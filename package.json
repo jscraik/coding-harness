@@ -1,0 +1,31 @@
+{
+	"name": "@jamiecraik/coding-harness",
+	"version": "0.1.0",
+	"type": "module",
+	"description": "Control plane for agentic development",
+	"bin": {
+		"harness": "./dist/cli.js"
+	},
+	"scripts": {
+		"check": "pnpm lint && pnpm typecheck && pnpm test && pnpm audit",
+		"lint": "biome check .",
+		"lint:fix": "biome check . --write",
+		"fmt": "biome format . --write",
+		"typecheck": "tsc --noEmit",
+		"test": "vitest run",
+		"test:watch": "vitest",
+		"build": "tsc && chmod +x dist/cli.js",
+		"audit": "pnpm audit --audit-level=moderate",
+		"audit:strict": "pnpm audit --audit-level=high"
+	},
+	"devDependencies": {
+		"@biomejs/biome": "^1.9.4",
+		"@types/node": "^22.0.0",
+		"typescript": "^5.9.0",
+		"vitest": "^3.0.0"
+	},
+	"packageManager": "pnpm@10.0.0",
+	"engines": {
+		"node": ">=24.0.0"
+	}
+}
