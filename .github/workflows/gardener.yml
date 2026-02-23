@@ -1,0 +1,68 @@
+name: Gardener
+
+on:
+  schedule:
+    - cron: "0 2 * * *"  # 2am UTC daily
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  garden:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.GARDENER_TOKEN }}
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+
+      - name: Install lychee
+        uses: lycheeverse/lychee-action@v2
+
+      - name: Install dependencies
+        run: pnpm install
+
+      - name: Build
+        run: pnpm build
+
+      - name: Run gardener analysis
+        id: gardener-analysis
+        run: node dist/cli.js gardener --json --dry-run
+        env:
+          DOCS_PATH: docs
+
+      - name: Check for issues
+        id: check-issues
+        run: |
+          if [ -f "gardener-report.json" ]; then
+            STALE_COUNT=$(jq -r '.staleDocs | length' gardener-report.json)
+            BROKEN_COUNT=$(jq -r '.brokenLinks | length' gardener-report.json)
+            echo "Stale docs: $STALE_COUNT"
+            echo "Broken links: $BROKEN_COUNT"
+            if [ "$STALE_COUNT" -gt 0 ] || [ "$BROKEN_COUNT" -gt 0 ]; then
+              echo "needs_pr=true" >> "$GITHUB_OUTPUT"
+            else
+              echo "needs_pr=false" >> "$GITHUB_OUTPUT"
+            fi
+          else
+            echo "needs_pr=false" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Create maintenance PR
+        if: steps.check-issues.outputs.needs_pr == 'true'
+        env:
+          GITHUB_TOKEN: ${{ secrets.GARDENER_TOKEN }}
+        run: |
+          BRANCH_NAME="gardener/$(date +%Y-%m-%d)"
+          git checkout -b "$BRANCH_NAME"
+          node dist/cli.js gardener
+          git add docs/QUALITY_SCORE.md
+          git commit -m "docs: gardening updates ($(date +%Y-%m-%d))"
+          git push -u origin "$BRANCH_NAME"
+          gh pr create --title "docs: gardening updates" --body "Automated gardening updates from harness gardener workflow"
