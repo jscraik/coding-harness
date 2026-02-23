@@ -1,6 +1,7 @@
 #!/usr/bin/env node
 import { runGardenerCLI } from "./commands/gardener.js";
 import { runInitCLI, runInteractiveInitCLI } from "./commands/init.js";
+import { runMemoryGateCLI } from "./commands/memory-gate.js";
 import { runRiskTierCLI } from "./commands/risk-tier.js";
 import { sanitizeError } from "./lib/input/sanitize.js";
 import { getVersion } from "./lib/version.js";
@@ -26,9 +27,10 @@ function printUsage(): void {
 	console.info("Usage: harness <command> [options]");
 	console.info("");
 	console.info("Commands:");
-	console.info("  init       Install harness in current directory");
-	console.info("  risk-tier  Classify files by risk tier");
-	console.info("  gardener   Detect stale docs and broken links");
+	console.info("  init         Install harness in current directory");
+	console.info("  risk-tier    Classify files by risk tier");
+	console.info("  gardener     Detect stale docs and broken links");
+	console.info("  memory-gate  Validate local-memory workflow compliance");
 	console.info("");
 	console.info("Init Options:");
 	console.info("  --dry-run        Preview changes without writing");
@@ -45,6 +47,11 @@ function printUsage(): void {
 	console.info("  --dry-run        Preview changes without writing");
 	console.info("  --json           Output results as JSON");
 	console.info("  --stale-days     Days before doc is stale (default: 30)");
+	console.info("");
+	console.info("Memory Gate Options:");
+	console.info("  --memory         Path to memory.json (default: memory.json)");
+	console.info("  --forjamie       Path to FORJAMIE.md (default: FORJAMIE.md)");
+	console.info("  --json           Output results as JSON");
 	console.info("");
 	console.info("Options:");
 	console.info("  --version, -v  Print version");
@@ -120,6 +127,37 @@ export function run(args: string[]): void {
 		}
 
 		const exitCode = runGardenerCLI(options);
+		process.exit(exitCode);
+		return;
+	}
+
+	if (command === "memory-gate") {
+		// Parse memory-gate options
+		const jsonFlag = args.includes("--json");
+		const memoryIndex = args.indexOf("--memory");
+		const forjamieIndex = args.indexOf("--forjamie");
+
+		const options: {
+			memoryPath?: string;
+			forjamiePath?: string;
+			json?: boolean;
+		} = {};
+
+		if (jsonFlag) options.json = true;
+		if (memoryIndex !== -1) {
+			const memoryArg = args[memoryIndex + 1];
+			if (memoryArg) {
+				options.memoryPath = memoryArg;
+			}
+		}
+		if (forjamieIndex !== -1) {
+			const forjamieArg = args[forjamieIndex + 1];
+			if (forjamieArg) {
+				options.forjamiePath = forjamieArg;
+			}
+		}
+
+		const exitCode = runMemoryGateCLI(options);
 		process.exit(exitCode);
 		return;
 	}
