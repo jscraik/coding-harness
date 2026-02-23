@@ -32,6 +32,7 @@ export interface InitOptions {
 	checkUpdates?: boolean; // Check for template updates
 	update?: boolean; // Apply template updates
 	interactive?: boolean; // Interactive prompts for each change
+	migrate?: boolean; // Migrate contract schema to latest version
 }
 
 // === Rollback Types ===
@@ -85,6 +86,62 @@ export interface ProposedChange {
 	newContent: string;
 }
 
+// === Schema Migration Types ===
+
+/** Typed contract schema for version-aware handling */
+export interface ContractSchema {
+	version: string;
+	riskTierRules: Record<string, unknown>;
+	reviewPolicy: {
+		timeoutSeconds: number;
+		timeoutAction: "fail" | "warn";
+	};
+	// Future fields can be added here with optional types
+	[key: string]: unknown; // Allow additional user-defined fields
+}
+
+/** Migration function that transforms a contract from one version to the next */
+export interface Migration {
+	fromVersion: string;
+	toVersion: string;
+	description: string;
+	migrate: (contract: ContractSchema) => ContractSchema;
+}
+
+/** Result of a migration operation */
+export interface MigrationResult {
+	originalVersion: string;
+	finalVersion: string;
+	migrationsApplied: string[]; // List of migration descriptions
+	migratedContract: ContractSchema;
+}
+
+export type MigrationResultType =
+	| { ok: true; value: MigrationResult }
+	| { ok: false; error: InitErrorOutput };
+
+// Current latest schema version (must match template)
+export const CURRENT_SCHEMA_VERSION = "1.0.0";
+
+/**
+ * Migration registry - ordered list of schema migrations.
+ * Each migration transforms a contract from fromVersion to toVersion.
+ * Migrations are applied sequentially to bring a contract up to date.
+ */
+const MIGRATIONS: Migration[] = [
+	// Example future migration (commented out until needed):
+	// {
+	//   fromVersion: "1.0",
+	//   toVersion: "2.0",
+	//   description: "Add memory policy configuration",
+	//   migrate: (contract) => ({
+	//     ...contract,
+	//     version: "2.0",
+	//     memoryPolicy: { enabled: true, maxEntries: 100 }
+	//   })
+	// },
+];
+
 export interface InitOutput {
 	packageManager: string;
 	created: string[];
@@ -122,7 +179,7 @@ const TEMPLATES: Template[] = [
 		render: () =>
 			JSON.stringify(
 				{
-					version: "1.0",
+					version: "1.0.0",
 					riskTierRules: {},
 					reviewPolicy: { timeoutSeconds: 600, timeoutAction: "fail" },
 				},
@@ -645,6 +702,178 @@ function executeUpdate(
 	return { ok: true, value: { updated, skipped } };
 }
 
+// === Schema Migration Functions ===
+
+const CONTRACT_FILE = "harness.contract.json";
+
+/**
+ * Detect the version of an existing contract file.
+ * Returns null if file doesn't exist or doesn't have a valid version.
+ */
+export function detectContractVersion(targetDir: string): string | null {
+	const contractPath = resolve(targetDir, CONTRACT_FILE);
+
+	if (!existsSync(contractPath)) {
+		return null;
+	}
+
+	try {
+		const content = readFileSync(contractPath, "utf-8");
+		const data = JSON.parse(content) as unknown;
+
+		if (typeof data !== "object" || data === null) {
+			return null;
+		}
+
+		const contract = data as Record<string, unknown>;
+		if (typeof contract.version !== "string") {
+			return null;
+		}
+
+		return contract.version;
+	} catch {
+		return null;
+	}
+}
+
+/**
+ * Load and validate a contract file.
+ * Returns the parsed contract or an error.
+ */
+function loadContract(
+	targetDir: string,
+): { ok: true; value: ContractSchema } | { ok: false; error: InitErrorOutput } {
+	const contractPath = resolve(targetDir, CONTRACT_FILE);
+
+	if (!existsSync(contractPath)) {
+		return {
+			ok: false,
+			error: {
+				code: "WRITE_ERROR",
+				message: `Contract file not found: ${CONTRACT_FILE}`,
+				path: CONTRACT_FILE,
+			},
+		};
+	}
+
+	try {
+		const content = readFileSync(contractPath, "utf-8");
+		const data = JSON.parse(content) as unknown;
+
+		if (typeof data !== "object" || data === null) {
+			return {
+				ok: false,
+				error: {
+					code: "WRITE_ERROR",
+					message: "Contract file is not a valid JSON object",
+					path: CONTRACT_FILE,
+				},
+			};
+		}
+
+		const contract = data as ContractSchema;
+
+		// Validate required fields
+		if (typeof contract.version !== "string") {
+			return {
+				ok: false,
+				error: {
+					code: "WRITE_ERROR",
+					message: "Contract file missing required 'version' field",
+					path: CONTRACT_FILE,
+				},
+			};
+		}
+
+		return { ok: true, value: contract };
+	} catch (e) {
+		return {
+			ok: false,
+			error: {
+				code: "WRITE_ERROR",
+				message: `Failed to parse contract: ${sanitizeError(e)}`,
+				path: CONTRACT_FILE,
+			},
+		};
+	}
+}
+
+/**
+ * Apply all applicable migrations to bring a contract up to the latest version.
+ * Chains migrations sequentially, preserving user customizations.
+ */
+function migrateContract(contract: ContractSchema): MigrationResult {
+	const originalVersion = contract.version;
+	const migrationsApplied: string[] = [];
+	let currentContract = { ...contract };
+
+	// Find and apply migrations sequentially
+	for (const migration of MIGRATIONS) {
+		if (currentContract.version === migration.fromVersion) {
+			currentContract = migration.migrate(currentContract);
+			migrationsApplied.push(
+				`${migration.fromVersion} → ${migration.toVersion}: ${migration.description}`,
+			);
+		}
+	}
+
+	return {
+		originalVersion,
+		finalVersion: currentContract.version,
+		migrationsApplied,
+		migratedContract: currentContract,
+	};
+}
+
+/**
+ * Check if contract needs migration by comparing versions.
+ */
+function needsMigration(contractVersion: string): boolean {
+	return semver.lt(contractVersion, CURRENT_SCHEMA_VERSION);
+}
+
+/**
+ * Execute contract schema migration.
+ * Loads contract, applies migrations, and writes result.
+ */
+function executeMigration(targetDir: string): MigrationResultType {
+	const loadResult = loadContract(targetDir);
+	if (!loadResult.ok) {
+		return loadResult;
+	}
+
+	const contract = loadResult.value;
+
+	// Check if migration is needed
+	if (!needsMigration(contract.version)) {
+		return {
+			ok: true,
+			value: {
+				originalVersion: contract.version,
+				finalVersion: contract.version,
+				migrationsApplied: [],
+				migratedContract: contract,
+			},
+		};
+	}
+
+	// Apply migrations
+	const result = migrateContract(contract);
+
+	// Write migrated contract
+	const contractPath = resolve(targetDir, CONTRACT_FILE);
+	const writeResult = atomicWrite(
+		contractPath,
+		JSON.stringify(result.migratedContract, null, 2),
+	);
+
+	if (!writeResult.ok) {
+		return writeResult;
+	}
+
+	return { ok: true, value: result };
+}
+
 /**
  * Collect proposed changes for interactive mode.
  * Returns a list of changes that would be made without actually writing files.
@@ -853,6 +1082,26 @@ export function runInit(
 				packageManager,
 				created: updateResult.value.updated,
 				skipped: updateResult.value.skipped,
+			},
+		};
+	}
+
+	// Handle --migrate: apply schema migrations to contract
+	if (options.migrate) {
+		const migrationResult = executeMigration(dir);
+		if (!migrationResult.ok) {
+			return migrationResult;
+		}
+
+		return {
+			ok: true,
+			output: {
+				packageManager,
+				created:
+					migrationResult.value.migrationsApplied.length > 0
+						? [CONTRACT_FILE]
+						: [],
+				skipped: [],
 			},
 		};
 	}
@@ -1146,6 +1395,23 @@ export function runInitCLI(
 					console.info(`  skipped ${path}`);
 				}
 				console.info(`\n✓ Updated ${created.length} file(s)`);
+			}
+			return EXIT_CODES.SUCCESS;
+		}
+
+		// Handle --migrate output
+		if (options.migrate) {
+			const contractVersion = detectContractVersion(targetDir ?? cwd());
+			if (created.length === 0) {
+				console.info(
+					`Contract already up to date (v${contractVersion ?? "unknown"})`,
+				);
+			} else {
+				console.info("Migrating contract schema\n");
+				console.info(
+					`  ${CONTRACT_FILE}: v${contractVersion ?? "unknown"} → v${CURRENT_SCHEMA_VERSION}`,
+				);
+				console.info("\n✓ Contract migrated");
 			}
 			return EXIT_CODES.SUCCESS;
 		}

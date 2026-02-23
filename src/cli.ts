@@ -36,6 +36,7 @@ function printUsage(): void {
 	console.info("  --check-updates  Check for template updates");
 	console.info("  --update         Apply available template updates");
 	console.info("  --interactive    Review and approve each change");
+	console.info("  --migrate        Migrate contract schema to latest version");
 	console.info("");
 	console.info("Options:");
 	console.info("  --version, -v  Print version");
@@ -93,6 +94,7 @@ export function run(args: string[]): void {
 		const checkUpdatesFlag = args.includes("--check-updates");
 		const updateFlag = args.includes("--update");
 		const interactiveFlag = args.includes("--interactive");
+		const migrateFlag = args.includes("--migrate");
 
 		// Get optional target directory (first non-flag arg after 'init')
 		const targetDir = args.slice(1).find((arg) => !arg.startsWith("--"));
@@ -105,6 +107,7 @@ export function run(args: string[]): void {
 			checkUpdates: checkUpdatesFlag,
 			update: updateFlag,
 			interactive: interactiveFlag,
+			migrate: migrateFlag,
 		};
 
 		// Handle interactive mode with async
