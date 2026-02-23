@@ -1,7 +1,7 @@
 ---
 title: feat: Add Evidence + Observability Hooks
 type: feat
-status: active
+status: completed
 date: 2026-02-23
 origin: docs/brainstorms/2026-02-23-phase-5-evidence-observability-brainstorm.md
 ---
@@ -62,12 +62,12 @@ src/
 - `src/lib/evidence/validator.ts` (new)
 
 **Tasks:**
-- [ ] Add `EvidenceType`, `EvidenceFile`, `EvidenceCheckResult` types
-- [ ] Add `EvidenceError` interface with machine-readable codes
-- [ ] Implement `loadEvidenceFile()` - read and validate file existence
-- [ ] Implement `validateImageFormat()` - PNG/JPEG magic byte validation
-- [ ] Add path traversal protection using `realpathSync()` pattern (see todos/001)
-- [ ] Add file size limit (1MB max per evidence file)
+- [x] Add `EvidenceType`, `EvidenceFile`, `EvidenceCheckResult` types
+- [x] Add `EvidenceError` interface with machine-readable codes
+- [x] Implement `loadEvidenceFile()` - read and validate file existence
+- [x] Implement `validateImageFormat()` - PNG/JPEG magic byte validation
+- [x] Add path traversal protection using `realpathSync()` pattern (see todos/001)
+- [x] Add file size limit (1MB max per evidence file)
 
 **Key patterns:**
 ```typescript
@@ -108,14 +108,14 @@ export type EvidenceResult = EvidenceCheckResult | { ok: false; error: EvidenceE
 - `src/cli.ts` (modify - add command)
 
 **Tasks:**
-- [ ] Add `runEvidenceVerify()` library function with discriminated union result
-- [ ] Add `runEvidenceVerifyCLI()` wrapper with console output
-- [ ] Add `EXIT_CODES` constant (SUCCESS=0, VALIDATION_ERROR=1, FILE_NOT_FOUND=2, PATH_TRAVERSAL=3)
-- [ ] Add `--files` flag parsing (comma-separated)
-- [ ] Add `--contract` flag for policy-gated verification
-- [ ] Add `--json` flag for structured output
-- [ ] Register command in `cli.ts`
-- [ ] Add to `printUsage()` help text
+- [x] Add `runEvidenceVerify()` library function with discriminated union result
+- [x] Add `runEvidenceVerifyCLI()` wrapper with console output
+- [x] Add `EXIT_CODES` constant (SUCCESS=0, VALIDATION_ERROR=1, FILE_NOT_FOUND=2, PATH_TRAVERSAL=3)
+- [x] Add `--files` flag parsing (comma-separated)
+- [x] Add `--contract` flag for policy-gated verification
+- [x] Add `--json` flag for structured output
+- [x] Register command in `cli.ts`
+- [x] Add to `printUsage()` help text
 
 **CLI interface:**
 ```bash
@@ -145,13 +145,13 @@ export type EvidenceVerifyResult =
 - `contracts/browser-evidence.schema.json` (new)
 
 **Tasks:**
-- [ ] Add `EvidencePolicy` interface to types.ts
-- [ ] Add `evidencePolicy?: EvidencePolicy` to `HarnessContract`
-- [ ] Add `DEFAULT_EVIDENCE_POLICY` constant
-- [ ] Add `isValidEvidencePolicy()` validation function
-- [ ] Extend `validateContract()` to validate evidence policy
-- [ ] Update contract template in init.ts to include `evidencePolicy`
-- [ ] Create `contracts/browser-evidence.schema.json` JSON Schema
+- [x] Add `EvidencePolicy` interface to types.ts
+- [x] Add `evidencePolicy?: EvidencePolicy` to `HarnessContract`
+- [x] Add `DEFAULT_EVIDENCE_POLICY` constant
+- [x] Add `isValidEvidencePolicy()` validation function
+- [x] Extend `validateContract()` to validate evidence policy
+- [x] Update contract template in init.ts to include `evidencePolicy`
+- [x] Create `contracts/browser-evidence.schema.json` JSON Schema
 
 **Contract extension:**
 ```typescript
@@ -173,12 +173,12 @@ evidencePolicy?: EvidencePolicy;
 - All commands (optional - add logging calls)
 
 **Tasks:**
-- [ ] Add `StructuredLogger` class with JSON output
-- [ ] Add log levels: `debug`, `info`, `warn`, `error`
-- [ ] Add `--otel-endpoint` flag for OTLP export
-- [ ] Add `OTEL_EXPORTER_OTLP_ENDPOINT` env var support
-- [ ] Implement OTLP log export (HTTP/protobuf)
-- [ ] Add timestamp (ISO 8601), level, message, context fields
+- [x] Add `StructuredLogger` class with JSON output
+- [x] Add log levels: `debug`, `info`, `warn`, `error`
+- [x] Add `--otel-endpoint` flag for OTLP export
+- [x] Add `OTEL_EXPORTER_OTLP_ENDPOINT` env var support
+- [x] Implement OTLP log export (HTTP/protobuf)
+- [x] Add timestamp (ISO 8601), level, message, context fields
 
 **Log format:**
 ```json
@@ -197,13 +197,13 @@ evidencePolicy?: EvidencePolicy;
 - `src/lib/evidence/validator.test.ts` (new)
 
 **Tasks:**
-- [ ] Test PNG/JPEG magic byte validation
-- [ ] Test invalid/corrupted image detection
-- [ ] Test file size limit enforcement
-- [ ] Test path traversal protection
-- [ ] Test `--json` output format
-- [ ] Test evidence policy validation in contract
-- [ ] Test CLI exit codes
+- [x] Test PNG/JPEG magic byte validation
+- [x] Test invalid/corrupted image detection
+- [x] Test file size limit enforcement
+- [x] Test path traversal protection
+- [x] Test `--json` output format
+- [x] Test evidence policy validation in contract
+- [x] Test CLI exit codes
 
 **Test patterns (from init.test.ts):**
 ```typescript

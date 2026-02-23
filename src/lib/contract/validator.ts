@@ -1,5 +1,7 @@
 import type {
+	EvidencePolicy,
 	HarnessContract,
+	ImageFormat,
 	ReviewPolicy,
 	RiskTier,
 	TimeoutAction,
@@ -7,6 +9,7 @@ import type {
 
 const VALID_RISK_TIERS: RiskTier[] = ["high", "medium", "low"];
 const VALID_TIMEOUT_ACTIONS: TimeoutAction[] = ["fail", "warn"];
+const VALID_IMAGE_FORMATS: ImageFormat[] = ["png", "jpeg"];
 const FORBIDDEN_KEYS = ["__proto__", "constructor", "prototype"] as const;
 
 // Machine-readable error codes for programmatic handling
@@ -76,6 +79,54 @@ function isValidReviewPolicy(value: unknown): value is ReviewPolicy {
 
 	// Validate timeoutAction
 	if (!isValidTimeoutAction(policy.timeoutAction)) {
+		return false;
+	}
+
+	return true;
+}
+
+function isValidImageFormat(value: unknown): value is ImageFormat {
+	return (
+		typeof value === "string" &&
+		VALID_IMAGE_FORMATS.includes(value as ImageFormat)
+	);
+}
+
+export function isValidEvidencePolicy(value: unknown): value is EvidencePolicy {
+	if (typeof value !== "object" || value === null) return false;
+	const policy = value as Record<string, unknown>;
+
+	// Validate requiredFor (must be array of strings)
+	if (!Array.isArray(policy.requiredFor)) {
+		return false;
+	}
+	for (const pattern of policy.requiredFor) {
+		if (typeof pattern !== "string") {
+			return false;
+		}
+		// Block prototype pollution
+		if (FORBIDDEN_KEYS.includes(pattern as (typeof FORBIDDEN_KEYS)[number])) {
+			return false;
+		}
+	}
+
+	// Validate allowedTypes (must be array of valid formats)
+	if (!Array.isArray(policy.allowedTypes)) {
+		return false;
+	}
+	for (const format of policy.allowedTypes) {
+		if (!isValidImageFormat(format)) {
+			return false;
+		}
+	}
+
+	// Validate maxFileSizeBytes (optional, must be positive integer)
+	if (
+		policy.maxFileSizeBytes !== undefined &&
+		(typeof policy.maxFileSizeBytes !== "number" ||
+			policy.maxFileSizeBytes <= 0 ||
+			!Number.isInteger(policy.maxFileSizeBytes))
+	) {
 		return false;
 	}
 
@@ -165,6 +216,25 @@ export function validateContract(
 		}
 	}
 
+	// Validate evidencePolicy (optional)
+	let evidencePolicy: EvidencePolicy | undefined;
+	if ("evidencePolicy" in obj && obj.evidencePolicy !== undefined) {
+		if (!isValidEvidencePolicy(obj.evidencePolicy)) {
+			errors.push({
+				code: ValidationErrorCode.INVALID_VALUE,
+				path: "evidencePolicy",
+				message:
+					"evidencePolicy must have requiredFor (string array) and allowedTypes ('png' | 'jpeg' array)",
+				expected:
+					"{ requiredFor: ['src/ui/**'], allowedTypes: ['png', 'jpeg'], maxFileSizeBytes?: number }",
+				received: JSON.stringify(obj.evidencePolicy),
+				fix: "Ensure evidencePolicy has valid requiredFor and allowedTypes",
+			});
+		} else {
+			evidencePolicy = obj.evidencePolicy as EvidencePolicy;
+		}
+	}
+
 	if (errors.length > 0) {
 		return { success: false, errors };
 	}
@@ -175,6 +245,7 @@ export function validateContract(
 			version: obj.version as string,
 			riskTierRules: (obj.riskTierRules as Record<string, RiskTier>) ?? {},
 			reviewPolicy,
+			evidencePolicy,
 		},
 		errors: [],
 	};
