@@ -2,6 +2,7 @@
 import { readFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
+import { runInitCLI } from "./commands/init.js";
 import { runRiskTierCLI } from "./commands/risk-tier.js";
 import { sanitizeError } from "./lib/input/sanitize.js";
 
@@ -52,6 +53,7 @@ function printUsage(): void {
 	console.info("Usage: harness <command> [options]");
 	console.info("");
 	console.info("Commands:");
+	console.info("  init       Install harness in current directory");
 	console.info("  risk-tier  Classify files by risk tier");
 	console.info("");
 	console.info("Options:");
@@ -96,6 +98,22 @@ export function run(args: string[]): void {
 			contractPath,
 			files,
 			json: jsonFlag,
+		});
+		process.exit(exitCode);
+		return;
+	}
+
+	if (command === "init") {
+		// Parse init options
+		const dryRunFlag = args.includes("--dry-run");
+		const forceFlag = args.includes("--force");
+
+		// Get optional target directory (first non-flag arg after 'init')
+		const targetDir = args.slice(1).find((arg) => !arg.startsWith("--"));
+
+		const exitCode = runInitCLI(targetDir, {
+			dryRun: dryRunFlag,
+			force: forceFlag,
 		});
 		process.exit(exitCode);
 		return;
