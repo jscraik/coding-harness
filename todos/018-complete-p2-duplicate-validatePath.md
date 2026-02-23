@@ -1,5 +1,5 @@
 ---
-status: pending
+status: complete
 priority: p2
 issue_id: 018
 tags: [architecture, maintainability, code-review]
@@ -76,17 +76,18 @@ validatePath(baseDir, userPath)
 
 ## Acceptance Criteria
 
-- [ ] Single `validatePath` in `validator.ts`
-- [ ] All imports updated to use `validator.ts`
-- [ ] Signature change propagated to callers
-- [ ] `pnpm test` passes
-- [ ] `pnpm typecheck` passes
+- [x] Single `validatePath` in `validator.ts`
+- [x] All imports updated to use `validator.ts` (via sanitize.ts re-export)
+- [x] Signature change propagated to callers
+- [x] `pnpm test` passes
+- [x] `pnpm typecheck` passes
 
 ## Work Log
 
 | Date | Action | Notes |
 |------|--------|-------|
 | 2026-02-23 | Review completed | Multiple agents identified duplication |
+| 2026-02-23 | Verified consolidation | sanitize.ts re-exports from validator.ts; all callers use correct (baseDir, userPath) signature |
 
 ## Resources
 
