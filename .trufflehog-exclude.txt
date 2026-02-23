@@ -1,0 +1,9 @@
+# Paths excluded from Trufflehog scans (fixture/docs/test/example noise)
+docs/
+examples/
+test/
+tests/
+spec/
+specs/
+__tests__/
+\./.*\.(test|spec)\.
