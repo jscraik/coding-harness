@@ -1,8 +1,8 @@
 import { existsSync, mkdirSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { describe, expect, it, beforeEach, afterEach } from "vitest";
-import { EXIT_CODES, runInit, type InitOptions } from "./init.js";
+import { afterEach, beforeEach, describe, expect, it } from "vitest";
+import { EXIT_CODES, runInit } from "./init.js";
 
 describe("runInit", () => {
 	let tempDir: string;
@@ -67,7 +67,9 @@ describe("runInit", () => {
 
 			// Verify no files were created
 			expect(existsSync(join(tempDir, "harness.contract.json"))).toBe(false);
-			expect(existsSync(join(tempDir, ".github/workflows/pr-pipeline.yml"))).toBe(false);
+			expect(
+				existsSync(join(tempDir, ".github/workflows/pr-pipeline.yml")),
+			).toBe(false);
 		});
 	});
 
@@ -83,14 +85,19 @@ describe("runInit", () => {
 
 			// Verify files were created
 			expect(existsSync(join(tempDir, "harness.contract.json"))).toBe(true);
-			expect(existsSync(join(tempDir, ".github/workflows/pr-pipeline.yml"))).toBe(true);
+			expect(
+				existsSync(join(tempDir, ".github/workflows/pr-pipeline.yml")),
+			).toBe(true);
 		});
 
 		it("skips existing files without --force", () => {
 			// Create existing file
 			mkdirSync(join(tempDir, ".github", "workflows"), { recursive: true });
 			writeFileSync(join(tempDir, "harness.contract.json"), "{}");
-			writeFileSync(join(tempDir, ".github/workflows/pr-pipeline.yml"), "existing");
+			writeFileSync(
+				join(tempDir, ".github/workflows/pr-pipeline.yml"),
+				"existing",
+			);
 
 			const result = runInit(tempDir, { dryRun: false, force: false });
 
@@ -107,7 +114,10 @@ describe("runInit", () => {
 			// Create existing files
 			mkdirSync(join(tempDir, ".github", "workflows"), { recursive: true });
 			writeFileSync(join(tempDir, "harness.contract.json"), '{"old": true}');
-			writeFileSync(join(tempDir, ".github/workflows/pr-pipeline.yml"), "old content");
+			writeFileSync(
+				join(tempDir, ".github/workflows/pr-pipeline.yml"),
+				"old content",
+			);
 
 			const result = runInit(tempDir, { dryRun: false, force: true });
 
@@ -166,7 +176,7 @@ describe("runInit", () => {
 			expect(existsSync(contractPath)).toBe(true);
 
 			const content = JSON.parse(
-				require("fs").readFileSync(contractPath, "utf-8")
+				require("node:fs").readFileSync(contractPath, "utf-8"),
 			);
 			expect(content.version).toBe("1.0");
 			expect(content.reviewPolicy.timeoutSeconds).toBe(600);
@@ -182,7 +192,7 @@ describe("runInit", () => {
 
 			// Read workflow and verify pnpm is used
 			const workflowPath = join(tempDir, ".github/workflows/pr-pipeline.yml");
-			const content = require("fs").readFileSync(workflowPath, "utf-8");
+			const content = require("node:fs").readFileSync(workflowPath, "utf-8");
 			expect(content).toContain("pnpm install");
 			expect(content).toContain("pnpm test");
 		});
@@ -195,5 +205,250 @@ describe("EXIT_CODES", () => {
 		expect(EXIT_CODES.PATH_TRAVERSAL).toBe(1);
 		expect(EXIT_CODES.WRITE_ERROR).toBe(2);
 		expect(EXIT_CODES.INVALID_PATH).toBe(3);
+	});
+});
+
+describe("--track flag", () => {
+	let tempDir: string;
+
+	beforeEach(() => {
+		tempDir = join(tmpdir(), `harness-track-test-${Date.now()}`);
+		mkdirSync(tempDir, { recursive: true });
+	});
+
+	afterEach(() => {
+		rmSync(tempDir, { recursive: true, force: true });
+	});
+
+	it("creates manifest for new files", () => {
+		const result = runInit(tempDir, {
+			dryRun: false,
+			force: false,
+			track: true,
+		});
+
+		expect(result.ok).toBe(true);
+		if (result.ok) {
+			expect(result.output.created).toHaveLength(2);
+		}
+
+		// Verify manifest exists
+		expect(existsSync(join(tempDir, ".harness/restore-manifest.json"))).toBe(
+			true,
+		);
+
+		// Backups directory is created but may be empty for new files
+		expect(existsSync(join(tempDir, ".harness/backups"))).toBe(true);
+	});
+
+	it("creates backups for existing files", () => {
+		// Create existing file with unique content
+		mkdirSync(join(tempDir, ".github", "workflows"), { recursive: true });
+		writeFileSync(
+			join(tempDir, ".github/workflows/pr-pipeline.yml"),
+			"old content",
+		);
+
+		const result = runInit(tempDir, {
+			dryRun: false,
+			force: true,
+			track: true,
+		});
+
+		expect(result.ok).toBe(true);
+		if (result.ok) {
+			expect(result.output.created).toHaveLength(2);
+		}
+
+		// Verify backup exists
+		expect(existsSync(join(tempDir, ".harness/backups"))).toBe(true);
+
+		// Read manifest and verify entry
+		const manifestContent = require("node:fs").readFileSync(
+			join(tempDir, ".harness/restore-manifest.json"),
+			"utf-8",
+		);
+		const manifest = JSON.parse(manifestContent);
+		expect(manifest.files).toHaveLength(2);
+
+		// Find the modified entry
+		const modifiedEntry = manifest.files.find(
+			(f: { path: string; action: string }) =>
+				f.path === ".github/workflows/pr-pipeline.yml",
+		);
+		expect(modifiedEntry.action).toBe("modified");
+		expect(modifiedEntry.backupHash).toMatch(/^[a-f0-9]{16}$/);
+	});
+
+	it("rejects symlinks with error", () => {
+		// Create symlink
+		mkdirSync(join(tempDir, ".github", "workflows"), { recursive: true });
+		const symlinkPath = join(tempDir, ".github/workflows/pr-pipeline.yml");
+		require("node:fs").symlinkSync("/etc/passwd", symlinkPath);
+
+		const result = runInit(tempDir, {
+			dryRun: false,
+			force: true,
+			track: true,
+		});
+
+		expect(result.ok).toBe(false);
+		if (!result.ok) {
+			expect(result.error.code).toBe("WRITE_ERROR");
+			expect(result.error.message).toContain("Symlink");
+		}
+	});
+});
+
+describe("--rollback flag", () => {
+	let tempDir: string;
+
+	beforeEach(() => {
+		tempDir = join(tmpdir(), `harness-rollback-test-${Date.now()}`);
+		mkdirSync(tempDir, { recursive: true });
+	});
+
+	afterEach(() => {
+		rmSync(tempDir, { recursive: true, force: true });
+	});
+
+	it("restores created files (deletes them)", () => {
+		// First install with --track
+		const installResult = runInit(tempDir, {
+			dryRun: false,
+			force: false,
+			track: true,
+		});
+		expect(installResult.ok).toBe(true);
+
+		// Verify files exist
+		expect(existsSync(join(tempDir, "harness.contract.json"))).toBe(true);
+
+		// Then rollback
+		const rollbackResult = runInit(tempDir, {
+			dryRun: false,
+			force: false,
+			rollback: true,
+		});
+		expect(rollbackResult.ok).toBe(true);
+
+		// Verify files deleted
+		expect(existsSync(join(tempDir, "harness.contract.json"))).toBe(false);
+		expect(existsSync(join(tempDir, ".github/workflows/pr-pipeline.yml"))).toBe(
+			false,
+		);
+
+		// Manifest cleaned up
+		expect(existsSync(join(tempDir, ".harness/restore-manifest.json"))).toBe(
+			false,
+		);
+	});
+
+	it("restores modified files from backup", () => {
+		// Create existing file
+		mkdirSync(join(tempDir, ".github", "workflows"), { recursive: true });
+		const originalContent = "ORIGINAL CONTENT";
+		writeFileSync(
+			join(tempDir, ".github/workflows/pr-pipeline.yml"),
+			originalContent,
+		);
+
+		// Install with --track --force
+		const installResult = runInit(tempDir, {
+			dryRun: false,
+			force: true,
+			track: true,
+		});
+		expect(installResult.ok).toBe(true);
+
+		// Verify file was modified
+		const modifiedContent = require("node:fs").readFileSync(
+			join(tempDir, ".github/workflows/pr-pipeline.yml"),
+			"utf-8",
+		);
+		expect(modifiedContent).not.toBe(originalContent);
+
+		// Rollback
+		const rollbackResult = runInit(tempDir, {
+			dryRun: false,
+			force: false,
+			rollback: true,
+		});
+		expect(rollbackResult.ok).toBe(true);
+
+		// Verify original content restored
+		const restoredContent = require("node:fs").readFileSync(
+			join(tempDir, ".github/workflows/pr-pipeline.yml"),
+			"utf-8",
+		);
+		expect(restoredContent).toBe(originalContent);
+	});
+
+	it("fails when no manifest exists", () => {
+		const result = runInit(tempDir, {
+			dryRun: false,
+			force: false,
+			rollback: true,
+		});
+
+		expect(result.ok).toBe(false);
+		if (!result.ok) {
+			expect(result.error.code).toBe("WRITE_ERROR");
+			expect(result.error.message).toContain("No restore manifest found");
+		}
+	});
+
+	it("fails when manifest is corrupted", () => {
+		// Create corrupted manifest
+		mkdirSync(join(tempDir, ".harness"), { recursive: true });
+		writeFileSync(
+			join(tempDir, ".harness/restore-manifest.json"),
+			"not valid json {{{",
+		);
+
+		const result = runInit(tempDir, {
+			dryRun: false,
+			force: false,
+			rollback: true,
+		});
+
+		expect(result.ok).toBe(false);
+		if (!result.ok) {
+			expect(result.error.code).toBe("WRITE_ERROR");
+			expect(result.error.message).toContain("Failed to load manifest");
+		}
+	});
+
+	it("blocks path traversal in manifest", () => {
+		// Install first
+		const installResult = runInit(tempDir, {
+			dryRun: false,
+			force: false,
+			track: true,
+		});
+		expect(installResult.ok).toBe(true);
+
+		// Tamper with manifest to add traversal
+		const manifestPath = join(tempDir, ".harness/restore-manifest.json");
+		const manifest = JSON.parse(
+			require("node:fs").readFileSync(manifestPath, "utf-8"),
+		);
+		manifest.files.push({
+			path: "../../../etc/passwd",
+			action: "created",
+		});
+		require("node:fs").writeFileSync(manifestPath, JSON.stringify(manifest));
+
+		// Rollback should reject the tampered manifest
+		const result = runInit(tempDir, {
+			dryRun: false,
+			force: false,
+			rollback: true,
+		});
+
+		expect(result.ok).toBe(false);
+		if (!result.ok) {
+			expect(result.error.message).toMatch(/traversal|blocked/i);
+		}
 	});
 });
