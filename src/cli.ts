@@ -51,6 +51,9 @@ function printUsage(): void {
 	console.info("Memory Gate Options:");
 	console.info("  --memory         Path to memory.json (default: memory.json)");
 	console.info("  --forjamie       Path to FORJAMIE.md (default: FORJAMIE.md)");
+	console.info(
+		"  --metrics        Path to metrics storage (default: .memory-metrics.json)",
+	);
 	console.info("  --json           Output results as JSON");
 	console.info("");
 	console.info("Options:");
@@ -136,11 +139,13 @@ export function run(args: string[]): void {
 		const jsonFlag = args.includes("--json");
 		const memoryIndex = args.indexOf("--memory");
 		const forjamieIndex = args.indexOf("--forjamie");
+		const metricsIndex = args.indexOf("--metrics");
 
 		const options: {
 			memoryPath?: string;
 			forjamiePath?: string;
 			json?: boolean;
+			metricsPath?: string;
 		} = {};
 
 		if (jsonFlag) options.json = true;
@@ -154,6 +159,12 @@ export function run(args: string[]): void {
 			const forjamieArg = args[forjamieIndex + 1];
 			if (forjamieArg) {
 				options.forjamiePath = forjamieArg;
+			}
+		}
+		if (metricsIndex !== -1) {
+			const metricsArg = args[metricsIndex + 1];
+			if (metricsArg) {
+				options.metricsPath = metricsArg;
 			}
 		}
 

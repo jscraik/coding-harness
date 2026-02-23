@@ -134,6 +134,8 @@ export interface MemoryGateOptions {
 	branch?: string;
 	/** Output JSON instead of text */
 	json?: boolean;
+	/** Path to metrics storage file */
+	metricsPath?: string;
 }
 
 /**

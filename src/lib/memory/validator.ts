@@ -6,6 +6,13 @@
 
 import { existsSync, readFileSync, statSync } from "node:fs";
 import { resolve } from "node:path";
+import { enforceCodexBranch } from "./branch-enforcer.js";
+import {
+	calculateTrends,
+	loadMetrics,
+	saveMetrics,
+	updateMetrics,
+} from "./metrics-tracker.js";
 import {
 	EXIT_CODES,
 	type MemoryEntry,
@@ -273,7 +280,17 @@ export function runMemoryGate(options: MemoryGateOptions): MemoryGateResult {
 		}
 	}
 
-	// 5. Closeout validation
+	// 5. Codex branch enforcement (if applicable)
+	const codexOptions: { forjamiePath?: string } = {};
+	if (forjamiePath) codexOptions.forjamiePath = forjamiePath;
+	const codexResult = enforceCodexBranch(codexOptions);
+	if (codexResult.isCodexBranch && !codexResult.valid) {
+		for (const v of codexResult.violations) {
+			violations.push({ type: "discipline", message: `[codex] ${v.message}` });
+		}
+	}
+
+	// 6. Closeout validation
 	const closeoutResult = validateCloseout(summary, forjamiePath);
 	if (!closeoutResult.valid) {
 		for (const v of closeoutResult.violations) {
@@ -314,26 +331,72 @@ export function runMemoryGate(options: MemoryGateOptions): MemoryGateResult {
  * Run memory gate CLI with console output
  */
 export function runMemoryGateCLI(options: MemoryGateOptions): number {
+	// Load historical metrics
+	const { metrics: previousMetrics, history } = loadMetrics(
+		options.metricsPath,
+	);
+
 	const result = runMemoryGate(options);
 
+	// Update and save metrics
+	const updatedMetrics = updateMetrics(previousMetrics, {
+		success: result.ok,
+		entryCount: result.metrics?.total_ops ?? 0,
+		...(result.metrics?.tool_errors && {
+			toolErrors: result.metrics.tool_errors,
+		}),
+		...(result.metrics?.duplicate_memory_count !== undefined && {
+			duplicates: result.metrics.duplicate_memory_count,
+		}),
+	});
+	saveMetrics(updatedMetrics, history, options.metricsPath);
+
+	// Calculate trends
+	const trends = calculateTrends(history);
+
+	// Detect codex branch for display
+	const codexResult = enforceCodexBranch({
+		...(options.forjamiePath && { forjamiePath: options.forjamiePath }),
+	});
+
 	if (options.json) {
+		const jsonOutput = {
+			...result,
+			metrics: updatedMetrics,
+			trends,
+			codex: codexResult.isCodexBranch
+				? { branch: codexResult.branch, taskId: codexResult.taskId }
+				: undefined,
+		};
 		// biome-ignore lint/suspicious/noConsoleLog: CLI output
-		console.log(JSON.stringify(result, null, 2));
+		console.log(JSON.stringify(jsonOutput, null, 2));
 	} else {
+		// Show branch info for codex branches
+		if (codexResult.isCodexBranch) {
+			// biome-ignore lint/suspicious/noConsoleLog: CLI output
+			console.log(`🔷 Codex branch detected: ${codexResult.branch}`);
+			if (codexResult.taskId) {
+				// biome-ignore lint/suspicious/noConsoleLog: CLI output
+				console.log(`   Task: ${codexResult.taskId}`);
+			}
+			// biome-ignore lint/suspicious/noConsoleLog: CLI output
+			console.log();
+		}
+
 		if (result.ok) {
 			// biome-ignore lint/suspicious/noConsoleLog: CLI output
 			console.log("✓ Memory artifacts valid and compliant");
-			if (result.metrics) {
+			if (updatedMetrics) {
 				// biome-ignore lint/suspicious/noConsoleLog: CLI output
 				console.log("\n📊 Metrics:");
 				// biome-ignore lint/suspicious/noConsoleLog: CLI output
-				console.log(`  Pass^k: ${result.metrics.pass_k}`);
+				console.log(`  Pass^k: ${updatedMetrics.pass_k}`);
 				// biome-ignore lint/suspicious/noConsoleLog: CLI output
-				console.log(`  Total entries: ${result.metrics.total_ops}`);
-				if (result.metrics.duplicate_memory_count > 0) {
+				console.log(`  Total entries: ${updatedMetrics.total_ops}`);
+				if (updatedMetrics.duplicate_memory_count > 0) {
 					// biome-ignore lint/suspicious/noConsoleLog: CLI output
 					console.log(
-						`  ⚠ Duplicates: ${result.metrics.duplicate_memory_count}`,
+						`  ⚠ Duplicates: ${updatedMetrics.duplicate_memory_count}`,
 					);
 				}
 			}
@@ -344,6 +407,13 @@ export function runMemoryGateCLI(options: MemoryGateOptions): number {
 				for (const v of result.violations) {
 					console.error(`  [${v.type}] ${v.message}`);
 				}
+			}
+			// biome-ignore lint/suspicious/noConsoleLog: CLI output
+			console.log(`  Reliability: ${trends.reliability_score.toFixed(1)}%`);
+			if (trends.pass_k_trend !== "stable") {
+				const trendIcon = trends.pass_k_trend === "improving" ? "📈" : "📉";
+				// biome-ignore lint/suspicious/noConsoleLog: CLI output
+				console.log(`  ${trendIcon} Pass^k trend: ${trends.pass_k_trend}`);
 			}
 		}
 	}
