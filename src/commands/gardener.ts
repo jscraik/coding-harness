@@ -70,13 +70,11 @@ export function runGardener(options: GardenerOptions): GardenerResult {
 			brokenLinks,
 		);
 
-		if (!updateResult.ok) {
-			console.warn(
-				`Warning: Failed to update quality score file: ${updateResult.error}`,
-			);
-		}
-
-		return { ok: true, output };
+		return {
+			ok: true,
+			output,
+			...(updateResult.ok ? {} : { updateWarning: updateResult.error }),
+		};
 	} catch (error) {
 		return {
 			ok: false,
@@ -108,6 +106,13 @@ export function runGardenerCLI(options: GardenerOptions): number {
 		console.info(`  Docs path: ${options.docsPath ?? "docs"}`);
 		console.info(`  Stale docs: ${output.staleDocs.length}`);
 		console.info(`  Broken links: ${output.brokenLinks.length}`);
+
+		// Show update warning in human-readable mode only
+		if (result.updateWarning) {
+			console.warn(
+				`Warning: Failed to update quality score file: ${result.updateWarning}`,
+			);
+		}
 
 		if (output.staleDocs.length > 0) {
 			console.info("\n📄 Stale Documents:");
@@ -146,10 +151,11 @@ export function runGardenerCLI(options: GardenerOptions): number {
 		return output.needsPR ? EXIT_CODES.ISSUES_FOUND : EXIT_CODES.SUCCESS;
 	}
 
-	// Error output always to stderr
-	console.error(result.error.message);
+	// Error output: JSON only in JSON mode, text otherwise
 	if (options.json) {
 		console.error(JSON.stringify({ error: result.error }));
+	} else {
+		console.error(result.error.message);
 	}
 
 	// Map error codes to exit codes

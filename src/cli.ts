@@ -4,6 +4,7 @@ import { runInitCLI, runInteractiveInitCLI } from "./commands/init.js";
 import { runMemoryGateCLI } from "./commands/memory-gate.js";
 import { runPreflightGateCLI } from "./commands/preflight-gate.js";
 import { runRiskTierCLI } from "./commands/risk-tier.js";
+import { runSilentErrorDetectorCLI } from "./commands/silent-error.js";
 import { sanitizeError } from "./lib/input/sanitize.js";
 import { getVersion } from "./lib/version.js";
 
@@ -35,6 +36,7 @@ function printUsage(): void {
 	console.info(
 		"  preflight-gate Fast policy checks before expensive operations",
 	);
+	console.info("  silent-error   Detect silent error handling anti-patterns");
 	console.info("");
 	console.info("Init Options:");
 	console.info("  --dry-run        Preview changes without writing");
@@ -240,6 +242,43 @@ export function run(args: string[]): void {
 		runPreflightGateCLI(options)
 			.then((exitCode) => process.exit(exitCode))
 			.catch((error) => handleFatalError("Preflight Gate Error", error));
+		return;
+	}
+
+	if (command === "silent-error") {
+		// Parse silent-error options
+		const jsonFlag = args.includes("--json");
+		const strictFlag = args.includes("--strict");
+		const suggestionsFlag = args.includes("--suggestions");
+		const filesIndex = args.indexOf("--files");
+		const dirsIndex = args.indexOf("--dirs");
+
+		const options: {
+			files?: string[];
+			dirs?: string[];
+			json?: boolean;
+			strict?: boolean;
+			suggestions?: boolean;
+		} = {};
+
+		if (jsonFlag) options.json = true;
+		if (strictFlag) options.strict = true;
+		if (suggestionsFlag) options.suggestions = true;
+		if (filesIndex !== -1) {
+			const filesArg = args[filesIndex + 1];
+			if (filesArg) {
+				options.files = filesArg.split(",").map((f) => f.trim());
+			}
+		}
+		if (dirsIndex !== -1) {
+			const dirsArg = args[dirsIndex + 1];
+			if (dirsArg) {
+				options.dirs = dirsArg.split(",").map((d) => d.trim());
+			}
+		}
+
+		const exitCode = runSilentErrorDetectorCLI(options);
+		process.exit(exitCode);
 		return;
 	}
 

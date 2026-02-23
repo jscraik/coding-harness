@@ -1,5 +1,5 @@
 ---
-status: pending
+status: complete
 priority: p3
 tags: [code-review, gardener, json-output, consistency]
 dependencies: []
@@ -89,3 +89,22 @@ Implement Option A: Suppress non-essential warnings when `--json` flag is used. 
 ## Work Log
 
 - **2026-02-23**: Issue identified during code review
+- **2026-02-23**: Fixed - moved warning to CLI layer, updated error output to be JSON-only in JSON mode
+
+## Changes Made
+
+1. **src/commands/gardener.ts**:
+   - Removed `console.warn` from `runGardener()` function (library layer)
+   - Added `updateWarning` field to GardenerResult type for type-safe error passing
+   - Updated `runGardenerCLI()` to show warning only in human-readable mode (line 111-115)
+   - Fixed error output to be exclusive JSON OR text, not both (lines 155-159)
+
+2. **src/lib/gardener/types.ts**:
+   - Updated GardenerResult discriminated union to include optional `updateWarning` field on success branch
+
+## Acceptance Criteria Verification
+
+- [x] No stdout output in JSON mode except valid JSON - Warning moved to CLI layer
+- [x] Error output uses stderr - Already using `console.error`
+- [x] Warning suppressed in JSON mode - Only shown when `!options.json`
+- [x] All tests pass - Verified with `pnpm check`

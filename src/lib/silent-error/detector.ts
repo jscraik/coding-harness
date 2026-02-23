@@ -8,13 +8,11 @@
  * - Silent fallbacks that hide failures
  */
 
-import { readFileSync } from "node:fs";
-import { globSync } from "glob";
-import { resolve } from "node:path";
+import { readFileSync, readdirSync, statSync } from "node:fs";
+import { join, resolve } from "node:path";
 import {
 	EXIT_CODES,
 	type PatternDefinition,
-	type PatternSeverity,
 	type SilentErrorDetection,
 	type SilentErrorDetectorOptions,
 	type SilentErrorDetectorResult,
@@ -91,10 +89,55 @@ const PATTERNS: PatternDefinition[] = [
 ];
 
 /**
+ * Recursively get all files matching extension patterns
+ */
+function getFilesRecursive(
+	dir: string,
+	extensions: string[],
+	ignore: string[],
+): string[] {
+	const files: string[] = [];
+
+	try {
+		const entries = readdirSync(dir);
+		for (const entry of entries) {
+			const fullPath = join(dir, entry);
+			const relativePath = fullPath.replace(process.cwd(), "");
+
+			// Check if path should be ignored
+			if (
+				ignore.some(
+					(pattern) =>
+						relativePath.includes(pattern.replace("**", "")) ||
+						entry.startsWith("."),
+				)
+			) {
+				continue;
+			}
+
+			const stats = statSync(fullPath);
+			if (stats.isDirectory()) {
+				files.push(...getFilesRecursive(fullPath, extensions, ignore));
+			} else if (
+				extensions.some((ext) => entry.endsWith(ext.replace("*", "")))
+			) {
+				files.push(fullPath);
+			}
+		}
+	} catch {
+		// Skip directories we can't read
+	}
+
+	return files;
+}
+
+/**
  * Get file list to analyze
  */
 function getFiles(options: SilentErrorDetectorOptions): string[] {
 	const files: string[] = [];
+	const extensions = [".ts", ".tsx", ".js", ".jsx"];
+	const ignore = ["node_modules", "dist", ".git"];
 
 	// Add explicit files
 	if (options.files) {
@@ -104,19 +147,19 @@ function getFiles(options: SilentErrorDetectorOptions): string[] {
 	// Add files from directories
 	if (options.dirs) {
 		for (const dir of options.dirs) {
-			const pattern = resolve(dir, "**/*.{ts,tsx,js,jsx}");
-			const matches = globSync(pattern, {
-				ignore: ["**/node_modules/**", "**/dist/**", "**/.git/**"],
-			});
+			const resolvedDir = resolve(dir);
+			const matches = getFilesRecursive(resolvedDir, extensions, ignore);
 			files.push(...matches);
 		}
 	}
 
 	// Default: scan src directory
 	if (files.length === 0) {
-		const matches = globSync("src/**/*.{ts,tsx,js,jsx}", {
-			ignore: ["**/node_modules/**", "**/dist/**", "**/*.test.ts"],
-		});
+		const srcDir = resolve("src");
+		const matches = getFilesRecursive(srcDir, extensions, [
+			...ignore,
+			"*.test.ts",
+		]);
 		files.push(...matches);
 	}
 
@@ -127,18 +170,26 @@ function getFiles(options: SilentErrorDetectorOptions): string[] {
 /**
  * Find line and column for a match
  */
-function findPosition(content: string, matchIndex: number): { line: number; column: number } {
+function findPosition(
+	content: string,
+	matchIndex: number,
+): { line: number; column: number } {
 	const lines = content.slice(0, matchIndex).split("\n");
+	const lastLine = lines[lines.length - 1];
 	return {
 		line: lines.length,
-		column: lines[lines.length - 1].length + 1,
+		column: lastLine ? lastLine.length + 1 : 1,
 	};
 }
 
 /**
  * Extract snippet around match
  */
-function extractSnippet(content: string, matchIndex: number, matchLength: number): string {
+function extractSnippet(
+	content: string,
+	matchIndex: number,
+	matchLength: number,
+): string {
 	const start = Math.max(0, matchIndex - 40);
 	const end = Math.min(content.length, matchIndex + matchLength + 40);
 	return content.slice(start, end).replace(/\s+/g, " ").trim();
@@ -147,7 +198,12 @@ function extractSnippet(content: string, matchIndex: number, matchLength: number
 /**
  * Check if error variable is actually used in catch block
  */
-function isErrorVariableUsed(content: string, varName: string, catchStart: number, catchEnd: number): boolean {
+function isErrorVariableUsed(
+	content: string,
+	varName: string,
+	catchStart: number,
+	catchEnd: number,
+): boolean {
 	const catchBlock = content.slice(catchStart, catchEnd);
 	// Simple check: does the variable name appear after the catch declaration
 	const varRegex = new RegExp(`\\b${varName}\\b`, "g");
@@ -170,8 +226,8 @@ function analyzeFile(filePath: string): SilentErrorDetection[] {
 				// Reset regex lastIndex
 				regex.lastIndex = 0;
 
-				let match: RegExpExecArray | null;
-				while ((match = regex.exec(content)) !== null) {
+				let match: RegExpExecArray | null = regex.exec(content);
+				while (match !== null) {
 					const { line, column } = findPosition(content, match.index);
 					const snippet = extractSnippet(content, match.index, match[0].length);
 
@@ -189,11 +245,12 @@ function analyzeFile(filePath: string): SilentErrorDetection[] {
 
 						// Skip if variable is actually used
 						if (isErrorVariableUsed(content, match[1], catchStart, catchEnd)) {
+							match = regex.exec(content);
 							continue;
 						}
 					}
 
-					detections.push({
+					const detection: SilentErrorDetection = {
 						type: pattern.id,
 						description: pattern.description,
 						severity: pattern.severity,
@@ -201,12 +258,19 @@ function analyzeFile(filePath: string): SilentErrorDetection[] {
 						line,
 						column,
 						snippet,
-						suggestion: pattern.suggestion,
-					});
+					};
+
+					if (pattern.suggestion) {
+						detection.suggestion = pattern.suggestion;
+					}
+
+					detections.push(detection);
+
+					match = regex.exec(content);
 				}
 			}
 		}
-	} catch (error) {
+	} catch {
 		// Skip files we can't read
 	}
 

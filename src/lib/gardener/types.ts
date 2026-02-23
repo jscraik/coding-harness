@@ -88,7 +88,7 @@ export interface GardenerErrorOutput {
 
 /** Discriminated union result type for type-safe error handling */
 export type GardenerResult =
-	| { ok: true; output: GardenerOutput }
+	| { ok: true; output: GardenerOutput; updateWarning?: string }
 	| { ok: false; error: GardenerErrorOutput };
 
 /** Default number of days before doc is considered stale */
