@@ -124,7 +124,7 @@ export function updateQualityScoreFile(
 	// Validate docsPath to prevent path traversal
 	let validatedPath: string;
 	try {
-		validatedPath = validatePath(docsPath);
+		validatedPath = validatePath(process.cwd(), docsPath);
 	} catch (error) {
 		return {
 			ok: false,
@@ -154,7 +154,7 @@ export function readQualityScore(docsPath: string): QualityScore | null {
 	// Validate docsPath to prevent path traversal
 	let validatedPath: string;
 	try {
-		validatedPath = validatePath(docsPath);
+		validatedPath = validatePath(process.cwd(), docsPath);
 	} catch {
 		return null;
 	}

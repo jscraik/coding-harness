@@ -56,7 +56,7 @@ export function checkLinks(basePath: string): BrokenLink[] {
 	// Validate and sanitize the path
 	let validatedPath: string;
 	try {
-		validatedPath = validatePath(basePath);
+		validatedPath = validatePath(process.cwd(), basePath);
 	} catch (error) {
 		console.error(
 			"Invalid docs path:",

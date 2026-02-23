@@ -1,5 +1,5 @@
 ---
-status: pending
+status: complete
 priority: p1
 issue_id: 016
 tags: [security, path-traversal, code-review]
@@ -93,6 +93,8 @@ import { validatePath } from "../input/validator.js";
 | Date | Action | Notes |
 |------|--------|-------|
 | 2026-02-23 | Review completed | Security-sentinel identified critical vulnerability |
+| 2026-02-23 | Fixed | Removed duplicate validatePath, re-export from validator.ts, updated call sites |
+| 2026-02-23 | Verified | pnpm typecheck, lint, test all pass |
 
 ## Resources
 

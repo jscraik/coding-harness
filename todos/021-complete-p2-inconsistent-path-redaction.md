@@ -1,5 +1,5 @@
 ---
-status: pending
+status: complete
 priority: p2
 issue_id: 021
 tags: [consistency, maintainability, code-review]
@@ -90,6 +90,7 @@ export function sanitizePathForDisplay(path: string): string {
 | Date | Action | Notes |
 |------|--------|-------|
 | 2026-02-23 | Review completed | Code-simplicity-reviewer identified inconsistency |
+| 2026-02-23 | Fixed | Changed [USER] to [HOME] in sanitizePathForDisplay as part of P1-016 fix |
 
 ## Resources
 

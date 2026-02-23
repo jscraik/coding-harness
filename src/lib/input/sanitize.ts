@@ -1,5 +1,3 @@
-import { resolve } from "node:path";
-
 /**
  * Sensitive patterns for error message sanitization.
  * Note: This is the canonical implementation - cli.ts should import from here.
@@ -34,36 +32,9 @@ export function sanitizeError(error: unknown): string {
 	return message;
 }
 
-/**
- * Validate and sanitize a file system path to prevent path traversal attacks.
- *
- * @param inputPath - User-provided path to validate
- * @param baseDir - Base directory that the path must resolve within (default: process.cwd())
- * @returns The validated, resolved path
- * @throws Error if path validation fails
- */
-export function validatePath(inputPath: string, baseDir?: string): string {
-	// Reject paths with null bytes
-	if (inputPath.includes("\0")) {
-		throw new Error("Path contains invalid characters");
-	}
-
-	// Reject paths containing parent directory traversal
-	if (inputPath.includes("..") || inputPath.includes("~")) {
-		throw new Error("Path traversal detected in input");
-	}
-
-	// Reject absolute paths that don't start with baseDir
-	const resolved = resolve(baseDir ?? process.cwd(), inputPath);
-	const baseResolved = resolve(baseDir ?? process.cwd());
-
-	// Ensure resolved path is within base directory (path jail)
-	if (!resolved.startsWith(baseResolved)) {
-		throw new Error("Path escapes allowed directory");
-	}
-
-	return resolved;
-}
+// Re-export validatePath from validator.ts for backward compatibility
+// The validator.ts version is symlink-safe using realpathSync
+export { validatePath } from "./validator.js";
 
 /**
  * Sanitize a path for safe display in error messages.
@@ -74,8 +45,8 @@ export function validatePath(inputPath: string, baseDir?: string): string {
  */
 export function sanitizePathForDisplay(path: string): string {
 	return path
-		.replace(/\/Users\/[^/]+/g, "[USER]")
-		.replace(/\/home\/[^/]+/g, "[USER]")
-		.replace(/C:\\Users\\[^\\]+/g, "[USER]")
+		.replace(/\/Users\/[^/]+/g, "[HOME]")
+		.replace(/\/home\/[^/]+/g, "[HOME]")
+		.replace(/C:\\Users\\[^\\]+/g, "[HOME]")
 		.replace(process.cwd(), ".");
 }
