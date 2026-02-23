@@ -53,17 +53,8 @@ export function checkLinks(basePath: string): BrokenLink[] {
 		return brokenLinks;
 	}
 
-	// Validate and sanitize the path
-	let validatedPath: string;
-	try {
-		validatedPath = validatePath(process.cwd(), basePath);
-	} catch (error) {
-		console.error(
-			"Invalid docs path:",
-			error instanceof Error ? error.message : String(error),
-		);
-		return brokenLinks;
-	}
+	// Validate and sanitize the path (throws on failure for caller to handle)
+	const validatedPath = validatePath(process.cwd(), basePath);
 
 	if (!existsSync(validatedPath)) {
 		return brokenLinks;

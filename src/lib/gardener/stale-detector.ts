@@ -7,6 +7,7 @@
 
 import { existsSync, readFileSync, readdirSync } from "node:fs";
 import { join } from "node:path";
+import { validatePath } from "../input/sanitize.js";
 import type { StaleDoc } from "./types.js";
 import { DEFAULT_STALE_DAYS } from "./types.js";
 
@@ -104,15 +105,23 @@ export function detectStaleDocs(
 ): StaleDoc[] {
 	const stale: StaleDoc[] = [];
 
-	if (!existsSync(basePath)) {
+	// Validate path to prevent traversal attacks
+	let validatedPath: string;
+	try {
+		validatedPath = validatePath(process.cwd(), basePath);
+	} catch {
 		return stale;
 	}
 
-	const docs = findMarkdownFiles(basePath, basePath);
+	if (!existsSync(validatedPath)) {
+		return stale;
+	}
+
+	const docs = findMarkdownFiles(validatedPath, validatedPath);
 	const now = new Date();
 
 	for (const doc of docs) {
-		const fullPath = join(basePath, doc);
+		const fullPath = join(validatedPath, doc);
 
 		try {
 			const content = readFileSync(fullPath, "utf-8");
@@ -163,8 +172,15 @@ export function detectStaleDocs(
  * Count total markdown files in directory
  */
 export function countMarkdownFiles(basePath: string): number {
-	if (!existsSync(basePath)) {
+	// Validate path to prevent traversal attacks
+	let validatedPath: string;
+	try {
+		validatedPath = validatePath(process.cwd(), basePath);
+	} catch {
 		return 0;
 	}
-	return findMarkdownFiles(basePath, basePath).length;
+	if (!existsSync(validatedPath)) {
+		return 0;
+	}
+	return findMarkdownFiles(validatedPath, validatedPath).length;
 }

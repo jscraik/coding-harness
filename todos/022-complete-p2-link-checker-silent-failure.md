@@ -1,5 +1,5 @@
 ---
-status: pending
+status: complete
 priority: p2
 issue_id: 022
 tags: [error-handling, agent-native, code-review]
@@ -75,7 +75,7 @@ try {
 
 ## Recommended Action
 
-**Option B** for immediate fix; **Option A** for proper agent-native design.
+**Option B** implemented - validation errors now throw and are caught by the caller's try-catch block, allowing proper error detection.
 
 ## Technical Details
 
@@ -95,15 +95,16 @@ try {
 
 ## Acceptance Criteria
 
-- [ ] Path validation failures are detectable by callers
-- [ ] Consistent error handling pattern across gardener modules
-- [ ] `pnpm test` passes
+- [x] Path validation failures are detectable by callers
+- [x] Consistent error handling pattern across gardener modules
+- [x] `pnpm test` passes
 
 ## Work Log
 
 | Date | Action | Notes |
 |------|--------|-------|
 | 2026-02-23 | Review completed | Agent-native-reviewer identified silent failure |
+| 2026-02-23 | Fixed | Removed try-catch, let validation error propagate to caller |
 
 ## Resources
 

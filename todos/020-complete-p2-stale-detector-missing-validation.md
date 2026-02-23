@@ -1,5 +1,5 @@
 ---
-status: pending
+status: complete
 priority: p2
 issue_id: 020
 tags: [security, path-traversal, code-review]
@@ -84,15 +84,16 @@ export function detectStaleDocs(basePath: string, staleDays: number = DEFAULT_ST
 
 ## Acceptance Criteria
 
-- [ ] `validatePath` call added to `detectStaleDocs`
-- [ ] Behavior matches link-checker pattern
-- [ ] `pnpm test` passes
+- [x] `validatePath` call added to `detectStaleDocs`
+- [x] Behavior matches link-checker pattern
+- [x] `pnpm test` passes
 
 ## Work Log
 
 | Date | Action | Notes |
 |------|--------|-------|
 | 2026-02-23 | Review completed | Security-sentinel identified missing validation |
+| 2026-02-23 | Fixed | Added validatePath to detectStaleDocs and countMarkdownFiles |
 
 ## Resources
 
