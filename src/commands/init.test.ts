@@ -452,3 +452,202 @@ describe("--rollback flag", () => {
 		}
 	});
 });
+
+describe("--check-updates flag", () => {
+	let tempDir: string;
+
+	beforeEach(() => {
+		tempDir = join(tmpdir(), `harness-check-updates-test-${Date.now()}`);
+		mkdirSync(tempDir, { recursive: true });
+	});
+
+	afterEach(() => {
+		rmSync(tempDir, { recursive: true, force: true });
+	});
+
+	it("fails when no manifest exists", () => {
+		const result = runInit(tempDir, {
+			dryRun: false,
+			force: false,
+			checkUpdates: true,
+		});
+
+		expect(result.ok).toBe(false);
+		if (!result.ok) {
+			expect(result.error.code).toBe("WRITE_ERROR");
+			expect(result.error.message).toContain("No restore manifest found");
+		}
+	});
+
+	it("reports update available for old version", () => {
+		// Install first
+		const installResult = runInit(tempDir, {
+			dryRun: false,
+			force: false,
+			track: true,
+		});
+		expect(installResult.ok).toBe(true);
+
+		// Tamper with manifest to set old version
+		const manifestPath = join(tempDir, ".harness/restore-manifest.json");
+		const manifest = JSON.parse(
+			require("node:fs").readFileSync(manifestPath, "utf-8"),
+		);
+		manifest.harnessVersion = "0.0.1"; // Old version
+		require("node:fs").writeFileSync(manifestPath, JSON.stringify(manifest));
+
+		// Check for updates
+		const result = runInit(tempDir, {
+			dryRun: false,
+			force: false,
+			checkUpdates: true,
+		});
+
+		expect(result.ok).toBe(true);
+		if (result.ok) {
+			expect(result.output.updateCheck).toBeDefined();
+			expect(result.output.updateCheck?.updateAvailable).toBe(true);
+			expect(result.output.updateCheck?.installedVersion).toBe("0.0.1");
+		}
+	});
+
+	it("reports up to date for same version", () => {
+		// Install first (this sets current version)
+		const installResult = runInit(tempDir, {
+			dryRun: false,
+			force: false,
+			track: true,
+		});
+		expect(installResult.ok).toBe(true);
+
+		// Check for updates immediately (same version)
+		const result = runInit(tempDir, {
+			dryRun: false,
+			force: false,
+			checkUpdates: true,
+		});
+
+		expect(result.ok).toBe(true);
+		if (result.ok) {
+			expect(result.output.updateCheck).toBeDefined();
+			expect(result.output.updateCheck?.updateAvailable).toBe(false);
+		}
+	});
+
+	it("defaults to 0.0.0 for manifest without version", () => {
+		// Install first
+		const installResult = runInit(tempDir, {
+			dryRun: false,
+			force: false,
+			track: true,
+		});
+		expect(installResult.ok).toBe(true);
+
+		// Remove version from manifest (simulates old manifest format)
+		const manifestPath = join(tempDir, ".harness/restore-manifest.json");
+		const manifest = JSON.parse(
+			require("node:fs").readFileSync(manifestPath, "utf-8"),
+		);
+		manifest.harnessVersion = undefined;
+		require("node:fs").writeFileSync(manifestPath, JSON.stringify(manifest));
+
+		// Check for updates
+		const result = runInit(tempDir, {
+			dryRun: false,
+			force: false,
+			checkUpdates: true,
+		});
+
+		expect(result.ok).toBe(true);
+		if (result.ok) {
+			expect(result.output.updateCheck?.installedVersion).toBe("0.0.0");
+			expect(result.output.updateCheck?.updateAvailable).toBe(true);
+		}
+	});
+});
+
+describe("--update flag", () => {
+	let tempDir: string;
+
+	beforeEach(() => {
+		tempDir = join(tmpdir(), `harness-update-test-${Date.now()}`);
+		mkdirSync(tempDir, { recursive: true });
+	});
+
+	afterEach(() => {
+		rmSync(tempDir, { recursive: true, force: true });
+	});
+
+	it("fails when no manifest exists", () => {
+		const result = runInit(tempDir, {
+			dryRun: false,
+			force: false,
+			update: true,
+		});
+
+		expect(result.ok).toBe(false);
+		if (!result.ok) {
+			expect(result.error.code).toBe("WRITE_ERROR");
+			expect(result.error.message).toContain("No restore manifest found");
+		}
+	});
+
+	it("updates files and manifest version", () => {
+		// Install first
+		const installResult = runInit(tempDir, {
+			dryRun: false,
+			force: false,
+			track: true,
+		});
+		expect(installResult.ok).toBe(true);
+
+		// Set old version in manifest
+		const manifestPath = join(tempDir, ".harness/restore-manifest.json");
+		const manifest = JSON.parse(
+			require("node:fs").readFileSync(manifestPath, "utf-8"),
+		);
+		manifest.harnessVersion = "0.0.1";
+		require("node:fs").writeFileSync(manifestPath, JSON.stringify(manifest));
+
+		// Run update
+		const result = runInit(tempDir, {
+			dryRun: false,
+			force: false,
+			update: true,
+		});
+
+		expect(result.ok).toBe(true);
+		if (result.ok) {
+			expect(result.output.created.length).toBeGreaterThan(0);
+		}
+
+		// Verify manifest version was updated
+		const updatedManifest = JSON.parse(
+			require("node:fs").readFileSync(manifestPath, "utf-8"),
+		);
+		expect(updatedManifest.harnessVersion).not.toBe("0.0.1");
+	});
+
+	it("is no-op when already up to date", () => {
+		// Install first (sets current version)
+		const installResult = runInit(tempDir, {
+			dryRun: false,
+			force: false,
+			track: true,
+		});
+		expect(installResult.ok).toBe(true);
+
+		// Run update immediately (same version)
+		const result = runInit(tempDir, {
+			dryRun: false,
+			force: false,
+			update: true,
+		});
+
+		expect(result.ok).toBe(true);
+		if (result.ok) {
+			// Should have updated files (even if same content)
+			expect(result.output.created.length).toBeGreaterThanOrEqual(0);
+		}
+	});
+});

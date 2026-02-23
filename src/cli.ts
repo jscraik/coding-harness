@@ -1,27 +1,8 @@
 #!/usr/bin/env node
-import { readFileSync } from "node:fs";
-import { dirname, join } from "node:path";
-import { fileURLToPath } from "node:url";
 import { runInitCLI } from "./commands/init.js";
 import { runRiskTierCLI } from "./commands/risk-tier.js";
 import { sanitizeError } from "./lib/input/sanitize.js";
-
-// Typed package.json reader (avoids any from JSON.parse)
-interface PackageJson {
-	version: string;
-}
-
-function readPackageJson(path: string): PackageJson {
-	const content = readFileSync(path, "utf-8");
-	const data = JSON.parse(content) as unknown;
-	if (typeof data !== "object" || data === null) {
-		throw new Error("Invalid package.json: not an object");
-	}
-	if (!("version" in data) || typeof data.version !== "string") {
-		throw new Error("Invalid package.json: missing or invalid version");
-	}
-	return { version: data.version };
-}
+import { getVersion } from "./lib/version.js";
 
 // Consolidated error handler
 function handleFatalError(type: string, error: unknown): never {
@@ -40,15 +21,6 @@ process.on("uncaughtException", (error) => {
 	handleFatalError("Uncaught Exception", error);
 });
 
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = dirname(__filename);
-
-function getVersion(): string {
-	const pkgPath = join(__dirname, "..", "package.json");
-	const pkg = readPackageJson(pkgPath);
-	return pkg.version;
-}
-
 function printUsage(): void {
 	console.info("Usage: harness <command> [options]");
 	console.info("");
@@ -57,10 +29,12 @@ function printUsage(): void {
 	console.info("  risk-tier  Classify files by risk tier");
 	console.info("");
 	console.info("Init Options:");
-	console.info("  --dry-run      Preview changes without writing");
-	console.info("  --force        Overwrite existing files");
-	console.info("  --track        Create manifest + backups for rollback");
-	console.info("  --rollback     Restore from manifest (undo init)");
+	console.info("  --dry-run        Preview changes without writing");
+	console.info("  --force          Overwrite existing files");
+	console.info("  --track          Create manifest + backups for rollback");
+	console.info("  --rollback       Restore from manifest (undo init)");
+	console.info("  --check-updates  Check for template updates");
+	console.info("  --update         Apply available template updates");
 	console.info("");
 	console.info("Options:");
 	console.info("  --version, -v  Print version");
@@ -115,6 +89,8 @@ export function run(args: string[]): void {
 		const forceFlag = args.includes("--force");
 		const trackFlag = args.includes("--track");
 		const rollbackFlag = args.includes("--rollback");
+		const checkUpdatesFlag = args.includes("--check-updates");
+		const updateFlag = args.includes("--update");
 
 		// Get optional target directory (first non-flag arg after 'init')
 		const targetDir = args.slice(1).find((arg) => !arg.startsWith("--"));
@@ -124,6 +100,8 @@ export function run(args: string[]): void {
 			force: forceFlag,
 			track: trackFlag,
 			rollback: rollbackFlag,
+			checkUpdates: checkUpdatesFlag,
+			update: updateFlag,
 		});
 		process.exit(exitCode);
 		return;
