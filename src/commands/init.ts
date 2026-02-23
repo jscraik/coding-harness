@@ -11,6 +11,7 @@ import {
 } from "node:fs";
 import { dirname, resolve, sep } from "node:path";
 import { cwd } from "node:process";
+import { diffLines } from "diff";
 import semver from "semver";
 import { sanitizeError } from "../lib/input/sanitize.js";
 import { getVersion } from "../lib/version.js";
@@ -30,6 +31,7 @@ export interface InitOptions {
 	rollback?: boolean; // Restore from manifest
 	checkUpdates?: boolean; // Check for template updates
 	update?: boolean; // Apply template updates
+	interactive?: boolean; // Interactive prompts for each change
 }
 
 // === Rollback Types ===
@@ -74,11 +76,21 @@ export type UpdateResult =
 	| { ok: true; value: { updated: string[]; skipped: string[] } }
 	| { ok: false; error: InitErrorOutput };
 
+// === Interactive Mode Types ===
+
+export interface ProposedChange {
+	path: string;
+	action: "create" | "modify" | "skip";
+	currentContent: string | null; // null for new files
+	newContent: string;
+}
+
 export interface InitOutput {
 	packageManager: string;
 	created: string[];
 	skipped: string[];
 	updateCheck?: UpdateCheckInfo; // Populated when --check-updates used
+	proposedChanges?: ProposedChange[]; // Populated in interactive dry-run
 }
 
 export interface InitErrorOutput {
@@ -634,6 +646,143 @@ function executeUpdate(
 }
 
 /**
+ * Collect proposed changes for interactive mode.
+ * Returns a list of changes that would be made without actually writing files.
+ */
+function collectProposedChanges(
+	targetDir: string,
+	options: InitOptions,
+): ProposedChange[] {
+	const packageManager = detectPackageManager(targetDir);
+	const proposed: ProposedChange[] = [];
+
+	for (const template of TEMPLATES) {
+		// Sanitize the template path
+		const pathResult = sanitizePath(targetDir, template.path);
+		if (!pathResult.ok) {
+			// Skip invalid paths - they would fail in actual run anyway
+			continue;
+		}
+
+		const targetPath = pathResult.value;
+		const exists = existsSync(targetPath);
+		const newContent = template.render(packageManager);
+
+		if (exists && !options.force) {
+			// File exists and not forcing - would skip
+			proposed.push({
+				path: template.path,
+				action: "skip",
+				currentContent: readFileSync(targetPath, "utf-8"),
+				newContent,
+			});
+		} else if (exists) {
+			// File exists and forcing - would modify
+			proposed.push({
+				path: template.path,
+				action: "modify",
+				currentContent: readFileSync(targetPath, "utf-8"),
+				newContent,
+			});
+		} else {
+			// File doesn't exist - would create
+			proposed.push({
+				path: template.path,
+				action: "create",
+				currentContent: null,
+				newContent,
+			});
+		}
+	}
+
+	return proposed;
+}
+
+/**
+ * Generate a unified diff for a proposed change.
+ * Returns a formatted diff string suitable for display.
+ */
+export function generateDiff(change: ProposedChange): string {
+	const lines: string[] = [];
+
+	if (change.action === "create") {
+		// For new files, show all content as additions
+		lines.push("--- /dev/null");
+		lines.push(`+++ b/${change.path}`);
+		const contentLines = change.newContent.split("\n");
+		for (const line of contentLines) {
+			lines.push(`+${line}`);
+		}
+	} else if (change.action === "modify") {
+		// For modifications, use diffLines for unified diff
+		lines.push(`--- a/${change.path}`);
+		lines.push(`+++ b/${change.path}`);
+
+		const changes = diffLines(change.currentContent ?? "", change.newContent);
+
+		for (const changePart of changes) {
+			const prefix = changePart.added ? "+" : changePart.removed ? "-" : " ";
+			const contentLines = changePart.value.split("\n");
+			// Remove trailing empty string if content ends with newline
+			if (contentLines[contentLines.length - 1] === "") {
+				contentLines.pop();
+			}
+			for (const line of contentLines) {
+				lines.push(`${prefix}${line}`);
+			}
+		}
+	}
+	// For "skip" action, no diff needed
+
+	return lines.join("\n");
+}
+
+/**
+ * Apply a single proposed change to the filesystem.
+ * Used by interactive mode after user approval.
+ */
+function applyProposedChange(
+	targetDir: string,
+	change: ProposedChange,
+): { ok: true } | { ok: false; error: InitErrorOutput } {
+	// Skip actions don't need to write anything
+	if (change.action === "skip") {
+		return { ok: true };
+	}
+
+	// Validate and sanitize path
+	const pathResult = sanitizePath(targetDir, change.path);
+	if (!pathResult.ok) {
+		return pathResult;
+	}
+
+	const targetPath = pathResult.value;
+
+	// Ensure parent directory exists
+	const parentDir = dirname(targetPath);
+	try {
+		mkdirSync(parentDir, { recursive: true });
+	} catch (e) {
+		return {
+			ok: false,
+			error: {
+				code: "WRITE_ERROR",
+				message: `Failed to create directory: ${sanitizeError(e)}`,
+				path: change.path,
+			},
+		};
+	}
+
+	// Write the file
+	const writeResult = atomicWrite(targetPath, change.newContent);
+	if (!writeResult.ok) {
+		return writeResult;
+	}
+
+	return { ok: true };
+}
+
+/**
  * Run harness init and return structured result.
  * This function is usable as a library (does not output to console).
  */
@@ -704,6 +853,20 @@ export function runInit(
 				packageManager,
 				created: updateResult.value.updated,
 				skipped: updateResult.value.skipped,
+			},
+		};
+	}
+
+	// Handle --interactive: collect proposed changes without writing
+	if (options.interactive) {
+		const proposedChanges = collectProposedChanges(dir, options);
+		return {
+			ok: true,
+			output: {
+				packageManager,
+				created: [],
+				skipped: [],
+				proposedChanges,
 			},
 		};
 	}
@@ -800,6 +963,139 @@ export function runInit(
 			skipped,
 		},
 	};
+}
+
+/**
+ * Async CLI entry point for interactive mode.
+ * Prompts user for each proposed change and applies approved ones.
+ */
+export async function runInteractiveInitCLI(
+	targetDir: string | undefined,
+	options: InitOptions,
+): Promise<number> {
+	// Dynamic import for ESM compatibility with inquirer
+	const { select, confirm } = await import("@inquirer/prompts");
+
+	const dir = targetDir ?? cwd();
+	const packageManager = detectPackageManager(dir);
+
+	// Check TTY - fall back to non-interactive if not a terminal
+	if (!process.stdin.isTTY) {
+		console.info("Warning: Not a TTY, falling back to non-interactive mode");
+		return runInitCLI(targetDir, { ...options, interactive: false });
+	}
+
+	console.info(`Installing harness (package manager: ${packageManager})\n`);
+
+	// Collect proposed changes
+	const result = runInit(targetDir, { ...options, interactive: true });
+	if (!result.ok) {
+		console.error(`Error: ${result.error.message}`);
+		if (result.error.path) {
+			console.error(`  Path: ${result.error.path}`);
+		}
+		if (result.error.code === "PATH_TRAVERSAL") {
+			return EXIT_CODES.PATH_TRAVERSAL;
+		}
+		if (result.error.code === "WRITE_ERROR") {
+			return EXIT_CODES.WRITE_ERROR;
+		}
+		return EXIT_CODES.INVALID_PATH;
+	}
+
+	const proposedChanges = result.output.proposedChanges ?? [];
+	const approved: ProposedChange[] = [];
+	const rejected: string[] = [];
+
+	// Process each proposed change
+	for (const change of proposedChanges) {
+		// Format the prompt message based on action type
+		let message: string;
+		if (change.action === "create") {
+			message = `${change.path} does not exist. Create?`;
+		} else if (change.action === "modify") {
+			message = `${change.path} exists. Overwrite?`;
+		} else {
+			// Skip action - no prompt needed, just record
+			rejected.push(change.path);
+			continue;
+		}
+
+		try {
+			const answer = await select({
+				message,
+				choices: [
+					{ value: "yes", name: "Yes" },
+					{ value: "no", name: "No" },
+					{ value: "diff", name: "Show diff" },
+				],
+				default: change.action === "create" ? "yes" : "no",
+			});
+
+			if (answer === "diff") {
+				// Show the diff
+				console.info(`\n${generateDiff(change)}\n`);
+
+				// Confirm after showing diff
+				const confirmApply = await confirm({
+					message: "Apply this change?",
+					default: false,
+				});
+
+				if (confirmApply) {
+					approved.push(change);
+				} else {
+					rejected.push(change.path);
+				}
+			} else if (answer === "yes") {
+				approved.push(change);
+			} else {
+				rejected.push(change.path);
+			}
+		} catch (e) {
+			// Handle Ctrl+C gracefully
+			if (e instanceof Error && e.name === "ExitPromptError") {
+				console.info("\nCancelled by user");
+				return EXIT_CODES.SUCCESS;
+			}
+			throw e;
+		}
+	}
+
+	// Apply approved changes
+	const applied: string[] = [];
+	const failed: string[] = [];
+
+	for (const change of approved) {
+		const applyResult = applyProposedChange(dir, change);
+		if (applyResult.ok) {
+			applied.push(change.path);
+			console.info(`  ✓ ${change.path}`);
+		} else {
+			failed.push(change.path);
+			console.error(`  ✗ ${change.path}: ${applyResult.error.message}`);
+		}
+	}
+
+	// Summary
+	console.info("\n✓ Harness installed!");
+	console.info(`  Created: ${applied.length}, Skipped: ${rejected.length}`);
+
+	if (failed.length > 0) {
+		console.info(`  Failed: ${failed.length}`);
+		return EXIT_CODES.WRITE_ERROR;
+	}
+
+	// Show rollback tip if tracking enabled
+	if (options.track && applied.length > 0) {
+		console.info("\n  Rollback: harness init --rollback");
+	} else if (applied.length > 0) {
+		console.info(
+			"\n  Tip: Review changes with 'git diff', undo with 'git checkout .'",
+		);
+	}
+
+	return EXIT_CODES.SUCCESS;
 }
 
 /**

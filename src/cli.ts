@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-import { runInitCLI } from "./commands/init.js";
+import { runInitCLI, runInteractiveInitCLI } from "./commands/init.js";
 import { runRiskTierCLI } from "./commands/risk-tier.js";
 import { sanitizeError } from "./lib/input/sanitize.js";
 import { getVersion } from "./lib/version.js";
@@ -35,6 +35,7 @@ function printUsage(): void {
 	console.info("  --rollback       Restore from manifest (undo init)");
 	console.info("  --check-updates  Check for template updates");
 	console.info("  --update         Apply available template updates");
+	console.info("  --interactive    Review and approve each change");
 	console.info("");
 	console.info("Options:");
 	console.info("  --version, -v  Print version");
@@ -91,18 +92,30 @@ export function run(args: string[]): void {
 		const rollbackFlag = args.includes("--rollback");
 		const checkUpdatesFlag = args.includes("--check-updates");
 		const updateFlag = args.includes("--update");
+		const interactiveFlag = args.includes("--interactive");
 
 		// Get optional target directory (first non-flag arg after 'init')
 		const targetDir = args.slice(1).find((arg) => !arg.startsWith("--"));
 
-		const exitCode = runInitCLI(targetDir, {
+		const options = {
 			dryRun: dryRunFlag,
 			force: forceFlag,
 			track: trackFlag,
 			rollback: rollbackFlag,
 			checkUpdates: checkUpdatesFlag,
 			update: updateFlag,
-		});
+			interactive: interactiveFlag,
+		};
+
+		// Handle interactive mode with async
+		if (interactiveFlag) {
+			runInteractiveInitCLI(targetDir, options)
+				.then((exitCode) => process.exit(exitCode))
+				.catch((error) => handleFatalError("Interactive Init Error", error));
+			return;
+		}
+
+		const exitCode = runInitCLI(targetDir, options);
 		process.exit(exitCode);
 		return;
 	}
