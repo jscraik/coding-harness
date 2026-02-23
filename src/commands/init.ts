@@ -11,7 +11,9 @@ import {
 } from "node:fs";
 import { dirname, resolve, sep } from "node:path";
 import { cwd } from "node:process";
+import semver from "semver";
 import { sanitizeError } from "../lib/input/sanitize.js";
+import { getVersion } from "../lib/version.js";
 
 // Exit codes for programmatic consumption
 export const EXIT_CODES = {
@@ -26,6 +28,8 @@ export interface InitOptions {
 	force: boolean;
 	track?: boolean; // Create manifest + backups for rollback
 	rollback?: boolean; // Restore from manifest
+	checkUpdates?: boolean; // Check for template updates
+	update?: boolean; // Apply template updates
 }
 
 // === Rollback Types ===
@@ -37,6 +41,7 @@ export type ManifestEntry =
 
 // Minimal manifest - no YAGNI metadata
 export interface RestoreManifest {
+	harnessVersion?: string; // CLI version at install/update time
 	files: ManifestEntry[];
 }
 
@@ -53,10 +58,27 @@ export type RollbackResult =
 	| { ok: true; value: { restored: string[]; deleted: string[] } }
 	| { ok: false; error: InitErrorOutput };
 
+// === Update Detection Types ===
+
+export interface UpdateCheckInfo {
+	currentVersion: string;
+	installedVersion: string;
+	updateAvailable: boolean;
+}
+
+export type UpdateCheckResult =
+	| { ok: true; value: UpdateCheckInfo }
+	| { ok: false; error: InitErrorOutput };
+
+export type UpdateResult =
+	| { ok: true; value: { updated: string[]; skipped: string[] } }
+	| { ok: false; error: InitErrorOutput };
+
 export interface InitOutput {
 	packageManager: string;
 	created: string[];
 	skipped: string[];
+	updateCheck?: UpdateCheckInfo; // Populated when --check-updates used
 }
 
 export interface InitErrorOutput {
@@ -400,7 +422,16 @@ function loadManifest(targetDir: string): ManifestResult {
 			}
 		}
 
-		return { ok: true, value: { files: validatedFiles } };
+		// Extract harnessVersion (defaults to "0.0.0" for backward compatibility)
+		const harnessVersion =
+			typeof manifest.harnessVersion === "string"
+				? manifest.harnessVersion
+				: "0.0.0";
+
+		return {
+			ok: true,
+			value: { harnessVersion, files: validatedFiles },
+		};
 	} catch (e) {
 		return {
 			ok: false,
@@ -489,6 +520,119 @@ function executeRollback(
 	}
 }
 
+// === Update Detection Functions ===
+
+/**
+ * Check if template updates are available.
+ * Compares manifest version against current CLI version.
+ */
+function checkForUpdates(targetDir: string): UpdateCheckResult {
+	const manifestResult = loadManifest(targetDir);
+	if (!manifestResult.ok) {
+		return manifestResult;
+	}
+
+	const currentVersion = getVersion();
+	const installedVersion = manifestResult.value.harnessVersion || "0.0.0";
+
+	// Validate versions
+	if (!semver.valid(currentVersion)) {
+		return {
+			ok: false,
+			error: {
+				code: "WRITE_ERROR",
+				message: `Invalid current version: ${currentVersion}`,
+			},
+		};
+	}
+
+	if (!semver.valid(installedVersion)) {
+		return {
+			ok: false,
+			error: {
+				code: "WRITE_ERROR",
+				message: `Invalid installed version: ${installedVersion}`,
+			},
+		};
+	}
+
+	const updateAvailable = semver.gt(currentVersion, installedVersion);
+
+	return {
+		ok: true,
+		value: {
+			currentVersion,
+			installedVersion,
+			updateAvailable,
+		},
+	};
+}
+
+/**
+ * Execute template updates.
+ * Re-renders all tracked templates and updates manifest version.
+ */
+function executeUpdate(
+	targetDir: string,
+	manifest: RestoreManifest,
+): UpdateResult {
+	const packageManager = detectPackageManager(targetDir);
+	const updated: string[] = [];
+	const skipped: string[] = [];
+
+	for (const entry of manifest.files) {
+		// Find matching template
+		const template = TEMPLATES.find((t) => t.path === entry.path);
+		if (!template) {
+			// Template no longer exists, skip
+			skipped.push(entry.path);
+			continue;
+		}
+
+		// Re-validate path
+		const pathResult = sanitizePath(targetDir, entry.path);
+		if (!pathResult.ok) {
+			return {
+				ok: false,
+				error: pathResult.error,
+			};
+		}
+
+		const targetPath = pathResult.value;
+
+		// Check if file exists
+		if (!existsSync(targetPath)) {
+			skipped.push(entry.path);
+			continue;
+		}
+
+		// Render and write
+		const content = template.render(packageManager);
+		const writeResult = atomicWrite(targetPath, content);
+		if (!writeResult.ok) {
+			return writeResult;
+		}
+
+		updated.push(entry.path);
+	}
+
+	// Update manifest version
+	const newManifest: RestoreManifest = {
+		...manifest,
+		harnessVersion: getVersion(),
+	};
+	const manifestPath = resolve(targetDir, HARNESS_DIR, MANIFEST_FILE);
+	const manifestResult = atomicWrite(
+		manifestPath,
+		JSON.stringify(newManifest, null, 2),
+	);
+	if (!manifestResult.ok) {
+		return manifestResult;
+	}
+
+	return { ok: true, value: { updated, skipped } };
+}
+
 /**
  * Run harness init and return structured result.
  * This function is usable as a library (does not output to console).
@@ -520,6 +664,46 @@ export function runInit(
 				skipped: rollbackResult.value.restored.concat(
 					rollbackResult.value.deleted,
 				),
+			},
+		};
+	}
+
+	// Handle --check-updates: compare versions
+	if (options.checkUpdates) {
+		const checkResult = checkForUpdates(dir);
+		if (!checkResult.ok) {
+			return checkResult;
+		}
+
+		return {
+			ok: true,
+			output: {
+				packageManager,
+				created: [], // Check doesn't create files
+				skipped: [], // Check doesn't skip files
+				updateCheck: checkResult.value,
+			},
+		};
+	}
+
+	// Handle --update: apply template updates
+	if (options.update) {
+		const manifestResult = loadManifest(dir);
+		if (!manifestResult.ok) {
+			return manifestResult;
+		}
+
+		const updateResult = executeUpdate(dir, manifestResult.value);
+		if (!updateResult.ok) {
+			return updateResult;
+		}
+
+		return {
+			ok: true,
+			output: {
+				packageManager,
+				created: updateResult.value.updated,
+				skipped: updateResult.value.skipped,
 			},
 		};
 	}
@@ -594,7 +778,10 @@ export function runInit(
 
 	// Write manifest if tracking
 	if (options.track && !options.dryRun && manifestEntries.length > 0) {
-		const manifest: RestoreManifest = { files: manifestEntries };
+		const manifest: RestoreManifest = {
+			harnessVersion: getVersion(),
+			files: manifestEntries,
+		};
 		const manifestPath = resolve(dir, HARNESS_DIR, MANIFEST_FILE);
 		const manifestResult = atomicWrite(
 			manifestPath,
@@ -625,7 +812,7 @@ export function runInitCLI(
 	const result = runInit(targetDir, options);
 
 	if (result.ok) {
-		const { packageManager, created, skipped } = result.output;
+		const { packageManager, created, skipped, updateCheck } = result.output;
 
 		// Handle rollback output
 		if (options.rollback) {
@@ -634,6 +821,36 @@ export function runInitCLI(
 				console.info(`  restored ${path}`);
 			}
 			console.info("\n✓ Restored to pre-install state");
+			return EXIT_CODES.SUCCESS;
+		}
+
+		// Handle --check-updates output
+		if (options.checkUpdates && updateCheck) {
+			if (updateCheck.updateAvailable) {
+				console.info(
+					`Update available: v${updateCheck.installedVersion} → v${updateCheck.currentVersion}`,
+				);
+				console.info("\n  Run: harness init --update");
+			} else {
+				console.info(`Up to date (v${updateCheck.currentVersion})`);
+			}
+			return EXIT_CODES.SUCCESS;
+		}
+
+		// Handle --update output
+		if (options.update) {
+			if (created.length === 0 && skipped.length === 0) {
+				console.info("Already up to date.");
+			} else {
+				console.info(`Updating harness (v${getVersion()})\n`);
+				for (const path of created) {
+					console.info(`  updated ${path}`);
+				}
+				for (const path of skipped) {
+					console.info(`  skipped ${path}`);
+				}
+				console.info(`\n✓ Updated ${created.length} file(s)`);
+			}
 			return EXIT_CODES.SUCCESS;
 		}
 
