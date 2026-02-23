@@ -1,4 +1,5 @@
 #!/usr/bin/env node
+import { runGardenerCLI } from "./commands/gardener.js";
 import { runInitCLI, runInteractiveInitCLI } from "./commands/init.js";
 import { runRiskTierCLI } from "./commands/risk-tier.js";
 import { sanitizeError } from "./lib/input/sanitize.js";
@@ -27,6 +28,7 @@ function printUsage(): void {
 	console.info("Commands:");
 	console.info("  init       Install harness in current directory");
 	console.info("  risk-tier  Classify files by risk tier");
+	console.info("  gardener   Detect stale docs and broken links");
 	console.info("");
 	console.info("Init Options:");
 	console.info("  --dry-run        Preview changes without writing");
@@ -37,6 +39,12 @@ function printUsage(): void {
 	console.info("  --update         Apply available template updates");
 	console.info("  --interactive    Review and approve each change");
 	console.info("  --migrate        Migrate contract schema to latest version");
+	console.info("");
+	console.info("Gardener Options:");
+	console.info("  --docs           Path to docs directory (default: docs)");
+	console.info("  --dry-run        Preview changes without writing");
+	console.info("  --json           Output results as JSON");
+	console.info("  --stale-days     Days before doc is stale (default: 30)");
 	console.info("");
 	console.info("Options:");
 	console.info("  --version, -v  Print version");
@@ -81,6 +89,37 @@ export function run(args: string[]): void {
 			files,
 			json: jsonFlag,
 		});
+		process.exit(exitCode);
+		return;
+	}
+
+	if (command === "gardener") {
+		// Parse gardener options
+		const dryRunFlag = args.includes("--dry-run");
+		const jsonFlag = args.includes("--json");
+		const docsIndex = args.indexOf("--docs");
+		const staleDaysIndex = args.indexOf("--stale-days");
+
+		const options: {
+			docsPath?: string;
+			dryRun?: boolean;
+			json?: boolean;
+			staleDays?: number;
+		} = {};
+
+		if (dryRunFlag) options.dryRun = true;
+		if (jsonFlag) options.json = true;
+		if (docsIndex !== -1) {
+			const docsArg = args[docsIndex + 1];
+			if (docsArg) {
+				options.docsPath = docsArg;
+			}
+		}
+		if (staleDaysIndex !== -1 && args[staleDaysIndex + 1]) {
+			options.staleDays = Number.parseInt(args[staleDaysIndex + 1] ?? "30", 10);
+		}
+
+		const exitCode = runGardenerCLI(options);
 		process.exit(exitCode);
 		return;
 	}
