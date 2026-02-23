@@ -1,6 +1,12 @@
-import type { HarnessContract, RiskTier } from "./types.js";
+import type {
+	HarnessContract,
+	ReviewPolicy,
+	RiskTier,
+	TimeoutAction,
+} from "./types.js";
 
 const VALID_RISK_TIERS: RiskTier[] = ["high", "medium", "low"];
+const VALID_TIMEOUT_ACTIONS: TimeoutAction[] = ["fail", "warn"];
 const FORBIDDEN_KEYS = ["__proto__", "constructor", "prototype"] as const;
 
 // Machine-readable error codes for programmatic handling
@@ -45,6 +51,34 @@ function isValidRiskTierRules(
 		}
 		if (typeof pattern !== "string" || !isValidRiskTier(tier)) return false;
 	}
+	return true;
+}
+
+function isValidTimeoutAction(value: unknown): value is TimeoutAction {
+	return (
+		typeof value === "string" &&
+		VALID_TIMEOUT_ACTIONS.includes(value as TimeoutAction)
+	);
+}
+
+function isValidReviewPolicy(value: unknown): value is ReviewPolicy {
+	if (typeof value !== "object" || value === null) return false;
+	const policy = value as Record<string, unknown>;
+
+	// Validate timeoutSeconds
+	if (
+		typeof policy.timeoutSeconds !== "number" ||
+		policy.timeoutSeconds <= 0 ||
+		!Number.isInteger(policy.timeoutSeconds)
+	) {
+		return false;
+	}
+
+	// Validate timeoutAction
+	if (!isValidTimeoutAction(policy.timeoutAction)) {
+		return false;
+	}
+
 	return true;
 }
 
@@ -113,6 +147,24 @@ export function validateContract(
 		}
 	}
 
+	// Validate reviewPolicy (optional)
+	let reviewPolicy: ReviewPolicy | undefined;
+	if ("reviewPolicy" in obj && obj.reviewPolicy !== undefined) {
+		if (!isValidReviewPolicy(obj.reviewPolicy)) {
+			errors.push({
+				code: ValidationErrorCode.INVALID_VALUE,
+				path: "reviewPolicy",
+				message:
+					"reviewPolicy must have timeoutSeconds (positive integer) and timeoutAction ('fail' | 'warn')",
+				expected: "{ timeoutSeconds: 600, timeoutAction: 'fail' | 'warn' }",
+				received: JSON.stringify(obj.reviewPolicy),
+				fix: "Ensure reviewPolicy has valid timeoutSeconds and timeoutAction",
+			});
+		} else {
+			reviewPolicy = obj.reviewPolicy as ReviewPolicy;
+		}
+	}
+
 	if (errors.length > 0) {
 		return { success: false, errors };
 	}
@@ -122,6 +174,7 @@ export function validateContract(
 		data: {
 			version: obj.version as string,
 			riskTierRules: (obj.riskTierRules as Record<string, RiskTier>) ?? {},
+			reviewPolicy,
 		},
 		errors: [],
 	};
