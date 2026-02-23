@@ -1,0 +1,149 @@
+import { ContractLoadError, loadContract } from "../lib/contract/loader.js";
+import type { RiskTier } from "../lib/contract/types.js";
+import { sanitizeError } from "../lib/input/sanitize.js";
+import { resolveOverallTier } from "../lib/policy/risk-tier.js";
+
+// Exit codes for programmatic consumption
+export const EXIT_CODES = {
+	SUCCESS: 0,
+	POLICY_VIOLATION: 1,
+	VALIDATION_ERROR: 1,
+	FILE_NOT_FOUND: 2,
+	PERMISSION_DENIED: 3,
+	SYSTEM_ERROR: 10,
+} as const;
+
+// Tier order: index 0 is highest severity
+const TIER_ORDER: RiskTier[] = ["high", "medium", "low"];
+
+function isValidTier(value: unknown): value is RiskTier {
+	return typeof value === "string" && TIER_ORDER.includes(value as RiskTier);
+}
+
+export interface PolicyGateOptions {
+	contractPath: string;
+	files: string[];
+	json?: boolean;
+	maxTier?: RiskTier;
+}
+
+export interface PolicyGateOutput {
+	passed: boolean;
+	tier: RiskTier;
+	maxAllowed?: RiskTier;
+	violatingFiles: string[];
+}
+
+export interface PolicyGateErrorOutput {
+	code: string;
+	message: string;
+	details?: unknown;
+}
+
+export type PolicyGateResult =
+	| { ok: true; output: PolicyGateOutput }
+	| { ok: false; error: PolicyGateErrorOutput };
+
+/**
+ * Run policy gate check and return structured result.
+ * This function is usable as a library (does not output to console).
+ */
+export function runPolicyGate(options: PolicyGateOptions): PolicyGateResult {
+	// Validate maxTier if provided
+	if (options.maxTier !== undefined && !isValidTier(options.maxTier)) {
+		return {
+			ok: false,
+			error: {
+				code: "VALIDATION_ERROR",
+				message: `Invalid max-tier: must be one of ${TIER_ORDER.join(", ")}`,
+			},
+		};
+	}
+
+	try {
+		const contract = loadContract(options.contractPath);
+		const tier = resolveOverallTier(options.files, contract);
+
+		// If no max tier specified, all pass
+		if (!options.maxTier) {
+			return {
+				ok: true,
+				output: { passed: true, tier, violatingFiles: [] },
+			};
+		}
+
+		const maxTierIndex = TIER_ORDER.indexOf(options.maxTier);
+		const actualTierIndex = TIER_ORDER.indexOf(tier);
+
+		// Lower index = higher severity
+		// If actual tier index is lower than max, it's more severe (violation)
+		if (actualTierIndex < maxTierIndex) {
+			return {
+				ok: true,
+				output: {
+					passed: false,
+					tier,
+					maxAllowed: options.maxTier,
+					violatingFiles: options.files,
+				},
+			};
+		}
+
+		return {
+			ok: true,
+			output: { passed: true, tier, violatingFiles: [] },
+		};
+	} catch (e) {
+		if (e instanceof ContractLoadError) {
+			return {
+				ok: false,
+				error: {
+					code: "VALIDATION_ERROR",
+					message: sanitizeError(e),
+					details: e.errors,
+				},
+			};
+		}
+		return {
+			ok: false,
+			error: {
+				code: "SYSTEM_ERROR",
+				message: sanitizeError(e),
+			},
+		};
+	}
+}
+
+/**
+ * CLI entry point with output formatting and exit codes.
+ */
+export function runPolicyGateCLI(options: PolicyGateOptions): number {
+	const result = runPolicyGate(options);
+
+	if (result.ok) {
+		if (options.json) {
+			console.info(JSON.stringify(result.output));
+		} else if (result.output.passed) {
+			console.info(`✓ Policy gate passed (tier: ${result.output.tier})`);
+		} else {
+			console.error(
+				`✗ Policy gate failed: tier ${result.output.tier} exceeds max ${result.output.maxAllowed}`,
+			);
+		}
+		return result.output.passed
+			? EXIT_CODES.SUCCESS
+			: EXIT_CODES.POLICY_VIOLATION;
+	}
+
+	// Error output always to stderr
+	console.error(result.error.message);
+	if (options.json) {
+		console.error(JSON.stringify({ error: result.error }));
+	}
+
+	// Map error codes to exit codes
+	if (result.error.code === "VALIDATION_ERROR") {
+		return EXIT_CODES.VALIDATION_ERROR;
+	}
+	return EXIT_CODES.SYSTEM_ERROR;
+}

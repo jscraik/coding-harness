@@ -1,0 +1,9 @@
+{
+	"version": "1.0",
+	"riskTierRules": {
+		"src/auth/**": "high",
+		"src/api/**": "high",
+		"src/lib/**": "medium",
+		"**/*.test.ts": "low"
+	}
+}
