@@ -651,3 +651,167 @@ describe("--update flag", () => {
 		}
 	});
 });
+
+describe("--interactive flag", () => {
+	let tempDir: string;
+
+	beforeEach(() => {
+		tempDir = join(tmpdir(), `harness-interactive-test-${Date.now()}`);
+		mkdirSync(tempDir, { recursive: true });
+	});
+
+	afterEach(() => {
+		rmSync(tempDir, { recursive: true, force: true });
+	});
+
+	it("returns proposed changes without writing files", () => {
+		const result = runInit(tempDir, {
+			dryRun: false,
+			force: false,
+			interactive: true,
+		});
+
+		expect(result.ok).toBe(true);
+		if (result.ok) {
+			expect(result.output.proposedChanges).toBeDefined();
+			expect(result.output.proposedChanges?.length).toBeGreaterThan(0);
+			expect(result.output.created).toEqual([]);
+		}
+
+		// Verify no files were created
+		expect(existsSync(join(tempDir, "harness.contract.json"))).toBe(false);
+	});
+
+	it("marks new files as 'create' action", () => {
+		const result = runInit(tempDir, {
+			dryRun: false,
+			force: false,
+			interactive: true,
+		});
+
+		expect(result.ok).toBe(true);
+		if (result.ok) {
+			const contractChange = result.output.proposedChanges?.find(
+				(c) => c.path === "harness.contract.json",
+			);
+			expect(contractChange).toBeDefined();
+			expect(contractChange?.action).toBe("create");
+			expect(contractChange?.currentContent).toBeNull();
+			expect(contractChange?.newContent).toBeDefined();
+		}
+	});
+
+	it("marks existing files as 'skip' action without --force", () => {
+		// Create existing file
+		writeFileSync(join(tempDir, "harness.contract.json"), '{"version": "old"}');
+
+		const result = runInit(tempDir, {
+			dryRun: false,
+			force: false,
+			interactive: true,
+		});
+
+		expect(result.ok).toBe(true);
+		if (result.ok) {
+			const contractChange = result.output.proposedChanges?.find(
+				(c) => c.path === "harness.contract.json",
+			);
+			expect(contractChange).toBeDefined();
+			expect(contractChange?.action).toBe("skip");
+			expect(contractChange?.currentContent).toBe('{"version": "old"}');
+		}
+	});
+
+	it("marks existing files as 'modify' action with --force", () => {
+		// Create existing file
+		writeFileSync(join(tempDir, "harness.contract.json"), '{"version": "old"}');
+
+		const result = runInit(tempDir, {
+			dryRun: false,
+			force: true,
+			interactive: true,
+		});
+
+		expect(result.ok).toBe(true);
+		if (result.ok) {
+			const contractChange = result.output.proposedChanges?.find(
+				(c) => c.path === "harness.contract.json",
+			);
+			expect(contractChange).toBeDefined();
+			expect(contractChange?.action).toBe("modify");
+			expect(contractChange?.currentContent).toBe('{"version": "old"}');
+			expect(contractChange?.newContent).toContain('"version": "1.0"');
+		}
+	});
+
+	it("detects package manager for rendering", () => {
+		writeFileSync(join(tempDir, "pnpm-lock.yaml"), "");
+
+		const result = runInit(tempDir, {
+			dryRun: false,
+			force: false,
+			interactive: true,
+		});
+
+		expect(result.ok).toBe(true);
+		if (result.ok) {
+			expect(result.output.packageManager).toBe("pnpm");
+			// The workflow template should contain pnpm
+			const workflowChange = result.output.proposedChanges?.find(
+				(c) => c.path === ".github/workflows/pr-pipeline.yml",
+			);
+			expect(workflowChange?.newContent).toContain("pnpm");
+		}
+	});
+});
+
+describe("generateDiff", () => {
+	it("generates diff for new file (create action)", async () => {
+		const { generateDiff } = await import("./init.js");
+
+		const change = {
+			path: "new-file.txt",
+			action: "create" as const,
+			currentContent: null,
+			newContent: "line1\nline2\n",
+		};
+
+		const diff = generateDiff(change);
+		expect(diff).toContain("--- /dev/null");
+		expect(diff).toContain("+++ b/new-file.txt");
+		expect(diff).toContain("+line1");
+		expect(diff).toContain("+line2");
+	});
+
+	it("generates diff for modified file", async () => {
+		const { generateDiff } = await import("./init.js");
+
+		const change = {
+			path: "modified.txt",
+			action: "modify" as const,
+			currentContent: "old line\nunchanged\n",
+			newContent: "new line\nunchanged\n",
+		};
+
+		const diff = generateDiff(change);
+		expect(diff).toContain("--- a/modified.txt");
+		expect(diff).toContain("+++ b/modified.txt");
+		expect(diff).toContain("-old line");
+		expect(diff).toContain("+new line");
+		expect(diff).toContain(" unchanged");
+	});
+
+	it("returns empty string for skip action", async () => {
+		const { generateDiff } = await import("./init.js");
+
+		const change = {
+			path: "skip.txt",
+			action: "skip" as const,
+			currentContent: "content",
+			newContent: "new content",
+		};
+
+		const diff = generateDiff(change);
+		expect(diff).toBe("");
+	});
+});

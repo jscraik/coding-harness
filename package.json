@@ -36,6 +36,8 @@
 		"node": ">=24.0.0"
 	},
 	"dependencies": {
+		"@inquirer/prompts": "^8.3.0",
+		"diff": "^8.0.3",
 		"semver": "^7.7.4"
 	}
 }
