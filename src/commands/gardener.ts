@@ -87,6 +87,21 @@ export function runGardener(options: GardenerOptions): GardenerResult {
 }
 
 /**
+ * Format a list with truncation (show first N, then ellipsis).
+ */
+function formatTruncatedList<T>(
+	items: T[],
+	format: (item: T) => string,
+	max = 5,
+): string[] {
+	const lines = items.slice(0, max).map(format);
+	if (items.length > max) {
+		lines.push(`  ... and ${items.length - max} more`);
+	}
+	return lines;
+}
+
+/**
  * CLI entry point with console output formatting and exit codes.
  */
 export function runGardenerCLI(options: GardenerOptions): number {
@@ -94,11 +109,14 @@ export function runGardenerCLI(options: GardenerOptions): number {
 
 	if (result.ok) {
 		const output = result.output;
+		const exitCode = output.needsPR
+			? EXIT_CODES.ISSUES_FOUND
+			: EXIT_CODES.SUCCESS;
 
 		// JSON output only
 		if (options.json) {
 			console.info(JSON.stringify(result.output, null, 2));
-			return output.needsPR ? EXIT_CODES.ISSUES_FOUND : EXIT_CODES.SUCCESS;
+			return exitCode;
 		}
 
 		// Human-readable console output
@@ -116,27 +134,21 @@ export function runGardenerCLI(options: GardenerOptions): number {
 
 		if (output.staleDocs.length > 0) {
 			console.info("\n📄 Stale Documents:");
-			for (const doc of output.staleDocs.slice(0, 5)) {
-				if (doc.daysSinceValidation === Number.POSITIVE_INFINITY) {
-					console.info(`  - ${doc.path} (never validated)`);
-				} else {
-					console.info(`  - ${doc.path} (${doc.daysSinceValidation} days)`);
-				}
-			}
-			if (output.staleDocs.length > 5) {
-				console.info(`  ... and ${output.staleDocs.length - 5} more`);
-			}
+			const lines = formatTruncatedList(output.staleDocs, (doc) =>
+				doc.daysSinceValidation === Number.POSITIVE_INFINITY
+					? `  - ${doc.path} (never validated)`
+					: `  - ${doc.path} (${doc.daysSinceValidation} days)`,
+			);
+			for (const line of lines) console.info(line);
 		}
 
 		if (output.brokenLinks.length > 0) {
 			console.info("\n🔗 Broken Links:");
-			for (const link of output.brokenLinks.slice(0, 5)) {
+			const lines = formatTruncatedList(output.brokenLinks, (link) => {
 				const status = link.statusCode ? ` [${link.statusCode}]` : "";
-				console.info(`  - ${link.file}: ${link.link}${status}`);
-			}
-			if (output.brokenLinks.length > 5) {
-				console.info(`  ... and ${output.brokenLinks.length - 5} more`);
-			}
+				return `  - ${link.file}: ${link.link}${status}`;
+			});
+			for (const line of lines) console.info(line);
 		}
 
 		if (options.dryRun) {
@@ -147,8 +159,7 @@ export function runGardenerCLI(options: GardenerOptions): number {
 
 		console.info("");
 
-		// Return exit code based on issues found
-		return output.needsPR ? EXIT_CODES.ISSUES_FOUND : EXIT_CODES.SUCCESS;
+		return exitCode;
 	}
 
 	// Error output: JSON only in JSON mode, text otherwise

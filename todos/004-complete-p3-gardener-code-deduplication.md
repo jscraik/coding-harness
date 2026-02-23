@@ -1,5 +1,5 @@
 ---
-status: pending
+status: complete
 priority: p3
 tags: [code-review, gardener, refactoring, simplicity]
 dependencies: []
@@ -74,12 +74,13 @@ Implement both deduplications to improve maintainability. This is low priority a
 
 ## Acceptance Criteria
 
-- [ ] Exit code logic extracted to constant
-- [ ] List truncation helper created
-- [ ] Both stale docs and broken links use helper
-- [ ] Tests still pass
-- [ ] No behavioral changes
+- [x] Exit code logic extracted to constant
+- [x] List truncation helper created
+- [x] Both stale docs and broken links use helper
+- [x] Tests still pass
+- [x] No behavioral changes
 
 ## Work Log
 
 - **2026-02-23**: Issue identified during code review
+- **2026-02-23**: Implemented deduplication - extracted `formatTruncatedList` helper and `exitCode` constant
