@@ -1,7 +1,7 @@
 ---
 title: Phase 3 GitHub Workflow Orchestration
 type: feat
-status: active
+status: completed
 date: 2026-02-23
 origin: docs/brainstorms/2026-02-22-harness-gap-analysis-brainstorm.md
 deepened: 2026-02-23
@@ -18,27 +18,34 @@ deepened: 2026-02-23
 ### Key Improvements
 
 1. **Use @octokit/plugin-throttling** - Official plugin handles rate limits automatically (eliminates custom retry.ts complexity)
-2. **Full jitter algorithm** - Prevents thundering herd on synchronized retries
-3. **SHA format validation** - 40-char hex regex prevents injection attacks
-4. **Markdown escaping** - Sanitize all user-provided strings in comments
-5. **Workflow SHA pinning** - Pin all actions to full commit SHA for supply chain security
+2. **SHA format validation** - 40-char hex regex prevents injection attacks
+3. **Combined workflow** - Single `pr-pipeline.yml` (cross-workflow `needs` doesn't work)
+4. **Simplified MVP scope** - Focus on `policy-gate` only, defer GitHub API integration
 
-### New Considerations Discovered
+### Technical Review Fixes (2026-02-23)
 
-- Token scope validation required before API calls
-- Time-bound deduping (24h) prevents stale comment confusion
-- GitHub secondary rate limits should NOT be retried
-- Octokit's `paginate()` handles pagination automatically
+| Issue | Fix Applied |
+|-------|-------------|
+| CRITICAL: Cross-workflow dependency broken | Combine into single `pr-pipeline.yml` |
+| CRITICAL: Over-scoped MVP | Reduce to `policy-gate.ts` + 1 workflow |
+| HIGH: Token prefix validation | Removed (YAGNI - Octokit fails fast) |
+| HIGH: Scope validation method | Removed (YAGNI - no caller in MVP) |
+| MEDIUM: GitHubClient wrapper class | Simplified to factory function |
+| MEDIUM: Separate workflow templates | Combined into single workflow |
 
-### Security Findings (from Security Sentinel)
+### Scope Reduction (from Technical Review)
 
-| Severity | Issue | Fix |
-|----------|-------|-----|
-| CRITICAL | Token stored in Octokit instance | Validate format before construction |
-| CRITICAL | Retry policy too permissive | Check HTTP status codes, not strings |
-| HIGH | SHA validation is string matching | Use regex `/^[0-9a-f]{40}$/` |
-| HIGH | Markdown injection in comments | Escape all user input |
-| MEDIUM | No token scope validation | Add `validateScopes()` method |
+**Deferred to Phase 4:**
+- `src/lib/github/client.ts` (full class)
+- `src/lib/github/comments.ts`
+- `src/lib/github/check-run.ts`
+- `src/commands/review-gate.ts`
+- `templates/.../ci-pipeline.yml`
+- `templates/.../review-gate.yml`
+
+**MVP Only:**
+- `src/commands/policy-gate.ts` - Preflight command
+- `templates/.../pr-pipeline.yml` - Combined workflow
 
 ---
 
@@ -316,311 +323,98 @@ async function validateScopes(octokit: Octokit): Promise<void> {
 
 ## System-Wide Impact
 
-- **Interaction graph:** risk-policy-gate calls risk-tier resolver (Phase 2); review-gate calls GitHub API; rerun-writer calls GitHub API
-- **Error propagation:** GitHub API errors wrapped with Octokit plugins; all errors flow through sanitizeError
+- **Interaction graph:** `policy-gate` calls `risk-tier` resolver (Phase 2) - no GitHub API calls in MVP
+- **Error propagation:** Contract/risk-tier errors flow through `sanitizeError`
 - **State lifecycle risks:** No persistent state; all operations are stateless queries
-- **API surface parity:** CLI commands + GitHub workflow templates work together
+- **API surface parity:** CLI command + GitHub workflow template work together
+
+### Deferred to Phase 4
+
+- `review-gate` calls GitHub API
+- `rerun-writer` calls GitHub API
+- GitHub API error handling with Octokit plugins
 
 ## Acceptance Criteria
 
-### Functional Requirements
+### Functional Requirements (MVP Scope)
 
-- [ ] `src/lib/github/client.ts` - Octokit wrapper with throttling plugin
-- [ ] `src/lib/github/sha.ts` - HEAD SHA fetching and validation with regex
-- [ ] `src/lib/github/check-run.ts` - Check run query helpers
-- [ ] `src/lib/github/comments.ts` - Comment posting with deduping and markdown escaping
-- [ ] `src/commands/policy-gate.ts` - Preflight risk-policy-gate command
-- [ ] `src/commands/review-gate.ts` - Review gate with SHA discipline
-- [ ] `templates/repo/.github/workflows/risk-policy-gate.yml` - Preflight workflow with SHA-pinned actions
-- [ ] `templates/repo/.github/workflows/ci-pipeline.yml` - CI fanout (depends on preflight)
-- [ ] `templates/repo/.github/workflows/review-gate.yml` - Review verification workflow
-- [ ] Contract extended with `reviewPolicy` (timeoutSeconds, timeoutAction)
+- [x] `src/commands/policy-gate.ts` - Preflight risk-policy-gate command
+- [x] `templates/repo/.github/workflows/pr-pipeline.yml` - Combined preflight + CI workflow
+
+### Deferred to Phase 4
+
+- `src/lib/github/client.ts` - Octokit wrapper
+- `src/lib/github/sha.ts` - SHA validation
+- `src/lib/github/check-run.ts` - Check run queries
+- `src/lib/github/comments.ts` - Comment posting with deduping
+- `src/commands/review-gate.ts` - Review gate with SHA discipline
+- `templates/.../review-gate.yml` - Review verification workflow
+- Contract extension with `reviewPolicy`
 
 ### Security Requirements
 
-- [ ] Token format validation before Octokit construction
-- [ ] Token scope validation on client initialization
-- [ ] SHA validation with `/^[0-9a-f]{40}$/` regex
-- [ ] Markdown escaping for all user-provided comment content
-- [ ] Time-bound deduping (24h max age)
-- [ ] All workflow actions pinned to full SHA
-- [ ] No retry on secondary rate limits (abuse detection)
+- [x] All workflow actions pinned to full SHA with version comment
+- [x] `max-tier` parameter validated (must be 'high', 'medium', or 'low')
+- [x] Contract path validated before loading
+
+### Deferred to Phase 4
+
+- Token format/scope validation
+- SHA validation with regex
+- Markdown escaping
+- Time-bound deduping
 
 ### Agent-Native Requirements
 
-- [ ] `--json` flag on all commands
-- [ ] Exit codes: 0 (pass), 1 (validation fail), 2 (not found), 3 (permission), 10+ (system)
-- [ ] Machine-readable error codes for each failure mode
+- [x] `--json` flag on all commands
+- [x] Exit codes: 0 (pass), 1 (validation fail), 2 (not found), 3 (permission), 10+ (system)
+- [x] Machine-readable error codes for each failure mode
 
 ### Quality Gates
 
-- [ ] `pnpm check` passes
-- [ ] Unit tests for SHA validation
-- [ ] Unit tests for comment deduping with time bounds
-- [ ] Unit tests for markdown escaping
-- [ ] Follows command pattern from risk-tier.ts
+- [x] `pnpm check` passes (lint + typecheck + test)
+- [x] Unit tests for policy-gate command
+- [x] Follows command pattern from `risk-tier.ts`
+- [x] Workflow YAML syntax valid
 
 ## Success Metrics
 
 1. `harness policy-gate --files "src/auth/**"` exits 0 (pass) or 1 (fail) with actionable error
-2. `harness review-gate --sha abc123...` validates SHA matches current HEAD
-3. Stale SHA detection returns specific error code (not generic failure)
-4. Duplicate rerun comments are suppressed (same SHA within 24h)
-5. GitHub API rate limits handled automatically by Octokit plugin
-6. Token with insufficient scopes fails fast with clear error message
+2. `--json` flag outputs machine-readable result
+3. `--max-tier medium` blocks high-risk file changes
+4. Workflow runs preflight before CI jobs
+5. Exit codes: 0 (pass), 1 (policy violation), 2 (file not found), 10+ (system error)
+
+### Deferred to Phase 4
+
+- SHA-bound review verification
+- Rerun comment deduping
+- GitHub API rate limit handling
 
 ## Dependencies & Risks
 
 ### Dependencies
 - Phase 2 contract and risk-tier core (complete)
-- **New dependencies:** `@octokit/rest`, `@octokit/plugin-throttling`, `@octokit/plugin-retry`
+- **No new dependencies for MVP** (Octokit deferred to Phase 4)
 
 ### Risks
 | Risk | Mitigation |
 |------|------------|
-| GitHub API rate limits | @octokit/plugin-throttling handles automatically |
-| Stale SHA edge cases | Exact SHA comparison with regex validation |
-| Comment spam | Time-bound deduping (24h) + bot-only trust |
-| Token permissions | Scope validation on initialization |
-| Supply chain | Pin all workflow actions to full SHA |
+| Contract file not found | Clear error message with path |
+| Invalid max-tier value | Validate against allowed values |
+| Workflow YAML syntax | Use linter/validation |
+
+### Deferred Risks (Phase 4)
+| Risk | Mitigation |
+|------|------------|
+| GitHub API rate limits | @octokit/plugin-throttling |
+| Stale SHA edge cases | Exact SHA comparison |
+| Comment spam | Time-bound deduping |
+| Token permissions | Scope validation |
 
 ## MVP Implementation
 
-### package.json (add Octokit with plugins)
-
-```json
-{
-  "devDependencies": {
-    "@biomejs/biome": "^1.9.4",
-    "@octokit/plugin-retry": "^7.0.0",
-    "@octokit/plugin-throttling": "^9.0.0",
-    "@octokit/rest": "^21.0.0",
-    "@types/node": "^22.0.0",
-    "picomatch": "^4.0.0",
-    "typescript": "^5.9.0",
-    "vitest": "^3.0.0"
-  }
-}
-```
-
-### src/lib/github/client.ts
-
-```typescript
-import { Octokit } from "@octokit/rest";
-import { throttling } from "@octokit/plugin-throttling";
-import { retry } from "@octokit/plugin-retry";
-
-const MyOctokit = Octokit.plugin(throttling, retry);
-
-const VALID_TOKEN_PREFIXES = ['ghp_', 'gho_', 'github_pat_', 'ghs_', 'ghr_'];
-
-function validateToken(token: string): void {
-	if (!token || typeof token !== 'string') {
-		throw new Error('Invalid token: must be non-empty string');
-	}
-	if (!VALID_TOKEN_PREFIXES.some(p => token.startsWith(p))) {
-		throw new Error('Invalid token: unrecognized prefix');
-	}
-}
-
-export interface GitHubClientOptions {
-	token: string;
-	owner: string;
-	repo: string;
-}
-
-export class GitHubClient {
-	private octokit: InstanceType<typeof MyOctokit>;
-	private owner: string;
-	private repo: string;
-
-	constructor(options: GitHubClientOptions) {
-		validateToken(options.token);
-
-		this.octokit = new MyOctokit({
-			auth: options.token,
-			throttle: {
-				onRateLimit: (retryAfter, options, octokit, retryCount) => {
-					octokit.log.warn(`Rate limit hit for ${options.method} ${options.url}`);
-					if (retryCount < 3) {
-						octokit.log.info(`Retrying after ${retryAfter} seconds`);
-						return true;
-					}
-					return false;
-				},
-				onSecondaryRateLimit: (_retryAfter, options, octokit) => {
-					// Don't retry secondary rate limits (abuse detection)
-					octokit.log.warn(`Secondary rate limit for ${options.method} ${options.url}`);
-					return false;
-				},
-			},
-		});
-		this.owner = options.owner;
-		this.repo = options.repo;
-	}
-
-	async validateScopes(): Promise<boolean> {
-		try {
-			await this.octokit.users.getAuthenticated();
-			return true;
-		} catch {
-			return false;
-		}
-	}
-
-	async getPullRequest(number: number) {
-		return this.octokit.pulls.get({
-			owner: this.owner,
-			repo: this.repo,
-			pull_number: number,
-		});
-	}
-
-	async listCheckRunsForRef(ref: string) {
-		return this.octokit.paginate(this.octokit.checks.listForRef, {
-			owner: this.owner,
-			repo: this.repo,
-			ref,
-			per_page: 100,
-		});
-	}
-
-	async createIssueComment(issueNumber: number, body: string) {
-		return this.octokit.issues.createComment({
-			owner: this.owner,
-			repo: this.repo,
-			issue_number: issueNumber,
-			body,
-		});
-	}
-
-	async listIssueComments(issueNumber: number) {
-		return this.octokit.paginate(this.octokit.issues.listComments, {
-			owner: this.owner,
-			repo: this.repo,
-			issue_number: issueNumber,
-			per_page: 100,
-		});
-	}
-}
-```
-
-### src/lib/github/sha.ts
-
-```typescript
-const SHA_PATTERN = /^[0-9a-f]{40}$/;
-
-export class ShaValidationError extends Error {
-	constructor(sha: string) {
-		super(`Invalid SHA format: ${sha}`);
-		this.name = "ShaValidationError";
-	}
-}
-
-export function validateSha(sha: string): void {
-	if (!SHA_PATTERN.test(sha)) {
-		throw new ShaValidationError(sha);
-	}
-}
-
-export function isValidSha(sha: unknown): sha is string {
-	return typeof sha === "string" && SHA_PATTERN.test(sha);
-}
-```
-
-### src/lib/github/comments.ts
-
-```typescript
-import type { validateSha } from "./sha.js";
-
-const RERUN_MARKER = "<!-- harness-review-rerun -->";
-const DEDUP_MAX_AGE_HOURS = 24;
-
-function escapeMarkdown(text: string): string {
-	return text
-		.replace(/([\\`*_{}[\]()#+\-.!])/g, '\\$1')
-		.replace(/<!--/g, '&lt;!--')
-		.replace(/-->/g, '--&gt;');
-}
-
-export function formatRerunComment(headSha: string, reason: string): string {
-	// Validate SHA format
-	if (!/^[0-9a-f]{40}$/.test(headSha)) {
-		throw new Error(`Invalid SHA format: ${headSha}`);
-	}
-
-	const safeReason = escapeMarkdown(reason);
-
-	return `${RERUN_MARKER}
-## Review Rerun Requested
-
-**SHA:** \`${headSha}\`
-**Reason:** ${safeReason}
-**Timestamp:** ${new Date().toISOString()}
-
-An agent will re-run the review for this SHA.
-`;
-}
-
-export interface Comment {
-	body: string;
-	created_at: string;
-	user: { login: string };
-}
-
-export function hasRerunCommentForSha(
-	comments: Comment[],
-	headSha: string,
-	botLogin: string,
-): boolean {
-	// Validate SHA format
-	if (!/^[0-9a-f]{40}$/.test(headSha)) {
-		return false;
-	}
-
-	const cutoff = new Date(Date.now() - DEDUP_MAX_AGE_HOURS * 60 * 60 * 1000);
-
-	return comments.some((comment) => {
-		// Only trust comments from our bot
-		if (comment.user.login !== botLogin) return false;
-		if (!comment.body.includes(RERUN_MARKER)) return false;
-
-		// Check age
-		const commentTime = new Date(comment.created_at);
-		if (commentTime < cutoff) return false;
-
-		// Use regex for precise SHA matching
-		const shaMatch = comment.body.match(/SHA: `([0-9a-f]{40})`/);
-		return shaMatch !== null && shaMatch[1] === headSha;
-	});
-}
-```
-
-### src/lib/contract/types.ts (extend)
-
-```typescript
-export type RiskTier = "high" | "medium" | "low";
-
-export interface ReviewPolicy {
-	timeoutSeconds: number;
-	timeoutAction: "fail" | "warn";
-}
-
-export interface HarnessContract {
-	version: string;
-	riskTierRules: Record<string, RiskTier>;
-	reviewPolicy?: ReviewPolicy;
-}
-
-export const DEFAULT_CONTRACT: HarnessContract = {
-	version: "1.0",
-	riskTierRules: {},
-	reviewPolicy: {
-		timeoutSeconds: 600, // 10 min per brainstorm
-		timeoutAction: "fail",
-	},
-};
-```
+**Note:** Simplified scope after technical review. GitHub API integration (Octokit, SHA validation, comment deduping) deferred to Phase 4.
 
 ### src/commands/policy-gate.ts
 
@@ -730,16 +524,20 @@ export function runPolicyGateCLI(options: PolicyGateOptions): number {
 }
 ```
 
-### templates/repo/.github/workflows/risk-policy-gate.yml
+### templates/repo/.github/workflows/pr-pipeline.yml
 
 ```yaml
-name: Risk Policy Gate
+# Combined PR Pipeline - Preflight + CI in single workflow
+# (Cross-workflow 'needs' doesn't work in GitHub Actions)
+
+name: PR Pipeline
 
 on:
   pull_request:
     types: [opened, synchronize, reopened]
 
 jobs:
+  # Preflight: Risk policy gate
   preflight:
     runs-on: ubuntu-latest
     outputs:
@@ -747,13 +545,12 @@ jobs:
       passed: ${{ steps.gate.outputs.passed }}
 
     steps:
-      # Pin to full SHA for supply chain security
-      - uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11
+      - uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4.1.1
         with:
           fetch-depth: 0
 
       - name: Setup Node
-        uses: actions/setup-node@60edb5dd545a775178f52524783378180af0d1f8
+        uses: actions/setup-node@60edb5dd545a775178f52524783378180af0d1f8 # v4.0.2
         with:
           node-version: '24'
 
@@ -791,28 +588,17 @@ jobs:
             echo "::error::Policy gate failed: tier ${TIER} exceeds maximum allowed"
             exit 1
           fi
-```
 
-### templates/repo/.github/workflows/ci-pipeline.yml
-
-```yaml
-name: CI Pipeline
-
-on:
-  pull_request:
-    types: [opened, synchronize, reopened]
-
-jobs:
-  # Depends on preflight from risk-policy-gate.yml
+  # CI: Lint, typecheck, test, build (only runs after preflight passes)
   ci:
     runs-on: ubuntu-latest
     needs: [preflight]
 
     steps:
-      - uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11
+      - uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4.1.1
 
       - name: Setup Node
-        uses: actions/setup-node@60edb5dd545a775178f52524783378180af0d1f8
+        uses: actions/setup-node@60edb5dd545a775178f52524783378180af0d1f8 # v4.0.2
         with:
           node-version: '24'
           cache: 'pnpm'
@@ -839,28 +625,26 @@ jobs:
 
 - **Brainstorm document:** [docs/brainstorms/2026-02-22-harness-gap-analysis-brainstorm.md](../brainstorms/2026-02-22-harness-gap-analysis-brainstorm.md)
 - **Key decisions carried forward:**
-  - GitHub API rate limiting: Exponential backoff with jitter
-  - Agent timeout: 10 minute default, fail PR on timeout
-  - Testing strategy: Hybrid fixtures + CI integration
-
-### Research Sources
-
-- **Octokit Documentation:** Official docs on authentication, throttling, pagination
-- **GitHub Actions Patterns:** Workflow syntax, job dependencies, SHA pinning
-- **Retry/Backoff Research:** Full jitter algorithm, thundering herd prevention
-- **Security Review:** Token validation, SHA format, markdown escaping
+  - Preflight gate before expensive CI jobs
+  - Policy-based risk tier enforcement
 
 ### Internal References
 
 - Command pattern: `src/commands/risk-tier.ts`
 - Contract types: `src/lib/contract/types.ts`
+- Contract loader: `src/lib/contract/loader.ts`
+- Risk tier resolver: `src/lib/policy/risk-tier.ts`
 - Error handling: `src/lib/input/sanitize.ts`
-- Implementation plan: `docs/HARNESS_IMPLEMENTATION_PLAN.md` Section 5, 6, 10
+- Implementation plan: `docs/HARNESS_IMPLEMENTATION_PLAN.md` Section 5
 
 ### External References
+
+- GitHub Actions Workflow Syntax: https://docs.github.com/en/actions/reference/workflow-syntax-for-github-actions
+- GitHub Actions SHA Pinning: https://docs.github.com/en/actions/security-guides/security-hardening-for-github-actions
+
+### Deferred to Phase 4
 
 - Octokit REST API: https://github.com/octokit/rest.js
 - Octokit Throttling Plugin: https://github.com/octokit/plugin-throttling.js
 - GitHub Checks API: https://docs.github.com/en/rest/checks
-- GitHub Actions Workflow Syntax: https://docs.github.com/en/actions/reference/workflow-syntax-for-github-actions
 - AWS Architecture Blog - Exponential Backoff and Jitter: https://aws.amazon.com/blogs/architecture/exponential-backoff-and-jitter/
