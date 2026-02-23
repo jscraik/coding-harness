@@ -8,6 +8,7 @@
 
 import { existsSync, readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
+import { validatePath } from "../input/sanitize.js";
 import type { BrokenLink, QualityScore, StaleDoc } from "./types.js";
 import {
 	BROKEN_LINK_DEDUCTION,
@@ -120,7 +121,18 @@ export function updateQualityScoreFile(
 	staleDocs: StaleDoc[],
 	brokenLinks: BrokenLink[],
 ): { ok: true; path: string } | { ok: false; error: string } {
-	const filePath = join(docsPath, "QUALITY_SCORE.md");
+	// Validate docsPath to prevent path traversal
+	let validatedPath: string;
+	try {
+		validatedPath = validatePath(docsPath);
+	} catch (error) {
+		return {
+			ok: false,
+			error: error instanceof Error ? error.message : "Invalid docs path",
+		};
+	}
+
+	const filePath = join(validatedPath, "QUALITY_SCORE.md");
 
 	try {
 		const content = generateQualityScoreMarkdown(score, staleDocs, brokenLinks);
@@ -139,7 +151,15 @@ export function updateQualityScoreFile(
  * Read current quality score from file
  */
 export function readQualityScore(docsPath: string): QualityScore | null {
-	const filePath = join(docsPath, "QUALITY_SCORE.md");
+	// Validate docsPath to prevent path traversal
+	let validatedPath: string;
+	try {
+		validatedPath = validatePath(docsPath);
+	} catch {
+		return null;
+	}
+
+	const filePath = join(validatedPath, "QUALITY_SCORE.md");
 
 	if (!existsSync(filePath)) {
 		return null;

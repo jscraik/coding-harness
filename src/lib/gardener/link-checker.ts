@@ -8,6 +8,7 @@
 import { spawnSync } from "node:child_process";
 import { existsSync, readFileSync, unlinkSync } from "node:fs";
 import { join } from "node:path";
+import { validatePath } from "../input/sanitize.js";
 import type { BrokenLink } from "./types.js";
 
 /**
@@ -52,7 +53,19 @@ export function checkLinks(basePath: string): BrokenLink[] {
 		return brokenLinks;
 	}
 
-	if (!existsSync(basePath)) {
+	// Validate and sanitize the path
+	let validatedPath: string;
+	try {
+		validatedPath = validatePath(basePath);
+	} catch (error) {
+		console.error(
+			"Invalid docs path:",
+			error instanceof Error ? error.message : String(error),
+		);
+		return brokenLinks;
+	}
+
+	if (!existsSync(validatedPath)) {
 		return brokenLinks;
 	}
 
@@ -69,7 +82,7 @@ export function checkLinks(basePath: string): BrokenLink[] {
 				reportPath,
 				"--config",
 				".lychee.toml",
-				basePath,
+				validatedPath,
 			],
 			{
 				encoding: "utf-8",
@@ -97,7 +110,9 @@ export function checkLinks(basePath: string): BrokenLink[] {
 			for (const [file, links] of Object.entries(report.fail_map)) {
 				for (const link of links) {
 					const brokenLink: BrokenLink = {
-						file: file.replace(`${basePath}/`, "").replace(basePath, ""),
+						file: file
+							.replace(`${validatedPath}/`, "")
+							.replace(validatedPath, ""),
 						link: link.url,
 						statusCode: link.status_code ?? null,
 					};

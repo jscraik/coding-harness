@@ -21,6 +21,7 @@ import {
 	type GardenerResult,
 	type StaleDoc,
 } from "../lib/gardener/types.js";
+import { sanitizePathForDisplay } from "../lib/input/sanitize.js";
 
 /**
  * Run gardener analysis and return structured result.
@@ -36,7 +37,7 @@ export function runGardener(options: GardenerOptions): GardenerResult {
 			ok: false,
 			error: {
 				code: "DOCS_PATH_NOT_FOUND",
-				message: `Docs directory not found: ${docsPath}`,
+				message: `Docs directory not found: ${sanitizePathForDisplay(docsPath)}`,
 			},
 		};
 	}
