@@ -96,9 +96,10 @@ export function runGardenerCLI(options: GardenerOptions): number {
 	if (result.ok) {
 		const output = result.output;
 
-		// JSON output
+		// JSON output only
 		if (options.json) {
 			console.info(JSON.stringify(result.output, null, 2));
+			return output.needsPR ? EXIT_CODES.ISSUES_FOUND : EXIT_CODES.SUCCESS;
 		}
 
 		// Human-readable console output
