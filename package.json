@@ -20,6 +20,10 @@
 	},
 	"devDependencies": {
 		"@biomejs/biome": "^1.9.4",
+		"@octokit/plugin-retry": "^7.0.0",
+		"@octokit/plugin-throttling": "^9.0.0",
+		"@octokit/request-error": "^7.0.0",
+		"@octokit/rest": "^21.0.0",
 		"@types/node": "^22.0.0",
 		"@types/picomatch": "^4.0.2",
 		"picomatch": "^4.0.0",

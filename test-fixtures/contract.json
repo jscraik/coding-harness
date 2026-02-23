@@ -5,5 +5,9 @@
 		"src/api/**": "high",
 		"src/lib/**": "medium",
 		"**/*.test.ts": "low"
+	},
+	"reviewPolicy": {
+		"timeoutSeconds": 600,
+		"timeoutAction": "fail"
 	}
 }
