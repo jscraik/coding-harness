@@ -2,6 +2,7 @@
 import { runGardenerCLI } from "./commands/gardener.js";
 import { runInitCLI, runInteractiveInitCLI } from "./commands/init.js";
 import { runMemoryGateCLI } from "./commands/memory-gate.js";
+import { runPreflightGateCLI } from "./commands/preflight-gate.js";
 import { runRiskTierCLI } from "./commands/risk-tier.js";
 import { sanitizeError } from "./lib/input/sanitize.js";
 import { getVersion } from "./lib/version.js";
@@ -27,10 +28,13 @@ function printUsage(): void {
 	console.info("Usage: harness <command> [options]");
 	console.info("");
 	console.info("Commands:");
-	console.info("  init         Install harness in current directory");
-	console.info("  risk-tier    Classify files by risk tier");
-	console.info("  gardener     Detect stale docs and broken links");
-	console.info("  memory-gate  Validate local-memory workflow compliance");
+	console.info("  init           Install harness in current directory");
+	console.info("  risk-tier      Classify files by risk tier");
+	console.info("  gardener       Detect stale docs and broken links");
+	console.info("  memory-gate    Validate local-memory workflow compliance");
+	console.info(
+		"  preflight-gate Fast policy checks before expensive operations",
+	);
 	console.info("");
 	console.info("Init Options:");
 	console.info("  --dry-run        Preview changes without writing");
@@ -54,6 +58,16 @@ function printUsage(): void {
 	console.info(
 		"  --metrics        Path to metrics storage (default: .memory-metrics.json)",
 	);
+	console.info("  --json           Output results as JSON");
+	console.info("");
+	console.info("Preflight Gate Options:");
+	console.info("  --contract       Path to harness.contract.json");
+	console.info("  --files          Comma-separated file paths to check");
+	console.info(
+		"  --max-tier       Maximum allowed risk tier (high/medium/low)",
+	);
+	console.info("  --strict         Treat warnings as errors");
+	console.info("  --skip           Comma-separated check IDs to skip");
 	console.info("  --json           Output results as JSON");
 	console.info("");
 	console.info("Options:");
@@ -170,6 +184,62 @@ export function run(args: string[]): void {
 
 		const exitCode = runMemoryGateCLI(options);
 		process.exit(exitCode);
+		return;
+	}
+
+	if (command === "preflight-gate") {
+		// Parse preflight-gate options
+		const jsonFlag = args.includes("--json");
+		const strictFlag = args.includes("--strict");
+		const contractIndex = args.indexOf("--contract");
+		const filesIndex = args.indexOf("--files");
+		const maxTierIndex = args.indexOf("--max-tier");
+		const skipIndex = args.indexOf("--skip");
+
+		const options: {
+			contractPath?: string;
+			files?: string[];
+			maxTier?: "high" | "medium" | "low";
+			strict?: boolean;
+			skip?: string[];
+			json?: boolean;
+		} = {};
+
+		if (jsonFlag) options.json = true;
+		if (strictFlag) options.strict = true;
+		if (contractIndex !== -1) {
+			const contractArg = args[contractIndex + 1];
+			if (contractArg) {
+				options.contractPath = contractArg;
+			}
+		}
+		if (filesIndex !== -1) {
+			const filesArg = args[filesIndex + 1];
+			if (filesArg) {
+				options.files = filesArg.split(",").map((f) => f.trim());
+			}
+		}
+		if (maxTierIndex !== -1) {
+			const maxTierArg = args[maxTierIndex + 1];
+			if (
+				maxTierArg === "high" ||
+				maxTierArg === "medium" ||
+				maxTierArg === "low"
+			) {
+				options.maxTier = maxTierArg;
+			}
+		}
+		if (skipIndex !== -1) {
+			const skipArg = args[skipIndex + 1];
+			if (skipArg) {
+				options.skip = skipArg.split(",").map((s) => s.trim());
+			}
+		}
+
+		// Handle async preflight gate
+		runPreflightGateCLI(options)
+			.then((exitCode) => process.exit(exitCode))
+			.catch((error) => handleFatalError("Preflight Gate Error", error));
 		return;
 	}
 
