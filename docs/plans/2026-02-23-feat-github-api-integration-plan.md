@@ -1,7 +1,7 @@
 ---
 title: Phase 4 GitHub API Integration
 type: feat
-status: active
+status: completed
 date: 2026-02-23
 origin: docs/plans/2026-02-23-feat-github-workflow-orchestration-plan.md
 ---
@@ -145,33 +145,33 @@ export interface HarnessContract {
 
 ### Functional Requirements
 
-- [ ] `src/lib/github/client.ts` - Octokit wrapper with throttling plugin
-- [ ] `src/lib/github/sha.ts` - SHA validation with `/^[0-9a-f]{40}$/` regex
-- [ ] `src/lib/github/check-run.ts` - Check run query helpers
-- [ ] `src/lib/github/comments.ts` - Comment posting with deduping and markdown escaping
-- [ ] `src/commands/review-gate.ts` - Review gate with SHA discipline
-- [ ] Contract extended with `reviewPolicy` (timeoutSeconds, timeoutAction)
+- [x] `src/lib/github/client.ts` - Octokit wrapper with throttling plugin
+- [x] `src/lib/github/sha.ts` - SHA validation with `/^[0-9a-f]{40}$/` regex
+- [x] `src/lib/github/check-run.ts` - Check run query helpers
+- [x] `src/lib/github/comments.ts` - Comment posting with deduping and markdown escaping
+- [x] `src/commands/review-gate.ts` - Review gate with SHA discipline
+- [x] Contract extended with `reviewPolicy` (timeoutSeconds, timeoutAction)
 
 ### Security Requirements
 
-- [ ] SHA validation with regex (not string matching)
-- [ ] Markdown escaping for comment content
-- [ ] Time-bound deduping (24h max age)
-- [ ] No retry on secondary rate limits (abuse detection)
+- [x] SHA validation with regex (not string matching)
+- [x] Markdown escaping for comment content
+- [x] Time-bound deduping (24h max age)
+- [x] No retry on secondary rate limits (abuse detection)
 
 ### Agent-Native Requirements
 
-- [ ] `--json` flag on review-gate command
-- [ ] Exit codes: 0 (pass), 1 (validation fail), 2 (not found), 3 (permission), 10+ (system)
-- [ ] Machine-readable error codes for each failure mode
+- [x] `--json` flag on review-gate command
+- [x] Exit codes: 0 (pass), 1 (validation fail), 2 (not found), 3 (permission), 10+ (system)
+- [x] Machine-readable error codes for each failure mode
 
 ### Quality Gates
 
-- [ ] `pnpm check` passes
-- [ ] Unit tests for SHA validation
-- [ ] Unit tests for comment deduping with time bounds
-- [ ] Unit tests for markdown escaping
-- [ ] Follows command pattern from `policy-gate.ts`
+- [x] `pnpm check` passes
+- [x] Unit tests for SHA validation
+- [x] Unit tests for comment deduping with time bounds
+- [x] Unit tests for markdown escaping
+- [x] Follows command pattern from `policy-gate.ts`
 
 ## Success Metrics
 
