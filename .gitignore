@@ -1,0 +1,50 @@
+# Dependencies
+node_modules/
+
+# Build output
+dist/
+
+# Internal docs (do not commit)
+FORJAMIE.md
+
+# Secrets (never commit)
+.env
+.env.*
+*.pem
+*.key
+*.p12
+*.pfx
+*.crt
+id_rsa*
+*.pub
+secrets/
+credentials.json
+.service-account*.json
+*-credentials*.json
+# Ignore .npmrc globally but allow project root config
+.npmrc
+!/.npmrc
+.yarnrc
+.netrc
+dockercfg*
+
+# Cloud provider credentials
+.aws/
+.azure/
+.gcloud/
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.code-workspace
+
+# OS
+.DS_Store
+
+# Logs
+*.log
+logs/
+
+# Test coverage
+coverage/
