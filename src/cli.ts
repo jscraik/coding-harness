@@ -56,6 +56,12 @@ function printUsage(): void {
 	console.info("  init       Install harness in current directory");
 	console.info("  risk-tier  Classify files by risk tier");
 	console.info("");
+	console.info("Init Options:");
+	console.info("  --dry-run      Preview changes without writing");
+	console.info("  --force        Overwrite existing files");
+	console.info("  --track        Create manifest + backups for rollback");
+	console.info("  --rollback     Restore from manifest (undo init)");
+	console.info("");
 	console.info("Options:");
 	console.info("  --version, -v  Print version");
 	console.info("  --help, -h     Print this help");
@@ -107,6 +113,8 @@ export function run(args: string[]): void {
 		// Parse init options
 		const dryRunFlag = args.includes("--dry-run");
 		const forceFlag = args.includes("--force");
+		const trackFlag = args.includes("--track");
+		const rollbackFlag = args.includes("--rollback");
 
 		// Get optional target directory (first non-flag arg after 'init')
 		const targetDir = args.slice(1).find((arg) => !arg.startsWith("--"));
@@ -114,6 +122,8 @@ export function run(args: string[]): void {
 		const exitCode = runInitCLI(targetDir, {
 			dryRun: dryRunFlag,
 			force: forceFlag,
+			track: trackFlag,
+			rollback: rollbackFlag,
 		});
 		process.exit(exitCode);
 		return;
