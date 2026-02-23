@@ -178,7 +178,7 @@ describe("runInit", () => {
 			const content = JSON.parse(
 				require("node:fs").readFileSync(contractPath, "utf-8"),
 			);
-			expect(content.version).toBe("1.0");
+			expect(content.version).toBe("1.0.0");
 			expect(content.reviewPolicy.timeoutSeconds).toBe(600);
 		});
 
@@ -740,7 +740,7 @@ describe("--interactive flag", () => {
 			expect(contractChange).toBeDefined();
 			expect(contractChange?.action).toBe("modify");
 			expect(contractChange?.currentContent).toBe('{"version": "old"}');
-			expect(contractChange?.newContent).toContain('"version": "1.0"');
+			expect(contractChange?.newContent).toContain('"version": "1.0.0"');
 		}
 	});
 
@@ -813,5 +813,207 @@ describe("generateDiff", () => {
 
 		const diff = generateDiff(change);
 		expect(diff).toBe("");
+	});
+});
+
+describe("--migrate flag", () => {
+	let tempDir: string;
+
+	beforeEach(() => {
+		tempDir = join(tmpdir(), `harness-migrate-test-${Date.now()}`);
+		mkdirSync(tempDir, { recursive: true });
+	});
+
+	afterEach(() => {
+		rmSync(tempDir, { recursive: true, force: true });
+	});
+
+	it("fails when no contract exists", () => {
+		const result = runInit(tempDir, {
+			dryRun: false,
+			force: false,
+			migrate: true,
+		});
+
+		expect(result.ok).toBe(false);
+		if (!result.ok) {
+			expect(result.error.code).toBe("WRITE_ERROR");
+			expect(result.error.message).toContain("Contract file not found");
+		}
+	});
+
+	it("succeeds when contract is already at latest version", () => {
+		// Create a contract at the current version
+		writeFileSync(
+			join(tempDir, "harness.contract.json"),
+			JSON.stringify({
+				version: "1.0.0",
+				riskTierRules: {},
+				reviewPolicy: { timeoutSeconds: 600, timeoutAction: "fail" },
+			}),
+		);
+
+		const result = runInit(tempDir, {
+			dryRun: false,
+			force: false,
+			migrate: true,
+		});
+
+		expect(result.ok).toBe(true);
+		if (result.ok) {
+			// No migrations applied, so created should be empty
+			expect(result.output.created).toHaveLength(0);
+		}
+	});
+
+	it("fails when contract has invalid JSON", () => {
+		writeFileSync(join(tempDir, "harness.contract.json"), "not valid json {{{");
+
+		const result = runInit(tempDir, {
+			dryRun: false,
+			force: false,
+			migrate: true,
+		});
+
+		expect(result.ok).toBe(false);
+		if (!result.ok) {
+			expect(result.error.code).toBe("WRITE_ERROR");
+			expect(result.error.message).toContain("Failed to parse contract");
+		}
+	});
+
+	it("fails when contract is missing version field", () => {
+		writeFileSync(
+			join(tempDir, "harness.contract.json"),
+			JSON.stringify({
+				riskTierRules: {},
+				reviewPolicy: { timeoutSeconds: 600 },
+			}),
+		);
+
+		const result = runInit(tempDir, {
+			dryRun: false,
+			force: false,
+			migrate: true,
+		});
+
+		expect(result.ok).toBe(false);
+		if (!result.ok) {
+			expect(result.error.code).toBe("WRITE_ERROR");
+			expect(result.error.message).toContain(
+				"missing required 'version' field",
+			);
+		}
+	});
+
+	it("preserves user customizations during migration", () => {
+		// Create a contract with custom settings
+		writeFileSync(
+			join(tempDir, "harness.contract.json"),
+			JSON.stringify({
+				version: "1.0.0",
+				riskTierRules: { "src/auth/*": "high" },
+				reviewPolicy: { timeoutSeconds: 300, timeoutAction: "warn" },
+				customField: "preserved",
+			}),
+		);
+
+		const result = runInit(tempDir, {
+			dryRun: false,
+			force: false,
+			migrate: true,
+		});
+
+		expect(result.ok).toBe(true);
+		if (result.ok) {
+			// Read the migrated contract
+			const migrated = JSON.parse(
+				require("node:fs").readFileSync(
+					join(tempDir, "harness.contract.json"),
+					"utf-8",
+				),
+			);
+			// Custom settings should be preserved
+			expect(migrated.riskTierRules["src/auth/*"]).toBe("high");
+			expect(migrated.reviewPolicy.timeoutSeconds).toBe(300);
+			expect(migrated.customField).toBe("preserved");
+		}
+	});
+
+	it("preserves contract content when already up to date", () => {
+		// Create a contract at current version with customizations
+		const originalContent = {
+			version: "1.0.0",
+			riskTierRules: { "src/api/*": "medium" },
+			reviewPolicy: { timeoutSeconds: 900, timeoutAction: "fail" },
+		};
+		writeFileSync(
+			join(tempDir, "harness.contract.json"),
+			JSON.stringify(originalContent, null, 2),
+		);
+
+		const result = runInit(tempDir, {
+			dryRun: false,
+			force: false,
+			migrate: true,
+		});
+
+		expect(result.ok).toBe(true);
+
+		// Contract should be unchanged
+		const content = require("node:fs").readFileSync(
+			join(tempDir, "harness.contract.json"),
+			"utf-8",
+		);
+		expect(JSON.parse(content)).toEqual(originalContent);
+	});
+});
+
+describe("detectContractVersion", () => {
+	let tempDir: string;
+
+	beforeEach(() => {
+		tempDir = join(tmpdir(), `harness-version-test-${Date.now()}`);
+		mkdirSync(tempDir, { recursive: true });
+	});
+
+	afterEach(() => {
+		rmSync(tempDir, { recursive: true, force: true });
+	});
+
+	it("returns null when contract doesn't exist", async () => {
+		const { detectContractVersion } = await import("./init.js");
+		const version = detectContractVersion(tempDir);
+		expect(version).toBeNull();
+	});
+
+	it("returns version from valid contract", async () => {
+		writeFileSync(
+			join(tempDir, "harness.contract.json"),
+			JSON.stringify({ version: "2.5.0" }),
+		);
+
+		const { detectContractVersion } = await import("./init.js");
+		const version = detectContractVersion(tempDir);
+		expect(version).toBe("2.5.0");
+	});
+
+	it("returns null for contract without version", async () => {
+		writeFileSync(
+			join(tempDir, "harness.contract.json"),
+			JSON.stringify({ riskTierRules: {} }),
+		);
+
+		const { detectContractVersion } = await import("./init.js");
+		const version = detectContractVersion(tempDir);
+		expect(version).toBeNull();
+	});
+
+	it("returns null for invalid JSON", async () => {
+		writeFileSync(join(tempDir, "harness.contract.json"), "not valid json");
+
+		const { detectContractVersion } = await import("./init.js");
+		const version = detectContractVersion(tempDir);
+		expect(version).toBeNull();
 	});
 });
