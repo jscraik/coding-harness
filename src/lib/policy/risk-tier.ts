@@ -8,6 +8,35 @@ interface Rule {
 }
 
 /**
+ * Score glob pattern specificity.
+ * Higher score means more specific and therefore higher precedence.
+ */
+function patternSpecificity(pattern: string): number {
+	const segments = pattern.split("/").filter((s) => s.length > 0);
+	const literalSegments = segments.filter((segment) => !segment.includes("*"));
+	const wildcardCount = (pattern.match(/\*/g) ?? []).length;
+	const literalLength = pattern.replace(/\*/g, "").length;
+
+	let score = 0;
+	score += literalSegments.length * 100;
+	score += segments.length * 10;
+	score += literalLength;
+
+	if (!pattern.includes("**")) {
+		score += 30;
+	}
+	if (!pattern.includes("*")) {
+		score += 200;
+	}
+	if (pattern.startsWith("**")) {
+		score -= 100;
+	}
+
+	score -= wildcardCount * 10;
+	return score;
+}
+
+/**
  * Create a risk-tier resolver with pre-compiled matchers.
  */
 export function createResolver(
@@ -20,7 +49,14 @@ export function createResolver(
 			tier,
 			matcher: picomatch(pattern),
 		}))
-		.sort((a, b) => b.pattern.length - a.pattern.length);
+		.sort((a, b) => {
+			const specificityDiff =
+				patternSpecificity(b.pattern) - patternSpecificity(a.pattern);
+			if (specificityDiff !== 0) {
+				return specificityDiff;
+			}
+			return b.pattern.length - a.pattern.length;
+		});
 
 	return (filePath: string): RiskTier => {
 		for (const rule of compiled) {

@@ -189,7 +189,12 @@ export function runBrainstormGate(
 	const brainstormsPath = resolve(
 		options.brainstormsPath || DEFAULTS.BRAINSTORMS_PATH,
 	);
-	const maxAgeDays = options.maxAgeDays || DEFAULTS.MAX_AGE_DAYS;
+	const requestedMaxAgeDays = options.maxAgeDays ?? options.maxAge;
+	const maxAgeDays =
+		typeof requestedMaxAgeDays === "number" &&
+		Number.isFinite(requestedMaxAgeDays)
+			? requestedMaxAgeDays
+			: DEFAULTS.MAX_AGE_DAYS;
 
 	const artifacts: BrainstormArtifact[] = [];
 	const errors: BrainstormError[] = [];
@@ -256,12 +261,9 @@ export function runBrainstormGate(
 		}
 	}
 
-	// Determine if passed
-	// Pass if we have at least one valid, non-stale artifact
-	const passed =
-		filteredArtifacts.length > 0 &&
-		errors.filter((e) => e.code === "MISSING" || e.code === "STALE").length ===
-			0;
+	// Determine if passed.
+	// Any validation error should fail the gate.
+	const passed = filteredArtifacts.length > 0 && errors.length === 0;
 
 	// Build result object conditionally to satisfy strict TypeScript
 	const result: BrainstormGateResult = {

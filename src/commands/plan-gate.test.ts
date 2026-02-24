@@ -171,6 +171,7 @@ describe("plan-gate command", () => {
 				strict: true,
 			});
 
+			expect(result.passed).toBe(false);
 			expect(result.errors.some((e) => e.code === "INCOMPLETE")).toBe(true);
 		});
 
@@ -191,6 +192,29 @@ describe("plan-gate command", () => {
 			const result = runPlanGate({
 				plansPath: join(TEST_DIR, "docs/plans"),
 				maxAge: 30,
+			});
+
+			expect(result.passed).toBe(false);
+			expect(result.errors.some((e) => e.code === "STALE")).toBe(true);
+		});
+
+		it("falls back to default max age when maxAge is NaN", () => {
+			const oldDate = new Date();
+			oldDate.setDate(oldDate.getDate() - 60);
+			const oldDateStr = oldDate.toISOString().slice(0, 10);
+
+			createTestPlan(
+				"Old Approved Plan",
+				oldDateStr,
+				"feature",
+				"approved",
+				"## Implementation Steps\n\n## Acceptance Criteria",
+				TEST_DIR,
+			);
+
+			const result = runPlanGate({
+				plansPath: join(TEST_DIR, "docs/plans"),
+				maxAge: Number.NaN,
 			});
 
 			expect(result.passed).toBe(false);

@@ -217,7 +217,10 @@ function loadPlanDoc(
  */
 export function runPlanGate(options: PlanGateOptions): PlanGateResult {
 	const plansPath = resolve(options.plansPath || DEFAULTS.PLANS_PATH);
-	const maxAgeDays = options.maxAge ?? DEFAULTS.MAX_AGE_DAYS;
+	const maxAgeDays =
+		typeof options.maxAge === "number" && Number.isFinite(options.maxAge)
+			? options.maxAge
+			: DEFAULTS.MAX_AGE_DAYS;
 	const requireOrigin = options.requireOrigin ?? false;
 
 	const artifacts: PlanArtifact[] = [];
@@ -286,16 +289,9 @@ export function runPlanGate(options: PlanGateOptions): PlanGateResult {
 		}
 	}
 
-	// Determine if passed
-	// Pass if we have at least one valid, non-stale artifact
-	const passed =
-		filteredArtifacts.length > 0 &&
-		errors.filter(
-			(e) =>
-				e.code === "MISSING" ||
-				e.code === "STALE" ||
-				e.code === "ORIGIN_MISSING",
-		).length === 0;
+	// Determine if passed.
+	// Any validation error should fail the gate.
+	const passed = filteredArtifacts.length > 0 && errors.length === 0;
 
 	// Build result object conditionally
 	const result: PlanGateResult = {

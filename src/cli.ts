@@ -140,6 +140,20 @@ function printUsage(): void {
 	console.info("  --help, -h     Print this help");
 }
 
+function parseIntegerArg(
+	value: string | undefined,
+	min: number = Number.NEGATIVE_INFINITY,
+): number | undefined {
+	if (value === undefined) {
+		return undefined;
+	}
+	const parsed = Number.parseInt(value, 10);
+	if (!Number.isFinite(parsed) || parsed < min) {
+		return undefined;
+	}
+	return parsed;
+}
+
 export function run(args: string[]): void {
 	const version = getVersion();
 
@@ -229,7 +243,10 @@ export function run(args: string[]): void {
 			}
 		}
 		if (staleDaysIndex !== -1 && args[staleDaysIndex + 1]) {
-			options.staleDays = Number.parseInt(args[staleDaysIndex + 1] ?? "30", 10);
+			const staleDays = parseIntegerArg(args[staleDaysIndex + 1], 0);
+			if (staleDays !== undefined) {
+				options.staleDays = staleDays;
+			}
 		}
 
 		const exitCode = runGardenerCLI(options);
@@ -491,7 +508,8 @@ export function run(args: string[]): void {
 		}
 		if (prIndex !== -1) {
 			const prArg = args[prIndex + 1];
-			if (prArg) options.prNumber = Number.parseInt(prArg, 10);
+			const parsedPr = parseIntegerArg(prArg, 1);
+			if (parsedPr !== undefined) options.prNumber = parsedPr;
 		}
 		if (shaIndex !== -1) {
 			const shaArg = args[shaIndex + 1];
@@ -523,7 +541,7 @@ export function run(args: string[]): void {
 		const options: {
 			brainstormsPath?: string;
 			topic?: string;
-			maxAge?: number;
+			maxAgeDays?: number;
 			strict?: boolean;
 			json?: boolean;
 		} = {};
@@ -540,7 +558,8 @@ export function run(args: string[]): void {
 		}
 		if (maxAgeIndex !== -1) {
 			const maxAgeArg = args[maxAgeIndex + 1];
-			if (maxAgeArg) options.maxAge = Number.parseInt(maxAgeArg, 10);
+			const parsedMaxAge = parseIntegerArg(maxAgeArg, 0);
+			if (parsedMaxAge !== undefined) options.maxAgeDays = parsedMaxAge;
 		}
 
 		const exitCode = runBrainstormGateCLI(options);
@@ -579,7 +598,8 @@ export function run(args: string[]): void {
 		}
 		if (maxAgeIndex !== -1) {
 			const maxAgeArg = args[maxAgeIndex + 1];
-			if (maxAgeArg) options.maxAge = Number.parseInt(maxAgeArg, 10);
+			const parsedMaxAge = parseIntegerArg(maxAgeArg, 0);
+			if (parsedMaxAge !== undefined) options.maxAge = parsedMaxAge;
 		}
 
 		const exitCode = runPlanGateCLI(options);
@@ -603,7 +623,8 @@ export function run(args: string[]): void {
 		if (ciFlag) options.ci = true;
 		if (portIndex !== -1) {
 			const portArg = args[portIndex + 1];
-			if (portArg) options.port = Number.parseInt(portArg, 10);
+			const parsedPort = parseIntegerArg(portArg, 1);
+			if (parsedPort !== undefined) options.port = parsedPort;
 		}
 
 		const exitCode = runUIFastCLI(options);
@@ -632,7 +653,8 @@ export function run(args: string[]): void {
 		}
 		if (timeoutIndex !== -1) {
 			const timeoutArg = args[timeoutIndex + 1];
-			if (timeoutArg) options.timeout = Number.parseInt(timeoutArg, 10);
+			const parsedTimeout = parseIntegerArg(timeoutArg, 1);
+			if (parsedTimeout !== undefined) options.timeout = parsedTimeout;
 		}
 		if (shardIndex !== -1) {
 			const shardArg = args[shardIndex + 1];

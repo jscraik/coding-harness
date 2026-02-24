@@ -45,7 +45,21 @@ describe("ui-loop commands", () => {
 			const parsed = JSON.parse(result.message);
 			expect(parsed.command).toContain("storybook");
 			expect(parsed.port).toBe(6007);
+			expect(parsed.ci).toBe(false);
 			expect(parsed.packageManager).toBe("pnpm");
+		});
+
+		it("includes --ci in command when CI mode is enabled", () => {
+			vi.mocked(existsSync).mockImplementation((path) => {
+				const p = String(path);
+				return p.includes("pnpm-lock.yaml") || p.includes(".storybook");
+			});
+
+			const result = runUIFast({ ci: true });
+
+			expect(result.exitCode).toBe(EXIT_CODES.SUCCESS);
+			expect(result.message).toContain("pnpm storybook --ci");
+			expect(result.message).toContain("CI mode: enabled");
 		});
 
 		it("detects npm package manager", () => {
@@ -59,6 +73,18 @@ describe("ui-loop commands", () => {
 
 			expect(result.exitCode).toBe(EXIT_CODES.SUCCESS);
 			expect(result.message).toContain("npm run storybook");
+		});
+
+		it("passes ci flag correctly for npm scripts", () => {
+			vi.mocked(existsSync).mockImplementation((path) => {
+				const p = String(path);
+				return p.includes(".storybook");
+			});
+
+			const result = runUIFast({ ci: true });
+
+			expect(result.exitCode).toBe(EXIT_CODES.SUCCESS);
+			expect(result.message).toContain("npm run storybook -- --ci");
 		});
 	});
 
@@ -118,6 +144,34 @@ describe("ui-loop commands", () => {
 			expect(result.evidence?.command).toContain("--output=./test-results");
 		});
 
+		it("includes timeout option in command when provided", () => {
+			vi.mocked(existsSync).mockImplementation((path) => {
+				const p = String(path);
+				return (
+					p.includes("pnpm-lock.yaml") || p.includes("playwright.config.ts")
+				);
+			});
+
+			const result = runUIVerify({ timeout: 45000 });
+
+			expect(result.exitCode).toBe(EXIT_CODES.SUCCESS);
+			expect(result.evidence?.command).toContain("--timeout=45000");
+		});
+
+		it("ignores timeout option when value is NaN", () => {
+			vi.mocked(existsSync).mockImplementation((path) => {
+				const p = String(path);
+				return (
+					p.includes("pnpm-lock.yaml") || p.includes("playwright.config.ts")
+				);
+			});
+
+			const result = runUIVerify({ timeout: Number.NaN });
+
+			expect(result.exitCode).toBe(EXIT_CODES.SUCCESS);
+			expect(result.evidence?.command).not.toContain("--timeout=");
+		});
+
 		it("returns JSON evidence when json option is true", () => {
 			vi.mocked(existsSync).mockImplementation((path) => {
 				const p = String(path);
@@ -134,6 +188,26 @@ describe("ui-loop commands", () => {
 			expect(parsed.passed).toBe(true);
 			expect(parsed.timestamp).toBeDefined();
 			expect(parsed.durationMs).toBeGreaterThanOrEqual(0);
+		});
+
+		it("builds npm command without duplicated run token", () => {
+			vi.mocked(existsSync).mockImplementation((path) => {
+				const p = String(path);
+				return p.includes("playwright.config.ts");
+			});
+
+			const result = runUIVerify({
+				shard: "1/2",
+				timeout: 30000,
+				outputDir: "./out",
+			});
+
+			expect(result.exitCode).toBe(EXIT_CODES.SUCCESS);
+			expect(result.evidence?.command).toContain("npm run playwright -- test");
+			expect(result.evidence?.command).toContain("--shard=1/2");
+			expect(result.evidence?.command).toContain("--timeout=30000");
+			expect(result.evidence?.command).toContain("--output=./out");
+			expect(result.evidence?.command).not.toContain("npm run run");
 		});
 	});
 

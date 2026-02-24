@@ -60,6 +60,20 @@ function detectPackageManager(cwd = process.cwd()): {
 }
 
 /**
+ * Build package-manager command for script execution.
+ */
+function buildScriptCommand(
+	pm: { name: string; runCmd: string },
+	script: string,
+	args: string[] = [],
+): string {
+	if (pm.name === "npm") {
+		return `${pm.runCmd} ${script}${args.length > 0 ? ` -- ${args.join(" ")}` : ""}`;
+	}
+	return `${pm.runCmd} ${script}${args.length > 0 ? ` ${args.join(" ")}` : ""}`;
+}
+
+/**
  * Check if Storybook is configured
  */
 function hasStorybook(cwd = process.cwd()): boolean {
@@ -104,7 +118,8 @@ export function runUIFast(options: UIFastOptions = {}): {
 
 	const pm = detectPackageManager();
 	const storybookCmd = "storybook";
-	const fullCmd = `${pm.runCmd} ${storybookCmd}`;
+	const storybookArgs = options.ci ? ["--ci"] : [];
+	const fullCmd = buildScriptCommand(pm, storybookCmd, storybookArgs);
 
 	if (json) {
 		return {
@@ -112,12 +127,13 @@ export function runUIFast(options: UIFastOptions = {}): {
 			message: JSON.stringify({
 				command: fullCmd,
 				port: options.port ?? 6006,
+				ci: options.ci ?? false,
 				packageManager: pm.name,
 			}),
 		};
 	}
 
-	const message = `✓ UI fast loop ready\n  Command: ${fullCmd}\n  Port: ${options.port ?? 6006}\n  Package manager: ${pm.name}`;
+	const message = `✓ UI fast loop ready\n  Command: ${fullCmd}\n  Port: ${options.port ?? 6006}\n  CI mode: ${options.ci ? "enabled" : "disabled"}\n  Package manager: ${pm.name}`;
 	return { exitCode: EXIT_CODES.SUCCESS, message };
 }
 
@@ -147,18 +163,19 @@ export function runUIVerify(options: UIVerifyOptions = {}): {
 	const pm = detectPackageManager();
 
 	// Build playwright command with options
-	const playwrightCmd =
-		pm.name === "npm" ? "run playwright -- test" : "playwright test";
-	const args: string[] = [];
+	const args: string[] = ["test"];
 
 	if (options.shard) {
 		args.push(`--shard=${options.shard}`);
+	}
+	if (typeof options.timeout === "number" && Number.isFinite(options.timeout)) {
+		args.push(`--timeout=${options.timeout}`);
 	}
 	if (options.outputDir) {
 		args.push(`--output=${options.outputDir}`);
 	}
 
-	const fullCmd = `${pm.runCmd} ${playwrightCmd}${args.length > 0 ? ` ${args.join(" ")}` : ""}`;
+	const fullCmd = buildScriptCommand(pm, "playwright", args);
 
 	const durationMs = Date.now() - startTime;
 	const passed = true; // Ready to run

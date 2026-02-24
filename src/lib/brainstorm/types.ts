@@ -60,6 +60,8 @@ export interface BrainstormGateOptions {
 	topic?: string;
 	/** Maximum age in days (default: 14) */
 	maxAgeDays?: number;
+	/** @deprecated Backward-compatible alias for maxAgeDays */
+	maxAge?: number;
 	/** Output as JSON */
 	json?: boolean;
 	/** Require all sections */

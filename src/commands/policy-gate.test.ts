@@ -21,7 +21,7 @@ describe("runPolicyGate", () => {
 		it("passes when tier is lower than max-tier", () => {
 			const result = runPolicyGate({
 				contractPath,
-				files: ["src/lib/utils.test.ts"], // low tier
+				files: ["tests/utils.test.ts"], // low tier (matches **/*.test.ts)
 				maxTier: "medium",
 			});
 			expect(result.ok).toBe(true);
@@ -69,6 +69,62 @@ describe("runPolicyGate", () => {
 			if (result.ok) {
 				expect(result.output.passed).toBe(true);
 				expect(result.output.tier).toBe("high");
+			}
+		});
+	});
+
+	describe("empty file list", () => {
+		it("passes with low tier when no files are provided", () => {
+			const result = runPolicyGate({
+				contractPath,
+				files: [],
+				maxTier: "low",
+			});
+
+			expect(result.ok).toBe(true);
+			if (result.ok) {
+				expect(result.output.passed).toBe(true);
+				expect(result.output.tier).toBe("low");
+				expect(result.output.violatingFiles).toEqual([]);
+			}
+		});
+	});
+
+	describe("tier-threshold invariants", () => {
+		it("is monotonic across max-tier thresholds", () => {
+			const corpus = [
+				"src/auth/login.ts",
+				"src/lib/cache.ts",
+				"tests/policy.test.ts",
+				"README.md",
+			];
+
+			for (let i = 0; i < corpus.length; i++) {
+				const files = corpus.slice(0, i + 1);
+
+				const low = runPolicyGate({ contractPath, files, maxTier: "low" });
+				const medium = runPolicyGate({
+					contractPath,
+					files,
+					maxTier: "medium",
+				});
+				const high = runPolicyGate({ contractPath, files, maxTier: "high" });
+
+				expect(low.ok).toBe(true);
+				expect(medium.ok).toBe(true);
+				expect(high.ok).toBe(true);
+
+				if (!low.ok || !medium.ok || !high.ok) {
+					throw new Error("Expected successful policy gate result");
+				}
+
+				expect(high.output.passed).toBe(true);
+				if (low.output.passed) {
+					expect(medium.output.passed).toBe(true);
+				}
+				if (medium.output.passed) {
+					expect(high.output.passed).toBe(true);
+				}
 			}
 		});
 	});

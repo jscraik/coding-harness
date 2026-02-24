@@ -62,6 +62,15 @@ export function runPolicyGate(options: PolicyGateOptions): PolicyGateResult {
 
 	try {
 		const contract = loadContract(options.contractPath);
+
+		// No changed files should always pass the gate.
+		if (options.files.length === 0) {
+			return {
+				ok: true,
+				output: { passed: true, tier: "low", violatingFiles: [] },
+			};
+		}
+
 		const tier = resolveOverallTier(options.files, contract);
 
 		// If no max tier specified, all pass
