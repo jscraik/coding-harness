@@ -14,6 +14,33 @@ decisions:
 
 # Plan: Context Compound Implementation
 
+## Enhancement Summary
+
+**Deepened on:** 2026-02-24
+**Sections enhanced:** Technical Decisions, Testing Strategy, Security, Implementation Patterns
+**Research agents used:**
+- `framework-docs-researcher` - sqlite-vec patterns and best practices
+- `best-practices-researcher` - Ollama API patterns
+- `kieran-typescript-reviewer` - TypeScript patterns, Result types, testing
+- `security-sentinel` - Security assessment and mitigations
+
+### Key Improvements Discovered
+
+1. **sqlite-vec integration**: Concrete setup patterns with WAL mode, schema design with metadata columns, cosine similarity search implementation
+2. **Result type pattern**: Use discriminated unions `{ ok: true, value: T } | { ok: false, error: E }` matching codebase conventions
+3. **Security hardening**: Path traversal protection using existing `validatePath()` utility, SSRF prevention for Ollama URLs, parameterized SQL queries
+4. **Concurrency control**: Semaphore pattern for batch indexing with configurable limits
+5. **Testing patterns**: MSW for mocking Ollama, in-memory SQLite with temp directories
+
+### New Considerations Discovered
+
+- **Storage formats**: Binary quantization can reduce storage 32x (96 bytes vs 3072 bytes per vector)
+- **Performance tuning**: WAL mode essential for concurrent access, mmap for large datasets
+- **Cancellation**: AbortController pattern for timeout handling
+- **Graceful degradation**: Fallback to keyword search when Ollama unavailable
+
+---
+
 ## Overview
 
 Implement a semantic memory system that uses local Ollama embeddings to surface relevant prior brainstorms, plans, and decisions when an agent starts new work.
@@ -183,31 +210,114 @@ Implement a semantic memory system that uses local Ollama embeddings to surface 
 - Simpler implementation
 - Can add section-based chunking later if needed
 
+## Testing Strategy
+
+| Component | Test Approach | Coverage |
+|-----------|---------------|----------|
+| ollama.ts | MSW mock server | Connection, embedding, errors, timeouts |
+| store.ts | In-memory SQLite | CRUD, search, similarity, transactions |
+| indexer.ts | Mock filesystem | Parsing, hashing, batching, concurrency |
+| retriever.ts | Integration with mock store | Ranking, threshold, fallback |
+| context.ts | CLI integration tests | Exit codes, output formats |
+
+**Mock Ollama Server (MSW):**
+```typescript
+import { setupServer } from 'msw/node';
+import { http, HttpResponse } from 'msw';
+
+const handlers = [
+  http.get('http://localhost:11434/api/tags', () => {
+    return HttpResponse.json({ models: [{ name: 'nomic-embed-text' }] });
+  }),
+
+  http.post('http://localhost:11434/api/embeddings', async ({ request }) => {
+    const body = await request.json();
+    // Return deterministic embedding based on input
+    const embedding = Array(768).fill(0).map((_, i) =>
+      Math.sin(body.prompt.length + i) * 0.1
+    );
+    return HttpResponse.json({ embedding });
+  }),
+];
+
+const server = setupServer(...handlers);
+```
+
+**In-Memory Store Tests:**
+```typescript
+import { mkdtempSync, rmSync } from 'node:fs';
+import { tmpdir } from 'node:os';
+import { join } from 'node:path';
+
+describe('VectorStore', () => {
+  let tempDir: string;
+  let store: VectorStore;
+
+  beforeEach(() => {
+    tempDir = mkdtempSync(join(tmpdir(), 'context-test-'));
+    store = new VectorStore(join(tempDir, 'test.db'));
+    store.init();
+  });
+
+  afterEach(() => {
+    store.close();
+    rmSync(tempDir, { recursive: true });
+  });
+});
+```
+
 ## File Structure
 
 ```
 src/lib/context-compound/
-├── types.ts          # Type definitions
-├── ollama.ts         # Ollama client
-├── store.ts          # sqlite-vec storage
-├── indexer.ts        # Artifact indexing
-├── retriever.ts      # Context retrieval
-└── index.ts          # Public API
+├── types.ts          # All type definitions (no implementation)
+├── errors.ts         # Error classes and error handling utilities
+├── config.ts         # Configuration schema and loading
+├── ollama.ts         # Ollama client with AbortController/timeout
+├── store.ts          # SQLite/vec storage with parameterized queries
+├── indexer.ts        # File indexing with concurrency control
+├── retriever.ts      # Context retrieval with fallback
+├── fallback.ts       # Keyword fallback implementation
+├── compound.ts       # Main ContextCompound class
+└── index.ts          # Public API exports
 
 src/commands/
-└── context.ts        # CLI command
+└── context.ts        # CLI command implementation
+
+src/lib/context-compound/__tests__/
+├── ollama.test.ts
+├── store.test.ts
+├── indexer.test.ts
+├── retriever.test.ts
+└── integration.test.ts
 ```
 
 ## Dependencies
 
-**New dev dependencies:**
-- `@types/better-sqlite3` (if using better-sqlite3)
+**New dependencies:**
+```bash
+# Runtime dependencies
+pnpm add sqlite-vec better-sqlite3
 
-**New runtime dependencies:**
-- None (use built-in `fetch` for Ollama API)
+# Dev dependencies
+pnpm add -D @types/better-sqlite3 msw
+```
+
+**Alternative: Zero-dependency approach (MVP):**
+If keeping dependencies minimal is prioritized, use:
+- Native `fetch` for Ollama API
+- Native `node:sqlite` (Node.js 22+) or `better-sqlite3` if already in project
+- Implement basic vector operations without sqlite-vec (slower but no new deps)
 
 **Optional system dependency:**
 - Ollama (auto-detected, not required)
+
+**Dependency Justification:**
+| Package | Purpose | Alternative |
+|---------|---------|-------------|
+| `sqlite-vec` | Fast cosine similarity search | Native cosine calculation (slower) |
+| `better-sqlite3` | Synchronous SQLite access | `node:sqlite` (Node 22+) |
+| `msw` | Mock Service Worker for tests | Manual fetch mocking |
 
 ## Testing Strategy
 
@@ -235,6 +345,226 @@ src/commands/
 - [ ] Relevance score > 0.70 for obviously related topics
 - [ ] Zero errors when Ollama unavailable (fallback works)
 - [ ] Test coverage > 80%
+
+## Implementation Example: Complete Flow
+
+**Ollama Client with Error Handling:**
+```typescript
+// src/lib/context-compound/ollama.ts
+export interface EmbeddingError {
+  readonly code: 'OLLAMA_ERROR' | 'NETWORK_ERROR' | 'TIMEOUT' | 'INVALID_RESPONSE';
+  readonly message: string;
+  readonly retryable: boolean;
+}
+
+export class OllamaClient {
+  private readonly baseUrl: string;
+  private readonly timeoutMs: number;
+  private abortController: AbortController | null = null;
+
+  constructor(options: { baseUrl?: string; timeoutMs?: number } = {}) {
+    this.baseUrl = options.baseUrl ?? 'http://localhost:11434';
+    this.timeoutMs = options.timeoutMs ?? 30000;
+  }
+
+  async isAvailable(): Promise<boolean> {
+    try {
+      const response = await fetch(`${this.baseUrl}/api/tags`, {
+        method: 'GET',
+        signal: AbortSignal.timeout(5000),
+      });
+      return response.ok;
+    } catch {
+      return false;
+    }
+  }
+
+  async embed(text: string): Promise<Result<Float32Array, EmbeddingError>> {
+    this.abortController?.abort();
+    this.abortController = new AbortController();
+    const timeoutId = setTimeout(() => this.abortController?.abort(), this.timeoutMs);
+
+    try {
+      const response = await fetch(`${this.baseUrl}/api/embeddings`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          model: 'nomic-embed-text',
+          prompt: text.slice(0, 8192),
+        }),
+        signal: this.abortController.signal,
+      });
+      clearTimeout(timeoutId);
+
+      if (!response.ok) {
+        return {
+          ok: false,
+          error: {
+            code: 'OLLAMA_ERROR',
+            message: `HTTP ${response.status}`,
+            retryable: response.status >= 500,
+          },
+        };
+      }
+
+      const data = await response.json() as { embedding: number[] };
+
+      if (!Array.isArray(data.embedding) || data.embedding.length !== 768) {
+        return {
+          ok: false,
+          error: {
+            code: 'INVALID_RESPONSE',
+            message: `Invalid embedding: expected 768 dimensions, got ${data.embedding?.length}`,
+            retryable: false,
+          },
+        };
+      }
+
+      return { ok: true, value: new Float32Array(data.embedding) };
+    } catch (error) {
+      clearTimeout(timeoutId);
+      return {
+        ok: false,
+        error: {
+          code: error instanceof Error && error.name === 'AbortError' ? 'TIMEOUT' : 'NETWORK_ERROR',
+          message: error instanceof Error ? error.message : 'Unknown error',
+          retryable: true,
+        },
+      };
+    }
+  }
+}
+```
+
+**Store with Parameterized Queries:**
+```typescript
+// src/lib/context-compound/store.ts
+export class VectorStore {
+  private db: Database.Database | null = null;
+
+  constructor(private readonly dbPath: string) {}
+
+  init(): Result<void, StoreError> {
+    try {
+      this.db = new Database(this.dbPath);
+      this.db.pragma('journal_mode = WAL');
+      sqliteVec.load(this.db);
+
+      this.db.exec(`
+        CREATE TABLE IF NOT EXISTS documents (
+          path TEXT PRIMARY KEY,
+          content_hash TEXT NOT NULL,
+          type TEXT NOT NULL,
+          topic TEXT,
+          date TEXT NOT NULL,
+          indexed_at TEXT NOT NULL
+        );
+
+        CREATE VIRTUAL TABLE IF NOT EXISTS vec_documents USING vec0(
+          path TEXT PRIMARY KEY,
+          embedding float[768] distance_metric=cosine
+        );
+      `);
+
+      return { ok: true, value: undefined };
+    } catch (error) {
+      return {
+        ok: false,
+        error: {
+          code: 'DB_ERROR',
+          message: `Failed to initialize: ${error instanceof Error ? error.message : 'Unknown'}`,
+        },
+      };
+    }
+  }
+
+  insert(record: EmbeddingRecord): Result<void, StoreError> {
+    if (!this.db) {
+      return { ok: false, error: { code: 'DB_ERROR', message: 'Not initialized' } };
+    }
+
+    const insert = this.db.transaction(() => {
+      this.db!.prepare(`
+        INSERT OR REPLACE INTO documents (path, content_hash, type, topic, date, indexed_at)
+        VALUES (?, ?, ?, ?, ?, ?)
+      `).run(
+        record.path,
+        record.contentHash,
+        record.metadata.type,
+        record.metadata.topic,
+        record.metadata.date,
+        record.indexedAt.toISOString()
+      );
+
+      this.db!.prepare(`
+        INSERT OR REPLACE INTO vec_documents (path, embedding)
+        VALUES (?, ?)
+      `).run(record.path, record.embedding);
+    });
+
+    try {
+      insert();
+      return { ok: true, value: undefined };
+    } catch (error) {
+      return {
+        ok: false,
+        error: {
+          code: 'DB_ERROR',
+          message: `Insert failed: ${error instanceof Error ? error.message : 'Unknown'}`,
+        },
+      };
+    }
+  }
+
+  search(
+    queryEmbedding: Float32Array,
+    options: { limit?: number; threshold?: number } = {}
+  ): Result<Array<{ path: string; similarity: number }>, StoreError> {
+    if (!this.db) {
+      return { ok: false, error: { code: 'DB_ERROR', message: 'Not initialized' } };
+    }
+
+    const { limit = 10, threshold = 0.7 } = options;
+    const maxDistance = 2 * (1 - threshold); // Convert similarity to distance
+
+    try {
+      const stmt = this.db.prepare(`
+        SELECT path, distance
+        FROM vec_documents
+        WHERE embedding MATCH ? AND distance <= ?
+        ORDER BY distance
+        LIMIT ?
+      `);
+
+      const rows = stmt.all(queryEmbedding, maxDistance, limit) as Array<{
+        path: string;
+        distance: number;
+      }>;
+
+      return {
+        ok: true,
+        value: rows.map((row) => ({
+          path: row.path,
+          similarity: 1 - row.distance / 2,
+        })),
+      };
+    } catch (error) {
+      return {
+        ok: false,
+        error: {
+          code: 'DB_ERROR',
+          message: `Search failed: ${error instanceof Error ? error.message : 'Unknown'}`,
+        },
+      };
+    }
+  }
+
+  close(): void {
+    this.db?.close();
+    this.db = null;
+  }
+}
+```
 
 ## Future Work (Phase 2)
 
