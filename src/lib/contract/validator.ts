@@ -1,23 +1,23 @@
 import type {
-	EvidencePolicy,
 	DiffBudget,
-	HarnessContract,
-	MergePolicy,
-	RemediationPolicy,
-	GapCasePolicy,
-	PackageManagerPolicy,
-	MemoryPolicy,
-	MemoryMaintenancePolicy,
-	MemoryEvalPolicy,
-	ObservabilityPolicy,
-	RuntimePolicy,
-	UILoopPolicy,
-	ImageFormat,
-	UILoopSLO,
 	DocsDriftRules,
+	EvidencePolicy,
+	GapCasePolicy,
+	HarnessContract,
+	ImageFormat,
+	MemoryEvalPolicy,
+	MemoryMaintenancePolicy,
+	MemoryPolicy,
+	MergePolicy,
+	ObservabilityPolicy,
+	PackageManagerPolicy,
+	RemediationPolicy,
 	ReviewPolicy,
 	RiskTier,
+	RuntimePolicy,
 	TimeoutAction,
+	UILoopPolicy,
+	UILoopSLO,
 } from "./types.js";
 
 const VALID_RISK_TIERS: RiskTier[] = ["high", "medium", "low"];
@@ -73,7 +73,10 @@ const VALID_MEMORY_EVAL_POLICY_KEYS = [
 	"requiredMetrics",
 	"passPowKThreshold",
 ] as const;
-const VALID_OBSERVABILITY_POLICY_KEYS = ["provider", "collectorEndpoint"] as const;
+const VALID_OBSERVABILITY_POLICY_KEYS = [
+	"provider",
+	"collectorEndpoint",
+] as const;
 const VALID_PACKAGE_MANAGER_POLICY_KEYS = [
 	"allowedManagers",
 	"requiredManager",
@@ -125,9 +128,7 @@ function hasForbiddenKey(value: string): boolean {
 	return FORBIDDEN_KEYS.includes(value as (typeof FORBIDDEN_KEYS)[number]);
 }
 
-function isPlainObject(
-	value: unknown,
-): value is Record<string, unknown> {
+function isPlainObject(value: unknown): value is Record<string, unknown> {
 	return typeof value === "object" && value !== null && !Array.isArray(value);
 }
 
@@ -220,8 +221,7 @@ function isValidDiffBudget(value: unknown): value is DiffBudget {
 	}
 
 	const invalidKeys = Object.keys(budget).filter(
-		(key) =>
-			!["maxFiles", "maxNetLOC", "overrideLabel"].includes(key),
+		(key) => !["maxFiles", "maxNetLOC", "overrideLabel"].includes(key),
 	);
 	if (invalidKeys.length > 0) {
 		return false;
@@ -237,7 +237,9 @@ function isValidUILoopSLO(value: unknown): value is UILoopSLO {
 	if (
 		Object.keys(slo).length !== VALID_SLO_TARGET_KEYS.length ||
 		!Object.keys(slo).every((key) =>
-			VALID_SLO_TARGET_KEYS.includes(key as (typeof VALID_SLO_TARGET_KEYS)[number]),
+			VALID_SLO_TARGET_KEYS.includes(
+				key as (typeof VALID_SLO_TARGET_KEYS)[number],
+			),
 		)
 	) {
 		return false;
@@ -264,18 +266,29 @@ function isValidUILoopPolicy(value: unknown): value is UILoopPolicy {
 	if (
 		Object.keys(policy).length !== VALID_UI_LOOP_POLICY_KEYS.length ||
 		!Object.keys(policy).every((key) =>
-			VALID_UI_LOOP_POLICY_KEYS.includes(key as (typeof VALID_UI_LOOP_POLICY_KEYS)[number]),
+			VALID_UI_LOOP_POLICY_KEYS.includes(
+				key as (typeof VALID_UI_LOOP_POLICY_KEYS)[number],
+			),
 		)
 	) {
 		return false;
 	}
-	if (typeof policy.fastCommand !== "string" || policy.fastCommand.length === 0) {
+	if (
+		typeof policy.fastCommand !== "string" ||
+		policy.fastCommand.length === 0
+	) {
 		return false;
 	}
-	if (typeof policy.verifyCommand !== "string" || policy.verifyCommand.length === 0) {
+	if (
+		typeof policy.verifyCommand !== "string" ||
+		policy.verifyCommand.length === 0
+	) {
 		return false;
 	}
-	if (typeof policy.exploreCommand !== "string" || policy.exploreCommand.length === 0) {
+	if (
+		typeof policy.exploreCommand !== "string" ||
+		policy.exploreCommand.length === 0
+	) {
 		return false;
 	}
 
@@ -288,12 +301,17 @@ function isValidRuntimePolicy(value: unknown): value is RuntimePolicy {
 
 	const invalidKeys = Object.keys(policy).filter(
 		(key) =>
-			!VALID_RUNTIME_POLICY_KEYS.includes(key as (typeof VALID_RUNTIME_POLICY_KEYS)[number]),
+			!VALID_RUNTIME_POLICY_KEYS.includes(
+				key as (typeof VALID_RUNTIME_POLICY_KEYS)[number],
+			),
 	);
 	if (invalidKeys.length > 0) {
 		return false;
 	}
-	if (typeof policy.nodeVersion !== "string" || policy.nodeVersion.length === 0) {
+	if (
+		typeof policy.nodeVersion !== "string" ||
+		policy.nodeVersion.length === 0
+	) {
 		return false;
 	}
 	return true;
@@ -305,33 +323,49 @@ function isValidMemoryPolicy(value: unknown): value is MemoryPolicy {
 
 	const invalidKeys = Object.keys(policy).filter(
 		(key) =>
-			!VALID_MEMORY_POLICY_KEYS.includes(key as (typeof VALID_MEMORY_POLICY_KEYS)[number]),
+			!VALID_MEMORY_POLICY_KEYS.includes(
+				key as (typeof VALID_MEMORY_POLICY_KEYS)[number],
+			),
 	);
 	if (invalidKeys.length > 0) {
 		return false;
 	}
 
 	if (typeof policy.enabled !== "boolean") return false;
-	if (typeof policy.provider !== "string" || policy.provider.length === 0) return false;
+	if (typeof policy.provider !== "string" || policy.provider.length === 0)
+		return false;
 	if (
 		typeof policy.sessionIdTemplate !== "string" ||
 		policy.sessionIdTemplate.length === 0
 	)
 		return false;
-	if (typeof policy.domain !== "string" || policy.domain.length === 0) return false;
+	if (typeof policy.domain !== "string" || policy.domain.length === 0)
+		return false;
 	if (!Array.isArray(policy.requiredTags)) return false;
-	if (!policy.requiredTags.every((value) => typeof value === "string")) return false;
-	if (typeof policy.maxObservationsPerStep !== "number" || !Number.isInteger(policy.maxObservationsPerStep) || policy.maxObservationsPerStep < 0) return false;
+	if (!policy.requiredTags.every((value) => typeof value === "string"))
+		return false;
+	if (
+		typeof policy.maxObservationsPerStep !== "number" ||
+		!Number.isInteger(policy.maxObservationsPerStep) ||
+		policy.maxObservationsPerStep < 0
+	)
+		return false;
 	if (!Array.isArray(policy.allowedLevels)) return false;
-	if (!policy.allowedLevels.every((value) => typeof value === "string")) return false;
+	if (!policy.allowedLevels.every((value) => typeof value === "string"))
+		return false;
 	if (typeof policy.requireStartRead !== "boolean") return false;
 	if (typeof policy.requireCloseoutSummary !== "boolean") return false;
 	if (!Array.isArray(policy.forbiddenContentPatterns)) return false;
-	if (!policy.forbiddenContentPatterns.every((value) => typeof value === "string")) return false;
+	if (
+		!policy.forbiddenContentPatterns.every((value) => typeof value === "string")
+	)
+		return false;
 	return true;
 }
 
-function isValidMemoryMaintenancePolicy(value: unknown): value is MemoryMaintenancePolicy {
+function isValidMemoryMaintenancePolicy(
+	value: unknown,
+): value is MemoryMaintenancePolicy {
 	if (!isPlainObject(value)) return false;
 	const policy = value as Record<string, unknown>;
 
@@ -344,10 +378,28 @@ function isValidMemoryMaintenancePolicy(value: unknown): value is MemoryMaintena
 	if (invalidKeys.length > 0) {
 		return false;
 	}
-	if (typeof policy.validateSchedule !== "string" || policy.validateSchedule.length === 0) return false;
-	if (typeof policy.reflectSchedule !== "string" || policy.reflectSchedule.length === 0) return false;
-	if (typeof policy.questionSlaDays !== "number" || !Number.isInteger(policy.questionSlaDays) || policy.questionSlaDays < 0) return false;
-	if (typeof policy.duplicateThreshold !== "number" || policy.duplicateThreshold < 0 || policy.duplicateThreshold > 1) return false;
+	if (
+		typeof policy.validateSchedule !== "string" ||
+		policy.validateSchedule.length === 0
+	)
+		return false;
+	if (
+		typeof policy.reflectSchedule !== "string" ||
+		policy.reflectSchedule.length === 0
+	)
+		return false;
+	if (
+		typeof policy.questionSlaDays !== "number" ||
+		!Number.isInteger(policy.questionSlaDays) ||
+		policy.questionSlaDays < 0
+	)
+		return false;
+	if (
+		typeof policy.duplicateThreshold !== "number" ||
+		policy.duplicateThreshold < 0 ||
+		policy.duplicateThreshold > 1
+	)
+		return false;
 	return true;
 }
 
@@ -357,19 +409,34 @@ function isValidMemoryEvalPolicy(value: unknown): value is MemoryEvalPolicy {
 
 	const invalidKeys = Object.keys(policy).filter(
 		(key) =>
-			!VALID_MEMORY_EVAL_POLICY_KEYS.includes(key as (typeof VALID_MEMORY_EVAL_POLICY_KEYS)[number]),
+			!VALID_MEMORY_EVAL_POLICY_KEYS.includes(
+				key as (typeof VALID_MEMORY_EVAL_POLICY_KEYS)[number],
+			),
 	);
 	if (invalidKeys.length > 0) {
 		return false;
 	}
-	if (typeof policy.trialsPerTask !== "number" || !Number.isInteger(policy.trialsPerTask) || policy.trialsPerTask < 0) return false;
+	if (
+		typeof policy.trialsPerTask !== "number" ||
+		!Number.isInteger(policy.trialsPerTask) ||
+		policy.trialsPerTask < 0
+	)
+		return false;
 	if (!Array.isArray(policy.requiredMetrics)) return false;
-	if (!policy.requiredMetrics.every((value) => typeof value === "string")) return false;
-	if (typeof policy.passPowKThreshold !== "number" || policy.passPowKThreshold < 0 || policy.passPowKThreshold > 1) return false;
+	if (!policy.requiredMetrics.every((value) => typeof value === "string"))
+		return false;
+	if (
+		typeof policy.passPowKThreshold !== "number" ||
+		policy.passPowKThreshold < 0 ||
+		policy.passPowKThreshold > 1
+	)
+		return false;
 	return true;
 }
 
-function isValidObservabilityPolicy(value: unknown): value is ObservabilityPolicy {
+function isValidObservabilityPolicy(
+	value: unknown,
+): value is ObservabilityPolicy {
 	if (!isPlainObject(value)) return false;
 	const policy = value as Record<string, unknown>;
 
@@ -382,8 +449,12 @@ function isValidObservabilityPolicy(value: unknown): value is ObservabilityPolic
 	if (invalidKeys.length > 0) {
 		return false;
 	}
-	if (typeof policy.provider !== "string" || policy.provider.length === 0) return false;
-	if (typeof policy.collectorEndpoint !== "string" || policy.collectorEndpoint.length === 0) {
+	if (typeof policy.provider !== "string" || policy.provider.length === 0)
+		return false;
+	if (
+		typeof policy.collectorEndpoint !== "string" ||
+		policy.collectorEndpoint.length === 0
+	) {
 		return false;
 	}
 	try {
@@ -394,7 +465,9 @@ function isValidObservabilityPolicy(value: unknown): value is ObservabilityPolic
 	return true;
 }
 
-function isValidPackageManagerPolicy(value: unknown): value is PackageManagerPolicy {
+function isValidPackageManagerPolicy(
+	value: unknown,
+): value is PackageManagerPolicy {
 	if (!isPlainObject(value)) return false;
 	const policy = value as Record<string, unknown>;
 
@@ -408,10 +481,12 @@ function isValidPackageManagerPolicy(value: unknown): value is PackageManagerPol
 		return false;
 	}
 	if (!Array.isArray(policy.allowedManagers)) return false;
-	if (!policy.allowedManagers.every((value) => typeof value === "string")) return false;
+	if (!policy.allowedManagers.every((value) => typeof value === "string"))
+		return false;
 	if (
 		policy.requiredManager === undefined ||
-		(typeof policy.requiredManager !== "string" && policy.requiredManager !== null)
+		(typeof policy.requiredManager !== "string" &&
+			policy.requiredManager !== null)
 	) {
 		return false;
 	}
@@ -496,11 +571,15 @@ function isValidGapCasePolicy(value: unknown): value is GapCasePolicy {
 		return false;
 	}
 	if (!Array.isArray(policy.requiredEvidenceStatuses)) return false;
-	if (!policy.requiredEvidenceStatuses.every((value) => typeof value === "string")) {
+	if (
+		!policy.requiredEvidenceStatuses.every((value) => typeof value === "string")
+	) {
 		return false;
 	}
 	if (!Array.isArray(policy.requiredCloseReasons)) return false;
-	if (!policy.requiredCloseReasons.every((value) => typeof value === "string")) {
+	if (
+		!policy.requiredCloseReasons.every((value) => typeof value === "string")
+	) {
 		return false;
 	}
 	if (
@@ -510,7 +589,10 @@ function isValidGapCasePolicy(value: unknown): value is GapCasePolicy {
 	) {
 		return false;
 	}
-	if (typeof policy.caseIdPrefix !== "string" || policy.caseIdPrefix.length === 0) {
+	if (
+		typeof policy.caseIdPrefix !== "string" ||
+		policy.caseIdPrefix.length === 0
+	) {
 		return false;
 	}
 	if (typeof policy.caseStore !== "string" || policy.caseStore.length === 0) {
@@ -538,7 +620,10 @@ function isValidMergePolicy(value: unknown): value is MergePolicy {
 		}
 	}
 	const disallowedKeys = Object.keys(policy).filter(
-		(key) => !VALID_MERGE_POLICY_VALUE_KEYS.includes(key as (typeof VALID_MERGE_POLICY_VALUE_KEYS)[number]),
+		(key) =>
+			!VALID_MERGE_POLICY_VALUE_KEYS.includes(
+				key as (typeof VALID_MERGE_POLICY_VALUE_KEYS)[number],
+			),
 	);
 	if (disallowedKeys.length > 0) {
 		return false;
@@ -564,7 +649,10 @@ function isValidTopLevel(
 	errors: ValidationError[],
 ): void {
 	const unknownKeys = Object.keys(data).filter(
-		(key) => !VALID_TOP_LEVEL_KEYS.includes(key as (typeof VALID_TOP_LEVEL_KEYS)[number]),
+		(key) =>
+			!VALID_TOP_LEVEL_KEYS.includes(
+				key as (typeof VALID_TOP_LEVEL_KEYS)[number],
+			),
 	);
 	for (const key of unknownKeys) {
 		errors.push({
@@ -581,8 +669,7 @@ export function isValidEvidencePolicy(value: unknown): value is EvidencePolicy {
 	const policy = value as Record<string, unknown>;
 
 	const invalidKeys = Object.keys(policy).filter(
-		(key) =>
-			!["requiredFor", "allowedTypes", "maxFileSizeBytes"].includes(key),
+		(key) => !["requiredFor", "allowedTypes", "maxFileSizeBytes"].includes(key),
 	);
 	if (invalidKeys.length > 0) {
 		return false;
@@ -700,7 +787,8 @@ export function validateContract(
 				path: "mergePolicy",
 				message:
 					"mergePolicy must be an object of severity keys (high/medium/low) mapped to string arrays",
-				expected: "{ high: ['review-gate', ...], medium: ['review-gate'], low: [] }",
+				expected:
+					"{ high: ['review-gate', ...], medium: ['review-gate'], low: [] }",
 				received: JSON.stringify(obj.mergePolicy),
 				fix: "Ensure mergePolicy has only valid severity keys and array values",
 			});
@@ -736,7 +824,8 @@ export function validateContract(
 				path: "diffBudget",
 				message:
 					"diffBudget must include maxFiles, maxNetLOC, and optional overrideLabel",
-				expected: "{ maxFiles: number, maxNetLOC: number, overrideLabel?: string }",
+				expected:
+					"{ maxFiles: number, maxNetLOC: number, overrideLabel?: string }",
 				received: JSON.stringify(obj.diffBudget),
 				fix: "Provide integer maxFiles and maxNetLOC values",
 			});
@@ -829,8 +918,7 @@ export function validateContract(
 				code: ValidationErrorCode.INVALID_VALUE,
 				path: "memoryEvalPolicy",
 				message: "memoryEvalPolicy fields are invalid",
-				expected:
-					"{ trialsPerTask, requiredMetrics, passPowKThreshold }",
+				expected: "{ trialsPerTask, requiredMetrics, passPowKThreshold }",
 				received: JSON.stringify(obj.memoryEvalPolicy),
 				fix: "Use a fully-populated memoryEvalPolicy object",
 			});
@@ -865,13 +953,13 @@ export function validateContract(
 				path: "packageManagerPolicy",
 				message:
 					"packageManagerPolicy requires allowedManagers and optional requiredManager",
-				expected: "{ allowedManagers: string[], requiredManager: string | null }",
+				expected:
+					"{ allowedManagers: string[], requiredManager: string | null }",
 				received: JSON.stringify(obj.packageManagerPolicy),
 				fix: "Ensure packageManagerPolicy has only allowedManager keys and value types",
 			});
 		} else {
-			packageManagerPolicy =
-				obj.packageManagerPolicy as PackageManagerPolicy;
+			packageManagerPolicy = obj.packageManagerPolicy as PackageManagerPolicy;
 		}
 	}
 

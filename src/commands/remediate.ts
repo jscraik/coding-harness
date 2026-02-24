@@ -100,7 +100,8 @@ export function runRemediate(options: RemediateOptions): RemediateResult {
 				ok: false,
 				error: {
 					code: "E_VALIDATION",
-					message: "Invalid required option: --provider must be codeql or codex",
+					message:
+						"Invalid required option: --provider must be codeql or codex",
 				},
 			};
 		}

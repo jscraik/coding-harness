@@ -5,20 +5,20 @@ import { runBrainstormGateCLI } from "./commands/brainstorm-gate.js";
 import { runContextCLI } from "./commands/context.js";
 import { runDiffBudgetCLI } from "./commands/diff-budget.js";
 import { runEvidenceVerifyCLI } from "./commands/evidence-verify.js";
+import { type GapSeverity, runGapCaseCLI } from "./commands/gap-case.js";
 import { runGardenerCLI } from "./commands/gardener.js";
 import { runIndexContextCLI } from "./commands/index-context.js";
 import { runInitCLI, runInteractiveInitCLI } from "./commands/init.js";
 import { runMemoryGateCLI } from "./commands/memory-gate.js";
 import { runObservabilityGateCLI } from "./commands/observability-gate.js";
 import { runPlanGateCLI } from "./commands/plan-gate.js";
-import { runGapCaseCLI, type GapSeverity } from "./commands/gap-case.js";
 import { runPreflightGateCLI } from "./commands/preflight-gate.js";
 import { runPromptGateCLI } from "./commands/prompt-gate.js";
+import { runRemediateCLI } from "./commands/remediate.js";
 import { runReplayCLI } from "./commands/replay.js";
 import { runReviewGateCLI } from "./commands/review-gate.js";
 import { runRiskTierCLI } from "./commands/risk-tier.js";
 import { runSilentErrorDetectorCLI } from "./commands/silent-error.js";
-import { runRemediateCLI } from "./commands/remediate.js";
 import {
 	runUIExploreCLI,
 	runUIFastCLI,
@@ -64,8 +64,12 @@ function printUsage(): void {
 	console.info(
 		"  blast-radius     Determine required checks from changed files",
 	);
-	console.info("  remediate        Auto-plan and execute deterministic remediation");
-	console.info("  gap-case         Manage production gap cases (create/list/resolve)");
+	console.info(
+		"  remediate        Auto-plan and execute deterministic remediation",
+	);
+	console.info(
+		"  gap-case         Manage production gap cases (create/list/resolve)",
+	);
 	console.info("  observability-gate  Check cardinality limits in metrics");
 	console.info("  diff-budget      Enforce diff budget constraints");
 	console.info("  ui:fast          Storybook-first local development loop");
@@ -868,7 +872,9 @@ export function run(args: string[]): void {
 	if (command === "remediate") {
 		const mode = args[1];
 		if (mode !== "run" && mode !== "apply") {
-			console.error("Error: remediate command requires subcommand `run` or `apply`");
+			console.error(
+				"Error: remediate command requires subcommand `run` or `apply`",
+			);
 			process.exit(2);
 			return;
 		}
@@ -890,13 +896,14 @@ export function run(args: string[]): void {
 
 		const exitCode = runRemediateCLI({
 			mode,
-			owner: ownerIndex !== -1 ? args[ownerIndex + 1] ?? "" : "",
-			repo: repoIndex !== -1 ? args[repoIndex + 1] ?? "" : "",
+			owner: ownerIndex !== -1 ? (args[ownerIndex + 1] ?? "") : "",
+			repo: repoIndex !== -1 ? (args[repoIndex + 1] ?? "") : "",
 			prNumber: parseIntegerArg(prValue, 1) ?? 0,
-			headSha: shaIndex !== -1 ? args[shaIndex + 1] ?? "" : "",
-			provider: (providerIndex !== -1
-				? (args[providerIndex + 1] as "codeql" | "codex" | undefined)
-				: undefined) ?? "codeql",
+			headSha: shaIndex !== -1 ? (args[shaIndex + 1] ?? "") : "",
+			provider:
+				(providerIndex !== -1
+					? (args[providerIndex + 1] as "codeql" | "codex" | undefined)
+					: undefined) ?? "codeql",
 			dryRun: dryRunFlag,
 			noInput: noInputFlag,
 			force: forceFlag,
@@ -916,7 +923,8 @@ export function run(args: string[]): void {
 		const action = args[1];
 		const jsonFlag = args.includes("--json");
 		const caseStoreIndex = args.indexOf("--case-store");
-		const caseStore = caseStoreIndex !== -1 ? args[caseStoreIndex + 1] : undefined;
+		const caseStore =
+			caseStoreIndex !== -1 ? args[caseStoreIndex + 1] : undefined;
 
 		if (action !== "create" && action !== "list" && action !== "resolve") {
 			console.error(
@@ -945,25 +953,26 @@ export function run(args: string[]): void {
 
 			const exitCode = runGapCaseCLI({
 				action: "create",
-				incidentId: incidentIndex !== -1 ? args[incidentIndex + 1] ?? "" : "",
-				owner: ownerIndex !== -1 ? args[ownerIndex + 1] ?? "" : "",
+				incidentId: incidentIndex !== -1 ? (args[incidentIndex + 1] ?? "") : "",
+				owner: ownerIndex !== -1 ? (args[ownerIndex + 1] ?? "") : "",
 				severity:
 					severityIndex !== -1
 						? ((args[severityIndex + 1] as GapSeverity | undefined) ?? "low")
 						: "low",
-				linkedPr:
-					linkedPrIndex !== -1 ? args[linkedPrIndex + 1] ?? "" : "",
+				linkedPr: linkedPrIndex !== -1 ? (args[linkedPrIndex + 1] ?? "") : "",
 				findingSummary:
 					findingSummaryIndex !== -1
-						? args[findingSummaryIndex + 1] ?? undefined
+						? (args[findingSummaryIndex + 1] ?? undefined)
 						: undefined,
 				dueDays: parsedDueDays,
-				caseId: caseIdIndex !== -1 ? args[caseIdIndex + 1] ?? undefined : undefined,
+				caseId:
+					caseIdIndex !== -1 ? (args[caseIdIndex + 1] ?? undefined) : undefined,
 				caseIdPrefix:
 					caseIdPrefixIndex !== -1
-						? args[caseIdPrefixIndex + 1] ?? undefined
+						? (args[caseIdPrefixIndex + 1] ?? undefined)
 						: undefined,
-				evidence: evidenceIndex !== -1 ? parseCsvList(args[evidenceIndex + 1]) : [],
+				evidence:
+					evidenceIndex !== -1 ? parseCsvList(args[evidenceIndex + 1]) : [],
 				caseStore,
 				json: jsonFlag,
 			});
@@ -985,10 +994,11 @@ export function run(args: string[]): void {
 			return;
 		}
 
-		const positionalCaseId = args[2] && !args[2].startsWith("--") ? args[2] : "";
+		const positionalCaseId =
+			args[2] && !args[2].startsWith("--") ? args[2] : "";
 		const caseIdArgIndex = args.indexOf("--case-id");
 		const caseIdArg =
-			caseIdArgIndex !== -1 ? args[caseIdArgIndex + 1] ?? "" : "";
+			caseIdArgIndex !== -1 ? (args[caseIdArgIndex + 1] ?? "") : "";
 		if (positionalCaseId && caseIdArg && positionalCaseId !== caseIdArg) {
 			console.error("Error: positional case id and --case-id must match");
 			process.exit(2);
@@ -1011,12 +1021,16 @@ export function run(args: string[]): void {
 		const exitCode = runGapCaseCLI({
 			action: "resolve",
 			caseId,
-			incidentId: incidentIndex !== -1 ? args[incidentIndex + 1] ?? "" : "",
-			resolvedBy: resolvedByIndex !== -1 ? args[resolvedByIndex + 1] ?? "" : "",
-			linkedPr: linkedPrIndex !== -1 ? args[linkedPrIndex + 1] ?? "" : "",
-			evidence: evidenceIndex !== -1 ? parseCsvList(args[evidenceIndex + 1]) : [],
+			incidentId: incidentIndex !== -1 ? (args[incidentIndex + 1] ?? "") : "",
+			resolvedBy:
+				resolvedByIndex !== -1 ? (args[resolvedByIndex + 1] ?? "") : "",
+			linkedPr: linkedPrIndex !== -1 ? (args[linkedPrIndex + 1] ?? "") : "",
+			evidence:
+				evidenceIndex !== -1 ? parseCsvList(args[evidenceIndex + 1]) : [],
 			closeReason:
-				closeReasonIndex !== -1 ? args[closeReasonIndex + 1] ?? undefined : undefined,
+				closeReasonIndex !== -1
+					? (args[closeReasonIndex + 1] ?? undefined)
+					: undefined,
 			force: forceFlag,
 			caseStore,
 			json: jsonFlag,

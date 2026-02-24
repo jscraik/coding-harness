@@ -844,14 +844,14 @@ describe("--migrate flag", () => {
 
 	it("succeeds when contract is already at latest version", () => {
 		// Create a contract at the current version
-			writeFileSync(
-				join(tempDir, "harness.contract.json"),
-				JSON.stringify({
-					version: "1.2.0",
-					riskTierRules: {},
-					reviewPolicy: { timeoutSeconds: 600, timeoutAction: "fail" },
-				}),
-			);
+		writeFileSync(
+			join(tempDir, "harness.contract.json"),
+			JSON.stringify({
+				version: "1.2.0",
+				riskTierRules: {},
+				reviewPolicy: { timeoutSeconds: 600, timeoutAction: "fail" },
+			}),
+		);
 
 		const result = runInit(tempDir, {
 			dryRun: false,
@@ -866,7 +866,7 @@ describe("--migrate flag", () => {
 		}
 	});
 
-		it("migrates legacy 1.0.0 contracts to 1.2.0", () => {
+	it("migrates legacy 1.0.0 contracts to 1.2.0", () => {
 		writeFileSync(
 			join(tempDir, "harness.contract.json"),
 			JSON.stringify({
@@ -973,8 +973,8 @@ describe("--migrate flag", () => {
 
 	it("preserves contract content when already up to date", () => {
 		// Create a contract at current version with customizations
-			const originalContent = {
-				version: "1.2.0",
+		const originalContent = {
+			version: "1.2.0",
 			riskTierRules: { "src/api/*": "medium" },
 			reviewPolicy: { timeoutSeconds: 900, timeoutAction: "fail" },
 		};

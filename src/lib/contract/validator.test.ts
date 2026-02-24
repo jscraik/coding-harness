@@ -165,11 +165,11 @@ describe("validateContract", () => {
 
 		expect(result.success).toBe(true);
 		expect(result.data?.diffBudget?.maxNetLOC).toBe(500);
-			expect(result.data?.uiLoopPolicy?.fastCommand).toBe("pnpm ui:fast");
-			expect(result.data?.runtimePolicy?.nodeVersion).toBe("20.x");
-			expect(result.data?.remediationPolicy?.timeoutMinutes).toBe(20);
-			expect(result.data?.gapCasePolicy?.caseIdPrefix).toBe("gap-");
-		});
+		expect(result.data?.uiLoopPolicy?.fastCommand).toBe("pnpm ui:fast");
+		expect(result.data?.runtimePolicy?.nodeVersion).toBe("20.x");
+		expect(result.data?.remediationPolicy?.timeoutMinutes).toBe(20);
+		expect(result.data?.gapCasePolicy?.caseIdPrefix).toBe("gap-");
+	});
 
 	it("rejects unknown top-level fields", () => {
 		const result = validateContract({

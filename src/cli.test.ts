@@ -1,9 +1,9 @@
-import { afterEach, describe, expect, it, vi } from "vitest";
-import { parseCsvList, parseIntegerArg, run } from "./cli.js";
-import { join } from "node:path";
 import { randomUUID } from "node:crypto";
 import { existsSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
+import { join } from "node:path";
+import { afterEach, describe, expect, it, vi } from "vitest";
+import { parseCsvList, parseIntegerArg, run } from "./cli.js";
 
 describe("parseIntegerArg", () => {
 	it("parses valid integers and respects minimum", () => {
@@ -157,14 +157,7 @@ describe("run", () => {
 			]),
 		).toThrowError("EXIT_0");
 		expect(() =>
-			run([
-				"gap-case",
-				"list",
-				"--open",
-				"--case-store",
-				storePath,
-				"--json",
-			]),
+			run(["gap-case", "list", "--open", "--case-store", storePath, "--json"]),
 		).toThrowError("EXIT_0");
 		expect(() =>
 			run([

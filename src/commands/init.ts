@@ -13,9 +13,12 @@ import { dirname, resolve, sep } from "node:path";
 import { cwd } from "node:process";
 import { diffLines } from "diff";
 import semver from "semver";
+import {
+	DEFAULT_CONTRACT,
+	type HarnessContract,
+} from "../lib/contract/types.js";
 import { sanitizeError } from "../lib/input/sanitize.js";
 import { getVersion } from "../lib/version.js";
-import { DEFAULT_CONTRACT, type HarnessContract } from "../lib/contract/types.js";
 
 // Exit codes for programmatic consumption
 export const EXIT_CODES = {
@@ -93,10 +96,12 @@ export interface ProposedChange {
 export interface ContractSchema {
 	version: string;
 	riskTierRules?: Record<string, unknown>;
-	reviewPolicy?: {
-		timeoutSeconds: number;
-		timeoutAction: "fail" | "warn";
-	} | undefined;
+	reviewPolicy?:
+		| {
+				timeoutSeconds: number;
+				timeoutAction: "fail" | "warn";
+		  }
+		| undefined;
 	evidencePolicy?: {
 		requiredFor: unknown[];
 		allowedTypes: unknown[];
@@ -157,16 +162,11 @@ function addSchemaDefaults(contract: ContractSchema): ContractSchema {
 		...DEFAULT_CONTRACT,
 		...contract,
 		version: contract.version,
-		riskTierRules:
-			contract.riskTierRules ?? DEFAULT_CONTRACT.riskTierRules,
-		reviewPolicy:
-			contract.reviewPolicy ?? DEFAULT_CONTRACT.reviewPolicy,
-		evidencePolicy:
-			contract.evidencePolicy ?? DEFAULT_CONTRACT.evidencePolicy,
-		mergePolicy:
-			contract.mergePolicy ?? DEFAULT_CONTRACT.mergePolicy,
-		docsDriftRules:
-			contract.docsDriftRules ?? DEFAULT_CONTRACT.docsDriftRules,
+		riskTierRules: contract.riskTierRules ?? DEFAULT_CONTRACT.riskTierRules,
+		reviewPolicy: contract.reviewPolicy ?? DEFAULT_CONTRACT.reviewPolicy,
+		evidencePolicy: contract.evidencePolicy ?? DEFAULT_CONTRACT.evidencePolicy,
+		mergePolicy: contract.mergePolicy ?? DEFAULT_CONTRACT.mergePolicy,
+		docsDriftRules: contract.docsDriftRules ?? DEFAULT_CONTRACT.docsDriftRules,
 		diffBudget: contract.diffBudget ?? DEFAULT_CONTRACT.diffBudget,
 		uiLoopPolicy:
 			(contract.uiLoopPolicy as HarnessContract["uiLoopPolicy"]) ??
@@ -205,9 +205,10 @@ function addSchemaDefaults(contract: ContractSchema): ContractSchema {
  */
 const MIGRATIONS: Migration[] = [
 	{
-	fromVersion: "1.0",
+		fromVersion: "1.0",
 		toVersion: "1.1.0",
-		description: "Normalize v1.0 schema to v1.1.0 and inject default policy surfaces",
+		description:
+			"Normalize v1.0 schema to v1.1.0 and inject default policy surfaces",
 		migrate: (contract) =>
 			({
 				...addSchemaDefaults(contract),
@@ -217,7 +218,8 @@ const MIGRATIONS: Migration[] = [
 	{
 		fromVersion: "1.0.0",
 		toVersion: "1.1.0",
-		description: "Normalize v1.0.0 schema to v1.1.0 and inject default policy surfaces",
+		description:
+			"Normalize v1.0.0 schema to v1.1.0 and inject default policy surfaces",
 		migrate: (contract) =>
 			({
 				...addSchemaDefaults(contract),
@@ -270,7 +272,7 @@ interface Template {
 const TEMPLATES: Template[] = [
 	{
 		path: "harness.contract.json",
-			render: (pm) =>
+		render: (pm) =>
 			JSON.stringify(
 				{
 					version: "1.2.0",

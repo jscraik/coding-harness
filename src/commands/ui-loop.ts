@@ -300,7 +300,8 @@ export function runUIExplore(options: UIExploreOptions = {}): {
 		`npx @agent-browser/cli explore ${url} --output ${outputDir}`;
 
 	if (policy?.exploreCommand) {
-		const command = `${policy.exploreCommand} ${[url, outputDir, ...interactionArgs].join(" ")}`.trim();
+		const command =
+			`${policy.exploreCommand} ${[url, outputDir, ...interactionArgs].join(" ")}`.trim();
 		if (json) {
 			return {
 				exitCode: EXIT_CODES.SUCCESS,

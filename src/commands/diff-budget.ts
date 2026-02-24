@@ -4,10 +4,10 @@
  * Enforces diff budget constraints on PRs.
  */
 
-import { readFileSync } from "node:fs";
 import { spawnSync } from "node:child_process";
-import type { DiffBudget, DiffBudgetOverride } from "../lib/contract/types.js";
+import { readFileSync } from "node:fs";
 import { loadContract } from "../lib/contract/loader.js";
+import type { DiffBudget, DiffBudgetOverride } from "../lib/contract/types.js";
 import {
 	type DiffBudgetCheck,
 	type DiffMetrics,

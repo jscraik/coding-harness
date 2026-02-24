@@ -76,12 +76,7 @@ type GapCaseResultOutput =
 	| { action: "resolve"; caseRecord: GapCaseRecord };
 
 export interface GapCaseError {
-	code:
-		| "E_USAGE"
-		| "E_VALIDATION"
-		| "E_POLICY"
-		| "E_NOT_FOUND"
-		| "E_INTERNAL";
+	code: "E_USAGE" | "E_VALIDATION" | "E_POLICY" | "E_NOT_FOUND" | "E_INTERNAL";
 	message: string;
 	details?: Record<string, unknown>;
 }
@@ -116,8 +111,11 @@ function readCaseStore(filePath: string): GapCaseStore {
 	) {
 		return { version: 1, cases: [] };
 	}
-	const cases = (parsed as { cases: unknown[] }).cases.filter((entry): entry is GapCaseRecord =>
-		typeof entry === "object" && entry !== null && typeof (entry as { id?: unknown }).id === "string",
+	const cases = (parsed as { cases: unknown[] }).cases.filter(
+		(entry): entry is GapCaseRecord =>
+			typeof entry === "object" &&
+			entry !== null &&
+			typeof (entry as { id?: unknown }).id === "string",
 	);
 	return { version: 1, cases };
 }
@@ -188,7 +186,8 @@ export function runGapCase(
 					ok: false,
 					error: {
 						code: "E_USAGE",
-						message: "Invalid required option: --severity must be low|medium|high",
+						message:
+							"Invalid required option: --severity must be low|medium|high",
 					},
 				};
 			}
@@ -275,7 +274,10 @@ export function runGapCase(
 					},
 				};
 			}
-			if (!options.incidentId.trim() || options.incidentId !== target.incidentId) {
+			if (
+				!options.incidentId.trim() ||
+				options.incidentId !== target.incidentId
+			) {
 				return {
 					ok: false,
 					error: {
@@ -392,4 +394,3 @@ export function runGapCaseCLI(
 	}
 	return EXIT_CODES.SUCCESS;
 }
-

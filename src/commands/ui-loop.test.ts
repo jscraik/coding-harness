@@ -1,7 +1,7 @@
 import { existsSync } from "node:fs";
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import { EXIT_CODES, runUIExplore, runUIFast, runUIVerify } from "./ui-loop.js";
 import { loadContract } from "../lib/contract/loader.js";
+import { EXIT_CODES, runUIExplore, runUIFast, runUIVerify } from "./ui-loop.js";
 
 vi.mock("../lib/contract/loader.js", () => ({
 	loadContract: vi.fn(),
