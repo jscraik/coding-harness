@@ -26,31 +26,31 @@ origin: docs/brainstorms/2026-02-24-code-factory-remediation-gap-loop-brainstorm
 - Duplicate remediation attempts on the same SHA need an explicit concurrency guard (state/read-before-write) before commenting to avoid duplicated rerun requests.
 
 ## Table of Contents
-- [Overview](#overview)
-- [Execution Readiness](#execution-readiness)
-- [Objective, boundaries, and assumptions](#objective-boundaries-and-assumptions)
-- [Current-state gap](#current-state-gap)
-- [Execution sequencing](#execution-sequencing)
-- [Phase 0 — prep and risk checkpoints](#phase-0--prep-and-risk-checkpoints)
-- [Phase 1 — contract + command surfaces](#phase-1--contract--command-surfaces)
-- [Phase 2 — deterministic remediation orchestrator](#phase-2--deterministic-remediation-orchestrator)
-- [Phase 3 — gap-case lifecycle](#phase-3--gap-case-lifecycle)
-- [Phase 4 — hardening, rollout, and rollback](#phase-4--hardening-rollout-and-rollback)
-- [Execution checkpoints (must block)](#execution-checkpoints-must-block)
-- [TypeScript command/service boundaries](#typescript-commandservice-boundaries)
-- [Data flow safety blueprint](#data-flow-safety-blueprint)
-- [Task matrix (ordered)](#task-matrix-ordered)
-- [Risk register](#risk-register)
-- [Acceptance criteria](#acceptance-criteria)
-- [Quality gates & evidence capture](#quality-gates--evidence-capture)
-- [Architecture summary](#architecture-summary)
-- [CLI UX and parser contract](#cli-ux-and-parser-contract)
-- [Data model (minimal)](#data-model-minimal)
-- [System impact and failure flow](#system-impact-and-failure-flow)
-- [Success metrics (30-day)](#success-metrics-30-day)
-- [Dependencies](#dependencies)
-- [Documentation plan](#documentation-plan)
-- [Sources and references](#sources-and-references)
+- Overview
+- Execution Readiness
+- Objective, boundaries, and assumptions
+- Current-state gap
+- Recommended order (hard dependency graph)
+- Phase 0 — prep and risk checkpoints
+- Phase 1 — contract + command scaffolding
+- Phase 2 — deterministic remediation orchestration
+- Phase 3 — minimal gap-case lifecycle
+- Phase 4 — hardening, rollout, and rollback
+- Checkpoint CP5 (must-pass)
+- TypeScript command/service boundaries
+- Data flow safety blueprint
+- Task matrix (ordered)
+- Risk register
+- Acceptance criteria
+- Quality gates & risk checkpoints
+- Architecture summary
+- CLI UX and parser contract
+- Data model (minimal)
+- System impact and failure propagation
+- Success Metrics (30-day)
+- Dependencies
+- Documentation plan
+- Sources and references
 
 ## Section Manifest (Deepen target set)
 
@@ -191,7 +191,7 @@ if (command === "help") return printHelp();
 
 | Command syntax | Required args | Optional args | Behavior |
 |---|---|---|---|
-| `harness remediate run --owner <owner> --repo <repo> --pr <pr> --sha <sha> --provider <codeql|codex>` | `owner`, `repo`, `pr`, `sha`, `provider` | `--dry-run`, `--json`, `--plain`, `--max-auto-tier`, `--allow-unsafe`, `--contract`, `--no-input` | Simulate remediation plan, no working-tree write, no PR comment/re-run posting. |
+| `harness remediate run --owner {owner} --repo {repo} --pr {pr} --sha {sha} --provider {codeql-or-codex}` | `owner`, `repo`, `pr`, `sha`, `provider` | `--dry-run`, `--json`, `--plain`, `--max-auto-tier`, `--allow-unsafe`, `--contract`, `--no-input` | Simulate remediation plan, no working-tree write, no PR comment/re-run posting. |
 | `harness remediate apply ...` | same as above | `--force`, `--json`, `--plain`, `--max-auto-tier`, `--allow-unsafe`, `--contract`, `--no-input` | Execute plan and write path changes to PR branch; deterministic preflight/policy gates; commit and verify rerun path. Apply mode always requires networked GitHub access for branch/check operations. `--dry-run` is invalid for apply and must return `E_USAGE`. |
 
 #### Evidence manifest requirements for `gap-case` resolution
@@ -215,17 +215,17 @@ if (command === "help") return printHelp();
 }
 ```
 
-  - `--evidence` accepts `@path/to/evidence.json` (or repeatable list via multiple flags).
-  - Resolution requires at least one `check` item with `status: "pass"` and all required assertions for command.
-  - Unknown schema versions are rejected with `E_VALIDATION` and `retryable: false`.
+- `--evidence` accepts `@path/to/evidence.json` (or repeatable list via multiple flags).
+- Resolution requires at least one `check` item with `status: "pass"` and all required assertions for command.
+- Unknown schema versions are rejected with `E_VALIDATION` and `retryable: false`.
 
 #### `harness gap-case` command contract
 
 | Command syntax | Required args | Optional args | Behavior |
 |---|---|---|---|
-| `harness gap-case create --incident-id <id> --owner <owner> --severity <low|medium|high> --linked-pr <org/repo#PR> --due-days <n>` | `incident-id`, `owner`, `severity`, `linked-pr` | `--finding-summary`, `--evidence`, `--require-evidence` | Create canonical gap case with deterministic generated case ID and SLA target. |
-| `harness gap-case list` | none | `--open`, `--overdue`, `--json`, `--plain`, `--output <json|table>` | List cases; overdue computed on read-time from `dueAt`. |
-| `harness gap-case resolve <case-id> --incident-id <id> --resolved-by <owner> --linked-pr <org/repo#PR> --evidence <files>` (or `harness gap-case resolve --case-id <id> ...`) | `case-id` (positional or `--case-id`), `incident-id`, `resolved-by`, `linked-pr` | `--force`, `--json`, `--plain` | Resolution requires evidence verification and linked PR check. |
+| `harness gap-case create --incident-id {id} --owner {owner} --severity {low-medium-high} --linked-pr {org/repo#pr} --due-days {n}` | `incident-id`, `owner`, `severity`, `linked-pr` | `--finding-summary`, `--evidence`, `--require-evidence` | Create canonical gap case with deterministic generated case ID and SLA target. |
+| `harness gap-case list` | none | `--open`, `--overdue`, `--json`, `--plain`, `--output {json-or-table}` | List cases; overdue computed on read-time from `dueAt`. |
+| `harness gap-case resolve --case-id {id} --incident-id {incident} --resolved-by {owner} --linked-pr {org/repo#pr} --evidence {files}` | `case-id`, `incident-id`, `resolved-by`, `linked-pr` | `--force`, `--json`, `--plain` | Resolution requires evidence verification and linked PR check. Positional `case-id` remains compatibility-only. |
 
 ### Help and discoverability
 - Top-level usage must include:
@@ -368,7 +368,7 @@ Pause and request review:
 **Best Practices:**
 - Normalize all provider findings before policy to reduce branching in the orchestrator.
 - Enforce SHA checks before write and again right before commit to prevent stale-head mutation.
- - Keep rerun request as a single state transition with explicit marker+SHA dedupe and a pre/post-run active-state check before posting.
+- Keep rerun request as a single state transition with explicit marker+SHA dedupe and a pre/post-run active-state check before posting.
 
 **Performance Considerations:**
 - Cache normalized findings and pre-compute eligibility by `maxAutoTier` to avoid repeated scans.

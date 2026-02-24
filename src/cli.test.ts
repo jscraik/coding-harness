@@ -103,7 +103,7 @@ describe("run", () => {
 	it("routes remediate run command", () => {
 		const exitSpy = vi
 			.spyOn(process, "exit")
-			.mockImplementation((code?: number) => {
+			.mockImplementation((code?: string | number | null | undefined) => {
 				throw new Error(`EXIT_${String(code)}`);
 			}) as never;
 		const infoSpy = vi.spyOn(console, "info").mockImplementation(() => {
@@ -135,7 +135,7 @@ describe("run", () => {
 	it("routes gap-case create/list/resolve commands", () => {
 		const exitSpy = vi
 			.spyOn(process, "exit")
-			.mockImplementation((code?: number) => {
+			.mockImplementation((code?: string | number | null | undefined) => {
 				throw new Error(`EXIT_${String(code)}`);
 			}) as never;
 		const storePath = join(tmpdir(), `harness-gap-case-${randomUUID()}.json`);

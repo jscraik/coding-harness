@@ -5,7 +5,13 @@ import { runBrainstormGateCLI } from "./commands/brainstorm-gate.js";
 import { runContextCLI } from "./commands/context.js";
 import { runDiffBudgetCLI } from "./commands/diff-budget.js";
 import { runEvidenceVerifyCLI } from "./commands/evidence-verify.js";
-import { type GapSeverity, runGapCaseCLI } from "./commands/gap-case.js";
+import {
+	type CreateGapCaseOptions,
+	type GapSeverity,
+	type ListGapCaseOptions,
+	type ResolveGapCaseOptions,
+	runGapCaseCLI,
+} from "./commands/gap-case.js";
 import { runGardenerCLI } from "./commands/gardener.js";
 import { runIndexContextCLI } from "./commands/index-context.js";
 import { runInitCLI, runInteractiveInitCLI } from "./commands/init.js";
@@ -14,7 +20,10 @@ import { runObservabilityGateCLI } from "./commands/observability-gate.js";
 import { runPlanGateCLI } from "./commands/plan-gate.js";
 import { runPreflightGateCLI } from "./commands/preflight-gate.js";
 import { runPromptGateCLI } from "./commands/prompt-gate.js";
-import { runRemediateCLI } from "./commands/remediate.js";
+import {
+	type RemediateOptions,
+	runRemediateCLI,
+} from "./commands/remediate.js";
 import { runReplayCLI } from "./commands/replay.js";
 import { runReviewGateCLI } from "./commands/review-gate.js";
 import { runRiskTierCLI } from "./commands/risk-tier.js";
@@ -894,7 +903,7 @@ export function run(args: string[]): void {
 		const maxAutoTierValue =
 			maxAutoTierIndex !== -1 ? args[maxAutoTierIndex + 1] : undefined;
 
-		const exitCode = runRemediateCLI({
+		const remediateOptions: RemediateOptions = {
 			mode,
 			owner: ownerIndex !== -1 ? (args[ownerIndex + 1] ?? "") : "",
 			repo: repoIndex !== -1 ? (args[repoIndex + 1] ?? "") : "",
@@ -907,14 +916,16 @@ export function run(args: string[]): void {
 			dryRun: dryRunFlag,
 			noInput: noInputFlag,
 			force: forceFlag,
-			maxAutoTier:
-				maxAutoTierValue === "low" ||
-				maxAutoTierValue === "medium" ||
-				maxAutoTierValue === "high"
-					? maxAutoTierValue
-					: undefined,
 			json: jsonFlag,
-		});
+		};
+		if (
+			maxAutoTierValue === "low" ||
+			maxAutoTierValue === "medium" ||
+			maxAutoTierValue === "high"
+		) {
+			remediateOptions.maxAutoTier = maxAutoTierValue;
+		}
+		const exitCode = runRemediateCLI(remediateOptions);
 		process.exit(exitCode);
 		return;
 	}
@@ -951,7 +962,7 @@ export function run(args: string[]): void {
 				? parseIntegerArg(dueDaysValue, 1)
 				: undefined;
 
-			const exitCode = runGapCaseCLI({
+			const createOptions: CreateGapCaseOptions = {
 				action: "create",
 				incidentId: incidentIndex !== -1 ? (args[incidentIndex + 1] ?? "") : "",
 				owner: ownerIndex !== -1 ? (args[ownerIndex + 1] ?? "") : "",
@@ -960,22 +971,32 @@ export function run(args: string[]): void {
 						? ((args[severityIndex + 1] as GapSeverity | undefined) ?? "low")
 						: "low",
 				linkedPr: linkedPrIndex !== -1 ? (args[linkedPrIndex + 1] ?? "") : "",
-				findingSummary:
-					findingSummaryIndex !== -1
-						? (args[findingSummaryIndex + 1] ?? undefined)
-						: undefined,
-				dueDays: parsedDueDays,
-				caseId:
-					caseIdIndex !== -1 ? (args[caseIdIndex + 1] ?? undefined) : undefined,
-				caseIdPrefix:
-					caseIdPrefixIndex !== -1
-						? (args[caseIdPrefixIndex + 1] ?? undefined)
-						: undefined,
 				evidence:
 					evidenceIndex !== -1 ? parseCsvList(args[evidenceIndex + 1]) : [],
-				caseStore,
 				json: jsonFlag,
-			});
+			};
+			const findingSummaryValue =
+				findingSummaryIndex !== -1 ? args[findingSummaryIndex + 1] : undefined;
+			if (findingSummaryValue) {
+				createOptions.findingSummary = findingSummaryValue;
+			}
+			if (parsedDueDays !== undefined) {
+				createOptions.dueDays = parsedDueDays;
+			}
+			const caseIdValue =
+				caseIdIndex !== -1 ? args[caseIdIndex + 1] : undefined;
+			if (caseIdValue) {
+				createOptions.caseId = caseIdValue;
+			}
+			const caseIdPrefixValue =
+				caseIdPrefixIndex !== -1 ? args[caseIdPrefixIndex + 1] : undefined;
+			if (caseIdPrefixValue) {
+				createOptions.caseIdPrefix = caseIdPrefixValue;
+			}
+			if (caseStore) {
+				createOptions.caseStore = caseStore;
+			}
+			const exitCode = runGapCaseCLI(createOptions);
 			process.exit(exitCode);
 			return;
 		}
@@ -983,13 +1004,16 @@ export function run(args: string[]): void {
 		if (action === "list") {
 			const openFlag = args.includes("--open");
 			const overdueFlag = args.includes("--overdue");
-			const exitCode = runGapCaseCLI({
+			const listOptions: ListGapCaseOptions = {
 				action: "list",
-				caseStore,
 				open: openFlag,
 				overdue: overdueFlag,
 				json: jsonFlag,
-			});
+			};
+			if (caseStore) {
+				listOptions.caseStore = caseStore;
+			}
+			const exitCode = runGapCaseCLI(listOptions);
 			process.exit(exitCode);
 			return;
 		}
@@ -1018,7 +1042,7 @@ export function run(args: string[]): void {
 		const closeReasonIndex = args.indexOf("--close-reason");
 		const forceFlag = args.includes("--force");
 
-		const exitCode = runGapCaseCLI({
+		const resolveOptions: ResolveGapCaseOptions = {
 			action: "resolve",
 			caseId,
 			incidentId: incidentIndex !== -1 ? (args[incidentIndex + 1] ?? "") : "",
@@ -1027,14 +1051,18 @@ export function run(args: string[]): void {
 			linkedPr: linkedPrIndex !== -1 ? (args[linkedPrIndex + 1] ?? "") : "",
 			evidence:
 				evidenceIndex !== -1 ? parseCsvList(args[evidenceIndex + 1]) : [],
-			closeReason:
-				closeReasonIndex !== -1
-					? (args[closeReasonIndex + 1] ?? undefined)
-					: undefined,
 			force: forceFlag,
-			caseStore,
 			json: jsonFlag,
-		});
+		};
+		const closeReasonValue =
+			closeReasonIndex !== -1 ? args[closeReasonIndex + 1] : undefined;
+		if (closeReasonValue) {
+			resolveOptions.closeReason = closeReasonValue;
+		}
+		if (caseStore) {
+			resolveOptions.caseStore = caseStore;
+		}
+		const exitCode = runGapCaseCLI(resolveOptions);
 		process.exit(exitCode);
 		return;
 	}

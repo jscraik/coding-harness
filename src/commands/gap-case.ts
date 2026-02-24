@@ -231,11 +231,13 @@ export function runGapCase(
 				owner: options.owner,
 				severity: options.severity,
 				linkedPr: options.linkedPr,
-				findingSummary: options.findingSummary,
 				createdAt: nowIso(),
 				dueAt: computeDueDate(dueDays),
 				status: "open",
-				evidence: options.evidence,
+				...(options.findingSummary
+					? { findingSummary: options.findingSummary }
+					: {}),
+				...(options.evidence ? { evidence: options.evidence } : {}),
 			};
 
 			store.cases.push(caseRecord);
