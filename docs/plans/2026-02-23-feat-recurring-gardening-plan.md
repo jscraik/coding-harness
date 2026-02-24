@@ -450,7 +450,7 @@ harness gardener
 
 ### Origin
 
-- **Brainstorm document:** [docs/brainstorms/2026-02-23-phase-6-recurring-gardening-brainstorm.md](docs/brainstorms/2026-02-23-phase-6-recurring-gardening-brainstorm.md)
+- **Brainstorm document:** [docs/brainstorms/2026-02-23-phase-6-recurring-gardening-brainstorm.md](../brainstorms/2026-02-23-phase-6-recurring-gardening-brainstorm.md)
 - Key decisions carried forward:
   1. Scope: Docs only (MVP)
   2. Link checker: lychee (fast, GitHub Action)

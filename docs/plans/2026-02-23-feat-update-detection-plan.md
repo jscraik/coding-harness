@@ -222,7 +222,7 @@ harness init --update
 
 ### Origin
 
-- **Brainstorm:** [docs/brainstorms/2026-02-23-installability-patches-brainstorm.md](docs/brainstorms/2026-02-23-installability-patches-brainstorm.md)
+- **Brainstorm:** [docs/brainstorms/2026-02-23-installability-patches-brainstorm.md](../brainstorms/2026-02-23-installability-patches-brainstorm.md)
 - Key decisions carried forward:
   - Store `harnessVersion` in manifest
   - `--check-updates` for version comparison
