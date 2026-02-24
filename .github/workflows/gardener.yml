@@ -73,4 +73,4 @@ jobs:
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git commit -m "docs: gardening updates ($(date +%Y-%m-%d))"
           git push -u origin "$BRANCH_NAME"
-          gh pr create --title "docs: gardening updates" --body "Automated gardening updates from harness gardener workflow"
+          gh pr create --title "docs: gardening updates" --body "Automated gardening updates from harness gardener workflow" || echo "PR creation not permitted for this token"
