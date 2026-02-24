@@ -115,6 +115,8 @@ export interface ContractSchema {
 	memoryEvalPolicy?: unknown;
 	observabilityPolicy?: unknown;
 	packageManagerPolicy?: unknown;
+	remediationPolicy?: unknown;
+	gapCasePolicy?: unknown;
 	uiLoopPolicy?: {
 		fastCommand?: unknown;
 		verifyCommand?: unknown;
@@ -148,7 +150,7 @@ export type MigrationResultType =
 	| { ok: false; error: InitErrorOutput };
 
 // Current latest schema version (must match template)
-export const CURRENT_SCHEMA_VERSION = "1.1.0";
+export const CURRENT_SCHEMA_VERSION = "1.2.0";
 
 function addSchemaDefaults(contract: ContractSchema): ContractSchema {
 	return {
@@ -187,6 +189,12 @@ function addSchemaDefaults(contract: ContractSchema): ContractSchema {
 		packageManagerPolicy:
 			contract.packageManagerPolicy ??
 			(DEFAULT_CONTRACT.packageManagerPolicy as HarnessContract["packageManagerPolicy"]),
+		remediationPolicy:
+			contract.remediationPolicy ??
+			(DEFAULT_CONTRACT.remediationPolicy as HarnessContract["remediationPolicy"]),
+		gapCasePolicy:
+			contract.gapCasePolicy ??
+			(DEFAULT_CONTRACT.gapCasePolicy as HarnessContract["gapCasePolicy"]),
 	} as ContractSchema;
 }
 
@@ -214,6 +222,16 @@ const MIGRATIONS: Migration[] = [
 			({
 				...addSchemaDefaults(contract),
 				version: "1.1.0",
+			}) as ContractSchema,
+	},
+	{
+		fromVersion: "1.1.0",
+		toVersion: "1.2.0",
+		description: "Inject remediation and gap-case policy defaults",
+		migrate: (contract) =>
+			({
+				...addSchemaDefaults(contract),
+				version: "1.2.0",
 			}) as ContractSchema,
 	},
 ];
@@ -252,10 +270,10 @@ interface Template {
 const TEMPLATES: Template[] = [
 	{
 		path: "harness.contract.json",
-		render: (pm) =>
+			render: (pm) =>
 			JSON.stringify(
 				{
-					version: "1.1.0",
+					version: "1.2.0",
 					riskTierRules: {
 						"src/auth/**": "high",
 						"src/api/**": "high",
@@ -330,6 +348,31 @@ const TEMPLATES: Template[] = [
 					packageManagerPolicy: {
 						allowedManagers: ["pnpm", "npm", "yarn"],
 						requiredManager: null,
+					},
+					remediationPolicy: {
+						providerDefaults: {
+							codeql: {
+								autoApplyMaxTier: "medium",
+								dryRunOnlyByDefault: true,
+							},
+							codex: {
+								autoApplyMaxTier: "medium",
+								dryRunOnlyByDefault: true,
+							},
+						},
+						canonicalRerunWorkflow: "greptile-rerun.yml",
+						marker: "<!-- harness-remediation-rerun -->",
+						timeoutMinutes: 20,
+						retryLimit: 3,
+						requireEvidence: true,
+					},
+					gapCasePolicy: {
+						requiredEvidenceStatuses: ["passed", "approved"],
+						requiredCloseReasons: ["fix", "workaround", "waived"],
+						defaultDueDays: 7,
+						caseIdPrefix: "gap-",
+						caseStore: ".harness/gap-cases.json",
+						allowEvidencelessResolve: false,
 					},
 				},
 				null,

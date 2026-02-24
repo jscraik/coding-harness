@@ -136,13 +136,40 @@ describe("validateContract", () => {
 				allowedManagers: ["pnpm", "npm", "yarn"],
 				requiredManager: null,
 			},
+			remediationPolicy: {
+				providerDefaults: {
+					codeql: {
+						autoApplyMaxTier: "medium",
+						dryRunOnlyByDefault: true,
+					},
+					codex: {
+						autoApplyMaxTier: "low",
+						dryRunOnlyByDefault: false,
+					},
+				},
+				canonicalRerunWorkflow: "greptile-rerun.yml",
+				marker: "<!-- harness-remediation-rerun -->",
+				timeoutMinutes: 20,
+				retryLimit: 3,
+				requireEvidence: true,
+			},
+			gapCasePolicy: {
+				requiredEvidenceStatuses: ["passed", "approved"],
+				requiredCloseReasons: ["fix", "workaround"],
+				defaultDueDays: 7,
+				caseIdPrefix: "gap-",
+				caseStore: ".harness/gap-cases.json",
+				allowEvidencelessResolve: false,
+			},
 		});
 
 		expect(result.success).toBe(true);
 		expect(result.data?.diffBudget?.maxNetLOC).toBe(500);
-		expect(result.data?.uiLoopPolicy?.fastCommand).toBe("pnpm ui:fast");
-		expect(result.data?.runtimePolicy?.nodeVersion).toBe("20.x");
-	});
+			expect(result.data?.uiLoopPolicy?.fastCommand).toBe("pnpm ui:fast");
+			expect(result.data?.runtimePolicy?.nodeVersion).toBe("20.x");
+			expect(result.data?.remediationPolicy?.timeoutMinutes).toBe(20);
+			expect(result.data?.gapCasePolicy?.caseIdPrefix).toBe("gap-");
+		});
 
 	it("rejects unknown top-level fields", () => {
 		const result = validateContract({
@@ -154,5 +181,47 @@ describe("validateContract", () => {
 		expect(result.success).toBe(false);
 		expect(result.errors[0]?.path).toBe("root");
 		expect(result.errors[0]?.message).toContain("Unknown top-level key");
+	});
+
+	it("rejects malformed remediation policy", () => {
+		const result = validateContract({
+			version: "1.2.0",
+			remediationPolicy: {
+				providerDefaults: {
+					codeql: {
+						autoApplyMaxTier: "critical",
+						dryRunOnlyByDefault: true,
+					},
+					codex: {
+						autoApplyMaxTier: "medium",
+						dryRunOnlyByDefault: true,
+					},
+				},
+				marker: "",
+				timeoutMinutes: 0,
+				retryLimit: -1,
+				requireEvidence: true,
+			},
+		});
+
+		expect(result.success).toBe(false);
+		expect(result.errors[0]?.path).toBe("remediationPolicy");
+	});
+
+	it("rejects malformed gap-case policy", () => {
+		const result = validateContract({
+			version: "1.2.0",
+			gapCasePolicy: {
+				requiredEvidenceStatuses: ["passed"],
+				requiredCloseReasons: ["fix"],
+				defaultDueDays: 0,
+				caseIdPrefix: "",
+				caseStore: "",
+				allowEvidencelessResolve: false,
+			},
+		});
+
+		expect(result.success).toBe(false);
+		expect(result.errors[0]?.path).toBe("gapCasePolicy");
 	});
 });
