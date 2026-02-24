@@ -1,4 +1,5 @@
 #!/usr/bin/env node
+import { pathToFileURL } from "node:url";
 import { runBrainstormGateCLI } from "./commands/brainstorm-gate.js";
 import { runDiffBudgetCLI } from "./commands/diff-budget.js";
 import { runEvidenceVerifyCLI } from "./commands/evidence-verify.js";
@@ -140,18 +141,32 @@ function printUsage(): void {
 	console.info("  --help, -h     Print this help");
 }
 
-function parseIntegerArg(
+export function parseIntegerArg(
 	value: string | undefined,
 	min: number = Number.NEGATIVE_INFINITY,
 ): number | undefined {
 	if (value === undefined) {
 		return undefined;
 	}
-	const parsed = Number.parseInt(value, 10);
+	const trimmed = value.trim();
+	if (!/^-?\d+$/.test(trimmed)) {
+		return undefined;
+	}
+	const parsed = Number.parseInt(trimmed, 10);
 	if (!Number.isFinite(parsed) || parsed < min) {
 		return undefined;
 	}
 	return parsed;
+}
+
+export function parseCsvList(value: string | undefined): string[] {
+	if (value === undefined) {
+		return [];
+	}
+	return value
+		.split(",")
+		.map((item) => item.trim())
+		.filter((item) => item.length > 0);
 }
 
 export function run(args: string[]): void {
@@ -179,9 +194,7 @@ export function run(args: string[]): void {
 
 		const files: string[] = [];
 		const filesArg = filesIndex !== -1 ? args[filesIndex + 1] : undefined;
-		if (filesArg) {
-			files.push(...filesArg.split(",").map((f) => f.trim()));
-		}
+		files.push(...parseCsvList(filesArg));
 
 		const contractArg =
 			contractIndex !== -1 ? args[contractIndex + 1] : undefined;
@@ -204,9 +217,7 @@ export function run(args: string[]): void {
 
 		const files: string[] = [];
 		const filesArg = filesIndex !== -1 ? args[filesIndex + 1] : undefined;
-		if (filesArg) {
-			files.push(...filesArg.split(",").map((f) => f.trim()));
-		}
+		files.push(...parseCsvList(filesArg));
 
 		const contractArg =
 			contractIndex !== -1 ? args[contractIndex + 1] : undefined;
@@ -321,9 +332,7 @@ export function run(args: string[]): void {
 		}
 		if (filesIndex !== -1) {
 			const filesArg = args[filesIndex + 1];
-			if (filesArg) {
-				options.files = filesArg.split(",").map((f) => f.trim());
-			}
+			options.files = parseCsvList(filesArg);
 		}
 		if (maxTierIndex !== -1) {
 			const maxTierArg = args[maxTierIndex + 1];
@@ -337,9 +346,7 @@ export function run(args: string[]): void {
 		}
 		if (skipIndex !== -1) {
 			const skipArg = args[skipIndex + 1];
-			if (skipArg) {
-				options.skip = skipArg.split(",").map((s) => s.trim());
-			}
+			options.skip = parseCsvList(skipArg);
 		}
 
 		// Handle async preflight gate
@@ -370,15 +377,11 @@ export function run(args: string[]): void {
 		if (suggestionsFlag) options.suggestions = true;
 		if (filesIndex !== -1) {
 			const filesArg = args[filesIndex + 1];
-			if (filesArg) {
-				options.files = filesArg.split(",").map((f) => f.trim());
-			}
+			options.files = parseCsvList(filesArg);
 		}
 		if (dirsIndex !== -1) {
 			const dirsArg = args[dirsIndex + 1];
-			if (dirsArg) {
-				options.dirs = dirsArg.split(",").map((d) => d.trim());
-			}
+			options.dirs = parseCsvList(dirsArg);
 		}
 
 		const exitCode = runSilentErrorDetectorCLI(options);
@@ -702,7 +705,19 @@ export function run(args: string[]): void {
 		printUsage();
 	} else {
 		console.info(`Unknown command: ${command}`);
+		process.exit(1);
+		return;
 	}
 }
 
-run(process.argv.slice(2));
+function isDirectExecution(): boolean {
+	const entrypoint = process.argv[1];
+	if (!entrypoint) {
+		return false;
+	}
+	return import.meta.url === pathToFileURL(entrypoint).href;
+}
+
+if (isDirectExecution()) {
+	run(process.argv.slice(2));
+}

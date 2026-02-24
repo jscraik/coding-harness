@@ -114,4 +114,34 @@ describe("resolveOverallTier", () => {
 			);
 		}
 	});
+
+	it("handles fuzzed glob patterns without crashing resolver", () => {
+		let seed = 777;
+		const rand = (): number => {
+			seed = (seed * 1103515245 + 12345) & 0x7fffffff;
+			return seed / 0x80000000;
+		};
+
+		const alphabet = "abcABC0123*?[]{}()!./_\\-";
+		for (let i = 0; i < 120; i++) {
+			const len = 1 + Math.floor(rand() * 12);
+			let pattern = "";
+			for (let j = 0; j < len; j++) {
+				pattern +=
+					alphabet[Math.floor(rand() * alphabet.length)] ?? alphabet[0] ?? "a";
+			}
+
+			const tier = (["high", "medium", "low"] as const)[i % 3] ?? "medium";
+			expect(() =>
+				createResolver({
+					[pattern]: tier,
+				}),
+			).not.toThrow();
+
+			const resolver = createResolver({ [pattern]: tier });
+			expect(() => resolver("src/example.ts")).not.toThrow();
+			const resolved = resolver("src/example.ts");
+			expect(["high", "medium", "low"]).toContain(resolved);
+		}
+	});
 });

@@ -207,4 +207,32 @@ describe("loadEvidenceFile", () => {
 			expect(result.file.type).toBe("jpeg");
 		}
 	});
+
+	it("never throws for fuzzed malformed path inputs", () => {
+		const validPng = join(tempDir, "seed.png");
+		writeFileSync(
+			validPng,
+			Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]),
+		);
+
+		let seed = 9001;
+		const rand = (): number => {
+			seed = (seed * 1664525 + 1013904223) >>> 0;
+			return seed / 0x100000000;
+		};
+
+		const alphabet = "abcABC0123/._- \\\\..\0";
+		for (let i = 0; i < 250; i++) {
+			const len = 1 + Math.floor(rand() * 16);
+			let candidate = "";
+			for (let j = 0; j < len; j++) {
+				candidate +=
+					alphabet[Math.floor(rand() * alphabet.length)] ?? alphabet[0] ?? "a";
+			}
+
+			expect(() => loadEvidenceFile(candidate, tempDir)).not.toThrow();
+			const result = loadEvidenceFile(candidate, tempDir);
+			expect(result.ok === true || result.ok === false).toBe(true);
+		}
+	});
 });
