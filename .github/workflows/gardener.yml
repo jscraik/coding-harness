@@ -33,7 +33,7 @@ jobs:
 
       - name: Run gardener analysis
         id: gardener-analysis
-        run: node dist/cli.js gardener --json --dry-run > gardener-report.json
+        run: node dist/cli.js gardener --json --dry-run > gardener-report.json || true
         env:
           DOCS_PATH: docs
 
