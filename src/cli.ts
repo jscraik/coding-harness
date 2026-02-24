@@ -1,13 +1,17 @@
 #!/usr/bin/env node
 import { pathToFileURL } from "node:url";
+import { runBlastRadiusCLI } from "./commands/blast-radius.js";
 import { runBrainstormGateCLI } from "./commands/brainstorm-gate.js";
+import { runContextCLI } from "./commands/context.js";
 import { runDiffBudgetCLI } from "./commands/diff-budget.js";
 import { runEvidenceVerifyCLI } from "./commands/evidence-verify.js";
 import { runGardenerCLI } from "./commands/gardener.js";
+import { runIndexContextCLI } from "./commands/index-context.js";
 import { runInitCLI, runInteractiveInitCLI } from "./commands/init.js";
 import { runMemoryGateCLI } from "./commands/memory-gate.js";
 import { runPlanGateCLI } from "./commands/plan-gate.js";
 import { runPreflightGateCLI } from "./commands/preflight-gate.js";
+import { runPromptGateCLI } from "./commands/prompt-gate.js";
 import { runReviewGateCLI } from "./commands/review-gate.js";
 import { runRiskTierCLI } from "./commands/risk-tier.js";
 import { runSilentErrorDetectorCLI } from "./commands/silent-error.js";
@@ -52,10 +56,16 @@ function printUsage(): void {
 	console.info("  review-gate      Review gate with SHA enforcement");
 	console.info("  brainstorm-gate  Validate brainstorm artifacts");
 	console.info("  plan-gate        Validate plan artifacts");
+	console.info("  prompt-gate      Validate prompt template usage");
+	console.info(
+		"  blast-radius     Determine required checks from changed files",
+	);
 	console.info("  diff-budget      Enforce diff budget constraints");
 	console.info("  ui:fast          Storybook-first local development loop");
 	console.info("  ui:verify        Playwright smoke suite with evidence");
 	console.info("  ui:explore       Agent browser exploratory testing");
+	console.info("  context          Semantic search for relevant prior work");
+	console.info("  index-context    Bulk index brainstorms/plans for search");
 	console.info("");
 	console.info("Init Options:");
 	console.info("  --dry-run        Preview changes without writing");
@@ -214,6 +224,7 @@ export function run(args: string[]): void {
 		const jsonFlag = args.includes("--json");
 		const filesIndex = args.indexOf("--files");
 		const contractIndex = args.indexOf("--contract");
+		const changedIndex = args.indexOf("--changed");
 
 		const files: string[] = [];
 		const filesArg = filesIndex !== -1 ? args[filesIndex + 1] : undefined;
@@ -222,10 +233,15 @@ export function run(args: string[]): void {
 		const contractArg =
 			contractIndex !== -1 ? args[contractIndex + 1] : undefined;
 
+		const changedFiles: string[] = [];
+		const changedArg = changedIndex !== -1 ? args[changedIndex + 1] : undefined;
+		changedFiles.push(...parseCsvList(changedArg));
+
 		const exitCode = runEvidenceVerifyCLI({
 			files,
 			contract: contractArg,
 			json: jsonFlag,
+			changed: changedFiles.length > 0 ? changedFiles : undefined,
 		});
 		process.exit(exitCode);
 		return;
@@ -696,6 +712,96 @@ export function run(args: string[]): void {
 
 		const exitCode = runUIExploreCLI(options);
 		process.exit(exitCode);
+		return;
+	}
+
+	if (command === "prompt-gate") {
+		// Parse prompt-gate options
+		const jsonFlag = args.includes("--json");
+		const typeIndex = args.indexOf("--type");
+		const fileIndex = args.indexOf("--file");
+
+		if (typeIndex === -1 || !args[typeIndex + 1]) {
+			console.error(
+				"Error: --type is required (feature|bugfix|refactor|release)",
+			);
+			process.exit(1);
+			return;
+		}
+
+		if (fileIndex === -1 || !args[fileIndex + 1]) {
+			console.error("Error: --file is required");
+			process.exit(1);
+			return;
+		}
+
+		const typeArg = args[typeIndex + 1];
+		const validTypes = ["feature", "bugfix", "refactor", "release"] as const;
+		if (!validTypes.includes(typeArg as (typeof validTypes)[number])) {
+			console.error(
+				`Error: Invalid type "${typeArg}". Must be one of: ${validTypes.join(", ")}`,
+			);
+			process.exit(1);
+			return;
+		}
+
+		const fileArg = args[fileIndex + 1];
+		if (!fileArg) {
+			console.error("Error: --file requires a value");
+			process.exit(1);
+			return;
+		}
+
+		const exitCode = runPromptGateCLI({
+			type: typeArg as (typeof validTypes)[number],
+			file: fileArg,
+			json: jsonFlag,
+		});
+		process.exit(exitCode);
+		return;
+	}
+
+	if (command === "blast-radius") {
+		// Parse blast-radius options
+		const jsonFlag = args.includes("--json");
+		const verboseFlag = args.includes("--verbose");
+		const filesIndex = args.indexOf("--files");
+
+		if (filesIndex === -1 || !args[filesIndex + 1]) {
+			console.error("Error: --files is required (comma-separated paths)");
+			process.exit(1);
+			return;
+		}
+
+		const filesArg = args[filesIndex + 1];
+		const files = filesArg
+			.split(",")
+			.map((f) => f.trim())
+			.filter(Boolean);
+
+		const exitCode = runBlastRadiusCLI({
+			files,
+			json: jsonFlag,
+			verbose: verboseFlag,
+		});
+		process.exit(exitCode);
+		return;
+	}
+	if (command === "context") {
+		// Parse context options
+		const argsAfterCommand = args.slice(1);
+		runContextCLI(argsAfterCommand)
+			.then((exitCode) => process.exit(exitCode))
+			.catch((error) => handleFatalError("Context Error", error));
+		return;
+	}
+
+	if (command === "index-context") {
+		// Parse index-context options
+		const argsAfterCommand = args.slice(1);
+		runIndexContextCLI(argsAfterCommand)
+			.then((exitCode) => process.exit(exitCode))
+			.catch((error) => handleFatalError("Index Context Error", error));
 		return;
 	}
 
