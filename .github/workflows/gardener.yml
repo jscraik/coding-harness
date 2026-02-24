@@ -15,8 +15,6 @@ jobs:
 
     steps:
       - uses: actions/checkout@v4
-        with:
-          token: ${{ secrets.GARDENER_TOKEN }}
 
       - uses: actions/setup-node@v4
         with:
@@ -57,7 +55,7 @@ jobs:
       - name: Create maintenance PR
         if: steps.check-issues.outputs.needs_pr == 'true'
         env:
-          GITHUB_TOKEN: ${{ secrets.GARDENER_TOKEN }}
+          GITHUB_TOKEN: ${{ secrets.GARDENER_TOKEN || github.token }}
         run: |
           BRANCH_NAME="gardener/$(date +%Y-%m-%d)"
           git checkout -b "$BRANCH_NAME"
