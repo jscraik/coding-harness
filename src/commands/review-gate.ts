@@ -1,6 +1,8 @@
 import { ContractLoadError, loadContract } from "../lib/contract/loader.js";
-import { DEFAULT_REVIEW_POLICY } from "../lib/contract/types.js";
-import type { ReviewPolicy } from "../lib/contract/types.js";
+import {
+	DEFAULT_REVIEW_POLICY,
+	type ReviewPolicy,
+} from "../lib/contract/types.js";
 import {
 	findReviewCheckRun,
 	isCheckRunInProgress,

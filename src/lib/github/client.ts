@@ -35,7 +35,7 @@ export interface PullRequest {
 	};
 }
 
-function createOctokit(token: string) {
+function createOctokit(token: string): InstanceType<typeof MyOctokit> {
 	return new MyOctokit({
 		auth: token,
 		throttle: {
