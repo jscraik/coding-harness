@@ -156,6 +156,22 @@ export interface SchemaValidationResult<T> {
 }
 
 /**
+ * Simple validation result with string errors
+ */
+export interface EntriesValidationResult {
+	valid: boolean;
+	errors: string[];
+}
+
+/**
+ * Validation result with violations list
+ */
+export interface ViolationsResult {
+	valid: boolean;
+	violations: string[];
+}
+
+/**
  * Validate if value is a valid MemoryLevel
  */
 export function isValidMemoryLevel(value: unknown): value is MemoryLevel {

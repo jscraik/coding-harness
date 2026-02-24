@@ -20,6 +20,7 @@ import {
 	type MemoryGateResult,
 	type MemorySummary,
 	type ReliabilityMetrics,
+	type ViolationsResult,
 	isValidMemoryEntry,
 	validateMemorySummary,
 } from "./types.js";
@@ -70,10 +71,7 @@ function validateEntries(entries: unknown[]): {
 /**
  * Check read-first preamble compliance
  */
-function validatePreamble(summary: MemorySummary): {
-	valid: boolean;
-	violations: string[];
-} {
+function validatePreamble(summary: MemorySummary): ViolationsResult {
 	const violations: string[] = [];
 
 	if (!summary.preamble.bootstrap) {
@@ -92,10 +90,7 @@ function validatePreamble(summary: MemorySummary): {
 /**
  * Check write-discipline (no raw dumps, no speculative content)
  */
-function validateWriteDiscipline(summary: MemorySummary): {
-	valid: boolean;
-	violations: string[];
-} {
+function validateWriteDiscipline(summary: MemorySummary): ViolationsResult {
 	const violations: string[] = [];
 
 	for (const entry of summary.entries) {
@@ -144,7 +139,7 @@ function validateWriteDiscipline(summary: MemorySummary): {
 function validateCloseout(
 	summary: MemorySummary,
 	forjamiePath: string,
-): { valid: boolean; violations: string[] } {
+): ViolationsResult {
 	const violations: string[] = [];
 
 	if (!summary.closeout.forjamie_updated) {
