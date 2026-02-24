@@ -65,8 +65,11 @@ function printUsage(): void {
 	console.info("  observability-gate  Check cardinality limits in metrics");
 	console.info("  diff-budget      Enforce diff budget constraints");
 	console.info("  ui:fast          Storybook-first local development loop");
+	console.info("  --contract      Path to harness.contract.json");
 	console.info("  ui:verify        Playwright smoke suite with evidence");
+	console.info("  --contract      Path to harness.contract.json");
 	console.info("  ui:explore       Agent browser exploratory testing");
+	console.info("  --contract      Path to harness.contract.json");
 	console.info("  context          Semantic search for relevant prior work");
 	console.info("  index-context    Bulk index brainstorms/plans for search");
 	console.info("");
@@ -679,11 +682,13 @@ export function run(args: string[]): void {
 		const jsonFlag = args.includes("--json");
 		const ciFlag = args.includes("--ci");
 		const portIndex = args.indexOf("--port");
+		const contractIndex = args.indexOf("--contract");
 
 		const options: {
 			port?: number;
 			ci?: boolean;
 			json?: boolean;
+			contractPath?: string;
 		} = {};
 
 		if (jsonFlag) options.json = true;
@@ -692,6 +697,10 @@ export function run(args: string[]): void {
 			const portArg = args[portIndex + 1];
 			const parsedPort = parseIntegerArg(portArg, 1);
 			if (parsedPort !== undefined) options.port = parsedPort;
+		}
+		if (contractIndex !== -1) {
+			const contractArg = args[contractIndex + 1];
+			if (contractArg) options.contractPath = contractArg;
 		}
 
 		const exitCode = runUIFastCLI(options);
@@ -705,12 +714,14 @@ export function run(args: string[]): void {
 		const outputIndex = args.indexOf("--output");
 		const timeoutIndex = args.indexOf("--timeout");
 		const shardIndex = args.indexOf("--shard");
+		const contractIndex = args.indexOf("--contract");
 
 		const options: {
 			outputDir?: string;
 			json?: boolean;
 			timeout?: number;
 			shard?: string;
+			contractPath?: string;
 		} = {};
 
 		if (jsonFlag) options.json = true;
@@ -727,6 +738,10 @@ export function run(args: string[]): void {
 			const shardArg = args[shardIndex + 1];
 			if (shardArg) options.shard = shardArg;
 		}
+		if (contractIndex !== -1) {
+			const contractArg = args[contractIndex + 1];
+			if (contractArg) options.contractPath = contractArg;
+		}
 
 		const exitCode = runUIVerifyCLI(options);
 		process.exit(exitCode);
@@ -739,12 +754,14 @@ export function run(args: string[]): void {
 		const interactionsFlag = args.includes("--interactions");
 		const urlIndex = args.indexOf("--url");
 		const outputIndex = args.indexOf("--output");
+		const contractIndex = args.indexOf("--contract");
 
 		const options: {
 			url?: string;
 			outputDir?: string;
 			json?: boolean;
 			interactions?: boolean;
+			contractPath?: string;
 		} = {};
 
 		if (jsonFlag) options.json = true;
@@ -756,6 +773,10 @@ export function run(args: string[]): void {
 		if (outputIndex !== -1) {
 			const outputArg = args[outputIndex + 1];
 			if (outputArg) options.outputDir = outputArg;
+		}
+		if (contractIndex !== -1) {
+			const contractArg = args[contractIndex + 1];
+			if (contractArg) options.contractPath = contractArg;
 		}
 
 		const exitCode = runUIExploreCLI(options);

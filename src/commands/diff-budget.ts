@@ -4,10 +4,10 @@
  * Enforces diff budget constraints on PRs.
  */
 
+import { readFileSync } from "node:fs";
 import { spawnSync } from "node:child_process";
-import { existsSync, readFileSync } from "node:fs";
-import { join } from "node:path";
 import type { DiffBudget, DiffBudgetOverride } from "../lib/contract/types.js";
+import { loadContract } from "../lib/contract/loader.js";
 import {
 	type DiffBudgetCheck,
 	type DiffMetrics,
@@ -106,8 +106,7 @@ function getGitDiff(base: string, head: string): PullRequestFile[] {
  */
 function loadDiffBudgetFromContract(contractPath: string): DiffBudget | null {
 	try {
-		const content = readFileSync(contractPath, "utf-8");
-		const contract = JSON.parse(content) as { diffBudget?: DiffBudget };
+		const contract = loadContract(contractPath);
 		return contract.diffBudget ?? null;
 	} catch {
 		return null;
@@ -136,12 +135,9 @@ export function runDiffBudget(options: DiffBudgetOptions): DiffBudgetResult {
 
 	// Load budget from contract or use defaults
 	let budget = DEFAULT_DIFF_BUDGET;
-	const contractFullPath = join(process.cwd(), contractPath);
-	if (existsSync(contractFullPath)) {
-		const contractBudget = loadDiffBudgetFromContract(contractFullPath);
-		if (contractBudget) {
-			budget = contractBudget;
-		}
+	const contractBudget = loadDiffBudgetFromContract(contractPath);
+	if (contractBudget) {
+		budget = contractBudget;
 	}
 
 	// Get diff metrics

@@ -9,12 +9,16 @@ vi.mock("node:child_process", () => ({
 
 // Mock fs
 vi.mock("node:fs", () => ({
-	existsSync: vi.fn(() => false),
 	readFileSync: vi.fn(),
 }));
 
+vi.mock("../lib/contract/loader.js", () => ({
+	loadContract: vi.fn(),
+}));
+
 import { spawnSync } from "node:child_process";
-import { existsSync, readFileSync } from "node:fs";
+import { readFileSync } from "node:fs";
+import { loadContract } from "../lib/contract/loader.js";
 
 function createMockSpawnResult(
 	stdout: string,
@@ -33,8 +37,8 @@ function createMockSpawnResult(
 
 describe("diff-budget command", () => {
 	const mockSpawnSync = vi.mocked(spawnSync);
-	const mockExistsSync = vi.mocked(existsSync);
 	const mockReadFileSync = vi.mocked(readFileSync);
+	const mockLoadContract = vi.mocked(loadContract);
 
 	beforeEach(() => {
 		vi.clearAllMocks();
@@ -90,10 +94,11 @@ describe("diff-budget command", () => {
 		});
 
 		it("loads budget from contract file", () => {
-			mockExistsSync.mockReturnValue(true);
-			mockReadFileSync.mockReturnValue(
-				JSON.stringify({ diffBudget: { maxFiles: 20, maxNetLOC: 1000 } }),
-			);
+			mockLoadContract.mockReturnValue({
+				version: "1.1.0",
+				riskTierRules: {},
+				diffBudget: { maxFiles: 20, maxNetLOC: 1000 },
+			});
 
 			mockSpawnSync.mockReturnValue(
 				createMockSpawnResult("15\t0\tsrc/file.ts\n"),
@@ -132,19 +137,53 @@ describe("diff-budget command", () => {
 			);
 		});
 
-		it("applies valid override", () => {
-			mockExistsSync.mockReturnValue(true);
-			mockReadFileSync.mockImplementation((path) => {
-				const pathStr = path.toString();
-				if (pathStr.includes("override")) {
-					return JSON.stringify({
-						reason: "Large refactoring",
-						approvedBy: "admin",
-						timestamp: "2026-02-24T00:00:00Z",
-					});
-				}
-				return JSON.stringify({ diffBudget: { maxFiles: 10, maxNetLOC: 400 } });
+		it("uses default budget when contract is missing", () => {
+			mockLoadContract.mockImplementation(() => {
+				throw new Error("contract missing");
 			});
+
+			mockReadFileSync.mockReturnValue(
+				JSON.stringify({
+					reason: "Large refactoring",
+					approvedBy: "admin",
+					timestamp: "2026-02-24T00:00:00Z",
+				}),
+			);
+
+			mockSpawnSync.mockReturnValue(
+				createMockSpawnResult(
+					Array(15)
+						.fill(null)
+						.map((_, i) => `1\t0\tsrc/file${i}.ts`)
+						.join("\n"),
+				),
+			);
+
+			const result = runDiffBudget({
+				base: "main",
+				head: "HEAD",
+				overridePath: "diff-override.json",
+			});
+
+			expect(result.passed).toBe(true);
+			expect(result.check.override).toBeDefined();
+			expect(result.check.violations).toHaveLength(1);
+		});
+
+		it("applies valid override", () => {
+			mockLoadContract.mockReturnValue({
+				version: "1.1.0",
+				riskTierRules: {},
+				diffBudget: { maxFiles: 10, maxNetLOC: 400 },
+			});
+
+			mockReadFileSync.mockImplementation(() =>
+				JSON.stringify({
+					reason: "Large refactoring",
+					approvedBy: "admin",
+					timestamp: "2026-02-24T00:00:00Z",
+				}),
+			);
 
 			// Exceed budget
 			mockSpawnSync.mockReturnValue(

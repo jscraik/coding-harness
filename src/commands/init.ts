@@ -15,6 +15,7 @@ import { diffLines } from "diff";
 import semver from "semver";
 import { sanitizeError } from "../lib/input/sanitize.js";
 import { getVersion } from "../lib/version.js";
+import { DEFAULT_CONTRACT, type HarnessContract } from "../lib/contract/types.js";
 
 // Exit codes for programmatic consumption
 export const EXIT_CODES = {
@@ -91,12 +92,38 @@ export interface ProposedChange {
 /** Typed contract schema for version-aware handling */
 export interface ContractSchema {
 	version: string;
-	riskTierRules: Record<string, unknown>;
-	reviewPolicy: {
+	riskTierRules?: Record<string, unknown>;
+	reviewPolicy?: {
 		timeoutSeconds: number;
 		timeoutAction: "fail" | "warn";
+	} | undefined;
+	evidencePolicy?: {
+		requiredFor: unknown[];
+		allowedTypes: unknown[];
+		maxFileSizeBytes?: unknown;
 	};
-	// Future fields can be added here with optional types
+	mergePolicy?: unknown;
+	docsDriftRules?: Record<string, unknown>;
+	diffBudget?: {
+		maxFiles?: unknown;
+		maxNetLOC?: unknown;
+		overrideLabel?: unknown;
+	};
+	runtimePolicy?: unknown;
+	memoryPolicy?: unknown;
+	memoryMaintenancePolicy?: unknown;
+	memoryEvalPolicy?: unknown;
+	observabilityPolicy?: unknown;
+	packageManagerPolicy?: unknown;
+	uiLoopPolicy?: {
+		fastCommand?: unknown;
+		verifyCommand?: unknown;
+		exploreCommand?: unknown;
+		sloTargets?: {
+			fastLoopSeconds?: unknown;
+			verifyLoopSeconds?: unknown;
+		};
+	};
 	[key: string]: unknown; // Allow additional user-defined fields
 }
 
@@ -121,7 +148,47 @@ export type MigrationResultType =
 	| { ok: false; error: InitErrorOutput };
 
 // Current latest schema version (must match template)
-export const CURRENT_SCHEMA_VERSION = "1.0.0";
+export const CURRENT_SCHEMA_VERSION = "1.1.0";
+
+function addSchemaDefaults(contract: ContractSchema): ContractSchema {
+	return {
+		...DEFAULT_CONTRACT,
+		...contract,
+		version: contract.version,
+		riskTierRules:
+			contract.riskTierRules ?? DEFAULT_CONTRACT.riskTierRules,
+		reviewPolicy:
+			contract.reviewPolicy ?? DEFAULT_CONTRACT.reviewPolicy,
+		evidencePolicy:
+			contract.evidencePolicy ?? DEFAULT_CONTRACT.evidencePolicy,
+		mergePolicy:
+			contract.mergePolicy ?? DEFAULT_CONTRACT.mergePolicy,
+		docsDriftRules:
+			contract.docsDriftRules ?? DEFAULT_CONTRACT.docsDriftRules,
+		diffBudget: contract.diffBudget ?? DEFAULT_CONTRACT.diffBudget,
+		uiLoopPolicy:
+			(contract.uiLoopPolicy as HarnessContract["uiLoopPolicy"]) ??
+			DEFAULT_CONTRACT.uiLoopPolicy,
+		runtimePolicy:
+			contract.runtimePolicy ??
+			(DEFAULT_CONTRACT.runtimePolicy as HarnessContract["runtimePolicy"]),
+		memoryPolicy:
+			contract.memoryPolicy ??
+			(DEFAULT_CONTRACT.memoryPolicy as HarnessContract["memoryPolicy"]),
+		memoryMaintenancePolicy:
+			contract.memoryMaintenancePolicy ??
+			(DEFAULT_CONTRACT.memoryMaintenancePolicy as HarnessContract["memoryMaintenancePolicy"]),
+		memoryEvalPolicy:
+			contract.memoryEvalPolicy ??
+			(DEFAULT_CONTRACT.memoryEvalPolicy as HarnessContract["memoryEvalPolicy"]),
+		observabilityPolicy:
+			contract.observabilityPolicy ??
+			(DEFAULT_CONTRACT.observabilityPolicy as HarnessContract["observabilityPolicy"]),
+		packageManagerPolicy:
+			contract.packageManagerPolicy ??
+			(DEFAULT_CONTRACT.packageManagerPolicy as HarnessContract["packageManagerPolicy"]),
+	} as ContractSchema;
+}
 
 /**
  * Migration registry - ordered list of schema migrations.
@@ -129,17 +196,26 @@ export const CURRENT_SCHEMA_VERSION = "1.0.0";
  * Migrations are applied sequentially to bring a contract up to date.
  */
 const MIGRATIONS: Migration[] = [
-	// Example future migration (commented out until needed):
-	// {
-	//   fromVersion: "1.0",
-	//   toVersion: "2.0",
-	//   description: "Add memory policy configuration",
-	//   migrate: (contract) => ({
-	//     ...contract,
-	//     version: "2.0",
-	//     memoryPolicy: { enabled: true, maxEntries: 100 }
-	//   })
-	// },
+	{
+	fromVersion: "1.0",
+		toVersion: "1.1.0",
+		description: "Normalize v1.0 schema to v1.1.0 and inject default policy surfaces",
+		migrate: (contract) =>
+			({
+				...addSchemaDefaults(contract),
+				version: "1.1.0",
+			}) as ContractSchema,
+	},
+	{
+		fromVersion: "1.0.0",
+		toVersion: "1.1.0",
+		description: "Normalize v1.0.0 schema to v1.1.0 and inject default policy surfaces",
+		migrate: (contract) =>
+			({
+				...addSchemaDefaults(contract),
+				version: "1.1.0",
+			}) as ContractSchema,
+	},
 ];
 
 export interface InitOutput {
@@ -179,7 +255,7 @@ const TEMPLATES: Template[] = [
 		render: (pm) =>
 			JSON.stringify(
 				{
-					version: "1.0.0",
+					version: "1.1.0",
 					riskTierRules: {
 						"src/auth/**": "high",
 						"src/api/**": "high",
@@ -902,7 +978,11 @@ function migrateContract(contract: ContractSchema): MigrationResult {
  * Check if contract needs migration by comparing versions.
  */
 function needsMigration(contractVersion: string): boolean {
-	return semver.lt(contractVersion, CURRENT_SCHEMA_VERSION);
+	const normalizedVersion = semver.coerce(contractVersion)?.version;
+	if (!normalizedVersion) {
+		return false;
+	}
+	return semver.lt(normalizedVersion, CURRENT_SCHEMA_VERSION);
 }
 
 /**
@@ -916,22 +996,26 @@ function executeMigration(targetDir: string): MigrationResultType {
 	}
 
 	const contract = loadResult.value;
+	const normalizedVersion = semver.coerce(contract.version)?.version;
+	const normalizedContract = normalizedVersion
+		? { ...contract, version: normalizedVersion }
+		: contract;
 
 	// Check if migration is needed
-	if (!needsMigration(contract.version)) {
+	if (!needsMigration(normalizedContract.version)) {
 		return {
 			ok: true,
 			value: {
-				originalVersion: contract.version,
-				finalVersion: contract.version,
+				originalVersion: normalizedContract.version,
+				finalVersion: normalizedContract.version,
 				migrationsApplied: [],
-				migratedContract: contract,
+				migratedContract: normalizedContract,
 			},
 		};
 	}
 
 	// Apply migrations
-	const result = migrateContract(contract);
+	const result = migrateContract(normalizedContract);
 
 	// Write migrated contract
 	const contractPath = resolve(targetDir, CONTRACT_FILE);

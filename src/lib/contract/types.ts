@@ -12,6 +12,70 @@ export interface DiffBudget {
 	maxFiles: number;
 	/** Maximum net lines of code (additions - deletions) */
 	maxNetLOC: number;
+	/** Optional label referenced by override payloads */
+	overrideLabel?: string;
+}
+
+export interface MergePolicy {
+	[severity: string]: string[];
+}
+
+export interface DocsDriftRules {
+	[pattern: string]: string[];
+}
+
+export interface UILoopSLO {
+	/** Target seconds to reach stable "fast" loop execution */
+	fastLoopSeconds: number;
+	/** Target seconds to complete "verify" loop execution */
+	verifyLoopSeconds: number;
+}
+
+export interface UILoopPolicy {
+	fastCommand: string;
+	verifyCommand: string;
+	exploreCommand: string;
+	sloTargets: UILoopSLO;
+}
+
+export interface RuntimePolicy {
+	nodeVersion: string;
+}
+
+export interface MemoryPolicy {
+	enabled: boolean;
+	provider: string;
+	sessionIdTemplate: string;
+	domain: string;
+	requiredTags: string[];
+	maxObservationsPerStep: number;
+	allowedLevels: string[];
+	requireStartRead: boolean;
+	requireCloseoutSummary: boolean;
+	forbiddenContentPatterns: string[];
+}
+
+export interface MemoryMaintenancePolicy {
+	validateSchedule: string;
+	reflectSchedule: string;
+	questionSlaDays: number;
+	duplicateThreshold: number;
+}
+
+export interface MemoryEvalPolicy {
+	trialsPerTask: number;
+	requiredMetrics: string[];
+	passPowKThreshold: number;
+}
+
+export interface ObservabilityPolicy {
+	provider: string;
+	collectorEndpoint: string;
+}
+
+export interface PackageManagerPolicy {
+	allowedManagers: string[];
+	requiredManager: string | null;
 }
 
 /**
@@ -49,6 +113,26 @@ export interface HarnessContract {
 	reviewPolicy?: ReviewPolicy | undefined;
 	/** Evidence policy for requiring verification artifacts */
 	evidencePolicy?: EvidencePolicy | undefined;
+	/** Optional merge policy by severity */
+	mergePolicy?: MergePolicy | undefined;
+	/** Documentation drift rules by path patterns */
+	docsDriftRules?: DocsDriftRules | undefined;
+	/** Diff budget limits */
+	diffBudget?: DiffBudget | undefined;
+	/** UI loop command and SLO policy */
+	uiLoopPolicy?: UILoopPolicy | undefined;
+	/** Runtime requirements */
+	runtimePolicy?: RuntimePolicy | undefined;
+	/** Memory policy for local-memory behavior */
+	memoryPolicy?: MemoryPolicy | undefined;
+	/** Memory maintenance policy */
+	memoryMaintenancePolicy?: MemoryMaintenancePolicy | undefined;
+	/** Memory evaluation policy */
+	memoryEvalPolicy?: MemoryEvalPolicy | undefined;
+	/** Observability policy */
+	observabilityPolicy?: ObservabilityPolicy | undefined;
+	/** Package manager policy */
+	packageManagerPolicy?: PackageManagerPolicy | undefined;
 }
 
 export const DEFAULT_REVIEW_POLICY: ReviewPolicy = {
@@ -63,10 +147,70 @@ export const DEFAULT_EVIDENCE_POLICY: EvidencePolicy = {
 };
 
 export const DEFAULT_CONTRACT: HarnessContract = {
-	version: "1.0",
+	version: "1.1.0",
 	riskTierRules: {},
 	reviewPolicy: DEFAULT_REVIEW_POLICY,
 	evidencePolicy: DEFAULT_EVIDENCE_POLICY,
+	mergePolicy: {
+		high: ["review-gate", "evidence-verify"],
+		medium: ["review-gate"],
+		low: [],
+	},
+	docsDriftRules: {},
+	diffBudget: {
+		maxFiles: 10,
+		maxNetLOC: 400,
+		overrideLabel: "diff-budget-override",
+	},
+	uiLoopPolicy: {
+		fastCommand: "pnpm ui:fast",
+		verifyCommand: "pnpm ui:verify",
+		exploreCommand: "pnpm ui:explore",
+		sloTargets: {
+			fastLoopSeconds: 30,
+			verifyLoopSeconds: 120,
+		},
+	},
+	runtimePolicy: {
+		nodeVersion: "20.x",
+	},
+	memoryPolicy: {
+		enabled: true,
+		provider: "local",
+		sessionIdTemplate: "repo:<name>:task:<id>",
+		domain: "default",
+		requiredTags: ["repo", "area", "type"],
+		maxObservationsPerStep: 3,
+		allowedLevels: ["observation", "learning", "pattern"],
+		requireStartRead: true,
+		requireCloseoutSummary: true,
+		forbiddenContentPatterns: [
+			"token",
+			"api[_-]?key",
+			"secret",
+			"password",
+			"credential",
+		],
+	},
+	memoryMaintenancePolicy: {
+		validateSchedule: "weekly",
+		reflectSchedule: "weekly",
+		questionSlaDays: 7,
+		duplicateThreshold: 0.8,
+	},
+	memoryEvalPolicy: {
+		trialsPerTask: 3,
+		requiredMetrics: ["pass^k", "tool_errors", "duplicate_rate"],
+		passPowKThreshold: 0.8,
+	},
+	observabilityPolicy: {
+		provider: "logs",
+		collectorEndpoint: "http://localhost:4318",
+	},
+	packageManagerPolicy: {
+		allowedManagers: ["pnpm", "npm", "yarn"],
+		requiredManager: null,
+	},
 };
 
 /**
