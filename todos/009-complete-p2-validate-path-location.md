@@ -114,3 +114,4 @@ function validatePathForContract(baseDir: string, userPath: string): string { ..
 ## Work Log
 
 - 2026-02-23: Issue identified during technical review by Architecture Strategist
+- 2026-02-24: Resolved - validatePath canonical in input/validator.ts, sanitize.ts re-exports (commit 1d1ccae)

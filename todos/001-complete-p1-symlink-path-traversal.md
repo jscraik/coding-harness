@@ -110,3 +110,4 @@ try {
 ## Work Log
 
 - 2026-02-23: Issue identified during technical review by Security Sentinel agent
+- 2026-02-24: Resolved - consolidated to symlink-safe validatePath in validator.ts (commit 1d1ccae)
