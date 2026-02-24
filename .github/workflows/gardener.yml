@@ -20,6 +20,8 @@ jobs:
         with:
           node-version: "20"
 
+      - uses: pnpm/action-setup@v4
+
       - name: Install lychee
         uses: lycheeverse/lychee-action@v2
 
@@ -31,7 +33,7 @@ jobs:
 
       - name: Run gardener analysis
         id: gardener-analysis
-        run: node dist/cli.js gardener --json --dry-run
+        run: node dist/cli.js gardener --json --dry-run > gardener-report.json || true
         env:
           DOCS_PATH: docs
 
@@ -41,9 +43,11 @@ jobs:
           if [ -f "gardener-report.json" ]; then
             STALE_COUNT=$(jq -r '.staleDocs | length' gardener-report.json)
             BROKEN_COUNT=$(jq -r '.brokenLinks | length' gardener-report.json)
+            NEEDS_PR=$(jq -r '.needsPR' gardener-report.json)
             echo "Stale docs: $STALE_COUNT"
             echo "Broken links: $BROKEN_COUNT"
-            if [ "$STALE_COUNT" -gt 0 ] || [ "$BROKEN_COUNT" -gt 0 ]; then
+            echo "Needs PR: $NEEDS_PR"
+            if [ "$NEEDS_PR" = "true" ]; then
               echo "needs_pr=true" >> "$GITHUB_OUTPUT"
             else
               echo "needs_pr=false" >> "$GITHUB_OUTPUT"
@@ -57,10 +61,16 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GARDENER_TOKEN || github.token }}
         run: |
-          BRANCH_NAME="gardener/$(date +%Y-%m-%d)"
+          BRANCH_NAME="gardener/$(date +%Y-%m-%d-%H%M%S)"
           git checkout -b "$BRANCH_NAME"
-          node dist/cli.js gardener
+          node dist/cli.js gardener || true
           git add docs/QUALITY_SCORE.md
+          if git diff --cached --quiet; then
+            echo "No gardener changes to commit."
+            exit 0
+          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git commit -m "docs: gardening updates ($(date +%Y-%m-%d))"
           git push -u origin "$BRANCH_NAME"
-          gh pr create --title "docs: gardening updates" --body "Automated gardening updates from harness gardener workflow"
+          gh pr create --title "docs: gardening updates" --body "Automated gardening updates from harness gardener workflow" || echo "PR creation not permitted for this token"

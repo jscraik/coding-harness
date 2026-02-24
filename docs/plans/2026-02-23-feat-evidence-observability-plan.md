@@ -306,7 +306,7 @@ harness evidence-verify
 
 ### Origin
 
-- **Brainstorm document:** [docs/brainstorms/2026-02-23-phase-5-evidence-observability-brainstorm.md](docs/brainstorms/2026-02-23-phase-5-evidence-observability-brainstorm.md)
+- **Brainstorm document:** [docs/brainstorms/2026-02-23-phase-5-evidence-observability-brainstorm.md](../brainstorms/2026-02-23-phase-5-evidence-observability-brainstorm.md)
 - Key decisions carried forward:
   1. Screenshots only (MVP) - defer traces, logs, HAR files
   2. Manual file path collection - no GitHub artifact download

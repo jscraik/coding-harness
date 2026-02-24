@@ -1,0 +1,51 @@
+{
+  "artifact_dir": "artifacts/test",
+  "file_count": 9,
+  "files": [
+    {
+      "path": "artifacts/test/artifact-manifest.json",
+      "size": 758,
+      "mtime": 1771941513.371213
+    },
+    {
+      "path": "artifacts/test/discovered/.__artifacts__test__discovered__.__artifacts__test__junit-unit.xml",
+      "size": 20965,
+      "mtime": 1771941519.0237603
+    },
+    {
+      "path": "artifacts/test/discovered/.__artifacts__test__discovered__.__artifacts__test__test-output-unit.log",
+      "size": 1484,
+      "mtime": 1771941519.0217352
+    },
+    {
+      "path": "artifacts/test/discovered/.__artifacts__test__junit-unit.xml",
+      "size": 20987,
+      "mtime": 1771941519.0258577
+    },
+    {
+      "path": "artifacts/test/discovered/.__artifacts__test__test-output-unit.log",
+      "size": 1484,
+      "mtime": 1771941519.0194938
+    },
+    {
+      "path": "artifacts/test/junit-unit.xml",
+      "size": 20987,
+      "mtime": 1771941518.88269
+    },
+    {
+      "path": "artifacts/test/summary-unit.json",
+      "size": 321,
+      "mtime": 1771941518.976475
+    },
+    {
+      "path": "artifacts/test/test-output-unit.log",
+      "size": 1484,
+      "mtime": 1771941518.8827643
+    },
+    {
+      "path": "artifacts/test/unit-results.json",
+      "size": 28164,
+      "mtime": 1771941518.8648107
+    }
+  ]
+}

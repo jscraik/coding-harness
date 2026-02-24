@@ -979,12 +979,15 @@ User has OTel collector at `~/.agents/otel-collector/`. Explore direct emission 
 
 | Phase | Status | Notes |
 |-------|--------|-------|
-| Phase 1: Bootstrap | Not started | Repository is 0% implemented |
-| Phase 2: Contract core | Not started | Depends on Phase 1 |
-| Phase 3: GitHub workflows | Not started | Depends on Phase 2 |
-| Phase 4: Installability | Not started | Depends on Phase 3 |
-| Phase 5: Evidence + observability | Not started | Depends on Phase 4 |
-| Phase 6: Gardening | Not started | Depends on Phase 5 |
-| Phase 7: Memory policy | Not started | Depends on Phase 6 |
+| Phase 1: Bootstrap | ✅ Complete | Repository structure, build system, testing framework |
+| Phase 2: Contract core | ✅ Complete | Contract parser, validator, risk-tier engine, policy gates |
+| Phase 3: GitHub workflows | ✅ Complete | review-gate, policy-gate, SHA enforcement, GitHub client |
+| Phase 4: Installability | ✅ Complete | init command with --dry-run, --track, --rollback, --migrate |
+| Phase 5: Evidence + observability | ✅ Complete | evidence-verify command, gardener workflow |
+| Phase 6: Gardening | ✅ Complete | nightly gardener workflow, stale docs, broken links |
+| Phase 7: Memory policy | ✅ Complete | memory-gate command, branch enforcement, metrics tracking |
 
-**Critical blocker:** Repository needs bootstrap (git init, package.json, tsconfig, src/ structure) before Phase 1 can begin.
+**All core acceptance criteria implemented.** Remaining optional items from Section 27:
+- Diff budget guardrails (deferred)
+- UI loop commands (deferred)
+- Brainstorm/plan artifact workflow (deferred)

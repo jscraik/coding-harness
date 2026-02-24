@@ -1,0 +1,254 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<testsuites name="vitest tests" tests="110" failures="0" errors="0" time="0.05745804">
+    <testsuite name="src/cli.test.ts" timestamp="2026-02-24T13:56:14.246Z" hostname="Mac-Studio.local" tests="1" failures="0" errors="0" skipped="0" time="0.001042291">
+        <testcase classname="src/cli.test.ts" name="cli &gt; placeholder test - Phase 1 only verifies bootstrap works" time="0.000554583">
+        </testcase>
+    </testsuite>
+    <testsuite name="src/commands/init.test.ts" timestamp="2026-02-24T13:56:14.247Z" hostname="Mac-Studio.local" tests="47" failures="0" errors="0" skipped="0" time="0.038333083">
+        <testcase classname="src/commands/init.test.ts" name="runInit &gt; package manager detection &gt; detects pnpm from pnpm-lock.yaml" time="0.001252375">
+        </testcase>
+        <testcase classname="src/commands/init.test.ts" name="runInit &gt; package manager detection &gt; detects yarn from yarn.lock" time="0.000394458">
+        </testcase>
+        <testcase classname="src/commands/init.test.ts" name="runInit &gt; package manager detection &gt; detects npm from package-lock.json" time="0.000366583">
+        </testcase>
+        <testcase classname="src/commands/init.test.ts" name="runInit &gt; package manager detection &gt; defaults to npm when no lockfile exists" time="0.000243375">
+        </testcase>
+        <testcase classname="src/commands/init.test.ts" name="runInit &gt; dry-run mode &gt; does not create files in dry-run mode" time="0.000631958">
+        </testcase>
+        <testcase classname="src/commands/init.test.ts" name="runInit &gt; normal mode &gt; creates files in empty directory" time="0.001147458">
+        </testcase>
+        <testcase classname="src/commands/init.test.ts" name="runInit &gt; normal mode &gt; skips existing files without --force" time="0.000740416">
+        </testcase>
+        <testcase classname="src/commands/init.test.ts" name="runInit &gt; force mode &gt; overwrites existing files with --force" time="0.001266958">
+        </testcase>
+        <testcase classname="src/commands/init.test.ts" name="runInit &gt; path traversal protection &gt; blocks path traversal with .." time="0.000974042">
+        </testcase>
+        <testcase classname="src/commands/init.test.ts" name="runInit &gt; path traversal protection &gt; blocks traversal to sibling directory" time="0.001051291">
+        </testcase>
+        <testcase classname="src/commands/init.test.ts" name="runInit &gt; error handling &gt; returns error for invalid base path" time="0.000235083">
+        </testcase>
+        <testcase classname="src/commands/init.test.ts" name="runInit &gt; file content &gt; creates valid contract.json" time="0.001031791">
+        </testcase>
+        <testcase classname="src/commands/init.test.ts" name="runInit &gt; file content &gt; includes package manager in workflow" time="0.001049166">
+        </testcase>
+        <testcase classname="src/commands/init.test.ts" name="EXIT_CODES &gt; defines expected exit codes" time="0.0000745">
+        </testcase>
+        <testcase classname="src/commands/init.test.ts" name="--track flag &gt; creates manifest for new files" time="0.001396042">
+        </testcase>
+        <testcase classname="src/commands/init.test.ts" name="--track flag &gt; creates backups for existing files" time="0.00210825">
+        </testcase>
+        <testcase classname="src/commands/init.test.ts" name="--track flag &gt; rejects symlinks with error" time="0.001215917">
+        </testcase>
+        <testcase classname="src/commands/init.test.ts" name="--rollback flag &gt; restores created files (deletes them)" time="0.001839542">
+        </testcase>
+        <testcase classname="src/commands/init.test.ts" name="--rollback flag &gt; restores modified files from backup" time="0.00209575">
+        </testcase>
+        <testcase classname="src/commands/init.test.ts" name="--rollback flag &gt; fails when no manifest exists" time="0.000249791">
+        </testcase>
+        <testcase classname="src/commands/init.test.ts" name="--rollback flag &gt; fails when manifest is corrupted" time="0.000644">
+        </testcase>
+        <testcase classname="src/commands/init.test.ts" name="--rollback flag &gt; blocks path traversal in manifest" time="0.001333417">
+        </testcase>
+        <testcase classname="src/commands/init.test.ts" name="--check-updates flag &gt; fails when no manifest exists" time="0.000247166">
+        </testcase>
+        <testcase classname="src/commands/init.test.ts" name="--check-updates flag &gt; reports update available for old version" time="0.001704417">
+        </testcase>
+        <testcase classname="src/commands/init.test.ts" name="--check-updates flag &gt; reports up to date for same version" time="0.001373417">
+        </testcase>
+        <testcase classname="src/commands/init.test.ts" name="--check-updates flag &gt; defaults to 0.0.0 for manifest without version" time="0.001449042">
+        </testcase>
+        <testcase classname="src/commands/init.test.ts" name="--update flag &gt; fails when no manifest exists" time="0.000222958">
+        </testcase>
+        <testcase classname="src/commands/init.test.ts" name="--update flag &gt; updates files and manifest version" time="0.001922">
+        </testcase>
+        <testcase classname="src/commands/init.test.ts" name="--update flag &gt; is no-op when already up to date" time="0.002276083">
+        </testcase>
+        <testcase classname="src/commands/init.test.ts" name="--interactive flag &gt; returns proposed changes without writing files" time="0.000484042">
+        </testcase>
+        <testcase classname="src/commands/init.test.ts" name="--interactive flag &gt; marks new files as &apos;create&apos; action" time="0.000396958">
+        </testcase>
+        <testcase classname="src/commands/init.test.ts" name="--interactive flag &gt; marks existing files as &apos;skip&apos; action without --force" time="0.000491417">
+        </testcase>
+        <testcase classname="src/commands/init.test.ts" name="--interactive flag &gt; marks existing files as &apos;modify&apos; action with --force" time="0.000453458">
+        </testcase>
+        <testcase classname="src/commands/init.test.ts" name="--interactive flag &gt; detects package manager for rendering" time="0.00030175">
+        </testcase>
+        <testcase classname="src/commands/init.test.ts" name="generateDiff &gt; generates diff for new file (create action)" time="0.000173417">
+        </testcase>
+        <testcase classname="src/commands/init.test.ts" name="generateDiff &gt; generates diff for modified file" time="0.000430209">
+        </testcase>
+        <testcase classname="src/commands/init.test.ts" name="generateDiff &gt; returns empty string for skip action" time="0.000065209">
+        </testcase>
+        <testcase classname="src/commands/init.test.ts" name="--migrate flag &gt; fails when no contract exists" time="0.000263959">
+        </testcase>
+        <testcase classname="src/commands/init.test.ts" name="--migrate flag &gt; succeeds when contract is already at latest version" time="0.00041775">
+        </testcase>
+        <testcase classname="src/commands/init.test.ts" name="--migrate flag &gt; fails when contract has invalid JSON" time="0.000486709">
+        </testcase>
+        <testcase classname="src/commands/init.test.ts" name="--migrate flag &gt; fails when contract is missing version field" time="0.000456458">
+        </testcase>
+        <testcase classname="src/commands/init.test.ts" name="--migrate flag &gt; preserves user customizations during migration" time="0.000443">
+        </testcase>
+        <testcase classname="src/commands/init.test.ts" name="--migrate flag &gt; preserves contract content when already up to date" time="0.000435708">
+        </testcase>
+        <testcase classname="src/commands/init.test.ts" name="detectContractVersion &gt; returns null when contract doesn&apos;t exist" time="0.000251334">
+        </testcase>
+        <testcase classname="src/commands/init.test.ts" name="detectContractVersion &gt; returns version from valid contract" time="0.000329084">
+        </testcase>
+        <testcase classname="src/commands/init.test.ts" name="detectContractVersion &gt; returns null for contract without version" time="0.000312083">
+        </testcase>
+        <testcase classname="src/commands/init.test.ts" name="detectContractVersion &gt; returns null for invalid JSON" time="0.000362">
+        </testcase>
+    </testsuite>
+    <testsuite name="src/commands/policy-gate.test.ts" timestamp="2026-02-24T13:56:14.259Z" hostname="Mac-Studio.local" tests="10" failures="0" errors="0" skipped="0" time="0.004805">
+        <testcase classname="src/commands/policy-gate.test.ts" name="runPolicyGate &gt; with max-tier &gt; passes when tier equals max-tier" time="0.00196025">
+        </testcase>
+        <testcase classname="src/commands/policy-gate.test.ts" name="runPolicyGate &gt; with max-tier &gt; passes when tier is lower than max-tier" time="0.000259542">
+        </testcase>
+        <testcase classname="src/commands/policy-gate.test.ts" name="runPolicyGate &gt; with max-tier &gt; fails when tier exceeds max-tier" time="0.000502916">
+        </testcase>
+        <testcase classname="src/commands/policy-gate.test.ts" name="runPolicyGate &gt; with max-tier &gt; passes high-tier files when max-tier is high" time="0.000142083">
+        </testcase>
+        <testcase classname="src/commands/policy-gate.test.ts" name="runPolicyGate &gt; without max-tier &gt; passes all files when no max-tier specified" time="0.000142042">
+        </testcase>
+        <testcase classname="src/commands/policy-gate.test.ts" name="runPolicyGate &gt; validation &gt; rejects invalid max-tier value" time="0.000064583">
+        </testcase>
+        <testcase classname="src/commands/policy-gate.test.ts" name="runPolicyGate &gt; validation &gt; returns error for missing contract" time="0.000248417">
+        </testcase>
+        <testcase classname="src/commands/policy-gate.test.ts" name="runPolicyGateCLI &gt; returns SUCCESS (0) when gate passes" time="0.000609">
+            <system-out>
+{&quot;passed&quot;:true,&quot;tier&quot;:&quot;medium&quot;,&quot;violatingFiles&quot;:[]}
+
+            </system-out>
+        </testcase>
+        <testcase classname="src/commands/policy-gate.test.ts" name="runPolicyGateCLI &gt; returns POLICY_VIOLATION (1) when gate fails" time="0.000160833">
+            <system-out>
+{&quot;passed&quot;:false,&quot;tier&quot;:&quot;high&quot;,&quot;maxAllowed&quot;:&quot;medium&quot;,&quot;violatingFiles&quot;:[&quot;src/auth/login.ts&quot;]}
+
+            </system-out>
+        </testcase>
+        <testcase classname="src/commands/policy-gate.test.ts" name="runPolicyGateCLI &gt; returns VALIDATION_ERROR (1) for invalid max-tier" time="0.000148584">
+            <system-err>
+Invalid max-tier: must be one of high, medium, low
+{&quot;error&quot;:{&quot;code&quot;:&quot;VALIDATION_ERROR&quot;,&quot;message&quot;:&quot;Invalid max-tier: must be one of high, medium, low&quot;}}
+
+            </system-err>
+        </testcase>
+    </testsuite>
+    <testsuite name="src/commands/review-gate.test.ts" timestamp="2026-02-24T13:56:14.262Z" hostname="Mac-Studio.local" tests="5" failures="0" errors="0" skipped="0" time="0.00201325">
+        <testcase classname="src/commands/review-gate.test.ts" name="runReviewGate &gt; returns validation error for invalid SHA" time="0.000885375">
+        </testcase>
+        <testcase classname="src/commands/review-gate.test.ts" name="runReviewGate &gt; returns not_found when check run does not exist" time="0.000235458">
+        </testcase>
+        <testcase classname="src/commands/review-gate.test.ts" name="runReviewGate &gt; returns verified when check run is completed with success" time="0.000177625">
+        </testcase>
+        <testcase classname="src/commands/review-gate.test.ts" name="runReviewGate &gt; returns needsRerun when check run is completed with failure" time="0.0001305">
+        </testcase>
+        <testcase classname="src/commands/review-gate.test.ts" name="runReviewGate &gt; returns error on timeout with fail action" time="0.000093584">
+        </testcase>
+    </testsuite>
+    <testsuite name="src/lib/contract/validator.test.ts" timestamp="2026-02-24T13:56:14.263Z" hostname="Mac-Studio.local" tests="8" failures="0" errors="0" skipped="0" time="0.001944792">
+        <testcase classname="src/lib/contract/validator.test.ts" name="validateContract &gt; accepts minimal valid contract with version only" time="0.000706583">
+        </testcase>
+        <testcase classname="src/lib/contract/validator.test.ts" name="validateContract &gt; applies defaults for optional fields" time="0.0003085">
+        </testcase>
+        <testcase classname="src/lib/contract/validator.test.ts" name="validateContract &gt; rejects invalid risk tier" time="0.000108042">
+        </testcase>
+        <testcase classname="src/lib/contract/validator.test.ts" name="validateContract &gt; rejects missing version" time="0.000069083">
+        </testcase>
+        <testcase classname="src/lib/contract/validator.test.ts" name="validateContract &gt; accumulates multiple errors" time="0.0000665">
+        </testcase>
+        <testcase classname="src/lib/contract/validator.test.ts" name="validateContract &gt; accepts valid risk tier rules" time="0.0000595">
+        </testcase>
+        <testcase classname="src/lib/contract/validator.test.ts" name="validateContract &gt; rejects __proto__ key (prototype pollution)" time="0.000060584">
+        </testcase>
+        <testcase classname="src/lib/contract/validator.test.ts" name="validateContract &gt; rejects constructor key (prototype pollution)" time="0.000036958">
+        </testcase>
+    </testsuite>
+    <testsuite name="src/lib/input/sanitize.test.ts" timestamp="2026-02-24T13:56:14.264Z" hostname="Mac-Studio.local" tests="3" failures="0" errors="0" skipped="0" time="0.001357625">
+        <testcase classname="src/lib/input/sanitize.test.ts" name="sanitizeError &gt; redacts GitHub PATs" time="0.000731875">
+        </testcase>
+        <testcase classname="src/lib/input/sanitize.test.ts" name="sanitizeError &gt; redacts home paths" time="0.000100833">
+        </testcase>
+        <testcase classname="src/lib/input/sanitize.test.ts" name="sanitizeError &gt; preserves commit hashes (not 20+ alphanumeric)" time="0.000057833">
+        </testcase>
+    </testsuite>
+    <testsuite name="src/lib/github/comments.test.ts" timestamp="2026-02-24T13:56:14.265Z" hostname="Mac-Studio.local" tests="18" failures="0" errors="0" skipped="0" time="0.002969791">
+        <testcase classname="src/lib/github/comments.test.ts" name="escapeMarkdown &gt; escapes backslashes" time="0.000578833">
+        </testcase>
+        <testcase classname="src/lib/github/comments.test.ts" name="escapeMarkdown &gt; escapes backticks" time="0.000064792">
+        </testcase>
+        <testcase classname="src/lib/github/comments.test.ts" name="escapeMarkdown &gt; escapes asterisks and underscores" time="0.00004925">
+        </testcase>
+        <testcase classname="src/lib/github/comments.test.ts" name="escapeMarkdown &gt; escapes angle brackets" time="0.000040042">
+        </testcase>
+        <testcase classname="src/lib/github/comments.test.ts" name="escapeMarkdown &gt; escapes @ mentions with zero-width space" time="0.000059875">
+        </testcase>
+        <testcase classname="src/lib/github/comments.test.ts" name="escapeMarkdown &gt; escapes URLs with zero-width space" time="0.000054541">
+        </testcase>
+        <testcase classname="src/lib/github/comments.test.ts" name="escapeMarkdown &gt; escapes multiple special characters together" time="0.000107333">
+        </testcase>
+        <testcase classname="src/lib/github/comments.test.ts" name="formatRerunComment &gt; creates valid comment for valid SHA" time="0.000611833">
+        </testcase>
+        <testcase classname="src/lib/github/comments.test.ts" name="formatRerunComment &gt; escapes markdown in reason" time="0.000076292">
+        </testcase>
+        <testcase classname="src/lib/github/comments.test.ts" name="formatRerunComment &gt; throws for invalid SHA" time="0.000362375">
+        </testcase>
+        <testcase classname="src/lib/github/comments.test.ts" name="formatRerunComment &gt; includes timestamp in ISO format" time="0.000076666">
+        </testcase>
+        <testcase classname="src/lib/github/comments.test.ts" name="hasRerunCommentForSha &gt; returns found:false when no comments match" time="0.000063583">
+        </testcase>
+        <testcase classname="src/lib/github/comments.test.ts" name="hasRerunCommentForSha &gt; returns found:false for comments from other users" time="0.000043417">
+        </testcase>
+        <testcase classname="src/lib/github/comments.test.ts" name="hasRerunCommentForSha &gt; returns found:false for comments without marker" time="0.000049208">
+        </testcase>
+        <testcase classname="src/lib/github/comments.test.ts" name="hasRerunCommentForSha &gt; returns found:false for comments older than 24 hours" time="0.000042875">
+        </testcase>
+        <testcase classname="src/lib/github/comments.test.ts" name="hasRerunCommentForSha &gt; returns found:true for matching comment within 24 hours" time="0.000051667">
+        </testcase>
+        <testcase classname="src/lib/github/comments.test.ts" name="hasRerunCommentForSha &gt; returns found:false for different SHA" time="0.000049875">
+        </testcase>
+        <testcase classname="src/lib/github/comments.test.ts" name="hasRerunCommentForSha &gt; returns found:false for invalid SHA input" time="0.000023125">
+        </testcase>
+    </testsuite>
+    <testsuite name="src/lib/github/sha.test.ts" timestamp="2026-02-24T13:56:14.271Z" hostname="Mac-Studio.local" tests="11" failures="0" errors="0" skipped="0" time="0.002245792">
+        <testcase classname="src/lib/github/sha.test.ts" name="validateSha &gt; accepts valid 40-character lowercase hex SHA" time="0.000962375">
+        </testcase>
+        <testcase classname="src/lib/github/sha.test.ts" name="validateSha &gt; rejects SHA with uppercase letters" time="0.000093125">
+        </testcase>
+        <testcase classname="src/lib/github/sha.test.ts" name="validateSha &gt; rejects SHA that is too short" time="0.000058208">
+        </testcase>
+        <testcase classname="src/lib/github/sha.test.ts" name="validateSha &gt; rejects SHA that is too long" time="0.000051625">
+        </testcase>
+        <testcase classname="src/lib/github/sha.test.ts" name="validateSha &gt; rejects SHA with invalid characters" time="0.000061042">
+        </testcase>
+        <testcase classname="src/lib/github/sha.test.ts" name="validateSha &gt; rejects empty string" time="0.000085208">
+        </testcase>
+        <testcase classname="src/lib/github/sha.test.ts" name="validateSha &gt; throws ShaValidationError with correct message" time="0.0000825">
+        </testcase>
+        <testcase classname="src/lib/github/sha.test.ts" name="isValidSha &gt; returns true for valid SHA" time="0.000093083">
+        </testcase>
+        <testcase classname="src/lib/github/sha.test.ts" name="isValidSha &gt; returns false for invalid SHA" time="0.000064458">
+        </testcase>
+        <testcase classname="src/lib/github/sha.test.ts" name="isValidSha &gt; returns false for non-string values" time="0.00009275">
+        </testcase>
+        <testcase classname="src/lib/github/sha.test.ts" name="isValidSha &gt; acts as type guard" time="0.000038166">
+        </testcase>
+    </testsuite>
+    <testsuite name="src/lib/policy/risk-tier.test.ts" timestamp="2026-02-24T13:56:14.274Z" hostname="Mac-Studio.local" tests="7" failures="0" errors="0" skipped="0" time="0.002746416">
+        <testcase classname="src/lib/policy/risk-tier.test.ts" name="createResolver &gt; classifies auth files as high-risk" time="0.001638542">
+        </testcase>
+        <testcase classname="src/lib/policy/risk-tier.test.ts" name="createResolver &gt; classifies test files as low-risk" time="0.0001335">
+        </testcase>
+        <testcase classname="src/lib/policy/risk-tier.test.ts" name="createResolver &gt; defaults to medium for unknown paths" time="0.000136375">
+        </testcase>
+        <testcase classname="src/lib/policy/risk-tier.test.ts" name="createResolver &gt; handles nested paths with **" time="0.000079">
+        </testcase>
+        <testcase classname="src/lib/policy/risk-tier.test.ts" name="resolveOverallTier &gt; returns high when any file is high-risk" time="0.000100459">
+        </testcase>
+        <testcase classname="src/lib/policy/risk-tier.test.ts" name="resolveOverallTier &gt; returns medium when all files are medium or lower" time="0.00006275">
+        </testcase>
+        <testcase classname="src/lib/policy/risk-tier.test.ts" name="resolveOverallTier &gt; returns medium for empty file list" time="0.000044459">
+        </testcase>
+    </testsuite>
+</testsuites>

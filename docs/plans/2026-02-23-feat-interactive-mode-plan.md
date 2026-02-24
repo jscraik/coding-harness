@@ -233,9 +233,9 @@ harness init --interactive
 
 ### Origin
 
-- **Brainstorm:** [docs/brainstorms/2026-02-23-installability-patches-brainstorm.md](docs/brainstorms/2026-02-23-installability-patches-brainstorm.md)
+- **Brainstorm:** [docs/brainstorms/2026-02-23-installability-patches-brainstorm.md](../brainstorms/2026-02-23-installability-patches-brainstorm.md)
 
 ### External References
 
 - [@inquirer/prompts](https://github.com/SBoudrias/Inquirer.js)
-- [diff package](https://www.npmjs.com/package/diff)
+- [diff package](https://github.com/kpdecker/jsdiff)

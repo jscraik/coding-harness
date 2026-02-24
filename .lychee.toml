@@ -13,6 +13,7 @@ exclude = [
   "example.net",
   "*.internal",
   "*.local",
+  "npmjs.com",  # Returns 403 in CI
 ]
 
 # Retry configuration
