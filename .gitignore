@@ -55,3 +55,4 @@ gardener-report.json
 # Local harness data
 .harness/
 .traces/
+.test-traces-*/

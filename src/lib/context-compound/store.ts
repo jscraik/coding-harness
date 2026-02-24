@@ -26,6 +26,40 @@ import {
 } from "./types.js";
 import type { DocumentMetadata, EmbeddingRecord } from "./types.js";
 
+// ============================================================================
+// SQLite Row Types (for better-sqlite3 query results)
+// ============================================================================
+
+/** Row from vector similarity search */
+interface VectorSearchRow {
+	path: string;
+	distance: number;
+}
+
+/** Row from document metadata query */
+interface DocumentMetaRow {
+	path: string;
+	type: string;
+	topic: string;
+	date: string;
+}
+
+/** Row from content hash query */
+interface ContentHashRow {
+	content_hash: string;
+}
+
+/** Row from document count query */
+interface DocumentCountRow {
+	count: number;
+}
+
+/** Row from document type aggregation query */
+interface DocumentTypeCountRow {
+	type: string;
+	count: number;
+}
+
 /**
  * Vector store using sqlite-vec for similarity search.
  */
@@ -184,10 +218,7 @@ export class VectorStore {
         ORDER BY v.distance
       `);
 
-			const rows = stmt.all(queryEmbedding, limit) as Array<{
-				path: string;
-				distance: number;
-			}>;
+			const rows = stmt.all(queryEmbedding, limit) as VectorSearchRow[];
 
 			// Filter by distance threshold after query
 			const filteredRows = rows.filter((row) => row.distance <= maxDistance);
@@ -204,12 +235,7 @@ export class VectorStore {
 				const metaStmt = this.db.prepare(
 					`SELECT path, type, topic, date FROM documents WHERE path IN (${placeholders})`,
 				);
-				const metaRows = metaStmt.all(...paths) as Array<{
-					path: string;
-					type: string;
-					topic: string;
-					date: string;
-				}>;
+				const metaRows = metaStmt.all(...paths) as DocumentMetaRow[];
 
 				const metaMap = new Map(metaRows.map((m) => [m.path, m]));
 
@@ -253,7 +279,7 @@ export class VectorStore {
 			const stmt = this.db.prepare(
 				"SELECT content_hash FROM documents WHERE path = ?",
 			);
-			const row = stmt.get(path) as { content_hash: string } | undefined;
+			const row = stmt.get(path) as ContentHashRow | undefined;
 			return row?.content_hash ?? null;
 		} catch {
 			return null;
@@ -277,15 +303,12 @@ export class VectorStore {
 			const countStmt = this.db.prepare(
 				"SELECT COUNT(*) as count FROM documents",
 			);
-			const countRow = countStmt.get() as { count: number };
+			const countRow = countStmt.get() as DocumentCountRow;
 
 			const typeStmt = this.db.prepare(
 				"SELECT type, COUNT(*) as count FROM documents GROUP BY type",
 			);
-			const typeRows = typeStmt.all() as Array<{
-				type: string;
-				count: number;
-			}>;
+			const typeRows = typeStmt.all() as DocumentTypeCountRow[];
 
 			const documentTypes: Record<string, number> = {};
 			for (const row of typeRows) {
