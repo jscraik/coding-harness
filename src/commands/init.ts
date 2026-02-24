@@ -176,16 +176,84 @@ interface Template {
 const TEMPLATES: Template[] = [
 	{
 		path: "harness.contract.json",
-		render: () =>
+		render: (pm) =>
 			JSON.stringify(
 				{
 					version: "1.0.0",
-					riskTierRules: {},
-					reviewPolicy: { timeoutSeconds: 600, timeoutAction: "fail" },
+					riskTierRules: {
+						"src/auth/**": "high",
+						"src/api/**": "high",
+						"src/lib/**": "medium",
+						"**/*.test.ts": "low",
+					},
+					mergePolicy: {
+						high: ["review-gate", "evidence-verify"],
+						medium: ["review-gate"],
+						low: [],
+					},
+					docsDriftRules: {},
+					reviewPolicy: {
+						timeoutSeconds: 600,
+						timeoutAction: "fail" as const,
+					},
 					evidencePolicy: {
 						requiredFor: [],
 						allowedTypes: ["png", "jpeg"],
 						maxFileSizeBytes: 1048576,
+					},
+					diffBudget: {
+						maxFiles: 10,
+						maxNetLOC: 400,
+						overrideLabel: "diff-budget-override",
+					},
+					uiLoopPolicy: {
+						fastCommand: `${pm} ui:fast`,
+						verifyCommand: `${pm} ui:verify`,
+						exploreCommand: `${pm} ui:explore`,
+						sloTargets: {
+							fastLoopSeconds: 30,
+							verifyLoopSeconds: 120,
+						},
+					},
+					runtimePolicy: {
+						nodeVersion: "20.x",
+					},
+					memoryPolicy: {
+						enabled: true,
+						provider: "local",
+						sessionIdTemplate: "repo:<name>:task:<id>",
+						domain: "default",
+						requiredTags: ["repo", "area", "type"],
+						maxObservationsPerStep: 3,
+						allowedLevels: ["observation", "learning", "pattern"],
+						requireStartRead: true,
+						requireCloseoutSummary: true,
+						forbiddenContentPatterns: [
+							"token",
+							"api[_-]?key",
+							"secret",
+							"password",
+							"credential",
+						],
+					},
+					memoryMaintenancePolicy: {
+						validateSchedule: "weekly",
+						reflectSchedule: "weekly",
+						questionSlaDays: 7,
+						duplicateThreshold: 0.8,
+					},
+					memoryEvalPolicy: {
+						trialsPerTask: 3,
+						requiredMetrics: ["pass^k", "tool_errors", "duplicate_rate"],
+						passPowKThreshold: 0.8,
+					},
+					observabilityPolicy: {
+						provider: "logs",
+						collectorEndpoint: "http://localhost:4318",
+					},
+					packageManagerPolicy: {
+						allowedManagers: ["pnpm", "npm", "yarn"],
+						requiredManager: null,
 					},
 				},
 				null,
