@@ -72,4 +72,87 @@ describe("validateContract", () => {
 		});
 		expect(result.success).toBe(false);
 	});
+
+	it("accepts contract with extended policy surfaces", () => {
+		const result = validateContract({
+			version: "1.1.0",
+			reviewPolicy: { timeoutSeconds: 600, timeoutAction: "fail" },
+			evidencePolicy: {
+				requiredFor: ["docs/**"],
+				allowedTypes: ["png", "jpeg"],
+				maxFileSizeBytes: 1024,
+			},
+			mergePolicy: {
+				high: ["review-gate"],
+				medium: ["evidence-verify"],
+				low: [],
+			},
+			docsDriftRules: {
+				"docs/**": ["require-review"],
+			},
+			diffBudget: {
+				maxFiles: 20,
+				maxNetLOC: 500,
+				overrideLabel: "diff-budget-override",
+			},
+			uiLoopPolicy: {
+				fastCommand: "pnpm ui:fast",
+				verifyCommand: "pnpm ui:verify",
+				exploreCommand: "pnpm ui:explore",
+				sloTargets: {
+					fastLoopSeconds: 30,
+					verifyLoopSeconds: 120,
+				},
+			},
+			runtimePolicy: { nodeVersion: "20.x" },
+			memoryPolicy: {
+				enabled: true,
+				provider: "local",
+				sessionIdTemplate: "repo:<name>:task:<id>",
+				domain: "default",
+				requiredTags: ["repo", "area", "type"],
+				maxObservationsPerStep: 3,
+				allowedLevels: ["observation", "learning", "pattern"],
+				requireStartRead: true,
+				requireCloseoutSummary: true,
+				forbiddenContentPatterns: ["token", "secret"],
+			},
+			memoryMaintenancePolicy: {
+				validateSchedule: "weekly",
+				reflectSchedule: "weekly",
+				questionSlaDays: 7,
+				duplicateThreshold: 0.8,
+			},
+			memoryEvalPolicy: {
+				trialsPerTask: 3,
+				requiredMetrics: ["pass^k"],
+				passPowKThreshold: 0.8,
+			},
+			observabilityPolicy: {
+				provider: "logs",
+				collectorEndpoint: "http://localhost:4318",
+			},
+			packageManagerPolicy: {
+				allowedManagers: ["pnpm", "npm", "yarn"],
+				requiredManager: null,
+			},
+		});
+
+		expect(result.success).toBe(true);
+		expect(result.data?.diffBudget?.maxNetLOC).toBe(500);
+		expect(result.data?.uiLoopPolicy?.fastCommand).toBe("pnpm ui:fast");
+		expect(result.data?.runtimePolicy?.nodeVersion).toBe("20.x");
+	});
+
+	it("rejects unknown top-level fields", () => {
+		const result = validateContract({
+			version: "1.1.0",
+			reviewPolicy: { timeoutSeconds: 600, timeoutAction: "fail" },
+			validated_reserved: { future: true },
+		});
+
+		expect(result.success).toBe(false);
+		expect(result.errors[0]?.path).toBe("root");
+		expect(result.errors[0]?.message).toContain("Unknown top-level key");
+	});
 });
