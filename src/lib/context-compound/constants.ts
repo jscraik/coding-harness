@@ -7,8 +7,8 @@
 // Ollama Configuration
 export const DEFAULT_OLLAMA_PORT = 11434;
 export const DEFAULT_OLLAMA_URL = `http://localhost:${DEFAULT_OLLAMA_PORT}`;
-export const DEFAULT_EMBEDDING_MODEL = "nomic-embed-text";
-export const EMBEDDING_DIMENSIONS = 768;
+export const DEFAULT_EMBEDDING_MODEL = "bge-m3";
+export const EMBEDDING_DIMENSIONS = 1024;
 export const MAX_EMBED_TEXT_LENGTH = 8192;
 
 // Timeouts
