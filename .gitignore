@@ -56,3 +56,6 @@ gardener-report.json
 .harness/
 .traces/
 .test-traces-*/
+
+
+environment.toml
