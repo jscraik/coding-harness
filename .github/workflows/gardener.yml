@@ -61,7 +61,7 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GARDENER_TOKEN || github.token }}
         run: |
-          BRANCH_NAME="gardener/$(date +%Y-%m-%d)"
+          BRANCH_NAME="gardener/$(date +%Y-%m-%d-%H%M%S)"
           git checkout -b "$BRANCH_NAME"
           node dist/cli.js gardener || true
           git add docs/QUALITY_SCORE.md
