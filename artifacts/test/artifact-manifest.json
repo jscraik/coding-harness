@@ -1,0 +1,36 @@
+{
+  "artifact_dir": "artifacts/test",
+  "file_count": 6,
+  "files": [
+    {
+      "path": "artifacts/test/discovered/.__artifacts__test__junit-unit.xml",
+      "size": 20965,
+      "mtime": 1771941374.3927085
+    },
+    {
+      "path": "artifacts/test/discovered/.__artifacts__test__test-output-unit.log",
+      "size": 1484,
+      "mtime": 1771941374.3906195
+    },
+    {
+      "path": "artifacts/test/junit-unit.xml",
+      "size": 20965,
+      "mtime": 1771941374.276141
+    },
+    {
+      "path": "artifacts/test/summary-unit.json",
+      "size": 324,
+      "mtime": 1771941374.3597791
+    },
+    {
+      "path": "artifacts/test/test-output-unit.log",
+      "size": 1484,
+      "mtime": 1771941374.2762222
+    },
+    {
+      "path": "artifacts/test/unit-results.json",
+      "size": 28171,
+      "mtime": 1771941374.2458818
+    }
+  ]
+}

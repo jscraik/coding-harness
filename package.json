@@ -1,54 +1,58 @@
 {
-	"name": "@jamiecraik/coding-harness",
-	"version": "0.1.0",
-	"type": "module",
-	"description": "Control plane for agentic development",
-	"bin": {
-		"harness": "./dist/cli.js"
-	},
-	"scripts": {
-		"check": "pnpm lint && pnpm docs:lint && pnpm typecheck && pnpm test && pnpm audit",
-		"lint": "biome check .",
-		"lint:fix": "biome check . --write",
-		"fmt": "biome format . --write",
-		"typecheck": "tsc --noEmit",
-		"test": "vitest run",
-		"test:watch": "vitest",
-		"build": "tsc && chmod +x dist/cli.js",
-		"audit": "pnpm audit --audit-level=moderate",
-		"audit:strict": "pnpm audit --audit-level=high",
-		"docs:lint": "pnpm markdownlint",
-		"markdownlint": "markdownlint-cli2 \"**/*.md\"",
-		"vale": "vale --config .vale.ini AGENTS.md CLAUDE.md docs"
-	},
-	"devDependencies": {
-		"@biomejs/biome": "^1.9.4",
-		"@octokit/plugin-retry": "^7.2.1",
-		"@octokit/plugin-throttling": "^9.6.1",
-		"@octokit/request-error": "^7.1.0",
-		"@octokit/rest": "^21.1.1",
-		"@types/node": "^22.19.11",
-		"@types/picomatch": "^4.0.2",
-		"@types/semver": "^7.7.1",
-		"@vvago/vale": "^3.12.0",
-		"markdownlint-cli2": "^0.21.0",
-		"picomatch": "^4.0.3",
-		"typescript": "^5.9.3",
-		"vitest": "^3.2.4"
-	},
-	"packageManager": "pnpm@10.0.0",
-	"engines": {
-		"node": ">=24.0.0"
-	},
-	"dependencies": {
-		"@inquirer/prompts": "^8.3.0",
-		"diff": "^8.0.3",
-		"semver": "^7.7.4"
-	},
-	"pnpm": {
-		"overrides": {
-			"tar": "^7.5.8",
-			"minimatch": "^10.2.1"
-		}
-	}
+  "name": "@jamiecraik/coding-harness",
+  "version": "0.1.0",
+  "type": "module",
+  "description": "Control plane for agentic development",
+  "bin": {
+    "harness": "./dist/cli.js"
+  },
+  "scripts": {
+    "check": "pnpm lint && pnpm docs:lint && pnpm typecheck && pnpm test && pnpm audit",
+    "lint": "biome check .",
+    "lint:fix": "biome check . --write",
+    "fmt": "biome format . --write",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "build": "tsc && chmod +x dist/cli.js",
+    "audit": "pnpm audit --audit-level=moderate",
+    "audit:strict": "pnpm audit --audit-level=high",
+    "docs:lint": "pnpm markdownlint",
+    "markdownlint": "markdownlint-cli2 \"**/*.md\"",
+    "vale": "vale --config .vale.ini AGENTS.md CLAUDE.md docs",
+    "test:artifacts": "bash scripts/test-with-artifacts.sh all",
+    "test:artifacts:unit": "bash scripts/test-with-artifacts.sh unit",
+    "test:artifacts:integration": "bash scripts/test-with-artifacts.sh integration",
+    "test:artifacts:e2e": "bash scripts/test-with-artifacts.sh e2e"
+  },
+  "devDependencies": {
+    "@biomejs/biome": "^1.9.4",
+    "@octokit/plugin-retry": "^7.2.1",
+    "@octokit/plugin-throttling": "^9.6.1",
+    "@octokit/request-error": "^7.1.0",
+    "@octokit/rest": "^21.1.1",
+    "@types/node": "^22.19.11",
+    "@types/picomatch": "^4.0.2",
+    "@types/semver": "^7.7.1",
+    "@vvago/vale": "^3.12.0",
+    "markdownlint-cli2": "^0.21.0",
+    "picomatch": "^4.0.3",
+    "typescript": "^5.9.3",
+    "vitest": "^3.2.4"
+  },
+  "packageManager": "pnpm@10.0.0",
+  "engines": {
+    "node": ">=24.0.0"
+  },
+  "dependencies": {
+    "@inquirer/prompts": "^8.3.0",
+    "diff": "^8.0.3",
+    "semver": "^7.7.4"
+  },
+  "pnpm": {
+    "overrides": {
+      "tar": "^7.5.8",
+      "minimatch": "^10.2.1"
+    }
+  }
 }

@@ -1,5 +1,5 @@
 ---
-status: ready
+status: deferred
 priority: p2
 issue_id: 008
 tags: [correctness, glob-matching, code-review]
