@@ -11,12 +11,14 @@ import { runInitCLI, runInteractiveInitCLI } from "./commands/init.js";
 import { runMemoryGateCLI } from "./commands/memory-gate.js";
 import { runObservabilityGateCLI } from "./commands/observability-gate.js";
 import { runPlanGateCLI } from "./commands/plan-gate.js";
+import { runGapCaseCLI, type GapSeverity } from "./commands/gap-case.js";
 import { runPreflightGateCLI } from "./commands/preflight-gate.js";
 import { runPromptGateCLI } from "./commands/prompt-gate.js";
 import { runReplayCLI } from "./commands/replay.js";
 import { runReviewGateCLI } from "./commands/review-gate.js";
 import { runRiskTierCLI } from "./commands/risk-tier.js";
 import { runSilentErrorDetectorCLI } from "./commands/silent-error.js";
+import { runRemediateCLI } from "./commands/remediate.js";
 import {
 	runUIExploreCLI,
 	runUIFastCLI,
@@ -62,6 +64,8 @@ function printUsage(): void {
 	console.info(
 		"  blast-radius     Determine required checks from changed files",
 	);
+	console.info("  remediate        Auto-plan and execute deterministic remediation");
+	console.info("  gap-case         Manage production gap cases (create/list/resolve)");
 	console.info("  observability-gate  Check cardinality limits in metrics");
 	console.info("  diff-budget      Enforce diff budget constraints");
 	console.info("  ui:fast          Storybook-first local development loop");
@@ -861,6 +865,166 @@ export function run(args: string[]): void {
 		process.exit(exitCode);
 		return;
 	}
+	if (command === "remediate") {
+		const mode = args[1];
+		if (mode !== "run" && mode !== "apply") {
+			console.error("Error: remediate command requires subcommand `run` or `apply`");
+			process.exit(2);
+			return;
+		}
+
+		const ownerIndex = args.indexOf("--owner");
+		const repoIndex = args.indexOf("--repo");
+		const prIndex = args.indexOf("--pr");
+		const shaIndex = args.indexOf("--sha");
+		const providerIndex = args.indexOf("--provider");
+		const dryRunFlag = args.includes("--dry-run");
+		const noInputFlag = args.includes("--no-input");
+		const forceFlag = args.includes("--force");
+		const jsonFlag = args.includes("--json");
+		const maxAutoTierIndex = args.indexOf("--max-auto-tier");
+
+		const prValue = prIndex !== -1 ? args[prIndex + 1] : undefined;
+		const maxAutoTierValue =
+			maxAutoTierIndex !== -1 ? args[maxAutoTierIndex + 1] : undefined;
+
+		const exitCode = runRemediateCLI({
+			mode,
+			owner: ownerIndex !== -1 ? args[ownerIndex + 1] ?? "" : "",
+			repo: repoIndex !== -1 ? args[repoIndex + 1] ?? "" : "",
+			prNumber: parseIntegerArg(prValue, 1) ?? 0,
+			headSha: shaIndex !== -1 ? args[shaIndex + 1] ?? "" : "",
+			provider: (providerIndex !== -1
+				? (args[providerIndex + 1] as "codeql" | "codex" | undefined)
+				: undefined) ?? "codeql",
+			dryRun: dryRunFlag,
+			noInput: noInputFlag,
+			force: forceFlag,
+			maxAutoTier:
+				maxAutoTierValue === "low" ||
+				maxAutoTierValue === "medium" ||
+				maxAutoTierValue === "high"
+					? maxAutoTierValue
+					: undefined,
+			json: jsonFlag,
+		});
+		process.exit(exitCode);
+		return;
+	}
+
+	if (command === "gap-case") {
+		const action = args[1];
+		const jsonFlag = args.includes("--json");
+		const caseStoreIndex = args.indexOf("--case-store");
+		const caseStore = caseStoreIndex !== -1 ? args[caseStoreIndex + 1] : undefined;
+
+		if (action !== "create" && action !== "list" && action !== "resolve") {
+			console.error(
+				"Error: gap-case command requires subcommand `create`, `list`, or `resolve`",
+			);
+			process.exit(2);
+			return;
+		}
+
+		if (action === "create") {
+			const incidentIndex = args.indexOf("--incident-id");
+			const ownerIndex = args.indexOf("--owner");
+			const severityIndex = args.indexOf("--severity");
+			const linkedPrIndex = args.indexOf("--linked-pr");
+			const findingSummaryIndex = args.indexOf("--finding-summary");
+			const dueDaysIndex = args.indexOf("--due-days");
+			const caseIdIndex = args.indexOf("--case-id");
+			const caseIdPrefixIndex = args.indexOf("--case-id-prefix");
+			const evidenceIndex = args.indexOf("--evidence");
+
+			const dueDaysValue =
+				dueDaysIndex !== -1 ? args[dueDaysIndex + 1] : undefined;
+			const parsedDueDays = dueDaysValue
+				? parseIntegerArg(dueDaysValue, 1)
+				: undefined;
+
+			const exitCode = runGapCaseCLI({
+				action: "create",
+				incidentId: incidentIndex !== -1 ? args[incidentIndex + 1] ?? "" : "",
+				owner: ownerIndex !== -1 ? args[ownerIndex + 1] ?? "" : "",
+				severity:
+					severityIndex !== -1
+						? ((args[severityIndex + 1] as GapSeverity | undefined) ?? "low")
+						: "low",
+				linkedPr:
+					linkedPrIndex !== -1 ? args[linkedPrIndex + 1] ?? "" : "",
+				findingSummary:
+					findingSummaryIndex !== -1
+						? args[findingSummaryIndex + 1] ?? undefined
+						: undefined,
+				dueDays: parsedDueDays,
+				caseId: caseIdIndex !== -1 ? args[caseIdIndex + 1] ?? undefined : undefined,
+				caseIdPrefix:
+					caseIdPrefixIndex !== -1
+						? args[caseIdPrefixIndex + 1] ?? undefined
+						: undefined,
+				evidence: evidenceIndex !== -1 ? parseCsvList(args[evidenceIndex + 1]) : [],
+				caseStore,
+				json: jsonFlag,
+			});
+			process.exit(exitCode);
+			return;
+		}
+
+		if (action === "list") {
+			const openFlag = args.includes("--open");
+			const overdueFlag = args.includes("--overdue");
+			const exitCode = runGapCaseCLI({
+				action: "list",
+				caseStore,
+				open: openFlag,
+				overdue: overdueFlag,
+				json: jsonFlag,
+			});
+			process.exit(exitCode);
+			return;
+		}
+
+		const positionalCaseId = args[2] && !args[2].startsWith("--") ? args[2] : "";
+		const caseIdArgIndex = args.indexOf("--case-id");
+		const caseIdArg =
+			caseIdArgIndex !== -1 ? args[caseIdArgIndex + 1] ?? "" : "";
+		if (positionalCaseId && caseIdArg && positionalCaseId !== caseIdArg) {
+			console.error("Error: positional case id and --case-id must match");
+			process.exit(2);
+			return;
+		}
+		const caseId = caseIdArg || positionalCaseId;
+		if (!caseId) {
+			console.error("Error: gap-case resolve requires a case id");
+			process.exit(2);
+			return;
+		}
+
+		const incidentIndex = args.indexOf("--incident-id");
+		const resolvedByIndex = args.indexOf("--resolved-by");
+		const linkedPrIndex = args.indexOf("--linked-pr");
+		const evidenceIndex = args.indexOf("--evidence");
+		const closeReasonIndex = args.indexOf("--close-reason");
+		const forceFlag = args.includes("--force");
+
+		const exitCode = runGapCaseCLI({
+			action: "resolve",
+			caseId,
+			incidentId: incidentIndex !== -1 ? args[incidentIndex + 1] ?? "" : "",
+			resolvedBy: resolvedByIndex !== -1 ? args[resolvedByIndex + 1] ?? "" : "",
+			linkedPr: linkedPrIndex !== -1 ? args[linkedPrIndex + 1] ?? "" : "",
+			evidence: evidenceIndex !== -1 ? parseCsvList(args[evidenceIndex + 1]) : [],
+			closeReason:
+				closeReasonIndex !== -1 ? args[closeReasonIndex + 1] ?? undefined : undefined,
+			force: forceFlag,
+			caseStore,
+			json: jsonFlag,
+		});
+		process.exit(exitCode);
+		return;
+	}
+
 	if (command === "observability-gate") {
 		// Parse observability-gate options
 		const jsonFlag = args.includes("--json");

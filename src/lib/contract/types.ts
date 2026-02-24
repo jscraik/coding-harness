@@ -78,6 +78,36 @@ export interface PackageManagerPolicy {
 	requiredManager: string | null;
 }
 
+export type RemediationMode = "run" | "apply";
+export type RemediationAutoTier = "high" | "medium" | "low";
+
+export interface RemediationPolicy {
+	providerDefaults: {
+		codeql: {
+			autoApplyMaxTier: RemediationAutoTier;
+			dryRunOnlyByDefault: boolean;
+		};
+		codex: {
+			autoApplyMaxTier: RemediationAutoTier;
+			dryRunOnlyByDefault: boolean;
+		};
+	};
+	canonicalRerunWorkflow?: string | null;
+	marker: string;
+	timeoutMinutes: number;
+	retryLimit: number;
+	requireEvidence: boolean;
+}
+
+export interface GapCasePolicy {
+	requiredEvidenceStatuses: string[];
+	requiredCloseReasons: string[];
+	defaultDueDays: number;
+	caseIdPrefix: string;
+	caseStore: string;
+	allowEvidencelessResolve: boolean;
+}
+
 /**
  * Override metadata when diff budget is exceeded.
  */
@@ -133,7 +163,38 @@ export interface HarnessContract {
 	observabilityPolicy?: ObservabilityPolicy | undefined;
 	/** Package manager policy */
 	packageManagerPolicy?: PackageManagerPolicy | undefined;
+	/** Remediation policy for deterministic fix/retry workflows */
+	remediationPolicy?: RemediationPolicy | undefined;
+	/** Gap-case lifecycle policy */
+	gapCasePolicy?: GapCasePolicy | undefined;
 }
+
+export const DEFAULT_REMEDIATION_POLICY: RemediationPolicy = {
+	providerDefaults: {
+		codeql: {
+			autoApplyMaxTier: "medium",
+			dryRunOnlyByDefault: true,
+		},
+		codex: {
+			autoApplyMaxTier: "medium",
+			dryRunOnlyByDefault: true,
+		},
+	},
+	canonicalRerunWorkflow: "greptile-rerun.yml",
+	marker: "<!-- harness-remediation-rerun -->",
+	timeoutMinutes: 20,
+	retryLimit: 3,
+	requireEvidence: true,
+};
+
+export const DEFAULT_GAP_CASE_POLICY: GapCasePolicy = {
+	requiredEvidenceStatuses: ["passed", "approved"],
+	requiredCloseReasons: ["fix", "workaround", "waived"],
+	defaultDueDays: 7,
+	caseIdPrefix: "gap-",
+	caseStore: ".harness/gap-cases.json",
+	allowEvidencelessResolve: false,
+};
 
 export const DEFAULT_REVIEW_POLICY: ReviewPolicy = {
 	timeoutSeconds: 600, // 10 minutes
@@ -147,7 +208,7 @@ export const DEFAULT_EVIDENCE_POLICY: EvidencePolicy = {
 };
 
 export const DEFAULT_CONTRACT: HarnessContract = {
-	version: "1.1.0",
+	version: "1.2.0",
 	riskTierRules: {},
 	reviewPolicy: DEFAULT_REVIEW_POLICY,
 	evidencePolicy: DEFAULT_EVIDENCE_POLICY,
@@ -211,6 +272,8 @@ export const DEFAULT_CONTRACT: HarnessContract = {
 		allowedManagers: ["pnpm", "npm", "yarn"],
 		requiredManager: null,
 	},
+	remediationPolicy: DEFAULT_REMEDIATION_POLICY,
+	gapCasePolicy: DEFAULT_GAP_CASE_POLICY,
 };
 
 /**

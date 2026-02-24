@@ -1,5 +1,9 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { parseCsvList, parseIntegerArg, run } from "./cli.js";
+import { join } from "node:path";
+import { randomUUID } from "node:crypto";
+import { existsSync, rmSync } from "node:fs";
+import { tmpdir } from "node:os";
 
 describe("parseIntegerArg", () => {
 	it("parses valid integers and respects minimum", () => {
@@ -94,6 +98,93 @@ describe("run", () => {
 		expect(infoSpy).toHaveBeenCalledWith(
 			"Unknown command: totally-unknown-command",
 		);
+	});
+
+	it("routes remediate run command", () => {
+		const exitSpy = vi
+			.spyOn(process, "exit")
+			.mockImplementation((code?: number) => {
+				throw new Error(`EXIT_${String(code)}`);
+			}) as never;
+		const infoSpy = vi.spyOn(console, "info").mockImplementation(() => {
+			// silence output
+		});
+
+		expect(() =>
+			run([
+				"remediate",
+				"run",
+				"--owner",
+				"acme",
+				"--repo",
+				"demo",
+				"--pr",
+				"123",
+				"--sha",
+				"abcdeff",
+				"--provider",
+				"codeql",
+			]),
+		).toThrowError("EXIT_0");
+		expect(exitSpy).toHaveBeenCalledWith(0);
+		expect(infoSpy).toHaveBeenCalledWith(
+			"Remediation run prepared for acme/demo#123",
+		);
+	});
+
+	it("routes gap-case create/list/resolve commands", () => {
+		const exitSpy = vi
+			.spyOn(process, "exit")
+			.mockImplementation((code?: number) => {
+				throw new Error(`EXIT_${String(code)}`);
+			}) as never;
+		const storePath = join(tmpdir(), `harness-gap-case-${randomUUID()}.json`);
+
+		expect(() =>
+			run([
+				"gap-case",
+				"create",
+				"--incident-id",
+				"INC-1",
+				"--owner",
+				"alice",
+				"--severity",
+				"high",
+				"--linked-pr",
+				"acme/demo#1",
+				"--case-store",
+				storePath,
+			]),
+		).toThrowError("EXIT_0");
+		expect(() =>
+			run([
+				"gap-case",
+				"list",
+				"--open",
+				"--case-store",
+				storePath,
+				"--json",
+			]),
+		).toThrowError("EXIT_0");
+		expect(() =>
+			run([
+				"gap-case",
+				"resolve",
+				"gap-001",
+				"--incident-id",
+				"INC-1",
+				"--resolved-by",
+				"alice",
+				"--linked-pr",
+				"acme/demo#1",
+				"--case-store",
+				storePath,
+			]),
+		).toThrowError("EXIT_0");
+
+		expect(existsSync(storePath)).toBe(true);
+		rmSync(storePath, { force: true });
+		expect(exitSpy).toHaveBeenCalledWith(0);
 	});
 
 	it("does not exit for help or version", () => {
