@@ -6,7 +6,9 @@
  */
 
 import { spawnSync } from "node:child_process";
+import { randomUUID } from "node:crypto";
 import { existsSync, readFileSync, realpathSync, unlinkSync } from "node:fs";
+import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { validatePath } from "../input/sanitize.js";
 import type { BrokenLink } from "./types.js";
@@ -21,10 +23,31 @@ interface LycheeReport {
 	>;
 }
 
-/**
- * Default lychee output file
- */
-const LYCHEE_REPORT_FILE = "lychee-report.json";
+function isLycheeReport(value: unknown): value is LycheeReport {
+	if (typeof value !== "object" || value === null || Array.isArray(value)) {
+		return false;
+	}
+	const report = value as Record<string, unknown>;
+	if (report.fail_map === undefined) return true;
+	if (typeof report.fail_map !== "object" || report.fail_map === null) {
+		return false;
+	}
+	for (const links of Object.values(report.fail_map as Record<string, unknown>)) {
+		if (!Array.isArray(links)) {
+			return false;
+		}
+		for (const link of links) {
+			if (typeof link !== "object" || link === null) {
+				return false;
+			}
+			const entry = link as Record<string, unknown>;
+			if (typeof entry.url !== "string") {
+				return false;
+			}
+		}
+	}
+	return true;
+}
 
 /**
  * Check if lychee is available in the system
@@ -60,7 +83,7 @@ export function checkLinks(basePath: string): BrokenLink[] {
 		return brokenLinks;
 	}
 
-	const reportPath = join(process.cwd(), LYCHEE_REPORT_FILE);
+	const reportPath = join(tmpdir(), `lychee-report-${randomUUID()}.json`);
 
 	try {
 		// Re-validate path immediately before use to minimize TOCTOU window
@@ -102,7 +125,12 @@ export function checkLinks(basePath: string): BrokenLink[] {
 		}
 
 		const reportContent = readFileSync(reportPath, "utf-8");
-		const report: LycheeReport = JSON.parse(reportContent);
+		const parsed = JSON.parse(reportContent) as unknown;
+		if (!isLycheeReport(parsed)) {
+			console.error("Invalid lychee report format");
+			return brokenLinks;
+		}
+		const report = parsed;
 
 		if (report.fail_map) {
 			for (const [file, links] of Object.entries(report.fail_map)) {

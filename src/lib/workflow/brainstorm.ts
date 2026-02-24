@@ -24,6 +24,45 @@ export interface BrainstormMetadata {
 const BRAINSTORMS_DIR = "docs/brainstorms";
 const FORBIDDEN_CHARS = /[<>:"/\\|?*\!.,]/g;
 
+function parseBrainstormStatus(
+	status: unknown,
+): BrainstormFrontmatter["status"] {
+	return status === "draft" || status === "decided" || status === "superseded"
+		? status
+		: "draft";
+}
+
+function toStringArray(value: unknown): string[] {
+	if (!Array.isArray(value)) {
+		return [];
+	}
+	return value.filter((item): item is string => typeof item === "string");
+}
+
+function normalizeBrainstormFrontmatter(
+	frontmatter: Record<string, unknown>,
+): BrainstormFrontmatter | null {
+	const topic = frontmatter.topic;
+	const date = frontmatter.date;
+	if (typeof topic !== "string" || topic.trim().length === 0) {
+		return null;
+	}
+	if (typeof date !== "string" || date.trim().length === 0) {
+		return null;
+	}
+	const supersededBy =
+		typeof frontmatter.supersededBy === "string"
+			? frontmatter.supersededBy
+			: undefined;
+	return {
+		topic: topic.trim(),
+		date: date.trim(),
+		status: parseBrainstormStatus(frontmatter.status),
+		decisions: toStringArray(frontmatter.decisions),
+		...(supersededBy ? { supersededBy } : {}),
+	};
+}
+
 /**
  * Sanitize a topic string for use in a filename.
  */
@@ -194,10 +233,14 @@ ${content}
 export function loadBrainstorm(filepath: string): BrainstormMetadata {
 	const content = readFileSync(filepath, "utf-8");
 	const { frontmatter, body } = parseFrontmatter(content);
+	const normalized = normalizeBrainstormFrontmatter(frontmatter);
+	if (!normalized) {
+		throw new Error(`Invalid brainstorm frontmatter: ${filepath}`);
+	}
 
 	return {
 		path: filepath,
-		frontmatter: frontmatter as unknown as BrainstormFrontmatter,
+		frontmatter: normalized,
 		content: body,
 	};
 }

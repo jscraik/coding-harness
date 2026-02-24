@@ -25,7 +25,6 @@ export class OllamaClient {
 	private readonly baseUrl: string;
 	private readonly timeoutMs: number;
 	private readonly model: string;
-	private abortController: AbortController | null = null;
 
 	/**
 	 * Create a new Ollama client.
@@ -92,25 +91,23 @@ export class OllamaClient {
 	 * @returns Result containing Float32Array embedding or error
 	 */
 	async embed(text: string): Promise<Result<Float32Array, EmbeddingError>> {
-		// Cancel any pending request
-		this.abortController?.abort();
-		this.abortController = new AbortController();
+		const abortController = new AbortController();
 
 		// Set up timeout
 		const timeoutId = setTimeout(() => {
-			this.abortController?.abort();
+			abortController.abort();
 		}, this.timeoutMs);
 
 		try {
 			const response = await fetch(`${this.baseUrl}/api/embeddings`, {
 				method: "POST",
 				headers: { "Content-Type": "application/json" },
-				body: JSON.stringify({
-					model: this.model,
-					prompt: text.slice(0, MAX_EMBED_TEXT_LENGTH),
-				}),
-				signal: this.abortController.signal,
-			});
+					body: JSON.stringify({
+						model: this.model,
+						prompt: text.slice(0, MAX_EMBED_TEXT_LENGTH),
+					}),
+					signal: abortController.signal,
+				});
 
 			clearTimeout(timeoutId);
 

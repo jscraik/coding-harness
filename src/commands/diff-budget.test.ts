@@ -10,6 +10,7 @@ vi.mock("node:child_process", () => ({
 // Mock fs
 vi.mock("node:fs", () => ({
 	readFileSync: vi.fn(),
+	realpathSync: vi.fn((path: string) => path),
 }));
 
 vi.mock("../lib/contract/loader.js", () => ({

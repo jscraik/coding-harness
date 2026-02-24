@@ -45,6 +45,10 @@ export interface UIEvidence {
 	logs?: string[];
 }
 
+function hasUnsafeShellChars(command: string): boolean {
+	return /[;&|`$<>]/.test(command) || /[\n\r]/.test(command);
+}
+
 /**
  * Detect package manager and return run command
  */
@@ -129,6 +133,16 @@ export function runUIFast(options: UIFastOptions = {}): {
 
 	// If contract policy exists, trust it even if local tooling checks would fail.
 	if (policy?.fastCommand) {
+		if (hasUnsafeShellChars(policy.fastCommand)) {
+			const message = "Invalid uiLoopPolicy.fastCommand: unsafe shell characters";
+			if (json) {
+				return {
+					exitCode: EXIT_CODES.VALIDATION_ERROR,
+					message: JSON.stringify({ error: message, code: "VALIDATION_ERROR" }),
+				};
+			}
+			return { exitCode: EXIT_CODES.VALIDATION_ERROR, message };
+		}
 		let fullCmd = policy.fastCommand;
 		if (options.ci) {
 			fullCmd = `${fullCmd} --ci`;
@@ -209,6 +223,17 @@ export function runUIVerify(options: UIVerifyOptions = {}): {
 
 	// If policy exists, append args to configured command.
 	if (policy?.verifyCommand) {
+		if (hasUnsafeShellChars(policy.verifyCommand)) {
+			const message =
+				"Invalid uiLoopPolicy.verifyCommand: unsafe shell characters";
+			if (json) {
+				return {
+					exitCode: EXIT_CODES.VALIDATION_ERROR,
+					message: JSON.stringify({ error: message, code: "VALIDATION_ERROR" }),
+				};
+			}
+			return { exitCode: EXIT_CODES.VALIDATION_ERROR, message };
+		}
 		const startTime = Date.now();
 		const fullCmd = `${policy.verifyCommand}${
 			args.length > 0 ? ` ${args.join(" ")}` : ""
@@ -300,6 +325,17 @@ export function runUIExplore(options: UIExploreOptions = {}): {
 		`npx @agent-browser/cli explore ${url} --output ${outputDir}`;
 
 	if (policy?.exploreCommand) {
+		if (hasUnsafeShellChars(policy.exploreCommand)) {
+			const message =
+				"Invalid uiLoopPolicy.exploreCommand: unsafe shell characters";
+			if (json) {
+				return {
+					exitCode: EXIT_CODES.VALIDATION_ERROR,
+					message: JSON.stringify({ error: message, code: "VALIDATION_ERROR" }),
+				};
+			}
+			return { exitCode: EXIT_CODES.VALIDATION_ERROR, message };
+		}
 		const command =
 			`${policy.exploreCommand} ${[url, outputDir, ...interactionArgs].join(" ")}`.trim();
 		if (json) {

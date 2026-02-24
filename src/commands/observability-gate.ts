@@ -41,24 +41,44 @@ export type ObservabilityGateResult =
 	| { ok: true; output: ObservabilityGateOutput }
 	| { ok: false; error: { code: string; message: string } };
 
+function isStringRecord(value: unknown): value is Record<string, string> {
+	if (typeof value !== "object" || value === null || Array.isArray(value)) {
+		return false;
+	}
+	return Object.entries(value).every(
+		([key, entry]) => key.length > 0 && typeof entry === "string",
+	);
+}
+
 /**
  * Run observability gate validation.
  */
 export function runObservabilityGate(
 	options: ObservabilityGateOptions,
 ): ObservabilityGateResult {
-	try {
-		// Parse labels
-		let labels: Record<string, string> = {};
+		try {
+			// Parse labels
+			let labels: Record<string, string> = {};
 
-		if (options.labels) {
-			try {
-				labels = JSON.parse(options.labels);
-			} catch {
-				return {
-					ok: false,
-					error: {
-						code: "VALIDATION_ERROR",
+			if (options.labels) {
+				try {
+					const parsed = JSON.parse(options.labels) as unknown;
+					if (!isStringRecord(parsed)) {
+						return {
+							ok: false,
+							error: {
+								code: "VALIDATION_ERROR",
+								message:
+									"Invalid labels format: expected JSON object of string:string",
+							},
+						};
+					}
+					labels = parsed;
+				} catch {
+					return {
+						ok: false,
+						error: {
+							code: "VALIDATION_ERROR",
 						message: "Invalid JSON in labels",
 					},
 				};

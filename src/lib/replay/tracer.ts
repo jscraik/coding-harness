@@ -78,6 +78,12 @@ export const DEFAULT_TRACE_CONFIG: TraceConfig = {
 	includeEnv: false,
 };
 
+const TRACE_ID_PATTERN = /^trace-[a-f0-9]{16}$/;
+
+export function isValidTraceId(traceId: string): boolean {
+	return TRACE_ID_PATTERN.test(traceId);
+}
+
 /** Generate a stable trace ID from seed data */
 export function generateTraceId(seed?: string): string {
 	const timestamp = Date.now().toString(36);
@@ -182,6 +188,9 @@ async function saveTrace(
 	trace: ExecutionTrace,
 	config: TraceConfig,
 ): Promise<void> {
+	if (!isValidTraceId(trace.traceId)) {
+		throw new Error(`Invalid trace ID: ${trace.traceId}`);
+	}
 	const traceDir = join(config.baseDir, trace.traceId);
 	await mkdir(traceDir, { recursive: true });
 
@@ -194,12 +203,22 @@ export async function loadTrace(
 	traceId: string,
 	config?: Partial<TraceConfig>,
 ): Promise<ExecutionTrace | null> {
+	if (!isValidTraceId(traceId)) {
+		return null;
+	}
 	const fullConfig = { ...DEFAULT_TRACE_CONFIG, ...config };
 	const tracePath = join(fullConfig.baseDir, traceId, "trace.json");
 
 	try {
 		const data = await readFile(tracePath, "utf-8");
-		return JSON.parse(data) as ExecutionTrace;
+		const parsed = JSON.parse(data) as unknown;
+		if (!validateTrace(parsed)) {
+			return null;
+		}
+		if (parsed.traceId !== traceId) {
+			return null;
+		}
+		return parsed;
 	} catch {
 		return null;
 	}
@@ -304,7 +323,7 @@ export function validateTrace(trace: unknown): trace is ExecutionTrace {
 
 	return (
 		typeof t.traceId === "string" &&
-		t.traceId.startsWith("trace-") &&
+		isValidTraceId(t.traceId) &&
 		typeof t.createdAt === "string" &&
 		!Number.isNaN(new Date(t.createdAt).getTime()) &&
 		typeof t.workingDirectory === "string" &&

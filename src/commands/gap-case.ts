@@ -1,6 +1,7 @@
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { dirname, resolve } from "node:path";
 import { sanitizeError } from "../lib/input/sanitize.js";
+import { PathTraversalError, validatePath } from "../lib/input/validator.js";
 
 export const EXIT_CODES = {
 	SUCCESS: 0,
@@ -94,7 +95,7 @@ function nowIso(): string {
 }
 
 function normalizeCaseStore(caseStore?: string): string {
-	return resolve(caseStore || DEFAULT_CASE_STORE);
+	return validatePath(process.cwd(), resolve(caseStore || DEFAULT_CASE_STORE));
 }
 
 function readCaseStore(filePath: string): GapCaseStore {
@@ -314,6 +315,15 @@ export function runGapCase(
 			},
 		};
 	} catch (error) {
+		if (error instanceof PathTraversalError) {
+			return {
+				ok: false,
+				error: {
+					code: "E_VALIDATION",
+					message: "Invalid --case-store path (path traversal detected)",
+				},
+			};
+		}
 		if (error instanceof SyntaxError) {
 			return {
 				ok: false,

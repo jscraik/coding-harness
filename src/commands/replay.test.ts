@@ -15,7 +15,7 @@ describe("replay command", () => {
 
 		it("returns TRACE_NOT_FOUND for non-existent trace", async () => {
 			const exitCode = await runReplayCLI({
-				traceId: "trace-nonexistent123",
+				traceId: "trace-aaaaaaaaaaaaaaaa",
 			});
 			expect(exitCode).toBe(EXIT_CODES.TRACE_NOT_FOUND);
 		});
@@ -27,7 +27,7 @@ describe("replay command", () => {
 
 		it("outputs JSON when --json is set", async () => {
 			const exitCode = await runReplayCLI({
-				traceId: "trace-nonexistent",
+				traceId: "trace-bbbbbbbbbbbbbbbb",
 				json: true,
 			});
 			expect(exitCode).toBe(EXIT_CODES.TRACE_NOT_FOUND);

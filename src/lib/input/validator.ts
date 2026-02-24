@@ -1,5 +1,5 @@
 import { realpathSync } from "node:fs";
-import { dirname, normalize, resolve } from "node:path";
+import { dirname, normalize, resolve, sep } from "node:path";
 
 export class PathTraversalError extends Error {
 	constructor() {
@@ -15,6 +15,8 @@ export class PathTraversalError extends Error {
 export function validatePath(baseDir: string, userPath: string): string {
 	const resolved = resolve(baseDir, normalize(userPath));
 	const realBase = realpathSync(baseDir);
+	const isWithinBase = (candidate: string): boolean =>
+		candidate === realBase || candidate.startsWith(`${realBase}${sep}`);
 
 	// CRITICAL: Canonicalize resolved path BEFORE comparison
 	let realResolved: string;
@@ -22,19 +24,19 @@ export function validatePath(baseDir: string, userPath: string): string {
 		realResolved = realpathSync(resolved);
 	} catch {
 		// Path doesn't exist - validate parent directory
-		const parentDir = dirname(resolved);
-		try {
-			const realParent = realpathSync(parentDir);
-			if (!realParent.startsWith(realBase)) {
+			const parentDir = dirname(resolved);
+			try {
+				const realParent = realpathSync(parentDir);
+				if (!isWithinBase(realParent)) {
+					throw new PathTraversalError();
+				}
+			} catch {
 				throw new PathTraversalError();
 			}
-		} catch {
-			throw new PathTraversalError();
-		}
 		return resolved;
 	}
 
-	if (!realResolved.startsWith(realBase)) {
+	if (!isWithinBase(realResolved)) {
 		throw new PathTraversalError();
 	}
 	return realResolved;

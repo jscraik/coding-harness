@@ -1,6 +1,5 @@
 import { randomUUID } from "node:crypto";
 import { existsSync, rmSync } from "node:fs";
-import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { parseCsvList, parseIntegerArg, run } from "./cli.js";
@@ -138,7 +137,11 @@ describe("run", () => {
 			.mockImplementation((code?: string | number | null | undefined) => {
 				throw new Error(`EXIT_${String(code)}`);
 			}) as never;
-		const storePath = join(tmpdir(), `harness-gap-case-${randomUUID()}.json`);
+		const storePath = join(
+			process.cwd(),
+			"artifacts",
+			`harness-gap-case-${randomUUID()}.json`,
+		);
 
 		expect(() =>
 			run([
