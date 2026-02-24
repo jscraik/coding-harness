@@ -1,0 +1,29 @@
+# Lychee configuration for documentation link checking
+# https://lychee.cli.rs/
+
+verbose = "info"
+format = "json"
+
+# Exclude common development/local URLs
+exclude = [
+  "localhost",
+  "127.0.0.1",
+  "example.com",
+  "example.org",
+  "example.net",
+  "*.internal",
+  "*.local",
+]
+
+# Retry configuration
+max_retries = 2
+timeout = 10
+
+# User agent for better compatibility
+user_agent = "coding-harness-gardener/1.0"
+
+# Accept certain status codes (e.g., 999 for LinkedIn rate limiting)
+accept = [200, 201, 202, 203, 204, 999]
+
+# Don't check email addresses
+include_mail = false

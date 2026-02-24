@@ -31,3 +31,22 @@ export function sanitizeError(error: unknown): string {
 	}
 	return message;
 }
+
+// Re-export validatePath from validator.ts for backward compatibility
+// The validator.ts version is symlink-safe using realpathSync
+export { validatePath } from "./validator.js";
+
+/**
+ * Sanitize a path for safe display in error messages.
+ * Removes home directory and other sensitive path components.
+ *
+ * @param path - Path to sanitize for display
+ * @returns Sanitized path safe for error messages
+ */
+export function sanitizePathForDisplay(path: string): string {
+	return path
+		.replace(/\/Users\/[^/]+/g, "[HOME]")
+		.replace(/\/home\/[^/]+/g, "[HOME]")
+		.replace(/C:\\Users\\[^\\]+/g, "[HOME]")
+		.replace(process.cwd(), ".");
+}

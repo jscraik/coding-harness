@@ -1,0 +1,24 @@
+config:
+  default: true
+  # Relaxed rules for technical docs
+  MD010: false      # No hard tabs - some files use tabs
+  MD013: false      # Line length - too strict for code/URLs
+  MD024: false      # Duplicate headings - needed in changelogs
+  MD025: false      # Multiple h1s - needed in brainstorm docs
+  MD022: false      # Blanks around headings - too pedantic
+  MD029: false      # Ordered list prefix - allow any numbering
+  MD031: false      # Blanks around fences - too pedantic
+  MD032: false      # Blanks around lists - too pedantic
+  MD038: false      # Spaces in code spans - common in docs
+  MD040: false      # Fenced code language - too strict for quick blocks
+  MD012: false      # Multiple blank lines - harmless
+  MD034: false      # No bare URLs - too strict for docs with many URLs
+  MD036: false      # No emphasis as heading - used for callouts
+  MD037: false      # Spaces inside emphasis - minor formatting
+  MD058: false      # Blanks around tables - too pedantic
+  MD060: false      # Table column style - too pedantic for compact tables
+ignores:
+  - node_modules
+  - dist
+  - .git
+  - CHANGELOG.md   # Auto-generated, skip linting
