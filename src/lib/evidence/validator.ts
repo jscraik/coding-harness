@@ -1,6 +1,6 @@
 import { readFileSync, statSync } from "node:fs";
 import { realpathSync } from "node:fs";
-import { dirname, normalize, resolve } from "node:path";
+import { dirname, normalize, resolve, sep } from "node:path";
 import type {
 	EvidenceCheckResult,
 	EvidenceError,
@@ -26,6 +26,20 @@ export class PathTraversalError extends Error {
 }
 
 /**
+ * Assert that a candidate path is within the base directory.
+ * Prevents sibling-prefix attacks (e.g., `/base-evil/...` passing `startsWith("/base")`).
+ */
+function assertWithinBase(realBase: string, candidateRealPath: string): void {
+	const basePrefix = realBase.endsWith(sep) ? realBase : realBase + sep;
+	if (
+		candidateRealPath !== realBase &&
+		!candidateRealPath.startsWith(basePrefix)
+	) {
+		throw new PathTraversalError();
+	}
+}
+
+/**
  * Validate that a user-provided path stays within the base directory.
  * Handles symlink attacks by canonicalizing the resolved path.
  *
@@ -47,18 +61,14 @@ export function validatePath(baseDir: string, userPath: string): string {
 		const parentDir = dirname(resolved);
 		try {
 			const realParent = realpathSync(parentDir);
-			if (!realParent.startsWith(realBase)) {
-				throw new PathTraversalError();
-			}
+			assertWithinBase(realBase, realParent);
 		} catch {
 			throw new PathTraversalError();
 		}
 		return resolved;
 	}
 
-	if (!realResolved.startsWith(realBase)) {
-		throw new PathTraversalError();
-	}
+	assertWithinBase(realBase, realResolved);
 	return realResolved;
 }
 
