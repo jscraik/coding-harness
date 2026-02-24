@@ -1,0 +1,64 @@
+{
+	"$schema": "https://json-schema.org/draft/2020-12/schema",
+	"$id": "https://example.com/schemas/browser-evidence.json",
+	"title": "Browser Evidence",
+	"description": "Schema for browser evidence artifacts (screenshots)",
+	"type": "object",
+	"required": ["evidenceType", "files"],
+	"properties": {
+		"evidenceType": {
+			"const": "screenshot",
+			"description": "Type of evidence (MVP: screenshots only)"
+		},
+		"files": {
+			"type": "array",
+			"description": "List of evidence files",
+			"items": {
+				"type": "object",
+				"required": ["path"],
+				"properties": {
+					"path": {
+						"type": "string",
+						"description": "Path to the evidence file"
+					},
+					"description": {
+						"type": "string",
+						"description": "Human-readable description of what the evidence shows"
+					},
+					"flowId": {
+						"type": "string",
+						"description": "Identifier linking evidence to a specific user flow"
+					},
+					"type": {
+						"type": "string",
+						"enum": ["png", "jpeg"],
+						"description": "Image format of the evidence file"
+					},
+					"timestamp": {
+						"type": "string",
+						"format": "date-time",
+						"description": "When the evidence was captured"
+					}
+				}
+			}
+		},
+		"metadata": {
+			"type": "object",
+			"description": "Additional metadata about the evidence collection",
+			"properties": {
+				"captureTool": {
+					"type": "string",
+					"description": "Tool used to capture the evidence"
+				},
+				"environment": {
+					"type": "string",
+					"description": "Environment where evidence was captured (e.g., 'staging', 'production')"
+				},
+				"browserInfo": {
+					"type": "string",
+					"description": "Browser and version used for capture"
+				}
+			}
+		}
+	}
+}

@@ -1,4 +1,5 @@
 #!/usr/bin/env node
+import { runEvidenceVerifyCLI } from "./commands/evidence-verify.js";
 import { runGardenerCLI } from "./commands/gardener.js";
 import { runInitCLI, runInteractiveInitCLI } from "./commands/init.js";
 import { runMemoryGateCLI } from "./commands/memory-gate.js";
@@ -29,14 +30,15 @@ function printUsage(): void {
 	console.info("Usage: harness <command> [options]");
 	console.info("");
 	console.info("Commands:");
-	console.info("  init           Install harness in current directory");
-	console.info("  risk-tier      Classify files by risk tier");
-	console.info("  gardener       Detect stale docs and broken links");
-	console.info("  memory-gate    Validate local-memory workflow compliance");
+	console.info("  init             Install harness in current directory");
+	console.info("  risk-tier        Classify files by risk tier");
+	console.info("  evidence-verify  Verify evidence files (screenshots)");
+	console.info("  gardener         Detect stale docs and broken links");
+	console.info("  memory-gate      Validate local-memory workflow compliance");
 	console.info(
-		"  preflight-gate Fast policy checks before expensive operations",
+		"  preflight-gate   Fast policy checks before expensive operations",
 	);
-	console.info("  silent-error   Detect silent error handling anti-patterns");
+	console.info("  silent-error     Detect silent error handling anti-patterns");
 	console.info("");
 	console.info("Init Options:");
 	console.info("  --dry-run        Preview changes without writing");
@@ -47,6 +49,13 @@ function printUsage(): void {
 	console.info("  --update         Apply available template updates");
 	console.info("  --interactive    Review and approve each change");
 	console.info("  --migrate        Migrate contract schema to latest version");
+	console.info("");
+	console.info("Evidence Verify Options:");
+	console.info(
+		"  --files <paths>  Comma-separated list of evidence files to verify",
+	);
+	console.info("  --contract       Path to contract file (optional)");
+	console.info("  --json           Output as JSON");
 	console.info("");
 	console.info("Gardener Options:");
 	console.info("  --docs           Path to docs directory (default: docs)");
@@ -113,6 +122,30 @@ export function run(args: string[]): void {
 		const exitCode = runRiskTierCLI({
 			contractPath,
 			files,
+			json: jsonFlag,
+		});
+		process.exit(exitCode);
+		return;
+	}
+
+	if (command === "evidence-verify") {
+		// Parse evidence-verify options
+		const jsonFlag = args.includes("--json");
+		const filesIndex = args.indexOf("--files");
+		const contractIndex = args.indexOf("--contract");
+
+		const files: string[] = [];
+		const filesArg = filesIndex !== -1 ? args[filesIndex + 1] : undefined;
+		if (filesArg) {
+			files.push(...filesArg.split(",").map((f) => f.trim()));
+		}
+
+		const contractArg =
+			contractIndex !== -1 ? args[contractIndex + 1] : undefined;
+
+		const exitCode = runEvidenceVerifyCLI({
+			files,
+			contract: contractArg,
 			json: jsonFlag,
 		});
 		process.exit(exitCode);
@@ -293,7 +326,7 @@ export function run(args: string[]): void {
 		const interactiveFlag = args.includes("--interactive");
 		const migrateFlag = args.includes("--migrate");
 
-		// Get optional target directory (first non-flag arg after 'init')
+		// Get optional target directory (first non-flag arg after init)
 		const targetDir = args.slice(1).find((arg) => !arg.startsWith("--"));
 
 		const options = {

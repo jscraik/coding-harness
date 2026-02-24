@@ -182,6 +182,11 @@ const TEMPLATES: Template[] = [
 					version: "1.0.0",
 					riskTierRules: {},
 					reviewPolicy: { timeoutSeconds: 600, timeoutAction: "fail" },
+					evidencePolicy: {
+						requiredFor: [],
+						allowedTypes: ["png", "jpeg"],
+						maxFileSizeBytes: 1048576,
+					},
 				},
 				null,
 				2,

@@ -62,12 +62,17 @@ function parseFrontmatter(content: string): {
 	}
 
 	const frontmatter: Record<string, unknown> = {};
-	const lines = match![1]!.split("\n");
+	const contentCapture = match[1];
+	if (!contentCapture) {
+		return { frontmatter: {}, body: content };
+	}
+	const lines = contentCapture.split("\n");
 	let currentKey: string | null = null;
 	let currentArray: string[] = [];
 
 	for (let i = 0; i < lines.length; i++) {
-		const line = lines[i]!;
+		const line = lines[i];
+		if (!line) continue;
 		const trimmed = line.trim();
 
 		// Check if this is a list item
@@ -110,7 +115,8 @@ function parseFrontmatter(content: string): {
 		frontmatter[currentKey] = currentArray;
 	}
 
-	return { frontmatter, body: match![2]!.trim() };
+	const bodyContent = match[2];
+	return { frontmatter, body: bodyContent ? bodyContent.trim() : "" };
 }
 
 /**
