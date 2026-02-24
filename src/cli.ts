@@ -1,11 +1,20 @@
 #!/usr/bin/env node
+import { runBrainstormGateCLI } from "./commands/brainstorm-gate.js";
+import { runDiffBudgetCLI } from "./commands/diff-budget.js";
 import { runEvidenceVerifyCLI } from "./commands/evidence-verify.js";
 import { runGardenerCLI } from "./commands/gardener.js";
 import { runInitCLI, runInteractiveInitCLI } from "./commands/init.js";
 import { runMemoryGateCLI } from "./commands/memory-gate.js";
+import { runPlanGateCLI } from "./commands/plan-gate.js";
 import { runPreflightGateCLI } from "./commands/preflight-gate.js";
+import { runReviewGateCLI } from "./commands/review-gate.js";
 import { runRiskTierCLI } from "./commands/risk-tier.js";
 import { runSilentErrorDetectorCLI } from "./commands/silent-error.js";
+import {
+	runUIExploreCLI,
+	runUIFastCLI,
+	runUIVerifyCLI,
+} from "./commands/ui-loop.js";
 import { sanitizeError } from "./lib/input/sanitize.js";
 import { getVersion } from "./lib/version.js";
 
@@ -39,6 +48,13 @@ function printUsage(): void {
 		"  preflight-gate   Fast policy checks before expensive operations",
 	);
 	console.info("  silent-error     Detect silent error handling anti-patterns");
+	console.info("  review-gate      Review gate with SHA enforcement");
+	console.info("  brainstorm-gate  Validate brainstorm artifacts");
+	console.info("  plan-gate        Validate plan artifacts");
+	console.info("  diff-budget      Enforce diff budget constraints");
+	console.info("  ui:fast          Storybook-first local development loop");
+	console.info("  ui:verify        Playwright smoke suite with evidence");
+	console.info("  ui:explore       Agent browser exploratory testing");
 	console.info("");
 	console.info("Init Options:");
 	console.info("  --dry-run        Preview changes without writing");
@@ -80,6 +96,44 @@ function printUsage(): void {
 	console.info("  --strict         Treat warnings as errors");
 	console.info("  --skip           Comma-separated check IDs to skip");
 	console.info("  --json           Output results as JSON");
+	console.info("");
+	console.info("Diff Budget Options:");
+	console.info("  --base           Base ref (default: main)");
+	console.info("  --head           Head ref (default: HEAD)");
+	console.info("  --contract       Path to harness.contract.json");
+	console.info("  --override       Path to override file");
+	console.info("  --json           Output results as JSON");
+	console.info("");
+	console.info("Review Gate Options:");
+	console.info("  --token          GitHub token (required)");
+	console.info("  --owner          Repository owner (required)");
+	console.info("  --repo           Repository name (required)");
+	console.info("  --pr             Pull request number (required)");
+	console.info("  --sha            Head SHA to verify (required)");
+	console.info("  --check          Check run name to look for");
+	console.info("  --contract       Path to harness.contract.json");
+	console.info("  --json           Output as JSON");
+	console.info("");
+	console.info("Brainstorm Gate Options:");
+	console.info(
+		"  --brainstorms    Path to brainstorms directory (default: docs/brainstorms)",
+	);
+	console.info("  --topic          Filter by topic");
+	console.info("  --max-age        Max days old (default: 14)");
+	console.info("  --strict         Require all sections");
+	console.info("  --json           Output as JSON");
+	console.info("");
+	console.info("Plan Gate Options:");
+	console.info(
+		"  --plans          Path to plans directory (default: docs/plans)",
+	);
+	console.info(
+		"  --type           Filter by plan type (feature/refactor/bugfix/docs/architecture)",
+	);
+	console.info("  --max-age        Max days old (default: 30)");
+	console.info("  --require-origin Require origin reference to brainstorm");
+	console.info("  --strict         Require all sections");
+	console.info("  --json           Output as JSON");
 	console.info("");
 	console.info("Options:");
 	console.info("  --version, -v  Print version");
@@ -349,6 +403,273 @@ export function run(args: string[]): void {
 		}
 
 		const exitCode = runInitCLI(targetDir, options);
+		process.exit(exitCode);
+		return;
+	}
+
+	if (command === "diff-budget") {
+		// Parse diff-budget options
+		const jsonFlag = args.includes("--json");
+		const baseIndex = args.indexOf("--base");
+		const headIndex = args.indexOf("--head");
+		const contractIndex = args.indexOf("--contract");
+		const overrideIndex = args.indexOf("--override");
+
+		const options: {
+			base?: string;
+			head?: string;
+			contractPath?: string;
+			overridePath?: string;
+			json?: boolean;
+		} = {};
+
+		if (jsonFlag) options.json = true;
+		if (baseIndex !== -1) {
+			const baseArg = args[baseIndex + 1];
+			if (baseArg) options.base = baseArg;
+		}
+		if (headIndex !== -1) {
+			const headArg = args[headIndex + 1];
+			if (headArg) options.head = headArg;
+		}
+		if (contractIndex !== -1) {
+			const contractArg = args[contractIndex + 1];
+			if (contractArg) options.contractPath = contractArg;
+		}
+		if (overrideIndex !== -1) {
+			const overrideArg = args[overrideIndex + 1];
+			if (overrideArg) options.overridePath = overrideArg;
+		}
+
+		const exitCode = runDiffBudgetCLI(options);
+		process.exit(exitCode);
+		return;
+	}
+
+	if (command === "review-gate") {
+		// Parse review-gate options
+		const jsonFlag = args.includes("--json");
+		const tokenIndex = args.indexOf("--token");
+		const ownerIndex = args.indexOf("--owner");
+		const repoIndex = args.indexOf("--repo");
+		const prIndex = args.indexOf("--pr");
+		const shaIndex = args.indexOf("--sha");
+		const checkIndex = args.indexOf("--check");
+		const contractIndex = args.indexOf("--contract");
+
+		const options: {
+			token: string;
+			owner: string;
+			repo: string;
+			prNumber: number;
+			headSha: string;
+			checkName: string;
+			contractPath: string;
+			json?: boolean;
+		} = {
+			token: "",
+			owner: "",
+			repo: "",
+			prNumber: 0,
+			headSha: "",
+			checkName: "code-review",
+			contractPath: "harness.contract.json",
+		};
+
+		if (jsonFlag) options.json = true;
+		if (tokenIndex !== -1) {
+			const tokenArg = args[tokenIndex + 1];
+			if (tokenArg) options.token = tokenArg;
+		}
+		if (ownerIndex !== -1) {
+			const ownerArg = args[ownerIndex + 1];
+			if (ownerArg) options.owner = ownerArg;
+		}
+		if (repoIndex !== -1) {
+			const repoArg = args[repoIndex + 1];
+			if (repoArg) options.repo = repoArg;
+		}
+		if (prIndex !== -1) {
+			const prArg = args[prIndex + 1];
+			if (prArg) options.prNumber = Number.parseInt(prArg, 10);
+		}
+		if (shaIndex !== -1) {
+			const shaArg = args[shaIndex + 1];
+			if (shaArg) options.headSha = shaArg;
+		}
+		if (checkIndex !== -1) {
+			const checkArg = args[checkIndex + 1];
+			if (checkArg) options.checkName = checkArg;
+		}
+		if (contractIndex !== -1) {
+			const contractArg = args[contractIndex + 1];
+			if (contractArg) options.contractPath = contractArg;
+		}
+
+		runReviewGateCLI(options)
+			.then((exitCode) => process.exit(exitCode))
+			.catch((error) => handleFatalError("Review Gate Error", error));
+		return;
+	}
+
+	if (command === "brainstorm-gate") {
+		// Parse brainstorm-gate options
+		const jsonFlag = args.includes("--json");
+		const strictFlag = args.includes("--strict");
+		const brainstormsIndex = args.indexOf("--brainstorms");
+		const topicIndex = args.indexOf("--topic");
+		const maxAgeIndex = args.indexOf("--max-age");
+
+		const options: {
+			brainstormsPath?: string;
+			topic?: string;
+			maxAge?: number;
+			strict?: boolean;
+			json?: boolean;
+		} = {};
+
+		if (jsonFlag) options.json = true;
+		if (strictFlag) options.strict = true;
+		if (brainstormsIndex !== -1) {
+			const brainstormsArg = args[brainstormsIndex + 1];
+			if (brainstormsArg) options.brainstormsPath = brainstormsArg;
+		}
+		if (topicIndex !== -1) {
+			const topicArg = args[topicIndex + 1];
+			if (topicArg) options.topic = topicArg;
+		}
+		if (maxAgeIndex !== -1) {
+			const maxAgeArg = args[maxAgeIndex + 1];
+			if (maxAgeArg) options.maxAge = Number.parseInt(maxAgeArg, 10);
+		}
+
+		const exitCode = runBrainstormGateCLI(options);
+		process.exit(exitCode);
+		return;
+	}
+
+	if (command === "plan-gate") {
+		// Parse plan-gate options
+		const jsonFlag = args.includes("--json");
+		const strictFlag = args.includes("--strict");
+		const requireOriginFlag = args.includes("--require-origin");
+		const plansIndex = args.indexOf("--plans");
+		const typeIndex = args.indexOf("--type");
+		const maxAgeIndex = args.indexOf("--max-age");
+
+		const options: {
+			plansPath?: string;
+			type?: string;
+			maxAge?: number;
+			requireOrigin?: boolean;
+			strict?: boolean;
+			json?: boolean;
+		} = {};
+
+		if (jsonFlag) options.json = true;
+		if (strictFlag) options.strict = true;
+		if (requireOriginFlag) options.requireOrigin = true;
+		if (plansIndex !== -1) {
+			const plansArg = args[plansIndex + 1];
+			if (plansArg) options.plansPath = plansArg;
+		}
+		if (typeIndex !== -1) {
+			const typeArg = args[typeIndex + 1];
+			if (typeArg) options.type = typeArg;
+		}
+		if (maxAgeIndex !== -1) {
+			const maxAgeArg = args[maxAgeIndex + 1];
+			if (maxAgeArg) options.maxAge = Number.parseInt(maxAgeArg, 10);
+		}
+
+		const exitCode = runPlanGateCLI(options);
+		process.exit(exitCode);
+		return;
+	}
+
+	if (command === "ui:fast") {
+		// Parse ui:fast options
+		const jsonFlag = args.includes("--json");
+		const ciFlag = args.includes("--ci");
+		const portIndex = args.indexOf("--port");
+
+		const options: {
+			port?: number;
+			ci?: boolean;
+			json?: boolean;
+		} = {};
+
+		if (jsonFlag) options.json = true;
+		if (ciFlag) options.ci = true;
+		if (portIndex !== -1) {
+			const portArg = args[portIndex + 1];
+			if (portArg) options.port = Number.parseInt(portArg, 10);
+		}
+
+		const exitCode = runUIFastCLI(options);
+		process.exit(exitCode);
+		return;
+	}
+
+	if (command === "ui:verify") {
+		// Parse ui:verify options
+		const jsonFlag = args.includes("--json");
+		const outputIndex = args.indexOf("--output");
+		const timeoutIndex = args.indexOf("--timeout");
+		const shardIndex = args.indexOf("--shard");
+
+		const options: {
+			outputDir?: string;
+			json?: boolean;
+			timeout?: number;
+			shard?: string;
+		} = {};
+
+		if (jsonFlag) options.json = true;
+		if (outputIndex !== -1) {
+			const outputArg = args[outputIndex + 1];
+			if (outputArg) options.outputDir = outputArg;
+		}
+		if (timeoutIndex !== -1) {
+			const timeoutArg = args[timeoutIndex + 1];
+			if (timeoutArg) options.timeout = Number.parseInt(timeoutArg, 10);
+		}
+		if (shardIndex !== -1) {
+			const shardArg = args[shardIndex + 1];
+			if (shardArg) options.shard = shardArg;
+		}
+
+		const exitCode = runUIVerifyCLI(options);
+		process.exit(exitCode);
+		return;
+	}
+
+	if (command === "ui:explore") {
+		// Parse ui:explore options
+		const jsonFlag = args.includes("--json");
+		const interactionsFlag = args.includes("--interactions");
+		const urlIndex = args.indexOf("--url");
+		const outputIndex = args.indexOf("--output");
+
+		const options: {
+			url?: string;
+			outputDir?: string;
+			json?: boolean;
+			interactions?: boolean;
+		} = {};
+
+		if (jsonFlag) options.json = true;
+		if (interactionsFlag) options.interactions = true;
+		if (urlIndex !== -1) {
+			const urlArg = args[urlIndex + 1];
+			if (urlArg) options.url = urlArg;
+		}
+		if (outputIndex !== -1) {
+			const outputArg = args[outputIndex + 1];
+			if (outputArg) options.outputDir = outputArg;
+		}
+
+		const exitCode = runUIExploreCLI(options);
 		process.exit(exitCode);
 		return;
 	}

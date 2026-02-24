@@ -987,7 +987,12 @@ User has OTel collector at `~/.agents/otel-collector/`. Explore direct emission 
 | Phase 6: Gardening | ✅ Complete | nightly gardener workflow, stale docs, broken links |
 | Phase 7: Memory policy | ✅ Complete | memory-gate command, branch enforcement, metrics tracking |
 
-**All core acceptance criteria implemented.** Remaining optional items from Section 27:
-- Diff budget guardrails (deferred)
-- UI loop commands (deferred)
-- Brainstorm/plan artifact workflow (deferred)
+**All core acceptance criteria and optional Section 27 items implemented.**
+
+### Section 27 Optional Enhancements Status
+
+| Enhancement | Status |
+|-------------|--------|
+| Diff budget guardrails | ✅ Complete - `harness diff-budget` command |
+| UI loop commands | ✅ Complete - `harness ui:fast`, `ui:verify`, `ui:explore` |
+| Brainstorm/plan artifact workflow | ✅ Complete - `harness brainstorm-gate`, `plan-gate` commands |
