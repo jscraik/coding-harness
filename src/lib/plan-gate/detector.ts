@@ -113,10 +113,17 @@ function extractTitleFromFilename(filename: string): string {
 
 /**
  * Calculate days between two dates
+ * Returns Infinity for invalid dates to treat them as stale
  */
 function daysBetween(date1: string | Date, date2: string | Date): number {
 	const d1 = typeof date1 === "string" ? new Date(date1) : date1;
 	const d2 = typeof date2 === "string" ? new Date(date2) : date2;
+
+	// Handle invalid dates - treat as infinitely old (stale)
+	if (Number.isNaN(d1.getTime()) || Number.isNaN(d2.getTime())) {
+		return Number.POSITIVE_INFINITY;
+	}
+
 	const msPerDay = 24 * 60 * 60 * 1000;
 	return Math.floor((d2.getTime() - d1.getTime()) / msPerDay);
 }

@@ -61,7 +61,7 @@ function getGitDiff(base: string, head: string): PullRequestFile[] {
 	});
 
 	// Check for spawn error (e.g., git not found)
-	if (result.error && result.error.message !== "no error") {
+	if (result.error) {
 		throw new Error(`Failed to run git diff: ${result.error.message}`);
 	}
 

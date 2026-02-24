@@ -44,7 +44,7 @@ export function calculateDiffMetrics(files: PullRequestFile[]): DiffMetrics {
 		filesChanged: files.length,
 		additions,
 		deletions,
-		netLOC: additions + deletions,
+		netLOC: additions - deletions,
 	};
 }
 

@@ -46,6 +46,26 @@ export function createEmptyMetrics(): ReliabilityMetrics {
 }
 
 /**
+ * Validate that parsed data has expected MetricsHistory structure
+ */
+function isValidMetricsHistory(data: unknown): data is MetricsHistory {
+	if (typeof data !== "object" || data === null) return false;
+	const obj = data as Record<string, unknown>;
+
+	// Check required 'current' field has expected structure
+	if (typeof obj.current !== "object" || obj.current === null) return false;
+	const current = obj.current as Record<string, unknown>;
+	if (typeof current.pass_k !== "number") return false;
+	if (typeof current.total_ops !== "number") return false;
+	if (typeof current.successful_ops !== "number") return false;
+
+	// Check history is an array if present
+	if (obj.history !== undefined && !Array.isArray(obj.history)) return false;
+
+	return true;
+}
+
+/**
  * Read metrics from persistent storage
  */
 export function loadMetrics(metricsPath?: string): {
@@ -60,7 +80,13 @@ export function loadMetrics(metricsPath?: string): {
 
 	try {
 		const content = readFileSync(path, "utf-8");
-		const data = JSON.parse(content) as MetricsHistory;
+		const data: unknown = JSON.parse(content);
+
+		// Runtime validation of parsed structure
+		if (!isValidMetricsHistory(data)) {
+			return { metrics: createEmptyMetrics(), history: [] };
+		}
+
 		return { metrics: data.current, history: data.history ?? [] };
 	} catch {
 		return { metrics: createEmptyMetrics(), history: [] };

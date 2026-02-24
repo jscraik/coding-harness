@@ -71,7 +71,7 @@ export class GitHubApiError extends Error {
 				message = "Validation failed";
 				break;
 			default:
-				code = status >= 500 ? "SYSTEM_ERROR" : "SYSTEM_ERROR";
+				code = status >= 500 ? "SYSTEM_ERROR" : "VALIDATION_FAILED";
 				message = `GitHub API error: ${status}`;
 		}
 

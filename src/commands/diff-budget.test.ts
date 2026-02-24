@@ -24,11 +24,11 @@ function createMockSpawnResult(
 		stdout,
 		stderr: options.stderr ?? "",
 		status: options.status ?? 0,
-		error: options.error ?? new Error("no error"),
+		error: options.error ?? undefined,
 		signal: null,
 		pid: 12345,
 		output: [stdout, stdout],
-	};
+	} as SpawnSyncReturns<string>;
 }
 
 describe("diff-budget command", () => {
