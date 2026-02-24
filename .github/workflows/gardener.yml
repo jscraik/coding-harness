@@ -65,6 +65,10 @@ jobs:
           git checkout -b "$BRANCH_NAME"
           node dist/cli.js gardener
           git add docs/QUALITY_SCORE.md
+          if git diff --cached --quiet; then
+            echo "No gardener changes to commit."
+            exit 0
+          fi
           git commit -m "docs: gardening updates ($(date +%Y-%m-%d))"
           git push -u origin "$BRANCH_NAME"
           gh pr create --title "docs: gardening updates" --body "Automated gardening updates from harness gardener workflow"
