@@ -63,7 +63,7 @@ jobs:
         run: |
           BRANCH_NAME="gardener/$(date +%Y-%m-%d)"
           git checkout -b "$BRANCH_NAME"
-          node dist/cli.js gardener
+          node dist/cli.js gardener || true
           git add docs/QUALITY_SCORE.md
           if git diff --cached --quiet; then
             echo "No gardener changes to commit."
