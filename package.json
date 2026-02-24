@@ -38,6 +38,7 @@
 		"@vvago/vale": "^3.12.0",
 		"markdownlint-cli2": "^0.21.0",
 		"picomatch": "^4.0.3",
+		"tsx": "^4.21.0",
 		"typescript": "^5.9.3",
 		"vitest": "^3.2.4"
 	},

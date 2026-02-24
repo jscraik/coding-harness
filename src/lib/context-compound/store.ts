@@ -176,20 +176,23 @@ export class VectorStore {
 		const maxDistance = similarityToDistance(threshold);
 
 		try {
+			// sqlite-vec vec0 requires k constraint for KNN queries
 			const stmt = this.db.prepare(`
         SELECT v.path, v.distance
         FROM vec_documents v
-        WHERE v.embedding MATCH ? AND v.distance <= ?
+        WHERE v.embedding MATCH ? AND k = ?
         ORDER BY v.distance
-        LIMIT ?
       `);
 
-			const rows = stmt.all(queryEmbedding, maxDistance, limit) as Array<{
+			const rows = stmt.all(queryEmbedding, limit) as Array<{
 				path: string;
 				distance: number;
 			}>;
 
-			const results: SearchResult[] = rows.map((row) => ({
+			// Filter by distance threshold after query
+			const filteredRows = rows.filter((row) => row.distance <= maxDistance);
+
+			const results: SearchResult[] = filteredRows.map((row) => ({
 				path: row.path,
 				similarity: distanceToSimilarity(row.distance),
 			}));

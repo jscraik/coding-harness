@@ -9,9 +9,11 @@ import { runGardenerCLI } from "./commands/gardener.js";
 import { runIndexContextCLI } from "./commands/index-context.js";
 import { runInitCLI, runInteractiveInitCLI } from "./commands/init.js";
 import { runMemoryGateCLI } from "./commands/memory-gate.js";
+import { runObservabilityGateCLI } from "./commands/observability-gate.js";
 import { runPlanGateCLI } from "./commands/plan-gate.js";
 import { runPreflightGateCLI } from "./commands/preflight-gate.js";
 import { runPromptGateCLI } from "./commands/prompt-gate.js";
+import { runReplayCLI } from "./commands/replay.js";
 import { runReviewGateCLI } from "./commands/review-gate.js";
 import { runRiskTierCLI } from "./commands/risk-tier.js";
 import { runSilentErrorDetectorCLI } from "./commands/silent-error.js";
@@ -60,6 +62,7 @@ function printUsage(): void {
 	console.info(
 		"  blast-radius     Determine required checks from changed files",
 	);
+	console.info("  observability-gate  Check cardinality limits in metrics");
 	console.info("  diff-budget      Enforce diff budget constraints");
 	console.info("  ui:fast          Storybook-first local development loop");
 	console.info("  ui:verify        Playwright smoke suite with evidence");
@@ -216,6 +219,51 @@ export function run(args: string[]): void {
 			json: jsonFlag,
 		});
 		process.exit(exitCode);
+		return;
+	}
+
+	if (command === "replay") {
+		// Parse replay options
+		const jsonFlag = args.includes("--json");
+		const dryRunFlag = args.includes("--dry-run");
+		const listFlag = args.includes("--list");
+		const traceIdIndex = args.indexOf("--trace-id");
+		const traceDirIndex = args.indexOf("--trace-dir");
+
+		const options: {
+			traceId?: string;
+			list?: boolean;
+			dryRun?: boolean;
+			json?: boolean;
+			traceDir?: string;
+		} = {
+			json: jsonFlag,
+			dryRun: dryRunFlag,
+			list: listFlag,
+		};
+
+		if (traceIdIndex !== -1 && args[traceIdIndex + 1]) {
+			const traceIdValue = args[traceIdIndex + 1];
+			if (traceIdValue !== undefined) {
+				options.traceId = traceIdValue;
+			}
+		}
+
+		if (traceDirIndex !== -1 && args[traceDirIndex + 1]) {
+			const traceDirValue = args[traceDirIndex + 1];
+			if (traceDirValue !== undefined) {
+				options.traceDir = traceDirValue;
+			}
+		}
+
+		// Also check for positional trace ID argument
+		if (!options.traceId && args[1] && !args[1].startsWith("--")) {
+			options.traceId = args[1];
+		}
+
+		runReplayCLI(options)
+			.then((exitCode) => process.exit(exitCode))
+			.catch((error) => handleFatalError("Replay Error", error));
 		return;
 	}
 
@@ -774,6 +822,11 @@ export function run(args: string[]): void {
 		}
 
 		const filesArg = args[filesIndex + 1];
+		if (!filesArg) {
+			console.error("Error: --files requires a value");
+			process.exit(1);
+			return;
+		}
 		const files = filesArg
 			.split(",")
 			.map((f) => f.trim())
@@ -787,6 +840,47 @@ export function run(args: string[]): void {
 		process.exit(exitCode);
 		return;
 	}
+	if (command === "observability-gate") {
+		// Parse observability-gate options
+		const jsonFlag = args.includes("--json");
+		const labelsIndex = args.indexOf("--labels");
+		const maxCardIndex = args.indexOf("--max-cardinality");
+		const maxLenIndex = args.indexOf("--max-length");
+
+		const options: {
+			labels?: string;
+			json?: boolean;
+			maxCardinality?: number;
+			maxLength?: number;
+		} = {};
+
+		if (jsonFlag) options.json = true;
+		if (labelsIndex !== -1 && args[labelsIndex + 1]) {
+			const labelsValue = args[labelsIndex + 1];
+			if (labelsValue !== undefined) {
+				options.labels = labelsValue;
+			}
+		}
+		if (maxCardIndex !== -1 && args[maxCardIndex + 1]) {
+			const cardValue = args[maxCardIndex + 1];
+			if (cardValue !== undefined) {
+				const val = Number.parseInt(cardValue, 10);
+				if (!Number.isNaN(val)) options.maxCardinality = val;
+			}
+		}
+		if (maxLenIndex !== -1 && args[maxLenIndex + 1]) {
+			const lenValue = args[maxLenIndex + 1];
+			if (lenValue !== undefined) {
+				const val = Number.parseInt(lenValue, 10);
+				if (!Number.isNaN(val)) options.maxLength = val;
+			}
+		}
+
+		const exitCode = runObservabilityGateCLI(options);
+		process.exit(exitCode);
+		return;
+	}
+
 	if (command === "context") {
 		// Parse context options
 		const argsAfterCommand = args.slice(1);

@@ -1,6 +1,7 @@
 import { existsSync } from "node:fs";
 import { resolve } from "node:path";
 import { loadContract } from "../lib/contract/loader.js";
+import type { EvidencePolicy } from "../lib/contract/types.js";
 import type {
 	EvidenceError,
 	EvidenceFile,
@@ -9,6 +10,7 @@ import type {
 } from "../lib/evidence/index.js";
 import { loadEvidenceFile } from "../lib/evidence/index.js";
 import { DEFAULT_MAX_FILE_SIZE_BYTES } from "../lib/evidence/index.js";
+import { enforceEvidencePolicy } from "../lib/evidence/policy.js";
 import { sanitizeError } from "../lib/input/sanitize.js";
 
 // Exit codes for programmatic consumption
@@ -31,6 +33,8 @@ export interface EvidenceVerifyOptions {
 	baseDir?: string | undefined;
 	/** Maximum file size in bytes (defaults to 1MB) */
 	maxFileSizeBytes?: number | undefined;
+	/** Changed files to check against evidence policy (e.g., --changed src/ui/**.tsx) */
+	changed?: string[] | undefined;
 }
 
 /**
@@ -71,7 +75,8 @@ export function runEvidenceVerify(
 	const verifiedFiles: EvidenceFile[] = [];
 	const errors: EvidenceError[] = [];
 
-	// If contract is provided, validate it exists
+	// Load contract and evidence policy if provided
+	let evidencePolicy: EvidencePolicy | undefined;
 	if (options.contract) {
 		const contractPath = resolve(baseDir, options.contract);
 		if (!existsSync(contractPath)) {
@@ -84,10 +89,10 @@ export function runEvidenceVerify(
 			};
 		}
 
-		// Load and validate contract (for future policy-gated verification)
+		// Load and validate contract
 		try {
-			loadContract(contractPath);
-			// TODO: Apply evidence policy when EvidencePolicy is implemented
+			const contract = loadContract(contractPath);
+			evidencePolicy = contract.evidencePolicy;
 		} catch (e) {
 			return {
 				ok: false,
@@ -107,6 +112,20 @@ export function runEvidenceVerify(
 			verifiedFiles.push(result.file);
 		} else {
 			errors.push(result);
+		}
+	}
+
+	// Apply evidence policy if we have both policy and changed files
+	if (evidencePolicy && options.changed && options.changed.length > 0) {
+		const policyResult = enforceEvidencePolicy(
+			verifiedFiles,
+			options.changed,
+			evidencePolicy,
+		);
+
+		// Add policy violations to errors
+		if (!policyResult.passed) {
+			errors.push(...policyResult.violations);
 		}
 	}
 

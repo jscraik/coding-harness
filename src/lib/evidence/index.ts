@@ -47,3 +47,17 @@ export {
 // Logger
 export type { LogLevel, LogEntry, LoggerOptions } from "./logger.js";
 export { StructuredLogger, ChildLogger, logger } from "./logger.js";
+
+// Policy enforcement
+export type {
+	PolicyViolationCode,
+	PolicyCheckResult,
+	PolicyEnforcementResult,
+} from "./policy.js";
+export {
+	requiresEvidence,
+	isFormatAllowed,
+	enforceEvidencePolicy,
+	getFilesRequiringEvidence,
+	summarizePolicy,
+} from "./policy.js";

@@ -1,0 +1,194 @@
+import picomatch from "picomatch";
+import type { EvidencePolicy } from "../contract/types.js";
+import type { EvidenceError, EvidenceFile, ImageFormat } from "./types.js";
+
+/**
+ * Policy violation error codes.
+ */
+export type PolicyViolationCode =
+	| "EVIDENCE_REQUIRED"
+	| "EVIDENCE_TYPE_NOT_ALLOWED"
+	| "MISSING_REQUIRED_EVIDENCE";
+
+/**
+ * Policy check result for a single file.
+ */
+export interface PolicyCheckResult {
+	ok: boolean;
+	path: string;
+	violation?: {
+		code: PolicyViolationCode;
+		message: string;
+	};
+}
+
+/**
+ * Policy enforcement result for changed files.
+ */
+export interface PolicyEnforcementResult {
+	/** Whether all policy checks passed */
+	passed: boolean;
+	/** Files that passed policy checks */
+	passedFiles: string[];
+	/** Policy violations found */
+	violations: EvidenceError[];
+	/** Required evidence patterns that weren't satisfied */
+	missingEvidence: string[];
+}
+
+/**
+ * Extract base name from a file path (filename without extension).
+ */
+function getBaseName(filePath: string): string {
+	const fileName = filePath.split("/").pop() ?? "";
+	return fileName.replace(/\.[^.]+$/, "").toLowerCase();
+}
+
+/**
+ * Check if a file path matches any of the required patterns.
+ *
+ * @param filePath - Path to check
+ * @param patterns - Glob patterns for files requiring evidence
+ * @returns True if file matches any pattern
+ */
+export function requiresEvidence(
+	filePath: string,
+	patterns: string[],
+): boolean {
+	for (const pattern of patterns) {
+		const matcher = picomatch(pattern);
+		if (matcher(filePath)) {
+			return true;
+		}
+	}
+	return false;
+}
+
+/**
+ * Check if an image format is allowed by policy.
+ *
+ * @param format - Image format to check
+ * @param allowedTypes - Allowed formats from policy
+ * @returns True if format is allowed
+ */
+export function isFormatAllowed(
+	format: ImageFormat,
+	allowedTypes: ImageFormat[],
+): boolean {
+	return allowedTypes.includes(format);
+}
+
+/**
+ * Find evidence file that matches a changed file by base name.
+ */
+function findMatchingEvidence(
+	changedFile: string,
+	evidenceFiles: EvidenceFile[],
+): EvidenceFile | undefined {
+	const changedBase = getBaseName(changedFile);
+	return evidenceFiles.find((ev) => {
+		const evBase = getBaseName(ev.path);
+		// Match if either name contains the other (handles pluralization, etc)
+		return evBase.includes(changedBase) || changedBase.includes(evBase);
+	});
+}
+
+/**
+ * Validate evidence files against policy.
+ *
+ * @param verifiedFiles - Successfully verified evidence files
+ * @param changedFiles - Files that were changed in the PR/change
+ * @param policy - Evidence policy from contract
+ * @returns Policy enforcement result
+ */
+export function enforceEvidencePolicy(
+	verifiedFiles: EvidenceFile[],
+	changedFiles: string[],
+	policy: EvidencePolicy,
+): PolicyEnforcementResult {
+	const violations: EvidenceError[] = [];
+	const passedFiles: string[] = [];
+
+	// Check each evidence file against allowed types
+	for (const file of verifiedFiles) {
+		if (!isFormatAllowed(file.type, policy.allowedTypes)) {
+			violations.push({
+				ok: false,
+				code: "INVALID_FORMAT",
+				message: `Evidence type "${file.type}" not allowed. Allowed: ${policy.allowedTypes.join(", ")}`,
+				path: file.path,
+			});
+		} else {
+			passedFiles.push(file.path);
+		}
+	}
+
+	// Check if changed files require evidence
+	const filesRequiringEvidence = changedFiles.filter((f) =>
+		requiresEvidence(f, policy.requiredFor),
+	);
+
+	const missingEvidence: string[] = [];
+	for (const changedFile of filesRequiringEvidence) {
+		// Find matching evidence for this changed file
+		const matchingEvidence = findMatchingEvidence(changedFile, verifiedFiles);
+
+		if (!matchingEvidence) {
+			missingEvidence.push(changedFile);
+			violations.push({
+				ok: false,
+				code: "FILE_NOT_FOUND",
+				message: `Evidence required for changed file: ${changedFile}`,
+				path: changedFile,
+			});
+		}
+	}
+
+	return {
+		passed: violations.length === 0,
+		passedFiles,
+		violations,
+		missingEvidence,
+	};
+}
+
+/**
+ * Get list of changed files that require evidence.
+ *
+ * @param changedFiles - All changed files
+ * @param policy - Evidence policy
+ * @returns Files requiring evidence
+ */
+export function getFilesRequiringEvidence(
+	changedFiles: string[],
+	policy: EvidencePolicy,
+): string[] {
+	return changedFiles.filter((file) =>
+		requiresEvidence(file, policy.requiredFor),
+	);
+}
+
+/**
+ * Create a human-readable policy summary.
+ *
+ * @param policy - Evidence policy
+ * @returns Summary string
+ */
+export function summarizePolicy(policy: EvidencePolicy): string {
+	const lines = [
+		"Evidence Policy:",
+		`  Allowed types: ${policy.allowedTypes.join(", ")}`,
+		`  Max file size: ${(policy.maxFileSizeBytes ?? 1024 * 1024) / 1024 / 1024}MB`,
+	];
+
+	if (policy.requiredFor.length > 0) {
+		lines.push("  Required for:");
+		for (const pattern of policy.requiredFor) {
+			lines.push(`    - ${pattern}`);
+		}
+	} else {
+		lines.push("  No files require evidence (requiredFor is empty)");
+	}
+
+	return lines.join("\n");
+}

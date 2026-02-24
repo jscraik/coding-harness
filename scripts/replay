@@ -1,0 +1,74 @@
+#!/usr/bin/env bash
+# Replay a recorded trace by ID
+# Usage: ./scripts/replay <trace-id> [--json] [--dry-run]
+
+set -euo pipefail
+
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+PROJECT_ROOT="$(cd "${SCRIPT_DIR}/.." && pwd)"
+
+# Parse arguments
+TRACE_ID=""
+JSON_FLAG=""
+DRY_RUN=""
+LIST=""
+
+while [[ $# -gt 0 ]]; do
+  case $1 in
+    --json)
+      JSON_FLAG="--json"
+      shift
+      ;;
+    --dry-run)
+      DRY_RUN="--dry-run"
+      shift
+      ;;
+    --list)
+      LIST="--list"
+      shift
+      ;;
+    --trace-dir)
+      shift
+      TRACE_DIR="$1"
+      shift
+      ;;
+    trace-*)
+      TRACE_ID="$1"
+      shift
+      ;;
+    *)
+      # If first positional arg and doesn't start with --, treat as trace ID
+      if [[ -z "$TRACE_ID" && ! "$1" =~ ^-- ]]; then
+        TRACE_ID="$1"
+      fi
+      shift
+      ;;
+  esac
+done
+
+# Build command arguments
+ARGS=()
+
+if [[ -n "$LIST" ]]; then
+  ARGS+=("--list")
+fi
+
+if [[ -n "$TRACE_ID" ]]; then
+  ARGS+=("--trace-id" "$TRACE_ID")
+fi
+
+if [[ -n "$JSON_FLAG" ]]; then
+  ARGS+=("--json")
+fi
+
+if [[ -n "$DRY_RUN" ]]; then
+  ARGS+=("--dry-run")
+fi
+
+if [[ -n "${TRACE_DIR:-}" ]]; then
+  ARGS+=("--trace-dir" "$TRACE_DIR")
+fi
+
+# Run the CLI replay command
+cd "$PROJECT_ROOT"
+node dist/cli.js replay "${ARGS[@]}"
