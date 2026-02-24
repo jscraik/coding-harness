@@ -6,7 +6,7 @@
  * - Broken links (deduction: 10 points each)
  */
 
-import { existsSync, readFileSync, writeFileSync } from "node:fs";
+import { readFileSync, realpathSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { validatePath } from "../input/sanitize.js";
 import type { BrokenLink, QualityScore, StaleDoc } from "./types.js";
@@ -132,13 +132,19 @@ export function updateQualityScoreFile(
 		};
 	}
 
-	const filePath = join(validatedPath, "QUALITY_SCORE.md");
-
 	try {
-		const content = generateQualityScoreMarkdown(score, staleDocs, brokenLinks);
-		writeFileSync(filePath, content, "utf-8");
+		// Re-validate path immediately before use to minimize TOCTOU window
+		const realValidatedPath = realpathSync(validatedPath);
+		const realCwd = realpathSync(process.cwd());
+		if (!realValidatedPath.startsWith(realCwd)) {
+			throw new Error("Path traversal detected");
+		}
+		const realFilePath = join(realValidatedPath, "QUALITY_SCORE.md");
 
-		return { ok: true, path: filePath };
+		const content = generateQualityScoreMarkdown(score, staleDocs, brokenLinks);
+		writeFileSync(realFilePath, content, "utf-8");
+
+		return { ok: true, path: realFilePath };
 	} catch (error) {
 		return {
 			ok: false,
@@ -159,14 +165,16 @@ export function readQualityScore(docsPath: string): QualityScore | null {
 		return null;
 	}
 
-	const filePath = join(validatedPath, "QUALITY_SCORE.md");
-
-	if (!existsSync(filePath)) {
-		return null;
-	}
-
 	try {
-		const content = readFileSync(filePath, "utf-8");
+		// Re-validate path immediately before use to minimize TOCTOU window
+		const realValidatedPath = realpathSync(validatedPath);
+		const realCwd = realpathSync(process.cwd());
+		if (!realValidatedPath.startsWith(realCwd)) {
+			return null;
+		}
+		const realFilePath = join(realValidatedPath, "QUALITY_SCORE.md");
+
+		const content = readFileSync(realFilePath, "utf-8");
 
 		// Extract score from markdown
 		const scoreMatch = content.match(/\*\*Score:\*\*\s*(\d+)\/100/);

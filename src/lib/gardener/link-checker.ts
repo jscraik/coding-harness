@@ -6,7 +6,7 @@
  */
 
 import { spawnSync } from "node:child_process";
-import { existsSync, readFileSync, unlinkSync } from "node:fs";
+import { existsSync, readFileSync, realpathSync, unlinkSync } from "node:fs";
 import { join } from "node:path";
 import { validatePath } from "../input/sanitize.js";
 import type { BrokenLink } from "./types.js";
@@ -63,6 +63,13 @@ export function checkLinks(basePath: string): BrokenLink[] {
 	const reportPath = join(process.cwd(), LYCHEE_REPORT_FILE);
 
 	try {
+		// Re-validate path immediately before use to minimize TOCTOU window
+		const realValidatedPath = realpathSync(validatedPath);
+		const realCwd = realpathSync(process.cwd());
+		if (!realValidatedPath.startsWith(realCwd)) {
+			throw new Error("Path traversal detected");
+		}
+
 		// Run lychee with JSON output
 		const result = spawnSync(
 			"lychee",
@@ -73,7 +80,7 @@ export function checkLinks(basePath: string): BrokenLink[] {
 				reportPath,
 				"--config",
 				".lychee.toml",
-				validatedPath,
+				realValidatedPath,
 			],
 			{
 				encoding: "utf-8",
@@ -102,8 +109,8 @@ export function checkLinks(basePath: string): BrokenLink[] {
 				for (const link of links) {
 					const brokenLink: BrokenLink = {
 						file: file
-							.replace(`${validatedPath}/`, "")
-							.replace(validatedPath, ""),
+							.replace(`${realValidatedPath}/`, "")
+							.replace(realValidatedPath, ""),
 						link: link.url,
 						statusCode: link.status_code ?? null,
 					};
