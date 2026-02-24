@@ -4,6 +4,28 @@ export type TimeoutAction = "fail" | "warn";
 
 export type ImageFormat = "png" | "jpeg";
 
+/**
+ * Diff budget configuration for limiting PR scope.
+ */
+export interface DiffBudget {
+	/** Maximum number of files allowed in a PR */
+	maxFiles: number;
+	/** Maximum net lines of code (additions - deletions) */
+	maxNetLOC: number;
+}
+
+/**
+ * Override metadata when diff budget is exceeded.
+ */
+export interface DiffBudgetOverride {
+	/** Person approving the override */
+	approvedBy: string;
+	/** Reason for the override */
+	reason: string;
+	/** Timestamp of approval */
+	timestamp: string;
+}
+
 export interface ReviewPolicy {
 	timeoutSeconds: number;
 	timeoutAction: TimeoutAction;

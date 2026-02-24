@@ -1,0 +1,17 @@
+{
+	"version": "1.0",
+	"riskTierRules": {
+		"src/auth/**": "high",
+		"src/api/**": "high",
+		"src/lib/**": "medium",
+		"**/*.test.ts": "low"
+	},
+	"reviewPolicy": {
+		"timeoutSeconds": 600,
+		"timeoutAction": "fail"
+	},
+	"diffBudget": {
+		"maxFiles": 5,
+		"maxNetLOC": 100
+	}
+}
