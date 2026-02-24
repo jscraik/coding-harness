@@ -48,3 +48,6 @@ logs/
 
 # Test coverage
 coverage/
+
+# Gardener reports
+gardener-report.json

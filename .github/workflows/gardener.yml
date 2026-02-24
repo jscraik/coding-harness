@@ -35,7 +35,7 @@ jobs:
 
       - name: Run gardener analysis
         id: gardener-analysis
-        run: node dist/cli.js gardener --json --dry-run
+        run: node dist/cli.js gardener --json --dry-run > gardener-report.json
         env:
           DOCS_PATH: docs
 
@@ -45,9 +45,11 @@ jobs:
           if [ -f "gardener-report.json" ]; then
             STALE_COUNT=$(jq -r '.staleDocs | length' gardener-report.json)
             BROKEN_COUNT=$(jq -r '.brokenLinks | length' gardener-report.json)
+            NEEDS_PR=$(jq -r '.needsPR' gardener-report.json)
             echo "Stale docs: $STALE_COUNT"
             echo "Broken links: $BROKEN_COUNT"
-            if [ "$STALE_COUNT" -gt 0 ] || [ "$BROKEN_COUNT" -gt 0 ]; then
+            echo "Needs PR: $NEEDS_PR"
+            if [ "$NEEDS_PR" = "true" ]; then
               echo "needs_pr=true" >> "$GITHUB_OUTPUT"
             else
               echo "needs_pr=false" >> "$GITHUB_OUTPUT"
