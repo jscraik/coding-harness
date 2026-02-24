@@ -39,6 +39,19 @@ decisions:
 - **Cancellation**: AbortController pattern for timeout handling
 - **Graceful degradation**: Fallback to keyword search when Ollama unavailable
 
+### Technical Review Fixes (2026-02-24)
+
+Applied fixes from comprehensive technical review:
+
+1. **Fixed SSRF vulnerability** - Added `validateOllamaUrl()` to restrict URLs to localhost/127.0.0.1/::1 only
+2. **Fixed distance conversion formula** - Changed from `2 * (1 - threshold)` to `1 - threshold` (sqlite-vec uses `distance = 1 - similarity`)
+3. **Added missing type definitions** - Complete `Result<T,E>`, `StoreError`, and `EmbeddingError` types
+4. **Created constants file** - All magic numbers extracted (dimensions, timeouts, thresholds, hosts)
+5. **Simplified file structure** - Reduced from 10 files to 6 files for faster implementation
+6. **Added cold-start mitigation** - `warmup()` method to pre-load embedding model
+7. **Added file size limits** - 10MB max for indexed files to prevent resource exhaustion
+8. **Added database permissions** - Restrictive 0o600 permissions on SQLite database
+
 ---
 
 ## Overview
@@ -266,20 +279,18 @@ describe('VectorStore', () => {
 });
 ```
 
-## File Structure
+## File Structure (Simplified - 6 Files)
+
+Following the simplicity review feedback, the implementation uses 6 core files instead of 10:
 
 ```
 src/lib/context-compound/
-├── types.ts          # All type definitions (no implementation)
-├── errors.ts         # Error classes and error handling utilities
-├── config.ts         # Configuration schema and loading
-├── ollama.ts         # Ollama client with AbortController/timeout
+├── constants.ts      # All magic numbers, defaults, and validation helpers
+├── types.ts          # Result<T,E>, error types, and domain interfaces
+├── ollama.ts         # Ollama client with SSRF protection and warmup
 ├── store.ts          # SQLite/vec storage with parameterized queries
-├── indexer.ts        # File indexing with concurrency control
-├── retriever.ts      # Context retrieval with fallback
-├── fallback.ts       # Keyword fallback implementation
-├── compound.ts       # Main ContextCompound class
-└── index.ts          # Public API exports
+├── indexer.ts        # File indexing with size limits and concurrency
+└── index.ts          # Public API exports (ContextCompound class)
 
 src/commands/
 └── context.ts        # CLI command implementation
@@ -288,9 +299,13 @@ src/lib/context-compound/__tests__/
 ├── ollama.test.ts
 ├── store.test.ts
 ├── indexer.test.ts
-├── retriever.test.ts
 └── integration.test.ts
 ```
+
+**Simplification rationale:**
+- Merged `errors.ts` and `config.ts` into `types.ts` and `constants.ts`
+- Merged `retriever.ts`, `fallback.ts`, and `compound.ts` into `index.ts`
+- Fewer files = faster implementation, easier testing, less cognitive overhead
 
 ## Dependencies
 
