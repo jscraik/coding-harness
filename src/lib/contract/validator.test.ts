@@ -302,7 +302,10 @@ describe("field-by-field matrix tests for parity verification", () => {
 		// observabilityPolicy - requires string provider
 		const observabilityResult = validateContract({
 			version: "1.2.0",
-			observabilityPolicy: { provider: 123 as unknown as string, collectorEndpoint: "http://localhost:4318" },
+			observabilityPolicy: {
+				provider: 123 as unknown as string,
+				collectorEndpoint: "http://localhost:4318",
+			},
 		});
 		expect(observabilityResult.success).toBe(false);
 
