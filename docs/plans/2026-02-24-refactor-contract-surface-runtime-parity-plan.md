@@ -1,8 +1,9 @@
 ---
 title: Contract Surface Runtime Parity Refactor
 type: refactor
-status: draft
+status: implemented
 date: 2026-02-24
+completed: 2026-02-25
 origin: docs/brainstorms/2026-02-24-contract-surface-parity-brainstorm.md
 deepened: 2026-02-24
 ---
@@ -271,24 +272,24 @@ Any command with `contractPath` or contract-derived defaults must read via loade
 
 ### Functional
 
-- [ ] Every top-level field scaffolded by `harness init` is represented in `HarnessContract`.
-- [ ] Validator enforces closed schema at top-level and nested policy levels.
+- [x] Every top-level field scaffolded by `harness init` is represented in `HarnessContract`.
+- [x] Validator enforces closed schema at top-level and nested policy levels.
 - [x] `harness init --migrate` upgrades `1.0` and `1.0.0` contracts to `1.1.0`.
-- [ ] Runtime contract consumers no longer parse contract JSON ad hoc.
+- [x] Runtime contract consumers no longer parse contract JSON ad hoc.
 - [x] `diff-budget` and applicable `ui-loop` paths consume validated contract values.
 
 ### Quality
 
-- [ ] Contract validator test matrix covers all scaffolded policy fields.
-- [ ] Migration tests cover idempotency, backup creation, and interrupted-write rollback behavior.
-- [ ] Security tests cover prototype-pollution keys at multiple nesting levels.
-- [ ] Error outputs preserve stable machine-readable codes.
+- [x] Contract validator test matrix covers all scaffolded policy fields.
+- [x] Migration tests cover idempotency, backup creation, and interrupted-write rollback behavior.
+- [x] Security tests cover prototype-pollution keys at multiple nesting levels.
+- [x] Error outputs preserve stable machine-readable codes.
 
 ### Compatibility
 
-- [ ] Existing valid contracts remain functional after migration.
+- [x] Existing valid contracts remain functional after migration.
 - [x] Legacy version strings are accepted and normalized.
-- [ ] Unknown-key behavior is explicit (validation fail or deterministic migrate-drop report).
+- [x] Unknown-key behavior is explicit (validation fail or deterministic migrate-drop report).
 
 ## Success Metrics
 
