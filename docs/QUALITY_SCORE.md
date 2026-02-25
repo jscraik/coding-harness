@@ -1,5 +1,5 @@
 ---
-last_updated: 2026-02-24
+last_updated: 2026-02-25
 calculated_by: harness-gardener
 ---
 
@@ -7,13 +7,13 @@ calculated_by: harness-gardener
 
 **Score:** 0/100
 
-**Last Updated:** 2026-02-24
+**Last Updated:** 2026-02-25
 
 ## Breakdown
 
 | Category | Count | Deduction |
 |----------|-------|-----------|
-| Stale Docs | 28 | -140 |
+| Stale Docs | 35 | -175 |
 | Broken Links | 0 | -0 |
 
 ## Stale Documents
@@ -31,11 +31,13 @@ calculated_by: harness-gardener
 1. `agents/08-release-and-change-control.md` (never validated)
 1. `agents/09-audit-trail-policy.md` (never validated)
 1. `agents/10-agent-testing-gates.md` (never validated)
+1. `architecture/blast-radius.md` (never validated)
 1. `brainstorms/2026-02-22-harness-gap-analysis-brainstorm.md` (never validated)
 1. `brainstorms/2026-02-23-installability-patches-brainstorm.md` (never validated)
 1. `brainstorms/2026-02-23-phase-4-installability-brainstorm.md` (never validated)
 1. `brainstorms/2026-02-23-phase-5-evidence-observability-brainstorm.md` (never validated)
 1. `brainstorms/2026-02-23-phase-6-recurring-gardening-brainstorm.md` (never validated)
+1. `brainstorms/2026-02-24-context-compound-ollama-brainstorm.md` (never validated)
 1. `plans/2026-02-22-feat-phase-1-bootstrap-plan.md` (never validated)
 1. `plans/2026-02-22-feat-phase-2-contract-policy-core-plan.md` (never validated)
 1. `plans/2026-02-23-feat-evidence-observability-plan.md` (never validated)
@@ -46,6 +48,11 @@ calculated_by: harness-gardener
 1. `plans/2026-02-23-feat-recurring-gardening-plan.md` (never validated)
 1. `plans/2026-02-23-feat-rollback-system-plan.md` (never validated)
 1. `plans/2026-02-23-feat-update-detection-plan.md` (never validated)
+1. `plans/2026-02-24-context-compound-implementation-plan.md` (never validated)
+1. `prompts/bugfix_template.md` (never validated)
+1. `prompts/feature_template.md` (never validated)
+1. `prompts/refactor_template.md` (never validated)
+1. `prompts/release_template.md` (never validated)
 
 ## Broken Links
 
