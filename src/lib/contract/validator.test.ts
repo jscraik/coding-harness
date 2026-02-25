@@ -1,4 +1,5 @@
 import { describe, expect, it } from "vitest";
+import { DEFAULT_CONTRACT, type HarnessContract } from "./types.js";
 import { ValidationErrorCode, validateContract } from "./validator.js";
 
 describe("validateContract", () => {
@@ -223,5 +224,108 @@ describe("validateContract", () => {
 
 		expect(result.success).toBe(false);
 		expect(result.errors[0]?.path).toBe("gapCasePolicy");
+	});
+});
+
+describe("field-by-field matrix tests for parity verification", () => {
+	const SCAFFOLDED_FIELDS = [
+		"version",
+		"riskTierRules",
+		"mergePolicy",
+		"docsDriftRules",
+		"reviewPolicy",
+		"evidencePolicy",
+		"diffBudget",
+		"uiLoopPolicy",
+		"runtimePolicy",
+		"memoryPolicy",
+		"memoryMaintenancePolicy",
+		"memoryEvalPolicy",
+		"observabilityPolicy",
+		"packageManagerPolicy",
+		"remediationPolicy",
+		"gapCasePolicy",
+	] as const satisfies (keyof HarnessContract)[];
+
+	it("validates all scaffolded top-level fields exist in HarnessContract", () => {
+		for (const field of SCAFFOLDED_FIELDS) {
+			expect(DEFAULT_CONTRACT).toHaveProperty(field);
+		}
+		expect(Object.keys(DEFAULT_CONTRACT).length).toBe(SCAFFOLDED_FIELDS.length);
+	});
+
+	it("rejects each policy type independently when malformed", () => {
+		// diffBudget - requires numeric maxFiles and maxNetLOC
+		const diffBudgetResult = validateContract({
+			version: "1.2.0",
+			diffBudget: { maxFiles: "invalid" as unknown as number, maxNetLOC: 100 },
+		});
+		expect(diffBudgetResult.success).toBe(false);
+
+		// uiLoopPolicy - requires string commands
+		const uiLoopResult = validateContract({
+			version: "1.2.0",
+			uiLoopPolicy: {
+				fastCommand: 123 as unknown as string,
+				verifyCommand: "pnpm verify",
+				exploreCommand: "pnpm explore",
+				sloTargets: { fastLoopSeconds: 30, verifyLoopSeconds: 120 },
+			},
+		});
+		expect(uiLoopResult.success).toBe(false);
+
+		// runtimePolicy - requires string nodeVersion
+		const runtimeResult = validateContract({
+			version: "1.2.0",
+			runtimePolicy: { nodeVersion: 20 as unknown as string },
+		});
+		expect(runtimeResult.success).toBe(false);
+
+		// memoryPolicy - requires boolean enabled
+		const memoryResult = validateContract({
+			version: "1.2.0",
+			memoryPolicy: {
+				enabled: "yes" as unknown as boolean,
+				provider: "local",
+				sessionIdTemplate: "repo:<name>:task:<id>",
+				domain: "default",
+				requiredTags: ["repo"],
+				maxObservationsPerStep: 3,
+				allowedLevels: ["observation"],
+				requireStartRead: true,
+				requireCloseoutSummary: true,
+				forbiddenContentPatterns: [],
+			},
+		});
+		expect(memoryResult.success).toBe(false);
+
+		// observabilityPolicy - requires string provider
+		const observabilityResult = validateContract({
+			version: "1.2.0",
+			observabilityPolicy: { provider: 123 as unknown as string, collectorEndpoint: "http://localhost:4318" },
+		});
+		expect(observabilityResult.success).toBe(false);
+
+		// packageManagerPolicy - requires array allowedManagers
+		const packageManagerResult = validateContract({
+			version: "1.2.0",
+			packageManagerPolicy: {
+				allowedManagers: "pnpm" as unknown as string[],
+				requiredManager: null,
+			},
+		});
+		expect(packageManagerResult.success).toBe(false);
+	});
+
+	it("VALID_TOP_LEVEL_KEYS contains all scaffolded fields", () => {
+		// Indirectly test by ensuring all known keys are accepted
+		const contractWithAllFields: Record<string, unknown> = {};
+		for (const field of SCAFFOLDED_FIELDS) {
+			contractWithAllFields[field] = DEFAULT_CONTRACT[field];
+		}
+
+		const result = validateContract(contractWithAllFields);
+		expect(result.success).toBe(true);
+		expect(result.data).toBeDefined();
 	});
 });
