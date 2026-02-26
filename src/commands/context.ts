@@ -51,6 +51,58 @@ export interface ContextOutput {
 	error?: string;
 }
 
+function printContextUsage(write: (message: string) => void): void {
+	write("Usage: harness context <query> [options]");
+	write("");
+	write("Options:");
+	write("  --limit, -l       Maximum results (default: 10)");
+	write("  --threshold, -t   Similarity threshold 0-1 (default: 0.7)");
+	write("  --json, -j        Output as JSON");
+	write(
+		"  --harness-dir     Directory for context database (default: .harness)",
+	);
+	write("  --help, -h        Show this help");
+	write("");
+	write("Examples:");
+	write('  harness context "implementing OAuth"');
+	write('  harness context "database migrations" --limit 5');
+	write('  harness context "API design" --threshold 0.8 --json');
+}
+
+function isFlagToken(value: string | undefined): boolean {
+	return value?.startsWith("-") ?? false;
+}
+
+function parsePositiveInteger(value: string | undefined): number | undefined {
+	if (value === undefined) {
+		return undefined;
+	}
+	const trimmed = value.trim();
+	if (!/^-?\d+$/.test(trimmed)) {
+		return undefined;
+	}
+	const parsed = Number.parseInt(trimmed, 10);
+	if (!Number.isFinite(parsed) || parsed < 1) {
+		return undefined;
+	}
+	return parsed;
+}
+
+function parseThreshold(value: string | undefined): number | undefined {
+	if (value === undefined) {
+		return undefined;
+	}
+	const trimmed = value.trim();
+	if (!/^-?(?:\d+|\d*\.\d+)$/.test(trimmed)) {
+		return undefined;
+	}
+	const parsed = Number.parseFloat(trimmed);
+	if (!Number.isFinite(parsed) || parsed < 0 || parsed > 1) {
+		return undefined;
+	}
+	return parsed;
+}
+
 /**
  * Run a context query.
  *
@@ -211,16 +263,47 @@ export async function runContextCLI(args: string[]): Promise<number> {
 		const arg = args[i];
 
 		if (arg === "--limit" || arg === "-l") {
-			const val = args[++i];
-			if (val) limit = Number.parseInt(val, 10);
+			const val = args[i + 1];
+			if (!val || isFlagToken(val)) {
+				console.error("Error: --limit requires a numeric value");
+				return EXIT_CODES.ERROR;
+			}
+			const parsedLimit = parsePositiveInteger(val);
+			if (parsedLimit !== undefined) {
+				limit = parsedLimit;
+			} else {
+				console.error(`Error: --limit expects a positive integer, got '${val}'`);
+				return EXIT_CODES.ERROR;
+			}
+			i++;
 		} else if (arg === "--threshold" || arg === "-t") {
-			const val = args[++i];
-			if (val) threshold = Number.parseFloat(val);
+			const val = args[i + 1];
+			if (!val || isFlagToken(val)) {
+				console.error("Error: --threshold requires a numeric value");
+				return EXIT_CODES.ERROR;
+			}
+			const parsedThreshold = parseThreshold(val);
+			if (parsedThreshold !== undefined) {
+				threshold = parsedThreshold;
+			} else {
+				console.error(
+					`Error: --threshold expects a number between 0 and 1, got '${val}'`,
+				);
+				return EXIT_CODES.ERROR;
+			}
+			i++;
 		} else if (arg === "--json" || arg === "-j") {
 			json = true;
 		} else if (arg === "--harness-dir") {
-			const val = args[++i];
-			if (val) harnessDir = val;
+			const val = args[i + 1];
+			if (!val || isFlagToken(val)) {
+				continue;
+			}
+			harnessDir = val;
+			i++;
+		} else if (arg === "--help" || arg === "-h") {
+			printContextUsage(console.info);
+			return EXIT_CODES.SUCCESS;
 		} else if (arg && !arg.startsWith("-") && !query) {
 			query = arg;
 		} else if (arg && !arg.startsWith("-")) {
@@ -229,22 +312,7 @@ export async function runContextCLI(args: string[]): Promise<number> {
 	}
 
 	if (!query) {
-		console.error("Usage: harness context <query> [options]");
-		console.error("");
-		console.error("Options:");
-		console.error("  --limit, -l       Maximum results (default: 10)");
-		console.error(
-			"  --threshold, -t   Similarity threshold 0-1 (default: 0.7)",
-		);
-		console.error("  --json, -j        Output as JSON");
-		console.error(
-			"  --harness-dir     Directory for context database (default: .harness)",
-		);
-		console.error("");
-		console.error("Examples:");
-		console.error('  harness context "implementing OAuth"');
-		console.error('  harness context "database migrations" --limit 5');
-		console.error('  harness context "API design" --threshold 0.8 --json');
+		printContextUsage(console.error);
 		return EXIT_CODES.ERROR;
 	}
 

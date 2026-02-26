@@ -5,7 +5,8 @@
  */
 
 import { existsSync, readdirSync } from "node:fs";
-import { join, relative } from "node:path";
+import { isAbsolute, join, relative, resolve, sep } from "node:path";
+import { validatePath } from "../lib/input/validator.js";
 import {
 	DEFAULT_DB_FILENAME,
 	DEFAULT_HARNESS_DIR,
@@ -54,6 +55,20 @@ export interface IndexContextOutput {
 	error?: string;
 }
 
+function getValidatedHarnessDir(baseDir: string, candidatePath: string): string {
+	const resolvedCandidate = resolve(baseDir, candidatePath);
+	const relativeCandidate = relative(baseDir, resolvedCandidate);
+	if (
+		relativeCandidate === ".." ||
+		relativeCandidate.startsWith(`..${sep}`) ||
+		isAbsolute(relativeCandidate)
+	) {
+		throw new Error("path escapes base directory");
+	}
+
+	return validatePath(baseDir, candidatePath);
+}
+
 /**
  * Find all markdown files in a directory.
  */
@@ -64,8 +79,11 @@ function findMarkdownFiles(dir: string): string[] {
 	const entries = readdirSync(dir, { withFileTypes: true });
 
 	for (const entry of entries) {
-		if (entry.isFile() && entry.name.endsWith(".md")) {
-			files.push(join(dir, entry.name));
+		const fullPath = join(dir, entry.name);
+		if (entry.isDirectory()) {
+			files.push(...findMarkdownFiles(fullPath));
+		} else if (entry.isFile() && entry.name.endsWith(".md")) {
+			files.push(fullPath);
 		}
 	}
 
@@ -83,7 +101,28 @@ export async function runIndexContext(
 ): Promise<number> {
 	const baseDir = options.baseDir ?? process.cwd();
 	const harnessDir = options.harnessDir ?? DEFAULT_HARNESS_DIR;
-	const dbPath = join(baseDir, harnessDir, DEFAULT_DB_FILENAME);
+	let validatedHarnessDir: string;
+	try {
+		validatedHarnessDir = getValidatedHarnessDir(baseDir, harnessDir);
+	} catch {
+		const error = "Invalid harness directory: path escapes base directory";
+		if (options.json) {
+			console.info(
+				JSON.stringify({
+					success: false,
+					indexed: 0,
+					skipped: 0,
+					errors: 0,
+					results: [],
+					error,
+				}),
+			);
+		} else {
+			console.error(`✗ ${error}`);
+		}
+		return EXIT_CODES.ERROR;
+	}
+	const dbPath = join(validatedHarnessDir, DEFAULT_DB_FILENAME);
 
 	// Collect files to index
 	const brainstormsDir = join(baseDir, "docs/brainstorms");
@@ -95,12 +134,19 @@ export async function runIndexContext(
 	const solutionFiles = findMarkdownFiles(solutionsDir);
 
 	const allFiles = [
-		...brainstormFiles.map((f) => brainstormIndexOptions(f, baseDir)),
-		...planFiles.map((f) => planIndexOptions(f, baseDir)),
+		...brainstormFiles.map((f) => ({
+			...brainstormIndexOptions(f, baseDir),
+			force: options.force,
+		})),
+		...planFiles.map((f) => ({
+			...planIndexOptions(f, baseDir),
+			force: options.force,
+		})),
 		...solutionFiles.map((f) => ({
 			filepath: f,
 			type: "solution" as const,
 			basePath: baseDir,
+			force: options.force,
 		})),
 	];
 
@@ -267,7 +313,13 @@ export async function runIndexContextCLI(args: string[]): Promise<number> {
 		if (arg === "--json" || arg === "-j") {
 			json = true;
 		} else if (arg === "--harness-dir") {
-			harnessDir = args[++i];
+			const harnessDirArg = args[i + 1];
+			if (!harnessDirArg || harnessDirArg.startsWith("-")) {
+				console.error("Error: --harness-dir requires a value");
+				return EXIT_CODES.ERROR;
+			}
+			harnessDir = harnessDirArg;
+			i++;
 		} else if (arg === "--force" || arg === "-f") {
 			force = true;
 		} else if (arg === "--help" || arg === "-h") {
