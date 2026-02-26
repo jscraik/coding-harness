@@ -15,6 +15,7 @@ import { runObservabilityGateCLI } from "./commands/observability-gate.js";
 import { runPlanGateCLI } from "./commands/plan-gate.js";
 import { runPreflightGateCLI } from "./commands/preflight-gate.js";
 import { runPromptGateCLI } from "./commands/prompt-gate.js";
+import { runRemediateCLI } from "./commands/remediate.js";
 import { runReplayCLI } from "./commands/replay.js";
 import { runReviewGateCLI } from "./commands/review-gate.js";
 import { runRiskTierCLI } from "./commands/risk-tier.js";
@@ -71,6 +72,7 @@ function printUsage(): void {
 	console.info("  ui:explore       Agent browser exploratory testing");
 	console.info("  context          Semantic search for relevant prior work");
 	console.info("  index-context    Bulk index brainstorms/plans for search");
+	console.info("  remediate        Apply automated fixes for findings");
 	console.info("");
 	console.info("Check Authz Options:");
 	console.info("  --contract       Path to harness.contract.json");
@@ -84,8 +86,23 @@ function printUsage(): void {
 	console.info("  --check-secrets  Check for secrets in environment variables");
 	console.info("  --attestation    Path to write attestation artifact");
 	console.info("  --json           Output as JSON");
-	console.info("  check-authz      Validate authorization policy before mutative operations");
-	console.info("  check-environment  Validate governance envelope before pilot operations");
+	console.info("");
+	console.info("Remediate Options:");
+	console.info(
+		"  --findings       JSON file path for findings (or - for stdin)",
+	);
+	console.info("  --dry-run        Preview changes without applying");
+	console.info("  --contract       Path to harness.contract.json");
+	console.info("  --head-sha       HEAD SHA (defaults to current git HEAD)");
+	console.info("  --mode           Override rollback mode (manual/autonomous)");
+	console.info("  --completion-marker  Path to completion marker file");
+	console.info("  --json           Output as JSON");
+	console.info(
+		"  check-authz      Validate authorization policy before mutative operations",
+	);
+	console.info(
+		"  check-environment  Validate governance envelope before pilot operations",
+	);
 	console.info("");
 	console.info("Init Options:");
 	console.info("  --dry-run        Preview changes without writing");
@@ -922,6 +939,55 @@ export function run(args: string[]): void {
 
 	// No command recognized
 
+	if (command === "remediate") {
+		// Parse remediate options
+		const jsonFlag = args.includes("--json");
+		const dryRunFlag = args.includes("--dry-run");
+		const contractIndex = args.indexOf("--contract");
+		const findingsIndex = args.indexOf("--findings");
+		const headShaIndex = args.indexOf("--head-sha");
+		const modeIndex = args.indexOf("--mode");
+		const markerIndex = args.indexOf("--completion-marker");
+
+		const options: {
+			findings?: string;
+			dryRun?: boolean;
+			json?: boolean;
+			contractPath?: string;
+			headSha?: string;
+			mode?: "manual" | "autonomous";
+			completionMarkerPath?: string;
+		} = {};
+
+		if (jsonFlag) options.json = true;
+		if (dryRunFlag) options.dryRun = true;
+		if (contractIndex !== -1 && args[contractIndex + 1]) {
+			options.contractPath = args[contractIndex + 1] as string;
+		}
+		if (findingsIndex !== -1 && args[findingsIndex + 1]) {
+			options.findings = args[findingsIndex + 1] as string;
+		}
+		if (headShaIndex !== -1 && args[headShaIndex + 1]) {
+			options.headSha = args[headShaIndex + 1] as string;
+		}
+		if (modeIndex !== -1 && args[modeIndex + 1]) {
+			const modeValue = args[modeIndex + 1];
+			if (modeValue === "manual" || modeValue === "autonomous") {
+				options.mode = modeValue;
+			}
+		}
+		if (markerIndex !== -1 && args[markerIndex + 1]) {
+			options.completionMarkerPath = args[markerIndex + 1] as string;
+		}
+
+		runRemediateCLI(options)
+			.then((exitCode) => process.exit(exitCode))
+			.catch((error) => handleFatalError("Remediate Error", error));
+		return;
+	}
+
+	// No command recognized
+
 	if (command === "check-environment") {
 		// Parse check-environment options
 		const jsonFlag = args.includes("--json");
@@ -948,6 +1014,55 @@ export function run(args: string[]): void {
 		runCheckEnvironmentCLI(options)
 			.then((exitCode) => process.exit(exitCode))
 			.catch((error) => handleFatalError("Check Environment Error", error));
+		return;
+	}
+
+	// No command recognized
+
+	if (command === "remediate") {
+		// Parse remediate options
+		const jsonFlag = args.includes("--json");
+		const dryRunFlag = args.includes("--dry-run");
+		const contractIndex = args.indexOf("--contract");
+		const findingsIndex = args.indexOf("--findings");
+		const headShaIndex = args.indexOf("--head-sha");
+		const modeIndex = args.indexOf("--mode");
+		const markerIndex = args.indexOf("--completion-marker");
+
+		const options: {
+			findings?: string;
+			dryRun?: boolean;
+			json?: boolean;
+			contractPath?: string;
+			headSha?: string;
+			mode?: "manual" | "autonomous";
+			completionMarkerPath?: string;
+		} = {};
+
+		if (jsonFlag) options.json = true;
+		if (dryRunFlag) options.dryRun = true;
+		if (contractIndex !== -1 && args[contractIndex + 1]) {
+			options.contractPath = args[contractIndex + 1] as string;
+		}
+		if (findingsIndex !== -1 && args[findingsIndex + 1]) {
+			options.findings = args[findingsIndex + 1] as string;
+		}
+		if (headShaIndex !== -1 && args[headShaIndex + 1]) {
+			options.headSha = args[headShaIndex + 1] as string;
+		}
+		if (modeIndex !== -1 && args[modeIndex + 1]) {
+			const modeValue = args[modeIndex + 1];
+			if (modeValue === "manual" || modeValue === "autonomous") {
+				options.mode = modeValue;
+			}
+		}
+		if (markerIndex !== -1 && args[markerIndex + 1]) {
+			options.completionMarkerPath = args[markerIndex + 1] as string;
+		}
+
+		runRemediateCLI(options)
+			.then((exitCode) => process.exit(exitCode))
+			.catch((error) => handleFatalError("Remediate Error", error));
 		return;
 	}
 
@@ -989,6 +1104,55 @@ export function run(args: string[]): void {
 
 	// No command recognized
 
+	if (command === "remediate") {
+		// Parse remediate options
+		const jsonFlag = args.includes("--json");
+		const dryRunFlag = args.includes("--dry-run");
+		const contractIndex = args.indexOf("--contract");
+		const findingsIndex = args.indexOf("--findings");
+		const headShaIndex = args.indexOf("--head-sha");
+		const modeIndex = args.indexOf("--mode");
+		const markerIndex = args.indexOf("--completion-marker");
+
+		const options: {
+			findings?: string;
+			dryRun?: boolean;
+			json?: boolean;
+			contractPath?: string;
+			headSha?: string;
+			mode?: "manual" | "autonomous";
+			completionMarkerPath?: string;
+		} = {};
+
+		if (jsonFlag) options.json = true;
+		if (dryRunFlag) options.dryRun = true;
+		if (contractIndex !== -1 && args[contractIndex + 1]) {
+			options.contractPath = args[contractIndex + 1] as string;
+		}
+		if (findingsIndex !== -1 && args[findingsIndex + 1]) {
+			options.findings = args[findingsIndex + 1] as string;
+		}
+		if (headShaIndex !== -1 && args[headShaIndex + 1]) {
+			options.headSha = args[headShaIndex + 1] as string;
+		}
+		if (modeIndex !== -1 && args[modeIndex + 1]) {
+			const modeValue = args[modeIndex + 1];
+			if (modeValue === "manual" || modeValue === "autonomous") {
+				options.mode = modeValue;
+			}
+		}
+		if (markerIndex !== -1 && args[markerIndex + 1]) {
+			options.completionMarkerPath = args[markerIndex + 1] as string;
+		}
+
+		runRemediateCLI(options)
+			.then((exitCode) => process.exit(exitCode))
+			.catch((error) => handleFatalError("Remediate Error", error));
+		return;
+	}
+
+	// No command recognized
+
 	if (command === "check-environment") {
 		// Parse check-environment options
 		const jsonFlag = args.includes("--json");
@@ -1015,6 +1179,55 @@ export function run(args: string[]): void {
 		runCheckEnvironmentCLI(options)
 			.then((exitCode) => process.exit(exitCode))
 			.catch((error) => handleFatalError("Check Environment Error", error));
+		return;
+	}
+
+	// No command recognized
+
+	if (command === "remediate") {
+		// Parse remediate options
+		const jsonFlag = args.includes("--json");
+		const dryRunFlag = args.includes("--dry-run");
+		const contractIndex = args.indexOf("--contract");
+		const findingsIndex = args.indexOf("--findings");
+		const headShaIndex = args.indexOf("--head-sha");
+		const modeIndex = args.indexOf("--mode");
+		const markerIndex = args.indexOf("--completion-marker");
+
+		const options: {
+			findings?: string;
+			dryRun?: boolean;
+			json?: boolean;
+			contractPath?: string;
+			headSha?: string;
+			mode?: "manual" | "autonomous";
+			completionMarkerPath?: string;
+		} = {};
+
+		if (jsonFlag) options.json = true;
+		if (dryRunFlag) options.dryRun = true;
+		if (contractIndex !== -1 && args[contractIndex + 1]) {
+			options.contractPath = args[contractIndex + 1] as string;
+		}
+		if (findingsIndex !== -1 && args[findingsIndex + 1]) {
+			options.findings = args[findingsIndex + 1] as string;
+		}
+		if (headShaIndex !== -1 && args[headShaIndex + 1]) {
+			options.headSha = args[headShaIndex + 1] as string;
+		}
+		if (modeIndex !== -1 && args[modeIndex + 1]) {
+			const modeValue = args[modeIndex + 1];
+			if (modeValue === "manual" || modeValue === "autonomous") {
+				options.mode = modeValue;
+			}
+		}
+		if (markerIndex !== -1 && args[markerIndex + 1]) {
+			options.completionMarkerPath = args[markerIndex + 1] as string;
+		}
+
+		runRemediateCLI(options)
+			.then((exitCode) => process.exit(exitCode))
+			.catch((error) => handleFatalError("Remediate Error", error));
 		return;
 	}
 

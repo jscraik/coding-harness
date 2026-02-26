@@ -29,8 +29,6 @@ export interface OrchestratorOptions {
 	dryRun?: boolean;
 	/** Initial HEAD SHA (will be verified) */
 	headSha: string;
-	/** Concurrency limit for batch operations */
-	concurrency?: number;
 }
 
 /**
@@ -83,7 +81,6 @@ export class RemediationOrchestrator {
 	private readonly findings: CanonicalFinding[];
 	private readonly dryRun: boolean;
 	private readonly headSha: string;
-	private readonly concurrency: number;
 	private readonly github: GitHubClient | null;
 
 	constructor(options: OrchestratorOptions, github?: GitHubClient | null) {
@@ -91,7 +88,6 @@ export class RemediationOrchestrator {
 		this.findings = options.findings;
 		this.dryRun = options.dryRun ?? false;
 		this.headSha = options.headSha;
-		this.concurrency = options.concurrency ?? 5;
 		this.github = github ?? null;
 	}
 
@@ -112,37 +108,6 @@ export class RemediationOrchestrator {
 			: this.headSha;
 		if (this.github) apiCalls++;
 
-		// Step 1: Batch ancestry checks with deduplication
-		const ancestryCache = new Map<string, boolean>();
-
-		// Capture github client in local variable for type narrowing in callbacks
-		const github = this.github;
-		if (github) {
-			// Deduplicate SHAs - only check unique values
-			const uniqueShas = new Set(
-				this.findings
-					.map((f) => f.commitSha)
-					.filter((sha) => sha !== initialHead), // Skip HEAD SHA
-			);
-
-			// Batch checks with concurrency limit
-			const shaArray = Array.from(uniqueShas);
-			for (let i = 0; i < shaArray.length; i += this.concurrency) {
-				const batch = shaArray.slice(i, i + this.concurrency);
-				const results = await Promise.all(
-					batch.map(async (sha) => ({
-						sha,
-						isAncestor: await github.isAncestor(sha, initialHead),
-					})),
-				);
-				apiCalls += batch.length;
-
-				for (const { sha, isAncestor } of results) {
-					ancestryCache.set(sha, isAncestor);
-				}
-			}
-		}
-
 		// P1 FIX: TOCTOU Checkpoint 2 - Mid-processing check before action decisions
 		if (this.github) {
 			const midHead = await this.github.getHeadSha();
@@ -159,23 +124,18 @@ export class RemediationOrchestrator {
 			}
 		}
 
-		// Step 2: Process findings using cached results
+		// Step 2: Process findings with strict SHA-only filtering (v1 behavior)
+		// Only process findings bound to the exact current HEAD SHA
 		for (const finding of this.findings) {
-			// Check ancestry (use cache or assume true if no GitHub client)
-			if (this.github) {
-				if (finding.commitSha === initialHead) {
-					cacheHits++;
-				} else {
-					const isAncestor = ancestryCache.get(finding.commitSha);
-					if (isAncestor === false) {
-						skipped.push({
-							findingId: finding.id,
-							reason: "Commit not in HEAD ancestry",
-						});
-						continue;
-					}
-				}
+			// V1 strict SHA-only filtering: finding must be bound to exact HEAD SHA
+			if (finding.commitSha !== initialHead) {
+				skipped.push({
+					findingId: finding.id,
+					reason: `Finding commit ${finding.commitSha.slice(0, 7)} does not match HEAD ${initialHead.slice(0, 7)} (strict SHA-only policy)`,
+				});
+				continue;
 			}
+			cacheHits++;
 
 			// Get provider policy or skip if not configured
 			const providerPolicy = this.policy.providerDefaults[finding.provider];
@@ -194,9 +154,13 @@ export class RemediationOrchestrator {
 			);
 
 			if (!canAutoApply) {
-				skipped.push({
+				// High-risk findings require explicit human mediation
+				// Produce requires_human action for clear machine-readable signal
+				actions.push({
+					type: "requires_human",
 					findingId: finding.id,
-					reason: `Severity '${finding.severity}' exceeds auto-apply max tier '${providerPolicy.autoApplyMaxTier}'`,
+					reason: `Severity '${finding.severity}' requires human review (exceeds auto-apply max tier '${providerPolicy.autoApplyMaxTier}')`,
+					dryRun: this.dryRun,
 				});
 				continue;
 			}
@@ -213,7 +177,6 @@ export class RemediationOrchestrator {
 				dryRun: isDryRun,
 			});
 		}
-
 		// P1 FIX: TOCTOU Checkpoint 3 - Final check before return
 		if (this.github) {
 			const finalHead = await this.github.getHeadSha();

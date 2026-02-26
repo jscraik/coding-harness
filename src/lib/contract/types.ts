@@ -131,13 +131,17 @@ export const DEFAULT_EVIDENCE_POLICY: EvidencePolicy = {
 
 export const DEFAULT_REMEDIATION_POLICY: RemediationPolicy = {
 	providerDefaults: {
+		codeql: {
+			autoApplyMaxTier: "medium",
+			dryRunOnlyByDefault: false,
+		},
 		greptile: {
 			autoApplyMaxTier: "medium",
 			dryRunOnlyByDefault: false,
 		},
 		codex: {
-			autoApplyMaxTier: "medium",
-			dryRunOnlyByDefault: false,
+			autoApplyMaxTier: "low",
+			dryRunOnlyByDefault: true,
 		},
 	},
 	marker: "[auto-remediate]",
@@ -161,7 +165,11 @@ export const DEFAULT_PILOT_ROLLBACK_POLICY: PilotRollbackPolicy = {
 };
 
 export const DEFAULT_PILOT_AUTHZ_POLICY: PilotAuthzPolicy = {
-	githubScopeAllowlist: ["pull_requests:write", "contents:read", "issues:write"],
+	githubScopeAllowlist: [
+		"pull_requests:write",
+		"contents:read",
+		"issues:write",
+	],
 	repoAllowlist: [], // Empty = deny all repos by default
 	branchAllowlist: [], // Empty = deny all branches by default
 	protectedBranchDenylist: ["main", "master", "release/*"],

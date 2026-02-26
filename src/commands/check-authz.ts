@@ -4,9 +4,12 @@
  */
 import { existsSync } from "node:fs";
 import { resolve } from "node:path";
-import type { HarnessContract, PilotAuthzPolicy } from "../lib/contract/types.js";
-import { DEFAULT_PILOT_AUTHZ_POLICY } from "../lib/contract/types.js";
 import { loadContract } from "../lib/contract/loader.js";
+import type {
+	HarnessContract,
+	PilotAuthzPolicy,
+} from "../lib/contract/types.js";
+import { DEFAULT_PILOT_AUTHZ_POLICY } from "../lib/contract/types.js";
 import { sanitizeError } from "../lib/input/sanitize.js";
 
 // Exit codes for programmatic consumption
@@ -32,7 +35,11 @@ export interface CheckAuthzOptions {
 
 export interface AuthzViolation {
 	/** Violation type */
-	type: "repo_not_allowed" | "branch_not_allowed" | "branch_protected" | "scope_missing";
+	type:
+		| "repo_not_allowed"
+		| "branch_not_allowed"
+		| "branch_protected"
+		| "scope_missing";
 	/** Human-readable message */
 	message: string;
 	/** The value that caused the violation */
@@ -248,7 +255,9 @@ export async function runCheckAuthz(
 /**
  * CLI entry point with output formatting and exit codes.
  */
-export async function runCheckAuthzCLI(options: CheckAuthzOptions): Promise<number> {
+export async function runCheckAuthzCLI(
+	options: CheckAuthzOptions,
+): Promise<number> {
 	const result = await runCheckAuthz(options);
 
 	if (!result.ok) {
@@ -263,7 +272,7 @@ export async function runCheckAuthzCLI(options: CheckAuthzOptions): Promise<numb
 	const { output } = result;
 
 	if (options.json) {
-		console.log(JSON.stringify(output, null, 2));
+		console.info(JSON.stringify(output, null, 2));
 	} else {
 		if (output.passed) {
 			console.info("✓ Authorization check passed");

@@ -1,13 +1,13 @@
+import { createHash } from "node:crypto";
 /**
  * check-environment command for governance envelope preflight validation.
  * Validates sandbox mode, environment filters, and approval posture.
  */
 import { existsSync, writeFileSync } from "node:fs";
 import { resolve } from "node:path";
-import type { HarnessContract } from "../lib/contract/types.js";
 import { loadContract } from "../lib/contract/loader.js";
+import type { HarnessContract } from "../lib/contract/types.js";
 import { sanitizeError } from "../lib/input/sanitize.js";
-import { createHash } from "node:crypto";
 
 // Exit codes for programmatic consumption
 export const EXIT_CODES = {
@@ -118,7 +118,8 @@ function detectSandboxMode(): string | undefined {
  */
 function hasSecretsFilterConfigured(): boolean {
 	// Check for common secrets filter configurations
-	const filterEnv = process.env.CLAUDE_SECRET_FILTER ?? process.env.CODEX_SECRET_FILTER;
+	const filterEnv =
+		process.env.CLAUDE_SECRET_FILTER ?? process.env.CODEX_SECRET_FILTER;
 	if (filterEnv) {
 		return true;
 	}
@@ -184,7 +185,11 @@ export async function runCheckEnvironment(
 	const violations: EnvironmentViolation[] = [];
 
 	// Default allowed sandbox modes
-	const allowedModes = options.allowedSandboxModes ?? ["sandboxed", "restricted", "isolated"];
+	const allowedModes = options.allowedSandboxModes ?? [
+		"sandboxed",
+		"restricted",
+		"isolated",
+	];
 
 	// Detect sandbox mode
 	const sandboxMode = detectSandboxMode();
@@ -228,7 +233,8 @@ export async function runCheckEnvironment(
 		violations.push({
 			type: "approval_posture_invalid",
 			message: "No approval posture configured for mutative operations",
-			expected: "Set CLAUDE_APPROVAL_POSTURE=require or run in interactive mode",
+			expected:
+				"Set CLAUDE_APPROVAL_POSTURE=require or run in interactive mode",
 		});
 	}
 
@@ -285,7 +291,7 @@ export async function runCheckEnvironmentCLI(
 	const { output } = result;
 
 	if (options.json) {
-		console.log(JSON.stringify(output, null, 2));
+		console.info(JSON.stringify(output, null, 2));
 	} else {
 		if (output.passed) {
 			console.info("✓ Environment check passed");
@@ -293,8 +299,12 @@ export async function runCheckEnvironmentCLI(
 			if (output.posture.sandboxMode) {
 				console.info(`  Sandbox mode: ${output.posture.sandboxMode}`);
 			}
-			console.info(`  Secrets filter: ${output.posture.hasSecretsFilter ? "configured" : "not configured"}`);
-			console.info(`  Approval posture: ${output.posture.hasApprovalPosture ? "configured" : "not configured"}`);
+			console.info(
+				`  Secrets filter: ${output.posture.hasSecretsFilter ? "configured" : "not configured"}`,
+			);
+			console.info(
+				`  Approval posture: ${output.posture.hasApprovalPosture ? "configured" : "not configured"}`,
+			);
 			if (output.attestationPath) {
 				console.info(`  Attestation: ${output.attestationPath}`);
 			}

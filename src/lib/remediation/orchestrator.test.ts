@@ -131,7 +131,7 @@ describe("RemediationOrchestrator", () => {
 				expect(result.output.actions).toHaveLength(0);
 				expect(result.output.skipped).toHaveLength(1);
 				expect(result.output.skipped[0]?.reason).toBe(
-					"Commit not in HEAD ancestry",
+					"Finding commit aaaaaaa does not match HEAD bbbbbbb (strict SHA-only policy)",
 				);
 			}
 		});
@@ -164,7 +164,7 @@ describe("RemediationOrchestrator", () => {
 			}
 		});
 
-		it("processes findings when commit is an ancestor", async () => {
+		it("skips findings when commit is not HEAD SHA (strict SHA-only)", async () => {
 			const headSha = "b".repeat(40);
 			const ancestorSha = "a".repeat(40);
 
@@ -186,7 +186,12 @@ describe("RemediationOrchestrator", () => {
 
 			expect(result.ok).toBe(true);
 			if (result.ok) {
-				expect(result.output.actions).toHaveLength(1);
+				// Strict SHA-only: ancestor SHA !== HEAD SHA means skip
+				expect(result.output.actions).toHaveLength(0);
+				expect(result.output.skipped).toHaveLength(1);
+				expect(result.output.skipped[0]?.reason).toContain(
+					"does not match HEAD",
+				);
 			}
 		});
 	});
@@ -248,7 +253,7 @@ describe("RemediationOrchestrator", () => {
 			}
 		});
 
-		it("skips high severity findings (codeql max is medium)", async () => {
+		it("produces requires_human action for high severity findings (codeql max is medium)", async () => {
 			const headSha = "a".repeat(40);
 			const mockGithub: GitHubClient = {
 				getHeadSha: vi.fn().mockResolvedValue(headSha),
@@ -273,9 +278,13 @@ describe("RemediationOrchestrator", () => {
 
 			expect(result.ok).toBe(true);
 			if (result.ok) {
-				expect(result.output.actions).toHaveLength(0);
-				expect(result.output.skipped).toHaveLength(1);
-				expect(result.output.skipped[0]?.reason).toContain("exceeds");
+				// Phase 2: high-severity produces requires_human action, not skip
+				expect(result.output.actions).toHaveLength(1);
+				expect(result.output.actions[0]?.type).toBe("requires_human");
+				expect(result.output.actions[0]?.reason).toContain(
+					"requires human review",
+				);
+				expect(result.output.skipped).toHaveLength(0);
 			}
 		});
 
@@ -405,11 +414,14 @@ describe("RemediationOrchestrator", () => {
 			// Should succeed - uses fresh HEAD from checkpoint 1, not stale input
 			expect(result.ok).toBe(true);
 			if (result.ok) {
-				// Should have called isAncestor with actual HEAD, not stale input
-				expect(mockGithub.isAncestor).toHaveBeenCalledWith(
-					findingSha,
-					actualHeadSha,
+				// Strict SHA-only: finding SHA !== actualHeadSha means skipped
+				expect(result.output.actions).toHaveLength(0);
+				expect(result.output.skipped).toHaveLength(1);
+				expect(result.output.skipped[0]?.reason).toContain(
+					"does not match HEAD",
 				);
+				// No longer calls isAncestor with strict SHA-only filtering
+				expect(mockGithub.isAncestor).not.toHaveBeenCalled();
 			}
 		});
 
@@ -508,28 +520,22 @@ describe("RemediationOrchestrator", () => {
 	});
 
 	describe("batching and performance", () => {
-		it("batches ancestry checks for performance (SHA deduplication)", async () => {
+		// Phase 2: Ancestry batching removed - strict SHA-only filtering
+		it("does not call isAncestor with strict SHA-only filtering", async () => {
 			const headSha = "h".repeat(40);
 			const sha1 = "a".repeat(40);
 			const sha2 = "b".repeat(40);
-			const sha3 = "c".repeat(40);
 
 			const mockGithub: GitHubClient = {
 				getHeadSha: vi.fn().mockResolvedValue(headSha),
 				isAncestor: vi.fn().mockResolvedValue(true),
 			};
 
-			// 10 findings with only 3 unique SHAs (plus HEAD)
+			// Findings with non-HEAD SHAs should be skipped
 			const findings: CanonicalFinding[] = [
-				...Array(3)
-					.fill(null)
-					.map((_, i) => makeFinding({ id: `f${i}`, commitSha: sha1 })),
-				...Array(4)
-					.fill(null)
-					.map((_, i) => makeFinding({ id: `f${i + 3}`, commitSha: sha2 })),
-				...Array(3)
-					.fill(null)
-					.map((_, i) => makeFinding({ id: `f${i + 7}`, commitSha: sha3 })),
+				makeFinding({ id: "f1", commitSha: sha1 }),
+				makeFinding({ id: "f2", commitSha: sha2 }),
+				makeFinding({ id: "f3", commitSha: headSha }),
 			];
 
 			const orchestrator = new RemediationOrchestrator(
@@ -544,11 +550,12 @@ describe("RemediationOrchestrator", () => {
 			const result = await orchestrator.remediate();
 
 			expect(result.ok).toBe(true);
-			// Should only call isAncestor 3 times (one per unique SHA, excluding HEAD)
-			expect(mockGithub.isAncestor).toHaveBeenCalledTimes(3);
+			// isAncestor should never be called with strict SHA-only
+			expect(mockGithub.isAncestor).not.toHaveBeenCalled();
 			if (result.ok) {
-				expect(result.output.findingsProcessed).toBe(10);
-				expect(result.output.actions).toHaveLength(10);
+				expect(result.output.findingsProcessed).toBe(3);
+				expect(result.output.actions).toHaveLength(1); // Only f3 matches HEAD
+				expect(result.output.skipped).toHaveLength(2); // f1, f2 don't match HEAD
 			}
 		});
 
@@ -579,41 +586,6 @@ describe("RemediationOrchestrator", () => {
 				expect(result.output.telemetry?.cacheHits).toBe(2);
 				expect(result.output.telemetry?.apiCalls).toBe(3); // 3 getHeadSha calls
 			}
-		});
-
-		it("respects concurrency limit for batch operations", async () => {
-			// Use '0' as HEAD which won't collide with 'a'-'j' findings
-			const headSha = "0".repeat(40);
-			// 10 unique SHAs that are all different from HEAD
-			const uniqueShas = Array.from(
-				{ length: 10 },
-				(_, i) => String.fromCharCode(97 + i).repeat(40), // 'a' through 'j'
-			);
-
-			const mockGithub: GitHubClient = {
-				getHeadSha: vi.fn().mockResolvedValue(headSha),
-				isAncestor: vi.fn().mockResolvedValue(true),
-			};
-
-			const findings = uniqueShas.map((sha, i) =>
-				makeFinding({ id: `f${i}`, commitSha: sha }),
-			);
-
-			const orchestrator = new RemediationOrchestrator(
-				{
-					policy: mockPolicy,
-					findings,
-					headSha,
-					concurrency: 3,
-				},
-				mockGithub,
-			);
-
-			const result = await orchestrator.remediate();
-
-			expect(result.ok).toBe(true);
-			// All 10 unique SHAs (none equal to HEAD) should trigger ancestry checks
-			expect(mockGithub.isAncestor).toHaveBeenCalledTimes(10);
 		});
 	});
 
@@ -686,8 +658,119 @@ describe("RemediationOrchestrator", () => {
 			expect(result.ok).toBe(true);
 			if (result.ok) {
 				expect(result.output.telemetry).toBeDefined();
-				expect(result.output.telemetry?.apiCalls).toBe(4); // 3 getHeadSha + 1 isAncestor
-				expect(result.output.telemetry?.cacheHits).toBe(1); // One HEAD SHA hit
+				expect(result.output.telemetry?.apiCalls).toBe(3); // 3 getHeadSha (strict SHA-only)
+				expect(result.output.telemetry?.cacheHits).toBe(1); // One finding matched HEAD SHA
+			}
+		});
+	});
+
+	// === Phase 2: Strict SHA-only filtering ===
+	describe("strict SHA-only filtering (Phase 2)", () => {
+		it("only processes findings bound to exact HEAD SHA", async () => {
+			const headSha = "h".repeat(40);
+			const otherSha = "o".repeat(40);
+
+			const orchestrator = new RemediationOrchestrator(
+				{
+					policy: mockPolicy,
+					findings: [
+						makeFinding({ id: "f1", commitSha: headSha }),
+						makeFinding({ id: "f2", commitSha: otherSha }),
+					],
+					headSha,
+				},
+				null,
+			);
+
+			const result = await orchestrator.remediate();
+
+			expect(result.ok).toBe(true);
+			if (result.ok) {
+				expect(result.output.actions).toHaveLength(1);
+				expect(result.output.actions[0]?.findingId).toBe("f1");
+				expect(result.output.skipped).toHaveLength(1);
+				expect(result.output.skipped[0]?.findingId).toBe("f2");
+				expect(result.output.skipped[0]?.reason).toContain(
+					"does not match HEAD",
+				);
+			}
+		});
+	});
+
+	// === Phase 2: High-risk human mediation ===
+	describe("high-risk human mediation (Phase 2)", () => {
+		it("produces requires_human action for high-severity findings", async () => {
+			const headSha = "a".repeat(40);
+
+			const orchestrator = new RemediationOrchestrator(
+				{
+					policy: mockPolicy,
+					findings: [
+						makeFinding({ id: "f1", severity: "high", commitSha: headSha }),
+					],
+					headSha,
+				},
+				null,
+			);
+
+			const result = await orchestrator.remediate();
+
+			expect(result.ok).toBe(true);
+			if (result.ok) {
+				expect(result.output.actions).toHaveLength(1);
+				expect(result.output.actions[0]?.type).toBe("requires_human");
+				expect(result.output.actions[0]?.reason).toContain(
+					"requires human review",
+				);
+			}
+		});
+
+		it("does not add high-severity to skipped list", async () => {
+			const headSha = "a".repeat(40);
+
+			const orchestrator = new RemediationOrchestrator(
+				{
+					policy: mockPolicy,
+					findings: [
+						makeFinding({ id: "f1", severity: "high", commitSha: headSha }),
+					],
+					headSha,
+				},
+				null,
+			);
+
+			const result = await orchestrator.remediate();
+
+			expect(result.ok).toBe(true);
+			if (result.ok) {
+				expect(result.output.skipped).toHaveLength(0);
+				expect(result.output.actions).toHaveLength(1);
+			}
+		});
+
+		it("auto-applies low and medium severity findings", async () => {
+			const headSha = "a".repeat(40);
+
+			const orchestrator = new RemediationOrchestrator(
+				{
+					policy: mockPolicy,
+					findings: [
+						makeFinding({ id: "f1", severity: "low", commitSha: headSha }),
+						makeFinding({ id: "f2", severity: "medium", commitSha: headSha }),
+					],
+					headSha,
+				},
+				null,
+			);
+
+			const result = await orchestrator.remediate();
+
+			expect(result.ok).toBe(true);
+			if (result.ok) {
+				expect(result.output.actions).toHaveLength(2);
+				expect(result.output.actions.every((a) => a.type === "commit")).toBe(
+					true,
+				);
 			}
 		});
 	});

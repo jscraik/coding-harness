@@ -401,7 +401,7 @@ Current repository tests already cover core unit behavior in remediation orchest
      - Contract A yields skip/PARTIAL for medium finding.
      - Contract B yields action/SUCCESS for same medium finding.
    - Fail assertions:
-    - Runtime output is identical across materially different contracts.
+     - Runtime output is identical across materially different contracts.
 
 4. **Resilience and evaluator contract tests**
    - Setup: simulated mutative queue latency + synthetic secondary-limit response stream.

@@ -28,7 +28,12 @@ export type RemediationProvider = "codeql" | "codex";
 /**
  * Action types for remediation workflow.
  */
-export type RemediationActionType = "commit" | "push" | "comment" | "skip";
+export type RemediationActionType =
+	| "commit"
+	| "push"
+	| "comment"
+	| "skip"
+	| "requires_human";
 
 /**
  * Typed error codes for normalizer failures.
@@ -47,6 +52,7 @@ export type RemediationErrorCode =
 	| "E_POLICY"
 	| "E_GITHUB"
 	| "E_RACE_DETECTED"
+	| "E_ROLLBACK_MODE"
 	| "E_INTERNAL";
 
 /**
