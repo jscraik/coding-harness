@@ -7,11 +7,13 @@ import { runCheckEnvironmentCLI } from "./commands/check-environment.js";
 import { runContextCLI } from "./commands/context.js";
 import { runDiffBudgetCLI } from "./commands/diff-budget.js";
 import { runEvidenceVerifyCLI } from "./commands/evidence-verify.js";
+import { runGapCaseCLI } from "./commands/gap-case.js";
 import { runGardenerCLI } from "./commands/gardener.js";
 import { runIndexContextCLI } from "./commands/index-context.js";
 import { runInitCLI, runInteractiveInitCLI } from "./commands/init.js";
 import { runMemoryGateCLI } from "./commands/memory-gate.js";
 import { runObservabilityGateCLI } from "./commands/observability-gate.js";
+import { runPilotEvaluateCLI } from "./commands/pilot-evaluate.js";
 import { runPlanGateCLI } from "./commands/plan-gate.js";
 import { runPolicyGateCLI } from "./commands/policy-gate.js";
 import { runPreflightGateCLI } from "./commands/preflight-gate.js";
@@ -74,6 +76,10 @@ function printUsage(): void {
 	console.info("  context          Semantic search for relevant prior work");
 	console.info("  index-context    Bulk index brainstorms/plans for search");
 	console.info("  remediate        Apply automated fixes for findings");
+	console.info("  gap-case         Track and resolve gap-cases for pilot");
+	console.info(
+		"  pilot-evaluate   Evaluate pilot metrics and determine promotion",
+	);
 	console.info("");
 	console.info("Check Authz Options:");
 	console.info("  --contract       Path to harness.contract.json");
@@ -1227,6 +1233,147 @@ export function run(args: string[]): void {
 		runRemediateCLI(options)
 			.then((exitCode) => process.exit(exitCode))
 			.catch((error) => handleFatalError("Remediate Error", error));
+		return;
+	}
+
+	// No command recognized
+	if (command === "gap-case") {
+		// Parse gap-case options
+		const jsonFlag = args.includes("--json");
+		const contractIndex = args.indexOf("--contract");
+		const storeIndex = args.indexOf("--store");
+
+		// Get action (open/resolve) from second arg
+		const action = args[1] as "open" | "resolve" | undefined;
+		if (action !== "open" && action !== "resolve") {
+			console.error("Error: action must be 'open' or 'resolve'");
+			process.exit(1);
+			return;
+		}
+
+		// Open options
+		const incidentIdIndex = args.indexOf("--incident-id");
+		const summaryIndex = args.indexOf("--summary");
+		const severityIndex = args.indexOf("--severity");
+		const ownerIndex = args.indexOf("--owner");
+		const providerIndex = args.indexOf("--provider");
+		const findingIdIndex = args.indexOf("--finding-id");
+		const prNumberIndex = args.indexOf("--pr-number");
+		const headShaIndex = args.indexOf("--head-sha");
+		const slaHoursIndex = args.indexOf("--sla-hours");
+
+		// Resolve options
+		const caseIdIndex = args.indexOf("--case-id");
+		const evidenceUrlIndex = args.indexOf("--evidence-url");
+		const fixPrIndex = args.indexOf("--fix-pr");
+		const noteIndex = args.indexOf("--note");
+		const resolvedByIndex = args.indexOf("--resolved-by");
+
+		const options: {
+			action: "open" | "resolve";
+			json?: boolean;
+			contractPath?: string;
+			storePath?: string;
+			incidentId?: string;
+			summary?: string;
+			severity?: string;
+			owner?: string;
+			provider?: string;
+			findingId?: string;
+			prNumber?: number;
+			headSha?: string;
+			slaHours?: number;
+			caseId?: string;
+			evidenceUrl?: string;
+			fixPr?: number;
+			note?: string;
+			resolvedBy?: string;
+		} = { action };
+
+		if (jsonFlag) options.json = true;
+		const contractArg = getFlagValue(args, contractIndex);
+		if (contractArg) options.contractPath = contractArg;
+		const storeArg = getFlagValue(args, storeIndex);
+		if (storeArg) options.storePath = storeArg;
+
+		// Open options
+		const incidentIdArg = getFlagValue(args, incidentIdIndex);
+		if (incidentIdArg) options.incidentId = incidentIdArg;
+		const summaryArg = getFlagValue(args, summaryIndex);
+		if (summaryArg) options.summary = summaryArg;
+		const severityArg = getFlagValue(args, severityIndex);
+		if (severityArg) options.severity = severityArg;
+		const ownerArg = getFlagValue(args, ownerIndex);
+		if (ownerArg) options.owner = ownerArg;
+		const providerArg = getFlagValue(args, providerIndex);
+		if (providerArg) options.provider = providerArg;
+		const findingIdArg = getFlagValue(args, findingIdIndex);
+		if (findingIdArg) options.findingId = findingIdArg;
+		const prNumberArg = getFlagValue(args, prNumberIndex);
+		if (prNumberArg) {
+			const parsed = parseIntegerArg(prNumberArg, 1);
+			if (parsed !== undefined) options.prNumber = parsed;
+		}
+		const headShaArg = getFlagValue(args, headShaIndex);
+		if (headShaArg) options.headSha = headShaArg;
+		const slaHoursArg = getFlagValue(args, slaHoursIndex);
+		if (slaHoursArg) {
+			const parsed = parseIntegerArg(slaHoursArg, 1);
+			if (parsed !== undefined) options.slaHours = parsed;
+		}
+
+		// Resolve options
+		const caseIdArg = getFlagValue(args, caseIdIndex);
+		if (caseIdArg) options.caseId = caseIdArg;
+		const evidenceUrlArg = getFlagValue(args, evidenceUrlIndex);
+		if (evidenceUrlArg) options.evidenceUrl = evidenceUrlArg;
+		const fixPrArg = getFlagValue(args, fixPrIndex);
+		if (fixPrArg) {
+			const parsed = parseIntegerArg(fixPrArg, 1);
+			if (parsed !== undefined) options.fixPr = parsed;
+		}
+		const noteArg = getFlagValue(args, noteIndex);
+		if (noteArg) options.note = noteArg;
+		const resolvedByArg = getFlagValue(args, resolvedByIndex);
+		if (resolvedByArg) options.resolvedBy = resolvedByArg;
+
+		const exitCode = runGapCaseCLI(options);
+		process.exit(exitCode);
+		return;
+	}
+
+	if (command === "pilot-evaluate") {
+		// Parse pilot-evaluate options
+		const jsonFlag = args.includes("--json");
+		const contractIndex = args.indexOf("--contract");
+		const artifactsIndex = args.indexOf("--artifacts");
+		const outputIndex = args.indexOf("--output");
+
+		// artifacts-dir is required
+		const artifactsArg = getFlagValue(args, artifactsIndex);
+		if (!artifactsArg) {
+			console.error("Error: --artifacts is required");
+			process.exit(1);
+			return;
+		}
+
+		const options: {
+			artifactsDir: string;
+			contractPath?: string;
+			outputPath?: string;
+			json?: boolean;
+		} = {
+			artifactsDir: artifactsArg,
+		};
+
+		if (jsonFlag) options.json = true;
+		const contractArg = getFlagValue(args, contractIndex);
+		if (contractArg) options.contractPath = contractArg;
+		const outputArg = getFlagValue(args, outputIndex);
+		if (outputArg) options.outputPath = outputArg;
+
+		const exitCode = runPilotEvaluateCLI(options);
+		process.exit(exitCode);
 		return;
 	}
 
