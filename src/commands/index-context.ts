@@ -18,6 +18,7 @@ import {
 } from "../lib/context-compound/indexer.js";
 import { OllamaClient } from "../lib/context-compound/ollama.js";
 import { VectorStore } from "../lib/context-compound/store.js";
+import { validatePath } from "../lib/input/validator.js";
 
 // Exit codes for programmatic consumption
 export const EXIT_CODES = {
@@ -83,7 +84,28 @@ export async function runIndexContext(
 ): Promise<number> {
 	const baseDir = options.baseDir ?? process.cwd();
 	const harnessDir = options.harnessDir ?? DEFAULT_HARNESS_DIR;
-	const dbPath = join(baseDir, harnessDir, DEFAULT_DB_FILENAME);
+	let harnessPath: string;
+	try {
+		harnessPath = validatePath(baseDir, harnessDir);
+	} catch {
+		const error = `Invalid harness directory: ${harnessDir}`;
+		if (options.json) {
+			console.info(
+				JSON.stringify({
+					success: false,
+					indexed: 0,
+					skipped: 0,
+					errors: 0,
+					results: [],
+					error,
+				}),
+			);
+		} else {
+			console.error(`✗ ${error}`);
+		}
+		return EXIT_CODES.ERROR;
+	}
+	const dbPath = join(harnessPath, DEFAULT_DB_FILENAME);
 
 	// Collect files to index
 	const brainstormsDir = join(baseDir, "docs/brainstorms");
@@ -267,7 +289,13 @@ export async function runIndexContextCLI(args: string[]): Promise<number> {
 		if (arg === "--json" || arg === "-j") {
 			json = true;
 		} else if (arg === "--harness-dir") {
-			harnessDir = args[++i];
+			const value = args[i + 1];
+			if (!value || value.startsWith("-")) {
+				console.error("Error: --harness-dir requires a value");
+				return EXIT_CODES.ERROR;
+			}
+			i++;
+			harnessDir = value;
 		} else if (arg === "--force" || arg === "-f") {
 			force = true;
 		} else if (arg === "--help" || arg === "-h") {

@@ -1,6 +1,11 @@
 import { existsSync } from "node:fs";
 import { beforeEach, describe, expect, it, vi } from "vitest";
+import { loadContract } from "../lib/contract/loader.js";
 import { EXIT_CODES, runUIExplore, runUIFast, runUIVerify } from "./ui-loop.js";
+
+vi.mock("../lib/contract/loader.js", () => ({
+	loadContract: vi.fn(),
+}));
 
 // Mock fs
 vi.mock("node:fs", () => ({
@@ -12,6 +17,44 @@ describe("ui-loop commands", () => {
 		vi.resetAllMocks();
 	});
 	describe("runUIFast", () => {
+		it("uses uiLoopPolicy.fastCommand when contract provides it", () => {
+			vi.mocked(loadContract).mockReturnValue({
+				version: "1.1.0",
+				riskTierRules: {},
+				uiLoopPolicy: {
+					fastCommand: "npm run ui:fast",
+					verifyCommand: "npm run ui:verify",
+					exploreCommand: "npm run ui:explore",
+					sloTargets: {
+						fastLoopSeconds: 25,
+						verifyLoopSeconds: 90,
+					},
+				},
+			});
+
+			const result = runUIFast({ ci: true, port: 1234 });
+
+			expect(result.exitCode).toBe(EXIT_CODES.SUCCESS);
+			expect(result.message).toContain("npm run ui:fast --ci");
+			expect(result.message).toContain("Package manager: contract");
+			expect(result.message).toContain("Port: 1234");
+		});
+
+		it("falls back to heuristic path when contract policy is missing", () => {
+			vi.mocked(loadContract).mockReturnValue(
+				undefined as unknown as ReturnType<typeof loadContract>,
+			);
+			vi.mocked(existsSync).mockImplementation((path) => {
+				const p = String(path);
+				return p.includes("pnpm-lock.yaml") || p.includes(".storybook");
+			});
+
+			const result = runUIFast();
+
+			expect(result.exitCode).toBe(EXIT_CODES.SUCCESS);
+			expect(result.message).toContain("pnpm storybook");
+		});
+
 		it("returns NOT_FOUND when Storybook is not configured", () => {
 			vi.mocked(existsSync).mockReturnValue(false);
 
@@ -89,6 +132,37 @@ describe("ui-loop commands", () => {
 	});
 
 	describe("runUIVerify", () => {
+		it("uses uiLoopPolicy.verifyCommand when contract provides it", () => {
+			vi.mocked(loadContract).mockReturnValue({
+				version: "1.1.0",
+				riskTierRules: {},
+				uiLoopPolicy: {
+					fastCommand: "npm run ui:fast",
+					verifyCommand: "npm run ui:verify",
+					exploreCommand: "npm run ui:explore",
+					sloTargets: {
+						fastLoopSeconds: 25,
+						verifyLoopSeconds: 90,
+					},
+				},
+			});
+
+			const result = runUIVerify({
+				shard: "1/3",
+				timeout: 45000,
+				outputDir: "./test-results",
+			});
+
+			expect(result.exitCode).toBe(EXIT_CODES.SUCCESS);
+			expect(result.evidence?.command).toBe(
+				"npm run ui:verify test --shard=1/3 --timeout=45000 --output=./test-results",
+			);
+			expect(result.message).toContain("Package manager: contract");
+			expect(result.message).toContain(
+				"npm run ui:verify test --shard=1/3 --timeout=45000 --output=./test-results",
+			);
+		});
+
 		it("returns NOT_FOUND when Playwright is not configured", () => {
 			vi.mocked(existsSync).mockReturnValue(false);
 
@@ -212,6 +286,34 @@ describe("ui-loop commands", () => {
 	});
 
 	describe("runUIExplore", () => {
+		it("uses uiLoopPolicy.exploreCommand when contract provides it", () => {
+			vi.mocked(loadContract).mockReturnValue({
+				version: "1.1.0",
+				riskTierRules: {},
+				uiLoopPolicy: {
+					fastCommand: "npm run ui:fast",
+					verifyCommand: "npm run ui:verify",
+					exploreCommand: "npm run ui:explore",
+					sloTargets: {
+						fastLoopSeconds: 25,
+						verifyLoopSeconds: 90,
+					},
+				},
+			});
+
+			const result = runUIExplore({
+				url: "http://localhost:8080",
+				outputDir: "./explore-results",
+				interactions: true,
+			});
+
+			expect(result.exitCode).toBe(EXIT_CODES.SUCCESS);
+			expect(result.message).toContain(
+				"npm run ui:explore http://localhost:8080 ./explore-results --interactions",
+			);
+			expect(result.message).toContain("Interactions: enabled");
+		});
+
 		it("returns SUCCESS with default URL", () => {
 			const result = runUIExplore();
 

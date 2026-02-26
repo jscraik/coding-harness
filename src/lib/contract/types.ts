@@ -12,6 +12,70 @@ export interface DiffBudget {
 	maxFiles: number;
 	/** Maximum net lines of code (additions - deletions) */
 	maxNetLOC: number;
+	/** Optional label referenced by override payloads */
+	overrideLabel?: string;
+}
+
+export interface MergePolicy {
+	[severity: string]: string[];
+}
+
+export interface DocsDriftRules {
+	[pattern: string]: string[];
+}
+
+export interface UILoopSLO {
+	/** Target seconds to reach stable "fast" loop execution */
+	fastLoopSeconds: number;
+	/** Target seconds to complete "verify" loop execution */
+	verifyLoopSeconds: number;
+}
+
+export interface UILoopPolicy {
+	fastCommand: string;
+	verifyCommand: string;
+	exploreCommand: string;
+	sloTargets: UILoopSLO;
+}
+
+export interface RuntimePolicy {
+	nodeVersion: string;
+}
+
+export interface MemoryPolicy {
+	enabled: boolean;
+	provider: string;
+	sessionIdTemplate: string;
+	domain: string;
+	requiredTags: string[];
+	maxObservationsPerStep: number;
+	allowedLevels: string[];
+	requireStartRead: boolean;
+	requireCloseoutSummary: boolean;
+	forbiddenContentPatterns: string[];
+}
+
+export interface MemoryMaintenancePolicy {
+	validateSchedule: string;
+	reflectSchedule: string;
+	questionSlaDays: number;
+	duplicateThreshold: number;
+}
+
+export interface MemoryEvalPolicy {
+	trialsPerTask: number;
+	requiredMetrics: string[];
+	passPowKThreshold: number;
+}
+
+export interface ObservabilityPolicy {
+	provider: string;
+	collectorEndpoint: string;
+}
+
+export interface PackageManagerPolicy {
+	allowedManagers: string[];
+	requiredManager: string | null;
 }
 
 /**
@@ -41,6 +105,18 @@ export interface EvidencePolicy {
 	allowedTypes: ImageFormat[];
 	/** Maximum file size in bytes (optional, defaults to 1MB) */
 	maxFileSizeBytes?: number | undefined;
+}
+
+/**
+ * Gap-case lifecycle policy configuration.
+ */
+export interface GapCasePolicy {
+	requiredEvidenceStatuses: string[];
+	requiredCloseReasons: string[];
+	defaultDueDays: number;
+	caseIdPrefix: string;
+	caseStore: string;
+	allowEvidencelessResolve: boolean;
 }
 
 /**
@@ -129,6 +205,15 @@ export const DEFAULT_EVIDENCE_POLICY: EvidencePolicy = {
 	maxFileSizeBytes: 1024 * 1024, // 1MB
 };
 
+export const DEFAULT_GAP_CASE_POLICY: GapCasePolicy = {
+	requiredEvidenceStatuses: ["passed", "approved"],
+	requiredCloseReasons: ["fix", "workaround", "waived"],
+	defaultDueDays: 7,
+	caseIdPrefix: "gap-",
+	caseStore: ".harness/gap-cases.json",
+	allowEvidencelessResolve: false,
+};
+
 export const DEFAULT_REMEDIATION_POLICY: RemediationPolicy = {
 	providerDefaults: {
 		codeql: {
@@ -184,23 +269,106 @@ export interface HarnessContract {
 	reviewPolicy?: ReviewPolicy | undefined;
 	/** Evidence policy for requiring verification artifacts */
 	evidencePolicy?: EvidencePolicy | undefined;
+	/** Optional merge policy by severity */
+	mergePolicy?: MergePolicy | undefined;
+	/** Documentation drift rules by path patterns */
+	docsDriftRules?: DocsDriftRules | undefined;
+	/** Diff budget limits */
+	diffBudget?: DiffBudget | undefined;
+	/** UI loop command and SLO policy */
+	uiLoopPolicy?: UILoopPolicy | undefined;
+	/** Runtime requirements */
+	runtimePolicy?: RuntimePolicy | undefined;
+	/** Memory policy for local-memory behavior */
+	memoryPolicy?: MemoryPolicy | undefined;
+	/** Memory maintenance policy */
+	memoryMaintenancePolicy?: MemoryMaintenancePolicy | undefined;
+	/** Memory evaluation policy */
+	memoryEvalPolicy?: MemoryEvalPolicy | undefined;
+	/** Observability policy */
+	observabilityPolicy?: ObservabilityPolicy | undefined;
+	/** Package manager policy */
+	packageManagerPolicy?: PackageManagerPolicy | undefined;
+	/** Remediation policy for automatic fix application */
+	remediationPolicy?: RemediationPolicy | undefined;
+	/** Gap-case lifecycle policy */
+	gapCasePolicy?: GapCasePolicy | undefined;
 	/** Pilot gap-case tracking policy */
 	pilotGapCasePolicy?: PilotGapCasePolicy | undefined;
 	/** Pilot rollback behavior policy */
 	pilotRollbackPolicy?: PilotRollbackPolicy | undefined;
 	/** Pilot authorization policy for least-privilege */
 	pilotAuthzPolicy?: PilotAuthzPolicy | undefined;
-	/** Remediation policy for automatic fix application */
-	remediationPolicy?: RemediationPolicy | undefined;
 }
 
 export const DEFAULT_CONTRACT: HarnessContract = {
-	version: "1.0",
+	version: "1.2.0",
 	riskTierRules: {},
 	reviewPolicy: DEFAULT_REVIEW_POLICY,
 	evidencePolicy: DEFAULT_EVIDENCE_POLICY,
+	mergePolicy: {
+		high: ["review-gate", "evidence-verify"],
+		medium: ["review-gate"],
+		low: [],
+	},
+	docsDriftRules: {},
+	diffBudget: {
+		maxFiles: 10,
+		maxNetLOC: 400,
+		overrideLabel: "diff-budget-override",
+	},
+	uiLoopPolicy: {
+		fastCommand: "pnpm ui:fast",
+		verifyCommand: "pnpm ui:verify",
+		exploreCommand: "pnpm ui:explore",
+		sloTargets: {
+			fastLoopSeconds: 30,
+			verifyLoopSeconds: 120,
+		},
+	},
+	runtimePolicy: {
+		nodeVersion: "20.x",
+	},
+	memoryPolicy: {
+		enabled: true,
+		provider: "local",
+		sessionIdTemplate: "repo:<name>:task:<id>",
+		domain: "default",
+		requiredTags: ["repo", "area", "type"],
+		maxObservationsPerStep: 3,
+		allowedLevels: ["observation", "learning", "pattern"],
+		requireStartRead: true,
+		requireCloseoutSummary: true,
+		forbiddenContentPatterns: [
+			"token",
+			"api[_-]?key",
+			"secret",
+			"password",
+			"credential",
+		],
+	},
+	memoryMaintenancePolicy: {
+		validateSchedule: "weekly",
+		reflectSchedule: "weekly",
+		questionSlaDays: 7,
+		duplicateThreshold: 0.8,
+	},
+	memoryEvalPolicy: {
+		trialsPerTask: 3,
+		requiredMetrics: ["pass^k", "tool_errors", "duplicate_rate"],
+		passPowKThreshold: 0.8,
+	},
+	observabilityPolicy: {
+		provider: "logs",
+		collectorEndpoint: "http://localhost:4318",
+	},
+	packageManagerPolicy: {
+		allowedManagers: ["pnpm", "npm", "yarn"],
+		requiredManager: null,
+	},
+	remediationPolicy: DEFAULT_REMEDIATION_POLICY,
+	gapCasePolicy: DEFAULT_GAP_CASE_POLICY,
 	pilotGapCasePolicy: DEFAULT_PILOT_GAP_CASE_POLICY,
 	pilotRollbackPolicy: DEFAULT_PILOT_ROLLBACK_POLICY,
 	pilotAuthzPolicy: DEFAULT_PILOT_AUTHZ_POLICY,
-	remediationPolicy: DEFAULT_REMEDIATION_POLICY,
 };

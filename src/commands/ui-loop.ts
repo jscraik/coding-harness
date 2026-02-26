@@ -1,6 +1,8 @@
 #!/usr/bin/env node
 import { existsSync } from "node:fs";
 import { join } from "node:path";
+import { loadContract } from "../lib/contract/loader.js";
+import type { UILoopPolicy } from "../lib/contract/types.js";
 
 // Exit codes for programmatic consumption
 export const EXIT_CODES = {
@@ -15,6 +17,7 @@ export interface UIFastOptions {
 	port?: number;
 	ci?: boolean;
 	json?: boolean;
+	contractPath?: string;
 }
 
 export interface UIVerifyOptions {
@@ -22,6 +25,7 @@ export interface UIVerifyOptions {
 	json?: boolean;
 	timeout?: number;
 	shard?: string;
+	contractPath?: string;
 }
 
 export interface UIExploreOptions {
@@ -29,6 +33,7 @@ export interface UIExploreOptions {
 	outputDir?: string;
 	json?: boolean;
 	interactions?: boolean;
+	contractPath?: string;
 }
 
 export interface UIEvidence {
@@ -38,6 +43,10 @@ export interface UIEvidence {
 	passed: boolean;
 	screenshots?: string[];
 	logs?: string[];
+}
+
+function hasUnsafeShellChars(command: string): boolean {
+	return /[;&|`$<>]/.test(command) || /[\n\r]/.test(command);
 }
 
 /**
@@ -74,6 +83,21 @@ function buildScriptCommand(
 }
 
 /**
+ * Load ui loop policy from contract.
+ */
+function getContractUILoopPolicy(
+	contractPath?: string,
+): UILoopPolicy | undefined {
+	try {
+		if (!contractPath) return undefined;
+		const contract = loadContract(contractPath);
+		return contract.uiLoopPolicy;
+	} catch {
+		return undefined;
+	}
+}
+
+/**
  * Check if Storybook is configured
  */
 function hasStorybook(cwd = process.cwd()): boolean {
@@ -104,6 +128,41 @@ export function runUIFast(options: UIFastOptions = {}): {
 	message: string;
 } {
 	const { json = false } = options;
+	const contractPath = options.contractPath ?? "harness.contract.json";
+	const policy = getContractUILoopPolicy(contractPath);
+
+	// If contract policy exists, trust it even if local tooling checks would fail.
+	if (policy?.fastCommand) {
+		if (hasUnsafeShellChars(policy.fastCommand)) {
+			const message = "Invalid uiLoopPolicy.fastCommand: unsafe shell characters";
+			if (json) {
+				return {
+					exitCode: EXIT_CODES.VALIDATION_ERROR,
+					message: JSON.stringify({ error: message, code: "VALIDATION_ERROR" }),
+				};
+			}
+			return { exitCode: EXIT_CODES.VALIDATION_ERROR, message };
+		}
+		let fullCmd = policy.fastCommand;
+		if (options.ci) {
+			fullCmd = `${fullCmd} --ci`;
+		}
+
+		if (json) {
+			return {
+				exitCode: EXIT_CODES.SUCCESS,
+				message: JSON.stringify({
+					command: fullCmd,
+					port: options.port ?? 6006,
+					ci: options.ci ?? false,
+					packageManager: "contract",
+				}),
+			};
+		}
+
+		const message = `✓ UI fast loop ready\n  Command: ${fullCmd}\n  Port: ${options.port ?? 6006}\n  CI mode: ${options.ci ? "enabled" : "disabled"}\n  Package manager: contract`;
+		return { exitCode: EXIT_CODES.SUCCESS, message };
+	}
 
 	if (!hasStorybook()) {
 		const message = "Storybook not found. Ensure .storybook/ directory exists.";
@@ -146,6 +205,63 @@ export function runUIVerify(options: UIVerifyOptions = {}): {
 	evidence?: UIEvidence;
 } {
 	const { json = false } = options;
+	const contractPath = options.contractPath ?? "harness.contract.json";
+	const policy = getContractUILoopPolicy(contractPath);
+
+	const args: string[] = ["test"];
+
+	// Build runtime arguments
+	if (options.shard) {
+		args.push(`--shard=${options.shard}`);
+	}
+	if (typeof options.timeout === "number" && Number.isFinite(options.timeout)) {
+		args.push(`--timeout=${options.timeout}`);
+	}
+	if (options.outputDir) {
+		args.push(`--output=${options.outputDir}`);
+	}
+
+	// If policy exists, append args to configured command.
+	if (policy?.verifyCommand) {
+		if (hasUnsafeShellChars(policy.verifyCommand)) {
+			const message =
+				"Invalid uiLoopPolicy.verifyCommand: unsafe shell characters";
+			if (json) {
+				return {
+					exitCode: EXIT_CODES.VALIDATION_ERROR,
+					message: JSON.stringify({ error: message, code: "VALIDATION_ERROR" }),
+				};
+			}
+			return { exitCode: EXIT_CODES.VALIDATION_ERROR, message };
+		}
+		const startTime = Date.now();
+		const fullCmd = `${policy.verifyCommand}${
+			args.length > 0 ? ` ${args.join(" ")}` : ""
+		}`;
+		const durationMs = Date.now() - startTime;
+		const passed = true;
+		const evidence: UIEvidence = {
+			timestamp: new Date().toISOString(),
+			command: fullCmd,
+			durationMs,
+			passed,
+		};
+
+		if (json) {
+			return {
+				exitCode: EXIT_CODES.SUCCESS,
+				message: JSON.stringify(evidence),
+				evidence,
+			};
+		}
+
+		const message = `✓ UI verify ready\n  Command: ${fullCmd}\n  Duration: ${durationMs}ms\n  Package manager: contract\n\nRun the command to execute Playwright tests.`;
+		return {
+			exitCode: EXIT_CODES.SUCCESS,
+			message,
+			evidence,
+		};
+	}
 
 	if (!hasPlaywright()) {
 		const message =
@@ -161,20 +277,6 @@ export function runUIVerify(options: UIVerifyOptions = {}): {
 
 	const startTime = Date.now();
 	const pm = detectPackageManager();
-
-	// Build playwright command with options
-	const args: string[] = ["test"];
-
-	if (options.shard) {
-		args.push(`--shard=${options.shard}`);
-	}
-	if (typeof options.timeout === "number" && Number.isFinite(options.timeout)) {
-		args.push(`--timeout=${options.timeout}`);
-	}
-	if (options.outputDir) {
-		args.push(`--output=${options.outputDir}`);
-	}
-
 	const fullCmd = buildScriptCommand(pm, "playwright", args);
 
 	const durationMs = Date.now() - startTime;
@@ -212,11 +314,47 @@ export function runUIExplore(options: UIExploreOptions = {}): {
 	message: string;
 } {
 	const { json = false } = options;
+	const contractPath = options.contractPath ?? "harness.contract.json";
+	const policy = getContractUILoopPolicy(contractPath);
 
 	const url = options.url ?? "http://localhost:3000";
 	const outputDir = options.outputDir ?? "./ui-explore-output";
+	const interactionArgs = options.interactions ? ["--interactions"] : [];
+	const baseCommand =
+		policy?.exploreCommand ??
+		`npx @agent-browser/cli explore ${url} --output ${outputDir}`;
 
-	const command = `npx @agent-browser/cli explore ${url} --output ${outputDir}${options.interactions ? " --interactions" : ""}`;
+	if (policy?.exploreCommand) {
+		if (hasUnsafeShellChars(policy.exploreCommand)) {
+			const message =
+				"Invalid uiLoopPolicy.exploreCommand: unsafe shell characters";
+			if (json) {
+				return {
+					exitCode: EXIT_CODES.VALIDATION_ERROR,
+					message: JSON.stringify({ error: message, code: "VALIDATION_ERROR" }),
+				};
+			}
+			return { exitCode: EXIT_CODES.VALIDATION_ERROR, message };
+		}
+		const command =
+			`${policy.exploreCommand} ${[url, outputDir, ...interactionArgs].join(" ")}`.trim();
+		if (json) {
+			return {
+				exitCode: EXIT_CODES.SUCCESS,
+				message: JSON.stringify({
+					command,
+					url,
+					outputDir,
+					interactions: options.interactions ?? false,
+				}),
+			};
+		}
+
+		const message = `✓ UI explore ready\n  Target: ${url}\n  Output: ${outputDir}\n  Command: ${command}\n  Interactions: ${options.interactions ? "enabled" : "disabled"}`;
+		return { exitCode: EXIT_CODES.SUCCESS, message };
+	}
+
+	const command = `${baseCommand}${options.interactions ? " --interactions" : ""}`;
 
 	if (json) {
 		return {

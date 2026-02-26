@@ -14,6 +14,7 @@ import {
 import { OllamaClient } from "../lib/context-compound/ollama.js";
 import { VectorStore } from "../lib/context-compound/store.js";
 import type { SearchResult } from "../lib/context-compound/types.js";
+import { validatePath } from "../lib/input/validator.js";
 
 // Exit codes for programmatic consumption
 export const EXIT_CODES = {
@@ -60,7 +61,27 @@ export interface ContextOutput {
 export async function runContext(options: ContextOptions): Promise<number> {
 	const baseDir = options.baseDir ?? process.cwd();
 	const harnessDir = options.harnessDir ?? DEFAULT_HARNESS_DIR;
-	const dbPath = join(baseDir, harnessDir, DEFAULT_DB_FILENAME);
+	let harnessPath: string;
+	try {
+		harnessPath = validatePath(baseDir, harnessDir);
+	} catch {
+		const error = `Invalid harness directory: ${harnessDir}`;
+		if (options.json) {
+			console.info(
+				JSON.stringify({
+					success: false,
+					query: options.query,
+					count: 0,
+					results: [],
+					error,
+				}),
+			);
+		} else {
+			console.error(`✗ ${error}`);
+		}
+		return EXIT_CODES.ERROR;
+	}
+	const dbPath = join(harnessPath, DEFAULT_DB_FILENAME);
 
 	// Initialize store
 	const store = new VectorStore(dbPath);
@@ -211,15 +232,30 @@ export async function runContextCLI(args: string[]): Promise<number> {
 		const arg = args[i];
 
 		if (arg === "--limit" || arg === "-l") {
-			const val = args[++i];
+			const val = args[i + 1];
+			if (!val || val.startsWith("-")) {
+				console.error("Error: --limit requires a numeric value");
+				return EXIT_CODES.ERROR;
+			}
+			i++;
 			if (val) limit = Number.parseInt(val, 10);
 		} else if (arg === "--threshold" || arg === "-t") {
-			const val = args[++i];
+			const val = args[i + 1];
+			if (!val || val.startsWith("-")) {
+				console.error("Error: --threshold requires a numeric value");
+				return EXIT_CODES.ERROR;
+			}
+			i++;
 			if (val) threshold = Number.parseFloat(val);
 		} else if (arg === "--json" || arg === "-j") {
 			json = true;
 		} else if (arg === "--harness-dir") {
-			const val = args[++i];
+			const val = args[i + 1];
+			if (!val || val.startsWith("-")) {
+				console.error("Error: --harness-dir requires a value");
+				return EXIT_CODES.ERROR;
+			}
+			i++;
 			if (val) harnessDir = val;
 		} else if (arg && !arg.startsWith("-") && !query) {
 			query = arg;

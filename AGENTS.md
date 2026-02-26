@@ -13,6 +13,11 @@ This repository is a TypeScript control plane for agentic development and policy
 - Required checks baseline: `pnpm check` (lint + docs:lint + typecheck + test + audit).
 - Compatibility posture: canonical-only.
 
+### Repo-native command map
+- Install/dependencies: `pnpm install`
+- Run scripts: `pnpm run <script>`
+- Execute tools from deps: `pnpm exec <command>`
+
 ## References (informational)
 - Global protocol: `/Users/jamiecraik/.codex/AGENTS.md`
 - Standards baseline: `/Users/jamiecraik/.codex/instructions/standards.md`
@@ -48,7 +53,7 @@ import { foo } from './lib/foo.js';
 
 See [Tooling and command policy](./docs/agents/02-tooling-policy.md) for the full command reference.
 
-Quick reference: `pnpm check`, `pnpm lint`, `pnpm typecheck`, `pnpm test`, `pnpm build`, `pnpm audit`
+Quick reference: `pnpm check`, `pnpm lint`, `pnpm typecheck`, `pnpm test`, `pnpm build`, `pnpm audit`, `pnpm test:artifacts`
 
 ## Documentation map
 ### Table of Contents
@@ -63,21 +68,10 @@ Quick reference: `pnpm check`, `pnpm lint`, `pnpm typecheck`, `pnpm test`, `pnpm
 - [Release and change-control checks](./docs/agents/08-release-and-change-control.md)
 - [Audit trail policy](./docs/agents/09-audit-trail-policy.md)
 - [Agent testing gates](./docs/agents/10-agent-testing-gates.md)
+- [Flaky test artifact capture standard](./docs/agents/11-flaky-test-artifacts.md)
 
 ## Notes
 - This file is intentionally minimal. Detailed procedural guidance is in `docs/agents/*.md`.
 
-## Flaky Test Artifact Capture
-- Run `bash scripts/test-with-artifacts.sh all` (or `pnpm run test:artifacts` / `npm run test:artifacts` / `bun run test:artifacts`) to emit machine-readable flaky evidence under `artifacts/test`.
-- Optional targeted modes:
-  - `bash scripts/test-with-artifacts.sh unit`
-  - `bash scripts/test-with-artifacts.sh integration`
-  - `bash scripts/test-with-artifacts.sh e2e`
-- Commit/retain stable artifact paths for local automation ingestion:
-  - `artifacts/test/summary-*.json`
-  - `artifacts/test/test-output-*.log`
-  - `artifacts/test/junit-*.xml` (when supported by test runner)
-  - `artifacts/test/*-results.json` (when supported by test runner)
-  - `artifacts/test/artifact-manifest.json`
-- Keep artifact filenames stable (no timestamps in filenames) so recurring flake scans can compare runs.
-
+## Flaky test artifacts
+- See: [Flaky Test Artifact Capture](./docs/agents/11-flaky-test-artifacts.md)

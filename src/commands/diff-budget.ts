@@ -5,9 +5,10 @@
  */
 
 import { spawnSync } from "node:child_process";
-import { existsSync, readFileSync } from "node:fs";
-import { join } from "node:path";
+import { readFileSync } from "node:fs";
+import { loadContract } from "../lib/contract/loader.js";
 import type { DiffBudget, DiffBudgetOverride } from "../lib/contract/types.js";
+import { validatePath } from "../lib/input/validator.js";
 import {
 	type DiffBudgetCheck,
 	type DiffMetrics,
@@ -49,6 +50,36 @@ const DEFAULT_DIFF_BUDGET: DiffBudget = {
 	maxFiles: 10,
 	maxNetLOC: 400,
 };
+
+const GIT_REF_PATTERN = /^[A-Za-z0-9._/-]{1,120}$/;
+
+function isSafeGitRef(ref: string): boolean {
+	return (
+		GIT_REF_PATTERN.test(ref) &&
+		!ref.startsWith("-") &&
+		!ref.includes("..") &&
+		!ref.includes("//")
+	);
+}
+
+function isValidDiffBudgetOverride(
+	value: unknown,
+): value is DiffBudgetOverride {
+	if (typeof value !== "object" || value === null || Array.isArray(value)) {
+		return false;
+	}
+	const record = value as Record<string, unknown>;
+	if (
+		typeof record.reason !== "string" ||
+		record.reason.trim().length === 0 ||
+		typeof record.approvedBy !== "string" ||
+		record.approvedBy.trim().length === 0 ||
+		typeof record.timestamp !== "string"
+	) {
+		return false;
+	}
+	return !Number.isNaN(new Date(record.timestamp).getTime());
+}
 
 /**
  * Get diff between base and head refs using git.
@@ -106,8 +137,7 @@ function getGitDiff(base: string, head: string): PullRequestFile[] {
  */
 function loadDiffBudgetFromContract(contractPath: string): DiffBudget | null {
 	try {
-		const content = readFileSync(contractPath, "utf-8");
-		const contract = JSON.parse(content) as { diffBudget?: DiffBudget };
+		const contract = loadContract(contractPath);
 		return contract.diffBudget ?? null;
 	} catch {
 		return null;
@@ -119,8 +149,13 @@ function loadDiffBudgetFromContract(contractPath: string): DiffBudget | null {
  */
 function loadOverride(overridePath: string): DiffBudgetOverride | null {
 	try {
-		const content = readFileSync(overridePath, "utf-8");
-		return JSON.parse(content) as DiffBudgetOverride;
+		const safePath = validatePath(process.cwd(), overridePath);
+		const content = readFileSync(safePath, "utf-8");
+		const parsed = JSON.parse(content) as unknown;
+		if (!isValidDiffBudgetOverride(parsed)) {
+			return null;
+		}
+		return parsed;
 	} catch {
 		return null;
 	}
@@ -134,14 +169,18 @@ export function runDiffBudget(options: DiffBudgetOptions): DiffBudgetResult {
 	const head = options.head ?? "HEAD";
 	const contractPath = options.contractPath ?? "harness.contract.json";
 
+	if (!isSafeGitRef(base)) {
+		throw new Error(`Invalid base ref: ${base}`);
+	}
+	if (!isSafeGitRef(head)) {
+		throw new Error(`Invalid head ref: ${head}`);
+	}
+
 	// Load budget from contract or use defaults
 	let budget = DEFAULT_DIFF_BUDGET;
-	const contractFullPath = join(process.cwd(), contractPath);
-	if (existsSync(contractFullPath)) {
-		const contractBudget = loadDiffBudgetFromContract(contractFullPath);
-		if (contractBudget) {
-			budget = contractBudget;
-		}
+	const contractBudget = loadDiffBudgetFromContract(contractPath);
+	if (contractBudget) {
+		budget = contractBudget;
 	}
 
 	// Get diff metrics

@@ -13,6 +13,10 @@ import { dirname, resolve, sep } from "node:path";
 import { cwd } from "node:process";
 import { diffLines } from "diff";
 import semver from "semver";
+import {
+	DEFAULT_CONTRACT,
+	type HarnessContract,
+} from "../lib/contract/types.js";
 import { sanitizeError } from "../lib/input/sanitize.js";
 import { getVersion } from "../lib/version.js";
 
@@ -91,12 +95,42 @@ export interface ProposedChange {
 /** Typed contract schema for version-aware handling */
 export interface ContractSchema {
 	version: string;
-	riskTierRules: Record<string, unknown>;
-	reviewPolicy: {
-		timeoutSeconds: number;
-		timeoutAction: "fail" | "warn";
+	riskTierRules?: Record<string, unknown>;
+	reviewPolicy?:
+		| {
+				timeoutSeconds: number;
+				timeoutAction: "fail" | "warn";
+		  }
+		| undefined;
+	evidencePolicy?: {
+		requiredFor: unknown[];
+		allowedTypes: unknown[];
+		maxFileSizeBytes?: unknown;
 	};
-	// Future fields can be added here with optional types
+	mergePolicy?: unknown;
+	docsDriftRules?: Record<string, unknown>;
+	diffBudget?: {
+		maxFiles?: unknown;
+		maxNetLOC?: unknown;
+		overrideLabel?: unknown;
+	};
+	runtimePolicy?: unknown;
+	memoryPolicy?: unknown;
+	memoryMaintenancePolicy?: unknown;
+	memoryEvalPolicy?: unknown;
+	observabilityPolicy?: unknown;
+	packageManagerPolicy?: unknown;
+	remediationPolicy?: unknown;
+	gapCasePolicy?: unknown;
+	uiLoopPolicy?: {
+		fastCommand?: unknown;
+		verifyCommand?: unknown;
+		exploreCommand?: unknown;
+		sloTargets?: {
+			fastLoopSeconds?: unknown;
+			verifyLoopSeconds?: unknown;
+		};
+	};
 	[key: string]: unknown; // Allow additional user-defined fields
 }
 
@@ -121,25 +155,83 @@ export type MigrationResultType =
 	| { ok: false; error: InitErrorOutput };
 
 // Current latest schema version (must match template)
-export const CURRENT_SCHEMA_VERSION = "1.0.0";
+export const CURRENT_SCHEMA_VERSION = "1.2.0";
+
+function addSchemaDefaults(contract: ContractSchema): ContractSchema {
+	return {
+		...DEFAULT_CONTRACT,
+		...contract,
+		version: contract.version,
+		riskTierRules: contract.riskTierRules ?? DEFAULT_CONTRACT.riskTierRules,
+		reviewPolicy: contract.reviewPolicy ?? DEFAULT_CONTRACT.reviewPolicy,
+		evidencePolicy: contract.evidencePolicy ?? DEFAULT_CONTRACT.evidencePolicy,
+		mergePolicy: contract.mergePolicy ?? DEFAULT_CONTRACT.mergePolicy,
+		docsDriftRules: contract.docsDriftRules ?? DEFAULT_CONTRACT.docsDriftRules,
+		diffBudget: contract.diffBudget ?? DEFAULT_CONTRACT.diffBudget,
+		uiLoopPolicy:
+			(contract.uiLoopPolicy as HarnessContract["uiLoopPolicy"]) ??
+			DEFAULT_CONTRACT.uiLoopPolicy,
+		runtimePolicy:
+			contract.runtimePolicy ??
+			(DEFAULT_CONTRACT.runtimePolicy as HarnessContract["runtimePolicy"]),
+		memoryPolicy:
+			contract.memoryPolicy ??
+			(DEFAULT_CONTRACT.memoryPolicy as HarnessContract["memoryPolicy"]),
+		memoryMaintenancePolicy:
+			contract.memoryMaintenancePolicy ??
+			(DEFAULT_CONTRACT.memoryMaintenancePolicy as HarnessContract["memoryMaintenancePolicy"]),
+		memoryEvalPolicy:
+			contract.memoryEvalPolicy ??
+			(DEFAULT_CONTRACT.memoryEvalPolicy as HarnessContract["memoryEvalPolicy"]),
+		observabilityPolicy:
+			contract.observabilityPolicy ??
+			(DEFAULT_CONTRACT.observabilityPolicy as HarnessContract["observabilityPolicy"]),
+		packageManagerPolicy:
+			contract.packageManagerPolicy ??
+			(DEFAULT_CONTRACT.packageManagerPolicy as HarnessContract["packageManagerPolicy"]),
+		remediationPolicy:
+			contract.remediationPolicy ??
+			(DEFAULT_CONTRACT.remediationPolicy as HarnessContract["remediationPolicy"]),
+		gapCasePolicy:
+			contract.gapCasePolicy ??
+			(DEFAULT_CONTRACT.gapCasePolicy as HarnessContract["gapCasePolicy"]),
+	} as ContractSchema;
+}
 
 /**
  * Migration registry - ordered list of schema migrations.
  * Each migration transforms a contract from fromVersion to toVersion.
  * Migrations are applied sequentially to bring a contract up to date.
  */
+/**
+ * Migration registry - ordered list of schema migrations.
+ * Each migration transforms a contract from fromVersion to toVersion.
+ * Migrations are applied sequentially to bring a contract up to date.
+ * Note: Version normalization via semver.coerce() converts "1.0" → "1.0.0"
+ * before migration, so migrations should use semver-normalized versions.
+ */
 const MIGRATIONS: Migration[] = [
-	// Example future migration (commented out until needed):
-	// {
-	//   fromVersion: "1.0",
-	//   toVersion: "2.0",
-	//   description: "Add memory policy configuration",
-	//   migrate: (contract) => ({
-	//     ...contract,
-	//     version: "2.0",
-	//     memoryPolicy: { enabled: true, maxEntries: 100 }
-	//   })
-	// },
+	{
+		fromVersion: "1.0.0",
+		toVersion: "1.1.0",
+		description:
+			"Normalize v1.0.0 schema to v1.1.0 and inject default policy surfaces",
+		migrate: (contract) =>
+			({
+				...addSchemaDefaults(contract),
+				version: "1.1.0",
+			}) as ContractSchema,
+	},
+	{
+		fromVersion: "1.1.0",
+		toVersion: "1.2.0",
+		description: "Inject remediation and gap-case policy defaults",
+		migrate: (contract) =>
+			({
+				...addSchemaDefaults(contract),
+				version: "1.2.0",
+			}) as ContractSchema,
+	},
 ];
 
 export interface InitOutput {
@@ -179,7 +271,7 @@ const TEMPLATES: Template[] = [
 		render: (pm) =>
 			JSON.stringify(
 				{
-					version: "1.0.0",
+					version: "1.2.0",
 					riskTierRules: {
 						"src/auth/**": "high",
 						"src/api/**": "high",
@@ -257,42 +349,28 @@ const TEMPLATES: Template[] = [
 					},
 					remediationPolicy: {
 						providerDefaults: {
-							greptile: {
+							codeql: {
 								autoApplyMaxTier: "medium",
-								dryRunOnlyByDefault: false,
+								dryRunOnlyByDefault: true,
 							},
 							codex: {
 								autoApplyMaxTier: "medium",
-								dryRunOnlyByDefault: false,
+								dryRunOnlyByDefault: true,
 							},
 						},
-						marker: "[auto-remediate]",
-						timeoutMinutes: 10,
+						canonicalRerunWorkflow: "greptile-rerun.yml",
+						marker: "<!-- harness-remediation-rerun -->",
+						timeoutMinutes: 20,
 						retryLimit: 3,
 						requireEvidence: true,
 					},
-					pilotGapCasePolicy: {
-						enabled: false,
-						defaultSlaHours: 72,
-						requireClosureEvidence: true,
-						storePath: ".harness/gap-cases.v1.json",
-					},
-					pilotRollbackPolicy: {
-						autoTrigger: true,
-						requireManualRelease: true,
-						completionMarkerPath: ".harness/rollback-marker.json",
-						mode: "manual" as const,
-					},
-					pilotAuthzPolicy: {
-						githubScopeAllowlist: [
-							"pull_requests:write",
-							"contents:read",
-							"issues:write",
-						],
-						repoAllowlist: [],
-						branchAllowlist: [],
-						protectedBranchDenylist: ["main", "master", "release/*"],
-						enforceBranchProtection: true,
+					gapCasePolicy: {
+						requiredEvidenceStatuses: ["passed", "approved"],
+						requiredCloseReasons: ["fix", "workaround", "waived"],
+						defaultDueDays: 7,
+						caseIdPrefix: "gap-",
+						caseStore: ".harness/gap-cases.json",
+						allowEvidencelessResolve: false,
 					},
 				},
 				null,
@@ -941,7 +1019,11 @@ function migrateContract(contract: ContractSchema): MigrationResult {
  * Check if contract needs migration by comparing versions.
  */
 function needsMigration(contractVersion: string): boolean {
-	return semver.lt(contractVersion, CURRENT_SCHEMA_VERSION);
+	const normalizedVersion = semver.coerce(contractVersion)?.version;
+	if (!normalizedVersion) {
+		return false;
+	}
+	return semver.lt(normalizedVersion, CURRENT_SCHEMA_VERSION);
 }
 
 /**
@@ -955,22 +1037,36 @@ function executeMigration(targetDir: string): MigrationResultType {
 	}
 
 	const contract = loadResult.value;
+	const normalizedVersion = semver.coerce(contract.version)?.version;
+
+	// Surface error for unparseable versions instead of silently skipping
+	if (!normalizedVersion) {
+		return {
+			ok: false,
+			error: {
+				code: "E_INVALID_VERSION",
+				message: `Cannot parse contract version: "${contract.version}". Version must be semver-compatible (e.g., "1.0.0").`,
+			},
+		};
+	}
+
+	const normalizedContract = { ...contract, version: normalizedVersion };
 
 	// Check if migration is needed
-	if (!needsMigration(contract.version)) {
+	if (!needsMigration(normalizedContract.version)) {
 		return {
 			ok: true,
 			value: {
-				originalVersion: contract.version,
-				finalVersion: contract.version,
+				originalVersion: normalizedContract.version,
+				finalVersion: normalizedContract.version,
 				migrationsApplied: [],
-				migratedContract: contract,
+				migratedContract: normalizedContract,
 			},
 		};
 	}
 
 	// Apply migrations
-	const result = migrateContract(contract);
+	const result = migrateContract(normalizedContract);
 
 	// Write migrated contract
 	const contractPath = resolve(targetDir, CONTRACT_FILE);
@@ -985,11 +1081,6 @@ function executeMigration(targetDir: string): MigrationResultType {
 
 	return { ok: true, value: result };
 }
-
-/**
- * Collect proposed changes for interactive mode.
- * Returns a list of changes that would be made without actually writing files.
- */
 function collectProposedChanges(
 	targetDir: string,
 	options: InitOptions,

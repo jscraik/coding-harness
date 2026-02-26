@@ -36,6 +36,66 @@ export interface CreatePlanOptions {
 const PLANS_DIR = "docs/plans";
 const FORBIDDEN_CHARS = /[<>:""/\\|?*!.,]/g;
 
+function parsePlanType(type: unknown): PlanFrontmatter["type"] | null {
+	return type === "feature" ||
+		type === "refactor" ||
+		type === "bugfix" ||
+		type === "docs" ||
+		type === "architecture"
+		? type
+		: null;
+}
+
+function parsePlanStatus(status: unknown): PlanFrontmatter["status"] | null {
+	return status === "draft" ||
+		status === "approved" ||
+		status === "implemented" ||
+		status === "superseded"
+		? status
+		: null;
+}
+
+function toStringArray(value: unknown): string[] {
+	if (!Array.isArray(value)) {
+		return [];
+	}
+	return value.filter((item): item is string => typeof item === "string");
+}
+
+function normalizePlanFrontmatter(
+	frontmatter: Record<string, unknown>,
+): PlanFrontmatter | null {
+	const title = frontmatter.title;
+	const date = frontmatter.date;
+	const type = parsePlanType(frontmatter.type);
+	const status = parsePlanStatus(frontmatter.status);
+	if (typeof title !== "string" || title.trim().length === 0) {
+		return null;
+	}
+	if (typeof date !== "string" || date.trim().length === 0) {
+		return null;
+	}
+	if (!type || !status) {
+		return null;
+	}
+	const origin =
+		typeof frontmatter.origin === "string" ? frontmatter.origin : undefined;
+	const brainstormDate =
+		typeof frontmatter.brainstormDate === "string"
+			? frontmatter.brainstormDate
+			: undefined;
+	const decisions = toStringArray(frontmatter.decisions);
+	return {
+		title: title.trim(),
+		date: date.trim(),
+		type,
+		status,
+		...(origin ? { origin } : {}),
+		...(brainstormDate ? { brainstormDate } : {}),
+		...(decisions.length > 0 ? { decisions } : {}),
+	};
+}
+
 /**
  * Sanitize a string for use in a filename.
  */
@@ -249,10 +309,14 @@ ${originData?.decisions?.length ? `## Decisions from Brainstorm\n\n${originData.
 export function loadPlan(filepath: string): PlanMetadata {
 	const content = readFileSync(filepath, "utf-8");
 	const { frontmatter, body } = parseFrontmatter(content);
+	const normalized = normalizePlanFrontmatter(frontmatter);
+	if (!normalized) {
+		throw new Error(`Invalid plan frontmatter: ${filepath}`);
+	}
 
 	return {
 		path: filepath,
-		frontmatter: frontmatter as unknown as PlanFrontmatter,
+		frontmatter: normalized,
 		content: body,
 	};
 }

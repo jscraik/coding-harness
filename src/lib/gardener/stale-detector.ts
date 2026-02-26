@@ -57,8 +57,8 @@ function parseFrontmatter(content: string): Record<string, string> | null {
  */
 function daysBetween(date1: Date, date2: Date): number {
 	const msPerDay = 24 * 60 * 60 * 1000;
-	const diffTime = Math.abs(date2.getTime() - date1.getTime());
-	return Math.floor(diffTime / msPerDay);
+	const diffTime = date2.getTime() - date1.getTime();
+	return Math.max(0, Math.floor(diffTime / msPerDay));
 }
 
 /**
@@ -152,7 +152,7 @@ export function detectStaleDocs(
 
 			const daysSince = daysBetween(lastDate, now);
 
-			if (daysSince > staleDays) {
+			if (daysSince >= staleDays) {
 				stale.push({
 					path: doc,
 					lastValidated: frontmatter.last_validated,

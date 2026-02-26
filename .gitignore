@@ -56,3 +56,14 @@ gardener-report.json
 .harness/
 .traces/
 .test-traces-*/
+
+
+environment.toml
+
+# Local draft brainstorm/plan artifacts
+docs/brainstorms/2026-02-24-code-factory-remediation-gap-loop-brainstorm.md
+docs/brainstorms/2026-02-24-contract-surface-parity-brainstorm.md
+docs/brainstorms/2026-02-24-envctl-environment-orchestrator-brainstorm.md
+docs/plans/2026-02-24-feat-envctl-environment-orchestrator-plan.md
+docs/plans/2026-02-24-feat-envctl-environment-orchestrator-v1-plan.md
+docs/sketches/

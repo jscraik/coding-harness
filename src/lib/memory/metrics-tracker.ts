@@ -10,6 +10,7 @@
 
 import { existsSync, readFileSync, writeFileSync } from "node:fs";
 import { resolve } from "node:path";
+import { validatePath } from "../input/validator.js";
 import type { ReliabilityMetrics } from "./types.js";
 
 /**
@@ -30,6 +31,15 @@ export interface MetricsHistory {
 }
 
 const DEFAULT_METRICS_PATH = ".memory-metrics.json";
+
+function resolveMetricsPath(metricsPath?: string): string {
+	const candidate = resolve(metricsPath ?? DEFAULT_METRICS_PATH);
+	try {
+		return validatePath(process.cwd(), candidate);
+	} catch {
+		return validatePath(process.cwd(), resolve(DEFAULT_METRICS_PATH));
+	}
+}
 
 /**
  * Initialize empty metrics
@@ -89,7 +99,7 @@ export function loadMetrics(metricsPath?: string): {
 	metrics: ReliabilityMetrics;
 	history: MetricsHistory["history"];
 } {
-	const path = resolve(metricsPath ?? DEFAULT_METRICS_PATH);
+	const path = resolveMetricsPath(metricsPath);
 
 	if (!existsSync(path)) {
 		return { metrics: createEmptyMetrics(), history: [] };
@@ -121,7 +131,7 @@ export function saveMetrics(
 	history: MetricsHistory["history"],
 	metricsPath?: string,
 ): void {
-	const path = resolve(metricsPath ?? DEFAULT_METRICS_PATH);
+	const path = resolveMetricsPath(metricsPath);
 	const now = new Date().toISOString();
 
 	const data: MetricsHistory = {

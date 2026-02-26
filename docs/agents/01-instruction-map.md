@@ -19,6 +19,7 @@ When starting a task, follow this lookup order:
    - **Environment/setup, command selection, or tool preference:** `02-tooling-policy.md`
    - **Memory/checkpoint workflow:** `03-local-memory.md`
    - **Validation and gate planning:** `04-validation.md` + `10-agent-testing-gates.md`
+   - **Flaky tests and evidence artifacts:** `11-flaky-test-artifacts.md`
    - **Policy conflicts/inconsistencies:** `05-contradictions-and-cleanup.md`
    - **Security or secret handling:** `06-security-and-governance.md`
    - **Role/accountability changes:** `07a-role-governance.md` + `07b-agent-governance.md`
@@ -74,3 +75,4 @@ If two instructions conflict:
 - [Release and change control](./08-release-and-change-control.md)
 - [Audit trail policy](./09-audit-trail-policy.md)
 - [Agent testing gates](./10-agent-testing-gates.md)
+- [Flaky test artifact capture standard](./11-flaky-test-artifacts.md)

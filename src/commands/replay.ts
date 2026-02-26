@@ -1,4 +1,10 @@
-import { listTraces, loadTrace, replayTrace } from "../lib/replay/tracer.js";
+import { validatePath } from "../lib/input/validator.js";
+import {
+	isValidTraceId,
+	listTraces,
+	loadTrace,
+	replayTrace,
+} from "../lib/replay/tracer.js";
 
 // Exit codes for programmatic consumption
 export const EXIT_CODES = {
@@ -27,9 +33,38 @@ export interface ReplayOptions {
  */
 export async function runReplayCLI(options: ReplayOptions): Promise<number> {
 	try {
-		const config = options.traceDir
-			? { baseDir: options.traceDir, maxTraces: 100 }
-			: undefined;
+		let config:
+			| {
+					baseDir: string;
+					maxTraces: number;
+			  }
+			| undefined;
+		if (options.traceDir) {
+			try {
+				config = {
+					baseDir: validatePath(process.cwd(), options.traceDir),
+					maxTraces: 100,
+				};
+			} catch {
+				if (options.json) {
+					console.error(
+						JSON.stringify(
+							{
+								error: {
+									code: "VALIDATION_ERROR",
+									message: `Invalid trace directory: ${options.traceDir}`,
+								},
+							},
+							null,
+							2,
+						),
+					);
+				} else {
+					console.error(`Error: Invalid trace directory: ${options.traceDir}`);
+				}
+				return EXIT_CODES.VALIDATION_ERROR;
+			}
+		}
 
 		// List mode
 		if (options.list) {
@@ -79,7 +114,7 @@ export async function runReplayCLI(options: ReplayOptions): Promise<number> {
 		}
 
 		// Validate trace ID format
-		if (!options.traceId.startsWith("trace-")) {
+		if (!isValidTraceId(options.traceId)) {
 			if (options.json) {
 				console.error(
 					JSON.stringify(
@@ -95,7 +130,7 @@ export async function runReplayCLI(options: ReplayOptions): Promise<number> {
 				);
 			} else {
 				console.error(
-					`Error: Invalid trace ID format. Expected trace-<hash>, got: ${options.traceId}`,
+					`Error: Invalid trace ID format. Expected trace-<16 hex chars>, got: ${options.traceId}`,
 				);
 			}
 			return EXIT_CODES.VALIDATION_ERROR;

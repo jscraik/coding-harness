@@ -1,546 +1,417 @@
-/**
- * Gap-case CLI command
- *
- * Minimal incident → gap-case workflow for v1 pilot.
- * Supports open and resolve actions with contract-gated behavior.
- */
-
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { dirname, resolve } from "node:path";
-import { loadContract } from "../lib/contract/loader.js";
-import type { RiskTier } from "../lib/contract/types.js";
-import { DEFAULT_PILOT_GAP_CASE_POLICY } from "../lib/contract/types.js";
-import type {
-	GapCaseOpenOptions,
-	GapCaseRecord,
-	GapCaseResolveOptions,
-	GapCaseResult,
-	GapCaseStoreV1,
-} from "../lib/gap-case/types.js";
-import { GAP_CASE_EXIT_CODES } from "../lib/gap-case/types.js";
+import { sanitizeError } from "../lib/input/sanitize.js";
 import { PathTraversalError, validatePath } from "../lib/input/validator.js";
 
-const DEFAULT_STORE_PATH = ".harness/gap-cases.v1.json";
+export const EXIT_CODES = {
+	SUCCESS: 0,
+	USAGE: 2,
+	POLICY: 3,
+	PARTIAL: 4,
+	INTERNAL: 10,
+} as const;
 
-/**
- * Generate a unique gap-case ID
- */
-function generateCaseId(): string {
-	const timestamp = Date.now().toString(36);
-	const random = Math.random().toString(36).slice(2, 8);
-	return `gc-${timestamp}-${random}`;
+export type GapCaseStatus = "open" | "resolved";
+export type GapSeverity = "low" | "medium" | "high";
+
+export interface GapCaseRecord {
+	id: string;
+	incidentId: string;
+	owner: string;
+	severity: GapSeverity;
+	linkedPr: string;
+	findingSummary?: string;
+	createdAt: string;
+	dueAt: string;
+	status: GapCaseStatus;
+	resolvedBy?: string;
+	closedAt?: string;
+	closeReason?: string;
+	evidence?: string[];
 }
 
-/**
- * Validate SHA format (40 hex characters)
- */
-function isValidSha(sha: string | undefined): boolean {
-	if (!sha) return false;
-	return /^[a-f0-9]{40}$/i.test(sha);
+export interface GapCaseStore {
+	version: number;
+	cases: GapCaseRecord[];
 }
 
-/**
- * Validate severity tier
- */
-function isValidSeverity(value: string): value is RiskTier {
-	return value === "high" || value === "medium" || value === "low";
+export interface CreateGapCaseOptions {
+	action: "create";
+	incidentId: string;
+	owner: string;
+	severity: GapSeverity;
+	linkedPr: string;
+	findingSummary?: string;
+	dueDays?: number;
+	caseStore?: string;
+	caseIdPrefix?: string;
+	caseId?: string;
+	evidence?: string[];
+	json?: boolean;
 }
 
-/**
- * Validate URL format (must be HTTPS)
- */
-function isValidHttpsUrl(value: string): boolean {
-	try {
-		const url = new URL(value);
-		return url.protocol === "https:";
-	} catch {
-		return false;
+export interface ListGapCaseOptions {
+	action: "list";
+	caseStore?: string;
+	open?: boolean;
+	overdue?: boolean;
+	json?: boolean;
+}
+
+export interface ResolveGapCaseOptions {
+	action: "resolve";
+	caseStore?: string;
+	caseId: string;
+	incidentId: string;
+	resolvedBy: string;
+	linkedPr: string;
+	evidence?: string[];
+	closeReason?: string;
+	force?: boolean;
+	json?: boolean;
+}
+
+type GapCaseResultOutput =
+	| { action: "create"; caseRecord: GapCaseRecord }
+	| { action: "list"; cases: GapCaseRecord[] }
+	| { action: "resolve"; caseRecord: GapCaseRecord };
+
+export interface GapCaseError {
+	code: "E_USAGE" | "E_VALIDATION" | "E_POLICY" | "E_NOT_FOUND" | "E_INTERNAL";
+	message: string;
+	details?: Record<string, unknown>;
+}
+
+export type GapCaseResult =
+	| { ok: true; output: GapCaseResultOutput }
+	| { ok: false; error: GapCaseError };
+
+const DEFAULT_CASE_STORE = ".harness/gap-cases.json";
+const DEFAULT_CASE_ID_PREFIX = "gap-";
+const DEFAULT_DUE_DAYS = 7;
+
+function nowIso(): string {
+	return new Date().toISOString();
+}
+
+function normalizeCaseStore(caseStore?: string): string {
+	return validatePath(process.cwd(), resolve(caseStore || DEFAULT_CASE_STORE));
+}
+
+function readCaseStore(filePath: string): GapCaseStore {
+	if (!existsSync(filePath)) {
+		return { version: 1, cases: [] };
 	}
+
+	const raw = readFileSync(filePath, "utf-8");
+	const parsed = JSON.parse(raw) as unknown;
+	if (
+		typeof parsed !== "object" ||
+		parsed === null ||
+		!Array.isArray((parsed as { cases?: unknown }).cases)
+	) {
+		return { version: 1, cases: [] };
+	}
+	const cases = (parsed as { cases: unknown[] }).cases.filter(
+		(entry): entry is GapCaseRecord =>
+			typeof entry === "object" &&
+			entry !== null &&
+			typeof (entry as { id?: unknown }).id === "string",
+	);
+	return { version: 1, cases };
 }
 
-/**
- * Load gap-case store from disk
- */
-function loadStore(storePath: string): GapCaseStoreV1 {
-	const absolutePath = resolve(storePath);
-
-	if (!existsSync(absolutePath)) {
-		return { version: "1", cases: [] };
-	}
-
-	try {
-		const content = readFileSync(absolutePath, "utf-8");
-		const data = JSON.parse(content) as unknown;
-
-		// Validate structure
-		if (
-			typeof data !== "object" ||
-			data === null ||
-			(data as Record<string, unknown>).version !== "1" ||
-			!Array.isArray((data as Record<string, unknown>).cases)
-		) {
-			throw new Error("Invalid store format");
-		}
-
-		return data as GapCaseStoreV1;
-	} catch (error) {
-		const message = error instanceof Error ? error.message : "Unknown error";
-		throw new Error(`Corrupt gap-case store: ${message}`);
-	}
+function writeCaseStore(filePath: string, store: GapCaseStore): void {
+	mkdirSync(dirname(filePath), { recursive: true });
+	writeFileSync(filePath, JSON.stringify(store, null, 2), "utf-8");
 }
 
-/**
- * Save gap-case store to disk (atomic write with directory creation)
- */
-function saveStore(storePath: string, store: GapCaseStoreV1): void {
-	const absolutePath = resolve(storePath);
-
-	// Validate path stays within cwd (prevent traversal)
-	const cwd = process.cwd();
-	try {
-		validatePath(cwd, absolutePath);
-	} catch (e) {
-		if (e instanceof PathTraversalError) {
-			throw new Error("Store path escapes working directory");
-		}
-		throw e;
-	}
-
-	// Ensure directory exists
-	const dir = dirname(absolutePath);
-	if (!existsSync(dir)) {
-		mkdirSync(dir, { recursive: true });
-	}
-
-	// Write atomically (write to temp, then rename would be better but keep simple for v1)
-	writeFileSync(absolutePath, JSON.stringify(store, null, 2), "utf-8");
-}
-
-/**
- * Find existing case by fingerprint (incidentId + sha + findingId)
- */
-function findExistingCase(
-	store: GapCaseStoreV1,
-	incidentId: string,
-	headSha?: string,
-	findingId?: string,
-): GapCaseRecord | undefined {
-	return store.cases.find((c) => {
-		if (c.incidentId !== incidentId) return false;
-		if (headSha && c.headSha !== headSha) return false;
-		if (findingId && c.findingId !== findingId) return false;
-		return true;
-	});
-}
-
-/**
- * Open a new gap-case (idempotent - returns existing if fingerprint matches)
- */
-export function openGapCase(options: GapCaseOpenOptions): GapCaseResult {
-	// Load contract for policy
-	let policy = DEFAULT_PILOT_GAP_CASE_POLICY;
-	if (options.contractPath) {
-		try {
-			const contract = loadContract(options.contractPath);
-			if (contract.pilotGapCasePolicy) {
-				policy = contract.pilotGapCasePolicy;
+function nextCaseId(cases: GapCaseRecord[], prefix: string): string {
+	const matches = cases
+		.map((entry) => {
+			if (!entry.id.startsWith(prefix)) {
+				return 0;
 			}
-		} catch (error) {
-			return {
-				ok: false,
-				error: {
-					code: "E_CONTRACT_LOAD",
-					message: `Failed to load contract: ${error instanceof Error ? error.message : "Unknown error"}`,
-				},
+			const suffix = entry.id.slice(prefix.length);
+			const n = Number.parseInt(suffix, 10);
+			return Number.isNaN(n) ? 0 : n;
+		})
+		.filter((value) => value > 0);
+	const next = Math.max(0, ...matches, 0) + 1;
+	return `${prefix}${next.toString().padStart(3, "0")}`;
+}
+
+function computeDueDate(days: number): string {
+	const timestamp = Date.now() + days * 24 * 60 * 60 * 1000;
+	return new Date(timestamp).toISOString();
+}
+
+function isOverdue(caseRecord: GapCaseRecord): boolean {
+	return new Date(caseRecord.dueAt).getTime() < Date.now();
+}
+
+export function runGapCase(
+	options: CreateGapCaseOptions | ListGapCaseOptions | ResolveGapCaseOptions,
+): GapCaseResult {
+	try {
+		const caseStore = normalizeCaseStore(
+			"caseStore" in options ? options.caseStore : undefined,
+		);
+		const store = readCaseStore(caseStore);
+
+		if (options.action === "create") {
+			if (!options.incidentId.trim()) {
+				return {
+					ok: false,
+					error: {
+						code: "E_USAGE",
+						message: "Missing required option: --incident-id",
+					},
+				};
+			}
+			if (!options.owner.trim()) {
+				return {
+					ok: false,
+					error: {
+						code: "E_USAGE",
+						message: "Missing required option: --owner",
+					},
+				};
+			}
+			if (
+				options.severity !== "low" &&
+				options.severity !== "medium" &&
+				options.severity !== "high"
+			) {
+				return {
+					ok: false,
+					error: {
+						code: "E_USAGE",
+						message:
+							"Invalid required option: --severity must be low|medium|high",
+					},
+				};
+			}
+			if (!options.linkedPr.trim()) {
+				return {
+					ok: false,
+					error: {
+						code: "E_USAGE",
+						message: "Missing required option: --linked-pr",
+					},
+				};
+			}
+
+			const prefix = options.caseIdPrefix ?? DEFAULT_CASE_ID_PREFIX;
+			const id = options.caseId ?? nextCaseId(store.cases, prefix);
+			const dueDays = options.dueDays ?? DEFAULT_DUE_DAYS;
+			if (dueDays <= 0) {
+				return {
+					ok: false,
+					error: {
+						code: "E_VALIDATION",
+						message: "Invalid --due-days; must be a positive integer",
+					},
+				};
+			}
+
+			const existing = store.cases.find((entry) => entry.id === id);
+			if (existing) {
+				return {
+					ok: false,
+					error: {
+						code: "E_VALIDATION",
+						message: `Gap case ${id} already exists`,
+					},
+				};
+			}
+
+			const caseRecord: GapCaseRecord = {
+				id,
+				incidentId: options.incidentId,
+				owner: options.owner,
+				severity: options.severity,
+				linkedPr: options.linkedPr,
+				createdAt: nowIso(),
+				dueAt: computeDueDate(dueDays),
+				status: "open",
+				...(options.findingSummary
+					? { findingSummary: options.findingSummary }
+					: {}),
+				...(options.evidence ? { evidence: options.evidence } : {}),
 			};
+
+			store.cases.push(caseRecord);
+			writeCaseStore(caseStore, store);
+			return { ok: true, output: { action: "create", caseRecord } };
 		}
-	}
 
-	// Check if gap-case is enabled
-	if (!policy.enabled) {
+		if (options.action === "list") {
+			let cases = [...store.cases];
+			if (options.open) {
+				cases = cases.filter((entry) => entry.status === "open");
+			}
+			if (options.overdue) {
+				cases = cases.filter(isOverdue);
+			}
+			return { ok: true, output: { action: "list", cases } };
+		}
+
+		if (options.action === "resolve") {
+			const target = store.cases.find((entry) => entry.id === options.caseId);
+			if (!target) {
+				return {
+					ok: false,
+					error: {
+						code: "E_NOT_FOUND",
+						message: `Gap case ${options.caseId} not found`,
+					},
+				};
+			}
+			if (target.status === "resolved") {
+				return {
+					ok: false,
+					error: {
+						code: "E_POLICY",
+						message: `Gap case ${options.caseId} is already resolved`,
+					},
+				};
+			}
+			if (
+				!options.incidentId.trim() ||
+				options.incidentId !== target.incidentId
+			) {
+				return {
+					ok: false,
+					error: {
+						code: "E_VALIDATION",
+						message: "Incident ID does not match existing gap case",
+					},
+				};
+			}
+			if (!options.resolvedBy.trim() || !options.linkedPr.trim()) {
+				return {
+					ok: false,
+					error: {
+						code: "E_USAGE",
+						message: "Missing required option: --resolved-by and --linked-pr",
+					},
+				};
+			}
+			target.status = "resolved";
+			target.closedAt = nowIso();
+			target.resolvedBy = options.resolvedBy;
+			target.closeReason = options.closeReason ?? "fix";
+			// Apply evidence and linkedPr from resolve options
+			if (options.evidence && options.evidence.length > 0) {
+				target.evidence = [...(target.evidence ?? []), ...options.evidence];
+			}
+			if (options.linkedPr?.trim()) {
+				target.linkedPr = options.linkedPr;
+			}
+
+			writeCaseStore(caseStore, store);
+			return { ok: true, output: { action: "resolve", caseRecord: target } };
+		}
+
 		return {
 			ok: false,
 			error: {
-				code: "E_DISABLED",
-				message: "Gap-case tracking is disabled in policy",
+				code: "E_INTERNAL",
+				message: "Unknown gap-case action",
 			},
 		};
-	}
-
-	// Validate required fields
-	if (!options.incidentId?.trim()) {
-		return {
-			ok: false,
-			error: { code: "E_VALIDATION", message: "incidentId is required" },
-		};
-	}
-
-	if (!options.summary?.trim()) {
-		return {
-			ok: false,
-			error: { code: "E_VALIDATION", message: "summary is required" },
-		};
-	}
-
-	if (!options.owner?.trim()) {
-		return {
-			ok: false,
-			error: { code: "E_VALIDATION", message: "owner is required" },
-		};
-	}
-
-	if (!options.severity || !isValidSeverity(options.severity)) {
-		return {
-			ok: false,
-			error: {
-				code: "E_VALIDATION",
-				message: "severity must be one of: high, medium, low",
-			},
-		};
-	}
-
-	// Validate SHA format if provided
-	if (options.headSha && !isValidSha(options.headSha)) {
-		return {
-			ok: false,
-			error: {
-				code: "E_VALIDATION",
-				message: "headSha must be a valid 40-character hex SHA",
-			},
-		};
-	}
-
-	// Validate SLA hours if provided
-	if (options.slaHours !== undefined) {
-		if (
-			!Number.isInteger(options.slaHours) ||
-			options.slaHours <= 0 ||
-			options.slaHours > 8760 // Max 1 year
-		) {
+	} catch (error) {
+		if (error instanceof PathTraversalError) {
 			return {
 				ok: false,
 				error: {
 					code: "E_VALIDATION",
-					message: "slaHours must be a positive integer (max 8760)",
+					message: "Invalid --case-store path (path traversal detected)",
 				},
 			};
 		}
-	}
-
-	const storePath = options.storePath ?? policy.storePath ?? DEFAULT_STORE_PATH;
-
-	// Load store
-	let store: GapCaseStoreV1;
-	try {
-		store = loadStore(storePath);
-	} catch (error) {
-		return {
-			ok: false,
-			error: {
-				code: "E_STORE_CORRUPT",
-				message: error instanceof Error ? error.message : "Store load failed",
-			},
-		};
-	}
-
-	// Check for duplicate (idempotent open)
-	const existing = findExistingCase(
-		store,
-		options.incidentId,
-		options.headSha,
-		options.findingId,
-	);
-	if (existing) {
-		return { ok: true, output: existing };
-	}
-
-	// Create new case
-	const now = new Date().toISOString();
-	const slaHours = options.slaHours ?? policy.defaultSlaHours;
-	const slaDueAt = new Date(
-		Date.now() + slaHours * 60 * 60 * 1000,
-	).toISOString();
-
-	const newCase: GapCaseRecord = {
-		id: generateCaseId(),
-		incidentId: options.incidentId.trim(),
-		status: "open",
-		severity: options.severity,
-		summary: options.summary.trim(),
-		owner: options.owner.trim(),
-		openedAt: now,
-		slaDueAt,
-		provider: options.provider,
-		findingId: options.findingId,
-		prNumber: options.prNumber,
-		headSha: options.headSha,
-	};
-
-	// Add to store
-	store.cases.push(newCase);
-
-	// Save store
-	try {
-		saveStore(storePath, store);
-	} catch (error) {
-		return {
-			ok: false,
-			error: {
-				code: "E_STORE_WRITE",
-				message: error instanceof Error ? error.message : "Store write failed",
-			},
-		};
-	}
-
-	return { ok: true, output: newCase };
-}
-
-/**
- * Resolve an existing gap-case
- */
-export function resolveGapCase(options: GapCaseResolveOptions): GapCaseResult {
-	// Load contract for policy
-	let policy = DEFAULT_PILOT_GAP_CASE_POLICY;
-	if (options.contractPath) {
-		try {
-			const contract = loadContract(options.contractPath);
-			if (contract.pilotGapCasePolicy) {
-				policy = contract.pilotGapCasePolicy;
-			}
-		} catch (error) {
+		if (error instanceof SyntaxError) {
 			return {
 				ok: false,
 				error: {
-					code: "E_CONTRACT_LOAD",
-					message: `Failed to load contract: ${error instanceof Error ? error.message : "Unknown error"}`,
+					code: "E_VALIDATION",
+					message: `Could not parse gap-case store: ${sanitizeError(error)}`,
 				},
 			};
 		}
-	}
-
-	// Check if gap-case is enabled
-	if (!policy.enabled) {
 		return {
 			ok: false,
 			error: {
-				code: "E_DISABLED",
-				message: "Gap-case tracking is disabled in policy",
+				code: "E_INTERNAL",
+				message: `Could not update gap-case state: ${sanitizeError(error)}`,
 			},
 		};
 	}
-
-	// Validate required fields
-	if (!options.caseId?.trim()) {
-		return {
-			ok: false,
-			error: { code: "E_VALIDATION", message: "caseId is required" },
-		};
-	}
-
-	// Validate evidence URL
-	if (!options.evidenceUrl?.trim()) {
-		return {
-			ok: false,
-			error: {
-				code: "E_VALIDATION",
-				message: `evidenceUrl is required${policy.requireClosureEvidence ? " by policy" : ""}`,
-			},
-		};
-	}
-
-	if (!isValidHttpsUrl(options.evidenceUrl)) {
-		return {
-			ok: false,
-			error: {
-				code: "E_VALIDATION",
-				message: "evidenceUrl must be a valid HTTPS URL",
-			},
-		};
-	}
-
-	const storePath = options.storePath ?? policy.storePath ?? DEFAULT_STORE_PATH;
-
-	// Load store
-	let store: GapCaseStoreV1;
-	try {
-		store = loadStore(storePath);
-	} catch (error) {
-		return {
-			ok: false,
-			error: {
-				code: "E_STORE_CORRUPT",
-				message: error instanceof Error ? error.message : "Store load failed",
-			},
-		};
-	}
-
-	// Find case
-	const caseIndex = store.cases.findIndex((c) => c.id === options.caseId);
-	if (caseIndex === -1) {
-		return {
-			ok: false,
-			error: {
-				code: "E_NOT_FOUND",
-				message: `Gap-case not found: ${options.caseId}`,
-			},
-		};
-	}
-
-	const existingCase = store.cases[caseIndex];
-	if (!existingCase) {
-		return {
-			ok: false,
-			error: {
-				code: "E_NOT_FOUND",
-				message: `Gap-case not found: ${options.caseId}`,
-			},
-		};
-	}
-
-	// Check if already resolved
-	if (existingCase.status === "resolved") {
-		return {
-			ok: false,
-			error: {
-				code: "E_ALREADY_RESOLVED",
-				message: `Gap-case ${options.caseId} is already resolved`,
-			},
-		};
-	}
-
-	// Update case - explicitly build the resolved case to avoid spread type issues
-	const now = new Date().toISOString();
-	const resolvedCase: GapCaseRecord = {
-		id: existingCase.id,
-		incidentId: existingCase.incidentId,
-		status: "resolved",
-		severity: existingCase.severity,
-		summary: existingCase.summary,
-		owner: existingCase.owner,
-		openedAt: existingCase.openedAt,
-		slaDueAt: existingCase.slaDueAt,
-		resolvedAt: now,
-		provider: existingCase.provider,
-		findingId: existingCase.findingId,
-		prNumber: existingCase.prNumber,
-		headSha: existingCase.headSha,
-		resolution: {
-			evidenceUrl: options.evidenceUrl.trim(),
-			fixPr: options.fixPr,
-			note: options.note,
-			resolvedBy: options.resolvedBy,
-		},
-	};
-
-	store.cases[caseIndex] = resolvedCase;
-
-	// Save store
-	try {
-		saveStore(storePath, store);
-	} catch (error) {
-		return {
-			ok: false,
-			error: {
-				code: "E_STORE_WRITE",
-				message: error instanceof Error ? error.message : "Store write failed",
-			},
-		};
-	}
-
-	return { ok: true, output: resolvedCase };
 }
 
-/**
- * CLI entry point for gap-case command
- */
-export function runGapCaseCLI(args: {
-	action: "open" | "resolve";
-	json?: boolean;
-	contractPath?: string;
-	storePath?: string;
-	// Open options
-	incidentId?: string;
-	summary?: string;
-	severity?: string;
-	owner?: string;
-	provider?: string;
-	findingId?: string;
-	prNumber?: number;
-	headSha?: string;
-	slaHours?: number;
-	// Resolve options
-	caseId?: string;
-	evidenceUrl?: string;
-	fixPr?: number;
-	note?: string;
-	resolvedBy?: string;
-}): number {
-	let result: GapCaseResult;
-
-	if (args.action === "open") {
-		result = openGapCase({
-			incidentId: args.incidentId ?? "",
-			summary: args.summary ?? "",
-			severity: args.severity as RiskTier | undefined,
-			owner: args.owner ?? "",
-			provider: args.provider as GapCaseOpenOptions["provider"],
-			findingId: args.findingId,
-			prNumber: args.prNumber,
-			headSha: args.headSha,
-			slaHours: args.slaHours,
-			contractPath: args.contractPath,
-			storePath: args.storePath,
-			json: args.json,
-		});
-	} else {
-		result = resolveGapCase({
-			caseId: args.caseId ?? "",
-			evidenceUrl: args.evidenceUrl ?? "",
-			fixPr: args.fixPr,
-			note: args.note,
-			resolvedBy: args.resolvedBy,
-			contractPath: args.contractPath,
-			storePath: args.storePath,
-			json: args.json,
-		});
-	}
-
-	if (result.ok) {
-		if (args.json) {
-			console.info(JSON.stringify(result.output, null, 2));
+export function runGapCaseCLI(
+	options: CreateGapCaseOptions | ListGapCaseOptions | ResolveGapCaseOptions,
+): number {
+	const result = runGapCase(options);
+	if (!result.ok) {
+		// Output only JSON or only plain text, not both
+		if (options.json) {
+			console.error(JSON.stringify({ error: result.error }));
 		} else {
-			console.info(`✓ Gap-case ${result.output.status}: ${result.output.id}`);
-			console.info(`  Incident: ${result.output.incidentId}`);
-			console.info(`  Severity: ${result.output.severity}`);
-			console.info(`  Owner: ${result.output.owner}`);
-			console.info(`  Status: ${result.output.status}`);
-			if (result.output.status === "open") {
-				console.info(`  SLA due: ${result.output.slaDueAt}`);
-			} else if (result.output.resolution) {
-				console.info(`  Evidence: ${result.output.resolution.evidenceUrl}`);
-			}
+			console.error(result.error.message);
 		}
-		return GAP_CASE_EXIT_CODES.SUCCESS;
+		switch (result.error.code) {
+			case "E_USAGE":
+			case "E_VALIDATION":
+				return EXIT_CODES.USAGE;
+			case "E_POLICY":
+			case "E_NOT_FOUND":
+				return EXIT_CODES.POLICY;
+			default:
+				return EXIT_CODES.INTERNAL;
+		}
 	}
 
-	// Error output
-	if (args.json) {
-		console.error(JSON.stringify({ error: result.error }, null, 2));
-	} else {
-		console.error(`✗ ${result.error.message}`);
+	if (options.json) {
+		console.info(
+			JSON.stringify({
+				schema: "harness.gap-case.v1",
+				meta: {
+					tool: "harness-gap-case",
+					timestamp: new Date().toISOString(),
+				},
+				status: "success",
+				summary: `Gap-case ${result.output.action} complete`,
+				data: result.output,
+				errors: [],
+			}),
+		);
+		return EXIT_CODES.SUCCESS;
 	}
 
-	// Map error codes to exit codes
-	switch (result.error.code) {
-		case "E_VALIDATION":
-			return GAP_CASE_EXIT_CODES.VALIDATION_ERROR;
-		case "E_NOT_FOUND":
-		case "E_ALREADY_RESOLVED":
-			return GAP_CASE_EXIT_CODES.NOT_FOUND;
-		case "E_STORE_CORRUPT":
-		case "E_STORE_WRITE":
-			return GAP_CASE_EXIT_CODES.STORE_ERROR;
-		default:
-			return GAP_CASE_EXIT_CODES.SYSTEM_ERROR;
+	switch (result.output.action) {
+		case "create":
+			console.info(`Created gap case ${result.output.caseRecord.id}`);
+			console.info(`incident: ${result.output.caseRecord.incidentId}`);
+			console.info(`dueAt: ${result.output.caseRecord.dueAt}`);
+			break;
+		case "list":
+			console.info(
+				`Gap cases: ${result.output.cases.length} record(s) in ${normalizeCaseStore(
+					options.caseStore,
+				)}`,
+			);
+			for (const entry of result.output.cases) {
+				console.info(
+					`${entry.id}\t${entry.status}\t${entry.incidentId}\t${entry.owner}`,
+				);
+			}
+			break;
+		case "resolve":
+			console.info(`Resolved gap case ${result.output.caseRecord.id}`);
+			console.info(`closedAt: ${result.output.caseRecord.closedAt}`);
+			break;
 	}
+	return EXIT_CODES.SUCCESS;
 }

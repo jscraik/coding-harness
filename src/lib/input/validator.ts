@@ -8,30 +8,6 @@ export class PathTraversalError extends Error {
 	}
 }
 
-function resolveNearestExistingAncestor(path: string): string {
-	let current = path;
-
-	while (true) {
-		try {
-			return realpathSync(current);
-		} catch {
-			const parent = dirname(current);
-			if (parent === current) {
-				throw new PathTraversalError();
-			}
-			current = parent;
-		}
-	}
-}
-
-function isWithinBase(realBase: string, realTarget: string): boolean {
-	if (realTarget === realBase) {
-		return true;
-	}
-	const baseWithSep = realBase.endsWith(sep) ? realBase : `${realBase}${sep}`;
-	return realTarget.startsWith(baseWithSep);
-}
-
 /**
  * Validate that a user-provided path stays within the base directory.
  * Handles symlink attacks by canonicalizing the resolved path.
@@ -39,25 +15,28 @@ function isWithinBase(realBase: string, realTarget: string): boolean {
 export function validatePath(baseDir: string, userPath: string): string {
 	const resolved = resolve(baseDir, normalize(userPath));
 	const realBase = realpathSync(baseDir);
+	const isWithinBase = (candidate: string): boolean =>
+		candidate === realBase || candidate.startsWith(`${realBase}${sep}`);
 
 	// CRITICAL: Canonicalize resolved path BEFORE comparison
 	let realResolved: string;
 	try {
 		realResolved = realpathSync(resolved);
 	} catch {
-		// Path doesn't exist - validate nearest existing ancestor directory
-		try {
-			const realAncestor = resolveNearestExistingAncestor(resolved);
-			if (!isWithinBase(realBase, realAncestor)) {
+		// Path doesn't exist - validate parent directory
+			const parentDir = dirname(resolved);
+			try {
+				const realParent = realpathSync(parentDir);
+				if (!isWithinBase(realParent)) {
+					throw new PathTraversalError();
+				}
+			} catch {
 				throw new PathTraversalError();
 			}
-		} catch {
-			throw new PathTraversalError();
-		}
 		return resolved;
 	}
 
-	if (!isWithinBase(realBase, realResolved)) {
+	if (!isWithinBase(realResolved)) {
 		throw new PathTraversalError();
 	}
 	return realResolved;

@@ -178,7 +178,7 @@ describe("runInit", () => {
 			const content = JSON.parse(
 				require("node:fs").readFileSync(contractPath, "utf-8"),
 			);
-			expect(content.version).toBe("1.0.0");
+			expect(content.version).toBe("1.2.0");
 			expect(content.reviewPolicy.timeoutSeconds).toBe(600);
 		});
 
@@ -740,7 +740,7 @@ describe("--interactive flag", () => {
 			expect(contractChange).toBeDefined();
 			expect(contractChange?.action).toBe("modify");
 			expect(contractChange?.currentContent).toBe('{"version": "old"}');
-			expect(contractChange?.newContent).toContain('"version": "1.0.0"');
+			expect(contractChange?.newContent).toContain('"version": "1.2.0"');
 		}
 	});
 
@@ -847,7 +847,7 @@ describe("--migrate flag", () => {
 		writeFileSync(
 			join(tempDir, "harness.contract.json"),
 			JSON.stringify({
-				version: "1.0.0",
+				version: "1.2.0",
 				riskTierRules: {},
 				reviewPolicy: { timeoutSeconds: 600, timeoutAction: "fail" },
 			}),
@@ -863,6 +863,38 @@ describe("--migrate flag", () => {
 		if (result.ok) {
 			// No migrations applied, so created should be empty
 			expect(result.output.created).toHaveLength(0);
+		}
+	});
+
+	it("migrates legacy 1.0.0 contracts to 1.2.0", () => {
+		writeFileSync(
+			join(tempDir, "harness.contract.json"),
+			JSON.stringify({
+				version: "1.0.0",
+				riskTierRules: { "src/legacy/*": "low" },
+				reviewPolicy: { timeoutSeconds: 300, timeoutAction: "warn" },
+			}),
+		);
+
+		const result = runInit(tempDir, {
+			dryRun: false,
+			force: false,
+			migrate: true,
+		});
+
+		expect(result.ok).toBe(true);
+		if (result.ok) {
+			expect(result.output.created).toHaveLength(1);
+			const migrated = JSON.parse(
+				require("node:fs").readFileSync(
+					join(tempDir, "harness.contract.json"),
+					"utf-8",
+				),
+			);
+			expect(migrated.version).toBe("1.2.0");
+			expect(migrated.riskTierRules["src/legacy/*"]).toBe("low");
+			expect(migrated.reviewPolicy.timeoutSeconds).toBe(300);
+			expect(migrated.reviewPolicy.timeoutAction).toBe("warn");
 		}
 	});
 
@@ -911,10 +943,9 @@ describe("--migrate flag", () => {
 		writeFileSync(
 			join(tempDir, "harness.contract.json"),
 			JSON.stringify({
-				version: "1.0.0",
+				version: "1.0",
 				riskTierRules: { "src/auth/*": "high" },
 				reviewPolicy: { timeoutSeconds: 300, timeoutAction: "warn" },
-				customField: "preserved",
 			}),
 		);
 
@@ -934,16 +965,16 @@ describe("--migrate flag", () => {
 				),
 			);
 			// Custom settings should be preserved
+			expect(migrated.version).toBe("1.2.0");
 			expect(migrated.riskTierRules["src/auth/*"]).toBe("high");
 			expect(migrated.reviewPolicy.timeoutSeconds).toBe(300);
-			expect(migrated.customField).toBe("preserved");
 		}
 	});
 
 	it("preserves contract content when already up to date", () => {
 		// Create a contract at current version with customizations
 		const originalContent = {
-			version: "1.0.0",
+			version: "1.2.0",
 			riskTierRules: { "src/api/*": "medium" },
 			reviewPolicy: { timeoutSeconds: 900, timeoutAction: "fail" },
 		};

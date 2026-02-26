@@ -90,7 +90,10 @@ describe("tracer", () => {
 
 		it("throws for non-existent trace", async () => {
 			await expect(
-				addTraceEvent("trace-nonexistent", { type: "command", payload: {} }),
+				addTraceEvent("trace-aaaaaaaaaaaaaaaa", {
+					type: "command",
+					payload: {},
+				}),
 			).rejects.toThrow("Trace not found");
 		});
 	});
@@ -110,7 +113,7 @@ describe("tracer", () => {
 		});
 
 		it("returns null for non-existent trace", async () => {
-			const loaded = await loadTrace("trace-does-not-exist");
+			const loaded = await loadTrace("trace-bbbbbbbbbbbbbbbb");
 			expect(loaded).toBeNull();
 		});
 	});
@@ -139,7 +142,7 @@ describe("tracer", () => {
 
 	describe("replayTrace", () => {
 		it("returns error for non-existent trace", async () => {
-			const result = await replayTrace("trace-nonexistent");
+			const result = await replayTrace("trace-cccccccccccccccc");
 			expect(result.success).toBe(false);
 			expect(result.message).toContain("not found");
 		});
@@ -195,10 +198,10 @@ describe("tracer", () => {
 	});
 
 	describe("validateTrace", () => {
-		it("validates correct trace", () => {
-			const trace: ExecutionTrace = {
-				traceId: "trace-abc123",
-				createdAt: new Date().toISOString(),
+			it("validates correct trace", () => {
+				const trace: ExecutionTrace = {
+					traceId: "trace-0123456789abcdef",
+					createdAt: new Date().toISOString(),
 				workingDirectory: "/test",
 				command: "test",
 				args: [],
@@ -227,7 +230,7 @@ describe("tracer", () => {
 
 		it("rejects trace with invalid date", () => {
 			const trace = {
-				traceId: "trace-abc123",
+				traceId: "trace-0123456789abcdef",
 				createdAt: "invalid-date",
 				workingDirectory: "/test",
 				command: "test",
