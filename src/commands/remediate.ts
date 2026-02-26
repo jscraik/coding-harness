@@ -8,7 +8,10 @@
 import { spawnSync } from "node:child_process";
 import { readFileSync } from "node:fs";
 import { loadContract } from "../lib/contract/loader.js";
-import type { RemediationPolicy } from "../lib/contract/types.js";
+import {
+	DEFAULT_REMEDIATION_POLICY,
+	type RemediationPolicy,
+} from "../lib/contract/types.js";
 import {
 	type CodeqlFindingInput,
 	type CodexFindingInput,
@@ -64,20 +67,6 @@ export interface RemediateResult {
 	outcome: RemediationOutcome;
 	exitCode: number;
 }
-
-/**
- * Default remediation policy when no contract is available.
- */
-const DEFAULT_REMEDIATION_POLICY: RemediationPolicy = {
-	providerDefaults: {
-		codeql: { autoApplyMaxTier: "medium", dryRunOnlyByDefault: false },
-		codex: { autoApplyMaxTier: "low", dryRunOnlyByDefault: true },
-	},
-	marker: "<!-- harness-remediation -->",
-	timeoutMinutes: 5,
-	retryLimit: 3,
-	requireEvidence: false,
-};
 
 /**
  * Get current HEAD SHA from git.
@@ -226,13 +215,14 @@ export async function runRemediate(
 	}
 
 	// 2. Load contract for policy (use defaults if not available)
-	let policy = DEFAULT_REMEDIATION_POLICY;
+	let policy: RemediationPolicy = DEFAULT_REMEDIATION_POLICY;
 	if (options.contractPath) {
 		try {
-			loadContract(options.contractPath);
-			// If contract has remediation policy, use it
-			// For now, use defaults as RemediationPolicy is not in HarnessContract
-			policy = DEFAULT_REMEDIATION_POLICY;
+			const contract = loadContract(options.contractPath);
+			// Use contract's remediation policy if defined, otherwise use defaults
+			if (contract.remediationPolicy) {
+				policy = contract.remediationPolicy;
+			}
 		} catch {
 			// Use defaults if contract load fails
 		}
