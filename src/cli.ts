@@ -202,6 +202,17 @@ export function parseCsvList(value: string | undefined): string[] {
 		.filter((item) => item.length > 0);
 }
 
+/**
+ * Safely get a flag value from args, returning undefined if the flag is missing
+ * or if the next argument is another flag (starts with --).
+ */
+function getFlagValue(args: string[], flagIndex: number): string | undefined {
+	if (flagIndex === -1) return undefined;
+	const value = args[flagIndex + 1];
+	if (value === undefined || value.startsWith("--")) return undefined;
+	return value;
+}
+
 export function run(args: string[]): void {
 	const version = getVersion();
 
