@@ -17,6 +17,10 @@ import { runIndexContextCLI } from "./commands/index-context.js";
 import { runInitCLI, runInteractiveInitCLI } from "./commands/init.js";
 import { runMemoryGateCLI } from "./commands/memory-gate.js";
 import { runObservabilityGateCLI } from "./commands/observability-gate.js";
+import {
+	type PilotRollbackOptions,
+	runPilotRollbackCLI,
+} from "./commands/pilot-rollback.js";
 import { runPlanGateCLI } from "./commands/plan-gate.js";
 import { runPreflightGateCLI } from "./commands/preflight-gate.js";
 import { runPromptGateCLI } from "./commands/prompt-gate.js";
@@ -89,6 +93,7 @@ function printUsage(): void {
 	console.info("  --contract      Path to harness.contract.json");
 	console.info("  context          Semantic search for relevant prior work");
 	console.info("  index-context    Bulk index brainstorms/plans for search");
+	console.info("  pilot-rollback   Transition pilot mode (autonomous <-> manual)");
 	console.info("");
 	console.info("Init Options:");
 	console.info("  --dry-run        Preview changes without writing");
@@ -1042,6 +1047,49 @@ export function run(args: string[]): void {
 		runIndexContextCLI(argsAfterCommand)
 			.then((exitCode) => process.exit(exitCode))
 			.catch((error) => handleFatalError("Index Context Error", error));
+		return;
+	}
+
+	if (command === "pilot-rollback") {
+		// Parse pilot-rollback options
+		const jsonFlag = args.includes("--json");
+		const incidentIndex = args.indexOf("--incident-id");
+		const modeIndex = args.indexOf("--mode");
+		const contractIndex = args.indexOf("--contract");
+		const artifactsIndex = args.indexOf("--artifacts");
+		const outputIndex = args.indexOf("--output");
+		const reasonIndex = args.indexOf("--reason");
+
+		const modeArg = getFlagValue(args, modeIndex);
+		if (modeArg !== "autonomous" && modeArg !== "manual") {
+			console.error(
+				"Error: --mode is required and must be 'autonomous' or 'manual'",
+			);
+			process.exit(2);
+			return;
+		}
+
+		const options: PilotRollbackOptions = {
+			incidentId: getFlagValue(args, incidentIndex) ?? "",
+			mode: modeArg,
+			json: jsonFlag,
+		};
+
+		const contractArg = getFlagValue(args, contractIndex);
+		if (contractArg) options.contractPath = contractArg;
+
+		const artifactsArg = getFlagValue(args, artifactsIndex);
+		if (artifactsArg) options.artifactsDir = artifactsArg;
+
+		const outputArg = getFlagValue(args, outputIndex);
+		if (outputArg) options.outputPath = outputArg;
+
+		const reasonArg = getFlagValue(args, reasonIndex);
+		if (reasonArg) options.reason = reasonArg;
+
+		runPilotRollbackCLI(options)
+			.then((exitCode) => process.exit(exitCode))
+			.catch((error) => handleFatalError("Pilot Rollback Error", error));
 		return;
 	}
 

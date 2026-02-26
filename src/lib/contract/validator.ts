@@ -1064,6 +1064,16 @@ export function validateContract(
 			packageManagerPolicy,
 			remediationPolicy,
 			gapCasePolicy,
+			// Pass through pilot policy fields (validated by type only for v1)
+			pilotGapCasePolicy: obj.pilotGapCasePolicy as
+				| HarnessContract["pilotGapCasePolicy"]
+				| undefined,
+			pilotRollbackPolicy: obj.pilotRollbackPolicy as
+				| HarnessContract["pilotRollbackPolicy"]
+				| undefined,
+			pilotAuthzPolicy: obj.pilotAuthzPolicy as
+				| HarnessContract["pilotAuthzPolicy"]
+				| undefined,
 		},
 		errors: [],
 	};
