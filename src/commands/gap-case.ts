@@ -302,6 +302,16 @@ export function runGapCase(
 			target.closedAt = nowIso();
 			target.resolvedBy = options.resolvedBy;
 			target.closeReason = options.closeReason ?? "fix";
+			// Apply evidence and linkedPr from resolve options
+			if (options.evidence && options.evidence.length > 0) {
+				target.evidence = [
+					...(target.evidence ?? []),
+					...options.evidence,
+					];
+			}
+			if (options.linkedPr && options.linkedPr.trim()) {
+				target.linkedPr = options.linkedPr;
+			}
 
 			writeCaseStore(caseStore, store);
 			return { ok: true, output: { action: "resolve", caseRecord: target } };
@@ -348,9 +358,11 @@ export function runGapCaseCLI(
 ): number {
 	const result = runGapCase(options);
 	if (!result.ok) {
-		console.error(result.error.message);
+		// Output only JSON or only plain text, not both
 		if (options.json) {
 			console.error(JSON.stringify({ error: result.error }));
+		} else {
+			console.error(result.error.message);
 		}
 		switch (result.error.code) {
 			case "E_USAGE":
