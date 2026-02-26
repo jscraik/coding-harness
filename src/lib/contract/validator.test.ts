@@ -245,6 +245,9 @@ describe("field-by-field matrix tests for parity verification", () => {
 		"packageManagerPolicy",
 		"remediationPolicy",
 		"gapCasePolicy",
+		"pilotGapCasePolicy",
+		"pilotRollbackPolicy",
+		"pilotAuthzPolicy",
 	] as const satisfies (keyof HarnessContract)[];
 
 	it("validates all scaffolded top-level fields exist in HarnessContract", () => {

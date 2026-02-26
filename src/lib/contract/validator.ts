@@ -41,6 +41,9 @@ const VALID_TOP_LEVEL_KEYS = [
 	"packageManagerPolicy",
 	"remediationPolicy",
 	"gapCasePolicy",
+	"pilotGapCasePolicy",
+	"pilotRollbackPolicy",
+	"pilotAuthzPolicy",
 ] as const;
 const VALID_UI_LOOP_POLICY_KEYS = [
 	"fastCommand",
