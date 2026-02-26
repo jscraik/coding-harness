@@ -120,22 +120,22 @@ describe("remediate command", () => {
 			}
 		});
 
-		it("exits PARTIAL when some findings are skipped", async () => {
-			// High severity will be skipped (codeql max tier is medium)
+		it("exits SUCCESS when all findings produce actions (including requires_human)", async () => {
+			// Phase 2: High severity produces requires_human action instead of skip
 			const findings = [
 				{
 					id: "test-1",
 					rule: { id: "rule-1" },
 					location: { path: "src/test.ts", startLine: 10 },
 					commitSha: HEAD_SHA,
-					severity: "warning" as const, // This will be processed
+					severity: "warning" as const, // This will be auto-applied
 				},
 				{
 					id: "test-2",
 					rule: { id: "rule-2" },
 					location: { path: "src/test2.ts", startLine: 20 },
 					commitSha: HEAD_SHA,
-					severity: "error" as const, // This will be skipped (high > medium)
+					severity: "error" as const, // Phase 2: produces requires_human action
 				},
 			];
 
@@ -143,10 +143,15 @@ describe("remediate command", () => {
 
 			const result = await runRemediate({ findings: "findings.json" });
 
-			expect(result.exitCode).toBe(EXIT_CODES.PARTIAL);
+			// Phase 2: Both findings produce actions (commit + requires_human), so SUCCESS
+			expect(result.exitCode).toBe(EXIT_CODES.SUCCESS);
 			expect(result.outcome.ok).toBe(true);
 			if (result.outcome.ok) {
-				expect(result.outcome.output.skipped?.length).toBeGreaterThan(0);
+				expect(result.outcome.output.actions).toHaveLength(2);
+				// One auto-applied, one requires human
+				const actionTypes = result.outcome.output.actions.map((a) => a.type);
+				expect(actionTypes).toContain("commit");
+				expect(actionTypes).toContain("requires_human");
 			}
 		});
 
@@ -393,7 +398,7 @@ describe("remediate command", () => {
 			}
 		});
 
-		it("skips high severity findings for codeql (max tier is medium)", async () => {
+		it("produces requires_human action for high severity findings (codeql max tier is medium)", async () => {
 			const finding = {
 				id: "test-1",
 				rule: { id: "rule-1" },
@@ -406,12 +411,16 @@ describe("remediate command", () => {
 
 			const result = await runRemediate({ findings: "findings.json" });
 
-			expect(result.exitCode).toBe(EXIT_CODES.PARTIAL);
+			// Phase 2: High severity produces requires_human action, not skip
+			expect(result.exitCode).toBe(EXIT_CODES.SUCCESS);
 			expect(result.outcome.ok).toBe(true);
 			if (result.outcome.ok) {
-				expect(result.outcome.output.actions).toHaveLength(0);
-				expect(result.outcome.output.skipped).toHaveLength(1);
-				expect(result.outcome.output.skipped[0]?.reason).toContain("exceeds");
+				expect(result.outcome.output.actions).toHaveLength(1);
+				expect(result.outcome.output.actions[0]?.type).toBe("requires_human");
+				expect(result.outcome.output.actions[0]?.reason).toContain(
+					"requires human review",
+				);
+				expect(result.outcome.output.skipped).toHaveLength(0);
 			}
 		});
 	});

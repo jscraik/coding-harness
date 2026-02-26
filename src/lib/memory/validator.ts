@@ -146,6 +146,13 @@ function validateCloseout(
 		violations.push("FORJAMIE.md update flag not set in closeout");
 	}
 
+	// Validate closeout date is a valid ISO date
+	const closeoutTime = new Date(summary.closeout.date);
+	if (Number.isNaN(closeoutTime.getTime())) {
+		violations.push("Closeout date is invalid (not a valid ISO date)");
+		return { valid: false, violations };
+	}
+
 	// Verify FORJAMIE.md exists and is recent
 	try {
 		if (!existsSync(forjamiePath)) {
@@ -153,7 +160,6 @@ function validateCloseout(
 		} else {
 			const stats = statSync(forjamiePath);
 			const modifiedTime = stats.mtime;
-			const closeoutTime = new Date(summary.closeout.date);
 
 			// FORJAMIE.md should be modified at or after closeout date
 			if (modifiedTime < closeoutTime) {
@@ -344,10 +350,25 @@ export function runMemoryGateCLI(options: MemoryGateOptions): number {
 			duplicates: result.metrics.duplicate_memory_count,
 		}),
 	});
-	saveMetrics(updatedMetrics, history, options.metricsPath);
 
-	// Calculate trends
-	const trends = calculateTrends(history);
+	// Save metrics with error handling (e.g., EISDIR if path is a directory)
+	let updatedHistory = history;
+	try {
+		saveMetrics(updatedMetrics, history, options.metricsPath);
+		// After saving, create updated history for trend calculation
+		updatedHistory = [
+			...history.slice(-99),
+			{
+				date: new Date().toISOString(),
+				metrics: { ...updatedMetrics },
+			},
+		];
+	} catch {
+		// Continue even if metrics persistence fails
+	}
+
+	// Calculate trends from updated history
+	const trends = calculateTrends(updatedHistory);
 
 	// Detect codex branch for display
 	const codexResult = enforceCodexBranch({

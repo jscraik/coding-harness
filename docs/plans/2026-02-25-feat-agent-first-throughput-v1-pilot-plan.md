@@ -32,6 +32,7 @@ deepened: 2026-02-25
 - [Problem Statement / Motivation](#problem-statement--motivation)
 - [Research Summary](#research-summary)
 - [Proposed Solution](#proposed-solution)
+- [Governance Envelope / Enterprise Safety Rail](#governance-envelope--enterprise-safety-rail)
 - [Alternative Approaches Considered](#alternative-approaches-considered)
 - [System-Wide Impact](#system-wide-impact)
 - [SpecFlow Analysis (Flow Coverage + Edge Cases)](#specflow-analysis-flow-coverage--edge-cases)
@@ -400,7 +401,7 @@ Current repository tests already cover core unit behavior in remediation orchest
      - Contract A yields skip/PARTIAL for medium finding.
      - Contract B yields action/SUCCESS for same medium finding.
    - Fail assertions:
-    - Runtime output is identical across materially different contracts.
+     - Runtime output is identical across materially different contracts.
 
 4. **Resilience and evaluator contract tests**
    - Setup: simulated mutative queue latency + synthetic secondary-limit response stream.
@@ -420,6 +421,7 @@ Implement a single throughput pilot slice with four aligned capabilities:
 3. **Minimal incident → gap-case path** for secondary learning loop (no broad incident platform).
 4. **Pilot scorecard + promotion gate** to decide rollout from 1–2 repos to broader adoption.
 5. **Machine-verifiable rollback contract** with explicit mode state (`manual|autonomous`) and completion artifacts before phase exit.
+6. **Governance envelope safety rail** that fail-closes when sandbox/runtime/policy invariants drift.
 
 ```mermaid
 flowchart TD
@@ -428,14 +430,51 @@ flowchart TD
   C --> D{"Severity <= medium?"}
   D -- yes --> E["Auto-remediation action"]
   D -- no --> F["Human-mediated path"]
-  E --> G["Canonical rerun request (deduped)"]
+  E --> G["Governance envelope check"]
   F --> G
-  G --> H["Evidence bundle: findings + actions + rerun outcome"]
-  H --> I{"High-risk incident caused by automation?"}
-  I -- yes --> J["Auto-rollback to manual mode"]
-  I -- no --> K["Pilot KPI tracking + promotion gate"]
-  K --> L["Optional minimal gap-case record"]
+  G --> H["Canonical rerun request (deduped)"]
+  H --> I["Evidence bundle: findings + actions + rerun outcome"]
+  I --> J{"High-risk incident caused by automation?"}
+  J -- yes --> K["Auto-rollback to manual mode"]
+  J -- no --> L["Pilot KPI tracking + promotion gate"]
+  L --> M["Optional minimal gap-case record"]
+  G --> N["Auto-hold + auto-gap-case for policy drift"]
+  N --> O["Manual release before resume"]
+
+classDef safety fill:#fff1f2,stroke:#be123c,stroke-width:2px,color:#7f1d1d;
+class G,N safety
 ```
+
+## Governance Envelope / Enterprise Safety Rail
+Add one enterprise safety layer that converts policy/permission posture into runtime controls for the automation loop.
+
+### Why this is essential
+The v1 pilot already has strong mechanics. The missing control is preventing policy drift from becoming invisible. A governance envelope ensures runtime behavior cannot silently diverge from allowed operational boundaries.
+
+### Envelope validation inputs
+- `policyFingerprint`: active contract + requirements + config hash.
+- `runtimePosture`: sandbox mode, approval policy posture, and shell environment posture.
+- `commandContext`: command target, contract revision, mutation strategy.
+- `riskSignals`: recent throttle state, retry budget, recent hold/release events.
+
+### Auto-halt contract
+If preflight detects a violation:
+- fail mutation with `E_GOVERNANCE_HALT`;
+- open a minimal gap-case with a machine-readable cause and enforcement evidence;
+- force repo context into `manual` mode;
+- require explicit manual clearance to resume.
+
+Targeted invariant checks (v1):
+- sandbox mode is below allowed set,
+- shell environment filter disabled where secrets are present,
+- forbidden tool/command patterns blocked (prefix/action policy),
+- policy or config checksums changed since preflight,
+- API governance backoff/retry invariants exceeded.
+
+Implementation pattern:
+- Add `validateExecutionEnvelope()` shared preflight in mutative commands.
+- Attach `envelope` metadata to all decision and incident artifacts.
+- Treat unresolved holds as hard hold in `harness pilot-evaluate`.
 
 ## Alternative Approaches Considered
 ### A) Deterministic Throughput Loop (Chosen)
@@ -506,6 +545,10 @@ Too much scope for v1; conflicts with YAGNI and introduces rollout ambiguity.
   - current actor token type + scope coverage,
   - branch targets are writable under policy,
   - `artifacts/pilot/` remains excluded from commit inputs by default.
+- Add governance envelope preflight (`harness check-environment --contract <path>`):
+  - validates sandbox mode, approval posture, and shell variable filtering for current agent runtime.
+  - computes `policyFingerprint` + `runtimePosture` attestation used by later commands.
+  - produces a hard hold artifact on violations.
 
 ### Phase 2 — Deterministic Throughput Loop Hardening
 **Goal:** Ensure loop behavior exactly matches brainstorm invariants.
@@ -542,6 +585,7 @@ Too much scope for v1; conflicts with YAGNI and introduces rollout ambiguity.
 - [ ] v1 uses only Greptile + Codex finding sources (see brainstorm: docs/brainstorms/2026-02-25-agent-first-throughput-v1-brainstorm.md).
 - [ ] Findings not bound to current PR head SHA are never auto-remediated (exact SHA match for auto path).
 - [ ] Auto-remediation applies only to low/medium risk findings; high-risk path is human-mediated.
+- [ ] `check-environment` style governance preflight runs before mutative operations and halts with `E_GOVERNANCE_HALT` on drift.
 - [ ] Pilot evidence output includes: SHA-bound findings summary, remediation actions, rerun outcome.
 - [ ] Minimal incident→gap-case tracking flow is available and auditable.
 - [ ] Unknown provider or unknown severity fails closed (no auto-commit) with machine-readable reason.
@@ -554,6 +598,7 @@ Too much scope for v1; conflicts with YAGNI and introduces rollout ambiguity.
 - [ ] Rollback transitions require explicit lock evidence and are blocked without completed rollback completion marker.
 - [ ] Pilot authz preflight is executed before any mutative write and rejects unapproved repo/branch targets.
 - [ ] Artifact write path applies redaction + schemaVersion checks and retention policy before use in promotion.
+- [ ] `policyFingerprint`, `runtimePosture`, and `envelope` risk signals are logged on every mutative decision and evaluator hold.
 
 ### Quality Gates
 - [ ] Unit tests cover policy parsing, SHA filtering, severity gating, dedupe behavior, and rollback trigger logic.
@@ -562,6 +607,10 @@ Too much scope for v1; conflicts with YAGNI and introduces rollout ambiguity.
 - [ ] Decision audit payload includes `headShaStart`, `headShaEnd`, provider, normalized severity, fingerprint, and decision reason.
 - [ ] Schema validation test suite includes required artifacts and fails closed on schema drift or invalid `schemaVersion`.
 - [ ] Evaluator hold case explicitly tests unresolved high-severity incident causality/SLA gate and dual-review downgrade path.
+- [ ] Governance hold contract tests cover:
+  - fail-closed `E_GOVERNANCE_HALT`,
+  - automatic gap-case creation with policy drift cause code,
+  - manual clearance requirement before resume.
 - [ ] `pnpm check` passes before implementation completion.
 
 ## Success Metrics
@@ -593,11 +642,16 @@ Too much scope for v1; conflicts with YAGNI and introduces rollout ambiguity.
 - **Contract drift risk:** scaffold/runtime mismatch can silently disable intended controls.
 - **API rate-limit risk:** high mutative volume can trigger secondary limits.
 - **Classification risk:** incorrect severity mapping could bypass intended human mediation.
+- **Posture drift risk:** environment/posture changes after preflight can bypass invariants.
 
 ### Mitigations
 - Add explicit parity tests from scaffold → validator → loader → consumer.
 - Add mutative request queue/backoff and dedupe logic.
 - Add policy-level invariants and fail-closed behavior tests for severity tiers.
+- Add continuous envelope attestation + holdbook controls:
+  - fail-run checks before each mutative command,
+  - auto-gap-case + lockout on posture violations,
+  - explicit manual release workflow with evidence proof.
 
 ## Validation Plan
 - `pnpm lint`

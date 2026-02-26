@@ -255,6 +255,45 @@ const TEMPLATES: Template[] = [
 						allowedManagers: ["pnpm", "npm", "yarn"],
 						requiredManager: null,
 					},
+					remediationPolicy: {
+						providerDefaults: {
+							greptile: {
+								autoApplyMaxTier: "medium",
+								dryRunOnlyByDefault: false,
+							},
+							codex: {
+								autoApplyMaxTier: "medium",
+								dryRunOnlyByDefault: false,
+							},
+						},
+						marker: "[auto-remediate]",
+						timeoutMinutes: 10,
+						retryLimit: 3,
+						requireEvidence: true,
+					},
+					pilotGapCasePolicy: {
+						enabled: false,
+						defaultSlaHours: 72,
+						requireClosureEvidence: true,
+						storePath: ".harness/gap-cases.v1.json",
+					},
+					pilotRollbackPolicy: {
+						autoTrigger: true,
+						requireManualRelease: true,
+						completionMarkerPath: ".harness/rollback-marker.json",
+						mode: "manual" as const,
+					},
+					pilotAuthzPolicy: {
+						githubScopeAllowlist: [
+							"pull_requests:write",
+							"contents:read",
+							"issues:write",
+						],
+						repoAllowlist: [],
+						branchAllowlist: [],
+						protectedBranchDenylist: ["main", "master", "release/*"],
+						enforceBranchProtection: true,
+					},
 				},
 				null,
 				2,

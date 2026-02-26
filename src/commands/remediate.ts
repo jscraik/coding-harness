@@ -6,9 +6,12 @@
  */
 
 import { spawnSync } from "node:child_process";
-import { readFileSync } from "node:fs";
+import { existsSync, readFileSync } from "node:fs";
 import { loadContract } from "../lib/contract/loader.js";
-import type { RemediationPolicy } from "../lib/contract/types.js";
+import {
+	DEFAULT_PILOT_ROLLBACK_POLICY,
+	DEFAULT_REMEDIATION_POLICY,
+} from "../lib/contract/types.js";
 import {
 	type CodeqlFindingInput,
 	type CodexFindingInput,
@@ -43,26 +46,16 @@ export interface RemediateOptions {
 	contractPath?: string;
 	/** HEAD SHA (defaults to current git HEAD) */
 	headSha?: string;
+	/** Override rollback mode (manual/autonomous) */
+	mode?: "manual" | "autonomous";
+	/** Path to completion marker file */
+	completionMarkerPath?: string;
 }
 
 export interface RemediateResult {
 	outcome: RemediationOutcome;
 	exitCode: number;
 }
-
-/**
- * Default remediation policy when no contract is available.
- */
-const DEFAULT_REMEDIATION_POLICY: RemediationPolicy = {
-	providerDefaults: {
-		codeql: { autoApplyMaxTier: "medium", dryRunOnlyByDefault: false },
-		codex: { autoApplyMaxTier: "low", dryRunOnlyByDefault: true },
-	},
-	marker: "<!-- harness-remediation -->",
-	timeoutMinutes: 5,
-	retryLimit: 3,
-	requireEvidence: false,
-};
 
 /**
  * Get current HEAD SHA from git.
@@ -212,14 +205,42 @@ export async function runRemediate(
 
 	// 2. Load contract for policy (use defaults if not available)
 	let policy = DEFAULT_REMEDIATION_POLICY;
+	let rollbackPolicy = DEFAULT_PILOT_ROLLBACK_POLICY;
 	if (options.contractPath) {
 		try {
-			loadContract(options.contractPath);
-			// If contract has remediation policy, use it
-			// For now, use defaults as RemediationPolicy is not in HarnessContract
-			policy = DEFAULT_REMEDIATION_POLICY;
+			const contract = loadContract(options.contractPath);
+			// Use contract's remediation policy if available
+			if (contract.remediationPolicy) {
+				policy = contract.remediationPolicy;
+			}
+			// Use contract's rollback policy if available
+			if (contract.pilotRollbackPolicy) {
+				rollbackPolicy = contract.pilotRollbackPolicy;
+			}
 		} catch {
 			// Use defaults if contract load fails
+		}
+	}
+
+	// 2b. Check rollback mode - fail closed if autonomous mode not allowed
+	const effectiveMode = options.mode ?? rollbackPolicy.mode;
+	if (effectiveMode === "autonomous" && rollbackPolicy.requireManualRelease) {
+		// Check for completion marker
+		const markerPath =
+			options.completionMarkerPath ?? rollbackPolicy.completionMarkerPath;
+		const markerExists = existsSync(markerPath);
+		if (!markerExists) {
+			return {
+				outcome: {
+					ok: false,
+					error: {
+						code: "E_ROLLBACK_MODE",
+						message: `Autonomous mode requires completion marker at ${markerPath}. Run in manual mode or create marker file.`,
+						context: { mode: effectiveMode, markerPath },
+					},
+				},
+				exitCode: EXIT_CODES.POLICY,
+			};
 		}
 	}
 
