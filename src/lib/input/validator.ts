@@ -1,11 +1,35 @@
 import { realpathSync } from "node:fs";
-import { dirname, normalize, resolve } from "node:path";
+import { dirname, normalize, resolve, sep } from "node:path";
 
 export class PathTraversalError extends Error {
 	constructor() {
 		super("Path traversal detected");
 		this.name = "PathTraversalError";
 	}
+}
+
+function resolveNearestExistingAncestor(path: string): string {
+	let current = path;
+
+	while (true) {
+		try {
+			return realpathSync(current);
+		} catch {
+			const parent = dirname(current);
+			if (parent === current) {
+				throw new PathTraversalError();
+			}
+			current = parent;
+		}
+	}
+}
+
+function isWithinBase(realBase: string, realTarget: string): boolean {
+	if (realTarget === realBase) {
+		return true;
+	}
+	const baseWithSep = realBase.endsWith(sep) ? realBase : `${realBase}${sep}`;
+	return realTarget.startsWith(baseWithSep);
 }
 
 /**
@@ -21,11 +45,10 @@ export function validatePath(baseDir: string, userPath: string): string {
 	try {
 		realResolved = realpathSync(resolved);
 	} catch {
-		// Path doesn't exist - validate parent directory
-		const parentDir = dirname(resolved);
+		// Path doesn't exist - validate nearest existing ancestor directory
 		try {
-			const realParent = realpathSync(parentDir);
-			if (!realParent.startsWith(realBase)) {
+			const realAncestor = resolveNearestExistingAncestor(resolved);
+			if (!isWithinBase(realBase, realAncestor)) {
 				throw new PathTraversalError();
 			}
 		} catch {
@@ -34,7 +57,7 @@ export function validatePath(baseDir: string, userPath: string): string {
 		return resolved;
 	}
 
-	if (!realResolved.startsWith(realBase)) {
+	if (!isWithinBase(realBase, realResolved)) {
 		throw new PathTraversalError();
 	}
 	return realResolved;

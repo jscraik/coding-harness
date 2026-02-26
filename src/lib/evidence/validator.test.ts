@@ -88,6 +88,11 @@ describe("validatePath", () => {
 		const result = validatePath(tempDir, "nonexistent/file.txt");
 		expect(result).toContain(tempDir);
 	});
+
+	it("allows non-existent nested paths under base directory", () => {
+		const result = validatePath(tempDir, "missing/a/b/c/file.txt");
+		expect(result).toContain(tempDir);
+	});
 });
 
 describe("loadEvidenceFile", () => {
@@ -108,6 +113,15 @@ describe("loadEvidenceFile", () => {
 		if (!result.ok) {
 			expect(result.code).toBe("FILE_NOT_FOUND");
 			expect(result.path).toBe("missing.png");
+		}
+	});
+
+	it("returns FILE_NOT_FOUND for missing nested file with absent parent chain", () => {
+		const result = loadEvidenceFile("missing/deep/path/file.png", tempDir);
+		expect(result.ok).toBe(false);
+		if (!result.ok) {
+			expect(result.code).toBe("FILE_NOT_FOUND");
+			expect(result.path).toBe("missing/deep/path/file.png");
 		}
 	});
 
