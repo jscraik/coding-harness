@@ -23,19 +23,31 @@ export class ContractLoadError extends Error {
 }
 
 /**
+ * Calculate the maximum nesting depth of a JSON value.
+ */
+function getDepth(value: unknown): number {
+	if (typeof value !== "object" || value === null) {
+		return 0;
+	}
+
+	const arr = Array.isArray(value) ? value : Object.values(value);
+	if (arr.length === 0) {
+		return 1;
+	}
+
+	return 1 + Math.max(...arr.map(getDepth));
+}
+
+/**
  * Parse JSON with depth limit to prevent stack overflow attacks.
  */
 function safeParseJson(content: string): unknown {
-	let depth = 0;
-	return JSON.parse(content, (_key, value) => {
-		if (typeof value === "object" && value !== null) {
-			depth++;
-			if (depth > MAX_JSON_DEPTH) {
-				throw new Error(`JSON depth exceeds maximum (${MAX_JSON_DEPTH})`);
-			}
-		}
-		return value;
-	});
+	const data = JSON.parse(content);
+	const depth = getDepth(data);
+	if (depth > MAX_JSON_DEPTH) {
+		throw new Error(`JSON depth exceeds maximum (${MAX_JSON_DEPTH})`);
+	}
+	return data;
 }
 
 export function loadContract(path: string): HarnessContract {
@@ -58,9 +70,10 @@ export function loadContract(path: string): HarnessContract {
 		throw e;
 	}
 
-	// Read with size limit
+	// Read with size limit (use byte count, not character count)
 	const content = readFileSync(validatedPath, "utf-8");
-	if (content.length > MAX_CONTRACT_SIZE) {
+	const byteSize = Buffer.byteLength(content, "utf-8");
+	if (byteSize > MAX_CONTRACT_SIZE) {
 		throw new Error(`Contract file exceeds maximum size (1MB): ${path}`);
 	}
 

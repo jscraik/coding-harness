@@ -62,13 +62,16 @@ export function runGardener(options: GardenerOptions): GardenerResult {
 			needsPR,
 		};
 
-		// Update quality score file (always, even in dry-run)
-		const updateResult = updateQualityScoreFile(
-			docsPath,
-			qualityScore,
-			staleDocs,
-			brokenLinks,
-		);
+		// Update quality score file (skip in dry-run mode)
+		let updateResult: { ok: boolean; error?: string } = { ok: true };
+		if (!options.dryRun) {
+			updateResult = updateQualityScoreFile(
+				docsPath,
+				qualityScore,
+				staleDocs,
+				brokenLinks,
+			);
+		}
 
 		return {
 			ok: true,
