@@ -41,7 +41,9 @@ export function validateOllamaUrl(url: string): void {
 	if (!["http:", "https:"].includes(parsed.protocol)) {
 		throw new Error(`Invalid protocol: ${parsed.protocol}`);
 	}
-	if (!ALLOWED_OLLAMA_HOSTS.includes(parsed.hostname)) {
+	// Normalize hostname: strip brackets from IPv6 addresses
+	const hostname = parsed.hostname.replace(/^\[|\]$/g, "");
+	if (!ALLOWED_OLLAMA_HOSTS.includes(hostname)) {
 		throw new Error(`Ollama URL must be localhost, got: ${parsed.hostname}`);
 	}
 }

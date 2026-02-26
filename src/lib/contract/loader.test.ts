@@ -58,17 +58,25 @@ describe("loadContract", () => {
 		const path = join(dir, "contract-loader-wide.json");
 		createdFiles.push(path);
 
+		// Use a valid contract field (riskTierRules) to test wide/shallow JSON
+		// Each key-value pair is at depth 1, so this shouldn't trigger depth limit
+		const wideRiskTierRules: Record<string, string> = {};
+		for (let i = 0; i < 250; i++) {
+			wideRiskTierRules[`src/module${i}/**`] = "low";
+		}
+
 		writeFileSync(
 			path,
 			JSON.stringify({
 				version: "1.0",
-				largeArray: Array.from({ length: 250 }, (_, i) => ({ id: i })),
+				riskTierRules: wideRiskTierRules,
 			}),
 			"utf-8",
 		);
 
 		const contract = loadContract(path);
 		expect(contract.version).toBe("1.0");
+		expect(Object.keys(contract.riskTierRules).length).toBe(250);
 	});
 
 	it("rejects excessively deep JSON payloads", () => {

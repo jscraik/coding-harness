@@ -89,6 +89,25 @@ const PATTERNS: PatternDefinition[] = [
 ];
 
 /**
+ * Check if a file should be ignored based on patterns
+ */
+function shouldIgnore(entry: string, ignore: string[]): boolean {
+	// Skip hidden files/directories
+	if (entry.startsWith(".")) return true;
+
+	for (const pattern of ignore) {
+		// Handle glob patterns like *.test.ts
+		if (pattern.startsWith("*.")) {
+			const suffix = pattern.slice(1); // Get ".test.ts" from "*.test.ts"
+			if (entry.endsWith(suffix)) return true;
+		} else if (entry === pattern || entry.includes(pattern)) {
+			return true;
+		}
+	}
+	return false;
+}
+
+/**
  * Recursively get all files matching extension patterns
  */
 function getFilesRecursive(
@@ -102,16 +121,9 @@ function getFilesRecursive(
 		const entries = readdirSync(dir);
 		for (const entry of entries) {
 			const fullPath = join(dir, entry);
-			const relativePath = fullPath.replace(process.cwd(), "");
 
 			// Check if path should be ignored
-			if (
-				ignore.some(
-					(pattern) =>
-						relativePath.includes(pattern.replace("**", "")) ||
-						entry.startsWith("."),
-				)
-			) {
+			if (shouldIgnore(entry, ignore)) {
 				continue;
 			}
 
@@ -217,6 +229,8 @@ function isErrorVariableUsed(
  */
 function analyzeFile(filePath: string): SilentErrorDetection[] {
 	const detections: SilentErrorDetection[] = [];
+	// Track detections by location to avoid duplicates from multiple regexes
+	const seenLocations = new Set<string>();
 
 	try {
 		const content = readFileSync(filePath, "utf-8");
@@ -229,6 +243,15 @@ function analyzeFile(filePath: string): SilentErrorDetection[] {
 				let match: RegExpExecArray | null = regex.exec(content);
 				while (match !== null) {
 					const { line, column } = findPosition(content, match.index);
+					const locationKey = `${filePath}:${line}:${column}:${pattern.id}`;
+
+					// Skip if we've already detected this pattern at this location
+					if (seenLocations.has(locationKey)) {
+						match = regex.exec(content);
+						continue;
+					}
+					seenLocations.add(locationKey);
+
 					const snippet = extractSnippet(content, match.index, match[0].length);
 
 					// Special handling for unused-error-variable

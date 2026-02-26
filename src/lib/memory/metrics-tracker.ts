@@ -33,11 +33,16 @@ export interface MetricsHistory {
 const DEFAULT_METRICS_PATH = ".memory-metrics.json";
 
 function resolveMetricsPath(metricsPath?: string): string {
-	const candidate = resolve(metricsPath ?? DEFAULT_METRICS_PATH);
+	// If an explicit path is provided, use it directly (caller is responsible for path safety)
+	if (metricsPath) {
+		return resolve(metricsPath);
+	}
+	// For default path, validate it stays within cwd
+	const defaultPath = resolve(DEFAULT_METRICS_PATH);
 	try {
-		return validatePath(process.cwd(), candidate);
+		return validatePath(process.cwd(), defaultPath);
 	} catch {
-		return validatePath(process.cwd(), resolve(DEFAULT_METRICS_PATH));
+		return defaultPath;
 	}
 }
 

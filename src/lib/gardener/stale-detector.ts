@@ -19,14 +19,14 @@ export { DEFAULT_STALE_DAYS };
  * Returns null if no frontmatter found
  */
 function parseFrontmatter(content: string): Record<string, string> | null {
-	// Match frontmatter between --- delimiters
-	const match = content.match(/^---\n([\s\S]*?)\n---/);
+	// Match frontmatter between --- delimiters (handles both LF and CRLF)
+	const match = content.match(/^---\r?\n([\s\S]*?)\r?\n---/);
 	if (!match) {
 		return null;
 	}
 
 	const frontmatter: Record<string, string> = {};
-	const lines = match[1]?.split("\n");
+	const lines = match[1]?.split(/\r?\n/);
 
 	if (!lines) {
 		return frontmatter;
@@ -61,6 +61,9 @@ function daysBetween(date1: Date, date2: Date): number {
 	return Math.max(0, Math.floor(diffTime / msPerDay));
 }
 
+// Generated files to skip during stale detection
+const SKIP_FILES = new Set(["QUALITY_SCORE.md"]);
+
 /**
  * Recursively find all markdown files in a directory
  */
@@ -83,6 +86,10 @@ function findMarkdownFiles(dir: string, baseDir: string): string[] {
 			}
 			files.push(...findMarkdownFiles(fullPath, baseDir));
 		} else if (entry.isFile() && entry.name.endsWith(".md")) {
+			// Skip generated files
+			if (SKIP_FILES.has(entry.name)) {
+				continue;
+			}
 			// Return relative path from base directory
 			const relativePath = fullPath.slice(baseDir.length + 1);
 			files.push(relativePath);

@@ -204,12 +204,12 @@ export function parseCsvList(value: string | undefined): string[] {
 
 /**
  * Safely get a flag value from args, returning undefined if the flag is missing
- * or if the next argument is another flag (starts with --).
+ * or if the next argument is another flag (starts with -- or -).
  */
 function getFlagValue(args: string[], flagIndex: number): string | undefined {
 	if (flagIndex === -1) return undefined;
 	const value = args[flagIndex + 1];
-	if (value === undefined || value.startsWith("--")) return undefined;
+	if (value === undefined || value.startsWith("-")) return undefined;
 	return value;
 }
 
@@ -237,11 +237,10 @@ export function run(args: string[]): void {
 		const contractIndex = args.indexOf("--contract");
 
 		const files: string[] = [];
-		const filesArg = filesIndex !== -1 ? args[filesIndex + 1] : undefined;
+		const filesArg = getFlagValue(args, filesIndex);
 		files.push(...parseCsvList(filesArg));
 
-		const contractArg =
-			contractIndex !== -1 ? args[contractIndex + 1] : undefined;
+		const contractArg = getFlagValue(args, contractIndex);
 		const contractPath = contractArg ?? "harness.contract.json";
 
 		const exitCode = runRiskTierCLI({
@@ -273,18 +272,14 @@ export function run(args: string[]): void {
 			list: listFlag,
 		};
 
-		if (traceIdIndex !== -1 && args[traceIdIndex + 1]) {
-			const traceIdValue = args[traceIdIndex + 1];
-			if (traceIdValue !== undefined) {
-				options.traceId = traceIdValue;
-			}
+		const traceIdValue = getFlagValue(args, traceIdIndex);
+		if (traceIdValue) {
+			options.traceId = traceIdValue;
 		}
 
-		if (traceDirIndex !== -1 && args[traceDirIndex + 1]) {
-			const traceDirValue = args[traceDirIndex + 1];
-			if (traceDirValue !== undefined) {
-				options.traceDir = traceDirValue;
-			}
+		const traceDirValue = getFlagValue(args, traceDirIndex);
+		if (traceDirValue) {
+			options.traceDir = traceDirValue;
 		}
 
 		// Also check for positional trace ID argument
@@ -306,14 +301,13 @@ export function run(args: string[]): void {
 		const changedIndex = args.indexOf("--changed");
 
 		const files: string[] = [];
-		const filesArg = filesIndex !== -1 ? args[filesIndex + 1] : undefined;
+		const filesArg = getFlagValue(args, filesIndex);
 		files.push(...parseCsvList(filesArg));
 
-		const contractArg =
-			contractIndex !== -1 ? args[contractIndex + 1] : undefined;
+		const contractArg = getFlagValue(args, contractIndex);
 
 		const changedFiles: string[] = [];
-		const changedArg = changedIndex !== -1 ? args[changedIndex + 1] : undefined;
+		const changedArg = getFlagValue(args, changedIndex);
 		changedFiles.push(...parseCsvList(changedArg));
 
 		const exitCode = runEvidenceVerifyCLI({
@@ -342,14 +336,13 @@ export function run(args: string[]): void {
 
 		if (dryRunFlag) options.dryRun = true;
 		if (jsonFlag) options.json = true;
-		if (docsIndex !== -1) {
-			const docsArg = args[docsIndex + 1];
-			if (docsArg) {
-				options.docsPath = docsArg;
-			}
+		const docsArg = getFlagValue(args, docsIndex);
+		if (docsArg) {
+			options.docsPath = docsArg;
 		}
-		if (staleDaysIndex !== -1 && args[staleDaysIndex + 1]) {
-			const staleDays = parseIntegerArg(args[staleDaysIndex + 1], 0);
+		const staleDaysArg = getFlagValue(args, staleDaysIndex);
+		if (staleDaysArg) {
+			const staleDays = parseIntegerArg(staleDaysArg, 0);
 			if (staleDays !== undefined) {
 				options.staleDays = staleDays;
 			}
@@ -375,23 +368,17 @@ export function run(args: string[]): void {
 		} = {};
 
 		if (jsonFlag) options.json = true;
-		if (memoryIndex !== -1) {
-			const memoryArg = args[memoryIndex + 1];
-			if (memoryArg) {
-				options.memoryPath = memoryArg;
-			}
+		const memoryArg = getFlagValue(args, memoryIndex);
+		if (memoryArg) {
+			options.memoryPath = memoryArg;
 		}
-		if (forjamieIndex !== -1) {
-			const forjamieArg = args[forjamieIndex + 1];
-			if (forjamieArg) {
-				options.forjamiePath = forjamieArg;
-			}
+		const forjamieArg = getFlagValue(args, forjamieIndex);
+		if (forjamieArg) {
+			options.forjamiePath = forjamieArg;
 		}
-		if (metricsIndex !== -1) {
-			const metricsArg = args[metricsIndex + 1];
-			if (metricsArg) {
-				options.metricsPath = metricsArg;
-			}
+		const metricsArg = getFlagValue(args, metricsIndex);
+		if (metricsArg) {
+			options.metricsPath = metricsArg;
 		}
 
 		const exitCode = runMemoryGateCLI(options);
@@ -419,28 +406,24 @@ export function run(args: string[]): void {
 
 		if (jsonFlag) options.json = true;
 		if (strictFlag) options.strict = true;
-		if (contractIndex !== -1) {
-			const contractArg = args[contractIndex + 1];
-			if (contractArg) {
-				options.contractPath = contractArg;
-			}
+		const contractArg = getFlagValue(args, contractIndex);
+		if (contractArg) {
+			options.contractPath = contractArg;
 		}
-		if (filesIndex !== -1) {
-			const filesArg = args[filesIndex + 1];
+		const filesArg = getFlagValue(args, filesIndex);
+		if (filesArg) {
 			options.files = parseCsvList(filesArg);
 		}
-		if (maxTierIndex !== -1) {
-			const maxTierArg = args[maxTierIndex + 1];
-			if (
-				maxTierArg === "high" ||
-				maxTierArg === "medium" ||
-				maxTierArg === "low"
-			) {
-				options.maxTier = maxTierArg;
-			}
+		const maxTierArg = getFlagValue(args, maxTierIndex);
+		if (
+			maxTierArg === "high" ||
+			maxTierArg === "medium" ||
+			maxTierArg === "low"
+		) {
+			options.maxTier = maxTierArg;
 		}
-		if (skipIndex !== -1) {
-			const skipArg = args[skipIndex + 1];
+		const skipArg = getFlagValue(args, skipIndex);
+		if (skipArg) {
 			options.skip = parseCsvList(skipArg);
 		}
 
@@ -470,12 +453,12 @@ export function run(args: string[]): void {
 		if (jsonFlag) options.json = true;
 		if (strictFlag) options.strict = true;
 		if (suggestionsFlag) options.suggestions = true;
-		if (filesIndex !== -1) {
-			const filesArg = args[filesIndex + 1];
+		const filesArg = getFlagValue(args, filesIndex);
+		if (filesArg) {
 			options.files = parseCsvList(filesArg);
 		}
-		if (dirsIndex !== -1) {
-			const dirsArg = args[dirsIndex + 1];
+		const dirsArg = getFlagValue(args, dirsIndex);
+		if (dirsArg) {
 			options.dirs = parseCsvList(dirsArg);
 		}
 
@@ -496,7 +479,7 @@ export function run(args: string[]): void {
 		const migrateFlag = args.includes("--migrate");
 
 		// Get optional target directory (first non-flag arg after init)
-		const targetDir = args.slice(1).find((arg) => !arg.startsWith("--"));
+		const targetDir = args.slice(1).find((arg) => !arg.startsWith("-"));
 
 		const options = {
 			dryRun: dryRunFlag,
@@ -539,22 +522,14 @@ export function run(args: string[]): void {
 		} = {};
 
 		if (jsonFlag) options.json = true;
-		if (baseIndex !== -1) {
-			const baseArg = args[baseIndex + 1];
-			if (baseArg) options.base = baseArg;
-		}
-		if (headIndex !== -1) {
-			const headArg = args[headIndex + 1];
-			if (headArg) options.head = headArg;
-		}
-		if (contractIndex !== -1) {
-			const contractArg = args[contractIndex + 1];
-			if (contractArg) options.contractPath = contractArg;
-		}
-		if (overrideIndex !== -1) {
-			const overrideArg = args[overrideIndex + 1];
-			if (overrideArg) options.overridePath = overrideArg;
-		}
+		const baseArg = getFlagValue(args, baseIndex);
+		if (baseArg) options.base = baseArg;
+		const headArg = getFlagValue(args, headIndex);
+		if (headArg) options.head = headArg;
+		const contractArg = getFlagValue(args, contractIndex);
+		if (contractArg) options.contractPath = contractArg;
+		const overrideArg = getFlagValue(args, overrideIndex);
+		if (overrideArg) options.overridePath = overrideArg;
 
 		const exitCode = runDiffBudgetCLI(options);
 		process.exit(exitCode);
@@ -592,35 +567,23 @@ export function run(args: string[]): void {
 		};
 
 		if (jsonFlag) options.json = true;
-		if (tokenIndex !== -1) {
-			const tokenArg = args[tokenIndex + 1];
-			if (tokenArg) options.token = tokenArg;
-		}
-		if (ownerIndex !== -1) {
-			const ownerArg = args[ownerIndex + 1];
-			if (ownerArg) options.owner = ownerArg;
-		}
-		if (repoIndex !== -1) {
-			const repoArg = args[repoIndex + 1];
-			if (repoArg) options.repo = repoArg;
-		}
-		if (prIndex !== -1) {
-			const prArg = args[prIndex + 1];
+		const tokenArg = getFlagValue(args, tokenIndex);
+		if (tokenArg) options.token = tokenArg;
+		const ownerArg = getFlagValue(args, ownerIndex);
+		if (ownerArg) options.owner = ownerArg;
+		const repoArg = getFlagValue(args, repoIndex);
+		if (repoArg) options.repo = repoArg;
+		const prArg = getFlagValue(args, prIndex);
+		if (prArg) {
 			const parsedPr = parseIntegerArg(prArg, 1);
 			if (parsedPr !== undefined) options.prNumber = parsedPr;
 		}
-		if (shaIndex !== -1) {
-			const shaArg = args[shaIndex + 1];
-			if (shaArg) options.headSha = shaArg;
-		}
-		if (checkIndex !== -1) {
-			const checkArg = args[checkIndex + 1];
-			if (checkArg) options.checkName = checkArg;
-		}
-		if (contractIndex !== -1) {
-			const contractArg = args[contractIndex + 1];
-			if (contractArg) options.contractPath = contractArg;
-		}
+		const shaArg = getFlagValue(args, shaIndex);
+		if (shaArg) options.headSha = shaArg;
+		const checkArg = getFlagValue(args, checkIndex);
+		if (checkArg) options.checkName = checkArg;
+		const contractArg = getFlagValue(args, contractIndex);
+		if (contractArg) options.contractPath = contractArg;
 
 		runReviewGateCLI(options)
 			.then((exitCode) => process.exit(exitCode))
@@ -646,16 +609,12 @@ export function run(args: string[]): void {
 
 		if (jsonFlag) options.json = true;
 		if (strictFlag) options.strict = true;
-		if (brainstormsIndex !== -1) {
-			const brainstormsArg = args[brainstormsIndex + 1];
-			if (brainstormsArg) options.brainstormsPath = brainstormsArg;
-		}
-		if (topicIndex !== -1) {
-			const topicArg = args[topicIndex + 1];
-			if (topicArg) options.topic = topicArg;
-		}
-		if (maxAgeIndex !== -1) {
-			const maxAgeArg = args[maxAgeIndex + 1];
+		const brainstormsArg = getFlagValue(args, brainstormsIndex);
+		if (brainstormsArg) options.brainstormsPath = brainstormsArg;
+		const topicArg = getFlagValue(args, topicIndex);
+		if (topicArg) options.topic = topicArg;
+		const maxAgeArg = getFlagValue(args, maxAgeIndex);
+		if (maxAgeArg) {
 			const parsedMaxAge = parseIntegerArg(maxAgeArg, 0);
 			if (parsedMaxAge !== undefined) options.maxAgeDays = parsedMaxAge;
 		}
@@ -686,16 +645,12 @@ export function run(args: string[]): void {
 		if (jsonFlag) options.json = true;
 		if (strictFlag) options.strict = true;
 		if (requireOriginFlag) options.requireOrigin = true;
-		if (plansIndex !== -1) {
-			const plansArg = args[plansIndex + 1];
-			if (plansArg) options.plansPath = plansArg;
-		}
-		if (typeIndex !== -1) {
-			const typeArg = args[typeIndex + 1];
-			if (typeArg) options.type = typeArg;
-		}
-		if (maxAgeIndex !== -1) {
-			const maxAgeArg = args[maxAgeIndex + 1];
+		const plansArg = getFlagValue(args, plansIndex);
+		if (plansArg) options.plansPath = plansArg;
+		const typeArg = getFlagValue(args, typeIndex);
+		if (typeArg) options.type = typeArg;
+		const maxAgeArg = getFlagValue(args, maxAgeIndex);
+		if (maxAgeArg) {
 			const parsedMaxAge = parseIntegerArg(maxAgeArg, 0);
 			if (parsedMaxAge !== undefined) options.maxAge = parsedMaxAge;
 		}
@@ -721,15 +676,13 @@ export function run(args: string[]): void {
 
 		if (jsonFlag) options.json = true;
 		if (ciFlag) options.ci = true;
-		if (portIndex !== -1) {
-			const portArg = args[portIndex + 1];
+		const portArg = getFlagValue(args, portIndex);
+		if (portArg) {
 			const parsedPort = parseIntegerArg(portArg, 1);
 			if (parsedPort !== undefined) options.port = parsedPort;
 		}
-		if (contractIndex !== -1) {
-			const contractArg = args[contractIndex + 1];
-			if (contractArg) options.contractPath = contractArg;
-		}
+		const contractArg = getFlagValue(args, contractIndex);
+		if (contractArg) options.contractPath = contractArg;
 
 		const exitCode = runUIFastCLI(options);
 		process.exit(exitCode);
@@ -753,23 +706,17 @@ export function run(args: string[]): void {
 		} = {};
 
 		if (jsonFlag) options.json = true;
-		if (outputIndex !== -1) {
-			const outputArg = args[outputIndex + 1];
-			if (outputArg) options.outputDir = outputArg;
-		}
-		if (timeoutIndex !== -1) {
-			const timeoutArg = args[timeoutIndex + 1];
+		const outputArg = getFlagValue(args, outputIndex);
+		if (outputArg) options.outputDir = outputArg;
+		const timeoutArg = getFlagValue(args, timeoutIndex);
+		if (timeoutArg) {
 			const parsedTimeout = parseIntegerArg(timeoutArg, 1);
 			if (parsedTimeout !== undefined) options.timeout = parsedTimeout;
 		}
-		if (shardIndex !== -1) {
-			const shardArg = args[shardIndex + 1];
-			if (shardArg) options.shard = shardArg;
-		}
-		if (contractIndex !== -1) {
-			const contractArg = args[contractIndex + 1];
-			if (contractArg) options.contractPath = contractArg;
-		}
+		const shardArg = getFlagValue(args, shardIndex);
+		if (shardArg) options.shard = shardArg;
+		const contractArg = getFlagValue(args, contractIndex);
+		if (contractArg) options.contractPath = contractArg;
 
 		const exitCode = runUIVerifyCLI(options);
 		process.exit(exitCode);
@@ -794,18 +741,12 @@ export function run(args: string[]): void {
 
 		if (jsonFlag) options.json = true;
 		if (interactionsFlag) options.interactions = true;
-		if (urlIndex !== -1) {
-			const urlArg = args[urlIndex + 1];
-			if (urlArg) options.url = urlArg;
-		}
-		if (outputIndex !== -1) {
-			const outputArg = args[outputIndex + 1];
-			if (outputArg) options.outputDir = outputArg;
-		}
-		if (contractIndex !== -1) {
-			const contractArg = args[contractIndex + 1];
-			if (contractArg) options.contractPath = contractArg;
-		}
+		const urlArg = getFlagValue(args, urlIndex);
+		if (urlArg) options.url = urlArg;
+		const outputArg = getFlagValue(args, outputIndex);
+		if (outputArg) options.outputDir = outputArg;
+		const contractArg = getFlagValue(args, contractIndex);
+		if (contractArg) options.contractPath = contractArg;
 
 		const exitCode = runUIExploreCLI(options);
 		process.exit(exitCode);
@@ -818,7 +759,8 @@ export function run(args: string[]): void {
 		const typeIndex = args.indexOf("--type");
 		const fileIndex = args.indexOf("--file");
 
-		if (typeIndex === -1 || !args[typeIndex + 1]) {
+		const typeArg = getFlagValue(args, typeIndex);
+		if (!typeArg) {
 			console.error(
 				"Error: --type is required (feature|bugfix|refactor|release)",
 			);
@@ -826,25 +768,18 @@ export function run(args: string[]): void {
 			return;
 		}
 
-		if (fileIndex === -1 || !args[fileIndex + 1]) {
+		const fileArg = getFlagValue(args, fileIndex);
+		if (!fileArg) {
 			console.error("Error: --file is required");
 			process.exit(1);
 			return;
 		}
 
-		const typeArg = args[typeIndex + 1];
 		const validTypes = ["feature", "bugfix", "refactor", "release"] as const;
 		if (!validTypes.includes(typeArg as (typeof validTypes)[number])) {
 			console.error(
 				`Error: Invalid type "${typeArg}". Must be one of: ${validTypes.join(", ")}`,
 			);
-			process.exit(1);
-			return;
-		}
-
-		const fileArg = args[fileIndex + 1];
-		if (!fileArg) {
-			console.error("Error: --file requires a value");
 			process.exit(1);
 			return;
 		}
@@ -864,15 +799,9 @@ export function run(args: string[]): void {
 		const verboseFlag = args.includes("--verbose");
 		const filesIndex = args.indexOf("--files");
 
-		if (filesIndex === -1 || !args[filesIndex + 1]) {
-			console.error("Error: --files is required (comma-separated paths)");
-			process.exit(1);
-			return;
-		}
-
-		const filesArg = args[filesIndex + 1];
+		const filesArg = getFlagValue(args, filesIndex);
 		if (!filesArg) {
-			console.error("Error: --files requires a value");
+			console.error("Error: --files is required (comma-separated paths)");
 			process.exit(1);
 			return;
 		}
@@ -910,20 +839,16 @@ export function run(args: string[]): void {
 		const jsonFlag = args.includes("--json");
 		const maxAutoTierIndex = args.indexOf("--max-auto-tier");
 
-		const prValue = prIndex !== -1 ? args[prIndex + 1] : undefined;
-		const maxAutoTierValue =
-			maxAutoTierIndex !== -1 ? args[maxAutoTierIndex + 1] : undefined;
+		const prValue = getFlagValue(args, prIndex);
+		const maxAutoTierValue = getFlagValue(args, maxAutoTierIndex);
 
 		const remediateOptions: RemediateOptions = {
 			mode,
-			owner: ownerIndex !== -1 ? (args[ownerIndex + 1] ?? "") : "",
-			repo: repoIndex !== -1 ? (args[repoIndex + 1] ?? "") : "",
+			owner: getFlagValue(args, ownerIndex) ?? "",
+			repo: getFlagValue(args, repoIndex) ?? "",
 			prNumber: parseIntegerArg(prValue, 1) ?? 0,
-			headSha: shaIndex !== -1 ? (args[shaIndex + 1] ?? "") : "",
-			provider:
-				(providerIndex !== -1
-					? (args[providerIndex + 1] as "codeql" | "codex" | undefined)
-					: undefined) ?? "codeql",
+			headSha: getFlagValue(args, shaIndex) ?? "",
+			provider: (getFlagValue(args, providerIndex) as "codeql" | "codex" | undefined) ?? "codeql",
 			dryRun: dryRunFlag,
 			noInput: noInputFlag,
 			force: forceFlag,
@@ -946,8 +871,7 @@ export function run(args: string[]): void {
 		const action = args[1];
 		const jsonFlag = args.includes("--json");
 		const caseStoreIndex = args.indexOf("--case-store");
-		const caseStore =
-			caseStoreIndex !== -1 ? args[caseStoreIndex + 1] : undefined;
+		const caseStore = getFlagValue(args, caseStoreIndex);
 
 		if (action !== "create" && action !== "list" && action !== "resolve") {
 			console.error(
@@ -968,40 +892,33 @@ export function run(args: string[]): void {
 			const caseIdPrefixIndex = args.indexOf("--case-id-prefix");
 			const evidenceIndex = args.indexOf("--evidence");
 
-			const dueDaysValue =
-				dueDaysIndex !== -1 ? args[dueDaysIndex + 1] : undefined;
+			const dueDaysValue = getFlagValue(args, dueDaysIndex);
 			const parsedDueDays = dueDaysValue
 				? parseIntegerArg(dueDaysValue, 1)
 				: undefined;
 
+			const severityArg = getFlagValue(args, severityIndex);
 			const createOptions: CreateGapCaseOptions = {
 				action: "create",
-				incidentId: incidentIndex !== -1 ? (args[incidentIndex + 1] ?? "") : "",
-				owner: ownerIndex !== -1 ? (args[ownerIndex + 1] ?? "") : "",
-				severity:
-					severityIndex !== -1
-						? ((args[severityIndex + 1] as GapSeverity | undefined) ?? "low")
-						: "low",
-				linkedPr: linkedPrIndex !== -1 ? (args[linkedPrIndex + 1] ?? "") : "",
-				evidence:
-					evidenceIndex !== -1 ? parseCsvList(args[evidenceIndex + 1]) : [],
+				incidentId: getFlagValue(args, incidentIndex) ?? "",
+				owner: getFlagValue(args, ownerIndex) ?? "",
+				severity: (severityArg as GapSeverity | undefined) ?? "low",
+				linkedPr: getFlagValue(args, linkedPrIndex) ?? "",
+				evidence: parseCsvList(getFlagValue(args, evidenceIndex)),
 				json: jsonFlag,
 			};
-			const findingSummaryValue =
-				findingSummaryIndex !== -1 ? args[findingSummaryIndex + 1] : undefined;
+			const findingSummaryValue = getFlagValue(args, findingSummaryIndex);
 			if (findingSummaryValue) {
 				createOptions.findingSummary = findingSummaryValue;
 			}
 			if (parsedDueDays !== undefined) {
 				createOptions.dueDays = parsedDueDays;
 			}
-			const caseIdValue =
-				caseIdIndex !== -1 ? args[caseIdIndex + 1] : undefined;
+			const caseIdValue = getFlagValue(args, caseIdIndex);
 			if (caseIdValue) {
 				createOptions.caseId = caseIdValue;
 			}
-			const caseIdPrefixValue =
-				caseIdPrefixIndex !== -1 ? args[caseIdPrefixIndex + 1] : undefined;
+			const caseIdPrefixValue = getFlagValue(args, caseIdPrefixIndex);
 			if (caseIdPrefixValue) {
 				createOptions.caseIdPrefix = caseIdPrefixValue;
 			}
@@ -1033,8 +950,7 @@ export function run(args: string[]): void {
 		const positionalCaseId =
 			args[2] && !args[2].startsWith("--") ? args[2] : "";
 		const caseIdArgIndex = args.indexOf("--case-id");
-		const caseIdArg =
-			caseIdArgIndex !== -1 ? (args[caseIdArgIndex + 1] ?? "") : "";
+		const caseIdArg = getFlagValue(args, caseIdArgIndex) ?? "";
 		if (positionalCaseId && caseIdArg && positionalCaseId !== caseIdArg) {
 			console.error("Error: positional case id and --case-id must match");
 			process.exit(2);
@@ -1057,17 +973,14 @@ export function run(args: string[]): void {
 		const resolveOptions: ResolveGapCaseOptions = {
 			action: "resolve",
 			caseId,
-			incidentId: incidentIndex !== -1 ? (args[incidentIndex + 1] ?? "") : "",
-			resolvedBy:
-				resolvedByIndex !== -1 ? (args[resolvedByIndex + 1] ?? "") : "",
-			linkedPr: linkedPrIndex !== -1 ? (args[linkedPrIndex + 1] ?? "") : "",
-			evidence:
-				evidenceIndex !== -1 ? parseCsvList(args[evidenceIndex + 1]) : [],
+			incidentId: getFlagValue(args, incidentIndex) ?? "",
+			resolvedBy: getFlagValue(args, resolvedByIndex) ?? "",
+			linkedPr: getFlagValue(args, linkedPrIndex) ?? "",
+			evidence: parseCsvList(getFlagValue(args, evidenceIndex)),
 			force: forceFlag,
 			json: jsonFlag,
 		};
-		const closeReasonValue =
-			closeReasonIndex !== -1 ? args[closeReasonIndex + 1] : undefined;
+		const closeReasonValue = getFlagValue(args, closeReasonIndex);
 		if (closeReasonValue) {
 			resolveOptions.closeReason = closeReasonValue;
 		}
@@ -1094,25 +1007,19 @@ export function run(args: string[]): void {
 		} = {};
 
 		if (jsonFlag) options.json = true;
-		if (labelsIndex !== -1 && args[labelsIndex + 1]) {
-			const labelsValue = args[labelsIndex + 1];
-			if (labelsValue !== undefined) {
-				options.labels = labelsValue;
-			}
+		const labelsValue = getFlagValue(args, labelsIndex);
+		if (labelsValue) {
+			options.labels = labelsValue;
 		}
-		if (maxCardIndex !== -1 && args[maxCardIndex + 1]) {
-			const cardValue = args[maxCardIndex + 1];
-			if (cardValue !== undefined) {
-				const val = Number.parseInt(cardValue, 10);
-				if (!Number.isNaN(val)) options.maxCardinality = val;
-			}
+		const cardValue = getFlagValue(args, maxCardIndex);
+		if (cardValue && /^\d+$/.test(cardValue)) {
+			const val = Number.parseInt(cardValue, 10);
+			if (!Number.isNaN(val)) options.maxCardinality = val;
 		}
-		if (maxLenIndex !== -1 && args[maxLenIndex + 1]) {
-			const lenValue = args[maxLenIndex + 1];
-			if (lenValue !== undefined) {
-				const val = Number.parseInt(lenValue, 10);
-				if (!Number.isNaN(val)) options.maxLength = val;
-			}
+		const lenValue = getFlagValue(args, maxLenIndex);
+		if (lenValue && /^\d+$/.test(lenValue)) {
+			const val = Number.parseInt(lenValue, 10);
+			if (!Number.isNaN(val)) options.maxLength = val;
 		}
 
 		const exitCode = runObservabilityGateCLI(options);

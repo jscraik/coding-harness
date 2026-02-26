@@ -23,17 +23,31 @@ export function validatePath(baseDir: string, userPath: string): string {
 	try {
 		realResolved = realpathSync(resolved);
 	} catch {
-		// Path doesn't exist - validate parent directory
-			const parentDir = dirname(resolved);
+		// Path doesn't exist - validate by walking up to find existing ancestor
+		let currentDir = dirname(resolved);
+		while (currentDir !== baseDir && currentDir !== dirname(currentDir)) {
 			try {
-				const realParent = realpathSync(parentDir);
-				if (!isWithinBase(realParent)) {
-					throw new PathTraversalError();
+				const realCurrent = realpathSync(currentDir);
+				if (isWithinBase(realCurrent)) {
+					// Found an existing ancestor within base, path is safe
+					return resolved;
 				}
+				break;
 			} catch {
-				throw new PathTraversalError();
+				// Parent doesn't exist either, keep walking up
+				currentDir = dirname(currentDir);
 			}
-		return resolved;
+		}
+		// If we reached baseDir or root without finding an existing dir,
+		// check if baseDir itself exists and validates
+		try {
+			if (isWithinBase(realpathSync(baseDir))) {
+				return resolved;
+			}
+		} catch {
+			// Base dir doesn't exist - cannot validate
+		}
+		throw new PathTraversalError();
 	}
 
 	if (!isWithinBase(realResolved)) {
