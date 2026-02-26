@@ -304,12 +304,9 @@ export function runGapCase(
 			target.closeReason = options.closeReason ?? "fix";
 			// Apply evidence and linkedPr from resolve options
 			if (options.evidence && options.evidence.length > 0) {
-				target.evidence = [
-					...(target.evidence ?? []),
-					...options.evidence,
-					];
+				target.evidence = [...(target.evidence ?? []), ...options.evidence];
 			}
-			if (options.linkedPr && options.linkedPr.trim()) {
+			if (options.linkedPr?.trim()) {
 				target.linkedPr = options.linkedPr;
 			}
 

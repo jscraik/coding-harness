@@ -1,10 +1,10 @@
+import { validatePath } from "../lib/input/validator.js";
 import {
 	isValidTraceId,
 	listTraces,
 	loadTrace,
 	replayTrace,
 } from "../lib/replay/tracer.js";
-import { validatePath } from "../lib/input/validator.js";
 
 // Exit codes for programmatic consumption
 export const EXIT_CODES = {
@@ -128,13 +128,13 @@ export async function runReplayCLI(options: ReplayOptions): Promise<number> {
 						2,
 					),
 				);
-				} else {
-					console.error(
-						`Error: Invalid trace ID format. Expected trace-<16 hex chars>, got: ${options.traceId}`,
-					);
-				}
-				return EXIT_CODES.VALIDATION_ERROR;
+			} else {
+				console.error(
+					`Error: Invalid trace ID format. Expected trace-<16 hex chars>, got: ${options.traceId}`,
+				);
 			}
+			return EXIT_CODES.VALIDATION_ERROR;
+		}
 
 		// Check if trace exists
 		const trace = await loadTrace(options.traceId, config);

@@ -33,6 +33,18 @@ export const EXIT_CODES = {
 } as const;
 
 export interface RemediateOptions {
+	/** Remediation mode: "run" (plan only) or "apply" (execute) */
+	mode?: "run" | "apply";
+	/** Repository owner */
+	owner?: string;
+	/** Repository name */
+	repo?: string;
+	/** PR number */
+	prNumber?: number;
+	/** Provider: "codeql" or "codex" */
+	provider?: "codeql" | "codex";
+	/** Maximum severity tier for auto-apply */
+	maxAutoTier?: "high" | "medium" | "low";
 	/** JSON file path for findings, or "-" for stdin */
 	findings?: string;
 	/** Run in dry-run mode (no actual changes) */
@@ -43,8 +55,11 @@ export interface RemediateOptions {
 	contractPath?: string;
 	/** HEAD SHA (defaults to current git HEAD) */
 	headSha?: string;
+	/** Disable interactive prompts */
+	noInput?: boolean;
+	/** Force execution even with warnings */
+	force?: boolean;
 }
-
 export interface RemediateResult {
 	outcome: RemediationOutcome;
 	exitCode: number;

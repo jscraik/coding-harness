@@ -925,8 +925,9 @@ export function run(args: string[]): void {
 		) {
 			remediateOptions.maxAutoTier = maxAutoTierValue;
 		}
-		const exitCode = runRemediateCLI(remediateOptions);
-		process.exit(exitCode);
+		runRemediateCLI(remediateOptions)
+			.then((exitCode) => process.exit(exitCode))
+			.catch((error) => handleFatalError("Remediate Error", error));
 		return;
 	}
 

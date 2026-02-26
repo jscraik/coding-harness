@@ -285,19 +285,3 @@ export interface RemediationProviderPolicy {
 	/** Whether to default to dry-run mode for this provider */
 	dryRunOnlyByDefault: boolean;
 }
-
-/**
- * Remediation policy configuration for automatic fix application.
- */
-export interface RemediationPolicy {
-	/** Provider-specific defaults keyed by provider name */
-	providerDefaults: Record<string, RemediationProviderPolicy>;
-	/** Comment marker for remediation commits/comments */
-	marker: string;
-	/** Timeout for remediation operations in minutes */
-	timeoutMinutes: number;
-	/** Maximum retry attempts for failed remediations */
-	retryLimit: number;
-	/** Whether evidence is required for remediation */
-	requireEvidence: boolean;
-}

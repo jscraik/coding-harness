@@ -203,18 +203,14 @@ function addSchemaDefaults(contract: ContractSchema): ContractSchema {
  * Each migration transforms a contract from fromVersion to toVersion.
  * Migrations are applied sequentially to bring a contract up to date.
  */
+/**
+ * Migration registry - ordered list of schema migrations.
+ * Each migration transforms a contract from fromVersion to toVersion.
+ * Migrations are applied sequentially to bring a contract up to date.
+ * Note: Version normalization via semver.coerce() converts "1.0" → "1.0.0"
+ * before migration, so migrations should use semver-normalized versions.
+ */
 const MIGRATIONS: Migration[] = [
-	{
-		fromVersion: "1.0",
-		toVersion: "1.1.0",
-		description:
-			"Normalize v1.0 schema to v1.1.0 and inject default policy surfaces",
-		migrate: (contract) =>
-			({
-				...addSchemaDefaults(contract),
-				version: "1.1.0",
-			}) as ContractSchema,
-	},
 	{
 		fromVersion: "1.0.0",
 		toVersion: "1.1.0",
@@ -1042,9 +1038,19 @@ function executeMigration(targetDir: string): MigrationResultType {
 
 	const contract = loadResult.value;
 	const normalizedVersion = semver.coerce(contract.version)?.version;
-	const normalizedContract = normalizedVersion
-		? { ...contract, version: normalizedVersion }
-		: contract;
+
+	// Surface error for unparseable versions instead of silently skipping
+	if (!normalizedVersion) {
+		return {
+			ok: false,
+			error: {
+				code: "E_INVALID_VERSION",
+				message: `Cannot parse contract version: "${contract.version}". Version must be semver-compatible (e.g., "1.0.0").`,
+			},
+		};
+	}
+
+	const normalizedContract = { ...contract, version: normalizedVersion };
 
 	// Check if migration is needed
 	if (!needsMigration(normalizedContract.version)) {
@@ -1075,11 +1081,6 @@ function executeMigration(targetDir: string): MigrationResultType {
 
 	return { ok: true, value: result };
 }
-
-/**
- * Collect proposed changes for interactive mode.
- * Returns a list of changes that would be made without actually writing files.
- */
 function collectProposedChanges(
 	targetDir: string,
 	options: InitOptions,
