@@ -1,5 +1,7 @@
 ---
-status: deferred
+status: complete
+resolved_date: 2026-02-26
+incorporated_in_plan: docs/plans/2026-02-25-feat-remediation-loop-implementation-plan.md
 priority: p2
 issue_id: 008
 tags: [correctness, glob-matching, code-review]
@@ -97,9 +99,9 @@ interface RiskTierRule {
 
 ## Acceptance Criteria
 
-- [ ] `patternSpecificity()` function implemented
-- [ ] Rules sorted by specificity score
-- [ ] Test cases verify correct ordering:
+- [x] `patternSpecificity()` function implemented
+- [x] Rules sorted by specificity score
+- [x] Test cases verify correct ordering:
   - `src/auth/**` > `src/**`
   - `src/auth/login.ts` > `src/auth/**`
   - `**/*.test.ts` does not override specific patterns
@@ -107,3 +109,7 @@ interface RiskTierRule {
 ## Work Log
 
 - 2026-02-23: Issue identified during technical review by Architecture Strategist
+
+### 2026-02-26 - Completed
+**By:** Codex
+**Actions:** Verified implementation already in place in `src/lib/policy/risk-tier.ts` and tests in `src/lib/policy/risk-tier.test.ts`; confirmed ordering behavior for `src/auth/**`, `src/auth/login.ts`, and `**/*.test.ts` cases; marked TODO complete.
