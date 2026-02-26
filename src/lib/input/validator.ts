@@ -18,35 +18,37 @@ export function validatePath(baseDir: string, userPath: string): string {
 	const isWithinBase = (candidate: string): boolean =>
 		candidate === realBase || candidate.startsWith(`${realBase}${sep}`);
 
-	// CRITICAL: Canonicalize resolved path BEFORE comparison
+	// First check: does the resolved path even potentially start with base (non-canonical)?
+	// This catches obvious traversal attempts early (e.g., "../../../etc/passwd")
+	// Use baseDir here, not realBase, since resolved is relative to baseDir
+	if (!resolved.startsWith(`${baseDir}${sep}`) && resolved !== baseDir) {
+		throw new PathTraversalError();
+	}
+
+	// CRITICAL: Canonicalize resolved path BEFORE final comparison
 	let realResolved: string;
 	try {
 		realResolved = realpathSync(resolved);
 	} catch {
 		// Path doesn't exist - validate by walking up to find existing ancestor
 		let currentDir = dirname(resolved);
-		while (currentDir !== baseDir && currentDir !== dirname(currentDir)) {
+		// Keep walking up until we go past the base or hit the filesystem root
+		while (currentDir !== dirname(currentDir)) {
 			try {
 				const realCurrent = realpathSync(currentDir);
 				if (isWithinBase(realCurrent)) {
 					// Found an existing ancestor within base, path is safe
 					return resolved;
 				}
-				break;
-			} catch {
+				// Ancestor exists but is outside base - traversal detected
+				throw new PathTraversalError();
+			} catch (e) {
+				if (e instanceof PathTraversalError) throw e;
 				// Parent doesn't exist either, keep walking up
 				currentDir = dirname(currentDir);
 			}
 		}
-		// If we reached baseDir or root without finding an existing dir,
-		// check if baseDir itself exists and validates
-		try {
-			if (isWithinBase(realpathSync(baseDir))) {
-				return resolved;
-			}
-		} catch {
-			// Base dir doesn't exist - cannot validate
-		}
+		// Reached filesystem root without finding an existing directory
 		throw new PathTraversalError();
 	}
 
