@@ -72,4 +72,262 @@ describe("validateContract", () => {
 		});
 		expect(result.success).toBe(false);
 	});
+
+	// Pilot Gap-Case Policy Tests
+	describe("pilotGapCasePolicy", () => {
+		it("accepts valid pilot gap-case policy", () => {
+			const result = validateContract({
+				version: "1.0",
+				pilotGapCasePolicy: {
+					enabled: true,
+					defaultSlaHours: 72,
+					requireClosureEvidence: true,
+				},
+			});
+			expect(result.success).toBe(true);
+			expect(result.data?.pilotGapCasePolicy?.enabled).toBe(true);
+			expect(result.data?.pilotGapCasePolicy?.defaultSlaHours).toBe(72);
+		});
+
+		it("accepts pilot gap-case policy with optional storePath", () => {
+			const result = validateContract({
+				version: "1.0",
+				pilotGapCasePolicy: {
+					enabled: true,
+					defaultSlaHours: 48,
+					requireClosureEvidence: false,
+					storePath: ".harness/custom-gap-cases.json",
+				},
+			});
+			expect(result.success).toBe(true);
+			expect(result.data?.pilotGapCasePolicy?.storePath).toBe(
+				".harness/custom-gap-cases.json",
+			);
+		});
+
+		it("rejects invalid defaultSlaHours (non-positive)", () => {
+			const result = validateContract({
+				version: "1.0",
+				pilotGapCasePolicy: {
+					enabled: true,
+					defaultSlaHours: 0,
+					requireClosureEvidence: true,
+				},
+			});
+			expect(result.success).toBe(false);
+			expect(result.errors[0]?.path).toBe("pilotGapCasePolicy");
+		});
+
+		it("rejects invalid enabled (non-boolean)", () => {
+			const result = validateContract({
+				version: "1.0",
+				pilotGapCasePolicy: {
+					enabled: "yes",
+					defaultSlaHours: 72,
+					requireClosureEvidence: true,
+				},
+			});
+			expect(result.success).toBe(false);
+		});
+	});
+
+	// Pilot Rollback Policy Tests
+	describe("pilotRollbackPolicy", () => {
+		it("accepts valid pilot rollback policy in manual mode", () => {
+			const result = validateContract({
+				version: "1.0",
+				pilotRollbackPolicy: {
+					autoTrigger: true,
+					requireManualRelease: true,
+					completionMarkerPath: ".harness/rollback-marker.json",
+					mode: "manual",
+				},
+			});
+			expect(result.success).toBe(true);
+			expect(result.data?.pilotRollbackPolicy?.mode).toBe("manual");
+		});
+
+		it("accepts valid pilot rollback policy in autonomous mode", () => {
+			const result = validateContract({
+				version: "1.0",
+				pilotRollbackPolicy: {
+					autoTrigger: false,
+					requireManualRelease: false,
+					completionMarkerPath: ".harness/rollback-marker.json",
+					mode: "autonomous",
+				},
+			});
+			expect(result.success).toBe(true);
+			expect(result.data?.pilotRollbackPolicy?.mode).toBe("autonomous");
+		});
+
+		it("rejects invalid mode", () => {
+			const result = validateContract({
+				version: "1.0",
+				pilotRollbackPolicy: {
+					autoTrigger: true,
+					requireManualRelease: true,
+					completionMarkerPath: ".harness/rollback-marker.json",
+					mode: "invalid",
+				},
+			});
+			expect(result.success).toBe(false);
+			expect(result.errors[0]?.path).toBe("pilotRollbackPolicy");
+		});
+
+		it("rejects missing completionMarkerPath", () => {
+			const result = validateContract({
+				version: "1.0",
+				pilotRollbackPolicy: {
+					autoTrigger: true,
+					requireManualRelease: true,
+					mode: "manual",
+				},
+			});
+			expect(result.success).toBe(false);
+		});
+	});
+
+	// Pilot Authz Policy Tests
+	describe("pilotAuthzPolicy", () => {
+		it("accepts valid pilot authz policy", () => {
+			const result = validateContract({
+				version: "1.0",
+				pilotAuthzPolicy: {
+					githubScopeAllowlist: ["pull_requests:write", "contents:read"],
+					repoAllowlist: ["owner/*"],
+					branchAllowlist: ["feature/*"],
+					protectedBranchDenylist: ["main", "master"],
+					enforceBranchProtection: true,
+				},
+			});
+			expect(result.success).toBe(true);
+			expect(result.data?.pilotAuthzPolicy?.githubScopeAllowlist).toContain(
+				"pull_requests:write",
+			);
+		});
+
+		it("accepts empty allowlists (deny-all default)", () => {
+			const result = validateContract({
+				version: "1.0",
+				pilotAuthzPolicy: {
+					githubScopeAllowlist: [],
+					repoAllowlist: [],
+					branchAllowlist: [],
+					protectedBranchDenylist: ["main"],
+					enforceBranchProtection: true,
+				},
+			});
+			expect(result.success).toBe(true);
+		});
+
+		it("rejects non-array githubScopeAllowlist", () => {
+			const result = validateContract({
+				version: "1.0",
+				pilotAuthzPolicy: {
+					githubScopeAllowlist: "pull_requests:write",
+					repoAllowlist: [],
+					branchAllowlist: [],
+					protectedBranchDenylist: [],
+					enforceBranchProtection: true,
+				},
+			});
+			expect(result.success).toBe(false);
+		});
+
+		it("rejects non-boolean enforceBranchProtection", () => {
+			const result = validateContract({
+				version: "1.0",
+				pilotAuthzPolicy: {
+					githubScopeAllowlist: [],
+					repoAllowlist: [],
+					branchAllowlist: [],
+					protectedBranchDenylist: [],
+					enforceBranchProtection: "yes",
+				},
+			});
+			expect(result.success).toBe(false);
+		});
+
+		it("rejects __proto__ in repoAllowlist (prototype pollution)", () => {
+			const result = validateContract({
+				version: "1.0",
+				pilotAuthzPolicy: {
+					githubScopeAllowlist: [],
+					repoAllowlist: ["__proto__"],
+					branchAllowlist: [],
+					protectedBranchDenylist: [],
+					enforceBranchProtection: true,
+				},
+			});
+			expect(result.success).toBe(false);
+		});
+	});
+
+	// Remediation Policy Tests
+	describe("remediationPolicy", () => {
+		it("accepts valid remediation policy", () => {
+			const result = validateContract({
+				version: "1.0",
+				remediationPolicy: {
+					providerDefaults: {
+						greptile: {
+							autoApplyMaxTier: "medium",
+							dryRunOnlyByDefault: false,
+						},
+					},
+					marker: "[auto-remediate]",
+					timeoutMinutes: 10,
+					retryLimit: 3,
+					requireEvidence: true,
+				},
+			});
+			expect(result.success).toBe(true);
+			expect(result.data?.remediationPolicy?.marker).toBe("[auto-remediate]");
+		});
+
+		it("rejects invalid autoApplyMaxTier", () => {
+			const result = validateContract({
+				version: "1.0",
+				remediationPolicy: {
+					providerDefaults: {
+						greptile: {
+							autoApplyMaxTier: "critical",
+							dryRunOnlyByDefault: false,
+						},
+					},
+					marker: "[auto-remediate]",
+					timeoutMinutes: 10,
+					retryLimit: 3,
+					requireEvidence: true,
+				},
+			});
+			expect(result.success).toBe(false);
+		});
+
+		it("rejects negative retryLimit", () => {
+			const result = validateContract({
+				version: "1.0",
+				remediationPolicy: {
+					providerDefaults: {},
+					marker: "[auto-remediate]",
+					timeoutMinutes: 10,
+					retryLimit: -1,
+					requireEvidence: true,
+				},
+			});
+			expect(result.success).toBe(false);
+		});
+
+		it("rejects missing required fields", () => {
+			const result = validateContract({
+				version: "1.0",
+				remediationPolicy: {
+					providerDefaults: {},
+					marker: "[auto-remediate]",
+				},
+			});
+			expect(result.success).toBe(false);
+		});
+	});
 });

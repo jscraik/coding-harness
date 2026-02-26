@@ -2,6 +2,8 @@
 import { pathToFileURL } from "node:url";
 import { runBlastRadiusCLI } from "./commands/blast-radius.js";
 import { runBrainstormGateCLI } from "./commands/brainstorm-gate.js";
+import { runCheckAuthzCLI } from "./commands/check-authz.js";
+import { runCheckEnvironmentCLI } from "./commands/check-environment.js";
 import { runContextCLI } from "./commands/context.js";
 import { runDiffBudgetCLI } from "./commands/diff-budget.js";
 import { runEvidenceVerifyCLI } from "./commands/evidence-verify.js";
@@ -70,6 +72,21 @@ function printUsage(): void {
 	console.info("  context          Semantic search for relevant prior work");
 	console.info("  index-context    Bulk index brainstorms/plans for search");
 	console.info("");
+	console.info("Check Authz Options:");
+	console.info("  --contract       Path to harness.contract.json");
+	console.info("  --repo           Repository to check (owner/repo format)");
+	console.info("  --branch         Branch to check");
+	console.info("  --check-scopes   Check GITHUB_TOKEN scopes against policy");
+	console.info("  --json           Output as JSON");
+	console.info("");
+	console.info("Check Environment Options:");
+	console.info("  --contract       Path to harness.contract.json");
+	console.info("  --check-secrets  Check for secrets in environment variables");
+	console.info("  --attestation    Path to write attestation artifact");
+	console.info("  --json           Output as JSON");
+	console.info("  check-authz      Validate authorization policy before mutative operations");
+	console.info("  check-environment  Validate governance envelope before pilot operations");
+	console.info("");
 	console.info("Init Options:");
 	console.info("  --dry-run        Preview changes without writing");
 	console.info("  --force          Overwrite existing files");
@@ -86,6 +103,7 @@ function printUsage(): void {
 	);
 	console.info("  --contract       Path to contract file (optional)");
 	console.info("  --json           Output as JSON");
+	console.info("");
 	console.info("");
 	console.info("Gardener Options:");
 	console.info("  --docs           Path to docs directory (default: docs)");
@@ -128,6 +146,7 @@ function printUsage(): void {
 	console.info("  --contract       Path to harness.contract.json");
 	console.info("  --json           Output as JSON");
 	console.info("");
+	console.info("");
 	console.info("Brainstorm Gate Options:");
 	console.info(
 		"  --brainstorms    Path to brainstorms directory (default: docs/brainstorms)",
@@ -136,6 +155,7 @@ function printUsage(): void {
 	console.info("  --max-age        Max days old (default: 14)");
 	console.info("  --strict         Require all sections");
 	console.info("  --json           Output as JSON");
+	console.info("");
 	console.info("");
 	console.info("Plan Gate Options:");
 	console.info(
@@ -148,6 +168,7 @@ function printUsage(): void {
 	console.info("  --require-origin Require origin reference to brainstorm");
 	console.info("  --strict         Require all sections");
 	console.info("  --json           Output as JSON");
+	console.info("");
 	console.info("");
 	console.info("Options:");
 	console.info("  --version, -v  Print version");
@@ -896,6 +917,104 @@ export function run(args: string[]): void {
 		runIndexContextCLI(argsAfterCommand)
 			.then((exitCode) => process.exit(exitCode))
 			.catch((error) => handleFatalError("Index Context Error", error));
+		return;
+	}
+
+	// No command recognized
+
+	if (command === "check-environment") {
+		// Parse check-environment options
+		const jsonFlag = args.includes("--json");
+		const checkSecretsFlag = args.includes("--check-secrets");
+		const contractIndex = args.indexOf("--contract");
+		const attestationIndex = args.indexOf("--attestation");
+
+		const options: {
+			contractPath?: string;
+			checkSecrets?: boolean;
+			json?: boolean;
+			attestationPath?: string;
+		} = {};
+
+		if (jsonFlag) options.json = true;
+		if (checkSecretsFlag) options.checkSecrets = true;
+		if (contractIndex !== -1 && args[contractIndex + 1]) {
+			options.contractPath = args[contractIndex + 1] as string;
+		}
+		if (attestationIndex !== -1 && args[attestationIndex + 1]) {
+			options.attestationPath = args[attestationIndex + 1] as string;
+		}
+
+		runCheckEnvironmentCLI(options)
+			.then((exitCode) => process.exit(exitCode))
+			.catch((error) => handleFatalError("Check Environment Error", error));
+		return;
+	}
+
+	// No command recognized
+
+	if (command === "check-authz") {
+		// Parse check-authz options
+		const jsonFlag = args.includes("--json");
+		const checkScopesFlag = args.includes("--check-scopes");
+		const contractIndex = args.indexOf("--contract");
+		const repoIndex = args.indexOf("--repo");
+		const branchIndex = args.indexOf("--branch");
+
+		const options: {
+			contractPath?: string;
+			repo?: string;
+			branch?: string;
+			checkScopes?: boolean;
+			json?: boolean;
+		} = {};
+
+		if (jsonFlag) options.json = true;
+		if (checkScopesFlag) options.checkScopes = true;
+		if (contractIndex !== -1 && args[contractIndex + 1]) {
+			options.contractPath = args[contractIndex + 1] as string;
+		}
+		if (repoIndex !== -1 && args[repoIndex + 1]) {
+			options.repo = args[repoIndex + 1] as string;
+		}
+		if (branchIndex !== -1 && args[branchIndex + 1]) {
+			options.branch = args[branchIndex + 1] as string;
+		}
+
+		runCheckAuthzCLI(options)
+			.then((exitCode) => process.exit(exitCode))
+			.catch((error) => handleFatalError("Check Authz Error", error));
+		return;
+	}
+
+	// No command recognized
+
+	if (command === "check-environment") {
+		// Parse check-environment options
+		const jsonFlag = args.includes("--json");
+		const checkSecretsFlag = args.includes("--check-secrets");
+		const contractIndex = args.indexOf("--contract");
+		const attestationIndex = args.indexOf("--attestation");
+
+		const options: {
+			contractPath?: string;
+			checkSecrets?: boolean;
+			json?: boolean;
+			attestationPath?: string;
+		} = {};
+
+		if (jsonFlag) options.json = true;
+		if (checkSecretsFlag) options.checkSecrets = true;
+		if (contractIndex !== -1 && args[contractIndex + 1]) {
+			options.contractPath = args[contractIndex + 1] as string;
+		}
+		if (attestationIndex !== -1 && args[attestationIndex + 1]) {
+			options.attestationPath = args[attestationIndex + 1] as string;
+		}
+
+		runCheckEnvironmentCLI(options)
+			.then((exitCode) => process.exit(exitCode))
+			.catch((error) => handleFatalError("Check Environment Error", error));
 		return;
 	}
 
