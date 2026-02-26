@@ -44,7 +44,7 @@ deepened: 2026-02-25
 - [Sources & References](#sources--references)
 
 ## Overview
-Build a tightly-scoped v1 throughput pilot that reduces PR lead time by shrinking the review/rework loop, using deterministic remediation for CodeQL + Codex findings only (see brainstorm: docs/brainstorms/2026-02-25-agent-first-throughput-v1-brainstorm.md).
+Build a tightly-scoped v1 throughput pilot that reduces PR lead time by shrinking the review/rework loop, using deterministic remediation for Greptile + Codex findings only (see brainstorm: docs/brainstorms/2026-02-25-agent-first-throughput-v1-brainstorm.md).
 
 The pilot keeps strict safety boundaries: current-head SHA enforcement, low/medium auto-commit only, human mediation for high-risk findings, and automatic rollback to manual mode on any high-risk automation incident (see brainstorm: docs/brainstorms/2026-02-25-agent-first-throughput-v1-brainstorm.md).
 
@@ -113,7 +113,7 @@ Keep v1 to one new command in existing CLI style (single command + flags, no sub
 
 Recommended v1 flags:
 - Common: `--contract <path>`, `--store <path>` (default: `.harness/gap-cases.v1.json`), `--json`.
-- Open-only: `--provider <codeql|codex|manual>`, `--finding-id <id>`, `--pr <n>`, `--sha <40-hex>`, `--sla-hours <n>`.
+- Open-only: `--provider <greptile|codex|manual>`, `--finding-id <id>`, `--pr <n>`, `--sha <40-hex>`, `--sla-hours <n>`.
 - Resolve-only: `--resolved-by <actor>` (optional).
 
 Recommended output/result shape:
@@ -191,7 +191,7 @@ External research was included because this feature depends on GitHub API behavi
 #### Practical metric definitions
 | Metric | Definition | Formula | Data source | Pilot target |
 | --- | --- | --- | --- | --- |
-| PR lead time (north star) | Time from PR creation to merge for pilot-eligible PRs (`draft=false`, merged, CodeQL/Codex findings processed in loop). | `p50_hours = median((merged_at - created_at) / 3600)` and `delta = (pilot_p50 - baseline_p50) / baseline_p50` | GitHub PR metadata + remediation evidence matched by PR + HEAD SHA | 35-50% reduction (`delta <= -0.35`) with `n >= 20` merged pilot PRs |
+| PR lead time (north star) | Time from PR creation to merge for pilot-eligible PRs (`draft=false`, merged, Greptile/Codex findings processed in loop). | `p50_hours = median((merged_at - created_at) / 3600)` and `delta = (pilot_p50 - baseline_p50) / baseline_p50` | GitHub PR metadata + remediation evidence matched by PR + HEAD SHA | 35-50% reduction (`delta <= -0.35`) with `n >= 20` merged pilot PRs |
 | PR lead-time tail guardrail | Prevents median-only improvement masking slow tail behavior. | `p75_delta = (pilot_p75 - baseline_p75) / baseline_p75` | Same PR dataset | At least 20% reduction (`p75_delta <= -0.20`) |
 | Rollback reliability | Reliability of auto-rollback to manual mode after a trigger (drill or real). | `rollback_reliability = successful_rollbacks / rollback_triggers` | Rollback trigger/completion events + remediation logs | 100% |
 | Evidence completeness ratio | Fraction of eligible PR events with complete pilot artifacts. | `evidenceComplete = evidence_rows_with_required_fields / eligible_prs` | Nightly PR snapshot + artifact rows | `>= 0.95` |
@@ -323,7 +323,7 @@ Current repository tests already cover core unit behavior in remediation orchest
 
 #### Unit tests (deterministic decision logic)
 1. **Remediation tier gating is fail-closed by provider**
-   - Setup: CodeQL finding at `high` severity with provider max tier `medium`; Codex finding at `low` with provider default dry-run.
+   - Setup: Greptile finding at `high` severity with provider max tier `medium`; Codex finding at `low` with provider default dry-run.
    - Pass assertions:
      - `runRemediate(...).exitCode === PARTIAL` when only high finding is present.
      - `outcome.output.skipped[0].reason` contains `"exceeds auto-apply max tier"`.
@@ -395,7 +395,7 @@ Current repository tests already cover core unit behavior in remediation orchest
    - Fail assertions:
      - Invalid contract silently falls back to permissive behavior.
 3. **Consumer behavior changes when policy changes**
-   - Setup: run the same findings against two contracts (e.g., CodeQL max tier `low` vs `medium`).
+   - Setup: run the same findings against two contracts (e.g., Greptile max tier `low` vs `medium`).
    - Pass assertions:
      - Contract A yields skip/PARTIAL for medium finding.
      - Contract B yields action/SUCCESS for same medium finding.
@@ -415,7 +415,7 @@ Current repository tests already cover core unit behavior in remediation orchest
 ## Proposed Solution
 Implement a single throughput pilot slice with four aligned capabilities:
 
-1. **Deterministic remediation path** for CodeQL + Codex only, current-head SHA only (see brainstorm: docs/brainstorms/2026-02-25-agent-first-throughput-v1-brainstorm.md).
+1. **Deterministic remediation path** for Greptile + Codex only, current-head SHA only (see brainstorm: docs/brainstorms/2026-02-25-agent-first-throughput-v1-brainstorm.md).
 2. **Policy/runtime parity** so configured remediation and gap-case policy can be loaded consistently (remove hardcoded-only behavior).
 3. **Minimal incident → gap-case path** for secondary learning loop (no broad incident platform).
 4. **Pilot scorecard + promotion gate** to decide rollout from 1–2 repos to broader adoption.
@@ -423,7 +423,7 @@ Implement a single throughput pilot slice with four aligned capabilities:
 
 ```mermaid
 flowchart TD
-  A["PR head SHA"] --> B["Review findings (CodeQL + Codex)"]
+  A["PR head SHA"] --> B["Review findings (Greptile + Codex)"]
   B --> C["Normalize + stale/SHA filter"]
   C --> D{"Severity <= medium?"}
   D -- yes --> E["Auto-remediation action"]
@@ -539,7 +539,7 @@ Too much scope for v1; conflicts with YAGNI and introduces rollout ambiguity.
 
 ## Acceptance Criteria
 ### Functional Requirements
-- [ ] v1 uses only CodeQL + Codex finding sources (see brainstorm: docs/brainstorms/2026-02-25-agent-first-throughput-v1-brainstorm.md).
+- [ ] v1 uses only Greptile + Codex finding sources (see brainstorm: docs/brainstorms/2026-02-25-agent-first-throughput-v1-brainstorm.md).
 - [ ] Findings not bound to current PR head SHA are never auto-remediated (exact SHA match for auto path).
 - [ ] Auto-remediation applies only to low/medium risk findings; high-risk path is human-mediated.
 - [ ] Pilot evidence output includes: SHA-bound findings summary, remediation actions, rerun outcome.
@@ -580,7 +580,7 @@ Too much scope for v1; conflicts with YAGNI and introduces rollout ambiguity.
 - Pilot scorecard and promotion gate.
 
 ### Out of Scope (v1)
-- New provider adapters beyond CodeQL + Codex.
+- New provider adapters beyond Greptile + Codex.
 - Full incident management platform.
 - Cross-repo orchestration dashboards.
 
@@ -613,7 +613,7 @@ Too much scope for v1; conflicts with YAGNI and introduces rollout ambiguity.
   - throughput-first 35–50% target,
   - strict current-head SHA determinism,
   - low/medium auto-commit boundary,
-  - CodeQL + Codex only,
+  - Greptile + Codex only,
   - two-phase pilot rollout,
   - minimal gap-case secondary scope.
 
