@@ -170,6 +170,15 @@ describe("evidence-verify", () => {
 			expect(exitCode).toBe(EXIT_CODES.FILE_NOT_FOUND);
 		});
 
+		it("returns FILE_NOT_FOUND (2) for missing nested file with absent parent chain", () => {
+			const exitCode = runEvidenceVerifyCLI({
+				files: ["missing/deep/path/file.png"],
+				baseDir: tempDir,
+			});
+
+			expect(exitCode).toBe(EXIT_CODES.FILE_NOT_FOUND);
+		});
+
 		it("returns PATH_TRAVERSAL (3) for path escape attempt", () => {
 			const exitCode = runEvidenceVerifyCLI({
 				files: ["../../../etc/passwd"],

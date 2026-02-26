@@ -76,6 +76,23 @@ function isValidMetricsHistory(data: unknown): data is MetricsHistory {
 }
 
 /**
+ * Validate that a history entry has valid metrics structure
+ */
+function isValidHistoryEntry(
+	entry: unknown,
+): entry is MetricsHistory["history"][0] {
+	if (typeof entry !== "object" || entry === null) return false;
+	const obj = entry as Record<string, unknown>;
+	if (typeof obj.date !== "string") return false;
+	if (typeof obj.metrics !== "object" || obj.metrics === null) return false;
+	const metrics = obj.metrics as Record<string, unknown>;
+	if (typeof metrics.pass_k !== "number") return false;
+	if (typeof metrics.total_ops !== "number") return false;
+	if (typeof metrics.successful_ops !== "number") return false;
+	return true;
+}
+
+/**
  * Read metrics from persistent storage
  */
 export function loadMetrics(metricsPath?: string): {
@@ -97,7 +114,10 @@ export function loadMetrics(metricsPath?: string): {
 			return { metrics: createEmptyMetrics(), history: [] };
 		}
 
-		return { metrics: data.current, history: data.history ?? [] };
+		// Filter out malformed history entries
+		const validHistory = (data.history ?? []).filter(isValidHistoryEntry);
+
+		return { metrics: data.current, history: validHistory };
 	} catch {
 		return { metrics: createEmptyMetrics(), history: [] };
 	}
@@ -194,21 +214,26 @@ export function calculateTrends(history: MetricsHistory["history"]): {
 		else if (last < first) pass_k_trend = "degrading";
 	}
 
-	// Error rate (errors per operation)
-	const totalOps = recent.reduce((sum, h) => sum + h.metrics.total_ops, 0);
-	const totalErrors = Object.values(
-		recent.reduce(
-			(acc, h) => {
-				for (const [tool, count] of Object.entries(h.metrics.tool_errors)) {
-					acc[tool] = (acc[tool] ?? 0) + count;
-				}
-				return acc;
-			},
-			{} as Record<string, number>,
-		),
-	).reduce((sum, count) => sum + count, 0);
+	// Error rate: calculate deltas (not cumulative sums)
+	// Delta = last - first for each metric over the window
+	const firstEntry = recent[0];
+	const lastEntry = recent[recent.length - 1];
 
-	const error_rate = totalOps > 0 ? totalErrors / totalOps : 0;
+	if (!firstEntry || !lastEntry) {
+		return { pass_k_trend, error_rate: 0, reliability_score: 100 };
+	}
+
+	const opsDelta = lastEntry.metrics.total_ops - firstEntry.metrics.total_ops;
+
+	// Sum error counts from delta calculation (last - first for each tool)
+	const firstErrors = firstEntry.metrics.tool_errors;
+	const lastErrors = lastEntry.metrics.tool_errors;
+	let errorsDelta = 0;
+	for (const [tool, count] of Object.entries(lastErrors)) {
+		errorsDelta += count - (firstErrors[tool] ?? 0);
+	}
+
+	const error_rate = opsDelta > 0 ? errorsDelta / opsDelta : 0;
 
 	// Reliability score (0-100)
 	const reliability_score = Math.max(0, Math.min(100, 100 - error_rate * 100));
@@ -254,6 +279,13 @@ export function checkQuestionSLA(metrics: ReliabilityMetrics): {
 
 	for (const q of metrics.unresolved_questions) {
 		const askedAt = new Date(q.asked_at);
+
+		// Treat invalid dates as overdue
+		if (Number.isNaN(askedAt.getTime())) {
+			overdue.push(q.question);
+			continue;
+		}
+
 		const hoursElapsed = (now.getTime() - askedAt.getTime()) / (1000 * 60 * 60);
 
 		if (hoursElapsed > q.sla_hours) {

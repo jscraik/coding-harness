@@ -26,6 +26,26 @@ export class PathTraversalError extends Error {
 }
 
 /**
+ * Resolve the nearest existing ancestor for a path.
+ * Walks up until an existing segment can be canonicalized.
+ */
+function resolveNearestExistingAncestor(path: string): string {
+	let current = path;
+
+	while (true) {
+		try {
+			return realpathSync(current);
+		} catch {
+			const parent = dirname(current);
+			if (parent === current) {
+				throw new PathTraversalError();
+			}
+			current = parent;
+		}
+	}
+}
+
+/**
  * Assert that a candidate path is within the base directory.
  * Prevents sibling-prefix attacks (e.g., `/base-evil/...` passing `startsWith("/base")`).
  */
@@ -57,11 +77,10 @@ export function validatePath(baseDir: string, userPath: string): string {
 	try {
 		realResolved = realpathSync(resolved);
 	} catch {
-		// Path doesn't exist - validate parent directory
-		const parentDir = dirname(resolved);
+		// Path doesn't exist - validate nearest existing ancestor directory
 		try {
-			const realParent = realpathSync(parentDir);
-			assertWithinBase(realBase, realParent);
+			const realAncestor = resolveNearestExistingAncestor(resolved);
+			assertWithinBase(realBase, realAncestor);
 		} catch {
 			throw new PathTraversalError();
 		}

@@ -78,36 +78,6 @@ export interface PackageManagerPolicy {
 	requiredManager: string | null;
 }
 
-export type RemediationMode = "run" | "apply";
-export type RemediationAutoTier = "high" | "medium" | "low";
-
-export interface RemediationPolicy {
-	providerDefaults: {
-		codeql: {
-			autoApplyMaxTier: RemediationAutoTier;
-			dryRunOnlyByDefault: boolean;
-		};
-		codex: {
-			autoApplyMaxTier: RemediationAutoTier;
-			dryRunOnlyByDefault: boolean;
-		};
-	};
-	canonicalRerunWorkflow?: string | null;
-	marker: string;
-	timeoutMinutes: number;
-	retryLimit: number;
-	requireEvidence: boolean;
-}
-
-export interface GapCasePolicy {
-	requiredEvidenceStatuses: string[];
-	requiredCloseReasons: string[];
-	defaultDueDays: number;
-	caseIdPrefix: string;
-	caseStore: string;
-	allowEvidencelessResolve: boolean;
-}
-
 /**
  * Override metadata when diff budget is exceeded.
  */
@@ -137,6 +107,162 @@ export interface EvidencePolicy {
 	maxFileSizeBytes?: number | undefined;
 }
 
+/**
+ * Gap-case lifecycle policy configuration.
+ */
+export interface GapCasePolicy {
+	requiredEvidenceStatuses: string[];
+	requiredCloseReasons: string[];
+	defaultDueDays: number;
+	caseIdPrefix: string;
+	caseStore: string;
+	allowEvidencelessResolve: boolean;
+}
+
+/**
+ * Provider-specific remediation policy settings.
+ */
+export interface RemediationProviderPolicy {
+	/** Maximum severity tier for automatic remediation */
+	autoApplyMaxTier: RiskTier;
+	/** Whether to default to dry-run mode for this provider */
+	dryRunOnlyByDefault: boolean;
+}
+
+/**
+ * Remediation policy configuration for automatic fix application.
+ */
+export interface RemediationPolicy {
+	/** Provider-specific defaults keyed by provider name */
+	providerDefaults: Record<string, RemediationProviderPolicy>;
+	/** Comment marker for remediation commits/comments */
+	marker: string;
+	/** Timeout for remediation operations in minutes */
+	timeoutMinutes: number;
+	/** Maximum retry attempts for failed remediations */
+	retryLimit: number;
+	/** Whether evidence is required for remediation */
+	requireEvidence: boolean;
+}
+
+/**
+ * Pilot gap-case policy for incident tracking workflow.
+ * Minimal v1 surface for incident → gap-case creation/update.
+ */
+export interface PilotGapCasePolicy {
+	/** Whether gap-case tracking is enabled */
+	enabled: boolean;
+	/** Default SLA in hours for gap-case resolution */
+	defaultSlaHours: number;
+	/** Whether evidence URL is required for closure */
+	requireClosureEvidence: boolean;
+	/** Optional custom path for gap-case store (default: .harness/gap-cases.v1.json) */
+	storePath?: string | undefined;
+}
+
+/**
+ * Pilot rollback policy for automatic rollback behavior.
+ * Controls how the system responds to high-risk automation incidents.
+ */
+export interface PilotRollbackPolicy {
+	/** Automatically trigger rollback on high-risk automation incident */
+	autoTrigger: boolean;
+	/** Require explicit manual release before resuming automation */
+	requireManualRelease: boolean;
+	/** Path to rollback completion marker artifact */
+	completionMarkerPath: string;
+	/** Mode state: 'manual' or 'autonomous' */
+	mode: "manual" | "autonomous";
+}
+
+/**
+ * Pilot authorization policy for least-privilege enforcement.
+ * Controls what operations are permitted based on token scope and targets.
+ */
+export interface PilotAuthzPolicy {
+	/** Allowed GitHub App or fine-grained PAT scopes */
+	githubScopeAllowlist: string[];
+	/** Allowed repository patterns (glob patterns) */
+	repoAllowlist: string[];
+	/** Allowed branch patterns (glob patterns) */
+	branchAllowlist: string[];
+	/** Branches that are always write-protected (cannot be overridden) */
+	protectedBranchDenylist: string[];
+	/** Whether to enforce branch protection checks */
+	enforceBranchProtection: boolean;
+}
+
+// === Default Values ===
+
+export const DEFAULT_REVIEW_POLICY: ReviewPolicy = {
+	timeoutSeconds: 600, // 10 minutes
+	timeoutAction: "fail",
+};
+
+export const DEFAULT_EVIDENCE_POLICY: EvidencePolicy = {
+	requiredFor: [],
+	allowedTypes: ["png", "jpeg"],
+	maxFileSizeBytes: 1024 * 1024, // 1MB
+};
+
+export const DEFAULT_GAP_CASE_POLICY: GapCasePolicy = {
+	requiredEvidenceStatuses: ["passed", "approved"],
+	requiredCloseReasons: ["fix", "workaround", "waived"],
+	defaultDueDays: 7,
+	caseIdPrefix: "gap-",
+	caseStore: ".harness/gap-cases.json",
+	allowEvidencelessResolve: false,
+};
+
+export const DEFAULT_REMEDIATION_POLICY: RemediationPolicy = {
+	providerDefaults: {
+		codeql: {
+			autoApplyMaxTier: "medium",
+			dryRunOnlyByDefault: false,
+		},
+		greptile: {
+			autoApplyMaxTier: "medium",
+			dryRunOnlyByDefault: false,
+		},
+		codex: {
+			autoApplyMaxTier: "low",
+			dryRunOnlyByDefault: true,
+		},
+	},
+	marker: "[auto-remediate]",
+	timeoutMinutes: 10,
+	retryLimit: 3,
+	requireEvidence: true,
+};
+
+export const DEFAULT_PILOT_GAP_CASE_POLICY: PilotGapCasePolicy = {
+	enabled: false,
+	defaultSlaHours: 72, // 3 days
+	requireClosureEvidence: true,
+	storePath: ".harness/gap-cases.v1.json",
+};
+
+export const DEFAULT_PILOT_ROLLBACK_POLICY: PilotRollbackPolicy = {
+	autoTrigger: true,
+	requireManualRelease: true,
+	completionMarkerPath: ".harness/rollback-marker.json",
+	mode: "manual", // Start in manual mode for safety
+};
+
+export const DEFAULT_PILOT_AUTHZ_POLICY: PilotAuthzPolicy = {
+	githubScopeAllowlist: [
+		"pull_requests:write",
+		"contents:read",
+		"issues:write",
+	],
+	repoAllowlist: [], // Empty = deny all repos by default
+	branchAllowlist: [], // Empty = deny all branches by default
+	protectedBranchDenylist: ["main", "master", "release/*"],
+	enforceBranchProtection: true,
+};
+
+// === Contract Interface ===
+
 export interface HarnessContract {
 	version: string;
 	riskTierRules: Record<string, RiskTier>;
@@ -163,49 +289,17 @@ export interface HarnessContract {
 	observabilityPolicy?: ObservabilityPolicy | undefined;
 	/** Package manager policy */
 	packageManagerPolicy?: PackageManagerPolicy | undefined;
-	/** Remediation policy for deterministic fix/retry workflows */
+	/** Remediation policy for automatic fix application */
 	remediationPolicy?: RemediationPolicy | undefined;
 	/** Gap-case lifecycle policy */
 	gapCasePolicy?: GapCasePolicy | undefined;
+	/** Pilot gap-case tracking policy */
+	pilotGapCasePolicy?: PilotGapCasePolicy | undefined;
+	/** Pilot rollback behavior policy */
+	pilotRollbackPolicy?: PilotRollbackPolicy | undefined;
+	/** Pilot authorization policy for least-privilege */
+	pilotAuthzPolicy?: PilotAuthzPolicy | undefined;
 }
-
-export const DEFAULT_REMEDIATION_POLICY: RemediationPolicy = {
-	providerDefaults: {
-		codeql: {
-			autoApplyMaxTier: "medium",
-			dryRunOnlyByDefault: true,
-		},
-		codex: {
-			autoApplyMaxTier: "medium",
-			dryRunOnlyByDefault: true,
-		},
-	},
-	canonicalRerunWorkflow: "greptile-rerun.yml",
-	marker: "<!-- harness-remediation-rerun -->",
-	timeoutMinutes: 20,
-	retryLimit: 3,
-	requireEvidence: true,
-};
-
-export const DEFAULT_GAP_CASE_POLICY: GapCasePolicy = {
-	requiredEvidenceStatuses: ["passed", "approved"],
-	requiredCloseReasons: ["fix", "workaround", "waived"],
-	defaultDueDays: 7,
-	caseIdPrefix: "gap-",
-	caseStore: ".harness/gap-cases.json",
-	allowEvidencelessResolve: false,
-};
-
-export const DEFAULT_REVIEW_POLICY: ReviewPolicy = {
-	timeoutSeconds: 600, // 10 minutes
-	timeoutAction: "fail",
-};
-
-export const DEFAULT_EVIDENCE_POLICY: EvidencePolicy = {
-	requiredFor: [],
-	allowedTypes: ["png", "jpeg"],
-	maxFileSizeBytes: 1024 * 1024, // 1MB
-};
 
 export const DEFAULT_CONTRACT: HarnessContract = {
 	version: "1.2.0",
@@ -274,14 +368,7 @@ export const DEFAULT_CONTRACT: HarnessContract = {
 	},
 	remediationPolicy: DEFAULT_REMEDIATION_POLICY,
 	gapCasePolicy: DEFAULT_GAP_CASE_POLICY,
+	pilotGapCasePolicy: DEFAULT_PILOT_GAP_CASE_POLICY,
+	pilotRollbackPolicy: DEFAULT_PILOT_ROLLBACK_POLICY,
+	pilotAuthzPolicy: DEFAULT_PILOT_AUTHZ_POLICY,
 };
-
-/**
- * Provider-specific remediation policy settings.
- */
-export interface RemediationProviderPolicy {
-	/** Maximum severity tier for automatic remediation */
-	autoApplyMaxTier: RiskTier;
-	/** Whether to default to dry-run mode for this provider */
-	dryRunOnlyByDefault: boolean;
-}
