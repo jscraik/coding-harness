@@ -878,9 +878,13 @@ export function run(args: string[]): void {
 		const caseStoreIndex = args.indexOf("--case-store");
 		const caseStore = getFlagValue(args, caseStoreIndex);
 
-		if (action !== "create" && action !== "list" && action !== "resolve") {
+		// Parse --contract flag for all gap-case actions
+		const contractIndex = args.indexOf("--contract");
+		const contractPath = getFlagValue(args, contractIndex);
+
+		if (action !== "create" && action !== "list" && action !== "resolve" && action !== "update-causality") {
 			console.error(
-				"Error: gap-case command requires subcommand `create`, `list`, or `resolve`",
+				"Error: gap-case command requires subcommand `create`, `list`, `resolve`, or `update-causality`",
 			);
 			process.exit(2);
 			return;
@@ -930,6 +934,9 @@ export function run(args: string[]): void {
 			if (caseStore) {
 				createOptions.caseStore = caseStore;
 			}
+			if (contractPath) {
+				createOptions.contractPath = contractPath;
+			}
 			const exitCode = runGapCaseCLI(createOptions);
 			process.exit(exitCode);
 			return;
@@ -946,6 +953,9 @@ export function run(args: string[]): void {
 			};
 			if (caseStore) {
 				listOptions.caseStore = caseStore;
+			}
+			if (contractPath) {
+				listOptions.contractPath = contractPath;
 			}
 			const exitCode = runGapCaseCLI(listOptions);
 			process.exit(exitCode);
@@ -991,6 +1001,9 @@ export function run(args: string[]): void {
 		}
 		if (caseStore) {
 			resolveOptions.caseStore = caseStore;
+		}
+		if (contractPath) {
+			resolveOptions.contractPath = contractPath;
 		}
 		const exitCode = runGapCaseCLI(resolveOptions);
 		process.exit(exitCode);

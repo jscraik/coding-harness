@@ -1,5 +1,10 @@
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { dirname, resolve } from "node:path";
+import { loadContract } from "../lib/contract/loader.js";
+import {
+	DEFAULT_PILOT_GAP_CASE_POLICY,
+	type PilotGapCasePolicy,
+} from "../lib/contract/types.js";
 import { sanitizeError } from "../lib/input/sanitize.js";
 import { PathTraversalError, validatePath } from "../lib/input/validator.js";
 
@@ -13,6 +18,21 @@ export const EXIT_CODES = {
 
 export type GapCaseStatus = "open" | "resolved";
 export type GapSeverity = "low" | "medium" | "high";
+
+/**
+ * Causality classification for incident attribution (v1 pilot)
+ * Used to determine if automation was the root cause of an incident.
+ */
+export type Causality =
+	| "automation_confirmed"
+	| "automation_possible"
+	| "human_or_external"
+	| "unknown";
+
+/**
+ * Confidence level for causality classification.
+ */
+export type Confidence = "confirmed" | "probable" | "provisional";
 
 export interface GapCaseRecord {
 	id: string;
@@ -28,6 +48,11 @@ export interface GapCaseRecord {
 	closedAt?: string;
 	closeReason?: string;
 	evidence?: string[];
+	// Causality fields (Phase 3)
+	causality?: Causality;
+	confidence?: Confidence;
+	causalityUpdatedAt?: string;
+	causalityUpdatedBy?: string;
 }
 
 export interface GapCaseStore {
@@ -47,20 +72,24 @@ export interface CreateGapCaseOptions {
 	caseIdPrefix?: string;
 	caseId?: string;
 	evidence?: string[];
+	contractPath?: string;
 	json?: boolean;
 }
 
 export interface ListGapCaseOptions {
 	action: "list";
 	caseStore?: string;
+	contractPath?: string;
 	open?: boolean;
 	overdue?: boolean;
+	unresolvedCausality?: boolean;
 	json?: boolean;
 }
 
 export interface ResolveGapCaseOptions {
 	action: "resolve";
 	caseStore?: string;
+	contractPath?: string;
 	caseId: string;
 	incidentId: string;
 	resolvedBy: string;
@@ -71,10 +100,22 @@ export interface ResolveGapCaseOptions {
 	json?: boolean;
 }
 
+export interface UpdateCausalityOptions {
+	action: "update-causality";
+	caseStore?: string;
+	contractPath?: string;
+	caseId: string;
+	causality: Causality;
+	confidence: Confidence;
+	updatedBy: string;
+	json?: boolean;
+}
+
 type GapCaseResultOutput =
 	| { action: "create"; caseRecord: GapCaseRecord }
 	| { action: "list"; cases: GapCaseRecord[] }
-	| { action: "resolve"; caseRecord: GapCaseRecord };
+	| { action: "resolve"; caseRecord: GapCaseRecord }
+	| { action: "update-causality"; caseRecord: GapCaseRecord };
 
 export interface GapCaseError {
 	code: "E_USAGE" | "E_VALIDATION" | "E_POLICY" | "E_NOT_FOUND" | "E_INTERNAL";
@@ -88,7 +129,7 @@ export type GapCaseResult =
 
 const DEFAULT_CASE_STORE = ".harness/gap-cases.json";
 const DEFAULT_CASE_ID_PREFIX = "gap-";
-const DEFAULT_DUE_DAYS = 7;
+const HOURS_PER_DAY = 24;
 
 function nowIso(): string {
 	return new Date().toISOString();
@@ -96,6 +137,22 @@ function nowIso(): string {
 
 function normalizeCaseStore(caseStore?: string): string {
 	return validatePath(process.cwd(), resolve(caseStore || DEFAULT_CASE_STORE));
+}
+
+/**
+ * Load pilot gap-case policy from contract, with defaults.
+ */
+function loadPolicy(contractPath?: string): PilotGapCasePolicy {
+	if (!contractPath) {
+		return DEFAULT_PILOT_GAP_CASE_POLICY;
+	}
+
+	try {
+		const contract = loadContract(contractPath);
+		return contract.pilotGapCasePolicy ?? DEFAULT_PILOT_GAP_CASE_POLICY;
+	} catch {
+		return DEFAULT_PILOT_GAP_CASE_POLICY;
+	}
 }
 
 function readCaseStore(filePath: string): GapCaseStore {
@@ -141,8 +198,8 @@ function nextCaseId(cases: GapCaseRecord[], prefix: string): string {
 	return `${prefix}${next.toString().padStart(3, "0")}`;
 }
 
-function computeDueDate(days: number): string {
-	const timestamp = Date.now() + days * 24 * 60 * 60 * 1000;
+function computeDueDate(slaHours: number): string {
+	const timestamp = Date.now() + slaHours * 60 * 60 * 1000;
 	return new Date(timestamp).toISOString();
 }
 
@@ -150,13 +207,68 @@ function isOverdue(caseRecord: GapCaseRecord): boolean {
 	return new Date(caseRecord.dueAt).getTime() < Date.now();
 }
 
+/**
+ * Check if a case has unresolved high-severity causality.
+ * A case is unresolved if causality is automation_possible or unknown
+ * and hasn't been confirmed by dual-review.
+ */
+function hasUnresolvedCausality(caseRecord: GapCaseRecord): boolean {
+	if (caseRecord.severity !== "high") return false;
+	if (!caseRecord.causality) return true; // No causality set = unresolved
+	if (caseRecord.causality === "automation_possible") return true;
+	if (caseRecord.causality === "unknown") return true;
+	return false;
+}
+
+/**
+ * Check if causality downgrade requires dual-review.
+ * A downgrade is when moving from automation_confirmed to a lower certainty.
+ */
+function isCausalityDowngrade(
+	current: Causality | undefined,
+	newCausality: Causality,
+): boolean {
+	if (!current) return false;
+	const rank: Record<Causality, number> = {
+		automation_confirmed: 3,
+		automation_possible: 2,
+		human_or_external: 1,
+		unknown: 0,
+	};
+	return rank[newCausality] < rank[current];
+}
+
 export function runGapCase(
-	options: CreateGapCaseOptions | ListGapCaseOptions | ResolveGapCaseOptions,
+	options:
+		| CreateGapCaseOptions
+		| ListGapCaseOptions
+		| ResolveGapCaseOptions
+		| UpdateCausalityOptions,
 ): GapCaseResult {
 	try {
-		const caseStore = normalizeCaseStore(
-			"caseStore" in options ? options.caseStore : undefined,
-		);
+		// Load policy from contract
+		const contractPath =
+			"contractPath" in options ? options.contractPath : undefined;
+		const policy = loadPolicy(contractPath);
+
+		// Check if gap-case is enabled
+		if (!policy.enabled) {
+			return {
+				ok: false,
+				error: {
+					code: "E_POLICY",
+					message:
+						"Gap-case tracking is disabled in contract policy (pilotGapCasePolicy.enabled = false)",
+				},
+			};
+		}
+
+		// Use policy's store path if not overridden
+		const caseStorePath =
+			"caseStore" in options && options.caseStore
+				? options.caseStore
+				: policy.storePath ?? DEFAULT_CASE_STORE;
+		const caseStore = normalizeCaseStore(caseStorePath);
 		const store = readCaseStore(caseStore);
 
 		if (options.action === "create") {
@@ -204,15 +316,22 @@ export function runGapCase(
 
 			const prefix = options.caseIdPrefix ?? DEFAULT_CASE_ID_PREFIX;
 			const id = options.caseId ?? nextCaseId(store.cases, prefix);
-			const dueDays = options.dueDays ?? DEFAULT_DUE_DAYS;
-			if (dueDays <= 0) {
-				return {
-					ok: false,
-					error: {
-						code: "E_VALIDATION",
-						message: "Invalid --due-days; must be a positive integer",
-					},
-				};
+
+			// Use policy's SLA hours (converted to days for backward compat) or explicit override
+			let slaHours: number;
+			if (options.dueDays !== undefined) {
+				if (options.dueDays <= 0) {
+					return {
+						ok: false,
+						error: {
+							code: "E_VALIDATION",
+							message: "Invalid --due-days; must be a positive integer",
+						},
+					};
+				}
+				slaHours = options.dueDays * HOURS_PER_DAY;
+			} else {
+				slaHours = policy.defaultSlaHours;
 			}
 
 			const existing = store.cases.find((entry) => entry.id === id);
@@ -233,7 +352,7 @@ export function runGapCase(
 				severity: options.severity,
 				linkedPr: options.linkedPr,
 				createdAt: nowIso(),
-				dueAt: computeDueDate(dueDays),
+				dueAt: computeDueDate(slaHours),
 				status: "open",
 				...(options.findingSummary
 					? { findingSummary: options.findingSummary }
@@ -253,6 +372,9 @@ export function runGapCase(
 			}
 			if (options.overdue) {
 				cases = cases.filter(isOverdue);
+			}
+			if (options.unresolvedCausality) {
+				cases = cases.filter(hasUnresolvedCausality);
 			}
 			return { ok: true, output: { action: "list", cases } };
 		}
@@ -298,6 +420,24 @@ export function runGapCase(
 					},
 				};
 			}
+
+			// Enforce evidence requirement from policy
+			const hasEvidence =
+				(options.evidence && options.evidence.length > 0) ||
+				(target.evidence && target.evidence.length > 0);
+
+			if (policy.requireClosureEvidence && !hasEvidence && !options.force) {
+				return {
+					ok: false,
+					error: {
+						code: "E_POLICY",
+						message:
+							"Evidence required for closure (pilotGapCasePolicy.requireClosureEvidence = true). Provide --evidence or use --force to override.",
+						details: { requireClosureEvidence: true },
+					},
+				};
+			}
+
 			target.status = "resolved";
 			target.closedAt = nowIso();
 			target.resolvedBy = options.resolvedBy;
@@ -312,6 +452,50 @@ export function runGapCase(
 
 			writeCaseStore(caseStore, store);
 			return { ok: true, output: { action: "resolve", caseRecord: target } };
+		}
+
+		if (options.action === "update-causality") {
+			const target = store.cases.find((entry) => entry.id === options.caseId);
+			if (!target) {
+				return {
+					ok: false,
+					error: {
+						code: "E_NOT_FOUND",
+						message: `Gap case ${options.caseId} not found`,
+					},
+				};
+			}
+
+			// Check for causality downgrade (requires explicit acknowledgment)
+			if (
+				isCausalityDowngrade(target.causality, options.causality) &&
+				options.confidence !== "confirmed"
+			) {
+				return {
+					ok: false,
+					error: {
+						code: "E_POLICY",
+						message:
+							"Causality downgrade requires --confidence confirmed for audit trail. Downgrading from a higher-certainty causality classification must be explicitly confirmed.",
+						details: {
+							currentCausality: target.causality,
+							newCausality: options.causality,
+							requiredConfidence: "confirmed",
+						},
+					},
+				};
+			}
+
+			target.causality = options.causality;
+			target.confidence = options.confidence;
+			target.causalityUpdatedAt = nowIso();
+			target.causalityUpdatedBy = options.updatedBy;
+
+			writeCaseStore(caseStore, store);
+			return {
+				ok: true,
+				output: { action: "update-causality", caseRecord: target },
+			};
 		}
 
 		return {
@@ -351,15 +535,22 @@ export function runGapCase(
 }
 
 export function runGapCaseCLI(
-	options: CreateGapCaseOptions | ListGapCaseOptions | ResolveGapCaseOptions,
+	options:
+		| CreateGapCaseOptions
+		| ListGapCaseOptions
+		| ResolveGapCaseOptions
+		| UpdateCausalityOptions,
 ): number {
 	const result = runGapCase(options);
 	if (!result.ok) {
 		// Output only JSON or only plain text, not both
-		if (options.json) {
+		if ("json" in options && options.json) {
 			console.error(JSON.stringify({ error: result.error }));
 		} else {
 			console.error(result.error.message);
+			if (result.error.details) {
+				console.error(`Details: ${JSON.stringify(result.error.details)}`);
+			}
 		}
 		switch (result.error.code) {
 			case "E_USAGE":
@@ -373,7 +564,7 @@ export function runGapCaseCLI(
 		}
 	}
 
-	if (options.json) {
+	if ("json" in options && options.json) {
 		console.info(
 			JSON.stringify({
 				schema: "harness.gap-case.v1",
@@ -399,18 +590,24 @@ export function runGapCaseCLI(
 		case "list":
 			console.info(
 				`Gap cases: ${result.output.cases.length} record(s) in ${normalizeCaseStore(
-					options.caseStore,
+					"caseStore" in options ? options.caseStore : undefined,
 				)}`,
 			);
 			for (const entry of result.output.cases) {
+				const causality = entry.causality ? ` [${entry.causality}]` : "";
 				console.info(
-					`${entry.id}\t${entry.status}\t${entry.incidentId}\t${entry.owner}`,
+					`${entry.id}\t${entry.status}\t${entry.incidentId}\t${entry.owner}${causality}`,
 				);
 			}
 			break;
 		case "resolve":
 			console.info(`Resolved gap case ${result.output.caseRecord.id}`);
 			console.info(`closedAt: ${result.output.caseRecord.closedAt}`);
+			break;
+		case "update-causality":
+			console.info(`Updated causality for ${result.output.caseRecord.id}`);
+			console.info(`causality: ${result.output.caseRecord.causality}`);
+			console.info(`confidence: ${result.output.caseRecord.confidence}`);
 			break;
 	}
 	return EXIT_CODES.SUCCESS;

@@ -1,6 +1,6 @@
 import { randomUUID } from "node:crypto";
-import { existsSync, rmSync } from "node:fs";
-import { join } from "node:path";
+import { existsSync, mkdirSync, rmSync, writeFileSync } from "node:fs";
+import { dirname, join } from "node:path";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { parseCsvList, parseIntegerArg, run } from "./cli.js";
 
@@ -137,10 +137,28 @@ describe("run", () => {
 			.mockImplementation((code?: string | number | null | undefined) => {
 				throw new Error(`EXIT_${String(code)}`);
 			}) as never;
-		const storePath = join(
+		const testDir = join(
 			process.cwd(),
 			"artifacts",
-			`harness-gap-case-${randomUUID()}.json`,
+			`harness-cli-test-${randomUUID()}`,
+		);
+		const contractPath = join(testDir, "harness.contract.json");
+		const storePath = join(testDir, "gap-cases.json");
+
+		// Create contract with gap-case policy enabled
+		mkdirSync(dirname(contractPath), { recursive: true });
+		writeFileSync(
+			contractPath,
+			JSON.stringify({
+				version: "1.0",
+				pilotGapCasePolicy: {
+					enabled: true,
+					defaultSlaHours: 168,
+					requireClosureEvidence: false,
+					storePath,
+				},
+			}),
+			"utf-8",
 		);
 
 		expect(() =>
@@ -157,10 +175,21 @@ describe("run", () => {
 				"acme/demo#1",
 				"--case-store",
 				storePath,
+				"--contract",
+				contractPath,
 			]),
 		).toThrowError("EXIT_0");
 		expect(() =>
-			run(["gap-case", "list", "--open", "--case-store", storePath, "--json"]),
+			run([
+				"gap-case",
+				"list",
+				"--open",
+				"--case-store",
+				storePath,
+				"--contract",
+				contractPath,
+				"--json",
+			]),
 		).toThrowError("EXIT_0");
 		expect(() =>
 			run([
@@ -175,11 +204,13 @@ describe("run", () => {
 				"acme/demo#1",
 				"--case-store",
 				storePath,
+				"--contract",
+				contractPath,
 			]),
 		).toThrowError("EXIT_0");
 
 		expect(existsSync(storePath)).toBe(true);
-		rmSync(storePath, { force: true });
+		rmSync(testDir, { recursive: true, force: true });
 		expect(exitSpy).toHaveBeenCalledWith(0);
 	});
 
