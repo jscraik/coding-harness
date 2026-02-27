@@ -144,6 +144,7 @@ function printUsage(): void {
 	console.info(
 		"  --max-tier       Maximum allowed risk tier (high/medium/low)",
 	);
+	console.info("  --head-sha       HEAD SHA for determinism checks");
 	console.info("  --strict         Treat warnings as errors");
 	console.info("  --skip           Comma-separated check IDs to skip");
 	console.info("  --json           Output results as JSON");

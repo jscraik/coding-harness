@@ -696,7 +696,14 @@ export function isValidEvidencePolicy(value: unknown): value is EvidencePolicy {
 	const policy = value as Record<string, unknown>;
 
 	const invalidKeys = Object.keys(policy).filter(
-		(key) => !["requiredFor", "allowedTypes", "maxFileSizeBytes"].includes(key),
+		(key) =>
+			![
+				"requiredFor",
+				"allowedTypes",
+				"maxFileSizeBytes",
+				"allowedVideoTypes",
+				"maxVideoSizeBytes",
+			].includes(key),
 	);
 	if (invalidKeys.length > 0) {
 		return false;
@@ -732,6 +739,29 @@ export function isValidEvidencePolicy(value: unknown): value is EvidencePolicy {
 		(typeof policy.maxFileSizeBytes !== "number" ||
 			policy.maxFileSizeBytes <= 0 ||
 			!Number.isInteger(policy.maxFileSizeBytes))
+	) {
+		return false;
+	}
+
+	// Validate allowedVideoTypes (optional, must be array of valid video formats)
+	if (policy.allowedVideoTypes !== undefined) {
+		if (!Array.isArray(policy.allowedVideoTypes)) {
+			return false;
+		}
+		const validVideoFormats = ["mp4", "webm"];
+		for (const format of policy.allowedVideoTypes) {
+			if (!validVideoFormats.includes(format)) {
+				return false;
+			}
+		}
+	}
+
+	// Validate maxVideoSizeBytes (optional, must be positive integer)
+	if (
+		policy.maxVideoSizeBytes !== undefined &&
+		(typeof policy.maxVideoSizeBytes !== "number" ||
+			policy.maxVideoSizeBytes <= 0 ||
+			!Number.isInteger(policy.maxVideoSizeBytes))
 	) {
 		return false;
 	}
