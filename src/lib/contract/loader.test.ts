@@ -103,4 +103,109 @@ describe("loadContract", () => {
 
 		expect(() => loadContract(path)).toThrow(/depth exceeds maximum/i);
 	});
+
+	describe("merge policy dual-shape support", () => {
+		it("accepts legacy array-style merge policy", () => {
+			const dir = join(process.cwd(), "artifacts");
+			mkdirSync(dir, { recursive: true });
+			const path = join(dir, "contract-loader-legacy-merge.json");
+			createdFiles.push(path);
+
+			writeFileSync(
+				path,
+				JSON.stringify({
+					version: "1.0",
+					mergePolicy: {
+						high: ["review-gate", "evidence-verify"],
+						medium: ["review-gate"],
+						low: [],
+					},
+				}),
+				"utf-8",
+			);
+
+			const contract = loadContract(path);
+			expect(contract.mergePolicy).toEqual({
+				high: ["review-gate", "evidence-verify"],
+				medium: ["review-gate"],
+				low: [],
+			});
+		});
+
+		it("accepts roadmap object-style merge policy and normalizes to array", () => {
+			const dir = join(process.cwd(), "artifacts");
+			mkdirSync(dir, { recursive: true });
+			const path = join(dir, "contract-loader-roadmap-merge.json");
+			createdFiles.push(path);
+
+			writeFileSync(
+				path,
+				JSON.stringify({
+					version: "1.0",
+					mergePolicy: {
+						high: { requiredChecks: ["review-gate", "evidence-verify"] },
+						medium: { requiredChecks: ["review-gate"] },
+						low: { requiredChecks: [] },
+					},
+				}),
+				"utf-8",
+			);
+
+			const contract = loadContract(path);
+			// Should be normalized to array form
+			expect(contract.mergePolicy).toEqual({
+				high: ["review-gate", "evidence-verify"],
+				medium: ["review-gate"],
+				low: [],
+			});
+		});
+
+		it("accepts mixed legacy and roadmap shapes and normalizes", () => {
+			const dir = join(process.cwd(), "artifacts");
+			mkdirSync(dir, { recursive: true });
+			const path = join(dir, "contract-loader-mixed-merge.json");
+			createdFiles.push(path);
+
+			writeFileSync(
+				path,
+				JSON.stringify({
+					version: "1.0",
+					mergePolicy: {
+						high: { requiredChecks: ["review-gate"] }, // roadmap style
+						medium: ["review-gate"], // legacy style
+						low: [], // legacy style
+					},
+				}),
+				"utf-8",
+			);
+
+			const contract = loadContract(path);
+			// All should be normalized to array form
+			expect(contract.mergePolicy).toEqual({
+				high: ["review-gate"],
+				medium: ["review-gate"],
+				low: [],
+			});
+		});
+
+		it("rejects invalid roadmap merge policy with missing requiredChecks", () => {
+			const dir = join(process.cwd(), "artifacts");
+			mkdirSync(dir, { recursive: true });
+			const path = join(dir, "contract-loader-invalid-roadmap.json");
+			createdFiles.push(path);
+
+			writeFileSync(
+				path,
+				JSON.stringify({
+					version: "1.0",
+					mergePolicy: {
+						high: { invalidKey: ["review-gate"] }, // missing requiredChecks
+					},
+				}),
+				"utf-8",
+			);
+
+			expect(() => loadContract(path)).toThrow(/validation failed/i);
+		});
+	});
 });

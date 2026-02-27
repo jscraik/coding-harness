@@ -4,7 +4,10 @@ import { join } from "node:path";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import {
 	PathTraversalError,
+	detectEvidenceFormat,
 	detectImageFormat,
+	detectVideoFormat,
+	getEvidenceType,
 	loadEvidenceFile,
 	validatePath,
 } from "./validator.js";
@@ -41,6 +44,121 @@ describe("detectImageFormat", () => {
 	it("returns null for text file", () => {
 		const textBuffer = Buffer.from("Hello, World!");
 		expect(detectImageFormat(textBuffer)).toBeNull();
+	});
+});
+
+describe("detectVideoFormat", () => {
+	it("detects MP4 format from magic bytes", () => {
+		// MP4: [size (4 bytes)] 'ftyp' [brand]
+		// Common MP4 header: 00 00 00 20 66 74 79 70 (ftyp at offset 4)
+		const mp4Buffer = Buffer.from([
+			0x00,
+			0x00,
+			0x00,
+			0x20, // size
+			0x66,
+			0x74,
+			0x79,
+			0x70, // 'ftyp'
+			0x69,
+			0x73,
+			0x6f,
+			0x6d, // 'isom' brand
+		]);
+		expect(detectVideoFormat(mp4Buffer)).toBe("mp4");
+	});
+
+	it("detects WebM format from magic bytes", () => {
+		// WebM: EBML header 1A 45 DF A3
+		const webmBuffer = Buffer.from([
+			0x1a, 0x45, 0xdf, 0xa3, 0x93, 0x00, 0x00, 0x00,
+		]);
+		expect(detectVideoFormat(webmBuffer)).toBe("webm");
+	});
+
+	it("returns null for image formats", () => {
+		// PNG magic bytes should not be detected as video
+		const pngBuffer = Buffer.from([
+			0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a,
+		]);
+		expect(detectVideoFormat(pngBuffer)).toBeNull();
+	});
+
+	it("returns null for invalid video format", () => {
+		const invalidBuffer = Buffer.from([
+			0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+		]);
+		expect(detectVideoFormat(invalidBuffer)).toBeNull();
+	});
+
+	it("returns null for buffer too small", () => {
+		const smallBuffer = Buffer.from([0x1a, 0x45]);
+		expect(detectVideoFormat(smallBuffer)).toBeNull();
+	});
+
+	it("returns null for buffer with exactly 7 bytes (one less than minimum)", () => {
+		const sevenBytes = Buffer.from([0x1a, 0x45, 0xdf, 0xa3, 0x00, 0x00, 0x00]);
+		expect(detectVideoFormat(sevenBytes)).toBeNull();
+	});
+
+	it("returns null for text file", () => {
+		const textBuffer = Buffer.from("Hello, World!");
+		expect(detectVideoFormat(textBuffer)).toBeNull();
+	});
+});
+
+describe("detectEvidenceFormat", () => {
+	it("detects PNG as image format", () => {
+		const pngBuffer = Buffer.from([
+			0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a,
+		]);
+		expect(detectEvidenceFormat(pngBuffer)).toBe("png");
+	});
+
+	it("detects JPEG as image format", () => {
+		const jpegBuffer = Buffer.from([
+			0xff, 0xd8, 0xff, 0x00, 0x00, 0x00, 0x00, 0x00,
+		]);
+		expect(detectEvidenceFormat(jpegBuffer)).toBe("jpeg");
+	});
+
+	it("detects MP4 as video format", () => {
+		const mp4Buffer = Buffer.from([
+			0x00, 0x00, 0x00, 0x20, 0x66, 0x74, 0x79, 0x70, 0x69, 0x73, 0x6f, 0x6d,
+		]);
+		expect(detectEvidenceFormat(mp4Buffer)).toBe("mp4");
+	});
+
+	it("detects WebM as video format", () => {
+		const webmBuffer = Buffer.from([
+			0x1a, 0x45, 0xdf, 0xa3, 0x93, 0x00, 0x00, 0x00,
+		]);
+		expect(detectEvidenceFormat(webmBuffer)).toBe("webm");
+	});
+
+	it("returns null for unrecognized format", () => {
+		const invalidBuffer = Buffer.from([
+			0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+		]);
+		expect(detectEvidenceFormat(invalidBuffer)).toBeNull();
+	});
+});
+
+describe("getEvidenceType", () => {
+	it("returns screenshot for PNG", () => {
+		expect(getEvidenceType("png")).toBe("screenshot");
+	});
+
+	it("returns screenshot for JPEG", () => {
+		expect(getEvidenceType("jpeg")).toBe("screenshot");
+	});
+
+	it("returns video for MP4", () => {
+		expect(getEvidenceType("mp4")).toBe("video");
+	});
+
+	it("returns video for WebM", () => {
+		expect(getEvidenceType("webm")).toBe("video");
 	});
 });
 
@@ -247,6 +365,113 @@ describe("loadEvidenceFile", () => {
 			expect(() => loadEvidenceFile(candidate, tempDir)).not.toThrow();
 			const result = loadEvidenceFile(candidate, tempDir);
 			expect(result.ok === true || result.ok === false).toBe(true);
+		}
+	});
+
+	it("validates valid MP4 file", () => {
+		const mp4File = join(tempDir, "valid.mp4");
+		// Minimal valid MP4 header (ftyp box)
+		const mp4Header = Buffer.from([
+			0x00,
+			0x00,
+			0x00,
+			0x20, // size
+			0x66,
+			0x74,
+			0x79,
+			0x70, // 'ftyp'
+			0x69,
+			0x73,
+			0x6f,
+			0x6d, // 'isom' brand
+			0x00,
+			0x00,
+			0x00,
+			0x00,
+		]);
+		writeFileSync(mp4File, mp4Header);
+
+		const result = loadEvidenceFile("valid.mp4", tempDir);
+		expect(result.ok).toBe(true);
+		if (result.ok) {
+			expect(result.file.type).toBe("mp4");
+			expect(result.file.evidenceType).toBe("video");
+			expect(result.file.sizeBytes).toBe(16);
+		}
+	});
+
+	it("validates valid WebM file", () => {
+		const webmFile = join(tempDir, "valid.webm");
+		// Minimal valid WebM header (EBML)
+		const webmHeader = Buffer.from([
+			0x1a, 0x45, 0xdf, 0xa3, 0x93, 0x00, 0x00, 0x00,
+		]);
+		writeFileSync(webmFile, webmHeader);
+
+		const result = loadEvidenceFile("valid.webm", tempDir);
+		expect(result.ok).toBe(true);
+		if (result.ok) {
+			expect(result.file.type).toBe("webm");
+			expect(result.file.evidenceType).toBe("video");
+			expect(result.file.sizeBytes).toBe(8);
+		}
+	});
+
+	it("includes evidenceType for image files", () => {
+		const pngFile = join(tempDir, "valid.png");
+		const pngHeader = Buffer.from([
+			0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a,
+		]);
+		writeFileSync(pngFile, pngHeader);
+
+		const result = loadEvidenceFile("valid.png", tempDir);
+		expect(result.ok).toBe(true);
+		if (result.ok) {
+			expect(result.file.evidenceType).toBe("screenshot");
+		}
+	});
+
+	it("applies video size limit to video files", () => {
+		const mp4File = join(tempDir, "large.mp4");
+		const mp4Header = Buffer.from([
+			0x00, 0x00, 0x00, 0x20, 0x66, 0x74, 0x79, 0x70,
+		]);
+		const largeContent = Buffer.concat([mp4Header, Buffer.alloc(2000)]);
+		writeFileSync(mp4File, largeContent);
+
+		// Video limit of 100 bytes - file should be too large
+		const result = loadEvidenceFile("large.mp4", tempDir, 100, 100);
+		expect(result.ok).toBe(false);
+		if (!result.ok) {
+			expect(result.code).toBe("FILE_TOO_LARGE");
+		}
+	});
+
+	it("allows video files within video size limit", () => {
+		const mp4File = join(tempDir, "small.mp4");
+		const mp4Header = Buffer.from([
+			0x00, 0x00, 0x00, 0x20, 0x66, 0x74, 0x79, 0x70, 0x69, 0x73, 0x6f, 0x6d,
+		]);
+		writeFileSync(mp4File, mp4Header);
+
+		// Video limit of 1000 bytes - file should pass
+		const result = loadEvidenceFile("small.mp4", tempDir, 100, 1000);
+		expect(result.ok).toBe(true);
+	});
+
+	it("applies image size limit to image files even with higher video limit", () => {
+		const pngFile = join(tempDir, "large.png");
+		const pngHeader = Buffer.from([
+			0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a,
+		]);
+		const largeContent = Buffer.concat([pngHeader, Buffer.alloc(2000)]);
+		writeFileSync(pngFile, largeContent);
+
+		// Image limit of 100, video limit of 10000 - PNG should fail
+		const result = loadEvidenceFile("large.png", tempDir, 100, 10000);
+		expect(result.ok).toBe(false);
+		if (!result.ok) {
+			expect(result.code).toBe("FILE_TOO_LARGE");
 		}
 	});
 });

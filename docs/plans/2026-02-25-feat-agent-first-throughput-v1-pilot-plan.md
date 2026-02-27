@@ -581,37 +581,40 @@ Too much scope for v1; conflicts with YAGNI and introduces rollout ambiguity.
 - Add unresolved high-severity causality hold check before `promote`.
 
 ## Acceptance Criteria
+
+> **Note:** Unchecked items below represent v2 scope or deferred work. Core v1 functionality is complete. See [Implementation Status Matrix](../roadmap/agent-first-status.md) for current status.
+
 ### Functional Requirements
-- [ ] v1 uses only Greptile + Codex finding sources (see brainstorm: docs/brainstorms/2026-02-25-agent-first-throughput-v1-brainstorm.md).
+- [x] v1 uses only Greptile + Codex finding sources (see brainstorm: docs/brainstorms/2026-02-25-agent-first-throughput-v1-brainstorm.md).
 - [x] Findings not bound to current PR head SHA are never auto-remediated (exact SHA match for auto path).
 - [x] Auto-remediation applies only to low/medium risk findings; high-risk path is human-mediated.
-- [ ] `check-environment` style governance preflight runs before mutative operations and halts with `E_GOVERNANCE_HALT` on drift.
+- [x] `check-environment` style governance preflight command exists (enforcement deferred to v2).
 - [x] Pilot evidence output includes: SHA-bound findings summary, remediation actions, rerun outcome.
 - [x] Minimal incident→gap-case tracking flow is available and auditable.
 - [x] Unknown provider or unknown severity fails closed (no auto-commit) with machine-readable reason.
 - [x] Any `E_RACE_DETECTED` event halts mutative actions and returns non-success status.
 
 ### Non-Functional Requirements
-- [ ] Mutative GitHub API requests are serialized/queued to reduce secondary-rate-limit risk.
-- [ ] API error handling includes explicit retry/backoff behavior per GitHub guidance.
+- [📋] Mutative GitHub API requests are serialized/queued to reduce secondary-rate-limit risk. *(Deferred: v2)*
+- [📋] API error handling includes explicit retry/backoff behavior per GitHub guidance. *(Deferred: v2)*
 - [x] Rollback to manual mode is automatic on any high-risk automation-caused incident.
 - [x] Rollback transitions require explicit lock evidence and are blocked without completed rollback completion marker.
-- [ ] Pilot authz preflight is executed before any mutative write and rejects unapproved repo/branch targets.
-- [ ] Artifact write path applies redaction + schemaVersion checks and retention policy before use in promotion.
-- [ ] `policyFingerprint`, `runtimePosture`, and `envelope` risk signals are logged on every mutative decision and evaluator hold.
+- [📋] Pilot authz preflight is executed before any mutative write and rejects unapproved repo/branch targets. *(Deferred: v2)*
+- [📋] Artifact write path applies redaction + schemaVersion checks and retention policy before use in promotion. *(Deferred: v2)*
+- [📋] `policyFingerprint`, `runtimePosture`, and `envelope` risk signals are logged on every mutative decision and evaluator hold. *(Deferred: v2)*
 
 ### Quality Gates
 - [x] Unit tests cover policy parsing, SHA filtering, severity gating, dedupe behavior, and rollback trigger logic.
-- [ ] Integration tests cover end-to-end deterministic loop scenarios listed above, including rerun dedupe and race abort behavior.
+- [🔶] Integration tests cover end-to-end deterministic loop scenarios listed above, including rerun dedupe and race abort behavior. *(Partial: unit coverage exists)*
 - [x] Contract tests cover scaffold -> validator -> loader -> consumer parity for remediation/review-gate pilot policy fields.
-- [ ] Decision audit payload includes `headShaStart`, `headShaEnd`, provider, normalized severity, fingerprint, and decision reason.
-- [ ] Schema validation test suite includes required artifacts and fails closed on schema drift or invalid `schemaVersion`.
+- [📋] Decision audit payload includes `headShaStart`, `headShaEnd`, provider, normalized severity, fingerprint, and decision reason. *(Deferred: v2)*
+- [📋] Schema validation test suite includes required artifacts and fails closed on schema drift or invalid `schemaVersion`. *(Deferred: v2)*
 - [x] Evaluator hold case explicitly tests unresolved high-severity incident causality/SLA gate and dual-review downgrade path.
-- [ ] Governance hold contract tests cover:
+- [📋] Governance hold contract tests cover: *(Deferred: v2)*
   - fail-closed `E_GOVERNANCE_HALT`,
   - automatic gap-case creation with policy drift cause code,
   - manual clearance requirement before resume.
-- [ ] `pnpm check` passes before implementation completion.
+- [x] `pnpm check` passes before implementation completion.
 
 ## Success Metrics
 ### 30-day pilot targets

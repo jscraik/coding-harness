@@ -6,13 +6,18 @@ import type {
 	EvidenceError,
 	EvidenceErrorCode,
 	EvidenceFile,
+	EvidenceFormat,
 	EvidenceResult,
 	ImageFormat,
+	VideoFormat,
 } from "./types.js";
 import {
 	DEFAULT_MAX_FILE_SIZE_BYTES,
+	DEFAULT_MAX_VIDEO_SIZE_BYTES,
 	JPEG_MAGIC_BYTES,
+	MP4_MAGIC_BYTES,
 	PNG_MAGIC_BYTES,
+	WEBM_MAGIC_BYTES,
 } from "./types.js";
 
 /**
@@ -116,6 +121,59 @@ export function detectImageFormat(buffer: Buffer): ImageFormat | null {
 }
 
 /**
+ * Detect video format from magic bytes.
+ *
+ * @param buffer - Buffer containing file data (at least 8 bytes)
+ * @returns Detected format or null if unrecognized
+ */
+export function detectVideoFormat(buffer: Buffer): VideoFormat | null {
+	if (buffer.length < 8) {
+		return null;
+	}
+
+	// Check MP4: look for 'ftyp' at offset 4
+	// MP4 files start with: [size (4 bytes)] 'ftyp' [brand]
+	if (buffer.subarray(4, 8).equals(MP4_MAGIC_BYTES)) {
+		return "mp4";
+	}
+
+	// Check WebM: EBML header starts with 1A 45 DF A3
+	if (buffer.subarray(0, 4).equals(WEBM_MAGIC_BYTES)) {
+		return "webm";
+	}
+
+	return null;
+}
+
+/**
+ * Detect evidence format (image or video) from magic bytes.
+ *
+ * @param buffer - Buffer containing file data
+ * @returns Detected format or null if unrecognized
+ */
+export function detectEvidenceFormat(buffer: Buffer): EvidenceFormat | null {
+	// Try image formats first
+	const imageFormat = detectImageFormat(buffer);
+	if (imageFormat) return imageFormat;
+
+	// Then try video formats
+	return detectVideoFormat(buffer);
+}
+
+/**
+ * Determine evidence type from format.
+ *
+ * @param format - Detected format
+ * @returns Evidence type (screenshot or video)
+ */
+export function getEvidenceType(
+	format: EvidenceFormat,
+): "screenshot" | "video" {
+	const videoFormats: VideoFormat[] = ["mp4", "webm"];
+	return videoFormats.includes(format as VideoFormat) ? "video" : "screenshot";
+}
+
+/**
  * Create a structured evidence error.
  */
 export function createEvidenceError(
@@ -144,6 +202,7 @@ export function loadEvidenceFile(
 	filePath: string,
 	baseDir: string = process.cwd(),
 	maxFileSizeBytes: number = DEFAULT_MAX_FILE_SIZE_BYTES,
+	maxVideoSizeBytes: number = DEFAULT_MAX_VIDEO_SIZE_BYTES,
 ): EvidenceResult {
 	// 1. Validate path stays within base directory
 	let validatedPath: string;
@@ -169,16 +228,7 @@ export function loadEvidenceFile(
 		);
 	}
 
-	// 3. Validate file size
-	if (stats.size > maxFileSizeBytes) {
-		return createEvidenceError(
-			"FILE_TOO_LARGE",
-			`Evidence file exceeds ${maxFileSizeBytes} bytes: ${filePath} (${stats.size} bytes)`,
-			filePath,
-		);
-	}
-
-	// 4. Read file and validate format
+	// 3. Read file and detect format first (needed to determine size limit)
 	let buffer: Buffer;
 	try {
 		buffer = readFileSync(validatedPath);
@@ -190,11 +240,22 @@ export function loadEvidenceFile(
 		);
 	}
 
-	const format = detectImageFormat(buffer);
+	const format = detectEvidenceFormat(buffer);
 	if (!format) {
 		return createEvidenceError(
 			"INVALID_FORMAT",
-			`Invalid image format (expected PNG or JPEG): ${filePath}`,
+			`Invalid evidence format (expected PNG, JPEG, MP4, or WebM): ${filePath}`,
+			filePath,
+		);
+	}
+
+	// 4. Validate file size based on type (video has higher limit)
+	const isVideo = format === "mp4" || format === "webm";
+	const effectiveLimit = isVideo ? maxVideoSizeBytes : maxFileSizeBytes;
+	if (stats.size > effectiveLimit) {
+		return createEvidenceError(
+			"FILE_TOO_LARGE",
+			`Evidence file exceeds ${effectiveLimit} bytes: ${filePath} (${stats.size} bytes)`,
 			filePath,
 		);
 	}
@@ -203,6 +264,7 @@ export function loadEvidenceFile(
 	const evidenceFile: EvidenceFile = {
 		path: validatedPath,
 		type: format,
+		evidenceType: getEvidenceType(format),
 		sizeBytes: stats.size,
 	};
 

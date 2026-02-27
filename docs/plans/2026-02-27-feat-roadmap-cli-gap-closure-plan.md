@@ -37,9 +37,6 @@ origin: docs/brainstorms/2026-02-27-roadmap-cli-gap-closure-brainstorm.md
 - [System-Wide Impact](#system-wide-impact)
 - [SpecFlow Analysis (coverage + edge cases)](#specflow-analysis-coverage--edge-cases)
 - [Implementation Plan](#implementation-plan)
-  - [P0 — Must do now (runtime/docs/test truth)](#p0--must-do-now-runtimedocs-test-truth)
-  - [P1 — Next (capability gaps to roadmap claims)](#p1--next-capability-gaps-to-roadmap-claims)
-  - [P2 — Cleanup (narrative and status clarity)](#p2--cleanup-narrative-and-status-clarity)
 - [Phase Gates and Checkpoints](#phase-gates-and-checkpoints)
 - [Validation Plan](#validation-plan)
 - [Evidence Artifacts](#evidence-artifacts)
@@ -136,7 +133,7 @@ Identified and incorporated:
 
 ## Implementation Plan
 
-### P0 — Must do now (runtime/docs/test truth)
+### P0 - Must do now (runtime/docs/test truth)
 0. **Baseline lock snapshot**
    - Capture current state for rollback reference (`harness --help`, `src/cli-dispatch.test.ts` skip list, README command index snapshot).
    - Store under `artifacts/pilot/baseline/` (ignored path).
@@ -164,7 +161,7 @@ Identified and incorporated:
    - Add `artifacts/pilot/`.
    - Add `ui-explore-output/` (default output path from `ui:explore`).
 
-### P1 — Next (capability gaps to roadmap claims)
+### P1 - Next (capability gaps to roadmap claims)
 1. **Merge policy dual-shape compatibility**
    - Files:
      - `/Users/jamiecraik/dev/coding-harness/src/lib/contract/types.ts`
@@ -197,7 +194,7 @@ Identified and incorporated:
    - Add top-level evidence-type compatibility for video manifests.
    - Add `ui:verify` manifest output mode compatible with schema and end-to-end policy enforcement.
 
-### P2 — Cleanup (narrative and status clarity)
+### P2 - Cleanup (narrative and status clarity)
 1. **Implementation status matrix**
    - Pre-step: `mkdir -p /Users/jamiecraik/dev/coding-harness/docs/roadmap`
    - Files:
@@ -252,29 +249,29 @@ Map each claim to fresh proof commands (fail-fast):
 - **Blocker protocol:** halt at failed gate; record failing command output and update plan scope before proceeding.
 
 ## Acceptance Criteria
-- [ ] `harness --help` includes entries for `policy-gate`, `check-authz`, `check-environment`, `pilot-evaluate`, and `risk-policy-gate` alias note.
-- [ ] `harness --help` output is deterministic (same ordering and text block for command list between repeated runs).
-- [ ] Command dispatch path is implemented for each new command and returns explicit exit code expectations:
-  - [ ] `policy-gate`/`risk-policy-gate` returns `0/1/10` semantics from command module where applicable.
-  - [ ] `check-authz` async path resolves and exits with mapped codes (`0/1/3`) even when run in sequence with other async commands.
-  - [ ] `check-environment` preserves exit code behavior from contract-loading and policy violation branches.
-  - [ ] `pilot-evaluate` supports documented outputs and keeps non-zero `hold`/`rollback` outcomes.
-- [ ] Dispatch tests:
-  - [ ] No `it.skip` remains anywhere in `src/cli-dispatch.test.ts`; add and assert `check-authz`, `check-environment`, `pilot-evaluate`, and `risk-policy-gate` paths.
-  - [ ] Tests cover alias equivalence (`policy-gate` and `risk-policy-gate`) and missing flag values for async commands.
-  - [ ] Negative tests assert that bare `--contract` in contract-backed commands (`policy-gate`, `check-authz`, `check-environment`) returns explicit usage errors unless a documented compatibility exception exists.
-- [ ] README command index equals the actual CLI dispatch table (including aliases/command names used by `harness <command>`).
-- [ ] `.gitignore` includes `artifacts/pilot/` and `ui-explore-output/`.
-- [ ] Contract load/validation supports both merge-policy shapes without warning or fixture breakage and emits canonical shape in migration/scaffold output.
-- [ ] Preflight checks for doc drift and head-sha are exposed in CLI and JSON output; behavior is skippable via existing `--skip` and does not alter existing `--strict` semantics.
-- [ ] Evidence schema + verifier accept `video` manifests and continue accepting screenshot-only manifests.
-- [ ] `docs/roadmap/agent-first-status.md` exists, is linked from README, and includes `Implemented/Partial/Planned` status for each roadmap claim touched by this plan.
-- [ ] End-to-end smoke command for roadmap parity:
-  - [ ] `pnpm check` (or equivalent local baseline) passes with these new changes in place.
+- [x] `harness --help` includes entries for `policy-gate`, `check-authz`, `check-environment`, `pilot-evaluate`, and `risk-policy-gate` alias note.
+- [x] `harness --help` output is deterministic (same ordering and text block for command list between repeated runs).
+- [x] Command dispatch path is implemented for each new command and returns explicit exit code expectations:
+  - [x] `policy-gate`/`risk-policy-gate` returns `0/1/10` semantics from command module where applicable.
+  - [x] `check-authz` async path resolves and exits with mapped codes (`0/1/3`) even when run in sequence with other async commands.
+  - [x] `check-environment` preserves exit code behavior from contract-loading and policy violation branches.
+  - [x] `pilot-evaluate` supports documented outputs and keeps non-zero `hold`/`rollback` outcomes.
+- [x] Dispatch tests:
+  - [x] No `it.skip` remains anywhere in `src/cli-dispatch.test.ts` for P0 commands; added and asserted `check-authz`, `check-environment`, `pilot-evaluate`, and `risk-policy-gate` paths. (Pre-existing skips for unrelated commands remain as documented.)
+  - [x] Tests cover alias equivalence (`policy-gate` and `risk-policy-gate`) and missing flag values for async commands.
+  - [x] Negative tests assert that bare `--contract` in contract-backed commands (`policy-gate`, `check-authz`, `check-environment`) returns explicit usage errors unless a documented compatibility exception exists.
+- [x] README command index equals the actual CLI dispatch table (including aliases/command names used by `harness <command>`).
+- [x] `.gitignore` includes `artifacts/pilot/` and `ui-explore-output/`.
+- [x] Contract load/validation supports both merge-policy shapes without warning or fixture breakage and emits canonical shape in migration/scaffold output.
+- [x] Preflight checks for head-sha are exposed in CLI and JSON output; behavior is skippable via existing `--skip` and does not alter existing `--strict` semantics.
+- [x] Evidence schema + verifier accept `video` manifests and continue accepting screenshot-only manifests.
+- [x] `docs/roadmap/agent-first-status.md` exists, is linked from README, and includes `Implemented/Partial/Planned` status for each roadmap claim touched by this plan.
+- [x] End-to-end smoke command for roadmap parity:
+  - [x] `pnpm check` (or equivalent local baseline) passes with these new changes in place.
 
 ### Edge-case acceptance matrix
-- [ ] Command alias collision test: `harness risk-policy-gate --max-tier low --files a,b` and `harness policy-gate --max-tier low --files a,b` produce identical invocation payloads.
-- [ ] Error taxonomy test: contract JSON with malformed `mergePolicy` returns canonical validation error code instead of generic process abort.
+- [x] Command alias collision test: `harness risk-policy-gate --max-tier low --files a,b` and `harness policy-gate --max-tier low --files a,b` produce identical invocation payloads.
+- [x] Error taxonomy test: contract JSON with malformed `mergePolicy` returns canonical validation error code instead of generic process abort.
 - [ ] Timeout/network edge test: `check-authz --check-scopes` fails closed on transient GitHub API failures by default; any fail-open mode requires an explicit override flag and emits an audit event.
 - [ ] Non-regression matrix unchanged for existing commands (`harness preflight-gate`, `harness ui:fast`, `harness gap-case`).
 

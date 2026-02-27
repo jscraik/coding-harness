@@ -335,3 +335,178 @@ describe("field-by-field matrix tests for parity verification", () => {
 		expect(result.data).toBeDefined();
 	});
 });
+
+describe("mergePolicy dual-shape validation", () => {
+	it("accepts legacy array-style merge policy", () => {
+		const result = validateContract({
+			version: "1.2.0",
+			mergePolicy: {
+				high: ["review-gate", "evidence-verify"],
+				medium: ["review-gate"],
+				low: [],
+			},
+		});
+		expect(result.success).toBe(true);
+		expect(result.data?.mergePolicy).toEqual({
+			high: ["review-gate", "evidence-verify"],
+			medium: ["review-gate"],
+			low: [],
+		});
+	});
+
+	it("accepts roadmap object-style merge policy", () => {
+		const result = validateContract({
+			version: "1.2.0",
+			mergePolicy: {
+				high: { requiredChecks: ["review-gate", "evidence-verify"] },
+				medium: { requiredChecks: ["review-gate"] },
+				low: { requiredChecks: [] },
+			},
+		});
+		expect(result.success).toBe(true);
+		// Validator passes through the original shape; loader normalizes
+		expect(result.data?.mergePolicy).toEqual({
+			high: { requiredChecks: ["review-gate", "evidence-verify"] },
+			medium: { requiredChecks: ["review-gate"] },
+			low: { requiredChecks: [] },
+		});
+	});
+
+	it("accepts mixed legacy and roadmap shapes", () => {
+		const result = validateContract({
+			version: "1.2.0",
+			mergePolicy: {
+				high: { requiredChecks: ["review-gate"] }, // roadmap style
+				medium: ["review-gate"], // legacy style
+				low: [], // legacy style
+			},
+		});
+		expect(result.success).toBe(true);
+	});
+
+	it("rejects roadmap merge policy with non-array requiredChecks", () => {
+		const result = validateContract({
+			version: "1.2.0",
+			mergePolicy: {
+				high: { requiredChecks: "invalid" as unknown as string[] },
+			},
+		});
+		expect(result.success).toBe(false);
+	});
+
+	it("rejects roadmap merge policy with missing requiredChecks", () => {
+		const result = validateContract({
+			version: "1.2.0",
+			mergePolicy: {
+				high: { invalidKey: ["review-gate"] },
+			},
+		});
+		expect(result.success).toBe(false);
+	});
+
+	it("rejects merge policy with invalid severity key", () => {
+		const result = validateContract({
+			version: "1.2.0",
+			mergePolicy: {
+				critical: ["review-gate"], // invalid severity
+			},
+		});
+		expect(result.success).toBe(false);
+	});
+});
+
+describe("evidencePolicy video field validation", () => {
+	it("accepts evidencePolicy with allowedVideoTypes", () => {
+		const result = validateContract({
+			version: "1.2.0",
+			evidencePolicy: {
+				requiredFor: ["src/**/*.tsx"],
+				allowedTypes: ["png", "jpeg"],
+				allowedVideoTypes: ["mp4", "webm"],
+			},
+		});
+		expect(result.success).toBe(true);
+	});
+
+	it("accepts evidencePolicy with maxVideoSizeBytes", () => {
+		const result = validateContract({
+			version: "1.2.0",
+			evidencePolicy: {
+				requiredFor: [],
+				allowedTypes: ["png"],
+				maxVideoSizeBytes: 100 * 1024 * 1024,
+			},
+		});
+		expect(result.success).toBe(true);
+	});
+
+	it("rejects invalid allowedVideoTypes values", () => {
+		const result = validateContract({
+			version: "1.2.0",
+			evidencePolicy: {
+				requiredFor: [],
+				allowedTypes: ["png"],
+				allowedVideoTypes: ["avi", "mov"], // invalid formats
+			},
+		});
+		expect(result.success).toBe(false);
+	});
+
+	it("rejects non-array allowedVideoTypes", () => {
+		const result = validateContract({
+			version: "1.2.0",
+			evidencePolicy: {
+				requiredFor: [],
+				allowedTypes: ["png"],
+				allowedVideoTypes: "mp4" as unknown as string[],
+			},
+		});
+		expect(result.success).toBe(false);
+	});
+
+	it("rejects non-integer maxVideoSizeBytes", () => {
+		const result = validateContract({
+			version: "1.2.0",
+			evidencePolicy: {
+				requiredFor: [],
+				allowedTypes: ["png"],
+				maxVideoSizeBytes: 100.5,
+			},
+		});
+		expect(result.success).toBe(false);
+	});
+
+	it("rejects zero or negative maxVideoSizeBytes", () => {
+		const result1 = validateContract({
+			version: "1.2.0",
+			evidencePolicy: {
+				requiredFor: [],
+				allowedTypes: ["png"],
+				maxVideoSizeBytes: 0,
+			},
+		});
+		expect(result1.success).toBe(false);
+
+		const result2 = validateContract({
+			version: "1.2.0",
+			evidencePolicy: {
+				requiredFor: [],
+				allowedTypes: ["png"],
+				maxVideoSizeBytes: -100,
+			},
+		});
+		expect(result2.success).toBe(false);
+	});
+
+	it("rejects unknown evidencePolicy fields", () => {
+		const result = validateContract({
+			version: "1.2.0",
+			evidencePolicy: {
+				requiredFor: [],
+				allowedTypes: ["png"],
+				unknownField: "value",
+			},
+		});
+		expect(result.success).toBe(false);
+	});
+});

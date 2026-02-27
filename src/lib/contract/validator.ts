@@ -9,6 +9,8 @@ import type {
 	MemoryMaintenancePolicy,
 	MemoryPolicy,
 	MergePolicy,
+	MergePolicyEntry,
+	MergePolicyValue,
 	ObservabilityPolicy,
 	PackageManagerPolicy,
 	RemediationPolicy,
@@ -606,6 +608,32 @@ function isValidGapCasePolicy(value: unknown): value is GapCasePolicy {
 	return true;
 }
 
+/**
+ * Check if a value is a valid legacy array-style merge policy value.
+ */
+function isLegacyMergePolicyValue(value: unknown): value is string[] {
+	return (
+		Array.isArray(value) && value.every((item) => typeof item === "string")
+	);
+}
+
+/**
+ * Check if a value is a valid roadmap object-style merge policy entry.
+ */
+function isRoadmapMergePolicyEntry(value: unknown): value is MergePolicyEntry {
+	if (!isPlainObject(value)) return false;
+	const entry = value as Record<string, unknown>;
+	if (!Array.isArray(entry.requiredChecks)) return false;
+	return entry.requiredChecks.every((item) => typeof item === "string");
+}
+
+/**
+ * Check if a value is a valid merge policy value (either shape).
+ */
+function isValidMergePolicyValue(value: unknown): value is MergePolicyValue {
+	return isLegacyMergePolicyValue(value) || isRoadmapMergePolicyEntry(value);
+}
+
 function isValidMergePolicy(value: unknown): value is MergePolicy {
 	if (!isPlainObject(value)) return false;
 	const policy = value as Record<string, unknown>;
@@ -613,12 +641,8 @@ function isValidMergePolicy(value: unknown): value is MergePolicy {
 	if (Object.keys(policy).length === 0) {
 		return true;
 	}
-	for (const [severity, actions] of Object.entries(policy)) {
-		if (
-			hasForbiddenKey(severity) ||
-			!Array.isArray(actions) ||
-			!actions.every((value) => typeof value === "string")
-		) {
+	for (const [severity, entry] of Object.entries(policy)) {
+		if (hasForbiddenKey(severity) || !isValidMergePolicyValue(entry)) {
 			return false;
 		}
 	}
@@ -672,7 +696,14 @@ export function isValidEvidencePolicy(value: unknown): value is EvidencePolicy {
 	const policy = value as Record<string, unknown>;
 
 	const invalidKeys = Object.keys(policy).filter(
-		(key) => !["requiredFor", "allowedTypes", "maxFileSizeBytes"].includes(key),
+		(key) =>
+			![
+				"requiredFor",
+				"allowedTypes",
+				"maxFileSizeBytes",
+				"allowedVideoTypes",
+				"maxVideoSizeBytes",
+			].includes(key),
 	);
 	if (invalidKeys.length > 0) {
 		return false;
@@ -708,6 +739,29 @@ export function isValidEvidencePolicy(value: unknown): value is EvidencePolicy {
 		(typeof policy.maxFileSizeBytes !== "number" ||
 			policy.maxFileSizeBytes <= 0 ||
 			!Number.isInteger(policy.maxFileSizeBytes))
+	) {
+		return false;
+	}
+
+	// Validate allowedVideoTypes (optional, must be array of valid video formats)
+	if (policy.allowedVideoTypes !== undefined) {
+		if (!Array.isArray(policy.allowedVideoTypes)) {
+			return false;
+		}
+		const validVideoFormats = ["mp4", "webm"];
+		for (const format of policy.allowedVideoTypes) {
+			if (!validVideoFormats.includes(format)) {
+				return false;
+			}
+		}
+	}
+
+	// Validate maxVideoSizeBytes (optional, must be positive integer)
+	if (
+		policy.maxVideoSizeBytes !== undefined &&
+		(typeof policy.maxVideoSizeBytes !== "number" ||
+			policy.maxVideoSizeBytes <= 0 ||
+			!Number.isInteger(policy.maxVideoSizeBytes))
 	) {
 		return false;
 	}

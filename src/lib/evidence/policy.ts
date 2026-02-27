@@ -1,6 +1,12 @@
 import picomatch from "picomatch";
 import type { EvidencePolicy } from "../contract/types.js";
-import type { EvidenceError, EvidenceFile, ImageFormat } from "./types.js";
+import type {
+	EvidenceError,
+	EvidenceFile,
+	EvidenceFormat,
+	ImageFormat,
+	VideoFormat,
+} from "./types.js";
 
 /**
  * Policy violation error codes.
@@ -72,10 +78,19 @@ export function requiresEvidence(
  * @returns True if format is allowed
  */
 export function isFormatAllowed(
-	format: ImageFormat,
+	format: EvidenceFormat,
 	allowedTypes: ImageFormat[],
+	allowedVideoTypes?: VideoFormat[],
 ): boolean {
-	return allowedTypes.includes(format);
+	// Check if it's an image format
+	if (allowedTypes.includes(format as ImageFormat)) {
+		return true;
+	}
+	// Check if it's a video format (and video types are specified)
+	if (allowedVideoTypes?.includes(format as VideoFormat)) {
+		return true;
+	}
+	return false;
 }
 
 /**
@@ -111,7 +126,9 @@ export function enforceEvidencePolicy(
 
 	// Check each evidence file against allowed types
 	for (const file of verifiedFiles) {
-		if (!isFormatAllowed(file.type, policy.allowedTypes)) {
+		if (
+			!isFormatAllowed(file.type, policy.allowedTypes, policy.allowedVideoTypes)
+		) {
 			violations.push({
 				ok: false,
 				code: "INVALID_FORMAT",

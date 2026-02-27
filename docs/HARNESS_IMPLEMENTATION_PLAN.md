@@ -22,6 +22,7 @@
 - [32) Planning workflow contract (`/workflows:plan`)](#32-planning-workflow-contract-workflowsplan)
 - [33) Gap analysis decisions](#33-gap-analysis-decisions-2026-02-22)
 - [34) Implementation status](#34-implementation-status)
+- [35) Roadmap status matrix](#35-roadmap-status-matrix)
 
 ## 1) What this harness is
 
@@ -996,3 +997,14 @@ User has OTel collector at `~/.agents/otel-collector/`. Explore direct emission 
 | Diff budget guardrails | ✅ Complete - `harness diff-budget` command |
 | UI loop commands | ✅ Complete - `harness ui:fast`, `ui:verify`, `ui:explore` |
 | Brainstorm/plan artifact workflow | ✅ Complete - `harness brainstorm-gate`, `plan-gate` commands |
+
+## 35) Roadmap status matrix
+
+For detailed roadmap claims vs implementation status, see the [Agent-First Implementation Status Matrix](roadmap/agent-first-status.md).
+
+### Terminology notes
+
+- **`policy-gate`** and **`risk-policy-gate`** are aliases for the same command; `risk-policy-gate` provides terminology parity with roadmap naming.
+- **`preflight-gate`** refers to the pre-commit/pre-push policy enforcement layer.
+- **Deferred items** (marked 📋) represent v2 scope or future iterations, not incomplete work.
+- **Partial items** (marked 🔶) have core functionality implemented with gaps in edge cases or integration coverage.
