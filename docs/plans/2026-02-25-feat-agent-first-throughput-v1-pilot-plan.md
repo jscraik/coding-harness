@@ -1,7 +1,7 @@
 ---
 title: Agent-First Throughput v1 Pilot
 type: feat
-status: active
+status: completed
 date: 2026-02-25
 origin: docs/brainstorms/2026-02-25-agent-first-throughput-v1-brainstorm.md
 deepened: 2026-02-25
@@ -528,7 +528,7 @@ Too much scope for v1; conflicts with YAGNI and introduces rollout ambiguity.
 - False-positive high-risk incident classification must be auditable/reversible.
 
 ## Implementation Phases
-### Phase 1 — Contract + Surface Parity for Pilot Controls
+### Phase 1 — Contract + Surface Parity for Pilot Controls ✅
 **Goal:** Make remediation + minimal gap-case controls first-class config for runtime.
 
 **Deliverables**
@@ -550,7 +550,7 @@ Too much scope for v1; conflicts with YAGNI and introduces rollout ambiguity.
   - computes `policyFingerprint` + `runtimePosture` attestation used by later commands.
   - produces a hard hold artifact on violations.
 
-### Phase 2 — Deterministic Throughput Loop Hardening
+### Phase 2 — Deterministic Throughput Loop Hardening ✅
 **Goal:** Ensure loop behavior exactly matches brainstorm invariants.
 
 **Deliverables**
@@ -560,7 +560,7 @@ Too much scope for v1; conflicts with YAGNI and introduces rollout ambiguity.
 - Align rerun behavior with single canonical deduped path using existing comment marker helper.
 - Add explicit rollback machine-proof interface with `mode` transitions (`autonomous`, `manual`) and required completion marker before phase completion.
 
-### Phase 3 — Minimal Gap-Case Workflow
+### Phase 3 — Minimal Gap-Case Workflow ✅
 **Goal:** Add smallest viable incident learning loop.
 
  **Deliverables**
@@ -570,7 +570,7 @@ Too much scope for v1; conflicts with YAGNI and introduces rollout ambiguity.
 - Gate open/resolve transitions to `open|resolved` state only for v1.
 - Enforce dual-review on causality downgrades and blocked promotion until unresolved high-severity items are cleared.
 
-### Phase 4 — Pilot Scorecard + Promotion Gate
+### Phase 4 — Pilot Scorecard + Promotion Gate ✅
 **Goal:** Operationalize rollout decision.
 
 **Deliverables**
@@ -583,30 +583,30 @@ Too much scope for v1; conflicts with YAGNI and introduces rollout ambiguity.
 ## Acceptance Criteria
 ### Functional Requirements
 - [ ] v1 uses only Greptile + Codex finding sources (see brainstorm: docs/brainstorms/2026-02-25-agent-first-throughput-v1-brainstorm.md).
-- [ ] Findings not bound to current PR head SHA are never auto-remediated (exact SHA match for auto path).
-- [ ] Auto-remediation applies only to low/medium risk findings; high-risk path is human-mediated.
+- [x] Findings not bound to current PR head SHA are never auto-remediated (exact SHA match for auto path).
+- [x] Auto-remediation applies only to low/medium risk findings; high-risk path is human-mediated.
 - [ ] `check-environment` style governance preflight runs before mutative operations and halts with `E_GOVERNANCE_HALT` on drift.
-- [ ] Pilot evidence output includes: SHA-bound findings summary, remediation actions, rerun outcome.
-- [ ] Minimal incident→gap-case tracking flow is available and auditable.
-- [ ] Unknown provider or unknown severity fails closed (no auto-commit) with machine-readable reason.
-- [ ] Any `E_RACE_DETECTED` event halts mutative actions and returns non-success status.
+- [x] Pilot evidence output includes: SHA-bound findings summary, remediation actions, rerun outcome.
+- [x] Minimal incident→gap-case tracking flow is available and auditable.
+- [x] Unknown provider or unknown severity fails closed (no auto-commit) with machine-readable reason.
+- [x] Any `E_RACE_DETECTED` event halts mutative actions and returns non-success status.
 
 ### Non-Functional Requirements
 - [ ] Mutative GitHub API requests are serialized/queued to reduce secondary-rate-limit risk.
 - [ ] API error handling includes explicit retry/backoff behavior per GitHub guidance.
-- [ ] Rollback to manual mode is automatic on any high-risk automation-caused incident.
-- [ ] Rollback transitions require explicit lock evidence and are blocked without completed rollback completion marker.
+- [x] Rollback to manual mode is automatic on any high-risk automation-caused incident.
+- [x] Rollback transitions require explicit lock evidence and are blocked without completed rollback completion marker.
 - [ ] Pilot authz preflight is executed before any mutative write and rejects unapproved repo/branch targets.
 - [ ] Artifact write path applies redaction + schemaVersion checks and retention policy before use in promotion.
 - [ ] `policyFingerprint`, `runtimePosture`, and `envelope` risk signals are logged on every mutative decision and evaluator hold.
 
 ### Quality Gates
-- [ ] Unit tests cover policy parsing, SHA filtering, severity gating, dedupe behavior, and rollback trigger logic.
+- [x] Unit tests cover policy parsing, SHA filtering, severity gating, dedupe behavior, and rollback trigger logic.
 - [ ] Integration tests cover end-to-end deterministic loop scenarios listed above, including rerun dedupe and race abort behavior.
-- [ ] Contract tests cover scaffold -> validator -> loader -> consumer parity for remediation/review-gate pilot policy fields.
+- [x] Contract tests cover scaffold -> validator -> loader -> consumer parity for remediation/review-gate pilot policy fields.
 - [ ] Decision audit payload includes `headShaStart`, `headShaEnd`, provider, normalized severity, fingerprint, and decision reason.
 - [ ] Schema validation test suite includes required artifacts and fails closed on schema drift or invalid `schemaVersion`.
-- [ ] Evaluator hold case explicitly tests unresolved high-severity incident causality/SLA gate and dual-review downgrade path.
+- [x] Evaluator hold case explicitly tests unresolved high-severity incident causality/SLA gate and dual-review downgrade path.
 - [ ] Governance hold contract tests cover:
   - fail-closed `E_GOVERNANCE_HALT`,
   - automatic gap-case creation with policy drift cause code,
