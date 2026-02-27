@@ -63,6 +63,8 @@ export interface PreflightGateOptions {
 	skip?: string[];
 	/** Maximum tier allowed (blocks higher) */
 	maxTier?: RiskTier;
+	/** Head SHA for determinism checks (optional) */
+	headSha?: string;
 }
 
 /**

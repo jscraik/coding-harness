@@ -2,13 +2,14 @@
 	"$schema": "https://json-schema.org/draft/2020-12/schema",
 	"$id": "https://example.com/schemas/browser-evidence.json",
 	"title": "Browser Evidence",
-	"description": "Schema for browser evidence artifacts (screenshots)",
+	"description": "Schema for browser evidence artifacts (screenshots and videos)",
 	"type": "object",
 	"required": ["evidenceType", "files"],
 	"properties": {
 		"evidenceType": {
-			"const": "screenshot",
-			"description": "Type of evidence (MVP: screenshots only)"
+			"type": "string",
+			"enum": ["screenshot", "video"],
+			"description": "Type of evidence"
 		},
 		"files": {
 			"type": "array",
@@ -31,8 +32,8 @@
 					},
 					"type": {
 						"type": "string",
-						"enum": ["png", "jpeg"],
-						"description": "Image format of the evidence file"
+						"enum": ["png", "jpeg", "mp4", "webm"],
+						"description": "Format of the evidence file (image or video)"
 					},
 					"timestamp": {
 						"type": "string",

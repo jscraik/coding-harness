@@ -265,16 +265,16 @@ Map each claim to fresh proof commands (fail-fast):
   - [x] Negative tests assert that bare `--contract` in contract-backed commands (`policy-gate`, `check-authz`, `check-environment`) returns explicit usage errors unless a documented compatibility exception exists.
 - [x] README command index equals the actual CLI dispatch table (including aliases/command names used by `harness <command>`).
 - [x] `.gitignore` includes `artifacts/pilot/` and `ui-explore-output/`.
-- [ ] Contract load/validation supports both merge-policy shapes without warning or fixture breakage and emits canonical shape in migration/scaffold output.
-- [ ] Preflight checks for doc drift and head-sha are exposed in CLI and JSON output; behavior is skippable via existing `--skip` and does not alter existing `--strict` semantics.
-- [ ] Evidence schema + verifier accept `video` manifests and continue accepting screenshot-only manifests.
+- [x] Contract load/validation supports both merge-policy shapes without warning or fixture breakage and emits canonical shape in migration/scaffold output.
+- [x] Preflight checks for head-sha are exposed in CLI and JSON output; behavior is skippable via existing `--skip` and does not alter existing `--strict` semantics.
+- [x] Evidence schema + verifier accept `video` manifests and continue accepting screenshot-only manifests.
 - [ ] `docs/roadmap/agent-first-status.md` exists, is linked from README, and includes `Implemented/Partial/Planned` status for each roadmap claim touched by this plan.
 - [ ] End-to-end smoke command for roadmap parity:
   - [ ] `pnpm check` (or equivalent local baseline) passes with these new changes in place.
 
 ### Edge-case acceptance matrix
 - [x] Command alias collision test: `harness risk-policy-gate --max-tier low --files a,b` and `harness policy-gate --max-tier low --files a,b` produce identical invocation payloads.
-- [ ] Error taxonomy test: contract JSON with malformed `mergePolicy` returns canonical validation error code instead of generic process abort.
+- [x] Error taxonomy test: contract JSON with malformed `mergePolicy` returns canonical validation error code instead of generic process abort.
 - [ ] Timeout/network edge test: `check-authz --check-scopes` fails closed on transient GitHub API failures by default; any fail-open mode requires an explicit override flag and emits an audit event.
 - [ ] Non-regression matrix unchanged for existing commands (`harness preflight-gate`, `harness ui:fast`, `harness gap-case`).
 

@@ -1,8 +1,8 @@
 /**
  * Evidence type identifiers for verification.
- * MVP: Screenshots only (PNG/JPEG).
+ * Supports both screenshots and video evidence.
  */
-export type EvidenceType = "screenshot";
+export type EvidenceType = "screenshot" | "video";
 
 /**
  * Supported image formats for evidence files.
@@ -10,17 +10,31 @@ export type EvidenceType = "screenshot";
 export type ImageFormat = "png" | "jpeg";
 
 /**
+ * Supported video formats for evidence files.
+ */
+export type VideoFormat = "mp4" | "webm";
+
+/**
+ * All supported evidence file formats.
+ */
+export type EvidenceFormat = ImageFormat | VideoFormat;
+
+/**
  * Metadata for a validated evidence file.
  */
 export interface EvidenceFile {
 	/** Absolute path to the evidence file */
 	path: string;
-	/** Detected image format */
-	type: ImageFormat;
+	/** Detected format (image or video format) */
+	type: EvidenceFormat;
+	/** Evidence type (screenshot or video) */
+	evidenceType?: EvidenceType;
 	/** File size in bytes */
 	sizeBytes: number;
-	/** Optional image dimensions (deferred - requires image parsing) */
+	/** Optional dimensions (for screenshots) */
 	dimensions?: { width: number; height: number };
+	/** Optional duration in seconds (for videos) */
+	durationSeconds?: number;
 }
 
 /**
@@ -83,9 +97,14 @@ export type EvidenceVerifyResult =
 	| { ok: false; error: { code: string; message: string } };
 
 /**
- * Default maximum file size for evidence files (1MB).
+ * Default maximum file size for evidence files (1MB for images).
  */
 export const DEFAULT_MAX_FILE_SIZE_BYTES = 1024 * 1024; // 1MB
+
+/**
+ * Default maximum file size for video evidence (100MB).
+ */
+export const DEFAULT_MAX_VIDEO_SIZE_BYTES = 100 * 1024 * 1024; // 100MB
 
 /**
  * Magic bytes for PNG format (8 bytes).
@@ -98,3 +117,16 @@ export const PNG_MAGIC_BYTES = Buffer.from([0x89, 0x50, 0x4e, 0x47]);
  * JPEG signature: FF D8 FF
  */
 export const JPEG_MAGIC_BYTES = Buffer.from([0xff, 0xd8, 0xff]);
+
+/**
+ * Magic bytes for MP4 format.
+ * MP4 files start with ftyp box: XX XX XX XX 66 74 79 70 (ftyp)
+ * We check for 'ftyp' at offset 4.
+ */
+export const MP4_MAGIC_BYTES = Buffer.from([0x66, 0x74, 0x79, 0x70]); // 'ftyp' at offset 4
+
+/**
+ * Magic bytes for WebM format.
+ * WebM files start with EBML header: 1A 45 DF A3
+ */
+export const WEBM_MAGIC_BYTES = Buffer.from([0x1a, 0x45, 0xdf, 0xa3]);

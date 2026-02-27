@@ -543,6 +543,36 @@ describe("cli command dispatch", () => {
 		expect(exitSpy).toHaveBeenCalledWith(46);
 	});
 
+	it("dispatches preflight-gate with --head-sha flag", async () => {
+		const { run } = await import("./cli.js");
+		const { runPreflightGateCLI } = await import(
+			"./commands/preflight-gate.js"
+		);
+
+		const exitSpy = vi
+			.spyOn(process, "exit")
+			.mockImplementation(((_code?: number) => undefined) as never);
+
+		run([
+			"preflight-gate",
+			"--files",
+			"src/a.ts",
+			"--head-sha",
+			"abc123",
+			"--json",
+		]);
+
+		// Allow async CLI handler to resolve
+		await new Promise((resolve) => setTimeout(resolve, 0));
+
+		expect(vi.mocked(runPreflightGateCLI)).toHaveBeenCalledWith({
+			files: ["src/a.ts"],
+			headSha: "abc123",
+			json: true,
+		});
+		expect(exitSpy).toHaveBeenCalledWith(46);
+	});
+
 	// Note: The remediate command doesn't support --findings flag in the current implementation
 	it.skip("dispatches remediate command", async () => {
 		const { run } = await import("./cli.js");

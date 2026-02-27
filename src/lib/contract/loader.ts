@@ -1,6 +1,10 @@
 import { readFileSync } from "node:fs";
 import { PathTraversalError, validatePath } from "../input/validator.js";
-import type { HarnessContract } from "./types.js";
+import type {
+	HarnessContract,
+	MergePolicy,
+	MergePolicyValue,
+} from "./types.js";
 import { DEFAULT_CONTRACT } from "./types.js";
 import {
 	type ValidationError,
@@ -10,6 +14,31 @@ import {
 
 const MAX_CONTRACT_SIZE = 1024 * 1024; // 1MB
 const MAX_JSON_DEPTH = 100;
+
+/**
+ * Normalize a merge policy value to canonical array form.
+ * - Legacy array: returned as-is
+ * - Roadmap object: extracts requiredChecks array
+ */
+function normalizeMergePolicyValue(value: MergePolicyValue): string[] {
+	if (Array.isArray(value)) {
+		return value;
+	}
+	// Roadmap shape: { requiredChecks: [...] }
+	return value.requiredChecks;
+}
+
+/**
+ * Normalize merge policy to canonical array form.
+ * All severity keys map to string arrays internally.
+ */
+function normalizeMergePolicy(policy: MergePolicy): MergePolicy {
+	const normalized: MergePolicy = {};
+	for (const [severity, value] of Object.entries(policy)) {
+		normalized[severity] = normalizeMergePolicyValue(value);
+	}
+	return normalized;
+}
 
 export class ContractLoadError extends Error {
 	constructor(
@@ -96,9 +125,16 @@ export function loadContract(path: string): HarnessContract {
 		);
 	}
 
-	// Merge with defaults
-	return {
+	// Merge with defaults and normalize merge policy to canonical form
+	const contract: HarnessContract = {
 		...DEFAULT_CONTRACT,
 		...result.data,
 	};
+
+	// Normalize merge policy if present
+	if (contract.mergePolicy) {
+		contract.mergePolicy = normalizeMergePolicy(contract.mergePolicy);
+	}
+
+	return contract;
 }

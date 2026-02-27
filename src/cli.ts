@@ -98,15 +98,11 @@ function printUsage(): void {
 		"  pilot-rollback   Transition pilot mode (autonomous <-> manual)",
 	);
 	console.info("  policy-gate      Check risk tier compliance for files");
-	console.info(
-		"  risk-policy-gate Alias for policy-gate (roadmap parity)",
-	);
+	console.info("  risk-policy-gate Alias for policy-gate (roadmap parity)");
 	console.info(
 		"  check-authz      Check authorization against contract policy",
 	);
-	console.info(
-		"  check-environment Check environment against contract policy",
-	);
+	console.info("  check-environment Check environment against contract policy");
 	console.info(
 		"  pilot-evaluate   Evaluate pilot metrics for promotion decision",
 	);
@@ -415,6 +411,7 @@ export function run(args: string[]): void {
 		const filesIndex = args.indexOf("--files");
 		const maxTierIndex = args.indexOf("--max-tier");
 		const skipIndex = args.indexOf("--skip");
+		const headShaIndex = args.indexOf("--head-sha");
 
 		const options: {
 			contractPath?: string;
@@ -423,6 +420,7 @@ export function run(args: string[]): void {
 			strict?: boolean;
 			skip?: string[];
 			json?: boolean;
+			headSha?: string;
 		} = {};
 
 		if (jsonFlag) options.json = true;
@@ -446,6 +444,10 @@ export function run(args: string[]): void {
 		const skipArg = getFlagValue(args, skipIndex);
 		if (skipArg) {
 			options.skip = parseCsvList(skipArg);
+		}
+		const headShaArg = getFlagValue(args, headShaIndex);
+		if (headShaArg) {
+			options.headSha = headShaArg;
 		}
 
 		// Handle async preflight gate

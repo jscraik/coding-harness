@@ -5,6 +5,21 @@ export type TimeoutAction = "fail" | "warn";
 export type ImageFormat = "png" | "jpeg";
 
 /**
+ * Roadmap-style merge policy entry with required checks array.
+ * Used for extended policy configuration.
+ */
+export interface MergePolicyEntry {
+	requiredChecks: string[];
+}
+
+/**
+ * Merge policy value - supports both legacy array and roadmap object shapes.
+ * - Legacy: `["check1", "check2"]`
+ * - Roadmap: `{ "requiredChecks": ["check1", "check2"] }`
+ */
+export type MergePolicyValue = string[] | MergePolicyEntry;
+
+/**
  * Diff budget configuration for limiting PR scope.
  */
 export interface DiffBudget {
@@ -17,7 +32,7 @@ export interface DiffBudget {
 }
 
 export interface MergePolicy {
-	[severity: string]: string[];
+	[severity: string]: MergePolicyValue;
 }
 
 export interface DocsDriftRules {
@@ -103,8 +118,12 @@ export interface EvidencePolicy {
 	requiredFor: string[];
 	/** Allowed image formats for evidence */
 	allowedTypes: ImageFormat[];
-	/** Maximum file size in bytes (optional, defaults to 1MB) */
+	/** Allowed video formats for evidence (optional) */
+	allowedVideoTypes?: ("mp4" | "webm")[] | undefined;
+	/** Maximum file size in bytes (optional, defaults to 1MB for images) */
 	maxFileSizeBytes?: number | undefined;
+	/** Maximum video file size in bytes (optional, defaults to 100MB) */
+	maxVideoSizeBytes?: number | undefined;
 }
 
 /**

@@ -335,3 +335,82 @@ describe("field-by-field matrix tests for parity verification", () => {
 		expect(result.data).toBeDefined();
 	});
 });
+
+describe("mergePolicy dual-shape validation", () => {
+	it("accepts legacy array-style merge policy", () => {
+		const result = validateContract({
+			version: "1.2.0",
+			mergePolicy: {
+				high: ["review-gate", "evidence-verify"],
+				medium: ["review-gate"],
+				low: [],
+			},
+		});
+		expect(result.success).toBe(true);
+		expect(result.data?.mergePolicy).toEqual({
+			high: ["review-gate", "evidence-verify"],
+			medium: ["review-gate"],
+			low: [],
+		});
+	});
+
+	it("accepts roadmap object-style merge policy", () => {
+		const result = validateContract({
+			version: "1.2.0",
+			mergePolicy: {
+				high: { requiredChecks: ["review-gate", "evidence-verify"] },
+				medium: { requiredChecks: ["review-gate"] },
+				low: { requiredChecks: [] },
+			},
+		});
+		expect(result.success).toBe(true);
+		// Validator passes through the original shape; loader normalizes
+		expect(result.data?.mergePolicy).toEqual({
+			high: { requiredChecks: ["review-gate", "evidence-verify"] },
+			medium: { requiredChecks: ["review-gate"] },
+			low: { requiredChecks: [] },
+		});
+	});
+
+	it("accepts mixed legacy and roadmap shapes", () => {
+		const result = validateContract({
+			version: "1.2.0",
+			mergePolicy: {
+				high: { requiredChecks: ["review-gate"] }, // roadmap style
+				medium: ["review-gate"], // legacy style
+				low: [], // legacy style
+			},
+		});
+		expect(result.success).toBe(true);
+	});
+
+	it("rejects roadmap merge policy with non-array requiredChecks", () => {
+		const result = validateContract({
+			version: "1.2.0",
+			mergePolicy: {
+				high: { requiredChecks: "invalid" as unknown as string[] },
+			},
+		});
+		expect(result.success).toBe(false);
+	});
+
+	it("rejects roadmap merge policy with missing requiredChecks", () => {
+		const result = validateContract({
+			version: "1.2.0",
+			mergePolicy: {
+				high: { invalidKey: ["review-gate"] },
+			},
+		});
+		expect(result.success).toBe(false);
+	});
+
+	it("rejects merge policy with invalid severity key", () => {
+		const result = validateContract({
+			version: "1.2.0",
+			mergePolicy: {
+				critical: ["review-gate"], // invalid severity
+			},
+		});
+		expect(result.success).toBe(false);
+	});
+});
