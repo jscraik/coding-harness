@@ -86,11 +86,8 @@ function printUsage(): void {
 	console.info("  observability-gate  Check cardinality limits in metrics");
 	console.info("  diff-budget      Enforce diff budget constraints");
 	console.info("  ui:fast          Storybook-first local development loop");
-	console.info("  --contract      Path to harness.contract.json");
 	console.info("  ui:verify        Playwright smoke suite with evidence");
-	console.info("  --contract      Path to harness.contract.json");
 	console.info("  ui:explore       Agent browser exploratory testing");
-	console.info("  --contract      Path to harness.contract.json");
 	console.info("  context          Semantic search for relevant prior work");
 	console.info("  index-context    Bulk index brainstorms/plans for search");
 	console.info(

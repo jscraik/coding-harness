@@ -1,7 +1,7 @@
 ---
 title: feat: Recurring Gardening Workflow
 type: feat
-status: active
+status: completed
 date: 2026-02-23
 origin: docs/brainstorms/2026-02-23-phase-6-recurring-gardening-brainstorm.md
 ---

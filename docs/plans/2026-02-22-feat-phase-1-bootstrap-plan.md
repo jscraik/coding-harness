@@ -1,7 +1,7 @@
 ---
 title: Phase 1 Bootstrap and Deterministic Local Gate
 type: feat
-status: active
+status: superseded
 date: 2026-02-22
 origin: docs/brainstorms/2026-02-22-harness-gap-analysis-brainstorm.md
 deepened: 2026-02-22

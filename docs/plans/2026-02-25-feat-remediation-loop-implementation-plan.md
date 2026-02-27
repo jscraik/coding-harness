@@ -1,7 +1,7 @@
 ---
 title: Remediation Loop Implementation
 type: feat
-status: active
+status: superseded
 date: 2026-02-25
 origin: docs/brainstorms/2026-02-24-code-factory-remediation-gap-loop-brainstorm.md
 deepened: 2026-02-25

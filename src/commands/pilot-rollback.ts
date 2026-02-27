@@ -6,7 +6,15 @@
  * marker artifacts for verification.
  */
 
-import { existsSync, mkdirSync, writeFileSync } from "node:fs";
+import { randomUUID } from "node:crypto";
+import {
+	existsSync,
+	mkdirSync,
+	readFileSync,
+	renameSync,
+	rmSync,
+	writeFileSync,
+} from "node:fs";
 import { dirname, resolve } from "node:path";
 import { loadContract } from "../lib/contract/loader.js";
 import type { PilotRollbackPolicy } from "../lib/contract/types.js";
@@ -99,8 +107,8 @@ function nowIso(): string {
 
 function generateEventsId(): string {
 	const timestamp = Date.now().toString(36);
-	const random = Math.random().toString(36).slice(2, 8);
-	return `rollback-${timestamp}-${random}`;
+	const uuid = randomUUID().slice(0, 8);
+	return `rollback-${timestamp}-${uuid}`;
 }
 
 function normalizePath(baseDir: string, userPath: string): string {
@@ -142,7 +150,30 @@ function appendRollbackEvent(
 ): void {
 	mkdirSync(dirname(eventsPath), { recursive: true });
 	const line = `${JSON.stringify(record)}\n`;
-	writeFileSync(eventsPath, line, { flag: "a", encoding: "utf-8" });
+
+	// Atomic append: write to temp file, then rename (prevents race conditions)
+	const tempPath = `${eventsPath}.${process.pid}.${Date.now()}.tmp`;
+	try {
+		// Atomic append: read existing, write to temp, then rename
+		if (existsSync(eventsPath)) {
+			const existing = readFileSync(eventsPath, "utf-8");
+			writeFileSync(tempPath, existing + line, { encoding: "utf-8" });
+		} else {
+			writeFileSync(tempPath, line, { encoding: "utf-8" });
+		}
+		renameSync(tempPath, eventsPath);
+	} catch {
+		// Clean up temp file on failure
+		try {
+			if (existsSync(tempPath)) {
+				rmSync(tempPath);
+			}
+		} catch {
+			// Ignore cleanup errors
+		}
+		// Fallback to direct append if atomic fails (e.g., cross-filesystem)
+		writeFileSync(eventsPath, line, { flag: "a", encoding: "utf-8" });
+	}
 }
 
 function writeRollbackMarker(markerPath: string, marker: RollbackMarker): void {

@@ -1,4 +1,13 @@
-import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
+import { randomUUID } from "node:crypto";
+import {
+	existsSync,
+	mkdirSync,
+	readFileSync,
+	renameSync,
+	rmSync,
+	statSync,
+	writeFileSync,
+} from "node:fs";
 import { dirname, resolve } from "node:path";
 import { loadContract } from "../lib/contract/loader.js";
 import {
@@ -132,6 +141,7 @@ export type GapCaseResult =
 
 const DEFAULT_CASE_STORE = ".harness/gap-cases.json";
 const DEFAULT_CASE_ID_PREFIX = "gap-";
+const MAX_CASE_STORE_SIZE = 10 * 1024 * 1024; // 10MB
 const HOURS_PER_DAY = 24;
 const DEFAULT_ARTIFACTS_DIR = "artifacts/pilot";
 const ROLLBACK_MARKER_FILE = "rollback-marker.json";
@@ -164,6 +174,14 @@ function loadPolicy(contractPath?: string): PilotGapCasePolicy {
 function readCaseStore(filePath: string): GapCaseStore {
 	if (!existsSync(filePath)) {
 		return { version: 1, cases: [] };
+	}
+
+	// Size check to prevent memory exhaustion (OWASP: CWE-400)
+	const stats = statSync(filePath);
+	if (stats.size > MAX_CASE_STORE_SIZE) {
+		throw new Error(
+			`Case store exceeds maximum size (${MAX_CASE_STORE_SIZE} bytes): ${filePath}`,
+		);
 	}
 
 	const raw = readFileSync(filePath, "utf-8");
@@ -225,8 +243,8 @@ interface AutoRollbackMarker {
  */
 function generateRollbackEventId(): string {
 	const timestamp = Date.now().toString(36);
-	const random = Math.random().toString(36).slice(2, 8);
-	return `rollback-${timestamp}-${random}`;
+	const uuid = randomUUID().slice(0, 8);
+	return `rollback-${timestamp}-${uuid}`;
 }
 
 /**
@@ -260,11 +278,31 @@ function triggerAutoRollback(
 			result: "success",
 		};
 
-		// Append to rollback events
+		// Append to rollback events (atomic write to prevent race conditions)
 		const eventsPath = resolve(artifactsPath, ROLLBACK_EVENTS_FILE);
 		mkdirSync(dirname(eventsPath), { recursive: true });
 		const line = `${JSON.stringify(event)}\n`;
-		writeFileSync(eventsPath, line, { flag: "a", encoding: "utf-8" });
+		const tempPath = `${eventsPath}.${process.pid}.${Date.now()}.tmp`;
+		try {
+			if (existsSync(eventsPath)) {
+				const existing = readFileSync(eventsPath, "utf-8");
+				writeFileSync(tempPath, existing + line, { encoding: "utf-8" });
+			} else {
+				writeFileSync(tempPath, line, { encoding: "utf-8" });
+			}
+			renameSync(tempPath, eventsPath);
+		} catch {
+			// Clean up temp file on failure
+			try {
+				if (existsSync(tempPath)) {
+					rmSync(tempPath);
+				}
+			} catch {
+				// Ignore cleanup errors
+			}
+			// Fallback to direct append if atomic fails
+			writeFileSync(eventsPath, line, { flag: "a", encoding: "utf-8" });
+		}
 
 		// Write rollback marker
 		const marker: AutoRollbackMarker = {
