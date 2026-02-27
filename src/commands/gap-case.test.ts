@@ -560,6 +560,185 @@ describe("gap-case", () => {
 		});
 	});
 
+	describe("auto-rollback trigger", () => {
+		it("triggers rollback when high-severity automation is confirmed", () => {
+			createContract();
+
+			const createResult = runGapCase({
+				action: "create",
+				incidentId: "incident-001",
+				owner: "alice",
+				severity: "high",
+				linkedPr: "https://github.com/org/repo/pull/1",
+				contractPath,
+			});
+
+			if (!createResult.ok || createResult.output.action !== "create") return;
+
+			const result = runGapCase({
+				action: "update-causality",
+				caseId: createResult.output.caseRecord.id,
+				causality: "automation_confirmed",
+				confidence: "confirmed",
+				updatedBy: "bob",
+				contractPath,
+			});
+
+			expect(result.ok).toBe(true);
+			if (result.ok && result.output.action === "update-causality") {
+				expect(result.output.caseRecord.autoRollbackTriggeredAt).toBeDefined();
+				expect(result.output.caseRecord.autoRollbackReason).toContain(
+					"Automatic rollback triggered",
+				);
+			}
+		});
+
+		it("does not trigger rollback for medium severity", () => {
+			createContract();
+
+			const createResult = runGapCase({
+				action: "create",
+				incidentId: "incident-001",
+				owner: "alice",
+				severity: "medium",
+				linkedPr: "https://github.com/org/repo/pull/1",
+				contractPath,
+			});
+
+			if (!createResult.ok || createResult.output.action !== "create") return;
+
+			const result = runGapCase({
+				action: "update-causality",
+				caseId: createResult.output.caseRecord.id,
+				causality: "automation_confirmed",
+				confidence: "confirmed",
+				updatedBy: "bob",
+				contractPath,
+			});
+
+			expect(result.ok).toBe(true);
+			if (result.ok && result.output.action === "update-causality") {
+				expect(result.output.caseRecord.autoRollbackTriggeredAt).toBeUndefined();
+			}
+		});
+
+		it("does not trigger rollback for automation_possible", () => {
+			createContract();
+
+			const createResult = runGapCase({
+				action: "create",
+				incidentId: "incident-001",
+				owner: "alice",
+				severity: "high",
+				linkedPr: "https://github.com/org/repo/pull/1",
+				contractPath,
+			});
+
+			if (!createResult.ok || createResult.output.action !== "create") return;
+
+			const result = runGapCase({
+				action: "update-causality",
+				caseId: createResult.output.caseRecord.id,
+				causality: "automation_possible",
+				confidence: "confirmed",
+				updatedBy: "bob",
+				contractPath,
+			});
+
+			expect(result.ok).toBe(true);
+			if (result.ok && result.output.action === "update-causality") {
+				expect(result.output.caseRecord.autoRollbackTriggeredAt).toBeUndefined();
+			}
+		});
+
+		it("does not trigger rollback without confirmed confidence", () => {
+			createContract();
+
+			const createResult = runGapCase({
+				action: "create",
+				incidentId: "incident-001",
+				owner: "alice",
+				severity: "high",
+				linkedPr: "https://github.com/org/repo/pull/1",
+				contractPath,
+			});
+
+			if (!createResult.ok || createResult.output.action !== "create") return;
+
+			const result = runGapCase({
+				action: "update-causality",
+				caseId: createResult.output.caseRecord.id,
+				causality: "automation_confirmed",
+				confidence: "probable",
+				updatedBy: "bob",
+				contractPath,
+			});
+
+			expect(result.ok).toBe(true);
+			if (result.ok && result.output.action === "update-causality") {
+				expect(result.output.caseRecord.autoRollbackTriggeredAt).toBeUndefined();
+			}
+		});
+
+		it("does not trigger rollback twice", () => {
+			createContract();
+
+			const createResult = runGapCase({
+				action: "create",
+				incidentId: "incident-001",
+				owner: "alice",
+				severity: "high",
+				linkedPr: "https://github.com/org/repo/pull/1",
+				contractPath,
+			});
+
+			if (!createResult.ok || createResult.output.action !== "create") return;
+
+			// First update triggers rollback
+			const firstResult = runGapCase({
+				action: "update-causality",
+				caseId: createResult.output.caseRecord.id,
+				causality: "automation_confirmed",
+				confidence: "confirmed",
+				updatedBy: "bob",
+				contractPath,
+			});
+
+			expect(firstResult.ok).toBe(true);
+			if (!firstResult.ok || firstResult.output.action !== "update-causality") return;
+
+			const firstTriggeredAt = firstResult.output.caseRecord.autoRollbackTriggeredAt;
+			expect(firstTriggeredAt).toBeDefined();
+
+			// Downgrade and re-confirm (should not trigger again)
+			runGapCase({
+				action: "update-causality",
+				caseId: createResult.output.caseRecord.id,
+				causality: "automation_possible",
+				confidence: "confirmed",
+				updatedBy: "charlie",
+				contractPath,
+			});
+
+			const secondResult = runGapCase({
+				action: "update-causality",
+				caseId: createResult.output.caseRecord.id,
+				causality: "automation_confirmed",
+				confidence: "confirmed",
+				updatedBy: "dave",
+				contractPath,
+			});
+
+			expect(secondResult.ok).toBe(true);
+			if (secondResult.ok && secondResult.output.action === "update-causality") {
+				// Should still have the original timestamp
+				expect(secondResult.output.caseRecord.autoRollbackTriggeredAt).toBe(
+					firstTriggeredAt,
+				);
+			}
+		});
+	});
+
 	describe("exit codes", () => {
 		it("defines expected exit codes", () => {
 			expect(EXIT_CODES.SUCCESS).toBe(0);

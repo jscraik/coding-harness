@@ -53,6 +53,9 @@ export interface GapCaseRecord {
 	confidence?: Confidence;
 	causalityUpdatedAt?: string;
 	causalityUpdatedBy?: string;
+	// Auto-rollback trigger (Phase 4)
+	autoRollbackTriggeredAt?: string;
+	autoRollbackReason?: string;
 }
 
 export interface GapCaseStore {
@@ -130,6 +133,9 @@ export type GapCaseResult =
 const DEFAULT_CASE_STORE = ".harness/gap-cases.json";
 const DEFAULT_CASE_ID_PREFIX = "gap-";
 const HOURS_PER_DAY = 24;
+const DEFAULT_ARTIFACTS_DIR = "artifacts/pilot";
+const ROLLBACK_MARKER_FILE = "rollback-marker.json";
+const ROLLBACK_EVENTS_FILE = "rollback-events.jsonl";
 
 function nowIso(): string {
 	return new Date().toISOString();
@@ -181,6 +187,110 @@ function readCaseStore(filePath: string): GapCaseStore {
 function writeCaseStore(filePath: string, store: GapCaseStore): void {
 	mkdirSync(dirname(filePath), { recursive: true });
 	writeFileSync(filePath, JSON.stringify(store, null, 2), "utf-8");
+}
+
+/**
+ * Auto-rollback event record for audit trail
+ */
+interface AutoRollbackEvent {
+	id: string;
+	incidentId: string;
+	caseId: string;
+	triggerType: "automatic";
+	trigger: "high_risk_automation_confirmed";
+	triggeredAt: string;
+	modeBefore: "autonomous";
+	modeAfter: "manual";
+	result: "success";
+}
+
+/**
+ * Auto-rollback marker for completion verification
+ */
+interface AutoRollbackMarker {
+	schemaVersion: "pilot-rollback-marker/v1";
+	incidentId: string;
+	caseId: string;
+	modeBefore: "autonomous";
+	modeAfter: "manual";
+	triggerType: "automatic";
+	trigger: "high_risk_automation_confirmed";
+	requestedAt: string;
+	completedAt: string;
+	result: "success";
+}
+
+/**
+ * Generate a unique ID for rollback events
+ */
+function generateRollbackEventId(): string {
+	const timestamp = Date.now().toString(36);
+	const random = Math.random().toString(36).slice(2, 8);
+	return `rollback-${timestamp}-${random}`;
+}
+
+/**
+ * Trigger automatic rollback to manual mode.
+ * Called when high-severity automation-caused incident is confirmed.
+ */
+function triggerAutoRollback(
+	incidentId: string,
+	caseId: string,
+	artifactsDir?: string,
+): { triggered: boolean; rollbackEventId?: string; error?: string } {
+	try {
+		const baseDir = process.cwd();
+		const artifactsPath = artifactsDir
+			? validatePath(baseDir, resolve(baseDir, artifactsDir))
+			: resolve(baseDir, DEFAULT_ARTIFACTS_DIR);
+
+		const now = nowIso();
+		const rollbackEventId = generateRollbackEventId();
+
+		// Create rollback event record
+		const event: AutoRollbackEvent = {
+			id: rollbackEventId,
+			incidentId,
+			caseId,
+			triggerType: "automatic",
+			trigger: "high_risk_automation_confirmed",
+			triggeredAt: now,
+			modeBefore: "autonomous",
+			modeAfter: "manual",
+			result: "success",
+		};
+
+		// Append to rollback events
+		const eventsPath = resolve(artifactsPath, ROLLBACK_EVENTS_FILE);
+		mkdirSync(dirname(eventsPath), { recursive: true });
+		const line = JSON.stringify(event) + "\n";
+		writeFileSync(eventsPath, line, { flag: "a", encoding: "utf-8" });
+
+		// Write rollback marker
+		const marker: AutoRollbackMarker = {
+			schemaVersion: "pilot-rollback-marker/v1",
+			incidentId,
+			caseId,
+			modeBefore: "autonomous",
+			modeAfter: "manual",
+			triggerType: "automatic",
+			trigger: "high_risk_automation_confirmed",
+			requestedAt: now,
+			completedAt: now,
+			result: "success",
+		};
+
+		const markerPath = resolve(artifactsPath, ROLLBACK_MARKER_FILE);
+		mkdirSync(dirname(markerPath), { recursive: true });
+		writeFileSync(markerPath, JSON.stringify(marker, null, 2), "utf-8");
+
+		return { triggered: true, rollbackEventId };
+	} catch (error) {
+		return {
+			triggered: false,
+			error: error instanceof Error ? error.message : "Unknown error",
+		};
+	}
 }
 
 function nextCaseId(cases: GapCaseRecord[], prefix: string): string {
@@ -490,6 +600,25 @@ export function runGapCase(
 			target.confidence = options.confidence;
 			target.causalityUpdatedAt = nowIso();
 			target.causalityUpdatedBy = options.updatedBy;
+
+			// Auto-rollback trigger: high-severity + automation_confirmed + confirmed confidence
+			if (
+				target.severity === "high" &&
+				options.causality === "automation_confirmed" &&
+				options.confidence === "confirmed" &&
+				!target.autoRollbackTriggeredAt
+			) {
+				const rollbackResult = triggerAutoRollback(
+					target.incidentId,
+					target.id,
+					policy.artifactsDir,
+				);
+				if (rollbackResult.triggered) {
+					target.autoRollbackTriggeredAt = nowIso();
+					target.autoRollbackReason =
+						"Automatic rollback triggered: high-severity automation-caused incident confirmed";
+				}
+			}
 
 			writeCaseStore(caseStore, store);
 			return {

@@ -158,6 +158,8 @@ export interface PilotGapCasePolicy {
 	requireClosureEvidence: boolean;
 	/** Optional custom path for gap-case store (default: .harness/gap-cases.v1.json) */
 	storePath?: string | undefined;
+	/** Directory for pilot artifacts including rollback events (default: artifacts/pilot) */
+	artifactsDir?: string | undefined;
 }
 
 /**
