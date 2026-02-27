@@ -35,6 +35,7 @@ import {
 import { runReplayCLI } from "./commands/replay.js";
 import { runReviewGateCLI } from "./commands/review-gate.js";
 import { runRiskTierCLI } from "./commands/risk-tier.js";
+import { runSearchCLI } from "./commands/search.js";
 import { runSilentErrorDetectorCLI } from "./commands/silent-error.js";
 import {
 	runUIExploreCLI,
@@ -93,6 +94,9 @@ function printUsage(): void {
 	console.info("  ui:verify        Playwright smoke suite with evidence");
 	console.info("  ui:explore       Agent browser exploratory testing");
 	console.info("  context          Semantic search for relevant prior work");
+	console.info(
+		"  search           Agent-first hybrid lexical + semantic search",
+	);
 	console.info("  index-context    Bulk index brainstorms/plans for search");
 	console.info(
 		"  pilot-rollback   Transition pilot mode (autonomous <-> manual)",
@@ -1077,6 +1081,15 @@ export function run(args: string[]): void {
 		runContextCLI(argsAfterCommand)
 			.then((exitCode) => process.exit(exitCode))
 			.catch((error) => handleFatalError("Context Error", error));
+		return;
+	}
+
+	if (command === "search") {
+		// Parse search options
+		const argsAfterCommand = args.slice(1);
+		runSearchCLI(argsAfterCommand)
+			.then((exitCode) => process.exit(exitCode))
+			.catch((error) => handleFatalError("Search Error", error));
 		return;
 	}
 
