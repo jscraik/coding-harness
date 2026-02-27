@@ -1,7 +1,7 @@
 ---
 title: Patch 2 - Interactive Mode for harness init
 type: feat
-status: active
+status: completed
 date: 2026-02-23
 origin: docs/brainstorms/2026-02-23-installability-patches-brainstorm.md
 ---
