@@ -4,6 +4,18 @@ vi.mock("./commands/policy-gate.js", () => ({
 	runPolicyGateCLI: vi.fn(() => 42),
 }));
 
+vi.mock("./commands/check-authz.js", () => ({
+	runCheckAuthzCLI: vi.fn(async () => 0),
+}));
+
+vi.mock("./commands/check-environment.js", () => ({
+	runCheckEnvironmentCLI: vi.fn(async () => 0),
+}));
+
+vi.mock("./commands/pilot-evaluate.js", () => ({
+	runPilotEvaluateCLI: vi.fn(() => 0),
+}));
+
 vi.mock("./commands/risk-tier.js", () => ({
 	runRiskTierCLI: vi.fn(() => 41),
 }));
@@ -275,8 +287,7 @@ describe("cli command dispatch", () => {
 		expect(exitSpy).toHaveBeenCalledWith(52);
 	});
 
-	// Note: policy-gate command does not exist in the CLI. Use preflight-gate instead.
-	it.skip("dispatches policy-gate command", async () => {
+	it("dispatches policy-gate command", async () => {
 		const { run } = await import("./cli.js");
 		const { runPolicyGateCLI } = await import("./commands/policy-gate.js");
 
@@ -377,8 +388,7 @@ describe("cli command dispatch", () => {
 		expect(exitSpy).toHaveBeenCalledWith(61);
 	});
 
-	// Note: policy-gate command does not exist in the CLI. Use preflight-gate instead.
-	it.skip("dispatches policy-gate command and ignores missing contract value", async () => {
+	it("dispatches policy-gate command and ignores missing contract value", async () => {
 		const { run } = await import("./cli.js");
 		const { runPolicyGateCLI } = await import("./commands/policy-gate.js");
 
@@ -669,8 +679,7 @@ describe("cli command dispatch", () => {
 		expect(exitSpy).toHaveBeenCalledWith(45);
 	});
 
-	// Note: policy-gate command does not exist in the CLI. Use preflight-gate instead.
-	it.skip("dispatches policy-gate command and ignores missing --files value", async () => {
+	it("dispatches policy-gate command and ignores missing --files value", async () => {
 		const { run } = await import("./cli.js");
 		const { runPolicyGateCLI } = await import("./commands/policy-gate.js");
 
@@ -691,6 +700,212 @@ describe("cli command dispatch", () => {
 			json: true,
 		});
 		expect(exitSpy).toHaveBeenCalledWith(42);
+	});
+
+	it("dispatches risk-policy-gate alias to policy-gate command", async () => {
+		const { run } = await import("./cli.js");
+		const { runPolicyGateCLI } = await import("./commands/policy-gate.js");
+
+		const exitSpy = vi.spyOn(process, "exit").mockImplementation(((
+			code?: number,
+		) => {
+			throw new Error(`EXIT_${String(code)}`);
+		}) as never);
+
+		expect(() =>
+			run([
+				"risk-policy-gate",
+				"--contract",
+				"custom.contract.json",
+				"--files",
+				"src/a.ts",
+				"--max-tier",
+				"medium",
+				"--json",
+			]),
+		).toThrowError("EXIT_42");
+
+		expect(vi.mocked(runPolicyGateCLI)).toHaveBeenCalledWith({
+			contractPath: "custom.contract.json",
+			files: ["src/a.ts"],
+			maxTier: "medium",
+			json: true,
+		});
+		expect(exitSpy).toHaveBeenCalledWith(42);
+	});
+
+	it("dispatches check-authz command", async () => {
+		const { run } = await import("./cli.js");
+		const { runCheckAuthzCLI } = await import("./commands/check-authz.js");
+
+		const exitSpy = vi
+			.spyOn(process, "exit")
+			.mockImplementation(((_code?: number) => undefined) as never);
+
+		run([
+			"check-authz",
+			"--contract",
+			"harness.contract.json",
+			"--repo",
+			"owner/repo",
+			"--branch",
+			"main",
+			"--check-scopes",
+			"--json",
+		]);
+
+		// Allow async CLI handler to resolve
+		await new Promise((resolve) => setTimeout(resolve, 0));
+
+		expect(vi.mocked(runCheckAuthzCLI)).toHaveBeenCalledWith({
+			contractPath: "harness.contract.json",
+			repo: "owner/repo",
+			branch: "main",
+			checkScopes: true,
+			json: true,
+		});
+		expect(exitSpy).toHaveBeenCalledWith(0);
+	});
+
+	it("dispatches check-authz command and ignores missing flag values", async () => {
+		const { run } = await import("./cli.js");
+		const { runCheckAuthzCLI } = await import("./commands/check-authz.js");
+
+		const exitSpy = vi
+			.spyOn(process, "exit")
+			.mockImplementation(((_code?: number) => undefined) as never);
+
+		run(["check-authz", "--contract", "--repo", "--branch", "--json"]);
+
+		// Allow async CLI handler to resolve
+		await new Promise((resolve) => setTimeout(resolve, 0));
+
+		// Missing flag values are not included in the options object
+		expect(vi.mocked(runCheckAuthzCLI)).toHaveBeenCalledWith({
+			json: true,
+		});
+		expect(exitSpy).toHaveBeenCalledWith(0);
+	});
+
+	it("dispatches check-environment command", async () => {
+		const { run } = await import("./cli.js");
+		const { runCheckEnvironmentCLI } = await import(
+			"./commands/check-environment.js"
+		);
+
+		const exitSpy = vi
+			.spyOn(process, "exit")
+			.mockImplementation(((_code?: number) => undefined) as never);
+
+		run([
+			"check-environment",
+			"--contract",
+			"harness.contract.json",
+			"--check-secrets",
+			"--allowed-sandbox",
+			"full-access,sandboxed",
+			"--attestation",
+			"attestation.json",
+			"--json",
+		]);
+
+		// Allow async CLI handler to resolve
+		await new Promise((resolve) => setTimeout(resolve, 0));
+
+		expect(vi.mocked(runCheckEnvironmentCLI)).toHaveBeenCalledWith({
+			contractPath: "harness.contract.json",
+			checkSecrets: true,
+			allowedSandboxModes: ["full-access", "sandboxed"],
+			attestationPath: "attestation.json",
+			json: true,
+		});
+		expect(exitSpy).toHaveBeenCalledWith(0);
+	});
+
+	it("dispatches check-environment command and ignores missing flag values", async () => {
+		const { run } = await import("./cli.js");
+		const { runCheckEnvironmentCLI } = await import(
+			"./commands/check-environment.js"
+		);
+
+		const exitSpy = vi
+			.spyOn(process, "exit")
+			.mockImplementation(((_code?: number) => undefined) as never);
+
+		run([
+			"check-environment",
+			"--contract",
+			"--allowed-sandbox",
+			"--attestation",
+			"--json",
+		]);
+
+		// Allow async CLI handler to resolve
+		await new Promise((resolve) => setTimeout(resolve, 0));
+
+		// Missing flag values are not included in the options object
+		expect(vi.mocked(runCheckEnvironmentCLI)).toHaveBeenCalledWith({
+			json: true,
+		});
+		expect(exitSpy).toHaveBeenCalledWith(0);
+	});
+
+	it("dispatches pilot-evaluate command", async () => {
+		const { run } = await import("./cli.js");
+		const { runPilotEvaluateCLI } = await import(
+			"./commands/pilot-evaluate.js"
+		);
+
+		const exitSpy = vi.spyOn(process, "exit").mockImplementation(((
+			code?: number,
+		) => {
+			throw new Error(`EXIT_${String(code)}`);
+		}) as never);
+
+		expect(() =>
+			run([
+				"pilot-evaluate",
+				"--artifacts",
+				"artifacts/pilot",
+				"--contract",
+				"harness.contract.json",
+				"--output",
+				"result.json",
+				"--json",
+			]),
+		).toThrowError("EXIT_0");
+
+		expect(vi.mocked(runPilotEvaluateCLI)).toHaveBeenCalledWith({
+			artifactsDir: "artifacts/pilot",
+			contractPath: "harness.contract.json",
+			outputPath: "result.json",
+			json: true,
+		});
+		expect(exitSpy).toHaveBeenCalledWith(0);
+	});
+
+	it("dispatches pilot-evaluate command and ignores missing optional flag values", async () => {
+		const { run } = await import("./cli.js");
+		const { runPilotEvaluateCLI } = await import(
+			"./commands/pilot-evaluate.js"
+		);
+
+		const exitSpy = vi.spyOn(process, "exit").mockImplementation(((
+			code?: number,
+		) => {
+			throw new Error(`EXIT_${String(code)}`);
+		}) as never);
+
+		expect(() =>
+			run(["pilot-evaluate", "--artifacts", "artifacts/pilot", "--json"]),
+		).toThrowError("EXIT_0");
+
+		// Missing flag values are not included in the options object
+		expect(vi.mocked(runPilotEvaluateCLI)).toHaveBeenCalledWith({
+			artifactsDir: "artifacts/pilot",
+			json: true,
+		});
+		expect(exitSpy).toHaveBeenCalledWith(0);
 	});
 
 	it("dispatches silent-error command and ignores missing --files value", async () => {

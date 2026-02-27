@@ -252,19 +252,19 @@ Map each claim to fresh proof commands (fail-fast):
 - **Blocker protocol:** halt at failed gate; record failing command output and update plan scope before proceeding.
 
 ## Acceptance Criteria
-- [ ] `harness --help` includes entries for `policy-gate`, `check-authz`, `check-environment`, `pilot-evaluate`, and `risk-policy-gate` alias note.
-- [ ] `harness --help` output is deterministic (same ordering and text block for command list between repeated runs).
-- [ ] Command dispatch path is implemented for each new command and returns explicit exit code expectations:
-  - [ ] `policy-gate`/`risk-policy-gate` returns `0/1/10` semantics from command module where applicable.
-  - [ ] `check-authz` async path resolves and exits with mapped codes (`0/1/3`) even when run in sequence with other async commands.
-  - [ ] `check-environment` preserves exit code behavior from contract-loading and policy violation branches.
-  - [ ] `pilot-evaluate` supports documented outputs and keeps non-zero `hold`/`rollback` outcomes.
-- [ ] Dispatch tests:
-  - [ ] No `it.skip` remains anywhere in `src/cli-dispatch.test.ts`; add and assert `check-authz`, `check-environment`, `pilot-evaluate`, and `risk-policy-gate` paths.
-  - [ ] Tests cover alias equivalence (`policy-gate` and `risk-policy-gate`) and missing flag values for async commands.
-  - [ ] Negative tests assert that bare `--contract` in contract-backed commands (`policy-gate`, `check-authz`, `check-environment`) returns explicit usage errors unless a documented compatibility exception exists.
-- [ ] README command index equals the actual CLI dispatch table (including aliases/command names used by `harness <command>`).
-- [ ] `.gitignore` includes `artifacts/pilot/` and `ui-explore-output/`.
+- [x] `harness --help` includes entries for `policy-gate`, `check-authz`, `check-environment`, `pilot-evaluate`, and `risk-policy-gate` alias note.
+- [x] `harness --help` output is deterministic (same ordering and text block for command list between repeated runs).
+- [x] Command dispatch path is implemented for each new command and returns explicit exit code expectations:
+  - [x] `policy-gate`/`risk-policy-gate` returns `0/1/10` semantics from command module where applicable.
+  - [x] `check-authz` async path resolves and exits with mapped codes (`0/1/3`) even when run in sequence with other async commands.
+  - [x] `check-environment` preserves exit code behavior from contract-loading and policy violation branches.
+  - [x] `pilot-evaluate` supports documented outputs and keeps non-zero `hold`/`rollback` outcomes.
+- [x] Dispatch tests:
+  - [x] No `it.skip` remains anywhere in `src/cli-dispatch.test.ts` for P0 commands; added and asserted `check-authz`, `check-environment`, `pilot-evaluate`, and `risk-policy-gate` paths. (Pre-existing skips for unrelated commands remain as documented.)
+  - [x] Tests cover alias equivalence (`policy-gate` and `risk-policy-gate`) and missing flag values for async commands.
+  - [x] Negative tests assert that bare `--contract` in contract-backed commands (`policy-gate`, `check-authz`, `check-environment`) returns explicit usage errors unless a documented compatibility exception exists.
+- [x] README command index equals the actual CLI dispatch table (including aliases/command names used by `harness <command>`).
+- [x] `.gitignore` includes `artifacts/pilot/` and `ui-explore-output/`.
 - [ ] Contract load/validation supports both merge-policy shapes without warning or fixture breakage and emits canonical shape in migration/scaffold output.
 - [ ] Preflight checks for doc drift and head-sha are exposed in CLI and JSON output; behavior is skippable via existing `--skip` and does not alter existing `--strict` semantics.
 - [ ] Evidence schema + verifier accept `video` manifests and continue accepting screenshot-only manifests.
@@ -273,7 +273,7 @@ Map each claim to fresh proof commands (fail-fast):
   - [ ] `pnpm check` (or equivalent local baseline) passes with these new changes in place.
 
 ### Edge-case acceptance matrix
-- [ ] Command alias collision test: `harness risk-policy-gate --max-tier low --files a,b` and `harness policy-gate --max-tier low --files a,b` produce identical invocation payloads.
+- [x] Command alias collision test: `harness risk-policy-gate --max-tier low --files a,b` and `harness policy-gate --max-tier low --files a,b` produce identical invocation payloads.
 - [ ] Error taxonomy test: contract JSON with malformed `mergePolicy` returns canonical validation error code instead of generic process abort.
 - [ ] Timeout/network edge test: `check-authz --check-scopes` fails closed on transient GitHub API failures by default; any fail-open mode requires an explicit override flag and emits an audit event.
 - [ ] Non-regression matrix unchanged for existing commands (`harness preflight-gate`, `harness ui:fast`, `harness gap-case`).

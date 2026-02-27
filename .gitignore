@@ -57,6 +57,12 @@ gardener-report.json
 .traces/
 .test-traces-*/
 
+# Pilot artifacts
+artifacts/pilot/
+
+# UI explore output
+ui-explore-output/
+
 
 environment.toml
 

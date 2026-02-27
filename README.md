@@ -34,7 +34,7 @@ pnpm check
 | --- | --- |
 | `init` | Install harness files into the current repository. |
 | `risk-tier` | Classify changed files by risk. |
-| `policy-gate` | Validate policy expectations from changed files. |
+| `policy-gate` | Validate policy expectations from changed files. Alias: `risk-policy-gate`. |
 | `replay` | Re-run policy checks from saved snapshots. |
 | `evidence-verify` | Validate screenshot/evidence artifacts. |
 | `gardener` | Detect stale docs and broken links. |
@@ -58,5 +58,6 @@ pnpm check
 | `check-environment` | Validate pilot environment governance checks. |
 | `gap-case` | Track and resolve pilot gap-cases. |
 | `pilot-evaluate` | Evaluate pilot metrics and promotion readiness. |
+| `pilot-rollback` | Transition pilot mode (autonomous <-> manual). |
 
 Use `harness --help` (or `node dist/cli.js --help`) for the current global options surface.

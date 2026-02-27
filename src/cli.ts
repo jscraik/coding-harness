@@ -2,6 +2,8 @@
 import { pathToFileURL } from "node:url";
 import { runBlastRadiusCLI } from "./commands/blast-radius.js";
 import { runBrainstormGateCLI } from "./commands/brainstorm-gate.js";
+import { runCheckAuthzCLI } from "./commands/check-authz.js";
+import { runCheckEnvironmentCLI } from "./commands/check-environment.js";
 import { runContextCLI } from "./commands/context.js";
 import { runDiffBudgetCLI } from "./commands/diff-budget.js";
 import { runEvidenceVerifyCLI } from "./commands/evidence-verify.js";
@@ -17,11 +19,13 @@ import { runIndexContextCLI } from "./commands/index-context.js";
 import { runInitCLI, runInteractiveInitCLI } from "./commands/init.js";
 import { runMemoryGateCLI } from "./commands/memory-gate.js";
 import { runObservabilityGateCLI } from "./commands/observability-gate.js";
+import { runPilotEvaluateCLI } from "./commands/pilot-evaluate.js";
 import {
 	type PilotRollbackOptions,
 	runPilotRollbackCLI,
 } from "./commands/pilot-rollback.js";
 import { runPlanGateCLI } from "./commands/plan-gate.js";
+import { runPolicyGateCLI } from "./commands/policy-gate.js";
 import { runPreflightGateCLI } from "./commands/preflight-gate.js";
 import { runPromptGateCLI } from "./commands/prompt-gate.js";
 import {
@@ -92,6 +96,19 @@ function printUsage(): void {
 	console.info("  index-context    Bulk index brainstorms/plans for search");
 	console.info(
 		"  pilot-rollback   Transition pilot mode (autonomous <-> manual)",
+	);
+	console.info("  policy-gate      Check risk tier compliance for files");
+	console.info(
+		"  risk-policy-gate Alias for policy-gate (roadmap parity)",
+	);
+	console.info(
+		"  check-authz      Check authorization against contract policy",
+	);
+	console.info(
+		"  check-environment Check environment against contract policy",
+	);
+	console.info(
+		"  pilot-evaluate   Evaluate pilot metrics for promotion decision",
 	);
 	console.info("");
 	console.info("Init Options:");
@@ -1109,6 +1126,142 @@ export function run(args: string[]): void {
 		runPilotRollbackCLI(options)
 			.then((exitCode) => process.exit(exitCode))
 			.catch((error) => handleFatalError("Pilot Rollback Error", error));
+		return;
+	}
+
+	if (command === "policy-gate" || command === "risk-policy-gate") {
+		// Parse policy-gate options
+		const jsonFlag = args.includes("--json");
+		const contractIndex = args.indexOf("--contract");
+		const filesIndex = args.indexOf("--files");
+		const maxTierIndex = args.indexOf("--max-tier");
+
+		const options: {
+			contractPath: string;
+			files: string[];
+			json?: boolean;
+			maxTier?: "high" | "medium" | "low";
+		} = {
+			contractPath: "harness.contract.json",
+			files: [],
+		};
+
+		if (jsonFlag) options.json = true;
+		const contractArg = getFlagValue(args, contractIndex);
+		if (contractArg) options.contractPath = contractArg;
+		const filesArg = getFlagValue(args, filesIndex);
+		if (filesArg) {
+			options.files = parseCsvList(filesArg);
+		}
+		const maxTierArg = getFlagValue(args, maxTierIndex);
+		if (
+			maxTierArg === "high" ||
+			maxTierArg === "medium" ||
+			maxTierArg === "low"
+		) {
+			options.maxTier = maxTierArg;
+		}
+
+		const exitCode = runPolicyGateCLI(options);
+		process.exit(exitCode);
+		return;
+	}
+
+	if (command === "check-authz") {
+		// Parse check-authz options (async)
+		const jsonFlag = args.includes("--json");
+		const checkScopesFlag = args.includes("--check-scopes");
+		const contractIndex = args.indexOf("--contract");
+		const repoIndex = args.indexOf("--repo");
+		const branchIndex = args.indexOf("--branch");
+
+		const options: {
+			contractPath?: string;
+			repo?: string;
+			branch?: string;
+			checkScopes?: boolean;
+			json?: boolean;
+		} = {};
+
+		if (jsonFlag) options.json = true;
+		if (checkScopesFlag) options.checkScopes = true;
+		const contractArg = getFlagValue(args, contractIndex);
+		if (contractArg) options.contractPath = contractArg;
+		const repoArg = getFlagValue(args, repoIndex);
+		if (repoArg) options.repo = repoArg;
+		const branchArg = getFlagValue(args, branchIndex);
+		if (branchArg) options.branch = branchArg;
+
+		runCheckAuthzCLI(options)
+			.then((exitCode) => process.exit(exitCode))
+			.catch((error) => handleFatalError("Check Authz Error", error));
+		return;
+	}
+
+	if (command === "check-environment") {
+		// Parse check-environment options (async)
+		const jsonFlag = args.includes("--json");
+		const checkSecretsFlag = args.includes("--check-secrets");
+		const contractIndex = args.indexOf("--contract");
+		const attestationIndex = args.indexOf("--attestation");
+		const allowedSandboxIndex = args.indexOf("--allowed-sandbox");
+
+		const options: {
+			contractPath?: string;
+			checkSecrets?: boolean;
+			allowedSandboxModes?: string[];
+			json?: boolean;
+			attestationPath?: string;
+		} = {};
+
+		if (jsonFlag) options.json = true;
+		if (checkSecretsFlag) options.checkSecrets = true;
+		const contractArg = getFlagValue(args, contractIndex);
+		if (contractArg) options.contractPath = contractArg;
+		const attestationArg = getFlagValue(args, attestationIndex);
+		if (attestationArg) options.attestationPath = attestationArg;
+		const allowedSandboxArg = getFlagValue(args, allowedSandboxIndex);
+		if (allowedSandboxArg) {
+			options.allowedSandboxModes = parseCsvList(allowedSandboxArg);
+		}
+
+		runCheckEnvironmentCLI(options)
+			.then((exitCode) => process.exit(exitCode))
+			.catch((error) => handleFatalError("Check Environment Error", error));
+		return;
+	}
+
+	if (command === "pilot-evaluate") {
+		// Parse pilot-evaluate options
+		const jsonFlag = args.includes("--json");
+		const contractIndex = args.indexOf("--contract");
+		const artifactsIndex = args.indexOf("--artifacts");
+		const outputIndex = args.indexOf("--output");
+
+		const artifactsArg = getFlagValue(args, artifactsIndex);
+		if (!artifactsArg) {
+			console.error("Error: --artifacts is required");
+			process.exit(2);
+			return;
+		}
+
+		const options: {
+			artifactsDir: string;
+			contractPath?: string;
+			outputPath?: string;
+			json?: boolean;
+		} = {
+			artifactsDir: artifactsArg,
+		};
+
+		if (jsonFlag) options.json = true;
+		const contractArg = getFlagValue(args, contractIndex);
+		if (contractArg) options.contractPath = contractArg;
+		const outputArg = getFlagValue(args, outputIndex);
+		if (outputArg) options.outputPath = outputArg;
+
+		const exitCode = runPilotEvaluateCLI(options);
+		process.exit(exitCode);
 		return;
 	}
 
