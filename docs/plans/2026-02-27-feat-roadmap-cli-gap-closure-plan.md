@@ -37,9 +37,6 @@ origin: docs/brainstorms/2026-02-27-roadmap-cli-gap-closure-brainstorm.md
 - [System-Wide Impact](#system-wide-impact)
 - [SpecFlow Analysis (coverage + edge cases)](#specflow-analysis-coverage--edge-cases)
 - [Implementation Plan](#implementation-plan)
-  - [P0 — Must do now (runtime/docs/test truth)](#p0--must-do-now-runtimedocs-test-truth)
-  - [P1 — Next (capability gaps to roadmap claims)](#p1--next-capability-gaps-to-roadmap-claims)
-  - [P2 — Cleanup (narrative and status clarity)](#p2--cleanup-narrative-and-status-clarity)
 - [Phase Gates and Checkpoints](#phase-gates-and-checkpoints)
 - [Validation Plan](#validation-plan)
 - [Evidence Artifacts](#evidence-artifacts)
@@ -136,7 +133,7 @@ Identified and incorporated:
 
 ## Implementation Plan
 
-### P0 — Must do now (runtime/docs/test truth)
+### P0 - Must do now (runtime/docs/test truth)
 0. **Baseline lock snapshot**
    - Capture current state for rollback reference (`harness --help`, `src/cli-dispatch.test.ts` skip list, README command index snapshot).
    - Store under `artifacts/pilot/baseline/` (ignored path).
@@ -164,7 +161,7 @@ Identified and incorporated:
    - Add `artifacts/pilot/`.
    - Add `ui-explore-output/` (default output path from `ui:explore`).
 
-### P1 — Next (capability gaps to roadmap claims)
+### P1 - Next (capability gaps to roadmap claims)
 1. **Merge policy dual-shape compatibility**
    - Files:
      - `/Users/jamiecraik/dev/coding-harness/src/lib/contract/types.ts`
@@ -197,7 +194,7 @@ Identified and incorporated:
    - Add top-level evidence-type compatibility for video manifests.
    - Add `ui:verify` manifest output mode compatible with schema and end-to-end policy enforcement.
 
-### P2 — Cleanup (narrative and status clarity)
+### P2 - Cleanup (narrative and status clarity)
 1. **Implementation status matrix**
    - Pre-step: `mkdir -p /Users/jamiecraik/dev/coding-harness/docs/roadmap`
    - Files:
@@ -268,9 +265,9 @@ Map each claim to fresh proof commands (fail-fast):
 - [x] Contract load/validation supports both merge-policy shapes without warning or fixture breakage and emits canonical shape in migration/scaffold output.
 - [x] Preflight checks for head-sha are exposed in CLI and JSON output; behavior is skippable via existing `--skip` and does not alter existing `--strict` semantics.
 - [x] Evidence schema + verifier accept `video` manifests and continue accepting screenshot-only manifests.
-- [ ] `docs/roadmap/agent-first-status.md` exists, is linked from README, and includes `Implemented/Partial/Planned` status for each roadmap claim touched by this plan.
-- [ ] End-to-end smoke command for roadmap parity:
-  - [ ] `pnpm check` (or equivalent local baseline) passes with these new changes in place.
+- [x] `docs/roadmap/agent-first-status.md` exists, is linked from README, and includes `Implemented/Partial/Planned` status for each roadmap claim touched by this plan.
+- [x] End-to-end smoke command for roadmap parity:
+  - [x] `pnpm check` (or equivalent local baseline) passes with these new changes in place.
 
 ### Edge-case acceptance matrix
 - [x] Command alias collision test: `harness risk-policy-gate --max-tier low --files a,b` and `harness policy-gate --max-tier low --files a,b` produce identical invocation payloads.

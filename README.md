@@ -61,3 +61,8 @@ pnpm check
 | `pilot-rollback` | Transition pilot mode (autonomous <-> manual). |
 
 Use `harness --help` (or `node dist/cli.js --help`) for the current global options surface.
+
+## Documentation
+
+- [Implementation Status Matrix](docs/roadmap/agent-first-status.md) - Roadmap claims vs current implementation status
+- [Harness Implementation Plan](docs/HARNESS_IMPLEMENTATION_PLAN.md) - Architecture and phase-by-phase execution plan
