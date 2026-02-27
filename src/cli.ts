@@ -93,7 +93,9 @@ function printUsage(): void {
 	console.info("  --contract      Path to harness.contract.json");
 	console.info("  context          Semantic search for relevant prior work");
 	console.info("  index-context    Bulk index brainstorms/plans for search");
-	console.info("  pilot-rollback   Transition pilot mode (autonomous <-> manual)");
+	console.info(
+		"  pilot-rollback   Transition pilot mode (autonomous <-> manual)",
+	);
 	console.info("");
 	console.info("Init Options:");
 	console.info("  --dry-run        Preview changes without writing");
@@ -853,7 +855,9 @@ export function run(args: string[]): void {
 			repo: getFlagValue(args, repoIndex) ?? "",
 			prNumber: parseIntegerArg(prValue, 1) ?? 0,
 			headSha: getFlagValue(args, shaIndex) ?? "",
-			provider: (getFlagValue(args, providerIndex) as "codeql" | "codex" | undefined) ?? "codeql",
+			provider:
+				(getFlagValue(args, providerIndex) as "codeql" | "codex" | undefined) ??
+				"codeql",
 			dryRun: dryRunFlag,
 			noInput: noInputFlag,
 			force: forceFlag,
@@ -882,7 +886,12 @@ export function run(args: string[]): void {
 		const contractIndex = args.indexOf("--contract");
 		const contractPath = getFlagValue(args, contractIndex);
 
-		if (action !== "create" && action !== "list" && action !== "resolve" && action !== "update-causality") {
+		if (
+			action !== "create" &&
+			action !== "list" &&
+			action !== "resolve" &&
+			action !== "update-causality"
+		) {
 			console.error(
 				"Error: gap-case command requires subcommand `create`, `list`, `resolve`, or `update-causality`",
 			);

@@ -198,10 +198,10 @@ describe("tracer", () => {
 	});
 
 	describe("validateTrace", () => {
-			it("validates correct trace", () => {
-				const trace: ExecutionTrace = {
-					traceId: "trace-0123456789abcdef",
-					createdAt: new Date().toISOString(),
+		it("validates correct trace", () => {
+			const trace: ExecutionTrace = {
+				traceId: "trace-0123456789abcdef",
+				createdAt: new Date().toISOString(),
 				workingDirectory: "/test",
 				command: "test",
 				args: [],

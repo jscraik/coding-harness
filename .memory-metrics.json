@@ -1,146 +1,146 @@
 {
-  "current": {
-    "pass_k": 12,
-    "total_ops": 12,
-    "successful_ops": 12,
-    "tool_errors": {},
-    "duplicate_memory_count": 0,
-    "unresolved_questions": []
-  },
-  "history": [
-    {
-      "date": "2026-02-26T20:23:05.094Z",
-      "metrics": {
-        "pass_k": 1,
-        "total_ops": 1,
-        "successful_ops": 1,
-        "tool_errors": {},
-        "duplicate_memory_count": 0,
-        "unresolved_questions": []
-      }
-    },
-    {
-      "date": "2026-02-26T20:23:05.170Z",
-      "metrics": {
-        "pass_k": 2,
-        "total_ops": 2,
-        "successful_ops": 2,
-        "tool_errors": {},
-        "duplicate_memory_count": 0,
-        "unresolved_questions": []
-      }
-    },
-    {
-      "date": "2026-02-26T20:35:08.133Z",
-      "metrics": {
-        "pass_k": 3,
-        "total_ops": 3,
-        "successful_ops": 3,
-        "tool_errors": {},
-        "duplicate_memory_count": 0,
-        "unresolved_questions": []
-      }
-    },
-    {
-      "date": "2026-02-26T20:35:08.184Z",
-      "metrics": {
-        "pass_k": 4,
-        "total_ops": 4,
-        "successful_ops": 4,
-        "tool_errors": {},
-        "duplicate_memory_count": 0,
-        "unresolved_questions": []
-      }
-    },
-    {
-      "date": "2026-02-26T20:35:17.172Z",
-      "metrics": {
-        "pass_k": 5,
-        "total_ops": 5,
-        "successful_ops": 5,
-        "tool_errors": {},
-        "duplicate_memory_count": 0,
-        "unresolved_questions": []
-      }
-    },
-    {
-      "date": "2026-02-26T20:35:17.267Z",
-      "metrics": {
-        "pass_k": 6,
-        "total_ops": 6,
-        "successful_ops": 6,
-        "tool_errors": {},
-        "duplicate_memory_count": 0,
-        "unresolved_questions": []
-      }
-    },
-    {
-      "date": "2026-02-26T20:35:25.399Z",
-      "metrics": {
-        "pass_k": 7,
-        "total_ops": 7,
-        "successful_ops": 7,
-        "tool_errors": {},
-        "duplicate_memory_count": 0,
-        "unresolved_questions": []
-      }
-    },
-    {
-      "date": "2026-02-26T20:35:25.464Z",
-      "metrics": {
-        "pass_k": 8,
-        "total_ops": 8,
-        "successful_ops": 8,
-        "tool_errors": {},
-        "duplicate_memory_count": 0,
-        "unresolved_questions": []
-      }
-    },
-    {
-      "date": "2026-02-26T20:56:52.667Z",
-      "metrics": {
-        "pass_k": 9,
-        "total_ops": 9,
-        "successful_ops": 9,
-        "tool_errors": {},
-        "duplicate_memory_count": 0,
-        "unresolved_questions": []
-      }
-    },
-    {
-      "date": "2026-02-26T20:56:52.747Z",
-      "metrics": {
-        "pass_k": 10,
-        "total_ops": 10,
-        "successful_ops": 10,
-        "tool_errors": {},
-        "duplicate_memory_count": 0,
-        "unresolved_questions": []
-      }
-    },
-    {
-      "date": "2026-02-26T21:14:58.303Z",
-      "metrics": {
-        "pass_k": 11,
-        "total_ops": 11,
-        "successful_ops": 11,
-        "tool_errors": {},
-        "duplicate_memory_count": 0,
-        "unresolved_questions": []
-      }
-    },
-    {
-      "date": "2026-02-26T21:14:58.352Z",
-      "metrics": {
-        "pass_k": 12,
-        "total_ops": 12,
-        "successful_ops": 12,
-        "tool_errors": {},
-        "duplicate_memory_count": 0,
-        "unresolved_questions": []
-      }
-    }
-  ],
-  "started_at": "2026-02-26T20:23:05.094Z",
-  "last_updated": "2026-02-26T21:14:58.352Z"
+	"current": {
+		"pass_k": 12,
+		"total_ops": 12,
+		"successful_ops": 12,
+		"tool_errors": {},
+		"duplicate_memory_count": 0,
+		"unresolved_questions": []
+	},
+	"history": [
+		{
+			"date": "2026-02-26T20:23:05.094Z",
+			"metrics": {
+				"pass_k": 1,
+				"total_ops": 1,
+				"successful_ops": 1,
+				"tool_errors": {},
+				"duplicate_memory_count": 0,
+				"unresolved_questions": []
+			}
+		},
+		{
+			"date": "2026-02-26T20:23:05.170Z",
+			"metrics": {
+				"pass_k": 2,
+				"total_ops": 2,
+				"successful_ops": 2,
+				"tool_errors": {},
+				"duplicate_memory_count": 0,
+				"unresolved_questions": []
+			}
+		},
+		{
+			"date": "2026-02-26T20:35:08.133Z",
+			"metrics": {
+				"pass_k": 3,
+				"total_ops": 3,
+				"successful_ops": 3,
+				"tool_errors": {},
+				"duplicate_memory_count": 0,
+				"unresolved_questions": []
+			}
+		},
+		{
+			"date": "2026-02-26T20:35:08.184Z",
+			"metrics": {
+				"pass_k": 4,
+				"total_ops": 4,
+				"successful_ops": 4,
+				"tool_errors": {},
+				"duplicate_memory_count": 0,
+				"unresolved_questions": []
+			}
+		},
+		{
+			"date": "2026-02-26T20:35:17.172Z",
+			"metrics": {
+				"pass_k": 5,
+				"total_ops": 5,
+				"successful_ops": 5,
+				"tool_errors": {},
+				"duplicate_memory_count": 0,
+				"unresolved_questions": []
+			}
+		},
+		{
+			"date": "2026-02-26T20:35:17.267Z",
+			"metrics": {
+				"pass_k": 6,
+				"total_ops": 6,
+				"successful_ops": 6,
+				"tool_errors": {},
+				"duplicate_memory_count": 0,
+				"unresolved_questions": []
+			}
+		},
+		{
+			"date": "2026-02-26T20:35:25.399Z",
+			"metrics": {
+				"pass_k": 7,
+				"total_ops": 7,
+				"successful_ops": 7,
+				"tool_errors": {},
+				"duplicate_memory_count": 0,
+				"unresolved_questions": []
+			}
+		},
+		{
+			"date": "2026-02-26T20:35:25.464Z",
+			"metrics": {
+				"pass_k": 8,
+				"total_ops": 8,
+				"successful_ops": 8,
+				"tool_errors": {},
+				"duplicate_memory_count": 0,
+				"unresolved_questions": []
+			}
+		},
+		{
+			"date": "2026-02-26T20:56:52.667Z",
+			"metrics": {
+				"pass_k": 9,
+				"total_ops": 9,
+				"successful_ops": 9,
+				"tool_errors": {},
+				"duplicate_memory_count": 0,
+				"unresolved_questions": []
+			}
+		},
+		{
+			"date": "2026-02-26T20:56:52.747Z",
+			"metrics": {
+				"pass_k": 10,
+				"total_ops": 10,
+				"successful_ops": 10,
+				"tool_errors": {},
+				"duplicate_memory_count": 0,
+				"unresolved_questions": []
+			}
+		},
+		{
+			"date": "2026-02-26T21:14:58.303Z",
+			"metrics": {
+				"pass_k": 11,
+				"total_ops": 11,
+				"successful_ops": 11,
+				"tool_errors": {},
+				"duplicate_memory_count": 0,
+				"unresolved_questions": []
+			}
+		},
+		{
+			"date": "2026-02-26T21:14:58.352Z",
+			"metrics": {
+				"pass_k": 12,
+				"total_ops": 12,
+				"successful_ops": 12,
+				"tool_errors": {},
+				"duplicate_memory_count": 0,
+				"unresolved_questions": []
+			}
+		}
+	],
+	"started_at": "2026-02-26T20:23:05.094Z",
+	"last_updated": "2026-02-26T21:14:58.352Z"
 }

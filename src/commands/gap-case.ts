@@ -263,7 +263,7 @@ function triggerAutoRollback(
 		// Append to rollback events
 		const eventsPath = resolve(artifactsPath, ROLLBACK_EVENTS_FILE);
 		mkdirSync(dirname(eventsPath), { recursive: true });
-		const line = JSON.stringify(event) + "\n";
+		const line = `${JSON.stringify(event)}\n`;
 		writeFileSync(eventsPath, line, { flag: "a", encoding: "utf-8" });
 
 		// Write rollback marker
@@ -377,7 +377,7 @@ export function runGapCase(
 		const caseStorePath =
 			"caseStore" in options && options.caseStore
 				? options.caseStore
-				: policy.storePath ?? DEFAULT_CASE_STORE;
+				: (policy.storePath ?? DEFAULT_CASE_STORE);
 		const caseStore = normalizeCaseStore(caseStorePath);
 		const store = readCaseStore(caseStore);
 

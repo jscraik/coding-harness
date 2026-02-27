@@ -56,29 +56,29 @@ function isStringRecord(value: unknown): value is Record<string, string> {
 export function runObservabilityGate(
 	options: ObservabilityGateOptions,
 ): ObservabilityGateResult {
-		try {
-			// Parse labels
-			let labels: Record<string, string> = {};
+	try {
+		// Parse labels
+		let labels: Record<string, string> = {};
 
-			if (options.labels) {
-				try {
-					const parsed = JSON.parse(options.labels) as unknown;
-					if (!isStringRecord(parsed)) {
-						return {
-							ok: false,
-							error: {
-								code: "VALIDATION_ERROR",
-								message:
-									"Invalid labels format: expected JSON object of string:string",
-							},
-						};
-					}
-					labels = parsed;
-				} catch {
+		if (options.labels) {
+			try {
+				const parsed = JSON.parse(options.labels) as unknown;
+				if (!isStringRecord(parsed)) {
 					return {
 						ok: false,
 						error: {
 							code: "VALIDATION_ERROR",
+							message:
+								"Invalid labels format: expected JSON object of string:string",
+						},
+					};
+				}
+				labels = parsed;
+			} catch {
+				return {
+					ok: false,
+					error: {
+						code: "VALIDATION_ERROR",
 						message: "Invalid JSON in labels",
 					},
 				};

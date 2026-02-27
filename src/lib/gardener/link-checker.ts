@@ -32,7 +32,9 @@ function isLycheeReport(value: unknown): value is LycheeReport {
 	if (typeof report.fail_map !== "object" || report.fail_map === null) {
 		return false;
 	}
-	for (const links of Object.values(report.fail_map as Record<string, unknown>)) {
+	for (const links of Object.values(
+		report.fail_map as Record<string, unknown>,
+	)) {
 		if (!Array.isArray(links)) {
 			return false;
 		}

@@ -20,9 +20,7 @@ describe("pilot-rollback", () => {
 		rmSync(testDir, { recursive: true, force: true });
 	});
 
-	function createContract(
-		policy?: { mode?: "autonomous" | "manual" },
-	): string {
+	function createContract(policy?: { mode?: "autonomous" | "manual" }): string {
 		const contract = {
 			version: "1.0",
 			pilotRollbackPolicy: {
@@ -130,7 +128,7 @@ describe("pilot-rollback", () => {
 			expect(existsSync(markerPath)).toBe(true);
 
 			const marker = JSON.parse(
-				require("fs").readFileSync(markerPath, "utf-8"),
+				require("node:fs").readFileSync(markerPath, "utf-8"),
 			);
 			expect(marker.schemaVersion).toBe("pilot-rollback-marker/v1");
 			expect(marker.incidentId).toBe("incident-789");
@@ -153,7 +151,7 @@ describe("pilot-rollback", () => {
 			const eventsPath = join(artifactsDir, "rollback-events.jsonl");
 			expect(existsSync(eventsPath)).toBe(true);
 
-			const content = require("fs").readFileSync(eventsPath, "utf-8");
+			const content = require("node:fs").readFileSync(eventsPath, "utf-8");
 			const lines = content.trim().split("\n");
 			expect(lines.length).toBe(1);
 
@@ -182,7 +180,7 @@ describe("pilot-rollback", () => {
 			expect(existsSync(outputPath)).toBe(true);
 
 			const output = JSON.parse(
-				require("fs").readFileSync(outputPath, "utf-8"),
+				require("node:fs").readFileSync(outputPath, "utf-8"),
 			);
 			expect(output.incidentId).toBe("incident-output");
 		});
@@ -190,11 +188,7 @@ describe("pilot-rollback", () => {
 		it("defaults to manual mode when contract lacks policy", async () => {
 			// Create contract without pilotRollbackPolicy
 			mkdirSync(dirname(contractPath), { recursive: true });
-			writeFileSync(
-				contractPath,
-				JSON.stringify({ version: "1.0" }),
-				"utf-8",
-			);
+			writeFileSync(contractPath, JSON.stringify({ version: "1.0" }), "utf-8");
 
 			const result = await runPilotRollback({
 				incidentId: "incident-default",

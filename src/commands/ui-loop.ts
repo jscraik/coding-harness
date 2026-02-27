@@ -134,7 +134,8 @@ export function runUIFast(options: UIFastOptions = {}): {
 	// If contract policy exists, trust it even if local tooling checks would fail.
 	if (policy?.fastCommand) {
 		if (hasUnsafeShellChars(policy.fastCommand)) {
-			const message = "Invalid uiLoopPolicy.fastCommand: unsafe shell characters";
+			const message =
+				"Invalid uiLoopPolicy.fastCommand: unsafe shell characters";
 			if (json) {
 				return {
 					exitCode: EXIT_CODES.VALIDATION_ERROR,

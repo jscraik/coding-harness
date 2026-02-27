@@ -141,7 +141,7 @@ function appendRollbackEvent(
 	record: RollbackEventsRecord,
 ): void {
 	mkdirSync(dirname(eventsPath), { recursive: true });
-	const line = JSON.stringify(record) + "\n";
+	const line = `${JSON.stringify(record)}\n`;
 	writeFileSync(eventsPath, line, { flag: "a", encoding: "utf-8" });
 }
 

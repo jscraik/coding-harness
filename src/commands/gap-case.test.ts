@@ -418,9 +418,7 @@ describe("gap-case", () => {
 
 			expect(result.ok).toBe(true);
 			if (result.ok && result.output.action === "update-causality") {
-				expect(result.output.caseRecord.causality).toBe(
-					"automation_confirmed",
-				);
+				expect(result.output.caseRecord.causality).toBe("automation_confirmed");
 				expect(result.output.caseRecord.confidence).toBe("confirmed");
 				expect(result.output.caseRecord.causalityUpdatedBy).toBe("bob");
 			}
@@ -503,9 +501,7 @@ describe("gap-case", () => {
 
 			expect(result.ok).toBe(true);
 			if (result.ok && result.output.action === "update-causality") {
-				expect(result.output.caseRecord.causality).toBe(
-					"human_or_external",
-				);
+				expect(result.output.caseRecord.causality).toBe("human_or_external");
 			}
 		});
 	});
@@ -618,7 +614,9 @@ describe("gap-case", () => {
 
 			expect(result.ok).toBe(true);
 			if (result.ok && result.output.action === "update-causality") {
-				expect(result.output.caseRecord.autoRollbackTriggeredAt).toBeUndefined();
+				expect(
+					result.output.caseRecord.autoRollbackTriggeredAt,
+				).toBeUndefined();
 			}
 		});
 
@@ -647,7 +645,9 @@ describe("gap-case", () => {
 
 			expect(result.ok).toBe(true);
 			if (result.ok && result.output.action === "update-causality") {
-				expect(result.output.caseRecord.autoRollbackTriggeredAt).toBeUndefined();
+				expect(
+					result.output.caseRecord.autoRollbackTriggeredAt,
+				).toBeUndefined();
 			}
 		});
 
@@ -676,7 +676,9 @@ describe("gap-case", () => {
 
 			expect(result.ok).toBe(true);
 			if (result.ok && result.output.action === "update-causality") {
-				expect(result.output.caseRecord.autoRollbackTriggeredAt).toBeUndefined();
+				expect(
+					result.output.caseRecord.autoRollbackTriggeredAt,
+				).toBeUndefined();
 			}
 		});
 
@@ -705,9 +707,11 @@ describe("gap-case", () => {
 			});
 
 			expect(firstResult.ok).toBe(true);
-			if (!firstResult.ok || firstResult.output.action !== "update-causality") return;
+			if (!firstResult.ok || firstResult.output.action !== "update-causality")
+				return;
 
-			const firstTriggeredAt = firstResult.output.caseRecord.autoRollbackTriggeredAt;
+			const firstTriggeredAt =
+				firstResult.output.caseRecord.autoRollbackTriggeredAt;
 			expect(firstTriggeredAt).toBeDefined();
 
 			// Downgrade and re-confirm (should not trigger again)
@@ -730,7 +734,10 @@ describe("gap-case", () => {
 			});
 
 			expect(secondResult.ok).toBe(true);
-			if (secondResult.ok && secondResult.output.action === "update-causality") {
+			if (
+				secondResult.ok &&
+				secondResult.output.action === "update-causality"
+			) {
 				// Should still have the original timestamp
 				expect(secondResult.output.caseRecord.autoRollbackTriggeredAt).toBe(
 					firstTriggeredAt,

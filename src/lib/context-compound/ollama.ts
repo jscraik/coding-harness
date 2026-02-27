@@ -102,12 +102,12 @@ export class OllamaClient {
 			const response = await fetch(`${this.baseUrl}/api/embeddings`, {
 				method: "POST",
 				headers: { "Content-Type": "application/json" },
-					body: JSON.stringify({
-						model: this.model,
-						prompt: text.slice(0, MAX_EMBED_TEXT_LENGTH),
-					}),
-					signal: abortController.signal,
-				});
+				body: JSON.stringify({
+					model: this.model,
+					prompt: text.slice(0, MAX_EMBED_TEXT_LENGTH),
+				}),
+				signal: abortController.signal,
+			});
 
 			clearTimeout(timeoutId);
 

@@ -42,19 +42,19 @@ describe("observability-gate", () => {
 			expect(result.ok).toBe(false);
 			if (!result.ok) {
 				expect(result.error.code).toBe("VALIDATION_ERROR");
-				}
+			}
+		});
+
+		it("returns error for invalid label schema", () => {
+			const result = runObservabilityGate({
+				labels: JSON.stringify({ status: 200 }),
 			});
 
-			it("returns error for invalid label schema", () => {
-				const result = runObservabilityGate({
-					labels: JSON.stringify({ status: 200 }),
-				});
-
-				expect(result.ok).toBe(false);
-				if (!result.ok) {
-					expect(result.error.code).toBe("VALIDATION_ERROR");
-				}
-			});
+			expect(result.ok).toBe(false);
+			if (!result.ok) {
+				expect(result.error.code).toBe("VALIDATION_ERROR");
+			}
+		});
 
 		it("handles empty labels", () => {
 			const result = runObservabilityGate({});
