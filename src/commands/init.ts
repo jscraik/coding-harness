@@ -278,6 +278,10 @@ function renderInstallCommand(packageManager: string): string {
 	return `${packageManager} install`;
 }
 
+function renderMemoryValidateCommand(): string {
+	return `test -f memory.json && jq -e '.meta.version == "1.0" and (.preamble.bootstrap | type == "boolean") and (.preamble.search | type == "boolean") and (.entries | type == "array")' memory.json >/dev/null`;
+}
+
 const TEMPLATES: Template[] = [
 	{
 		path: "harness.contract.json",
@@ -406,6 +410,41 @@ const TEMPLATES: Template[] = [
 			),
 	},
 	{
+		path: "memory.json",
+		render: () =>
+			JSON.stringify(
+				{
+					repo: "replace-with-repo-name",
+					session_id: "bootstrap/init",
+					preamble: {
+						bootstrap: true,
+						search: true,
+					},
+					entries: [
+						{
+							level: "observation",
+							content:
+								"Harness memory baseline initialized. Replace with task-specific observations.",
+							tags: ["repo:unknown", "area:bootstrap", "type:setup"],
+							session_id: "bootstrap/init",
+							source: "harness init",
+							observed_at: "2026-01-01T00:00:00.000Z",
+						},
+					],
+					closeout: {
+						forjamie_updated: false,
+						date: "2026-01-01T00:00:00.000Z",
+					},
+					meta: {
+						created_at: "2026-01-01T00:00:00.000Z",
+						version: "1.0",
+					},
+				},
+				null,
+				2,
+			),
+	},
+	{
 		path: ".github/workflows/pr-pipeline.yml",
 		render: (pm) => {
 			const installCommand = renderInstallCommand(pm);
@@ -414,6 +453,7 @@ const TEMPLATES: Template[] = [
 			const testCommand = renderScriptCommand(pm, "test");
 			const auditCommand = renderScriptCommand(pm, "audit");
 			const checkCommand = renderScriptCommand(pm, "check");
+			const memoryValidateCommand = renderMemoryValidateCommand();
 			return `name: Harness PR Pipeline
 
 on: pull_request
@@ -497,6 +537,14 @@ jobs:
         run: ${installCommand}
       - name: Run full check
         run: ${checkCommand}
+
+  memory:
+    name: memory
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Validate memory.json
+        run: ${memoryValidateCommand}
 `;
 		},
 	},
@@ -508,6 +556,7 @@ jobs:
 			const testCommand = renderScriptCommand(pm, "test");
 			const auditCommand = renderScriptCommand(pm, "audit");
 			const checkCommand = renderScriptCommand(pm, "check");
+			const memoryValidateCommand = renderMemoryValidateCommand();
 			return `# Contributing
 
 ## Table of Contents
@@ -559,6 +608,7 @@ This workflow keeps delivery auditable, reversible, and consistent even for solo
 - ${testCommand}
 - ${auditCommand}
 - ${checkCommand}
+- ${memoryValidateCommand}
 
 ## Review artifacts requirement
 
@@ -579,7 +629,7 @@ Configure GitHub branch protection (or rulesets) on \`main\`:
   - \`--token <PAT>\` or env \`GITHUB_TOKEN\` / \`GITHUB_PERSONAL_ACCESS_TOKEN\`
 - Require pull request before merge.
 - Require at least one approval.
-- Require status checks: \`lint\`, \`typecheck\`, \`test\`, \`audit\`, \`check\`.
+- Require status checks: \`lint\`, \`typecheck\`, \`test\`, \`audit\`, \`check\`, \`memory\`.
 - Block direct pushes to \`main\`.
 `;
 		},
@@ -592,6 +642,7 @@ Configure GitHub branch protection (or rulesets) on \`main\`:
 			const testCommand = renderScriptCommand(pm, "test");
 			const auditCommand = renderScriptCommand(pm, "audit");
 			const checkCommand = renderScriptCommand(pm, "check");
+			const memoryValidateCommand = renderMemoryValidateCommand();
 			return `# Pull request checklist
 
 ## Summary
@@ -604,7 +655,7 @@ Configure GitHub branch protection (or rulesets) on \`main\`:
 
 - [ ] I did not push directly to \`main\`; this PR is from a dedicated branch.
 - [ ] Branch name follows policy (\`codex/*\` for agent-created branches).
-- [ ] Required local gates run: \`${lintCommand}\`, \`${typecheckCommand}\`, \`${testCommand}\`, \`${auditCommand}\`, \`${checkCommand}\`.
+- [ ] Required local gates run: \`${lintCommand}\`, \`${typecheckCommand}\`, \`${testCommand}\`, \`${auditCommand}\`, \`${checkCommand}\`, \`${memoryValidateCommand}\`.
 - [ ] Greptile review completed and findings handled (or explicitly waived).
 - [ ] Codex review completed and findings handled (or explicitly waived).
 - [ ] Merge is blocked until all required checks pass.
@@ -617,6 +668,7 @@ Configure GitHub branch protection (or rulesets) on \`main\`:
 - Command: \`${testCommand}\` -> pass/fail
 - Command: \`${auditCommand}\` -> pass/fail
 - Command: \`${checkCommand}\` -> pass/fail
+- Command: \`${memoryValidateCommand}\` -> pass/fail
 - Any other command(s):
 
 ## Review artifacts
