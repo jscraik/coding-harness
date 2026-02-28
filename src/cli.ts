@@ -1,6 +1,9 @@
 #!/usr/bin/env node
 import { pathToFileURL } from "node:url";
-import { runBlastRadiusCLI } from "./commands/blast-radius.js";
+import {
+	type BlastRadiusOptions,
+	runBlastRadiusCLI,
+} from "./commands/blast-radius.js";
 import { runBrainstormGateCLI } from "./commands/brainstorm-gate.js";
 import { runCheckAuthzCLI } from "./commands/check-authz.js";
 import { runCheckEnvironmentCLI } from "./commands/check-environment.js";
@@ -921,14 +924,14 @@ export function run(args: string[]): void {
 			.filter(Boolean);
 
 		const contractArg = getFlagValue(args, contractIndex);
-		const contractPath = contractArg ?? "harness.contract.json";
-
-		const exitCode = runBlastRadiusCLI({
+		const blastRadiusOptions: BlastRadiusOptions = {
 			files,
 			json: jsonFlag,
 			verbose: verboseFlag,
-			contractPath,
-		});
+		};
+		if (contractArg) blastRadiusOptions.contractPath = contractArg;
+
+		const exitCode = runBlastRadiusCLI(blastRadiusOptions);
 		process.exit(exitCode);
 		return;
 	}

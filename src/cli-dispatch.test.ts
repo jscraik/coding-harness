@@ -573,7 +573,7 @@ describe("cli command dispatch", () => {
 		expect(exitSpy).toHaveBeenCalledWith(46);
 	});
 
-	it("dispatches blast-radius command with default contract path", async () => {
+	it("dispatches blast-radius command without explicit contract path", async () => {
 		const { run } = await import("./cli.js");
 		const { runBlastRadiusCLI } = await import("./commands/blast-radius.js");
 
@@ -587,7 +587,6 @@ describe("cli command dispatch", () => {
 			files: ["src/a.ts", "src/b.ts"],
 			json: true,
 			verbose: false,
-			contractPath: "harness.contract.json",
 		});
 		expect(exitSpy).toHaveBeenCalledWith(59);
 	});

@@ -130,6 +130,11 @@ describe("resolveBlastRadiusRules", () => {
 			}),
 		);
 	});
+
+	it("returns empty rules when mode is replace and custom rules are omitted", () => {
+		const rules = resolveBlastRadiusRules(undefined, "replace");
+		expect(rules).toEqual([]);
+	});
 });
 
 describe("getBlastRadiusInfo", () => {

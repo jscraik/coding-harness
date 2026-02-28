@@ -84,6 +84,30 @@ describe("runBlastRadius", () => {
 		}
 	});
 
+	it("treats replace mode without custom rules as no blast-radius rules", () => {
+		const contractPath = "harness.contract.json";
+		writeFileSync(
+			contractPath,
+			JSON.stringify({
+				version: "1.0",
+				blastRadiusRulesMode: "replace",
+			}),
+		);
+
+		const result = runBlastRadius({
+			files: ["src/auth/login.ts"],
+			contractPath,
+		});
+
+		expect(result.ok).toBe(true);
+		if (result.ok) {
+			expect(result.output.rulesMode).toBe("replace");
+			expect(result.output.rules).toEqual([]);
+			expect(result.output.usedDefaults).toBe(true);
+			expect(result.output.checks).not.toContain("auth-flows");
+		}
+	});
+
 	it("returns VALIDATION_ERROR when contract is invalid", () => {
 		const contractPath = "harness.contract.json";
 		writeFileSync(

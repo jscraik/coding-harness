@@ -159,12 +159,12 @@ export function resolveBlastRadiusRules(
 	customRules: BlastRadiusRule[] | undefined = undefined,
 	mode: BlastRadiusRulesMode = DEFAULT_BLAST_RADIUS_RULES_MODE,
 ): BlastRadiusRule[] {
-	if (customRules === undefined) {
-		return [...DEFAULT_BLAST_RADIUS_RULES];
+	if (mode === "replace") {
+		return customRules ? [...customRules] : [];
 	}
 
-	if (mode === "replace") {
-		return [...customRules];
+	if (customRules === undefined) {
+		return [...DEFAULT_BLAST_RADIUS_RULES];
 	}
 
 	return [...DEFAULT_BLAST_RADIUS_RULES, ...customRules];
