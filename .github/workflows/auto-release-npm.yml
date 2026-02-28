@@ -38,6 +38,8 @@ jobs:
           run_install: false
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
+      - name: Build CLI
+        run: pnpm build
       - name: Resolve merged PR metadata for pushed commit
         id: resolve-pr
         uses: actions/github-script@v7
