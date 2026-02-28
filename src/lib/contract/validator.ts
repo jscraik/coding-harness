@@ -64,7 +64,10 @@ const VALID_UI_LOOP_POLICY_KEYS = [
 	"sloTargets",
 ] as const;
 const VALID_SLO_TARGET_KEYS = ["fastLoopSeconds", "verifyLoopSeconds"] as const;
-const VALID_RUNTIME_POLICY_KEYS = ["nodeVersion"] as const;
+const VALID_RUNTIME_POLICY_KEYS = [
+	"nodeVersion",
+	"createIssueOnAgentFindings",
+] as const;
 const VALID_MEMORY_POLICY_KEYS = [
 	"enabled",
 	"provider",
@@ -373,6 +376,12 @@ function isValidRuntimePolicy(value: unknown): value is RuntimePolicy {
 	if (
 		typeof policy.nodeVersion !== "string" ||
 		policy.nodeVersion.length === 0
+	) {
+		return false;
+	}
+	if (
+		policy.createIssueOnAgentFindings !== undefined &&
+		typeof policy.createIssueOnAgentFindings !== "boolean"
 	) {
 		return false;
 	}
@@ -1134,9 +1143,10 @@ export function validateContract(
 				code: ValidationErrorCode.INVALID_VALUE,
 				path: "runtimePolicy",
 				message: "runtimePolicy must include nodeVersion",
-				expected: "{ nodeVersion: string }",
+				expected:
+					"{ nodeVersion: string, createIssueOnAgentFindings?: boolean }",
 				received: JSON.stringify(obj.runtimePolicy),
-				fix: "Ensure runtimePolicy includes only nodeVersion as a non-empty string",
+				fix: "Ensure runtimePolicy includes nodeVersion and optional createIssueOnAgentFindings boolean",
 			});
 		} else {
 			runtimePolicy = obj.runtimePolicy as RuntimePolicy;

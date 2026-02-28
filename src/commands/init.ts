@@ -322,6 +322,7 @@ const TEMPLATES: Template[] = [
 					},
 					runtimePolicy: {
 						nodeVersion: "20.x",
+						createIssueOnAgentFindings: true,
 					},
 					memoryPolicy: {
 						enabled: true,

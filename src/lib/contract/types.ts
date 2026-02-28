@@ -55,6 +55,8 @@ export interface UILoopPolicy {
 
 export interface RuntimePolicy {
 	nodeVersion: string;
+	/** Require issue creation/update when agents find reproducible harness issues */
+	createIssueOnAgentFindings?: boolean;
 }
 
 export interface MemoryPolicy {

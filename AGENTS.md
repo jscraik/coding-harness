@@ -47,6 +47,9 @@ Implementation details and checklists:
 
 ## Internal GitHub issue routing
 - The package `bugs.url` points to the private repository issues page: `https://github.com/jscraik/coding-harness/issues`.
+- If an agent finds a reproducible coding-harness bug, policy gap, or workflow regression, it must create (or update) a GitHub issue before handoff.
+- Before creating a new issue, search open issues and reuse an existing issue when it matches.
+- Include minimal repro steps, expected vs actual behavior, and validation evidence in the issue body.
 - Agents may file issues directly when authenticated with `GITHUB_PERSONAL_ACCESS_TOKEN` sourced from `~/.claude.env` and/or `~/.codex/.env`.
 - Compatibility note: if a tool expects `GITHUB_TOKEN`, map it from `GITHUB_PERSONAL_ACCESS_TOKEN` in the runtime environment.
 - Never print token values in logs, docs, or command output.

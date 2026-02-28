@@ -200,6 +200,7 @@ describe("runInit", () => {
 			);
 			expect(content.version).toBe("1.2.0");
 			expect(content.reviewPolicy.timeoutSeconds).toBe(600);
+			expect(content.runtimePolicy.createIssueOnAgentFindings).toBe(true);
 		});
 
 		it("includes package manager in workflow", () => {

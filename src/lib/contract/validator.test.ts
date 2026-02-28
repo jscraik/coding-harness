@@ -99,6 +99,31 @@ describe("validateContract", () => {
 		expect(result.data?.riskTierRules["src/auth/**"]).toBe("high");
 	});
 
+	describe("runtimePolicy", () => {
+		it("accepts runtimePolicy with optional createIssueOnAgentFindings", () => {
+			const result = validateContract({
+				version: "1.0",
+				runtimePolicy: {
+					nodeVersion: "20.x",
+					createIssueOnAgentFindings: true,
+				},
+			});
+			expect(result.success).toBe(true);
+		});
+
+		it("rejects non-boolean createIssueOnAgentFindings", () => {
+			const result = validateContract({
+				version: "1.0",
+				runtimePolicy: {
+					nodeVersion: "20.x",
+					createIssueOnAgentFindings: "yes",
+				},
+			});
+			expect(result.success).toBe(false);
+			expect(result.errors[0]?.path).toBe("runtimePolicy");
+		});
+	});
+
 	it("rejects __proto__ key (prototype pollution)", () => {
 		// Use JSON.parse to create an actual own property named __proto__
 		const data = JSON.parse(
