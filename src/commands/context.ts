@@ -272,7 +272,9 @@ export async function runContextCLI(args: string[]): Promise<number> {
 			if (parsedLimit !== undefined) {
 				limit = parsedLimit;
 			} else {
-				console.error(`Error: --limit expects a positive integer, got '${val}'`);
+				console.error(
+					`Error: --limit expects a positive integer, got '${val}'`,
+				);
 				return EXIT_CODES.ERROR;
 			}
 			i++;

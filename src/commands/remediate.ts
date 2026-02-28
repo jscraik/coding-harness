@@ -37,7 +37,7 @@ export const EXIT_CODES = {
 
 export interface RemediateOptions {
 	/** Remediation mode: "run" (plan only) or "apply" (execute) */
-	mode?: "run" | "apply";
+	mode?: "run" | "apply" | "manual" | "autonomous";
 	/** Repository owner */
 	owner?: string;
 	/** Repository name */
@@ -58,8 +58,11 @@ export interface RemediateOptions {
 	contractPath?: string;
 	/** HEAD SHA (defaults to current git HEAD) */
 	headSha?: string;
+	/** Skip interactive prompts */
+	noInput?: boolean;
+	/** Force execution in apply mode */
+	force?: boolean;
 	/** Override rollback mode (manual/autonomous) */
-	mode?: "manual" | "autonomous";
 	/** Path to completion marker file */
 	completionMarkerPath?: string;
 }

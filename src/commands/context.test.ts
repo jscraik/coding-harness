@@ -3,8 +3,6 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 import {
 	DEFAULT_DB_FILENAME,
 	DEFAULT_HARNESS_DIR,
-	DEFAULT_SEARCH_LIMIT,
-	DEFAULT_SIMILARITY_THRESHOLD,
 } from "../lib/context-compound/constants.js";
 
 const constructorPaths: string[] = [];

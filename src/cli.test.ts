@@ -139,7 +139,7 @@ describe("run", () => {
 		expect(infoSpy).toHaveBeenCalled();
 	});
 
-	it("routes gap-case create/list/resolve commands", () => {
+	it("routes gap-case open/resolve commands", () => {
 		const exitSpy = vi
 			.spyOn(process, "exit")
 			.mockImplementation((code?: string | number | null | undefined) => {
@@ -172,45 +172,34 @@ describe("run", () => {
 		expect(() =>
 			run([
 				"gap-case",
-				"create",
+				"open",
 				"--incident-id",
 				"INC-1",
 				"--owner",
 				"alice",
 				"--severity",
 				"high",
-				"--linked-pr",
-				"acme/demo#1",
-				"--case-store",
+				"--summary",
+				"Found security issue",
+				"--finding-id",
+				"f-123",
+				"--store",
 				storePath,
 				"--contract",
 				contractPath,
-			]),
-		).toThrowError("EXIT_0");
-		expect(() =>
-			run([
-				"gap-case",
-				"list",
-				"--open",
-				"--case-store",
-				storePath,
-				"--contract",
-				contractPath,
-				"--json",
 			]),
 		).toThrowError("EXIT_0");
 		expect(() =>
 			run([
 				"gap-case",
 				"resolve",
+				"--case-id",
 				"gap-001",
-				"--incident-id",
-				"INC-1",
 				"--resolved-by",
 				"alice",
-				"--linked-pr",
-				"acme/demo#1",
-				"--case-store",
+				"--evidence-url",
+				"https://example.com/evidence",
+				"--store",
 				storePath,
 				"--contract",
 				contractPath,

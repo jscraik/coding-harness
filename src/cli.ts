@@ -14,11 +14,18 @@ import { runInitCLI, runInteractiveInitCLI } from "./commands/init.js";
 import { runMemoryGateCLI } from "./commands/memory-gate.js";
 import { runObservabilityGateCLI } from "./commands/observability-gate.js";
 import { runPilotEvaluateCLI } from "./commands/pilot-evaluate.js";
+import {
+	type PilotRollbackOptions,
+	runPilotRollbackCLI,
+} from "./commands/pilot-rollback.js";
 import { runPlanGateCLI } from "./commands/plan-gate.js";
 import { runPolicyGateCLI } from "./commands/policy-gate.js";
 import { runPreflightGateCLI } from "./commands/preflight-gate.js";
 import { runPromptGateCLI } from "./commands/prompt-gate.js";
-import { runRemediateCLI } from "./commands/remediate.js";
+import {
+	type RemediateOptions,
+	runRemediateCLI,
+} from "./commands/remediate.js";
 import { runReplayCLI } from "./commands/replay.js";
 import { runReviewGateCLI } from "./commands/review-gate.js";
 import { runRiskTierCLI } from "./commands/risk-tier.js";
@@ -806,6 +813,8 @@ export function run(args: string[]): void {
 		}
 		const shardArg = getFlagValue(args, shardIndex);
 		if (shardArg) options.shard = shardArg;
+		const contractArg = getFlagValue(args, contractIndex);
+		if (contractArg) options.contractPath = contractArg;
 
 		const exitCode = runUIVerifyCLI(options);
 		process.exit(exitCode);
@@ -834,6 +843,8 @@ export function run(args: string[]): void {
 		if (urlArg) options.url = urlArg;
 		const outputArg = getFlagValue(args, outputIndex);
 		if (outputArg) options.outputDir = outputArg;
+		const contractArg = getFlagValue(args, contractIndex);
+		if (contractArg) options.contractPath = contractArg;
 
 		const exitCode = runUIExploreCLI(options);
 		process.exit(exitCode);
@@ -930,6 +941,11 @@ export function run(args: string[]): void {
 		const forceFlag = args.includes("--force");
 		const jsonFlag = args.includes("--json");
 		const maxAutoTierIndex = args.indexOf("--max-auto-tier");
+		const modeArg = args.indexOf("--mode");
+		const markerIndex = args.indexOf("--completion-marker");
+		const contractIndex = args.indexOf("--contract");
+		const findingsIndex = args.indexOf("--findings");
+		const headShaIndex = args.indexOf("--head-sha");
 
 		const prValue = getFlagValue(args, prIndex);
 		const maxAutoTierValue = getFlagValue(args, maxAutoTierIndex);
@@ -948,6 +964,26 @@ export function run(args: string[]): void {
 			force: forceFlag,
 			json: jsonFlag,
 		};
+		const contractArg = getFlagValue(args, contractIndex);
+		if (contractArg) {
+			remediateOptions.contractPath = contractArg;
+		}
+		const findingsArg = getFlagValue(args, findingsIndex);
+		if (findingsArg) {
+			remediateOptions.findings = findingsArg;
+		}
+		const headShaArg = getFlagValue(args, headShaIndex);
+		if (headShaArg) {
+			remediateOptions.headSha = headShaArg;
+		}
+		const modeValue = getFlagValue(args, modeArg);
+		if (modeValue === "manual" || modeValue === "autonomous") {
+			remediateOptions.mode = modeValue;
+		}
+		const markerArg = getFlagValue(args, markerIndex);
+		if (markerArg) {
+			remediateOptions.completionMarkerPath = markerArg;
+		}
 		if (
 			maxAutoTierValue === "low" ||
 			maxAutoTierValue === "medium" ||
@@ -955,155 +991,12 @@ export function run(args: string[]): void {
 		) {
 			remediateOptions.maxAutoTier = maxAutoTierValue;
 		}
+
 		runRemediateCLI(remediateOptions)
 			.then((exitCode) => process.exit(exitCode))
 			.catch((error) => handleFatalError("Remediate Error", error));
 		return;
 	}
-
-	if (command === "gap-case") {
-		const action = args[1];
-		const jsonFlag = args.includes("--json");
-		const caseStoreIndex = args.indexOf("--case-store");
-		const caseStore = getFlagValue(args, caseStoreIndex);
-
-		// Parse --contract flag for all gap-case actions
-		const contractIndex = args.indexOf("--contract");
-		const contractPath = getFlagValue(args, contractIndex);
-
-		if (
-			action !== "create" &&
-			action !== "list" &&
-			action !== "resolve" &&
-			action !== "update-causality"
-		) {
-			console.error(
-				"Error: gap-case command requires subcommand `create`, `list`, `resolve`, or `update-causality`",
-			);
-			process.exit(2);
-			return;
-		}
-
-		if (action === "create") {
-			const incidentIndex = args.indexOf("--incident-id");
-			const ownerIndex = args.indexOf("--owner");
-			const severityIndex = args.indexOf("--severity");
-			const linkedPrIndex = args.indexOf("--linked-pr");
-			const findingSummaryIndex = args.indexOf("--finding-summary");
-			const dueDaysIndex = args.indexOf("--due-days");
-			const caseIdIndex = args.indexOf("--case-id");
-			const caseIdPrefixIndex = args.indexOf("--case-id-prefix");
-			const evidenceIndex = args.indexOf("--evidence");
-
-			const dueDaysValue = getFlagValue(args, dueDaysIndex);
-			const parsedDueDays = dueDaysValue
-				? parseIntegerArg(dueDaysValue, 1)
-				: undefined;
-
-			const severityArg = getFlagValue(args, severityIndex);
-			const createOptions: CreateGapCaseOptions = {
-				action: "create",
-				incidentId: getFlagValue(args, incidentIndex) ?? "",
-				owner: getFlagValue(args, ownerIndex) ?? "",
-				severity: (severityArg as GapSeverity | undefined) ?? "low",
-				linkedPr: getFlagValue(args, linkedPrIndex) ?? "",
-				evidence: parseCsvList(getFlagValue(args, evidenceIndex)),
-				json: jsonFlag,
-			};
-			const findingSummaryValue = getFlagValue(args, findingSummaryIndex);
-			if (findingSummaryValue) {
-				createOptions.findingSummary = findingSummaryValue;
-			}
-			if (parsedDueDays !== undefined) {
-				createOptions.dueDays = parsedDueDays;
-			}
-			const caseIdValue = getFlagValue(args, caseIdIndex);
-			if (caseIdValue) {
-				createOptions.caseId = caseIdValue;
-			}
-			const caseIdPrefixValue = getFlagValue(args, caseIdPrefixIndex);
-			if (caseIdPrefixValue) {
-				createOptions.caseIdPrefix = caseIdPrefixValue;
-			}
-			if (caseStore) {
-				createOptions.caseStore = caseStore;
-			}
-			if (contractPath) {
-				createOptions.contractPath = contractPath;
-			}
-			const exitCode = runGapCaseCLI(createOptions);
-			process.exit(exitCode);
-			return;
-		}
-
-		if (action === "list") {
-			const openFlag = args.includes("--open");
-			const overdueFlag = args.includes("--overdue");
-			const listOptions: ListGapCaseOptions = {
-				action: "list",
-				open: openFlag,
-				overdue: overdueFlag,
-				json: jsonFlag,
-			};
-			if (caseStore) {
-				listOptions.caseStore = caseStore;
-			}
-			if (contractPath) {
-				listOptions.contractPath = contractPath;
-			}
-			const exitCode = runGapCaseCLI(listOptions);
-			process.exit(exitCode);
-			return;
-		}
-
-		const positionalCaseId =
-			args[2] && !args[2].startsWith("--") ? args[2] : "";
-		const caseIdArgIndex = args.indexOf("--case-id");
-		const caseIdArg = getFlagValue(args, caseIdArgIndex) ?? "";
-		if (positionalCaseId && caseIdArg && positionalCaseId !== caseIdArg) {
-			console.error("Error: positional case id and --case-id must match");
-			process.exit(2);
-			return;
-		}
-		const caseId = caseIdArg || positionalCaseId;
-		if (!caseId) {
-			console.error("Error: gap-case resolve requires a case id");
-			process.exit(2);
-			return;
-		}
-
-		const incidentIndex = args.indexOf("--incident-id");
-		const resolvedByIndex = args.indexOf("--resolved-by");
-		const linkedPrIndex = args.indexOf("--linked-pr");
-		const evidenceIndex = args.indexOf("--evidence");
-		const closeReasonIndex = args.indexOf("--close-reason");
-		const forceFlag = args.includes("--force");
-
-		const resolveOptions: ResolveGapCaseOptions = {
-			action: "resolve",
-			caseId,
-			incidentId: getFlagValue(args, incidentIndex) ?? "",
-			resolvedBy: getFlagValue(args, resolvedByIndex) ?? "",
-			linkedPr: getFlagValue(args, linkedPrIndex) ?? "",
-			evidence: parseCsvList(getFlagValue(args, evidenceIndex)),
-			force: forceFlag,
-			json: jsonFlag,
-		};
-		const closeReasonValue = getFlagValue(args, closeReasonIndex);
-		if (closeReasonValue) {
-			resolveOptions.closeReason = closeReasonValue;
-		}
-		if (caseStore) {
-			resolveOptions.caseStore = caseStore;
-		}
-		if (contractPath) {
-			resolveOptions.contractPath = contractPath;
-		}
-		const exitCode = runGapCaseCLI(resolveOptions);
-		process.exit(exitCode);
-		return;
-	}
-
 	if (command === "observability-gate") {
 		// Parse observability-gate options
 		const jsonFlag = args.includes("--json");
@@ -1346,311 +1239,11 @@ export function run(args: string[]): void {
 	}
 
 	// No command recognized
-
-	if (command === "remediate") {
-		// Parse remediate options
-		const jsonFlag = args.includes("--json");
-		const dryRunFlag = args.includes("--dry-run");
-		const contractIndex = args.indexOf("--contract");
-		const findingsIndex = args.indexOf("--findings");
-		const headShaIndex = args.indexOf("--head-sha");
-		const shaIndex = args.indexOf("--sha"); // Support both --sha and --head-sha
-		const modeIndex = args.indexOf("--mode");
-		const markerIndex = args.indexOf("--completion-marker");
-
-		const options: {
-			findings?: string;
-			dryRun?: boolean;
-			json?: boolean;
-			contractPath?: string;
-			headSha?: string;
-			mode?: "manual" | "autonomous";
-			completionMarkerPath?: string;
-		} = {};
-
-		if (jsonFlag) options.json = true;
-		if (dryRunFlag) options.dryRun = true;
-
-		const contractArg = getFlagValue(args, contractIndex);
-		if (contractArg) options.contractPath = contractArg;
-
-		const findingsArg = getFlagValue(args, findingsIndex);
-		if (findingsArg) options.findings = findingsArg;
-
-		// Support both --sha and --head-sha for headSha
-		const headShaArg =
-			getFlagValue(args, headShaIndex) || getFlagValue(args, shaIndex);
-		if (headShaArg) options.headSha = headShaArg;
-
-		const modeArg = getFlagValue(args, modeIndex);
-		if (modeArg === "manual" || modeArg === "autonomous") {
-			options.mode = modeArg;
-		}
-
-		const markerArg = getFlagValue(args, markerIndex);
-		if (markerArg) options.completionMarkerPath = markerArg;
-
-		runRemediateCLI(options)
-			.then((exitCode) => process.exit(exitCode))
-			.catch((error) => handleFatalError("Remediate Error", error));
-		return;
-	}
-
-	// No command recognized
-
-	if (command === "check-environment") {
-		// Parse check-environment options
-		const jsonFlag = args.includes("--json");
-		const checkSecretsFlag = args.includes("--check-secrets");
-		const contractIndex = args.indexOf("--contract");
-		const attestationIndex = args.indexOf("--attestation");
-
-		const options: {
-			contractPath?: string;
-			checkSecrets?: boolean;
-			json?: boolean;
-			attestationPath?: string;
-		} = {};
-
-		if (jsonFlag) options.json = true;
-		if (checkSecretsFlag) options.checkSecrets = true;
-		if (contractIndex !== -1 && args[contractIndex + 1]) {
-			options.contractPath = args[contractIndex + 1] as string;
-		}
-		if (attestationIndex !== -1 && args[attestationIndex + 1]) {
-			options.attestationPath = args[attestationIndex + 1] as string;
-		}
-
-		runCheckEnvironmentCLI(options)
-			.then((exitCode) => process.exit(exitCode))
-			.catch((error) => handleFatalError("Check Environment Error", error));
-		return;
-	}
-
-	// No command recognized
-
-	if (command === "remediate") {
-		// Parse remediate options
-		const jsonFlag = args.includes("--json");
-		const dryRunFlag = args.includes("--dry-run");
-		const contractIndex = args.indexOf("--contract");
-		const findingsIndex = args.indexOf("--findings");
-		const headShaIndex = args.indexOf("--head-sha");
-		const modeIndex = args.indexOf("--mode");
-		const markerIndex = args.indexOf("--completion-marker");
-
-		const options: {
-			findings?: string;
-			dryRun?: boolean;
-			json?: boolean;
-			contractPath?: string;
-			headSha?: string;
-			mode?: "manual" | "autonomous";
-			completionMarkerPath?: string;
-		} = {};
-
-		if (jsonFlag) options.json = true;
-		if (dryRunFlag) options.dryRun = true;
-		if (contractIndex !== -1 && args[contractIndex + 1]) {
-			options.contractPath = args[contractIndex + 1] as string;
-		}
-		if (findingsIndex !== -1 && args[findingsIndex + 1]) {
-			options.findings = args[findingsIndex + 1] as string;
-		}
-		if (headShaIndex !== -1 && args[headShaIndex + 1]) {
-			options.headSha = args[headShaIndex + 1] as string;
-		}
-		if (modeIndex !== -1 && args[modeIndex + 1]) {
-			const modeValue = args[modeIndex + 1];
-			if (modeValue === "manual" || modeValue === "autonomous") {
-				options.mode = modeValue;
-			}
-		}
-		if (markerIndex !== -1 && args[markerIndex + 1]) {
-			options.completionMarkerPath = args[markerIndex + 1] as string;
-		}
-
-		runRemediateCLI(options)
-			.then((exitCode) => process.exit(exitCode))
-			.catch((error) => handleFatalError("Remediate Error", error));
-		return;
-	}
-
-	// No command recognized
-
-	if (command === "check-authz") {
-		// Parse check-authz options
-		const jsonFlag = args.includes("--json");
-		const checkScopesFlag = args.includes("--check-scopes");
-		const contractIndex = args.indexOf("--contract");
-		const repoIndex = args.indexOf("--repo");
-		const branchIndex = args.indexOf("--branch");
-
-		const options: {
-			contractPath?: string;
-			repo?: string;
-			branch?: string;
-			checkScopes?: boolean;
-			json?: boolean;
-		} = {};
-
-		if (jsonFlag) options.json = true;
-		if (checkScopesFlag) options.checkScopes = true;
-		if (contractIndex !== -1 && args[contractIndex + 1]) {
-			options.contractPath = args[contractIndex + 1] as string;
-		}
-		if (repoIndex !== -1 && args[repoIndex + 1]) {
-			options.repo = args[repoIndex + 1] as string;
-		}
-		if (branchIndex !== -1 && args[branchIndex + 1]) {
-			options.branch = args[branchIndex + 1] as string;
-		}
-
-		runCheckAuthzCLI(options)
-			.then((exitCode) => process.exit(exitCode))
-			.catch((error) => handleFatalError("Check Authz Error", error));
-		return;
-	}
-
-	// No command recognized
-
-	if (command === "remediate") {
-		// Parse remediate options
-		const jsonFlag = args.includes("--json");
-		const dryRunFlag = args.includes("--dry-run");
-		const contractIndex = args.indexOf("--contract");
-		const findingsIndex = args.indexOf("--findings");
-		const headShaIndex = args.indexOf("--head-sha");
-		const shaIndex = args.indexOf("--sha"); // Support both --sha and --head-sha
-		const modeIndex = args.indexOf("--mode");
-		const markerIndex = args.indexOf("--completion-marker");
-
-		const options: {
-			findings?: string;
-			dryRun?: boolean;
-			json?: boolean;
-			contractPath?: string;
-			headSha?: string;
-			mode?: "manual" | "autonomous";
-			completionMarkerPath?: string;
-		} = {};
-
-		if (jsonFlag) options.json = true;
-		if (dryRunFlag) options.dryRun = true;
-
-		const contractArg = getFlagValue(args, contractIndex);
-		if (contractArg) options.contractPath = contractArg;
-
-		const findingsArg = getFlagValue(args, findingsIndex);
-		if (findingsArg) options.findings = findingsArg;
-
-		// Support both --sha and --head-sha for headSha
-		const headShaArg =
-			getFlagValue(args, headShaIndex) || getFlagValue(args, shaIndex);
-		if (headShaArg) options.headSha = headShaArg;
-
-		const modeArg = getFlagValue(args, modeIndex);
-		if (modeArg === "manual" || modeArg === "autonomous") {
-			options.mode = modeArg;
-		}
-
-		const markerArg = getFlagValue(args, markerIndex);
-		if (markerArg) options.completionMarkerPath = markerArg;
-
-		runRemediateCLI(options)
-			.then((exitCode) => process.exit(exitCode))
-			.catch((error) => handleFatalError("Remediate Error", error));
-		return;
-	}
-
-	// No command recognized
-
-	if (command === "check-environment") {
-		// Parse check-environment options
-		const jsonFlag = args.includes("--json");
-		const checkSecretsFlag = args.includes("--check-secrets");
-		const contractIndex = args.indexOf("--contract");
-		const attestationIndex = args.indexOf("--attestation");
-
-		const options: {
-			contractPath?: string;
-			checkSecrets?: boolean;
-			json?: boolean;
-			attestationPath?: string;
-		} = {};
-
-		if (jsonFlag) options.json = true;
-		if (checkSecretsFlag) options.checkSecrets = true;
-		if (contractIndex !== -1 && args[contractIndex + 1]) {
-			options.contractPath = args[contractIndex + 1] as string;
-		}
-		if (attestationIndex !== -1 && args[attestationIndex + 1]) {
-			options.attestationPath = args[attestationIndex + 1] as string;
-		}
-
-		runCheckEnvironmentCLI(options)
-			.then((exitCode) => process.exit(exitCode))
-			.catch((error) => handleFatalError("Check Environment Error", error));
-		return;
-	}
-
-	// No command recognized
-
-	if (command === "remediate") {
-		// Parse remediate options
-		const jsonFlag = args.includes("--json");
-		const dryRunFlag = args.includes("--dry-run");
-		const contractIndex = args.indexOf("--contract");
-		const findingsIndex = args.indexOf("--findings");
-		const headShaIndex = args.indexOf("--head-sha");
-		const modeIndex = args.indexOf("--mode");
-		const markerIndex = args.indexOf("--completion-marker");
-
-		const options: {
-			findings?: string;
-			dryRun?: boolean;
-			json?: boolean;
-			contractPath?: string;
-			headSha?: string;
-			mode?: "manual" | "autonomous";
-			completionMarkerPath?: string;
-		} = {};
-
-		if (jsonFlag) options.json = true;
-		if (dryRunFlag) options.dryRun = true;
-		if (contractIndex !== -1 && args[contractIndex + 1]) {
-			options.contractPath = args[contractIndex + 1] as string;
-		}
-		if (findingsIndex !== -1 && args[findingsIndex + 1]) {
-			options.findings = args[findingsIndex + 1] as string;
-		}
-		if (headShaIndex !== -1 && args[headShaIndex + 1]) {
-			options.headSha = args[headShaIndex + 1] as string;
-		}
-		if (modeIndex !== -1 && args[modeIndex + 1]) {
-			const modeValue = args[modeIndex + 1];
-			if (modeValue === "manual" || modeValue === "autonomous") {
-				options.mode = modeValue;
-			}
-		}
-		if (markerIndex !== -1 && args[markerIndex + 1]) {
-			options.completionMarkerPath = args[markerIndex + 1] as string;
-		}
-
-		runRemediateCLI(options)
-			.then((exitCode) => process.exit(exitCode))
-			.catch((error) => handleFatalError("Remediate Error", error));
-		return;
-	}
-
-	// No command recognized
 	if (command === "gap-case") {
-		// Parse gap-case options
 		const jsonFlag = args.includes("--json");
 		const contractIndex = args.indexOf("--contract");
 		const storeIndex = args.indexOf("--store");
 
-		// Get action (open/resolve) from second arg
 		const action = args[1] as "open" | "resolve" | undefined;
 		if (action !== "open" && action !== "resolve") {
 			console.error("Error: action must be 'open' or 'resolve'");
@@ -1658,7 +1251,6 @@ export function run(args: string[]): void {
 			return;
 		}
 
-		// Open options
 		const incidentIdIndex = args.indexOf("--incident-id");
 		const summaryIndex = args.indexOf("--summary");
 		const severityIndex = args.indexOf("--severity");
@@ -1669,7 +1261,6 @@ export function run(args: string[]): void {
 		const headShaIndex = args.indexOf("--head-sha");
 		const slaHoursIndex = args.indexOf("--sla-hours");
 
-		// Resolve options
 		const caseIdIndex = args.indexOf("--case-id");
 		const evidenceUrlIndex = args.indexOf("--evidence-url");
 		const fixPrIndex = args.indexOf("--fix-pr");
@@ -1703,7 +1294,6 @@ export function run(args: string[]): void {
 		const storeArg = getFlagValue(args, storeIndex);
 		if (storeArg) options.storePath = storeArg;
 
-		// Open options
 		const incidentIdArg = getFlagValue(args, incidentIdIndex);
 		if (incidentIdArg) options.incidentId = incidentIdArg;
 		const summaryArg = getFlagValue(args, summaryIndex);
@@ -1729,7 +1319,6 @@ export function run(args: string[]): void {
 			if (parsed !== undefined) options.slaHours = parsed;
 		}
 
-		// Resolve options
 		const caseIdArg = getFlagValue(args, caseIdIndex);
 		if (caseIdArg) options.caseId = caseIdArg;
 		const evidenceUrlArg = getFlagValue(args, evidenceUrlIndex);
@@ -1745,41 +1334,6 @@ export function run(args: string[]): void {
 		if (resolvedByArg) options.resolvedBy = resolvedByArg;
 
 		const exitCode = runGapCaseCLI(options);
-		process.exit(exitCode);
-		return;
-	}
-
-	if (command === "pilot-evaluate") {
-		// Parse pilot-evaluate options
-		const jsonFlag = args.includes("--json");
-		const contractIndex = args.indexOf("--contract");
-		const artifactsIndex = args.indexOf("--artifacts");
-		const outputIndex = args.indexOf("--output");
-
-		// artifacts-dir is required
-		const artifactsArg = getFlagValue(args, artifactsIndex);
-		if (!artifactsArg) {
-			console.error("Error: --artifacts is required");
-			process.exit(1);
-			return;
-		}
-
-		const options: {
-			artifactsDir: string;
-			contractPath?: string;
-			outputPath?: string;
-			json?: boolean;
-		} = {
-			artifactsDir: artifactsArg,
-		};
-
-		if (jsonFlag) options.json = true;
-		const contractArg = getFlagValue(args, contractIndex);
-		if (contractArg) options.contractPath = contractArg;
-		const outputArg = getFlagValue(args, outputIndex);
-		if (outputArg) options.outputPath = outputArg;
-
-		const exitCode = runPilotEvaluateCLI(options);
 		process.exit(exitCode);
 		return;
 	}
