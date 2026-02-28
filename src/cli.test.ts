@@ -1,8 +1,21 @@
 import { randomUUID } from "node:crypto";
-import { mkdirSync, rmSync, writeFileSync } from "node:fs";
+import {
+	mkdirSync,
+	mkdtempSync,
+	rmSync,
+	symlinkSync,
+	writeFileSync,
+} from "node:fs";
+import { tmpdir } from "node:os";
 import { dirname, join } from "node:path";
+import { pathToFileURL } from "node:url";
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { parseCsvList, parseIntegerArg, run } from "./cli.js";
+import {
+	isDirectExecution,
+	parseCsvList,
+	parseIntegerArg,
+	run,
+} from "./cli.js";
 
 // Mock command modules to avoid actual execution
 vi.mock("./commands/remediate.js", () => ({
@@ -225,5 +238,43 @@ describe("run", () => {
 		run(["--version"]);
 
 		expect(exitSpy).not.toHaveBeenCalled();
+	});
+});
+
+describe("isDirectExecution", () => {
+	it("returns false when entrypoint is missing", () => {
+		expect(isDirectExecution(undefined, import.meta.url)).toBe(false);
+	});
+
+	it("treats symlinked entrypoint as direct execution", () => {
+		const fixtureDir = mkdtempSync(join(tmpdir(), "harness-cli-entrypoint-"));
+		const targetPath = join(fixtureDir, "cli.js");
+		const symlinkPath = join(fixtureDir, "harness");
+
+		try {
+			writeFileSync(targetPath, "#!/usr/bin/env node\n", "utf-8");
+			symlinkSync(targetPath, symlinkPath);
+
+			const moduleUrl = pathToFileURL(targetPath).href;
+			expect(isDirectExecution(symlinkPath, moduleUrl)).toBe(true);
+		} finally {
+			rmSync(fixtureDir, { recursive: true, force: true });
+		}
+	});
+
+	it("returns false for unrelated entrypoints", () => {
+		const fixtureDir = mkdtempSync(join(tmpdir(), "harness-cli-entrypoint-"));
+		const targetPath = join(fixtureDir, "cli.js");
+		const otherPath = join(fixtureDir, "other.js");
+
+		try {
+			writeFileSync(targetPath, "#!/usr/bin/env node\n", "utf-8");
+			writeFileSync(otherPath, "#!/usr/bin/env node\n", "utf-8");
+
+			const moduleUrl = pathToFileURL(targetPath).href;
+			expect(isDirectExecution(otherPath, moduleUrl)).toBe(false);
+		} finally {
+			rmSync(fixtureDir, { recursive: true, force: true });
+		}
 	});
 });
