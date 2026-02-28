@@ -573,6 +573,50 @@ describe("cli command dispatch", () => {
 		expect(exitSpy).toHaveBeenCalledWith(46);
 	});
 
+	it("dispatches blast-radius command without explicit contract path", async () => {
+		const { run } = await import("./cli.js");
+		const { runBlastRadiusCLI } = await import("./commands/blast-radius.js");
+
+		const exitSpy = vi
+			.spyOn(process, "exit")
+			.mockImplementation(((_code?: number) => undefined) as never);
+
+		run(["blast-radius", "--files", "src/a.ts,src/b.ts", "--json"]);
+
+		expect(vi.mocked(runBlastRadiusCLI)).toHaveBeenCalledWith({
+			files: ["src/a.ts", "src/b.ts"],
+			json: true,
+			verbose: false,
+		});
+		expect(exitSpy).toHaveBeenCalledWith(59);
+	});
+
+	it("dispatches blast-radius command with explicit contract path", async () => {
+		const { run } = await import("./cli.js");
+		const { runBlastRadiusCLI } = await import("./commands/blast-radius.js");
+
+		const exitSpy = vi
+			.spyOn(process, "exit")
+			.mockImplementation(((_code?: number) => undefined) as never);
+
+		run([
+			"blast-radius",
+			"--contract",
+			"custom.contract.json",
+			"--files",
+			"src/a.ts",
+			"--verbose",
+		]);
+
+		expect(vi.mocked(runBlastRadiusCLI)).toHaveBeenCalledWith({
+			files: ["src/a.ts"],
+			json: false,
+			verbose: true,
+			contractPath: "custom.contract.json",
+		});
+		expect(exitSpy).toHaveBeenCalledWith(59);
+	});
+
 	// Note: The remediate command doesn't support --findings flag in the current implementation
 	it.skip("dispatches remediate command", async () => {
 		const { run } = await import("./cli.js");

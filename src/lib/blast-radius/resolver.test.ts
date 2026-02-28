@@ -1,8 +1,10 @@
 import { describe, expect, it } from "vitest";
 import {
+	DEFAULT_BLAST_RADIUS_RULES,
 	DEFAULT_CHECKS,
 	getBlastRadiusInfo,
 	getChecksForFile,
+	resolveBlastRadiusRules,
 	resolveChecks,
 	summarizeBlastRadius,
 } from "./resolver.js";
@@ -71,6 +73,67 @@ describe("resolveChecks", () => {
 
 		expect(result.fileChecks.has("src/auth/login.ts")).toBe(true);
 		expect(result.fileChecks.get("src/auth/login.ts")).toContain("auth-flows");
+	});
+});
+
+describe("resolveBlastRadiusRules", () => {
+	it("returns defaults when no custom rules are provided", () => {
+		const rules = resolveBlastRadiusRules();
+		expect(rules.length).toBeGreaterThan(0);
+		expect(rules[0]).toEqual(
+			expect.objectContaining({
+				pattern: "src/auth/**",
+				checks: expect.arrayContaining(["auth-flows"]),
+			}),
+		);
+	});
+
+	it("merges default and custom rules in merge mode", () => {
+		const rules = resolveBlastRadiusRules(
+			[
+				{
+					pattern: "**/*.sh",
+					checks: ["shellcheck"],
+				},
+			],
+			"merge",
+		);
+
+		expect(rules).toHaveLength(DEFAULT_BLAST_RADIUS_RULES.length + 1);
+		expect(rules[0]).toEqual(
+			expect.objectContaining({
+				pattern: "src/auth/**",
+				checks: expect.arrayContaining(["auth-flows"]),
+			}),
+		);
+		expect(rules.at(-1)).toEqual(
+			expect.objectContaining({ pattern: "**/*.sh", checks: ["shellcheck"] }),
+		);
+	});
+
+	it("replaces defaults with custom rules in replace mode", () => {
+		const rules = resolveBlastRadiusRules(
+			[
+				{
+					pattern: "**/*.sh",
+					checks: ["shellcheck", "bash-syntax"],
+				},
+			],
+			"replace",
+		);
+
+		expect(rules).toHaveLength(1);
+		expect(rules[0]).toEqual(
+			expect.objectContaining({
+				pattern: "**/*.sh",
+				checks: ["shellcheck", "bash-syntax"],
+			}),
+		);
+	});
+
+	it("returns empty rules when mode is replace and custom rules are omitted", () => {
+		const rules = resolveBlastRadiusRules(undefined, "replace");
+		expect(rules).toEqual([]);
 	});
 });
 

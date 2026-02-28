@@ -80,8 +80,9 @@ const contractExistsCheck: PreflightCheckFn = (options) => {
  */
 const riskTierCheck: PreflightCheckFn = (options) => {
 	const start = Date.now();
+	const contractPath = resolve(options.contractPath ?? "harness.contract.json");
 
-	if (!options.contractPath || options.files?.length === 0) {
+	if (!existsSync(contractPath) || !options.files?.length) {
 		return {
 			id: "risk-tier",
 			description: "Validate risk tier against contract",
@@ -93,7 +94,7 @@ const riskTierCheck: PreflightCheckFn = (options) => {
 	}
 
 	try {
-		const contract = loadContract(options.contractPath);
+		const contract = loadContract(contractPath);
 		const tier = resolveOverallTier(options.files ?? [], contract);
 
 		// Check against max tier if specified
@@ -275,9 +276,10 @@ export async function runPreflightGate(
 
 	// Determine overall risk tier if we have files
 	let riskTier: RiskTier | undefined;
-	if (options.contractPath && options.files?.length) {
+	const contractPath = resolve(options.contractPath ?? "harness.contract.json");
+	if (existsSync(contractPath) && options.files?.length) {
 		try {
-			const contract = loadContract(options.contractPath);
+			const contract = loadContract(contractPath);
 			riskTier = resolveOverallTier(options.files, contract);
 		} catch {
 			// Ignore errors here

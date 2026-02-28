@@ -2,6 +2,20 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+# [0.5.0](https://github.com/jscraik/coding-harness/compare/v0.4.0...v0.5.0) (2026-02-28)
+
+
+### Bug Fixes
+
+* use default contract for preflight risk-tier ([81d2609](https://github.com/jscraik/coding-harness/commit/81d26094aa57f2c613d4186b13b97b50a93efa6f))
+
+
+### Features
+
+* align governance rules and contract defaults ([76cd5f0](https://github.com/jscraik/coding-harness/commit/76cd5f023c78e7b4ea5464b5f3d2536bcb231845))
+
+
+
 # [0.4.0](https://github.com/jscraik/coding-harness/compare/v0.3.8...v0.4.0) (2026-02-28)
 
 

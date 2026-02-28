@@ -55,6 +55,8 @@ export interface UILoopPolicy {
 
 export interface RuntimePolicy {
 	nodeVersion: string;
+	/** Require issue creation/update when agents find reproducible harness issues */
+	createIssueOnAgentFindings?: boolean;
 }
 
 export interface MemoryPolicy {
@@ -92,6 +94,17 @@ export interface PackageManagerPolicy {
 	allowedManagers: string[];
 	requiredManager: string | null;
 }
+
+export interface BlastRadiusRule {
+	/** Glob pattern for matching file paths */
+	pattern: string;
+	/** Required checks when files match this pattern */
+	checks: string[];
+	/** Optional rule description */
+	description?: string | undefined;
+}
+
+export type BlastRadiusRulesMode = "merge" | "replace";
 
 /**
  * Gap-case policy for lifecycle and severity controls.
@@ -296,6 +309,10 @@ export interface HarnessContract {
 	pilotRollbackPolicy?: PilotRollbackPolicy | undefined;
 	/** Pilot authorization policy for least-privilege */
 	pilotAuthzPolicy?: PilotAuthzPolicy | undefined;
+	/** Blast-radius resolver rules */
+	blastRadiusRules?: BlastRadiusRule[] | undefined;
+	/** Blast-radius merge behavior */
+	blastRadiusRulesMode?: BlastRadiusRulesMode | undefined;
 	/** Remediation policy for automatic fix application */
 	remediationPolicy?: RemediationPolicy | undefined;
 }

@@ -6,8 +6,10 @@ Coding Harness is a TypeScript control plane for agentic development and policy-
 
 - [Quick start](#quick-start)
 - [Quality checks](#quality-checks)
+- [Issue reporting (internal)](#issue-reporting-internal)
 - [CLI command index](#cli-command-index)
 - [Release flow](#release-flow)
+- [Contributing](#contributing)
 
 ## Quick start
 
@@ -29,11 +31,20 @@ pnpm exec tsx src/cli.ts --help
 pnpm check
 ```
 
+## Issue reporting (internal)
+
+This package and repository are private. Report bugs at:
+
+- <https://github.com/jscraik/coding-harness/issues>
+
+Internal agents may create issues directly when `GITHUB_PERSONAL_ACCESS_TOKEN` is loaded from `~/.claude.env` and/or `~/.codex/.env`.
+If a tool expects `GITHUB_TOKEN`, map it from `GITHUB_PERSONAL_ACCESS_TOKEN` in your shell/session environment.
+
 ## CLI command index
 
 | Command | Purpose |
 | --- | --- |
-| `init` | Install harness files into the current repository. |
+| `init` | Install harness contract + PR governance templates into the current repository. |
 | `risk-tier` | Classify changed files by risk. |
 | `policy-gate` | Validate policy expectations from changed files. Alias: `risk-policy-gate`. |
 | `replay` | Re-run policy checks from saved snapshots. |
@@ -108,3 +119,8 @@ gh workflow run release-private-npm.yml \
   -f confirm=release \
   -f publish_auth=oidc
 ```
+
+## Contributing
+
+- Read `CONTRIBUTING.md` before making code changes.
+- Branching + PR workflow, required gates, and review expectations are documented there.

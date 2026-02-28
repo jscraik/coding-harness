@@ -1,6 +1,9 @@
 #!/usr/bin/env node
 import { pathToFileURL } from "node:url";
-import { runBlastRadiusCLI } from "./commands/blast-radius.js";
+import {
+	type BlastRadiusOptions,
+	runBlastRadiusCLI,
+} from "./commands/blast-radius.js";
 import { runBrainstormGateCLI } from "./commands/brainstorm-gate.js";
 import { runCheckAuthzCLI } from "./commands/check-authz.js";
 import { runCheckEnvironmentCLI } from "./commands/check-environment.js";
@@ -97,6 +100,12 @@ function printUsage(): void {
 	console.info(
 		"  pilot-evaluate   Evaluate pilot metrics and determine promotion",
 	);
+	console.info("");
+	console.info("Blast Radius Options:");
+	console.info("  --contract       Path to harness.contract.json");
+	console.info("  --files <paths>  Comma-separated list of changed file paths");
+	console.info("  --json           Output as JSON");
+	console.info("  --verbose        Include verbose summary output");
 	console.info("");
 	console.info("Check Authz Options:");
 	console.info("  --contract       Path to harness.contract.json");
@@ -898,6 +907,7 @@ export function run(args: string[]): void {
 		const jsonFlag = args.includes("--json");
 		const verboseFlag = args.includes("--verbose");
 		const filesIndex = args.indexOf("--files");
+		const contractIndex = args.indexOf("--contract");
 
 		// Get flag value, rejecting if the value is another flag (starts with -)
 		const filesArg = getFlagValue(args, filesIndex);
@@ -913,11 +923,15 @@ export function run(args: string[]): void {
 			.map((f) => f.trim())
 			.filter(Boolean);
 
-		const exitCode = runBlastRadiusCLI({
+		const contractArg = getFlagValue(args, contractIndex);
+		const blastRadiusOptions: BlastRadiusOptions = {
 			files,
 			json: jsonFlag,
 			verbose: verboseFlag,
-		});
+		};
+		if (contractArg) blastRadiusOptions.contractPath = contractArg;
+
+		const exitCode = runBlastRadiusCLI(blastRadiusOptions);
 		process.exit(exitCode);
 		return;
 	}
