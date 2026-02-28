@@ -535,7 +535,7 @@ jobs:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with:
-          node-version: "20"
+          node-version: "24"
       - name: Enable corepack
         run: corepack enable
       - name: Install dependencies
@@ -550,7 +550,7 @@ jobs:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with:
-          node-version: "20"
+          node-version: "24"
       - name: Enable corepack
         run: corepack enable
       - name: Install dependencies
@@ -565,7 +565,7 @@ jobs:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with:
-          node-version: "20"
+          node-version: "24"
       - name: Enable corepack
         run: corepack enable
       - name: Install dependencies
@@ -580,7 +580,7 @@ jobs:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with:
-          node-version: "20"
+          node-version: "24"
       - name: Enable corepack
         run: corepack enable
       - name: Install dependencies
@@ -595,13 +595,46 @@ jobs:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with:
-          node-version: "20"
+          node-version: "24"
       - name: Enable corepack
         run: corepack enable
       - name: Install dependencies
         run: ${installCommand}
       - name: Run full check
         run: ${checkCommand}
+
+  security-scan:
+    name: security-scan
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Run Gitleaks
+        uses: gitleaks/gitleaks-action@v2
+        env:
+          GITHUB_TOKEN: \${{ secrets.GITHUB_TOKEN }}
+      - name: Setup Trivy
+        uses: aquasecurity/setup-trivy@v0.2.2
+      - name: Run Trivy filesystem scan
+        run: trivy fs --severity HIGH,CRITICAL --exit-code 1 --no-progress .
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Install Semgrep
+        run: python -m pip install --upgrade pip semgrep
+      - name: Run Semgrep scan
+        run: semgrep scan --error --config p/security-audit --exclude node_modules .
+      - name: Run Senvar scan (optional)
+        run: |
+          if command -v senvar >/dev/null 2>&1; then
+            senvar scan .
+          else
+            echo "senvar not installed on runner; skipping."
+          fi
 
   memory:
     name: memory
@@ -631,6 +664,7 @@ jobs:
 - [Branching and PR rule](#branching-and-pr-rule)
 - [Branch name policy](#branch-name-policy)
 - [Required pre-merge gates](#required-pre-merge-gates)
+- [Recommended security scanner baseline](#recommended-security-scanner-baseline)
 - [Review artifacts requirement](#review-artifacts-requirement)
 - [Credential-safe evidence snippets](#credential-safe-evidence-snippets)
 - [Branch protection recommendation](#branch-protection-recommendation)
@@ -674,7 +708,23 @@ This workflow keeps delivery auditable, reversible, and consistent even for solo
 - ${testCommand}
 - ${auditCommand}
 - ${checkCommand}
+- security-scan (CI required check)
 - ${memoryValidateCommand}
+
+## Recommended security scanner baseline
+
+For repositories that use Harness, recommend installing these scanners as project prerequisites:
+
+- Gitleaks
+- Trivy
+- Senvar (if used by your organization)
+- Semgrep
+
+Recommended policy:
+
+- Keep scanner binaries available in local development environments and CI runners.
+- Run scanner checks in CI on pull requests and pushes to protected branches.
+- Treat scanner findings as merge blockers unless explicitly waived with rationale.
 
 ## Review artifacts requirement
 
@@ -705,7 +755,7 @@ Configure GitHub branch protection (or rulesets) on \`main\`:
   - \`--token <PAT>\` or env \`GITHUB_TOKEN\` / \`GITHUB_PERSONAL_ACCESS_TOKEN\`
 - Require pull request before merge.
 - Require at least one approval.
-- Require status checks: \`pr-template\`, \`lint\`, \`typecheck\`, \`test\`, \`audit\`, \`check\`, \`memory\`.
+- Require status checks: \`pr-template\`, \`lint\`, \`typecheck\`, \`test\`, \`audit\`, \`check\`, \`security-scan\`, \`memory\`.
 - Block direct pushes to \`main\`.
 `;
 		},
@@ -732,6 +782,7 @@ Configure GitHub branch protection (or rulesets) on \`main\`:
 - [ ] I did not push directly to \`main\`; this PR is from a dedicated branch.
 - [ ] Branch name follows policy (\`codex/*\` for agent-created branches).
 - [ ] Required local gates run: \`${lintCommand}\`, \`${typecheckCommand}\`, \`${testCommand}\`, \`${auditCommand}\`, \`${checkCommand}\`, \`${memoryValidateCommand}\`.
+- [ ] Required CI security gate passed: \`security-scan\` (gitleaks + trivy + semgrep, senvar optional).
 - [ ] Greptile review completed and findings handled (or explicitly waived).
 - [ ] Codex review completed and findings handled (or explicitly waived).
 - [ ] Merge is blocked until all required checks pass.
@@ -744,6 +795,7 @@ Configure GitHub branch protection (or rulesets) on \`main\`:
 - Command: \`${testCommand}\` -> pass/fail
 - Command: \`${auditCommand}\` -> pass/fail
 - Command: \`${checkCommand}\` -> pass/fail
+- Command: \`security-scan\` (CI check) -> pass/fail
 - Command: \`${memoryValidateCommand}\` -> pass/fail
 - Any other command(s):
 

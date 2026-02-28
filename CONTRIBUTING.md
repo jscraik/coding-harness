@@ -6,6 +6,7 @@
 - [Why this workflow exists](#why-this-workflow-exists)
 - [Branching and PR rule](#branching-and-pr-rule)
 - [Required pre-merge gates](#required-pre-merge-gates)
+- [Recommended security scanner baseline](#recommended-security-scanner-baseline)
 - [One-click review workflow](#one-click-review-workflow)
 - [Credential-safe evidence snippets](#credential-safe-evidence-snippets)
 - [Recommended GitHub branch protection settings](#recommended-github-branch-protection-settings)
@@ -73,11 +74,27 @@ For behavior-affecting changes:
 - `pnpm test`
 - `pnpm audit`
 - `pnpm check`
+- `security-scan` GitHub Actions check (gitleaks + trivy + semgrep, senvar optional)
 
 For docs-only edits, run at minimum:
 
 - `pnpm lint` (if docs lint is enabled),
 - `pnpm typecheck` if any types or imports changed.
+
+## Recommended security scanner baseline
+
+For repositories that use Harness, recommend installing these scanners as project prerequisites:
+
+- Gitleaks
+- Trivy
+- Senvar (if used by your organization)
+- Semgrep
+
+Recommended policy:
+
+- Keep scanner binaries available in local development environments and CI runners.
+- Run scanner checks in CI on pull requests and pushes to protected branches.
+- Treat scanner findings as merge blockers unless explicitly waived with rationale.
 
 ## One-click review workflow
 
@@ -124,6 +141,7 @@ Configure repository settings on `main` to make the workflow enforceable:
   - `pnpm test`
   - `pnpm audit`
   - `pnpm check`
+  - `security-scan`
   - `memory`
 - Dismiss stale approvals when new commits are pushed.
 - Restrict pushes to `main` to `main` repository settings/admin workflows only.

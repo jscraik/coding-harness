@@ -227,6 +227,7 @@ describe("runBranchProtect", () => {
 				{ context: "test" },
 				{ context: "audit" },
 				{ context: "check" },
+				{ context: "security-scan" },
 				{ context: "memory" },
 			],
 		});

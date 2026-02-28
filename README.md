@@ -6,6 +6,7 @@ Coding Harness is a TypeScript control plane for agentic development and policy-
 
 - [Quick start](#quick-start)
 - [Quality checks](#quality-checks)
+- [Recommended security scanner baseline](#recommended-security-scanner-baseline)
 - [Issue reporting (internal)](#issue-reporting-internal)
 - [CLI command index](#cli-command-index)
 - [Release flow](#release-flow)
@@ -30,6 +31,18 @@ pnpm exec tsx src/cli.ts --help
 ```bash
 pnpm check
 ```
+
+## Recommended security scanner baseline
+
+When Harness is installed in a repository, recommend installing these scanners in that project:
+
+- Gitleaks
+- Trivy
+- Senvar (if your organization uses it)
+- Semgrep
+
+These should be available in local dev and CI to keep security checks consistent.
+Harness `init` templates enforce this via a required `security-scan` PR check.
 
 ## Issue reporting (internal)
 

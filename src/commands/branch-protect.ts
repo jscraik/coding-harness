@@ -16,6 +16,7 @@ const DEFAULT_REQUIRED_CHECKS = [
 	"test",
 	"audit",
 	"check",
+	"security-scan",
 	"memory",
 ];
 

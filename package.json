@@ -1,7 +1,12 @@
 {
 	"name": "@brainwav/coding-harness",
 	"version": "0.5.3",
-	"files": ["dist", "README.md", "CHANGELOG.md", "LICENSE"],
+	"files": [
+		"dist",
+		"README.md",
+		"CHANGELOG.md",
+		"LICENSE"
+	],
 	"type": "module",
 	"description": "Control plane for agentic development",
 	"repository": {
@@ -16,7 +21,7 @@
 		"registry": "https://registry.npmjs.org/"
 	},
 	"bin": {
-		"harness": "./dist/cli.js"
+		"harness": "dist/cli.js"
 	},
 	"scripts": {
 		"check": "pnpm lint && pnpm docs:lint && pnpm typecheck && pnpm test && pnpm audit",
@@ -43,17 +48,12 @@
 	},
 	"devDependencies": {
 		"@biomejs/biome": "^1.9.4",
-		"@octokit/plugin-retry": "^7.2.1",
-		"@octokit/plugin-throttling": "^9.6.1",
-		"@octokit/request-error": "^7.1.0",
-		"@octokit/rest": "^21.1.1",
 		"@types/better-sqlite3": "^7.6.13",
 		"@types/node": "^22.19.11",
 		"@types/picomatch": "^4.0.2",
 		"@types/semver": "^7.7.1",
 		"@vvago/vale": "^3.12.0",
 		"markdownlint-cli2": "^0.21.0",
-		"picomatch": "^4.0.3",
 		"tsx": "^4.21.0",
 		"typescript": "^5.9.3",
 		"vitest": "^3.2.4",
@@ -64,9 +64,14 @@
 		"node": ">=24.0.0"
 	},
 	"dependencies": {
+		"@octokit/plugin-retry": "^7.2.1",
+		"@octokit/plugin-throttling": "^9.6.1",
+		"@octokit/request-error": "^7.1.0",
+		"@octokit/rest": "^21.1.1",
 		"@inquirer/prompts": "^8.3.0",
 		"better-sqlite3": "^12.6.2",
 		"diff": "^8.0.3",
+		"picomatch": "^4.0.3",
 		"semver": "^7.7.4",
 		"sqlite-vec": "0.1.7-alpha.2"
 	},
@@ -75,5 +80,13 @@
 			"tar": "^7.5.8",
 			"minimatch": "^10.2.3"
 		}
-	}
+	},
+	"main": "index.js",
+	"directories": {
+		"doc": "docs"
+	},
+	"keywords": [],
+	"author": "",
+	"license": "ISC",
+	"homepage": "https://github.com/jscraik/coding-harness#readme"
 }

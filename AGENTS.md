@@ -20,7 +20,7 @@ For all code and docs changes in this repository:
 2. For agent-created branches, use `codex/<short-description>`.
 3. Do not push directly to `main`.
 4. Open a PR for every merge into `main`.
-5. Required gates before merge: `pnpm lint`, `pnpm typecheck`, `pnpm test`, `pnpm audit`, `pnpm check`.
+5. Required gates before merge: `pnpm lint`, `pnpm typecheck`, `pnpm test`, `pnpm audit`, `pnpm check`, and CI `security-scan`.
 6. Required review artifacts before merge: Greptile + Codex.
 7. Merge only after all required checks and artifacts are complete.
 8. After merge, delete branch/worktree.

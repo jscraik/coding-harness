@@ -239,7 +239,9 @@ describe("runInit", () => {
 			expect(content).toContain("pnpm test");
 			expect(content).toContain("pnpm lint");
 			expect(content).toContain("pnpm check");
+			expect(content).toContain('node-version: "24"');
 			expect(content).toContain("name: pr-template");
+			expect(content).toContain("name: security-scan");
 			expect(content).toContain("Validate memory.json");
 			expect(content).toContain("test -f memory.json");
 		});
@@ -262,6 +264,23 @@ describe("runInit", () => {
 			const workflow = require("node:fs").readFileSync(workflowPath, "utf-8");
 			expect(workflow).toContain("npm run lint");
 			expect(workflow).toContain("npm run check");
+		});
+
+		it("includes recommended security scanners in contributing template", () => {
+			const result = runInit(tempDir, { dryRun: false, force: false });
+
+			expect(result.ok).toBe(true);
+
+			const contributingPath = join(tempDir, "CONTRIBUTING.md");
+			const content = require("node:fs").readFileSync(
+				contributingPath,
+				"utf-8",
+			);
+			expect(content).toContain("## Recommended security scanner baseline");
+			expect(content).toContain("Gitleaks");
+			expect(content).toContain("Trivy");
+			expect(content).toContain("Senvar");
+			expect(content).toContain("Semgrep");
 		});
 	});
 });

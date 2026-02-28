@@ -15,22 +15,6 @@ importers:
       '@inquirer/prompts':
         specifier: ^8.3.0
         version: 8.3.0(@types/node@22.19.11)
-      better-sqlite3:
-        specifier: ^12.6.2
-        version: 12.6.2
-      diff:
-        specifier: ^8.0.3
-        version: 8.0.3
-      semver:
-        specifier: ^7.7.4
-        version: 7.7.4
-      sqlite-vec:
-        specifier: 0.1.7-alpha.2
-        version: 0.1.7-alpha.2
-    devDependencies:
-      '@biomejs/biome':
-        specifier: ^1.9.4
-        version: 1.9.4
       '@octokit/plugin-retry':
         specifier: ^7.2.1
         version: 7.2.1(@octokit/core@6.1.6)
@@ -43,6 +27,25 @@ importers:
       '@octokit/rest':
         specifier: ^21.1.1
         version: 21.1.1
+      better-sqlite3:
+        specifier: ^12.6.2
+        version: 12.6.2
+      diff:
+        specifier: ^8.0.3
+        version: 8.0.3
+      picomatch:
+        specifier: ^4.0.3
+        version: 4.0.3
+      semver:
+        specifier: ^7.7.4
+        version: 7.7.4
+      sqlite-vec:
+        specifier: 0.1.7-alpha.2
+        version: 0.1.7-alpha.2
+    devDependencies:
+      '@biomejs/biome':
+        specifier: ^1.9.4
+        version: 1.9.4
       '@types/better-sqlite3':
         specifier: ^7.6.13
         version: 7.6.13
@@ -61,9 +64,6 @@ importers:
       markdownlint-cli2:
         specifier: ^0.21.0
         version: 0.21.0
-      picomatch:
-        specifier: ^4.0.3
-        version: 4.0.3
       standard-version:
         specifier: ^9.5.0
         version: 9.5.0
