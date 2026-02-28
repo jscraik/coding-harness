@@ -7,31 +7,18 @@ import { runCheckEnvironmentCLI } from "./commands/check-environment.js";
 import { runContextCLI } from "./commands/context.js";
 import { runDiffBudgetCLI } from "./commands/diff-budget.js";
 import { runEvidenceVerifyCLI } from "./commands/evidence-verify.js";
-import {
-	type CreateGapCaseOptions,
-	type GapSeverity,
-	type ListGapCaseOptions,
-	type ResolveGapCaseOptions,
-	runGapCaseCLI,
-} from "./commands/gap-case.js";
+import { runGapCaseCLI } from "./commands/gap-case.js";
 import { runGardenerCLI } from "./commands/gardener.js";
 import { runIndexContextCLI } from "./commands/index-context.js";
 import { runInitCLI, runInteractiveInitCLI } from "./commands/init.js";
 import { runMemoryGateCLI } from "./commands/memory-gate.js";
 import { runObservabilityGateCLI } from "./commands/observability-gate.js";
 import { runPilotEvaluateCLI } from "./commands/pilot-evaluate.js";
-import {
-	type PilotRollbackOptions,
-	runPilotRollbackCLI,
-} from "./commands/pilot-rollback.js";
 import { runPlanGateCLI } from "./commands/plan-gate.js";
 import { runPolicyGateCLI } from "./commands/policy-gate.js";
 import { runPreflightGateCLI } from "./commands/preflight-gate.js";
 import { runPromptGateCLI } from "./commands/prompt-gate.js";
-import {
-	type RemediateOptions,
-	runRemediateCLI,
-} from "./commands/remediate.js";
+import { runRemediateCLI } from "./commands/remediate.js";
 import { runReplayCLI } from "./commands/replay.js";
 import { runReviewGateCLI } from "./commands/review-gate.js";
 import { runRiskTierCLI } from "./commands/risk-tier.js";
@@ -98,17 +85,40 @@ function printUsage(): void {
 		"  search           Agent-first hybrid lexical + semantic search",
 	);
 	console.info("  index-context    Bulk index brainstorms/plans for search");
+	console.info("  remediate        Apply automated fixes for findings");
+	console.info("  gap-case         Track and resolve gap-cases for pilot");
 	console.info(
-		"  pilot-rollback   Transition pilot mode (autonomous <-> manual)",
+		"  pilot-evaluate   Evaluate pilot metrics and determine promotion",
 	);
-	console.info("  policy-gate      Check risk tier compliance for files");
-	console.info("  risk-policy-gate Alias for policy-gate (roadmap parity)");
+	console.info("");
+	console.info("Check Authz Options:");
+	console.info("  --contract       Path to harness.contract.json");
+	console.info("  --repo           Repository to check (owner/repo format)");
+	console.info("  --branch         Branch to check");
+	console.info("  --check-scopes   Check GITHUB_TOKEN scopes against policy");
+	console.info("  --json           Output as JSON");
+	console.info("");
+	console.info("Check Environment Options:");
+	console.info("  --contract       Path to harness.contract.json");
+	console.info("  --check-secrets  Check for secrets in environment variables");
+	console.info("  --attestation    Path to write attestation artifact");
+	console.info("  --json           Output as JSON");
+	console.info("");
+	console.info("Remediate Options:");
 	console.info(
-		"  check-authz      Check authorization against contract policy",
+		"  --findings       JSON file path for findings (or - for stdin)",
 	);
-	console.info("  check-environment Check environment against contract policy");
+	console.info("  --dry-run        Preview changes without applying");
+	console.info("  --contract       Path to harness.contract.json");
+	console.info("  --head-sha       HEAD SHA (defaults to current git HEAD)");
+	console.info("  --mode           Override rollback mode (manual/autonomous)");
+	console.info("  --completion-marker  Path to completion marker file");
+	console.info("  --json           Output as JSON");
 	console.info(
-		"  pilot-evaluate   Evaluate pilot metrics for promotion decision",
+		"  check-authz      Validate authorization policy before mutative operations",
+	);
+	console.info(
+		"  check-environment  Validate governance envelope before pilot operations",
 	);
 	console.info("");
 	console.info("Init Options:");
@@ -127,6 +137,7 @@ function printUsage(): void {
 	);
 	console.info("  --contract       Path to contract file (optional)");
 	console.info("  --json           Output as JSON");
+	console.info("");
 	console.info("");
 	console.info("Gardener Options:");
 	console.info("  --docs           Path to docs directory (default: docs)");
@@ -170,6 +181,7 @@ function printUsage(): void {
 	console.info("  --contract       Path to harness.contract.json");
 	console.info("  --json           Output as JSON");
 	console.info("");
+	console.info("");
 	console.info("Brainstorm Gate Options:");
 	console.info(
 		"  --brainstorms    Path to brainstorms directory (default: docs/brainstorms)",
@@ -178,6 +190,7 @@ function printUsage(): void {
 	console.info("  --max-age        Max days old (default: 14)");
 	console.info("  --strict         Require all sections");
 	console.info("  --json           Output as JSON");
+	console.info("");
 	console.info("");
 	console.info("Plan Gate Options:");
 	console.info(
@@ -190,6 +203,7 @@ function printUsage(): void {
 	console.info("  --require-origin Require origin reference to brainstorm");
 	console.info("  --strict         Require all sections");
 	console.info("  --json           Output as JSON");
+	console.info("");
 	console.info("");
 	console.info("Options:");
 	console.info("  --version, -v  Print version");
@@ -218,6 +232,10 @@ export function parseCsvList(value: string | undefined): string[] {
 	if (value === undefined) {
 		return [];
 	}
+	// Treat another flag (starts with -) as missing value
+	if (value.startsWith("-")) {
+		return [];
+	}
 	return value
 		.split(",")
 		.map((item) => item.trim())
@@ -225,8 +243,7 @@ export function parseCsvList(value: string | undefined): string[] {
 }
 
 /**
- * Safely get a flag value from args, returning undefined if the flag is missing
- * or if the next argument is another flag (starts with -- or -).
+ * Get the value for a flag, returning undefined if the value is another flag.
  */
 function getFlagValue(args: string[], flagIndex: number): string | undefined {
 	if (flagIndex === -1) return undefined;
@@ -238,12 +255,16 @@ function getFlagValue(args: string[], flagIndex: number): string | undefined {
 export function run(args: string[]): void {
 	const version = getVersion();
 
+	// Handle top-level --version and --help before parsing command
+	// These work even without a command
 	if (args.includes("--version") || args.includes("-v")) {
 		console.info(`harness v${version}`);
 		return;
 	}
 
-	if (args.includes("--help") || args.includes("-h")) {
+	// Only handle --help at top level
+	// Commands that accept -h (like index-context) should handle it themselves
+	if (args.includes("--help")) {
 		console.info(`harness v${version}`);
 		printUsage();
 		return;
@@ -270,6 +291,47 @@ export function run(args: string[]): void {
 			files,
 			json: jsonFlag,
 		});
+		process.exit(exitCode);
+		return;
+	}
+
+	if (command === "policy-gate") {
+		// Parse policy-gate options
+		const jsonFlag = args.includes("--json");
+		const filesIndex = args.indexOf("--files");
+		const contractIndex = args.indexOf("--contract");
+		const maxTierIndex = args.indexOf("--max-tier");
+
+		const files: string[] = [];
+		const filesArg = getFlagValue(args, filesIndex);
+		files.push(...parseCsvList(filesArg));
+
+		const contractArg = getFlagValue(args, contractIndex);
+		const contractPath = contractArg ?? "harness.contract.json";
+
+		let maxTier: "high" | "medium" | "low" | undefined;
+		const maxTierArg = getFlagValue(args, maxTierIndex);
+		if (
+			maxTierArg === "high" ||
+			maxTierArg === "medium" ||
+			maxTierArg === "low"
+		) {
+			maxTier = maxTierArg;
+		}
+
+		const options: {
+			contractPath: string;
+			files: string[];
+			maxTier?: "high" | "medium" | "low";
+			json: boolean;
+		} = {
+			contractPath,
+			files,
+			json: jsonFlag,
+		};
+		if (maxTier) options.maxTier = maxTier;
+
+		const exitCode = runPolicyGateCLI(options);
 		process.exit(exitCode);
 		return;
 	}
@@ -304,8 +366,8 @@ export function run(args: string[]): void {
 			options.traceDir = traceDirValue;
 		}
 
-		// Also check for positional trace ID argument
-		if (!options.traceId && args[1] && !args[1].startsWith("--")) {
+		// Also check for positional trace ID argument (must not start with -)
+		if (!options.traceId && args[1] && !args[1].startsWith("-")) {
 			options.traceId = args[1];
 		}
 
@@ -435,7 +497,7 @@ export function run(args: string[]): void {
 			options.contractPath = contractArg;
 		}
 		const filesArg = getFlagValue(args, filesIndex);
-		if (filesArg) {
+		if (filesArg !== undefined) {
 			options.files = parseCsvList(filesArg);
 		}
 		const maxTierArg = getFlagValue(args, maxTierIndex);
@@ -447,7 +509,7 @@ export function run(args: string[]): void {
 			options.maxTier = maxTierArg;
 		}
 		const skipArg = getFlagValue(args, skipIndex);
-		if (skipArg) {
+		if (skipArg !== undefined) {
 			options.skip = parseCsvList(skipArg);
 		}
 		const headShaArg = getFlagValue(args, headShaIndex);
@@ -482,11 +544,11 @@ export function run(args: string[]): void {
 		if (strictFlag) options.strict = true;
 		if (suggestionsFlag) options.suggestions = true;
 		const filesArg = getFlagValue(args, filesIndex);
-		if (filesArg) {
+		if (filesArg !== undefined) {
 			options.files = parseCsvList(filesArg);
 		}
 		const dirsArg = getFlagValue(args, dirsIndex);
-		if (dirsArg) {
+		if (dirsArg !== undefined) {
 			options.dirs = parseCsvList(dirsArg);
 		}
 
@@ -507,6 +569,7 @@ export function run(args: string[]): void {
 		const migrateFlag = args.includes("--migrate");
 
 		// Get optional target directory (first non-flag arg after init)
+		// Exclude both long flags (--) and short flags (-)
 		const targetDir = args.slice(1).find((arg) => !arg.startsWith("-"));
 
 		const options = {
@@ -743,8 +806,6 @@ export function run(args: string[]): void {
 		}
 		const shardArg = getFlagValue(args, shardIndex);
 		if (shardArg) options.shard = shardArg;
-		const contractArg = getFlagValue(args, contractIndex);
-		if (contractArg) options.contractPath = contractArg;
 
 		const exitCode = runUIVerifyCLI(options);
 		process.exit(exitCode);
@@ -773,8 +834,6 @@ export function run(args: string[]): void {
 		if (urlArg) options.url = urlArg;
 		const outputArg = getFlagValue(args, outputIndex);
 		if (outputArg) options.outputDir = outputArg;
-		const contractArg = getFlagValue(args, contractIndex);
-		if (contractArg) options.contractPath = contractArg;
 
 		const exitCode = runUIExploreCLI(options);
 		process.exit(exitCode);
@@ -787,7 +846,10 @@ export function run(args: string[]): void {
 		const typeIndex = args.indexOf("--type");
 		const fileIndex = args.indexOf("--file");
 
+		// Get flag values, rejecting if the value is another flag (starts with -)
 		const typeArg = getFlagValue(args, typeIndex);
+		const fileArg = getFlagValue(args, fileIndex);
+
 		if (!typeArg) {
 			console.error(
 				"Error: --type is required (feature|bugfix|refactor|release)",
@@ -796,7 +858,6 @@ export function run(args: string[]): void {
 			return;
 		}
 
-		const fileArg = getFlagValue(args, fileIndex);
 		if (!fileArg) {
 			console.error("Error: --file is required");
 			process.exit(1);
@@ -827,12 +888,15 @@ export function run(args: string[]): void {
 		const verboseFlag = args.includes("--verbose");
 		const filesIndex = args.indexOf("--files");
 
+		// Get flag value, rejecting if the value is another flag (starts with -)
 		const filesArg = getFlagValue(args, filesIndex);
+
 		if (!filesArg) {
 			console.error("Error: --files is required (comma-separated paths)");
 			process.exit(1);
 			return;
 		}
+
 		const files = filesArg
 			.split(",")
 			.map((f) => f.trim())
@@ -1060,14 +1124,14 @@ export function run(args: string[]): void {
 			options.labels = labelsValue;
 		}
 		const cardValue = getFlagValue(args, maxCardIndex);
-		if (cardValue && /^\d+$/.test(cardValue)) {
-			const val = Number.parseInt(cardValue, 10);
-			if (!Number.isNaN(val)) options.maxCardinality = val;
+		if (cardValue) {
+			const val = parseIntegerArg(cardValue, 0);
+			if (val !== undefined) options.maxCardinality = val;
 		}
 		const lenValue = getFlagValue(args, maxLenIndex);
-		if (lenValue && /^\d+$/.test(lenValue)) {
-			const val = Number.parseInt(lenValue, 10);
-			if (!Number.isNaN(val)) options.maxLength = val;
+		if (lenValue) {
+			const val = parseIntegerArg(lenValue, 0);
+			if (val !== undefined) options.maxLength = val;
 		}
 
 		const exitCode = runObservabilityGateCLI(options);
@@ -1258,6 +1322,445 @@ export function run(args: string[]): void {
 		if (!artifactsArg) {
 			console.error("Error: --artifacts is required");
 			process.exit(2);
+			return;
+		}
+
+		const options: {
+			artifactsDir: string;
+			contractPath?: string;
+			outputPath?: string;
+			json?: boolean;
+		} = {
+			artifactsDir: artifactsArg,
+		};
+
+		if (jsonFlag) options.json = true;
+		const contractArg = getFlagValue(args, contractIndex);
+		if (contractArg) options.contractPath = contractArg;
+		const outputArg = getFlagValue(args, outputIndex);
+		if (outputArg) options.outputPath = outputArg;
+
+		const exitCode = runPilotEvaluateCLI(options);
+		process.exit(exitCode);
+		return;
+	}
+
+	// No command recognized
+
+	if (command === "remediate") {
+		// Parse remediate options
+		const jsonFlag = args.includes("--json");
+		const dryRunFlag = args.includes("--dry-run");
+		const contractIndex = args.indexOf("--contract");
+		const findingsIndex = args.indexOf("--findings");
+		const headShaIndex = args.indexOf("--head-sha");
+		const shaIndex = args.indexOf("--sha"); // Support both --sha and --head-sha
+		const modeIndex = args.indexOf("--mode");
+		const markerIndex = args.indexOf("--completion-marker");
+
+		const options: {
+			findings?: string;
+			dryRun?: boolean;
+			json?: boolean;
+			contractPath?: string;
+			headSha?: string;
+			mode?: "manual" | "autonomous";
+			completionMarkerPath?: string;
+		} = {};
+
+		if (jsonFlag) options.json = true;
+		if (dryRunFlag) options.dryRun = true;
+
+		const contractArg = getFlagValue(args, contractIndex);
+		if (contractArg) options.contractPath = contractArg;
+
+		const findingsArg = getFlagValue(args, findingsIndex);
+		if (findingsArg) options.findings = findingsArg;
+
+		// Support both --sha and --head-sha for headSha
+		const headShaArg =
+			getFlagValue(args, headShaIndex) || getFlagValue(args, shaIndex);
+		if (headShaArg) options.headSha = headShaArg;
+
+		const modeArg = getFlagValue(args, modeIndex);
+		if (modeArg === "manual" || modeArg === "autonomous") {
+			options.mode = modeArg;
+		}
+
+		const markerArg = getFlagValue(args, markerIndex);
+		if (markerArg) options.completionMarkerPath = markerArg;
+
+		runRemediateCLI(options)
+			.then((exitCode) => process.exit(exitCode))
+			.catch((error) => handleFatalError("Remediate Error", error));
+		return;
+	}
+
+	// No command recognized
+
+	if (command === "check-environment") {
+		// Parse check-environment options
+		const jsonFlag = args.includes("--json");
+		const checkSecretsFlag = args.includes("--check-secrets");
+		const contractIndex = args.indexOf("--contract");
+		const attestationIndex = args.indexOf("--attestation");
+
+		const options: {
+			contractPath?: string;
+			checkSecrets?: boolean;
+			json?: boolean;
+			attestationPath?: string;
+		} = {};
+
+		if (jsonFlag) options.json = true;
+		if (checkSecretsFlag) options.checkSecrets = true;
+		if (contractIndex !== -1 && args[contractIndex + 1]) {
+			options.contractPath = args[contractIndex + 1] as string;
+		}
+		if (attestationIndex !== -1 && args[attestationIndex + 1]) {
+			options.attestationPath = args[attestationIndex + 1] as string;
+		}
+
+		runCheckEnvironmentCLI(options)
+			.then((exitCode) => process.exit(exitCode))
+			.catch((error) => handleFatalError("Check Environment Error", error));
+		return;
+	}
+
+	// No command recognized
+
+	if (command === "remediate") {
+		// Parse remediate options
+		const jsonFlag = args.includes("--json");
+		const dryRunFlag = args.includes("--dry-run");
+		const contractIndex = args.indexOf("--contract");
+		const findingsIndex = args.indexOf("--findings");
+		const headShaIndex = args.indexOf("--head-sha");
+		const modeIndex = args.indexOf("--mode");
+		const markerIndex = args.indexOf("--completion-marker");
+
+		const options: {
+			findings?: string;
+			dryRun?: boolean;
+			json?: boolean;
+			contractPath?: string;
+			headSha?: string;
+			mode?: "manual" | "autonomous";
+			completionMarkerPath?: string;
+		} = {};
+
+		if (jsonFlag) options.json = true;
+		if (dryRunFlag) options.dryRun = true;
+		if (contractIndex !== -1 && args[contractIndex + 1]) {
+			options.contractPath = args[contractIndex + 1] as string;
+		}
+		if (findingsIndex !== -1 && args[findingsIndex + 1]) {
+			options.findings = args[findingsIndex + 1] as string;
+		}
+		if (headShaIndex !== -1 && args[headShaIndex + 1]) {
+			options.headSha = args[headShaIndex + 1] as string;
+		}
+		if (modeIndex !== -1 && args[modeIndex + 1]) {
+			const modeValue = args[modeIndex + 1];
+			if (modeValue === "manual" || modeValue === "autonomous") {
+				options.mode = modeValue;
+			}
+		}
+		if (markerIndex !== -1 && args[markerIndex + 1]) {
+			options.completionMarkerPath = args[markerIndex + 1] as string;
+		}
+
+		runRemediateCLI(options)
+			.then((exitCode) => process.exit(exitCode))
+			.catch((error) => handleFatalError("Remediate Error", error));
+		return;
+	}
+
+	// No command recognized
+
+	if (command === "check-authz") {
+		// Parse check-authz options
+		const jsonFlag = args.includes("--json");
+		const checkScopesFlag = args.includes("--check-scopes");
+		const contractIndex = args.indexOf("--contract");
+		const repoIndex = args.indexOf("--repo");
+		const branchIndex = args.indexOf("--branch");
+
+		const options: {
+			contractPath?: string;
+			repo?: string;
+			branch?: string;
+			checkScopes?: boolean;
+			json?: boolean;
+		} = {};
+
+		if (jsonFlag) options.json = true;
+		if (checkScopesFlag) options.checkScopes = true;
+		if (contractIndex !== -1 && args[contractIndex + 1]) {
+			options.contractPath = args[contractIndex + 1] as string;
+		}
+		if (repoIndex !== -1 && args[repoIndex + 1]) {
+			options.repo = args[repoIndex + 1] as string;
+		}
+		if (branchIndex !== -1 && args[branchIndex + 1]) {
+			options.branch = args[branchIndex + 1] as string;
+		}
+
+		runCheckAuthzCLI(options)
+			.then((exitCode) => process.exit(exitCode))
+			.catch((error) => handleFatalError("Check Authz Error", error));
+		return;
+	}
+
+	// No command recognized
+
+	if (command === "remediate") {
+		// Parse remediate options
+		const jsonFlag = args.includes("--json");
+		const dryRunFlag = args.includes("--dry-run");
+		const contractIndex = args.indexOf("--contract");
+		const findingsIndex = args.indexOf("--findings");
+		const headShaIndex = args.indexOf("--head-sha");
+		const shaIndex = args.indexOf("--sha"); // Support both --sha and --head-sha
+		const modeIndex = args.indexOf("--mode");
+		const markerIndex = args.indexOf("--completion-marker");
+
+		const options: {
+			findings?: string;
+			dryRun?: boolean;
+			json?: boolean;
+			contractPath?: string;
+			headSha?: string;
+			mode?: "manual" | "autonomous";
+			completionMarkerPath?: string;
+		} = {};
+
+		if (jsonFlag) options.json = true;
+		if (dryRunFlag) options.dryRun = true;
+
+		const contractArg = getFlagValue(args, contractIndex);
+		if (contractArg) options.contractPath = contractArg;
+
+		const findingsArg = getFlagValue(args, findingsIndex);
+		if (findingsArg) options.findings = findingsArg;
+
+		// Support both --sha and --head-sha for headSha
+		const headShaArg =
+			getFlagValue(args, headShaIndex) || getFlagValue(args, shaIndex);
+		if (headShaArg) options.headSha = headShaArg;
+
+		const modeArg = getFlagValue(args, modeIndex);
+		if (modeArg === "manual" || modeArg === "autonomous") {
+			options.mode = modeArg;
+		}
+
+		const markerArg = getFlagValue(args, markerIndex);
+		if (markerArg) options.completionMarkerPath = markerArg;
+
+		runRemediateCLI(options)
+			.then((exitCode) => process.exit(exitCode))
+			.catch((error) => handleFatalError("Remediate Error", error));
+		return;
+	}
+
+	// No command recognized
+
+	if (command === "check-environment") {
+		// Parse check-environment options
+		const jsonFlag = args.includes("--json");
+		const checkSecretsFlag = args.includes("--check-secrets");
+		const contractIndex = args.indexOf("--contract");
+		const attestationIndex = args.indexOf("--attestation");
+
+		const options: {
+			contractPath?: string;
+			checkSecrets?: boolean;
+			json?: boolean;
+			attestationPath?: string;
+		} = {};
+
+		if (jsonFlag) options.json = true;
+		if (checkSecretsFlag) options.checkSecrets = true;
+		if (contractIndex !== -1 && args[contractIndex + 1]) {
+			options.contractPath = args[contractIndex + 1] as string;
+		}
+		if (attestationIndex !== -1 && args[attestationIndex + 1]) {
+			options.attestationPath = args[attestationIndex + 1] as string;
+		}
+
+		runCheckEnvironmentCLI(options)
+			.then((exitCode) => process.exit(exitCode))
+			.catch((error) => handleFatalError("Check Environment Error", error));
+		return;
+	}
+
+	// No command recognized
+
+	if (command === "remediate") {
+		// Parse remediate options
+		const jsonFlag = args.includes("--json");
+		const dryRunFlag = args.includes("--dry-run");
+		const contractIndex = args.indexOf("--contract");
+		const findingsIndex = args.indexOf("--findings");
+		const headShaIndex = args.indexOf("--head-sha");
+		const modeIndex = args.indexOf("--mode");
+		const markerIndex = args.indexOf("--completion-marker");
+
+		const options: {
+			findings?: string;
+			dryRun?: boolean;
+			json?: boolean;
+			contractPath?: string;
+			headSha?: string;
+			mode?: "manual" | "autonomous";
+			completionMarkerPath?: string;
+		} = {};
+
+		if (jsonFlag) options.json = true;
+		if (dryRunFlag) options.dryRun = true;
+		if (contractIndex !== -1 && args[contractIndex + 1]) {
+			options.contractPath = args[contractIndex + 1] as string;
+		}
+		if (findingsIndex !== -1 && args[findingsIndex + 1]) {
+			options.findings = args[findingsIndex + 1] as string;
+		}
+		if (headShaIndex !== -1 && args[headShaIndex + 1]) {
+			options.headSha = args[headShaIndex + 1] as string;
+		}
+		if (modeIndex !== -1 && args[modeIndex + 1]) {
+			const modeValue = args[modeIndex + 1];
+			if (modeValue === "manual" || modeValue === "autonomous") {
+				options.mode = modeValue;
+			}
+		}
+		if (markerIndex !== -1 && args[markerIndex + 1]) {
+			options.completionMarkerPath = args[markerIndex + 1] as string;
+		}
+
+		runRemediateCLI(options)
+			.then((exitCode) => process.exit(exitCode))
+			.catch((error) => handleFatalError("Remediate Error", error));
+		return;
+	}
+
+	// No command recognized
+	if (command === "gap-case") {
+		// Parse gap-case options
+		const jsonFlag = args.includes("--json");
+		const contractIndex = args.indexOf("--contract");
+		const storeIndex = args.indexOf("--store");
+
+		// Get action (open/resolve) from second arg
+		const action = args[1] as "open" | "resolve" | undefined;
+		if (action !== "open" && action !== "resolve") {
+			console.error("Error: action must be 'open' or 'resolve'");
+			process.exit(1);
+			return;
+		}
+
+		// Open options
+		const incidentIdIndex = args.indexOf("--incident-id");
+		const summaryIndex = args.indexOf("--summary");
+		const severityIndex = args.indexOf("--severity");
+		const ownerIndex = args.indexOf("--owner");
+		const providerIndex = args.indexOf("--provider");
+		const findingIdIndex = args.indexOf("--finding-id");
+		const prNumberIndex = args.indexOf("--pr-number");
+		const headShaIndex = args.indexOf("--head-sha");
+		const slaHoursIndex = args.indexOf("--sla-hours");
+
+		// Resolve options
+		const caseIdIndex = args.indexOf("--case-id");
+		const evidenceUrlIndex = args.indexOf("--evidence-url");
+		const fixPrIndex = args.indexOf("--fix-pr");
+		const noteIndex = args.indexOf("--note");
+		const resolvedByIndex = args.indexOf("--resolved-by");
+
+		const options: {
+			action: "open" | "resolve";
+			json?: boolean;
+			contractPath?: string;
+			storePath?: string;
+			incidentId?: string;
+			summary?: string;
+			severity?: string;
+			owner?: string;
+			provider?: string;
+			findingId?: string;
+			prNumber?: number;
+			headSha?: string;
+			slaHours?: number;
+			caseId?: string;
+			evidenceUrl?: string;
+			fixPr?: number;
+			note?: string;
+			resolvedBy?: string;
+		} = { action };
+
+		if (jsonFlag) options.json = true;
+		const contractArg = getFlagValue(args, contractIndex);
+		if (contractArg) options.contractPath = contractArg;
+		const storeArg = getFlagValue(args, storeIndex);
+		if (storeArg) options.storePath = storeArg;
+
+		// Open options
+		const incidentIdArg = getFlagValue(args, incidentIdIndex);
+		if (incidentIdArg) options.incidentId = incidentIdArg;
+		const summaryArg = getFlagValue(args, summaryIndex);
+		if (summaryArg) options.summary = summaryArg;
+		const severityArg = getFlagValue(args, severityIndex);
+		if (severityArg) options.severity = severityArg;
+		const ownerArg = getFlagValue(args, ownerIndex);
+		if (ownerArg) options.owner = ownerArg;
+		const providerArg = getFlagValue(args, providerIndex);
+		if (providerArg) options.provider = providerArg;
+		const findingIdArg = getFlagValue(args, findingIdIndex);
+		if (findingIdArg) options.findingId = findingIdArg;
+		const prNumberArg = getFlagValue(args, prNumberIndex);
+		if (prNumberArg) {
+			const parsed = parseIntegerArg(prNumberArg, 1);
+			if (parsed !== undefined) options.prNumber = parsed;
+		}
+		const headShaArg = getFlagValue(args, headShaIndex);
+		if (headShaArg) options.headSha = headShaArg;
+		const slaHoursArg = getFlagValue(args, slaHoursIndex);
+		if (slaHoursArg) {
+			const parsed = parseIntegerArg(slaHoursArg, 1);
+			if (parsed !== undefined) options.slaHours = parsed;
+		}
+
+		// Resolve options
+		const caseIdArg = getFlagValue(args, caseIdIndex);
+		if (caseIdArg) options.caseId = caseIdArg;
+		const evidenceUrlArg = getFlagValue(args, evidenceUrlIndex);
+		if (evidenceUrlArg) options.evidenceUrl = evidenceUrlArg;
+		const fixPrArg = getFlagValue(args, fixPrIndex);
+		if (fixPrArg) {
+			const parsed = parseIntegerArg(fixPrArg, 1);
+			if (parsed !== undefined) options.fixPr = parsed;
+		}
+		const noteArg = getFlagValue(args, noteIndex);
+		if (noteArg) options.note = noteArg;
+		const resolvedByArg = getFlagValue(args, resolvedByIndex);
+		if (resolvedByArg) options.resolvedBy = resolvedByArg;
+
+		const exitCode = runGapCaseCLI(options);
+		process.exit(exitCode);
+		return;
+	}
+
+	if (command === "pilot-evaluate") {
+		// Parse pilot-evaluate options
+		const jsonFlag = args.includes("--json");
+		const contractIndex = args.indexOf("--contract");
+		const artifactsIndex = args.indexOf("--artifacts");
+		const outputIndex = args.indexOf("--output");
+
+		// artifacts-dir is required
+		const artifactsArg = getFlagValue(args, artifactsIndex);
+		if (!artifactsArg) {
+			console.error("Error: --artifacts is required");
+			process.exit(1);
 			return;
 		}
 

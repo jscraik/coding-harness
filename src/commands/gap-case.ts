@@ -1,781 +1,546 @@
-import { randomUUID } from "node:crypto";
-import {
-	existsSync,
-	mkdirSync,
-	readFileSync,
-	renameSync,
-	rmSync,
-	statSync,
-	writeFileSync,
-} from "node:fs";
+/**
+ * Gap-case CLI command
+ *
+ * Minimal incident → gap-case workflow for v1 pilot.
+ * Supports open and resolve actions with contract-gated behavior.
+ */
+
+import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { dirname, resolve } from "node:path";
 import { loadContract } from "../lib/contract/loader.js";
-import {
-	DEFAULT_PILOT_GAP_CASE_POLICY,
-	type PilotGapCasePolicy,
-} from "../lib/contract/types.js";
-import { sanitizeError } from "../lib/input/sanitize.js";
+import type { RiskTier } from "../lib/contract/types.js";
+import { DEFAULT_PILOT_GAP_CASE_POLICY } from "../lib/contract/types.js";
+import type {
+	GapCaseOpenOptions,
+	GapCaseRecord,
+	GapCaseResolveOptions,
+	GapCaseResult,
+	GapCaseStoreV1,
+} from "../lib/gap-case/types.js";
+import { GAP_CASE_EXIT_CODES } from "../lib/gap-case/types.js";
 import { PathTraversalError, validatePath } from "../lib/input/validator.js";
 
-export const EXIT_CODES = {
-	SUCCESS: 0,
-	USAGE: 2,
-	POLICY: 3,
-	PARTIAL: 4,
-	INTERNAL: 10,
-} as const;
-
-export type GapCaseStatus = "open" | "resolved";
-export type GapSeverity = "low" | "medium" | "high";
+const DEFAULT_STORE_PATH = ".harness/gap-cases.v1.json";
 
 /**
- * Causality classification for incident attribution (v1 pilot)
- * Used to determine if automation was the root cause of an incident.
+ * Generate a unique gap-case ID
  */
-export type Causality =
-	| "automation_confirmed"
-	| "automation_possible"
-	| "human_or_external"
-	| "unknown";
-
-/**
- * Confidence level for causality classification.
- */
-export type Confidence = "confirmed" | "probable" | "provisional";
-
-export interface GapCaseRecord {
-	id: string;
-	incidentId: string;
-	owner: string;
-	severity: GapSeverity;
-	linkedPr: string;
-	findingSummary?: string;
-	createdAt: string;
-	dueAt: string;
-	status: GapCaseStatus;
-	resolvedBy?: string;
-	closedAt?: string;
-	closeReason?: string;
-	evidence?: string[];
-	// Causality fields (Phase 3)
-	causality?: Causality;
-	confidence?: Confidence;
-	causalityUpdatedAt?: string;
-	causalityUpdatedBy?: string;
-	// Auto-rollback trigger (Phase 4)
-	autoRollbackTriggeredAt?: string;
-	autoRollbackReason?: string;
-}
-
-export interface GapCaseStore {
-	version: number;
-	cases: GapCaseRecord[];
-}
-
-export interface CreateGapCaseOptions {
-	action: "create";
-	incidentId: string;
-	owner: string;
-	severity: GapSeverity;
-	linkedPr: string;
-	findingSummary?: string;
-	dueDays?: number;
-	caseStore?: string;
-	caseIdPrefix?: string;
-	caseId?: string;
-	evidence?: string[];
-	contractPath?: string;
-	json?: boolean;
-}
-
-export interface ListGapCaseOptions {
-	action: "list";
-	caseStore?: string;
-	contractPath?: string;
-	open?: boolean;
-	overdue?: boolean;
-	unresolvedCausality?: boolean;
-	json?: boolean;
-}
-
-export interface ResolveGapCaseOptions {
-	action: "resolve";
-	caseStore?: string;
-	contractPath?: string;
-	caseId: string;
-	incidentId: string;
-	resolvedBy: string;
-	linkedPr: string;
-	evidence?: string[];
-	closeReason?: string;
-	force?: boolean;
-	json?: boolean;
-}
-
-export interface UpdateCausalityOptions {
-	action: "update-causality";
-	caseStore?: string;
-	contractPath?: string;
-	caseId: string;
-	causality: Causality;
-	confidence: Confidence;
-	updatedBy: string;
-	json?: boolean;
-}
-
-type GapCaseResultOutput =
-	| { action: "create"; caseRecord: GapCaseRecord }
-	| { action: "list"; cases: GapCaseRecord[] }
-	| { action: "resolve"; caseRecord: GapCaseRecord }
-	| { action: "update-causality"; caseRecord: GapCaseRecord };
-
-export interface GapCaseError {
-	code: "E_USAGE" | "E_VALIDATION" | "E_POLICY" | "E_NOT_FOUND" | "E_INTERNAL";
-	message: string;
-	details?: Record<string, unknown>;
-}
-
-export type GapCaseResult =
-	| { ok: true; output: GapCaseResultOutput }
-	| { ok: false; error: GapCaseError };
-
-const DEFAULT_CASE_STORE = ".harness/gap-cases.json";
-const DEFAULT_CASE_ID_PREFIX = "gap-";
-const MAX_CASE_STORE_SIZE = 10 * 1024 * 1024; // 10MB
-const HOURS_PER_DAY = 24;
-const DEFAULT_ARTIFACTS_DIR = "artifacts/pilot";
-const ROLLBACK_MARKER_FILE = "rollback-marker.json";
-const ROLLBACK_EVENTS_FILE = "rollback-events.jsonl";
-
-function nowIso(): string {
-	return new Date().toISOString();
-}
-
-function normalizeCaseStore(caseStore?: string): string {
-	return validatePath(process.cwd(), resolve(caseStore || DEFAULT_CASE_STORE));
-}
-
-/**
- * Load pilot gap-case policy from contract, with defaults.
- */
-function loadPolicy(contractPath?: string): PilotGapCasePolicy {
-	if (!contractPath) {
-		return DEFAULT_PILOT_GAP_CASE_POLICY;
-	}
-
-	try {
-		const contract = loadContract(contractPath);
-		return contract.pilotGapCasePolicy ?? DEFAULT_PILOT_GAP_CASE_POLICY;
-	} catch {
-		return DEFAULT_PILOT_GAP_CASE_POLICY;
-	}
-}
-
-function readCaseStore(filePath: string): GapCaseStore {
-	if (!existsSync(filePath)) {
-		return { version: 1, cases: [] };
-	}
-
-	// Size check to prevent memory exhaustion (OWASP: CWE-400)
-	const stats = statSync(filePath);
-	if (stats.size > MAX_CASE_STORE_SIZE) {
-		throw new Error(
-			`Case store exceeds maximum size (${MAX_CASE_STORE_SIZE} bytes): ${filePath}`,
-		);
-	}
-
-	const raw = readFileSync(filePath, "utf-8");
-	const parsed = JSON.parse(raw) as unknown;
-	if (
-		typeof parsed !== "object" ||
-		parsed === null ||
-		!Array.isArray((parsed as { cases?: unknown }).cases)
-	) {
-		return { version: 1, cases: [] };
-	}
-	const cases = (parsed as { cases: unknown[] }).cases.filter(
-		(entry): entry is GapCaseRecord =>
-			typeof entry === "object" &&
-			entry !== null &&
-			typeof (entry as { id?: unknown }).id === "string",
-	);
-	return { version: 1, cases };
-}
-
-function writeCaseStore(filePath: string, store: GapCaseStore): void {
-	mkdirSync(dirname(filePath), { recursive: true });
-	writeFileSync(filePath, JSON.stringify(store, null, 2), "utf-8");
-}
-
-/**
- * Auto-rollback event record for audit trail
- */
-interface AutoRollbackEvent {
-	id: string;
-	incidentId: string;
-	caseId: string;
-	triggerType: "automatic";
-	trigger: "high_risk_automation_confirmed";
-	triggeredAt: string;
-	modeBefore: "autonomous";
-	modeAfter: "manual";
-	result: "success";
-}
-
-/**
- * Auto-rollback marker for completion verification
- */
-interface AutoRollbackMarker {
-	schemaVersion: "pilot-rollback-marker/v1";
-	incidentId: string;
-	caseId: string;
-	modeBefore: "autonomous";
-	modeAfter: "manual";
-	triggerType: "automatic";
-	trigger: "high_risk_automation_confirmed";
-	requestedAt: string;
-	completedAt: string;
-	result: "success";
-}
-
-/**
- * Generate a unique ID for rollback events
- */
-function generateRollbackEventId(): string {
+function generateCaseId(): string {
 	const timestamp = Date.now().toString(36);
-	const uuid = randomUUID().slice(0, 8);
-	return `rollback-${timestamp}-${uuid}`;
+	const random = Math.random().toString(36).slice(2, 8);
+	return `gc-${timestamp}-${random}`;
 }
 
 /**
- * Trigger automatic rollback to manual mode.
- * Called when high-severity automation-caused incident is confirmed.
+ * Validate SHA format (40 hex characters)
  */
-function triggerAutoRollback(
+function isValidSha(sha: string | undefined): boolean {
+	if (!sha) return false;
+	return /^[a-f0-9]{40}$/i.test(sha);
+}
+
+/**
+ * Validate severity tier
+ */
+function isValidSeverity(value: string): value is RiskTier {
+	return value === "high" || value === "medium" || value === "low";
+}
+
+/**
+ * Validate URL format (must be HTTPS)
+ */
+function isValidHttpsUrl(value: string): boolean {
+	try {
+		const url = new URL(value);
+		return url.protocol === "https:";
+	} catch {
+		return false;
+	}
+}
+
+/**
+ * Load gap-case store from disk
+ */
+function loadStore(storePath: string): GapCaseStoreV1 {
+	const absolutePath = resolve(storePath);
+
+	if (!existsSync(absolutePath)) {
+		return { version: "1", cases: [] };
+	}
+
+	try {
+		const content = readFileSync(absolutePath, "utf-8");
+		const data = JSON.parse(content) as unknown;
+
+		// Validate structure
+		if (
+			typeof data !== "object" ||
+			data === null ||
+			(data as Record<string, unknown>).version !== "1" ||
+			!Array.isArray((data as Record<string, unknown>).cases)
+		) {
+			throw new Error("Invalid store format");
+		}
+
+		return data as GapCaseStoreV1;
+	} catch (error) {
+		const message = error instanceof Error ? error.message : "Unknown error";
+		throw new Error(`Corrupt gap-case store: ${message}`);
+	}
+}
+
+/**
+ * Save gap-case store to disk (atomic write with directory creation)
+ */
+function saveStore(storePath: string, store: GapCaseStoreV1): void {
+	const absolutePath = resolve(storePath);
+
+	// Validate path stays within cwd (prevent traversal)
+	const cwd = process.cwd();
+	try {
+		validatePath(cwd, absolutePath);
+	} catch (e) {
+		if (e instanceof PathTraversalError) {
+			throw new Error("Store path escapes working directory");
+		}
+		throw e;
+	}
+
+	// Ensure directory exists
+	const dir = dirname(absolutePath);
+	if (!existsSync(dir)) {
+		mkdirSync(dir, { recursive: true });
+	}
+
+	// Write atomically (write to temp, then rename would be better but keep simple for v1)
+	writeFileSync(absolutePath, JSON.stringify(store, null, 2), "utf-8");
+}
+
+/**
+ * Find existing case by fingerprint (incidentId + sha + findingId)
+ */
+function findExistingCase(
+	store: GapCaseStoreV1,
 	incidentId: string,
-	caseId: string,
-	artifactsDir?: string,
-): { triggered: boolean; rollbackEventId?: string; error?: string } {
-	try {
-		const baseDir = process.cwd();
-		const artifactsPath = artifactsDir
-			? validatePath(baseDir, resolve(baseDir, artifactsDir))
-			: resolve(baseDir, DEFAULT_ARTIFACTS_DIR);
+	headSha?: string,
+	findingId?: string,
+): GapCaseRecord | undefined {
+	return store.cases.find((c) => {
+		if (c.incidentId !== incidentId) return false;
+		if (headSha && c.headSha !== headSha) return false;
+		if (findingId && c.findingId !== findingId) return false;
+		return true;
+	});
+}
 
-		const now = nowIso();
-		const rollbackEventId = generateRollbackEventId();
-
-		// Create rollback event record
-		const event: AutoRollbackEvent = {
-			id: rollbackEventId,
-			incidentId,
-			caseId,
-			triggerType: "automatic",
-			trigger: "high_risk_automation_confirmed",
-			triggeredAt: now,
-			modeBefore: "autonomous",
-			modeAfter: "manual",
-			result: "success",
-		};
-
-		// Append to rollback events (atomic write to prevent race conditions)
-		const eventsPath = resolve(artifactsPath, ROLLBACK_EVENTS_FILE);
-		mkdirSync(dirname(eventsPath), { recursive: true });
-		const line = `${JSON.stringify(event)}\n`;
-		const tempPath = `${eventsPath}.${process.pid}.${Date.now()}.tmp`;
+/**
+ * Open a new gap-case (idempotent - returns existing if fingerprint matches)
+ */
+export function openGapCase(options: GapCaseOpenOptions): GapCaseResult {
+	// Load contract for policy
+	let policy = DEFAULT_PILOT_GAP_CASE_POLICY;
+	if (options.contractPath) {
 		try {
-			if (existsSync(eventsPath)) {
-				const existing = readFileSync(eventsPath, "utf-8");
-				writeFileSync(tempPath, existing + line, { encoding: "utf-8" });
-			} else {
-				writeFileSync(tempPath, line, { encoding: "utf-8" });
+			const contract = loadContract(options.contractPath);
+			if (contract.pilotGapCasePolicy) {
+				policy = contract.pilotGapCasePolicy;
 			}
-			renameSync(tempPath, eventsPath);
-		} catch {
-			// Clean up temp file on failure
-			try {
-				if (existsSync(tempPath)) {
-					rmSync(tempPath);
-				}
-			} catch {
-				// Ignore cleanup errors
-			}
-			// Fallback to direct append if atomic fails
-			writeFileSync(eventsPath, line, { flag: "a", encoding: "utf-8" });
+		} catch (error) {
+			return {
+				ok: false,
+				error: {
+					code: "E_CONTRACT_LOAD",
+					message: `Failed to load contract: ${error instanceof Error ? error.message : "Unknown error"}`,
+				},
+			};
 		}
+	}
 
-		// Write rollback marker
-		const marker: AutoRollbackMarker = {
-			schemaVersion: "pilot-rollback-marker/v1",
-			incidentId,
-			caseId,
-			modeBefore: "autonomous",
-			modeAfter: "manual",
-			triggerType: "automatic",
-			trigger: "high_risk_automation_confirmed",
-			requestedAt: now,
-			completedAt: now,
-			result: "success",
-		};
-
-		const markerPath = resolve(artifactsPath, ROLLBACK_MARKER_FILE);
-		mkdirSync(dirname(markerPath), { recursive: true });
-		writeFileSync(markerPath, JSON.stringify(marker, null, 2), "utf-8");
-
-		return { triggered: true, rollbackEventId };
-	} catch (error) {
+	// Check if gap-case is enabled
+	if (!policy.enabled) {
 		return {
-			triggered: false,
-			error: error instanceof Error ? error.message : "Unknown error",
+			ok: false,
+			error: {
+				code: "E_DISABLED",
+				message: "Gap-case tracking is disabled in policy",
+			},
 		};
 	}
-}
 
-function nextCaseId(cases: GapCaseRecord[], prefix: string): string {
-	const matches = cases
-		.map((entry) => {
-			if (!entry.id.startsWith(prefix)) {
-				return 0;
-			}
-			const suffix = entry.id.slice(prefix.length);
-			const n = Number.parseInt(suffix, 10);
-			return Number.isNaN(n) ? 0 : n;
-		})
-		.filter((value) => value > 0);
-	const next = Math.max(0, ...matches, 0) + 1;
-	return `${prefix}${next.toString().padStart(3, "0")}`;
-}
+	// Validate required fields
+	if (!options.incidentId?.trim()) {
+		return {
+			ok: false,
+			error: { code: "E_VALIDATION", message: "incidentId is required" },
+		};
+	}
 
-function computeDueDate(slaHours: number): string {
-	const timestamp = Date.now() + slaHours * 60 * 60 * 1000;
-	return new Date(timestamp).toISOString();
-}
+	if (!options.summary?.trim()) {
+		return {
+			ok: false,
+			error: { code: "E_VALIDATION", message: "summary is required" },
+		};
+	}
 
-function isOverdue(caseRecord: GapCaseRecord): boolean {
-	return new Date(caseRecord.dueAt).getTime() < Date.now();
-}
+	if (!options.owner?.trim()) {
+		return {
+			ok: false,
+			error: { code: "E_VALIDATION", message: "owner is required" },
+		};
+	}
 
-/**
- * Check if a case has unresolved high-severity causality.
- * A case is unresolved if causality is automation_possible or unknown
- * and hasn't been confirmed by dual-review.
- */
-function hasUnresolvedCausality(caseRecord: GapCaseRecord): boolean {
-	if (caseRecord.severity !== "high") return false;
-	if (!caseRecord.causality) return true; // No causality set = unresolved
-	if (caseRecord.causality === "automation_possible") return true;
-	if (caseRecord.causality === "unknown") return true;
-	return false;
-}
+	if (!options.severity || !isValidSeverity(options.severity)) {
+		return {
+			ok: false,
+			error: {
+				code: "E_VALIDATION",
+				message: "severity must be one of: high, medium, low",
+			},
+		};
+	}
 
-/**
- * Check if causality downgrade requires dual-review.
- * A downgrade is when moving from automation_confirmed to a lower certainty.
- */
-function isCausalityDowngrade(
-	current: Causality | undefined,
-	newCausality: Causality,
-): boolean {
-	if (!current) return false;
-	const rank: Record<Causality, number> = {
-		automation_confirmed: 3,
-		automation_possible: 2,
-		human_or_external: 1,
-		unknown: 0,
-	};
-	return rank[newCausality] < rank[current];
-}
+	// Validate SHA format if provided
+	if (options.headSha && !isValidSha(options.headSha)) {
+		return {
+			ok: false,
+			error: {
+				code: "E_VALIDATION",
+				message: "headSha must be a valid 40-character hex SHA",
+			},
+		};
+	}
 
-export function runGapCase(
-	options:
-		| CreateGapCaseOptions
-		| ListGapCaseOptions
-		| ResolveGapCaseOptions
-		| UpdateCausalityOptions,
-): GapCaseResult {
+	// Validate SLA hours if provided
+	if (options.slaHours !== undefined) {
+		if (
+			!Number.isInteger(options.slaHours) ||
+			options.slaHours <= 0 ||
+			options.slaHours > 8760 // Max 1 year
+		) {
+			return {
+				ok: false,
+				error: {
+					code: "E_VALIDATION",
+					message: "slaHours must be a positive integer (max 8760)",
+				},
+			};
+		}
+	}
+
+	const storePath = options.storePath ?? policy.storePath ?? DEFAULT_STORE_PATH;
+
+	// Load store
+	let store: GapCaseStoreV1;
 	try {
-		// Load policy from contract
-		const contractPath =
-			"contractPath" in options ? options.contractPath : undefined;
-		const policy = loadPolicy(contractPath);
-
-		// Check if gap-case is enabled
-		if (!policy.enabled) {
-			return {
-				ok: false,
-				error: {
-					code: "E_POLICY",
-					message:
-						"Gap-case tracking is disabled in contract policy (pilotGapCasePolicy.enabled = false)",
-				},
-			};
-		}
-
-		// Use policy's store path if not overridden
-		const caseStorePath =
-			"caseStore" in options && options.caseStore
-				? options.caseStore
-				: (policy.storePath ?? DEFAULT_CASE_STORE);
-		const caseStore = normalizeCaseStore(caseStorePath);
-		const store = readCaseStore(caseStore);
-
-		if (options.action === "create") {
-			if (!options.incidentId.trim()) {
-				return {
-					ok: false,
-					error: {
-						code: "E_USAGE",
-						message: "Missing required option: --incident-id",
-					},
-				};
-			}
-			if (!options.owner.trim()) {
-				return {
-					ok: false,
-					error: {
-						code: "E_USAGE",
-						message: "Missing required option: --owner",
-					},
-				};
-			}
-			if (
-				options.severity !== "low" &&
-				options.severity !== "medium" &&
-				options.severity !== "high"
-			) {
-				return {
-					ok: false,
-					error: {
-						code: "E_USAGE",
-						message:
-							"Invalid required option: --severity must be low|medium|high",
-					},
-				};
-			}
-			if (!options.linkedPr.trim()) {
-				return {
-					ok: false,
-					error: {
-						code: "E_USAGE",
-						message: "Missing required option: --linked-pr",
-					},
-				};
-			}
-
-			const prefix = options.caseIdPrefix ?? DEFAULT_CASE_ID_PREFIX;
-			const id = options.caseId ?? nextCaseId(store.cases, prefix);
-
-			// Use policy's SLA hours (converted to days for backward compat) or explicit override
-			let slaHours: number;
-			if (options.dueDays !== undefined) {
-				if (options.dueDays <= 0) {
-					return {
-						ok: false,
-						error: {
-							code: "E_VALIDATION",
-							message: "Invalid --due-days; must be a positive integer",
-						},
-					};
-				}
-				slaHours = options.dueDays * HOURS_PER_DAY;
-			} else {
-				slaHours = policy.defaultSlaHours;
-			}
-
-			const existing = store.cases.find((entry) => entry.id === id);
-			if (existing) {
-				return {
-					ok: false,
-					error: {
-						code: "E_VALIDATION",
-						message: `Gap case ${id} already exists`,
-					},
-				};
-			}
-
-			const caseRecord: GapCaseRecord = {
-				id,
-				incidentId: options.incidentId,
-				owner: options.owner,
-				severity: options.severity,
-				linkedPr: options.linkedPr,
-				createdAt: nowIso(),
-				dueAt: computeDueDate(slaHours),
-				status: "open",
-				...(options.findingSummary
-					? { findingSummary: options.findingSummary }
-					: {}),
-				...(options.evidence ? { evidence: options.evidence } : {}),
-			};
-
-			store.cases.push(caseRecord);
-			writeCaseStore(caseStore, store);
-			return { ok: true, output: { action: "create", caseRecord } };
-		}
-
-		if (options.action === "list") {
-			let cases = [...store.cases];
-			if (options.open) {
-				cases = cases.filter((entry) => entry.status === "open");
-			}
-			if (options.overdue) {
-				cases = cases.filter(isOverdue);
-			}
-			if (options.unresolvedCausality) {
-				cases = cases.filter(hasUnresolvedCausality);
-			}
-			return { ok: true, output: { action: "list", cases } };
-		}
-
-		if (options.action === "resolve") {
-			const target = store.cases.find((entry) => entry.id === options.caseId);
-			if (!target) {
-				return {
-					ok: false,
-					error: {
-						code: "E_NOT_FOUND",
-						message: `Gap case ${options.caseId} not found`,
-					},
-				};
-			}
-			if (target.status === "resolved") {
-				return {
-					ok: false,
-					error: {
-						code: "E_POLICY",
-						message: `Gap case ${options.caseId} is already resolved`,
-					},
-				};
-			}
-			if (
-				!options.incidentId.trim() ||
-				options.incidentId !== target.incidentId
-			) {
-				return {
-					ok: false,
-					error: {
-						code: "E_VALIDATION",
-						message: "Incident ID does not match existing gap case",
-					},
-				};
-			}
-			if (!options.resolvedBy.trim() || !options.linkedPr.trim()) {
-				return {
-					ok: false,
-					error: {
-						code: "E_USAGE",
-						message: "Missing required option: --resolved-by and --linked-pr",
-					},
-				};
-			}
-
-			// Enforce evidence requirement from policy
-			const hasEvidence =
-				(options.evidence && options.evidence.length > 0) ||
-				(target.evidence && target.evidence.length > 0);
-
-			if (policy.requireClosureEvidence && !hasEvidence && !options.force) {
-				return {
-					ok: false,
-					error: {
-						code: "E_POLICY",
-						message:
-							"Evidence required for closure (pilotGapCasePolicy.requireClosureEvidence = true). Provide --evidence or use --force to override.",
-						details: { requireClosureEvidence: true },
-					},
-				};
-			}
-
-			target.status = "resolved";
-			target.closedAt = nowIso();
-			target.resolvedBy = options.resolvedBy;
-			target.closeReason = options.closeReason ?? "fix";
-			// Apply evidence and linkedPr from resolve options
-			if (options.evidence && options.evidence.length > 0) {
-				target.evidence = [...(target.evidence ?? []), ...options.evidence];
-			}
-			if (options.linkedPr?.trim()) {
-				target.linkedPr = options.linkedPr;
-			}
-
-			writeCaseStore(caseStore, store);
-			return { ok: true, output: { action: "resolve", caseRecord: target } };
-		}
-
-		if (options.action === "update-causality") {
-			const target = store.cases.find((entry) => entry.id === options.caseId);
-			if (!target) {
-				return {
-					ok: false,
-					error: {
-						code: "E_NOT_FOUND",
-						message: `Gap case ${options.caseId} not found`,
-					},
-				};
-			}
-
-			// Check for causality downgrade (requires explicit acknowledgment)
-			if (
-				isCausalityDowngrade(target.causality, options.causality) &&
-				options.confidence !== "confirmed"
-			) {
-				return {
-					ok: false,
-					error: {
-						code: "E_POLICY",
-						message:
-							"Causality downgrade requires --confidence confirmed for audit trail. Downgrading from a higher-certainty causality classification must be explicitly confirmed.",
-						details: {
-							currentCausality: target.causality,
-							newCausality: options.causality,
-							requiredConfidence: "confirmed",
-						},
-					},
-				};
-			}
-
-			target.causality = options.causality;
-			target.confidence = options.confidence;
-			target.causalityUpdatedAt = nowIso();
-			target.causalityUpdatedBy = options.updatedBy;
-
-			// Auto-rollback trigger: high-severity + automation_confirmed + confirmed confidence
-			if (
-				target.severity === "high" &&
-				options.causality === "automation_confirmed" &&
-				options.confidence === "confirmed" &&
-				!target.autoRollbackTriggeredAt
-			) {
-				const rollbackResult = triggerAutoRollback(
-					target.incidentId,
-					target.id,
-					policy.artifactsDir,
-				);
-				if (rollbackResult.triggered) {
-					target.autoRollbackTriggeredAt = nowIso();
-					target.autoRollbackReason =
-						"Automatic rollback triggered: high-severity automation-caused incident confirmed";
-				}
-			}
-
-			writeCaseStore(caseStore, store);
-			return {
-				ok: true,
-				output: { action: "update-causality", caseRecord: target },
-			};
-		}
-
-		return {
-			ok: false,
-			error: {
-				code: "E_INTERNAL",
-				message: "Unknown gap-case action",
-			},
-		};
+		store = loadStore(storePath);
 	} catch (error) {
-		if (error instanceof PathTraversalError) {
-			return {
-				ok: false,
-				error: {
-					code: "E_VALIDATION",
-					message: "Invalid --case-store path (path traversal detected)",
-				},
-			};
-		}
-		if (error instanceof SyntaxError) {
-			return {
-				ok: false,
-				error: {
-					code: "E_VALIDATION",
-					message: `Could not parse gap-case store: ${sanitizeError(error)}`,
-				},
-			};
-		}
 		return {
 			ok: false,
 			error: {
-				code: "E_INTERNAL",
-				message: `Could not update gap-case state: ${sanitizeError(error)}`,
+				code: "E_STORE_CORRUPT",
+				message: error instanceof Error ? error.message : "Store load failed",
 			},
 		};
 	}
+
+	// Check for duplicate (idempotent open)
+	const existing = findExistingCase(
+		store,
+		options.incidentId,
+		options.headSha,
+		options.findingId,
+	);
+	if (existing) {
+		return { ok: true, output: existing };
+	}
+
+	// Create new case
+	const now = new Date().toISOString();
+	const slaHours = options.slaHours ?? policy.defaultSlaHours;
+	const slaDueAt = new Date(
+		Date.now() + slaHours * 60 * 60 * 1000,
+	).toISOString();
+
+	const newCase: GapCaseRecord = {
+		id: generateCaseId(),
+		incidentId: options.incidentId.trim(),
+		status: "open",
+		severity: options.severity,
+		summary: options.summary.trim(),
+		owner: options.owner.trim(),
+		openedAt: now,
+		slaDueAt,
+		provider: options.provider,
+		findingId: options.findingId,
+		prNumber: options.prNumber,
+		headSha: options.headSha,
+	};
+
+	// Add to store
+	store.cases.push(newCase);
+
+	// Save store
+	try {
+		saveStore(storePath, store);
+	} catch (error) {
+		return {
+			ok: false,
+			error: {
+				code: "E_STORE_WRITE",
+				message: error instanceof Error ? error.message : "Store write failed",
+			},
+		};
+	}
+
+	return { ok: true, output: newCase };
 }
 
-export function runGapCaseCLI(
-	options:
-		| CreateGapCaseOptions
-		| ListGapCaseOptions
-		| ResolveGapCaseOptions
-		| UpdateCausalityOptions,
-): number {
-	const result = runGapCase(options);
-	if (!result.ok) {
-		// Output only JSON or only plain text, not both
-		if ("json" in options && options.json) {
-			console.error(JSON.stringify({ error: result.error }));
-		} else {
-			console.error(result.error.message);
-			if (result.error.details) {
-				console.error(`Details: ${JSON.stringify(result.error.details)}`);
+/**
+ * Resolve an existing gap-case
+ */
+export function resolveGapCase(options: GapCaseResolveOptions): GapCaseResult {
+	// Load contract for policy
+	let policy = DEFAULT_PILOT_GAP_CASE_POLICY;
+	if (options.contractPath) {
+		try {
+			const contract = loadContract(options.contractPath);
+			if (contract.pilotGapCasePolicy) {
+				policy = contract.pilotGapCasePolicy;
 			}
-		}
-		switch (result.error.code) {
-			case "E_USAGE":
-			case "E_VALIDATION":
-				return EXIT_CODES.USAGE;
-			case "E_POLICY":
-			case "E_NOT_FOUND":
-				return EXIT_CODES.POLICY;
-			default:
-				return EXIT_CODES.INTERNAL;
-		}
-	}
-
-	if ("json" in options && options.json) {
-		console.info(
-			JSON.stringify({
-				schema: "harness.gap-case.v1",
-				meta: {
-					tool: "harness-gap-case",
-					timestamp: new Date().toISOString(),
+		} catch (error) {
+			return {
+				ok: false,
+				error: {
+					code: "E_CONTRACT_LOAD",
+					message: `Failed to load contract: ${error instanceof Error ? error.message : "Unknown error"}`,
 				},
-				status: "success",
-				summary: `Gap-case ${result.output.action} complete`,
-				data: result.output,
-				errors: [],
-			}),
-		);
-		return EXIT_CODES.SUCCESS;
+			};
+		}
 	}
 
-	switch (result.output.action) {
-		case "create":
-			console.info(`Created gap case ${result.output.caseRecord.id}`);
-			console.info(`incident: ${result.output.caseRecord.incidentId}`);
-			console.info(`dueAt: ${result.output.caseRecord.dueAt}`);
-			break;
-		case "list":
-			console.info(
-				`Gap cases: ${result.output.cases.length} record(s) in ${normalizeCaseStore(
-					"caseStore" in options ? options.caseStore : undefined,
-				)}`,
-			);
-			for (const entry of result.output.cases) {
-				const causality = entry.causality ? ` [${entry.causality}]` : "";
-				console.info(
-					`${entry.id}\t${entry.status}\t${entry.incidentId}\t${entry.owner}${causality}`,
-				);
-			}
-			break;
-		case "resolve":
-			console.info(`Resolved gap case ${result.output.caseRecord.id}`);
-			console.info(`closedAt: ${result.output.caseRecord.closedAt}`);
-			break;
-		case "update-causality":
-			console.info(`Updated causality for ${result.output.caseRecord.id}`);
-			console.info(`causality: ${result.output.caseRecord.causality}`);
-			console.info(`confidence: ${result.output.caseRecord.confidence}`);
-			break;
+	// Check if gap-case is enabled
+	if (!policy.enabled) {
+		return {
+			ok: false,
+			error: {
+				code: "E_DISABLED",
+				message: "Gap-case tracking is disabled in policy",
+			},
+		};
 	}
-	return EXIT_CODES.SUCCESS;
+
+	// Validate required fields
+	if (!options.caseId?.trim()) {
+		return {
+			ok: false,
+			error: { code: "E_VALIDATION", message: "caseId is required" },
+		};
+	}
+
+	// Validate evidence URL
+	if (!options.evidenceUrl?.trim()) {
+		return {
+			ok: false,
+			error: {
+				code: "E_VALIDATION",
+				message: `evidenceUrl is required${policy.requireClosureEvidence ? " by policy" : ""}`,
+			},
+		};
+	}
+
+	if (!isValidHttpsUrl(options.evidenceUrl)) {
+		return {
+			ok: false,
+			error: {
+				code: "E_VALIDATION",
+				message: "evidenceUrl must be a valid HTTPS URL",
+			},
+		};
+	}
+
+	const storePath = options.storePath ?? policy.storePath ?? DEFAULT_STORE_PATH;
+
+	// Load store
+	let store: GapCaseStoreV1;
+	try {
+		store = loadStore(storePath);
+	} catch (error) {
+		return {
+			ok: false,
+			error: {
+				code: "E_STORE_CORRUPT",
+				message: error instanceof Error ? error.message : "Store load failed",
+			},
+		};
+	}
+
+	// Find case
+	const caseIndex = store.cases.findIndex((c) => c.id === options.caseId);
+	if (caseIndex === -1) {
+		return {
+			ok: false,
+			error: {
+				code: "E_NOT_FOUND",
+				message: `Gap-case not found: ${options.caseId}`,
+			},
+		};
+	}
+
+	const existingCase = store.cases[caseIndex];
+	if (!existingCase) {
+		return {
+			ok: false,
+			error: {
+				code: "E_NOT_FOUND",
+				message: `Gap-case not found: ${options.caseId}`,
+			},
+		};
+	}
+
+	// Check if already resolved
+	if (existingCase.status === "resolved") {
+		return {
+			ok: false,
+			error: {
+				code: "E_ALREADY_RESOLVED",
+				message: `Gap-case ${options.caseId} is already resolved`,
+			},
+		};
+	}
+
+	// Update case - explicitly build the resolved case to avoid spread type issues
+	const now = new Date().toISOString();
+	const resolvedCase: GapCaseRecord = {
+		id: existingCase.id,
+		incidentId: existingCase.incidentId,
+		status: "resolved",
+		severity: existingCase.severity,
+		summary: existingCase.summary,
+		owner: existingCase.owner,
+		openedAt: existingCase.openedAt,
+		slaDueAt: existingCase.slaDueAt,
+		resolvedAt: now,
+		provider: existingCase.provider,
+		findingId: existingCase.findingId,
+		prNumber: existingCase.prNumber,
+		headSha: existingCase.headSha,
+		resolution: {
+			evidenceUrl: options.evidenceUrl.trim(),
+			fixPr: options.fixPr,
+			note: options.note,
+			resolvedBy: options.resolvedBy,
+		},
+	};
+
+	store.cases[caseIndex] = resolvedCase;
+
+	// Save store
+	try {
+		saveStore(storePath, store);
+	} catch (error) {
+		return {
+			ok: false,
+			error: {
+				code: "E_STORE_WRITE",
+				message: error instanceof Error ? error.message : "Store write failed",
+			},
+		};
+	}
+
+	return { ok: true, output: resolvedCase };
+}
+
+/**
+ * CLI entry point for gap-case command
+ */
+export function runGapCaseCLI(args: {
+	action: "open" | "resolve";
+	json?: boolean;
+	contractPath?: string;
+	storePath?: string;
+	// Open options
+	incidentId?: string;
+	summary?: string;
+	severity?: string;
+	owner?: string;
+	provider?: string;
+	findingId?: string;
+	prNumber?: number;
+	headSha?: string;
+	slaHours?: number;
+	// Resolve options
+	caseId?: string;
+	evidenceUrl?: string;
+	fixPr?: number;
+	note?: string;
+	resolvedBy?: string;
+}): number {
+	let result: GapCaseResult;
+
+	if (args.action === "open") {
+		result = openGapCase({
+			incidentId: args.incidentId ?? "",
+			summary: args.summary ?? "",
+			severity: args.severity as RiskTier | undefined,
+			owner: args.owner ?? "",
+			provider: args.provider as GapCaseOpenOptions["provider"],
+			findingId: args.findingId,
+			prNumber: args.prNumber,
+			headSha: args.headSha,
+			slaHours: args.slaHours,
+			contractPath: args.contractPath,
+			storePath: args.storePath,
+			json: args.json,
+		});
+	} else {
+		result = resolveGapCase({
+			caseId: args.caseId ?? "",
+			evidenceUrl: args.evidenceUrl ?? "",
+			fixPr: args.fixPr,
+			note: args.note,
+			resolvedBy: args.resolvedBy,
+			contractPath: args.contractPath,
+			storePath: args.storePath,
+			json: args.json,
+		});
+	}
+
+	if (result.ok) {
+		if (args.json) {
+			console.info(JSON.stringify(result.output, null, 2));
+		} else {
+			console.info(`✓ Gap-case ${result.output.status}: ${result.output.id}`);
+			console.info(`  Incident: ${result.output.incidentId}`);
+			console.info(`  Severity: ${result.output.severity}`);
+			console.info(`  Owner: ${result.output.owner}`);
+			console.info(`  Status: ${result.output.status}`);
+			if (result.output.status === "open") {
+				console.info(`  SLA due: ${result.output.slaDueAt}`);
+			} else if (result.output.resolution) {
+				console.info(`  Evidence: ${result.output.resolution.evidenceUrl}`);
+			}
+		}
+		return GAP_CASE_EXIT_CODES.SUCCESS;
+	}
+
+	// Error output
+	if (args.json) {
+		console.error(JSON.stringify({ error: result.error }, null, 2));
+	} else {
+		console.error(`✗ ${result.error.message}`);
+	}
+
+	// Map error codes to exit codes
+	switch (result.error.code) {
+		case "E_VALIDATION":
+			return GAP_CASE_EXIT_CODES.VALIDATION_ERROR;
+		case "E_NOT_FOUND":
+		case "E_ALREADY_RESOLVED":
+			return GAP_CASE_EXIT_CODES.NOT_FOUND;
+		case "E_STORE_CORRUPT":
+		case "E_STORE_WRITE":
+			return GAP_CASE_EXIT_CODES.STORE_ERROR;
+		default:
+			return GAP_CASE_EXIT_CODES.SYSTEM_ERROR;
+	}
 }

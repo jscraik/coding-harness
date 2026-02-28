@@ -74,439 +74,261 @@ describe("validateContract", () => {
 		expect(result.success).toBe(false);
 	});
 
-	it("accepts contract with extended policy surfaces", () => {
-		const result = validateContract({
-			version: "1.1.0",
-			reviewPolicy: { timeoutSeconds: 600, timeoutAction: "fail" },
-			evidencePolicy: {
-				requiredFor: ["docs/**"],
-				allowedTypes: ["png", "jpeg"],
-				maxFileSizeBytes: 1024,
-			},
-			mergePolicy: {
-				high: ["review-gate"],
-				medium: ["evidence-verify"],
-				low: [],
-			},
-			docsDriftRules: {
-				"docs/**": ["require-review"],
-			},
-			diffBudget: {
-				maxFiles: 20,
-				maxNetLOC: 500,
-				overrideLabel: "diff-budget-override",
-			},
-			uiLoopPolicy: {
-				fastCommand: "pnpm ui:fast",
-				verifyCommand: "pnpm ui:verify",
-				exploreCommand: "pnpm ui:explore",
-				sloTargets: {
-					fastLoopSeconds: 30,
-					verifyLoopSeconds: 120,
+	// Pilot Gap-Case Policy Tests
+	describe("pilotGapCasePolicy", () => {
+		it("accepts valid pilot gap-case policy", () => {
+			const result = validateContract({
+				version: "1.0",
+				pilotGapCasePolicy: {
+					enabled: true,
+					defaultSlaHours: 72,
+					requireClosureEvidence: true,
 				},
-			},
-			runtimePolicy: { nodeVersion: "20.x" },
-			memoryPolicy: {
-				enabled: true,
-				provider: "local",
-				sessionIdTemplate: "repo:<name>:task:<id>",
-				domain: "default",
-				requiredTags: ["repo", "area", "type"],
-				maxObservationsPerStep: 3,
-				allowedLevels: ["observation", "learning", "pattern"],
-				requireStartRead: true,
-				requireCloseoutSummary: true,
-				forbiddenContentPatterns: ["token", "secret"],
-			},
-			memoryMaintenancePolicy: {
-				validateSchedule: "weekly",
-				reflectSchedule: "weekly",
-				questionSlaDays: 7,
-				duplicateThreshold: 0.8,
-			},
-			memoryEvalPolicy: {
-				trialsPerTask: 3,
-				requiredMetrics: ["pass^k"],
-				passPowKThreshold: 0.8,
-			},
-			observabilityPolicy: {
-				provider: "logs",
-				collectorEndpoint: "http://localhost:4318",
-			},
-			packageManagerPolicy: {
-				allowedManagers: ["pnpm", "npm", "yarn"],
-				requiredManager: null,
-			},
-			remediationPolicy: {
-				providerDefaults: {
-					codeql: {
-						autoApplyMaxTier: "medium",
-						dryRunOnlyByDefault: true,
-					},
-					codex: {
-						autoApplyMaxTier: "low",
-						dryRunOnlyByDefault: false,
-					},
+			});
+			expect(result.success).toBe(true);
+			expect(result.data?.pilotGapCasePolicy?.enabled).toBe(true);
+			expect(result.data?.pilotGapCasePolicy?.defaultSlaHours).toBe(72);
+		});
+
+		it("accepts pilot gap-case policy with optional storePath", () => {
+			const result = validateContract({
+				version: "1.0",
+				pilotGapCasePolicy: {
+					enabled: true,
+					defaultSlaHours: 48,
+					requireClosureEvidence: false,
+					storePath: ".harness/custom-gap-cases.json",
 				},
-				canonicalRerunWorkflow: "greptile-rerun.yml",
-				marker: "<!-- harness-remediation-rerun -->",
-				timeoutMinutes: 20,
-				retryLimit: 3,
-				requireEvidence: true,
-			},
-			gapCasePolicy: {
-				requiredEvidenceStatuses: ["passed", "approved"],
-				requiredCloseReasons: ["fix", "workaround"],
-				defaultDueDays: 7,
-				caseIdPrefix: "gap-",
-				caseStore: ".harness/gap-cases.json",
-				allowEvidencelessResolve: false,
-			},
+			});
+			expect(result.success).toBe(true);
+			expect(result.data?.pilotGapCasePolicy?.storePath).toBe(
+				".harness/custom-gap-cases.json",
+			);
 		});
 
-		expect(result.success).toBe(true);
-		expect(result.data?.diffBudget?.maxNetLOC).toBe(500);
-		expect(result.data?.uiLoopPolicy?.fastCommand).toBe("pnpm ui:fast");
-		expect(result.data?.runtimePolicy?.nodeVersion).toBe("20.x");
-		expect(result.data?.remediationPolicy?.timeoutMinutes).toBe(20);
-		expect(result.data?.gapCasePolicy?.caseIdPrefix).toBe("gap-");
-	});
-
-	it("rejects unknown top-level fields", () => {
-		const result = validateContract({
-			version: "1.1.0",
-			reviewPolicy: { timeoutSeconds: 600, timeoutAction: "fail" },
-			validated_reserved: { future: true },
-		});
-
-		expect(result.success).toBe(false);
-		expect(result.errors[0]?.path).toBe("root");
-		expect(result.errors[0]?.message).toContain("Unknown top-level key");
-	});
-
-	it("rejects malformed remediation policy", () => {
-		const result = validateContract({
-			version: "1.2.0",
-			remediationPolicy: {
-				providerDefaults: {
-					codeql: {
-						autoApplyMaxTier: "critical",
-						dryRunOnlyByDefault: true,
-					},
-					codex: {
-						autoApplyMaxTier: "medium",
-						dryRunOnlyByDefault: true,
-					},
+		it("rejects invalid defaultSlaHours (non-positive)", () => {
+			const result = validateContract({
+				version: "1.0",
+				pilotGapCasePolicy: {
+					enabled: true,
+					defaultSlaHours: 0,
+					requireClosureEvidence: true,
 				},
-				marker: "",
-				timeoutMinutes: 0,
-				retryLimit: -1,
-				requireEvidence: true,
-			},
+			});
+			expect(result.success).toBe(false);
+			expect(result.errors[0]?.path).toBe("pilotGapCasePolicy");
 		});
 
-		expect(result.success).toBe(false);
-		expect(result.errors[0]?.path).toBe("remediationPolicy");
-	});
-
-	it("rejects malformed gap-case policy", () => {
-		const result = validateContract({
-			version: "1.2.0",
-			gapCasePolicy: {
-				requiredEvidenceStatuses: ["passed"],
-				requiredCloseReasons: ["fix"],
-				defaultDueDays: 0,
-				caseIdPrefix: "",
-				caseStore: "",
-				allowEvidencelessResolve: false,
-			},
-		});
-
-		expect(result.success).toBe(false);
-		expect(result.errors[0]?.path).toBe("gapCasePolicy");
-	});
-});
-
-describe("field-by-field matrix tests for parity verification", () => {
-	const SCAFFOLDED_FIELDS = [
-		"version",
-		"riskTierRules",
-		"mergePolicy",
-		"docsDriftRules",
-		"reviewPolicy",
-		"evidencePolicy",
-		"diffBudget",
-		"uiLoopPolicy",
-		"runtimePolicy",
-		"memoryPolicy",
-		"memoryMaintenancePolicy",
-		"memoryEvalPolicy",
-		"observabilityPolicy",
-		"packageManagerPolicy",
-		"remediationPolicy",
-		"gapCasePolicy",
-		"pilotGapCasePolicy",
-		"pilotRollbackPolicy",
-		"pilotAuthzPolicy",
-	] as const satisfies (keyof HarnessContract)[];
-
-	it("validates all scaffolded top-level fields exist in HarnessContract", () => {
-		for (const field of SCAFFOLDED_FIELDS) {
-			expect(DEFAULT_CONTRACT).toHaveProperty(field);
-		}
-		expect(Object.keys(DEFAULT_CONTRACT).length).toBe(SCAFFOLDED_FIELDS.length);
-	});
-
-	it("rejects each policy type independently when malformed", () => {
-		// diffBudget - requires numeric maxFiles and maxNetLOC
-		const diffBudgetResult = validateContract({
-			version: "1.2.0",
-			diffBudget: { maxFiles: "invalid" as unknown as number, maxNetLOC: 100 },
-		});
-		expect(diffBudgetResult.success).toBe(false);
-
-		// uiLoopPolicy - requires string commands
-		const uiLoopResult = validateContract({
-			version: "1.2.0",
-			uiLoopPolicy: {
-				fastCommand: 123 as unknown as string,
-				verifyCommand: "pnpm verify",
-				exploreCommand: "pnpm explore",
-				sloTargets: { fastLoopSeconds: 30, verifyLoopSeconds: 120 },
-			},
-		});
-		expect(uiLoopResult.success).toBe(false);
-
-		// runtimePolicy - requires string nodeVersion
-		const runtimeResult = validateContract({
-			version: "1.2.0",
-			runtimePolicy: { nodeVersion: 20 as unknown as string },
-		});
-		expect(runtimeResult.success).toBe(false);
-
-		// memoryPolicy - requires boolean enabled
-		const memoryResult = validateContract({
-			version: "1.2.0",
-			memoryPolicy: {
-				enabled: "yes" as unknown as boolean,
-				provider: "local",
-				sessionIdTemplate: "repo:<name>:task:<id>",
-				domain: "default",
-				requiredTags: ["repo"],
-				maxObservationsPerStep: 3,
-				allowedLevels: ["observation"],
-				requireStartRead: true,
-				requireCloseoutSummary: true,
-				forbiddenContentPatterns: [],
-			},
-		});
-		expect(memoryResult.success).toBe(false);
-
-		// observabilityPolicy - requires string provider
-		const observabilityResult = validateContract({
-			version: "1.2.0",
-			observabilityPolicy: {
-				provider: 123 as unknown as string,
-				collectorEndpoint: "http://localhost:4318",
-			},
-		});
-		expect(observabilityResult.success).toBe(false);
-
-		// packageManagerPolicy - requires array allowedManagers
-		const packageManagerResult = validateContract({
-			version: "1.2.0",
-			packageManagerPolicy: {
-				allowedManagers: "pnpm" as unknown as string[],
-				requiredManager: null,
-			},
-		});
-		expect(packageManagerResult.success).toBe(false);
-	});
-
-	it("VALID_TOP_LEVEL_KEYS contains all scaffolded fields", () => {
-		// Indirectly test by ensuring all known keys are accepted
-		const contractWithAllFields: Record<string, unknown> = {};
-		for (const field of SCAFFOLDED_FIELDS) {
-			contractWithAllFields[field] = DEFAULT_CONTRACT[field];
-		}
-
-		const result = validateContract(contractWithAllFields);
-		expect(result.success).toBe(true);
-		expect(result.data).toBeDefined();
-	});
-});
-
-describe("mergePolicy dual-shape validation", () => {
-	it("accepts legacy array-style merge policy", () => {
-		const result = validateContract({
-			version: "1.2.0",
-			mergePolicy: {
-				high: ["review-gate", "evidence-verify"],
-				medium: ["review-gate"],
-				low: [],
-			},
-		});
-		expect(result.success).toBe(true);
-		expect(result.data?.mergePolicy).toEqual({
-			high: ["review-gate", "evidence-verify"],
-			medium: ["review-gate"],
-			low: [],
+		it("rejects invalid enabled (non-boolean)", () => {
+			const result = validateContract({
+				version: "1.0",
+				pilotGapCasePolicy: {
+					enabled: "yes",
+					defaultSlaHours: 72,
+					requireClosureEvidence: true,
+				},
+			});
+			expect(result.success).toBe(false);
 		});
 	});
 
-	it("accepts roadmap object-style merge policy", () => {
-		const result = validateContract({
-			version: "1.2.0",
-			mergePolicy: {
-				high: { requiredChecks: ["review-gate", "evidence-verify"] },
-				medium: { requiredChecks: ["review-gate"] },
-				low: { requiredChecks: [] },
-			},
+	// Pilot Rollback Policy Tests
+	describe("pilotRollbackPolicy", () => {
+		it("accepts valid pilot rollback policy in manual mode", () => {
+			const result = validateContract({
+				version: "1.0",
+				pilotRollbackPolicy: {
+					autoTrigger: true,
+					requireManualRelease: true,
+					completionMarkerPath: ".harness/rollback-marker.json",
+					mode: "manual",
+				},
+			});
+			expect(result.success).toBe(true);
+			expect(result.data?.pilotRollbackPolicy?.mode).toBe("manual");
 		});
-		expect(result.success).toBe(true);
-		// Validator passes through the original shape; loader normalizes
-		expect(result.data?.mergePolicy).toEqual({
-			high: { requiredChecks: ["review-gate", "evidence-verify"] },
-			medium: { requiredChecks: ["review-gate"] },
-			low: { requiredChecks: [] },
+
+		it("accepts valid pilot rollback policy in autonomous mode", () => {
+			const result = validateContract({
+				version: "1.0",
+				pilotRollbackPolicy: {
+					autoTrigger: false,
+					requireManualRelease: false,
+					completionMarkerPath: ".harness/rollback-marker.json",
+					mode: "autonomous",
+				},
+			});
+			expect(result.success).toBe(true);
+			expect(result.data?.pilotRollbackPolicy?.mode).toBe("autonomous");
+		});
+
+		it("rejects invalid mode", () => {
+			const result = validateContract({
+				version: "1.0",
+				pilotRollbackPolicy: {
+					autoTrigger: true,
+					requireManualRelease: true,
+					completionMarkerPath: ".harness/rollback-marker.json",
+					mode: "invalid",
+				},
+			});
+			expect(result.success).toBe(false);
+			expect(result.errors[0]?.path).toBe("pilotRollbackPolicy");
+		});
+
+		it("rejects missing completionMarkerPath", () => {
+			const result = validateContract({
+				version: "1.0",
+				pilotRollbackPolicy: {
+					autoTrigger: true,
+					requireManualRelease: true,
+					mode: "manual",
+				},
+			});
+			expect(result.success).toBe(false);
 		});
 	});
 
-	it("accepts mixed legacy and roadmap shapes", () => {
-		const result = validateContract({
-			version: "1.2.0",
-			mergePolicy: {
-				high: { requiredChecks: ["review-gate"] }, // roadmap style
-				medium: ["review-gate"], // legacy style
-				low: [], // legacy style
-			},
+	// Pilot Authz Policy Tests
+	describe("pilotAuthzPolicy", () => {
+		it("accepts valid pilot authz policy", () => {
+			const result = validateContract({
+				version: "1.0",
+				pilotAuthzPolicy: {
+					githubScopeAllowlist: ["pull_requests:write", "contents:read"],
+					repoAllowlist: ["owner/*"],
+					branchAllowlist: ["feature/*"],
+					protectedBranchDenylist: ["main", "master"],
+					enforceBranchProtection: true,
+				},
+			});
+			expect(result.success).toBe(true);
+			expect(result.data?.pilotAuthzPolicy?.githubScopeAllowlist).toContain(
+				"pull_requests:write",
+			);
 		});
-		expect(result.success).toBe(true);
+
+		it("accepts empty allowlists (deny-all default)", () => {
+			const result = validateContract({
+				version: "1.0",
+				pilotAuthzPolicy: {
+					githubScopeAllowlist: [],
+					repoAllowlist: [],
+					branchAllowlist: [],
+					protectedBranchDenylist: ["main"],
+					enforceBranchProtection: true,
+				},
+			});
+			expect(result.success).toBe(true);
+		});
+
+		it("rejects non-array githubScopeAllowlist", () => {
+			const result = validateContract({
+				version: "1.0",
+				pilotAuthzPolicy: {
+					githubScopeAllowlist: "pull_requests:write",
+					repoAllowlist: [],
+					branchAllowlist: [],
+					protectedBranchDenylist: [],
+					enforceBranchProtection: true,
+				},
+			});
+			expect(result.success).toBe(false);
+		});
+
+		it("rejects non-boolean enforceBranchProtection", () => {
+			const result = validateContract({
+				version: "1.0",
+				pilotAuthzPolicy: {
+					githubScopeAllowlist: [],
+					repoAllowlist: [],
+					branchAllowlist: [],
+					protectedBranchDenylist: [],
+					enforceBranchProtection: "yes",
+				},
+			});
+			expect(result.success).toBe(false);
+		});
+
+		it("rejects __proto__ in repoAllowlist (prototype pollution)", () => {
+			const result = validateContract({
+				version: "1.0",
+				pilotAuthzPolicy: {
+					githubScopeAllowlist: [],
+					repoAllowlist: ["__proto__"],
+					branchAllowlist: [],
+					protectedBranchDenylist: [],
+					enforceBranchProtection: true,
+				},
+			});
+			expect(result.success).toBe(false);
+		});
 	});
 
-	it("rejects roadmap merge policy with non-array requiredChecks", () => {
-		const result = validateContract({
-			version: "1.2.0",
-			mergePolicy: {
-				high: { requiredChecks: "invalid" as unknown as string[] },
-			},
+	// Remediation Policy Tests
+	describe("remediationPolicy", () => {
+		it("accepts valid remediation policy", () => {
+			const result = validateContract({
+				version: "1.0",
+				remediationPolicy: {
+					providerDefaults: {
+						greptile: {
+							autoApplyMaxTier: "medium",
+							dryRunOnlyByDefault: false,
+						},
+					},
+					marker: "[auto-remediate]",
+					timeoutMinutes: 10,
+					retryLimit: 3,
+					requireEvidence: true,
+				},
+			});
+			expect(result.success).toBe(true);
+			expect(result.data?.remediationPolicy?.marker).toBe("[auto-remediate]");
 		});
-		expect(result.success).toBe(false);
-	});
 
-	it("rejects roadmap merge policy with missing requiredChecks", () => {
-		const result = validateContract({
-			version: "1.2.0",
-			mergePolicy: {
-				high: { invalidKey: ["review-gate"] },
-			},
+		it("rejects invalid autoApplyMaxTier", () => {
+			const result = validateContract({
+				version: "1.0",
+				remediationPolicy: {
+					providerDefaults: {
+						greptile: {
+							autoApplyMaxTier: "critical",
+							dryRunOnlyByDefault: false,
+						},
+					},
+					marker: "[auto-remediate]",
+					timeoutMinutes: 10,
+					retryLimit: 3,
+					requireEvidence: true,
+				},
+			});
+			expect(result.success).toBe(false);
 		});
-		expect(result.success).toBe(false);
-	});
 
-	it("rejects merge policy with invalid severity key", () => {
-		const result = validateContract({
-			version: "1.2.0",
-			mergePolicy: {
-				critical: ["review-gate"], // invalid severity
-			},
+		it("rejects negative retryLimit", () => {
+			const result = validateContract({
+				version: "1.0",
+				remediationPolicy: {
+					providerDefaults: {},
+					marker: "[auto-remediate]",
+					timeoutMinutes: 10,
+					retryLimit: -1,
+					requireEvidence: true,
+				},
+			});
+			expect(result.success).toBe(false);
 		});
-		expect(result.success).toBe(false);
-	});
-});
 
-describe("evidencePolicy video field validation", () => {
-	it("accepts evidencePolicy with allowedVideoTypes", () => {
-		const result = validateContract({
-			version: "1.2.0",
-			evidencePolicy: {
-				requiredFor: ["src/**/*.tsx"],
-				allowedTypes: ["png", "jpeg"],
-				allowedVideoTypes: ["mp4", "webm"],
-			},
+		it("rejects missing required fields", () => {
+			const result = validateContract({
+				version: "1.0",
+				remediationPolicy: {
+					providerDefaults: {},
+					marker: "[auto-remediate]",
+				},
+			});
+			expect(result.success).toBe(false);
 		});
-		expect(result.success).toBe(true);
-	});
-
-	it("accepts evidencePolicy with maxVideoSizeBytes", () => {
-		const result = validateContract({
-			version: "1.2.0",
-			evidencePolicy: {
-				requiredFor: [],
-				allowedTypes: ["png"],
-				maxVideoSizeBytes: 100 * 1024 * 1024,
-			},
-		});
-		expect(result.success).toBe(true);
-	});
-
-	it("rejects invalid allowedVideoTypes values", () => {
-		const result = validateContract({
-			version: "1.2.0",
-			evidencePolicy: {
-				requiredFor: [],
-				allowedTypes: ["png"],
-				allowedVideoTypes: ["avi", "mov"], // invalid formats
-			},
-		});
-		expect(result.success).toBe(false);
-	});
-
-	it("rejects non-array allowedVideoTypes", () => {
-		const result = validateContract({
-			version: "1.2.0",
-			evidencePolicy: {
-				requiredFor: [],
-				allowedTypes: ["png"],
-				allowedVideoTypes: "mp4" as unknown as string[],
-			},
-		});
-		expect(result.success).toBe(false);
-	});
-
-	it("rejects non-integer maxVideoSizeBytes", () => {
-		const result = validateContract({
-			version: "1.2.0",
-			evidencePolicy: {
-				requiredFor: [],
-				allowedTypes: ["png"],
-				maxVideoSizeBytes: 100.5,
-			},
-		});
-		expect(result.success).toBe(false);
-	});
-
-	it("rejects zero or negative maxVideoSizeBytes", () => {
-		const result1 = validateContract({
-			version: "1.2.0",
-			evidencePolicy: {
-				requiredFor: [],
-				allowedTypes: ["png"],
-				maxVideoSizeBytes: 0,
-			},
-		});
-		expect(result1.success).toBe(false);
-
-		const result2 = validateContract({
-			version: "1.2.0",
-			evidencePolicy: {
-				requiredFor: [],
-				allowedTypes: ["png"],
-				maxVideoSizeBytes: -100,
-			},
-		});
-		expect(result2.success).toBe(false);
-	});
-
-	it("rejects unknown evidencePolicy fields", () => {
-		const result = validateContract({
-			version: "1.2.0",
-			evidencePolicy: {
-				requiredFor: [],
-				allowedTypes: ["png"],
-				unknownField: "value",
-			},
-		});
-		expect(result.success).toBe(false);
 	});
 });

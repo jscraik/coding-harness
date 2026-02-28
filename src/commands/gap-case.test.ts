@@ -1,758 +1,516 @@
-import { mkdirSync, rmSync, writeFileSync } from "node:fs";
-import { dirname, join } from "node:path";
+/**
+ * Gap-case command tests
+ */
+
+import { existsSync, mkdirSync, rmSync, writeFileSync } from "node:fs";
+import { join, resolve } from "node:path";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
-import { EXIT_CODES, runGapCase, runGapCaseCLI } from "./gap-case.js";
+import type { GapCaseRecord } from "../lib/gap-case/types.js";
+import { openGapCase, resolveGapCase, runGapCaseCLI } from "./gap-case.js";
+
+// Contract that enables gap-case
+const ENABLED_CONTRACT = {
+	version: "1.0",
+	riskTierRules: {},
+	pilotGapCasePolicy: {
+		enabled: true,
+		defaultSlaHours: 72,
+		requireClosureEvidence: true,
+		storePath: ".harness/gap-cases.v1.json",
+	},
+};
 
 describe("gap-case", () => {
-	const testDir = join(process.cwd(), "artifacts/test/gap-case");
-	const contractPath = join(testDir, "harness.contract.json");
-	const caseStore = join(testDir, ".harness/gap-cases.json");
+	let testDir: string;
+	let storePath: string;
+	let contractPath: string;
 
 	beforeEach(() => {
-		rmSync(testDir, { recursive: true, force: true });
+		// Use artifacts directory within cwd (contract loader validates paths stay within cwd)
+		const baseDir = resolve("artifacts");
+		if (!existsSync(baseDir)) {
+			mkdirSync(baseDir, { recursive: true });
+		}
+		testDir = join(baseDir, `gap-case-test-${Date.now()}`);
+		mkdirSync(testDir, { recursive: true });
+		storePath = join(testDir, "gap-cases.v1.json");
+		contractPath = join(testDir, "harness.contract.json");
+		// Write enabled contract
+		writeFileSync(contractPath, JSON.stringify(ENABLED_CONTRACT, null, 2));
 	});
 
 	afterEach(() => {
 		rmSync(testDir, { recursive: true, force: true });
 	});
 
-	function createContract(policy?: {
-		enabled?: boolean;
-		defaultSlaHours?: number;
-		requireClosureEvidence?: boolean;
-		storePath?: string;
-	}): string {
-		const contract = {
-			version: "1.0",
-			pilotGapCasePolicy: {
-				enabled: policy?.enabled ?? true,
-				defaultSlaHours: policy?.defaultSlaHours ?? 168, // 7 days
-				requireClosureEvidence: policy?.requireClosureEvidence ?? false,
-				storePath: policy?.storePath ?? caseStore,
-			},
-		};
-		mkdirSync(dirname(contractPath), { recursive: true });
-		writeFileSync(contractPath, JSON.stringify(contract), "utf-8");
-		return contractPath;
-	}
-
-	describe("create action", () => {
-		it("creates a gap case with required fields", () => {
-			createContract();
-
-			const result = runGapCase({
-				action: "create",
-				incidentId: "incident-001",
-				owner: "alice",
-				severity: "high",
-				linkedPr: "https://github.com/org/repo/pull/1",
-				contractPath,
-			});
-
-			expect(result.ok).toBe(true);
-			if (result.ok && result.output.action === "create") {
-				expect(result.output.caseRecord.id).toMatch(/^gap-/);
-				expect(result.output.caseRecord.incidentId).toBe("incident-001");
-				expect(result.output.caseRecord.severity).toBe("high");
-				expect(result.output.caseRecord.status).toBe("open");
-			}
-		});
-
-		it("uses contract defaultSlaHours for due date", () => {
-			createContract({ defaultSlaHours: 24 }); // 1 day
-
-			const result = runGapCase({
-				action: "create",
-				incidentId: "incident-002",
-				owner: "bob",
-				severity: "medium",
-				linkedPr: "https://github.com/org/repo/pull/2",
-				contractPath,
-			});
-
-			expect(result.ok).toBe(true);
-			if (result.ok && result.output.action === "create") {
-				const dueDate = new Date(result.output.caseRecord.dueAt);
-				const now = new Date();
-				const hoursDiff =
-					(dueDate.getTime() - now.getTime()) / (1000 * 60 * 60);
-				// Should be approximately 24 hours (with some buffer for test execution)
-				expect(hoursDiff).toBeGreaterThan(23);
-				expect(hoursDiff).toBeLessThan(25);
-			}
-		});
-
-		it("returns error when gap-case is disabled in policy", () => {
-			createContract({ enabled: false });
-
-			const result = runGapCase({
-				action: "create",
-				incidentId: "incident-003",
-				owner: "alice",
-				severity: "low",
-				linkedPr: "https://github.com/org/repo/pull/3",
-				contractPath,
-			});
-
-			expect(result.ok).toBe(false);
-			if (!result.ok) {
-				expect(result.error.code).toBe("E_POLICY");
-				expect(result.error.message).toContain("disabled");
-			}
-		});
-
-		it("returns error for missing incidentId", () => {
-			createContract();
-
-			const result = runGapCase({
-				action: "create",
+	describe("openGapCase", () => {
+		it("requires incidentId", () => {
+			const result = openGapCase({
 				incidentId: "",
-				owner: "alice",
-				severity: "high",
-				linkedPr: "https://github.com/org/repo/pull/1",
+				summary: "Test summary",
+				severity: "medium",
+				owner: "test-owner",
+				storePath,
 				contractPath,
 			});
-
 			expect(result.ok).toBe(false);
 			if (!result.ok) {
-				expect(result.error.code).toBe("E_USAGE");
-				expect(result.error.message).toContain("--incident-id");
+				expect(result.error.code).toBe("E_VALIDATION");
+				expect(result.error.message).toContain("incidentId");
 			}
 		});
 
-		it("returns error for invalid severity", () => {
-			createContract();
-
-			const result = runGapCase({
-				action: "create",
-				incidentId: "incident-001",
-				owner: "alice",
-				severity: "critical" as "high",
-				linkedPr: "https://github.com/org/repo/pull/1",
+		it("requires summary", () => {
+			const result = openGapCase({
+				incidentId: "INC-001",
+				summary: "",
+				severity: "medium",
+				owner: "test-owner",
+				storePath,
 				contractPath,
 			});
-
 			expect(result.ok).toBe(false);
 			if (!result.ok) {
-				expect(result.error.code).toBe("E_USAGE");
-				expect(result.error.message).toContain("--severity");
+				expect(result.error.code).toBe("E_VALIDATION");
+				expect(result.error.message).toContain("summary");
+			}
+		});
+
+		it("requires owner", () => {
+			const result = openGapCase({
+				incidentId: "INC-001",
+				summary: "Test summary",
+				severity: "medium",
+				owner: "",
+				storePath,
+				contractPath,
+			});
+			expect(result.ok).toBe(false);
+			if (!result.ok) {
+				expect(result.error.code).toBe("E_VALIDATION");
+				expect(result.error.message).toContain("owner");
+			}
+		});
+
+		it("validates severity", () => {
+			const result = openGapCase({
+				incidentId: "INC-001",
+				summary: "Test summary",
+				severity: "invalid" as "medium",
+				owner: "test-owner",
+				storePath,
+				contractPath,
+			});
+			expect(result.ok).toBe(false);
+			if (!result.ok) {
+				expect(result.error.code).toBe("E_VALIDATION");
+				expect(result.error.message).toContain("severity");
+			}
+		});
+
+		it("validates SHA format", () => {
+			const result = openGapCase({
+				incidentId: "INC-001",
+				summary: "Test summary",
+				severity: "medium",
+				owner: "test-owner",
+				headSha: "invalid-sha",
+				storePath,
+				contractPath,
+			});
+			expect(result.ok).toBe(false);
+			if (!result.ok) {
+				expect(result.error.code).toBe("E_VALIDATION");
+				expect(result.error.message).toContain("headSha");
+			}
+		});
+
+		it("validates SLA hours", () => {
+			const result = openGapCase({
+				incidentId: "INC-001",
+				summary: "Test summary",
+				severity: "medium",
+				owner: "test-owner",
+				slaHours: 0,
+				storePath,
+				contractPath,
+			});
+			expect(result.ok).toBe(false);
+			if (!result.ok) {
+				expect(result.error.code).toBe("E_VALIDATION");
+				expect(result.error.message).toContain("slaHours");
+			}
+		});
+
+		it("returns E_DISABLED when policy is disabled", () => {
+			const disabledContractPath = join(testDir, "disabled.contract.json");
+			writeFileSync(
+				disabledContractPath,
+				JSON.stringify({
+					version: "1.0",
+					riskTierRules: {},
+					pilotGapCasePolicy: {
+						enabled: false,
+						defaultSlaHours: 72,
+						requireClosureEvidence: true,
+						storePath: ".harness/gap-cases.v1.json",
+					},
+				}),
+			);
+
+			const result = openGapCase({
+				incidentId: "INC-001",
+				summary: "Test summary",
+				severity: "medium",
+				owner: "test-owner",
+				storePath,
+				contractPath: disabledContractPath,
+			});
+			expect(result.ok).toBe(false);
+			if (!result.ok) {
+				expect(result.error.code).toBe("E_DISABLED");
+			}
+		});
+
+		it("creates a new gap-case with required fields", () => {
+			const result = openGapCase({
+				incidentId: "INC-001",
+				summary: "Test summary",
+				severity: "high",
+				owner: "test-owner",
+				storePath,
+				contractPath,
+			});
+			expect(result.ok).toBe(true);
+			if (result.ok) {
+				expect(result.output.incidentId).toBe("INC-001");
+				expect(result.output.summary).toBe("Test summary");
+				expect(result.output.severity).toBe("high");
+				expect(result.output.owner).toBe("test-owner");
+				expect(result.output.status).toBe("open");
+				expect(result.output.id).toMatch(/^gc-/);
+				expect(result.output.openedAt).toBeDefined();
+				expect(result.output.slaDueAt).toBeDefined();
+			}
+		});
+
+		it("creates gap-case with optional fields", () => {
+			const result = openGapCase({
+				incidentId: "INC-001",
+				summary: "Test summary",
+				severity: "medium",
+				owner: "test-owner",
+				provider: "greptile",
+				findingId: "FIND-001",
+				prNumber: 123,
+				headSha: "a".repeat(40),
+				slaHours: 48,
+				storePath,
+				contractPath,
+			});
+			expect(result.ok).toBe(true);
+			if (result.ok) {
+				expect(result.output.provider).toBe("greptile");
+				expect(result.output.findingId).toBe("FIND-001");
+				expect(result.output.prNumber).toBe(123);
+				expect(result.output.headSha).toBe("a".repeat(40));
+			}
+		});
+
+		it("is idempotent - returns existing case for same fingerprint", () => {
+			const first = openGapCase({
+				incidentId: "INC-001",
+				summary: "First summary",
+				severity: "high",
+				owner: "test-owner",
+				headSha: "a".repeat(40),
+				findingId: "FIND-001",
+				storePath,
+				contractPath,
+			});
+			expect(first.ok).toBe(true);
+
+			const second = openGapCase({
+				incidentId: "INC-001",
+				summary: "Different summary", // Should be ignored
+				severity: "low", // Should be ignored
+				owner: "different-owner", // Should be ignored
+				headSha: "a".repeat(40),
+				findingId: "FIND-001",
+				storePath,
+				contractPath,
+			});
+			expect(second.ok).toBe(true);
+			if (second.ok && first.ok) {
+				expect(second.output.id).toBe(first.output.id);
+				expect(second.output.summary).toBe("First summary"); // Original preserved
+			}
+		});
+
+		it("creates different cases for different fingerprints", () => {
+			const first = openGapCase({
+				incidentId: "INC-001",
+				summary: "Test summary",
+				severity: "high",
+				owner: "test-owner",
+				headSha: "a".repeat(40),
+				storePath,
+				contractPath,
+			});
+			expect(first.ok).toBe(true);
+
+			const second = openGapCase({
+				incidentId: "INC-001",
+				summary: "Test summary",
+				severity: "high",
+				owner: "test-owner",
+				headSha: "b".repeat(40), // Different SHA
+				storePath,
+				contractPath,
+			});
+			expect(second.ok).toBe(true);
+			if (second.ok && first.ok) {
+				expect(second.output.id).not.toBe(first.output.id);
 			}
 		});
 	});
 
-	describe("list action", () => {
-		it("lists all gap cases", () => {
-			createContract();
+	describe("resolveGapCase", () => {
+		let openCase: GapCaseRecord;
 
-			// Create two cases
-			runGapCase({
-				action: "create",
-				incidentId: "incident-001",
-				owner: "alice",
+		beforeEach(() => {
+			const result = openGapCase({
+				incidentId: "INC-001",
+				summary: "Test summary",
 				severity: "high",
-				linkedPr: "https://github.com/org/repo/pull/1",
+				owner: "test-owner",
+				storePath,
 				contractPath,
 			});
-			runGapCase({
-				action: "create",
-				incidentId: "incident-002",
-				owner: "bob",
-				severity: "low",
-				linkedPr: "https://github.com/org/repo/pull/2",
-				contractPath,
-			});
-
-			const result = runGapCase({
-				action: "list",
-				contractPath,
-			});
-
-			expect(result.ok).toBe(true);
-			if (result.ok && result.output.action === "list") {
-				expect(result.output.cases).toHaveLength(2);
+			if (result.ok) {
+				openCase = result.output;
 			}
 		});
 
-		it("filters by open status", () => {
-			createContract();
-
-			// Create and resolve one case
-			const createResult = runGapCase({
-				action: "create",
-				incidentId: "incident-001",
-				owner: "alice",
-				severity: "high",
-				linkedPr: "https://github.com/org/repo/pull/1",
+		it("requires caseId", () => {
+			const result = resolveGapCase({
+				caseId: "",
+				evidenceUrl: "https://example.com/evidence",
+				storePath,
 				contractPath,
 			});
-
-			if (createResult.ok && createResult.output.action === "create") {
-				runGapCase({
-					action: "resolve",
-					caseId: createResult.output.caseRecord.id,
-					incidentId: "incident-001",
-					resolvedBy: "bob",
-					linkedPr: "https://github.com/org/repo/pull/2",
-					contractPath,
-				});
-			}
-
-			// Create another open case
-			runGapCase({
-				action: "create",
-				incidentId: "incident-002",
-				owner: "charlie",
-				severity: "low",
-				linkedPr: "https://github.com/org/repo/pull/3",
-				contractPath,
-			});
-
-			const result = runGapCase({
-				action: "list",
-				open: true,
-				contractPath,
-			});
-
-			expect(result.ok).toBe(true);
-			if (result.ok && result.output.action === "list") {
-				expect(result.output.cases).toHaveLength(1);
-				expect(result.output.cases[0]?.status).toBe("open");
+			expect(result.ok).toBe(false);
+			if (!result.ok) {
+				expect(result.error.code).toBe("E_VALIDATION");
+				expect(result.error.message).toContain("caseId");
 			}
 		});
 
-		it("filters by unresolvedCausality (high-severity only)", () => {
-			createContract();
-
-			// Create high-severity case without causality
-			runGapCase({
-				action: "create",
-				incidentId: "incident-001",
-				owner: "alice",
-				severity: "high",
-				linkedPr: "https://github.com/org/repo/pull/1",
+		it("requires evidenceUrl", () => {
+			const result = resolveGapCase({
+				caseId: openCase.id,
+				evidenceUrl: "",
+				storePath,
 				contractPath,
 			});
-
-			// Create low-severity case
-			runGapCase({
-				action: "create",
-				incidentId: "incident-002",
-				owner: "bob",
-				severity: "low",
-				linkedPr: "https://github.com/org/repo/pull/2",
-				contractPath,
-			});
-
-			const result = runGapCase({
-				action: "list",
-				unresolvedCausality: true,
-				contractPath,
-			});
-
-			expect(result.ok).toBe(true);
-			if (result.ok && result.output.action === "list") {
-				expect(result.output.cases).toHaveLength(1);
-				expect(result.output.cases[0]?.severity).toBe("high");
-			}
-		});
-	});
-
-	describe("resolve action", () => {
-		it("resolves an open gap case", () => {
-			createContract();
-
-			const createResult = runGapCase({
-				action: "create",
-				incidentId: "incident-001",
-				owner: "alice",
-				severity: "high",
-				linkedPr: "https://github.com/org/repo/pull/1",
-				contractPath,
-			});
-
-			expect(createResult.ok).toBe(true);
-			if (!createResult.ok || createResult.output.action !== "create") return;
-
-			const result = runGapCase({
-				action: "resolve",
-				caseId: createResult.output.caseRecord.id,
-				incidentId: "incident-001",
-				resolvedBy: "bob",
-				linkedPr: "https://github.com/org/repo/pull/2",
-				contractPath,
-			});
-
-			expect(result.ok).toBe(true);
-			if (result.ok && result.output.action === "resolve") {
-				expect(result.output.caseRecord.status).toBe("resolved");
-				expect(result.output.caseRecord.resolvedBy).toBe("bob");
-				expect(result.output.caseRecord.closedAt).toBeDefined();
+			expect(result.ok).toBe(false);
+			if (!result.ok) {
+				expect(result.error.code).toBe("E_VALIDATION");
+				expect(result.error.message).toContain("evidenceUrl");
 			}
 		});
 
-		it("returns error when case is already resolved", () => {
-			createContract();
-
-			const createResult = runGapCase({
-				action: "create",
-				incidentId: "incident-001",
-				owner: "alice",
-				severity: "high",
-				linkedPr: "https://github.com/org/repo/pull/1",
+		it("requires HTTPS URL for evidence", () => {
+			const result = resolveGapCase({
+				caseId: openCase.id,
+				evidenceUrl: "http://example.com/evidence", // HTTP not HTTPS
+				storePath,
 				contractPath,
 			});
+			expect(result.ok).toBe(false);
+			if (!result.ok) {
+				expect(result.error.code).toBe("E_VALIDATION");
+				expect(result.error.message).toContain("HTTPS");
+			}
+		});
 
-			if (!createResult.ok || createResult.output.action !== "create") return;
+		it("returns E_NOT_FOUND for unknown case", () => {
+			const result = resolveGapCase({
+				caseId: "gc-nonexistent",
+				evidenceUrl: "https://example.com/evidence",
+				storePath,
+				contractPath,
+			});
+			expect(result.ok).toBe(false);
+			if (!result.ok) {
+				expect(result.error.code).toBe("E_NOT_FOUND");
+			}
+		});
 
-			// Resolve once
-			runGapCase({
-				action: "resolve",
-				caseId: createResult.output.caseRecord.id,
-				incidentId: "incident-001",
-				resolvedBy: "bob",
-				linkedPr: "https://github.com/org/repo/pull/2",
+		it("resolves an open case", () => {
+			const result = resolveGapCase({
+				caseId: openCase.id,
+				evidenceUrl: "https://example.com/evidence",
+				fixPr: 456,
+				note: "Fixed in PR",
+				resolvedBy: "resolver",
+				storePath,
+				contractPath,
+			});
+			expect(result.ok).toBe(true);
+			if (result.ok) {
+				expect(result.output.status).toBe("resolved");
+				expect(result.output.resolvedAt).toBeDefined();
+				expect(result.output.resolution?.evidenceUrl).toBe(
+					"https://example.com/evidence",
+				);
+				expect(result.output.resolution?.fixPr).toBe(456);
+				expect(result.output.resolution?.note).toBe("Fixed in PR");
+				expect(result.output.resolution?.resolvedBy).toBe("resolver");
+			}
+		});
+
+		it("returns E_ALREADY_RESOLVED for already resolved case", () => {
+			// First resolve
+			resolveGapCase({
+				caseId: openCase.id,
+				evidenceUrl: "https://example.com/evidence",
+				storePath,
 				contractPath,
 			});
 
 			// Try to resolve again
-			const result = runGapCase({
-				action: "resolve",
-				caseId: createResult.output.caseRecord.id,
-				incidentId: "incident-001",
-				resolvedBy: "charlie",
-				linkedPr: "https://github.com/org/repo/pull/3",
+			const result = resolveGapCase({
+				caseId: openCase.id,
+				evidenceUrl: "https://example.com/other-evidence",
+				storePath,
 				contractPath,
 			});
-
 			expect(result.ok).toBe(false);
 			if (!result.ok) {
-				expect(result.error.code).toBe("E_POLICY");
-				expect(result.error.message).toContain("already resolved");
-			}
-		});
-
-		it("requires evidence when requireClosureEvidence is true", () => {
-			createContract({ requireClosureEvidence: true });
-
-			const createResult = runGapCase({
-				action: "create",
-				incidentId: "incident-001",
-				owner: "alice",
-				severity: "high",
-				linkedPr: "https://github.com/org/repo/pull/1",
-				contractPath,
-			});
-
-			if (!createResult.ok || createResult.output.action !== "create") return;
-
-			const result = runGapCase({
-				action: "resolve",
-				caseId: createResult.output.caseRecord.id,
-				incidentId: "incident-001",
-				resolvedBy: "bob",
-				linkedPr: "https://github.com/org/repo/pull/2",
-				contractPath,
-			});
-
-			expect(result.ok).toBe(false);
-			if (!result.ok) {
-				expect(result.error.code).toBe("E_POLICY");
-				expect(result.error.message).toContain("Evidence required");
-			}
-		});
-
-		it("allows resolve with evidence when requireClosureEvidence is true", () => {
-			createContract({ requireClosureEvidence: true });
-
-			const createResult = runGapCase({
-				action: "create",
-				incidentId: "incident-001",
-				owner: "alice",
-				severity: "high",
-				linkedPr: "https://github.com/org/repo/pull/1",
-				contractPath,
-			});
-
-			if (!createResult.ok || createResult.output.action !== "create") return;
-
-			const result = runGapCase({
-				action: "resolve",
-				caseId: createResult.output.caseRecord.id,
-				incidentId: "incident-001",
-				resolvedBy: "bob",
-				linkedPr: "https://github.com/org/repo/pull/2",
-				evidence: ["Root cause identified: race condition in X"],
-				contractPath,
-			});
-
-			expect(result.ok).toBe(true);
-			if (result.ok && result.output.action === "resolve") {
-				expect(result.output.caseRecord.status).toBe("resolved");
-			}
-		});
-	});
-
-	describe("update-causality action", () => {
-		it("updates causality for a gap case", () => {
-			createContract();
-
-			const createResult = runGapCase({
-				action: "create",
-				incidentId: "incident-001",
-				owner: "alice",
-				severity: "high",
-				linkedPr: "https://github.com/org/repo/pull/1",
-				contractPath,
-			});
-
-			if (!createResult.ok || createResult.output.action !== "create") return;
-
-			const result = runGapCase({
-				action: "update-causality",
-				caseId: createResult.output.caseRecord.id,
-				causality: "automation_confirmed",
-				confidence: "confirmed",
-				updatedBy: "bob",
-				contractPath,
-			});
-
-			expect(result.ok).toBe(true);
-			if (result.ok && result.output.action === "update-causality") {
-				expect(result.output.caseRecord.causality).toBe("automation_confirmed");
-				expect(result.output.caseRecord.confidence).toBe("confirmed");
-				expect(result.output.caseRecord.causalityUpdatedBy).toBe("bob");
-			}
-		});
-
-		it("requires confirmed confidence for causality downgrade", () => {
-			createContract();
-
-			const createResult = runGapCase({
-				action: "create",
-				incidentId: "incident-001",
-				owner: "alice",
-				severity: "high",
-				linkedPr: "https://github.com/org/repo/pull/1",
-				contractPath,
-			});
-
-			if (!createResult.ok || createResult.output.action !== "create") return;
-
-			// First set to automation_confirmed
-			runGapCase({
-				action: "update-causality",
-				caseId: createResult.output.caseRecord.id,
-				causality: "automation_confirmed",
-				confidence: "confirmed",
-				updatedBy: "bob",
-				contractPath,
-			});
-
-			// Try to downgrade without confirmed confidence
-			const result = runGapCase({
-				action: "update-causality",
-				caseId: createResult.output.caseRecord.id,
-				causality: "automation_possible",
-				confidence: "probable",
-				updatedBy: "charlie",
-				contractPath,
-			});
-
-			expect(result.ok).toBe(false);
-			if (!result.ok) {
-				expect(result.error.code).toBe("E_POLICY");
-				expect(result.error.message).toContain("downgrade requires");
-			}
-		});
-
-		it("allows causality downgrade with confirmed confidence", () => {
-			createContract();
-
-			const createResult = runGapCase({
-				action: "create",
-				incidentId: "incident-001",
-				owner: "alice",
-				severity: "high",
-				linkedPr: "https://github.com/org/repo/pull/1",
-				contractPath,
-			});
-
-			if (!createResult.ok || createResult.output.action !== "create") return;
-
-			// First set to automation_confirmed
-			runGapCase({
-				action: "update-causality",
-				caseId: createResult.output.caseRecord.id,
-				causality: "automation_confirmed",
-				confidence: "confirmed",
-				updatedBy: "bob",
-				contractPath,
-			});
-
-			// Downgrade with confirmed confidence
-			const result = runGapCase({
-				action: "update-causality",
-				caseId: createResult.output.caseRecord.id,
-				causality: "human_or_external",
-				confidence: "confirmed",
-				updatedBy: "charlie",
-				contractPath,
-			});
-
-			expect(result.ok).toBe(true);
-			if (result.ok && result.output.action === "update-causality") {
-				expect(result.output.caseRecord.causality).toBe("human_or_external");
+				expect(result.error.code).toBe("E_ALREADY_RESOLVED");
 			}
 		});
 	});
 
 	describe("runGapCaseCLI", () => {
-		it("returns SUCCESS exit code on create", () => {
-			createContract();
-
+		it("returns VALIDATION_ERROR for missing incidentId on open", () => {
 			const exitCode = runGapCaseCLI({
-				action: "create",
-				incidentId: "incident-001",
-				owner: "alice",
-				severity: "high",
-				linkedPr: "https://github.com/org/repo/pull/1",
+				action: "open",
+				storePath,
 				contractPath,
-				json: true,
 			});
-
-			expect(exitCode).toBe(EXIT_CODES.SUCCESS);
+			expect(exitCode).toBe(1); // VALIDATION_ERROR
 		});
 
-		it("returns USAGE exit code for missing incident ID", () => {
-			createContract();
-
+		it("returns SUCCESS for valid open", () => {
 			const exitCode = runGapCaseCLI({
-				action: "create",
-				incidentId: "",
-				owner: "alice",
+				action: "open",
+				incidentId: "INC-001",
+				summary: "Test summary",
 				severity: "high",
-				linkedPr: "https://github.com/org/repo/pull/1",
+				owner: "test-owner",
+				storePath,
 				contractPath,
-				json: true,
 			});
-
-			expect(exitCode).toBe(EXIT_CODES.USAGE);
+			expect(exitCode).toBe(0); // SUCCESS
 		});
 
-		it("returns POLICY exit code when disabled", () => {
-			createContract({ enabled: false });
-
+		it("returns NOT_FOUND for unknown case on resolve", () => {
 			const exitCode = runGapCaseCLI({
-				action: "create",
-				incidentId: "incident-001",
-				owner: "alice",
-				severity: "high",
-				linkedPr: "https://github.com/org/repo/pull/1",
+				action: "resolve",
+				caseId: "gc-nonexistent",
+				evidenceUrl: "https://example.com/evidence",
+				storePath,
 				contractPath,
-				json: true,
+			});
+			expect(exitCode).toBe(2); // NOT_FOUND
+		});
+
+		it("returns VALIDATION_ERROR for missing evidence URL", () => {
+			// First open a case
+			runGapCaseCLI({
+				action: "open",
+				incidentId: "INC-001",
+				summary: "Test summary",
+				severity: "high",
+				owner: "test-owner",
+				storePath,
+				contractPath,
 			});
 
-			expect(exitCode).toBe(EXIT_CODES.POLICY);
+			const exitCode = runGapCaseCLI({
+				action: "resolve",
+				caseId: "gc-some-id",
+				storePath,
+				contractPath,
+			});
+			expect(exitCode).toBe(1); // VALIDATION_ERROR
 		});
 	});
 
-	describe("auto-rollback trigger", () => {
-		it("triggers rollback when high-severity automation is confirmed", () => {
-			createContract();
-
-			const createResult = runGapCase({
-				action: "create",
-				incidentId: "incident-001",
-				owner: "alice",
+	describe("store persistence", () => {
+		it("persists cases to disk", () => {
+			const first = openGapCase({
+				incidentId: "INC-001",
+				summary: "Test summary",
 				severity: "high",
-				linkedPr: "https://github.com/org/repo/pull/1",
+				owner: "test-owner",
+				storePath,
 				contractPath,
 			});
+			expect(first.ok).toBe(true);
 
-			if (!createResult.ok || createResult.output.action !== "create") return;
-
-			const result = runGapCase({
-				action: "update-causality",
-				caseId: createResult.output.caseRecord.id,
-				causality: "automation_confirmed",
-				confidence: "confirmed",
-				updatedBy: "bob",
+			// Open another session with same store
+			const second = openGapCase({
+				incidentId: "INC-001",
+				summary: "Different summary",
+				severity: "low",
+				owner: "different",
+				storePath,
 				contractPath,
 			});
-
-			expect(result.ok).toBe(true);
-			if (result.ok && result.output.action === "update-causality") {
-				expect(result.output.caseRecord.autoRollbackTriggeredAt).toBeDefined();
-				expect(result.output.caseRecord.autoRollbackReason).toContain(
-					"Automatic rollback triggered",
-				);
+			expect(second.ok).toBe(true);
+			if (second.ok && first.ok) {
+				// Should return the same case (idempotent)
+				expect(second.output.id).toBe(first.output.id);
 			}
 		});
 
-		it("does not trigger rollback for medium severity", () => {
-			createContract();
+		it("handles corrupt store gracefully", () => {
+			// Write invalid JSON
+			writeFileSync(storePath, "not valid json");
 
-			const createResult = runGapCase({
-				action: "create",
-				incidentId: "incident-001",
-				owner: "alice",
-				severity: "medium",
-				linkedPr: "https://github.com/org/repo/pull/1",
-				contractPath,
-			});
-
-			if (!createResult.ok || createResult.output.action !== "create") return;
-
-			const result = runGapCase({
-				action: "update-causality",
-				caseId: createResult.output.caseRecord.id,
-				causality: "automation_confirmed",
-				confidence: "confirmed",
-				updatedBy: "bob",
-				contractPath,
-			});
-
-			expect(result.ok).toBe(true);
-			if (result.ok && result.output.action === "update-causality") {
-				expect(
-					result.output.caseRecord.autoRollbackTriggeredAt,
-				).toBeUndefined();
-			}
-		});
-
-		it("does not trigger rollback for automation_possible", () => {
-			createContract();
-
-			const createResult = runGapCase({
-				action: "create",
-				incidentId: "incident-001",
-				owner: "alice",
+			const result = openGapCase({
+				incidentId: "INC-001",
+				summary: "Test summary",
 				severity: "high",
-				linkedPr: "https://github.com/org/repo/pull/1",
+				owner: "test-owner",
+				storePath,
 				contractPath,
 			});
-
-			if (!createResult.ok || createResult.output.action !== "create") return;
-
-			const result = runGapCase({
-				action: "update-causality",
-				caseId: createResult.output.caseRecord.id,
-				causality: "automation_possible",
-				confidence: "confirmed",
-				updatedBy: "bob",
-				contractPath,
-			});
-
-			expect(result.ok).toBe(true);
-			if (result.ok && result.output.action === "update-causality") {
-				expect(
-					result.output.caseRecord.autoRollbackTriggeredAt,
-				).toBeUndefined();
+			expect(result.ok).toBe(false);
+			if (!result.ok) {
+				expect(result.error.code).toBe("E_STORE_CORRUPT");
 			}
 		});
 
-		it("does not trigger rollback without confirmed confidence", () => {
-			createContract();
+		it("handles invalid store schema", () => {
+			// Write valid JSON but wrong schema
+			writeFileSync(storePath, JSON.stringify({ version: "2", cases: [] }));
 
-			const createResult = runGapCase({
-				action: "create",
-				incidentId: "incident-001",
-				owner: "alice",
+			const result = openGapCase({
+				incidentId: "INC-001",
+				summary: "Test summary",
 				severity: "high",
-				linkedPr: "https://github.com/org/repo/pull/1",
+				owner: "test-owner",
+				storePath,
 				contractPath,
 			});
-
-			if (!createResult.ok || createResult.output.action !== "create") return;
-
-			const result = runGapCase({
-				action: "update-causality",
-				caseId: createResult.output.caseRecord.id,
-				causality: "automation_confirmed",
-				confidence: "probable",
-				updatedBy: "bob",
-				contractPath,
-			});
-
-			expect(result.ok).toBe(true);
-			if (result.ok && result.output.action === "update-causality") {
-				expect(
-					result.output.caseRecord.autoRollbackTriggeredAt,
-				).toBeUndefined();
+			expect(result.ok).toBe(false);
+			if (!result.ok) {
+				expect(result.error.code).toBe("E_STORE_CORRUPT");
 			}
-		});
-
-		it("does not trigger rollback twice", () => {
-			createContract();
-
-			const createResult = runGapCase({
-				action: "create",
-				incidentId: "incident-001",
-				owner: "alice",
-				severity: "high",
-				linkedPr: "https://github.com/org/repo/pull/1",
-				contractPath,
-			});
-
-			if (!createResult.ok || createResult.output.action !== "create") return;
-
-			// First update triggers rollback
-			const firstResult = runGapCase({
-				action: "update-causality",
-				caseId: createResult.output.caseRecord.id,
-				causality: "automation_confirmed",
-				confidence: "confirmed",
-				updatedBy: "bob",
-				contractPath,
-			});
-
-			expect(firstResult.ok).toBe(true);
-			if (!firstResult.ok || firstResult.output.action !== "update-causality")
-				return;
-
-			const firstTriggeredAt =
-				firstResult.output.caseRecord.autoRollbackTriggeredAt;
-			expect(firstTriggeredAt).toBeDefined();
-
-			// Downgrade and re-confirm (should not trigger again)
-			runGapCase({
-				action: "update-causality",
-				caseId: createResult.output.caseRecord.id,
-				causality: "automation_possible",
-				confidence: "confirmed",
-				updatedBy: "charlie",
-				contractPath,
-			});
-
-			const secondResult = runGapCase({
-				action: "update-causality",
-				caseId: createResult.output.caseRecord.id,
-				causality: "automation_confirmed",
-				confidence: "confirmed",
-				updatedBy: "dave",
-				contractPath,
-			});
-
-			expect(secondResult.ok).toBe(true);
-			if (
-				secondResult.ok &&
-				secondResult.output.action === "update-causality"
-			) {
-				// Should still have the original timestamp
-				expect(secondResult.output.caseRecord.autoRollbackTriggeredAt).toBe(
-					firstTriggeredAt,
-				);
-			}
-		});
-	});
-
-	describe("exit codes", () => {
-		it("defines expected exit codes", () => {
-			expect(EXIT_CODES.SUCCESS).toBe(0);
-			expect(EXIT_CODES.USAGE).toBe(2);
-			expect(EXIT_CODES.POLICY).toBe(3);
-			expect(EXIT_CODES.PARTIAL).toBe(4);
-			expect(EXIT_CODES.INTERNAL).toBe(10);
 		});
 	});
 });

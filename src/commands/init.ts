@@ -349,28 +349,42 @@ const TEMPLATES: Template[] = [
 					},
 					remediationPolicy: {
 						providerDefaults: {
-							codeql: {
+							greptile: {
 								autoApplyMaxTier: "medium",
-								dryRunOnlyByDefault: true,
+								dryRunOnlyByDefault: false,
 							},
 							codex: {
 								autoApplyMaxTier: "medium",
-								dryRunOnlyByDefault: true,
+								dryRunOnlyByDefault: false,
 							},
 						},
-						canonicalRerunWorkflow: "greptile-rerun.yml",
-						marker: "<!-- harness-remediation-rerun -->",
-						timeoutMinutes: 20,
+						marker: "[auto-remediate]",
+						timeoutMinutes: 10,
 						retryLimit: 3,
 						requireEvidence: true,
 					},
-					gapCasePolicy: {
-						requiredEvidenceStatuses: ["passed", "approved"],
-						requiredCloseReasons: ["fix", "workaround", "waived"],
-						defaultDueDays: 7,
-						caseIdPrefix: "gap-",
-						caseStore: ".harness/gap-cases.json",
-						allowEvidencelessResolve: false,
+					pilotGapCasePolicy: {
+						enabled: false,
+						defaultSlaHours: 72,
+						requireClosureEvidence: true,
+						storePath: ".harness/gap-cases.v1.json",
+					},
+					pilotRollbackPolicy: {
+						autoTrigger: true,
+						requireManualRelease: true,
+						completionMarkerPath: ".harness/rollback-marker.json",
+						mode: "manual" as const,
+					},
+					pilotAuthzPolicy: {
+						githubScopeAllowlist: [
+							"pull_requests:write",
+							"contents:read",
+							"issues:write",
+						],
+						repoAllowlist: [],
+						branchAllowlist: [],
+						protectedBranchDenylist: ["main", "master", "release/*"],
+						enforceBranchProtection: true,
 					},
 				},
 				null,
