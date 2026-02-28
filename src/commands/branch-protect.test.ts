@@ -395,6 +395,133 @@ describe("runBranchProtect", () => {
 		expect(createRuleset).not.toHaveBeenCalled();
 	});
 
+	it("does not match an existing ruleset when target branch is excluded", async () => {
+		const listRulesets = vi.fn(
+			async () =>
+				[
+					{
+						id: 16,
+						name: "protect",
+						target: "branch",
+						enforcement: "active",
+						conditions: {
+							ref_name: {
+								include: ["refs/heads/*"],
+								exclude: ["refs/heads/main"],
+							},
+						},
+					},
+				] as RulesetSummary[],
+		);
+		const createRuleset = vi.fn(
+			async (payload: RulesetPayload) =>
+				({
+					id: 160,
+					name: payload.name,
+					target: payload.target,
+					enforcement: payload.enforcement,
+					bypass_actors: payload.bypass_actors,
+					conditions: payload.conditions,
+					rules: payload.rules,
+				}) as Ruleset,
+		);
+		const updateRuleset = vi.fn();
+
+		mockGitHubClient.mockImplementation(
+			() =>
+				({
+					listRulesets,
+					createRuleset,
+					updateRuleset,
+				}) as unknown as GitHubClient,
+		);
+
+		const result = await runBranchProtect({
+			token: "token",
+			owner: "octo",
+			repo: "harness",
+			branch: "main",
+		});
+
+		expect(result.ok).toBe(true);
+		expect(createRuleset).toHaveBeenCalledTimes(1);
+		expect(updateRuleset).not.toHaveBeenCalled();
+	});
+
+	it("matches ~DEFAULT_BRANCH selectors using repository default branch", async () => {
+		const listRulesets = vi.fn(
+			async () =>
+				[
+					{
+						id: 17,
+						name: "protect",
+						target: "branch",
+						enforcement: "active",
+						conditions: {
+							ref_name: {
+								include: ["~DEFAULT_BRANCH"],
+								exclude: [],
+							},
+						},
+					},
+				] as RulesetSummary[],
+		);
+		const getRuleset = vi.fn(
+			async () =>
+				({
+					id: 17,
+					name: "protect",
+					target: "branch",
+					enforcement: "active",
+					bypass_actors: [],
+					conditions: {
+						ref_name: {
+							include: ["~DEFAULT_BRANCH"],
+							exclude: [],
+						},
+					},
+					rules: [],
+				}) as Ruleset,
+		);
+		const getDefaultBranch = vi.fn(async () => "master");
+		const updateRuleset = vi.fn(
+			async (_id: number, payload: RulesetPayload) =>
+				({
+					id: 17,
+					name: payload.name,
+					target: payload.target,
+					enforcement: payload.enforcement,
+					bypass_actors: payload.bypass_actors,
+					conditions: payload.conditions,
+					rules: payload.rules,
+				}) as Ruleset,
+		);
+		const createRuleset = vi.fn();
+
+		mockGitHubClient.mockImplementation(
+			() =>
+				({
+					getDefaultBranch,
+					listRulesets,
+					getRuleset,
+					updateRuleset,
+					createRuleset,
+				}) as unknown as GitHubClient,
+		);
+
+		const result = await runBranchProtect({
+			token: "token",
+			owner: "octo",
+			repo: "harness",
+			branch: "master",
+		});
+
+		expect(result.ok).toBe(true);
+		expect(getDefaultBranch).toHaveBeenCalledTimes(1);
+		expect(updateRuleset).toHaveBeenCalledTimes(1);
+		expect(createRuleset).not.toHaveBeenCalled();
+	});
+
 	it("preserves stricter existing pull request protections", async () => {
 		const listRulesets = vi.fn(
 			async () =>

@@ -187,6 +187,18 @@ export class GitHubClient {
 		}
 	}
 
+	async getDefaultBranch(): Promise<string> {
+		try {
+			const response = await this.octokit.repos.get({
+				owner: this.owner,
+				repo: this.repo,
+			});
+			return response.data.default_branch;
+		} catch (error) {
+			throw this.classifyError(error);
+		}
+	}
+
 	async listIssueComments(issueNumber: number): Promise<Comment[]> {
 		try {
 			const response = await this.octokit.paginate(

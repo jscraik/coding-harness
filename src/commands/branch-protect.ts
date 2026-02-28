@@ -124,11 +124,13 @@ export async function runBranchProtect(
 	const branchRef = `refs/heads/${branch}`;
 
 	try {
+		const defaultBranchRef = await resolveDefaultBranchRef(client);
 		const rulesets = await client.listRulesets();
 		const existingSummary = findMatchingRuleset(
 			rulesets,
 			branchRef,
 			rulesetName,
+			defaultBranchRef,
 		);
 		const existingRuleset =
 			existingSummary !== undefined
@@ -406,7 +408,31 @@ function mergeRequiredStatusChecks(
 	return merged;
 }
 
-function refSelectorMatches(selector: string, branchRef: string): boolean {
+async function resolveDefaultBranchRef(client: GitHubClient): Promise<string> {
+	try {
+		const defaultBranchResolver = (
+			client as GitHubClient & {
+				getDefaultBranch?: () => Promise<string>;
+			}
+		).getDefaultBranch;
+		if (typeof defaultBranchResolver !== "function") {
+			return `refs/heads/${DEFAULT_BRANCH}`;
+		}
+		const defaultBranch = await defaultBranchResolver.call(client);
+		if (typeof defaultBranch === "string" && defaultBranch.trim().length > 0) {
+			return `refs/heads/${defaultBranch.trim()}`;
+		}
+	} catch {
+		// Ignore lookup failures and continue with conservative fallback.
+	}
+	return `refs/heads/${DEFAULT_BRANCH}`;
+}
+
+function refSelectorMatches(
+	selector: string,
+	branchRef: string,
+	defaultBranchRef: string,
+): boolean {
 	const normalized = selector.trim();
 	if (normalized.length === 0) {
 		return false;
@@ -415,7 +441,7 @@ function refSelectorMatches(selector: string, branchRef: string): boolean {
 		return true;
 	}
 	if (normalized === "~DEFAULT_BRANCH") {
-		return branchRef === `refs/heads/${DEFAULT_BRANCH}`;
+		return branchRef === defaultBranchRef;
 	}
 	if (normalized === branchRef) {
 		return true;
@@ -435,16 +461,28 @@ function findMatchingRuleset(
 	rulesets: RulesetSummary[],
 	branchRef: string,
 	rulesetName: string,
+	defaultBranchRef: string,
 ): RulesetSummary | undefined {
 	return rulesets.find((ruleset) => {
 		if (ruleset.target !== "branch" || ruleset.name !== rulesetName) {
 			return false;
 		}
 		const includes = ruleset.conditions?.ref_name?.include;
+		const excludes = ruleset.conditions?.ref_name?.exclude;
+		if (
+			Array.isArray(excludes) &&
+			excludes.some((exclude) =>
+				refSelectorMatches(exclude, branchRef, defaultBranchRef),
+			)
+		) {
+			return false;
+		}
 		if (!Array.isArray(includes) || includes.length === 0) {
 			return true;
 		}
-		return includes.some((include) => refSelectorMatches(include, branchRef));
+		return includes.some((include) =>
+			refSelectorMatches(include, branchRef, defaultBranchRef),
+		);
 	});
 }
 
