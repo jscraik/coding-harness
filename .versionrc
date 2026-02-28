@@ -1,0 +1,47 @@
+{
+	"preset": "angular",
+	"tagPrefix": "v",
+	"bumpFiles": [
+		"package.json"
+	],
+	"commitMessage": "chore(release): {{currentTag}}",
+	"releaseCommitMessageFormat": "chore(release): {{currentTag}}",
+	"types": [
+		{
+			"type": "feat",
+			"section": "Added"
+		},
+		{
+			"type": "fix",
+			"section": "Fixed"
+		},
+		{
+			"type": "docs",
+			"section": "Changed"
+		},
+		{
+			"type": "chore",
+			"section": "Other"
+		},
+		{
+			"type": "refactor",
+			"section": "Changed"
+		},
+		{
+			"type": "perf",
+			"section": "Changed"
+		},
+		{
+			"type": "test",
+			"section": "Other"
+		},
+		{
+			"type": "ci",
+			"section": "Changed"
+		},
+		{
+			"type": "build",
+			"section": "Changed"
+		}
+	]
+}
