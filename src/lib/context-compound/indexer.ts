@@ -10,8 +10,9 @@
 
 import { createHash } from "node:crypto";
 import { existsSync, readFileSync, statSync } from "node:fs";
-import { basename } from "node:path";
+import { basename, isAbsolute, relative, resolve, sep } from "node:path";
 import { MAX_FILE_SIZE_BYTES } from "./constants.js";
+import { validatePath } from "../input/validator.js";
 import type { OllamaClient } from "./ollama.js";
 import type { VectorStore } from "./store.js";
 import {
@@ -33,6 +34,8 @@ export interface IndexOptions {
 	type: "brainstorm" | "plan" | "solution";
 	/** Base directory for relative paths */
 	basePath?: string | undefined;
+	/** Force reindex even when content hash is unchanged */
+	force?: boolean | undefined;
 }
 
 /**
@@ -55,7 +58,9 @@ function parseFrontmatter(content: string): {
 	frontmatter: Record<string, unknown>;
 	body: string;
 } {
-	const match = content.match(/^---\n([\s\S]*?)\n---\n([\s\S]*)$/);
+	const match = content.match(
+		/^---\r?\n([\s\S]*?)\r?\n---(?:\r?\n([\s\S]*))?$/,
+	);
 	if (!match) {
 		return { frontmatter: {}, body: content };
 	}
@@ -66,7 +71,7 @@ function parseFrontmatter(content: string): {
 		return { frontmatter: {}, body: content };
 	}
 
-	const lines = contentCapture.split("\n");
+	const lines = contentCapture.split(/\r?\n/);
 	let currentKey: string | null = null;
 	let currentArray: string[] = [];
 
@@ -121,6 +126,43 @@ function computeHash(content: string): string {
 }
 
 /**
+ * Resolve a file path to a stable relative path within the base path.
+ */
+function getRelativePathWithinBase(
+	filepath: string,
+	basePath: string,
+): Result<string, IndexerError> {
+	let resolvedFilePath = filepath;
+	try {
+		resolvedFilePath = validatePath(basePath, filepath);
+	} catch {
+		return err({
+			code: "READ_FAILED",
+			message: `File path escapes base path: ${filepath}`,
+			path: filepath,
+		});
+	}
+
+	const relativePath = relative(resolve(basePath), resolvedFilePath);
+
+	if (
+		relativePath.length === 0 ||
+		relativePath === "." ||
+		relativePath === ".." ||
+		relativePath.startsWith(`..${sep}`) ||
+		isAbsolute(relativePath)
+	) {
+		return err({
+			code: "READ_FAILED",
+			message: `File path escapes base path: ${filepath}`,
+			path: filepath,
+		});
+	}
+
+	return ok(relativePath.split(sep).join("/"));
+}
+
+/**
  * Check if file is within size limits.
  */
 function validateFileSize(filepath: string): Result<void, IndexerError> {
@@ -156,7 +198,7 @@ export async function indexFile(
 	ollama: OllamaClient,
 	store: VectorStore,
 ): Promise<IndexResult> {
-	const { filepath, type, basePath = process.cwd() } = options;
+	const { filepath, type, basePath = process.cwd(), force = false } = options;
 
 	// Validate file exists
 	if (!existsSync(filepath)) {
@@ -197,9 +239,17 @@ export async function indexFile(
 	const contentHash = computeHash(content);
 
 	// Check if already indexed with same hash
-	const relativePath = filepath.replace(basePath, "").replace(/^\//, "");
+	const relativePathResult = getRelativePathWithinBase(filepath, basePath);
+	if (!relativePathResult.ok) {
+		return {
+			indexed: false,
+			path: filepath,
+			error: relativePathResult.error,
+		};
+	}
+	const relativePath = relativePathResult.value;
 	const existingHash = store.getContentHash(relativePath);
-	if (existingHash === contentHash) {
+	if (!force && existingHash === contentHash) {
 		return { indexed: false, path: filepath }; // Skip: unchanged
 	}
 
