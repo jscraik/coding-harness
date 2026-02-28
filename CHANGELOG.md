@@ -2,6 +2,16 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [0.5.3](https://github.com/jscraik/coding-harness/compare/v0.5.1...v0.5.3) (2026-02-28)
+
+
+### Bug Fixes
+
+* **ci:** keep release tag after formatting amend ([2b3a865](https://github.com/jscraik/coding-harness/commit/2b3a86521c6595e24407cdcb2a1bc6c9755caaee))
+* **ci:** normalize npm release commit formatting ([bdf17eb](https://github.com/jscraik/coding-harness/commit/bdf17eb617a47221b7b27c11c80c52565f12eeb9))
+
+
+
 ## [0.5.2](https://github.com/jscraik/coding-harness/compare/v0.5.1...v0.5.2) (2026-02-28)
 
 
