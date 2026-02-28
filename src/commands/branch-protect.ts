@@ -10,9 +10,12 @@ import { sanitizeError } from "../lib/input/sanitize.js";
 const DEFAULT_RULESET_NAME = "protect";
 const DEFAULT_BRANCH = "main";
 const DEFAULT_REQUIRED_CHECKS = [
-	"Greptile Review",
-	"Socket Security: Pull Request Alerts",
-	"Socket Security: Project Report",
+	"lint",
+	"typecheck",
+	"test",
+	"audit",
+	"check",
+	"memory",
 ];
 
 export const EXIT_CODES = {
@@ -287,8 +290,13 @@ function buildPayload(input: BuildPayloadInput): RulesetPayload {
 		bypass_actors: input.existingRuleset?.bypass_actors ?? [],
 		conditions: {
 			ref_name: {
-				include: [input.branchRef],
-				exclude: input.existingRuleset?.conditions?.ref_name?.exclude ?? [],
+				include: mergeRefNameIncludes(
+					input.existingRuleset?.conditions?.ref_name?.include,
+					input.branchRef,
+				),
+				exclude: normalizeStringList(
+					input.existingRuleset?.conditions?.ref_name?.exclude,
+				),
 			},
 		},
 		rules: baseRules,
@@ -314,6 +322,35 @@ function toNonNegativeInteger(value: unknown): number | undefined {
 		return undefined;
 	}
 	return value;
+}
+
+function normalizeStringList(value: unknown): string[] {
+	if (!Array.isArray(value)) {
+		return [];
+	}
+	const list: string[] = [];
+	for (const item of value) {
+		if (typeof item === "string" && item.trim().length > 0) {
+			list.push(item.trim());
+		}
+	}
+	return list;
+}
+
+function mergeRefNameIncludes(
+	existingIncludes: unknown,
+	branchRef: string,
+): string[] {
+	if (!Array.isArray(existingIncludes)) {
+		return [branchRef];
+	}
+	const normalized = normalizeStringList(existingIncludes);
+	if (normalized.length === 0) {
+		return [];
+	}
+	const merged = new Set(normalized);
+	merged.add(branchRef);
+	return Array.from(merged);
 }
 
 function extractCheckContexts(value: unknown): string[] {

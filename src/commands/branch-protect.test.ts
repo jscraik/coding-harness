@@ -182,6 +182,53 @@ describe("runBranchProtect", () => {
 				{ context: "Greptile Review" },
 			],
 		});
+		expect(payload?.conditions?.ref_name?.include).toEqual(["refs/heads/main"]);
+	});
+
+	it("uses harness baseline checks by default", async () => {
+		const listRulesets = vi.fn(async () => [] as RulesetSummary[]);
+		const createRuleset = vi.fn(
+			async (payload: RulesetPayload) =>
+				({
+					id: 55,
+					name: payload.name,
+					target: payload.target,
+					enforcement: payload.enforcement,
+					bypass_actors: payload.bypass_actors,
+					conditions: payload.conditions,
+					rules: payload.rules,
+				}) as Ruleset,
+		);
+
+		mockGitHubClient.mockImplementation(
+			() =>
+				({
+					listRulesets,
+					createRuleset,
+				}) as unknown as GitHubClient,
+		);
+
+		const result = await runBranchProtect({
+			token: "token",
+			owner: "octo",
+			repo: "harness",
+		});
+
+		expect(result.ok).toBe(true);
+		const payload = createRuleset.mock.calls[0]?.[0];
+		const requiredRule = payload?.rules.find(
+			(rule) => rule.type === "required_status_checks",
+		);
+		expect(requiredRule?.parameters).toMatchObject({
+			required_status_checks: [
+				{ context: "lint" },
+				{ context: "typecheck" },
+				{ context: "test" },
+				{ context: "audit" },
+				{ context: "check" },
+				{ context: "memory" },
+			],
+		});
 	});
 
 	it("supports dry-run without applying changes", async () => {
@@ -359,5 +406,77 @@ describe("runBranchProtect", () => {
 			require_code_owner_review: true,
 			require_last_push_approval: true,
 		});
+	});
+
+	it("preserves existing multi-ref include scope when updating", async () => {
+		const listRulesets = vi.fn(
+			async () =>
+				[
+					{
+						id: 29,
+						name: "protect",
+						target: "branch",
+						enforcement: "active",
+						conditions: {
+							ref_name: {
+								include: ["refs/heads/main", "refs/heads/release/*"],
+								exclude: [],
+							},
+						},
+					},
+				] as RulesetSummary[],
+		);
+		const getRuleset = vi.fn(
+			async () =>
+				({
+					id: 29,
+					name: "protect",
+					target: "branch",
+					enforcement: "active",
+					bypass_actors: [],
+					conditions: {
+						ref_name: {
+							include: ["refs/heads/main", "refs/heads/release/*"],
+							exclude: [],
+						},
+					},
+					rules: [],
+				}) as Ruleset,
+		);
+		const updateRuleset = vi.fn(
+			async (_id: number, payload: RulesetPayload) =>
+				({
+					id: 29,
+					name: payload.name,
+					target: payload.target,
+					enforcement: payload.enforcement,
+					bypass_actors: payload.bypass_actors,
+					conditions: payload.conditions,
+					rules: payload.rules,
+				}) as Ruleset,
+		);
+
+		mockGitHubClient.mockImplementation(
+			() =>
+				({
+					listRulesets,
+					getRuleset,
+					updateRuleset,
+				}) as unknown as GitHubClient,
+		);
+
+		const result = await runBranchProtect({
+			token: "token",
+			owner: "octo",
+			repo: "harness",
+			branch: "main",
+		});
+
+		expect(result.ok).toBe(true);
+		const payload = updateRuleset.mock.calls[0]?.[1];
+		expect(payload?.conditions?.ref_name?.include).toEqual([
+			"refs/heads/main",
+			"refs/heads/release/*",
+		]);
 	});
 });
