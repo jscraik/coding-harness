@@ -82,7 +82,7 @@ const riskTierCheck: PreflightCheckFn = (options) => {
 	const start = Date.now();
 	const contractPath = resolve(options.contractPath ?? "harness.contract.json");
 
-	if (!existsSync(contractPath) || options.files?.length === 0) {
+	if (!existsSync(contractPath) || !options.files?.length) {
 		return {
 			id: "risk-tier",
 			description: "Validate risk tier against contract",

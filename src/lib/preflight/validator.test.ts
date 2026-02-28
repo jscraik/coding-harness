@@ -66,4 +66,29 @@ describe("runPreflightGate", () => {
 		);
 		expect(result.riskTier).toBeUndefined();
 	});
+
+	it("skips risk-tier when files option is omitted", async () => {
+		writeFileSync(
+			"harness.contract.json",
+			JSON.stringify({
+				version: "1.0",
+				riskTierRules: {
+					"src/auth/**": "high",
+				},
+			}),
+		);
+
+		const result = await runPreflightGate({
+			maxTier: "low",
+		});
+		const riskTierCheck = result.checks.find(
+			(check) => check.id === "risk-tier",
+		);
+
+		expect(riskTierCheck?.passed).toBe(true);
+		expect(riskTierCheck?.message).toBe(
+			"Skipped: no contract or files provided",
+		);
+		expect(result.riskTier).toBeUndefined();
+	});
 });
