@@ -1,12 +1,7 @@
 {
-	"name": "@jamiecraik/coding-harness",
+	"name": "@brainwav/coding-harness",
 	"version": "0.3.6",
-	"files": [
-		"dist",
-		"README.md",
-		"CHANGELOG.md",
-		"LICENSE"
-	],
+	"files": ["dist", "README.md", "CHANGELOG.md", "LICENSE"],
 	"type": "module",
 	"description": "Control plane for agentic development",
 	"publishConfig": {
