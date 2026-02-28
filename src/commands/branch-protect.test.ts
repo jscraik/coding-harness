@@ -82,6 +82,12 @@ describe("runBranchProtect", () => {
 			target: "branch",
 			enforcement: "active",
 		});
+		const pullRequestRule = createRuleset.mock.calls[0]?.[0].rules.find(
+			(rule) => rule.type === "pull_request",
+		);
+		expect(pullRequestRule?.parameters).toMatchObject({
+			required_approving_review_count: 1,
+		});
 	});
 
 	it("updates existing ruleset and preserves unrelated rules", async () => {
@@ -268,5 +274,90 @@ describe("runBranchProtect", () => {
 		expect(getRuleset).toHaveBeenCalledWith(9);
 		expect(updateRuleset).toHaveBeenCalledTimes(1);
 		expect(createRuleset).not.toHaveBeenCalled();
+	});
+
+	it("preserves stricter existing pull request protections", async () => {
+		const listRulesets = vi.fn(
+			async () =>
+				[
+					{
+						id: 19,
+						name: "protect",
+						target: "branch",
+						enforcement: "active",
+						conditions: {
+							ref_name: {
+								include: ["refs/heads/main"],
+								exclude: [],
+							},
+						},
+					},
+				] as RulesetSummary[],
+		);
+		const getRuleset = vi.fn(
+			async () =>
+				({
+					id: 19,
+					name: "protect",
+					target: "branch",
+					enforcement: "active",
+					bypass_actors: [],
+					conditions: {
+						ref_name: {
+							include: ["refs/heads/main"],
+							exclude: [],
+						},
+					},
+					rules: [
+						{
+							type: "pull_request",
+							parameters: {
+								required_approving_review_count: 2,
+								require_code_owner_review: true,
+								require_last_push_approval: true,
+							},
+						},
+					],
+				}) as Ruleset,
+		);
+		const updateRuleset = vi.fn(
+			async (_id: number, payload: RulesetPayload) =>
+				({
+					id: 19,
+					name: payload.name,
+					target: payload.target,
+					enforcement: payload.enforcement,
+					bypass_actors: payload.bypass_actors,
+					conditions: payload.conditions,
+					rules: payload.rules,
+				}) as Ruleset,
+		);
+
+		mockGitHubClient.mockImplementation(
+			() =>
+				({
+					listRulesets,
+					getRuleset,
+					updateRuleset,
+				}) as unknown as GitHubClient,
+		);
+
+		const result = await runBranchProtect({
+			token: "token",
+			owner: "octo",
+			repo: "harness",
+			requiredApprovingReviewCount: 1,
+		});
+
+		expect(result.ok).toBe(true);
+		const payload = updateRuleset.mock.calls[0]?.[1];
+		const pullRequestRule = payload?.rules.find(
+			(rule) => rule.type === "pull_request",
+		);
+		expect(pullRequestRule?.parameters).toMatchObject({
+			required_approving_review_count: 2,
+			require_code_owner_review: true,
+			require_last_push_approval: true,
+		});
 	});
 });

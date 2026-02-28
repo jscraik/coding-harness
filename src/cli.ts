@@ -208,7 +208,7 @@ function printUsage(): void {
 	console.info("  --branch         Branch name (default: main)");
 	console.info("  --ruleset        Ruleset name (default: protect)");
 	console.info("  --checks         Comma-separated required status checks");
-	console.info("  --required-approvals  Required PR approvals (default: 0)");
+	console.info("  --required-approvals  Required PR approvals (default: 1)");
 	console.info("  --dry-run        Preview payload without applying");
 	console.info("  --json           Output as JSON");
 	console.info("");

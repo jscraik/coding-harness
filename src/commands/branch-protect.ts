@@ -106,7 +106,7 @@ export async function runBranchProtect(
 		};
 	}
 
-	const requiredApprovals = options.requiredApprovingReviewCount ?? 0;
+	const requiredApprovals = options.requiredApprovingReviewCount ?? 1;
 	if (!Number.isInteger(requiredApprovals) || requiredApprovals < 0) {
 		return {
 			ok: false,
@@ -228,14 +228,26 @@ function buildPayload(input: BuildPayloadInput): RulesetPayload {
 	const existingPullParameters = normalizeParameters(
 		existingPullRequestRule?.parameters,
 	);
+	const existingRequireCodeOwnerReview = toBoolean(
+		existingPullParameters.require_code_owner_review,
+	);
+	const existingRequireLastPushApproval = toBoolean(
+		existingPullParameters.require_last_push_approval,
+	);
+	const existingRequiredApprovals = toNonNegativeInteger(
+		existingPullParameters.required_approving_review_count,
+	);
 	const pullRequestRule: RulesetRule = {
 		type: "pull_request",
 		parameters: {
 			...existingPullParameters,
 			dismiss_stale_reviews_on_push: true,
-			require_code_owner_review: false,
-			require_last_push_approval: false,
-			required_approving_review_count: input.requiredApprovals,
+			require_code_owner_review: existingRequireCodeOwnerReview ?? false,
+			require_last_push_approval: existingRequireLastPushApproval ?? false,
+			required_approving_review_count: Math.max(
+				input.requiredApprovals,
+				existingRequiredApprovals ?? 0,
+			),
 			required_review_thread_resolution: true,
 		},
 	};
@@ -288,6 +300,20 @@ function normalizeParameters(value: unknown): Record<string, unknown> {
 		return value as Record<string, unknown>;
 	}
 	return {};
+}
+
+function toBoolean(value: unknown): boolean | undefined {
+	if (typeof value === "boolean") {
+		return value;
+	}
+	return undefined;
+}
+
+function toNonNegativeInteger(value: unknown): number | undefined {
+	if (typeof value !== "number" || !Number.isInteger(value) || value < 0) {
+		return undefined;
+	}
+	return value;
 }
 
 function extractCheckContexts(value: unknown): string[] {
