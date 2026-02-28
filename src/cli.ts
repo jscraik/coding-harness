@@ -5,6 +5,7 @@ import {
 	runBlastRadiusCLI,
 } from "./commands/blast-radius.js";
 import { runBrainstormGateCLI } from "./commands/brainstorm-gate.js";
+import { runBranchProtectCLI } from "./commands/branch-protect.js";
 import { runCheckAuthzCLI } from "./commands/check-authz.js";
 import { runCheckEnvironmentCLI } from "./commands/check-environment.js";
 import { runContextCLI } from "./commands/context.js";
@@ -73,6 +74,7 @@ function printUsage(): void {
 	);
 	console.info("  silent-error     Detect silent error handling anti-patterns");
 	console.info("  review-gate      Review gate with SHA enforcement");
+	console.info("  branch-protect   Configure GitHub branch protection ruleset");
 	console.info("  brainstorm-gate  Validate brainstorm artifacts");
 	console.info("  plan-gate        Validate plan artifacts");
 	console.info("  prompt-gate      Validate prompt template usage");
@@ -195,6 +197,19 @@ function printUsage(): void {
 	console.info("  --sha            Head SHA to verify (required)");
 	console.info("  --check          Check run name to look for");
 	console.info("  --contract       Path to harness.contract.json");
+	console.info("  --json           Output as JSON");
+	console.info("");
+	console.info("Branch Protect Options:");
+	console.info(
+		"  --token          GitHub token (or env GITHUB_TOKEN / GITHUB_PERSONAL_ACCESS_TOKEN)",
+	);
+	console.info("  --owner          Repository owner (required)");
+	console.info("  --repo           Repository name (required)");
+	console.info("  --branch         Branch name (default: main)");
+	console.info("  --ruleset        Ruleset name (default: protect)");
+	console.info("  --checks         Comma-separated required status checks");
+	console.info("  --required-approvals  Required PR approvals (default: 0)");
+	console.info("  --dry-run        Preview payload without applying");
 	console.info("  --json           Output as JSON");
 	console.info("");
 	console.info("");
@@ -695,6 +710,60 @@ export function run(args: string[]): void {
 		runReviewGateCLI(options)
 			.then((exitCode) => process.exit(exitCode))
 			.catch((error) => handleFatalError("Review Gate Error", error));
+		return;
+	}
+
+	if (command === "branch-protect") {
+		const jsonFlag = args.includes("--json");
+		const dryRunFlag = args.includes("--dry-run");
+		const tokenIndex = args.indexOf("--token");
+		const ownerIndex = args.indexOf("--owner");
+		const repoIndex = args.indexOf("--repo");
+		const branchIndex = args.indexOf("--branch");
+		const rulesetIndex = args.indexOf("--ruleset");
+		const checksIndex = args.indexOf("--checks");
+		const approvalsIndex = args.indexOf("--required-approvals");
+
+		const parsedApprovals = parseIntegerArg(
+			getFlagValue(args, approvalsIndex),
+			0,
+		);
+		const checksArg = getFlagValue(args, checksIndex);
+
+		const options: {
+			token?: string;
+			owner?: string;
+			repo?: string;
+			branch?: string;
+			rulesetName?: string;
+			requiredChecks?: string[];
+			requiredApprovingReviewCount?: number;
+			dryRun?: boolean;
+			json?: boolean;
+		} = {};
+
+		if (jsonFlag) options.json = true;
+		if (dryRunFlag) options.dryRun = true;
+		const tokenArg = getFlagValue(args, tokenIndex);
+		if (tokenArg) options.token = tokenArg;
+		const ownerArg = getFlagValue(args, ownerIndex);
+		if (ownerArg) options.owner = ownerArg;
+		const repoArg = getFlagValue(args, repoIndex);
+		if (repoArg) options.repo = repoArg;
+		const branchArg = getFlagValue(args, branchIndex);
+		if (branchArg) options.branch = branchArg;
+		const rulesetArg = getFlagValue(args, rulesetIndex);
+		if (rulesetArg) options.rulesetName = rulesetArg;
+		if (checksArg !== undefined) {
+			options.requiredChecks = parseCsvList(checksArg);
+		}
+		if (parsedApprovals !== undefined) {
+			options.requiredApprovingReviewCount = parsedApprovals;
+		}
+
+		runBranchProtectCLI(options)
+			.then((exitCode) => process.exit(exitCode))
+			.catch((error) => handleFatalError("Branch Protect Error", error));
 		return;
 	}
 

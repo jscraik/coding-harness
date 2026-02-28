@@ -55,6 +55,7 @@ If a tool expects `GITHUB_TOKEN`, map it from `GITHUB_PERSONAL_ACCESS_TOKEN` in 
 | `silent-error` | Detect silent error handling anti-patterns. |
 | `diff-budget` | Enforce diff budget constraints. |
 | `review-gate` | Enforce review checks and SHA guardrails. |
+| `branch-protect` | Configure/maintain branch protection rulesets and required status checks. |
 | `brainstorm-gate` | Validate brainstorm artifacts. |
 | `plan-gate` | Validate plan artifacts. |
 | `prompt-gate` | Validate prompt template usage. |

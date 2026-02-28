@@ -573,6 +573,10 @@ If either artifact is missing, block merge until it is added or explicitly waive
 
 Configure GitHub branch protection (or rulesets) on \`main\`:
 
+- Bootstrap baseline via harness:
+  - \`harness branch-protect --owner <owner> --repo <repo>\`
+- Token resolution for \`branch-protect\`:
+  - \`--token <PAT>\` or env \`GITHUB_TOKEN\` / \`GITHUB_PERSONAL_ACCESS_TOKEN\`
 - Require pull request before merge.
 - Require at least one approval.
 - Require status checks: \`lint\`, \`typecheck\`, \`test\`, \`audit\`, \`check\`.

@@ -1,0 +1,271 @@
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import type {
+	Ruleset,
+	RulesetPayload,
+	RulesetSummary,
+} from "../lib/github/client.js";
+import { runBranchProtect } from "./branch-protect.js";
+
+vi.mock("../lib/github/client.js", () => ({
+	GitHubClient: vi.fn(),
+}));
+
+import { GitHubClient } from "../lib/github/client.js";
+
+const mockGitHubClient = vi.mocked(GitHubClient);
+
+describe("runBranchProtect", () => {
+	beforeEach(() => {
+		vi.clearAllMocks();
+	});
+
+	afterEach(() => {
+		process.env.GITHUB_TOKEN = undefined;
+		process.env.GITHUB_PERSONAL_ACCESS_TOKEN = undefined;
+	});
+
+	it("returns validation error when token is missing", async () => {
+		const result = await runBranchProtect({
+			owner: "octo",
+			repo: "harness",
+		});
+
+		expect(result.ok).toBe(false);
+		if (!result.ok) {
+			expect(result.error.code).toBe("VALIDATION_ERROR");
+			expect(result.error.message).toContain("Missing GitHub token");
+		}
+	});
+
+	it("creates a ruleset when none exists", async () => {
+		const listRulesets = vi.fn(async () => [] as RulesetSummary[]);
+		const createRuleset = vi.fn(
+			async (payload: RulesetPayload) =>
+				({
+					id: 123,
+					name: payload.name,
+					target: payload.target,
+					enforcement: payload.enforcement,
+					bypass_actors: payload.bypass_actors,
+					conditions: payload.conditions,
+					rules: payload.rules,
+				}) as Ruleset,
+		);
+
+		mockGitHubClient.mockImplementation(
+			() =>
+				({
+					listRulesets,
+					createRuleset,
+				}) as unknown as GitHubClient,
+		);
+
+		const result = await runBranchProtect({
+			token: "token",
+			owner: "octo",
+			repo: "harness",
+			branch: "main",
+			requiredChecks: ["Greptile Review"],
+		});
+
+		expect(result.ok).toBe(true);
+		if (result.ok) {
+			expect(result.output.action).toBe("created");
+			expect(result.output.rulesetId).toBe(123);
+		}
+
+		expect(listRulesets).toHaveBeenCalledTimes(1);
+		expect(createRuleset).toHaveBeenCalledTimes(1);
+		expect(createRuleset.mock.calls[0]?.[0]).toMatchObject({
+			name: "protect",
+			target: "branch",
+			enforcement: "active",
+		});
+	});
+
+	it("updates existing ruleset and preserves unrelated rules", async () => {
+		const listRulesets = vi.fn(
+			async () =>
+				[
+					{
+						id: 7,
+						name: "protect",
+						target: "branch",
+						enforcement: "active",
+						conditions: {
+							ref_name: {
+								include: ["refs/heads/main"],
+								exclude: [],
+							},
+						},
+					},
+				] as RulesetSummary[],
+		);
+
+		const getRuleset = vi.fn(
+			async () =>
+				({
+					id: 7,
+					name: "protect",
+					target: "branch",
+					enforcement: "active",
+					bypass_actors: [],
+					conditions: {
+						ref_name: {
+							include: ["refs/heads/main"],
+							exclude: [],
+						},
+					},
+					rules: [
+						{
+							type: "required_status_checks",
+							parameters: {
+								required_status_checks: [{ context: "existing-check" }],
+							},
+						},
+						{
+							type: "code_scanning",
+						},
+					],
+				}) as Ruleset,
+		);
+
+		const updateRuleset = vi.fn(
+			async (_id: number, payload: RulesetPayload) =>
+				({
+					id: 7,
+					name: payload.name,
+					target: payload.target,
+					enforcement: payload.enforcement,
+					bypass_actors: payload.bypass_actors,
+					conditions: payload.conditions,
+					rules: payload.rules,
+				}) as Ruleset,
+		);
+
+		mockGitHubClient.mockImplementation(
+			() =>
+				({
+					listRulesets,
+					getRuleset,
+					updateRuleset,
+				}) as unknown as GitHubClient,
+		);
+
+		const result = await runBranchProtect({
+			token: "token",
+			owner: "octo",
+			repo: "harness",
+			requiredChecks: ["Greptile Review"],
+		});
+
+		expect(result.ok).toBe(true);
+		expect(updateRuleset).toHaveBeenCalledTimes(1);
+		const payload = updateRuleset.mock.calls[0]?.[1];
+		expect(payload?.rules.some((rule) => rule.type === "code_scanning")).toBe(
+			true,
+		);
+		const requiredRule = payload?.rules.find(
+			(rule) => rule.type === "required_status_checks",
+		);
+		expect(requiredRule).toBeDefined();
+		expect(requiredRule?.parameters).toMatchObject({
+			required_status_checks: [
+				{ context: "existing-check" },
+				{ context: "Greptile Review" },
+			],
+		});
+	});
+
+	it("supports dry-run without applying changes", async () => {
+		const listRulesets = vi.fn(async () => [] as RulesetSummary[]);
+		const createRuleset = vi.fn();
+
+		mockGitHubClient.mockImplementation(
+			() =>
+				({
+					listRulesets,
+					createRuleset,
+				}) as unknown as GitHubClient,
+		);
+
+		const result = await runBranchProtect({
+			token: "token",
+			owner: "octo",
+			repo: "harness",
+			dryRun: true,
+		});
+
+		expect(result.ok).toBe(true);
+		if (result.ok) {
+			expect(result.output.action).toBe("dry_run");
+		}
+		expect(createRuleset).not.toHaveBeenCalled();
+	});
+
+	it("matches existing ruleset when summary conditions are omitted", async () => {
+		const listRulesets = vi.fn(
+			async () =>
+				[
+					{
+						id: 9,
+						name: "protect",
+						target: "branch",
+						enforcement: "active",
+					},
+				] as RulesetSummary[],
+		);
+
+		const getRuleset = vi.fn(
+			async () =>
+				({
+					id: 9,
+					name: "protect",
+					target: "branch",
+					enforcement: "active",
+					bypass_actors: [],
+					conditions: {
+						ref_name: {
+							include: ["refs/heads/main"],
+							exclude: [],
+						},
+					},
+					rules: [],
+				}) as Ruleset,
+		);
+		const updateRuleset = vi.fn(
+			async (_id: number, payload: RulesetPayload) =>
+				({
+					id: 9,
+					name: payload.name,
+					target: payload.target,
+					enforcement: payload.enforcement,
+					bypass_actors: payload.bypass_actors,
+					conditions: payload.conditions,
+					rules: payload.rules,
+				}) as Ruleset,
+		);
+		const createRuleset = vi.fn();
+
+		mockGitHubClient.mockImplementation(
+			() =>
+				({
+					listRulesets,
+					getRuleset,
+					updateRuleset,
+					createRuleset,
+				}) as unknown as GitHubClient,
+		);
+
+		const result = await runBranchProtect({
+			token: "token",
+			owner: "octo",
+			repo: "harness",
+		});
+
+		expect(result.ok).toBe(true);
+		expect(getRuleset).toHaveBeenCalledWith(9);
+		expect(updateRuleset).toHaveBeenCalledTimes(1);
+		expect(createRuleset).not.toHaveBeenCalled();
+	});
+});

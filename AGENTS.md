@@ -80,6 +80,8 @@ See [Tooling and command policy](./docs/agents/02-tooling-policy.md) for the ful
 
 Quick reference: `pnpm check`, `pnpm lint`, `pnpm typecheck`, `pnpm test`, `pnpm build`, `pnpm audit`, `pnpm test:artifacts`
 
+Branch protection bootstrap: `harness branch-protect --owner <owner> --repo <repo>` (token via `GITHUB_TOKEN` or `GITHUB_PERSONAL_ACCESS_TOKEN`)
+
 ## Documentation map
 ### Table of Contents
 - [Instruction map](./docs/agents/01-instruction-map.md)
