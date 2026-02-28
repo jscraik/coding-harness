@@ -2,6 +2,27 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+# [0.4.0](https://github.com/jscraik/coding-harness/compare/v0.3.8...v0.4.0) (2026-02-28)
+
+
+### Bug Fixes
+
+* **cli:** restore command dispatch compatibility ([4633600](https://github.com/jscraik/coding-harness/commit/46336000d1ee8a18637dffefa843ff5d46db02b7))
+* harden CLI argument parsing and validation ([aeb9c1a](https://github.com/jscraik/coding-harness/commit/aeb9c1ae3bd646fd9109b5879dbfe11b6a0e6d70))
+* harden context path validation and option parsing ([7f3c6c2](https://github.com/jscraik/coding-harness/commit/7f3c6c2aa32af45e8955ecfba44212196c725a5a))
+* resolve contract and indexer policy parsing ([fc89f52](https://github.com/jscraik/coding-harness/commit/fc89f52548be5e5be2db2b982f00f38bb4b5bccc))
+* wire up gap-case and pilot-evaluate commands in CLI ([151a8d2](https://github.com/jscraik/coding-harness/commit/151a8d2b0cb1f18229ccc845b795f8a2de5774b9))
+
+
+### Features
+
+* **contract:** add pilot policy types and preflight commands for agent-first throughput v1 ([5f6bb37](https://github.com/jscraik/coding-harness/commit/5f6bb3727138071bc7361ccbc131567e2f5a9fcd))
+* **gap-case:** implement minimal incident tracking workflow for v1 pilot ([a645f03](https://github.com/jscraik/coding-harness/commit/a645f03e5ea80cbbf2e4d345d4b7a6e9781da6bb))
+* **pilot:** implement pilot scorecard and promotion gate ([7ff7340](https://github.com/jscraik/coding-harness/commit/7ff734084eb639f6d6fe5d02b0b44b91da162376))
+* **remediation:** implement Phase 2 deterministic throughput hardening ([14f5fd5](https://github.com/jscraik/coding-harness/commit/14f5fd51a3128583a23087998d9b5463599cfc1e))
+
+
+
 ## [0.3.8](https://github.com/jscraik/coding-harness/compare/v0.3.7...v0.3.8) (2026-02-28)
 
 
