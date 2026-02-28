@@ -96,6 +96,7 @@ export interface ProposedChange {
 export interface ContractSchema {
 	version: string;
 	riskTierRules?: Record<string, unknown>;
+	blastRadiusRules?: unknown[];
 	reviewPolicy?:
 		| {
 				timeoutSeconds: number;
@@ -163,6 +164,8 @@ function addSchemaDefaults(contract: ContractSchema): ContractSchema {
 		...contract,
 		version: contract.version,
 		riskTierRules: contract.riskTierRules ?? DEFAULT_CONTRACT.riskTierRules,
+		blastRadiusRules:
+			contract.blastRadiusRules ?? DEFAULT_CONTRACT.blastRadiusRules,
 		reviewPolicy: contract.reviewPolicy ?? DEFAULT_CONTRACT.reviewPolicy,
 		evidencePolicy: contract.evidencePolicy ?? DEFAULT_CONTRACT.evidencePolicy,
 		mergePolicy: contract.mergePolicy ?? DEFAULT_CONTRACT.mergePolicy,
@@ -283,6 +286,18 @@ const TEMPLATES: Template[] = [
 						medium: ["review-gate"],
 						low: [],
 					},
+					blastRadiusRules: [
+						{
+							pattern: "src/**/*.{tsx,ts,js}",
+							checks: ["typecheck", "test-run", "lint", "docs-lint"],
+							description: "Project-specific default for app-layer changes",
+						},
+						{
+							pattern: "harness.contract.json",
+							checks: ["contract-validate", "policy-gate"],
+							description: "Contract changes impact policy enforcement",
+						},
+					],
 					docsDriftRules: {},
 					reviewPolicy: {
 						timeoutSeconds: 600,
@@ -393,6 +408,86 @@ jobs:
           node-version: "20"
       - run: ${pm} install
       - run: ${pm} test
+`,
+	},
+	{
+		path: ".github/workflows/harness-update-check.yml",
+		render: (pm) => `name: Harness Update Check
+
+on:
+  schedule:
+    - cron: "0 5 * * 1" # Mondays at 05:00 UTC
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  check-updates:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+
+      - uses: pnpm/action-setup@v4
+
+      - name: Install dependencies
+        run: ${pm} install
+
+      - name: Check for harness template updates
+        id: update-check
+        run: |
+          set -euo pipefail
+          if OUTPUT=$(${pm} exec harness init --check-updates 2>&1); then
+            echo "$OUTPUT"
+            if [[ "$OUTPUT" == *"Update available:"* ]]; then
+              echo "has_updates=true" >> "$GITHUB_OUTPUT"
+            else
+              echo "has_updates=false" >> "$GITHUB_OUTPUT"
+            fi
+          else
+            echo "$OUTPUT"
+            echo "has_updates=false" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Apply harness template updates
+        if: steps.update-check.outputs.has_updates == 'true'
+        run: |
+          set -euo pipefail
+          ${pm} exec harness init --update
+
+      - name: Open maintenance PR
+        if: steps.update-check.outputs.has_updates == 'true'
+        env:
+          GITHUB_TOKEN: \${{ secrets.GITHUB_TOKEN }}
+        run: |
+          set -euo pipefail
+
+          if [ -z "$(git status --porcelain)" ]; then
+            echo "No updates were applied."
+            exit 0
+          fi
+
+          BRANCH_NAME="harness/update-check-\${{ github.run_id }}"
+          git checkout -b "$BRANCH_NAME"
+
+          git add .harness/restore-manifest.json harness.contract.json .github/workflows/pr-pipeline.yml .github/workflows/harness-update-check.yml
+
+          if git diff --cached --quiet; then
+            echo "No tracked harness updates to commit."
+            exit 0
+          fi
+
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git commit -m "chore: update harness templates"
+          git push -u origin "$BRANCH_NAME"
+          gh pr create --title "chore: refresh harness templates" --body "Automated update from 'harness init --update'." || echo "PR creation not permitted for this token"
 `,
 	},
 ];

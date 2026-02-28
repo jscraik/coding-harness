@@ -1100,6 +1100,32 @@ describe("cli command dispatch", () => {
 		expect(exitSpy).toHaveBeenCalledWith(1);
 	});
 
+	it("dispatches blast-radius with optional --contract and parsing", async () => {
+		const { run } = await import("./cli.js");
+		const { runBlastRadiusCLI } = await import("./commands/blast-radius.js");
+
+		const exitSpy = vi
+			.spyOn(process, "exit")
+			.mockImplementation(((_code?: number) => undefined) as never);
+
+		run([
+			"blast-radius",
+			"--files",
+			"src/auth/login.ts,src/ui/Button.tsx",
+			"--contract",
+			"custom-harness.contract.json",
+			"--json",
+		]);
+
+		expect(vi.mocked(runBlastRadiusCLI)).toHaveBeenCalledWith({
+			files: ["src/auth/login.ts", "src/ui/Button.tsx"],
+			contract: "custom-harness.contract.json",
+			json: true,
+			verbose: false,
+		});
+		expect(exitSpy).toHaveBeenCalledWith(59);
+	});
+
 	// Note: -h is intercepted by the top-level help check, so it's not passed to the command
 	it.skip("dispatches index-context when -h is passed after command", async () => {
 		const { run } = await import("./cli.js");

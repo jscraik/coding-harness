@@ -61,7 +61,7 @@ describe("runInit", () => {
 
 			expect(result.ok).toBe(true);
 			if (result.ok) {
-				expect(result.output.created).toHaveLength(2);
+				expect(result.output.created).toHaveLength(3);
 				expect(result.output.skipped).toHaveLength(0);
 			}
 
@@ -69,6 +69,9 @@ describe("runInit", () => {
 			expect(existsSync(join(tempDir, "harness.contract.json"))).toBe(false);
 			expect(
 				existsSync(join(tempDir, ".github/workflows/pr-pipeline.yml")),
+			).toBe(false);
+			expect(
+				existsSync(join(tempDir, ".github/workflows/harness-update-check.yml")),
 			).toBe(false);
 		});
 	});
@@ -79,7 +82,7 @@ describe("runInit", () => {
 
 			expect(result.ok).toBe(true);
 			if (result.ok) {
-				expect(result.output.created).toHaveLength(2);
+				expect(result.output.created).toHaveLength(3);
 				expect(result.output.skipped).toHaveLength(0);
 			}
 
@@ -87,6 +90,9 @@ describe("runInit", () => {
 			expect(existsSync(join(tempDir, "harness.contract.json"))).toBe(true);
 			expect(
 				existsSync(join(tempDir, ".github/workflows/pr-pipeline.yml")),
+			).toBe(true);
+			expect(
+				existsSync(join(tempDir, ".github/workflows/harness-update-check.yml")),
 			).toBe(true);
 		});
 
@@ -98,13 +104,17 @@ describe("runInit", () => {
 				join(tempDir, ".github/workflows/pr-pipeline.yml"),
 				"existing",
 			);
+			writeFileSync(
+				join(tempDir, ".github/workflows/harness-update-check.yml"),
+				"existing",
+			);
 
 			const result = runInit(tempDir, { dryRun: false, force: false });
 
 			expect(result.ok).toBe(true);
 			if (result.ok) {
 				expect(result.output.created).toHaveLength(0);
-				expect(result.output.skipped).toHaveLength(2);
+				expect(result.output.skipped).toHaveLength(3);
 			}
 		});
 	});
@@ -118,12 +128,16 @@ describe("runInit", () => {
 				join(tempDir, ".github/workflows/pr-pipeline.yml"),
 				"old content",
 			);
+			writeFileSync(
+				join(tempDir, ".github/workflows/harness-update-check.yml"),
+				"old content",
+			);
 
 			const result = runInit(tempDir, { dryRun: false, force: true });
 
 			expect(result.ok).toBe(true);
 			if (result.ok) {
-				expect(result.output.created).toHaveLength(2);
+				expect(result.output.created).toHaveLength(3);
 				expect(result.output.skipped).toHaveLength(0);
 			}
 		});
@@ -229,7 +243,7 @@ describe("--track flag", () => {
 
 		expect(result.ok).toBe(true);
 		if (result.ok) {
-			expect(result.output.created).toHaveLength(2);
+			expect(result.output.created).toHaveLength(3);
 		}
 
 		// Verify manifest exists
@@ -257,7 +271,7 @@ describe("--track flag", () => {
 
 		expect(result.ok).toBe(true);
 		if (result.ok) {
-			expect(result.output.created).toHaveLength(2);
+			expect(result.output.created).toHaveLength(3);
 		}
 
 		// Verify backup exists
@@ -269,7 +283,7 @@ describe("--track flag", () => {
 			"utf-8",
 		);
 		const manifest = JSON.parse(manifestContent);
-		expect(manifest.files).toHaveLength(2);
+		expect(manifest.files).toHaveLength(3);
 
 		// Find the modified entry
 		const modifiedEntry = manifest.files.find(

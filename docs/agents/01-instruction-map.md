@@ -7,6 +7,7 @@ This repository keeps operational guidance in layers so operators can find the m
 - `AGENTS.md` gives the mandatory top-level baseline.
 - `CLAUDE.md` holds conversational always-on guidance for this repo.
 - `docs/agents/*.md` stores focused SOPs by task type.
+- `docs/agents/harness-onboarding-playbook.json` stores a machine-readable, project-profile-aware onboarding workflow for agents.
 - `docs/plans/*` and `todos/*` capture larger initiatives and backlog context.
 
 ## Decision map by task type
@@ -25,6 +26,7 @@ When starting a task, follow this lookup order:
    - **Role/accountability changes:** `07a-role-governance.md` + `07b-agent-governance.md`
    - **Release milestone, rollback, or process change:** `08-release-and-change-control.md`
    - **Auditability requirements:** `09-audit-trail-policy.md`
+   - **Harness onboarding automation:** `harness-onboarding-playbook.json`
 
 3. If guidance is unclear, pause and resolve precedence before proceeding.
 
@@ -76,3 +78,4 @@ If two instructions conflict:
 - [Audit trail policy](./09-audit-trail-policy.md)
 - [Agent testing gates](./10-agent-testing-gates.md)
 - [Flaky test artifact capture standard](./11-flaky-test-artifacts.md)
+- [Harness onboarding playbook](./harness-onboarding-playbook.json)

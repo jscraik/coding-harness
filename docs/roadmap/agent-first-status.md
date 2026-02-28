@@ -52,7 +52,7 @@ This document tracks the implementation status of roadmap claims for the Agent-F
 
 | Component | Status | Notes |
 |-----------|--------|-------|
-| init command | ✅ | `--dry-run`, `--track`, `--rollback`, `--migrate` |
+| init command | ✅ | `--dry-run`, `--track`, `--rollback`, `--migrate`, `--check-updates`, `--update` |
 | Contract scaffolding | ✅ | Full policy output with defaults |
 
 ### Phase 5: Evidence + Observability
@@ -69,6 +69,7 @@ This document tracks the implementation status of roadmap claims for the Agent-F
 
 | Component | Status | Notes |
 |-----------|--------|-------|
+| Template update workflow | ✅ | Weekly scheduled `harness-update-check.yml` opens template refresh PRs |
 | Nightly workflow | ✅ | Scheduled maintenance tasks |
 | Stale docs detection | ✅ | Age-based flagging |
 | Broken link detection | ✅ | Link validation |

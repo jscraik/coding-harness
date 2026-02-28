@@ -185,6 +185,7 @@ Modes:
       ci-pipeline.yml
       review-gate.yml
       harness-gardener.yml
+      harness-update-check.yml
     scripts/check
     docs/*
     .harness/
@@ -983,7 +984,7 @@ User has OTel collector at `~/.agents/otel-collector/`. Explore direct emission 
 | Phase 1: Bootstrap | ✅ Complete | Repository structure, build system, testing framework |
 | Phase 2: Contract core | ✅ Complete | Contract parser, validator, risk-tier engine, policy gates |
 | Phase 3: GitHub workflows | ✅ Complete | review-gate, policy-gate, SHA enforcement, GitHub client |
-| Phase 4: Installability | ✅ Complete | init command with --dry-run, --track, --rollback, --migrate |
+| Phase 4: Installability | ✅ Complete | init command with --dry-run, --track, --rollback, --migrate, --check-updates, --update |
 | Phase 5: Evidence + observability | ✅ Complete | evidence-verify command, gardener workflow |
 | Phase 6: Gardening | ✅ Complete | nightly gardener workflow, stale docs, broken links |
 | Phase 7: Memory policy | ✅ Complete | memory-gate command, branch enforcement, metrics tracking |

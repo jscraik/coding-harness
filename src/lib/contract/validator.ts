@@ -1,3 +1,4 @@
+import type { BlastRadiusRule } from "../blast-radius/resolver.js";
 import type {
 	DiffBudget,
 	DocsDriftRules,
@@ -29,6 +30,7 @@ const FORBIDDEN_KEYS = ["__proto__", "constructor", "prototype"] as const;
 const VALID_TOP_LEVEL_KEYS = [
 	"version",
 	"riskTierRules",
+	"blastRadiusRules",
 	"reviewPolicy",
 	"evidencePolicy",
 	"mergePolicy",
@@ -671,6 +673,34 @@ function isValidDocsDriftRules(value: unknown): value is DocsDriftRules {
 	return true;
 }
 
+function isValidBlastRadiusRules(value: unknown): value is BlastRadiusRule[] {
+	if (!Array.isArray(value)) return false;
+
+	for (const entry of value) {
+		if (typeof entry !== "object" || entry === null) return false;
+		if (Array.isArray(entry)) return false;
+		if (!("pattern" in entry) || !("checks" in entry)) return false;
+
+		const rule = entry as Record<string, unknown>;
+		if (typeof rule.pattern !== "string" || rule.pattern.length === 0) {
+			return false;
+		}
+
+		if (!Array.isArray(rule.checks)) return false;
+		if (!rule.checks.every((check) => typeof check === "string")) return false;
+
+		if (rule.description !== undefined && typeof rule.description !== "string")
+			return false;
+
+		const extraKeys = Object.keys(rule).filter(
+			(key) => !["pattern", "checks", "description"].includes(key),
+		);
+		if (extraKeys.length > 0) return false;
+	}
+
+	return true;
+}
+
 function isValidTopLevel(
 	data: Record<string, unknown>,
 	errors: ValidationError[],
@@ -869,6 +899,24 @@ export function validateContract(
 			});
 		} else {
 			docsDriftRules = obj.docsDriftRules as DocsDriftRules;
+		}
+	}
+
+	// Validate blastRadiusRules
+	let blastRadiusRules: BlastRadiusRule[] | undefined;
+	if ("blastRadiusRules" in obj && obj.blastRadiusRules !== undefined) {
+		if (!isValidBlastRadiusRules(obj.blastRadiusRules)) {
+			errors.push({
+				code: ValidationErrorCode.INVALID_VALUE,
+				path: "blastRadiusRules",
+				message: "blastRadiusRules must be an array of pattern/check objects",
+				expected:
+					"[{ pattern: string, checks: string[], description?: string }]",
+				received: JSON.stringify(obj.blastRadiusRules),
+				fix: "Ensure each blastRadiusRules entry has pattern and checks, with optional description",
+			});
+		} else {
+			blastRadiusRules = obj.blastRadiusRules as BlastRadiusRule[];
 		}
 	}
 
@@ -1104,6 +1152,7 @@ export function validateContract(
 		data: {
 			version: obj.version as string,
 			riskTierRules: (obj.riskTierRules as Record<string, RiskTier>) ?? {},
+			blastRadiusRules,
 			reviewPolicy,
 			evidencePolicy,
 			mergePolicy,

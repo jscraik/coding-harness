@@ -209,6 +209,55 @@ describe("validateContract", () => {
 		expect(result.errors[0]?.path).toBe("remediationPolicy");
 	});
 
+	it("accepts valid blastRadiusRules in contract", () => {
+		const result = validateContract({
+			version: "1.2.0",
+			blastRadiusRules: [
+				{
+					pattern: "src/commands/**/*.ts",
+					checks: ["typecheck", "test-run", "lint"],
+					description: "Project-specific command tests",
+				},
+				{
+					pattern: "docs/**/*.md",
+					checks: ["docs-lint", "link-check"],
+				},
+			],
+		});
+
+		expect(result.success).toBe(true);
+		expect(result.data?.blastRadiusRules).toEqual([
+			{
+				pattern: "src/commands/**/*.ts",
+				checks: ["typecheck", "test-run", "lint"],
+				description: "Project-specific command tests",
+			},
+			{
+				pattern: "docs/**/*.md",
+				checks: ["docs-lint", "link-check"],
+				description: undefined,
+			},
+		]);
+	});
+
+	it("rejects malformed blastRadiusRules", () => {
+		const result = validateContract({
+			version: "1.2.0",
+			blastRadiusRules: [
+				{
+					pattern: "",
+					checks: ["typecheck"],
+				},
+				{
+					pattern: "src/**/*.ts",
+					checks: [123 as unknown as string],
+				},
+			],
+		});
+		expect(result.success).toBe(false);
+		expect(result.errors[0]?.path).toBe("blastRadiusRules");
+	});
+
 	it("rejects malformed gap-case policy", () => {
 		const result = validateContract({
 			version: "1.2.0",
@@ -231,6 +280,7 @@ describe("field-by-field matrix tests for parity verification", () => {
 	const SCAFFOLDED_FIELDS = [
 		"version",
 		"riskTierRules",
+		"blastRadiusRules",
 		"mergePolicy",
 		"docsDriftRules",
 		"reviewPolicy",

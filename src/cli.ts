@@ -128,6 +128,14 @@ function printUsage(): void {
 	console.info("  --contract       Path to contract file (optional)");
 	console.info("  --json           Output as JSON");
 	console.info("");
+	console.info("Blast Radius Options:");
+	console.info("  --files <paths>  Comma-separated list of changed files");
+	console.info(
+		"  --contract       Path to contract file with blastRadiusRules override",
+	);
+	console.info("  --json           Output as JSON");
+	console.info("  --verbose        Show detailed matched-check output");
+	console.info("");
 	console.info("Gardener Options:");
 	console.info("  --docs           Path to docs directory (default: docs)");
 	console.info("  --dry-run        Preview changes without writing");
@@ -826,6 +834,7 @@ export function run(args: string[]): void {
 		const jsonFlag = args.includes("--json");
 		const verboseFlag = args.includes("--verbose");
 		const filesIndex = args.indexOf("--files");
+		const contractIndex = args.indexOf("--contract");
 
 		const filesArg = getFlagValue(args, filesIndex);
 		if (!filesArg) {
@@ -837,12 +846,22 @@ export function run(args: string[]): void {
 			.split(",")
 			.map((f) => f.trim())
 			.filter(Boolean);
-
-		const exitCode = runBlastRadiusCLI({
+		const contractArg = getFlagValue(args, contractIndex);
+		const options: {
+			files: string[];
+			json?: boolean;
+			verbose?: boolean;
+			contract?: string;
+		} = {
 			files,
 			json: jsonFlag,
 			verbose: verboseFlag,
-		});
+		};
+		if (contractArg) {
+			options.contract = contractArg;
+		}
+
+		const exitCode = runBlastRadiusCLI(options);
 		process.exit(exitCode);
 		return;
 	}

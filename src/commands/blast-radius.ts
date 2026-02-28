@@ -2,6 +2,8 @@ import {
 	resolveChecks,
 	summarizeBlastRadius,
 } from "../lib/blast-radius/resolver.js";
+import { ContractLoadError, loadContract } from "../lib/contract/loader.js";
+import { sanitizeError } from "../lib/input/sanitize.js";
 
 // Exit codes for programmatic consumption
 export const EXIT_CODES = {
@@ -17,6 +19,8 @@ export interface BlastRadiusOptions {
 	json?: boolean;
 	/** Show detailed analysis */
 	verbose?: boolean;
+	/** Optional contract path containing blastRadiusRules overrides */
+	contract?: string;
 }
 
 export interface BlastRadiusOutput {
@@ -49,7 +53,14 @@ export function runBlastRadius(options: BlastRadiusOptions): BlastRadiusResult {
 			};
 		}
 
-		const { checks, fileChecks, useDefaults } = resolveChecks(options.files);
+		const rules =
+			options.contract === undefined
+				? undefined
+				: loadContract(options.contract).blastRadiusRules;
+		const { checks, fileChecks, useDefaults } = resolveChecks(
+			options.files,
+			rules,
+		);
 
 		const fileChecksRecord: Record<string, string[]> = {};
 		for (const [file, fileChecksList] of fileChecks) {
@@ -65,11 +76,21 @@ export function runBlastRadius(options: BlastRadiusOptions): BlastRadiusResult {
 
 		return { ok: true, output };
 	} catch (error) {
+		if (error instanceof ContractLoadError) {
+			return {
+				ok: false,
+				error: {
+					code: "SYSTEM_ERROR",
+					message: error.message,
+				},
+			};
+		}
 		return {
 			ok: false,
 			error: {
 				code: "SYSTEM_ERROR",
-				message: error instanceof Error ? error.message : "Unknown error",
+				message:
+					error instanceof Error ? sanitizeError(error) : "Unknown error",
 			},
 		};
 	}

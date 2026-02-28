@@ -131,6 +131,35 @@ When adding new paths or check types:
 3. Ensure CI workflows can run the check
 4. Document the check's purpose above
 
+### Per-project configuration
+
+`blastRadiusRules` can now be customized per repo in `harness.contract.json`.
+Projects can override the default rule set by adding their own ordered list:
+
+```json
+{
+  "blastRadiusRules": [
+    {
+      "pattern": "src/ui/**",
+      "checks": ["test-run", "visual-regression", "lint"],
+      "description": "UI changes need visual and lint verification"
+    }
+  ]
+}
+```
+
+The harness uses the matching project rules when running:
+
+```bash
+harness blast-radius --files src/ui/Feature.tsx --contract harness.contract.json
+```
+
+If no matching rule is found for a file set, the command falls back to:
+
+- `typecheck`
+- `lint`
+- `test-run`
+
 ## Fallback Behavior
 
 If a changed file matches no specific pattern, these default checks run:

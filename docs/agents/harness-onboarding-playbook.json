@@ -1,0 +1,227 @@
+{
+  "schema_version": 1,
+  "name": "coding-harness-agent-onboarding",
+  "title": "Coding Harness Onboarding Playbook",
+  "description": "Step-by-step workflow for onboarding an existing repository to use coding-harness with agent support.",
+  "updated_at": "2026-02-28",
+  "execution_policy": {
+    "agent_guidance": "Detect project profile first, then execute only commands tagged in that profile via `applies_to`.",
+    "criticality": "Commands may be marked `required: true|false`. Required commands should fail the onboarding flow when they fail; optional commands may be skipped or retried per environment limits.",
+    "selection_rules": [
+      "Run only the command list that matches the detected project profile.",
+      "Skip commands whose required markers are absent.",
+      "When multiple project profiles match, run only the overlapping command set."
+    ],
+    "project_profiles": [
+      {
+        "id": "node",
+        "name": "Node / TypeScript / JavaScript project",
+        "required_markers": ["package.json"],
+        "optional_markers": [
+          "pnpm-lock.yaml",
+          "yarn.lock",
+          "package-lock.json"
+        ]
+      },
+      {
+        "id": "other",
+        "name": "Non-Node project",
+        "required_markers": [],
+        "optional_markers": []
+      }
+    ]
+  },
+  "artifacts": {
+    "diagram_context_pack": {
+      "markdown": "AI/context/diagram-context.md",
+      "metadata": "AI/context/diagram-context.meta.json",
+      "diagrams": [
+        ".diagram/diagrams/architecture.mmd",
+        ".diagram/diagrams/flow.mmd",
+        ".diagram/diagrams/sequence.mmd",
+        ".diagram/diagrams/dependency.mmd",
+        ".diagram/diagrams/class.mmd"
+      ]
+    },
+    "init_template_files": [
+      "harness.contract.json",
+      ".github/workflows/pr-pipeline.yml",
+      ".github/workflows/harness-update-check.yml",
+      ".harness/restore-manifest.json"
+    ]
+  },
+  "steps": [
+    {
+      "id": "step-01",
+      "title": "Preflight and safety checks",
+      "goal": "Ensure the repo is in a clean, install-safe state.",
+      "commands": [
+        {
+          "command": "git status --short",
+          "required": true,
+          "applies_to": ["node", "other"]
+        },
+        {
+          "command": "ls -1 pnpm-lock.yaml yarn.lock package-lock.json",
+          "required": false,
+          "applies_to": ["node"],
+          "skip_if_missing": true
+        },
+        {
+          "command": "ls -1 pyproject.toml go.mod go.work Cargo.toml",
+          "required": false,
+          "applies_to": ["other"]
+        },
+        {
+          "command": "ls -1 .github/workflows",
+          "required": false,
+          "applies_to": ["node", "other"]
+        }
+      ],
+      "verify": [
+        "no uncommitted file changes before bootstrapping",
+        "lockfile exists for package-manager auto-detection"
+      ],
+      "diagrams": [
+        ".diagram/diagrams/flow.mmd",
+        ".diagram/diagrams/architecture.mmd"
+      ]
+    },
+    {
+      "id": "step-02",
+      "title": "Install harness templates",
+      "goal": "Bootstrap harness files and track mutable state.",
+      "commands": [
+        {
+          "command": "pnpm exec tsx src/cli.ts init --track",
+          "required": false,
+          "applies_to": ["node"],
+          "skip_if_missing": true
+        },
+        {
+          "command": "harness init --track",
+          "required": true,
+          "applies_to": ["node", "other"],
+          "fallback_for": [
+            "pnpm exec tsx src/cli.ts init --track"
+          ]
+        }
+      ],
+      "verify": [
+        "harness.contract.json exists",
+        ".github/workflows/pr-pipeline.yml exists",
+        ".github/workflows/harness-update-check.yml exists",
+        ".harness/restore-manifest.json exists"
+      ],
+      "notes": "Prefer the repository-local CLI command shown; use the installed binary equivalent when available."
+    },
+    {
+      "id": "step-03",
+      "title": "Verify drift tracking state",
+      "goal": "Confirm version-tracking metadata is present and valid.",
+      "commands": [
+        {
+          "command": "pnpm exec tsx src/cli.ts init --check-updates",
+          "required": false,
+          "applies_to": ["node"],
+          "skip_if_missing": true
+        },
+        {
+          "command": "harness init --check-updates",
+          "required": true,
+          "applies_to": ["node", "other"],
+          "fallback_for": [
+            "pnpm exec tsx src/cli.ts init --check-updates"
+          ]
+        },
+        {
+          "command": "cat .harness/restore-manifest.json",
+          "required": true,
+          "applies_to": ["node", "other"]
+        }
+      ],
+      "verify": [
+        ".harness/restore-manifest.json is valid JSON",
+        "init --check-updates returns current vs installed state"
+      ]
+    },
+    {
+      "id": "step-04",
+      "title": "Run baseline checks",
+      "goal": "Validate the repo with repository checks.",
+      "commands": [
+        {
+          "command": "pnpm check",
+          "required": false,
+          "applies_to": ["node"],
+          "skip_if_missing": true
+        },
+        {
+          "command": "pnpm test src/commands/init.test.ts",
+          "required": false,
+          "applies_to": ["node"],
+          "skip_if_missing": true
+        }
+      ],
+      "verify": [
+        "command exits successfully"
+      ],
+      "notes": "If CI-only repos block full checks, run a scoped subset first and record follow-up."
+    },
+    {
+      "id": "step-05",
+      "title": "Commit and monitor drift",
+      "goal": "Persist harness setup and enable automated template refresh.",
+      "commands": [
+        {
+          "command": "git add harness.contract.json .github/workflows/pr-pipeline.yml .github/workflows/harness-update-check.yml .harness/restore-manifest.json",
+          "required": true,
+          "applies_to": ["node", "other"]
+        },
+        {
+          "command": "git commit -m \"chore: add harness templates\"",
+          "required": true,
+          "applies_to": ["node", "other"]
+        },
+        {
+          "command": "gh workflow run harness-update-check.yml",
+          "required": false,
+          "applies_to": ["node", "other"]
+        },
+        {
+          "command": "pnpm exec tsx src/cli.ts init --update",
+          "required": false,
+          "applies_to": ["node"],
+          "skip_if_missing": true
+        },
+        {
+          "command": "harness init --update",
+          "required": false,
+          "applies_to": ["other"],
+          "notes": "Use when the repo does not expose local CLI tooling."
+        }
+      ],
+      "verify": [
+        "commit contains expected harness files",
+        "harness-update-check workflow exists in .github/workflows",
+        "manual run succeeds (or returns actionable diagnostics)"
+      ],
+      "recovery": [
+        {
+          "command": "pnpm exec tsx src/cli.ts init --rollback",
+          "required": false,
+          "notes": "Use the local CLI rollback path when available."
+        },
+        {
+          "command": "harness init --rollback",
+          "required": false,
+          "notes": "Use fallback binary rollback when local tooling is unavailable."
+        }
+      ]
+    }
+  ],
+  "runtime": {
+    "update_strategy": "Weekly scheduled workflow checks for template drift, commits maintenance branch/PR when needed.",
+    "fallback": "Run `harness init --update` to reconcile drift if automatic workflow is disabled."
+  }
+}

@@ -1,3 +1,6 @@
+import type { BlastRadiusRule } from "../blast-radius/resolver.js";
+import { DEFAULT_BLAST_RADIUS_RULES } from "../blast-radius/resolver.js";
+
 export type RiskTier = "high" | "medium" | "low";
 
 export type TimeoutAction = "fail" | "warn";
@@ -287,6 +290,8 @@ export const DEFAULT_PILOT_AUTHZ_POLICY: PilotAuthzPolicy = {
 export interface HarnessContract {
 	version: string;
 	riskTierRules: Record<string, RiskTier>;
+	/** Optional blast-radius overrides by glob pattern */
+	blastRadiusRules?: BlastRadiusRule[] | undefined;
 	reviewPolicy?: ReviewPolicy | undefined;
 	/** Evidence policy for requiring verification artifacts */
 	evidencePolicy?: EvidencePolicy | undefined;
@@ -325,6 +330,7 @@ export interface HarnessContract {
 export const DEFAULT_CONTRACT: HarnessContract = {
 	version: "1.2.0",
 	riskTierRules: {},
+	blastRadiusRules: DEFAULT_BLAST_RADIUS_RULES,
 	reviewPolicy: DEFAULT_REVIEW_POLICY,
 	evidencePolicy: DEFAULT_EVIDENCE_POLICY,
 	mergePolicy: {
