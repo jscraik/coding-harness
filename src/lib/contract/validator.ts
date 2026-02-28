@@ -21,6 +21,7 @@ import type {
 	RemediationPolicy,
 	RemediationProviderPolicy,
 	ReviewPolicy,
+	ReviewScoreThresholds,
 	RiskTier,
 	RuntimePolicy,
 	TimeoutAction,
@@ -230,7 +231,8 @@ function isValidReviewPolicy(value: unknown): value is ReviewPolicy {
 
 	// Reject unknown top-level keys
 	const unknownKeys = Object.keys(policy).filter(
-		(key) => !["timeoutSeconds", "timeoutAction"].includes(key),
+		(key) =>
+			!["timeoutSeconds", "timeoutAction", "scoreThresholds"].includes(key),
 	);
 	if (unknownKeys.length > 0) {
 		return false;
@@ -247,6 +249,62 @@ function isValidReviewPolicy(value: unknown): value is ReviewPolicy {
 
 	// Validate timeoutAction
 	if (!isValidTimeoutAction(policy.timeoutAction)) {
+		return false;
+	}
+
+	if (
+		policy.scoreThresholds !== undefined &&
+		!isValidReviewScoreThresholds(policy.scoreThresholds)
+	) {
+		return false;
+	}
+
+	return true;
+}
+
+function isValidReviewScoreThresholds(
+	value: unknown,
+): value is ReviewScoreThresholds {
+	if (!isPlainObject(value)) return false;
+	const thresholds = value as Record<string, unknown>;
+
+	const unknownKeys = Object.keys(thresholds).filter(
+		(key) =>
+			!["minOprScore", "minGreptileScore", "scoreScale"].includes(key),
+	);
+	if (unknownKeys.length > 0) {
+		return false;
+	}
+
+	if (
+		typeof thresholds.minOprScore !== "number" ||
+		!Number.isInteger(thresholds.minOprScore) ||
+		thresholds.minOprScore < 0
+	) {
+		return false;
+	}
+
+	if (
+		typeof thresholds.minGreptileScore !== "number" ||
+		!Number.isInteger(thresholds.minGreptileScore) ||
+		thresholds.minGreptileScore < 0
+	) {
+		return false;
+	}
+
+	if (
+		typeof thresholds.scoreScale !== "number" ||
+		!Number.isInteger(thresholds.scoreScale) ||
+		thresholds.scoreScale <= 0
+	) {
+		return false;
+	}
+
+	if (thresholds.minOprScore > thresholds.scoreScale) {
+		return false;
+	}
+
+	if (thresholds.minGreptileScore > thresholds.scoreScale) {
 		return false;
 	}
 
@@ -1254,10 +1312,11 @@ export function validateContract(
 				code: ValidationErrorCode.INVALID_VALUE,
 				path: "reviewPolicy",
 				message:
-					"reviewPolicy must have timeoutSeconds (positive integer) and timeoutAction ('fail' | 'warn')",
-				expected: "{ timeoutSeconds: 600, timeoutAction: 'fail' | 'warn' }",
+					"reviewPolicy must have timeoutSeconds, timeoutAction, and optional scoreThresholds { minOprScore, minGreptileScore, scoreScale }",
+				expected:
+					"{ timeoutSeconds: 600, timeoutAction: 'fail' | 'warn', scoreThresholds?: { minOprScore: 4, minGreptileScore: 5, scoreScale: 5 } }",
 				received: JSON.stringify(obj.reviewPolicy),
-				fix: "Ensure reviewPolicy has valid timeoutSeconds and timeoutAction",
+				fix: "Ensure reviewPolicy has valid timeout fields and optional scoreThresholds values",
 			});
 		} else {
 			reviewPolicy = obj.reviewPolicy as ReviewPolicy;

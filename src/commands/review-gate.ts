@@ -1,8 +1,8 @@
 import { ContractLoadError, loadContract } from "../lib/contract/loader.js";
-// LOCAL_EDIT
 import {
 	DEFAULT_REVIEW_POLICY,
 	type ReviewPolicy,
+	type ReviewScoreThresholds,
 } from "../lib/contract/types.js";
 import {
 	findReviewCheckRun,
@@ -46,6 +46,21 @@ export interface ReviewGateOutput {
 	checkConclusion?: string | undefined;
 	needsRerun: boolean;
 	timedOut?: boolean;
+	scoreValidation?: ScoreValidationResult | undefined;
+}
+
+interface ParsedScore {
+	value: number;
+	scale: number;
+}
+
+interface ScoreValidationResult {
+	enforced: boolean;
+	passed: boolean;
+	reason?: string | undefined;
+	oprScore?: ParsedScore | undefined;
+	greptileScore?: ParsedScore | undefined;
+	thresholds?: ReviewScoreThresholds | undefined;
 }
 
 export type ReviewGateResult =
@@ -54,6 +69,14 @@ export type ReviewGateResult =
 
 const POLL_INTERVAL_MS = 5000; // 5 seconds
 const DEFAULT_REVIEW_GATE_AUTHZ_CONTRACT = "harness.contract.json";
+const OPR_SCORE_PATTERNS = [
+	/\bOPR(?:\s+score)?\s*[:=-]?\s*(\d+)\s*\/\s*(\d+)\b/i,
+	/\bOperational\s+PR\s+Review(?:\s+score)?\s*[:=-]?\s*(\d+)\s*\/\s*(\d+)\b/i,
+] as const;
+const GREPTILE_SCORE_PATTERNS = [
+	/\bGreptile(?:\s+score)?\s*[:=-]?\s*(\d+)\s*\/\s*(\d+)\b/i,
+	/\bGreptile\s+confidence(?:\s+score)?\s*[:=-]?\s*(\d+)\s*\/\s*(\d+)\b/i,
+] as const;
 
 /**
  * Run review gate check with timeout polling.
@@ -120,6 +143,24 @@ export async function runReviewGate(
 			}
 
 			if (isCheckRunPassing(checkResult)) {
+				const scoreValidation = evaluateScoreThresholds(
+					checkResult.checkRun,
+					reviewPolicy.scoreThresholds,
+				);
+				if (!scoreValidation.passed) {
+					return {
+						ok: true,
+						output: {
+							verified: false,
+							headSha: options.headSha,
+							checkStatus: checkResult.status,
+							checkConclusion: checkResult.conclusion ?? undefined,
+							needsRerun: true,
+							scoreValidation,
+						},
+					};
+				}
+
 				return {
 					ok: true,
 					output: {
@@ -128,6 +169,7 @@ export async function runReviewGate(
 						checkStatus: checkResult.status,
 						checkConclusion: checkResult.conclusion ?? undefined,
 						needsRerun: false,
+						scoreValidation,
 					},
 				};
 			}
@@ -353,4 +395,115 @@ export async function runReviewGateCLI(
 
 function sleep(ms: number): Promise<void> {
 	return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+function evaluateScoreThresholds(
+	checkRun:
+		| {
+				output?: {
+					title?: string | null;
+					summary?: string | null;
+					text?: string | null;
+				};
+		  }
+		| undefined,
+	thresholds: ReviewScoreThresholds | undefined,
+): ScoreValidationResult {
+	if (thresholds === undefined) {
+		return { enforced: false, passed: true };
+	}
+
+	const content = [
+		checkRun?.output?.title ?? "",
+		checkRun?.output?.summary ?? "",
+		checkRun?.output?.text ?? "",
+	]
+		.filter((part) => part.length > 0)
+		.join("\n");
+
+	if (content.length === 0) {
+		return {
+			enforced: true,
+			passed: false,
+			reason:
+				"Review check did not provide score output for threshold validation",
+			thresholds,
+		};
+	}
+
+	const oprScore = extractScore(content, OPR_SCORE_PATTERNS);
+	const greptileScore = extractScore(content, GREPTILE_SCORE_PATTERNS);
+
+	if (!oprScore || !greptileScore) {
+		return {
+			enforced: true,
+			passed: false,
+			reason:
+				"Missing required OPR/Greptile score values in review check output",
+			oprScore: oprScore ?? undefined,
+			greptileScore: greptileScore ?? undefined,
+			thresholds,
+		};
+	}
+
+	if (
+		oprScore.scale !== thresholds.scoreScale ||
+		greptileScore.scale !== thresholds.scoreScale
+	) {
+		return {
+			enforced: true,
+			passed: false,
+			reason: `Score scale mismatch. Expected ${thresholds.scoreScale}`,
+			oprScore,
+			greptileScore,
+			thresholds,
+		};
+	}
+
+	if (
+		oprScore.value < thresholds.minOprScore ||
+		greptileScore.value < thresholds.minGreptileScore
+	) {
+		return {
+			enforced: true,
+			passed: false,
+			reason: `Score thresholds unmet. Required OPR ${thresholds.minOprScore}/${thresholds.scoreScale} and Greptile ${thresholds.minGreptileScore}/${thresholds.scoreScale}`,
+			oprScore,
+			greptileScore,
+			thresholds,
+		};
+	}
+
+	return {
+		enforced: true,
+		passed: true,
+		oprScore,
+		greptileScore,
+		thresholds,
+	};
+}
+
+function extractScore(
+	content: string,
+	patterns: readonly RegExp[],
+): ParsedScore | null {
+	for (const pattern of patterns) {
+		const match = content.match(pattern);
+		if (!match) {
+			continue;
+		}
+		const value = Number.parseInt(match[1] ?? "", 10);
+		const scale = Number.parseInt(match[2] ?? "", 10);
+		if (
+			Number.isNaN(value) ||
+			Number.isNaN(scale) ||
+			value < 0 ||
+			scale <= 0 ||
+			value > scale
+		) {
+			return null;
+		}
+		return { value, scale };
+	}
+	return null;
 }
