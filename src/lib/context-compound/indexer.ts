@@ -9,10 +9,10 @@
  */
 
 import { createHash } from "node:crypto";
-import { existsSync, readFileSync, statSync } from "node:fs";
-import { basename, isAbsolute, relative, resolve, sep } from "node:path";
-import { MAX_FILE_SIZE_BYTES } from "./constants.js";
+import { existsSync, readFileSync, realpathSync, statSync } from "node:fs";
+import { basename, isAbsolute, relative, sep } from "node:path";
 import { validatePath } from "../input/validator.js";
+import { MAX_FILE_SIZE_BYTES } from "./constants.js";
 import type { OllamaClient } from "./ollama.js";
 import type { VectorStore } from "./store.js";
 import {
@@ -133,8 +133,10 @@ function getRelativePathWithinBase(
 	basePath: string,
 ): Result<string, IndexerError> {
 	let resolvedFilePath = filepath;
+	let resolvedBasePath: string;
 	try {
 		resolvedFilePath = validatePath(basePath, filepath);
+		resolvedBasePath = realpathSync(basePath);
 	} catch {
 		return err({
 			code: "READ_FAILED",
@@ -143,7 +145,7 @@ function getRelativePathWithinBase(
 		});
 	}
 
-	const relativePath = relative(resolve(basePath), resolvedFilePath);
+	const relativePath = relative(resolvedBasePath, resolvedFilePath);
 
 	if (
 		relativePath.length === 0 ||

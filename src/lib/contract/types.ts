@@ -94,6 +94,18 @@ export interface PackageManagerPolicy {
 }
 
 /**
+ * Gap-case policy for lifecycle and severity controls.
+ */
+export interface GapCasePolicy {
+	requiredEvidenceStatuses: string[];
+	requiredCloseReasons: string[];
+	defaultDueDays: number;
+	caseIdPrefix: string;
+	caseStore: string;
+	allowEvidencelessResolve: boolean;
+}
+
+/**
  * Override metadata when diff budget is exceeded.
  */
 export interface DiffBudgetOverride {
@@ -264,6 +276,17 @@ export const DEFAULT_PILOT_AUTHZ_POLICY: PilotAuthzPolicy = {
 export interface HarnessContract {
 	version: string;
 	riskTierRules: Record<string, RiskTier>;
+	mergePolicy?: MergePolicy | undefined;
+	docsDriftRules?: DocsDriftRules | undefined;
+	diffBudget?: DiffBudget | undefined;
+	uiLoopPolicy?: UILoopPolicy | undefined;
+	runtimePolicy?: RuntimePolicy | undefined;
+	memoryPolicy?: MemoryPolicy | undefined;
+	memoryMaintenancePolicy?: MemoryMaintenancePolicy | undefined;
+	memoryEvalPolicy?: MemoryEvalPolicy | undefined;
+	observabilityPolicy?: ObservabilityPolicy | undefined;
+	packageManagerPolicy?: PackageManagerPolicy | undefined;
+	gapCasePolicy?: GapCasePolicy | undefined;
 	reviewPolicy?: ReviewPolicy | undefined;
 	/** Evidence policy for requiring verification artifacts */
 	evidencePolicy?: EvidencePolicy | undefined;

@@ -5,6 +5,14 @@ import type {
 	GapCasePolicy,
 	HarnessContract,
 	ImageFormat,
+	MemoryEvalPolicy,
+	MemoryMaintenancePolicy,
+	MemoryPolicy,
+	MergePolicy,
+	MergePolicyEntry,
+	MergePolicyValue,
+	ObservabilityPolicy,
+	PackageManagerPolicy,
 	PilotAuthzPolicy,
 	PilotGapCasePolicy,
 	PilotRollbackPolicy,
@@ -82,16 +90,6 @@ const VALID_OBSERVABILITY_POLICY_KEYS = [
 const VALID_PACKAGE_MANAGER_POLICY_KEYS = [
 	"allowedManagers",
 	"requiredManager",
-] as const;
-const VALID_REMEDIATION_PROVIDER_KEYS = ["codeql", "codex"] as const;
-const VALID_REMEDIATION_PROVIDER_VALUES = ["high", "medium", "low"] as const;
-const VALID_REMEDIATION_POLICY_KEYS = [
-	"providerDefaults",
-	"canonicalRerunWorkflow",
-	"marker",
-	"timeoutMinutes",
-	"retryLimit",
-	"requireEvidence",
 ] as const;
 const VALID_GAP_CASE_POLICY_KEYS = [
 	"requiredEvidenceStatuses",
@@ -492,70 +490,6 @@ function isValidPackageManagerPolicy(
 	) {
 		return false;
 	}
-	return true;
-}
-
-function isValidRemediationPolicy(value: unknown): value is RemediationPolicy {
-	if (!isPlainObject(value)) return false;
-	const policy = value as Record<string, unknown>;
-
-	const invalidKeys = Object.keys(policy).filter(
-		(key) =>
-			!VALID_REMEDIATION_POLICY_KEYS.includes(
-				key as (typeof VALID_REMEDIATION_POLICY_KEYS)[number],
-			),
-	);
-	if (invalidKeys.length > 0) {
-		return false;
-	}
-
-	const providerDefaults = policy.providerDefaults;
-	if (!isPlainObject(providerDefaults)) return false;
-	for (const provider of VALID_REMEDIATION_PROVIDER_KEYS) {
-		const providerPolicy = providerDefaults[provider];
-		if (!isPlainObject(providerPolicy)) return false;
-		const entry = providerPolicy as Record<string, unknown>;
-		if (
-			typeof entry.autoApplyMaxTier !== "string" ||
-			!VALID_REMEDIATION_PROVIDER_VALUES.includes(
-				entry.autoApplyMaxTier as (typeof VALID_REMEDIATION_PROVIDER_VALUES)[number],
-			)
-		) {
-			return false;
-		}
-		if (typeof entry.dryRunOnlyByDefault !== "boolean") {
-			return false;
-		}
-	}
-
-	if (typeof policy.marker !== "string" || policy.marker.length === 0) {
-		return false;
-	}
-	if (
-		policy.canonicalRerunWorkflow !== null &&
-		policy.canonicalRerunWorkflow !== undefined &&
-		typeof policy.canonicalRerunWorkflow !== "string"
-	) {
-		return false;
-	}
-	if (
-		typeof policy.timeoutMinutes !== "number" ||
-		!Number.isInteger(policy.timeoutMinutes) ||
-		policy.timeoutMinutes < 1
-	) {
-		return false;
-	}
-	if (
-		typeof policy.retryLimit !== "number" ||
-		!Number.isInteger(policy.retryLimit) ||
-		policy.retryLimit < 0
-	) {
-		return false;
-	}
-	if (typeof policy.requireEvidence !== "boolean") {
-		return false;
-	}
-
 	return true;
 }
 
@@ -1258,25 +1192,6 @@ export function validateContract(
 		}
 	}
 
-	// Validate remediationPolicy (optional)
-	let remediationPolicy: RemediationPolicy | undefined;
-	if ("remediationPolicy" in obj && obj.remediationPolicy !== undefined) {
-		if (!isValidRemediationPolicy(obj.remediationPolicy)) {
-			errors.push({
-				code: ValidationErrorCode.INVALID_VALUE,
-				path: "remediationPolicy",
-				message:
-					"remediationPolicy must define providerDefaults, marker, timeoutMinutes, retryLimit, and requireEvidence",
-				expected:
-					"{ providerDefaults: { codeql: { autoApplyMaxTier: 'high'|'medium'|'low', dryRunOnlyByDefault: boolean }, codex: { autoApplyMaxTier: 'high'|'medium'|'low', dryRunOnlyByDefault: boolean } }, canonicalRerunWorkflow?: string | null, marker: string, timeoutMinutes: number, retryLimit: number, requireEvidence: boolean }",
-				received: JSON.stringify(obj.remediationPolicy),
-				fix: "Ensure remediationPolicy contains only supported keys and valid types",
-			});
-		} else {
-			remediationPolicy = obj.remediationPolicy as RemediationPolicy;
-		}
-	}
-
 	// Validate gapCasePolicy (optional)
 	let gapCasePolicy: GapCasePolicy | undefined;
 	if ("gapCasePolicy" in obj && obj.gapCasePolicy !== undefined) {
@@ -1400,6 +1315,17 @@ export function validateContract(
 		data: {
 			version: obj.version as string,
 			riskTierRules: (obj.riskTierRules as Record<string, RiskTier>) ?? {},
+			mergePolicy,
+			docsDriftRules,
+			diffBudget,
+			uiLoopPolicy,
+			runtimePolicy,
+			memoryPolicy,
+			memoryMaintenancePolicy,
+			memoryEvalPolicy,
+			observabilityPolicy,
+			packageManagerPolicy,
+			gapCasePolicy,
 			reviewPolicy,
 			evidencePolicy,
 			remediationPolicy,

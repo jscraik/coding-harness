@@ -4,9 +4,8 @@
  * Bulk index brainstorms, plans, and solutions for semantic search.
  */
 
-import { existsSync, readdirSync } from "node:fs";
+import { existsSync, lstatSync, readdirSync } from "node:fs";
 import { isAbsolute, join, relative, resolve, sep } from "node:path";
-import { validatePath } from "../lib/input/validator.js";
 import {
 	DEFAULT_DB_FILENAME,
 	DEFAULT_HARNESS_DIR,
@@ -19,6 +18,7 @@ import {
 } from "../lib/context-compound/indexer.js";
 import { OllamaClient } from "../lib/context-compound/ollama.js";
 import { VectorStore } from "../lib/context-compound/store.js";
+import { validatePath } from "../lib/input/validator.js";
 
 // Exit codes for programmatic consumption
 export const EXIT_CODES = {
@@ -55,7 +55,10 @@ export interface IndexContextOutput {
 	error?: string;
 }
 
-function getValidatedHarnessDir(baseDir: string, candidatePath: string): string {
+function getValidatedHarnessDir(
+	baseDir: string,
+	candidatePath: string,
+): string {
 	const resolvedCandidate = resolve(baseDir, candidatePath);
 	const relativeCandidate = relative(baseDir, resolvedCandidate);
 	if (
@@ -64,6 +67,22 @@ function getValidatedHarnessDir(baseDir: string, candidatePath: string): string 
 		isAbsolute(relativeCandidate)
 	) {
 		throw new Error("path escapes base directory");
+	}
+
+	if (existsSync(resolvedCandidate)) {
+		try {
+			if (lstatSync(resolvedCandidate).isSymbolicLink()) {
+				throw new Error("path escapes base directory");
+			}
+		} catch (error) {
+			if (
+				error instanceof Error &&
+				error.message !== "path escapes base directory"
+			) {
+				throw error;
+			}
+			throw new Error("path escapes base directory");
+		}
 	}
 
 	return validatePath(baseDir, candidatePath);
