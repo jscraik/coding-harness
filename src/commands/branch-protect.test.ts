@@ -221,6 +221,7 @@ describe("runBranchProtect", () => {
 		);
 		expect(requiredRule?.parameters).toMatchObject({
 			required_status_checks: [
+				{ context: "pr-template" },
 				{ context: "lint" },
 				{ context: "typecheck" },
 				{ context: "test" },

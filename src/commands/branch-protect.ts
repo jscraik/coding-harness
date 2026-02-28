@@ -10,6 +10,7 @@ import { sanitizeError } from "../lib/input/sanitize.js";
 const DEFAULT_RULESET_NAME = "protect";
 const DEFAULT_BRANCH = "main";
 const DEFAULT_REQUIRED_CHECKS = [
+	"pr-template",
 	"lint",
 	"typecheck",
 	"test",

@@ -725,12 +725,9 @@ export function run(args: string[]): void {
 		const rulesetIndex = args.indexOf("--ruleset");
 		const checksIndex = args.indexOf("--checks");
 		const approvalsIndex = args.indexOf("--required-approvals");
-
-		const parsedApprovals = parseIntegerArg(
-			getFlagValue(args, approvalsIndex),
-			0,
-		);
 		const checksArg = getFlagValue(args, checksIndex);
+		const approvalsArg =
+			approvalsIndex === -1 ? undefined : args[approvalsIndex + 1];
 
 		const options: {
 			token?: string;
@@ -759,7 +756,13 @@ export function run(args: string[]): void {
 		if (checksArg !== undefined) {
 			options.requiredChecks = parseCsvList(checksArg);
 		}
-		if (parsedApprovals !== undefined) {
+		if (approvalsIndex !== -1) {
+			const parsedApprovals = parseIntegerArg(approvalsArg, 0);
+			if (parsedApprovals === undefined) {
+				console.error("--required-approvals expects a non-negative integer.");
+				process.exit(1);
+				return;
+			}
 			options.requiredApprovingReviewCount = parsedApprovals;
 		}
 

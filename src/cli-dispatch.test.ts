@@ -804,6 +804,74 @@ describe("cli command dispatch", () => {
 		expect(exitSpy).toHaveBeenCalledWith(64);
 	});
 
+	it("rejects branch-protect --required-approvals when value is negative", async () => {
+		const { run } = await import("./cli.js");
+		const { runBranchProtectCLI } = await import(
+			"./commands/branch-protect.js"
+		);
+
+		const exitSpy = vi.spyOn(process, "exit").mockImplementation(((
+			code?: number,
+		) => {
+			throw new Error(`EXIT_${String(code)}`);
+		}) as never);
+		const errorSpy = vi
+			.spyOn(console, "error")
+			.mockImplementation(() => undefined);
+
+		expect(() =>
+			run([
+				"branch-protect",
+				"--owner",
+				"octo",
+				"--repo",
+				"harness",
+				"--required-approvals",
+				"-1",
+			]),
+		).toThrowError("EXIT_1");
+
+		expect(errorSpy).toHaveBeenCalledWith(
+			"--required-approvals expects a non-negative integer.",
+		);
+		expect(vi.mocked(runBranchProtectCLI)).not.toHaveBeenCalled();
+		expect(exitSpy).toHaveBeenCalledWith(1);
+	});
+
+	it("rejects branch-protect --required-approvals when value is non-numeric", async () => {
+		const { run } = await import("./cli.js");
+		const { runBranchProtectCLI } = await import(
+			"./commands/branch-protect.js"
+		);
+
+		const exitSpy = vi.spyOn(process, "exit").mockImplementation(((
+			code?: number,
+		) => {
+			throw new Error(`EXIT_${String(code)}`);
+		}) as never);
+		const errorSpy = vi
+			.spyOn(console, "error")
+			.mockImplementation(() => undefined);
+
+		expect(() =>
+			run([
+				"branch-protect",
+				"--owner",
+				"octo",
+				"--repo",
+				"harness",
+				"--required-approvals",
+				"two",
+			]),
+		).toThrowError("EXIT_1");
+
+		expect(errorSpy).toHaveBeenCalledWith(
+			"--required-approvals expects a non-negative integer.",
+		);
+		expect(vi.mocked(runBranchProtectCLI)).not.toHaveBeenCalled();
+		expect(exitSpy).toHaveBeenCalledWith(1);
+	});
+
 	it("dispatches policy-gate command and ignores missing --files value", async () => {
 		const { run } = await import("./cli.js");
 		const { runPolicyGateCLI } = await import("./commands/policy-gate.js");
