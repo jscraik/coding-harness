@@ -13,6 +13,22 @@ This repository is a TypeScript control plane for agentic development and policy
 - Required checks baseline: `pnpm check` (lint + docs:lint + typecheck + test + audit).
 - Compatibility posture: canonical-only.
 
+## Always-on PR governance (mandatory)
+For all code and docs changes in this repository:
+
+1. Branch off `main` for every change.
+2. For agent-created branches, use `codex/<short-description>`.
+3. Do not push directly to `main`.
+4. Open a PR for every merge into `main`.
+5. Required gates before merge: `pnpm lint`, `pnpm typecheck`, `pnpm test`, `pnpm audit`, `pnpm check`.
+6. Required review artifacts before merge: Greptile + Codex.
+7. Merge only after all required checks and artifacts are complete.
+8. After merge, delete branch/worktree.
+
+Implementation details and checklists:
+- [`CONTRIBUTING.md`](./CONTRIBUTING.md)
+- [Agent governance](./docs/agents/07b-agent-governance.md)
+
 ### Repo-native command map
 - Install/dependencies: `pnpm install`
 - Run scripts: `pnpm run <script>`
@@ -28,6 +44,12 @@ This repository is a TypeScript control plane for agentic development and policy
 - Prefer `rg`, `fd`, and `jq` for search/discovery/json parsing.
 - Read `/Users/jamiecraik/.codex/instructions/tooling.md` before deciding command/tooling.
 - Ask before adding dependencies or changing system-level settings.
+
+## Internal GitHub issue routing
+- The package `bugs.url` points to the private repository issues page: `https://github.com/jscraik/coding-harness/issues`.
+- Agents may file issues directly when authenticated with `GITHUB_PERSONAL_ACCESS_TOKEN` sourced from `~/.claude.env` and/or `~/.codex/.env`.
+- Compatibility note: if a tool expects `GITHUB_TOKEN`, map it from `GITHUB_PERSONAL_ACCESS_TOKEN` in the runtime environment.
+- Never print token values in logs, docs, or command output.
 
 ## Global discovery order
 1. Read repo instructions in this order:

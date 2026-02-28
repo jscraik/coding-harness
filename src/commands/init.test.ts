@@ -61,7 +61,7 @@ describe("runInit", () => {
 
 			expect(result.ok).toBe(true);
 			if (result.ok) {
-				expect(result.output.created).toHaveLength(2);
+				expect(result.output.created).toHaveLength(4);
 				expect(result.output.skipped).toHaveLength(0);
 			}
 
@@ -69,6 +69,10 @@ describe("runInit", () => {
 			expect(existsSync(join(tempDir, "harness.contract.json"))).toBe(false);
 			expect(
 				existsSync(join(tempDir, ".github/workflows/pr-pipeline.yml")),
+			).toBe(false);
+			expect(existsSync(join(tempDir, "CONTRIBUTING.md"))).toBe(false);
+			expect(
+				existsSync(join(tempDir, ".github/PULL_REQUEST_TEMPLATE.md")),
 			).toBe(false);
 		});
 	});
@@ -79,7 +83,7 @@ describe("runInit", () => {
 
 			expect(result.ok).toBe(true);
 			if (result.ok) {
-				expect(result.output.created).toHaveLength(2);
+				expect(result.output.created).toHaveLength(4);
 				expect(result.output.skipped).toHaveLength(0);
 			}
 
@@ -88,14 +92,24 @@ describe("runInit", () => {
 			expect(
 				existsSync(join(tempDir, ".github/workflows/pr-pipeline.yml")),
 			).toBe(true);
+			expect(existsSync(join(tempDir, "CONTRIBUTING.md"))).toBe(true);
+			expect(
+				existsSync(join(tempDir, ".github/PULL_REQUEST_TEMPLATE.md")),
+			).toBe(true);
 		});
 
 		it("skips existing files without --force", () => {
 			// Create existing file
 			mkdirSync(join(tempDir, ".github", "workflows"), { recursive: true });
+			mkdirSync(join(tempDir, ".github"), { recursive: true });
 			writeFileSync(join(tempDir, "harness.contract.json"), "{}");
 			writeFileSync(
 				join(tempDir, ".github/workflows/pr-pipeline.yml"),
+				"existing",
+			);
+			writeFileSync(join(tempDir, "CONTRIBUTING.md"), "existing");
+			writeFileSync(
+				join(tempDir, ".github/PULL_REQUEST_TEMPLATE.md"),
 				"existing",
 			);
 
@@ -104,7 +118,7 @@ describe("runInit", () => {
 			expect(result.ok).toBe(true);
 			if (result.ok) {
 				expect(result.output.created).toHaveLength(0);
-				expect(result.output.skipped).toHaveLength(2);
+				expect(result.output.skipped).toHaveLength(4);
 			}
 		});
 	});
@@ -113,9 +127,15 @@ describe("runInit", () => {
 		it("overwrites existing files with --force", () => {
 			// Create existing files
 			mkdirSync(join(tempDir, ".github", "workflows"), { recursive: true });
+			mkdirSync(join(tempDir, ".github"), { recursive: true });
 			writeFileSync(join(tempDir, "harness.contract.json"), '{"old": true}');
 			writeFileSync(
 				join(tempDir, ".github/workflows/pr-pipeline.yml"),
+				"old content",
+			);
+			writeFileSync(join(tempDir, "CONTRIBUTING.md"), "old content");
+			writeFileSync(
+				join(tempDir, ".github/PULL_REQUEST_TEMPLATE.md"),
 				"old content",
 			);
 
@@ -123,7 +143,7 @@ describe("runInit", () => {
 
 			expect(result.ok).toBe(true);
 			if (result.ok) {
-				expect(result.output.created).toHaveLength(2);
+				expect(result.output.created).toHaveLength(4);
 				expect(result.output.skipped).toHaveLength(0);
 			}
 		});
@@ -195,6 +215,28 @@ describe("runInit", () => {
 			const content = require("node:fs").readFileSync(workflowPath, "utf-8");
 			expect(content).toContain("pnpm install");
 			expect(content).toContain("pnpm test");
+			expect(content).toContain("pnpm lint");
+			expect(content).toContain("pnpm check");
+		});
+
+		it("uses npm run for npm script commands", () => {
+			// No lockfile => npm
+			const result = runInit(tempDir, { dryRun: false, force: false });
+
+			expect(result.ok).toBe(true);
+
+			const contractPath = join(tempDir, "harness.contract.json");
+			const contract = JSON.parse(
+				require("node:fs").readFileSync(contractPath, "utf-8"),
+			);
+			expect(contract.uiLoopPolicy.fastCommand).toBe("npm run ui:fast");
+			expect(contract.uiLoopPolicy.verifyCommand).toBe("npm run ui:verify");
+			expect(contract.uiLoopPolicy.exploreCommand).toBe("npm run ui:explore");
+
+			const workflowPath = join(tempDir, ".github/workflows/pr-pipeline.yml");
+			const workflow = require("node:fs").readFileSync(workflowPath, "utf-8");
+			expect(workflow).toContain("npm run lint");
+			expect(workflow).toContain("npm run check");
 		});
 	});
 });
@@ -229,7 +271,7 @@ describe("--track flag", () => {
 
 		expect(result.ok).toBe(true);
 		if (result.ok) {
-			expect(result.output.created).toHaveLength(2);
+			expect(result.output.created).toHaveLength(4);
 		}
 
 		// Verify manifest exists
@@ -257,7 +299,7 @@ describe("--track flag", () => {
 
 		expect(result.ok).toBe(true);
 		if (result.ok) {
-			expect(result.output.created).toHaveLength(2);
+			expect(result.output.created).toHaveLength(4);
 		}
 
 		// Verify backup exists
@@ -269,7 +311,7 @@ describe("--track flag", () => {
 			"utf-8",
 		);
 		const manifest = JSON.parse(manifestContent);
-		expect(manifest.files).toHaveLength(2);
+		expect(manifest.files).toHaveLength(4);
 
 		// Find the modified entry
 		const modifiedEntry = manifest.files.find(
@@ -335,6 +377,10 @@ describe("--rollback flag", () => {
 		// Verify files deleted
 		expect(existsSync(join(tempDir, "harness.contract.json"))).toBe(false);
 		expect(existsSync(join(tempDir, ".github/workflows/pr-pipeline.yml"))).toBe(
+			false,
+		);
+		expect(existsSync(join(tempDir, "CONTRIBUTING.md"))).toBe(false);
+		expect(existsSync(join(tempDir, ".github/PULL_REQUEST_TEMPLATE.md"))).toBe(
 			false,
 		);
 

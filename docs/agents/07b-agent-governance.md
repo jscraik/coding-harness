@@ -17,6 +17,7 @@ Agents are expected to be deterministic and auditable. Recommended execution loo
 - `pnpm test`
 - `pnpm audit`
 - `pnpm check`
+- Code-review pass-through via PR workflow (no direct `main` commits).
 
 ## Evidence and communication
 
@@ -32,6 +33,9 @@ Every agent handoff should include:
 - If any required gate fails: stop, fix, and rerun from first failure.
 - If command tooling is unavailable: mark check as blocked and escalate environment dependency.
 - If instructions conflict: resolve precedence before further edits.
+- Agent-created branches must use `codex/<short-description>` naming.
+- If PR review artifacts are missing (Greptile/Codex for this repo): do not merge; complete reviews or explicitly escalate the exception.
+- After merge completion: clean up branch/worktree to keep an auditable branch lifecycle.
 
 ## Optional quality expectations
 

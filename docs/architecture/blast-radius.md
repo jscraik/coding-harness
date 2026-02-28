@@ -2,6 +2,19 @@
 
 This document maps file paths to required checks, enabling deterministic check routing based on changed files.
 
+## Table of Contents
+- [Purpose](#purpose)
+- [Path-to-Check Mappings](#path-to-check-mappings)
+- [Security Checks](#security-checks)
+- [API Checks](#api-checks)
+- [UI Checks](#ui-checks)
+- [Database Checks](#database-checks)
+- [General Checks](#general-checks)
+- [Usage](#usage)
+- [Contract fields](#contract-fields)
+- [Maintenance](#maintenance)
+- [Fallback Behavior](#fallback-behavior)
+
 ## Purpose
 
 When files change, the harness uses this map to determine which checks must run. This prevents:
@@ -121,7 +134,33 @@ harness blast-radius --files src/auth/login.ts,src/ui/Button.tsx
 
 # Output as JSON for CI integration
 harness blast-radius --files src/auth/login.ts --json
+
+# Use custom blast-radius rules from a contract
+harness blast-radius --files scripts/deploy.sh --contract harness.contract.json
 ```
+
+### Contract fields
+
+`harness.contract.json` supports the following optional fields for blast radius:
+
+```json
+{
+	"blastRadiusRules": [
+		{
+			"pattern": "**/*.sh",
+			"checks": ["shellcheck", "bash-syntax"],
+			"description": "Shell scripts need syntax validation"
+		}
+	],
+	"blastRadiusRulesMode": "merge"
+}
+```
+
+- `blastRadiusRules` defines additional path patterns and required checks.
+- `blastRadiusRulesMode` controls merge behavior with defaults:
+  - `merge` (default): append custom rules after the built-in defaults.
+  - `replace`: use only `blastRadiusRules` and ignore built-in defaults.
+- If the default contract path (`harness.contract.json`) is missing, `harness blast-radius` falls back to built-in defaults. Passing an explicit `--contract` path that does not exist returns a validation error.
 
 ## Maintenance
 

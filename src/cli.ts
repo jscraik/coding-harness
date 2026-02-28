@@ -98,6 +98,12 @@ function printUsage(): void {
 		"  pilot-evaluate   Evaluate pilot metrics and determine promotion",
 	);
 	console.info("");
+	console.info("Blast Radius Options:");
+	console.info("  --contract       Path to harness.contract.json");
+	console.info("  --files <paths>  Comma-separated list of changed file paths");
+	console.info("  --json           Output as JSON");
+	console.info("  --verbose        Include verbose summary output");
+	console.info("");
 	console.info("Check Authz Options:");
 	console.info("  --contract       Path to harness.contract.json");
 	console.info("  --repo           Repository to check (owner/repo format)");
@@ -898,6 +904,7 @@ export function run(args: string[]): void {
 		const jsonFlag = args.includes("--json");
 		const verboseFlag = args.includes("--verbose");
 		const filesIndex = args.indexOf("--files");
+		const contractIndex = args.indexOf("--contract");
 
 		// Get flag value, rejecting if the value is another flag (starts with -)
 		const filesArg = getFlagValue(args, filesIndex);
@@ -913,10 +920,14 @@ export function run(args: string[]): void {
 			.map((f) => f.trim())
 			.filter(Boolean);
 
+		const contractArg = getFlagValue(args, contractIndex);
+		const contractPath = contractArg ?? "harness.contract.json";
+
 		const exitCode = runBlastRadiusCLI({
 			files,
 			json: jsonFlag,
 			verbose: verboseFlag,
+			contractPath,
 		});
 		process.exit(exitCode);
 		return;

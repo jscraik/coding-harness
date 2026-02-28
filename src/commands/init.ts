@@ -265,6 +265,19 @@ interface Template {
 	render: (pm: string) => string;
 }
 
+type PackageManager = "pnpm" | "yarn" | "npm";
+
+function renderScriptCommand(packageManager: string, script: string): string {
+	if (packageManager === "npm") {
+		return `npm run ${script}`;
+	}
+	return `${packageManager} ${script}`;
+}
+
+function renderInstallCommand(packageManager: string): string {
+	return `${packageManager} install`;
+}
+
 const TEMPLATES: Template[] = [
 	{
 		path: "harness.contract.json",
@@ -299,9 +312,9 @@ const TEMPLATES: Template[] = [
 						overrideLabel: "diff-budget-override",
 					},
 					uiLoopPolicy: {
-						fastCommand: `${pm} ui:fast`,
-						verifyCommand: `${pm} ui:verify`,
-						exploreCommand: `${pm} ui:explore`,
+						fastCommand: renderScriptCommand(pm, "ui:fast"),
+						verifyCommand: renderScriptCommand(pm, "ui:verify"),
+						exploreCommand: renderScriptCommand(pm, "ui:explore"),
 						sloTargets: {
 							fastLoopSeconds: 30,
 							verifyLoopSeconds: 120,
@@ -393,27 +406,231 @@ const TEMPLATES: Template[] = [
 	},
 	{
 		path: ".github/workflows/pr-pipeline.yml",
-		render: (pm) => `name: Harness PR Pipeline
+		render: (pm) => {
+			const installCommand = renderInstallCommand(pm);
+			const lintCommand = renderScriptCommand(pm, "lint");
+			const typecheckCommand = renderScriptCommand(pm, "typecheck");
+			const testCommand = renderScriptCommand(pm, "test");
+			const auditCommand = renderScriptCommand(pm, "audit");
+			const checkCommand = renderScriptCommand(pm, "check");
+			return `name: Harness PR Pipeline
 
 on: pull_request
 
+permissions:
+  contents: read
+  pull-requests: read
+
 jobs:
-  review:
+  lint:
+    name: lint
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with:
           node-version: "20"
-      - run: ${pm} install
-      - run: ${pm} test
-`,
+      - name: Enable corepack
+        run: corepack enable
+      - name: Install dependencies
+        run: ${installCommand}
+      - name: Run lint
+        run: ${lintCommand}
+
+  typecheck:
+    name: typecheck
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+      - name: Enable corepack
+        run: corepack enable
+      - name: Install dependencies
+        run: ${installCommand}
+      - name: Run typecheck
+        run: ${typecheckCommand}
+
+  test:
+    name: test
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+      - name: Enable corepack
+        run: corepack enable
+      - name: Install dependencies
+        run: ${installCommand}
+      - name: Run tests
+        run: ${testCommand}
+
+  audit:
+    name: audit
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+      - name: Enable corepack
+        run: corepack enable
+      - name: Install dependencies
+        run: ${installCommand}
+      - name: Run audit
+        run: ${auditCommand}
+
+  check:
+    name: check
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+      - name: Enable corepack
+        run: corepack enable
+      - name: Install dependencies
+        run: ${installCommand}
+      - name: Run full check
+        run: ${checkCommand}
+`;
+		},
+	},
+	{
+		path: "CONTRIBUTING.md",
+		render: (pm) => {
+			const lintCommand = renderScriptCommand(pm, "lint");
+			const typecheckCommand = renderScriptCommand(pm, "typecheck");
+			const testCommand = renderScriptCommand(pm, "test");
+			const auditCommand = renderScriptCommand(pm, "audit");
+			const checkCommand = renderScriptCommand(pm, "check");
+			return `# Contributing
+
+## Table of Contents
+
+- [Minimum workflow contract](#minimum-workflow-contract)
+- [Why this workflow exists](#why-this-workflow-exists)
+- [Branching and PR rule](#branching-and-pr-rule)
+- [Branch name policy](#branch-name-policy)
+- [Required pre-merge gates](#required-pre-merge-gates)
+- [Review artifacts requirement](#review-artifacts-requirement)
+- [Branch protection recommendation](#branch-protection-recommendation)
+
+## Minimum workflow contract
+
+- Branch off \`main\` for every change.
+- No direct push to \`main\`.
+- Pull request required for every merge.
+- Required checks must pass before merge.
+- Greptile + Codex review artifacts are required before merge.
+- Merge only after all gates pass.
+- Delete branch/worktree after merge.
+
+## Why this workflow exists
+
+This workflow keeps delivery auditable, reversible, and consistent even for solo development.
+
+## Branching and PR rule
+
+1. Create a dedicated branch/worktree for each task:
+   - Agent-created branch: \`git switch -c codex/<short-description>\`
+   - Agent-created worktree: \`git worktree add ../tmp-worktree -b codex/<short-description>\`
+   - Human-authored optional prefixes: \`feat/\`, \`fix/\`, \`docs/\`, \`refactor/\`, \`chore/\`, \`test/\`
+2. Keep commits small and focused.
+3. Open a PR to merge into \`main\`.
+4. Do not merge until checks, reviews, and checklist items are complete.
+5. After merge, delete the remote branch and remove local worktree/branch.
+
+## Branch name policy
+
+- Use lower-case, kebab-case slugs.
+- Agent-created branches must use \`codex/<short-description>\`.
+- Human-authored branches may use: \`feat/\`, \`fix/\`, \`docs/\`, \`refactor/\`, \`chore/\`, \`test/\`.
+- Avoid \`main\`-like names and do not include secrets or issue-pii.
+
+## Required pre-merge gates
+
+- ${lintCommand}
+- ${typecheckCommand}
+- ${testCommand}
+- ${auditCommand}
+- ${checkCommand}
+
+## Review artifacts requirement
+
+Each PR must include:
+
+- Greptile review artifact (URL, report, or comment reference).
+- Codex review artifact (URL, report, or comment reference).
+
+If either artifact is missing, block merge until it is added or explicitly waived by repository policy.
+
+## Branch protection recommendation
+
+Configure GitHub branch protection (or rulesets) on \`main\`:
+
+- Require pull request before merge.
+- Require at least one approval.
+- Require status checks: \`lint\`, \`typecheck\`, \`test\`, \`audit\`, \`check\`.
+- Block direct pushes to \`main\`.
+`;
+		},
+	},
+	{
+		path: ".github/PULL_REQUEST_TEMPLATE.md",
+		render: (pm) => {
+			const lintCommand = renderScriptCommand(pm, "lint");
+			const typecheckCommand = renderScriptCommand(pm, "typecheck");
+			const testCommand = renderScriptCommand(pm, "test");
+			const auditCommand = renderScriptCommand(pm, "audit");
+			const checkCommand = renderScriptCommand(pm, "check");
+			return `# Pull request checklist
+
+## Summary
+
+- What changed (brief):
+- Why this change was needed:
+- Risk and rollback plan:
+
+## Checklist
+
+- [ ] I did not push directly to \`main\`; this PR is from a dedicated branch.
+- [ ] Branch name follows policy (\`codex/*\` for agent-created branches).
+- [ ] Required local gates run: \`${lintCommand}\`, \`${typecheckCommand}\`, \`${testCommand}\`, \`${auditCommand}\`, \`${checkCommand}\`.
+- [ ] Greptile review completed and findings handled (or explicitly waived).
+- [ ] Codex review completed and findings handled (or explicitly waived).
+- [ ] Merge is blocked until all required checks pass.
+- [ ] I will delete branch/worktree after merge.
+
+## Testing
+
+- Command: \`${lintCommand}\` -> pass/fail
+- Command: \`${typecheckCommand}\` -> pass/fail
+- Command: \`${testCommand}\` -> pass/fail
+- Command: \`${auditCommand}\` -> pass/fail
+- Command: \`${checkCommand}\` -> pass/fail
+- Any other command(s):
+
+## Review artifacts
+
+- Greptile: <link / artifact path / comment ID>
+- Codex: <link / artifact path / comment ID>
+- Additional evidence (if any):
+
+## Notes
+
+Add one-paragraph merge rationale here.
+`;
+		},
 	},
 ];
 
 // === Package Manager Detection ===
 
-function detectPackageManager(dir: string): string {
+function detectPackageManager(dir: string): PackageManager {
 	if (existsSync(resolve(dir, "pnpm-lock.yaml"))) return "pnpm";
 	if (existsSync(resolve(dir, "yarn.lock"))) return "yarn";
 	if (existsSync(resolve(dir, "package-lock.json"))) return "npm";

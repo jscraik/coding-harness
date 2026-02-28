@@ -1,16 +1,13 @@
 import picomatch from "picomatch";
+import type {
+	BlastRadiusRule,
+	BlastRadiusRulesMode,
+} from "../contract/types.js";
 
 /**
- * A mapping from glob patterns to required checks.
+ * Blast-radius merge mode.
  */
-export interface BlastRadiusRule {
-	/** Glob pattern for matching file paths */
-	pattern: string;
-	/** Required checks when files match this pattern */
-	checks: string[];
-	/** Description of why these checks are required */
-	description?: string;
-}
+const DEFAULT_BLAST_RADIUS_RULES_MODE: BlastRadiusRulesMode = "merge";
 
 /**
  * Default blast radius rules.
@@ -150,6 +147,28 @@ export const DEFAULT_BLAST_RADIUS_RULES: BlastRadiusRule[] = [
 		description: "Spec tests must pass",
 	},
 ];
+
+/**
+ * Resolve the active blast-radius rules.
+ *
+ * @param customRules - Optional custom blast-radius rules from contract.
+ * @param mode - Merge mode for combining default and custom rules.
+ * @returns Rules used for matching.
+ */
+export function resolveBlastRadiusRules(
+	customRules: BlastRadiusRule[] | undefined = undefined,
+	mode: BlastRadiusRulesMode = DEFAULT_BLAST_RADIUS_RULES_MODE,
+): BlastRadiusRule[] {
+	if (customRules === undefined) {
+		return [...DEFAULT_BLAST_RADIUS_RULES];
+	}
+
+	if (mode === "replace") {
+		return [...customRules];
+	}
+
+	return [...DEFAULT_BLAST_RADIUS_RULES, ...customRules];
+}
 
 /**
  * Default checks to run when no specific patterns match.

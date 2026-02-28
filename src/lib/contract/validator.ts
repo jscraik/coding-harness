@@ -1,4 +1,6 @@
 import type {
+	BlastRadiusRule,
+	BlastRadiusRulesMode,
 	DiffBudget,
 	DocsDriftRules,
 	EvidencePolicy,
@@ -30,10 +32,13 @@ const VALID_RISK_TIERS: RiskTier[] = ["high", "medium", "low"];
 const VALID_TIMEOUT_ACTIONS: TimeoutAction[] = ["fail", "warn"];
 const VALID_IMAGE_FORMATS: ImageFormat[] = ["png", "jpeg"];
 const VALID_ROLLBACK_MODES = ["manual", "autonomous"] as const;
+const VALID_BLAST_RADIUS_RULES_MODES = ["merge", "replace"] as const;
 const FORBIDDEN_KEYS = ["__proto__", "constructor", "prototype"] as const;
 const VALID_TOP_LEVEL_KEYS = [
 	"version",
 	"riskTierRules",
+	"blastRadiusRules",
+	"blastRadiusRulesMode",
 	"reviewPolicy",
 	"evidencePolicy",
 	"mergePolicy",
@@ -148,6 +153,63 @@ function isValidRiskTierRules(
 			return false;
 		}
 		if (typeof pattern !== "string" || !isValidRiskTier(tier)) return false;
+	}
+	return true;
+}
+
+function isValidBlastRadiusRulesMode(
+	value: unknown,
+): value is BlastRadiusRulesMode {
+	return (
+		typeof value === "string" &&
+		VALID_BLAST_RADIUS_RULES_MODES.includes(
+			value as (typeof VALID_BLAST_RADIUS_RULES_MODES)[number],
+		)
+	);
+}
+
+function isValidBlastRadiusRule(value: unknown): value is BlastRadiusRule {
+	if (!isPlainObject(value)) {
+		return false;
+	}
+	const rule = value as Record<string, unknown>;
+	const validKeys = ["pattern", "checks", "description"] as const;
+
+	const invalidKeys = Object.keys(rule).filter(
+		(key) => !validKeys.includes(key as (typeof validKeys)[number]),
+	);
+	if (invalidKeys.length > 0) {
+		return false;
+	}
+
+	if (typeof rule.pattern !== "string" || rule.pattern.length === 0) {
+		return false;
+	}
+
+	if (!Array.isArray(rule.checks)) {
+		return false;
+	}
+	for (const check of rule.checks) {
+		if (typeof check !== "string" || check.length === 0) {
+			return false;
+		}
+	}
+
+	if (rule.description !== undefined && typeof rule.description !== "string") {
+		return false;
+	}
+
+	return true;
+}
+
+function isValidBlastRadiusRules(value: unknown): value is BlastRadiusRule[] {
+	if (!Array.isArray(value)) {
+		return false;
+	}
+	for (const rule of value) {
+		if (!isValidBlastRadiusRule(rule)) {
+			return false;
+		}
 	}
 	return true;
 }
@@ -1306,6 +1368,42 @@ export function validateContract(
 		}
 	}
 
+	// Validate blastRadiusRules (optional)
+	let blastRadiusRules: BlastRadiusRule[] | undefined;
+	if ("blastRadiusRules" in obj && obj.blastRadiusRules !== undefined) {
+		if (!isValidBlastRadiusRules(obj.blastRadiusRules)) {
+			errors.push({
+				code: ValidationErrorCode.INVALID_VALUE,
+				path: "blastRadiusRules",
+				message:
+					"blastRadiusRules must be an array of rule objects with pattern/checks",
+				expected:
+					"[{ pattern: string, checks: string[], description?: string }]",
+				received: JSON.stringify(obj.blastRadiusRules),
+				fix: "Ensure blastRadiusRules uses valid rule objects with string patterns and string checks",
+			});
+		} else {
+			blastRadiusRules = obj.blastRadiusRules as BlastRadiusRule[];
+		}
+	}
+
+	// Validate blastRadiusRulesMode (optional)
+	let blastRadiusRulesMode: BlastRadiusRulesMode = "merge";
+	if ("blastRadiusRulesMode" in obj && obj.blastRadiusRulesMode !== undefined) {
+		if (!isValidBlastRadiusRulesMode(obj.blastRadiusRulesMode)) {
+			errors.push({
+				code: ValidationErrorCode.INVALID_VALUE,
+				path: "blastRadiusRulesMode",
+				message: "blastRadiusRulesMode must be 'merge' or 'replace'",
+				expected: "'merge' | 'replace'",
+				received: String(obj.blastRadiusRulesMode),
+				fix: "Set blastRadiusRulesMode to 'merge' or 'replace'",
+			});
+		} else {
+			blastRadiusRulesMode = obj.blastRadiusRulesMode;
+		}
+	}
+
 	if (errors.length > 0) {
 		return { success: false, errors };
 	}
@@ -1332,6 +1430,8 @@ export function validateContract(
 			pilotGapCasePolicy,
 			pilotRollbackPolicy,
 			pilotAuthzPolicy,
+			blastRadiusRules,
+			blastRadiusRulesMode,
 		},
 		errors: [],
 	};

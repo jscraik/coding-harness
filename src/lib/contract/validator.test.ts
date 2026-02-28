@@ -14,6 +14,52 @@ describe("validateContract", () => {
 		expect(result.data?.riskTierRules).toEqual({});
 	});
 
+	it("accepts blastRadiusRules and blastRadiusRulesMode", () => {
+		const result = validateContract({
+			version: "1.0",
+			blastRadiusRules: [
+				{
+					pattern: "**/*.sh",
+					checks: ["shellcheck", "bash-syntax"],
+					description: "Shell scripts",
+				},
+			],
+			blastRadiusRulesMode: "replace",
+		});
+
+		expect(result.success).toBe(true);
+		expect(result.data?.blastRadiusRules).toHaveLength(1);
+		expect(result.data?.blastRadiusRules?.[0]?.pattern).toBe("**/*.sh");
+		expect(result.data?.blastRadiusRulesMode).toBe("replace");
+	});
+
+	it("rejects invalid blastRadiusRulesMode", () => {
+		const result = validateContract({
+			version: "1.0",
+			blastRadiusRulesMode: "invalid",
+		});
+
+		expect(result.success).toBe(false);
+		expect(result.errors[0]?.path).toBe("blastRadiusRulesMode");
+		expect(result.errors[0]?.code).toBe(ValidationErrorCode.INVALID_VALUE);
+	});
+
+	it("rejects malformed blastRadiusRules", () => {
+		const result = validateContract({
+			version: "1.0",
+			blastRadiusRules: [
+				{
+					pattern: "**/*.sh",
+					checks: "shellcheck",
+				},
+			],
+		});
+
+		expect(result.success).toBe(false);
+		expect(result.errors[0]?.path).toBe("blastRadiusRules");
+		expect(result.errors[0]?.code).toBe(ValidationErrorCode.INVALID_VALUE);
+	});
+
 	it("rejects invalid risk tier", () => {
 		const result = validateContract({
 			version: "1.0",
