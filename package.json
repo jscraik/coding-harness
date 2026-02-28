@@ -1,8 +1,18 @@
 {
 	"name": "@jamiecraik/coding-harness",
-	"version": "0.1.0",
+	"version": "0.3.0",
+	"files": [
+		"dist",
+		"README.md",
+		"CHANGELOG.md",
+		"LICENSE"
+	],
 	"type": "module",
 	"description": "Control plane for agentic development",
+	"publishConfig": {
+		"access": "restricted",
+		"registry": "https://registry.npmjs.org/"
+	},
 	"bin": {
 		"harness": "./dist/cli.js"
 	},
@@ -15,6 +25,9 @@
 		"test": "vitest run",
 		"test:watch": "vitest",
 		"build": "tsc && chmod +x dist/cli.js",
+		"prepublishOnly": "pnpm check && pnpm build",
+		"changelog": "standard-version --skip.bump --skip.tag --skip.commit",
+		"release": "standard-version",
 		"audit": "pnpm audit --audit-level=moderate",
 		"audit:strict": "pnpm audit --audit-level=high",
 		"docs:lint": "pnpm markdownlint",
@@ -40,7 +53,8 @@
 		"picomatch": "^4.0.3",
 		"tsx": "^4.21.0",
 		"typescript": "^5.9.3",
-		"vitest": "^3.2.4"
+		"vitest": "^3.2.4",
+		"standard-version": "^9.5.0"
 	},
 	"packageManager": "pnpm@10.0.0",
 	"engines": {
