@@ -17,11 +17,12 @@ const mockGitHubClient = vi.mocked(GitHubClient);
 describe("runBranchProtect", () => {
 	beforeEach(() => {
 		vi.clearAllMocks();
+		vi.stubEnv("GITHUB_TOKEN", "");
+		vi.stubEnv("GITHUB_PERSONAL_ACCESS_TOKEN", "");
 	});
 
 	afterEach(() => {
-		process.env.GITHUB_TOKEN = undefined;
-		process.env.GITHUB_PERSONAL_ACCESS_TOKEN = undefined;
+		vi.unstubAllEnvs();
 	});
 
 	it("returns validation error when token is missing", async () => {

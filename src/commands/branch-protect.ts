@@ -48,13 +48,28 @@ export type BranchProtectResult =
 	| { ok: true; output: BranchProtectOutput }
 	| { ok: false; error: { code: string; message: string } };
 
+function normalizeToken(value: string | undefined): string | undefined {
+	if (typeof value !== "string") {
+		return undefined;
+	}
+	const trimmed = value.trim();
+	if (
+		trimmed.length === 0 ||
+		trimmed.toLowerCase() === "undefined" ||
+		trimmed.toLowerCase() === "null"
+	) {
+		return undefined;
+	}
+	return trimmed;
+}
+
 export async function runBranchProtect(
 	options: BranchProtectOptions,
 ): Promise<BranchProtectResult> {
 	const token =
-		options.token ??
-		process.env.GITHUB_TOKEN ??
-		process.env.GITHUB_PERSONAL_ACCESS_TOKEN;
+		normalizeToken(options.token) ??
+		normalizeToken(process.env.GITHUB_TOKEN) ??
+		normalizeToken(process.env.GITHUB_PERSONAL_ACCESS_TOKEN);
 	const owner = options.owner?.trim();
 	const repo = options.repo?.trim();
 	const branch = options.branch?.trim() || DEFAULT_BRANCH;
