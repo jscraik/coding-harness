@@ -239,6 +239,7 @@ describe("runInit", () => {
 			expect(content).toContain("pnpm test");
 			expect(content).toContain("pnpm lint");
 			expect(content).toContain("pnpm check");
+			expect(content).toContain("name: pr-template");
 			expect(content).toContain("Validate memory.json");
 			expect(content).toContain("test -f memory.json");
 		});

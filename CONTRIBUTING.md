@@ -118,11 +118,13 @@ Configure repository settings on `main` to make the workflow enforceable:
 - Require PRs before merging.
 - Require at least one review before merge.
 - Require status checks:
+  - `pr-template`
   - `pnpm lint`
   - `pnpm typecheck`
   - `pnpm test`
   - `pnpm audit`
   - `pnpm check`
+  - `memory`
 - Dismiss stale approvals when new commits are pushed.
 - Restrict pushes to `main` to `main` repository settings/admin workflows only.
 - Optionally require signed commits if your policy requires it.

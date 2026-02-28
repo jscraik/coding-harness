@@ -463,6 +463,71 @@ permissions:
   pull-requests: read
 
 jobs:
+  pr-template:
+    name: pr-template
+    runs-on: ubuntu-latest
+    steps:
+      - name: Validate PR template completion
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const body = context.payload.pull_request?.body ?? '';
+            const errors = [];
+
+            if (body.trim().length === 0) {
+              errors.push('PR body is empty. Fill out the full PR template.');
+            }
+
+            const requiredSections = [
+              '## Summary',
+              '## Checklist',
+              '## Testing',
+              '## Review artifacts',
+              '## Notes',
+            ];
+            for (const section of requiredSections) {
+              if (!body.includes(section)) {
+                errors.push('Missing required section: ' + section);
+              }
+            }
+
+            const checklistMatch = body.match(/## Checklist([\\s\\S]*?)(?:\\n## |\\n# |$)/i);
+            if (!checklistMatch) {
+              errors.push('Missing checklist block.');
+            } else {
+              const checklistBody = checklistMatch[1] ?? '';
+              const checklistItems = checklistBody
+                .split('\\n')
+                .map((line) => line.trim())
+                .filter((line) => /^- \\[[ xX]\\]/.test(line));
+
+              if (checklistItems.length === 0) {
+                errors.push('Checklist has no checkbox items.');
+              }
+
+              const unchecked = checklistItems.filter((line) => /^- \\[ \\]/.test(line));
+              if (unchecked.length > 0) {
+                errors.push(
+                  'Checklist has unchecked item(s):\\n' + unchecked.join('\\n'),
+                );
+              }
+            }
+
+            const placeholders = [
+              'pass/fail',
+              '<link / artifact path / comment ID>',
+              'Add one-paragraph merge rationale here.',
+            ];
+            for (const placeholder of placeholders) {
+              if (body.includes(placeholder)) {
+                errors.push('Replace template placeholder: ' + placeholder);
+              }
+            }
+
+            if (errors.length > 0) {
+              core.setFailed(errors.join('\\n'));
+            }
+
   lint:
     name: lint
     runs-on: ubuntu-latest
@@ -640,7 +705,7 @@ Configure GitHub branch protection (or rulesets) on \`main\`:
   - \`--token <PAT>\` or env \`GITHUB_TOKEN\` / \`GITHUB_PERSONAL_ACCESS_TOKEN\`
 - Require pull request before merge.
 - Require at least one approval.
-- Require status checks: \`lint\`, \`typecheck\`, \`test\`, \`audit\`, \`check\`, \`memory\`.
+- Require status checks: \`pr-template\`, \`lint\`, \`typecheck\`, \`test\`, \`audit\`, \`check\`, \`memory\`.
 - Block direct pushes to \`main\`.
 `;
 		},
