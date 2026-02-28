@@ -59,5 +59,7 @@ jobs:
             git add package.json
             git commit --amend --no-edit
           fi
+          VERSION="$(node -p "require('./package.json').version")"
+          git tag -f "v${VERSION}"
       - name: Push release commit and tag
         run: git push --follow-tags origin HEAD:${{ github.ref_name }}
