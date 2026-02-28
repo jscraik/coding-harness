@@ -1,0 +1,28 @@
+{
+  "rules": [
+    {
+      "id": "esm-local-import-js-extension",
+      "rule": "All local ESM imports in TypeScript/JavaScript must include the `.js` extension in relative specifiers (for example `./foo.js`).",
+      "scope": ["src/**/*.ts", "scripts/**/*.ts", "test/**/*.ts"],
+      "severity": "high"
+    },
+    {
+      "id": "pnpm-command-policy",
+      "rule": "Use pnpm for install/run/exec commands in docs, scripts, and workflow examples unless an explicit exception is documented.",
+      "scope": ["**/*.md", "scripts/**", ".github/workflows/**"],
+      "severity": "medium"
+    },
+    {
+      "id": "required-premerge-gates",
+      "rule": "Behavior-affecting changes must preserve and document required checks: pnpm lint, pnpm typecheck, pnpm test, pnpm audit, and pnpm check.",
+      "scope": ["src/**", "scripts/**", ".github/**", "docs/**"],
+      "severity": "high"
+    },
+    {
+      "id": "no-direct-main-merge",
+      "rule": "Agent-authored work must use a branch and PR workflow; do not approve paths that imply direct merges to main without required review artifacts.",
+      "scope": [".github/**", "docs/**", "AGENTS.md", "CONTRIBUTING.md"],
+      "severity": "medium"
+    }
+  ]
+}

@@ -1,0 +1,32 @@
+{
+  "files": [
+    {
+      "path": "AGENTS.md",
+      "description": "Repository operating rules, package manager policy, and mandatory PR governance."
+    },
+    {
+      "path": "CONTRIBUTING.md",
+      "description": "Branching model, required checks, and review artifact expectations."
+    },
+    {
+      "path": ".github/PULL_REQUEST_TEMPLATE.md",
+      "description": "Required PR checklist, testing evidence format, and review artifact slots."
+    },
+    {
+      "path": "docs/agents/07b-agent-governance.md",
+      "description": "Fail-safe governance requirements for agent-driven changes."
+    },
+    {
+      "path": "docs/agents/04-validation.md",
+      "description": "Validation sequencing and expected verification behavior."
+    },
+    {
+      "path": "package.json",
+      "description": "Canonical package manager and script contract for local/CI checks."
+    },
+    {
+      "path": "src/lib/contract/types.ts",
+      "description": "Core policy contract types that should remain consistent with runtime behavior."
+    }
+  ]
+}
