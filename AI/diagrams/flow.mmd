@@ -1,0 +1,20 @@
+flowchart TD
+  Start(["Start"])
+  vitest_config_a9f1245e["vitest.config"]
+  Start --> vitest_config_a9f1245e
+  cli_99bb8840["cli"]
+  vitest_config_a9f1245e --> cli_99bb8840
+  cli_test_4851f28b["cli.test"]
+  cli_99bb8840 --> cli_test_4851f28b
+  cli_dispatch_test_54c9f17b["cli-dispatch.test"]
+  cli_test_4851f28b --> cli_dispatch_test_54c9f17b
+  version_5ca4f385["version"]
+  cli_dispatch_test_54c9f17b --> version_5ca4f385
+  ui_loop_11660889["ui-loop"]
+  version_5ca4f385 --> ui_loop_11660889
+  ui_loop_test_f0eabc42["ui-loop.test"]
+  ui_loop_11660889 --> ui_loop_test_f0eabc42
+  silent_error_64e8c933["silent-error"]
+  ui_loop_test_f0eabc42 --> silent_error_64e8c933
+  End(["End"])
+  silent_error_64e8c933 --> End

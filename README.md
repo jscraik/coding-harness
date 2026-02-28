@@ -7,6 +7,7 @@ Coding Harness is a TypeScript control plane for agentic development and policy-
 - [Quick start](#quick-start)
 - [Quality checks](#quality-checks)
 - [CLI command index](#cli-command-index)
+- [Release flow](#release-flow)
 
 ## Quick start
 
@@ -66,3 +67,45 @@ Use `harness --help` (or `node dist/cli.js --help`) for the current global optio
 
 - [Implementation Status Matrix](docs/roadmap/agent-first-status.md) - Roadmap claims vs current implementation status
 - [Harness Implementation Plan](docs/HARNESS_IMPLEMENTATION_PLAN.md) - Architecture and phase-by-phase execution plan
+
+## Release flow
+
+The package publishes as a private npm package from tagged releases:
+
+1. Update changelog and versioned release notes with:
+
+   ```bash
+   pnpm changelog
+   ```
+
+2. Cut the release commit and tag with:
+
+   ```bash
+   pnpm release
+   ```
+
+   This runs `standard-version` using `CHANGELOG.md` conventions.
+
+3. Push the tag to trigger CI publish:
+
+   ```bash
+   git push --follow-tags
+   ```
+
+4. The GitHub workflow `release-private-npm.yml` publishes to npm.
+
+### Publish auth modes
+
+- Bootstrap: use `NPM_TOKEN` secret via `publish_auth: token`.
+- Future (after trusted publisher setup): switch to OIDC with
+  `publish_auth: oidc` in the workflow dispatch.
+- For automatic tag-based releases, use the default token mode until you
+  enable repo variable `NPM_PUBLISH_AUTH=oidc`.
+
+Example manual OIDC run (after trusted publisher is configured):
+
+```bash
+gh workflow run release-private-npm.yml \
+  -f confirm=release \
+  -f publish_auth=oidc
+```

@@ -1,0 +1,90 @@
+name: Release to private npm
+
+on:
+  push:
+    tags:
+      - "v[0-9]+.[0-9]+.[0-9]+"
+      - "v[0-9]+.[0-9]+.[0-9]+-*"
+  workflow_dispatch:
+    inputs:
+      confirm:
+        description: Type "release" to publish the current tag on disk
+        required: true
+        default: ""
+      publish_auth:
+        description: Auth mode for publish (`token` for bootstrap, `oidc` for trusted publisher)
+        required: false
+        default: "token"
+        type: choice
+        options:
+          - token
+          - oidc
+
+permissions:
+  contents: read
+  id-token: write
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    if: |
+      github.event_name != 'workflow_dispatch' ||
+      github.event.inputs.confirm == 'release'
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "24"
+          registry-url: "https://registry.npmjs.org/"
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          run_install: false
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Validate release candidate
+        run: pnpm check
+
+      - name: Build package
+        run: pnpm build
+
+      - name: Verify tag matches package version
+        if: github.event_name == 'push'
+        run: |
+          PKG_VERSION="$(node -p "require('./package.json').version")"
+          TAG_VERSION="${GITHUB_REF_NAME#v}"
+          if [ "$PKG_VERSION" != "$TAG_VERSION" ]; then
+            echo "::error::Tag v${PKG_VERSION} does not match package.json version ${TAG_VERSION}"
+            exit 1
+          fi
+
+      - name: Verify publish auth mode
+        id: publish-auth
+        run: |
+          MODE="${{ github.event_name == 'workflow_dispatch' && github.event.inputs.publish_auth || vars.NPM_PUBLISH_AUTH || 'token' }}"
+          if [[ -z "$MODE" ]]; then
+            MODE="token"
+          fi
+          if [[ "$MODE" != "token" && "$MODE" != "oidc" ]]; then
+            echo "::error::Unsupported publish_auth mode '$MODE'. Expected token or oidc."
+            exit 1
+          fi
+          echo "mode=$MODE" >> "$GITHUB_OUTPUT"
+
+      - name: Publish private package (token)
+        if: steps.publish-auth.outputs.mode == 'token'
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+        run: pnpm publish --no-git-checks --access restricted
+
+      - name: Publish private package (OIDC trusted publisher)
+        if: steps.publish-auth.outputs.mode == 'oidc'
+        run: pnpm publish --no-git-checks --access restricted --provenance

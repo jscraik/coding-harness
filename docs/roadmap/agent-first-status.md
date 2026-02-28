@@ -1,6 +1,6 @@
 # Agent-First Implementation Status Matrix
 
-> Last updated: 2026-02-27
+> Last updated: 2026-02-28
 > Owner: Jamie Craik
 > Review cadence: Per-release or when status changes
 
@@ -153,29 +153,29 @@ This document tracks the implementation status of roadmap claims for the Agent-F
 | Video evidence support | ✅ | MP4/WebM + schema update |
 
 ### P2: Narrative Clarity
-**Status:** 🔶 In Progress
+**Status:** ✅ Complete
 
 | Component | Status | Notes |
 |-----------|--------|-------|
 | Status matrix (this doc) | ✅ | Created |
-| Strategic docs normalization | 🔶 | Pending |
-| README link | 🔶 | Pending |
+| Strategic docs normalization | ✅ | Strategic status docs and implementation plans now cite this matrix as canonical |
+| README link | ✅ | README documentation section links to this matrix |
 
 ## Outstanding Items
 
 ### Non-Functional Requirements (Partial)
 | Item | Status | Notes |
 |------|--------|-------|
-| Serialized mutation queue | 📋 | Not yet implemented |
-| Explicit retry/backoff | 📋 | Basic handling exists |
-| Authz preflight enforcement | 📋 | Command exists, enforcement pending |
+| Serialized mutation queue | ✅ | Implemented in `src/lib/github/mutation-queue.ts` and `GitHubClient.createIssueComment` |
+| Explicit retry/backoff | ✅ | Implemented in `src/lib/github/mutation-queue.ts` with bounded exponential backoff + jitter |
+| Authz preflight enforcement | ✅ | Applied in `postRerunCommentIfNeeded` before mutative writes |
 
-### Integration Tests (Partial)
+### Integration Tests
 | Scenario | Status | Notes |
 |----------|--------|-------|
-| Happy path end-to-end | 🔶 | Unit tests exist |
-| Stale + race mixed path | 🔶 | Unit tests exist |
-| Governance hold contract | 📋 | Pending |
+| Happy path end-to-end | ✅ | Covered by `src/commands/agent-first-throughput.integration.test.ts` |
+| Stale + race mixed path | ✅ | Covered by `src/commands/agent-first-throughput.integration.test.ts` |
+| Governance hold contract | ✅ | Added to `postRerunCommentIfNeeded` tests for preflight hold behavior |
 
 ## Section 27 Optional Enhancements
 
