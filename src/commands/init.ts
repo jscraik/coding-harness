@@ -445,6 +445,150 @@ const TEMPLATES: Template[] = [
 			),
 	},
 	{
+		path: ".greptile/config.json",
+		render: () =>
+			JSON.stringify(
+				{
+					version: "1.0",
+					strictness: 2,
+					fileChangeLimit: 300,
+					commentTypes: [
+						"bug-risk",
+						"security",
+						"performance",
+						"architecture",
+						"maintainability",
+					],
+					enableCrossFileGraphQueries: true,
+					requireIndependentValidation: true,
+					confidence: {
+						minMergeScore: 4,
+						targetScore: 5,
+					},
+					rules: [
+						{
+							id: "esm-local-import-extension",
+							glob: "src/**/*.ts",
+							description: "Local ESM imports must include the .js extension.",
+							severity: "high",
+						},
+						{
+							id: "no-main-direct-push",
+							glob: "**/*",
+							description:
+								"No direct push to main; all changes flow through PR with review artifacts.",
+							severity: "high",
+						},
+						{
+							id: "independent-ai-validation",
+							glob: "**/*",
+							description:
+								"Coding agent must not approve its own PR; separate review agent required.",
+							severity: "high",
+						},
+					],
+					ignorePatterns: [
+						"dist/**",
+						"coverage/**",
+						"node_modules/**",
+						".pnpm-store/**",
+					],
+				},
+				null,
+				2,
+			),
+	},
+	{
+		path: ".greptile/files.json",
+		render: () =>
+			JSON.stringify(
+				{
+					contextFiles: [
+						{
+							path: "harness.contract.json",
+							role: "primary governance contract",
+						},
+						{
+							path: "contracts/browser-evidence.schema.json",
+							role: "primary JSON schema",
+						},
+						{
+							path: "src/lib/contract/types.ts",
+							role: "contract type definitions",
+						},
+						{
+							path: "src/cli.ts",
+							role: "CLI entrypoint and command surface",
+						},
+						{
+							path: "src/cli-dispatch.ts",
+							role: "command dispatch API",
+						},
+					],
+					apiSpecs: ["src/cli.ts", "src/commands/**/*.ts"],
+					schemaFiles: [
+						"contracts/**/*.schema.json",
+						"src/lib/contract/types.ts",
+					],
+				},
+				null,
+				2,
+			),
+	},
+	{
+		path: ".greptile/rules.md",
+		render: () => `# coding-harness Greptile rules
+
+## Scope
+
+These rules define repository-specific review expectations for Greptile.
+
+## Rule set
+
+### 1) Independent validation is mandatory
+
+- The coding agent must not act as approving reviewer on the same PR.
+- Greptile/Codex artifacts must be produced by an independent review step.
+
+### 2) Governance contract and docs must remain aligned
+
+If a PR changes any of the following, reviewers must verify consistency across all touched files:
+
+- \`/harness.contract.json\`
+- \`/AGENTS.md\`
+- \`/CONTRIBUTING.md\`
+- \`/docs/agents/07b-agent-governance.md\`
+- \`/.github/PULL_REQUEST_TEMPLATE.md\`
+
+### 3) ESM imports
+
+All local imports in TypeScript source must use \`.js\` extension.
+
+**Violation example**
+
+\`\`\`ts
+import { runReviewGate } from "./commands/review-gate";
+\`\`\`
+
+**Compliant example**
+
+\`\`\`ts
+import { runReviewGate } from "./commands/review-gate.js";
+\`\`\`
+
+### 4) Security and evidence
+
+- PRs changing policy/gate behavior must include test and evidence artifacts.
+- Any reduction in mandatory checks/review gates must be treated as high risk.
+
+### 5) Merge confidence threshold
+
+- Confidence < 4/5 is merge-blocking.
+- Confidence 4/5 may merge only when remaining items are non-logic polish.
+- Confidence 5/5 is merge-ready.
+`,
+	},
+	{
 		path: ".github/workflows/pr-pipeline.yml",
 		render: (pm) => {
 			const installCommand = renderInstallCommand(pm);
@@ -665,6 +809,12 @@ jobs:
 - [Branching and PR rule](#branching-and-pr-rule)
 - [Branch name policy](#branch-name-policy)
 - [Required pre-merge gates](#required-pre-merge-gates)
+- [Greptile setup baseline](#greptile-setup-baseline)
+- [Greptile config hierarchy](#greptile-config-hierarchy)
+- [Greptile merge logic for multi-scope pull requests](#greptile-merge-logic-for-multi-scope-pull-requests)
+- [Greptile confidence score policy](#greptile-confidence-score-policy)
+- [Greptile strictness policy](#greptile-strictness-policy)
+- [Greptile training and feedback loop](#greptile-training-and-feedback-loop)
 - [Recommended security scanner baseline](#recommended-security-scanner-baseline)
 - [Review artifacts requirement](#review-artifacts-requirement)
 - [Credential-safe evidence snippets](#credential-safe-evidence-snippets)
@@ -677,6 +827,8 @@ jobs:
 - Pull request required for every merge.
 - Required checks must pass before merge.
 - Greptile + Codex review artifacts are required before merge.
+- Greptile must be configured correctly using the \`grepfile\` skill with all required Greptile files present.
+- The coding agent must not approve its own PR; review must be independent.
 - Merge only after all gates pass.
 - Delete branch/worktree after merge.
 
@@ -712,6 +864,68 @@ This workflow keeps delivery auditable, reversible, and consistent even for solo
 - security-scan (CI required check)
 - ${memoryValidateCommand}
 
+## Greptile setup baseline
+
+- Greptile must be configured correctly before relying on Greptile review gates.
+- Use the \`grepfile\` skill to set up/refresh all required Greptile files for this repository.
+- If Greptile files are missing or stale, treat the review gate as blocked and do not merge.
+- Required local structure:
+  - \`.greptile/config.json\`
+  - \`.greptile/rules.md\`
+  - \`.greptile/files.json\`
+- Independent validation is mandatory: the coding agent cannot approve its own changes.
+
+## Greptile config hierarchy
+
+When settings conflict, use this precedence (highest first):
+
+1. Org-enforced rules from the Greptile dashboard.
+2. Directory-scoped \`.greptile/\` folders (cascading inheritance).
+3. \`greptile.json\` legacy repo-wide config (ignored if \`.greptile/\` exists in the same directory).
+4. Dashboard defaults.
+
+## Greptile merge logic for multi-scope pull requests
+
+For PRs touching multiple directories with different configs:
+
+- Strictness: use the most restrictive value (\`MAX\`).
+- \`fileChangeLimit\`: use the smallest value (\`MIN\`).
+- Comment types: union all requested comment types.
+- Boolean settings: if any scope enables it, treat as enabled (\`OR\`).
+
+## Greptile confidence score policy
+
+Use confidence score as a merge gate signal:
+
+- \`5/5\`: production-ready, merge allowed.
+- \`4/5\`: minor polish, merge allowed after non-logic fixes.
+- \`3/5\`: implementation issues, must address feedback and re-review.
+- \`2/5\`: significant bugs, blocked.
+- \`0-1/5\`: critical issues, blocked.
+
+## Greptile strictness policy
+
+- Level 1 (Verbose): required for security-critical directories and new project setup.
+- Level 2 (Default): required baseline for PRs targeting \`main\`/production branches.
+- Level 3 (Critical-only): reserved for stable, non-critical internal infrastructure.
+
+Important indexing caveat:
+
+- \`ignorePatterns\` excludes files from review only; it does **not** exclude indexing.
+- Large binaries/assets and \`node_modules\` must be excluded at repository/dashboard indexing level.
+
+## Greptile training and feedback loop
+
+- Developers must provide regular 👍/👎 feedback on review comments.
+- A 👎 should include a brief rationale to train the system.
+- Commit analysis and the 3-ignore rule are active signals and must be respected.
+- New repositories should expect a 2-3 week calibration period.
+
+Manual trigger standards:
+
+- Use \`@greptileai\` on draft PRs or when settings/context changed and a forced re-review is needed.
+- Use targeted prompts for scoped checks (for example: \`@greptileai check for memory leaks\`).
+
 ## Recommended security scanner baseline
 
 For repositories that use Harness, recommend installing these scanners as project prerequisites:
@@ -733,6 +947,8 @@ Each PR must include:
 
 - Greptile review artifact (URL, report, or comment reference).
 - Codex review artifact (URL, report, or comment reference).
+- Greptile confidence score for the PR.
+- Confirmation that reviewer agent is independent from coding agent.
 
 If either artifact is missing, block merge until it is added or explicitly waived by repository policy.
 
@@ -784,8 +1000,11 @@ Configure GitHub branch protection (or rulesets) on \`main\`:
 - [ ] Branch name follows policy (\`codex/*\` for agent-created branches).
 - [ ] Required local gates run: \`${lintCommand}\`, \`${typecheckCommand}\`, \`${testCommand}\`, \`${auditCommand}\`, \`${checkCommand}\`, \`${memoryValidateCommand}\`.
 - [ ] Required CI security gate passed: \`security-scan\` (gitleaks + trivy + semgrep, senvar optional).
+- [ ] Greptile setup verified with \`grepfile\` skill and \`.greptile/config.json\`, \`.greptile/rules.md\`, \`.greptile/files.json\`.
 - [ ] Greptile review completed and findings handled (or explicitly waived).
 - [ ] Codex review completed and findings handled (or explicitly waived).
+- [ ] Greptile review was performed by an independent reviewer (not the coding agent).
+- [ ] Greptile confidence score is \`>= 4/5\` for merge eligibility.
 - [ ] Merge is blocked until all required checks pass.
 - [ ] I will delete branch/worktree after merge.
 
@@ -803,6 +1022,8 @@ Configure GitHub branch protection (or rulesets) on \`main\`:
 ## Review artifacts
 
 - Greptile: <link / artifact path / comment ID>
+- Greptile confidence score: <0-5>
+- Independent reviewer evidence: <reviewer + link>
 - Codex: <link / artifact path / comment ID>
 - Additional evidence (if any):
 

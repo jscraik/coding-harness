@@ -34,8 +34,11 @@ Every agent handoff should include:
 - If command tooling is unavailable: mark check as blocked and escalate environment dependency.
 - If instructions conflict: resolve precedence before further edits.
 - Agent-created branches must use `codex/<short-description>` naming.
+- Greptile must be configured with all required files via the `grepfile` skill before relying on Greptile review artifacts (`.greptile/config.json`, `.greptile/rules.md`, `.greptile/files.json`).
+- Greptile review must be independent from code authorship (coding agent cannot act as approving review agent).
 - If a reproducible coding-harness bug/policy gap is found: create or update a GitHub issue with repro + evidence before handoff.
 - If PR review artifacts are missing (Greptile/Codex for this repo): do not merge; complete reviews or explicitly escalate the exception.
+- If Greptile confidence score is below `4/5`: do not merge.
 - After merge completion: clean up branch/worktree to keep an auditable branch lifecycle.
 
 ## Optional quality expectations

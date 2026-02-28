@@ -11,8 +11,11 @@
 - [ ] I did not push directly to `main`; this PR is from a dedicated branch.
 - [ ] Branch name follows policy (`codex/*` for agent-created branches).
 - [ ] Required local gates run: `pnpm lint`, `pnpm typecheck`, `pnpm test`, `pnpm audit`, `pnpm check` (or reason for deviation).
+- [ ] Greptile setup verified with `grepfile` skill and `.greptile/config.json`, `.greptile/rules.md`, `.greptile/files.json`.
 - [ ] `Greptile` review completed and findings handled (or explicitly waived).
 - [ ] `Codex` review completed and findings handled (or explicitly waived).
+- [ ] Greptile review was performed by an independent reviewer (not the coding agent).
+- [ ] Greptile confidence score is `>= 4/5` for merge eligibility.
 - [ ] PR template sections are complete and accurate.
 - [ ] I will delete branch/worktree after merge.
 
@@ -28,6 +31,8 @@
 ## Review artifacts
 
 - Greptile: `<link / artifact path / comment ID>`
+- Greptile confidence score: `<0-5>`
+- Independent reviewer evidence: `<reviewer + link>`
 - Codex: `<link / artifact path / comment ID>`
 - Additional evidence (if any):
 
