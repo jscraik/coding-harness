@@ -1,12 +1,7 @@
 {
 	"name": "@jamiecraik/coding-harness",
-	"version": "0.3.2",
-	"files": [
-		"dist",
-		"README.md",
-		"CHANGELOG.md",
-		"LICENSE"
-	],
+	"version": "0.3.3",
+	"files": ["dist", "README.md", "CHANGELOG.md", "LICENSE"],
 	"type": "module",
 	"description": "Control plane for agentic development",
 	"publishConfig": {
