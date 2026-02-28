@@ -769,7 +769,7 @@ describe("runBranchProtect", () => {
 		});
 	});
 
-	it("falls back to target branch include when existing includes are empty", async () => {
+	it("preserves empty include arrays to keep global scope", async () => {
 		const listRulesets = vi.fn(
 			async () =>
 				[
@@ -835,6 +835,6 @@ describe("runBranchProtect", () => {
 
 		expect(result.ok).toBe(true);
 		const payload = updateRuleset.mock.calls[0]?.[1];
-		expect(payload?.conditions?.ref_name?.include).toEqual(["refs/heads/main"]);
+		expect(payload?.conditions?.ref_name?.include).toEqual([]);
 	});
 });

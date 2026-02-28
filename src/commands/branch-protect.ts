@@ -353,6 +353,9 @@ function mergeRefNameIncludes(
 	if (!Array.isArray(existingIncludes)) {
 		return [branchRef];
 	}
+	if (existingIncludes.length === 0) {
+		return [];
+	}
 	const normalized = normalizeStringList(existingIncludes);
 	if (normalized.length === 0) {
 		return [branchRef];
