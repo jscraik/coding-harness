@@ -206,14 +206,15 @@ export class GitHubClient {
 
 	async listRulesets(): Promise<RulesetSummary[]> {
 		try {
-			const response = await this.octokit.request(
+			const response = await this.octokit.paginate(
 				"GET /repos/{owner}/{repo}/rulesets",
 				{
 					owner: this.owner,
 					repo: this.repo,
+					per_page: 100,
 				},
 			);
-			return response.data as RulesetSummary[];
+			return response as RulesetSummary[];
 		} catch (error) {
 			throw this.classifyError(error);
 		}
