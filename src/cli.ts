@@ -1,5 +1,7 @@
 #!/usr/bin/env node
-import { pathToFileURL } from "node:url";
+import { realpathSync } from "node:fs";
+import { resolve } from "node:path";
+import { fileURLToPath, pathToFileURL } from "node:url";
 import {
 	type BlastRadiusOptions,
 	runBlastRadiusCLI,
@@ -1432,12 +1434,31 @@ export function run(args: string[]): void {
 	}
 }
 
-function isDirectExecution(): boolean {
-	const entrypoint = process.argv[1];
+function canonicalizeExecutablePath(filePath: string): string {
+	const resolvedPath = resolve(filePath);
+	try {
+		return realpathSync(resolvedPath);
+	} catch {
+		return resolvedPath;
+	}
+}
+
+export function isDirectExecution(
+	entrypoint = process.argv[1],
+	moduleUrl = import.meta.url,
+): boolean {
 	if (!entrypoint) {
 		return false;
 	}
-	return import.meta.url === pathToFileURL(entrypoint).href;
+
+	const entrypointHref = pathToFileURL(
+		canonicalizeExecutablePath(entrypoint),
+	).href;
+	const moduleHref = pathToFileURL(
+		canonicalizeExecutablePath(fileURLToPath(moduleUrl)),
+	).href;
+
+	return moduleHref === entrypointHref;
 }
 
 if (isDirectExecution()) {
