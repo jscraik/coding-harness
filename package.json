@@ -76,7 +76,6 @@
 			"minimatch": "^10.2.3"
 		}
 	},
-	"main": "index.js",
 	"directories": {
 		"doc": "docs"
 	},
