@@ -6,6 +6,11 @@ import {
 } from "../lib/context-compound/constants.js";
 
 const constructorPaths: string[] = [];
+const initMock = vi.fn<
+	() =>
+		| { ok: true; value: undefined }
+		| { ok: false; error: { code: string; message: string } }
+>(() => ({ ok: true, value: undefined }));
 
 const searchMock = vi.fn(
 	(
@@ -21,7 +26,7 @@ vi.mock("../lib/context-compound/store.js", () => ({
 		}
 
 		init() {
-			return { ok: true, value: undefined };
+			return initMock();
 		}
 
 		search(
@@ -52,6 +57,8 @@ vi.mock("../lib/context-compound/ollama.js", () => ({
 describe("runContextCLI", () => {
 	beforeEach(() => {
 		searchMock.mockClear();
+		initMock.mockClear();
+		initMock.mockReturnValue({ ok: true, value: undefined });
 		constructorPaths.length = 0;
 	});
 
@@ -142,5 +149,33 @@ describe("runContextCLI", () => {
 		expect(constructorPaths[0]).toContain(
 			`.custom-harness${sep}${DEFAULT_DB_FILENAME}`,
 		);
+	});
+
+	it("returns actionable ABI mismatch error when better-sqlite3 is incompatible", async () => {
+		const { runContext, EXIT_CODES } = await import("./context.js");
+		const consoleInfoSpy = vi
+			.spyOn(console, "info")
+			.mockImplementation(() => undefined);
+
+		initMock.mockReturnValue({
+			ok: false,
+			error: {
+				code: "DB_ERROR",
+				message:
+					"The module '/tmp/better_sqlite3.node' was compiled against a different Node.js version using NODE_MODULE_VERSION 137. This version of Node.js requires NODE_MODULE_VERSION 141.",
+			},
+		});
+
+		const exitCode = await runContext({
+			query: "abi mismatch",
+			json: true,
+		});
+
+		expect(exitCode).toBe(EXIT_CODES.ERROR);
+		const payload = JSON.parse(String(consoleInfoSpy.mock.calls[0]?.[0]));
+		expect(payload.error).toContain("Node.js ABI mismatch");
+		expect(payload.error).toContain("pnpm rebuild better-sqlite3");
+		expect(payload.error).not.toContain("/tmp/better_sqlite3.node");
+		consoleInfoSpy.mockRestore();
 	});
 });

@@ -15,11 +15,16 @@ const indexBatchMock = vi.fn(
 	): Promise<Array<{ indexed: boolean; path: string }>> =>
 		files.map((file) => ({ indexed: true, path: file.filepath })),
 );
+const initMock = vi.fn<
+	() =>
+		| { ok: true; value: undefined }
+		| { ok: false; error: { code: string; message: string } }
+>(() => ({ ok: true, value: undefined }));
 
 vi.mock("../lib/context-compound/store.js", () => ({
 	VectorStore: class {
 		init() {
-			return { ok: true, value: undefined };
+			return initMock();
 		}
 
 		close() {
@@ -59,6 +64,8 @@ describe("runIndexContext", () => {
 
 	afterEach(() => {
 		vi.clearAllMocks();
+		initMock.mockClear();
+		initMock.mockReturnValue({ ok: true, value: undefined });
 		for (const dir of tempDirs) {
 			rmSync(dir, { recursive: true, force: true });
 		}
@@ -190,5 +197,40 @@ describe("runIndexContext", () => {
 
 		expect(exitCode).toBe(EXIT_CODES.SUCCESS);
 		expect(indexBatchMock).toHaveBeenCalled();
+	});
+
+	it("returns actionable ABI mismatch error when store init fails", async () => {
+		const { runIndexContext, EXIT_CODES } = await import("./index-context.js");
+		const root = mkdtempSync(join(tmpdir(), "harness-index-context-"));
+		tempDirs.push(root);
+
+		const brainstormDir = join(root, "docs/brainstorms");
+		mkdirSync(brainstormDir, { recursive: true });
+		writeFileSync(join(brainstormDir, "topic.md"), "# topic", "utf-8");
+
+		initMock.mockReturnValue({
+			ok: false,
+			error: {
+				code: "DB_ERROR",
+				message:
+					"The module '/tmp/better_sqlite3.node' was compiled against a different Node.js version using NODE_MODULE_VERSION 137. This version of Node.js requires NODE_MODULE_VERSION 141.",
+			},
+		});
+
+		const consoleInfoSpy = vi
+			.spyOn(console, "info")
+			.mockImplementation(() => undefined);
+
+		const exitCode = await runIndexContext({
+			baseDir: root,
+			json: true,
+		});
+
+		expect(exitCode).toBe(EXIT_CODES.ERROR);
+		const payload = JSON.parse(String(consoleInfoSpy.mock.calls[0]?.[0]));
+		expect(payload.error).toContain("Node.js ABI mismatch");
+		expect(payload.error).toContain("pnpm rebuild better-sqlite3");
+		expect(payload.error).not.toContain("/tmp/better_sqlite3.node");
+		consoleInfoSpy.mockRestore();
 	});
 });

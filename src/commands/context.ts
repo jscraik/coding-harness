@@ -11,6 +11,7 @@ import {
 	DEFAULT_SEARCH_LIMIT,
 	DEFAULT_SIMILARITY_THRESHOLD,
 } from "../lib/context-compound/constants.js";
+import { normalizeStoreInitError } from "../lib/context-compound/init-error.js";
 import { OllamaClient } from "../lib/context-compound/ollama.js";
 import { VectorStore } from "../lib/context-compound/store.js";
 import type { SearchResult } from "../lib/context-compound/types.js";
@@ -119,7 +120,8 @@ export async function runContext(options: ContextOptions): Promise<number> {
 	const initResult = store.init();
 
 	if (!initResult.ok) {
-		const error = `Failed to initialize store: ${initResult.error.message}`;
+		const normalized = normalizeStoreInitError(initResult.error.message);
+		const error = `Failed to initialize store: ${normalized.message}`;
 		if (options.json) {
 			console.info(
 				JSON.stringify({

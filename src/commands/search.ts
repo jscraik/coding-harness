@@ -13,6 +13,7 @@ import {
 	DEFAULT_SEARCH_LIMIT,
 	DEFAULT_SIMILARITY_THRESHOLD,
 } from "../lib/context-compound/constants.js";
+import { normalizeStoreInitError } from "../lib/context-compound/init-error.js";
 import { OllamaClient } from "../lib/context-compound/ollama.js";
 import { VectorStore } from "../lib/context-compound/store.js";
 import type { SearchResult as SemanticSearchResult } from "../lib/context-compound/types.js";
@@ -263,9 +264,11 @@ async function runSemanticSearch(
 	const initResult = store.init();
 
 	if (!initResult.ok) {
+		const normalized = normalizeStoreInitError(initResult.error.message);
 		return {
 			results: [],
-			warning: `Failed to initialize semantic store: ${initResult.error.message}`,
+			warning: `Failed to initialize semantic store: ${normalized.message}`,
+			unavailable: normalized.unavailable,
 		};
 	}
 
