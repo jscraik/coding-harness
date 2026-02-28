@@ -1,3 +1,4 @@
+import { sanitizeEvidenceText } from "../input/sanitize.js";
 import type { Comment } from "./client.js";
 import { isValidSha } from "./sha.js";
 
@@ -34,7 +35,7 @@ export function formatRerunComment(headSha: string, reason: string): string {
 		throw new Error(`Invalid SHA format: ${headSha}`);
 	}
 
-	const safeReason = escapeMarkdown(reason);
+	const safeReason = escapeMarkdown(sanitizeEvidenceText(reason));
 	const timestamp = new Date().toISOString();
 
 	return `${RERUN_MARKER}

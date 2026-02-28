@@ -78,6 +78,18 @@ describe("formatRerunComment", () => {
 		const isoPattern = /\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{3}Z/;
 		expect(comment).toMatch(isoPattern);
 	});
+
+	it("sanitizes token substitutions and values in reason text", () => {
+		const sha = "0123456789abcdef0123456789abcdef01234567";
+		const reason =
+			"rerun using $(gh auth token) and ghp_abcdefghijklmnopqrstuvwxyz0123456789";
+		const comment = formatRerunComment(sha, reason);
+
+		expect(comment).toContain("$GITHUB\\_TOKEN");
+		expect(comment).toContain("\\[REDACTED\\]");
+		expect(comment).not.toContain("$(gh auth token)");
+		expect(comment).not.toContain("ghp_abcdefghijklmnopqrstuvwxyz0123456789");
+	});
 });
 
 describe("hasRerunCommentForSha", () => {

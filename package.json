@@ -26,6 +26,7 @@
 		"typecheck": "tsc --noEmit",
 		"test": "vitest run",
 		"test:watch": "vitest",
+		"test:deep": "pnpm check && pnpm test:artifacts",
 		"build": "tsc && chmod +x dist/cli.js",
 		"prepublishOnly": "pnpm check && pnpm build",
 		"changelog": "standard-version --skip.bump --skip.tag --skip.commit",

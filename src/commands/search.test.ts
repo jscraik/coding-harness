@@ -247,4 +247,32 @@ describe("search command", () => {
 		expect(payload.error).toContain("Strict semantic mode enabled");
 		consoleSpy.mockRestore();
 	});
+
+	it("returns actionable ABI mismatch warning for semantic store init errors", async () => {
+		mockStore.init.mockReturnValue({
+			ok: false,
+			error: {
+				code: "DB_ERROR",
+				message:
+					"The module '/tmp/better_sqlite3.node' was compiled against a different Node.js version using NODE_MODULE_VERSION 137. This version of Node.js requires NODE_MODULE_VERSION 141.",
+			},
+		});
+
+		const consoleSpy = vi.spyOn(console, "info").mockImplementation(() => {
+			// noop
+		});
+
+		const code = await runSearch({
+			query: "abi mismatch",
+			mode: "semantic",
+			json: true,
+		});
+
+		expect(code).toBe(EXIT_CODES.SEMANTIC_UNAVAILABLE);
+		const payload = JSON.parse(String(consoleSpy.mock.calls[0]?.[0]));
+		expect(payload.warnings[0]).toContain("Node.js ABI mismatch");
+		expect(payload.warnings[0]).toContain("pnpm rebuild better-sqlite3");
+		expect(payload.warnings[0]).not.toContain("/tmp/better_sqlite3.node");
+		consoleSpy.mockRestore();
+	});
 });

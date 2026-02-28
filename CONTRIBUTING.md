@@ -7,6 +7,7 @@
 - [Branching and PR rule](#branching-and-pr-rule)
 - [Required pre-merge gates](#required-pre-merge-gates)
 - [One-click review workflow](#one-click-review-workflow)
+- [Credential-safe evidence snippets](#credential-safe-evidence-snippets)
 - [Recommended GitHub branch protection settings](#recommended-github-branch-protection-settings)
 - [Reviewer setup (solo dev friendly)](#reviewer-setup-solo-dev-friendly)
 
@@ -96,18 +97,34 @@ Use this checklist per task:
 4. Fix findings, re-run gates, and update artifacts.
 5. Merge only after all checklist items are checked.
 
+## Credential-safe evidence snippets
+
+- Never use command substitution in commit messages, PR bodies, or evidence notes for secrets.
+- Do **not** use `$(gh auth token)` (or similar) inside `git commit -m ...` / `gh pr create --body ...`.
+- Use placeholders in text output:
+  - ✅ `$GITHUB_TOKEN`
+  - ✅ `${GITHUB_TOKEN}`
+  - ❌ expanded token values
+- If a token value is ever exposed in commit/PR text, treat it as compromised: rotate/revoke, rewrite history where applicable, and document remediation in the issue/PR.
+
 ## Recommended GitHub branch protection settings
 
 Configure repository settings on `main` to make the workflow enforceable:
 
+- Bootstrap baseline via harness:
+  - `harness branch-protect --owner <owner> --repo <repo>`
+- Token resolution for `branch-protect`:
+  - `--token <PAT>` or env `GITHUB_TOKEN` / `GITHUB_PERSONAL_ACCESS_TOKEN`
 - Require PRs before merging.
 - Require at least one review before merge.
 - Require status checks:
+  - `pr-template`
   - `pnpm lint`
   - `pnpm typecheck`
   - `pnpm test`
   - `pnpm audit`
   - `pnpm check`
+  - `memory`
 - Dismiss stale approvals when new commits are pushed.
 - Restrict pushes to `main` to `main` repository settings/admin workflows only.
 - Optionally require signed commits if your policy requires it.

@@ -37,6 +37,56 @@ export interface PullRequest {
 	};
 }
 
+export interface RulesetRule {
+	type: string;
+	parameters?: Record<string, unknown>;
+}
+
+export interface RulesetBypassActor {
+	actor_id?: number | null;
+	actor_type:
+		| "Integration"
+		| "OrganizationAdmin"
+		| "RepositoryRole"
+		| "Team"
+		| "DeployKey";
+	bypass_mode?: "pull_request" | "always";
+}
+
+export interface BranchRulesetConditions {
+	ref_name?: {
+		include?: string[];
+		exclude?: string[];
+	};
+}
+
+export interface RulesetSummary {
+	id: number;
+	name: string;
+	target: string;
+	enforcement: string;
+	conditions?: BranchRulesetConditions;
+}
+
+export interface Ruleset {
+	id: number;
+	name: string;
+	target: string;
+	enforcement: string;
+	bypass_actors: RulesetBypassActor[];
+	conditions: BranchRulesetConditions;
+	rules: RulesetRule[];
+}
+
+export interface RulesetPayload {
+	name: string;
+	target: "branch";
+	enforcement: "active" | "disabled" | "evaluate";
+	bypass_actors: RulesetBypassActor[];
+	conditions: BranchRulesetConditions;
+	rules: RulesetRule[];
+}
+
 function createOctokit(token: string): InstanceType<typeof MyOctokit> {
 	return new MyOctokit({
 		auth: token,
@@ -137,6 +187,18 @@ export class GitHubClient {
 		}
 	}
 
+	async getDefaultBranch(): Promise<string> {
+		try {
+			const response = await this.octokit.repos.get({
+				owner: this.owner,
+				repo: this.repo,
+			});
+			return response.data.default_branch;
+		} catch (error) {
+			throw this.classifyError(error);
+		}
+	}
+
 	async listIssueComments(issueNumber: number): Promise<Comment[]> {
 		try {
 			const response = await this.octokit.paginate(
@@ -149,6 +211,75 @@ export class GitHubClient {
 				},
 			);
 			return response as Comment[];
+		} catch (error) {
+			throw this.classifyError(error);
+		}
+	}
+
+	async listRulesets(): Promise<RulesetSummary[]> {
+		try {
+			const response = await this.octokit.paginate(
+				"GET /repos/{owner}/{repo}/rulesets",
+				{
+					owner: this.owner,
+					repo: this.repo,
+					per_page: 100,
+				},
+			);
+			return response as RulesetSummary[];
+		} catch (error) {
+			throw this.classifyError(error);
+		}
+	}
+
+	async getRuleset(rulesetId: number): Promise<Ruleset> {
+		try {
+			const response = await this.octokit.request(
+				"GET /repos/{owner}/{repo}/rulesets/{ruleset_id}",
+				{
+					owner: this.owner,
+					repo: this.repo,
+					ruleset_id: rulesetId,
+				},
+			);
+			return response.data as Ruleset;
+		} catch (error) {
+			throw this.classifyError(error);
+		}
+	}
+
+	async createRuleset(payload: RulesetPayload): Promise<Ruleset> {
+		try {
+			const response = await mutationQueue.execute(() =>
+				this.octokit.request("POST /repos/{owner}/{repo}/rulesets", {
+					owner: this.owner,
+					repo: this.repo,
+					...payload,
+				} as never),
+			);
+			return response.data as Ruleset;
+		} catch (error) {
+			throw this.classifyError(error);
+		}
+	}
+
+	async updateRuleset(
+		rulesetId: number,
+		payload: RulesetPayload,
+	): Promise<Ruleset> {
+		try {
+			const response = await mutationQueue.execute(() =>
+				this.octokit.request(
+					"PUT /repos/{owner}/{repo}/rulesets/{ruleset_id}",
+					{
+						owner: this.owner,
+						repo: this.repo,
+						ruleset_id: rulesetId,
+						...payload,
+					} as never,
+				),
+			);
+			return response.data as Ruleset;
 		} catch (error) {
 			throw this.classifyError(error);
 		}

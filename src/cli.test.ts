@@ -1,8 +1,14 @@
 import { randomUUID } from "node:crypto";
-import { mkdirSync, rmSync, writeFileSync } from "node:fs";
+import { mkdirSync, rmSync, symlinkSync, writeFileSync } from "node:fs";
 import { dirname, join } from "node:path";
+import { pathToFileURL } from "node:url";
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { parseCsvList, parseIntegerArg, run } from "./cli.js";
+import {
+	isDirectExecution,
+	parseCsvList,
+	parseIntegerArg,
+	run,
+} from "./cli.js";
 
 // Mock command modules to avoid actual execution
 vi.mock("./commands/remediate.js", () => ({
@@ -225,5 +231,32 @@ describe("run", () => {
 		run(["--version"]);
 
 		expect(exitSpy).not.toHaveBeenCalled();
+	});
+});
+
+describe("isDirectExecution", () => {
+	it("returns true for direct module path", () => {
+		const modulePath = join(process.cwd(), "src/cli.ts");
+		const moduleUrl = pathToFileURL(modulePath).href;
+
+		expect(isDirectExecution(modulePath, moduleUrl)).toBe(true);
+	});
+
+	it("returns true when entrypoint is a symlink to the module", () => {
+		const testDir = join(
+			process.cwd(),
+			"artifacts",
+			`harness-cli-entrypoint-${randomUUID()}`,
+		);
+		const modulePath = join(process.cwd(), "src/cli.ts");
+		const moduleUrl = pathToFileURL(modulePath).href;
+		const symlinkPath = join(testDir, "harness");
+
+		mkdirSync(testDir, { recursive: true });
+		symlinkSync(modulePath, symlinkPath);
+
+		expect(isDirectExecution(symlinkPath, moduleUrl)).toBe(true);
+
+		rmSync(testDir, { recursive: true, force: true });
 	});
 });

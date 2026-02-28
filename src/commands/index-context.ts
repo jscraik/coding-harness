@@ -16,6 +16,7 @@ import {
 	indexBatch,
 	planIndexOptions,
 } from "../lib/context-compound/indexer.js";
+import { normalizeStoreInitError } from "../lib/context-compound/init-error.js";
 import { OllamaClient } from "../lib/context-compound/ollama.js";
 import { VectorStore } from "../lib/context-compound/store.js";
 import { validatePath } from "../lib/input/validator.js";
@@ -197,7 +198,8 @@ export async function runIndexContext(
 	const initResult = store.init();
 
 	if (!initResult.ok) {
-		const error = `Failed to initialize store: ${initResult.error.message}`;
+		const normalized = normalizeStoreInitError(initResult.error.message);
+		const error = `Failed to initialize store: ${normalized.message}`;
 		if (options.json) {
 			console.info(
 				JSON.stringify({

@@ -278,6 +278,10 @@ function renderInstallCommand(packageManager: string): string {
 	return `${packageManager} install`;
 }
 
+function renderMemoryValidateCommand(): string {
+	return `test -f memory.json && jq -e '.meta.version == "1.0" and (.preamble.bootstrap | type == "boolean") and (.preamble.search | type == "boolean") and (.entries | type == "array")' memory.json >/dev/null`;
+}
+
 const TEMPLATES: Template[] = [
 	{
 		path: "harness.contract.json",
@@ -406,6 +410,41 @@ const TEMPLATES: Template[] = [
 			),
 	},
 	{
+		path: "memory.json",
+		render: () =>
+			JSON.stringify(
+				{
+					repo: "replace-with-repo-name",
+					session_id: "bootstrap/init",
+					preamble: {
+						bootstrap: true,
+						search: true,
+					},
+					entries: [
+						{
+							level: "observation",
+							content:
+								"Harness memory baseline initialized. Replace with task-specific observations.",
+							tags: ["repo:unknown", "area:bootstrap", "type:setup"],
+							session_id: "bootstrap/init",
+							source: "harness init",
+							observed_at: "2026-01-01T00:00:00.000Z",
+						},
+					],
+					closeout: {
+						forjamie_updated: false,
+						date: "2026-01-01T00:00:00.000Z",
+					},
+					meta: {
+						created_at: "2026-01-01T00:00:00.000Z",
+						version: "1.0",
+					},
+				},
+				null,
+				2,
+			),
+	},
+	{
 		path: ".github/workflows/pr-pipeline.yml",
 		render: (pm) => {
 			const installCommand = renderInstallCommand(pm);
@@ -414,6 +453,7 @@ const TEMPLATES: Template[] = [
 			const testCommand = renderScriptCommand(pm, "test");
 			const auditCommand = renderScriptCommand(pm, "audit");
 			const checkCommand = renderScriptCommand(pm, "check");
+			const memoryValidateCommand = renderMemoryValidateCommand();
 			return `name: Harness PR Pipeline
 
 on: pull_request
@@ -423,6 +463,71 @@ permissions:
   pull-requests: read
 
 jobs:
+  pr-template:
+    name: pr-template
+    runs-on: ubuntu-latest
+    steps:
+      - name: Validate PR template completion
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const body = context.payload.pull_request?.body ?? '';
+            const errors = [];
+
+            if (body.trim().length === 0) {
+              errors.push('PR body is empty. Fill out the full PR template.');
+            }
+
+            const requiredSections = [
+              '## Summary',
+              '## Checklist',
+              '## Testing',
+              '## Review artifacts',
+              '## Notes',
+            ];
+            for (const section of requiredSections) {
+              if (!body.includes(section)) {
+                errors.push('Missing required section: ' + section);
+              }
+            }
+
+            const checklistMatch = body.match(/## Checklist([\\s\\S]*?)(?:\\n## |\\n# |$)/i);
+            if (!checklistMatch) {
+              errors.push('Missing checklist block.');
+            } else {
+              const checklistBody = checklistMatch[1] ?? '';
+              const checklistItems = checklistBody
+                .split('\\n')
+                .map((line) => line.trim())
+                .filter((line) => /^- \\[[ xX]\\]/.test(line));
+
+              if (checklistItems.length === 0) {
+                errors.push('Checklist has no checkbox items.');
+              }
+
+              const unchecked = checklistItems.filter((line) => /^- \\[ \\]/.test(line));
+              if (unchecked.length > 0) {
+                errors.push(
+                  'Checklist has unchecked item(s):\\n' + unchecked.join('\\n'),
+                );
+              }
+            }
+
+            const placeholders = [
+              'pass/fail',
+              '<link / artifact path / comment ID>',
+              'Add one-paragraph merge rationale here.',
+            ];
+            for (const placeholder of placeholders) {
+              if (body.includes(placeholder)) {
+                errors.push('Replace template placeholder: ' + placeholder);
+              }
+            }
+
+            if (errors.length > 0) {
+              core.setFailed(errors.join('\\n'));
+            }
+
   lint:
     name: lint
     runs-on: ubuntu-latest
@@ -497,6 +602,14 @@ jobs:
         run: ${installCommand}
       - name: Run full check
         run: ${checkCommand}
+
+  memory:
+    name: memory
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Validate memory.json
+        run: ${memoryValidateCommand}
 `;
 		},
 	},
@@ -508,6 +621,7 @@ jobs:
 			const testCommand = renderScriptCommand(pm, "test");
 			const auditCommand = renderScriptCommand(pm, "audit");
 			const checkCommand = renderScriptCommand(pm, "check");
+			const memoryValidateCommand = renderMemoryValidateCommand();
 			return `# Contributing
 
 ## Table of Contents
@@ -518,6 +632,7 @@ jobs:
 - [Branch name policy](#branch-name-policy)
 - [Required pre-merge gates](#required-pre-merge-gates)
 - [Review artifacts requirement](#review-artifacts-requirement)
+- [Credential-safe evidence snippets](#credential-safe-evidence-snippets)
 - [Branch protection recommendation](#branch-protection-recommendation)
 
 ## Minimum workflow contract
@@ -559,6 +674,7 @@ This workflow keeps delivery auditable, reversible, and consistent even for solo
 - ${testCommand}
 - ${auditCommand}
 - ${checkCommand}
+- ${memoryValidateCommand}
 
 ## Review artifacts requirement
 
@@ -569,13 +685,27 @@ Each PR must include:
 
 If either artifact is missing, block merge until it is added or explicitly waived by repository policy.
 
+## Credential-safe evidence snippets
+
+- Never use command substitution in commit messages, PR bodies, or evidence notes for secrets.
+- Do **not** use \`$(gh auth token)\` (or similar) inside \`git commit -m ...\` / \`gh pr create --body ...\`.
+- Use placeholders in text output:
+  - ✅ \`$GITHUB_TOKEN\`
+  - ✅ \`\${GITHUB_TOKEN}\`
+  - ❌ expanded token values
+- If a token value is ever exposed in commit/PR text, treat it as compromised: rotate/revoke, rewrite history where applicable, and document remediation in the issue/PR.
+
 ## Branch protection recommendation
 
 Configure GitHub branch protection (or rulesets) on \`main\`:
 
+- Bootstrap baseline via harness:
+  - \`harness branch-protect --owner <owner> --repo <repo>\`
+- Token resolution for \`branch-protect\`:
+  - \`--token <PAT>\` or env \`GITHUB_TOKEN\` / \`GITHUB_PERSONAL_ACCESS_TOKEN\`
 - Require pull request before merge.
 - Require at least one approval.
-- Require status checks: \`lint\`, \`typecheck\`, \`test\`, \`audit\`, \`check\`.
+- Require status checks: \`pr-template\`, \`lint\`, \`typecheck\`, \`test\`, \`audit\`, \`check\`, \`memory\`.
 - Block direct pushes to \`main\`.
 `;
 		},
@@ -588,6 +718,7 @@ Configure GitHub branch protection (or rulesets) on \`main\`:
 			const testCommand = renderScriptCommand(pm, "test");
 			const auditCommand = renderScriptCommand(pm, "audit");
 			const checkCommand = renderScriptCommand(pm, "check");
+			const memoryValidateCommand = renderMemoryValidateCommand();
 			return `# Pull request checklist
 
 ## Summary
@@ -600,7 +731,7 @@ Configure GitHub branch protection (or rulesets) on \`main\`:
 
 - [ ] I did not push directly to \`main\`; this PR is from a dedicated branch.
 - [ ] Branch name follows policy (\`codex/*\` for agent-created branches).
-- [ ] Required local gates run: \`${lintCommand}\`, \`${typecheckCommand}\`, \`${testCommand}\`, \`${auditCommand}\`, \`${checkCommand}\`.
+- [ ] Required local gates run: \`${lintCommand}\`, \`${typecheckCommand}\`, \`${testCommand}\`, \`${auditCommand}\`, \`${checkCommand}\`, \`${memoryValidateCommand}\`.
 - [ ] Greptile review completed and findings handled (or explicitly waived).
 - [ ] Codex review completed and findings handled (or explicitly waived).
 - [ ] Merge is blocked until all required checks pass.
@@ -613,6 +744,7 @@ Configure GitHub branch protection (or rulesets) on \`main\`:
 - Command: \`${testCommand}\` -> pass/fail
 - Command: \`${auditCommand}\` -> pass/fail
 - Command: \`${checkCommand}\` -> pass/fail
+- Command: \`${memoryValidateCommand}\` -> pass/fail
 - Any other command(s):
 
 ## Review artifacts

@@ -61,7 +61,7 @@ describe("runInit", () => {
 
 			expect(result.ok).toBe(true);
 			if (result.ok) {
-				expect(result.output.created).toHaveLength(4);
+				expect(result.output.created).toHaveLength(5);
 				expect(result.output.skipped).toHaveLength(0);
 			}
 
@@ -74,6 +74,7 @@ describe("runInit", () => {
 			expect(
 				existsSync(join(tempDir, ".github/PULL_REQUEST_TEMPLATE.md")),
 			).toBe(false);
+			expect(existsSync(join(tempDir, "memory.json"))).toBe(false);
 		});
 	});
 
@@ -83,7 +84,7 @@ describe("runInit", () => {
 
 			expect(result.ok).toBe(true);
 			if (result.ok) {
-				expect(result.output.created).toHaveLength(4);
+				expect(result.output.created).toHaveLength(5);
 				expect(result.output.skipped).toHaveLength(0);
 			}
 
@@ -96,6 +97,7 @@ describe("runInit", () => {
 			expect(
 				existsSync(join(tempDir, ".github/PULL_REQUEST_TEMPLATE.md")),
 			).toBe(true);
+			expect(existsSync(join(tempDir, "memory.json"))).toBe(true);
 		});
 
 		it("skips existing files without --force", () => {
@@ -112,13 +114,14 @@ describe("runInit", () => {
 				join(tempDir, ".github/PULL_REQUEST_TEMPLATE.md"),
 				"existing",
 			);
+			writeFileSync(join(tempDir, "memory.json"), "existing");
 
 			const result = runInit(tempDir, { dryRun: false, force: false });
 
 			expect(result.ok).toBe(true);
 			if (result.ok) {
 				expect(result.output.created).toHaveLength(0);
-				expect(result.output.skipped).toHaveLength(4);
+				expect(result.output.skipped).toHaveLength(5);
 			}
 		});
 	});
@@ -138,12 +141,13 @@ describe("runInit", () => {
 				join(tempDir, ".github/PULL_REQUEST_TEMPLATE.md"),
 				"old content",
 			);
+			writeFileSync(join(tempDir, "memory.json"), '{"old": true}');
 
 			const result = runInit(tempDir, { dryRun: false, force: true });
 
 			expect(result.ok).toBe(true);
 			if (result.ok) {
-				expect(result.output.created).toHaveLength(4);
+				expect(result.output.created).toHaveLength(5);
 				expect(result.output.skipped).toHaveLength(0);
 			}
 		});
@@ -203,6 +207,23 @@ describe("runInit", () => {
 			expect(content.runtimePolicy.createIssueOnAgentFindings).toBe(true);
 		});
 
+		it("creates valid memory.json baseline", () => {
+			const result = runInit(tempDir, { dryRun: false, force: false });
+
+			expect(result.ok).toBe(true);
+
+			const memoryPath = join(tempDir, "memory.json");
+			expect(existsSync(memoryPath)).toBe(true);
+
+			const memory = JSON.parse(
+				require("node:fs").readFileSync(memoryPath, "utf-8"),
+			);
+			expect(memory.meta.version).toBe("1.0");
+			expect(memory.preamble.bootstrap).toBe(true);
+			expect(memory.preamble.search).toBe(true);
+			expect(Array.isArray(memory.entries)).toBe(true);
+		});
+
 		it("includes package manager in workflow", () => {
 			// Create pnpm lockfile
 			writeFileSync(join(tempDir, "pnpm-lock.yaml"), "");
@@ -218,6 +239,9 @@ describe("runInit", () => {
 			expect(content).toContain("pnpm test");
 			expect(content).toContain("pnpm lint");
 			expect(content).toContain("pnpm check");
+			expect(content).toContain("name: pr-template");
+			expect(content).toContain("Validate memory.json");
+			expect(content).toContain("test -f memory.json");
 		});
 
 		it("uses npm run for npm script commands", () => {
@@ -272,7 +296,7 @@ describe("--track flag", () => {
 
 		expect(result.ok).toBe(true);
 		if (result.ok) {
-			expect(result.output.created).toHaveLength(4);
+			expect(result.output.created).toHaveLength(5);
 		}
 
 		// Verify manifest exists
@@ -300,7 +324,7 @@ describe("--track flag", () => {
 
 		expect(result.ok).toBe(true);
 		if (result.ok) {
-			expect(result.output.created).toHaveLength(4);
+			expect(result.output.created).toHaveLength(5);
 		}
 
 		// Verify backup exists
@@ -312,7 +336,7 @@ describe("--track flag", () => {
 			"utf-8",
 		);
 		const manifest = JSON.parse(manifestContent);
-		expect(manifest.files).toHaveLength(4);
+		expect(manifest.files).toHaveLength(5);
 
 		// Find the modified entry
 		const modifiedEntry = manifest.files.find(
@@ -366,6 +390,7 @@ describe("--rollback flag", () => {
 
 		// Verify files exist
 		expect(existsSync(join(tempDir, "harness.contract.json"))).toBe(true);
+		expect(existsSync(join(tempDir, "memory.json"))).toBe(true);
 
 		// Then rollback
 		const rollbackResult = runInit(tempDir, {
@@ -384,6 +409,7 @@ describe("--rollback flag", () => {
 		expect(existsSync(join(tempDir, ".github/PULL_REQUEST_TEMPLATE.md"))).toBe(
 			false,
 		);
+		expect(existsSync(join(tempDir, "memory.json"))).toBe(false);
 
 		// Manifest cleaned up
 		expect(existsSync(join(tempDir, ".harness/restore-manifest.json"))).toBe(
