@@ -219,6 +219,11 @@ interface BuildPayloadInput {
 	existingRuleset?: Ruleset | undefined;
 }
 
+type RequiredStatusCheckEntry = {
+	context: string;
+	[key: string]: unknown;
+};
+
 function buildPayload(input: BuildPayloadInput): RulesetPayload {
 	const baseRules = Array.isArray(input.existingRuleset?.rules)
 		? [...input.existingRuleset.rules]
@@ -260,20 +265,21 @@ function buildPayload(input: BuildPayloadInput): RulesetPayload {
 	const existingChecksParameters = normalizeParameters(
 		existingChecksRule?.parameters,
 	);
-	const existingContexts = extractCheckContexts(
+	const existingRequiredChecks = normalizeRequiredStatusCheckEntries(
 		existingChecksParameters.required_status_checks,
 	);
-	const requiredContexts = normalizeChecks([
-		...existingContexts,
-		...input.requiredChecks,
-	]);
+	const requiredContexts = normalizeChecks(input.requiredChecks);
+	const mergedRequiredChecks = mergeRequiredStatusChecks(
+		existingRequiredChecks,
+		requiredContexts,
+	);
 	const statusChecksRule: RulesetRule = {
 		type: "required_status_checks",
 		parameters: {
 			...existingChecksParameters,
 			strict_required_status_checks_policy: true,
 			do_not_enforce_on_create: false,
-			required_status_checks: requiredContexts.map((context) => ({ context })),
+			required_status_checks: mergedRequiredChecks,
 		},
 	};
 	upsertRule(baseRules, statusChecksRule);
@@ -353,19 +359,76 @@ function mergeRefNameIncludes(
 	return Array.from(merged);
 }
 
-function extractCheckContexts(value: unknown): string[] {
+function normalizeRequiredStatusCheckEntries(
+	value: unknown,
+): RequiredStatusCheckEntry[] {
 	if (!Array.isArray(value)) return [];
-	const contexts: string[] = [];
+	const checks: RequiredStatusCheckEntry[] = [];
 	for (const item of value) {
 		if (
 			typeof item === "object" &&
 			item !== null &&
 			typeof (item as { context?: unknown }).context === "string"
 		) {
-			contexts.push((item as { context: string }).context);
+			const context = (item as { context: string }).context.trim();
+			if (context.length > 0) {
+				checks.push({
+					...(item as Record<string, unknown>),
+					context,
+				});
+			}
 		}
 	}
-	return contexts;
+	return checks;
+}
+
+function mergeRequiredStatusChecks(
+	existingChecks: RequiredStatusCheckEntry[],
+	requiredContexts: string[],
+): RequiredStatusCheckEntry[] {
+	const merged: RequiredStatusCheckEntry[] = [];
+	const seenContexts = new Set<string>();
+
+	for (const check of existingChecks) {
+		if (!seenContexts.has(check.context)) {
+			merged.push(check);
+			seenContexts.add(check.context);
+		}
+	}
+
+	for (const context of requiredContexts) {
+		if (!seenContexts.has(context)) {
+			merged.push({ context });
+			seenContexts.add(context);
+		}
+	}
+
+	return merged;
+}
+
+function refSelectorMatches(selector: string, branchRef: string): boolean {
+	const normalized = selector.trim();
+	if (normalized.length === 0) {
+		return false;
+	}
+	if (normalized === "~ALL") {
+		return true;
+	}
+	if (normalized === "~DEFAULT_BRANCH") {
+		return branchRef === `refs/heads/${DEFAULT_BRANCH}`;
+	}
+	if (normalized === branchRef) {
+		return true;
+	}
+	if (!normalized.includes("*")) {
+		return false;
+	}
+
+	const escaped = normalized
+		.replace(/[.+?^${}()|[\]\\]/g, "\\$&")
+		.replace(/\*/g, ".*");
+	const pattern = new RegExp(`^${escaped}$`);
+	return pattern.test(branchRef);
 }
 
 function findMatchingRuleset(
@@ -381,7 +444,7 @@ function findMatchingRuleset(
 		if (!Array.isArray(includes) || includes.length === 0) {
 			return true;
 		}
-		return includes.includes(branchRef);
+		return includes.some((include) => refSelectorMatches(include, branchRef));
 	});
 }
 

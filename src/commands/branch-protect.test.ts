@@ -323,6 +323,78 @@ describe("runBranchProtect", () => {
 		expect(createRuleset).not.toHaveBeenCalled();
 	});
 
+	it("matches existing ruleset when include selector uses wildcard patterns", async () => {
+		const listRulesets = vi.fn(
+			async () =>
+				[
+					{
+						id: 15,
+						name: "protect",
+						target: "branch",
+						enforcement: "active",
+						conditions: {
+							ref_name: {
+								include: ["refs/heads/*"],
+								exclude: [],
+							},
+						},
+					},
+				] as RulesetSummary[],
+		);
+		const getRuleset = vi.fn(
+			async () =>
+				({
+					id: 15,
+					name: "protect",
+					target: "branch",
+					enforcement: "active",
+					bypass_actors: [],
+					conditions: {
+						ref_name: {
+							include: ["refs/heads/*"],
+							exclude: [],
+						},
+					},
+					rules: [],
+				}) as Ruleset,
+		);
+		const updateRuleset = vi.fn(
+			async (_id: number, payload: RulesetPayload) =>
+				({
+					id: 15,
+					name: payload.name,
+					target: payload.target,
+					enforcement: payload.enforcement,
+					bypass_actors: payload.bypass_actors,
+					conditions: payload.conditions,
+					rules: payload.rules,
+				}) as Ruleset,
+		);
+		const createRuleset = vi.fn();
+
+		mockGitHubClient.mockImplementation(
+			() =>
+				({
+					listRulesets,
+					getRuleset,
+					updateRuleset,
+					createRuleset,
+				}) as unknown as GitHubClient,
+		);
+
+		const result = await runBranchProtect({
+			token: "token",
+			owner: "octo",
+			repo: "harness",
+			branch: "main",
+		});
+
+		expect(result.ok).toBe(true);
+		expect(getRuleset).toHaveBeenCalledWith(15);
+		expect(updateRuleset).toHaveBeenCalledTimes(1);
+		expect(createRuleset).not.toHaveBeenCalled();
+	});
+
 	it("preserves stricter existing pull request protections", async () => {
 		const listRulesets = vi.fn(
 			async () =>
@@ -478,6 +550,95 @@ describe("runBranchProtect", () => {
 			"refs/heads/main",
 			"refs/heads/release/*",
 		]);
+	});
+
+	it("preserves existing required status check metadata entries", async () => {
+		const listRulesets = vi.fn(
+			async () =>
+				[
+					{
+						id: 32,
+						name: "protect",
+						target: "branch",
+						enforcement: "active",
+						conditions: {
+							ref_name: {
+								include: ["refs/heads/main"],
+								exclude: [],
+							},
+						},
+					},
+				] as RulesetSummary[],
+		);
+		const getRuleset = vi.fn(
+			async () =>
+				({
+					id: 32,
+					name: "protect",
+					target: "branch",
+					enforcement: "active",
+					bypass_actors: [],
+					conditions: {
+						ref_name: {
+							include: ["refs/heads/main"],
+							exclude: [],
+						},
+					},
+					rules: [
+						{
+							type: "required_status_checks",
+							parameters: {
+								required_status_checks: [
+									{
+										context: "existing-check",
+										integration_id: 1234,
+									},
+								],
+							},
+						},
+					],
+				}) as Ruleset,
+		);
+		const updateRuleset = vi.fn(
+			async (_id: number, payload: RulesetPayload) =>
+				({
+					id: 32,
+					name: payload.name,
+					target: payload.target,
+					enforcement: payload.enforcement,
+					bypass_actors: payload.bypass_actors,
+					conditions: payload.conditions,
+					rules: payload.rules,
+				}) as Ruleset,
+		);
+
+		mockGitHubClient.mockImplementation(
+			() =>
+				({
+					listRulesets,
+					getRuleset,
+					updateRuleset,
+				}) as unknown as GitHubClient,
+		);
+
+		const result = await runBranchProtect({
+			token: "token",
+			owner: "octo",
+			repo: "harness",
+			requiredChecks: ["check"],
+		});
+
+		expect(result.ok).toBe(true);
+		const payload = updateRuleset.mock.calls[0]?.[1];
+		const requiredRule = payload?.rules.find(
+			(rule) => rule.type === "required_status_checks",
+		);
+		expect(requiredRule?.parameters).toMatchObject({
+			required_status_checks: [
+				{ context: "existing-check", integration_id: 1234 },
+				{ context: "check" },
+			],
+		});
 	});
 
 	it("falls back to target branch include when existing includes are empty", async () => {
