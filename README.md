@@ -97,10 +97,9 @@ The package publishes as a private npm package from tagged releases:
 ### Publish auth modes
 
 - Bootstrap: use `NPM_TOKEN` secret via `publish_auth: token`.
-- Future (after trusted publisher setup): switch to OIDC with
-  `publish_auth: oidc` in the workflow dispatch.
-- For automatic tag-based releases, use the default token mode until you
-  enable repo variable `NPM_PUBLISH_AUTH=oidc`.
+- OIDC trusted publisher: set repo variable `NPM_PUBLISH_AUTH=oidc`
+  (or run manual dispatch with `publish_auth: oidc`).
+- Current workflow defaults: automatic tag releases now use OIDC by default.
 
 Example manual OIDC run (after trusted publisher is configured):
 
