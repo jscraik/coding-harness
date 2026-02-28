@@ -2,7 +2,7 @@
  * Remediate CLI command
  *
  * Entry point for the remediation loop. Uses the finding normalizer
- * and orchestrator to process findings from CodeQL or Codex providers.
+ * and orchestrator to process findings from Greptile or Codex providers.
  */
 
 import { spawnSync } from "node:child_process";
@@ -44,8 +44,8 @@ export interface RemediateOptions {
 	repo?: string;
 	/** PR number */
 	prNumber?: number;
-	/** Provider: "codeql" or "codex" */
-	provider?: "codeql" | "codex";
+	/** Provider: "greptile" or "codex" */
+	provider?: "greptile" | "codex";
 	/** Maximum severity tier for auto-apply */
 	maxAutoTier?: "high" | "medium" | "low";
 	/** JSON file path for findings, or "-" for stdin */
@@ -113,20 +113,27 @@ function parseFindings(input: string): unknown[] {
 /**
  * Detect provider type from finding structure.
  */
-function detectProvider(finding: unknown): "codeql" | "codex" | null {
+function detectProvider(finding: unknown): "greptile" | "codex" | null {
 	if (typeof finding !== "object" || finding === null) {
 		return null;
 	}
 
 	const f = finding as Record<string, unknown>;
 
-	// CodeQL has nested rule and location objects
+	if (f.provider === "codex") {
+		return "codex";
+	}
+	if (f.provider === "greptile" || f.provider === "codeql") {
+		return "greptile";
+	}
+
+	// Greptile has nested rule and location objects
 	if (
 		typeof f.location === "object" &&
 		f.location !== null &&
 		"startLine" in f.location
 	) {
-		return "codeql";
+		return "greptile";
 	}
 
 	// Codex has flat structure with filePath and line
@@ -146,10 +153,16 @@ function normalizeFinding(
 ): { ok: true; finding: CanonicalFinding } | { ok: false; error: string } {
 	const provider = detectProvider(raw);
 
-	if (provider === "codeql") {
+	if (provider === "greptile") {
 		const result = normalizeCodeqlFinding(raw as CodeqlFindingInput, repoRoot);
 		if (result.ok) {
-			return { ok: true, finding: result.finding };
+			return {
+				ok: true,
+				finding: {
+					...result.finding,
+					provider: "greptile",
+				},
+			};
 		}
 		return {
 			ok: false,
@@ -168,7 +181,7 @@ function normalizeFinding(
 		};
 	}
 
-	return { ok: false, error: "Unable to detect provider type" };
+	return { ok: false, error: "Unable to detect provider type (greptile/codex)" };
 }
 
 /**

@@ -83,6 +83,10 @@ vi.mock("./commands/review-gate.js", () => ({
 	runReviewGateCLI: vi.fn(async () => 45),
 }));
 
+vi.mock("./commands/branch-protect.js", () => ({
+	runBranchProtectCLI: vi.fn(async () => 64),
+}));
+
 vi.mock("./commands/blast-radius.js", () => ({
 	runBlastRadiusCLI: vi.fn(() => 59),
 }));
@@ -751,6 +755,53 @@ describe("cli command dispatch", () => {
 			json: true,
 		});
 		expect(exitSpy).toHaveBeenCalledWith(45);
+	});
+
+	it("dispatches branch-protect command and ignores missing flag values", async () => {
+		const { run } = await import("./cli.js");
+		const { runBranchProtectCLI } = await import(
+			"./commands/branch-protect.js"
+		);
+
+		const exitSpy = vi
+			.spyOn(process, "exit")
+			.mockImplementation(((_code?: number) => undefined) as never);
+
+		run([
+			"branch-protect",
+			"--token",
+			"--owner",
+			"octo",
+			"--repo",
+			"harness",
+			"--checks",
+			"Greptile Review,Socket Security: Pull Request Alerts",
+			"--required-approvals",
+			"2",
+			"--dry-run",
+			"--json",
+			"--ruleset",
+			"protect",
+			"--branch",
+			"main",
+		]);
+
+		await new Promise((resolve) => setTimeout(resolve, 0));
+
+		expect(vi.mocked(runBranchProtectCLI)).toHaveBeenCalledWith({
+			owner: "octo",
+			repo: "harness",
+			requiredChecks: [
+				"Greptile Review",
+				"Socket Security: Pull Request Alerts",
+			],
+			requiredApprovingReviewCount: 2,
+			dryRun: true,
+			json: true,
+			rulesetName: "protect",
+			branch: "main",
+		});
+		expect(exitSpy).toHaveBeenCalledWith(64);
 	});
 
 	it("dispatches policy-gate command and ignores missing --files value", async () => {

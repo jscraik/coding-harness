@@ -2,7 +2,7 @@
  * Canonical types for the remediation loop.
  *
  * These types provide a unified interface for findings from multiple providers
- * (CodeQL, Codex) and define discriminated union result types for type-safe
+ * (Greptile, Codex) and define discriminated union result types for type-safe
  * error handling.
  */
 
@@ -23,7 +23,7 @@ export type RemediationSeverity = RemediationAutoTier;
 /**
  * Provider source for a finding.
  */
-export type RemediationProvider = "codeql" | "codex";
+export type RemediationProvider = "greptile" | "codex" | "codeql";
 
 /**
  * Action types for remediation workflow.
@@ -87,7 +87,7 @@ interface FindingContext {
 
 /**
  * Canonical representation of a security or quality finding.
- * Unified format from multiple providers (CodeQL, Codex).
+ * Unified format from multiple providers (Greptile, Codex).
  */
 export interface CanonicalFinding
 	extends FindingBase,

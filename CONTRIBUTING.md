@@ -100,6 +100,10 @@ Use this checklist per task:
 
 Configure repository settings on `main` to make the workflow enforceable:
 
+- Bootstrap baseline via harness:
+  - `harness branch-protect --owner <owner> --repo <repo>`
+- Token resolution for `branch-protect`:
+  - `--token <PAT>` or env `GITHUB_TOKEN` / `GITHUB_PERSONAL_ACCESS_TOKEN`
 - Require PRs before merging.
 - Require at least one review before merge.
 - Require status checks:
