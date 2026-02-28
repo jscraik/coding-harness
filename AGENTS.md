@@ -24,10 +24,36 @@ For all code and docs changes in this repository:
 6. Required review artifacts before merge: Greptile + Codex.
 7. Merge only after all required checks and artifacts are complete.
 8. After merge, delete branch/worktree.
+9. Apply strict PR triage discipline (issue reuse, SHA-bound findings, smallest-root-cause CI fixes).
+10. Enforce review score thresholds via contract policy unless explicitly waived.
 
 Implementation details and checklists:
 - [`CONTRIBUTING.md`](./CONTRIBUTING.md)
 - [Agent governance](./docs/agents/07b-agent-governance.md)
+
+## Strict triage loop (mandatory)
+
+1. **Issue intake first**
+   - Run `gh issue list`/`gh issue search` before opening a new issue.
+   - Reuse an existing matching issue; otherwise create one with repro, expected vs actual, and evidence.
+2. **PR findings intake**
+   - Read PR metadata and comments from Greptile, Codex, and humans.
+   - Only action findings that match the current PR head SHA; treat stale-SHA comments as informational.
+3. **Risk triage and remediation**
+   - Prioritize findings by severity/risk.
+   - For CI failures, fix the smallest root cause first, rerun required gates, then re-evaluate.
+4. **Automation path**
+   - Use `harness review-gate` for SHA-bound review validity.
+   - Use `harness remediate run/apply` for low/medium deterministic fixes.
+   - Use `harness gap-case` for high-risk/manual escalation.
+
+## Review score policy
+
+- Repository policy target is:
+  - **OPR >= 4/5**
+  - **Greptile = 5/5**
+- Keep these thresholds codified in `reviewPolicy.scoreThresholds` in `harness.contract.json`.
+- If thresholds are not met, do not mark merge-ready unless an explicit waiver is documented in the PR.
 
 ### Repo-native command map
 - Install/dependencies: `pnpm install`

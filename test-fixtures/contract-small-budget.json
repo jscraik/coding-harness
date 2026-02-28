@@ -8,7 +8,12 @@
 	},
 	"reviewPolicy": {
 		"timeoutSeconds": 600,
-		"timeoutAction": "fail"
+		"timeoutAction": "fail",
+		"scoreThresholds": {
+			"minOprScore": 4,
+			"minGreptileScore": 5,
+			"scoreScale": 5
+		}
 	},
 	"diffBudget": {
 		"maxFiles": 5,

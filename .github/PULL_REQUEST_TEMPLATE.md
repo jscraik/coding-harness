@@ -13,6 +13,7 @@
 - [ ] Required local gates run: `pnpm lint`, `pnpm typecheck`, `pnpm test`, `pnpm audit`, `pnpm check` (or reason for deviation).
 - [ ] `Greptile` review completed and findings handled (or explicitly waived).
 - [ ] `Codex` review completed and findings handled (or explicitly waived).
+- [ ] Review score policy satisfied (`OPR >= 4/5`, `Greptile = 5/5`) or waiver documented.
 - [ ] PR template sections are complete and accurate.
 - [ ] I will delete branch/worktree after merge.
 
@@ -29,6 +30,7 @@
 
 - Greptile: `<link / artifact path / comment ID>`
 - Codex: `<link / artifact path / comment ID>`
+- Score evidence: `<OPR score / Greptile score / waiver reference>`
 - Additional evidence (if any):
 
 ## Notes

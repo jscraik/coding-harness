@@ -108,6 +108,16 @@ const VALID_GAP_CASE_POLICY_KEYS = [
 	"allowEvidencelessResolve",
 ] as const;
 const VALID_MERGE_POLICY_VALUE_KEYS = ["high", "medium", "low"] as const;
+const VALID_REVIEW_POLICY_KEYS = [
+	"timeoutSeconds",
+	"timeoutAction",
+	"scoreThresholds",
+] as const;
+const VALID_REVIEW_SCORE_THRESHOLD_KEYS = [
+	"minOprScore",
+	"minGreptileScore",
+	"scoreScale",
+] as const;
 
 // Machine-readable error codes for programmatic handling
 export enum ValidationErrorCode {
@@ -230,7 +240,10 @@ function isValidReviewPolicy(value: unknown): value is ReviewPolicy {
 
 	// Reject unknown top-level keys
 	const unknownKeys = Object.keys(policy).filter(
-		(key) => !["timeoutSeconds", "timeoutAction"].includes(key),
+		(key) =>
+			!VALID_REVIEW_POLICY_KEYS.includes(
+				key as (typeof VALID_REVIEW_POLICY_KEYS)[number],
+			),
 	);
 	if (unknownKeys.length > 0) {
 		return false;
@@ -248,6 +261,50 @@ function isValidReviewPolicy(value: unknown): value is ReviewPolicy {
 	// Validate timeoutAction
 	if (!isValidTimeoutAction(policy.timeoutAction)) {
 		return false;
+	}
+
+	if (policy.scoreThresholds !== undefined) {
+		if (!isPlainObject(policy.scoreThresholds)) {
+			return false;
+		}
+
+		const scoreThresholds = policy.scoreThresholds as Record<string, unknown>;
+		const invalidScoreThresholdKeys = Object.keys(scoreThresholds).filter(
+			(key) =>
+				!VALID_REVIEW_SCORE_THRESHOLD_KEYS.includes(
+					key as (typeof VALID_REVIEW_SCORE_THRESHOLD_KEYS)[number],
+				),
+		);
+		if (invalidScoreThresholdKeys.length > 0) {
+			return false;
+		}
+
+		if (
+			typeof scoreThresholds.scoreScale !== "number" ||
+			!Number.isInteger(scoreThresholds.scoreScale) ||
+			scoreThresholds.scoreScale < 1 ||
+			scoreThresholds.scoreScale > 10
+		) {
+			return false;
+		}
+
+		if (
+			typeof scoreThresholds.minOprScore !== "number" ||
+			!Number.isInteger(scoreThresholds.minOprScore) ||
+			scoreThresholds.minOprScore < 1 ||
+			scoreThresholds.minOprScore > scoreThresholds.scoreScale
+		) {
+			return false;
+		}
+
+		if (
+			typeof scoreThresholds.minGreptileScore !== "number" ||
+			!Number.isInteger(scoreThresholds.minGreptileScore) ||
+			scoreThresholds.minGreptileScore < 1 ||
+			scoreThresholds.minGreptileScore > scoreThresholds.scoreScale
+		) {
+			return false;
+		}
 	}
 
 	return true;
@@ -1254,10 +1311,11 @@ export function validateContract(
 				code: ValidationErrorCode.INVALID_VALUE,
 				path: "reviewPolicy",
 				message:
-					"reviewPolicy must have timeoutSeconds (positive integer) and timeoutAction ('fail' | 'warn')",
-				expected: "{ timeoutSeconds: 600, timeoutAction: 'fail' | 'warn' }",
+					"reviewPolicy must have timeoutSeconds (positive integer), timeoutAction ('fail' | 'warn'), and optional scoreThresholds",
+				expected:
+					"{ timeoutSeconds: 600, timeoutAction: 'fail' | 'warn', scoreThresholds?: { minOprScore: 4, minGreptileScore: 5, scoreScale: 5 } }",
 				received: JSON.stringify(obj.reviewPolicy),
-				fix: "Ensure reviewPolicy has valid timeoutSeconds and timeoutAction",
+				fix: "Ensure reviewPolicy has valid timeoutSeconds, timeoutAction, and optional scoreThresholds",
 			});
 		} else {
 			reviewPolicy = obj.reviewPolicy as ReviewPolicy;

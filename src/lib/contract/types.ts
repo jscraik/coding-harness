@@ -133,6 +133,11 @@ export interface DiffBudgetOverride {
 export interface ReviewPolicy {
 	timeoutSeconds: number;
 	timeoutAction: TimeoutAction;
+	scoreThresholds?: {
+		minOprScore: number;
+		minGreptileScore: number;
+		scoreScale: number;
+	};
 }
 
 /**
@@ -229,6 +234,11 @@ export interface PilotAuthzPolicy {
 export const DEFAULT_REVIEW_POLICY: ReviewPolicy = {
 	timeoutSeconds: 600, // 10 minutes
 	timeoutAction: "fail",
+	scoreThresholds: {
+		minOprScore: 4,
+		minGreptileScore: 5,
+		scoreScale: 5,
+	},
 };
 
 export const DEFAULT_EVIDENCE_POLICY: EvidencePolicy = {

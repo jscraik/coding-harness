@@ -99,6 +99,41 @@ describe("validateContract", () => {
 		expect(result.data?.riskTierRules["src/auth/**"]).toBe("high");
 	});
 
+	describe("reviewPolicy", () => {
+		it("accepts valid scoreThresholds", () => {
+			const result = validateContract({
+				version: "1.0",
+				reviewPolicy: {
+					timeoutSeconds: 600,
+					timeoutAction: "fail",
+					scoreThresholds: {
+						minOprScore: 4,
+						minGreptileScore: 5,
+						scoreScale: 5,
+					},
+				},
+			});
+			expect(result.success).toBe(true);
+		});
+
+		it("rejects out-of-range scoreThresholds", () => {
+			const result = validateContract({
+				version: "1.0",
+				reviewPolicy: {
+					timeoutSeconds: 600,
+					timeoutAction: "fail",
+					scoreThresholds: {
+						minOprScore: 6,
+						minGreptileScore: 5,
+						scoreScale: 5,
+					},
+				},
+			});
+			expect(result.success).toBe(false);
+			expect(result.errors[0]?.path).toBe("reviewPolicy");
+		});
+	});
+
 	describe("runtimePolicy", () => {
 		it("accepts runtimePolicy with optional createIssueOnAgentFindings", () => {
 			const result = validateContract({

@@ -100,6 +100,11 @@ export interface ContractSchema {
 		| {
 				timeoutSeconds: number;
 				timeoutAction: "fail" | "warn";
+				scoreThresholds?: {
+					minOprScore: number;
+					minGreptileScore: number;
+					scoreScale: number;
+				};
 		  }
 		| undefined;
 	evidencePolicy?: {
@@ -300,6 +305,11 @@ const TEMPLATES: Template[] = [
 					reviewPolicy: {
 						timeoutSeconds: 600,
 						timeoutAction: "fail" as const,
+						scoreThresholds: {
+							minOprScore: 4,
+							minGreptileScore: 5,
+							scoreScale: 5,
+						},
 					},
 					evidencePolicy: {
 						requiredFor: [],
@@ -566,6 +576,7 @@ Each PR must include:
 
 - Greptile review artifact (URL, report, or comment reference).
 - Codex review artifact (URL, report, or comment reference).
+- Score evidence (or waiver) for repository thresholds: OPR >= 4/5 and Greptile = 5/5.
 
 If either artifact is missing, block merge until it is added or explicitly waived by repository policy.
 
@@ -603,6 +614,7 @@ Configure GitHub branch protection (or rulesets) on \`main\`:
 - [ ] Required local gates run: \`${lintCommand}\`, \`${typecheckCommand}\`, \`${testCommand}\`, \`${auditCommand}\`, \`${checkCommand}\`.
 - [ ] Greptile review completed and findings handled (or explicitly waived).
 - [ ] Codex review completed and findings handled (or explicitly waived).
+- [ ] Review score policy satisfied (\`OPR >= 4/5\`, \`Greptile = 5/5\`) or waiver documented.
 - [ ] Merge is blocked until all required checks pass.
 - [ ] I will delete branch/worktree after merge.
 
@@ -619,6 +631,7 @@ Configure GitHub branch protection (or rulesets) on \`main\`:
 
 - Greptile: <link / artifact path / comment ID>
 - Codex: <link / artifact path / comment ID>
+- Score evidence: <OPR score / Greptile score / waiver reference>
 - Additional evidence (if any):
 
 ## Notes

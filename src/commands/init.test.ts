@@ -200,6 +200,8 @@ describe("runInit", () => {
 			);
 			expect(content.version).toBe("1.2.0");
 			expect(content.reviewPolicy.timeoutSeconds).toBe(600);
+			expect(content.reviewPolicy.scoreThresholds.minOprScore).toBe(4);
+			expect(content.reviewPolicy.scoreThresholds.minGreptileScore).toBe(5);
 			expect(content.runtimePolicy.createIssueOnAgentFindings).toBe(true);
 		});
 

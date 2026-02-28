@@ -83,18 +83,34 @@ For docs-only edits, run at minimum:
 Use this checklist per task:
 
 1. Open PR with a complete title/body.
-2. Run and paste local gate output:
+2. Run issue/PR triage in strict order:
+
+   - Search/reuse issues first (`gh issue list` / `gh issue search`) before creating a new issue.
+   - Review Greptile/Codex/human comments and only action findings for the current PR head SHA.
+   - Treat stale-SHA findings as informational unless still reproducible on current head.
+
+3. Run and paste local gate output:
 
    - `pnpm check`
    - `pnpm test:artifacts` (if requested by maintainer)
 
-3. Capture review artifacts:
+4. Capture review artifacts:
 
    - Greptile review result reference (URL or report file),
    - Codex review result reference (URL or report file).
+   - Include score evidence (or equivalent artifact notes) confirming:
+     - OPR >= 4/5
+     - Greptile = 5/5
+     - or an explicit documented waiver.
 
-4. Fix findings, re-run gates, and update artifacts.
-5. Merge only after all checklist items are checked.
+5. Fix findings with smallest-root-cause-first remediation, re-run gates, and update artifacts.
+6. For automation:
+
+   - `harness review-gate` for SHA-bound review validity.
+   - `harness remediate run/apply` for low/medium deterministic fixes.
+   - `harness gap-case` for high-risk/manual escalation.
+
+7. Merge only after all checklist items are checked.
 
 ## Recommended GitHub branch protection settings
 

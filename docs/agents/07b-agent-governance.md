@@ -37,6 +37,9 @@ Every agent handoff should include:
 - If a reproducible coding-harness bug/policy gap is found: create or update a GitHub issue with repro + evidence before handoff.
 - If PR review artifacts are missing (Greptile/Codex for this repo): do not merge; complete reviews or explicitly escalate the exception.
 - After merge completion: clean up branch/worktree to keep an auditable branch lifecycle.
+- Triage in strict order: issue search/reuse → PR comments by current head SHA only → smallest-root-cause fix → rerun required gates.
+- Use `harness review-gate` for SHA-bound validity, `harness remediate run/apply` for low/medium deterministic fixes, and `harness gap-case` for high-risk/manual escalation.
+- Review score policy default: OPR >= 4/5 and Greptile = 5/5 unless an explicit waiver is documented.
 
 ## Optional quality expectations
 
