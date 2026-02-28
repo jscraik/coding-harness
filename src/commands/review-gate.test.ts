@@ -1,6 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import type { CheckRun } from "../lib/github/client.js";
-import { runReviewGate } from "./review-gate.js";
+import { postRerunCommentIfNeeded, runReviewGate } from "./review-gate.js";
 
 // Mock the GitHub client
 vi.mock("../lib/github/client.js", () => ({
@@ -23,6 +23,8 @@ vi.mock("../lib/contract/loader.js", () => ({
 // Mock SHA validation
 vi.mock("../lib/github/sha.js", () => ({
 	validateSha: vi.fn(),
+	isValidSha: (sha: string): boolean =>
+		typeof sha === "string" && /^[0-9a-f]{40}$/.test(sha),
 	ShaValidationError: class ShaValidationError extends Error {
 		constructor(sha: string) {
 			super(`Invalid SHA format: ${sha}`);
@@ -31,13 +33,31 @@ vi.mock("../lib/github/sha.js", () => ({
 	},
 }));
 
+vi.mock("./check-authz.js", () => ({
+	runCheckAuthz: vi.fn(),
+}));
+
 import { loadContract } from "../lib/contract/loader.js";
 import { GitHubClient } from "../lib/github/client.js";
 import { validateSha } from "../lib/github/sha.js";
+import { runCheckAuthz } from "./check-authz.js";
 
 const mockGitHubClient = vi.mocked(GitHubClient);
 const mockLoadContract = vi.mocked(loadContract);
 const mockValidateSha = vi.mocked(validateSha);
+const mockRunCheckAuthz = vi.mocked(runCheckAuthz);
+
+const authzPassOutput = {
+	passed: true,
+	violations: [],
+	policyApplied: {
+		githubScopeAllowlist: ["issues:write"],
+		repoAllowlist: ["acme/*"],
+		branchAllowlist: ["feature/*", "main"],
+		protectedBranchDenylist: ["main"],
+		enforceBranchProtection: false,
+	},
+};
 
 describe("runReviewGate", () => {
 	const validSha = "0123456789abcdef0123456789abcdef01234567";
@@ -58,6 +78,14 @@ describe("runReviewGate", () => {
 			version: "1.0",
 			riskTierRules: {},
 			reviewPolicy: { timeoutSeconds: 600, timeoutAction: "fail" },
+		});
+		mockRunCheckAuthz.mockResolvedValue({
+			ok: true,
+			output: {
+				...authzPassOutput,
+				repoChecked: "acme/repo",
+				branchChecked: "main",
+			},
 		});
 	});
 
@@ -189,5 +217,134 @@ describe("runReviewGate", () => {
 		if (!result.ok) {
 			expect(result.error.code).toBe("TIMEOUT");
 		}
+	});
+});
+
+describe("postRerunCommentIfNeeded", () => {
+	const headSha = "0123456789abcdef0123456789abcdef01234567";
+
+	const mockRepositoryIdentifier = "acme/repo";
+	const mockBranch = "feature/review-gate";
+	const defaultOptions = {
+		reason: "Need rerun",
+		botLogin: "harness-bot",
+		prNumber: 321,
+	};
+
+	const createMockClient = (overrides: {
+		listIssueComments?: () => Promise<unknown>;
+		createIssueComment?: () => Promise<unknown>;
+		getPullRequest?: () => Promise<unknown>;
+		getRepositoryIdentifier?: () => string;
+	}) =>
+		({
+			listIssueComments:
+				overrides.listIssueComments ?? vi.fn().mockResolvedValue([]),
+			createIssueComment:
+				overrides.createIssueComment ??
+				vi.fn().mockResolvedValue({
+					id: 1,
+					body: "comment",
+					created_at: new Date().toISOString(),
+					user: { login: "harness-bot" },
+				}),
+			getPullRequest:
+				overrides.getPullRequest ??
+				vi.fn().mockResolvedValue({
+					head: {
+						ref: mockBranch,
+						sha: "1111111111111111111111111111111111111111",
+					},
+				}),
+			getRepositoryIdentifier:
+				overrides.getRepositoryIdentifier ??
+				vi.fn().mockReturnValue(mockRepositoryIdentifier),
+		}) as unknown as GitHubClient;
+
+	it("returns hold when authz preflight fails", async () => {
+		const mockListIssueComments = vi.fn().mockResolvedValue([]);
+		const mockClient = createMockClient({
+			listIssueComments: mockListIssueComments,
+			createIssueComment: vi.fn().mockResolvedValue({
+				id: 1,
+				body: "comment",
+				created_at: new Date().toISOString(),
+				user: { login: "harness-bot" },
+			}),
+		});
+
+		mockRunCheckAuthz.mockResolvedValue({
+			ok: true,
+			output: {
+				passed: false,
+				violations: [
+					{
+						type: "repo_not_allowed",
+						message: "Repository is not allowlisted",
+					},
+				],
+				policyApplied: authzPassOutput.policyApplied,
+			},
+		});
+
+		const result = await postRerunCommentIfNeeded(
+			mockClient,
+			defaultOptions.prNumber,
+			headSha,
+			defaultOptions.botLogin,
+			defaultOptions.reason,
+			"harness.contract.json",
+			"feature/review-gate",
+		);
+
+		expect(result.posted).toBe(false);
+		expect(result.message).toContain("Governance hold");
+		expect(mockListIssueComments).not.toHaveBeenCalled();
+	});
+
+	it("posts rerun comment after authz preflight passes", async () => {
+		mockRunCheckAuthz.mockResolvedValue({
+			ok: true,
+			output: {
+				passed: true,
+				violations: [],
+				policyApplied: {
+					...authzPassOutput.policyApplied,
+				},
+				repoChecked: mockRepositoryIdentifier,
+				branchChecked: "feature/review-gate",
+			},
+		});
+
+		const mockListIssueComments = vi.fn().mockResolvedValue([]);
+		const mockCreateIssueComment = vi.fn().mockResolvedValue({
+			id: 10,
+			body: "comment",
+			created_at: new Date().toISOString(),
+			user: { login: "harness-bot" },
+		});
+		const mockClient = createMockClient({
+			listIssueComments: mockListIssueComments,
+			createIssueComment: mockCreateIssueComment,
+		});
+
+		const result = await postRerunCommentIfNeeded(
+			mockClient,
+			defaultOptions.prNumber,
+			headSha,
+			defaultOptions.botLogin,
+			defaultOptions.reason,
+			"harness.contract.json",
+			"feature/review-gate",
+		);
+
+		expect(result).toEqual({ posted: true });
+		expect(mockRunCheckAuthz).toHaveBeenCalledWith({
+			contractPath: "harness.contract.json",
+			repo: mockRepositoryIdentifier,
+			branch: "feature/review-gate",
+		});
+		expect(mockListIssueComments).toHaveBeenCalledWith(defaultOptions.prNumber);
+		expect(mockCreateIssueComment).toHaveBeenCalledTimes(1);
 	});
 });

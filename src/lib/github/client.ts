@@ -2,6 +2,7 @@ import { retry } from "@octokit/plugin-retry";
 import { throttling } from "@octokit/plugin-throttling";
 import type { RequestError } from "@octokit/request-error";
 import { Octokit } from "@octokit/rest";
+import { mutationQueue } from "./mutation-queue.js";
 
 const MyOctokit = Octokit.plugin(throttling, retry);
 
@@ -32,6 +33,7 @@ export interface PullRequest {
 	number: number;
 	head: {
 		sha: string;
+		ref: string;
 	};
 }
 
@@ -82,6 +84,10 @@ export class GitHubClient {
 		this.repo = options.repo;
 	}
 
+	getRepositoryIdentifier(): string {
+		return `${this.owner}/${this.repo}`;
+	}
+
 	async listCheckRunsForRef(ref: string): Promise<CheckRun[]> {
 		try {
 			const response = await this.octokit.paginate(
@@ -104,13 +110,28 @@ export class GitHubClient {
 		body: string,
 	): Promise<Comment> {
 		try {
-			const response = await this.octokit.issues.createComment({
+			const response = await mutationQueue.execute(() =>
+				this.octokit.issues.createComment({
+					owner: this.owner,
+					repo: this.repo,
+					issue_number: issueNumber,
+					body,
+				}),
+			);
+			return response.data as Comment;
+		} catch (error) {
+			throw this.classifyError(error);
+		}
+	}
+
+	async getPullRequest(number: number): Promise<PullRequest> {
+		try {
+			const response = await this.octokit.pulls.get({
 				owner: this.owner,
 				repo: this.repo,
-				issue_number: issueNumber,
-				body,
+				pull_number: number,
 			});
-			return response.data as Comment;
+			return response.data as PullRequest;
 		} catch (error) {
 			throw this.classifyError(error);
 		}
@@ -128,19 +149,6 @@ export class GitHubClient {
 				},
 			);
 			return response as Comment[];
-		} catch (error) {
-			throw this.classifyError(error);
-		}
-	}
-
-	async getPullRequest(number: number): Promise<PullRequest> {
-		try {
-			const response = await this.octokit.pulls.get({
-				owner: this.owner,
-				repo: this.repo,
-				pull_number: number,
-			});
-			return response.data as PullRequest;
 		} catch (error) {
 			throw this.classifyError(error);
 		}

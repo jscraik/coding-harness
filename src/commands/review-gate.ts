@@ -15,6 +15,7 @@ import {
 } from "../lib/github/comments.js";
 import { validateSha } from "../lib/github/sha.js";
 import { sanitizeError } from "../lib/input/sanitize.js";
+import { runCheckAuthz } from "./check-authz.js";
 
 export const EXIT_CODES = {
 	SUCCESS: 0,
@@ -51,6 +52,7 @@ export type ReviewGateResult =
 	| { ok: false; error: { code: string; message: string } };
 
 const POLL_INTERVAL_MS = 5000; // 5 seconds
+const DEFAULT_REVIEW_GATE_AUTHZ_CONTRACT = "harness.contract.json";
 
 /**
  * Run review gate check with timeout polling.
@@ -210,8 +212,26 @@ export async function postRerunCommentIfNeeded(
 	headSha: string,
 	botLogin: string,
 	reason: string,
+	contractPath = DEFAULT_REVIEW_GATE_AUTHZ_CONTRACT,
+	targetBranch?: string,
 ): Promise<{ posted: boolean; message?: string }> {
 	try {
+		const authzResult = await runAuthzPreflight({
+			client,
+			contractPath,
+			prNumber,
+			...(targetBranch !== undefined ? { targetBranch } : {}),
+		});
+		if (!authzResult.passed) {
+			const { message } = authzResult;
+			return {
+				posted: false,
+				message:
+					message ??
+					"Governance hold: authz check returned violations or failed",
+			};
+		}
+
 		const comments = await client.listIssueComments(prNumber);
 		const existingComment = hasRerunCommentForSha(comments, headSha, botLogin);
 
@@ -233,6 +253,56 @@ export async function postRerunCommentIfNeeded(
 			message: `Failed to post rerun comment: ${errorMessage}`,
 		};
 	}
+}
+
+interface AuthzPreflightInput {
+	client: GitHubClient;
+	contractPath: string;
+	prNumber: number;
+	targetBranch?: string;
+}
+
+interface AuthzPreflightResult {
+	passed: boolean;
+	message?: string;
+}
+
+async function runAuthzPreflight({
+	client,
+	contractPath,
+	prNumber,
+	targetBranch,
+}: AuthzPreflightInput): Promise<AuthzPreflightResult> {
+	let branch = targetBranch;
+	if (branch === undefined) {
+		const pullRequest = await client.getPullRequest(prNumber);
+		branch = pullRequest.head.ref;
+	}
+
+	const result = await runCheckAuthz({
+		contractPath,
+		repo: client.getRepositoryIdentifier(),
+		branch,
+	});
+
+	if (!result.ok) {
+		return {
+			passed: false,
+			message: `Governance hold: failed to run authz preflight (${result.error.message})`,
+		};
+	}
+
+	if (!result.output.passed) {
+		const violationSummary = result.output.violations
+			.map((violation) => `${violation.type}: ${violation.message}`)
+			.join("; ");
+		return {
+			passed: false,
+			message: `Governance hold: ${violationSummary}`,
+		};
+	}
+
+	return { passed: true };
 }
 
 /**
