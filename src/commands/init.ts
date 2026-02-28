@@ -567,6 +567,7 @@ jobs:
 - [Branch name policy](#branch-name-policy)
 - [Required pre-merge gates](#required-pre-merge-gates)
 - [Review artifacts requirement](#review-artifacts-requirement)
+- [Credential-safe evidence snippets](#credential-safe-evidence-snippets)
 - [Branch protection recommendation](#branch-protection-recommendation)
 
 ## Minimum workflow contract
@@ -618,6 +619,16 @@ Each PR must include:
 - Codex review artifact (URL, report, or comment reference).
 
 If either artifact is missing, block merge until it is added or explicitly waived by repository policy.
+
+## Credential-safe evidence snippets
+
+- Never use command substitution in commit messages, PR bodies, or evidence notes for secrets.
+- Do **not** use \`$(gh auth token)\` (or similar) inside \`git commit -m ...\` / \`gh pr create --body ...\`.
+- Use placeholders in text output:
+  - ✅ \`$GITHUB_TOKEN\`
+  - ✅ \`\${GITHUB_TOKEN}\`
+  - ❌ expanded token values
+- If a token value is ever exposed in commit/PR text, treat it as compromised: rotate/revoke, rewrite history where applicable, and document remediation in the issue/PR.
 
 ## Branch protection recommendation
 

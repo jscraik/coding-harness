@@ -17,6 +17,15 @@ const SENSITIVE_PATTERNS: [RegExp, string][] = [
 	[/eyJ[a-zA-Z0-9_-]*\.eyJ[a-zA-Z0-9_-]*/g, "[REDACTED]"],
 ];
 
+const EVIDENCE_SUBSTITUTION_PATTERNS: [RegExp, string][] = [
+	[/\$\(\s*gh\s+auth\s+token\s*\)/gi, "$GITHUB_TOKEN"],
+	[/\$\(\s*printenv\s+GITHUB_TOKEN\s*\)/gi, "$GITHUB_TOKEN"],
+	[/\$\(\s*echo\s+\$GITHUB_TOKEN\s*\)/gi, "$GITHUB_TOKEN"],
+];
+
+const EVIDENCE_QUERY_PARAM_PATTERN =
+	/((?:access_token|token|api[_-]?key|secret|password)=)[^&\s)\]]+/gi;
+
 export function sanitizeError(error: unknown): string {
 	if (error instanceof Error) {
 		let message = error.message;
@@ -30,6 +39,23 @@ export function sanitizeError(error: unknown): string {
 		message = message.replace(pattern, replacement);
 	}
 	return message;
+}
+
+/**
+ * Sanitize commit/PR evidence text to prevent credential disclosure.
+ * - Rewrites common shell token substitutions to env placeholders.
+ * - Redacts known secret formats and token-like URL query parameters.
+ */
+export function sanitizeEvidenceText(text: string): string {
+	let sanitized = text;
+	for (const [pattern, replacement] of EVIDENCE_SUBSTITUTION_PATTERNS) {
+		sanitized = sanitized.replace(pattern, replacement);
+	}
+	for (const [pattern, replacement] of SENSITIVE_PATTERNS) {
+		sanitized = sanitized.replace(pattern, replacement);
+	}
+	sanitized = sanitized.replace(EVIDENCE_QUERY_PARAM_PATTERN, "$1[REDACTED]");
+	return sanitized;
 }
 
 // Re-export validatePath from validator.ts for backward compatibility
