@@ -49,5 +49,15 @@ jobs:
           else
             pnpm release
           fi
+      - name: Normalize release commit formatting
+        env:
+          GIT_COMMITTER_NAME: github-actions[bot]
+          GIT_COMMITTER_EMAIL: github-actions[bot]@users.noreply.github.com
+        run: |
+          pnpm exec biome format package.json --write
+          if ! git diff --quiet -- package.json; then
+            git add package.json
+            git commit --amend --no-edit
+          fi
       - name: Push release commit and tag
         run: git push --follow-tags origin HEAD:${{ github.ref_name }}
