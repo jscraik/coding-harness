@@ -8,7 +8,10 @@ import { existsSync, writeFileSync } from "node:fs";
 import { resolve } from "node:path";
 import semver from "semver";
 import { loadContract } from "../lib/contract/loader.js";
-import type { HarnessContract } from "../lib/contract/types.js";
+import {
+	DEFAULT_CONTRACT,
+	type HarnessContract,
+} from "../lib/contract/types.js";
 import {
 	RALPH_PYTHON_VERSION_PIN,
 	RALPH_UV_VERSION_PIN,
@@ -221,7 +224,12 @@ export async function runCheckEnvironment(
 	let contract: HarnessContract;
 	try {
 		const contractPath = options.contractPath ?? "harness.contract.json";
-		contract = loadContract(contractPath);
+		const resolvedContractPath = resolve(contractPath);
+		if (existsSync(resolvedContractPath)) {
+			contract = loadContract(contractPath);
+		} else {
+			contract = DEFAULT_CONTRACT;
+		}
 	} catch (e) {
 		return {
 			ok: false,

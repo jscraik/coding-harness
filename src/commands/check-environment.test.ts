@@ -109,4 +109,36 @@ describe("runCheckEnvironment runtime dependency checks", () => {
 			),
 		).toBe(true);
 	});
+
+	it("falls back to default contract when contract file is missing", async () => {
+		rmSync(join(tempDir, contractPath), { force: true });
+		const { spawnSync } = await import("node:child_process");
+		const { runCheckEnvironment } = await import("./check-environment.js");
+		vi.mocked(spawnSync).mockImplementation((command) => {
+			if (command === "python3") {
+				return {
+					status: 0,
+					stdout: "Python 3.12.10\n",
+					stderr: "",
+				} as never;
+			}
+			if (command === "uv") {
+				return {
+					status: 0,
+					stdout: "uv 0.9.5\n",
+					stderr: "",
+				} as never;
+			}
+			return {
+				status: 0,
+				stdout: "ralph-gold 1.0.0\n",
+				stderr: "",
+			} as never;
+		});
+
+		const result = await runCheckEnvironment({ contractPath });
+		expect(result.ok).toBe(true);
+		if (!result.ok) return;
+		expect(result.output.passed).toBe(true);
+	});
 });
