@@ -2,6 +2,7 @@
 import { realpathSync } from "node:fs";
 import { resolve } from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
+import { runAutomationRunCLI } from "./commands/automation-run.js";
 import {
 	type BlastRadiusOptions,
 	runBlastRadiusCLI,
@@ -91,6 +92,9 @@ function printUsage(): void {
 	);
 	console.info("  observability-gate  Check cardinality limits in metrics");
 	console.info("  diff-budget      Enforce diff budget constraints");
+	console.info(
+		"  automation-run  Execute Pulse/Upskill/Green PRs/Drift Check idempotently",
+	);
 	console.info("  ui:fast          Storybook-first local development loop");
 	console.info("  ui:verify        Playwright smoke suite with evidence");
 	console.info("  ui:explore       Agent browser exploratory testing");
@@ -116,6 +120,28 @@ function printUsage(): void {
 	console.info("  --repo           Repository to check (owner/repo format)");
 	console.info("  --branch         Branch to check");
 	console.info("  --check-scopes   Check GITHUB_TOKEN scopes against policy");
+	console.info("  --json           Output as JSON");
+	console.info("");
+	console.info("Automation Run Options:");
+	console.info(
+		"  --name           pulse|upskill|green-prs|drift-check (required)",
+	);
+	console.info(
+		"  --repo           Repository identifier owner/repo (required)",
+	);
+	console.info("  --head-sha       HEAD SHA for key binding (required)");
+	console.info(
+		"  --contract-version  Contract version for key binding (required)",
+	);
+	console.info(
+		"  --input-fingerprint  Input fingerprint for key binding (required)",
+	);
+	console.info(
+		"  --artifacts-dir  Artifact root (default: artifacts/automation)",
+	);
+	console.info("  --state-path     Idempotency state file path override");
+	console.info("  --force          Override replay for terminal runs");
+	console.info("  --simulate-failure  Test-only failure simulation");
 	console.info("  --json           Output as JSON");
 	console.info("");
 	console.info("Check Environment Options:");
@@ -1048,6 +1074,41 @@ export function run(args: string[]): void {
 		if (contractArg) blastRadiusOptions.contractPath = contractArg;
 
 		const exitCode = runBlastRadiusCLI(blastRadiusOptions);
+		process.exit(exitCode);
+		return;
+	}
+	if (command === "automation-run") {
+		const nameIndex = args.indexOf("--name");
+		const repoIndex = args.indexOf("--repo");
+		const headShaIndex = args.indexOf("--head-sha");
+		const contractVersionIndex = args.indexOf("--contract-version");
+		const inputFingerprintIndex = args.indexOf("--input-fingerprint");
+		const artifactsDirIndex = args.indexOf("--artifacts-dir");
+		const statePathIndex = args.indexOf("--state-path");
+		const jsonFlag = args.includes("--json");
+		const forceFlag = args.includes("--force");
+		const simulateFailureFlag = args.includes("--simulate-failure");
+
+		const name = getFlagValue(args, nameIndex) ?? "";
+		const repo = getFlagValue(args, repoIndex) ?? "";
+		const headSha = getFlagValue(args, headShaIndex) ?? "";
+		const contractVersion = getFlagValue(args, contractVersionIndex) ?? "";
+		const inputFingerprint = getFlagValue(args, inputFingerprintIndex) ?? "";
+		const artifactsDir = getFlagValue(args, artifactsDirIndex);
+		const statePath = getFlagValue(args, statePathIndex);
+
+		const exitCode = runAutomationRunCLI({
+			name,
+			repo,
+			headSha,
+			contractVersion,
+			inputFingerprint,
+			...(artifactsDir ? { artifactsDir } : {}),
+			...(statePath ? { statePath } : {}),
+			force: forceFlag,
+			simulateFailure: simulateFailureFlag,
+			json: jsonFlag,
+		});
 		process.exit(exitCode);
 		return;
 	}

@@ -14,6 +14,7 @@ export const EXIT_CODES = {
 	COMMAND_FAILED: 2,
 	VALIDATION_ERROR: 3,
 	TIMEOUT: 4,
+	EXECUTION_DISABLED: 5,
 } as const;
 
 export type UILoopMode = "execute" | "prepare";
@@ -83,6 +84,30 @@ interface UILoopContractContext {
 interface UIExecutionContext {
 	headSha: string;
 	contractVersion: string;
+}
+
+const EXECUTION_DISABLE_ENV = "HARNESS_UI_EXECUTION_DISABLED";
+const EXECUTION_DISABLED_CODE = "execution_disabled";
+const EXECUTION_DISABLED_MESSAGE =
+	"UI execution backend disabled by kill switch";
+
+function isExecutionDisabled(): boolean {
+	const raw = process.env[EXECUTION_DISABLE_ENV]?.trim().toLowerCase();
+	if (!raw) {
+		return false;
+	}
+	return raw === "1" || raw === "true" || raw === "yes" || raw === "on";
+}
+
+function buildExecutionDisabledResult(): CommandExecutionResult {
+	return {
+		executed: false,
+		passed: false,
+		exitCode: EXIT_CODES.EXECUTION_DISABLED,
+		durationMs: 0,
+		timedOut: false,
+		stderr: EXECUTION_DISABLED_MESSAGE,
+	};
 }
 
 function hasUnsafeShellChars(command: string): boolean {
@@ -285,6 +310,25 @@ function resolveHeadSha(): string {
 	return "unknown";
 }
 
+function withExecutionDisabledError<T extends Record<string, unknown>>(
+	payload: T,
+	exitCode: number,
+): T & {
+	error?: { code: string; message: string };
+} {
+	if (exitCode !== EXIT_CODES.EXECUTION_DISABLED) {
+		return payload;
+	}
+
+	return {
+		...payload,
+		error: {
+			code: EXECUTION_DISABLED_CODE,
+			message: EXECUTION_DISABLED_MESSAGE,
+		},
+	};
+}
+
 /**
  * Check if Storybook is configured
  */
@@ -366,7 +410,9 @@ export function runUIFast(options: UIFastOptions = {}): {
 
 	const execution =
 		mode === "execute"
-			? executeCommand(fullCmd, 8000, true)
+			? isExecutionDisabled()
+				? buildExecutionDisabledResult()
+				: executeCommand(fullCmd, 8000, true)
 			: buildPrepareResult();
 	const artifact = createEvidence(
 		"ui:fast",
@@ -380,14 +426,16 @@ export function runUIFast(options: UIFastOptions = {}): {
 		},
 		executionContext,
 	);
-	const exitCode = artifact.passed
-		? EXIT_CODES.SUCCESS
-		: EXIT_CODES.COMMAND_FAILED;
+	const exitCode =
+		artifact.exitCode === EXIT_CODES.EXECUTION_DISABLED
+			? EXIT_CODES.EXECUTION_DISABLED
+			: artifact.passed
+				? EXIT_CODES.SUCCESS
+				: EXIT_CODES.COMMAND_FAILED;
 
 	if (json) {
-		return {
-			exitCode,
-			message: JSON.stringify({
+		const payload = withExecutionDisabledError(
+			{
 				command: fullCmd,
 				port: options.port ?? 6006,
 				ci: options.ci ?? false,
@@ -401,7 +449,12 @@ export function runUIFast(options: UIFastOptions = {}): {
 				artifact_checksum: artifact.artifactChecksum,
 				packageManager,
 				...(artifact.timedOut ? { timedOut: true } : {}),
-			}),
+			},
+			exitCode,
+		);
+		return {
+			exitCode,
+			message: JSON.stringify(payload),
 			artifact,
 		};
 	}
@@ -477,7 +530,9 @@ export function runUIVerify(options: UIVerifyOptions = {}): {
 
 	const execution =
 		mode === "execute"
-			? executeCommand(fullCmd, 10 * 60 * 1000)
+			? isExecutionDisabled()
+				? buildExecutionDisabledResult()
+				: executeCommand(fullCmd, 10 * 60 * 1000)
 			: buildPrepareResult();
 	const evidence = createEvidence(
 		"ui:verify",
@@ -492,14 +547,16 @@ export function runUIVerify(options: UIVerifyOptions = {}): {
 		},
 		executionContext,
 	);
-	const exitCode = evidence.passed
-		? EXIT_CODES.SUCCESS
-		: EXIT_CODES.COMMAND_FAILED;
+	const exitCode =
+		evidence.exitCode === EXIT_CODES.EXECUTION_DISABLED
+			? EXIT_CODES.EXECUTION_DISABLED
+			: evidence.passed
+				? EXIT_CODES.SUCCESS
+				: EXIT_CODES.COMMAND_FAILED;
 
 	if (json) {
-		return {
-			exitCode,
-			message: JSON.stringify({
+		const payload = withExecutionDisabledError(
+			{
 				timestamp: evidence.timestamp,
 				command: evidence.command,
 				durationMs: evidence.durationMs,
@@ -514,7 +571,12 @@ export function runUIVerify(options: UIVerifyOptions = {}): {
 				...(evidence.timedOut ? { timedOut: true } : {}),
 				...(evidence.stdout ? { stdout: evidence.stdout } : {}),
 				...(evidence.stderr ? { stderr: evidence.stderr } : {}),
-			}),
+			},
+			exitCode,
+		);
+		return {
+			exitCode,
+			message: JSON.stringify(payload),
 			evidence,
 		};
 	}
@@ -572,7 +634,9 @@ export function runUIExplore(options: UIExploreOptions = {}): {
 
 	const execution =
 		mode === "execute"
-			? executeCommand(fullCmd, 5 * 60 * 1000)
+			? isExecutionDisabled()
+				? buildExecutionDisabledResult()
+				: executeCommand(fullCmd, 5 * 60 * 1000)
 			: buildPrepareResult();
 	const evidence = createEvidence(
 		"ui:explore",
@@ -586,14 +650,16 @@ export function runUIExplore(options: UIExploreOptions = {}): {
 		},
 		executionContext,
 	);
-	const exitCode = evidence.passed
-		? EXIT_CODES.SUCCESS
-		: EXIT_CODES.COMMAND_FAILED;
+	const exitCode =
+		evidence.exitCode === EXIT_CODES.EXECUTION_DISABLED
+			? EXIT_CODES.EXECUTION_DISABLED
+			: evidence.passed
+				? EXIT_CODES.SUCCESS
+				: EXIT_CODES.COMMAND_FAILED;
 
 	if (json) {
-		return {
-			exitCode,
-			message: JSON.stringify({
+		const payload = withExecutionDisabledError(
+			{
 				timestamp: evidence.timestamp,
 				command: evidence.command,
 				durationMs: evidence.durationMs,
@@ -611,7 +677,12 @@ export function runUIExplore(options: UIExploreOptions = {}): {
 				...(evidence.timedOut ? { timedOut: true } : {}),
 				...(evidence.stdout ? { stdout: evidence.stdout } : {}),
 				...(evidence.stderr ? { stderr: evidence.stderr } : {}),
-			}),
+			},
+			exitCode,
+		);
+		return {
+			exitCode,
+			message: JSON.stringify(payload),
 			evidence,
 		};
 	}

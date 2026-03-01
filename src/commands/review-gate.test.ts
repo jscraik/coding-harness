@@ -126,6 +126,11 @@ describe("runReviewGate", () => {
 			expect(result.output.verified).toBe(false);
 			expect(result.output.checkStatus).toBe("not_found");
 			expect(result.output.needsRerun).toBe(true);
+			expect(result.output.policy_gate_status).toBe("missing");
+			expect(result.output.blockers.length).toBeGreaterThan(0);
+			expect(result.output.actionable_count).toBeGreaterThan(0);
+			expect(result.output.informational_count).toBe(1);
+			expect(result.output.confidence_rubric.level).toBe("low");
 		}
 	});
 
@@ -140,10 +145,24 @@ describe("runReviewGate", () => {
 			},
 		];
 		const mockListCheckRuns = vi.fn().mockResolvedValue(mockCheckRuns);
+		const mockGetPullRequest = vi.fn().mockResolvedValue({
+			number: defaultOptions.prNumber,
+			user: { login: "coding-actor" },
+			head: { sha: validSha, ref: "feature/test" },
+		});
+		const mockListReviews = vi.fn().mockResolvedValue([
+			{
+				state: "APPROVED",
+				commit_id: validSha,
+				user: { login: "independent-reviewer" },
+			},
+		]);
 		mockGitHubClient.mockImplementation(
 			() =>
 				({
 					listCheckRunsForRef: mockListCheckRuns,
+					getPullRequest: mockGetPullRequest,
+					listPullRequestReviews: mockListReviews,
 				}) as unknown as GitHubClient,
 		);
 
@@ -155,6 +174,230 @@ describe("runReviewGate", () => {
 			expect(result.output.checkStatus).toBe("completed");
 			expect(result.output.checkConclusion).toBe("success");
 			expect(result.output.needsRerun).toBe(false);
+			expect(result.output.policy_gate_status).toBe("pass");
+			expect(result.output.blockers).toEqual([]);
+			expect(result.output.actionable_count).toBe(0);
+			expect(result.output.informational_count).toBe(3);
+			expect(result.output.confidence_rubric.score).toBe(5);
+		}
+	});
+
+	it("enforces reviewer independence when coding actor is sole approver", async () => {
+		const mockCheckRuns: CheckRun[] = [
+			{
+				id: 1,
+				name: "review-check",
+				status: "completed",
+				conclusion: "success",
+				head_sha: validSha,
+			},
+		];
+		const mockListCheckRuns = vi.fn().mockResolvedValue(mockCheckRuns);
+		const mockGetPullRequest = vi.fn().mockResolvedValue({
+			number: defaultOptions.prNumber,
+			user: { login: "coding-actor" },
+			head: { sha: validSha, ref: "feature/test" },
+		});
+		const mockListReviews = vi.fn().mockResolvedValue([
+			{
+				state: "APPROVED",
+				commit_id: validSha,
+				user: { login: "coding-actor" },
+			},
+		]);
+		mockGitHubClient.mockImplementation(
+			() =>
+				({
+					listCheckRunsForRef: mockListCheckRuns,
+					getPullRequest: mockGetPullRequest,
+					listPullRequestReviews: mockListReviews,
+				}) as unknown as GitHubClient,
+		);
+
+		const result = await runReviewGate(defaultOptions);
+
+		expect(result.ok).toBe(true);
+		if (result.ok) {
+			expect(result.output.verified).toBe(false);
+			expect(result.output.policy_gate_status).toBe("pass");
+			expect(result.output.blockers.length).toBeGreaterThan(0);
+			expect(result.output.blockers.join(" ")).toContain(
+				"Reviewer independence failed",
+			);
+			expect(result.output.actionable_count).toBeGreaterThan(0);
+		}
+	});
+
+	it("rejects approvals without a commit id when enforcing reviewer independence", async () => {
+		const mockCheckRuns: CheckRun[] = [
+			{
+				id: 1,
+				name: "review-check",
+				status: "completed",
+				conclusion: "success",
+				head_sha: validSha,
+			},
+		];
+		const mockListCheckRuns = vi.fn().mockResolvedValue(mockCheckRuns);
+		const mockGetPullRequest = vi.fn().mockResolvedValue({
+			number: defaultOptions.prNumber,
+			user: { login: "coding-actor" },
+			head: { sha: validSha, ref: "feature/test" },
+		});
+		const mockListReviews = vi.fn().mockResolvedValue([
+			{
+				state: "APPROVED",
+				commit_id: null,
+				user: { login: "independent-reviewer" },
+			},
+		]);
+		mockGitHubClient.mockImplementation(
+			() =>
+				({
+					listCheckRunsForRef: mockListCheckRuns,
+					getPullRequest: mockGetPullRequest,
+					listPullRequestReviews: mockListReviews,
+				}) as unknown as GitHubClient,
+		);
+
+		const result = await runReviewGate(defaultOptions);
+
+		expect(result.ok).toBe(true);
+		if (result.ok) {
+			expect(result.output.verified).toBe(false);
+			expect(result.output.policy_gate_status).toBe("pass");
+			expect(result.output.blockers.length).toBeGreaterThan(0);
+			expect(result.output.blockers.join(" ")).toContain(
+				"No APPROVED reviews found for the current HEAD SHA",
+			);
+			expect(result.output.actionable_count).toBeGreaterThan(0);
+		}
+	});
+
+	it("blocks merge readiness when required checks are missing", async () => {
+		mockLoadContract.mockReturnValue({
+			version: "1.0",
+			riskTierRules: {},
+			reviewPolicy: {
+				timeoutSeconds: 600,
+				timeoutAction: "fail",
+				requiredChecks: ["security-scan", "Greptile Review", "Codex Review"],
+			},
+		});
+
+		const mockCheckRuns: CheckRun[] = [
+			{
+				id: 1,
+				name: "review-check",
+				status: "completed",
+				conclusion: "success",
+				head_sha: validSha,
+			},
+		];
+		const mockListCheckRuns = vi.fn().mockResolvedValue(mockCheckRuns);
+		const mockGetPullRequest = vi.fn().mockResolvedValue({
+			number: defaultOptions.prNumber,
+			user: { login: "coding-actor" },
+			head: { sha: validSha, ref: "feature/test" },
+		});
+		const mockListReviews = vi.fn().mockResolvedValue([
+			{
+				state: "APPROVED",
+				commit_id: validSha,
+				user: { login: "independent-reviewer" },
+			},
+		]);
+		mockGitHubClient.mockImplementation(
+			() =>
+				({
+					listCheckRunsForRef: mockListCheckRuns,
+					getPullRequest: mockGetPullRequest,
+					listPullRequestReviews: mockListReviews,
+				}) as unknown as GitHubClient,
+		);
+
+		const result = await runReviewGate(defaultOptions);
+
+		expect(result.ok).toBe(true);
+		if (result.ok) {
+			expect(result.output.verified).toBe(false);
+			expect(result.output.policy_gate_status).toBe("pass");
+			expect(result.output.blockers.join(" ")).toContain("security-scan");
+			expect(result.output.blockers.join(" ")).toContain("Greptile Review");
+			expect(result.output.blockers.join(" ")).toContain("Codex Review");
+		}
+	});
+
+	it("passes when required checks are present and successful", async () => {
+		mockLoadContract.mockReturnValue({
+			version: "1.0",
+			riskTierRules: {},
+			reviewPolicy: {
+				timeoutSeconds: 600,
+				timeoutAction: "fail",
+				requiredChecks: ["security-scan", "Greptile Review", "Codex Review"],
+			},
+		});
+
+		const mockCheckRuns: CheckRun[] = [
+			{
+				id: 1,
+				name: "review-check",
+				status: "completed",
+				conclusion: "success",
+				head_sha: validSha,
+			},
+			{
+				id: 2,
+				name: "security-scan",
+				status: "completed",
+				conclusion: "success",
+				head_sha: validSha,
+			},
+			{
+				id: 3,
+				name: "Greptile Review",
+				status: "completed",
+				conclusion: "success",
+				head_sha: validSha,
+			},
+			{
+				id: 4,
+				name: "Codex Review",
+				status: "completed",
+				conclusion: "success",
+				head_sha: validSha,
+			},
+		];
+		const mockListCheckRuns = vi.fn().mockResolvedValue(mockCheckRuns);
+		const mockGetPullRequest = vi.fn().mockResolvedValue({
+			number: defaultOptions.prNumber,
+			user: { login: "coding-actor" },
+			head: { sha: validSha, ref: "feature/test" },
+		});
+		const mockListReviews = vi.fn().mockResolvedValue([
+			{
+				state: "APPROVED",
+				commit_id: validSha,
+				user: { login: "independent-reviewer" },
+			},
+		]);
+		mockGitHubClient.mockImplementation(
+			() =>
+				({
+					listCheckRunsForRef: mockListCheckRuns,
+					getPullRequest: mockGetPullRequest,
+					listPullRequestReviews: mockListReviews,
+				}) as unknown as GitHubClient,
+		);
+
+		const result = await runReviewGate(defaultOptions);
+
+		expect(result.ok).toBe(true);
+		if (result.ok) {
+			expect(result.output.verified).toBe(true);
+			expect(result.output.policy_gate_status).toBe("pass");
+			expect(result.output.blockers).toEqual([]);
 		}
 	});
 
@@ -183,6 +426,10 @@ describe("runReviewGate", () => {
 			expect(result.output.verified).toBe(false);
 			expect(result.output.checkConclusion).toBe("failure");
 			expect(result.output.needsRerun).toBe(true);
+			expect(result.output.policy_gate_status).toBe("fail");
+			expect(result.output.blockers.length).toBeGreaterThan(0);
+			expect(result.output.actionable_count).toBeGreaterThan(0);
+			expect(result.output.confidence_rubric.level).toBe("low");
 		}
 	});
 

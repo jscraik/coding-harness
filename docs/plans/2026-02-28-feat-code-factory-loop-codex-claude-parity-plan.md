@@ -1,7 +1,7 @@
 ---
 title: feat: Close code-factory loop parity for Codex and Claude
 type: feat
-status: active
+status: completed
 date: 2026-02-28
 origin: docs/brainstorms/2026-02-28-code-factory-loop-parity-brainstorm.md
 amended: 2026-03-01
@@ -387,35 +387,35 @@ Surfaces requiring parity updates:
 - [x] Client adapters for Codex App/CLI and Claude Code preserve shared policy outcomes for identical inputs.
 - [x] Preflight `risk-policy-gate` runs before expensive CI fanout and enforces risk + docs drift contract.
 - [x] Browser evidence command (`pnpm run harness:ui:capture-browser-evidence`) is required where UI-state proof is needed.
-- [ ] PR-readiness output contract includes `policy_gate_status`, blockers, actionable/informational counts, and confidence rubric.
-- [ ] Reviewer independence is enforced for merge readiness (coding actor cannot be sole approving reviewer).
+- [x] PR-readiness output contract includes `policy_gate_status`, blockers, actionable/informational counts, and confidence rubric.
+- [x] Reviewer independence is enforced for merge readiness (coding actor cannot be sole approving reviewer).
 
 ### Functional Requirements (Follow-up tracks)
-- [ ] **[v1.1]** remediation apply path writes low-risk patches with single-finding atomic transactions and per-finding rollback guarantee.
-- [ ] **[v2]** Pulse/Upskill/Green PRs/Drift Check workflows exist with idempotent report contracts and replay semantics.
+- [x] **[v1.1]** remediation apply path writes low-risk patches with single-finding atomic transactions and per-finding rollback guarantee.
+- [x] **[v2]** Pulse/Upskill/Green PRs/Drift Check workflows exist with idempotent report contracts and replay semantics.
 
 ### Non-Functional Requirements
-- [ ] Determinism: same input artifacts + policy produce same stage outcomes.
-- [ ] Safety: fail-closed behavior for missing/invalid artifacts.
-- [ ] Observability: each stage emits timestamped, SHA-bound telemetry/events, including `codex.tool.call.duration_ms` and `codex.api_request.duration_ms`.
-- [ ] Performance: loop stage orchestration overhead p95 ≤ 2.5s, measured from preflight completion to remediation-decision artifact across 30 CI fixture runs.
+- [x] Determinism: same input artifacts + policy produce same stage outcomes.
+- [x] Safety: fail-closed behavior for missing/invalid artifacts.
+- [x] Observability: each stage emits timestamped, SHA-bound telemetry/events, including `codex.tool.call.duration_ms` and `codex.api_request.duration_ms`.
+- [x] Performance: loop stage orchestration overhead p95 ≤ 2.5s, measured from preflight completion to remediation-decision artifact across 30 CI fixture runs.
 
 ### Quality Gates
-- [ ] Ralph dependency smoke test on clean environment fixture (install + `ralph --version` + minimal doctor/preflight pass).
+- [x] Ralph dependency smoke test on clean environment fixture (install + `ralph --version` + minimal doctor/preflight pass).
 - [x] `pnpm lint`
 - [x] `pnpm typecheck`
 - [x] `pnpm test`
 - [x] `pnpm audit`
 - [x] `pnpm check`
 - [x] `pnpm run test:deep` (required because runtime behavior changes)
-- [ ] CI `security-scan` required and green before merge.
-- [ ] **[MVP v1]** workflow fixture/integration tests for loop ordering, stale-SHA invalidation, and failure propagation
-- [ ] **[MVP v1]** contract loader/validator tests for loop-stage semantic parity fields (inputs/outputs/schema/fail policy/if/permissions/timeout/concurrency)
-- [ ] **[MVP v1]** kill-switch mode matrix tests across adapters (`execute => execution_disabled`, `prepare => deterministic non-exec artifact`).
-- [ ] **[v1.1]** remediation transaction tests (single-finding atomic boundary, per-finding rollback scope)
-- [ ] **[v2]** automation idempotency tests (`in_progress/succeeded/failed`, replay, force override)
-- [ ] **[v1.1]** remediation apply hard-fails on dirty/non-disposable workspace and leaves primary workspace byte-identical before/after.
-- [ ] Independent review artifacts (Greptile + Codex) attached before merge recommendation.
+- [x] CI `security-scan` required and green before merge.
+- [x] **[MVP v1]** workflow fixture/integration tests for loop ordering, stale-SHA invalidation, and failure propagation
+- [x] **[MVP v1]** contract loader/validator tests for loop-stage semantic parity fields (inputs/outputs/schema/fail policy/if/permissions/timeout/concurrency)
+- [x] **[MVP v1]** kill-switch mode matrix tests across adapters (`execute => execution_disabled`, `prepare => deterministic non-exec artifact`).
+- [x] **[v1.1]** remediation transaction tests (single-finding atomic boundary, per-finding rollback scope)
+- [x] **[v2]** automation idempotency tests (`in_progress/succeeded/failed`, replay, force override)
+- [x] **[v1.1]** remediation apply hard-fails on dirty/non-disposable workspace and leaves primary workspace byte-identical before/after.
+- [x] Independent review artifacts (Greptile + Codex) attached before merge recommendation.
 
 ## Success Metrics
 - Workflow parity: generated and repo-native PR pipeline share identical loop stages and required gates.
@@ -543,9 +543,9 @@ erDiagram
 ## Pseudo Examples (non-binding)
 ### `/Users/jamiecraik/dev/coding-harness/docs/examples/loop-contract.todo.md`
 ```md
-- [ ] Add workflow stage contract schema for risk/review/evidence/remediation-decision
-- [ ] Add adapter parity test checklist for codex + claude
-- [ ] Add stale-artifact rejection integration test cases
+- [x] Add workflow stage contract schema for risk/review/evidence/remediation-decision
+- [x] Add adapter parity test checklist for codex + claude
+- [x] Add stale-artifact rejection integration test cases
 ```
 
 ### `/Users/jamiecraik/dev/coding-harness/docs/examples/remediation-apply-flow.pseudo.ts`

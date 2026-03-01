@@ -230,7 +230,16 @@ describe("runInit", () => {
 			);
 			expect(content.version).toBe("1.2.0");
 			expect(content.reviewPolicy.timeoutSeconds).toBe(600);
+			expect(content.reviewPolicy.requiredChecks).toContain("security-scan");
+			expect(content.reviewPolicy.requiredChecks).not.toContain(
+				"Greptile Review",
+			);
+			expect(content.reviewPolicy.requiredChecks).not.toContain("Codex Review");
 			expect(content.runtimePolicy.createIssueOnAgentFindings).toBe(true);
+			expect(content.loopStageContracts["risk-policy-gate"].schema).toBe(
+				"loop-stage-contract/v1",
+			);
+			expect(content.loopStageContracts["review-gate"].timeoutMinutes).toBe(15);
 		});
 
 		it("creates valid memory.json baseline", () => {
@@ -273,10 +282,21 @@ describe("runInit", () => {
 			expect(content).toContain('uv tool install "ralph-gold==0.8.1"');
 			expect(content).toContain("HARNESS_ALLOW_RALPH_PIPX_FALLBACK");
 			expect(content).toContain("ralph-fallback-warning.json");
+			expect(content).toContain("Install dependencies for preflight smoke");
+			expect(content).toContain("name: Ralph dependency smoke preflight");
+			expect(content).toContain(
+				"npx tsx src/cli.ts check-environment --contract harness.contract.json --json --attestation artifacts/policy/ralph-smoke-attestation.json",
+			);
 			expect(content).toContain("name: risk-policy-gate");
 			expect(content).toContain("name: review-gate");
 			expect(content).toContain("name: evidence-verify");
 			expect(content).toContain("name: remediation-decision");
+			expect(content).toContain("Upload risk-policy telemetry artifacts");
+			expect(content).toContain("Upload review telemetry artifacts");
+			expect(content).toContain("Upload evidence telemetry artifacts");
+			expect(content).toContain("Upload remediation telemetry artifacts");
+			expect(content).toContain('"codex.tool.call.duration_ms"');
+			expect(content).toContain('"codex.api_request.duration_ms"');
 			expect(content).toContain("npx tsx src/cli.ts risk-policy-gate");
 			expect(content).toContain("npx tsx src/cli.ts review-gate");
 			expect(content).toContain("npx tsx src/cli.ts evidence-verify");
@@ -287,6 +307,31 @@ describe("runInit", () => {
 			expect(content).toContain("name: security-scan");
 			expect(content).toContain("Validate memory.json");
 			expect(content).toContain("test -f memory.json");
+		});
+
+		it("enforces ordered loop stage dependencies in workflow template", () => {
+			const result = runInit(tempDir, { dryRun: false, force: false });
+
+			expect(result.ok).toBe(true);
+
+			const workflowPath = join(tempDir, ".github/workflows/pr-pipeline.yml");
+			const workflow = require("node:fs").readFileSync(workflowPath, "utf-8");
+
+			const riskIndex = workflow.indexOf("  risk-policy-gate:");
+			const reviewIndex = workflow.indexOf("  review-gate:");
+			const evidenceIndex = workflow.indexOf("  evidence-verify:");
+			const remediationIndex = workflow.indexOf("  remediation-decision:");
+
+			expect(riskIndex).toBeGreaterThanOrEqual(0);
+			expect(reviewIndex).toBeGreaterThan(riskIndex);
+			expect(evidenceIndex).toBeGreaterThan(reviewIndex);
+			expect(remediationIndex).toBeGreaterThan(evidenceIndex);
+			expect(workflow).toContain("  review-gate:");
+			expect(workflow).toContain("    needs: [risk-policy-gate]");
+			expect(workflow).toContain("  evidence-verify:");
+			expect(workflow).toContain("    needs: [review-gate]");
+			expect(workflow).toContain("  remediation-decision:");
+			expect(workflow).toContain("    needs: [evidence-verify]");
 		});
 
 		it("uses npm run for npm script commands", () => {

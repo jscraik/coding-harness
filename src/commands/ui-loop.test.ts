@@ -35,6 +35,7 @@ const MOCK_POLICY = {
 describe("ui-loop commands", () => {
 	beforeEach(() => {
 		vi.resetAllMocks();
+		process.env.HARNESS_UI_EXECUTION_DISABLED = undefined;
 		vi.mocked(spawnSync).mockReturnValue({
 			status: 0,
 			stdout: "ok",
@@ -114,6 +115,20 @@ describe("ui-loop commands", () => {
 			expect(result.exitCode).toBe(EXIT_CODES.COMMAND_FAILED);
 			expect(result.artifact?.passed).toBe(false);
 		});
+
+		it("returns execution_disabled when kill switch is enabled in execute mode", () => {
+			process.env.HARNESS_UI_EXECUTION_DISABLED = "true";
+
+			const result = runUIFast({ mode: "execute", json: true });
+
+			expect(result.exitCode).toBe(EXIT_CODES.EXECUTION_DISABLED);
+			expect(spawnSync).not.toHaveBeenCalled();
+			const payload = JSON.parse(result.message);
+			expect(payload.mode).toBe("execute");
+			expect(payload.executed).toBe(false);
+			expect(payload.error.code).toBe("execution_disabled");
+			expect(payload.error.message).toContain("kill switch");
+		});
 	});
 
 	describe("runUIVerify", () => {
@@ -169,6 +184,19 @@ describe("ui-loop commands", () => {
 			expect(result.evidence?.mode).toBe("prepare");
 			expect(result.evidence?.executed).toBe(false);
 			expect(spawnSync).not.toHaveBeenCalled();
+		});
+
+		it("returns execution_disabled when kill switch is enabled in execute mode", () => {
+			process.env.HARNESS_UI_EXECUTION_DISABLED = "1";
+
+			const result = runUIVerify({ mode: "execute", json: true });
+
+			expect(result.exitCode).toBe(EXIT_CODES.EXECUTION_DISABLED);
+			expect(spawnSync).not.toHaveBeenCalled();
+			const payload = JSON.parse(result.message);
+			expect(payload.mode).toBe("execute");
+			expect(payload.executed).toBe(false);
+			expect(payload.error.code).toBe("execution_disabled");
 		});
 
 		it("returns JSON payload with artifact fields", () => {
@@ -228,6 +256,19 @@ describe("ui-loop commands", () => {
 			expect(result.evidence?.passed).toBe(false);
 		});
 
+		it("returns execution_disabled when kill switch is enabled in execute mode", () => {
+			process.env.HARNESS_UI_EXECUTION_DISABLED = "yes";
+
+			const result = runUIExplore({ mode: "execute", json: true });
+
+			expect(result.exitCode).toBe(EXIT_CODES.EXECUTION_DISABLED);
+			expect(spawnSync).not.toHaveBeenCalled();
+			const payload = JSON.parse(result.message);
+			expect(payload.mode).toBe("execute");
+			expect(payload.executed).toBe(false);
+			expect(payload.error.code).toBe("execution_disabled");
+		});
+
 		it("keeps canonical policy fields aligned across command adapters", () => {
 			vi.mocked(loadContract).mockReturnValue(
 				MOCK_POLICY as unknown as ReturnType<typeof loadContract>,
@@ -246,6 +287,43 @@ describe("ui-loop commands", () => {
 				expect(payload.exitCode).toBe(EXIT_CODES.SUCCESS);
 				expect(payload.head_sha).toEqual(expect.any(String));
 				expect(payload.contract_version).toBe("1.1.0");
+				expect(payload.artifact_uri).toContain("artifacts/ui-loop");
+				expect(payload.artifact_checksum).toHaveLength(64);
+			}
+		});
+
+		it("enforces kill-switch mode matrix across adapters", () => {
+			process.env.HARNESS_UI_EXECUTION_DISABLED = "true";
+			vi.mocked(loadContract).mockReturnValue(
+				MOCK_POLICY as unknown as ReturnType<typeof loadContract>,
+			);
+
+			const executePayloads = [
+				JSON.parse(runUIFast({ mode: "execute", json: true }).message),
+				JSON.parse(runUIVerify({ mode: "execute", json: true }).message),
+				JSON.parse(runUIExplore({ mode: "execute", json: true }).message),
+			];
+
+			for (const payload of executePayloads) {
+				expect(payload.mode).toBe("execute");
+				expect(payload.executed).toBe(false);
+				expect(payload.exitCode).toBe(EXIT_CODES.EXECUTION_DISABLED);
+				expect(payload.error.code).toBe("execution_disabled");
+				expect(payload.artifact_uri).toContain("artifacts/ui-loop");
+				expect(payload.artifact_checksum).toHaveLength(64);
+			}
+
+			const preparePayloads = [
+				JSON.parse(runUIFast({ mode: "prepare", json: true }).message),
+				JSON.parse(runUIVerify({ mode: "prepare", json: true }).message),
+				JSON.parse(runUIExplore({ mode: "prepare", json: true }).message),
+			];
+
+			for (const payload of preparePayloads) {
+				expect(payload.mode).toBe("prepare");
+				expect(payload.executed).toBe(false);
+				expect(payload.exitCode).toBe(EXIT_CODES.SUCCESS);
+				expect(payload.error).toBeUndefined();
 				expect(payload.artifact_uri).toContain("artifacts/ui-loop");
 				expect(payload.artifact_checksum).toHaveLength(64);
 			}

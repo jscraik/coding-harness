@@ -33,6 +33,83 @@ describe("loadContract", () => {
 		expect(contract.riskTierRules["src/**"]).toBe("medium");
 	});
 
+	it("loads valid loopStageContracts semantic parity data", () => {
+		const dir = join(process.cwd(), "artifacts");
+		mkdirSync(dir, { recursive: true });
+		const path = join(dir, "contract-loader-loop-stage-contracts.json");
+		createdFiles.push(path);
+
+		writeFileSync(
+			path,
+			JSON.stringify({
+				version: "1.0",
+				loopStageContracts: {
+					"risk-policy-gate": {
+						inputs: ["changed_files", "harness.contract.json"],
+						outputs: ["risk-policy-gate.result"],
+						schema: "loop-stage-contract/v1",
+						failPolicy: "fail_closed",
+						if: "always()",
+						permissions: ["contents:read", "pull-requests:read"],
+						timeoutMinutes: 15,
+						concurrency: "none",
+					},
+					"review-gate": {
+						inputs: [
+							"risk-policy-gate.result",
+							"head_sha",
+							"harness.contract.json",
+						],
+						outputs: ["review-gate.result"],
+						schema: "loop-stage-contract/v1",
+						failPolicy: "fail_closed",
+						if: "always()",
+						permissions: ["contents:read", "pull-requests:read"],
+						timeoutMinutes: 15,
+						concurrency: "none",
+					},
+					"evidence-verify": {
+						inputs: [
+							"review-gate.result",
+							"evidence_files",
+							"harness.contract.json",
+						],
+						outputs: ["evidence-verify.result", "browser-evidence-artifacts"],
+						schema: "loop-stage-contract/v1",
+						failPolicy: "fail_closed",
+						if: "always()",
+						permissions: ["contents:read"],
+						timeoutMinutes: 15,
+						concurrency: "none",
+					},
+					"remediation-decision": {
+						inputs: [
+							"evidence-verify.result",
+							"findings.json",
+							"harness.contract.json",
+						],
+						outputs: [
+							"remediation-decision.result",
+							"remediation-decision-artifacts",
+						],
+						schema: "loop-stage-contract/v1",
+						failPolicy: "fail_closed",
+						if: "always()",
+						permissions: ["contents:read", "pull-requests:write"],
+						timeoutMinutes: 15,
+						concurrency: "none",
+					},
+				},
+			}),
+			"utf-8",
+		);
+
+		const contract = loadContract(path);
+		expect(contract.loopStageContracts?.["review-gate"]?.schema).toBe(
+			"loop-stage-contract/v1",
+		);
+	});
+
 	it("enforces size limit using UTF-8 bytes, not character count", () => {
 		const dir = join(process.cwd(), "artifacts");
 		mkdirSync(dir, { recursive: true });

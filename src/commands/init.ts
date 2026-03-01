@@ -314,6 +314,7 @@ const TEMPLATES: Template[] = [
 					reviewPolicy: {
 						timeoutSeconds: 600,
 						timeoutAction: "fail" as const,
+						requiredChecks: ["security-scan"],
 					},
 					evidencePolicy: {
 						requiredFor: [],
@@ -390,6 +391,63 @@ const TEMPLATES: Template[] = [
 						timeoutMinutes: 10,
 						retryLimit: 3,
 						requireEvidence: true,
+					},
+					loopStageContracts: {
+						"risk-policy-gate": {
+							inputs: ["changed_files", "harness.contract.json"],
+							outputs: ["risk-policy-gate.result"],
+							schema: "loop-stage-contract/v1",
+							failPolicy: "fail_closed" as const,
+							if: "always()",
+							permissions: ["contents:read", "pull-requests:read"],
+							timeoutMinutes: 15,
+							concurrency: "none",
+						},
+						"review-gate": {
+							inputs: [
+								"risk-policy-gate.result",
+								"head_sha",
+								"harness.contract.json",
+							],
+							outputs: ["review-gate.result"],
+							schema: "loop-stage-contract/v1",
+							failPolicy: "fail_closed" as const,
+							if: "always()",
+							permissions: ["contents:read", "pull-requests:read"],
+							timeoutMinutes: 15,
+							concurrency: "none",
+						},
+						"evidence-verify": {
+							inputs: [
+								"review-gate.result",
+								"evidence_files",
+								"harness.contract.json",
+							],
+							outputs: ["evidence-verify.result", "browser-evidence-artifacts"],
+							schema: "loop-stage-contract/v1",
+							failPolicy: "fail_closed" as const,
+							if: "always()",
+							permissions: ["contents:read"],
+							timeoutMinutes: 15,
+							concurrency: "none",
+						},
+						"remediation-decision": {
+							inputs: [
+								"evidence-verify.result",
+								"findings.json",
+								"harness.contract.json",
+							],
+							outputs: [
+								"remediation-decision.result",
+								"remediation-decision-artifacts",
+							],
+							schema: "loop-stage-contract/v1",
+							failPolicy: "fail_closed" as const,
+							if: "always()",
+							permissions: ["contents:read", "pull-requests:write"],
+							timeoutMinutes: 15,
+							concurrency: "none",
+						},
 					},
 					pilotGapCasePolicy: {
 						enabled: false,
@@ -738,6 +796,19 @@ jobs:
             *"${RALPH_VERSION_PIN}"*) ;;
             *) echo "Pinned Ralph version ${RALPH_VERSION_PIN} not found"; exit 1 ;;
           esac
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "24"
+      - name: Enable corepack
+        run: corepack enable
+      - name: Install dependencies for preflight smoke
+        run: ${installCommand}
+      - name: Ralph dependency smoke preflight
+        env:
+          CODEX_APPROVAL_POSTURE: require
+        run: |
+          export PATH="$HOME/.local/bin:$PATH"
+          npx tsx src/cli.ts check-environment --contract harness.contract.json --json --attestation artifacts/policy/ralph-smoke-attestation.json
       - name: Upload dependency policy artifacts
         if: always()
         uses: actions/upload-artifact@v4
@@ -765,8 +836,32 @@ jobs:
         run: ${renderScriptCommand(pm, "docs:lint")}
       - name: Run risk-policy gate
         run: |
+          mkdir -p artifacts/telemetry
+          START_MS="$(date +%s%3N)"
           CHANGED_FILES="$(git diff --name-only "${"${{ github.event.pull_request.base.sha }}"}" "${"${{ github.event.pull_request.head.sha }}"}" | paste -sd, -)"
+          set +e
           npx tsx src/cli.ts risk-policy-gate --contract harness.contract.json --files "$CHANGED_FILES" --max-tier medium
+          STATUS=$?
+          set -e
+          END_MS="$(date +%s%3N)"
+          DURATION_MS="$((END_MS - START_MS))"
+          cat > artifacts/telemetry/risk-policy-gate.json <<JSON
+          {
+            "stage": "risk-policy-gate",
+            "timestamp": "$(date -u +"%Y-%m-%dT%H:%M:%SZ")",
+            "head_sha": "${"${{ github.event.pull_request.head.sha }}"}",
+            "codex.tool.call.duration_ms": ${"$"}{DURATION_MS},
+            "codex.api_request.duration_ms": 0
+          }
+          JSON
+          exit "${"$"}{STATUS}"
+      - name: Upload risk-policy telemetry artifacts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: risk-policy-telemetry-artifacts
+          path: artifacts/telemetry/risk-policy-gate.json
+          if-no-files-found: error
 
   review-gate:
     name: review-gate
@@ -783,6 +878,9 @@ jobs:
         run: ${installCommand}
       - name: Run review gate against current SHA
         run: |
+          mkdir -p artifacts/telemetry
+          START_MS="$(date +%s%3N)"
+          set +e
           npx tsx src/cli.ts review-gate \
             --token "${"${{ secrets.GITHUB_TOKEN }}"}" \
             --owner "${"${{ github.repository_owner }}"}" \
@@ -791,6 +889,27 @@ jobs:
             --sha "${"${{ github.event.pull_request.head.sha }}"}" \
             --check "risk-policy-gate" \
             --contract harness.contract.json
+          STATUS=$?
+          set -e
+          END_MS="$(date +%s%3N)"
+          DURATION_MS="$((END_MS - START_MS))"
+          cat > artifacts/telemetry/review-gate.json <<JSON
+          {
+            "stage": "review-gate",
+            "timestamp": "$(date -u +"%Y-%m-%dT%H:%M:%SZ")",
+            "head_sha": "${"${{ github.event.pull_request.head.sha }}"}",
+            "codex.tool.call.duration_ms": ${"$"}{DURATION_MS},
+            "codex.api_request.duration_ms": ${"$"}{DURATION_MS}
+          }
+          JSON
+          exit "${"$"}{STATUS}"
+      - name: Upload review telemetry artifacts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: review-telemetry-artifacts
+          path: artifacts/telemetry/review-gate.json
+          if-no-files-found: error
 
   evidence-verify:
     name: evidence-verify
@@ -815,14 +934,38 @@ jobs:
           PNG_BASE64
       - name: Verify evidence contract
         run: |
+          mkdir -p artifacts/telemetry
+          START_MS="$(date +%s%3N)"
           CHANGED_FILES="$(git diff --name-only "${"${{ github.event.pull_request.base.sha }}"}" "${"${{ github.event.pull_request.head.sha }}"}" | paste -sd, -)"
+          set +e
           npx tsx src/cli.ts evidence-verify --contract harness.contract.json --files artifacts/evidence/loop-stage-smoke.png --changed "$CHANGED_FILES"
+          STATUS=$?
+          set -e
+          END_MS="$(date +%s%3N)"
+          DURATION_MS="$((END_MS - START_MS))"
+          cat > artifacts/telemetry/evidence-verify.json <<JSON
+          {
+            "stage": "evidence-verify",
+            "timestamp": "$(date -u +"%Y-%m-%dT%H:%M:%SZ")",
+            "head_sha": "${"${{ github.event.pull_request.head.sha }}"}",
+            "codex.tool.call.duration_ms": ${"$"}{DURATION_MS},
+            "codex.api_request.duration_ms": 0
+          }
+          JSON
+          exit "${"$"}{STATUS}"
       - name: Upload evidence artifacts
         if: always()
         uses: actions/upload-artifact@v4
         with:
           name: browser-evidence-artifacts
           path: artifacts/evidence/
+          if-no-files-found: error
+      - name: Upload evidence telemetry artifacts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: evidence-telemetry-artifacts
+          path: artifacts/telemetry/evidence-verify.json
           if-no-files-found: error
 
   remediation-decision:
@@ -841,14 +984,38 @@ jobs:
       - name: Run remediation-decision stage (plan only)
         run: |
           mkdir -p artifacts/remediation
+          mkdir -p artifacts/telemetry
+          START_MS="$(date +%s%3N)"
           echo "[]" > artifacts/remediation/findings.json
+          set +e
           npx tsx src/cli.ts remediate run --findings artifacts/remediation/findings.json --contract harness.contract.json --mode run --json
+          STATUS=$?
+          set -e
+          END_MS="$(date +%s%3N)"
+          DURATION_MS="$((END_MS - START_MS))"
+          cat > artifacts/telemetry/remediation-decision.json <<JSON
+          {
+            "stage": "remediation-decision",
+            "timestamp": "$(date -u +"%Y-%m-%dT%H:%M:%SZ")",
+            "head_sha": "${"${{ github.event.pull_request.head.sha }}"}",
+            "codex.tool.call.duration_ms": ${"$"}{DURATION_MS},
+            "codex.api_request.duration_ms": 0
+          }
+          JSON
+          exit "${"$"}{STATUS}"
       - name: Upload remediation artifacts
         if: always()
         uses: actions/upload-artifact@v4
         with:
           name: remediation-decision-artifacts
           path: artifacts/remediation/
+          if-no-files-found: error
+      - name: Upload remediation telemetry artifacts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: remediation-telemetry-artifacts
+          path: artifacts/telemetry/remediation-decision.json
           if-no-files-found: error
 
   lint:
