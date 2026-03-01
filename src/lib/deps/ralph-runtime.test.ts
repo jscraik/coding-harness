@@ -2,9 +2,12 @@ import { describe, expect, it } from "vitest";
 import {
 	RALPH_FALLBACK_ENV_FLAG,
 	RALPH_FALLBACK_WARNING_ARTIFACT_PATH,
+	RALPH_GIT_FALLBACK_COMMIT_SHA,
+	RALPH_GIT_FALLBACK_REPO_URL,
 	RALPH_PACKAGE_NAME,
 	RALPH_VERSION_PIN,
 	extractVersionFromRalphVersionOutput,
+	getPinnedRalphGitFallbackSpec,
 	getPinnedRalphGitSpec,
 	getRalphPackageSpec,
 } from "./ralph-runtime.js";
@@ -23,6 +26,12 @@ describe("ralph-runtime contract", () => {
 				"abc1234",
 			),
 		).toBe("git+https://github.com/example/ralph-gold.git@abc1234");
+	});
+
+	it("builds pinned git fallback spec", () => {
+		expect(getPinnedRalphGitFallbackSpec()).toBe(
+			`git+${RALPH_GIT_FALLBACK_REPO_URL}@${RALPH_GIT_FALLBACK_COMMIT_SHA}`,
+		);
 	});
 
 	it("extracts version from CLI output", () => {

@@ -25,6 +25,7 @@ import {
 	RALPH_VERSION_PIN,
 	SETUP_PYTHON_ACTION_VERSION,
 	SETUP_UV_ACTION_VERSION,
+	getPinnedRalphGitFallbackSpec,
 	getRalphPackageSpec,
 } from "../lib/deps/ralph-runtime.js";
 import { sanitizeError } from "../lib/input/sanitize.js";
@@ -667,6 +668,7 @@ import { runReviewGate } from "./commands/review-gate.js";
 			const checkCommand = renderScriptCommand(pm, "check");
 			const memoryValidateCommand = renderMemoryValidateCommand();
 			const ralphPackageSpec = getRalphPackageSpec();
+			const ralphGitFallbackSpec = getPinnedRalphGitFallbackSpec();
 			return `name: Harness PR Pipeline
 
 on: pull_request
@@ -758,7 +760,7 @@ jobs:
           cache-dependency-glob: |
             **/pyproject.toml
             **/uv.lock
-      - name: Install Ralph runtime (canonical + opt-in fallback)
+      - name: Install Ralph runtime (canonical + pinned-git fallback + opt-in pipx fallback)
         env:
           ${RALPH_FALLBACK_ENV_FLAG}: \${{ vars.${RALPH_FALLBACK_ENV_FLAG} || 'false' }}
         run: |
@@ -767,21 +769,36 @@ jobs:
             exit 0
           fi
 
+          if uv tool install "${ralphGitFallbackSpec}"; then
+            cat > "${RALPH_FALLBACK_WARNING_ARTIFACT_PATH}" <<JSON
+          {
+            "warning": "ralph_runtime_fallback",
+            "reason": "pypi_package_unavailable",
+            "fallback": "uv_git",
+            "package": "${ralphPackageSpec}",
+            "gitSpec": "${ralphGitFallbackSpec}",
+            "timestamp": "$(date -u +"%Y-%m-%dT%H:%M:%SZ")"
+          }
+          JSON
+            exit 0
+          fi
+
           if [ "\${${RALPH_FALLBACK_ENV_FLAG}}" != "true" ]; then
-            echo "uv install failed and ${RALPH_FALLBACK_ENV_FLAG} is not enabled."
+            echo "uv install failed for canonical and git fallback, and ${RALPH_FALLBACK_ENV_FLAG} is not enabled."
             exit 1
           fi
 
           python -m pip install --upgrade pip pipx
           export PATH="$HOME/.local/bin:$PATH"
-          python -m pipx install "${ralphPackageSpec}" --force
+          python -m pipx install "${ralphGitFallbackSpec}" --force
 
           cat > "${RALPH_FALLBACK_WARNING_ARTIFACT_PATH}" <<JSON
           {
             "warning": "ralph_runtime_fallback",
             "reason": "uv_tool_install_failed",
-            "fallback": "pipx",
+            "fallback": "pipx_git",
             "package": "${ralphPackageSpec}",
+            "gitSpec": "${ralphGitFallbackSpec}",
             "optInEnv": "${RALPH_FALLBACK_ENV_FLAG}",
             "timestamp": "$(date -u +"%Y-%m-%dT%H:%M:%SZ")"
           }

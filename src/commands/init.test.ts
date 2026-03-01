@@ -280,8 +280,13 @@ describe("runInit", () => {
 			expect(content).toContain("uses: actions/setup-python@v6");
 			expect(content).toContain("uses: astral-sh/setup-uv@v7");
 			expect(content).toContain('uv tool install "ralph-gold==0.8.1"');
+			expect(content).toContain(
+				'uv tool install "git+https://github.com/jscraik/ralph-gold.git@5d4b57537a29c3edb566665c9482ae5ca1d49eed"',
+			);
 			expect(content).toContain("HARNESS_ALLOW_RALPH_PIPX_FALLBACK");
 			expect(content).toContain("ralph-fallback-warning.json");
+			expect(content).toContain('"fallback": "uv_git"');
+			expect(content).toContain('"fallback": "pipx_git"');
 			expect(content).toContain("Install dependencies for preflight smoke");
 			expect(content).toContain("name: Ralph dependency smoke preflight");
 			expect(content).toContain(

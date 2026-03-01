@@ -89,7 +89,7 @@ jobs:
           cache-dependency-glob: |
             **/pyproject.toml
             **/uv.lock
-      - name: Install Ralph runtime (canonical + opt-in fallback)
+      - name: Install Ralph runtime (canonical + pinned-git fallback + opt-in pipx fallback)
         env:
           HARNESS_ALLOW_RALPH_PIPX_FALLBACK: ${{ vars.HARNESS_ALLOW_RALPH_PIPX_FALLBACK || 'false' }}
         run: |
@@ -98,21 +98,36 @@ jobs:
             exit 0
           fi
 
+          if uv tool install "git+https://github.com/jscraik/ralph-gold.git@5d4b57537a29c3edb566665c9482ae5ca1d49eed"; then
+            cat > "artifacts/policy/ralph-fallback-warning.json" <<JSON
+          {
+            "warning": "ralph_runtime_fallback",
+            "reason": "pypi_package_unavailable",
+            "fallback": "uv_git",
+            "package": "ralph-gold==0.8.1",
+            "gitSpec": "git+https://github.com/jscraik/ralph-gold.git@5d4b57537a29c3edb566665c9482ae5ca1d49eed",
+            "timestamp": "$(date -u +"%Y-%m-%dT%H:%M:%SZ")"
+          }
+          JSON
+            exit 0
+          fi
+
           if [ "${HARNESS_ALLOW_RALPH_PIPX_FALLBACK}" != "true" ]; then
-            echo "uv install failed and HARNESS_ALLOW_RALPH_PIPX_FALLBACK is not enabled."
+            echo "uv install failed for canonical and git fallback, and HARNESS_ALLOW_RALPH_PIPX_FALLBACK is not enabled."
             exit 1
           fi
 
           python -m pip install --upgrade pip pipx
           export PATH="$HOME/.local/bin:$PATH"
-          python -m pipx install "ralph-gold==0.8.1" --force
+          python -m pipx install "git+https://github.com/jscraik/ralph-gold.git@5d4b57537a29c3edb566665c9482ae5ca1d49eed" --force
 
           cat > "artifacts/policy/ralph-fallback-warning.json" <<JSON
           {
             "warning": "ralph_runtime_fallback",
             "reason": "uv_tool_install_failed",
-            "fallback": "pipx",
+            "fallback": "pipx_git",
             "package": "ralph-gold==0.8.1",
+            "gitSpec": "git+https://github.com/jscraik/ralph-gold.git@5d4b57537a29c3edb566665c9482ae5ca1d49eed",
             "optInEnv": "HARNESS_ALLOW_RALPH_PIPX_FALLBACK",
             "timestamp": "$(date -u +"%Y-%m-%dT%H:%M:%SZ")"
           }
