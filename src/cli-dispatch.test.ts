@@ -1145,6 +1145,51 @@ describe("cli command dispatch", () => {
 		expect(exitSpy).toHaveBeenCalledWith(54);
 	});
 
+	it("maps ui:verify --dry-run to mode=prepare", async () => {
+		const { run } = await import("./cli.js");
+		const { runUIVerifyCLI } = await import("./commands/ui-loop.js");
+
+		const exitSpy = vi.spyOn(process, "exit").mockImplementation(((
+			code?: number,
+		) => {
+			throw new Error(`EXIT_${String(code)}`);
+		}) as never);
+
+		expect(() =>
+			run(["ui:verify", "--mode", "execute", "--dry-run", "--json"]),
+		).toThrowError("EXIT_54");
+
+		expect(vi.mocked(runUIVerifyCLI)).toHaveBeenCalledWith({
+			mode: "prepare",
+			dryRun: true,
+			json: true,
+		});
+		expect(exitSpy).toHaveBeenCalledWith(54);
+	});
+
+	it("maps ui:fast --dry-run to mode=prepare", async () => {
+		const { run } = await import("./cli.js");
+		const { runUIFastCLI } = await import("./commands/ui-loop.js");
+
+		const exitSpy = vi.spyOn(process, "exit").mockImplementation(((
+			code?: number,
+		) => {
+			throw new Error(`EXIT_${String(code)}`);
+		}) as never);
+
+		expect(() =>
+			run(["ui:fast", "--ci", "--mode", "execute", "--dry-run", "--json"]),
+		).toThrowError("EXIT_58");
+
+		expect(vi.mocked(runUIFastCLI)).toHaveBeenCalledWith({
+			ci: true,
+			mode: "prepare",
+			dryRun: true,
+			json: true,
+		});
+		expect(exitSpy).toHaveBeenCalledWith(58);
+	});
+
 	it("dispatches ui:explore and ignores missing --url value", async () => {
 		const { run } = await import("./cli.js");
 		const { runUIExploreCLI } = await import("./commands/ui-loop.js");

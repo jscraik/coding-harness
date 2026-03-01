@@ -381,9 +381,9 @@ Surfaces requiring parity updates:
 - [x] Fallback bootstrap path (pipx) is explicit, opt-in, and emits a policy warning artifact when used.
 - [x] PR pipeline enforces ordered risk → review → evidence → remediation-decision dependencies in generated and repo-native workflows.
 - [x] `harness init` emits workflow templates that include loop contract jobs and required status checks.
-- [ ] `ui:fast`, `ui:verify`, and `ui:explore` implement explicit `execute | prepare` mode semantics.
-- [ ] Default mode is `execute`; `--dry-run` maps to `prepare` consistently across adapters.
-- [ ] UI loop command execution emits structured artifact output with durable `artifact_uri` + checksum (no local-only path dependency).
+- [x] `ui:fast`, `ui:verify`, and `ui:explore` implement explicit `execute | prepare` mode semantics.
+- [x] Default mode is `execute`; `--dry-run` maps to `prepare` consistently across adapters.
+- [x] UI loop command execution emits structured artifact output with durable `artifact_uri` + checksum (no local-only path dependency).
 - [ ] Client adapters for Codex App/CLI and Claude Code preserve shared policy outcomes for identical inputs.
 - [x] Preflight `risk-policy-gate` runs before expensive CI fanout and enforces risk + docs drift contract.
 - [ ] Browser evidence command (`pnpm run harness:ui:capture-browser-evidence`) is required where UI-state proof is needed.

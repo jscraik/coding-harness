@@ -158,6 +158,12 @@ function printUsage(): void {
 	console.info("  --contract       Path to contract file (optional)");
 	console.info("  --json           Output as JSON");
 	console.info("");
+	console.info("UI Loop Options:");
+	console.info("  --mode           execute|prepare (default: execute)");
+	console.info("  --dry-run        Alias for --mode prepare");
+	console.info("  --json           Output as JSON");
+	console.info("  --contract       Path to harness.contract.json");
+	console.info("");
 	console.info("");
 	console.info("Gardener Options:");
 	console.info("  --docs           Path to docs directory (default: docs)");
@@ -845,22 +851,34 @@ export function run(args: string[]): void {
 		// Parse ui:fast options
 		const jsonFlag = args.includes("--json");
 		const ciFlag = args.includes("--ci");
+		const dryRunFlag = args.includes("--dry-run");
 		const portIndex = args.indexOf("--port");
 		const contractIndex = args.indexOf("--contract");
+		const modeIndex = args.indexOf("--mode");
 
 		const options: {
 			port?: number;
 			ci?: boolean;
 			json?: boolean;
 			contractPath?: string;
+			dryRun?: boolean;
+			mode?: "execute" | "prepare";
 		} = {};
 
 		if (jsonFlag) options.json = true;
 		if (ciFlag) options.ci = true;
+		if (dryRunFlag) options.dryRun = true;
 		const portArg = getFlagValue(args, portIndex);
 		if (portArg) {
 			const parsedPort = parseIntegerArg(portArg, 1);
 			if (parsedPort !== undefined) options.port = parsedPort;
+		}
+		const modeArg = getFlagValue(args, modeIndex);
+		if (modeArg === "execute" || modeArg === "prepare") {
+			options.mode = modeArg;
+		}
+		if (dryRunFlag) {
+			options.mode = "prepare";
 		}
 		const contractArg = getFlagValue(args, contractIndex);
 		if (contractArg) options.contractPath = contractArg;
@@ -873,10 +891,12 @@ export function run(args: string[]): void {
 	if (command === "ui:verify") {
 		// Parse ui:verify options
 		const jsonFlag = args.includes("--json");
+		const dryRunFlag = args.includes("--dry-run");
 		const outputIndex = args.indexOf("--output");
 		const timeoutIndex = args.indexOf("--timeout");
 		const shardIndex = args.indexOf("--shard");
 		const contractIndex = args.indexOf("--contract");
+		const modeIndex = args.indexOf("--mode");
 
 		const options: {
 			outputDir?: string;
@@ -884,9 +904,12 @@ export function run(args: string[]): void {
 			timeout?: number;
 			shard?: string;
 			contractPath?: string;
+			dryRun?: boolean;
+			mode?: "execute" | "prepare";
 		} = {};
 
 		if (jsonFlag) options.json = true;
+		if (dryRunFlag) options.dryRun = true;
 		const outputArg = getFlagValue(args, outputIndex);
 		if (outputArg) options.outputDir = outputArg;
 		const timeoutArg = getFlagValue(args, timeoutIndex);
@@ -896,6 +919,13 @@ export function run(args: string[]): void {
 		}
 		const shardArg = getFlagValue(args, shardIndex);
 		if (shardArg) options.shard = shardArg;
+		const modeArg = getFlagValue(args, modeIndex);
+		if (modeArg === "execute" || modeArg === "prepare") {
+			options.mode = modeArg;
+		}
+		if (dryRunFlag) {
+			options.mode = "prepare";
+		}
 		const contractArg = getFlagValue(args, contractIndex);
 		if (contractArg) options.contractPath = contractArg;
 
@@ -908,9 +938,11 @@ export function run(args: string[]): void {
 		// Parse ui:explore options
 		const jsonFlag = args.includes("--json");
 		const interactionsFlag = args.includes("--interactions");
+		const dryRunFlag = args.includes("--dry-run");
 		const urlIndex = args.indexOf("--url");
 		const outputIndex = args.indexOf("--output");
 		const contractIndex = args.indexOf("--contract");
+		const modeIndex = args.indexOf("--mode");
 
 		const options: {
 			url?: string;
@@ -918,14 +950,24 @@ export function run(args: string[]): void {
 			json?: boolean;
 			interactions?: boolean;
 			contractPath?: string;
+			dryRun?: boolean;
+			mode?: "execute" | "prepare";
 		} = {};
 
 		if (jsonFlag) options.json = true;
 		if (interactionsFlag) options.interactions = true;
+		if (dryRunFlag) options.dryRun = true;
 		const urlArg = getFlagValue(args, urlIndex);
 		if (urlArg) options.url = urlArg;
 		const outputArg = getFlagValue(args, outputIndex);
 		if (outputArg) options.outputDir = outputArg;
+		const modeArg = getFlagValue(args, modeIndex);
+		if (modeArg === "execute" || modeArg === "prepare") {
+			options.mode = modeArg;
+		}
+		if (dryRunFlag) {
+			options.mode = "prepare";
+		}
 		const contractArg = getFlagValue(args, contractIndex);
 		if (contractArg) options.contractPath = contractArg;
 
