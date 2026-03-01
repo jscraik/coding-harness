@@ -228,6 +228,55 @@ describe("runReviewGate", () => {
 		}
 	});
 
+	it("uses the newest review state per reviewer before deduplicating approvals", async () => {
+		const mockCheckRuns: CheckRun[] = [
+			{
+				id: 1,
+				name: "review-check",
+				status: "completed",
+				conclusion: "success",
+				head_sha: validSha,
+			},
+		];
+		const mockListCheckRuns = vi.fn().mockResolvedValue(mockCheckRuns);
+		const mockGetPullRequest = vi.fn().mockResolvedValue({
+			number: defaultOptions.prNumber,
+			user: { login: "coding-actor" },
+			head: { sha: validSha, ref: "feature/test" },
+		});
+		const mockListReviews = vi.fn().mockResolvedValue([
+			{
+				state: "APPROVED",
+				commit_id: validSha,
+				submitted_at: "2026-03-01T10:00:00Z",
+				user: { login: "independent-reviewer" },
+			},
+			{
+				state: "CHANGES_REQUESTED",
+				commit_id: validSha,
+				submitted_at: "2026-03-01T09:00:00Z",
+				user: { login: "independent-reviewer" },
+			},
+		]);
+		mockGitHubClient.mockImplementation(
+			() =>
+				({
+					listCheckRunsForRef: mockListCheckRuns,
+					getPullRequest: mockGetPullRequest,
+					listPullRequestReviews: mockListReviews,
+				}) as unknown as GitHubClient,
+		);
+
+		const result = await runReviewGate(defaultOptions);
+
+		expect(result.ok).toBe(true);
+		if (result.ok) {
+			expect(result.output.verified).toBe(true);
+			expect(result.output.policy_gate_status).toBe("pass");
+			expect(result.output.blockers).toEqual([]);
+		}
+	});
+
 	it("rejects approvals without a commit id when enforcing reviewer independence", async () => {
 		const mockCheckRuns: CheckRun[] = [
 			{

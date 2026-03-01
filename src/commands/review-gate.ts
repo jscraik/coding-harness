@@ -169,7 +169,7 @@ function resolveCurrentApprovers(
 ): string[] {
 	const latestStateByReviewer = new Map<
 		string,
-		{ state: string; commitId?: string | null }
+		{ state: string; commitId?: string | null; submittedAt: number }
 	>();
 
 	for (const review of reviews) {
@@ -177,10 +177,20 @@ function resolveCurrentApprovers(
 		if (!login) {
 			continue;
 		}
-		latestStateByReviewer.set(login, {
-			state: review.state,
-			...(review.commit_id ? { commitId: review.commit_id } : {}),
-		});
+		const submittedAt = review.submitted_at
+			? Date.parse(review.submitted_at)
+			: Number.MIN_SAFE_INTEGER;
+		if (Number.isNaN(submittedAt)) {
+			continue;
+		}
+		const previousState = latestStateByReviewer.get(login);
+		if (!previousState || submittedAt > previousState.submittedAt) {
+			latestStateByReviewer.set(login, {
+				state: review.state,
+				commitId: review.commit_id ?? null,
+				submittedAt,
+			});
+		}
 	}
 
 	return [...latestStateByReviewer.entries()]
