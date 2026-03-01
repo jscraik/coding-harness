@@ -235,6 +235,7 @@ describe("runInit", () => {
 				"Greptile Review",
 			);
 			expect(content.reviewPolicy.requiredChecks).not.toContain("Codex Review");
+			expect(content.reviewPolicy.enforceReviewerIndependence).toBe(false);
 			expect(content.runtimePolicy.createIssueOnAgentFindings).toBe(true);
 			expect(content.loopStageContracts["risk-policy-gate"].schema).toBe(
 				"loop-stage-contract/v1",

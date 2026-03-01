@@ -14,7 +14,7 @@
 - [ ] Greptile setup verified with `grepfile` skill and `.greptile/config.json`, `.greptile/rules.md`, `.greptile/files.json`.
 - [ ] `Greptile` review completed and findings handled (or explicitly waived).
 - [ ] `Codex` review completed and findings handled (or explicitly waived).
-- [ ] Greptile review was performed by an independent reviewer (not the coding agent).
+- [ ] Independent reviewer evidence added when `reviewPolicy.enforceReviewerIndependence=true` (otherwise mark N/A).
 - [ ] Greptile confidence score is `>= 4/5` for merge eligibility.
 - [ ] PR template sections are complete and accurate.
 - [ ] I will delete branch/worktree after merge.

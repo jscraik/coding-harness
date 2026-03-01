@@ -246,7 +246,12 @@ function isValidReviewPolicy(value: unknown): value is ReviewPolicy {
 	// Reject unknown top-level keys
 	const unknownKeys = Object.keys(policy).filter(
 		(key) =>
-			!["timeoutSeconds", "timeoutAction", "requiredChecks"].includes(key),
+			![
+				"timeoutSeconds",
+				"timeoutAction",
+				"requiredChecks",
+				"enforceReviewerIndependence",
+			].includes(key),
 	);
 	if (unknownKeys.length > 0) {
 		return false;
@@ -276,6 +281,14 @@ function isValidReviewPolicy(value: unknown): value is ReviewPolicy {
 				return false;
 			}
 		}
+	}
+
+	// Validate enforceReviewerIndependence (optional)
+	if (
+		policy.enforceReviewerIndependence !== undefined &&
+		typeof policy.enforceReviewerIndependence !== "boolean"
+	) {
+		return false;
 	}
 
 	return true;
@@ -1389,9 +1402,9 @@ export function validateContract(
 				code: ValidationErrorCode.INVALID_VALUE,
 				path: "reviewPolicy",
 				message:
-					"reviewPolicy must have timeoutSeconds (positive integer), timeoutAction ('fail' | 'warn'), and optional requiredChecks (string array)",
+					"reviewPolicy must have timeoutSeconds (positive integer), timeoutAction ('fail' | 'warn'), optional requiredChecks (string array), and optional enforceReviewerIndependence (boolean)",
 				expected:
-					"{ timeoutSeconds: 600, timeoutAction: 'fail' | 'warn', requiredChecks?: string[] }",
+					"{ timeoutSeconds: 600, timeoutAction: 'fail' | 'warn', requiredChecks?: string[], enforceReviewerIndependence?: boolean }",
 				received: JSON.stringify(obj.reviewPolicy),
 				fix: "Ensure reviewPolicy has valid timeoutSeconds and timeoutAction",
 			});

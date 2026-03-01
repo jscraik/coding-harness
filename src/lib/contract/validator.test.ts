@@ -112,6 +112,18 @@ describe("validateContract", () => {
 			expect(result.success).toBe(true);
 		});
 
+		it("accepts reviewPolicy with optional enforceReviewerIndependence", () => {
+			const result = validateContract({
+				version: "1.0",
+				reviewPolicy: {
+					timeoutSeconds: 600,
+					timeoutAction: "fail",
+					enforceReviewerIndependence: false,
+				},
+			});
+			expect(result.success).toBe(true);
+		});
+
 		it("rejects reviewPolicy when requiredChecks is not an array", () => {
 			const result = validateContract({
 				version: "1.0",
@@ -119,6 +131,19 @@ describe("validateContract", () => {
 					timeoutSeconds: 600,
 					timeoutAction: "fail",
 					requiredChecks: "security-scan",
+				},
+			});
+			expect(result.success).toBe(false);
+			expect(result.errors[0]?.path).toBe("reviewPolicy");
+		});
+
+		it("rejects reviewPolicy when enforceReviewerIndependence is not boolean", () => {
+			const result = validateContract({
+				version: "1.0",
+				reviewPolicy: {
+					timeoutSeconds: 600,
+					timeoutAction: "fail",
+					enforceReviewerIndependence: "no",
 				},
 			});
 			expect(result.success).toBe(false);

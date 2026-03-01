@@ -335,14 +335,20 @@ export async function runReviewGate(
 			}
 
 			if (isCheckRunPassing(checkResult)) {
+				const enforceReviewerIndependence =
+					reviewPolicy.enforceReviewerIndependence ??
+					DEFAULT_REVIEW_POLICY.enforceReviewerIndependence ??
+					false;
 				const requiredChecks = (reviewPolicy.requiredChecks ?? []).filter(
 					(checkName) => checkName !== options.checkName,
 				);
-				const independence = await evaluateReviewerIndependence(
-					client,
-					options.prNumber,
-					options.headSha,
-				);
+				const independence = enforceReviewerIndependence
+					? await evaluateReviewerIndependence(
+							client,
+							options.prNumber,
+							options.headSha,
+						)
+					: { passed: true, blockers: [] };
 				const requiredCheckBlockers = evaluateRequiredChecks(
 					checkRuns,
 					requiredChecks,

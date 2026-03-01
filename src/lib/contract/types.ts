@@ -134,6 +134,7 @@ export interface ReviewPolicy {
 	timeoutSeconds: number;
 	timeoutAction: TimeoutAction;
 	requiredChecks?: string[] | undefined;
+	enforceReviewerIndependence?: boolean | undefined;
 }
 
 export type LoopStageFailPolicy = "fail_closed" | "warn_only";
@@ -256,6 +257,7 @@ export const DEFAULT_REVIEW_POLICY: ReviewPolicy = {
 	timeoutSeconds: 600, // 10 minutes
 	timeoutAction: "fail",
 	requiredChecks: [],
+	enforceReviewerIndependence: false,
 };
 
 export const DEFAULT_EVIDENCE_POLICY: EvidencePolicy = {

@@ -316,6 +316,7 @@ const TEMPLATES: Template[] = [
 						timeoutSeconds: 600,
 						timeoutAction: "fail" as const,
 						requiredChecks: ["security-scan"],
+						enforceReviewerIndependence: false,
 					},
 					evidencePolicy: {
 						requiredFor: [],

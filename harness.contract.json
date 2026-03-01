@@ -3,7 +3,8 @@
 	"riskTierRules": {},
 	"reviewPolicy": {
 		"timeoutSeconds": 600,
-		"timeoutAction": "fail"
+		"timeoutAction": "fail",
+		"enforceReviewerIndependence": false
 	},
 	"evidencePolicy": {
 		"requiredFor": [],

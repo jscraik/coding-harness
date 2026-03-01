@@ -77,7 +77,11 @@ describe("runReviewGate", () => {
 		mockLoadContract.mockReturnValue({
 			version: "1.0",
 			riskTierRules: {},
-			reviewPolicy: { timeoutSeconds: 600, timeoutAction: "fail" },
+			reviewPolicy: {
+				timeoutSeconds: 600,
+				timeoutAction: "fail",
+				enforceReviewerIndependence: true,
+			},
 		});
 		mockRunCheckAuthz.mockResolvedValue({
 			ok: true,
@@ -225,6 +229,58 @@ describe("runReviewGate", () => {
 				"Reviewer independence failed",
 			);
 			expect(result.output.actionable_count).toBeGreaterThan(0);
+		}
+	});
+
+	it("allows solo approval when reviewer independence is disabled", async () => {
+		mockLoadContract.mockReturnValue({
+			version: "1.0",
+			riskTierRules: {},
+			reviewPolicy: {
+				timeoutSeconds: 600,
+				timeoutAction: "fail",
+				enforceReviewerIndependence: false,
+			},
+		});
+
+		const mockCheckRuns: CheckRun[] = [
+			{
+				id: 1,
+				name: "review-check",
+				status: "completed",
+				conclusion: "success",
+				head_sha: validSha,
+			},
+		];
+		const mockListCheckRuns = vi.fn().mockResolvedValue(mockCheckRuns);
+		const mockGetPullRequest = vi.fn().mockResolvedValue({
+			number: defaultOptions.prNumber,
+			user: { login: "coding-actor" },
+			head: { sha: validSha, ref: "feature/test" },
+		});
+		const mockListReviews = vi.fn().mockResolvedValue([
+			{
+				state: "APPROVED",
+				commit_id: validSha,
+				user: { login: "coding-actor" },
+			},
+		]);
+		mockGitHubClient.mockImplementation(
+			() =>
+				({
+					listCheckRunsForRef: mockListCheckRuns,
+					getPullRequest: mockGetPullRequest,
+					listPullRequestReviews: mockListReviews,
+				}) as unknown as GitHubClient,
+		);
+
+		const result = await runReviewGate(defaultOptions);
+
+		expect(result.ok).toBe(true);
+		if (result.ok) {
+			expect(result.output.verified).toBe(true);
+			expect(result.output.policy_gate_status).toBe("pass");
+			expect(result.output.blockers).toEqual([]);
 		}
 	});
 
