@@ -35,11 +35,11 @@ describe("ralph-runtime contract", () => {
 	});
 
 	it("extracts version from CLI output", () => {
-		expect(extractVersionFromRalphVersionOutput("ralph-gold 0.8.1")).toBe(
-			"0.8.1",
+		expect(extractVersionFromRalphVersionOutput("ralph-gold 1.0.0")).toBe(
+			"1.0.0",
 		);
-		expect(extractVersionFromRalphVersionOutput("ralph 0.8.1+build.1")).toBe(
-			"0.8.1+build.1",
+		expect(extractVersionFromRalphVersionOutput("ralph 1.0.0+build.1")).toBe(
+			"1.0.0+build.1",
 		);
 		expect(extractVersionFromRalphVersionOutput("unexpected output")).toBe(
 			undefined,

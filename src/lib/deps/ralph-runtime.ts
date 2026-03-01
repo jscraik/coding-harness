@@ -8,7 +8,7 @@
  */
 
 export const RALPH_PACKAGE_NAME = "ralph-gold";
-export const RALPH_VERSION_PIN = "0.8.1";
+export const RALPH_VERSION_PIN = "1.0.0";
 
 export const RALPH_PYTHON_VERSION_PIN = "3.12";
 export const RALPH_UV_VERSION_PIN = "0.9.5";
@@ -45,8 +45,8 @@ export function extractVersionFromRalphVersionOutput(
 	output: string,
 ): string | undefined {
 	// Expected forms include:
-	// - "ralph-gold 0.8.1"
-	// - "ralph 0.8.1"
+	// - "ralph-gold 1.0.0"
+	// - "ralph 1.0.0"
 	const match = output.match(/(\d+\.\d+\.\d+(?:[-+][0-9A-Za-z.-]+)?)/);
 	return match?.[1];
 }

@@ -94,7 +94,7 @@ jobs:
           HARNESS_ALLOW_RALPH_PIPX_FALLBACK: ${{ vars.HARNESS_ALLOW_RALPH_PIPX_FALLBACK || 'false' }}
         run: |
           mkdir -p artifacts/policy
-          if uv tool install "ralph-gold==0.8.1"; then
+          if uv tool install "ralph-gold==1.0.0"; then
             exit 0
           fi
 
@@ -104,7 +104,7 @@ jobs:
             "warning": "ralph_runtime_fallback",
             "reason": "pypi_package_unavailable",
             "fallback": "uv_git",
-            "package": "ralph-gold==0.8.1",
+            "package": "ralph-gold==1.0.0",
             "gitSpec": "git+https://github.com/jscraik/ralph-gold.git@5d4b57537a29c3edb566665c9482ae5ca1d49eed",
             "timestamp": "$(date -u +"%Y-%m-%dT%H:%M:%SZ")"
           }
@@ -126,7 +126,7 @@ jobs:
             "warning": "ralph_runtime_fallback",
             "reason": "uv_tool_install_failed",
             "fallback": "pipx_git",
-            "package": "ralph-gold==0.8.1",
+            "package": "ralph-gold==1.0.0",
             "gitSpec": "git+https://github.com/jscraik/ralph-gold.git@5d4b57537a29c3edb566665c9482ae5ca1d49eed",
             "optInEnv": "HARNESS_ALLOW_RALPH_PIPX_FALLBACK",
             "timestamp": "$(date -u +"%Y-%m-%dT%H:%M:%SZ")"
@@ -139,8 +139,8 @@ jobs:
           uv --version
           ralph --version
           case "$(ralph --version)" in
-            *"0.8.1"*) ;;
-            *) echo "Pinned Ralph version 0.8.1 not found"; exit 1 ;;
+            *"1.0.0"*) ;;
+            *) echo "Pinned Ralph version 1.0.0 not found"; exit 1 ;;
           esac
       - uses: actions/setup-node@v4
         with:

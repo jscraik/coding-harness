@@ -57,7 +57,7 @@ describe("runCheckEnvironment runtime dependency checks", () => {
 			}
 			return {
 				status: 0,
-				stdout: "ralph-gold 0.8.1\n",
+				stdout: "ralph-gold 1.0.0\n",
 				stderr: "",
 			} as never;
 		});
@@ -69,7 +69,7 @@ describe("runCheckEnvironment runtime dependency checks", () => {
 		expect(result.output.violations).toHaveLength(0);
 		expect(result.output.posture.runtime?.pythonVersion).toBe("3.12.10");
 		expect(result.output.posture.runtime?.uvVersion).toBe("0.9.5");
-		expect(result.output.posture.runtime?.ralphVersion).toBe("0.8.1");
+		expect(result.output.posture.runtime?.ralphVersion).toBe("1.0.0");
 	});
 
 	it("fails when ralph is missing", async () => {

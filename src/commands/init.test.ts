@@ -279,7 +279,7 @@ describe("runInit", () => {
 			expect(content).toContain("name: dependency-chain");
 			expect(content).toContain("uses: actions/setup-python@v6");
 			expect(content).toContain("uses: astral-sh/setup-uv@v7");
-			expect(content).toContain('uv tool install "ralph-gold==0.8.1"');
+			expect(content).toContain('uv tool install "ralph-gold==1.0.0"');
 			expect(content).toContain(
 				'uv tool install "git+https://github.com/jscraik/ralph-gold.git@5d4b57537a29c3edb566665c9482ae5ca1d49eed"',
 			);
