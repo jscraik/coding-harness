@@ -72,6 +72,8 @@ describe("ui-loop commands", () => {
 			expect(payload.mode).toBe("prepare");
 			expect(payload.executed).toBe(false);
 			expect(payload.command).toContain("npm run ui:fast --ci");
+			expect(payload.head_sha).toEqual(expect.any(String));
+			expect(payload.contract_version).toBe("1.1.0");
 			expect(payload.artifact_uri).toContain("artifacts/ui-loop");
 			expect(payload.artifact_checksum).toHaveLength(64);
 		});
@@ -176,6 +178,8 @@ describe("ui-loop commands", () => {
 			const payload = JSON.parse(result.message);
 			expect(payload.mode).toBe("prepare");
 			expect(payload.executed).toBe(false);
+			expect(payload.head_sha).toEqual(expect.any(String));
+			expect(payload.contract_version).toEqual(expect.any(String));
 			expect(payload.artifact_uri).toContain("artifacts/ui-loop");
 			expect(payload.artifact_checksum).toHaveLength(64);
 		});
@@ -197,6 +201,8 @@ describe("ui-loop commands", () => {
 			expect(payload.mode).toBe("prepare");
 			expect(payload.executed).toBe(false);
 			expect(payload.interactions).toBe(true);
+			expect(payload.head_sha).toEqual(expect.any(String));
+			expect(payload.contract_version).toEqual(expect.any(String));
 			expect(payload.artifact_uri).toContain("artifacts/ui-loop");
 			expect(payload.artifact_checksum).toHaveLength(64);
 		});
@@ -220,6 +226,29 @@ describe("ui-loop commands", () => {
 
 			expect(result.exitCode).toBe(EXIT_CODES.COMMAND_FAILED);
 			expect(result.evidence?.passed).toBe(false);
+		});
+
+		it("keeps canonical policy fields aligned across command adapters", () => {
+			vi.mocked(loadContract).mockReturnValue(
+				MOCK_POLICY as unknown as ReturnType<typeof loadContract>,
+			);
+
+			const payloads = [
+				JSON.parse(runUIFast({ mode: "prepare", json: true }).message),
+				JSON.parse(runUIVerify({ mode: "prepare", json: true }).message),
+				JSON.parse(runUIExplore({ mode: "prepare", json: true }).message),
+			];
+
+			for (const payload of payloads) {
+				expect(payload.mode).toBe("prepare");
+				expect(payload.executed).toBe(false);
+				expect(payload.passed).toBe(true);
+				expect(payload.exitCode).toBe(EXIT_CODES.SUCCESS);
+				expect(payload.head_sha).toEqual(expect.any(String));
+				expect(payload.contract_version).toBe("1.1.0");
+				expect(payload.artifact_uri).toContain("artifacts/ui-loop");
+				expect(payload.artifact_checksum).toHaveLength(64);
+			}
 		});
 	});
 });

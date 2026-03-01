@@ -88,6 +88,12 @@ If a tool expects `GITHUB_TOKEN`, map it from `GITHUB_PERSONAL_ACCESS_TOKEN` in 
 
 Use `harness --help` (or `node dist/cli.js --help`) for the current global options surface.
 
+## Evidence capture shortcut
+
+- `pnpm run harness:ui:capture-browser-evidence`
+  - Executes `ui:explore` in `execute` mode with interactions enabled.
+  - Writes browser evidence artifacts to `artifacts/ui-evidence` and emits JSON output.
+
 ## Documentation
 
 - [Implementation Status Matrix](docs/roadmap/agent-first-status.md) - Roadmap claims vs current implementation status

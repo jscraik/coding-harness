@@ -384,9 +384,9 @@ Surfaces requiring parity updates:
 - [x] `ui:fast`, `ui:verify`, and `ui:explore` implement explicit `execute | prepare` mode semantics.
 - [x] Default mode is `execute`; `--dry-run` maps to `prepare` consistently across adapters.
 - [x] UI loop command execution emits structured artifact output with durable `artifact_uri` + checksum (no local-only path dependency).
-- [ ] Client adapters for Codex App/CLI and Claude Code preserve shared policy outcomes for identical inputs.
+- [x] Client adapters for Codex App/CLI and Claude Code preserve shared policy outcomes for identical inputs.
 - [x] Preflight `risk-policy-gate` runs before expensive CI fanout and enforces risk + docs drift contract.
-- [ ] Browser evidence command (`pnpm run harness:ui:capture-browser-evidence`) is required where UI-state proof is needed.
+- [x] Browser evidence command (`pnpm run harness:ui:capture-browser-evidence`) is required where UI-state proof is needed.
 - [ ] PR-readiness output contract includes `policy_gate_status`, blockers, actionable/informational counts, and confidence rubric.
 - [ ] Reviewer independence is enforced for merge readiness (coding actor cannot be sole approving reviewer).
 

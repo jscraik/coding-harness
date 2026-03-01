@@ -1211,6 +1211,37 @@ describe("cli command dispatch", () => {
 		expect(exitSpy).toHaveBeenCalledWith(55);
 	});
 
+	it("maps ui:explore --dry-run to mode=prepare", async () => {
+		const { run } = await import("./cli.js");
+		const { runUIExploreCLI } = await import("./commands/ui-loop.js");
+
+		const exitSpy = vi.spyOn(process, "exit").mockImplementation(((
+			code?: number,
+		) => {
+			throw new Error(`EXIT_${String(code)}`);
+		}) as never);
+
+		expect(() =>
+			run([
+				"ui:explore",
+				"--mode",
+				"execute",
+				"--dry-run",
+				"--output",
+				"artifacts/ui",
+				"--json",
+			]),
+		).toThrowError("EXIT_55");
+
+		expect(vi.mocked(runUIExploreCLI)).toHaveBeenCalledWith({
+			mode: "prepare",
+			dryRun: true,
+			outputDir: "artifacts/ui",
+			json: true,
+		});
+		expect(exitSpy).toHaveBeenCalledWith(55);
+	});
+
 	it("dispatches observability-gate and ignores missing --labels value", async () => {
 		const { run } = await import("./cli.js");
 		const { runObservabilityGateCLI } = await import(

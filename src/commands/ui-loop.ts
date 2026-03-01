@@ -54,6 +54,8 @@ export interface UIEvidence {
 	mode: UILoopMode;
 	executed: boolean;
 	exitCode: number;
+	headSha: string;
+	contractVersion: string;
 	artifactUri: string;
 	artifactChecksum: string;
 	timedOut?: boolean;
@@ -71,6 +73,16 @@ interface CommandExecutionResult {
 	timedOut: boolean;
 	stdout?: string;
 	stderr?: string;
+}
+
+interface UILoopContractContext {
+	policy: UILoopPolicy | undefined;
+	contractVersion: string;
+}
+
+interface UIExecutionContext {
+	headSha: string;
+	contractVersion: string;
 }
 
 function hasUnsafeShellChars(command: string): boolean {
@@ -169,12 +181,15 @@ function createEvidence(
 	command: string,
 	execution: CommandExecutionResult,
 	context: Record<string, unknown>,
+	executionContext: UIExecutionContext,
 ): UIEvidence {
 	const timestamp = new Date().toISOString();
 	const artifactPayload = {
 		schemaVersion: "ui-loop-execution/v1",
 		commandName,
 		timestamp,
+		headSha: executionContext.headSha,
+		contractVersion: executionContext.contractVersion,
 		mode,
 		command,
 		executed: execution.executed,
@@ -199,6 +214,8 @@ function createEvidence(
 		mode,
 		executed: execution.executed,
 		exitCode: execution.exitCode,
+		headSha: executionContext.headSha,
+		contractVersion: executionContext.contractVersion,
 		artifactUri,
 		artifactChecksum,
 		...(execution.timedOut ? { timedOut: true } : {}),
@@ -241,18 +258,31 @@ function buildScriptCommand(
 }
 
 /**
- * Load ui loop policy from contract.
+ * Resolve shared execution context used for parity fields.
  */
-function getContractUILoopPolicy(
+function getContractUILoopContext(
 	contractPath?: string,
-): UILoopPolicy | undefined {
+): UILoopContractContext {
 	try {
-		if (!contractPath) return undefined;
+		if (!contractPath) {
+			return { policy: undefined, contractVersion: "unknown" };
+		}
 		const contract = loadContract(contractPath);
-		return contract.uiLoopPolicy;
+		return {
+			policy: contract.uiLoopPolicy,
+			contractVersion: contract.version,
+		};
 	} catch {
-		return undefined;
+		return { policy: undefined, contractVersion: "unknown" };
 	}
+}
+
+function resolveHeadSha(): string {
+	const envHeadSha = process.env.GITHUB_SHA?.trim();
+	if (envHeadSha && envHeadSha.length > 0) {
+		return envHeadSha;
+	}
+	return "unknown";
 }
 
 /**
@@ -289,7 +319,12 @@ export function runUIFast(options: UIFastOptions = {}): {
 	const { json = false } = options;
 	const mode = resolveMode(options.mode, options.dryRun);
 	const contractPath = options.contractPath ?? "harness.contract.json";
-	const policy = getContractUILoopPolicy(contractPath);
+	const contractContext = getContractUILoopContext(contractPath);
+	const policy = contractContext.policy;
+	const executionContext: UIExecutionContext = {
+		headSha: resolveHeadSha(),
+		contractVersion: contractContext.contractVersion,
+	};
 
 	let fullCmd: string;
 	let packageManager: string;
@@ -333,11 +368,18 @@ export function runUIFast(options: UIFastOptions = {}): {
 		mode === "execute"
 			? executeCommand(fullCmd, 8000, true)
 			: buildPrepareResult();
-	const artifact = createEvidence("ui:fast", mode, fullCmd, execution, {
-		port: options.port ?? 6006,
-		ci: options.ci ?? false,
-		packageManager,
-	});
+	const artifact = createEvidence(
+		"ui:fast",
+		mode,
+		fullCmd,
+		execution,
+		{
+			port: options.port ?? 6006,
+			ci: options.ci ?? false,
+			packageManager,
+		},
+		executionContext,
+	);
 	const exitCode = artifact.passed
 		? EXIT_CODES.SUCCESS
 		: EXIT_CODES.COMMAND_FAILED;
@@ -353,6 +395,8 @@ export function runUIFast(options: UIFastOptions = {}): {
 				executed: artifact.executed,
 				passed: artifact.passed,
 				exitCode: artifact.exitCode,
+				head_sha: artifact.headSha,
+				contract_version: artifact.contractVersion,
 				artifact_uri: artifact.artifactUri,
 				artifact_checksum: artifact.artifactChecksum,
 				packageManager,
@@ -378,7 +422,12 @@ export function runUIVerify(options: UIVerifyOptions = {}): {
 	const { json = false } = options;
 	const mode = resolveMode(options.mode, options.dryRun);
 	const contractPath = options.contractPath ?? "harness.contract.json";
-	const policy = getContractUILoopPolicy(contractPath);
+	const contractContext = getContractUILoopContext(contractPath);
+	const policy = contractContext.policy;
+	const executionContext: UIExecutionContext = {
+		headSha: resolveHeadSha(),
+		contractVersion: contractContext.contractVersion,
+	};
 
 	const args: string[] = ["test"];
 	if (options.shard) {
@@ -430,12 +479,19 @@ export function runUIVerify(options: UIVerifyOptions = {}): {
 		mode === "execute"
 			? executeCommand(fullCmd, 10 * 60 * 1000)
 			: buildPrepareResult();
-	const evidence = createEvidence("ui:verify", mode, fullCmd, execution, {
-		outputDir: options.outputDir,
-		shard: options.shard,
-		timeout: options.timeout,
-		packageManager,
-	});
+	const evidence = createEvidence(
+		"ui:verify",
+		mode,
+		fullCmd,
+		execution,
+		{
+			outputDir: options.outputDir,
+			shard: options.shard,
+			timeout: options.timeout,
+			packageManager,
+		},
+		executionContext,
+	);
 	const exitCode = evidence.passed
 		? EXIT_CODES.SUCCESS
 		: EXIT_CODES.COMMAND_FAILED;
@@ -451,6 +507,8 @@ export function runUIVerify(options: UIVerifyOptions = {}): {
 				executed: evidence.executed,
 				passed: evidence.passed,
 				exitCode: evidence.exitCode,
+				head_sha: evidence.headSha,
+				contract_version: evidence.contractVersion,
 				artifact_uri: evidence.artifactUri,
 				artifact_checksum: evidence.artifactChecksum,
 				...(evidence.timedOut ? { timedOut: true } : {}),
@@ -481,7 +539,12 @@ export function runUIExplore(options: UIExploreOptions = {}): {
 	const { json = false } = options;
 	const mode = resolveMode(options.mode, options.dryRun);
 	const contractPath = options.contractPath ?? "harness.contract.json";
-	const policy = getContractUILoopPolicy(contractPath);
+	const contractContext = getContractUILoopContext(contractPath);
+	const policy = contractContext.policy;
+	const executionContext: UIExecutionContext = {
+		headSha: resolveHeadSha(),
+		contractVersion: contractContext.contractVersion,
+	};
 
 	const url = options.url ?? "http://localhost:3000";
 	const outputDir = options.outputDir ?? "./ui-explore-output";
@@ -511,11 +574,18 @@ export function runUIExplore(options: UIExploreOptions = {}): {
 		mode === "execute"
 			? executeCommand(fullCmd, 5 * 60 * 1000)
 			: buildPrepareResult();
-	const evidence = createEvidence("ui:explore", mode, fullCmd, execution, {
-		url,
-		outputDir,
-		interactions: options.interactions ?? false,
-	});
+	const evidence = createEvidence(
+		"ui:explore",
+		mode,
+		fullCmd,
+		execution,
+		{
+			url,
+			outputDir,
+			interactions: options.interactions ?? false,
+		},
+		executionContext,
+	);
 	const exitCode = evidence.passed
 		? EXIT_CODES.SUCCESS
 		: EXIT_CODES.COMMAND_FAILED;
@@ -531,6 +601,8 @@ export function runUIExplore(options: UIExploreOptions = {}): {
 				executed: evidence.executed,
 				passed: evidence.passed,
 				exitCode: evidence.exitCode,
+				head_sha: evidence.headSha,
+				contract_version: evidence.contractVersion,
 				artifact_uri: evidence.artifactUri,
 				artifact_checksum: evidence.artifactChecksum,
 				url,
