@@ -676,6 +676,7 @@ on: pull_request
 permissions:
   contents: read
   pull-requests: read
+  checks: read
 
 jobs:
   pr-template:
