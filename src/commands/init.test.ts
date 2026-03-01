@@ -267,6 +267,23 @@ describe("runInit", () => {
 			expect(content).toContain("pnpm check");
 			expect(content).toContain('node-version: "24"');
 			expect(content).toContain("name: pr-template");
+			expect(content).toContain("name: dependency-chain");
+			expect(content).toContain("uses: actions/setup-python@v6");
+			expect(content).toContain("uses: astral-sh/setup-uv@v7");
+			expect(content).toContain('uv tool install "ralph-gold==0.8.1"');
+			expect(content).toContain("HARNESS_ALLOW_RALPH_PIPX_FALLBACK");
+			expect(content).toContain("ralph-fallback-warning.json");
+			expect(content).toContain("name: risk-policy-gate");
+			expect(content).toContain("name: review-gate");
+			expect(content).toContain("name: evidence-verify");
+			expect(content).toContain("name: remediation-decision");
+			expect(content).toContain("npx tsx src/cli.ts risk-policy-gate");
+			expect(content).toContain("npx tsx src/cli.ts review-gate");
+			expect(content).toContain("npx tsx src/cli.ts evidence-verify");
+			expect(content).toContain("npx tsx src/cli.ts remediate run");
+			expect(content).toContain(
+				"needs: [pr-template, dependency-chain, remediation-decision]",
+			);
 			expect(content).toContain("name: security-scan");
 			expect(content).toContain("Validate memory.json");
 			expect(content).toContain("test -f memory.json");

@@ -17,6 +17,16 @@ import {
 	DEFAULT_CONTRACT,
 	type HarnessContract,
 } from "../lib/contract/types.js";
+import {
+	RALPH_FALLBACK_ENV_FLAG,
+	RALPH_FALLBACK_WARNING_ARTIFACT_PATH,
+	RALPH_PYTHON_VERSION_PIN,
+	RALPH_UV_VERSION_PIN,
+	RALPH_VERSION_PIN,
+	SETUP_PYTHON_ACTION_VERSION,
+	SETUP_UV_ACTION_VERSION,
+	getRalphPackageSpec,
+} from "../lib/deps/ralph-runtime.js";
 import { sanitizeError } from "../lib/input/sanitize.js";
 import { getVersion } from "../lib/version.js";
 
@@ -598,6 +608,7 @@ import { runReviewGate } from "./commands/review-gate.js";
 			const auditCommand = renderScriptCommand(pm, "audit");
 			const checkCommand = renderScriptCommand(pm, "check");
 			const memoryValidateCommand = renderMemoryValidateCommand();
+			const ralphPackageSpec = getRalphPackageSpec();
 			return `name: Harness PR Pipeline
 
 on: pull_request
@@ -672,8 +683,177 @@ jobs:
               core.setFailed(errors.join('\\n'));
             }
 
+  dependency-chain:
+    name: dependency-chain
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Setup Python
+        uses: actions/setup-python@${SETUP_PYTHON_ACTION_VERSION}
+        with:
+          python-version: "${RALPH_PYTHON_VERSION_PIN}"
+      - name: Setup uv
+        uses: astral-sh/setup-uv@${SETUP_UV_ACTION_VERSION}
+        with:
+          version: "${RALPH_UV_VERSION_PIN}"
+          enable-cache: true
+          cache-dependency-glob: |
+            **/pyproject.toml
+            **/uv.lock
+      - name: Install Ralph runtime (canonical + opt-in fallback)
+        env:
+          ${RALPH_FALLBACK_ENV_FLAG}: \${{ vars.${RALPH_FALLBACK_ENV_FLAG} || 'false' }}
+        run: |
+          mkdir -p artifacts/policy
+          if uv tool install "${ralphPackageSpec}"; then
+            exit 0
+          fi
+
+          if [ "\${${RALPH_FALLBACK_ENV_FLAG}}" != "true" ]; then
+            echo "uv install failed and ${RALPH_FALLBACK_ENV_FLAG} is not enabled."
+            exit 1
+          fi
+
+          python -m pip install --upgrade pip pipx
+          export PATH="$HOME/.local/bin:$PATH"
+          python -m pipx install "${ralphPackageSpec}" --force
+
+          cat > "${RALPH_FALLBACK_WARNING_ARTIFACT_PATH}" <<JSON
+          {
+            "warning": "ralph_runtime_fallback",
+            "reason": "uv_tool_install_failed",
+            "fallback": "pipx",
+            "package": "${ralphPackageSpec}",
+            "optInEnv": "${RALPH_FALLBACK_ENV_FLAG}",
+            "timestamp": "$(date -u +"%Y-%m-%dT%H:%M:%SZ")"
+          }
+          JSON
+      - name: Verify dependency chain
+        run: |
+          export PATH="$HOME/.local/bin:$PATH"
+          python3 --version
+          uv --version
+          ralph --version
+          case "$(ralph --version)" in
+            *"${RALPH_VERSION_PIN}"*) ;;
+            *) echo "Pinned Ralph version ${RALPH_VERSION_PIN} not found"; exit 1 ;;
+          esac
+      - name: Upload dependency policy artifacts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: dependency-policy-artifacts
+          path: artifacts/policy/
+          if-no-files-found: ignore
+
+  risk-policy-gate:
+    name: risk-policy-gate
+    needs: [pr-template, dependency-chain]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "24"
+      - name: Enable corepack
+        run: corepack enable
+      - name: Install dependencies
+        run: ${installCommand}
+      - name: Enforce docs drift baseline
+        run: ${renderScriptCommand(pm, "docs:lint")}
+      - name: Run risk-policy gate
+        run: |
+          CHANGED_FILES="$(git diff --name-only "${"${{ github.event.pull_request.base.sha }}"}" "${"${{ github.event.pull_request.head.sha }}"}" | paste -sd, -)"
+          npx tsx src/cli.ts risk-policy-gate --contract harness.contract.json --files "$CHANGED_FILES" --max-tier medium
+
+  review-gate:
+    name: review-gate
+    needs: [risk-policy-gate]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "24"
+      - name: Enable corepack
+        run: corepack enable
+      - name: Install dependencies
+        run: ${installCommand}
+      - name: Run review gate against current SHA
+        run: |
+          npx tsx src/cli.ts review-gate \
+            --token "${"${{ secrets.GITHUB_TOKEN }}"}" \
+            --owner "${"${{ github.repository_owner }}"}" \
+            --repo "${"${{ github.event.repository.name }}"}" \
+            --pr "${"${{ github.event.pull_request.number }}"}" \
+            --sha "${"${{ github.event.pull_request.head.sha }}"}" \
+            --check "risk-policy-gate" \
+            --contract harness.contract.json
+
+  evidence-verify:
+    name: evidence-verify
+    needs: [review-gate]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "24"
+      - name: Enable corepack
+        run: corepack enable
+      - name: Install dependencies
+        run: ${installCommand}
+      - name: Capture browser evidence fixture
+        run: |
+          mkdir -p artifacts/evidence
+          cat <<'PNG_BASE64' | base64 --decode > artifacts/evidence/loop-stage-smoke.png
+          iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO5s6wAAAABJRU5ErkJggg==
+          PNG_BASE64
+      - name: Verify evidence contract
+        run: |
+          CHANGED_FILES="$(git diff --name-only "${"${{ github.event.pull_request.base.sha }}"}" "${"${{ github.event.pull_request.head.sha }}"}" | paste -sd, -)"
+          npx tsx src/cli.ts evidence-verify --contract harness.contract.json --files artifacts/evidence/loop-stage-smoke.png --changed "$CHANGED_FILES"
+      - name: Upload evidence artifacts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: browser-evidence-artifacts
+          path: artifacts/evidence/
+          if-no-files-found: error
+
+  remediation-decision:
+    name: remediation-decision
+    needs: [evidence-verify]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "24"
+      - name: Enable corepack
+        run: corepack enable
+      - name: Install dependencies
+        run: ${installCommand}
+      - name: Run remediation-decision stage (plan only)
+        run: |
+          mkdir -p artifacts/remediation
+          echo "[]" > artifacts/remediation/findings.json
+          npx tsx src/cli.ts remediate run --findings artifacts/remediation/findings.json --contract harness.contract.json --mode run --json
+      - name: Upload remediation artifacts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: remediation-decision-artifacts
+          path: artifacts/remediation/
+          if-no-files-found: error
+
   lint:
     name: lint
+    needs: [pr-template, dependency-chain, remediation-decision]
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -689,6 +869,7 @@ jobs:
 
   typecheck:
     name: typecheck
+    needs: [pr-template, dependency-chain, remediation-decision]
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -704,6 +885,7 @@ jobs:
 
   test:
     name: test
+    needs: [pr-template, dependency-chain, remediation-decision]
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -719,6 +901,7 @@ jobs:
 
   audit:
     name: audit
+    needs: [pr-template, dependency-chain, remediation-decision]
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -734,6 +917,7 @@ jobs:
 
   check:
     name: check
+    needs: [pr-template, dependency-chain, remediation-decision]
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -766,9 +950,9 @@ jobs:
       - name: Run Trivy filesystem scan
         run: trivy fs --severity HIGH,CRITICAL --exit-code 1 --no-progress .
       - name: Setup Python
-        uses: actions/setup-python@v5
+        uses: actions/setup-python@${SETUP_PYTHON_ACTION_VERSION}
         with:
-          python-version: "3.12"
+          python-version: "${RALPH_PYTHON_VERSION_PIN}"
       - name: Install Semgrep
         run: python -m pip install --upgrade pip semgrep
       - name: Run Semgrep scan
