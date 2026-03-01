@@ -1,0 +1,63 @@
+{
+  "version": "1.0",
+  "riskTierRules": {},
+  "reviewPolicy": {
+    "timeoutSeconds": 600,
+    "timeoutAction": "fail"
+  },
+  "evidencePolicy": {
+    "requiredFor": [],
+    "allowedTypes": [
+      "png",
+      "jpeg"
+    ],
+    "maxFileSizeBytes": 1048576
+  },
+  "pilotGapCasePolicy": {
+    "enabled": false,
+    "defaultSlaHours": 72,
+    "requireClosureEvidence": true,
+    "storePath": ".harness/gap-cases.v1.json"
+  },
+  "pilotRollbackPolicy": {
+    "autoTrigger": true,
+    "requireManualRelease": true,
+    "completionMarkerPath": ".harness/rollback-marker.json",
+    "mode": "manual"
+  },
+  "pilotAuthzPolicy": {
+    "githubScopeAllowlist": [
+      "pull_requests:write",
+      "contents:read",
+      "issues:write"
+    ],
+    "repoAllowlist": [],
+    "branchAllowlist": [],
+    "protectedBranchDenylist": [
+      "main",
+      "master",
+      "release/*"
+    ],
+    "enforceBranchProtection": true
+  },
+  "remediationPolicy": {
+    "providerDefaults": {
+      "codeql": {
+        "autoApplyMaxTier": "medium",
+        "dryRunOnlyByDefault": false
+      },
+      "greptile": {
+        "autoApplyMaxTier": "medium",
+        "dryRunOnlyByDefault": false
+      },
+      "codex": {
+        "autoApplyMaxTier": "low",
+        "dryRunOnlyByDefault": true
+      }
+    },
+    "marker": "[auto-remediate]",
+    "timeoutMinutes": 10,
+    "retryLimit": 3,
+    "requireEvidence": true
+  }
+}
