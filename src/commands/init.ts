@@ -1085,22 +1085,6 @@ jobs:
       - name: Run tests
         run: ${testCommand}
 
-  audit:
-    name: audit
-    needs: [pr-template, dependency-chain, remediation-decision]
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
-        with:
-          node-version: "24"
-      - name: Enable corepack
-        run: corepack enable
-      - name: Install dependencies
-        run: ${installCommand}
-      - name: Run audit
-        run: ${auditCommand}
-
   check:
     name: check
     needs: [pr-template, dependency-chain, remediation-decision]
@@ -1127,6 +1111,15 @@ jobs:
       - uses: actions/checkout@v4
         with:
           fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "24"
+      - name: Enable corepack
+        run: corepack enable
+      - name: Install dependencies
+        run: ${installCommand}
+      - name: Run pnpm audit
+        run: ${auditCommand} --audit-level=moderate
       - name: Run Gitleaks
         uses: gitleaks/gitleaks-action@v2
         env:
@@ -1139,17 +1132,14 @@ jobs:
         uses: actions/setup-python@${SETUP_PYTHON_ACTION_VERSION}
         with:
           python-version: "${RALPH_PYTHON_VERSION_PIN}"
-      - name: Install Semgrep
-        run: python -m pip install --upgrade pip semgrep
+      - name: Install Semgrep (pinned)
+        run: python -m pip install --upgrade pip semgrep==1.100.0
       - name: Run Semgrep scan
         run: semgrep scan --error --config p/security-audit --exclude node_modules .
-      - name: Run Senvar scan (optional)
-        run: |
-          if command -v senvar >/dev/null 2>&1; then
-            senvar scan .
-          else
-            echo "senvar not installed on runner; skipping."
-          fi
+      - name: Install Senvar (pinned)
+        run: python -m pip install senvar==0.1.4
+      - name: Run Senvar scan
+        run: senvar scan .
 
   memory:
     name: memory
@@ -1233,6 +1223,52 @@ This workflow keeps delivery auditable, reversible, and consistent even for solo
 - ${checkCommand}
 - security-scan (CI required check)
 - ${memoryValidateCommand}
+
+## Pre-commit hooks
+
+This repository uses \`simple-git-hooks\` for local quality gates:
+
+| Hook | Purpose |
+| --- | --- |
+| \`pre-commit\` | Runs \`${lintCommand} && ${typecheckCommand}\` |
+| \`commit-msg\` | Validates conventional commit format |
+| \`pre-push\` | Runs \`${testCommand}\` |
+
+### Setup
+
+Add to your \`package.json\`:
+
+\`\`\`json
+{
+  "devDependencies": {
+    "simple-git-hooks": "^2.13.1"
+  },
+  "scripts": {
+    "postinstall": "simple-git-hooks"
+  },
+  "simple-git-hooks": {
+    "pre-commit": "${pm} lint && ${pm} typecheck",
+    "commit-msg": "node scripts/validate-commit-msg.js $1",
+    "pre-push": "${pm} test"
+  }
+}
+\`\`\`
+
+Then run \`${pm} install\` to install hooks.
+
+### Commit message format
+
+All commits must follow conventional commit format:
+
+\`\`\`
+type(scope)!: description
+
+Detailed body (optional).
+
+Co-Authored-By: Name <email>
+\`\`\`
+
+Types: \`feat\`, \`fix\`, \`chore\`, \`docs\`, \`refactor\`, \`test\`, \`style\`, \`perf\`, \`ci\`, \`build\`, \`revert\`
 
 ## Greptile setup baseline
 
@@ -1369,7 +1405,7 @@ Configure GitHub branch protection (or rulesets) on \`main\`:
 - [ ] I did not push directly to \`main\`; this PR is from a dedicated branch.
 - [ ] Branch name follows policy (\`codex/*\` for agent-created branches).
 - [ ] Required local gates run: \`${lintCommand}\`, \`${typecheckCommand}\`, \`${testCommand}\`, \`${auditCommand}\`, \`${checkCommand}\`, \`${memoryValidateCommand}\`.
-- [ ] Required CI security gate passed: \`security-scan\` (gitleaks + trivy + semgrep, senvar optional).
+- [ ] Required CI security gate passed: \`security-scan\` (gitleaks + trivy + semgrep + senvar).
 - [ ] Greptile setup verified with \`grepfile\` skill and \`.greptile/config.json\`, \`.greptile/rules.md\`, \`.greptile/files.json\`.
 - [ ] Greptile review completed and findings handled (or explicitly waived).
 - [ ] Codex review completed and findings handled (or explicitly waived).
@@ -1402,6 +1438,119 @@ Configure GitHub branch protection (or rulesets) on \`main\`:
 Add one-paragraph merge rationale here.
 `;
 		},
+	},
+	{
+		path: "scripts/validate-commit-msg.js",
+		render: () => `#!/usr/bin/env node
+/**
+ * Commit message validation hook
+ *
+ * Validates commit messages follow governance requirements:
+ * - Conventional commit format (feat|fix|chore|docs|refactor|test|style)
+ * - Co-authorship for AI-generated code
+ * - PR template completion reminder for agent branches
+ */
+
+import { execFileSync } from "node:child_process";
+import { readFileSync } from "node:fs";
+
+const COMMIT_MSG_FILE = process.argv[2];
+const CONVENTIONAL_COMMIT_REGEX =
+	/^(feat|fix|chore|docs|refactor|test|style|perf|ci|build|revert)(\\(.+\\))?!?:\\s.+/;
+const CO_AUTHOR_REGEX = /Co-Authored-By:\\s*.+/i;
+
+function main() {
+	if (!COMMIT_MSG_FILE) {
+		console.error("Usage: validate-commit-msg.js <commit-msg-file>");
+		process.exit(1);
+	}
+
+	let commitMsg;
+	try {
+		commitMsg = readFileSync(COMMIT_MSG_FILE, "utf-8");
+	} catch (e) {
+		console.error(\`Failed to read commit message file: \${e.message}\`);
+		process.exit(1);
+	}
+
+	const errors = [];
+	const warnings = [];
+	const lines = commitMsg
+		.split("\\n")
+		.filter((line) => line && !line.startsWith("#"));
+
+	// Check 1: Conventional commit format
+	const firstLine = lines[0];
+	if (!CONVENTIONAL_COMMIT_REGEX.test(firstLine)) {
+		errors.push(
+			"First line must follow conventional commit format: type(scope)!: description",
+		);
+	}
+
+	// Check 2: First line length
+	if (firstLine && firstLine.length > 72) {
+		errors.push(\`First line exceeds 72 characters (\${firstLine.length} chars)\`);
+	}
+
+	// Check 3: Body paragraphs separated by blank line
+	if (lines.length > 1 && lines[1] !== "") {
+		warnings.push(
+			"Body should be separated from subject by a blank line for readability",
+		);
+	}
+
+	// Check 4: Co-authorship for AI-assisted commits (warn only)
+	const hasCoAuthor = CO_AUTHOR_REGEX.test(commitMsg);
+	const branchName = getBranchName();
+	const isAgentBranch = /codex|claude|agent/i.test(branchName);
+
+	if (isAgentBranch && !hasCoAuthor) {
+		warnings.push(
+			"AI-assisted commit detected. Consider adding Co-Authored-By for transparency.",
+		);
+	}
+
+	// Check 5: PR template reminder for agent branches
+	// Note: PR template sections are enforced by PR review workflow, not commit hook
+	// Agent branches should follow: Summary, Checklist, Testing, Review artifacts, Notes
+
+	// Output results
+	if (errors.length > 0) {
+		console.error("\\n❌ Commit message validation failed:\\n");
+		for (const error of errors) {
+			console.error(\`  ✗ \${error}\`);
+		}
+		console.error(
+			"\\nCommit message format example:\\n  feat(scope): add new feature\\n\\n  Detailed description here.\\n\\n  Co-Authored-By: Your Name <email@example.com>",
+		);
+		process.exit(1);
+	}
+
+	if (warnings.length > 0) {
+		console.info("\\n⚠️  Commit message warnings:\\n");
+		for (const warning of warnings) {
+			console.info(\`  • \${warning}\`);
+		}
+		console.info("");
+	}
+	process.exit(0);
+}
+
+function getBranchName() {
+	try {
+		// Using execFileSync for safety - no shell interpolation
+		const output = execFileSync("git", ["rev-parse", "--abbrev-ref", "HEAD"], {
+			encoding: "utf-8",
+			stdio: ["pipe", "pipe", "pipe"],
+		});
+		return output.trim();
+	} catch {
+		return "";
+	}
+}
+
+main();
+`,
 	},
 ];
 

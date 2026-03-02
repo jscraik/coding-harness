@@ -13,6 +13,7 @@ const EXPECTED_TEMPLATE_PATHS = [
 	".github/workflows/pr-pipeline.yml",
 	"CONTRIBUTING.md",
 	".github/PULL_REQUEST_TEMPLATE.md",
+	"scripts/validate-commit-msg.js",
 ];
 const EXPECTED_TEMPLATE_COUNT = EXPECTED_TEMPLATE_PATHS.length;
 
@@ -122,6 +123,7 @@ describe("runInit", () => {
 			// Create existing file
 			mkdirSync(join(tempDir, ".github", "workflows"), { recursive: true });
 			mkdirSync(join(tempDir, ".github"), { recursive: true });
+			mkdirSync(join(tempDir, "scripts"), { recursive: true });
 			writeFileSync(join(tempDir, "harness.contract.json"), "{}");
 			writeFileSync(
 				join(tempDir, ".github/workflows/pr-pipeline.yml"),
@@ -137,6 +139,10 @@ describe("runInit", () => {
 			writeFileSync(join(tempDir, ".greptile/config.json"), "{}");
 			writeFileSync(join(tempDir, ".greptile/files.json"), "{}");
 			writeFileSync(join(tempDir, ".greptile/rules.md"), "existing");
+			writeFileSync(
+				join(tempDir, "scripts/validate-commit-msg.js"),
+				"existing",
+			);
 
 			const result = runInit(tempDir, { dryRun: false, force: false });
 
