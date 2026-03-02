@@ -9,6 +9,9 @@ graph LR
   node_url_b54ed078["node:url"] --> cli_test_4851f28b
   vitest_a9127f3d["vitest"] --> cli_test_4851f28b
   vitest_a9127f3d["vitest"] --> cli_dispatch_test_54c9f17b
+  node_fs_df6b52af["node:fs"] --> version_5ca4f385
+  node_path_0e7d56ab["node:path"] --> version_5ca4f385
+  node_url_b54ed078["node:url"] --> version_5ca4f385
   node_fs_df6b52af["node:fs"] --> verify_greptile_227190f7
   node_path_0e7d56ab["node:path"] --> verify_greptile_227190f7
   node_child_process_cb73900b["node:child_process"] --> ui_loop_11660889
@@ -149,9 +152,6 @@ graph LR
   node_fs_df6b52af["node:fs"] --> agent_first_throughput_integration_test_dc677cc4
   node_path_0e7d56ab["node:path"] --> agent_first_throughput_integration_test_dc677cc4
   vitest_a9127f3d["vitest"] --> agent_first_throughput_integration_test_dc677cc4
-  node_fs_df6b52af["node:fs"] --> version_5ca4f385
-  node_path_0e7d56ab["node:path"] --> version_5ca4f385
-  node_url_b54ed078["node:url"] --> version_5ca4f385
   node_path_0e7d56ab["node:path"] --> plan_64879f7d
   node_path_0e7d56ab["node:path"] --> plan_test_e7c3b920
   vitest_a9127f3d["vitest"] --> plan_test_e7c3b920
@@ -159,6 +159,12 @@ graph LR
   node_fs_df6b52af["node:fs"] --> brainstorm_test_78cf7a1e
   node_path_0e7d56ab["node:path"] --> brainstorm_test_78cf7a1e
   vitest_a9127f3d["vitest"] --> brainstorm_test_78cf7a1e
+  node_fs_df6b52af["node:fs"] --> detector_f2b3cbe4
+  node_path_0e7d56ab["node:path"] --> detector_f2b3cbe4
+  node_fs_df6b52af["node:fs"] --> detector_test_d10b3555
+  node_os_e9717731["node:os"] --> detector_test_d10b3555
+  node_path_0e7d56ab["node:path"] --> detector_test_d10b3555
+  vitest_a9127f3d["vitest"] --> detector_test_d10b3555
   node_crypto_879f6cbe["node:crypto"] --> tracer_1e6243a2
   node_fs_df6b52af["node:fs"] --> tracer_1e6243a2
   node_path_0e7d56ab["node:path"] --> tracer_1e6243a2
@@ -174,8 +180,8 @@ graph LR
   vitest_a9127f3d["vitest"] --> validator_test_b4b482f8
   picomatch_0bf97c7b["picomatch"] --> risk_tier_1_96b6ff91
   vitest_a9127f3d["vitest"] --> risk_tier_test_ae056367
-  node_fs_df6b52af["node:fs"] --> detector_f2b3cbe4
-  node_path_0e7d56ab["node:path"] --> detector_f2b3cbe4
+  node_fs_df6b52af["node:fs"] --> detector_1_b37d288b
+  node_path_0e7d56ab["node:path"] --> detector_1_b37d288b
   node_fs_df6b52af["node:fs"] --> metrics_capture_1d1a2c08
   node_path_0e7d56ab["node:path"] --> metrics_capture_1d1a2c08
   vitest_a9127f3d["vitest"] --> cardinality_test_c00e7edb
@@ -203,10 +209,6 @@ graph LR
   vitest_a9127f3d["vitest"] --> sha_test_5a5924fc
   vitest_a9127f3d["vitest"] --> mutation_queue_test_10b599e8
   _octokit_request_error_32e46e23["@octokit/request-error"] --> errors_be4bd567
-  vitest_a9127f3d["vitest"] --> comments_test_f8c9ae41
-  _octokit_plugin_retry_db489add["@octokit/plugin-retry"] --> client_948fe603
-  _octokit_plugin_throttling_c7312007["@octokit/plugin-throttling"] --> client_948fe603
-  _octokit_rest_c557ffd5["@octokit/rest"] --> client_948fe603
   style vitest_a9127f3d fill:#f59e0b,color:#fff
   style node_fs_df6b52af fill:#f59e0b,color:#fff
   style node_path_0e7d56ab fill:#f59e0b,color:#fff
@@ -220,6 +222,3 @@ graph LR
   style node_os_e9717731 fill:#f59e0b,color:#fff
   style picomatch_0bf97c7b fill:#f59e0b,color:#fff
   style _octokit_request_error_32e46e23 fill:#f59e0b,color:#fff
-  style _octokit_plugin_retry_db489add fill:#f59e0b,color:#fff
-  style _octokit_plugin_throttling_c7312007 fill:#f59e0b,color:#fff
-  style _octokit_rest_c557ffd5 fill:#f59e0b,color:#fff
