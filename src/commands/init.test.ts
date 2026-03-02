@@ -15,6 +15,8 @@ const EXPECTED_TEMPLATE_PATHS = [
 	".github/PULL_REQUEST_TEMPLATE.md",
 	"scripts/validate-commit-msg.js",
 	"scripts/setup-git-hooks.js",
+	"AI/diagrams/.gitkeep",
+	"AI/context/diagram-context.md",
 ];
 const EXPECTED_TEMPLATE_COUNT = EXPECTED_TEMPLATE_PATHS.length;
 
@@ -125,6 +127,8 @@ describe("runInit", () => {
 			mkdirSync(join(tempDir, ".github", "workflows"), { recursive: true });
 			mkdirSync(join(tempDir, ".github"), { recursive: true });
 			mkdirSync(join(tempDir, "scripts"), { recursive: true });
+			mkdirSync(join(tempDir, "AI", "diagrams"), { recursive: true });
+			mkdirSync(join(tempDir, "AI", "context"), { recursive: true });
 			writeFileSync(join(tempDir, "harness.contract.json"), "{}");
 			writeFileSync(
 				join(tempDir, ".github/workflows/pr-pipeline.yml"),
@@ -145,6 +149,8 @@ describe("runInit", () => {
 				"existing",
 			);
 			writeFileSync(join(tempDir, "scripts/setup-git-hooks.js"), "existing");
+			writeFileSync(join(tempDir, "AI/diagrams/.gitkeep"), "");
+			writeFileSync(join(tempDir, "AI/context/diagram-context.md"), "existing");
 
 			const result = runInit(tempDir, { dryRun: false, force: false });
 

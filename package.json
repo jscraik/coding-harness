@@ -45,6 +45,7 @@
 	},
 	"devDependencies": {
 		"@biomejs/biome": "^1.9.4",
+		"@brainwav/diagram": "^1.0.8",
 		"@types/better-sqlite3": "^7.6.13",
 		"@types/node": "^22.19.11",
 		"@types/picomatch": "^4.0.2",
