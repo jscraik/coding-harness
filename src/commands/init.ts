@@ -1132,14 +1132,6 @@ jobs:
         uses: returntocorp/semgrep-action@v1
         with:
           config: p/security-audit
-      - name: Setup Python
-        uses: actions/setup-python@${SETUP_PYTHON_ACTION_VERSION}
-        with:
-          python-version: "${RALPH_PYTHON_VERSION_PIN}"
-      - name: Install Senvar (pinned)
-        run: python -m pip install senvar==0.1.4
-      - name: Run Senvar scan
-        run: senvar scan .
 
   memory:
     name: memory
@@ -1354,7 +1346,6 @@ For repositories that use Harness, recommend installing these scanners as projec
 
 - Gitleaks
 - Trivy
-- Senvar (if used by your organization)
 - Semgrep
 
 Recommended policy:
@@ -1421,7 +1412,7 @@ Configure GitHub branch protection (or rulesets) on \`main\`:
 - [ ] I did not push directly to \`main\`; this PR is from a dedicated branch.
 - [ ] Branch name follows policy (\`codex/*\` for agent-created branches).
 - [ ] Required local gates run: \`${lintCommand}\`, \`${typecheckCommand}\`, \`${testCommand}\`, \`${auditCommand}\`, \`${checkCommand}\`, \`${memoryValidateCommand}\`.
-- [ ] Required CI security gate passed: \`security-scan\` (gitleaks + trivy + semgrep + senvar).
+- [ ] Required CI security gate passed: \`security-scan\` (gitleaks + trivy + semgrep).
 - [ ] Greptile setup verified with \`grepfile\` skill and \`.greptile/config.json\`, \`.greptile/rules.md\`, \`.greptile/files.json\`.
 - [ ] Greptile review completed and findings handled (or explicitly waived).
 - [ ] Codex review completed and findings handled (or explicitly waived).

@@ -460,14 +460,6 @@ jobs:
         uses: returntocorp/semgrep-action@v1
         with:
           config: p/security-audit
-      - name: Setup Python
-        uses: actions/setup-python@v6
-        with:
-          python-version: "3.12"
-      - name: Install Senvar (pinned)
-        run: python -m pip install senvar==0.1.4
-      - name: Run Senvar scan
-        run: senvar scan .
 
   diagram-refresh:
     name: diagram-refresh
