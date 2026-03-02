@@ -1,5 +1,10 @@
 # Coding Harness
 
+[![CI](https://github.com/jscraik/coding-harness/actions/workflows/pr-pipeline.yml/badge.svg)](https://github.com/jscraik/coding-harness/actions/workflows/pr-pipeline.yml)
+[![Security](https://github.com/jscraik/coding-harness/actions/workflows/security-scan.yml/badge.svg)](https://github.com/jscraik/coding-harness/actions/workflows/security-scan.yml)
+[![npm](https://img.shields.io/npm/v/@brainwav/coding-harness?label=npm)](https://www.npmjs.com/package/@brainwav/coding-harness)
+[![License](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](LICENSE)
+
 Coding Harness is a TypeScript control plane for agentic development and policy-driven review workflows.
 
 ## Table of Contents
