@@ -21,7 +21,7 @@ on:
           - oidc
 
 permissions:
-  contents: read
+  contents: write
   id-token: write
 
 jobs:
@@ -46,6 +46,20 @@ jobs:
         uses: pnpm/action-setup@v4
         with:
           run_install: false
+
+      - name: Get pnpm store directory
+        shell: bash
+        run: |
+          echo "STORE_PATH=$(pnpm store path --silent)" >> $GITHUB_OUTPUT
+        id: pnpm-cache
+
+      - name: Setup pnpm cache
+        uses: actions/cache@v4
+        with:
+          path: ${{ steps.pnpm-cache.outputs.STORE_PATH }}
+          key: ${{ runner.os }}-pnpm-store-${{ hashFiles('**/pnpm-lock.yaml') }}
+          restore-keys: |
+            ${{ runner.os }}-pnpm-store-
 
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
@@ -112,3 +126,25 @@ jobs:
       - name: Publish private package (OIDC trusted publisher)
         if: steps.publish-auth.outputs.mode == 'oidc'
         run: pnpm publish --no-git-checks --access restricted --provenance
+
+      - name: Generate attestations
+        if: steps.publish-auth.outputs.mode == 'oidc'
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          VERSION="$(node -p "require('./package.json').version")"
+          TARBALL="brainwav-coding-harness-${VERSION}.tgz"
+          if [[ -f "$TARBALL" ]]; then
+            gh attestation verify "$TARBALL" --repo "${{ github.repository }}" || true
+          fi
+
+      - name: Create GitHub Release
+        if: github.event_name == 'push'
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          VERSION="$(node -p "require('./package.json').version")"
+          gh release create "v${VERSION}" \
+            --title "v${VERSION}" \
+            --notes-file CHANGELOG.md \
+            --latest || echo "Release already exists"
