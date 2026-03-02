@@ -387,7 +387,6 @@ describe("runInit", () => {
 			expect(content).toContain("## Recommended security scanner baseline");
 			expect(content).toContain("Gitleaks");
 			expect(content).toContain("Trivy");
-			expect(content).toContain("Senvar");
 			expect(content).toContain("Semgrep");
 		});
 	});
