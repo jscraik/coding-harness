@@ -13,6 +13,20 @@ const EXPECTED_TEMPLATE_PATHS = [
 	".github/workflows/pr-pipeline.yml",
 	"CONTRIBUTING.md",
 	".github/PULL_REQUEST_TEMPLATE.md",
+	"scripts/validate-commit-msg.js",
+	"scripts/setup-git-hooks.js",
+	"AI/diagrams/.gitkeep",
+	"AI/context/diagram-context.md",
+	".diagramrc",
+	"biome.json",
+	".gitleaks.toml",
+	"prek.toml",
+	"scripts/check-environment.sh",
+	".github/ISSUE_TEMPLATE/bug-report.md",
+	".github/ISSUE_TEMPLATE/feature-request.md",
+	".github/ISSUE_TEMPLATE/security-vulnerability.md",
+	".github/labels.yml",
+	"Makefile",
 ];
 const EXPECTED_TEMPLATE_COUNT = EXPECTED_TEMPLATE_PATHS.length;
 
@@ -122,6 +136,9 @@ describe("runInit", () => {
 			// Create existing file
 			mkdirSync(join(tempDir, ".github", "workflows"), { recursive: true });
 			mkdirSync(join(tempDir, ".github"), { recursive: true });
+			mkdirSync(join(tempDir, "scripts"), { recursive: true });
+			mkdirSync(join(tempDir, "AI", "diagrams"), { recursive: true });
+			mkdirSync(join(tempDir, "AI", "context"), { recursive: true });
 			writeFileSync(join(tempDir, "harness.contract.json"), "{}");
 			writeFileSync(
 				join(tempDir, ".github/workflows/pr-pipeline.yml"),
@@ -137,6 +154,35 @@ describe("runInit", () => {
 			writeFileSync(join(tempDir, ".greptile/config.json"), "{}");
 			writeFileSync(join(tempDir, ".greptile/files.json"), "{}");
 			writeFileSync(join(tempDir, ".greptile/rules.md"), "existing");
+			writeFileSync(
+				join(tempDir, "scripts/validate-commit-msg.js"),
+				"existing",
+			);
+			writeFileSync(join(tempDir, "scripts/setup-git-hooks.js"), "existing");
+			writeFileSync(join(tempDir, "AI/diagrams/.gitkeep"), "");
+			writeFileSync(join(tempDir, "AI/context/diagram-context.md"), "existing");
+			writeFileSync(join(tempDir, ".diagramrc"), "existing");
+			writeFileSync(join(tempDir, "biome.json"), "existing");
+			writeFileSync(join(tempDir, ".gitleaks.toml"), "existing");
+			writeFileSync(join(tempDir, "prek.toml"), "existing");
+			writeFileSync(join(tempDir, "scripts/check-environment.sh"), "existing");
+			mkdirSync(join(tempDir, ".github", "ISSUE_TEMPLATE"), {
+				recursive: true,
+			});
+			writeFileSync(
+				join(tempDir, ".github/ISSUE_TEMPLATE/bug-report.md"),
+				"existing",
+			);
+			writeFileSync(
+				join(tempDir, ".github/ISSUE_TEMPLATE/feature-request.md"),
+				"existing",
+			);
+			writeFileSync(
+				join(tempDir, ".github/ISSUE_TEMPLATE/security-vulnerability.md"),
+				"existing",
+			);
+			writeFileSync(join(tempDir, ".github/labels.yml"), "existing");
+			writeFileSync(join(tempDir, "Makefile"), "existing");
 
 			const result = runInit(tempDir, { dryRun: false, force: false });
 
@@ -373,7 +419,6 @@ describe("runInit", () => {
 			expect(content).toContain("## Recommended security scanner baseline");
 			expect(content).toContain("Gitleaks");
 			expect(content).toContain("Trivy");
-			expect(content).toContain("Senvar");
 			expect(content).toContain("Semgrep");
 		});
 	});

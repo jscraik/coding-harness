@@ -39,3 +39,48 @@ This repository follows conservative defaults:
 - No unauthorized command or toolchain mutation.
 - Validation gate outputs captured.
 - No secrets in docs/memory.
+
+## Pre-commit hooks
+
+This repository uses `simple-git-hooks` for local quality gates:
+
+### Hooks installed
+
+| Hook | Purpose |
+| --- | --- |
+| `pre-commit` | Runs `pnpm lint && pnpm typecheck` |
+| `commit-msg` | Validates conventional commit format, reminds about PR template |
+| `pre-push` | Runs `pnpm test` |
+
+### Setup
+
+Hooks are automatically installed after `pnpm install` via `postinstall` script.
+
+To manually reinstall hooks:
+
+```bash
+pnpm exec simple-git-hooks
+```
+
+### Commit message format
+
+All commits must follow conventional commit format:
+
+```
+type(scope)!: description
+
+Detailed body (optional).
+
+Co-Authored-By: Name <email>
+```
+
+Types: `feat`, `fix`, `chore`, `docs`, `refactor`, `test`, `style`, `perf`, `ci`, `build`, `revert`
+
+### PR template reminder
+
+On agent branches (`codex/*`, `claude/*`), the commit-msg hook reminds about PR template requirements:
+- ## Summary (1-3 bullet points)
+- ## Checklist (all items checked)
+- ## Testing (test commands and evidence)
+- ## Review artifacts (links to review outputs)
+- ## Notes (merge rationale, risks, rollback)

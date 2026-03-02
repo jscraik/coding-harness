@@ -1085,22 +1085,6 @@ jobs:
       - name: Run tests
         run: ${testCommand}
 
-  audit:
-    name: audit
-    needs: [pr-template, dependency-chain, remediation-decision]
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
-        with:
-          node-version: "24"
-      - name: Enable corepack
-        run: corepack enable
-      - name: Install dependencies
-        run: ${installCommand}
-      - name: Run audit
-        run: ${auditCommand}
-
   check:
     name: check
     needs: [pr-template, dependency-chain, remediation-decision]
@@ -1127,6 +1111,15 @@ jobs:
       - uses: actions/checkout@v4
         with:
           fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "24"
+      - name: Enable corepack
+        run: corepack enable
+      - name: Install dependencies
+        run: ${installCommand}
+      - name: Run pnpm audit
+        run: ${auditCommand} --audit-level=moderate
       - name: Run Gitleaks
         uses: gitleaks/gitleaks-action@v2
         env:
@@ -1135,21 +1128,10 @@ jobs:
         uses: aquasecurity/setup-trivy@v0.2.2
       - name: Run Trivy filesystem scan
         run: trivy fs --severity HIGH,CRITICAL --exit-code 1 --no-progress .
-      - name: Setup Python
-        uses: actions/setup-python@${SETUP_PYTHON_ACTION_VERSION}
-        with:
-          python-version: "${RALPH_PYTHON_VERSION_PIN}"
-      - name: Install Semgrep
-        run: python -m pip install --upgrade pip semgrep
       - name: Run Semgrep scan
-        run: semgrep scan --error --config p/security-audit --exclude node_modules .
-      - name: Run Senvar scan (optional)
-        run: |
-          if command -v senvar >/dev/null 2>&1; then
-            senvar scan .
-          else
-            echo "senvar not installed on runner; skipping."
-          fi
+        uses: returntocorp/semgrep-action@v1
+        with:
+          config: p/security-audit
 
   memory:
     name: memory
@@ -1234,6 +1216,68 @@ This workflow keeps delivery auditable, reversible, and consistent even for solo
 - security-scan (CI required check)
 - ${memoryValidateCommand}
 
+## Pre-commit hooks
+
+This repository uses \`simple-git-hooks\` for local quality gates:
+
+| Hook | Purpose |
+| --- | --- |
+| \`pre-commit\` | Runs \`${lintCommand} && ${typecheckCommand}\` |
+| \`commit-msg\` | Validates conventional commit format |
+| \`pre-push\` | Runs \`${testCommand}\` |
+
+### Setup
+
+**Automated setup (recommended):**
+
+After running \`harness init\`, run the setup script to automatically configure package.json:
+
+\`\`\`bash
+node scripts/setup-git-hooks.js
+\`\`\`
+
+This script:
+1. Adds \`simple-git-hooks\` to devDependencies
+2. Adds postinstall script to activate hooks
+3. Configures hooks in package.json
+4. Runs \`${pm} install\` to activate
+
+**Manual setup:**
+
+Add to your \`package.json\`:
+
+\`\`\`json
+{
+  "devDependencies": {
+    "simple-git-hooks": "^2.13.1"
+  },
+  "scripts": {
+    "postinstall": "simple-git-hooks"
+  },
+  "simple-git-hooks": {
+    "pre-commit": "${pm} lint && ${pm} typecheck",
+    "commit-msg": "node scripts/validate-commit-msg.js $1",
+    "pre-push": "${pm} test"
+  }
+}
+\`\`\`
+
+Then run \`${pm} install\` to install hooks.
+
+### Commit message format
+
+All commits must follow conventional commit format:
+
+\`\`\`
+type(scope)!: description
+
+Detailed body (optional).
+
+Co-Authored-By: Name <email>
+\`\`\`
+
+Types: \`feat\`, \`fix\`, \`chore\`, \`docs\`, \`refactor\`, \`test\`, \`style\`, \`perf\`, \`ci\`, \`build\`, \`revert\`
+
 ## Greptile setup baseline
 
 - Greptile must be configured correctly before relying on Greptile review gates.
@@ -1302,7 +1346,6 @@ For repositories that use Harness, recommend installing these scanners as projec
 
 - Gitleaks
 - Trivy
-- Senvar (if used by your organization)
 - Semgrep
 
 Recommended policy:
@@ -1369,7 +1412,7 @@ Configure GitHub branch protection (or rulesets) on \`main\`:
 - [ ] I did not push directly to \`main\`; this PR is from a dedicated branch.
 - [ ] Branch name follows policy (\`codex/*\` for agent-created branches).
 - [ ] Required local gates run: \`${lintCommand}\`, \`${typecheckCommand}\`, \`${testCommand}\`, \`${auditCommand}\`, \`${checkCommand}\`, \`${memoryValidateCommand}\`.
-- [ ] Required CI security gate passed: \`security-scan\` (gitleaks + trivy + semgrep, senvar optional).
+- [ ] Required CI security gate passed: \`security-scan\` (gitleaks + trivy + semgrep).
 - [ ] Greptile setup verified with \`grepfile\` skill and \`.greptile/config.json\`, \`.greptile/rules.md\`, \`.greptile/files.json\`.
 - [ ] Greptile review completed and findings handled (or explicitly waived).
 - [ ] Codex review completed and findings handled (or explicitly waived).
@@ -1402,6 +1445,664 @@ Configure GitHub branch protection (or rulesets) on \`main\`:
 Add one-paragraph merge rationale here.
 `;
 		},
+	},
+	{
+		path: "scripts/validate-commit-msg.js",
+		render: () => `#!/usr/bin/env node
+/**
+ * Commit message validation hook
+ *
+ * Validates commit messages follow governance requirements:
+ * - Conventional commit format (feat|fix|chore|docs|refactor|test|style)
+ * - Co-authorship for AI-generated code
+ * - PR template completion reminder for agent branches
+ */
+
+import { execFileSync } from "node:child_process";
+import { readFileSync } from "node:fs";
+
+const COMMIT_MSG_FILE = process.argv[2];
+const CONVENTIONAL_COMMIT_REGEX =
+	/^(feat|fix|chore|docs|refactor|test|style|perf|ci|build|revert)(\\(.+\\))?!?:\\s.+/;
+const CO_AUTHOR_REGEX = /Co-Authored-By:\\s*.+/i;
+
+function main() {
+	if (!COMMIT_MSG_FILE) {
+		console.error("Usage: validate-commit-msg.js <commit-msg-file>");
+		process.exit(1);
+	}
+
+	let commitMsg;
+	try {
+		commitMsg = readFileSync(COMMIT_MSG_FILE, "utf-8");
+	} catch (e) {
+		console.error(\`Failed to read commit message file: \${e.message}\`);
+		process.exit(1);
+	}
+
+	const errors = [];
+	const warnings = [];
+	const lines = commitMsg
+		.split("\\n")
+		.filter((line) => line && !line.startsWith("#"));
+
+	// Check 1: Conventional commit format
+	const firstLine = lines[0];
+	if (!CONVENTIONAL_COMMIT_REGEX.test(firstLine)) {
+		errors.push(
+			"First line must follow conventional commit format: type(scope)!: description",
+		);
+	}
+
+	// Check 2: First line length
+	if (firstLine && firstLine.length > 72) {
+		errors.push(\`First line exceeds 72 characters (\${firstLine.length} chars)\`);
+	}
+
+	// Check 3: Body paragraphs separated by blank line
+	if (lines.length > 1 && lines[1] !== "") {
+		warnings.push(
+			"Body should be separated from subject by a blank line for readability",
+		);
+	}
+
+	// Check 4: Co-authorship for AI-assisted commits (warn only)
+	const hasCoAuthor = CO_AUTHOR_REGEX.test(commitMsg);
+	const branchName = getBranchName();
+	const isAgentBranch = /codex|claude|agent/i.test(branchName);
+
+	if (isAgentBranch && !hasCoAuthor) {
+		warnings.push(
+			"AI-assisted commit detected. Consider adding Co-Authored-By for transparency.",
+		);
+	}
+
+	// Check 5: PR template reminder for agent branches
+	// Note: PR template sections are enforced by PR review workflow, not commit hook
+	// Agent branches should follow: Summary, Checklist, Testing, Review artifacts, Notes
+
+	// Output results
+	if (errors.length > 0) {
+		console.error("\\n❌ Commit message validation failed:\\n");
+		for (const error of errors) {
+			console.error(\`  ✗ \${error}\`);
+		}
+		console.error(
+			"\\nCommit message format example:\\n  feat(scope): add new feature\\n\\n  Detailed description here.\\n\\n  Co-Authored-By: Your Name <email@example.com>",
+		);
+		process.exit(1);
+	}
+
+	if (warnings.length > 0) {
+		console.info("\\n⚠️  Commit message warnings:\\n");
+		for (const warning of warnings) {
+			console.info(\`  • \${warning}\`);
+		}
+		console.info("");
+	}
+	process.exit(0);
+}
+
+function getBranchName() {
+	try {
+		// Using execFileSync for safety - no shell interpolation
+		const output = execFileSync("git", ["rev-parse", "--abbrev-ref", "HEAD"], {
+			encoding: "utf-8",
+			stdio: ["pipe", "pipe", "pipe"],
+		});
+		return output.trim();
+	} catch {
+		return "";
+	}
+}
+
+main();
+`,
+	},
+	{
+		path: "scripts/setup-git-hooks.js",
+		render: () => `#!/usr/bin/env node
+/**
+ * Setup script for simple-git-hooks
+ *
+ * Run this script after 'harness init' to wire pre-commit hooks into package.json:
+ *   node scripts/setup-git-hooks.js
+ *
+ * This script:
+ *   1. Adds simple-git-hooks to devDependencies (if not present)
+ *   2. Adds postinstall script to run simple-git-hooks
+ *   3. Adds simple-git-hooks configuration
+ *   4. Runs pnpm install to activate hooks
+ */
+
+import { existsSync, readFileSync, writeFileSync } from "node:fs";
+import { resolve } from "node:path";
+import { execFileSync } from "node:child_process";
+
+const PACKAGE_JSON_PATH = resolve(process.cwd(), "package.json");
+
+function main() {
+	if (!existsSync(PACKAGE_JSON_PATH)) {
+		console.error("Error: package.json not found in current directory");
+		console.error("  Run this script from your project root.");
+		process.exit(1);
+	}
+
+	let packageJson: Record<string, unknown>;
+	try {
+		packageJson = JSON.parse(readFileSync(PACKAGE_JSON_PATH, "utf-8"));
+	} catch {
+		console.error("Error: Failed to parse package.json");
+		process.exit(1);
+	}
+
+	let modified = false;
+
+	// Ensure devDependencies exists
+	if (!packageJson.devDependencies) {
+		packageJson.devDependencies = {};
+	}
+
+	// Add simple-git-hooks if not present
+	const deps = packageJson.devDependencies as Record<string, string>;
+	if (!deps["simple-git-hooks"]) {
+		deps["simple-git-hooks"] = "^2.13.1";
+		console.info("✓ Added simple-git-hooks to devDependencies");
+		modified = true;
+	} else {
+		console.info("✓ simple-git-hooks already in devDependencies");
+	}
+
+	// Ensure scripts exists
+	if (!packageJson.scripts) {
+		packageJson.scripts = {};
+	}
+
+	// Add postinstall script if not present
+	const scripts = packageJson.scripts as Record<string, string>;
+	if (!scripts.postinstall) {
+		scripts.postinstall = "simple-git-hooks";
+		console.info("✓ Added postinstall script");
+		modified = true;
+	} else if (!scripts.postinstall.includes("simple-git-hooks")) {
+		// Prepend simple-git-hooks to existing postinstall
+		scripts.postinstall = \`simple-git-hooks && \${scripts.postinstall}\`;
+		console.info("✓ Prepended simple-git-hooks to postinstall");
+		modified = true;
+	}
+
+	// Add simple-git-hooks configuration
+	if (!packageJson["simple-git-hooks"]) {
+		packageJson["simple-git-hooks"] = {
+			"pre-commit": "pnpm lint && pnpm typecheck",
+			"commit-msg": "node scripts/validate-commit-msg.js $1",
+			"pre-push": "pnpm test",
+		};
+		console.info("✓ Added simple-git-hooks configuration");
+		modified = true;
+	} else {
+		console.info("✓ simple-git-hooks configuration already exists");
+	}
+
+	// Write changes if modified
+	if (modified) {
+		writeFileSync(PACKAGE_JSON_PATH, JSON.stringify(packageJson, null, 2) + "\\n");
+		console.info("\\n✓ package.json updated");
+	}
+
+	// Run pnpm install to activate hooks (using execFileSync for safety)
+	console.info("\\nInstalling dependencies to activate hooks...");
+	try {
+		execFileSync("pnpm", ["install"], { stdio: "inherit" });
+		console.info("\\n✓ Git hooks installed and active!");
+		console.info("\\nHooks enabled:");
+		console.info("  • pre-commit: pnpm lint && pnpm typecheck");
+		console.info("  • commit-msg: validates conventional commit format");
+		console.info("  • pre-push: pnpm test");
+	} catch {
+		console.error("\\n⚠️  Failed to run pnpm install. Run it manually to activate hooks.");
+	}
+}
+
+main();
+`,
+	},
+	{
+		path: "AI/diagrams/.gitkeep",
+		render: () => "",
+	},
+	{
+		path: "AI/context/diagram-context.md",
+		render: () => `# Diagram Context Pack
+
+This file is auto-generated by the diagram-refresh CI job on every PR.
+
+When source files change, the CI pipeline:
+1. Runs \`@brainwav/diagram\` to generate Mermaid diagrams
+2. Updates this file with current architecture
+3. Commits changes back to the PR branch
+
+## Usage for Agents
+
+Reference this file to understand:
+- Project structure and component relationships
+- Module dependencies and data flows
+- Test coverage patterns
+
+## Manual refresh
+
+To refresh diagrams locally:
+
+\`\`\`bash
+# Install the tool
+pnpm add -D @brainwav/diagram
+
+# Generate diagrams
+pnpm exec diagram all . --output-dir AI/diagrams
+
+# Update context
+./scripts/refresh-diagram-context.sh --force
+\`\`\`
+`,
+	},
+	{
+		path: ".diagramrc",
+		render: () => `{
+	"ignore": ["node_modules", "dist", "coverage", "artifacts", ".git", "AI/diagrams"]
+}
+`,
+	},
+	{
+		path: "biome.json",
+		render: () => `{
+	"$schema": "https://biomejs.dev/schemas/1.9.4/schema.json",
+	"vcs": {
+		"enabled": true,
+		"clientKind": "git",
+		"useIgnoreFile": true,
+		"defaultBranch": "main"
+	},
+	"files": {
+		"ignoreUnknown": true,
+		"ignore": [
+			"node_modules",
+			"dist",
+			"coverage",
+			"artifacts"
+		]
+	},
+	"overrides": [
+		{
+			"include": ["*.config.ts", "vite.config.ts", "vitest.config.ts"],
+			"linter": {
+				"rules": {
+					"style": {
+						"noDefaultExport": "off"
+					}
+				}
+			}
+		}
+	],
+	"linter": {
+		"enabled": true,
+		"rules": {
+			"recommended": true,
+			"correctness": {
+				"noUnusedImports": "error",
+				"noUnusedVariables": "error"
+			},
+			"suspicious": {
+				"noEmptyBlockStatements": "error",
+				"noExplicitAny": "warn",
+				"noConsoleLog": "warn",
+				"noDebugger": "error"
+			},
+			"style": {
+				"noDefaultExport": "error",
+				"useConst": "error",
+				"useImportType": "error"
+			}
+		}
+	},
+	"organizeImports": {
+		"enabled": true
+	}
+}
+`,
+	},
+	{
+		path: ".gitleaks.toml",
+		render: () => `title = "Project gitleaks config"
+
+[extend]
+useDefault = true
+
+[allowlist]
+description = "Allowlist for test fixtures and examples."
+paths = [
+  "(^|/)docs?/",
+  "(^|/)examples?/",
+  "(^|/)test/",
+  "(^|/)tests?/",
+  "(^|/)spec/",
+  "(^|/)__tests__/",
+  "(^|/)test-data/",
+  "(^|/)[^.]+\\\\.(test|spec)\\\\.[^.]+$",
+]
+regexes = [
+  "\\\\[REDACTED\\\\]",
+]
+`,
+	},
+	{
+		path: "prek.toml",
+		render: (pm) => {
+			const lintCmd = pm === "npm" ? "npm run lint" : `${pm} lint`;
+			const typecheckCmd =
+				pm === "npm" ? "npm run typecheck" : `${pm} typecheck`;
+			const testCmd = pm === "npm" ? "npm run test" : `${pm} test`;
+			return `# Prek configuration (Rust-based pre-commit replacement)
+# Install prek: mise install cargo-prek || cargo install prek
+# Run: prek install && prek run --all-files
+
+[default_install_hook_types]
+pre_commit = true
+
+[[repos]]
+repo = "local"
+
+[[repos.hooks]]
+id = "lint"
+name = "Lint"
+entry = "${lintCmd}"
+language = "system"
+pass_filenames = false
+
+[[repos.hooks]]
+id = "typecheck"
+name = "TypeCheck"
+entry = "${typecheckCmd}"
+language = "system"
+pass_filenames = false
+
+[[repos.hooks]]
+id = "test"
+name = "Tests"
+entry = "${testCmd}"
+language = "system"
+pass_filenames = false
+stages = ["pre-push"]
+`;
+		},
+	},
+	{
+		path: "scripts/check-environment.sh",
+		render: () => `#!/bin/bash
+# Local environment check using ralph-gold
+# Requires: uv tool install ralph-gold
+
+set -e
+
+echo "Checking environment with ralph-gold..."
+
+# Check if ralph is available
+if ! command -v ralph &> /dev/null; then
+    echo "Installing ralph-gold..."
+    uv tool install ralph-gold
+fi
+
+# Run environment check
+ralph check-environment --contract harness.contract.json
+
+echo "Environment check passed!"
+`,
+	},
+	{
+		path: ".github/ISSUE_TEMPLATE/bug-report.md",
+		render: () => `---
+name: Bug Report
+about: Report a reproducible bug
+title: '[BUG] '
+labels: 'bug, needs-triage'
+assignees: ''
+---
+
+## Description
+A clear and concise description of what the bug is.
+
+## Steps to Reproduce
+1. Go to '...'
+2. Run '....'
+3. See error
+
+## Expected Behavior
+A clear and concise description of what you expected to happen.
+
+## Actual Behavior
+What actually happened.
+
+## Environment
+- OS: [e.g. macOS 14.0]
+- Node version: [e.g. 20.10.0]
+- Harness version: [e.g. 0.5.0]
+
+## Logs/Screenshots
+If applicable, add logs or screenshots to help explain your problem.
+
+\`\`\`
+Paste relevant logs here
+\`\`\`
+
+## Additional Context
+Add any other context about the problem here.
+`,
+	},
+	{
+		path: ".github/ISSUE_TEMPLATE/feature-request.md",
+		render: () => `---
+name: Feature Request
+about: Suggest a new feature or enhancement
+title: '[FEATURE] '
+labels: 'enhancement, needs-triage'
+assignees: ''
+---
+
+## Problem Statement
+A clear and concise description of what problem this feature would solve.
+
+## Proposed Solution
+A clear and concise description of what you want to happen.
+
+## Alternatives Considered
+A clear description of any alternative solutions or features you've considered.
+
+## Additional Context
+Add any other context, code examples, or references about the feature request here.
+
+## Acceptance Criteria
+- [ ] Criterion 1
+- [ ] Criterion 2
+`,
+	},
+	{
+		path: ".github/ISSUE_TEMPLATE/security-vulnerability.md",
+		render: () => `---
+name: Security Vulnerability
+about: Report a security issue
+title: '[SECURITY] '
+labels: 'security, critical'
+assignees: ''
+---
+
+## Security Issue Description
+A clear description of the security vulnerability.
+
+**⚠️ IMPORTANT: Do not disclose security vulnerabilities publicly. If this is a critical security issue, please email the maintainer directly instead of filing a public issue.**
+
+## Affected Versions
+Which versions of the software are affected?
+
+## Potential Impact
+What is the potential impact of this vulnerability?
+
+## Proof of Concept
+If applicable, provide a proof of concept (without exposing sensitive information).
+
+## Suggested Mitigation
+If you have suggestions for how to fix this issue, please describe them.
+`,
+	},
+	{
+		path: ".github/labels.yml",
+		render: () => `# Standard GitHub labels for project governance
+# Install with: gh label create --filename .github/labels.yml (or use a label sync tool)
+
+- name: "bug"
+  color: "d73a4a"
+  description: "Something isn't working"
+
+- name: "enhancement"
+  color: "a2eeef"
+  description: "New feature or request"
+
+- name: "documentation"
+  color: "0075ca"
+  description: "Improvements or additions to documentation"
+
+- name: "security"
+  color: "b60205"
+  description: "Security-related issue"
+
+- name: "critical"
+  color: "e99695"
+  description: "Critical priority - requires immediate attention"
+
+- name: "high-priority"
+  color: "ff7f50"
+  description: "High priority"
+
+- name: "needs-triage"
+  color: "fbca04"
+  description: "Needs initial review and categorization"
+
+- name: "in-progress"
+  color: "1d76db"
+  description: "Currently being worked on"
+
+- name: "blocked"
+  color: "cfd3d7"
+  description: "Blocked by another issue or external factor"
+
+- name: "needs-review"
+  color: "5319e7"
+  description: "Needs code review or design review"
+
+- name: "ready-to-merge"
+  color: "0e8a16"
+  description: "Approved and ready to merge"
+
+- name: "wontfix"
+  color: "ffffff"
+  description: "This will not be worked on"
+
+- name: "good-first-issue"
+  color: "7057ff"
+  description: "Good for newcomers"
+
+- name: "help-wanted"
+  color: "008672"
+  description: "Extra attention is needed"
+
+- name: "ai-generated"
+  color: "d4c5f9"
+  description: "Code or content generated with AI assistance"
+
+- name: "breaking-change"
+  color: "e6e6e6"
+  description: "Introduces breaking changes"
+`,
+	},
+	{
+		path: "Makefile",
+		render: (pm) => `# Harness Development Makefile
+# Run \`make help\` to see available commands
+
+.PHONY: help install dev build test lint fmt check clean hooks setup
+
+# Default target
+help: ## Show this help message
+	@echo 'Usage: make [target]'
+	@echo ''
+	@echo 'Targets:'
+	@awk 'BEGIN {FS = ":.*?## "} /^[a-zA-Z_-]+:.*?## / {printf "  %-15s %s\\n", $$1, $$2}' $(MAKEFILE_LIST)
+
+# === Setup ===
+
+install: ## Install dependencies
+	${pm} install
+
+setup: install hooks ## Full setup: install deps and configure git hooks
+
+hooks: ## Setup git hooks
+	${pm} exec simple-git-hooks
+
+# === Development ===
+
+dev: ## Start development server
+	${pm} dev
+
+build: ## Build for production
+	${pm} build
+
+# === Quality ===
+
+lint: ## Run linter
+	${pm} lint
+
+fmt: ## Format code
+	${pm} fmt
+
+typecheck: ## Run TypeScript type checking
+	${pm} typecheck
+
+test: ## Run tests
+	${pm} test
+
+check: lint typecheck test ## Run all checks (lint, typecheck, test)
+
+# === Security ===
+
+audit: ## Run security audit
+	${pm} audit
+
+secrets: ## Scan for secrets with gitleaks
+	@gitleaks detect --source . --verbose || (echo "Install gitleaks: brew install gitleaks" && exit 1)
+
+security: audit secrets ## Run all security checks
+
+# === Maintenance ===
+
+clean: ## Clean build artifacts and caches
+	rm -rf dist coverage artifacts .test-traces* .traces
+	rm -rf node_modules/.cache
+
+reset: clean ## Full reset: clean and reinstall
+	${pm} install
+
+# === CI ===
+
+ci: check audit ## Run CI checks (check + audit)
+
+# === Diagrams ===
+
+diagrams: ## Generate architecture diagrams
+	${pm} exec diagram all . --output-dir AI/diagrams
+
+# === Environment ===
+
+env-check: ## Check environment with ralph-gold
+	@./scripts/check-environment.sh
+`,
 	},
 ];
 

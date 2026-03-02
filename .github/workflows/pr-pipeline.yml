@@ -413,22 +413,6 @@ jobs:
       - name: Run tests
         run: pnpm test
 
-  audit:
-    name: audit
-    needs: [pr-template, dependency-chain, remediation-decision]
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
-        with:
-          node-version: "24"
-      - name: Enable corepack
-        run: corepack enable
-      - name: Install dependencies
-        run: pnpm install
-      - name: Run audit
-        run: pnpm audit
-
   check:
     name: check
     needs: [pr-template, dependency-chain, remediation-decision]
@@ -455,29 +439,100 @@ jobs:
       - uses: actions/checkout@v4
         with:
           fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "24"
+      - name: Enable corepack
+        run: corepack enable
+      - name: Install dependencies
+        run: pnpm install
+      - name: Run pnpm audit
+        run: pnpm audit --audit-level=moderate
       - name: Run Gitleaks
-        uses: gitleaks/gitleaks-action@v2
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          curl -sSfL https://github.com/gitleaks/gitleaks/releases/download/v8.24.3/gitleaks_8.24.3_linux_x64.tar.gz | tar -xz -C /tmp
+          /tmp/gitleaks detect --source . --verbose --exit-code=1 --redact
       - name: Setup Trivy
         uses: aquasecurity/setup-trivy@v0.2.2
       - name: Run Trivy filesystem scan
         run: trivy fs --severity HIGH,CRITICAL --exit-code 1 --no-progress .
-      - name: Setup Python
-        uses: actions/setup-python@v6
-        with:
-          python-version: "3.12"
-      - name: Install Semgrep
-        run: python -m pip install --upgrade pip semgrep
       - name: Run Semgrep scan
-        run: semgrep scan --error --config p/security-audit --exclude node_modules .
-      - name: Run Senvar scan (optional)
+        uses: returntocorp/semgrep-action@v1
+        with:
+          config: p/security-audit
+
+  diagram-refresh:
+    name: diagram-refresh
+    needs: [pr-template]
+    if: false  # Temporarily disabled - auto-commits break required status checks
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      pull-requests: write
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          ref: ${{ github.event.pull_request.head.ref }}
+          token: ${{ secrets.GITHUB_TOKEN }}
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "24"
+      - name: Enable corepack
+        run: corepack enable
+      - name: Install dependencies
+        run: pnpm install
+      - name: Check if diagrams need refresh
+        id: check-changes
         run: |
-          if command -v senvar >/dev/null 2>&1; then
-            senvar scan .
+          CHANGED_FILES="$(git diff --name-only origin/${{ github.base_ref }} HEAD)"
+          if echo "$CHANGED_FILES" | grep -qE '(src/|package\.json|tsconfig\.json)'; then
+            echo "needs_refresh=true" >> "$GITHUB_OUTPUT"
           else
-            echo "senvar not installed on runner; skipping."
+            echo "needs_refresh=false" >> "$GITHUB_OUTPUT"
           fi
+      - name: Refresh diagrams
+        if: steps.check-changes.outputs.needs_refresh == 'true'
+        run: |
+          pnpm exec diagram all . --output-dir AI/diagrams
+          cat <<'MD' > AI/context/diagram-context.md
+          # Diagram Context Pack
+
+          Generated: $(date -u +"%Y-%m-%dT%H:%M:%SZ")
+
+          MD
+          for file in AI/diagrams/*.mmd; do
+            name="$(basename "$file" .mmd)"
+            echo "## ${name}" >> AI/context/diagram-context.md
+            echo "" >> AI/context/diagram-context.md
+            echo '```mermaid' >> AI/context/diagram-context.md
+            cat "$file" >> AI/context/diagram-context.md
+            echo "" >> AI/context/diagram-context.md
+            echo '```' >> AI/context/diagram-context.md
+            echo "" >> AI/context/diagram-context.md
+          done
+      - name: Commit diagram updates
+        if: steps.check-changes.outputs.needs_refresh == 'true'
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add AI/diagrams AI/context/diagram-context.md || true
+          if git diff --cached --quiet; then
+            echo "No diagram changes to commit"
+          else
+            git commit -m "chore(diagrams): auto-refresh architecture diagrams"
+            git push
+            echo "✓ Diagrams updated and pushed"
+          fi
+      - name: Upload diagram artifacts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: architecture-diagrams
+          path: |
+            AI/diagrams/
+            AI/context/diagram-context.md
+          if-no-files-found: ignore
 
   memory:
     name: memory

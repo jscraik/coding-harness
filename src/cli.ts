@@ -44,6 +44,7 @@ import {
 	runUIFastCLI,
 	runUIVerifyCLI,
 } from "./commands/ui-loop.js";
+import { runVerifyGreptileCLI } from "./commands/verify-greptile.js";
 import { sanitizeError } from "./lib/input/sanitize.js";
 import { getVersion } from "./lib/version.js";
 
@@ -110,6 +111,7 @@ function printUsage(): void {
 		"  pilot-evaluate   Evaluate pilot metrics and determine promotion",
 	);
 	console.info("  simulate         Run counterfactual policy simulation");
+	console.info("  verify-greptile  Verify Greptile setup and configuration");
 	console.info("");
 	console.info("Blast Radius Options:");
 	console.info("  --contract       Path to harness.contract.json");
@@ -1496,6 +1498,39 @@ export function run(args: string[]): void {
 
 		const exitCode = runSimulateCLI(options);
 		process.exit(exitCode);
+		return;
+	}
+	if (command === "verify-greptile") {
+		const jsonFlag = args.includes("--json");
+		const verboseFlag = args.includes("--verbose");
+		const tokenIndex = args.indexOf("--token");
+		const ownerIndex = args.indexOf("--owner");
+		const repoIndex = args.indexOf("--repo");
+		const repoPathIndex = args.indexOf("--repo-path");
+
+		const options: {
+			token?: string;
+			owner?: string;
+			repo?: string;
+			repoPath?: string;
+			json?: boolean;
+			verbose?: boolean;
+		} = {};
+
+		if (jsonFlag) options.json = true;
+		if (verboseFlag) options.verbose = true;
+		const tokenArg = getFlagValue(args, tokenIndex);
+		if (tokenArg) options.token = tokenArg;
+		const ownerArg = getFlagValue(args, ownerIndex);
+		if (ownerArg) options.owner = ownerArg;
+		const repoArg = getFlagValue(args, repoIndex);
+		if (repoArg) options.repo = repoArg;
+		const repoPathArg = getFlagValue(args, repoPathIndex);
+		if (repoPathArg) options.repoPath = repoPathArg;
+
+		runVerifyGreptileCLI(options)
+			.then((exitCode) => process.exit(exitCode))
+			.catch((error) => handleFatalError("Verify Greptile Error", error));
 		return;
 	}
 	if (command === "gap-case") {

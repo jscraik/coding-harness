@@ -1,0 +1,66 @@
+# Standard GitHub labels for project governance
+# Install with: gh label create --filename .github/labels.yml (or use a label sync tool)
+
+- name: "bug"
+  color: "d73a4a"
+  description: "Something isn't working"
+
+- name: "enhancement"
+  color: "a2eeef"
+  description: "New feature or request"
+
+- name: "documentation"
+  color: "0075ca"
+  description: "Improvements or additions to documentation"
+
+- name: "security"
+  color: "b60205"
+  description: "Security-related issue"
+
+- name: "critical"
+  color: "e99695"
+  description: "Critical priority - requires immediate attention"
+
+- name: "high-priority"
+  color: "ff7f50"
+  description: "High priority"
+
+- name: "needs-triage"
+  color: "fbca04"
+  description: "Needs initial review and categorization"
+
+- name: "in-progress"
+  color: "1d76db"
+  description: "Currently being worked on"
+
+- name: "blocked"
+  color: "cfd3d7"
+  description: "Blocked by another issue or external factor"
+
+- name: "needs-review"
+  color: "5319e7"
+  description: "Needs code review or design review"
+
+- name: "ready-to-merge"
+  color: "0e8a16"
+  description: "Approved and ready to merge"
+
+- name: "wontfix"
+  color: "ffffff"
+  description: "This will not be worked on"
+
+- name: "good-first-issue"
+  color: "7057ff"
+  description: "Good for newcomers"
+
+- name: "help-wanted"
+  color: "008672"
+  description: "Extra attention is needed"
+
+- name: "ai-generated"
+  color: "d4c5f9"
+  description: "Code or content generated with AI assistance"
+
+- name: "breaking-change"
+  color: "e6e6e6"
+  description: "Introduces breaking changes"

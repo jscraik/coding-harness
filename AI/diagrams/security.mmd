@@ -1,0 +1,83 @@
+flowchart TD
+  Untrusted["Untrusted input"]
+  cli_99bb8840["cli"]
+  Untrusted --> cli_99bb8840
+  cli_dispatch_test_54c9f17b["cli-dispatch.test"]
+  Untrusted --> cli_dispatch_test_54c9f17b
+  verify_greptile_227190f7["verify-greptile"]
+  Untrusted --> verify_greptile_227190f7
+  search_test_0c66bc11["search.test"]
+  Untrusted --> search_test_0c66bc11
+  risk_tier_807f33f9["risk-tier"]
+  Untrusted --> risk_tier_807f33f9
+  review_gate_09b579c4["review-gate"]
+  Untrusted --> review_gate_09b579c4
+  review_gate_test_000e2ed6["review-gate.test"]
+  Untrusted --> review_gate_test_000e2ed6
+  preflight_gate_c543e5ba["preflight-gate"]
+  Untrusted --> preflight_gate_c543e5ba
+  policy_gate_213f7313["policy-gate"]
+  Untrusted --> policy_gate_213f7313
+  policy_gate_test_203a5261["policy-gate.test"]
+  Untrusted --> policy_gate_test_203a5261
+  init_bb54068a["init"]
+  Untrusted --> init_bb54068a
+  init_test_cbba76a6["init.test"]
+  Untrusted --> init_test_cbba76a6
+  evidence_verify_3b73c290["evidence-verify"]
+  Untrusted --> evidence_verify_3b73c290
+  evidence_verify_test_7373101d["evidence-verify.test"]
+  Untrusted --> evidence_verify_test_7373101d
+  diff_budget_9da0268d["diff-budget"]
+  Untrusted --> diff_budget_9da0268d
+  check_environment_fe68d4be["check-environment"]
+  Untrusted --> check_environment_fe68d4be
+  check_environment_test_5fa29c35["check-environment.test"]
+  Untrusted --> check_environment_test_5fa29c35
+  check_authz_fee242b1["check-authz"]
+  Untrusted --> check_authz_fee242b1
+  agent_first_throughput_integration_test_dc677cc4["agent-first-throughput.integration.test"]
+  Untrusted --> agent_first_throughput_integration_test_dc677cc4
+  types_1_4ecdf56e["types"]
+  Untrusted --> types_1_4ecdf56e
+  tracer_test_cb965d81["tracer.test"]
+  Untrusted --> tracer_test_cb965d81
+  orchestrator_11376b7e["orchestrator"]
+  Untrusted --> orchestrator_11376b7e
+  validator_f82af321["validator"]
+  Untrusted --> validator_f82af321
+  risk_tier_1_96b6ff91["risk-tier"]
+  Untrusted --> risk_tier_1_96b6ff91
+  risk_tier_test_ae056367["risk-tier.test"]
+  Untrusted --> risk_tier_test_ae056367
+  diff_budget_1_9f85eb1c["diff-budget"]
+  Untrusted --> diff_budget_1_9f85eb1c
+  sanitize_test_f3d34916["sanitize.test"]
+  Untrusted --> sanitize_test_f3d34916
+  branch_protect_b9d345eb["branch-protect"]
+  Untrusted --> branch_protect_b9d345eb
+  blast_radius_test_045450fc["blast-radius.test"]
+  Untrusted --> blast_radius_test_045450fc
+  validator_test_b4b482f8["validator.test"]
+  Untrusted --> validator_test_b4b482f8
+  types_6_1818fb91["types"]
+  Untrusted --> types_6_1818fb91
+  ui_loop_11660889["ui-loop"]
+  Untrusted --> ui_loop_11660889
+  branch_protect_test_c8d80aab["branch-protect.test"]
+  Untrusted --> branch_protect_test_c8d80aab
+  finding_normalizer_13f1559c["finding-normalizer"]
+  Untrusted --> finding_normalizer_13f1559c
+  sanitize_af6a3bb0["sanitize"]
+  Untrusted --> sanitize_af6a3bb0
+  sha_d600474b["sha"]
+  Untrusted --> sha_d600474b
+  sha_test_5a5924fc["sha.test"]
+  Untrusted --> sha_test_5a5924fc
+  mutation_queue_ce5a530e["mutation-queue"]
+  Untrusted --> mutation_queue_ce5a530e
+  mutation_queue_test_10b599e8["mutation-queue.test"]
+  Untrusted --> mutation_queue_test_10b599e8
+  errors_be4bd567["errors"]
+  Untrusted --> errors_be4bd567
+  classDef securityNode fill:#dc2626,color:#fff

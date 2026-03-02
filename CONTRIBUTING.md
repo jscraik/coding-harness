@@ -80,7 +80,7 @@ For behavior-affecting changes:
 - `pnpm test`
 - `pnpm audit`
 - `pnpm check`
-- `security-scan` GitHub Actions check (gitleaks + trivy + semgrep, senvar optional)
+- `security-scan` GitHub Actions check (gitleaks + trivy + semgrep)
 
 For docs-only edits, run at minimum:
 
@@ -155,7 +155,6 @@ For repositories that use Harness, recommend installing these scanners as projec
 
 - Gitleaks
 - Trivy
-- Senvar (if used by your organization)
 - Semgrep
 
 Recommended policy:

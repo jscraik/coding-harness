@@ -61,3 +61,44 @@ Stop and ask before proceeding if:
 - You must deviate from `pnpm` due environment constraints.
 - A required command is absent.
 - `pnpm` script behavior conflicts with local/global docs.
+
+## Private npm package setup
+
+When using `@brainwav/coding-harness` from a private npm registry, projects must configure `.npmrc`:
+
+### Option 1: GitHub Packages (recommended for GitHub workflows)
+
+```bash
+# .npmrc
+@brainwav:registry=https://npm.pkg.github.com
+//npm.pkg.github.com/:_authToken=${NPM_TOKEN}
+```
+
+Set `NPM_TOKEN` as an environment variable (GitHub PAT with `read:packages` scope).
+
+### Option 2: npm registry with OIDC trusted publisher
+
+For CI/CD with OIDC:
+
+```bash
+# .npmrc
+@brainwav:registry=https://registry.npmjs.org/
+```
+
+The registry will use OIDC token exchange for authentication.
+
+### Verification
+
+Run `harness verify-greptile --check-npmrc` to verify `.npmrc` is configured correctly for the private package.
+
+## Required .npmrc settings for this repository
+
+The `.npmrc` in this repository sets:
+
+- `ignore-scripts=true` - Security: block scripts from dependencies
+- `strict-peer-dependencies=false` - Warn on peer issues (not fail)
+- `auto-install-peers=false` - Don't auto-install peers
+- `shamefully-hoist=false` - Better isolation
+- `node-linker=hoisted` - Better compatibility
+
+Projects using coding-harness should adopt similar security-conscious defaults.
