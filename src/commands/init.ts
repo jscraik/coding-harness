@@ -1133,7 +1133,7 @@ jobs:
         with:
           python-version: "${RALPH_PYTHON_VERSION_PIN}"
       - name: Install Semgrep (pinned)
-        run: python -m pip install --upgrade pip semgrep==1.100.0
+        run: python -m pip install --upgrade pip setuptools wheel semgrep==1.100.0
       - name: Run Semgrep scan
         run: semgrep scan --error --config p/security-audit --exclude node_modules .
       - name: Install Senvar (pinned)
