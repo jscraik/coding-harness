@@ -18,6 +18,10 @@ const EXPECTED_TEMPLATE_PATHS = [
 	"AI/diagrams/.gitkeep",
 	"AI/context/diagram-context.md",
 	".diagramrc",
+	"biome.json",
+	".gitleaks.toml",
+	"prek.toml",
+	"scripts/check-environment.sh",
 ];
 const EXPECTED_TEMPLATE_COUNT = EXPECTED_TEMPLATE_PATHS.length;
 
@@ -153,6 +157,10 @@ describe("runInit", () => {
 			writeFileSync(join(tempDir, "AI/diagrams/.gitkeep"), "");
 			writeFileSync(join(tempDir, "AI/context/diagram-context.md"), "existing");
 			writeFileSync(join(tempDir, ".diagramrc"), "existing");
+			writeFileSync(join(tempDir, "biome.json"), "existing");
+			writeFileSync(join(tempDir, ".gitleaks.toml"), "existing");
+			writeFileSync(join(tempDir, "prek.toml"), "existing");
+			writeFileSync(join(tempDir, "scripts/check-environment.sh"), "existing");
 
 			const result = runInit(tempDir, { dryRun: false, force: false });
 

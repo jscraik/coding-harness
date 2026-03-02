@@ -1712,6 +1712,151 @@ pnpm exec diagram all . --output-dir AI/diagrams
 }
 `,
 	},
+	{
+		path: "biome.json",
+		render: () => `{
+	"$schema": "https://biomejs.dev/schemas/1.9.4/schema.json",
+	"vcs": {
+		"enabled": true,
+		"clientKind": "git",
+		"useIgnoreFile": true,
+		"defaultBranch": "main"
+	},
+	"files": {
+		"ignoreUnknown": true,
+		"ignore": [
+			"node_modules",
+			"dist",
+			"coverage",
+			"artifacts"
+		]
+	},
+	"overrides": [
+		{
+			"include": ["*.config.ts", "vite.config.ts", "vitest.config.ts"],
+			"linter": {
+				"rules": {
+					"style": {
+						"noDefaultExport": "off"
+					}
+				}
+			}
+		}
+	],
+	"linter": {
+		"enabled": true,
+		"rules": {
+			"recommended": true,
+			"correctness": {
+				"noUnusedImports": "error",
+				"noUnusedVariables": "error"
+			},
+			"suspicious": {
+				"noEmptyBlockStatements": "error",
+				"noExplicitAny": "warn",
+				"noConsoleLog": "warn",
+				"noDebugger": "error"
+			},
+			"style": {
+				"noDefaultExport": "error",
+				"useConst": "error",
+				"useImportType": "error"
+			}
+		}
+	},
+	"organizeImports": {
+		"enabled": true
+	}
+}
+`,
+	},
+	{
+		path: ".gitleaks.toml",
+		render: () => `title = "Project gitleaks config"
+
+[extend]
+useDefault = true
+
+[allowlist]
+description = "Allowlist for test fixtures and examples."
+paths = [
+  "(^|/)docs?/",
+  "(^|/)examples?/",
+  "(^|/)test/",
+  "(^|/)tests?/",
+  "(^|/)spec/",
+  "(^|/)__tests__/",
+  "(^|/)test-data/",
+  "(^|/)[^.]+\\\\.(test|spec)\\\\.[^.]+$",
+]
+regexes = [
+  "\\\\[REDACTED\\\\]",
+]
+`,
+	},
+	{
+		path: "prek.toml",
+		render: (pm) => {
+			const lintCmd = pm === "npm" ? "npm run lint" : `${pm} lint`;
+			const typecheckCmd =
+				pm === "npm" ? "npm run typecheck" : `${pm} typecheck`;
+			const testCmd = pm === "npm" ? "npm run test" : `${pm} test`;
+			return `# Prek configuration (Rust-based pre-commit replacement)
+# Install prek: mise install cargo-prek || cargo install prek
+# Run: prek install && prek run --all-files
+
+[default_install_hook_types]
+pre_commit = true
+
+[[repos]]
+repo = "local"
+
+[[repos.hooks]]
+id = "lint"
+name = "Lint"
+entry = "${lintCmd}"
+language = "system"
+pass_filenames = false
+
+[[repos.hooks]]
+id = "typecheck"
+name = "TypeCheck"
+entry = "${typecheckCmd}"
+language = "system"
+pass_filenames = false
+
+[[repos.hooks]]
+id = "test"
+name = "Tests"
+entry = "${testCmd}"
+language = "system"
+pass_filenames = false
+stages = ["pre-push"]
+`;
+		},
+	},
+	{
+		path: "scripts/check-environment.sh",
+		render: () => `#!/bin/bash
+# Local environment check using ralph-gold
+# Requires: uv tool install ralph-gold
+
+set -e
+
+echo "Checking environment with ralph-gold..."
+
+# Check if ralph is available
+if ! command -v ralph &> /dev/null; then
+    echo "Installing ralph-gold..."
+    uv tool install ralph-gold
+fi
+
+# Run environment check
+ralph check-environment --contract harness.contract.json
+
+echo "Environment check passed!"
+`,
+	},
 ];
 
 // === Package Manager Detection ===
