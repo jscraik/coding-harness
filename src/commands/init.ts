@@ -1857,6 +1857,171 @@ ralph check-environment --contract harness.contract.json
 echo "Environment check passed!"
 `,
 	},
+	{
+		path: ".github/ISSUE_TEMPLATE/bug-report.md",
+		render: () => `---
+name: Bug Report
+about: Report a reproducible bug
+title: '[BUG] '
+labels: 'bug, needs-triage'
+assignees: ''
+---
+
+## Description
+A clear and concise description of what the bug is.
+
+## Steps to Reproduce
+1. Go to '...'
+2. Run '....'
+3. See error
+
+## Expected Behavior
+A clear and concise description of what you expected to happen.
+
+## Actual Behavior
+What actually happened.
+
+## Environment
+- OS: [e.g. macOS 14.0]
+- Node version: [e.g. 20.10.0]
+- Harness version: [e.g. 0.5.0]
+
+## Logs/Screenshots
+If applicable, add logs or screenshots to help explain your problem.
+
+\`\`\`
+Paste relevant logs here
+\`\`\`
+
+## Additional Context
+Add any other context about the problem here.
+`,
+	},
+	{
+		path: ".github/ISSUE_TEMPLATE/feature-request.md",
+		render: () => `---
+name: Feature Request
+about: Suggest a new feature or enhancement
+title: '[FEATURE] '
+labels: 'enhancement, needs-triage'
+assignees: ''
+---
+
+## Problem Statement
+A clear and concise description of what problem this feature would solve.
+
+## Proposed Solution
+A clear and concise description of what you want to happen.
+
+## Alternatives Considered
+A clear description of any alternative solutions or features you've considered.
+
+## Additional Context
+Add any other context, code examples, or references about the feature request here.
+
+## Acceptance Criteria
+- [ ] Criterion 1
+- [ ] Criterion 2
+`,
+	},
+	{
+		path: ".github/ISSUE_TEMPLATE/security-vulnerability.md",
+		render: () => `---
+name: Security Vulnerability
+about: Report a security issue
+title: '[SECURITY] '
+labels: 'security, critical'
+assignees: ''
+---
+
+## Security Issue Description
+A clear description of the security vulnerability.
+
+**⚠️ IMPORTANT: Do not disclose security vulnerabilities publicly. If this is a critical security issue, please email the maintainer directly instead of filing a public issue.**
+
+## Affected Versions
+Which versions of the software are affected?
+
+## Potential Impact
+What is the potential impact of this vulnerability?
+
+## Proof of Concept
+If applicable, provide a proof of concept (without exposing sensitive information).
+
+## Suggested Mitigation
+If you have suggestions for how to fix this issue, please describe them.
+`,
+	},
+	{
+		path: ".github/labels.yml",
+		render: () => `# Standard GitHub labels for project governance
+# Install with: gh label create --filename .github/labels.yml (or use a label sync tool)
+
+- name: "bug"
+  color: "d73a4a"
+  description: "Something isn't working"
+
+- name: "enhancement"
+  color: "a2eeef"
+  description: "New feature or request"
+
+- name: "documentation"
+  color: "0075ca"
+  description: "Improvements or additions to documentation"
+
+- name: "security"
+  color: "b60205"
+  description: "Security-related issue"
+
+- name: "critical"
+  color: "e99695"
+  description: "Critical priority - requires immediate attention"
+
+- name: "high-priority"
+  color: "ff7f50"
+  description: "High priority"
+
+- name: "needs-triage"
+  color: "fbca04"
+  description: "Needs initial review and categorization"
+
+- name: "in-progress"
+  color: "1d76db"
+  description: "Currently being worked on"
+
+- name: "blocked"
+  color: "cfd3d7"
+  description: "Blocked by another issue or external factor"
+
+- name: "needs-review"
+  color: "5319e7"
+  description: "Needs code review or design review"
+
+- name: "ready-to-merge"
+  color: "0e8a16"
+  description: "Approved and ready to merge"
+
+- name: "wontfix"
+  color: "ffffff"
+  description: "This will not be worked on"
+
+- name: "good-first-issue"
+  color: "7057ff"
+  description: "Good for newcomers"
+
+- name: "help-wanted"
+  color: "008672"
+  description: "Extra attention is needed"
+
+- name: "ai-generated"
+  color: "d4c5f9"
+  description: "Code or content generated with AI assistance"
+
+- name: "breaking-change"
+  color: "e6e6e6"
+  description: "Introduces breaking changes"
+`,
+	},
 ];
 
 // === Package Manager Detection ===

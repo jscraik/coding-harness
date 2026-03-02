@@ -22,6 +22,10 @@ const EXPECTED_TEMPLATE_PATHS = [
 	".gitleaks.toml",
 	"prek.toml",
 	"scripts/check-environment.sh",
+	".github/ISSUE_TEMPLATE/bug-report.md",
+	".github/ISSUE_TEMPLATE/feature-request.md",
+	".github/ISSUE_TEMPLATE/security-vulnerability.md",
+	".github/labels.yml",
 ];
 const EXPECTED_TEMPLATE_COUNT = EXPECTED_TEMPLATE_PATHS.length;
 
@@ -161,6 +165,20 @@ describe("runInit", () => {
 			writeFileSync(join(tempDir, ".gitleaks.toml"), "existing");
 			writeFileSync(join(tempDir, "prek.toml"), "existing");
 			writeFileSync(join(tempDir, "scripts/check-environment.sh"), "existing");
+			mkdirSync(join(tempDir, ".github", "ISSUE_TEMPLATE"), { recursive: true });
+			writeFileSync(
+				join(tempDir, ".github/ISSUE_TEMPLATE/bug-report.md"),
+				"existing",
+			);
+			writeFileSync(
+				join(tempDir, ".github/ISSUE_TEMPLATE/feature-request.md"),
+				"existing",
+			);
+			writeFileSync(
+				join(tempDir, ".github/ISSUE_TEMPLATE/security-vulnerability.md"),
+				"existing",
+			);
+			writeFileSync(join(tempDir, ".github/labels.yml"), "existing");
 
 			const result = runInit(tempDir, { dryRun: false, force: false });
 
