@@ -165,7 +165,9 @@ describe("runInit", () => {
 			writeFileSync(join(tempDir, ".gitleaks.toml"), "existing");
 			writeFileSync(join(tempDir, "prek.toml"), "existing");
 			writeFileSync(join(tempDir, "scripts/check-environment.sh"), "existing");
-			mkdirSync(join(tempDir, ".github", "ISSUE_TEMPLATE"), { recursive: true });
+			mkdirSync(join(tempDir, ".github", "ISSUE_TEMPLATE"), {
+				recursive: true,
+			});
 			writeFileSync(
 				join(tempDir, ".github/ISSUE_TEMPLATE/bug-report.md"),
 				"existing",
