@@ -464,6 +464,7 @@ jobs:
   diagram-refresh:
     name: diagram-refresh
     needs: [pr-template]
+    if: false  # Temporarily disabled - auto-commits break required status checks
     runs-on: ubuntu-latest
     permissions:
       contents: write
