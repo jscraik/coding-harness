@@ -2006,11 +2006,9 @@ body:
 	},
 	{
 		path: ".github/ISSUE_TEMPLATE/config.yml",
-		render: () => `blank_issues_enabled: false
-contact_links:
-  - name: Documentation
-    url: https://github.com/jscraik/coding-harness#readme
-    about: Check the README for usage information
+		render: () => `# Issue template configuration
+# Add contact_links here if you have a documentation site or support channel
+blank_issues_enabled: false
 `,
 	},
 	{

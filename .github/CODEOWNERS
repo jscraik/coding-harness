@@ -1,5 +1,8 @@
 # CODEOWNERS - Define ownership for code review
 # https://docs.github.com/en/repositories/managing-your-repositorys-settings-and-features/customizing-your-repository/about-code-owners
+#
+# Security contact: jamie@brainwav.ai
+# For security vulnerabilities, please email the above address instead of opening a public issue.
 
 # Default owners for everything
 * @jscraik
