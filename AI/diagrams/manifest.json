@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-03-02T10:53:35.697Z",
+  "generatedAt": "2026-03-02T10:58:08.363Z",
   "rootPath": "/home/runner/work/coding-harness/coding-harness",
   "diagramDir": "AI/diagrams",
   "diagrams": [
@@ -7,8 +7,8 @@
       "type": "architecture",
       "file": "architecture.mmd",
       "outputPath": "AI/diagrams/architecture.mmd",
-      "lines": 135,
-      "bytes": 5295,
+      "lines": 133,
+      "bytes": 5222,
       "isPlaceholder": false
     },
     {
@@ -23,8 +23,8 @@
       "type": "dependency",
       "file": "dependency.mmd",
       "outputPath": "AI/diagrams/dependency.mmd",
-      "lines": 224,
-      "bytes": 13246,
+      "lines": 225,
+      "bytes": 13373,
       "isPlaceholder": false
     },
     {
@@ -47,24 +47,24 @@
       "type": "database",
       "file": "database.mmd",
       "outputPath": "AI/diagrams/database.mmd",
-      "lines": 44,
-      "bytes": 1871,
+      "lines": 47,
+      "bytes": 1988,
       "isPlaceholder": false
     },
     {
       "type": "user",
       "file": "user.mmd",
       "outputPath": "AI/diagrams/user.mmd",
-      "lines": 41,
-      "bytes": 1535,
+      "lines": 47,
+      "bytes": 1727,
       "isPlaceholder": false
     },
     {
       "type": "events",
       "file": "events.mmd",
       "outputPath": "AI/diagrams/events.mmd",
-      "lines": 13,
-      "bytes": 504,
+      "lines": 14,
+      "bytes": 536,
       "isPlaceholder": false
     },
     {
@@ -79,8 +79,8 @@
       "type": "security",
       "file": "security.mmd",
       "outputPath": "AI/diagrams/security.mmd",
-      "lines": 83,
-      "bytes": 3304,
+      "lines": 89,
+      "bytes": 3511,
       "isPlaceholder": false
     }
   ]

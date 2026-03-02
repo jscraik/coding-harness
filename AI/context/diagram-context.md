@@ -81,17 +81,12 @@ graph TD
   subgraph src_lib_simulate_87a8be80["src/lib/simulate"]
     types_8d846022["types"]
   end
-  subgraph src_lib_silent_error_26e972c0["src/lib/silent-error"]
-    types_1_4ecdf56e["types"]
-    detector_f2b3cbe4["detector"]
-    detector_test_d10b3555["detector.test"]
-  end
   subgraph src_lib_replay_9cdd6ac4["src/lib/replay"]
     tracer_1e6243a2["tracer"]
     tracer_test_cb965d81["tracer.test"]
   end
   subgraph src_lib_remediation_66ee2139["src/lib/remediation"]
-    types_2_d9bc6e7a["types"]
+    types_1_4ecdf56e["types"]
     orchestrator_11376b7e["orchestrator"]
     orchestrator_test_18d2fe26["orchestrator.test"]
     finding_normalizer_13f1559c["finding-normalizer"]
@@ -100,7 +95,7 @@ graph TD
   subgraph src_lib_preflight_d75938f9["src/lib/preflight"]
     validator_f82af321["validator"]
     validator_test_b4b482f8["validator.test"]
-    types_3_9675d69b["types"]
+    types_2_d9bc6e7a["types"]
   end
   subgraph src_lib_policy_f3a0824d["src/lib/policy"]
     risk_tier_1_96b6ff91["risk-tier"]
@@ -108,11 +103,11 @@ graph TD
     diff_budget_1_9f85eb1c["diff-budget"]
   end
   subgraph src_lib_plan_gate_b742698a["src/lib/plan-gate"]
-    types_4_822d0f88["types"]
-    detector_1_b37d288b["detector"]
+    types_3_9675d69b["types"]
+    detector_f2b3cbe4["detector"]
   end
   subgraph src_lib_pilot_evaluation_f6cc358e["src/lib/pilot-evaluation"]
-    types_5_f869ec4b["types"]
+    types_4_822d0f88["types"]
     metrics_capture_1d1a2c08["metrics-capture"]
   end
   subgraph src_lib_observability_ecdc7d70["src/lib/observability"]
@@ -122,7 +117,7 @@ graph TD
   subgraph src_lib_memory_273eb2dc["src/lib/memory"]
     validator_1_0c0621d8["validator"]
     validator_test_1_c5015ca0["validator.test"]
-    types_6_1818fb91["types"]
+    types_5_f869ec4b["types"]
     metrics_tracker_98cec29c["metrics-tracker"]
     metrics_tracker_test_3de156fa["metrics-tracker.test"]
     branch_enforcer_acb749cd["branch-enforcer"]
@@ -139,6 +134,9 @@ graph TD
     mutation_queue_ce5a530e["mutation-queue"]
     mutation_queue_test_10b599e8["mutation-queue.test"]
     errors_be4bd567["errors"]
+    comments_2b4244fb["comments"]
+    comments_test_f8c9ae41["comments.test"]
+    client_948fe603["client"]
   end
 ```
 
@@ -169,8 +167,8 @@ flowchart TD
   Boundary --> validator_test_b4b482f8
   risk_tier_test_ae056367["risk-tier.test"]
   Boundary --> risk_tier_test_ae056367
-  types_6_1818fb91["types"]
-  Boundary --> types_6_1818fb91
+  types_5_f869ec4b["types"]
+  Boundary --> types_5_f869ec4b
   vitest_a9127f3d[("vitest")]
   node_crypto_879f6cbe[("node:crypto")]
   node_path_0e7d56ab[("node:path")]
@@ -244,12 +242,15 @@ flowchart TD
   validator_1_0c0621d8["validator"]
   UserRequest --> validator_1_0c0621d8
   validator_1_0c0621d8 --> validator_1_0c0621d8_result["result"]
-  types_6_1818fb91["types"]
-  UserRequest --> types_6_1818fb91
-  types_6_1818fb91 --> types_6_1818fb91_result["result"]
+  types_5_f869ec4b["types"]
+  UserRequest --> types_5_f869ec4b
+  types_5_f869ec4b --> types_5_f869ec4b_result["result"]
   sanitize_af6a3bb0["sanitize"]
   UserRequest --> sanitize_af6a3bb0
   sanitize_af6a3bb0 --> sanitize_af6a3bb0_result["result"]
+  client_948fe603["client"]
+  UserRequest --> client_948fe603
+  client_948fe603 --> client_948fe603_result["result"]
   classDef dbNode fill:#0ea5e9,color:#fff
   classDef decisionNode fill:#0284c7,color:#fff
 ```
@@ -418,12 +419,6 @@ graph LR
   node_fs_df6b52af["node:fs"] --> brainstorm_test_78cf7a1e
   node_path_0e7d56ab["node:path"] --> brainstorm_test_78cf7a1e
   vitest_a9127f3d["vitest"] --> brainstorm_test_78cf7a1e
-  node_fs_df6b52af["node:fs"] --> detector_f2b3cbe4
-  node_path_0e7d56ab["node:path"] --> detector_f2b3cbe4
-  node_fs_df6b52af["node:fs"] --> detector_test_d10b3555
-  node_os_e9717731["node:os"] --> detector_test_d10b3555
-  node_path_0e7d56ab["node:path"] --> detector_test_d10b3555
-  vitest_a9127f3d["vitest"] --> detector_test_d10b3555
   node_crypto_879f6cbe["node:crypto"] --> tracer_1e6243a2
   node_fs_df6b52af["node:fs"] --> tracer_1e6243a2
   node_path_0e7d56ab["node:path"] --> tracer_1e6243a2
@@ -439,8 +434,8 @@ graph LR
   vitest_a9127f3d["vitest"] --> validator_test_b4b482f8
   picomatch_0bf97c7b["picomatch"] --> risk_tier_1_96b6ff91
   vitest_a9127f3d["vitest"] --> risk_tier_test_ae056367
-  node_fs_df6b52af["node:fs"] --> detector_1_b37d288b
-  node_path_0e7d56ab["node:path"] --> detector_1_b37d288b
+  node_fs_df6b52af["node:fs"] --> detector_f2b3cbe4
+  node_path_0e7d56ab["node:path"] --> detector_f2b3cbe4
   node_fs_df6b52af["node:fs"] --> metrics_capture_1d1a2c08
   node_path_0e7d56ab["node:path"] --> metrics_capture_1d1a2c08
   vitest_a9127f3d["vitest"] --> cardinality_test_c00e7edb
@@ -468,6 +463,10 @@ graph LR
   vitest_a9127f3d["vitest"] --> sha_test_5a5924fc
   vitest_a9127f3d["vitest"] --> mutation_queue_test_10b599e8
   _octokit_request_error_32e46e23["@octokit/request-error"] --> errors_be4bd567
+  vitest_a9127f3d["vitest"] --> comments_test_f8c9ae41
+  _octokit_plugin_retry_db489add["@octokit/plugin-retry"] --> client_948fe603
+  _octokit_plugin_throttling_c7312007["@octokit/plugin-throttling"] --> client_948fe603
+  _octokit_rest_c557ffd5["@octokit/rest"] --> client_948fe603
   style vitest_a9127f3d fill:#f59e0b,color:#fff
   style node_fs_df6b52af fill:#f59e0b,color:#fff
   style node_path_0e7d56ab fill:#f59e0b,color:#fff
@@ -481,6 +480,9 @@ graph LR
   style node_os_e9717731 fill:#f59e0b,color:#fff
   style picomatch_0bf97c7b fill:#f59e0b,color:#fff
   style _octokit_request_error_32e46e23 fill:#f59e0b,color:#fff
+  style _octokit_plugin_retry_db489add fill:#f59e0b,color:#fff
+  style _octokit_plugin_throttling_c7312007 fill:#f59e0b,color:#fff
+  style _octokit_rest_c557ffd5 fill:#f59e0b,color:#fff
 ```
 
 ## events
@@ -494,9 +496,10 @@ flowchart TD
     pilot_evaluate_test_a2ac06fc{{"pilot-evaluate.test"}}
     init_bb54068a{{"init"}}
     tracer_1e6243a2{{"tracer"}}
-    types_5_f869ec4b{{"types"}}
+    types_4_822d0f88{{"types"}}
     mutation_queue_ce5a530e{{"mutation-queue"}}
     mutation_queue_test_10b599e8{{"mutation-queue.test"}}
+    client_948fe603{{"client"}}
   end
   classDef eventNode fill:#db2777,color:#fff
 ```
@@ -591,8 +594,8 @@ flowchart TD
   Untrusted --> blast_radius_test_045450fc
   validator_test_b4b482f8["validator.test"]
   Untrusted --> validator_test_b4b482f8
-  types_6_1818fb91["types"]
-  Untrusted --> types_6_1818fb91
+  types_5_f869ec4b["types"]
+  Untrusted --> types_5_f869ec4b
   ui_loop_11660889["ui-loop"]
   Untrusted --> ui_loop_11660889
   branch_protect_test_c8d80aab["branch-protect.test"]
@@ -611,6 +614,12 @@ flowchart TD
   Untrusted --> mutation_queue_test_10b599e8
   errors_be4bd567["errors"]
   Untrusted --> errors_be4bd567
+  comments_2b4244fb["comments"]
+  Untrusted --> comments_2b4244fb
+  comments_test_f8c9ae41["comments.test"]
+  Untrusted --> comments_test_f8c9ae41
+  client_948fe603["client"]
+  Untrusted --> client_948fe603
   classDef securityNode fill:#dc2626,color:#fff
 ```
 
@@ -664,6 +673,12 @@ flowchart LR
   User --> risk_tier_test_ae056367
   errors_be4bd567["errors"]
   User --> errors_be4bd567
+  comments_2b4244fb["comments"]
+  User --> comments_2b4244fb
+  comments_test_f8c9ae41["comments.test"]
+  User --> comments_test_f8c9ae41
+  client_948fe603["client"]
+  User --> client_948fe603
   classDef userNode fill:#16a34a,color:#fff
 ```
 
