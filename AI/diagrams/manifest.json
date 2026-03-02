@@ -1,0 +1,87 @@
+{
+  "generatedAt": "2026-03-02T10:53:35.697Z",
+  "rootPath": "/home/runner/work/coding-harness/coding-harness",
+  "diagramDir": "AI/diagrams",
+  "diagrams": [
+    {
+      "type": "architecture",
+      "file": "architecture.mmd",
+      "outputPath": "AI/diagrams/architecture.mmd",
+      "lines": 135,
+      "bytes": 5295,
+      "isPlaceholder": false
+    },
+    {
+      "type": "sequence",
+      "file": "sequence.mmd",
+      "outputPath": "AI/diagrams/sequence.mmd",
+      "lines": 2,
+      "bytes": 58,
+      "isPlaceholder": true
+    },
+    {
+      "type": "dependency",
+      "file": "dependency.mmd",
+      "outputPath": "AI/diagrams/dependency.mmd",
+      "lines": 224,
+      "bytes": 13246,
+      "isPlaceholder": false
+    },
+    {
+      "type": "class",
+      "file": "class.mmd",
+      "outputPath": "AI/diagrams/class.mmd",
+      "lines": 16,
+      "bytes": 345,
+      "isPlaceholder": false
+    },
+    {
+      "type": "flow",
+      "file": "flow.mmd",
+      "outputPath": "AI/diagrams/flow.mmd",
+      "lines": 20,
+      "bytes": 730,
+      "isPlaceholder": false
+    },
+    {
+      "type": "database",
+      "file": "database.mmd",
+      "outputPath": "AI/diagrams/database.mmd",
+      "lines": 44,
+      "bytes": 1871,
+      "isPlaceholder": false
+    },
+    {
+      "type": "user",
+      "file": "user.mmd",
+      "outputPath": "AI/diagrams/user.mmd",
+      "lines": 41,
+      "bytes": 1535,
+      "isPlaceholder": false
+    },
+    {
+      "type": "events",
+      "file": "events.mmd",
+      "outputPath": "AI/diagrams/events.mmd",
+      "lines": 13,
+      "bytes": 504,
+      "isPlaceholder": false
+    },
+    {
+      "type": "auth",
+      "file": "auth.mmd",
+      "outputPath": "AI/diagrams/auth.mmd",
+      "lines": 37,
+      "bytes": 1368,
+      "isPlaceholder": false
+    },
+    {
+      "type": "security",
+      "file": "security.mmd",
+      "outputPath": "AI/diagrams/security.mmd",
+      "lines": 83,
+      "bytes": 3304,
+      "isPlaceholder": false
+    }
+  ]
+}

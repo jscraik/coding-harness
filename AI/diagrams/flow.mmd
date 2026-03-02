@@ -8,13 +8,13 @@ flowchart TD
   cli_99bb8840 --> cli_test_4851f28b
   cli_dispatch_test_54c9f17b["cli-dispatch.test"]
   cli_test_4851f28b --> cli_dispatch_test_54c9f17b
-  version_5ca4f385["version"]
-  cli_dispatch_test_54c9f17b --> version_5ca4f385
+  verify_greptile_227190f7["verify-greptile"]
+  cli_dispatch_test_54c9f17b --> verify_greptile_227190f7
   ui_loop_11660889["ui-loop"]
-  version_5ca4f385 --> ui_loop_11660889
+  verify_greptile_227190f7 --> ui_loop_11660889
   ui_loop_test_f0eabc42["ui-loop.test"]
   ui_loop_11660889 --> ui_loop_test_f0eabc42
-  silent_error_64e8c933["silent-error"]
-  ui_loop_test_f0eabc42 --> silent_error_64e8c933
+  simulate_b9efe395["simulate"]
+  ui_loop_test_f0eabc42 --> simulate_b9efe395
   End(["End"])
-  silent_error_64e8c933 --> End
+  simulate_b9efe395 --> End
