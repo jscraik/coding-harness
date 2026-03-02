@@ -10,6 +10,8 @@ This repository enforces an AI-integrated review policy for Greptile that priori
 - [Independent validation and compliance](#independent-validation-and-compliance)
 - [Configuration standards and cascading governance](#configuration-standards-and-cascading-governance)
 - [Required local `.greptile/` structure](#required-local-greptile-structure)
+- [Webhook and event requirements](#webhook-and-event-requirements)
+- [Greptile Review bridge workflow](#greptile-review-bridge-workflow)
 - [Merge logic for multi-scope pull requests](#merge-logic-for-multi-scope-pull-requests)
 - [Confidence score policy](#confidence-score-policy)
 - [Strictness and branch protection expectations](#strictness-and-branch-protection-expectations)
@@ -17,6 +19,7 @@ This repository enforces an AI-integrated review policy for Greptile that priori
 - [Feedback loops and calibration](#feedback-loops-and-calibration)
 - [Custom context and pattern repositories](#custom-context-and-pattern-repositories)
 - [MCP loop workflow and manual triggers](#mcp-loop-workflow-and-manual-triggers)
+- [Verification command](#verification-command)
 
 ## Absolute grounding
 
@@ -53,6 +56,33 @@ This repository must maintain:
 - `.greptile/files.json`
 
 Use the `grepfile` skill to set up or refresh these files.
+
+## Webhook and event requirements
+
+For the Greptile Review bridge workflow to function correctly, the Greptile GitHub App must subscribe to these events:
+
+- `pull_request` - triggers on PR open/sync/reopen
+- `pull_request_review` - triggers on review submission
+- `pull_request_review_comment` - triggers on review comments
+- `issue_comment` - triggers on PR comments (Greptile feedback)
+
+These events are configured at the GitHub App level (not repository level). To verify setup:
+
+1. Go to GitHub App settings: `https://github.com/apps/greptile/configurations`
+2. Ensure "Pull requests", "Pull request reviews", and "Issue comments" are subscribed
+3. Verify the app has "Checks: Write" permission
+
+## Greptile Review bridge workflow
+
+Since Greptile posts PR comments but doesn't create GitHub check runs, this repository uses a bridge workflow:
+
+- `.github/workflows/greptile-review.yml` - creates "Greptile Review" check runs
+- Triggers on PR events, review events, and Greptile comments
+- Parses Greptile comments for confidence scores
+- Uses `minMergeScore` from `.greptile/config.json` as pass threshold
+- Creates `neutral` check when Greptile hasn't reviewed yet (doesn't block merge)
+
+The repository ruleset requires "Greptile Review" as a passing status check.
 
 ## Merge logic for multi-scope pull requests
 
@@ -111,3 +141,27 @@ Manual trigger standards:
 - use `@greptileai` for draft PR reviews,
 - force re-review after config changes,
 - request targeted checks when needed.
+
+## Verification command
+
+Run `harness verify-greptile` to verify the Greptile setup:
+
+```bash
+# Local verification only
+harness verify-greptile
+
+# Full verification including GitHub API checks
+harness verify-greptile --token $GITHUB_TOKEN --owner jscraik --repo coding-harness
+
+# JSON output for CI
+harness verify-greptile --json
+```
+
+The verification checks:
+
+1. `.greptile/config.json` exists and has required fields
+2. `.greptile/rules.md` exists (optional but recommended)
+3. `.github/workflows/greptile-review.yml` exists with required triggers
+4. GitHub App is installed (requires --token, --owner, --repo)
+5. Ruleset requires "Greptile Review" status check
+6. Webhook events are properly configured
