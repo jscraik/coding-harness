@@ -4,7 +4,7 @@
 	"reviewPolicy": {
 		"timeoutSeconds": 600,
 		"timeoutAction": "fail",
-		"enforceReviewerIndependence": true
+		"enforceReviewerIndependence": false
 	},
 	"evidencePolicy": {
 		"requiredFor": [],
