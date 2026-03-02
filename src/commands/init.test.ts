@@ -14,6 +14,7 @@ const EXPECTED_TEMPLATE_PATHS = [
 	"CONTRIBUTING.md",
 	".github/PULL_REQUEST_TEMPLATE.md",
 	"scripts/validate-commit-msg.js",
+	"scripts/setup-git-hooks.js",
 ];
 const EXPECTED_TEMPLATE_COUNT = EXPECTED_TEMPLATE_PATHS.length;
 
@@ -143,6 +144,7 @@ describe("runInit", () => {
 				join(tempDir, "scripts/validate-commit-msg.js"),
 				"existing",
 			);
+			writeFileSync(join(tempDir, "scripts/setup-git-hooks.js"), "existing");
 
 			const result = runInit(tempDir, { dryRun: false, force: false });
 
