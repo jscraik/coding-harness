@@ -38,6 +38,7 @@ import { runReviewGateCLI } from "./commands/review-gate.js";
 import { runRiskTierCLI } from "./commands/risk-tier.js";
 import { runSearchCLI } from "./commands/search.js";
 import { runSilentErrorDetectorCLI } from "./commands/silent-error.js";
+import { printSimulateUsage, runSimulateCLI } from "./commands/simulate.js";
 import {
 	runUIExploreCLI,
 	runUIFastCLI,
@@ -108,6 +109,7 @@ function printUsage(): void {
 	console.info(
 		"  pilot-evaluate   Evaluate pilot metrics and determine promotion",
 	);
+	console.info("  simulate         Run counterfactual policy simulation");
 	console.info("");
 	console.info("Blast Radius Options:");
 	console.info("  --contract       Path to harness.contract.json");
@@ -1430,6 +1432,72 @@ export function run(args: string[]): void {
 	}
 
 	// No command recognized
+
+	if (command === "simulate") {
+		// Handle help
+		if (args.includes("--help") || args.includes("-h")) {
+			printSimulateUsage();
+			process.exit(0);
+			return;
+		}
+
+		// Parse simulate options
+		const jsonFlag = args.includes("--json");
+		const ciSoftFlag = args.includes("--ci-soft");
+		const verboseFlag = args.includes("--verbose");
+
+		const contractAIndex = args.indexOf("--contract-a");
+		const contractBIndex = args.indexOf("--contract-b");
+		const artifactsIndex = args.indexOf("--artifacts");
+		const tracesIndex = args.indexOf("--traces");
+		const outputIndex = args.indexOf("--output");
+
+		const contractA = getFlagValue(args, contractAIndex);
+		const contractB = getFlagValue(args, contractBIndex);
+
+		if (!contractA) {
+			console.error("Error: --contract-a is required");
+			process.exit(1);
+			return;
+		}
+
+		if (!contractB) {
+			console.error("Error: --contract-b is required");
+			process.exit(1);
+			return;
+		}
+
+		const options: {
+			contractA: string;
+			contractB: string;
+			artifactsDir?: string;
+			tracesDir?: string;
+			outputPath?: string;
+			json?: boolean;
+			ciSoft?: boolean;
+			verbose?: boolean;
+		} = {
+			contractA,
+			contractB,
+		};
+
+		if (jsonFlag) options.json = true;
+		if (ciSoftFlag) options.ciSoft = true;
+		if (verboseFlag) options.verbose = true;
+
+		const artifactsArg = getFlagValue(args, artifactsIndex);
+		if (artifactsArg) options.artifactsDir = artifactsArg;
+
+		const tracesArg = getFlagValue(args, tracesIndex);
+		if (tracesArg) options.tracesDir = tracesArg;
+
+		const outputArg = getFlagValue(args, outputIndex);
+		if (outputArg) options.outputPath = outputArg;
+
+		const exitCode = runSimulateCLI(options);
+		process.exit(exitCode);
+		return;
+	}
 	if (command === "gap-case") {
 		const jsonFlag = args.includes("--json");
 		const contractIndex = args.indexOf("--contract");
