@@ -56,6 +56,19 @@ jobs:
       - name: Build package
         run: pnpm build
 
+      - name: Generate SBOM
+        run: |
+          npm install -g @cyclonedx/cyclonedx-npm
+          cyclonedx-npm --output-file artifacts/sbom.cdx.json
+        working-directory: ${{ github.workspace }}
+
+      - name: Upload SBOM artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: sbom
+          path: artifacts/sbom.cdx.json
+          retention-days: 90
+
       - name: Smoke test packed CLI artifact
         run: |
           set -euo pipefail

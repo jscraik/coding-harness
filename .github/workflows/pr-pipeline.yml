@@ -413,22 +413,6 @@ jobs:
       - name: Run tests
         run: pnpm test
 
-  audit:
-    name: audit
-    needs: [pr-template, dependency-chain, remediation-decision]
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
-        with:
-          node-version: "24"
-      - name: Enable corepack
-        run: corepack enable
-      - name: Install dependencies
-        run: pnpm install
-      - name: Run audit
-        run: pnpm audit
-
   check:
     name: check
     needs: [pr-template, dependency-chain, remediation-decision]
@@ -455,6 +439,15 @@ jobs:
       - uses: actions/checkout@v4
         with:
           fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "24"
+      - name: Enable corepack
+        run: corepack enable
+      - name: Install dependencies
+        run: pnpm install
+      - name: Run pnpm audit
+        run: pnpm audit --audit-level=moderate
       - name: Run Gitleaks
         uses: gitleaks/gitleaks-action@v2
         env:
@@ -467,17 +460,14 @@ jobs:
         uses: actions/setup-python@v6
         with:
           python-version: "3.12"
-      - name: Install Semgrep
-        run: python -m pip install --upgrade pip semgrep
+      - name: Install Semgrep (pinned)
+        run: python -m pip install --upgrade pip semgrep==1.100.0
       - name: Run Semgrep scan
         run: semgrep scan --error --config p/security-audit --exclude node_modules .
-      - name: Run Senvar scan (optional)
-        run: |
-          if command -v senvar >/dev/null 2>&1; then
-            senvar scan .
-          else
-            echo "senvar not installed on runner; skipping."
-          fi
+      - name: Install Senvar (pinned)
+        run: python -m pip install senvar==0.1.4
+      - name: Run Senvar scan
+        run: senvar scan .
 
   memory:
     name: memory
