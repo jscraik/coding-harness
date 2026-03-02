@@ -2,6 +2,23 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [0.5.4](https://github.com/jscraik/coding-harness/compare/v0.5.3...v0.5.4) (2026-03-02)
+
+
+### Bug Fixes
+
+* **ci:** address Codex review issues in workflow files ([#38](https://github.com/jscraik/coding-harness/issues/38)) ([c5b3249](https://github.com/jscraik/coding-harness/commit/c5b324958259e9de0d03e54d8f1cb617a4efe77b))
+* **ci:** skip preview publish for fork PRs ([6b166aa](https://github.com/jscraik/coding-harness/commit/6b166aa6e6b1b31b9a4e88bfe9e60abaf53a64f8))
+* **security:** add CODEOWNERS security contact for private vulnerability reporting ([#39](https://github.com/jscraik/coding-harness/issues/39)) ([52fac71](https://github.com/jscraik/coding-harness/commit/52fac7154af3d5a7965b93cb832cf6b51071d307))
+* **init:** remove hardcoded URL from issue template config ([52fac71](https://github.com/jscraik/coding-harness/commit/52fac7154af3d5a7965b93cb832cf6b51071d307))
+
+
+### Features
+
+* **ci:** add release workflow upgrades (dependency review, branch cleanup, preview releases) ([#37](https://github.com/jscraik/coding-harness/issues/37)) ([c69ee8c](https://github.com/jscraik/coding-harness/commit/c69ee8c8e7a6a4b5b4d5e6f7a8b9c0d1e2f3a4b5))
+
+
+
 ## [0.5.3](https://github.com/jscraik/coding-harness/compare/v0.5.1...v0.5.3) (2026-02-28)
 
 
