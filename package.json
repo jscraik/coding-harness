@@ -35,13 +35,13 @@
 		"audit:strict": "pnpm audit --audit-level=high",
 		"docs:lint": "pnpm markdownlint",
 		"markdownlint": "markdownlint-cli2 \"**/*.md\"",
-		"vale": "vale --config .vale.ini AGENTS.md CLAUDE.md docs",
 		"test:artifacts": "bash scripts/test-with-artifacts.sh all",
 		"test:artifacts:unit": "bash scripts/test-with-artifacts.sh unit",
 		"test:artifacts:integration": "bash scripts/test-with-artifacts.sh integration",
 		"test:artifacts:e2e": "bash scripts/test-with-artifacts.sh e2e",
 		"harness:ui:capture-browser-evidence": "pnpm exec tsx src/cli.ts ui:explore --mode execute --interactions --output artifacts/ui-evidence --json",
-		"postinstall": "simple-git-hooks"
+		"postinstall": "simple-git-hooks",
+		"vale": "vale --config .vale.ini AGENTS.md CLAUDE.md docs"
 	},
 	"devDependencies": {
 		"@biomejs/biome": "^1.9.4",

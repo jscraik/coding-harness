@@ -1858,168 +1858,159 @@ echo "Environment check passed!"
 `,
 	},
 	{
-		path: ".github/ISSUE_TEMPLATE/bug-report.md",
-		render: () => `---
-name: Bug Report
-about: Report a reproducible bug
-title: '[BUG] '
-labels: 'bug, needs-triage'
-assignees: ''
----
+		path: ".github/ISSUE_TEMPLATE/issue.yml",
+		render: () => `name: Bug Report
+description: Report a bug or unexpected behavior
+labels: [bug]
+body:
+  - type: textarea
+    id: description
+    attributes:
+      label: Description
+      description: A clear description of the bug
+      placeholder: "What happened? What did you expect?"
+    validations:
+      required: true
 
-## Description
-A clear and concise description of what the bug is.
+  - type: textarea
+    id: steps
+    attributes:
+      label: Steps to reproduce
+      description: How can we reproduce this behavior?
+      placeholder: |
+        1. Run 'harness init'
+        2. Observe error...
+    validations:
+      required: true
 
-## Steps to Reproduce
-1. Go to '...'
-2. Run '....'
-3. See error
+  - type: textarea
+    id: expected
+    attributes:
+      label: Expected behavior
+      description: What did you expect to happen?
+    validations:
+      required: true
 
-## Expected Behavior
-A clear and concise description of what you expected to happen.
+  - type: textarea
+    id: environment
+    attributes:
+      label: Environment
+      description: Please complete the following information
+      value: |
+        - OS: [e.g. macOS 15]
+        - Node version: [e.g. 24.x]
+        - Harness version: [e.g. 0.5.0]
+    validations:
+      required: false
 
-## Actual Behavior
-What actually happened.
-
-## Environment
-- OS: [e.g. macOS 14.0]
-- Node version: [e.g. 20.10.0]
-- Harness version: [e.g. 0.5.0]
-
-## Logs/Screenshots
-If applicable, add logs or screenshots to help explain your problem.
-
-\`\`\`
-Paste relevant logs here
-\`\`\`
-
-## Additional Context
-Add any other context about the problem here.
+  - type: textarea
+    id: logs
+    attributes:
+      label: Logs/Screenshots
+      description: Add any relevant logs or screenshots
+    validations:
+      required: false
 `,
 	},
 	{
-		path: ".github/ISSUE_TEMPLATE/feature-request.md",
-		render: () => `---
-name: Feature Request
-about: Suggest a new feature or enhancement
-title: '[FEATURE] '
-labels: 'enhancement, needs-triage'
-assignees: ''
----
+		path: ".github/ISSUE_TEMPLATE/feature.yml",
+		render: () => `name: Feature Request
+description: Suggest a new feature or enhancement
+labels: [enhancement]
+body:
+  - type: textarea
+    id: problem
+    attributes:
+      label: Problem / Motivation
+      description: What problem does this feature solve?
+      placeholder: "I'm always frustrated when..."
+    validations:
+      required: true
 
-## Problem Statement
-A clear and concise description of what problem this feature would solve.
+  - type: textarea
+    id: solution
+    attributes:
+      label: Proposed solution
+      description: How would you like this to work?
+    validations:
+      required: true
 
-## Proposed Solution
-A clear and concise description of what you want to happen.
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: Alternatives considered
+      description: Have you considered any alternative solutions?
+    validations:
+      required: false
 
-## Alternatives Considered
-A clear description of any alternative solutions or features you've considered.
-
-## Additional Context
-Add any other context, code examples, or references about the feature request here.
-
-## Acceptance Criteria
-- [ ] Criterion 1
-- [ ] Criterion 2
+  - type: textarea
+    id: additional
+    attributes:
+      label: Additional context
+      description: Add any other context or screenshots here
+    validations:
+      required: false
 `,
 	},
 	{
-		path: ".github/ISSUE_TEMPLATE/security-vulnerability.md",
-		render: () => `---
-name: Security Vulnerability
-about: Report a security issue
-title: '[SECURITY] '
-labels: 'security, critical'
-assignees: ''
----
+		path: ".github/ISSUE_TEMPLATE/security.yml",
+		render: () => `name: Security Vulnerability
+description: Report a security issue
+labels: [security, critical]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        ⚠️ **IMPORTANT**: For critical security issues, please email the maintainer directly instead of filing a public issue.
 
-## Security Issue Description
-A clear description of the security vulnerability.
+  - type: textarea
+    id: description
+    attributes:
+      label: Security Issue Description
+      description: A clear description of the security vulnerability
+    validations:
+      required: true
 
-**⚠️ IMPORTANT: Do not disclose security vulnerabilities publicly. If this is a critical security issue, please email the maintainer directly instead of filing a public issue.**
+  - type: textarea
+    id: affected
+    attributes:
+      label: Affected Versions
+      description: Which versions of the software are affected?
+    validations:
+      required: true
 
-## Affected Versions
-Which versions of the software are affected?
+  - type: textarea
+    id: impact
+    attributes:
+      label: Potential Impact
+      description: What is the potential impact of this vulnerability?
+    validations:
+      required: true
 
-## Potential Impact
-What is the potential impact of this vulnerability?
+  - type: textarea
+    id: poc
+    attributes:
+      label: Proof of Concept
+      description: If applicable, provide a proof of concept (without exposing sensitive information)
+    validations:
+      required: false
 
-## Proof of Concept
-If applicable, provide a proof of concept (without exposing sensitive information).
-
-## Suggested Mitigation
-If you have suggestions for how to fix this issue, please describe them.
+  - type: textarea
+    id: mitigation
+    attributes:
+      label: Suggested Mitigation
+      description: If you have suggestions for how to fix this issue, please describe them
+    validations:
+      required: false
 `,
 	},
 	{
-		path: ".github/labels.yml",
-		render: () => `# Standard GitHub labels for project governance
-# Install with: gh label create --filename .github/labels.yml (or use a label sync tool)
-
-- name: "bug"
-  color: "d73a4a"
-  description: "Something isn't working"
-
-- name: "enhancement"
-  color: "a2eeef"
-  description: "New feature or request"
-
-- name: "documentation"
-  color: "0075ca"
-  description: "Improvements or additions to documentation"
-
-- name: "security"
-  color: "b60205"
-  description: "Security-related issue"
-
-- name: "critical"
-  color: "e99695"
-  description: "Critical priority - requires immediate attention"
-
-- name: "high-priority"
-  color: "ff7f50"
-  description: "High priority"
-
-- name: "needs-triage"
-  color: "fbca04"
-  description: "Needs initial review and categorization"
-
-- name: "in-progress"
-  color: "1d76db"
-  description: "Currently being worked on"
-
-- name: "blocked"
-  color: "cfd3d7"
-  description: "Blocked by another issue or external factor"
-
-- name: "needs-review"
-  color: "5319e7"
-  description: "Needs code review or design review"
-
-- name: "ready-to-merge"
-  color: "0e8a16"
-  description: "Approved and ready to merge"
-
-- name: "wontfix"
-  color: "ffffff"
-  description: "This will not be worked on"
-
-- name: "good-first-issue"
-  color: "7057ff"
-  description: "Good for newcomers"
-
-- name: "help-wanted"
-  color: "008672"
-  description: "Extra attention is needed"
-
-- name: "ai-generated"
-  color: "d4c5f9"
-  description: "Code or content generated with AI assistance"
-
-- name: "breaking-change"
-  color: "e6e6e6"
-  description: "Introduces breaking changes"
+		path: ".github/ISSUE_TEMPLATE/config.yml",
+		render: () => `blank_issues_enabled: false
+contact_links:
+  - name: Documentation
+    url: https://github.com/jscraik/coding-harness#readme
+    about: Check the README for usage information
 `,
 	},
 	{

@@ -1,0 +1,10 @@
+# Prek configuration - pre-commit hook runner
+# https://github.com/jdx/prek
+
+[hooks]
+pre-commit = ["pnpm lint", "pnpm typecheck", "pnpm test"]
+
+[tools]
+biome = "1.9.4"
+typescript = "5.7"
+vitest = "3.2"
