@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-03-02T12:36:52.763Z",
+  "generatedAt": "2026-03-02T12:55:10.875Z",
   "rootPath": "/home/runner/work/coding-harness/coding-harness",
   "diagramDir": "AI/diagrams",
   "diagrams": [
@@ -48,7 +48,7 @@
       "file": "database.mmd",
       "outputPath": "AI/diagrams/database.mmd",
       "lines": 44,
-      "bytes": 1879,
+      "bytes": 1871,
       "isPlaceholder": false
     },
     {
@@ -80,7 +80,7 @@
       "file": "security.mmd",
       "outputPath": "AI/diagrams/security.mmd",
       "lines": 83,
-      "bytes": 3308,
+      "bytes": 3304,
       "isPlaceholder": false
     }
   ]

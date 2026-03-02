@@ -78,13 +78,13 @@ graph TD
     brainstorm_e2e2381d["brainstorm"]
     brainstorm_test_78cf7a1e["brainstorm.test"]
   end
-  subgraph src_lib_silent_error_26e972c0["src/lib/silent-error"]
+  subgraph src_lib_simulate_87a8be80["src/lib/simulate"]
     types_8d846022["types"]
+  end
+  subgraph src_lib_silent_error_26e972c0["src/lib/silent-error"]
+    types_1_4ecdf56e["types"]
     detector_f2b3cbe4["detector"]
     detector_test_d10b3555["detector.test"]
-  end
-  subgraph src_lib_simulate_87a8be80["src/lib/simulate"]
-    types_1_4ecdf56e["types"]
   end
   subgraph src_lib_replay_9cdd6ac4["src/lib/replay"]
     tracer_1e6243a2["tracer"]
@@ -238,9 +238,9 @@ flowchart TD
   context_test_57aad306["context.test"]
   UserRequest --> context_test_57aad306
   context_test_57aad306 --> context_test_57aad306_result["result"]
-  types_1_4ecdf56e["types"]
-  UserRequest --> types_1_4ecdf56e
-  types_1_4ecdf56e --> types_1_4ecdf56e_result["result"]
+  types_8d846022["types"]
+  UserRequest --> types_8d846022
+  types_8d846022 --> types_8d846022_result["result"]
   validator_1_0c0621d8["validator"]
   UserRequest --> validator_1_0c0621d8
   validator_1_0c0621d8 --> validator_1_0c0621d8_result["result"]
@@ -569,8 +569,8 @@ flowchart TD
   Untrusted --> check_authz_fee242b1
   agent_first_throughput_integration_test_dc677cc4["agent-first-throughput.integration.test"]
   Untrusted --> agent_first_throughput_integration_test_dc677cc4
-  types_1_4ecdf56e["types"]
-  Untrusted --> types_1_4ecdf56e
+  types_8d846022["types"]
+  Untrusted --> types_8d846022
   tracer_test_cb965d81["tracer.test"]
   Untrusted --> tracer_test_cb965d81
   orchestrator_11376b7e["orchestrator"]
