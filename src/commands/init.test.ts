@@ -17,6 +17,7 @@ const EXPECTED_TEMPLATE_PATHS = [
 	"scripts/setup-git-hooks.js",
 	"AI/diagrams/.gitkeep",
 	"AI/context/diagram-context.md",
+	".diagramrc",
 ];
 const EXPECTED_TEMPLATE_COUNT = EXPECTED_TEMPLATE_PATHS.length;
 
@@ -151,6 +152,7 @@ describe("runInit", () => {
 			writeFileSync(join(tempDir, "scripts/setup-git-hooks.js"), "existing");
 			writeFileSync(join(tempDir, "AI/diagrams/.gitkeep"), "");
 			writeFileSync(join(tempDir, "AI/context/diagram-context.md"), "existing");
+			writeFileSync(join(tempDir, ".diagramrc"), "existing");
 
 			const result = runInit(tempDir, { dryRun: false, force: false });
 

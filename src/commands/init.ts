@@ -1705,6 +1705,13 @@ pnpm exec diagram all . --output-dir AI/diagrams
 \`\`\`
 `,
 	},
+	{
+		path: ".diagramrc",
+		render: () => `{
+	"ignore": ["node_modules", "dist", "coverage", "artifacts", ".git", "AI/diagrams"]
+}
+`,
+	},
 ];
 
 // === Package Manager Detection ===
