@@ -1128,16 +1128,14 @@ jobs:
         uses: aquasecurity/setup-trivy@v0.2.2
       - name: Run Trivy filesystem scan
         run: trivy fs --severity HIGH,CRITICAL --exit-code 1 --no-progress .
+      - name: Run Semgrep scan
+        uses: returntocorp/semgrep-action@v1
+        with:
+          config: p/security-audit
       - name: Setup Python
         uses: actions/setup-python@${SETUP_PYTHON_ACTION_VERSION}
         with:
           python-version: "${RALPH_PYTHON_VERSION_PIN}"
-      - name: Install setuptools (required for semgrep on Python 3.12)
-        run: python -m pip install --upgrade pip setuptools wheel
-      - name: Install Semgrep (pinned)
-        run: python -m pip install semgrep==1.100.0
-      - name: Run Semgrep scan
-        run: semgrep scan --error --config p/security-audit --exclude node_modules .
       - name: Install Senvar (pinned)
         run: python -m pip install senvar==0.1.4
       - name: Run Senvar scan
