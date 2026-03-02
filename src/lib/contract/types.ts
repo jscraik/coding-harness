@@ -133,7 +133,34 @@ export interface DiffBudgetOverride {
 export interface ReviewPolicy {
 	timeoutSeconds: number;
 	timeoutAction: TimeoutAction;
+	requiredChecks?: string[] | undefined;
+	enforceReviewerIndependence?: boolean | undefined;
 }
+
+export type LoopStageFailPolicy = "fail_closed" | "warn_only";
+
+export type LoopStageName =
+	| "risk-policy-gate"
+	| "review-gate"
+	| "evidence-verify"
+	| "remediation-decision";
+
+/**
+ * Semantic contract for a loop stage. Used to validate generated and
+ * repo-native workflow parity at the stage-behavior level.
+ */
+export interface LoopStageContract {
+	inputs: string[];
+	outputs: string[];
+	schema: string;
+	failPolicy: LoopStageFailPolicy;
+	if: string;
+	permissions: string[];
+	timeoutMinutes: number;
+	concurrency: string;
+}
+
+export type LoopStageContracts = Record<LoopStageName, LoopStageContract>;
 
 /**
  * Evidence policy configuration for requiring evidence files.
@@ -229,6 +256,8 @@ export interface PilotAuthzPolicy {
 export const DEFAULT_REVIEW_POLICY: ReviewPolicy = {
 	timeoutSeconds: 600, // 10 minutes
 	timeoutAction: "fail",
+	requiredChecks: [],
+	enforceReviewerIndependence: false,
 };
 
 export const DEFAULT_EVIDENCE_POLICY: EvidencePolicy = {
@@ -256,6 +285,53 @@ export const DEFAULT_REMEDIATION_POLICY: RemediationPolicy = {
 	timeoutMinutes: 10,
 	retryLimit: 3,
 	requireEvidence: true,
+};
+
+export const DEFAULT_LOOP_STAGE_CONTRACTS: LoopStageContracts = {
+	"risk-policy-gate": {
+		inputs: ["changed_files", "harness.contract.json"],
+		outputs: ["risk-policy-gate.result"],
+		schema: "loop-stage-contract/v1",
+		failPolicy: "fail_closed",
+		if: "always()",
+		permissions: ["contents:read", "pull-requests:read"],
+		timeoutMinutes: 15,
+		concurrency: "none",
+	},
+	"review-gate": {
+		inputs: ["risk-policy-gate.result", "head_sha", "harness.contract.json"],
+		outputs: ["review-gate.result"],
+		schema: "loop-stage-contract/v1",
+		failPolicy: "fail_closed",
+		if: "always()",
+		permissions: ["contents:read", "pull-requests:read"],
+		timeoutMinutes: 15,
+		concurrency: "none",
+	},
+	"evidence-verify": {
+		inputs: ["review-gate.result", "evidence_files", "harness.contract.json"],
+		outputs: ["evidence-verify.result", "browser-evidence-artifacts"],
+		schema: "loop-stage-contract/v1",
+		failPolicy: "fail_closed",
+		if: "always()",
+		permissions: ["contents:read"],
+		timeoutMinutes: 15,
+		concurrency: "none",
+	},
+	"remediation-decision": {
+		inputs: [
+			"evidence-verify.result",
+			"findings.json",
+			"harness.contract.json",
+		],
+		outputs: ["remediation-decision.result", "remediation-decision-artifacts"],
+		schema: "loop-stage-contract/v1",
+		failPolicy: "fail_closed",
+		if: "always()",
+		permissions: ["contents:read", "pull-requests:write"],
+		timeoutMinutes: 15,
+		concurrency: "none",
+	},
 };
 
 export const DEFAULT_PILOT_GAP_CASE_POLICY: PilotGapCasePolicy = {
@@ -315,6 +391,8 @@ export interface HarnessContract {
 	blastRadiusRulesMode?: BlastRadiusRulesMode | undefined;
 	/** Remediation policy for automatic fix application */
 	remediationPolicy?: RemediationPolicy | undefined;
+	/** Semantic loop stage contract for workflow parity validation */
+	loopStageContracts?: LoopStageContracts | undefined;
 }
 
 export const DEFAULT_CONTRACT: HarnessContract = {
@@ -326,4 +404,5 @@ export const DEFAULT_CONTRACT: HarnessContract = {
 	pilotRollbackPolicy: DEFAULT_PILOT_ROLLBACK_POLICY,
 	pilotAuthzPolicy: DEFAULT_PILOT_AUTHZ_POLICY,
 	remediationPolicy: DEFAULT_REMEDIATION_POLICY,
+	loopStageContracts: DEFAULT_LOOP_STAGE_CONTRACTS,
 };

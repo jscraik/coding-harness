@@ -18,11 +18,19 @@ vi.mock("node:child_process", () => ({
 	spawnSync: vi.fn(),
 }));
 
-// Mock fs for file reading
-vi.mock("node:fs", () => ({
-	readFileSync: vi.fn(),
-	realpathSync: vi.fn((path: string) => path), // Return path as-is for tests
-}));
+// Mock fs with writable methods needed by apply transactions.
+vi.mock("node:fs", async () => {
+	const actual = await vi.importActual<typeof import("node:fs")>("node:fs");
+	return {
+		...actual,
+		readFileSync: vi.fn(),
+		writeFileSync: vi.fn(),
+		renameSync: vi.fn(),
+		unlinkSync: vi.fn(),
+		mkdirSync: vi.fn(),
+		realpathSync: vi.fn((path: string) => path), // Return path as-is for tests
+	};
+});
 
 // Mock path validator to always succeed in tests
 vi.mock("../lib/input/validator.js", () => ({
@@ -36,7 +44,13 @@ vi.mock("../lib/input/validator.js", () => ({
 }));
 
 import { spawnSync } from "node:child_process";
-import { readFileSync } from "node:fs";
+import {
+	mkdirSync,
+	readFileSync,
+	renameSync,
+	unlinkSync,
+	writeFileSync,
+} from "node:fs";
 
 const HEAD_SHA = "a".repeat(40);
 
@@ -58,9 +72,14 @@ function createMockSpawnResult(
 describe("remediate command", () => {
 	const mockSpawnSync = vi.mocked(spawnSync);
 	const mockReadFileSync = vi.mocked(readFileSync);
+	const mockWriteFileSync = vi.mocked(writeFileSync);
+	const mockRenameSync = vi.mocked(renameSync);
+	const mockUnlinkSync = vi.mocked(unlinkSync);
+	const mockMkdirSync = vi.mocked(mkdirSync);
 
 	beforeEach(() => {
 		vi.clearAllMocks();
+		process.env.HARNESS_DISPOSABLE_WORKSPACE = undefined;
 		// Default: git commands succeed
 		mockSpawnSync.mockImplementation(
 			(_command: string, args: readonly string[] | undefined) => {
@@ -70,6 +89,9 @@ describe("remediate command", () => {
 				}
 				if (argList[0] === "merge-base") {
 					return createMockSpawnResult("", { status: 0 }); // is-ancestor returns true
+				}
+				if (argList[0] === "status") {
+					return createMockSpawnResult("");
 				}
 				return createMockSpawnResult("");
 			},
@@ -117,6 +139,21 @@ describe("remediate command", () => {
 			expect(result.outcome.ok).toBe(false);
 			if (!result.outcome.ok) {
 				expect(result.outcome.error.code).toBe("E_VALIDATION");
+			}
+		});
+
+		it("fails closed when explicit contract path cannot be loaded", async () => {
+			mockReadFileSync.mockReturnValue(JSON.stringify([]));
+
+			const result = await runRemediate({
+				findings: "findings.json",
+				contractPath: "missing.contract.json",
+			});
+
+			expect(result.exitCode).toBe(EXIT_CODES.USAGE);
+			expect(result.outcome.ok).toBe(false);
+			if (!result.outcome.ok) {
+				expect(result.outcome.error.code).toBe("E_CONTRACT");
 			}
 		});
 
@@ -210,6 +247,234 @@ describe("remediate command", () => {
 			expect(result.outcome.ok).toBe(false);
 			if (!result.outcome.ok) {
 				expect(result.outcome.error.code).toBe("E_RACE_DETECTED");
+			}
+		});
+
+		it("hard-fails apply mode on non-disposable workspace", async () => {
+			const finding = {
+				id: "test-apply-1",
+				rule: { id: "rule-1", name: "Apply Rule" },
+				location: { path: "src/test.ts", startLine: 10 },
+				commitSha: HEAD_SHA,
+				severity: "warning" as const,
+			};
+			mockReadFileSync.mockReturnValue(JSON.stringify([finding]));
+
+			const result = await runRemediate({
+				mode: "apply",
+				findings: "findings.json",
+			});
+
+			expect(result.exitCode).toBe(EXIT_CODES.POLICY);
+			expect(result.outcome.ok).toBe(false);
+			if (!result.outcome.ok) {
+				expect(result.outcome.error.code).toBe("E_POLICY");
+				expect(result.outcome.error.message).toContain(
+					"Apply mode requires a disposable workspace",
+				);
+			}
+		});
+
+		it("allows apply mode in detected git worktree checkout", async () => {
+			const finding = {
+				id: "test-apply-worktree-1",
+				rule: { id: "rule-1", name: "Apply Rule" },
+				location: { path: "src/test.ts", startLine: 1, endLine: 1 },
+				commitSha: HEAD_SHA,
+				severity: "warning" as const,
+				evidence: JSON.stringify({
+					op: "replace_range",
+					content: "const patched = true;",
+					startLine: 1,
+					endLine: 1,
+				}),
+			};
+
+			mockReadFileSync.mockImplementation((path) => {
+				if (path === "findings.json") {
+					return JSON.stringify([finding]);
+				}
+				if (path === `${process.cwd()}/src/test.ts`) {
+					return "const patched = false;\n";
+				}
+				return "";
+			});
+
+			mockSpawnSync.mockImplementation(
+				(_command: string, args: readonly string[] | undefined) => {
+					const argList = args ?? [];
+					if (argList[0] === "rev-parse" && argList[1] === "--git-dir") {
+						return createMockSpawnResult(
+							`${process.cwd()}/.git/worktrees/feature`,
+						);
+					}
+					if (argList[0] === "rev-parse" && argList[1] === "HEAD") {
+						return createMockSpawnResult(HEAD_SHA);
+					}
+					if (argList[0] === "status") {
+						return createMockSpawnResult("");
+					}
+					if (argList[0] === "merge-base") {
+						return createMockSpawnResult("", { status: 0 });
+					}
+					return createMockSpawnResult("");
+				},
+			);
+
+			const result = await runRemediate({
+				mode: "apply",
+				findings: "findings.json",
+			});
+
+			expect(result.exitCode).toBe(EXIT_CODES.SUCCESS);
+			expect(result.outcome.ok).toBe(true);
+			if (result.outcome.ok) {
+				expect(result.outcome.output.transactions).toHaveLength(1);
+				expect(result.outcome.output.transactions?.[0]?.status).toBe("applied");
+			}
+		});
+
+		it("hard-fails apply mode when disposable workspace is dirty", async () => {
+			process.env.HARNESS_DISPOSABLE_WORKSPACE = "true";
+			const finding = {
+				id: "test-apply-2",
+				rule: { id: "rule-1", name: "Apply Rule" },
+				location: { path: "src/test.ts", startLine: 10 },
+				commitSha: HEAD_SHA,
+				severity: "warning" as const,
+			};
+			mockReadFileSync.mockReturnValue(JSON.stringify([finding]));
+			mockSpawnSync.mockImplementation(
+				(_command: string, args: readonly string[] | undefined) => {
+					const argList = args ?? [];
+					if (argList[0] === "rev-parse" && argList[1] === "HEAD") {
+						return createMockSpawnResult(HEAD_SHA);
+					}
+					if (argList[0] === "status") {
+						return createMockSpawnResult(" M src/test.ts\n");
+					}
+					if (argList[0] === "merge-base") {
+						return createMockSpawnResult("", { status: 0 });
+					}
+					return createMockSpawnResult("");
+				},
+			);
+
+			const result = await runRemediate({
+				mode: "apply",
+				findings: "findings.json",
+			});
+
+			expect(result.exitCode).toBe(EXIT_CODES.POLICY);
+			expect(result.outcome.ok).toBe(false);
+			if (!result.outcome.ok) {
+				expect(result.outcome.error.code).toBe("E_POLICY");
+				expect(result.outcome.error.message).toContain(
+					"Apply mode requires a clean disposable workspace",
+				);
+			}
+		});
+
+		it("applies low-risk patch in single-finding transaction mode", async () => {
+			process.env.HARNESS_DISPOSABLE_WORKSPACE = "true";
+			const finding = {
+				id: "test-apply-tx-1",
+				rule: { id: "rule-1", name: "Apply Rule" },
+				location: { path: "src/test.ts", startLine: 1, endLine: 1 },
+				commitSha: HEAD_SHA,
+				severity: "warning" as const,
+				evidence: JSON.stringify({
+					op: "replace_range",
+					content: "const patched = true;",
+					startLine: 1,
+					endLine: 1,
+				}),
+			};
+			mockReadFileSync.mockImplementation((path) => {
+				if (path === "findings.json") {
+					return JSON.stringify([finding]);
+				}
+				if (path === `${process.cwd()}/src/test.ts`) {
+					return "const patched = false;\n";
+				}
+				return "";
+			});
+
+			const result = await runRemediate({
+				mode: "apply",
+				findings: "findings.json",
+			});
+
+			expect(result.exitCode).toBe(EXIT_CODES.SUCCESS);
+			expect(result.outcome.ok).toBe(true);
+			if (result.outcome.ok) {
+				expect(result.outcome.output.transactions).toHaveLength(1);
+				expect(result.outcome.output.transactions?.[0]?.status).toBe("applied");
+			}
+			expect(mockMkdirSync).toHaveBeenCalled();
+			expect(mockWriteFileSync).toHaveBeenCalled();
+			expect(mockRenameSync).toHaveBeenCalled();
+			expect(mockUnlinkSync).toHaveBeenCalled();
+		});
+
+		it("rolls back a finding transaction on HEAD change during apply", async () => {
+			process.env.HARNESS_DISPOSABLE_WORKSPACE = "true";
+			const finding = {
+				id: "test-apply-tx-rollback",
+				rule: { id: "rule-1", name: "Apply Rule" },
+				location: { path: "src/test.ts", startLine: 1, endLine: 1 },
+				commitSha: HEAD_SHA,
+				severity: "warning" as const,
+				evidence: JSON.stringify({
+					op: "replace_range",
+					content: "const patched = true;",
+					startLine: 1,
+					endLine: 1,
+				}),
+			};
+			mockReadFileSync.mockImplementation((path) => {
+				if (path === "findings.json") {
+					return JSON.stringify([finding]);
+				}
+				if (path === `${process.cwd()}/src/test.ts`) {
+					return "const patched = false;\n";
+				}
+				return "";
+			});
+
+			let revParseCalls = 0;
+			mockSpawnSync.mockImplementation(
+				(_command: string, args: readonly string[] | undefined) => {
+					const argList = args ?? [];
+					if (argList[0] === "rev-parse" && argList[1] === "HEAD") {
+						revParseCalls++;
+						if (revParseCalls >= 6) {
+							return createMockSpawnResult("b".repeat(40));
+						}
+						return createMockSpawnResult(HEAD_SHA);
+					}
+					if (argList[0] === "status") {
+						return createMockSpawnResult("");
+					}
+					if (argList[0] === "merge-base") {
+						return createMockSpawnResult("", { status: 0 });
+					}
+					return createMockSpawnResult("");
+				},
+			);
+
+			const result = await runRemediate({
+				mode: "apply",
+				findings: "findings.json",
+			});
+
+			expect(result.exitCode).toBe(EXIT_CODES.PARTIAL);
+			expect(result.outcome.ok).toBe(true);
+			if (result.outcome.ok) {
+				expect(result.outcome.output.transactions).toHaveLength(1);
+				expect(result.outcome.output.transactions?.[0]?.status).toBe(
+					"rolled_back",
+				);
 			}
 		});
 	});

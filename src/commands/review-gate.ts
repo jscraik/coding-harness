@@ -8,6 +8,7 @@ import {
 	isCheckRunInProgress,
 	isCheckRunPassing,
 } from "../lib/github/check-run.js";
+import type { CheckRun, PullRequestReview } from "../lib/github/client.js";
 import { GitHubClient } from "../lib/github/client.js";
 import {
 	formatRerunComment,
@@ -45,6 +46,15 @@ export interface ReviewGateOutput {
 	checkConclusion?: string | undefined;
 	needsRerun: boolean;
 	timedOut?: boolean;
+	policy_gate_status: "pass" | "fail" | "pending" | "missing";
+	blockers: string[];
+	actionable_count: number;
+	informational_count: number;
+	confidence_rubric: {
+		score: 1 | 2 | 3 | 4 | 5;
+		level: "low" | "medium" | "high";
+		rationale: string[];
+	};
 }
 
 export type ReviewGateResult =
@@ -53,6 +63,212 @@ export type ReviewGateResult =
 
 const POLL_INTERVAL_MS = 5000; // 5 seconds
 const DEFAULT_REVIEW_GATE_AUTHZ_CONTRACT = "harness.contract.json";
+
+type BaseReviewGateOutput = Omit<
+	ReviewGateOutput,
+	| "policy_gate_status"
+	| "blockers"
+	| "actionable_count"
+	| "informational_count"
+	| "confidence_rubric"
+>;
+
+interface ReadinessOptions {
+	additionalBlockers?: string[];
+}
+
+function withReadinessFields(
+	base: BaseReviewGateOutput,
+	options: ReadinessOptions = {},
+): ReviewGateOutput {
+	const policyGateStatus: ReviewGateOutput["policy_gate_status"] =
+		base.checkStatus === "not_found"
+			? "missing"
+			: base.checkStatus === "completed"
+				? base.checkConclusion === "success"
+					? "pass"
+					: "fail"
+				: "pending";
+
+	const blockers: string[] = [];
+	if (policyGateStatus === "missing") {
+		blockers.push("risk-policy-gate check run not found for current HEAD SHA");
+	}
+	if (policyGateStatus === "fail") {
+		blockers.push(
+			`risk-policy-gate check did not pass (conclusion: ${base.checkConclusion ?? "unknown"})`,
+		);
+	}
+	if (policyGateStatus === "pending" && (base.needsRerun || base.timedOut)) {
+		blockers.push(
+			"risk-policy-gate verification is incomplete for current HEAD SHA",
+		);
+	}
+	if (options.additionalBlockers && options.additionalBlockers.length > 0) {
+		blockers.push(...options.additionalBlockers);
+	}
+
+	const actionableCount = blockers.length;
+	const informationalCount = base.verified ? 3 : 1;
+
+	const confidenceRubric: ReviewGateOutput["confidence_rubric"] =
+		actionableCount === 0 && policyGateStatus === "pass"
+			? {
+					score: 5,
+					level: "high",
+					rationale: [
+						"risk-policy-gate passed for the current HEAD SHA",
+						"no merge blockers detected in review gate",
+					],
+				}
+			: policyGateStatus === "pending"
+				? {
+						score: 2,
+						level: "low",
+						rationale: [
+							"risk-policy-gate verification has not reached a terminal pass state",
+							"merge confidence is reduced until blockers are resolved",
+						],
+					}
+				: policyGateStatus === "pass"
+					? {
+							score: 2,
+							level: "low",
+							rationale: [
+								"risk-policy-gate passed but merge-readiness blockers remain",
+								"merge should remain blocked until required checks and review policies are satisfied",
+							],
+						}
+					: {
+							score: 1,
+							level: "low",
+							rationale: [
+								"risk-policy-gate did not provide a passing result for current HEAD SHA",
+								"merge should remain blocked until policy gate issues are resolved",
+							],
+						};
+
+	return {
+		...base,
+		policy_gate_status: policyGateStatus,
+		blockers,
+		actionable_count: actionableCount,
+		informational_count: informationalCount,
+		confidence_rubric: confidenceRubric,
+	};
+}
+
+interface ReviewerIndependenceResult {
+	passed: boolean;
+	blockers: string[];
+}
+
+function resolveCurrentApprovers(
+	reviews: PullRequestReview[],
+	headSha: string,
+): string[] {
+	const latestStateByReviewer = new Map<
+		string,
+		{ state: string; commitId?: string | null; submittedAt: number }
+	>();
+
+	for (const review of reviews) {
+		const login = review.user?.login?.trim();
+		if (!login) {
+			continue;
+		}
+		const submittedAt = review.submitted_at
+			? Date.parse(review.submitted_at)
+			: Number.MIN_SAFE_INTEGER;
+		if (Number.isNaN(submittedAt)) {
+			continue;
+		}
+		const previousState = latestStateByReviewer.get(login);
+		if (!previousState || submittedAt > previousState.submittedAt) {
+			latestStateByReviewer.set(login, {
+				state: review.state,
+				commitId: review.commit_id ?? null,
+				submittedAt,
+			});
+		}
+	}
+
+	return [...latestStateByReviewer.entries()]
+		.filter(([, review]) => {
+			if (review.state !== "APPROVED") {
+				return false;
+			}
+			return review.commitId === headSha;
+		})
+		.map(([login]) => login);
+}
+
+async function evaluateReviewerIndependence(
+	client: GitHubClient,
+	prNumber: number,
+	headSha: string,
+): Promise<ReviewerIndependenceResult> {
+	const pullRequest = await client.getPullRequest(prNumber);
+	const codingActor = pullRequest.user?.login?.trim();
+	const reviews = await client.listPullRequestReviews(prNumber);
+	const approvers = resolveCurrentApprovers(reviews, headSha);
+
+	const blockers: string[] = [];
+	if (!codingActor) {
+		blockers.push(
+			"Unable to determine coding actor from PR author; cannot verify reviewer independence",
+		);
+		return { passed: false, blockers };
+	}
+
+	if (approvers.length === 0) {
+		blockers.push("No APPROVED reviews found for the current HEAD SHA");
+		return { passed: false, blockers };
+	}
+
+	const independentApprovers = approvers.filter(
+		(reviewer) => reviewer !== codingActor,
+	);
+
+	if (independentApprovers.length === 0) {
+		blockers.push(
+			`Reviewer independence failed: coding actor '${codingActor}' is the sole approving reviewer`,
+		);
+		return { passed: false, blockers };
+	}
+
+	return { passed: true, blockers: [] };
+}
+
+function evaluateRequiredChecks(
+	checkRuns: CheckRun[],
+	requiredChecks: string[],
+): string[] {
+	const blockers: string[] = [];
+
+	for (const checkName of requiredChecks) {
+		const checkRun = checkRuns.find((run) => run.name === checkName);
+		if (!checkRun) {
+			blockers.push(
+				`Required check '${checkName}' was not found for current HEAD SHA`,
+			);
+			continue;
+		}
+		if (checkRun.status !== "completed") {
+			blockers.push(
+				`Required check '${checkName}' is not complete (status: ${checkRun.status})`,
+			);
+			continue;
+		}
+		if (checkRun.conclusion !== "success") {
+			blockers.push(
+				`Required check '${checkName}' did not pass (conclusion: ${checkRun.conclusion ?? "unknown"})`,
+			);
+		}
+	}
+
+	return blockers;
+}
 
 /**
  * Run review gate check with timeout polling.
@@ -109,25 +325,52 @@ export async function runReviewGate(
 			if (!checkResult.found) {
 				return {
 					ok: true,
-					output: {
+					output: withReadinessFields({
 						verified: false,
 						headSha: options.headSha,
 						checkStatus: "not_found",
 						needsRerun: true,
-					},
+					}),
 				};
 			}
 
 			if (isCheckRunPassing(checkResult)) {
+				const enforceReviewerIndependence =
+					reviewPolicy.enforceReviewerIndependence ??
+					DEFAULT_REVIEW_POLICY.enforceReviewerIndependence ??
+					false;
+				const requiredChecks = (reviewPolicy.requiredChecks ?? []).filter(
+					(checkName) => checkName !== options.checkName,
+				);
+				const independence = enforceReviewerIndependence
+					? await evaluateReviewerIndependence(
+							client,
+							options.prNumber,
+							options.headSha,
+						)
+					: { passed: true, blockers: [] };
+				const requiredCheckBlockers = evaluateRequiredChecks(
+					checkRuns,
+					requiredChecks,
+				);
+				const additionalBlockers = [
+					...independence.blockers,
+					...requiredCheckBlockers,
+				];
 				return {
 					ok: true,
-					output: {
-						verified: true,
-						headSha: options.headSha,
-						checkStatus: checkResult.status,
-						checkConclusion: checkResult.conclusion ?? undefined,
-						needsRerun: false,
-					},
+					output: withReadinessFields(
+						{
+							verified: additionalBlockers.length === 0 && independence.passed,
+							headSha: options.headSha,
+							checkStatus: checkResult.status,
+							checkConclusion: checkResult.conclusion ?? undefined,
+							needsRerun: false,
+						},
+						{
+							additionalBlockers,
+						},
+					),
 				};
 			}
 
@@ -135,13 +378,13 @@ export async function runReviewGate(
 			if (checkResult.status === "completed") {
 				return {
 					ok: true,
-					output: {
+					output: withReadinessFields({
 						verified: false,
 						headSha: options.headSha,
 						checkStatus: checkResult.status,
 						checkConclusion: checkResult.conclusion ?? undefined,
 						needsRerun: true,
-					},
+					}),
 				};
 			}
 
@@ -165,13 +408,13 @@ export async function runReviewGate(
 		// Warn mode - return needsRerun
 		return {
 			ok: true,
-			output: {
+			output: withReadinessFields({
 				verified: false,
 				headSha: options.headSha,
 				checkStatus: "in_progress",
 				needsRerun: true,
 				timedOut: true,
-			},
+			}),
 		};
 	} catch (e) {
 		const errorMessage = e instanceof Error ? e.message : String(e);

@@ -20,14 +20,17 @@ For all code and docs changes in this repository:
 2. For agent-created branches, use `codex/<short-description>`.
 3. Do not push directly to `main`.
 4. Open a PR for every merge into `main`.
-5. Required gates before merge: `pnpm lint`, `pnpm typecheck`, `pnpm test`, `pnpm audit`, `pnpm check`.
+5. Required gates before merge: `pnpm lint`, `pnpm typecheck`, `pnpm test`, `pnpm audit`, `pnpm check`, and CI `security-scan`.
 6. Required review artifacts before merge: Greptile + Codex.
-7. Merge only after all required checks and artifacts are complete.
-8. After merge, delete branch/worktree.
+7. Greptile setup must be verified before merge: run the `grepfile` skill and ensure `.greptile/config.json`, `.greptile/rules.md`, and `.greptile/files.json` are present and current.
+8. Greptile validation must be independent: the coding agent must not approve its own PR; use a separate review agent.
+9. Merge only after all required checks and artifacts are complete.
+10. After merge, delete branch/worktree.
 
 Implementation details and checklists:
 - [`CONTRIBUTING.md`](./CONTRIBUTING.md)
 - [Agent governance](./docs/agents/07b-agent-governance.md)
+- [Greptile AI governance](./docs/agents/12-greptile-ai-governance.md)
 
 ### Repo-native command map
 - Install/dependencies: `pnpm install`
@@ -96,6 +99,7 @@ Branch protection bootstrap: `harness branch-protect --owner <owner> --repo <rep
 - [Audit trail policy](./docs/agents/09-audit-trail-policy.md)
 - [Agent testing gates](./docs/agents/10-agent-testing-gates.md)
 - [Flaky test artifact capture standard](./docs/agents/11-flaky-test-artifacts.md)
+- [Greptile AI governance](./docs/agents/12-greptile-ai-governance.md)
 
 ## Notes
 - This file is intentionally minimal. Detailed procedural guidance is in `docs/agents/*.md`.

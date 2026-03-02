@@ -17,6 +17,17 @@ import {
 	DEFAULT_CONTRACT,
 	type HarnessContract,
 } from "../lib/contract/types.js";
+import {
+	RALPH_FALLBACK_ENV_FLAG,
+	RALPH_FALLBACK_WARNING_ARTIFACT_PATH,
+	RALPH_PYTHON_VERSION_PIN,
+	RALPH_UV_VERSION_PIN,
+	RALPH_VERSION_PIN,
+	SETUP_PYTHON_ACTION_VERSION,
+	SETUP_UV_ACTION_VERSION,
+	getPinnedRalphGitFallbackSpec,
+	getRalphPackageSpec,
+} from "../lib/deps/ralph-runtime.js";
 import { sanitizeError } from "../lib/input/sanitize.js";
 import { getVersion } from "../lib/version.js";
 
@@ -304,6 +315,8 @@ const TEMPLATES: Template[] = [
 					reviewPolicy: {
 						timeoutSeconds: 600,
 						timeoutAction: "fail" as const,
+						requiredChecks: ["security-scan"],
+						enforceReviewerIndependence: false,
 					},
 					evidencePolicy: {
 						requiredFor: [],
@@ -381,6 +394,63 @@ const TEMPLATES: Template[] = [
 						retryLimit: 3,
 						requireEvidence: true,
 					},
+					loopStageContracts: {
+						"risk-policy-gate": {
+							inputs: ["changed_files", "harness.contract.json"],
+							outputs: ["risk-policy-gate.result"],
+							schema: "loop-stage-contract/v1",
+							failPolicy: "fail_closed" as const,
+							if: "always()",
+							permissions: ["contents:read", "pull-requests:read"],
+							timeoutMinutes: 15,
+							concurrency: "none",
+						},
+						"review-gate": {
+							inputs: [
+								"risk-policy-gate.result",
+								"head_sha",
+								"harness.contract.json",
+							],
+							outputs: ["review-gate.result"],
+							schema: "loop-stage-contract/v1",
+							failPolicy: "fail_closed" as const,
+							if: "always()",
+							permissions: ["contents:read", "pull-requests:read"],
+							timeoutMinutes: 15,
+							concurrency: "none",
+						},
+						"evidence-verify": {
+							inputs: [
+								"review-gate.result",
+								"evidence_files",
+								"harness.contract.json",
+							],
+							outputs: ["evidence-verify.result", "browser-evidence-artifacts"],
+							schema: "loop-stage-contract/v1",
+							failPolicy: "fail_closed" as const,
+							if: "always()",
+							permissions: ["contents:read"],
+							timeoutMinutes: 15,
+							concurrency: "none",
+						},
+						"remediation-decision": {
+							inputs: [
+								"evidence-verify.result",
+								"findings.json",
+								"harness.contract.json",
+							],
+							outputs: [
+								"remediation-decision.result",
+								"remediation-decision-artifacts",
+							],
+							schema: "loop-stage-contract/v1",
+							failPolicy: "fail_closed" as const,
+							if: "always()",
+							permissions: ["contents:read", "pull-requests:write"],
+							timeoutMinutes: 15,
+							concurrency: "none",
+						},
+					},
 					pilotGapCasePolicy: {
 						enabled: false,
 						defaultSlaHours: 72,
@@ -445,6 +515,150 @@ const TEMPLATES: Template[] = [
 			),
 	},
 	{
+		path: ".greptile/config.json",
+		render: () =>
+			JSON.stringify(
+				{
+					version: "1.0",
+					strictness: 2,
+					fileChangeLimit: 300,
+					commentTypes: [
+						"bug-risk",
+						"security",
+						"performance",
+						"architecture",
+						"maintainability",
+					],
+					enableCrossFileGraphQueries: true,
+					requireIndependentValidation: true,
+					confidence: {
+						minMergeScore: 4,
+						targetScore: 5,
+					},
+					rules: [
+						{
+							id: "esm-local-import-extension",
+							glob: "src/**/*.ts",
+							description: "Local ESM imports must include the .js extension.",
+							severity: "high",
+						},
+						{
+							id: "no-main-direct-push",
+							glob: "**/*",
+							description:
+								"No direct push to main; all changes flow through PR with review artifacts.",
+							severity: "high",
+						},
+						{
+							id: "independent-ai-validation",
+							glob: "**/*",
+							description:
+								"Coding agent must not approve its own PR; separate review agent required.",
+							severity: "high",
+						},
+					],
+					ignorePatterns: [
+						"dist/**",
+						"coverage/**",
+						"node_modules/**",
+						".pnpm-store/**",
+					],
+				},
+				null,
+				2,
+			),
+	},
+	{
+		path: ".greptile/files.json",
+		render: () =>
+			JSON.stringify(
+				{
+					contextFiles: [
+						{
+							path: "harness.contract.json",
+							role: "primary governance contract",
+						},
+						{
+							path: "contracts/browser-evidence.schema.json",
+							role: "primary JSON schema",
+						},
+						{
+							path: "src/lib/contract/types.ts",
+							role: "contract type definitions",
+						},
+						{
+							path: "src/cli.ts",
+							role: "CLI entrypoint and command surface",
+						},
+						{
+							path: "src/cli-dispatch.ts",
+							role: "command dispatch API",
+						},
+					],
+					apiSpecs: ["src/cli.ts", "src/commands/**/*.ts"],
+					schemaFiles: [
+						"contracts/**/*.schema.json",
+						"src/lib/contract/types.ts",
+					],
+				},
+				null,
+				2,
+			),
+	},
+	{
+		path: ".greptile/rules.md",
+		render: () => `# coding-harness Greptile rules
+
+## Scope
+
+These rules define repository-specific review expectations for Greptile.
+
+## Rule set
+
+### 1) Independent validation is mandatory
+
+- The coding agent must not act as approving reviewer on the same PR.
+- Greptile/Codex artifacts must be produced by an independent review step.
+
+### 2) Governance contract and docs must remain aligned
+
+If a PR changes any of the following, reviewers must verify consistency across all touched files:
+
+- \`/harness.contract.json\`
+- \`/AGENTS.md\`
+- \`/CONTRIBUTING.md\`
+- \`/docs/agents/07b-agent-governance.md\`
+- \`/.github/PULL_REQUEST_TEMPLATE.md\`
+
+### 3) ESM imports
+
+All local imports in TypeScript source must use \`.js\` extension.
+
+**Violation example**
+
+\`\`\`ts
+import { runReviewGate } from "./commands/review-gate";
+\`\`\`
+
+**Compliant example**
+
+\`\`\`ts
+import { runReviewGate } from "./commands/review-gate.js";
+\`\`\`
+
+### 4) Security and evidence
+
+- PRs changing policy/gate behavior must include test and evidence artifacts.
+- Any reduction in mandatory checks/review gates must be treated as high risk.
+
+### 5) Merge confidence threshold
+
+- Confidence < 4/5 is merge-blocking.
+- Confidence 4/5 may merge only when remaining items are non-logic polish.
+- Confidence 5/5 is merge-ready.
+`,
+	},
+	{
 		path: ".github/workflows/pr-pipeline.yml",
 		render: (pm) => {
 			const installCommand = renderInstallCommand(pm);
@@ -454,6 +668,8 @@ const TEMPLATES: Template[] = [
 			const auditCommand = renderScriptCommand(pm, "audit");
 			const checkCommand = renderScriptCommand(pm, "check");
 			const memoryValidateCommand = renderMemoryValidateCommand();
+			const ralphPackageSpec = getRalphPackageSpec();
+			const ralphGitFallbackSpec = getPinnedRalphGitFallbackSpec();
 			return `name: Harness PR Pipeline
 
 on: pull_request
@@ -461,6 +677,7 @@ on: pull_request
 permissions:
   contents: read
   pull-requests: read
+  checks: read
 
 jobs:
   pr-template:
@@ -528,14 +745,307 @@ jobs:
               core.setFailed(errors.join('\\n'));
             }
 
-  lint:
-    name: lint
+  dependency-chain:
+    name: dependency-chain
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Setup Python
+        uses: actions/setup-python@${SETUP_PYTHON_ACTION_VERSION}
+        with:
+          python-version: "${RALPH_PYTHON_VERSION_PIN}"
+      - name: Setup uv
+        uses: astral-sh/setup-uv@${SETUP_UV_ACTION_VERSION}
+        with:
+          version: "${RALPH_UV_VERSION_PIN}"
+          enable-cache: true
+          cache-dependency-glob: |
+            **/pyproject.toml
+            **/uv.lock
+      - name: Install Ralph runtime (canonical + pinned-git fallback + opt-in pipx fallback)
+        env:
+          ${RALPH_FALLBACK_ENV_FLAG}: \${{ vars.${RALPH_FALLBACK_ENV_FLAG} || 'false' }}
+        run: |
+          mkdir -p artifacts/policy
+          if uv tool install "${ralphPackageSpec}"; then
+            exit 0
+          fi
+
+          if uv tool install "${ralphGitFallbackSpec}"; then
+            cat > "${RALPH_FALLBACK_WARNING_ARTIFACT_PATH}" <<JSON
+          {
+            "warning": "ralph_runtime_fallback",
+            "reason": "pypi_package_unavailable",
+            "fallback": "uv_git",
+            "package": "${ralphPackageSpec}",
+            "gitSpec": "${ralphGitFallbackSpec}",
+            "timestamp": "$(date -u +"%Y-%m-%dT%H:%M:%SZ")"
+          }
+          JSON
+            exit 0
+          fi
+
+          if [ "\${${RALPH_FALLBACK_ENV_FLAG}}" != "true" ]; then
+            echo "uv install failed for canonical and git fallback, and ${RALPH_FALLBACK_ENV_FLAG} is not enabled."
+            exit 1
+          fi
+
+          python -m pip install --upgrade pip pipx
+          export PATH="$HOME/.local/bin:$PATH"
+          python -m pipx install "${ralphGitFallbackSpec}" --force
+
+          cat > "${RALPH_FALLBACK_WARNING_ARTIFACT_PATH}" <<JSON
+          {
+            "warning": "ralph_runtime_fallback",
+            "reason": "uv_tool_install_failed",
+            "fallback": "pipx_git",
+            "package": "${ralphPackageSpec}",
+            "gitSpec": "${ralphGitFallbackSpec}",
+            "optInEnv": "${RALPH_FALLBACK_ENV_FLAG}",
+            "timestamp": "$(date -u +"%Y-%m-%dT%H:%M:%SZ")"
+          }
+          JSON
+      - name: Verify dependency chain
+        run: |
+          export PATH="$HOME/.local/bin:$PATH"
+          python3 --version
+          uv --version
+          ralph --version
+          case "$(ralph --version)" in
+            *"${RALPH_VERSION_PIN}"*) ;;
+            *) echo "Pinned Ralph version ${RALPH_VERSION_PIN} not found"; exit 1 ;;
+          esac
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "24"
+      - name: Enable corepack
+        run: corepack enable
+      - name: Install dependencies for preflight smoke
+        run: ${installCommand}
+      - name: Ralph dependency smoke preflight
+        env:
+          CODEX_APPROVAL_POSTURE: require
+        run: |
+          export PATH="$HOME/.local/bin:$PATH"
+          npx tsx src/cli.ts check-environment --contract harness.contract.json --json --attestation artifacts/policy/ralph-smoke-attestation.json
+      - name: Upload dependency policy artifacts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: dependency-policy-artifacts
+          path: artifacts/policy/
+          if-no-files-found: ignore
+
+  risk-policy-gate:
+    name: risk-policy-gate
+    needs: [pr-template, dependency-chain]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "24"
+      - name: Enable corepack
+        run: corepack enable
+      - name: Install dependencies
+        run: ${installCommand}
+      - name: Enforce docs drift baseline
+        run: ${renderScriptCommand(pm, "docs:lint")}
+      - name: Run risk-policy gate
+        run: |
+          mkdir -p artifacts/telemetry
+          START_MS="$(date +%s%3N)"
+          CHANGED_FILES="$(git diff --name-only "${"${{ github.event.pull_request.base.sha }}"}" "${"${{ github.event.pull_request.head.sha }}"}" | paste -sd, -)"
+          set +e
+          npx tsx src/cli.ts risk-policy-gate --contract harness.contract.json --files "$CHANGED_FILES" --max-tier medium
+          STATUS=$?
+          set -e
+          END_MS="$(date +%s%3N)"
+          DURATION_MS="$((END_MS - START_MS))"
+          cat > artifacts/telemetry/risk-policy-gate.json <<JSON
+          {
+            "stage": "risk-policy-gate",
+            "timestamp": "$(date -u +"%Y-%m-%dT%H:%M:%SZ")",
+            "head_sha": "${"${{ github.event.pull_request.head.sha }}"}",
+            "codex.tool.call.duration_ms": ${"$"}{DURATION_MS},
+            "codex.api_request.duration_ms": 0
+          }
+          JSON
+          exit "${"$"}{STATUS}"
+      - name: Upload risk-policy telemetry artifacts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: risk-policy-telemetry-artifacts
+          path: artifacts/telemetry/risk-policy-gate.json
+          if-no-files-found: error
+
+  review-gate:
+    name: review-gate
+    needs: [risk-policy-gate]
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with:
-          node-version: "20"
+          node-version: "24"
+      - name: Enable corepack
+        run: corepack enable
+      - name: Install dependencies
+        run: ${installCommand}
+      - name: Run review gate against current SHA
+        run: |
+          mkdir -p artifacts/telemetry
+          START_MS="$(date +%s%3N)"
+          set +e
+          npx tsx src/cli.ts review-gate \
+            --token "${"${{ secrets.GITHUB_TOKEN }}"}" \
+            --owner "${"${{ github.repository_owner }}"}" \
+            --repo "${"${{ github.event.repository.name }}"}" \
+            --pr "${"${{ github.event.pull_request.number }}"}" \
+            --sha "${"${{ github.event.pull_request.head.sha }}"}" \
+            --check "risk-policy-gate" \
+            --contract harness.contract.json
+          STATUS=$?
+          set -e
+          END_MS="$(date +%s%3N)"
+          DURATION_MS="$((END_MS - START_MS))"
+          cat > artifacts/telemetry/review-gate.json <<JSON
+          {
+            "stage": "review-gate",
+            "timestamp": "$(date -u +"%Y-%m-%dT%H:%M:%SZ")",
+            "head_sha": "${"${{ github.event.pull_request.head.sha }}"}",
+            "codex.tool.call.duration_ms": ${"$"}{DURATION_MS},
+            "codex.api_request.duration_ms": ${"$"}{DURATION_MS}
+          }
+          JSON
+          exit "${"$"}{STATUS}"
+      - name: Upload review telemetry artifacts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: review-telemetry-artifacts
+          path: artifacts/telemetry/review-gate.json
+          if-no-files-found: error
+
+  evidence-verify:
+    name: evidence-verify
+    needs: [review-gate]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "24"
+      - name: Enable corepack
+        run: corepack enable
+      - name: Install dependencies
+        run: ${installCommand}
+      - name: Capture browser evidence fixture
+        run: |
+          mkdir -p artifacts/evidence
+          cat <<'PNG_BASE64' | base64 --decode > artifacts/evidence/loop-stage-smoke.png
+          iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO5s6wAAAABJRU5ErkJggg==
+          PNG_BASE64
+      - name: Verify evidence contract
+        run: |
+          mkdir -p artifacts/telemetry
+          START_MS="$(date +%s%3N)"
+          CHANGED_FILES="$(git diff --name-only "${"${{ github.event.pull_request.base.sha }}"}" "${"${{ github.event.pull_request.head.sha }}"}" | paste -sd, -)"
+          set +e
+          npx tsx src/cli.ts evidence-verify --contract harness.contract.json --files artifacts/evidence/loop-stage-smoke.png --changed "$CHANGED_FILES"
+          STATUS=$?
+          set -e
+          END_MS="$(date +%s%3N)"
+          DURATION_MS="$((END_MS - START_MS))"
+          cat > artifacts/telemetry/evidence-verify.json <<JSON
+          {
+            "stage": "evidence-verify",
+            "timestamp": "$(date -u +"%Y-%m-%dT%H:%M:%SZ")",
+            "head_sha": "${"${{ github.event.pull_request.head.sha }}"}",
+            "codex.tool.call.duration_ms": ${"$"}{DURATION_MS},
+            "codex.api_request.duration_ms": 0
+          }
+          JSON
+          exit "${"$"}{STATUS}"
+      - name: Upload evidence artifacts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: browser-evidence-artifacts
+          path: artifacts/evidence/
+          if-no-files-found: error
+      - name: Upload evidence telemetry artifacts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: evidence-telemetry-artifacts
+          path: artifacts/telemetry/evidence-verify.json
+          if-no-files-found: error
+
+  remediation-decision:
+    name: remediation-decision
+    needs: [evidence-verify]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "24"
+      - name: Enable corepack
+        run: corepack enable
+      - name: Install dependencies
+        run: ${installCommand}
+      - name: Run remediation-decision stage (plan only)
+        run: |
+          mkdir -p artifacts/remediation
+          mkdir -p artifacts/telemetry
+          START_MS="$(date +%s%3N)"
+          echo "[]" > artifacts/remediation/findings.json
+          set +e
+          npx tsx src/cli.ts remediate run --findings artifacts/remediation/findings.json --contract harness.contract.json --mode run --json
+          STATUS=$?
+          set -e
+          END_MS="$(date +%s%3N)"
+          DURATION_MS="$((END_MS - START_MS))"
+          cat > artifacts/telemetry/remediation-decision.json <<JSON
+          {
+            "stage": "remediation-decision",
+            "timestamp": "$(date -u +"%Y-%m-%dT%H:%M:%SZ")",
+            "head_sha": "${"${{ github.event.pull_request.head.sha }}"}",
+            "codex.tool.call.duration_ms": ${"$"}{DURATION_MS},
+            "codex.api_request.duration_ms": 0
+          }
+          JSON
+          exit "${"$"}{STATUS}"
+      - name: Upload remediation artifacts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: remediation-decision-artifacts
+          path: artifacts/remediation/
+          if-no-files-found: error
+      - name: Upload remediation telemetry artifacts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: remediation-telemetry-artifacts
+          path: artifacts/telemetry/remediation-decision.json
+          if-no-files-found: error
+
+  lint:
+    name: lint
+    needs: [pr-template, dependency-chain, remediation-decision]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "24"
       - name: Enable corepack
         run: corepack enable
       - name: Install dependencies
@@ -545,12 +1055,13 @@ jobs:
 
   typecheck:
     name: typecheck
+    needs: [pr-template, dependency-chain, remediation-decision]
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with:
-          node-version: "20"
+          node-version: "24"
       - name: Enable corepack
         run: corepack enable
       - name: Install dependencies
@@ -560,12 +1071,13 @@ jobs:
 
   test:
     name: test
+    needs: [pr-template, dependency-chain, remediation-decision]
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with:
-          node-version: "20"
+          node-version: "24"
       - name: Enable corepack
         run: corepack enable
       - name: Install dependencies
@@ -575,12 +1087,13 @@ jobs:
 
   audit:
     name: audit
+    needs: [pr-template, dependency-chain, remediation-decision]
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with:
-          node-version: "20"
+          node-version: "24"
       - name: Enable corepack
         run: corepack enable
       - name: Install dependencies
@@ -590,18 +1103,53 @@ jobs:
 
   check:
     name: check
+    needs: [pr-template, dependency-chain, remediation-decision]
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with:
-          node-version: "20"
+          node-version: "24"
       - name: Enable corepack
         run: corepack enable
       - name: Install dependencies
         run: ${installCommand}
       - name: Run full check
         run: ${checkCommand}
+
+  security-scan:
+    name: security-scan
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pull-requests: read
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Run Gitleaks
+        uses: gitleaks/gitleaks-action@v2
+        env:
+          GITHUB_TOKEN: \${{ secrets.GITHUB_TOKEN }}
+      - name: Setup Trivy
+        uses: aquasecurity/setup-trivy@v0.2.2
+      - name: Run Trivy filesystem scan
+        run: trivy fs --severity HIGH,CRITICAL --exit-code 1 --no-progress .
+      - name: Setup Python
+        uses: actions/setup-python@${SETUP_PYTHON_ACTION_VERSION}
+        with:
+          python-version: "${RALPH_PYTHON_VERSION_PIN}"
+      - name: Install Semgrep
+        run: python -m pip install --upgrade pip semgrep
+      - name: Run Semgrep scan
+        run: semgrep scan --error --config p/security-audit --exclude node_modules .
+      - name: Run Senvar scan (optional)
+        run: |
+          if command -v senvar >/dev/null 2>&1; then
+            senvar scan .
+          else
+            echo "senvar not installed on runner; skipping."
+          fi
 
   memory:
     name: memory
@@ -631,6 +1179,13 @@ jobs:
 - [Branching and PR rule](#branching-and-pr-rule)
 - [Branch name policy](#branch-name-policy)
 - [Required pre-merge gates](#required-pre-merge-gates)
+- [Greptile setup baseline](#greptile-setup-baseline)
+- [Greptile config hierarchy](#greptile-config-hierarchy)
+- [Greptile merge logic for multi-scope pull requests](#greptile-merge-logic-for-multi-scope-pull-requests)
+- [Greptile confidence score policy](#greptile-confidence-score-policy)
+- [Greptile strictness policy](#greptile-strictness-policy)
+- [Greptile training and feedback loop](#greptile-training-and-feedback-loop)
+- [Recommended security scanner baseline](#recommended-security-scanner-baseline)
 - [Review artifacts requirement](#review-artifacts-requirement)
 - [Credential-safe evidence snippets](#credential-safe-evidence-snippets)
 - [Branch protection recommendation](#branch-protection-recommendation)
@@ -642,6 +1197,8 @@ jobs:
 - Pull request required for every merge.
 - Required checks must pass before merge.
 - Greptile + Codex review artifacts are required before merge.
+- Greptile must be configured correctly using the \`grepfile\` skill with all required Greptile files present.
+- The coding agent must not approve its own PR; review must be independent.
 - Merge only after all gates pass.
 - Delete branch/worktree after merge.
 
@@ -674,7 +1231,85 @@ This workflow keeps delivery auditable, reversible, and consistent even for solo
 - ${testCommand}
 - ${auditCommand}
 - ${checkCommand}
+- security-scan (CI required check)
 - ${memoryValidateCommand}
+
+## Greptile setup baseline
+
+- Greptile must be configured correctly before relying on Greptile review gates.
+- Use the \`grepfile\` skill to set up/refresh all required Greptile files for this repository.
+- If Greptile files are missing or stale, treat the review gate as blocked and do not merge.
+- Required local structure:
+  - \`.greptile/config.json\`
+  - \`.greptile/rules.md\`
+  - \`.greptile/files.json\`
+- Independent validation is mandatory: the coding agent cannot approve its own changes.
+
+## Greptile config hierarchy
+
+When settings conflict, use this precedence (highest first):
+
+1. Org-enforced rules from the Greptile dashboard.
+2. Directory-scoped \`.greptile/\` folders (cascading inheritance).
+3. \`greptile.json\` legacy repo-wide config (ignored if \`.greptile/\` exists in the same directory).
+4. Dashboard defaults.
+
+## Greptile merge logic for multi-scope pull requests
+
+For PRs touching multiple directories with different configs:
+
+- Strictness: use the most restrictive value (\`MAX\`).
+- \`fileChangeLimit\`: use the smallest value (\`MIN\`).
+- Comment types: union all requested comment types.
+- Boolean settings: if any scope enables it, treat as enabled (\`OR\`).
+
+## Greptile confidence score policy
+
+Use confidence score as a merge gate signal:
+
+- \`5/5\`: production-ready, merge allowed.
+- \`4/5\`: minor polish, merge allowed after non-logic fixes.
+- \`3/5\`: implementation issues, must address feedback and re-review.
+- \`2/5\`: significant bugs, blocked.
+- \`0-1/5\`: critical issues, blocked.
+
+## Greptile strictness policy
+
+- Level 1 (Verbose): required for security-critical directories and new project setup.
+- Level 2 (Default): required baseline for PRs targeting \`main\`/production branches.
+- Level 3 (Critical-only): reserved for stable, non-critical internal infrastructure.
+
+Important indexing caveat:
+
+- \`ignorePatterns\` excludes files from review only; it does **not** exclude indexing.
+- Large binaries/assets and \`node_modules\` must be excluded at repository/dashboard indexing level.
+
+## Greptile training and feedback loop
+
+- Developers must provide regular 👍/👎 feedback on review comments.
+- A 👎 should include a brief rationale to train the system.
+- Commit analysis and the 3-ignore rule are active signals and must be respected.
+- New repositories should expect a 2-3 week calibration period.
+
+Manual trigger standards:
+
+- Use \`@greptileai\` on draft PRs or when settings/context changed and a forced re-review is needed.
+- Use targeted prompts for scoped checks (for example: \`@greptileai check for memory leaks\`).
+
+## Recommended security scanner baseline
+
+For repositories that use Harness, recommend installing these scanners as project prerequisites:
+
+- Gitleaks
+- Trivy
+- Senvar (if used by your organization)
+- Semgrep
+
+Recommended policy:
+
+- Keep scanner binaries available in local development environments and CI runners.
+- Run scanner checks in CI on pull requests and pushes to protected branches.
+- Treat scanner findings as merge blockers unless explicitly waived with rationale.
 
 ## Review artifacts requirement
 
@@ -682,6 +1317,8 @@ Each PR must include:
 
 - Greptile review artifact (URL, report, or comment reference).
 - Codex review artifact (URL, report, or comment reference).
+- Greptile confidence score for the PR.
+- Confirmation that reviewer agent is independent from coding agent.
 
 If either artifact is missing, block merge until it is added or explicitly waived by repository policy.
 
@@ -705,7 +1342,7 @@ Configure GitHub branch protection (or rulesets) on \`main\`:
   - \`--token <PAT>\` or env \`GITHUB_TOKEN\` / \`GITHUB_PERSONAL_ACCESS_TOKEN\`
 - Require pull request before merge.
 - Require at least one approval.
-- Require status checks: \`pr-template\`, \`lint\`, \`typecheck\`, \`test\`, \`audit\`, \`check\`, \`memory\`.
+- Require status checks: \`pr-template\`, \`lint\`, \`typecheck\`, \`test\`, \`audit\`, \`check\`, \`security-scan\`, \`memory\`.
 - Block direct pushes to \`main\`.
 `;
 		},
@@ -732,8 +1369,12 @@ Configure GitHub branch protection (or rulesets) on \`main\`:
 - [ ] I did not push directly to \`main\`; this PR is from a dedicated branch.
 - [ ] Branch name follows policy (\`codex/*\` for agent-created branches).
 - [ ] Required local gates run: \`${lintCommand}\`, \`${typecheckCommand}\`, \`${testCommand}\`, \`${auditCommand}\`, \`${checkCommand}\`, \`${memoryValidateCommand}\`.
+- [ ] Required CI security gate passed: \`security-scan\` (gitleaks + trivy + semgrep, senvar optional).
+- [ ] Greptile setup verified with \`grepfile\` skill and \`.greptile/config.json\`, \`.greptile/rules.md\`, \`.greptile/files.json\`.
 - [ ] Greptile review completed and findings handled (or explicitly waived).
 - [ ] Codex review completed and findings handled (or explicitly waived).
+- [ ] Greptile review was performed by an independent reviewer (not the coding agent).
+- [ ] Greptile confidence score is \`>= 4/5\` for merge eligibility.
 - [ ] Merge is blocked until all required checks pass.
 - [ ] I will delete branch/worktree after merge.
 
@@ -744,12 +1385,15 @@ Configure GitHub branch protection (or rulesets) on \`main\`:
 - Command: \`${testCommand}\` -> pass/fail
 - Command: \`${auditCommand}\` -> pass/fail
 - Command: \`${checkCommand}\` -> pass/fail
+- Command: \`security-scan\` (CI check) -> pass/fail
 - Command: \`${memoryValidateCommand}\` -> pass/fail
 - Any other command(s):
 
 ## Review artifacts
 
 - Greptile: <link / artifact path / comment ID>
+- Greptile confidence score: <0-5>
+- Independent reviewer evidence: <reviewer + link>
 - Codex: <link / artifact path / comment ID>
 - Additional evidence (if any):
 

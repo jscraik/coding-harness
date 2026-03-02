@@ -2,6 +2,7 @@
 import { realpathSync } from "node:fs";
 import { resolve } from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
+import { runAutomationRunCLI } from "./commands/automation-run.js";
 import {
 	type BlastRadiusOptions,
 	runBlastRadiusCLI,
@@ -37,6 +38,7 @@ import { runReviewGateCLI } from "./commands/review-gate.js";
 import { runRiskTierCLI } from "./commands/risk-tier.js";
 import { runSearchCLI } from "./commands/search.js";
 import { runSilentErrorDetectorCLI } from "./commands/silent-error.js";
+import { printSimulateUsage, runSimulateCLI } from "./commands/simulate.js";
 import {
 	runUIExploreCLI,
 	runUIFastCLI,
@@ -91,6 +93,9 @@ function printUsage(): void {
 	);
 	console.info("  observability-gate  Check cardinality limits in metrics");
 	console.info("  diff-budget      Enforce diff budget constraints");
+	console.info(
+		"  automation-run  Execute Pulse/Upskill/Green PRs/Drift Check idempotently",
+	);
 	console.info("  ui:fast          Storybook-first local development loop");
 	console.info("  ui:verify        Playwright smoke suite with evidence");
 	console.info("  ui:explore       Agent browser exploratory testing");
@@ -104,6 +109,7 @@ function printUsage(): void {
 	console.info(
 		"  pilot-evaluate   Evaluate pilot metrics and determine promotion",
 	);
+	console.info("  simulate         Run counterfactual policy simulation");
 	console.info("");
 	console.info("Blast Radius Options:");
 	console.info("  --contract       Path to harness.contract.json");
@@ -116,6 +122,28 @@ function printUsage(): void {
 	console.info("  --repo           Repository to check (owner/repo format)");
 	console.info("  --branch         Branch to check");
 	console.info("  --check-scopes   Check GITHUB_TOKEN scopes against policy");
+	console.info("  --json           Output as JSON");
+	console.info("");
+	console.info("Automation Run Options:");
+	console.info(
+		"  --name           pulse|upskill|green-prs|drift-check (required)",
+	);
+	console.info(
+		"  --repo           Repository identifier owner/repo (required)",
+	);
+	console.info("  --head-sha       HEAD SHA for key binding (required)");
+	console.info(
+		"  --contract-version  Contract version for key binding (required)",
+	);
+	console.info(
+		"  --input-fingerprint  Input fingerprint for key binding (required)",
+	);
+	console.info(
+		"  --artifacts-dir  Artifact root (default: artifacts/automation)",
+	);
+	console.info("  --state-path     Idempotency state file path override");
+	console.info("  --force          Override replay for terminal runs");
+	console.info("  --simulate-failure  Test-only failure simulation");
 	console.info("  --json           Output as JSON");
 	console.info("");
 	console.info("Check Environment Options:");
@@ -157,6 +185,12 @@ function printUsage(): void {
 	);
 	console.info("  --contract       Path to contract file (optional)");
 	console.info("  --json           Output as JSON");
+	console.info("");
+	console.info("UI Loop Options:");
+	console.info("  --mode           execute|prepare (default: execute)");
+	console.info("  --dry-run        Alias for --mode prepare");
+	console.info("  --json           Output as JSON");
+	console.info("  --contract       Path to harness.contract.json");
 	console.info("");
 	console.info("");
 	console.info("Gardener Options:");
@@ -845,22 +879,34 @@ export function run(args: string[]): void {
 		// Parse ui:fast options
 		const jsonFlag = args.includes("--json");
 		const ciFlag = args.includes("--ci");
+		const dryRunFlag = args.includes("--dry-run");
 		const portIndex = args.indexOf("--port");
 		const contractIndex = args.indexOf("--contract");
+		const modeIndex = args.indexOf("--mode");
 
 		const options: {
 			port?: number;
 			ci?: boolean;
 			json?: boolean;
 			contractPath?: string;
+			dryRun?: boolean;
+			mode?: "execute" | "prepare";
 		} = {};
 
 		if (jsonFlag) options.json = true;
 		if (ciFlag) options.ci = true;
+		if (dryRunFlag) options.dryRun = true;
 		const portArg = getFlagValue(args, portIndex);
 		if (portArg) {
 			const parsedPort = parseIntegerArg(portArg, 1);
 			if (parsedPort !== undefined) options.port = parsedPort;
+		}
+		const modeArg = getFlagValue(args, modeIndex);
+		if (modeArg === "execute" || modeArg === "prepare") {
+			options.mode = modeArg;
+		}
+		if (dryRunFlag) {
+			options.mode = "prepare";
 		}
 		const contractArg = getFlagValue(args, contractIndex);
 		if (contractArg) options.contractPath = contractArg;
@@ -873,10 +919,12 @@ export function run(args: string[]): void {
 	if (command === "ui:verify") {
 		// Parse ui:verify options
 		const jsonFlag = args.includes("--json");
+		const dryRunFlag = args.includes("--dry-run");
 		const outputIndex = args.indexOf("--output");
 		const timeoutIndex = args.indexOf("--timeout");
 		const shardIndex = args.indexOf("--shard");
 		const contractIndex = args.indexOf("--contract");
+		const modeIndex = args.indexOf("--mode");
 
 		const options: {
 			outputDir?: string;
@@ -884,9 +932,12 @@ export function run(args: string[]): void {
 			timeout?: number;
 			shard?: string;
 			contractPath?: string;
+			dryRun?: boolean;
+			mode?: "execute" | "prepare";
 		} = {};
 
 		if (jsonFlag) options.json = true;
+		if (dryRunFlag) options.dryRun = true;
 		const outputArg = getFlagValue(args, outputIndex);
 		if (outputArg) options.outputDir = outputArg;
 		const timeoutArg = getFlagValue(args, timeoutIndex);
@@ -896,6 +947,13 @@ export function run(args: string[]): void {
 		}
 		const shardArg = getFlagValue(args, shardIndex);
 		if (shardArg) options.shard = shardArg;
+		const modeArg = getFlagValue(args, modeIndex);
+		if (modeArg === "execute" || modeArg === "prepare") {
+			options.mode = modeArg;
+		}
+		if (dryRunFlag) {
+			options.mode = "prepare";
+		}
 		const contractArg = getFlagValue(args, contractIndex);
 		if (contractArg) options.contractPath = contractArg;
 
@@ -908,9 +966,11 @@ export function run(args: string[]): void {
 		// Parse ui:explore options
 		const jsonFlag = args.includes("--json");
 		const interactionsFlag = args.includes("--interactions");
+		const dryRunFlag = args.includes("--dry-run");
 		const urlIndex = args.indexOf("--url");
 		const outputIndex = args.indexOf("--output");
 		const contractIndex = args.indexOf("--contract");
+		const modeIndex = args.indexOf("--mode");
 
 		const options: {
 			url?: string;
@@ -918,14 +978,24 @@ export function run(args: string[]): void {
 			json?: boolean;
 			interactions?: boolean;
 			contractPath?: string;
+			dryRun?: boolean;
+			mode?: "execute" | "prepare";
 		} = {};
 
 		if (jsonFlag) options.json = true;
 		if (interactionsFlag) options.interactions = true;
+		if (dryRunFlag) options.dryRun = true;
 		const urlArg = getFlagValue(args, urlIndex);
 		if (urlArg) options.url = urlArg;
 		const outputArg = getFlagValue(args, outputIndex);
 		if (outputArg) options.outputDir = outputArg;
+		const modeArg = getFlagValue(args, modeIndex);
+		if (modeArg === "execute" || modeArg === "prepare") {
+			options.mode = modeArg;
+		}
+		if (dryRunFlag) {
+			options.mode = "prepare";
+		}
 		const contractArg = getFlagValue(args, contractIndex);
 		if (contractArg) options.contractPath = contractArg;
 
@@ -1006,6 +1076,41 @@ export function run(args: string[]): void {
 		if (contractArg) blastRadiusOptions.contractPath = contractArg;
 
 		const exitCode = runBlastRadiusCLI(blastRadiusOptions);
+		process.exit(exitCode);
+		return;
+	}
+	if (command === "automation-run") {
+		const nameIndex = args.indexOf("--name");
+		const repoIndex = args.indexOf("--repo");
+		const headShaIndex = args.indexOf("--head-sha");
+		const contractVersionIndex = args.indexOf("--contract-version");
+		const inputFingerprintIndex = args.indexOf("--input-fingerprint");
+		const artifactsDirIndex = args.indexOf("--artifacts-dir");
+		const statePathIndex = args.indexOf("--state-path");
+		const jsonFlag = args.includes("--json");
+		const forceFlag = args.includes("--force");
+		const simulateFailureFlag = args.includes("--simulate-failure");
+
+		const name = getFlagValue(args, nameIndex) ?? "";
+		const repo = getFlagValue(args, repoIndex) ?? "";
+		const headSha = getFlagValue(args, headShaIndex) ?? "";
+		const contractVersion = getFlagValue(args, contractVersionIndex) ?? "";
+		const inputFingerprint = getFlagValue(args, inputFingerprintIndex) ?? "";
+		const artifactsDir = getFlagValue(args, artifactsDirIndex);
+		const statePath = getFlagValue(args, statePathIndex);
+
+		const exitCode = runAutomationRunCLI({
+			name,
+			repo,
+			headSha,
+			contractVersion,
+			inputFingerprint,
+			...(artifactsDir ? { artifactsDir } : {}),
+			...(statePath ? { statePath } : {}),
+			force: forceFlag,
+			simulateFailure: simulateFailureFlag,
+			json: jsonFlag,
+		});
 		process.exit(exitCode);
 		return;
 	}
@@ -1327,6 +1432,72 @@ export function run(args: string[]): void {
 	}
 
 	// No command recognized
+
+	if (command === "simulate") {
+		// Handle help
+		if (args.includes("--help") || args.includes("-h")) {
+			printSimulateUsage();
+			process.exit(0);
+			return;
+		}
+
+		// Parse simulate options
+		const jsonFlag = args.includes("--json");
+		const ciSoftFlag = args.includes("--ci-soft");
+		const verboseFlag = args.includes("--verbose");
+
+		const contractAIndex = args.indexOf("--contract-a");
+		const contractBIndex = args.indexOf("--contract-b");
+		const artifactsIndex = args.indexOf("--artifacts");
+		const tracesIndex = args.indexOf("--traces");
+		const outputIndex = args.indexOf("--output");
+
+		const contractA = getFlagValue(args, contractAIndex);
+		const contractB = getFlagValue(args, contractBIndex);
+
+		if (!contractA) {
+			console.error("Error: --contract-a is required");
+			process.exit(1);
+			return;
+		}
+
+		if (!contractB) {
+			console.error("Error: --contract-b is required");
+			process.exit(1);
+			return;
+		}
+
+		const options: {
+			contractA: string;
+			contractB: string;
+			artifactsDir?: string;
+			tracesDir?: string;
+			outputPath?: string;
+			json?: boolean;
+			ciSoft?: boolean;
+			verbose?: boolean;
+		} = {
+			contractA,
+			contractB,
+		};
+
+		if (jsonFlag) options.json = true;
+		if (ciSoftFlag) options.ciSoft = true;
+		if (verboseFlag) options.verbose = true;
+
+		const artifactsArg = getFlagValue(args, artifactsIndex);
+		if (artifactsArg) options.artifactsDir = artifactsArg;
+
+		const tracesArg = getFlagValue(args, tracesIndex);
+		if (tracesArg) options.tracesDir = tracesArg;
+
+		const outputArg = getFlagValue(args, outputIndex);
+		if (outputArg) options.outputPath = outputArg;
+
+		const exitCode = runSimulateCLI(options);
+		process.exit(exitCode);
+		return;
+	}
 	if (command === "gap-case") {
 		const jsonFlag = args.includes("--json");
 		const contractIndex = args.indexOf("--contract");

@@ -99,6 +99,58 @@ describe("validateContract", () => {
 		expect(result.data?.riskTierRules["src/auth/**"]).toBe("high");
 	});
 
+	describe("reviewPolicy", () => {
+		it("accepts reviewPolicy with optional requiredChecks", () => {
+			const result = validateContract({
+				version: "1.0",
+				reviewPolicy: {
+					timeoutSeconds: 600,
+					timeoutAction: "fail",
+					requiredChecks: ["security-scan", "Greptile Review", "Codex Review"],
+				},
+			});
+			expect(result.success).toBe(true);
+		});
+
+		it("accepts reviewPolicy with optional enforceReviewerIndependence", () => {
+			const result = validateContract({
+				version: "1.0",
+				reviewPolicy: {
+					timeoutSeconds: 600,
+					timeoutAction: "fail",
+					enforceReviewerIndependence: false,
+				},
+			});
+			expect(result.success).toBe(true);
+		});
+
+		it("rejects reviewPolicy when requiredChecks is not an array", () => {
+			const result = validateContract({
+				version: "1.0",
+				reviewPolicy: {
+					timeoutSeconds: 600,
+					timeoutAction: "fail",
+					requiredChecks: "security-scan",
+				},
+			});
+			expect(result.success).toBe(false);
+			expect(result.errors[0]?.path).toBe("reviewPolicy");
+		});
+
+		it("rejects reviewPolicy when enforceReviewerIndependence is not boolean", () => {
+			const result = validateContract({
+				version: "1.0",
+				reviewPolicy: {
+					timeoutSeconds: 600,
+					timeoutAction: "fail",
+					enforceReviewerIndependence: "no",
+				},
+			});
+			expect(result.success).toBe(false);
+			expect(result.errors[0]?.path).toBe("reviewPolicy");
+		});
+	});
+
 	describe("runtimePolicy", () => {
 		it("accepts runtimePolicy with optional createIssueOnAgentFindings", () => {
 			const result = validateContract({
@@ -399,6 +451,103 @@ describe("validateContract", () => {
 				},
 			});
 			expect(result.success).toBe(false);
+		});
+	});
+
+	describe("loopStageContracts", () => {
+		const validLoopStageContracts = {
+			"risk-policy-gate": {
+				inputs: ["changed_files", "harness.contract.json"],
+				outputs: ["risk-policy-gate.result"],
+				schema: "loop-stage-contract/v1",
+				failPolicy: "fail_closed",
+				if: "always()",
+				permissions: ["contents:read", "pull-requests:read"],
+				timeoutMinutes: 15,
+				concurrency: "none",
+			},
+			"review-gate": {
+				inputs: [
+					"risk-policy-gate.result",
+					"head_sha",
+					"harness.contract.json",
+				],
+				outputs: ["review-gate.result"],
+				schema: "loop-stage-contract/v1",
+				failPolicy: "fail_closed",
+				if: "always()",
+				permissions: ["contents:read", "pull-requests:read"],
+				timeoutMinutes: 15,
+				concurrency: "none",
+			},
+			"evidence-verify": {
+				inputs: [
+					"review-gate.result",
+					"evidence_files",
+					"harness.contract.json",
+				],
+				outputs: ["evidence-verify.result", "browser-evidence-artifacts"],
+				schema: "loop-stage-contract/v1",
+				failPolicy: "fail_closed",
+				if: "always()",
+				permissions: ["contents:read"],
+				timeoutMinutes: 15,
+				concurrency: "none",
+			},
+			"remediation-decision": {
+				inputs: [
+					"evidence-verify.result",
+					"findings.json",
+					"harness.contract.json",
+				],
+				outputs: [
+					"remediation-decision.result",
+					"remediation-decision-artifacts",
+				],
+				schema: "loop-stage-contract/v1",
+				failPolicy: "fail_closed",
+				if: "always()",
+				permissions: ["contents:read", "pull-requests:write"],
+				timeoutMinutes: 15,
+				concurrency: "none",
+			},
+		};
+
+		it("accepts complete loop stage semantic contracts", () => {
+			const result = validateContract({
+				version: "1.0",
+				loopStageContracts: validLoopStageContracts,
+			});
+			expect(result.success).toBe(true);
+			expect(result.data?.loopStageContracts?.["review-gate"]?.failPolicy).toBe(
+				"fail_closed",
+			);
+		});
+
+		it("rejects missing required loop stages", () => {
+			const result = validateContract({
+				version: "1.0",
+				loopStageContracts: {
+					"risk-policy-gate": validLoopStageContracts["risk-policy-gate"],
+				},
+			});
+			expect(result.success).toBe(false);
+			expect(result.errors[0]?.path).toBe("loopStageContracts");
+		});
+
+		it("rejects invalid fail policy values", () => {
+			const result = validateContract({
+				version: "1.0",
+				loopStageContracts: {
+					...validLoopStageContracts,
+					"review-gate": {
+						...validLoopStageContracts["review-gate"],
+						failPolicy: "best_effort",
+					},
+				},
+			});
+			expect(result.success).toBe(false);
+			expect(result.errors[0]?.path).toBe("loopStageContracts");
 		});
 	});
 });

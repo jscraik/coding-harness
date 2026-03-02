@@ -49,6 +49,7 @@ export type NormalizerErrorCode =
  */
 export type RemediationErrorCode =
 	| "E_VALIDATION"
+	| "E_CONTRACT"
 	| "E_POLICY"
 	| "E_GITHUB"
 	| "E_RACE_DETECTED"
@@ -127,6 +128,16 @@ export interface RemediationTelemetry {
 	cacheHits: number;
 }
 
+export interface RemediationTransaction {
+	findingId: string;
+	status: "applied" | "rolled_back" | "skipped";
+	reason: string;
+	preSha: string;
+	postSha: string;
+	artifactUri: string;
+	artifactChecksum: string;
+}
+
 /**
  * Output from successful remediation processing.
  */
@@ -135,6 +146,7 @@ export interface RemediationOutput {
 	actions: RemediationAction[];
 	skipped: Array<{ findingId: string; reason: string }>;
 	telemetry?: RemediationTelemetry | undefined;
+	transactions?: RemediationTransaction[] | undefined;
 }
 
 /**

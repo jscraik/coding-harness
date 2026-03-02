@@ -1,0 +1,44 @@
+name: Drift Check Automation
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: drift-check-${{ github.repository }}-${{ github.ref_name }}
+  cancel-in-progress: false
+
+jobs:
+  drift-check:
+    name: drift-check
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "24"
+      - name: Enable corepack
+        run: corepack enable
+      - name: Install dependencies
+        run: pnpm install
+      - name: Run drift-check automation idempotently
+        run: |
+          mkdir -p artifacts/automation
+          INPUT_FINGERPRINT="$(printf "%s" "${{ github.repository }}:${{ github.sha }}:drift-check" | sha256sum | awk '{print $1}')"
+          npx tsx src/cli.ts automation-run \
+            --name drift-check \
+            --repo "${{ github.repository }}" \
+            --head-sha "${{ github.sha }}" \
+            --contract-version "1.2.0" \
+            --input-fingerprint "${INPUT_FINGERPRINT}" \
+            --artifacts-dir artifacts/automation \
+            --json
+      - name: Upload drift-check artifacts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: drift-check-automation-artifacts
+          path: artifacts/automation/
+          if-no-files-found: error

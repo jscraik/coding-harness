@@ -7,6 +7,10 @@ import type {
 	GapCasePolicy,
 	HarnessContract,
 	ImageFormat,
+	LoopStageContract,
+	LoopStageContracts,
+	LoopStageFailPolicy,
+	LoopStageName,
 	MemoryEvalPolicy,
 	MemoryMaintenancePolicy,
 	MemoryPolicy,
@@ -56,6 +60,7 @@ const VALID_TOP_LEVEL_KEYS = [
 	"pilotGapCasePolicy",
 	"pilotRollbackPolicy",
 	"pilotAuthzPolicy",
+	"loopStageContracts",
 ] as const;
 const VALID_UI_LOOP_POLICY_KEYS = [
 	"fastCommand",
@@ -108,6 +113,16 @@ const VALID_GAP_CASE_POLICY_KEYS = [
 	"allowEvidencelessResolve",
 ] as const;
 const VALID_MERGE_POLICY_VALUE_KEYS = ["high", "medium", "low"] as const;
+const VALID_LOOP_STAGE_NAMES: LoopStageName[] = [
+	"risk-policy-gate",
+	"review-gate",
+	"evidence-verify",
+	"remediation-decision",
+];
+const VALID_LOOP_STAGE_FAIL_POLICIES: LoopStageFailPolicy[] = [
+	"fail_closed",
+	"warn_only",
+];
 
 // Machine-readable error codes for programmatic handling
 export enum ValidationErrorCode {
@@ -230,7 +245,13 @@ function isValidReviewPolicy(value: unknown): value is ReviewPolicy {
 
 	// Reject unknown top-level keys
 	const unknownKeys = Object.keys(policy).filter(
-		(key) => !["timeoutSeconds", "timeoutAction"].includes(key),
+		(key) =>
+			![
+				"timeoutSeconds",
+				"timeoutAction",
+				"requiredChecks",
+				"enforceReviewerIndependence",
+			].includes(key),
 	);
 	if (unknownKeys.length > 0) {
 		return false;
@@ -247,6 +268,26 @@ function isValidReviewPolicy(value: unknown): value is ReviewPolicy {
 
 	// Validate timeoutAction
 	if (!isValidTimeoutAction(policy.timeoutAction)) {
+		return false;
+	}
+
+	// Validate requiredChecks (optional)
+	if (policy.requiredChecks !== undefined) {
+		if (!Array.isArray(policy.requiredChecks)) {
+			return false;
+		}
+		for (const check of policy.requiredChecks) {
+			if (typeof check !== "string" || check.trim().length === 0) {
+				return false;
+			}
+		}
+	}
+
+	// Validate enforceReviewerIndependence (optional)
+	if (
+		policy.enforceReviewerIndependence !== undefined &&
+		typeof policy.enforceReviewerIndependence !== "boolean"
+	) {
 		return false;
 	}
 
@@ -657,6 +698,113 @@ function isValidMergePolicy(value: unknown): value is MergePolicy {
 	if (disallowedKeys.length > 0) {
 		return false;
 	}
+	return true;
+}
+
+function isStringArray(
+	value: unknown,
+	options: { minLength?: number } = {},
+): value is string[] {
+	if (!Array.isArray(value)) {
+		return false;
+	}
+	if (options.minLength !== undefined && value.length < options.minLength) {
+		return false;
+	}
+	return value.every((entry) => typeof entry === "string" && entry.length > 0);
+}
+
+function isValidLoopStageContract(value: unknown): value is LoopStageContract {
+	if (!isPlainObject(value)) {
+		return false;
+	}
+
+	const contract = value as Record<string, unknown>;
+	const validKeys = [
+		"inputs",
+		"outputs",
+		"schema",
+		"failPolicy",
+		"if",
+		"permissions",
+		"timeoutMinutes",
+		"concurrency",
+	] as const;
+	const invalidKeys = Object.keys(contract).filter(
+		(key) => !validKeys.includes(key as (typeof validKeys)[number]),
+	);
+	if (invalidKeys.length > 0) {
+		return false;
+	}
+
+	if (!isStringArray(contract.inputs, { minLength: 1 })) {
+		return false;
+	}
+	if (!isStringArray(contract.outputs, { minLength: 1 })) {
+		return false;
+	}
+	if (typeof contract.schema !== "string" || contract.schema.length === 0) {
+		return false;
+	}
+	if (
+		typeof contract.failPolicy !== "string" ||
+		!VALID_LOOP_STAGE_FAIL_POLICIES.includes(
+			contract.failPolicy as LoopStageFailPolicy,
+		)
+	) {
+		return false;
+	}
+	if (typeof contract.if !== "string" || contract.if.length === 0) {
+		return false;
+	}
+	if (!isStringArray(contract.permissions, { minLength: 1 })) {
+		return false;
+	}
+	if (
+		typeof contract.timeoutMinutes !== "number" ||
+		contract.timeoutMinutes <= 0 ||
+		!Number.isInteger(contract.timeoutMinutes)
+	) {
+		return false;
+	}
+	if (
+		typeof contract.concurrency !== "string" ||
+		contract.concurrency.length === 0
+	) {
+		return false;
+	}
+
+	return true;
+}
+
+function isValidLoopStageContracts(
+	value: unknown,
+): value is LoopStageContracts {
+	if (!isPlainObject(value)) {
+		return false;
+	}
+
+	const contracts = value as Record<string, unknown>;
+	const keys = Object.keys(contracts);
+	if (keys.length !== VALID_LOOP_STAGE_NAMES.length) {
+		return false;
+	}
+
+	for (const stageName of keys) {
+		if (!VALID_LOOP_STAGE_NAMES.includes(stageName as LoopStageName)) {
+			return false;
+		}
+		if (!isValidLoopStageContract(contracts[stageName])) {
+			return false;
+		}
+	}
+
+	for (const requiredStage of VALID_LOOP_STAGE_NAMES) {
+		if (!(requiredStage in contracts)) {
+			return false;
+		}
+	}
+
 	return true;
 }
 
@@ -1254,8 +1402,9 @@ export function validateContract(
 				code: ValidationErrorCode.INVALID_VALUE,
 				path: "reviewPolicy",
 				message:
-					"reviewPolicy must have timeoutSeconds (positive integer) and timeoutAction ('fail' | 'warn')",
-				expected: "{ timeoutSeconds: 600, timeoutAction: 'fail' | 'warn' }",
+					"reviewPolicy must have timeoutSeconds (positive integer), timeoutAction ('fail' | 'warn'), optional requiredChecks (string array), and optional enforceReviewerIndependence (boolean)",
+				expected:
+					"{ timeoutSeconds: 600, timeoutAction: 'fail' | 'warn', requiredChecks?: string[], enforceReviewerIndependence?: boolean }",
 				received: JSON.stringify(obj.reviewPolicy),
 				fix: "Ensure reviewPolicy has valid timeoutSeconds and timeoutAction",
 			});
@@ -1318,6 +1467,25 @@ export function validateContract(
 			});
 		} else {
 			remediationPolicy = obj.remediationPolicy as RemediationPolicy;
+		}
+	}
+
+	// Validate loopStageContracts (optional)
+	let loopStageContracts: LoopStageContracts | undefined;
+	if ("loopStageContracts" in obj && obj.loopStageContracts !== undefined) {
+		if (!isValidLoopStageContracts(obj.loopStageContracts)) {
+			errors.push({
+				code: ValidationErrorCode.INVALID_VALUE,
+				path: "loopStageContracts",
+				message:
+					"loopStageContracts must define all loop stages with semantic parity fields",
+				expected:
+					"{ risk-policy-gate, review-gate, evidence-verify, remediation-decision } with inputs/outputs/schema/failPolicy/if/permissions/timeoutMinutes/concurrency",
+				received: JSON.stringify(obj.loopStageContracts),
+				fix: "Provide complete loopStageContracts entries with valid field types and required stage keys",
+			});
+		} else {
+			loopStageContracts = obj.loopStageContracts as LoopStageContracts;
 		}
 	}
 
@@ -1437,6 +1605,7 @@ export function validateContract(
 			reviewPolicy,
 			evidencePolicy,
 			remediationPolicy,
+			loopStageContracts,
 			pilotGapCasePolicy,
 			pilotRollbackPolicy,
 			pilotAuthzPolicy,

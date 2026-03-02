@@ -4,6 +4,18 @@ import { join } from "node:path";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import { EXIT_CODES, runInit } from "./init.js";
 
+const EXPECTED_TEMPLATE_PATHS = [
+	"harness.contract.json",
+	"memory.json",
+	".greptile/config.json",
+	".greptile/files.json",
+	".greptile/rules.md",
+	".github/workflows/pr-pipeline.yml",
+	"CONTRIBUTING.md",
+	".github/PULL_REQUEST_TEMPLATE.md",
+];
+const EXPECTED_TEMPLATE_COUNT = EXPECTED_TEMPLATE_PATHS.length;
+
 describe("runInit", () => {
 	let tempDir: string;
 
@@ -61,7 +73,7 @@ describe("runInit", () => {
 
 			expect(result.ok).toBe(true);
 			if (result.ok) {
-				expect(result.output.created).toHaveLength(5);
+				expect(result.output.created).toHaveLength(EXPECTED_TEMPLATE_COUNT);
 				expect(result.output.skipped).toHaveLength(0);
 			}
 
@@ -75,6 +87,9 @@ describe("runInit", () => {
 				existsSync(join(tempDir, ".github/PULL_REQUEST_TEMPLATE.md")),
 			).toBe(false);
 			expect(existsSync(join(tempDir, "memory.json"))).toBe(false);
+			expect(existsSync(join(tempDir, ".greptile/config.json"))).toBe(false);
+			expect(existsSync(join(tempDir, ".greptile/files.json"))).toBe(false);
+			expect(existsSync(join(tempDir, ".greptile/rules.md"))).toBe(false);
 		});
 	});
 
@@ -84,7 +99,7 @@ describe("runInit", () => {
 
 			expect(result.ok).toBe(true);
 			if (result.ok) {
-				expect(result.output.created).toHaveLength(5);
+				expect(result.output.created).toHaveLength(EXPECTED_TEMPLATE_COUNT);
 				expect(result.output.skipped).toHaveLength(0);
 			}
 
@@ -98,6 +113,9 @@ describe("runInit", () => {
 				existsSync(join(tempDir, ".github/PULL_REQUEST_TEMPLATE.md")),
 			).toBe(true);
 			expect(existsSync(join(tempDir, "memory.json"))).toBe(true);
+			expect(existsSync(join(tempDir, ".greptile/config.json"))).toBe(true);
+			expect(existsSync(join(tempDir, ".greptile/files.json"))).toBe(true);
+			expect(existsSync(join(tempDir, ".greptile/rules.md"))).toBe(true);
 		});
 
 		it("skips existing files without --force", () => {
@@ -115,13 +133,17 @@ describe("runInit", () => {
 				"existing",
 			);
 			writeFileSync(join(tempDir, "memory.json"), "existing");
+			mkdirSync(join(tempDir, ".greptile"), { recursive: true });
+			writeFileSync(join(tempDir, ".greptile/config.json"), "{}");
+			writeFileSync(join(tempDir, ".greptile/files.json"), "{}");
+			writeFileSync(join(tempDir, ".greptile/rules.md"), "existing");
 
 			const result = runInit(tempDir, { dryRun: false, force: false });
 
 			expect(result.ok).toBe(true);
 			if (result.ok) {
 				expect(result.output.created).toHaveLength(0);
-				expect(result.output.skipped).toHaveLength(5);
+				expect(result.output.skipped).toHaveLength(EXPECTED_TEMPLATE_COUNT);
 			}
 		});
 	});
@@ -142,12 +164,16 @@ describe("runInit", () => {
 				"old content",
 			);
 			writeFileSync(join(tempDir, "memory.json"), '{"old": true}');
+			mkdirSync(join(tempDir, ".greptile"), { recursive: true });
+			writeFileSync(join(tempDir, ".greptile/config.json"), '{"old": true}');
+			writeFileSync(join(tempDir, ".greptile/files.json"), '{"old": true}');
+			writeFileSync(join(tempDir, ".greptile/rules.md"), "old content");
 
 			const result = runInit(tempDir, { dryRun: false, force: true });
 
 			expect(result.ok).toBe(true);
 			if (result.ok) {
-				expect(result.output.created).toHaveLength(5);
+				expect(result.output.created).toHaveLength(EXPECTED_TEMPLATE_COUNT);
 				expect(result.output.skipped).toHaveLength(0);
 			}
 		});
@@ -204,7 +230,17 @@ describe("runInit", () => {
 			);
 			expect(content.version).toBe("1.2.0");
 			expect(content.reviewPolicy.timeoutSeconds).toBe(600);
+			expect(content.reviewPolicy.requiredChecks).toContain("security-scan");
+			expect(content.reviewPolicy.requiredChecks).not.toContain(
+				"Greptile Review",
+			);
+			expect(content.reviewPolicy.requiredChecks).not.toContain("Codex Review");
+			expect(content.reviewPolicy.enforceReviewerIndependence).toBe(false);
 			expect(content.runtimePolicy.createIssueOnAgentFindings).toBe(true);
+			expect(content.loopStageContracts["risk-policy-gate"].schema).toBe(
+				"loop-stage-contract/v1",
+			);
+			expect(content.loopStageContracts["review-gate"].timeoutMinutes).toBe(15);
 		});
 
 		it("creates valid memory.json baseline", () => {
@@ -239,9 +275,69 @@ describe("runInit", () => {
 			expect(content).toContain("pnpm test");
 			expect(content).toContain("pnpm lint");
 			expect(content).toContain("pnpm check");
+			expect(content).toContain('node-version: "24"');
 			expect(content).toContain("name: pr-template");
+			expect(content).toContain("name: dependency-chain");
+			expect(content).toContain("uses: actions/setup-python@v6");
+			expect(content).toContain("uses: astral-sh/setup-uv@v7");
+			expect(content).toContain('uv tool install "ralph-gold==1.0.0"');
+			expect(content).toContain(
+				'uv tool install "git+https://github.com/jscraik/ralph-gold.git@5d4b57537a29c3edb566665c9482ae5ca1d49eed"',
+			);
+			expect(content).toContain("HARNESS_ALLOW_RALPH_PIPX_FALLBACK");
+			expect(content).toContain("ralph-fallback-warning.json");
+			expect(content).toContain('"fallback": "uv_git"');
+			expect(content).toContain('"fallback": "pipx_git"');
+			expect(content).toContain("Install dependencies for preflight smoke");
+			expect(content).toContain("name: Ralph dependency smoke preflight");
+			expect(content).toContain(
+				"npx tsx src/cli.ts check-environment --contract harness.contract.json --json --attestation artifacts/policy/ralph-smoke-attestation.json",
+			);
+			expect(content).toContain("name: risk-policy-gate");
+			expect(content).toContain("name: review-gate");
+			expect(content).toContain("name: evidence-verify");
+			expect(content).toContain("name: remediation-decision");
+			expect(content).toContain("Upload risk-policy telemetry artifacts");
+			expect(content).toContain("Upload review telemetry artifacts");
+			expect(content).toContain("Upload evidence telemetry artifacts");
+			expect(content).toContain("Upload remediation telemetry artifacts");
+			expect(content).toContain('"codex.tool.call.duration_ms"');
+			expect(content).toContain('"codex.api_request.duration_ms"');
+			expect(content).toContain("npx tsx src/cli.ts risk-policy-gate");
+			expect(content).toContain("npx tsx src/cli.ts review-gate");
+			expect(content).toContain("npx tsx src/cli.ts evidence-verify");
+			expect(content).toContain("npx tsx src/cli.ts remediate run");
+			expect(content).toContain(
+				"needs: [pr-template, dependency-chain, remediation-decision]",
+			);
+			expect(content).toContain("name: security-scan");
 			expect(content).toContain("Validate memory.json");
 			expect(content).toContain("test -f memory.json");
+		});
+
+		it("enforces ordered loop stage dependencies in workflow template", () => {
+			const result = runInit(tempDir, { dryRun: false, force: false });
+
+			expect(result.ok).toBe(true);
+
+			const workflowPath = join(tempDir, ".github/workflows/pr-pipeline.yml");
+			const workflow = require("node:fs").readFileSync(workflowPath, "utf-8");
+
+			const riskIndex = workflow.indexOf("  risk-policy-gate:");
+			const reviewIndex = workflow.indexOf("  review-gate:");
+			const evidenceIndex = workflow.indexOf("  evidence-verify:");
+			const remediationIndex = workflow.indexOf("  remediation-decision:");
+
+			expect(riskIndex).toBeGreaterThanOrEqual(0);
+			expect(reviewIndex).toBeGreaterThan(riskIndex);
+			expect(evidenceIndex).toBeGreaterThan(reviewIndex);
+			expect(remediationIndex).toBeGreaterThan(evidenceIndex);
+			expect(workflow).toContain("  review-gate:");
+			expect(workflow).toContain("    needs: [risk-policy-gate]");
+			expect(workflow).toContain("  evidence-verify:");
+			expect(workflow).toContain("    needs: [review-gate]");
+			expect(workflow).toContain("  remediation-decision:");
+			expect(workflow).toContain("    needs: [evidence-verify]");
 		});
 
 		it("uses npm run for npm script commands", () => {
@@ -262,6 +358,23 @@ describe("runInit", () => {
 			const workflow = require("node:fs").readFileSync(workflowPath, "utf-8");
 			expect(workflow).toContain("npm run lint");
 			expect(workflow).toContain("npm run check");
+		});
+
+		it("includes recommended security scanners in contributing template", () => {
+			const result = runInit(tempDir, { dryRun: false, force: false });
+
+			expect(result.ok).toBe(true);
+
+			const contributingPath = join(tempDir, "CONTRIBUTING.md");
+			const content = require("node:fs").readFileSync(
+				contributingPath,
+				"utf-8",
+			);
+			expect(content).toContain("## Recommended security scanner baseline");
+			expect(content).toContain("Gitleaks");
+			expect(content).toContain("Trivy");
+			expect(content).toContain("Senvar");
+			expect(content).toContain("Semgrep");
 		});
 	});
 });
@@ -296,7 +409,7 @@ describe("--track flag", () => {
 
 		expect(result.ok).toBe(true);
 		if (result.ok) {
-			expect(result.output.created).toHaveLength(5);
+			expect(result.output.created).toHaveLength(EXPECTED_TEMPLATE_COUNT);
 		}
 
 		// Verify manifest exists
@@ -324,7 +437,7 @@ describe("--track flag", () => {
 
 		expect(result.ok).toBe(true);
 		if (result.ok) {
-			expect(result.output.created).toHaveLength(5);
+			expect(result.output.created).toHaveLength(EXPECTED_TEMPLATE_COUNT);
 		}
 
 		// Verify backup exists
@@ -336,7 +449,7 @@ describe("--track flag", () => {
 			"utf-8",
 		);
 		const manifest = JSON.parse(manifestContent);
-		expect(manifest.files).toHaveLength(5);
+		expect(manifest.files).toHaveLength(EXPECTED_TEMPLATE_COUNT);
 
 		// Find the modified entry
 		const modifiedEntry = manifest.files.find(
@@ -410,6 +523,9 @@ describe("--rollback flag", () => {
 			false,
 		);
 		expect(existsSync(join(tempDir, "memory.json"))).toBe(false);
+		expect(existsSync(join(tempDir, ".greptile/config.json"))).toBe(false);
+		expect(existsSync(join(tempDir, ".greptile/files.json"))).toBe(false);
+		expect(existsSync(join(tempDir, ".greptile/rules.md"))).toBe(false);
 
 		// Manifest cleaned up
 		expect(existsSync(join(tempDir, ".harness/restore-manifest.json"))).toBe(

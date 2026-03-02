@@ -6,7 +6,16 @@
  */
 
 import { spawnSync } from "node:child_process";
-import { existsSync, readFileSync } from "node:fs";
+import { createHash } from "node:crypto";
+import {
+	existsSync,
+	mkdirSync,
+	readFileSync,
+	renameSync,
+	unlinkSync,
+	writeFileSync,
+} from "node:fs";
+import { join } from "node:path";
 import { loadContract } from "../lib/contract/loader.js";
 import {
 	DEFAULT_PILOT_ROLLBACK_POLICY,
@@ -25,6 +34,7 @@ import {
 import type {
 	CanonicalFinding,
 	RemediationOutcome,
+	RemediationTransaction,
 } from "../lib/remediation/types.js";
 
 export const EXIT_CODES = {
@@ -87,6 +97,50 @@ function getHeadSha(): string {
 	}
 
 	return result.stdout.trim();
+}
+
+function isDisposableWorkspace(): boolean {
+	if (process.env.HARNESS_DISPOSABLE_WORKSPACE === "true") {
+		return true;
+	}
+	const gitDirResult = spawnSync("git", ["rev-parse", "--git-dir"], {
+		encoding: "utf-8",
+		timeout: 5000,
+	});
+
+	if (gitDirResult.status !== 0 || !gitDirResult.stdout) {
+		return false;
+	}
+
+	const gitDir = gitDirResult.stdout.trim();
+	return gitDir.split(/[\\/]/).includes("worktrees");
+}
+
+function getWorkspaceStatus():
+	| {
+			ok: true;
+			clean: boolean;
+	  }
+	| {
+			ok: false;
+			reason: string;
+	  } {
+	const result = spawnSync("git", ["status", "--porcelain"], {
+		encoding: "utf-8",
+		timeout: 5000,
+	});
+
+	if (result.error || result.status !== 0) {
+		return {
+			ok: false,
+			reason: result.error?.message ?? result.stderr ?? "git status failed",
+		};
+	}
+
+	return {
+		ok: true,
+		clean: result.stdout.trim().length === 0,
+	};
 }
 
 /**
@@ -194,6 +248,318 @@ function createGitHubClient(): GitHubClient {
 	};
 }
 
+interface ReplaceRangePatch {
+	op: "replace_range";
+	content: string;
+	startLine?: number;
+	endLine?: number;
+}
+
+function safeFindingArtifactName(findingId: string): string {
+	return findingId.replace(/[^a-zA-Z0-9._-]/g, "_").slice(0, 128);
+}
+
+function parsePatchFromEvidence(
+	finding: CanonicalFinding,
+): { ok: true; patch: ReplaceRangePatch } | { ok: false; reason: string } {
+	if (!finding.evidence) {
+		return {
+			ok: false,
+			reason:
+				'No patch payload in finding evidence. Include evidence as JSON: {"op":"replace_range","content":"..."}',
+		};
+	}
+
+	const raw = finding.evidence.startsWith("harness_patch:")
+		? finding.evidence.slice("harness_patch:".length).trim()
+		: finding.evidence.trim();
+
+	let parsed: unknown;
+	try {
+		parsed = JSON.parse(raw);
+	} catch (error) {
+		return {
+			ok: false,
+			reason: `Patch payload parse error: ${error instanceof Error ? error.message : String(error)}`,
+		};
+	}
+
+	if (typeof parsed !== "object" || parsed === null) {
+		return {
+			ok: false,
+			reason: "Patch payload must be a JSON object",
+		};
+	}
+
+	const value = parsed as Record<string, unknown>;
+	if (value.op !== "replace_range") {
+		return {
+			ok: false,
+			reason: 'Patch payload op must be "replace_range"',
+		};
+	}
+	if (typeof value.content !== "string") {
+		return {
+			ok: false,
+			reason: "Patch payload content must be a string",
+		};
+	}
+
+	const startLine =
+		typeof value.startLine === "number" ? value.startLine : undefined;
+	const endLine = typeof value.endLine === "number" ? value.endLine : undefined;
+	if (
+		(startLine !== undefined &&
+			(!Number.isInteger(startLine) || startLine < 1)) ||
+		(endLine !== undefined && (!Number.isInteger(endLine) || endLine < 1))
+	) {
+		return {
+			ok: false,
+			reason: "Patch startLine/endLine must be positive integers",
+		};
+	}
+	if (startLine !== undefined && endLine !== undefined && endLine < startLine) {
+		return {
+			ok: false,
+			reason: "Patch endLine cannot be less than startLine",
+		};
+	}
+
+	return {
+		ok: true,
+		patch: {
+			op: "replace_range",
+			content: value.content,
+			...(startLine !== undefined ? { startLine } : {}),
+			...(endLine !== undefined ? { endLine } : {}),
+		},
+	};
+}
+
+function applyReplaceRange(
+	originalContent: string,
+	startLine: number,
+	endLine: number,
+	replacement: string,
+): string {
+	const lines = originalContent.split("\n");
+	const startIdx = startLine - 1;
+	const endIdx = endLine - 1;
+	if (startIdx < 0 || endIdx >= lines.length || startIdx > endIdx) {
+		throw new Error(
+			`Patch range [${startLine}, ${endLine}] is out of bounds for ${lines.length} line(s)`,
+		);
+	}
+	const replacementLines = replacement.split("\n");
+	return [
+		...lines.slice(0, startIdx),
+		...replacementLines,
+		...lines.slice(endIdx + 1),
+	].join("\n");
+}
+
+function applyFindingTransaction(
+	finding: CanonicalFinding,
+	workspaceRoot: string,
+): RemediationTransaction {
+	const preSha = getHeadSha();
+	const artifactDir = join(workspaceRoot, "artifacts/remediation/transactions");
+	mkdirSync(artifactDir, { recursive: true });
+	const artifactUri = join(
+		artifactDir,
+		`${safeFindingArtifactName(finding.id)}.json`,
+	);
+
+	const patchResult = parsePatchFromEvidence(finding);
+	if (!patchResult.ok) {
+		const transactionPayload = {
+			findingId: finding.id,
+			status: "skipped",
+			reason: patchResult.reason,
+			preSha,
+			postSha: preSha,
+			artifactUri,
+		};
+		const artifactChecksum = createHash("sha256")
+			.update(JSON.stringify(transactionPayload))
+			.digest("hex");
+		writeFileSync(
+			artifactUri,
+			JSON.stringify(
+				{
+					...transactionPayload,
+					artifactChecksum,
+					timestamp: new Date().toISOString(),
+				},
+				null,
+				2,
+			),
+			"utf-8",
+		);
+		return {
+			findingId: finding.id,
+			status: "skipped",
+			reason: patchResult.reason,
+			preSha,
+			postSha: preSha,
+			artifactUri,
+			artifactChecksum,
+		};
+	}
+
+	const targetPath = join(workspaceRoot, finding.filePath);
+	const backupPath = `${targetPath}.harness-bak.${Date.now()}`;
+	const tempPath = `${targetPath}.harness-tmp.${Date.now()}`;
+
+	try {
+		const originalContent = readFileSync(targetPath, "utf-8");
+		writeFileSync(backupPath, originalContent, "utf-8");
+
+		const startLine = patchResult.patch.startLine ?? finding.lineStart;
+		const endLine =
+			patchResult.patch.endLine ??
+			(finding.lineEnd !== undefined ? finding.lineEnd : finding.lineStart);
+		const updatedContent = applyReplaceRange(
+			originalContent,
+			startLine,
+			endLine,
+			patchResult.patch.content,
+		);
+		writeFileSync(tempPath, updatedContent, "utf-8");
+		renameSync(tempPath, targetPath);
+
+		const postSha = getHeadSha();
+		if (postSha !== preSha) {
+			writeFileSync(targetPath, originalContent, "utf-8");
+			unlinkSync(backupPath);
+			const transactionPayload = {
+				findingId: finding.id,
+				status: "rolled_back",
+				reason:
+					"HEAD changed during apply transaction; patch rolled back for safety",
+				preSha,
+				postSha,
+				artifactUri,
+			};
+			const artifactChecksum = createHash("sha256")
+				.update(JSON.stringify(transactionPayload))
+				.digest("hex");
+			writeFileSync(
+				artifactUri,
+				JSON.stringify(
+					{
+						...transactionPayload,
+						artifactChecksum,
+						timestamp: new Date().toISOString(),
+					},
+					null,
+					2,
+				),
+				"utf-8",
+			);
+			return {
+				findingId: finding.id,
+				status: "rolled_back",
+				reason:
+					"HEAD changed during apply transaction; patch rolled back for safety",
+				preSha,
+				postSha,
+				artifactUri,
+				artifactChecksum,
+			};
+		}
+
+		unlinkSync(backupPath);
+		const transactionPayload = {
+			findingId: finding.id,
+			status: "applied",
+			reason: "Applied low-risk patch in single-finding transaction",
+			preSha,
+			postSha,
+			artifactUri,
+		};
+		const artifactChecksum = createHash("sha256")
+			.update(JSON.stringify(transactionPayload))
+			.digest("hex");
+		writeFileSync(
+			artifactUri,
+			JSON.stringify(
+				{
+					...transactionPayload,
+					artifactChecksum,
+					timestamp: new Date().toISOString(),
+				},
+				null,
+				2,
+			),
+			"utf-8",
+		);
+		return {
+			findingId: finding.id,
+			status: "applied",
+			reason: "Applied low-risk patch in single-finding transaction",
+			preSha,
+			postSha,
+			artifactUri,
+			artifactChecksum,
+		};
+	} catch (error) {
+		let postSha = preSha;
+		try {
+			postSha = getHeadSha();
+		} catch {
+			postSha = preSha;
+		}
+
+		try {
+			if (existsSync(backupPath)) {
+				const originalContent = readFileSync(backupPath, "utf-8");
+				writeFileSync(targetPath, originalContent, "utf-8");
+				unlinkSync(backupPath);
+			}
+		} catch {
+			// Best effort rollback for transaction scope.
+		}
+
+		const reason = `Patch apply failed and was rolled back: ${
+			error instanceof Error ? error.message : String(error)
+		}`;
+		const transactionPayload = {
+			findingId: finding.id,
+			status: "rolled_back",
+			reason,
+			preSha,
+			postSha,
+			artifactUri,
+		};
+		const artifactChecksum = createHash("sha256")
+			.update(JSON.stringify(transactionPayload))
+			.digest("hex");
+		writeFileSync(
+			artifactUri,
+			JSON.stringify(
+				{
+					...transactionPayload,
+					artifactChecksum,
+					timestamp: new Date().toISOString(),
+				},
+				null,
+				2,
+			),
+			"utf-8",
+		);
+		return {
+			findingId: finding.id,
+			status: "rolled_back",
+			reason,
+			preSha,
+			postSha,
+			artifactUri,
+			artifactChecksum,
+		};
+	}
+}
+
 /**
  * Run remediation workflow.
  */
@@ -231,8 +597,19 @@ export async function runRemediate(
 			if (contract.pilotRollbackPolicy) {
 				rollbackPolicy = contract.pilotRollbackPolicy;
 			}
-		} catch {
-			// Use defaults if contract load fails
+		} catch (error) {
+			return {
+				outcome: {
+					ok: false,
+					error: {
+						code: "E_CONTRACT",
+						message: `Failed to load remediation contract: ${
+							error instanceof Error ? error.message : String(error)
+						}`,
+					},
+				},
+				exitCode: EXIT_CODES.USAGE,
+			};
 		}
 	}
 
@@ -251,6 +628,55 @@ export async function runRemediate(
 						code: "E_ROLLBACK_MODE",
 						message: `Autonomous mode requires completion marker at ${markerPath}. Run in manual mode or create marker file.`,
 						context: { mode: effectiveMode, markerPath },
+					},
+				},
+				exitCode: EXIT_CODES.POLICY,
+			};
+		}
+	}
+
+	// 2c. v1.1 safety contract: apply mode only runs in clean disposable workspaces.
+	if (effectiveMode === "apply") {
+		const cwd = process.cwd();
+		if (!isDisposableWorkspace()) {
+			return {
+				outcome: {
+					ok: false,
+					error: {
+						code: "E_POLICY",
+						message:
+							"Apply mode requires a disposable workspace (for example, a git worktree). Set HARNESS_DISPOSABLE_WORKSPACE=true only for controlled disposable environments.",
+						context: { cwd, mode: effectiveMode },
+					},
+				},
+				exitCode: EXIT_CODES.POLICY,
+			};
+		}
+
+		const workspaceStatus = getWorkspaceStatus();
+		if (!workspaceStatus.ok) {
+			return {
+				outcome: {
+					ok: false,
+					error: {
+						code: "E_POLICY",
+						message: `Apply mode failed preflight workspace check: ${workspaceStatus.reason}`,
+						context: { mode: effectiveMode },
+					},
+				},
+				exitCode: EXIT_CODES.POLICY,
+			};
+		}
+
+		if (!workspaceStatus.clean) {
+			return {
+				outcome: {
+					ok: false,
+					error: {
+						code: "E_POLICY",
+						message:
+							"Apply mode requires a clean disposable workspace. Commit or stash changes before retrying.",
+						context: { mode: effectiveMode },
 					},
 				},
 				exitCode: EXIT_CODES.POLICY,
@@ -354,6 +780,73 @@ export async function runRemediate(
 		};
 	}
 
+	// 6b. v1.1 apply mode: execute low-risk commit actions as single-finding transactions.
+	if (outcome.ok && effectiveMode === "apply") {
+		const findingById = new Map(
+			findings.map((finding) => [finding.id, finding]),
+		);
+		const transactions: RemediationTransaction[] = [];
+
+		for (const action of outcome.output.actions) {
+			if (action.type !== "commit" || action.dryRun) {
+				continue;
+			}
+			const finding = findingById.get(action.findingId);
+			if (!finding) {
+				const preSha = getHeadSha();
+				const artifactUri = join(
+					repoRoot,
+					"artifacts/remediation/transactions",
+					`${safeFindingArtifactName(action.findingId)}.json`,
+				);
+				mkdirSync(join(repoRoot, "artifacts/remediation/transactions"), {
+					recursive: true,
+				});
+				const transactionPayload = {
+					findingId: action.findingId,
+					status: "rolled_back",
+					reason:
+						"Remediation action referenced an unknown finding id; no patch applied",
+					preSha,
+					postSha: preSha,
+					artifactUri,
+				};
+				const artifactChecksum = createHash("sha256")
+					.update(JSON.stringify(transactionPayload))
+					.digest("hex");
+				writeFileSync(
+					artifactUri,
+					JSON.stringify(
+						{
+							...transactionPayload,
+							artifactChecksum,
+							timestamp: new Date().toISOString(),
+						},
+						null,
+						2,
+					),
+					"utf-8",
+				);
+				transactions.push({
+					findingId: action.findingId,
+					status: "rolled_back",
+					reason:
+						"Remediation action referenced an unknown finding id; no patch applied",
+					preSha,
+					postSha: preSha,
+					artifactUri,
+					artifactChecksum,
+				});
+				continue;
+			}
+
+			const transaction = applyFindingTransaction(finding, repoRoot);
+			transactions.push(transaction);
+		}
+
+		outcome.output.transactions = transactions;
+	}
+
 	// 7. Determine exit code
 	let exitCode: number;
 	if (!outcome.ok) {
@@ -366,6 +859,12 @@ export async function runRemediate(
 		}
 	} else if (outcome.output.actions.length < findings.length) {
 		// Some findings were skipped
+		exitCode = EXIT_CODES.PARTIAL;
+	} else if (
+		(outcome.output.transactions ?? []).some(
+			(transaction) => transaction.status !== "applied",
+		)
+	) {
 		exitCode = EXIT_CODES.PARTIAL;
 	} else {
 		exitCode = EXIT_CODES.SUCCESS;
@@ -413,6 +912,15 @@ export async function runRemediateCLI(
 				console.info("\nTelemetry:");
 				console.info(`  API calls: ${output.telemetry.apiCalls}`);
 				console.info(`  Cache hits: ${output.telemetry.cacheHits}`);
+			}
+
+			if (output.transactions && output.transactions.length > 0) {
+				console.info("\nTransactions:");
+				for (const transaction of output.transactions) {
+					console.info(
+						`  - ${transaction.status}: ${transaction.findingId} (${transaction.reason})`,
+					);
+				}
 			}
 		} else {
 			console.error(`Remediation failed: ${outcome.error.message}`);

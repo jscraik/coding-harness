@@ -16,7 +16,71 @@ permissions:
   id-token: write
 
 jobs:
+  post-merge-review-gate:
+    name: post-merge-review-gate
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      checks: read
+      pull-requests: read
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "24"
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          run_install: false
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+      - name: Build CLI
+        run: pnpm build
+      - name: Resolve merged PR metadata for pushed commit
+        id: resolve-pr
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const commitSha = context.sha;
+            const { owner, repo } = context.repo;
+            const response = await github.rest.repos.listPullRequestsAssociatedWithCommit({
+              owner,
+              repo,
+              commit_sha: commitSha,
+            });
+            const mergedPr = response.data.find(
+              (pr) => Boolean(pr.merged_at) && pr.base?.ref === context.ref.replace("refs/heads/", ""),
+            );
+            if (!mergedPr) {
+              core.info(`No merged PR associated with commit ${commitSha}; skipping post-merge review-gate.`);
+              core.setOutput("run_gate", "false");
+              return;
+            }
+            core.info(`Resolved merged PR #${mergedPr.number} with head SHA ${mergedPr.head.sha}`);
+            core.setOutput("run_gate", "true");
+            core.setOutput("pr_number", String(mergedPr.number));
+            core.setOutput("head_sha", mergedPr.head.sha);
+      - name: Run review-gate against finalized check runs
+        if: steps.resolve-pr.outputs.run_gate == 'true'
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          node dist/cli.js review-gate \
+            --token "$GITHUB_TOKEN" \
+            --owner "${{ github.repository_owner }}" \
+            --repo "${{ github.event.repository.name }}" \
+            --pr "${{ steps.resolve-pr.outputs.pr_number }}" \
+            --sha "${{ steps.resolve-pr.outputs.head_sha }}" \
+            --check "Greptile Review" \
+            --contract "test-fixtures/contract.json" \
+            --json
+
   auto-release:
+    needs: post-merge-review-gate
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
@@ -36,6 +100,16 @@ jobs:
         run: pnpm install --frozen-lockfile
       - name: Validate release candidate
         run: pnpm check
+      - name: Smoke test packed CLI artifact
+        run: |
+          set -euo pipefail
+          TARBALL="$(npm pack --silent)"
+          TMP_DIR="$(mktemp -d)"
+          npm init -y --prefix "$TMP_DIR" >/dev/null 2>&1
+          npm install --prefix "$TMP_DIR" "./$TARBALL" >/dev/null
+          "$TMP_DIR/node_modules/.bin/harness" --version | tee "$TMP_DIR/version.txt"
+          grep -Eq '^harness v[0-9]+\.[0-9]+\.[0-9]+' "$TMP_DIR/version.txt"
+          node "$TMP_DIR/node_modules/@brainwav/coding-harness/dist/cli.js" --version
       - name: Create release commit and tag
         env:
           GIT_AUTHOR_NAME: github-actions[bot]

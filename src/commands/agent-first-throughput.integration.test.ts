@@ -117,6 +117,78 @@ describe("agent-first throughput integration", () => {
 		];
 
 		const mockListCheckRuns = vi.fn().mockResolvedValue(checkRuns);
+		const mockGetPullRequest = vi.fn().mockResolvedValue({
+			number: 1,
+			user: { login: "coding-actor" },
+			head: { sha: headSha, ref: "feature/throughput" },
+		});
+		const mockListPullRequestReviews = vi.fn().mockResolvedValue([
+			{
+				state: "APPROVED",
+				commit_id: headSha,
+				user: { login: "independent-reviewer" },
+			},
+		]);
+		mockGitHubClient.mockImplementation(
+			() =>
+				({
+					listCheckRunsForRef: mockListCheckRuns,
+					getPullRequest: mockGetPullRequest,
+					listPullRequestReviews: mockListPullRequestReviews,
+				}) as unknown as GitHubClient,
+		);
+
+		const reviewResult = await runReviewGate({
+			contractPath,
+			token: "test-token",
+			owner: "acme",
+			repo: "repo",
+			prNumber: 1,
+			headSha,
+			checkName: "review-check",
+		});
+
+		expect(reviewResult).toEqual({
+			ok: true,
+			output: expect.objectContaining({
+				verified: true,
+				headSha,
+				checkStatus: "completed",
+				checkConclusion: "success",
+				needsRerun: false,
+				policy_gate_status: "pass",
+				actionable_count: 0,
+				blockers: [],
+			}),
+		});
+		expect(mockListCheckRuns).toHaveBeenCalledWith(headSha);
+	});
+
+	it("propagates review-gate failure before downstream evidence stages", async () => {
+		const headSha = headShaForTests();
+		writeFileSync(
+			contractPath,
+			JSON.stringify({
+				version: "1.0",
+				reviewPolicy: {
+					timeoutSeconds: 1,
+					timeoutAction: "fail",
+				},
+			}),
+			"utf-8",
+		);
+
+		const checkRuns: CheckRun[] = [
+			{
+				id: 2001,
+				name: "review-check",
+				status: "completed",
+				conclusion: "failure",
+				head_sha: headSha,
+			},
+		];
+
+		const mockListCheckRuns = vi.fn().mockResolvedValue(checkRuns);
 		mockGitHubClient.mockImplementation(
 			() =>
 				({
@@ -134,17 +206,196 @@ describe("agent-first throughput integration", () => {
 			checkName: "review-check",
 		});
 
-		expect(reviewResult).toEqual({
-			ok: true,
-			output: {
-				verified: true,
-				headSha,
-				checkStatus: "completed",
-				checkConclusion: "success",
-				needsRerun: false,
-			},
+		expect(reviewResult.ok).toBe(true);
+		if (reviewResult.ok) {
+			expect(reviewResult.output.verified).toBe(false);
+			expect(reviewResult.output.policy_gate_status).toBe("fail");
+			expect(reviewResult.output.blockers).toContain(
+				"risk-policy-gate check did not pass (conclusion: failure)",
+			);
+		}
+	});
+
+	it("is deterministic for identical inputs and policy", async () => {
+		const headSha = headShaForTests();
+		writeFileSync(
+			findingsPath,
+			JSON.stringify([
+				{
+					id: "deterministic-1",
+					rule: { id: "rule-det", name: "Deterministic Rule" },
+					location: { path: "src/example.ts", startLine: 42 },
+					commitSha: headSha,
+					severity: "warning" as const,
+				},
+			]),
+			"utf-8",
+		);
+		writeFileSync(
+			contractPath,
+			JSON.stringify({
+				version: "1.0",
+				reviewPolicy: {
+					timeoutSeconds: 1,
+					timeoutAction: "fail",
+				},
+			}),
+			"utf-8",
+		);
+
+		const runA = await runRemediate({
+			findings: findingsPath,
+			headSha,
+			dryRun: false,
 		});
-		expect(mockListCheckRuns).toHaveBeenCalledWith(headSha);
+		const runB = await runRemediate({
+			findings: findingsPath,
+			headSha,
+			dryRun: false,
+		});
+		expect(runA).toEqual(runB);
+
+		const checkRuns: CheckRun[] = [
+			{
+				id: 3001,
+				name: "review-check",
+				status: "completed",
+				conclusion: "success",
+				head_sha: headSha,
+			},
+		];
+		const mockListCheckRuns = vi.fn().mockResolvedValue(checkRuns);
+		const mockGetPullRequest = vi.fn().mockResolvedValue({
+			number: 1,
+			user: { login: "coding-actor" },
+			head: { sha: headSha, ref: "feature/throughput" },
+		});
+		const mockListPullRequestReviews = vi.fn().mockResolvedValue([
+			{
+				state: "APPROVED",
+				commit_id: headSha,
+				user: { login: "independent-reviewer" },
+			},
+		]);
+		mockGitHubClient.mockImplementation(
+			() =>
+				({
+					listCheckRunsForRef: mockListCheckRuns,
+					getPullRequest: mockGetPullRequest,
+					listPullRequestReviews: mockListPullRequestReviews,
+				}) as unknown as GitHubClient,
+		);
+
+		const gateA = await runReviewGate({
+			contractPath,
+			token: "test-token",
+			owner: "acme",
+			repo: "repo",
+			prNumber: 1,
+			headSha,
+			checkName: "review-check",
+		});
+		const gateB = await runReviewGate({
+			contractPath,
+			token: "test-token",
+			owner: "acme",
+			repo: "repo",
+			prNumber: 1,
+			headSha,
+			checkName: "review-check",
+		});
+		expect(gateA).toEqual(gateB);
+	});
+
+	it("keeps loop orchestration overhead p95 <= 2500ms across 30 fixture runs", async () => {
+		const headSha = headShaForTests();
+		writeFileSync(
+			findingsPath,
+			JSON.stringify([
+				{
+					id: "perf-1",
+					rule: { id: "rule-perf", name: "Perf Rule" },
+					location: { path: "src/example.ts", startLine: 12 },
+					commitSha: headSha,
+					severity: "warning" as const,
+				},
+			]),
+			"utf-8",
+		);
+		writeFileSync(
+			contractPath,
+			JSON.stringify({
+				version: "1.0",
+				reviewPolicy: {
+					timeoutSeconds: 1,
+					timeoutAction: "fail",
+				},
+			}),
+			"utf-8",
+		);
+
+		const checkRuns: CheckRun[] = [
+			{
+				id: 4001,
+				name: "review-check",
+				status: "completed",
+				conclusion: "success",
+				head_sha: headSha,
+			},
+		];
+		const mockListCheckRuns = vi.fn().mockResolvedValue(checkRuns);
+		const mockGetPullRequest = vi.fn().mockResolvedValue({
+			number: 1,
+			user: { login: "coding-actor" },
+			head: { sha: headSha, ref: "feature/perf" },
+		});
+		const mockListPullRequestReviews = vi.fn().mockResolvedValue([
+			{
+				state: "APPROVED",
+				commit_id: headSha,
+				user: { login: "independent-reviewer" },
+			},
+		]);
+		mockGitHubClient.mockImplementation(
+			() =>
+				({
+					listCheckRunsForRef: mockListCheckRuns,
+					getPullRequest: mockGetPullRequest,
+					listPullRequestReviews: mockListPullRequestReviews,
+				}) as unknown as GitHubClient,
+		);
+
+		const durationsMs: number[] = [];
+		for (let i = 0; i < 30; i++) {
+			const startedAt = Date.now();
+			const remediate = await runRemediate({
+				findings: findingsPath,
+				headSha,
+				dryRun: false,
+			});
+			expect(remediate.exitCode).toBe(0);
+			expect(remediate.outcome.ok).toBe(true);
+
+			const review = await runReviewGate({
+				contractPath,
+				token: "test-token",
+				owner: "acme",
+				repo: "repo",
+				prNumber: 1,
+				headSha,
+				checkName: "review-check",
+			});
+			expect(review.ok).toBe(true);
+			if (review.ok) {
+				expect(review.output.verified).toBe(true);
+			}
+			durationsMs.push(Date.now() - startedAt);
+		}
+
+		const sorted = [...durationsMs].sort((a, b) => a - b);
+		const p95Index = Math.ceil(sorted.length * 0.95) - 1;
+		const p95 = sorted[Math.max(0, p95Index)] ?? Number.POSITIVE_INFINITY;
+		expect(p95).toBeLessThanOrEqual(2500);
 	});
 
 	it("aborts mixed stale + race path with policy hold", async () => {

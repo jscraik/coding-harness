@@ -1,0 +1,44 @@
+name: Green PRs Automation
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: green-prs-${{ github.repository }}-${{ github.ref_name }}
+  cancel-in-progress: false
+
+jobs:
+  green-prs:
+    name: green-prs
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "24"
+      - name: Enable corepack
+        run: corepack enable
+      - name: Install dependencies
+        run: pnpm install
+      - name: Run green-prs automation idempotently
+        run: |
+          mkdir -p artifacts/automation
+          INPUT_FINGERPRINT="$(printf "%s" "${{ github.repository }}:${{ github.sha }}:green-prs" | sha256sum | awk '{print $1}')"
+          npx tsx src/cli.ts automation-run \
+            --name green-prs \
+            --repo "${{ github.repository }}" \
+            --head-sha "${{ github.sha }}" \
+            --contract-version "1.2.0" \
+            --input-fingerprint "${INPUT_FINGERPRINT}" \
+            --artifacts-dir artifacts/automation \
+            --json
+      - name: Upload green-prs artifacts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: green-prs-automation-artifacts
+          path: artifacts/automation/
+          if-no-files-found: error

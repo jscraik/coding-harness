@@ -1,3 +1,4 @@
+import { spawnSync } from "node:child_process";
 import { createHash } from "node:crypto";
 /**
  * check-environment command for governance envelope preflight validation.
@@ -5,8 +6,19 @@ import { createHash } from "node:crypto";
  */
 import { existsSync, writeFileSync } from "node:fs";
 import { resolve } from "node:path";
+import semver from "semver";
 import { loadContract } from "../lib/contract/loader.js";
-import type { HarnessContract } from "../lib/contract/types.js";
+import {
+	DEFAULT_CONTRACT,
+	type HarnessContract,
+} from "../lib/contract/types.js";
+import {
+	RALPH_PYTHON_VERSION_PIN,
+	RALPH_UV_VERSION_PIN,
+	RALPH_VERSION_PIN,
+	extractVersionFromRalphVersionOutput,
+	getRalphPackageSpec,
+} from "../lib/deps/ralph-runtime.js";
 import { sanitizeError } from "../lib/input/sanitize.js";
 
 // Exit codes for programmatic consumption
@@ -36,7 +48,9 @@ export interface EnvironmentViolation {
 		| "sandbox_mode_not_allowed"
 		| "secret_in_environment"
 		| "approval_posture_invalid"
-		| "artifact_path_traversal";
+		| "artifact_path_traversal"
+		| "runtime_dependency_missing"
+		| "runtime_dependency_version_mismatch";
 	/** Human-readable message */
 	message: string;
 	/** The value that caused the violation */
@@ -56,6 +70,12 @@ export interface EnvironmentPosture {
 	policyFingerprint: string;
 	/** Timestamp of check */
 	timestamp: string;
+	/** Runtime posture for mandatory dependencies */
+	runtime?: {
+		pythonVersion?: string;
+		uvVersion?: string;
+		ralphVersion?: string;
+	};
 }
 
 export interface CheckEnvironmentOutput {
@@ -67,6 +87,12 @@ export interface CheckEnvironmentOutput {
 	posture: EnvironmentPosture;
 	/** Path to attestation artifact (if written) */
 	attestationPath?: string;
+}
+
+interface CommandProbe {
+	available: boolean;
+	version?: string;
+	rawOutput?: string;
 }
 
 export type CheckEnvironmentResult =
@@ -148,6 +174,33 @@ function hasApprovalPostureConfigured(): boolean {
 	return false;
 }
 
+function parseSemverLoose(version: string): string | null {
+	return semver.coerce(version)?.version ?? null;
+}
+
+function probeCommandVersion(
+	command: string,
+	args: string[],
+	extractVersion: (output: string) => string | undefined,
+): CommandProbe {
+	const result = spawnSync(command, args, {
+		encoding: "utf-8",
+		stdio: ["ignore", "pipe", "pipe"],
+	});
+
+	if (result.error || result.status !== 0) {
+		return { available: false };
+	}
+
+	const output = `${result.stdout ?? ""}\n${result.stderr ?? ""}`.trim();
+	const version = extractVersion(output);
+	return {
+		available: true,
+		rawOutput: output,
+		...(version ? { version } : {}),
+	};
+}
+
 /**
  * Compute a fingerprint for the policy.
  */
@@ -171,7 +224,12 @@ export async function runCheckEnvironment(
 	let contract: HarnessContract;
 	try {
 		const contractPath = options.contractPath ?? "harness.contract.json";
-		contract = loadContract(contractPath);
+		const resolvedContractPath = resolve(contractPath);
+		if (existsSync(resolvedContractPath)) {
+			contract = loadContract(contractPath);
+		} else {
+			contract = DEFAULT_CONTRACT;
+		}
 	} catch (e) {
 		return {
 			ok: false,
@@ -236,6 +294,91 @@ export async function runCheckEnvironment(
 			expected:
 				"Set CLAUDE_APPROVAL_POSTURE=require or run in interactive mode",
 		});
+	}
+
+	// Runtime dependency checks (mandatory for loop-stage execution)
+	const pythonProbe = probeCommandVersion(
+		"python3",
+		["--version"],
+		(output) => output.match(/(\d+\.\d+\.\d+)/)?.[1],
+	);
+	if (!pythonProbe.available || !pythonProbe.version) {
+		violations.push({
+			type: "runtime_dependency_missing",
+			message: "python3 is required but was not found",
+			expected: `Install Python ${RALPH_PYTHON_VERSION_PIN}.x`,
+		});
+	} else {
+		posture.runtime = {
+			...(posture.runtime ?? {}),
+			pythonVersion: pythonProbe.version,
+		};
+		const current = parseSemverLoose(pythonProbe.version);
+		const required = parseSemverLoose(RALPH_PYTHON_VERSION_PIN);
+		if (current && required && !semver.gte(current, required)) {
+			violations.push({
+				type: "runtime_dependency_version_mismatch",
+				message: `python3 version ${pythonProbe.version} is lower than required`,
+				value: pythonProbe.version,
+				expected: `>= ${RALPH_PYTHON_VERSION_PIN}`,
+			});
+		}
+	}
+
+	const uvProbe = probeCommandVersion(
+		"uv",
+		["--version"],
+		(output) => output.match(/(\d+\.\d+\.\d+(?:[-+][0-9A-Za-z.-]+)?)/)?.[1],
+	);
+	if (!uvProbe.available || !uvProbe.version) {
+		violations.push({
+			type: "runtime_dependency_missing",
+			message: "uv is required but was not found",
+			expected: `Install uv ${RALPH_UV_VERSION_PIN}`,
+		});
+	} else {
+		posture.runtime = {
+			...(posture.runtime ?? {}),
+			uvVersion: uvProbe.version,
+		};
+		const current = parseSemverLoose(uvProbe.version);
+		const required = parseSemverLoose(RALPH_UV_VERSION_PIN);
+		if (current && required && !semver.eq(current, required)) {
+			violations.push({
+				type: "runtime_dependency_version_mismatch",
+				message: `uv version ${uvProbe.version} does not match the pinned runtime`,
+				value: uvProbe.version,
+				expected: RALPH_UV_VERSION_PIN,
+			});
+		}
+	}
+
+	const ralphProbe = probeCommandVersion(
+		"ralph",
+		["--version"],
+		extractVersionFromRalphVersionOutput,
+	);
+	if (!ralphProbe.available || !ralphProbe.version) {
+		violations.push({
+			type: "runtime_dependency_missing",
+			message: "ralph CLI is required but was not found",
+			expected: `Install ${getRalphPackageSpec()}`,
+		});
+	} else {
+		posture.runtime = {
+			...(posture.runtime ?? {}),
+			ralphVersion: ralphProbe.version,
+		};
+		const current = parseSemverLoose(ralphProbe.version);
+		const required = parseSemverLoose(RALPH_VERSION_PIN);
+		if (current && required && !semver.eq(current, required)) {
+			violations.push({
+				type: "runtime_dependency_version_mismatch",
+				message: `ralph version ${ralphProbe.version} does not match pinned runtime`,
+				value: ralphProbe.version,
+				expected: RALPH_VERSION_PIN,
+			});
+		}
 	}
 
 	// Build output
@@ -305,6 +448,17 @@ export async function runCheckEnvironmentCLI(
 			console.info(
 				`  Approval posture: ${output.posture.hasApprovalPosture ? "configured" : "not configured"}`,
 			);
+			if (output.posture.runtime) {
+				if (output.posture.runtime.pythonVersion) {
+					console.info(`  Python: ${output.posture.runtime.pythonVersion}`);
+				}
+				if (output.posture.runtime.uvVersion) {
+					console.info(`  uv: ${output.posture.runtime.uvVersion}`);
+				}
+				if (output.posture.runtime.ralphVersion) {
+					console.info(`  Ralph: ${output.posture.runtime.ralphVersion}`);
+				}
+			}
 			if (output.attestationPath) {
 				console.info(`  Attestation: ${output.attestationPath}`);
 			}

@@ -6,6 +6,13 @@
 - [Why this workflow exists](#why-this-workflow-exists)
 - [Branching and PR rule](#branching-and-pr-rule)
 - [Required pre-merge gates](#required-pre-merge-gates)
+- [Greptile setup baseline](#greptile-setup-baseline)
+- [Greptile config hierarchy](#greptile-config-hierarchy)
+- [Greptile merge logic for multi-scope PRs](#greptile-merge-logic-for-multi-scope-prs)
+- [Greptile confidence score policy](#greptile-confidence-score-policy)
+- [Greptile strictness policy](#greptile-strictness-policy)
+- [Greptile training and feedback loop](#greptile-training-and-feedback-loop)
+- [Recommended security scanner baseline](#recommended-security-scanner-baseline)
 - [One-click review workflow](#one-click-review-workflow)
 - [Credential-safe evidence snippets](#credential-safe-evidence-snippets)
 - [Recommended GitHub branch protection settings](#recommended-github-branch-protection-settings)
@@ -73,11 +80,89 @@ For behavior-affecting changes:
 - `pnpm test`
 - `pnpm audit`
 - `pnpm check`
+- `security-scan` GitHub Actions check (gitleaks + trivy + semgrep, senvar optional)
 
 For docs-only edits, run at minimum:
 
 - `pnpm lint` (if docs lint is enabled),
 - `pnpm typecheck` if any types or imports changed.
+
+## Greptile setup baseline
+
+- Greptile must be configured correctly before relying on Greptile review gates.
+- Use the `grepfile` skill to set up/refresh all required Greptile files for this repository.
+- If Greptile files are missing or stale, treat the review gate as blocked and do not merge.
+- Required local structure:
+  - `.greptile/config.json`
+  - `.greptile/rules.md`
+  - `.greptile/files.json`
+- Independent validation is mandatory: the coding agent cannot approve its own changes.
+
+## Greptile config hierarchy
+
+When settings conflict, use this precedence (highest first):
+
+1. Org-enforced rules from the Greptile dashboard.
+2. Directory-scoped `.greptile/` folders (cascading inheritance).
+3. `greptile.json` legacy repo-wide config (ignored if `.greptile/` exists in the same directory).
+4. Dashboard defaults.
+
+## Greptile merge logic for multi-scope PRs
+
+For PRs touching multiple directories with different configs:
+
+- Strictness: use the most restrictive value (`MAX`).
+- `fileChangeLimit`: use the smallest value (`MIN`).
+- Comment types: union all requested comment types.
+- Boolean settings: if any scope enables it, treat as enabled (`OR`).
+
+## Greptile confidence score policy
+
+Use confidence score as a merge gate signal:
+
+- `5/5`: production-ready, merge allowed.
+- `4/5`: minor polish, merge allowed after non-logic fixes.
+- `3/5`: implementation issues, must address feedback and re-review.
+- `2/5`: significant bugs, blocked.
+- `0-1/5`: critical issues, blocked.
+
+## Greptile strictness policy
+
+- Level 1 (Verbose): required for security-critical directories and new project setup.
+- Level 2 (Default): required baseline for PRs targeting `main`/production branches.
+- Level 3 (Critical-only): reserved for stable, non-critical internal infrastructure.
+
+Important indexing caveat:
+
+- `ignorePatterns` excludes files from review only; it does **not** exclude indexing.
+- Large binaries/assets and `node_modules` must be excluded at repository/dashboard indexing level.
+
+## Greptile training and feedback loop
+
+- Developers must provide regular 👍/👎 feedback on review comments.
+- A 👎 should include a brief rationale to train the system.
+- Commit analysis and the 3-ignore rule are active signals and must be respected.
+- New repositories should expect a 2-3 week calibration period.
+
+Manual trigger standards:
+
+- Use `@greptileai` on draft PRs or when settings/context changed and a forced re-review is needed.
+- Use targeted prompts for scoped checks (for example: `@greptileai check for memory leaks`).
+
+## Recommended security scanner baseline
+
+For repositories that use Harness, recommend installing these scanners as project prerequisites:
+
+- Gitleaks
+- Trivy
+- Senvar (if used by your organization)
+- Semgrep
+
+Recommended policy:
+
+- Keep scanner binaries available in local development environments and CI runners.
+- Run scanner checks in CI on pull requests and pushes to protected branches.
+- Treat scanner findings as merge blockers unless explicitly waived with rationale.
 
 ## One-click review workflow
 
@@ -92,10 +177,12 @@ Use this checklist per task:
 3. Capture review artifacts:
 
    - Greptile review result reference (URL or report file),
-   - Codex review result reference (URL or report file).
+   - Codex review result reference (URL or report file),
+   - Greptile confidence score for the PR,
+   - confirmation that reviewer agent is independent from coding agent.
 
 4. Fix findings, re-run gates, and update artifacts.
-5. Merge only after all checklist items are checked.
+5. Merge only after all checklist items are checked and confidence policy allows merge.
 
 ## Credential-safe evidence snippets
 
@@ -124,6 +211,7 @@ Configure repository settings on `main` to make the workflow enforceable:
   - `pnpm test`
   - `pnpm audit`
   - `pnpm check`
+  - `security-scan`
   - `memory`
 - Dismiss stale approvals when new commits are pushed.
 - Restrict pushes to `main` to `main` repository settings/admin workflows only.
