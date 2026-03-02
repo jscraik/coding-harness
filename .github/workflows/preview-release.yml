@@ -54,8 +54,24 @@ jobs:
       - name: Smoke test
         run: node dist/cli.js --version
 
+      - name: Check publish eligibility
+        id: eligibility
+        env:
+          HEAD_REPO: ${{ github.event.pull_request.head.repo.full_name }}
+        run: |
+          if [[ "$HEAD_REPO" != "${{ github.repository }}" ]]; then
+            echo "eligible=false" >> "$GITHUB_OUTPUT"
+            echo "::notice::Skipping preview publish for fork PR (secrets unavailable)"
+          elif [[ -z "${{ secrets.NPM_TOKEN }}" ]]; then
+            echo "eligible=false" >> "$GITHUB_OUTPUT"
+            echo "::notice::Skipping preview publish (NPM_TOKEN not configured)"
+          else
+            echo "eligible=true" >> "$GITHUB_OUTPUT"
+          fi
+
       - name: Publish preview
         id: publish
+        if: steps.eligibility.outputs.eligible == 'true'
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
           PR_NUMBER: ${{ github.event.pull_request.number }}
