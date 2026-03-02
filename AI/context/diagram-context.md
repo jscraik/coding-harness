@@ -102,14 +102,14 @@ graph TD
     validator_test_b4b482f8["validator.test"]
     types_3_9675d69b["types"]
   end
-  subgraph src_lib_plan_gate_b742698a["src/lib/plan-gate"]
-    types_4_822d0f88["types"]
-    detector_1_b37d288b["detector"]
-  end
   subgraph src_lib_policy_f3a0824d["src/lib/policy"]
     risk_tier_1_96b6ff91["risk-tier"]
     risk_tier_test_ae056367["risk-tier.test"]
     diff_budget_1_9f85eb1c["diff-budget"]
+  end
+  subgraph src_lib_plan_gate_b742698a["src/lib/plan-gate"]
+    types_4_822d0f88["types"]
+    detector_1_b37d288b["detector"]
   end
   subgraph src_lib_pilot_evaluation_f6cc358e["src/lib/pilot-evaluation"]
     types_5_f869ec4b["types"]
@@ -437,10 +437,10 @@ graph LR
   node_os_e9717731["node:os"] --> validator_test_b4b482f8
   node_path_0e7d56ab["node:path"] --> validator_test_b4b482f8
   vitest_a9127f3d["vitest"] --> validator_test_b4b482f8
-  node_fs_df6b52af["node:fs"] --> detector_1_b37d288b
-  node_path_0e7d56ab["node:path"] --> detector_1_b37d288b
   picomatch_0bf97c7b["picomatch"] --> risk_tier_1_96b6ff91
   vitest_a9127f3d["vitest"] --> risk_tier_test_ae056367
+  node_fs_df6b52af["node:fs"] --> detector_1_b37d288b
+  node_path_0e7d56ab["node:path"] --> detector_1_b37d288b
   node_fs_df6b52af["node:fs"] --> metrics_capture_1d1a2c08
   node_path_0e7d56ab["node:path"] --> metrics_capture_1d1a2c08
   vitest_a9127f3d["vitest"] --> cardinality_test_c00e7edb
