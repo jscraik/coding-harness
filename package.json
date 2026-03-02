@@ -41,7 +41,7 @@
 		"test:artifacts:integration": "bash scripts/test-with-artifacts.sh integration",
 		"test:artifacts:e2e": "bash scripts/test-with-artifacts.sh e2e",
 		"harness:ui:capture-browser-evidence": "pnpm exec tsx src/cli.ts ui:explore --mode execute --interactions --output artifacts/ui-evidence --json",
-		"postinstall": "simple-git-hooks",
+		"postinstall": "[ -d .git ] && simple-git-hooks || true",
 		"vale": "vale --config .vale.ini AGENTS.md CLAUDE.md docs"
 	},
 	"devDependencies": {
