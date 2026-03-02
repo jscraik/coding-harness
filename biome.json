@@ -14,7 +14,8 @@
 			"coverage",
 			"artifacts",
 			".test-traces*",
-			".traces"
+			".traces",
+			"AI/diagrams"
 		]
 	},
 	"overrides": [
