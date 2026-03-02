@@ -2022,6 +2022,88 @@ If you have suggestions for how to fix this issue, please describe them.
   description: "Introduces breaking changes"
 `,
 	},
+	{
+		path: "Makefile",
+		render: (pm) => `# Harness Development Makefile
+# Run \`make help\` to see available commands
+
+.PHONY: help install dev build test lint fmt check clean hooks setup
+
+# Default target
+help: ## Show this help message
+	@echo 'Usage: make [target]'
+	@echo ''
+	@echo 'Targets:'
+	@awk 'BEGIN {FS = ":.*?## "} /^[a-zA-Z_-]+:.*?## / {printf "  %-15s %s\\n", $$1, $$2}' $(MAKEFILE_LIST)
+
+# === Setup ===
+
+install: ## Install dependencies
+	${pm} install
+
+setup: install hooks ## Full setup: install deps and configure git hooks
+
+hooks: ## Setup git hooks
+	${pm} exec simple-git-hooks
+
+# === Development ===
+
+dev: ## Start development server
+	${pm} dev
+
+build: ## Build for production
+	${pm} build
+
+# === Quality ===
+
+lint: ## Run linter
+	${pm} lint
+
+fmt: ## Format code
+	${pm} fmt
+
+typecheck: ## Run TypeScript type checking
+	${pm} typecheck
+
+test: ## Run tests
+	${pm} test
+
+check: lint typecheck test ## Run all checks (lint, typecheck, test)
+
+# === Security ===
+
+audit: ## Run security audit
+	${pm} audit
+
+secrets: ## Scan for secrets with gitleaks
+	@gitleaks detect --source . --verbose || (echo "Install gitleaks: brew install gitleaks" && exit 1)
+
+security: audit secrets ## Run all security checks
+
+# === Maintenance ===
+
+clean: ## Clean build artifacts and caches
+	rm -rf dist coverage artifacts .test-traces* .traces
+	rm -rf node_modules/.cache
+
+reset: clean ## Full reset: clean and reinstall
+	${pm} install
+
+# === CI ===
+
+ci: check audit ## Run CI checks (check + audit)
+
+# === Diagrams ===
+
+diagrams: ## Generate architecture diagrams
+	${pm} exec diagram all . --output-dir AI/diagrams
+
+# === Environment ===
+
+env-check: ## Check environment with ralph-gold
+	@./scripts/check-environment.sh
+`,
+	},
 ];
 
 // === Package Manager Detection ===

@@ -26,6 +26,7 @@ const EXPECTED_TEMPLATE_PATHS = [
 	".github/ISSUE_TEMPLATE/feature-request.md",
 	".github/ISSUE_TEMPLATE/security-vulnerability.md",
 	".github/labels.yml",
+	"Makefile",
 ];
 const EXPECTED_TEMPLATE_COUNT = EXPECTED_TEMPLATE_PATHS.length;
 
@@ -181,6 +182,7 @@ describe("runInit", () => {
 				"existing",
 			);
 			writeFileSync(join(tempDir, ".github/labels.yml"), "existing");
+			writeFileSync(join(tempDir, "Makefile"), "existing");
 
 			const result = runInit(tempDir, { dryRun: false, force: false });
 
