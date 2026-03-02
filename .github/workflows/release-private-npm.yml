@@ -21,7 +21,7 @@ on:
           - oidc
 
 permissions:
-  contents: read
+  contents: write
   id-token: write
 
 jobs:
@@ -133,7 +133,7 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           VERSION="$(node -p "require('./package.json').version")"
-          TARBALL="@brainwav/coding-harness-${VERSION}.tgz"
+          TARBALL="brainwav-coding-harness-${VERSION}.tgz"
           if [[ -f "$TARBALL" ]]; then
             gh attestation verify "$TARBALL" --repo "${{ github.repository }}" || true
           fi

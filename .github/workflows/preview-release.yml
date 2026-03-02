@@ -54,13 +54,30 @@ jobs:
       - name: Smoke test
         run: node dist/cli.js --version
 
+      - name: Check publish eligibility
+        id: eligibility
+        env:
+          HEAD_REPO: ${{ github.event.pull_request.head.repo.full_name }}
+        run: |
+          if [[ "$HEAD_REPO" != "${{ github.repository }}" ]]; then
+            echo "eligible=false" >> "$GITHUB_OUTPUT"
+            echo "::notice::Skipping preview publish for fork PR (secrets unavailable)"
+          elif [[ -z "${{ secrets.NPM_TOKEN }}" ]]; then
+            echo "eligible=false" >> "$GITHUB_OUTPUT"
+            echo "::notice::Skipping preview publish (NPM_TOKEN not configured)"
+          else
+            echo "eligible=true" >> "$GITHUB_OUTPUT"
+          fi
+
       - name: Publish preview
         id: publish
+        if: steps.eligibility.outputs.eligible == 'true'
         env:
-          NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
           PR_NUMBER: ${{ github.event.pull_request.number }}
           COMMIT_SHA: ${{ github.event.pull_request.head.sha }}
         run: |
+          set -euo pipefail
           SHORT_SHA="${COMMIT_SHA:0:7}"
           BASE_VERSION="$(node -p "require('./package.json').version")"
           PREVIEW_VERSION="${BASE_VERSION}-pr.${PR_NUMBER}.${SHORT_SHA}"
@@ -71,7 +88,7 @@ jobs:
           echo "tarball=${TARBALL}" >> "$GITHUB_OUTPUT"
           echo "version=${PREVIEW_VERSION}" >> "$GITHUB_OUTPUT"
           
-          pnpm publish --no-git-checks --access restricted --tag preview 2>&1 || echo "Preview publish skipped"
+          pnpm publish --no-git-checks --access restricted --tag preview
 
       - name: Comment preview link
         if: steps.publish.outputs.version
