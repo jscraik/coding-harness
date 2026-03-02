@@ -57,10 +57,11 @@ jobs:
       - name: Publish preview
         id: publish
         env:
-          NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
           PR_NUMBER: ${{ github.event.pull_request.number }}
           COMMIT_SHA: ${{ github.event.pull_request.head.sha }}
         run: |
+          set -euo pipefail
           SHORT_SHA="${COMMIT_SHA:0:7}"
           BASE_VERSION="$(node -p "require('./package.json').version")"
           PREVIEW_VERSION="${BASE_VERSION}-pr.${PR_NUMBER}.${SHORT_SHA}"
@@ -71,7 +72,7 @@ jobs:
           echo "tarball=${TARBALL}" >> "$GITHUB_OUTPUT"
           echo "version=${PREVIEW_VERSION}" >> "$GITHUB_OUTPUT"
           
-          pnpm publish --no-git-checks --access restricted --tag preview 2>&1 || echo "Preview publish skipped"
+          pnpm publish --no-git-checks --access restricted --tag preview
 
       - name: Comment preview link
         if: steps.publish.outputs.version
