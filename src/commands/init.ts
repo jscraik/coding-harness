@@ -2009,7 +2009,7 @@ body:
 		render: () => `blank_issues_enabled: false
 contact_links:
   - name: Documentation
-    url: https://github.com/jscraik/coding-harness#readme
+    url: https://github.com/<owner>/<repo>#readme
     about: Check the README for usage information
 `,
 	},
