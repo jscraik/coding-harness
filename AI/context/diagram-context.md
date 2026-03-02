@@ -115,10 +115,6 @@ graph TD
     types_5_f869ec4b["types"]
     metrics_capture_1d1a2c08["metrics-capture"]
   end
-  subgraph src_lib_observability_ecdc7d70["src/lib/observability"]
-    cardinality_ebef8aff["cardinality"]
-    cardinality_test_c00e7edb["cardinality.test"]
-  end
   subgraph src_lib_memory_273eb2dc["src/lib/memory"]
     validator_1_0c0621d8["validator"]
     validator_test_1_c5015ca0["validator.test"]
@@ -126,6 +122,10 @@ graph TD
     metrics_tracker_98cec29c["metrics-tracker"]
     metrics_tracker_test_3de156fa["metrics-tracker.test"]
     branch_enforcer_acb749cd["branch-enforcer"]
+  end
+  subgraph src_lib_observability_ecdc7d70["src/lib/observability"]
+    cardinality_ebef8aff["cardinality"]
+    cardinality_test_c00e7edb["cardinality.test"]
   end
   subgraph src_lib_input_456cc971["src/lib/input"]
     validator_2_744853f5["validator"]
@@ -443,7 +443,6 @@ graph LR
   node_path_0e7d56ab["node:path"] --> detector_1_b37d288b
   node_fs_df6b52af["node:fs"] --> metrics_capture_1d1a2c08
   node_path_0e7d56ab["node:path"] --> metrics_capture_1d1a2c08
-  vitest_a9127f3d["vitest"] --> cardinality_test_c00e7edb
   node_fs_df6b52af["node:fs"] --> validator_1_0c0621d8
   node_path_0e7d56ab["node:path"] --> validator_1_0c0621d8
   node_fs_df6b52af["node:fs"] --> validator_test_1_c5015ca0
@@ -459,6 +458,7 @@ graph LR
   node_child_process_cb73900b["node:child_process"] --> branch_enforcer_acb749cd
   node_fs_df6b52af["node:fs"] --> branch_enforcer_acb749cd
   node_path_0e7d56ab["node:path"] --> branch_enforcer_acb749cd
+  vitest_a9127f3d["vitest"] --> cardinality_test_c00e7edb
   node_fs_df6b52af["node:fs"] --> validator_2_744853f5
   node_path_0e7d56ab["node:path"] --> validator_2_744853f5
   node_os_e9717731["node:os"] --> validator_test_2_8dbecf99
