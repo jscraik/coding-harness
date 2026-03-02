@@ -1,0 +1,30 @@
+{
+	"$schema": "https://docs.renovatebot.com/renovate-schema.json",
+	"extends": ["config:recommended"],
+	"schedule": ["before 9am on Monday"],
+	"prConcurrentLimit": 3,
+	"prHourlyLimit": 2,
+	"rangeStrategy": "bump",
+	"packageRules": [
+		{
+			"matchUpdateTypes": ["minor", "patch"],
+			"groupName": "non-major dependencies",
+			"groupSlug": "all-minor-patch"
+		},
+		{
+			"matchUpdateTypes": ["major"],
+			"groupName": "major dependencies",
+			"groupSlug": "all-major",
+			"labels": ["breaking-change"]
+		},
+		{
+			"matchDepTypes": ["devDependencies"],
+			"automerge": true,
+			"matchUpdateTypes": ["minor", "patch"]
+		}
+	],
+	"ignorePaths": ["**/node_modules/**"],
+	"labels": ["dependencies"],
+	"reviewers": ["jscraik"],
+	"timezone": "America/New_York"
+}

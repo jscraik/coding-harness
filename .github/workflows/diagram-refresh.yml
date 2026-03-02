@@ -1,0 +1,60 @@
+name: Diagram Refresh
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'src/**'
+      - 'package.json'
+      - 'tsconfig.json'
+
+permissions:
+  contents: write
+
+jobs:
+  diagram-refresh:
+    name: Refresh Architecture Diagrams
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          token: ${{ secrets.GITHUB_TOKEN }}
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "24"
+      - name: Enable corepack
+        run: corepack enable
+      - name: Install dependencies
+        run: pnpm install
+      - name: Generate diagrams
+        run: pnpm exec diagram all . --output-dir AI/diagrams
+      - name: Generate context file
+        run: |
+          cat <<'MD' > AI/context/diagram-context.md
+          # Diagram Context Pack
+
+          Generated: $(date -u +"%Y-%m-%dT%H:%M:%SZ")
+
+          MD
+          for file in AI/diagrams/*.mmd; do
+            name="$(basename "$file" .mmd)"
+            echo "## ${name}" >> AI/context/diagram-context.md
+            echo "" >> AI/context/diagram-context.md
+            echo '```mermaid' >> AI/context/diagram-context.md
+            cat "$file" >> AI/context/diagram-context.md
+            echo "" >> AI/context/diagram-context.md
+            echo '```' >> AI/context/diagram-context.md
+            echo "" >> AI/context/diagram-context.md
+          done
+      - name: Commit diagram updates
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          if git diff --quiet; then
+            echo "No diagram changes to commit"
+            exit 0
+          fi
+          git add AI/diagrams AI/context/diagram-context.md
+          git commit -m "chore(diagrams): auto-refresh architecture diagrams"
+          git push

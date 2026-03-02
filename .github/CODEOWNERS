@@ -1,0 +1,27 @@
+# CODEOWNERS - Define ownership for code review
+# https://docs.github.com/en/repositories/managing-your-repositorys-settings-and-features/customizing-your-repository/about-code-owners
+
+# Default owners for everything
+* @jscraik
+
+# Security-sensitive files require owner review
+.github/workflows/ @jscraik
+.github/rulesets/ @jscraik
+.contract/ @jscraik
+*.contract.json @jscraik
+
+# Core CLI and commands
+src/cli.ts @jscraik
+src/commands/ @jscraik
+
+# Documentation
+docs/ @jscraik
+CLAUDE.md @jscraik
+AGENTS.md @jscraik
+CONTRIBUTING.md @jscraik
+
+# Package configuration
+package.json @jscraik
+pnpm-lock.yaml @jscraik
+tsconfig.json @jscraik
+biome.json @jscraik
