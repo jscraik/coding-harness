@@ -76,7 +76,11 @@ export async function runVerifyGreptile(
 	const workflowCheck = verifyGreptileWorkflow(repoPath);
 	checks.push(workflowCheck);
 
-	// Check 3: GitHub App installation and ruleset (requires token)
+	// Check 3: .npmrc configuration for private packages
+	const npmrcCheck = verifyNpmrc(repoPath);
+	checks.push(npmrcCheck);
+
+	// Check 4: GitHub App installation and ruleset (requires token)
 	const token =
 		normalizeToken(options.token) ??
 		normalizeToken(process.env.GITHUB_TOKEN) ??
@@ -265,6 +269,71 @@ function verifyGreptileWorkflow(repoPath: string): GreptileCheck {
 	}
 }
 
+function verifyNpmrc(repoPath: string): GreptileCheck {
+	const npmrcPath = resolve(repoPath, ".npmrc");
+
+	if (!existsSync(npmrcPath)) {
+		return {
+			name: ".npmrc configuration",
+			status: "warn",
+			message:
+				"No .npmrc file found. If using private npm packages, ensure .npmrc is configured.",
+			details: { path: npmrcPath },
+		};
+	}
+
+	try {
+		const content = readFileSync(npmrcPath, "utf-8");
+		const issues: string[] = [];
+		const features: string[] = [];
+
+		// Check for private package registry configuration
+		const hasScopedRegistry = /@[\w-]+:registry=/m.test(content);
+		const hasAuthToken = /_authToken=/m.test(content);
+		const hasIgnoreScripts = /ignore-scripts\s*=\s*true/m.test(content);
+
+		if (hasScopedRegistry) features.push("scoped registry");
+		if (hasAuthToken) features.push("auth token configured");
+		if (hasIgnoreScripts) features.push("ignore-scripts=true (security)");
+
+		// Check for security best practices
+		if (!hasIgnoreScripts) {
+			issues.push("consider setting ignore-scripts=true for security");
+		}
+
+		if (issues.length > 0) {
+			return {
+				name: ".npmrc configuration",
+				status: "warn",
+				message: `.npmrc exists but has recommendations: ${issues.join(", ")}`,
+				details: { path: npmrcPath, features, issues },
+			};
+		}
+
+		if (features.length > 0) {
+			return {
+				name: ".npmrc configuration",
+				status: "pass",
+				message: `Valid .npmrc with: ${features.join(", ")}`,
+				details: { path: npmrcPath, features },
+			};
+		}
+
+		return {
+			name: ".npmrc configuration",
+			status: "pass",
+			message: ".npmrc file exists",
+			details: { path: npmrcPath },
+		};
+	} catch (e) {
+		return {
+			name: ".npmrc configuration",
+			status: "fail",
+			message: `Failed to read .npmrc: ${e instanceof Error ? e.message : "Unknown error"}`,
+			details: { path: npmrcPath },
+		};
+	}
+}
 async function verifyRemoteGreptileSetup(
 	token: string,
 	owner: string,
