@@ -40,7 +40,8 @@
 		"test:artifacts:unit": "bash scripts/test-with-artifacts.sh unit",
 		"test:artifacts:integration": "bash scripts/test-with-artifacts.sh integration",
 		"test:artifacts:e2e": "bash scripts/test-with-artifacts.sh e2e",
-		"harness:ui:capture-browser-evidence": "pnpm exec tsx src/cli.ts ui:explore --mode execute --interactions --output artifacts/ui-evidence --json"
+		"harness:ui:capture-browser-evidence": "pnpm exec tsx src/cli.ts ui:explore --mode execute --interactions --output artifacts/ui-evidence --json",
+		"postinstall": "simple-git-hooks"
 	},
 	"devDependencies": {
 		"@biomejs/biome": "^1.9.4",
@@ -50,21 +51,22 @@
 		"@types/semver": "^7.7.1",
 		"@vvago/vale": "^3.12.0",
 		"markdownlint-cli2": "^0.21.0",
+		"simple-git-hooks": "^2.13.1",
+		"standard-version": "^9.5.0",
 		"tsx": "^4.21.0",
 		"typescript": "^5.9.3",
-		"vitest": "^3.2.4",
-		"standard-version": "^9.5.0"
+		"vitest": "^3.2.4"
 	},
 	"packageManager": "pnpm@10.0.0",
 	"engines": {
 		"node": ">=24.0.0"
 	},
 	"dependencies": {
+		"@inquirer/prompts": "^8.3.0",
 		"@octokit/plugin-retry": "^7.2.1",
 		"@octokit/plugin-throttling": "^9.6.1",
 		"@octokit/request-error": "^7.1.0",
 		"@octokit/rest": "^21.1.1",
-		"@inquirer/prompts": "^8.3.0",
 		"better-sqlite3": "^12.6.2",
 		"diff": "^8.0.3",
 		"picomatch": "^4.0.3",
@@ -76,6 +78,11 @@
 			"tar": "^7.5.8",
 			"minimatch": "^10.2.3"
 		}
+	},
+	"simple-git-hooks": {
+		"pre-commit": "pnpm lint && pnpm typecheck",
+		"commit-msg": "node scripts/validate-commit-msg.js $1",
+		"pre-push": "pnpm test"
 	},
 	"license": "Apache-2.0",
 	"homepage": "https://github.com/jscraik/coding-harness#readme"
