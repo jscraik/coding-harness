@@ -1132,8 +1132,10 @@ jobs:
         uses: actions/setup-python@${SETUP_PYTHON_ACTION_VERSION}
         with:
           python-version: "${RALPH_PYTHON_VERSION_PIN}"
+      - name: Install setuptools (required for semgrep on Python 3.12)
+        run: python -m pip install --upgrade pip setuptools wheel
       - name: Install Semgrep (pinned)
-        run: python -m pip install --upgrade pip setuptools wheel semgrep==1.100.0
+        run: python -m pip install semgrep==1.100.0
       - name: Run Semgrep scan
         run: semgrep scan --error --config p/security-audit --exclude node_modules .
       - name: Install Senvar (pinned)
