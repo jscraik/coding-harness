@@ -69,7 +69,7 @@ ui-explore-output/
 AI/context/refresh.log
 
 # Local deep-test discovery recursion artifacts
-artifacts/test/discovered/.__artifacts__test__discovered__.__artifacts__test__discovered__*
+artifacts/test/discovered/.__artifacts__test__discovered__*
 
 # Locally generated helper scripts (from init template previews)
 scripts/check-environment.sh
