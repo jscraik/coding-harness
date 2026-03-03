@@ -71,11 +71,11 @@ jobs:
         run: pnpm build
 
       - name: Generate SBOM
-        # Continue on error since cyclonedx-npm may fail with pnpm overrides
-        continue-on-error: true
+        # Use cyclonedx-npm with --ignore-npm-errors flag for pnpm compatibility
+        # pnpm overrides can cause npm ls to report version conflicts
         run: |
           npm install -g @cyclonedx/cyclonedx-npm
-          cyclonedx-npm --output-file artifacts/sbom.cdx.json
+          cyclonedx-npm --ignore-npm-errors --output-file artifacts/sbom.cdx.json
         working-directory: ${{ github.workspace }}
 
       - name: Upload SBOM artifact
