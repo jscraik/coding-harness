@@ -10,6 +10,7 @@ Coding Harness is a TypeScript control plane for agentic development and policy-
 ## Table of Contents
 
 - [Quick start](#quick-start)
+- [Packaged Codex skill](#packaged-codex-skill)
 - [Quality checks](#quality-checks)
 - [Recommended security scanner baseline](#recommended-security-scanner-baseline)
 - [Issue reporting (internal)](#issue-reporting-internal)
@@ -30,6 +31,19 @@ For local iteration without building first:
 ```bash
 pnpm exec tsx src/cli.ts --help
 ```
+
+## Packaged Codex skill
+
+The npm package now includes a reusable Codex skill bundle at:
+
+- `.agents/skills/coding-harness/SKILL.md`
+
+This skill is intended for install/setup/update workflows and capability-boundary guidance
+for coding-harness usage in other repositories.
+
+If you install this package locally in another project, the skill is available at:
+
+- `node_modules/@brainwav/coding-harness/.agents/skills/coding-harness/`
 
 ## Quality checks
 

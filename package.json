@@ -1,7 +1,13 @@
 {
 	"name": "@brainwav/coding-harness",
 	"version": "0.5.7",
-	"files": ["dist", "README.md", "CHANGELOG.md", "LICENSE"],
+	"files": [
+		"dist",
+		"README.md",
+		"CHANGELOG.md",
+		"LICENSE",
+		".agents/skills/coding-harness"
+	],
 	"type": "module",
 	"description": "Control plane for agentic development",
 	"repository": {
