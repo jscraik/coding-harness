@@ -25,7 +25,7 @@ body:
       label: Alternatives considered
       description: Have you considered any alternative solutions?
     validations:
-      required: false
+      required: true
 
   - type: textarea
     id: additional
@@ -33,4 +33,4 @@ body:
       label: Additional context
       description: Add any other context or screenshots here
     validations:
-      required: false
+      required: true

@@ -274,6 +274,23 @@ function printUsage(): void {
 	console.info("  --json           Output as JSON");
 	console.info("");
 	console.info("");
+	console.info("Verify Greptile Options:");
+	console.info(
+		"  --token          GitHub token for ruleset checks (or env GITHUB_TOKEN / GITHUB_PERSONAL_ACCESS_TOKEN)",
+	);
+	console.info("  --owner          Repository owner for remote checks");
+	console.info("  --repo           Repository name for remote checks");
+	console.info(
+		"  --app-id         GitHub App ID for app-installation checks (or env GITHUB_APP_ID)",
+	);
+	console.info(
+		"  --app-private-key-path  Path to GitHub App private key PEM (or env GITHUB_APP_PRIVATE_KEY_PATH)",
+	);
+	console.info("  --repo-path      Repository path for local file checks");
+	console.info("  --verbose        Include detailed check output");
+	console.info("  --json           Output as JSON");
+	console.info("");
+	console.info("");
 	console.info("Options:");
 	console.info("  --version, -v  Print version");
 	console.info("  --help, -h     Print this help");
@@ -1507,12 +1524,16 @@ export function run(args: string[]): void {
 		const ownerIndex = args.indexOf("--owner");
 		const repoIndex = args.indexOf("--repo");
 		const repoPathIndex = args.indexOf("--repo-path");
+		const appIdIndex = args.indexOf("--app-id");
+		const appPrivateKeyPathIndex = args.indexOf("--app-private-key-path");
 
 		const options: {
 			token?: string;
 			owner?: string;
 			repo?: string;
 			repoPath?: string;
+			appId?: string;
+			appPrivateKeyPath?: string;
 			json?: boolean;
 			verbose?: boolean;
 		} = {};
@@ -1527,6 +1548,10 @@ export function run(args: string[]): void {
 		if (repoArg) options.repo = repoArg;
 		const repoPathArg = getFlagValue(args, repoPathIndex);
 		if (repoPathArg) options.repoPath = repoPathArg;
+		const appIdArg = getFlagValue(args, appIdIndex);
+		if (appIdArg) options.appId = appIdArg;
+		const appPrivateKeyPathArg = getFlagValue(args, appPrivateKeyPathIndex);
+		if (appPrivateKeyPathArg) options.appPrivateKeyPath = appPrivateKeyPathArg;
 
 		runVerifyGreptileCLI(options)
 			.then((exitCode) => process.exit(exitCode))
