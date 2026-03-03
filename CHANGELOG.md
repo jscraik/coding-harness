@@ -1,5 +1,15 @@
 # Changelog
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
+
+## [0.5.7](https://github.com/jscraik/coding-harness/compare/v0.5.6...v0.5.7) (2026-03-03)
+
+
+### Bug Fixes
+* **ci:** use correct SBOM package name ([#49](https://github.com/jscraik/coding-harness/issues/49))
+  - Switch from non-existent `@cyclonedx/cyclonedx-pnpm` to `@cyclonedx/cyclonedx-npm`
+  - Add `--ignore-npm-errors` flag for pnpm compatibility with overrides
+
+
 ## [0.5.6](https://github.com/jscraik/coding-harness/compare/v0.5.5...v0.5.6) (2026-03-03)
 
 
