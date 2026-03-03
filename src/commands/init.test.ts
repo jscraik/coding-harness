@@ -22,6 +22,7 @@ const EXPECTED_TEMPLATE_PATHS = [
 	".gitleaks.toml",
 	"prek.toml",
 	"scripts/check-environment.sh",
+	".codex/environments/environment.toml",
 	".github/ISSUE_TEMPLATE/issue.yml",
 	".github/ISSUE_TEMPLATE/feature.yml",
 	".github/ISSUE_TEMPLATE/security.yml",
@@ -104,6 +105,9 @@ describe("runInit", () => {
 			expect(existsSync(join(tempDir, ".greptile/config.json"))).toBe(false);
 			expect(existsSync(join(tempDir, ".greptile/files.json"))).toBe(false);
 			expect(existsSync(join(tempDir, ".greptile/rules.md"))).toBe(false);
+			expect(
+				existsSync(join(tempDir, ".codex/environments/environment.toml")),
+			).toBe(false);
 		});
 	});
 
@@ -130,6 +134,9 @@ describe("runInit", () => {
 			expect(existsSync(join(tempDir, ".greptile/config.json"))).toBe(true);
 			expect(existsSync(join(tempDir, ".greptile/files.json"))).toBe(true);
 			expect(existsSync(join(tempDir, ".greptile/rules.md"))).toBe(true);
+			expect(
+				existsSync(join(tempDir, ".codex/environments/environment.toml")),
+			).toBe(true);
 		});
 
 		it("skips existing files without --force", () => {
@@ -166,6 +173,13 @@ describe("runInit", () => {
 			writeFileSync(join(tempDir, ".gitleaks.toml"), "existing");
 			writeFileSync(join(tempDir, "prek.toml"), "existing");
 			writeFileSync(join(tempDir, "scripts/check-environment.sh"), "existing");
+			mkdirSync(join(tempDir, ".codex", "environments"), {
+				recursive: true,
+			});
+			writeFileSync(
+				join(tempDir, ".codex/environments/environment.toml"),
+				"existing",
+			);
 			mkdirSync(join(tempDir, ".github", "ISSUE_TEMPLATE"), {
 				recursive: true,
 			});
@@ -307,6 +321,31 @@ describe("runInit", () => {
 			expect(memory.preamble.bootstrap).toBe(true);
 			expect(memory.preamble.search).toBe(true);
 			expect(Array.isArray(memory.entries)).toBe(true);
+		});
+
+		it("creates codex local environment actions with mapped icons", () => {
+			const result = runInit(tempDir, { dryRun: false, force: false });
+
+			expect(result.ok).toBe(true);
+
+			const environmentPath = join(
+				tempDir,
+				".codex/environments/environment.toml",
+			);
+			expect(existsSync(environmentPath)).toBe(true);
+
+			const content = require("node:fs").readFileSync(environmentPath, "utf-8");
+			expect(content).toContain('[[actions]]\nname = "Tools"\nicon = "tool"');
+			expect(content).toContain('[[actions]]\nname = "Run"\nicon = "run"');
+			expect(content).toContain('[[actions]]\nname = "Debug"\nicon = "debug"');
+			expect(content).toContain('[[actions]]\nname = "Test"\nicon = "test"');
+			expect(content).toContain("npm install");
+			expect(content).toContain("npm run dev");
+			expect(content).toContain("npm run check");
+			expect(content).toContain("npm run test");
+			expect(content).toContain(
+				"if jq -e '.scripts[\"check\"]' package.json >/dev/null 2>&1; then",
+			);
 		});
 
 		it("includes package manager in workflow", () => {
