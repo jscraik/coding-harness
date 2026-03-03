@@ -45,7 +45,7 @@ This protects history, simplifies rollback, and provides a review trail even for
 
    - Agent-created branch: `git switch -c codex/<short-description>`
    - Agent-created worktree: `git worktree add ../tmp-worktree -b codex/<short-description>`
-   - Human-authored optional prefixes: `feat/`, `fix/`, `docs/`, `refactor/`, `chore/`, `test/`.
+   - Human-authored prefixes (when not using `codex/`): `feat/`, `fix/`, `docs/`, `refactor/`, `chore/`, `test/`.
 
 2. Make targeted changes and keep commits small and atomic.
 

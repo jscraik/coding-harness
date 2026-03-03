@@ -40,7 +40,7 @@ body:
         - Node version: [e.g. 24.x]
         - Harness version: [e.g. 1.0.0]
     validations:
-      required: false
+      required: true
 
   - type: textarea
     id: additional
@@ -48,4 +48,4 @@ body:
       label: Additional context
       description: Add any other context, logs, or screenshots here
     validations:
-      required: false
+      required: true

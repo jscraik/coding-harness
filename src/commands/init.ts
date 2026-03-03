@@ -1193,7 +1193,7 @@ This workflow keeps delivery auditable, reversible, and consistent even for solo
 1. Create a dedicated branch/worktree for each task:
    - Agent-created branch: \`git switch -c codex/<short-description>\`
    - Agent-created worktree: \`git worktree add ../tmp-worktree -b codex/<short-description>\`
-   - Human-authored optional prefixes: \`feat/\`, \`fix/\`, \`docs/\`, \`refactor/\`, \`chore/\`, \`test/\`
+   - Human-authored branch prefixes (when not using \`codex/\`): \`feat/\`, \`fix/\`, \`docs/\`, \`refactor/\`, \`chore/\`, \`test/\`
 2. Keep commits small and focused.
 3. Open a PR to merge into \`main\`.
 4. Do not merge until checks, reviews, and checklist items are complete.
@@ -1222,9 +1222,9 @@ This repository uses \`simple-git-hooks\` for local quality gates:
 
 | Hook | Purpose |
 | --- | --- |
-| \`pre-commit\` | Runs \`${lintCommand} && ${typecheckCommand}\` |
+| \`pre-commit\` | Runs \`${lintCommand} && ${renderScriptCommand(pm, "docs:lint")} && ${typecheckCommand}\` |
 | \`commit-msg\` | Validates conventional commit format |
-| \`pre-push\` | Runs \`${testCommand}\` |
+| \`pre-push\` | Runs \`${testCommand} && ${auditCommand}\` |
 
 ### Setup
 
@@ -1255,9 +1255,9 @@ Add to your \`package.json\`:
     "postinstall": "simple-git-hooks"
   },
   "simple-git-hooks": {
-    "pre-commit": "${pm} lint && ${pm} typecheck",
+    "pre-commit": "${lintCommand} && ${renderScriptCommand(pm, "docs:lint")} && ${typecheckCommand}",
     "commit-msg": "node scripts/validate-commit-msg.js $1",
-    "pre-push": "${pm} test"
+    "pre-push": "${testCommand} && ${auditCommand}"
   }
 }
 \`\`\`
@@ -1271,7 +1271,7 @@ All commits must follow conventional commit format:
 \`\`\`
 type(scope)!: description
 
-Detailed body (optional).
+Detailed body explaining why and impact.
 
 Co-Authored-By: Name <email>
 \`\`\`
@@ -1454,8 +1454,9 @@ Add one-paragraph merge rationale here.
  *
  * Validates commit messages follow governance requirements:
  * - Conventional commit format (feat|fix|chore|docs|refactor|test|style)
- * - Co-authorship for AI-generated code
- * - PR template completion reminder for agent branches
+ * - Subject line <= 72 chars
+ * - Blank line between subject and body/trailers
+ * - Co-authored-by trailer on agent branches
  */
 
 import { execFileSync } from "node:child_process";
@@ -1464,7 +1465,9 @@ import { readFileSync } from "node:fs";
 const COMMIT_MSG_FILE = process.argv[2];
 const CONVENTIONAL_COMMIT_REGEX =
 	/^(feat|fix|chore|docs|refactor|test|style|perf|ci|build|revert)(\\(.+\\))?!?:\\s.+/;
-const CO_AUTHOR_REGEX = /Co-Authored-By:\\s*.+/i;
+const CO_AUTHOR_LINE_REGEX = /^Co-authored-by:\\s*.+$/gim;
+const CODEX_CO_AUTHOR_REGEX =
+	/^Co-authored-by:\\s*Codex <noreply@openai\\.com>\\s*$/im;
 
 function main() {
 	if (!COMMIT_MSG_FILE) {
@@ -1481,45 +1484,51 @@ function main() {
 	}
 
 	const errors = [];
-	const warnings = [];
 	const lines = commitMsg
-		.split("\\n")
-		.filter((line) => line && !line.startsWith("#"));
+		.split(/\\r?\\n/)
+		.filter((line) => !line.startsWith("#"));
+	const firstLineIndex = lines.findIndex((line) => line.trim().length > 0);
+	const firstLine = firstLineIndex >= 0 ? lines[firstLineIndex].trim() : "";
 
-	// Check 1: Conventional commit format
-	const firstLine = lines[0];
-	if (!CONVENTIONAL_COMMIT_REGEX.test(firstLine)) {
+	// Check 1: Subject exists and follows conventional commit format
+	if (!firstLine) {
+		errors.push("Commit message subject is required");
+	} else if (!CONVENTIONAL_COMMIT_REGEX.test(firstLine)) {
 		errors.push(
-			"First line must follow conventional commit format: type(scope)!: description",
+			"Subject must follow conventional commit format: type(scope)!: description",
 		);
 	}
 
-	// Check 2: First line length
+	// Check 2: Subject length
 	if (firstLine && firstLine.length > 72) {
-		errors.push(\`First line exceeds 72 characters (\${firstLine.length} chars)\`);
+		errors.push(\`Subject exceeds 72 characters (\${firstLine.length} chars)\`);
 	}
 
-	// Check 3: Body paragraphs separated by blank line
-	if (lines.length > 1 && lines[1] !== "") {
-		warnings.push(
-			"Body should be separated from subject by a blank line for readability",
+	// Check 3: Body/trailers must be separated by a blank line
+	const hasAdditionalContent = lines
+		.slice(Math.max(firstLineIndex + 1, 0))
+		.some((line) => line.trim().length > 0);
+	if (hasAdditionalContent && lines[firstLineIndex + 1]?.trim() !== "") {
+		errors.push(
+			"Add a blank line between the subject and the rest of the commit message",
 		);
 	}
 
-	// Check 4: Co-authorship for AI-assisted commits (warn only)
-	const hasCoAuthor = CO_AUTHOR_REGEX.test(commitMsg);
+	// Check 4: Co-authorship for agent branches (enforced)
+	const coAuthorLines = commitMsg.match(CO_AUTHOR_LINE_REGEX) ?? [];
 	const branchName = getBranchName();
 	const isAgentBranch = /codex|claude|agent/i.test(branchName);
 
-	if (isAgentBranch && !hasCoAuthor) {
-		warnings.push(
-			"AI-assisted commit detected. Consider adding Co-Authored-By for transparency.",
+	if (isAgentBranch && coAuthorLines.length !== 1) {
+		errors.push(
+			"Agent branches require exactly one Co-authored-by trailer for auditability",
 		);
 	}
-
-	// Check 5: PR template reminder for agent branches
-	// Note: PR template sections are enforced by PR review workflow, not commit hook
-	// Agent branches should follow: Summary, Checklist, Testing, Review artifacts, Notes
+	if (isAgentBranch && !CODEX_CO_AUTHOR_REGEX.test(commitMsg)) {
+		errors.push(
+			"Agent branches must include: Co-authored-by: Codex <noreply@openai.com>",
+		);
+	}
 
 	// Output results
 	if (errors.length > 0) {
@@ -1528,17 +1537,9 @@ function main() {
 			console.error(\`  ✗ \${error}\`);
 		}
 		console.error(
-			"\\nCommit message format example:\\n  feat(scope): add new feature\\n\\n  Detailed description here.\\n\\n  Co-Authored-By: Your Name <email@example.com>",
+			"\\nCommit message format example:\\n  feat(scope): add new feature\\n\\n  Why this change is needed and what it impacts.\\n\\n  Co-authored-by: Codex <noreply@openai.com>",
 		);
 		process.exit(1);
-	}
-
-	if (warnings.length > 0) {
-		console.info("\\n⚠️  Commit message warnings:\\n");
-		for (const warning of warnings) {
-			console.info(\`  • \${warning}\`);
-		}
-		console.info("");
 	}
 	process.exit(0);
 }
@@ -1557,7 +1558,7 @@ function getBranchName() {
 }
 
 main();
-`,
+		`,
 	},
 	{
 		path: "scripts/setup-git-hooks.js",
@@ -1571,8 +1572,8 @@ main();
  * This script:
  *   1. Adds simple-git-hooks to devDependencies (if not present)
  *   2. Adds postinstall script to run simple-git-hooks
- *   3. Adds simple-git-hooks configuration
- *   4. Runs pnpm install to activate hooks
+ *   3. Enforces required simple-git-hooks configuration
+ *   4. Runs package-manager install to activate hooks
  */
 
 import { existsSync, readFileSync, writeFileSync } from "node:fs";
@@ -1580,6 +1581,13 @@ import { resolve } from "node:path";
 import { execFileSync } from "node:child_process";
 
 const PACKAGE_JSON_PATH = resolve(process.cwd(), "package.json");
+const REQUIRED_HOOKS = {
+	"pre-commit": "pnpm lint && pnpm docs:lint && pnpm typecheck",
+	"commit-msg": "node scripts/validate-commit-msg.js $1",
+	"pre-push": "pnpm test && pnpm audit",
+};
+const POSTINSTALL_BOOTSTRAP =
+	"command -v simple-git-hooks >/dev/null 2>&1 && simple-git-hooks || true";
 
 function main() {
 	if (!existsSync(PACKAGE_JSON_PATH)) {
@@ -1588,7 +1596,7 @@ function main() {
 		process.exit(1);
 	}
 
-	let packageJson: Record<string, unknown>;
+	let packageJson;
 	try {
 		packageJson = JSON.parse(readFileSync(PACKAGE_JSON_PATH, "utf-8"));
 	} catch {
@@ -1604,7 +1612,7 @@ function main() {
 	}
 
 	// Add simple-git-hooks if not present
-	const deps = packageJson.devDependencies as Record<string, string>;
+	const deps = packageJson.devDependencies;
 	if (!deps["simple-git-hooks"]) {
 		deps["simple-git-hooks"] = "^2.13.1";
 		console.info("✓ Added simple-git-hooks to devDependencies");
@@ -1619,29 +1627,27 @@ function main() {
 	}
 
 	// Add postinstall script if not present
-	const scripts = packageJson.scripts as Record<string, string>;
+	const scripts = packageJson.scripts;
 	if (!scripts.postinstall) {
-		scripts.postinstall = "simple-git-hooks";
+		scripts.postinstall = POSTINSTALL_BOOTSTRAP;
 		console.info("✓ Added postinstall script");
 		modified = true;
 	} else if (!scripts.postinstall.includes("simple-git-hooks")) {
 		// Prepend simple-git-hooks to existing postinstall
-		scripts.postinstall = \`simple-git-hooks && \${scripts.postinstall}\`;
+		scripts.postinstall = \`\${POSTINSTALL_BOOTSTRAP} && \${scripts.postinstall}\`;
 		console.info("✓ Prepended simple-git-hooks to postinstall");
 		modified = true;
 	}
 
-	// Add simple-git-hooks configuration
-	if (!packageJson["simple-git-hooks"]) {
-		packageJson["simple-git-hooks"] = {
-			"pre-commit": "pnpm lint && pnpm typecheck",
-			"commit-msg": "node scripts/validate-commit-msg.js $1",
-			"pre-push": "pnpm test",
-		};
-		console.info("✓ Added simple-git-hooks configuration");
+	// Enforce required simple-git-hooks configuration
+	const existingHooks = packageJson["simple-git-hooks"] ?? {};
+	const mergedHooks = { ...existingHooks, ...REQUIRED_HOOKS };
+	if (JSON.stringify(existingHooks) !== JSON.stringify(mergedHooks)) {
+		packageJson["simple-git-hooks"] = mergedHooks;
+		console.info("✓ Enforced required simple-git-hooks configuration");
 		modified = true;
 	} else {
-		console.info("✓ simple-git-hooks configuration already exists");
+		console.info("✓ Required simple-git-hooks configuration already present");
 	}
 
 	// Write changes if modified
@@ -1650,15 +1656,15 @@ function main() {
 		console.info("\\n✓ package.json updated");
 	}
 
-	// Run pnpm install to activate hooks (using execFileSync for safety)
+	// Run install to activate hooks (using execFileSync for safety)
 	console.info("\\nInstalling dependencies to activate hooks...");
 	try {
 		execFileSync("pnpm", ["install"], { stdio: "inherit" });
 		console.info("\\n✓ Git hooks installed and active!");
 		console.info("\\nHooks enabled:");
-		console.info("  • pre-commit: pnpm lint && pnpm typecheck");
+		console.info("  • pre-commit: pnpm lint && pnpm docs:lint && pnpm typecheck");
 		console.info("  • commit-msg: validates conventional commit format");
-		console.info("  • pre-push: pnpm test");
+		console.info("  • pre-push: pnpm test && pnpm audit");
 	} catch {
 		console.error("\\n⚠️  Failed to run pnpm install. Run it manually to activate hooks.");
 	}
@@ -1668,11 +1674,11 @@ main();
 `,
 	},
 	{
-		path: "AI/diagrams/.gitkeep",
+		path: ".diagram/.gitkeep",
 		render: () => "",
 	},
 	{
-		path: "AI/context/diagram-context.md",
+		path: ".diagram/context/diagram-context.md",
 		render: () => `# Diagram Context Pack
 
 This file is auto-generated by the diagram-refresh CI job on every PR.
@@ -1698,7 +1704,7 @@ To refresh diagrams locally:
 pnpm add -D @brainwav/diagram
 
 # Generate diagrams
-pnpm exec diagram all . --output-dir AI/diagrams
+pnpm exec diagram all . --output-dir .diagram
 
 # Update context
 ./scripts/refresh-diagram-context.sh --force
@@ -1708,7 +1714,7 @@ pnpm exec diagram all . --output-dir AI/diagrams
 	{
 		path: ".diagramrc",
 		render: () => `{
-	"ignore": ["node_modules", "dist", "coverage", "artifacts", ".git", "AI/diagrams"]
+	"ignore": ["node_modules", "dist", "coverage", "artifacts", ".git", ".diagram"]
 }
 `,
 	},
@@ -1798,63 +1804,63 @@ regexes = [
 		path: "prek.toml",
 		render: (pm) => {
 			const lintCmd = pm === "npm" ? "npm run lint" : `${pm} lint`;
+			const docsLintCmd =
+				pm === "npm" ? "npm run docs:lint" : `${pm} docs:lint`;
 			const typecheckCmd =
 				pm === "npm" ? "npm run typecheck" : `${pm} typecheck`;
 			const testCmd = pm === "npm" ? "npm run test" : `${pm} test`;
+			const auditCmd = pm === "npm" ? "npm run audit" : `${pm} audit`;
 			return `# Prek configuration (Rust-based pre-commit replacement)
 # Install prek: mise install cargo-prek || cargo install prek
 # Run: prek install && prek run --all-files
 
-[default_install_hook_types]
-pre_commit = true
+[hooks]
+pre-commit = ["${lintCmd}", "${docsLintCmd}", "${typecheckCmd}"]
+pre-push = ["${testCmd}", "${auditCmd}"]
 
-[[repos]]
-repo = "local"
-
-[[repos.hooks]]
-id = "lint"
-name = "Lint"
-entry = "${lintCmd}"
-language = "system"
-pass_filenames = false
-
-[[repos.hooks]]
-id = "typecheck"
-name = "TypeCheck"
-entry = "${typecheckCmd}"
-language = "system"
-pass_filenames = false
-
-[[repos.hooks]]
-id = "test"
-name = "Tests"
-entry = "${testCmd}"
-language = "system"
-pass_filenames = false
-stages = ["pre-push"]
+[tools]
+biome = "1.9.4"
+typescript = "5.7"
+vitest = "3.2"
 `;
 		},
 	},
 	{
 		path: "scripts/check-environment.sh",
-		render: () => `#!/bin/bash
-# Local environment check using ralph-gold
-# Requires: uv tool install ralph-gold
+		render: () => `#!/usr/bin/env bash
+# Local environment preflight (strict)
+# Fails fast when required tooling is missing.
 
-set -e
+set -euo pipefail
 
-echo "Checking environment with ralph-gold..."
+SCRIPT_DIR="$(cd -- "$(dirname -- "${"${"}BASH_SOURCE[0]}")" && pwd)"
+REPO_ROOT="$(cd -- "$SCRIPT_DIR/.." && pwd)"
+CONTRACT_PATH="$REPO_ROOT/harness.contract.json"
+ATTESTATION_PATH="$REPO_ROOT/artifacts/policy/environment-attestation.json"
 
-# Check if ralph is available
-if ! command -v ralph &> /dev/null; then
-    echo "Installing ralph-gold..."
-    uv tool install ralph-gold
+if [[ ! -f "$CONTRACT_PATH" ]]; then
+	echo "Error: missing contract file at $CONTRACT_PATH"
+	exit 1
 fi
 
-# Run environment check
-ralph check-environment --contract harness.contract.json
+required_bins=(pnpm node jq)
+for bin in "\${required_bins[@]}"; do
+	if ! command -v "$bin" >/dev/null 2>&1; then
+		echo "Error: required binary '$bin' is not installed or not on PATH"
+		exit 1
+	fi
+done
 
-echo "Environment check passed!"
+mkdir -p "$REPO_ROOT/artifacts/policy"
+
+echo "Running harness environment preflight..."
+pnpm exec tsx src/cli.ts check-environment \\
+	--contract "$CONTRACT_PATH" \\
+	--json \\
+	--attestation "$ATTESTATION_PATH"
+
+jq -e '.passed == true' "$ATTESTATION_PATH" >/dev/null
+echo "Environment check passed (attestation: $ATTESTATION_PATH)"
 `,
 	},
 	{
@@ -1901,7 +1907,7 @@ body:
         - Node version: [e.g. 24.x]
         - Harness version: [e.g. 0.5.0]
     validations:
-      required: false
+      required: true
 
   - type: textarea
     id: logs
@@ -1909,7 +1915,7 @@ body:
       label: Logs/Screenshots
       description: Add any relevant logs or screenshots
     validations:
-      required: false
+      required: true
 `,
 	},
 	{
@@ -1941,7 +1947,7 @@ body:
       label: Alternatives considered
       description: Have you considered any alternative solutions?
     validations:
-      required: false
+      required: true
 
   - type: textarea
     id: additional
@@ -1949,7 +1955,7 @@ body:
       label: Additional context
       description: Add any other context or screenshots here
     validations:
-      required: false
+      required: true
 `,
 	},
 	{
@@ -1993,7 +1999,7 @@ body:
       label: Proof of Concept
       description: If applicable, provide a proof of concept (without exposing sensitive information)
     validations:
-      required: false
+      required: true
 
   - type: textarea
     id: mitigation
@@ -2001,7 +2007,7 @@ body:
       label: Suggested Mitigation
       description: If you have suggestions for how to fix this issue, please describe them
     validations:
-      required: false
+      required: true
 `,
 	},
 	{
@@ -2013,10 +2019,10 @@ blank_issues_enabled: false
 	},
 	{
 		path: "Makefile",
-		render: (pm) => `# Harness Development Makefile
+		render: () => `# Harness Development Makefile
 # Run \`make help\` to see available commands
 
-.PHONY: help install dev build test lint fmt check clean hooks setup
+.PHONY: help install setup hooks dev build lint docs-lint fmt typecheck test check audit secrets security clean reset ci diagrams env-check
 
 # Default target
 help: ## Show this help message
@@ -2028,41 +2034,45 @@ help: ## Show this help message
 # === Setup ===
 
 install: ## Install dependencies
-	${pm} install
+	pnpm install
 
 setup: install hooks ## Full setup: install deps and configure git hooks
 
 hooks: ## Setup git hooks
-	${pm} exec simple-git-hooks
+	node scripts/setup-git-hooks.js
 
 # === Development ===
 
 dev: ## Start development server
-	${pm} dev
+	pnpm dev
 
 build: ## Build for production
-	${pm} build
+	pnpm build
 
 # === Quality ===
 
 lint: ## Run linter
-	${pm} lint
+	pnpm lint
+
+docs-lint: ## Lint markdown/docs
+	pnpm docs:lint
 
 fmt: ## Format code
-	${pm} fmt
+	pnpm fmt
 
 typecheck: ## Run TypeScript type checking
-	${pm} typecheck
+	pnpm typecheck
 
 test: ## Run tests
-	${pm} test
+	pnpm test
 
-check: lint typecheck test ## Run all checks (lint, typecheck, test)
+check: ## Run all required quality gates
+	pnpm check
 
 # === Security ===
 
 audit: ## Run security audit
-	${pm} audit
+	pnpm audit
 
 secrets: ## Scan for secrets with gitleaks
 	@gitleaks detect --source . --verbose || (echo "Install gitleaks: brew install gitleaks" && exit 1)
@@ -2076,20 +2086,21 @@ clean: ## Clean build artifacts and caches
 	rm -rf node_modules/.cache
 
 reset: clean ## Full reset: clean and reinstall
-	${pm} install
+	pnpm install
 
 # === CI ===
 
-ci: check audit ## Run CI checks (check + audit)
+ci: ## Run CI-equivalent local checks
+	pnpm check
 
 # === Diagrams ===
 
 diagrams: ## Generate architecture diagrams
-	${pm} exec diagram all . --output-dir AI/diagrams
+	pnpm exec diagram all . --output-dir .diagram
 
 # === Environment ===
 
-env-check: ## Check environment with ralph-gold
+env-check: ## Check environment policy envelope
 	@./scripts/check-environment.sh
 `,
 	},

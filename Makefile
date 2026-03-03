@@ -1,7 +1,7 @@
 # Harness Development Makefile
 # Run `make help` to see available commands
 
-.PHONY: help install dev build test lint fmt check clean hooks setup
+.PHONY: help install setup hooks dev build lint docs-lint fmt typecheck test check audit secrets security clean reset ci diagrams env-check
 
 # Default target
 help: ## Show this help message
@@ -33,6 +33,9 @@ build: ## Build for production
 lint: ## Run linter
 	pnpm lint
 
+docs-lint: ## Lint markdown/docs
+	pnpm docs:lint
+
 fmt: ## Format code
 	pnpm fmt
 
@@ -42,7 +45,8 @@ typecheck: ## Run TypeScript type checking
 test: ## Run tests
 	pnpm test
 
-check: lint typecheck test ## Run all checks (lint, typecheck, test)
+check: ## Run all required quality gates
+	pnpm check
 
 # === Security ===
 
@@ -65,14 +69,15 @@ reset: clean ## Full reset: clean and reinstall
 
 # === CI ===
 
-ci: check audit ## Run CI checks (check + audit)
+ci: ## Run CI-equivalent local checks
+	pnpm check
 
 # === Diagrams ===
 
 diagrams: ## Generate architecture diagrams
-	pnpm exec diagram all . --output-dir AI/diagrams
+	pnpm exec diagram all . --output-dir .diagram
 
 # === Environment ===
 
-env-check: ## Check environment with ralph-gold
+env-check: ## Check environment policy envelope
 	@./scripts/check-environment.sh
