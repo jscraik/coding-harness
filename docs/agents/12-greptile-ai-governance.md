@@ -153,6 +153,24 @@ harness verify-greptile
 # Full verification including GitHub API checks
 harness verify-greptile --token $GITHUB_TOKEN --owner jscraik --repo coding-harness
 
+# Verify GitHub App installation with App JWT credentials
+harness verify-greptile \
+  --owner jscraik \
+  --repo coding-harness \
+  --app-id $GITHUB_APP_ID \
+  --app-private-key-path ~/.config/github/greptile-app.pem
+
+# Check all repos for one owner (installation check + rulesets)
+gh repo list jscraik --limit 500 --json name -q '.[].name' | while read -r repo; do
+  harness verify-greptile \
+    --owner jscraik \
+    --repo "$repo" \
+    --token "$GITHUB_TOKEN" \
+    --app-id "$GITHUB_APP_ID" \
+    --app-private-key-path ~/.config/github/greptile-app.pem \
+    --json
+done
+
 # JSON output for CI
 harness verify-greptile --json
 ```
@@ -162,6 +180,6 @@ The verification checks:
 1. `.greptile/config.json` exists and has required fields
 2. `.greptile/rules.md` exists (optional but recommended)
 3. `.github/workflows/greptile-review.yml` exists with required triggers
-4. GitHub App is installed (requires --token, --owner, --repo)
+4. GitHub App is installed (best verified via `--app-id` + `--app-private-key-path`)
 5. Ruleset requires "Greptile Review" status check
 6. Webhook events are properly configured
