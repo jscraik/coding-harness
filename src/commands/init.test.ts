@@ -15,8 +15,8 @@ const EXPECTED_TEMPLATE_PATHS = [
 	".github/PULL_REQUEST_TEMPLATE.md",
 	"scripts/validate-commit-msg.js",
 	"scripts/setup-git-hooks.js",
-	"AI/diagrams/.gitkeep",
-	"AI/context/diagram-context.md",
+	".diagram/.gitkeep",
+	".diagram/context/diagram-context.md",
 	".diagramrc",
 	"biome.json",
 	".gitleaks.toml",
@@ -137,7 +137,7 @@ describe("runInit", () => {
 			mkdirSync(join(tempDir, ".github", "workflows"), { recursive: true });
 			mkdirSync(join(tempDir, ".github"), { recursive: true });
 			mkdirSync(join(tempDir, "scripts"), { recursive: true });
-			mkdirSync(join(tempDir, "AI", "diagrams"), { recursive: true });
+			mkdirSync(join(tempDir, ".diagram"), { recursive: true });
 			mkdirSync(join(tempDir, "AI", "context"), { recursive: true });
 			writeFileSync(join(tempDir, "harness.contract.json"), "{}");
 			writeFileSync(
@@ -159,8 +159,12 @@ describe("runInit", () => {
 				"existing",
 			);
 			writeFileSync(join(tempDir, "scripts/setup-git-hooks.js"), "existing");
-			writeFileSync(join(tempDir, "AI/diagrams/.gitkeep"), "");
-			writeFileSync(join(tempDir, "AI/context/diagram-context.md"), "existing");
+			writeFileSync(join(tempDir, ".diagram/.gitkeep"), "");
+			mkdirSync(join(tempDir, ".diagram", "context"), { recursive: true });
+			writeFileSync(
+				join(tempDir, ".diagram/context/diagram-context.md"),
+				"existing",
+			);
 			writeFileSync(join(tempDir, ".diagramrc"), "existing");
 			writeFileSync(join(tempDir, "biome.json"), "existing");
 			writeFileSync(join(tempDir, ".gitleaks.toml"), "existing");
@@ -423,6 +427,76 @@ describe("runInit", () => {
 			expect(content).toContain("Gitleaks");
 			expect(content).toContain("Trivy");
 			expect(content).toContain("Semgrep");
+		});
+
+		it("enforces required fields in issue templates", () => {
+			const result = runInit(tempDir, { dryRun: false, force: false });
+			expect(result.ok).toBe(true);
+
+			const issueTemplate = require("node:fs").readFileSync(
+				join(tempDir, ".github/ISSUE_TEMPLATE/issue.yml"),
+				"utf-8",
+			);
+			const featureTemplate = require("node:fs").readFileSync(
+				join(tempDir, ".github/ISSUE_TEMPLATE/feature.yml"),
+				"utf-8",
+			);
+			const securityTemplate = require("node:fs").readFileSync(
+				join(tempDir, ".github/ISSUE_TEMPLATE/security.yml"),
+				"utf-8",
+			);
+
+			expect(issueTemplate).not.toContain("required: false");
+			expect(featureTemplate).not.toContain("required: false");
+			expect(securityTemplate).not.toContain("required: false");
+		});
+
+		it("enforces strict commit and hook governance in templates", () => {
+			const result = runInit(tempDir, { dryRun: false, force: false });
+			expect(result.ok).toBe(true);
+
+			const validateCommitMsg = require("node:fs").readFileSync(
+				join(tempDir, "scripts/validate-commit-msg.js"),
+				"utf-8",
+			);
+			const setupHooks = require("node:fs").readFileSync(
+				join(tempDir, "scripts/setup-git-hooks.js"),
+				"utf-8",
+			);
+			const makefile = require("node:fs").readFileSync(
+				join(tempDir, "Makefile"),
+				"utf-8",
+			);
+			const prek = require("node:fs").readFileSync(
+				join(tempDir, "prek.toml"),
+				"utf-8",
+			);
+			const environmentCheck = require("node:fs").readFileSync(
+				join(tempDir, "scripts/check-environment.sh"),
+				"utf-8",
+			);
+
+			expect(validateCommitMsg).toContain(
+				"Agent branches require exactly one Co-authored-by trailer",
+			);
+			expect(validateCommitMsg).toContain(
+				"Co-authored-by: Codex <noreply@openai.com>",
+			);
+			expect(setupHooks).toContain(
+				"pnpm lint && pnpm docs:lint && pnpm typecheck",
+			);
+			expect(setupHooks).toContain("pnpm test && pnpm audit");
+			expect(makefile).toContain("check: ## Run all required quality gates");
+			expect(makefile).toContain("\tpnpm check");
+			expect(prek).toContain("pre-commit = [");
+			expect(prek).toContain("docs:lint");
+			expect(prek).toContain("typecheck");
+			expect(prek).toContain("pre-push = [");
+			expect(prek).toContain("test");
+			expect(prek).toContain("audit");
+			expect(environmentCheck).toContain(
+				"pnpm exec tsx src/cli.ts check-environment",
+			);
 		});
 	});
 });
