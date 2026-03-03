@@ -59,9 +59,21 @@ gardener-report.json
 
 # Pilot artifacts
 artifacts/pilot/
+artifacts/policy/
 
 # UI explore output
 ui-explore-output/
+
+# Local generated diagram artifacts
+.diagram/
+AI/context/refresh.log
+
+# Local deep-test discovery recursion artifacts
+artifacts/test/discovered/.__artifacts__test__discovered__*
+
+# Locally generated helper scripts (from init template previews)
+scripts/check-environment.sh
+scripts/setup-git-hooks.js
 
 
 environment.toml
