@@ -2,6 +2,17 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [0.5.5](https://github.com/jscraik/coding-harness/compare/v0.5.4...v0.5.5) (2026-03-03)
+
+
+### Bug Fixes
+
+* **ci:** proper release hardening fixes ([#46](https://github.com/jscraik/coding-harness/issues/46)) ([06fc66b](https://github.com/jscraik/coding-harness/commit/06fc66b))
+  - Remove dependency-review workflow (requires GitHub Advanced Security)
+  - Switch SBOM generation to @cyclonedx/cyclonedx-pnpm for pnpm compatibility
+  - Fix postinstall script to work with git worktrees
+
+
 ## [0.5.4](https://github.com/jscraik/coding-harness/compare/v0.5.3...v0.5.4) (2026-03-02)
 
 
