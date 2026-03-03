@@ -71,6 +71,8 @@ jobs:
         run: pnpm build
 
       - name: Generate SBOM
+        # Continue on error since cyclonedx-npm may fail with pnpm overrides
+        continue-on-error: true
         run: |
           npm install -g @cyclonedx/cyclonedx-npm
           cyclonedx-npm --output-file artifacts/sbom.cdx.json
@@ -107,9 +109,9 @@ jobs:
       - name: Verify publish auth mode
         id: publish-auth
         run: |
-          MODE="${{ github.event_name == 'workflow_dispatch' && github.event.inputs.publish_auth || vars.NPM_PUBLISH_AUTH || 'oidc' }}"
+          MODE="${{ github.event_name == 'workflow_dispatch' && github.event.inputs.publish_auth || vars.NPM_PUBLISH_AUTH || 'token' }}"
           if [[ -z "$MODE" ]]; then
-            MODE="oidc"
+            MODE="token"
           fi
           if [[ "$MODE" != "token" && "$MODE" != "oidc" ]]; then
             echo "::error::Unsupported publish_auth mode '$MODE'. Expected token or oidc."
