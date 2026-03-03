@@ -8,6 +8,7 @@
  * - Ruleset requires "Greptile Review" check
  */
 
+import { createSign } from "node:crypto";
 import { existsSync, readFileSync } from "node:fs";
 import { resolve } from "node:path";
 
@@ -27,6 +28,9 @@ export interface VerifyGreptileOptions {
 	owner?: string;
 	repo?: string;
 	repoPath?: string;
+	appId?: string;
+	appPrivateKeyPath?: string;
+	appPrivateKey?: string;
 	json?: boolean;
 	verbose?: boolean;
 }
@@ -61,6 +65,147 @@ function normalizeToken(value: string | undefined): string | undefined {
 	return trimmed;
 }
 
+interface GitHubAppAuth {
+	appId: string;
+	privateKeyPem: string;
+}
+
+interface HttpResponseSummary {
+	status: number;
+	message: string;
+}
+
+function normalizeAppId(value: string | undefined): string | undefined {
+	if (typeof value !== "string") return undefined;
+	const trimmed = value.trim();
+	if (trimmed.length === 0) return undefined;
+	return trimmed;
+}
+
+function normalizePrivateKey(value: string | undefined): string | undefined {
+	if (typeof value !== "string") return undefined;
+	const trimmed = value.trim();
+	if (trimmed.length === 0) return undefined;
+	return trimmed.replace(/\\n/g, "\n");
+}
+
+function loadGitHubAppAuth(options: VerifyGreptileOptions): {
+	auth?: GitHubAppAuth;
+	warning?: GreptileCheck;
+} {
+	const appId =
+		normalizeAppId(options.appId) ??
+		normalizeAppId(process.env.GITHUB_APP_ID) ??
+		normalizeAppId(process.env.GH_APP_ID);
+
+	const privateKeyFromCliOrEnv =
+		normalizePrivateKey(options.appPrivateKey) ??
+		normalizePrivateKey(process.env.GITHUB_APP_PRIVATE_KEY) ??
+		normalizePrivateKey(process.env.GH_APP_PRIVATE_KEY);
+
+	const privateKeyPath =
+		normalizeToken(options.appPrivateKeyPath) ??
+		normalizeToken(process.env.GITHUB_APP_PRIVATE_KEY_PATH) ??
+		normalizeToken(process.env.GH_APP_PRIVATE_KEY_PATH);
+
+	let privateKeyPem = privateKeyFromCliOrEnv;
+	if (!privateKeyPem && privateKeyPath) {
+		try {
+			privateKeyPem = normalizePrivateKey(
+				readFileSync(privateKeyPath, "utf-8"),
+			);
+		} catch (e) {
+			return {
+				warning: {
+					name: "GitHub App Credentials",
+					status: "warn",
+					message: `Could not read GitHub App private key from ${privateKeyPath}: ${
+						e instanceof Error ? e.message : "Unknown error"
+					}`,
+				},
+			};
+		}
+	}
+
+	if (appId && !privateKeyPem) {
+		return {
+			warning: {
+				name: "GitHub App Credentials",
+				status: "warn",
+				message:
+					"GitHub App ID provided but private key is missing. Set --app-private-key-path or GITHUB_APP_PRIVATE_KEY.",
+			},
+		};
+	}
+
+	if (!appId && privateKeyPem) {
+		return {
+			warning: {
+				name: "GitHub App Credentials",
+				status: "warn",
+				message:
+					"GitHub App private key provided but app ID is missing. Set --app-id or GITHUB_APP_ID.",
+			},
+		};
+	}
+
+	if (appId && privateKeyPem) {
+		return {
+			auth: {
+				appId,
+				privateKeyPem,
+			},
+		};
+	}
+
+	return {};
+}
+
+function buildGitHubAppJwt(auth: GitHubAppAuth): string {
+	const now = Math.floor(Date.now() / 1000);
+	const header = Buffer.from(
+		JSON.stringify({ alg: "RS256", typ: "JWT" }),
+	).toString("base64url");
+	const payload = Buffer.from(
+		JSON.stringify({
+			iat: now - 60,
+			exp: now + 9 * 60,
+			iss: auth.appId,
+		}),
+	).toString("base64url");
+	const unsignedToken = `${header}.${payload}`;
+	const signature = createSign("RSA-SHA256")
+		.update(unsignedToken)
+		.end()
+		.sign(auth.privateKeyPem)
+		.toString("base64url");
+	return `${unsignedToken}.${signature}`;
+}
+
+async function fetchInstallationEndpoint(
+	owner: string,
+	repo: string,
+	authHeader: string,
+): Promise<HttpResponseSummary> {
+	const response = await fetch(
+		`https://api.github.com/repos/${owner}/${repo}/installation`,
+		{
+			headers: {
+				Authorization: authHeader,
+				Accept: "application/vnd.github+json",
+			},
+		},
+	);
+	let message = "";
+	try {
+		const payload = (await response.json()) as { message?: string };
+		message = typeof payload.message === "string" ? payload.message : "";
+	} catch {
+		// ignore non-JSON payloads
+	}
+	return { status: response.status, message };
+}
+
 export async function runVerifyGreptile(
 	options: VerifyGreptileOptions,
 ): Promise<GreptileVerificationResult> {
@@ -85,16 +230,21 @@ export async function runVerifyGreptile(
 		normalizeToken(options.token) ??
 		normalizeToken(process.env.GITHUB_TOKEN) ??
 		normalizeToken(process.env.GITHUB_PERSONAL_ACCESS_TOKEN);
+	const { auth: appAuth, warning: appAuthWarning } = loadGitHubAppAuth(options);
+	if (appAuthWarning) {
+		checks.push(appAuthWarning);
+	}
 
 	const owner = options.owner?.trim();
 	const repo = options.repo?.trim();
 
-	if (token && owner && repo) {
+	if ((token || appAuth) && owner && repo) {
 		const remoteChecks = await verifyRemoteGreptileSetup(
 			token,
 			owner,
 			repo,
 			repoPath,
+			appAuth,
 		);
 		checks.push(...remoteChecks);
 	} else {
@@ -102,7 +252,7 @@ export async function runVerifyGreptile(
 			name: "GitHub Configuration",
 			status: "warn",
 			message:
-				"Skipped remote verification. Provide --token, --owner, and --repo to verify GitHub App installation and ruleset.",
+				"Skipped remote verification. Provide --owner/--repo plus a token for rulesets and optional GitHub App credentials (--app-id + --app-private-key-path) for app-installation checks.",
 		});
 	}
 
@@ -335,35 +485,52 @@ function verifyNpmrc(repoPath: string): GreptileCheck {
 	}
 }
 async function verifyRemoteGreptileSetup(
-	token: string,
+	token: string | undefined,
 	owner: string,
 	repo: string,
 	_repoPath: string,
+	appAuth?: GitHubAppAuth,
 ): Promise<GreptileCheck[]> {
 	const checks: GreptileCheck[] = [];
-	const client = new GitHubClient({ token, owner, repo });
+	const client = token ? new GitHubClient({ token, owner, repo }) : undefined;
 
 	// Check if Greptile App is installed
 	try {
-		// Try to get app installation info
-		// Note: This requires the token to have appropriate permissions
-		const response = await fetch(
-			`https://api.github.com/repos/${owner}/${repo}/installation`,
-			{
-				headers: {
-					Authorization: `Bearer ${token}`,
-					Accept: "application/vnd.github+json",
-				},
-			},
-		);
+		let installationResponse: HttpResponseSummary | undefined;
+		let authMode: "app_jwt" | "token" | "none" = "none";
 
-		if (response.ok) {
+		if (appAuth) {
+			const appJwt = buildGitHubAppJwt(appAuth);
+			installationResponse = await fetchInstallationEndpoint(
+				owner,
+				repo,
+				`Bearer ${appJwt}`,
+			);
+			authMode = "app_jwt";
+		} else if (token) {
+			installationResponse = await fetchInstallationEndpoint(
+				owner,
+				repo,
+				`Bearer ${token}`,
+			);
+			authMode = "token";
+		}
+
+		if (!installationResponse) {
+			checks.push({
+				name: "GitHub App Installation",
+				status: "warn",
+				message:
+					"Skipped app-installation verification. Provide --app-id and --app-private-key-path (or env equivalents) to verify this check.",
+			});
+		} else if (installationResponse.status === 200) {
 			checks.push({
 				name: "GitHub App Installation",
 				status: "pass",
 				message: "GitHub App integration available on repository",
+				details: { authMode },
 			});
-		} else if (response.status === 404) {
+		} else if (installationResponse.status === 404) {
 			checks.push({
 				name: "GitHub App Installation",
 				status: "warn",
@@ -371,13 +538,33 @@ async function verifyRemoteGreptileSetup(
 					"Could not verify GitHub App installation. Ensure Greptile app is installed from GitHub Marketplace.",
 				details: {
 					hint: "Visit https://github.com/apps/greptile to install",
+					authMode,
+				},
+			});
+		} else if (
+			installationResponse.status === 401 &&
+			installationResponse.message
+				.toLowerCase()
+				.includes("json web token could not be decoded")
+		) {
+			checks.push({
+				name: "GitHub App Installation",
+				status: "warn",
+				message:
+					"GitHub returned 401 because /installation expects a GitHub App JWT. Personal access tokens cannot verify this endpoint. Provide --app-id and --app-private-key-path to run this check.",
+				details: {
+					authMode,
 				},
 			});
 		} else {
 			checks.push({
 				name: "GitHub App Installation",
 				status: "warn",
-				message: `Could not verify app installation (HTTP ${response.status})`,
+				message: `Could not verify app installation (HTTP ${installationResponse.status})`,
+				details: {
+					authMode,
+					apiMessage: installationResponse.message || undefined,
+				},
 			});
 		}
 	} catch (e) {
@@ -389,59 +576,69 @@ async function verifyRemoteGreptileSetup(
 	}
 
 	// Check if ruleset requires "Greptile Review"
-	try {
-		const rulesets = await client.listRulesets();
-		const protectRuleset = rulesets.find(
-			(r) => r.name === "protect" && r.target === "branch",
-		);
-
-		if (!protectRuleset) {
-			checks.push({
-				name: "Ruleset Configuration",
-				status: "warn",
-				message:
-					'No "protect" ruleset found. Run `harness branch-protect` to create one.',
-			});
-		} else {
-			const fullRuleset = await client.getRuleset(protectRuleset.id);
-			const statusChecksRule = fullRuleset.rules.find(
-				(r) => r.type === "required_status_checks",
-			);
-			const requiredChecks =
-				(statusChecksRule?.parameters?.required_status_checks as
-					| { context: string }[]
-					| undefined) || [];
-
-			const hasGreptileReview = requiredChecks.some(
-				(c) => c.context === "Greptile Review",
-			);
-
-			if (hasGreptileReview) {
-				checks.push({
-					name: "Ruleset Configuration",
-					status: "pass",
-					message: 'Ruleset "protect" requires "Greptile Review" status check',
-					details: { rulesetId: protectRuleset.id },
-				});
-			} else {
-				checks.push({
-					name: "Ruleset Configuration",
-					status: "fail",
-					message:
-						'Ruleset "protect" does not require "Greptile Review" status check. Update the ruleset to enforce Greptile review.',
-					details: {
-						rulesetId: protectRuleset.id,
-						currentChecks: requiredChecks.map((c) => c.context),
-					},
-				});
-			}
-		}
-	} catch (e) {
+	if (!client) {
 		checks.push({
 			name: "Ruleset Configuration",
 			status: "warn",
-			message: `Failed to check ruleset: ${sanitizeError(e)}`,
+			message:
+				"Skipped ruleset verification: provide --token (or GITHUB_TOKEN / GITHUB_PERSONAL_ACCESS_TOKEN).",
 		});
+	} else {
+		try {
+			const rulesets = await client.listRulesets();
+			const protectRuleset = rulesets.find(
+				(r) => r.name === "protect" && r.target === "branch",
+			);
+
+			if (!protectRuleset) {
+				checks.push({
+					name: "Ruleset Configuration",
+					status: "warn",
+					message:
+						'No "protect" ruleset found. Run `harness branch-protect` to create one.',
+				});
+			} else {
+				const fullRuleset = await client.getRuleset(protectRuleset.id);
+				const statusChecksRule = fullRuleset.rules.find(
+					(r) => r.type === "required_status_checks",
+				);
+				const requiredChecks =
+					(statusChecksRule?.parameters?.required_status_checks as
+						| { context: string }[]
+						| undefined) || [];
+
+				const hasGreptileReview = requiredChecks.some(
+					(c) => c.context === "Greptile Review",
+				);
+
+				if (hasGreptileReview) {
+					checks.push({
+						name: "Ruleset Configuration",
+						status: "pass",
+						message:
+							'Ruleset "protect" requires "Greptile Review" status check',
+						details: { rulesetId: protectRuleset.id },
+					});
+				} else {
+					checks.push({
+						name: "Ruleset Configuration",
+						status: "fail",
+						message:
+							'Ruleset "protect" does not require "Greptile Review" status check. Update the ruleset to enforce Greptile review.',
+						details: {
+							rulesetId: protectRuleset.id,
+							currentChecks: requiredChecks.map((c) => c.context),
+						},
+					});
+				}
+			}
+		} catch (e) {
+			checks.push({
+				name: "Ruleset Configuration",
+				status: "warn",
+				message: `Failed to check ruleset: ${sanitizeError(e)}`,
+			});
+		}
 	}
 
 	// Check webhook requirements (informational)
