@@ -1,6 +1,14 @@
 # Changelog
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [0.5.8](https://github.com/jscraik/coding-harness/compare/v0.5.7...v0.5.8) (2026-03-03)
+
+
+### Bug Fixes
+* **ci:** improve verify-greptile PAT warning message ([#51](https://github.com/jscraik/coding-harness/issues/51))
+  - Clarify that /installation endpoint requires GitHub App JWT,  - PAT users see actionable message instead of generic 401 error
+
+
 ## [0.5.7](https://github.com/jscraik/coding-harness/compare/v0.5.6...v0.5.7) (2026-03-03)
 
 
