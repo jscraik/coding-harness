@@ -12,6 +12,7 @@ graph TD
   end
   subgraph src_commands_f0f9cc2d["src/commands"]
     verify_greptile_227190f7["verify-greptile"]
+    verify_greptile_test_17404b05["verify-greptile.test"]
     ui_loop_11660889["ui-loop"]
     ui_loop_test_f0eabc42["ui-loop.test"]
     simulate_b9efe395["simulate"]
@@ -71,17 +72,13 @@ graph TD
     brainstorm_e2e2381d["brainstorm"]
     brainstorm_test_78cf7a1e["brainstorm.test"]
   end
-  subgraph src_lib_silent_error_26e972c0["src/lib/silent-error"]
+  subgraph src_lib_simulate_87a8be80["src/lib/simulate"]
     types_8d846022["types"]
+  end
+  subgraph src_lib_silent_error_26e972c0["src/lib/silent-error"]
+    types_1_4ecdf56e["types"]
     detector_f2b3cbe4["detector"]
     detector_test_d10b3555["detector.test"]
-  end
-  subgraph src_lib_simulate_87a8be80["src/lib/simulate"]
-    types_1_4ecdf56e["types"]
-  end
-  subgraph src_lib_replay_9cdd6ac4["src/lib/replay"]
-    tracer_1e6243a2["tracer"]
-    tracer_test_cb965d81["tracer.test"]
   end
   subgraph src_lib_remediation_66ee2139["src/lib/remediation"]
     types_2_d9bc6e7a["types"]
@@ -94,6 +91,10 @@ graph TD
     validator_f82af321["validator"]
     validator_test_b4b482f8["validator.test"]
     types_3_9675d69b["types"]
+  end
+  subgraph src_lib_replay_9cdd6ac4["src/lib/replay"]
+    tracer_1e6243a2["tracer"]
+    tracer_test_cb965d81["tracer.test"]
   end
   subgraph src_lib_policy_f3a0824d["src/lib/policy"]
     risk_tier_1_96b6ff91["risk-tier"]
@@ -131,5 +132,4 @@ graph TD
     sha_test_5a5924fc["sha.test"]
     mutation_queue_ce5a530e["mutation-queue"]
     mutation_queue_test_10b599e8["mutation-queue.test"]
-    errors_be4bd567["errors"]
   end

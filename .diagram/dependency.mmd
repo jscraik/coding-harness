@@ -12,8 +12,14 @@ graph LR
   node_fs_df6b52af["node:fs"] --> version_5ca4f385
   node_path_0e7d56ab["node:path"] --> version_5ca4f385
   node_url_b54ed078["node:url"] --> version_5ca4f385
+  node_crypto_879f6cbe["node:crypto"] --> verify_greptile_227190f7
   node_fs_df6b52af["node:fs"] --> verify_greptile_227190f7
   node_path_0e7d56ab["node:path"] --> verify_greptile_227190f7
+  node_crypto_879f6cbe["node:crypto"] --> verify_greptile_test_17404b05
+  node_fs_df6b52af["node:fs"] --> verify_greptile_test_17404b05
+  node_os_e9717731["node:os"] --> verify_greptile_test_17404b05
+  node_path_0e7d56ab["node:path"] --> verify_greptile_test_17404b05
+  vitest_a9127f3d["vitest"] --> verify_greptile_test_17404b05
   node_child_process_cb73900b["node:child_process"] --> ui_loop_11660889
   node_crypto_879f6cbe["node:crypto"] --> ui_loop_11660889
   node_fs_df6b52af["node:fs"] --> ui_loop_11660889
@@ -165,11 +171,6 @@ graph LR
   node_os_e9717731["node:os"] --> detector_test_d10b3555
   node_path_0e7d56ab["node:path"] --> detector_test_d10b3555
   vitest_a9127f3d["vitest"] --> detector_test_d10b3555
-  node_crypto_879f6cbe["node:crypto"] --> tracer_1e6243a2
-  node_fs_df6b52af["node:fs"] --> tracer_1e6243a2
-  node_path_0e7d56ab["node:path"] --> tracer_1e6243a2
-  node_fs_df6b52af["node:fs"] --> tracer_1e6243a2
-  vitest_a9127f3d["vitest"] --> tracer_test_cb965d81
   vitest_a9127f3d["vitest"] --> orchestrator_test_18d2fe26
   vitest_a9127f3d["vitest"] --> finding_normalizer_test_d4639bd8
   node_fs_df6b52af["node:fs"] --> validator_f82af321
@@ -178,6 +179,11 @@ graph LR
   node_os_e9717731["node:os"] --> validator_test_b4b482f8
   node_path_0e7d56ab["node:path"] --> validator_test_b4b482f8
   vitest_a9127f3d["vitest"] --> validator_test_b4b482f8
+  node_crypto_879f6cbe["node:crypto"] --> tracer_1e6243a2
+  node_fs_df6b52af["node:fs"] --> tracer_1e6243a2
+  node_path_0e7d56ab["node:path"] --> tracer_1e6243a2
+  node_fs_df6b52af["node:fs"] --> tracer_1e6243a2
+  vitest_a9127f3d["vitest"] --> tracer_test_cb965d81
   picomatch_0bf97c7b["picomatch"] --> risk_tier_1_96b6ff91
   vitest_a9127f3d["vitest"] --> risk_tier_test_ae056367
   node_fs_df6b52af["node:fs"] --> detector_1_b37d288b
@@ -208,17 +214,15 @@ graph LR
   vitest_a9127f3d["vitest"] --> sanitize_test_f3d34916
   vitest_a9127f3d["vitest"] --> sha_test_5a5924fc
   vitest_a9127f3d["vitest"] --> mutation_queue_test_10b599e8
-  _octokit_request_error_32e46e23["@octokit/request-error"] --> errors_be4bd567
   style vitest_a9127f3d fill:#f59e0b,color:#fff
   style node_fs_df6b52af fill:#f59e0b,color:#fff
   style node_path_0e7d56ab fill:#f59e0b,color:#fff
   style node_url_b54ed078 fill:#f59e0b,color:#fff
   style node_crypto_879f6cbe fill:#f59e0b,color:#fff
+  style node_os_e9717731 fill:#f59e0b,color:#fff
   style node_child_process_cb73900b fill:#f59e0b,color:#fff
   style node_process_09240432 fill:#f59e0b,color:#fff
   style diff_df087996 fill:#f59e0b,color:#fff
   style semver_50449d83 fill:#f59e0b,color:#fff
   style _inquirer_prompts_21758d24 fill:#f59e0b,color:#fff
-  style node_os_e9717731 fill:#f59e0b,color:#fff
   style picomatch_0bf97c7b fill:#f59e0b,color:#fff
-  style _octokit_request_error_32e46e23 fill:#f59e0b,color:#fff

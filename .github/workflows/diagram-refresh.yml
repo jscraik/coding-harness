@@ -28,24 +28,25 @@ jobs:
       - name: Install dependencies
         run: pnpm install
       - name: Generate diagrams
-        run: pnpm exec diagram all . --output-dir AI/diagrams
+        run: pnpm exec diagram all . --output-dir .diagram
       - name: Generate context file
         run: |
-          cat <<'MD' > AI/context/diagram-context.md
+          mkdir -p .diagram/context
+          cat <<'MD' > .diagram/context/diagram-context.md
           # Diagram Context Pack
 
           Generated: $(date -u +"%Y-%m-%dT%H:%M:%SZ")
 
           MD
-          for file in AI/diagrams/*.mmd; do
+          for file in .diagram/*.mmd; do
             name="$(basename "$file" .mmd)"
-            echo "## ${name}" >> AI/context/diagram-context.md
-            echo "" >> AI/context/diagram-context.md
-            echo '```mermaid' >> AI/context/diagram-context.md
-            cat "$file" >> AI/context/diagram-context.md
-            echo "" >> AI/context/diagram-context.md
-            echo '```' >> AI/context/diagram-context.md
-            echo "" >> AI/context/diagram-context.md
+            echo "## ${name}" >> .diagram/context/diagram-context.md
+            echo "" >> .diagram/context/diagram-context.md
+            echo '```mermaid' >> .diagram/context/diagram-context.md
+            cat "$file" >> .diagram/context/diagram-context.md
+            echo "" >> .diagram/context/diagram-context.md
+            echo '```' >> .diagram/context/diagram-context.md
+            echo "" >> .diagram/context/diagram-context.md
           done
       - name: Commit diagram updates
         run: |
@@ -55,6 +56,6 @@ jobs:
             echo "No diagram changes to commit"
             exit 0
           fi
-          git add AI/diagrams AI/context/diagram-context.md
+          git add .diagram
           git commit -m "chore(diagrams): auto-refresh architecture diagrams"
           git push

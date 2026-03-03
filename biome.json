@@ -15,7 +15,7 @@
 			"artifacts",
 			".test-traces*",
 			".traces",
-			"AI/diagrams"
+			".diagram"
 		]
 	},
 	"overrides": [

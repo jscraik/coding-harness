@@ -1,6 +1,6 @@
 # Diagram Context Pack
 
-Generated: $(date -u +"%Y-%m-%dT%H:%M:%SZ")
+Generated: 2026-03-03T13:38:48Z
 
 ## architecture
 
@@ -19,6 +19,7 @@ graph TD
   end
   subgraph src_commands_f0f9cc2d["src/commands"]
     verify_greptile_227190f7["verify-greptile"]
+    verify_greptile_test_17404b05["verify-greptile.test"]
     ui_loop_11660889["ui-loop"]
     ui_loop_test_f0eabc42["ui-loop.test"]
     simulate_b9efe395["simulate"]
@@ -78,17 +79,13 @@ graph TD
     brainstorm_e2e2381d["brainstorm"]
     brainstorm_test_78cf7a1e["brainstorm.test"]
   end
-  subgraph src_lib_silent_error_26e972c0["src/lib/silent-error"]
+  subgraph src_lib_simulate_87a8be80["src/lib/simulate"]
     types_8d846022["types"]
+  end
+  subgraph src_lib_silent_error_26e972c0["src/lib/silent-error"]
+    types_1_4ecdf56e["types"]
     detector_f2b3cbe4["detector"]
     detector_test_d10b3555["detector.test"]
-  end
-  subgraph src_lib_simulate_87a8be80["src/lib/simulate"]
-    types_1_4ecdf56e["types"]
-  end
-  subgraph src_lib_replay_9cdd6ac4["src/lib/replay"]
-    tracer_1e6243a2["tracer"]
-    tracer_test_cb965d81["tracer.test"]
   end
   subgraph src_lib_remediation_66ee2139["src/lib/remediation"]
     types_2_d9bc6e7a["types"]
@@ -101,6 +98,10 @@ graph TD
     validator_f82af321["validator"]
     validator_test_b4b482f8["validator.test"]
     types_3_9675d69b["types"]
+  end
+  subgraph src_lib_replay_9cdd6ac4["src/lib/replay"]
+    tracer_1e6243a2["tracer"]
+    tracer_test_cb965d81["tracer.test"]
   end
   subgraph src_lib_policy_f3a0824d["src/lib/policy"]
     risk_tier_1_96b6ff91["risk-tier"]
@@ -138,7 +139,6 @@ graph TD
     sha_test_5a5924fc["sha.test"]
     mutation_queue_ce5a530e["mutation-queue"]
     mutation_queue_test_10b599e8["mutation-queue.test"]
-    errors_be4bd567["errors"]
   end
 ```
 
@@ -200,9 +200,6 @@ classDiagram
   class sha_d600474b {
     +src/lib/github/sha.ts
   }
-  class errors_be4bd567 {
-    +src/lib/github/errors.ts
-  }
 ```
 
 ## database
@@ -238,9 +235,9 @@ flowchart TD
   context_test_57aad306["context.test"]
   UserRequest --> context_test_57aad306
   context_test_57aad306 --> context_test_57aad306_result["result"]
-  types_1_4ecdf56e["types"]
-  UserRequest --> types_1_4ecdf56e
-  types_1_4ecdf56e --> types_1_4ecdf56e_result["result"]
+  types_8d846022["types"]
+  UserRequest --> types_8d846022
+  types_8d846022 --> types_8d846022_result["result"]
   validator_1_0c0621d8["validator"]
   UserRequest --> validator_1_0c0621d8
   validator_1_0c0621d8 --> validator_1_0c0621d8_result["result"]
@@ -271,8 +268,14 @@ graph LR
   node_fs_df6b52af["node:fs"] --> version_5ca4f385
   node_path_0e7d56ab["node:path"] --> version_5ca4f385
   node_url_b54ed078["node:url"] --> version_5ca4f385
+  node_crypto_879f6cbe["node:crypto"] --> verify_greptile_227190f7
   node_fs_df6b52af["node:fs"] --> verify_greptile_227190f7
   node_path_0e7d56ab["node:path"] --> verify_greptile_227190f7
+  node_crypto_879f6cbe["node:crypto"] --> verify_greptile_test_17404b05
+  node_fs_df6b52af["node:fs"] --> verify_greptile_test_17404b05
+  node_os_e9717731["node:os"] --> verify_greptile_test_17404b05
+  node_path_0e7d56ab["node:path"] --> verify_greptile_test_17404b05
+  vitest_a9127f3d["vitest"] --> verify_greptile_test_17404b05
   node_child_process_cb73900b["node:child_process"] --> ui_loop_11660889
   node_crypto_879f6cbe["node:crypto"] --> ui_loop_11660889
   node_fs_df6b52af["node:fs"] --> ui_loop_11660889
@@ -424,11 +427,6 @@ graph LR
   node_os_e9717731["node:os"] --> detector_test_d10b3555
   node_path_0e7d56ab["node:path"] --> detector_test_d10b3555
   vitest_a9127f3d["vitest"] --> detector_test_d10b3555
-  node_crypto_879f6cbe["node:crypto"] --> tracer_1e6243a2
-  node_fs_df6b52af["node:fs"] --> tracer_1e6243a2
-  node_path_0e7d56ab["node:path"] --> tracer_1e6243a2
-  node_fs_df6b52af["node:fs"] --> tracer_1e6243a2
-  vitest_a9127f3d["vitest"] --> tracer_test_cb965d81
   vitest_a9127f3d["vitest"] --> orchestrator_test_18d2fe26
   vitest_a9127f3d["vitest"] --> finding_normalizer_test_d4639bd8
   node_fs_df6b52af["node:fs"] --> validator_f82af321
@@ -437,6 +435,11 @@ graph LR
   node_os_e9717731["node:os"] --> validator_test_b4b482f8
   node_path_0e7d56ab["node:path"] --> validator_test_b4b482f8
   vitest_a9127f3d["vitest"] --> validator_test_b4b482f8
+  node_crypto_879f6cbe["node:crypto"] --> tracer_1e6243a2
+  node_fs_df6b52af["node:fs"] --> tracer_1e6243a2
+  node_path_0e7d56ab["node:path"] --> tracer_1e6243a2
+  node_fs_df6b52af["node:fs"] --> tracer_1e6243a2
+  vitest_a9127f3d["vitest"] --> tracer_test_cb965d81
   picomatch_0bf97c7b["picomatch"] --> risk_tier_1_96b6ff91
   vitest_a9127f3d["vitest"] --> risk_tier_test_ae056367
   node_fs_df6b52af["node:fs"] --> detector_1_b37d288b
@@ -467,20 +470,18 @@ graph LR
   vitest_a9127f3d["vitest"] --> sanitize_test_f3d34916
   vitest_a9127f3d["vitest"] --> sha_test_5a5924fc
   vitest_a9127f3d["vitest"] --> mutation_queue_test_10b599e8
-  _octokit_request_error_32e46e23["@octokit/request-error"] --> errors_be4bd567
   style vitest_a9127f3d fill:#f59e0b,color:#fff
   style node_fs_df6b52af fill:#f59e0b,color:#fff
   style node_path_0e7d56ab fill:#f59e0b,color:#fff
   style node_url_b54ed078 fill:#f59e0b,color:#fff
   style node_crypto_879f6cbe fill:#f59e0b,color:#fff
+  style node_os_e9717731 fill:#f59e0b,color:#fff
   style node_child_process_cb73900b fill:#f59e0b,color:#fff
   style node_process_09240432 fill:#f59e0b,color:#fff
   style diff_df087996 fill:#f59e0b,color:#fff
   style semver_50449d83 fill:#f59e0b,color:#fff
   style _inquirer_prompts_21758d24 fill:#f59e0b,color:#fff
-  style node_os_e9717731 fill:#f59e0b,color:#fff
   style picomatch_0bf97c7b fill:#f59e0b,color:#fff
-  style _octokit_request_error_32e46e23 fill:#f59e0b,color:#fff
 ```
 
 ## events
@@ -518,12 +519,12 @@ flowchart TD
   cli_dispatch_test_54c9f17b --> version_5ca4f385
   verify_greptile_227190f7["verify-greptile"]
   version_5ca4f385 --> verify_greptile_227190f7
+  verify_greptile_test_17404b05["verify-greptile.test"]
+  verify_greptile_227190f7 --> verify_greptile_test_17404b05
   ui_loop_11660889["ui-loop"]
-  verify_greptile_227190f7 --> ui_loop_11660889
-  ui_loop_test_f0eabc42["ui-loop.test"]
-  ui_loop_11660889 --> ui_loop_test_f0eabc42
+  verify_greptile_test_17404b05 --> ui_loop_11660889
   End(["End"])
-  ui_loop_test_f0eabc42 --> End
+  ui_loop_11660889 --> End
 ```
 
 ## security
@@ -537,6 +538,8 @@ flowchart TD
   Untrusted --> cli_dispatch_test_54c9f17b
   verify_greptile_227190f7["verify-greptile"]
   Untrusted --> verify_greptile_227190f7
+  verify_greptile_test_17404b05["verify-greptile.test"]
+  Untrusted --> verify_greptile_test_17404b05
   search_test_0c66bc11["search.test"]
   Untrusted --> search_test_0c66bc11
   risk_tier_807f33f9["risk-tier"]
@@ -569,14 +572,14 @@ flowchart TD
   Untrusted --> check_authz_fee242b1
   agent_first_throughput_integration_test_dc677cc4["agent-first-throughput.integration.test"]
   Untrusted --> agent_first_throughput_integration_test_dc677cc4
-  types_1_4ecdf56e["types"]
-  Untrusted --> types_1_4ecdf56e
-  tracer_test_cb965d81["tracer.test"]
-  Untrusted --> tracer_test_cb965d81
+  types_8d846022["types"]
+  Untrusted --> types_8d846022
   orchestrator_11376b7e["orchestrator"]
   Untrusted --> orchestrator_11376b7e
   validator_f82af321["validator"]
   Untrusted --> validator_f82af321
+  tracer_test_cb965d81["tracer.test"]
+  Untrusted --> tracer_test_cb965d81
   risk_tier_1_96b6ff91["risk-tier"]
   Untrusted --> risk_tier_1_96b6ff91
   risk_tier_test_ae056367["risk-tier.test"]
@@ -609,8 +612,6 @@ flowchart TD
   Untrusted --> mutation_queue_ce5a530e
   mutation_queue_test_10b599e8["mutation-queue.test"]
   Untrusted --> mutation_queue_test_10b599e8
-  errors_be4bd567["errors"]
-  Untrusted --> errors_be4bd567
   classDef securityNode fill:#dc2626,color:#fff
 ```
 
@@ -632,6 +633,8 @@ flowchart LR
   User --> cli_dispatch_test_54c9f17b
   verify_greptile_227190f7["verify-greptile"]
   User --> verify_greptile_227190f7
+  verify_greptile_test_17404b05["verify-greptile.test"]
+  User --> verify_greptile_test_17404b05
   ui_loop_11660889["ui-loop"]
   User --> ui_loop_11660889
   ui_loop_test_f0eabc42["ui-loop.test"]
@@ -662,8 +665,6 @@ flowchart LR
   User --> brainstorm_test_78cf7a1e
   risk_tier_test_ae056367["risk-tier.test"]
   User --> risk_tier_test_ae056367
-  errors_be4bd567["errors"]
-  User --> errors_be4bd567
   classDef userNode fill:#16a34a,color:#fff
 ```
 

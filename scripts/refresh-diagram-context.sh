@@ -27,8 +27,8 @@ while [[ $# -gt 0 ]]; do
 done
 
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
-DIAGRAM_DIR="$ROOT_DIR/AI/diagrams"
-CONTEXT_DIR="$ROOT_DIR/AI/context"
+DIAGRAM_DIR="$ROOT_DIR/.diagram"
+CONTEXT_DIR="$ROOT_DIR/.diagram/context"
 CONTEXT_FILE="$CONTEXT_DIR/diagram-context.md"
 META_FILE="$CONTEXT_DIR/diagram-context.meta.json"
 LOG_FILE="$CONTEXT_DIR/refresh.log"
@@ -61,8 +61,8 @@ if [[ "$FORCE" -ne 1 && -f "$META_FILE" ]]; then
   fi
 fi
 
-if [[ ! -f "$ROOT_DIR/src/diagram.js" ]] && ! command -v diagram >/dev/null 2>&1; then
-  log "error: neither src/diagram.js nor global diagram CLI is available"
+if [[ ! -f "$ROOT_DIR/src/diagram.js" ]] && ! command -v pnpm >/dev/null 2>&1 && ! command -v diagram >/dev/null 2>&1; then
+  log "error: neither src/diagram.js, pnpm exec diagram, nor global diagram CLI is available"
   exit 1
 fi
 
@@ -78,10 +78,18 @@ if [[ -f "$ROOT_DIR/src/diagram.js" ]]; then
     node src/diagram.js all . --output-dir "$TMP_DIR/diagrams"
   fi
 else
-  if [[ "$QUIET" -eq 1 ]]; then
-    diagram all . --output-dir "$TMP_DIR/diagrams" >/dev/null 2>&1
+  if command -v pnpm >/dev/null 2>&1; then
+    if [[ "$QUIET" -eq 1 ]]; then
+      pnpm exec diagram all . --output-dir "$TMP_DIR/diagrams" >/dev/null 2>&1
+    else
+      pnpm exec diagram all . --output-dir "$TMP_DIR/diagrams"
+    fi
   else
-    diagram all . --output-dir "$TMP_DIR/diagrams"
+    if [[ "$QUIET" -eq 1 ]]; then
+      diagram all . --output-dir "$TMP_DIR/diagrams" >/dev/null 2>&1
+    else
+      diagram all . --output-dir "$TMP_DIR/diagrams"
+    fi
   fi
 fi
 popd >/dev/null

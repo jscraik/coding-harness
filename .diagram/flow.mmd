@@ -12,9 +12,9 @@ flowchart TD
   cli_dispatch_test_54c9f17b --> version_5ca4f385
   verify_greptile_227190f7["verify-greptile"]
   version_5ca4f385 --> verify_greptile_227190f7
+  verify_greptile_test_17404b05["verify-greptile.test"]
+  verify_greptile_227190f7 --> verify_greptile_test_17404b05
   ui_loop_11660889["ui-loop"]
-  verify_greptile_227190f7 --> ui_loop_11660889
-  ui_loop_test_f0eabc42["ui-loop.test"]
-  ui_loop_11660889 --> ui_loop_test_f0eabc42
+  verify_greptile_test_17404b05 --> ui_loop_11660889
   End(["End"])
-  ui_loop_test_f0eabc42 --> End
+  ui_loop_11660889 --> End
