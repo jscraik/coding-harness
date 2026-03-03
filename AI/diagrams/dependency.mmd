@@ -97,6 +97,8 @@ graph LR
   node_fs_df6b52af["node:fs"] --> init_test_cbba76a6
   node_fs_df6b52af["node:fs"] --> init_test_cbba76a6
   node_fs_df6b52af["node:fs"] --> init_test_cbba76a6
+  node_fs_df6b52af["node:fs"] --> init_test_cbba76a6
+  node_fs_df6b52af["node:fs"] --> init_test_cbba76a6
   node_fs_df6b52af["node:fs"] --> index_context_de3ed39d
   node_path_0e7d56ab["node:path"] --> index_context_de3ed39d
   node_os_e9717731["node:os"] --> index_context_test_1949ea6f
@@ -172,12 +174,6 @@ graph LR
   vitest_a9127f3d["vitest"] --> tracer_test_cb965d81
   vitest_a9127f3d["vitest"] --> orchestrator_test_18d2fe26
   vitest_a9127f3d["vitest"] --> finding_normalizer_test_d4639bd8
-  node_fs_df6b52af["node:fs"] --> validator_f82af321
-  node_path_0e7d56ab["node:path"] --> validator_f82af321
-  node_fs_df6b52af["node:fs"] --> validator_test_b4b482f8
-  node_os_e9717731["node:os"] --> validator_test_b4b482f8
-  node_path_0e7d56ab["node:path"] --> validator_test_b4b482f8
-  vitest_a9127f3d["vitest"] --> validator_test_b4b482f8
   picomatch_0bf97c7b["picomatch"] --> risk_tier_1_96b6ff91
   vitest_a9127f3d["vitest"] --> risk_tier_test_ae056367
   node_fs_df6b52af["node:fs"] --> detector_1_b37d288b
@@ -185,6 +181,12 @@ graph LR
   node_fs_df6b52af["node:fs"] --> metrics_capture_1d1a2c08
   node_path_0e7d56ab["node:path"] --> metrics_capture_1d1a2c08
   vitest_a9127f3d["vitest"] --> cardinality_test_c00e7edb
+  node_fs_df6b52af["node:fs"] --> validator_f82af321
+  node_path_0e7d56ab["node:path"] --> validator_f82af321
+  node_os_e9717731["node:os"] --> validator_test_b4b482f8
+  node_path_0e7d56ab["node:path"] --> validator_test_b4b482f8
+  vitest_a9127f3d["vitest"] --> validator_test_b4b482f8
+  vitest_a9127f3d["vitest"] --> sanitize_test_f3d34916
   node_fs_df6b52af["node:fs"] --> validator_1_0c0621d8
   node_path_0e7d56ab["node:path"] --> validator_1_0c0621d8
   node_fs_df6b52af["node:fs"] --> validator_test_1_c5015ca0
@@ -200,15 +202,13 @@ graph LR
   node_child_process_cb73900b["node:child_process"] --> branch_enforcer_acb749cd
   node_fs_df6b52af["node:fs"] --> branch_enforcer_acb749cd
   node_path_0e7d56ab["node:path"] --> branch_enforcer_acb749cd
-  node_fs_df6b52af["node:fs"] --> validator_2_744853f5
-  node_path_0e7d56ab["node:path"] --> validator_2_744853f5
-  node_os_e9717731["node:os"] --> validator_test_2_8dbecf99
-  node_path_0e7d56ab["node:path"] --> validator_test_2_8dbecf99
-  vitest_a9127f3d["vitest"] --> validator_test_2_8dbecf99
-  vitest_a9127f3d["vitest"] --> sanitize_test_f3d34916
   vitest_a9127f3d["vitest"] --> sha_test_5a5924fc
   vitest_a9127f3d["vitest"] --> mutation_queue_test_10b599e8
   _octokit_request_error_32e46e23["@octokit/request-error"] --> errors_be4bd567
+  vitest_a9127f3d["vitest"] --> comments_test_f8c9ae41
+  _octokit_plugin_retry_db489add["@octokit/plugin-retry"] --> client_948fe603
+  _octokit_plugin_throttling_c7312007["@octokit/plugin-throttling"] --> client_948fe603
+  _octokit_rest_c557ffd5["@octokit/rest"] --> client_948fe603
   style vitest_a9127f3d fill:#f59e0b,color:#fff
   style node_fs_df6b52af fill:#f59e0b,color:#fff
   style node_path_0e7d56ab fill:#f59e0b,color:#fff
@@ -222,3 +222,6 @@ graph LR
   style node_os_e9717731 fill:#f59e0b,color:#fff
   style picomatch_0bf97c7b fill:#f59e0b,color:#fff
   style _octokit_request_error_32e46e23 fill:#f59e0b,color:#fff
+  style _octokit_plugin_retry_db489add fill:#f59e0b,color:#fff
+  style _octokit_plugin_throttling_c7312007 fill:#f59e0b,color:#fff
+  style _octokit_rest_c557ffd5 fill:#f59e0b,color:#fff

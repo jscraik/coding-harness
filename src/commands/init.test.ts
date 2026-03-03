@@ -22,6 +22,7 @@ const EXPECTED_TEMPLATE_PATHS = [
 	".gitleaks.toml",
 	"prek.toml",
 	"scripts/check-environment.sh",
+	"mise.toml",
 	".codex/environments/environment.toml",
 	".github/ISSUE_TEMPLATE/issue.yml",
 	".github/ISSUE_TEMPLATE/feature.yml",
@@ -173,6 +174,7 @@ describe("runInit", () => {
 			writeFileSync(join(tempDir, ".gitleaks.toml"), "existing");
 			writeFileSync(join(tempDir, "prek.toml"), "existing");
 			writeFileSync(join(tempDir, "scripts/check-environment.sh"), "existing");
+			writeFileSync(join(tempDir, "mise.toml"), "existing");
 			mkdirSync(join(tempDir, ".codex", "environments"), {
 				recursive: true,
 			});

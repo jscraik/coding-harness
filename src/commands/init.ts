@@ -2055,19 +2055,53 @@ stages = ["pre-push"]
 		},
 	},
 	{
+		path: "mise.toml",
+		render: () => `[tools]
+uv = "0.9.5"
+
+[env]
+CLAUDE_APPROVAL_POSTURE = "require"
+`,
+	},
+	{
 		path: "scripts/check-environment.sh",
 		render: () => `#!/bin/bash
 # Local environment check using ralph-gold
-# Requires: uv tool install ralph-gold
+# Requires: uv (pinned via mise.toml) and/or Python/pipx to provide ralph-gold runtime.
 
-set -e
+set -euo pipefail
+
+if command -v mise >/dev/null 2>&1; then
+	eval "$(mise activate bash)"
+fi
+
+export CLAUDE_APPROVAL_POSTURE="\${CLAUDE_APPROVAL_POSTURE:-require}"
+
+if command -v uv >/dev/null 2>&1; then
+	# keep in sync with coding-harness check contract runtime pins
+	UV_VERSION="$(uv --version | awk '{print $2}')"
+	if [ "$UV_VERSION" != "0.9.5" ]; then
+		echo "WARNING: uv version is $UV_VERSION, expected 0.9.5"
+	fi
+else
+	echo "uv is not installed; using Python/pipx fallback when available."
+fi
 
 echo "Checking environment with ralph-gold..."
 
 # Check if ralph is available
 if ! command -v ralph &> /dev/null; then
-    echo "Installing ralph-gold..."
-    uv tool install ralph-gold
+	echo "Installing ralph-gold..."
+	if command -v uv >/dev/null 2>&1; then
+		uv tool install ralph-gold
+	elif command -v pipx >/dev/null 2>&1; then
+		pipx install ralph-gold
+	elif command -v python >/dev/null 2>&1; then
+		python -m pip install --user ralph-gold
+	else
+		echo "Could not install ralph-gold. Please install uv, pipx, or Python."
+		exit 1
+	fi
 fi
 
 # Run environment check

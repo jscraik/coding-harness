@@ -1,6 +1,6 @@
 # Diagram Context Pack
 
-Generated: $(date -u +"%Y-%m-%dT%H:%M:%SZ")
+Generated: 2026-03-03T21:08:19Z
 
 ## architecture
 
@@ -78,13 +78,13 @@ graph TD
     brainstorm_e2e2381d["brainstorm"]
     brainstorm_test_78cf7a1e["brainstorm.test"]
   end
-  subgraph src_lib_silent_error_26e972c0["src/lib/silent-error"]
+  subgraph src_lib_simulate_87a8be80["src/lib/simulate"]
     types_8d846022["types"]
+  end
+  subgraph src_lib_silent_error_26e972c0["src/lib/silent-error"]
+    types_1_4ecdf56e["types"]
     detector_f2b3cbe4["detector"]
     detector_test_d10b3555["detector.test"]
-  end
-  subgraph src_lib_simulate_87a8be80["src/lib/simulate"]
-    types_1_4ecdf56e["types"]
   end
   subgraph src_lib_replay_9cdd6ac4["src/lib/replay"]
     tracer_1e6243a2["tracer"]
@@ -97,41 +97,36 @@ graph TD
     finding_normalizer_13f1559c["finding-normalizer"]
     finding_normalizer_test_d4639bd8["finding-normalizer.test"]
   end
-  subgraph src_lib_preflight_d75938f9["src/lib/preflight"]
-    validator_f82af321["validator"]
-    validator_test_b4b482f8["validator.test"]
-    types_3_9675d69b["types"]
-  end
   subgraph src_lib_policy_f3a0824d["src/lib/policy"]
     risk_tier_1_96b6ff91["risk-tier"]
     risk_tier_test_ae056367["risk-tier.test"]
     diff_budget_1_9f85eb1c["diff-budget"]
   end
   subgraph src_lib_plan_gate_b742698a["src/lib/plan-gate"]
-    types_4_822d0f88["types"]
+    types_3_9675d69b["types"]
     detector_1_b37d288b["detector"]
   end
   subgraph src_lib_pilot_evaluation_f6cc358e["src/lib/pilot-evaluation"]
-    types_5_f869ec4b["types"]
+    types_4_822d0f88["types"]
     metrics_capture_1d1a2c08["metrics-capture"]
   end
   subgraph src_lib_observability_ecdc7d70["src/lib/observability"]
     cardinality_ebef8aff["cardinality"]
     cardinality_test_c00e7edb["cardinality.test"]
   end
+  subgraph src_lib_input_456cc971["src/lib/input"]
+    validator_f82af321["validator"]
+    validator_test_b4b482f8["validator.test"]
+    sanitize_af6a3bb0["sanitize"]
+    sanitize_test_f3d34916["sanitize.test"]
+  end
   subgraph src_lib_memory_273eb2dc["src/lib/memory"]
     validator_1_0c0621d8["validator"]
     validator_test_1_c5015ca0["validator.test"]
-    types_6_1818fb91["types"]
+    types_5_f869ec4b["types"]
     metrics_tracker_98cec29c["metrics-tracker"]
     metrics_tracker_test_3de156fa["metrics-tracker.test"]
     branch_enforcer_acb749cd["branch-enforcer"]
-  end
-  subgraph src_lib_input_456cc971["src/lib/input"]
-    validator_2_744853f5["validator"]
-    validator_test_2_8dbecf99["validator.test"]
-    sanitize_af6a3bb0["sanitize"]
-    sanitize_test_f3d34916["sanitize.test"]
   end
   subgraph src_lib_github_bad33b49["src/lib/github"]
     sha_d600474b["sha"]
@@ -139,49 +134,10 @@ graph TD
     mutation_queue_ce5a530e["mutation-queue"]
     mutation_queue_test_10b599e8["mutation-queue.test"]
     errors_be4bd567["errors"]
+    comments_2b4244fb["comments"]
+    comments_test_f8c9ae41["comments.test"]
+    client_948fe603["client"]
   end
-```
-
-## auth
-
-```mermaid
-flowchart TD
-  Request["Authentication request"]
-  Boundary{"Auth Boundary"}
-  Request --> Boundary
-  review_gate_09b579c4["review-gate"]
-  Boundary --> review_gate_09b579c4
-  policy_gate_test_203a5261["policy-gate.test"]
-  Boundary --> policy_gate_test_203a5261
-  init_bb54068a["init"]
-  Boundary --> init_bb54068a
-  init_test_cbba76a6["init.test"]
-  Boundary --> init_test_cbba76a6
-  check_environment_fe68d4be["check-environment"]
-  Boundary --> check_environment_fe68d4be
-  check_authz_fee242b1["check-authz"]
-  Boundary --> check_authz_fee242b1
-  branch_protect_b9d345eb["branch-protect"]
-  Boundary --> branch_protect_b9d345eb
-  blast_radius_test_045450fc["blast-radius.test"]
-  Boundary --> blast_radius_test_045450fc
-  validator_test_b4b482f8["validator.test"]
-  Boundary --> validator_test_b4b482f8
-  risk_tier_test_ae056367["risk-tier.test"]
-  Boundary --> risk_tier_test_ae056367
-  types_6_1818fb91["types"]
-  Boundary --> types_6_1818fb91
-  vitest_a9127f3d[("vitest")]
-  node_crypto_879f6cbe[("node:crypto")]
-  node_path_0e7d56ab[("node:path")]
-  node_process_09240432[("node:process")]
-  diff_df087996[("diff")]
-  semver_50449d83[("semver")]
-  node_child_process_cb73900b[("node:child_process")]
-  node_fs_df6b52af[("node:fs")]
-  _inquirer_prompts_21758d24[("@inquirer/prompts")]
-  node_os_e9717731[("node:os")]
-  classDef authNode fill:#7c3aed,color:#fff
 ```
 
 ## class
@@ -194,7 +150,7 @@ classDiagram
   class remediate_test_6f59cafe {
     +src/commands/remediate.test.ts
   }
-  class validator_2_744853f5 {
+  class validator_f82af321 {
     +src/lib/input/validator.ts
   }
   class sha_d600474b {
@@ -203,55 +159,6 @@ classDiagram
   class errors_be4bd567 {
     +src/lib/github/errors.ts
   }
-```
-
-## database
-
-```mermaid
-flowchart TD
-  UserRequest["User request"]
-  Decision{Record exists?}
-  cli_99bb8840["cli"]
-  UserRequest --> cli_99bb8840
-  cli_99bb8840 --> cli_99bb8840_result["result"]
-  simulate_b9efe395["simulate"]
-  UserRequest --> simulate_b9efe395
-  simulate_b9efe395 --> simulate_b9efe395_result["result"]
-  search_24193290["search"]
-  UserRequest --> search_24193290
-  search_24193290 --> search_24193290_result["result"]
-  pilot_evaluate_2045b1a1["pilot-evaluate"]
-  UserRequest --> pilot_evaluate_2045b1a1
-  pilot_evaluate_2045b1a1 --> pilot_evaluate_2045b1a1_result["result"]
-  pilot_evaluate_test_a2ac06fc["pilot-evaluate.test"]
-  UserRequest --> pilot_evaluate_test_a2ac06fc
-  pilot_evaluate_test_a2ac06fc --> pilot_evaluate_test_a2ac06fc_result["result"]
-  init_bb54068a["init"]
-  UserRequest --> init_bb54068a
-  init_bb54068a --> init_bb54068a_result["result"]
-  index_context_de3ed39d["index-context"]
-  UserRequest --> index_context_de3ed39d
-  index_context_de3ed39d --> index_context_de3ed39d_result["result"]
-  context_ea7792a2["context"]
-  UserRequest --> context_ea7792a2
-  context_ea7792a2 --> context_ea7792a2_result["result"]
-  context_test_57aad306["context.test"]
-  UserRequest --> context_test_57aad306
-  context_test_57aad306 --> context_test_57aad306_result["result"]
-  types_1_4ecdf56e["types"]
-  UserRequest --> types_1_4ecdf56e
-  types_1_4ecdf56e --> types_1_4ecdf56e_result["result"]
-  validator_1_0c0621d8["validator"]
-  UserRequest --> validator_1_0c0621d8
-  validator_1_0c0621d8 --> validator_1_0c0621d8_result["result"]
-  types_6_1818fb91["types"]
-  UserRequest --> types_6_1818fb91
-  types_6_1818fb91 --> types_6_1818fb91_result["result"]
-  sanitize_af6a3bb0["sanitize"]
-  UserRequest --> sanitize_af6a3bb0
-  sanitize_af6a3bb0 --> sanitize_af6a3bb0_result["result"]
-  classDef dbNode fill:#0ea5e9,color:#fff
-  classDef decisionNode fill:#0284c7,color:#fff
 ```
 
 ## dependency
@@ -356,6 +263,8 @@ graph LR
   node_fs_df6b52af["node:fs"] --> init_test_cbba76a6
   node_fs_df6b52af["node:fs"] --> init_test_cbba76a6
   node_fs_df6b52af["node:fs"] --> init_test_cbba76a6
+  node_fs_df6b52af["node:fs"] --> init_test_cbba76a6
+  node_fs_df6b52af["node:fs"] --> init_test_cbba76a6
   node_fs_df6b52af["node:fs"] --> index_context_de3ed39d
   node_path_0e7d56ab["node:path"] --> index_context_de3ed39d
   node_os_e9717731["node:os"] --> index_context_test_1949ea6f
@@ -431,12 +340,6 @@ graph LR
   vitest_a9127f3d["vitest"] --> tracer_test_cb965d81
   vitest_a9127f3d["vitest"] --> orchestrator_test_18d2fe26
   vitest_a9127f3d["vitest"] --> finding_normalizer_test_d4639bd8
-  node_fs_df6b52af["node:fs"] --> validator_f82af321
-  node_path_0e7d56ab["node:path"] --> validator_f82af321
-  node_fs_df6b52af["node:fs"] --> validator_test_b4b482f8
-  node_os_e9717731["node:os"] --> validator_test_b4b482f8
-  node_path_0e7d56ab["node:path"] --> validator_test_b4b482f8
-  vitest_a9127f3d["vitest"] --> validator_test_b4b482f8
   picomatch_0bf97c7b["picomatch"] --> risk_tier_1_96b6ff91
   vitest_a9127f3d["vitest"] --> risk_tier_test_ae056367
   node_fs_df6b52af["node:fs"] --> detector_1_b37d288b
@@ -444,6 +347,12 @@ graph LR
   node_fs_df6b52af["node:fs"] --> metrics_capture_1d1a2c08
   node_path_0e7d56ab["node:path"] --> metrics_capture_1d1a2c08
   vitest_a9127f3d["vitest"] --> cardinality_test_c00e7edb
+  node_fs_df6b52af["node:fs"] --> validator_f82af321
+  node_path_0e7d56ab["node:path"] --> validator_f82af321
+  node_os_e9717731["node:os"] --> validator_test_b4b482f8
+  node_path_0e7d56ab["node:path"] --> validator_test_b4b482f8
+  vitest_a9127f3d["vitest"] --> validator_test_b4b482f8
+  vitest_a9127f3d["vitest"] --> sanitize_test_f3d34916
   node_fs_df6b52af["node:fs"] --> validator_1_0c0621d8
   node_path_0e7d56ab["node:path"] --> validator_1_0c0621d8
   node_fs_df6b52af["node:fs"] --> validator_test_1_c5015ca0
@@ -459,15 +368,13 @@ graph LR
   node_child_process_cb73900b["node:child_process"] --> branch_enforcer_acb749cd
   node_fs_df6b52af["node:fs"] --> branch_enforcer_acb749cd
   node_path_0e7d56ab["node:path"] --> branch_enforcer_acb749cd
-  node_fs_df6b52af["node:fs"] --> validator_2_744853f5
-  node_path_0e7d56ab["node:path"] --> validator_2_744853f5
-  node_os_e9717731["node:os"] --> validator_test_2_8dbecf99
-  node_path_0e7d56ab["node:path"] --> validator_test_2_8dbecf99
-  vitest_a9127f3d["vitest"] --> validator_test_2_8dbecf99
-  vitest_a9127f3d["vitest"] --> sanitize_test_f3d34916
   vitest_a9127f3d["vitest"] --> sha_test_5a5924fc
   vitest_a9127f3d["vitest"] --> mutation_queue_test_10b599e8
   _octokit_request_error_32e46e23["@octokit/request-error"] --> errors_be4bd567
+  vitest_a9127f3d["vitest"] --> comments_test_f8c9ae41
+  _octokit_plugin_retry_db489add["@octokit/plugin-retry"] --> client_948fe603
+  _octokit_plugin_throttling_c7312007["@octokit/plugin-throttling"] --> client_948fe603
+  _octokit_rest_c557ffd5["@octokit/rest"] --> client_948fe603
   style vitest_a9127f3d fill:#f59e0b,color:#fff
   style node_fs_df6b52af fill:#f59e0b,color:#fff
   style node_path_0e7d56ab fill:#f59e0b,color:#fff
@@ -481,24 +388,9 @@ graph LR
   style node_os_e9717731 fill:#f59e0b,color:#fff
   style picomatch_0bf97c7b fill:#f59e0b,color:#fff
   style _octokit_request_error_32e46e23 fill:#f59e0b,color:#fff
-```
-
-## events
-
-```mermaid
-flowchart TD
-  subgraph Channels["Event channels / queues"]
-    replay_ac203c98{{"replay"}}
-    pilot_rollback_00c1f82c{{"pilot-rollback"}}
-    pilot_rollback_test_e61d5a2b{{"pilot-rollback.test"}}
-    pilot_evaluate_test_a2ac06fc{{"pilot-evaluate.test"}}
-    init_bb54068a{{"init"}}
-    tracer_1e6243a2{{"tracer"}}
-    types_5_f869ec4b{{"types"}}
-    mutation_queue_ce5a530e{{"mutation-queue"}}
-    mutation_queue_test_10b599e8{{"mutation-queue.test"}}
-  end
-  classDef eventNode fill:#db2777,color:#fff
+  style _octokit_plugin_retry_db489add fill:#f59e0b,color:#fff
+  style _octokit_plugin_throttling_c7312007 fill:#f59e0b,color:#fff
+  style _octokit_rest_c557ffd5 fill:#f59e0b,color:#fff
 ```
 
 ## flow
@@ -526,144 +418,10 @@ flowchart TD
   ui_loop_test_f0eabc42 --> End
 ```
 
-## security
-
-```mermaid
-flowchart TD
-  Untrusted["Untrusted input"]
-  cli_99bb8840["cli"]
-  Untrusted --> cli_99bb8840
-  cli_dispatch_test_54c9f17b["cli-dispatch.test"]
-  Untrusted --> cli_dispatch_test_54c9f17b
-  verify_greptile_227190f7["verify-greptile"]
-  Untrusted --> verify_greptile_227190f7
-  search_test_0c66bc11["search.test"]
-  Untrusted --> search_test_0c66bc11
-  risk_tier_807f33f9["risk-tier"]
-  Untrusted --> risk_tier_807f33f9
-  review_gate_09b579c4["review-gate"]
-  Untrusted --> review_gate_09b579c4
-  review_gate_test_000e2ed6["review-gate.test"]
-  Untrusted --> review_gate_test_000e2ed6
-  preflight_gate_c543e5ba["preflight-gate"]
-  Untrusted --> preflight_gate_c543e5ba
-  policy_gate_213f7313["policy-gate"]
-  Untrusted --> policy_gate_213f7313
-  policy_gate_test_203a5261["policy-gate.test"]
-  Untrusted --> policy_gate_test_203a5261
-  init_bb54068a["init"]
-  Untrusted --> init_bb54068a
-  init_test_cbba76a6["init.test"]
-  Untrusted --> init_test_cbba76a6
-  evidence_verify_3b73c290["evidence-verify"]
-  Untrusted --> evidence_verify_3b73c290
-  evidence_verify_test_7373101d["evidence-verify.test"]
-  Untrusted --> evidence_verify_test_7373101d
-  diff_budget_9da0268d["diff-budget"]
-  Untrusted --> diff_budget_9da0268d
-  check_environment_fe68d4be["check-environment"]
-  Untrusted --> check_environment_fe68d4be
-  check_environment_test_5fa29c35["check-environment.test"]
-  Untrusted --> check_environment_test_5fa29c35
-  check_authz_fee242b1["check-authz"]
-  Untrusted --> check_authz_fee242b1
-  agent_first_throughput_integration_test_dc677cc4["agent-first-throughput.integration.test"]
-  Untrusted --> agent_first_throughput_integration_test_dc677cc4
-  types_1_4ecdf56e["types"]
-  Untrusted --> types_1_4ecdf56e
-  tracer_test_cb965d81["tracer.test"]
-  Untrusted --> tracer_test_cb965d81
-  orchestrator_11376b7e["orchestrator"]
-  Untrusted --> orchestrator_11376b7e
-  validator_f82af321["validator"]
-  Untrusted --> validator_f82af321
-  risk_tier_1_96b6ff91["risk-tier"]
-  Untrusted --> risk_tier_1_96b6ff91
-  risk_tier_test_ae056367["risk-tier.test"]
-  Untrusted --> risk_tier_test_ae056367
-  diff_budget_1_9f85eb1c["diff-budget"]
-  Untrusted --> diff_budget_1_9f85eb1c
-  sanitize_test_f3d34916["sanitize.test"]
-  Untrusted --> sanitize_test_f3d34916
-  branch_protect_b9d345eb["branch-protect"]
-  Untrusted --> branch_protect_b9d345eb
-  blast_radius_test_045450fc["blast-radius.test"]
-  Untrusted --> blast_radius_test_045450fc
-  validator_test_b4b482f8["validator.test"]
-  Untrusted --> validator_test_b4b482f8
-  types_6_1818fb91["types"]
-  Untrusted --> types_6_1818fb91
-  ui_loop_11660889["ui-loop"]
-  Untrusted --> ui_loop_11660889
-  branch_protect_test_c8d80aab["branch-protect.test"]
-  Untrusted --> branch_protect_test_c8d80aab
-  finding_normalizer_13f1559c["finding-normalizer"]
-  Untrusted --> finding_normalizer_13f1559c
-  sanitize_af6a3bb0["sanitize"]
-  Untrusted --> sanitize_af6a3bb0
-  sha_d600474b["sha"]
-  Untrusted --> sha_d600474b
-  sha_test_5a5924fc["sha.test"]
-  Untrusted --> sha_test_5a5924fc
-  mutation_queue_ce5a530e["mutation-queue"]
-  Untrusted --> mutation_queue_ce5a530e
-  mutation_queue_test_10b599e8["mutation-queue.test"]
-  Untrusted --> mutation_queue_test_10b599e8
-  errors_be4bd567["errors"]
-  Untrusted --> errors_be4bd567
-  classDef securityNode fill:#dc2626,color:#fff
-```
-
 ## sequence
 
 ```mermaid
 sequenceDiagram
   Note over User,App: No services detected
-```
-
-## user
-
-```mermaid
-flowchart LR
-  User(("User"))
-  cli_99bb8840["cli"]
-  User --> cli_99bb8840
-  cli_dispatch_test_54c9f17b["cli-dispatch.test"]
-  User --> cli_dispatch_test_54c9f17b
-  verify_greptile_227190f7["verify-greptile"]
-  User --> verify_greptile_227190f7
-  ui_loop_11660889["ui-loop"]
-  User --> ui_loop_11660889
-  ui_loop_test_f0eabc42["ui-loop.test"]
-  User --> ui_loop_test_f0eabc42
-  review_gate_09b579c4["review-gate"]
-  User --> review_gate_09b579c4
-  review_gate_test_000e2ed6["review-gate.test"]
-  User --> review_gate_test_000e2ed6
-  init_bb54068a["init"]
-  User --> init_bb54068a
-  init_test_cbba76a6["init.test"]
-  User --> init_test_cbba76a6
-  evidence_verify_3b73c290["evidence-verify"]
-  User --> evidence_verify_3b73c290
-  check_environment_fe68d4be["check-environment"]
-  User --> check_environment_fe68d4be
-  check_authz_fee242b1["check-authz"]
-  User --> check_authz_fee242b1
-  branch_protect_b9d345eb["branch-protect"]
-  User --> branch_protect_b9d345eb
-  branch_protect_test_c8d80aab["branch-protect.test"]
-  User --> branch_protect_test_c8d80aab
-  agent_first_throughput_integration_test_dc677cc4["agent-first-throughput.integration.test"]
-  User --> agent_first_throughput_integration_test_dc677cc4
-  plan_test_e7c3b920["plan.test"]
-  User --> plan_test_e7c3b920
-  brainstorm_test_78cf7a1e["brainstorm.test"]
-  User --> brainstorm_test_78cf7a1e
-  risk_tier_test_ae056367["risk-tier.test"]
-  User --> risk_tier_test_ae056367
-  errors_be4bd567["errors"]
-  User --> errors_be4bd567
-  classDef userNode fill:#16a34a,color:#fff
 ```
 
