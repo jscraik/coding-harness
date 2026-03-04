@@ -1,5 +1,15 @@
 # Release and change-control checks
 
+## Table of Contents
+
+- [Scope](#scope)
+- [Required pre-release checklist](#required-pre-release-checklist)
+- [Benchmark cadence requirements](#benchmark-cadence-requirements)
+- [Change-control flow](#change-control-flow)
+- [Rollback policy](#rollback-policy)
+- [Post-change validation](#post-change-validation)
+- [Release blockers](#release-blockers)
+
 ## Scope
 
 Use this document before milestones, release-tagged branches, or behavior-changing policy edits.
@@ -10,6 +20,16 @@ Use this document before milestones, release-tagged branches, or behavior-changi
 2. Confirm no open contradictions remain in operational docs.
 3. Verify command contract still matches `package.json` and lockfile.
 4. Ensure process docs (`docs/plans/*`, `FORJAMIE.md` where present) match the actual workflow used.
+5. Confirm benchmark evidence is fresh per the benchmark cadence policy.
+
+## Benchmark cadence requirements
+
+- Canonical benchmark instructions: `docs/benchmarks/README.md`.
+- Minimum cadence:
+  - One SWE track run per week on `main`.
+  - One fresh SWE track run before release tagging.
+- Store each run record in JSON that validates against
+  `docs/benchmarks/schema/benchmark-run.schema.json`.
 
 ## Change-control flow
 
@@ -36,4 +56,5 @@ Block release completion if:
 
 - Required validation commands are missing/unrunnable in CI environment,
 - Command authority conflicts remain unresolved,
-- High-risk behavior changed without rollback notes.
+- High-risk behavior changed without rollback notes,
+- Benchmark cadence evidence is missing for the release window.

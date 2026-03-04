@@ -10,7 +10,23 @@
 		"timeoutSeconds": 600,
 		"timeoutAction": "fail",
 		"requiredChecks": ["security-scan", "dependency-review", "actions-pinning"],
-		"enforceReviewerIndependence": false
+		"enforceReviewerIndependence": true
+	},
+	"branchProtection": {
+		"requiredChecks": [
+			"pr-template",
+			"risk-policy-gate",
+			"dependency-review",
+			"actions-pinning",
+			"lint",
+			"typecheck",
+			"test",
+			"audit",
+			"check",
+			"memory",
+			"security-scan",
+			"Greptile Review"
+		]
 	},
 	"evidencePolicy": {
 		"requiredFor": [],

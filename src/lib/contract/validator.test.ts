@@ -151,6 +151,64 @@ describe("validateContract", () => {
 		});
 	});
 
+	describe("branchProtection", () => {
+		it("accepts branchProtection with requiredChecks", () => {
+			const result = validateContract({
+				version: "1.0",
+				branchProtection: {
+					requiredChecks: ["security-scan", "Greptile Review"],
+				},
+			});
+			expect(result.success).toBe(true);
+		});
+
+		it("rejects branchProtection when requiredChecks is not an array", () => {
+			const result = validateContract({
+				version: "1.0",
+				branchProtection: {
+					requiredChecks: "security-scan",
+				},
+			});
+			expect(result.success).toBe(false);
+			expect(result.errors[0]?.path).toBe("branchProtection");
+		});
+
+		it("rejects when reviewPolicy.requiredChecks is not a subset of branchProtection.requiredChecks", () => {
+			const result = validateContract({
+				version: "1.0",
+				reviewPolicy: {
+					timeoutSeconds: 600,
+					timeoutAction: "fail",
+					requiredChecks: ["security-scan", "Codex Review"],
+				},
+				branchProtection: {
+					requiredChecks: ["security-scan", "Greptile Review"],
+				},
+			});
+			expect(result.success).toBe(false);
+			expect(
+				result.errors.some(
+					(error) => error.path === "reviewPolicy.requiredChecks",
+				),
+			).toBe(true);
+		});
+
+		it("accepts when reviewPolicy.requiredChecks is a subset of branchProtection.requiredChecks", () => {
+			const result = validateContract({
+				version: "1.0",
+				reviewPolicy: {
+					timeoutSeconds: 600,
+					timeoutAction: "fail",
+					requiredChecks: ["security-scan"],
+				},
+				branchProtection: {
+					requiredChecks: ["security-scan", "Greptile Review"],
+				},
+			});
+			expect(result.success).toBe(true);
+		});
+	});
+
 	describe("runtimePolicy", () => {
 		it("accepts runtimePolicy with optional createIssueOnAgentFindings", () => {
 			const result = validateContract({

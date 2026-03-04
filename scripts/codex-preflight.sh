@@ -1,5 +1,33 @@
 #!/usr/bin/env bash
-set -euo pipefail
+
+if [[ -n "${ZSH_VERSION:-}" && -z "${BASH_VERSION:-}" ]]; then
+  _CODEX_PREFLIGHT_SOURCE="$(eval 'printf "%s" "${(%):-%x}"')"
+  _CODEX_PREFLIGHT_SCRIPT="$(
+    cd "$(dirname -- "${_CODEX_PREFLIGHT_SOURCE}")" && pwd -P
+  )/$(basename -- "${_CODEX_PREFLIGHT_SOURCE}")"
+
+  preflight_repo() {
+    command bash "${_CODEX_PREFLIGHT_SCRIPT}" "$@"
+  }
+
+  preflight_js() {
+    preflight_repo "${1:-}" "git,bash,sed,rg,node,npm" "${2:-AGENTS.md,package.json,docs,docs/plans}"
+  }
+
+  preflight_rust() {
+    preflight_repo "${1:-}" "git,bash,sed,rg,python3,cargo" "${2:-AGENTS.md,Cargo.toml,docs,docs/plans}"
+  }
+
+  preflight_py() {
+    preflight_repo "${1:-}" "git,bash,sed,rg,python3" "${2:-AGENTS.md,pyproject.toml,docs,docs/plans}"
+  }
+
+  return 0 2>/dev/null || exit 0
+fi
+
+if [[ -n "${BASH_VERSION:-}" ]] && [[ "${BASH_SOURCE[0]}" == "$0" ]]; then
+  set -euo pipefail
+fi
 
 preflight_repo() {
   local expected_repo="${1:-}"

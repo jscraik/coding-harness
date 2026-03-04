@@ -1,3 +1,4 @@
+import { loadContract } from "../lib/contract/loader.js";
 import {
 	GitHubClient,
 	type Ruleset,
@@ -6,23 +7,12 @@ import {
 	type RulesetSummary,
 } from "../lib/github/client.js";
 import { sanitizeError } from "../lib/input/sanitize.js";
+import { BRANCH_PROTECTION_REQUIRED_CHECKS } from "../lib/policy/required-checks.js";
 
 const DEFAULT_RULESET_NAME = "protect";
 const DEFAULT_BRANCH = "main";
-const DEFAULT_REQUIRED_CHECKS = [
-	"pr-template",
-	"risk-policy-gate",
-	"dependency-review",
-	"actions-pinning",
-	"lint",
-	"typecheck",
-	"test",
-	"audit",
-	"check",
-	"memory",
-	"security-scan",
-	"Greptile Review",
-];
+const DEFAULT_CONTRACT_PATH = "harness.contract.json";
+const DEFAULT_REQUIRED_CHECKS = [...BRANCH_PROTECTION_REQUIRED_CHECKS];
 
 export const EXIT_CODES = {
 	SUCCESS: 0,
@@ -38,6 +28,7 @@ export interface BranchProtectOptions {
 	repo?: string;
 	branch?: string;
 	rulesetName?: string;
+	contractPath?: string;
 	requiredChecks?: string[];
 	requiredApprovingReviewCount?: number;
 	dryRun?: boolean;
@@ -83,6 +74,7 @@ export async function runBranchProtect(
 	const repo = options.repo?.trim();
 	const branch = options.branch?.trim() || DEFAULT_BRANCH;
 	const rulesetName = options.rulesetName?.trim() || DEFAULT_RULESET_NAME;
+	const contractPath = options.contractPath?.trim() || DEFAULT_CONTRACT_PATH;
 
 	if (!token) {
 		return {
@@ -104,7 +96,12 @@ export async function runBranchProtect(
 		};
 	}
 
-	const requestedChecks = normalizeChecks(options.requiredChecks);
+	const requestedChecks = normalizeChecks(
+		options.requiredChecks ??
+			resolveContractRequiredChecks({
+				contractPath,
+			}),
+	);
 	if (requestedChecks.length === 0) {
 		return {
 			ok: false,
@@ -505,6 +502,29 @@ function normalizeChecks(checks: string[] | undefined): string[] {
 		}
 	}
 	return Array.from(deduped);
+}
+
+interface ResolveContractRequiredChecksInput {
+	contractPath: string;
+}
+
+function resolveContractRequiredChecks(
+	input: ResolveContractRequiredChecksInput,
+): string[] | undefined {
+	try {
+		const contract = loadContract(input.contractPath);
+		const branchChecks = contract.branchProtection?.requiredChecks;
+		if (Array.isArray(branchChecks) && branchChecks.length > 0) {
+			return branchChecks;
+		}
+		const legacyReviewChecks = contract.reviewPolicy?.requiredChecks;
+		if (Array.isArray(legacyReviewChecks) && legacyReviewChecks.length > 0) {
+			return legacyReviewChecks;
+		}
+		return undefined;
+	} catch {
+		return undefined;
+	}
 }
 
 function getRule(rules: RulesetRule[], type: string): RulesetRule | undefined {

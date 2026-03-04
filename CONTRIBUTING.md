@@ -13,6 +13,7 @@
 - [Greptile strictness policy](#greptile-strictness-policy)
 - [Greptile training and feedback loop](#greptile-training-and-feedback-loop)
 - [Recommended security scanner baseline](#recommended-security-scanner-baseline)
+- [Benchmark cadence and artifacts](#benchmark-cadence-and-artifacts)
 - [One-click review workflow](#one-click-review-workflow)
 - [Credential-safe evidence snippets](#credential-safe-evidence-snippets)
 - [Recommended GitHub branch protection settings](#recommended-github-branch-protection-settings)
@@ -164,6 +165,16 @@ Recommended policy:
 - Keep scanner binaries available in local development environments and CI runners.
 - Run scanner checks in CI on pull requests and pushes to protected branches.
 - Treat scanner findings as merge blockers unless explicitly waived with rationale.
+- Keep the canonical `security-scan` workflow aligned to this exact trio (`gitleaks`, `trivy`, `semgrep`).
+
+## Benchmark cadence and artifacts
+
+Use benchmark artifacts as release evidence:
+
+- Run the SWE benchmark track at least weekly on `main`.
+- Run the benchmark track again before release tags.
+- Store run artifacts using `scripts/benchmarks/run-swe-track.sh` and validate output
+  against `docs/benchmarks/schema/benchmark-run.schema.json`.
 
 ## One-click review workflow
 

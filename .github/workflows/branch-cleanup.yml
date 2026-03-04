@@ -37,8 +37,9 @@ jobs:
           REPO: ${{ github.repository }}
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
+          command -v rg >/dev/null 2>&1 || { echo "rg is required on the runner"; exit 2; }
           git fetch --prune
-          for branch in $(git branch -r --merged origin/main | grep -v 'main\|master\|HEAD' | sed 's/origin\///'); do
+          for branch in $(git branch -r --merged origin/main | rg -v 'main|master|HEAD' | sed 's/origin\///'); do
             last_commit=$(git log -1 --format=%ci "origin/$branch" 2>/dev/null || echo "")
             if [[ -n "$last_commit" ]]; then
               age_days=$(( ( $(date +%s) - $(date -d "$last_commit" +%s) ) / 86400 ))

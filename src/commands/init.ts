@@ -18,6 +18,10 @@ import {
 	type HarnessContract,
 } from "../lib/contract/types.js";
 import { sanitizeError } from "../lib/input/sanitize.js";
+import {
+	BRANCH_PROTECTION_REQUIRED_CHECKS,
+	REVIEW_POLICY_REQUIRED_CHECKS,
+} from "../lib/policy/required-checks.js";
 import { getVersion } from "../lib/version.js";
 
 // Exit codes for programmatic consumption
@@ -100,8 +104,13 @@ export interface ContractSchema {
 		| {
 				timeoutSeconds: number;
 				timeoutAction: "fail" | "warn";
+				requiredChecks?: string[];
+				enforceReviewerIndependence?: boolean;
 		  }
 		| undefined;
+	branchProtection?: {
+		requiredChecks?: string[];
+	};
 	evidencePolicy?: {
 		requiredFor: unknown[];
 		allowedTypes: unknown[];
@@ -195,6 +204,9 @@ function addSchemaDefaults(contract: ContractSchema): ContractSchema {
 		gapCasePolicy:
 			contract.gapCasePolicy ??
 			(DEFAULT_CONTRACT.gapCasePolicy as HarnessContract["gapCasePolicy"]),
+		branchProtection:
+			contract.branchProtection ??
+			(DEFAULT_CONTRACT.branchProtection as HarnessContract["branchProtection"]),
 	} as ContractSchema;
 }
 
@@ -525,12 +537,11 @@ const TEMPLATES: Template[] = [
 					reviewPolicy: {
 						timeoutSeconds: 600,
 						timeoutAction: "fail" as const,
-						requiredChecks: [
-							"security-scan",
-							"dependency-review",
-							"actions-pinning",
-						],
-						enforceReviewerIndependence: false,
+						requiredChecks: [...REVIEW_POLICY_REQUIRED_CHECKS],
+						enforceReviewerIndependence: true,
+					},
+					branchProtection: {
+						requiredChecks: [...BRANCH_PROTECTION_REQUIRED_CHECKS],
 					},
 					evidencePolicy: {
 						requiredFor: [],

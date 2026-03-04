@@ -13,6 +13,7 @@ Coding Harness is a TypeScript control plane for agentic development and policy-
 - [Packaged Codex skill](#packaged-codex-skill)
 - [Quality checks](#quality-checks)
 - [Recommended security scanner baseline](#recommended-security-scanner-baseline)
+- [Benchmark track (SWE)](#benchmark-track-swe)
 - [Issue reporting (internal)](#issue-reporting-internal)
 - [CLI command index](#cli-command-index)
 - [Release flow](#release-flow)
@@ -57,11 +58,19 @@ When Harness is installed in a repository, recommend installing these scanners i
 
 - Gitleaks
 - Trivy
-- Senvar (if your organization uses it)
 - Semgrep
 
-These should be available in local dev and CI to keep security checks consistent.
-Harness `init` templates enforce this via a required `security-scan` PR check.
+These scanners should be available in local dev and CI to keep security checks consistent.
+Harness `init` templates enforce this baseline via the required `security-scan` check.
+
+## Benchmark track (SWE)
+
+Benchmark track setup, schema, and run script live in [`docs/benchmarks/README.md`](docs/benchmarks/README.md).
+
+Recommended cadence:
+
+- Weekly benchmark run on `main`.
+- Pre-release benchmark run before cutting tags.
 
 ## Issue reporting (internal)
 
