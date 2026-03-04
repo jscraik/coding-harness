@@ -8,6 +8,7 @@ const EXPECTED_TEMPLATE_PATHS = [
 	"harness.contract.json",
 	"memory.json",
 	".github/workflows/pr-pipeline.yml",
+	".github/workflows/secret-scan.yml",
 	"CONTRIBUTING.md",
 	".github/PULL_REQUEST_TEMPLATE.md",
 	"scripts/validate-commit-msg.js",
@@ -242,7 +243,7 @@ describe("runInit", () => {
 			expect(content.branchProtection.requiredChecks).toContain(
 				"security-scan",
 			);
-			expect(content.branchProtection.requiredChecks).toContain(
+			expect(content.branchProtection.requiredChecks).not.toContain(
 				"Greptile Review",
 			);
 			expect(content.runtimePolicy.createIssueOnAgentFindings).toBe(true);

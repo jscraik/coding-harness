@@ -370,7 +370,6 @@ describe("runBranchProtect", () => {
 				{ context: "check" },
 				{ context: "memory" },
 				{ context: "security-scan" },
-				{ context: "Greptile Review" },
 			],
 		});
 	});
@@ -912,7 +911,7 @@ describe("runBranchProtect", () => {
 		});
 	});
 
-	it("falls back to target branch include when existing includes are empty", async () => {
+	it("preserves global scope when existing includes are empty", async () => {
 		const listRulesets = vi.fn(
 			async () =>
 				[
@@ -978,6 +977,6 @@ describe("runBranchProtect", () => {
 
 		expect(result.ok).toBe(true);
 		const payload = updateRuleset.mock.calls[0]?.[1];
-		expect(payload?.conditions?.ref_name?.include).toEqual(["refs/heads/main"]);
+		expect(payload?.conditions?.ref_name?.include).toEqual([]);
 	});
 });

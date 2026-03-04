@@ -89,7 +89,7 @@ jobs:
             --sha "${{ steps.resolve-pr.outputs.head_sha }}" \
             --check "Greptile Review" \
             --contract "harness.contract.json" \
-            --bot-login "${{ github.actor }}" \
+            --bot-login "greptile-apps" \
             --auto-resolve-bot-threads \
             --json
 

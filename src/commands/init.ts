@@ -847,9 +847,11 @@ jobs:
     if: ${"${{ always() && (github.event_name == 'merge_group' || needs.pr-template.result == 'success') }}"}
     steps:
       - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
+        with:
+          fetch-depth: 0
       - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
         with:
-          node-version: "20"
+          node-version: "24"
       - name: Enable corepack
         run: corepack enable
       - name: Install dependencies
@@ -869,6 +871,7 @@ jobs:
           fi
           pnpm exec tsx src/cli.ts preflight-gate \\
             --contract harness.contract.json \\
+            --max-tier medium \\
             --files "${"${CHANGED_FILES}"}" \\
             --json
 
@@ -921,7 +924,7 @@ jobs:
       - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
       - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
         with:
-          node-version: "20"
+          node-version: "24"
       - name: Enable corepack
         run: corepack enable
       - name: Install dependencies
@@ -937,7 +940,7 @@ jobs:
       - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
       - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
         with:
-          node-version: "20"
+          node-version: "24"
       - name: Enable corepack
         run: corepack enable
       - name: Install dependencies
@@ -953,7 +956,7 @@ jobs:
       - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
       - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
         with:
-          node-version: "20"
+          node-version: "24"
       - name: Enable corepack
         run: corepack enable
       - name: Install dependencies
@@ -969,7 +972,7 @@ jobs:
       - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
       - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
         with:
-          node-version: "20"
+          node-version: "24"
       - name: Enable corepack
         run: corepack enable
       - name: Install dependencies
@@ -985,7 +988,7 @@ jobs:
       - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
       - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
         with:
-          node-version: "20"
+          node-version: "24"
       - name: Enable corepack
         run: corepack enable
       - name: Install dependencies
@@ -1003,6 +1006,59 @@ jobs:
         run: ${memoryValidateCommand}
 `;
 		},
+	},
+	{
+		path: ".github/workflows/secret-scan.yml",
+		render: () => `name: security-scan
+
+on:
+  push:
+    branches: ["main"]
+  pull_request:
+  merge_group:
+
+permissions:
+  contents: read
+
+jobs:
+  secret-scan:
+    name: security-scan
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
+        with:
+          fetch-depth: 0
+
+      - name: Gitleaks Scan
+        uses: gitleaks/gitleaks-action@ff98106e4c7b2bc287b24eaf42907196329070c7 # v2
+        env:
+          GITHUB_TOKEN: ${"${{ secrets.GITHUB_TOKEN }}"}
+
+      - name: Trivy Scan
+        uses: aquasecurity/trivy-action@97e0b3872f55f89b95b2f65b3dbab56962816478 # 0.34.2
+        with:
+          scan-type: fs
+          scan-ref: .
+          scanners: vuln
+          ignore-unfixed: true
+          severity: HIGH,CRITICAL
+          exit-code: 1
+
+      - name: Semgrep Scan
+        run: |
+          set -euo pipefail
+          python3 -m venv "${"${RUNNER_TEMP}"}/semgrep-venv"
+          "${"${RUNNER_TEMP}"}/semgrep-venv/bin/python" -m pip install --quiet --upgrade pip semgrep
+          "${"${RUNNER_TEMP}"}/semgrep-venv/bin/semgrep" scan \\
+            --config p/security-audit \\
+            --error \\
+            --severity ERROR \\
+            --exclude node_modules \\
+            --exclude dist \\
+            .
+`,
 	},
 	{
 		path: "CONTRIBUTING.md",
@@ -1121,7 +1177,7 @@ Configure GitHub branch protection (or rulesets) on \`main\`:
   - \`--token <PAT>\` or env \`GITHUB_TOKEN\` / \`GITHUB_PERSONAL_ACCESS_TOKEN\`
 - Require pull request before merge.
 - Require at least one approval.
-- Require status checks: \`pr-template\`, \`risk-policy-gate\`, \`dependency-review\`, \`actions-pinning\`, \`lint\`, \`typecheck\`, \`test\`, \`audit\`, \`check\`, \`memory\`, \`security-scan\`, \`Greptile Review\`.
+- Require status checks: \`pr-template\`, \`risk-policy-gate\`, \`dependency-review\`, \`actions-pinning\`, \`lint\`, \`typecheck\`, \`test\`, \`audit\`, \`check\`, \`memory\`, \`security-scan\`.
 - Require workflows to pin third-party actions to full commit SHAs.
 - Configure required checks workflows to run on both \`pull_request\` and \`merge_group\` when using merge queue.
 - Block direct pushes to \`main\`.
