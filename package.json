@@ -1,7 +1,13 @@
 {
 	"name": "@brainwav/coding-harness",
-	"version": "0.5.7",
-	"files": ["dist", "README.md", "CHANGELOG.md", "LICENSE"],
+	"version": "0.6.0",
+	"files": [
+		"dist",
+		"README.md",
+		"CHANGELOG.md",
+		"LICENSE",
+		".agents/skills/coding-harness"
+	],
 	"type": "module",
 	"description": "Control plane for agentic development",
 	"repository": {
@@ -26,7 +32,6 @@
 		"typecheck": "tsc --noEmit",
 		"test": "vitest run",
 		"test:watch": "vitest",
-		"test:coverage": "vitest run --coverage",
 		"test:deep": "pnpm check && pnpm test:artifacts",
 		"build": "tsc && chmod +x dist/cli.js",
 		"prepublishOnly": "pnpm check && pnpm build",

@@ -1,6 +1,7 @@
 import type {
 	BlastRadiusRule,
 	BlastRadiusRulesMode,
+	BranchProtectionPolicy,
 	DiffBudget,
 	DocsDriftRules,
 	EvidencePolicy,
@@ -61,6 +62,7 @@ const VALID_TOP_LEVEL_KEYS = [
 	"pilotRollbackPolicy",
 	"pilotAuthzPolicy",
 	"loopStageContracts",
+	"branchProtection",
 ] as const;
 const VALID_UI_LOOP_POLICY_KEYS = [
 	"fastCommand",
@@ -239,6 +241,18 @@ function isValidTimeoutAction(value: unknown): value is TimeoutAction {
 	);
 }
 
+function isValidRequiredChecks(value: unknown): value is string[] {
+	if (!Array.isArray(value)) {
+		return false;
+	}
+	for (const check of value) {
+		if (typeof check !== "string" || check.trim().length === 0) {
+			return false;
+		}
+	}
+	return true;
+}
+
 function isValidReviewPolicy(value: unknown): value is ReviewPolicy {
 	if (!isPlainObject(value)) return false;
 	const policy = value as Record<string, unknown>;
@@ -273,13 +287,8 @@ function isValidReviewPolicy(value: unknown): value is ReviewPolicy {
 
 	// Validate requiredChecks (optional)
 	if (policy.requiredChecks !== undefined) {
-		if (!Array.isArray(policy.requiredChecks)) {
+		if (!isValidRequiredChecks(policy.requiredChecks)) {
 			return false;
-		}
-		for (const check of policy.requiredChecks) {
-			if (typeof check !== "string" || check.trim().length === 0) {
-				return false;
-			}
 		}
 	}
 
@@ -287,6 +296,29 @@ function isValidReviewPolicy(value: unknown): value is ReviewPolicy {
 	if (
 		policy.enforceReviewerIndependence !== undefined &&
 		typeof policy.enforceReviewerIndependence !== "boolean"
+	) {
+		return false;
+	}
+
+	return true;
+}
+
+function isValidBranchProtection(
+	value: unknown,
+): value is BranchProtectionPolicy {
+	if (!isPlainObject(value)) return false;
+	const policy = value as Record<string, unknown>;
+
+	const unknownKeys = Object.keys(policy).filter(
+		(key) => !["requiredChecks"].includes(key),
+	);
+	if (unknownKeys.length > 0) {
+		return false;
+	}
+
+	if (
+		policy.requiredChecks !== undefined &&
+		!isValidRequiredChecks(policy.requiredChecks)
 	) {
 		return false;
 	}
@@ -1413,6 +1445,24 @@ export function validateContract(
 		}
 	}
 
+	// Validate branchProtection (optional)
+	let branchProtection: BranchProtectionPolicy | undefined;
+	if ("branchProtection" in obj && obj.branchProtection !== undefined) {
+		if (!isValidBranchProtection(obj.branchProtection)) {
+			errors.push({
+				code: ValidationErrorCode.INVALID_VALUE,
+				path: "branchProtection",
+				message:
+					"branchProtection must include optional requiredChecks (string array)",
+				expected: "{ requiredChecks?: string[] }",
+				received: JSON.stringify(obj.branchProtection),
+				fix: "Ensure branchProtection only contains requiredChecks with non-empty string values",
+			});
+		} else {
+			branchProtection = obj.branchProtection as BranchProtectionPolicy;
+		}
+	}
+
 	// Validate gapCasePolicy (optional)
 	let gapCasePolicy: GapCasePolicy | undefined;
 	if ("gapCasePolicy" in obj && obj.gapCasePolicy !== undefined) {
@@ -1582,6 +1632,27 @@ export function validateContract(
 		}
 	}
 
+	if (
+		reviewPolicy?.requiredChecks !== undefined &&
+		branchProtection?.requiredChecks !== undefined
+	) {
+		const branchProtectionChecks = new Set(branchProtection.requiredChecks);
+		const missingChecks = reviewPolicy.requiredChecks.filter(
+			(check) => !branchProtectionChecks.has(check),
+		);
+		if (missingChecks.length > 0) {
+			errors.push({
+				code: ValidationErrorCode.INVALID_VALUE,
+				path: "reviewPolicy.requiredChecks",
+				message:
+					"reviewPolicy.requiredChecks must be a subset of branchProtection.requiredChecks",
+				expected: `subset of ${JSON.stringify(branchProtection.requiredChecks)}`,
+				received: JSON.stringify(reviewPolicy.requiredChecks),
+				fix: `Remove unsupported reviewPolicy checks: ${missingChecks.join(", ")}`,
+			});
+		}
+	}
+
 	if (errors.length > 0) {
 		return { success: false, errors };
 	}
@@ -1609,6 +1680,7 @@ export function validateContract(
 			pilotGapCasePolicy,
 			pilotRollbackPolicy,
 			pilotAuthzPolicy,
+			branchProtection,
 			blastRadiusRules,
 			blastRadiusRulesMode,
 		},

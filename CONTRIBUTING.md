@@ -13,6 +13,7 @@
 - [Greptile strictness policy](#greptile-strictness-policy)
 - [Greptile training and feedback loop](#greptile-training-and-feedback-loop)
 - [Recommended security scanner baseline](#recommended-security-scanner-baseline)
+- [Benchmark cadence and artifacts](#benchmark-cadence-and-artifacts)
 - [One-click review workflow](#one-click-review-workflow)
 - [Credential-safe evidence snippets](#credential-safe-evidence-snippets)
 - [Recommended GitHub branch protection settings](#recommended-github-branch-protection-settings)
@@ -80,6 +81,8 @@ For behavior-affecting changes:
 - `pnpm test`
 - `pnpm audit`
 - `pnpm check`
+- `dependency-review` GitHub Actions check
+- `actions-pinning` GitHub Actions check
 - `security-scan` GitHub Actions check (gitleaks + trivy + semgrep)
 
 For docs-only edits, run at minimum:
@@ -162,6 +165,16 @@ Recommended policy:
 - Keep scanner binaries available in local development environments and CI runners.
 - Run scanner checks in CI on pull requests and pushes to protected branches.
 - Treat scanner findings as merge blockers unless explicitly waived with rationale.
+- Keep the canonical `security-scan` workflow aligned to this exact trio (`gitleaks`, `trivy`, `semgrep`).
+
+## Benchmark cadence and artifacts
+
+Use benchmark artifacts as release evidence:
+
+- Run the SWE benchmark track at least weekly on `main`.
+- Run the benchmark track again before release tags.
+- Store run artifacts using `scripts/benchmarks/run-swe-track.sh` and validate output
+  against `docs/benchmarks/schema/benchmark-run.schema.json`.
 
 ## One-click review workflow
 
@@ -193,6 +206,16 @@ Use this checklist per task:
   - ❌ expanded token values
 - If a token value is ever exposed in commit/PR text, treat it as compromised: rotate/revoke, rewrite history where applicable, and document remediation in the issue/PR.
 
+## Credential-safe evidence snippets
+
+- Never use command substitution in commit messages, PR bodies, or evidence notes for secrets.
+- Do **not** use `$(gh auth token)` (or similar) inside `git commit -m ...` / `gh pr create --body ...`.
+- Use placeholders in text output:
+  - ✅ `$GITHUB_TOKEN`
+  - ✅ `${GITHUB_TOKEN}`
+  - ❌ expanded token values
+- If a token value is ever exposed in commit/PR text, treat it as compromised: rotate/revoke, rewrite history where applicable, and document remediation in the issue/PR.
+
 ## Recommended GitHub branch protection settings
 
 Configure repository settings on `main` to make the workflow enforceable:
@@ -205,13 +228,19 @@ Configure repository settings on `main` to make the workflow enforceable:
 - Require at least one review before merge.
 - Require status checks:
   - `pr-template`
-  - `pnpm lint`
-  - `pnpm typecheck`
-  - `pnpm test`
-  - `pnpm audit`
-  - `pnpm check`
-  - `security-scan`
+  - `risk-policy-gate`
+  - `dependency-review`
+  - `actions-pinning`
+  - `lint`
+  - `typecheck`
+  - `test`
+  - `audit`
+  - `check`
   - `memory`
+  - `security-scan`
+  - `Greptile Review`
+- Require workflows to pin third-party actions to full commit SHAs.
+- Configure required checks workflows to run on both `pull_request` and `merge_group` when using merge queue.
 - Dismiss stale approvals when new commits are pushed.
 - Restrict pushes to `main` to `main` repository settings/admin workflows only.
 - Optionally require signed commits if your policy requires it.

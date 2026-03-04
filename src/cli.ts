@@ -234,6 +234,10 @@ function printUsage(): void {
 	console.info("  --pr             Pull request number (required)");
 	console.info("  --sha            Head SHA to verify (required)");
 	console.info("  --check          Check run name to look for");
+	console.info("  --bot-login      Bot login for rerun-comment dedupe");
+	console.info(
+		"  --auto-resolve-bot-threads  Resolve unresolved bot-only threads after successful rerun",
+	);
 	console.info("  --contract       Path to harness.contract.json");
 	console.info("  --json           Output as JSON");
 	console.info("");
@@ -716,12 +720,16 @@ export function run(args: string[]): void {
 	if (command === "review-gate") {
 		// Parse review-gate options
 		const jsonFlag = args.includes("--json");
+		const autoResolveBotThreadsFlag = args.includes(
+			"--auto-resolve-bot-threads",
+		);
 		const tokenIndex = args.indexOf("--token");
 		const ownerIndex = args.indexOf("--owner");
 		const repoIndex = args.indexOf("--repo");
 		const prIndex = args.indexOf("--pr");
 		const shaIndex = args.indexOf("--sha");
 		const checkIndex = args.indexOf("--check");
+		const botLoginIndex = args.indexOf("--bot-login");
 		const contractIndex = args.indexOf("--contract");
 
 		const options: {
@@ -731,6 +739,8 @@ export function run(args: string[]): void {
 			prNumber: number;
 			headSha: string;
 			checkName: string;
+			botLogin?: string;
+			autoResolveBotThreads?: boolean;
 			contractPath: string;
 			json?: boolean;
 		} = {
@@ -759,6 +769,11 @@ export function run(args: string[]): void {
 		if (shaArg) options.headSha = shaArg;
 		const checkArg = getFlagValue(args, checkIndex);
 		if (checkArg) options.checkName = checkArg;
+		const botLoginArg = getFlagValue(args, botLoginIndex);
+		if (botLoginArg) options.botLogin = botLoginArg;
+		if (autoResolveBotThreadsFlag) {
+			options.autoResolveBotThreads = true;
+		}
 		const contractArg = getFlagValue(args, contractIndex);
 		if (contractArg) options.contractPath = contractArg;
 

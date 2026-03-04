@@ -247,7 +247,7 @@ function evaluateRequiredChecks(
 	const blockers: string[] = [];
 
 	for (const checkName of requiredChecks) {
-		const checkRun = checkRuns.find((run) => run.name === checkName);
+		const checkRun = resolveRequiredCheckRun(checkRuns, checkName);
 		if (!checkRun) {
 			blockers.push(
 				`Required check '${checkName}' was not found for current HEAD SHA`,
@@ -268,6 +268,19 @@ function evaluateRequiredChecks(
 	}
 
 	return blockers;
+}
+
+function resolveRequiredCheckRun(
+	checkRuns: CheckRun[],
+	checkName: string,
+): CheckRun | undefined {
+	const matches = checkRuns.filter((run) => run.name === checkName);
+	if (matches.length === 0) {
+		return undefined;
+	}
+	return matches.reduce((latest, current) =>
+		current.id > latest.id ? current : latest,
+	);
 }
 
 /**

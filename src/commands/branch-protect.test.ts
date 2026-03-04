@@ -10,15 +10,42 @@ vi.mock("../lib/github/client.js", () => ({
 	GitHubClient: vi.fn(),
 }));
 
+vi.mock("../lib/contract/loader.js", () => ({
+	loadContract: vi.fn(),
+	ContractLoadError: class ContractLoadError extends Error {},
+}));
+
+import { loadContract } from "../lib/contract/loader.js";
 import { GitHubClient } from "../lib/github/client.js";
 
 const mockGitHubClient = vi.mocked(GitHubClient);
+const mockLoadContract = vi.mocked(loadContract);
 
 describe("runBranchProtect", () => {
 	beforeEach(() => {
 		vi.clearAllMocks();
 		vi.stubEnv("GITHUB_TOKEN", "");
 		vi.stubEnv("GITHUB_PERSONAL_ACCESS_TOKEN", "");
+		mockLoadContract.mockReturnValue({
+			version: "1.0",
+			riskTierRules: {},
+			branchProtection: {
+				requiredChecks: [
+					"pr-template",
+					"risk-policy-gate",
+					"dependency-review",
+					"actions-pinning",
+					"lint",
+					"typecheck",
+					"test",
+					"audit",
+					"check",
+					"memory",
+					"security-scan",
+					"Greptile Review",
+				],
+			},
+		});
 	});
 
 	afterEach(() => {
@@ -87,6 +114,8 @@ describe("runBranchProtect", () => {
 		);
 		expect(pullRequestRule?.parameters).toMatchObject({
 			required_approving_review_count: 1,
+			require_code_owner_review: true,
+			require_last_push_approval: true,
 		});
 	});
 
@@ -185,12 +214,121 @@ describe("runBranchProtect", () => {
 		expect(payload?.conditions?.ref_name?.include).toEqual(["refs/heads/main"]);
 	});
 
-	it("uses harness baseline checks by default", async () => {
+	it("uses branchProtection.requiredChecks from contract by default", async () => {
 		const listRulesets = vi.fn(async () => [] as RulesetSummary[]);
 		const createRuleset = vi.fn(
 			async (payload: RulesetPayload) =>
 				({
 					id: 55,
+					name: payload.name,
+					target: payload.target,
+					enforcement: payload.enforcement,
+					bypass_actors: payload.bypass_actors,
+					conditions: payload.conditions,
+					rules: payload.rules,
+				}) as Ruleset,
+		);
+
+		mockGitHubClient.mockImplementation(
+			() =>
+				({
+					listRulesets,
+					createRuleset,
+				}) as unknown as GitHubClient,
+		);
+
+		const result = await runBranchProtect({
+			token: "token",
+			owner: "octo",
+			repo: "harness",
+		});
+
+		expect(result.ok).toBe(true);
+		expect(mockLoadContract).toHaveBeenCalledWith("harness.contract.json");
+		const payload = createRuleset.mock.calls[0]?.[0];
+		const requiredRule = payload?.rules.find(
+			(rule) => rule.type === "required_status_checks",
+		);
+		expect(requiredRule?.parameters).toMatchObject({
+			required_status_checks: [
+				{ context: "pr-template" },
+				{ context: "risk-policy-gate" },
+				{ context: "dependency-review" },
+				{ context: "actions-pinning" },
+				{ context: "lint" },
+				{ context: "typecheck" },
+				{ context: "test" },
+				{ context: "audit" },
+				{ context: "check" },
+				{ context: "memory" },
+				{ context: "security-scan" },
+				{ context: "Greptile Review" },
+			],
+		});
+	});
+
+	it("falls back to legacy reviewPolicy.requiredChecks when branchProtection is absent", async () => {
+		mockLoadContract.mockReturnValue({
+			version: "1.0",
+			riskTierRules: {},
+			reviewPolicy: {
+				timeoutSeconds: 600,
+				timeoutAction: "fail",
+				requiredChecks: ["security-scan", "dependency-review"],
+			},
+		});
+
+		const listRulesets = vi.fn(async () => [] as RulesetSummary[]);
+		const createRuleset = vi.fn(
+			async (payload: RulesetPayload) =>
+				({
+					id: 56,
+					name: payload.name,
+					target: payload.target,
+					enforcement: payload.enforcement,
+					bypass_actors: payload.bypass_actors,
+					conditions: payload.conditions,
+					rules: payload.rules,
+				}) as Ruleset,
+		);
+
+		mockGitHubClient.mockImplementation(
+			() =>
+				({
+					listRulesets,
+					createRuleset,
+				}) as unknown as GitHubClient,
+		);
+
+		const result = await runBranchProtect({
+			token: "token",
+			owner: "octo",
+			repo: "harness",
+		});
+
+		expect(result.ok).toBe(true);
+		const payload = createRuleset.mock.calls[0]?.[0];
+		const requiredRule = payload?.rules.find(
+			(rule) => rule.type === "required_status_checks",
+		);
+		expect(requiredRule?.parameters).toMatchObject({
+			required_status_checks: [
+				{ context: "security-scan" },
+				{ context: "dependency-review" },
+			],
+		});
+	});
+
+	it("falls back to harness baseline checks when contract loading fails", async () => {
+		mockLoadContract.mockImplementation(() => {
+			throw new Error("contract missing");
+		});
+
+		const listRulesets = vi.fn(async () => [] as RulesetSummary[]);
+		const createRuleset = vi.fn(
+			async (payload: RulesetPayload) =>
+				({
+					id: 57,
 					name: payload.name,
 					target: payload.target,
 					enforcement: payload.enforcement,
@@ -222,13 +360,16 @@ describe("runBranchProtect", () => {
 		expect(requiredRule?.parameters).toMatchObject({
 			required_status_checks: [
 				{ context: "pr-template" },
+				{ context: "risk-policy-gate" },
+				{ context: "dependency-review" },
+				{ context: "actions-pinning" },
 				{ context: "lint" },
 				{ context: "typecheck" },
 				{ context: "test" },
 				{ context: "audit" },
 				{ context: "check" },
-				{ context: "security-scan" },
 				{ context: "memory" },
+				{ context: "security-scan" },
 			],
 		});
 	});
@@ -770,7 +911,7 @@ describe("runBranchProtect", () => {
 		});
 	});
 
-	it("preserves empty include arrays to keep global scope", async () => {
+	it("preserves global scope when existing includes are empty", async () => {
 		const listRulesets = vi.fn(
 			async () =>
 				[

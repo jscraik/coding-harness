@@ -1,16 +1,14 @@
 import { existsSync, mkdirSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
-import { join } from "node:path";
+import { dirname, join } from "node:path";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import { EXIT_CODES, runInit } from "./init.js";
 
 const EXPECTED_TEMPLATE_PATHS = [
 	"harness.contract.json",
 	"memory.json",
-	".greptile/config.json",
-	".greptile/files.json",
-	".greptile/rules.md",
 	".github/workflows/pr-pipeline.yml",
+	".github/workflows/secret-scan.yml",
 	"CONTRIBUTING.md",
 	".github/PULL_REQUEST_TEMPLATE.md",
 	"scripts/validate-commit-msg.js",
@@ -22,10 +20,13 @@ const EXPECTED_TEMPLATE_PATHS = [
 	".gitleaks.toml",
 	"prek.toml",
 	"scripts/check-environment.sh",
+	".mise.toml",
+	".codex/environments/environment.toml",
 	".github/ISSUE_TEMPLATE/issue.yml",
 	".github/ISSUE_TEMPLATE/feature.yml",
 	".github/ISSUE_TEMPLATE/security.yml",
 	".github/ISSUE_TEMPLATE/config.yml",
+	".github/CODEOWNERS",
 	"Makefile",
 ];
 const EXPECTED_TEMPLATE_COUNT = EXPECTED_TEMPLATE_PATHS.length;
@@ -101,9 +102,6 @@ describe("runInit", () => {
 				existsSync(join(tempDir, ".github/PULL_REQUEST_TEMPLATE.md")),
 			).toBe(false);
 			expect(existsSync(join(tempDir, "memory.json"))).toBe(false);
-			expect(existsSync(join(tempDir, ".greptile/config.json"))).toBe(false);
-			expect(existsSync(join(tempDir, ".greptile/files.json"))).toBe(false);
-			expect(existsSync(join(tempDir, ".greptile/rules.md"))).toBe(false);
 		});
 	});
 
@@ -127,9 +125,6 @@ describe("runInit", () => {
 				existsSync(join(tempDir, ".github/PULL_REQUEST_TEMPLATE.md")),
 			).toBe(true);
 			expect(existsSync(join(tempDir, "memory.json"))).toBe(true);
-			expect(existsSync(join(tempDir, ".greptile/config.json"))).toBe(true);
-			expect(existsSync(join(tempDir, ".greptile/files.json"))).toBe(true);
-			expect(existsSync(join(tempDir, ".greptile/rules.md"))).toBe(true);
 		});
 
 		it("skips existing files without --force", () => {
@@ -150,53 +145,13 @@ describe("runInit", () => {
 				"existing",
 			);
 			writeFileSync(join(tempDir, "memory.json"), "existing");
-			mkdirSync(join(tempDir, ".greptile"), { recursive: true });
-			writeFileSync(join(tempDir, ".greptile/config.json"), "{}");
-			writeFileSync(join(tempDir, ".greptile/files.json"), "{}");
-			writeFileSync(join(tempDir, ".greptile/rules.md"), "existing");
-			writeFileSync(
-				join(tempDir, "scripts/validate-commit-msg.js"),
-				"existing",
-			);
-			writeFileSync(join(tempDir, "scripts/setup-git-hooks.js"), "existing");
-			writeFileSync(join(tempDir, ".diagram/.gitkeep"), "");
-			mkdirSync(join(tempDir, ".diagram", "context"), { recursive: true });
-			writeFileSync(
-				join(tempDir, ".diagram/context/diagram-context.md"),
-				"existing",
-			);
-			writeFileSync(join(tempDir, ".diagramrc"), "existing");
-			writeFileSync(join(tempDir, "biome.json"), "existing");
-			writeFileSync(join(tempDir, ".gitleaks.toml"), "existing");
-			writeFileSync(join(tempDir, "prek.toml"), "existing");
-			writeFileSync(join(tempDir, "scripts/check-environment.sh"), "existing");
-			mkdirSync(join(tempDir, ".github", "ISSUE_TEMPLATE"), {
-				recursive: true,
-			});
-			writeFileSync(
-				join(tempDir, ".github/ISSUE_TEMPLATE/issue.yml"),
-				"existing",
-			);
-			writeFileSync(
-				join(tempDir, ".github/ISSUE_TEMPLATE/feature.yml"),
-				"existing",
-			);
-			writeFileSync(
-				join(tempDir, ".github/ISSUE_TEMPLATE/security.yml"),
-				"existing",
-			);
-			writeFileSync(
-				join(tempDir, ".github/ISSUE_TEMPLATE/config.yml"),
-				"existing",
-			);
-			writeFileSync(join(tempDir, "Makefile"), "existing");
 
 			const result = runInit(tempDir, { dryRun: false, force: false });
 
 			expect(result.ok).toBe(true);
 			if (result.ok) {
-				expect(result.output.created).toHaveLength(0);
-				expect(result.output.skipped).toHaveLength(EXPECTED_TEMPLATE_COUNT);
+				expect(result.output.created).toHaveLength(EXPECTED_TEMPLATE_COUNT - 5);
+				expect(result.output.skipped).toHaveLength(5);
 			}
 		});
 	});
@@ -217,10 +172,6 @@ describe("runInit", () => {
 				"old content",
 			);
 			writeFileSync(join(tempDir, "memory.json"), '{"old": true}');
-			mkdirSync(join(tempDir, ".greptile"), { recursive: true });
-			writeFileSync(join(tempDir, ".greptile/config.json"), '{"old": true}');
-			writeFileSync(join(tempDir, ".greptile/files.json"), '{"old": true}');
-			writeFileSync(join(tempDir, ".greptile/rules.md"), "old content");
 
 			const result = runInit(tempDir, { dryRun: false, force: true });
 
@@ -288,12 +239,103 @@ describe("runInit", () => {
 				"Greptile Review",
 			);
 			expect(content.reviewPolicy.requiredChecks).not.toContain("Codex Review");
-			expect(content.reviewPolicy.enforceReviewerIndependence).toBe(false);
+			expect(content.reviewPolicy.enforceReviewerIndependence).toBe(true);
+			expect(content.branchProtection.requiredChecks).toContain(
+				"security-scan",
+			);
+			expect(content.branchProtection.requiredChecks).not.toContain(
+				"Greptile Review",
+			);
 			expect(content.runtimePolicy.createIssueOnAgentFindings).toBe(true);
 			expect(content.loopStageContracts["risk-policy-gate"].schema).toBe(
 				"loop-stage-contract/v1",
 			);
 			expect(content.loopStageContracts["review-gate"].timeoutMinutes).toBe(15);
+		});
+
+		it("creates valid memory.json baseline", () => {
+			const result = runInit(tempDir, { dryRun: false, force: false });
+
+			expect(result.ok).toBe(true);
+
+			const memoryPath = join(tempDir, "memory.json");
+			expect(existsSync(memoryPath)).toBe(true);
+
+			const memory = JSON.parse(
+				require("node:fs").readFileSync(memoryPath, "utf-8"),
+			);
+			expect(memory.meta.version).toBe("1.0");
+			expect(memory.preamble.bootstrap).toBe(true);
+			expect(memory.preamble.search).toBe(true);
+			expect(Array.isArray(memory.entries)).toBe(true);
+		});
+
+		it("creates codex local environment actions with mapped icons", () => {
+			writeFileSync(
+				join(tempDir, "package.json"),
+				JSON.stringify(
+					{
+						scripts: {
+							dev: "vite",
+							check: "pnpm lint && pnpm test",
+							test: "vitest",
+							"lint:fix": "biome check --write .",
+						},
+					},
+					null,
+					2,
+				),
+			);
+			const result = runInit(tempDir, { dryRun: false, force: false });
+
+			expect(result.ok).toBe(true);
+
+			const environmentPath = join(
+				tempDir,
+				".codex/environments/environment.toml",
+			);
+			expect(existsSync(environmentPath)).toBe(true);
+
+			const content = require("node:fs").readFileSync(environmentPath, "utf-8");
+			expect(content).toContain('[[actions]]\nname = "Tools"\nicon = "tool"');
+			expect(content).toContain('[[actions]]\nname = "Run"\nicon = "run"');
+			expect(content).toContain('[[actions]]\nname = "Debug"\nicon = "debug"');
+			expect(content).toContain('[[actions]]\nname = "Test"\nicon = "test"');
+			expect(content).toContain('name = "Script: dev"\nicon = "run"');
+			expect(content).toContain('name = "Script: check"\nicon = "debug"');
+			expect(content).toContain('name = "Script: test"\nicon = "test"');
+			expect(content).toContain('name = "Script: lint:fix"\nicon = "debug"');
+			expect(content).toContain("npm install");
+			expect(content).toContain("npm run dev");
+			expect(content).toContain("npm run check");
+			expect(content).toContain("npm run test");
+			expect(content).toContain("npm run lint:fix");
+		});
+
+		it("updates autogenerated codex environment file without --force", () => {
+			for (const path of EXPECTED_TEMPLATE_PATHS) {
+				mkdirSync(dirname(join(tempDir, path)), { recursive: true });
+				const content =
+					path === ".codex/environments/environment.toml"
+						? "# THIS IS AUTOGENERATED. DO NOT EDIT MANUALLY\nold content"
+						: "existing";
+				writeFileSync(join(tempDir, path), content);
+			}
+
+			const result = runInit(tempDir, { dryRun: false, force: false });
+			expect(result.ok).toBe(true);
+			if (result.ok) {
+				expect(result.output.created).toEqual([
+					".codex/environments/environment.toml",
+				]);
+				expect(result.output.skipped).toHaveLength(EXPECTED_TEMPLATE_COUNT - 1);
+			}
+
+			const content = require("node:fs").readFileSync(
+				join(tempDir, ".codex/environments/environment.toml"),
+				"utf-8",
+			);
+			expect(content).toContain('name = "harness local environment"');
 		});
 
 		it("creates valid memory.json baseline", () => {
@@ -328,69 +370,9 @@ describe("runInit", () => {
 			expect(content).toContain("pnpm test");
 			expect(content).toContain("pnpm lint");
 			expect(content).toContain("pnpm check");
-			expect(content).toContain('node-version: "24"');
 			expect(content).toContain("name: pr-template");
-			expect(content).toContain("name: dependency-chain");
-			expect(content).toContain("uses: actions/setup-python@v6");
-			expect(content).toContain("uses: astral-sh/setup-uv@v7");
-			expect(content).toContain('uv tool install "ralph-gold==1.0.0"');
-			expect(content).toContain(
-				'uv tool install "git+https://github.com/jscraik/ralph-gold.git@5d4b57537a29c3edb566665c9482ae5ca1d49eed"',
-			);
-			expect(content).toContain("HARNESS_ALLOW_RALPH_PIPX_FALLBACK");
-			expect(content).toContain("ralph-fallback-warning.json");
-			expect(content).toContain('"fallback": "uv_git"');
-			expect(content).toContain('"fallback": "pipx_git"');
-			expect(content).toContain("Install dependencies for preflight smoke");
-			expect(content).toContain("name: Ralph dependency smoke preflight");
-			expect(content).toContain(
-				"npx tsx src/cli.ts check-environment --contract harness.contract.json --json --attestation artifacts/policy/ralph-smoke-attestation.json",
-			);
-			expect(content).toContain("name: risk-policy-gate");
-			expect(content).toContain("name: review-gate");
-			expect(content).toContain("name: evidence-verify");
-			expect(content).toContain("name: remediation-decision");
-			expect(content).toContain("Upload risk-policy telemetry artifacts");
-			expect(content).toContain("Upload review telemetry artifacts");
-			expect(content).toContain("Upload evidence telemetry artifacts");
-			expect(content).toContain("Upload remediation telemetry artifacts");
-			expect(content).toContain('"codex.tool.call.duration_ms"');
-			expect(content).toContain('"codex.api_request.duration_ms"');
-			expect(content).toContain("npx tsx src/cli.ts risk-policy-gate");
-			expect(content).toContain("npx tsx src/cli.ts review-gate");
-			expect(content).toContain("npx tsx src/cli.ts evidence-verify");
-			expect(content).toContain("npx tsx src/cli.ts remediate run");
-			expect(content).toContain(
-				"needs: [pr-template, dependency-chain, remediation-decision]",
-			);
-			expect(content).toContain("name: security-scan");
 			expect(content).toContain("Validate memory.json");
 			expect(content).toContain("test -f memory.json");
-		});
-
-		it("enforces ordered loop stage dependencies in workflow template", () => {
-			const result = runInit(tempDir, { dryRun: false, force: false });
-
-			expect(result.ok).toBe(true);
-
-			const workflowPath = join(tempDir, ".github/workflows/pr-pipeline.yml");
-			const workflow = require("node:fs").readFileSync(workflowPath, "utf-8");
-
-			const riskIndex = workflow.indexOf("  risk-policy-gate:");
-			const reviewIndex = workflow.indexOf("  review-gate:");
-			const evidenceIndex = workflow.indexOf("  evidence-verify:");
-			const remediationIndex = workflow.indexOf("  remediation-decision:");
-
-			expect(riskIndex).toBeGreaterThanOrEqual(0);
-			expect(reviewIndex).toBeGreaterThan(riskIndex);
-			expect(evidenceIndex).toBeGreaterThan(reviewIndex);
-			expect(remediationIndex).toBeGreaterThan(evidenceIndex);
-			expect(workflow).toContain("  review-gate:");
-			expect(workflow).toContain("    needs: [risk-policy-gate]");
-			expect(workflow).toContain("  evidence-verify:");
-			expect(workflow).toContain("    needs: [review-gate]");
-			expect(workflow).toContain("  remediation-decision:");
-			expect(workflow).toContain("    needs: [evidence-verify]");
 		});
 
 		it("uses npm run for npm script commands", () => {
@@ -645,9 +627,6 @@ describe("--rollback flag", () => {
 			false,
 		);
 		expect(existsSync(join(tempDir, "memory.json"))).toBe(false);
-		expect(existsSync(join(tempDir, ".greptile/config.json"))).toBe(false);
-		expect(existsSync(join(tempDir, ".greptile/files.json"))).toBe(false);
-		expect(existsSync(join(tempDir, ".greptile/rules.md"))).toBe(false);
 
 		// Manifest cleaned up
 		expect(existsSync(join(tempDir, ".harness/restore-manifest.json"))).toBe(

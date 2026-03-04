@@ -1,0 +1,93 @@
+{
+	"$schema": "https://json-schema.org/draft/2020-12/schema",
+	"$id": "https://brainwav.dev/schemas/benchmark-run.schema.json",
+	"title": "SWE Benchmark Run",
+	"description": "Canonical schema for Coding Harness benchmark track run metadata.",
+	"type": "object",
+	"additionalProperties": false,
+	"required": [
+		"run_id",
+		"track",
+		"command",
+		"status",
+		"started_at",
+		"finished_at",
+		"duration_seconds",
+		"git",
+		"metrics"
+	],
+	"properties": {
+		"run_id": {
+			"type": "string",
+			"description": "Stable run identifier (UTC timestamp slug).",
+			"pattern": "^[a-z0-9-]+$"
+		},
+		"track": {
+			"type": "string",
+			"enum": ["swe"],
+			"description": "Benchmark track identifier."
+		},
+		"command": {
+			"type": "string",
+			"minLength": 1,
+			"description": "Command executed for this benchmark run."
+		},
+		"status": {
+			"type": "string",
+			"enum": ["pass", "fail", "error"],
+			"description": "Overall run status derived from the benchmark command exit code."
+		},
+		"started_at": {
+			"type": "string",
+			"format": "date-time"
+		},
+		"finished_at": {
+			"type": "string",
+			"format": "date-time"
+		},
+		"duration_seconds": {
+			"type": "integer",
+			"minimum": 0
+		},
+		"notes": {
+			"type": "string"
+		},
+		"artifacts": {
+			"type": "array",
+			"items": {
+				"type": "string"
+			},
+			"default": []
+		},
+		"git": {
+			"type": "object",
+			"additionalProperties": false,
+			"required": ["commit", "branch", "repository"],
+			"properties": {
+				"commit": {
+					"type": "string",
+					"pattern": "^[0-9a-f]{7,40}$"
+				},
+				"branch": {
+					"type": "string",
+					"minLength": 1
+				},
+				"repository": {
+					"type": "string",
+					"minLength": 1
+				}
+			}
+		},
+		"metrics": {
+			"type": "object",
+			"additionalProperties": false,
+			"required": ["exit_code"],
+			"properties": {
+				"exit_code": {
+					"type": "integer",
+					"minimum": 0
+				}
+			}
+		}
+	}
+}

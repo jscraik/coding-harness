@@ -1,10 +1,32 @@
 {
 	"version": "1.0",
-	"riskTierRules": {},
+	"riskTierRules": {
+		"src/auth/**": "high",
+		"src/api/**": "high",
+		"src/lib/**": "medium",
+		"**/*.test.ts": "low"
+	},
 	"reviewPolicy": {
 		"timeoutSeconds": 600,
 		"timeoutAction": "fail",
-		"enforceReviewerIndependence": false
+		"requiredChecks": ["security-scan", "dependency-review", "actions-pinning"],
+		"enforceReviewerIndependence": true
+	},
+	"branchProtection": {
+		"requiredChecks": [
+			"pr-template",
+			"risk-policy-gate",
+			"dependency-review",
+			"actions-pinning",
+			"lint",
+			"typecheck",
+			"test",
+			"audit",
+			"check",
+			"memory",
+			"security-scan",
+			"Greptile Review"
+		]
 	},
 	"evidencePolicy": {
 		"requiredFor": [],

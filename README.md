@@ -10,8 +10,10 @@ Coding Harness is a TypeScript control plane for agentic development and policy-
 ## Table of Contents
 
 - [Quick start](#quick-start)
+- [Packaged Codex skill](#packaged-codex-skill)
 - [Quality checks](#quality-checks)
 - [Recommended security scanner baseline](#recommended-security-scanner-baseline)
+- [Benchmark track (SWE)](#benchmark-track-swe)
 - [Issue reporting (internal)](#issue-reporting-internal)
 - [CLI command index](#cli-command-index)
 - [Release flow](#release-flow)
@@ -31,6 +33,19 @@ For local iteration without building first:
 pnpm exec tsx src/cli.ts --help
 ```
 
+## Packaged Codex skill
+
+The npm package now includes a reusable Codex skill bundle at:
+
+- `.agents/skills/coding-harness/SKILL.md`
+
+This skill is intended for install/setup/update workflows and capability-boundary guidance
+for coding-harness usage in other repositories.
+
+If you install this package locally in another project, the skill is available at:
+
+- `node_modules/@brainwav/coding-harness/.agents/skills/coding-harness/`
+
 ## Quality checks
 
 ```bash
@@ -43,11 +58,19 @@ When Harness is installed in a repository, recommend installing these scanners i
 
 - Gitleaks
 - Trivy
-- Senvar (if your organization uses it)
 - Semgrep
 
-These should be available in local dev and CI to keep security checks consistent.
-Harness `init` templates enforce this via a required `security-scan` PR check.
+These scanners should be available in local dev and CI to keep security checks consistent.
+Harness `init` templates enforce this baseline via the required `security-scan` check.
+
+## Benchmark track (SWE)
+
+Benchmark track setup, schema, and run script live in [`docs/benchmarks/README.md`](docs/benchmarks/README.md).
+
+Recommended cadence:
+
+- Weekly benchmark run on `main`.
+- Pre-release benchmark run before cutting tags.
 
 ## Issue reporting (internal)
 

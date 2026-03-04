@@ -16,11 +16,11 @@ jobs:
     name: Refresh Architecture Diagrams
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
         with:
           fetch-depth: 0
           token: ${{ secrets.GITHUB_TOKEN }}
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
         with:
           node-version: "24"
       - name: Enable corepack
@@ -39,13 +39,15 @@ jobs:
           MD
           for file in AI/diagrams/*.mmd; do
             name="$(basename "$file" .mmd)"
-            echo "## ${name}" >> AI/context/diagram-context.md
-            echo "" >> AI/context/diagram-context.md
-            echo '```mermaid' >> AI/context/diagram-context.md
-            cat "$file" >> AI/context/diagram-context.md
-            echo "" >> AI/context/diagram-context.md
-            echo '```' >> AI/context/diagram-context.md
-            echo "" >> AI/context/diagram-context.md
+            {
+              echo "## ${name}"
+              echo ""
+              echo '```mermaid'
+              cat "$file"
+              echo ""
+              echo '```'
+              echo ""
+            } >> AI/context/diagram-context.md
           done
       - name: Commit diagram updates
         run: |

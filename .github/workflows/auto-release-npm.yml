@@ -25,24 +25,24 @@ jobs:
       pull-requests: read
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
         with:
           fetch-depth: 0
       - name: Setup Node.js
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
         with:
           node-version: "24"
       - name: Setup pnpm
-        uses: pnpm/action-setup@v4
+        uses: pnpm/action-setup@41ff72655975bd51cab0327fa583b6e92b6d3061 # v4
         with:
           run_install: false
       - name: Get pnpm store directory
         shell: bash
         run: |
-          echo "STORE_PATH=$(pnpm store path --silent)" >> $GITHUB_OUTPUT
+          echo "STORE_PATH=$(pnpm store path --silent)" >> "$GITHUB_OUTPUT"
         id: pnpm-cache
       - name: Setup pnpm cache
-        uses: actions/cache@v4
+        uses: actions/cache@0057852bfaa89a56745cba8c7296529d2fc39830 # v4
         with:
           path: ${{ steps.pnpm-cache.outputs.STORE_PATH }}
           key: ${{ runner.os }}-pnpm-store-${{ hashFiles('**/pnpm-lock.yaml') }}
@@ -54,7 +54,7 @@ jobs:
         run: pnpm build
       - name: Resolve merged PR metadata for pushed commit
         id: resolve-pr
-        uses: actions/github-script@v7
+        uses: actions/github-script@f28e40c7f34bde8b3046d885e986cb6290c5673b # v7
         with:
           script: |
             const commitSha = context.sha;
@@ -88,7 +88,9 @@ jobs:
             --pr "${{ steps.resolve-pr.outputs.pr_number }}" \
             --sha "${{ steps.resolve-pr.outputs.head_sha }}" \
             --check "Greptile Review" \
-            --contract "test-fixtures/contract.json" \
+            --contract "harness.contract.json" \
+            --bot-login "greptile-apps" \
+            --auto-resolve-bot-threads \
             --json
 
   auto-release:
@@ -96,25 +98,25 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
         with:
           fetch-depth: 0
       - name: Setup Node.js
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
         with:
           node-version: "24"
           registry-url: "https://registry.npmjs.org/"
       - name: Setup pnpm
-        uses: pnpm/action-setup@v4
+        uses: pnpm/action-setup@41ff72655975bd51cab0327fa583b6e92b6d3061 # v4
         with:
           run_install: false
       - name: Get pnpm store directory
         shell: bash
         run: |
-          echo "STORE_PATH=$(pnpm store path --silent)" >> $GITHUB_OUTPUT
+          echo "STORE_PATH=$(pnpm store path --silent)" >> "$GITHUB_OUTPUT"
         id: pnpm-cache
       - name: Setup pnpm cache
-        uses: actions/cache@v4
+        uses: actions/cache@0057852bfaa89a56745cba8c7296529d2fc39830 # v4
         with:
           path: ${{ steps.pnpm-cache.outputs.STORE_PATH }}
           key: ${{ runner.os }}-pnpm-store-${{ hashFiles('**/pnpm-lock.yaml') }}
@@ -127,12 +129,13 @@ jobs:
       - name: Smoke test packed CLI artifact
         run: |
           set -euo pipefail
+          command -v rg >/dev/null 2>&1 || { echo "rg is required on the runner"; exit 2; }
           TARBALL="$(npm pack --silent)"
           TMP_DIR="$(mktemp -d)"
           npm init -y --prefix "$TMP_DIR" >/dev/null 2>&1
           npm install --prefix "$TMP_DIR" "./$TARBALL" >/dev/null
           "$TMP_DIR/node_modules/.bin/harness" --version | tee "$TMP_DIR/version.txt"
-          grep -Eq '^harness v[0-9]+\.[0-9]+\.[0-9]+' "$TMP_DIR/version.txt"
+          rg -q '^harness v[0-9]+\.[0-9]+\.[0-9]+' "$TMP_DIR/version.txt"
           node "$TMP_DIR/node_modules/@brainwav/coding-harness/dist/cli.js" --version
       - name: Create release commit and tag
         env:

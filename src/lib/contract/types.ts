@@ -1,3 +1,8 @@
+import {
+	BRANCH_PROTECTION_REQUIRED_CHECKS,
+	REVIEW_POLICY_REQUIRED_CHECKS,
+} from "../policy/required-checks.js";
+
 export type RiskTier = "high" | "medium" | "low";
 
 export type TimeoutAction = "fail" | "warn";
@@ -137,6 +142,10 @@ export interface ReviewPolicy {
 	enforceReviewerIndependence?: boolean | undefined;
 }
 
+export interface BranchProtectionPolicy {
+	requiredChecks?: string[] | undefined;
+}
+
 export type LoopStageFailPolicy = "fail_closed" | "warn_only";
 
 export type LoopStageName =
@@ -256,8 +265,12 @@ export interface PilotAuthzPolicy {
 export const DEFAULT_REVIEW_POLICY: ReviewPolicy = {
 	timeoutSeconds: 600, // 10 minutes
 	timeoutAction: "fail",
-	requiredChecks: [],
-	enforceReviewerIndependence: false,
+	requiredChecks: [...REVIEW_POLICY_REQUIRED_CHECKS],
+	enforceReviewerIndependence: true,
+};
+
+export const DEFAULT_BRANCH_PROTECTION_POLICY: BranchProtectionPolicy = {
+	requiredChecks: [...BRANCH_PROTECTION_REQUIRED_CHECKS],
 };
 
 export const DEFAULT_EVIDENCE_POLICY: EvidencePolicy = {
@@ -389,6 +402,8 @@ export interface HarnessContract {
 	blastRadiusRules?: BlastRadiusRule[] | undefined;
 	/** Blast-radius merge behavior */
 	blastRadiusRulesMode?: BlastRadiusRulesMode | undefined;
+	/** Branch protection configuration */
+	branchProtection?: BranchProtectionPolicy | undefined;
 	/** Remediation policy for automatic fix application */
 	remediationPolicy?: RemediationPolicy | undefined;
 	/** Semantic loop stage contract for workflow parity validation */
@@ -403,6 +418,7 @@ export const DEFAULT_CONTRACT: HarnessContract = {
 	pilotGapCasePolicy: DEFAULT_PILOT_GAP_CASE_POLICY,
 	pilotRollbackPolicy: DEFAULT_PILOT_ROLLBACK_POLICY,
 	pilotAuthzPolicy: DEFAULT_PILOT_AUTHZ_POLICY,
+	branchProtection: DEFAULT_BRANCH_PROTECTION_POLICY,
 	remediationPolicy: DEFAULT_REMEDIATION_POLICY,
 	loopStageContracts: DEFAULT_LOOP_STAGE_CONTRACTS,
 };
