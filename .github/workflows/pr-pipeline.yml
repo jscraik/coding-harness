@@ -133,11 +133,26 @@ jobs:
       pull-requests: read
     steps:
       - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
-      - name: Run dependency review (pull_request)
+      - name: Detect dependency review support
+        id: dependency-review-support
         if: github.event_name == 'pull_request'
+        uses: actions/github-script@f28e40c7f34bde8b3046d885e986cb6290c5673b # v7
+        with:
+          script: |
+            const { owner, repo } = context.repo;
+            const response = await github.rest.repos.get({ owner, repo });
+            const security = response.data.security_and_analysis ?? {};
+            const advanced = security.advanced_security?.status === 'enabled';
+            const dependencyGraph = security.dependency_graph?.status === 'enabled';
+            core.setOutput('supported', advanced && dependencyGraph ? 'true' : 'false');
+      - name: Run dependency review (pull_request)
+        if: github.event_name == 'pull_request' && steps.dependency-review-support.outputs.supported == 'true'
         uses: actions/dependency-review-action@2031cfc080254a8a887f58cffee85186f0e49e48 # v4.9.0
         with:
           fail-on-severity: high
+      - name: Skip dependency review when repository support is unavailable
+        if: github.event_name == 'pull_request' && steps.dependency-review-support.outputs.supported != 'true'
+        run: echo "Dependency review unsupported (requires dependency graph + advanced security); skipping."
       - name: Skip dependency review for merge queue
         if: github.event_name == 'merge_group'
         run: echo "Dependency review enforced on pull_request; merge_group runs are no-op."
