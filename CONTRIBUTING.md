@@ -80,6 +80,8 @@ For behavior-affecting changes:
 - `pnpm test`
 - `pnpm audit`
 - `pnpm check`
+- `dependency-review` GitHub Actions check
+- `actions-pinning` GitHub Actions check
 - `security-scan` GitHub Actions check (gitleaks + trivy + semgrep)
 
 For docs-only edits, run at minimum:
@@ -215,12 +217,19 @@ Configure repository settings on `main` to make the workflow enforceable:
 - Require at least one review before merge.
 - Require status checks:
   - `pr-template`
-  - `pnpm lint`
-  - `pnpm typecheck`
-  - `pnpm test`
-  - `pnpm audit`
-  - `pnpm check`
+  - `risk-policy-gate`
+  - `dependency-review`
+  - `actions-pinning`
+  - `lint`
+  - `typecheck`
+  - `test`
+  - `audit`
+  - `check`
   - `memory`
+  - `security-scan`
+  - `Greptile Review`
+- Require workflows to pin third-party actions to full commit SHAs.
+- Configure required checks workflows to run on both `pull_request` and `merge_group` when using merge queue.
 - Dismiss stale approvals when new commits are pushed.
 - Restrict pushes to `main` to `main` repository settings/admin workflows only.
 - Optionally require signed commits if your policy requires it.

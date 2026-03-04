@@ -20,7 +20,7 @@ For all code and docs changes in this repository:
 2. For agent-created branches, use `codex/<short-description>`.
 3. Do not push directly to `main`.
 4. Open a PR for every merge into `main`.
-5. Required gates before merge: `pnpm lint`, `pnpm typecheck`, `pnpm test`, `pnpm audit`, `pnpm check`, and CI `security-scan`.
+5. Required gates before merge: `pnpm lint`, `pnpm typecheck`, `pnpm test`, `pnpm audit`, `pnpm check`, and CI checks `risk-policy-gate`, `dependency-review`, `actions-pinning`, `security-scan`, `Greptile Review`.
 6. Required review artifacts before merge: Greptile + Codex.
 7. Greptile setup must be verified before merge: run the `grepfile` skill and ensure `.greptile/config.json`, `.greptile/rules.md`, and `.greptile/files.json` are present and current.
 8. Greptile validation must be independent: the coding agent must not approve its own PR; use a separate review agent.

@@ -1,9 +1,15 @@
 {
 	"version": "1.0",
-	"riskTierRules": {},
+	"riskTierRules": {
+		"src/auth/**": "high",
+		"src/api/**": "high",
+		"src/lib/**": "medium",
+		"**/*.test.ts": "low"
+	},
 	"reviewPolicy": {
 		"timeoutSeconds": 600,
 		"timeoutAction": "fail",
+		"requiredChecks": ["security-scan", "dependency-review", "actions-pinning"],
 		"enforceReviewerIndependence": false
 	},
 	"evidencePolicy": {
