@@ -71,13 +71,13 @@ graph TD
     brainstorm_e2e2381d["brainstorm"]
     brainstorm_test_78cf7a1e["brainstorm.test"]
   end
-  subgraph src_lib_silent_error_26e972c0["src/lib/silent-error"]
+  subgraph src_lib_simulate_87a8be80["src/lib/simulate"]
     types_8d846022["types"]
+  end
+  subgraph src_lib_silent_error_26e972c0["src/lib/silent-error"]
+    types_1_4ecdf56e["types"]
     detector_f2b3cbe4["detector"]
     detector_test_d10b3555["detector.test"]
-  end
-  subgraph src_lib_simulate_87a8be80["src/lib/simulate"]
-    types_1_4ecdf56e["types"]
   end
   subgraph src_lib_replay_9cdd6ac4["src/lib/replay"]
     tracer_1e6243a2["tracer"]
@@ -90,41 +90,36 @@ graph TD
     finding_normalizer_13f1559c["finding-normalizer"]
     finding_normalizer_test_d4639bd8["finding-normalizer.test"]
   end
-  subgraph src_lib_preflight_d75938f9["src/lib/preflight"]
-    validator_f82af321["validator"]
-    validator_test_b4b482f8["validator.test"]
-    types_3_9675d69b["types"]
-  end
   subgraph src_lib_policy_f3a0824d["src/lib/policy"]
     risk_tier_1_96b6ff91["risk-tier"]
     risk_tier_test_ae056367["risk-tier.test"]
     diff_budget_1_9f85eb1c["diff-budget"]
   end
   subgraph src_lib_plan_gate_b742698a["src/lib/plan-gate"]
-    types_4_822d0f88["types"]
+    types_3_9675d69b["types"]
     detector_1_b37d288b["detector"]
   end
   subgraph src_lib_pilot_evaluation_f6cc358e["src/lib/pilot-evaluation"]
-    types_5_f869ec4b["types"]
+    types_4_822d0f88["types"]
     metrics_capture_1d1a2c08["metrics-capture"]
   end
   subgraph src_lib_observability_ecdc7d70["src/lib/observability"]
     cardinality_ebef8aff["cardinality"]
     cardinality_test_c00e7edb["cardinality.test"]
   end
+  subgraph src_lib_input_456cc971["src/lib/input"]
+    validator_f82af321["validator"]
+    validator_test_b4b482f8["validator.test"]
+    sanitize_af6a3bb0["sanitize"]
+    sanitize_test_f3d34916["sanitize.test"]
+  end
   subgraph src_lib_memory_273eb2dc["src/lib/memory"]
     validator_1_0c0621d8["validator"]
     validator_test_1_c5015ca0["validator.test"]
-    types_6_1818fb91["types"]
+    types_5_f869ec4b["types"]
     metrics_tracker_98cec29c["metrics-tracker"]
     metrics_tracker_test_3de156fa["metrics-tracker.test"]
     branch_enforcer_acb749cd["branch-enforcer"]
-  end
-  subgraph src_lib_input_456cc971["src/lib/input"]
-    validator_2_744853f5["validator"]
-    validator_test_2_8dbecf99["validator.test"]
-    sanitize_af6a3bb0["sanitize"]
-    sanitize_test_f3d34916["sanitize.test"]
   end
   subgraph src_lib_github_bad33b49["src/lib/github"]
     sha_d600474b["sha"]
@@ -132,4 +127,7 @@ graph TD
     mutation_queue_ce5a530e["mutation-queue"]
     mutation_queue_test_10b599e8["mutation-queue.test"]
     errors_be4bd567["errors"]
+    comments_2b4244fb["comments"]
+    comments_test_f8c9ae41["comments.test"]
+    client_948fe603["client"]
   end

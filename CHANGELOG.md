@@ -1,5 +1,24 @@
 # Changelog
+
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
+
+## Unreleased
+
+### Features
+
+* **init:** scaffold `mise.toml` and update generated environment checks to enable `uv` pinning with `CLAUDE_APPROVAL_POSTURE` defaults, while adding fallback installation paths (`uv`/`pipx`/`python`) for ralph to better support mixed Node/Python projects.
+
+
+# [0.6.0](https://github.com/jscraik/coding-harness/compare/v0.5.8...v0.6.0) (2026-03-03)
+
+
+### Features
+
+* add packaged coding-harness skill bundle ([bbe37e2](https://github.com/jscraik/coding-harness/commit/bbe37e20b727b4e7cc969ef518ea2097cc38b91a))
+* **init:** add Codex environment action template ([c5d24ba](https://github.com/jscraik/coding-harness/commit/c5d24ba090233f514a451671abfc2e87f2ee5ec6))
+* **init:** generate codex actions from project scripts ([781463b](https://github.com/jscraik/coding-harness/commit/781463beff271ca6113b28ce2bb574de1efb32ce))
+
+
 
 ## [0.5.7](https://github.com/jscraik/coding-harness/compare/v0.5.6...v0.5.7) (2026-03-03)
 
