@@ -87,6 +87,8 @@ describe("runBranchProtect", () => {
 		);
 		expect(pullRequestRule?.parameters).toMatchObject({
 			required_approving_review_count: 1,
+			require_code_owner_review: true,
+			require_last_push_approval: true,
 		});
 	});
 
@@ -222,12 +224,17 @@ describe("runBranchProtect", () => {
 		expect(requiredRule?.parameters).toMatchObject({
 			required_status_checks: [
 				{ context: "pr-template" },
+				{ context: "risk-policy-gate" },
+				{ context: "dependency-review" },
+				{ context: "actions-pinning" },
 				{ context: "lint" },
 				{ context: "typecheck" },
 				{ context: "test" },
 				{ context: "audit" },
 				{ context: "check" },
 				{ context: "memory" },
+				{ context: "security-scan" },
+				{ context: "Greptile Review" },
 			],
 		});
 	});

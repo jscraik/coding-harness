@@ -11,12 +11,17 @@ const DEFAULT_RULESET_NAME = "protect";
 const DEFAULT_BRANCH = "main";
 const DEFAULT_REQUIRED_CHECKS = [
 	"pr-template",
+	"risk-policy-gate",
+	"dependency-review",
+	"actions-pinning",
 	"lint",
 	"typecheck",
 	"test",
 	"audit",
 	"check",
 	"memory",
+	"security-scan",
+	"Greptile Review",
 ];
 
 export const EXIT_CODES = {
@@ -253,8 +258,8 @@ function buildPayload(input: BuildPayloadInput): RulesetPayload {
 		parameters: {
 			...existingPullParameters,
 			dismiss_stale_reviews_on_push: true,
-			require_code_owner_review: existingRequireCodeOwnerReview ?? false,
-			require_last_push_approval: existingRequireLastPushApproval ?? false,
+			require_code_owner_review: existingRequireCodeOwnerReview ?? true,
+			require_last_push_approval: existingRequireLastPushApproval ?? true,
 			required_approving_review_count: Math.max(
 				input.requiredApprovals,
 				existingRequiredApprovals ?? 0,

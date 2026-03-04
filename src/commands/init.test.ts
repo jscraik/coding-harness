@@ -7,9 +7,6 @@ import { EXIT_CODES, runInit } from "./init.js";
 const EXPECTED_TEMPLATE_PATHS = [
 	"harness.contract.json",
 	"memory.json",
-	".greptile/config.json",
-	".greptile/files.json",
-	".greptile/rules.md",
 	".github/workflows/pr-pipeline.yml",
 	"CONTRIBUTING.md",
 	".github/PULL_REQUEST_TEMPLATE.md",
@@ -22,12 +19,13 @@ const EXPECTED_TEMPLATE_PATHS = [
 	".gitleaks.toml",
 	"prek.toml",
 	"scripts/check-environment.sh",
-	"mise.toml",
+	".mise.toml",
 	".codex/environments/environment.toml",
 	".github/ISSUE_TEMPLATE/issue.yml",
 	".github/ISSUE_TEMPLATE/feature.yml",
 	".github/ISSUE_TEMPLATE/security.yml",
 	".github/ISSUE_TEMPLATE/config.yml",
+	".github/CODEOWNERS",
 	"Makefile",
 ];
 const EXPECTED_TEMPLATE_COUNT = EXPECTED_TEMPLATE_PATHS.length;
@@ -89,7 +87,7 @@ describe("runInit", () => {
 
 			expect(result.ok).toBe(true);
 			if (result.ok) {
-				expect(result.output.created).toHaveLength(5);
+				expect(result.output.created).toHaveLength(EXPECTED_TEMPLATE_COUNT);
 				expect(result.output.skipped).toHaveLength(0);
 			}
 
@@ -112,7 +110,7 @@ describe("runInit", () => {
 
 			expect(result.ok).toBe(true);
 			if (result.ok) {
-				expect(result.output.created).toHaveLength(5);
+				expect(result.output.created).toHaveLength(EXPECTED_TEMPLATE_COUNT);
 				expect(result.output.skipped).toHaveLength(0);
 			}
 
@@ -151,7 +149,7 @@ describe("runInit", () => {
 
 			expect(result.ok).toBe(true);
 			if (result.ok) {
-				expect(result.output.created).toHaveLength(0);
+				expect(result.output.created).toHaveLength(EXPECTED_TEMPLATE_COUNT - 5);
 				expect(result.output.skipped).toHaveLength(5);
 			}
 		});
@@ -178,7 +176,7 @@ describe("runInit", () => {
 
 			expect(result.ok).toBe(true);
 			if (result.ok) {
-				expect(result.output.created).toHaveLength(5);
+				expect(result.output.created).toHaveLength(EXPECTED_TEMPLATE_COUNT);
 				expect(result.output.skipped).toHaveLength(0);
 			}
 		});
@@ -508,7 +506,7 @@ describe("--track flag", () => {
 
 		expect(result.ok).toBe(true);
 		if (result.ok) {
-			expect(result.output.created).toHaveLength(5);
+			expect(result.output.created).toHaveLength(EXPECTED_TEMPLATE_COUNT);
 		}
 
 		// Verify manifest exists
@@ -536,7 +534,7 @@ describe("--track flag", () => {
 
 		expect(result.ok).toBe(true);
 		if (result.ok) {
-			expect(result.output.created).toHaveLength(5);
+			expect(result.output.created).toHaveLength(EXPECTED_TEMPLATE_COUNT);
 		}
 
 		// Verify backup exists
@@ -548,7 +546,7 @@ describe("--track flag", () => {
 			"utf-8",
 		);
 		const manifest = JSON.parse(manifestContent);
-		expect(manifest.files).toHaveLength(5);
+		expect(manifest.files).toHaveLength(EXPECTED_TEMPLATE_COUNT);
 
 		// Find the modified entry
 		const modifiedEntry = manifest.files.find(

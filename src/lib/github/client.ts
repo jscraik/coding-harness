@@ -40,6 +40,28 @@ export interface PullRequest {
 	};
 }
 
+export interface PullRequestReview {
+	id: number;
+	state: string;
+	commit_id?: string | null;
+	submitted_at?: string | null;
+	user?: {
+		login?: string;
+	};
+}
+
+export interface PullRequestReviewThreadComment {
+	author?: {
+		login?: string;
+	} | null;
+}
+
+export interface PullRequestReviewThread {
+	id: string;
+	isResolved: boolean;
+	comments: PullRequestReviewThreadComment[];
+}
+
 export interface RulesetRule {
 	type: string;
 	parameters?: Record<string, unknown>;
@@ -185,6 +207,132 @@ export class GitHubClient {
 				pull_number: number,
 			});
 			return response.data as PullRequest;
+		} catch (error) {
+			throw this.classifyError(error);
+		}
+	}
+
+	async listPullRequestReviews(
+		pullNumber: number,
+	): Promise<PullRequestReview[]> {
+		try {
+			const response = await this.octokit.paginate(
+				this.octokit.pulls.listReviews,
+				{
+					owner: this.owner,
+					repo: this.repo,
+					pull_number: pullNumber,
+					per_page: 100,
+				},
+			);
+			return response as PullRequestReview[];
+		} catch (error) {
+			throw this.classifyError(error);
+		}
+	}
+
+	async listPullRequestReviewThreads(
+		pullNumber: number,
+	): Promise<PullRequestReviewThread[]> {
+		try {
+			const threads: PullRequestReviewThread[] = [];
+			let cursor: string | null = null;
+
+			do {
+				const response = (await this.octokit.graphql(
+					`query($owner: String!, $repo: String!, $number: Int!, $cursor: String) {
+  repository(owner: $owner, name: $repo) {
+    pullRequest(number: $number) {
+      reviewThreads(first: 100, after: $cursor) {
+        nodes {
+          id
+          isResolved
+          comments(first: 100) {
+            nodes {
+              author {
+                login
+              }
+            }
+          }
+        }
+        pageInfo {
+          hasNextPage
+          endCursor
+        }
+      }
+    }
+  }
+}`,
+					{
+						owner: this.owner,
+						repo: this.repo,
+						number: pullNumber,
+						cursor,
+					},
+				)) as {
+					repository?: {
+						pullRequest?: {
+							reviewThreads?: {
+								nodes?: Array<{
+									id?: string | null;
+									isResolved?: boolean | null;
+									comments?: {
+										nodes?: Array<PullRequestReviewThreadComment | null>;
+									} | null;
+								} | null>;
+								pageInfo?: {
+									hasNextPage?: boolean | null;
+									endCursor?: string | null;
+								} | null;
+							} | null;
+						} | null;
+					} | null;
+				};
+
+				const reviewThreads = response.repository?.pullRequest?.reviewThreads;
+				const nodes = reviewThreads?.nodes ?? [];
+				for (const node of nodes) {
+					if (!node?.id) {
+						continue;
+					}
+
+					threads.push({
+						id: node.id,
+						isResolved: node.isResolved ?? false,
+						comments: (node.comments?.nodes ?? []).filter(
+							(comment): comment is PullRequestReviewThreadComment =>
+								comment !== null,
+						),
+					});
+				}
+
+				if (!reviewThreads?.pageInfo?.hasNextPage) {
+					break;
+				}
+				cursor = reviewThreads.pageInfo.endCursor ?? null;
+			} while (cursor !== null);
+
+			return threads;
+		} catch (error) {
+			throw this.classifyError(error);
+		}
+	}
+
+	async resolvePullRequestReviewThread(threadId: string): Promise<void> {
+		try {
+			await mutationQueue.execute(() =>
+				this.octokit.graphql(
+					`mutation($threadId: ID!) {
+  resolveReviewThread(input: { threadId: $threadId }) {
+    thread {
+      id
+      isResolved
+    }
+  }
+}`,
+					{ threadId },
+				),
+			);
 		} catch (error) {
 			throw this.classifyError(error);
 		}

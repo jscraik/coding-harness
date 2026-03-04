@@ -1,6 +1,8 @@
 name: Harness PR Pipeline
 
-on: pull_request
+on:
+  pull_request:
+  merge_group:
 
 permissions:
   contents: read
@@ -12,7 +14,8 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Validate PR template completion
-        uses: actions/github-script@v7
+        if: github.event_name == 'pull_request'
+        uses: actions/github-script@f28e40c7f34bde8b3046d885e986cb6290c5673b # v7
         with:
           script: |
             const body = context.payload.pull_request?.body ?? '';
@@ -60,6 +63,8 @@ jobs:
             const placeholders = [
               'pass/fail',
               '<link / artifact path / comment ID>',
+              '<0-5>',
+              '<reviewer + link>',
               'Add one-paragraph merge rationale here.',
             ];
             for (const placeholder of placeholders) {
@@ -68,16 +73,102 @@ jobs:
               }
             }
 
+            const reviewArtifactsMatch = body.match(/## Review artifacts([\s\S]*?)(?:\n## |\n# |$)/i);
+            if (reviewArtifactsMatch) {
+              const reviewArtifactsBody = reviewArtifactsMatch[1] ?? '';
+              const unresolvedTokens = reviewArtifactsBody.match(/<[^>\n]+>/g) ?? [];
+              for (const token of unresolvedTokens) {
+                errors.push('Replace unresolved placeholder token: ' + token);
+              }
+            }
+
             if (errors.length > 0) {
               core.setFailed(errors.join('\n'));
             }
+      - name: Skip PR template enforcement for merge queue
+        if: github.event_name == 'merge_group'
+        run: echo "merge_group event detected; PR template enforcement is pull_request-only."
+
+  risk-policy-gate:
+    name: risk-policy-gate
+    runs-on: ubuntu-latest
+    needs: [pr-template]
+    if: ${{ always() && (github.event_name == 'merge_group' || needs.pr-template.result == 'success') }}
+    steps:
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
+        with:
+          node-version: "20"
+      - name: Enable corepack
+        run: corepack enable
+      - name: Install dependencies
+        run: pnpm install
+      - name: Run fast preflight policy gate
+        run: |
+          if [[ "${{ github.event_name }}" == "pull_request" ]]; then
+            BASE_SHA="${{ github.event.pull_request.base.sha }}"
+            HEAD_SHA="${{ github.event.pull_request.head.sha }}"
+          else
+            BASE_SHA="${{ github.event.merge_group.base_sha }}"
+            HEAD_SHA="${{ github.event.merge_group.head_sha }}"
+          fi
+          CHANGED_FILES="$(git diff --name-only "$BASE_SHA" "$HEAD_SHA" | paste -sd, -)"
+          if [[ -z "$CHANGED_FILES" ]]; then
+            CHANGED_FILES="$(git ls-files | paste -sd, -)"
+          fi
+          pnpm exec tsx src/cli.ts preflight-gate \
+            --contract harness.contract.json \
+            --files "${CHANGED_FILES}" \
+            --json
+
+  dependency-review:
+    name: dependency-review
+    runs-on: ubuntu-latest
+    needs: [risk-policy-gate]
+    permissions:
+      contents: read
+      pull-requests: read
+    steps:
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
+      - name: Run dependency review (pull_request)
+        if: github.event_name == 'pull_request'
+        uses: actions/dependency-review-action@2031cfc080254a8a887f58cffee85186f0e49e48 # v4.9.0
+        with:
+          fail-on-severity: high
+      - name: Skip dependency review for merge queue
+        if: github.event_name == 'merge_group'
+        run: echo "Dependency review enforced on pull_request; merge_group runs are no-op."
+
+  actions-pinning:
+    name: actions-pinning
+    runs-on: ubuntu-latest
+    needs: [risk-policy-gate]
+    steps:
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
+      - name: Enforce pinned GitHub Actions
+        shell: bash
+        run: |
+          set -euo pipefail
+          violations=0
+          while IFS=: read -r file line raw; do
+            ref="$(printf "%s" "$raw" | sed -E 's/^[[:space:]]*(-[[:space:]]*)?uses:[[:space:]]*([^[:space:]#]+).*/\2/')"
+            if [[ "$ref" == ./* ]] || [[ "$ref" == docker://* ]]; then
+              continue
+            fi
+            if [[ ! "$ref" =~ @[0-9a-f]{40}$ ]]; then
+              echo "::error file=$file,line=$line::Action is not pinned to a full commit SHA: $ref"
+              violations=1
+            fi
+          done < <(rg -n "^[[:space:]]*(-[[:space:]]*)?uses:[[:space:]]*[^[:space:]]+" .github/workflows/*.yml)
+          exit "$violations"
 
   lint:
     name: lint
     runs-on: ubuntu-latest
+    needs: [risk-policy-gate]
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
         with:
           node-version: "20"
       - name: Enable corepack
@@ -90,9 +181,10 @@ jobs:
   typecheck:
     name: typecheck
     runs-on: ubuntu-latest
+    needs: [risk-policy-gate]
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
         with:
           node-version: "20"
       - name: Enable corepack
@@ -105,9 +197,10 @@ jobs:
   test:
     name: test
     runs-on: ubuntu-latest
+    needs: [risk-policy-gate]
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
         with:
           node-version: "20"
       - name: Enable corepack
@@ -120,9 +213,10 @@ jobs:
   audit:
     name: audit
     runs-on: ubuntu-latest
+    needs: [risk-policy-gate]
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
         with:
           node-version: "20"
       - name: Enable corepack
@@ -135,9 +229,10 @@ jobs:
   check:
     name: check
     runs-on: ubuntu-latest
+    needs: [risk-policy-gate]
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
         with:
           node-version: "20"
       - name: Enable corepack
@@ -150,7 +245,8 @@ jobs:
   memory:
     name: memory
     runs-on: ubuntu-latest
+    needs: [risk-policy-gate]
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
       - name: Validate memory.json
         run: test -f memory.json && jq -e '.meta.version == "1.0" and (.preamble.bootstrap | type == "boolean") and (.preamble.search | type == "boolean") and (.entries | type == "array")' memory.json >/dev/null

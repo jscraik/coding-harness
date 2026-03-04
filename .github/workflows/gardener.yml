@@ -14,13 +14,13 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
 
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
         with:
           node-version: "24"
 
-      - uses: pnpm/action-setup@v4
+      - uses: pnpm/action-setup@41ff72655975bd51cab0327fa583b6e92b6d3061 # v4
 
       - name: Get pnpm store directory
         shell: bash
@@ -29,7 +29,7 @@ jobs:
         id: pnpm-cache
 
       - name: Setup pnpm cache
-        uses: actions/cache@v4
+        uses: actions/cache@0057852bfaa89a56745cba8c7296529d2fc39830 # v4
         with:
           path: ${{ steps.pnpm-cache.outputs.STORE_PATH }}
           key: ${{ runner.os }}-pnpm-store-${{ hashFiles('**/pnpm-lock.yaml') }}
@@ -37,7 +37,7 @@ jobs:
             ${{ runner.os }}-pnpm-store-
 
       - name: Install lychee
-        uses: lycheeverse/lychee-action@v2
+        uses: lycheeverse/lychee-action@8646ba30535128ac92d33dfc9133794bfdd9b411 # v2
 
       - name: Install dependencies
         run: pnpm install
@@ -77,7 +77,7 @@ jobs:
         run: |
           BRANCH_NAME="gardener/$(date +%Y-%m-%d-%H%M%S)"
           git checkout -b "$BRANCH_NAME"
-          node dist/cli.js gardener || true
+          node dist/cli.js gardener --json || true
           git add docs/QUALITY_SCORE.md
           if git diff --cached --quiet; then
             echo "No gardener changes to commit."

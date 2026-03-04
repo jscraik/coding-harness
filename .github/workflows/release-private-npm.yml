@@ -21,6 +21,7 @@ on:
           - oidc
 
 permissions:
+  attestations: write
   contents: write
   id-token: write
 
@@ -32,18 +33,18 @@ jobs:
       github.event.inputs.confirm == 'release'
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
         with:
           fetch-depth: 0
 
       - name: Setup Node.js
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
         with:
           node-version: "24"
           registry-url: "https://registry.npmjs.org/"
 
       - name: Setup pnpm
-        uses: pnpm/action-setup@v4
+        uses: pnpm/action-setup@41ff72655975bd51cab0327fa583b6e92b6d3061 # v4
         with:
           run_install: false
 
@@ -54,7 +55,7 @@ jobs:
         id: pnpm-cache
 
       - name: Setup pnpm cache
-        uses: actions/cache@v4
+        uses: actions/cache@0057852bfaa89a56745cba8c7296529d2fc39830 # v4
         with:
           path: ${{ steps.pnpm-cache.outputs.STORE_PATH }}
           key: ${{ runner.os }}-pnpm-store-${{ hashFiles('**/pnpm-lock.yaml') }}
@@ -79,7 +80,7 @@ jobs:
         working-directory: ${{ github.workspace }}
 
       - name: Upload SBOM artifact
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         with:
           name: sbom
           path: artifacts/sbom.cdx.json
@@ -95,6 +96,9 @@ jobs:
           "$TMP_DIR/node_modules/.bin/harness" --version | tee "$TMP_DIR/version.txt"
           grep -Eq '^harness v[0-9]+\.[0-9]+\.[0-9]+' "$TMP_DIR/version.txt"
           node "$TMP_DIR/node_modules/@brainwav/coding-harness/dist/cli.js" --version
+
+      - name: Create package tarball for attestation
+        run: npm pack --silent
 
       - name: Verify tag matches package version
         if: github.event_name == 'push'
@@ -129,7 +133,13 @@ jobs:
         if: steps.publish-auth.outputs.mode == 'oidc'
         run: pnpm publish --no-git-checks --access restricted --provenance
 
-      - name: Generate attestations
+      - name: Generate build provenance attestation
+        if: steps.publish-auth.outputs.mode == 'oidc'
+        uses: actions/attest-build-provenance@977bb373ede98d70efdf65b84cb5f73e068dcc2a # v3
+        with:
+          subject-path: "*.tgz"
+
+      - name: Verify attestations
         if: steps.publish-auth.outputs.mode == 'oidc'
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
