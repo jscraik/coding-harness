@@ -193,6 +193,16 @@ Use this checklist per task:
   - ❌ expanded token values
 - If a token value is ever exposed in commit/PR text, treat it as compromised: rotate/revoke, rewrite history where applicable, and document remediation in the issue/PR.
 
+## Credential-safe evidence snippets
+
+- Never use command substitution in commit messages, PR bodies, or evidence notes for secrets.
+- Do **not** use `$(gh auth token)` (or similar) inside `git commit -m ...` / `gh pr create --body ...`.
+- Use placeholders in text output:
+  - ✅ `$GITHUB_TOKEN`
+  - ✅ `${GITHUB_TOKEN}`
+  - ❌ expanded token values
+- If a token value is ever exposed in commit/PR text, treat it as compromised: rotate/revoke, rewrite history where applicable, and document remediation in the issue/PR.
+
 ## Recommended GitHub branch protection settings
 
 Configure repository settings on `main` to make the workflow enforceable:
@@ -210,7 +220,6 @@ Configure repository settings on `main` to make the workflow enforceable:
   - `pnpm test`
   - `pnpm audit`
   - `pnpm check`
-  - `security-scan`
   - `memory`
 - Dismiss stale approvals when new commits are pushed.
 - Restrict pushes to `main` to `main` repository settings/admin workflows only.

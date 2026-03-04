@@ -40,15 +40,6 @@ export interface PullRequest {
 	};
 }
 
-export interface PullRequestReview {
-	state: string;
-	commit_id?: string | null;
-	user?: {
-		login: string;
-	};
-	submitted_at?: string | null;
-}
-
 export interface RulesetRule {
 	type: string;
 	parameters?: Record<string, unknown>;
@@ -194,25 +185,6 @@ export class GitHubClient {
 				pull_number: number,
 			});
 			return response.data as PullRequest;
-		} catch (error) {
-			throw this.classifyError(error);
-		}
-	}
-
-	async listPullRequestReviews(
-		pullNumber: number,
-	): Promise<PullRequestReview[]> {
-		try {
-			const response = await this.octokit.paginate(
-				this.octokit.pulls.listReviews,
-				{
-					owner: this.owner,
-					repo: this.repo,
-					pull_number: pullNumber,
-					per_page: 100,
-				},
-			);
-			return response as PullRequestReview[];
 		} catch (error) {
 			throw this.classifyError(error);
 		}

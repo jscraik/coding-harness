@@ -16,7 +16,6 @@ const DEFAULT_REQUIRED_CHECKS = [
 	"test",
 	"audit",
 	"check",
-	"security-scan",
 	"memory",
 ];
 
@@ -353,9 +352,6 @@ function mergeRefNameIncludes(
 ): string[] {
 	if (!Array.isArray(existingIncludes)) {
 		return [branchRef];
-	}
-	if (existingIncludes.length === 0) {
-		return [];
 	}
 	const normalized = normalizeStringList(existingIncludes);
 	if (normalized.length === 0) {

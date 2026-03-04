@@ -2,7 +2,6 @@
 import { realpathSync } from "node:fs";
 import { resolve } from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
-import { runAutomationRunCLI } from "./commands/automation-run.js";
 import {
 	type BlastRadiusOptions,
 	runBlastRadiusCLI,

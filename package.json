@@ -32,7 +32,6 @@
 		"typecheck": "tsc --noEmit",
 		"test": "vitest run",
 		"test:watch": "vitest",
-		"test:coverage": "vitest run --coverage",
 		"test:deep": "pnpm check && pnpm test:artifacts",
 		"build": "tsc && chmod +x dist/cli.js",
 		"prepublishOnly": "pnpm check && pnpm build",
