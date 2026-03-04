@@ -955,7 +955,7 @@ jobs:
       - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
       - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
         with:
-          node-version: "24"
+          node-version: "20"
       - name: Enable corepack
         run: corepack enable
       - name: Install dependencies
@@ -971,7 +971,7 @@ jobs:
       - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
       - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
         with:
-          node-version: "24"
+          node-version: "20"
       - name: Enable corepack
         run: corepack enable
       - name: Install dependencies
@@ -1003,7 +1003,7 @@ jobs:
       - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
       - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
         with:
-          node-version: "24"
+          node-version: "20"
       - name: Enable corepack
         run: corepack enable
       - name: Install dependencies
