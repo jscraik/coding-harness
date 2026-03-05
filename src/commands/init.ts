@@ -931,6 +931,144 @@ jobs:
           done < <(rg -n "^[[:space:]]*(-[[:space:]]*)?uses:[[:space:]]*[^[:space:]]+" .github/workflows/*.yml)
           exit "$violations"
 
+  consistency-drift-advisory:
+    name: consistency-drift-advisory
+    runs-on: ubuntu-latest
+    needs: [risk-policy-gate]
+    permissions:
+      contents: read
+      pull-requests: read
+      actions: write
+    steps:
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
+        with:
+          node-version: "24"
+      - name: Enable corepack
+        run: corepack enable
+      - name: Install dependencies
+        run: ${installCommand}
+      - name: Prepare baseline seed fallback
+        run: |
+          mkdir -p artifacts/consistency-gate
+          if [[ ! -f artifacts/consistency-gate/consistency-baseline-latest.json ]]; then
+            cat > artifacts/consistency-gate/consistency-baseline-latest.json <<'JSON'
+          {
+            "schemaVersion": "1.0.0",
+            "findings": []
+          }
+          JSON
+          fi
+      - name: Run advisory drift gate
+        run: |
+          pnpm exec tsx src/cli.ts drift-gate \\
+            --mode advisory \\
+            --json \\
+            --out artifacts/consistency-gate/consistency-drift-advisory-latest.json
+      - name: Advisory guard (soft-fail)
+        run: |
+          if [[ ! -s artifacts/consistency-gate/consistency-drift-advisory-latest.json ]]; then
+            echo "::warning::advisory report missing; writing fallback stub."
+            cat > artifacts/consistency-gate/consistency-drift-advisory-latest.json <<'JSON'
+          {
+            "schemaVersion": "1.0.0",
+            "command": "drift-gate",
+            "mode": "advisory",
+            "status": "blocked",
+            "outcome": "error",
+            "error_class": "io",
+            "generated_at": "1970-01-01T00:00:00.000Z",
+            "repo_root": ".",
+            "baseline": { "path": "artifacts/consistency-gate/consistency-baseline-latest.json", "loaded": false, "reason": "missing_report_output" },
+            "summary": { "finding_count": 1, "new_count": 1, "preexisting_count": 0, "error_count": 1 },
+            "findings": [
+              {
+                "rule_id": "report.output.missing",
+                "surface": "status",
+                "rule_result": "error",
+                "severity": "error",
+                "baseline_state": "new",
+                "message": "Advisory report missing; generated fallback stub."
+              }
+            ]
+          }
+          JSON
+          fi
+      - name: Upload advisory artifact
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: consistency-drift-advisory-latest
+          path: artifacts/consistency-gate/consistency-drift-advisory-latest.json
+
+  consistency-drift-health:
+    name: consistency-drift-health
+    runs-on: ubuntu-latest
+    needs: [risk-policy-gate]
+    permissions:
+      contents: read
+      pull-requests: read
+      actions: write
+    steps:
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
+        with:
+          node-version: "24"
+      - name: Enable corepack
+        run: corepack enable
+      - name: Install dependencies
+        run: ${installCommand}
+      - name: Detect baseline seed
+        id: baseline-seed
+        run: |
+          mkdir -p artifacts/consistency-gate
+          if [[ -f artifacts/consistency-gate/consistency-baseline-latest.json ]]; then
+            echo "seeded=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "seeded=false" >> "$GITHUB_OUTPUT"
+          fi
+      - name: Run health drift gate
+        if: steps.baseline-seed.outputs.seeded == 'true'
+        run: |
+          pnpm exec tsx src/cli.ts drift-gate \\
+            --mode health \\
+            --json \\
+            --out artifacts/consistency-gate/health.json
+      - name: Bootstrap health warning (first-run)
+        if: steps.baseline-seed.outputs.seeded != 'true'
+        run: |
+          cat > artifacts/consistency-gate/health.json <<'JSON'
+          {
+            "schemaVersion": "1.0.0",
+            "command": "drift-gate",
+            "mode": "health",
+            "status": "partial",
+            "outcome": "ok",
+            "error_class": "none",
+            "generated_at": "1970-01-01T00:00:00.000Z",
+            "repo_root": ".",
+            "baseline": { "path": "artifacts/consistency-gate/consistency-baseline-latest.json", "loaded": false, "reason": "bootstrap_seed_missing" },
+            "summary": { "finding_count": 1, "new_count": 1, "preexisting_count": 0, "error_count": 0 },
+            "findings": [
+              {
+                "rule_id": "baseline.seed.bootstrap",
+                "surface": "status",
+                "rule_result": "not_applicable",
+                "severity": "info",
+                "baseline_state": "new",
+                "message": "Health check running in bootstrap mode until baseline seed is published on default branch."
+              }
+            ]
+          }
+          JSON
+          echo "::warning::consistency-drift-health running in bootstrap mode (baseline seed missing)."
+      - name: Upload health artifact
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: consistency-drift-health-latest
+          path: artifacts/consistency-gate/health.json
+
   lint:
     name: lint
     runs-on: ubuntu-latest
@@ -1192,7 +1330,7 @@ Configure GitHub branch protection (or rulesets) on \`main\`:
   - \`--token <PAT>\` or env \`GITHUB_TOKEN\` / \`GITHUB_PERSONAL_ACCESS_TOKEN\`
 - Require pull request before merge.
 - Require at least one approval.
-- Require status checks: \`pr-template\`, \`risk-policy-gate\`, \`dependency-review\`, \`actions-pinning\`, \`lint\`, \`typecheck\`, \`test\`, \`audit\`, \`check\`, \`memory\`, \`security-scan\`.
+- Require status checks: \`pr-template\`, \`risk-policy-gate\`, \`dependency-review\`, \`actions-pinning\`, \`consistency-drift-health\`, \`lint\`, \`typecheck\`, \`test\`, \`audit\`, \`check\`, \`memory\`, \`security-scan\`.
 - Require workflows to pin third-party actions to full commit SHAs.
 - Configure required checks workflows to run on both \`pull_request\` and \`merge_group\` when using merge queue.
 - Block direct pushes to \`main\`.

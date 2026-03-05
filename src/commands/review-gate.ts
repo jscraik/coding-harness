@@ -36,6 +36,7 @@ export interface ReviewGateOptions {
 	headSha: string;
 	checkName: string;
 	botLogin?: string;
+	autoResolveBotThreads?: boolean;
 	json?: boolean;
 }
 
@@ -403,7 +404,12 @@ export async function runReviewGate(
 
 			// Still in progress - wait and retry
 			if (isCheckRunInProgress(checkResult)) {
-				await sleep(POLL_INTERVAL_MS);
+				const elapsedMs = Date.now() - startTime;
+				const remainingMs = timeoutMs - elapsedMs;
+				if (remainingMs <= 0) {
+					break;
+				}
+				await sleep(Math.min(POLL_INTERVAL_MS, remainingMs));
 			}
 		}
 
@@ -523,6 +529,47 @@ interface AuthzPreflightResult {
 	message?: string;
 }
 
+function normalizeBotLogin(login: string | undefined): string | undefined {
+	const trimmed = login?.trim().toLowerCase();
+	return trimmed && trimmed.length > 0 ? trimmed : undefined;
+}
+
+async function resolveBotOnlyThreads(
+	client: GitHubClient,
+	prNumber: number,
+	botLogins: Set<string>,
+): Promise<{ resolvedCount: number; unresolvedCount: number }> {
+	if (botLogins.size === 0) {
+		return { resolvedCount: 0, unresolvedCount: 0 };
+	}
+
+	const threads = await client.listPullRequestReviewThreads(prNumber);
+	const unresolvedThreads = threads.filter((thread) => !thread.isResolved);
+	let resolvedCount = 0;
+
+	for (const thread of unresolvedThreads) {
+		const commentAuthors = thread.comments
+			.map((comment) => normalizeBotLogin(comment.author?.login))
+			.filter((login): login is string => login !== undefined);
+		if (commentAuthors.length === 0) {
+			continue;
+		}
+
+		const isBotOnly = commentAuthors.every((login) => botLogins.has(login));
+		if (!isBotOnly) {
+			continue;
+		}
+
+		await client.resolvePullRequestReviewThread(thread.id);
+		resolvedCount += 1;
+	}
+
+	return {
+		resolvedCount,
+		unresolvedCount: unresolvedThreads.length - resolvedCount,
+	};
+}
+
 async function runAuthzPreflight({
 	client,
 	contractPath,
@@ -570,6 +617,47 @@ export async function runReviewGateCLI(
 	const result = await runReviewGate(options);
 
 	if (result.ok) {
+		if (result.output.verified && options.autoResolveBotThreads) {
+			try {
+				const client = new GitHubClient({
+					token: options.token,
+					owner: options.owner,
+					repo: options.repo,
+				});
+				const botLogins = new Set<string>(
+					[
+						options.botLogin,
+						"greptile-apps",
+						"greptile[bot]",
+						"chatgpt-codex-connector",
+					]
+						.map((login) => normalizeBotLogin(login))
+						.filter((login): login is string => login !== undefined),
+				);
+				const threadResolutionResult = await resolveBotOnlyThreads(
+					client,
+					options.prNumber,
+					botLogins,
+				);
+				if (!options.json) {
+					console.info(
+						`Resolved ${threadResolutionResult.resolvedCount} bot-only review thread(s).`,
+					);
+				}
+			} catch (error) {
+				const message = sanitizeError(error);
+				if (options.json) {
+					console.error(
+						JSON.stringify({
+							warning: `Failed to auto-resolve bot-only threads: ${message}`,
+						}),
+					);
+				} else {
+					console.warn(`⚠ Failed to auto-resolve bot-only threads: ${message}`);
+				}
+			}
+		}
+
 		if (options.json) {
 			console.info(JSON.stringify(result.output));
 		} else if (result.output.verified) {

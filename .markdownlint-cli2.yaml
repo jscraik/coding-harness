@@ -19,6 +19,7 @@ config:
   MD060: false      # Table column style - too pedantic for compact tables
 ignores:
   - node_modules
+  - .worktrees
   - dist
   - .git
   - CHANGELOG.md   # Auto-generated, skip linting

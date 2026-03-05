@@ -56,7 +56,7 @@ The repository already has strong primitives for remediation and review gating, 
 - Review gate exists with SHA validation + rerun-comment dedupe ([`src/commands/review-gate.ts`](../src/commands/review-gate.ts#L59-L236), [`src/lib/github/comments.ts`](../src/lib/github/comments.ts#L4-L90)).
 - `remediate` currently uses a hardcoded default remediation policy even when a contract is provided ([`src/commands/remediate.ts`](../src/commands/remediate.ts#L228-L237)).
 - `init` scaffolds many policy fields that are not fully represented by the loaded `HarnessContract` surface (`src/commands/init.ts:182-257`, `src/lib/contract/types.ts:46-70`).
-- CLI usage currently exposes `remediate` but no explicit minimal gap-case command for incident tracking ([`src/cli.ts`](../src/cli.ts#L50-L77)).
+- CLI usage now exposes explicit `gap-case` and `pilot-evaluate` commands for incident tracking and promotion checks ([`src/cli.ts`](../src/cli.ts#L93-L113)).
 
 This creates drift between intended operating model and measurable throughput outcomes.
 
@@ -80,7 +80,7 @@ This creates drift between intended operating model and measurable throughput ou
   - [`src/commands/init.ts`](../src/commands/init.ts)
   - [`src/lib/contract/types.ts`](../src/lib/contract/types.ts)
 - No `docs/solutions/` directory was found in this repo; nearest learnings are existing brainstorm/plan artifacts in [`docs/brainstorms`](../docs/brainstorms/) and [`docs/plans`](../docs/plans/).
-- No implemented `gap-case` command surface was found in `src/cli.ts` or `src/commands/`; minimal incident→gap-case flow is still net-new in this codebase.
+- `gap-case` and `pilot-evaluate` command surfaces are now implemented in `src/cli.ts`; treat earlier "net-new" notes in this plan as historical context.
 - Attempted specialist agent roles (`repo-research-analyst`, `learnings-researcher`, `spec-flow-analyzer`) were unavailable in this environment; analysis below is direct repository analysis.
 
 ### Skills and learnings discovery results
