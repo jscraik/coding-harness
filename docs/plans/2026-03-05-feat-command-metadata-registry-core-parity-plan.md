@@ -1,7 +1,7 @@
 ---
 title: feat: command metadata registry core parity
 type: feat
-status: active
+status: completed
 date: 2026-03-05
 origin: docs/brainstorms/2026-03-04-command-metadata-registry-brainstorm.md
 ---
