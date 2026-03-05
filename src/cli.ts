@@ -8,12 +8,8 @@ import {
 	runBlastRadiusCLI,
 } from "./commands/blast-radius.js";
 import { runBrainstormGateCLI } from "./commands/brainstorm-gate.js";
-import { runBranchProtectCLI } from "./commands/branch-protect.js";
-import { runCheckAuthzCLI } from "./commands/check-authz.js";
-import { runCheckEnvironmentCLI } from "./commands/check-environment.js";
 import { runContextCLI } from "./commands/context.js";
 import { runDiffBudgetCLI } from "./commands/diff-budget.js";
-import { runEvidenceVerifyCLI } from "./commands/evidence-verify.js";
 import { runGapCaseCLI } from "./commands/gap-case.js";
 import { runGardenerCLI } from "./commands/gardener.js";
 import { runIndexContextCLI } from "./commands/index-context.js";
@@ -26,15 +22,12 @@ import {
 	runPilotRollbackCLI,
 } from "./commands/pilot-rollback.js";
 import { runPlanGateCLI } from "./commands/plan-gate.js";
-import { runPolicyGateCLI } from "./commands/policy-gate.js";
-import { runPreflightGateCLI } from "./commands/preflight-gate.js";
 import { runPromptGateCLI } from "./commands/prompt-gate.js";
 import {
 	type RemediateOptions,
 	runRemediateCLI,
 } from "./commands/remediate.js";
 import { runReplayCLI } from "./commands/replay.js";
-import { runReviewGateCLI } from "./commands/review-gate.js";
 import { runRiskTierCLI } from "./commands/risk-tier.js";
 import { runSearchCLI } from "./commands/search.js";
 import { runSilentErrorDetectorCLI } from "./commands/silent-error.js";
@@ -45,6 +38,16 @@ import {
 	runUIVerifyCLI,
 } from "./commands/ui-loop.js";
 import { runVerifyGreptileCLI } from "./commands/verify-greptile.js";
+import {
+	dispatchRegistryCommand,
+	getRegistryCommandHelpRows,
+} from "./lib/cli/command-registry.js";
+import { renderCommandHelpRows } from "./lib/cli/help-renderer.js";
+import {
+	getFlagValue,
+	parseCsvList,
+	parseIntegerArg,
+} from "./lib/cli/parse-utils.js";
 import { sanitizeError } from "./lib/input/sanitize.js";
 import { getVersion } from "./lib/version.js";
 
@@ -66,52 +69,87 @@ process.on("uncaughtException", (error) => {
 });
 
 function printUsage(): void {
+	const legacyCommandRows = [
+		{ name: "init", summary: "Install harness in current directory" },
+		{ name: "risk-tier", summary: "Classify files by risk tier" },
+		{ name: "gardener", summary: "Detect stale docs and broken links" },
+		{
+			name: "memory-gate",
+			summary: "Validate local-memory workflow compliance",
+		},
+		{
+			name: "silent-error",
+			summary: "Detect silent error handling anti-patterns",
+		},
+		{ name: "brainstorm-gate", summary: "Validate brainstorm artifacts" },
+		{ name: "plan-gate", summary: "Validate plan artifacts" },
+		{ name: "prompt-gate", summary: "Validate prompt template usage" },
+		{
+			name: "blast-radius",
+			summary: "Determine required checks from changed files",
+		},
+		{
+			name: "remediate",
+			summary: "Auto-plan and execute deterministic remediation",
+		},
+		{
+			name: "gap-case",
+			summary: "Manage production gap cases (create/list/resolve)",
+		},
+		{
+			name: "observability-gate",
+			summary: "Check cardinality limits in metrics",
+		},
+		{ name: "diff-budget", summary: "Enforce diff budget constraints" },
+		{
+			name: "automation-run",
+			summary: "Execute Pulse/Upskill/Green PRs/Drift Check idempotently",
+		},
+		{ name: "ui:fast", summary: "Storybook-first local development loop" },
+		{ name: "ui:verify", summary: "Playwright smoke suite with evidence" },
+		{
+			name: "ui:explore",
+			summary: "Agent browser exploratory testing",
+		},
+		{
+			name: "context",
+			summary: "Semantic search for relevant prior work",
+		},
+		{
+			name: "search",
+			summary: "Agent-first hybrid lexical + semantic search",
+		},
+		{
+			name: "index-context",
+			summary: "Bulk index brainstorms/plans for search",
+		},
+		{
+			name: "pilot-evaluate",
+			summary: "Evaluate pilot metrics and determine promotion",
+		},
+		{
+			name: "pilot-rollback",
+			summary: "Transition pilot mode (autonomous <-> manual)",
+		},
+		{
+			name: "simulate",
+			summary: "Run counterfactual policy simulation",
+		},
+		{
+			name: "verify-greptile",
+			summary: "Verify Greptile setup and configuration",
+		},
+	];
+
 	console.info("Usage: harness <command> [options]");
 	console.info("");
 	console.info("Commands:");
-	console.info("  init             Install harness in current directory");
-	console.info("  risk-tier        Classify files by risk tier");
-	console.info("  evidence-verify  Verify evidence files (screenshots)");
-	console.info("  gardener         Detect stale docs and broken links");
-	console.info("  memory-gate      Validate local-memory workflow compliance");
-	console.info(
-		"  preflight-gate   Fast policy checks before expensive operations",
-	);
-	console.info("  silent-error     Detect silent error handling anti-patterns");
-	console.info("  review-gate      Review gate with SHA enforcement");
-	console.info("  branch-protect   Configure GitHub branch protection ruleset");
-	console.info("  brainstorm-gate  Validate brainstorm artifacts");
-	console.info("  plan-gate        Validate plan artifacts");
-	console.info("  prompt-gate      Validate prompt template usage");
-	console.info(
-		"  blast-radius     Determine required checks from changed files",
-	);
-	console.info(
-		"  remediate        Auto-plan and execute deterministic remediation",
-	);
-	console.info(
-		"  gap-case         Manage production gap cases (create/list/resolve)",
-	);
-	console.info("  observability-gate  Check cardinality limits in metrics");
-	console.info("  diff-budget      Enforce diff budget constraints");
-	console.info(
-		"  automation-run  Execute Pulse/Upskill/Green PRs/Drift Check idempotently",
-	);
-	console.info("  ui:fast          Storybook-first local development loop");
-	console.info("  ui:verify        Playwright smoke suite with evidence");
-	console.info("  ui:explore       Agent browser exploratory testing");
-	console.info("  context          Semantic search for relevant prior work");
-	console.info(
-		"  search           Agent-first hybrid lexical + semantic search",
-	);
-	console.info("  index-context    Bulk index brainstorms/plans for search");
-	console.info("  remediate        Apply automated fixes for findings");
-	console.info("  gap-case         Track and resolve gap-cases for pilot");
-	console.info(
-		"  pilot-evaluate   Evaluate pilot metrics and determine promotion",
-	);
-	console.info("  simulate         Run counterfactual policy simulation");
-	console.info("  verify-greptile  Verify Greptile setup and configuration");
+	for (const line of renderCommandHelpRows([
+		...legacyCommandRows,
+		...getRegistryCommandHelpRows(),
+	])) {
+		console.info(line);
+	}
 	console.info("");
 	console.info("Blast Radius Options:");
 	console.info("  --contract       Path to harness.contract.json");
@@ -299,48 +337,7 @@ function printUsage(): void {
 	console.info("  --version, -v  Print version");
 	console.info("  --help, -h     Print this help");
 }
-
-export function parseIntegerArg(
-	value: string | undefined,
-	min: number = Number.NEGATIVE_INFINITY,
-): number | undefined {
-	if (value === undefined) {
-		return undefined;
-	}
-	const trimmed = value.trim();
-	if (!/^-?\d+$/.test(trimmed)) {
-		return undefined;
-	}
-	const parsed = Number.parseInt(trimmed, 10);
-	if (!Number.isFinite(parsed) || parsed < min) {
-		return undefined;
-	}
-	return parsed;
-}
-
-export function parseCsvList(value: string | undefined): string[] {
-	if (value === undefined) {
-		return [];
-	}
-	// Treat another flag (starts with -) as missing value
-	if (value.startsWith("-")) {
-		return [];
-	}
-	return value
-		.split(",")
-		.map((item) => item.trim())
-		.filter((item) => item.length > 0);
-}
-
-/**
- * Get the value for a flag, returning undefined if the value is another flag.
- */
-function getFlagValue(args: string[], flagIndex: number): string | undefined {
-	if (flagIndex === -1) return undefined;
-	const value = args[flagIndex + 1];
-	if (value === undefined || value.startsWith("-")) return undefined;
-	return value;
-}
+export { parseIntegerArg, parseCsvList };
 
 export function run(args: string[]): void {
 	const version = getVersion();
@@ -363,6 +360,20 @@ export function run(args: string[]): void {
 	// Parse command
 	const command = args[0];
 
+	const registryDispatch = dispatchRegistryCommand(command, args);
+	if (registryDispatch) {
+		if (registryDispatch.result instanceof Promise) {
+			registryDispatch.result
+				.then((exitCode) => process.exit(exitCode))
+				.catch((error) =>
+					handleFatalError(registryDispatch.spec.errorLabel, error),
+				);
+			return;
+		}
+		process.exit(registryDispatch.result);
+		return;
+	}
+
 	if (command === "risk-tier") {
 		// Parse risk-tier options
 		const jsonFlag = args.includes("--json");
@@ -381,47 +392,6 @@ export function run(args: string[]): void {
 			files,
 			json: jsonFlag,
 		});
-		process.exit(exitCode);
-		return;
-	}
-
-	if (command === "policy-gate") {
-		// Parse policy-gate options
-		const jsonFlag = args.includes("--json");
-		const filesIndex = args.indexOf("--files");
-		const contractIndex = args.indexOf("--contract");
-		const maxTierIndex = args.indexOf("--max-tier");
-
-		const files: string[] = [];
-		const filesArg = getFlagValue(args, filesIndex);
-		files.push(...parseCsvList(filesArg));
-
-		const contractArg = getFlagValue(args, contractIndex);
-		const contractPath = contractArg ?? "harness.contract.json";
-
-		let maxTier: "high" | "medium" | "low" | undefined;
-		const maxTierArg = getFlagValue(args, maxTierIndex);
-		if (
-			maxTierArg === "high" ||
-			maxTierArg === "medium" ||
-			maxTierArg === "low"
-		) {
-			maxTier = maxTierArg;
-		}
-
-		const options: {
-			contractPath: string;
-			files: string[];
-			maxTier?: "high" | "medium" | "low";
-			json: boolean;
-		} = {
-			contractPath,
-			files,
-			json: jsonFlag,
-		};
-		if (maxTier) options.maxTier = maxTier;
-
-		const exitCode = runPolicyGateCLI(options);
 		process.exit(exitCode);
 		return;
 	}
@@ -464,33 +434,6 @@ export function run(args: string[]): void {
 		runReplayCLI(options)
 			.then((exitCode) => process.exit(exitCode))
 			.catch((error) => handleFatalError("Replay Error", error));
-		return;
-	}
-
-	if (command === "evidence-verify") {
-		// Parse evidence-verify options
-		const jsonFlag = args.includes("--json");
-		const filesIndex = args.indexOf("--files");
-		const contractIndex = args.indexOf("--contract");
-		const changedIndex = args.indexOf("--changed");
-
-		const files: string[] = [];
-		const filesArg = getFlagValue(args, filesIndex);
-		files.push(...parseCsvList(filesArg));
-
-		const contractArg = getFlagValue(args, contractIndex);
-
-		const changedFiles: string[] = [];
-		const changedArg = getFlagValue(args, changedIndex);
-		changedFiles.push(...parseCsvList(changedArg));
-
-		const exitCode = runEvidenceVerifyCLI({
-			files,
-			contract: contractArg,
-			json: jsonFlag,
-			changed: changedFiles.length > 0 ? changedFiles : undefined,
-		});
-		process.exit(exitCode);
 		return;
 	}
 
@@ -557,60 +500,6 @@ export function run(args: string[]): void {
 
 		const exitCode = runMemoryGateCLI(options);
 		process.exit(exitCode);
-		return;
-	}
-
-	if (command === "preflight-gate") {
-		// Parse preflight-gate options
-		const jsonFlag = args.includes("--json");
-		const strictFlag = args.includes("--strict");
-		const contractIndex = args.indexOf("--contract");
-		const filesIndex = args.indexOf("--files");
-		const maxTierIndex = args.indexOf("--max-tier");
-		const skipIndex = args.indexOf("--skip");
-		const headShaIndex = args.indexOf("--head-sha");
-
-		const options: {
-			contractPath?: string;
-			files?: string[];
-			maxTier?: "high" | "medium" | "low";
-			strict?: boolean;
-			skip?: string[];
-			json?: boolean;
-			headSha?: string;
-		} = {};
-
-		if (jsonFlag) options.json = true;
-		if (strictFlag) options.strict = true;
-		const contractArg = getFlagValue(args, contractIndex);
-		if (contractArg) {
-			options.contractPath = contractArg;
-		}
-		const filesArg = getFlagValue(args, filesIndex);
-		if (filesArg !== undefined) {
-			options.files = parseCsvList(filesArg);
-		}
-		const maxTierArg = getFlagValue(args, maxTierIndex);
-		if (
-			maxTierArg === "high" ||
-			maxTierArg === "medium" ||
-			maxTierArg === "low"
-		) {
-			options.maxTier = maxTierArg;
-		}
-		const skipArg = getFlagValue(args, skipIndex);
-		if (skipArg !== undefined) {
-			options.skip = parseCsvList(skipArg);
-		}
-		const headShaArg = getFlagValue(args, headShaIndex);
-		if (headShaArg) {
-			options.headSha = headShaArg;
-		}
-
-		// Handle async preflight gate
-		runPreflightGateCLI(options)
-			.then((exitCode) => process.exit(exitCode))
-			.catch((error) => handleFatalError("Preflight Gate Error", error));
 		return;
 	}
 
@@ -714,129 +603,6 @@ export function run(args: string[]): void {
 
 		const exitCode = runDiffBudgetCLI(options);
 		process.exit(exitCode);
-		return;
-	}
-
-	if (command === "review-gate") {
-		// Parse review-gate options
-		const jsonFlag = args.includes("--json");
-		const autoResolveBotThreadsFlag = args.includes(
-			"--auto-resolve-bot-threads",
-		);
-		const tokenIndex = args.indexOf("--token");
-		const ownerIndex = args.indexOf("--owner");
-		const repoIndex = args.indexOf("--repo");
-		const prIndex = args.indexOf("--pr");
-		const shaIndex = args.indexOf("--sha");
-		const checkIndex = args.indexOf("--check");
-		const botLoginIndex = args.indexOf("--bot-login");
-		const contractIndex = args.indexOf("--contract");
-
-		const options: {
-			token: string;
-			owner: string;
-			repo: string;
-			prNumber: number;
-			headSha: string;
-			checkName: string;
-			botLogin?: string;
-			autoResolveBotThreads?: boolean;
-			contractPath: string;
-			json?: boolean;
-		} = {
-			token: "",
-			owner: "",
-			repo: "",
-			prNumber: 0,
-			headSha: "",
-			checkName: "code-review",
-			contractPath: "harness.contract.json",
-		};
-
-		if (jsonFlag) options.json = true;
-		const tokenArg = getFlagValue(args, tokenIndex);
-		if (tokenArg) options.token = tokenArg;
-		const ownerArg = getFlagValue(args, ownerIndex);
-		if (ownerArg) options.owner = ownerArg;
-		const repoArg = getFlagValue(args, repoIndex);
-		if (repoArg) options.repo = repoArg;
-		const prArg = getFlagValue(args, prIndex);
-		if (prArg) {
-			const parsedPr = parseIntegerArg(prArg, 1);
-			if (parsedPr !== undefined) options.prNumber = parsedPr;
-		}
-		const shaArg = getFlagValue(args, shaIndex);
-		if (shaArg) options.headSha = shaArg;
-		const checkArg = getFlagValue(args, checkIndex);
-		if (checkArg) options.checkName = checkArg;
-		const botLoginArg = getFlagValue(args, botLoginIndex);
-		if (botLoginArg) options.botLogin = botLoginArg;
-		if (autoResolveBotThreadsFlag) {
-			options.autoResolveBotThreads = true;
-		}
-		const contractArg = getFlagValue(args, contractIndex);
-		if (contractArg) options.contractPath = contractArg;
-
-		runReviewGateCLI(options)
-			.then((exitCode) => process.exit(exitCode))
-			.catch((error) => handleFatalError("Review Gate Error", error));
-		return;
-	}
-
-	if (command === "branch-protect") {
-		const jsonFlag = args.includes("--json");
-		const dryRunFlag = args.includes("--dry-run");
-		const tokenIndex = args.indexOf("--token");
-		const ownerIndex = args.indexOf("--owner");
-		const repoIndex = args.indexOf("--repo");
-		const branchIndex = args.indexOf("--branch");
-		const rulesetIndex = args.indexOf("--ruleset");
-		const checksIndex = args.indexOf("--checks");
-		const approvalsIndex = args.indexOf("--required-approvals");
-		const checksArg = getFlagValue(args, checksIndex);
-		const approvalsArg =
-			approvalsIndex === -1 ? undefined : args[approvalsIndex + 1];
-
-		const options: {
-			token?: string;
-			owner?: string;
-			repo?: string;
-			branch?: string;
-			rulesetName?: string;
-			requiredChecks?: string[];
-			requiredApprovingReviewCount?: number;
-			dryRun?: boolean;
-			json?: boolean;
-		} = {};
-
-		if (jsonFlag) options.json = true;
-		if (dryRunFlag) options.dryRun = true;
-		const tokenArg = getFlagValue(args, tokenIndex);
-		if (tokenArg) options.token = tokenArg;
-		const ownerArg = getFlagValue(args, ownerIndex);
-		if (ownerArg) options.owner = ownerArg;
-		const repoArg = getFlagValue(args, repoIndex);
-		if (repoArg) options.repo = repoArg;
-		const branchArg = getFlagValue(args, branchIndex);
-		if (branchArg) options.branch = branchArg;
-		const rulesetArg = getFlagValue(args, rulesetIndex);
-		if (rulesetArg) options.rulesetName = rulesetArg;
-		if (checksArg !== undefined) {
-			options.requiredChecks = parseCsvList(checksArg);
-		}
-		if (approvalsIndex !== -1) {
-			const parsedApprovals = parseIntegerArg(approvalsArg, 0);
-			if (parsedApprovals === undefined) {
-				console.error("--required-approvals expects a non-negative integer.");
-				process.exit(1);
-				return;
-			}
-			options.requiredApprovingReviewCount = parsedApprovals;
-		}
-
-		runBranchProtectCLI(options)
-			.then((exitCode) => process.exit(exitCode))
-			.catch((error) => handleFatalError("Branch Protect Error", error));
 		return;
 	}
 
@@ -1326,108 +1092,6 @@ export function run(args: string[]): void {
 		runPilotRollbackCLI(options)
 			.then((exitCode) => process.exit(exitCode))
 			.catch((error) => handleFatalError("Pilot Rollback Error", error));
-		return;
-	}
-
-	if (command === "policy-gate" || command === "risk-policy-gate") {
-		// Parse policy-gate options
-		const jsonFlag = args.includes("--json");
-		const contractIndex = args.indexOf("--contract");
-		const filesIndex = args.indexOf("--files");
-		const maxTierIndex = args.indexOf("--max-tier");
-
-		const options: {
-			contractPath: string;
-			files: string[];
-			json?: boolean;
-			maxTier?: "high" | "medium" | "low";
-		} = {
-			contractPath: "harness.contract.json",
-			files: [],
-		};
-
-		if (jsonFlag) options.json = true;
-		const contractArg = getFlagValue(args, contractIndex);
-		if (contractArg) options.contractPath = contractArg;
-		const filesArg = getFlagValue(args, filesIndex);
-		if (filesArg) {
-			options.files = parseCsvList(filesArg);
-		}
-		const maxTierArg = getFlagValue(args, maxTierIndex);
-		if (
-			maxTierArg === "high" ||
-			maxTierArg === "medium" ||
-			maxTierArg === "low"
-		) {
-			options.maxTier = maxTierArg;
-		}
-
-		const exitCode = runPolicyGateCLI(options);
-		process.exit(exitCode);
-		return;
-	}
-
-	if (command === "check-authz") {
-		// Parse check-authz options (async)
-		const jsonFlag = args.includes("--json");
-		const checkScopesFlag = args.includes("--check-scopes");
-		const contractIndex = args.indexOf("--contract");
-		const repoIndex = args.indexOf("--repo");
-		const branchIndex = args.indexOf("--branch");
-
-		const options: {
-			contractPath?: string;
-			repo?: string;
-			branch?: string;
-			checkScopes?: boolean;
-			json?: boolean;
-		} = {};
-
-		if (jsonFlag) options.json = true;
-		if (checkScopesFlag) options.checkScopes = true;
-		const contractArg = getFlagValue(args, contractIndex);
-		if (contractArg) options.contractPath = contractArg;
-		const repoArg = getFlagValue(args, repoIndex);
-		if (repoArg) options.repo = repoArg;
-		const branchArg = getFlagValue(args, branchIndex);
-		if (branchArg) options.branch = branchArg;
-
-		runCheckAuthzCLI(options)
-			.then((exitCode) => process.exit(exitCode))
-			.catch((error) => handleFatalError("Check Authz Error", error));
-		return;
-	}
-
-	if (command === "check-environment") {
-		// Parse check-environment options (async)
-		const jsonFlag = args.includes("--json");
-		const checkSecretsFlag = args.includes("--check-secrets");
-		const contractIndex = args.indexOf("--contract");
-		const attestationIndex = args.indexOf("--attestation");
-		const allowedSandboxIndex = args.indexOf("--allowed-sandbox");
-
-		const options: {
-			contractPath?: string;
-			checkSecrets?: boolean;
-			allowedSandboxModes?: string[];
-			json?: boolean;
-			attestationPath?: string;
-		} = {};
-
-		if (jsonFlag) options.json = true;
-		if (checkSecretsFlag) options.checkSecrets = true;
-		const contractArg = getFlagValue(args, contractIndex);
-		if (contractArg) options.contractPath = contractArg;
-		const attestationArg = getFlagValue(args, attestationIndex);
-		if (attestationArg) options.attestationPath = attestationArg;
-		const allowedSandboxArg = getFlagValue(args, allowedSandboxIndex);
-		if (allowedSandboxArg) {
-			options.allowedSandboxModes = parseCsvList(allowedSandboxArg);
-		}
-
-		runCheckEnvironmentCLI(options)
-			.then((exitCode) => process.exit(exitCode))
-			.catch((error) => handleFatalError("Check Environment Error", error));
 		return;
 	}
 
