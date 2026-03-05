@@ -423,6 +423,38 @@ describe("cli command dispatch", () => {
 		expect(exitSpy).toHaveBeenCalledWith(42);
 	});
 
+	it("dispatches policy-gate command and preserves explicit empty contract value", async () => {
+		const { run } = await import("./cli.js");
+		const { runPolicyGateCLI } = await import("./commands/policy-gate.js");
+
+		const exitSpy = vi.spyOn(process, "exit").mockImplementation(((
+			code?: number,
+		) => {
+			throw new Error(`EXIT_${String(code)}`);
+		}) as never);
+
+		expect(() =>
+			run([
+				"policy-gate",
+				"--contract",
+				"",
+				"--files",
+				"src/a.ts",
+				"--max-tier",
+				"low",
+				"--json",
+			]),
+		).toThrowError("EXIT_42");
+
+		expect(vi.mocked(runPolicyGateCLI)).toHaveBeenCalledWith({
+			contractPath: "",
+			files: ["src/a.ts"],
+			maxTier: "low",
+			json: true,
+		});
+		expect(exitSpy).toHaveBeenCalledWith(42);
+	});
+
 	// Note: The remediate command doesn't support --findings flag in the current implementation
 	it.skip("dispatches remediate command", async () => {
 		const { run } = await import("./cli.js");

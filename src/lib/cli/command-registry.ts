@@ -40,7 +40,7 @@ const COMMAND_SPECS: CommandSpec[] = [
 
 			if (jsonFlag) options.json = true;
 			const contractArg = getFlagValue(args, contractIndex);
-			if (contractArg) options.contractPath = contractArg;
+			if (contractArg !== undefined) options.contractPath = contractArg;
 			const filesArg = getFlagValue(args, filesIndex);
 			if (filesArg) {
 				options.files = parseCsvList(filesArg);
@@ -103,7 +103,7 @@ const COMMAND_SPECS: CommandSpec[] = [
 			if (jsonFlag) options.json = true;
 			if (strictFlag) options.strict = true;
 			const contractArg = getFlagValue(args, contractIndex);
-			if (contractArg) {
+			if (contractArg !== undefined) {
 				options.contractPath = contractArg;
 			}
 			const filesArg = getFlagValue(args, filesIndex);
@@ -174,7 +174,7 @@ const COMMAND_SPECS: CommandSpec[] = [
 			const botLoginArg = getFlagValue(args, botLoginIndex);
 			if (botLoginArg) options.botLogin = botLoginArg;
 			const contractArg = getFlagValue(args, contractIndex);
-			if (contractArg) options.contractPath = contractArg;
+			if (contractArg !== undefined) options.contractPath = contractArg;
 
 			return runReviewGateCLI(options);
 		},
@@ -194,8 +194,7 @@ const COMMAND_SPECS: CommandSpec[] = [
 			const checksIndex = args.indexOf("--checks");
 			const approvalsIndex = args.indexOf("--required-approvals");
 			const checksArg = getFlagValue(args, checksIndex);
-			const approvalsArg =
-				approvalsIndex === -1 ? undefined : args[approvalsIndex + 1];
+			const approvalsArg = getFlagValue(args, approvalsIndex);
 
 			const options: Parameters<typeof runBranchProtectCLI>[0] = {};
 
@@ -242,7 +241,7 @@ const COMMAND_SPECS: CommandSpec[] = [
 			if (jsonFlag) options.json = true;
 			if (checkScopesFlag) options.checkScopes = true;
 			const contractArg = getFlagValue(args, contractIndex);
-			if (contractArg) options.contractPath = contractArg;
+			if (contractArg !== undefined) options.contractPath = contractArg;
 			const repoArg = getFlagValue(args, repoIndex);
 			if (repoArg) options.repo = repoArg;
 			const branchArg = getFlagValue(args, branchIndex);
@@ -267,7 +266,7 @@ const COMMAND_SPECS: CommandSpec[] = [
 			if (jsonFlag) options.json = true;
 			if (checkSecretsFlag) options.checkSecrets = true;
 			const contractArg = getFlagValue(args, contractIndex);
-			if (contractArg) options.contractPath = contractArg;
+			if (contractArg !== undefined) options.contractPath = contractArg;
 			const attestationArg = getFlagValue(args, attestationIndex);
 			if (attestationArg) options.attestationPath = attestationArg;
 			const allowedSandboxArg = getFlagValue(args, allowedSandboxIndex);

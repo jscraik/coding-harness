@@ -24,6 +24,8 @@ describe("help renderer", () => {
 			{ name: "risk-tier", summary: "duplicate" },
 		]);
 
-		expect(lines).toEqual(["  risk-tier        Classify files by risk tier"]);
+		expect(lines).toEqual([
+			"  risk-tier                Classify files by risk tier",
+		]);
 	});
 });

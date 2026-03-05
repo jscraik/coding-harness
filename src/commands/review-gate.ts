@@ -569,17 +569,32 @@ export async function runReviewGateCLI(
 ): Promise<number> {
 	const result = await runReviewGate(options);
 
+	const logConfidenceExport = (output: ReviewGateOutput): void => {
+		console.info(
+			[
+				`REVIEW_CONFIDENCE_SCORE=${output.confidence_rubric.score}/5`,
+				`REVIEW_CONFIDENCE_LEVEL=${output.confidence_rubric.level}`,
+				`REVIEW_POLICY_GATE=${output.policy_gate_status}`,
+				`REVIEW_ACTIONABLE=${output.actionable_count}`,
+				`REVIEW_INFORMATIONAL=${output.informational_count}`,
+			].join(" "),
+		);
+	};
+
 	if (result.ok) {
 		if (options.json) {
 			console.info(JSON.stringify(result.output));
 		} else if (result.output.verified) {
 			console.info(`✓ Review verified for SHA ${result.output.headSha}`);
+			logConfidenceExport(result.output);
 		} else if (result.output.timedOut) {
 			console.warn(`⚠ Review check timed out for SHA ${result.output.headSha}`);
+			logConfidenceExport(result.output);
 		} else {
 			console.error(
 				`✗ Review not verified: check ${result.output.checkStatus}`,
 			);
+			logConfidenceExport(result.output);
 		}
 
 		return result.output.verified

@@ -3,7 +3,7 @@ export interface CommandHelpRow {
 	summary: string;
 }
 
-const COMMAND_COLUMN_WIDTH = 16;
+const COMMAND_COLUMN_WIDTH = 24;
 
 export function dedupeCommandHelpRows(
 	rows: CommandHelpRow[],
