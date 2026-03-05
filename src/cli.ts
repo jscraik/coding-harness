@@ -13,6 +13,7 @@ import { runCheckAuthzCLI } from "./commands/check-authz.js";
 import { runCheckEnvironmentCLI } from "./commands/check-environment.js";
 import { runContextCLI } from "./commands/context.js";
 import { runDiffBudgetCLI } from "./commands/diff-budget.js";
+import { runDriftGateCLI } from "./commands/drift-gate.js";
 import { runEvidenceVerifyCLI } from "./commands/evidence-verify.js";
 import { runGapCaseCLI } from "./commands/gap-case.js";
 import { runGardenerCLI } from "./commands/gardener.js";
@@ -94,6 +95,9 @@ function printUsage(): void {
 	);
 	console.info("  observability-gate  Check cardinality limits in metrics");
 	console.info("  diff-budget      Enforce diff budget constraints");
+	console.info(
+		"  drift-gate       Evaluate consistency drift across governance surfaces",
+	);
 	console.info(
 		"  automation-run  Execute Pulse/Upskill/Green PRs/Drift Check idempotently",
 	);
@@ -225,6 +229,16 @@ function printUsage(): void {
 	console.info("  --head           Head ref (default: HEAD)");
 	console.info("  --contract       Path to harness.contract.json");
 	console.info("  --override       Path to override file");
+	console.info("  --json           Output results as JSON");
+	console.info("");
+	console.info("Drift Gate Options:");
+	console.info("  --mode           advisory|health (default: advisory)");
+	console.info(
+		"  --out            Write machine report to file (default advisory path)",
+	);
+	console.info(
+		"  --baseline       Baseline report path (default: artifacts/consistency-gate/consistency-baseline-latest.json)",
+	);
 	console.info("  --json           Output results as JSON");
 	console.info("");
 	console.info("Review Gate Options:");
@@ -713,6 +727,40 @@ export function run(args: string[]): void {
 		if (overrideArg) options.overridePath = overrideArg;
 
 		const exitCode = runDiffBudgetCLI(options);
+		process.exit(exitCode);
+		return;
+	}
+
+	if (command === "drift-gate") {
+		// Parse drift-gate options
+		const jsonFlag = args.includes("--json");
+		const modeIndex = args.indexOf("--mode");
+		const outIndex = args.indexOf("--out");
+		const baselineIndex = args.indexOf("--baseline");
+
+		const options: {
+			mode?: "advisory" | "health";
+			json?: boolean;
+			outPath?: string;
+			baselinePath?: string;
+		} = {};
+
+		if (jsonFlag) options.json = true;
+		const modeArg = getFlagValue(args, modeIndex);
+		if (modeArg) {
+			if (modeArg !== "advisory" && modeArg !== "health") {
+				console.error("Error: --mode must be advisory or health");
+				process.exit(2);
+				return;
+			}
+			options.mode = modeArg;
+		}
+		const outArg = getFlagValue(args, outIndex);
+		if (outArg) options.outPath = outArg;
+		const baselineArg = getFlagValue(args, baselineIndex);
+		if (baselineArg) options.baselinePath = baselineArg;
+
+		const exitCode = runDriftGateCLI(options);
 		process.exit(exitCode);
 		return;
 	}
