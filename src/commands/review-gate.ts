@@ -403,7 +403,12 @@ export async function runReviewGate(
 
 			// Still in progress - wait and retry
 			if (isCheckRunInProgress(checkResult)) {
-				await sleep(POLL_INTERVAL_MS);
+				const elapsedMs = Date.now() - startTime;
+				const remainingMs = timeoutMs - elapsedMs;
+				if (remainingMs <= 0) {
+					break;
+				}
+				await sleep(Math.min(POLL_INTERVAL_MS, remainingMs));
 			}
 		}
 
