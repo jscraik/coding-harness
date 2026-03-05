@@ -36,6 +36,7 @@ export interface ReviewGateOptions {
 	headSha: string;
 	checkName: string;
 	botLogin?: string;
+	autoResolveBotThreads?: boolean;
 	json?: boolean;
 }
 

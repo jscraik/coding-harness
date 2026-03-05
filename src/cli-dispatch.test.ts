@@ -789,6 +789,44 @@ describe("cli command dispatch", () => {
 		expect(exitSpy).toHaveBeenCalledWith(45);
 	});
 
+	it("dispatches review-gate command and preserves --auto-resolve-bot-threads flag", async () => {
+		const { run } = await import("./cli.js");
+		const { runReviewGateCLI } = await import("./commands/review-gate.js");
+
+		const exitSpy = vi
+			.spyOn(process, "exit")
+			.mockImplementation(((_code?: number) => undefined) as never);
+
+		run([
+			"review-gate",
+			"--owner",
+			"octo",
+			"--repo",
+			"harness",
+			"--pr",
+			"123",
+			"--sha",
+			"a".repeat(40),
+			"--auto-resolve-bot-threads",
+			"--json",
+		]);
+
+		await new Promise((resolve) => setTimeout(resolve, 0));
+
+		expect(vi.mocked(runReviewGateCLI)).toHaveBeenCalledWith({
+			token: "",
+			owner: "octo",
+			repo: "harness",
+			prNumber: 123,
+			headSha: "a".repeat(40),
+			checkName: "code-review",
+			contractPath: "harness.contract.json",
+			autoResolveBotThreads: true,
+			json: true,
+		});
+		expect(exitSpy).toHaveBeenCalledWith(45);
+	});
+
 	it("dispatches branch-protect command and ignores missing flag values", async () => {
 		const { run } = await import("./cli.js");
 		const { runBranchProtectCLI } = await import(

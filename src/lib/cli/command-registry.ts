@@ -143,6 +143,9 @@ const COMMAND_SPECS: CommandSpec[] = [
 			const shaIndex = args.indexOf("--sha");
 			const checkIndex = args.indexOf("--check");
 			const botLoginIndex = args.indexOf("--bot-login");
+			const autoResolveBotThreadsFlag = args.includes(
+				"--auto-resolve-bot-threads",
+			);
 			const contractIndex = args.indexOf("--contract");
 
 			const options: Parameters<typeof runReviewGateCLI>[0] = {
@@ -173,6 +176,7 @@ const COMMAND_SPECS: CommandSpec[] = [
 			if (checkArg) options.checkName = checkArg;
 			const botLoginArg = getFlagValue(args, botLoginIndex);
 			if (botLoginArg) options.botLogin = botLoginArg;
+			if (autoResolveBotThreadsFlag) options.autoResolveBotThreads = true;
 			const contractArg = getFlagValue(args, contractIndex);
 			if (contractArg !== undefined) options.contractPath = contractArg;
 
