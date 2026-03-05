@@ -129,8 +129,84 @@ describe("drift-gate command", () => {
 		expect(result.report.error_class).toBe("schema");
 	});
 
-	it("writes output report to --out path", () => {
+	it("treats stale findings as preexisting when baseline omits dynamic message text", () => {
 		const root = join(process.cwd(), "artifacts", "drift-gate-test-4");
+		roots.push(root);
+		createRepoFixture(root);
+
+		write(
+			join(root, "docs/QUALITY_SCORE.md"),
+			[
+				"---",
+				"last_updated: 2026-01-01",
+				"calculated_by: harness-gardener",
+				"---",
+				"",
+				"# Documentation Quality Score",
+				"",
+				"**Score:** 90/100",
+			].join("\n"),
+		);
+
+		write(
+			join(root, "artifacts/consistency-gate/consistency-baseline-latest.json"),
+			JSON.stringify(
+				{
+					schemaVersion: "1.0.0",
+					findings: [
+						{
+							rule_id: "quality.score.stale",
+							surface: "quality-score",
+							path: "docs/QUALITY_SCORE.md",
+						},
+					],
+				},
+				null,
+				2,
+			),
+		);
+
+		const result = runDriftGate({
+			repoRoot: root,
+			mode: "advisory",
+		});
+
+		const staleFinding = result.report.findings.find(
+			(f) => f.rule_id === "quality.score.stale",
+		);
+		expect(staleFinding?.baseline_state).toBe("preexisting");
+	});
+
+	it("ignores help option rows when detecting command duplicates", () => {
+		const root = join(process.cwd(), "artifacts", "drift-gate-test-5");
+		roots.push(root);
+		createRepoFixture(root);
+		write(
+			join(root, "src/cli.ts"),
+			[
+				'if (command === "init") {}',
+				'if (command === "drift-gate") {}',
+				'console.info("  init             Install harness");',
+				'console.info("  drift-gate       Check consistency drift");',
+				'console.info("  --json           Emit JSON");',
+				'console.info("  --json           Emit JSON");',
+			].join("\n"),
+		);
+
+		const result = runDriftGate({
+			repoRoot: root,
+			mode: "advisory",
+		});
+
+		expect(
+			result.report.findings.some(
+				(f) => f.rule_id === "command.surface.help.duplicate",
+			),
+		).toBe(false);
+	});
+
+	it("writes output report to --out path", () => {
+		const root = join(process.cwd(), "artifacts", "drift-gate-test-6");
 		roots.push(root);
 		createRepoFixture(root);
 

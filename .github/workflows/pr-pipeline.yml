@@ -273,6 +273,22 @@ jobs:
         run: corepack enable
       - name: Install dependencies
         run: pnpm install
+      - name: Hydrate baseline seed
+        run: |
+          mkdir -p artifacts/consistency-gate
+          if [[ -f artifacts/consistency-gate/consistency-baseline-latest.json ]]; then
+            echo "Baseline seed already present."
+            exit 0
+          fi
+
+          if pnpm exec tsx src/cli.ts drift-gate \
+            --mode advisory \
+            --json \
+            --out artifacts/consistency-gate/consistency-baseline-latest.json; then
+            echo "::notice::Hydrated consistency baseline from advisory snapshot."
+          else
+            echo "::warning::Failed to hydrate consistency baseline seed; health check may bootstrap."
+          fi
       - name: Detect baseline seed
         id: baseline-seed
         run: |

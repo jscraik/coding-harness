@@ -17,4 +17,5 @@ export const BRANCH_PROTECTION_REQUIRED_CHECKS = [
 	"check",
 	"memory",
 	"security-scan",
+	"Greptile Review",
 ] as const;

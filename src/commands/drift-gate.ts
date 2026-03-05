@@ -82,12 +82,7 @@ function normalizePath(repoRoot: string, pathValue: string): string {
 }
 
 function findingFingerprint(finding: DriftFinding): string {
-	return [
-		finding.rule_id,
-		finding.surface,
-		finding.path ?? "",
-		finding.message,
-	].join("|");
+	return [finding.rule_id, finding.surface, finding.path ?? ""].join("|");
 }
 
 function loadBaselineFingerprints(
@@ -137,16 +132,10 @@ function loadBaselineFingerprints(
 			const finding = item as Partial<DriftFinding>;
 			if (
 				typeof finding.rule_id === "string" &&
-				typeof finding.surface === "string" &&
-				typeof finding.message === "string"
+				typeof finding.surface === "string"
 			) {
 				fingerprints.add(
-					[
-						finding.rule_id,
-						finding.surface,
-						finding.path ?? "",
-						finding.message,
-					].join("|"),
+					[finding.rule_id, finding.surface, finding.path ?? ""].join("|"),
 				);
 			}
 		}
@@ -199,7 +188,7 @@ function extractHelpCommands(cliSource: string): {
 	commands: string[];
 	duplicates: string[];
 } {
-	const helpRegex = /console\.info\("\s{2}([a-z0-9:-]+)\s+/gi;
+	const helpRegex = /console\.info\("\s{2}([a-z][a-z0-9:-]*)\s+/gi;
 	const seen = new Set<string>();
 	const duplicates = new Set<string>();
 	let match: RegExpExecArray | null = helpRegex.exec(cliSource);

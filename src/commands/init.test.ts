@@ -243,7 +243,7 @@ describe("runInit", () => {
 			expect(content.branchProtection.requiredChecks).toContain(
 				"security-scan",
 			);
-			expect(content.branchProtection.requiredChecks).not.toContain(
+			expect(content.branchProtection.requiredChecks).toContain(
 				"Greptile Review",
 			);
 			expect(content.runtimePolicy.createIssueOnAgentFindings).toBe(true);

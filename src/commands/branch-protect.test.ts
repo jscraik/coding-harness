@@ -373,6 +373,7 @@ describe("runBranchProtect", () => {
 				{ context: "check" },
 				{ context: "memory" },
 				{ context: "security-scan" },
+				{ context: "Greptile Review" },
 			],
 		});
 	});
