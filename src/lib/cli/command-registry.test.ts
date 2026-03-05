@@ -2,6 +2,7 @@ import { readFileSync } from "node:fs";
 import { join } from "node:path";
 import { describe, expect, it } from "vitest";
 import {
+	MIGRATED_COMMAND_AND_ALIAS_NAMES,
 	MIGRATED_COMMAND_NAMES,
 	dispatchRegistryCommand,
 	getRegistryCommandHelpRows,
@@ -27,6 +28,11 @@ describe("command registry", () => {
 	it("resolves alias to policy-gate spec", () => {
 		const result = dispatchRegistryCommand("risk-policy-gate", []);
 		expect(result?.spec.name).toBe("policy-gate");
+	});
+
+	it("exposes migrated aliases alongside canonical command names", () => {
+		expect(MIGRATED_COMMAND_AND_ALIAS_NAMES).toContain("risk-policy-gate");
+		expect(MIGRATED_COMMAND_AND_ALIAS_NAMES).toContain("policy-gate");
 	});
 
 	it("returns undefined for unknown commands", () => {

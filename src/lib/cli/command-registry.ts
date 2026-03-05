@@ -292,6 +292,9 @@ for (const spec of COMMAND_SPECS) {
 }
 
 export const MIGRATED_COMMAND_NAMES = COMMAND_SPECS.map((spec) => spec.name);
+export const MIGRATED_COMMAND_AND_ALIAS_NAMES = COMMAND_SPECS.flatMap(
+	(spec) => [spec.name, ...(spec.aliases ?? [])],
+);
 
 export function getRegistryCommandHelpRows(): Array<{
 	name: string;
@@ -316,6 +319,6 @@ export function dispatchRegistryCommand(
 	}
 	return {
 		spec,
-		result: spec.execute(args),
+		result: spec.execute(args.slice(1)),
 	};
 }
