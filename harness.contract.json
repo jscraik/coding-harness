@@ -18,6 +18,7 @@
 			"risk-policy-gate",
 			"dependency-review",
 			"actions-pinning",
+			"consistency-drift-health",
 			"lint",
 			"typecheck",
 			"test",

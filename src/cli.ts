@@ -10,6 +10,7 @@ import {
 import { runBrainstormGateCLI } from "./commands/brainstorm-gate.js";
 import { runContextCLI } from "./commands/context.js";
 import { runDiffBudgetCLI } from "./commands/diff-budget.js";
+import { runDriftGateCLI } from "./commands/drift-gate.js";
 import { runGapCaseCLI } from "./commands/gap-case.js";
 import { runGardenerCLI } from "./commands/gardener.js";
 import { runIndexContextCLI } from "./commands/index-context.js";
@@ -101,6 +102,10 @@ function printUsage(): void {
 			summary: "Check cardinality limits in metrics",
 		},
 		{ name: "diff-budget", summary: "Enforce diff budget constraints" },
+		{
+			name: "drift-gate",
+			summary: "Evaluate consistency drift across governance surfaces",
+		},
 		{
 			name: "automation-run",
 			summary: "Execute Pulse/Upskill/Green PRs/Drift Check idempotently",
@@ -263,6 +268,16 @@ function printUsage(): void {
 	console.info("  --head           Head ref (default: HEAD)");
 	console.info("  --contract       Path to harness.contract.json");
 	console.info("  --override       Path to override file");
+	console.info("  --json           Output results as JSON");
+	console.info("");
+	console.info("Drift Gate Options:");
+	console.info("  --mode           advisory|health (default: advisory)");
+	console.info(
+		"  --out            Write machine report to file (default advisory path)",
+	);
+	console.info(
+		"  --baseline       Baseline report path (default: artifacts/consistency-gate/consistency-baseline-latest.json)",
+	);
 	console.info("  --json           Output results as JSON");
 	console.info("");
 	console.info("Review Gate Options:");
@@ -606,6 +621,39 @@ export function run(args: string[]): void {
 		return;
 	}
 
+	if (command === "drift-gate") {
+		// Parse drift-gate options
+		const jsonFlag = args.includes("--json");
+		const modeIndex = args.indexOf("--mode");
+		const outIndex = args.indexOf("--out");
+		const baselineIndex = args.indexOf("--baseline");
+
+		const options: {
+			mode?: "advisory" | "health";
+			json?: boolean;
+			outPath?: string;
+			baselinePath?: string;
+		} = {};
+
+		if (jsonFlag) options.json = true;
+		const modeArg = getFlagValue(args, modeIndex);
+		if (modeArg) {
+			if (modeArg !== "advisory" && modeArg !== "health") {
+				console.error("Error: --mode must be advisory or health");
+				process.exit(2);
+				return;
+			}
+			options.mode = modeArg;
+		}
+		const outArg = getFlagValue(args, outIndex);
+		if (outArg) options.outPath = outArg;
+		const baselineArg = getFlagValue(args, baselineIndex);
+		if (baselineArg) options.baselinePath = baselineArg;
+
+		const exitCode = runDriftGateCLI(options);
+		process.exit(exitCode);
+		return;
+	}
 	if (command === "brainstorm-gate") {
 		// Parse brainstorm-gate options
 		const jsonFlag = args.includes("--json");

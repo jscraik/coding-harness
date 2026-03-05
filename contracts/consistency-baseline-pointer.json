@@ -1,0 +1,9 @@
+{
+	"schemaVersion": "1.0.0",
+	"artifactName": "consistency-baseline-latest",
+	"artifactPath": "artifacts/consistency-gate/consistency-baseline-latest.json",
+	"historyPath": "artifacts/consistency-gate/consistency-baseline-history/",
+	"sourceBranch": "main",
+	"updatedAt": "2026-03-05T00:00:00.000Z",
+	"owner": "maintainers"
+}

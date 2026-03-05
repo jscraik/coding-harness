@@ -1,0 +1,44 @@
+schema_version: 1
+name: consistency-contract
+description: >
+  Canonical contract for advisory consistency drift reporting across command,
+  status, todo lifecycle, and quality-score surfaces.
+
+report:
+  schemaVersion: "1.0.0"
+  command: drift-gate
+  mode:
+    enum: [advisory, health]
+  status:
+    enum: [success, partial, blocked]
+  outcome:
+    enum: [ok, error]
+  error_class:
+    enum: [none, evaluator, io, schema, runtime, integrity]
+
+finding:
+  required:
+    - rule_id
+    - surface
+    - rule_result
+    - severity
+    - baseline_state
+    - message
+  surface:
+    enum: [command, status, todo, quality-score]
+  rule_result:
+    enum: [pass, fail, not_applicable, error]
+  severity:
+    enum: [info, warning, error]
+  baseline_state:
+    enum: [preexisting, new]
+
+baseline:
+  pointer_file: contracts/consistency-baseline-pointer.json
+  latest_report: artifacts/consistency-gate/consistency-baseline-latest.json
+  history_path: artifacts/consistency-gate/consistency-baseline-history/
+  precedence:
+    - base_branch_pointer
+    - default_branch_published_artifact
+  note: >
+    PR-local pointer changes are not authoritative for PR baseline resolution.

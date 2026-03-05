@@ -9,6 +9,7 @@ export const BRANCH_PROTECTION_REQUIRED_CHECKS = [
 	"risk-policy-gate",
 	"dependency-review",
 	"actions-pinning",
+	"consistency-drift-health",
 	"lint",
 	"typecheck",
 	"test",
@@ -16,4 +17,5 @@ export const BRANCH_PROTECTION_REQUIRED_CHECKS = [
 	"check",
 	"memory",
 	"security-scan",
+	"Greptile Review",
 ] as const;

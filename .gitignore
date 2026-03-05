@@ -60,6 +60,7 @@ gardener-report.json
 # Pilot artifacts
 artifacts/pilot/
 artifacts/policy/
+artifacts/consistency-gate/
 
 # UI explore output
 ui-explore-output/
@@ -85,3 +86,6 @@ docs/brainstorms/2026-02-24-envctl-environment-orchestrator-brainstorm.md
 docs/plans/2026-02-24-feat-envctl-environment-orchestrator-plan.md
 docs/plans/2026-02-24-feat-envctl-environment-orchestrator-v1-plan.md
 docs/sketches/
+
+# Local git worktrees
+.worktrees/

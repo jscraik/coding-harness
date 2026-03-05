@@ -95,6 +95,7 @@ If a tool expects `GITHUB_TOKEN`, map it from `GITHUB_PERSONAL_ACCESS_TOKEN` in 
 | `preflight-gate` | Run fast policy checks before expensive operations. |
 | `silent-error` | Detect silent error handling anti-patterns. |
 | `diff-budget` | Enforce diff budget constraints. |
+| `drift-gate` | Evaluate consistency drift across governance surfaces (advisory/health). |
 | `review-gate` | Enforce review checks and SHA guardrails. |
 | `branch-protect` | Configure/maintain branch protection rulesets and required status checks. |
 | `brainstorm-gate` | Validate brainstorm artifacts. |
