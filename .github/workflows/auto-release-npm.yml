@@ -110,8 +110,6 @@ jobs:
     needs: post-merge-review-gate
     if: "${{ github.event_name == 'workflow_dispatch' || (github.event_name == 'push' && !startsWith(github.event.head_commit.message, 'chore(release): v')) }}"
     runs-on: ubuntu-latest
-    env:
-      GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
     steps:
       - name: Checkout
         uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
@@ -198,10 +196,10 @@ jobs:
           - [x] Linear issue key is present in the branch name or PR title/body for GitHub↔Linear linking.
           - [x] Required local gates run: \`pnpm lint\`, \`pnpm typecheck\`, \`pnpm test\`, \`pnpm audit\`, \`pnpm check\` (or reason for deviation).
           - [x] Greptile setup verified with \`grepfile\` skill and \`.greptile/config.json\`, \`.greptile/rules.md\`, \`.greptile/files.json\`.
-          - [x] \`Greptile\` review completed and findings handled (or explicitly waived).
-          - [x] \`Codex\` review completed and findings handled (or explicitly waived).
-          - [x] Independent reviewer evidence added when \`reviewPolicy.enforceReviewerIndependence=true\` (otherwise mark N/A).
-          - [x] Greptile confidence score is \`>= 4/5\` for merge eligibility.
+          - [ ] \`Greptile\` review completed and findings handled (or explicitly waived).
+          - [ ] \`Codex\` review completed and findings handled (or explicitly waived).
+          - [ ] Independent reviewer evidence added when \`reviewPolicy.enforceReviewerIndependence=true\` (otherwise mark N/A).
+          - [ ] Greptile confidence score is \`>= 4/5\` for merge eligibility.
           - [x] PR template sections are complete and accurate.
           - [x] I will delete branch/worktree after merge.
 
@@ -232,8 +230,19 @@ jobs:
             echo "version=${VERSION}"
             echo "branch=${BRANCH}"
           } >> "$GITHUB_OUTPUT"
+      - name: Validate release PR automation token
+        if: steps.prepare.outputs.has_changes == 'true'
+        env:
+          RELEASE_PR_TOKEN: ${{ secrets.RELEASE_PR_TOKEN }}
+        run: |
+          if [ -z "$RELEASE_PR_TOKEN" ]; then
+            echo "::error::Missing RELEASE_PR_TOKEN secret. Configure a token with contents:write and pull-requests:write so release PR checks run."
+            exit 1
+          fi
       - name: Create or update release PR
         if: steps.prepare.outputs.has_changes == 'true'
+        env:
+          GH_TOKEN: ${{ secrets.RELEASE_PR_TOKEN }}
         run: |
           set -euo pipefail
 
@@ -266,27 +275,61 @@ jobs:
   tag-merged-release:
     name: tag-merged-release
     needs: post-merge-review-gate
-    if: "${{ github.event_name == 'push' && startsWith(github.event.head_commit.message, 'chore(release): v') }}"
+    if: "${{ github.event_name == 'push' }}"
     runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      pull-requests: read
     steps:
       - name: Checkout
         uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
         with:
           fetch-depth: 0
+      - name: Resolve release version for pushed commit
+        id: resolve-release
+        uses: actions/github-script@f28e40c7f34bde8b3046d885e986cb6290c5673b # v7
+        with:
+          script: |
+            const parseVersion = (value = "") =>
+              value.match(/^chore\(release\): v([0-9]+\.[0-9]+\.[0-9]+(?:-[0-9A-Za-z.-]+)?)/)?.[1] ?? "";
+
+            const commitMessage = context.payload.head_commit?.message ?? "";
+            let expectedVersion = parseVersion(commitMessage);
+            let source = "head_commit.message";
+
+            if (!expectedVersion) {
+              const { owner, repo } = context.repo;
+              const associated = await github.rest.repos.listPullRequestsAssociatedWithCommit({
+                owner,
+                repo,
+                commit_sha: context.sha,
+              });
+              const baseRef = context.ref.replace("refs/heads/", "");
+              const mergedPr = associated.data.find(
+                (pr) => Boolean(pr.merged_at) && pr.base?.ref === baseRef,
+              );
+              expectedVersion = parseVersion(mergedPr?.title ?? "");
+              source = mergedPr ? `merged PR #${mergedPr.number} title` : "none";
+            }
+
+            if (!expectedVersion) {
+              core.info(`Commit ${context.sha} is not a merged release commit; skipping tag creation.`);
+              core.setOutput("should_tag", "false");
+              return;
+            }
+
+            core.info(`Resolved release version v${expectedVersion} from ${source}.`);
+            core.setOutput("should_tag", "true");
+            core.setOutput("expected_version", expectedVersion);
       - name: Create and push release tag from merged commit
+        if: steps.resolve-release.outputs.should_tag == 'true'
         env:
-          RELEASE_COMMIT_MESSAGE: ${{ github.event.head_commit.message }}
+          EXPECTED_VERSION: ${{ steps.resolve-release.outputs.expected_version }}
         run: |
           set -euo pipefail
           git fetch --tags --force
 
           VERSION="$(node -p "require('./package.json').version")"
-          EXPECTED_VERSION="$(printf "%s" "$RELEASE_COMMIT_MESSAGE" | sed -nE "s/^chore\(release\): v([0-9]+\.[0-9]+\.[0-9]+).*/\1/p")"
-
-          if [ -z "$EXPECTED_VERSION" ]; then
-            echo "::error::Unable to parse version from release commit message."
-            exit 1
-          fi
 
           if [ "$VERSION" != "$EXPECTED_VERSION" ]; then
             echo "::error::Release commit message version v$EXPECTED_VERSION does not match package.json version v$VERSION."
