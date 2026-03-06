@@ -325,6 +325,7 @@ jobs:
         if: steps.resolve-release.outputs.should_tag == 'true'
         env:
           EXPECTED_VERSION: ${{ steps.resolve-release.outputs.expected_version }}
+          RELEASE_TAG_TOKEN: ${{ secrets.RELEASE_PR_TOKEN }}
         run: |
           set -euo pipefail
           git fetch --tags --force
@@ -336,6 +337,11 @@ jobs:
             exit 1
           fi
 
+          if [ -z "$RELEASE_TAG_TOKEN" ]; then
+            echo "::error::Missing RELEASE_PR_TOKEN secret. Configure it so tag pushes can trigger downstream release workflows."
+            exit 1
+          fi
+
           if git ls-remote --tags origin "refs/tags/v${VERSION}" | rg -q .; then
             echo "Tag v${VERSION} already exists on origin; skipping."
             exit 0
@@ -344,4 +350,4 @@ jobs:
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
           git tag "v${VERSION}" "${GITHUB_SHA}"
-          git push origin "refs/tags/v${VERSION}"
+          git push "https://x-access-token:${RELEASE_TAG_TOKEN}@github.com/${GITHUB_REPOSITORY}.git" "refs/tags/v${VERSION}"
