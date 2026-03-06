@@ -2,7 +2,7 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
-# [0.7.0](https://github.com/jscraik/coding-harness/compare/v0.5.8...v0.7.0) (2026-03-06)
+# [0.7.0](https://github.com/jscraik/coding-harness/compare/v0.6.0...v0.7.0) (2026-03-06)
 
 
 ### Bug Fixes
@@ -24,6 +24,7 @@ All notable changes to this project will be documented in this file. See [standa
 * add advisory consistency drift gate and branch updates ([#64](https://github.com/jscraik/coding-harness/issues/64)) ([98ac487](https://github.com/jscraik/coding-harness/commit/98ac4872cbe1d5b08cad74085884901deb1e9d92)), closes [#62](https://github.com/jscraik/coding-harness/issues/62) [#62](https://github.com/jscraik/coding-harness/issues/62)
 * **cli:** add core command metadata registry ([6e11ed0](https://github.com/jscraik/coding-harness/commit/6e11ed06d68add4ca9ba99f05247542a72250bb7))
 * harden CI gates and reconcile init workflow drift ([#62](https://github.com/jscraik/coding-harness/issues/62)) ([550736b](https://github.com/jscraik/coding-harness/commit/550736b90623428284bc5b8c13f43324d559c321))
+* **init:** scaffold `.mise.toml` and update generated environment checks to enable `uv` pinning with `CLAUDE_APPROVAL_POSTURE` defaults, while adding fallback installation paths (`uv`/`pipx`/`python`) for ralph to better support mixed Node/Python projects. ([15baf82](https://github.com/jscraik/coding-harness/commit/15baf825ab1e55f4b19c35e73c510cb9de93c0b2))
 * support app JWT in verify-greptile ([290f22c](https://github.com/jscraik/coding-harness/commit/290f22cfd7307a3321071a92d6f878855ce06a3f))
 
 
