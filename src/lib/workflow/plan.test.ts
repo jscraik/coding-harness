@@ -19,8 +19,14 @@ import {
 const TEST_DIR = "artifacts/plans-test";
 
 function isoDateDaysAgo(daysAgo: number): string {
-	const date = new Date();
-	date.setDate(date.getDate() - daysAgo);
+	const now = new Date();
+	const date = new Date(
+		Date.UTC(
+			now.getUTCFullYear(),
+			now.getUTCMonth(),
+			now.getUTCDate() - daysAgo,
+		),
+	);
 	return date.toISOString().split("T")[0] ?? "";
 }
 
