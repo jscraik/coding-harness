@@ -233,16 +233,16 @@ jobs:
       - name: Validate release PR automation token
         if: steps.prepare.outputs.has_changes == 'true'
         env:
-          RELEASE_PR_TOKEN: ${{ secrets.RELEASE_PR_TOKEN }}
+          RELEASE_AUTOMATION_TOKEN: ${{ secrets.RELEASE_PR_TOKEN || secrets.GARDENER_TOKEN }}
         run: |
-          if [ -z "$RELEASE_PR_TOKEN" ]; then
-            echo "::error::Missing RELEASE_PR_TOKEN secret. Configure a token with contents:write and pull-requests:write so release PR checks run."
+          if [ -z "$RELEASE_AUTOMATION_TOKEN" ]; then
+            echo "::error::Missing RELEASE_PR_TOKEN/GARDENER_TOKEN secret. Configure a token with contents:write and pull-requests:write so release PR checks run."
             exit 1
           fi
       - name: Create or update release PR
         if: steps.prepare.outputs.has_changes == 'true'
         env:
-          GH_TOKEN: ${{ secrets.RELEASE_PR_TOKEN }}
+          GH_TOKEN: ${{ secrets.RELEASE_PR_TOKEN || secrets.GARDENER_TOKEN }}
         run: |
           set -euo pipefail
 
@@ -325,7 +325,7 @@ jobs:
         if: steps.resolve-release.outputs.should_tag == 'true'
         env:
           EXPECTED_VERSION: ${{ steps.resolve-release.outputs.expected_version }}
-          RELEASE_TAG_TOKEN: ${{ secrets.RELEASE_PR_TOKEN }}
+          RELEASE_TAG_TOKEN: ${{ secrets.RELEASE_PR_TOKEN || secrets.GARDENER_TOKEN }}
         run: |
           set -euo pipefail
           git fetch --tags --force
@@ -338,7 +338,7 @@ jobs:
           fi
 
           if [ -z "$RELEASE_TAG_TOKEN" ]; then
-            echo "::error::Missing RELEASE_PR_TOKEN secret. Configure it so tag pushes can trigger downstream release workflows."
+            echo "::error::Missing RELEASE_PR_TOKEN/GARDENER_TOKEN secret. Configure one so tag pushes can trigger downstream release workflows."
             exit 1
           fi
 
