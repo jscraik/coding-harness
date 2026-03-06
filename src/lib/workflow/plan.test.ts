@@ -24,9 +24,9 @@ function isoDateDaysAgo(daysAgo: number): string {
 		Date.UTC(
 			now.getUTCFullYear(),
 			now.getUTCMonth(),
-			now.getUTCDate() - daysAgo,
-		),
-	);
+function isoDateDaysAgo(daysAgo: number): string {
+	const now = new Date();
+	const date = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate() - daysAgo));
 	return date.toISOString().split("T")[0] ?? "";
 }
 
