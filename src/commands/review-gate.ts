@@ -24,6 +24,7 @@ export const EXIT_CODES = {
 	NOT_FOUND: 2,
 	PERMISSION_DENIED: 3,
 	TIMEOUT: 4,
+	REVIEW_NOT_VERIFIED: 5,
 	SYSTEM_ERROR: 10,
 } as const;
 
@@ -687,7 +688,7 @@ export async function runReviewGateCLI(
 
 		return result.output.verified
 			? EXIT_CODES.SUCCESS
-			: EXIT_CODES.VALIDATION_ERROR;
+			: EXIT_CODES.REVIEW_NOT_VERIFIED;
 	}
 
 	console.error(result.error.message);

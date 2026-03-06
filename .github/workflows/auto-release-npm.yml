@@ -77,10 +77,12 @@ jobs:
             core.setOutput("pr_number", String(mergedPr.number));
             core.setOutput("head_sha", mergedPr.head.sha);
       - name: Run review-gate against finalized check runs
+        id: review-gate
         if: steps.resolve-pr.outputs.run_gate == 'true'
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
+          set +e
           node dist/cli.js review-gate \
             --token "$GITHUB_TOKEN" \
             --owner "${{ github.repository_owner }}" \
@@ -92,6 +94,12 @@ jobs:
             --bot-login "greptile-apps" \
             --auto-resolve-bot-threads \
             --json
+          STATUS=$?
+          if [ "$STATUS" -eq 5 ]; then
+            echo "::warning::post-merge review-gate reported merged-PR follow-up work; continuing with release because main has already passed the release candidate checks."
+            exit 0
+          fi
+          exit "$STATUS"
 
   auto-release:
     needs: post-merge-review-gate

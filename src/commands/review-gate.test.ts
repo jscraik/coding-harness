@@ -1,6 +1,11 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import type { CheckRun } from "../lib/github/client.js";
-import { postRerunCommentIfNeeded, runReviewGate } from "./review-gate.js";
+import {
+	EXIT_CODES,
+	postRerunCommentIfNeeded,
+	runReviewGate,
+	runReviewGateCLI,
+} from "./review-gate.js";
 
 // Mock the GitHub client
 vi.mock("../lib/github/client.js", () => ({
@@ -703,6 +708,69 @@ describe("runReviewGate", () => {
 		if (!result.ok) {
 			expect(result.error.code).toBe("TIMEOUT");
 		}
+	});
+});
+
+describe("runReviewGateCLI", () => {
+	const validSha = "0123456789abcdef0123456789abcdef01234567";
+	const defaultOptions = {
+		contractPath: "test-fixtures/contract.json",
+		token: "test-token",
+		owner: "test-owner",
+		repo: "test-repo",
+		prNumber: 123,
+		headSha: validSha,
+		checkName: "review-check",
+		json: true,
+	};
+
+	beforeEach(() => {
+		vi.clearAllMocks();
+		mockValidateSha.mockReturnValue(undefined);
+		mockLoadContract.mockReturnValue({
+			version: "1.0",
+			riskTierRules: {},
+			reviewPolicy: {
+				timeoutSeconds: 600,
+				timeoutAction: "fail",
+				enforceReviewerIndependence: true,
+			},
+		});
+		mockRunCheckAuthz.mockResolvedValue({
+			ok: true,
+			output: {
+				...authzPassOutput,
+				repoChecked: "acme/repo",
+				branchChecked: "main",
+			},
+		});
+	});
+
+	it("returns REVIEW_NOT_VERIFIED when review follow-up is still required", async () => {
+		const mockListCheckRuns = vi.fn().mockResolvedValue([]);
+		mockGitHubClient.mockImplementation(
+			() =>
+				({
+					listCheckRunsForRef: mockListCheckRuns,
+				}) as unknown as GitHubClient,
+		);
+
+		const exitCode = await runReviewGateCLI(defaultOptions);
+
+		expect(exitCode).toBe(EXIT_CODES.REVIEW_NOT_VERIFIED);
+	});
+
+	it("returns VALIDATION_ERROR for invalid invocation state", async () => {
+		mockValidateSha.mockImplementation(() => {
+			throw new Error("Invalid SHA format: invalid");
+		});
+
+		const exitCode = await runReviewGateCLI({
+			...defaultOptions,
+			headSha: "invalid",
+		});
+
+		expect(exitCode).toBe(EXIT_CODES.VALIDATION_ERROR);
 	});
 });
 
