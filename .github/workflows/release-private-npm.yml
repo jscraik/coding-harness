@@ -89,13 +89,20 @@ jobs:
       - name: Smoke test packed CLI artifact
         run: |
           set -euo pipefail
-          command -v rg >/dev/null 2>&1 || { echo "rg is required on the runner"; exit 2; }
           TARBALL="$(npm pack --silent)"
           TMP_DIR="$(mktemp -d)"
           npm init -y --prefix "$TMP_DIR" >/dev/null 2>&1
           npm install --prefix "$TMP_DIR" "./$TARBALL" >/dev/null
-          "$TMP_DIR/node_modules/.bin/harness" --version | tee "$TMP_DIR/version.txt"
-          rg -q '^harness v[0-9]+\.[0-9]+\.[0-9]+' "$TMP_DIR/version.txt"
+          VERSION_FILE="$TMP_DIR/version.txt"
+          "$TMP_DIR/node_modules/.bin/harness" --version | tee "$VERSION_FILE"
+          VERSION_FILE="$VERSION_FILE" node <<'EOF'
+          const fs = require("node:fs");
+          const version = fs.readFileSync(process.env.VERSION_FILE, "utf8").trim();
+          if (!/^harness v\d+\.\d+\.\d+(?:-[0-9A-Za-z.-]+)?$/.test(version)) {
+            console.error(`Unexpected harness --version output: ${version}`);
+            process.exit(1);
+          }
+          EOF
           node "$TMP_DIR/node_modules/@brainwav/coding-harness/dist/cli.js" --version
 
       - name: Create package tarball for attestation
