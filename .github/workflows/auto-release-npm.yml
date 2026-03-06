@@ -134,6 +134,8 @@ jobs:
         run: pnpm install --frozen-lockfile
       - name: Validate release candidate
         run: pnpm check
+      - name: Build package
+        run: pnpm build
       - name: Smoke test packed CLI artifact
         run: |
           set -euo pipefail
