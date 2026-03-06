@@ -48,13 +48,12 @@ Implementation details and checklists:
 - Read `/Users/jamiecraik/.codex/instructions/tooling.md` before deciding command/tooling.
 - Ask before adding dependencies or changing system-level settings.
 
-## Internal GitHub issue routing
-- The package `bugs.url` points to the private repository issues page: `https://github.com/jscraik/coding-harness/issues`.
-- If an agent finds a reproducible coding-harness bug, policy gap, or workflow regression, it must create (or update) a GitHub issue before handoff.
-- Before creating a new issue, search open issues and reuse an existing issue when it matches.
-- Include minimal repro steps, expected vs actual behavior, and validation evidence in the issue body.
-- Agents may file issues directly when authenticated with `GITHUB_PERSONAL_ACCESS_TOKEN` sourced from `~/.claude.env` and/or `~/.codex/.env`.
-- Compatibility note: if a tool expects `GITHUB_TOKEN`, map it from `GITHUB_PERSONAL_ACCESS_TOKEN` in the runtime environment.
+## Internal work intake routing
+- The package `bugs.url` points to the Linear project for this repository: `https://linear.app/jscraik/project/coding-harness-bb735dbbda79`.
+- If an agent finds a reproducible coding-harness bug, policy gap, workflow regression, automation task, or release follow-up, it must create (or update) a **Linear issue** before handoff.
+- Before creating a new Linear issue, search the project/team backlog and reuse an existing issue when it matches.
+- Include minimal repro steps, expected vs actual behavior, validation evidence, and links to repo docs or PRs in the issue body.
+- GitHub remains the system for branches, pull requests, CI, and merge history; it is not the default issue intake path for this repository.
 - Never print token values in logs, docs, or command output.
 
 ## Global discovery order
