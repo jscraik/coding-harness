@@ -2,11 +2,31 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
-## Unreleased
+# [0.7.0](https://github.com/jscraik/coding-harness/compare/v0.6.0...v0.7.0) (2026-03-06)
+
+
+### Bug Fixes
+
+* **ci:** build package before auto-release smoke test ([#71](https://github.com/jscraik/coding-harness/issues/71)) ([fe124e3](https://github.com/jscraik/coding-harness/commit/fe124e3e94f285e1653b374f3bde2c0c74bd1a26))
+* **ci:** distinguish review-gate follow-up exits ([d8c1467](https://github.com/jscraik/coding-harness/commit/d8c14679e7a26add34baefea2593656e601b3acd))
+* **ci:** keep review-gate system failures blocking ([c3a4a91](https://github.com/jscraik/coding-harness/commit/c3a4a91f5a94a1ad6fcfc8caea6ca74016507a8c))
+* **ci:** unblock auto-release after merged PR audit ([0e8816d](https://github.com/jscraik/coding-harness/commit/0e8816dad6526783f8a71e8c042c393a7f24ec20))
+* **ci:** unblock release smoke test on GitHub runners ([#69](https://github.com/jscraik/coding-harness/issues/69)) ([215c1f2](https://github.com/jscraik/coding-harness/commit/215c1f2cb24322fe5251bcce5655b6fd5611e39d))
+* **cli:** address greptile thread follow-ups ([a317fcb](https://github.com/jscraik/coding-harness/commit/a317fcb3b0624c49270446b987bc39895e97948f))
+* **cli:** address PR [#63](https://github.com/jscraik/coding-harness/issues/63) review blockers ([79cdaa3](https://github.com/jscraik/coding-harness/commit/79cdaa38f67e5ed45bfe1373bf263bf8e3cedf94))
+* **deps:** bump tar override to patched release ([0324bf5](https://github.com/jscraik/coding-harness/commit/0324bf5ead4b051ad4d3c85bc9bf5180c5538150))
+* **init:** enforce internal governance templates ([3c30ece](https://github.com/jscraik/coding-harness/commit/3c30ece95991c0c73305cc36d3e94bddaff9a132))
+* **review-gate:** preserve --auto-resolve-bot-threads parsing ([b78f245](https://github.com/jscraik/coding-harness/commit/b78f2455b3c48e4dccc2ec9bc78f6e94a6817541))
+
 
 ### Features
 
-* **init:** scaffold `mise.toml` and update generated environment checks to enable `uv` pinning with `CLAUDE_APPROVAL_POSTURE` defaults, while adding fallback installation paths (`uv`/`pipx`/`python`) for ralph to better support mixed Node/Python projects.
+* add advisory consistency drift gate and branch updates ([#64](https://github.com/jscraik/coding-harness/issues/64)) ([98ac487](https://github.com/jscraik/coding-harness/commit/98ac4872cbe1d5b08cad74085884901deb1e9d92)), closes [#62](https://github.com/jscraik/coding-harness/issues/62) [#62](https://github.com/jscraik/coding-harness/issues/62)
+* **cli:** add core command metadata registry ([6e11ed0](https://github.com/jscraik/coding-harness/commit/6e11ed06d68add4ca9ba99f05247542a72250bb7))
+* harden CI gates and reconcile init workflow drift ([#62](https://github.com/jscraik/coding-harness/issues/62)) ([550736b](https://github.com/jscraik/coding-harness/commit/550736b90623428284bc5b8c13f43324d559c321))
+* **init:** scaffold `.mise.toml` and update generated environment checks to enable `uv` pinning with `CLAUDE_APPROVAL_POSTURE` defaults, while adding fallback installation paths (`uv`/`pipx`/`python`) for ralph to better support mixed Node/Python projects. ([15baf82](https://github.com/jscraik/coding-harness/commit/15baf825ab1e55f4b19c35e73c510cb9de93c0b2))
+* support app JWT in verify-greptile ([290f22c](https://github.com/jscraik/coding-harness/commit/290f22cfd7307a3321071a92d6f878855ce06a3f))
+
 
 
 # [0.6.0](https://github.com/jscraik/coding-harness/compare/v0.5.8...v0.6.0) (2026-03-03)
