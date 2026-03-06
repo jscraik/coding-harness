@@ -18,6 +18,12 @@ import {
 
 const TEST_DIR = "artifacts/plans-test";
 
+function isoDateDaysAgo(daysAgo: number): string {
+	const date = new Date();
+	date.setDate(date.getDate() - daysAgo);
+	return date.toISOString().split("T")[0] ?? "";
+}
+
 // Helper to create a brainstorm for testing
 function createTestBrainstorm(
 	topic: string,
@@ -140,7 +146,7 @@ describe("plan workflow", () => {
 			// Create a brainstorm with matching topic
 			createTestBrainstorm(
 				"test-feature",
-				"2026-02-20",
+				isoDateDaysAgo(1),
 				["Decision 1"],
 				TEST_DIR,
 			);
@@ -201,7 +207,7 @@ describe("plan workflow", () => {
 		});
 
 		it("returns missing=true when related brainstorm exists but no origin", () => {
-			createTestBrainstorm("feature-y", "2026-02-20", [], TEST_DIR);
+			createTestBrainstorm("feature-y", isoDateDaysAgo(1), [], TEST_DIR);
 
 			const planPath = createPlan({
 				title: "feature-y", // Matches brainstorm
