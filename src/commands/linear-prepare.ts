@@ -1,10 +1,12 @@
 import { sanitizeError } from "../lib/input/sanitize.js";
 import { buildLinearAutomationMetadata } from "../lib/linear/automation.js";
+import { LinearAPIError, LinearClient } from "../lib/linear/client.js";
 import {
-	LinearAPIError,
-	LinearClient,
-	type LinearIssueSummary,
-} from "../lib/linear/client.js";
+	normalizeIssueReference,
+	normalizeTeamMatch,
+	normalizeToken,
+	selectIssue,
+} from "../lib/linear/utils.js";
 
 export interface LinearPrepareOptions {
 	issue?: string;
@@ -35,77 +37,6 @@ export interface LinearPrepareOutput {
 export type LinearPrepareResult =
 	| { ok: true; output: LinearPrepareOutput }
 	| { ok: false; error: { code: string; message: string } };
-
-const ISSUE_IDENTIFIER_PATTERN = /^[A-Z][A-Z0-9]+-\d+$/i;
-
-function normalizeToken(value: string | undefined): string | undefined {
-	if (typeof value !== "string") {
-		return undefined;
-	}
-	const trimmed = value.trim();
-	if (
-		trimmed.length === 0 ||
-		trimmed.toLowerCase() === "undefined" ||
-		trimmed.toLowerCase() === "null"
-	) {
-		return undefined;
-	}
-	return trimmed;
-}
-
-function normalizeIssueReference(value: string): string {
-	const trimmed = value.trim();
-	const urlMatch = trimmed.match(/\/issue\/([A-Z][A-Z0-9]+-\d+)/i);
-	if (urlMatch?.[1]) {
-		return urlMatch[1].toUpperCase();
-	}
-	if (ISSUE_IDENTIFIER_PATTERN.test(trimmed)) {
-		return trimmed.toUpperCase();
-	}
-	return trimmed;
-}
-
-function normalizeTeamMatch(value: string | undefined): string | undefined {
-	const trimmed = value?.trim();
-	return trimmed ? trimmed.toLowerCase() : undefined;
-}
-
-function issueMatchesTeam(
-	issue: LinearIssueSummary,
-	team: string | undefined,
-): boolean {
-	if (!team) {
-		return true;
-	}
-	return (
-		issue.team.key.toLowerCase() === team ||
-		issue.team.name.toLowerCase() === team
-	);
-}
-
-function selectIssue(
-	issues: LinearIssueSummary[],
-	issueRef: string,
-	team: string | undefined,
-): LinearIssueSummary | undefined {
-	const teamFiltered = issues.filter((issue) => issueMatchesTeam(issue, team));
-	if (teamFiltered.length === 0) {
-		return undefined;
-	}
-
-	const exactIdentifier = teamFiltered.find(
-		(issue) => issue.identifier.toLowerCase() === issueRef.toLowerCase(),
-	);
-	if (exactIdentifier) {
-		return exactIdentifier;
-	}
-
-	if (teamFiltered.length === 1) {
-		return teamFiltered[0];
-	}
-
-	return undefined;
-}
 
 function readRequestedField(
 	output: LinearPrepareOutput,

@@ -1,10 +1,12 @@
 import { sanitizeError } from "../lib/input/sanitize.js";
 import { validateLinearAutomationBranch } from "../lib/linear/automation.js";
+import { LinearAPIError, LinearClient } from "../lib/linear/client.js";
 import {
-	LinearAPIError,
-	LinearClient,
-	type LinearIssueSummary,
-} from "../lib/linear/client.js";
+	normalizeIssueReference,
+	normalizeTeamMatch,
+	normalizeToken,
+	selectIssue,
+} from "../lib/linear/utils.js";
 
 export const EXIT_CODES = {
 	SUCCESS: 0,
@@ -22,7 +24,6 @@ const DEFAULT_STATE_BY_ACTION = {
 
 const UUID_PATTERN =
 	/^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
-const ISSUE_IDENTIFIER_PATTERN = /^[A-Z][A-Z0-9]+-\d+$/i;
 
 export type LinearWorkflowAction = keyof typeof DEFAULT_STATE_BY_ACTION;
 
@@ -65,75 +66,6 @@ export interface LinearWorkflowOutput {
 export type LinearWorkflowResult =
 	| { ok: true; output: LinearWorkflowOutput }
 	| { ok: false; error: { code: string; message: string } };
-
-function normalizeToken(value: string | undefined): string | undefined {
-	if (typeof value !== "string") {
-		return undefined;
-	}
-	const trimmed = value.trim();
-	if (
-		trimmed.length === 0 ||
-		trimmed.toLowerCase() === "undefined" ||
-		trimmed.toLowerCase() === "null"
-	) {
-		return undefined;
-	}
-	return trimmed;
-}
-
-function normalizeIssueReference(value: string): string {
-	const trimmed = value.trim();
-	const urlMatch = trimmed.match(/\/issue\/([A-Z][A-Z0-9]+-\d+)/i);
-	if (urlMatch?.[1]) {
-		return urlMatch[1].toUpperCase();
-	}
-	if (ISSUE_IDENTIFIER_PATTERN.test(trimmed)) {
-		return trimmed.toUpperCase();
-	}
-	return trimmed;
-}
-
-function normalizeTeamMatch(value: string | undefined): string | undefined {
-	const trimmed = value?.trim();
-	return trimmed ? trimmed.toLowerCase() : undefined;
-}
-
-function issueMatchesTeam(
-	issue: LinearIssueSummary,
-	team: string | undefined,
-): boolean {
-	if (!team) {
-		return true;
-	}
-	return (
-		issue.team.key.toLowerCase() === team ||
-		issue.team.name.toLowerCase() === team
-	);
-}
-
-function selectIssue(
-	issues: LinearIssueSummary[],
-	issueRef: string,
-	team: string | undefined,
-): LinearIssueSummary | undefined {
-	const teamFiltered = issues.filter((issue) => issueMatchesTeam(issue, team));
-	if (teamFiltered.length === 0) {
-		return undefined;
-	}
-
-	const exactIdentifier = teamFiltered.find(
-		(issue) => issue.identifier.toLowerCase() === issueRef.toLowerCase(),
-	);
-	if (exactIdentifier) {
-		return exactIdentifier;
-	}
-
-	if (teamFiltered.length === 1) {
-		return teamFiltered[0];
-	}
-
-	return undefined;
-}
 
 function dedupeUrls(urls: Array<string | undefined>): string[] {
 	const seen = new Set<string>();
