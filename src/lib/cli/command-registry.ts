@@ -294,6 +294,7 @@ const COMMAND_SPECS: CommandSpec[] = [
 			const branchIndex = args.indexOf("--branch");
 			const rulesetIndex = args.indexOf("--ruleset");
 			const checksIndex = args.indexOf("--checks");
+			const ecosystemIndex = args.indexOf("--ecosystem");
 			const approvalsIndex = args.indexOf("--required-approvals");
 			const checksArg = getFlagValue(args, checksIndex);
 			const approvalsArg = getFlagValue(args, approvalsIndex);
@@ -312,6 +313,8 @@ const COMMAND_SPECS: CommandSpec[] = [
 			if (branchArg) options.branch = branchArg;
 			const rulesetArg = getFlagValue(args, rulesetIndex);
 			if (rulesetArg) options.rulesetName = rulesetArg;
+			const ecosystemArg = getFlagValue(args, ecosystemIndex);
+			if (ecosystemArg) options.ecosystem = ecosystemArg;
 			if (checksArg !== undefined) {
 				options.requiredChecks = parseCsvList(checksArg);
 			}

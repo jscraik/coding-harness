@@ -983,4 +983,232 @@ describe("runBranchProtect", () => {
 		const payload = updateRuleset.mock.calls[0]?.[1];
 		expect(payload?.conditions?.ref_name?.include).toEqual([]);
 	});
+
+	describe("ecosystem profiles", () => {
+		it("uses typescript ecosystem profile", async () => {
+			const listRulesets = vi.fn(async () => [] as RulesetSummary[]);
+			const createRuleset = vi.fn(
+				async (payload: RulesetPayload) =>
+					({
+						id: 100,
+						name: payload.name,
+						target: payload.target,
+						enforcement: payload.enforcement,
+						bypass_actors: payload.bypass_actors,
+						conditions: payload.conditions,
+						rules: payload.rules,
+					}) as Ruleset,
+			);
+
+			mockGitHubClient.mockImplementation(
+				() =>
+					({
+						listRulesets,
+						createRuleset,
+					}) as unknown as GitHubClient,
+			);
+
+			const result = await runBranchProtect({
+				token: "token",
+				owner: "octo",
+				repo: "my-typescript-app",
+				ecosystem: "typescript",
+			});
+
+			expect(result.ok).toBe(true);
+			if (result.ok) {
+				expect(result.output.ecosystem).toBe("typescript");
+				expect(result.output.requiredChecks).toEqual(
+					expect.arrayContaining([
+						"lint",
+						"typecheck",
+						"test",
+						"audit",
+						"security-scan",
+						"dependency-review",
+					]),
+				);
+			}
+		});
+
+		it("uses python ecosystem profile", async () => {
+			const listRulesets = vi.fn(async () => [] as RulesetSummary[]);
+			const createRuleset = vi.fn(
+				async (payload: RulesetPayload) =>
+					({
+						id: 101,
+						name: payload.name,
+						target: payload.target,
+						enforcement: payload.enforcement,
+						bypass_actors: payload.bypass_actors,
+						conditions: payload.conditions,
+						rules: payload.rules,
+					}) as Ruleset,
+			);
+
+			mockGitHubClient.mockImplementation(
+				() =>
+					({
+						listRulesets,
+						createRuleset,
+					}) as unknown as GitHubClient,
+			);
+
+			const result = await runBranchProtect({
+				token: "token",
+				owner: "octo",
+				repo: "my-python-app",
+				ecosystem: "python",
+			});
+
+			expect(result.ok).toBe(true);
+			if (result.ok) {
+				expect(result.output.ecosystem).toBe("python");
+				expect(result.output.requiredChecks).toEqual(
+					expect.arrayContaining([
+						"lint",
+						"test",
+						"security-scan",
+						"dependency-review",
+					]),
+				);
+			}
+		});
+
+		it("uses rust ecosystem profile", async () => {
+			const listRulesets = vi.fn(async () => [] as RulesetSummary[]);
+			const createRuleset = vi.fn(
+				async (payload: RulesetPayload) =>
+					({
+						id: 102,
+						name: payload.name,
+						target: payload.target,
+						enforcement: payload.enforcement,
+						bypass_actors: payload.bypass_actors,
+						conditions: payload.conditions,
+						rules: payload.rules,
+					}) as Ruleset,
+			);
+
+			mockGitHubClient.mockImplementation(
+				() =>
+					({
+						listRulesets,
+						createRuleset,
+					}) as unknown as GitHubClient,
+			);
+
+			const result = await runBranchProtect({
+				token: "token",
+				owner: "octo",
+				repo: "my-rust-app",
+				ecosystem: "rust",
+			});
+
+			expect(result.ok).toBe(true);
+			if (result.ok) {
+				expect(result.output.ecosystem).toBe("rust");
+				expect(result.output.requiredChecks).toEqual(
+					expect.arrayContaining(["lint", "test", "security-scan"]),
+				);
+			}
+		});
+
+		it("uses minimal ecosystem profile", async () => {
+			const listRulesets = vi.fn(async () => [] as RulesetSummary[]);
+			const createRuleset = vi.fn(
+				async (payload: RulesetPayload) =>
+					({
+						id: 103,
+						name: payload.name,
+						target: payload.target,
+						enforcement: payload.enforcement,
+						bypass_actors: payload.bypass_actors,
+						conditions: payload.conditions,
+						rules: payload.rules,
+					}) as Ruleset,
+			);
+
+			mockGitHubClient.mockImplementation(
+				() =>
+					({
+						listRulesets,
+						createRuleset,
+					}) as unknown as GitHubClient,
+			);
+
+			const result = await runBranchProtect({
+				token: "token",
+				owner: "octo",
+				repo: "my-minimal-app",
+				ecosystem: "minimal",
+			});
+
+			expect(result.ok).toBe(true);
+			if (result.ok) {
+				expect(result.output.ecosystem).toBe("minimal");
+				expect(result.output.requiredChecks).toEqual(["security-scan"]);
+			}
+		});
+
+		it("returns error for invalid ecosystem", async () => {
+			const result = await runBranchProtect({
+				token: "token",
+				owner: "octo",
+				repo: "my-app",
+				ecosystem: "invalid-ecosystem",
+			});
+
+			expect(result.ok).toBe(false);
+			if (!result.ok) {
+				expect(result.error.code).toBe("VALIDATION_ERROR");
+				expect(result.error.message).toContain(
+					'Invalid ecosystem "invalid-ecosystem"',
+				);
+				expect(result.error.message).toContain("Available:");
+			}
+		});
+
+		it("explicit requiredChecks overrides ecosystem", async () => {
+			const listRulesets = vi.fn(async () => [] as RulesetSummary[]);
+			const createRuleset = vi.fn(
+				async (payload: RulesetPayload) =>
+					({
+						id: 104,
+						name: payload.name,
+						target: payload.target,
+						enforcement: payload.enforcement,
+						bypass_actors: payload.bypass_actors,
+						conditions: payload.conditions,
+						rules: payload.rules,
+					}) as Ruleset,
+			);
+
+			mockGitHubClient.mockImplementation(
+				() =>
+					({
+						listRulesets,
+						createRuleset,
+					}) as unknown as GitHubClient,
+			);
+
+			const result = await runBranchProtect({
+				token: "token",
+				owner: "octo",
+				repo: "my-app",
+				ecosystem: "typescript",
+				requiredChecks: ["custom-check-1", "custom-check-2"],
+			});
+
+			expect(result.ok).toBe(true);
+			if (result.ok) {
+				// ecosystem should not be set when explicit checks are provided
+				expect(result.output.ecosystem).toBeUndefined();
+				expect(result.output.requiredChecks).toEqual([
+					"custom-check-1",
+					"custom-check-2",
+				]);
+			}
+		});
+	});
 });
