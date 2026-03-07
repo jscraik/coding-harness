@@ -2,6 +2,20 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+# [0.8.0](https://github.com/jscraik/coding-harness/compare/v0.7.2...v0.8.0) (2026-03-07)
+
+
+### Bug Fixes
+
+* **ci:** make OIDC attestation non-blocking ([#80](https://github.com/jscraik/coding-harness/issues/80)) ([98cef2e](https://github.com/jscraik/coding-harness/commit/98cef2e1368c6b9e9b2b28eab23c9f202eeee6c4))
+
+
+### Features
+
+* add linear workflow commands and governance updates ([#81](https://github.com/jscraik/coding-harness/issues/81)) ([dca2376](https://github.com/jscraik/coding-harness/commit/dca23763936cd1577f5d9f814623fb7545d8e470))
+
+
+
 ## [0.7.2](https://github.com/jscraik/coding-harness/compare/v0.7.1...v0.7.2) (2026-03-07)
 
 
