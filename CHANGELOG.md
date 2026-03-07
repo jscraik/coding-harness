@@ -2,6 +2,15 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [0.7.2](https://github.com/jscraik/coding-harness/compare/v0.7.1...v0.7.2) (2026-03-07)
+
+
+### Bug Fixes
+
+* **ci:** harden private npm release automation ([#77](https://github.com/jscraik/coding-harness/issues/77)) ([673bee5](https://github.com/jscraik/coding-harness/commit/673bee5dfc8a48fc6425ba0e15966ec30d218813))
+
+
+
 ## [0.7.1](https://github.com/jscraik/coding-harness/compare/v0.7.0...v0.7.1) (2026-03-06)
 
 
