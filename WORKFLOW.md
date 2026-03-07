@@ -2,15 +2,13 @@
 tracker:
   kind: linear
   api_key: $LINEAR_API_KEY
-  project_slug: "symphony-pilot-coding-harness-32d853352b38"
+  project_slug: "coding-harness-bb735dbbda79"
   active_states:
     - Todo
     - In Progress
   terminal_states:
     - Done
-    - Closed
     - Canceled
-    - Cancelled
     - Duplicate
 polling:
   interval_ms: 10000
@@ -66,6 +64,7 @@ Issue URL: {{ issue.url }}
 Use only the current workspace root and follow repository instructions:
 - `/Users/jamiecraik/.codex/AGENTS.md`
 - `AGENTS.md` in repository root
+- `docs/agents/13-linear-production-workflow.md`
 
 Do not operate outside the checked-out repository.
 
@@ -74,7 +73,13 @@ Do not operate outside the checked-out repository.
 2. Keep a single running workpad-style progress comment on the issue.
 3. Attach or update PR link on the issue once a PR exists.
 4. Move issue to `In Review` only when all required checks pass.
-5. If blocked by missing auth/secrets/permissions, post a concise blocker note and keep `In Progress`.
+5. If blocked by missing auth/secrets/permissions, post a concise blocker note, apply the `Blocked` label when available, and keep `In Progress`.
+6. Prefer the repo-native Linear workflow commands when available:
+   - `harness linear prepare --issue <KEY> --field branch`
+   - `harness linear claim --issue <KEY> --branch <codex/...> --workspace <path>`
+   - `harness linear handoff --issue <KEY> --pr-url <url> --evidence-url <url[,url]>`
+   - `harness linear close --issue <KEY> --pr-url <url>`
+7. For GitHub↔Linear automation, keep the Linear issue key in the branch name and use `Refs <KEY>` or `Fixes <KEY>` in the PR body/title.
 
 ## Definition of done
 Before handoff, run and pass:
@@ -95,3 +100,4 @@ When blocked, report:
 - what is missing,
 - what command failed,
 - what human action unblocks the run.
+- Do not create a GitHub Issue for routine intake; keep the canonical work item in Linear.

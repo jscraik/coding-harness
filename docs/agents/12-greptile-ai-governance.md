@@ -55,7 +55,7 @@ This repository must maintain:
 - `.greptile/rules.md`
 - `.greptile/files.json`
 
-Use the `grepfile` skill to set up or refresh these files.
+Use the `greploop` or `check-pr` skill to set up or refresh these files.
 
 ## Webhook and event requirements
 
