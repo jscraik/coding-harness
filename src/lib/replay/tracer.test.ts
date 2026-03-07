@@ -1,4 +1,5 @@
-import { describe, expect, it } from "vitest";
+import { rm } from "node:fs/promises";
+import { afterAll, describe, expect, it } from "vitest";
 import {
 	type ExecutionTrace,
 	type TraceEvent,
@@ -12,6 +13,19 @@ import {
 } from "./tracer.js";
 
 describe("tracer", () => {
+	afterAll(async () => {
+		try {
+			const { readdir } = await import("node:fs/promises");
+			const entries = await readdir(process.cwd(), { withFileTypes: true });
+			const deletes = entries
+				.filter((e) => e.isDirectory() && e.name.startsWith(".test-traces-"))
+				.map((e) => rm(e.name, { recursive: true, force: true }));
+			await Promise.all(deletes);
+		} catch (_e) {
+			// ignore cleanup errors
+		}
+	});
+
 	describe("generateTraceId", () => {
 		it("generates stable IDs", () => {
 			const seed = "test-seed-123";

@@ -74,12 +74,14 @@ Recommended cadence:
 
 ## Issue reporting (internal)
 
-This package and repository are private. Report bugs at:
+This repository now uses a **Linear-first** intake workflow. Create or update work in the
+`coding-harness` project:
 
-- <https://github.com/jscraik/coding-harness/issues>
+- <https://linear.app/jscraik/project/coding-harness-bb735dbbda79>
 
-Internal agents may create issues directly when `GITHUB_PERSONAL_ACCESS_TOKEN` is loaded from `~/.claude.env` and/or `~/.codex/.env`.
-If a tool expects `GITHUB_TOKEN`, map it from `GITHUB_PERSONAL_ACCESS_TOKEN` in your shell/session environment.
+Internal agents may create or update Linear work directly when `LINEAR_API_KEY` is loaded in
+the shell/session environment.
+GitHub issue forms in this repository are retired; the repo now routes work intake to Linear, docs, or private security disclosure links.
 
 ## CLI command index
 
@@ -111,6 +113,7 @@ If a tool expects `GITHUB_TOKEN`, map it from `GITHUB_PERSONAL_ACCESS_TOKEN` in 
 | `remediate` | Apply automated fixes for findings. |
 | `check-authz` | Validate authorization policy for mutative operations. |
 | `check-environment` | Validate pilot environment governance checks. |
+| `linear` | Prepare Linear-aware branch/PR metadata and move issues through claim, handoff, and close workflow states. |
 | `gap-case` | Track and resolve pilot gap-cases. |
 | `pilot-evaluate` | Evaluate pilot metrics and promotion readiness. |
 | `pilot-rollback` | Transition pilot mode (autonomous <-> manual). |
