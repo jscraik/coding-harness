@@ -372,7 +372,12 @@ jobs:
           fi
 
           for attempt in $(seq 1 6); do
-            RUN_ID="$(gh api "repos/${GITHUB_REPOSITORY}/actions/workflows/release-private-npm.yml/runs?event=push&per_page=20" --jq ".workflow_runs[] | select(.head_branch == \"${TAG_NAME}\") | .id" | head -n 1)"
+            RUN_ID="$(
+              gh api \
+                "repos/${GITHUB_REPOSITORY}/actions/workflows/release-private-npm.yml/runs?event=push&per_page=20" \
+                --jq ".workflow_runs[] | select(.head_branch == \"${TAG_NAME}\") | .id" \
+                2>/dev/null | head -n 1 || true
+            )"
             if [ -n "${RUN_ID}" ]; then
               echo "Detected Release to private npm run ${RUN_ID} for tag ${TAG_NAME}."
               exit 0
