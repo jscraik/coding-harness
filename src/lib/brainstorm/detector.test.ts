@@ -5,6 +5,13 @@ import { runBrainstormGate } from "./detector.js";
 
 const TEST_DIR = "artifacts/brainstorm-detector-test";
 
+function isoDateDaysAgo(daysAgo: number): string {
+	const date = new Date();
+	date.setUTCHours(12, 0, 0, 0);
+	date.setUTCDate(date.getUTCDate() - daysAgo);
+	return date.toISOString().slice(0, 10);
+}
+
 function createTestBrainstorm(basePath: string, date: string): void {
 	const brainstormsDir = join(basePath, "docs/brainstorms");
 	if (!existsSync(brainstormsDir)) {
@@ -51,7 +58,7 @@ describe("brainstorm detector max-age handling", () => {
 	});
 
 	it("respects maxAgeDays override", () => {
-		createTestBrainstorm(TEST_DIR, "2026-02-04");
+		createTestBrainstorm(TEST_DIR, isoDateDaysAgo(20));
 
 		const staleWithDefault = runBrainstormGate({
 			brainstormsPath: join(TEST_DIR, "docs/brainstorms"),
@@ -70,7 +77,7 @@ describe("brainstorm detector max-age handling", () => {
 	});
 
 	it("supports legacy maxAge alias used by older callers", () => {
-		createTestBrainstorm(TEST_DIR, "2026-02-04");
+		createTestBrainstorm(TEST_DIR, isoDateDaysAgo(20));
 
 		const result = runBrainstormGate({
 			brainstormsPath: join(TEST_DIR, "docs/brainstorms"),
@@ -82,7 +89,7 @@ describe("brainstorm detector max-age handling", () => {
 	});
 
 	it("prefers maxAgeDays when both maxAgeDays and maxAge are provided", () => {
-		createTestBrainstorm(TEST_DIR, "2026-02-04");
+		createTestBrainstorm(TEST_DIR, isoDateDaysAgo(20));
 
 		const result = runBrainstormGate({
 			brainstormsPath: join(TEST_DIR, "docs/brainstorms"),
@@ -95,7 +102,7 @@ describe("brainstorm detector max-age handling", () => {
 	});
 
 	it("falls back to default max age when maxAgeDays is NaN", () => {
-		createTestBrainstorm(TEST_DIR, "2026-02-04");
+		createTestBrainstorm(TEST_DIR, isoDateDaysAgo(20));
 
 		const result = runBrainstormGate({
 			brainstormsPath: join(TEST_DIR, "docs/brainstorms"),
@@ -113,8 +120,8 @@ describe("brainstorm detector max-age handling", () => {
 		}
 
 		writeFileSync(
-			join(brainstormsDir, "2026-02-24-incomplete-brainstorm.md"),
-			`---\ntopic: incomplete\ndate: 2026-02-24\n---\n\n## What We're Building\n\n- One section only\n`,
+			join(brainstormsDir, `${isoDateDaysAgo(1)}-incomplete-brainstorm.md`),
+			`---\ntopic: incomplete\ndate: ${isoDateDaysAgo(1)}\n---\n\n## What We're Building\n\n- One section only\n`,
 			"utf-8",
 		);
 
