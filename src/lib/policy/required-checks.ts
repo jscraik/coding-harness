@@ -47,55 +47,35 @@ export const ECOSYSTEM_PROFILES = {
 	/**
 	 * Python projects using uv/pytest.
 	 */
-	python: [
-		"lint",
-		"test",
-		"security-scan",
-		"dependency-review",
-	] as const,
+	python: ["lint", "test", "security-scan", "dependency-review"] as const,
 
 	/**
 	 * Rust projects using cargo.
 	 */
-	rust: [
-		"lint",
-		"test",
-		"security-scan",
-	] as const,
+	rust: ["lint", "test", "security-scan"] as const,
 
 	/**
 	 * Swift/iOS/macOS projects.
 	 */
-	swift: [
-		"lint",
-		"test",
-		"security-scan",
-	] as const,
+	swift: ["lint", "test", "security-scan"] as const,
 
 	/**
 	 * Go projects.
 	 */
-	go: [
-		"lint",
-		"test",
-		"security-scan",
-	] as const,
+	go: ["lint", "test", "security-scan"] as const,
 
 	/**
 	 * Minimal profile - just security and basic checks.
 	 * Use for experiments, docs, or custom setups.
 	 */
-	minimal: [
-		"security-scan",
-	] as const,
+	minimal: ["security-scan"] as const,
 } as const;
 
 /**
  * Default required checks for backwards compatibility.
  * Maps to the "harness" profile.
  */
-export const BRANCH_PROTECTION_REQUIRED_CHECKS =
-	ECOSYSTEM_PROFILES.harness;
+export const BRANCH_PROTECTION_REQUIRED_CHECKS = ECOSYSTEM_PROFILES.harness;
 
 /**
  * Get required checks for an ecosystem profile.
