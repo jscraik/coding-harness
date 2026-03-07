@@ -377,7 +377,9 @@ jobs:
               echo "Detected Release to private npm run ${RUN_ID} for tag ${TAG_NAME}."
               exit 0
             fi
-            sleep 10
+            if [ "${attempt}" -lt 6 ]; then
+              sleep 10
+            fi
           done
 
-          echo "::warning::Could not confirm a Release to private npm run for tag ${TAG_NAME} within 60 seconds."
+          echo "::warning::Could not confirm a Release to private npm run for tag ${TAG_NAME} within 50 seconds."

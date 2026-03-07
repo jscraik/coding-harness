@@ -3,7 +3,7 @@ name: Release to private npm
 on:
   push:
     tags:
-      - "v*.*.*"
+      - "v[0-9]*.[0-9]*.[0-9]*"
   workflow_dispatch:
     inputs:
       confirm:
@@ -161,12 +161,19 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
+          set -euo pipefail
           VERSION="$(node -p "require('./package.json').version")"
           if git rev-parse --verify --quiet "refs/tags/v${VERSION}" >/dev/null; then
-            gh release create "v${VERSION}" \
-              --title "v${VERSION}" \
-              --notes-file CHANGELOG.md \
-              --latest || echo "Release already exists"
+            RELEASE_ARGS=(
+              --title "v${VERSION}"
+              --notes-file CHANGELOG.md
+            )
+
+            if [ "${GITHUB_EVENT_NAME}" = "push" ]; then
+              RELEASE_ARGS+=(--latest)
+            fi
+
+            gh release create "v${VERSION}" "${RELEASE_ARGS[@]}" || echo "Release already exists"
           else
             echo "::warning::Tag v${VERSION} is not present locally; skipping GitHub release creation."
           fi
