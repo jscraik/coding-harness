@@ -141,13 +141,20 @@ jobs:
         run: pnpm publish --no-git-checks --access restricted
 
       - name: Generate build provenance attestation
+        id: attest
         if: steps.publish-auth.outputs.mode == 'oidc'
+        continue-on-error: true
         uses: actions/attest-build-provenance@977bb373ede98d70efdf65b84cb5f73e068dcc2a # v3
         with:
           subject-path: "*.tgz"
 
+      - name: Warn when attestations are unavailable
+        if: steps.publish-auth.outputs.mode == 'oidc' && steps.attest.outcome == 'failure'
+        run: |
+          echo "::warning::Build provenance attestations are unavailable for this repository type. Publish succeeded, but attestation generation was skipped."
+
       - name: Verify attestations
-        if: steps.publish-auth.outputs.mode == 'oidc'
+        if: steps.publish-auth.outputs.mode == 'oidc' && steps.attest.outcome == 'success'
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
