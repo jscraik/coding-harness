@@ -118,10 +118,11 @@ describe("brainstorm detector max-age handling", () => {
 		if (!existsSync(brainstormsDir)) {
 			mkdirSync(brainstormsDir, { recursive: true });
 		}
+		const incompleteDate = isoDateDaysAgo(1);
 
 		writeFileSync(
-			join(brainstormsDir, `${isoDateDaysAgo(1)}-incomplete-brainstorm.md`),
-			`---\ntopic: incomplete\ndate: ${isoDateDaysAgo(1)}\n---\n\n## What We're Building\n\n- One section only\n`,
+			join(brainstormsDir, `${incompleteDate}-incomplete-brainstorm.md`),
+			`---\ntopic: incomplete\ndate: ${incompleteDate}\n---\n\n## What We're Building\n\n- One section only\n`,
 			"utf-8",
 		);
 
