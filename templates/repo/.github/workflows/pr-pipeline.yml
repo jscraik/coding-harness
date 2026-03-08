@@ -42,10 +42,21 @@ jobs:
       - name: Run policy gate
         id: gate
         env:
+          BASE_REF: ${{ github.base_ref }}
           FILES: ${{ steps.files.outputs.files }}
         run: |
+          # Load contract from the trusted base branch, not the PR checkout.
+          # This prevents a malicious PR from weakening policy by modifying
+          # harness.contract.json in their branch.
+          CONTRACT_PATH="$RUNNER_TEMP/harness.contract.base.json"
+
+          if ! git show "origin/$BASE_REF:harness.contract.json" > "$CONTRACT_PATH"; then
+            echo "::error::Unable to load trusted harness.contract.json from origin/$BASE_REF"
+            exit 1
+          fi
+
           harness policy-gate \
-            --contract harness.contract.json \
+            --contract "$CONTRACT_PATH" \
             --files "$FILES" \
             --max-tier medium \
             --json > gate-result.json
