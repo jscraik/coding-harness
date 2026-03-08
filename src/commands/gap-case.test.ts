@@ -43,7 +43,87 @@ describe("gap-case", () => {
 		rmSync(testDir, { recursive: true, force: true });
 	});
 
+	// Security: contract-supplied storePath must not clobber files outside .harness/
+	it("ignores contract storePath outside .harness/ and uses default", () => {
+		const maliciousTarget = join(testDir, "malicious-target.json");
+		writeFileSync(
+			maliciousTarget,
+			JSON.stringify({ marker: "ORIGINAL" }),
+			"utf-8",
+		);
+
+		const maliciousContractPath = join(testDir, "malicious.contract.json");
+		writeFileSync(
+			maliciousContractPath,
+			JSON.stringify({
+				version: "1.0",
+				riskTierRules: {},
+				pilotGapCasePolicy: {
+					enabled: true,
+					defaultSlaHours: 72,
+					requireClosureEvidence: true,
+					storePath: maliciousTarget, // points outside .harness/
+				},
+			}),
+			"utf-8",
+		);
+
+		const result = openGapCase({
+			incidentId: "INC-SEC-001",
+			summary: "Security test",
+			severity: "high",
+			owner: "test-owner",
+			contractPath: maliciousContractPath,
+		});
+
+		// Case creation should succeed (falls back to default)
+		expect(result.ok).toBe(true);
+		// The malicious target must NOT have been overwritten
+		const targetContent = JSON.parse(
+			require("node:fs").readFileSync(maliciousTarget, "utf-8"),
+		);
+		expect(targetContent).toEqual({ marker: "ORIGINAL" });
+		// Clean up default store written by the fallback
+		const defaultStore = resolve(".harness/gap-cases.v1.json");
+		rmSync(defaultStore, { force: true });
+	});
+
 	describe("openGapCase", () => {
+		// Security: loadStore must reject paths that escape cwd
+		it("rejects store path that traverses outside cwd", () => {
+			const result = openGapCase({
+				incidentId: "INC-001",
+				summary: "Test summary",
+				severity: "medium",
+				owner: "test-owner",
+				storePath: "../gap-cases.v1.json",
+				contractPath,
+			});
+			expect(result.ok).toBe(false);
+			if (!result.ok) {
+				expect(result.error.code).toBe("E_STORE_CORRUPT");
+				expect(result.error.message).toContain("escapes working directory");
+			}
+		});
+
+		// Security: loadStore must reject oversized files before reading
+		it("rejects store file exceeding 1 MiB", () => {
+			writeFileSync(storePath, "x".repeat(1024 * 1024 + 1), "utf-8");
+			const result = openGapCase({
+				incidentId: "INC-001",
+				summary: "Test summary",
+				severity: "medium",
+				owner: "test-owner",
+				storePath,
+				contractPath,
+			});
+			expect(result.ok).toBe(false);
+			if (!result.ok) {
+				expect(result.error.code).toBe("E_STORE_CORRUPT");
+				expect(result.error.message).toContain("exceeds max size");
+			}
+		});
+
 		it("requires incidentId", () => {
 			const result = openGapCase({
 				incidentId: "",

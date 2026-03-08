@@ -1,4 +1,11 @@
-import { existsSync, mkdirSync, rmSync, writeFileSync } from "node:fs";
+import {
+	existsSync,
+	mkdirSync,
+	rmSync,
+	symlinkSync,
+	writeFileSync,
+} from "node:fs";
+
 import { dirname, join } from "node:path";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import {
@@ -164,6 +171,34 @@ describe("pilot-rollback", () => {
 			expect(event.triggeredBy).toBe("manual");
 		});
 
+		// Regression: existing log entries must be preserved (not overwritten) when appending
+		it("preserves existing rollback-events entries when appending", async () => {
+			createContract({ mode: "autonomous" });
+			const artifactsDir = join(testDir, "artifacts/pilot");
+			const eventsPath = join(artifactsDir, "rollback-events.jsonl");
+			mkdirSync(dirname(eventsPath), { recursive: true });
+			writeFileSync(eventsPath, '{"id":"existing"}\n', "utf-8");
+
+			await runPilotRollback({
+				incidentId: "incident-existing",
+				mode: "manual",
+				contractPath,
+				artifactsDir,
+			});
+
+			const content = require("node:fs").readFileSync(eventsPath, "utf-8");
+			const lines = content.trim().split("\n");
+			expect(lines.length).toBe(2);
+			expect(JSON.parse(lines[0] ?? "")).toEqual({ id: "existing" });
+
+			const appended = JSON.parse(lines[1] ?? "");
+			expect(appended.incidentId).toBe("incident-existing");
+			expect(appended.modeTransition).toEqual({
+				from: "autonomous",
+				to: "manual",
+			});
+		});
+
 		it("writes to output file when specified", async () => {
 			createContract({ mode: "manual" });
 			const outputPath = join(testDir, "output/result.json");
@@ -183,6 +218,130 @@ describe("pilot-rollback", () => {
 				require("node:fs").readFileSync(outputPath, "utf-8"),
 			);
 			expect(output.incidentId).toBe("incident-output");
+		});
+
+		// Security: --output path must not escape cwd
+		it("returns error when output path traverses outside cwd", async () => {
+			createContract({ mode: "manual" });
+
+			const result = await runPilotRollback({
+				incidentId: "incident-output-traversal",
+				mode: "autonomous",
+				contractPath,
+				artifactsDir: join(testDir, "artifacts/pilot"),
+				outputPath: "../outside.json",
+			});
+
+			expect(result.ok).toBe(false);
+			if (!result.ok) {
+				expect(result.error.message).toContain("Path traversal");
+			}
+		});
+
+		// Security: default artifacts path (no --artifacts flag) must still be validated
+		it("returns error when default artifacts dir is a symlink outside cwd", async () => {
+			const { mkdtempSync } = require("node:fs");
+			const { tmpdir } = require("node:os");
+			const originalCwd = process.cwd();
+			const sandboxDir = mkdtempSync(join(tmpdir(), "pilot-rollback-"));
+			const outsideDir = mkdtempSync(join(tmpdir(), "pilot-rollback-outside-"));
+
+			try {
+				process.chdir(sandboxDir);
+				writeFileSync(
+					join(sandboxDir, "harness.contract.json"),
+					JSON.stringify({
+						version: "1.0",
+						pilotRollbackPolicy: {
+							autoTrigger: true,
+							requireManualRelease: true,
+							completionMarkerPath: ".harness/rollback-marker.json",
+							mode: "manual",
+						},
+					}),
+					"utf-8",
+				);
+				// Place a symlink at the default artifacts/ location pointing outside sandbox
+				symlinkSync(outsideDir, join(sandboxDir, "artifacts"), "dir");
+
+				const result = await runPilotRollback({
+					incidentId: "incident-default-artifacts-symlink",
+					mode: "autonomous",
+				});
+
+				expect(result.ok).toBe(false);
+				if (!result.ok) {
+					expect(result.error.message).toContain("Path traversal");
+				}
+			} finally {
+				process.chdir(originalCwd);
+				rmSync(sandboxDir, { recursive: true, force: true });
+				rmSync(outsideDir, { recursive: true, force: true });
+			}
+		});
+
+		// Security: symlinked artifacts directory must be rejected
+		it("rejects artifacts dir that resolves through a symlink outside cwd", async () => {
+			createContract({ mode: "autonomous" });
+			const outsideDir = "/tmp/coding-harness-test-outside-dir";
+			const linkedDir = join(testDir, "artifacts-link");
+			mkdirSync(outsideDir, { recursive: true });
+			mkdirSync(dirname(linkedDir), { recursive: true });
+			symlinkSync(outsideDir, linkedDir, "dir");
+
+			try {
+				const result = await runPilotRollback({
+					incidentId: "incident-dir-symlink",
+					mode: "manual",
+					contractPath,
+					artifactsDir: linkedDir,
+				});
+
+				expect(result.ok).toBe(false);
+				if (!result.ok) {
+					expect(result.error.message).toContain("Path traversal");
+				}
+			} finally {
+				rmSync(outsideDir, { recursive: true, force: true });
+			}
+		});
+
+		// Security: symlinked rollback output files must be rejected
+		it("rejects rollback event/marker files when they are symlinked outside cwd", async () => {
+			createContract({ mode: "autonomous" });
+			const artifactsDir = join(testDir, "artifacts/pilot");
+			mkdirSync(artifactsDir, { recursive: true });
+
+			const outsideEvents = "/tmp/coding-harness-test-outside-events.jsonl";
+			const outsideMarker = "/tmp/coding-harness-test-outside-marker.json";
+			writeFileSync(outsideEvents, "", "utf-8");
+			writeFileSync(outsideMarker, "", "utf-8");
+			symlinkSync(outsideEvents, join(artifactsDir, "rollback-events.jsonl"));
+			symlinkSync(outsideMarker, join(artifactsDir, "rollback-marker.json"));
+
+			try {
+				const result = await runPilotRollback({
+					incidentId: "incident-file-symlink",
+					mode: "manual",
+					contractPath,
+					artifactsDir,
+				});
+
+				expect(result.ok).toBe(false);
+				if (!result.ok) {
+					expect(result.error.message).toContain("Path traversal");
+				}
+				// Confirm the outside files were NOT written to
+				expect(require("node:fs").readFileSync(outsideEvents, "utf-8")).toBe(
+					"",
+				);
+				expect(require("node:fs").readFileSync(outsideMarker, "utf-8")).toBe(
+					"",
+				);
+			} finally {
+				rmSync(outsideEvents, { force: true });
+				rmSync(outsideMarker, { force: true });
+			}
 		});
 
 		it("defaults to manual mode when contract lacks policy", async () => {

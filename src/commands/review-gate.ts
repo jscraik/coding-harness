@@ -351,9 +351,25 @@ export async function runReviewGate(
 			repo: options.repo,
 		});
 
+		// SECURITY: Verify the caller-supplied SHA matches the PR's current head.
+		// Without this check, an attacker controlling headSha could point to an older
+		// commit with a passing review check and bypass the intended gate.
+		const pullRequest = await client.getPullRequest(options.prNumber);
+		const pullRequestHeadSha = pullRequest.head.sha;
+
+		if (pullRequestHeadSha.toLowerCase() !== options.headSha.toLowerCase()) {
+			return {
+				ok: false,
+				error: {
+					code: "VALIDATION_ERROR",
+					message: `Provided SHA (${options.headSha}) does not match the pull request's current head SHA (${pullRequestHeadSha})`,
+				},
+			};
+		}
+
 		// Poll for check run completion with timeout
 		while (Date.now() - startTime < timeoutMs) {
-			const checkRuns = await client.listCheckRunsForRef(options.headSha);
+			const checkRuns = await client.listCheckRunsForRef(pullRequestHeadSha);
 			const checkResult = findReviewCheckRun(checkRuns, options.checkName);
 
 			if (!checkResult.found) {
@@ -361,7 +377,7 @@ export async function runReviewGate(
 					ok: true,
 					output: withReadinessFields({
 						verified: false,
-						headSha: options.headSha,
+						headSha: pullRequestHeadSha,
 						checkStatus: "not_found",
 						needsRerun: true,
 					}),
@@ -383,7 +399,7 @@ export async function runReviewGate(
 				const approvals = await evaluateApprovals(
 					client,
 					options.prNumber,
-					options.headSha,
+					pullRequestHeadSha,
 				);
 				const independence =
 					enforceReviewerIndependence && approvals.passed
@@ -409,7 +425,7 @@ export async function runReviewGate(
 								additionalBlockers.length === 0 &&
 								approvals.passed &&
 								independence.passed,
-							headSha: options.headSha,
+							headSha: pullRequestHeadSha,
 							checkStatus: checkResult.status,
 							checkConclusion: checkResult.conclusion ?? undefined,
 							needsRerun: false,
@@ -427,7 +443,7 @@ export async function runReviewGate(
 					ok: true,
 					output: withReadinessFields({
 						verified: false,
-						headSha: options.headSha,
+						headSha: pullRequestHeadSha,
 						checkStatus: checkResult.status,
 						checkConclusion: checkResult.conclusion ?? undefined,
 						needsRerun: true,
@@ -462,7 +478,7 @@ export async function runReviewGate(
 			ok: true,
 			output: withReadinessFields({
 				verified: false,
-				headSha: options.headSha,
+				headSha: pullRequestHeadSha,
 				checkStatus: "in_progress",
 				needsRerun: true,
 				timedOut: true,

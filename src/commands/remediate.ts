@@ -585,15 +585,15 @@ export async function runRemediate(
 	}
 
 	// 2. Load contract for policy (use defaults if not available)
-	let policy = DEFAULT_REMEDIATION_POLICY;
+	const policy = DEFAULT_REMEDIATION_POLICY;
+
 	let rollbackPolicy = DEFAULT_PILOT_ROLLBACK_POLICY;
 	if (options.contractPath) {
 		try {
 			const contract = loadContract(options.contractPath);
-			// Use contract's remediation policy if available
-			if (contract.remediationPolicy) {
-				policy = contract.remediationPolicy;
-			}
+			// SECURITY: Remediation policy is process-controlled and not overridable
+			// from repo-controlled contract content. Accepting autoApplyMaxTier or
+			// dryRunOnlyByDefault from an untrusted contract would allow policy injection.
 			// Use contract's rollback policy if available
 			if (contract.pilotRollbackPolicy) {
 				rollbackPolicy = contract.pilotRollbackPolicy;

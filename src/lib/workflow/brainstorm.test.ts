@@ -1,6 +1,7 @@
 import { existsSync, mkdirSync, rmSync } from "node:fs";
 import { join } from "node:path";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
+import { PathTraversalError } from "../input/validator.js";
 import {
 	createBrainstorm,
 	findBrainstorms,
@@ -66,6 +67,13 @@ describe("brainstorm workflow", () => {
 				"Add tests",
 			]);
 			expect(loaded.content).toContain("Initial thoughts");
+		});
+
+		// Security: basePath must not escape cwd
+		it("rejects path traversal via basePath", () => {
+			expect(() =>
+				createBrainstorm("test-feature", "content", { basePath: ".." }),
+			).toThrow(PathTraversalError);
 		});
 	});
 
@@ -135,6 +143,20 @@ describe("brainstorm workflow", () => {
 			expect(loaded.frontmatter.supersededBy).toBe(
 				"2026-02-25-new-test-brainstorm.md",
 			);
+		});
+
+		// Security: filepath must not escape cwd
+		it("rejects path traversal via filepath", () => {
+			expect(() =>
+				updateBrainstormStatus("../outside.md", "superseded"),
+			).toThrow(PathTraversalError);
+		});
+	});
+
+	describe("loadBrainstorm", () => {
+		// Security: filepath must not escape cwd
+		it("rejects path traversal via filepath", () => {
+			expect(() => loadBrainstorm("../outside.md")).toThrow(PathTraversalError);
 		});
 	});
 });

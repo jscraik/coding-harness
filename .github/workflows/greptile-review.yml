@@ -217,21 +217,20 @@ jobs:
             const commentUrl = process.env.COMMENT_URL;
 
             if (status === 'pending') {
-              // Waiting for Greptile - create a neutral check that doesn't block merge
+              // Waiting for Greptile - keep the check queued to block merge until review arrives
               // The check will be updated when Greptile posts a review (triggers via issue_comment)
               await github.rest.checks.create({
                 owner,
                 repo,
                 name: 'Greptile Review',
                 head_sha: headSha,
-                status: 'completed',
-                conclusion: 'neutral',
+                status: 'queued',
                 output: {
                   title: 'Greptile Review Pending',
-                  summary: 'Greptile has not yet reviewed this PR. The check will update automatically when Greptile posts a review. Merge is allowed but Greptile review is still expected.'
+                  summary: 'Greptile has not yet reviewed this PR. The check will update automatically when Greptile posts a review.'
                 }
               });
-              console.log('Created neutral check run - waiting for Greptile');
+              console.log('Created queued check run - waiting for Greptile');
               return;
             }
 

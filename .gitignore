@@ -69,8 +69,13 @@ ui-explore-output/
 .diagram/
 AI/context/refresh.log
 
-# Local deep-test discovery recursion artifacts
-artifacts/test/discovered/.__artifacts__test__discovered__*
+# Generated test artifacts (embed local machine paths/hostnames — never commit)
+artifacts/test/junit-*.xml
+artifacts/test/*-results.json
+artifacts/test/test-output-*.log
+artifacts/test/summary-*.json
+artifacts/test/artifact-manifest.json
+artifacts/test/discovered/
 
 # Locally generated helper scripts (from init template previews)
 scripts/check-environment.sh

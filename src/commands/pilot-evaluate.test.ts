@@ -2,7 +2,15 @@
  * Pilot evaluate command tests
  */
 
-import { existsSync, mkdirSync, rmSync, writeFileSync } from "node:fs";
+import {
+	existsSync,
+	mkdirSync,
+	readFileSync,
+	rmSync,
+	symlinkSync,
+	writeFileSync,
+} from "node:fs";
+
 import { join, resolve } from "node:path";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import {
@@ -228,6 +236,16 @@ describe("pilot-evaluate", () => {
 			expect(data.length).toBe(1);
 			expect(data[0]?.incidentId).toBe("INC-001");
 		});
+
+		it("returns error for malformed JSONL", () => {
+			const filePath = join(artifactsDir, "rollback-events.jsonl");
+			writeFileSync(filePath, "{not-json}");
+
+			const { data, errors } = loadRollbackEvents(artifactsDir);
+			expect(data).toEqual([]);
+			expect(errors.length).toBe(1);
+			expect(errors[0]).toContain("invalid JSONL");
+		});
 	});
 
 	describe("loadIncidents", () => {
@@ -246,6 +264,16 @@ describe("pilot-evaluate", () => {
 			expect(errors).toEqual([]);
 			expect(data.length).toBe(1);
 			expect(data[0]?.incidentId).toBe("INC-001");
+		});
+
+		it("returns error for malformed JSONL", () => {
+			const filePath = join(artifactsDir, "incidents.jsonl");
+			writeFileSync(filePath, "{not-json}");
+
+			const { data, errors } = loadIncidents(artifactsDir);
+			expect(data).toEqual([]);
+			expect(errors.length).toBe(1);
+			expect(errors[0]).toContain("invalid JSONL");
 		});
 	});
 
@@ -571,6 +599,40 @@ describe("pilot-evaluate", () => {
 			expect(result.exitCode).toBe(PILOT_EVALUATE_EXIT_CODES.HOLD);
 		});
 
+		// Security: malformed JSONL must fail closed, not silently promote
+		it("fails closed (E_SCHEMA_VALIDATION) when rollback/incidents JSONL are malformed", () => {
+			const leadTimePath = join(artifactsDir, "pr-lead-time.json");
+			writeFileSync(
+				leadTimePath,
+				JSON.stringify({
+					schemaVersion: "pr-lead-time/v1",
+					entries: [
+						createLeadTimeEntry({
+							prNumber: 1,
+							repo: "test/repo",
+							leadTimeHours: 4,
+							pilotEligible: true,
+						}),
+						createLeadTimeEntry({
+							prNumber: 2,
+							repo: "test/repo",
+							leadTimeHours: 10,
+							pilotEligible: false,
+						}),
+					],
+				}),
+			);
+			writeFileSync(join(artifactsDir, "rollback-events.jsonl"), "{not-json}");
+			writeFileSync(join(artifactsDir, "incidents.jsonl"), "{not-json}");
+			writeFileSync(join(artifactsDir, "remediation-events.jsonl"), "");
+
+			const result = runPilotEvaluate({ artifactsDir });
+			expect(result.ok).toBe(false);
+			expect(result.error?.code).toBe("E_SCHEMA_VALIDATION");
+			expect(result.error?.message).toContain("invalid JSONL");
+			expect(result.exitCode).toBe(PILOT_EVALUATE_EXIT_CODES.VALIDATION_ERROR);
+		});
+
 		it("returns promote when all thresholds met", () => {
 			// Create valid artifacts with good metrics
 			const leadTimePath = join(artifactsDir, "pr-lead-time.json");
@@ -708,6 +770,40 @@ describe("pilot-evaluate", () => {
 				result.result?.holdReasons.some((r) => r.includes("Sample size")),
 			).toBe(true);
 			expect(result.exitCode).toBe(PILOT_EVALUATE_EXIT_CODES.HOLD);
+		});
+
+		// Security: output path must not escape cwd
+		it("rejects output path that traverses outside cwd", () => {
+			const result = runPilotEvaluate({
+				artifactsDir,
+				outputPath: "../outside.json",
+			});
+			expect(result.ok).toBe(false);
+			expect(result.error?.code).toBe("E_PATH_TRAVERSAL");
+		});
+
+		// Security: symlinked output path must not escape cwd
+		it("rejects symlinked output path that escapes cwd", () => {
+			const externalTarget = join(
+				"/tmp",
+				`pilot-eval-target-${Date.now()}.json`,
+			);
+			writeFileSync(externalTarget, "do-not-overwrite", "utf-8");
+			const symlinkPath = join(artifactsDir, "escaped-output.json");
+			symlinkSync(externalTarget, symlinkPath);
+
+			try {
+				const result = runPilotEvaluate({
+					artifactsDir,
+					outputPath: symlinkPath,
+				});
+				expect(result.ok).toBe(false);
+				expect(result.error?.code).toBe("E_PATH_TRAVERSAL");
+				// Confirm the external target was not touched
+				expect(readFileSync(externalTarget, "utf-8")).toBe("do-not-overwrite");
+			} finally {
+				rmSync(externalTarget, { force: true });
+			}
 		});
 
 		it("writes output file when specified", () => {

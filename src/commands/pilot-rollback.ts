@@ -8,9 +8,9 @@
 
 import { randomUUID } from "node:crypto";
 import {
+	copyFileSync,
 	existsSync,
 	mkdirSync,
-	readFileSync,
 	renameSync,
 	rmSync,
 	writeFileSync,
@@ -124,10 +124,12 @@ function normalizePath(baseDir: string, userPath: string): string {
 
 function resolveArtifactsDir(artifactsDir?: string): string {
 	const base = process.cwd();
-	if (artifactsDir) {
-		return normalizePath(base, resolve(base, artifactsDir));
-	}
-	return resolve(base, DEFAULT_ARTIFACTS_DIR);
+	const targetDir = artifactsDir
+		? resolve(base, artifactsDir)
+		: resolve(base, DEFAULT_ARTIFACTS_DIR);
+	// Always validate — covers both user-supplied paths and the default.
+	// normalizePath is symlink-aware (uses realpathSync internally via validatePath).
+	return normalizePath(base, targetDir);
 }
 
 function readCurrentMode(contractPath: string): PilotMode {
@@ -154,10 +156,11 @@ function appendRollbackEvent(
 	// Atomic append: write to temp file, then rename (prevents race conditions)
 	const tempPath = `${eventsPath}.${process.pid}.${Date.now()}.tmp`;
 	try {
-		// Atomic append: read existing, write to temp, then rename
+		// Atomic append without loading the entire file into memory:
+		// copy existing log to temp, then append the new line to the temp file.
 		if (existsSync(eventsPath)) {
-			const existing = readFileSync(eventsPath, "utf-8");
-			writeFileSync(tempPath, existing + line, { encoding: "utf-8" });
+			copyFileSync(eventsPath, tempPath);
+			writeFileSync(tempPath, line, { flag: "a", encoding: "utf-8" });
 		} else {
 			writeFileSync(tempPath, line, { encoding: "utf-8" });
 		}
@@ -236,7 +239,12 @@ export async function runPilotRollback(
 
 		// 7. Generate event ID and create event record
 		const rollbackEventsId = generateEventsId();
-		const eventsPath = resolve(artifactsDir, ROLLBACK_EVENTS_FILE);
+		// Validate each file path individually: a symlink placed at the file
+		// itself (not just the directory) would otherwise bypass directory validation.
+		const eventsPath = normalizePath(
+			cwd,
+			resolve(artifactsDir, ROLLBACK_EVENTS_FILE),
+		);
 
 		const eventRecord: RollbackEventsRecord = {
 			id: rollbackEventsId,
@@ -252,7 +260,10 @@ export async function runPilotRollback(
 
 		// 9. Write completion marker
 		const completedAt = nowIso();
-		const markerPath = resolve(artifactsDir, ROLLBACK_MARKER_FILE);
+		const markerPath = normalizePath(
+			cwd,
+			resolve(artifactsDir, ROLLBACK_MARKER_FILE),
+		);
 
 		const marker: RollbackMarker = {
 			schemaVersion: "pilot-rollback-marker/v1",
@@ -270,7 +281,7 @@ export async function runPilotRollback(
 
 		// 10. Write to output file if specified
 		if (options.outputPath) {
-			const outputPath = resolve(cwd, options.outputPath);
+			const outputPath = normalizePath(cwd, options.outputPath);
 			mkdirSync(dirname(outputPath), { recursive: true });
 			writeFileSync(outputPath, JSON.stringify(marker, null, 2), "utf-8");
 		}

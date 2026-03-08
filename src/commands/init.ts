@@ -8,6 +8,7 @@ import {
 	realpathSync,
 	renameSync,
 	rmSync,
+	statSync,
 	writeFileSync,
 } from "node:fs";
 import { dirname, join, relative, resolve, sep } from "node:path";
@@ -94,6 +95,9 @@ export interface ProposedChange {
 	currentContent: string | null; // null for new files
 	newContent: string;
 }
+
+/** Max size for interactive content reads to prevent DoS via large/special files */
+const MAX_INTERACTIVE_FILE_BYTES = 1024 * 1024; // 1 MiB
 
 // === Schema Migration Types ===
 
@@ -2824,19 +2828,20 @@ function collectProposedChanges(
 			exists && shouldAutoUpdateTemplate(template.path, targetPath);
 
 		if (exists && !options.force && !autoUpdate) {
-			// File exists and not forcing - would skip
+			// File exists and not forcing - would skip; no content read needed
+			// (diff for skip is not shown; reading here is unnecessary and risky).
 			proposed.push({
 				path: template.path,
 				action: "skip",
-				currentContent: readFileSync(targetPath, "utf-8"),
+				currentContent: null,
 				newContent,
 			});
 		} else if (exists) {
-			// File exists and forcing - would modify
+			// File exists and forcing or auto-updating - read safely.
 			proposed.push({
 				path: template.path,
 				action: "modify",
-				currentContent: readFileSync(targetPath, "utf-8"),
+				currentContent: readInteractiveCurrentContent(targetPath),
 				newContent,
 			});
 		} else {
@@ -2851,6 +2856,32 @@ function collectProposedChanges(
 	}
 
 	return proposed;
+}
+
+/**
+ * Safely read a file for interactive diff display.
+ * Returns null for symlinks, non-regular files, or files exceeding the size cap
+ * to prevent symlink traversal and denial-of-service via unbounded reads.
+ */
+function readInteractiveCurrentContent(path: string): string | null {
+	try {
+		// lstatSync does NOT follow symlinks; reject symlink entries immediately.
+		const lstat = lstatSync(path);
+		if (lstat.isSymbolicLink()) {
+			return null;
+		}
+
+		// statSync follows symlinks but we've already excluded them above;
+		// this second check guards against non-regular files (FIFOs, devices).
+		const stat = statSync(path);
+		if (!stat.isFile() || stat.size > MAX_INTERACTIVE_FILE_BYTES) {
+			return null;
+		}
+
+		return readFileSync(path, "utf-8");
+	} catch {
+		return null;
+	}
 }
 
 /**

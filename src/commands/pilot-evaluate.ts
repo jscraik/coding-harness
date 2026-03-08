@@ -6,6 +6,8 @@
 
 import { existsSync, mkdirSync, writeFileSync } from "node:fs";
 import { dirname, resolve } from "node:path";
+import { PathTraversalError, validatePath } from "../lib/input/validator.js";
+
 import { capturePilotMetrics } from "../lib/pilot-evaluation/metrics-capture.js";
 import {
 	PILOT_EVALUATE_EXIT_CODES,
@@ -199,7 +201,23 @@ export function runPilotEvaluate(options: PilotEvaluateOptions): {
 
 	// Write output file if specified
 	if (options.outputPath) {
-		const outputPath = resolve(options.outputPath);
+		const cwd = process.cwd();
+		let outputPath: string;
+		try {
+			outputPath = validatePath(cwd, options.outputPath);
+		} catch (error) {
+			if (error instanceof PathTraversalError) {
+				return {
+					ok: false,
+					error: {
+						code: "E_PATH_TRAVERSAL",
+						message: "Output path escapes working directory",
+					},
+					exitCode: PILOT_EVALUATE_EXIT_CODES.VALIDATION_ERROR,
+				};
+			}
+			throw error;
+		}
 		const dir = dirname(outputPath);
 		if (!existsSync(dir)) {
 			mkdirSync(dir, { recursive: true });

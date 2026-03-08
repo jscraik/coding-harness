@@ -5,7 +5,8 @@
  */
 
 import { existsSync, readFileSync, statSync } from "node:fs";
-import { resolve } from "node:path";
+import { isAbsolute, resolve } from "node:path";
+import { validatePath } from "../input/validator.js";
 import { enforceCodexBranch } from "./branch-enforcer.js";
 import {
 	calculateTrends,
@@ -28,11 +29,21 @@ import {
 /**
  * Read and parse memory.json file
  */
+const MAX_MEMORY_FILE_SIZE_BYTES = 1024 * 1024; // 1 MiB
+
 function readMemoryFile(memoryPath: string): MemorySummary | null {
 	try {
 		if (!existsSync(memoryPath)) {
 			return null;
 		}
+
+		// Reject non-regular files (FIFOs, devices, sockets) and oversized files
+		// to prevent synchronous readFileSync from hanging or exhausting memory.
+		const stats = statSync(memoryPath);
+		if (!stats.isFile() || stats.size > MAX_MEMORY_FILE_SIZE_BYTES) {
+			return null;
+		}
+
 		const content = readFileSync(memoryPath, "utf-8");
 		return JSON.parse(content) as MemorySummary;
 	} catch {
@@ -220,8 +231,32 @@ function calculateMetrics(summary: MemorySummary): ReliabilityMetrics {
  * Run memory gate validation
  */
 export function runMemoryGate(options: MemoryGateOptions): MemoryGateResult {
-	const memoryPath = resolve(options.memoryPath ?? "memory.json");
-	const forjamiePath = resolve(options.forjamiePath ?? "FORJAMIE.md");
+	const baseDir = process.cwd();
+	let memoryPath: string;
+	let forjamiePath: string;
+
+	try {
+		const memoryCandidate = options.memoryPath ?? "memory.json";
+		const forjamieCandidate = options.forjamiePath ?? "FORJAMIE.md";
+
+		// Absolute paths are resolved as-is (direct invocation); relative paths
+		// are validated to stay within the repository working directory.
+		memoryPath = isAbsolute(memoryCandidate)
+			? resolve(memoryCandidate)
+			: validatePath(baseDir, memoryCandidate);
+		forjamiePath = isAbsolute(forjamieCandidate)
+			? resolve(forjamieCandidate)
+			: validatePath(baseDir, forjamieCandidate);
+	} catch {
+		return {
+			ok: false,
+			code: EXIT_CODES.SYSTEM_ERROR,
+			message: "Invalid file path: path escapes repository",
+			violations: [
+				{ type: "schema", message: "Invalid file path: outside repository" },
+			],
+		};
+	}
 
 	// Read memory file
 	const data = readMemoryFile(memoryPath);

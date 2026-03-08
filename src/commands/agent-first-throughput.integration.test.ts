@@ -189,9 +189,15 @@ describe("agent-first throughput integration", () => {
 		];
 
 		const mockListCheckRuns = vi.fn().mockResolvedValue(checkRuns);
+		const mockGetPullRequest = vi.fn().mockResolvedValue({
+			number: 1,
+			user: { login: "coding-actor" },
+			head: { sha: headSha, ref: "feature/throughput" },
+		});
 		mockGitHubClient.mockImplementation(
 			() =>
 				({
+					getPullRequest: mockGetPullRequest,
 					listCheckRunsForRef: mockListCheckRuns,
 				}) as unknown as GitHubClient,
 		);

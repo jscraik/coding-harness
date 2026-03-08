@@ -1129,7 +1129,7 @@ describe("--interactive flag", () => {
 			);
 			expect(contractChange).toBeDefined();
 			expect(contractChange?.action).toBe("skip");
-			expect(contractChange?.currentContent).toBe('{"version": "old"}');
+			expect(contractChange?.currentContent).toBeNull();
 		}
 	});
 
@@ -1152,6 +1152,27 @@ describe("--interactive flag", () => {
 			expect(contractChange?.action).toBe("modify");
 			expect(contractChange?.currentContent).toBe('{"version": "old"}');
 			expect(contractChange?.newContent).toContain('"version": "1.2.0"');
+		}
+	});
+
+	// Security: symlinks to outside-repo paths are rejected entirely by sanitizePath
+	it("excludes template paths that are symlinks pointing outside the repo", () => {
+		const targetPath = join(tempDir, "harness.contract.json");
+		symlinkSync("/etc/passwd", targetPath);
+
+		const result = runInit(tempDir, {
+			dryRun: false,
+			force: true,
+			interactive: true,
+		});
+
+		expect(result.ok).toBe(true);
+		if (result.ok) {
+			// sanitizePath detects the out-of-repo realpath and skips the entry
+			const contractChange = result.output.proposedChanges?.find(
+				(c) => c.path === "harness.contract.json",
+			);
+			expect(contractChange).toBeUndefined();
 		}
 	});
 

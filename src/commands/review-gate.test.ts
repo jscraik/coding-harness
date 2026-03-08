@@ -96,6 +96,19 @@ describe("runReviewGate", () => {
 				branchChecked: "main",
 			},
 		});
+
+		// Default: PR head SHA matches the supplied SHA so unchanged tests pass.
+		mockGitHubClient.mockImplementation(
+			() =>
+				({
+					getPullRequest: vi.fn().mockResolvedValue({
+						number: defaultOptions.prNumber,
+						user: { login: "coding-actor" },
+						head: { sha: validSha, ref: "feature/test" },
+					}),
+					listCheckRunsForRef: vi.fn().mockResolvedValue([]),
+				}) as unknown as GitHubClient,
+		);
 	});
 
 	afterEach(() => {
@@ -119,11 +132,42 @@ describe("runReviewGate", () => {
 		}
 	});
 
+	// Security: provided SHA must match the PR's actual head SHA
+	it("returns validation error when provided SHA does not match PR head", async () => {
+		const mismatchedSha = "fedcba9876543210fedcba9876543210fedcba98";
+		mockGitHubClient.mockImplementation(
+			() =>
+				({
+					getPullRequest: vi.fn().mockResolvedValue({
+						number: defaultOptions.prNumber,
+						user: { login: "coding-actor" },
+						head: { sha: validSha, ref: "feature/test" },
+					}),
+				}) as unknown as GitHubClient,
+		);
+
+		const result = await runReviewGate({
+			...defaultOptions,
+			headSha: mismatchedSha,
+		});
+
+		expect(result.ok).toBe(false);
+		if (!result.ok) {
+			expect(result.error.code).toBe("VALIDATION_ERROR");
+			expect(result.error.message).toContain("does not match");
+		}
+	});
+
 	it("returns not_found when check run does not exist", async () => {
 		const mockListCheckRuns = vi.fn().mockResolvedValue([]);
 		mockGitHubClient.mockImplementation(
 			() =>
 				({
+					getPullRequest: vi.fn().mockResolvedValue({
+						number: defaultOptions.prNumber,
+						user: { login: "coding-actor" },
+						head: { sha: validSha, ref: "feature/test" },
+					}),
 					listCheckRunsForRef: mockListCheckRuns,
 				}) as unknown as GitHubClient,
 		);
@@ -709,6 +753,11 @@ describe("runReviewGate", () => {
 		mockGitHubClient.mockImplementation(
 			() =>
 				({
+					getPullRequest: vi.fn().mockResolvedValue({
+						number: defaultOptions.prNumber,
+						user: { login: "coding-actor" },
+						head: { sha: validSha, ref: "feature/test" },
+					}),
 					listCheckRunsForRef: mockListCheckRuns,
 				}) as unknown as GitHubClient,
 		);
@@ -748,6 +797,11 @@ describe("runReviewGate", () => {
 		mockGitHubClient.mockImplementation(
 			() =>
 				({
+					getPullRequest: vi.fn().mockResolvedValue({
+						number: defaultOptions.prNumber,
+						user: { login: "coding-actor" },
+						head: { sha: validSha, ref: "feature/test" },
+					}),
 					listCheckRunsForRef: mockListCheckRuns,
 				}) as unknown as GitHubClient,
 		);
@@ -801,6 +855,11 @@ describe("runReviewGateCLI", () => {
 		mockGitHubClient.mockImplementation(
 			() =>
 				({
+					getPullRequest: vi.fn().mockResolvedValue({
+						number: defaultOptions.prNumber,
+						user: { login: "coding-actor" },
+						head: { sha: validSha, ref: "feature/test" },
+					}),
 					listCheckRunsForRef: mockListCheckRuns,
 				}) as unknown as GitHubClient,
 		);

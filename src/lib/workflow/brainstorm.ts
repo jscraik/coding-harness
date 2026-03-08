@@ -6,6 +6,7 @@ import {
 	writeFileSync,
 } from "node:fs";
 import { join } from "node:path";
+import { validatePath } from "../input/validator.js";
 
 export interface BrainstormFrontmatter {
 	topic: string;
@@ -195,7 +196,11 @@ export function createBrainstorm(
 	const date = options.date ?? new Date();
 
 	// Ensure brainstorms directory exists
-	const brainstormsPath = join(basePath, BRAINSTORMS_DIR);
+	const rootPath = process.cwd();
+	const brainstormsPath = validatePath(
+		rootPath,
+		join(basePath, BRAINSTORMS_DIR),
+	);
 	if (!existsSync(brainstormsPath)) {
 		mkdirSync(brainstormsPath, { recursive: true });
 	}
@@ -204,8 +209,8 @@ export function createBrainstorm(
 	const filename = generateBrainstormFilename(topic, date);
 	const filepath = join(brainstormsPath, filename);
 
-	// Validate path
-	const validatedPath = filepath;
+	// Validate path (symlink-aware, stays within cwd)
+	const validatedPath = validatePath(rootPath, filepath);
 
 	// Create frontmatter
 	const frontmatter: BrainstormFrontmatter = {
@@ -231,15 +236,16 @@ ${content}
  * Load a brainstorm artifact by path.
  */
 export function loadBrainstorm(filepath: string): BrainstormMetadata {
-	const content = readFileSync(filepath, "utf-8");
+	const validatedPath = validatePath(process.cwd(), filepath);
+	const content = readFileSync(validatedPath, "utf-8");
 	const { frontmatter, body } = parseFrontmatter(content);
 	const normalized = normalizeBrainstormFrontmatter(frontmatter);
 	if (!normalized) {
-		throw new Error(`Invalid brainstorm frontmatter: ${filepath}`);
+		throw new Error(`Invalid brainstorm frontmatter: ${validatedPath}`);
 	}
 
 	return {
-		path: filepath,
+		path: validatedPath,
 		frontmatter: normalized,
 		content: body,
 	};
@@ -297,7 +303,8 @@ export function updateBrainstormStatus(
 	status: BrainstormFrontmatter["status"],
 	supersededBy?: string,
 ): void {
-	const content = readFileSync(filepath, "utf-8");
+	const validatedPath = validatePath(process.cwd(), filepath);
+	const content = readFileSync(validatedPath, "utf-8");
 	const { frontmatter, body } = parseFrontmatter(content);
 
 	frontmatter.status = status;
@@ -306,7 +313,7 @@ export function updateBrainstormStatus(
 	}
 
 	const newContent = `${serializeFrontmatter(frontmatter)}\n\n${body}`;
-	writeFileSync(filepath, newContent, "utf-8");
+	writeFileSync(validatedPath, newContent, "utf-8");
 }
 
 /**

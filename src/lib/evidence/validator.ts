@@ -1,4 +1,4 @@
-import { readFileSync, statSync } from "node:fs";
+import { closeSync, openSync, readSync, statSync } from "node:fs";
 import { realpathSync } from "node:fs";
 import { dirname, normalize, resolve, sep } from "node:path";
 import type {
@@ -228,10 +228,17 @@ export function loadEvidenceFile(
 		);
 	}
 
-	// 3. Read file and detect format first (needed to determine size limit)
-	let buffer: Buffer;
+	// 3. Read only the file header (16 bytes) to detect format
+	//    This avoids loading oversized files into memory before the size check.
+	const HEADER_SIZE = 16;
+	const headerBuf = Buffer.alloc(HEADER_SIZE);
 	try {
-		buffer = readFileSync(validatedPath);
+		const fd = openSync(validatedPath, "r");
+		try {
+			readSync(fd, headerBuf, 0, HEADER_SIZE, 0);
+		} finally {
+			closeSync(fd);
+		}
 	} catch {
 		return createEvidenceError(
 			"READ_ERROR",
@@ -240,7 +247,7 @@ export function loadEvidenceFile(
 		);
 	}
 
-	const format = detectEvidenceFormat(buffer);
+	const format = detectEvidenceFormat(headerBuf);
 	if (!format) {
 		return createEvidenceError(
 			"INVALID_FORMAT",
@@ -250,6 +257,7 @@ export function loadEvidenceFile(
 	}
 
 	// 4. Validate file size based on type (video has higher limit)
+	//    Size is already known from step 2 — no extra I/O needed.
 	const isVideo = format === "mp4" || format === "webm";
 	const effectiveLimit = isVideo ? maxVideoSizeBytes : maxFileSizeBytes;
 	if (stats.size > effectiveLimit) {
@@ -260,7 +268,8 @@ export function loadEvidenceFile(
 		);
 	}
 
-	// Success - return validated file metadata
+	// 5. Success — return validated file metadata
+	// (Full file contents are not returned; callers use the path for subsequent reads.)
 	const evidenceFile: EvidenceFile = {
 		path: validatedPath,
 		type: format,

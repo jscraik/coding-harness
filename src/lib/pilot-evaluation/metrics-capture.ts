@@ -43,17 +43,33 @@ function readJsonFile<T>(filePath: string): T | null {
 /**
  * Read JSONL file and parse entries
  */
-function readJsonlFile<T>(filePath: string): T[] {
+function readJsonlFile<T>(filePath: string): {
+	data: T[];
+	error?: string;
+} {
 	if (!existsSync(filePath)) {
-		return [];
+		return { data: [] };
 	}
-	try {
-		const content = readFileSync(filePath, "utf-8");
-		const lines = content.trim().split("\n").filter(Boolean);
-		return lines.map((line) => JSON.parse(line) as T);
-	} catch {
-		return [];
+	const content = readFileSync(filePath, "utf-8");
+	const lines = content
+		.split("\n")
+		.map((line) => line.trim())
+		.filter(Boolean);
+
+	const data: T[] = [];
+	for (let idx = 0; idx < lines.length; idx++) {
+		const line = lines[idx];
+		if (line === undefined) continue;
+		try {
+			data.push(JSON.parse(line) as T);
+		} catch {
+			return {
+				data: [],
+				error: `${filePath}: invalid JSONL at line ${idx + 1}`,
+			};
+		}
 	}
+	return { data };
 }
 
 /**
@@ -200,7 +216,11 @@ export function loadRemediationEvents(artifactsDir: string): {
 } {
 	const errors: string[] = [];
 	const filePath = join(artifactsDir, ARTIFACT_FILES.REMEDIATION_EVENTS);
-	const data = readJsonlFile<RemediationEvent>(filePath);
+	const { data, error } = readJsonlFile<RemediationEvent>(filePath);
+	if (error) {
+		errors.push(error);
+		return { data: [], errors };
+	}
 
 	// Validate schema for each entry
 	for (const event of data) {
@@ -226,7 +246,11 @@ export function loadRollbackEvents(artifactsDir: string): {
 } {
 	const errors: string[] = [];
 	const filePath = join(artifactsDir, ARTIFACT_FILES.ROLLBACK_EVENTS);
-	const data = readJsonlFile<RollbackEvent>(filePath);
+	const { data, error } = readJsonlFile<RollbackEvent>(filePath);
+	if (error) {
+		errors.push(error);
+		return { data: [], errors };
+	}
 
 	for (const event of data) {
 		const validation = validateSchema(
@@ -251,7 +275,11 @@ export function loadIncidents(artifactsDir: string): {
 } {
 	const errors: string[] = [];
 	const filePath = join(artifactsDir, ARTIFACT_FILES.INCIDENTS);
-	const data = readJsonlFile<IncidentRecord>(filePath);
+	const { data, error } = readJsonlFile<IncidentRecord>(filePath);
+	if (error) {
+		errors.push(error);
+		return { data: [], errors };
+	}
 
 	for (const incident of data) {
 		const validation = validateSchema(
@@ -552,7 +580,9 @@ export function capturePilotMetrics(artifactsDir: string): {
 	if (
 		errors.some(
 			(e) =>
-				e.includes("missing schemaVersion") || e.includes("unsupported schema"),
+				e.includes("missing schemaVersion") ||
+				e.includes("unsupported schema") ||
+				e.includes("invalid JSONL"),
 		)
 	) {
 		return { metrics: null, errors };
