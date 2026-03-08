@@ -426,7 +426,18 @@ describe("runInit", () => {
 		});
 
 		it("routes issue intake to Linear via contact links", () => {
-			const result = runInit(tempDir, { dryRun: false, force: false });
+			const retiredTemplates = [
+				".github/ISSUE_TEMPLATE/issue.yml",
+				".github/ISSUE_TEMPLATE/feature.yml",
+				".github/ISSUE_TEMPLATE/security.yml",
+			];
+			for (const templatePath of retiredTemplates) {
+				const fullPath = join(tempDir, templatePath);
+				mkdirSync(dirname(fullPath), { recursive: true });
+				writeFileSync(fullPath, "name: legacy-form\n", "utf-8");
+			}
+
+			const result = runInit(tempDir, { dryRun: false, force: true });
 			expect(result.ok).toBe(true);
 
 			const issueTemplateConfig = require("node:fs").readFileSync(
@@ -434,15 +445,9 @@ describe("runInit", () => {
 				"utf-8",
 			);
 
-			expect(
-				existsSync(join(tempDir, ".github/ISSUE_TEMPLATE/issue.yml")),
-			).toBe(false);
-			expect(
-				existsSync(join(tempDir, ".github/ISSUE_TEMPLATE/feature.yml")),
-			).toBe(false);
-			expect(
-				existsSync(join(tempDir, ".github/ISSUE_TEMPLATE/security.yml")),
-			).toBe(false);
+			for (const templatePath of retiredTemplates) {
+				expect(existsSync(join(tempDir, templatePath))).toBe(false);
+			}
 			expect(issueTemplateConfig).toContain("blank_issues_enabled: false");
 			expect(issueTemplateConfig).toContain("Linear work intake");
 			expect(issueTemplateConfig).toContain(
