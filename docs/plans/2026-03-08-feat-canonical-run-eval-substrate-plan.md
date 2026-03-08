@@ -69,6 +69,7 @@ The leverage path is phased: establish canonical schemas/writers first, migrate 
 - **v1-core (blocking for initial rollout):** CP0 → CP0.5 → CP1 → CP2 → CP3 → CP4a → CP5 → CP6.
 - **v1.1 (follow-on expansion):** CP4b retrieval parity (`search`, `context`, `index-context`) and broader degraded-mode harmonization.
 - **Track rule:** CP4b is a v1.1 checkpoint and is not a prerequisite for CP5/CP6 core readiness unless a release explicitly scopes v1.1 retrieval parity.
+- **v1.1 scope authority:** release/governance approver must record whether CP4b is in-scope for a release in the checkpoint evidence package.
 
 ### Non-Goals
 - No orchestration engine redesign.
@@ -256,17 +257,18 @@ If any checkpoint fails, stop, fix root cause, and rerun from the first failed g
    - distinct exit behavior (no rollback collapse into hold path)
 3. Add explicit adapter drift events and fail-closed promotion behavior on unresolved drift.
 4. Add evidence freshness gating and attestation verification before promotion decisions.
-5. Define executable attestation lifecycle:
+5. Define preflight evidence artifact lifecycle and signer/verifier upgrade gate:
    - issuer/authority
-   - signing step timing
-   - verification command/checkpoint owner
+   - preflight artifact emission timing
+   - signer/verifier command/checkpoint owner
    - key-rotation owner + failure classes
    - command templates:
-     - sign (environment/governance attestation artifact): `pnpm exec tsx src/cli.ts check-environment --contract harness.contract.json --attestation <attestationPath> --json`
-     - verify (policy/evidence validation of attested package): `pnpm exec tsx src/cli.ts pilot-evaluate --artifacts <artifactsDir> --contract harness.contract.json --json`
+     - preflight artifact emit: `pnpm exec tsx src/cli.ts check-environment --contract harness.contract.json --attestation <attestationPath> --json`
+     - promotion verifier (post-CP3 migration only): `pnpm exec tsx src/cli.ts pilot-evaluate --artifacts <artifactsDir> --contract harness.contract.json --json`
    - expected outputs:
-     - attestation artifact path
-     - verifier outcome (`pass|fail`) in canonical event stream
+     - preflight artifact path
+     - explicit lifecycle status (`preflight_only` until signer/verifier is implemented)
+     - verifier outcome (`pass|fail`) only after canonical evaluator migration includes required predicates
 
 **Target files (expected)**
 - `src/commands/pilot-evaluate.ts`
@@ -278,8 +280,8 @@ If any checkpoint fails, stop, fix root cause, and rerun from the first failed g
 - Rollback path is machine-distinct from hold path.
 - Canonical-first ingestion succeeds; legacy path requires explicit mapping metadata.
 - `unresolved_adapter_drift_count == 0` for promotion-evaluated runs.
-- Attestation lifecycle checks are test-proven end to end (sign + verify + rotation controls).
-- Promotion path blocks on stale evidence, attestation failures, or unresolved schema/adapter drift.
+- Preflight artifact lifecycle checks are test-proven, and signer/verifier upgrade requirements are explicitly gated before promotion use.
+- Promotion path blocks on stale evidence, preflight artifact write failures, attestation failures, or unresolved schema/adapter drift.
 
 ---
 
@@ -301,6 +303,7 @@ If any checkpoint fails, stop, fix root cause, and rerun from the first failed g
    - `search` mode-aware behavior when semantic backend unavailable (degraded in default mode, strict fail when strict semantic mode enabled)
    - `context` explicit fail when semantic backend unavailable
    - `index-context` explicit fail when semantic backend unavailable
+   - canonical degraded/fail retrieval events are emitted for semantic-unavailable paths (required in v1-core)
 
 **Target files (expected)**
 - `src/commands/pilot-rollback.ts`
@@ -318,6 +321,7 @@ If any checkpoint fails, stop, fix root cause, and rerun from the first failed g
 - Required rollback invariant suite outputs (ID-tagged checks) attached for drill and incident runs.
 - v1-core retrieval contract is verified: `search` mode-aware semantic-unavailable behavior passes tests.
 - v1-core retrieval contract is verified: `context` and `index-context` explicit-fail behavior passes semantic-unavailable tests.
+- v1-core retrieval contract is verified: canonical degraded/fail retrieval events are emitted with required fields for semantic-unavailable paths.
 
 ---
 
@@ -333,7 +337,7 @@ If any checkpoint fails, stop, fix root cause, and rerun from the first failed g
    - `search`: degraded/strict behavior according to mode
    - `context`: degraded lexical parity behavior (v1.1 enhancement)
    - `index-context`: degraded lexical parity behavior (v1.1 enhancement)
-2. Ensure canonical degraded/fail events include fallback metadata and confidence constraints.
+2. Expand retrieval event metadata (v1.1) with richer fallback metadata and confidence constraints beyond v1-core required fields.
 
 **Target files (expected)**
 - `src/commands/search.ts`
@@ -344,7 +348,7 @@ If any checkpoint fails, stop, fix root cause, and rerun from the first failed g
 
 **Validation Gate (CP4b)**
 - Retrieval behavior matrix tests pass across all three commands.
-- Canonical events emitted for degraded and explicit-fail paths.
+- v1.1 metadata enrichment is present for degraded and explicit-fail retrieval events.
 - `retrieval_parity_failure_count == 0` over 10 consecutive retrieval scenarios.
 
 ---
@@ -352,6 +356,10 @@ If any checkpoint fails, stop, fix root cause, and rerun from the first failed g
 ### Phase 5 — Scenario registry + rollout controls
 
 **Objective:** Operationalize substrate with scenario coverage and lane-based rollout controls.
+
+**Entry condition**
+- CP3 canonical evaluator migration is complete and is the only authoritative evaluator for rollout/promotion decisions.
+- Legacy evaluator outputs are advisory only and cannot satisfy CP5/CP6 gates.
 
 **Tasks**
 1. Create `evals/scenarios/daily-smoke/` registry and metadata.
@@ -393,7 +401,7 @@ If any checkpoint fails, stop, fix root cause, and rerun from the first failed g
 
 ### Phase 6 — Hardening and promotion-readiness window
 
-**Objective:** Prove safe autonomy progression using canonical evidence only.
+**Objective:** Prove safe autonomy progression using canonical evidence and canonical evaluator semantics only.
 
 **Tasks**
 1. Run readiness window using canonical artifacts as sole truth input.
@@ -408,13 +416,15 @@ If any checkpoint fails, stop, fix root cause, and rerun from the first failed g
    - `evidenceCompletenessRatio >= 0.95`
    - `minTotalSampleSize >= 100` (CP5-qualified window)
    - `minPerCommandScenarioSampleSize >= 10`
+   - `interventionRate` and `thrashRate` are tracked as required indicators in CP6, but remain non-blocking until explicit blocking thresholds are approved in a CP6 addendum/ADR.
 4. Enforce rollback-to-manual and re-enable criteria as machine-checked predicates.
 5. Execute rollback drills (see rollout section) and attach evidence.
 
 **Validation Gate (CP6)**
 - Spec acceptance criteria demonstrated via canonical records.
 - Readiness decision and sign-off reproducible from artifacts without narrative-only evidence.
-- Promotion lane entry requires 3 consecutive health-lane windows with zero unresolved critical drift.
+- Promotion lane entry requires 3 consecutive health-lane windows (rolling 24h windows) with zero unresolved critical drift.
+- CP6 promotion decisions must be generated by canonical evaluator outputs; legacy evaluator outputs are non-authoritative.
 
 ## Dependencies and Risks
 
@@ -449,6 +459,7 @@ If any checkpoint fails, stop, fix root cause, and rerun from the first failed g
 3. `pnpm test`
 4. targeted module tests for changed surfaces
 5. `pnpm test:deep` (required when source/runtime behavior changes)
+   - prerequisite: environment must provide `jq` and `rg` (or run in CI image that provides both)
 6. `pnpm audit`
 7. `pnpm check`
 8. `pnpm build`
@@ -518,19 +529,25 @@ If relevance set differs between capture and decision, checkpoint evidence is st
 ### Rollback and re-enable controls
 - **Rollback-to-manual triggers:** unresolved critical integrity drift, failed rollback reliability floor, missing terminal-path guarantees, or attestation failures.
 - **Re-enable requirements:** trigger cause fixed, relevant checkpoint rerun passed, fresh evidence regenerated, rollback invariants verified.
+- **Marker-path authority:** manual-release gating uses `pilotRollbackPolicy.completionMarkerPath` from `harness.contract.json` unless `remediate --completion-marker` explicitly overrides it.
 
-### Go/No-Go + rollback runbook (required, executable)
+### Go/No-Go + rollback runbook (required, executable post-CP3+CP4a)
+
+This runbook becomes authoritative only after CP3 and CP4a are complete (canonical evaluator predicates, marker-path coherence, and authoritative lane-freeze controls landed).
+
 1. **Containment (Go/No-Go):** switch to manual mode and freeze promotion lane; capture trigger artifact and timestamp.
    - command template: `pnpm exec tsx src/cli.ts pilot-rollback --mode manual --incident-id <incidentId> --reason "<reason>" --json`
    - pass predicate: mode state reads `manual`, containment event is recorded, and promotion lane is blocked.
 2. **Rollback execution:** run rollback reconciliation in artifact-capturing mode (idempotent if already in manual mode) and persist rollback event + marker artifacts.
    - command template: `pnpm exec tsx src/cli.ts pilot-rollback --mode manual --incident-id <incidentId> --reason "<reason>" --artifacts <artifactDir> --output <rollbackEventPath> --json`
-   - required artifacts: `run-manifest.json`, `events.jsonl`, rollback marker, rollback event record.
+   - required artifacts (current command contract): `rollback-events.jsonl`, `rollback-marker.json`.
+   - required artifacts (post-CP4a canonical substrate): `run-manifest.json`, `events.jsonl`, rollback marker, rollback event record.
 3. **Verification:** run required validation commands (`pnpm lint`, `pnpm typecheck`, `pnpm test`, `pnpm audit`, `pnpm check`) and attach outputs.
    - pass predicate: all commands exit 0 and no required-gate regressions remain.
-4. **Invariant suite:** run ID-tagged rollback invariants; attach pass/fail payloads.
+4. **Invariant suite:** run ID-tagged rollback invariants; attach pass/fail payloads (post-CP3 canonical evaluator migration).
    - command template: `pnpm exec tsx src/cli.ts pilot-evaluate --artifacts <artifactDir> --contract harness.contract.json --json`
-   - pass predicate: all invariant IDs pass and no partial-rollback flag is present.
+   - pass predicate (post-CP3): evaluator output includes invariant IDs and partial-rollback status, all invariant IDs pass, and no partial-rollback flag is present.
+   - pre-CP3 behavior: this step is non-authoritative and cannot be used for promotion/re-enable decisions.
 5. **Re-enable decision:** only re-enable when all re-enable requirements are met and approver signs off.
    - command template: `pnpm exec tsx src/cli.ts pilot-rollback --mode autonomous --incident-id <incidentId> --reason "<reason>" --artifacts <artifactDir> --json`
    - pass predicate: re-enable evidence package includes approver identity, timestamp, and regenerated fresh artifacts.
