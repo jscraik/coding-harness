@@ -79,12 +79,14 @@ function safeParseJson(content: string): unknown {
 	return data;
 }
 
-export function loadContract(path: string): HarnessContract {
-	// Validate path stays within cwd (symlink-aware)
-	const cwd = process.cwd();
+export function loadContract(
+	path: string,
+	baseDir = process.cwd(),
+): HarnessContract {
+	// Validate path stays within baseDir (symlink-aware)
 	let validatedPath: string;
 	try {
-		validatedPath = validatePath(cwd, path);
+		validatedPath = validatePath(baseDir, path);
 	} catch (e) {
 		if (e instanceof PathTraversalError) {
 			throw new ContractLoadError("Path traversal detected", path, [

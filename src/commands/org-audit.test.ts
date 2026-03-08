@@ -1,5 +1,13 @@
+import { mkdtempSync, writeFileSync } from "node:fs";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
 import { describe, expect, it } from "vitest";
-import { EXIT_CODES, findRepositories, runOrgAudit } from "./org-audit.js";
+import {
+	EXIT_CODES,
+	findRepositories,
+	runOrgAudit,
+	runOrgAuditCLI,
+} from "./org-audit.js";
 
 describe("org-audit command", () => {
 	describe("findRepositories", () => {
@@ -87,6 +95,38 @@ describe("org-audit command", () => {
 					expect(exitCode).toBe(EXIT_CODES.DRIFT_DETECTED);
 				}
 			}
+		});
+
+		it("accepts --base contract path outside the current working directory", async () => {
+			const tempDir = mkdtempSync(join(tmpdir(), "harness-base-contract-"));
+			const basePath = join(tempDir, "base.contract.json");
+			writeFileSync(
+				basePath,
+				JSON.stringify(
+					{
+						version: "1.0",
+						riskTierRules: {},
+						reviewPolicy: {
+							timeoutSeconds: 600,
+							timeoutAction: "fail",
+							requiredChecks: [],
+							enforceReviewerIndependence: true,
+						},
+					},
+					null,
+					2,
+				),
+			);
+
+			const result = await runOrgAuditCLI([
+				"--path",
+				process.cwd(),
+				"--base",
+				basePath,
+				"--json",
+			]);
+
+			expect(result.exitCode).not.toBe(EXIT_CODES.INVALID_ARGUMENT);
 		});
 	});
 });

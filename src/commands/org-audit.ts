@@ -8,7 +8,7 @@
  */
 
 import { existsSync, readdirSync, statSync } from "node:fs";
-import { basename, join, resolve } from "node:path";
+import { dirname, join, resolve } from "node:path";
 import { loadContract } from "../lib/contract/loader.js";
 import type { HarnessContract } from "../lib/contract/types.js";
 import {
@@ -16,10 +16,7 @@ import {
 	scanRepositories,
 	summarizeResults,
 } from "../lib/governance/repo-scanner.js";
-import {
-	validatePathComponent,
-	validateSafeArgument,
-} from "../lib/input/validation.js";
+import { validateSafeArgument } from "../lib/input/validation.js";
 import { type CliResult, err, ok } from "../lib/result/types.js";
 
 // Exit codes for programmatic consumption
@@ -342,18 +339,14 @@ export async function runOrgAuditCLI(args: string[]): Promise<{
 			console.error("Error: --base requires a path argument");
 			return { exitCode: EXIT_CODES.INVALID_ARGUMENT };
 		}
-		// Validate base contract path (prevent path traversal)
-		const pathValidation = validatePathComponent(
-			basename(rawBasePath),
-			undefined,
-			"base contract path",
-		);
-		if (!pathValidation.ok) {
-			console.error(`Error: ${pathValidation.error.message}`);
+		const baseValidation = validateSafeArgument(rawBasePath, "--base");
+		if (!baseValidation.ok) {
+			console.error(`Error: ${baseValidation.error.message}`);
 			return { exitCode: EXIT_CODES.INVALID_ARGUMENT };
 		}
+		const resolvedBasePath = resolve(baseValidation.value);
 		try {
-			baseContract = loadContract(rawBasePath);
+			baseContract = loadContract(resolvedBasePath, dirname(resolvedBasePath));
 		} catch (error) {
 			const message = error instanceof Error ? error.message : "Unknown error";
 			console.error(`Error loading base contract: ${message}`);
