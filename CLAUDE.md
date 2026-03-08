@@ -19,6 +19,7 @@
 - Default validation: `pnpm check`. Fast loop when needed: `pnpm lint`, `pnpm docs:lint`, `pnpm typecheck`, `pnpm test`.
 
 ## Docs lookup (progressive disclosure)
+- Start with [Architecture bootstrap](./docs/agents/00-architecture-bootstrap.md) for architecture-sensitive tasks.
 - Start with [Instruction map](./docs/agents/01-instruction-map.md).
 - Then open only the relevant SOP from `docs/agents/` for the current task type.
 

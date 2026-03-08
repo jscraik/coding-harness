@@ -2,6 +2,7 @@
 
 ## Summary
 
+- Linear issue:
 - What changed (brief):
 - Why this change was needed:
 - Risk and rollback plan:
@@ -10,6 +11,7 @@
 
 - [ ] I did not push directly to `main`; this PR is from a dedicated branch.
 - [ ] Branch name follows policy (`codex/*` for agent-created branches).
+- [ ] Linear issue key is present in the branch name or PR title/body for GitHub↔Linear linking.
 - [ ] Required local gates run: `pnpm lint`, `pnpm typecheck`, `pnpm test`, `pnpm audit`, `pnpm check` (or reason for deviation).
 - [ ] Greptile setup verified with `grepfile` skill and `.greptile/config.json`, `.greptile/rules.md`, `.greptile/files.json`.
 - [ ] `Greptile` review completed and findings handled (or explicitly waived).

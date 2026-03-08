@@ -197,6 +197,32 @@ function printUsage(): void {
 	console.info("  --attestation    Path to write attestation artifact");
 	console.info("  --json           Output as JSON");
 	console.info("");
+	console.info("Linear Workflow Options:");
+	console.info("  linear <claim|handoff|close> --issue <id-or-url>");
+	console.info("  linear prepare --issue <id-or-url> [--field <name>]");
+	console.info("  --team           Optional team key/name filter");
+	console.info("  --state          Override target workflow state");
+	console.info(
+		"  --assignee       Claim assignee (default: me, UUID supported)",
+	);
+	console.info("  --no-assign      Skip assignee updates during claim");
+	console.info("  --comment        Add a handoff/closure note");
+	console.info("  --branch         Include branch name in the Linear comment");
+	console.info(
+		"  --workspace      Include workspace/worktree path in the comment",
+	);
+	console.info("  --pr-url         Attach a pull request URL");
+	console.info("  --evidence-url   Comma-separated evidence URLs to attach");
+	console.info("  --links          Comma-separated reference URLs to attach");
+	console.info(
+		"  --branch-prefix  Override the generated branch prefix (default: codex)",
+	);
+	console.info(
+		"  --field          branch|pr-title|pr-body|link-line|closing-line|issue-url",
+	);
+	console.info("  --token          Override LINEAR_API_KEY");
+	console.info("  --json           Output as JSON");
+	console.info("");
 	console.info("Remediate Options:");
 	console.info(
 		"  --findings       JSON file path for findings (or - for stdin)",

@@ -87,6 +87,14 @@ vi.mock("./commands/branch-protect.js", () => ({
 	runBranchProtectCLI: vi.fn(async () => 64),
 }));
 
+vi.mock("./commands/linear-workflow.js", () => ({
+	runLinearWorkflowCLI: vi.fn(async () => 65),
+}));
+
+vi.mock("./commands/linear-prepare.js", () => ({
+	runLinearPrepareCLI: vi.fn(async () => 66),
+}));
+
 vi.mock("./commands/blast-radius.js", () => ({
 	runBlastRadiusCLI: vi.fn(() => 59),
 }));
@@ -213,6 +221,79 @@ describe("cli command dispatch", () => {
 			json: true,
 		});
 		expect(exitSpy).toHaveBeenCalledWith(49);
+	});
+
+	it("dispatches linear claim workflow command", async () => {
+		const { run } = await import("./cli.js");
+		const { runLinearWorkflowCLI } = await import(
+			"./commands/linear-workflow.js"
+		);
+
+		const exitSpy = vi
+			.spyOn(process, "exit")
+			.mockImplementation(((_code?: number) => undefined) as never);
+
+		run([
+			"linear",
+			"claim",
+			"--issue",
+			"JSC-36",
+			"--branch",
+			"codex/jsc-36-linear-claim",
+			"--workspace",
+			"/tmp/worktrees/jsc-36",
+			"--evidence-url",
+			"https://example.com/one,https://example.com/two",
+			"--links",
+			"https://example.com/runbook",
+			"--json",
+		]);
+
+		await new Promise((resolve) => setTimeout(resolve, 0));
+
+		expect(vi.mocked(runLinearWorkflowCLI)).toHaveBeenCalledWith({
+			action: "claim",
+			issue: "JSC-36",
+			branch: "codex/jsc-36-linear-claim",
+			workspace: "/tmp/worktrees/jsc-36",
+			evidenceUrls: ["https://example.com/one", "https://example.com/two"],
+			links: ["https://example.com/runbook"],
+			json: true,
+		});
+		expect(exitSpy).toHaveBeenCalledWith(65);
+	});
+
+	it("dispatches linear prepare command", async () => {
+		const { run } = await import("./cli.js");
+		const { runLinearPrepareCLI } = await import(
+			"./commands/linear-prepare.js"
+		);
+
+		const exitSpy = vi
+			.spyOn(process, "exit")
+			.mockImplementation(((_code?: number) => undefined) as never);
+
+		run([
+			"linear",
+			"prepare",
+			"--issue",
+			"JSC-37",
+			"--branch-prefix",
+			"codex",
+			"--field",
+			"branch",
+			"--json",
+		]);
+
+		await new Promise((resolve) => setTimeout(resolve, 0));
+
+		expect(vi.mocked(runLinearPrepareCLI)).toHaveBeenCalledWith({
+			issue: "JSC-37",
+			branchPrefix: "codex",
+			field: "branch",
+			json: true,
+		});
+		expect(exitSpy).toHaveBeenCalledWith(66);
 	});
 
 	it("dispatches brainstorm-gate and ignores missing --topic value", async () => {

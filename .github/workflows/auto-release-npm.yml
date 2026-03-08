@@ -99,6 +99,7 @@ jobs:
             --auto-resolve-bot-threads \
             --json
           STATUS=$?
+          echo "exit_code=$STATUS" >> "$GITHUB_OUTPUT"
           if [ "$STATUS" -eq 5 ]; then
             echo "::warning::post-merge review-gate reported merged-PR follow-up work; continuing with release because main has already passed the release candidate checks."
             exit 0

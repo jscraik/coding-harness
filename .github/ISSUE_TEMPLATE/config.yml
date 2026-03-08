@@ -1,5 +1,11 @@
 blank_issues_enabled: false
 contact_links:
-  - name: Documentation
+  - name: Linear work intake
+    url: https://linear.app/jscraik/project/coding-harness-bb735dbbda79
+    about: Create or update bugs, features, policy gaps, automation work, and release follow-ups in Linear.
+  - name: Repository docs
     url: https://github.com/jscraik/coding-harness#readme
-    about: Check the README for usage information
+    about: Review setup, workflow, and command documentation before opening new work.
+  - name: Private security disclosure
+    url: mailto:jamie@brainwav.ai
+    about: Report security vulnerabilities privately instead of using public issue flows.
