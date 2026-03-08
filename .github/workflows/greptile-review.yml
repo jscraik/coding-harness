@@ -214,20 +214,21 @@ jobs:
             const commentUrl = process.env.COMMENT_URL;
 
             if (status === 'pending') {
-              // Waiting for Greptile - keep the check queued to block merge until review arrives
-              // The check will be updated when Greptile posts a review (triggers via issue_comment)
+              // Waiting for Greptile - mark as a failing completed check so branch
+              // protection blocks merge without leaving an indefinitely queued run.
               await github.rest.checks.create({
                 owner,
                 repo,
                 name: 'Greptile Review',
                 head_sha: headSha,
-                status: 'queued',
+                status: 'completed',
+                conclusion: 'failure',
                 output: {
                   title: 'Greptile Review Pending',
-                  summary: 'Greptile has not yet reviewed this PR. The check will update automatically when Greptile posts a review.'
+                  summary: 'Greptile has not yet reviewed this PR head commit.'
                 }
               });
-              console.log('Created queued check run - waiting for Greptile');
+              console.log('Created failing check run - waiting for Greptile');
               return;
             }
 
