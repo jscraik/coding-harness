@@ -22,9 +22,6 @@ const EXPECTED_TEMPLATE_PATHS = [
 	"scripts/check-environment.sh",
 	".mise.toml",
 	".codex/environments/environment.toml",
-	".github/ISSUE_TEMPLATE/issue.yml",
-	".github/ISSUE_TEMPLATE/feature.yml",
-	".github/ISSUE_TEMPLATE/security.yml",
 	".github/ISSUE_TEMPLATE/config.yml",
 	".github/CODEOWNERS",
 	"Makefile",
@@ -428,26 +425,35 @@ describe("runInit", () => {
 			expect(content).toContain("Semgrep");
 		});
 
-		it("enforces required fields in issue templates", () => {
-			const result = runInit(tempDir, { dryRun: false, force: false });
+		it("routes issue intake to Linear via contact links", () => {
+			const retiredTemplates = [
+				".github/ISSUE_TEMPLATE/issue.yml",
+				".github/ISSUE_TEMPLATE/feature.yml",
+				".github/ISSUE_TEMPLATE/security.yml",
+			];
+			for (const templatePath of retiredTemplates) {
+				const fullPath = join(tempDir, templatePath);
+				mkdirSync(dirname(fullPath), { recursive: true });
+				writeFileSync(fullPath, "name: legacy-form\n", "utf-8");
+			}
+
+			const result = runInit(tempDir, { dryRun: false, force: true });
 			expect(result.ok).toBe(true);
 
-			const issueTemplate = require("node:fs").readFileSync(
-				join(tempDir, ".github/ISSUE_TEMPLATE/issue.yml"),
-				"utf-8",
-			);
-			const featureTemplate = require("node:fs").readFileSync(
-				join(tempDir, ".github/ISSUE_TEMPLATE/feature.yml"),
-				"utf-8",
-			);
-			const securityTemplate = require("node:fs").readFileSync(
-				join(tempDir, ".github/ISSUE_TEMPLATE/security.yml"),
+			const issueTemplateConfig = require("node:fs").readFileSync(
+				join(tempDir, ".github/ISSUE_TEMPLATE/config.yml"),
 				"utf-8",
 			);
 
-			expect(issueTemplate).not.toContain("required: false");
-			expect(featureTemplate).not.toContain("required: false");
-			expect(securityTemplate).not.toContain("required: false");
+			for (const templatePath of retiredTemplates) {
+				expect(existsSync(join(tempDir, templatePath))).toBe(false);
+			}
+			expect(issueTemplateConfig).toContain("blank_issues_enabled: false");
+			expect(issueTemplateConfig).toContain("Linear work intake");
+			expect(issueTemplateConfig).toContain(
+				"https://linear.app/jscraik/project/coding-harness-bb735dbbda79",
+			);
+			expect(issueTemplateConfig).toContain("Private security disclosure");
 		});
 
 		it("enforces strict commit and hook governance in templates", () => {

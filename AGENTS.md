@@ -43,10 +43,12 @@ Details: [CONTRIBUTING.md](./CONTRIBUTING.md), [Agent governance](./docs/agents/
 - Ask before adding dependencies or changing system-level settings.
 
 ## Internal work intake routing
-- Intake is Linear: `https://linear.app/jscraik/project/coding-harness-bb735dbbda79`.
-- Reuse existing Linear issues when possible; include repro and validation evidence.
-- GitHub remains for branches/PRs/CI only.
-- Never print token values in logs or docs.
+- The package `bugs.url` points to the Linear project for this repository: `https://linear.app/jscraik/project/coding-harness-bb735dbbda79`.
+- If an agent finds a reproducible coding-harness bug, policy gap, workflow regression, automation task, or release follow-up, it must create (or update) a **Linear issue** before handoff.
+- Before creating a new Linear issue, search the project/team backlog and reuse an existing issue when it matches.
+- Include minimal repro steps, expected vs actual behavior, validation evidence, and links to repo docs or PRs in the issue body.
+- GitHub remains the system for branches, pull requests, CI, and merge history; it is not the default issue intake path for this repository.
+- Never print token values in logs, docs, or command output.
 
 ## Global discovery order
 1. `/Users/jamiecraik/.codex/AGENTS.md`
