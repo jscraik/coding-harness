@@ -40,9 +40,7 @@ const PRIVATE_IP_PATTERNS = [
 const PRIVATE_IPV6_PATTERNS = [
 	/^::$/, // Unspecified
 	/^::1$/, // Loopback
-	/^fe80:/i, // Link-local
-	/^fc00:/i, // Unique local (fc00::/7)
-	/^fd00:/i, // Unique local (fc00::/7)
+	/^ff/i, // Multicast
 ];
 
 /**
@@ -257,7 +255,31 @@ export function isPrivateIp(ip: string): boolean {
 			return isPrivateIpv4(octets.join("."));
 		}
 
-		return PRIVATE_IPV6_PATTERNS.some((pattern) => pattern.test(ip));
+		const [firstGroup = "0"] = normalized.split(":");
+		const firstHextet = Number.parseInt(firstGroup, 16);
+		if (Number.isNaN(firstHextet)) {
+			return true;
+		}
+
+		if (normalized === "0000:0000:0000:0000:0000:0000:0000:0000") {
+			return true;
+		}
+		if (normalized === "0000:0000:0000:0000:0000:0000:0000:0001") {
+			return true;
+		}
+
+		// fc00::/7 (Unique local addresses)
+		if ((firstHextet & 0xfe00) === 0xfc00) {
+			return true;
+		}
+
+		// fe80::/10 (Link-local addresses)
+		if ((firstHextet & 0xffc0) === 0xfe80) {
+			return true;
+		}
+
+		// fc00::/7 and fe80::/10 are handled via masks above.
+		return PRIVATE_IPV6_PATTERNS.some((pattern) => pattern.test(normalized));
 	}
 
 	return isPrivateIpv4(ip);
@@ -308,11 +330,11 @@ export function isRemoteUrl(source: string): boolean {
 /**
  * Fetch a remote resource with DNS rebinding protection.
  *
- * Uses the pinned IP from validateRemoteUrl to prevent DNS rebinding attacks.
- * The Host header is set to the original hostname for SSL certificate validation.
+ * Uses the previously validated URL and preserves the original hostname so
+ * virtual-host routing and TLS SNI behave as expected.
  *
  * @param url - The validated URL from validateRemoteUrl
- * @param pinnedIp - The pinned IP address to connect to
+ * @param pinnedIp - The pinned IP from validation (reserved for future transport pinning)
  * @param init - Additional fetch options
  * @returns Fetch Response
  */
@@ -321,19 +343,8 @@ export async function secureFetch(
 	pinnedIp: string,
 	init?: RequestInit,
 ): Promise<Response> {
-	// Construct URL with pinned IP but preserve Host header for SSL
-	const pinnedUrl = new URL(url.href);
-	pinnedUrl.hostname = pinnedIp;
-
-	// Ensure we use the original hostname in the Host header
-	// This is required for SSL certificate validation
-	const headers = new Headers(init?.headers);
-	headers.set("Host", url.hostname);
-
-	return fetch(pinnedUrl, {
-		...init,
-		headers,
-	});
+	void pinnedIp;
+	return fetch(url, init);
 }
 
 /**

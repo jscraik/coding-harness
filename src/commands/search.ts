@@ -162,6 +162,64 @@ function parsePathFilters(parts: string[]): PathFilterResult {
 	return { include, exclude, warnings };
 }
 
+function validatePathPrefix(value: string, field: string): CliResult<string> {
+	const normalized = normalizeRelativePath(value).replace(/\/+$/, "");
+	if (!normalized) {
+		return err(
+			createError("VALIDATION_ERROR", `${field} cannot be empty`, {
+				field,
+				value,
+			}),
+		);
+	}
+	if (normalized.startsWith("/")) {
+		return err(
+			createError(
+				"VALIDATION_ERROR",
+				`${field} must be a relative path prefix`,
+				{
+					field,
+					value,
+				},
+			),
+		);
+	}
+	if (normalized.includes("\0")) {
+		return err(
+			createError("VALIDATION_ERROR", `${field} cannot contain null bytes`, {
+				field,
+				value,
+			}),
+		);
+	}
+
+	const segments = normalized.split("/");
+	for (const segment of segments) {
+		if (segment === "" || segment === "." || segment === "..") {
+			return err(
+				createError(
+					"VALIDATION_ERROR",
+					`${field} cannot contain relative path segments`,
+					{
+						field,
+						value,
+					},
+				),
+			);
+		}
+		const segmentValidation = validatePathComponent(
+			segment,
+			undefined,
+			`${field} segment`,
+		);
+		if (!segmentValidation.ok) {
+			return err(segmentValidation.error);
+		}
+	}
+
+	return ok(normalized);
+}
+
 /**
  * Run lexical search using ripgrep.
  */
@@ -640,7 +698,7 @@ export async function runSearchCLI(args: string[]): Promise<number> {
 			}
 			// Validate each path component
 			for (const p of parsed.include) {
-				const v = validatePathComponent(p, undefined, "include path");
+				const v = validatePathPrefix(p, "include path");
 				if (!v.ok) {
 					console.error(`Error: ${v.error.message}`);
 					return EXIT_CODES.VALIDATION_ERROR;
@@ -648,7 +706,7 @@ export async function runSearchCLI(args: string[]): Promise<number> {
 				rawIncludePaths.push(v.value);
 			}
 			for (const p of parsed.exclude) {
-				const v = validatePathComponent(p, undefined, "exclude path");
+				const v = validatePathPrefix(p, "exclude path");
 				if (!v.ok) {
 					console.error(`Error: ${v.error.message}`);
 					return EXIT_CODES.VALIDATION_ERROR;

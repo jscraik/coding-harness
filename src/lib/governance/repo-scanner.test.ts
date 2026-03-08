@@ -1,3 +1,4 @@
+import { join } from "node:path";
 import { describe, expect, it } from "vitest";
 import type { HarnessContract } from "../contract/types.js";
 import {
@@ -6,6 +7,7 @@ import {
 	scanSingleRepo,
 	summarizeResults,
 } from "./repo-scanner.js";
+import { setCachedEntry } from "./scan-cache.js";
 
 describe("repo-scanner", () => {
 	describe("detectDrift", () => {
@@ -174,6 +176,32 @@ describe("repo-scanner", () => {
 			const results2 = await scanRepositories(repos, {});
 			expect(results1).toHaveLength(1);
 			expect(results2).toHaveLength(1);
+		});
+
+		it("drops cached drift when no base contract is provided", async () => {
+			const repoPath = process.cwd();
+			const contractPath = join(repoPath, "harness.contract.json");
+			const cache = { version: 1, entries: [] };
+			setCachedEntry(cache, repoPath, contractPath, {
+				path: repoPath,
+				status: "success",
+				contract: {
+					version: "1.0",
+				},
+				drift: [
+					{
+						path: "reviewPolicy.requiredChecks",
+						expected: "security-scan",
+						actual: undefined,
+						severity: "critical",
+						description: "Missing required check: security-scan",
+					},
+				],
+			});
+
+			const result = await scanSingleRepo(repoPath, {}, cache);
+			expect(result.status).toBe("success");
+			expect(result.drift).toBeUndefined();
 		});
 	});
 });

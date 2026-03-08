@@ -80,6 +80,14 @@ describe("preset-resolver", () => {
 			expect(getBundledPreset("unknown-preset")).toBeUndefined();
 		});
 
+		it("does not treat path-like input as bundled preset name", () => {
+			const resolver = new PresetResolver();
+			expect(resolver.getBundledPreset("../typescript-base")).toBeUndefined();
+			expect(
+				resolver.getBundledPreset("src/presets/typescript-base"),
+			).toBeUndefined();
+		});
+
 		it("returns valid contract structure", () => {
 			const preset = getBundledPreset("typescript-base");
 			expect(preset).toBeDefined();

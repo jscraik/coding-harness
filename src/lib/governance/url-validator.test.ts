@@ -24,6 +24,8 @@ describe("url-validator", () => {
 			expect(isPrivateIp("fe80::1")).toBe(true); // Link-local
 			expect(isPrivateIp("fc00::1")).toBe(true); // Unique local
 			expect(isPrivateIp("fd00::1")).toBe(true); // Unique local
+			expect(isPrivateIp("fcab::1")).toBe(true); // Unique local (fc00::/7)
+			expect(isPrivateIp("fd12::1")).toBe(true); // Unique local (fc00::/7)
 			expect(isPrivateIp("::")).toBe(true); // Unspecified
 		});
 

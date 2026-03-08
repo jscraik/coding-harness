@@ -344,5 +344,17 @@ describe("search command", () => {
 			warnSpy.mockRestore();
 			errorSpy.mockRestore();
 		});
+
+		it("accepts nested include/exclude path prefixes", async () => {
+			mockSpawnSync.mockReturnValue(createSpawnResult(""));
+
+			const code = await runSearchCLI([
+				"query",
+				"--paths",
+				"include:src/generated;exclude:src/generated/tmp",
+			]);
+
+			expect(code).not.toBe(EXIT_CODES.VALIDATION_ERROR);
+		});
 	});
 });

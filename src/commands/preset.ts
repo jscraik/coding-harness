@@ -49,6 +49,64 @@ export type PresetResult =
 	| { ok: true; value: PresetListOutput | PresetShowOutput }
 	| { ok: false; error: PresetErrorOutput };
 
+function toYaml(value: unknown, indent = 0): string {
+	const spacing = "  ".repeat(indent);
+
+	if (value === null) return "null";
+	if (value === undefined) return "null";
+	if (typeof value === "string") {
+		return JSON.stringify(value);
+	}
+	if (typeof value === "number" || typeof value === "boolean") {
+		return String(value);
+	}
+	if (Array.isArray(value)) {
+		if (value.length === 0) return "[]";
+		return value
+			.map((item) => {
+				if (item !== null && typeof item === "object" && !Array.isArray(item)) {
+					const nested = toYaml(item, indent + 1);
+					return `${spacing}-\n${nested}`;
+				}
+				return `${spacing}- ${toYaml(item, indent + 1)}`;
+			})
+			.join("\n");
+	}
+
+	const entries = Object.entries(value as Record<string, unknown>);
+	if (entries.length === 0) return "{}";
+	return entries
+		.map(([key, nestedValue]) => {
+			if (
+				nestedValue !== null &&
+				typeof nestedValue === "object" &&
+				!Array.isArray(nestedValue)
+			) {
+				return `${spacing}${key}:\n${toYaml(nestedValue, indent + 1)}`;
+			}
+			if (Array.isArray(nestedValue)) {
+				if (nestedValue.length === 0) {
+					return `${spacing}${key}: []`;
+				}
+				const nested = nestedValue
+					.map((item) => {
+						if (
+							item !== null &&
+							typeof item === "object" &&
+							!Array.isArray(item)
+						) {
+							return `${spacing}  -\n${toYaml(item, indent + 2)}`;
+						}
+						return `${spacing}  - ${toYaml(item, indent + 2)}`;
+					})
+					.join("\n");
+				return `${spacing}${key}:\n${nested}`;
+			}
+			return `${spacing}${key}: ${toYaml(nestedValue, indent + 1)}`;
+		})
+		.join("\n");
+}
+
 /**
  * Get preset descriptions for human-friendly output
  */
@@ -79,6 +137,17 @@ export function listPresets(options: PresetListOptions = {}): PresetResult {
 					presets,
 					count: presets.length,
 				},
+			};
+		}
+		if (options.format === "yaml") {
+			const output = {
+				presets,
+				count: presets.length,
+			};
+			console.info(toYaml(output));
+			return {
+				ok: true,
+				value: output,
 			};
 		}
 
@@ -140,6 +209,17 @@ export function showPreset(
 					name,
 					preset: preset as unknown as Record<string, unknown>,
 				},
+			};
+		}
+		if (options.format === "yaml") {
+			const output = {
+				name,
+				preset: preset as unknown as Record<string, unknown>,
+			};
+			console.info(toYaml(output));
+			return {
+				ok: true,
+				value: output,
 			};
 		}
 

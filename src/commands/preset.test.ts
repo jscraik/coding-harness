@@ -31,6 +31,17 @@ describe("preset command", () => {
 				}
 			}
 		});
+
+		it("emits YAML output when format is yaml", () => {
+			const infoSpy = vi.spyOn(console, "info").mockImplementation(() => {
+				// noop
+			});
+			const result = listPresets({ format: "yaml" });
+
+			expect(result.ok).toBe(true);
+			expect(infoSpy).toHaveBeenCalledWith(expect.stringContaining("presets:"));
+			infoSpy.mockRestore();
+		});
 	});
 
 	describe("showPreset", () => {
@@ -50,6 +61,18 @@ describe("preset command", () => {
 			if (!result.ok) {
 				expect(result.error.code).toBe(EXIT_CODES.PRESET_NOT_FOUND);
 			}
+		});
+
+		it("emits YAML output for preset show", () => {
+			const infoSpy = vi.spyOn(console, "info").mockImplementation(() => {
+				// noop
+			});
+			const result = showPreset("typescript-base", { format: "yaml" });
+
+			expect(result.ok).toBe(true);
+			expect(infoSpy).toHaveBeenCalledWith(expect.stringContaining("name:"));
+			expect(infoSpy).toHaveBeenCalledWith(expect.stringContaining("preset:"));
+			infoSpy.mockRestore();
 		});
 	});
 

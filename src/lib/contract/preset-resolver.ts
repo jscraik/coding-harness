@@ -34,6 +34,7 @@ import { validateContract } from "./validator.js";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
+const BUNDLED_PRESET_NAME_PATTERN = /^[a-z0-9][a-z0-9-]*$/i;
 
 /**
  * Get the presets directory path.
@@ -160,7 +161,10 @@ export class PresetResolver {
 	 * Check if source is a bundled preset name.
 	 */
 	private isBundledPresetName(source: string): source is BundledPreset {
-		return this.getBundledPreset(source) !== undefined;
+		if (!BUNDLED_PRESET_NAME_PATTERN.test(source)) {
+			return false;
+		}
+		return this.listBundledPresets().includes(source);
 	}
 
 	/**

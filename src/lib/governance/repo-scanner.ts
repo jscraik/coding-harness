@@ -123,6 +123,13 @@ export async function scanSingleRepo(
 					drift: detectDrift(options.baseContract, cachedResult.contract),
 				};
 			}
+			// Drop stale drift findings when no base contract is requested.
+			// Cached entries may have been created during a previous scan with
+			// baseContract enabled.
+			if (!options.baseContract && cachedResult.drift !== undefined) {
+				const { drift: _drift, ...resultWithoutDrift } = cachedResult;
+				return resultWithoutDrift;
+			}
 			return cachedResult;
 		}
 	}
