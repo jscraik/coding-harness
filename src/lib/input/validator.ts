@@ -1,4 +1,4 @@
-import { realpathSync } from "node:fs";
+import { lstatSync, realpathSync } from "node:fs";
 import { dirname, normalize, resolve, sep } from "node:path";
 
 export class PathTraversalError extends Error {
@@ -30,6 +30,20 @@ export function validatePath(baseDir: string, userPath: string): string {
 	try {
 		realResolved = realpathSync(resolved);
 	} catch {
+		// Path doesn't exist OR is a dangling symlink.
+		// Use lstatSync (no symlink follow) to detect symlinks explicitly:
+		// a dangling symlink has lstat but no realpath, and may point outside the base.
+		try {
+			const lstat = lstatSync(resolved);
+			if (lstat.isSymbolicLink()) {
+				// Dangling symlink - always reject regardless of where its target points
+				throw new PathTraversalError();
+			}
+		} catch (e) {
+			if (e instanceof PathTraversalError) throw e;
+			// lstatSync threw ENOENT - path truly doesn't exist, proceed to ancestor walk
+		}
+
 		// Path doesn't exist - validate by walking up to find existing ancestor
 		let currentDir = dirname(resolved);
 		// Keep walking up until we go past the base or hit the filesystem root

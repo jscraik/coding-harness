@@ -160,6 +160,13 @@ function withReadinessFields(
 	};
 }
 
+interface ApprovalResult {
+	passed: boolean;
+	blockers: string[];
+	approvers: string[];
+	codingActor?: string;
+}
+
 interface ReviewerIndependenceResult {
 	passed: boolean;
 	blockers: string[];
@@ -205,11 +212,11 @@ function resolveCurrentApprovers(
 		.map(([login]) => login);
 }
 
-async function evaluateReviewerIndependence(
+async function evaluateApprovals(
 	client: GitHubClient,
 	prNumber: number,
 	headSha: string,
-): Promise<ReviewerIndependenceResult> {
+): Promise<ApprovalResult> {
 	const pullRequest = await client.getPullRequest(prNumber);
 	const codingActor = pullRequest.user?.login?.trim();
 	const reviews = await client.listPullRequestReviews(prNumber);
@@ -220,23 +227,35 @@ async function evaluateReviewerIndependence(
 		blockers.push(
 			"Unable to determine coding actor from PR author; cannot verify reviewer independence",
 		);
-		return { passed: false, blockers };
+		return { passed: false, blockers, approvers };
 	}
 
 	if (approvers.length === 0) {
 		blockers.push("No APPROVED reviews found for the current HEAD SHA");
-		return { passed: false, blockers };
+		return { passed: false, blockers, approvers, codingActor };
 	}
 
+	return { passed: true, blockers: [], approvers, codingActor };
+}
+
+function evaluateReviewerIndependence({
+	approvers,
+	codingActor,
+}: {
+	approvers: string[];
+	codingActor: string;
+}): ReviewerIndependenceResult {
 	const independentApprovers = approvers.filter(
 		(reviewer) => reviewer !== codingActor,
 	);
 
 	if (independentApprovers.length === 0) {
-		blockers.push(
-			`Reviewer independence failed: coding actor '${codingActor}' is the sole approving reviewer`,
-		);
-		return { passed: false, blockers };
+		return {
+			passed: false,
+			blockers: [
+				`Reviewer independence failed: coding actor '${codingActor}' is the sole approving reviewer`,
+			],
+		};
 	}
 
 	return { passed: true, blockers: [] };
@@ -357,18 +376,28 @@ export async function runReviewGate(
 				const requiredChecks = (reviewPolicy.requiredChecks ?? []).filter(
 					(checkName) => checkName !== options.checkName,
 				);
-				const independence = enforceReviewerIndependence
-					? await evaluateReviewerIndependence(
-							client,
-							options.prNumber,
-							options.headSha,
-						)
-					: { passed: true, blockers: [] };
+				// Always enforce that at least one APPROVED review exists for the
+				// current HEAD SHA. enforceReviewerIndependence only controls
+				// whether the approver must be different from the PR author —
+				// it cannot skip the approval requirement itself.
+				const approvals = await evaluateApprovals(
+					client,
+					options.prNumber,
+					options.headSha,
+				);
+				const independence =
+					enforceReviewerIndependence && approvals.passed
+						? evaluateReviewerIndependence({
+								approvers: approvals.approvers,
+								codingActor: approvals.codingActor ?? "",
+							})
+						: { passed: true, blockers: [] };
 				const requiredCheckBlockers = evaluateRequiredChecks(
 					checkRuns,
 					requiredChecks,
 				);
 				const additionalBlockers = [
+					...approvals.blockers,
 					...independence.blockers,
 					...requiredCheckBlockers,
 				];
@@ -376,7 +405,10 @@ export async function runReviewGate(
 					ok: true,
 					output: withReadinessFields(
 						{
-							verified: additionalBlockers.length === 0 && independence.passed,
+							verified:
+								additionalBlockers.length === 0 &&
+								approvals.passed &&
+								independence.passed,
 							headSha: options.headSha,
 							checkStatus: checkResult.status,
 							checkConclusion: checkResult.conclusion ?? undefined,

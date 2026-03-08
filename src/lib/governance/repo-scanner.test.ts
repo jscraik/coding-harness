@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import type { HarnessContract } from "../contract/types.js";
 import {
 	detectDrift,
+	scanRepositories,
 	scanSingleRepo,
 	summarizeResults,
 } from "./repo-scanner.js";
@@ -154,6 +155,25 @@ describe("repo-scanner", () => {
 			expect(summary.totalDrift).toBe(2);
 			expect(summary.criticalDrift).toBe(1);
 			expect(summary.warningDrift).toBe(1);
+		});
+	});
+
+	describe("scanRepositories caching", () => {
+		it("respects useCache=false option", async () => {
+			const repos = [process.cwd()];
+			// Run with cache disabled
+			const results = await scanRepositories(repos, { useCache: false });
+			expect(results).toHaveLength(1);
+		});
+
+		it("uses cache by default", async () => {
+			const repos = [process.cwd()];
+			// First scan populates cache
+			const results1 = await scanRepositories(repos, {});
+			// Second scan should use cache
+			const results2 = await scanRepositories(repos, {});
+			expect(results1).toHaveLength(1);
+			expect(results2).toHaveLength(1);
 		});
 	});
 });

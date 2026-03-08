@@ -1,5 +1,4 @@
-import { mkdtempSync, rmSync, writeFileSync } from "node:fs";
-import { tmpdir } from "node:os";
+import { mkdtempSync, rmSync, symlinkSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { afterEach, describe, expect, it } from "vitest";
 import {
@@ -7,6 +6,7 @@ import {
 	checkQuestionSLA,
 	createEmptyMetrics,
 	loadMetrics,
+	saveMetrics,
 	updateMetrics,
 } from "./metrics-tracker.js";
 import type { MetricsHistory } from "./metrics-tracker.js";
@@ -100,7 +100,7 @@ describe("calculateTrends", () => {
 
 describe("loadMetrics", () => {
 	it("filters malformed history entries to avoid downstream crashes", () => {
-		const root = mkdtempSync(join(tmpdir(), "harness-metrics-"));
+		const root = mkdtempSync(join(process.cwd(), ".harness-metrics-"));
 		tempDirs.push(root);
 		const metricsPath = join(root, "metrics.json");
 
@@ -125,6 +125,44 @@ describe("loadMetrics", () => {
 		const { history } = loadMetrics(metricsPath);
 		expect(history).toHaveLength(1);
 		expect(() => calculateTrends(history)).not.toThrow();
+	});
+
+	// Regression: symlinked metrics file must not be read (fail-safe empty metrics)
+	it("returns empty metrics when metrics path is a symlink", () => {
+		const root = mkdtempSync(join(process.cwd(), ".harness-metrics-"));
+		tempDirs.push(root);
+
+		const targetPath = join(root, "real-metrics.json");
+		writeFileSync(
+			targetPath,
+			JSON.stringify({ current: createEmptyMetrics(), history: [] }),
+			"utf-8",
+		);
+
+		const symlinkPath = join(root, "metrics-symlink.json");
+		symlinkSync(targetPath, symlinkPath);
+
+		const result = loadMetrics(symlinkPath);
+		expect(result.metrics).toEqual(createEmptyMetrics());
+		expect(result.history).toEqual([]);
+	});
+});
+
+describe("saveMetrics", () => {
+	// Regression: saveMetrics must throw for symlinked paths (fail-closed for writes)
+	it("throws when metrics file path is a symlink", () => {
+		const root = mkdtempSync(join(process.cwd(), ".harness-metrics-"));
+		tempDirs.push(root);
+
+		const targetPath = join(root, "outside.json");
+		writeFileSync(targetPath, "{}", "utf-8");
+
+		const symlinkPath = join(root, "metrics.json");
+		symlinkSync(targetPath, symlinkPath);
+
+		expect(() => saveMetrics(createEmptyMetrics(), [], symlinkPath)).toThrow(
+			/symlinked metrics file path/,
+		);
 	});
 });
 

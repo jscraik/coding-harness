@@ -8,8 +8,14 @@
  * - Unresolved-question SLA tracking
  */
 
-import { existsSync, readFileSync, writeFileSync } from "node:fs";
-import { resolve } from "node:path";
+import {
+	existsSync,
+	lstatSync,
+	readFileSync,
+	realpathSync,
+	writeFileSync,
+} from "node:fs";
+import { dirname, resolve, sep } from "node:path";
 import { validatePath } from "../input/validator.js";
 import type { ReliabilityMetrics } from "./types.js";
 
@@ -33,17 +39,34 @@ export interface MetricsHistory {
 const DEFAULT_METRICS_PATH = ".memory-metrics.json";
 
 function resolveMetricsPath(metricsPath?: string): string {
-	// If an explicit path is provided, use it directly (caller is responsible for path safety)
-	if (metricsPath) {
-		return resolve(metricsPath);
+	const resolvedPath = resolve(metricsPath ?? DEFAULT_METRICS_PATH);
+
+	// 1. Refuse to follow symlinks — prevents symlink-based file overwrite.
+	if (existsSync(resolvedPath) && lstatSync(resolvedPath).isSymbolicLink()) {
+		throw new Error(
+			`Refusing to use symlinked metrics file path: ${resolvedPath}`,
+		);
 	}
-	// For default path, validate it stays within cwd
-	const defaultPath = resolve(DEFAULT_METRICS_PATH);
-	try {
-		return validatePath(process.cwd(), defaultPath);
-	} catch {
-		return defaultPath;
+
+	// 2. Enforce workspace containment via the shared validatePath guard.
+	const validatedPath = validatePath(process.cwd(), resolvedPath);
+
+	// 3. Canonical parent-directory check: ensure the containing dir is inside cwd
+	//    even after symlink resolution of the directory (not the file).
+	const realWorkspace = realpathSync(process.cwd());
+	const parent = dirname(validatedPath);
+	// Parent may not exist yet (first write) — skip realpathSync in that case.
+	const realParent = existsSync(parent) ? realpathSync(parent) : parent;
+	if (
+		realParent !== realWorkspace &&
+		!realParent.startsWith(`${realWorkspace}${sep}`)
+	) {
+		throw new Error(
+			`Refusing to write metrics outside workspace: ${resolvedPath}`,
+		);
 	}
+
+	return validatedPath;
 }
 
 /**
@@ -104,13 +127,13 @@ export function loadMetrics(metricsPath?: string): {
 	metrics: ReliabilityMetrics;
 	history: MetricsHistory["history"];
 } {
-	const path = resolveMetricsPath(metricsPath);
-
-	if (!existsSync(path)) {
-		return { metrics: createEmptyMetrics(), history: [] };
-	}
-
 	try {
+		const path = resolveMetricsPath(metricsPath);
+
+		if (!existsSync(path)) {
+			return { metrics: createEmptyMetrics(), history: [] };
+		}
+
 		const content = readFileSync(path, "utf-8");
 		const data: unknown = JSON.parse(content);
 

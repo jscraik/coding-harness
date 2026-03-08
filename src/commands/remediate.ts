@@ -21,6 +21,7 @@ import {
 	DEFAULT_PILOT_ROLLBACK_POLICY,
 	DEFAULT_REMEDIATION_POLICY,
 } from "../lib/contract/types.js";
+import { validatePath } from "../lib/input/validator.js";
 import {
 	type CodeqlFindingInput,
 	type CodexFindingInput,
@@ -691,7 +692,10 @@ export async function runRemediate(
 			// Read from stdin
 			rawInput = readFileSync(0, "utf-8");
 		} else {
-			rawInput = readFileSync(options.findings, "utf-8");
+			// Validate the path against the repo root before reading.
+			// This prevents symlink traversal and reads of files outside the workspace.
+			const validatedPath = validatePath(process.cwd(), options.findings);
+			rawInput = readFileSync(validatedPath, "utf-8");
 		}
 	} catch (e) {
 		return {

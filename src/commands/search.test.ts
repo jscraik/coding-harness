@@ -275,4 +275,74 @@ describe("search command", () => {
 		expect(payload.warnings[0]).not.toContain("/tmp/better_sqlite3.node");
 		consoleSpy.mockRestore();
 	});
+
+	describe("input validation", () => {
+		it("rejects queries exceeding MAX_INPUT_LENGTH", async () => {
+			const errorSpy = vi.spyOn(console, "error").mockImplementation(() => {
+				// noop
+			});
+
+			const longQuery = "a".repeat(5000);
+			const code = await runSearchCLI([longQuery]);
+
+			expect(code).toBe(EXIT_CODES.VALIDATION_ERROR);
+			expect(errorSpy).toHaveBeenCalledWith(
+				expect.stringContaining("exceeds maximum length"),
+			);
+			errorSpy.mockRestore();
+		});
+
+		it("rejects harness-dir with path traversal", async () => {
+			const errorSpy = vi.spyOn(console, "error").mockImplementation(() => {
+				// noop
+			});
+
+			const code = await runSearchCLI([
+				"query",
+				"--harness-dir",
+				"../etc/passwd",
+			]);
+
+			expect(code).toBe(EXIT_CODES.VALIDATION_ERROR);
+			errorSpy.mockRestore();
+		});
+
+		it("warns about malformed path filters", async () => {
+			const warnSpy = vi.spyOn(console, "warn").mockImplementation(() => {
+				// noop
+			});
+			const errorSpy = vi.spyOn(console, "error").mockImplementation(() => {
+				// noop
+			});
+
+			mockSpawnSync.mockReturnValue(createSpawnResult(""));
+
+			await runSearchCLI(["query", "--paths", "invalidfilter"]);
+
+			expect(warnSpy).toHaveBeenCalledWith(
+				expect.stringContaining("Invalid filter format"),
+			);
+			warnSpy.mockRestore();
+			errorSpy.mockRestore();
+		});
+
+		it("warns about unknown filter kind", async () => {
+			const warnSpy = vi.spyOn(console, "warn").mockImplementation(() => {
+				// noop
+			});
+			const errorSpy = vi.spyOn(console, "error").mockImplementation(() => {
+				// noop
+			});
+
+			mockSpawnSync.mockReturnValue(createSpawnResult(""));
+
+			await runSearchCLI(["query", "--paths", "unknown:src"]);
+
+			expect(warnSpy).toHaveBeenCalledWith(
+				expect.stringContaining("Unknown filter kind"),
+			);
+			warnSpy.mockRestore();
+			errorSpy.mockRestore();
+		});
+	});
 });

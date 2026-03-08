@@ -11,12 +11,24 @@ import { existsSync, readFileSync } from "node:fs";
 import { join } from "node:path";
 import type { HarnessContract } from "../contract/types.js";
 import { validateContract } from "../contract/validator.js";
+import {
+	type ScanCache,
+	getCachedEntry,
+	getDefaultCachePath,
+	loadScanCache,
+	saveScanCache,
+	setCachedEntry,
+} from "./scan-cache.js";
 
 export interface ScanOptions {
 	/** Base contract to compare against (for drift detection) */
 	baseContract?: HarnessContract | undefined;
 	/** Whether to include repositories without contracts */
 	includeMissing?: boolean | undefined;
+	/** Enable caching for repeated scans (default: true) */
+	useCache?: boolean | undefined;
+	/** Path to cache file (default: ~/.cache/harness/org-audit-cache.json) */
+	cachePath?: string | undefined;
 }
 
 export interface ScanResult {
@@ -52,14 +64,27 @@ export interface DriftFinding {
  *
  * Uses Promise.allSettled for fault tolerance - one repo failing
  * doesn't prevent others from being scanned.
+ *
+ * Supports caching to improve performance on repeated scans.
  */
 export async function scanRepositories(
 	repos: string[],
 	options: ScanOptions = {},
 ): Promise<ScanResult[]> {
+	const useCache = options.useCache ?? true;
+	const cachePath = options.cachePath ?? getDefaultCachePath();
+	const cache = useCache
+		? loadScanCache(cachePath)
+		: { version: 1, entries: [] };
+
 	const results = await Promise.allSettled(
-		repos.map((repo) => scanSingleRepo(repo, options)),
+		repos.map((repo) => scanSingleRepo(repo, options, cache)),
 	);
+
+	// Save cache after scan if enabled
+	if (useCache) {
+		saveScanCache(cachePath, cache);
+	}
 
 	return results.map((result, i) => {
 		if (result.status === "fulfilled") {
@@ -82,8 +107,25 @@ export async function scanRepositories(
 export async function scanSingleRepo(
 	repoPath: string,
 	options: ScanOptions = {},
+	cache?: ScanCache,
 ): Promise<ScanResult> {
 	const contractPath = join(repoPath, "harness.contract.json");
+
+	// Check cache first if available
+	if (cache && existsSync(contractPath)) {
+		const cached = getCachedEntry(cache, repoPath, contractPath);
+		if (cached) {
+			const cachedResult = cached.result as ScanResult;
+			// Re-run drift detection if base contract changed
+			if (options.baseContract && cachedResult.contract) {
+				return {
+					...cachedResult,
+					drift: detectDrift(options.baseContract, cachedResult.contract),
+				};
+			}
+			return cachedResult;
+		}
+	}
 
 	// Check if contract exists
 	if (!existsSync(contractPath)) {
@@ -129,6 +171,11 @@ export async function scanSingleRepo(
 
 		if (options.baseContract) {
 			result.drift = detectDrift(options.baseContract, contract);
+		}
+
+		// Update cache if enabled
+		if (cache) {
+			setCachedEntry(cache, repoPath, contractPath, result);
 		}
 
 		return result;

@@ -5,7 +5,7 @@ import { createHash } from "node:crypto";
  * Validates sandbox mode, environment filters, and approval posture.
  */
 import { existsSync, writeFileSync } from "node:fs";
-import { resolve } from "node:path";
+import { dirname, resolve } from "node:path";
 import semver from "semver";
 import { loadContract } from "../lib/contract/loader.js";
 import {
@@ -20,6 +20,7 @@ import {
 	getRalphPackageSpec,
 } from "../lib/deps/ralph-runtime.js";
 import { sanitizeError } from "../lib/input/sanitize.js";
+import { PathTraversalError, validatePath } from "../lib/input/validator.js";
 
 // Exit codes for programmatic consumption
 export const EXIT_CODES = {
@@ -391,6 +392,13 @@ export async function runCheckEnvironment(
 	// Write attestation artifact if path provided
 	if (options.attestationPath) {
 		try {
+			// Validate path against cwd to prevent symlink-based overwrite.
+			// validatePath checks all existing ancestors for symlinks and
+			// ensures the resolved path stays within the base directory.
+			const safeAttestation = validatePath(
+				process.cwd(),
+				options.attestationPath,
+			);
 			const attestation = {
 				timestamp: posture.timestamp,
 				policyFingerprint: posture.policyFingerprint,
@@ -400,14 +408,27 @@ export async function runCheckEnvironment(
 				passed: output.passed,
 				violations: output.violations,
 			};
+			const resolvedDir = dirname(safeAttestation);
+			const { mkdirSync } = await import("node:fs");
+			mkdirSync(resolvedDir, { recursive: true });
 			writeFileSync(
-				options.attestationPath,
+				safeAttestation,
 				JSON.stringify(attestation, null, 2),
 				"utf-8",
 			);
-			output.attestationPath = options.attestationPath;
-		} catch {
-			// Ignore write errors for attestation
+			output.attestationPath = safeAttestation;
+		} catch (e) {
+			if (e instanceof PathTraversalError) {
+				violations.push({
+					type: "artifact_path_traversal",
+					message:
+						"Attestation path cannot include symbolic links in existing path segments",
+					value: options.attestationPath,
+				});
+				output.passed = false;
+				output.violations = violations;
+			}
+			// Non-traversal write errors are still silently ignored
 		}
 	}
 

@@ -8,7 +8,7 @@
  */
 
 import { existsSync, readdirSync, statSync } from "node:fs";
-import { join, resolve } from "node:path";
+import { basename, join, resolve } from "node:path";
 import { loadContract } from "../lib/contract/loader.js";
 import type { HarnessContract } from "../lib/contract/types.js";
 import {
@@ -16,6 +16,11 @@ import {
 	scanRepositories,
 	summarizeResults,
 } from "../lib/governance/repo-scanner.js";
+import {
+	validatePathComponent,
+	validateSafeArgument,
+} from "../lib/input/validation.js";
+import { type CliResult, err, ok } from "../lib/result/types.js";
 
 // Exit codes for programmatic consumption
 export const EXIT_CODES = {
@@ -39,6 +44,8 @@ export interface OrgAuditOptions {
 	includeMissing?: boolean | undefined;
 	/** Show only repos with drift */
 	driftOnly?: boolean | undefined;
+	/** Enable caching for repeated scans (default: true) */
+	useCache?: boolean | undefined;
 }
 
 export interface OrgAuditResult {
@@ -91,15 +98,24 @@ export function findRepositories(basePath: string): string[] {
 
 /**
  * Run the org audit and return results.
+ *
+ * Uses Result types for explicit error handling.
  */
 export async function runOrgAudit(
 	options: OrgAuditOptions,
-): Promise<{ result: OrgAuditResult; exitCode: number }> {
+): Promise<CliResult<{ result: OrgAuditResult; exitCode: number }>> {
+	// Validate path parameter
+	const pathValidation = validateSafeArgument(options.path, "path");
+	if (!pathValidation.ok) {
+		return err(pathValidation.error);
+	}
+	const validatedPath = pathValidation.value;
+
 	// Find repositories
-	const repos = findRepositories(options.path);
+	const repos = findRepositories(validatedPath);
 
 	if (repos.length === 0) {
-		return {
+		return ok({
 			result: {
 				totalRepos: 0,
 				validContracts: 0,
@@ -114,13 +130,14 @@ export async function runOrgAudit(
 				},
 			},
 			exitCode: EXIT_CODES.NO_REPOS_FOUND,
-		};
+		});
 	}
 
 	// Scan repositories
 	const results = await scanRepositories(repos, {
 		baseContract: options.baseContract,
 		includeMissing: options.includeMissing,
+		useCache: options.useCache,
 	});
 
 	// Filter for drift-only if requested
@@ -155,7 +172,7 @@ export async function runOrgAudit(
 		exitCode = EXIT_CODES.DRIFT_DETECTED;
 	}
 
-	return { result, exitCode };
+	return ok({ result, exitCode });
 }
 
 /**
@@ -300,6 +317,7 @@ export async function runOrgAuditCLI(args: string[]): Promise<{
 	const formatIndex = args.indexOf("--format");
 	const driftOnlyFlag = args.includes("--drift-only");
 	const includeMissingFlag = args.includes("--include-missing");
+	const noCacheFlag = args.includes("--no-cache");
 	const jsonFlag = args.includes("--json");
 
 	// Get path (required)
@@ -319,13 +337,23 @@ export async function runOrgAuditCLI(args: string[]): Promise<{
 	// Load base contract if specified
 	let baseContract: HarnessContract | undefined;
 	if (baseIndex !== -1) {
-		const basePath = args[baseIndex + 1];
-		if (!basePath) {
+		const rawBasePath = args[baseIndex + 1];
+		if (!rawBasePath) {
 			console.error("Error: --base requires a path argument");
 			return { exitCode: EXIT_CODES.INVALID_ARGUMENT };
 		}
+		// Validate base contract path (prevent path traversal)
+		const pathValidation = validatePathComponent(
+			basename(rawBasePath),
+			undefined,
+			"base contract path",
+		);
+		if (!pathValidation.ok) {
+			console.error(`Error: ${pathValidation.error.message}`);
+			return { exitCode: EXIT_CODES.INVALID_ARGUMENT };
+		}
 		try {
-			baseContract = loadContract(basePath);
+			baseContract = loadContract(rawBasePath);
 		} catch (error) {
 			const message = error instanceof Error ? error.message : "Unknown error";
 			console.error(`Error loading base contract: ${message}`);
@@ -366,13 +394,21 @@ export async function runOrgAuditCLI(args: string[]): Promise<{
 	}
 
 	// Run audit
-	const { result, exitCode } = await runOrgAudit({
+	const auditResult = await runOrgAudit({
 		path: scanPath,
 		baseContract,
 		format,
 		includeMissing: includeMissingFlag,
 		driftOnly: driftOnlyFlag,
+		useCache: !noCacheFlag,
 	});
+
+	if (!auditResult.ok) {
+		console.error(`Error: ${auditResult.error.message}`);
+		return { exitCode: EXIT_CODES.INVALID_ARGUMENT };
+	}
+
+	const { result, exitCode } = auditResult.value;
 
 	// Format output
 	let output: string;

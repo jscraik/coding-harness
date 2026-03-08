@@ -1,5 +1,5 @@
-import { describe, expect, it } from "vitest";
-import { EXIT_CODES, listPresets, showPreset } from "./preset.js";
+import { describe, expect, it, vi } from "vitest";
+import { EXIT_CODES, listPresets, runPresetCLI, showPreset } from "./preset.js";
 
 describe("preset command", () => {
 	describe("listPresets", () => {
@@ -50,6 +50,41 @@ describe("preset command", () => {
 			if (!result.ok) {
 				expect(result.error.code).toBe(EXIT_CODES.PRESET_NOT_FOUND);
 			}
+		});
+	});
+
+	describe("input validation", () => {
+		it("rejects preset name with path traversal in CLI", async () => {
+			const errorSpy = vi.spyOn(console, "error").mockImplementation(() => {
+				// noop
+			});
+
+			const result = await runPresetCLI(["show", "../etc/passwd"]);
+
+			expect(result.exitCode).toBe(EXIT_CODES.INVALID_ARGUMENT);
+			errorSpy.mockRestore();
+		});
+
+		it("rejects preset name with shell characters in CLI", async () => {
+			const errorSpy = vi.spyOn(console, "error").mockImplementation(() => {
+				// noop
+			});
+
+			const result = await runPresetCLI(["show", "test;rm -rf /"]);
+
+			expect(result.exitCode).toBe(EXIT_CODES.INVALID_ARGUMENT);
+			errorSpy.mockRestore();
+		});
+
+		it("rejects preset name with command substitution", async () => {
+			const errorSpy = vi.spyOn(console, "error").mockImplementation(() => {
+				// noop
+			});
+
+			const result = await runPresetCLI(["show", "test$(whoami)"]);
+
+			expect(result.exitCode).toBe(EXIT_CODES.INVALID_ARGUMENT);
+			errorSpy.mockRestore();
 		});
 	});
 });

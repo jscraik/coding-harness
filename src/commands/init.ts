@@ -5,11 +5,12 @@ import {
 	lstatSync,
 	mkdirSync,
 	readFileSync,
+	realpathSync,
 	renameSync,
 	rmSync,
 	writeFileSync,
 } from "node:fs";
-import { dirname, resolve, sep } from "node:path";
+import { dirname, join, relative, resolve, sep } from "node:path";
 import { cwd } from "node:process";
 import { diffLines } from "diff";
 import semver from "semver";
@@ -299,6 +300,10 @@ function renderScriptCommand(packageManager: string, script: string): string {
 	return `${packageManager} ${script}`;
 }
 
+function shellEscapeArg(value: string): string {
+	return `'${value.replaceAll("'", `'"'"'`)}'`;
+}
+
 function renderInstallCommand(packageManager: string): string {
 	return `${packageManager} install`;
 }
@@ -405,7 +410,7 @@ function renderScriptActionCommand(
 ): string {
 	return `set -euo pipefail
 
-${renderScriptCommand(packageManager, script)}`;
+${renderScriptCommand(packageManager, shellEscapeArg(script))}`;
 }
 
 function pickScriptForIcon(
@@ -2019,19 +2024,106 @@ function sanitizePath(base: string, relativePath: string): PathResult {
 	const normalizedBase = resolve(base);
 	const resolved = resolve(base, relativePath);
 
+	// Resolve the true canonical base dir — reject if it doesn't exist yet.
+	let baseRealPath: string;
+	try {
+		baseRealPath = realpathSync(normalizedBase);
+	} catch {
+		return {
+			ok: false,
+			error: {
+				code: "INVALID_PATH",
+				message: `Base directory must exist and be resolvable: ${base}`,
+			},
+		};
+	}
+
 	// Ensure base ends with separator for proper prefix matching
 	// This prevents /app from matching /app-secrets
 	const baseWithSep = normalizedBase.endsWith(sep)
 		? normalizedBase
 		: normalizedBase + sep;
 
-	// Check if resolved is exactly base or starts with base + separator
+	// Lexical containment check (fast path — still needed for the no-symlink case)
 	if (resolved !== normalizedBase && !resolved.startsWith(baseWithSep)) {
 		return {
 			ok: false,
 			error: {
 				code: "PATH_TRAVERSAL",
 				message: `Path traversal blocked: ${relativePath} resolves outside target directory`,
+				path: relativePath,
+			},
+		};
+	}
+
+	// SECURITY: Walk each existing path segment and reject any symlink.
+	// resolve() is purely lexical — it doesn't follow symlinks, so a
+	// directory symlink (.github -> /etc) passes the prefix check above
+	// but mkdirSync/renameSync will follow it at write time.
+	const relToBase = relative(normalizedBase, resolved);
+	const segments = relToBase.split(sep).filter((s) => s.length > 0);
+	let walkPath = normalizedBase;
+	for (const segment of segments) {
+		walkPath = join(walkPath, segment);
+		if (!existsSync(walkPath)) {
+			// Not yet created — safe to skip (atomicWrite will create it)
+			break;
+		}
+		try {
+			if (lstatSync(walkPath).isSymbolicLink()) {
+				return {
+					ok: false,
+					error: {
+						code: "PATH_TRAVERSAL",
+						message: `Path traversal blocked: ${relativePath} contains a symbolic link`,
+						path: relativePath,
+					},
+				};
+			}
+		} catch (e) {
+			return {
+				ok: false,
+				error: {
+					code: "INVALID_PATH",
+					message: `Failed to validate path safety: ${sanitizeError(e)}`,
+					path: relativePath,
+				},
+			};
+		}
+	}
+
+	// SECURITY: Canonical ancestor check — realpathSync on the nearest
+	// existing ancestor to catch symlink-based escapes in parent dirs.
+	let nearestExisting = resolved;
+	while (!existsSync(nearestExisting)) {
+		const parent = dirname(nearestExisting);
+		if (parent === nearestExisting) break; // filesystem root
+		nearestExisting = parent;
+	}
+	try {
+		const realNearest = realpathSync(nearestExisting);
+		const baseRealWithSep = baseRealPath.endsWith(sep)
+			? baseRealPath
+			: `${baseRealPath}${sep}`;
+		if (
+			realNearest !== baseRealPath &&
+			!realNearest.startsWith(baseRealWithSep)
+		) {
+			return {
+				ok: false,
+				error: {
+					code: "PATH_TRAVERSAL",
+					message: `Path traversal blocked: ${relativePath} resolves outside target directory`,
+					path: relativePath,
+				},
+			};
+		}
+	} catch (e) {
+		return {
+			ok: false,
+			error: {
+				code: "INVALID_PATH",
+				message: `Failed to resolve path safety: ${sanitizeError(e)}`,
 				path: relativePath,
 			},
 		};
@@ -2332,6 +2424,52 @@ function executeRollback(
 						},
 					};
 				}
+
+				// SECURITY: reject any symlink at the target path or in its
+				// parent directory to prevent symlink-based rollback overwrite.
+				try {
+					if (
+						existsSync(targetPath) &&
+						lstatSync(targetPath).isSymbolicLink()
+					) {
+						return {
+							ok: false,
+							error: {
+								code: "WRITE_ERROR",
+								message: `Symlink detected at rollback target: ${entry.path} — rollback rejected`,
+								path: entry.path,
+							},
+						};
+					}
+					const realTargetDir = realpathSync(targetDir);
+					const parentDir = dirname(targetPath);
+					const realParent = existsSync(parentDir)
+						? realpathSync(parentDir)
+						: parentDir;
+					if (
+						realParent !== realTargetDir &&
+						!realParent.startsWith(`${realTargetDir}${sep}`)
+					) {
+						return {
+							ok: false,
+							error: {
+								code: "WRITE_ERROR",
+								message: `Rollback path escaped workspace: ${entry.path}`,
+								path: entry.path,
+							},
+						};
+					}
+				} catch (e) {
+					return {
+						ok: false,
+						error: {
+							code: "WRITE_ERROR",
+							message: `Failed to validate rollback target: ${sanitizeError(e)}`,
+							path: entry.path,
+						},
+					};
+				}
+
 				copyFileSync(backupPath, targetPath);
 				restored.push(entry.path);
 			}

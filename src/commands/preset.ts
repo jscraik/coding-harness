@@ -10,6 +10,7 @@ import {
 	getBundledPreset,
 	listBundledPresets,
 } from "../lib/contract/preset-resolver.js";
+import { validateIdentifier } from "../lib/input/validation.js";
 
 // Exit codes for programmatic consumption
 export const EXIT_CODES = {
@@ -189,13 +190,26 @@ export async function runPresetCLI(
 		}
 
 		case "show": {
-			const name = rest[0];
-			if (!name) {
+			const rawName = rest[0];
+			if (!rawName) {
 				console.error(
 					"Error: Preset name required. Usage: harness preset show <name>",
 				);
 				return { exitCode: EXIT_CODES.INVALID_ARGUMENT };
 			}
+
+			// Validate preset name (identifier only - no path traversal)
+			const nameValidation = validateIdentifier(
+				rawName,
+				undefined,
+				"preset name",
+			);
+			if (!nameValidation.ok) {
+				console.error(`Error: ${nameValidation.error.message}`);
+				return { exitCode: EXIT_CODES.INVALID_ARGUMENT };
+			}
+			const name = nameValidation.value;
+
 			const format = rest.includes("--json")
 				? "json"
 				: rest.includes("--yaml")

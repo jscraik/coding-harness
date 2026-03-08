@@ -1,4 +1,4 @@
-import { mkdtempSync, rmSync, writeFileSync } from "node:fs";
+import { mkdtempSync, rmSync, symlinkSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
@@ -108,6 +108,49 @@ describe("runCheckEnvironment runtime dependency checks", () => {
 					v.type === "runtime_dependency_missing" && /ralph/i.test(v.message),
 			),
 		).toBe(true);
+	});
+
+	it("rejects attestation paths that traverse symlinked segments", async () => {
+		const { spawnSync } = await import("node:child_process");
+		const { runCheckEnvironment } = await import("./check-environment.js");
+		vi.mocked(spawnSync).mockImplementation((command) => {
+			if (command === "python3") {
+				return { status: 0, stdout: "Python 3.12.10\n", stderr: "" } as never;
+			}
+			if (command === "uv") {
+				return { status: 0, stdout: "uv 0.9.5\n", stderr: "" } as never;
+			}
+			return { status: 0, stdout: "ralph-gold 1.0.0\n", stderr: "" } as never;
+		});
+
+		// Create a real directory outside tempDir, then symlink artifacts/ → it
+		const outsideDir = mkdtempSync(join(tmpdir(), "check-env-outside-"));
+		try {
+			symlinkSync(outsideDir, join(tempDir, "artifacts"), "dir");
+
+			const attestationPath = join(
+				tempDir,
+				"artifacts/policy/environment-attestation.json",
+			);
+
+			const result = await runCheckEnvironment({
+				contractPath,
+				attestationPath,
+			});
+			expect(result.ok).toBe(true);
+			if (!result.ok) return;
+			expect(result.output.passed).toBe(false);
+			expect(result.output.attestationPath).toBeUndefined();
+			expect(
+				result.output.violations.some(
+					(v) =>
+						v.type === "artifact_path_traversal" &&
+						v.value?.includes("environment-attestation.json"),
+				),
+			).toBe(true);
+		} finally {
+			rmSync(outsideDir, { recursive: true, force: true });
+		}
 	});
 
 	it("falls back to default contract when contract file is missing", async () => {

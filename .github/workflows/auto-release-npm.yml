@@ -86,7 +86,7 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          set +e
+          set -euo pipefail
           node dist/cli.js review-gate \
             --token "$GITHUB_TOKEN" \
             --owner "${{ github.repository_owner }}" \
@@ -98,13 +98,6 @@ jobs:
             --bot-login "greptile-apps" \
             --auto-resolve-bot-threads \
             --json
-          STATUS=$?
-          echo "exit_code=$STATUS" >> "$GITHUB_OUTPUT"
-          if [ "$STATUS" -eq 5 ]; then
-            echo "::warning::post-merge review-gate reported merged-PR follow-up work; continuing with release because main has already passed the release candidate checks."
-            exit 0
-          fi
-          exit "$STATUS"
 
   prepare-release-pr:
     name: prepare-release-pr

@@ -70,8 +70,19 @@ jobs:
               headSha = pr.data.head.sha;
             }
 
+            const headCommit = await github.rest.repos.getCommit({
+              owner: process.env.REPO_OWNER,
+              repo: process.env.REPO_NAME,
+              ref: headSha
+            });
+            const headCommitTimestamp =
+              headCommit.data.commit.committer?.date ||
+              headCommit.data.commit.author?.date ||
+              '';
+
             core.setOutput('pr_number', prNumber);
             core.setOutput('head_sha', headSha);
+            core.setOutput('head_commit_timestamp', headCommitTimestamp);
             core.setOutput('repo_owner', process.env.REPO_OWNER);
             core.setOutput('repo_name', process.env.REPO_NAME);
 
@@ -83,6 +94,7 @@ jobs:
           REPO_OWNER: ${{ steps.context.outputs.repo_owner }}
           REPO_NAME: ${{ steps.context.outputs.repo_name }}
           MIN_MERGE_SCORE: '4'
+          HEAD_COMMIT_TIMESTAMP: ${{ steps.context.outputs.head_commit_timestamp }}
         uses: actions/github-script@f28e40c7f34bde8b3046d885e986cb6290c5673b # v7
         with:
           script: |
@@ -98,18 +110,24 @@ jobs:
               issue_number: prNumber
             });
 
-            // Find Greptile's review comments (most recent first)
+            // Find Greptile's review comments tied to the current head commit (most recent first).
+            // Filter out any comment posted before the head commit was pushed — this prevents
+            // a previously passing Greptile comment from satisfying the check for new commits.
+            const headCommitTimestamp = process.env.HEAD_COMMIT_TIMESTAMP;
+            const headCommitDate = headCommitTimestamp ? new Date(headCommitTimestamp) : null;
+
             const greptileComments = comments.data
               .filter(c => c.user.login === 'greptile[bot]' || c.user.login === 'greptile')
+              .filter(c => !headCommitDate || new Date(c.created_at) >= headCommitDate)
               .sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
 
             if (greptileComments.length === 0) {
               core.setOutput('found', 'false');
               core.setOutput('status', 'pending');
-              core.setOutput('summary', 'Waiting for Greptile review...');
+              core.setOutput('summary', 'Waiting for Greptile review on the current PR head commit...');
               core.setOutput('comment_url', '');
               core.setOutput('score', '');
-              console.log('No Greptile comments found');
+              console.log('No Greptile comments found for the current head commit');
               return;
             }
 

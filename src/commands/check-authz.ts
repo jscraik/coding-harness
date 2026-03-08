@@ -190,11 +190,15 @@ export async function runCheckAuthz(
 			});
 		}
 
-		// Then check against allowlist (if not already protected)
-		if (
-			policy.branchAllowlist.length > 0 &&
-			!matchesPattern(options.branch, policy.branchAllowlist)
-		) {
+		// Then check against allowlist (empty allowlist = deny all, matching repo behaviour)
+		if (policy.branchAllowlist.length === 0) {
+			violations.push({
+				type: "branch_not_allowed",
+				message: `Branch '${options.branch}' not allowed: branch allowlist is empty (deny all by default)`,
+				value: options.branch,
+				expected: "At least one pattern in pilotAuthzPolicy.branchAllowlist",
+			});
+		} else if (!matchesPattern(options.branch, policy.branchAllowlist)) {
 			violations.push({
 				type: "branch_not_allowed",
 				message: `Branch '${options.branch}' does not match any pattern in allowlist`,

@@ -289,6 +289,56 @@ describe("runReviewGate", () => {
 		}
 	});
 
+	it("still requires an approval when reviewer independence is disabled", async () => {
+		mockLoadContract.mockReturnValue({
+			version: "1.0",
+			riskTierRules: {},
+			reviewPolicy: {
+				timeoutSeconds: 600,
+				timeoutAction: "fail",
+				enforceReviewerIndependence: false,
+			},
+		});
+
+		const mockCheckRuns: CheckRun[] = [
+			{
+				id: 1,
+				name: "review-check",
+				status: "completed",
+				conclusion: "success",
+				head_sha: validSha,
+			},
+		];
+		const mockListCheckRuns = vi.fn().mockResolvedValue(mockCheckRuns);
+		const mockGetPullRequest = vi.fn().mockResolvedValue({
+			number: defaultOptions.prNumber,
+			user: { login: "coding-actor" },
+			head: { sha: validSha, ref: "feature/test" },
+		});
+		// No reviews at all — this is the bypass vector
+		const mockListReviews = vi.fn().mockResolvedValue([]);
+		mockGitHubClient.mockImplementation(
+			() =>
+				({
+					listCheckRunsForRef: mockListCheckRuns,
+					getPullRequest: mockGetPullRequest,
+					listPullRequestReviews: mockListReviews,
+				}) as unknown as GitHubClient,
+		);
+
+		const result = await runReviewGate(defaultOptions);
+
+		expect(result.ok).toBe(true);
+		if (result.ok) {
+			// Disabling independence must NOT skip the approval requirement
+			expect(result.output.verified).toBe(false);
+			expect(result.output.policy_gate_status).toBe("pass");
+			expect(result.output.blockers.join(" ")).toContain(
+				"No APPROVED reviews found for the current HEAD SHA",
+			);
+		}
+	});
+
 	it("defaults reviewer independence to enforced when not explicitly configured", async () => {
 		mockLoadContract.mockReturnValue({
 			version: "1.0",

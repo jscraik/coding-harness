@@ -268,7 +268,7 @@ function printUsage(): void {
 	console.info("  --json           Output as JSON");
 	console.info("");
 	console.info("UI Loop Options:");
-	console.info("  --mode           execute|prepare (default: execute)");
+	console.info("  --mode           execute|prepare (default: prepare)");
 	console.info("  --dry-run        Alias for --mode prepare");
 	console.info("  --json           Output as JSON");
 	console.info("  --contract       Path to harness.contract.json");

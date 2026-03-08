@@ -83,15 +83,15 @@ function resolveRequiredChecks(
 	}
 
 	// 2. Ecosystem profile
-	// 2. Ecosystem profile
 	if (options.ecosystem) {
 		const ecosystemChecks = getEcosystemChecks(options.ecosystem);
-		return {
-			checks: normalizeChecks([...ecosystemChecks!]),
-			ecosystem: options.ecosystem,
-		};
+		if (ecosystemChecks) {
+			return {
+				checks: normalizeChecks([...ecosystemChecks]),
+				ecosystem: options.ecosystem,
+			};
+		}
 	}
-
 
 	// 3. Contract
 	const contractChecks = resolveContractRequiredChecks({ contractPath });

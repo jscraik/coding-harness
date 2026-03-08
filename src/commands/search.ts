@@ -17,6 +17,11 @@ import { normalizeStoreInitError } from "../lib/context-compound/init-error.js";
 import { OllamaClient } from "../lib/context-compound/ollama.js";
 import { VectorStore } from "../lib/context-compound/store.js";
 import type { SearchResult as SemanticSearchResult } from "../lib/context-compound/types.js";
+import {
+	MAX_INPUT_LENGTH,
+	validateLength,
+	validatePathComponent,
+} from "../lib/input/validation.js";
 import { validatePath } from "../lib/input/validator.js";
 import { type CliResult, createError, err, ok } from "../lib/result/types.js";
 
@@ -25,6 +30,7 @@ export const EXIT_CODES = {
 	NO_RESULTS: 1,
 	SEMANTIC_UNAVAILABLE: 2,
 	ERROR: 3,
+	VALIDATION_ERROR: 4,
 } as const;
 
 export type SearchMode = "lexical" | "semantic" | "hybrid";
@@ -112,28 +118,48 @@ function matchesPathFilters(
 	});
 }
 
-function parsePathFilters(parts: string[]): {
+interface PathFilterResult {
 	include: string[];
 	exclude: string[];
-} {
+	warnings: string[];
+}
+
+function parsePathFilters(parts: string[]): PathFilterResult {
 	const include: string[] = [];
 	const exclude: string[] = [];
+	const warnings: string[] = [];
+
 	for (const rawPart of parts) {
 		const part = rawPart.trim();
 		if (!part) continue;
 		const [kind, value] = part.split(":");
-		if (!kind || !value) continue;
+		if (!kind || !value) {
+			warnings.push(
+				`Invalid filter format: "${rawPart}" (expected format: include:path or exclude:path)`,
+			);
+			continue;
+		}
+		if (kind !== "include" && kind !== "exclude") {
+			warnings.push(
+				`Unknown filter kind: "${kind}" (expected include or exclude)`,
+			);
+			continue;
+		}
 		const tokens = value
 			.split(",")
 			.map((item) => item.trim())
 			.filter((item) => item.length > 0);
+		if (tokens.length === 0) {
+			warnings.push(`Empty ${kind} filter value: "${rawPart}"`);
+			continue;
+		}
 		if (kind === "include") {
 			include.push(...tokens);
-		} else if (kind === "exclude") {
+		} else {
 			exclude.push(...tokens);
 		}
 	}
-	return { include, exclude };
+	return { include, exclude, warnings };
 }
 
 /**
@@ -535,15 +561,15 @@ export async function runSearch(options: SearchOptions): Promise<number> {
 }
 
 export async function runSearchCLI(args: string[]): Promise<number> {
-	let query = "";
+	let rawQuery = "";
 	let mode: SearchMode = "hybrid";
 	let limit: number | undefined;
 	let threshold: number | undefined;
 	let json: boolean | undefined;
 	let text = false;
-	let harnessDir: string | undefined;
-	const includePaths: string[] = [];
-	const excludePaths: string[] = [];
+	let rawHarnessDir: string | undefined;
+	const rawIncludePaths: string[] = [];
+	const rawExcludePaths: string[] = [];
 	let strictSemantic = false;
 
 	for (let i = 0; i < args.length; i++) {
@@ -586,8 +612,18 @@ export async function runSearchCLI(args: string[]): Promise<number> {
 				console.error("Error: --harness-dir requires a value");
 				return EXIT_CODES.ERROR;
 			}
+			// Validate harness-dir as a path component (no path traversal)
+			const dirValidation = validatePathComponent(
+				value,
+				undefined,
+				"harness-dir",
+			);
+			if (!dirValidation.ok) {
+				console.error(`Error: ${dirValidation.error.message}`);
+				return EXIT_CODES.VALIDATION_ERROR;
+			}
 			i++;
-			harnessDir = value;
+			rawHarnessDir = dirValidation.value;
 		} else if (arg === "--paths") {
 			const value = args[i + 1];
 			if (!value || value.startsWith("-")) {
@@ -598,8 +634,27 @@ export async function runSearchCLI(args: string[]): Promise<number> {
 			}
 			i++;
 			const parsed = parsePathFilters(value.split(";"));
-			includePaths.push(...parsed.include);
-			excludePaths.push(...parsed.exclude);
+			// Report warnings for malformed filters
+			for (const warning of parsed.warnings) {
+				console.warn(`Warning: ${warning}`);
+			}
+			// Validate each path component
+			for (const p of parsed.include) {
+				const v = validatePathComponent(p, undefined, "include path");
+				if (!v.ok) {
+					console.error(`Error: ${v.error.message}`);
+					return EXIT_CODES.VALIDATION_ERROR;
+				}
+				rawIncludePaths.push(v.value);
+			}
+			for (const p of parsed.exclude) {
+				const v = validatePathComponent(p, undefined, "exclude path");
+				if (!v.ok) {
+					console.error(`Error: ${v.error.message}`);
+					return EXIT_CODES.VALIDATION_ERROR;
+				}
+				rawExcludePaths.push(v.value);
+			}
 		} else if (arg === "--strict-semantic") {
 			strictSemantic = true;
 		} else if (arg === "--help" || arg === "-h") {
@@ -633,30 +688,38 @@ export async function runSearchCLI(args: string[]): Promise<number> {
 			);
 			console.info('  harness search "authz" --mode hybrid --strict-semantic');
 			return EXIT_CODES.SUCCESS;
-		} else if (arg && !arg.startsWith("-") && !query) {
-			query = arg;
+		} else if (arg && !arg.startsWith("-") && !rawQuery) {
+			rawQuery = arg;
 		} else if (arg && !arg.startsWith("-")) {
-			query += ` ${arg}`;
+			rawQuery += ` ${arg}`;
 		}
 	}
 
-	if (!query) {
+	if (!rawQuery) {
 		console.error("Usage: harness search <query> [options]");
 		console.error("Try: harness search --help");
 		return EXIT_CODES.ERROR;
 	}
+
+	// Validate query length (prevent DoS with extremely long queries)
+	const queryValidation = validateLength(rawQuery, MAX_INPUT_LENGTH, "query");
+	if (!queryValidation.ok) {
+		console.error(`Error: ${queryValidation.error.message}`);
+		return EXIT_CODES.VALIDATION_ERROR;
+	}
+	const query = queryValidation.value;
 
 	const options: SearchOptions = {
 		query,
 		mode,
 		text,
 		strictSemantic,
-		...(includePaths.length > 0 ? { includePaths } : {}),
-		...(excludePaths.length > 0 ? { excludePaths } : {}),
+		...(rawIncludePaths.length > 0 ? { includePaths: rawIncludePaths } : {}),
+		...(rawExcludePaths.length > 0 ? { excludePaths: rawExcludePaths } : {}),
 		...(limit !== undefined ? { limit } : {}),
 		...(threshold !== undefined ? { threshold } : {}),
 		...(json !== undefined ? { json } : {}),
-		...(harnessDir !== undefined ? { harnessDir } : {}),
+		...(rawHarnessDir !== undefined ? { harnessDir: rawHarnessDir } : {}),
 	};
 
 	return runSearch(options);
