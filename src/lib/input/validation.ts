@@ -209,7 +209,7 @@ export function validateSafeString(
  * Pattern for valid git refs (branches, tags, SHAs).
  * Excludes dangerous patterns like path traversal.
  */
-const GIT_REF_PATTERN = /^[a-zA-Z0-9._/-]{1,120}$/;
+const GIT_REF_PATTERN = /^[a-zA-Z0-9._/-]{1,255}$/;
 
 /**
  * Dangerous git ref patterns.
