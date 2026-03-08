@@ -44,8 +44,9 @@ This protects history, simplifies rollback, and provides a review trail even for
 
 1. Create a branch/worktree per task:
 
-   - Agent-created branch: `git switch -c codex/<short-description>`
-   - Agent-created worktree: `git worktree add ../tmp-worktree -b codex/<short-description>`
+   - Preferred Linear-first branch helper: `harness linear prepare --issue JSC-37 --field branch`
+   - Agent-created branch: `git switch -c codex/<linear-key>-<short-description>`
+   - Agent-created worktree: `git worktree add ../tmp-worktree -b codex/<linear-key>-<short-description>`
    - Human-authored prefixes (when not using `codex/`): `feat/`, `fix/`, `docs/`, `refactor/`, `chore/`, `test/`.
 
 2. Make targeted changes and keep commits small and atomic.
@@ -54,6 +55,9 @@ This protects history, simplifies rollback, and provides a review trail even for
 
 4. Open a PR:
 
+   - Preferred PR title helper: `harness linear prepare --issue JSC-37 --field pr-title`
+   - Link-only PR body line: `Refs JSC-37`
+   - Auto-close on merge PR body line: `Fixes JSC-37`
    - `gh pr create --base main --head <branch> --title "..." --body "..."`.
 
 5. Merge only after:
@@ -68,7 +72,8 @@ This protects history, simplifies rollback, and provides a review trail even for
 ### Branch name policy
 
 - Use lower-case, kebab-case slugs.
-- Agent-created branches must use `codex/<short-description>`.
+- Agent-created branches must use `codex/<linear-key>-<short-description>` when the work is tracked in Linear.
+- Include the Linear issue key in the branch name to enable GitHub↔Linear branch and PR linking.
 - Human-authored branches may use: `feat/`, `fix/`, `docs/`, `refactor/`, `chore/`, `test/`.
 - Avoid `main`-like names and do not include secrets or issue-pii.
 
@@ -93,7 +98,7 @@ For docs-only edits, run at minimum:
 ## Greptile setup baseline
 
 - Greptile must be configured correctly before relying on Greptile review gates.
-- Use the `grepfile` skill to set up/refresh all required Greptile files for this repository.
+- Use the `greploop` or `check-pr` skill to set up/refresh all required Greptile files for this repository.
 - If Greptile files are missing or stale, treat the review gate as blocked and do not merge.
 - Required local structure:
   - `.greptile/config.json`

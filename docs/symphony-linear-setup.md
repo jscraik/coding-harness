@@ -17,16 +17,16 @@ the repository `WORKFLOW.md` contract.
 - `SYMPHONY_WORKSPACE_ROOT`: absolute path for per-issue workspaces.
 - Optional: `SOURCE_REPO_URL`, `CODEX_BIN`.
 
-Linear resources provisioned via MCP (2026-03-04):
-- Team: `brAInwav`
-- Project: `Symphony Pilot - coding-harness` (`symphony-pilot-coding-harness-32d853352b38`)
-- Label: `symphony`
-- Seed issue: `BR-83`
+Linear resources provisioned for the production workflow (2026-03-06):
+- Team: `Jscraik` (`JSC`)
+- Project: `coding-harness` (`coding-harness-bb735dbbda79`)
+- Workflow labels: `Blocked`, `Automation`, `Policy`, `Agent`, `Release`
+- Project doc: `coding-harness production workflow`
 
 ## One-time setup
 1. Create a Linear API key in Linear: **Settings → Security & access → Personal API keys**.
-2. Pick the target project slug from the project URL
-   (`https://linear.app/<workspace>/project/<slug>`).
+2. Pick the target project slug from the production project URL
+   (`https://linear.app/jscraik/project/coding-harness-bb735dbbda79`).
 3. Export environment variables:
 
    ```bash
@@ -65,7 +65,10 @@ mise exec -- ./bin/symphony /Users/jamiecraik/dev/coding-harness/WORKFLOW.md
 ```
 
 ## Notes
-- This repo currently uses `Todo` and `In Progress` as active execution states.
+- This repo uses Linear-first intake: create or update work in Linear, not GitHub Issues.
+- Active execution states are `Todo` and `In Progress`.
 - Handoff is configured to `In Review` in the prompt contract.
+- For GitHub↔Linear linking, keep the Linear issue key in the branch name, for example `codex/jsc-37-enable-github-to-linear-branch-and-pr-automation-for-the`.
+- Use `Refs <LINEAR-KEY>` in a PR body/title for linking only, or `Fixes <LINEAR-KEY>` when merge should close the Linear issue automatically.
 - The workflow `after_create` hook now runs `mise trust` defensively to avoid `.mise.toml` trust failures in fresh workspaces.
 - Keep secrets out of git; never commit live token values.

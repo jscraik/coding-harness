@@ -113,6 +113,7 @@ GitHub issue forms in this repository are retired; the repo now routes work inta
 | `remediate` | Apply automated fixes for findings. |
 | `check-authz` | Validate authorization policy for mutative operations. |
 | `check-environment` | Validate pilot environment governance checks. |
+| `linear` | Prepare Linear-aware branch/PR metadata and move issues through claim, handoff, and close workflow states. |
 | `gap-case` | Track and resolve pilot gap-cases. |
 | `pilot-evaluate` | Evaluate pilot metrics and promotion readiness. |
 | `pilot-rollback` | Transition pilot mode (autonomous <-> manual). |

@@ -99,6 +99,7 @@ jobs:
             --auto-resolve-bot-threads \
             --json
           STATUS=$?
+          echo "exit_code=$STATUS" >> "$GITHUB_OUTPUT"
           if [ "$STATUS" -eq 5 ]; then
             echo "::warning::post-merge review-gate reported merged-PR follow-up work; continuing with release because main has already passed the release candidate checks."
             exit 0
@@ -322,6 +323,7 @@ jobs:
             core.setOutput("should_tag", "true");
             core.setOutput("expected_version", expectedVersion);
       - name: Create and push release tag from merged commit
+        id: push-tag
         if: steps.resolve-release.outputs.should_tag == 'true'
         env:
           EXPECTED_VERSION: ${{ steps.resolve-release.outputs.expected_version }}
@@ -342,12 +344,48 @@ jobs:
             exit 1
           fi
 
-          if git ls-remote --tags origin "refs/tags/v${VERSION}" | rg -q .; then
+          TAG_NAME="v${VERSION}"
+
+          if git ls-remote --tags origin "refs/tags/${TAG_NAME}" | awk 'NF { found=1; exit } END { exit(found ? 0 : 1) }'; then
             echo "Tag v${VERSION} already exists on origin; skipping."
+            echo "tag_name=${TAG_NAME}" >> "$GITHUB_OUTPUT"
+            echo "tag_pushed=false" >> "$GITHUB_OUTPUT"
             exit 0
           fi
 
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
-          git tag "v${VERSION}" "${GITHUB_SHA}"
-          git push "https://x-access-token:${RELEASE_TAG_TOKEN}@github.com/${GITHUB_REPOSITORY}.git" "refs/tags/v${VERSION}"
+          git tag "${TAG_NAME}" "${GITHUB_SHA}"
+          git push "https://x-access-token:${RELEASE_TAG_TOKEN}@github.com/${GITHUB_REPOSITORY}.git" "refs/tags/${TAG_NAME}"
+          echo "tag_name=${TAG_NAME}" >> "$GITHUB_OUTPUT"
+          echo "tag_pushed=true" >> "$GITHUB_OUTPUT"
+      - name: Verify downstream release workflow trigger (best effort)
+        if: steps.resolve-release.outputs.should_tag == 'true' && steps.push-tag.outputs.tag_name != ''
+        env:
+          GH_TOKEN: ${{ secrets.RELEASE_PR_TOKEN || secrets.GARDENER_TOKEN }}
+          TAG_NAME: ${{ steps.push-tag.outputs.tag_name }}
+        run: |
+          set -euo pipefail
+
+          if [ "${{ steps.push-tag.outputs.tag_pushed }}" != "true" ]; then
+            echo "Tag ${TAG_NAME} already existed; skipping downstream trigger verification."
+            exit 0
+          fi
+
+          for attempt in $(seq 1 6); do
+            RUN_ID="$(
+              gh api \
+                "repos/${GITHUB_REPOSITORY}/actions/workflows/release-private-npm.yml/runs?event=push&per_page=20" \
+                --jq ".workflow_runs[] | select(.head_branch == \"${TAG_NAME}\") | .id" \
+                2>/dev/null | head -n 1 || true
+            )"
+            if [ -n "${RUN_ID}" ]; then
+              echo "Detected Release to private npm run ${RUN_ID} for tag ${TAG_NAME}."
+              exit 0
+            fi
+            if [ "${attempt}" -lt 6 ]; then
+              sleep 10
+            fi
+          done
+
+          echo "::warning::Could not confirm a Release to private npm run for tag ${TAG_NAME} within 50 seconds."
