@@ -818,9 +818,13 @@ jobs:
               }
 
               const unchecked = checklistItems.filter((line) => /^- \\[ \\]/.test(line));
-              if (unchecked.length > 0) {
+              const unresolvedUnchecked = unchecked.filter(
+                (line) => !/\\*\\*\\((pending|n\\/a|not applicable)\\)\\*\\*/i.test(line),
+              );
+              if (unresolvedUnchecked.length > 0) {
                 errors.push(
-                  'Checklist has unchecked item(s):\\n' + unchecked.join('\\n'),
+                  'Checklist has unchecked item(s) without explicit status marker ((Pending) or (N/A)):\\n' +
+                    unresolvedUnchecked.join('\\n'),
                 );
               }
             }

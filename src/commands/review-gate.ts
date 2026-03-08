@@ -172,6 +172,11 @@ interface ReviewerIndependenceResult {
 	blockers: string[];
 }
 
+interface ThreadReadinessResult {
+	passed: boolean;
+	blockers: string[];
+}
+
 function resolveCurrentApprovers(
 	reviews: PullRequestReview[],
 	headSha: string,
@@ -304,6 +309,47 @@ function resolveRequiredCheckRun(
 	);
 }
 
+function buildBotLoginSet(botLogin?: string): Set<string> {
+	return new Set<string>(
+		[botLogin, "greptile-apps", "greptile[bot]", "chatgpt-codex-connector"]
+			.map((login) => normalizeBotLogin(login))
+			.filter((login): login is string => login !== undefined),
+	);
+}
+
+function evaluateUnresolvedReviewThreads(
+	threads: Awaited<ReturnType<GitHubClient["listPullRequestReviewThreads"]>>,
+	botLogins: Set<string>,
+): ThreadReadinessResult {
+	const unresolvedThreads = threads.filter((thread) => !thread.isResolved);
+	if (unresolvedThreads.length === 0) {
+		return { passed: true, blockers: [] };
+	}
+
+	const unresolvedHumanThreads = unresolvedThreads.filter((thread) => {
+		const commentAuthors = thread.comments
+			.map((comment) => normalizeBotLogin(comment.author?.login))
+			.filter((login): login is string => login !== undefined);
+
+		if (commentAuthors.length === 0) {
+			return true;
+		}
+
+		return commentAuthors.some((login) => !botLogins.has(login));
+	});
+
+	if (unresolvedHumanThreads.length === 0) {
+		return { passed: true, blockers: [] };
+	}
+
+	return {
+		passed: false,
+		blockers: [
+			`Unresolved review thread comments remain (${unresolvedHumanThreads.length}); resolve all non-bot threads before merge`,
+		],
+	};
+}
+
 /**
  * Run review gate check with timeout polling.
  * Returns structured result usable as a library function.
@@ -408,6 +454,15 @@ export async function runReviewGate(
 								codingActor: approvals.codingActor ?? "",
 							})
 						: { passed: true, blockers: [] };
+				const threads =
+					typeof (client as Partial<GitHubClient>)
+						.listPullRequestReviewThreads === "function"
+						? await client.listPullRequestReviewThreads(options.prNumber)
+						: [];
+				const threadReadiness = evaluateUnresolvedReviewThreads(
+					threads,
+					buildBotLoginSet(options.botLogin),
+				);
 				const requiredCheckBlockers = evaluateRequiredChecks(
 					checkRuns,
 					requiredChecks,
@@ -415,6 +470,7 @@ export async function runReviewGate(
 				const additionalBlockers = [
 					...approvals.blockers,
 					...independence.blockers,
+					...threadReadiness.blockers,
 					...requiredCheckBlockers,
 				];
 				return {
@@ -424,7 +480,8 @@ export async function runReviewGate(
 							verified:
 								additionalBlockers.length === 0 &&
 								approvals.passed &&
-								independence.passed,
+								independence.passed &&
+								threadReadiness.passed,
 							headSha: pullRequestHeadSha,
 							checkStatus: checkResult.status,
 							checkConclusion: checkResult.conclusion ?? undefined,
@@ -685,16 +742,7 @@ export async function runReviewGateCLI(
 					owner: options.owner,
 					repo: options.repo,
 				});
-				const botLogins = new Set<string>(
-					[
-						options.botLogin,
-						"greptile-apps",
-						"greptile[bot]",
-						"chatgpt-codex-connector",
-					]
-						.map((login) => normalizeBotLogin(login))
-						.filter((login): login is string => login !== undefined),
-				);
+				const botLogins = buildBotLoginSet(options.botLogin);
 				const threadResolutionResult = await resolveBotOnlyThreads(
 					client,
 					options.prNumber,

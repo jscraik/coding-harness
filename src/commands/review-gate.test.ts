@@ -674,6 +674,98 @@ describe("runReviewGate", () => {
 		}
 	});
 
+	it("blocks merge readiness when unresolved non-bot review threads remain", async () => {
+		const mockCheckRuns: CheckRun[] = [
+			{
+				id: 1,
+				name: "review-check",
+				status: "completed",
+				conclusion: "success",
+				head_sha: validSha,
+			},
+		];
+		mockGitHubClient.mockImplementation(
+			() =>
+				({
+					listCheckRunsForRef: vi.fn().mockResolvedValue(mockCheckRuns),
+					getPullRequest: vi.fn().mockResolvedValue({
+						number: defaultOptions.prNumber,
+						user: { login: "coding-actor" },
+						head: { sha: validSha, ref: "feature/test" },
+					}),
+					listPullRequestReviews: vi.fn().mockResolvedValue([
+						{
+							state: "APPROVED",
+							commit_id: validSha,
+							user: { login: "independent-reviewer" },
+						},
+					]),
+					listPullRequestReviewThreads: vi.fn().mockResolvedValue([
+						{
+							id: "thread-1",
+							isResolved: false,
+							comments: [{ author: { login: "independent-reviewer" } }],
+						},
+					]),
+				}) as unknown as GitHubClient,
+		);
+
+		const result = await runReviewGate(defaultOptions);
+
+		expect(result.ok).toBe(true);
+		if (result.ok) {
+			expect(result.output.verified).toBe(false);
+			expect(result.output.blockers.join(" ")).toContain(
+				"Unresolved review thread comments remain",
+			);
+		}
+	});
+
+	it("allows unresolved bot-only review threads", async () => {
+		const mockCheckRuns: CheckRun[] = [
+			{
+				id: 1,
+				name: "review-check",
+				status: "completed",
+				conclusion: "success",
+				head_sha: validSha,
+			},
+		];
+		mockGitHubClient.mockImplementation(
+			() =>
+				({
+					listCheckRunsForRef: vi.fn().mockResolvedValue(mockCheckRuns),
+					getPullRequest: vi.fn().mockResolvedValue({
+						number: defaultOptions.prNumber,
+						user: { login: "coding-actor" },
+						head: { sha: validSha, ref: "feature/test" },
+					}),
+					listPullRequestReviews: vi.fn().mockResolvedValue([
+						{
+							state: "APPROVED",
+							commit_id: validSha,
+							user: { login: "independent-reviewer" },
+						},
+					]),
+					listPullRequestReviewThreads: vi.fn().mockResolvedValue([
+						{
+							id: "thread-1",
+							isResolved: false,
+							comments: [{ author: { login: "greptile[bot]" } }],
+						},
+					]),
+				}) as unknown as GitHubClient,
+		);
+
+		const result = await runReviewGate(defaultOptions);
+
+		expect(result.ok).toBe(true);
+		if (result.ok) {
+			expect(result.output.verified).toBe(true);
+			expect(result.output.blockers).toEqual([]);
+		}
+	});
+
 	it("uses the newest check run when duplicate required check names exist", async () => {
 		mockLoadContract.mockReturnValue({
 			version: "1.0",
