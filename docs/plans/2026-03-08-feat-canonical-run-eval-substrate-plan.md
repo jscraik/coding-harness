@@ -52,9 +52,10 @@ The leverage path is phased: establish canonical schemas/writers first, migrate 
 - Wire producer commands to emit canonical records:
   - `src/commands/automation-run.ts`
   - `src/commands/remediate.ts`
+  - `src/commands/pilot-evaluate.ts`
   - `src/commands/pilot-rollback.ts`
   - `src/commands/replay.ts`
-- Update consumer path to use canonical records first:
+- Update consumer path to use canonical records first (while remaining a producer of its own run records):
   - `src/commands/pilot-evaluate.ts`
   - `src/lib/pilot-evaluation/metrics-capture.ts`
   - `src/lib/pilot-evaluation/types.ts`
@@ -239,7 +240,7 @@ If any checkpoint fails, stop, fix root cause, and rerun from the first failed g
 - `missing_terminal_manifest_count == 0` over 20 consecutive scenario runs.
 - `toctou_provenance_missing_count == 0` for TOCTOU-sensitive paths.
 - `illegal_retry_count == 0` for `policy_blocked`/`precondition_failed` runs.
-- Retrieval commands (`search`, `context`, `index-context`) emit canonical semantic-unavailable events with required run identifiers/classification in v1-core paths.
+- Retrieval commands (`search`, `context`, `index-context`) are excluded from CP2 producer-manifest gates; their semantic-unavailable event contract is validated in CP4a.
 
 ---
 
@@ -377,8 +378,11 @@ If any checkpoint fails, stop, fix root cause, and rerun from the first failed g
 
 **Validation Gate (CP5)**
 - Scenario runs produce canonical artifacts with pass rate >= 99% across last 100 runs.
-- Minimum sampling floors are met per command, per scenario, and per terminal outcome class.
-- Per-command and per-terminal-outcome pass-rate thresholds are enforced (no bucket may fall below configured floor).
+- Minimum sampling floors are met with normative values:
+  - `minTotalSampleSize >= 100`
+  - `minPerCommandScenarioSampleSize >= 10`
+  - `minPerTerminalOutcomeBucketSampleSize >= 5`
+- Per-command and per-terminal-outcome pass-rate thresholds are enforced with normative floor `>= 0.95` (no bucket may fall below configured floor).
 - Advisory/health lane behavior deterministic and test-backed.
 - Kill-switch and manual safe mode test-proven.
 - Adapter registry entries complete for 100% of active adapters.
@@ -517,12 +521,12 @@ If relevance set differs between capture and decision, checkpoint evidence is st
 
 ### Go/No-Go + rollback runbook (required, executable)
 1. **Containment (Go/No-Go):** switch to manual mode and freeze promotion lane; capture trigger artifact and timestamp.
-   - command template: `pnpm exec tsx src/cli.ts pilot-rollback --mode manual --incident-id <incidentId> --reason "<reason>" --artifacts <artifactDir> --json`
-   - pass predicate: mode state reads `manual` and promotion lane is blocked.
-2. **Rollback execution:** run canonical rollback command path and persist rollback event + marker artifacts.
-   - command template: `pnpm exec tsx src/cli.ts pilot-rollback --mode manual --incident-id <incidentId> --reason "<reason>" --artifacts <artifactDir> --json`
+   - command template: `pnpm exec tsx src/cli.ts pilot-rollback --mode manual --incident-id <incidentId> --reason "<reason>" --json`
+   - pass predicate: mode state reads `manual`, containment event is recorded, and promotion lane is blocked.
+2. **Rollback execution:** run rollback reconciliation in artifact-capturing mode (idempotent if already in manual mode) and persist rollback event + marker artifacts.
+   - command template: `pnpm exec tsx src/cli.ts pilot-rollback --mode manual --incident-id <incidentId> --reason "<reason>" --artifacts <artifactDir> --output <rollbackEventPath> --json`
    - required artifacts: `run-manifest.json`, `events.jsonl`, rollback marker, rollback event record.
-3. **Verification:** run required validation commands (`pnpm lint`, `pnpm typecheck`, `pnpm test`, `pnpm check`) and attach outputs.
+3. **Verification:** run required validation commands (`pnpm lint`, `pnpm typecheck`, `pnpm test`, `pnpm audit`, `pnpm check`) and attach outputs.
    - pass predicate: all commands exit 0 and no required-gate regressions remain.
 4. **Invariant suite:** run ID-tagged rollback invariants; attach pass/fail payloads.
    - command template: `pnpm exec tsx src/cli.ts pilot-evaluate --artifacts <artifactDir> --contract harness.contract.json --json`
@@ -560,8 +564,8 @@ If relevance set differs between capture and decision, checkpoint evidence is st
 - [ ] Canonical manifest and event schemas are added and versioned.
 - [ ] Shared canonical run-record IO/types are implemented and tested.
 - [ ] Canonical artifact storage/discovery contract is documented and test-proven.
-- [ ] `automation-run`, `remediate`, `pilot-rollback`, and `replay` emit canonical terminal artifacts.
-- [ ] `pilot-evaluate` is canonical-first and preserves explicit legacy adapter mapping.
+- [ ] `automation-run`, `remediate`, `pilot-evaluate`, `pilot-rollback`, and `replay` emit canonical terminal artifacts.
+- [ ] `pilot-evaluate` is canonical-first as a consumer and preserves explicit legacy adapter mapping.
 - [ ] Rollback and hold outcomes are machine-distinct (state, classification, exit behavior).
 - [ ] Rollback marker path is coherent across contract, producer, and consumer gate.
 - [ ] v1-core retrieval behavior contract is explicit and test-proven (`search` mode-aware degraded/strict semantics; `context`/`index-context` explicit fail on semantic-unavailable).
