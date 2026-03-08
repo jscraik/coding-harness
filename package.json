@@ -93,11 +93,5 @@
 		"pre-push": "pnpm test"
 	},
 	"license": "Apache-2.0",
-	"homepage": "https://github.com/jscraik/coding-harness#readme",
-"main": "dist/index.js",
-	"directories": {
-		"doc": "docs"
-	},
-	"keywords": [],
-	"author": ""
+	"homepage": "https://github.com/jscraik/coding-harness#readme"
 }
