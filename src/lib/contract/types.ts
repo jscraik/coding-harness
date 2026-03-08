@@ -436,9 +436,41 @@ export type HttpsUrl = string & { readonly __brand: "HttpsUrl" };
 export type LocalPath = string & { readonly __brand: "LocalPath" };
 
 /**
- * Reference to a preset source - either a bundled preset name, local path, or remote URL.
+ * Branded type for bundled preset names.
+ * Prevents confusion with local paths or remote URLs at compile time.
  */
-export type PresetSource = string;
+export type BundledPreset = string & { readonly __brand: "BundledPreset" };
+
+/**
+ * Branded type for remote preset URLs.
+ * Prevents confusion with bundled names or local paths at compile time.
+ */
+export type RemotePreset = string & { readonly __brand: "RemotePreset" };
+
+/**
+ * Branded type for local preset file paths.
+ * Prevents confusion with bundled names or remote URLs at compile time.
+ */
+export type LocalPreset = string & { readonly __brand: "LocalPreset" };
+
+/**
+ * Discriminated union of all preset source types.
+ * Use type guards to narrow to specific types.
+ */
+export type PresetSource = BundledPreset | RemotePreset | LocalPreset;
+
+/**
+ * Runtime discriminator for preset source kinds.
+ */
+export type PresetSourceKind = "bundled" | "remote" | "local";
+
+/**
+ * Tagged preset source with runtime kind information.
+ */
+export interface TaggedPresetSource {
+	kind: PresetSourceKind;
+	source: PresetSource;
+}
 
 /**
  * Configuration for a single preset reference.
@@ -493,3 +525,113 @@ export const DEFAULT_MERGE_OPTIONS: MergeOptions = {
  * Maximum inheritance chain depth to prevent circular references.
  */
 export const MAX_INHERITANCE_DEPTH = 10;
+
+// ============================================================================
+// Preset Source Type Guards
+// ============================================================================
+
+const URL_PATTERN = /^https?:\/\//i;
+const BUNDLED_PRESET_PATTERN = /^[a-z0-9-]+$/i;
+
+/**
+ * Check if a string looks like a remote URL.
+ */
+function looksLikeRemote(value: string): boolean {
+	return URL_PATTERN.test(value);
+}
+
+/**
+ * Check if a string looks like a bundled preset name.
+ */
+function looksLikeBundled(value: string): boolean {
+	return (
+		BUNDLED_PRESET_PATTERN.test(value) &&
+		!value.includes("/") &&
+		!value.includes("\\") &&
+		!value.includes(".")
+	);
+}
+
+/**
+ * Type guard: Check if value is a RemotePreset.
+ */
+export function isRemotePreset(value: string): value is RemotePreset {
+	return looksLikeRemote(value);
+}
+
+/**
+ * Type guard: Check if value is a BundledPreset.
+ */
+export function isBundledPreset(value: string): value is BundledPreset {
+	return looksLikeBundled(value);
+}
+
+/**
+ * Type guard: Check if value is a LocalPreset.
+ */
+export function isLocalPreset(value: string): value is LocalPreset {
+	return !looksLikeRemote(value) && !looksLikeBundled(value);
+}
+
+/**
+ * Determine the kind of preset source.
+ */
+export function getPresetSourceKind(value: string): PresetSourceKind {
+	if (isRemotePreset(value)) return "remote";
+	if (isBundledPreset(value)) return "bundled";
+	return "local";
+}
+
+/**
+ * Tag a preset source with its runtime kind.
+ */
+export function tagPresetSource(source: string): TaggedPresetSource {
+	return {
+		kind: getPresetSourceKind(source),
+		source: source as PresetSource,
+	};
+}
+
+/**
+ * Assert that a string is a BundledPreset.
+ * Throws if the value is not a valid bundled preset name.
+ */
+export function asBundledPreset(value: string): BundledPreset {
+	if (!isBundledPreset(value)) {
+		throw new Error(
+			`Invalid bundled preset name: "${value}". Expected alphanumeric with hyphens only.`,
+		);
+	}
+	return value as BundledPreset;
+}
+
+/**
+ * Assert that a string is a RemotePreset.
+ * Throws if the value is not a valid remote URL.
+ */
+export function asRemotePreset(value: string): RemotePreset {
+	if (!isRemotePreset(value)) {
+		throw new Error(
+			`Invalid remote preset URL: "${value}". Expected http:// or https:// URL.`,
+		);
+	}
+	return value as RemotePreset;
+}
+
+/**
+ * Assert that a string is a LocalPreset.
+ * Throws if the value looks like a remote URL or bundled preset.
+ */
+export function asLocalPreset(value: string): LocalPreset {
+	if (isRemotePreset(value)) {
+		throw new Error(
+			`Invalid local preset path: "${value}" looks like a remote URL.`,
+		);
+	}
+	if (isBundledPreset(value)) {
+		throw new Error(
+			`Invalid local preset path: "${value}" looks like a bundled preset name.`,
+		);
+	}
+	return value as LocalPreset;
+}

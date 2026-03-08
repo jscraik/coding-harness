@@ -20,10 +20,14 @@ import {
 import { CircularInheritanceError, PresetFetchError } from "./errors.js";
 import { mergeContracts, validateNoDangerousKeys } from "./merger.js";
 import type {
+	BundledPreset,
 	HarnessContract,
 	HarnessContractWithPreset,
+	LocalPreset,
 	MergeResult,
 	PresetReference,
+	PresetSource,
+	RemotePreset,
 } from "./types.js";
 import { DEFAULT_CONTRACT, MAX_INHERITANCE_DEPTH } from "./types.js";
 import { validateContract } from "./validator.js";
@@ -155,14 +159,14 @@ export class PresetResolver {
 	/**
 	 * Check if source is a bundled preset name.
 	 */
-	private isBundledPreset(source: string): boolean {
+	private isBundledPresetName(source: string): source is BundledPreset {
 		return this.getBundledPreset(source) !== undefined;
 	}
 
 	/**
 	 * Load a bundled preset by name.
 	 */
-	private loadBundledPreset(name: string): HarnessContract {
+	private loadBundledPreset(name: BundledPreset): HarnessContract {
 		const preset = this.getBundledPreset(name);
 		if (!preset) {
 			throw new PresetFetchError(
@@ -198,12 +202,12 @@ export class PresetResolver {
 		let presetContract: HarnessContract;
 		const sources: string[] = [source];
 
-		if (this.isBundledPreset(source)) {
-			presetContract = this.loadBundledPreset(source);
+		if (this.isBundledPresetName(source)) {
+			presetContract = this.loadBundledPreset(source as BundledPreset);
 		} else if (isRemoteUrl(source)) {
-			presetContract = await this.loadRemotePreset(source);
+			presetContract = await this.loadRemotePreset(source as RemotePreset);
 		} else {
-			presetContract = this.loadLocalPreset(source, contractDir);
+			presetContract = this.loadLocalPreset(source as LocalPreset, contractDir);
 		}
 
 		// Recursively resolve if this preset also extends others
@@ -296,7 +300,7 @@ export class PresetResolver {
 	/**
 	 * Load a remote preset with SSRF protection.
 	 */
-	private async loadRemotePreset(url: string): Promise<HarnessContract> {
+	private async loadRemotePreset(url: RemotePreset): Promise<HarnessContract> {
 		// Check cache first
 		const cached = this.remotePresetCache.get(url);
 		if (cached !== undefined) {
@@ -378,7 +382,7 @@ export class PresetResolver {
 	 * Load a local preset file with path traversal protection.
 	 */
 	private loadLocalPreset(
-		presetPath: string,
+		presetPath: LocalPreset,
 		contractDir: string,
 	): HarnessContract {
 		// Path traversal protection
@@ -469,7 +473,7 @@ export class PresetResolver {
 		if (isRemoteUrl(source)) {
 			return source;
 		}
-		if (this.isBundledPreset(source)) {
+		if (this.isBundledPresetName(source)) {
 			return `bundled:${source}`;
 		}
 		return realpathSync(join(contractDir, source));
@@ -480,14 +484,18 @@ export class PresetResolver {
  * Normalize extends field to PresetReference array.
  */
 function normalizeExtends(
-	extendsField: PresetReference | PresetReference[] | string | string[],
+	extendsField:
+		| PresetReference
+		| PresetReference[]
+		| PresetSource
+		| PresetSource[],
 ): PresetReference[] {
 	if (typeof extendsField === "string") {
-		return [{ source: extendsField }];
+		return [{ source: extendsField as PresetSource }];
 	}
 	if (Array.isArray(extendsField)) {
 		return extendsField.map((ext) =>
-			typeof ext === "string" ? { source: ext } : ext,
+			typeof ext === "string" ? { source: ext as PresetSource } : ext,
 		);
 	}
 	return [extendsField];
