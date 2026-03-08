@@ -57,10 +57,13 @@ describe("diff-budget command", () => {
 
 			const result = runDiffBudget({ base: "main", head: "HEAD" });
 
-			expect(result.passed).toBe(true);
-			expect(result.metrics.filesChanged).toBe(1);
-			expect(result.metrics.additions).toBe(5);
-			expect(result.metrics.deletions).toBe(3);
+			expect(result.ok).toBe(true);
+			if (result.ok) {
+				expect(result.value.passed).toBe(true);
+				expect(result.value.metrics.filesChanged).toBe(1);
+				expect(result.value.metrics.additions).toBe(5);
+				expect(result.value.metrics.deletions).toBe(3);
+			}
 		});
 
 		it("returns failed when exceeding file budget", () => {
@@ -74,10 +77,13 @@ describe("diff-budget command", () => {
 
 			const result = runDiffBudget({ base: "main", head: "HEAD" });
 
-			expect(result.passed).toBe(false);
-			expect(result.metrics.filesChanged).toBe(15);
-			expect(result.check.violations).toHaveLength(1);
-			expect(result.check.violations[0]?.type).toBe("files");
+			expect(result.ok).toBe(true);
+			if (result.ok) {
+				expect(result.value.passed).toBe(false);
+				expect(result.value.metrics.filesChanged).toBe(15);
+				expect(result.value.check.violations).toHaveLength(1);
+				expect(result.value.check.violations[0]?.type).toBe("files");
+			}
 		});
 
 		it("returns failed when exceeding LOC budget", () => {
@@ -88,10 +94,13 @@ describe("diff-budget command", () => {
 
 			const result = runDiffBudget({ base: "main", head: "HEAD" });
 
-			expect(result.passed).toBe(false);
-			expect(result.metrics.netLOC).toBe(500);
-			expect(result.check.violations).toHaveLength(1);
-			expect(result.check.violations[0]?.type).toBe("loc");
+			expect(result.ok).toBe(true);
+			if (result.ok) {
+				expect(result.value.passed).toBe(false);
+				expect(result.value.metrics.netLOC).toBe(500);
+				expect(result.value.check.violations).toHaveLength(1);
+				expect(result.value.check.violations[0]?.type).toBe("loc");
+			}
 		});
 
 		it("loads budget from contract file", () => {
@@ -111,8 +120,11 @@ describe("diff-budget command", () => {
 				contractPath: "harness.contract.json",
 			});
 
-			expect(result.passed).toBe(true);
-			expect(result.metrics.filesChanged).toBe(1);
+			expect(result.ok).toBe(true);
+			if (result.ok) {
+				expect(result.value.passed).toBe(true);
+				expect(result.value.metrics.filesChanged).toBe(1);
+			}
 		});
 
 		it("handles empty diff", () => {
@@ -120,12 +132,15 @@ describe("diff-budget command", () => {
 
 			const result = runDiffBudget({ base: "main", head: "HEAD" });
 
-			expect(result.passed).toBe(true);
-			expect(result.metrics.filesChanged).toBe(0);
-			expect(result.metrics.netLOC).toBe(0);
+			expect(result.ok).toBe(true);
+			if (result.ok) {
+				expect(result.value.passed).toBe(true);
+				expect(result.value.metrics.filesChanged).toBe(0);
+				expect(result.value.metrics.netLOC).toBe(0);
+			}
 		});
 
-		it("handles git diff error", () => {
+		it("returns error when git diff fails", () => {
 			mockSpawnSync.mockReturnValue(
 				createMockSpawnResult("", {
 					status: 128,
@@ -133,9 +148,12 @@ describe("diff-budget command", () => {
 				}),
 			);
 
-			expect(() => runDiffBudget({ base: "invalid", head: "HEAD" })).toThrow(
-				"git diff failed",
-			);
+			const result = runDiffBudget({ base: "invalid", head: "HEAD" });
+
+			expect(result.ok).toBe(false);
+			if (!result.ok) {
+				expect(result.error.message).toContain("git diff failed");
+			}
 		});
 
 		it("uses default budget when contract is missing", () => {
@@ -166,9 +184,12 @@ describe("diff-budget command", () => {
 				overridePath: "diff-override.json",
 			});
 
-			expect(result.passed).toBe(true);
-			expect(result.check.override).toBeDefined();
-			expect(result.check.violations).toHaveLength(1);
+			expect(result.ok).toBe(true);
+			if (result.ok) {
+				expect(result.value.passed).toBe(true);
+				expect(result.value.check.override).toBeDefined();
+				expect(result.value.check.violations).toHaveLength(1);
+			}
 		});
 
 		it("applies valid override", () => {
@@ -202,8 +223,11 @@ describe("diff-budget command", () => {
 				overridePath: "diff-override.json",
 			});
 
-			expect(result.passed).toBe(true);
-			expect(result.check.override).toBeDefined();
+			expect(result.ok).toBe(true);
+			if (result.ok) {
+				expect(result.value.passed).toBe(true);
+				expect(result.value.check.override).toBeDefined();
+			}
 		});
 	});
 

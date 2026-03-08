@@ -63,6 +63,7 @@ const VALID_TOP_LEVEL_KEYS = [
 	"pilotAuthzPolicy",
 	"loopStageContracts",
 	"branchProtection",
+	"extends",
 ] as const;
 const VALID_UI_LOOP_POLICY_KEYS = [
 	"fastCommand",

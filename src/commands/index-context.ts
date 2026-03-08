@@ -20,6 +20,7 @@ import { normalizeStoreInitError } from "../lib/context-compound/init-error.js";
 import { OllamaClient } from "../lib/context-compound/ollama.js";
 import { VectorStore } from "../lib/context-compound/store.js";
 import { validatePath } from "../lib/input/validator.js";
+import { type CliResult, createError, err, ok } from "../lib/result/types.js";
 
 // Exit codes for programmatic consumption
 export const EXIT_CODES = {
@@ -56,10 +57,13 @@ export interface IndexContextOutput {
 	error?: string;
 }
 
+/**
+ * Validate harness directory path for security (path traversal protection).
+ */
 function getValidatedHarnessDir(
 	baseDir: string,
 	candidatePath: string,
-): string {
+): CliResult<string> {
 	const resolvedCandidate = resolve(baseDir, candidatePath);
 	const relativeCandidate = relative(baseDir, resolvedCandidate);
 	if (
@@ -67,26 +71,59 @@ function getValidatedHarnessDir(
 		relativeCandidate.startsWith(`..${sep}`) ||
 		isAbsolute(relativeCandidate)
 	) {
-		throw new Error("path escapes base directory");
+		return err(
+			createError(
+				"PATH_TRAVERSAL",
+				"Invalid harness directory: path escapes base directory",
+			),
+		);
 	}
 
 	if (existsSync(resolvedCandidate)) {
 		try {
 			if (lstatSync(resolvedCandidate).isSymbolicLink()) {
-				throw new Error("path escapes base directory");
+				return err(
+					createError(
+						"PATH_TRAVERSAL",
+						"Invalid harness directory: path escapes base directory",
+					),
+				);
 			}
 		} catch (error) {
 			if (
 				error instanceof Error &&
 				error.message !== "path escapes base directory"
 			) {
-				throw error;
+				return err(
+					createError(
+						"SYSTEM_ERROR",
+						`Failed to validate harness directory: ${error.message}`,
+						undefined,
+						error,
+					),
+				);
 			}
-			throw new Error("path escapes base directory");
+			return err(
+				createError(
+					"PATH_TRAVERSAL",
+					"Invalid harness directory: path escapes base directory",
+				),
+			);
 		}
 	}
 
-	return validatePath(baseDir, candidatePath);
+	try {
+		return ok(validatePath(baseDir, candidatePath));
+	} catch (error) {
+		return err(
+			createError(
+				"VALIDATION_ERROR",
+				error instanceof Error ? error.message : "Invalid harness directory",
+				undefined,
+				error instanceof Error ? error : undefined,
+			),
+		);
+	}
 }
 
 /**
@@ -111,37 +148,20 @@ function findMarkdownFiles(dir: string): string[] {
 }
 
 /**
- * Run bulk indexing.
- *
- * @param options - Index options
- * @returns Exit code
+ * Run bulk indexing and return structured result.
  */
 export async function runIndexContext(
 	options: IndexContextOptions,
-): Promise<number> {
+): Promise<CliResult<IndexContextOutput>> {
 	const baseDir = options.baseDir ?? process.cwd();
 	const harnessDir = options.harnessDir ?? DEFAULT_HARNESS_DIR;
-	let validatedHarnessDir: string;
-	try {
-		validatedHarnessDir = getValidatedHarnessDir(baseDir, harnessDir);
-	} catch {
-		const error = "Invalid harness directory: path escapes base directory";
-		if (options.json) {
-			console.info(
-				JSON.stringify({
-					success: false,
-					indexed: 0,
-					skipped: 0,
-					errors: 0,
-					results: [],
-					error,
-				}),
-			);
-		} else {
-			console.error(`✗ ${error}`);
-		}
-		return EXIT_CODES.ERROR;
+
+	const validatedHarnessResult = getValidatedHarnessDir(baseDir, harnessDir);
+	if (!validatedHarnessResult.ok) {
+		return err(validatedHarnessResult.error);
 	}
+
+	const validatedHarnessDir = validatedHarnessResult.value;
 	const dbPath = join(validatedHarnessDir, DEFAULT_DB_FILENAME);
 
 	// Collect files to index
@@ -171,26 +191,11 @@ export async function runIndexContext(
 	];
 
 	if (allFiles.length === 0) {
-		const error = "No files found to index";
-		if (options.json) {
-			console.info(
-				JSON.stringify({
-					success: false,
-					indexed: 0,
-					skipped: 0,
-					errors: 0,
-					results: [],
-					error,
-				}),
-			);
-		} else {
-			console.error(`✗ ${error}`);
-			console.error("   Expected files in:");
-			console.error(`   - ${brainstormsDir}`);
-			console.error(`   - ${plansDir}`);
-			console.error(`   - ${solutionsDir}`);
-		}
-		return EXIT_CODES.NO_FILES;
+		return err(
+			createError("NOT_FOUND", "No files found to index", {
+				expectedDirs: [brainstormsDir, plansDir, solutionsDir],
+			}),
+		);
 	}
 
 	// Initialize store
@@ -199,22 +204,12 @@ export async function runIndexContext(
 
 	if (!initResult.ok) {
 		const normalized = normalizeStoreInitError(initResult.error.message);
-		const error = `Failed to initialize store: ${normalized.message}`;
-		if (options.json) {
-			console.info(
-				JSON.stringify({
-					success: false,
-					indexed: 0,
-					skipped: 0,
-					errors: 0,
-					results: [],
-					error,
-				}),
-			);
-		} else {
-			console.error(`✗ ${error}`);
-		}
-		return EXIT_CODES.ERROR;
+		return err(
+			createError(
+				"SYSTEM_ERROR",
+				`Failed to initialize store: ${normalized.message}`,
+			),
+		);
 	}
 
 	// Check Ollama availability
@@ -222,25 +217,17 @@ export async function runIndexContext(
 	const isAvailable = await ollama.isAvailable();
 
 	if (!isAvailable) {
-		const error = "Ollama not available. Please start Ollama or install it.";
-		if (options.json) {
-			console.info(
-				JSON.stringify({
-					success: false,
-					indexed: 0,
-					skipped: 0,
-					errors: 0,
-					results: [],
-					error,
-				}),
-			);
-		} else {
-			console.error(`✗ ${error}`);
-			console.error("   Install: https://ollama.com");
-			console.error("   Start: ollama serve");
-		}
 		store.close();
-		return EXIT_CODES.OLLAMA_UNAVAILABLE;
+		return err(
+			createError(
+				"API_ERROR",
+				"Ollama not available. Please start Ollama or install it.",
+				{
+					installUrl: "https://ollama.com",
+					startCommand: "ollama serve",
+				},
+			),
+		);
 	}
 
 	// Warmup Ollama for faster indexing
@@ -288,39 +275,19 @@ export async function runIndexContext(
 
 	store.close();
 
-	// Output results
 	const success = errors === 0;
 
-	if (options.json) {
-		const output: IndexContextOutput = {
-			success,
-			indexed,
-			skipped,
-			errors,
-			results,
-		};
-		console.info(JSON.stringify(output, null, 2));
-	} else {
-		console.info("Indexing complete:");
-		console.info(`  ✓ Indexed: ${indexed}`);
-		console.info(`  ⏭ Skipped: ${skipped}`);
-		if (errors > 0) {
-			console.info(`  ✗ Errors: ${errors}`);
-			for (const result of results) {
-				if (result.error) {
-					console.error(`    - ${result.path}: ${result.error.message}`);
-				}
-			}
-		}
-	}
-
-	if (errors > 0) return EXIT_CODES.PARTIAL_SUCCESS;
-	if (indexed === 0 && skipped > 0) return EXIT_CODES.SUCCESS; // All up to date
-	return EXIT_CODES.SUCCESS;
+	return ok({
+		success,
+		indexed,
+		skipped,
+		errors,
+		results,
+	});
 }
 
 /**
- * CLI entry point for index-context command
+ * CLI entry point for index-context command.
  */
 export async function runIndexContextCLI(args: string[]): Promise<number> {
 	// Parse arguments
@@ -361,5 +328,67 @@ export async function runIndexContextCLI(args: string[]): Promise<number> {
 		}
 	}
 
-	return runIndexContext({ json, harnessDir, force });
+	const result = await runIndexContext({ json, harnessDir, force });
+
+	if (!result.ok) {
+		const { error } = result;
+		if (json) {
+			console.info(
+				JSON.stringify({
+					success: false,
+					indexed: 0,
+					skipped: 0,
+					errors: 0,
+					results: [],
+					error: error.message,
+				}),
+			);
+		} else {
+			console.error(`✗ ${error.message}`);
+			if (error.code === "NOT_FOUND") {
+				console.error("   Expected files in:");
+				console.error("   - docs/brainstorms");
+				console.error("   - docs/plans");
+				console.error("   - docs/solutions");
+			} else if (error.code === "API_ERROR") {
+				console.error("   Install: https://ollama.com");
+				console.error("   Start: ollama serve");
+			}
+		}
+
+		// Map error codes to exit codes
+		switch (error.code) {
+			case "PATH_TRAVERSAL":
+			case "VALIDATION_ERROR":
+				return EXIT_CODES.ERROR;
+			case "NOT_FOUND":
+				return EXIT_CODES.NO_FILES;
+			case "API_ERROR":
+				return EXIT_CODES.OLLAMA_UNAVAILABLE;
+			default:
+				return EXIT_CODES.ERROR;
+		}
+	}
+
+	const { value: output } = result;
+
+	if (json) {
+		console.info(JSON.stringify(output, null, 2));
+	} else {
+		console.info("Indexing complete:");
+		console.info(`  ✓ Indexed: ${output.indexed}`);
+		console.info(`  ⏭ Skipped: ${output.skipped}`);
+		if (output.errors > 0) {
+			console.info(`  ✗ Errors: ${output.errors}`);
+			for (const item of output.results) {
+				if (item.error) {
+					console.error(`    - ${item.path}: ${item.error.message}`);
+				}
+			}
+		}
+	}
+
+	if (output.errors > 0) return EXIT_CODES.PARTIAL_SUCCESS;
+	if (output.indexed === 0 && output.skipped > 0) return EXIT_CODES.SUCCESS; // All up to date
+	return EXIT_CODES.SUCCESS;
 }

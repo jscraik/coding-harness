@@ -18,6 +18,7 @@ import { OllamaClient } from "../lib/context-compound/ollama.js";
 import { VectorStore } from "../lib/context-compound/store.js";
 import type { SearchResult as SemanticSearchResult } from "../lib/context-compound/types.js";
 import { validatePath } from "../lib/input/validator.js";
+import { type CliResult, createError, err, ok } from "../lib/result/types.js";
 
 export const EXIT_CODES = {
 	SUCCESS: 0,
@@ -135,13 +136,16 @@ function parsePathFilters(parts: string[]): {
 	return { include, exclude };
 }
 
+/**
+ * Run lexical search using ripgrep.
+ */
 function runLexicalSearch(
 	query: string,
 	baseDir: string,
 	limit: number,
 	includePaths: string[],
 	excludePaths: string[],
-): SearchMatch[] {
+): CliResult<SearchMatch[]> {
 	const maxMatches = Math.max(limit * 8, 50);
 	const rgArgs = [
 		"--json",
@@ -175,16 +179,28 @@ function runLexicalSearch(
 	});
 
 	if (result.error) {
-		throw new Error(`Failed to run rg: ${result.error.message}`);
+		return err(
+			createError(
+				"SYSTEM_ERROR",
+				`Failed to run rg: ${result.error.message}`,
+				undefined,
+				result.error,
+			),
+		);
 	}
 
 	if (result.status !== 0 && result.status !== 1) {
 		const stderr = result.stderr.trim();
-		throw new Error(stderr ? `rg failed: ${stderr}` : "rg failed");
+		return err(
+			createError(
+				"SYSTEM_ERROR",
+				stderr ? `rg failed: ${stderr}` : "rg failed",
+			),
+		);
 	}
 
 	if (result.status === 1 || !result.stdout.trim()) {
-		return [];
+		return ok([]);
 	}
 
 	const matches: SearchMatch[] = [];
@@ -233,7 +249,7 @@ function runLexicalSearch(
 		if (matches.length >= maxMatches) break;
 	}
 
-	return matches.slice(0, limit);
+	return ok(matches.slice(0, limit));
 }
 
 async function runSemanticSearch(
@@ -397,38 +413,20 @@ export async function runSearch(options: SearchOptions): Promise<number> {
 	const excludePaths = options.excludePaths ?? [];
 	const warnings: string[] = [];
 
-	try {
-		let lexicalResults: SearchMatch[] = [];
-		let semanticResults: SearchMatch[] = [];
-		let semanticUnavailable = false;
+	let lexicalResults: SearchMatch[] = [];
+	let semanticResults: SearchMatch[] = [];
+	let semanticUnavailable = false;
 
-		if (mode === "lexical" || mode === "hybrid") {
-			lexicalResults = runLexicalSearch(
-				options.query,
-				baseDir,
-				limit,
-				includePaths,
-				excludePaths,
-			);
-		}
-
-		if (mode === "semantic" || mode === "hybrid") {
-			const semantic = await runSemanticSearch(
-				options.query,
-				baseDir,
-				harnessDir,
-				limit,
-				threshold,
-				includePaths,
-				excludePaths,
-			);
-			semanticResults = semantic.results;
-			if (semantic.warning) warnings.push(semantic.warning);
-			semanticUnavailable = semantic.unavailable ?? false;
-		}
-
-		if ((options.strictSemantic ?? false) && warnings.length > 0) {
-			const error = `Strict semantic mode enabled: ${warnings.join("; ")}`;
+	if (mode === "lexical" || mode === "hybrid") {
+		const lexicalResult = runLexicalSearch(
+			options.query,
+			baseDir,
+			limit,
+			includePaths,
+			excludePaths,
+		);
+		if (!lexicalResult.ok) {
+			const message = lexicalResult.error.message;
 			if (outputJson) {
 				console.info(
 					JSON.stringify({
@@ -437,69 +435,34 @@ export async function runSearch(options: SearchOptions): Promise<number> {
 						mode,
 						count: 0,
 						results: [],
-						warnings,
-						error,
+						error: message,
 					}),
 				);
 			} else {
-				console.error(`✗ ${error}`);
+				console.error(`✗ ${message}`);
 			}
-			return semanticUnavailable
-				? EXIT_CODES.SEMANTIC_UNAVAILABLE
-				: EXIT_CODES.ERROR;
+			return EXIT_CODES.ERROR;
 		}
+		lexicalResults = lexicalResult.value;
+	}
 
-		const results =
-			mode === "lexical"
-				? lexicalResults
-				: mode === "semantic"
-					? semanticResults
-					: mergeResults(lexicalResults, semanticResults, limit);
+	if (mode === "semantic" || mode === "hybrid") {
+		const semantic = await runSemanticSearch(
+			options.query,
+			baseDir,
+			harnessDir,
+			limit,
+			threshold,
+			includePaths,
+			excludePaths,
+		);
+		semanticResults = semantic.results;
+		if (semantic.warning) warnings.push(semantic.warning);
+		semanticUnavailable = semantic.unavailable ?? false;
+	}
 
-		const output: SearchOutput = {
-			success: true,
-			query: options.query,
-			mode,
-			count: results.length,
-			results,
-			...(warnings.length > 0 ? { warnings } : {}),
-		};
-
-		if (outputJson) {
-			console.info(JSON.stringify(output, null, 2));
-		} else if (results.length === 0) {
-			console.info(`No results found for: "${options.query}"`);
-			for (const warning of warnings) {
-				console.info(`Warning: ${warning}`);
-			}
-		} else {
-			console.info(
-				`Found ${results.length} result(s) for "${options.query}" [${mode}]`,
-			);
-			for (const [index, result] of results.entries()) {
-				console.info(`${index + 1}. ${result.path}`);
-				if (result.line !== undefined) {
-					console.info(`   Line: ${result.line}`);
-				}
-				console.info(
-					`   Source: ${result.source} | Score: ${(result.score * 100).toFixed(1)}%`,
-				);
-				if (result.snippet) {
-					console.info(`   ${result.snippet.slice(0, 200)}`);
-				}
-			}
-			for (const warning of warnings) {
-				console.info(`Warning: ${warning}`);
-			}
-		}
-
-		if (results.length > 0) return EXIT_CODES.SUCCESS;
-		if (mode === "semantic" && semanticUnavailable) {
-			return EXIT_CODES.SEMANTIC_UNAVAILABLE;
-		}
-		return EXIT_CODES.NO_RESULTS;
-	} catch (error) {
-		const message = error instanceof Error ? error.message : String(error);
+	if ((options.strictSemantic ?? false) && warnings.length > 0) {
+		const error = `Strict semantic mode enabled: ${warnings.join("; ")}`;
 		if (outputJson) {
 			console.info(
 				JSON.stringify({
@@ -508,14 +471,67 @@ export async function runSearch(options: SearchOptions): Promise<number> {
 					mode,
 					count: 0,
 					results: [],
-					error: message,
+					warnings,
+					error,
 				}),
 			);
 		} else {
-			console.error(`✗ ${message}`);
+			console.error(`✗ ${error}`);
 		}
-		return EXIT_CODES.ERROR;
+		return semanticUnavailable
+			? EXIT_CODES.SEMANTIC_UNAVAILABLE
+			: EXIT_CODES.ERROR;
 	}
+
+	const results =
+		mode === "lexical"
+			? lexicalResults
+			: mode === "semantic"
+				? semanticResults
+				: mergeResults(lexicalResults, semanticResults, limit);
+
+	const output: SearchOutput = {
+		success: true,
+		query: options.query,
+		mode,
+		count: results.length,
+		results,
+		...(warnings.length > 0 ? { warnings } : {}),
+	};
+
+	if (outputJson) {
+		console.info(JSON.stringify(output, null, 2));
+	} else if (results.length === 0) {
+		console.info(`No results found for: "${options.query}"`);
+		for (const warning of warnings) {
+			console.info(`Warning: ${warning}`);
+		}
+	} else {
+		console.info(
+			`Found ${results.length} result(s) for "${options.query}" [${mode}]`,
+		);
+		for (const [index, result] of results.entries()) {
+			console.info(`${index + 1}. ${result.path}`);
+			if (result.line !== undefined) {
+				console.info(`   Line: ${result.line}`);
+			}
+			console.info(
+				`   Source: ${result.source} | Score: ${(result.score * 100).toFixed(1)}%`,
+			);
+			if (result.snippet) {
+				console.info(`   ${result.snippet.slice(0, 200)}`);
+			}
+		}
+		for (const warning of warnings) {
+			console.info(`Warning: ${warning}`);
+		}
+	}
+
+	if (results.length > 0) return EXIT_CODES.SUCCESS;
+	if (mode === "semantic" && semanticUnavailable) {
+		return EXIT_CODES.SEMANTIC_UNAVAILABLE;
+	}
+	return EXIT_CODES.NO_RESULTS;
 }
 
 export async function runSearchCLI(args: string[]): Promise<number> {

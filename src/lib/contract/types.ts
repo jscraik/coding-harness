@@ -422,3 +422,74 @@ export const DEFAULT_CONTRACT: HarnessContract = {
 	remediationPolicy: DEFAULT_REMEDIATION_POLICY,
 	loopStageContracts: DEFAULT_LOOP_STAGE_CONTRACTS,
 };
+
+// === Preset Inheritance Types ===
+
+/**
+ * Branded type for HTTP/HTTPS URLs to prevent confusion with local paths.
+ */
+export type HttpsUrl = string & { readonly __brand: "HttpsUrl" };
+
+/**
+ * Branded type for local file paths to prevent confusion with URLs.
+ */
+export type LocalPath = string & { readonly __brand: "LocalPath" };
+
+/**
+ * Reference to a preset source - either a bundled preset name, local path, or remote URL.
+ */
+export type PresetSource = string;
+
+/**
+ * Configuration for a single preset reference.
+ */
+export interface PresetReference {
+	/** Preset source: bundled name, local path, or remote URL */
+	source: PresetSource;
+	/** Merge strategy for array fields */
+	arrays?: "replace" | "append" | "prepend";
+	/** SRI integrity hash for remote presets (sha256-...) */
+	integrity?: string;
+}
+
+/**
+ * Contract with preset inheritance support.
+ * Extends the base contract with an 'extends' field for preset references.
+ */
+export interface HarnessContractWithPreset extends HarnessContract {
+	/** Preset(s) to extend - single reference, array, or string shorthand */
+	extends?: PresetReference | PresetReference[] | PresetSource | PresetSource[];
+}
+
+/**
+ * Result of contract merge operation with audit trail.
+ */
+export interface MergeResult {
+	/** The merged contract */
+	contract: HarnessContract;
+	/** Sources that were resolved during merge (for audit trail) */
+	sources: string[];
+}
+
+/**
+ * Options for contract merge operation.
+ */
+export interface MergeOptions {
+	/** Strategy for merging arrays */
+	arrayMergeStrategy: "replace" | "concat";
+	/** Maximum recursion depth */
+	maxDepth: number;
+}
+
+/**
+ * Default merge options.
+ */
+export const DEFAULT_MERGE_OPTIONS: MergeOptions = {
+	arrayMergeStrategy: "replace",
+	maxDepth: 20,
+};
+
+/**
+ * Maximum inheritance chain depth to prevent circular references.
+ */
+export const MAX_INHERITANCE_DEPTH = 10;

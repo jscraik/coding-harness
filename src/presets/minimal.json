@@ -1,0 +1,18 @@
+{
+	"version": "1.0",
+	"riskTierRules": {},
+	"reviewPolicy": {
+		"timeoutSeconds": 600,
+		"timeoutAction": "fail",
+		"requiredChecks": ["security-scan"],
+		"enforceReviewerIndependence": false
+	},
+	"branchProtection": {
+		"requiredChecks": ["security-scan"]
+	},
+	"evidencePolicy": {
+		"requiredFor": [],
+		"allowedTypes": ["png", "jpeg"],
+		"maxFileSizeBytes": 1048576
+	}
+}

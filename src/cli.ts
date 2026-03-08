@@ -17,12 +17,14 @@ import { runIndexContextCLI } from "./commands/index-context.js";
 import { runInitCLI, runInteractiveInitCLI } from "./commands/init.js";
 import { runMemoryGateCLI } from "./commands/memory-gate.js";
 import { runObservabilityGateCLI } from "./commands/observability-gate.js";
+import { runOrgAuditCLI } from "./commands/org-audit.js";
 import { runPilotEvaluateCLI } from "./commands/pilot-evaluate.js";
 import {
 	type PilotRollbackOptions,
 	runPilotRollbackCLI,
 } from "./commands/pilot-rollback.js";
 import { runPlanGateCLI } from "./commands/plan-gate.js";
+import { runPresetCLI } from "./commands/preset.js";
 import { runPromptGateCLI } from "./commands/prompt-gate.js";
 import {
 	type RemediateOptions,
@@ -143,6 +145,14 @@ function printUsage(): void {
 		{
 			name: "verify-greptile",
 			summary: "Verify Greptile setup and configuration",
+		},
+		{
+			name: "preset",
+			summary: "List and inspect bundled presets",
+		},
+		{
+			name: "org-audit",
+			summary: "Multi-repo governance visibility and drift detection",
 		},
 	];
 
@@ -1407,6 +1417,21 @@ export function run(args: string[]): void {
 
 		const exitCode = runGapCaseCLI(options);
 		process.exit(exitCode);
+		return;
+	}
+
+	if (command === "org-audit") {
+		runOrgAuditCLI(args.slice(1))
+			.then((result) => process.exit(result.exitCode))
+			.catch((error) => handleFatalError("Org Audit Error", error));
+		return;
+	}
+
+	if (command === "preset") {
+		const subcommandArgs = args.slice(1);
+		runPresetCLI(subcommandArgs)
+			.then((result) => process.exit(result.exitCode))
+			.catch((error) => handleFatalError("Preset Error", error));
 		return;
 	}
 
