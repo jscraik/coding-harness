@@ -1,6 +1,7 @@
 import {
 	existsSync,
 	mkdirSync,
+	readdirSync,
 	rmSync,
 	symlinkSync,
 	writeFileSync,
@@ -33,7 +34,7 @@ describe("pilot-rollback", () => {
 			pilotRollbackPolicy: {
 				autoTrigger: true,
 				requireManualRelease: true,
-				completionMarkerPath: ".harness/rollback-marker.json",
+				completionMarkerPath: join(testDir, ".harness/rollback-marker.json"),
 				mode: policy?.mode ?? "manual",
 			},
 		};
@@ -85,12 +86,14 @@ describe("pilot-rollback", () => {
 
 		it("transitions from manual to autonomous and creates artifacts", async () => {
 			createContract({ mode: "manual" });
+			const runRecordsDir = join(testDir, "artifacts/agent-runs");
 
 			const result = await runPilotRollback({
 				incidentId: "incident-123",
 				mode: "autonomous",
 				contractPath,
 				artifactsDir: join(testDir, "artifacts/pilot"),
+				runRecordsDir,
 			});
 
 			expect(result.ok).toBe(true);
@@ -101,6 +104,10 @@ describe("pilot-rollback", () => {
 				expect(result.output.result).toBe("success");
 				expect(result.output.rollbackEventsId).toMatch(/^rollback-/);
 			}
+			const runDirs = readdirSync(runRecordsDir, { withFileTypes: true })
+				.filter((entry) => entry.isDirectory())
+				.map((entry) => entry.name);
+			expect(runDirs.length).toBe(1);
 		});
 
 		it("transitions from autonomous to manual", async () => {
@@ -120,7 +127,7 @@ describe("pilot-rollback", () => {
 			}
 		});
 
-		it("creates rollback-marker.json artifact", async () => {
+		it("writes rollback marker to the contract authority path by default", async () => {
 			createContract({ mode: "autonomous" });
 			const artifactsDir = join(testDir, "artifacts/pilot");
 
@@ -131,7 +138,7 @@ describe("pilot-rollback", () => {
 				artifactsDir,
 			});
 
-			const markerPath = join(artifactsDir, "rollback-marker.json");
+			const markerPath = join(testDir, ".harness/rollback-marker.json");
 			expect(existsSync(markerPath)).toBe(true);
 
 			const marker = JSON.parse(
@@ -142,6 +149,22 @@ describe("pilot-rollback", () => {
 			expect(marker.modeBefore).toBe("autonomous");
 			expect(marker.modeAfter).toBe("manual");
 			expect(marker.result).toBe("success");
+		});
+
+		it("allows explicit completion-marker override", async () => {
+			createContract({ mode: "autonomous" });
+			const artifactsDir = join(testDir, "artifacts/pilot");
+			const markerPath = join(testDir, "custom/rollback-marker.json");
+
+			await runPilotRollback({
+				incidentId: "incident-override",
+				mode: "manual",
+				contractPath,
+				artifactsDir,
+				completionMarkerPath: markerPath,
+			});
+
+			expect(existsSync(markerPath)).toBe(true);
 		});
 
 		it("appends to rollback-events.jsonl", async () => {

@@ -3,11 +3,11 @@
  *
  * Commands:
  * - `harness org-audit --path ~/dev` - Scan all repos in directory
- * - `harness org-audit --drift --base ~/base.contract.json` - Detect drift
+ * - `harness org-audit --drift-only --base ~/base.contract.json` - Detect drift (`--drift` alias supported)
  * - `harness org-audit --format json` - Output as JSON
  */
 
-import { existsSync, readdirSync, statSync } from "node:fs";
+import { existsSync, lstatSync, readdirSync, statSync } from "node:fs";
 import { dirname, join, resolve } from "node:path";
 import { loadContract } from "../lib/contract/loader.js";
 import type { HarnessContract } from "../lib/contract/types.js";
@@ -16,7 +16,7 @@ import {
 	scanRepositories,
 	summarizeResults,
 } from "../lib/governance/repo-scanner.js";
-import { validateSafeArgument } from "../lib/input/validation.js";
+import { PathTraversalError, validatePath } from "../lib/input/validator.js";
 import { type CliResult, err, ok } from "../lib/result/types.js";
 
 // Exit codes for programmatic consumption
@@ -65,16 +65,51 @@ export interface OrgAuditResult {
 	};
 }
 
+function validatePathInput(
+	rawPath: string,
+	field: string,
+): CliResult<{ absolutePath: string; safePath: string }> {
+	const absolutePath = resolve(rawPath);
+	try {
+		const safePath = validatePath(dirname(absolutePath), absolutePath);
+		return ok({ absolutePath, safePath });
+	} catch (error) {
+		if (error instanceof PathTraversalError) {
+			return err({
+				code: "VALIDATION_ERROR",
+				message: `${field} contains an unsafe path traversal sequence`,
+			});
+		}
+		return err({
+			code: "VALIDATION_ERROR",
+			message: `${field} is not a valid path`,
+		});
+	}
+}
+
 /**
  * Find git repositories in a directory.
  *
- * Looks for directories containing a .git folder.
+ * Looks for directories containing a `.git` directory or `.git` file
+ * (for worktree-style repositories).
  */
 export function findRepositories(basePath: string): string[] {
 	const repos: string[] = [];
 
 	if (!existsSync(basePath)) {
 		return repos;
+	}
+
+	const baseGitPath = join(basePath, ".git");
+	if (existsSync(baseGitPath)) {
+		try {
+			const baseGitStat = lstatSync(baseGitPath);
+			if (baseGitStat.isDirectory() || baseGitStat.isFile()) {
+				repos.push(basePath);
+			}
+		} catch {
+			// Ignore invalid .git metadata and continue scanning children.
+		}
 	}
 
 	const entries = readdirSync(basePath, { withFileTypes: true });
@@ -85,7 +120,14 @@ export function findRepositories(basePath: string): string[] {
 			const gitPath = join(fullPath, ".git");
 
 			if (existsSync(gitPath)) {
-				repos.push(fullPath);
+				try {
+					const gitStat = lstatSync(gitPath);
+					if (gitStat.isDirectory() || gitStat.isFile()) {
+						repos.push(fullPath);
+					}
+				} catch {
+					// Ignore invalid .git metadata and continue.
+				}
 			}
 		}
 	}
@@ -102,11 +144,11 @@ export async function runOrgAudit(
 	options: OrgAuditOptions,
 ): Promise<CliResult<{ result: OrgAuditResult; exitCode: number }>> {
 	// Validate path parameter
-	const pathValidation = validateSafeArgument(options.path, "path");
+	const pathValidation = validatePathInput(options.path, "path");
 	if (!pathValidation.ok) {
 		return err(pathValidation.error);
 	}
-	const validatedPath = pathValidation.value;
+	const validatedPath = pathValidation.value.safePath;
 
 	// Find repositories
 	const repos = findRepositories(validatedPath);
@@ -309,10 +351,44 @@ export async function runOrgAuditCLI(args: string[]): Promise<{
 	output?: string;
 }> {
 	// Parse arguments
+	const flagsWithValues = new Set(["--path", "--base", "--format"]);
+	const booleanFlags = new Set([
+		"--drift-only",
+		"--drift",
+		"--include-missing",
+		"--no-cache",
+		"--json",
+	]);
+	for (let i = 0; i < args.length; i += 1) {
+		const arg = args[i];
+		if (!arg) {
+			continue;
+		}
+		if (!arg.startsWith("-")) {
+			console.error(`Error: Unexpected positional argument '${arg}'`);
+			return { exitCode: EXIT_CODES.INVALID_ARGUMENT };
+		}
+		if (flagsWithValues.has(arg)) {
+			const next = args[i + 1];
+			if (!next || next.startsWith("-")) {
+				console.error(`Error: ${arg} requires a value`);
+				return { exitCode: EXIT_CODES.INVALID_ARGUMENT };
+			}
+			i += 1;
+			continue;
+		}
+		if (booleanFlags.has(arg)) {
+			continue;
+		}
+		console.error(`Error: Unknown flag '${arg}'`);
+		return { exitCode: EXIT_CODES.INVALID_ARGUMENT };
+	}
+
 	const pathIndex = args.indexOf("--path");
 	const baseIndex = args.indexOf("--base");
 	const formatIndex = args.indexOf("--format");
-	const driftOnlyFlag = args.includes("--drift-only");
+	const driftOnlyFlag =
+		args.includes("--drift-only") || args.includes("--drift");
 	const includeMissingFlag = args.includes("--include-missing");
 	const noCacheFlag = args.includes("--no-cache");
 	const jsonFlag = args.includes("--json");
@@ -329,7 +405,12 @@ export async function runOrgAuditCLI(args: string[]): Promise<{
 	}
 
 	// Resolve to absolute path
-	scanPath = resolve(scanPath);
+	const scanPathValidation = validatePathInput(scanPath, "--path");
+	if (!scanPathValidation.ok) {
+		console.error(`Error: ${scanPathValidation.error.message}`);
+		return { exitCode: EXIT_CODES.INVALID_ARGUMENT };
+	}
+	scanPath = scanPathValidation.value.absolutePath;
 
 	// Load base contract if specified
 	let baseContract: HarnessContract | undefined;
@@ -339,12 +420,12 @@ export async function runOrgAuditCLI(args: string[]): Promise<{
 			console.error("Error: --base requires a path argument");
 			return { exitCode: EXIT_CODES.INVALID_ARGUMENT };
 		}
-		const baseValidation = validateSafeArgument(rawBasePath, "--base");
+		const baseValidation = validatePathInput(rawBasePath, "--base");
 		if (!baseValidation.ok) {
 			console.error(`Error: ${baseValidation.error.message}`);
 			return { exitCode: EXIT_CODES.INVALID_ARGUMENT };
 		}
-		const resolvedBasePath = resolve(baseValidation.value);
+		const resolvedBasePath = baseValidation.value.safePath;
 		try {
 			baseContract = loadContract(resolvedBasePath, dirname(resolvedBasePath));
 		} catch (error) {

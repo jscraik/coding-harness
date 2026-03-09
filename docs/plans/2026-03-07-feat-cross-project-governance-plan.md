@@ -1,7 +1,7 @@
 ---
 title: feat: Cross-Project Governance Platform
 type: feat
-status: phase-1-complete
+status: active
 date: 2026-03-07
 origin: docs/brainstorms/2026-03-07-cross-project-governance-brainstorm.md
 deepened: 2026-03-07

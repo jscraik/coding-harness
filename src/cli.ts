@@ -1144,6 +1144,7 @@ export function run(args: string[]): void {
 		const contractIndex = args.indexOf("--contract");
 		const artifactsIndex = args.indexOf("--artifacts");
 		const outputIndex = args.indexOf("--output");
+		const markerIndex = args.indexOf("--completion-marker");
 		const reasonIndex = args.indexOf("--reason");
 
 		const modeArg = getFlagValue(args, modeIndex);
@@ -1170,6 +1171,9 @@ export function run(args: string[]): void {
 		const outputArg = getFlagValue(args, outputIndex);
 		if (outputArg) options.outputPath = outputArg;
 
+		const markerArg = getFlagValue(args, markerIndex);
+		if (markerArg) options.completionMarkerPath = markerArg;
+
 		const reasonArg = getFlagValue(args, reasonIndex);
 		if (reasonArg) options.reason = reasonArg;
 
@@ -1182,9 +1186,13 @@ export function run(args: string[]): void {
 	if (command === "pilot-evaluate") {
 		// Parse pilot-evaluate options
 		const jsonFlag = args.includes("--json");
+		const killSwitchFlag = args.includes("--kill-switch");
 		const contractIndex = args.indexOf("--contract");
 		const artifactsIndex = args.indexOf("--artifacts");
 		const outputIndex = args.indexOf("--output");
+		const laneIndex = args.indexOf("--lane");
+		const adapterRegistryIndex = args.indexOf("--adapter-registry");
+		const metricRegistryIndex = args.indexOf("--metric-registry");
 
 		const artifactsArg = getFlagValue(args, artifactsIndex);
 		if (!artifactsArg) {
@@ -1197,16 +1205,29 @@ export function run(args: string[]): void {
 			artifactsDir: string;
 			contractPath?: string;
 			outputPath?: string;
+			lane?: "advisory" | "health";
+			killSwitch?: boolean;
+			adapterRegistryPath?: string;
+			metricRegistryPath?: string;
 			json?: boolean;
 		} = {
 			artifactsDir: artifactsArg,
 		};
 
 		if (jsonFlag) options.json = true;
+		if (killSwitchFlag) options.killSwitch = true;
 		const contractArg = getFlagValue(args, contractIndex);
 		if (contractArg) options.contractPath = contractArg;
 		const outputArg = getFlagValue(args, outputIndex);
 		if (outputArg) options.outputPath = outputArg;
+		const laneArg = getFlagValue(args, laneIndex);
+		if (laneArg === "advisory" || laneArg === "health") {
+			options.lane = laneArg;
+		}
+		const adapterRegistryArg = getFlagValue(args, adapterRegistryIndex);
+		if (adapterRegistryArg) options.adapterRegistryPath = adapterRegistryArg;
+		const metricRegistryArg = getFlagValue(args, metricRegistryIndex);
+		if (metricRegistryArg) options.metricRegistryPath = metricRegistryArg;
 
 		const exitCode = runPilotEvaluateCLI(options);
 		process.exit(exitCode);

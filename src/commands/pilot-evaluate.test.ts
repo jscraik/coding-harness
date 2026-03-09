@@ -11,8 +11,13 @@ import {
 	writeFileSync,
 } from "node:fs";
 
-import { join, resolve } from "node:path";
+import { dirname, join, resolve } from "node:path";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
+import {
+	appendCanonicalEvent,
+	computeEventHash,
+	writeCanonicalManifest,
+} from "../lib/contract/run-records.js";
 import {
 	calculateClassificationLatency,
 	calculateEvidenceCompleteness,
@@ -124,9 +129,122 @@ function createPendingIncident(
 	};
 }
 
+function writePassingPilotArtifacts(artifactsDir: string): void {
+	const leadTimePath = join(artifactsDir, "pr-lead-time.json");
+	const pilotEntries = Array.from({ length: 25 }, (_, i) =>
+		createLeadTimeEntry({
+			prNumber: i + 1,
+			repo: "test/repo",
+			leadTimeHours: 4,
+			pilotEligible: true,
+		}),
+	);
+	const baselineEntries = Array.from({ length: 25 }, (_, i) =>
+		createLeadTimeEntry({
+			prNumber: 100 + i,
+			repo: "test/repo",
+			leadTimeHours: 10,
+			pilotEligible: false,
+		}),
+	);
+	writeFileSync(
+		leadTimePath,
+		JSON.stringify({
+			schemaVersion: "pr-lead-time/v1",
+			entries: [...pilotEntries, ...baselineEntries],
+		}),
+	);
+	writeFileSync(join(artifactsDir, "remediation-events.jsonl"), "");
+	writeFileSync(join(artifactsDir, "rollback-events.jsonl"), "");
+	writeFileSync(join(artifactsDir, "incidents.jsonl"), "");
+}
+
+function writeCanonicalProducerBundle(options: {
+	runRecordsDir: string;
+	runId: string;
+	command: "remediate" | "pilot-rollback";
+	artifactType: "remediation-events" | "rollback-events";
+	artifactPath: string;
+	manifestOutcome?: "success" | "hold" | "rollback";
+	exitClassification?:
+		| "ok"
+		| "manual_intervention_required"
+		| "rollback_required";
+	eventType?: "decision" | "intervention" | "retry";
+	eventStatus?: "completed" | "passed";
+	preconditions?: Record<string, boolean | string>;
+	provenance?: {
+		repoContractHash?: string;
+		processPolicyHash?: string;
+	};
+}) {
+	const now = new Date().toISOString();
+	writeCanonicalManifest({
+		baseDir: options.runRecordsDir,
+		manifest: {
+			schemaVersion: "agent-run-manifest/v1",
+			runId: options.runId,
+			command: options.command,
+			startedAt: now,
+			finishedAt: now,
+			durationMs: 0,
+			repo: {
+				repository: "test/repo",
+				branch: "codex/test",
+				headSha: "a".repeat(40),
+			},
+			contract: {
+				path: "harness.contract.json",
+				hash: "b".repeat(64),
+			},
+			policyContext: {
+				mode: "manual",
+				safetyPosture: "strict",
+				effectivePolicySource: "test",
+			},
+			outcome: options.manifestOutcome ?? "success",
+			exit: {
+				code: 0,
+				classification: options.exitClassification ?? "ok",
+			},
+			artifactRefs: [
+				{
+					type: options.artifactType,
+					path: options.artifactPath,
+					checksum: "c".repeat(64),
+				},
+			],
+			preconditions: options.preconditions ?? {},
+			provenance: {
+				repoContractHash:
+					options.provenance?.repoContractHash ?? "d".repeat(64),
+				processPolicyHash:
+					options.provenance?.processPolicyHash ?? "e".repeat(64),
+			},
+		},
+	});
+
+	appendCanonicalEvent({
+		baseDir: options.runRecordsDir,
+		event: {
+			schemaVersion: "agent-run-event/v1",
+			runId: options.runId,
+			eventId: `evt-${options.runId}`,
+			timestamp: now,
+			eventType: options.eventType ?? "decision",
+			status: options.eventStatus ?? "completed",
+			severity: "info",
+			payload: {
+				origin: options.command,
+			},
+		},
+	});
+}
+
 describe("pilot-evaluate", () => {
 	let testDir: string;
 	let artifactsDir: string;
+	let runRecordsDir: string;
 
 	beforeEach(() => {
 		// Use artifacts directory within cwd
@@ -137,6 +255,7 @@ describe("pilot-evaluate", () => {
 		testDir = join(baseDir, `pilot-evaluate-test-${Date.now()}`);
 		mkdirSync(testDir, { recursive: true });
 		artifactsDir = testDir;
+		runRecordsDir = join(testDir, "agent-runs");
 	});
 
 	afterEach(() => {
@@ -585,6 +704,7 @@ describe("pilot-evaluate", () => {
 		it("returns error when artifacts directory missing", () => {
 			const result = runPilotEvaluate({
 				artifactsDir: "/nonexistent/path",
+				runRecordsDir,
 			});
 			expect(result.ok).toBe(false);
 			expect(result.error?.code).toBe("E_ARTIFACTS_NOT_FOUND");
@@ -592,7 +712,7 @@ describe("pilot-evaluate", () => {
 		});
 
 		it("returns hold for missing required artifact (sample size 0)", () => {
-			const result = runPilotEvaluate({ artifactsDir });
+			const result = runPilotEvaluate({ artifactsDir, runRecordsDir });
 			// Returns ok:true but outcome is "hold" because sample size is 0
 			expect(result.ok).toBe(true);
 			expect(result.result?.outcome).toBe("hold");
@@ -626,7 +746,7 @@ describe("pilot-evaluate", () => {
 			writeFileSync(join(artifactsDir, "incidents.jsonl"), "{not-json}");
 			writeFileSync(join(artifactsDir, "remediation-events.jsonl"), "");
 
-			const result = runPilotEvaluate({ artifactsDir });
+			const result = runPilotEvaluate({ artifactsDir, runRecordsDir });
 			expect(result.ok).toBe(false);
 			expect(result.error?.code).toBe("E_SCHEMA_VALIDATION");
 			expect(result.error?.message).toContain("invalid JSONL");
@@ -677,13 +797,13 @@ describe("pilot-evaluate", () => {
 			writeFileSync(join(artifactsDir, "remediation-events.jsonl"), "");
 			writeFileSync(join(artifactsDir, "incidents.jsonl"), "");
 
-			const result = runPilotEvaluate({ artifactsDir });
+			const result = runPilotEvaluate({ artifactsDir, runRecordsDir });
 			expect(result.ok).toBe(true);
 			expect(result.result?.outcome).toBe("promote");
 			expect(result.exitCode).toBe(PILOT_EVALUATE_EXIT_CODES.PROMOTE);
 		});
 
-		it("returns hold when high-risk automation incidents exist", () => {
+		it("returns rollback when high-risk automation incidents exist", () => {
 			// Create valid lead time data
 			const leadTimePath = join(artifactsDir, "pr-lead-time.json");
 			writeFileSync(
@@ -725,11 +845,11 @@ describe("pilot-evaluate", () => {
 			// Create empty remediation file
 			writeFileSync(join(artifactsDir, "remediation-events.jsonl"), "");
 
-			const result = runPilotEvaluate({ artifactsDir });
+			const result = runPilotEvaluate({ artifactsDir, runRecordsDir });
 			expect(result.ok).toBe(true);
 			expect(result.result?.outcome).toBe("rollback"); // Hard gate triggers rollback
 			expect(result.result?.holdReasons.length).toBeGreaterThan(0);
-			expect(result.exitCode).toBe(PILOT_EVALUATE_EXIT_CODES.HOLD);
+			expect(result.exitCode).toBe(PILOT_EVALUATE_EXIT_CODES.ROLLBACK);
 		});
 
 		it("returns hold when sample size too small", () => {
@@ -763,7 +883,7 @@ describe("pilot-evaluate", () => {
 			writeFileSync(join(artifactsDir, "remediation-events.jsonl"), "");
 			writeFileSync(join(artifactsDir, "incidents.jsonl"), "");
 
-			const result = runPilotEvaluate({ artifactsDir });
+			const result = runPilotEvaluate({ artifactsDir, runRecordsDir });
 			expect(result.ok).toBe(true);
 			expect(result.result?.outcome).toBe("hold");
 			expect(
@@ -777,6 +897,7 @@ describe("pilot-evaluate", () => {
 			const result = runPilotEvaluate({
 				artifactsDir,
 				outputPath: "../outside.json",
+				runRecordsDir,
 			});
 			expect(result.ok).toBe(false);
 			expect(result.error?.code).toBe("E_PATH_TRAVERSAL");
@@ -796,6 +917,7 @@ describe("pilot-evaluate", () => {
 				const result = runPilotEvaluate({
 					artifactsDir,
 					outputPath: symlinkPath,
+					runRecordsDir,
 				});
 				expect(result.ok).toBe(false);
 				expect(result.error?.code).toBe("E_PATH_TRAVERSAL");
@@ -845,7 +967,11 @@ describe("pilot-evaluate", () => {
 			writeFileSync(join(artifactsDir, "incidents.jsonl"), "");
 
 			const outputPath = join(artifactsDir, "evaluation-result.json");
-			const result = runPilotEvaluate({ artifactsDir, outputPath });
+			const result = runPilotEvaluate({
+				artifactsDir,
+				outputPath,
+				runRecordsDir,
+			});
 
 			expect(result.ok).toBe(true);
 			expect(existsSync(outputPath)).toBe(true);
@@ -856,6 +982,758 @@ describe("pilot-evaluate", () => {
 			);
 			expect(output.schemaVersion).toBe("pilot-evaluation/v1");
 			expect(output.outcome).toBe("promote");
+		});
+
+		it("reports explicit legacy adapter metadata when canonical bundles are absent", () => {
+			const leadTimePath = join(artifactsDir, "pr-lead-time.json");
+			const pilotEntries = Array.from({ length: 25 }, (_, i) =>
+				createLeadTimeEntry({
+					prNumber: i + 1,
+					repo: "test/repo",
+					leadTimeHours: 4,
+					pilotEligible: true,
+				}),
+			);
+			const baselineEntries = Array.from({ length: 25 }, (_, i) =>
+				createLeadTimeEntry({
+					prNumber: 100 + i,
+					repo: "test/repo",
+					leadTimeHours: 10,
+					pilotEligible: false,
+				}),
+			);
+			writeFileSync(
+				leadTimePath,
+				JSON.stringify({
+					schemaVersion: "pr-lead-time/v1",
+					entries: [...pilotEntries, ...baselineEntries],
+				}),
+			);
+			writeFileSync(
+				join(artifactsDir, "rollback-events.jsonl"),
+				JSON.stringify(
+					createRollbackEvent({ triggerType: "drill", result: "success" }),
+				),
+			);
+			writeFileSync(join(artifactsDir, "remediation-events.jsonl"), "");
+			writeFileSync(join(artifactsDir, "incidents.jsonl"), "");
+
+			const result = runPilotEvaluate({ artifactsDir, runRecordsDir });
+			expect(result.ok).toBe(true);
+			expect(result.result?.ingestion.remediationEvents.source).toBe(
+				"legacy_adapter",
+			);
+			expect(result.result?.ingestion.remediationEvents.adapterVersion).toBe(
+				"legacy-jsonl-v1",
+			);
+			expect(result.result?.ingestion.rollbackEvents.source).toBe(
+				"legacy_adapter",
+			);
+		});
+
+		it("consumes canonical artifactRefs before legacy adapter files", () => {
+			const leadTimePath = join(artifactsDir, "pr-lead-time.json");
+			const pilotEntries = Array.from({ length: 25 }, (_, i) =>
+				createLeadTimeEntry({
+					prNumber: i + 1,
+					repo: "test/repo",
+					leadTimeHours: 4,
+					pilotEligible: true,
+				}),
+			);
+			const baselineEntries = Array.from({ length: 25 }, (_, i) =>
+				createLeadTimeEntry({
+					prNumber: 100 + i,
+					repo: "test/repo",
+					leadTimeHours: 10,
+					pilotEligible: false,
+				}),
+			);
+			writeFileSync(
+				leadTimePath,
+				JSON.stringify({
+					schemaVersion: "pr-lead-time/v1",
+					entries: [...pilotEntries, ...baselineEntries],
+				}),
+			);
+
+			const canonicalDataDir = join(artifactsDir, "canonical");
+			mkdirSync(canonicalDataDir, { recursive: true });
+			const canonicalRollbackPath = join(
+				canonicalDataDir,
+				"rollback-events.jsonl",
+			);
+			const canonicalRemediationPath = join(
+				canonicalDataDir,
+				"remediation-events.jsonl",
+			);
+			writeFileSync(
+				canonicalRollbackPath,
+				JSON.stringify(
+					createRollbackEvent({ triggerType: "drill", result: "success" }),
+				),
+			);
+			writeFileSync(canonicalRemediationPath, "");
+
+			// Intentionally malformed legacy files prove canonical-first discovery.
+			writeFileSync(join(artifactsDir, "rollback-events.jsonl"), "{not-json}");
+			writeFileSync(
+				join(artifactsDir, "remediation-events.jsonl"),
+				"{not-json}",
+			);
+			writeFileSync(join(artifactsDir, "incidents.jsonl"), "");
+
+			writeCanonicalProducerBundle({
+				runRecordsDir,
+				runId: "remediate-bundle-1",
+				command: "remediate",
+				artifactType: "remediation-events",
+				artifactPath: canonicalRemediationPath,
+			});
+			writeCanonicalProducerBundle({
+				runRecordsDir,
+				runId: "rollback-bundle-1",
+				command: "pilot-rollback",
+				artifactType: "rollback-events",
+				artifactPath: canonicalRollbackPath,
+			});
+
+			const result = runPilotEvaluate({ artifactsDir, runRecordsDir });
+			expect(result.ok).toBe(true);
+			expect(result.result?.outcome).toBe("promote");
+			expect(result.result?.ingestion.remediationEvents.source).toBe(
+				"canonical",
+			);
+			expect(result.result?.ingestion.rollbackEvents.source).toBe("canonical");
+		});
+
+		it("enriches legacy adapter ingestion metadata from the adapter registry", () => {
+			writePassingPilotArtifacts(artifactsDir);
+			const result = runPilotEvaluate({ artifactsDir, runRecordsDir });
+
+			expect(result.ok).toBe(true);
+			expect(result.result?.ingestion.remediationEvents.source).toBe(
+				"legacy_adapter",
+			);
+			expect(result.result?.ingestion.remediationEvents.owner).toBe(
+				"pilot-evaluation",
+			);
+			expect(result.result?.ingestion.remediationEvents.introducedAt).toBe(
+				"2026-03-08",
+			);
+			expect(result.result?.ingestion.remediationEvents.sunsetBy).toContain(
+				"30 consecutive",
+			);
+		});
+
+		it("computes CP6 canonical metrics from canonical bundles", () => {
+			writePassingPilotArtifacts(artifactsDir);
+			const canonicalDataDir = join(artifactsDir, "canonical");
+			mkdirSync(canonicalDataDir, { recursive: true });
+			const canonicalRollbackPath = join(
+				canonicalDataDir,
+				"rollback-events.jsonl",
+			);
+			const canonicalRemediationPath = join(
+				canonicalDataDir,
+				"remediation-events.jsonl",
+			);
+			writeFileSync(
+				canonicalRollbackPath,
+				[
+					JSON.stringify(
+						createRollbackEvent({ triggerType: "drill", result: "success" }),
+					),
+					JSON.stringify(
+						createRollbackEvent({
+							incidentId: "INC-002",
+							triggerType: "real",
+							result: "success",
+						}),
+					),
+					JSON.stringify(
+						createRollbackEvent({
+							incidentId: "INC-003",
+							triggerType: "real",
+							result: "success",
+						}),
+					),
+				].join("\n"),
+			);
+			writeFileSync(canonicalRemediationPath, "");
+			writeCanonicalProducerBundle({
+				runRecordsDir,
+				runId: "remediate-bundle-intervention",
+				command: "remediate",
+				artifactType: "remediation-events",
+				artifactPath: canonicalRemediationPath,
+				eventType: "intervention",
+				eventStatus: "completed",
+			});
+			writeCanonicalProducerBundle({
+				runRecordsDir,
+				runId: "rollback-bundle-thrash",
+				command: "pilot-rollback",
+				artifactType: "rollback-events",
+				artifactPath: canonicalRollbackPath,
+				manifestOutcome: "hold",
+				exitClassification: "manual_intervention_required",
+				eventType: "retry",
+				eventStatus: "passed",
+			});
+
+			const { metrics } = capturePilotMetrics(artifactsDir, { runRecordsDir });
+			expect(metrics?.interventionRate).toBe(0.5);
+			expect(metrics?.thrashRate).toBe(0.5);
+			expect(metrics?.rollbackTriggerCount).toBe(3);
+			expect(metrics?.evidenceCompletenessRatio).toBe(1);
+		});
+
+		it("holds when canonical bundle loading detects a sensitive field leak", () => {
+			writePassingPilotArtifacts(artifactsDir);
+			const canonicalDataDir = join(artifactsDir, "canonical");
+			mkdirSync(canonicalDataDir, { recursive: true });
+			const canonicalRollbackPath = join(
+				canonicalDataDir,
+				"rollback-events.jsonl",
+			);
+			const canonicalRemediationPath = join(
+				canonicalDataDir,
+				"remediation-events.jsonl",
+			);
+			writeFileSync(
+				canonicalRollbackPath,
+				JSON.stringify(
+					createRollbackEvent({ triggerType: "drill", result: "success" }),
+				),
+			);
+			writeFileSync(canonicalRemediationPath, "");
+			writeCanonicalProducerBundle({
+				runRecordsDir,
+				runId: "remediate-bundle-clean",
+				command: "remediate",
+				artifactType: "remediation-events",
+				artifactPath: canonicalRemediationPath,
+			});
+
+			const sensitiveRunId = "rollback-bundle-sensitive";
+			const sensitiveRunDir = join(runRecordsDir, sensitiveRunId);
+			mkdirSync(sensitiveRunDir, { recursive: true });
+			const now = new Date().toISOString();
+			writeFileSync(
+				join(sensitiveRunDir, "manifest.json"),
+				JSON.stringify(
+					{
+						schemaVersion: "agent-run-manifest/v1",
+						runId: sensitiveRunId,
+						command: "pilot-rollback",
+						startedAt: now,
+						finishedAt: now,
+						durationMs: 0,
+						repo: {
+							repository: "test/repo",
+							branch: "codex/test",
+							headSha: "a".repeat(40),
+						},
+						contract: {
+							path: "harness.contract.json",
+							hash: "b".repeat(64),
+						},
+						policyContext: {
+							mode: "manual",
+							safetyPosture: "strict",
+							effectivePolicySource: "test",
+						},
+						outcome: "success",
+						exit: {
+							code: 0,
+							classification: "ok",
+						},
+						artifactRefs: [
+							{
+								type: "rollback-events",
+								path: canonicalRollbackPath,
+								checksum: "c".repeat(64),
+							},
+						],
+						preconditions: {
+							apiToken: "leaked-secret",
+						},
+						provenance: {
+							repoContractHash: "d".repeat(64),
+							processPolicyHash: "e".repeat(64),
+						},
+					},
+					null,
+					2,
+				),
+			);
+			const event = {
+				schemaVersion: "agent-run-event/v1" as const,
+				runId: sensitiveRunId,
+				eventId: `evt-${sensitiveRunId}`,
+				timestamp: now,
+				eventType: "decision" as const,
+				status: "completed" as const,
+				severity: "info" as const,
+				payload: {
+					origin: "pilot-rollback",
+				},
+			};
+			writeFileSync(
+				join(sensitiveRunDir, "events.jsonl"),
+				`${JSON.stringify({ ...event, eventHash: computeEventHash(event) })}\n`,
+				"utf-8",
+			);
+
+			const result = runPilotEvaluate({
+				artifactsDir,
+				runRecordsDir,
+				lane: "health",
+			});
+			expect(result.ok).toBe(true);
+			expect(result.result?.outcome).toBe("hold");
+			expect(result.result?.metrics.sensitiveFieldLeakCount).toBe(1);
+			expect(result.result?.holdReasons).toContainEqual(
+				expect.stringContaining("Sensitive field leak count"),
+			);
+		});
+
+		it("holds when canonical bundle discovery finds runId collisions across roots", () => {
+			writePassingPilotArtifacts(artifactsDir);
+			const localRoot = join(artifactsDir, "agent-runs");
+			const sharedRoot = resolve("artifacts/agent-runs");
+			const runId = "collision-bundle";
+			const localArtifactPath = join(
+				artifactsDir,
+				"canonical/local-rollback.jsonl",
+			);
+			const sharedArtifactPath = join(
+				artifactsDir,
+				"canonical/shared-rollback.jsonl",
+			);
+			mkdirSync(dirname(localArtifactPath), { recursive: true });
+			mkdirSync(sharedRoot, { recursive: true });
+			writeFileSync(
+				localArtifactPath,
+				JSON.stringify(
+					createRollbackEvent({ triggerType: "drill", result: "success" }),
+				),
+			);
+			writeFileSync(
+				sharedArtifactPath,
+				JSON.stringify(
+					createRollbackEvent({
+						incidentId: "INC-002",
+						triggerType: "real",
+						result: "success",
+					}),
+				),
+			);
+			writeCanonicalProducerBundle({
+				runRecordsDir: localRoot,
+				runId,
+				command: "pilot-rollback",
+				artifactType: "rollback-events",
+				artifactPath: localArtifactPath,
+			});
+			writeCanonicalProducerBundle({
+				runRecordsDir: sharedRoot,
+				runId,
+				command: "pilot-rollback",
+				artifactType: "rollback-events",
+				artifactPath: sharedArtifactPath,
+			});
+
+			try {
+				const result = runPilotEvaluate({
+					artifactsDir,
+					lane: "health",
+				});
+				expect(result.ok).toBe(true);
+				expect(result.result?.outcome).toBe("hold");
+				expect(result.result?.metrics.runIdCollisionCount).toBe(1);
+				expect(result.result?.holdReasons).toContainEqual(
+					expect.stringContaining("RunId collision count"),
+				);
+			} finally {
+				rmSync(join(sharedRoot, runId), { recursive: true, force: true });
+			}
+		});
+
+		it("enforces the rollback trigger denominator guard from the metric registry in health lane", () => {
+			writePassingPilotArtifacts(artifactsDir);
+			const canonicalDataDir = join(artifactsDir, "canonical");
+			mkdirSync(canonicalDataDir, { recursive: true });
+			const canonicalRollbackPath = join(
+				canonicalDataDir,
+				"rollback-events.jsonl",
+			);
+			const canonicalRemediationPath = join(
+				canonicalDataDir,
+				"remediation-events.jsonl",
+			);
+			writeFileSync(
+				canonicalRollbackPath,
+				JSON.stringify(
+					createRollbackEvent({ triggerType: "drill", result: "success" }),
+				),
+			);
+			writeFileSync(canonicalRemediationPath, "");
+			writeCanonicalProducerBundle({
+				runRecordsDir,
+				runId: "remediate-bundle-guard",
+				command: "remediate",
+				artifactType: "remediation-events",
+				artifactPath: canonicalRemediationPath,
+			});
+			writeCanonicalProducerBundle({
+				runRecordsDir,
+				runId: "rollback-bundle-guard",
+				command: "pilot-rollback",
+				artifactType: "rollback-events",
+				artifactPath: canonicalRollbackPath,
+				manifestOutcome: "rollback",
+				exitClassification: "rollback_required",
+			});
+
+			const result = runPilotEvaluate({
+				artifactsDir,
+				runRecordsDir,
+				lane: "health",
+			});
+			expect(result.ok).toBe(true);
+			expect(result.result?.outcome).toBe("hold");
+			expect(result.result?.holdReasons).toContainEqual(
+				expect.stringContaining("insufficient evidence"),
+			);
+		});
+
+		it("keeps drift-only findings exit-neutral in advisory lane", () => {
+			writePassingPilotArtifacts(artifactsDir);
+			const canonicalDataDir = join(artifactsDir, "canonical");
+			mkdirSync(canonicalDataDir, { recursive: true });
+			const wrongRollbackPath = join(canonicalDataDir, "wrong-rollback.jsonl");
+			const canonicalRemediationPath = join(
+				canonicalDataDir,
+				"remediation-events.jsonl",
+			);
+			writeFileSync(
+				wrongRollbackPath,
+				[
+					JSON.stringify(
+						createRollbackEvent({ triggerType: "drill", result: "success" }),
+					),
+					JSON.stringify(
+						createRollbackEvent({
+							incidentId: "INC-002",
+							triggerType: "real",
+							result: "success",
+						}),
+					),
+					JSON.stringify(
+						createRollbackEvent({
+							incidentId: "INC-003",
+							triggerType: "real",
+							result: "success",
+						}),
+					),
+				].join("\n"),
+			);
+			writeFileSync(canonicalRemediationPath, "");
+			writeCanonicalProducerBundle({
+				runRecordsDir,
+				runId: "remediate-bundle-advisory",
+				command: "remediate",
+				artifactType: "remediation-events",
+				artifactPath: canonicalRemediationPath,
+			});
+			writeCanonicalProducerBundle({
+				runRecordsDir,
+				runId: "rollback-bundle-advisory",
+				command: "pilot-rollback",
+				artifactType: "rollback-events",
+				artifactPath: wrongRollbackPath,
+				manifestOutcome: "rollback",
+				exitClassification: "rollback_required",
+			});
+
+			const advisory = runPilotEvaluate({
+				artifactsDir,
+				runRecordsDir,
+				lane: "advisory",
+			});
+			expect(advisory.ok).toBe(true);
+			expect(advisory.result?.outcome).toBe("promote");
+			expect(advisory.result?.controls.lane).toBe("advisory");
+
+			const health = runPilotEvaluate({
+				artifactsDir,
+				runRecordsDir,
+				lane: "health",
+			});
+			expect(health.ok).toBe(true);
+			expect(health.result?.outcome).toBe("hold");
+		});
+
+		it("engages manual safe mode when kill switch is enabled", () => {
+			writePassingPilotArtifacts(artifactsDir);
+			const result = runPilotEvaluate({
+				artifactsDir,
+				runRecordsDir,
+				killSwitch: true,
+			});
+
+			expect(result.ok).toBe(true);
+			expect(result.result?.outcome).toBe("hold");
+			expect(result.result?.controls.killSwitchEngaged).toBe(true);
+			expect(result.result?.controls.manualSafeMode).toBe(true);
+		});
+
+		it("blocks legacy adapter usage after blockAfter in health lane", () => {
+			writePassingPilotArtifacts(artifactsDir);
+			const adapterRegistryPath = join(artifactsDir, "adapter-registry.json");
+			writeFileSync(
+				adapterRegistryPath,
+				JSON.stringify({
+					schemaVersion: "agent-adapter-registry/v1",
+					adapters: [
+						{
+							adapterVersion: "legacy-jsonl-v1",
+							owner: "pilot-evaluation",
+							introducedAt: "2026-03-08",
+							sunsetBy: "test window",
+							blockAfter: "2026-03-08T00:00:00.000Z",
+							parityWindow: {
+								minimumCanonicalCoverage: 0.95,
+								minimumConsecutivePassingWindows: 30,
+								maxCriticalDrifts: 0,
+							},
+						},
+					],
+				}),
+			);
+
+			const result = runPilotEvaluate({
+				artifactsDir,
+				runRecordsDir,
+				lane: "health",
+				adapterRegistryPath,
+			});
+			expect(result.ok).toBe(true);
+			expect(result.result?.outcome).toBe("hold");
+			expect(result.result?.controls.manualSafeMode).toBe(true);
+			expect(result.result?.holdReasons).toContainEqual(
+				expect.stringContaining("blockAfter"),
+			);
+		});
+
+		it("requires consecutive passing parity windows before marking legacy retirement ready", () => {
+			writePassingPilotArtifacts(artifactsDir);
+			const canonicalDataDir = join(artifactsDir, "canonical");
+			mkdirSync(canonicalDataDir, { recursive: true });
+			const canonicalRollbackPath = join(
+				canonicalDataDir,
+				"rollback-events.jsonl",
+			);
+			const canonicalRemediationPath = join(
+				canonicalDataDir,
+				"remediation-events.jsonl",
+			);
+			writeFileSync(
+				canonicalRollbackPath,
+				[
+					JSON.stringify(
+						createRollbackEvent({ triggerType: "drill", result: "success" }),
+					),
+					JSON.stringify(
+						createRollbackEvent({
+							incidentId: "INC-002",
+							triggerType: "real",
+							result: "success",
+						}),
+					),
+					JSON.stringify(
+						createRollbackEvent({
+							incidentId: "INC-003",
+							triggerType: "real",
+							result: "success",
+						}),
+					),
+				].join("\n"),
+			);
+			writeFileSync(canonicalRemediationPath, "");
+			writeCanonicalProducerBundle({
+				runRecordsDir,
+				runId: "remediate-bundle-retirement",
+				command: "remediate",
+				artifactType: "remediation-events",
+				artifactPath: canonicalRemediationPath,
+			});
+			writeCanonicalProducerBundle({
+				runRecordsDir,
+				runId: "rollback-bundle-retirement",
+				command: "pilot-rollback",
+				artifactType: "rollback-events",
+				artifactPath: canonicalRollbackPath,
+			});
+
+			const adapterRegistryPath = join(artifactsDir, "adapter-registry.json");
+			writeFileSync(
+				adapterRegistryPath,
+				JSON.stringify({
+					schemaVersion: "agent-adapter-registry/v1",
+					adapters: [
+						{
+							adapterVersion: "legacy-jsonl-v1",
+							owner: "pilot-evaluation",
+							introducedAt: "2026-03-08",
+							sunsetBy: "test window",
+							blockAfter: null,
+							parityWindow: {
+								minimumCanonicalCoverage: 0.95,
+								minimumConsecutivePassingWindows: 2,
+								maxCriticalDrifts: 0,
+							},
+						},
+					],
+				}),
+			);
+			const parityHistoryPath = join(artifactsDir, "parity-history.json");
+			writeFileSync(
+				parityHistoryPath,
+				JSON.stringify(
+					{
+						schemaVersion: "pilot-adapter-parity-history/v1",
+						windows: [
+							{
+								windowStart: "2026-03-07",
+								windowEnd: "2026-03-07",
+								generatedAt: "2026-03-07T12:00:00.000Z",
+								lane: "advisory",
+								canonicalCoverageRatio: 1,
+								criticalDriftCount: 0,
+								sensitiveFieldLeakCount: 0,
+								runIdCollisionCount: 0,
+								passing: true,
+							},
+						],
+					},
+					null,
+					2,
+				),
+			);
+
+			const result = runPilotEvaluate({
+				artifactsDir,
+				runRecordsDir,
+				adapterRegistryPath,
+				parityHistoryPath,
+			});
+			expect(result.ok).toBe(true);
+			expect(result.result?.controls.legacyRetirementReady).toBe(true);
+			expect(
+				result.result?.controls.parityWindow?.consecutivePassingWindows,
+			).toBe(2);
+		});
+
+		it("holds in health lane when canonical bundle provenance is missing a policy hash", () => {
+			writePassingPilotArtifacts(artifactsDir);
+			const canonicalDataDir = join(artifactsDir, "canonical");
+			mkdirSync(canonicalDataDir, { recursive: true });
+			const canonicalRollbackPath = join(
+				canonicalDataDir,
+				"rollback-events.jsonl",
+			);
+			writeFileSync(
+				canonicalRollbackPath,
+				JSON.stringify(
+					createRollbackEvent({ triggerType: "drill", result: "success" }),
+				),
+			);
+
+			const malformedRunId = "rollback-bundle-missing-policy-hash";
+			const malformedRunDir = join(runRecordsDir, malformedRunId);
+			mkdirSync(malformedRunDir, { recursive: true });
+			const now = new Date().toISOString();
+			writeFileSync(
+				join(malformedRunDir, "manifest.json"),
+				JSON.stringify(
+					{
+						schemaVersion: "agent-run-manifest/v1",
+						runId: malformedRunId,
+						command: "pilot-rollback",
+						startedAt: now,
+						finishedAt: now,
+						durationMs: 0,
+						repo: {
+							repository: "test/repo",
+							branch: "codex/test",
+							headSha: "a".repeat(40),
+						},
+						contract: {
+							path: "harness.contract.json",
+							hash: "b".repeat(64),
+						},
+						policyContext: {
+							mode: "manual",
+							safetyPosture: "strict",
+							effectivePolicySource: "test",
+						},
+						outcome: "success",
+						exit: {
+							code: 0,
+							classification: "ok",
+						},
+						artifactRefs: [
+							{
+								type: "rollback-events",
+								path: canonicalRollbackPath,
+								checksum: "c".repeat(64),
+							},
+						],
+						preconditions: {},
+						provenance: {
+							repoContractHash: "d".repeat(64),
+						},
+					},
+					null,
+					2,
+				),
+			);
+			const event = {
+				schemaVersion: "agent-run-event/v1" as const,
+				runId: malformedRunId,
+				eventId: `evt-${malformedRunId}`,
+				timestamp: now,
+				eventType: "decision" as const,
+				status: "completed" as const,
+				severity: "info" as const,
+				payload: {
+					origin: "pilot-rollback",
+				},
+			};
+			writeFileSync(
+				join(malformedRunDir, "events.jsonl"),
+				`${JSON.stringify({ ...event, eventHash: computeEventHash(event) })}\n`,
+				"utf-8",
+			);
+
+			const result = runPilotEvaluate({
+				artifactsDir,
+				runRecordsDir,
+				lane: "health",
+			});
+			expect(result.ok).toBe(true);
+			expect(result.result?.outcome).toBe("hold");
+			expect(result.result?.holdReasons).toContainEqual(
+				expect.stringContaining("drift detected"),
+			);
+			expect(
+				result.result?.warnings.some((warning) =>
+					/processPolicyHash/i.test(warning),
+				),
+			).toBe(true);
 		});
 	});
 

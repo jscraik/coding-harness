@@ -61,7 +61,9 @@ export function runPolicyGate(options: PolicyGateOptions): PolicyGateResult {
 	}
 
 	try {
-		const contract = loadContract(options.contractPath);
+		const contract = loadContract(options.contractPath, process.cwd(), {
+			allowExtends: false,
+		});
 
 		// No changed files should always pass the gate.
 		if (options.files.length === 0) {

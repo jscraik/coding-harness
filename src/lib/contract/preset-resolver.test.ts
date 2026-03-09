@@ -1,4 +1,6 @@
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { createHash } from "node:crypto";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import * as urlValidator from "../governance/url-validator.js";
 import { CircularInheritanceError, MaxDepthExceededError } from "./errors.js";
 import {
 	PresetResolver,
@@ -11,6 +13,11 @@ import {
 describe("preset-resolver", () => {
 	beforeEach(() => {
 		clearPresetCache();
+		vi.restoreAllMocks();
+	});
+
+	afterEach(() => {
+		vi.restoreAllMocks();
 	});
 
 	describe("listBundledPresets", () => {
@@ -155,6 +162,102 @@ describe("preset-resolver", () => {
 			await expect(
 				resolvePreset("non-existent-file.json", process.cwd()),
 			).rejects.toThrow();
+		});
+
+		it("fails closed when remote preset reference omits integrity hash", async () => {
+			const resolver = new PresetResolver();
+			await expect(
+				resolver.resolvePreset(
+					"https://raw.githubusercontent.com/acme/contracts/main/base.json",
+					process.cwd(),
+				),
+			).rejects.toThrow(/integrity hash/i);
+		});
+
+		it("verifies remote preset integrity hash", async () => {
+			const resolver = new PresetResolver();
+			const remoteUrl =
+				"https://raw.githubusercontent.com/acme/contracts/main/base.json";
+			const preset = getBundledPreset("minimal");
+			expect(preset).toBeDefined();
+			const content = JSON.stringify(preset);
+			const integrity = `sha256-${createHash("sha256").update(content, "utf-8").digest("base64")}`;
+
+			vi.spyOn(urlValidator, "validateRemoteUrl").mockResolvedValue({
+				url: new URL(remoteUrl),
+				resolvedIps: ["1.1.1.1"],
+				pinnedIp: "1.1.1.1",
+			});
+			vi.spyOn(urlValidator, "secureFetch").mockResolvedValue(
+				new Response(content, {
+					status: 200,
+					headers: { "content-length": `${Buffer.byteLength(content)}` },
+				}),
+			);
+
+			const result = await resolver.resolvePreset(
+				remoteUrl,
+				process.cwd(),
+				undefined,
+				undefined,
+				{
+					source: remoteUrl as never,
+					integrity,
+				},
+			);
+
+			expect(result.contract.version).toBe("1.0");
+			expect(result.sources).toContain(remoteUrl);
+		});
+
+		it("rejects remote presets when integrity hash mismatches", async () => {
+			const resolver = new PresetResolver();
+			const remoteUrl =
+				"https://raw.githubusercontent.com/acme/contracts/main/base.json";
+			const preset = getBundledPreset("minimal");
+			expect(preset).toBeDefined();
+			const content = JSON.stringify(preset);
+
+			vi.spyOn(urlValidator, "validateRemoteUrl").mockResolvedValue({
+				url: new URL(remoteUrl),
+				resolvedIps: ["1.1.1.1"],
+				pinnedIp: "1.1.1.1",
+			});
+			vi.spyOn(urlValidator, "secureFetch").mockResolvedValue(
+				new Response(content, { status: 200 }),
+			);
+
+			await expect(
+				resolver.resolvePreset(remoteUrl, process.cwd(), undefined, undefined, {
+					source: remoteUrl as never,
+					integrity: "sha256-AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=",
+				}),
+			).rejects.toThrow(/integrity mismatch/i);
+		});
+
+		it("rejects oversized remote preset responses before body read", async () => {
+			const resolver = new PresetResolver();
+			const remoteUrl =
+				"https://raw.githubusercontent.com/acme/contracts/main/base.json";
+
+			vi.spyOn(urlValidator, "validateRemoteUrl").mockResolvedValue({
+				url: new URL(remoteUrl),
+				resolvedIps: ["1.1.1.1"],
+				pinnedIp: "1.1.1.1",
+			});
+			vi.spyOn(urlValidator, "secureFetch").mockResolvedValue(
+				new Response('{"version":"1.0"}', {
+					status: 200,
+					headers: { "content-length": `${1024 * 1024 + 1}` },
+				}),
+			);
+
+			await expect(
+				resolver.resolvePreset(remoteUrl, process.cwd(), undefined, undefined, {
+					source: remoteUrl as never,
+					integrity: "sha256-AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=",
+				}),
+			).rejects.toThrow(/exceeds size limit/i);
 		});
 	});
 

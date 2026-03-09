@@ -29,6 +29,10 @@ export interface PilotMetrics {
 	leadTimeP75CiHalfWidth: number;
 	/** Rollback reliability ratio (successful_rollbacks / rollback_triggers) */
 	rollbackReliability: number;
+	/** Number of rollback-triggering events in the evaluation window */
+	rollbackTriggerCount: number;
+	/** Intervention event rate over canonical terminal runs */
+	interventionRate: number;
 	/** Count of confirmed high-risk automation-caused incidents */
 	highRiskAutomationIncidents: number;
 	/** Count of unresolved high-severity incidents awaiting classification */
@@ -37,6 +41,12 @@ export interface PilotMetrics {
 	incidentClassificationP95Hours: number;
 	/** Evidence completeness ratio across pilot artifacts */
 	evidenceCompletenessRatio: number;
+	/** Thrash rate over canonical terminal runs */
+	thrashRate: number;
+	/** Count of canonical bundle loads rejected for sensitive-field leakage */
+	sensitiveFieldLeakCount: number;
+	/** Count of runId collisions discovered while loading canonical bundles */
+	runIdCollisionCount: number;
 	/** Per-repo sample sizes for minimum threshold check */
 	repoSampleSizes: Record<string, number>;
 }
@@ -57,6 +67,68 @@ export interface PilotEvaluationResult {
 	holdReasons: string[];
 	/** Warnings that don't block promotion */
 	warnings: string[];
+	/** Canonical-first ingestion metadata with explicit legacy adapter lanes */
+	ingestion: PilotEvaluationIngestion;
+	/** Lane controls and rollout posture for this evaluation */
+	controls: PilotEvaluationControls;
+}
+
+export interface PilotIngestionSourceMetadata {
+	/** Canonical-first source lane used by evaluator */
+	source: "canonical" | "legacy_adapter";
+	/** Versioned adapter path for legacy fallback (none when canonical used) */
+	adapterVersion: "none" | "legacy-jsonl-v1";
+	/** Canonical run IDs consulted for this dataset */
+	runIds: string[];
+	/** Resolved artifact paths used for loading */
+	mappedArtifactPaths: string[];
+	/** Drift warnings emitted by canonical/adapter mapping */
+	driftWarnings: string[];
+	/** Adapter registry owner for fallback path governance */
+	owner?: string;
+	/** Adapter registry introduction date */
+	introducedAt?: string;
+	/** Adapter sunset date/condition */
+	sunsetBy?: string;
+	/** Adapter hard-stop date, if any */
+	blockAfter?: string | null;
+}
+
+export interface PilotEvaluationIngestion {
+	remediationEvents: PilotIngestionSourceMetadata;
+	rollbackEvents: PilotIngestionSourceMetadata;
+}
+
+export interface PilotParityWindowStatus {
+	/** Path to the persisted parity history artifact */
+	historyPath: string;
+	/** Whether the current evaluation window satisfies parity criteria */
+	currentWindowPassing: boolean;
+	/** Number of consecutive passing windows recorded, including the current window */
+	consecutivePassingWindows: number;
+	/** Required consecutive window count before retirement is allowed */
+	requiredConsecutivePassingWindows: number;
+	/** Critical drift count recorded for the current window */
+	criticalDriftCount: number;
+	/** Maximum allowed critical drift count for a passing window */
+	allowedCriticalDrifts: number;
+	/** Canonical coverage required by the parity policy */
+	requiredCanonicalCoverage: number;
+}
+
+export interface PilotEvaluationControls {
+	/** Rollout lane used for this evaluation */
+	lane: "advisory" | "health";
+	/** True when kill-switch/manual containment is engaged */
+	killSwitchEngaged: boolean;
+	/** True when operator intervention is required before promotion */
+	manualSafeMode: boolean;
+	/** Canonical coverage ratio across adapter-backed ingestion surfaces */
+	canonicalCoverageRatio: number;
+	/** Whether legacy retirement readiness thresholds pass in this window */
+	legacyRetirementReady: boolean;
+	/** Parity-window evidence used to evaluate legacy retirement readiness */
+	parityWindow?: PilotParityWindowStatus;
 }
 
 /**
@@ -71,6 +143,18 @@ export interface PilotEvaluateOptions {
 	outputPath?: string;
 	/** JSON output mode (suppresses human-readable output) */
 	json?: boolean;
+	/** Optional override for canonical run-record discovery root */
+	runRecordsDir?: string;
+	/** Lane used for rollout checks */
+	lane?: "advisory" | "health";
+	/** Force manual safe mode regardless of metric outcome */
+	killSwitch?: boolean;
+	/** Optional override for adapter registry path */
+	adapterRegistryPath?: string;
+	/** Optional override for metric registry path */
+	metricRegistryPath?: string;
+	/** Optional override for persisted parity-window history */
+	parityHistoryPath?: string;
 }
 
 /**
@@ -81,6 +165,8 @@ export const PILOT_EVALUATE_EXIT_CODES = {
 	PROMOTE: 0,
 	/** Evaluation successful with hold outcome */
 	HOLD: 1,
+	/** Evaluation successful with rollback outcome */
+	ROLLBACK: 3,
 	/** Validation or schema error */
 	VALIDATION_ERROR: 2,
 	/** Infrastructure/runtime failure */

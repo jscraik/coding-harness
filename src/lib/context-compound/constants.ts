@@ -31,6 +31,7 @@ export const DB_FILE_PERMISSIONS = 0o600; // Owner read/write only
 // Paths
 export const DEFAULT_HARNESS_DIR = ".harness";
 export const DEFAULT_DB_FILENAME = "context-compound.db";
+export const DEFAULT_LEXICAL_INDEX_FILENAME = "context-lexical-index.json";
 
 /**
  * Validate Ollama URL to prevent SSRF attacks.

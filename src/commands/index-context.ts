@@ -17,7 +17,15 @@ import {
 	planIndexOptions,
 } from "../lib/context-compound/indexer.js";
 import { normalizeStoreInitError } from "../lib/context-compound/init-error.js";
+import {
+	discoverContextSources,
+	writeLexicalIndex,
+} from "../lib/context-compound/lexical-fallback.js";
 import { OllamaClient } from "../lib/context-compound/ollama.js";
+import {
+	CP4B_ENABLED_ENV,
+	isCp4bLexicalFallbackEnabled,
+} from "../lib/context-compound/rollout.js";
 import { VectorStore } from "../lib/context-compound/store.js";
 import { validatePath } from "../lib/input/validator.js";
 import { type CliResult, createError, err, ok } from "../lib/result/types.js";
@@ -40,6 +48,8 @@ export interface IndexContextOptions {
 	harnessDir?: string | undefined;
 	/** Force reindex even if unchanged */
 	force?: boolean | undefined;
+	/** Explicitly enable CP4b lexical fallback when semantic backend is unavailable */
+	lexicalFallback?: boolean | undefined;
 }
 
 export interface IndexContextOutput {
@@ -53,6 +63,10 @@ export interface IndexContextOutput {
 	errors: number;
 	/** Detailed results */
 	results: IndexResult[];
+	/** Indexing mode used for this run */
+	mode?: "semantic" | "lexical_degraded";
+	/** Lexical index artifact path when degraded mode is used */
+	lexicalIndexPath?: string;
 	/** Error message if failed */
 	error?: string;
 }
@@ -163,6 +177,9 @@ export async function runIndexContext(
 
 	const validatedHarnessDir = validatedHarnessResult.value;
 	const dbPath = join(validatedHarnessDir, DEFAULT_DB_FILENAME);
+	const lexicalFallbackEnabled = isCp4bLexicalFallbackEnabled(
+		options.lexicalFallback,
+	);
 
 	// Collect files to index
 	const brainstormsDir = join(baseDir, "docs/brainstorms");
@@ -196,6 +213,26 @@ export async function runIndexContext(
 				expectedDirs: [brainstormsDir, plansDir, solutionsDir],
 			}),
 		);
+	}
+
+	if (lexicalFallbackEnabled) {
+		const ollama = new OllamaClient();
+		const isAvailable = await ollama.isAvailable();
+		if (!isAvailable) {
+			const lexicalIndex = writeLexicalIndex(baseDir, harnessDir);
+			return ok({
+				success: true,
+				indexed: lexicalIndex.indexed,
+				skipped: 0,
+				errors: 0,
+				results: discoverContextSources(baseDir).map(({ filepath }) => ({
+					indexed: true,
+					path: filepath,
+				})),
+				mode: "lexical_degraded",
+				lexicalIndexPath: lexicalIndex.path,
+			});
+		}
 	}
 
 	// Initialize store
@@ -283,6 +320,7 @@ export async function runIndexContext(
 		skipped,
 		errors,
 		results,
+		mode: "semantic",
 	});
 }
 
@@ -294,12 +332,15 @@ export async function runIndexContextCLI(args: string[]): Promise<number> {
 	let json = false;
 	let harnessDir: string | undefined;
 	let force = false;
+	let lexicalFallback = false;
 
 	for (let i = 0; i < args.length; i++) {
 		const arg = args[i];
 
 		if (arg === "--json" || arg === "-j") {
 			json = true;
+		} else if (arg === "--lexical-fallback") {
+			lexicalFallback = true;
 		} else if (arg === "--harness-dir") {
 			const harnessDirArg = args[i + 1];
 			if (!harnessDirArg || harnessDirArg.startsWith("-")) {
@@ -318,6 +359,9 @@ export async function runIndexContextCLI(args: string[]): Promise<number> {
 			console.info(
 				"  --harness-dir     Directory for context database (default: .harness)",
 			);
+			console.info(
+				`  --lexical-fallback  Use CP4b lexical fallback when enabled or ${CP4B_ENABLED_ENV}=1`,
+			);
 			console.info("  --force, -f       Force reindex even if unchanged");
 			console.info("  --help, -h        Show this help");
 			console.info("");
@@ -328,7 +372,12 @@ export async function runIndexContextCLI(args: string[]): Promise<number> {
 		}
 	}
 
-	const result = await runIndexContext({ json, harnessDir, force });
+	const result = await runIndexContext({
+		json,
+		harnessDir,
+		force,
+		lexicalFallback,
+	});
 
 	if (!result.ok) {
 		const { error } = result;
@@ -378,6 +427,12 @@ export async function runIndexContextCLI(args: string[]): Promise<number> {
 		console.info("Indexing complete:");
 		console.info(`  ✓ Indexed: ${output.indexed}`);
 		console.info(`  ⏭ Skipped: ${output.skipped}`);
+		if (output.mode === "lexical_degraded") {
+			console.info("  Mode: lexical_degraded");
+			if (output.lexicalIndexPath) {
+				console.info(`  Lexical index: ${output.lexicalIndexPath}`);
+			}
+		}
 		if (output.errors > 0) {
 			console.info(`  ✗ Errors: ${output.errors}`);
 			for (const item of output.results) {

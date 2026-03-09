@@ -8,6 +8,7 @@
  * - Deep merge with security hardening
  */
 
+import { createHash } from "node:crypto";
 import { existsSync, readFileSync, readdirSync, realpathSync } from "node:fs";
 import { dirname, isAbsolute, join, normalize, sep } from "node:path";
 import { fileURLToPath } from "node:url";
@@ -17,7 +18,11 @@ import {
 	secureFetch,
 	validateRemoteUrl,
 } from "../governance/url-validator.js";
-import { CircularInheritanceError, PresetFetchError } from "./errors.js";
+import {
+	CircularInheritanceError,
+	IntegrityError,
+	PresetFetchError,
+} from "./errors.js";
 import { mergeContracts, validateNoDangerousKeys } from "./merger.js";
 import type {
 	BundledPreset,
@@ -35,6 +40,86 @@ import { validateContract } from "./validator.js";
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 const BUNDLED_PRESET_NAME_PATTERN = /^[a-z0-9][a-z0-9-]*$/i;
+const MAX_REMOTE_PRESET_SIZE_BYTES = 1024 * 1024; // 1MB
+const SRI_SHA256_PATTERN = /^sha256-[A-Za-z0-9+/=]+$/;
+
+function verifyIntegrityHash(
+	source: string,
+	content: string,
+	expectedIntegrity: string,
+): void {
+	if (!SRI_SHA256_PATTERN.test(expectedIntegrity)) {
+		throw new PresetFetchError(
+			redactUrlCredentials(source),
+			`Invalid integrity format '${expectedIntegrity}'. Expected sha256-<base64>.`,
+		);
+	}
+
+	const actualIntegrity = `sha256-${createHash("sha256").update(content, "utf-8").digest("base64")}`;
+	if (actualIntegrity !== expectedIntegrity) {
+		throw new IntegrityError(
+			redactUrlCredentials(source),
+			expectedIntegrity,
+			actualIntegrity,
+		);
+	}
+}
+
+async function readResponseWithLimit(
+	response: Response,
+	source: string,
+	maxBytes: number,
+): Promise<string> {
+	const contentLengthHeader = response.headers.get("content-length");
+	if (contentLengthHeader) {
+		const contentLength = Number.parseInt(contentLengthHeader, 10);
+		if (Number.isFinite(contentLength) && contentLength > maxBytes) {
+			throw new PresetFetchError(
+				redactUrlCredentials(source),
+				`Remote preset exceeds size limit (${contentLength} bytes > ${maxBytes} bytes)`,
+			);
+		}
+	}
+
+	if (!response.body) {
+		const fallbackContent = await response.text();
+		const fallbackBytes = Buffer.byteLength(fallbackContent, "utf-8");
+		if (fallbackBytes > maxBytes) {
+			throw new PresetFetchError(
+				redactUrlCredentials(source),
+				`Remote preset exceeds size limit (${fallbackBytes} bytes > ${maxBytes} bytes)`,
+			);
+		}
+		return fallbackContent;
+	}
+
+	const reader = response.body.getReader();
+	const decoder = new TextDecoder();
+	let totalBytes = 0;
+	let content = "";
+
+	while (true) {
+		const { done, value } = await reader.read();
+		if (done) {
+			break;
+		}
+		if (!value) {
+			continue;
+		}
+		totalBytes += value.byteLength;
+		if (totalBytes > maxBytes) {
+			await reader.cancel();
+			throw new PresetFetchError(
+				redactUrlCredentials(source),
+				`Remote preset exceeds size limit (${totalBytes} bytes > ${maxBytes} bytes)`,
+			);
+		}
+		content += decoder.decode(value, { stream: true });
+	}
+
+	content += decoder.decode();
+	return content;
+}
 
 /**
  * Get the presets directory path.
@@ -189,6 +274,7 @@ export class PresetResolver {
 		contractDir: string,
 		visited: Set<string> = new Set(),
 		depth = 0,
+		reference?: PresetReference,
 	): Promise<MergeResult> {
 		// Depth check
 		if (depth >= MAX_INHERITANCE_DEPTH) {
@@ -209,7 +295,16 @@ export class PresetResolver {
 		if (this.isBundledPresetName(source)) {
 			presetContract = this.loadBundledPreset(source as BundledPreset);
 		} else if (isRemoteUrl(source)) {
-			presetContract = await this.loadRemotePreset(source as RemotePreset);
+			if (!reference?.integrity) {
+				throw new PresetFetchError(
+					redactUrlCredentials(source),
+					"Remote preset references must include an integrity hash (sha256-...)",
+				);
+			}
+			presetContract = await this.loadRemotePreset(
+				source as RemotePreset,
+				reference.integrity,
+			);
 		} else {
 			presetContract = this.loadLocalPreset(source as LocalPreset, contractDir);
 		}
@@ -226,6 +321,7 @@ export class PresetResolver {
 					contractDir,
 					new Set(visited),
 					depth + 1,
+					ext,
 				);
 				merged = mergeContracts(merged, extResult.contract);
 				sources.push(...extResult.sources);
@@ -282,6 +378,7 @@ export class PresetResolver {
 				contractDir,
 				visited,
 				0,
+				ext,
 			);
 			merged = mergeContracts(merged, presetResult.contract);
 			sources.push(...presetResult.sources);
@@ -304,9 +401,13 @@ export class PresetResolver {
 	/**
 	 * Load a remote preset with SSRF protection.
 	 */
-	private async loadRemotePreset(url: RemotePreset): Promise<HarnessContract> {
+	private async loadRemotePreset(
+		url: RemotePreset,
+		integrity: string,
+	): Promise<HarnessContract> {
+		const cacheKey = `${url}#${integrity}`;
 		// Check cache first
-		const cached = this.remotePresetCache.get(url);
+		const cached = this.remotePresetCache.get(cacheKey);
 		if (cached !== undefined) {
 			return cached;
 		}
@@ -329,7 +430,6 @@ export class PresetResolver {
 		try {
 			const response = await secureFetch(validatedUrl.url, pinnedIp, {
 				signal: controller.signal,
-				redirect: "follow",
 			});
 
 			if (!response.ok) {
@@ -339,7 +439,12 @@ export class PresetResolver {
 				);
 			}
 
-			const content = await response.text();
+			const content = await readResponseWithLimit(
+				response,
+				url,
+				MAX_REMOTE_PRESET_SIZE_BYTES,
+			);
+			verifyIntegrityHash(url, content, integrity);
 			const data = JSON.parse(content);
 
 			// Validate for prototype pollution attempts before type casting
@@ -364,7 +469,7 @@ export class PresetResolver {
 			const contract = validationResult.data as HarnessContract;
 
 			// Cache for session
-			this.remotePresetCache.set(url, contract);
+			this.remotePresetCache.set(cacheKey, contract);
 
 			return contract;
 		} catch (error) {

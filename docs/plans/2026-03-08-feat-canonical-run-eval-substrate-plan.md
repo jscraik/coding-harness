@@ -24,11 +24,11 @@ spec: docs/specs/2026-03-08-feat-canonical-run-eval-substrate-spec.md
 ## Enhancement Summary
 
 **Deepened on:** 2026-03-08  
-**Key areas improved:** contract freeze gating, executable checkpoints, artifact/discovery contract, migration parity controls, attestation/integrity controls, and v1-core vs v1.1 lane split.
+**Key areas improved:** executable checkpoint realism, solo-maintainer operating profile, artifact/discovery contract, migration parity controls, and explicit v0 preflight vs v1 attestation split.
 
-- Added **CP0.5 Contract Freeze** to resolve spec-blocking decisions before schema implementation.
-- Converted CP2–CP5 from qualitative checks to **numeric/boolean go/no-go predicates**.
-- Added **tamper-evident evidence controls**, machine-generated relevance-set invalidation, and rollback drill/escalation requirements.
+- Reframed **CP0.5** as a decision-verification checkpoint (not a re-freeze) because core decisions are already specified.
+- Reworked validation and rollout gates to preserve a **fast loop** for solo maintenance and reserve heavy checks for promotion windows.
+- Updated rollback/runbook semantics to match current command behavior and marked authoritative lane-freeze controls as post-substrate deliverables.
 
 ## Overview
 
@@ -64,12 +64,13 @@ The leverage path is phased: establish canonical schemas/writers first, migrate 
   - rollback marker path coherence
   - evaluator compatibility-adapter explicitness
 - Bootstrap scenario registry for smoke/eval: `evals/scenarios/daily-smoke/`.
+- Add machine-readable metric registry for CP5/CP6 gate math: `contracts/agent-metric-registry.json`.
 
 ### v1-core and v1.1 lane split
 - **v1-core (blocking for initial rollout):** CP0 → CP0.5 → CP1 → CP2 → CP3 → CP4a → CP5 → CP6.
 - **v1.1 (follow-on expansion):** CP4b retrieval parity (`search`, `context`, `index-context`) and broader degraded-mode harmonization.
 - **Track rule:** CP4b is a v1.1 checkpoint and is not a prerequisite for CP5/CP6 core readiness unless a release explicitly scopes v1.1 retrieval parity.
-- **v1.1 scope authority:** release/governance approver must record whether CP4b is in-scope for a release in the checkpoint evidence package.
+- **v1.1 scope authority:** release/governance approver (or solo-mode owner) must record whether CP4b is in-scope for a release in the checkpoint evidence package.
 
 ### Non-Goals
 - No orchestration engine redesign.
@@ -110,10 +111,9 @@ If any checkpoint fails, stop, fix root cause, and rerun from the first failed g
    - run event schema
    - evaluator compatibility adapters
    - rollback marker path source-of-truth
-2. Define explicit accountability per checkpoint:
-   - DRI
-   - backup DRI
-   - final approver for go/no-go decisions
+2. Define explicit accountability per checkpoint with a solo-safe operating profile:
+   - default (team mode): DRI + backup DRI + final approver
+   - solo mode: single DRI/owner; approver/backup fields may be `N/A (solo-mode)` with explicit owner sign-off artifact
 3. Add **Trust Boundary Matrix** (actor, authority, write/read permissions, verification duty, failure mode) for:
    - producer commands
    - evaluator/consumer commands
@@ -124,7 +124,7 @@ If any checkpoint fails, stop, fix root cause, and rerun from the first failed g
    - marker-path interaction (`harness.contract.json` ↔ `pilot-rollback` ↔ `remediate`)
    - semantic-unavailable behavior across `search`, `context`, `index-context`
 5. Define evidence freshness contract:
-   - required fields: claim ID, UTC timestamp, HEAD SHA, command, exit code, artifact path, checksum, attestation ref
+   - required fields: claim ID, UTC timestamp, HEAD SHA, command, exit code, artifact path, checksum, evidence posture ref (`preflight_only` in v0, signed attestation ref in v1)
    - machine-generated relevance-set rule (see validation section)
 
 **Deliverables**
@@ -138,23 +138,23 @@ If any checkpoint fails, stop, fix root cause, and rerun from the first failed g
 
 ---
 
-### Phase 0.5 — Contract freeze (required before implementation)
+### Phase 0.5 — Contract decision verification (required before implementation)
 
-**Objective:** Resolve schema-blocking decisions before Phase 1 implementation.
+**Objective:** Verify that already-resolved spec decisions remain authoritative before Phase 1 implementation (no re-freeze ceremony).
 
 **Tasks**
-1. Resolve and freeze decisions for:
+1. Verify and link authoritative decision sources for:
    - `runId` uniqueness scope
    - retrieval fallback contract for v1 core
    - promotion-mandatory fields
    - provenance hash requirements (repo + process policy)
    - legacy adapter sunset criterion
-2. Link decisions in spec or ADR refs and mark as frozen through CP4a.
+2. Record any divergence from spec in a checkpoint note with explicit disposition (`accepted`, `deferred`, `requires-spec-update`).
 
 **Validation Gate (CP0.5)**
-- All five decisions resolved and documented in spec/ADR references.
+- All five decisions are linked to existing spec/ADR sources and marked `verified`.
 - No unresolved decision remains that can invalidate CP1–CP4a schemas.
-- Remaining open questions are explicitly marked non-blocking for CP1–CP6 with interim defaults.
+- Any newly discovered ambiguity is explicitly marked blocking/non-blocking with an interim default.
 
 ---
 
@@ -247,7 +247,7 @@ If any checkpoint fails, stop, fix root cause, and rerun from the first failed g
 
 ### Phase 3 — Consumer convergence and decision legibility
 
-**Objective:** Move evaluation logic to canonical-first and fix outcome legibility seams.
+**Objective:** Replace throughput-v1 evaluator assumptions with canonical-first evaluation logic and fix outcome legibility seams.
 
 **Tasks**
 1. Update `pilot-evaluate` to consume canonical records first, then versioned legacy adapters.
@@ -255,33 +255,53 @@ If any checkpoint fails, stop, fix root cause, and rerun from the first failed g
    - distinct terminal outcomes
    - distinct classification
    - distinct exit behavior (no rollback collapse into hold path)
-3. Add explicit adapter drift events and fail-closed promotion behavior on unresolved drift.
-4. Add evidence freshness gating and attestation verification before promotion decisions.
-5. Define preflight evidence artifact lifecycle and signer/verifier upgrade gate:
+3. Align rollback event ingestion contract end-to-end:
+   - `pilot-rollback` emitted event shape must match evaluator-required schema, or
+   - an explicit versioned adapter must exist and emit drift events on mismatch.
+4. Add explicit adapter drift events and fail-closed promotion behavior on unresolved drift.
+5. Add evidence freshness gating and attestation verification before promotion decisions.
+6. Define preflight evidence artifact lifecycle and signer/verifier upgrade gate:
    - issuer/authority
    - preflight artifact emission timing
    - signer/verifier command/checkpoint owner
    - key-rotation owner + failure classes
    - command templates:
-     - preflight artifact emit: `pnpm exec tsx src/cli.ts check-environment --contract harness.contract.json --attestation <attestationPath> --json`
-     - promotion verifier (post-CP3 migration only): `pnpm exec tsx src/cli.ts pilot-evaluate --artifacts <artifactsDir> --contract harness.contract.json --json`
+     - preflight artifact emit (promotion/checkpoint evidence only; not required for everyday fast-loop iteration): `pnpm exec tsx src/cli.ts check-environment --contract harness.contract.json --attestation <attestationPath> --json`
+     - promotion verifier (post-CP3 migration only): `pnpm exec tsx src/cli.ts pilot-evaluate --artifacts <artifactsDir> --json`
+       - note: `--contract` is currently accepted by CLI wiring but non-functional in `pilot-evaluate` until contract-driven evaluator configuration lands.
    - expected outputs:
      - preflight artifact path
-     - explicit lifecycle status (`preflight_only` until signer/verifier is implemented)
+     - plan-level evidence classification: `preflight_only` until signer/verifier is implemented (emitted via `check-environment` checkpoint `evidenceReference`)
      - verifier outcome (`pass|fail`) only after canonical evaluator migration includes required predicates
+   - current-state constraint:
+     - `check-environment --attestation` evidence remains non-authoritative until attestation write failures are fail-closed (non-path write failures must not be silently ignored for checkpoint evidence use).
+7. Deliver evaluator-v2 readiness contract as a CP3 blocking output:
+   - replace repo-level sample adequacy outputs with machine-readable per-command/per-scenario/per-outcome sample-floor outputs required by CP5/CP6 gates
+   - add metric fields: `interventionRate`, `thrashRate`, `rollbackTriggerCount`
+   - add fail-closed denominator semantics (`insufficient_evidence`)
+   - add machine-distinct rollback vs hold exit behavior in evaluator output/exit mapping
+8. Land metric registry ownership + enforcement wiring:
+   - create/update `contracts/agent-metric-registry.json`
+   - ensure CP5/CP6 gates read metric definitions from this registry (not prose-only values).
 
 **Target files (expected)**
 - `src/commands/pilot-evaluate.ts`
 - `src/commands/check-environment.ts`
 - `src/lib/pilot-evaluation/metrics-capture.ts`
 - `src/lib/pilot-evaluation/types.ts`
+- `contracts/agent-metric-registry.json`
 
 **Validation Gate (CP3)**
-- Rollback path is machine-distinct from hold path.
+- Rollback path is machine-distinct from hold path (outcome + classification + exit behavior).
 - Canonical-first ingestion succeeds; legacy path requires explicit mapping metadata.
+- Rollback event ingestion compatibility is test-proven (`pilot-rollback` output schema-compatible or adapter-backed with drift events).
+- Canonical evaluator metric contract is upgraded for CP5/CP6 readiness use (includes `interventionRate`, `thrashRate`, `rollbackTriggerCount`, and fail-closed denominator semantics with explicit `insufficient_evidence` status).
+- Evaluator readiness outputs expose machine-readable per-command/per-scenario/per-outcome sample-floor adequacy (not repo-only sample buckets).
 - `unresolved_adapter_drift_count == 0` for promotion-evaluated runs.
 - Preflight artifact lifecycle checks are test-proven, and signer/verifier upgrade requirements are explicitly gated before promotion use.
-- Promotion path blocks on stale evidence, preflight artifact write failures, attestation failures, or unresolved schema/adapter drift.
+- `check-environment --attestation` write-path behavior is fail-closed before checkpoint evidence packages may rely on that artifact.
+- Metric registry file exists, is machine-validated, and is referenced as the authoritative source for CP5/CP6 gate thresholds and window math.
+- Promotion path blocks on stale evidence, preflight artifact write failures, attestation failures, unresolved schema/adapter drift, or insufficient-evidence denominator failures.
 
 ---
 
@@ -359,17 +379,20 @@ If any checkpoint fails, stop, fix root cause, and rerun from the first failed g
 
 **Entry condition**
 - CP3 canonical evaluator migration is complete and is the only authoritative evaluator for rollout/promotion decisions.
+- Canonical evaluator metric schema includes CP6 core metrics and fail-closed denominator semantics.
 - Legacy evaluator outputs are advisory only and cannot satisfy CP5/CP6 gates.
 
 **Tasks**
 1. Create `evals/scenarios/daily-smoke/` registry and metadata.
-2. Add smoke scenarios covering:
-   - producer emission
-   - consumer ingestion and decisioning
-   - rollback marker flow
-   - replay consumption
-   - v1-core retrieval behavior contract (`search` mode-aware degraded/strict semantics; `context`/`index-context` explicit fail under semantic-unavailable)
-   - retrieval lexical parity behavior (CP4b only, if in scope)
+2. Add smoke scenarios with explicit mandatory/optional split:
+   - **mandatory (v1-core):**
+     - producer emission
+     - consumer ingestion and decisioning
+     - rollback marker flow
+     - replay consumption
+     - v1-core retrieval behavior contract (`search` mode-aware degraded/strict semantics; `context`/`index-context` explicit fail under semantic-unavailable)
+   - **optional (only when CP4b is enabled in scope evidence):**
+     - retrieval lexical parity behavior
 3. Implement lane controls:
    - **advisory lane**: exit-neutral for drift-only findings, artifact-producing
    - **health lane**: blocking on schema/runtime/integrity failures
@@ -434,6 +457,7 @@ If any checkpoint fails, stop, fix root cause, and rerun from the first failed g
 - Test fixture updates for output expectations.
 - CI support for smoke scenarios and artifact retention.
 - Maintainer decisions on adapter ownership/sunset policy and attestation verifier ownership.
+- `check-environment` dependency checks (`python3`, `uv`, `ralph`) are required only in phases that consume preflight posture artifacts; they are not universal fast-loop prerequisites.
 
 ### Key Risks and Mitigations
 1. **Rollback/hold ambiguity regressions**
@@ -445,24 +469,41 @@ If any checkpoint fails, stop, fix root cause, and rerun from the first failed g
 4. **Retrieval behavior divergence across commands**
    - Mitigation: CP4b behavior matrix tests + canonical degraded/fail events.
 5. **Stale evidence used for promotion decisions**
-   - Mitigation: machine-generated relevance sets + invalidation checks + attestation verification.
+   - Mitigation: machine-generated relevance sets + invalidation checks + evidence posture verification (v0 preflight status, v1 signed attestation verification).
 6. **Artifact tampering risk**
-   - Mitigation: signed attestations + immutable evidence ledger/WORM sink + verifier key rotation policy.
+   - Mitigation (staged):
+     - v0: unsigned preflight posture artifact with checksum + freshness enforcement (informative, non-signature semantics)
+     - v1: signed attestations + verifier checks + key rotation policy (promotion-blocking once implemented)
 7. **Operational noise during rollout**
    - Mitigation: advisory-first lane and measurable promotion criteria before health enforcement.
 
 ## Test and Validation Strategy
 
 ### Validation order (required)
-1. `pnpm lint`
-2. `pnpm typecheck`
-3. `pnpm test`
-4. targeted module tests for changed surfaces
-5. `pnpm test:deep` (required when source/runtime behavior changes)
-   - prerequisite: environment must provide `jq` and `rg` (or run in CI image that provides both)
-6. `pnpm audit`
-7. `pnpm check`
-8. `pnpm build`
+
+Use the **smallest gate needed** by lane.
+
+This validation-lane model is rollout/checkpoint workflow guidance layered on top of repository baseline validation policy (`docs/agents/04-validation.md`, `docs/agents/10-agent-testing-gates.md`), not a replacement for those baseline docs.
+
+0. **Targeted-only local iteration (lowest-cost path)**
+   - allowed for edit/debug loops before checkpoint evidence collection
+   - run targeted module tests only
+   - allowed through CP0–CP2 local development work; not sufficient for checkpoint sign-off
+
+1. **Fast loop (default for local iteration once a checkpoint-ready candidate exists)**
+   - targeted module tests for changed surfaces
+   - default aggregate gate: `pnpm check`
+   - escalate to `pnpm test:deep` when artifact/runtime behavior changes and deep artifact checks are required (`pnpm test:deep` includes `pnpm check` + artifact verification)
+   - prerequisite for `pnpm test:deep`: environment provides `jq` and `rg` (or run in CI image that provides both)
+2. **Promotion gate (checkpoint evidence only)**
+   - `pnpm test:deep` (if not already run in fast loop)
+   - `pnpm build` only when distribution/entrypoint/package outputs changed
+3. **Do not duplicate aggregate gates**
+   - targeted-only loops should be preferred until a checkpoint candidate is ready.
+   - once checkpoint evidence capture starts, follow lane rules without mixing targeted-only claims with promotion assertions.
+   - avoid running `lint`/`typecheck`/`test`/`audit` separately after `pnpm check` or `pnpm test:deep` unless debugging a specific failure path.
+4. **Promotion/release assertions require checkpoint evidence gates**
+   - no CP3+ readiness claim may rely only on targeted-only test runs.
 
 ### Test layers
 1. **Schema/contract tests**
@@ -484,15 +525,19 @@ If any checkpoint fails, stop, fix root cause, and rerun from the first failed g
 - Stop at first required gate failure.
 - Fix root cause.
 - Rerun from first failed gate.
-- Do not promote phases with stale, superseded, or un-attested evidence.
+- Do not promote phases with stale, superseded, or evidence-posture-invalid artifacts.
 
 ### Evidence requirements per phase
-Each claim must include: claim ID, UTC timestamp, HEAD SHA, command, exit code, artifact path, checksum, attestation reference.
+Each claim must include: claim ID, UTC timestamp, HEAD SHA, command, exit code, artifact path, checksum, and evidence posture reference.
+
+Evidence posture reference semantics:
+- v0 (current): unsigned preflight artifact reference (`preflight_only` lifecycle status)
+- v1 (future): signed attestation reference with verifier outcome
 
 Evidence becomes invalid when:
 - machine-generated relevance set changes after evidence capture,
 - artifact checksums or event-chain continuity no longer match,
-- attestation signature verification fails,
+- v1-only: attestation signature verification fails,
 - referenced run artifacts are missing.
 
 ### Relevance-set contract (machine-generated)
@@ -516,6 +561,14 @@ If relevance set differs between capture and decision, checkpoint evidence is st
 3. **Promotion-readiness lane:**
    - requires CP6 evidence and maintainer sign-off.
 
+### Solo-maintainer operating profile
+
+When repository operation is single-owner, apply these defaults unless explicitly overridden:
+- one owner acts as DRI/approver with explicit sign-off artifacts (`owner_signoff`), no synthetic backup role required,
+- approval/escalation wording maps to owner actions (not multi-party routing),
+- promotion evidence still requires machine-checkable artifacts; role simplification does not relax technical gates,
+- optional governance fields (`backupDRI`, `secondaryApprover`) may be `N/A (solo-mode)`.
+
 ### Migration strategy
 - Keep legacy artifacts while canonical coverage reaches checkpoint criteria.
 - Require explicit version-mapping adapters for legacy consumption.
@@ -530,34 +583,49 @@ If relevance set differs between capture and decision, checkpoint evidence is st
 - **Rollback-to-manual triggers:** unresolved critical integrity drift, failed rollback reliability floor, missing terminal-path guarantees, or attestation failures.
 - **Re-enable requirements:** trigger cause fixed, relevant checkpoint rerun passed, fresh evidence regenerated, rollback invariants verified.
 - **Marker-path authority:** manual-release gating uses `pilotRollbackPolicy.completionMarkerPath` from `harness.contract.json` unless `remediate --completion-marker` explicitly overrides it.
+- **Current-state seam (must be handled explicitly):** `pilot-rollback` default marker output path may diverge from the contract authority path; until code alignment lands, runbook commands must write marker artifacts to the contract-authoritative path (or `remediate` must be invoked with an explicit matching override).
 
-### Go/No-Go + rollback runbook (required, executable post-CP3+CP4a)
+### Go/No-Go + rollback runbook (required)
 
-This runbook becomes authoritative only after CP3 and CP4a are complete (canonical evaluator predicates, marker-path coherence, and authoritative lane-freeze controls landed).
+#### A) Current executable runbook (pre-authoritative lane state)
 
-1. **Containment (Go/No-Go):** switch to manual mode and freeze promotion lane; capture trigger artifact and timestamp.
-   - command template: `pnpm exec tsx src/cli.ts pilot-rollback --mode manual --incident-id <incidentId> --reason "<reason>" --json`
-   - pass predicate: mode state reads `manual`, containment event is recorded, and promotion lane is blocked.
-2. **Rollback execution:** run rollback reconciliation in artifact-capturing mode (idempotent if already in manual mode) and persist rollback event + marker artifacts.
-   - command template: `pnpm exec tsx src/cli.ts pilot-rollback --mode manual --incident-id <incidentId> --reason "<reason>" --artifacts <artifactDir> --output <rollbackEventPath> --json`
-   - required artifacts (current command contract): `rollback-events.jsonl`, `rollback-marker.json`.
-   - required artifacts (post-CP4a canonical substrate): `run-manifest.json`, `events.jsonl`, rollback marker, rollback event record.
-3. **Verification:** run required validation commands (`pnpm lint`, `pnpm typecheck`, `pnpm test`, `pnpm audit`, `pnpm check`) and attach outputs.
-   - pass predicate: all commands exit 0 and no required-gate regressions remain.
-4. **Invariant suite:** run ID-tagged rollback invariants; attach pass/fail payloads (post-CP3 canonical evaluator migration).
-   - command template: `pnpm exec tsx src/cli.ts pilot-evaluate --artifacts <artifactDir> --contract harness.contract.json --json`
-   - pass predicate (post-CP3): evaluator output includes invariant IDs and partial-rollback status, all invariant IDs pass, and no partial-rollback flag is present.
-   - pre-CP3 behavior: this step is non-authoritative and cannot be used for promotion/re-enable decisions.
-5. **Re-enable decision:** only re-enable when all re-enable requirements are met and approver signs off.
-   - command template: `pnpm exec tsx src/cli.ts pilot-rollback --mode autonomous --incident-id <incidentId> --reason "<reason>" --artifacts <artifactDir> --json`
-   - pass predicate: re-enable evidence package includes approver identity, timestamp, and regenerated fresh artifacts.
+Use this flow until authoritative mode/lane-freeze controls are implemented.
+
+1. **Containment signal:** emit rollback signal artifacts and record incident metadata.
+   - command template: `pnpm exec tsx src/cli.ts pilot-rollback --mode manual --incident-id <incidentId> --reason "<reason>" --artifacts <artifactDir> --output <contractCompletionMarkerPath> --json`
+   - note: in current command behavior, `--output` writes the rollback marker JSON (not the rollback events stream).
+   - pass predicate: `rollback-events.jsonl` exists, marker exists at `<contractCompletionMarkerPath>`, and incident metadata is captured.
+2. **Manual safety enforcement (operator/governance):** enforce promotion freeze + manual mode in governance controls (outside current rollback command authority).
+   - pass predicate: promotion actions are blocked by policy until recovery evidence is accepted.
+   - required manual evidence artifact (until authoritative lane-state controls land): attach `manual-freeze-evidence.json` with owner identity, timestamp, freeze scope, and validation of blocked promotion actions.
+3. **Verification loop:** run smallest required validation lane checks and attach outputs.
+   - fast-loop minimum: targeted tests + (`pnpm check` or `pnpm test:deep`)
+   - promotion checkpoint: `pnpm test:deep` + conditional `pnpm build` when required
+4. **Evaluator check (authoritative only after CP3 migration):**
+   - command template: `pnpm exec tsx src/cli.ts pilot-evaluate --artifacts <artifactDir> --json`
+   - prerequisite: `<artifactDir>` contains a full pilot evaluation bundle (not rollback artifacts alone).
+   - pre-CP3 behavior: advisory only (cannot drive promotion/re-enable).
+5. **Re-enable decision:** only after trigger cause is fixed and fresh evidence is regenerated.
+   - in solo mode, owner sign-off artifact is sufficient; in team mode, named approver sign-off is required.
+
+#### B) Post-substrate authoritative runbook (post-CP3 + CP4a + lane-state controls)
+
+After authoritative lane-freeze/mode-state controls are implemented, this runbook becomes machine-enforceable:
+- containment step must set authoritative manual mode and freeze promotion lane,
+- rollback/re-enable predicates must be evaluator-checked from canonical artifacts,
+- re-enable evidence must include owner/approver identity, timestamp, and regenerated fresh artifacts,
+- manual-release marker authority must use `pilotRollbackPolicy.completionMarkerPath` (unless explicit override is provided).
 
 ### Rollback drill runbook (required)
-- cadence: weekly during rollout phases CP4a–CP6
-- owner: release/governance owner on rotation
+- cadence:
+  - solo mode: per release boundary and after any rollback-path change
+  - team mode: weekly during rollout phases CP4a–CP6
+- owner:
+  - solo mode: single owner
+  - team mode: release/governance owner on rotation
 - scenarios: adapter failure, marker mismatch, partial rollback, stale evidence rejection
 - target restore time: <= 30 minutes to stable manual mode
-- drill pass/fail: all rollback artifacts generated, invariants pass, manual-safe fallback engages when expected
+- drill pass/fail: required rollback artifacts generated, invariants pass when available, manual-safe fallback engages when expected
 
 ### Monitoring and operational checks
 - Per-run timeline from canonical events.
@@ -566,37 +634,61 @@ This runbook becomes authoritative only after CP3 and CP4a are complete (canonic
 - Evidence freshness compliance dashboard/report.
 - Thrash/retry oscillation detection from canonical events only.
 
+### Metric registry (authoritative source)
+
+Create and maintain one machine-readable metric registry (`contracts/agent-metric-registry.json`) with, for every rollout metric:
+- metric name
+- numerator definition
+- denominator definition
+- artifact/event source path
+- window rule (size + rolling/fixed semantics)
+- blocking policy (`blocking`, `non_blocking`, `advisory_only`)
+- owner + last-updated checkpoint
+
+Ownership/enforcement:
+- initially landed as a CP3 blocking deliverable,
+- validated in CP3 gate,
+- treated as authoritative for CP5/CP6 readiness math.
+
+CP5/CP6 gates must reference this registry directly; prose-only metric definitions are non-authoritative.
+
 ### Alert thresholds and escalation
 - `missing_terminal_manifest_count > 0` in any 1h window → block health lane.
 - `unresolved_adapter_drift_count > 0` in any promotion window → block promotion.
 - `evidence_freshness_compliance < 100%` in health lane window → block promotion.
 - `rollback_reliability < 1.0` in readiness window with `rollbackTriggerCount >= 3` → rollback-to-manual trigger.
 - `critical_drift_count >= 2` in rolling 24h window → auto-containment (manual-safe mode + promotion freeze).
-- Escalation path: owner on-call → release/governance approver → manual-mode enforcement.
-- Override governance: manual override requires named approver + expiration <= 24h and explicit reason artifact.
+- Escalation path:
+  - solo mode: owner → manual-mode enforcement
+  - team mode: owner on-call → release/governance approver → manual-mode enforcement
+- Override governance:
+  - solo mode: owner override with explicit reason artifact + expiration <= 24h
+  - team mode: named approver override + expiration <= 24h + explicit reason artifact.
 
 ## Acceptance Checklist
 
-- [ ] Enhancement summary and checkpoint model (including CP0.5, CP4a/CP4b) are documented.
-- [ ] Canonical manifest and event schemas are added and versioned.
-- [ ] Shared canonical run-record IO/types are implemented and tested.
-- [ ] Canonical artifact storage/discovery contract is documented and test-proven.
-- [ ] `automation-run`, `remediate`, `pilot-evaluate`, `pilot-rollback`, and `replay` emit canonical terminal artifacts.
-- [ ] `pilot-evaluate` is canonical-first as a consumer and preserves explicit legacy adapter mapping.
-- [ ] Rollback and hold outcomes are machine-distinct (state, classification, exit behavior).
-- [ ] Rollback marker path is coherent across contract, producer, and consumer gate.
-- [ ] v1-core retrieval behavior contract is explicit and test-proven (`search` mode-aware degraded/strict semantics; `context`/`index-context` explicit fail on semantic-unavailable).
-- [ ] CP4b lexical retrieval parity expansion is explicit and test-proven when CP4b is enabled for the lane.
-- [ ] Failure-injection tests prove terminal-path and append/hash-chain guarantees.
-- [ ] Scenario registry (`evals/scenarios/daily-smoke/`) exists with core coverage.
-- [ ] Advisory/health lane behavior and kill-switch safe mode are test-proven.
-- [ ] Adapter registry fields (`owner`, `introducedAt`, `sunsetBy`, `blockAfter`) are complete.
-- [ ] Dual-read parity window passes required thresholds before legacy retirement.
-- [ ] RunId uniqueness/collision and dual provenance hash gates pass (`repoContractHash` + `processPolicyHash` required on terminal manifests).
-- [ ] Metrics (`interventionRate`, `rollbackReliability`, `evidenceCompleteness`, `thrashRate`) are computed from canonical artifacts.
-- [ ] Rollback reliability denominator guard is enforced (`rollbackTriggerCount >= 3` or promotion blocked as insufficient evidence).
-- [ ] Sanitization gate passes with `sensitive_field_leak_count == 0`.
-- [ ] Validation baseline commands pass with fresh, attested evidence attached to checkpoints.
+- [x] Enhancement summary and checkpoint model (including CP0.5, CP4a/CP4b) are documented.
+- [x] Canonical manifest and event schemas are added and versioned.
+- [x] Shared canonical run-record IO/types are implemented and tested.
+- [x] Canonical artifact storage/discovery contract is documented and test-proven.
+- [x] `automation-run`, `remediate`, `pilot-evaluate`, `pilot-rollback`, and `replay` emit canonical terminal artifacts.
+- [x] `pilot-evaluate` is canonical-first as a consumer, preserves explicit legacy adapter mapping, and exposes CP6 metric/denominator semantics.
+- [x] Rollback and hold outcomes are machine-distinct (state, classification, exit behavior).
+- [x] Rollback marker path is coherent across contract, producer, and consumer gate (including default-path behavior).
+- [x] v1-core retrieval behavior contract is explicit and test-proven (`search` mode-aware degraded/strict semantics; `context`/`index-context` explicit fail on semantic-unavailable).
+- [x] CP4b lexical retrieval parity expansion is explicit and test-proven when CP4b is enabled for the lane.
+- [x] Failure-injection tests prove terminal-path and append/hash-chain guarantees.
+- [x] Scenario registry (`evals/scenarios/daily-smoke/`) exists with core coverage.
+- [x] Advisory/health lane behavior and kill-switch safe mode are test-proven.
+- [x] Adapter registry fields (`owner`, `introducedAt`, `sunsetBy`, `blockAfter`) are complete.
+- [x] Dual-read parity window passes required thresholds before legacy retirement.
+- [x] RunId uniqueness/collision and dual provenance hash gates pass (`repoContractHash` + `processPolicyHash` required on terminal manifests).
+- [x] Metrics (`interventionRate`, `rollbackReliability`, `evidenceCompleteness`, `thrashRate`) are computed from canonical artifacts.
+- [x] Metric definitions used by CP5/CP6 gates are sourced from a machine-readable metric registry (no prose-only gate math).
+- [x] Rollback reliability denominator guard is enforced (`rollbackTriggerCount >= 3` or promotion blocked as insufficient evidence).
+- [x] Sanitization gate passes with `sensitive_field_leak_count == 0`.
+- [ ] Validation baseline commands pass with fresh evidence posture references attached to checkpoints (`preflight_only` in v0; signed verifier evidence when v1 attestation is enabled).
+  Current blocker: fresh `check-environment --attestation` evidence now includes `evidenceReference`, but the local baseline still fails until approval posture is set for mutative runs and `uv` resolves to the pinned `0.9.5` runtime.
 
 ## Sources & References
 

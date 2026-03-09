@@ -343,8 +343,80 @@ export async function secureFetch(
 	pinnedIp: string,
 	init?: RequestInit,
 ): Promise<Response> {
-	void pinnedIp;
-	return fetch(url, init);
+	const maxRedirects = 3;
+	let currentUrl = new URL(url.toString());
+	let currentPinnedIp = pinnedIp;
+	let redirects = 0;
+
+	while (true) {
+		const addresses = await lookup(currentUrl.hostname, { all: true });
+		const resolvedIps = addresses.map((addr) => addr.address);
+		if (resolvedIps.length === 0) {
+			throw createUrlError(
+				`No IP addresses resolved for ${currentUrl.hostname}`,
+				"DNS_LOOKUP_FAILED",
+			);
+		}
+		for (const ip of resolvedIps) {
+			if (isPrivateIp(ip)) {
+				throw createUrlError(
+					`Resolved IP ${ip} is in private range. DNS rebinding attack blocked.`,
+					"PRIVATE_IP_BLOCKED",
+				);
+			}
+		}
+		if (!resolvedIps.includes(currentPinnedIp)) {
+			throw createUrlError(
+				`Pinned IP mismatch for ${currentUrl.hostname}; possible DNS rebinding`,
+				"DNS_LOOKUP_FAILED",
+			);
+		}
+
+		const response = await fetch(currentUrl, {
+			...init,
+			redirect: "manual",
+		});
+		if (
+			response.status !== 301 &&
+			response.status !== 302 &&
+			response.status !== 303 &&
+			response.status !== 307 &&
+			response.status !== 308
+		) {
+			return response;
+		}
+
+		if (redirects >= maxRedirects) {
+			throw createUrlError(
+				`Too many redirects for ${url.toString()} (max ${maxRedirects})`,
+				"REDIRECT_NOT_ALLOWED",
+			);
+		}
+
+		const location = response.headers.get("location");
+		if (!location) {
+			throw createUrlError(
+				"Redirect response missing Location header",
+				"REDIRECT_NOT_ALLOWED",
+			);
+		}
+
+		const nextUrl = new URL(location, currentUrl);
+		const validatedRedirect = await validateRemoteUrl(nextUrl.toString(), {
+			allowedHosts: DEFAULT_ALLOWED_HOSTS,
+			checkDns: true,
+		});
+		if (!validatedRedirect.pinnedIp) {
+			throw createUrlError(
+				`Failed to resolve IP for redirect target ${nextUrl.hostname}`,
+				"DNS_LOOKUP_FAILED",
+			);
+		}
+
+		currentUrl = validatedRedirect.url;
+		currentPinnedIp = validatedRedirect.pinnedIp;
+		redirects += 1;
+	}
 }
 
 /**

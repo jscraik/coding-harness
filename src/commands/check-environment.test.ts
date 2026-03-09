@@ -1,4 +1,10 @@
-import { mkdtempSync, rmSync, symlinkSync, writeFileSync } from "node:fs";
+import {
+	mkdirSync,
+	mkdtempSync,
+	rmSync,
+	symlinkSync,
+	writeFileSync,
+} from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
@@ -183,5 +189,85 @@ describe("runCheckEnvironment runtime dependency checks", () => {
 		expect(result.ok).toBe(true);
 		if (!result.ok) return;
 		expect(result.output.passed).toBe(true);
+	});
+
+	it("fails closed when attestation write errors for non-traversal reasons", async () => {
+		const { spawnSync } = await import("node:child_process");
+		const { runCheckEnvironment } = await import("./check-environment.js");
+		vi.mocked(spawnSync).mockImplementation((command) => {
+			if (command === "python3") {
+				return { status: 0, stdout: "Python 3.12.10\n", stderr: "" } as never;
+			}
+			if (command === "uv") {
+				return { status: 0, stdout: "uv 0.9.5\n", stderr: "" } as never;
+			}
+			return { status: 0, stdout: "ralph-gold 1.0.0\n", stderr: "" } as never;
+		});
+		const attestationDir = join(process.cwd(), "attestation-dir");
+		mkdirSync(attestationDir, { recursive: true });
+
+		const result = await runCheckEnvironment({
+			contractPath,
+			// Writing JSON to an existing directory triggers a non-traversal write error (EISDIR).
+			attestationPath: attestationDir,
+		});
+
+		expect(result.ok).toBe(true);
+		if (!result.ok) return;
+		expect(result.output.passed).toBe(false);
+		expect(result.output.attestationPath).toBeUndefined();
+		expect(
+			result.output.violations.some(
+				(v) =>
+					v.type === "artifact_write_failed" &&
+					v.message.includes("Failed to write attestation artifact"),
+			),
+		).toBe(true);
+	});
+
+	it("emits checkpoint evidence metadata for preflight attestation artifacts", async () => {
+		const { spawnSync } = await import("node:child_process");
+		const { runCheckEnvironment } = await import("./check-environment.js");
+		vi.mocked(spawnSync).mockImplementation((command) => {
+			if (command === "python3") {
+				return { status: 0, stdout: "Python 3.12.10\n", stderr: "" } as never;
+			}
+			if (command === "uv") {
+				return { status: 0, stdout: "uv 0.9.5\n", stderr: "" } as never;
+			}
+			if (command === "git") {
+				return {
+					status: 0,
+					stdout: `${"a".repeat(40)}\n`,
+					stderr: "",
+				} as never;
+			}
+			return { status: 0, stdout: "ralph-gold 1.0.0\n", stderr: "" } as never;
+		});
+
+		const attestationPath = join(
+			process.cwd(),
+			"artifacts/policy/environment-attestation.json",
+		);
+		const result = await runCheckEnvironment({
+			contractPath,
+			attestationPath,
+		});
+
+		expect(result.ok).toBe(true);
+		if (!result.ok) return;
+		expect(result.output.attestationPath).toBe(attestationPath);
+		expect(result.output.evidenceReference).toEqual(
+			expect.objectContaining({
+				command: "check-environment",
+				evidencePostureRef: "preflight_only",
+				attestationVerificationStatus: "preflight_only",
+				artifactPath: attestationPath,
+				exitCode: 0,
+				headSha: "a".repeat(40),
+			}),
+		);
+		expect(result.output.evidenceReference?.claimId).toHaveLength(64);
+		expect(result.output.evidenceReference?.artifactChecksum).toHaveLength(64);
 	});
 });

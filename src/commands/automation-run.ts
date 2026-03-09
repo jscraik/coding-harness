@@ -4,6 +4,10 @@ import {
 	computeAutomationIdempotencyKey,
 	runAutomationWithIdempotency,
 } from "../lib/automation/idempotency.js";
+import {
+	emitTerminalRunRecord,
+	hashRunRecordValue,
+} from "../lib/contract/run-record-emitter.js";
 
 export const EXIT_CODES = {
 	SUCCESS: 0,
@@ -32,6 +36,7 @@ export interface AutomationRunOptions {
 	force?: boolean;
 	simulateFailure?: boolean;
 	json?: boolean;
+	runRecordsDir?: string;
 }
 
 export interface AutomationRunOutput {
@@ -79,7 +84,92 @@ function buildPayload(
 export function runAutomationRun(
 	options: AutomationRunOptions,
 ): AutomationRunResult {
+	const startedAt = new Date().toISOString();
+	const writeRunRecord = (params: {
+		outcome: "success" | "failed" | "blocked";
+		classification:
+			| "ok"
+			| "validation_failed"
+			| "runtime_failed"
+			| "precondition_failed";
+		exitCode: number;
+		artifacts?: Array<{ type: string; path: string; checksum?: string }>;
+		payload: Record<string, unknown>;
+	}): string | null => {
+		try {
+			emitTerminalRunRecord({
+				command: "automation-run",
+				startedAt,
+				outcome: params.outcome,
+				classification: params.classification,
+				exitCode: params.exitCode,
+				...(options.runRecordsDir ? { baseDir: options.runRecordsDir } : {}),
+				repo: {
+					repository: options.repo,
+					headSha: options.headSha,
+				},
+				contract: {
+					path: "harness.contract.json",
+					version: options.contractVersion,
+				},
+				policyContext: {
+					mode: options.force ? "force" : "default",
+					safetyPosture: "strict",
+					effectivePolicySource: "automation-idempotency",
+					hash: hashRunRecordValue({
+						policy: "automation-idempotency",
+						mode: options.force ? "force" : "default",
+						safetyPosture: "strict",
+						contractVersion: options.contractVersion,
+						inputFingerprint: options.inputFingerprint,
+					}),
+				},
+				preconditions: {
+					inputValid: params.classification !== "validation_failed",
+				},
+				...(params.artifacts ? { artifacts: params.artifacts } : {}),
+				event: {
+					eventType: "decision",
+					status:
+						params.classification === "ok"
+							? "completed"
+							: params.classification === "precondition_failed"
+								? "blocked"
+								: "failed",
+					severity:
+						params.classification === "ok"
+							? "info"
+							: params.classification === "precondition_failed"
+								? "warn"
+								: "error",
+					payload: params.payload,
+				},
+			});
+			return null;
+		} catch (error) {
+			return String(error);
+		}
+	};
+
 	if (!isAllowedAutomation(options.name)) {
+		const runRecordError = writeRunRecord({
+			outcome: "failed",
+			classification: "validation_failed",
+			exitCode: EXIT_CODES.USAGE,
+			payload: {
+				automationName: options.name,
+				error: "invalid_automation_name",
+			},
+		});
+		if (runRecordError) {
+			return {
+				ok: false,
+				error: {
+					code: "RUN_RECORD_ERROR",
+					message: `Failed to emit canonical run record: ${runRecordError}`,
+				},
+			};
+		}
 		return {
 			ok: false,
 			error: {
@@ -95,6 +185,25 @@ export function runAutomationRun(
 		validateRequired("--contract-version", options.contractVersion) ??
 		validateRequired("--input-fingerprint", options.inputFingerprint);
 	if (missing) {
+		const runRecordError = writeRunRecord({
+			outcome: "failed",
+			classification: "validation_failed",
+			exitCode: EXIT_CODES.USAGE,
+			payload: {
+				automationName: options.name,
+				error: "missing_required_option",
+				message: missing,
+			},
+		});
+		if (runRecordError) {
+			return {
+				ok: false,
+				error: {
+					code: "RUN_RECORD_ERROR",
+					message: `Failed to emit canonical run record: ${runRecordError}`,
+				},
+			};
+		}
 		return {
 			ok: false,
 			error: { code: "VALIDATION_ERROR", message: missing },
@@ -134,6 +243,36 @@ export function runAutomationRun(
 	});
 
 	if (!runResult.ok) {
+		const runRecordError = writeRunRecord({
+			outcome: "blocked",
+			classification: "precondition_failed",
+			exitCode: EXIT_CODES.IN_PROGRESS,
+			artifacts: [
+				{
+					type: "automation-report",
+					path: runResult.run.artifactUri,
+					checksum: runResult.run.artifactChecksum,
+				},
+				{
+					type: "idempotency-state",
+					path: runResult.statePath,
+				},
+			],
+			payload: {
+				automationName: options.name,
+				status: runResult.run.status,
+				reason: "idempotency_in_progress",
+			},
+		});
+		if (runRecordError) {
+			return {
+				ok: false,
+				error: {
+					code: "RUN_RECORD_ERROR",
+					message: `Failed to emit canonical run record: ${runRecordError}`,
+				},
+			};
+		}
 		return {
 			ok: true,
 			output: {
@@ -148,6 +287,42 @@ export function runAutomationRun(
 				statePath: runResult.statePath,
 				reason:
 					"Idempotency gate blocked duplicate run while prior attempt is in progress",
+			},
+		};
+	}
+
+	const runRecordError = writeRunRecord({
+		outcome: runResult.run.status === "failed" ? "failed" : "success",
+		classification: runResult.run.status === "failed" ? "runtime_failed" : "ok",
+		exitCode:
+			runResult.run.status === "failed"
+				? EXIT_CODES.FAILED
+				: EXIT_CODES.SUCCESS,
+		artifacts: [
+			{
+				type: "automation-report",
+				path: runResult.run.artifactUri,
+				checksum: runResult.run.artifactChecksum,
+			},
+			{
+				type: "idempotency-state",
+				path: runResult.statePath,
+			},
+		],
+		payload: {
+			automationName: options.name,
+			status: runResult.run.status,
+			replayed: runResult.replayed,
+			forceApplied: options.force ?? false,
+			idempotencyKey: computeAutomationIdempotencyKey(keyParts),
+		},
+	});
+	if (runRecordError) {
+		return {
+			ok: false,
+			error: {
+				code: "RUN_RECORD_ERROR",
+				message: `Failed to emit canonical run record: ${runRecordError}`,
 			},
 		};
 	}
@@ -178,7 +353,9 @@ export function runAutomationRunCLI(options: AutomationRunOptions): number {
 		} else {
 			console.error(result.error.message);
 		}
-		return EXIT_CODES.USAGE;
+		return result.error.code === "RUN_RECORD_ERROR"
+			? EXIT_CODES.SYSTEM
+			: EXIT_CODES.USAGE;
 	}
 
 	if (options.json) {

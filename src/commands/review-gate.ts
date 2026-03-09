@@ -221,9 +221,8 @@ async function evaluateApprovals(
 	client: GitHubClient,
 	prNumber: number,
 	headSha: string,
+	codingActor: string | undefined,
 ): Promise<ApprovalResult> {
-	const pullRequest = await client.getPullRequest(prNumber);
-	const codingActor = pullRequest.user?.login?.trim();
 	const reviews = await client.listPullRequestReviews(prNumber);
 	const approvers = resolveCurrentApprovers(reviews, headSha);
 
@@ -271,9 +270,17 @@ function evaluateRequiredChecks(
 	requiredChecks: string[],
 ): string[] {
 	const blockers: string[] = [];
+	const latestByCheckName = new Map<string, CheckRun>();
+
+	for (const run of checkRuns) {
+		const current = latestByCheckName.get(run.name);
+		if (!current || run.id > current.id) {
+			latestByCheckName.set(run.name, run);
+		}
+	}
 
 	for (const checkName of requiredChecks) {
-		const checkRun = resolveRequiredCheckRun(checkRuns, checkName);
+		const checkRun = latestByCheckName.get(checkName);
 		if (!checkRun) {
 			blockers.push(
 				`Required check '${checkName}' was not found for current HEAD SHA`,
@@ -294,19 +301,6 @@ function evaluateRequiredChecks(
 	}
 
 	return blockers;
-}
-
-function resolveRequiredCheckRun(
-	checkRuns: CheckRun[],
-	checkName: string,
-): CheckRun | undefined {
-	const matches = checkRuns.filter((run) => run.name === checkName);
-	if (matches.length === 0) {
-		return undefined;
-	}
-	return matches.reduce((latest, current) =>
-		current.id > latest.id ? current : latest,
-	);
 }
 
 function buildBotLoginSet(botLogin?: string): Set<string> {
@@ -446,6 +440,7 @@ export async function runReviewGate(
 					client,
 					options.prNumber,
 					pullRequestHeadSha,
+					pullRequest.user?.login?.trim(),
 				);
 				const independence =
 					enforceReviewerIndependence && approvals.passed

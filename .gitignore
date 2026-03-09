@@ -59,6 +59,7 @@ gardener-report.json
 
 # Pilot artifacts
 artifacts/pilot/
+artifacts/agent-runs/
 artifacts/policy/
 artifacts/consistency-gate/
 

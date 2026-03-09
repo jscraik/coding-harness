@@ -1,0 +1,72 @@
+{
+	"$schema": "https://json-schema.org/draft/2020-12/schema",
+	"$id": "https://brainwav.dev/schemas/agent-run-event.schema.json",
+	"title": "Agent Run Event",
+	"type": "object",
+	"additionalProperties": false,
+	"required": [
+		"schemaVersion",
+		"runId",
+		"eventId",
+		"timestamp",
+		"eventType",
+		"status",
+		"severity",
+		"payload"
+	],
+	"properties": {
+		"schemaVersion": {
+			"const": "agent-run-event/v1"
+		},
+		"runId": {
+			"type": "string",
+			"minLength": 3,
+			"maxLength": 128,
+			"pattern": "^[A-Za-z0-9][A-Za-z0-9._-]*$"
+		},
+		"eventId": {
+			"type": "string",
+			"minLength": 1
+		},
+		"timestamp": {
+			"type": "string",
+			"format": "date-time"
+		},
+		"eventType": {
+			"enum": [
+				"phase",
+				"policy_check",
+				"precondition",
+				"artifact_write",
+				"decision",
+				"retry",
+				"timeout",
+				"cancel",
+				"error",
+				"rollback",
+				"intervention",
+				"degraded_mode"
+			]
+		},
+		"status": {
+			"enum": ["started", "passed", "failed", "skipped", "blocked", "completed"]
+		},
+		"severity": {
+			"enum": ["info", "warn", "error", "critical"]
+		},
+		"payload": {
+			"type": "object"
+		},
+		"correlationId": {
+			"type": "string"
+		},
+		"prevEventHash": {
+			"type": "string",
+			"pattern": "^[a-f0-9]{64}$"
+		},
+		"eventHash": {
+			"type": "string",
+			"pattern": "^[a-f0-9]{64}$"
+		}
+	}
+}

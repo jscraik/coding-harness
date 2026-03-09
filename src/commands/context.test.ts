@@ -1,11 +1,14 @@
-import { sep } from "node:path";
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
+import { tmpdir } from "node:os";
+import { join, sep } from "node:path";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import {
 	DEFAULT_DB_FILENAME,
 	DEFAULT_HARNESS_DIR,
 } from "../lib/context-compound/constants.js";
 
 const constructorPaths: string[] = [];
+let ollamaAvailable = true;
 const initMock = vi.fn<
 	() =>
 		| { ok: true; value: undefined }
@@ -45,7 +48,7 @@ vi.mock("../lib/context-compound/store.js", () => ({
 vi.mock("../lib/context-compound/ollama.js", () => ({
 	OllamaClient: class {
 		async isAvailable() {
-			return true;
+			return ollamaAvailable;
 		}
 
 		async embed() {
@@ -55,11 +58,23 @@ vi.mock("../lib/context-compound/ollama.js", () => ({
 }));
 
 describe("runContextCLI", () => {
+	const tempDirs: string[] = [];
+
+	afterEach(() => {
+		while (tempDirs.length > 0) {
+			const dir = tempDirs.pop();
+			if (dir) {
+				rmSync(dir, { recursive: true, force: true });
+			}
+		}
+	});
+
 	beforeEach(() => {
 		searchMock.mockClear();
 		initMock.mockClear();
 		initMock.mockReturnValue({ ok: true, value: undefined });
 		constructorPaths.length = 0;
+		ollamaAvailable = true;
 	});
 
 	it("returns SUCCESS and prints help for -h", async () => {
@@ -177,5 +192,95 @@ describe("runContextCLI", () => {
 		expect(payload.error).toContain("pnpm rebuild better-sqlite3");
 		expect(payload.error).not.toContain("/tmp/better_sqlite3.node");
 		consoleInfoSpy.mockRestore();
+	});
+
+	it("fails explicitly when semantic backend is unavailable", async () => {
+		const { runContext, EXIT_CODES } = await import("./context.js");
+		const consoleInfoSpy = vi
+			.spyOn(console, "info")
+			.mockImplementation(() => undefined);
+		ollamaAvailable = false;
+
+		const exitCode = await runContext({
+			query: "semantic unavailable",
+			json: true,
+		});
+
+		expect(exitCode).toBe(EXIT_CODES.OLLAMA_UNAVAILABLE);
+		const payload = JSON.parse(String(consoleInfoSpy.mock.calls[0]?.[0]));
+		expect(payload.success).toBe(false);
+		expect(payload.error).toContain("Ollama not available");
+		consoleInfoSpy.mockRestore();
+	});
+
+	it("uses lexical fallback when explicitly enabled and semantic backend is unavailable", async () => {
+		const { runContext, EXIT_CODES } = await import("./context.js");
+		const root = mkdtempSync(join(tmpdir(), "harness-context-fallback-"));
+		tempDirs.push(root);
+		const planDir = join(root, "docs/plans");
+		mkdirSync(planDir, { recursive: true });
+		writeFileSync(
+			join(planDir, "oauth-plan.md"),
+			"# OAuth rollout\n\nImplement OAuth rollback safeguards and lexical fallback coverage.\n",
+			"utf-8",
+		);
+		const consoleInfoSpy = vi
+			.spyOn(console, "info")
+			.mockImplementation(() => undefined);
+		ollamaAvailable = false;
+
+		const exitCode = await runContext({
+			query: "OAuth fallback",
+			baseDir: root,
+			json: true,
+			lexicalFallback: true,
+		});
+
+		expect(exitCode).toBe(EXIT_CODES.SUCCESS);
+		const payload = JSON.parse(String(consoleInfoSpy.mock.calls[0]?.[0]));
+		expect(payload.success).toBe(true);
+		expect(payload.source).toBe("lexical_degraded");
+		expect(payload.results[0]?.path).toBe("docs/plans/oauth-plan.md");
+		consoleInfoSpy.mockRestore();
+	});
+
+	it("uses lexical fallback when CP4b is enabled through the shared rollout switch", async () => {
+		const { runContext, EXIT_CODES } = await import("./context.js");
+		const root = mkdtempSync(join(tmpdir(), "harness-context-cp4b-"));
+		tempDirs.push(root);
+		const planDir = join(root, "docs/plans");
+		mkdirSync(planDir, { recursive: true });
+		writeFileSync(
+			join(planDir, "cp4b-plan.md"),
+			"# CP4b\n\nShared rollout enablement should activate lexical fallback.\n",
+			"utf-8",
+		);
+		const consoleInfoSpy = vi
+			.spyOn(console, "info")
+			.mockImplementation(() => undefined);
+		const previous = process.env.HARNESS_CP4B_ENABLED;
+		process.env.HARNESS_CP4B_ENABLED = "true";
+		ollamaAvailable = false;
+
+		try {
+			const exitCode = await runContext({
+				query: "shared rollout enablement",
+				baseDir: root,
+				json: true,
+			});
+
+			expect(exitCode).toBe(EXIT_CODES.SUCCESS);
+			const payload = JSON.parse(String(consoleInfoSpy.mock.calls[0]?.[0]));
+			expect(payload.success).toBe(true);
+			expect(payload.source).toBe("lexical_degraded");
+			expect(payload.results[0]?.path).toBe("docs/plans/cp4b-plan.md");
+		} finally {
+			if (previous === undefined) {
+				process.env.HARNESS_CP4B_ENABLED = undefined;
+			} else {
+				process.env.HARNESS_CP4B_ENABLED = previous;
+			}
+			consoleInfoSpy.mockRestore();
+		}
 	});
 });

@@ -17,6 +17,10 @@ import {
 } from "node:fs";
 import { dirname, resolve } from "node:path";
 import { loadContract } from "../lib/contract/loader.js";
+import {
+	emitTerminalRunRecord,
+	hashRunRecordValue,
+} from "../lib/contract/run-record-emitter.js";
 import type { PilotRollbackPolicy } from "../lib/contract/types.js";
 import { sanitizeError } from "../lib/input/sanitize.js";
 import { PathTraversalError, validatePath } from "../lib/input/validator.js";
@@ -67,10 +71,14 @@ export interface PilotRollbackOptions {
 	artifactsDir?: string;
 	/** Path to output JSON file for result */
 	outputPath?: string;
+	/** Optional override for rollback completion marker path */
+	completionMarkerPath?: string;
 	/** Output as JSON to stdout */
 	json?: boolean;
 	/** Reason for rollback */
 	reason?: string;
+	/** Optional override for canonical run-record base dir */
+	runRecordsDir?: string;
 }
 
 export interface PilotRollbackResult {
@@ -146,6 +154,18 @@ function readCurrentMode(contractPath: string): PilotMode {
 	}
 }
 
+function readRollbackPolicy(
+	contractPath: string,
+): PilotRollbackPolicy | undefined {
+	try {
+		return loadContract(contractPath).pilotRollbackPolicy as
+			| PilotRollbackPolicy
+			| undefined;
+	} catch {
+		return undefined;
+	}
+}
+
 function appendRollbackEvent(
 	eventsPath: string,
 	record: RollbackEventsRecord,
@@ -187,9 +207,88 @@ function writeRollbackMarker(markerPath: string, marker: RollbackMarker): void {
 export async function runPilotRollback(
 	options: PilotRollbackOptions,
 ): Promise<PilotRollbackResult | PilotRollbackError> {
+	const startedAt = new Date().toISOString();
+	const writeRunRecord = (params: {
+		outcome: "success" | "failed" | "blocked";
+		classification:
+			| "ok"
+			| "validation_failed"
+			| "precondition_failed"
+			| "runtime_failed";
+		exitCode: number;
+		payload: Record<string, unknown>;
+		artifacts?: Array<{ type: string; path: string; checksum?: string }>;
+		contractPath?: string;
+		headSha?: string;
+		strict?: boolean;
+	}): string | null => {
+		try {
+			const record = emitTerminalRunRecord({
+				command: "pilot-rollback",
+				startedAt,
+				outcome: params.outcome,
+				classification: params.classification,
+				exitCode: params.exitCode,
+				...(options.runRecordsDir ? { baseDir: options.runRecordsDir } : {}),
+				repo: {
+					repository: "unknown/unknown",
+					...(params.headSha ? { headSha: params.headSha } : {}),
+				},
+				contract: {
+					path:
+						params.contractPath ??
+						options.contractPath ??
+						DEFAULT_CONTRACT_PATH,
+				},
+				policyContext: {
+					mode: options.mode,
+					safetyPosture: "strict",
+					effectivePolicySource: "pilot-rollback-policy",
+					hash: hashRunRecordValue({
+						policy: "pilot-rollback-policy",
+						mode: options.mode,
+						incidentId: options.incidentId,
+					}),
+				},
+				preconditions: {
+					hasIncidentId: Boolean(options.incidentId?.trim()),
+				},
+				...(params.artifacts ? { artifacts: params.artifacts } : {}),
+				event: {
+					eventType:
+						params.classification === "ok" ? "rollback" : "precondition",
+					status:
+						params.classification === "ok"
+							? "completed"
+							: params.classification === "precondition_failed"
+								? "blocked"
+								: "failed",
+					severity: params.classification === "ok" ? "info" : "error",
+					payload: params.payload,
+				},
+			});
+			return record.manifestPath;
+		} catch (error) {
+			if (params.strict ?? false) {
+				throw error;
+			}
+			console.error(
+				`pilot-rollback: failed to emit canonical run record: ${sanitizeError(error)}`,
+			);
+			return sanitizeError(error);
+		}
+	};
+
 	try {
 		// 1. Validate incident ID
 		if (!options.incidentId?.trim()) {
+			writeRunRecord({
+				outcome: "failed",
+				classification: "validation_failed",
+				exitCode: EXIT_CODES.VALIDATION,
+				payload: { error: "missing_incident_id" },
+				strict: false,
+			});
 			return {
 				ok: false,
 				error: {
@@ -201,6 +300,16 @@ export async function runPilotRollback(
 
 		// 2. Validate mode
 		if (options.mode !== "autonomous" && options.mode !== "manual") {
+			writeRunRecord({
+				outcome: "failed",
+				classification: "validation_failed",
+				exitCode: EXIT_CODES.VALIDATION,
+				payload: {
+					error: "invalid_mode",
+					mode: options.mode,
+				},
+				strict: false,
+			});
 			return {
 				ok: false,
 				error: {
@@ -220,18 +329,33 @@ export async function runPilotRollback(
 
 		// 4. Check contract exists
 		if (!existsSync(contractPath)) {
+			const runRecordError = writeRunRecord({
+				outcome: "blocked",
+				classification: "precondition_failed",
+				exitCode: EXIT_CODES.PRECONDITION,
+				contractPath,
+				payload: {
+					error: "missing_contract",
+					contractPath,
+				},
+				strict: false,
+			});
 			return {
 				ok: false,
 				error: {
 					code: "E_PRECONDITION",
 					message: `Contract not found: ${contractPath}`,
-					context: { contractPath },
+					context: {
+						contractPath,
+						...(runRecordError ? { runRecordError } : {}),
+					},
 				},
 			};
 		}
 
 		// 5. Read current mode from contract
-		const modeBefore = readCurrentMode(contractPath);
+		const rollbackPolicy = readRollbackPolicy(contractPath);
+		const modeBefore = rollbackPolicy?.mode ?? readCurrentMode(contractPath);
 
 		// 6. Validate transition (v1: any transition is allowed, but we record it)
 		// In future versions, we may enforce specific transition rules
@@ -262,7 +386,9 @@ export async function runPilotRollback(
 		const completedAt = nowIso();
 		const markerPath = normalizePath(
 			cwd,
-			resolve(artifactsDir, ROLLBACK_MARKER_FILE),
+			options.completionMarkerPath ??
+				rollbackPolicy?.completionMarkerPath ??
+				resolve(artifactsDir, ROLLBACK_MARKER_FILE),
 		);
 
 		const marker: RollbackMarker = {
@@ -286,6 +412,33 @@ export async function runPilotRollback(
 			writeFileSync(outputPath, JSON.stringify(marker, null, 2), "utf-8");
 		}
 
+		writeRunRecord({
+			outcome: "success",
+			classification: "ok",
+			exitCode: EXIT_CODES.SUCCESS,
+			contractPath,
+			payload: {
+				incidentId: options.incidentId,
+				modeBefore,
+				modeAfter: options.mode,
+				rollbackEventsId,
+			},
+			artifacts: [
+				{
+					type: "rollback-events",
+					path: eventsPath,
+				},
+				{
+					type: "rollback-marker",
+					path: markerPath,
+				},
+				...(options.outputPath
+					? [{ type: "rollback-output", path: options.outputPath }]
+					: []),
+			],
+			strict: true,
+		});
+
 		return {
 			ok: true,
 			output: {
@@ -301,6 +454,15 @@ export async function runPilotRollback(
 		};
 	} catch (error) {
 		if (error instanceof PathTraversalError) {
+			writeRunRecord({
+				outcome: "failed",
+				classification: "validation_failed",
+				exitCode: EXIT_CODES.VALIDATION,
+				payload: {
+					error: "path_traversal",
+				},
+				strict: false,
+			});
 			return {
 				ok: false,
 				error: {
@@ -309,6 +471,16 @@ export async function runPilotRollback(
 				},
 			};
 		}
+		writeRunRecord({
+			outcome: "failed",
+			classification: "runtime_failed",
+			exitCode: EXIT_CODES.INTERNAL,
+			payload: {
+				error: "rollback_failed",
+				message: sanitizeError(error),
+			},
+			strict: false,
+		});
 		return {
 			ok: false,
 			error: {

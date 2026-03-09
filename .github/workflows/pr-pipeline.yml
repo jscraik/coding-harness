@@ -114,16 +114,26 @@ jobs:
           if [[ "${{ github.event_name }}" == "pull_request" ]]; then
             BASE_SHA="${{ github.event.pull_request.base.sha }}"
             HEAD_SHA="${{ github.event.pull_request.head.sha }}"
+            BASE_REF="${{ github.base_ref }}"
+            # Load contract from the trusted base branch, not the PR checkout.
+            # Prevents a malicious PR from weakening policy by modifying harness.contract.json.
+            CONTRACT_PATH="$RUNNER_TEMP/harness.contract.base.json"
+            if ! git show "origin/$BASE_REF:harness.contract.json" > "$CONTRACT_PATH"; then
+              echo "::error::Unable to load trusted harness.contract.json from origin/$BASE_REF"
+              exit 1
+            fi
           else
             BASE_SHA="${{ github.event.merge_group.base_sha }}"
             HEAD_SHA="${{ github.event.merge_group.head_sha }}"
+            # Merge queue: contract is committed and protected by branch rules.
+            CONTRACT_PATH="harness.contract.json"
           fi
           CHANGED_FILES="$(git diff --name-only "$BASE_SHA" "$HEAD_SHA" | paste -sd, -)"
           if [[ -z "$CHANGED_FILES" ]]; then
             CHANGED_FILES="$(git ls-files | paste -sd, -)"
           fi
           pnpm exec tsx src/cli.ts preflight-gate \
-            --contract harness.contract.json \
+            --contract "$CONTRACT_PATH" \
             --max-tier medium \
             --files "${CHANGED_FILES}" \
             --json

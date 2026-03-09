@@ -12,7 +12,12 @@ import {
 	DEFAULT_SIMILARITY_THRESHOLD,
 } from "../lib/context-compound/constants.js";
 import { normalizeStoreInitError } from "../lib/context-compound/init-error.js";
+import { searchLexicalFallback } from "../lib/context-compound/lexical-fallback.js";
 import { OllamaClient } from "../lib/context-compound/ollama.js";
+import {
+	CP4B_ENABLED_ENV,
+	isCp4bLexicalFallbackEnabled,
+} from "../lib/context-compound/rollout.js";
 import { VectorStore } from "../lib/context-compound/store.js";
 import type { SearchResult } from "../lib/context-compound/types.js";
 
@@ -37,6 +42,8 @@ export interface ContextOptions {
 	baseDir?: string | undefined;
 	/** Harness directory name */
 	harnessDir?: string | undefined;
+	/** Explicitly enable CP4b lexical fallback when semantic backend is unavailable */
+	lexicalFallback?: boolean | undefined;
 }
 
 export interface ContextOutput {
@@ -48,6 +55,8 @@ export interface ContextOutput {
 	count: number;
 	/** Search results */
 	results: SearchResult[];
+	/** Result source lane */
+	source?: "semantic" | "lexical_degraded";
 	/** Error message if failed */
 	error?: string;
 }
@@ -61,6 +70,9 @@ function printContextUsage(write: (message: string) => void): void {
 	write("  --json, -j        Output as JSON");
 	write(
 		"  --harness-dir     Directory for context database (default: .harness)",
+	);
+	write(
+		`  --lexical-fallback  Use CP4b lexical fallback when enabled or ${CP4B_ENABLED_ENV}=1`,
 	);
 	write("  --help, -h        Show this help");
 	write("");
@@ -114,6 +126,52 @@ export async function runContext(options: ContextOptions): Promise<number> {
 	const baseDir = options.baseDir ?? process.cwd();
 	const harnessDir = options.harnessDir ?? DEFAULT_HARNESS_DIR;
 	const dbPath = join(baseDir, harnessDir, DEFAULT_DB_FILENAME);
+	const lexicalFallbackEnabled = isCp4bLexicalFallbackEnabled(
+		options.lexicalFallback,
+	);
+
+	if (lexicalFallbackEnabled) {
+		const ollama = new OllamaClient();
+		const isAvailable = await ollama.isAvailable();
+		if (!isAvailable) {
+			const limit = options.limit ?? DEFAULT_SEARCH_LIMIT;
+			const results = searchLexicalFallback(baseDir, options.query, {
+				harnessDir,
+				limit,
+			});
+			if (options.json) {
+				const output: ContextOutput = {
+					success: true,
+					query: options.query,
+					count: results.length,
+					results,
+					source: "lexical_degraded",
+				};
+				console.info(JSON.stringify(output, null, 2));
+			} else if (results.length === 0) {
+				console.info(
+					`No lexical fallback results found for: "${options.query}"`,
+				);
+			} else {
+				console.info(
+					`Found ${results.length} lexical fallback result(s) for: "${options.query}"`,
+				);
+				console.info();
+				for (const [i, r] of results.entries()) {
+					console.info(`${i + 1}. ${r.path}`);
+					console.info(`   Similarity: ${(r.similarity * 100).toFixed(1)}%`);
+					if (r.metadata) {
+						console.info(`   Type: ${r.metadata.type}`);
+						console.info(`   Topic: ${r.metadata.topic}`);
+						console.info(`   Date: ${r.metadata.date}`);
+					}
+					console.info("   Mode: lexical_degraded");
+					console.info();
+				}
+			}
+			return results.length > 0 ? EXIT_CODES.SUCCESS : EXIT_CODES.NO_RESULTS;
+		}
+	}
 
 	// Initialize store
 	const store = new VectorStore(dbPath);
@@ -224,6 +282,7 @@ export async function runContext(options: ContextOptions): Promise<number> {
 			query: options.query,
 			count: results.length,
 			results,
+			source: "semantic",
 		};
 		console.info(JSON.stringify(output, null, 2));
 	} else {
@@ -260,6 +319,7 @@ export async function runContextCLI(args: string[]): Promise<number> {
 	let threshold: number | undefined;
 	let json = false;
 	let harnessDir: string | undefined;
+	let lexicalFallback = false;
 
 	for (let i = 0; i < args.length; i++) {
 		const arg = args[i];
@@ -298,6 +358,8 @@ export async function runContextCLI(args: string[]): Promise<number> {
 			i++;
 		} else if (arg === "--json" || arg === "-j") {
 			json = true;
+		} else if (arg === "--lexical-fallback") {
+			lexicalFallback = true;
 		} else if (arg === "--harness-dir") {
 			const val = args[i + 1];
 			if (!val || isFlagToken(val)) {
@@ -320,5 +382,12 @@ export async function runContextCLI(args: string[]): Promise<number> {
 		return EXIT_CODES.ERROR;
 	}
 
-	return runContext({ query, limit, threshold, json, harnessDir });
+	return runContext({
+		query,
+		limit,
+		threshold,
+		json,
+		harnessDir,
+		lexicalFallback,
+	});
 }

@@ -1,4 +1,4 @@
-import { mkdtempSync, writeFileSync } from "node:fs";
+import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { describe, expect, it } from "vitest";
@@ -22,6 +22,23 @@ describe("org-audit command", () => {
 		it("returns empty array for non-existent path", () => {
 			const repos = findRepositories("/non/existent/path");
 			expect(repos).toHaveLength(0);
+		});
+
+		it("detects repositories with .git file metadata", () => {
+			const tempRoot = mkdtempSync(join(tmpdir(), "org-audit-repos-"));
+			try {
+				const repoDir = join(tempRoot, "worktree-style");
+				mkdirSync(repoDir, { recursive: true });
+				writeFileSync(
+					join(repoDir, ".git"),
+					"gitdir: ../.git/worktrees/worktree",
+				);
+
+				const repos = findRepositories(tempRoot);
+				expect(repos).toContain(repoDir);
+			} finally {
+				rmSync(tempRoot, { recursive: true, force: true });
+			}
 		});
 	});
 
@@ -127,6 +144,25 @@ describe("org-audit command", () => {
 			]);
 
 			expect(result.exitCode).not.toBe(EXIT_CODES.INVALID_ARGUMENT);
+		});
+
+		it("supports --drift alias for --drift-only", async () => {
+			const result = await runOrgAuditCLI([
+				"--path",
+				process.cwd(),
+				"--drift",
+				"--json",
+			]);
+			expect(result.exitCode).not.toBe(EXIT_CODES.INVALID_ARGUMENT);
+		});
+
+		it("fails with INVALID_ARGUMENT for unknown flags", async () => {
+			const result = await runOrgAuditCLI([
+				"--path",
+				process.cwd(),
+				"--unsupported-flag",
+			]);
+			expect(result.exitCode).toBe(EXIT_CODES.INVALID_ARGUMENT);
 		});
 	});
 });

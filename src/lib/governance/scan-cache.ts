@@ -135,9 +135,8 @@ export function getCachedEntry(
 
 	// Verify contract hasn't changed
 	const currentMtime = getMtimeMs(contractPath);
-	const currentHash = hashFile(contractPath);
-
 	if (currentMtime !== entry.mtimeMs) return undefined;
+	const currentHash = hashFile(contractPath);
 	if (currentHash !== entry.contractHash) return undefined;
 
 	return entry;
