@@ -147,6 +147,10 @@ function printUsage(): void {
 			summary: "Verify Greptile setup and configuration",
 		},
 		{
+			name: "request-greptile-review",
+			summary: "Request a Greptile review on a PR",
+		},
+		{
 			name: "preset",
 			summary: "List and inspect bundled presets",
 		},
@@ -410,6 +414,18 @@ function printUsage(): void {
 	);
 	console.info("  --repo-path      Repository path for local file checks");
 	console.info("  --verbose        Include detailed check output");
+	console.info("  --json           Output as JSON");
+	console.info("");
+	console.info("Request Greptile Review Options:");
+	console.info(
+		"  --token          GitHub token (or env GITHUB_TOKEN / GITHUB_PERSONAL_ACCESS_TOKEN)",
+	);
+	console.info("  --owner          Repository owner");
+	console.info("  --repo           Repository name");
+	console.info("  --pr             Pull request number");
+	console.info(
+		"  --message        Custom message to post (default: '@greptile please review the latest changes')",
+	);
 	console.info("  --json           Output as JSON");
 	console.info("");
 	console.info("");
@@ -1369,6 +1385,48 @@ export function run(args: string[]): void {
 		runVerifyGreptileCLI(options)
 			.then((exitCode) => process.exit(exitCode))
 			.catch((error) => handleFatalError("Verify Greptile Error", error));
+		return;
+	}
+	if (command === "request-greptile-review") {
+		const jsonFlag = args.includes("--json");
+		const tokenIndex = args.indexOf("--token");
+		const ownerIndex = args.indexOf("--owner");
+		const repoIndex = args.indexOf("--repo");
+		const prIndex = args.indexOf("--pr");
+		const messageIndex = args.indexOf("--message");
+
+		const options: {
+			token?: string;
+			owner?: string;
+			repo?: string;
+			pr?: number;
+			message?: string;
+			json?: boolean;
+		} = {};
+
+		if (jsonFlag) options.json = true;
+		const tokenArg = getFlagValue(args, tokenIndex);
+		if (tokenArg) options.token = tokenArg;
+		const ownerArg = getFlagValue(args, ownerIndex);
+		if (ownerArg) options.owner = ownerArg;
+		const repoArg = getFlagValue(args, repoIndex);
+		if (repoArg) options.repo = repoArg;
+		const prArg = getFlagValue(args, prIndex);
+		if (prArg) {
+			const parsed = parseIntegerArg(prArg, 1);
+			if (parsed !== undefined) options.pr = parsed;
+		}
+		const messageArg = getFlagValue(args, messageIndex);
+		if (messageArg) options.message = messageArg;
+
+		import("./commands/request-greptile-review.js")
+			.then(({ runRequestGreptileReviewCLI }) =>
+				runRequestGreptileReviewCLI(options),
+			)
+			.then((exitCode) => process.exit(exitCode))
+			.catch((error) =>
+				handleFatalError("Request Greptile Review Error", error),
+			);
 		return;
 	}
 	if (command === "gap-case") {

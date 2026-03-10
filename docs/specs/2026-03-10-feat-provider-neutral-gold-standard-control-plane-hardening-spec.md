@@ -250,6 +250,8 @@ Required fields:
 - `requiredChecksRef`
 - `branchPolicyRef`
 - `instructionPolicyRef`
+- `prTemplatePolicyRef`
+- `prTemplateValidationRef`
 - `sourceTrustLevel`
 - `evaluationMode` (`local|pr|merge_group`)
 - `sourceRef`
@@ -266,10 +268,12 @@ Normative rule:
 Normative v1 source selection:
 
 - `local` mode uses current checkout `HEAD` for repository-tracked instruction and code surfaces,
-  but cannot produce merge-authoritative `promote`.
+  but cannot produce merge-authoritative `promote`; `prTemplateValidationRef` is `not_applicable`.
 - `pr` mode uses the protected base-branch SHA for contract, workflow, required-check,
-  and branch-policy truth, while using the PR head SHA for changed instruction and implementation surfaces.
-- `merge_group` mode uses the merge-group candidate SHA for runtime-under-test plus the protected base SHA lineage for policy truth.
+  and branch-policy truth, while using the PR head SHA for changed instruction and implementation surfaces;
+  `.github/PULL_REQUEST_TEMPLATE.md` must be resolved from the protected base SHA and `prTemplateValidationRef` must bind to the trusted `pr-template` workflow result for that PR.
+- `merge_group` mode uses the merge-group candidate SHA for runtime-under-test plus the protected base SHA lineage for policy truth;
+  `prTemplateValidationRef` must point to the originating PR's most recent successful `pr-template` result or be treated as invalid for merge-authoritative evaluation.
 
 Integrity and freshness requirements:
 
@@ -277,7 +281,7 @@ Integrity and freshness requirements:
 - `attestation` must contain at minimum the canonical digest bundle and may also include a signature or equivalent verifier output.
 - A snapshot is invalid if any referenced SHA or digest can no longer be verified at evaluation time.
 - `expiresAt` is mandatory. A snapshot must be recaptured on base ref change, head SHA change,
-  required-check/config drift, canonical instruction digest drift, or expiry, whichever comes first.
+  required-check/config drift, canonical instruction digest drift, PR-template policy drift, PR-template validation drift, or expiry, whichever comes first.
 
 ### 5) InstructionSurface
 
@@ -354,19 +358,9 @@ Required fields:
 - `staleReviewRate`
 - `rollbackRate`
 - `unresolvedAdapterDriftCount`
-- `decisionRecommendation`
 - `scoreWindow`
 - `minimumSample`
 - `thresholdProfileRef`
-
-Decision recommendation values:
-
-- `promote`
-- `hold`
-- `rollback`
-- `block_for_parity`
-- `block_for_evidence`
-- `block_for_adapter`
 
 Normative rule:
 
@@ -377,7 +371,7 @@ Decision-layer rules:
 - `evaluationDecision` is always computed from the deterministic failure-precedence table.
 - `enforcementDecision` is derived from `evaluationDecision` plus the active rollout stage.
 - `shadow` stage maps all blocking evaluation decisions to non-blocking advisory enforcement.
-- `advisory` stage preserves the recommendation in reports, but merge-authoritative enforcement still requires recorded human approval.
+- `advisory` stage preserves the computed `evaluationDecision` in reports, but merge-authoritative enforcement still requires recorded human approval.
 - `enforced` stage makes the mapped `enforcementDecision` merge-authoritative for the configured scope.
 
 Normative metric definitions for merge-authoritative v1:
@@ -388,6 +382,15 @@ Normative metric definitions for merge-authoritative v1:
 - `governanceParityPassRate = governance-snapshot-valid plus docs-gate parity-passing runs / governance-parity-required runs`
 - `evidenceCompleteness = runs with all required control-plane artifacts and sanitization outcomes / eligible runs`
 - `identityDegradedRate = degraded-identity runs / eligible runs`
+- `falseBlockRate = false blocks / blocking evaluation decisions in the score window`
+
+False-block classification rules:
+
+- A `false block` is a blocking `evaluationDecision` later adjudicated as non-actionable by a trusted human maintainer review or by a recorded override artifact whose resolution notes explicitly mark the original block as incorrect.
+- `blocking evaluation decisions` are score-window evaluations whose `evaluationDecision` is one of `block_for_parity`, `block_for_evidence`, or `block_for_adapter`.
+- A run can contribute at most one false block to the numerator even if multiple blocking reasons were present.
+- If the denominator is `0`, `falseBlockRate` is treated as `0` for reporting and cannot alone satisfy a rollout promotion gate; the enclosing rollout stage must still satisfy `minimumSample` and the other parity-window thresholds.
+- The authoritative adjudication source is the dedicated append-only `control-plane-audit-log.jsonl` artifact for the relevant `runId` and `evaluationAttemptId`.
 - `staleReviewRate = review-gated runs with stale SHA-bound review evidence / review-gated runs`
 - `rollbackRate = rollback-recommended or rollback-executed mutative runs / eligible mutative runs`
 - `manualInterventionRate = runs requiring override or human release decision / eligible runs`
@@ -411,7 +414,7 @@ Normative v1 thresholds:
 
 ### 8) OverridePolicyRecord
 
-Machine-readable record for any explicit override of a control-plane recommendation or blocker.
+Machine-readable record for any explicit override of a control-plane `evaluationDecision`, `enforcementDecision`, or blocker.
 
 Required fields:
 
@@ -442,15 +445,16 @@ Normative override rules:
 
 1. Resolve the trusted repository context for the evaluation mode.
 2. Capture the immutable `GovernanceSnapshot`.
-3. Resolve which instruction surfaces are in scope for this run from policy and repository state.
-4. If a required governance source cannot be loaded, transition the control-plane evaluation to `blocked`.
+3. Resolve PR-template policy and trusted validation state when evaluation mode is `pr` or `merge_group`.
+4. Resolve which instruction surfaces are in scope for this run from policy and repository state.
+5. If a required governance source cannot be loaded, transition the control-plane evaluation to `blocked`.
 
 ### B. Instruction resolution
 
-5. Normalize canonical instruction truth from repository-tracked `AGENTS.md` and any repository-tracked linked canonical sources at the captured `headSha`.
-6. Consume the trusted, SHA-bound `docs-gate` machine-readable artifact for governed instruction/doc surfaces.
-7. Produce an `InstructionParityResult` by translating the `docs-gate` artifact into control-plane terminology without changing its blocker meaning.
-8. If required parity fails, mark the run `block_for_parity` before any promotion decision is attempted.
+6. Normalize canonical instruction truth from repository-tracked `AGENTS.md` and any repository-tracked linked canonical sources at the captured `headSha`.
+7. Consume the trusted, SHA-bound `docs-gate` machine-readable artifact for governed instruction/doc surfaces.
+8. Produce an `InstructionParityResult` by translating the `docs-gate` artifact into control-plane terminology without changing its blocker meaning.
+9. If required parity fails, mark the run `block_for_parity` before any promotion decision is attempted.
 
 Producer rule:
 
@@ -458,9 +462,9 @@ Producer rule:
 
 ### C. Adapter resolution
 
-9. Resolve the provider/client runtime to a `ProviderAdapterDescriptor`.
-10. Validate that the adapter can normalize the available runtime evidence into the required control-plane fields.
-11. If adapter coverage is incomplete for a required decision path, mark the run `block_for_adapter`.
+10. Resolve the provider/client runtime to a `ProviderAdapterDescriptor`.
+11. Validate that the adapter can normalize the available runtime evidence into the required control-plane fields.
+12. If adapter coverage is incomplete for a required decision path, mark the run `block_for_adapter`.
 
 Adapter input-hardening rules:
 
@@ -472,36 +476,37 @@ Adapter input-hardening rules:
 
 ### D. Runtime composition
 
-12. Load canonical run/eval artifacts from the existing substrate.
-13. Bind them to `AgentIdentity`, `ProviderAdapterDescriptor`, `GovernanceSnapshot`, and `InstructionParityResult`.
-14. Build the `ControlPlaneRun`.
-15. If canonical runtime truth exists but is invalid, fail closed and do not silently fall back to weaker evidence.
+13. Load canonical run/eval artifacts from the existing substrate.
+14. Bind them to `AgentIdentity`, `ProviderAdapterDescriptor`, `GovernanceSnapshot`, and `InstructionParityResult`.
+15. Build the `ControlPlaneRun`.
+16. If canonical runtime truth exists but is invalid, fail closed and do not silently fall back to weaker evidence.
 
 ### E. Scorecard evaluation
 
-16. Derive the `ControlPlaneScorecard`.
-17. Apply denominator guards and fail-closed rules for missing or degraded evidence.
-18. Emit a machine-readable recommendation and explanation payload.
+17. Derive the `ControlPlaneScorecard`.
+18. Apply denominator guards and fail-closed rules for missing or degraded evidence.
+19. Emit machine-readable `evaluationDecision`, `enforcementDecision`, and explanation payloads.
 
 ### F. Terminal decision behavior
 
-19. Promotion may occur only when canonical coverage, adapter coverage, governance parity, and instruction parity all meet policy thresholds.
-20. Hold is used when the run is valid but requires human review or more evidence.
-21. Rollback remains a distinct outcome when runtime behavior crossed the rollback threshold defined by existing pilot/remediation policy.
-22. Blocked outcomes are reserved for parity, adapter, policy, or evidence incompleteness that prevents a valid trust decision.
+20. Promotion may occur only when canonical coverage, adapter coverage, governance parity, and instruction parity all meet policy thresholds.
+21. Hold is used when the run is valid but requires human review or more evidence.
+22. Rollback remains a distinct outcome when runtime behavior crossed the rollback threshold defined by existing pilot/remediation policy.
+23. Blocked outcomes are reserved for parity, adapter, policy, or evidence incompleteness that prevents a valid trust decision.
 
 Deterministic failure-precedence and decision mapping:
 
 1. `governance_trust_mismatch` or failed snapshot integrity verification -> `block_for_evidence`
 2. `canonical_runtime_invalid` -> `block_for_evidence`
-3. `missing_required_instruction_surface` or `instruction_parity_failed` -> `block_for_parity`
-4. `adapter_unresolved` or `adapter_coverage_incomplete` -> `block_for_adapter`
-5. `scorecard_denominator_insufficient` -> `block_for_evidence`
-6. `telemetry_unavailable` -> `block_for_evidence` in merge-authoritative modes, `hold` in advisory/local modes
-7. `identity_degraded` -> `block_for_evidence` in merge-authoritative modes, `hold` in advisory/local modes
-8. runtime rollback threshold crossed with no higher-precedence blocker -> `rollback`
-9. valid but non-promotable with no blocker -> `hold`
-10. all thresholds and invariants satisfied -> `promote`
+3. `pr_template_invalid` or missing trusted PR-template validation in `pr|merge_group` mode -> `block_for_evidence`
+4. `missing_required_instruction_surface` or `instruction_parity_failed` -> `block_for_parity`
+5. `adapter_unresolved` or `adapter_coverage_incomplete` -> `block_for_adapter`
+6. `scorecard_denominator_insufficient` -> `block_for_evidence`
+7. `telemetry_unavailable` -> `block_for_evidence` in merge-authoritative modes, `hold` in advisory/local modes
+8. `identity_degraded` -> `block_for_evidence` in merge-authoritative modes, `hold` in advisory/local modes
+9. runtime rollback threshold crossed with no higher-precedence blocker -> `rollback`
+10. valid but non-promotable with no blocker -> `hold`
+11. all thresholds and invariants satisfied -> `promote`
 
 The emitted `exitClassification` and CI status must preserve the highest-precedence failure reason even when a lower-precedence condition also exists.
 
@@ -513,9 +518,9 @@ Stage-aware enforcement mapping:
 
 ### G. Rollout behavior over time
 
-23. Existing command behavior remains authoritative while this layer is rolled out additively.
-24. New provider adapters begin in shadow mode until parity evidence is sufficient.
-25. Canonical and provider-neutral scorecards must prove stability for a sustained parity window before legacy adapter assumptions are retired.
+24. Existing command behavior remains authoritative while this layer is rolled out additively.
+25. New provider adapters begin in shadow mode until parity evidence is sufficient.
+26. Canonical and provider-neutral scorecards must prove stability for a sustained parity window before legacy adapter assumptions are retired.
 
 ### H. Rollout stages
 
@@ -525,14 +530,14 @@ Three rollout stages are normative for v1:
    - companion artifacts are written;
    - `docs-gate` parity artifacts are consumed but do not introduce new merge blockers beyond existing checks;
    - entry requires canonical substrate already enabled;
-   - exit requires at least `50` eligible runs, zero critical drift, and `block_for_*` false positive rate `<= 0.02`.
+   - exit requires at least `50` eligible runs, zero critical drift, and `falseBlockRate <= parityWindow.maxFalseBlockRate`.
 2. `advisory`
-   - control-plane recommendation is visible to operators and CI summaries;
+   - control-plane `evaluationDecision` and `enforcementDecision` are visible to operators and CI summaries;
    - blockers are reported, but human approval remains required to enforce new failure classes;
    - exit requires `30` consecutive passing parity windows, `canonicalCoverage >= 0.99`,
      and explicit maintainer approval.
 3. `enforced`
-   - control-plane recommendations become merge-authoritative for the configured scope;
+   - control-plane `enforcementDecision` becomes merge-authoritative for the configured scope;
    - entry requires zero unresolved adapter drift, zero required parity contradictions,
      and all merge-authoritative thresholds satisfied in the score window.
 
@@ -567,6 +572,7 @@ Approval authority:
 - [src/commands/observability-gate.ts](../../src/commands/observability-gate.ts)
 - [docs/specs/2026-03-10-feat-docs-gate-governance-parity-spec.md](../specs/2026-03-10-feat-docs-gate-governance-parity-spec.md)
 - [.github/workflows/pr-pipeline.yml](../../.github/workflows/pr-pipeline.yml)
+- [.github/PULL_REQUEST_TEMPLATE.md](../../.github/PULL_REQUEST_TEMPLATE.md)
 - [AGENTS.md](../../AGENTS.md)
 - [CLAUDE.md](../../CLAUDE.md)
 - [harness.contract.json](../../harness.contract.json)
@@ -587,9 +593,16 @@ Required companion artifacts for v1:
 - `governance-snapshot.json`
 - `instruction-parity.json`
 - `control-plane-scorecard.json`
+- `control-plane-audit-log.jsonl`
 - `override-policy-record.json` when an override exists
 
-Required metadata in every companion artifact:
+Audit-log usage rules:
+
+- `control-plane-audit-log.jsonl` is the dedicated append-only audit artifact for false-block adjudications, override approvals, rollout-stage transitions, and other operator actions that affect promotability or enforcement interpretation.
+- Audit log entries must be immutable once written; corrections are represented as new appended entries that reference the superseded record.
+- False-block adjudications must be written to `control-plane-audit-log.jsonl` before they can affect `falseBlockRate`.
+
+Required metadata in every companion artifact and every audit-log record:
 
 - `schemaVersion`
 - `compatibilityMajor`
@@ -608,6 +621,8 @@ Normative pathing:
 
 - companion artifacts must be written under:
   `.../<runId>/control-plane/<evaluationAttemptId>/`
+- the dedicated audit artifact must be written under:
+  `.../<runId>/control-plane/audit/control-plane-audit-log.jsonl`
 - an optional `.../<runId>/control-plane/latest.json` index may point to the most recent valid attempt, but it is advisory only.
 
 Compatibility and rollback contract:
@@ -766,9 +781,11 @@ Minimum required artifact families:
 
 - canonical run/eval records under existing run-record storage;
 - governance snapshot artifact or embedded snapshot reference;
+- trusted PR-template validation artifact or `not_applicable` marker, depending on evaluation mode;
 - instruction parity report;
 - adapter coverage report;
 - control-plane scorecard;
+- append-only `control-plane-audit-log.jsonl`;
 - summary status artifact for CI and promotion consumers.
 
 ### Required Metrics
@@ -789,7 +806,7 @@ Minimum required artifact families:
   - threshold: `1.00`
   - action: below threshold -> `block_for_parity`
 - `governance_parity_pass_rate`
-  - definition: governance-snapshot-valid plus docs-gate parity-passing runs / governance-parity-required runs
+  - definition: governance-snapshot-valid runs, plus docs-gate parity-passing runs, plus valid PR-template policy/validation when evaluation mode is `pr` or `merge_group`, divided by governance-parity-required runs
   - window: same as score window
   - threshold: `1.00`
   - action: below threshold -> `block_for_evidence`
@@ -827,6 +844,7 @@ Minimum required artifact families:
 ### Required Logs and Provenance
 
 - capture the governing contract/workflow/instruction refs used for each evaluation;
+- capture the PR-template policy ref and trusted validation ref when evaluation mode is `pr` or `merge_group`;
 - capture adapter version and parity-window status;
 - capture whether the run occurred in local checkout, dedicated worktree, or background mode when known;
 - capture any operator override with reason, provenance, approvers, and expiry;
@@ -862,7 +880,8 @@ The control-plane layer must support two operator views without changing truth:
 4. A canonical runtime artifact that is present but invalid blocks promotion.
 5. A new provider can be introduced through an adapter contract without inventing bespoke governance rules.
 6. The control-plane layer consumes one authoritative `docs-gate` parity artifact rather than producing a second parity truth.
-7. Companion artifacts can be rolled back without breaking canonical run/eval readers.
+7. In `pr` and merge-authoritative `merge_group` evaluation, PR-template policy and completion are validated from trusted workflow evidence rather than freeform PR body parsing inside the control-plane layer.
+8. Companion artifacts can be rolled back without breaking canonical run/eval readers.
 
 ### Test Matrix
 
@@ -916,7 +935,7 @@ The control-plane layer must support two operator views without changing truth:
 
 13. **Failure precedence**
     - Input: a run with `instruction_parity_failed`, `telemetry_unavailable`, and rollback signal.
-    - Expectation: terminal recommendation follows the deterministic precedence table and preserves lower-precedence reason codes as context only.
+    - Expectation: terminal `evaluationDecision` follows the deterministic precedence table and preserves lower-precedence reason codes as context only.
 
 14. **Override policy enforcement**
     - Input: attempted temporary promote override for `canonical_runtime_invalid`.
@@ -926,6 +945,10 @@ The control-plane layer must support two operator views without changing truth:
     - Input: v1 companion writer disabled during rollback.
     - Expectation: canonical readers continue to function, companion artifacts remain audit-only, and new provider-neutral completeness claims stop.
 
+16. **PR template incomplete**
+    - Input: PR body missing a required template section, unresolved placeholder, or unchecked checklist item without `(Pending)`/`(N/A)` status.
+    - Expectation: trusted `pr-template` validation is failed, `GovernanceSnapshot.prTemplateValidationRef` is invalid for merge-authoritative evaluation, and the control-plane result is `block_for_evidence`.
+
 ### Operational Verification Checklist
 
 Before enabling `advisory` or `enforced` rollout stages, operators must verify:
@@ -933,9 +956,10 @@ Before enabling `advisory` or `enforced` rollout stages, operators must verify:
 1. `pnpm check` passes.
 2. `harness check-environment` resolves trusted governance sources and emits a valid policy fingerprint.
 3. `harness docs-gate` reports no unresolved required instruction contradictions for the target scope.
-4. `harness pilot-evaluate` shows the target score window meets all required thresholds for the intended rollout stage.
-5. `harness drift-gate` in health mode reports no unresolved governance-surface drift relevant to the rollout.
-6. If observability is required for the target mode, `harness observability-gate` passes with no blocking cardinality or missing-signal issue.
+4. In `pull_request` mode, the trusted `pr-template` check passes with all required sections completed and no unresolved placeholders.
+5. `harness pilot-evaluate` shows the target score window meets all required thresholds for the intended rollout stage.
+6. `harness drift-gate` in health mode reports no unresolved governance-surface drift relevant to the rollout.
+7. If observability is required for the target mode, `harness observability-gate` passes with no blocking cardinality or missing-signal issue.
 
 After enabling a new stage, operators must verify:
 

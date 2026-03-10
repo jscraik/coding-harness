@@ -61,17 +61,22 @@ describe("org-audit command", () => {
 		});
 
 		it("returns NO_REPOS_FOUND for directory without git repos", async () => {
-			// Use a directory that's unlikely to have git repos
-			const auditResult = await runOrgAudit({
-				path: "/System/Library",
-				format: "json",
-			});
+			const tempRoot = mkdtempSync(join(tmpdir(), "org-audit-empty-"));
 
-			expect(auditResult.ok).toBe(true);
-			if (auditResult.ok) {
-				const { result, exitCode } = auditResult.value;
-				expect(result.totalRepos).toBe(0);
-				expect(exitCode).toBe(EXIT_CODES.NO_REPOS_FOUND);
+			try {
+				const auditResult = await runOrgAudit({
+					path: tempRoot,
+					format: "json",
+				});
+
+				expect(auditResult.ok).toBe(true);
+				if (auditResult.ok) {
+					const { result, exitCode } = auditResult.value;
+					expect(result.totalRepos).toBe(0);
+					expect(exitCode).toBe(EXIT_CODES.NO_REPOS_FOUND);
+				}
+			} finally {
+				rmSync(tempRoot, { recursive: true, force: true });
 			}
 		});
 
@@ -163,6 +168,24 @@ describe("org-audit command", () => {
 				"--unsupported-flag",
 			]);
 			expect(result.exitCode).toBe(EXIT_CODES.INVALID_ARGUMENT);
+		});
+
+		it("renders schema validation errors in table output", async () => {
+			const tempRoot = mkdtempSync(join(tmpdir(), "org-audit-invalid-"));
+			const repoDir = join(tempRoot, "invalid-contract-repo");
+			mkdirSync(join(repoDir, ".git"), { recursive: true });
+			writeFileSync(join(repoDir, "harness.contract.json"), "{\n");
+
+			try {
+				const result = await runOrgAuditCLI(["--path", tempRoot]);
+
+				expect(result.exitCode).toBe(EXIT_CODES.SCAN_ERRORS);
+				expect(result.output).toContain("invalid-contract-repo");
+				expect(result.output).toContain("Expected property name");
+				expect(result.output).not.toContain("undefined");
+			} finally {
+				rmSync(tempRoot, { recursive: true, force: true });
+			}
 		});
 	});
 });

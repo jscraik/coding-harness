@@ -109,6 +109,7 @@ describe("hasRerunCommentForSha", () => {
 				id: 1,
 				body: `<!-- harness-review-rerun -->\n**SHA:** \`${sha}\``,
 				created_at: new Date().toISOString(),
+				html_url: "https://github.com/test/repo/issues/1#issuecomment-1",
 				user: { login: "other-bot" },
 			},
 		];
@@ -123,6 +124,7 @@ describe("hasRerunCommentForSha", () => {
 				id: 1,
 				body: `**SHA:** \`${sha}\``,
 				created_at: new Date().toISOString(),
+				html_url: "https://github.com/test/repo/issues/1#issuecomment-1",
 				user: { login: botLogin },
 			},
 		];
@@ -138,6 +140,7 @@ describe("hasRerunCommentForSha", () => {
 				id: 1,
 				body: `<!-- harness-review-rerun -->\n**SHA:** \`${sha}\``,
 				created_at: oldDate.toISOString(),
+				html_url: "https://github.com/test/repo/issues/1#issuecomment-1",
 				user: { login: botLogin },
 			},
 		];
@@ -152,6 +155,7 @@ describe("hasRerunCommentForSha", () => {
 				id: 1,
 				body: `<!-- harness-review-rerun -->\n**SHA:** \`${sha}\``,
 				created_at: new Date().toISOString(),
+				html_url: "https://github.com/test/repo/issues/1#issuecomment-1",
 				user: { login: botLogin },
 			},
 		];
@@ -168,6 +172,7 @@ describe("hasRerunCommentForSha", () => {
 				id: 1,
 				body: `<!-- harness-review-rerun -->\n**SHA:** \`${otherSha}\``,
 				created_at: new Date().toISOString(),
+				html_url: "https://github.com/test/repo/issues/1#issuecomment-1",
 				user: { login: botLogin },
 			},
 		];

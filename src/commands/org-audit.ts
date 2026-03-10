@@ -221,6 +221,16 @@ function formatJson(result: OrgAuditResult): string {
 	return JSON.stringify(result, null, 2);
 }
 
+function formatRepoScanError(repoResult: ScanResult): string {
+	if (repoResult.error) {
+		return repoResult.error;
+	}
+	if (repoResult.errors && repoResult.errors.length > 0) {
+		return repoResult.errors.join("; ");
+	}
+	return "Unknown error";
+}
+
 /**
  * Format results as Markdown table.
  */
@@ -273,7 +283,9 @@ function formatMarkdown(result: OrgAuditResult): string {
 
 		for (const repoResult of result.results) {
 			if (repoResult.status === "error") {
-				lines.push(`- **${repoResult.path}**: ${repoResult.error}`);
+				lines.push(
+					`- **${repoResult.path}**: ${formatRepoScanError(repoResult)}`,
+				);
 			}
 		}
 		lines.push("");
@@ -334,7 +346,7 @@ function formatTable(result: OrgAuditResult): string {
 
 		for (const repoResult of result.results) {
 			if (repoResult.status === "error") {
-				lines.push(`❌ ${repoResult.path}: ${repoResult.error}`);
+				lines.push(`❌ ${repoResult.path}: ${formatRepoScanError(repoResult)}`);
 			}
 		}
 		lines.push("");
