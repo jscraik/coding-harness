@@ -192,7 +192,7 @@ jobs:
 
             console.log(`Analysis complete: status=${status}, score=${scoreOutput}`);
 
-      - name: Create check run
+      - name: Create or update check run
         if: github.event_name != 'merge_group'
         env:
           HEAD_SHA: ${{ steps.context.outputs.head_sha }}
@@ -212,14 +212,28 @@ jobs:
             const summary = process.env.SUMMARY;
             const found = process.env.FOUND;
             const commentUrl = process.env.COMMENT_URL;
+            const checkName = 'Greptile Review';
+
+            // Find existing check runs for this SHA with the same name to avoid duplicates
+            const existingChecks = await github.rest.checks.listForRef({
+              owner,
+              repo,
+              ref: headSha,
+              check_name: checkName,
+              filter: 'latest'
+            });
+
+            const existingCheck = existingChecks.data.check_runs.find(
+              run => run.name === checkName
+            );
 
             if (status === 'pending') {
-              // Waiting for Greptile - mark as a failing completed check so branch
+              // Waiting for Greptile - create or update as a failing check so branch
               // protection blocks merge without leaving an indefinitely queued run.
-              await github.rest.checks.create({
+              const checkPayload = {
                 owner,
                 repo,
-                name: 'Greptile Review',
+                name: checkName,
                 head_sha: headSha,
                 status: 'completed',
                 conclusion: 'failure',
@@ -227,8 +241,20 @@ jobs:
                   title: 'Greptile Review Pending',
                   summary: 'Greptile has not yet reviewed this PR head commit.'
                 }
-              });
-              console.log('Created failing check run - waiting for Greptile');
+              };
+
+              if (existingCheck) {
+                await github.rest.checks.update({
+                  owner,
+                  repo,
+                  check_run_id: existingCheck.id,
+                  ...checkPayload
+                });
+                console.log(`Updated existing check run ${existingCheck.id} to pending/failure`);
+              } else {
+                await github.rest.checks.create(checkPayload);
+                console.log('Created new failing check run - waiting for Greptile');
+              }
               return;
             }
 
@@ -236,10 +262,10 @@ jobs:
             const title = status === 'success' ? 'Greptile Review Passed' : 'Greptile Review Failed';
             const text = commentUrl ? `See [Greptile's review comment](${commentUrl}) for details.` : '';
 
-            await github.rest.checks.create({
+            const checkPayload = {
               owner,
               repo,
-              name: 'Greptile Review',
+              name: checkName,
               head_sha: headSha,
               status: 'completed',
               conclusion: conclusion,
@@ -248,9 +274,20 @@ jobs:
                 summary,
                 text
               }
-            });
+            };
 
-            console.log(`Created check run with conclusion: ${conclusion}`);
+            if (existingCheck) {
+              await github.rest.checks.update({
+                owner,
+                repo,
+                check_run_id: existingCheck.id,
+                ...checkPayload
+              });
+              console.log(`Updated existing check run ${existingCheck.id} with conclusion: ${conclusion}`);
+            } else {
+              await github.rest.checks.create(checkPayload);
+              console.log(`Created new check run with conclusion: ${conclusion}`);
+            }
 
             if (conclusion === 'failure') {
               core.setFailed(summary);
