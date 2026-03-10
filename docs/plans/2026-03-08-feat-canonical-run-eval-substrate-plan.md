@@ -687,8 +687,8 @@ CP5/CP6 gates must reference this registry directly; prose-only metric definitio
 - [x] Metric definitions used by CP5/CP6 gates are sourced from a machine-readable metric registry (no prose-only gate math).
 - [x] Rollback reliability denominator guard is enforced (`rollbackTriggerCount >= 3` or promotion blocked as insufficient evidence).
 - [x] Sanitization gate passes with `sensitive_field_leak_count == 0`.
-- [ ] Validation baseline commands pass with fresh evidence posture references attached to checkpoints (`preflight_only` in v0; signed verifier evidence when v1 attestation is enabled).
-  Current blocker: fresh `check-environment --attestation` evidence now includes `evidenceReference`, but the local baseline still fails until approval posture is set for mutative runs and `uv` resolves to the pinned `0.9.5` runtime.
+- [x] Validation baseline commands pass with fresh evidence posture references attached to checkpoints (`preflight_only` in v0; signed verifier evidence when v1 attestation is enabled).
+  Validated on 2026-03-10: `check-environment --attestation` passed with fresh `preflight_only` evidence after running in a `mise`-activated shell with `CLAUDE_APPROVAL_POSTURE=require`, which resolved the repo-pinned `uv 0.9.5` runtime; `pnpm test:deep` and `pnpm build` also passed on HEAD `5f2e2097b0392cde392da54bfe8108ffc179aac7`.
 
 ## Sources & References
 

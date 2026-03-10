@@ -233,6 +233,22 @@ function printUsage(): void {
 	console.info("  --token          Override LINEAR_API_KEY");
 	console.info("  --json           Output as JSON");
 	console.info("");
+	console.info("Linear Gate Options:");
+	console.info("  --contract       Path to harness.contract.json");
+	console.info("  --repo-root      Repository root to inspect (default: cwd)");
+	console.info(
+		"  --branch         Branch name to validate (defaults to git/env)",
+	);
+	console.info("  --pr-title       Pull request title to validate");
+	console.info("  --pr-body        Pull request body to validate");
+	console.info(
+		"  --allow-missing-branch  Skip branch-name requirement when branch metadata is unavailable",
+	);
+	console.info(
+		"  --allow-missing-pr  Skip PR-title/body requirement when PR metadata is unavailable",
+	);
+	console.info("  --json           Output as JSON");
+	console.info("");
 	console.info("Remediate Options:");
 	console.info(
 		"  --findings       JSON file path for findings (or - for stdin)",

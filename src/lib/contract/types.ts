@@ -146,6 +146,21 @@ export interface BranchProtectionPolicy {
 	requiredChecks?: string[] | undefined;
 }
 
+export type IssueTrackingProvider = "linear";
+
+export type PrReferenceMode = "refs" | "fixes" | "either";
+
+export interface IssueTrackingPolicy {
+	provider: IssueTrackingProvider;
+	projectUrl?: string | undefined;
+	requirePackageBugsUrl?: boolean | undefined;
+	disableGitHubIssues?: boolean | undefined;
+	requireBranchIssueKey?: boolean | undefined;
+	requirePrIssueKey?: boolean | undefined;
+	prReferenceMode?: PrReferenceMode | undefined;
+	branchPrefix?: string | undefined;
+}
+
 export type LoopStageFailPolicy = "fail_closed" | "warn_only";
 
 export type LoopStageName =
@@ -271,6 +286,16 @@ export const DEFAULT_REVIEW_POLICY: ReviewPolicy = {
 
 export const DEFAULT_BRANCH_PROTECTION_POLICY: BranchProtectionPolicy = {
 	requiredChecks: [...BRANCH_PROTECTION_REQUIRED_CHECKS],
+};
+
+export const DEFAULT_ISSUE_TRACKING_POLICY: IssueTrackingPolicy = {
+	provider: "linear",
+	requirePackageBugsUrl: true,
+	disableGitHubIssues: true,
+	requireBranchIssueKey: true,
+	requirePrIssueKey: true,
+	prReferenceMode: "either",
+	branchPrefix: "codex",
 };
 
 export const DEFAULT_EVIDENCE_POLICY: EvidencePolicy = {
@@ -404,6 +429,8 @@ export interface HarnessContract {
 	blastRadiusRulesMode?: BlastRadiusRulesMode | undefined;
 	/** Branch protection configuration */
 	branchProtection?: BranchProtectionPolicy | undefined;
+	/** Issue tracking enforcement policy */
+	issueTrackingPolicy?: IssueTrackingPolicy | undefined;
 	/** Remediation policy for automatic fix application */
 	remediationPolicy?: RemediationPolicy | undefined;
 	/** Semantic loop stage contract for workflow parity validation */
@@ -419,6 +446,7 @@ export const DEFAULT_CONTRACT: HarnessContract = {
 	pilotRollbackPolicy: DEFAULT_PILOT_ROLLBACK_POLICY,
 	pilotAuthzPolicy: DEFAULT_PILOT_AUTHZ_POLICY,
 	branchProtection: DEFAULT_BRANCH_PROTECTION_POLICY,
+	issueTrackingPolicy: DEFAULT_ISSUE_TRACKING_POLICY,
 	remediationPolicy: DEFAULT_REMEDIATION_POLICY,
 	loopStageContracts: DEFAULT_LOOP_STAGE_CONTRACTS,
 };

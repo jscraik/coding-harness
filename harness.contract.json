@@ -15,6 +15,7 @@
 	"branchProtection": {
 		"requiredChecks": [
 			"pr-template",
+			"linear-gate",
 			"risk-policy-gate",
 			"dependency-review",
 			"actions-pinning",
@@ -28,6 +29,16 @@
 			"security-scan",
 			"Greptile Review"
 		]
+	},
+	"issueTrackingPolicy": {
+		"provider": "linear",
+		"projectUrl": "https://linear.app/jscraik/project/coding-harness-bb735dbbda79",
+		"requirePackageBugsUrl": true,
+		"disableGitHubIssues": true,
+		"requireBranchIssueKey": true,
+		"requirePrIssueKey": true,
+		"prReferenceMode": "either",
+		"branchPrefix": "codex"
 	},
 	"evidencePolicy": {
 		"requiredFor": [],

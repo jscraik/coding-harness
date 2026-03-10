@@ -209,6 +209,54 @@ describe("validateContract", () => {
 		});
 	});
 
+	describe("issueTrackingPolicy", () => {
+		it("accepts a valid Linear enforcement policy", () => {
+			const result = validateContract({
+				version: "1.0",
+				issueTrackingPolicy: {
+					provider: "linear",
+					projectUrl: "https://linear.app/acme/project/platform-123",
+					requirePackageBugsUrl: true,
+					disableGitHubIssues: true,
+					requireBranchIssueKey: true,
+					requirePrIssueKey: true,
+					prReferenceMode: "either",
+					branchPrefix: "codex",
+				},
+			});
+
+			expect(result.success).toBe(true);
+			expect(result.data?.issueTrackingPolicy?.provider).toBe("linear");
+		});
+
+		it("rejects a non-Linear project URL", () => {
+			const result = validateContract({
+				version: "1.0",
+				issueTrackingPolicy: {
+					provider: "linear",
+					projectUrl: "https://example.com/issues",
+				},
+			});
+
+			expect(result.success).toBe(false);
+			expect(result.errors[0]?.path).toBe("issueTrackingPolicy");
+		});
+
+		it("rejects an invalid prReferenceMode", () => {
+			const result = validateContract({
+				version: "1.0",
+				issueTrackingPolicy: {
+					provider: "linear",
+					prReferenceMode: "close",
+				},
+			});
+
+			expect(result.success).toBe(false);
+			expect(result.errors[0]?.path).toBe("issueTrackingPolicy");
+			expect(result.errors[0]?.code).toBe(ValidationErrorCode.INVALID_VALUE);
+		});
+	});
+
 	describe("runtimePolicy", () => {
 		it("accepts runtimePolicy with optional createIssueOnAgentFindings", () => {
 			const result = validateContract({

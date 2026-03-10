@@ -16,6 +16,7 @@ describe("command registry", () => {
 	it("exposes migrated command names", () => {
 		expect(MIGRATED_COMMAND_NAMES).toEqual([
 			"linear",
+			"linear-gate",
 			"policy-gate",
 			"evidence-verify",
 			"preflight-gate",

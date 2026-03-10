@@ -1,0 +1,172 @@
+import { mkdirSync, rmSync, writeFileSync } from "node:fs";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
+import { afterEach, beforeEach, describe, expect, it } from "vitest";
+import { runLinearGate } from "./linear-gate.js";
+
+function writeHarnessContract(tempDir: string): void {
+	writeFileSync(
+		join(tempDir, "harness.contract.json"),
+		JSON.stringify(
+			{
+				version: "1.2.0",
+				riskTierRules: {},
+				issueTrackingPolicy: {
+					provider: "linear",
+					projectUrl: "https://linear.app/acme/project/platform-123",
+					requirePackageBugsUrl: true,
+					disableGitHubIssues: true,
+					requireBranchIssueKey: true,
+					requirePrIssueKey: true,
+					prReferenceMode: "either",
+					branchPrefix: "codex",
+				},
+			},
+			null,
+			2,
+		),
+		"utf-8",
+	);
+}
+
+describe("runLinearGate", () => {
+	let tempDir: string;
+
+	beforeEach(() => {
+		tempDir = join(tmpdir(), `linear-gate-test-${Date.now()}`);
+		mkdirSync(join(tempDir, ".github/ISSUE_TEMPLATE"), { recursive: true });
+		writeHarnessContract(tempDir);
+	});
+
+	afterEach(() => {
+		rmSync(tempDir, { recursive: true, force: true });
+	});
+
+	it("passes when package metadata, branch, and PR metadata align with Linear policy", () => {
+		writeFileSync(
+			join(tempDir, "package.json"),
+			JSON.stringify(
+				{
+					name: "fixture",
+					bugs: {
+						url: "https://linear.app/acme/project/platform-123",
+					},
+				},
+				null,
+				2,
+			),
+			"utf-8",
+		);
+		writeFileSync(
+			join(tempDir, ".github/ISSUE_TEMPLATE/config.yml"),
+			`blank_issues_enabled: false
+contact_links:
+  - name: Linear work intake
+    url: https://linear.app/acme/project/platform-123
+    about: Track all work in Linear.
+`,
+			"utf-8",
+		);
+
+		const result = runLinearGate({
+			repoRoot: tempDir,
+			branch: "codex/jsc-42-enforce-linear-policy",
+			prTitle: "JSC-42: Enforce Linear policy",
+			prBody: "Refs JSC-42\n\nFixes JSC-42",
+		});
+
+		expect(result.ok).toBe(true);
+		if (!result.ok) {
+			return;
+		}
+
+		expect(result.output.passed).toBe(true);
+		expect(result.output.issueKeys.branch).toEqual(["JSC-42"]);
+		expect(result.output.issueKeys.pr).toEqual(["JSC-42"]);
+	});
+
+	it("fails when the branch omits the Linear issue key", () => {
+		writeFileSync(
+			join(tempDir, "package.json"),
+			JSON.stringify(
+				{
+					name: "fixture",
+					bugs: "https://linear.app/acme/project/platform-123",
+				},
+				null,
+				2,
+			),
+			"utf-8",
+		);
+		writeFileSync(
+			join(tempDir, ".github/ISSUE_TEMPLATE/config.yml"),
+			`blank_issues_enabled: false
+contact_links:
+  - name: Linear work intake
+    url: https://linear.app/acme/project/platform-123
+    about: Track all work in Linear.
+`,
+			"utf-8",
+		);
+
+		const result = runLinearGate({
+			repoRoot: tempDir,
+			branch: "codex/no-issue-key",
+			prTitle: "JSC-42: Enforce Linear policy",
+			prBody: "Refs JSC-42",
+		});
+
+		expect(result.ok).toBe(true);
+		if (!result.ok) {
+			return;
+		}
+
+		expect(result.output.passed).toBe(false);
+		expect(
+			result.output.checks.find((check) => check.code === "branch-linkage")
+				?.passed,
+		).toBe(false);
+	});
+
+	it("allows merge-queue style runs when PR and branch metadata are unavailable", () => {
+		writeFileSync(
+			join(tempDir, "package.json"),
+			JSON.stringify(
+				{
+					name: "fixture",
+					bugs: "https://linear.app/acme/project/platform-123",
+				},
+				null,
+				2,
+			),
+			"utf-8",
+		);
+		writeFileSync(
+			join(tempDir, ".github/ISSUE_TEMPLATE/config.yml"),
+			`blank_issues_enabled: false
+contact_links:
+  - name: Linear work intake
+    url: https://linear.app/acme/project/platform-123
+    about: Track all work in Linear.
+`,
+			"utf-8",
+		);
+
+		const result = runLinearGate({
+			repoRoot: tempDir,
+			allowMissingBranch: true,
+			allowMissingPrMetadata: true,
+		});
+
+		expect(result.ok).toBe(true);
+		if (!result.ok) {
+			return;
+		}
+
+		expect(result.output.passed).toBe(true);
+		expect(
+			result.output.checks.find((check) => check.code === "branch-linkage")
+				?.message,
+		).toContain("skipped");
+	});
+});

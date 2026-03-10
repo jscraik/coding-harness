@@ -246,9 +246,13 @@ describe("runInit", () => {
 			expect(content.branchProtection.requiredChecks).toContain(
 				"security-scan",
 			);
+			expect(content.branchProtection.requiredChecks).toContain("linear-gate");
 			expect(content.branchProtection.requiredChecks).toContain(
 				"Greptile Review",
 			);
+			expect(content.issueTrackingPolicy.provider).toBe("linear");
+			expect(content.issueTrackingPolicy.requirePackageBugsUrl).toBe(true);
+			expect(content.issueTrackingPolicy.requirePrIssueKey).toBe(true);
 			expect(content.runtimePolicy.createIssueOnAgentFindings).toBe(true);
 			expect(content.loopStageContracts["risk-policy-gate"].schema).toBe(
 				"loop-stage-contract/v1",
@@ -460,6 +464,21 @@ describe("runInit", () => {
 		});
 
 		it("routes issue intake to Linear via contact links", () => {
+			writeFileSync(
+				join(tempDir, "package.json"),
+				JSON.stringify(
+					{
+						name: "fixture",
+						bugs: {
+							url: "https://linear.app/acme/project/platform-123",
+						},
+					},
+					null,
+					2,
+				),
+				"utf-8",
+			);
+
 			const retiredTemplates = [
 				".github/ISSUE_TEMPLATE/issue.yml",
 				".github/ISSUE_TEMPLATE/feature.yml",
@@ -485,7 +504,7 @@ describe("runInit", () => {
 			expect(issueTemplateConfig).toContain("blank_issues_enabled: false");
 			expect(issueTemplateConfig).toContain("Linear work intake");
 			expect(issueTemplateConfig).toContain(
-				"https://linear.app/jscraik/project/coding-harness-bb735dbbda79",
+				"https://linear.app/acme/project/platform-123",
 			);
 			expect(issueTemplateConfig).toContain("Private security disclosure");
 		});

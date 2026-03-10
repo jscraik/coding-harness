@@ -74,6 +74,7 @@ The repository now includes a Linear-first CLI surface for the common workflow t
 
 ```bash
 harness linear prepare --issue JSC-37 --field branch
+harness linear-gate --branch codex/jsc-37-enable-github-to-linear-branch-and-pr-automation-for-the --pr-title "JSC-37: Enable GitHub to Linear branch and PR automation" --pr-body "Refs JSC-37"
 harness linear claim --issue JSC-36 --branch codex/jsc-36-linear-claim --workspace /path/to/worktree
 harness linear handoff --issue JSC-36 --pr-url https://github.com/org/repo/pull/123 --evidence-url https://example.com/evidence.json
 harness linear close --issue JSC-36 --pr-url https://github.com/org/repo/pull/123
@@ -86,6 +87,11 @@ Operational notes:
   - PR title: `<LINEAR-KEY>: <issue title>`
   - link line: `Refs <LINEAR-KEY>`
   - closing line: `Fixes <LINEAR-KEY>`
+- `linear-gate` enforces the contract-level policy offline in CI or locally:
+  - `package.json` must point `bugs.url` at the Linear project when required
+  - `.github/ISSUE_TEMPLATE/config.yml` must retire public GitHub issue intake and point to Linear
+  - branch names must keep the configured prefix and include the Linear issue key
+  - PR titles/bodies must include the Linear key plus the required `Refs`/`Fixes` reference line
 - `claim` defaults to assigning the issue to the current Linear API user unless `--no-assign` is set.
 - `handoff` moves the issue to `In Review`, posts a workflow comment, and can attach PR/evidence/reference URLs.
 - `close` moves the issue to `Done`, posts a closure comment, and can attach the merge PR/evidence URLs.

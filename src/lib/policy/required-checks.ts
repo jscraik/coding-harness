@@ -18,6 +18,7 @@ export const ECOSYSTEM_PROFILES = {
 	 */
 	harness: [
 		"pr-template",
+		"linear-gate",
 		"risk-policy-gate",
 		"dependency-review",
 		"actions-pinning",

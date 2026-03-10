@@ -8,6 +8,7 @@ import type {
 	GapCasePolicy,
 	HarnessContract,
 	ImageFormat,
+	IssueTrackingPolicy,
 	LoopStageContract,
 	LoopStageContracts,
 	LoopStageFailPolicy,
@@ -23,6 +24,7 @@ import type {
 	PilotAuthzPolicy,
 	PilotGapCasePolicy,
 	PilotRollbackPolicy,
+	PrReferenceMode,
 	RemediationPolicy,
 	RemediationProviderPolicy,
 	ReviewPolicy,
@@ -63,6 +65,7 @@ const VALID_TOP_LEVEL_KEYS = [
 	"pilotAuthzPolicy",
 	"loopStageContracts",
 	"branchProtection",
+	"issueTrackingPolicy",
 	"extends",
 ] as const;
 const VALID_UI_LOOP_POLICY_KEYS = [
@@ -126,6 +129,7 @@ const VALID_LOOP_STAGE_FAIL_POLICIES: LoopStageFailPolicy[] = [
 	"fail_closed",
 	"warn_only",
 ];
+const VALID_PR_REFERENCE_MODES: PrReferenceMode[] = ["refs", "fixes", "either"];
 
 // Machine-readable error codes for programmatic handling
 export enum ValidationErrorCode {
@@ -320,6 +324,99 @@ function isValidBranchProtection(
 	if (
 		policy.requiredChecks !== undefined &&
 		!isValidRequiredChecks(policy.requiredChecks)
+	) {
+		return false;
+	}
+
+	return true;
+}
+
+function isValidLinearProjectUrl(value: string): boolean {
+	try {
+		const url = new URL(value);
+		return (
+			url.protocol === "https:" &&
+			url.hostname === "linear.app" &&
+			url.pathname.includes("/project/")
+		);
+	} catch {
+		return false;
+	}
+}
+
+function isValidIssueTrackingPolicy(
+	value: unknown,
+): value is IssueTrackingPolicy {
+	if (!isPlainObject(value)) {
+		return false;
+	}
+
+	const policy = value as Record<string, unknown>;
+	const unknownKeys = Object.keys(policy).filter(
+		(key) =>
+			![
+				"provider",
+				"projectUrl",
+				"requirePackageBugsUrl",
+				"disableGitHubIssues",
+				"requireBranchIssueKey",
+				"requirePrIssueKey",
+				"prReferenceMode",
+				"branchPrefix",
+			].includes(key),
+	);
+	if (unknownKeys.length > 0) {
+		return false;
+	}
+
+	if (policy.provider !== "linear") {
+		return false;
+	}
+	if (
+		policy.projectUrl !== undefined &&
+		(typeof policy.projectUrl !== "string" ||
+			!isValidLinearProjectUrl(policy.projectUrl))
+	) {
+		return false;
+	}
+	if (
+		policy.requirePackageBugsUrl !== undefined &&
+		typeof policy.requirePackageBugsUrl !== "boolean"
+	) {
+		return false;
+	}
+	if (
+		policy.disableGitHubIssues !== undefined &&
+		typeof policy.disableGitHubIssues !== "boolean"
+	) {
+		return false;
+	}
+	if (
+		policy.requireBranchIssueKey !== undefined &&
+		typeof policy.requireBranchIssueKey !== "boolean"
+	) {
+		return false;
+	}
+	if (
+		policy.requirePrIssueKey !== undefined &&
+		typeof policy.requirePrIssueKey !== "boolean"
+	) {
+		return false;
+	}
+	if (
+		policy.prReferenceMode !== undefined &&
+		(typeof policy.prReferenceMode !== "string" ||
+			!VALID_PR_REFERENCE_MODES.includes(
+				policy.prReferenceMode as PrReferenceMode,
+			))
+	) {
+		return false;
+	}
+	if (
+		policy.branchPrefix !== undefined &&
+		(typeof policy.branchPrefix !== "string" ||
+			policy.branchPrefix.trim().length === 0 ||
+			policy.branchPrefix.includes("/"))
 	) {
 		return false;
 	}
@@ -1464,6 +1561,25 @@ export function validateContract(
 		}
 	}
 
+	// Validate issueTrackingPolicy (optional)
+	let issueTrackingPolicy: IssueTrackingPolicy | undefined;
+	if ("issueTrackingPolicy" in obj && obj.issueTrackingPolicy !== undefined) {
+		if (!isValidIssueTrackingPolicy(obj.issueTrackingPolicy)) {
+			errors.push({
+				code: ValidationErrorCode.INVALID_VALUE,
+				path: "issueTrackingPolicy",
+				message:
+					"issueTrackingPolicy must declare provider 'linear' plus optional Linear enforcement settings",
+				expected:
+					"{ provider: 'linear', projectUrl?: 'https://linear.app/.../project/...', requirePackageBugsUrl?: boolean, disableGitHubIssues?: boolean, requireBranchIssueKey?: boolean, requirePrIssueKey?: boolean, prReferenceMode?: 'refs' | 'fixes' | 'either', branchPrefix?: string }",
+				received: JSON.stringify(obj.issueTrackingPolicy),
+				fix: "Ensure issueTrackingPolicy uses only supported Linear policy fields",
+			});
+		} else {
+			issueTrackingPolicy = obj.issueTrackingPolicy as IssueTrackingPolicy;
+		}
+	}
+
 	// Validate gapCasePolicy (optional)
 	let gapCasePolicy: GapCasePolicy | undefined;
 	if ("gapCasePolicy" in obj && obj.gapCasePolicy !== undefined) {
@@ -1682,6 +1798,7 @@ export function validateContract(
 			pilotRollbackPolicy,
 			pilotAuthzPolicy,
 			branchProtection,
+			issueTrackingPolicy,
 			blastRadiusRules,
 			blastRadiusRulesMode,
 		},

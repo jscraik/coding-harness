@@ -223,6 +223,7 @@ Configure repository settings on `main` to make the workflow enforceable:
 - Require at least one review before merge.
 - Require status checks:
   - `pr-template`
+  - `linear-gate`
   - `risk-policy-gate`
   - `dependency-review`
   - `actions-pinning`

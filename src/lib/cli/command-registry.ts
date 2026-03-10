@@ -2,6 +2,7 @@ import { runBranchProtectCLI } from "../../commands/branch-protect.js";
 import { runCheckAuthzCLI } from "../../commands/check-authz.js";
 import { runCheckEnvironmentCLI } from "../../commands/check-environment.js";
 import { runEvidenceVerifyCLI } from "../../commands/evidence-verify.js";
+import { runLinearGateCLI } from "../../commands/linear-gate.js";
 import { runLinearPrepareCLI } from "../../commands/linear-prepare.js";
 import { runLinearWorkflowCLI } from "../../commands/linear-workflow.js";
 import { runPolicyGateCLI } from "../../commands/policy-gate.js";
@@ -117,6 +118,39 @@ const COMMAND_SPECS: CommandSpec[] = [
 			}
 
 			return runLinearWorkflowCLI(options);
+		},
+	},
+	{
+		name: "linear-gate",
+		summary: "Enforce Linear-first intake, branch, and PR linkage policy",
+		errorLabel: "Linear Gate Error",
+		execute: (args) => {
+			const jsonFlag = args.includes("--json");
+			const allowMissingBranchFlag = args.includes("--allow-missing-branch");
+			const allowMissingPrMetadataFlag = args.includes("--allow-missing-pr");
+			const contractIndex = args.indexOf("--contract");
+			const repoRootIndex = args.indexOf("--repo-root");
+			const branchIndex = args.indexOf("--branch");
+			const prTitleIndex = args.indexOf("--pr-title");
+			const prBodyIndex = args.indexOf("--pr-body");
+
+			const options: Parameters<typeof runLinearGateCLI>[0] = {};
+
+			if (jsonFlag) options.json = true;
+			if (allowMissingBranchFlag) options.allowMissingBranch = true;
+			if (allowMissingPrMetadataFlag) options.allowMissingPrMetadata = true;
+			const contractArg = getFlagValue(args, contractIndex);
+			if (contractArg !== undefined) options.contractPath = contractArg;
+			const repoRootArg = getFlagValue(args, repoRootIndex);
+			if (repoRootArg) options.repoRoot = repoRootArg;
+			const branchArg = getFlagValue(args, branchIndex);
+			if (branchArg) options.branch = branchArg;
+			const prTitleArg = getFlagValue(args, prTitleIndex);
+			if (prTitleArg !== undefined) options.prTitle = prTitleArg;
+			const prBodyArg = getFlagValue(args, prBodyIndex);
+			if (prBodyArg !== undefined) options.prBody = prBodyArg;
+
+			return runLinearGateCLI(options);
 		},
 	},
 	{

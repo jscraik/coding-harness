@@ -116,6 +116,7 @@ export interface ContractSchema {
 	branchProtection?: {
 		requiredChecks?: string[];
 	};
+	issueTrackingPolicy?: unknown;
 	evidencePolicy?: {
 		requiredFor: unknown[];
 		allowedTypes: unknown[];
@@ -212,6 +213,9 @@ function addSchemaDefaults(contract: ContractSchema): ContractSchema {
 		branchProtection:
 			contract.branchProtection ??
 			(DEFAULT_CONTRACT.branchProtection as HarnessContract["branchProtection"]),
+		issueTrackingPolicy:
+			contract.issueTrackingPolicy ??
+			(DEFAULT_CONTRACT.issueTrackingPolicy as HarnessContract["issueTrackingPolicy"]),
 	} as ContractSchema;
 }
 
@@ -288,6 +292,7 @@ const RETIRED_TEMPLATE_PATHS = [
 interface TemplateRenderContext {
 	targetDir: string;
 	packageScripts: string[];
+	issueTrackingUrl?: string;
 }
 
 interface Template {
@@ -318,6 +323,7 @@ function renderMemoryValidateCommand(): string {
 
 interface PackageJsonLike {
 	scripts?: Record<string, unknown>;
+	bugs?: string | { url?: unknown } | undefined;
 }
 
 type CodexActionIcon = "tool" | "run" | "debug" | "test";
@@ -328,10 +334,10 @@ interface CodexAction {
 	command: string;
 }
 
-function readPackageScripts(targetDir: string): string[] {
+function readPackageJson(targetDir: string): PackageJsonLike | undefined {
 	const packageJsonPath = resolve(targetDir, "package.json");
 	if (!existsSync(packageJsonPath)) {
-		return [];
+		return undefined;
 	}
 
 	try {
@@ -339,27 +345,49 @@ function readPackageScripts(targetDir: string): string[] {
 			readFileSync(packageJsonPath, "utf-8"),
 		) as unknown;
 		if (!parsed || typeof parsed !== "object") {
-			return [];
+			return undefined;
 		}
-		const { scripts } = parsed as PackageJsonLike;
-		if (!scripts || typeof scripts !== "object") {
-			return [];
-		}
-		return Object.entries(scripts)
-			.filter(
-				([name, value]) =>
-					typeof name === "string" && typeof value === "string",
-			)
-			.map(([name]) => name);
+		return parsed as PackageJsonLike;
 	} catch {
-		return [];
+		return undefined;
 	}
 }
 
+function readPackageScripts(targetDir: string): string[] {
+	const parsed = readPackageJson(targetDir);
+	const { scripts } = parsed ?? {};
+	if (!scripts || typeof scripts !== "object") {
+		return [];
+	}
+	return Object.entries(scripts)
+		.filter(
+			([name, value]) => typeof name === "string" && typeof value === "string",
+		)
+		.map(([name]) => name);
+}
+
+function readIssueTrackingUrl(targetDir: string): string | undefined {
+	const parsed = readPackageJson(targetDir);
+	if (!parsed) {
+		return undefined;
+	}
+	const { bugs } = parsed;
+	if (typeof bugs === "string") {
+		return bugs.trim() || undefined;
+	}
+	if (bugs && typeof bugs === "object" && typeof bugs.url === "string") {
+		const trimmed = bugs.url.trim();
+		return trimmed || undefined;
+	}
+	return undefined;
+}
+
 function createTemplateRenderContext(targetDir: string): TemplateRenderContext {
+	const issueTrackingUrl = readIssueTrackingUrl(targetDir);
 	return {
 		targetDir,
 		packageScripts: readPackageScripts(targetDir),
+		...(issueTrackingUrl ? { issueTrackingUrl } : {}),
 	};
 }
 
@@ -529,10 +557,27 @@ ${actionBlocks}
 `;
 }
 
+function renderIssueTemplateConfig(context: TemplateRenderContext): string {
+	const linearUrl = context.issueTrackingUrl ?? "https://linear.app/";
+	return `# Issue template configuration
+blank_issues_enabled: false
+contact_links:
+  - name: Linear work intake
+    url: ${linearUrl}
+    about: Create or update bugs, features, policy gaps, automation work, and release follow-ups in Linear.
+  - name: Repository docs
+    url: https://github.com/jscraik/coding-harness#readme
+    about: Review setup, workflow, and command documentation before opening new work.
+  - name: Private security disclosure
+    url: mailto:jamie@brainwav.ai
+    about: Report security vulnerabilities privately instead of using public issue flows.
+`;
+}
+
 const TEMPLATES: Template[] = [
 	{
 		path: "harness.contract.json",
-		render: (pm) =>
+		render: (pm, context) =>
 			JSON.stringify(
 				{
 					version: "1.2.0",
@@ -556,6 +601,18 @@ const TEMPLATES: Template[] = [
 					},
 					branchProtection: {
 						requiredChecks: [...BRANCH_PROTECTION_REQUIRED_CHECKS],
+					},
+					issueTrackingPolicy: {
+						provider: "linear" as const,
+						...(context.issueTrackingUrl
+							? { projectUrl: context.issueTrackingUrl }
+							: {}),
+						requirePackageBugsUrl: true,
+						disableGitHubIssues: true,
+						requireBranchIssueKey: true,
+						requirePrIssueKey: true,
+						prReferenceMode: "either" as const,
+						branchPrefix: "codex",
 					},
 					evidencePolicy: {
 						requiredFor: [],
@@ -858,11 +915,50 @@ jobs:
         if: github.event_name == 'merge_group'
         run: echo "merge_group event detected; PR template enforcement is pull_request-only."
 
-  risk-policy-gate:
-    name: risk-policy-gate
+  linear-gate:
+    name: linear-gate
     runs-on: ubuntu-latest
     needs: [pr-template]
     if: ${"${{ always() && (github.event_name == 'merge_group' || needs.pr-template.result == 'success') }}"}
+    steps:
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
+        with:
+          node-version: "24"
+      - name: Enable corepack
+        run: corepack enable
+      - name: Install dependencies
+        run: ${installCommand}
+      - name: Enforce Linear-first issue tracking policy
+        shell: bash
+        run: |
+          if [[ "${"${{ github.event_name }}"}" == "pull_request" ]]; then
+            BRANCH="${"${{ github.head_ref }}"}"
+            PR_TITLE="$(cat <<'EOF'
+${"${{ github.event.pull_request.title }}"}
+EOF
+)"
+            PR_BODY="$(cat <<'EOF'
+${"${{ github.event.pull_request.body }}"}
+EOF
+)"
+            pnpm exec tsx src/cli.ts linear-gate \\
+              --branch "$BRANCH" \\
+              --pr-title "$PR_TITLE" \\
+              --pr-body "$PR_BODY" \\
+              --json
+          else
+            pnpm exec tsx src/cli.ts linear-gate \\
+              --allow-missing-branch \\
+              --allow-missing-pr \\
+              --json
+          fi
+
+  risk-policy-gate:
+    name: risk-policy-gate
+    runs-on: ubuntu-latest
+    needs: [pr-template, linear-gate]
+    if: ${"${{ always() && (github.event_name == 'merge_group' || (needs.pr-template.result == 'success' && needs.linear-gate.result == 'success')) }}"}
     steps:
       - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
         with:
@@ -1358,7 +1454,7 @@ Configure GitHub branch protection (or rulesets) on \`main\`:
   - \`--token <PAT>\` or env \`GITHUB_TOKEN\` / \`GITHUB_PERSONAL_ACCESS_TOKEN\`
 - Require pull request before merge.
 - Require at least one approval.
-- Require status checks: \`pr-template\`, \`risk-policy-gate\`, \`dependency-review\`, \`actions-pinning\`, \`consistency-drift-health\`, \`lint\`, \`typecheck\`, \`test\`, \`audit\`, \`check\`, \`memory\`, \`security-scan\`.
+- Require status checks: \`pr-template\`, \`linear-gate\`, \`risk-policy-gate\`, \`dependency-review\`, \`actions-pinning\`, \`consistency-drift-health\`, \`lint\`, \`typecheck\`, \`test\`, \`audit\`, \`check\`, \`memory\`, \`security-scan\`.
 - Require workflows to pin third-party actions to full commit SHAs.
 - Configure required checks workflows to run on both \`pull_request\` and \`merge_group\` when using merge queue.
 - Block direct pushes to \`main\`.
@@ -1888,19 +1984,7 @@ echo "Environment check passed (attestation: $ATTESTATION_PATH)"
 	},
 	{
 		path: ".github/ISSUE_TEMPLATE/config.yml",
-		render: () => `# Issue template configuration
-blank_issues_enabled: false
-contact_links:
-  - name: Linear work intake
-    url: https://linear.app/jscraik/project/coding-harness-bb735dbbda79
-    about: Create or update bugs, features, policy gaps, automation work, and release follow-ups in Linear.
-  - name: Repository docs
-    url: https://github.com/jscraik/coding-harness#readme
-    about: Review setup, workflow, and command documentation before opening new work.
-  - name: Private security disclosure
-    url: mailto:jamie@brainwav.ai
-    about: Report security vulnerabilities privately instead of using public issue flows.
-`,
+		render: (_pm, context) => renderIssueTemplateConfig(context),
 	},
 	{
 		path: ".github/CODEOWNERS",

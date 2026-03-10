@@ -32,6 +32,7 @@ describe("runBranchProtect", () => {
 			branchProtection: {
 				requiredChecks: [
 					"pr-template",
+					"linear-gate",
 					"risk-policy-gate",
 					"dependency-review",
 					"actions-pinning",
@@ -253,6 +254,7 @@ describe("runBranchProtect", () => {
 		expect(requiredRule?.parameters).toMatchObject({
 			required_status_checks: [
 				{ context: "pr-template" },
+				{ context: "linear-gate" },
 				{ context: "risk-policy-gate" },
 				{ context: "dependency-review" },
 				{ context: "actions-pinning" },
@@ -362,6 +364,7 @@ describe("runBranchProtect", () => {
 		expect(requiredRule?.parameters).toMatchObject({
 			required_status_checks: [
 				{ context: "pr-template" },
+				{ context: "linear-gate" },
 				{ context: "risk-policy-gate" },
 				{ context: "dependency-review" },
 				{ context: "actions-pinning" },

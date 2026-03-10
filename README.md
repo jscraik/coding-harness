@@ -114,6 +114,7 @@ GitHub issue forms in this repository are retired; the repo now routes work inta
 | `check-authz` | Validate authorization policy for mutative operations. |
 | `check-environment` | Validate pilot environment governance checks. |
 | `linear` | Prepare Linear-aware branch/PR metadata and move issues through claim, handoff, and close workflow states. |
+| `linear-gate` | Enforce Linear-first intake, branch naming, and PR linkage rules from the contract. |
 | `gap-case` | Track and resolve pilot gap-cases. |
 | `pilot-evaluate` | Evaluate pilot metrics and promotion readiness. |
 | `pilot-rollback` | Transition pilot mode (autonomous <-> manual). |
