@@ -136,8 +136,8 @@ export async function runBranchProtect(
 		};
 	}
 
-	// Validate ecosystem if provided
-	if (options.ecosystem) {
+	// Validate ecosystem if provided (and not overridden by explicit checks)
+	if (options.ecosystem && !options.requiredChecks) {
 		const validEcosystems = listEcosystemProfiles();
 		if (!validEcosystems.includes(options.ecosystem)) {
 			return {

@@ -264,6 +264,9 @@ export async function runPresetCLI(
 					? "yaml"
 					: "table";
 			const result = listPresets({ format });
+			if (result.ok && format === "json") {
+				console.info(JSON.stringify(result.value, null, 2));
+			}
 			return {
 				exitCode: result.ok ? EXIT_CODES.SUCCESS : result.error.code,
 			};
@@ -298,6 +301,8 @@ export async function runPresetCLI(
 			const result = showPreset(name, { format });
 			if (!result.ok) {
 				console.error(`Error: ${result.error.message}`);
+			} else if (format === "json") {
+				console.info(JSON.stringify(result.value, null, 2));
 			}
 			return {
 				exitCode: result.ok ? EXIT_CODES.SUCCESS : result.error.code,
