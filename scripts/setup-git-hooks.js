@@ -9,12 +9,12 @@
  *   1. Adds simple-git-hooks to devDependencies (if not present)
  *   2. Adds postinstall script to run simple-git-hooks
  *   3. Enforces required simple-git-hooks configuration
- *   4. Runs pnpm install to activate hooks
+ *   4. Runs package-manager install to activate hooks
  */
 
-import { execFileSync } from "node:child_process";
 import { existsSync, readFileSync, writeFileSync } from "node:fs";
 import { resolve } from "node:path";
+import { execFileSync } from "node:child_process";
 
 const PACKAGE_JSON_PATH = resolve(process.cwd(), "package.json");
 const REQUIRED_HOOKS = {
@@ -88,28 +88,21 @@ function main() {
 
 	// Write changes if modified
 	if (modified) {
-		writeFileSync(
-			PACKAGE_JSON_PATH,
-			`${JSON.stringify(packageJson, null, 2)}\n`,
-		);
+		writeFileSync(PACKAGE_JSON_PATH, JSON.stringify(packageJson, null, 2) + "\n");
 		console.info("\n✓ package.json updated");
 	}
 
-	// Run pnpm install to activate hooks (using execFileSync for safety)
+	// Run install to activate hooks (using execFileSync for safety)
 	console.info("\nInstalling dependencies to activate hooks...");
 	try {
 		execFileSync("pnpm", ["install"], { stdio: "inherit" });
 		console.info("\n✓ Git hooks installed and active!");
 		console.info("\nHooks enabled:");
-		console.info(
-			"  • pre-commit: pnpm lint && pnpm docs:lint && pnpm typecheck",
-		);
+		console.info("  • pre-commit: pnpm lint && pnpm docs:lint && pnpm typecheck");
 		console.info("  • commit-msg: validates conventional commit format");
 		console.info("  • pre-push: pnpm test && pnpm audit");
 	} catch {
-		console.error(
-			"\n⚠️  Failed to run pnpm install. Run it manually to activate hooks.",
-		);
+		console.error("\n⚠️  Failed to run pnpm install. Run it manually to activate hooks.");
 	}
 }
 

@@ -160,7 +160,19 @@ function withReadinessFields(
 	};
 }
 
+interface ApprovalResult {
+	passed: boolean;
+	blockers: string[];
+	approvers: string[];
+	codingActor?: string;
+}
+
 interface ReviewerIndependenceResult {
+	passed: boolean;
+	blockers: string[];
+}
+
+interface ThreadReadinessResult {
 	passed: boolean;
 	blockers: string[];
 }
@@ -205,13 +217,12 @@ function resolveCurrentApprovers(
 		.map(([login]) => login);
 }
 
-async function evaluateReviewerIndependence(
+async function evaluateApprovals(
 	client: GitHubClient,
 	prNumber: number,
 	headSha: string,
-): Promise<ReviewerIndependenceResult> {
-	const pullRequest = await client.getPullRequest(prNumber);
-	const codingActor = pullRequest.user?.login?.trim();
+	codingActor: string | undefined,
+): Promise<ApprovalResult> {
 	const reviews = await client.listPullRequestReviews(prNumber);
 	const approvers = resolveCurrentApprovers(reviews, headSha);
 
@@ -220,23 +231,35 @@ async function evaluateReviewerIndependence(
 		blockers.push(
 			"Unable to determine coding actor from PR author; cannot verify reviewer independence",
 		);
-		return { passed: false, blockers };
+		return { passed: false, blockers, approvers };
 	}
 
 	if (approvers.length === 0) {
 		blockers.push("No APPROVED reviews found for the current HEAD SHA");
-		return { passed: false, blockers };
+		return { passed: false, blockers, approvers, codingActor };
 	}
 
+	return { passed: true, blockers: [], approvers, codingActor };
+}
+
+function evaluateReviewerIndependence({
+	approvers,
+	codingActor,
+}: {
+	approvers: string[];
+	codingActor: string;
+}): ReviewerIndependenceResult {
 	const independentApprovers = approvers.filter(
 		(reviewer) => reviewer !== codingActor,
 	);
 
 	if (independentApprovers.length === 0) {
-		blockers.push(
-			`Reviewer independence failed: coding actor '${codingActor}' is the sole approving reviewer`,
-		);
-		return { passed: false, blockers };
+		return {
+			passed: false,
+			blockers: [
+				`Reviewer independence failed: coding actor '${codingActor}' is the sole approving reviewer`,
+			],
+		};
 	}
 
 	return { passed: true, blockers: [] };
@@ -247,9 +270,17 @@ function evaluateRequiredChecks(
 	requiredChecks: string[],
 ): string[] {
 	const blockers: string[] = [];
+	const latestByCheckName = new Map<string, CheckRun>();
+
+	for (const run of checkRuns) {
+		const current = latestByCheckName.get(run.name);
+		if (!current || run.id > current.id) {
+			latestByCheckName.set(run.name, run);
+		}
+	}
 
 	for (const checkName of requiredChecks) {
-		const checkRun = resolveRequiredCheckRun(checkRuns, checkName);
+		const checkRun = latestByCheckName.get(checkName);
 		if (!checkRun) {
 			blockers.push(
 				`Required check '${checkName}' was not found for current HEAD SHA`,
@@ -272,17 +303,45 @@ function evaluateRequiredChecks(
 	return blockers;
 }
 
-function resolveRequiredCheckRun(
-	checkRuns: CheckRun[],
-	checkName: string,
-): CheckRun | undefined {
-	const matches = checkRuns.filter((run) => run.name === checkName);
-	if (matches.length === 0) {
-		return undefined;
-	}
-	return matches.reduce((latest, current) =>
-		current.id > latest.id ? current : latest,
+function buildBotLoginSet(botLogin?: string): Set<string> {
+	return new Set<string>(
+		[botLogin, "greptile-apps", "greptile[bot]", "chatgpt-codex-connector"]
+			.map((login) => normalizeBotLogin(login))
+			.filter((login): login is string => login !== undefined),
 	);
+}
+
+function evaluateUnresolvedReviewThreads(
+	threads: Awaited<ReturnType<GitHubClient["listPullRequestReviewThreads"]>>,
+	botLogins: Set<string>,
+): ThreadReadinessResult {
+	const unresolvedThreads = threads.filter((thread) => !thread.isResolved);
+	if (unresolvedThreads.length === 0) {
+		return { passed: true, blockers: [] };
+	}
+
+	const unresolvedHumanThreads = unresolvedThreads.filter((thread) => {
+		const commentAuthors = thread.comments
+			.map((comment) => normalizeBotLogin(comment.author?.login))
+			.filter((login): login is string => login !== undefined);
+
+		if (commentAuthors.length === 0) {
+			return true;
+		}
+
+		return commentAuthors.some((login) => !botLogins.has(login));
+	});
+
+	if (unresolvedHumanThreads.length === 0) {
+		return { passed: true, blockers: [] };
+	}
+
+	return {
+		passed: false,
+		blockers: [
+			`Unresolved review thread comments remain (${unresolvedHumanThreads.length}); resolve all non-bot threads before merge`,
+		],
+	};
 }
 
 /**
@@ -332,9 +391,25 @@ export async function runReviewGate(
 			repo: options.repo,
 		});
 
+		// SECURITY: Verify the caller-supplied SHA matches the PR's current head.
+		// Without this check, an attacker controlling headSha could point to an older
+		// commit with a passing review check and bypass the intended gate.
+		const pullRequest = await client.getPullRequest(options.prNumber);
+		const pullRequestHeadSha = pullRequest.head.sha;
+
+		if (pullRequestHeadSha.toLowerCase() !== options.headSha.toLowerCase()) {
+			return {
+				ok: false,
+				error: {
+					code: "VALIDATION_ERROR",
+					message: `Provided SHA (${options.headSha}) does not match the pull request's current head SHA (${pullRequestHeadSha})`,
+				},
+			};
+		}
+
 		// Poll for check run completion with timeout
 		while (Date.now() - startTime < timeoutMs) {
-			const checkRuns = await client.listCheckRunsForRef(options.headSha);
+			const checkRuns = await client.listCheckRunsForRef(pullRequestHeadSha);
 			const checkResult = findReviewCheckRun(checkRuns, options.checkName);
 
 			if (!checkResult.found) {
@@ -342,7 +417,7 @@ export async function runReviewGate(
 					ok: true,
 					output: withReadinessFields({
 						verified: false,
-						headSha: options.headSha,
+						headSha: pullRequestHeadSha,
 						checkStatus: "not_found",
 						needsRerun: true,
 					}),
@@ -357,27 +432,52 @@ export async function runReviewGate(
 				const requiredChecks = (reviewPolicy.requiredChecks ?? []).filter(
 					(checkName) => checkName !== options.checkName,
 				);
-				const independence = enforceReviewerIndependence
-					? await evaluateReviewerIndependence(
-							client,
-							options.prNumber,
-							options.headSha,
-						)
-					: { passed: true, blockers: [] };
+				// Always enforce that at least one APPROVED review exists for the
+				// current HEAD SHA. enforceReviewerIndependence only controls
+				// whether the approver must be different from the PR author —
+				// it cannot skip the approval requirement itself.
+				const approvals = await evaluateApprovals(
+					client,
+					options.prNumber,
+					pullRequestHeadSha,
+					pullRequest.user?.login?.trim(),
+				);
+				const independence =
+					enforceReviewerIndependence && approvals.passed
+						? evaluateReviewerIndependence({
+								approvers: approvals.approvers,
+								codingActor: approvals.codingActor ?? "",
+							})
+						: { passed: true, blockers: [] };
+				const threads =
+					typeof (client as Partial<GitHubClient>)
+						.listPullRequestReviewThreads === "function"
+						? await client.listPullRequestReviewThreads(options.prNumber)
+						: [];
+				const threadReadiness = evaluateUnresolvedReviewThreads(
+					threads,
+					buildBotLoginSet(options.botLogin),
+				);
 				const requiredCheckBlockers = evaluateRequiredChecks(
 					checkRuns,
 					requiredChecks,
 				);
 				const additionalBlockers = [
+					...approvals.blockers,
 					...independence.blockers,
+					...threadReadiness.blockers,
 					...requiredCheckBlockers,
 				];
 				return {
 					ok: true,
 					output: withReadinessFields(
 						{
-							verified: additionalBlockers.length === 0 && independence.passed,
-							headSha: options.headSha,
+							verified:
+								additionalBlockers.length === 0 &&
+								approvals.passed &&
+								independence.passed &&
+								threadReadiness.passed,
+							headSha: pullRequestHeadSha,
 							checkStatus: checkResult.status,
 							checkConclusion: checkResult.conclusion ?? undefined,
 							needsRerun: false,
@@ -395,7 +495,7 @@ export async function runReviewGate(
 					ok: true,
 					output: withReadinessFields({
 						verified: false,
-						headSha: options.headSha,
+						headSha: pullRequestHeadSha,
 						checkStatus: checkResult.status,
 						checkConclusion: checkResult.conclusion ?? undefined,
 						needsRerun: true,
@@ -430,7 +530,7 @@ export async function runReviewGate(
 			ok: true,
 			output: withReadinessFields({
 				verified: false,
-				headSha: options.headSha,
+				headSha: pullRequestHeadSha,
 				checkStatus: "in_progress",
 				needsRerun: true,
 				timedOut: true,
@@ -637,16 +737,7 @@ export async function runReviewGateCLI(
 					owner: options.owner,
 					repo: options.repo,
 				});
-				const botLogins = new Set<string>(
-					[
-						options.botLogin,
-						"greptile-apps",
-						"greptile[bot]",
-						"chatgpt-codex-connector",
-					]
-						.map((login) => normalizeBotLogin(login))
-						.filter((login): login is string => login !== undefined),
-				);
+				const botLogins = buildBotLoginSet(options.botLogin);
 				const threadResolutionResult = await resolveBotOnlyThreads(
 					client,
 					options.prNumber,

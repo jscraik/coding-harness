@@ -5,11 +5,13 @@ import {
 	lstatSync,
 	mkdirSync,
 	readFileSync,
+	realpathSync,
 	renameSync,
 	rmSync,
+	statSync,
 	writeFileSync,
 } from "node:fs";
-import { dirname, resolve, sep } from "node:path";
+import { dirname, join, relative, resolve, sep } from "node:path";
 import { cwd } from "node:process";
 import { diffLines } from "diff";
 import semver from "semver";
@@ -94,6 +96,9 @@ export interface ProposedChange {
 	newContent: string;
 }
 
+/** Max size for interactive content reads to prevent DoS via large/special files */
+const MAX_INTERACTIVE_FILE_BYTES = 1024 * 1024; // 1 MiB
+
 // === Schema Migration Types ===
 
 /** Typed contract schema for version-aware handling */
@@ -111,6 +116,7 @@ export interface ContractSchema {
 	branchProtection?: {
 		requiredChecks?: string[];
 	};
+	issueTrackingPolicy?: unknown;
 	evidencePolicy?: {
 		requiredFor: unknown[];
 		allowedTypes: unknown[];
@@ -164,7 +170,7 @@ export type MigrationResultType =
 	| { ok: false; error: InitErrorOutput };
 
 // Current latest schema version (must match template)
-export const CURRENT_SCHEMA_VERSION = "1.2.0";
+export const CURRENT_SCHEMA_VERSION = "1.3.0";
 
 function addSchemaDefaults(contract: ContractSchema): ContractSchema {
 	return {
@@ -207,6 +213,9 @@ function addSchemaDefaults(contract: ContractSchema): ContractSchema {
 		branchProtection:
 			contract.branchProtection ??
 			(DEFAULT_CONTRACT.branchProtection as HarnessContract["branchProtection"]),
+		issueTrackingPolicy:
+			contract.issueTrackingPolicy ??
+			(DEFAULT_CONTRACT.issueTrackingPolicy as HarnessContract["issueTrackingPolicy"]),
 	} as ContractSchema;
 }
 
@@ -242,6 +251,16 @@ const MIGRATIONS: Migration[] = [
 			({
 				...addSchemaDefaults(contract),
 				version: "1.2.0",
+			}) as ContractSchema,
+	},
+	{
+		fromVersion: "1.2.0",
+		toVersion: "1.3.0",
+		description: "Inject docs-gate policy for governance documentation parity",
+		migrate: (contract) =>
+			({
+				...addSchemaDefaults(contract),
+				version: "1.3.0",
 			}) as ContractSchema,
 	},
 ];
@@ -283,6 +302,7 @@ const RETIRED_TEMPLATE_PATHS = [
 interface TemplateRenderContext {
 	targetDir: string;
 	packageScripts: string[];
+	issueTrackingUrl?: string;
 }
 
 interface Template {
@@ -299,6 +319,10 @@ function renderScriptCommand(packageManager: string, script: string): string {
 	return `${packageManager} ${script}`;
 }
 
+function shellEscapeArg(value: string): string {
+	return `'${value.replaceAll("'", `'"'"'`)}'`;
+}
+
 function renderInstallCommand(packageManager: string): string {
 	return `${packageManager} install`;
 }
@@ -309,6 +333,7 @@ function renderMemoryValidateCommand(): string {
 
 interface PackageJsonLike {
 	scripts?: Record<string, unknown>;
+	bugs?: string | { url?: unknown } | undefined;
 }
 
 type CodexActionIcon = "tool" | "run" | "debug" | "test";
@@ -319,10 +344,10 @@ interface CodexAction {
 	command: string;
 }
 
-function readPackageScripts(targetDir: string): string[] {
+function readPackageJson(targetDir: string): PackageJsonLike | undefined {
 	const packageJsonPath = resolve(targetDir, "package.json");
 	if (!existsSync(packageJsonPath)) {
-		return [];
+		return undefined;
 	}
 
 	try {
@@ -330,27 +355,49 @@ function readPackageScripts(targetDir: string): string[] {
 			readFileSync(packageJsonPath, "utf-8"),
 		) as unknown;
 		if (!parsed || typeof parsed !== "object") {
-			return [];
+			return undefined;
 		}
-		const { scripts } = parsed as PackageJsonLike;
-		if (!scripts || typeof scripts !== "object") {
-			return [];
-		}
-		return Object.entries(scripts)
-			.filter(
-				([name, value]) =>
-					typeof name === "string" && typeof value === "string",
-			)
-			.map(([name]) => name);
+		return parsed as PackageJsonLike;
 	} catch {
-		return [];
+		return undefined;
 	}
 }
 
+function readPackageScripts(targetDir: string): string[] {
+	const parsed = readPackageJson(targetDir);
+	const { scripts } = parsed ?? {};
+	if (!scripts || typeof scripts !== "object") {
+		return [];
+	}
+	return Object.entries(scripts)
+		.filter(
+			([name, value]) => typeof name === "string" && typeof value === "string",
+		)
+		.map(([name]) => name);
+}
+
+function readIssueTrackingUrl(targetDir: string): string | undefined {
+	const parsed = readPackageJson(targetDir);
+	if (!parsed) {
+		return undefined;
+	}
+	const { bugs } = parsed;
+	if (typeof bugs === "string") {
+		return bugs.trim() || undefined;
+	}
+	if (bugs && typeof bugs === "object" && typeof bugs.url === "string") {
+		const trimmed = bugs.url.trim();
+		return trimmed || undefined;
+	}
+	return undefined;
+}
+
 function createTemplateRenderContext(targetDir: string): TemplateRenderContext {
+	const issueTrackingUrl = readIssueTrackingUrl(targetDir);
 	return {
 		targetDir,
 		packageScripts: readPackageScripts(targetDir),
+		...(issueTrackingUrl ? { issueTrackingUrl } : {}),
 	};
 }
 
@@ -405,7 +452,7 @@ function renderScriptActionCommand(
 ): string {
 	return `set -euo pipefail
 
-${renderScriptCommand(packageManager, script)}`;
+${renderScriptCommand(packageManager, shellEscapeArg(script))}`;
 }
 
 function pickScriptForIcon(
@@ -520,10 +567,27 @@ ${actionBlocks}
 `;
 }
 
+function renderIssueTemplateConfig(context: TemplateRenderContext): string {
+	const linearUrl = context.issueTrackingUrl ?? "https://linear.app/";
+	return `# Issue template configuration
+blank_issues_enabled: false
+contact_links:
+  - name: Linear work intake
+    url: ${linearUrl}
+    about: Create or update bugs, features, policy gaps, automation work, and release follow-ups in Linear.
+  - name: Repository docs
+    url: https://github.com/jscraik/coding-harness#readme
+    about: Review setup, workflow, and command documentation before opening new work.
+  - name: Private security disclosure
+    url: mailto:jamie@brainwav.ai
+    about: Report security vulnerabilities privately instead of using public issue flows.
+`;
+}
+
 const TEMPLATES: Template[] = [
 	{
 		path: "harness.contract.json",
-		render: (pm) =>
+		render: (pm, context) =>
 			JSON.stringify(
 				{
 					version: "1.2.0",
@@ -547,6 +611,18 @@ const TEMPLATES: Template[] = [
 					},
 					branchProtection: {
 						requiredChecks: [...BRANCH_PROTECTION_REQUIRED_CHECKS],
+					},
+					issueTrackingPolicy: {
+						provider: "linear" as const,
+						...(context.issueTrackingUrl
+							? { projectUrl: context.issueTrackingUrl }
+							: {}),
+						requirePackageBugsUrl: true,
+						disableGitHubIssues: true,
+						requireBranchIssueKey: true,
+						requirePrIssueKey: true,
+						prReferenceMode: "either" as const,
+						branchPrefix: "codex",
 					},
 					evidencePolicy: {
 						requiredFor: [],
@@ -809,9 +885,13 @@ jobs:
               }
 
               const unchecked = checklistItems.filter((line) => /^- \\[ \\]/.test(line));
-              if (unchecked.length > 0) {
+              const unresolvedUnchecked = unchecked.filter(
+                (line) => !/\\*\\*\\((pending|n\\/a|not applicable)\\)\\*\\*/i.test(line),
+              );
+              if (unresolvedUnchecked.length > 0) {
                 errors.push(
-                  'Checklist has unchecked item(s):\\n' + unchecked.join('\\n'),
+                  'Checklist has unchecked item(s) without explicit status marker ((Pending) or (N/A)):\\n' +
+                    unresolvedUnchecked.join('\\n'),
                 );
               }
             }
@@ -845,11 +925,50 @@ jobs:
         if: github.event_name == 'merge_group'
         run: echo "merge_group event detected; PR template enforcement is pull_request-only."
 
-  risk-policy-gate:
-    name: risk-policy-gate
+  linear-gate:
+    name: linear-gate
     runs-on: ubuntu-latest
     needs: [pr-template]
     if: ${"${{ always() && (github.event_name == 'merge_group' || needs.pr-template.result == 'success') }}"}
+    steps:
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
+        with:
+          node-version: "24"
+      - name: Enable corepack
+        run: corepack enable
+      - name: Install dependencies
+        run: ${installCommand}
+      - name: Enforce Linear-first issue tracking policy
+        shell: bash
+        run: |
+          if [[ "${"${{ github.event_name }}"}" == "pull_request" ]]; then
+            BRANCH="${"${{ github.head_ref }}"}"
+            PR_TITLE="$(cat <<'EOF'
+${"${{ github.event.pull_request.title }}"}
+EOF
+)"
+            PR_BODY="$(cat <<'EOF'
+${"${{ github.event.pull_request.body }}"}
+EOF
+)"
+            pnpm exec tsx src/cli.ts linear-gate \\
+              --branch "$BRANCH" \\
+              --pr-title "$PR_TITLE" \\
+              --pr-body "$PR_BODY" \\
+              --json
+          else
+            pnpm exec tsx src/cli.ts linear-gate \\
+              --allow-missing-branch \\
+              --allow-missing-pr \\
+              --json
+          fi
+
+  risk-policy-gate:
+    name: risk-policy-gate
+    runs-on: ubuntu-latest
+    needs: [pr-template, linear-gate]
+    if: ${"${{ always() && (github.event_name == 'merge_group' || (needs.pr-template.result == 'success' && needs.linear-gate.result == 'success')) }}"}
     steps:
       - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
         with:
@@ -866,16 +985,26 @@ jobs:
           if [[ "${"${{ github.event_name }}"}" == "pull_request" ]]; then
             BASE_SHA="${"${{ github.event.pull_request.base.sha }}"}"
             HEAD_SHA="${"${{ github.event.pull_request.head.sha }}"}"
+            BASE_REF="${"${{ github.base_ref }}"}"
+            # Load contract from the trusted base branch, not the PR checkout.
+            # Prevents a malicious PR from weakening policy by modifying harness.contract.json.
+            CONTRACT_PATH="$RUNNER_TEMP/harness.contract.base.json"
+            if ! git show "origin/$BASE_REF:harness.contract.json" > "$CONTRACT_PATH"; then
+              echo "::error::Unable to load trusted harness.contract.json from origin/$BASE_REF"
+              exit 1
+            fi
           else
             BASE_SHA="${"${{ github.event.merge_group.base_sha }}"}"
             HEAD_SHA="${"${{ github.event.merge_group.head_sha }}"}"
+            # Merge queue: contract is committed and protected by branch rules.
+            CONTRACT_PATH="harness.contract.json"
           fi
           CHANGED_FILES="$(git diff --name-only "$BASE_SHA" "$HEAD_SHA" | paste -sd, -)"
           if [[ -z "$CHANGED_FILES" ]]; then
             CHANGED_FILES="$(git ls-files | paste -sd, -)"
           fi
           pnpm exec tsx src/cli.ts preflight-gate \\
-            --contract harness.contract.json \\
+            --contract "$CONTRACT_PATH" \\
             --max-tier medium \\
             --files "${"${CHANGED_FILES}"}" \\
             --json
@@ -1335,7 +1464,7 @@ Configure GitHub branch protection (or rulesets) on \`main\`:
   - \`--token <PAT>\` or env \`GITHUB_TOKEN\` / \`GITHUB_PERSONAL_ACCESS_TOKEN\`
 - Require pull request before merge.
 - Require at least one approval.
-- Require status checks: \`pr-template\`, \`risk-policy-gate\`, \`dependency-review\`, \`actions-pinning\`, \`consistency-drift-health\`, \`lint\`, \`typecheck\`, \`test\`, \`audit\`, \`check\`, \`memory\`, \`security-scan\`.
+- Require status checks: \`pr-template\`, \`linear-gate\`, \`risk-policy-gate\`, \`dependency-review\`, \`actions-pinning\`, \`consistency-drift-health\`, \`lint\`, \`typecheck\`, \`test\`, \`audit\`, \`check\`, \`memory\`, \`security-scan\`.
 - Require workflows to pin third-party actions to full commit SHAs.
 - Configure required checks workflows to run on both \`pull_request\` and \`merge_group\` when using merge queue.
 - Block direct pushes to \`main\`.
@@ -1865,19 +1994,7 @@ echo "Environment check passed (attestation: $ATTESTATION_PATH)"
 	},
 	{
 		path: ".github/ISSUE_TEMPLATE/config.yml",
-		render: () => `# Issue template configuration
-blank_issues_enabled: false
-contact_links:
-  - name: Linear work intake
-    url: https://linear.app/jscraik/project/coding-harness-bb735dbbda79
-    about: Create or update bugs, features, policy gaps, automation work, and release follow-ups in Linear.
-  - name: Repository docs
-    url: https://github.com/jscraik/coding-harness#readme
-    about: Review setup, workflow, and command documentation before opening new work.
-  - name: Private security disclosure
-    url: mailto:jamie@brainwav.ai
-    about: Report security vulnerabilities privately instead of using public issue flows.
-`,
+		render: (_pm, context) => renderIssueTemplateConfig(context),
 	},
 	{
 		path: ".github/CODEOWNERS",
@@ -2019,19 +2136,106 @@ function sanitizePath(base: string, relativePath: string): PathResult {
 	const normalizedBase = resolve(base);
 	const resolved = resolve(base, relativePath);
 
+	// Resolve the true canonical base dir — reject if it doesn't exist yet.
+	let baseRealPath: string;
+	try {
+		baseRealPath = realpathSync(normalizedBase);
+	} catch {
+		return {
+			ok: false,
+			error: {
+				code: "INVALID_PATH",
+				message: `Base directory must exist and be resolvable: ${base}`,
+			},
+		};
+	}
+
 	// Ensure base ends with separator for proper prefix matching
 	// This prevents /app from matching /app-secrets
 	const baseWithSep = normalizedBase.endsWith(sep)
 		? normalizedBase
 		: normalizedBase + sep;
 
-	// Check if resolved is exactly base or starts with base + separator
+	// Lexical containment check (fast path — still needed for the no-symlink case)
 	if (resolved !== normalizedBase && !resolved.startsWith(baseWithSep)) {
 		return {
 			ok: false,
 			error: {
 				code: "PATH_TRAVERSAL",
 				message: `Path traversal blocked: ${relativePath} resolves outside target directory`,
+				path: relativePath,
+			},
+		};
+	}
+
+	// SECURITY: Walk each existing path segment and reject any symlink.
+	// resolve() is purely lexical — it doesn't follow symlinks, so a
+	// directory symlink (.github -> /etc) passes the prefix check above
+	// but mkdirSync/renameSync will follow it at write time.
+	const relToBase = relative(normalizedBase, resolved);
+	const segments = relToBase.split(sep).filter((s) => s.length > 0);
+	let walkPath = normalizedBase;
+	for (const segment of segments) {
+		walkPath = join(walkPath, segment);
+		if (!existsSync(walkPath)) {
+			// Not yet created — safe to skip (atomicWrite will create it)
+			break;
+		}
+		try {
+			if (lstatSync(walkPath).isSymbolicLink()) {
+				return {
+					ok: false,
+					error: {
+						code: "PATH_TRAVERSAL",
+						message: `Path traversal blocked: ${relativePath} contains a symbolic link`,
+						path: relativePath,
+					},
+				};
+			}
+		} catch (e) {
+			return {
+				ok: false,
+				error: {
+					code: "INVALID_PATH",
+					message: `Failed to validate path safety: ${sanitizeError(e)}`,
+					path: relativePath,
+				},
+			};
+		}
+	}
+
+	// SECURITY: Canonical ancestor check — realpathSync on the nearest
+	// existing ancestor to catch symlink-based escapes in parent dirs.
+	let nearestExisting = resolved;
+	while (!existsSync(nearestExisting)) {
+		const parent = dirname(nearestExisting);
+		if (parent === nearestExisting) break; // filesystem root
+		nearestExisting = parent;
+	}
+	try {
+		const realNearest = realpathSync(nearestExisting);
+		const baseRealWithSep = baseRealPath.endsWith(sep)
+			? baseRealPath
+			: `${baseRealPath}${sep}`;
+		if (
+			realNearest !== baseRealPath &&
+			!realNearest.startsWith(baseRealWithSep)
+		) {
+			return {
+				ok: false,
+				error: {
+					code: "PATH_TRAVERSAL",
+					message: `Path traversal blocked: ${relativePath} resolves outside target directory`,
+					path: relativePath,
+				},
+			};
+		}
+	} catch (e) {
+		return {
+			ok: false,
+			error: {
+				code: "INVALID_PATH",
+				message: `Failed to resolve path safety: ${sanitizeError(e)}`,
 				path: relativePath,
 			},
 		};
@@ -2332,6 +2536,52 @@ function executeRollback(
 						},
 					};
 				}
+
+				// SECURITY: reject any symlink at the target path or in its
+				// parent directory to prevent symlink-based rollback overwrite.
+				try {
+					if (
+						existsSync(targetPath) &&
+						lstatSync(targetPath).isSymbolicLink()
+					) {
+						return {
+							ok: false,
+							error: {
+								code: "WRITE_ERROR",
+								message: `Symlink detected at rollback target: ${entry.path} — rollback rejected`,
+								path: entry.path,
+							},
+						};
+					}
+					const realTargetDir = realpathSync(targetDir);
+					const parentDir = dirname(targetPath);
+					const realParent = existsSync(parentDir)
+						? realpathSync(parentDir)
+						: parentDir;
+					if (
+						realParent !== realTargetDir &&
+						!realParent.startsWith(`${realTargetDir}${sep}`)
+					) {
+						return {
+							ok: false,
+							error: {
+								code: "WRITE_ERROR",
+								message: `Rollback path escaped workspace: ${entry.path}`,
+								path: entry.path,
+							},
+						};
+					}
+				} catch (e) {
+					return {
+						ok: false,
+						error: {
+							code: "WRITE_ERROR",
+							message: `Failed to validate rollback target: ${sanitizeError(e)}`,
+							path: entry.path,
+						},
+					};
+				}
+
 				copyFileSync(backupPath, targetPath);
 				restored.push(entry.path);
 			}
@@ -2686,19 +2936,20 @@ function collectProposedChanges(
 			exists && shouldAutoUpdateTemplate(template.path, targetPath);
 
 		if (exists && !options.force && !autoUpdate) {
-			// File exists and not forcing - would skip
+			// File exists and not forcing - would skip; no content read needed
+			// (diff for skip is not shown; reading here is unnecessary and risky).
 			proposed.push({
 				path: template.path,
 				action: "skip",
-				currentContent: readFileSync(targetPath, "utf-8"),
+				currentContent: null,
 				newContent,
 			});
 		} else if (exists) {
-			// File exists and forcing - would modify
+			// File exists and forcing or auto-updating - read safely.
 			proposed.push({
 				path: template.path,
 				action: "modify",
-				currentContent: readFileSync(targetPath, "utf-8"),
+				currentContent: readInteractiveCurrentContent(targetPath),
 				newContent,
 			});
 		} else {
@@ -2713,6 +2964,32 @@ function collectProposedChanges(
 	}
 
 	return proposed;
+}
+
+/**
+ * Safely read a file for interactive diff display.
+ * Returns null for symlinks, non-regular files, or files exceeding the size cap
+ * to prevent symlink traversal and denial-of-service via unbounded reads.
+ */
+function readInteractiveCurrentContent(path: string): string | null {
+	try {
+		// lstatSync does NOT follow symlinks; reject symlink entries immediately.
+		const lstat = lstatSync(path);
+		if (lstat.isSymbolicLink()) {
+			return null;
+		}
+
+		// statSync follows symlinks but we've already excluded them above;
+		// this second check guards against non-regular files (FIFOs, devices).
+		const stat = statSync(path);
+		if (!stat.isFile() || stat.size > MAX_INTERACTIVE_FILE_BYTES) {
+			return null;
+		}
+
+		return readFileSync(path, "utf-8");
+	} catch {
+		return null;
+	}
 }
 
 /**

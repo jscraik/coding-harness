@@ -256,6 +256,32 @@ function validateOptions(options: SimulateOptions): SimulateResult {
 		}
 	}
 
+	// Validate output path if specified
+	if (options.outputPath) {
+		try {
+			validatePath(cwd, options.outputPath);
+		} catch (e) {
+			if (e instanceof PathTraversalError) {
+				return {
+					ok: false,
+					error: {
+						code: "E_PATH_TRAVERSAL",
+						message: `Output path escapes working directory: ${options.outputPath}`,
+					},
+					exitCode: SIMULATE_EXIT_CODES.VALIDATION_ERROR,
+				};
+			}
+			return {
+				ok: false,
+				error: {
+					code: "E_INVALID_PATH",
+					message: `Invalid output path: ${e instanceof Error ? e.message : "Unknown error"}`,
+				},
+				exitCode: SIMULATE_EXIT_CODES.VALIDATION_ERROR,
+			};
+		}
+	}
+
 	// Validation passed - return placeholder to indicate success
 	// The actual report will be built in runSimulate
 	return {

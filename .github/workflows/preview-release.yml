@@ -74,21 +74,25 @@ jobs:
         if: steps.eligibility.outputs.eligible == 'true'
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+          NPM_CONFIG_IGNORE_SCRIPTS: true
           PR_NUMBER: ${{ github.event.pull_request.number }}
           COMMIT_SHA: ${{ github.event.pull_request.head.sha }}
         run: |
           set -euo pipefail
           SHORT_SHA="${COMMIT_SHA:0:7}"
           BASE_VERSION="$(node -p "require('./package.json').version")"
+          PACKAGE_NAME="$(node -p "require('./package.json').name")"
           PREVIEW_VERSION="${BASE_VERSION}-pr.${PR_NUMBER}.${SHORT_SHA}"
-          
+
+          SAFE_NAME="${PACKAGE_NAME#@}"
+          SAFE_NAME="${SAFE_NAME//\//-}"
+          TARBALL="${SAFE_NAME}-${PREVIEW_VERSION}.tgz"
+
           node -e "const p=require('./package.json'); p.version='${PREVIEW_VERSION}'; require('fs').writeFileSync('package.json', JSON.stringify(p, null, '\\t'))"
-          
-          TARBALL="$(npm pack --silent)"
           echo "tarball=${TARBALL}" >> "$GITHUB_OUTPUT"
           echo "version=${PREVIEW_VERSION}" >> "$GITHUB_OUTPUT"
-          
-          pnpm publish --no-git-checks --access restricted --tag preview
+
+          pnpm publish --no-git-checks --ignore-scripts --access restricted --tag preview
 
       - name: Comment preview link
         if: steps.publish.outputs.version

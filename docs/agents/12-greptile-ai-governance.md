@@ -109,6 +109,13 @@ Repository merge rule: do not merge below `4/5`.
 - Strictness 2 (default): all PRs targeting `main`/production.
 - Strictness 3 (critical-only): only stable, non-critical infrastructure.
 
+Required status checks include:
+- `pr-template`, `linear-gate`, `risk-policy-gate`
+- `dependency-review`, `actions-pinning`, `consistency-drift-health`
+- `docs-gate` (documentation parity)
+- `lint`, `typecheck`, `test`, `audit`, `check`, `memory`
+- `security-scan`, `Greptile Review`
+
 ## Indexing vs review warning
 
 `ignorePatterns` excludes files from review scope only; it does not prevent indexing.

@@ -5,8 +5,16 @@
  * Supports open and resolve actions with contract-gated behavior.
  */
 
-import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
-import { dirname, resolve } from "node:path";
+import {
+	existsSync,
+	mkdirSync,
+	readFileSync,
+	statSync,
+	writeFileSync,
+} from "node:fs";
+
+import { dirname, relative, resolve, sep } from "node:path";
+
 import { loadContract } from "../lib/contract/loader.js";
 import type { RiskTier } from "../lib/contract/types.js";
 import { DEFAULT_PILOT_GAP_CASE_POLICY } from "../lib/contract/types.js";
@@ -21,6 +29,42 @@ import { GAP_CASE_EXIT_CODES } from "../lib/gap-case/types.js";
 import { PathTraversalError, validatePath } from "../lib/input/validator.js";
 
 const DEFAULT_STORE_PATH = ".harness/gap-cases.v1.json";
+const MAX_STORE_SIZE_BYTES = 1024 * 1024; // 1 MiB
+
+/** Policy-supplied store paths are only honoured if they stay within this prefix. */
+const SAFE_POLICY_STORE_PREFIX = ".harness/";
+
+/**
+ * Returns true if a policy-supplied storePath is within the allowed subdirectory.
+ * CLI-supplied overrides bypass this check (they are operator-intentional).
+ */
+function isAllowedPolicyStorePath(storePath: string): boolean {
+	const cwd = process.cwd();
+	const absolutePath = resolve(cwd, storePath);
+	try {
+		validatePath(cwd, absolutePath);
+	} catch {
+		return false;
+	}
+	const rel = relative(cwd, absolutePath).split(sep).join("/");
+	return rel.startsWith(SAFE_POLICY_STORE_PREFIX);
+}
+
+/**
+ * Resolves the case-store path with policy sandboxing:
+ * - Explicit CLI override is always accepted (operator-intentional).
+ * - Policy-supplied path is only accepted when within .harness/.
+ * - Falls back to DEFAULT_STORE_PATH otherwise.
+ */
+function resolveStorePath(
+	overridePath?: string,
+	policyStorePath?: string,
+): string {
+	if (overridePath) return overridePath;
+	if (policyStorePath && isAllowedPolicyStorePath(policyStorePath))
+		return policyStorePath;
+	return DEFAULT_STORE_PATH;
+}
 
 /**
  * Generate a unique gap-case ID
@@ -63,12 +107,33 @@ function isValidHttpsUrl(value: string): boolean {
  */
 function loadStore(storePath: string): GapCaseStoreV1 {
 	const absolutePath = resolve(storePath);
+	const cwd = process.cwd();
+
+	// Validate path stays within cwd and doesn't follow symlinks outside
+	try {
+		validatePath(cwd, absolutePath);
+	} catch (e) {
+		if (e instanceof PathTraversalError) {
+			throw new Error("Store path escapes working directory");
+		}
+		throw e;
+	}
 
 	if (!existsSync(absolutePath)) {
 		return { version: "1", cases: [] };
 	}
 
 	try {
+		const stats = statSync(absolutePath);
+		if (!stats.isFile()) {
+			throw new Error("Store path must be a regular file");
+		}
+		if (stats.size > MAX_STORE_SIZE_BYTES) {
+			throw new Error(
+				`Store file exceeds max size (${MAX_STORE_SIZE_BYTES} bytes)`,
+			);
+		}
+
 		const content = readFileSync(absolutePath, "utf-8");
 		const data = JSON.parse(content) as unknown;
 
@@ -227,7 +292,7 @@ export function openGapCase(options: GapCaseOpenOptions): GapCaseResult {
 		}
 	}
 
-	const storePath = options.storePath ?? policy.storePath ?? DEFAULT_STORE_PATH;
+	const storePath = resolveStorePath(options.storePath, policy.storePath);
 
 	// Load store
 	let store: GapCaseStoreV1;
@@ -358,7 +423,7 @@ export function resolveGapCase(options: GapCaseResolveOptions): GapCaseResult {
 		};
 	}
 
-	const storePath = options.storePath ?? policy.storePath ?? DEFAULT_STORE_PATH;
+	const storePath = resolveStorePath(options.storePath, policy.storePath);
 
 	// Load store
 	let store: GapCaseStoreV1;

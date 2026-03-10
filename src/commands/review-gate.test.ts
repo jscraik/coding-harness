@@ -96,6 +96,19 @@ describe("runReviewGate", () => {
 				branchChecked: "main",
 			},
 		});
+
+		// Default: PR head SHA matches the supplied SHA so unchanged tests pass.
+		mockGitHubClient.mockImplementation(
+			() =>
+				({
+					getPullRequest: vi.fn().mockResolvedValue({
+						number: defaultOptions.prNumber,
+						user: { login: "coding-actor" },
+						head: { sha: validSha, ref: "feature/test" },
+					}),
+					listCheckRunsForRef: vi.fn().mockResolvedValue([]),
+				}) as unknown as GitHubClient,
+		);
 	});
 
 	afterEach(() => {
@@ -119,11 +132,42 @@ describe("runReviewGate", () => {
 		}
 	});
 
+	// Security: provided SHA must match the PR's actual head SHA
+	it("returns validation error when provided SHA does not match PR head", async () => {
+		const mismatchedSha = "fedcba9876543210fedcba9876543210fedcba98";
+		mockGitHubClient.mockImplementation(
+			() =>
+				({
+					getPullRequest: vi.fn().mockResolvedValue({
+						number: defaultOptions.prNumber,
+						user: { login: "coding-actor" },
+						head: { sha: validSha, ref: "feature/test" },
+					}),
+				}) as unknown as GitHubClient,
+		);
+
+		const result = await runReviewGate({
+			...defaultOptions,
+			headSha: mismatchedSha,
+		});
+
+		expect(result.ok).toBe(false);
+		if (!result.ok) {
+			expect(result.error.code).toBe("VALIDATION_ERROR");
+			expect(result.error.message).toContain("does not match");
+		}
+	});
+
 	it("returns not_found when check run does not exist", async () => {
 		const mockListCheckRuns = vi.fn().mockResolvedValue([]);
 		mockGitHubClient.mockImplementation(
 			() =>
 				({
+					getPullRequest: vi.fn().mockResolvedValue({
+						number: defaultOptions.prNumber,
+						user: { login: "coding-actor" },
+						head: { sha: validSha, ref: "feature/test" },
+					}),
 					listCheckRunsForRef: mockListCheckRuns,
 				}) as unknown as GitHubClient,
 		);
@@ -286,6 +330,56 @@ describe("runReviewGate", () => {
 			expect(result.output.verified).toBe(true);
 			expect(result.output.policy_gate_status).toBe("pass");
 			expect(result.output.blockers).toEqual([]);
+		}
+	});
+
+	it("still requires an approval when reviewer independence is disabled", async () => {
+		mockLoadContract.mockReturnValue({
+			version: "1.0",
+			riskTierRules: {},
+			reviewPolicy: {
+				timeoutSeconds: 600,
+				timeoutAction: "fail",
+				enforceReviewerIndependence: false,
+			},
+		});
+
+		const mockCheckRuns: CheckRun[] = [
+			{
+				id: 1,
+				name: "review-check",
+				status: "completed",
+				conclusion: "success",
+				head_sha: validSha,
+			},
+		];
+		const mockListCheckRuns = vi.fn().mockResolvedValue(mockCheckRuns);
+		const mockGetPullRequest = vi.fn().mockResolvedValue({
+			number: defaultOptions.prNumber,
+			user: { login: "coding-actor" },
+			head: { sha: validSha, ref: "feature/test" },
+		});
+		// No reviews at all — this is the bypass vector
+		const mockListReviews = vi.fn().mockResolvedValue([]);
+		mockGitHubClient.mockImplementation(
+			() =>
+				({
+					listCheckRunsForRef: mockListCheckRuns,
+					getPullRequest: mockGetPullRequest,
+					listPullRequestReviews: mockListReviews,
+				}) as unknown as GitHubClient,
+		);
+
+		const result = await runReviewGate(defaultOptions);
+
+		expect(result.ok).toBe(true);
+		if (result.ok) {
+			// Disabling independence must NOT skip the approval requirement
+			expect(result.output.verified).toBe(false);
+			expect(result.output.policy_gate_status).toBe("pass");
+			expect(result.output.blockers.join(" ")).toContain(
+				"No APPROVED reviews found for the current HEAD SHA",
+			);
 		}
 	});
 
@@ -580,6 +674,98 @@ describe("runReviewGate", () => {
 		}
 	});
 
+	it("blocks merge readiness when unresolved non-bot review threads remain", async () => {
+		const mockCheckRuns: CheckRun[] = [
+			{
+				id: 1,
+				name: "review-check",
+				status: "completed",
+				conclusion: "success",
+				head_sha: validSha,
+			},
+		];
+		mockGitHubClient.mockImplementation(
+			() =>
+				({
+					listCheckRunsForRef: vi.fn().mockResolvedValue(mockCheckRuns),
+					getPullRequest: vi.fn().mockResolvedValue({
+						number: defaultOptions.prNumber,
+						user: { login: "coding-actor" },
+						head: { sha: validSha, ref: "feature/test" },
+					}),
+					listPullRequestReviews: vi.fn().mockResolvedValue([
+						{
+							state: "APPROVED",
+							commit_id: validSha,
+							user: { login: "independent-reviewer" },
+						},
+					]),
+					listPullRequestReviewThreads: vi.fn().mockResolvedValue([
+						{
+							id: "thread-1",
+							isResolved: false,
+							comments: [{ author: { login: "independent-reviewer" } }],
+						},
+					]),
+				}) as unknown as GitHubClient,
+		);
+
+		const result = await runReviewGate(defaultOptions);
+
+		expect(result.ok).toBe(true);
+		if (result.ok) {
+			expect(result.output.verified).toBe(false);
+			expect(result.output.blockers.join(" ")).toContain(
+				"Unresolved review thread comments remain",
+			);
+		}
+	});
+
+	it("allows unresolved bot-only review threads", async () => {
+		const mockCheckRuns: CheckRun[] = [
+			{
+				id: 1,
+				name: "review-check",
+				status: "completed",
+				conclusion: "success",
+				head_sha: validSha,
+			},
+		];
+		mockGitHubClient.mockImplementation(
+			() =>
+				({
+					listCheckRunsForRef: vi.fn().mockResolvedValue(mockCheckRuns),
+					getPullRequest: vi.fn().mockResolvedValue({
+						number: defaultOptions.prNumber,
+						user: { login: "coding-actor" },
+						head: { sha: validSha, ref: "feature/test" },
+					}),
+					listPullRequestReviews: vi.fn().mockResolvedValue([
+						{
+							state: "APPROVED",
+							commit_id: validSha,
+							user: { login: "independent-reviewer" },
+						},
+					]),
+					listPullRequestReviewThreads: vi.fn().mockResolvedValue([
+						{
+							id: "thread-1",
+							isResolved: false,
+							comments: [{ author: { login: "greptile[bot]" } }],
+						},
+					]),
+				}) as unknown as GitHubClient,
+		);
+
+		const result = await runReviewGate(defaultOptions);
+
+		expect(result.ok).toBe(true);
+		if (result.ok) {
+			expect(result.output.verified).toBe(true);
+			expect(result.output.blockers).toEqual([]);
+		}
+	});
+
 	it("uses the newest check run when duplicate required check names exist", async () => {
 		mockLoadContract.mockReturnValue({
 			version: "1.0",
@@ -659,6 +845,11 @@ describe("runReviewGate", () => {
 		mockGitHubClient.mockImplementation(
 			() =>
 				({
+					getPullRequest: vi.fn().mockResolvedValue({
+						number: defaultOptions.prNumber,
+						user: { login: "coding-actor" },
+						head: { sha: validSha, ref: "feature/test" },
+					}),
 					listCheckRunsForRef: mockListCheckRuns,
 				}) as unknown as GitHubClient,
 		);
@@ -698,6 +889,11 @@ describe("runReviewGate", () => {
 		mockGitHubClient.mockImplementation(
 			() =>
 				({
+					getPullRequest: vi.fn().mockResolvedValue({
+						number: defaultOptions.prNumber,
+						user: { login: "coding-actor" },
+						head: { sha: validSha, ref: "feature/test" },
+					}),
 					listCheckRunsForRef: mockListCheckRuns,
 				}) as unknown as GitHubClient,
 		);
@@ -751,6 +947,11 @@ describe("runReviewGateCLI", () => {
 		mockGitHubClient.mockImplementation(
 			() =>
 				({
+					getPullRequest: vi.fn().mockResolvedValue({
+						number: defaultOptions.prNumber,
+						user: { login: "coding-actor" },
+						head: { sha: validSha, ref: "feature/test" },
+					}),
 					listCheckRunsForRef: mockListCheckRuns,
 				}) as unknown as GitHubClient,
 		);

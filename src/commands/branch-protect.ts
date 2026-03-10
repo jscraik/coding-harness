@@ -7,7 +7,11 @@ import {
 	type RulesetSummary,
 } from "../lib/github/client.js";
 import { sanitizeError } from "../lib/input/sanitize.js";
-import { BRANCH_PROTECTION_REQUIRED_CHECKS } from "../lib/policy/required-checks.js";
+import {
+	BRANCH_PROTECTION_REQUIRED_CHECKS,
+	getEcosystemChecks,
+	listEcosystemProfiles,
+} from "../lib/policy/required-checks.js";
 
 const DEFAULT_RULESET_NAME = "protect";
 const DEFAULT_BRANCH = "main";
@@ -30,6 +34,7 @@ export interface BranchProtectOptions {
 	rulesetName?: string;
 	contractPath?: string;
 	requiredChecks?: string[];
+	ecosystem?: string;
 	requiredApprovingReviewCount?: number;
 	dryRun?: boolean;
 	json?: boolean;
@@ -42,6 +47,7 @@ export interface BranchProtectOutput {
 	rulesetId?: number | undefined;
 	rulesetName: string;
 	requiredChecks: string[];
+	ecosystem?: string | undefined;
 }
 
 export type BranchProtectResult =
@@ -61,6 +67,40 @@ function normalizeToken(value: string | undefined): string | undefined {
 		return undefined;
 	}
 	return trimmed;
+}
+
+/**
+ * Resolves required checks from ecosystem profile, explicit checks, or contract.
+ * Priority: explicit --required-checks > --ecosystem > contract > defaults
+ */
+function resolveRequiredChecks(
+	options: BranchProtectOptions,
+	contractPath: string,
+): { checks: string[]; ecosystem?: string } {
+	// 1. Explicit checks take highest priority
+	if (options.requiredChecks && options.requiredChecks.length > 0) {
+		return { checks: normalizeChecks(options.requiredChecks) };
+	}
+
+	// 2. Ecosystem profile
+	if (options.ecosystem) {
+		const ecosystemChecks = getEcosystemChecks(options.ecosystem);
+		if (ecosystemChecks) {
+			return {
+				checks: normalizeChecks([...ecosystemChecks]),
+				ecosystem: options.ecosystem,
+			};
+		}
+	}
+
+	// 3. Contract
+	const contractChecks = resolveContractRequiredChecks({ contractPath });
+	if (contractChecks && contractChecks.length > 0) {
+		return { checks: normalizeChecks(contractChecks) };
+	}
+
+	// 4. Defaults
+	return { checks: normalizeChecks([...DEFAULT_REQUIRED_CHECKS]) };
 }
 
 export async function runBranchProtect(
@@ -96,11 +136,23 @@ export async function runBranchProtect(
 		};
 	}
 
-	const requestedChecks = normalizeChecks(
-		options.requiredChecks ??
-			resolveContractRequiredChecks({
-				contractPath,
-			}),
+	// Validate ecosystem if provided (and not overridden by explicit checks)
+	if (options.ecosystem && !options.requiredChecks) {
+		const validEcosystems = listEcosystemProfiles();
+		if (!validEcosystems.includes(options.ecosystem)) {
+			return {
+				ok: false,
+				error: {
+					code: "VALIDATION_ERROR",
+					message: `Invalid ecosystem "${options.ecosystem}". Available: ${validEcosystems.join(", ")}`,
+				},
+			};
+		}
+	}
+
+	const { checks: requestedChecks, ecosystem } = resolveRequiredChecks(
+		options,
+		contractPath,
 	);
 	if (requestedChecks.length === 0) {
 		return {
@@ -157,6 +209,7 @@ export async function runBranchProtect(
 					branch,
 					rulesetName,
 					requiredChecks: requestedChecks,
+					ecosystem,
 					...(existingSummary !== undefined
 						? { rulesetId: existingSummary.id }
 						: {}),
@@ -178,6 +231,7 @@ export async function runBranchProtect(
 				rulesetId: updatedRuleset.id,
 				rulesetName,
 				requiredChecks: requestedChecks,
+				ecosystem,
 			},
 		};
 	} catch (error) {
@@ -552,6 +606,9 @@ export async function runBranchProtectCLI(
 				`✓ Branch protection ${result.output.action} for ${result.output.repository}:${result.output.branch}`,
 			);
 			console.info(`  ruleset: ${result.output.rulesetName}`);
+			if (result.output.ecosystem) {
+				console.info(`  ecosystem: ${result.output.ecosystem}`);
+			}
 			console.info(`  checks: ${result.output.requiredChecks.join(", ")}`);
 		}
 		return EXIT_CODES.SUCCESS;
@@ -572,3 +629,5 @@ export async function runBranchProtectCLI(
 	}
 	return EXIT_CODES.SYSTEM_ERROR;
 }
+
+export { listEcosystemProfiles };

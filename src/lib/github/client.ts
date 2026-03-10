@@ -24,6 +24,7 @@ export interface Comment {
 	id: number;
 	body: string;
 	created_at: string;
+	html_url: string;
 	user: {
 		login: string;
 	};

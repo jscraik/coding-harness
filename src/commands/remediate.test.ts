@@ -51,6 +51,7 @@ import {
 	unlinkSync,
 	writeFileSync,
 } from "node:fs";
+import { PathTraversalError, validatePath } from "../lib/input/validator.js";
 
 const HEAD_SHA = "a".repeat(40);
 
@@ -76,10 +77,15 @@ describe("remediate command", () => {
 	const mockRenameSync = vi.mocked(renameSync);
 	const mockUnlinkSync = vi.mocked(unlinkSync);
 	const mockMkdirSync = vi.mocked(mkdirSync);
+	const mockValidatePath = vi.mocked(validatePath);
 
 	beforeEach(() => {
 		vi.clearAllMocks();
 		process.env.HARNESS_DISPOSABLE_WORKSPACE = undefined;
+		// Default: validatePath passes through unchanged
+		mockValidatePath.mockImplementation(
+			(_baseDir: string, userPath: string) => userPath,
+		);
 		// Default: git commands succeed
 		mockSpawnSync.mockImplementation(
 			(_command: string, args: readonly string[] | undefined) => {
@@ -126,6 +132,44 @@ describe("remediate command", () => {
 			if (!result.outcome.ok) {
 				expect(result.outcome.error.code).toBe("E_VALIDATION");
 			}
+		});
+
+		// Regression: findings path must be validated before readFileSync is called
+		it("validates findings path against workspace root before reading", async () => {
+			const codeqlFinding = {
+				id: "test-path-validation",
+				rule: { id: "rule-1", name: "Test Rule" },
+				location: { path: "src/test.ts", startLine: 10 },
+				commitSha: HEAD_SHA,
+				severity: "warning" as const,
+			};
+			mockReadFileSync.mockReturnValue(JSON.stringify([codeqlFinding]));
+
+			await runRemediate({ findings: "findings.json" });
+
+			expect(mockValidatePath).toHaveBeenCalledWith(
+				process.cwd(),
+				"findings.json",
+			);
+		});
+
+		// Regression: path traversal attempt must not reach readFileSync
+		it("exits USAGE and never reads file when findings path fails traversal check", async () => {
+			mockValidatePath.mockImplementation(() => {
+				throw new PathTraversalError();
+			});
+
+			const result = await runRemediate({ findings: "../../../etc/passwd" });
+
+			expect(result.exitCode).toBe(EXIT_CODES.USAGE);
+			expect(result.outcome.ok).toBe(false);
+			if (!result.outcome.ok) {
+				expect(result.outcome.error.code).toBe("E_VALIDATION");
+				expect(result.outcome.error.message).toContain(
+					"Path traversal detected",
+				);
+			}
+			expect(mockReadFileSync).not.toHaveBeenCalled();
 		});
 
 		it("exits USAGE for findings with missing required fields", async () => {

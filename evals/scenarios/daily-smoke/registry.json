@@ -1,0 +1,84 @@
+{
+	"schemaVersion": "daily-smoke-registry/v1",
+	"generatedForCheckpoint": "CP5",
+	"laneControls": {
+		"advisory": {
+			"driftOnlyExitNeutral": true,
+			"artifactProducing": true
+		},
+		"health": {
+			"blocksOnSchemaRuntimeIntegrity": true,
+			"enforcesAdapterBlockAfter": true
+		}
+	},
+	"scenarios": [
+		{
+			"id": "producer-emission",
+			"checkpoint": "CP2",
+			"required": true,
+			"enabledByDefault": true,
+			"coverage": [
+				"automation-run canonical manifest/event emission",
+				"remediate canonical manifest/event emission",
+				"pilot-evaluate canonical manifest/event emission",
+				"pilot-rollback canonical manifest/event emission",
+				"replay canonical manifest/event emission"
+			]
+		},
+		{
+			"id": "consumer-ingestion-decisioning",
+			"checkpoint": "CP3",
+			"required": true,
+			"enabledByDefault": true,
+			"coverage": [
+				"pilot-evaluate canonical-first bundle loading",
+				"explicit legacy adapter fallback metadata",
+				"dual-read drift blocking in health lane"
+			]
+		},
+		{
+			"id": "rollback-marker-flow",
+			"checkpoint": "CP4a",
+			"required": true,
+			"enabledByDefault": true,
+			"coverage": [
+				"contract-authoritative completionMarkerPath",
+				"producer default-path coherence",
+				"consumer gate coherence"
+			]
+		},
+		{
+			"id": "replay-consumption",
+			"checkpoint": "CP3",
+			"required": true,
+			"enabledByDefault": true,
+			"coverage": [
+				"canonical manifest/event replay bundle discovery",
+				"legacy fallback path remains explicit"
+			]
+		},
+		{
+			"id": "retrieval-v1-core",
+			"checkpoint": "CP4a",
+			"required": true,
+			"enabledByDefault": true,
+			"coverage": [
+				"search degraded-vs-strict semantic unavailable semantics",
+				"context explicit fail on semantic unavailable",
+				"index-context explicit fail on semantic unavailable"
+			]
+		},
+		{
+			"id": "retrieval-lexical-parity",
+			"checkpoint": "CP4b",
+			"required": false,
+			"enabledByDefault": false,
+			"enableWhen": "CP4b enabled in rollout evidence",
+			"coverage": [
+				"context lexical parity fallback",
+				"index-context lexical parity fallback",
+				"retrieval parity bucket sampling"
+			]
+		}
+	]
+}

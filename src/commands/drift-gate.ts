@@ -7,6 +7,7 @@ import {
 } from "node:fs";
 import { dirname, join, resolve } from "node:path";
 import { sanitizeError } from "../lib/input/sanitize.js";
+import { validatePath } from "../lib/input/validator.js";
 
 export type DriftGateMode = "advisory" | "health";
 export type DriftStatus = "success" | "partial" | "blocked";
@@ -589,8 +590,8 @@ export function runDriftGate(options: DriftGateOptions = {}): DriftGateResult {
 	const outPath =
 		options.outPath ?? (mode === "advisory" ? DEFAULT_OUT_PATH : undefined);
 	if (outPath) {
-		const resolvedOutPath = normalizePath(repoRoot, outPath);
 		try {
+			const resolvedOutPath = validatePath(repoRoot, outPath);
 			mkdirSync(dirname(resolvedOutPath), { recursive: true });
 			writeFileSync(
 				resolvedOutPath,

@@ -17,12 +17,14 @@ import { runIndexContextCLI } from "./commands/index-context.js";
 import { runInitCLI, runInteractiveInitCLI } from "./commands/init.js";
 import { runMemoryGateCLI } from "./commands/memory-gate.js";
 import { runObservabilityGateCLI } from "./commands/observability-gate.js";
+import { runOrgAuditCLI } from "./commands/org-audit.js";
 import { runPilotEvaluateCLI } from "./commands/pilot-evaluate.js";
 import {
 	type PilotRollbackOptions,
 	runPilotRollbackCLI,
 } from "./commands/pilot-rollback.js";
 import { runPlanGateCLI } from "./commands/plan-gate.js";
+import { runPresetCLI } from "./commands/preset.js";
 import { runPromptGateCLI } from "./commands/prompt-gate.js";
 import {
 	type RemediateOptions,
@@ -144,6 +146,18 @@ function printUsage(): void {
 			name: "verify-greptile",
 			summary: "Verify Greptile setup and configuration",
 		},
+		{
+			name: "request-greptile-review",
+			summary: "Request a Greptile review on a PR",
+		},
+		{
+			name: "preset",
+			summary: "List and inspect bundled presets",
+		},
+		{
+			name: "org-audit",
+			summary: "Multi-repo governance visibility and drift detection",
+		},
 	];
 
 	console.info("Usage: harness <command> [options]");
@@ -197,6 +211,19 @@ function printUsage(): void {
 	console.info("  --attestation    Path to write attestation artifact");
 	console.info("  --json           Output as JSON");
 	console.info("");
+	console.info("Docs Gate Options:");
+	console.info("  --mode           advisory|required (default: advisory)");
+	console.info("  --trigger        local|pull_request|merge_group|manual_ci");
+	console.info("  --files          Comma-separated changed file paths");
+	console.info("  --out            Write machine report to file");
+	console.info("  --repo-root      Repository root to inspect (default: cwd)");
+	console.info("  --trusted-base-ref      Base branch ref for truth loading");
+	console.info("  --trusted-contract-sha  Expected contract file SHA");
+	console.info("  --trusted-workflow-sha  Expected workflow file SHA");
+	console.info("  --merge-queue-target-ref  Merge queue target branch");
+	console.info("  --merge-queue-base-sha    Merge queue base SHA");
+	console.info("  --json           Output as JSON");
+	console.info("");
 	console.info("Linear Workflow Options:");
 	console.info("  linear <claim|handoff|close> --issue <id-or-url>");
 	console.info("  linear prepare --issue <id-or-url> [--field <name>]");
@@ -221,6 +248,22 @@ function printUsage(): void {
 		"  --field          branch|pr-title|pr-body|link-line|closing-line|issue-url",
 	);
 	console.info("  --token          Override LINEAR_API_KEY");
+	console.info("  --json           Output as JSON");
+	console.info("");
+	console.info("Linear Gate Options:");
+	console.info("  --contract       Path to harness.contract.json");
+	console.info("  --repo-root      Repository root to inspect (default: cwd)");
+	console.info(
+		"  --branch         Branch name to validate (defaults to git/env)",
+	);
+	console.info("  --pr-title       Pull request title to validate");
+	console.info("  --pr-body        Pull request body to validate");
+	console.info(
+		"  --allow-missing-branch  Skip branch-name requirement when branch metadata is unavailable",
+	);
+	console.info(
+		"  --allow-missing-pr  Skip PR-title/body requirement when PR metadata is unavailable",
+	);
 	console.info("  --json           Output as JSON");
 	console.info("");
 	console.info("Remediate Options:");
@@ -258,7 +301,7 @@ function printUsage(): void {
 	console.info("  --json           Output as JSON");
 	console.info("");
 	console.info("UI Loop Options:");
-	console.info("  --mode           execute|prepare (default: execute)");
+	console.info("  --mode           execute|prepare (default: prepare)");
 	console.info("  --dry-run        Alias for --mode prepare");
 	console.info("  --json           Output as JSON");
 	console.info("  --contract       Path to harness.contract.json");
@@ -371,6 +414,18 @@ function printUsage(): void {
 	);
 	console.info("  --repo-path      Repository path for local file checks");
 	console.info("  --verbose        Include detailed check output");
+	console.info("  --json           Output as JSON");
+	console.info("");
+	console.info("Request Greptile Review Options:");
+	console.info(
+		"  --token          GitHub token (or env GITHUB_TOKEN / GITHUB_PERSONAL_ACCESS_TOKEN)",
+	);
+	console.info("  --owner          Repository owner");
+	console.info("  --repo           Repository name");
+	console.info("  --pr             Pull request number");
+	console.info(
+		"  --message        Custom message to post (default: '@greptile please review the latest changes')",
+	);
 	console.info("  --json           Output as JSON");
 	console.info("");
 	console.info("");
@@ -1134,6 +1189,7 @@ export function run(args: string[]): void {
 		const contractIndex = args.indexOf("--contract");
 		const artifactsIndex = args.indexOf("--artifacts");
 		const outputIndex = args.indexOf("--output");
+		const markerIndex = args.indexOf("--completion-marker");
 		const reasonIndex = args.indexOf("--reason");
 
 		const modeArg = getFlagValue(args, modeIndex);
@@ -1160,6 +1216,9 @@ export function run(args: string[]): void {
 		const outputArg = getFlagValue(args, outputIndex);
 		if (outputArg) options.outputPath = outputArg;
 
+		const markerArg = getFlagValue(args, markerIndex);
+		if (markerArg) options.completionMarkerPath = markerArg;
+
 		const reasonArg = getFlagValue(args, reasonIndex);
 		if (reasonArg) options.reason = reasonArg;
 
@@ -1172,9 +1231,13 @@ export function run(args: string[]): void {
 	if (command === "pilot-evaluate") {
 		// Parse pilot-evaluate options
 		const jsonFlag = args.includes("--json");
+		const killSwitchFlag = args.includes("--kill-switch");
 		const contractIndex = args.indexOf("--contract");
 		const artifactsIndex = args.indexOf("--artifacts");
 		const outputIndex = args.indexOf("--output");
+		const laneIndex = args.indexOf("--lane");
+		const adapterRegistryIndex = args.indexOf("--adapter-registry");
+		const metricRegistryIndex = args.indexOf("--metric-registry");
 
 		const artifactsArg = getFlagValue(args, artifactsIndex);
 		if (!artifactsArg) {
@@ -1187,16 +1250,29 @@ export function run(args: string[]): void {
 			artifactsDir: string;
 			contractPath?: string;
 			outputPath?: string;
+			lane?: "advisory" | "health";
+			killSwitch?: boolean;
+			adapterRegistryPath?: string;
+			metricRegistryPath?: string;
 			json?: boolean;
 		} = {
 			artifactsDir: artifactsArg,
 		};
 
 		if (jsonFlag) options.json = true;
+		if (killSwitchFlag) options.killSwitch = true;
 		const contractArg = getFlagValue(args, contractIndex);
 		if (contractArg) options.contractPath = contractArg;
 		const outputArg = getFlagValue(args, outputIndex);
 		if (outputArg) options.outputPath = outputArg;
+		const laneArg = getFlagValue(args, laneIndex);
+		if (laneArg === "advisory" || laneArg === "health") {
+			options.lane = laneArg;
+		}
+		const adapterRegistryArg = getFlagValue(args, adapterRegistryIndex);
+		if (adapterRegistryArg) options.adapterRegistryPath = adapterRegistryArg;
+		const metricRegistryArg = getFlagValue(args, metricRegistryIndex);
+		if (metricRegistryArg) options.metricRegistryPath = metricRegistryArg;
 
 		const exitCode = runPilotEvaluateCLI(options);
 		process.exit(exitCode);
@@ -1311,6 +1387,48 @@ export function run(args: string[]): void {
 			.catch((error) => handleFatalError("Verify Greptile Error", error));
 		return;
 	}
+	if (command === "request-greptile-review") {
+		const jsonFlag = args.includes("--json");
+		const tokenIndex = args.indexOf("--token");
+		const ownerIndex = args.indexOf("--owner");
+		const repoIndex = args.indexOf("--repo");
+		const prIndex = args.indexOf("--pr");
+		const messageIndex = args.indexOf("--message");
+
+		const options: {
+			token?: string;
+			owner?: string;
+			repo?: string;
+			pr?: number;
+			message?: string;
+			json?: boolean;
+		} = {};
+
+		if (jsonFlag) options.json = true;
+		const tokenArg = getFlagValue(args, tokenIndex);
+		if (tokenArg) options.token = tokenArg;
+		const ownerArg = getFlagValue(args, ownerIndex);
+		if (ownerArg) options.owner = ownerArg;
+		const repoArg = getFlagValue(args, repoIndex);
+		if (repoArg) options.repo = repoArg;
+		const prArg = getFlagValue(args, prIndex);
+		if (prArg) {
+			const parsed = parseIntegerArg(prArg, 1);
+			if (parsed !== undefined) options.pr = parsed;
+		}
+		const messageArg = getFlagValue(args, messageIndex);
+		if (messageArg) options.message = messageArg;
+
+		import("./commands/request-greptile-review.js")
+			.then(({ runRequestGreptileReviewCLI }) =>
+				runRequestGreptileReviewCLI(options),
+			)
+			.then((exitCode) => process.exit(exitCode))
+			.catch((error) =>
+				handleFatalError("Request Greptile Review Error", error),
+			);
+		return;
+	}
 	if (command === "gap-case") {
 		const jsonFlag = args.includes("--json");
 		const contractIndex = args.indexOf("--contract");
@@ -1407,6 +1525,21 @@ export function run(args: string[]): void {
 
 		const exitCode = runGapCaseCLI(options);
 		process.exit(exitCode);
+		return;
+	}
+
+	if (command === "org-audit") {
+		runOrgAuditCLI(args.slice(1))
+			.then((result) => process.exit(result.exitCode))
+			.catch((error) => handleFatalError("Org Audit Error", error));
+		return;
+	}
+
+	if (command === "preset") {
+		const subcommandArgs = args.slice(1);
+		runPresetCLI(subcommandArgs)
+			.then((result) => process.exit(result.exitCode))
+			.catch((error) => handleFatalError("Preset Error", error));
 		return;
 	}
 

@@ -4,10 +4,16 @@ import type {
 	BranchProtectionPolicy,
 	DiffBudget,
 	DocsDriftRules,
+	DocsGateMode,
+	DocsGatePolicy,
+	DocsGateRule,
+	DocsImpactCategory,
+	DocsSurface,
 	EvidencePolicy,
 	GapCasePolicy,
 	HarnessContract,
 	ImageFormat,
+	IssueTrackingPolicy,
 	LoopStageContract,
 	LoopStageContracts,
 	LoopStageFailPolicy,
@@ -23,6 +29,7 @@ import type {
 	PilotAuthzPolicy,
 	PilotGapCasePolicy,
 	PilotRollbackPolicy,
+	PrReferenceMode,
 	RemediationPolicy,
 	RemediationProviderPolicy,
 	ReviewPolicy,
@@ -63,6 +70,9 @@ const VALID_TOP_LEVEL_KEYS = [
 	"pilotAuthzPolicy",
 	"loopStageContracts",
 	"branchProtection",
+	"issueTrackingPolicy",
+	"docsGatePolicy",
+	"extends",
 ] as const;
 const VALID_UI_LOOP_POLICY_KEYS = [
 	"fastCommand",
@@ -125,6 +135,7 @@ const VALID_LOOP_STAGE_FAIL_POLICIES: LoopStageFailPolicy[] = [
 	"fail_closed",
 	"warn_only",
 ];
+const VALID_PR_REFERENCE_MODES: PrReferenceMode[] = ["refs", "fixes", "either"];
 
 // Machine-readable error codes for programmatic handling
 export enum ValidationErrorCode {
@@ -319,6 +330,99 @@ function isValidBranchProtection(
 	if (
 		policy.requiredChecks !== undefined &&
 		!isValidRequiredChecks(policy.requiredChecks)
+	) {
+		return false;
+	}
+
+	return true;
+}
+
+function isValidLinearProjectUrl(value: string): boolean {
+	try {
+		const url = new URL(value);
+		return (
+			url.protocol === "https:" &&
+			url.hostname === "linear.app" &&
+			url.pathname.includes("/project/")
+		);
+	} catch {
+		return false;
+	}
+}
+
+function isValidIssueTrackingPolicy(
+	value: unknown,
+): value is IssueTrackingPolicy {
+	if (!isPlainObject(value)) {
+		return false;
+	}
+
+	const policy = value as Record<string, unknown>;
+	const unknownKeys = Object.keys(policy).filter(
+		(key) =>
+			![
+				"provider",
+				"projectUrl",
+				"requirePackageBugsUrl",
+				"disableGitHubIssues",
+				"requireBranchIssueKey",
+				"requirePrIssueKey",
+				"prReferenceMode",
+				"branchPrefix",
+			].includes(key),
+	);
+	if (unknownKeys.length > 0) {
+		return false;
+	}
+
+	if (policy.provider !== "linear") {
+		return false;
+	}
+	if (
+		policy.projectUrl !== undefined &&
+		(typeof policy.projectUrl !== "string" ||
+			!isValidLinearProjectUrl(policy.projectUrl))
+	) {
+		return false;
+	}
+	if (
+		policy.requirePackageBugsUrl !== undefined &&
+		typeof policy.requirePackageBugsUrl !== "boolean"
+	) {
+		return false;
+	}
+	if (
+		policy.disableGitHubIssues !== undefined &&
+		typeof policy.disableGitHubIssues !== "boolean"
+	) {
+		return false;
+	}
+	if (
+		policy.requireBranchIssueKey !== undefined &&
+		typeof policy.requireBranchIssueKey !== "boolean"
+	) {
+		return false;
+	}
+	if (
+		policy.requirePrIssueKey !== undefined &&
+		typeof policy.requirePrIssueKey !== "boolean"
+	) {
+		return false;
+	}
+	if (
+		policy.prReferenceMode !== undefined &&
+		(typeof policy.prReferenceMode !== "string" ||
+			!VALID_PR_REFERENCE_MODES.includes(
+				policy.prReferenceMode as PrReferenceMode,
+			))
+	) {
+		return false;
+	}
+	if (
+		policy.branchPrefix !== undefined &&
+		(typeof policy.branchPrefix !== "string" ||
+			policy.branchPrefix.trim().length === 0 ||
+			policy.branchPrefix.includes("/"))
 	) {
 		return false;
 	}
@@ -850,6 +954,204 @@ function isValidDocsDriftRules(value: unknown): value is DocsDriftRules {
 			return false;
 		}
 	}
+	return true;
+}
+
+// === Docs Gate Policy Validation ===
+
+const VALID_DOCS_GATE_MODES: DocsGateMode[] = ["advisory", "required"];
+const VALID_DOCS_IMPACT_CATEGORIES: DocsImpactCategory[] = [
+	"cli_surface",
+	"contract_policy",
+	"ci_workflow",
+	"branch_protection_or_required_checks",
+	"init_scaffolding",
+	"agent_governance",
+	"doc_only",
+	"unknown_governance_change",
+];
+const VALID_DOCS_SURFACE_TYPES = [
+	"root_doc",
+	"governance_doc",
+	"generated_template",
+	"workflow_doc",
+] as const;
+const VALID_DOCS_SURFACE_OWNERS = [
+	"implementation",
+	"contract",
+	"workflow",
+	"template",
+] as const;
+const VALID_DOCS_RULE_SEVERITIES = ["info", "warning", "error"] as const;
+
+function isValidDocsImpactCategory(
+	value: unknown,
+): value is DocsImpactCategory {
+	return (
+		typeof value === "string" &&
+		VALID_DOCS_IMPACT_CATEGORIES.includes(value as DocsImpactCategory)
+	);
+}
+
+function isValidDocsSurface(value: unknown): value is DocsSurface {
+	if (!isPlainObject(value)) return false;
+	const surface = value as Record<string, unknown>;
+
+	// Validate path (required string)
+	if (typeof surface.path !== "string" || surface.path.length === 0) {
+		return false;
+	}
+
+	// Validate surfaceType (required, must be valid value)
+	if (
+		typeof surface.surfaceType !== "string" ||
+		!VALID_DOCS_SURFACE_TYPES.includes(
+			surface.surfaceType as (typeof VALID_DOCS_SURFACE_TYPES)[number],
+		)
+	) {
+		return false;
+	}
+
+	// Validate owner (required, must be valid value)
+	if (
+		typeof surface.owner !== "string" ||
+		!VALID_DOCS_SURFACE_OWNERS.includes(
+			surface.owner as (typeof VALID_DOCS_SURFACE_OWNERS)[number],
+		)
+	) {
+		return false;
+	}
+
+	// Validate requiredFor (required string array of valid categories)
+	if (!Array.isArray(surface.requiredFor)) {
+		return false;
+	}
+	for (const category of surface.requiredFor) {
+		if (!isValidDocsImpactCategory(category)) {
+			return false;
+		}
+	}
+
+	return true;
+}
+
+function isValidDocsGateRule(value: unknown): value is DocsGateRule {
+	if (!isPlainObject(value)) return false;
+	const rule = value as Record<string, unknown>;
+
+	// Validate ruleId (required string)
+	if (typeof rule.ruleId !== "string" || rule.ruleId.length === 0) {
+		return false;
+	}
+
+	// Validate when (required object with categories and/or fileGlobs)
+	if (!isPlainObject(rule.when)) {
+		return false;
+	}
+	const when = rule.when as Record<string, unknown>;
+
+	// Validate when.categories (optional array of valid categories)
+	if (when.categories !== undefined) {
+		if (!Array.isArray(when.categories)) {
+			return false;
+		}
+		for (const category of when.categories) {
+			if (!isValidDocsImpactCategory(category)) {
+				return false;
+			}
+		}
+	}
+
+	// Validate when.fileGlobs (optional string array)
+	if (when.fileGlobs !== undefined) {
+		if (!Array.isArray(when.fileGlobs)) {
+			return false;
+		}
+		for (const glob of when.fileGlobs) {
+			if (typeof glob !== "string" || glob.length === 0) {
+				return false;
+			}
+		}
+	}
+
+	// Validate requireDocs (required string array)
+	if (!Array.isArray(rule.requireDocs)) {
+		return false;
+	}
+	for (const doc of rule.requireDocs) {
+		if (typeof doc !== "string" || doc.length === 0) {
+			return false;
+		}
+	}
+
+	// Validate severity (required, must be valid value)
+	if (
+		typeof rule.severity !== "string" ||
+		!VALID_DOCS_RULE_SEVERITIES.includes(
+			rule.severity as (typeof VALID_DOCS_RULE_SEVERITIES)[number],
+		)
+	) {
+		return false;
+	}
+
+	// Validate allowDocOnly (optional boolean)
+	if (
+		rule.allowDocOnly !== undefined &&
+		typeof rule.allowDocOnly !== "boolean"
+	) {
+		return false;
+	}
+
+	return true;
+}
+
+export function isValidDocsGatePolicy(value: unknown): value is DocsGatePolicy {
+	if (!isPlainObject(value)) return false;
+	const policy = value as Record<string, unknown>;
+
+	// Validate enabled (required boolean)
+	if (typeof policy.enabled !== "boolean") {
+		return false;
+	}
+
+	// Validate mode (required, must be valid value)
+	if (
+		typeof policy.mode !== "string" ||
+		!VALID_DOCS_GATE_MODES.includes(policy.mode as DocsGateMode)
+	) {
+		return false;
+	}
+
+	// Validate rules (required array of valid rules)
+	if (!Array.isArray(policy.rules)) {
+		return false;
+	}
+	for (const rule of policy.rules) {
+		if (!isValidDocsGateRule(rule)) {
+			return false;
+		}
+	}
+
+	// Validate surfaces (optional array of valid surfaces)
+	if (policy.surfaces !== undefined) {
+		if (!Array.isArray(policy.surfaces)) {
+			return false;
+		}
+		for (const surface of policy.surfaces) {
+			if (!isValidDocsSurface(surface)) {
+				return false;
+			}
+		}
+	}
+
+	// Validate localHookEnabled (optional boolean)
+	if (
+		policy.localHookEnabled !== undefined &&
+		typeof policy.localHookEnabled !== "boolean"
+	) {
+		return false;
+	}
+
 	return true;
 }
 
@@ -1463,6 +1765,25 @@ export function validateContract(
 		}
 	}
 
+	// Validate issueTrackingPolicy (optional)
+	let issueTrackingPolicy: IssueTrackingPolicy | undefined;
+	if ("issueTrackingPolicy" in obj && obj.issueTrackingPolicy !== undefined) {
+		if (!isValidIssueTrackingPolicy(obj.issueTrackingPolicy)) {
+			errors.push({
+				code: ValidationErrorCode.INVALID_VALUE,
+				path: "issueTrackingPolicy",
+				message:
+					"issueTrackingPolicy must declare provider 'linear' plus optional Linear enforcement settings",
+				expected:
+					"{ provider: 'linear', projectUrl?: 'https://linear.app/.../project/...', requirePackageBugsUrl?: boolean, disableGitHubIssues?: boolean, requireBranchIssueKey?: boolean, requirePrIssueKey?: boolean, prReferenceMode?: 'refs' | 'fixes' | 'either', branchPrefix?: string }",
+				received: JSON.stringify(obj.issueTrackingPolicy),
+				fix: "Ensure issueTrackingPolicy uses only supported Linear policy fields",
+			});
+		} else {
+			issueTrackingPolicy = obj.issueTrackingPolicy as IssueTrackingPolicy;
+		}
+	}
+
 	// Validate gapCasePolicy (optional)
 	let gapCasePolicy: GapCasePolicy | undefined;
 	if ("gapCasePolicy" in obj && obj.gapCasePolicy !== undefined) {
@@ -1596,6 +1917,25 @@ export function validateContract(
 		}
 	}
 
+	// Validate docsGatePolicy (optional)
+	let docsGatePolicy: DocsGatePolicy | undefined;
+	if ("docsGatePolicy" in obj && obj.docsGatePolicy !== undefined) {
+		if (!isValidDocsGatePolicy(obj.docsGatePolicy)) {
+			errors.push({
+				code: ValidationErrorCode.INVALID_VALUE,
+				path: "docsGatePolicy",
+				message:
+					"docsGatePolicy must have enabled (boolean), mode ('advisory' | 'required'), rules (array), and optional surfaces, localHookEnabled",
+				expected:
+					"{ enabled: boolean, mode: 'advisory' | 'required', rules: [...], surfaces?: [...], localHookEnabled?: boolean }",
+				received: JSON.stringify(obj.docsGatePolicy),
+				fix: "Ensure docsGatePolicy has valid enabled, mode, and rules fields with valid rule structures",
+			});
+		} else {
+			docsGatePolicy = obj.docsGatePolicy as DocsGatePolicy;
+		}
+	}
+
 	// Validate blastRadiusRules (optional)
 	let blastRadiusRules: BlastRadiusRule[] | undefined;
 	if ("blastRadiusRules" in obj && obj.blastRadiusRules !== undefined) {
@@ -1680,7 +2020,9 @@ export function validateContract(
 			pilotGapCasePolicy,
 			pilotRollbackPolicy,
 			pilotAuthzPolicy,
+			docsGatePolicy,
 			branchProtection,
+			issueTrackingPolicy,
 			blastRadiusRules,
 			blastRadiusRulesMode,
 		},

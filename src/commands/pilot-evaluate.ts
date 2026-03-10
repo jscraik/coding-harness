@@ -4,28 +4,78 @@
  * Evaluates pilot metrics and determines promotion outcome (promote/hold/rollback).
  */
 
-import { existsSync, mkdirSync, writeFileSync } from "node:fs";
+import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { dirname, resolve } from "node:path";
+import {
+	emitTerminalRunRecord,
+	hashRunRecordValue,
+} from "../lib/contract/run-record-emitter.js";
+import { PathTraversalError, validatePath } from "../lib/input/validator.js";
+
 import { capturePilotMetrics } from "../lib/pilot-evaluation/metrics-capture.js";
+import {
+	getAdapterRegistryEntry,
+	getMetricRegistryEntry,
+	loadAdapterRegistry,
+	loadMetricRegistry,
+} from "../lib/pilot-evaluation/registries.js";
 import {
 	PILOT_EVALUATE_EXIT_CODES,
 	PILOT_THRESHOLDS,
 	type PilotEvaluateOptions,
+	type PilotEvaluationIngestion,
 	type PilotEvaluationResult,
 	type PilotMetrics,
 	type PilotOutcome,
 } from "../lib/pilot-evaluation/types.js";
 
+interface ParityHistoryEntry {
+	windowStart: string;
+	windowEnd: string;
+	generatedAt: string;
+	lane: "advisory" | "health";
+	canonicalCoverageRatio: number;
+	criticalDriftCount: number;
+	sensitiveFieldLeakCount: number;
+	runIdCollisionCount: number;
+	passing: boolean;
+}
+
+interface ParityHistoryArtifact {
+	schemaVersion: "pilot-adapter-parity-history/v1";
+	windows: ParityHistoryEntry[];
+}
+
 /**
  * Evaluate pilot metrics against thresholds
  */
-function evaluateMetrics(metrics: PilotMetrics): {
+function evaluateMetrics(
+	metrics: PilotMetrics,
+	options?: {
+		metricRegistryPath?: string;
+		lane?: "advisory" | "health";
+	},
+): {
 	outcome: PilotOutcome;
 	holdReasons: string[];
 	warnings: string[];
 } {
 	const holdReasons: string[] = [];
 	const warnings: string[] = [];
+	const metricRegistry = loadMetricRegistry(options?.metricRegistryPath);
+	const rollbackReliabilityMetric = getMetricRegistryEntry(
+		metricRegistry,
+		"rollbackReliability",
+	);
+	const evidenceCompletenessMetric = getMetricRegistryEntry(
+		metricRegistry,
+		"evidenceCompleteness",
+	);
+	const interventionRateMetric = getMetricRegistryEntry(
+		metricRegistry,
+		"interventionRate",
+	);
+	const thrashRateMetric = getMetricRegistryEntry(metricRegistry, "thrashRate");
 
 	// Hard gate: high-risk automation incidents
 	if (
@@ -82,8 +132,22 @@ function evaluateMetrics(metrics: PilotMetrics): {
 		);
 	}
 
-	// Rollback reliability check
-	if (metrics.rollbackReliability < PILOT_THRESHOLDS.rollbackReliability) {
+	// Rollback reliability denominator guard + threshold
+	if (
+		rollbackReliabilityMetric?.minimumDenominator !== undefined &&
+		metrics.rollbackTriggerCount < rollbackReliabilityMetric.minimumDenominator
+	) {
+		const message = `Rollback reliability has insufficient evidence (${metrics.rollbackTriggerCount}/${rollbackReliabilityMetric.minimumDenominator} required rollback triggers)`;
+		if ((options?.lane ?? "health") === "health") {
+			holdReasons.push(message);
+		} else {
+			warnings.push(`${message}; advisory lane records this as a warning only`);
+		}
+	} else if (
+		metrics.rollbackReliability <
+		(rollbackReliabilityMetric?.threshold?.value ??
+			PILOT_THRESHOLDS.rollbackReliability)
+	) {
 		holdReasons.push(
 			`Rollback reliability (${(metrics.rollbackReliability * 100).toFixed(0)}%) below required (${(PILOT_THRESHOLDS.rollbackReliability * 100).toFixed(0)}%)`,
 		);
@@ -113,10 +177,41 @@ function evaluateMetrics(metrics: PilotMetrics): {
 	// Evidence completeness check
 	if (
 		metrics.evidenceCompletenessRatio <
-		PILOT_THRESHOLDS.evidenceCompletenessRatio
+		(evidenceCompletenessMetric?.threshold?.value ??
+			PILOT_THRESHOLDS.evidenceCompletenessRatio)
 	) {
 		holdReasons.push(
 			`Evidence completeness (${(metrics.evidenceCompletenessRatio * 100).toFixed(1)}%) below minimum (${(PILOT_THRESHOLDS.evidenceCompletenessRatio * 100).toFixed(0)}%)`,
+		);
+	}
+
+	if (metrics.sensitiveFieldLeakCount > 0) {
+		holdReasons.push(
+			`Sensitive field leak count (${metrics.sensitiveFieldLeakCount}) must be zero`,
+		);
+	}
+
+	if (metrics.runIdCollisionCount > 0) {
+		holdReasons.push(
+			`RunId collision count (${metrics.runIdCollisionCount}) must be zero`,
+		);
+	}
+
+	if (
+		interventionRateMetric?.threshold?.operator === "max" &&
+		metrics.interventionRate > interventionRateMetric.threshold.value
+	) {
+		warnings.push(
+			`Intervention rate (${(metrics.interventionRate * 100).toFixed(1)}%) exceeds advisory threshold (${(interventionRateMetric.threshold.value * 100).toFixed(0)}%)`,
+		);
+	}
+
+	if (
+		thrashRateMetric?.threshold?.operator === "max" &&
+		metrics.thrashRate > thrashRateMetric.threshold.value
+	) {
+		warnings.push(
+			`Thrash rate (${(metrics.thrashRate * 100).toFixed(1)}%) exceeds advisory threshold (${(thrashRateMetric.threshold.value * 100).toFixed(0)}%)`,
 		);
 	}
 
@@ -136,6 +231,75 @@ function evaluateMetrics(metrics: PilotMetrics): {
 	return { outcome, holdReasons, warnings };
 }
 
+function calculateCanonicalCoverageRatio(
+	ingestion: PilotEvaluationIngestion,
+): number {
+	const sources = [
+		ingestion.remediationEvents.source,
+		ingestion.rollbackEvents.source,
+	];
+	const canonicalCount = sources.filter(
+		(source) => source === "canonical",
+	).length;
+	return canonicalCount / sources.length;
+}
+
+function loadParityHistory(historyPath: string): ParityHistoryArtifact {
+	if (!existsSync(historyPath)) {
+		return {
+			schemaVersion: "pilot-adapter-parity-history/v1",
+			windows: [],
+		};
+	}
+
+	try {
+		const parsed = JSON.parse(
+			readFileSync(historyPath, "utf-8"),
+		) as Partial<ParityHistoryArtifact>;
+		if (
+			parsed.schemaVersion !== "pilot-adapter-parity-history/v1" ||
+			!Array.isArray(parsed.windows)
+		) {
+			throw new Error("Unsupported parity history schema");
+		}
+		return {
+			schemaVersion: "pilot-adapter-parity-history/v1",
+			windows: parsed.windows.filter(
+				(entry): entry is ParityHistoryEntry =>
+					typeof entry?.windowStart === "string" &&
+					typeof entry.windowEnd === "string" &&
+					typeof entry.generatedAt === "string" &&
+					(entry.lane === "advisory" || entry.lane === "health") &&
+					typeof entry.canonicalCoverageRatio === "number" &&
+					typeof entry.criticalDriftCount === "number" &&
+					typeof entry.sensitiveFieldLeakCount === "number" &&
+					typeof entry.runIdCollisionCount === "number" &&
+					typeof entry.passing === "boolean",
+			),
+		};
+	} catch (error) {
+		throw new Error(
+			`Failed to load parity history at ${historyPath}: ${
+				error instanceof Error ? error.message : String(error)
+			}`,
+		);
+	}
+}
+
+function countConsecutivePassingWindows(entries: ParityHistoryEntry[]): number {
+	const sorted = [...entries].sort((left, right) =>
+		right.generatedAt.localeCompare(left.generatedAt),
+	);
+	let count = 0;
+	for (const entry of sorted) {
+		if (!entry.passing) {
+			break;
+		}
+		count++;
+	}
+	return count;
+}
+
 /**
  * Run pilot evaluation
  */
@@ -145,10 +309,95 @@ export function runPilotEvaluate(options: PilotEvaluateOptions): {
 	error?: { code: string; message: string };
 	exitCode: number;
 } {
+	const startedAt = new Date().toISOString();
+	const writeRunRecord = (params: {
+		outcome: "success" | "hold" | "rollback" | "failed";
+		classification:
+			| "ok"
+			| "validation_failed"
+			| "runtime_failed"
+			| "manual_intervention_required"
+			| "rollback_required";
+		exitCode: number;
+		payload: Record<string, unknown>;
+		artifacts?: Array<{ type: string; path: string; checksum?: string }>;
+	}): string | null => {
+		try {
+			emitTerminalRunRecord({
+				command: "pilot-evaluate",
+				startedAt,
+				outcome:
+					params.outcome === "failed"
+						? "failed"
+						: params.outcome === "success"
+							? "success"
+							: params.outcome,
+				classification: params.classification,
+				exitCode: params.exitCode,
+				...(options.runRecordsDir ? { baseDir: options.runRecordsDir } : {}),
+				contract: {
+					path: options.contractPath ?? "harness.contract.json",
+				},
+				policyContext: {
+					mode: "evaluation",
+					safetyPosture: "strict",
+					effectivePolicySource: "pilot-evaluate-thresholds",
+					hash: hashRunRecordValue({
+						policy: "pilot-evaluate-thresholds",
+						thresholds: PILOT_THRESHOLDS,
+					}),
+				},
+				preconditions: {
+					artifactsDirExists: existsSync(resolve(options.artifactsDir)),
+				},
+				...(params.artifacts ? { artifacts: params.artifacts } : {}),
+				event: {
+					eventType: "decision",
+					status:
+						params.classification === "ok"
+							? "completed"
+							: params.classification === "manual_intervention_required"
+								? "blocked"
+								: "failed",
+					severity:
+						params.classification === "ok"
+							? "info"
+							: params.classification === "manual_intervention_required"
+								? "warn"
+								: "error",
+					payload: params.payload,
+				},
+			});
+			return null;
+		} catch (error) {
+			return String(error);
+		}
+	};
+
 	const artifactsDir = resolve(options.artifactsDir);
+	const lane = options.lane ?? "advisory";
 
 	// Check artifacts directory exists
 	if (!existsSync(artifactsDir)) {
+		const runRecordError = writeRunRecord({
+			outcome: "failed",
+			classification: "validation_failed",
+			exitCode: PILOT_EVALUATE_EXIT_CODES.VALIDATION_ERROR,
+			payload: {
+				error: "artifacts_not_found",
+				artifactsDir,
+			},
+		});
+		if (runRecordError) {
+			return {
+				ok: false,
+				error: {
+					code: "E_RUN_RECORD",
+					message: `Failed to emit canonical run record: ${runRecordError}`,
+				},
+				exitCode: PILOT_EVALUATE_EXIT_CODES.VALIDATION_ERROR,
+			};
+		}
 		return {
 			ok: false,
 			error: {
@@ -160,9 +409,65 @@ export function runPilotEvaluate(options: PilotEvaluateOptions): {
 	}
 
 	// Capture metrics from artifacts
-	const { metrics, errors } = capturePilotMetrics(artifactsDir);
+	let metricRegistryError: string | null = null;
+	try {
+		loadMetricRegistry(options.metricRegistryPath);
+	} catch (error) {
+		metricRegistryError =
+			error instanceof Error ? error.message : String(error);
+	}
+	let adapterRegistryError: string | null = null;
+	let adapterRegistry = null;
+	try {
+		adapterRegistry = loadAdapterRegistry(options.adapterRegistryPath);
+	} catch (error) {
+		adapterRegistryError =
+			error instanceof Error ? error.message : String(error);
+	}
+	const { metrics, errors, ingestion, driftWarnings } = capturePilotMetrics(
+		artifactsDir,
+		{
+			...(options.runRecordsDir
+				? { runRecordsDir: options.runRecordsDir }
+				: {}),
+			...(options.adapterRegistryPath
+				? { adapterRegistryPath: options.adapterRegistryPath }
+				: {}),
+		},
+	);
+	if (metricRegistryError) {
+		errors.push(metricRegistryError);
+	}
+	if (adapterRegistryError) {
+		errors.push(adapterRegistryError);
+	}
 
 	if (errors.length > 0 && !metrics) {
+		const runRecordError = writeRunRecord({
+			outcome: "failed",
+			classification: "validation_failed",
+			exitCode: PILOT_EVALUATE_EXIT_CODES.VALIDATION_ERROR,
+			payload: {
+				error: "schema_validation_failed",
+				errors,
+			},
+			artifacts: [
+				{
+					type: "pr-lead-time",
+					path: resolve(artifactsDir, "pr-lead-time.json"),
+				},
+			],
+		});
+		if (runRecordError) {
+			return {
+				ok: false,
+				error: {
+					code: "E_RUN_RECORD",
+					message: `Failed to emit canonical run record: ${runRecordError}`,
+				},
+				exitCode: PILOT_EVALUATE_EXIT_CODES.VALIDATION_ERROR,
+			};
+		}
 		return {
 			ok: false,
 			error: {
@@ -174,6 +479,24 @@ export function runPilotEvaluate(options: PilotEvaluateOptions): {
 	}
 
 	if (!metrics) {
+		const runRecordError = writeRunRecord({
+			outcome: "failed",
+			classification: "validation_failed",
+			exitCode: PILOT_EVALUATE_EXIT_CODES.VALIDATION_ERROR,
+			payload: {
+				error: "no_metrics",
+			},
+		});
+		if (runRecordError) {
+			return {
+				ok: false,
+				error: {
+					code: "E_RUN_RECORD",
+					message: `Failed to emit canonical run record: ${runRecordError}`,
+				},
+				exitCode: PILOT_EVALUATE_EXIT_CODES.VALIDATION_ERROR,
+			};
+		}
 		return {
 			ok: false,
 			error: {
@@ -184,8 +507,182 @@ export function runPilotEvaluate(options: PilotEvaluateOptions): {
 		};
 	}
 
+	if (
+		errors.some(
+			(error) =>
+				error.includes("metric registry") || error.includes("adapter registry"),
+		)
+	) {
+		const runRecordError = writeRunRecord({
+			outcome: "failed",
+			classification: "validation_failed",
+			exitCode: PILOT_EVALUATE_EXIT_CODES.VALIDATION_ERROR,
+			payload: {
+				error: "registry_validation_failed",
+				errors,
+			},
+		});
+		if (runRecordError) {
+			return {
+				ok: false,
+				error: {
+					code: "E_RUN_RECORD",
+					message: `Failed to emit canonical run record: ${runRecordError}`,
+				},
+				exitCode: PILOT_EVALUATE_EXIT_CODES.VALIDATION_ERROR,
+			};
+		}
+		return {
+			ok: false,
+			error: {
+				code: "E_REGISTRY_VALIDATION",
+				message: `Registry validation failed: ${errors.join("; ")}`,
+			},
+			exitCode: PILOT_EVALUATE_EXIT_CODES.VALIDATION_ERROR,
+		};
+	}
+
 	// Evaluate against thresholds
-	const { outcome, holdReasons, warnings } = evaluateMetrics(metrics);
+	const {
+		outcome: computedOutcome,
+		holdReasons,
+		warnings,
+	} = evaluateMetrics(metrics, {
+		...(options.metricRegistryPath
+			? { metricRegistryPath: options.metricRegistryPath }
+			: {}),
+		lane,
+	});
+	const canonicalCoverageRatio = calculateCanonicalCoverageRatio(ingestion);
+	const legacyAdapterRegistryEntry =
+		adapterRegistry &&
+		getAdapterRegistryEntry(adapterRegistry, "legacy-jsonl-v1");
+	const legacyAdapterEntries = [
+		ingestion.remediationEvents,
+		ingestion.rollbackEvents,
+	]
+		.filter((source) => source.source === "legacy_adapter")
+		.map((source) =>
+			source.adapterVersion === "none" || !adapterRegistry
+				? undefined
+				: getAdapterRegistryEntry(adapterRegistry, source.adapterVersion),
+		)
+		.filter((entry): entry is NonNullable<typeof entry> => Boolean(entry));
+	const legacyBlockAfterExceeded = legacyAdapterEntries.some((entry) => {
+		if (!entry.blockAfter) return false;
+		return new Date(entry.blockAfter).getTime() <= Date.now();
+	});
+	const parityWindow = legacyAdapterRegistryEntry?.parityWindow;
+	const parityHistoryPath = resolve(
+		options.parityHistoryPath ??
+			resolve(artifactsDir, "pilot-evaluation-parity-history.json"),
+	);
+	let manualSafeMode = options.killSwitch ?? false;
+	let outcome: PilotOutcome = computedOutcome;
+
+	if (lane === "health" && driftWarnings.length > 0) {
+		outcome = computedOutcome === "rollback" ? "rollback" : "hold";
+		holdReasons.push(
+			"Canonical/legacy adapter drift detected; promotion blocked until resolved",
+		);
+		warnings.push(...driftWarnings);
+	} else if (driftWarnings.length > 0) {
+		warnings.push(...driftWarnings);
+		warnings.push(
+			"Advisory lane observed canonical/legacy drift; release gating remains manual-only",
+		);
+	}
+
+	if (legacyBlockAfterExceeded) {
+		manualSafeMode = true;
+		if (lane === "health") {
+			outcome = "hold";
+			holdReasons.push(
+				"Legacy adapter blockAfter has passed in health lane; manual safe mode required",
+			);
+		} else {
+			warnings.push(
+				"Legacy adapter blockAfter has passed; advisory lane records manual safe mode without promoting health enforcement",
+			);
+		}
+	}
+
+	if (options.killSwitch) {
+		outcome = "hold";
+		manualSafeMode = true;
+		holdReasons.push(
+			"Kill switch engaged; promotion frozen until manual safe mode is cleared",
+		);
+	}
+	const currentWindowPassing =
+		canonicalCoverageRatio >=
+			(parityWindow?.minimumCanonicalCoverage ?? 0.95) &&
+		driftWarnings.length <= (parityWindow?.maxCriticalDrifts ?? 0) &&
+		metrics.sensitiveFieldLeakCount === 0 &&
+		metrics.runIdCollisionCount === 0;
+	let legacyRetirementReady =
+		!legacyAdapterRegistryEntry && currentWindowPassing;
+	let parityWindowStatus:
+		| NonNullable<PilotEvaluationResult["controls"]["parityWindow"]>
+		| undefined;
+
+	if (parityWindow) {
+		try {
+			const history = loadParityHistory(parityHistoryPath);
+			const historyKey = `${metrics.windowStart}:${metrics.windowEnd}:${lane}`;
+			const nextEntry: ParityHistoryEntry = {
+				windowStart: metrics.windowStart,
+				windowEnd: metrics.windowEnd,
+				generatedAt: new Date().toISOString(),
+				lane,
+				canonicalCoverageRatio,
+				criticalDriftCount: driftWarnings.length,
+				sensitiveFieldLeakCount: metrics.sensitiveFieldLeakCount,
+				runIdCollisionCount: metrics.runIdCollisionCount,
+				passing: currentWindowPassing,
+			};
+			const filtered = history.windows.filter(
+				(entry) =>
+					`${entry.windowStart}:${entry.windowEnd}:${entry.lane}` !==
+					historyKey,
+			);
+			const nextHistory: ParityHistoryArtifact = {
+				schemaVersion: "pilot-adapter-parity-history/v1",
+				windows: [...filtered, nextEntry],
+			};
+			mkdirSync(dirname(parityHistoryPath), { recursive: true });
+			writeFileSync(
+				parityHistoryPath,
+				JSON.stringify(nextHistory, null, 2),
+				"utf-8",
+			);
+
+			const consecutivePassingWindows = countConsecutivePassingWindows(
+				nextHistory.windows,
+			);
+			legacyRetirementReady =
+				currentWindowPassing &&
+				consecutivePassingWindows >=
+					parityWindow.minimumConsecutivePassingWindows;
+			parityWindowStatus = {
+				historyPath: parityHistoryPath,
+				currentWindowPassing,
+				consecutivePassingWindows,
+				requiredConsecutivePassingWindows:
+					parityWindow.minimumConsecutivePassingWindows,
+				criticalDriftCount: driftWarnings.length,
+				allowedCriticalDrifts: parityWindow.maxCriticalDrifts,
+				requiredCanonicalCoverage: parityWindow.minimumCanonicalCoverage,
+			};
+		} catch (error) {
+			legacyRetirementReady = false;
+			warnings.push(
+				error instanceof Error
+					? error.message
+					: `Failed to update parity history at ${parityHistoryPath}`,
+			);
+		}
+	}
 
 	// Build result
 	const result: PilotEvaluationResult = {
@@ -195,11 +692,55 @@ export function runPilotEvaluate(options: PilotEvaluateOptions): {
 		outcome,
 		holdReasons,
 		warnings,
+		ingestion,
+		controls: {
+			lane,
+			killSwitchEngaged: options.killSwitch ?? false,
+			manualSafeMode,
+			canonicalCoverageRatio,
+			legacyRetirementReady,
+			...(parityWindowStatus ? { parityWindow: parityWindowStatus } : {}),
+		},
 	};
 
 	// Write output file if specified
 	if (options.outputPath) {
-		const outputPath = resolve(options.outputPath);
+		const cwd = process.cwd();
+		let outputPath: string;
+		try {
+			outputPath = validatePath(cwd, options.outputPath);
+		} catch (error) {
+			if (error instanceof PathTraversalError) {
+				const runRecordError = writeRunRecord({
+					outcome: "failed",
+					classification: "validation_failed",
+					exitCode: PILOT_EVALUATE_EXIT_CODES.VALIDATION_ERROR,
+					payload: {
+						error: "path_traversal",
+						outputPath: options.outputPath,
+					},
+				});
+				if (runRecordError) {
+					return {
+						ok: false,
+						error: {
+							code: "E_RUN_RECORD",
+							message: `Failed to emit canonical run record: ${runRecordError}`,
+						},
+						exitCode: PILOT_EVALUATE_EXIT_CODES.VALIDATION_ERROR,
+					};
+				}
+				return {
+					ok: false,
+					error: {
+						code: "E_PATH_TRAVERSAL",
+						message: "Output path escapes working directory",
+					},
+					exitCode: PILOT_EVALUATE_EXIT_CODES.VALIDATION_ERROR,
+				};
+			}
+			throw error;
+		}
 		const dir = dirname(outputPath);
 		if (!existsSync(dir)) {
 			mkdirSync(dir, { recursive: true });
@@ -213,7 +754,62 @@ export function runPilotEvaluate(options: PilotEvaluateOptions): {
 			? PILOT_EVALUATE_EXIT_CODES.PROMOTE
 			: outcome === "hold"
 				? PILOT_EVALUATE_EXIT_CODES.HOLD
-				: PILOT_EVALUATE_EXIT_CODES.HOLD; // rollback also returns HOLD for now
+				: PILOT_EVALUATE_EXIT_CODES.ROLLBACK;
+
+	const runRecordError = writeRunRecord({
+		outcome: outcome === "promote" ? "success" : outcome,
+		classification:
+			outcome === "promote"
+				? "ok"
+				: outcome === "hold"
+					? "manual_intervention_required"
+					: "rollback_required",
+		exitCode,
+		payload: {
+			outcome,
+			holdReasons,
+			warnings,
+			ingestion,
+			driftWarningCount: driftWarnings.length,
+			controls: result.controls,
+		},
+		artifacts: [
+			{
+				type: "pr-lead-time",
+				path: resolve(artifactsDir, "pr-lead-time.json"),
+			},
+			...ingestion.remediationEvents.mappedArtifactPaths.map((path) => ({
+				type: "remediation-events",
+				path,
+			})),
+			...ingestion.rollbackEvents.mappedArtifactPaths.map((path) => ({
+				type: "rollback-events",
+				path,
+			})),
+			{
+				type: "incidents",
+				path: resolve(artifactsDir, "incidents.jsonl"),
+			},
+			...(options.outputPath
+				? [
+						{
+							type: "evaluation-result",
+							path: options.outputPath,
+						},
+					]
+				: []),
+		],
+	});
+	if (runRecordError) {
+		return {
+			ok: false,
+			error: {
+				code: "E_RUN_RECORD",
+				message: `Failed to emit canonical run record: ${runRecordError}`,
+			},
+			exitCode: PILOT_EVALUATE_EXIT_CODES.VALIDATION_ERROR,
+		};
+	}
 
 	return {
 		ok: true,

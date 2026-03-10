@@ -181,6 +181,49 @@ describe("loadContract", () => {
 		expect(() => loadContract(path)).toThrow(/depth exceeds maximum/i);
 	});
 
+	it("loads contracts with extends by default for inheritance-aware callers", () => {
+		const dir = join(process.cwd(), "artifacts");
+		mkdirSync(dir, { recursive: true });
+		const path = join(dir, "contract-loader-extends.json");
+		createdFiles.push(path);
+
+		writeFileSync(
+			path,
+			JSON.stringify({
+				version: "1.0",
+				extends: "typescript-base",
+				riskTierRules: {
+					"src/auth/**": "high",
+				},
+			}),
+			"utf-8",
+		);
+
+		const contract = loadContract(path);
+		expect(contract.version).toBe("1.0");
+		expect(contract.riskTierRules["src/auth/**"]).toBe("high");
+	});
+
+	it("rejects contracts with extends when caller disallows inheritance", () => {
+		const dir = join(process.cwd(), "artifacts");
+		mkdirSync(dir, { recursive: true });
+		const path = join(dir, "contract-loader-extends-blocked.json");
+		createdFiles.push(path);
+
+		writeFileSync(
+			path,
+			JSON.stringify({
+				version: "1.0",
+				extends: "typescript-base",
+			}),
+			"utf-8",
+		);
+
+		expect(() =>
+			loadContract(path, process.cwd(), { allowExtends: false }),
+		).toThrow(/extends/i);
+	});
+
 	describe("merge policy dual-shape support", () => {
 		it("accepts legacy array-style merge policy", () => {
 			const dir = join(process.cwd(), "artifacts");

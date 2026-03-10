@@ -1,0 +1,45 @@
+{
+	"version": "1.0",
+	"riskTierRules": {
+		"src/**": "medium",
+		"src/auth/**": "high",
+		"src/api/**": "high",
+		"**/test*/**": "low"
+	},
+	"mergePolicy": {
+		"high": ["review-gate", "evidence-verify", "remediation-decision"],
+		"medium": ["review-gate", "evidence-verify"],
+		"low": ["review-gate"]
+	},
+	"reviewPolicy": {
+		"timeoutSeconds": 900,
+		"timeoutAction": "fail",
+		"requiredChecks": [
+			"lint",
+			"typecheck",
+			"test",
+			"security-scan",
+			"dependency-review"
+		],
+		"enforceReviewerIndependence": true
+	},
+	"branchProtection": {
+		"requiredChecks": [
+			"lint",
+			"typecheck",
+			"test",
+			"security-scan",
+			"dependency-review"
+		]
+	},
+	"evidencePolicy": {
+		"requiredFor": ["src/**"],
+		"allowedTypes": ["png", "jpeg"],
+		"maxFileSizeBytes": 1048576
+	},
+	"diffBudget": {
+		"maxFiles": 8,
+		"maxNetLOC": 300,
+		"overrideLabel": "diff-budget-override"
+	}
+}

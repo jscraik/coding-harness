@@ -8,7 +8,8 @@
  * - Silent fallbacks that hide failures
  */
 
-import { readFileSync, readdirSync, statSync } from "node:fs";
+import { lstatSync, readFileSync, readdirSync } from "node:fs";
+
 import { join, resolve } from "node:path";
 import {
 	EXIT_CODES,
@@ -127,7 +128,13 @@ function getFilesRecursive(
 				continue;
 			}
 
-			const stats = statSync(fullPath);
+			const stats = lstatSync(fullPath);
+
+			// Skip symlinks — following them can escape the repo tree (path traversal / DoS).
+			if (stats.isSymbolicLink()) {
+				continue;
+			}
+
 			if (stats.isDirectory()) {
 				files.push(...getFilesRecursive(fullPath, extensions, ignore));
 			} else if (

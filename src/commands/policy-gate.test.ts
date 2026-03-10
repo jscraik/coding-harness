@@ -3,6 +3,7 @@ import { EXIT_CODES, runPolicyGate, runPolicyGateCLI } from "./policy-gate.js";
 
 describe("runPolicyGate", () => {
 	const contractPath = "test-fixtures/contract.json";
+	const contractWithExtendsPath = "test-fixtures/contract-with-extends.json";
 
 	describe("with max-tier", () => {
 		it("passes when tier equals max-tier", () => {
@@ -153,6 +154,19 @@ describe("runPolicyGate", () => {
 			if (!result.ok) {
 				// File not found throws system error (ENOENT)
 				expect(result.error.code).toBe("SYSTEM_ERROR");
+			}
+		});
+
+		it("fails closed when contract uses extends", () => {
+			const result = runPolicyGate({
+				contractPath: contractWithExtendsPath,
+				files: ["src/lib/utils.ts"],
+				maxTier: "medium",
+			});
+			expect(result.ok).toBe(false);
+			if (!result.ok) {
+				expect(result.error.code).toBe("VALIDATION_ERROR");
+				expect(result.error.message).toContain("extends");
 			}
 		});
 	});

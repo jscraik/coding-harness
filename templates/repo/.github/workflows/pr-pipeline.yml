@@ -11,9 +11,68 @@ on:
     types: [opened, synchronize, reopened]
 
 jobs:
+  pr-template:
+    name: pr-template
+    runs-on: ubuntu-latest
+    steps:
+      - name: Validate PR template completion
+        uses: actions/github-script@f28e40c7f34bde8b3046d885e986cb6290c5673b # v7
+        with:
+          script: |
+            const body = context.payload.pull_request?.body ?? '';
+            const errors = [];
+
+            if (body.trim().length === 0) {
+              errors.push('PR body is empty. Fill out the full PR template.');
+            }
+
+            const requiredSections = [
+              '## Summary',
+              '## Checklist',
+              '## Testing',
+              '## Review artifacts',
+              '## Notes',
+            ];
+            for (const section of requiredSections) {
+              if (!body.includes(section)) {
+                errors.push('Missing required section: ' + section);
+              }
+            }
+
+            const checklistMatch = body.match(/## Checklist([\s\S]*?)(?:\n## |\n# |$)/i);
+            if (!checklistMatch) {
+              errors.push('Missing checklist block.');
+            } else {
+              const checklistBody = checklistMatch[1] ?? '';
+              const checklistItems = checklistBody
+                .split('\n')
+                .map((line) => line.trim())
+                .filter((line) => /^- \[[ xX]\]/.test(line));
+
+              if (checklistItems.length === 0) {
+                errors.push('Checklist has no checkbox items.');
+              }
+
+              const unchecked = checklistItems.filter((line) => /^- \[ \]/.test(line));
+              const unresolvedUnchecked = unchecked.filter(
+                (line) => !/\*\*\((pending|n\/a|not applicable)\)\*\*/i.test(line),
+              );
+              if (unresolvedUnchecked.length > 0) {
+                errors.push(
+                  'Checklist has unchecked item(s) without explicit status marker ((Pending) or (N/A)):\n' +
+                    unresolvedUnchecked.join('\n'),
+                );
+              }
+            }
+
+            if (errors.length > 0) {
+              core.setFailed(errors.join('\n'));
+            }
+
   # Preflight: Risk policy gate - blocks CI on policy violations
   preflight:
     runs-on: ubuntu-latest
+    needs: [pr-template]
     outputs:
       tier: ${{ steps.gate.outputs.tier }}
       passed: ${{ steps.gate.outputs.passed }}
@@ -42,10 +101,21 @@ jobs:
       - name: Run policy gate
         id: gate
         env:
+          BASE_REF: ${{ github.base_ref }}
           FILES: ${{ steps.files.outputs.files }}
         run: |
+          # Load contract from the trusted base branch, not the PR checkout.
+          # This prevents a malicious PR from weakening policy by modifying
+          # harness.contract.json in their branch.
+          CONTRACT_PATH="$RUNNER_TEMP/harness.contract.base.json"
+
+          if ! git show "origin/$BASE_REF:harness.contract.json" > "$CONTRACT_PATH"; then
+            echo "::error::Unable to load trusted harness.contract.json from origin/$BASE_REF"
+            exit 1
+          fi
+
           harness policy-gate \
-            --contract harness.contract.json \
+            --contract "$CONTRACT_PATH" \
             --files "$FILES" \
             --max-tier medium \
             --json > gate-result.json
@@ -70,7 +140,8 @@ jobs:
   # CI: Lint, typecheck, test, build (only runs after preflight passes)
   ci:
     runs-on: ubuntu-latest
-    needs: [preflight]
+    needs: [pr-template, preflight]
+    if: ${{ needs.pr-template.result == 'success' && needs.preflight.result == 'success' }}
 
     steps:
       - uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4.1.1

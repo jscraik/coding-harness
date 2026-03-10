@@ -95,6 +95,10 @@ vi.mock("./commands/linear-prepare.js", () => ({
 	runLinearPrepareCLI: vi.fn(async () => 66),
 }));
 
+vi.mock("./commands/linear-gate.js", () => ({
+	runLinearGateCLI: vi.fn(async () => 67),
+}));
+
 vi.mock("./commands/blast-radius.js", () => ({
 	runBlastRadiusCLI: vi.fn(() => 59),
 }));
@@ -294,6 +298,46 @@ describe("cli command dispatch", () => {
 			json: true,
 		});
 		expect(exitSpy).toHaveBeenCalledWith(66);
+	});
+
+	it("dispatches linear-gate command", async () => {
+		const { run } = await import("./cli.js");
+		const { runLinearGateCLI } = await import("./commands/linear-gate.js");
+
+		const exitSpy = vi
+			.spyOn(process, "exit")
+			.mockImplementation(((_code?: number) => undefined) as never);
+
+		run([
+			"linear-gate",
+			"--contract",
+			"harness.contract.json",
+			"--repo-root",
+			"/tmp/repo",
+			"--branch",
+			"codex/jsc-42-enforce-linear-policy",
+			"--pr-title",
+			"JSC-42: Enforce Linear policy",
+			"--pr-body",
+			"Refs JSC-42",
+			"--allow-missing-pr",
+			"--allow-missing-branch",
+			"--json",
+		]);
+
+		await new Promise((resolve) => setTimeout(resolve, 0));
+
+		expect(vi.mocked(runLinearGateCLI)).toHaveBeenCalledWith({
+			contractPath: "harness.contract.json",
+			repoRoot: "/tmp/repo",
+			branch: "codex/jsc-42-enforce-linear-policy",
+			prTitle: "JSC-42: Enforce Linear policy",
+			prBody: "Refs JSC-42",
+			allowMissingPrMetadata: true,
+			allowMissingBranch: true,
+			json: true,
+		});
+		expect(exitSpy).toHaveBeenCalledWith(67);
 	});
 
 	it("dispatches brainstorm-gate and ignores missing --topic value", async () => {

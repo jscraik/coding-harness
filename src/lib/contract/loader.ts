@@ -79,12 +79,15 @@ function safeParseJson(content: string): unknown {
 	return data;
 }
 
-export function loadContract(path: string): HarnessContract {
-	// Validate path stays within cwd (symlink-aware)
-	const cwd = process.cwd();
+export function loadContract(
+	path: string,
+	baseDir = process.cwd(),
+	options?: { allowExtends?: boolean },
+): HarnessContract {
+	// Validate path stays within baseDir (symlink-aware)
 	let validatedPath: string;
 	try {
-		validatedPath = validatePath(cwd, path);
+		validatedPath = validatePath(baseDir, path);
 	} catch (e) {
 		if (e instanceof PathTraversalError) {
 			throw new ContractLoadError("Path traversal detected", path, [
@@ -113,6 +116,30 @@ export function loadContract(path: string): HarnessContract {
 	} catch (e) {
 		const message = e instanceof Error ? e.message : "unknown error";
 		throw new ContractLoadError(`Failed to parse JSON: ${message}`, path);
+	}
+
+	// Some command paths intentionally fail closed on inherited contracts because
+	// they must not resolve repo-controlled inheritance implicitly. Keep the
+	// default loader backwards-compatible and let specific callers opt in.
+	if (
+		options?.allowExtends === false &&
+		typeof data === "object" &&
+		data !== null &&
+		Object.prototype.hasOwnProperty.call(data, "extends")
+	) {
+		throw new ContractLoadError(
+			"Contract inheritance via 'extends' is not supported in this command path. Resolve presets before running policy commands.",
+			path,
+			[
+				{
+					code: ValidationErrorCode.INVALID_VALUE,
+					path: "extends",
+					message:
+						"'extends' requires inheritance-aware loading and cannot be used with this command path",
+					fix: "Resolve inheritance into a concrete contract before execution",
+				},
+			],
+		);
 	}
 
 	// Validate

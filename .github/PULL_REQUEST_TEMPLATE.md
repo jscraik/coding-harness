@@ -13,11 +13,13 @@
 - [ ] Branch name follows policy (`codex/*` for agent-created branches).
 - [ ] Linear issue key is present in the branch name or PR title/body for GitHub↔Linear linking.
 - [ ] Required local gates run: `pnpm lint`, `pnpm typecheck`, `pnpm test`, `pnpm audit`, `pnpm check` (or reason for deviation).
-- [ ] Greptile setup verified with `grepfile` skill and `.greptile/config.json`, `.greptile/rules.md`, `.greptile/files.json`.
-- [ ] `Greptile` review completed and findings handled (or explicitly waived).
+- [ ] `docs-gate` passes locally when modifying governance-sensitive surfaces (CLI, CI, contract, init, docs).
+- [ ] Greptile setup verified via `greploop` or `check-pr` skill with `.greptile/config.json`, `.greptile/rules.md`, `.greptile/files.json` present.
+- [ ] `Greptile Review` check completed and findings handled (or explicitly waived).
 - [ ] `Codex` review completed and findings handled (or explicitly waived).
 - [ ] Independent reviewer evidence added when `reviewPolicy.enforceReviewerIndependence=true` (otherwise mark N/A).
 - [ ] Greptile confidence score is `>= 4/5` for merge eligibility.
+- [ ] Required CI gates pass: `risk-policy-gate`, `dependency-review`, `actions-pinning`, `security-scan`, `docs-gate`, `Greptile Review`.
 - [ ] PR template sections are complete and accurate.
 - [ ] I will delete branch/worktree after merge.
 
@@ -28,6 +30,7 @@
 - Command: `pnpm test` → `pass/fail`
 - Command: `pnpm audit` → `pass/fail`
 - Command: `pnpm check` → `pass/fail`
+- Command: `harness docs-gate --mode advisory` → `pass/fail` (if governance surfaces changed)
 - Any other command(s):
 
 ## Review artifacts

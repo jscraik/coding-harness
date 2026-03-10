@@ -44,6 +44,63 @@ export interface DocsDriftRules {
 	[pattern: string]: string[];
 }
 
+// === Docs Gate Policy Types ===
+
+export type DocsGateMode = "advisory" | "required";
+
+export type DocsImpactCategory =
+	| "cli_surface"
+	| "contract_policy"
+	| "ci_workflow"
+	| "branch_protection_or_required_checks"
+	| "init_scaffolding"
+	| "agent_governance"
+	| "doc_only"
+	| "unknown_governance_change";
+
+export type DocsSurfaceType =
+	| "root_doc"
+	| "governance_doc"
+	| "generated_template"
+	| "workflow_doc";
+
+export type DocsSurfaceOwner =
+	| "implementation"
+	| "contract"
+	| "workflow"
+	| "template";
+
+export interface DocsSurface {
+	path: string;
+	surfaceType: DocsSurfaceType;
+	owner: DocsSurfaceOwner;
+	requiredFor: DocsImpactCategory[];
+}
+
+export interface DocsGateRule {
+	ruleId: string;
+	when: {
+		categories?: DocsImpactCategory[];
+		fileGlobs?: string[];
+	};
+	requireDocs: string[];
+	severity: "info" | "warning" | "error";
+	allowDocOnly?: boolean;
+}
+
+export interface DocsGatePolicy {
+	/** Whether docs-gate is enabled for this repository */
+	enabled: boolean;
+	/** Execution mode: advisory reports findings without blocking, required fails on error findings */
+	mode: DocsGateMode;
+	/** Rules mapping implementation changes to required documentation updates */
+	rules: DocsGateRule[];
+	/** Governed documentation surfaces that may be required */
+	surfaces?: DocsSurface[];
+	/** Whether to enable optional local pre-push hook generation */
+	localHookEnabled?: boolean;
+}
+
 export interface UILoopSLO {
 	/** Target seconds to reach stable "fast" loop execution */
 	fastLoopSeconds: number;
@@ -144,6 +201,21 @@ export interface ReviewPolicy {
 
 export interface BranchProtectionPolicy {
 	requiredChecks?: string[] | undefined;
+}
+
+export type IssueTrackingProvider = "linear";
+
+export type PrReferenceMode = "refs" | "fixes" | "either";
+
+export interface IssueTrackingPolicy {
+	provider: IssueTrackingProvider;
+	projectUrl?: string | undefined;
+	requirePackageBugsUrl?: boolean | undefined;
+	disableGitHubIssues?: boolean | undefined;
+	requireBranchIssueKey?: boolean | undefined;
+	requirePrIssueKey?: boolean | undefined;
+	prReferenceMode?: PrReferenceMode | undefined;
+	branchPrefix?: string | undefined;
 }
 
 export type LoopStageFailPolicy = "fail_closed" | "warn_only";
@@ -273,6 +345,16 @@ export const DEFAULT_BRANCH_PROTECTION_POLICY: BranchProtectionPolicy = {
 	requiredChecks: [...BRANCH_PROTECTION_REQUIRED_CHECKS],
 };
 
+export const DEFAULT_ISSUE_TRACKING_POLICY: IssueTrackingPolicy = {
+	provider: "linear",
+	requirePackageBugsUrl: true,
+	disableGitHubIssues: true,
+	requireBranchIssueKey: true,
+	requirePrIssueKey: true,
+	prReferenceMode: "either",
+	branchPrefix: "codex",
+};
+
 export const DEFAULT_EVIDENCE_POLICY: EvidencePolicy = {
 	requiredFor: [],
 	allowedTypes: ["png", "jpeg"],
@@ -373,6 +455,111 @@ export const DEFAULT_PILOT_AUTHZ_POLICY: PilotAuthzPolicy = {
 	enforceBranchProtection: true,
 };
 
+export const DEFAULT_DOCS_GATE_POLICY: DocsGatePolicy = {
+	enabled: true,
+	mode: "advisory",
+	rules: [
+		{
+			ruleId: "cli-surface-docs",
+			when: { categories: ["cli_surface"] },
+			requireDocs: ["README.md"],
+			severity: "error",
+		},
+		{
+			ruleId: "contract-policy-docs",
+			when: { categories: ["contract_policy"] },
+			requireDocs: ["README.md", "AGENTS.md"],
+			severity: "error",
+		},
+		{
+			ruleId: "ci-workflow-docs",
+			when: { categories: ["ci_workflow"] },
+			requireDocs: ["README.md", "CONTRIBUTING.md", "AGENTS.md"],
+			severity: "error",
+		},
+		{
+			ruleId: "required-checks-docs",
+			when: { categories: ["branch_protection_or_required_checks"] },
+			requireDocs: ["README.md", "CONTRIBUTING.md", "AGENTS.md"],
+			severity: "error",
+		},
+		{
+			ruleId: "init-scaffold-docs",
+			when: { categories: ["init_scaffolding"] },
+			requireDocs: ["README.md", "AGENTS.md"],
+			severity: "error",
+		},
+		{
+			ruleId: "agent-governance-docs",
+			when: { categories: ["agent_governance"] },
+			requireDocs: ["AGENTS.md", "docs/agents/07b-agent-governance.md"],
+			severity: "error",
+		},
+		{
+			ruleId: "unknown-governance-docs",
+			when: { categories: ["unknown_governance_change"] },
+			requireDocs: [],
+			severity: "warning",
+		},
+	],
+	surfaces: [
+		{
+			path: "README.md",
+			surfaceType: "root_doc",
+			owner: "implementation",
+			requiredFor: [
+				"cli_surface",
+				"contract_policy",
+				"ci_workflow",
+				"branch_protection_or_required_checks",
+				"init_scaffolding",
+			],
+		},
+		{
+			path: "CONTRIBUTING.md",
+			surfaceType: "root_doc",
+			owner: "contract",
+			requiredFor: ["ci_workflow", "branch_protection_or_required_checks"],
+		},
+		{
+			path: "AGENTS.md",
+			surfaceType: "governance_doc",
+			owner: "contract",
+			requiredFor: [
+				"contract_policy",
+				"ci_workflow",
+				"branch_protection_or_required_checks",
+				"agent_governance",
+			],
+		},
+		{
+			path: "docs/agents/04-validation.md",
+			surfaceType: "governance_doc",
+			owner: "contract",
+			requiredFor: ["ci_workflow"],
+		},
+		{
+			path: "docs/agents/07b-agent-governance.md",
+			surfaceType: "governance_doc",
+			owner: "contract",
+			requiredFor: ["agent_governance"],
+		},
+		{
+			path: "docs/agents/12-greptile-ai-governance.md",
+			surfaceType: "governance_doc",
+			owner: "contract",
+			requiredFor: ["agent_governance"],
+		},
+		{
+			path: "docs/agents/13-linear-production-workflow.md",
+			surfaceType: "governance_doc",
+			owner: "contract",
+			requiredFor: ["ci_workflow"],
+		},
+	],
+	localHookEnabled: false,
+};
+
 // === Contract Interface ===
 
 export interface HarnessContract {
@@ -404,14 +591,18 @@ export interface HarnessContract {
 	blastRadiusRulesMode?: BlastRadiusRulesMode | undefined;
 	/** Branch protection configuration */
 	branchProtection?: BranchProtectionPolicy | undefined;
+	/** Issue tracking enforcement policy */
+	issueTrackingPolicy?: IssueTrackingPolicy | undefined;
 	/** Remediation policy for automatic fix application */
 	remediationPolicy?: RemediationPolicy | undefined;
 	/** Semantic loop stage contract for workflow parity validation */
 	loopStageContracts?: LoopStageContracts | undefined;
+	/** Docs gate policy for governance documentation parity enforcement */
+	docsGatePolicy?: DocsGatePolicy | undefined;
 }
 
 export const DEFAULT_CONTRACT: HarnessContract = {
-	version: "1.0",
+	version: "1.3.0",
 	riskTierRules: {},
 	reviewPolicy: DEFAULT_REVIEW_POLICY,
 	evidencePolicy: DEFAULT_EVIDENCE_POLICY,
@@ -419,6 +610,221 @@ export const DEFAULT_CONTRACT: HarnessContract = {
 	pilotRollbackPolicy: DEFAULT_PILOT_ROLLBACK_POLICY,
 	pilotAuthzPolicy: DEFAULT_PILOT_AUTHZ_POLICY,
 	branchProtection: DEFAULT_BRANCH_PROTECTION_POLICY,
+	issueTrackingPolicy: DEFAULT_ISSUE_TRACKING_POLICY,
 	remediationPolicy: DEFAULT_REMEDIATION_POLICY,
 	loopStageContracts: DEFAULT_LOOP_STAGE_CONTRACTS,
+	docsGatePolicy: DEFAULT_DOCS_GATE_POLICY,
 };
+
+// === Preset Inheritance Types ===
+
+/**
+ * Branded type for HTTP/HTTPS URLs to prevent confusion with local paths.
+ */
+export type HttpsUrl = string & { readonly __brand: "HttpsUrl" };
+
+/**
+ * Branded type for local file paths to prevent confusion with URLs.
+ */
+export type LocalPath = string & { readonly __brand: "LocalPath" };
+
+/**
+ * Branded type for bundled preset names.
+ * Prevents confusion with local paths or remote URLs at compile time.
+ */
+export type BundledPreset = string & { readonly __brand: "BundledPreset" };
+
+/**
+ * Branded type for remote preset URLs.
+ * Prevents confusion with bundled names or local paths at compile time.
+ */
+export type RemotePreset = string & { readonly __brand: "RemotePreset" };
+
+/**
+ * Branded type for local preset file paths.
+ * Prevents confusion with bundled names or remote URLs at compile time.
+ */
+export type LocalPreset = string & { readonly __brand: "LocalPreset" };
+
+/**
+ * Discriminated union of all preset source types.
+ * Use type guards to narrow to specific types.
+ */
+export type PresetSource = BundledPreset | RemotePreset | LocalPreset;
+
+/**
+ * Runtime discriminator for preset source kinds.
+ */
+export type PresetSourceKind = "bundled" | "remote" | "local";
+
+/**
+ * Tagged preset source with runtime kind information.
+ */
+export interface TaggedPresetSource {
+	kind: PresetSourceKind;
+	source: PresetSource;
+}
+
+/**
+ * Configuration for a single preset reference.
+ */
+export interface PresetReference {
+	/** Preset source: bundled name, local path, or remote URL */
+	source: PresetSource;
+	/** Merge strategy for array fields */
+	arrays?: "replace" | "append" | "prepend";
+	/** SRI integrity hash for remote presets (sha256-...) */
+	integrity?: string;
+}
+
+/**
+ * Contract with preset inheritance support.
+ * Extends the base contract with an 'extends' field for preset references.
+ */
+export interface HarnessContractWithPreset extends HarnessContract {
+	/** Preset(s) to extend - single reference, array, or string shorthand */
+	extends?: PresetReference | PresetReference[] | PresetSource | PresetSource[];
+}
+
+/**
+ * Result of contract merge operation with audit trail.
+ */
+export interface MergeResult {
+	/** The merged contract */
+	contract: HarnessContract;
+	/** Sources that were resolved during merge (for audit trail) */
+	sources: string[];
+}
+
+/**
+ * Options for contract merge operation.
+ */
+export interface MergeOptions {
+	/** Strategy for merging arrays */
+	arrayMergeStrategy: "replace" | "concat";
+	/** Maximum recursion depth */
+	maxDepth: number;
+}
+
+/**
+ * Default merge options.
+ */
+export const DEFAULT_MERGE_OPTIONS: MergeOptions = {
+	arrayMergeStrategy: "replace",
+	maxDepth: 20,
+};
+
+/**
+ * Maximum inheritance chain depth to prevent circular references.
+ */
+export const MAX_INHERITANCE_DEPTH = 10;
+
+// ============================================================================
+// Preset Source Type Guards
+// ============================================================================
+
+const URL_PATTERN = /^https?:\/\//i;
+const BUNDLED_PRESET_PATTERN = /^[a-z0-9-]+$/i;
+
+/**
+ * Check if a string looks like a remote URL.
+ */
+function looksLikeRemote(value: string): boolean {
+	return URL_PATTERN.test(value);
+}
+
+/**
+ * Check if a string looks like a bundled preset name.
+ */
+function looksLikeBundled(value: string): boolean {
+	return (
+		BUNDLED_PRESET_PATTERN.test(value) &&
+		!value.includes("/") &&
+		!value.includes("\\") &&
+		!value.includes(".")
+	);
+}
+
+/**
+ * Type guard: Check if value is a RemotePreset.
+ */
+export function isRemotePreset(value: string): value is RemotePreset {
+	return looksLikeRemote(value);
+}
+
+/**
+ * Type guard: Check if value is a BundledPreset.
+ */
+export function isBundledPreset(value: string): value is BundledPreset {
+	return looksLikeBundled(value);
+}
+
+/**
+ * Type guard: Check if value is a LocalPreset.
+ */
+export function isLocalPreset(value: string): value is LocalPreset {
+	return !looksLikeRemote(value) && !looksLikeBundled(value);
+}
+
+/**
+ * Determine the kind of preset source.
+ */
+export function getPresetSourceKind(value: string): PresetSourceKind {
+	if (isRemotePreset(value)) return "remote";
+	if (isBundledPreset(value)) return "bundled";
+	return "local";
+}
+
+/**
+ * Tag a preset source with its runtime kind.
+ */
+export function tagPresetSource(source: string): TaggedPresetSource {
+	return {
+		kind: getPresetSourceKind(source),
+		source: source as PresetSource,
+	};
+}
+
+/**
+ * Assert that a string is a BundledPreset.
+ * Throws if the value is not a valid bundled preset name.
+ */
+export function asBundledPreset(value: string): BundledPreset {
+	if (!isBundledPreset(value)) {
+		throw new Error(
+			`Invalid bundled preset name: "${value}". Expected alphanumeric with hyphens only.`,
+		);
+	}
+	return value as BundledPreset;
+}
+
+/**
+ * Assert that a string is a RemotePreset.
+ * Throws if the value is not a valid remote URL.
+ */
+export function asRemotePreset(value: string): RemotePreset {
+	if (!isRemotePreset(value)) {
+		throw new Error(
+			`Invalid remote preset URL: "${value}". Expected http:// or https:// URL.`,
+		);
+	}
+	return value as RemotePreset;
+}
+
+/**
+ * Assert that a string is a LocalPreset.
+ * Throws if the value looks like a remote URL or bundled preset.
+ */
+export function asLocalPreset(value: string): LocalPreset {
+	if (isRemotePreset(value)) {
+		throw new Error(
+			`Invalid local preset path: "${value}" looks like a remote URL.`,
+		);
+	}
+	if (isBundledPreset(value)) {
+		throw new Error(
+			`Invalid local preset path: "${value}" looks like a bundled preset name.`,
+		);
+	}
+	return value as LocalPreset;
+}

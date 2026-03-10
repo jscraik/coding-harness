@@ -5,7 +5,7 @@ import { createHash } from "node:crypto";
  * Validates sandbox mode, environment filters, and approval posture.
  */
 import { existsSync, writeFileSync } from "node:fs";
-import { resolve } from "node:path";
+import { dirname, resolve } from "node:path";
 import semver from "semver";
 import { loadContract } from "../lib/contract/loader.js";
 import {
@@ -20,6 +20,7 @@ import {
 	getRalphPackageSpec,
 } from "../lib/deps/ralph-runtime.js";
 import { sanitizeError } from "../lib/input/sanitize.js";
+import { PathTraversalError, validatePath } from "../lib/input/validator.js";
 
 // Exit codes for programmatic consumption
 export const EXIT_CODES = {
@@ -49,6 +50,7 @@ export interface EnvironmentViolation {
 		| "secret_in_environment"
 		| "approval_posture_invalid"
 		| "artifact_path_traversal"
+		| "artifact_write_failed"
 		| "runtime_dependency_missing"
 		| "runtime_dependency_version_mismatch";
 	/** Human-readable message */
@@ -87,6 +89,21 @@ export interface CheckEnvironmentOutput {
 	posture: EnvironmentPosture;
 	/** Path to attestation artifact (if written) */
 	attestationPath?: string;
+	/** Machine-readable checkpoint evidence reference for promotion workflows */
+	evidenceReference?: {
+		claimId: string;
+		timestamp: string;
+		headSha?: string;
+		command: "check-environment";
+		exitCode: number;
+		evidencePostureRef: "preflight_only" | "signed_verifier";
+		attestationVerificationStatus:
+			| "not_requested"
+			| "preflight_only"
+			| "verified";
+		artifactPath?: string;
+		artifactChecksum?: string;
+	};
 }
 
 interface CommandProbe {
@@ -213,6 +230,18 @@ function computePolicyFingerprint(contract: HarnessContract): string {
 	return createHash("sha256").update(policyData).digest("hex").slice(0, 16);
 }
 
+function detectHeadSha(): string | undefined {
+	const probe = spawnSync("git", ["rev-parse", "HEAD"], {
+		encoding: "utf-8",
+		stdio: ["ignore", "pipe", "ignore"],
+	});
+	if (probe.status !== 0) {
+		return undefined;
+	}
+	const candidate = probe.stdout.trim();
+	return /^[a-f0-9]{40}$/i.test(candidate) ? candidate : undefined;
+}
+
 /**
  * Run environment preflight check.
  * This function is usable as a library (does not output to console).
@@ -241,6 +270,7 @@ export async function runCheckEnvironment(
 	}
 
 	const violations: EnvironmentViolation[] = [];
+	const headSha = detectHeadSha();
 
 	// Default allowed sandbox modes
 	const allowedModes = options.allowedSandboxModes ?? [
@@ -391,6 +421,13 @@ export async function runCheckEnvironment(
 	// Write attestation artifact if path provided
 	if (options.attestationPath) {
 		try {
+			// Validate path against cwd to prevent symlink-based overwrite.
+			// validatePath checks all existing ancestors for symlinks and
+			// ensures the resolved path stays within the base directory.
+			const safeAttestation = validatePath(
+				process.cwd(),
+				options.attestationPath,
+			);
 			const attestation = {
 				timestamp: posture.timestamp,
 				policyFingerprint: posture.policyFingerprint,
@@ -400,15 +437,81 @@ export async function runCheckEnvironment(
 				passed: output.passed,
 				violations: output.violations,
 			};
+			const resolvedDir = dirname(safeAttestation);
+			const { mkdirSync } = await import("node:fs");
+			mkdirSync(resolvedDir, { recursive: true });
 			writeFileSync(
-				options.attestationPath,
+				safeAttestation,
 				JSON.stringify(attestation, null, 2),
 				"utf-8",
 			);
-			output.attestationPath = options.attestationPath;
-		} catch {
-			// Ignore write errors for attestation
+			output.attestationPath = safeAttestation;
+			output.evidenceReference = {
+				claimId: createHash("sha256")
+					.update(
+						[
+							"check-environment",
+							posture.timestamp,
+							posture.policyFingerprint,
+							safeAttestation,
+						].join("|"),
+					)
+					.digest("hex"),
+				timestamp: posture.timestamp,
+				...(headSha ? { headSha } : {}),
+				command: "check-environment",
+				exitCode: output.passed
+					? EXIT_CODES.SUCCESS
+					: EXIT_CODES.POLICY_VIOLATION,
+				evidencePostureRef: "preflight_only",
+				attestationVerificationStatus: "preflight_only",
+				artifactPath: safeAttestation,
+				artifactChecksum: createHash("sha256")
+					.update(JSON.stringify(attestation, null, 2))
+					.digest("hex"),
+			};
+		} catch (e) {
+			if (e instanceof PathTraversalError) {
+				violations.push({
+					type: "artifact_path_traversal",
+					message:
+						"Attestation path cannot include symbolic links in existing path segments",
+					value: options.attestationPath,
+				});
+				output.passed = false;
+				output.violations = violations;
+			} else {
+				violations.push({
+					type: "artifact_write_failed",
+					message: `Failed to write attestation artifact: ${sanitizeError(e)}`,
+					value: options.attestationPath,
+				});
+				output.passed = false;
+				output.violations = violations;
+			}
 		}
+	}
+
+	if (!output.evidenceReference) {
+		output.evidenceReference = {
+			claimId: createHash("sha256")
+				.update(
+					[
+						"check-environment",
+						posture.timestamp,
+						posture.policyFingerprint,
+					].join("|"),
+				)
+				.digest("hex"),
+			timestamp: posture.timestamp,
+			...(headSha ? { headSha } : {}),
+			command: "check-environment",
+			exitCode: output.passed
+				? EXIT_CODES.SUCCESS
+				: EXIT_CODES.POLICY_VIOLATION,
+			evidencePostureRef: "preflight_only",
+			attestationVerificationStatus: "not_requested",
+		};
 	}
 
 	return { ok: true, output };

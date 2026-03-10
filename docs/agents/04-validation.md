@@ -12,6 +12,21 @@ Every change must be checked by the smallest gate needed for risk, then by the f
 4. `pnpm audit`
 5. `pnpm check` (aggregated command)
 
+## CI gates
+
+### docs-gate
+
+Enforces documentation parity for governance-sensitive changes.
+
+- **Trigger**: Pull requests and merge queue events.
+- **Behavior**: Classifies changed files into impact categories; verifies required docs exist.
+- **Mode**: `advisory` (logs warnings) or `required` (fails CI).
+- **Exit codes**:
+  - `0`: No drift or advisory mode
+  - `10`: Drift detected (required mode)
+  - `11-14`: Bootstrap gap, trust mismatch, policy error, runtime error
+- **Remediation**: Add missing docs or update `harness.contract.json` `docsGatePolicy.surfaces` to reflect new doc locations.
+
 ## Validation by change type
 
 ### Docs-only edits

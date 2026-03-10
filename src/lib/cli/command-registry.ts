@@ -1,7 +1,9 @@
 import { runBranchProtectCLI } from "../../commands/branch-protect.js";
 import { runCheckAuthzCLI } from "../../commands/check-authz.js";
 import { runCheckEnvironmentCLI } from "../../commands/check-environment.js";
+import { runDocsGateCLI } from "../../commands/docs-gate.js";
 import { runEvidenceVerifyCLI } from "../../commands/evidence-verify.js";
+import { runLinearGateCLI } from "../../commands/linear-gate.js";
 import { runLinearPrepareCLI } from "../../commands/linear-prepare.js";
 import { runLinearWorkflowCLI } from "../../commands/linear-workflow.js";
 import { runPolicyGateCLI } from "../../commands/policy-gate.js";
@@ -117,6 +119,39 @@ const COMMAND_SPECS: CommandSpec[] = [
 			}
 
 			return runLinearWorkflowCLI(options);
+		},
+	},
+	{
+		name: "linear-gate",
+		summary: "Enforce Linear-first intake, branch, and PR linkage policy",
+		errorLabel: "Linear Gate Error",
+		execute: (args) => {
+			const jsonFlag = args.includes("--json");
+			const allowMissingBranchFlag = args.includes("--allow-missing-branch");
+			const allowMissingPrMetadataFlag = args.includes("--allow-missing-pr");
+			const contractIndex = args.indexOf("--contract");
+			const repoRootIndex = args.indexOf("--repo-root");
+			const branchIndex = args.indexOf("--branch");
+			const prTitleIndex = args.indexOf("--pr-title");
+			const prBodyIndex = args.indexOf("--pr-body");
+
+			const options: Parameters<typeof runLinearGateCLI>[0] = {};
+
+			if (jsonFlag) options.json = true;
+			if (allowMissingBranchFlag) options.allowMissingBranch = true;
+			if (allowMissingPrMetadataFlag) options.allowMissingPrMetadata = true;
+			const contractArg = getFlagValue(args, contractIndex);
+			if (contractArg !== undefined) options.contractPath = contractArg;
+			const repoRootArg = getFlagValue(args, repoRootIndex);
+			if (repoRootArg) options.repoRoot = repoRootArg;
+			const branchArg = getFlagValue(args, branchIndex);
+			if (branchArg) options.branch = branchArg;
+			const prTitleArg = getFlagValue(args, prTitleIndex);
+			if (prTitleArg !== undefined) options.prTitle = prTitleArg;
+			const prBodyArg = getFlagValue(args, prBodyIndex);
+			if (prBodyArg !== undefined) options.prBody = prBodyArg;
+
+			return runLinearGateCLI(options);
 		},
 	},
 	{
@@ -294,6 +329,7 @@ const COMMAND_SPECS: CommandSpec[] = [
 			const branchIndex = args.indexOf("--branch");
 			const rulesetIndex = args.indexOf("--ruleset");
 			const checksIndex = args.indexOf("--checks");
+			const ecosystemIndex = args.indexOf("--ecosystem");
 			const approvalsIndex = args.indexOf("--required-approvals");
 			const checksArg = getFlagValue(args, checksIndex);
 			const approvalsArg = getFlagValue(args, approvalsIndex);
@@ -312,6 +348,8 @@ const COMMAND_SPECS: CommandSpec[] = [
 			if (branchArg) options.branch = branchArg;
 			const rulesetArg = getFlagValue(args, rulesetIndex);
 			if (rulesetArg) options.rulesetName = rulesetArg;
+			const ecosystemArg = getFlagValue(args, ecosystemIndex);
+			if (ecosystemArg) options.ecosystem = ecosystemArg;
 			if (checksArg !== undefined) {
 				options.requiredChecks = parseCsvList(checksArg);
 			}
@@ -377,6 +415,69 @@ const COMMAND_SPECS: CommandSpec[] = [
 			}
 
 			return runCheckEnvironmentCLI(options);
+		},
+	},
+	{
+		name: "docs-gate",
+		summary: "Enforce documentation parity for governance changes",
+		errorLabel: "Docs Gate Error",
+		execute: (args) => {
+			const jsonFlag = args.includes("--json");
+			const modeIndex = args.indexOf("--mode");
+			const triggerIndex = args.indexOf("--trigger");
+			const outIndex = args.indexOf("--out");
+			const filesIndex = args.indexOf("--files");
+			const repoRootIndex = args.indexOf("--repo-root");
+			const trustedBaseRefIndex = args.indexOf("--trusted-base-ref");
+			const trustedContractShaIndex = args.indexOf("--trusted-contract-sha");
+			const trustedWorkflowShaIndex = args.indexOf("--trusted-workflow-sha");
+			const mergeQueueTargetRefIndex = args.indexOf("--merge-queue-target-ref");
+			const mergeQueueBaseShaIndex = args.indexOf("--merge-queue-base-sha");
+
+			const options: Parameters<typeof runDocsGateCLI>[0] = {};
+
+			if (jsonFlag) options.json = true;
+			const modeArg = getFlagValue(args, modeIndex);
+			if (modeArg === "advisory" || modeArg === "required") {
+				options.mode = modeArg;
+			}
+			const triggerArg = getFlagValue(args, triggerIndex);
+			if (
+				triggerArg === "local" ||
+				triggerArg === "pull_request" ||
+				triggerArg === "merge_group" ||
+				triggerArg === "manual_ci"
+			) {
+				options.trigger = triggerArg;
+			}
+			const outArg = getFlagValue(args, outIndex);
+			if (outArg !== undefined) options.outPath = outArg;
+			const filesArg = getFlagValue(args, filesIndex);
+			if (filesArg !== undefined) {
+				options.changedFiles = parseCsvList(filesArg);
+			}
+			const repoRootArg = getFlagValue(args, repoRootIndex);
+			if (repoRootArg) options.repoRoot = repoRootArg;
+			const trustedBaseRefArg = getFlagValue(args, trustedBaseRefIndex);
+			if (trustedBaseRefArg !== undefined)
+				options.trustedBaseRef = trustedBaseRefArg;
+			const trustedContractShaArg = getFlagValue(args, trustedContractShaIndex);
+			if (trustedContractShaArg !== undefined)
+				options.trustedContractSha = trustedContractShaArg;
+			const trustedWorkflowShaArg = getFlagValue(args, trustedWorkflowShaIndex);
+			if (trustedWorkflowShaArg !== undefined)
+				options.trustedWorkflowSha = trustedWorkflowShaArg;
+			const mergeQueueTargetRefArg = getFlagValue(
+				args,
+				mergeQueueTargetRefIndex,
+			);
+			if (mergeQueueTargetRefArg !== undefined)
+				options.mergeQueueTargetRef = mergeQueueTargetRefArg;
+			const mergeQueueBaseShaArg = getFlagValue(args, mergeQueueBaseShaIndex);
+			if (mergeQueueBaseShaArg !== undefined)
+				options.mergeQueueBaseSha = mergeQueueBaseShaArg;
+
+			return runDocsGateCLI(options);
 		},
 	},
 ];

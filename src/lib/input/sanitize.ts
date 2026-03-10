@@ -62,6 +62,26 @@ export function sanitizeEvidenceText(text: string): string {
 // The validator.ts version is symlink-safe using realpathSync
 export { validatePath } from "./validator.js";
 
+// Re-export validation functions
+export {
+	MAX_ARRAY_SIZE,
+	MAX_GIT_REF_LENGTH,
+	MAX_IDENTIFIER_LENGTH,
+	MAX_INPUT_LENGTH,
+	MAX_PATH_LENGTH,
+	validateArray,
+	validateArraySize,
+	validateCliString,
+	validateGitRef,
+	validateIdentifier,
+	validateLength,
+	validateNoShellInjection,
+	validatePathComponent,
+	validateSafeArgument,
+	validateSafeString,
+	validateSafeUrl,
+} from "./validation.js";
+
 /**
  * Sanitize a path for safe display in error messages.
  * Removes home directory and other sensitive path components.

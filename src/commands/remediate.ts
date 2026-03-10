@@ -18,9 +18,14 @@ import {
 import { join } from "node:path";
 import { loadContract } from "../lib/contract/loader.js";
 import {
+	emitTerminalRunRecord,
+	hashRunRecordValue,
+} from "../lib/contract/run-record-emitter.js";
+import {
 	DEFAULT_PILOT_ROLLBACK_POLICY,
 	DEFAULT_REMEDIATION_POLICY,
 } from "../lib/contract/types.js";
+import { validatePath } from "../lib/input/validator.js";
 import {
 	type CodeqlFindingInput,
 	type CodexFindingInput,
@@ -75,6 +80,8 @@ export interface RemediateOptions {
 	/** Override rollback mode (manual/autonomous) */
 	/** Path to completion marker file */
 	completionMarkerPath?: string;
+	/** Optional override for canonical run-record base dir */
+	runRecordsDir?: string;
 }
 export interface RemediateResult {
 	outcome: RemediationOutcome;
@@ -566,50 +573,216 @@ function applyFindingTransaction(
 export async function runRemediate(
 	options: RemediateOptions,
 ): Promise<RemediateResult> {
+	const startedAt = new Date().toISOString();
+	const finalize = (
+		result: RemediateResult,
+		payload: Record<string, unknown>,
+		finalizeOptions?: { emitRunRecord?: boolean },
+	): RemediateResult => {
+		if (finalizeOptions?.emitRunRecord === false) {
+			return result;
+		}
+		try {
+			const artifacts: Array<{
+				type: string;
+				path: string;
+				checksum?: string;
+			}> = [];
+			if (options.findings && options.findings !== "-") {
+				artifacts.push({
+					type: "findings-input",
+					path: options.findings,
+				});
+			}
+			if (result.outcome.ok && result.outcome.output.transactions) {
+				for (const transaction of result.outcome.output.transactions) {
+					artifacts.push({
+						type: "remediation-transaction",
+						path: transaction.artifactUri,
+						checksum: transaction.artifactChecksum,
+					});
+				}
+			}
+
+			const outcome = !result.outcome.ok
+				? "failed"
+				: result.exitCode === EXIT_CODES.PARTIAL
+					? "hold"
+					: "success";
+			const classification = !result.outcome.ok
+				? result.outcome.error.code === "E_POLICY"
+					? "policy_blocked"
+					: result.outcome.error.code === "E_ROLLBACK_MODE"
+						? "precondition_failed"
+						: result.outcome.error.code === "E_RACE_DETECTED"
+							? "manual_intervention_required"
+							: result.outcome.error.code === "E_VALIDATION" ||
+									result.outcome.error.code === "E_CONTRACT"
+								? "validation_failed"
+								: "runtime_failed"
+				: result.exitCode === EXIT_CODES.PARTIAL
+					? "manual_intervention_required"
+					: "ok";
+
+			emitTerminalRunRecord({
+				command: "remediate",
+				startedAt,
+				outcome,
+				classification,
+				exitCode: result.exitCode,
+				...(options.runRecordsDir ? { baseDir: options.runRecordsDir } : {}),
+				contract: {
+					path: options.contractPath ?? "harness.contract.json",
+				},
+				policyContext: {
+					mode: options.mode ?? "run",
+					safetyPosture: "strict",
+					effectivePolicySource: "remediation-policy",
+					hash: hashRunRecordValue({
+						policy: "remediation-policy",
+						defaultRemediationPolicy: DEFAULT_REMEDIATION_POLICY,
+						mode: options.mode ?? "run",
+						dryRun: options.dryRun ?? false,
+						force: options.force ?? false,
+					}),
+				},
+				preconditions: {
+					dryRun: options.dryRun ?? false,
+					force: options.force ?? false,
+				},
+				artifacts,
+				event: {
+					eventType: "decision",
+					status:
+						classification === "ok"
+							? "completed"
+							: classification === "policy_blocked" ||
+									classification === "precondition_failed" ||
+									classification === "manual_intervention_required"
+								? "blocked"
+								: "failed",
+					severity:
+						classification === "ok"
+							? "info"
+							: classification === "manual_intervention_required"
+								? "warn"
+								: "error",
+					payload,
+				},
+			});
+		} catch (error) {
+			const runRecordError =
+				error instanceof Error ? error.message : String(error);
+			if (result.outcome.ok) {
+				return {
+					outcome: {
+						ok: false,
+						error: {
+							code: "E_INTERNAL",
+							message: `Failed to emit canonical run record: ${runRecordError}`,
+						},
+					},
+					exitCode: EXIT_CODES.INTERNAL,
+				};
+			}
+			return {
+				outcome: {
+					ok: false,
+					error: {
+						...result.outcome.error,
+						context: {
+							...(result.outcome.error.context ?? {}),
+							runRecordError,
+						},
+					},
+				},
+				exitCode: result.exitCode,
+			};
+		}
+		return result;
+	};
+
 	// 1. Get HEAD SHA
 	let headSha: string;
 	try {
 		headSha = options.headSha ?? getHeadSha();
 	} catch (e) {
-		return {
-			outcome: {
-				ok: false,
-				error: {
-					code: "E_INTERNAL",
-					message: `Failed to get HEAD SHA: ${e instanceof Error ? e.message : String(e)}`,
+		return finalize(
+			{
+				outcome: {
+					ok: false,
+					error: {
+						code: "E_INTERNAL",
+						message: `Failed to get HEAD SHA: ${e instanceof Error ? e.message : String(e)}`,
+					},
 				},
+				exitCode: EXIT_CODES.INTERNAL,
 			},
-			exitCode: EXIT_CODES.INTERNAL,
-		};
+			{
+				stage: "head_sha",
+				error: "failed_to_get_head_sha",
+			},
+		);
+	}
+
+	let validatedFindingsPath: string | null = null;
+	if (options.findings && options.findings !== "-") {
+		try {
+			validatedFindingsPath = validatePath(process.cwd(), options.findings);
+		} catch (error) {
+			return finalize(
+				{
+					outcome: {
+						ok: false,
+						error: {
+							code: "E_VALIDATION",
+							message: `Failed to read findings: ${error instanceof Error ? error.message : String(error)}`,
+						},
+					},
+					exitCode: EXIT_CODES.USAGE,
+				},
+				{
+					stage: "read_findings",
+					error: "invalid_findings_path",
+				},
+				{ emitRunRecord: false },
+			);
+		}
 	}
 
 	// 2. Load contract for policy (use defaults if not available)
-	let policy = DEFAULT_REMEDIATION_POLICY;
+	const policy = DEFAULT_REMEDIATION_POLICY;
+
 	let rollbackPolicy = DEFAULT_PILOT_ROLLBACK_POLICY;
 	if (options.contractPath) {
 		try {
 			const contract = loadContract(options.contractPath);
-			// Use contract's remediation policy if available
-			if (contract.remediationPolicy) {
-				policy = contract.remediationPolicy;
-			}
+			// SECURITY: Remediation policy is process-controlled and not overridable
+			// from repo-controlled contract content. Accepting autoApplyMaxTier or
+			// dryRunOnlyByDefault from an untrusted contract would allow policy injection.
 			// Use contract's rollback policy if available
 			if (contract.pilotRollbackPolicy) {
 				rollbackPolicy = contract.pilotRollbackPolicy;
 			}
 		} catch (error) {
-			return {
-				outcome: {
-					ok: false,
-					error: {
-						code: "E_CONTRACT",
-						message: `Failed to load remediation contract: ${
-							error instanceof Error ? error.message : String(error)
-						}`,
+			return finalize(
+				{
+					outcome: {
+						ok: false,
+						error: {
+							code: "E_CONTRACT",
+							message: `Failed to load remediation contract: ${
+								error instanceof Error ? error.message : String(error)
+							}`,
+						},
 					},
+					exitCode: EXIT_CODES.USAGE,
 				},
-				exitCode: EXIT_CODES.USAGE,
-			};
+				{
+					stage: "contract_load",
+					error: "failed_to_load_contract",
+				},
+			);
 		}
 	}
 
@@ -621,17 +794,24 @@ export async function runRemediate(
 			options.completionMarkerPath ?? rollbackPolicy.completionMarkerPath;
 		const markerExists = existsSync(markerPath);
 		if (!markerExists) {
-			return {
-				outcome: {
-					ok: false,
-					error: {
-						code: "E_ROLLBACK_MODE",
-						message: `Autonomous mode requires completion marker at ${markerPath}. Run in manual mode or create marker file.`,
-						context: { mode: effectiveMode, markerPath },
+			return finalize(
+				{
+					outcome: {
+						ok: false,
+						error: {
+							code: "E_ROLLBACK_MODE",
+							message: `Autonomous mode requires completion marker at ${markerPath}. Run in manual mode or create marker file.`,
+							context: { mode: effectiveMode, markerPath },
+						},
 					},
+					exitCode: EXIT_CODES.POLICY,
 				},
-				exitCode: EXIT_CODES.POLICY,
-			};
+				{
+					stage: "rollback_gate",
+					error: "missing_completion_marker",
+					markerPath,
+				},
+			);
 		}
 	}
 
@@ -639,48 +819,66 @@ export async function runRemediate(
 	if (effectiveMode === "apply") {
 		const cwd = process.cwd();
 		if (!isDisposableWorkspace()) {
-			return {
-				outcome: {
-					ok: false,
-					error: {
-						code: "E_POLICY",
-						message:
-							"Apply mode requires a disposable workspace (for example, a git worktree). Set HARNESS_DISPOSABLE_WORKSPACE=true only for controlled disposable environments.",
-						context: { cwd, mode: effectiveMode },
+			return finalize(
+				{
+					outcome: {
+						ok: false,
+						error: {
+							code: "E_POLICY",
+							message:
+								"Apply mode requires a disposable workspace (for example, a git worktree). Set HARNESS_DISPOSABLE_WORKSPACE=true only for controlled disposable environments.",
+							context: { cwd, mode: effectiveMode },
+						},
 					},
+					exitCode: EXIT_CODES.POLICY,
 				},
-				exitCode: EXIT_CODES.POLICY,
-			};
+				{
+					stage: "apply_preflight",
+					error: "non_disposable_workspace",
+				},
+			);
 		}
 
 		const workspaceStatus = getWorkspaceStatus();
 		if (!workspaceStatus.ok) {
-			return {
-				outcome: {
-					ok: false,
-					error: {
-						code: "E_POLICY",
-						message: `Apply mode failed preflight workspace check: ${workspaceStatus.reason}`,
-						context: { mode: effectiveMode },
+			return finalize(
+				{
+					outcome: {
+						ok: false,
+						error: {
+							code: "E_POLICY",
+							message: `Apply mode failed preflight workspace check: ${workspaceStatus.reason}`,
+							context: { mode: effectiveMode },
+						},
 					},
+					exitCode: EXIT_CODES.POLICY,
 				},
-				exitCode: EXIT_CODES.POLICY,
-			};
+				{
+					stage: "apply_preflight",
+					error: "workspace_status_failed",
+				},
+			);
 		}
 
 		if (!workspaceStatus.clean) {
-			return {
-				outcome: {
-					ok: false,
-					error: {
-						code: "E_POLICY",
-						message:
-							"Apply mode requires a clean disposable workspace. Commit or stash changes before retrying.",
-						context: { mode: effectiveMode },
+			return finalize(
+				{
+					outcome: {
+						ok: false,
+						error: {
+							code: "E_POLICY",
+							message:
+								"Apply mode requires a clean disposable workspace. Commit or stash changes before retrying.",
+							context: { mode: effectiveMode },
+						},
 					},
+					exitCode: EXIT_CODES.POLICY,
 				},
-				exitCode: EXIT_CODES.POLICY,
-			};
+				{
+					stage: "apply_preflight",
+					error: "workspace_not_clean",
+				},
+			);
 		}
 	}
 
@@ -691,19 +889,26 @@ export async function runRemediate(
 			// Read from stdin
 			rawInput = readFileSync(0, "utf-8");
 		} else {
-			rawInput = readFileSync(options.findings, "utf-8");
+			const findingsPath = validatedFindingsPath ?? options.findings;
+			rawInput = readFileSync(findingsPath, "utf-8");
 		}
 	} catch (e) {
-		return {
-			outcome: {
-				ok: false,
-				error: {
-					code: "E_VALIDATION",
-					message: `Failed to read findings: ${e instanceof Error ? e.message : String(e)}`,
+		return finalize(
+			{
+				outcome: {
+					ok: false,
+					error: {
+						code: "E_VALIDATION",
+						message: `Failed to read findings: ${e instanceof Error ? e.message : String(e)}`,
+					},
 				},
+				exitCode: EXIT_CODES.USAGE,
 			},
-			exitCode: EXIT_CODES.USAGE,
-		};
+			{
+				stage: "read_findings",
+				error: "failed_to_read_findings",
+			},
+		);
 	}
 
 	// 4. Parse and normalize findings
@@ -711,16 +916,22 @@ export async function runRemediate(
 	try {
 		rawFindings = parseFindings(rawInput);
 	} catch (e) {
-		return {
-			outcome: {
-				ok: false,
-				error: {
-					code: "E_VALIDATION",
-					message: e instanceof Error ? e.message : String(e),
+		return finalize(
+			{
+				outcome: {
+					ok: false,
+					error: {
+						code: "E_VALIDATION",
+						message: e instanceof Error ? e.message : String(e),
+					},
 				},
+				exitCode: EXIT_CODES.USAGE,
 			},
-			exitCode: EXIT_CODES.USAGE,
-		};
+			{
+				stage: "parse_findings",
+				error: "failed_to_parse_findings",
+			},
+		);
 	}
 
 	const repoRoot = process.cwd();
@@ -738,17 +949,24 @@ export async function runRemediate(
 
 	// If all findings failed to parse, return usage error
 	if (findings.length === 0 && parseErrors.length > 0) {
-		return {
-			outcome: {
-				ok: false,
-				error: {
-					code: "E_VALIDATION",
-					message: `All findings failed to parse. First error: ${parseErrors[0]?.error}`,
-					context: { parseErrors },
+		return finalize(
+			{
+				outcome: {
+					ok: false,
+					error: {
+						code: "E_VALIDATION",
+						message: `All findings failed to parse. First error: ${parseErrors[0]?.error}`,
+						context: { parseErrors },
+					},
 				},
+				exitCode: EXIT_CODES.USAGE,
 			},
-			exitCode: EXIT_CODES.USAGE,
-		};
+			{
+				stage: "normalize_findings",
+				error: "all_findings_invalid",
+				parseErrorCount: parseErrors.length,
+			},
+		);
 	}
 
 	// 5. Create orchestrator with policy
@@ -768,16 +986,22 @@ export async function runRemediate(
 	try {
 		outcome = await orchestrator.remediate();
 	} catch (e) {
-		return {
-			outcome: {
-				ok: false,
-				error: {
-					code: "E_INTERNAL",
-					message: `Remediation failed: ${e instanceof Error ? e.message : String(e)}`,
+		return finalize(
+			{
+				outcome: {
+					ok: false,
+					error: {
+						code: "E_INTERNAL",
+						message: `Remediation failed: ${e instanceof Error ? e.message : String(e)}`,
+					},
 				},
+				exitCode: EXIT_CODES.INTERNAL,
 			},
-			exitCode: EXIT_CODES.INTERNAL,
-		};
+			{
+				stage: "orchestrator",
+				error: "remediation_failed",
+			},
+		);
 	}
 
 	// 6b. v1.1 apply mode: execute low-risk commit actions as single-finding transactions.
@@ -870,7 +1094,15 @@ export async function runRemediate(
 		exitCode = EXIT_CODES.SUCCESS;
 	}
 
-	return { outcome, exitCode };
+	return finalize(
+		{ outcome, exitCode },
+		{
+			stage: "complete",
+			outcome: outcome.ok ? "ok" : "error",
+			findingsProcessed: findings.length,
+			effectiveMode,
+		},
+	);
 }
 
 /**

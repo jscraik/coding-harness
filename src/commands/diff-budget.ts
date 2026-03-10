@@ -17,6 +17,14 @@ import {
 	checkDiffBudget,
 	formatDiffBudgetMessage,
 } from "../lib/policy/diff-budget.js";
+import {
+	type CliError,
+	type CliResult,
+	type Result,
+	createError,
+	err,
+	ok,
+} from "../lib/result/types.js";
 
 export const EXIT_CODES = {
 	SUCCESS: 0,
@@ -38,7 +46,7 @@ export interface DiffBudgetOptions {
 	json?: boolean;
 }
 
-export interface DiffBudgetResult {
+export interface DiffBudgetOutput {
 	passed: boolean;
 	metrics: DiffMetrics;
 	check: DiffBudgetCheck;
@@ -84,7 +92,10 @@ function isValidDiffBudgetOverride(
 /**
  * Get diff between base and head refs using git.
  */
-function getGitDiff(base: string, head: string): PullRequestFile[] {
+function getGitDiff(
+	base: string,
+	head: string,
+): Result<PullRequestFile[], CliError> {
 	// Use spawnSync for safe argument passing (no shell interpolation)
 	const result = spawnSync("git", ["diff", "--numstat", `${base}..${head}`], {
 		encoding: "utf-8",
@@ -93,18 +104,28 @@ function getGitDiff(base: string, head: string): PullRequestFile[] {
 
 	// Check for spawn error (e.g., git not found)
 	if (result.error) {
-		throw new Error(`Failed to run git diff: ${result.error.message}`);
+		return err(
+			createError(
+				"SYSTEM_ERROR",
+				`Failed to run git diff: ${result.error.message}`,
+				undefined,
+				result.error,
+			),
+		);
 	}
 
 	if (result.status !== 0) {
-		throw new Error(
-			`git diff failed with status ${result.status}: ${result.stderr}`,
+		return err(
+			createError(
+				"SYSTEM_ERROR",
+				`git diff failed with status ${result.status}: ${result.stderr}`,
+			),
 		);
 	}
 
 	const output = result.stdout;
 	if (!output.trim()) {
-		return [];
+		return ok([]);
 	}
 
 	const files: PullRequestFile[] = [];
@@ -129,7 +150,7 @@ function getGitDiff(base: string, head: string): PullRequestFile[] {
 		}
 	}
 
-	return files;
+	return ok(files);
 }
 
 /**
@@ -162,18 +183,20 @@ function loadOverride(overridePath: string): DiffBudgetOverride | null {
 }
 
 /**
- * Run diff budget check.
+ * Run diff budget check and return structured result.
  */
-export function runDiffBudget(options: DiffBudgetOptions): DiffBudgetResult {
+export function runDiffBudget(
+	options: DiffBudgetOptions,
+): CliResult<DiffBudgetOutput> {
 	const base = options.base ?? "main";
 	const head = options.head ?? "HEAD";
 	const contractPath = options.contractPath ?? "harness.contract.json";
 
 	if (!isSafeGitRef(base)) {
-		throw new Error(`Invalid base ref: ${base}`);
+		return err(createError("VALIDATION_ERROR", `Invalid base ref: ${base}`));
 	}
 	if (!isSafeGitRef(head)) {
-		throw new Error(`Invalid head ref: ${head}`);
+		return err(createError("VALIDATION_ERROR", `Invalid head ref: ${head}`));
 	}
 
 	// Load budget from contract or use defaults
@@ -184,8 +207,12 @@ export function runDiffBudget(options: DiffBudgetOptions): DiffBudgetResult {
 	}
 
 	// Get diff metrics
-	const files = getGitDiff(base, head);
-	const metrics = calculateDiffMetrics(files);
+	const filesResult = getGitDiff(base, head);
+	if (!filesResult.ok) {
+		return filesResult;
+	}
+
+	const metrics = calculateDiffMetrics(filesResult.value);
 
 	// Load override if specified
 	let override: DiffBudgetOverride | undefined;
@@ -196,39 +223,38 @@ export function runDiffBudget(options: DiffBudgetOptions): DiffBudgetResult {
 	// Check budget
 	const check = checkDiffBudget(metrics, budget, override);
 
-	return {
+	return ok({
 		passed: check.passed,
 		metrics,
 		check,
 		base,
 		head,
-	};
+	});
 }
 
 /**
  * CLI entry point for diff budget command.
  */
 export function runDiffBudgetCLI(options: DiffBudgetOptions): number {
-	try {
-		const result = runDiffBudget(options);
+	const result = runDiffBudget(options);
+
+	if (!result.ok) {
+		console.error(`Error: ${result.error.message}`);
 
 		if (options.json) {
-			console.info(JSON.stringify(result, null, 2));
-		} else {
-			console.info(formatDiffBudgetMessage(result.check));
-			console.info(`  Base: ${result.base}`);
-			console.info(`  Head: ${result.head}`);
-		}
-
-		return result.passed ? EXIT_CODES.SUCCESS : EXIT_CODES.BUDGET_EXCEEDED;
-	} catch (error) {
-		const message = error instanceof Error ? error.message : String(error);
-		console.error(`Error: ${message}`);
-
-		if (options.json) {
-			console.info(JSON.stringify({ error: message }));
+			console.info(JSON.stringify({ error: result.error.message }));
 		}
 
 		return EXIT_CODES.SYSTEM_ERROR;
 	}
+
+	if (options.json) {
+		console.info(JSON.stringify(result.value, null, 2));
+	} else {
+		console.info(formatDiffBudgetMessage(result.value.check));
+		console.info(`  Base: ${result.value.base}`);
+		console.info(`  Head: ${result.value.head}`);
+	}
+
+	return result.value.passed ? EXIT_CODES.SUCCESS : EXIT_CODES.BUDGET_EXCEEDED;
 }

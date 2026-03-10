@@ -4,11 +4,21 @@
  * Reads artifact files and computes metrics for pilot evaluation.
  */
 
-import { existsSync, readFileSync } from "node:fs";
-import { join } from "node:path";
+import { existsSync, readFileSync, readdirSync, realpathSync } from "node:fs";
+import { basename, dirname, join, resolve, sep } from "node:path";
+import {
+	type LoadedRunRecordBundle,
+	loadRunRecordBundle,
+} from "../contract/run-records.js";
+import {
+	type PilotAdapterRegistry,
+	getAdapterRegistryEntry,
+	loadAdapterRegistry,
+} from "./registries.js";
 import type {
 	IncidentRecord,
 	PendingIncident,
+	PilotEvaluationIngestion,
 	PilotMetrics,
 	PrLeadTimeEntry,
 	RemediationEvent,
@@ -24,6 +34,218 @@ export type {
 	IncidentRecord,
 	PendingIncident,
 } from "./types.js";
+
+interface CanonicalArtifactDiscovery {
+	paths: string[];
+	runIds: string[];
+	driftWarnings: string[];
+	usedCanonical: boolean;
+}
+
+interface CanonicalBundleScan {
+	bundles: LoadedRunRecordBundle[];
+	errors: string[];
+	runIdCollisionCount: number;
+	sensitiveFieldLeakCount: number;
+}
+
+function unique(values: string[]): string[] {
+	return [...new Set(values)];
+}
+
+function resolveRunRecordRoots(
+	artifactsDir: string,
+	runRecordsDir?: string,
+): string[] {
+	if (runRecordsDir) {
+		return [resolve(process.cwd(), runRecordsDir)];
+	}
+	const defaults = [
+		resolve(process.cwd(), "artifacts/agent-runs"),
+		resolve(artifactsDir, "agent-runs"),
+	];
+	return unique(defaults);
+}
+
+function isWithinRoot(candidate: string, root: string): boolean {
+	return candidate === root || candidate.startsWith(`${root}${sep}`);
+}
+
+function safeArtifactPath(
+	pathLike: string,
+	allowedRoots: string[],
+): string | null {
+	const resolved = resolve(pathLike);
+	return allowedRoots.some((root) => isWithinRoot(resolved, root))
+		? resolved
+		: null;
+}
+
+function discoverCanonicalArtifacts(options: {
+	artifactsDir: string;
+	runRecordsDir?: string;
+	command: string;
+	artifactTypes: string[];
+	expectedFileName: string;
+}): CanonicalArtifactDiscovery {
+	const driftWarnings: string[] = [];
+	const runIds: string[] = [];
+	const artifactPaths: string[] = [];
+	const roots = resolveRunRecordRoots(
+		options.artifactsDir,
+		options.runRecordsDir,
+	);
+	const workspaceRoot = resolve(process.cwd());
+	const artifactRoot = resolve(options.artifactsDir);
+	const allowedRoots = unique(
+		[workspaceRoot, artifactRoot, ...roots].map((root) => resolve(root)),
+	);
+	let usedCanonical = false;
+
+	for (const root of roots) {
+		if (!existsSync(root)) {
+			continue;
+		}
+
+		const entries = readdirSync(root, { withFileTypes: true })
+			.filter((entry) => entry.isDirectory())
+			.map((entry) => entry.name)
+			.sort();
+
+		for (const runId of entries) {
+			try {
+				const bundle = loadRunRecordBundle({
+					runId,
+					baseDir: root,
+					...(isWithinRoot(root, workspaceRoot)
+						? {}
+						: {
+								cwd: (() => {
+									try {
+										return realpathSync(dirname(root));
+									} catch {
+										return dirname(root);
+									}
+								})(),
+							}),
+				});
+				if (bundle.manifest.command !== options.command) {
+					continue;
+				}
+
+				usedCanonical = true;
+				runIds.push(runId);
+
+				const refs = bundle.manifest.artifactRefs.filter((ref) =>
+					options.artifactTypes.includes(ref.type),
+				);
+				if (refs.length === 0) {
+					driftWarnings.push(
+						`${options.command}:${runId}: missing typed artifactRefs for ${options.expectedFileName}`,
+					);
+					continue;
+				}
+
+				for (const ref of refs) {
+					if (basename(ref.path) !== options.expectedFileName) {
+						driftWarnings.push(
+							`${options.command}:${runId}: artifactRef ${ref.path} does not match expected ${options.expectedFileName}`,
+						);
+						continue;
+					}
+					const safePath = safeArtifactPath(ref.path, allowedRoots);
+					if (!safePath) {
+						driftWarnings.push(
+							`${options.command}:${runId}: artifactRef path escapes workspace (${ref.path})`,
+						);
+						continue;
+					}
+					artifactPaths.push(safePath);
+				}
+			} catch (error) {
+				const message = error instanceof Error ? error.message : String(error);
+				driftWarnings.push(
+					`canonical bundle load failed for ${runId}: ${message}`,
+				);
+			}
+		}
+	}
+
+	return {
+		paths: unique(artifactPaths),
+		runIds: unique(runIds),
+		driftWarnings,
+		usedCanonical,
+	};
+}
+
+function scanCanonicalBundles(
+	artifactsDir: string,
+	runRecordsDir?: string,
+): CanonicalBundleScan {
+	const roots = resolveRunRecordRoots(artifactsDir, runRecordsDir);
+	const workspaceRoot = resolve(process.cwd());
+	const seenRunIds = new Map<string, string>();
+	const bundles: LoadedRunRecordBundle[] = [];
+	const errors: string[] = [];
+	let runIdCollisionCount = 0;
+	let sensitiveFieldLeakCount = 0;
+
+	for (const root of roots) {
+		if (!existsSync(root)) {
+			continue;
+		}
+
+		const entries = readdirSync(root, { withFileTypes: true })
+			.filter((entry) => entry.isDirectory())
+			.map((entry) => entry.name)
+			.sort();
+
+		for (const runId of entries) {
+			const existingRoot = seenRunIds.get(runId);
+			if (existingRoot && existingRoot !== root) {
+				runIdCollisionCount++;
+				errors.push(
+					`runId collision detected for ${runId} in ${existingRoot} and ${root}`,
+				);
+				continue;
+			}
+			seenRunIds.set(runId, root);
+
+			try {
+				const bundle = loadRunRecordBundle({
+					runId,
+					baseDir: root,
+					...(isWithinRoot(root, workspaceRoot)
+						? {}
+						: {
+								cwd: (() => {
+									try {
+										return realpathSync(dirname(root));
+									} catch {
+										return dirname(root);
+									}
+								})(),
+							}),
+				});
+				bundles.push(bundle);
+			} catch (error) {
+				const message = error instanceof Error ? error.message : String(error);
+				errors.push(`canonical bundle load failed for ${runId}: ${message}`);
+				if (/sensitive/i.test(message)) {
+					sensitiveFieldLeakCount++;
+				}
+			}
+		}
+	}
+
+	return {
+		bundles,
+		errors,
+		runIdCollisionCount,
+		sensitiveFieldLeakCount,
+	};
+}
 
 /**
  * Read and parse JSON file with error handling
@@ -43,17 +265,33 @@ function readJsonFile<T>(filePath: string): T | null {
 /**
  * Read JSONL file and parse entries
  */
-function readJsonlFile<T>(filePath: string): T[] {
+function readJsonlFile<T>(filePath: string): {
+	data: T[];
+	error?: string;
+} {
 	if (!existsSync(filePath)) {
-		return [];
+		return { data: [] };
 	}
-	try {
-		const content = readFileSync(filePath, "utf-8");
-		const lines = content.trim().split("\n").filter(Boolean);
-		return lines.map((line) => JSON.parse(line) as T);
-	} catch {
-		return [];
+	const content = readFileSync(filePath, "utf-8");
+	const lines = content
+		.split("\n")
+		.map((line) => line.trim())
+		.filter(Boolean);
+
+	const data: T[] = [];
+	for (let idx = 0; idx < lines.length; idx++) {
+		const line = lines[idx];
+		if (line === undefined) continue;
+		try {
+			data.push(JSON.parse(line) as T);
+		} catch {
+			return {
+				data: [],
+				error: `${filePath}: invalid JSONL at line ${idx + 1}`,
+			};
+		}
 	}
+	return { data };
 }
 
 /**
@@ -194,13 +432,28 @@ export function loadPrLeadTimeData(artifactsDir: string): {
 /**
  * Load remediation events from artifact
  */
-export function loadRemediationEvents(artifactsDir: string): {
+export function loadRemediationEvents(
+	artifactsDir: string,
+	options?: { artifactPaths?: string[] },
+): {
 	data: RemediationEvent[];
 	errors: string[];
 } {
 	const errors: string[] = [];
-	const filePath = join(artifactsDir, ARTIFACT_FILES.REMEDIATION_EVENTS);
-	const data = readJsonlFile<RemediationEvent>(filePath);
+	const paths =
+		options?.artifactPaths && options.artifactPaths.length > 0
+			? options.artifactPaths
+			: [join(artifactsDir, ARTIFACT_FILES.REMEDIATION_EVENTS)];
+	const data: RemediationEvent[] = [];
+
+	for (const filePath of paths) {
+		const parsed = readJsonlFile<RemediationEvent>(filePath);
+		if (parsed.error) {
+			errors.push(parsed.error);
+			continue;
+		}
+		data.push(...parsed.data);
+	}
 
 	// Validate schema for each entry
 	for (const event of data) {
@@ -220,13 +473,28 @@ export function loadRemediationEvents(artifactsDir: string): {
 /**
  * Load rollback events from artifact
  */
-export function loadRollbackEvents(artifactsDir: string): {
+export function loadRollbackEvents(
+	artifactsDir: string,
+	options?: { artifactPaths?: string[] },
+): {
 	data: RollbackEvent[];
 	errors: string[];
 } {
 	const errors: string[] = [];
-	const filePath = join(artifactsDir, ARTIFACT_FILES.ROLLBACK_EVENTS);
-	const data = readJsonlFile<RollbackEvent>(filePath);
+	const paths =
+		options?.artifactPaths && options.artifactPaths.length > 0
+			? options.artifactPaths
+			: [join(artifactsDir, ARTIFACT_FILES.ROLLBACK_EVENTS)];
+	const data: RollbackEvent[] = [];
+
+	for (const filePath of paths) {
+		const parsed = readJsonlFile<RollbackEvent>(filePath);
+		if (parsed.error) {
+			errors.push(parsed.error);
+			continue;
+		}
+		data.push(...parsed.data);
+	}
 
 	for (const event of data) {
 		const validation = validateSchema(
@@ -251,7 +519,11 @@ export function loadIncidents(artifactsDir: string): {
 } {
 	const errors: string[] = [];
 	const filePath = join(artifactsDir, ARTIFACT_FILES.INCIDENTS);
-	const data = readJsonlFile<IncidentRecord>(filePath);
+	const { data, error } = readJsonlFile<IncidentRecord>(filePath);
+	if (error) {
+		errors.push(error);
+		return { data: [], errors };
+	}
 
 	for (const incident of data) {
 		const validation = validateSchema(
@@ -362,6 +634,75 @@ export function calculateRollbackReliability(events: RollbackEvent[]): number {
 
 	const successful = triggers.filter((e) => e.result === "success").length;
 	return successful / triggers.length;
+}
+
+export function countRollbackTriggers(events: RollbackEvent[]): number {
+	return events.filter(
+		(e) => e.triggerType === "drill" || e.triggerType === "real",
+	).length;
+}
+
+export function calculateInterventionRate(
+	bundles: LoadedRunRecordBundle[],
+): number {
+	if (bundles.length === 0) {
+		return 0;
+	}
+
+	const runIds = new Set<string>();
+	for (const bundle of bundles) {
+		if (
+			bundle.events.some(
+				(event) =>
+					event.eventType === "intervention" &&
+					(event.status === "completed" || event.status === "passed"),
+			)
+		) {
+			runIds.add(bundle.manifest.runId);
+		}
+	}
+
+	return runIds.size / bundles.length;
+}
+
+export function calculateThrashRate(bundles: LoadedRunRecordBundle[]): number {
+	if (bundles.length === 0) {
+		return 0;
+	}
+
+	let thrashCount = 0;
+	for (const bundle of bundles) {
+		const hasRetry = bundle.events.some((event) => event.eventType === "retry");
+		const hasManualInterventionOutcome =
+			bundle.manifest.outcome === "hold" ||
+			bundle.manifest.outcome === "rollback";
+		if (hasRetry || hasManualInterventionOutcome) {
+			thrashCount++;
+		}
+	}
+
+	return thrashCount / bundles.length;
+}
+
+export function calculateCanonicalEvidenceCompleteness(
+	bundles: LoadedRunRecordBundle[],
+): number {
+	if (bundles.length === 0) {
+		return 1;
+	}
+
+	let complete = 0;
+	for (const bundle of bundles) {
+		const hasArtifactRefs = bundle.manifest.artifactRefs.length > 0;
+		const hasDualProvenance =
+			Boolean(bundle.manifest.provenance.repoContractHash) &&
+			Boolean(bundle.manifest.provenance.processPolicyHash);
+		if (hasArtifactRefs && hasDualProvenance) {
+			complete++;
+		}
+	}
+
+	return complete / bundles.length;
 }
 
 /**
@@ -521,23 +862,123 @@ export function determineWindowDates(leadTimeData: PrLeadTimeEntry[]): {
 /**
  * Capture all pilot metrics from artifacts directory
  */
-export function capturePilotMetrics(artifactsDir: string): {
+export function capturePilotMetrics(
+	artifactsDir: string,
+	options?: { runRecordsDir?: string; adapterRegistryPath?: string },
+): {
 	metrics: PilotMetrics | null;
 	errors: string[];
+	ingestion: PilotEvaluationIngestion;
+	driftWarnings: string[];
 } {
 	const errors: string[] = [];
+	const driftWarnings: string[] = [];
+	let adapterRegistry: PilotAdapterRegistry | null = null;
+
+	try {
+		adapterRegistry = loadAdapterRegistry(options?.adapterRegistryPath);
+	} catch (error) {
+		errors.push(error instanceof Error ? error.message : String(error));
+	}
+
+	const canonicalBundleScan = scanCanonicalBundles(
+		artifactsDir,
+		options?.runRecordsDir,
+	);
+	driftWarnings.push(...canonicalBundleScan.errors);
+
+	const remediationDiscovery = discoverCanonicalArtifacts({
+		artifactsDir,
+		...(options?.runRecordsDir ? { runRecordsDir: options.runRecordsDir } : {}),
+		command: "remediate",
+		artifactTypes: ["remediation-events", "legacy-remediation-events"],
+		expectedFileName: ARTIFACT_FILES.REMEDIATION_EVENTS,
+	});
+	driftWarnings.push(...remediationDiscovery.driftWarnings);
+	const remediationArtifactPaths =
+		remediationDiscovery.paths.length > 0
+			? remediationDiscovery.paths
+			: [join(artifactsDir, ARTIFACT_FILES.REMEDIATION_EVENTS)];
+
+	const rollbackDiscovery = discoverCanonicalArtifacts({
+		artifactsDir,
+		...(options?.runRecordsDir ? { runRecordsDir: options.runRecordsDir } : {}),
+		command: "pilot-rollback",
+		artifactTypes: ["rollback-events", "legacy-rollback-events"],
+		expectedFileName: ARTIFACT_FILES.ROLLBACK_EVENTS,
+	});
+	driftWarnings.push(...rollbackDiscovery.driftWarnings);
+	const rollbackArtifactPaths =
+		rollbackDiscovery.paths.length > 0
+			? rollbackDiscovery.paths
+			: [join(artifactsDir, ARTIFACT_FILES.ROLLBACK_EVENTS)];
+
+	const ingestion: PilotEvaluationIngestion = {
+		remediationEvents: {
+			source:
+				remediationDiscovery.paths.length > 0 ? "canonical" : "legacy_adapter",
+			adapterVersion:
+				remediationDiscovery.paths.length > 0 ? "none" : "legacy-jsonl-v1",
+			runIds: remediationDiscovery.runIds,
+			mappedArtifactPaths: remediationArtifactPaths,
+			driftWarnings: remediationDiscovery.driftWarnings,
+			...(() => {
+				const entry =
+					adapterRegistry &&
+					getAdapterRegistryEntry(adapterRegistry, "legacy-jsonl-v1");
+				return remediationDiscovery.paths.length > 0 || !entry
+					? {}
+					: {
+							owner: entry.owner,
+							introducedAt: entry.introducedAt,
+							sunsetBy: entry.sunsetBy,
+							blockAfter: entry.blockAfter,
+						};
+			})(),
+		},
+		rollbackEvents: {
+			source:
+				rollbackDiscovery.paths.length > 0 ? "canonical" : "legacy_adapter",
+			adapterVersion:
+				rollbackDiscovery.paths.length > 0 ? "none" : "legacy-jsonl-v1",
+			runIds: rollbackDiscovery.runIds,
+			mappedArtifactPaths: rollbackArtifactPaths,
+			driftWarnings: rollbackDiscovery.driftWarnings,
+			...(() => {
+				const entry =
+					adapterRegistry &&
+					getAdapterRegistryEntry(adapterRegistry, "legacy-jsonl-v1");
+				return rollbackDiscovery.paths.length > 0 || !entry
+					? {}
+					: {
+							owner: entry.owner,
+							introducedAt: entry.introducedAt,
+							sunsetBy: entry.sunsetBy,
+							blockAfter: entry.blockAfter,
+						};
+			})(),
+		},
+	};
 
 	// Load all artifacts
 	const { data: leadTimeData, errors: ltErrors } =
 		loadPrLeadTimeData(artifactsDir);
 	errors.push(...ltErrors);
 
-	const { data: remediationData, errors: remErrors } =
-		loadRemediationEvents(artifactsDir);
+	const { data: remediationData, errors: remErrors } = loadRemediationEvents(
+		artifactsDir,
+		{
+			artifactPaths: remediationArtifactPaths,
+		},
+	);
 	errors.push(...remErrors);
 
-	const { data: rollbackData, errors: rbErrors } =
-		loadRollbackEvents(artifactsDir);
+	const { data: rollbackData, errors: rbErrors } = loadRollbackEvents(
+		artifactsDir,
+		{
+			artifactPaths: rollbackArtifactPaths,
+		},
+	);
 	errors.push(...rbErrors);
 
 	const { data: incidentsData, errors: incErrors } =
@@ -552,10 +993,12 @@ export function capturePilotMetrics(artifactsDir: string): {
 	if (
 		errors.some(
 			(e) =>
-				e.includes("missing schemaVersion") || e.includes("unsupported schema"),
+				e.includes("missing schemaVersion") ||
+				e.includes("unsupported schema") ||
+				e.includes("invalid JSONL"),
 		)
 	) {
-		return { metrics: null, errors };
+		return { metrics: null, errors, ingestion, driftWarnings };
 	}
 
 	// Filter pilot-eligible entries
@@ -581,6 +1024,8 @@ export function capturePilotMetrics(artifactsDir: string): {
 		leadTimeP50CiHalfWidth: leadTimeMetrics.p50CiHalfWidth,
 		leadTimeP75CiHalfWidth: leadTimeMetrics.p75CiHalfWidth,
 		rollbackReliability: calculateRollbackReliability(rollbackData),
+		rollbackTriggerCount: countRollbackTriggers(rollbackData),
+		interventionRate: calculateInterventionRate(canonicalBundleScan.bundles),
 		highRiskAutomationIncidents:
 			countHighRiskAutomationIncidents(incidentsData),
 		unresolvedCriticalIncidents: countUnresolvedCriticalIncidents(
@@ -589,13 +1034,19 @@ export function capturePilotMetrics(artifactsDir: string): {
 		),
 		incidentClassificationP95Hours:
 			calculateClassificationLatency(incidentsData),
-		evidenceCompletenessRatio: calculateEvidenceCompleteness(
-			leadTimeData,
-			remediationData,
-			incidentsData,
-		),
+		evidenceCompletenessRatio:
+			canonicalBundleScan.bundles.length > 0
+				? calculateCanonicalEvidenceCompleteness(canonicalBundleScan.bundles)
+				: calculateEvidenceCompleteness(
+						leadTimeData,
+						remediationData,
+						incidentsData,
+					),
+		thrashRate: calculateThrashRate(canonicalBundleScan.bundles),
+		sensitiveFieldLeakCount: canonicalBundleScan.sensitiveFieldLeakCount,
+		runIdCollisionCount: canonicalBundleScan.runIdCollisionCount,
 		repoSampleSizes: calculateRepoSampleSizes(pilotEntries),
 	};
 
-	return { metrics, errors };
+	return { metrics, errors, ingestion, driftWarnings };
 }

@@ -83,6 +83,7 @@ jobs:
           REPO_OWNER: ${{ steps.context.outputs.repo_owner }}
           REPO_NAME: ${{ steps.context.outputs.repo_name }}
           MIN_MERGE_SCORE: '4'
+          EVENT_NAME: ${{ github.event_name }}
         uses: actions/github-script@f28e40c7f34bde8b3046d885e986cb6290c5673b # v7
         with:
           script: |
@@ -90,6 +91,21 @@ jobs:
             const minMergeScore = parseInt(process.env.MIN_MERGE_SCORE, 10);
             const owner = process.env.REPO_OWNER;
             const repo = process.env.REPO_NAME;
+            const eventName = process.env.EVENT_NAME;
+            const action = context.payload.action || '';
+
+            // Freshness is keyed to PR head SHA, not commit timestamps.
+            // Any synchronize event means the head SHA changed and requires a new
+            // Greptile comment to complete this check.
+            if (eventName === 'pull_request' && action === 'synchronize') {
+              core.setOutput('found', 'false');
+              core.setOutput('status', 'pending');
+              core.setOutput('summary', 'Waiting for Greptile review on the current PR head commit...');
+              core.setOutput('comment_url', '');
+              core.setOutput('score', '');
+              console.log('Head SHA changed via synchronize event; waiting for fresh Greptile review');
+              return;
+            }
 
             // Fetch comments on the PR
             const comments = await github.rest.issues.listComments({
@@ -98,7 +114,6 @@ jobs:
               issue_number: prNumber
             });
 
-            // Find Greptile's review comments (most recent first)
             const greptileComments = comments.data
               .filter(c => c.user.login === 'greptile[bot]' || c.user.login === 'greptile')
               .sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
@@ -106,10 +121,10 @@ jobs:
             if (greptileComments.length === 0) {
               core.setOutput('found', 'false');
               core.setOutput('status', 'pending');
-              core.setOutput('summary', 'Waiting for Greptile review...');
+              core.setOutput('summary', 'Waiting for Greptile review on the current PR head commit...');
               core.setOutput('comment_url', '');
               core.setOutput('score', '');
-              console.log('No Greptile comments found');
+              console.log('No Greptile comments found for the current head commit');
               return;
             }
 
@@ -199,21 +214,21 @@ jobs:
             const commentUrl = process.env.COMMENT_URL;
 
             if (status === 'pending') {
-              // Waiting for Greptile - create a neutral check that doesn't block merge
-              // The check will be updated when Greptile posts a review (triggers via issue_comment)
+              // Waiting for Greptile - mark as a failing completed check so branch
+              // protection blocks merge without leaving an indefinitely queued run.
               await github.rest.checks.create({
                 owner,
                 repo,
                 name: 'Greptile Review',
                 head_sha: headSha,
                 status: 'completed',
-                conclusion: 'neutral',
+                conclusion: 'failure',
                 output: {
                   title: 'Greptile Review Pending',
-                  summary: 'Greptile has not yet reviewed this PR. The check will update automatically when Greptile posts a review. Merge is allowed but Greptile review is still expected.'
+                  summary: 'Greptile has not yet reviewed this PR head commit.'
                 }
               });
-              console.log('Created neutral check run - waiting for Greptile');
+              console.log('Created failing check run - waiting for Greptile');
               return;
             }
 

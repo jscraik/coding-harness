@@ -15,6 +15,7 @@ const indexBatchMock = vi.fn(
 	): Promise<Array<{ indexed: boolean; path: string }>> =>
 		files.map((file) => ({ indexed: true, path: file.filepath })),
 );
+let ollamaAvailable = true;
 const initMock = vi.fn<
 	() =>
 		| { ok: true; value: undefined }
@@ -36,7 +37,7 @@ vi.mock("../lib/context-compound/store.js", () => ({
 vi.mock("../lib/context-compound/ollama.js", () => ({
 	OllamaClient: class {
 		async isAvailable() {
-			return true;
+			return ollamaAvailable;
 		}
 
 		async warmup() {
@@ -66,6 +67,7 @@ describe("runIndexContext", () => {
 		vi.clearAllMocks();
 		initMock.mockClear();
 		initMock.mockReturnValue({ ok: true, value: undefined });
+		ollamaAvailable = true;
 		for (const dir of tempDirs) {
 			rmSync(dir, { recursive: true, force: true });
 		}
@@ -73,7 +75,7 @@ describe("runIndexContext", () => {
 	});
 
 	it("indexes markdown files in nested directories", async () => {
-		const { runIndexContext, EXIT_CODES } = await import("./index-context.js");
+		const { runIndexContext } = await import("./index-context.js");
 
 		const root = mkdtempSync(join(tmpdir(), "harness-index-context-"));
 		tempDirs.push(root);
@@ -84,12 +86,16 @@ describe("runIndexContext", () => {
 		writeFileSync(join(brainstormDir, "top.md"), "# top", "utf-8");
 		writeFileSync(join(nestedDir, "nested.md"), "# nested", "utf-8");
 
-		const exitCode = await runIndexContext({
+		const result = await runIndexContext({
 			baseDir: root,
 			json: true,
 		});
 
-		expect(exitCode).toBe(EXIT_CODES.SUCCESS);
+		expect(result.ok).toBe(true);
+		if (result.ok) {
+			expect(result.value.success).toBe(true);
+			expect(result.value.indexed).toBe(2);
+		}
 		const indexedPaths = indexBatchMock.mock.calls.flatMap((call) =>
 			(call[0] as Array<{ filepath: string }>).map((file) => file.filepath),
 		);
@@ -134,28 +140,25 @@ describe("runIndexContext", () => {
 	});
 
 	it("returns ERROR when harnessDir escapes baseDir", async () => {
-		const { runIndexContext, EXIT_CODES } = await import("./index-context.js");
+		const { runIndexContext } = await import("./index-context.js");
 		const root = mkdtempSync(join(tmpdir(), "harness-index-context-"));
 		tempDirs.push(root);
 
-		const consoleInfoSpy = vi
-			.spyOn(console, "info")
-			.mockImplementation(() => undefined);
-
-		const exitCode = await runIndexContext({
+		const result = await runIndexContext({
 			baseDir: root,
 			harnessDir: "../outside",
 			json: true,
 		});
 
-		expect(exitCode).toBe(EXIT_CODES.ERROR);
+		expect(result.ok).toBe(false);
+		if (!result.ok) {
+			expect(result.error.code).toBe("PATH_TRAVERSAL");
+		}
 		expect(indexBatchMock).not.toHaveBeenCalled();
-
-		consoleInfoSpy.mockRestore();
 	});
 
 	it("returns ERROR when harnessDir is a symlink that resolves outside baseDir", async () => {
-		const { runIndexContext, EXIT_CODES } = await import("./index-context.js");
+		const { runIndexContext } = await import("./index-context.js");
 		const root = mkdtempSync(join(tmpdir(), "harness-index-context-"));
 		tempDirs.push(root);
 
@@ -164,24 +167,21 @@ describe("runIndexContext", () => {
 		mkdirSync(outside, { recursive: true });
 		symlinkSync(outside, harnessLink);
 
-		const consoleInfoSpy = vi
-			.spyOn(console, "info")
-			.mockImplementation(() => undefined);
-
-		const exitCode = await runIndexContext({
+		const result = await runIndexContext({
 			baseDir: root,
 			harnessDir: harnessLink,
 			json: true,
 		});
 
-		expect(exitCode).toBe(EXIT_CODES.ERROR);
+		expect(result.ok).toBe(false);
+		if (!result.ok) {
+			expect(result.error.code).toBe("PATH_TRAVERSAL");
+		}
 		expect(indexBatchMock).not.toHaveBeenCalled();
-
-		consoleInfoSpy.mockRestore();
 	});
 
 	it("accepts nested harnessDir paths that do not exist yet", async () => {
-		const { runIndexContext, EXIT_CODES } = await import("./index-context.js");
+		const { runIndexContext } = await import("./index-context.js");
 		const root = mkdtempSync(join(tmpdir(), "harness-index-context-"));
 		tempDirs.push(root);
 
@@ -189,18 +189,21 @@ describe("runIndexContext", () => {
 		mkdirSync(brainstormDir, { recursive: true });
 		writeFileSync(join(brainstormDir, "topic.md"), "# topic", "utf-8");
 
-		const exitCode = await runIndexContext({
+		const result = await runIndexContext({
 			baseDir: root,
 			harnessDir: ".harness/nested/path",
 			json: true,
 		});
 
-		expect(exitCode).toBe(EXIT_CODES.SUCCESS);
+		expect(result.ok).toBe(true);
+		if (result.ok) {
+			expect(result.value.success).toBe(true);
+		}
 		expect(indexBatchMock).toHaveBeenCalled();
 	});
 
 	it("returns actionable ABI mismatch error when store init fails", async () => {
-		const { runIndexContext, EXIT_CODES } = await import("./index-context.js");
+		const { runIndexContext } = await import("./index-context.js");
 		const root = mkdtempSync(join(tmpdir(), "harness-index-context-"));
 		tempDirs.push(root);
 
@@ -217,20 +220,111 @@ describe("runIndexContext", () => {
 			},
 		});
 
-		const consoleInfoSpy = vi
-			.spyOn(console, "info")
-			.mockImplementation(() => undefined);
-
-		const exitCode = await runIndexContext({
+		const result = await runIndexContext({
 			baseDir: root,
 			json: true,
 		});
 
-		expect(exitCode).toBe(EXIT_CODES.ERROR);
-		const payload = JSON.parse(String(consoleInfoSpy.mock.calls[0]?.[0]));
-		expect(payload.error).toContain("Node.js ABI mismatch");
-		expect(payload.error).toContain("pnpm rebuild better-sqlite3");
-		expect(payload.error).not.toContain("/tmp/better_sqlite3.node");
+		expect(result.ok).toBe(false);
+		if (!result.ok) {
+			expect(result.error.message).toContain("Node.js ABI mismatch");
+			expect(result.error.message).toContain("pnpm rebuild better-sqlite3");
+			expect(result.error.message).not.toContain("/tmp/better_sqlite3.node");
+		}
+	});
+
+	it("fails explicitly when semantic backend is unavailable", async () => {
+		const { runIndexContext, EXIT_CODES } = await import("./index-context.js");
+		const root = mkdtempSync(join(tmpdir(), "harness-index-context-"));
+		tempDirs.push(root);
+		const brainstormDir = join(root, "docs/brainstorms");
+		mkdirSync(brainstormDir, { recursive: true });
+		writeFileSync(join(brainstormDir, "topic.md"), "# topic", "utf-8");
+		ollamaAvailable = false;
+
+		const result = await runIndexContext({
+			baseDir: root,
+			json: true,
+		});
+
+		expect(result.ok).toBe(false);
+		if (!result.ok) {
+			expect(result.error.code).toBe("API_ERROR");
+			expect(result.error.message).toContain("Ollama not available");
+		}
+		const { runIndexContextCLI } = await import("./index-context.js");
+		const consoleInfoSpy = vi
+			.spyOn(console, "info")
+			.mockImplementation(() => undefined);
+		const exitCode = await runIndexContextCLI(["--json"]);
+		expect(exitCode).toBe(EXIT_CODES.OLLAMA_UNAVAILABLE);
 		consoleInfoSpy.mockRestore();
+	});
+
+	it("writes a lexical index when fallback is explicitly enabled and semantic backend is unavailable", async () => {
+		const { runIndexContext } = await import("./index-context.js");
+		const root = mkdtempSync(join(tmpdir(), "harness-index-context-fallback-"));
+		tempDirs.push(root);
+		const brainstormDir = join(root, "docs/brainstorms");
+		mkdirSync(brainstormDir, { recursive: true });
+		writeFileSync(
+			join(brainstormDir, "fallback.md"),
+			"# Fallback\n\nLexical fallback should still index this brainstorm.\n",
+			"utf-8",
+		);
+		ollamaAvailable = false;
+
+		const result = await runIndexContext({
+			baseDir: root,
+			json: true,
+			lexicalFallback: true,
+		});
+
+		expect(result.ok).toBe(true);
+		if (result.ok) {
+			expect(result.value.mode).toBe("lexical_degraded");
+			expect(result.value.indexed).toBe(1);
+			expect(result.value.lexicalIndexPath).toBe(
+				join(root, ".harness/context-lexical-index.json"),
+			);
+		}
+	});
+
+	it("writes a lexical index when CP4b is enabled through the shared rollout switch", async () => {
+		const { runIndexContext } = await import("./index-context.js");
+		const root = mkdtempSync(join(tmpdir(), "harness-index-context-cp4b-"));
+		tempDirs.push(root);
+		const brainstormDir = join(root, "docs/brainstorms");
+		mkdirSync(brainstormDir, { recursive: true });
+		writeFileSync(
+			join(brainstormDir, "cp4b.md"),
+			"# CP4b\n\nShared rollout enablement should produce a lexical index.\n",
+			"utf-8",
+		);
+		const previous = process.env.HARNESS_CP4B_ENABLED;
+		process.env.HARNESS_CP4B_ENABLED = "1";
+		ollamaAvailable = false;
+
+		try {
+			const result = await runIndexContext({
+				baseDir: root,
+				json: true,
+			});
+
+			expect(result.ok).toBe(true);
+			if (result.ok) {
+				expect(result.value.mode).toBe("lexical_degraded");
+				expect(result.value.indexed).toBe(1);
+				expect(result.value.lexicalIndexPath).toBe(
+					join(root, ".harness/context-lexical-index.json"),
+				);
+			}
+		} finally {
+			if (previous === undefined) {
+				process.env.HARNESS_CP4B_ENABLED = undefined;
+			} else {
+				process.env.HARNESS_CP4B_ENABLED = previous;
+			}
+		}
 	});
 });

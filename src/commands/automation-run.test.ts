@@ -2,6 +2,7 @@ import {
 	mkdirSync,
 	mkdtempSync,
 	readFileSync,
+	readdirSync,
 	rmSync,
 	writeFileSync,
 } from "node:fs";
@@ -23,6 +24,7 @@ function baseOptions(tempDir: string) {
 		inputFingerprint: "fp-123",
 		artifactsDir: join(tempDir, "artifacts/automation"),
 		statePath: join(tempDir, "artifacts/automation/idempotency-state.json"),
+		runRecordsDir: join(tempDir, "artifacts/agent-runs"),
 		json: true,
 	} as const;
 }
@@ -54,6 +56,20 @@ describe("automation-run", () => {
 				readFileSync(result.output.artifactUri, "utf-8"),
 			);
 			expect(artifact.schemaVersion).toBe("automation-report/v1");
+
+			const runDirs = readdirSync(options.runRecordsDir, {
+				withFileTypes: true,
+			})
+				.filter((entry) => entry.isDirectory())
+				.map((entry) => entry.name);
+			expect(runDirs.length).toBe(1);
+			const manifest = JSON.parse(
+				readFileSync(
+					join(options.runRecordsDir, runDirs[0] ?? "", "manifest.json"),
+					"utf-8",
+				),
+			);
+			expect(manifest.command).toBe("automation-run");
 		}
 	});
 
@@ -115,6 +131,19 @@ describe("automation-run", () => {
 			expect(result.output.status).toBe("in_progress");
 			expect(result.output.reason).toContain("in progress");
 		}
+		const runDirs = readdirSync(options.runRecordsDir, { withFileTypes: true })
+			.filter((entry) => entry.isDirectory())
+			.map((entry) => entry.name);
+		expect(runDirs.length).toBe(1);
+		const eventsJsonl = readFileSync(
+			join(options.runRecordsDir, runDirs[0] ?? "", "events.jsonl"),
+			"utf-8",
+		)
+			.trim()
+			.split("\n")
+			.filter(Boolean);
+		const latestEvent = JSON.parse(eventsJsonl.at(-1) ?? "{}");
+		expect(latestEvent.status).toBe("blocked");
 		expect(runAutomationRunCLI({ ...options, force: true })).toBe(
 			EXIT_CODES.IN_PROGRESS,
 		);

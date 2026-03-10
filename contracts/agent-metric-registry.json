@@ -1,0 +1,62 @@
+{
+	"schemaVersion": "agent-metric-registry/v1",
+	"metrics": [
+		{
+			"name": "interventionRate",
+			"numerator": "count(events where eventType=intervention and status in [completed,passed])",
+			"denominator": "count(distinct runId from canonical manifests in evaluation window)",
+			"source": "artifacts/agent-runs/*/events.jsonl + artifacts/agent-runs/*/manifest.json",
+			"windowRule": "rolling_24h",
+			"blockingPolicy": "non_blocking",
+			"owner": "pilot-evaluation",
+			"lastUpdatedCheckpoint": "CP6",
+			"threshold": {
+				"operator": "max",
+				"value": 0.25
+			}
+		},
+		{
+			"name": "rollbackReliability",
+			"numerator": "count(manifests where outcome=rollback and exit.classification=rollback_required and rollback completion event status=completed)",
+			"denominator": "count(manifests where outcome=rollback and exit.classification=rollback_required)",
+			"source": "artifacts/agent-runs/*/manifest.json + artifacts/agent-runs/*/events.jsonl",
+			"windowRule": "rolling_24h",
+			"blockingPolicy": "blocking",
+			"owner": "pilot-evaluation",
+			"lastUpdatedCheckpoint": "CP6",
+			"threshold": {
+				"operator": "min",
+				"value": 1
+			},
+			"minimumDenominator": 3
+		},
+		{
+			"name": "evidenceCompleteness",
+			"numerator": "count(manifests with required artifactRefs and dual provenance hashes)",
+			"denominator": "count(canonical terminal manifests in evaluation window)",
+			"source": "artifacts/agent-runs/*/manifest.json",
+			"windowRule": "rolling_24h",
+			"blockingPolicy": "blocking",
+			"owner": "pilot-evaluation",
+			"lastUpdatedCheckpoint": "CP6",
+			"threshold": {
+				"operator": "min",
+				"value": 0.95
+			}
+		},
+		{
+			"name": "thrashRate",
+			"numerator": "count(runs with retry or repeated rollback/hold transitions within window)",
+			"denominator": "count(canonical terminal manifests in evaluation window)",
+			"source": "artifacts/agent-runs/*/events.jsonl + artifacts/agent-runs/*/manifest.json",
+			"windowRule": "rolling_24h",
+			"blockingPolicy": "non_blocking",
+			"owner": "pilot-evaluation",
+			"lastUpdatedCheckpoint": "CP6",
+			"threshold": {
+				"operator": "max",
+				"value": 0.1
+			}
+		}
+	]
+}

@@ -1,0 +1,191 @@
+{
+	"$schema": "https://json-schema.org/draft/2020-12/schema",
+	"$id": "https://brainwav.dev/schemas/agent-run-manifest.schema.json",
+	"title": "Agent Run Manifest",
+	"type": "object",
+	"additionalProperties": false,
+	"required": [
+		"schemaVersion",
+		"runId",
+		"command",
+		"startedAt",
+		"finishedAt",
+		"durationMs",
+		"repo",
+		"contract",
+		"policyContext",
+		"outcome",
+		"exit",
+		"artifactRefs",
+		"preconditions",
+		"provenance"
+	],
+	"properties": {
+		"schemaVersion": {
+			"const": "agent-run-manifest/v1"
+		},
+		"runId": {
+			"type": "string",
+			"minLength": 3,
+			"maxLength": 128,
+			"pattern": "^[A-Za-z0-9][A-Za-z0-9._-]*$"
+		},
+		"command": {
+			"type": "string",
+			"minLength": 1
+		},
+		"scenarioId": {
+			"type": "string"
+		},
+		"startedAt": {
+			"type": "string",
+			"format": "date-time"
+		},
+		"finishedAt": {
+			"type": "string",
+			"format": "date-time"
+		},
+		"durationMs": {
+			"type": "number",
+			"minimum": 0
+		},
+		"repo": {
+			"type": "object",
+			"additionalProperties": false,
+			"required": ["repository", "branch", "headSha"],
+			"properties": {
+				"repository": {
+					"type": "string",
+					"minLength": 1
+				},
+				"branch": {
+					"type": "string",
+					"minLength": 1
+				},
+				"headSha": {
+					"anyOf": [
+						{
+							"type": "string",
+							"pattern": "^[a-f0-9]{7,64}$"
+						},
+						{
+							"const": "unknown"
+						}
+					]
+				},
+				"ancestryBaseSha": {
+					"type": "string",
+					"pattern": "^[a-f0-9]{7,64}$"
+				},
+				"ancestryVerified": {
+					"type": "boolean"
+				}
+			}
+		},
+		"contract": {
+			"type": "object",
+			"additionalProperties": false,
+			"required": ["path", "hash"],
+			"properties": {
+				"path": {
+					"type": "string",
+					"minLength": 1
+				},
+				"hash": {
+					"type": "string",
+					"pattern": "^[a-f0-9]{64}$"
+				},
+				"version": {
+					"type": "string"
+				}
+			}
+		},
+		"policyContext": {
+			"type": "object",
+			"additionalProperties": false,
+			"required": ["mode", "safetyPosture", "effectivePolicySource"],
+			"properties": {
+				"mode": {
+					"type": "string",
+					"minLength": 1
+				},
+				"safetyPosture": {
+					"type": "string",
+					"minLength": 1
+				},
+				"effectivePolicySource": {
+					"type": "string",
+					"minLength": 1
+				}
+			}
+		},
+		"outcome": {
+			"enum": ["success", "hold", "rollback", "failed", "blocked", "canceled"]
+		},
+		"exit": {
+			"type": "object",
+			"additionalProperties": false,
+			"required": ["code", "classification"],
+			"properties": {
+				"code": {
+					"type": "integer"
+				},
+				"classification": {
+					"enum": [
+						"ok",
+						"policy_blocked",
+						"validation_failed",
+						"precondition_failed",
+						"runtime_failed",
+						"rollback_required",
+						"manual_intervention_required",
+						"canceled"
+					]
+				}
+			}
+		},
+		"artifactRefs": {
+			"type": "array",
+			"items": {
+				"type": "object",
+				"additionalProperties": false,
+				"required": ["type", "path", "checksum"],
+				"properties": {
+					"type": {
+						"type": "string",
+						"minLength": 1
+					},
+					"path": {
+						"type": "string",
+						"minLength": 1
+					},
+					"checksum": {
+						"type": "string",
+						"pattern": "^[a-f0-9]{64}$"
+					}
+				}
+			}
+		},
+		"preconditions": {
+			"type": "object",
+			"additionalProperties": {
+				"type": ["string", "number", "boolean", "null"]
+			}
+		},
+		"provenance": {
+			"type": "object",
+			"additionalProperties": false,
+			"required": ["repoContractHash", "processPolicyHash"],
+			"properties": {
+				"repoContractHash": {
+					"type": "string",
+					"pattern": "^[a-f0-9]{64}$"
+				},
+				"processPolicyHash": {
+					"type": "string",
+					"pattern": "^[a-f0-9]{64}$"
+				}
+			}
+		}
+	}
+}

@@ -1,0 +1,9 @@
+{
+	"version": "1.0",
+	"extends": "typescript-base",
+	"riskTierRules": {
+		"src/auth/**": "high",
+		"src/lib/**": "medium",
+		"**/*.test.ts": "low"
+	}
+}

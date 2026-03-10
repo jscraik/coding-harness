@@ -1,0 +1,37 @@
+{
+	"version": "1.0",
+	"riskTierRules": {
+		"**/Auth*/**": "high",
+		"**/API*/**": "high",
+		"**/Core*/**": "medium",
+		"**/Tests/**": "low"
+	},
+	"mergePolicy": {
+		"high": ["review-gate", "evidence-verify"],
+		"medium": ["review-gate"],
+		"low": []
+	},
+	"reviewPolicy": {
+		"timeoutSeconds": 600,
+		"timeoutAction": "fail",
+		"requiredChecks": ["lint", "test", "security-scan"],
+		"enforceReviewerIndependence": true
+	},
+	"branchProtection": {
+		"requiredChecks": ["lint", "test", "security-scan"]
+	},
+	"evidencePolicy": {
+		"requiredFor": [],
+		"allowedTypes": ["png", "jpeg"],
+		"maxFileSizeBytes": 1048576
+	},
+	"diffBudget": {
+		"maxFiles": 10,
+		"maxNetLOC": 400,
+		"overrideLabel": "diff-budget-override"
+	},
+	"packageManagerPolicy": {
+		"allowedManagers": ["swift"],
+		"requiredManager": "swift"
+	}
+}

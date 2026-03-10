@@ -1,4 +1,10 @@
-import { mkdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
+import {
+	mkdirSync,
+	readFileSync,
+	rmSync,
+	symlinkSync,
+	writeFileSync,
+} from "node:fs";
 import { dirname, join } from "node:path";
 import { afterEach, describe, expect, it } from "vitest";
 import { runDriftGate } from "./drift-gate.js";
@@ -203,6 +209,39 @@ describe("drift-gate command", () => {
 				(f) => f.rule_id === "command.surface.help.duplicate",
 			),
 		).toBe(false);
+	});
+
+	it("blocks writes through symlinked output path", () => {
+		const root = join(process.cwd(), "artifacts", "drift-gate-test-7");
+		roots.push(root);
+		createRepoFixture(root);
+
+		const outsideDir = join(process.cwd(), "artifacts", "drift-gate-outside-7");
+		roots.push(outsideDir);
+		mkdirSync(outsideDir, { recursive: true });
+
+		const linkPath = join(
+			root,
+			"artifacts/consistency-gate/consistency-drift-advisory-latest.json",
+		);
+		mkdirSync(dirname(linkPath), { recursive: true });
+		symlinkSync(join(outsideDir, "poc.json"), linkPath);
+
+		const result = runDriftGate({
+			repoRoot: root,
+			mode: "advisory",
+			outPath:
+				"artifacts/consistency-gate/consistency-drift-advisory-latest.json",
+		});
+
+		expect(result.report.outcome).toBe("error");
+		expect(result.report.error_class).toBe("io");
+		expect(
+			result.report.findings.some(
+				(f) => f.rule_id === "report.output.write_error",
+			),
+		).toBe(true);
+		expect(() => readFileSync(join(outsideDir, "poc.json"), "utf-8")).toThrow();
 	});
 
 	it("writes output report to --out path", () => {
