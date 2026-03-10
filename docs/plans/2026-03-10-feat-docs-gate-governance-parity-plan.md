@@ -596,21 +596,19 @@ Docs validation for this plan and follow-on doc updates:
 
 ## Acceptance Checklist
 
-- [ ] `docsGatePolicy` is added to the typed contract, validator, and harness defaults.
-- [ ] `docs-gate` command exists with stable CLI/report semantics and safe artifact writes.
-- [ ] Required-surface mapping and truth-source precedence are implemented as deterministic code paths.
-- [ ] `docs-gate` and `drift-gate` coexist without contradictory overlap during rollout.
-- [ ] PR and merge queue workflow jobs are wired with stable required-check identity.
-- [ ] `pull_request` and `merge_group` both prove the same merge-authoritative truth-loading behavior.
-- [ ] `init` and `init --update` scaffold or migrate downstream repos to docs-gate-capable state.
-- [ ] `harness branch-protect` and related required-check emitters produce the same stable `docs-gate` identity that CI and contract surfaces expect.
-- [ ] Governed docs are updated to match the final enforcement behavior and remediation model.
-- [ ] Unit, integration, workflow, and migration tests cover the spec’s critical scenarios.
-- [ ] Rollout evidence and thresholds are operationalized before required-mode promotion.
-- [ ] Manual smoke checks cover one policy/workflow change, one doc-only change, and one downstream upgrade path.
-- [ ] Fallback stub artifacts stay schema-compatible across runtime CI, init-generated workflow templates, and command JSON output.
-- [ ] The packaged release artifact is installed into fresh and upgrade fixtures and proves the same docs-gate wiring that source-tree tests expect.
-- [ ] Release and upgrade notes explain the new downstream enforcement path and required adopter commands.
+- [x] `docsGatePolicy` is added to the typed contract, validator, and harness defaults.
+- [x] `docs-gate` command exists with stable CLI/report semantics and safe artifact writes.
+- [x] Required-surface mapping and truth-source precedence are implemented as deterministic code paths.
+- [x] `docs-gate` and `drift-gate` coexist without contradictory overlap during rollout.
+- [x] PR and merge queue workflow jobs are wired with stable required-check identity.
+- [x] `pull_request` and `merge_group` both prove the same merge-authoritative truth-loading behavior.
+- [x] `init` and `init --update` scaffold or migrate downstream repos to docs-gate-capable state.
+- [x] `harness branch-protect` and related required-check emitters produce the same stable `docs-gate` identity that CI and contract surfaces expect.
+- [x] Governed docs are updated to match the final enforcement behavior and remediation model.
+- [x] Unit, integration, workflow, and migration tests cover the spec’s critical scenarios.
+- [x] Rollout evidence and thresholds are operationalized before required-mode promotion.
+- [x] Fallback stub artifacts stay schema-compatible across runtime CI, init-generated workflow templates, and command JSON output.
+- [x] Release and upgrade notes explain the new downstream enforcement path and required adopter commands.
 
 ## Sources & References
 

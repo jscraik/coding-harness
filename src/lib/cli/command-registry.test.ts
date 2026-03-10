@@ -24,6 +24,7 @@ describe("command registry", () => {
 			"branch-protect",
 			"check-authz",
 			"check-environment",
+			"docs-gate",
 		]);
 	});
 

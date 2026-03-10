@@ -23,6 +23,7 @@ export const ECOSYSTEM_PROFILES = {
 		"dependency-review",
 		"actions-pinning",
 		"consistency-drift-health",
+		"docs-gate",
 		"lint",
 		"typecheck",
 		"test",

@@ -30,7 +30,7 @@ required_mise_tools=(node pnpm python uv)
 for tool in "${required_mise_tools[@]}"; do
 	if ! rg -q "^[[:space:]]*${tool}[[:space:]]*=" "$MISE_PATH"; then
 		echo "Error: required tool '$tool' is not pinned in $MISE_PATH [tools]"
-		echo "Fix: add '$tool = \"<version>\"' to $MISE_PATH."
+		echo "Fix: add '$tool = "<version>"' to $MISE_PATH."
 		exit 1
 	fi
 done

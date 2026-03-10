@@ -112,7 +112,8 @@ Operational notes:
 Before a coding-harness issue is ready for review:
 
 - the linked branch/PR exists,
-- required validation commands have been run,
+- required validation commands have been run (`pnpm lint`, `pnpm typecheck`, `pnpm test`, `pnpm audit`, `pnpm check`),
+- CI gates pass including `docs-gate` for documentation parity,
 - evidence is attached or summarized,
 - blockers and risks are explicit,
 - the reviewer can continue without re-deriving context.

@@ -369,6 +369,7 @@ describe("runBranchProtect", () => {
 				{ context: "dependency-review" },
 				{ context: "actions-pinning" },
 				{ context: "consistency-drift-health" },
+				{ context: "docs-gate" },
 				{ context: "lint" },
 				{ context: "typecheck" },
 				{ context: "test" },

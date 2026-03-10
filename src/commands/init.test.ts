@@ -1298,7 +1298,7 @@ describe("--migrate flag", () => {
 		writeFileSync(
 			join(tempDir, "harness.contract.json"),
 			JSON.stringify({
-				version: "1.2.0",
+				version: "1.3.0",
 				riskTierRules: {},
 				reviewPolicy: { timeoutSeconds: 600, timeoutAction: "fail" },
 			}),
@@ -1317,7 +1317,7 @@ describe("--migrate flag", () => {
 		}
 	});
 
-	it("migrates legacy 1.0.0 contracts to 1.2.0", () => {
+	it("migrates legacy 1.0.0 contracts to 1.3.0", () => {
 		writeFileSync(
 			join(tempDir, "harness.contract.json"),
 			JSON.stringify({
@@ -1342,7 +1342,7 @@ describe("--migrate flag", () => {
 					"utf-8",
 				),
 			);
-			expect(migrated.version).toBe("1.2.0");
+			expect(migrated.version).toBe("1.3.0");
 			expect(migrated.riskTierRules["src/legacy/*"]).toBe("low");
 			expect(migrated.reviewPolicy.timeoutSeconds).toBe(300);
 			expect(migrated.reviewPolicy.timeoutAction).toBe("warn");
@@ -1416,7 +1416,7 @@ describe("--migrate flag", () => {
 				),
 			);
 			// Custom settings should be preserved
-			expect(migrated.version).toBe("1.2.0");
+			expect(migrated.version).toBe("1.3.0");
 			expect(migrated.riskTierRules["src/auth/*"]).toBe("high");
 			expect(migrated.reviewPolicy.timeoutSeconds).toBe(300);
 		}
@@ -1425,7 +1425,7 @@ describe("--migrate flag", () => {
 	it("preserves contract content when already up to date", () => {
 		// Create a contract at current version with customizations
 		const originalContent = {
-			version: "1.2.0",
+			version: "1.3.0",
 			riskTierRules: { "src/api/*": "medium" },
 			reviewPolicy: { timeoutSeconds: 900, timeoutAction: "fail" },
 		};

@@ -656,4 +656,255 @@ describe("validateContract", () => {
 			expect(result.errors[0]?.path).toBe("loopStageContracts");
 		});
 	});
+
+	// Docs Gate Policy Tests
+	describe("docsGatePolicy", () => {
+		it("accepts valid docsGatePolicy in advisory mode", () => {
+			const result = validateContract({
+				version: "1.0",
+				docsGatePolicy: {
+					enabled: true,
+					mode: "advisory",
+					rules: [
+						{
+							ruleId: "cli-surface-docs",
+							when: { categories: ["cli_surface"] },
+							requireDocs: ["README.md"],
+							severity: "error",
+						},
+					],
+				},
+			});
+			expect(result.success).toBe(true);
+			expect(result.data?.docsGatePolicy?.enabled).toBe(true);
+			expect(result.data?.docsGatePolicy?.mode).toBe("advisory");
+		});
+
+		it("accepts valid docsGatePolicy in required mode", () => {
+			const result = validateContract({
+				version: "1.0",
+				docsGatePolicy: {
+					enabled: true,
+					mode: "required",
+					rules: [],
+				},
+			});
+			expect(result.success).toBe(true);
+			expect(result.data?.docsGatePolicy?.mode).toBe("required");
+		});
+
+		it("accepts docsGatePolicy with surfaces", () => {
+			const result = validateContract({
+				version: "1.0",
+				docsGatePolicy: {
+					enabled: true,
+					mode: "advisory",
+					rules: [],
+					surfaces: [
+						{
+							path: "README.md",
+							surfaceType: "root_doc",
+							owner: "implementation",
+							requiredFor: ["cli_surface"],
+						},
+					],
+				},
+			});
+			expect(result.success).toBe(true);
+			expect(result.data?.docsGatePolicy?.surfaces).toHaveLength(1);
+		});
+
+		it("accepts docsGatePolicy with localHookEnabled", () => {
+			const result = validateContract({
+				version: "1.0",
+				docsGatePolicy: {
+					enabled: true,
+					mode: "advisory",
+					rules: [],
+					localHookEnabled: true,
+				},
+			});
+			expect(result.success).toBe(true);
+			expect(result.data?.docsGatePolicy?.localHookEnabled).toBe(true);
+		});
+
+		it("rejects invalid mode value", () => {
+			const result = validateContract({
+				version: "1.0",
+				docsGatePolicy: {
+					enabled: true,
+					mode: "invalid",
+					rules: [],
+				},
+			});
+			expect(result.success).toBe(false);
+			expect(result.errors[0]?.path).toBe("docsGatePolicy");
+		});
+
+		it("rejects non-boolean enabled", () => {
+			const result = validateContract({
+				version: "1.0",
+				docsGatePolicy: {
+					enabled: "yes",
+					mode: "advisory",
+					rules: [],
+				},
+			});
+			expect(result.success).toBe(false);
+			expect(result.errors[0]?.path).toBe("docsGatePolicy");
+		});
+
+		it("rejects missing rules array", () => {
+			const result = validateContract({
+				version: "1.0",
+				docsGatePolicy: {
+					enabled: true,
+					mode: "advisory",
+				},
+			});
+			expect(result.success).toBe(false);
+			expect(result.errors[0]?.path).toBe("docsGatePolicy");
+		});
+
+		it("rejects rule with invalid severity", () => {
+			const result = validateContract({
+				version: "1.0",
+				docsGatePolicy: {
+					enabled: true,
+					mode: "advisory",
+					rules: [
+						{
+							ruleId: "test-rule",
+							when: { categories: ["cli_surface"] },
+							requireDocs: ["README.md"],
+							severity: "critical",
+						},
+					],
+				},
+			});
+			expect(result.success).toBe(false);
+			expect(result.errors[0]?.path).toBe("docsGatePolicy");
+		});
+
+		it("rejects rule with invalid category", () => {
+			const result = validateContract({
+				version: "1.0",
+				docsGatePolicy: {
+					enabled: true,
+					mode: "advisory",
+					rules: [
+						{
+							ruleId: "test-rule",
+							when: { categories: ["invalid_category"] },
+							requireDocs: ["README.md"],
+							severity: "error",
+						},
+					],
+				},
+			});
+			expect(result.success).toBe(false);
+			expect(result.errors[0]?.path).toBe("docsGatePolicy");
+		});
+
+		it("rejects rule with empty ruleId", () => {
+			const result = validateContract({
+				version: "1.0",
+				docsGatePolicy: {
+					enabled: true,
+					mode: "advisory",
+					rules: [
+						{
+							ruleId: "",
+							when: { categories: ["cli_surface"] },
+							requireDocs: ["README.md"],
+							severity: "error",
+						},
+					],
+				},
+			});
+			expect(result.success).toBe(false);
+			expect(result.errors[0]?.path).toBe("docsGatePolicy");
+		});
+
+		it("rejects surface with invalid surfaceType", () => {
+			const result = validateContract({
+				version: "1.0",
+				docsGatePolicy: {
+					enabled: true,
+					mode: "advisory",
+					rules: [],
+					surfaces: [
+						{
+							path: "README.md",
+							surfaceType: "invalid_type",
+							owner: "implementation",
+							requiredFor: ["cli_surface"],
+						},
+					],
+				},
+			});
+			expect(result.success).toBe(false);
+			expect(result.errors[0]?.path).toBe("docsGatePolicy");
+		});
+
+		it("rejects surface with invalid owner", () => {
+			const result = validateContract({
+				version: "1.0",
+				docsGatePolicy: {
+					enabled: true,
+					mode: "advisory",
+					rules: [],
+					surfaces: [
+						{
+							path: "README.md",
+							surfaceType: "root_doc",
+							owner: "invalid_owner",
+							requiredFor: ["cli_surface"],
+						},
+					],
+				},
+			});
+			expect(result.success).toBe(false);
+			expect(result.errors[0]?.path).toBe("docsGatePolicy");
+		});
+
+		it("accepts rule with fileGlobs instead of categories", () => {
+			const result = validateContract({
+				version: "1.0",
+				docsGatePolicy: {
+					enabled: true,
+					mode: "advisory",
+					rules: [
+						{
+							ruleId: "glob-rule",
+							when: { fileGlobs: ["src/cli/**/*.ts"] },
+							requireDocs: ["README.md"],
+							severity: "error",
+						},
+					],
+				},
+			});
+			expect(result.success).toBe(true);
+		});
+
+		it("accepts rule with allowDocOnly flag", () => {
+			const result = validateContract({
+				version: "1.0",
+				docsGatePolicy: {
+					enabled: true,
+					mode: "advisory",
+					rules: [
+						{
+							ruleId: "doc-only-rule",
+							when: { categories: ["doc_only"] },
+							requireDocs: [],
+							severity: "info",
+							allowDocOnly: true,
+						},
+					],
+				},
+			});
+			expect(result.success).toBe(true);
+		});
+	});
 });

@@ -4,6 +4,11 @@ import type {
 	BranchProtectionPolicy,
 	DiffBudget,
 	DocsDriftRules,
+	DocsGateMode,
+	DocsGatePolicy,
+	DocsGateRule,
+	DocsImpactCategory,
+	DocsSurface,
 	EvidencePolicy,
 	GapCasePolicy,
 	HarnessContract,
@@ -66,6 +71,7 @@ const VALID_TOP_LEVEL_KEYS = [
 	"loopStageContracts",
 	"branchProtection",
 	"issueTrackingPolicy",
+	"docsGatePolicy",
 	"extends",
 ] as const;
 const VALID_UI_LOOP_POLICY_KEYS = [
@@ -951,6 +957,204 @@ function isValidDocsDriftRules(value: unknown): value is DocsDriftRules {
 	return true;
 }
 
+// === Docs Gate Policy Validation ===
+
+const VALID_DOCS_GATE_MODES: DocsGateMode[] = ["advisory", "required"];
+const VALID_DOCS_IMPACT_CATEGORIES: DocsImpactCategory[] = [
+	"cli_surface",
+	"contract_policy",
+	"ci_workflow",
+	"branch_protection_or_required_checks",
+	"init_scaffolding",
+	"agent_governance",
+	"doc_only",
+	"unknown_governance_change",
+];
+const VALID_DOCS_SURFACE_TYPES = [
+	"root_doc",
+	"governance_doc",
+	"generated_template",
+	"workflow_doc",
+] as const;
+const VALID_DOCS_SURFACE_OWNERS = [
+	"implementation",
+	"contract",
+	"workflow",
+	"template",
+] as const;
+const VALID_DOCS_RULE_SEVERITIES = ["info", "warning", "error"] as const;
+
+function isValidDocsImpactCategory(
+	value: unknown,
+): value is DocsImpactCategory {
+	return (
+		typeof value === "string" &&
+		VALID_DOCS_IMPACT_CATEGORIES.includes(value as DocsImpactCategory)
+	);
+}
+
+function isValidDocsSurface(value: unknown): value is DocsSurface {
+	if (!isPlainObject(value)) return false;
+	const surface = value as Record<string, unknown>;
+
+	// Validate path (required string)
+	if (typeof surface.path !== "string" || surface.path.length === 0) {
+		return false;
+	}
+
+	// Validate surfaceType (required, must be valid value)
+	if (
+		typeof surface.surfaceType !== "string" ||
+		!VALID_DOCS_SURFACE_TYPES.includes(
+			surface.surfaceType as (typeof VALID_DOCS_SURFACE_TYPES)[number],
+		)
+	) {
+		return false;
+	}
+
+	// Validate owner (required, must be valid value)
+	if (
+		typeof surface.owner !== "string" ||
+		!VALID_DOCS_SURFACE_OWNERS.includes(
+			surface.owner as (typeof VALID_DOCS_SURFACE_OWNERS)[number],
+		)
+	) {
+		return false;
+	}
+
+	// Validate requiredFor (required string array of valid categories)
+	if (!Array.isArray(surface.requiredFor)) {
+		return false;
+	}
+	for (const category of surface.requiredFor) {
+		if (!isValidDocsImpactCategory(category)) {
+			return false;
+		}
+	}
+
+	return true;
+}
+
+function isValidDocsGateRule(value: unknown): value is DocsGateRule {
+	if (!isPlainObject(value)) return false;
+	const rule = value as Record<string, unknown>;
+
+	// Validate ruleId (required string)
+	if (typeof rule.ruleId !== "string" || rule.ruleId.length === 0) {
+		return false;
+	}
+
+	// Validate when (required object with categories and/or fileGlobs)
+	if (!isPlainObject(rule.when)) {
+		return false;
+	}
+	const when = rule.when as Record<string, unknown>;
+
+	// Validate when.categories (optional array of valid categories)
+	if (when.categories !== undefined) {
+		if (!Array.isArray(when.categories)) {
+			return false;
+		}
+		for (const category of when.categories) {
+			if (!isValidDocsImpactCategory(category)) {
+				return false;
+			}
+		}
+	}
+
+	// Validate when.fileGlobs (optional string array)
+	if (when.fileGlobs !== undefined) {
+		if (!Array.isArray(when.fileGlobs)) {
+			return false;
+		}
+		for (const glob of when.fileGlobs) {
+			if (typeof glob !== "string" || glob.length === 0) {
+				return false;
+			}
+		}
+	}
+
+	// Validate requireDocs (required string array)
+	if (!Array.isArray(rule.requireDocs)) {
+		return false;
+	}
+	for (const doc of rule.requireDocs) {
+		if (typeof doc !== "string" || doc.length === 0) {
+			return false;
+		}
+	}
+
+	// Validate severity (required, must be valid value)
+	if (
+		typeof rule.severity !== "string" ||
+		!VALID_DOCS_RULE_SEVERITIES.includes(
+			rule.severity as (typeof VALID_DOCS_RULE_SEVERITIES)[number],
+		)
+	) {
+		return false;
+	}
+
+	// Validate allowDocOnly (optional boolean)
+	if (
+		rule.allowDocOnly !== undefined &&
+		typeof rule.allowDocOnly !== "boolean"
+	) {
+		return false;
+	}
+
+	return true;
+}
+
+export function isValidDocsGatePolicy(value: unknown): value is DocsGatePolicy {
+	if (!isPlainObject(value)) return false;
+	const policy = value as Record<string, unknown>;
+
+	// Validate enabled (required boolean)
+	if (typeof policy.enabled !== "boolean") {
+		return false;
+	}
+
+	// Validate mode (required, must be valid value)
+	if (
+		typeof policy.mode !== "string" ||
+		!VALID_DOCS_GATE_MODES.includes(policy.mode as DocsGateMode)
+	) {
+		return false;
+	}
+
+	// Validate rules (required array of valid rules)
+	if (!Array.isArray(policy.rules)) {
+		return false;
+	}
+	for (const rule of policy.rules) {
+		if (!isValidDocsGateRule(rule)) {
+			return false;
+		}
+	}
+
+	// Validate surfaces (optional array of valid surfaces)
+	if (policy.surfaces !== undefined) {
+		if (!Array.isArray(policy.surfaces)) {
+			return false;
+		}
+		for (const surface of policy.surfaces) {
+			if (!isValidDocsSurface(surface)) {
+				return false;
+			}
+		}
+	}
+
+	// Validate localHookEnabled (optional boolean)
+	if (
+		policy.localHookEnabled !== undefined &&
+		typeof policy.localHookEnabled !== "boolean"
+	) {
+		return false;
+	}
+
+	return true;
+}
+
 function isValidTopLevel(
 	data: Record<string, unknown>,
 	errors: ValidationError[],
@@ -1713,6 +1917,25 @@ export function validateContract(
 		}
 	}
 
+	// Validate docsGatePolicy (optional)
+	let docsGatePolicy: DocsGatePolicy | undefined;
+	if ("docsGatePolicy" in obj && obj.docsGatePolicy !== undefined) {
+		if (!isValidDocsGatePolicy(obj.docsGatePolicy)) {
+			errors.push({
+				code: ValidationErrorCode.INVALID_VALUE,
+				path: "docsGatePolicy",
+				message:
+					"docsGatePolicy must have enabled (boolean), mode ('advisory' | 'required'), rules (array), and optional surfaces, localHookEnabled",
+				expected:
+					"{ enabled: boolean, mode: 'advisory' | 'required', rules: [...], surfaces?: [...], localHookEnabled?: boolean }",
+				received: JSON.stringify(obj.docsGatePolicy),
+				fix: "Ensure docsGatePolicy has valid enabled, mode, and rules fields with valid rule structures",
+			});
+		} else {
+			docsGatePolicy = obj.docsGatePolicy as DocsGatePolicy;
+		}
+	}
+
 	// Validate blastRadiusRules (optional)
 	let blastRadiusRules: BlastRadiusRule[] | undefined;
 	if ("blastRadiusRules" in obj && obj.blastRadiusRules !== undefined) {
@@ -1797,6 +2020,7 @@ export function validateContract(
 			pilotGapCasePolicy,
 			pilotRollbackPolicy,
 			pilotAuthzPolicy,
+			docsGatePolicy,
 			branchProtection,
 			issueTrackingPolicy,
 			blastRadiusRules,

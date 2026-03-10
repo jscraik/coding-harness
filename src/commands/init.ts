@@ -170,7 +170,7 @@ export type MigrationResultType =
 	| { ok: false; error: InitErrorOutput };
 
 // Current latest schema version (must match template)
-export const CURRENT_SCHEMA_VERSION = "1.2.0";
+export const CURRENT_SCHEMA_VERSION = "1.3.0";
 
 function addSchemaDefaults(contract: ContractSchema): ContractSchema {
 	return {
@@ -251,6 +251,16 @@ const MIGRATIONS: Migration[] = [
 			({
 				...addSchemaDefaults(contract),
 				version: "1.2.0",
+			}) as ContractSchema,
+	},
+	{
+		fromVersion: "1.2.0",
+		toVersion: "1.3.0",
+		description: "Inject docs-gate policy for governance documentation parity",
+		migrate: (contract) =>
+			({
+				...addSchemaDefaults(contract),
+				version: "1.3.0",
 			}) as ContractSchema,
 	},
 ];

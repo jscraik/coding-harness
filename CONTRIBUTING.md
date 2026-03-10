@@ -89,6 +89,7 @@ For behavior-affecting changes:
 - `dependency-review` GitHub Actions check
 - `actions-pinning` GitHub Actions check
 - `security-scan` GitHub Actions check (gitleaks + trivy + semgrep)
+- `docs-gate` GitHub Actions check (documentation parity)
 
 For docs-only edits, run at minimum:
 
@@ -228,6 +229,7 @@ Configure repository settings on `main` to make the workflow enforceable:
   - `dependency-review`
   - `actions-pinning`
   - `consistency-drift-health`
+  - `docs-gate`
   - `lint`
   - `typecheck`
   - `test`

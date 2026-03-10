@@ -393,6 +393,66 @@ EOF
           name: consistency-drift-health-latest
           path: artifacts/consistency-gate/health.json
 
+  docs-gate:
+    name: docs-gate
+    runs-on: ubuntu-latest
+    needs: [risk-policy-gate]
+    permissions:
+      contents: read
+      pull-requests: read
+    steps:
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
+        with:
+          node-version: "24"
+      - name: Enable corepack
+        run: corepack enable
+      - name: Install dependencies
+        run: pnpm install
+      - name: Run docs-gate
+        env:
+          EVENT_NAME: ${{ github.event_name }}
+          PR_BASE_SHA: ${{ github.event.pull_request.base.sha }}
+          PR_HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+          PR_BASE_REF: ${{ github.base_ref }}
+          MG_BASE_SHA: ${{ github.event.merge_group.base_sha }}
+          MG_HEAD_SHA: ${{ github.event.merge_group.head_sha }}
+        run: |
+          if [[ "$EVENT_NAME" == "pull_request" ]]; then
+            BASE_SHA="$PR_BASE_SHA"
+            HEAD_SHA="$PR_HEAD_SHA"
+            BASE_REF="$PR_BASE_REF"
+            # Load contract from trusted base branch
+            CONTRACT_PATH="$RUNNER_TEMP/harness.contract.base.json"
+            if ! git show "origin/$BASE_REF:harness.contract.json" > "$CONTRACT_PATH"; then
+              echo "::error::Unable to load trusted harness.contract.json from origin/$BASE_REF"
+              exit 1
+            fi
+          else
+            BASE_SHA="$MG_BASE_SHA"
+            HEAD_SHA="$MG_HEAD_SHA"
+            # Merge queue: contract is committed and protected
+            CONTRACT_PATH="harness.contract.json"
+          fi
+          CHANGED_FILES="$(git diff --name-only "$BASE_SHA" "$HEAD_SHA" | paste -sd, -)"
+          if [[ -z "$CHANGED_FILES" ]]; then
+            CHANGED_FILES="$(git ls-files | paste -sd, -)"
+          fi
+          pnpm exec tsx src/cli.ts docs-gate \
+            --mode advisory \
+            --trigger "$EVENT_NAME" \
+            --files "$CHANGED_FILES" \
+            --trusted-base-ref "$BASE_REF" \
+            --json
+      - name: Upload docs-gate artifact
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: docs-gate-report
+          path: artifacts/consistency-gate/docs-gate-report.json
+
   lint:
     name: lint
     runs-on: ubuntu-latest

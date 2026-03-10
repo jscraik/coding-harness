@@ -19,7 +19,7 @@ This repository is a TypeScript control plane for agentic development and review
 3. Never push directly to `main`.
 4. Open a PR for every merge into `main`.
 5. Required local gates: `pnpm lint`, `pnpm typecheck`, `pnpm test`, `pnpm audit`, `pnpm check`.
-6. Required CI gates: `risk-policy-gate`, `dependency-review`, `actions-pinning`, `security-scan`, `Greptile Review`.
+6. Required CI gates: `risk-policy-gate`, `dependency-review`, `actions-pinning`, `security-scan`, `docs-gate`, `Greptile Review`.
 7. Required review artifacts: Greptile + Codex.
 8. Greptile setup must be verified via `greploop` or `check-pr` with `.greptile/config.json`, `.greptile/rules.md`, and `.greptile/files.json` present.
 9. Greptile review must be independent (coding agent cannot self-approve).
@@ -73,6 +73,7 @@ import { foo } from "./lib/foo.js";
 - [Instruction map](./docs/agents/01-instruction-map.md)
 - [Validation and checks](./docs/agents/04-validation.md)
 - [Greptile AI governance](./docs/agents/12-greptile-ai-governance.md)
+- [Docs-gate rollout](./docs/agents/14-docs-gate-rollout.md)
 
 ## Repository preflight helper
 - Use `scripts/codex-preflight.sh` before multi-step, destructive, or path-sensitive work.

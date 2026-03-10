@@ -1,6 +1,7 @@
 import { runBranchProtectCLI } from "../../commands/branch-protect.js";
 import { runCheckAuthzCLI } from "../../commands/check-authz.js";
 import { runCheckEnvironmentCLI } from "../../commands/check-environment.js";
+import { runDocsGateCLI } from "../../commands/docs-gate.js";
 import { runEvidenceVerifyCLI } from "../../commands/evidence-verify.js";
 import { runLinearGateCLI } from "../../commands/linear-gate.js";
 import { runLinearPrepareCLI } from "../../commands/linear-prepare.js";
@@ -414,6 +415,69 @@ const COMMAND_SPECS: CommandSpec[] = [
 			}
 
 			return runCheckEnvironmentCLI(options);
+		},
+	},
+	{
+		name: "docs-gate",
+		summary: "Enforce documentation parity for governance changes",
+		errorLabel: "Docs Gate Error",
+		execute: (args) => {
+			const jsonFlag = args.includes("--json");
+			const modeIndex = args.indexOf("--mode");
+			const triggerIndex = args.indexOf("--trigger");
+			const outIndex = args.indexOf("--out");
+			const filesIndex = args.indexOf("--files");
+			const repoRootIndex = args.indexOf("--repo-root");
+			const trustedBaseRefIndex = args.indexOf("--trusted-base-ref");
+			const trustedContractShaIndex = args.indexOf("--trusted-contract-sha");
+			const trustedWorkflowShaIndex = args.indexOf("--trusted-workflow-sha");
+			const mergeQueueTargetRefIndex = args.indexOf("--merge-queue-target-ref");
+			const mergeQueueBaseShaIndex = args.indexOf("--merge-queue-base-sha");
+
+			const options: Parameters<typeof runDocsGateCLI>[0] = {};
+
+			if (jsonFlag) options.json = true;
+			const modeArg = getFlagValue(args, modeIndex);
+			if (modeArg === "advisory" || modeArg === "required") {
+				options.mode = modeArg;
+			}
+			const triggerArg = getFlagValue(args, triggerIndex);
+			if (
+				triggerArg === "local" ||
+				triggerArg === "pull_request" ||
+				triggerArg === "merge_group" ||
+				triggerArg === "manual_ci"
+			) {
+				options.trigger = triggerArg;
+			}
+			const outArg = getFlagValue(args, outIndex);
+			if (outArg !== undefined) options.outPath = outArg;
+			const filesArg = getFlagValue(args, filesIndex);
+			if (filesArg !== undefined) {
+				options.changedFiles = parseCsvList(filesArg);
+			}
+			const repoRootArg = getFlagValue(args, repoRootIndex);
+			if (repoRootArg) options.repoRoot = repoRootArg;
+			const trustedBaseRefArg = getFlagValue(args, trustedBaseRefIndex);
+			if (trustedBaseRefArg !== undefined)
+				options.trustedBaseRef = trustedBaseRefArg;
+			const trustedContractShaArg = getFlagValue(args, trustedContractShaIndex);
+			if (trustedContractShaArg !== undefined)
+				options.trustedContractSha = trustedContractShaArg;
+			const trustedWorkflowShaArg = getFlagValue(args, trustedWorkflowShaIndex);
+			if (trustedWorkflowShaArg !== undefined)
+				options.trustedWorkflowSha = trustedWorkflowShaArg;
+			const mergeQueueTargetRefArg = getFlagValue(
+				args,
+				mergeQueueTargetRefIndex,
+			);
+			if (mergeQueueTargetRefArg !== undefined)
+				options.mergeQueueTargetRef = mergeQueueTargetRefArg;
+			const mergeQueueBaseShaArg = getFlagValue(args, mergeQueueBaseShaIndex);
+			if (mergeQueueBaseShaArg !== undefined)
+				options.mergeQueueBaseSha = mergeQueueBaseShaArg;
+
+			return runDocsGateCLI(options);
 		},
 	},
 ];

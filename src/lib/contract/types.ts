@@ -44,6 +44,63 @@ export interface DocsDriftRules {
 	[pattern: string]: string[];
 }
 
+// === Docs Gate Policy Types ===
+
+export type DocsGateMode = "advisory" | "required";
+
+export type DocsImpactCategory =
+	| "cli_surface"
+	| "contract_policy"
+	| "ci_workflow"
+	| "branch_protection_or_required_checks"
+	| "init_scaffolding"
+	| "agent_governance"
+	| "doc_only"
+	| "unknown_governance_change";
+
+export type DocsSurfaceType =
+	| "root_doc"
+	| "governance_doc"
+	| "generated_template"
+	| "workflow_doc";
+
+export type DocsSurfaceOwner =
+	| "implementation"
+	| "contract"
+	| "workflow"
+	| "template";
+
+export interface DocsSurface {
+	path: string;
+	surfaceType: DocsSurfaceType;
+	owner: DocsSurfaceOwner;
+	requiredFor: DocsImpactCategory[];
+}
+
+export interface DocsGateRule {
+	ruleId: string;
+	when: {
+		categories?: DocsImpactCategory[];
+		fileGlobs?: string[];
+	};
+	requireDocs: string[];
+	severity: "info" | "warning" | "error";
+	allowDocOnly?: boolean;
+}
+
+export interface DocsGatePolicy {
+	/** Whether docs-gate is enabled for this repository */
+	enabled: boolean;
+	/** Execution mode: advisory reports findings without blocking, required fails on error findings */
+	mode: DocsGateMode;
+	/** Rules mapping implementation changes to required documentation updates */
+	rules: DocsGateRule[];
+	/** Governed documentation surfaces that may be required */
+	surfaces?: DocsSurface[];
+	/** Whether to enable optional local pre-push hook generation */
+	localHookEnabled?: boolean;
+}
+
 export interface UILoopSLO {
 	/** Target seconds to reach stable "fast" loop execution */
 	fastLoopSeconds: number;
@@ -398,6 +455,111 @@ export const DEFAULT_PILOT_AUTHZ_POLICY: PilotAuthzPolicy = {
 	enforceBranchProtection: true,
 };
 
+export const DEFAULT_DOCS_GATE_POLICY: DocsGatePolicy = {
+	enabled: true,
+	mode: "advisory",
+	rules: [
+		{
+			ruleId: "cli-surface-docs",
+			when: { categories: ["cli_surface"] },
+			requireDocs: ["README.md"],
+			severity: "error",
+		},
+		{
+			ruleId: "contract-policy-docs",
+			when: { categories: ["contract_policy"] },
+			requireDocs: ["README.md", "AGENTS.md"],
+			severity: "error",
+		},
+		{
+			ruleId: "ci-workflow-docs",
+			when: { categories: ["ci_workflow"] },
+			requireDocs: ["README.md", "CONTRIBUTING.md", "AGENTS.md"],
+			severity: "error",
+		},
+		{
+			ruleId: "required-checks-docs",
+			when: { categories: ["branch_protection_or_required_checks"] },
+			requireDocs: ["README.md", "CONTRIBUTING.md", "AGENTS.md"],
+			severity: "error",
+		},
+		{
+			ruleId: "init-scaffold-docs",
+			when: { categories: ["init_scaffolding"] },
+			requireDocs: ["README.md", "AGENTS.md"],
+			severity: "error",
+		},
+		{
+			ruleId: "agent-governance-docs",
+			when: { categories: ["agent_governance"] },
+			requireDocs: ["AGENTS.md", "docs/agents/07b-agent-governance.md"],
+			severity: "error",
+		},
+		{
+			ruleId: "unknown-governance-docs",
+			when: { categories: ["unknown_governance_change"] },
+			requireDocs: [],
+			severity: "warning",
+		},
+	],
+	surfaces: [
+		{
+			path: "README.md",
+			surfaceType: "root_doc",
+			owner: "implementation",
+			requiredFor: [
+				"cli_surface",
+				"contract_policy",
+				"ci_workflow",
+				"branch_protection_or_required_checks",
+				"init_scaffolding",
+			],
+		},
+		{
+			path: "CONTRIBUTING.md",
+			surfaceType: "root_doc",
+			owner: "contract",
+			requiredFor: ["ci_workflow", "branch_protection_or_required_checks"],
+		},
+		{
+			path: "AGENTS.md",
+			surfaceType: "governance_doc",
+			owner: "contract",
+			requiredFor: [
+				"contract_policy",
+				"ci_workflow",
+				"branch_protection_or_required_checks",
+				"agent_governance",
+			],
+		},
+		{
+			path: "docs/agents/04-validation.md",
+			surfaceType: "governance_doc",
+			owner: "contract",
+			requiredFor: ["ci_workflow"],
+		},
+		{
+			path: "docs/agents/07b-agent-governance.md",
+			surfaceType: "governance_doc",
+			owner: "contract",
+			requiredFor: ["agent_governance"],
+		},
+		{
+			path: "docs/agents/12-greptile-ai-governance.md",
+			surfaceType: "governance_doc",
+			owner: "contract",
+			requiredFor: ["agent_governance"],
+		},
+		{
+			path: "docs/agents/13-linear-production-workflow.md",
+			surfaceType: "governance_doc",
+			owner: "contract",
+			requiredFor: ["ci_workflow"],
+		},
+	],
+	localHookEnabled: false,
+};
+
 // === Contract Interface ===
 
 export interface HarnessContract {
@@ -435,10 +597,12 @@ export interface HarnessContract {
 	remediationPolicy?: RemediationPolicy | undefined;
 	/** Semantic loop stage contract for workflow parity validation */
 	loopStageContracts?: LoopStageContracts | undefined;
+	/** Docs gate policy for governance documentation parity enforcement */
+	docsGatePolicy?: DocsGatePolicy | undefined;
 }
 
 export const DEFAULT_CONTRACT: HarnessContract = {
-	version: "1.0",
+	version: "1.3.0",
 	riskTierRules: {},
 	reviewPolicy: DEFAULT_REVIEW_POLICY,
 	evidencePolicy: DEFAULT_EVIDENCE_POLICY,
@@ -449,6 +613,7 @@ export const DEFAULT_CONTRACT: HarnessContract = {
 	issueTrackingPolicy: DEFAULT_ISSUE_TRACKING_POLICY,
 	remediationPolicy: DEFAULT_REMEDIATION_POLICY,
 	loopStageContracts: DEFAULT_LOOP_STAGE_CONTRACTS,
+	docsGatePolicy: DEFAULT_DOCS_GATE_POLICY,
 };
 
 // === Preset Inheritance Types ===
