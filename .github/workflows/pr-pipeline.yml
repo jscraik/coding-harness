@@ -434,7 +434,12 @@ EOF
             BASE_SHA="$MG_BASE_SHA"
             HEAD_SHA="$MG_HEAD_SHA"
             # Merge queue: contract is committed and protected
-            CONTRACT_PATH="harness.contract.json"
+          pnpm exec tsx src/cli.ts docs-gate \
+            --mode advisory \
+            --trigger "$EVENT_NAME" \
+            --files "$CHANGED_FILES" \
+            ${BASE_REF:+--trusted-base-ref "$BASE_REF"} \
+            --json
           fi
           CHANGED_FILES="$(git diff --name-only "$BASE_SHA" "$HEAD_SHA" | paste -sd, -)"
           if [[ -z "$CHANGED_FILES" ]]; then
