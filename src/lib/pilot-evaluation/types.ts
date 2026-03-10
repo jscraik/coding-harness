@@ -71,6 +71,8 @@ export interface PilotEvaluationResult {
 	ingestion: PilotEvaluationIngestion;
 	/** Lane controls and rollout posture for this evaluation */
 	controls: PilotEvaluationControls;
+	/** Optional provider-neutral companion artifact summary */
+	controlPlane?: ControlPlaneSummary;
 }
 
 export interface PilotIngestionSourceMetadata {
@@ -155,6 +157,28 @@ export interface PilotEvaluateOptions {
 	metricRegistryPath?: string;
 	/** Optional override for persisted parity-window history */
 	parityHistoryPath?: string;
+	/** Trusted docs-gate machine report used for instruction parity */
+	docsGateReportPath?: string;
+	/** Evaluation context for control-plane decisions */
+	evaluationMode?: EvaluationMode;
+	/** Rollout stage that maps evaluation to enforcement */
+	rolloutStage?: RolloutStage;
+	/** Trusted PR-template validation status */
+	prTemplateStatus?: "passed" | "failed" | "missing";
+	/** Trusted PR-template validation artifact/reference */
+	prTemplateRef?: string;
+	/** Explicit actor identity for the evaluation */
+	actorId?: string;
+	/** Provider/client family under evaluation */
+	clientFamily?: ClientFamily;
+	/** Provider identifier backing the run */
+	providerId?: string;
+	/** Provider/model descriptor backing the run */
+	modelDescriptor?: string;
+	/** Execution mode for the evaluated run */
+	executionMode?: "interactive" | "automation" | "ci";
+	/** Operator mode that initiated the run */
+	operatorType?: "human_directed" | "automation" | "autonomous";
 }
 
 /**
@@ -296,4 +320,188 @@ export interface PendingIncident {
 	severity: "low" | "medium" | "high";
 	openedAt: string;
 	classificationDeadline: string;
+}
+
+export type ClientFamily =
+	| "codex"
+	| "claude_family"
+	| "gemini_family"
+	| "kimi_family"
+	| "custom";
+
+export type EvaluationMode = "local" | "pr" | "merge_group";
+
+export type RolloutStage = "shadow" | "advisory" | "enforced";
+
+export type ControlPlaneDecision =
+	| "promote"
+	| "hold"
+	| "rollback"
+	| "block_for_parity"
+	| "block_for_evidence"
+	| "block_for_adapter";
+
+export type ControlPlaneEnforcementDecision =
+	| "allow"
+	| "block"
+	| "non_blocking"
+	| "require_human_review";
+
+export interface ArtifactFileRef {
+	path: string;
+	exists: boolean;
+	required: boolean;
+	sha256?: string;
+	sizeBytes?: number;
+}
+
+export interface ProviderAdapterDescriptor {
+	adapterVersion: string;
+	owner: string;
+	introducedAt: string;
+	sunsetBy: string;
+	blockAfter: string | null;
+	parityWindow?: {
+		minimumCanonicalCoverage: number;
+		minimumConsecutivePassingWindows: number;
+		maxCriticalDrifts: number;
+	};
+	clientFamily?: ClientFamily;
+	providerId?: string;
+	status?: "active" | "shadow" | "deprecated";
+}
+
+export interface AgentIdentity {
+	actorId: string;
+	clientFamily: ClientFamily;
+	providerId: string;
+	modelDescriptor: string;
+	executionMode: "interactive" | "automation" | "ci";
+	operatorType: "human_directed" | "automation" | "autonomous";
+	identityStatus: "verified" | "identity_degraded";
+	degradedReasons: string[];
+}
+
+export interface RequiredCheckAlignment {
+	policyChecks: string[];
+	contractChecks: string[];
+	workflowChecks: string[];
+	missingFromContract: string[];
+	extraInContract: string[];
+	missingFromWorkflow: string[];
+	status: "pass" | "fail";
+}
+
+export interface GovernanceSnapshot {
+	schemaVersion: "governance-snapshot/v1";
+	snapshotId: string;
+	capturedAt: string;
+	contractRef: ArtifactFileRef;
+	workflowRefs: ArtifactFileRef[];
+	requiredChecks: RequiredCheckAlignment;
+	branchPolicyRef: {
+		branch: string | null;
+		headSha: string | null;
+	};
+	instructionPolicyRefs: ArtifactFileRef[];
+	prTemplateRef: ArtifactFileRef;
+	prTemplateValidationStatus: "passed" | "failed" | "missing";
+	prTemplateValidationRef: string | null;
+	sourceTrustLevel: "trusted" | "degraded";
+	warnings: string[];
+}
+
+export interface InstructionSurfaceSummary {
+	surfaceId: string;
+	path: string;
+	kind: "canonical" | "mirror" | "provider_specific";
+	clientFamily: ClientFamily;
+	requiredMode: "required" | "optional";
+	sourceOfTruth: string;
+}
+
+export interface InstructionParityResult {
+	schemaVersion: "instruction-parity/v1";
+	parityResultId: string;
+	governanceSnapshotRef: string;
+	evaluatedSurfaces: InstructionSurfaceSummary[];
+	status: "pass" | "fail" | "not_applicable" | "error";
+	contradictions: string[];
+	missingRequiredSurfaces: string[];
+	staleSurfaceRefs: string[];
+	normalizationWarnings: string[];
+	sourceReportRef: ArtifactFileRef | null;
+}
+
+export interface ControlPlaneScorecard {
+	schemaVersion: "control-plane-scorecard/v1";
+	evaluationAttemptId: string;
+	runId: string;
+	recordedAt: string;
+	headSha: string | null;
+	evaluationDecision: ControlPlaneDecision;
+	enforcementDecision: ControlPlaneEnforcementDecision;
+	identityStatus: AgentIdentity["identityStatus"];
+	instructionParityStatus: InstructionParityResult["status"];
+	governanceTrustLevel: GovernanceSnapshot["sourceTrustLevel"];
+	falseBlockRate: number | null;
+	decisionReasons: string[];
+	warnings: string[];
+}
+
+export interface ControlPlaneRun {
+	schemaVersion: "control-plane-run/v1";
+	evaluationAttemptId: string;
+	runId: string;
+	recordedAt: string;
+	artifactRoot: string;
+	repoRoot: string;
+	branch: string | null;
+	headSha: string | null;
+	evaluationMode: EvaluationMode;
+	rolloutStage: RolloutStage;
+	metricsWindow: {
+		windowStart: string;
+		windowEnd: string;
+	};
+	agentIdentity: AgentIdentity;
+	governanceSnapshotRef: string;
+	instructionParityRef: string;
+}
+
+export interface ControlPlaneAuditLogEntry {
+	schemaVersion: "control-plane-audit-log-entry/v1";
+	evaluationAttemptId: string;
+	runId: string;
+	checkpointId: string;
+	phase: string;
+	command: string;
+	status: "completed" | "blocked" | "failed";
+	artifactRefs: string[];
+	sourceProvenance: string[];
+	blocker?: string;
+	followUp?: string;
+	recordedAt: string;
+	auditStatus: "recorded" | "adjudicated";
+	adjudication: "none" | "confirmed" | "false_block" | "operator_override";
+}
+
+export interface ControlPlaneArtifactSet {
+	controlPlaneRun: ControlPlaneRun;
+	governanceSnapshot: GovernanceSnapshot;
+	instructionParity: InstructionParityResult;
+	scorecard: ControlPlaneScorecard;
+	auditLog: ControlPlaneAuditLogEntry[];
+}
+
+export interface ControlPlaneSummary {
+	artifactRoot: string;
+	evaluationAttemptId: string;
+	runId: string;
+	evaluationDecision: ControlPlaneDecision;
+	enforcementDecision: ControlPlaneEnforcementDecision;
+	identityStatus: AgentIdentity["identityStatus"];
+	instructionParityStatus: InstructionParityResult["status"];
+	governanceTrustLevel: GovernanceSnapshot["sourceTrustLevel"];
+	warnings: string[];
 }

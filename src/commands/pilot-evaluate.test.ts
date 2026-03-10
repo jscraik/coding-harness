@@ -1738,6 +1738,51 @@ describe("pilot-evaluate", () => {
 	});
 
 	describe("PILOT_THRESHOLDS", () => {
+		it("emits control-plane companion artifacts when trusted inputs are provided", () => {
+			writePassingPilotArtifacts(artifactsDir);
+			const docsGateReportPath = join(artifactsDir, "docs-gate-report.json");
+			writeFileSync(
+				docsGateReportPath,
+				JSON.stringify({
+					status: "success",
+					contradictions: [],
+					missingRequiredSurfaces: [],
+					staleSurfaceRefs: [],
+					normalizationWarnings: [],
+				}),
+				"utf-8",
+			);
+
+			const result = runPilotEvaluate({
+				artifactsDir,
+				runRecordsDir,
+				docsGateReportPath,
+				evaluationMode: "pr",
+				rolloutStage: "advisory",
+				prTemplateStatus: "passed",
+				prTemplateRef: "artifacts/pilot/pr-template.json",
+				clientFamily: "codex",
+				providerId: "openai",
+				modelDescriptor: "gpt-5.4",
+				executionMode: "automation",
+				operatorType: "automation",
+			});
+
+			expect(result.ok).toBe(true);
+			expect(result.result?.controlPlane?.evaluationDecision).toBe("promote");
+			expect(result.result?.controlPlane?.enforcementDecision).toBe(
+				"non_blocking",
+			);
+			expect(
+				existsSync(
+					join(
+						result.result?.controlPlane?.artifactRoot ?? "",
+						"control-plane-scorecard.json",
+					),
+				),
+			).toBe(true);
+		});
+
 		it("has required threshold values", () => {
 			expect(PILOT_THRESHOLDS.leadTimeP50Improvement).toBe(-0.35);
 			expect(PILOT_THRESHOLDS.rollbackReliability).toBe(1.0);

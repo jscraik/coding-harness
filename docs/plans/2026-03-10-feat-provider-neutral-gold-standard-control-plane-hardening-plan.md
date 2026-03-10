@@ -11,6 +11,7 @@ spec: docs/specs/2026-03-10-feat-provider-neutral-gold-standard-control-plane-ha
 
 ## Table of Contents
 - [Enhancement Summary](#enhancement-summary)
+- [Current Execution Status](#current-execution-status)
 - [Overview](#overview)
 - [Problem Statement / Motivation](#problem-statement--motivation)
 - [Scope and Non-Goals](#scope-and-non-goals)
@@ -32,6 +33,29 @@ spec: docs/specs/2026-03-10-feat-provider-neutral-gold-standard-control-plane-ha
 - Adds explicit phase outputs, target files, verification slices, and checkpoint exit criteria instead of relying on implied handoff.
 - Treats `docs-gate` and the trusted `pr-template` check as authoritative governance inputs, not parallel truth paths to be recomputed by the control plane.
 - Separates `implementation complete` from `promotion ready`, so CP0-CP5 delivery is not mistaken for CP6 rollout clearance.
+
+## Current Execution Status
+
+Updated on 2026-03-10 after the current branch landing slice.
+
+- Landed the foundational provider-neutral companion-artifact seam for `pilot-evaluate`:
+  - shared control-plane types in `src/lib/pilot-evaluation/types.ts`
+  - additive artifact builder/loader in `src/lib/pilot-evaluation/control-plane.ts`
+  - trusted `docs-gate`/PR-template/provider identity CLI threading in `src/commands/pilot-evaluate.ts` and `src/cli.ts`
+  - focused coverage in `src/lib/pilot-evaluation/control-plane.test.ts`, `src/commands/pilot-evaluate.test.ts`, and `src/cli-dispatch.test.ts`
+- The current slice is intentionally additive:
+  - canonical `pilot-evaluate` outcome behavior remains authoritative
+  - control-plane artifacts are only emitted when explicit control-plane inputs are provided
+  - enforcement remains non-authoritative in `shadow`/`advisory` mode
+- Repo-wide validation for the landed slice passed:
+  - `pnpm check`
+  - `npm test`
+  - `npm run test:deep`
+  - `pnpm build`
+- Still pending from later phases:
+  - contract-backed override policy records
+  - full required-check governance parity across init/branch-protect/docs surfaces
+  - rollout-window evidence, promotion packets, and demotion automation
 
 ## Overview
 
@@ -712,19 +736,19 @@ Each stage transition must produce a promotion packet with:
 
 ## Acceptance Checklist
 
-- [ ] Plan preserves the canonical run/eval substrate as the authoritative runtime base.
-- [ ] Provider-neutral identity and adapter normalization occur before scorecard decision logic.
-- [ ] Companion artifacts, retry semantics, and join-integrity rules are phased before command integration.
-- [ ] `docs-gate` remains the only instruction-parity authority consumed by the control plane.
-- [ ] PR-template correctness is enforced via trusted workflow evidence, not reparsed prose.
+- [x] Plan preserves the canonical run/eval substrate as the authoritative runtime base.
+- [x] Provider-neutral identity and adapter normalization occur before scorecard decision logic.
+- [x] Companion artifacts, retry semantics, and join-integrity rules are phased before command integration.
+- [x] `docs-gate` remains the only instruction-parity authority consumed by the control plane.
+- [x] PR-template correctness is enforced via trusted workflow evidence, not reparsed prose.
 - [ ] Required-check handling is implemented as policy-truth ingestion, not a parallel command contract.
-- [ ] Scorecard work collapses onto `evaluationDecision` and `enforcementDecision` only.
-- [ ] `falseBlockRate` depends on `control-plane-audit-log.jsonl` adjudications and honors denominator guards.
+- [x] Scorecard work collapses onto `evaluationDecision` and `enforcementDecision` only.
+- [x] `falseBlockRate` depends on `control-plane-audit-log.jsonl` adjudications and honors denominator guards.
 - [ ] Override policy remains conditional, append-only, and fail-closed for non-overridable controls.
 - [ ] Rollout stages include explicit stage exit criteria, demotion triggers, and additive compatibility checks.
 - [ ] Test coverage proves precedence, retry, integrity, rollout, and trusted-evidence behavior.
 - [ ] Each checkpoint has a machine-checkable evidence bundle with commands, artifact paths, provenance, and blocker notes.
-- [ ] Implementation-complete evidence is explicitly separated from promotion-ready evidence.
+- [x] Implementation-complete evidence is explicitly separated from promotion-ready evidence.
 - [ ] The full required-check identity set is governed end to end across contract, workflow, init, branch protection, and governed docs.
 - [ ] Evidence formatting is folded into existing audit-log/report families with stable required keys and naming.
 

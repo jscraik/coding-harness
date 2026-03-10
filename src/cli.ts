@@ -52,6 +52,7 @@ import {
 	parseIntegerArg,
 } from "./lib/cli/parse-utils.js";
 import { sanitizeError } from "./lib/input/sanitize.js";
+import type { PilotEvaluateOptions } from "./lib/pilot-evaluation/types.js";
 import { getVersion } from "./lib/version.js";
 
 // Consolidated error handler
@@ -210,6 +211,29 @@ function printUsage(): void {
 	console.info("  --check-secrets  Check for secrets in environment variables");
 	console.info("  --attestation    Path to write attestation artifact");
 	console.info("  --json           Output as JSON");
+	console.info("");
+	console.info("Pilot Evaluate Options:");
+	console.info("  --artifacts      Artifacts directory (required)");
+	console.info("  --contract       Path to harness.contract.json");
+	console.info("  --output         Write evaluation JSON to file");
+	console.info("  --lane           advisory|health");
+	console.info("  --kill-switch    Force manual safe mode");
+	console.info("  --adapter-registry  Override adapter registry path");
+	console.info("  --metric-registry   Override metric registry path");
+	console.info("  --docs-gate-report  Trusted docs-gate machine report");
+	console.info("  --evaluation-mode   local|pr|merge_group");
+	console.info("  --rollout-stage    shadow|advisory|enforced");
+	console.info("  --pr-template-status  passed|failed|missing");
+	console.info("  --pr-template-ref     Trusted PR-template artifact ref");
+	console.info("  --actor-id        Explicit actor identifier");
+	console.info(
+		"  --client-family   codex|claude_family|gemini_family|kimi_family|custom",
+	);
+	console.info("  --provider-id     Provider identifier");
+	console.info("  --model-descriptor  Provider/model descriptor");
+	console.info("  --execution-mode  interactive|automation|ci");
+	console.info("  --operator-type   human_directed|automation|autonomous");
+	console.info("  --json            Output as JSON");
 	console.info("");
 	console.info("Docs Gate Options:");
 	console.info("  --mode           advisory|required (default: advisory)");
@@ -1238,6 +1262,17 @@ export function run(args: string[]): void {
 		const laneIndex = args.indexOf("--lane");
 		const adapterRegistryIndex = args.indexOf("--adapter-registry");
 		const metricRegistryIndex = args.indexOf("--metric-registry");
+		const docsGateReportIndex = args.indexOf("--docs-gate-report");
+		const evaluationModeIndex = args.indexOf("--evaluation-mode");
+		const rolloutStageIndex = args.indexOf("--rollout-stage");
+		const prTemplateStatusIndex = args.indexOf("--pr-template-status");
+		const prTemplateRefIndex = args.indexOf("--pr-template-ref");
+		const actorIdIndex = args.indexOf("--actor-id");
+		const clientFamilyIndex = args.indexOf("--client-family");
+		const providerIdIndex = args.indexOf("--provider-id");
+		const modelDescriptorIndex = args.indexOf("--model-descriptor");
+		const executionModeIndex = args.indexOf("--execution-mode");
+		const operatorTypeIndex = args.indexOf("--operator-type");
 
 		const artifactsArg = getFlagValue(args, artifactsIndex);
 		if (!artifactsArg) {
@@ -1246,16 +1281,7 @@ export function run(args: string[]): void {
 			return;
 		}
 
-		const options: {
-			artifactsDir: string;
-			contractPath?: string;
-			outputPath?: string;
-			lane?: "advisory" | "health";
-			killSwitch?: boolean;
-			adapterRegistryPath?: string;
-			metricRegistryPath?: string;
-			json?: boolean;
-		} = {
+		const options: PilotEvaluateOptions = {
 			artifactsDir: artifactsArg,
 		};
 
@@ -1273,6 +1299,66 @@ export function run(args: string[]): void {
 		if (adapterRegistryArg) options.adapterRegistryPath = adapterRegistryArg;
 		const metricRegistryArg = getFlagValue(args, metricRegistryIndex);
 		if (metricRegistryArg) options.metricRegistryPath = metricRegistryArg;
+		const docsGateReportArg = getFlagValue(args, docsGateReportIndex);
+		if (docsGateReportArg) options.docsGateReportPath = docsGateReportArg;
+		const evaluationModeArg = getFlagValue(args, evaluationModeIndex);
+		if (
+			evaluationModeArg === "local" ||
+			evaluationModeArg === "pr" ||
+			evaluationModeArg === "merge_group"
+		) {
+			options.evaluationMode = evaluationModeArg;
+		}
+		const rolloutStageArg = getFlagValue(args, rolloutStageIndex);
+		if (
+			rolloutStageArg === "shadow" ||
+			rolloutStageArg === "advisory" ||
+			rolloutStageArg === "enforced"
+		) {
+			options.rolloutStage = rolloutStageArg;
+		}
+		const prTemplateStatusArg = getFlagValue(args, prTemplateStatusIndex);
+		if (
+			prTemplateStatusArg === "passed" ||
+			prTemplateStatusArg === "failed" ||
+			prTemplateStatusArg === "missing"
+		) {
+			options.prTemplateStatus = prTemplateStatusArg;
+		}
+		const prTemplateRefArg = getFlagValue(args, prTemplateRefIndex);
+		if (prTemplateRefArg) options.prTemplateRef = prTemplateRefArg;
+		const actorIdArg = getFlagValue(args, actorIdIndex);
+		if (actorIdArg) options.actorId = actorIdArg;
+		const clientFamilyArg = getFlagValue(args, clientFamilyIndex);
+		if (
+			clientFamilyArg === "codex" ||
+			clientFamilyArg === "claude_family" ||
+			clientFamilyArg === "gemini_family" ||
+			clientFamilyArg === "kimi_family" ||
+			clientFamilyArg === "custom"
+		) {
+			options.clientFamily = clientFamilyArg;
+		}
+		const providerIdArg = getFlagValue(args, providerIdIndex);
+		if (providerIdArg) options.providerId = providerIdArg;
+		const modelDescriptorArg = getFlagValue(args, modelDescriptorIndex);
+		if (modelDescriptorArg) options.modelDescriptor = modelDescriptorArg;
+		const executionModeArg = getFlagValue(args, executionModeIndex);
+		if (
+			executionModeArg === "interactive" ||
+			executionModeArg === "automation" ||
+			executionModeArg === "ci"
+		) {
+			options.executionMode = executionModeArg;
+		}
+		const operatorTypeArg = getFlagValue(args, operatorTypeIndex);
+		if (
+			operatorTypeArg === "human_directed" ||
+			operatorTypeArg === "automation" ||
+			operatorTypeArg === "autonomous"
+		) {
+			options.operatorType = operatorTypeArg;
+		}
 
 		const exitCode = runPilotEvaluateCLI(options);
 		process.exit(exitCode);
