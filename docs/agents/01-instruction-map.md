@@ -33,6 +33,7 @@ When starting a task, follow this lookup order:
    - **Greptile review policy, confidence thresholds, and `.greptile/` governance:** `12-greptile-ai-governance.md`
    - **Linear-first intake and production tracker workflow:** `13-linear-production-workflow.md`
    - **Docs-gate rollout and promotion:** `14-docs-gate-rollout.md`
+   - **Context-integrity control plane (agent-optimized):** `15-context-integrity-compact.md`
    - **Policy conflicts/inconsistencies:** `05-contradictions-and-cleanup.md`
    - **Security or secret handling:** `06-security-and-governance.md`
    - **Role/accountability changes:** `07a-role-governance.md` + `07b-agent-governance.md`
@@ -93,3 +94,4 @@ If two instructions conflict:
 - [Greptile AI governance](./12-greptile-ai-governance.md)
 - [Linear production workflow](./13-linear-production-workflow.md)
 - [Docs-gate rollout](./14-docs-gate-rollout.md)
+- [Context-integrity compact](./15-context-integrity-compact.md)
