@@ -32,6 +32,7 @@ When starting a task, follow this lookup order:
    - **Flaky tests and evidence artifacts:** `11-flaky-test-artifacts.md`
    - **Greptile review policy, confidence thresholds, and `.greptile/` governance:** `12-greptile-ai-governance.md`
    - **Linear-first intake and production tracker workflow:** `13-linear-production-workflow.md`
+   - **Linear workflow (agent-optimized):** `16-linear-production-compact.md`
    - **Docs-gate rollout and promotion:** `14-docs-gate-rollout.md`
    - **Context-integrity control plane (agent-optimized):** `15-context-integrity-compact.md`
    - **Policy conflicts/inconsistencies:** `05-contradictions-and-cleanup.md`
@@ -93,5 +94,6 @@ If two instructions conflict:
 - [Flaky test artifact capture standard](./11-flaky-test-artifacts.md)
 - [Greptile AI governance](./12-greptile-ai-governance.md)
 - [Linear production workflow](./13-linear-production-workflow.md)
+- [Linear production compact](./16-linear-production-compact.md)
 - [Docs-gate rollout](./14-docs-gate-rollout.md)
 - [Context-integrity compact](./15-context-integrity-compact.md)
