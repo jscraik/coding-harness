@@ -1,5 +1,5 @@
 {
-	"version": "1.3.0",
+	"version": "1.4.0",
 	"riskTierRules": {
 		"src/auth/**": "high",
 		"src/api/**": "high",
@@ -34,7 +34,33 @@
 			"memory",
 			"security-scan",
 			"Greptile Review"
-		]
+		],
+		"restrictDeletions": true,
+		"blockForcePushes": true,
+		"requireLinearHistory": true,
+		"requirePullRequest": true,
+		"requiredApprovingReviewCount": 0,
+		"dismissStaleReviewsOnPush": true,
+		"requireConversationResolution": true,
+		"requireCodeOwnerReview": false,
+		"requireLastPushApproval": false,
+		"requireBranchesUpToDate": true,
+		"allowedMergeMethods": {
+			"mergeCommit": true,
+			"squash": true,
+			"rebase": true
+		},
+		"codeQuality": {
+			"required": true,
+			"severity": "all"
+		},
+		"publicCodeScanning": {
+			"required": true,
+			"publicOnly": true,
+			"tool": "CodeQL",
+			"alertsThreshold": "errors",
+			"securityAlertsThreshold": "high_or_higher"
+		}
 	},
 	"issueTrackingPolicy": {
 		"provider": "linear",
@@ -100,43 +126,57 @@
 		"rules": [
 			{
 				"ruleId": "cli-surface-docs",
-				"when": { "categories": ["cli_surface"] },
+				"when": {
+					"categories": ["cli_surface"]
+				},
 				"requireDocs": ["README.md"],
 				"severity": "error"
 			},
 			{
 				"ruleId": "contract-policy-docs",
-				"when": { "categories": ["contract_policy"] },
+				"when": {
+					"categories": ["contract_policy"]
+				},
 				"requireDocs": ["README.md", "AGENTS.md"],
 				"severity": "error"
 			},
 			{
 				"ruleId": "ci-workflow-docs",
-				"when": { "categories": ["ci_workflow"] },
+				"when": {
+					"categories": ["ci_workflow"]
+				},
 				"requireDocs": ["README.md", "CONTRIBUTING.md", "AGENTS.md"],
 				"severity": "error"
 			},
 			{
 				"ruleId": "required-checks-docs",
-				"when": { "categories": ["branch_protection_or_required_checks"] },
+				"when": {
+					"categories": ["branch_protection_or_required_checks"]
+				},
 				"requireDocs": ["README.md", "CONTRIBUTING.md", "AGENTS.md"],
 				"severity": "error"
 			},
 			{
 				"ruleId": "init-scaffold-docs",
-				"when": { "categories": ["init_scaffolding"] },
+				"when": {
+					"categories": ["init_scaffolding"]
+				},
 				"requireDocs": ["README.md", "AGENTS.md"],
 				"severity": "error"
 			},
 			{
 				"ruleId": "agent-governance-docs",
-				"when": { "categories": ["agent_governance"] },
+				"when": {
+					"categories": ["agent_governance"]
+				},
 				"requireDocs": ["AGENTS.md", "docs/agents/07b-agent-governance.md"],
 				"severity": "error"
 			},
 			{
 				"ruleId": "unknown-governance-docs",
-				"when": { "categories": ["unknown_governance_change"] },
+				"when": {
+					"categories": ["unknown_governance_change"]
+				},
 				"requireDocs": [],
 				"severity": "warning"
 			}
@@ -197,5 +237,318 @@
 			}
 		],
 		"localHookEnabled": false
+	},
+	"controlPlanePolicy": {
+		"overridePolicy": {
+			"authorizedPrincipals": [],
+			"dualApprovalScopes": ["temporary_unblock", "temporary_promote"],
+			"maxTtlHours": 24,
+			"nonOverridableControls": [
+				"canonical_runtime_invalid",
+				"governance_trust_mismatch",
+				"missing_required_instruction_surface",
+				"missing_snapshot_integrity_verification"
+			]
+		}
+	},
+	"toolingPolicy": {
+		"requiredDocumentationTerms": [
+			"node",
+			"pnpm",
+			"python",
+			"uv",
+			"make",
+			"rg",
+			"fd",
+			"jq",
+			"prek",
+			"diagram",
+			"mise",
+			"vale",
+			"argos",
+			"cosign",
+			"cloudflared",
+			"vitest",
+			"ruff",
+			"eslint",
+			"agent-browser",
+			"agentation",
+			"markdownlint-cli2",
+			"wrangler",
+			"beautiful-mermaid",
+			"semgrep",
+			"semver",
+			"trivy",
+			"rsearch",
+			"wsearch"
+		],
+		"requiredBinaries": [
+			"pnpm",
+			"node",
+			"jq",
+			"make",
+			"rg",
+			"fd",
+			"prek",
+			"diagram",
+			"mise",
+			"vale",
+			"argos",
+			"cosign",
+			"cloudflared",
+			"vitest",
+			"ruff",
+			"eslint",
+			"agent-browser",
+			"agentation-mcp",
+			"markdownlint-cli2",
+			"wrangler",
+			"beautiful-mermaid",
+			"semgrep",
+			"semver",
+			"trivy",
+			"rsearch",
+			"wsearch"
+		],
+		"requiredMiseTools": [
+			{
+				"tool": "node",
+				"version": "24.13.1"
+			},
+			{
+				"tool": "pnpm",
+				"version": "10.0.0"
+			},
+			{
+				"tool": "python",
+				"version": "3.12"
+			},
+			{
+				"tool": "uv",
+				"version": "0.9.5"
+			},
+			{
+				"tool": "cargo:prek",
+				"version": "0.3.4"
+			},
+			{
+				"tool": "npm:@brainwav/diagram",
+				"version": "1.0.8"
+			},
+			{
+				"tool": "npm:@argos-ci/cli",
+				"version": "4.1.1"
+			},
+			{
+				"tool": "cosign",
+				"version": "3.0.5"
+			},
+			{
+				"tool": "cloudflared",
+				"version": "2026.3.0"
+			},
+			{
+				"tool": "npm:vitest",
+				"version": "4.0.18"
+			},
+			{
+				"tool": "ruff",
+				"version": "0.15.5"
+			},
+			{
+				"tool": "npm:eslint",
+				"version": "10.0.3"
+			},
+			{
+				"tool": "npm:agent-browser",
+				"version": "0.17.1"
+			},
+			{
+				"tool": "npm:agentation",
+				"version": "2.3.2"
+			},
+			{
+				"tool": "npm:agentation-mcp",
+				"version": "1.2.0"
+			},
+			{
+				"tool": "npm:@brainwav/rsearch",
+				"version": "0.1.6"
+			},
+			{
+				"tool": "npm:@brainwav/wsearch-cli",
+				"version": "0.1.9"
+			},
+			{
+				"tool": "npm:beautiful-mermaid",
+				"version": "1.1.3"
+			},
+			{
+				"tool": "npm:markdownlint-cli2",
+				"version": "0.21.0"
+			},
+			{
+				"tool": "npm:semver",
+				"version": "7.7.4"
+			},
+			{
+				"tool": "npm:wrangler",
+				"version": "4.69.0"
+			},
+			{
+				"tool": "semgrep",
+				"version": "1.153.1"
+			},
+			{
+				"tool": "trivy",
+				"version": "0.69.3"
+			},
+			{
+				"tool": "vale",
+				"version": "3.13.1"
+			}
+		],
+		"miseFilePath": ".mise.toml",
+		"readinessScriptPath": "scripts/check-environment.sh",
+		"codexEnvironment": {
+			"path": ".codex/environments/environment.toml",
+			"requiredActions": [
+				{
+					"name": "Tools",
+					"icon": "tool"
+				},
+				{
+					"name": "Run",
+					"icon": "run"
+				},
+				{
+					"name": "Debug",
+					"icon": "debug"
+				},
+				{
+					"name": "Test",
+					"icon": "test"
+				},
+				{
+					"name": "Prek",
+					"icon": "test"
+				},
+				{
+					"name": "Diagram",
+					"icon": "tool"
+				},
+				{
+					"name": "Ralph",
+					"icon": "debug"
+				},
+				{
+					"name": "Mise",
+					"icon": "tool"
+				},
+				{
+					"name": "Vale",
+					"icon": "debug"
+				},
+				{
+					"name": "Argos",
+					"icon": "test"
+				},
+				{
+					"name": "Cosign",
+					"icon": "debug"
+				},
+				{
+					"name": "Cloudflared",
+					"icon": "run"
+				},
+				{
+					"name": "Vitest",
+					"icon": "test"
+				},
+				{
+					"name": "Ruff",
+					"icon": "debug"
+				},
+				{
+					"name": "ESLint",
+					"icon": "debug"
+				},
+				{
+					"name": "Agent Browser",
+					"icon": "tool"
+				},
+				{
+					"name": "Agentation",
+					"icon": "tool"
+				},
+				{
+					"name": "MarkdownLint",
+					"icon": "debug"
+				},
+				{
+					"name": "Wrangler",
+					"icon": "run"
+				},
+				{
+					"name": "1Password",
+					"icon": "tool"
+				},
+				{
+					"name": "Beautiful Mermaid",
+					"icon": "tool"
+				},
+				{
+					"name": "Auth0",
+					"icon": "tool"
+				},
+				{
+					"name": "Semgrep",
+					"icon": "debug"
+				},
+				{
+					"name": "Semver",
+					"icon": "tool"
+				},
+				{
+					"name": "Trivy",
+					"icon": "debug"
+				},
+				{
+					"name": "Gitleaks",
+					"icon": "debug"
+				},
+				{
+					"name": "Research",
+					"icon": "tool"
+				},
+				{
+					"name": "WSearch",
+					"icon": "tool"
+				}
+			]
+		},
+		"makefile": {
+			"path": "Makefile",
+			"requiredTargets": [
+				"help",
+				"install",
+				"setup",
+				"hooks",
+				"lint",
+				"docs-lint",
+				"fmt",
+				"typecheck",
+				"test",
+				"check",
+				"audit",
+				"secrets",
+				"security",
+				"clean",
+				"reset",
+				"ci",
+				"diagrams",
+				"env-check"
+			]
+		}
 	}
 }

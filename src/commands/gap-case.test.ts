@@ -2,7 +2,13 @@
  * Gap-case command tests
  */
 
-import { existsSync, mkdirSync, rmSync, writeFileSync } from "node:fs";
+import {
+	existsSync,
+	mkdirSync,
+	mkdtempSync,
+	rmSync,
+	writeFileSync,
+} from "node:fs";
 import { join, resolve } from "node:path";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import type { GapCaseRecord } from "../lib/gap-case/types.js";
@@ -31,8 +37,7 @@ describe("gap-case", () => {
 		if (!existsSync(baseDir)) {
 			mkdirSync(baseDir, { recursive: true });
 		}
-		testDir = join(baseDir, `gap-case-test-${Date.now()}`);
-		mkdirSync(testDir, { recursive: true });
+		testDir = mkdtempSync(join(baseDir, "gap-case-test-XXXXXX"));
 		storePath = join(testDir, "gap-cases.v1.json");
 		contractPath = join(testDir, "harness.contract.json");
 		// Write enabled contract

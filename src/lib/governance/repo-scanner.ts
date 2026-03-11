@@ -299,6 +299,99 @@ export function detectDrift(
 		}
 	}
 
+	// Compare tooling policy surface when present in the base contract.
+	if (base.toolingPolicy && actual.toolingPolicy) {
+		const actualDocTerms = new Set(
+			actual.toolingPolicy.requiredDocumentationTerms,
+		);
+		for (const term of base.toolingPolicy.requiredDocumentationTerms) {
+			if (!actualDocTerms.has(term)) {
+				findings.push({
+					path: "toolingPolicy.requiredDocumentationTerms",
+					expected: term,
+					actual: undefined,
+					severity: "warning",
+					description: `Missing required tooling documentation term: ${term}`,
+				});
+			}
+		}
+
+		const actualBinaries = new Set(actual.toolingPolicy.requiredBinaries);
+		for (const binary of base.toolingPolicy.requiredBinaries) {
+			if (!actualBinaries.has(binary)) {
+				findings.push({
+					path: "toolingPolicy.requiredBinaries",
+					expected: binary,
+					actual: undefined,
+					severity: "critical",
+					description: `Missing required tooling binary: ${binary}`,
+				});
+			}
+		}
+
+		const actualMiseTools = new Map(
+			actual.toolingPolicy.requiredMiseTools.map((item) => [
+				item.tool,
+				item.version,
+			]),
+		);
+		for (const item of base.toolingPolicy.requiredMiseTools) {
+			if (!actualMiseTools.has(item.tool)) {
+				findings.push({
+					path: "toolingPolicy.requiredMiseTools",
+					expected: item,
+					actual: undefined,
+					severity: "critical",
+					description: `Missing required mise tool pin: ${item.tool}`,
+				});
+				continue;
+			}
+			const actualVersion = actualMiseTools.get(item.tool);
+			if (actualVersion !== item.version) {
+				findings.push({
+					path: `toolingPolicy.requiredMiseTools.${item.tool}`,
+					expected: item.version,
+					actual: actualVersion,
+					severity: "warning",
+					description: `Pinned version drift for ${item.tool}: ${String(actualVersion)} != ${item.version}`,
+				});
+			}
+		}
+
+		const actualActions = new Set(
+			actual.toolingPolicy.codexEnvironment.requiredActions.map(
+				(action) => `${action.name}|${action.icon}`,
+			),
+		);
+		for (const action of base.toolingPolicy.codexEnvironment.requiredActions) {
+			const actionKey = `${action.name}|${action.icon}`;
+			if (!actualActions.has(actionKey)) {
+				findings.push({
+					path: "toolingPolicy.codexEnvironment.requiredActions",
+					expected: actionKey,
+					actual: undefined,
+					severity: "warning",
+					description: `Missing Codex action mapping: ${actionKey}`,
+				});
+			}
+		}
+
+		const actualTargets = new Set(
+			actual.toolingPolicy.makefile.requiredTargets,
+		);
+		for (const target of base.toolingPolicy.makefile.requiredTargets) {
+			if (!actualTargets.has(target)) {
+				findings.push({
+					path: "toolingPolicy.makefile.requiredTargets",
+					expected: target,
+					actual: undefined,
+					severity: "warning",
+					description: `Missing required Makefile target: ${target}`,
+				});
+			}
+		}
+	}
+
 	return findings;
 }
 

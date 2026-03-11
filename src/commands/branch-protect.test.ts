@@ -4,7 +4,7 @@ import type {
 	RulesetPayload,
 	RulesetSummary,
 } from "../lib/github/client.js";
-import { runBranchProtect } from "./branch-protect.js";
+import { runBranchProtect, runBranchProtectCLI } from "./branch-protect.js";
 
 vi.mock("../lib/github/client.js", () => ({
 	GitHubClient: vi.fn(),
@@ -69,6 +69,7 @@ describe("runBranchProtect", () => {
 
 	it("creates a ruleset when none exists", async () => {
 		const listRulesets = vi.fn(async () => [] as RulesetSummary[]);
+		const updateRepositoryMergeSettings = vi.fn(async () => undefined);
 		const createRuleset = vi.fn(
 			async (payload: RulesetPayload) =>
 				({
@@ -87,6 +88,7 @@ describe("runBranchProtect", () => {
 				({
 					listRulesets,
 					createRuleset,
+					updateRepositoryMergeSettings,
 				}) as unknown as GitHubClient,
 		);
 
@@ -106,6 +108,11 @@ describe("runBranchProtect", () => {
 
 		expect(listRulesets).toHaveBeenCalledTimes(1);
 		expect(createRuleset).toHaveBeenCalledTimes(1);
+		expect(updateRepositoryMergeSettings).toHaveBeenCalledWith({
+			allowMergeCommit: true,
+			allowSquashMerge: true,
+			allowRebaseMerge: true,
+		});
 		expect(createRuleset.mock.calls[0]?.[0]).toMatchObject({
 			name: "protect",
 			target: "branch",
@@ -115,10 +122,69 @@ describe("runBranchProtect", () => {
 			(rule) => rule.type === "pull_request",
 		);
 		expect(pullRequestRule?.parameters).toMatchObject({
-			required_approving_review_count: 1,
-			require_code_owner_review: true,
-			require_last_push_approval: true,
+			required_approving_review_count: 0,
+			require_code_owner_review: false,
+			require_last_push_approval: false,
+			required_review_thread_resolution: true,
 		});
+		expect(
+			createRuleset.mock.calls[0]?.[0].rules.some(
+				(rule) => rule.type === "required_linear_history",
+			),
+		).toBe(true);
+		expect(
+			createRuleset.mock.calls[0]?.[0].rules.find(
+				(rule) => rule.type === "code_quality",
+			)?.parameters,
+		).toMatchObject({
+			severity: "all",
+		});
+	});
+
+	it("reports a partial failure when merge settings fail after ruleset creation", async () => {
+		const listRulesets = vi.fn(async () => [] as RulesetSummary[]);
+		const createRuleset = vi.fn(
+			async (payload: RulesetPayload) =>
+				({
+					id: 124,
+					name: payload.name,
+					target: payload.target,
+					enforcement: payload.enforcement,
+					bypass_actors: payload.bypass_actors,
+					conditions: payload.conditions,
+					rules: payload.rules,
+				}) as Ruleset,
+		);
+		const updateRepositoryMergeSettings = vi.fn(async () => {
+			throw new Error("merge settings denied");
+		});
+
+		mockGitHubClient.mockImplementation(
+			() =>
+				({
+					listRulesets,
+					createRuleset,
+					updateRepositoryMergeSettings,
+				}) as unknown as GitHubClient,
+		);
+
+		const result = await runBranchProtect({
+			token: "token",
+			owner: "octo",
+			repo: "harness",
+			branch: "main",
+		});
+
+		expect(result.ok).toBe(false);
+		if (!result.ok) {
+			expect(result.error.code).toBe("SYSTEM_ERROR");
+			expect(result.error.message).toContain(
+				"Configured branch protection ruleset, but failed to apply repository merge settings",
+			);
+			expect(result.error.message).toContain("merge settings denied");
+		}
+		expect(createRuleset).toHaveBeenCalledTimes(1);
+		expect(updateRepositoryMergeSettings).toHaveBeenCalledTimes(1);
 	});
 
 	it("updates existing ruleset and preserves unrelated rules", async () => {
@@ -162,7 +228,7 @@ describe("runBranchProtect", () => {
 							},
 						},
 						{
-							type: "code_scanning",
+							type: "copilot_code_review",
 						},
 					],
 				}) as Ruleset,
@@ -200,9 +266,9 @@ describe("runBranchProtect", () => {
 		expect(result.ok).toBe(true);
 		expect(updateRuleset).toHaveBeenCalledTimes(1);
 		const payload = updateRuleset.mock.calls[0]?.[1];
-		expect(payload?.rules.some((rule) => rule.type === "code_scanning")).toBe(
-			true,
-		);
+		expect(
+			payload?.rules.some((rule) => rule.type === "copilot_code_review"),
+		).toBe(true);
 		const requiredRule = payload?.rules.find(
 			(rule) => rule.type === "required_status_checks",
 		);
@@ -214,6 +280,137 @@ describe("runBranchProtect", () => {
 			],
 		});
 		expect(payload?.conditions?.ref_name?.include).toEqual(["refs/heads/main"]);
+	});
+
+	it("adds public CodeQL code scanning requirements for public repositories", async () => {
+		const listRulesets = vi.fn(async () => [] as RulesetSummary[]);
+		const createRuleset = vi.fn(
+			async (payload: RulesetPayload) =>
+				({
+					id: 88,
+					name: payload.name,
+					target: payload.target,
+					enforcement: payload.enforcement,
+					bypass_actors: payload.bypass_actors,
+					conditions: payload.conditions,
+					rules: payload.rules,
+				}) as Ruleset,
+		);
+		const getRepositoryVisibility = vi.fn(async () => "public");
+
+		mockGitHubClient.mockImplementation(
+			() =>
+				({
+					listRulesets,
+					createRuleset,
+					getRepositoryVisibility,
+				}) as unknown as GitHubClient,
+		);
+
+		const result = await runBranchProtect({
+			token: "token",
+			owner: "octo",
+			repo: "harness",
+		});
+
+		expect(result.ok).toBe(true);
+		const payload = createRuleset.mock.calls[0]?.[0];
+		expect(
+			payload?.rules.find((rule) => rule.type === "code_scanning")?.parameters,
+		).toMatchObject({
+			code_scanning_tools: [
+				{
+					tool: "CodeQL",
+					alerts_threshold: "errors",
+					security_alerts_threshold: "high_or_higher",
+				},
+			],
+		});
+	});
+
+	it("removes managed code scanning rules for non-public repositories", async () => {
+		const listRulesets = vi.fn(
+			async () =>
+				[
+					{
+						id: 89,
+						name: "protect",
+						target: "branch",
+						enforcement: "active",
+						conditions: {
+							ref_name: {
+								include: ["refs/heads/main"],
+								exclude: [],
+							},
+						},
+					},
+				] as RulesetSummary[],
+		);
+		const getRuleset = vi.fn(
+			async () =>
+				({
+					id: 89,
+					name: "protect",
+					target: "branch",
+					enforcement: "active",
+					bypass_actors: [],
+					conditions: {
+						ref_name: {
+							include: ["refs/heads/main"],
+							exclude: [],
+						},
+					},
+					rules: [
+						{
+							type: "code_scanning",
+							parameters: {
+								code_scanning_tools: [
+									{
+										tool: "CodeQL",
+										alerts_threshold: "errors",
+										security_alerts_threshold: "high_or_higher",
+									},
+								],
+							},
+						},
+					],
+				}) as Ruleset,
+		);
+		const updateRuleset = vi.fn(
+			async (_id: number, payload: RulesetPayload) =>
+				({
+					id: 89,
+					name: payload.name,
+					target: payload.target,
+					enforcement: payload.enforcement,
+					bypass_actors: payload.bypass_actors,
+					conditions: payload.conditions,
+					rules: payload.rules,
+				}) as Ruleset,
+		);
+		const getRepositoryVisibility = vi.fn(async () => "private");
+
+		mockGitHubClient.mockImplementation(
+			() =>
+				({
+					listRulesets,
+					getRuleset,
+					updateRuleset,
+					getRepositoryVisibility,
+				}) as unknown as GitHubClient,
+		);
+
+		const result = await runBranchProtect({
+			token: "token",
+			owner: "octo",
+			repo: "harness",
+		});
+
+		expect(result.ok).toBe(true);
+		const payload = updateRuleset.mock.calls[0]?.[1];
+		expect(payload?.rules.some((rule) => rule.type === "code_scanning")).toBe(
+			false,
+		);
 	});
 
 	it("uses branchProtection.requiredChecks from contract by default", async () => {
@@ -385,12 +582,14 @@ describe("runBranchProtect", () => {
 	it("supports dry-run without applying changes", async () => {
 		const listRulesets = vi.fn(async () => [] as RulesetSummary[]);
 		const createRuleset = vi.fn();
+		const getRepositoryVisibility = vi.fn(async () => "public");
 
 		mockGitHubClient.mockImplementation(
 			() =>
 				({
 					listRulesets,
 					createRuleset,
+					getRepositoryVisibility,
 				}) as unknown as GitHubClient,
 		);
 
@@ -404,8 +603,106 @@ describe("runBranchProtect", () => {
 		expect(result.ok).toBe(true);
 		if (result.ok) {
 			expect(result.output.action).toBe("dry_run");
+			expect(result.output.repositoryVisibility).toBe("public");
+			expect(result.output.managedPolicy).toMatchObject({
+				requiredApprovingReviewCount: 0,
+				restrictDeletions: true,
+				blockForcePushes: true,
+				requireLinearHistory: true,
+				requirePullRequest: true,
+				dismissStaleReviewsOnPush: true,
+				requireConversationResolution: true,
+				requireCodeOwnerReview: false,
+				requireLastPushApproval: false,
+				requireBranchesUpToDate: true,
+				allowedMergeMethods: {
+					mergeCommit: true,
+					squash: true,
+					rebase: true,
+				},
+				codeQuality: {
+					required: true,
+					severity: "all",
+				},
+				publicCodeScanning: {
+					required: true,
+					publicOnly: true,
+					tool: "CodeQL",
+					alertsThreshold: "errors",
+					securityAlertsThreshold: "high_or_higher",
+				},
+			});
 		}
 		expect(createRuleset).not.toHaveBeenCalled();
+	});
+
+	it("emits dry-run JSON with managed policy snapshot", async () => {
+		const listRulesets = vi.fn(async () => [] as RulesetSummary[]);
+		const getRepositoryVisibility = vi.fn(async () => "public");
+		const consoleInfo = vi
+			.spyOn(console, "info")
+			.mockImplementation(() => undefined);
+
+		mockGitHubClient.mockImplementation(
+			() =>
+				({
+					listRulesets,
+					getRepositoryVisibility,
+				}) as unknown as GitHubClient,
+		);
+
+		const exitCode = await runBranchProtectCLI({
+			token: "token",
+			owner: "octo",
+			repo: "harness",
+			dryRun: true,
+			json: true,
+		});
+
+		expect(exitCode).toBe(0);
+		expect(consoleInfo).toHaveBeenCalledTimes(1);
+
+		const payload = JSON.parse(consoleInfo.mock.calls[0]?.[0] as string) as {
+			action: string;
+			repositoryVisibility?: string;
+			managedPolicy: {
+				requiredApprovingReviewCount: number;
+				requireLinearHistory: boolean;
+				requireCodeOwnerReview: boolean;
+				requireLastPushApproval: boolean;
+				requireBranchesUpToDate: boolean;
+				allowedMergeMethods: {
+					mergeCommit: boolean;
+					squash: boolean;
+					rebase: boolean;
+				};
+				codeQuality?: { severity: string };
+				publicCodeScanning?: {
+					tool: string;
+					securityAlertsThreshold: string;
+				};
+			};
+		};
+
+		expect(payload.action).toBe("dry_run");
+		expect(payload.repositoryVisibility).toBe("public");
+		expect(payload.managedPolicy).toMatchObject({
+			requiredApprovingReviewCount: 0,
+			requireLinearHistory: true,
+			requireCodeOwnerReview: false,
+			requireLastPushApproval: false,
+			requireBranchesUpToDate: true,
+			allowedMergeMethods: {
+				mergeCommit: true,
+				squash: true,
+				rebase: true,
+			},
+			codeQuality: { severity: "all" },
+			publicCodeScanning: {
+				tool: "CodeQL",
+				securityAlertsThreshold: "high_or_higher",
+			},
+		});
 	});
 
 	it("matches existing ruleset when summary conditions are omitted", async () => {
@@ -753,8 +1050,8 @@ describe("runBranchProtect", () => {
 		);
 		expect(pullRequestRule?.parameters).toMatchObject({
 			required_approving_review_count: 2,
-			require_code_owner_review: true,
-			require_last_push_approval: true,
+			require_code_owner_review: false,
+			require_last_push_approval: false,
 		});
 	});
 

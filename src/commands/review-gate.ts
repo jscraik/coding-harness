@@ -305,7 +305,15 @@ function evaluateRequiredChecks(
 
 function buildBotLoginSet(botLogin?: string): Set<string> {
 	return new Set<string>(
-		[botLogin, "greptile-apps", "greptile[bot]", "chatgpt-codex-connector"]
+		[
+			botLogin,
+			"greptile-apps",
+			"greptile[bot]",
+			"greptileai[bot]",
+			"greptile",
+			"greptileai",
+			"chatgpt-codex-connector",
+		]
 			.map((login) => normalizeBotLogin(login))
 			.filter((login): login is string => login !== undefined),
 	);

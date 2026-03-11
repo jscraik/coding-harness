@@ -56,6 +56,7 @@ This repository must maintain:
 - `.greptile/files.json`
 
 Use the `greploop` or `check-pr` skill to set up or refresh these files.
+`harness init` should distribute this baseline into harness-managed repositories.
 
 ## Webhook and event requirements
 
@@ -80,7 +81,7 @@ Since Greptile posts PR comments but doesn't create GitHub check runs, this repo
 - Triggers on PR events, review events, and Greptile comments
 - Parses Greptile comments for confidence scores
 - Uses `minMergeScore` from `.greptile/config.json` as pass threshold
-- Creates `neutral` check when Greptile hasn't reviewed yet (doesn't block merge)
+- Creates a failing pending-state check when Greptile has not reviewed the current head commit yet so merge stays blocked until review evidence exists
 
 The repository ruleset requires "Greptile Review" as a passing status check.
 
@@ -180,13 +181,17 @@ done
 
 # JSON output for CI
 harness verify-greptile --json
+
+# Trigger a standard review request comment
+harness request-greptile-review --owner jscraik --repo coding-harness --pr 123
 ```
 
 The verification checks:
 
 1. `.greptile/config.json` exists and has required fields
-2. `.greptile/rules.md` exists (optional but recommended)
-3. `.github/workflows/greptile-review.yml` exists with required triggers
-4. GitHub App is installed (best verified via `--app-id` + `--app-private-key-path`)
-5. Ruleset requires "Greptile Review" status check
-6. Webhook events are properly configured
+2. `.greptile/rules.md` exists and remains repository-local
+3. `.greptile/files.json` exists and points to graph-review context/schema sources
+4. `.github/workflows/greptile-review.yml` exists with required triggers
+5. GitHub App is installed (best verified via `--app-id` + `--app-private-key-path`)
+6. Ruleset requires "Greptile Review" status check
+7. Webhook events are properly configured

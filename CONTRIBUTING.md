@@ -6,6 +6,7 @@
 - [Why this workflow exists](#why-this-workflow-exists)
 - [Branching and PR rule](#branching-and-pr-rule)
 - [Required pre-merge gates](#required-pre-merge-gates)
+- [Required tooling baseline](#required-tooling-baseline)
 - [Greptile setup baseline](#greptile-setup-baseline)
 - [Greptile config hierarchy](#greptile-config-hierarchy)
 - [Greptile merge logic for multi-scope PRs](#greptile-merge-logic-for-multi-scope-prs)
@@ -96,15 +97,56 @@ For docs-only edits, run at minimum:
 - `pnpm lint` (if docs lint is enabled),
 - `pnpm typecheck` if any types or imports changed.
 
+## Required tooling baseline
+
+Harness-managed repositories should keep this baseline available locally before claiming the repo is ready:
+
+- `prek`
+- `diagram`
+- `mise`
+- `vale`
+- `argos`
+- `cosign`
+- `cloudflared`
+- `vitest`
+- `ruff`
+- `eslint`
+- `agent-browser`
+- `agentation` (via the `agentation-mcp` CLI)
+- `markdownlint-cli2`
+- `wrangler`
+- `beautiful-mermaid`
+- `semgrep`
+- `semver`
+- `trivy`
+- `rsearch` (arXiv research)
+- `wsearch` (Wikidata search)
+- `make` with the harness `Makefile` checked into repo root
+
+Policy:
+
+- Pin repo-managed tooling in `.mise.toml` where possible.
+- Treat `scripts/check-environment.sh` as the local readiness gate for required tooling.
+- Block merge or promotion work when a required CLI is missing rather than silently skipping the corresponding validation lane.
+- Treat the root `Makefile` as part of the repo contract; missing core targets should block readiness.
+
 ## Greptile setup baseline
 
 - Greptile must be configured correctly before relying on Greptile review gates.
 - Use the `greploop` or `check-pr` skill to set up/refresh all required Greptile files for this repository.
+- `harness init` is the distribution path for scaffolded Greptile baseline files and the bridge workflow in harness-managed repositories.
 - If Greptile files are missing or stale, treat the review gate as blocked and do not merge.
 - Required local structure:
   - `.greptile/config.json`
   - `.greptile/rules.md`
   - `.greptile/files.json`
+- Required bridge workflow:
+  - `.github/workflows/greptile-review.yml`
+- Verify setup with:
+  - `harness verify-greptile`
+  - `harness verify-greptile --token $GITHUB_TOKEN --owner <owner> --repo <repo>`
+- Trigger or refresh a review with:
+  - `harness request-greptile-review --owner <owner> --repo <repo> --pr <number>`
 - Independent validation is mandatory: the coding agent cannot approve its own changes.
 
 ## Greptile config hierarchy
@@ -221,7 +263,12 @@ Configure repository settings on `main` to make the workflow enforceable:
 - Token resolution for `branch-protect`:
   - `--token <PAT>` or env `GITHUB_TOKEN` / `GITHUB_PERSONAL_ACCESS_TOKEN`
 - Require PRs before merging.
-- Require at least one review before merge.
+- Allow `0` required reviewers for solo-maintainer repositories.
+- Dismiss stale approvals when new commits are pushed.
+- Require conversation resolution before merge.
+- Restrict branch deletions.
+- Block force pushes.
+- Require linear history.
 - Require status checks:
   - `pr-template`
   - `linear-gate`
@@ -238,9 +285,12 @@ Configure repository settings on `main` to make the workflow enforceable:
   - `memory`
   - `security-scan`
   - `Greptile Review`
+- Require branches to be up to date before merge.
+- Require code quality results with severity `all`.
+- In public repositories, require `CodeQL` code scanning results with `high_or_higher` security alerts and `errors` alerts thresholds.
+- Allow merge commits, squash merges, and rebase merges.
 - Require workflows to pin third-party actions to full commit SHAs.
 - Configure required checks workflows to run on both `pull_request` and `merge_group` when using merge queue.
-- Dismiss stale approvals when new commits are pushed.
 - Restrict pushes to `main` to `main` repository settings/admin workflows only.
 - Optionally require signed commits if your policy requires it.
 

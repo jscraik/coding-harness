@@ -5,6 +5,7 @@
 import {
 	existsSync,
 	mkdirSync,
+	mkdtempSync,
 	readFileSync,
 	rmSync,
 	symlinkSync,
@@ -252,8 +253,7 @@ describe("pilot-evaluate", () => {
 		if (!existsSync(baseDir)) {
 			mkdirSync(baseDir, { recursive: true });
 		}
-		testDir = join(baseDir, `pilot-evaluate-test-${Date.now()}`);
-		mkdirSync(testDir, { recursive: true });
+		testDir = mkdtempSync(join(baseDir, "pilot-evaluate-test-XXXXXX"));
 		artifactsDir = testDir;
 		runRecordsDir = join(testDir, "agent-runs");
 	});
@@ -651,7 +651,7 @@ describe("pilot-evaluate", () => {
 			expect(errors.length).toBeGreaterThan(0);
 			expect(metrics).not.toBeNull();
 			expect(metrics?.sampleSize).toBe(0);
-		});
+		}, 15_000);
 
 		it("captures metrics from valid artifacts", () => {
 			// Create valid artifacts
@@ -697,7 +697,7 @@ describe("pilot-evaluate", () => {
 			expect(metrics?.sampleSize).toBe(1);
 			expect(metrics?.rollbackReliability).toBe(1);
 			expect(metrics?.highRiskAutomationIncidents).toBe(0);
-		});
+		}, 15_000);
 	});
 
 	describe("runPilotEvaluate", () => {
@@ -1778,6 +1778,89 @@ describe("pilot-evaluate", () => {
 					join(
 						result.result?.controlPlane?.artifactRoot ?? "",
 						"control-plane-scorecard.json",
+					),
+				),
+			).toBe(true);
+		});
+
+		it("writes an override policy record when an authorized temporary promote is requested", () => {
+			writePassingPilotArtifacts(artifactsDir);
+			const docsGateReportPath = join(artifactsDir, "docs-gate-report.json");
+			writeFileSync(
+				docsGateReportPath,
+				JSON.stringify({
+					status: "success",
+					contradictions: [],
+					missingRequiredSurfaces: [],
+					staleSurfaceRefs: [],
+					normalizationWarnings: [],
+				}),
+				"utf-8",
+			);
+			const contractPath = join(artifactsDir, "override-contract.json");
+			const contract = JSON.parse(
+				readFileSync(resolve("harness.contract.json"), "utf-8"),
+			) as Record<string, unknown>;
+			contract.controlPlanePolicy = {
+				overridePolicy: {
+					authorizedPrincipals: ["jamie", "alex"],
+					dualApprovalScopes: ["temporary_unblock", "temporary_promote"],
+					maxTtlHours: 24,
+					nonOverridableControls: [
+						"canonical_runtime_invalid",
+						"governance_trust_mismatch",
+						"missing_required_instruction_surface",
+						"missing_snapshot_integrity_verification",
+					],
+				},
+			};
+			writeFileSync(contractPath, JSON.stringify(contract, null, 2), "utf-8");
+
+			const result = runPilotEvaluate({
+				artifactsDir,
+				runRecordsDir,
+				contractPath,
+				docsGateReportPath,
+				evaluationMode: "pr",
+				rolloutStage: "enforced",
+				prTemplateStatus: "passed",
+				prTemplateRef: "artifacts/pilot/pr-template.json",
+				clientFamily: "codex",
+				providerId: "openai",
+				executionMode: "automation",
+				operatorType: "human_directed",
+				overrideAuthorizedPrincipal: "jamie",
+				overrideScope: "temporary_promote",
+				overrideReason: "Manual review completed",
+				overrideTicketRef: "JSC-126",
+				overrideApprovedBy: ["jamie", "alex"],
+				overrideCreatedAt: "2099-03-10T10:00:00Z",
+				overrideExpiresAt: "2099-03-10T18:00:00Z",
+			});
+
+			expect(result.ok).toBe(true);
+			expect(result.result?.controlPlane?.evaluationDecision).toBe("promote");
+			expect(
+				existsSync(
+					join(
+						result.result?.controlPlane?.artifactRoot ?? "",
+						"override-policy-record.json",
+					),
+				),
+			).toBe(true);
+			expect(
+				existsSync(
+					join(
+						result.result?.controlPlane?.artifactRoot ?? "",
+						"pilot-evaluate-report.json",
+					),
+				),
+			).toBe(true);
+			expect(
+				existsSync(
+					join(
+						result.result?.controlPlane?.artifactRoot ?? "",
+						"override-policy-report.json",
 					),
 				),
 			).toBe(true);

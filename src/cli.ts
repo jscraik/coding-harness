@@ -35,6 +35,7 @@ import { runRiskTierCLI } from "./commands/risk-tier.js";
 import { runSearchCLI } from "./commands/search.js";
 import { runSilentErrorDetectorCLI } from "./commands/silent-error.js";
 import { printSimulateUsage, runSimulateCLI } from "./commands/simulate.js";
+import { runToolingAuditCLI } from "./commands/tooling-audit.js";
 import {
 	runUIExploreCLI,
 	runUIFastCLI,
@@ -159,6 +160,10 @@ function printUsage(): void {
 			name: "org-audit",
 			summary: "Multi-repo governance visibility and drift detection",
 		},
+		{
+			name: "tooling-audit",
+			summary: "Multi-repo tooling baseline audit for managed repo surfaces",
+		},
 	];
 
 	console.info("Usage: harness <command> [options]");
@@ -233,6 +238,17 @@ function printUsage(): void {
 	console.info("  --model-descriptor  Provider/model descriptor");
 	console.info("  --execution-mode  interactive|automation|ci");
 	console.info("  --operator-type   human_directed|automation|autonomous");
+	console.info(
+		"  --override-authorized-principal  Contract-authorized override principal",
+	);
+	console.info(
+		"  --override-scope  advisory_hold|temporary_unblock|temporary_promote",
+	);
+	console.info("  --override-reason  Human-readable override reason");
+	console.info("  --override-ticket  Ticket or approval reference");
+	console.info("  --override-approved-by  Comma-separated approver principals");
+	console.info("  --override-created-at  ISO timestamp for override creation");
+	console.info("  --override-expires-at  ISO timestamp for override expiry");
 	console.info("  --json            Output as JSON");
 	console.info("");
 	console.info("Docs Gate Options:");
@@ -246,6 +262,15 @@ function printUsage(): void {
 	console.info("  --trusted-workflow-sha  Expected workflow file SHA");
 	console.info("  --merge-queue-target-ref  Merge queue target branch");
 	console.info("  --merge-queue-base-sha    Merge queue base SHA");
+	console.info("  --json           Output as JSON");
+	console.info("");
+	console.info("Tooling Audit Options:");
+	console.info("  --path           Directory containing repos to scan");
+	console.info(
+		"  --base           Base harness.contract.json for drift comparison",
+	);
+	console.info("  --format         json|markdown|table");
+	console.info("  --include-missing  Include repos without contracts");
 	console.info("  --json           Output as JSON");
 	console.info("");
 	console.info("Linear Workflow Options:");
@@ -396,7 +421,7 @@ function printUsage(): void {
 	console.info("  --branch         Branch name (default: main)");
 	console.info("  --ruleset        Ruleset name (default: protect)");
 	console.info("  --checks         Comma-separated required status checks");
-	console.info("  --required-approvals  Required PR approvals (default: 1)");
+	console.info("  --required-approvals  Required PR approvals (default: 0)");
 	console.info("  --dry-run        Preview payload without applying");
 	console.info("  --json           Output as JSON");
 	console.info("");
@@ -448,7 +473,7 @@ function printUsage(): void {
 	console.info("  --repo           Repository name");
 	console.info("  --pr             Pull request number");
 	console.info(
-		"  --message        Custom message to post (default: '@greptile please review the latest changes')",
+		"  --message        Custom message to post (default: '@greptileai please review the latest changes')",
 	);
 	console.info("  --json           Output as JSON");
 	console.info("");
@@ -1273,6 +1298,15 @@ export function run(args: string[]): void {
 		const modelDescriptorIndex = args.indexOf("--model-descriptor");
 		const executionModeIndex = args.indexOf("--execution-mode");
 		const operatorTypeIndex = args.indexOf("--operator-type");
+		const overrideAuthorizedPrincipalIndex = args.indexOf(
+			"--override-authorized-principal",
+		);
+		const overrideScopeIndex = args.indexOf("--override-scope");
+		const overrideReasonIndex = args.indexOf("--override-reason");
+		const overrideTicketIndex = args.indexOf("--override-ticket");
+		const overrideApprovedByIndex = args.indexOf("--override-approved-by");
+		const overrideCreatedAtIndex = args.indexOf("--override-created-at");
+		const overrideExpiresAtIndex = args.indexOf("--override-expires-at");
 
 		const artifactsArg = getFlagValue(args, artifactsIndex);
 		if (!artifactsArg) {
@@ -1358,6 +1392,37 @@ export function run(args: string[]): void {
 			operatorTypeArg === "autonomous"
 		) {
 			options.operatorType = operatorTypeArg;
+		}
+		const overrideAuthorizedPrincipalArg = getFlagValue(
+			args,
+			overrideAuthorizedPrincipalIndex,
+		);
+		if (overrideAuthorizedPrincipalArg) {
+			options.overrideAuthorizedPrincipal = overrideAuthorizedPrincipalArg;
+		}
+		const overrideScopeArg = getFlagValue(args, overrideScopeIndex);
+		if (
+			overrideScopeArg === "advisory_hold" ||
+			overrideScopeArg === "temporary_unblock" ||
+			overrideScopeArg === "temporary_promote"
+		) {
+			options.overrideScope = overrideScopeArg;
+		}
+		const overrideReasonArg = getFlagValue(args, overrideReasonIndex);
+		if (overrideReasonArg) options.overrideReason = overrideReasonArg;
+		const overrideTicketArg = getFlagValue(args, overrideTicketIndex);
+		if (overrideTicketArg) options.overrideTicketRef = overrideTicketArg;
+		const overrideApprovedByArg = getFlagValue(args, overrideApprovedByIndex);
+		if (overrideApprovedByArg !== undefined) {
+			options.overrideApprovedBy = parseCsvList(overrideApprovedByArg);
+		}
+		const overrideCreatedAtArg = getFlagValue(args, overrideCreatedAtIndex);
+		if (overrideCreatedAtArg) {
+			options.overrideCreatedAt = overrideCreatedAtArg;
+		}
+		const overrideExpiresAtArg = getFlagValue(args, overrideExpiresAtIndex);
+		if (overrideExpiresAtArg) {
+			options.overrideExpiresAt = overrideExpiresAtArg;
 		}
 
 		const exitCode = runPilotEvaluateCLI(options);
@@ -1618,6 +1683,13 @@ export function run(args: string[]): void {
 		runOrgAuditCLI(args.slice(1))
 			.then((result) => process.exit(result.exitCode))
 			.catch((error) => handleFatalError("Org Audit Error", error));
+		return;
+	}
+
+	if (command === "tooling-audit") {
+		runToolingAuditCLI(args.slice(1))
+			.then((result) => process.exit(result.exitCode))
+			.catch((error) => handleFatalError("Tooling Audit Error", error));
 		return;
 	}
 

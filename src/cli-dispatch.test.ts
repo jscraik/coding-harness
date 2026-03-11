@@ -107,6 +107,10 @@ vi.mock("./commands/index-context.js", () => ({
 	runIndexContextCLI: vi.fn(async () => 60),
 }));
 
+vi.mock("./commands/tooling-audit.js", () => ({
+	runToolingAuditCLI: vi.fn(async () => ({ exitCode: 68 })),
+}));
+
 describe("cli command dispatch", () => {
 	afterEach(() => {
 		vi.restoreAllMocks();
@@ -1067,6 +1071,26 @@ describe("cli command dispatch", () => {
 		expect(exitSpy).toHaveBeenCalledWith(1);
 	});
 
+	it("dispatches tooling-audit command", async () => {
+		const { run } = await import("./cli.js");
+		const { runToolingAuditCLI } = await import("./commands/tooling-audit.js");
+
+		const exitSpy = vi
+			.spyOn(process, "exit")
+			.mockImplementation(((_code?: number) => undefined) as never);
+
+		run(["tooling-audit", "--path", "/tmp/repos", "--json"]);
+
+		await new Promise((resolve) => setTimeout(resolve, 0));
+
+		expect(vi.mocked(runToolingAuditCLI)).toHaveBeenCalledWith([
+			"--path",
+			"/tmp/repos",
+			"--json",
+		]);
+		expect(exitSpy).toHaveBeenCalledWith(68);
+	});
+
 	it("dispatches policy-gate command and ignores missing --files value", async () => {
 		const { run } = await import("./cli.js");
 		const { runPolicyGateCLI } = await import("./commands/policy-gate.js");
@@ -1281,6 +1305,20 @@ describe("cli command dispatch", () => {
 				"automation",
 				"--operator-type",
 				"automation",
+				"--override-authorized-principal",
+				"jamie",
+				"--override-scope",
+				"temporary_promote",
+				"--override-reason",
+				"Manual release approval",
+				"--override-ticket",
+				"JSC-123",
+				"--override-approved-by",
+				"jamie,alex",
+				"--override-created-at",
+				"2026-03-10T10:00:00Z",
+				"--override-expires-at",
+				"2026-03-10T18:00:00Z",
 				"--json",
 			]),
 		).toThrowError("EXIT_0");
@@ -1300,6 +1338,13 @@ describe("cli command dispatch", () => {
 			modelDescriptor: "gpt-5.4",
 			executionMode: "automation",
 			operatorType: "automation",
+			overrideAuthorizedPrincipal: "jamie",
+			overrideScope: "temporary_promote",
+			overrideReason: "Manual release approval",
+			overrideTicketRef: "JSC-123",
+			overrideApprovedBy: ["jamie", "alex"],
+			overrideCreatedAt: "2026-03-10T10:00:00Z",
+			overrideExpiresAt: "2026-03-10T18:00:00Z",
 			json: true,
 		});
 		expect(exitSpy).toHaveBeenCalledWith(0);

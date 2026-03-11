@@ -162,6 +162,42 @@ describe("validateContract", () => {
 			expect(result.success).toBe(true);
 		});
 
+		it("accepts the full non-negotiable branch protection policy surface", () => {
+			const result = validateContract({
+				version: "1.0",
+				branchProtection: {
+					requiredChecks: ["security-scan", "Greptile Review"],
+					restrictDeletions: true,
+					blockForcePushes: true,
+					requireLinearHistory: true,
+					requirePullRequest: true,
+					requiredApprovingReviewCount: 0,
+					dismissStaleReviewsOnPush: true,
+					requireConversationResolution: true,
+					requireCodeOwnerReview: false,
+					requireLastPushApproval: false,
+					requireBranchesUpToDate: true,
+					allowedMergeMethods: {
+						mergeCommit: true,
+						squash: true,
+						rebase: true,
+					},
+					codeQuality: {
+						required: true,
+						severity: "all",
+					},
+					publicCodeScanning: {
+						required: true,
+						publicOnly: true,
+						tool: "CodeQL",
+						alertsThreshold: "errors",
+						securityAlertsThreshold: "high_or_higher",
+					},
+				},
+			});
+			expect(result.success).toBe(true);
+		});
+
 		it("rejects branchProtection when requiredChecks is not an array", () => {
 			const result = validateContract({
 				version: "1.0",
@@ -191,6 +227,31 @@ describe("validateContract", () => {
 					(error) => error.path === "reviewPolicy.requiredChecks",
 				),
 			).toBe(true);
+		});
+
+		it("rejects negative requiredApprovingReviewCount", () => {
+			const result = validateContract({
+				version: "1.0",
+				branchProtection: {
+					requiredApprovingReviewCount: -1,
+				},
+			});
+			expect(result.success).toBe(false);
+			expect(result.errors[0]?.path).toBe("branchProtection");
+		});
+
+		it("rejects invalid codeQuality severity", () => {
+			const result = validateContract({
+				version: "1.0",
+				branchProtection: {
+					codeQuality: {
+						required: true,
+						severity: "critical",
+					},
+				},
+			});
+			expect(result.success).toBe(false);
+			expect(result.errors[0]?.path).toBe("branchProtection");
 		});
 
 		it("accepts when reviewPolicy.requiredChecks is a subset of branchProtection.requiredChecks", () => {
@@ -254,6 +315,86 @@ describe("validateContract", () => {
 			expect(result.success).toBe(false);
 			expect(result.errors[0]?.path).toBe("issueTrackingPolicy");
 			expect(result.errors[0]?.code).toBe(ValidationErrorCode.INVALID_VALUE);
+		});
+	});
+
+	describe("toolingPolicy", () => {
+		it("accepts the required tooling policy surface", () => {
+			const result = validateContract({
+				version: "1.4.0",
+				toolingPolicy: {
+					requiredDocumentationTerms: ["node", "pnpm"],
+					requiredBinaries: ["node", "pnpm"],
+					requiredMiseTools: [
+						{ tool: "node", version: "24.13.1" },
+						{ tool: "pnpm", version: "10.0.0" },
+					],
+					miseFilePath: ".mise.toml",
+					readinessScriptPath: "scripts/check-environment.sh",
+					codexEnvironment: {
+						path: ".codex/environments/environment.toml",
+						requiredActions: [
+							{ name: "Tools", icon: "tool" },
+							{ name: "Test", icon: "test" },
+						],
+					},
+					makefile: {
+						path: "Makefile",
+						requiredTargets: ["check", "env-check"],
+					},
+				},
+			});
+
+			expect(result.success).toBe(true);
+			expect(result.data?.toolingPolicy?.requiredMiseTools).toHaveLength(2);
+		});
+
+		it("rejects invalid tooling action icons", () => {
+			const result = validateContract({
+				version: "1.4.0",
+				toolingPolicy: {
+					requiredDocumentationTerms: ["node"],
+					requiredBinaries: ["node"],
+					requiredMiseTools: [{ tool: "node", version: "24.13.1" }],
+					miseFilePath: ".mise.toml",
+					readinessScriptPath: "scripts/check-environment.sh",
+					codexEnvironment: {
+						path: ".codex/environments/environment.toml",
+						requiredActions: [{ name: "Tools", icon: "gear" }],
+					},
+					makefile: {
+						path: "Makefile",
+						requiredTargets: ["check"],
+					},
+				},
+			});
+
+			expect(result.success).toBe(false);
+			expect(result.errors[0]?.path).toBe("toolingPolicy");
+		});
+
+		it("rejects toolingPolicy with missing mise tool version", () => {
+			const result = validateContract({
+				version: "1.4.0",
+				toolingPolicy: {
+					requiredDocumentationTerms: ["node"],
+					requiredBinaries: ["node"],
+					requiredMiseTools: [{ tool: "node" }],
+					miseFilePath: ".mise.toml",
+					readinessScriptPath: "scripts/check-environment.sh",
+					codexEnvironment: {
+						path: ".codex/environments/environment.toml",
+						requiredActions: [{ name: "Tools", icon: "tool" }],
+					},
+					makefile: {
+						path: "Makefile",
+						requiredTargets: ["check"],
+					},
+				},
+			});
+
+			expect(result.success).toBe(false);
+			expect(result.errors[0]?.path).toBe("toolingPolicy");
 		});
 	});
 
@@ -905,6 +1046,45 @@ describe("validateContract", () => {
 				},
 			});
 			expect(result.success).toBe(true);
+		});
+	});
+
+	describe("controlPlanePolicy", () => {
+		it("accepts valid controlPlane override policy", () => {
+			const result = validateContract({
+				version: "1.0",
+				controlPlanePolicy: {
+					overridePolicy: {
+						authorizedPrincipals: ["jamie", "alex"],
+						dualApprovalScopes: ["temporary_unblock", "temporary_promote"],
+						maxTtlHours: 24,
+						nonOverridableControls: [
+							"canonical_runtime_invalid",
+							"governance_trust_mismatch",
+						],
+					},
+				},
+			});
+			expect(result.success).toBe(true);
+			expect(result.data?.controlPlanePolicy?.overridePolicy.maxTtlHours).toBe(
+				24,
+			);
+		});
+
+		it("rejects controlPlane override policy with TTL above 24 hours", () => {
+			const result = validateContract({
+				version: "1.0",
+				controlPlanePolicy: {
+					overridePolicy: {
+						authorizedPrincipals: ["jamie"],
+						dualApprovalScopes: ["temporary_promote"],
+						maxTtlHours: 48,
+						nonOverridableControls: ["canonical_runtime_invalid"],
+					},
+				},
+			});
+			expect(result.success).toBe(false);
+			expect(result.errors[0]?.path).toBe("controlPlanePolicy");
 		});
 	});
 });

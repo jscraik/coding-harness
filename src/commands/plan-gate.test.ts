@@ -1,10 +1,11 @@
+import { randomUUID } from "node:crypto";
 import { existsSync, mkdirSync, rmSync, writeFileSync } from "node:fs";
-import { join } from "node:path";
+import { join, resolve } from "node:path";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { EXIT_CODES, runPlanGate } from "../lib/plan-gate/detector.js";
 import { runPlanGateCLI } from "./plan-gate.js";
 
-const TEST_DIR = "artifacts/plans-gate-test";
+let testDir = "";
 
 // Helper to create a plan for testing
 function createTestPlan(
@@ -46,25 +47,26 @@ ${content}
 
 describe("plan-gate command", () => {
 	beforeEach(() => {
-		if (!existsSync(TEST_DIR)) {
-			mkdirSync(TEST_DIR, { recursive: true });
-		}
+		const baseDir = resolve("artifacts");
+		mkdirSync(baseDir, { recursive: true });
+		testDir = join(baseDir, `plans-gate-test-${randomUUID()}`);
+		mkdirSync(testDir, { recursive: true });
 		// Clean up plans directory
-		const plansDir = join(TEST_DIR, "docs/plans");
+		const plansDir = join(testDir, "docs/plans");
 		if (existsSync(plansDir)) {
-			rmSync(plansDir, { recursive: true });
+			rmSync(plansDir, { recursive: true, force: true });
 		}
 	});
 
 	afterEach(() => {
-		if (existsSync(TEST_DIR)) {
-			rmSync(TEST_DIR, { recursive: true });
+		if (existsSync(testDir)) {
+			rmSync(testDir, { recursive: true, force: true });
 		}
 	});
 
 	describe("runPlanGate", () => {
 		it("fails when no plans exist", () => {
-			const result = runPlanGate({ plansPath: join(TEST_DIR, "docs/plans") });
+			const result = runPlanGate({ plansPath: join(testDir, "docs/plans") });
 
 			expect(result.passed).toBe(false);
 			expect(result.errors).toHaveLength(1);
@@ -78,10 +80,10 @@ describe("plan-gate command", () => {
 				"feature",
 				"draft",
 				"## Implementation Steps\n\n- Step 1\n\n## Acceptance Criteria\n\n- Criterion 1",
-				TEST_DIR,
+				testDir,
 			);
 
-			const result = runPlanGate({ plansPath: join(TEST_DIR, "docs/plans") });
+			const result = runPlanGate({ plansPath: join(testDir, "docs/plans") });
 
 			expect(result.passed).toBe(true);
 			expect(result.artifacts).toHaveLength(1);
@@ -95,7 +97,7 @@ describe("plan-gate command", () => {
 				"feature",
 				"draft",
 				"## Implementation Steps\n\n## Acceptance Criteria",
-				TEST_DIR,
+				testDir,
 			);
 			createTestPlan(
 				"Bug Fix B",
@@ -103,11 +105,11 @@ describe("plan-gate command", () => {
 				"bugfix",
 				"draft",
 				"## Implementation Steps\n\n## Acceptance Criteria",
-				TEST_DIR,
+				testDir,
 			);
 
 			const result = runPlanGate({
-				plansPath: join(TEST_DIR, "docs/plans"),
+				plansPath: join(testDir, "docs/plans"),
 				type: "bugfix",
 			});
 
@@ -123,12 +125,12 @@ describe("plan-gate command", () => {
 				"feature",
 				"draft",
 				"## Implementation Steps\n\n## Acceptance Criteria",
-				TEST_DIR,
+				testDir,
 				// No origin
 			);
 
 			const result = runPlanGate({
-				plansPath: join(TEST_DIR, "docs/plans"),
+				plansPath: join(testDir, "docs/plans"),
 				requireOrigin: true,
 			});
 
@@ -143,12 +145,12 @@ describe("plan-gate command", () => {
 				"feature",
 				"draft",
 				"## Implementation Steps\n\n## Acceptance Criteria",
-				TEST_DIR,
+				testDir,
 				"docs/brainstorms/2026-02-20-test-feature-brainstorm.md",
 			);
 
 			const result = runPlanGate({
-				plansPath: join(TEST_DIR, "docs/plans"),
+				plansPath: join(testDir, "docs/plans"),
 				requireOrigin: true,
 			});
 
@@ -163,11 +165,11 @@ describe("plan-gate command", () => {
 				"feature",
 				"draft",
 				"# Just a title", // Missing required sections
-				TEST_DIR,
+				testDir,
 			);
 
 			const result = runPlanGate({
-				plansPath: join(TEST_DIR, "docs/plans"),
+				plansPath: join(testDir, "docs/plans"),
 				strict: true,
 			});
 
@@ -186,11 +188,11 @@ describe("plan-gate command", () => {
 				"feature",
 				"approved", // Non-draft status
 				"## Implementation Steps\n\n## Acceptance Criteria",
-				TEST_DIR,
+				testDir,
 			);
 
 			const result = runPlanGate({
-				plansPath: join(TEST_DIR, "docs/plans"),
+				plansPath: join(testDir, "docs/plans"),
 				maxAge: 30,
 			});
 
@@ -209,11 +211,11 @@ describe("plan-gate command", () => {
 				"feature",
 				"approved",
 				"## Implementation Steps\n\n## Acceptance Criteria",
-				TEST_DIR,
+				testDir,
 			);
 
 			const result = runPlanGate({
-				plansPath: join(TEST_DIR, "docs/plans"),
+				plansPath: join(testDir, "docs/plans"),
 				maxAge: Number.NaN,
 			});
 
@@ -232,11 +234,11 @@ describe("plan-gate command", () => {
 				"feature",
 				"draft", // Draft status - age check skipped
 				"## Implementation Steps\n\n## Acceptance Criteria",
-				TEST_DIR,
+				testDir,
 			);
 
 			const result = runPlanGate({
-				plansPath: join(TEST_DIR, "docs/plans"),
+				plansPath: join(testDir, "docs/plans"),
 				maxAge: 30,
 			});
 
@@ -256,11 +258,11 @@ describe("plan-gate command", () => {
 				"feature",
 				"draft",
 				"## Implementation Steps\n\n## Acceptance Criteria",
-				TEST_DIR,
+				testDir,
 			);
 
 			const exitCode = runPlanGateCLI({
-				plansPath: join(TEST_DIR, "docs/plans"),
+				plansPath: join(testDir, "docs/plans"),
 				json: true,
 			});
 
@@ -275,7 +277,7 @@ describe("plan-gate command", () => {
 
 		it("returns PLAN_MISSING when no plans found", () => {
 			const exitCode = runPlanGateCLI({
-				plansPath: join(TEST_DIR, "docs/plans"),
+				plansPath: join(testDir, "docs/plans"),
 			});
 
 			expect(exitCode).toBe(EXIT_CODES.PLAN_MISSING);
@@ -288,11 +290,11 @@ describe("plan-gate command", () => {
 				"feature",
 				"draft",
 				"## Implementation Steps\n\n## Acceptance Criteria",
-				TEST_DIR,
+				testDir,
 			);
 
 			const exitCode = runPlanGateCLI({
-				plansPath: join(TEST_DIR, "docs/plans"),
+				plansPath: join(testDir, "docs/plans"),
 				requireOrigin: true,
 			});
 

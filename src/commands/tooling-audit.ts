@@ -1,0 +1,693 @@
+import { existsSync, readFileSync, statSync } from "node:fs";
+import { dirname, join, resolve } from "node:path";
+import { loadContract } from "../lib/contract/loader.js";
+import {
+	DEFAULT_CONTRACT,
+	type HarnessContract,
+} from "../lib/contract/types.js";
+import { PathTraversalError, validatePath } from "../lib/input/validator.js";
+import { type CliResult, err, ok } from "../lib/result/types.js";
+import { findRepositories } from "./org-audit.js";
+
+export const EXIT_CODES = {
+	SUCCESS: 0,
+	NO_REPOS_FOUND: 1,
+	SCAN_ERRORS: 2,
+	DRIFT_DETECTED: 3,
+	INVALID_ARGUMENT: 4,
+} as const;
+
+export type OutputFormat = "json" | "markdown" | "table";
+export type FindingSeverity = "critical" | "warning" | "info";
+
+export interface ToolingAuditFinding {
+	path: string;
+	severity: FindingSeverity;
+	description: string;
+	expected?: unknown;
+	actual?: unknown;
+}
+
+export interface ToolingAuditRepoResult {
+	path: string;
+	status: "success" | "error" | "no-contract";
+	findings: ToolingAuditFinding[];
+	error?: string | undefined;
+}
+
+export interface ToolingAuditOptions {
+	path: string;
+	baseContract?: HarnessContract | undefined;
+	format: OutputFormat;
+	includeMissing?: boolean | undefined;
+}
+
+export interface ToolingAuditResult {
+	totalRepos: number;
+	successfulRepos: number;
+	errors: number;
+	noContract: number;
+	findings: {
+		total: number;
+		critical: number;
+		warning: number;
+		info: number;
+	};
+	results: ToolingAuditRepoResult[];
+}
+
+function validatePathInput(
+	rawPath: string,
+	field: string,
+): CliResult<{ absolutePath: string; safePath: string }> {
+	const absolutePath = resolve(rawPath);
+	try {
+		const safePath = validatePath(dirname(absolutePath), absolutePath);
+		return ok({ absolutePath, safePath });
+	} catch (error) {
+		if (error instanceof PathTraversalError) {
+			return err({
+				code: "VALIDATION_ERROR",
+				message: `${field} contains an unsafe path traversal sequence`,
+			});
+		}
+		return err({
+			code: "VALIDATION_ERROR",
+			message: `${field} is not a valid path`,
+		});
+	}
+}
+
+function getRawJson(content: string): Record<string, unknown> {
+	const parsed = JSON.parse(content) as unknown;
+	if (!parsed || typeof parsed !== "object" || Array.isArray(parsed)) {
+		throw new Error("Contract root must be an object");
+	}
+	return parsed as Record<string, unknown>;
+}
+
+function readTextFile(path: string): string | null {
+	if (!existsSync(path)) {
+		return null;
+	}
+	return readFileSync(path, "utf-8");
+}
+
+function collectMisePins(content: string): Map<string, string> {
+	const pins = new Map<string, string>();
+	const regex = /^\s*(?:"([^"]+)"|([A-Za-z0-9:@._/-]+))\s*=\s*"([^"]+)"\s*$/gm;
+	let match = regex.exec(content);
+	while (match !== null) {
+		const tool = match[1] ?? match[2];
+		const version = match[3];
+		if (tool && version) {
+			pins.set(tool, version);
+		}
+		match = regex.exec(content);
+	}
+	return pins;
+}
+
+function collectCodexActionPairs(content: string): Set<string> {
+	const pairs = new Set<string>();
+	const blockRegex = /\[\[actions\]\][\s\S]*?(?=\n\[\[actions\]\]|$)/g;
+	for (const block of content.match(blockRegex) ?? []) {
+		const name = /\nname = "([^"]+)"/.exec(`\n${block}`)?.[1];
+		const icon = /\nicon = "([^"]+)"/.exec(`\n${block}`)?.[1];
+		if (name && icon) {
+			pairs.add(`${name}|${icon}`);
+		}
+	}
+	return pairs;
+}
+
+function collectMakeTargets(content: string): Set<string> {
+	const targets = new Set<string>();
+	const regex = /^([A-Za-z0-9_.-]+):/gm;
+	let match = regex.exec(content);
+	while (match !== null) {
+		const target = match[1];
+		if (target) {
+			targets.add(target);
+		}
+		match = regex.exec(content);
+	}
+	return targets;
+}
+
+function addMissingFileFinding(
+	findings: ToolingAuditFinding[],
+	path: string,
+	label: string,
+): void {
+	findings.push({
+		path,
+		severity: "critical",
+		description: `Missing required ${label}: ${path}`,
+	});
+}
+
+function auditReadinessScript(
+	findings: ToolingAuditFinding[],
+	repoPath: string,
+	contract: HarnessContract,
+): void {
+	const toolingPolicy =
+		contract.toolingPolicy ?? DEFAULT_CONTRACT.toolingPolicy;
+	if (!toolingPolicy) {
+		return;
+	}
+	const scriptPath = join(repoPath, toolingPolicy.readinessScriptPath);
+	const content = readTextFile(scriptPath);
+	if (content === null) {
+		addMissingFileFinding(
+			findings,
+			toolingPolicy.readinessScriptPath,
+			"readiness script",
+		);
+		return;
+	}
+
+	for (const term of toolingPolicy.requiredDocumentationTerms) {
+		if (!content.includes(`"${term}"`)) {
+			findings.push({
+				path: "toolingPolicy.requiredDocumentationTerms",
+				severity: "warning",
+				description: `Readiness script no longer enforces tooling inventory term '${term}'`,
+				expected: term,
+				actual: toolingPolicy.readinessScriptPath,
+			});
+		}
+	}
+
+	for (const binary of toolingPolicy.requiredBinaries) {
+		if (!content.includes(`"${binary}"`)) {
+			findings.push({
+				path: "toolingPolicy.requiredBinaries",
+				severity: "critical",
+				description: `Readiness script no longer enforces binary '${binary}'`,
+				expected: binary,
+				actual: toolingPolicy.readinessScriptPath,
+			});
+		}
+	}
+
+	for (const action of toolingPolicy.codexEnvironment.requiredActions) {
+		const pair = `${action.name}|${action.icon}`;
+		if (!content.includes(`"${pair}"`)) {
+			findings.push({
+				path: "toolingPolicy.codexEnvironment.requiredActions",
+				severity: "warning",
+				description: `Readiness script no longer checks Codex action '${pair}'`,
+				expected: pair,
+				actual: toolingPolicy.readinessScriptPath,
+			});
+		}
+	}
+
+	for (const target of toolingPolicy.makefile.requiredTargets) {
+		if (!content.includes(`"${target}"`)) {
+			findings.push({
+				path: "toolingPolicy.makefile.requiredTargets",
+				severity: "warning",
+				description: `Readiness script no longer checks Makefile target '${target}'`,
+				expected: target,
+				actual: toolingPolicy.readinessScriptPath,
+			});
+		}
+	}
+}
+
+function auditMise(
+	findings: ToolingAuditFinding[],
+	repoPath: string,
+	contract: HarnessContract,
+): void {
+	const toolingPolicy =
+		contract.toolingPolicy ?? DEFAULT_CONTRACT.toolingPolicy;
+	if (!toolingPolicy) {
+		return;
+	}
+	const misePath = join(repoPath, toolingPolicy.miseFilePath);
+	const content = readTextFile(misePath);
+	if (content === null) {
+		addMissingFileFinding(findings, toolingPolicy.miseFilePath, "mise file");
+		return;
+	}
+
+	const pins = collectMisePins(content);
+	for (const tool of toolingPolicy.requiredMiseTools) {
+		const actualVersion = pins.get(tool.tool);
+		if (!actualVersion) {
+			findings.push({
+				path: "toolingPolicy.requiredMiseTools",
+				severity: "critical",
+				description: `Missing mise tool pin for '${tool.tool}'`,
+				expected: tool.version,
+			});
+			continue;
+		}
+		if (actualVersion !== tool.version) {
+			findings.push({
+				path: `toolingPolicy.requiredMiseTools.${tool.tool}`,
+				severity: "warning",
+				description: `Mise pin drift for '${tool.tool}'`,
+				expected: tool.version,
+				actual: actualVersion,
+			});
+		}
+	}
+}
+
+function auditCodexEnvironment(
+	findings: ToolingAuditFinding[],
+	repoPath: string,
+	contract: HarnessContract,
+): void {
+	const toolingPolicy =
+		contract.toolingPolicy ?? DEFAULT_CONTRACT.toolingPolicy;
+	if (!toolingPolicy) {
+		return;
+	}
+	const envPath = join(repoPath, toolingPolicy.codexEnvironment.path);
+	const content = readTextFile(envPath);
+	if (content === null) {
+		addMissingFileFinding(
+			findings,
+			toolingPolicy.codexEnvironment.path,
+			"Codex environment file",
+		);
+		return;
+	}
+
+	const pairs = collectCodexActionPairs(content);
+	for (const action of toolingPolicy.codexEnvironment.requiredActions) {
+		const pair = `${action.name}|${action.icon}`;
+		if (!pairs.has(pair)) {
+			findings.push({
+				path: "toolingPolicy.codexEnvironment.requiredActions",
+				severity: "critical",
+				description: `Missing Codex action mapping '${pair}'`,
+				expected: pair,
+			});
+		}
+	}
+}
+
+function auditMakefile(
+	findings: ToolingAuditFinding[],
+	repoPath: string,
+	contract: HarnessContract,
+): void {
+	const toolingPolicy =
+		contract.toolingPolicy ?? DEFAULT_CONTRACT.toolingPolicy;
+	if (!toolingPolicy) {
+		return;
+	}
+	const makefilePath = join(repoPath, toolingPolicy.makefile.path);
+	const content = readTextFile(makefilePath);
+	if (content === null) {
+		addMissingFileFinding(findings, toolingPolicy.makefile.path, "Makefile");
+		return;
+	}
+
+	const targets = collectMakeTargets(content);
+	for (const target of toolingPolicy.makefile.requiredTargets) {
+		if (!targets.has(target)) {
+			findings.push({
+				path: "toolingPolicy.makefile.requiredTargets",
+				severity: "warning",
+				description: `Missing Makefile target '${target}'`,
+				expected: target,
+			});
+		}
+	}
+}
+
+function auditBaseDrift(
+	findings: ToolingAuditFinding[],
+	contract: HarnessContract,
+	baseContract: HarnessContract,
+): void {
+	const basePolicy = baseContract.toolingPolicy;
+	const actualPolicy = contract.toolingPolicy;
+	if (!basePolicy || !actualPolicy) {
+		return;
+	}
+
+	const actualDocs = new Set(actualPolicy.requiredDocumentationTerms);
+	for (const term of basePolicy.requiredDocumentationTerms) {
+		if (!actualDocs.has(term)) {
+			findings.push({
+				path: "toolingPolicy.requiredDocumentationTerms",
+				severity: "warning",
+				description: `Contract drift: missing tooling documentation term '${term}'`,
+				expected: term,
+			});
+		}
+	}
+
+	const actualBins = new Set(actualPolicy.requiredBinaries);
+	for (const binary of basePolicy.requiredBinaries) {
+		if (!actualBins.has(binary)) {
+			findings.push({
+				path: "toolingPolicy.requiredBinaries",
+				severity: "critical",
+				description: `Contract drift: missing required binary '${binary}'`,
+				expected: binary,
+			});
+		}
+	}
+}
+
+function summarizeFindings(
+	results: ToolingAuditRepoResult[],
+): ToolingAuditResult["findings"] {
+	let critical = 0;
+	let warning = 0;
+	let info = 0;
+	for (const result of results) {
+		for (const finding of result.findings) {
+			if (finding.severity === "critical") critical += 1;
+			if (finding.severity === "warning") warning += 1;
+			if (finding.severity === "info") info += 1;
+		}
+	}
+	return {
+		total: critical + warning + info,
+		critical,
+		warning,
+		info,
+	};
+}
+
+async function auditRepository(
+	repoPath: string,
+	baseContract?: HarnessContract,
+	includeMissing = false,
+): Promise<ToolingAuditRepoResult> {
+	const contractPath = join(repoPath, "harness.contract.json");
+	if (!existsSync(contractPath)) {
+		return includeMissing
+			? { path: repoPath, status: "no-contract", findings: [] }
+			: {
+					path: repoPath,
+					status: "error",
+					findings: [],
+					error: "No harness.contract.json found",
+				};
+	}
+
+	let rawContract: Record<string, unknown>;
+	try {
+		rawContract = getRawJson(readFileSync(contractPath, "utf-8"));
+	} catch (error) {
+		return {
+			path: repoPath,
+			status: "error",
+			findings: [],
+			error:
+				error instanceof Error ? error.message : "Failed to parse contract",
+		};
+	}
+
+	let contract: HarnessContract;
+	try {
+		contract = loadContract(contractPath, repoPath);
+	} catch (error) {
+		return {
+			path: repoPath,
+			status: "error",
+			findings: [],
+			error: error instanceof Error ? error.message : "Failed to load contract",
+		};
+	}
+
+	const findings: ToolingAuditFinding[] = [];
+	if (!Object.prototype.hasOwnProperty.call(rawContract, "toolingPolicy")) {
+		findings.push({
+			path: "toolingPolicy",
+			severity: "warning",
+			description:
+				"Contract relies on implicit tooling defaults; run 'harness init --update' to persist toolingPolicy explicitly",
+		});
+	}
+
+	auditReadinessScript(findings, repoPath, contract);
+	auditMise(findings, repoPath, contract);
+	auditCodexEnvironment(findings, repoPath, contract);
+	auditMakefile(findings, repoPath, contract);
+	if (baseContract) {
+		auditBaseDrift(findings, contract, baseContract);
+	}
+
+	return {
+		path: repoPath,
+		status: "success",
+		findings,
+	};
+}
+
+export async function runToolingAudit(
+	options: ToolingAuditOptions,
+): Promise<CliResult<{ result: ToolingAuditResult; exitCode: number }>> {
+	const pathValidation = validatePathInput(options.path, "path");
+	if (!pathValidation.ok) {
+		return err(pathValidation.error);
+	}
+	const validatedPath = pathValidation.value.safePath;
+	const repos = findRepositories(validatedPath);
+	if (repos.length === 0) {
+		return ok({
+			result: {
+				totalRepos: 0,
+				successfulRepos: 0,
+				errors: 0,
+				noContract: 0,
+				findings: { total: 0, critical: 0, warning: 0, info: 0 },
+				results: [],
+			},
+			exitCode: EXIT_CODES.NO_REPOS_FOUND,
+		});
+	}
+
+	const results = await Promise.all(
+		repos.map((repo) =>
+			auditRepository(repo, options.baseContract, options.includeMissing),
+		),
+	);
+	const findings = summarizeFindings(results);
+	const errors = results.filter((result) => result.status === "error").length;
+	const noContract = results.filter(
+		(result) => result.status === "no-contract",
+	).length;
+	const successfulRepos = results.filter(
+		(result) => result.status === "success",
+	).length;
+	const result: ToolingAuditResult = {
+		totalRepos: repos.length,
+		successfulRepos,
+		errors,
+		noContract,
+		findings,
+		results,
+	};
+
+	let exitCode: (typeof EXIT_CODES)[keyof typeof EXIT_CODES] =
+		EXIT_CODES.SUCCESS;
+	if (errors > 0) {
+		exitCode = EXIT_CODES.SCAN_ERRORS;
+	} else if (findings.critical > 0 || findings.warning > 0) {
+		exitCode = EXIT_CODES.DRIFT_DETECTED;
+	}
+
+	return ok({ result, exitCode });
+}
+
+function formatJson(result: ToolingAuditResult): string {
+	return JSON.stringify(result, null, 2);
+}
+
+function formatMarkdown(result: ToolingAuditResult): string {
+	const lines: string[] = [];
+	lines.push("# Tooling Audit Report", "", "## Summary", "");
+	lines.push(`- **Total Repositories**: ${result.totalRepos}`);
+	lines.push(`- **Successful**: ${result.successfulRepos}`);
+	lines.push(`- **Errors**: ${result.errors}`);
+	lines.push(`- **No Contract**: ${result.noContract}`);
+	lines.push(`- **Critical Findings**: ${result.findings.critical}`);
+	lines.push(`- **Warning Findings**: ${result.findings.warning}`);
+	lines.push("");
+	for (const repo of result.results) {
+		lines.push(`## ${repo.path}`, "");
+		if (repo.status === "error") {
+			lines.push(`- Error: ${repo.error ?? "Unknown error"}`, "");
+			continue;
+		}
+		if (repo.status === "no-contract") {
+			lines.push("- No harness contract found.", "");
+			continue;
+		}
+		if (repo.findings.length === 0) {
+			lines.push("- No tooling drift detected.", "");
+			continue;
+		}
+		for (const finding of repo.findings) {
+			lines.push(`- [${finding.severity}] ${finding.description}`);
+		}
+		lines.push("");
+	}
+	return lines.join("\n");
+}
+
+function formatTable(result: ToolingAuditResult): string {
+	const lines: string[] = [];
+	lines.push("Tooling Audit Report", "====================", "");
+	lines.push(`Total Repositories: ${result.totalRepos}`);
+	lines.push(`Successful: ${result.successfulRepos}`);
+	lines.push(`Errors: ${result.errors}`);
+	lines.push(`No Contract: ${result.noContract}`);
+	lines.push(`Critical Findings: ${result.findings.critical}`);
+	lines.push(`Warning Findings: ${result.findings.warning}`);
+	lines.push("");
+	for (const repo of result.results) {
+		lines.push(`${repo.path}:`);
+		if (repo.status === "error") {
+			lines.push(`  ❌ ${repo.error ?? "Unknown error"}`);
+			lines.push("");
+			continue;
+		}
+		if (repo.status === "no-contract") {
+			lines.push("  ℹ️ no harness contract found");
+			lines.push("");
+			continue;
+		}
+		if (repo.findings.length === 0) {
+			lines.push("  ✅ no tooling drift detected");
+			lines.push("");
+			continue;
+		}
+		for (const finding of repo.findings) {
+			const icon =
+				finding.severity === "critical"
+					? "❌"
+					: finding.severity === "warning"
+						? "⚠️"
+						: "ℹ️";
+			lines.push(`  ${icon} [${finding.severity}] ${finding.description}`);
+		}
+		lines.push("");
+	}
+	return lines.join("\n");
+}
+
+export async function runToolingAuditCLI(args: string[]): Promise<{
+	exitCode: number;
+	output?: string;
+}> {
+	const flagsWithValues = new Set(["--path", "--base", "--format"]);
+	const booleanFlags = new Set(["--include-missing", "--json"]);
+	for (let i = 0; i < args.length; i += 1) {
+		const arg = args[i];
+		if (!arg) continue;
+		if (!arg.startsWith("-")) {
+			console.error(`Error: Unexpected positional argument '${arg}'`);
+			return { exitCode: EXIT_CODES.INVALID_ARGUMENT };
+		}
+		if (flagsWithValues.has(arg)) {
+			const next = args[i + 1];
+			if (!next || next.startsWith("-")) {
+				console.error(`Error: ${arg} requires a value`);
+				return { exitCode: EXIT_CODES.INVALID_ARGUMENT };
+			}
+			i += 1;
+			continue;
+		}
+		if (booleanFlags.has(arg)) {
+			continue;
+		}
+		console.error(`Error: Unknown flag '${arg}'`);
+		return { exitCode: EXIT_CODES.INVALID_ARGUMENT };
+	}
+
+	const pathIndex = args.indexOf("--path");
+	const baseIndex = args.indexOf("--base");
+	const formatIndex = args.indexOf("--format");
+	const includeMissing = args.includes("--include-missing");
+	const jsonFlag = args.includes("--json");
+	let scanPath = pathIndex === -1 ? process.cwd() : args[pathIndex + 1];
+	if (!scanPath) {
+		scanPath = process.cwd();
+	}
+	const pathValidation = validatePathInput(scanPath, "--path");
+	if (!pathValidation.ok) {
+		console.error(`Error: ${pathValidation.error.message}`);
+		return { exitCode: EXIT_CODES.INVALID_ARGUMENT };
+	}
+	scanPath = pathValidation.value.absolutePath;
+	if (!existsSync(scanPath)) {
+		console.error(`Error: Path does not exist: ${scanPath}`);
+		return { exitCode: EXIT_CODES.INVALID_ARGUMENT };
+	}
+	if (!statSync(scanPath).isDirectory()) {
+		console.error(`Error: Path is not a directory: ${scanPath}`);
+		return { exitCode: EXIT_CODES.INVALID_ARGUMENT };
+	}
+
+	let baseContract: HarnessContract | undefined;
+	if (baseIndex !== -1) {
+		const rawBasePath = args[baseIndex + 1];
+		if (!rawBasePath) {
+			console.error("Error: --base requires a path argument");
+			return { exitCode: EXIT_CODES.INVALID_ARGUMENT };
+		}
+		const baseValidation = validatePathInput(rawBasePath, "--base");
+		if (!baseValidation.ok) {
+			console.error(`Error: ${baseValidation.error.message}`);
+			return { exitCode: EXIT_CODES.INVALID_ARGUMENT };
+		}
+		try {
+			baseContract = loadContract(
+				baseValidation.value.safePath,
+				dirname(baseValidation.value.safePath),
+			);
+		} catch (error) {
+			const message = error instanceof Error ? error.message : "Unknown error";
+			console.error(`Error loading base contract: ${message}`);
+			return { exitCode: EXIT_CODES.INVALID_ARGUMENT };
+		}
+	}
+
+	let format: OutputFormat = "table";
+	if (jsonFlag || formatIndex !== -1) {
+		const formatArg = jsonFlag ? "json" : args[formatIndex + 1];
+		if (
+			formatArg === "json" ||
+			formatArg === "markdown" ||
+			formatArg === "table"
+		) {
+			format = formatArg;
+		}
+	}
+
+	const auditResult = await runToolingAudit({
+		path: scanPath,
+		baseContract,
+		format,
+		includeMissing,
+	});
+	if (!auditResult.ok) {
+		console.error(`Error: ${auditResult.error.message}`);
+		return { exitCode: EXIT_CODES.INVALID_ARGUMENT };
+	}
+
+	const { result, exitCode } = auditResult.value;
+	const output =
+		format === "json"
+			? formatJson(result)
+			: format === "markdown"
+				? formatMarkdown(result)
+				: formatTable(result);
+	console.info(output);
+	return { exitCode, output };
+}

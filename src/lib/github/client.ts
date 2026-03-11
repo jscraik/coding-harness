@@ -113,6 +113,12 @@ export interface RulesetPayload {
 	rules: RulesetRule[];
 }
 
+export interface RepositoryMergeSettings {
+	allowMergeCommit: boolean;
+	allowSquashMerge: boolean;
+	allowRebaseMerge: boolean;
+}
+
 function createOctokit(token: string): InstanceType<typeof MyOctokit> {
 	return new MyOctokit({
 		auth: token,
@@ -351,6 +357,22 @@ export class GitHubClient {
 		}
 	}
 
+	async getRepositoryVisibility(): Promise<string> {
+		try {
+			const response = await this.octokit.repos.get({
+				owner: this.owner,
+				repo: this.repo,
+			});
+			const visibility = response.data.visibility;
+			if (typeof visibility === "string" && visibility.trim().length > 0) {
+				return visibility;
+			}
+			return response.data.private ? "private" : "public";
+		} catch (error) {
+			throw this.classifyError(error);
+		}
+	}
+
 	async listIssueComments(issueNumber: number): Promise<Comment[]> {
 		try {
 			const response = await this.octokit.paginate(
@@ -432,6 +454,24 @@ export class GitHubClient {
 				),
 			);
 			return response.data as Ruleset;
+		} catch (error) {
+			throw this.classifyError(error);
+		}
+	}
+
+	async updateRepositoryMergeSettings(
+		settings: RepositoryMergeSettings,
+	): Promise<void> {
+		try {
+			await mutationQueue.execute(() =>
+				this.octokit.repos.update({
+					owner: this.owner,
+					repo: this.repo,
+					allow_merge_commit: settings.allowMergeCommit,
+					allow_squash_merge: settings.allowSquashMerge,
+					allow_rebase_merge: settings.allowRebaseMerge,
+				}),
+			);
 		} catch (error) {
 			throw this.classifyError(error);
 		}

@@ -98,7 +98,7 @@ describe("request-greptile-review", () => {
 			const mockClient = vi.mocked(GitHubClient).mock.results[0]?.value;
 			expect(mockClient?.createIssueComment).toHaveBeenCalledWith(
 				1,
-				"@greptile please review the latest changes",
+				"@greptileai please review the latest changes",
 			);
 		});
 
@@ -110,7 +110,7 @@ describe("request-greptile-review", () => {
 				owner: "test-owner",
 				repo: "test-repo",
 				pr: 1,
-				message: "@greptile please review this PR for security issues",
+				message: "@greptileai please review this PR for security issues",
 			});
 
 			expect(result.ok).toBe(true);
@@ -118,7 +118,7 @@ describe("request-greptile-review", () => {
 			const mockClient = vi.mocked(GitHubClient).mock.results[0]?.value;
 			expect(mockClient?.createIssueComment).toHaveBeenCalledWith(
 				1,
-				"@greptile please review this PR for security issues",
+				"@greptileai please review this PR for security issues",
 			);
 		});
 	});

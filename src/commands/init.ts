@@ -23,7 +23,17 @@ import { sanitizeError } from "../lib/input/sanitize.js";
 import {
 	BRANCH_PROTECTION_REQUIRED_CHECKS,
 	REVIEW_POLICY_REQUIRED_CHECKS,
+	formatRequiredChecksBulleted,
 } from "../lib/policy/required-checks.js";
+import {
+	PROJECT_MISE_REQUIRED_TOOLS,
+	REQUIRED_CODEX_ACTION_PAIRS,
+	REQUIRED_CODEX_TOOL_ACTIONS,
+	REQUIRED_MAKEFILE_TARGETS,
+	REQUIRED_TOOLING_BINARIES,
+	REQUIRED_TOOLING_DOC_TERMS,
+	TOOLING_CODEX_ENVIRONMENT_PATH,
+} from "../lib/policy/tooling-baseline.js";
 import { getVersion } from "../lib/version.js";
 
 // Exit codes for programmatic consumption
@@ -115,6 +125,53 @@ export interface ContractSchema {
 		| undefined;
 	branchProtection?: {
 		requiredChecks?: string[];
+		restrictDeletions?: boolean;
+		blockForcePushes?: boolean;
+		requireLinearHistory?: boolean;
+		requirePullRequest?: boolean;
+		requiredApprovingReviewCount?: number;
+		dismissStaleReviewsOnPush?: boolean;
+		requireConversationResolution?: boolean;
+		requireCodeOwnerReview?: boolean;
+		requireLastPushApproval?: boolean;
+		requireBranchesUpToDate?: boolean;
+		allowedMergeMethods?: {
+			mergeCommit?: boolean;
+			squash?: boolean;
+			rebase?: boolean;
+		};
+		codeQuality?: {
+			required?: boolean;
+			severity?: unknown;
+		};
+		publicCodeScanning?: {
+			required?: boolean;
+			publicOnly?: boolean;
+			tool?: unknown;
+			alertsThreshold?: unknown;
+			securityAlertsThreshold?: unknown;
+		};
+	};
+	toolingPolicy?: {
+		requiredDocumentationTerms?: string[];
+		requiredBinaries?: string[];
+		requiredMiseTools?: Array<{
+			tool?: unknown;
+			version?: unknown;
+		}>;
+		miseFilePath?: unknown;
+		readinessScriptPath?: unknown;
+		codexEnvironment?: {
+			path?: unknown;
+			requiredActions?: Array<{
+				name?: unknown;
+				icon?: unknown;
+			}>;
+		};
+		makefile?: {
+			path?: unknown;
+			requiredTargets?: string[];
+		};
 	};
 	issueTrackingPolicy?: unknown;
 	evidencePolicy?: {
@@ -170,7 +227,7 @@ export type MigrationResultType =
 	| { ok: false; error: InitErrorOutput };
 
 // Current latest schema version (must match template)
-export const CURRENT_SCHEMA_VERSION = "1.3.0";
+export const CURRENT_SCHEMA_VERSION = "1.4.0";
 
 function addSchemaDefaults(contract: ContractSchema): ContractSchema {
 	return {
@@ -211,8 +268,77 @@ function addSchemaDefaults(contract: ContractSchema): ContractSchema {
 			contract.gapCasePolicy ??
 			(DEFAULT_CONTRACT.gapCasePolicy as HarnessContract["gapCasePolicy"]),
 		branchProtection:
-			contract.branchProtection ??
-			(DEFAULT_CONTRACT.branchProtection as HarnessContract["branchProtection"]),
+			contract.branchProtection === undefined
+				? (DEFAULT_CONTRACT.branchProtection as HarnessContract["branchProtection"])
+				: ({
+						...(DEFAULT_CONTRACT.branchProtection as HarnessContract["branchProtection"]),
+						...contract.branchProtection,
+						allowedMergeMethods:
+							contract.branchProtection.allowedMergeMethods === undefined
+								? (DEFAULT_CONTRACT.branchProtection
+										?.allowedMergeMethods as HarnessContract["branchProtection"] extends {
+										allowedMergeMethods?: infer T;
+									}
+										? T
+										: never)
+								: {
+										...(DEFAULT_CONTRACT.branchProtection
+											?.allowedMergeMethods ?? {}),
+										...contract.branchProtection.allowedMergeMethods,
+									},
+						codeQuality:
+							contract.branchProtection.codeQuality === undefined
+								? DEFAULT_CONTRACT.branchProtection?.codeQuality
+								: {
+										...(DEFAULT_CONTRACT.branchProtection?.codeQuality ?? {}),
+										...contract.branchProtection.codeQuality,
+									},
+						publicCodeScanning:
+							contract.branchProtection.publicCodeScanning === undefined
+								? DEFAULT_CONTRACT.branchProtection?.publicCodeScanning
+								: {
+										...(DEFAULT_CONTRACT.branchProtection?.publicCodeScanning ??
+											{}),
+										...contract.branchProtection.publicCodeScanning,
+									},
+					} as HarnessContract["branchProtection"]),
+		toolingPolicy:
+			contract.toolingPolicy === undefined
+				? DEFAULT_CONTRACT.toolingPolicy
+				: ({
+						...(DEFAULT_CONTRACT.toolingPolicy ?? {}),
+						...contract.toolingPolicy,
+						requiredDocumentationTerms:
+							contract.toolingPolicy.requiredDocumentationTerms ??
+							DEFAULT_CONTRACT.toolingPolicy?.requiredDocumentationTerms,
+						requiredBinaries:
+							contract.toolingPolicy.requiredBinaries ??
+							DEFAULT_CONTRACT.toolingPolicy?.requiredBinaries,
+						requiredMiseTools:
+							contract.toolingPolicy.requiredMiseTools ??
+							DEFAULT_CONTRACT.toolingPolicy?.requiredMiseTools,
+						codexEnvironment:
+							contract.toolingPolicy.codexEnvironment === undefined
+								? DEFAULT_CONTRACT.toolingPolicy?.codexEnvironment
+								: {
+										...(DEFAULT_CONTRACT.toolingPolicy?.codexEnvironment ?? {}),
+										...contract.toolingPolicy.codexEnvironment,
+										requiredActions:
+											contract.toolingPolicy.codexEnvironment.requiredActions ??
+											DEFAULT_CONTRACT.toolingPolicy?.codexEnvironment
+												?.requiredActions,
+									},
+						makefile:
+							contract.toolingPolicy.makefile === undefined
+								? DEFAULT_CONTRACT.toolingPolicy?.makefile
+								: {
+										...(DEFAULT_CONTRACT.toolingPolicy?.makefile ?? {}),
+										...contract.toolingPolicy.makefile,
+										requiredTargets:
+											contract.toolingPolicy.makefile.requiredTargets ??
+											DEFAULT_CONTRACT.toolingPolicy?.makefile?.requiredTargets,
+									},
+					} as HarnessContract["toolingPolicy"]),
 		issueTrackingPolicy:
 			contract.issueTrackingPolicy ??
 			(DEFAULT_CONTRACT.issueTrackingPolicy as HarnessContract["issueTrackingPolicy"]),
@@ -263,6 +389,17 @@ const MIGRATIONS: Migration[] = [
 				version: "1.3.0",
 			}) as ContractSchema,
 	},
+	{
+		fromVersion: "1.3.0",
+		toVersion: "1.4.0",
+		description:
+			"Inject tooling policy defaults for repo-managed readiness surfaces",
+		migrate: (contract) =>
+			({
+				...addSchemaDefaults(contract),
+				version: "1.4.0",
+			}) as ContractSchema,
+	},
 ];
 
 export interface InitOutput {
@@ -288,7 +425,7 @@ export type InitResult =
 const HARNESS_DIR = ".harness";
 const BACKUPS_DIR = "backups";
 const MANIFEST_FILE = "restore-manifest.json";
-const CODEX_ENVIRONMENT_TEMPLATE_PATH = ".codex/environments/environment.toml";
+const CODEX_ENVIRONMENT_TEMPLATE_PATH = TOOLING_CODEX_ENVIRONMENT_PATH;
 const CODEX_ENVIRONMENT_AUTOGENERATED_HEADER =
 	"# THIS IS AUTOGENERATED. DO NOT EDIT MANUALLY";
 const RETIRED_TEMPLATE_PATHS = [
@@ -504,7 +641,7 @@ function renderCodexEnvironmentTemplate(
 	packageManager: string,
 	context: TemplateRenderContext,
 ): string {
-	const installCommand = renderInstallCommand(packageManager);
+	const installCommand = `mise install\n${renderInstallCommand(packageManager)}`;
 	const runScript = pickScriptForIcon(context.packageScripts, "run");
 	const debugScript = pickScriptForIcon(context.packageScripts, "debug");
 	const testScript = pickScriptForIcon(context.packageScripts, "test");
@@ -539,6 +676,16 @@ ${installCommand}`,
 				: renderMissingScriptActionCommand("test"),
 		},
 	];
+
+	for (const action of REQUIRED_CODEX_TOOL_ACTIONS) {
+		actions.push({
+			name: action.name,
+			icon: action.icon,
+			command: `set -euo pipefail
+
+${action.command}`,
+		});
+	}
 
 	for (const script of context.packageScripts) {
 		actions.push({
@@ -584,13 +731,436 @@ contact_links:
 `;
 }
 
+function renderGreptileConfig(): string {
+	return `${JSON.stringify(
+		{
+			version: "1.0",
+			strictness: 2,
+			fileChangeLimit: 300,
+			commentTypes: [
+				"bug-risk",
+				"security",
+				"performance",
+				"architecture",
+				"maintainability",
+			],
+			enableCrossFileGraphQueries: true,
+			requireIndependentValidation: true,
+			confidence: {
+				minMergeScore: 4,
+				targetScore: 5,
+			},
+			rules: [
+				{
+					id: "independent-ai-validation",
+					glob: "**/*",
+					description:
+						"Coding agent must not approve its own PR; separate review signal required.",
+					severity: "high",
+				},
+				{
+					id: "governance-parity",
+					glob: "**/*",
+					description:
+						"Changes to governance, workflow, or policy surfaces must keep docs, required checks, and implementation aligned.",
+					severity: "high",
+				},
+				{
+					id: "evidence-required-for-review-policy",
+					glob: "**/*",
+					description:
+						"Policy, workflow, or review-gate changes require validation evidence before merge.",
+					severity: "medium",
+				},
+			],
+			ignorePatterns: ["dist/**", "coverage/**", "node_modules/**"],
+		},
+		null,
+		2,
+	)}\n`;
+}
+
+function renderGreptileRules(): string {
+	return `# Harness-managed Greptile rules
+
+## Scope
+
+These rules define the baseline Greptile review expectations for harness-managed repositories.
+
+## Rule set
+
+### 1) Independent validation is mandatory
+
+- The coding agent must not act as approving reviewer on the same PR.
+- Every merge-ready decision requires an independent review signal.
+
+### 2) Governance surfaces must stay aligned
+
+If a PR changes governance, workflow, or policy files, reviewers must verify consistency across:
+
+- \`harness.contract.json\`
+- \`CONTRIBUTING.md\`
+- \`README.md\`
+- \`.github/PULL_REQUEST_TEMPLATE.md\`
+- \`.github/workflows/*.yml\`
+
+### 3) Policy changes require evidence
+
+- Policy, workflow, or review-gate changes must include test and validation evidence.
+- Any reduction in mandatory checks or review gates is high risk.
+
+### 4) Merge confidence threshold
+
+- Confidence below \`4/5\` is merge-blocking.
+- Confidence \`4/5\` may merge only when remaining items are low-risk polish.
+- Confidence \`5/5\` is merge-ready.
+`;
+}
+
+function renderGreptileFiles(): string {
+	return `${JSON.stringify(
+		{
+			contextFiles: [
+				{
+					path: "harness.contract.json",
+					role: "primary governance contract",
+				},
+				{
+					path: "package.json",
+					role: "project scripts and package metadata",
+				},
+				{
+					path: "README.md",
+					role: "operator-facing setup and workflow docs",
+				},
+				{
+					path: "CONTRIBUTING.md",
+					role: "contributor governance requirements",
+				},
+				{
+					path: ".github/workflows/pr-pipeline.yml",
+					role: "required checks workflow",
+				},
+			],
+			apiSpecs: [
+				"contracts/**/*.schema.json",
+				"openapi/**/*.json",
+				"openapi/**/*.yaml",
+				"src/**/*.ts",
+			],
+			schemaFiles: [
+				"contracts/**/*.schema.json",
+				"schemas/**/*.json",
+				"openapi/**/*.json",
+				"openapi/**/*.yaml",
+			],
+		},
+		null,
+		2,
+	)}\n`;
+}
+
+function renderGreptileReviewWorkflow(): string {
+	return `name: Greptile Review
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened, review_requested]
+  merge_group:
+  pull_request_review:
+    types: [submitted, dismissed]
+  pull_request_review_comment:
+    types: [created]
+  issue_comment:
+    types: [created]
+
+permissions:
+  contents: read
+  pull-requests: read
+  checks: write
+  statuses: write
+
+jobs:
+  greptile-review:
+    name: Greptile Review
+    runs-on: ubuntu-latest
+    if: |
+      github.event_name == 'pull_request' ||
+      github.event_name == 'merge_group' ||
+      github.event_name == 'pull_request_review' ||
+      github.event_name == 'pull_request_review_comment' ||
+      (
+        github.event_name == 'issue_comment' &&
+        github.event.issue.pull_request &&
+        (
+          github.event.comment.user.login == 'greptile[bot]' ||
+          github.event.comment.user.login == 'greptileai[bot]' ||
+          github.event.comment.user.login == 'greptile' ||
+          github.event.comment.user.login == 'greptileai'
+        )
+      )
+    steps:
+      - name: Merge queue passthrough
+        if: github.event_name == 'merge_group'
+        run: echo "Greptile PR-context checks are evaluated on pull_request events."
+
+      - name: Get PR context
+        if: github.event_name != 'merge_group'
+        id: context
+        env:
+          EVENT_NAME: \${{ github.event_name }}
+          PR_NUMBER: \${{ github.event.pull_request.number || '' }}
+          ISSUE_NUMBER: \${{ github.event.issue.number || '' }}
+          REPO_OWNER: \${{ github.repository_owner }}
+          REPO_NAME: \${{ github.event.repository.name }}
+        uses: actions/github-script@f28e40c7f34bde8b3046d885e986cb6290c5673b # v7
+        with:
+          script: |
+            const eventName = process.env.EVENT_NAME;
+            const prNumber = eventName === 'issue_comment'
+              ? process.env.ISSUE_NUMBER
+              : process.env.PR_NUMBER;
+
+            if (!prNumber) {
+              core.setFailed(\`Could not determine PR number for event: \${eventName}\`);
+              return;
+            }
+
+            let headSha;
+
+            if (eventName === 'pull_request') {
+              headSha = context.payload.pull_request.head.sha;
+            } else {
+              const pr = await github.rest.pulls.get({
+                owner: process.env.REPO_OWNER,
+                repo: process.env.REPO_NAME,
+                pull_number: parseInt(prNumber, 10)
+              });
+              headSha = pr.data.head.sha;
+            }
+
+            core.setOutput('pr_number', prNumber);
+            core.setOutput('head_sha', headSha);
+            core.setOutput('repo_owner', process.env.REPO_OWNER);
+            core.setOutput('repo_name', process.env.REPO_NAME);
+
+      - name: Analyze Greptile review
+        if: github.event_name != 'merge_group'
+        id: analyze
+        env:
+          PR_NUMBER: \${{ steps.context.outputs.pr_number }}
+          REPO_OWNER: \${{ steps.context.outputs.repo_owner }}
+          REPO_NAME: \${{ steps.context.outputs.repo_name }}
+          MIN_MERGE_SCORE: '4'
+          EVENT_NAME: \${{ github.event_name }}
+        uses: actions/github-script@f28e40c7f34bde8b3046d885e986cb6290c5673b # v7
+        with:
+          script: |
+            const prNumber = parseInt(process.env.PR_NUMBER, 10);
+            const minMergeScore = parseInt(process.env.MIN_MERGE_SCORE, 10);
+            const owner = process.env.REPO_OWNER;
+            const repo = process.env.REPO_NAME;
+            const eventName = process.env.EVENT_NAME;
+            const action = context.payload.action || '';
+
+            if (eventName === 'pull_request' && action === 'synchronize') {
+              core.setOutput('found', 'false');
+              core.setOutput('status', 'pending');
+              core.setOutput('summary', 'Waiting for Greptile review on the current PR head commit...');
+              core.setOutput('comment_url', '');
+              core.setOutput('score', '');
+              console.log('Head SHA changed via synchronize event; waiting for fresh Greptile review');
+              return;
+            }
+
+            const comments = await github.rest.issues.listComments({
+              owner,
+              repo,
+              issue_number: prNumber
+            });
+
+            const greptileLogins = new Set([
+              'greptile[bot]',
+              'greptileai[bot]',
+              'greptile',
+              'greptileai'
+            ]);
+
+            const greptileComments = comments.data
+              .filter(c => greptileLogins.has(c.user.login))
+              .sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
+
+            if (greptileComments.length === 0) {
+              core.setOutput('found', 'false');
+              core.setOutput('status', 'pending');
+              core.setOutput('summary', 'Waiting for Greptile review on the current PR head commit...');
+              core.setOutput('comment_url', '');
+              core.setOutput('score', '');
+              console.log('No Greptile comments found for the current head commit');
+              return;
+            }
+
+            const latestComment = greptileComments[0];
+            const commentBody = (latestComment.body || '').toLowerCase();
+
+            core.setOutput('found', 'true');
+            core.setOutput('comment_url', latestComment.html_url);
+
+            let score = null;
+            const scorePatterns = [
+              /(?:confidence|score)[:\\s]*(\\d)(?:\\s*\\/\\s*5)?/,
+              /(\\d)\\s*\\/\\s*5.*confidence/,
+              /overall[:\\s]*(\\d)/,
+              /rating[:\\s]*(\\d)/
+            ];
+
+            for (const pattern of scorePatterns) {
+              const match = commentBody.match(pattern);
+              if (match) {
+                score = parseInt(match[1], 10);
+                break;
+              }
+            }
+
+            const hasApprovalKeywords = /\\b(approved?|pass(?:ed|ing)?|lgtm|looks good|ready to merge)\\b/.test(commentBody);
+            const hasBlockKeywords = /\\b(block(?:ed|ing)?|fail(?:ed|ing)?|needs? changes?|do not merge|dnm)\\b/.test(commentBody);
+
+            let status;
+            let summary;
+            let scoreOutput;
+
+            if (score !== null) {
+              scoreOutput = score.toString();
+              if (score >= minMergeScore) {
+                status = 'success';
+                summary = \`Greptile review passed with confidence score \${score}/5 (threshold: \${minMergeScore}/5)\`;
+              } else {
+                status = 'failure';
+                summary = \`Greptile review failed with confidence score \${score}/5 (minimum required: \${minMergeScore}/5)\`;
+              }
+            } else if (hasApprovalKeywords && !hasBlockKeywords) {
+              status = 'success';
+              scoreOutput = 'unknown';
+              summary = 'Greptile review indicates approval';
+            } else if (hasBlockKeywords) {
+              status = 'failure';
+              scoreOutput = 'unknown';
+              summary = 'Greptile review indicates changes are needed';
+            } else {
+              status = 'success';
+              scoreOutput = 'unknown';
+              summary = 'Greptile review completed (no explicit score detected)';
+            }
+
+            core.setOutput('status', status);
+            core.setOutput('summary', summary);
+            core.setOutput('score', scoreOutput);
+
+            console.log(\`Analysis complete: status=\${status}, score=\${scoreOutput}\`);
+
+      - name: Create or update check run
+        if: github.event_name != 'merge_group'
+        env:
+          HEAD_SHA: \${{ steps.context.outputs.head_sha }}
+          STATUS: \${{ steps.analyze.outputs.status }}
+          SUMMARY: \${{ steps.analyze.outputs.summary }}
+          FOUND: \${{ steps.analyze.outputs.found }}
+          COMMENT_URL: \${{ steps.analyze.outputs.comment_url }}
+          REPO_OWNER: \${{ steps.context.outputs.repo_owner }}
+          REPO_NAME: \${{ steps.context.outputs.repo_name }}
+        uses: actions/github-script@f28e40c7f34bde8b3046d885e986cb6290c5673b # v7
+        with:
+          script: |
+            const owner = process.env.REPO_OWNER;
+            const repo = process.env.REPO_NAME;
+            const headSha = process.env.HEAD_SHA;
+            const status = process.env.STATUS;
+            const summary = process.env.SUMMARY;
+            const found = process.env.FOUND;
+            const commentUrl = process.env.COMMENT_URL;
+            const checkName = 'Greptile Review';
+
+            const existingChecks = await github.rest.checks.listForRef({
+              owner,
+              repo,
+              ref: headSha,
+              check_name: checkName,
+              filter: 'latest'
+            });
+
+            const existingCheck = existingChecks.data.check_runs.find(
+              run => run.name === checkName
+            );
+
+            if (status === 'pending') {
+              const checkPayload = {
+                owner,
+                repo,
+                name: checkName,
+                head_sha: headSha,
+                status: 'completed',
+                conclusion: 'failure',
+                output: {
+                  title: 'Greptile Review Pending',
+                  summary: 'Greptile has not yet reviewed this PR head commit.'
+                }
+              };
+
+              if (existingCheck) {
+                await github.rest.checks.update({
+                  owner,
+                  repo,
+                  check_run_id: existingCheck.id,
+                  ...checkPayload
+                });
+              } else {
+                await github.rest.checks.create(checkPayload);
+              }
+              return;
+            }
+
+            const conclusion = status === 'success' ? 'success' : 'failure';
+            const output = {
+              title: checkName,
+              summary,
+              text: found === 'true' && commentUrl ? \`Greptile review comment: \${commentUrl}\` : undefined
+            };
+
+            if (existingCheck) {
+              await github.rest.checks.update({
+                owner,
+                repo,
+                check_run_id: existingCheck.id,
+                name: checkName,
+                status: 'completed',
+                conclusion,
+                output
+              });
+            } else {
+              await github.rest.checks.create({
+                owner,
+                repo,
+                name: checkName,
+                head_sha: headSha,
+                status: 'completed',
+                conclusion,
+                output
+              });
+            }
+
+            if (conclusion === 'failure') {
+              core.setFailed(summary);
+            }
+`;
+}
+
 const TEMPLATES: Template[] = [
 	{
 		path: "harness.contract.json",
 		render: (pm, context) =>
 			JSON.stringify(
 				{
-					version: "1.2.0",
+					version: CURRENT_SCHEMA_VERSION,
 					riskTierRules: {
 						"src/auth/**": "high",
 						"src/api/**": "high",
@@ -611,7 +1181,34 @@ const TEMPLATES: Template[] = [
 					},
 					branchProtection: {
 						requiredChecks: [...BRANCH_PROTECTION_REQUIRED_CHECKS],
+						restrictDeletions: true,
+						blockForcePushes: true,
+						requireLinearHistory: true,
+						requirePullRequest: true,
+						requiredApprovingReviewCount: 0,
+						dismissStaleReviewsOnPush: true,
+						requireConversationResolution: true,
+						requireCodeOwnerReview: false,
+						requireLastPushApproval: false,
+						requireBranchesUpToDate: true,
+						allowedMergeMethods: {
+							mergeCommit: true,
+							squash: true,
+							rebase: true,
+						},
+						codeQuality: {
+							required: true,
+							severity: "all",
+						},
+						publicCodeScanning: {
+							required: true,
+							publicOnly: true,
+							tool: "CodeQL",
+							alertsThreshold: "errors",
+							securityAlertsThreshold: "high_or_higher",
+						},
 					},
+					toolingPolicy: DEFAULT_CONTRACT.toolingPolicy,
 					issueTrackingPolicy: {
 						provider: "linear" as const,
 						...(context.issueTrackingUrl
@@ -780,6 +1377,19 @@ const TEMPLATES: Template[] = [
 						protectedBranchDenylist: ["main", "master", "release/*"],
 						enforceBranchProtection: true,
 					},
+					controlPlanePolicy: {
+						overridePolicy: {
+							authorizedPrincipals: [],
+							dualApprovalScopes: ["temporary_unblock", "temporary_promote"],
+							maxTtlHours: 24,
+							nonOverridableControls: [
+								"canonical_runtime_invalid",
+								"governance_trust_mismatch",
+								"missing_required_instruction_surface",
+								"missing_snapshot_integrity_verification",
+							],
+						},
+					},
 				},
 				null,
 				2,
@@ -819,6 +1429,22 @@ const TEMPLATES: Template[] = [
 				null,
 				2,
 			),
+	},
+	{
+		path: ".greptile/config.json",
+		render: () => renderGreptileConfig(),
+	},
+	{
+		path: ".greptile/rules.md",
+		render: () => renderGreptileRules(),
+	},
+	{
+		path: ".greptile/files.json",
+		render: () => renderGreptileFiles(),
+	},
+	{
+		path: ".github/workflows/greptile-review.yml",
+		render: () => renderGreptileReviewWorkflow(),
 	},
 	{
 		path: ".github/workflows/pr-pipeline.yml",
@@ -1365,6 +1991,7 @@ jobs:
 - [Branching and PR rule](#branching-and-pr-rule)
 - [Branch name policy](#branch-name-policy)
 - [Required pre-merge gates](#required-pre-merge-gates)
+- [Required tooling baseline](#required-tooling-baseline)
 - [Greptile setup baseline](#greptile-setup-baseline)
 - [Greptile config hierarchy](#greptile-config-hierarchy)
 - [Greptile merge logic for multi-scope pull requests](#greptile-merge-logic-for-multi-scope-pull-requests)
@@ -1383,7 +2010,7 @@ jobs:
 - Pull request required for every merge.
 - Required checks must pass before merge.
 - Greptile + Codex review artifacts are required before merge.
-- Greptile must be configured correctly using the \`grepfile\` skill with all required Greptile files present.
+- Greptile must be configured correctly using the \`check-pr\` or \`greploop\` skill with all required Greptile files present.
 - The coding agent must not approve its own PR; review must be independent.
 - Merge only after all gates pass.
 - Delete branch/worktree after merge.
@@ -1418,6 +2045,87 @@ This workflow keeps delivery auditable, reversible, and consistent even for solo
 - ${auditCommand}
 - ${checkCommand}
 - ${memoryValidateCommand}
+
+## Required tooling baseline
+
+Harness-managed repositories should keep this baseline available locally before claiming the repo is ready:
+
+- \`prek\`
+- \`diagram\`
+- \`mise\`
+- \`vale\`
+- \`argos\`
+- \`cosign\`
+- \`cloudflared\`
+- \`vitest\`
+- \`ruff\`
+- \`eslint\`
+- \`agent-browser\`
+- \`agentation\` (backed by the \`agentation-mcp\` CLI)
+- \`markdownlint-cli2\`
+- \`wrangler\`
+- \`beautiful-mermaid\`
+- \`semgrep\`
+- \`semver\`
+- \`trivy\`
+- \`rsearch\` (arXiv research)
+- \`wsearch\` (Wikidata search)
+
+Recommended policy:
+
+- Pin repo-managed tooling in \`.mise.toml\` where possible.
+- Treat \`scripts/check-environment.sh\` as the local readiness gate for required tooling.
+- Block merge or promotion work when a required CLI is missing rather than silently skipping the corresponding validation lane.
+
+## Greptile setup baseline
+
+- Greptile must be configured correctly before relying on Greptile review gates.
+- \`harness init\` scaffolds the baseline Greptile files and bridge workflow into harness-managed repositories.
+- Required repo-local files:
+  - \`.greptile/config.json\`
+  - \`.greptile/rules.md\`
+  - \`.greptile/files.json\`
+- Required bridge workflow:
+  - \`.github/workflows/greptile-review.yml\`
+- Verify setup with:
+  - \`harness verify-greptile\`
+  - \`harness verify-greptile --token $GITHUB_TOKEN --owner <owner> --repo <repo>\`
+- Trigger or refresh a review with:
+  - \`harness request-greptile-review --owner <owner> --repo <repo> --pr <number>\`
+
+## Greptile config hierarchy
+
+1. Org-enforced dashboard rules.
+2. Directory-scoped \`.greptile/\` folders.
+3. Legacy \`greptile.json\` (ignored when \`.greptile/\` exists in the same directory).
+4. Dashboard defaults.
+
+## Greptile merge logic for multi-scope pull requests
+
+- strictness: most restrictive scope wins.
+- \`fileChangeLimit\`: lowest value wins.
+- comment types: union all requested types.
+- booleans: enabled if any scope enables them.
+
+## Greptile confidence score policy
+
+- \`5/5\`: merge-ready.
+- \`4/5\`: merge after minor polish.
+- \`3/5\`: fix findings and re-review.
+- \`0-2/5\`: blocked.
+
+## Greptile strictness policy
+
+- Strictness 1: security-critical or fresh-calibration scopes.
+- Strictness 2: default baseline for \`main\`/production-targeted changes.
+- Strictness 3: stable, non-critical internal infrastructure.
+
+## Greptile training and feedback loop
+
+- Use \`@greptileai\` on draft PRs or when settings/context changed and a forced re-review is needed.
+- Use targeted prompts for scoped checks (for example: \`@greptileai check for memory leaks\`).
+- React to comments with 👍 / 👎 and include a short rationale with 👎.
+- Treat three ignored comments on the same pattern as a calibration prompt.
 
 ## Recommended security scanner baseline
 
@@ -1463,8 +2171,18 @@ Configure GitHub branch protection (or rulesets) on \`main\`:
 - Token resolution for \`branch-protect\`:
   - \`--token <PAT>\` or env \`GITHUB_TOKEN\` / \`GITHUB_PERSONAL_ACCESS_TOKEN\`
 - Require pull request before merge.
-- Require at least one approval.
-- Require status checks: \`pr-template\`, \`linear-gate\`, \`risk-policy-gate\`, \`dependency-review\`, \`actions-pinning\`, \`consistency-drift-health\`, \`lint\`, \`typecheck\`, \`test\`, \`audit\`, \`check\`, \`memory\`, \`security-scan\`.
+- Allow \`0\` required reviewers for solo-maintainer repositories.
+- Dismiss stale approvals when new commits are pushed.
+- Require conversation resolution before merge.
+- Restrict branch deletions.
+- Block force pushes.
+- Require linear history.
+- Require status checks:
+${formatRequiredChecksBulleted(BRANCH_PROTECTION_REQUIRED_CHECKS, "  - ")}
+- Require branches to be up to date before merge.
+- Require code quality results with severity \`all\`.
+- In public repositories, require \`CodeQL\` code scanning results with \`high_or_higher\` security alerts and \`errors\` alerts thresholds.
+- Allow merge commits, squash merges, and rebase merges.
 - Require workflows to pin third-party actions to full commit SHAs.
 - Configure required checks workflows to run on both \`pull_request\` and \`merge_group\` when using merge queue.
 - Block direct pushes to \`main\`.
@@ -1906,10 +2624,7 @@ vitest = "3.2"
 	{
 		path: ".mise.toml",
 		render: () => `[tools]
-node = "24.13.1"
-pnpm = "10.0.0"
-python = "3.12"
-uv = "0.9.5"
+${PROJECT_MISE_REQUIRED_TOOLS.map(([tool, version]) => `"${tool}" = "${version}"`).join("\n")}
 
 [env]
 CLAUDE_APPROVAL_POSTURE = "require"
@@ -1926,9 +2641,11 @@ set -euo pipefail
 SCRIPT_DIR="$(cd -- "$(dirname -- "${"${"}BASH_SOURCE[0]}")" && pwd)"
 REPO_ROOT="$(cd -- "$SCRIPT_DIR/.." && pwd)"
 CONTRACT_PATH="$REPO_ROOT/harness.contract.json"
-ATTESTATION_PATH="$REPO_ROOT/artifacts/policy/environment-attestation.json"
-MISE_PATH="$REPO_ROOT/.mise.toml"
-TOOLING_DOC_PATH="\${TOOLING_DOC_PATH:-$HOME/dev/config/codex/instructions/tooling.md}"
+	ATTESTATION_PATH="$REPO_ROOT/artifacts/policy/environment-attestation.json"
+	MISE_PATH="$REPO_ROOT/.mise.toml"
+	CODEX_ENVIRONMENT_PATH="$REPO_ROOT/.codex/environments/environment.toml"
+	MAKEFILE_PATH="$REPO_ROOT/Makefile"
+	TOOLING_DOC_PATH="\${TOOLING_DOC_PATH:-$HOME/dev/config/codex/instructions/tooling.md}"
 
 if [[ ! -f "$CONTRACT_PATH" ]]; then
 	echo "Error: missing contract file at $CONTRACT_PATH"
@@ -1940,22 +2657,32 @@ if ! command -v rg >/dev/null 2>&1; then
 	exit 1
 fi
 
-if [[ ! -f "$MISE_PATH" ]]; then
-	echo "Error: missing mise config at $MISE_PATH"
-	exit 1
-fi
+	if [[ ! -f "$MISE_PATH" ]]; then
+		echo "Error: missing mise config at $MISE_PATH"
+		exit 1
+	fi
 
-required_mise_tools=(node pnpm python uv)
+	if [[ ! -f "$CODEX_ENVIRONMENT_PATH" ]]; then
+		echo "Error: missing Codex environment file at $CODEX_ENVIRONMENT_PATH"
+		exit 1
+	fi
+
+	if [[ ! -f "$MAKEFILE_PATH" ]]; then
+		echo "Error: missing required Makefile at $MAKEFILE_PATH"
+		exit 1
+	fi
+
+required_mise_tools=(${PROJECT_MISE_REQUIRED_TOOLS.map(([tool]) => `"${tool}"`).join(" ")})
 for tool in "\${required_mise_tools[@]}"; do
-	if ! rg -q "^[[:space:]]*\${tool}[[:space:]]*=" "$MISE_PATH"; then
+	if ! rg -Fq "\"\${tool}\" = " "$MISE_PATH" && ! rg -Fq "\${tool} = " "$MISE_PATH"; then
 		echo "Error: required tool '\$tool' is not pinned in $MISE_PATH [tools]"
-		echo "Fix: add '\$tool = \"<version>\"' to $MISE_PATH."
+		echo "Fix: add '\$tool = \\\"<version>\\\"' to $MISE_PATH."
 		exit 1
 	fi
 done
 
 if [[ -f "$TOOLING_DOC_PATH" ]]; then
-	required_tooling_doc_terms=(node pnpm python uv rg fd jq)
+	required_tooling_doc_terms=(${REQUIRED_TOOLING_DOC_TERMS.map((term) => `"${term}"`).join(" ")})
 	for term in "\${required_tooling_doc_terms[@]}"; do
 		if ! rg -qi "(^|[^A-Za-z0-9_-])\${term}([^A-Za-z0-9_-]|$)" "$TOOLING_DOC_PATH"; then
 			echo "Error: tooling doc missing expected term '\$term': $TOOLING_DOC_PATH"
@@ -1968,15 +2695,37 @@ else
 	echo "Warning: tooling doc not found at $TOOLING_DOC_PATH; skipping doc sync check."
 fi
 
-required_bins=(pnpm node jq rg fd)
-for bin in "\${required_bins[@]}"; do
-	if ! command -v "$bin" >/dev/null 2>&1; then
-		echo "Error: required binary '$bin' is not installed or not on PATH"
-		exit 1
-	fi
-done
+	required_bins=(${REQUIRED_TOOLING_BINARIES.map((bin) => `"${bin}"`).join(" ")})
+	for bin in "\${required_bins[@]}"; do
+		if ! command -v "$bin" >/dev/null 2>&1; then
+			echo "Error: required binary '$bin' is not installed or not on PATH"
+			exit 1
+		fi
+	done
 
-mkdir -p "$REPO_ROOT/artifacts/policy"
+	required_codex_actions=(${REQUIRED_CODEX_ACTION_PAIRS.map(({ name, icon }) => `"${name}|${icon}"`).join(" ")})
+	for action in "\${required_codex_actions[@]}"; do
+		name="\${action%%|*}"
+		icon="\${action##*|}"
+		if ! awk -v name="$name" -v icon="$icon" '
+			prev == "name = \\"" name "\\"" && $0 == "icon = \\"" icon "\\"" { found = 1 }
+			{ prev = $0 }
+			END { exit found ? 0 : 1 }
+		' "$CODEX_ENVIRONMENT_PATH"; then
+			echo "Error: Codex environment action '\$name' is missing or mapped to the wrong icon in $CODEX_ENVIRONMENT_PATH"
+			exit 1
+		fi
+	done
+
+		required_make_targets=(${REQUIRED_MAKEFILE_TARGETS.map((target) => `"${target}"`).join(" ")})
+		for target in "\${required_make_targets[@]}"; do
+			if ! rg -q "^\${target}:" "$MAKEFILE_PATH"; then
+				echo "Error: required Makefile target '\$target' is missing from $MAKEFILE_PATH"
+				exit 1
+			fi
+		done
+
+	mkdir -p "$REPO_ROOT/artifacts/policy"
 
 echo "Running harness environment preflight..."
 pnpm exec tsx src/cli.ts check-environment \\

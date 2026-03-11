@@ -52,6 +52,13 @@ export interface GreptileCheck {
 	details?: Record<string, unknown>;
 }
 
+const REQUIRED_GREPTILE_WORKFLOW_TRIGGERS = [
+	"pull_request",
+	"pull_request_review",
+	"pull_request_review_comment",
+	"issue_comment",
+] as const;
+
 function normalizeToken(value: string | undefined): string | undefined {
 	if (typeof value !== "string") return undefined;
 	const trimmed = value.trim();
@@ -283,24 +290,39 @@ function verifyLocalGreptileConfig(greptileDir: string): GreptileCheck[] {
 			if (!config.version) missingFields.push("version");
 			if (typeof config.strictness !== "number")
 				missingFields.push("strictness");
+			if (typeof config.fileChangeLimit !== "number")
+				missingFields.push("fileChangeLimit");
+			if (
+				!Array.isArray(config.commentTypes) ||
+				config.commentTypes.length === 0
+			)
+				missingFields.push("commentTypes");
+			if (config.enableCrossFileGraphQueries !== true)
+				missingFields.push("enableCrossFileGraphQueries=true");
+			if (config.requireIndependentValidation !== true)
+				missingFields.push("requireIndependentValidation=true");
 			if (!config.confidence?.minMergeScore)
 				missingFields.push("confidence.minMergeScore");
+			if (!config.confidence?.targetScore)
+				missingFields.push("confidence.targetScore");
 
 			if (missingFields.length > 0) {
 				checks.push({
 					name: ".greptile/config.json",
-					status: "warn",
-					message: `Config exists but missing recommended fields: ${missingFields.join(", ")}`,
+					status: "fail",
+					message: `Config exists but missing required policy fields: ${missingFields.join(", ")}`,
 					details: { path: configPath },
 				});
 			} else {
 				checks.push({
 					name: ".greptile/config.json",
 					status: "pass",
-					message: `Valid config with minMergeScore=${config.confidence.minMergeScore}`,
+					message: `Valid config with strictness=${config.strictness}, minMergeScore=${config.confidence.minMergeScore}`,
 					details: {
 						path: configPath,
+						strictness: config.strictness,
 						minMergeScore: config.confidence.minMergeScore,
+						targetScore: config.confidence.targetScore,
 					},
 				});
 			}
@@ -327,14 +349,15 @@ function verifyLocalGreptileConfig(greptileDir: string): GreptileCheck[] {
 		checks.push({
 			name: ".greptile/rules.md",
 			status: "pass",
-			message: "Custom rules file exists",
+			message: "Required rules file exists",
 			details: { path: rulesPath },
 		});
 	} else {
 		checks.push({
 			name: ".greptile/rules.md",
-			status: "warn",
-			message: "Optional rules.md not found. Using Greptile defaults.",
+			status: "fail",
+			message:
+				"Missing required .greptile/rules.md. Repository-local review guidance is mandatory.",
 			details: { path: rulesPath },
 		});
 	}
@@ -342,17 +365,59 @@ function verifyLocalGreptileConfig(greptileDir: string): GreptileCheck[] {
 	// Check .greptile/files.json
 	const filesPath = resolve(greptileDir, "files.json");
 	if (existsSync(filesPath)) {
-		checks.push({
-			name: ".greptile/files.json",
-			status: "pass",
-			message: "Files index exists",
-			details: { path: filesPath },
-		});
+		try {
+			const content = readFileSync(filesPath, "utf-8");
+			const parsed = JSON.parse(content) as {
+				contextFiles?: unknown[];
+				apiSpecs?: unknown[];
+				schemaFiles?: unknown[];
+			};
+			const contextCount = Array.isArray(parsed.contextFiles)
+				? parsed.contextFiles.length
+				: 0;
+			const apiSpecCount = Array.isArray(parsed.apiSpecs)
+				? parsed.apiSpecs.length
+				: 0;
+			const schemaCount = Array.isArray(parsed.schemaFiles)
+				? parsed.schemaFiles.length
+				: 0;
+
+			if (contextCount + apiSpecCount + schemaCount === 0) {
+				checks.push({
+					name: ".greptile/files.json",
+					status: "fail",
+					message:
+						"files.json exists but does not reference any context files, API specs, or schema files.",
+					details: { path: filesPath },
+				});
+			} else {
+				checks.push({
+					name: ".greptile/files.json",
+					status: "pass",
+					message:
+						"Files index exists with context/schema references for graph-aware review",
+					details: {
+						path: filesPath,
+						contextFiles: contextCount,
+						apiSpecs: apiSpecCount,
+						schemaFiles: schemaCount,
+					},
+				});
+			}
+		} catch (e) {
+			checks.push({
+				name: ".greptile/files.json",
+				status: "fail",
+				message: `Failed to parse files.json: ${e instanceof Error ? e.message : "Unknown error"}`,
+				details: { path: filesPath },
+			});
+		}
 	} else {
 		checks.push({
 			name: ".greptile/files.json",
-			status: "warn",
-			message: "Optional files.json not found.",
+			status: "fail",
+			message:
+				"Missing required .greptile/files.json. Cross-file graph context pointers are mandatory.",
 			details: { path: filesPath },
 		});
 	}
@@ -380,23 +445,22 @@ function verifyGreptileWorkflow(repoPath: string): GreptileCheck {
 		const content = readFileSync(workflowPath, "utf-8");
 
 		// Verify workflow triggers
-		const hasPullRequestTrigger = /on:[\s\S]*?pull_request:/.test(content);
-		const hasIssueCommentTrigger = /on:[\s\S]*?issue_comment:/.test(content);
+		const missingTriggers = REQUIRED_GREPTILE_WORKFLOW_TRIGGERS.filter(
+			(trigger) => !new RegExp(`on:[\\s\\S]*?${trigger}:`).test(content),
+		);
 		const hasChecksWritePermission = /checks:\s*write/.test(content);
 
 		const issues: string[] = [];
-		if (!hasPullRequestTrigger) issues.push("missing pull_request trigger");
-		if (!hasIssueCommentTrigger)
-			issues.push(
-				"missing issue_comment trigger (required for Greptile bridge)",
-			);
+		for (const trigger of missingTriggers) {
+			issues.push(`missing ${trigger} trigger`);
+		}
 		if (!hasChecksWritePermission)
 			issues.push("missing checks: write permission");
 
 		if (issues.length > 0) {
 			return {
 				name: "greptile-review.yml workflow",
-				status: "warn",
+				status: "fail",
 				message: `Workflow exists but has issues: ${issues.join(", ")}`,
 				details: { path: workflowPath, issues },
 			};
@@ -405,8 +469,7 @@ function verifyGreptileWorkflow(repoPath: string): GreptileCheck {
 		return {
 			name: "greptile-review.yml workflow",
 			status: "pass",
-			message:
-				"Valid workflow with required triggers (pull_request, issue_comment) and permissions",
+			message: `Valid workflow with required Greptile bridge triggers (${REQUIRED_GREPTILE_WORKFLOW_TRIGGERS.join(", ")}) and permissions`,
 			details: { path: workflowPath },
 		};
 	} catch (e) {
@@ -646,9 +709,9 @@ async function verifyRemoteGreptileSetup(
 		name: "Webhook Configuration",
 		status: "pass",
 		message:
-			"Webhook events are managed by the Greptile GitHub App. Ensure the app subscribes to: pull_request, issue_comment",
+			"Webhook events are managed by the Greptile GitHub App. Ensure the app subscribes to: pull_request, pull_request_review, pull_request_review_comment, issue_comment",
 		details: {
-			requiredEvents: ["pull_request", "issue_comment"],
+			requiredEvents: [...REQUIRED_GREPTILE_WORKFLOW_TRIGGERS],
 			note: "These events are configured at the GitHub App level, not the repository level.",
 		},
 	});

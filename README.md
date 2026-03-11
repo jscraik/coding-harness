@@ -87,7 +87,7 @@ GitHub issue forms in this repository are retired; the repo now routes work inta
 
 | Command | Purpose |
 | --- | --- |
-| `init` | Install harness contract + PR governance templates into the current repository. |
+| `init` | Install harness contract, Greptile baseline, and PR governance templates into the current repository. |
 | `risk-tier` | Classify changed files by risk. |
 | `policy-gate` | Validate policy expectations from changed files. Alias: `risk-policy-gate`. |
 | `replay` | Re-run policy checks from saved snapshots. |
@@ -100,6 +100,9 @@ GitHub issue forms in this repository are retired; the repo now routes work inta
 | `drift-gate` | Evaluate consistency drift across governance surfaces (advisory/health). |
 | `review-gate` | Enforce review checks and SHA guardrails. |
 | `branch-protect` | Configure/maintain branch protection rulesets and required status checks. |
+| `tooling-audit` | Audit cross-repo tooling baseline drift against contract and generated repo surfaces. |
+| `verify-greptile` | Verify required Greptile files, bridge workflow, ruleset wiring, and app/ruleset readiness. |
+| `request-greptile-review` | Post the standard `@greptileai` review trigger comment on a PR. |
 | `brainstorm-gate` | Validate brainstorm artifacts. |
 | `plan-gate` | Validate plan artifacts. |
 | `prompt-gate` | Validate prompt template usage. |
@@ -121,6 +124,10 @@ GitHub issue forms in this repository are retired; the repo now routes work inta
 | `pilot-rollback` | Transition pilot mode (autonomous <-> manual). |
 
 Use `harness --help` (or `node dist/cli.js --help`) for the current global options surface.
+
+Branch protection is the non-negotiable merge gate surface that should be enforced in repository settings and CI. `diff-budget` remains a review-shaping budget and escalation signal, not a substitute for required branch protection or required status checks.
+
+The required local tooling surface now lives in `harness.contract.json` under `toolingPolicy`. Use `harness tooling-audit --path <dir>` to verify that sibling repositories have both the explicit contract entry and the expected `.mise.toml`, `.codex/environments/environment.toml`, `scripts/check-environment.sh`, and `Makefile` wiring.
 
 ## Evidence capture shortcut
 

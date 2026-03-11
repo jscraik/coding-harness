@@ -2,6 +2,16 @@ import {
 	BRANCH_PROTECTION_REQUIRED_CHECKS,
 	REVIEW_POLICY_REQUIRED_CHECKS,
 } from "../policy/required-checks.js";
+import {
+	PROJECT_MISE_REQUIRED_TOOLS,
+	REQUIRED_CODEX_ACTION_PAIRS,
+	REQUIRED_MAKEFILE_TARGETS,
+	REQUIRED_TOOLING_BINARIES,
+	REQUIRED_TOOLING_DOC_TERMS,
+	TOOLING_CODEX_ENVIRONMENT_PATH,
+	TOOLING_MAKEFILE_PATH,
+	TOOLING_READINESS_SCRIPT_PATH,
+} from "../policy/tooling-baseline.js";
 
 export type RiskTier = "high" | "medium" | "low";
 
@@ -199,8 +209,88 @@ export interface ReviewPolicy {
 	enforceReviewerIndependence?: boolean | undefined;
 }
 
+export type CodeQualitySeverity =
+	| "errors"
+	| "warnings_and_higher"
+	| "notes_and_higher"
+	| "all";
+
+export type CodeScanningAlertsThreshold =
+	| "errors"
+	| "errors_and_warnings"
+	| "all";
+
+export type CodeScanningSecurityAlertsThreshold =
+	| "high_or_higher"
+	| "medium_or_higher"
+	| "all";
+
+export interface BranchProtectionMergeMethods {
+	mergeCommit: boolean;
+	squash: boolean;
+	rebase: boolean;
+}
+
+export interface BranchProtectionCodeQualityPolicy {
+	required: boolean;
+	severity: CodeQualitySeverity;
+}
+
+export interface BranchProtectionCodeScanningPolicy {
+	required: boolean;
+	publicOnly: boolean;
+	tool: string;
+	alertsThreshold: CodeScanningAlertsThreshold;
+	securityAlertsThreshold: CodeScanningSecurityAlertsThreshold;
+}
+
 export interface BranchProtectionPolicy {
 	requiredChecks?: string[] | undefined;
+	restrictDeletions?: boolean | undefined;
+	blockForcePushes?: boolean | undefined;
+	requireLinearHistory?: boolean | undefined;
+	requirePullRequest?: boolean | undefined;
+	requiredApprovingReviewCount?: number | undefined;
+	dismissStaleReviewsOnPush?: boolean | undefined;
+	requireConversationResolution?: boolean | undefined;
+	requireCodeOwnerReview?: boolean | undefined;
+	requireLastPushApproval?: boolean | undefined;
+	requireBranchesUpToDate?: boolean | undefined;
+	allowedMergeMethods?: BranchProtectionMergeMethods | undefined;
+	codeQuality?: BranchProtectionCodeQualityPolicy | undefined;
+	publicCodeScanning?: BranchProtectionCodeScanningPolicy | undefined;
+}
+
+export type ToolingActionIcon = "tool" | "run" | "debug" | "test";
+
+export interface ToolingMiseTool {
+	tool: string;
+	version: string;
+}
+
+export interface ToolingCodexAction {
+	name: string;
+	icon: ToolingActionIcon;
+}
+
+export interface ToolingCodexEnvironmentPolicy {
+	path: string;
+	requiredActions: ToolingCodexAction[];
+}
+
+export interface ToolingMakefilePolicy {
+	path: string;
+	requiredTargets: string[];
+}
+
+export interface ToolingPolicy {
+	requiredDocumentationTerms: string[];
+	requiredBinaries: string[];
+	requiredMiseTools: ToolingMiseTool[];
+	miseFilePath: string;
+	readinessScriptPath: string;
+	codexEnvironment: ToolingCodexEnvironmentPolicy;
+	makefile: ToolingMakefilePolicy;
 }
 
 export type IssueTrackingProvider = "linear";
@@ -332,6 +422,32 @@ export interface PilotAuthzPolicy {
 	enforceBranchProtection: boolean;
 }
 
+export type ControlPlaneOverrideScope =
+	| "advisory_hold"
+	| "temporary_unblock"
+	| "temporary_promote";
+
+export type ControlPlaneNonOverridableControl =
+	| "canonical_runtime_invalid"
+	| "governance_trust_mismatch"
+	| "missing_required_instruction_surface"
+	| "missing_snapshot_integrity_verification";
+
+export interface ControlPlaneOverridePolicy {
+	/** Principals allowed to request or approve control-plane overrides */
+	authorizedPrincipals: string[];
+	/** Override scopes that require dual approval */
+	dualApprovalScopes: ControlPlaneOverrideScope[];
+	/** Maximum override lifetime in hours */
+	maxTtlHours: number;
+	/** Controls that cannot be bypassed by any override */
+	nonOverridableControls: ControlPlaneNonOverridableControl[];
+}
+
+export interface ControlPlanePolicy {
+	overridePolicy: ControlPlaneOverridePolicy;
+}
+
 // === Default Values ===
 
 export const DEFAULT_REVIEW_POLICY: ReviewPolicy = {
@@ -343,6 +459,32 @@ export const DEFAULT_REVIEW_POLICY: ReviewPolicy = {
 
 export const DEFAULT_BRANCH_PROTECTION_POLICY: BranchProtectionPolicy = {
 	requiredChecks: [...BRANCH_PROTECTION_REQUIRED_CHECKS],
+	restrictDeletions: true,
+	blockForcePushes: true,
+	requireLinearHistory: true,
+	requirePullRequest: true,
+	requiredApprovingReviewCount: 0,
+	dismissStaleReviewsOnPush: true,
+	requireConversationResolution: true,
+	requireCodeOwnerReview: false,
+	requireLastPushApproval: false,
+	requireBranchesUpToDate: true,
+	allowedMergeMethods: {
+		mergeCommit: true,
+		squash: true,
+		rebase: true,
+	},
+	codeQuality: {
+		required: true,
+		severity: "all",
+	},
+	publicCodeScanning: {
+		required: true,
+		publicOnly: true,
+		tool: "CodeQL",
+		alertsThreshold: "errors",
+		securityAlertsThreshold: "high_or_higher",
+	},
 };
 
 export const DEFAULT_ISSUE_TRACKING_POLICY: IssueTrackingPolicy = {
@@ -359,6 +501,20 @@ export const DEFAULT_EVIDENCE_POLICY: EvidencePolicy = {
 	requiredFor: [],
 	allowedTypes: ["png", "jpeg"],
 	maxFileSizeBytes: 1024 * 1024, // 1MB
+};
+
+export const DEFAULT_CONTROL_PLANE_POLICY: ControlPlanePolicy = {
+	overridePolicy: {
+		authorizedPrincipals: [],
+		dualApprovalScopes: ["temporary_unblock", "temporary_promote"],
+		maxTtlHours: 24,
+		nonOverridableControls: [
+			"canonical_runtime_invalid",
+			"governance_trust_mismatch",
+			"missing_required_instruction_surface",
+			"missing_snapshot_integrity_verification",
+		],
+	},
 };
 
 export const DEFAULT_REMEDIATION_POLICY: RemediationPolicy = {
@@ -560,6 +716,28 @@ export const DEFAULT_DOCS_GATE_POLICY: DocsGatePolicy = {
 	localHookEnabled: false,
 };
 
+export const DEFAULT_TOOLING_POLICY: ToolingPolicy = {
+	requiredDocumentationTerms: [...REQUIRED_TOOLING_DOC_TERMS],
+	requiredBinaries: [...REQUIRED_TOOLING_BINARIES],
+	requiredMiseTools: PROJECT_MISE_REQUIRED_TOOLS.map(([tool, version]) => ({
+		tool,
+		version,
+	})),
+	miseFilePath: ".mise.toml",
+	readinessScriptPath: TOOLING_READINESS_SCRIPT_PATH,
+	codexEnvironment: {
+		path: TOOLING_CODEX_ENVIRONMENT_PATH,
+		requiredActions: REQUIRED_CODEX_ACTION_PAIRS.map(({ name, icon }) => ({
+			name,
+			icon,
+		})),
+	},
+	makefile: {
+		path: TOOLING_MAKEFILE_PATH,
+		requiredTargets: [...REQUIRED_MAKEFILE_TARGETS],
+	},
+};
+
 // === Contract Interface ===
 
 export interface HarnessContract {
@@ -599,10 +777,14 @@ export interface HarnessContract {
 	loopStageContracts?: LoopStageContracts | undefined;
 	/** Docs gate policy for governance documentation parity enforcement */
 	docsGatePolicy?: DocsGatePolicy | undefined;
+	/** Control-plane override authority and non-overridable guardrails */
+	controlPlanePolicy?: ControlPlanePolicy | undefined;
+	/** Required local tooling surface enforced by scaffold and readiness checks */
+	toolingPolicy?: ToolingPolicy | undefined;
 }
 
 export const DEFAULT_CONTRACT: HarnessContract = {
-	version: "1.3.0",
+	version: "1.4.0",
 	riskTierRules: {},
 	reviewPolicy: DEFAULT_REVIEW_POLICY,
 	evidencePolicy: DEFAULT_EVIDENCE_POLICY,
@@ -614,6 +796,8 @@ export const DEFAULT_CONTRACT: HarnessContract = {
 	remediationPolicy: DEFAULT_REMEDIATION_POLICY,
 	loopStageContracts: DEFAULT_LOOP_STAGE_CONTRACTS,
 	docsGatePolicy: DEFAULT_DOCS_GATE_POLICY,
+	controlPlanePolicy: DEFAULT_CONTROL_PLANE_POLICY,
+	toolingPolicy: DEFAULT_TOOLING_POLICY,
 };
 
 // === Preset Inheritance Types ===

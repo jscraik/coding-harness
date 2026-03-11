@@ -13,6 +13,10 @@ import { EXIT_CODES, runInit } from "./init.js";
 const EXPECTED_TEMPLATE_PATHS = [
 	"harness.contract.json",
 	"memory.json",
+	".greptile/config.json",
+	".greptile/rules.md",
+	".greptile/files.json",
+	".github/workflows/greptile-review.yml",
 	".github/workflows/pr-pipeline.yml",
 	".github/workflows/secret-scan.yml",
 	"CONTRIBUTING.md",
@@ -100,6 +104,7 @@ describe("runInit", () => {
 			expect(
 				existsSync(join(tempDir, ".github/workflows/pr-pipeline.yml")),
 			).toBe(false);
+			expect(existsSync(join(tempDir, ".greptile/config.json"))).toBe(false);
 			expect(existsSync(join(tempDir, "CONTRIBUTING.md"))).toBe(false);
 			expect(
 				existsSync(join(tempDir, ".github/PULL_REQUEST_TEMPLATE.md")),
@@ -122,6 +127,10 @@ describe("runInit", () => {
 			expect(existsSync(join(tempDir, "harness.contract.json"))).toBe(true);
 			expect(
 				existsSync(join(tempDir, ".github/workflows/pr-pipeline.yml")),
+			).toBe(true);
+			expect(existsSync(join(tempDir, ".greptile/config.json"))).toBe(true);
+			expect(
+				existsSync(join(tempDir, ".github/workflows/greptile-review.yml")),
 			).toBe(true);
 			expect(existsSync(join(tempDir, "CONTRIBUTING.md"))).toBe(true);
 			expect(
@@ -235,7 +244,7 @@ describe("runInit", () => {
 			const content = JSON.parse(
 				require("node:fs").readFileSync(contractPath, "utf-8"),
 			);
-			expect(content.version).toBe("1.2.0");
+			expect(content.version).toBe("1.4.0");
 			expect(content.reviewPolicy.timeoutSeconds).toBe(600);
 			expect(content.reviewPolicy.requiredChecks).toContain("security-scan");
 			expect(content.reviewPolicy.requiredChecks).not.toContain(
@@ -250,6 +259,61 @@ describe("runInit", () => {
 			expect(content.branchProtection.requiredChecks).toContain(
 				"Greptile Review",
 			);
+			expect(content.branchProtection.requiredApprovingReviewCount).toBe(0);
+			expect(content.branchProtection.requireCodeOwnerReview).toBe(false);
+			expect(content.branchProtection.requireLastPushApproval).toBe(false);
+			expect(content.branchProtection.requireLinearHistory).toBe(true);
+			expect(content.branchProtection.allowedMergeMethods).toEqual({
+				mergeCommit: true,
+				squash: true,
+				rebase: true,
+			});
+			expect(content.branchProtection.codeQuality).toEqual({
+				required: true,
+				severity: "all",
+			});
+			expect(content.branchProtection.publicCodeScanning).toEqual({
+				required: true,
+				publicOnly: true,
+				tool: "CodeQL",
+				alertsThreshold: "errors",
+				securityAlertsThreshold: "high_or_higher",
+			});
+			expect(content.toolingPolicy.miseFilePath).toBe(".mise.toml");
+			expect(content.toolingPolicy.readinessScriptPath).toBe(
+				"scripts/check-environment.sh",
+			);
+			expect(content.toolingPolicy.requiredDocumentationTerms).toContain(
+				"agent-browser",
+			);
+			expect(content.toolingPolicy.requiredBinaries).toContain("agent-browser");
+			expect(content.toolingPolicy.requiredBinaries).not.toContain("gitleaks");
+			expect(content.toolingPolicy.requiredMiseTools).toEqual(
+				expect.arrayContaining([
+					expect.objectContaining({
+						tool: "npm:@brainwav/diagram",
+						version: "1.0.8",
+					}),
+					expect.objectContaining({
+						tool: "npm:agent-browser",
+						version: "0.17.1",
+					}),
+				]),
+			);
+			expect(content.toolingPolicy.codexEnvironment.path).toBe(
+				".codex/environments/environment.toml",
+			);
+			expect(content.toolingPolicy.codexEnvironment.requiredActions).toEqual(
+				expect.arrayContaining([
+					expect.objectContaining({ name: "Tools", icon: "tool" }),
+					expect.objectContaining({ name: "Cloudflared", icon: "run" }),
+					expect.objectContaining({ name: "Vitest", icon: "test" }),
+				]),
+			);
+			expect(content.toolingPolicy.makefile.path).toBe("Makefile");
+			expect(content.toolingPolicy.makefile.requiredTargets).toContain(
+				"env-check",
+			);
 			expect(content.issueTrackingPolicy.provider).toBe("linear");
 			expect(content.issueTrackingPolicy.requirePackageBugsUrl).toBe(true);
 			expect(content.issueTrackingPolicy.requirePrIssueKey).toBe(true);
@@ -258,6 +322,50 @@ describe("runInit", () => {
 				"loop-stage-contract/v1",
 			);
 			expect(content.loopStageContracts["review-gate"].timeoutMinutes).toBe(15);
+			expect(content.controlPlanePolicy.overridePolicy.maxTtlHours).toBe(24);
+			expect(
+				content.controlPlanePolicy.overridePolicy.nonOverridableControls,
+			).toContain("governance_trust_mismatch");
+		});
+
+		it("scaffolds the Greptile baseline for distributed repos", () => {
+			const result = runInit(tempDir, { dryRun: false, force: false });
+
+			expect(result.ok).toBe(true);
+
+			const greptileConfig = JSON.parse(
+				require("node:fs").readFileSync(
+					join(tempDir, ".greptile/config.json"),
+					"utf-8",
+				),
+			);
+			const greptileFiles = JSON.parse(
+				require("node:fs").readFileSync(
+					join(tempDir, ".greptile/files.json"),
+					"utf-8",
+				),
+			);
+			const greptileRules = require("node:fs").readFileSync(
+				join(tempDir, ".greptile/rules.md"),
+				"utf-8",
+			);
+			const greptileWorkflow = require("node:fs").readFileSync(
+				join(tempDir, ".github/workflows/greptile-review.yml"),
+				"utf-8",
+			);
+
+			expect(greptileConfig.strictness).toBe(2);
+			expect(greptileConfig.requireIndependentValidation).toBe(true);
+			expect(greptileConfig.confidence.minMergeScore).toBe(4);
+			expect(
+				greptileFiles.contextFiles.some(
+					(entry: { path: string }) => entry.path === "harness.contract.json",
+				),
+			).toBe(true);
+			expect(greptileRules).toContain("Independent validation is mandatory");
+			expect(greptileWorkflow).toContain("pull_request_review:");
+			expect(greptileWorkflow).toContain("pull_request_review_comment:");
+			expect(greptileWorkflow).toContain("greptileai[bot]");
 		});
 
 		it("creates valid memory.json baseline", () => {
@@ -308,11 +416,50 @@ describe("runInit", () => {
 			expect(content).toContain('[[actions]]\nname = "Run"\nicon = "run"');
 			expect(content).toContain('[[actions]]\nname = "Debug"\nicon = "debug"');
 			expect(content).toContain('[[actions]]\nname = "Test"\nicon = "test"');
+			expect(content).toContain('name = "Prek"\nicon = "test"');
+			expect(content).toContain('name = "Diagram"\nicon = "tool"');
+			expect(content).toContain('name = "Ralph"\nicon = "debug"');
+			expect(content).toContain('name = "Mise"\nicon = "tool"');
+			expect(content).toContain('name = "Vale"\nicon = "debug"');
+			expect(content).toContain('name = "Argos"\nicon = "test"');
+			expect(content).toContain('name = "Cosign"\nicon = "debug"');
+			expect(content).toContain('name = "Cloudflared"\nicon = "run"');
+			expect(content).toContain('name = "Vitest"\nicon = "test"');
+			expect(content).toContain('name = "Ruff"\nicon = "debug"');
+			expect(content).toContain('name = "ESLint"\nicon = "debug"');
+			expect(content).toContain('name = "Agent Browser"\nicon = "tool"');
+			expect(content).toContain('name = "Agentation"\nicon = "tool"');
+			expect(content).toContain('name = "MarkdownLint"\nicon = "debug"');
+			expect(content).toContain('name = "Wrangler"\nicon = "run"');
+			expect(content).toContain('name = "1Password"\nicon = "tool"');
+			expect(content).toContain('name = "Beautiful Mermaid"\nicon = "tool"');
+			expect(content).toContain('name = "Auth0"\nicon = "tool"');
+			expect(content).toContain('name = "Semgrep"\nicon = "debug"');
+			expect(content).toContain('name = "Semver"\nicon = "tool"');
+			expect(content).toContain('name = "Trivy"\nicon = "debug"');
+			expect(content).toContain('name = "Gitleaks"\nicon = "debug"');
+			expect(content).toContain('name = "Research"\nicon = "tool"');
+			expect(content).toContain('name = "WSearch"\nicon = "tool"');
 			expect(content).toContain('name = "Script: dev"\nicon = "run"');
 			expect(content).toContain('name = "Script: check"\nicon = "debug"');
 			expect(content).toContain('name = "Script: test"\nicon = "test"');
 			expect(content).toContain('name = "Script: lint:fix"\nicon = "debug"');
+			expect(content).toContain("mise install");
 			expect(content).toContain("npm install");
+			expect(content).toContain("prek --version");
+			expect(content).toContain("diagram --help");
+			expect(content).toContain("ralph --help");
+			expect(content).toContain("cosign version");
+			expect(content).toContain("cloudflared --version");
+			expect(content).toContain("vitest --version");
+			expect(content).toContain("ruff --version");
+			expect(content).toContain("eslint --version");
+			expect(content).toContain("agent-browser --help");
+			expect(content).toContain("agentation-mcp --help");
+			expect(content).toContain("wrangler --help");
+			expect(content).toContain("gitleaks --help");
+			expect(content).toContain("rsearch --help");
+			expect(content).toContain("wsearch --help");
 			expect(content).toContain("npm run 'dev'");
 			expect(content).toContain("npm run 'check'");
 			expect(content).toContain("npm run 'test'");
@@ -463,6 +610,37 @@ describe("runInit", () => {
 			expect(content).toContain("Semgrep");
 		});
 
+		it("keeps branch protection guidance aligned to the full required-check set", () => {
+			const result = runInit(tempDir, { dryRun: false, force: false });
+
+			expect(result.ok).toBe(true);
+
+			const contributingPath = join(tempDir, "CONTRIBUTING.md");
+			const content = require("node:fs").readFileSync(
+				contributingPath,
+				"utf-8",
+			);
+			expect(content).toContain("## Greptile setup baseline");
+			expect(content).toContain("`harness verify-greptile`");
+			expect(content).toContain(
+				"`harness request-greptile-review --owner <owner> --repo <repo> --pr <number>`",
+			);
+			expect(content).toContain("`@greptileai`");
+			expect(content).toContain("`docs-gate`");
+			expect(content).toContain("`Greptile Review`");
+			expect(content).toContain("`consistency-drift-health`");
+			expect(content).toContain("- Require status checks:\n  - `pr-template`");
+			expect(content).toContain(
+				"- Allow `0` required reviewers for solo-maintainer repositories.",
+			);
+			expect(content).toContain(
+				"- Require code quality results with severity `all`.",
+			);
+			expect(content).toContain(
+				"- Allow merge commits, squash merges, and rebase merges.",
+			);
+		});
+
 		it("routes issue intake to Linear via contact links", () => {
 			writeFileSync(
 				join(tempDir, "package.json"),
@@ -529,6 +707,10 @@ describe("runInit", () => {
 				join(tempDir, "prek.toml"),
 				"utf-8",
 			);
+			const miseToml = require("node:fs").readFileSync(
+				join(tempDir, ".mise.toml"),
+				"utf-8",
+			);
 			const environmentCheck = require("node:fs").readFileSync(
 				join(tempDir, "scripts/check-environment.sh"),
 				"utf-8",
@@ -552,6 +734,76 @@ describe("runInit", () => {
 			expect(prek).toContain("pre-push = [");
 			expect(prek).toContain("test");
 			expect(prek).toContain("audit");
+			expect(miseToml).toContain('"cargo:prek" = "0.3.4"');
+			expect(miseToml).toContain('"npm:@brainwav/diagram" = "1.0.8"');
+			expect(miseToml).toContain('"npm:@argos-ci/cli" = "4.1.1"');
+			expect(miseToml).toContain('"cosign" = "3.0.5"');
+			expect(miseToml).toContain('"cloudflared" = "2026.3.0"');
+			expect(miseToml).toContain('"npm:vitest" = "4.0.18"');
+			expect(miseToml).toContain('"ruff" = "0.15.5"');
+			expect(miseToml).toContain('"npm:eslint" = "10.0.3"');
+			expect(miseToml).toContain('"npm:agent-browser" = "0.17.1"');
+			expect(miseToml).toContain('"npm:agentation" = "2.3.2"');
+			expect(miseToml).toContain('"npm:agentation-mcp" = "1.2.0"');
+			expect(miseToml).toContain('"npm:@brainwav/rsearch" = "0.1.6"');
+			expect(miseToml).toContain('"npm:@brainwav/wsearch-cli" = "0.1.9"');
+			expect(miseToml).toContain('"npm:beautiful-mermaid" = "1.1.3"');
+			expect(miseToml).toContain('"npm:markdownlint-cli2" = "0.21.0"');
+			expect(miseToml).toContain('"npm:semver" = "7.7.4"');
+			expect(miseToml).toContain('"npm:wrangler" = "4.69.0"');
+			expect(miseToml).toContain('"semgrep" = "1.153.1"');
+			expect(miseToml).toContain('"trivy" = "0.69.3"');
+			expect(miseToml).toContain('"vale" = "3.13.1"');
+			expect(environmentCheck).toContain("required_tooling_doc_terms=(");
+			expect(environmentCheck).toContain('"make"');
+			expect(environmentCheck).toContain('"beautiful-mermaid"');
+			expect(environmentCheck).toContain('"cloudflared"');
+			expect(environmentCheck).toContain('"agentation"');
+			expect(environmentCheck).toContain('"rsearch"');
+			expect(environmentCheck).toContain('"wsearch"');
+			expect(environmentCheck).toContain('"wrangler"');
+			expect(environmentCheck).not.toMatch(
+				/required_tooling_doc_terms=\([^\n]*"auth0"/,
+			);
+			expect(environmentCheck).not.toMatch(
+				/required_tooling_doc_terms=\([^\n]*"gitleaks"/,
+			);
+			expect(environmentCheck).not.toMatch(
+				/required_tooling_doc_terms=\([^\n]*"op"/,
+			);
+			expect(environmentCheck).not.toMatch(
+				/required_tooling_doc_terms=\([^\n]*"ralph"/,
+			);
+			expect(environmentCheck).toContain(
+				'CODEX_ENVIRONMENT_PATH="$REPO_ROOT/.codex/environments/environment.toml"',
+			);
+			expect(environmentCheck).toContain("required_bins=(");
+			expect(environmentCheck).toContain('"make"');
+			expect(environmentCheck).toContain('"diagram"');
+			expect(environmentCheck).toContain('"cloudflared"');
+			expect(environmentCheck).toContain('"agentation-mcp"');
+			expect(environmentCheck).toContain('"markdownlint-cli2"');
+			expect(environmentCheck).not.toMatch(/required_bins=\([^\n]*"auth0"/);
+			expect(environmentCheck).not.toMatch(/required_bins=\([^\n]*"gitleaks"/);
+			expect(environmentCheck).not.toMatch(/required_bins=\([^\n]*"op"/);
+			expect(environmentCheck).not.toMatch(/required_bins=\([^\n]*"ralph"/);
+			expect(environmentCheck).toContain("required_codex_actions=(");
+			expect(environmentCheck).toContain('"Prek|test"');
+			expect(environmentCheck).toContain('"Diagram|tool"');
+			expect(environmentCheck).toContain('"Cloudflared|run"');
+			expect(environmentCheck).toContain('"Agentation|tool"');
+			expect(environmentCheck).toContain('"Wrangler|run"');
+			expect(environmentCheck).toContain('"Gitleaks|debug"');
+			expect(environmentCheck).toContain('"Research|tool"');
+			expect(environmentCheck).toContain('MAKEFILE_PATH="$REPO_ROOT/Makefile"');
+			expect(environmentCheck).toContain("required_make_targets=(");
+			expect(environmentCheck).toContain(
+				'if ! rg -q "^${target}:" "$MAKEFILE_PATH"; then',
+			);
+			expect(environmentCheck).toContain('"check"');
+			expect(environmentCheck).toContain('"env-check"');
+			expect(environmentCheck).toContain("required Makefile target");
+			expect(environmentCheck).toContain("Codex environment action");
 			expect(environmentCheck).toContain(
 				"pnpm exec tsx src/cli.ts check-environment",
 			);
@@ -675,7 +927,9 @@ describe("--track flag", () => {
 		expect(result.ok).toBe(false);
 		if (!result.ok) {
 			expect(result.error.code).toBe("PATH_TRAVERSAL");
-			expect(result.error.path).toBe(".github/workflows/pr-pipeline.yml");
+			expect(result.error.path).toMatch(
+				/^\.github\/workflows\/(?:greptile-review|pr-pipeline)\.yml$/,
+			);
 		}
 		// Nothing should have been written to outsideDir
 		expect(existsSync(join(outsideDir, "workflows"))).toBe(false);
@@ -1170,7 +1424,7 @@ describe("--interactive flag", () => {
 			expect(contractChange).toBeDefined();
 			expect(contractChange?.action).toBe("modify");
 			expect(contractChange?.currentContent).toBe('{"version": "old"}');
-			expect(contractChange?.newContent).toContain('"version": "1.2.0"');
+			expect(contractChange?.newContent).toContain('"version": "1.4.0"');
 		}
 	});
 
@@ -1298,7 +1552,7 @@ describe("--migrate flag", () => {
 		writeFileSync(
 			join(tempDir, "harness.contract.json"),
 			JSON.stringify({
-				version: "1.3.0",
+				version: "1.4.0",
 				riskTierRules: {},
 				reviewPolicy: { timeoutSeconds: 600, timeoutAction: "fail" },
 			}),
@@ -1317,7 +1571,7 @@ describe("--migrate flag", () => {
 		}
 	});
 
-	it("migrates legacy 1.0.0 contracts to 1.3.0", () => {
+	it("migrates legacy 1.0.0 contracts to 1.4.0", () => {
 		writeFileSync(
 			join(tempDir, "harness.contract.json"),
 			JSON.stringify({
@@ -1342,10 +1596,11 @@ describe("--migrate flag", () => {
 					"utf-8",
 				),
 			);
-			expect(migrated.version).toBe("1.3.0");
+			expect(migrated.version).toBe("1.4.0");
 			expect(migrated.riskTierRules["src/legacy/*"]).toBe("low");
 			expect(migrated.reviewPolicy.timeoutSeconds).toBe(300);
 			expect(migrated.reviewPolicy.timeoutAction).toBe("warn");
+			expect(migrated.toolingPolicy.miseFilePath).toBe(".mise.toml");
 		}
 	});
 
@@ -1416,16 +1671,19 @@ describe("--migrate flag", () => {
 				),
 			);
 			// Custom settings should be preserved
-			expect(migrated.version).toBe("1.3.0");
+			expect(migrated.version).toBe("1.4.0");
 			expect(migrated.riskTierRules["src/auth/*"]).toBe("high");
 			expect(migrated.reviewPolicy.timeoutSeconds).toBe(300);
+			expect(migrated.toolingPolicy.readinessScriptPath).toBe(
+				"scripts/check-environment.sh",
+			);
 		}
 	});
 
 	it("preserves contract content when already up to date", () => {
 		// Create a contract at current version with customizations
 		const originalContent = {
-			version: "1.3.0",
+			version: "1.4.0",
 			riskTierRules: { "src/api/*": "medium" },
 			reviewPolicy: { timeoutSeconds: 900, timeoutAction: "fail" },
 		};

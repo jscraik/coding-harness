@@ -1,7 +1,16 @@
 import type {
 	BlastRadiusRule,
 	BlastRadiusRulesMode,
+	BranchProtectionCodeQualityPolicy,
+	BranchProtectionCodeScanningPolicy,
+	BranchProtectionMergeMethods,
 	BranchProtectionPolicy,
+	CodeQualitySeverity,
+	CodeScanningAlertsThreshold,
+	CodeScanningSecurityAlertsThreshold,
+	ControlPlaneOverridePolicy,
+	ControlPlaneOverrideScope,
+	ControlPlanePolicy,
 	DiffBudget,
 	DocsDriftRules,
 	DocsGateMode,
@@ -36,6 +45,11 @@ import type {
 	RiskTier,
 	RuntimePolicy,
 	TimeoutAction,
+	ToolingCodexAction,
+	ToolingCodexEnvironmentPolicy,
+	ToolingMakefilePolicy,
+	ToolingMiseTool,
+	ToolingPolicy,
 	UILoopPolicy,
 	UILoopSLO,
 } from "./types.js";
@@ -72,6 +86,8 @@ const VALID_TOP_LEVEL_KEYS = [
 	"branchProtection",
 	"issueTrackingPolicy",
 	"docsGatePolicy",
+	"controlPlanePolicy",
+	"toolingPolicy",
 	"extends",
 ] as const;
 const VALID_UI_LOOP_POLICY_KEYS = [
@@ -116,6 +132,22 @@ const VALID_PACKAGE_MANAGER_POLICY_KEYS = [
 	"allowedManagers",
 	"requiredManager",
 ] as const;
+const VALID_TOOLING_POLICY_KEYS = [
+	"requiredDocumentationTerms",
+	"requiredBinaries",
+	"requiredMiseTools",
+	"miseFilePath",
+	"readinessScriptPath",
+	"codexEnvironment",
+	"makefile",
+] as const;
+const VALID_TOOLING_CODEX_ENVIRONMENT_KEYS = [
+	"path",
+	"requiredActions",
+] as const;
+const VALID_TOOLING_CODEX_ACTION_KEYS = ["name", "icon"] as const;
+const VALID_TOOLING_MAKEFILE_KEYS = ["path", "requiredTargets"] as const;
+const VALID_TOOLING_MISE_TOOL_KEYS = ["tool", "version"] as const;
 const VALID_GAP_CASE_POLICY_KEYS = [
 	"requiredEvidenceStatuses",
 	"requiredCloseReasons",
@@ -136,6 +168,30 @@ const VALID_LOOP_STAGE_FAIL_POLICIES: LoopStageFailPolicy[] = [
 	"warn_only",
 ];
 const VALID_PR_REFERENCE_MODES: PrReferenceMode[] = ["refs", "fixes", "either"];
+const VALID_CODE_QUALITY_SEVERITIES: CodeQualitySeverity[] = [
+	"errors",
+	"warnings_and_higher",
+	"notes_and_higher",
+	"all",
+];
+const VALID_CODE_SCANNING_ALERTS_THRESHOLDS: CodeScanningAlertsThreshold[] = [
+	"errors",
+	"errors_and_warnings",
+	"all",
+];
+const VALID_CODE_SCANNING_SECURITY_ALERTS_THRESHOLDS: CodeScanningSecurityAlertsThreshold[] =
+	["high_or_higher", "medium_or_higher", "all"];
+const VALID_CONTROL_PLANE_OVERRIDE_SCOPES: ControlPlaneOverrideScope[] = [
+	"advisory_hold",
+	"temporary_unblock",
+	"temporary_promote",
+];
+const VALID_NON_OVERRIDABLE_CONTROLS = [
+	"canonical_runtime_invalid",
+	"governance_trust_mismatch",
+	"missing_required_instruction_surface",
+	"missing_snapshot_integrity_verification",
+] as const;
 
 // Machine-readable error codes for programmatic handling
 export enum ValidationErrorCode {
@@ -264,6 +320,132 @@ function isValidRequiredChecks(value: unknown): value is string[] {
 	return true;
 }
 
+function isNonEmptyStringArray(value: unknown): value is string[] {
+	if (!Array.isArray(value)) {
+		return false;
+	}
+	return value.every(
+		(item) => typeof item === "string" && item.trim().length > 0,
+	);
+}
+
+function isValidToolingMiseTool(value: unknown): value is ToolingMiseTool {
+	if (!isPlainObject(value)) return false;
+	const item = value as Record<string, unknown>;
+	const unknownKeys = Object.keys(item).filter(
+		(key) =>
+			!VALID_TOOLING_MISE_TOOL_KEYS.includes(
+				key as (typeof VALID_TOOLING_MISE_TOOL_KEYS)[number],
+			),
+	);
+	if (unknownKeys.length > 0) {
+		return false;
+	}
+	return (
+		typeof item.tool === "string" &&
+		item.tool.trim().length > 0 &&
+		typeof item.version === "string" &&
+		item.version.trim().length > 0
+	);
+}
+
+function isValidToolingCodexAction(
+	value: unknown,
+): value is ToolingCodexAction {
+	if (!isPlainObject(value)) return false;
+	const action = value as Record<string, unknown>;
+	const unknownKeys = Object.keys(action).filter(
+		(key) =>
+			!VALID_TOOLING_CODEX_ACTION_KEYS.includes(
+				key as (typeof VALID_TOOLING_CODEX_ACTION_KEYS)[number],
+			),
+	);
+	if (unknownKeys.length > 0) {
+		return false;
+	}
+
+	return (
+		typeof action.name === "string" &&
+		action.name.trim().length > 0 &&
+		(action.icon === "tool" ||
+			action.icon === "run" ||
+			action.icon === "debug" ||
+			action.icon === "test")
+	);
+}
+
+function isValidToolingCodexEnvironment(
+	value: unknown,
+): value is ToolingCodexEnvironmentPolicy {
+	if (!isPlainObject(value)) return false;
+	const env = value as Record<string, unknown>;
+	const unknownKeys = Object.keys(env).filter(
+		(key) =>
+			!VALID_TOOLING_CODEX_ENVIRONMENT_KEYS.includes(
+				key as (typeof VALID_TOOLING_CODEX_ENVIRONMENT_KEYS)[number],
+			),
+	);
+	if (unknownKeys.length > 0) {
+		return false;
+	}
+
+	return (
+		typeof env.path === "string" &&
+		env.path.trim().length > 0 &&
+		Array.isArray(env.requiredActions) &&
+		env.requiredActions.every((action) => isValidToolingCodexAction(action))
+	);
+}
+
+function isValidToolingMakefile(
+	value: unknown,
+): value is ToolingMakefilePolicy {
+	if (!isPlainObject(value)) return false;
+	const makefile = value as Record<string, unknown>;
+	const unknownKeys = Object.keys(makefile).filter(
+		(key) =>
+			!VALID_TOOLING_MAKEFILE_KEYS.includes(
+				key as (typeof VALID_TOOLING_MAKEFILE_KEYS)[number],
+			),
+	);
+	if (unknownKeys.length > 0) {
+		return false;
+	}
+
+	return (
+		typeof makefile.path === "string" &&
+		makefile.path.trim().length > 0 &&
+		isNonEmptyStringArray(makefile.requiredTargets)
+	);
+}
+
+function isValidToolingPolicy(value: unknown): value is ToolingPolicy {
+	if (!isPlainObject(value)) return false;
+	const policy = value as Record<string, unknown>;
+	const unknownKeys = Object.keys(policy).filter(
+		(key) =>
+			!VALID_TOOLING_POLICY_KEYS.includes(
+				key as (typeof VALID_TOOLING_POLICY_KEYS)[number],
+			),
+	);
+	if (unknownKeys.length > 0) {
+		return false;
+	}
+
+	return (
+		isNonEmptyStringArray(policy.requiredDocumentationTerms) &&
+		isNonEmptyStringArray(policy.requiredBinaries) &&
+		Array.isArray(policy.requiredMiseTools) &&
+		policy.requiredMiseTools.every((item) => isValidToolingMiseTool(item)) &&
+		typeof policy.miseFilePath === "string" &&
+		policy.miseFilePath.trim().length > 0 &&
+		typeof policy.readinessScriptPath === "string" &&
+		policy.readinessScriptPath.trim().length > 0 &&
+		isValidToolingCodexEnvironment(policy.codexEnvironment) &&
+		isValidToolingMakefile(policy.makefile)
+	);
+}
+
 function isValidReviewPolicy(value: unknown): value is ReviewPolicy {
 	if (!isPlainObject(value)) return false;
 	const policy = value as Record<string, unknown>;
@@ -321,7 +503,23 @@ function isValidBranchProtection(
 	const policy = value as Record<string, unknown>;
 
 	const unknownKeys = Object.keys(policy).filter(
-		(key) => !["requiredChecks"].includes(key),
+		(key) =>
+			![
+				"requiredChecks",
+				"restrictDeletions",
+				"blockForcePushes",
+				"requireLinearHistory",
+				"requirePullRequest",
+				"requiredApprovingReviewCount",
+				"dismissStaleReviewsOnPush",
+				"requireConversationResolution",
+				"requireCodeOwnerReview",
+				"requireLastPushApproval",
+				"requireBranchesUpToDate",
+				"allowedMergeMethods",
+				"codeQuality",
+				"publicCodeScanning",
+			].includes(key),
 	);
 	if (unknownKeys.length > 0) {
 		return false;
@@ -334,7 +532,220 @@ function isValidBranchProtection(
 		return false;
 	}
 
+	const booleanKeys = [
+		"restrictDeletions",
+		"blockForcePushes",
+		"requireLinearHistory",
+		"requirePullRequest",
+		"dismissStaleReviewsOnPush",
+		"requireConversationResolution",
+		"requireCodeOwnerReview",
+		"requireLastPushApproval",
+		"requireBranchesUpToDate",
+	] as const;
+	for (const key of booleanKeys) {
+		if (policy[key] !== undefined && typeof policy[key] !== "boolean") {
+			return false;
+		}
+	}
+
+	if (
+		policy.requiredApprovingReviewCount !== undefined &&
+		(typeof policy.requiredApprovingReviewCount !== "number" ||
+			!Number.isInteger(policy.requiredApprovingReviewCount) ||
+			policy.requiredApprovingReviewCount < 0)
+	) {
+		return false;
+	}
+
+	if (
+		policy.allowedMergeMethods !== undefined &&
+		!isValidBranchProtectionMergeMethods(policy.allowedMergeMethods)
+	) {
+		return false;
+	}
+
+	if (
+		policy.codeQuality !== undefined &&
+		!isValidBranchProtectionCodeQualityPolicy(policy.codeQuality)
+	) {
+		return false;
+	}
+
+	if (
+		policy.publicCodeScanning !== undefined &&
+		!isValidBranchProtectionCodeScanningPolicy(policy.publicCodeScanning)
+	) {
+		return false;
+	}
+
 	return true;
+}
+
+function isValidBranchProtectionMergeMethods(
+	value: unknown,
+): value is BranchProtectionMergeMethods {
+	if (!isPlainObject(value)) {
+		return false;
+	}
+
+	const mergeMethods = value as Record<string, unknown>;
+	const unknownKeys = Object.keys(mergeMethods).filter(
+		(key) => !["mergeCommit", "squash", "rebase"].includes(key),
+	);
+	if (unknownKeys.length > 0) {
+		return false;
+	}
+
+	return (
+		typeof mergeMethods.mergeCommit === "boolean" &&
+		typeof mergeMethods.squash === "boolean" &&
+		typeof mergeMethods.rebase === "boolean"
+	);
+}
+
+function isValidBranchProtectionCodeQualityPolicy(
+	value: unknown,
+): value is BranchProtectionCodeQualityPolicy {
+	if (!isPlainObject(value)) {
+		return false;
+	}
+
+	const policy = value as Record<string, unknown>;
+	const unknownKeys = Object.keys(policy).filter(
+		(key) => !["required", "severity"].includes(key),
+	);
+	if (unknownKeys.length > 0) {
+		return false;
+	}
+
+	return (
+		typeof policy.required === "boolean" &&
+		typeof policy.severity === "string" &&
+		VALID_CODE_QUALITY_SEVERITIES.includes(
+			policy.severity as CodeQualitySeverity,
+		)
+	);
+}
+
+function isValidBranchProtectionCodeScanningPolicy(
+	value: unknown,
+): value is BranchProtectionCodeScanningPolicy {
+	if (!isPlainObject(value)) {
+		return false;
+	}
+
+	const policy = value as Record<string, unknown>;
+	const unknownKeys = Object.keys(policy).filter(
+		(key) =>
+			![
+				"required",
+				"publicOnly",
+				"tool",
+				"alertsThreshold",
+				"securityAlertsThreshold",
+			].includes(key),
+	);
+	if (unknownKeys.length > 0) {
+		return false;
+	}
+
+	return (
+		typeof policy.required === "boolean" &&
+		typeof policy.publicOnly === "boolean" &&
+		typeof policy.tool === "string" &&
+		policy.tool.trim().length > 0 &&
+		typeof policy.alertsThreshold === "string" &&
+		VALID_CODE_SCANNING_ALERTS_THRESHOLDS.includes(
+			policy.alertsThreshold as CodeScanningAlertsThreshold,
+		) &&
+		typeof policy.securityAlertsThreshold === "string" &&
+		VALID_CODE_SCANNING_SECURITY_ALERTS_THRESHOLDS.includes(
+			policy.securityAlertsThreshold as CodeScanningSecurityAlertsThreshold,
+		)
+	);
+}
+
+function isValidControlPlaneOverridePolicy(
+	value: unknown,
+): value is ControlPlaneOverridePolicy {
+	if (!isPlainObject(value)) {
+		return false;
+	}
+
+	const policy = value as Record<string, unknown>;
+	const validKeys = [
+		"authorizedPrincipals",
+		"dualApprovalScopes",
+		"maxTtlHours",
+		"nonOverridableControls",
+	] as const;
+	const invalidKeys = Object.keys(policy).filter(
+		(key) => !validKeys.includes(key as (typeof validKeys)[number]),
+	);
+	if (invalidKeys.length > 0) {
+		return false;
+	}
+
+	if (!isStringArray(policy.authorizedPrincipals)) {
+		return false;
+	}
+
+	if (
+		!Array.isArray(policy.dualApprovalScopes) ||
+		!policy.dualApprovalScopes.every(
+			(scope) =>
+				typeof scope === "string" &&
+				VALID_CONTROL_PLANE_OVERRIDE_SCOPES.includes(
+					scope as ControlPlaneOverrideScope,
+				),
+		)
+	) {
+		return false;
+	}
+
+	if (
+		typeof policy.maxTtlHours !== "number" ||
+		!Number.isInteger(policy.maxTtlHours) ||
+		policy.maxTtlHours <= 0 ||
+		policy.maxTtlHours > 24
+	) {
+		return false;
+	}
+
+	if (
+		!Array.isArray(policy.nonOverridableControls) ||
+		!policy.nonOverridableControls.every(
+			(control) =>
+				typeof control === "string" &&
+				VALID_NON_OVERRIDABLE_CONTROLS.includes(
+					control as (typeof VALID_NON_OVERRIDABLE_CONTROLS)[number],
+				),
+		)
+	) {
+		return false;
+	}
+
+	return true;
+}
+
+export function isValidControlPlanePolicy(
+	value: unknown,
+): value is ControlPlanePolicy {
+	if (!isPlainObject(value)) {
+		return false;
+	}
+
+	const policy = value as Record<string, unknown>;
+	const validKeys = ["overridePolicy"] as const;
+	const invalidKeys = Object.keys(policy).filter(
+		(key) => !validKeys.includes(key as (typeof validKeys)[number]),
+	);
+	if (invalidKeys.length > 0) {
+		return false;
+	}
+
+	return isValidControlPlaneOverridePolicy(policy.overridePolicy);
 }
 
 function isValidLinearProjectUrl(value: string): boolean {
@@ -1755,10 +2166,11 @@ export function validateContract(
 				code: ValidationErrorCode.INVALID_VALUE,
 				path: "branchProtection",
 				message:
-					"branchProtection must include optional requiredChecks (string array)",
-				expected: "{ requiredChecks?: string[] }",
+					"branchProtection must use valid required checks, merge requirements, merge methods, and optional code quality/code scanning policy fields",
+				expected:
+					"{ requiredChecks?: string[], restrictDeletions?: boolean, blockForcePushes?: boolean, requireLinearHistory?: boolean, requirePullRequest?: boolean, requiredApprovingReviewCount?: number, dismissStaleReviewsOnPush?: boolean, requireConversationResolution?: boolean, requireCodeOwnerReview?: boolean, requireLastPushApproval?: boolean, requireBranchesUpToDate?: boolean, allowedMergeMethods?: { mergeCommit: boolean, squash: boolean, rebase: boolean }, codeQuality?: { required: boolean, severity: 'errors' | 'warnings_and_higher' | 'notes_and_higher' | 'all' }, publicCodeScanning?: { required: boolean, publicOnly: boolean, tool: string, alertsThreshold: 'errors' | 'errors_and_warnings' | 'all', securityAlertsThreshold: 'high_or_higher' | 'medium_or_higher' | 'all' } }",
 				received: JSON.stringify(obj.branchProtection),
-				fix: "Ensure branchProtection only contains requiredChecks with non-empty string values",
+				fix: "Ensure branchProtection only contains supported booleans, non-negative approval counts, valid merge methods, and supported code quality/code scanning thresholds",
 			});
 		} else {
 			branchProtection = obj.branchProtection as BranchProtectionPolicy;
@@ -1936,6 +2348,44 @@ export function validateContract(
 		}
 	}
 
+	// Validate controlPlanePolicy (optional)
+	let controlPlanePolicy: ControlPlanePolicy | undefined;
+	if ("controlPlanePolicy" in obj && obj.controlPlanePolicy !== undefined) {
+		if (!isValidControlPlanePolicy(obj.controlPlanePolicy)) {
+			errors.push({
+				code: ValidationErrorCode.INVALID_VALUE,
+				path: "controlPlanePolicy",
+				message:
+					"controlPlanePolicy must include overridePolicy with authorizedPrincipals, dualApprovalScopes, maxTtlHours (<= 24), and nonOverridableControls",
+				expected:
+					"{ overridePolicy: { authorizedPrincipals: string[], dualApprovalScopes: ('advisory_hold' | 'temporary_unblock' | 'temporary_promote')[], maxTtlHours: number, nonOverridableControls: string[] } }",
+				received: JSON.stringify(obj.controlPlanePolicy),
+				fix: "Ensure controlPlanePolicy.overridePolicy uses valid principals, scopes, TTL, and non-overridable control ids",
+			});
+		} else {
+			controlPlanePolicy = obj.controlPlanePolicy as ControlPlanePolicy;
+		}
+	}
+
+	// Validate toolingPolicy (optional)
+	let toolingPolicy: ToolingPolicy | undefined;
+	if ("toolingPolicy" in obj && obj.toolingPolicy !== undefined) {
+		if (!isValidToolingPolicy(obj.toolingPolicy)) {
+			errors.push({
+				code: ValidationErrorCode.INVALID_VALUE,
+				path: "toolingPolicy",
+				message:
+					"toolingPolicy must declare required documentation terms, binaries, mise tool pins, readiness script path, Codex environment actions, and Makefile targets",
+				expected:
+					"{ requiredDocumentationTerms: string[], requiredBinaries: string[], requiredMiseTools: [{ tool: string, version: string }], miseFilePath: string, readinessScriptPath: string, codexEnvironment: { path: string, requiredActions: [{ name: string, icon: 'tool' | 'run' | 'debug' | 'test' }] }, makefile: { path: string, requiredTargets: string[] } }",
+				received: JSON.stringify(obj.toolingPolicy),
+				fix: "Ensure toolingPolicy contains only supported keys and uses non-empty strings for terms, binaries, paths, tools, versions, action names, and target names",
+			});
+		} else {
+			toolingPolicy = obj.toolingPolicy as ToolingPolicy;
+		}
+	}
+
 	// Validate blastRadiusRules (optional)
 	let blastRadiusRules: BlastRadiusRule[] | undefined;
 	if ("blastRadiusRules" in obj && obj.blastRadiusRules !== undefined) {
@@ -2021,6 +2471,8 @@ export function validateContract(
 			pilotRollbackPolicy,
 			pilotAuthzPolicy,
 			docsGatePolicy,
+			controlPlanePolicy,
+			toolingPolicy,
 			branchProtection,
 			issueTrackingPolicy,
 			blastRadiusRules,

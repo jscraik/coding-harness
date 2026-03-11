@@ -59,7 +59,14 @@ function shouldBuildControlPlane(options: PilotEvaluateOptions): boolean {
 			options.providerId ||
 			options.modelDescriptor ||
 			options.executionMode ||
-			options.operatorType,
+			options.operatorType ||
+			options.overrideAuthorizedPrincipal ||
+			options.overrideScope ||
+			options.overrideReason ||
+			options.overrideTicketRef ||
+			(options.overrideApprovedBy?.length ?? 0) > 0 ||
+			options.overrideCreatedAt ||
+			options.overrideExpiresAt,
 	);
 }
 

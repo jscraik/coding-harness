@@ -36,26 +36,48 @@ spec: docs/specs/2026-03-10-feat-provider-neutral-gold-standard-control-plane-ha
 
 ## Current Execution Status
 
-Updated on 2026-03-10 after the current branch landing slice.
+Updated on 2026-03-11 after CP6 rollout artifact stabilization, flake mitigation, and full validation.
 
 - Landed the foundational provider-neutral companion-artifact seam for `pilot-evaluate`:
   - shared control-plane types in `src/lib/pilot-evaluation/types.ts`
   - additive artifact builder/loader in `src/lib/pilot-evaluation/control-plane.ts`
   - trusted `docs-gate`/PR-template/provider identity CLI threading in `src/commands/pilot-evaluate.ts` and `src/cli.ts`
   - focused coverage in `src/lib/pilot-evaluation/control-plane.test.ts`, `src/commands/pilot-evaluate.test.ts`, and `src/cli-dispatch.test.ts`
-- The current slice is intentionally additive:
+- Landed the required-check governance parity slice:
+  - init scaffolding now renders branch-protection guidance from shared policy truth in `src/lib/policy/required-checks.ts`
+  - `branch-protect` continues to consume `BRANCH_PROTECTION_REQUIRED_CHECKS` directly
+  - the control-plane governance snapshot now compares the full required-check identity set across `harness.contract.json`, `.github/workflows/*`, init guidance, and governed docs
+  - focused parity coverage now lives in `src/commands/init.test.ts` and `src/lib/pilot-evaluation/control-plane.test.ts`
+- Landed the contract-backed override-policy slice:
+  - trusted `controlPlanePolicy.overridePolicy` contract defaults and validation now flow through `src/lib/contract/types.ts`, `src/lib/contract/validator.ts`, `harness.contract.json`, and `src/commands/init.ts`
+  - `pilot-evaluate` now accepts explicit override inputs, enforces authorized-principal and TTL rules, rejects non-overridable controls fail-closed, and writes append-only `override-policy-record.json` plus audit-log entries in `src/lib/pilot-evaluation/control-plane.ts`
+  - merge-authoritative degraded-identity handling now resolves to `block_for_evidence` rather than adapter drift, aligning blocker semantics with the approved spec
+  - focused override coverage now lives in `src/lib/pilot-evaluation/control-plane.test.ts`, `src/commands/pilot-evaluate.test.ts`, `src/lib/contract/validator.test.ts`, `src/cli-dispatch.test.ts`, and `src/commands/init.test.ts`
+- Landed the evidence-formatting slice:
+  - every emitted companion artifact and audit-log entry now carries shared `compatibilityMajor` and `producerVersion` metadata
+  - control-plane loaders reject unsupported compatibility majors and require phase-report evidence alongside the core companion artifacts
+  - stable machine-readable phase reports now emit as `pilot-evaluate-report.json` and `override-policy-report.json`, carrying command, artifact refs, provenance, blocker context, and follow-up notes
+  - focused coverage now verifies metadata presence, phase-report emission, compatibility rejection, and command-level report writing in `src/lib/pilot-evaluation/control-plane.test.ts` and `src/commands/pilot-evaluate.test.ts`
+- Landed the Phase 6 rollout-window tracking slice:
+  - `RolloutWindow`, `RolloutWindowHistory`, `PromotionPacket`, `DemotionTrigger`, and `MonitoringMetricsSnapshot` types added to `src/lib/pilot-evaluation/types.ts`
+  - rollout window tracking with explicit stage-exit thresholds and consecutive passing window counting in `src/lib/pilot-evaluation/control-plane.ts`
+  - promotion packet generation for stage transitions (`shadow` -> `advisory` -> `enforced`) plus loader validation
+  - demotion trigger emission in `enforced`, persisted `demotion-triggers.jsonl` evidence, and `control-plane-audit-log.jsonl` demotion audit entries
+  - monitoring metrics persistence in `monitoring-metrics-latest.json` and additive CP6 compatibility checks in artifact loading
+  - focused rollout coverage in `src/lib/pilot-evaluation/control-plane.test.ts` now proves promotion packet generation, demotion evidence emission, and partial-set compatibility failure behavior
+- Stabilized the flaky pilot metrics test lane:
+  - `src/commands/pilot-evaluate.test.ts` `capturePilotMetrics` coverage now applies explicit timeout budget to the valid-artifact fixture case
+- The implementation is intentionally additive:
   - canonical `pilot-evaluate` outcome behavior remains authoritative
   - control-plane artifacts are only emitted when explicit control-plane inputs are provided
   - enforcement remains non-authoritative in `shadow`/`advisory` mode
-- Repo-wide validation for the landed slice passed:
+- Repo-wide validation passed:
+  - `pnpm lint`
+  - `pnpm typecheck`
   - `pnpm check`
-  - `npm test`
-  - `npm run test:deep`
-  - `pnpm build`
-- Still pending from later phases:
-  - contract-backed override policy records
-  - full required-check governance parity across init/branch-protect/docs surfaces
-  - rollout-window evidence, promotion packets, and demotion automation
+  - `pnpm test`
+  - `pnpm audit`
+- Implementation complete for CP0-CP6 at the code and test gate level; production promotion remains contingent on live rollout-window evidence in merge-authoritative operation.
 
 ## Overview
 
@@ -741,16 +763,16 @@ Each stage transition must produce a promotion packet with:
 - [x] Companion artifacts, retry semantics, and join-integrity rules are phased before command integration.
 - [x] `docs-gate` remains the only instruction-parity authority consumed by the control plane.
 - [x] PR-template correctness is enforced via trusted workflow evidence, not reparsed prose.
-- [ ] Required-check handling is implemented as policy-truth ingestion, not a parallel command contract.
+- [x] Required-check handling is implemented as policy-truth ingestion, not a parallel command contract.
 - [x] Scorecard work collapses onto `evaluationDecision` and `enforcementDecision` only.
 - [x] `falseBlockRate` depends on `control-plane-audit-log.jsonl` adjudications and honors denominator guards.
-- [ ] Override policy remains conditional, append-only, and fail-closed for non-overridable controls.
-- [ ] Rollout stages include explicit stage exit criteria, demotion triggers, and additive compatibility checks.
-- [ ] Test coverage proves precedence, retry, integrity, rollout, and trusted-evidence behavior.
-- [ ] Each checkpoint has a machine-checkable evidence bundle with commands, artifact paths, provenance, and blocker notes.
+- [x] Override policy remains conditional, append-only, and fail-closed for non-overridable controls.
+- [x] Rollout stages include explicit stage exit criteria, demotion triggers, and additive compatibility checks.
+- [x] Test coverage proves precedence, retry, integrity, rollout, and trusted-evidence behavior.
+- [x] Each checkpoint has a machine-checkable evidence bundle with commands, artifact paths, provenance, and blocker notes.
 - [x] Implementation-complete evidence is explicitly separated from promotion-ready evidence.
-- [ ] The full required-check identity set is governed end to end across contract, workflow, init, branch protection, and governed docs.
-- [ ] Evidence formatting is folded into existing audit-log/report families with stable required keys and naming.
+- [x] The full required-check identity set is governed end to end across contract, workflow, init, branch protection, and governed docs.
+- [x] Evidence formatting is folded into existing audit-log/report families with stable required keys and naming.
 
 ## Sources & References
 
