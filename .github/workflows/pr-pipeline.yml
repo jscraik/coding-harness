@@ -109,17 +109,14 @@ jobs:
         run: pnpm install
       - name: Enforce Linear-first issue tracking policy
         shell: bash
+        env:
+          PR_TEMPLATE_TITLE: ${{ github.event.pull_request.title || '' }}
+          PR_TEMPLATE_BODY: ${{ github.event.pull_request.body || '' }}
         run: |
           if [[ "${{ github.event_name }}" == "pull_request" ]]; then
             BRANCH="${{ github.head_ref }}"
-            PR_TITLE="$(cat <<'EOF'
-${{ github.event.pull_request.title }}
-EOF
-)"
-            PR_BODY="$(cat <<'EOF'
-${{ github.event.pull_request.body }}
-EOF
-)"
+            PR_TITLE="${PR_TEMPLATE_TITLE}"
+            PR_BODY="${PR_TEMPLATE_BODY}"
             pnpm exec tsx src/cli.ts linear-gate \
               --branch "$BRANCH" \
               --pr-title "$PR_TITLE" \
@@ -149,6 +146,9 @@ EOF
       - name: Install dependencies
         run: pnpm install
       - name: Run fast preflight policy gate
+        env:
+          PR_TEMPLATE_TITLE: ${{ github.event.pull_request.title || '' }}
+          PR_TEMPLATE_BODY: ${{ github.event.pull_request.body || '' }}
         run: |
           if [[ "${{ github.event_name }}" == "pull_request" ]]; then
             BASE_SHA="${{ github.event.pull_request.base.sha }}"
@@ -177,11 +177,8 @@ EOF
             --files "${CHANGED_FILES}" \
             --json
           if [[ "${{ github.event_name }}" == "pull_request" ]]; then
-            PR_TITLE="${{ github.event.pull_request.title }}"
-            PR_BODY="$(cat <<'EOF'
-${{ github.event.pull_request.body }}
-EOF
-)"
+            PR_TITLE="${PR_TEMPLATE_TITLE}"
+            PR_BODY="${PR_TEMPLATE_BODY}"
             pnpm exec tsx src/cli.ts plan-gate \
               --pr-title "$PR_TITLE" \
               --pr-body "$PR_BODY" \
