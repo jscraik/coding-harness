@@ -75,6 +75,43 @@ Create four interconnected components:
 3. **review-gate** - SHA-bound review verification with timeout handling
 4. **rerun-writer** - Canonical, deduplicated rerun comment mechanism
 
+## Operational Compact Contract
+
+Abbreviations:
+- `S`: state
+- `E`: event
+- `G`: guard
+- `A`: action
+- `N`: next
+
+State machine:
+
+```txt
+S0 PRECHECK -> S1 CI_FANOUT -> S2 REVIEW_GATE -> S3 MERGE_READY
+      |             |                |
+      +-----------> S4 BLOCKED <-----+
+```
+
+Transition table (`S | E | G | A | N`):
+
+| S | E | G | A | N |
+| --- | --- | --- | --- | --- |
+| `S0 PRECHECK` | `policy_pass` | risk/policy gate passes | run CI fanout jobs | `S1 CI_FANOUT` |
+| `S0 PRECHECK` | `policy_fail` | policy violation detected | emit actionable blocker output | `S4 BLOCKED` |
+| `S1 CI_FANOUT` | `ci_pass` | required jobs succeed | run SHA-bound review gate | `S2 REVIEW_GATE` |
+| `S1 CI_FANOUT` | `ci_fail` | any required job fails | emit failure summary + stop | `S4 BLOCKED` |
+| `S2 REVIEW_GATE` | `review_valid` | review artifact matches HEAD SHA and passes | mark PR merge-ready | `S3 MERGE_READY` |
+| `S2 REVIEW_GATE` | `review_missing_or_stale` | artifact missing or stale SHA | write deduplicated rerun request | `S4 BLOCKED` |
+| `S4 BLOCKED` | `rerun_complete` | remediation closes blocker condition | restart at precheck | `S0 PRECHECK` |
+
+Executor loop:
+
+```txt
+run first matching transition row
+persist decision artifact for every blocked edge
+allow merge only from S3 MERGE_READY
+```
+
 ## Technical Considerations
 
 ### Architecture

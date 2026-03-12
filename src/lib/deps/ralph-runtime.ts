@@ -11,7 +11,7 @@ export const RALPH_PACKAGE_NAME = "ralph-gold";
 export const RALPH_VERSION_PIN = "1.0.0";
 
 export const RALPH_PYTHON_VERSION_PIN = "3.12";
-export const RALPH_UV_VERSION_PIN = "0.9.5";
+export const RALPH_UV_VERSION_PIN = "0.10.9";
 export const RALPH_FALLBACK_ENV_FLAG = "HARNESS_ALLOW_RALPH_PIPX_FALLBACK";
 export const RALPH_FALLBACK_WARNING_ARTIFACT_PATH =
 	"artifacts/policy/ralph-fallback-warning.json";

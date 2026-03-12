@@ -16,6 +16,7 @@
 - [ ] Plan IDs are listed in the PR summary and resolve to existing `docs/plans/*` frontmatter `plan_id` values.
 - [ ] Completed acceptance items for referenced plans include evidence links/refs before requesting merge.
 - [ ] Required local gates run: `pnpm lint`, `pnpm docs:lint`, `pnpm workflow:validate`, `pnpm typecheck`, `pnpm test`, `pnpm audit`, `pnpm check` (or reason for deviation).
+- [ ] If scaffold/setup surfaces changed (`init`, `check-environment`, hooks, templates, tooling docs), `bash scripts/run-harness-setup-checks.sh` ran successfully.
 - [ ] Workflow contract normalization reviewed: `pnpm workflow:normalize` run (no-op or changes committed), then `pnpm workflow:validate` passes.
 - [ ] `docs-gate` passes locally when modifying governance-sensitive surfaces (CLI, CI, contract, init, docs).
 - [ ] Greptile setup verified via `greploop` or `check-pr` skill with `.greptile/config.json`, `.greptile/rules.md`, `.greptile/files.json` present.
@@ -37,6 +38,7 @@
 - Command: `pnpm test` → `pass/fail`
 - Command: `pnpm audit` → `pass/fail`
 - Command: `pnpm check` → `pass/fail`
+- Command: `bash scripts/run-harness-setup-checks.sh` → `pass/fail` (required when scaffold/setup surfaces change)
 - Command: `harness docs-gate --mode advisory` → `pass/fail` (if governance surfaces changed)
 - Any other command(s):
 

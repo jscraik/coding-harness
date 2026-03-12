@@ -88,6 +88,9 @@ tmp-agent-first-*/
 scripts/check-environment.sh
 scripts/setup-git-hooks.js
 .github/.tmp/
+*.harness-files.txt
+*.harness-add-pathspec.sh
+*.harness-commit-template.txt
 
 
 environment.toml

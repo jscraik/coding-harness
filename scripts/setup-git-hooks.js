@@ -23,10 +23,10 @@ const REQUIRED_HOOKS = {
 	"pre-push": "make hooks-pre-push",
 };
 const REQUIRED_SCRIPTS = {
-	"secrets:staged": "bash scripts/check-staged-secrets.sh",
-	"docs:style:changed": "bash scripts/check-doc-style.sh",
-	"test:related": "bash scripts/check-related-tests.sh",
-	"semgrep:changed": "bash scripts/check-semgrep-changed.sh",
+  "secrets:staged": "bash scripts/check-staged-secrets.sh",
+  "docs:style:changed": "bash scripts/check-doc-style.sh",
+  "test:related": "bash scripts/check-related-tests.sh",
+  "semgrep:changed": "bash scripts/check-semgrep-changed.sh"
 };
 const POSTINSTALL_BOOTSTRAP =
 	"command -v simple-git-hooks >/dev/null 2>&1 && simple-git-hooks || true";

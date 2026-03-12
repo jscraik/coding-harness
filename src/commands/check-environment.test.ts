@@ -9,6 +9,7 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { DEFAULT_CONTRACT } from "../lib/contract/types.js";
+import { RALPH_UV_VERSION_PIN } from "../lib/deps/ralph-runtime.js";
 
 vi.mock("node:child_process", () => ({
 	spawnSync: vi.fn(),
@@ -57,7 +58,7 @@ describe("runCheckEnvironment runtime dependency checks", () => {
 			if (command === "uv") {
 				return {
 					status: 0,
-					stdout: "uv 0.9.5\n",
+					stdout: `uv ${RALPH_UV_VERSION_PIN}\n`,
 					stderr: "",
 				} as never;
 			}
@@ -74,7 +75,7 @@ describe("runCheckEnvironment runtime dependency checks", () => {
 		expect(result.output.passed).toBe(true);
 		expect(result.output.violations).toHaveLength(0);
 		expect(result.output.posture.runtime?.pythonVersion).toBe("3.12.10");
-		expect(result.output.posture.runtime?.uvVersion).toBe("0.9.5");
+		expect(result.output.posture.runtime?.uvVersion).toBe(RALPH_UV_VERSION_PIN);
 		expect(result.output.posture.runtime?.ralphVersion).toBe("1.0.0");
 	});
 
@@ -92,7 +93,7 @@ describe("runCheckEnvironment runtime dependency checks", () => {
 			if (command === "uv") {
 				return {
 					status: 0,
-					stdout: "uv 0.9.5\n",
+					stdout: `uv ${RALPH_UV_VERSION_PIN}\n`,
 					stderr: "",
 				} as never;
 			}
@@ -124,7 +125,11 @@ describe("runCheckEnvironment runtime dependency checks", () => {
 				return { status: 0, stdout: "Python 3.12.10\n", stderr: "" } as never;
 			}
 			if (command === "uv") {
-				return { status: 0, stdout: "uv 0.9.5\n", stderr: "" } as never;
+				return {
+					status: 0,
+					stdout: `uv ${RALPH_UV_VERSION_PIN}\n`,
+					stderr: "",
+				} as never;
 			}
 			return { status: 0, stdout: "ralph-gold 1.0.0\n", stderr: "" } as never;
 		});
@@ -174,7 +179,7 @@ describe("runCheckEnvironment runtime dependency checks", () => {
 			if (command === "uv") {
 				return {
 					status: 0,
-					stdout: "uv 0.9.5\n",
+					stdout: `uv ${RALPH_UV_VERSION_PIN}\n`,
 					stderr: "",
 				} as never;
 			}
@@ -199,7 +204,11 @@ describe("runCheckEnvironment runtime dependency checks", () => {
 				return { status: 0, stdout: "Python 3.12.10\n", stderr: "" } as never;
 			}
 			if (command === "uv") {
-				return { status: 0, stdout: "uv 0.9.5\n", stderr: "" } as never;
+				return {
+					status: 0,
+					stdout: `uv ${RALPH_UV_VERSION_PIN}\n`,
+					stderr: "",
+				} as never;
 			}
 			return { status: 0, stdout: "ralph-gold 1.0.0\n", stderr: "" } as never;
 		});
@@ -233,7 +242,11 @@ describe("runCheckEnvironment runtime dependency checks", () => {
 				return { status: 0, stdout: "Python 3.12.10\n", stderr: "" } as never;
 			}
 			if (command === "uv") {
-				return { status: 0, stdout: "uv 0.9.5\n", stderr: "" } as never;
+				return {
+					status: 0,
+					stdout: `uv ${RALPH_UV_VERSION_PIN}\n`,
+					stderr: "",
+				} as never;
 			}
 			if (command === "git") {
 				return {

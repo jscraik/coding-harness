@@ -34,7 +34,7 @@
 		"test": "vitest run",
 		"test:watch": "vitest",
 		"test:deep": "pnpm check && pnpm test:artifacts",
-		"build": "tsc && cp -r src/presets dist/presets && chmod +x dist/cli.js",
+		"build": "tsc && cp -r src/presets dist/presets && cp -r src/templates dist/templates && chmod +x dist/cli.js",
 		"prepublishOnly": "pnpm check && pnpm build",
 		"changelog": "standard-version --skip.bump --skip.tag --skip.commit",
 		"release": "standard-version",
