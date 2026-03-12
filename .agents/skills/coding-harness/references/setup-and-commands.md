@@ -4,6 +4,7 @@
 - [Prerequisites](#prerequisites)
 - [Command truth source](#command-truth-source)
 - [Install modes](#install-modes)
+- [Bootstrap workflow](#bootstrap-workflow)
 - [Abbreviations](#abbreviations)
 - [Metadata](#metadata)
 - [Invariants](#invariants)
@@ -76,6 +77,34 @@ to `pnpm exec tsx src/cli.ts ...`; it requires the global `harness` binary from 
 ## Bootstrap workflow
 
 1. Install dependencies:
+
+## Abbreviations
+| Abbr | Meaning |
+| --- | --- |
+| `S` | state |
+| `E` | event |
+| `G` | guard |
+| `A` | action |
+| `N` | next state |
+
+## Metadata
+| Field | Value |
+| --- | --- |
+| `owner` | `TODO` |
+| `max_duration` | `TODO` |
+| `escalation` | `TODO` |
+
+## Invariants
+- TODO invariant 1
+- TODO invariant 2
+
+## States
+```txt
+S0 (non-terminal)
+DONE (terminal)
+FAIL (terminal)
+BLOCKED (terminal)
+```
 
 ## Transition Table (Canonical)
 `S | E | G | A | N`
