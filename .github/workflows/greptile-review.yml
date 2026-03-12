@@ -253,18 +253,29 @@ jobs:
               return;
             }
 
-            await github.rest.issues.createComment({
-              owner,
-              repo,
-              issue_number: prNumber,
-              body: [
-                "@greptileai please review the latest changes on this PR head commit.",
-                "",
-                marker,
-              ].join("\n"),
-            });
+            try {
+              await github.rest.issues.createComment({
+                owner,
+                repo,
+                issue_number: prNumber,
+                body: [
+                  "@greptileai please review the latest changes on this PR head commit.",
+                  "",
+                  marker,
+                ].join("\n"),
+              });
 
-            console.log(`Posted Greptile auto-request for head ${headSha}`);
+              console.log(`Posted Greptile auto-request for head ${headSha}`);
+            } catch (error) {
+              if (error?.status === 403) {
+                core.warning(
+                  "Auto-request skipped: token cannot write PR comments (Resource not accessible by integration). " +
+                    "Set workflow permissions to Read and write or request Greptile manually for this run.",
+                );
+                return;
+              }
+              throw error;
+            }
 
       - name: Finalize workflow check for pull_request events
         if: github.event_name == 'pull_request'
