@@ -152,11 +152,32 @@ contact_links:
 			"utf-8",
 		);
 
-		const result = runLinearGate({
-			repoRoot: tempDir,
-			allowMissingBranch: true,
-			allowMissingPrMetadata: true,
-		});
+		const previousGithubHeadRef = process.env.GITHUB_HEAD_REF;
+		const previousGithubRefName = process.env.GITHUB_REF_NAME;
+		process.env.GITHUB_HEAD_REF = "";
+		process.env.GITHUB_REF_NAME = "";
+
+		const result = (() => {
+			try {
+				return runLinearGate({
+					repoRoot: tempDir,
+					allowMissingBranch: true,
+					allowMissingPrMetadata: true,
+				});
+			} finally {
+				if (previousGithubHeadRef === undefined) {
+					process.env.GITHUB_HEAD_REF = "";
+				} else {
+					process.env.GITHUB_HEAD_REF = previousGithubHeadRef;
+				}
+
+				if (previousGithubRefName === undefined) {
+					process.env.GITHUB_REF_NAME = "";
+				} else {
+					process.env.GITHUB_REF_NAME = previousGithubRefName;
+				}
+			}
+		})();
 
 		expect(result.ok).toBe(true);
 		if (!result.ok) {
