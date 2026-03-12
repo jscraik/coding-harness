@@ -45,7 +45,7 @@ if [[ ! -f "$PREK_CONFIG_PATH" ]]; then
 	exit 1
 fi
 
-required_support_files=("scripts/check-staged-secrets.sh" "scripts/check-doc-style.sh" "scripts/check-related-tests.sh" "scripts/check-semgrep-changed.sh" "scripts/semgrep-pre-push.yml")
+required_support_files=("scripts/codex-preflight.sh" "scripts/check-staged-secrets.sh" "scripts/check-doc-style.sh" "scripts/check-related-tests.sh" "scripts/check-semgrep-changed.sh" "scripts/semgrep-pre-push.yml")
 for support_file in "${required_support_files[@]}"; do
 	if [[ ! -f "$REPO_ROOT/${support_file}" ]]; then
 		echo "Error: missing required hook support file at $REPO_ROOT/${support_file}"
@@ -109,7 +109,7 @@ for action in "${required_codex_actions[@]}"; do
 	fi
 done
 
-required_make_targets=("help" "install" "setup" "hooks" "hooks-pre-commit" "hooks-pre-push" "diagrams-check" "lint" "docs-lint" "fmt" "typecheck" "test" "check" "audit" "secrets" "security" "clean" "reset" "ci" "diagrams" "env-check")
+required_make_targets=("help" "install" "setup" "preflight" "hooks" "hooks-pre-commit" "hooks-pre-push" "secrets-staged" "docs-style-changed" "related-tests" "semgrep-changed" "diagrams-check" "lint" "docs-lint" "fmt" "typecheck" "test" "check" "audit" "secrets" "security" "clean" "reset" "ci" "diagrams" "env-check")
 for target in "${required_make_targets[@]}"; do
 	if ! rg -q "^${target}:" "$MAKEFILE_PATH"; then
 		echo "Error: required Makefile target '$target' is missing from $MAKEFILE_PATH"
@@ -167,7 +167,6 @@ if [[ -f "$PACKAGE_JSON_PATH" ]]; then
 		[[ -n "$capability" ]] || continue
 		repo_capabilities+=("$capability")
 	done
-
 	ui_markers=("react" "react-dom" "next" "vite" "tailwindcss" "@storybook/react" "@storybook/react-vite" "@radix-ui/react-slot")
 	for marker in "${ui_markers[@]}"; do
 		if has_package_marker "$marker"; then
