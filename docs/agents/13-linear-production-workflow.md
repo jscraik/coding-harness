@@ -3,14 +3,17 @@
 ## Table of Contents
 
 - [Purpose](#purpose)
-- [Operating model](#operating-model)
-- [Intake rules](#intake-rules)
-- [Issue types and labels](#issue-types-and-labels)
-- [Execution flow](#execution-flow)
-- [Harness command surface](#harness-command-surface)
-- [System boundaries](#system-boundaries)
-- [Definition of done](#definition-of-done)
-- [Manual workspace follow-ups](#manual-workspace-follow-ups)
+- [Abbreviations](#abbreviations)
+- [Metadata](#metadata)
+- [Invariants](#invariants)
+- [States](#states)
+- [Transition Table (Canonical)](#transition-table-canonical)
+- [Error Handling](#error-handling)
+- [Idempotency](#idempotency)
+- [Execution Modes](#execution-modes)
+- [Dry-Run Simulation](#dry-run-simulation)
+- [Observability Logs](#observability-logs)
+- [Validation Checklist](#validation-checklist)
 
 ## Purpose
 
@@ -23,6 +26,98 @@ This document defines the production workflow for coding-harness work tracked in
 - **GitHub** remains the source of truth for branches, pull requests, CI, reviews, and merge history.
 - **GitHub Issues are not the default intake path** for this repository.
 - The repo-level GitHub issue-form entry points are retired and replaced with Linear/docs/security contact links.
+
+## Abbreviations
+
+| Abbr | Meaning |
+| --- | --- |
+| `LI` | Linear issue |
+| `LK` | Linear issue key (example: `JSC-37`) |
+| `PR` | Pull request |
+| `S` | State |
+| `E` | Event |
+| `G` | Guard |
+| `A` | Action |
+| `N` | Next state |
+| `DoD` | Definition of done |
+
+## Metadata
+| Field | Value |
+| --- | --- |
+| `owner` | `coding-harness-maintainers` |
+| `max_duration` | `1 issue lifecycle` |
+| `escalation` | `set Blocked marker with explicit unblock action` |
+
+## Invariants
+- Exactly one running LI progress thread per issue.
+- Branch format is `codex/<lk>-<slug>`.
+- `S2 IN_PROGRESS -> S3 IN_REVIEW` requires DoD pre-review checks.
+- `pr_closed_unmerged` always routes back to active work.
+
+## States
+```txt
+S0 TRIAGE (non-terminal)
+S1 READY (non-terminal)
+S2 IN_PROGRESS (non-terminal)
+S3 IN_REVIEW (non-terminal)
+S4 DONE (terminal)
+S5 BLOCKED (non-terminal)
+```
+
+## Transition Table (Canonical)
+
+`S | E | G | A | N`
+
+| S | E | G | A | N |
+| --- | --- | --- | --- | --- |
+| `S0 TRIAGE` | `scoped` | issue has clear next action | move LI to ready queue | `S1 READY` |
+| `S1 READY` | `start` | branch created with `codex/` + `LK` | `harness linear claim --issue <LK> --branch <name>` | `S2 IN_PROGRESS` |
+| `S2 IN_PROGRESS` | `progress_tick` | always | update single running LI comment | `S2 IN_PROGRESS` |
+| `S2 IN_PROGRESS` | `pr_opened` | PR URL available | attach PR URL to LI | `S2 IN_PROGRESS` |
+| `S2 IN_PROGRESS` | `handoff_ready` | DoD pre-review checks pass | `harness linear handoff --issue <LK> --pr-url <url> --evidence-url <url[,url]>` | `S3 IN_REVIEW` |
+| `S3 IN_REVIEW` | `merged` | required checks pass | `harness linear close --issue <LK> --pr-url <url>` | `S4 DONE` |
+| `S3 IN_REVIEW` | `pr_closed_unmerged` | PR closed without merge | `harness linear claim --issue <LK> --state "In Progress" --no-assign` and add rationale note | `S2 IN_PROGRESS` |
+| `S2 IN_PROGRESS` | `blocked` | missing auth, permission, or human input | add `Blocked` marker and unblock action | `S5 BLOCKED` |
+| `S5 BLOCKED` | `unblocked` | dependency resolved | remove blocker marker and resume execution | `S2 IN_PROGRESS` |
+
+## Error Handling
+- `VALIDATION_ERROR`: missing/invalid LK or malformed branch/PR metadata.
+- `BLOCKED_DEPENDENCY`: missing permission, auth, or required human input.
+- `POLICY_FAIL`: required checks/docs-gate/branch policy fail.
+- `SYSTEM_ERROR`: CLI/API failures while executing transition actions.
+
+## Idempotency
+- Key: `<LK>|<state>|<event>|<pr_url?>`.
+- Replayed `progress_tick` and `pr_opened` events upsert existing LI artifacts.
+- `handoff_ready` replay must not duplicate evidence links/comments.
+
+## Execution Modes
+- `STRICT`: fail on validation/policy errors and block transition.
+- `ADVISORY`: emit warning artifacts and continue where safe.
+
+## Dry-Run Simulation
+- No stateful writes to Linear/GitHub and no side effects.
+- Guards and transition selection run deterministically.
+- Emit deterministic transition trace output for review.
+
+## Observability Logs
+```json
+{
+  "workflow_id": "linear-production-workflow",
+  "transition_code": "S2:handoff_ready",
+  "from_state": "S2 IN_PROGRESS",
+  "to_state": "S3 IN_REVIEW",
+  "correlation_id": "JSC-37:PR-123",
+  "result": "success|blocked|failed"
+}
+```
+
+## Validation Checklist
+- non-terminal states have >=1 outbound transition
+- deterministic event resolution per `(S,E)`
+- failure events route to blocked/fail lane
+- terminal states have no outbound transitions
+- DoD gate enforced before review transition
 
 ## Intake rules
 
@@ -60,14 +155,43 @@ Use the workflow labels for orchestration/reporting when relevant:
 
 ## Execution flow
 
-1. Start from a Linear issue in the `coding-harness` project.
-2. Create a branch using the required `codex/` prefix and include the Linear issue key where practical.
-3. Move the issue to `In Progress` when implementation starts.
-4. Keep a single running progress update on the issue instead of scattering status across multiple comments.
-5. Attach the PR, branch, commit, and validation evidence before moving the issue to `In Review`.
-6. Move the issue to `Done` only after merge and required checks have passed.
-7. If the work is blocked by missing auth, permissions, or human input, keep the issue active, mark it clearly as blocked, and record the unblock action.
-8. If a PR is closed without merge, return the issue to an active state (for example `In Progress`) with a note describing why the PR lane was abandoned.
+### State machine
+
+State machine:
+
+```txt
+S0 TRIAGE -> S1 READY -> S2 IN_PROGRESS -> S3 IN_REVIEW -> S4 DONE
+                                 |                |
+                                 +----> S5 BLOCKED+
+```
+
+Execution invariants:
+- Keep one running progress comment per LI.
+- Branch format is `codex/<lk>-<slug>`.
+- Every `S2 -> S3` transition includes evidence links.
+- `S3 -> S2` is required when a PR closes without merge.
+
+## Execution pseudocode
+
+```txt
+preflight:
+  assert LI exists in coding-harness project
+  assert branch format contains codex/ and LK
+
+run:
+  transition to S2 at implementation start
+  maintain one LI progress thread
+  sync PR, branch, commit, and evidence refs
+
+gate_to_review:
+  require pnpm lint && pnpm typecheck && pnpm test && pnpm audit && pnpm check
+  require docs-gate parity
+  transition S2 -> S3
+
+closeout:
+  if PR merged and checks green: transition S3 -> S4
+  if PR closed without merge: transition S3 -> S2 with rationale
+```
 
 ## Harness command surface
 

@@ -59,6 +59,7 @@ gardener-report.json
 ops/metrics/skill-feedback/
 
 # Pilot artifacts
+artifacts/
 artifacts/pilot/
 artifacts/agent-runs/
 artifacts/policy/
@@ -86,6 +87,7 @@ tmp-agent-first-*/
 # Locally generated helper scripts (from init template previews)
 scripts/check-environment.sh
 scripts/setup-git-hooks.js
+.github/.tmp/
 
 
 environment.toml

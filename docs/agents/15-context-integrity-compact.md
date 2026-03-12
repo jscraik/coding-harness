@@ -6,6 +6,16 @@
 ## Table of Contents
 
 - [Abbreviations](#abbreviations)
+- [Metadata](#metadata)
+- [Invariants](#invariants)
+- [States](#states)
+- [Transition Table (Canonical)](#transition-table-canonical)
+- [Error Handling](#error-handling)
+- [Idempotency](#idempotency)
+- [Execution Modes](#execution-modes)
+- [Dry-Run Simulation](#dry-run-simulation)
+- [Observability Logs](#observability-logs)
+- [Validation Checklist](#validation-checklist)
 - [Domain Model (Compact)](#domain-model-compact)
 - [Checkpoint State Machine](#checkpoint-state-machine)
 - [Phase Execution Map](#phase-execution-map)
@@ -34,6 +44,70 @@
 | CP*n* | Checkpoint *n* (hard-stop gate) |
 | AUTH | authority level |
 | ST | staleness state |
+
+## Metadata
+| Field | Value |
+| --- | --- |
+| `owner` | `context-integrity-maintainers` |
+| `max_duration` | `CP0->CP7 rollout window` |
+| `escalation` | `hard-stop at first failed checkpoint and rerun from first failure` |
+
+## Invariants
+- Checkpoints execute in order with no skip-ahead.
+- Any checkpoint failure routes to `FAIL`.
+- Recovery always starts from first failed checkpoint.
+- Artifact references must resolve or fail closed.
+
+## States
+```txt
+CP0..CP7 (non-terminal except completion at CP7)
+FAIL (terminal)
+```
+
+## Transition Table (Canonical)
+`S | E | G | A | N`
+
+| S | E | G | A | N |
+| --- | --- | --- | --- | --- |
+| `CP0` | `contract_loaded` | `CIP` validates and artifacts typed | scaffold defaults + freeze vocab | `CP1` |
+| `CP1` | `inventory_complete` | authoritative corpus indexed | persist inventory artifact | `CP2` |
+| `CP2` | `retrieval_verified` | AUTH/ST ranking tests pass | persist retrieval reports | `CP3` |
+| `CP3` | `ledger_verified` | stable `finding_id` + non-placeholder findings | append contradiction history | `CP4a` |
+| `CP4a` | `checkout_health_scored` | persisted snapshots only, denominator guards proven | emit current-checkout health reports | `CP4b` |
+| `CP4b` | `window_health_scored` | 30 eval or 7-day window + dedupe passes | emit windowed health reports | `CP5` |
+| `CP5` | `join_integrity_verified` | stale/missing refs fail explicitly | enforce load-or-fail join policy | `CP6` |
+| `CP6` | `docs_rollout_aligned` | docs + rollout wiring + downgrade lane verified | update operator docs and workflow-owned references | `CP7` |
+| `CP*` | `gate_failed` | any checkpoint pass condition fails | emit explicit fail artifact + stop promotion | `FAIL` |
+
+## Error Handling
+- `VALIDATION_ERROR`: invalid contract/schema/artifact payload.
+- `BLOCKED_DEPENDENCY`: required source/artifact missing.
+- `POLICY_FAIL`: governance/docs-gate/posture policy conflict.
+- `SYSTEM_ERROR`: runtime/indexing/IO failures.
+
+## Idempotency
+- Key: `<checkpoint>|<contract_hash>|<artifact_set_hash>`.
+- Replays of completed checkpoints must not duplicate contradiction or rollout entries.
+- Deduplication relies on checkpoint-scoped dedupe keys.
+
+## Execution Modes
+- `STRICT`: fail closed on any missing or inconsistent evidence.
+- `ADVISORY`: emit warnings while preserving explicit non-promotion outcomes.
+
+## Dry-Run Simulation
+- Evaluate checkpoint guards and transitions only with no side effects.
+- Produce deterministic transition trace output for checkpoints.
+- No artifact mutation side effects.
+
+## Observability Logs
+`workflow_id, transition_code, from_state, to_state, correlation_id, result`
+
+## Validation Checklist
+- non-terminal checkpoints have outbound transitions
+- deterministic `(S,E)` checkpoint routing
+- failures route to `FAIL`/`BLOCKED`
+- terminal `FAIL` has no outbound transitions
+- rerun starts at first failed checkpoint
 
 ---
 
@@ -87,6 +161,9 @@ RO  ::= { query, mode, count, results[{ path, score, AUTH, ST }], warnings[] }
 | **CP6** | Docs + Rollout | Operator docs match shipped behavior; downgrade path verified |
 | **CP7** | Full Validation | `pnpm check` passes; rollout evidence packaged; promotion-ready signal distinct |
 
+Executor invariant:
+- rerun starts from first failed checkpoint; skip-ahead is not allowed.
+
 ---
 
 ## Phase Execution Map
@@ -139,6 +216,15 @@ context-health → resolve window(current_checkout|recent_artifacts) →
   load persisted artifacts via artifactRefs →
   apply denominator guards → dedupe by dedupe_key →
   emit CHR → advisory only (no merge-blocking)
+```
+
+## Executor pseudocode
+
+```txt
+start at CP0
+for each checkpoint transition row:
+  if guard fails: emit fail artifact and stop
+  run action and advance to next checkpoint
 ```
 
 ---

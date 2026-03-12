@@ -49,12 +49,32 @@ codex:
 # Coding Harness Symphony Workflow
 
 ## Table of Contents
-- [Execution contract](#execution-contract)
-- [State handling](#state-handling)
-- [Definition of done](#definition-of-done)
-- [Blocked policy](#blocked-policy)
+- [Abbreviations](#abbreviations)
+- [Metadata](#metadata)
+- [Invariants](#invariants)
+- [States](#states)
+- [Transition Table (Canonical)](#transition-table-canonical)
+- [Error Handling](#error-handling)
+- [Idempotency](#idempotency)
+- [Execution Modes](#execution-modes)
+- [Dry-Run Simulation](#dry-run-simulation)
+- [Observability Logs](#observability-logs)
+- [Validation Checklist](#validation-checklist)
 
 ## Execution contract
+| Field | Value |
+| --- | --- |
+| `owner` | `coding-harness-maintainers` |
+| `max_duration` | `12 turns` |
+| `escalation` | `Block at S4 BLOCKED with unblock_action payload` |
+
+## Workflow context
+- Branch names keep `codex/` prefix and include `LK`.
+- One progress comment thread per Linear issue.
+- `S2 IN_REVIEW` requires pre-review checks to pass before entry.
+- Terminal states (`S3 DONE`, `S4 BLOCKED`) do not auto-transition without explicit events.
+
+## Execution context
 You are working on Linear issue `{{ issue.identifier }}`.
 
 Issue title: {{ issue.title }}
@@ -68,18 +88,132 @@ Use only the current workspace root and follow repository instructions:
 
 Do not operate outside the checked-out repository.
 
-## State handling
-1. If issue is `Todo`, move it to `In Progress` before editing code.
-2. Keep a single running workpad-style progress comment on the issue.
-3. Attach or update PR link on the issue once a PR exists.
-4. Move issue to `In Review` only when all required checks pass.
-5. If blocked by missing auth/secrets/permissions, post a concise blocker note, apply the `Blocked` label when available, and keep `In Progress`.
-6. Prefer the repo-native Linear workflow commands when available:
-   - `harness linear prepare --issue <KEY> --field branch`
-   - `harness linear claim --issue <KEY> --branch <codex/...> --workspace <path>`
-   - `harness linear handoff --issue <KEY> --pr-url <url> --evidence-url <url[,url]>`
-   - `harness linear close --issue <KEY> --pr-url <url>`
-7. For GitHub↔Linear automation, keep the Linear issue key in the branch name and use `Refs <KEY>` or `Fixes <KEY>` in the PR body/title.
+## Abbreviations
+| Abbr | Meaning |
+| --- | --- |
+| `LI` | Linear issue |
+| `LK` | Linear key (example: `JSC-36`) |
+| `PR` | GitHub pull request |
+| `S` | State |
+| `E` | Event |
+| `G` | Guard |
+| `A` | Action |
+| `N` | Next state |
+| `DoD` | Definition of done |
+
+## Metadata
+| Field | Value |
+| --- | --- |
+| `owner` | `coding-harness-maintainers` |
+| `max_duration` | `12 turns` |
+| `escalation` | `Block at S4 BLOCKED with unblock_action payload` |
+
+## Invariants
+- Branch names keep `codex/` prefix and include `LK`.
+- One progress comment thread per Linear issue.
+- `S2 IN_REVIEW` requires pre-review checks to pass before entry.
+- Terminal state `S3 DONE` has no outbound transitions.
+
+## States
+```txt
+S0 TODO (non-terminal)
+S1 IN_PROGRESS (non-terminal)
+S2 IN_REVIEW (non-terminal)
+S3 DONE (terminal)
+S4 BLOCKED (non-terminal)
+```
+
+### State machine
+```
+S0 TODO -> S1 IN_PROGRESS -> S2 IN_REVIEW -> S3 DONE
+  |             |                 |
+  |             +----> S4 BLOCKED-+
+  +-------------------------------+
+```
+
+## Transition Table (Canonical)
+`S | E | G | A | N`
+
+| S | E | G | A | N |
+| --- | --- | --- | --- | --- |
+| `S0 TODO` | `start` | issue selected | `harness linear claim --issue <LK> --branch <codex/...> --workspace <path>` | `S1 IN_PROGRESS` |
+| `S1 IN_PROGRESS` | `status_tick` | always | update one running progress comment (single thread) | `S1 IN_PROGRESS` |
+| `S1 IN_PROGRESS` | `pr_opened` | PR exists | attach/update PR link on LI | `S1 IN_PROGRESS` |
+| `S1 IN_PROGRESS` | `handoff_ready` | `pnpm lint && pnpm typecheck && pnpm test && pnpm audit && pnpm check` pass | `harness linear handoff --issue <LK> --pr-url <url> --evidence-url <url[,url]>` | `S2 IN_REVIEW` |
+| `S2 IN_REVIEW` | `merged` | required checks pass | `harness linear close --issue <LK> --pr-url <url>` | `S3 DONE` |
+| `S1 IN_PROGRESS` | `blocked` | missing auth, secret, or permission | post blocker note, add `Blocked` label when available, record unblock action | `S4 BLOCKED` |
+| `S4 BLOCKED` | `unblocked` | dependency restored | remove blocker marker, continue execution | `S1 IN_PROGRESS` |
+
+Command lane (always available):
+- `harness linear prepare --issue <LK> --field branch`
+- `harness linear claim --issue <LK> --branch <codex/...> --workspace <path>`
+- `harness linear handoff --issue <LK> --pr-url <url> --evidence-url <url[,url]>`
+- `harness linear close --issue <LK> --pr-url <url>`
+
+GitHub linking invariant:
+- branch keeps `codex/` prefix and includes `LK`.
+- PR uses `Refs <LK>` for linking or `Fixes <LK>` for merge closeout.
+
+## Error Handling
+- `VALIDATION_ERROR`: invalid issue key, malformed branch, or missing required fields.
+- `BLOCKED_DEPENDENCY`: missing auth/secret/permission; route to `S4 BLOCKED`.
+- `POLICY_FAIL`: required checks, branch policy, or PR reference policy fails.
+- `SYSTEM_ERROR`: CLI/runtime/network failure; stop and emit failed command.
+
+## Idempotency
+- Idempotency key: `{{ issue.identifier }}|{{ issue.url }}|<event>|<state>`.
+- Repeated `status_tick` updates mutate the single running comment, not create duplicates.
+- Replayed `pr_opened`/`handoff_ready` must upsert LI links/comments.
+
+## Execution Modes
+- `STRICT`: enforce hard-fail for policy/validation violations.
+- `ADVISORY`: emit warnings and continue only for non-safety violations.
+
+## Dry-Run Simulation
+- Enable dry-run by evaluating guards and transitions with no side effects.
+- Emit deterministic transition trace output rows: `S,E,G,A,N,decision`.
+- No writes to Linear/GitHub in dry-run mode.
+
+## Observability Logs
+```json
+{
+  "workflow_id": "linear-production",
+  "transition_code": "S1:handoff_ready",
+  "from_state": "S1 IN_PROGRESS",
+  "to_state": "S2 IN_REVIEW",
+  "correlation_id": "LK-PR-SHA",
+  "result": "success|blocked|failed"
+}
+```
+
+## Validation Checklist
+- non-terminal states have outbound transitions
+- deterministic `(S,E)` routing via non-overlapping guards
+- failures route to `FAIL`/`BLOCKED`
+- terminal states have no outbound transitions
+- required checks pass before review transition
+
+## Agent pseudocode
+```txt
+init:
+  assert repo instructions loaded
+  assert issue key present
+
+if LI.state == TODO:
+  transition(S0 -> S1)
+
+while state in {S1, S4}:
+  if blocked:
+    transition(* -> S4) with explicit unblock action
+  else:
+    execute scoped work
+    maintain one running LI progress comment
+    if PR exists: sync PR URL attachment
+    if DoD pre-review checks pass: transition(S1 -> S2)
+
+if state == S2 and PR merged and required checks pass:
+  transition(S2 -> S3)
+```
 
 ## Definition of done
 Before handoff, run and pass:
@@ -95,9 +229,11 @@ When creating commits, include this trailer exactly once at the end:
 `Co-authored-by: Codex <noreply@openai.com>`
 
 ## Blocked policy
-Only stop for true blockers (missing required auth, secrets, or permissions).
-When blocked, report:
-- what is missing,
-- what command failed,
-- what human action unblocks the run.
-- Do not create a GitHub Issue for routine intake; keep the canonical work item in Linear.
+Only stop for true blockers (`auth`, `secrets`, `permissions`).
+
+Required blocker payload:
+- `missing`: what dependency is absent
+- `failed_cmd`: exact command that failed
+- `unblock_action`: human action required
+
+Do not create a GitHub Issue for routine intake; keep the canonical work item in Linear.

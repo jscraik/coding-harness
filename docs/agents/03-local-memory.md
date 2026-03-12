@@ -1,7 +1,100 @@
 # Local-memory workflow
 
-## Intent
+## Abbreviations
 
+| Abbr | Meaning |
+| --- | --- |
+| `L0` | raw observation capture |
+| `L1` | interpreted learning capture |
+| `SID` | session id (`repo:<name>:task:<id>`) |
+| `S` | state |
+| `E` | event |
+| `G` | guard |
+| `A` | action |
+| `N` | next state |
+
+## Metadata
+| Field | Value |
+| --- | --- |
+| `owner` | `memory-governance` |
+| `max_duration` | `single session` |
+| `escalation` | `move to S4 BLOCKED and request precedence decision` |
+
+## Invariants
+- Durable writes require `bootstrap` and `search` in the same `SID`.
+- No secrets, tokens, credentials, or PII in persisted memory.
+- Conflicts require explicit precedence resolution before durable capture.
+
+## States
+```txt
+S0 PRECHECK (non-terminal)
+S1 CAPTURE (non-terminal)
+S2 VERIFY (non-terminal)
+S3 DURABLE (terminal)
+S4 BLOCKED (non-terminal)
+```
+
+### State machine
+
+```txt
+S0 PRECHECK -> S1 CAPTURE -> S2 VERIFY -> S3 DURABLE
+      |             |            |
+      +----> S4 BLOCKED <--------+
+```
+
+## Transition Table (Canonical)
+
+`S | E | G | A | N`
+
+| S | E | G | A | N |
+| --- | --- | --- | --- | --- |
+| `S0 PRECHECK` | `bootstrap_ok` | `bootstrap` + `search` completed in same SID | begin durable write candidate | `S1 CAPTURE` |
+| `S1 CAPTURE` | `capture_observation` | evidence-backed fact | `observe(level=\"observation\")` | `S2 VERIFY` |
+| `S1 CAPTURE` | `capture_learning` | interpreted and evidence-backed | `observe(level=\"learning\")` | `S2 VERIFY` |
+| `S2 VERIFY` | `validated` | no secrets/PII + durable value confirmed | persist tags/source/context | `S3 DURABLE` |
+| `S2 VERIFY` | `conflict_found` | conflicting guidance unresolved | record conflict and precedence decision request | `S4 BLOCKED` |
+| `S4 BLOCKED` | `resolved` | precedence decided with evidence | update docs or memory with rationale | `S3 DURABLE` |
+
+## Error Handling
+- `VALIDATION_ERROR`: missing preamble, malformed `SID`, or invalid capture payload.
+- `BLOCKED_DEPENDENCY`: unresolved contradiction or missing precedence decision.
+- `POLICY_FAIL`: attempted durable write violates minimization/durability policy.
+- `SYSTEM_ERROR`: tool/runtime failure during bootstrap/search/observe.
+
+## Idempotency
+- Key: `<SID>|<content_hash>|<level>`.
+- Replays of same key must no-op or update metadata only.
+- Conflict-resolution replays must reference prior conflict entry id.
+
+## Execution Modes
+- `STRICT`: block durable writes on any policy or verification failure.
+- `ADVISORY`: permit observation staging with warnings; no durable promotion until resolved.
+
+## Dry-Run Simulation
+- Evaluate transition guards and outcomes only with no side effects.
+- Emit deterministic transition trace output for selected rows.
+- No `observe(...)` persistence side effects.
+
+## Observability Logs
+```json
+{
+  "workflow_id": "local-memory",
+  "transition_code": "S2:validated",
+  "from_state": "S2 VERIFY",
+  "to_state": "S3 DURABLE",
+  "correlation_id": "repo:coding-harness:task:x",
+  "result": "success|blocked|failed"
+}
+```
+
+## Validation Checklist
+- every non-terminal state has >=1 outbound transition
+- guards are deterministic for each `(S,E)`
+- conflict/failure paths route through blocked/fail semantics
+- terminal state `S3 DURABLE` has no outbound transitions
+- preamble executed before durable capture
+
+## Intent
 Local memory is for durable continuity, not raw scratchpad logs. Use it for repository-level decisions, conventions, and recurring process knowledge.
 
 ## Required preamble before durable capture
@@ -62,3 +155,13 @@ Review memory notes when:
 - A recurring ambiguity appears during repeated tasks.
 - New validation gates or release rules are adopted.
 - Policy ownership changes.
+
+## Executor pseudocode
+
+```txt
+run precheck (bootstrap + search with same SID)
+if precheck missing: stop at S0
+capture candidate observation/learning
+verify durable value and sensitivity constraints
+persist only when verified; otherwise block and resolve conflict first
+```

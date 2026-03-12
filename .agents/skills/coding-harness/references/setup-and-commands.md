@@ -4,8 +4,19 @@
 - [Prerequisites](#prerequisites)
 - [Command truth source](#command-truth-source)
 - [Install modes](#install-modes)
-- [Bootstrap workflow](#bootstrap-workflow)
+- [Abbreviations](#abbreviations)
+- [Metadata](#metadata)
+- [Invariants](#invariants)
+- [States](#states)
+- [Transition Table (Canonical)](#transition-table-canonical)
 - [Update workflow for existing repos](#update-workflow-for-existing-repos)
+- [Error Handling](#error-handling)
+- [Idempotency](#idempotency)
+- [Execution Modes](#execution-modes)
+- [Dry-Run Simulation](#dry-run-simulation)
+- [Observability Logs](#observability-logs)
+- [Validation Checklist](#validation-checklist)
+- [Executor pseudocode](#executor-pseudocode)
 - [Validation ladder](#validation-ladder)
 - [environment.toml action sync behavior](#environmenttoml-action-sync-behavior)
 - [Command map](#command-map)
@@ -54,83 +65,119 @@ pnpm add -D @brainwav/coding-harness
 pnpm exec harness --help
 ```
 
-## Bootstrap workflow
+## Abbreviations
 
-1. Confirm repository preflight:
+| Abbr | Meaning |
+| --- | --- |
+| `S` | State |
+| `E` | Event |
+| `G` | Guard |
+| `A` | Action |
+| `N` | Next |
 
-   ```bash
-   source scripts/codex-preflight.sh && preflight_repo
-   ```
+## Metadata
+| Field | Value |
+| --- | --- |
+| `owner` | `coding-harness-maintainers` |
+| `max_duration` | `single bootstrap/update run` |
+| `escalation` | `route to BX/UX fail state with unblock action` |
 
-2. Install dependencies:
+## Invariants
+- Transition tables are canonical and deterministic.
+- Update flows must preserve rollback/migrate routes.
+- Validation state requires explicit checks execution.
 
-   ```bash
-   pnpm install
-   ```
+## States
+```txt
+B0 PREFLIGHT, B1 DEPS, B2 INIT_PREVIEW, B3 INIT_APPLY, B4 VALIDATE, B5 READY, BX FAIL
+U0 CHECK, U1 PREVIEW, U2 APPLY, U3 VALIDATE, U4 DONE, UX FAIL
+```
 
-3. Preview and initialize harness templates:
+## Transition Table (Canonical)
+`S | E | G | A | N`
 
-   ```bash
-   harness init --dry-run
-   harness init
-   ```
+### State machine
 
-   This scaffolds the Greptile baseline as well:
-   - `.greptile/config.json`
-   - `.greptile/rules.md`
-   - `.greptile/files.json`
-   - `.github/workflows/greptile-review.yml`
+```txt
+B0 PREFLIGHT -> B1 DEPS -> B2 INIT_PREVIEW -> B3 INIT_APPLY -> B4 VALIDATE -> B5 READY
+     |             |            |              |
+     +-----------> BX FAIL <----+--------------+
+```
 
-4. Run baseline quality gate:
+### Transition table (`S | E | G | A | N`)
 
-   ```bash
-   pnpm check
-   ```
+| S | E | G | A | N |
+| --- | --- | --- | --- | --- |
+| `B0 PREFLIGHT` | `preflight_ok` | preflight script passes | `source scripts/codex-preflight.sh && preflight_repo` | `B1 DEPS` |
+| `B1 DEPS` | `deps_installed` | `pnpm` available | `pnpm install` | `B2 INIT_PREVIEW` |
+| `B2 INIT_PREVIEW` | `preview_ok` | dry-run exits clean | `harness init --dry-run` | `B3 INIT_APPLY` |
+| `B3 INIT_APPLY` | `init_applied` | templates generated | `harness init` | `B4 VALIDATE` |
+| `B4 VALIDATE` | `checks_pass` | baseline gate passes | `pnpm check` and optional `harness verify-greptile` | `B5 READY` |
+| `B*` | `error` | any guard fails | capture blocker + stop | `BX FAIL` |
 
-5. Verify local Greptile configuration (if used):
-
-   ```bash
-   harness verify-greptile
-   ```
+Expected scaffold lane in `B3`:
+- `.greptile/config.json`
+- `.greptile/rules.md`
+- `.greptile/files.json`
+- `.github/workflows/greptile-review.yml`
 
 ## Update workflow for existing repos
 
-1. Check pending harness template updates:
+### State machine
 
-   ```bash
-   harness init --check-updates
-   ```
+```txt
+U0 CHECK -> U1 PREVIEW -> U2 APPLY -> U3 VALIDATE -> U4 DONE
+   |          |           |             |
+   +--------> UX FAIL <---+-------------+
+```
 
-2. Preview update changes:
+### Transition table (`S | E | G | A | N`)
 
-   ```bash
-   harness init --dry-run --update
-   ```
+| S | E | G | A | N |
+| --- | --- | --- | --- | --- |
+| `U0 CHECK` | `updates_found` | update check runs | `harness init --check-updates` | `U1 PREVIEW` |
+| `U1 PREVIEW` | `preview_ok` | dry-run output reviewed | `harness init --dry-run --update` | `U2 APPLY` |
+| `U2 APPLY` | `apply_ok` | selected update strategy confirmed | `harness init --update` (or `--interactive`) | `U3 VALIDATE` |
+| `U2 APPLY` | `tracked_apply` | rollback tracking requested | `harness init --track` before apply | `U3 VALIDATE` |
+| `U3 VALIDATE` | `checks_pass` | validation ladder passes | run `pnpm check` (+ deep gate if needed) | `U4 DONE` |
+| `U*` | `migration_or_rollback` | contract transition needed | `harness init --migrate` or `harness init --rollback` | `U0 CHECK` |
+| `U*` | `error` | any guard fails | capture blocker + stop | `UX FAIL` |
 
-3. Apply updates:
+## Error Handling
+- `VALIDATION_ERROR`: invalid command invocation or malformed workflow input.
+- `BLOCKED_DEPENDENCY`: missing binaries/auth/dependencies required by guards.
+- `POLICY_FAIL`: required validation/policy gates fail.
+- `SYSTEM_ERROR`: runtime/process failures.
 
-   ```bash
-   harness init --update
-   ```
+## Idempotency
+- Key: `<lane>|<repo>|<event>|<target_state>`.
+- Re-running preview and validate steps must be side-effect free.
+- Apply steps should be replay-safe with guard checks.
 
-4. If selective review is needed:
+## Execution Modes
+- `STRICT`: stop on first violation/failure.
+- `ADVISORY`: collect warnings and continue where safe.
 
-   ```bash
-   harness init --interactive
-   ```
+## Dry-Run Simulation
+- No file mutations or external writes; no side effects.
+- Deterministic transition trace output based on guard evaluation.
 
-5. If rollback tracking is desired before updates:
+## Observability Logs
+`workflow_id, transition_code, from_state, to_state, correlation_id, result`
 
-   ```bash
-   harness init --track
-   ```
+## Validation Checklist
+- every non-terminal state has >=1 outbound transition
+- deterministic `(S,E)` handling
+- failure paths route to `FAIL`/`BLOCKED`
+- terminal states (`B5 READY`, `U4 DONE`) have no outbound transitions
 
-6. Contract migration and rollback lanes:
+## Executor pseudocode
 
-   ```bash
-   harness init --migrate
-   harness init --rollback
-   ```
+```txt
+run bootstrap or update lane
+for each transition row, execute action when guard is true
+stop on first error transition and emit unblock guidance
+```
 
 ## Validation ladder
 
