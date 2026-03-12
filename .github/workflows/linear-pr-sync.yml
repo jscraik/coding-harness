@@ -1,0 +1,133 @@
+name: Linear PR Sync
+
+on:
+  pull_request:
+    types: [opened, reopened, closed]
+
+permissions:
+  contents: read
+  pull-requests: read
+
+concurrency:
+  group: linear-pr-sync-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+jobs:
+  linear-pr-sync:
+    name: linear-pr-sync
+    runs-on: ubuntu-latest
+    steps:
+      - name: Determine Linear sync action
+        id: action
+        uses: actions/github-script@f28e40c7f34bde8b3046d885e986cb6290c5673b # v7
+        with:
+          script: |
+            const pr = context.payload.pull_request;
+            const eventAction = context.payload.action;
+            const merged = Boolean(pr?.merged);
+            const text = [pr?.title ?? "", pr?.body ?? "", pr?.head?.ref ?? ""].join("\n");
+            const keyMatches = Array.from(
+              text.matchAll(/\b([A-Z][A-Z0-9]+-\d+)\b/gi),
+              (match) => match[1].toUpperCase(),
+            );
+            const issueKeys = Array.from(new Set(keyMatches));
+
+            if (issueKeys.length === 0) {
+              core.notice("Skipping Linear sync: no Linear key found in PR title/body/branch.");
+              core.setOutput("should_run", "false");
+              return;
+            }
+
+            if (issueKeys.length > 1) {
+              core.setFailed(
+                `Ambiguous Linear keys for PR #${pr?.number}: ${issueKeys.join(", ")}. Refusing to sync automatically.`,
+              );
+              return;
+            }
+
+            let linearAction = "";
+            if (eventAction === "opened" || eventAction === "reopened") {
+              linearAction = "handoff";
+            } else if (eventAction === "closed" && merged) {
+              linearAction = "close";
+            } else if (eventAction === "closed" && !merged) {
+              linearAction = "claim";
+            } else {
+              core.notice(`No Linear sync mapping for pull_request action '${eventAction}'.`);
+              core.setOutput("should_run", "false");
+              return;
+            }
+
+            core.setOutput("should_run", "true");
+            core.setOutput("linear_action", linearAction);
+            core.setOutput("issue_key", issueKeys[0]);
+            core.setOutput("pr_url", pr?.html_url ?? "");
+            core.setOutput("pr_number", String(pr?.number ?? ""));
+            core.setOutput("event_action", eventAction);
+            core.setOutput("merged", merged ? "true" : "false");
+
+      - name: Skip when LINEAR_API_KEY is not configured
+        id: token
+        if: steps.action.outputs.should_run == 'true'
+        env:
+          LINEAR_API_KEY: ${{ secrets.LINEAR_API_KEY }}
+        run: |
+          if [[ -z "${LINEAR_API_KEY}" ]]; then
+            echo "present=false" >> "$GITHUB_OUTPUT"
+            echo "::warning::Skipping Linear sync because LINEAR_API_KEY is not configured."
+            exit 0
+          fi
+          echo "present=true" >> "$GITHUB_OUTPUT"
+
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
+        if: steps.action.outputs.should_run == 'true' && steps.token.outputs.present == 'true'
+
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
+        if: steps.action.outputs.should_run == 'true' && steps.token.outputs.present == 'true'
+        with:
+          node-version: "24"
+
+      - name: Enable corepack
+        if: steps.action.outputs.should_run == 'true' && steps.token.outputs.present == 'true'
+        run: corepack enable
+
+      - name: Install dependencies
+        if: steps.action.outputs.should_run == 'true' && steps.token.outputs.present == 'true'
+        run: pnpm install
+
+      - name: Sync Linear issue state from PR event
+        if: steps.action.outputs.should_run == 'true' && steps.token.outputs.present == 'true'
+        env:
+          LINEAR_API_KEY: ${{ secrets.LINEAR_API_KEY }}
+          LINEAR_ACTION: ${{ steps.action.outputs.linear_action }}
+          ISSUE_KEY: ${{ steps.action.outputs.issue_key }}
+          PR_URL: ${{ steps.action.outputs.pr_url }}
+          PR_NUMBER: ${{ steps.action.outputs.pr_number }}
+          EVENT_ACTION: ${{ steps.action.outputs.event_action }}
+          MERGED: ${{ steps.action.outputs.merged }}
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          comment="Synced from pull_request ${EVENT_ACTION} event for PR #${PR_NUMBER}."
+          if [[ "${LINEAR_ACTION}" == "close" ]]; then
+            comment="PR #${PR_NUMBER} merged; auto-closing Linear issue."
+          elif [[ "${LINEAR_ACTION}" == "claim" ]]; then
+            comment="PR #${PR_NUMBER} closed without merge; returning Linear issue to In Progress."
+          fi
+
+          if [[ "${LINEAR_ACTION}" == "claim" ]]; then
+            pnpm exec tsx src/cli.ts linear claim \
+              --issue "${ISSUE_KEY}" \
+              --state "In Progress" \
+              --no-assign \
+              --pr-url "${PR_URL}" \
+              --comment "${comment}" \
+              --json
+          else
+            pnpm exec tsx src/cli.ts linear "${LINEAR_ACTION}" \
+              --issue "${ISSUE_KEY}" \
+              --pr-url "${PR_URL}" \
+              --comment "${comment}" \
+              --json
+          fi

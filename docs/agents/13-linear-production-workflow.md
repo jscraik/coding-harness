@@ -67,6 +67,7 @@ Use the workflow labels for orchestration/reporting when relevant:
 5. Attach the PR, branch, commit, and validation evidence before moving the issue to `In Review`.
 6. Move the issue to `Done` only after merge and required checks have passed.
 7. If the work is blocked by missing auth, permissions, or human input, keep the issue active, mark it clearly as blocked, and record the unblock action.
+8. If a PR is closed without merge, return the issue to an active state (for example `In Progress`) with a note describing why the PR lane was abandoned.
 
 ## Harness command surface
 
@@ -100,6 +101,11 @@ Operational notes:
 - When you want GitHub merge activity to close the Linear issue automatically, put `Fixes <LINEAR-KEY>` in the PR body or title.
 - When you only want linking without merge-time closeout, use `Refs <LINEAR-KEY>` instead.
 - For predictable GitHub→Linear linking, branches should keep the required `codex/` prefix **and** include the Linear issue key, for example `codex/jsc-37-enable-github-to-linear-branch-and-pr-automation-for-the`.
+- `.github/workflows/linear-pr-sync.yml` mirrors PR lifecycle events into Linear when `LINEAR_API_KEY` is configured:
+  - `opened`/`reopened` → `harness linear handoff` (`In Review`)
+  - `closed` + merged → `harness linear close` (`Done`)
+  - `closed` + not merged → `harness linear claim --state "In Progress" --no-assign`
+  - fail-closed behavior: if multiple Linear keys are detected in PR metadata, automation stops and reports ambiguity.
 
 ## System boundaries
 
