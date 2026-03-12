@@ -212,13 +212,27 @@ jobs:
 
             console.log(`Analysis complete: status=${status}, score=${scoreOutput}`);
 
-      - name: Create or update check run
-        if: github.event_name != 'merge_group'
+      - name: Finalize workflow check for pull_request events
+        if: github.event_name == 'pull_request'
+        env:
+          STATUS: ${{ steps.analyze.outputs.status }}
+          SUMMARY: ${{ steps.analyze.outputs.summary }}
+        run: |
+          echo "$SUMMARY"
+
+          if [ "$STATUS" = "success" ]; then
+            exit 0
+          fi
+
+          echo "::error::$SUMMARY"
+          exit 1
+
+      - name: Create PR-head check run for Greptile refresh events
+        if: github.event_name != 'merge_group' && github.event_name != 'pull_request'
         env:
           HEAD_SHA: ${{ steps.context.outputs.head_sha }}
           STATUS: ${{ steps.analyze.outputs.status }}
           SUMMARY: ${{ steps.analyze.outputs.summary }}
-          FOUND: ${{ steps.analyze.outputs.found }}
           COMMENT_URL: ${{ steps.analyze.outputs.comment_url }}
           REPO_OWNER: ${{ steps.context.outputs.repo_owner }}
           REPO_NAME: ${{ steps.context.outputs.repo_name }}
@@ -230,25 +244,11 @@ jobs:
             const headSha = process.env.HEAD_SHA;
             const status = process.env.STATUS;
             const summary = process.env.SUMMARY;
-            const found = process.env.FOUND;
             const commentUrl = process.env.COMMENT_URL;
             const checkName = 'Greptile Review';
 
-            // Find existing check runs for this SHA with the same name to avoid duplicates
-            const existingChecks = await github.rest.checks.listForRef({
-              owner,
-              repo,
-              ref: headSha,
-              check_name: checkName,
-              filter: 'latest'
-            });
-
-            const existingCheck = existingChecks.data.check_runs.find(
-              run => run.name === checkName
-            );
-
             if (status === 'pending') {
-              // Waiting for Greptile - create or update as a failing check so branch
+              // Waiting for Greptile - create a failing PR-head check so branch
               // protection blocks merge without leaving an indefinitely queued run.
               const checkPayload = {
                 owner,
@@ -263,18 +263,8 @@ jobs:
                 }
               };
 
-              if (existingCheck) {
-                await github.rest.checks.update({
-                  owner,
-                  repo,
-                  check_run_id: existingCheck.id,
-                  ...checkPayload
-                });
-                console.log(`Updated existing check run ${existingCheck.id} to pending/failure`);
-              } else {
-                await github.rest.checks.create(checkPayload);
-                console.log('Created new failing check run - waiting for Greptile');
-              }
+              await github.rest.checks.create(checkPayload);
+              console.log('Created new failing check run - waiting for Greptile');
               return;
             }
 
@@ -296,18 +286,8 @@ jobs:
               }
             };
 
-            if (existingCheck) {
-              await github.rest.checks.update({
-                owner,
-                repo,
-                check_run_id: existingCheck.id,
-                ...checkPayload
-              });
-              console.log(`Updated existing check run ${existingCheck.id} with conclusion: ${conclusion}`);
-            } else {
-              await github.rest.checks.create(checkPayload);
-              console.log(`Created new check run with conclusion: ${conclusion}`);
-            }
+            await github.rest.checks.create(checkPayload);
+            console.log(`Created new check run with conclusion: ${conclusion}`);
 
             if (conclusion === 'failure') {
               core.setFailed(summary);
