@@ -26,7 +26,7 @@ Codex skill for reliably setting up and operating `@brainwav/coding-harness` in 
 - Write run artifacts to `./artifacts/` (local) or `/mnt/data/` (hosted).
 
 ## When to use
-- Install `@brainwav/coding-harness` globally or per-project.
+- Install `@brainwav/coding-harness` globally for repository preflight and environment checks.
 - Run and maintain `harness init` safely, including update/rollback paths.
 - Explain what harness can and cannot do, including required tokens, checks, and environment setup.
 - Keep `.codex/environments/environment.toml` in sync with current project scripts (Tools/Run/Debug/Test + generated script actions).
@@ -38,7 +38,7 @@ Non-triggers:
 
 ## Inputs
 - Target repository path and package manager context.
-- Install mode (`global` or `project-local`) and desired verification depth.
+- Global install posture (`npm i -g @brainwav/coding-harness`) and desired verification depth.
 - Access mode for remote checks (for example GitHub App JWT for installation checks).
 - Existing harness state (`not installed`, `installed`, `needs update`, `broken`).
 
@@ -82,8 +82,9 @@ Core boundaries to enforce:
 2. **Preflight context (execution mode)**
    - Confirm repo root, available toolchain (`rg`, `fd`, `jq`, `node`, `pnpm`), and current harness state.
 3. **Install/upgrade harness**
-   - Use global install for workstation usage or project-local install for repo-scoped usage.
-   - Prefer deterministic versions when requested.
+   - Use global npm install for consumer repositories: `npm i -g @brainwav/coding-harness`.
+   - Ensure private package auth is wired (`NPM_TOKEN` locally and `secrets.NPM_TOKEN` in GitHub Actions).
+   - Use project-local/source execution only when explicitly developing the coding-harness repository itself.
 4. **Initialize/update contract**
    - First-time: run `harness init` (optionally `--track`).
    - Existing setup: run `harness init --check-updates` then `harness init --update` when required.
