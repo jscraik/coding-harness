@@ -391,9 +391,9 @@ async function validateScopes(octokit: Octokit): Promise<void> {
 
 ### Security Requirements
 
-- [x] All workflow actions pinned to full SHA with version comment
+- [x] All workflow actions pinned to full SHA with version comment (evidence: `.github/workflows/greptile-review.yml`, `.github/workflows/auto-release-npm.yml`)
 - [x] `max-tier` parameter validated (must be 'high', 'medium', or 'low')
-- [x] Contract path validated before loading
+- [x] Contract path validated before loading (evidence: `src/commands/preflight-gate.ts`)
 
 ### Deferred to Phase 4
 
@@ -405,15 +405,15 @@ async function validateScopes(octokit: Octokit): Promise<void> {
 ### Agent-Native Requirements
 
 - [x] `--json` flag on all commands
-- [x] Exit codes: 0 (pass), 1 (validation fail), 2 (not found), 3 (permission), 10+ (system)
-- [x] Machine-readable error codes for each failure mode
+- [x] Exit codes: 0 (pass), 1 (validation fail), 2 (not found), 3 (permission), 10+ (system) (evidence: `src/commands/policy-gate.ts`)
+- [x] Machine-readable error codes for each failure mode (evidence: `src/commands/policy-gate.ts`)
 
 ### Quality Gates
 
 - [x] `pnpm check` passes (lint + typecheck + test)
-- [x] Unit tests for policy-gate command
+- [x] Unit tests for policy-gate command (evidence: `src/commands/policy-gate.test.ts`)
 - [x] Follows command pattern from `risk-tier.ts`
-- [x] Workflow YAML syntax valid
+- [x] Workflow YAML syntax valid (evidence: `.github/workflows/pr-pipeline.yml`)
 
 ## Success Metrics
 
