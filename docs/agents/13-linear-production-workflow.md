@@ -155,43 +155,14 @@ Use the workflow labels for orchestration/reporting when relevant:
 
 ## Execution flow
 
-### State machine
-
-State machine:
-
-```txt
-S0 TRIAGE -> S1 READY -> S2 IN_PROGRESS -> S3 IN_REVIEW -> S4 DONE
-                                 |                |
-                                 +----> S5 BLOCKED+
-```
-
-Execution invariants:
-- Keep one running progress comment per LI.
-- Branch format is `codex/<lk>-<slug>`.
-- Every `S2 -> S3` transition includes evidence links.
-- `S3 -> S2` is required when a PR closes without merge.
-
-## Execution pseudocode
-
-```txt
-preflight:
-  assert LI exists in coding-harness project
-  assert branch format contains codex/ and LK
-
-run:
-  transition to S2 at implementation start
-  maintain one LI progress thread
-  sync PR, branch, commit, and evidence refs
-
-gate_to_review:
-  require pnpm lint && pnpm typecheck && pnpm test && pnpm audit && pnpm check
-  require docs-gate parity
-  transition S2 -> S3
-
-closeout:
-  if PR merged and checks green: transition S3 -> S4
-  if PR closed without merge: transition S3 -> S2 with rationale
-```
+1. Start from a Linear issue in the `coding-harness` project.
+2. Create a branch using the required `codex/` prefix and include the Linear issue key where practical.
+3. Move the issue to `In Progress` when implementation starts.
+4. Keep a single running progress update on the issue instead of scattering status across multiple comments.
+5. Attach the PR, branch, commit, and validation evidence before moving the issue to `In Review`.
+6. Move the issue to `Done` only after merge and required checks have passed.
+7. If the work is blocked by missing auth, permissions, or human input, keep the issue active, mark it clearly as blocked, and record the unblock action.
+8. If a PR is closed without merge, return the issue to an active state (for example `In Progress`) with a note describing why the PR lane was abandoned.
 
 ## Harness command surface
 

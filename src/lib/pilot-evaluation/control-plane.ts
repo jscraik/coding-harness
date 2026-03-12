@@ -2307,9 +2307,10 @@ export function loadControlPlaneArtifactSet(artifactRoot: string): {
 			typeof entry === "string" ? [] : [entry.triggerId],
 		),
 	);
-	const missingActiveDemotionTriggers = (
-		rolloutWindowHistory?.activeDemotionTriggers ?? []
-	).filter((triggerId) => !demotionTriggerIds.has(triggerId));
+	const missingActiveDemotionTriggers =
+		(rolloutWindowHistory?.activeDemotionTriggers ?? []).filter(
+			(triggerId) => !demotionTriggerIds.has(triggerId),
+		);
 
 	const errors: string[] = [];
 	if (!controlPlaneRun) {

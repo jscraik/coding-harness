@@ -133,13 +133,16 @@ Done (terminal)
 
 ## Executor Loop
 
-```txt
-load LI -> validate branch/PR identity -> enter state machine
-while state != Done:
-  apply first matching transition row (S,E,G,A,N)
-  persist one progress thread per LI
-  fail-closed on ambiguous LK extraction
-```
+| From | To | Trigger | Agent Action |
+|------|-----|---------|--------------|
+| Triage | Ready | Triaged, scoped | `harness linear prepare --issue <LK>` |
+| Ready | In Progress | Branch created | `harness linear claim --issue <LK> --branch <name>` |
+| In Progress | In Review | PR opened | `harness linear handoff --issue <LK> --pr-url <url>` |
+| In Review | Done | PR merged | `harness linear close --issue <LK> --pr-url <url>` |
+| In Review | In Progress | PR closed without merge | `harness linear claim --issue <LK> --state "In Progress" --no-assign` |
+| * | Blocked | External dependency | Label `Blocked`, record unblock action |
+| Blocked | In Progress | Unblocked | Remove `Blocked`, resume work |
+| * | Delegated | Handed off | Assign to delegate, record context |
 
 ---
 
