@@ -986,9 +986,9 @@ describe("runInit", () => {
 			);
 			expect(environmentCheck).toContain("required Makefile target");
 			expect(environmentCheck).toContain("Codex environment action");
-			expect(environmentCheck).toContain(
-				"pnpm exec tsx src/cli.ts check-environment",
-			);
+			expect(environmentCheck).toContain("run_check_environment_with_runner()");
+			expect(environmentCheck).toContain("npm i -g @brainwav/coding-harness");
+			expect(environmentCheck).toContain("repository secret NPM_TOKEN");
 			expect(refreshDiagrams).toContain(
 				"diagram manifest generation requires ROOT_DIR, TMP_DIR, and MANIFEST_PATH",
 			);

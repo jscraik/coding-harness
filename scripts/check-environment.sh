@@ -238,10 +238,111 @@ fi
 mkdir -p "$REPO_ROOT/artifacts/policy"
 
 echo "Running harness environment preflight..."
-pnpm exec tsx src/cli.ts check-environment \
-	--contract "$CONTRACT_PATH" \
-	--json \
-	--attestation "$ATTESTATION_PATH"
+
+run_check_environment_with_runner() {
+	local label="$1"
+	shift
+	local -a runner=("$@")
+	local output=""
+	local exit_code=0
+
+	rm -f "$ATTESTATION_PATH"
+
+	echo "Using harness runner: $label"
+	set +e
+	output="$("${runner[@]}" check-environment \
+		--contract "$CONTRACT_PATH" \
+		--json \
+		--attestation "$ATTESTATION_PATH" 2>&1)"
+	exit_code=$?
+	set -e
+
+	if [[ -n "$output" ]]; then
+		printf '%s\n' "$output"
+	fi
+
+	if [[ "$exit_code" -ne 0 ]]; then
+		echo "Runner failed: $label (exit $exit_code)"
+		return 1
+	fi
+
+	if [[ ! -f "$ATTESTATION_PATH" ]]; then
+		local json_line
+		json_line="$(printf '%s\n' "$output" | awk '/^\{/{line=$0} END{if(line!="") print line}')"
+		if [[ -n "$json_line" ]]; then
+			printf '%s\n' "$json_line" > "$ATTESTATION_PATH"
+		fi
+	fi
+
+	if [[ ! -f "$ATTESTATION_PATH" ]]; then
+		echo "Runner produced no attestation output: $label"
+		return 1
+	fi
+
+	return 0
+}
+
+runner_succeeded=0
+
+if [[ -n "${CODING_HARNESS_CLI_PATH:-}" ]]; then
+	if [[ -f "${CODING_HARNESS_CLI_PATH}" ]]; then
+		if run_check_environment_with_runner "CODING_HARNESS_CLI_PATH" node "${CODING_HARNESS_CLI_PATH}"; then
+			runner_succeeded=1
+		fi
+	elif command -v "${CODING_HARNESS_CLI_PATH}" >/dev/null 2>&1; then
+		if run_check_environment_with_runner "CODING_HARNESS_CLI_PATH command" "${CODING_HARNESS_CLI_PATH}"; then
+			runner_succeeded=1
+		fi
+	else
+		echo "Warning: CODING_HARNESS_CLI_PATH is set but not usable: ${CODING_HARNESS_CLI_PATH}"
+	fi
+fi
+
+if [[ "$runner_succeeded" -eq 0 ]] && command -v harness >/dev/null 2>&1; then
+	if run_check_environment_with_runner "PATH harness ($(command -v harness))" harness; then
+		runner_succeeded=1
+	fi
+fi
+
+if [[ "$runner_succeeded" -eq 0 ]] && [[ -x /opt/homebrew/bin/harness ]]; then
+	if run_check_environment_with_runner "Homebrew harness (/opt/homebrew/bin/harness)" /opt/homebrew/bin/harness; then
+		runner_succeeded=1
+	fi
+fi
+
+if [[ "$runner_succeeded" -eq 0 ]] && [[ -f "$HOME/dev/coding-harness/dist/cli.js" ]]; then
+	if run_check_environment_with_runner "local coding-harness dist ($HOME/dev/coding-harness/dist/cli.js)" node "$HOME/dev/coding-harness/dist/cli.js"; then
+		runner_succeeded=1
+	fi
+fi
+
+if [[ "$runner_succeeded" -eq 0 ]] && [[ -x "$REPO_ROOT/dist/cli.js" ]]; then
+	if run_check_environment_with_runner "repo dist CLI ($REPO_ROOT/dist/cli.js)" node "$REPO_ROOT/dist/cli.js"; then
+		runner_succeeded=1
+	fi
+fi
+
+if [[ "$runner_succeeded" -eq 0 ]] && [[ -f "$REPO_ROOT/src/cli.ts" ]]; then
+	if run_check_environment_with_runner "repo source CLI ($REPO_ROOT/src/cli.ts)" pnpm exec tsx "$REPO_ROOT/src/cli.ts"; then
+		runner_succeeded=1
+	fi
+fi
+
+if [[ "$runner_succeeded" -eq 0 ]]; then
+	echo "Error: unable to run harness check-environment with a compatible CLI."
+	echo "Install or provide a compatible harness CLI, then retry."
+	echo "Options:"
+	echo "  1) Install globally (recommended for skills/config repos):"
+	echo "     npm i -g @brainwav/coding-harness"
+	echo "     Requires auth for the private package:"
+	echo "     - Local shell: export NPM_TOKEN=<token>"
+	echo "     - GitHub Actions: add repository secret NPM_TOKEN and map it to workflow env"
+	echo '       env: NPM_TOKEN: ${{ secrets.NPM_TOKEN }}'
+	echo "  2) Point to a known-good local CLI build:"
+	echo "     export CODING_HARNESS_CLI_PATH=\\\"$HOME/dev/coding-harness/dist/cli.js\\\""
+	echo "  3) Use any compatible harness binary on PATH."
+	exit 1
+fi
 
 jq -e '.passed == true' "$ATTESTATION_PATH" >/dev/null
 echo "Environment check passed (attestation: $ATTESTATION_PATH)"
