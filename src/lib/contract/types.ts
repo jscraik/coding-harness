@@ -910,7 +910,7 @@ export const DEFAULT_DOCS_GATE_POLICY: DocsGatePolicy = {
 			path: "docs/agents/04-validation.md",
 			surfaceType: "governance_doc",
 			owner: "contract",
-			requiredFor: ["ci_workflow"],
+			requiredFor: ["ci_workflow", "workflow_authority"],
 		},
 		{
 			path: "docs/agents/07b-agent-governance.md",
@@ -974,6 +974,18 @@ export const DEFAULT_DOCS_GATE_POLICY: DocsGatePolicy = {
 		},
 		{
 			path: "docs/agents/13-linear-production-workflow.md",
+			surfaceType: "workflow_doc",
+			owner: "workflow",
+			requiredFor: ["workflow_authority"],
+		},
+		{
+			path: "docs/agents/08-release-and-change-control.md",
+			surfaceType: "workflow_doc",
+			owner: "workflow",
+			requiredFor: ["workflow_authority"],
+		},
+		{
+			path: "docs/agents/10-agent-testing-gates.md",
 			surfaceType: "workflow_doc",
 			owner: "workflow",
 			requiredFor: ["workflow_authority"],

@@ -69,6 +69,8 @@ Key docs:
 - [Architecture bootstrap](./docs/agents/00-architecture-bootstrap.md)
 - [Tooling policy](./docs/agents/02-tooling-policy.md)
 - [Validation and checks](./docs/agents/04-validation.md)
+- [Release and change control](./docs/agents/08-release-and-change-control.md)
+- [Agent testing gates](./docs/agents/10-agent-testing-gates.md)
 - [Security and governance](./docs/agents/06-security-and-governance.md)
 - [Agent governance](./docs/agents/07b-agent-governance.md)
 - [Greptile AI governance](./docs/agents/12-greptile-ai-governance.md)

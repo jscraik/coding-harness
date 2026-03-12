@@ -116,7 +116,7 @@ GitHub issue forms in this repository are retired; the repo now routes work inta
 | `remediate` | Apply automated fixes for findings. |
 | `check-authz` | Validate authorization policy for mutative operations. |
 | `check-environment` | Validate pilot environment governance checks. |
-| `docs-gate` | Enforce documentation parity for governance, tooling/runtime, architecture-context, tracked workflow-authority docs, and tracked compound-workflow artifacts such as ADRs, specs, plans, and brainstorms. |
+| `docs-gate` | Enforce documentation parity for governance, tooling/runtime, architecture-context, tracked workflow-authority docs (including routing, validation, release, and testing-gate runbooks), and tracked compound-workflow artifacts such as ADRs, specs, plans, and brainstorms. |
 | `linear` | Prepare Linear-aware branch/PR metadata and move issues through claim, handoff, and close workflow states. |
 | `linear-gate` | Enforce Linear-first intake, branch naming, and PR linkage rules from the contract. |
 | `gap-case` | Track and resolve pilot gap-cases. |

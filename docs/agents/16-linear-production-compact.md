@@ -63,6 +63,7 @@
 | Ready | In Progress | Branch created | `harness linear claim --issue <LK> --branch <name>` |
 | In Progress | In Review | PR opened | `harness linear handoff --issue <LK> --pr-url <url>` |
 | In Review | Done | PR merged | `harness linear close --issue <LK> --pr-url <url>` |
+| In Review | In Progress | PR closed without merge | `harness linear claim --issue <LK> --state "In Progress" --no-assign` |
 | * | Blocked | External dependency | Label `Blocked`, record unblock action |
 | Blocked | In Progress | Unblocked | Remove `Blocked`, resume work |
 | * | Delegated | Handed off | Assign to delegate, record context |
@@ -99,6 +100,10 @@ harness linear close --issue <LK> --pr-url <url>
 | `claim` | Assign + branch | `--issue`, `--branch` | LI→In Progress, assignment |
 | `handoff` | Move to review | `--issue`, `--pr-url` | LI→In Review, comment posted |
 | `close` | Close after merge | `--issue`, `--pr-url` | LI→Done, comment posted |
+
+Automation lane:
+- `.github/workflows/linear-pr-sync.yml` runs on `pull_request` events (`opened`, `reopened`, `closed`) and mirrors lifecycle changes into Linear when `LINEAR_API_KEY` is available.
+- It fails closed on ambiguous metadata (more than one Linear key in title/body/branch) and skips when no key is present.
 
 ### Output Formats
 
@@ -204,6 +209,7 @@ Before `Done`:
 □ Required checks passed
 □ `Fixes <LK>` in PR body (for auto-close)
   OR manual `harness linear close` executed
+□ If PR closed without merge: issue moved back to active state with rationale
 ```
 
 ---

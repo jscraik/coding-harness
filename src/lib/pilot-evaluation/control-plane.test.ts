@@ -6,7 +6,7 @@ import {
 	unlinkSync,
 	writeFileSync,
 } from "node:fs";
-import { join, resolve } from "node:path";
+import { dirname, join, resolve } from "node:path";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import {
 	buildControlPlaneArtifacts,
@@ -1312,6 +1312,60 @@ describe("control-plane artifacts", () => {
 		const loaded = loadControlPlaneArtifactSet(summary.artifactRoot);
 		expect(loaded.errors).toContain(
 			"Join integrity failed: audit log references missing demotion trigger evidence",
+		);
+		expect(loaded.artifacts).toBeNull();
+	});
+
+	it("fails closed when active demotion triggers cannot be loaded", () => {
+		const metrics = {
+			...createMetrics(),
+			sampleSize: 60,
+			sensitiveFieldLeakCount: 1,
+		};
+		const { summary } = buildControlPlaneArtifacts({
+			artifactsDir: testDir,
+			metrics,
+			metricsErrors: [],
+			legacyOutcome: "promote",
+			legacyHoldReasons: [],
+			options: {
+				artifactsDir: testDir,
+				docsGateReportPath,
+				prTemplateStatus: "passed",
+				evaluationMode: "pr",
+				rolloutStage: "enforced",
+				clientFamily: "codex",
+				providerId: "openai",
+				modelDescriptor: "gpt-5.4",
+			},
+		});
+
+		const initialLoad = loadControlPlaneArtifactSet(summary.artifactRoot);
+		expect(initialLoad.errors).toEqual([]);
+		expect(initialLoad.artifacts?.latestDemotionTrigger).not.toBeNull();
+
+		const auditPath = join(
+			dirname(summary.artifactRoot),
+			"audit",
+			"control-plane-audit-log.jsonl",
+		);
+		const filteredAuditEntries = readFileSync(auditPath, "utf-8")
+			.split("\n")
+			.filter(Boolean)
+			.map((line) => JSON.parse(line) as { phase?: string })
+			.filter((entry) => entry.phase !== "rollout-demotion");
+		writeFileSync(
+			auditPath,
+			[...filteredAuditEntries.map((entry) => JSON.stringify(entry)), ""].join(
+				"\n",
+			),
+			"utf-8",
+		);
+		unlinkSync(join(testDir, "control-plane", "demotion-triggers.jsonl"));
+
+		const loaded = loadControlPlaneArtifactSet(summary.artifactRoot);
+		expect(loaded.errors).toContain(
+			"Join integrity failed: rollout history references missing demotion trigger evidence",
 		);
 		expect(loaded.artifacts).toBeNull();
 	});

@@ -528,6 +528,30 @@ describe("docs-gate command", () => {
 		expect(result.report.categories).not.toContain("agent_governance");
 	});
 
+	it("treats compound-routing workflow docs as workflow authority", () => {
+		const root = join(process.cwd(), "artifacts", "docs-gate-test-18");
+		roots.push(root);
+		createContractWithDocsGate(root, {
+			enabled: true,
+			mode: "required",
+			rules: [],
+		});
+
+		const result = runDocsGate({
+			repoRoot: root,
+			mode: "required",
+			changedFiles: [
+				"docs/agents/04-validation.md",
+				"docs/agents/08-release-and-change-control.md",
+				"docs/agents/10-agent-testing-gates.md",
+			],
+		});
+
+		expect(result.exitCode).toBe(0);
+		expect(result.report.categories).toContain("workflow_authority");
+		expect(result.report.categories).not.toContain("agent_governance");
+	});
+
 	it("emits source_truth_missing contradictions for missing required truth sources", () => {
 		const root = join(
 			process.cwd(),
