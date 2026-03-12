@@ -890,15 +890,14 @@ jobs:
       github.event_name == 'pull_request_review' ||
       github.event_name == 'pull_request_review_comment' ||
       (
-        github.event_name == 'issue_comment' &&
-        github.event.issue.pull_request &&
         (
           github.event.comment.user.login == 'greptile[bot]' ||
           github.event.comment.user.login == 'greptileai[bot]' ||
+          github.event.comment.user.login == 'greptile-apps[bot]' ||
           github.event.comment.user.login == 'greptile' ||
-          github.event.comment.user.login == 'greptileai'
+          github.event.comment.user.login == 'greptileai' ||
+          github.event.comment.user.login == 'greptile-apps'
         )
-      )
     steps:
       - name: Merge queue passthrough
         if: github.event_name == 'merge_group'
