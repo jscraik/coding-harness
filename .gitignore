@@ -78,6 +78,9 @@ artifacts/test/test-output-*.log
 artifacts/test/summary-*.json
 artifacts/test/artifact-manifest.json
 artifacts/test/discovered/
+artifacts/plans-gate-test-*/
+artifacts/context-health-test-*/
+tmp-agent-first-*/
 
 # Locally generated helper scripts (from init template previews)
 scripts/check-environment.sh
