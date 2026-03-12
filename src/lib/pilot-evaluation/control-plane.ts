@@ -2302,6 +2302,15 @@ export function loadControlPlaneArtifactSet(artifactRoot: string): {
 		auditLog,
 		demotionTriggerEntries,
 	);
+	const demotionTriggerIds = new Set(
+		demotionTriggerEntries.flatMap((entry) =>
+			typeof entry === "string" ? [] : [entry.triggerId],
+		),
+	);
+	const missingActiveDemotionTriggers =
+		rolloutWindowHistory?.activeDemotionTriggers.filter(
+			(triggerId) => !demotionTriggerIds.has(triggerId),
+		) ?? [];
 
 	const errors: string[] = [];
 	if (!controlPlaneRun) {
@@ -2501,6 +2510,11 @@ export function loadControlPlaneArtifactSet(artifactRoot: string): {
 	) {
 		errors.push(
 			"Join integrity failed: audit log references missing demotion trigger evidence",
+		);
+	}
+	if (missingActiveDemotionTriggers.length > 0) {
+		errors.push(
+			"Join integrity failed: rollout history references missing demotion trigger evidence",
 		);
 	}
 
