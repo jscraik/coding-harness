@@ -12,7 +12,7 @@ triggers:
 
 inputs:
   - Target repository path.
-  - Install preference (global vs project-local).
+  - Global install posture (`npm i -g @brainwav/coding-harness`) for consumer repositories.
   - Current harness state (new install, existing setup, update required, or broken).
   - Auth mode for remote checks (token/JWT + owner/repo when applicable).
   - Execution mode (no-execution guidance vs execution with commands).

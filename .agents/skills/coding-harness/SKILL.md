@@ -28,11 +28,10 @@ Codex skill for reliable setup and operation of `@brainwav/coding-harness` in re
 - Treat `harness --help` as the runtime command truth and use docs as supporting context.
 
 ## When to use
-- Install `@brainwav/coding-harness` globally or per-project.
-- Run and maintain the `harness init` lifecycle safely (`init`, update, rollback, migrate).
-- Explain what harness can and cannot do, including required auth, checks, and governance boundaries.
-- Keep `.codex/environments/environment.toml` aligned with current project scripts (canonical `Tools`/`Run`/`Debug`/`Test` plus script-derived actions).
-- Audit harness governance readiness for a repository (for example Greptile, authz, docs, environment, tooling policy checks).
+- Install `@brainwav/coding-harness` globally for repository preflight and environment checks.
+- Run and maintain `harness init` safely, including update/rollback paths.
+- Explain what harness can and cannot do, including required tokens, checks, and environment setup.
+- Keep `.codex/environments/environment.toml` in sync with current project scripts (Tools/Run/Debug/Test + generated script actions).
 
 Non-triggers:
 - Building unrelated application features.
@@ -41,8 +40,8 @@ Non-triggers:
 
 ## Inputs
 - Target repository path and package manager context.
-- Install mode (`global` or `project-local`) and desired verification depth.
-- Access mode for remote checks (for example GitHub token or GitHub App credentials for installation checks).
+- Global install posture (`npm i -g @brainwav/coding-harness`) and desired verification depth.
+- Access mode for remote checks (for example GitHub App JWT for installation checks).
 - Existing harness state (`not installed`, `installed`, `needs update`, `broken`).
 - Execution posture (`no-execution` guidance vs `execution` with commands).
 
@@ -90,8 +89,9 @@ Core boundaries to enforce:
    - Confirm repo root, available toolchain (`rg`, `fd`, `jq`, `node`, `pnpm`), and current harness state.
    - For path-sensitive or multi-step operations, run `source scripts/codex-preflight.sh && preflight_repo` when available.
 3. **Install/upgrade harness**
-   - Use global install for workstation usage or project-local install for repo-scoped usage.
-   - Prefer deterministic versions when requested, then verify with `harness --help`.
+   - Use global npm install for consumer repositories: `npm i -g @brainwav/coding-harness`.
+   - Ensure private package auth is wired (`NPM_TOKEN` locally and `secrets.NPM_TOKEN` in GitHub Actions).
+   - Use project-local/source execution only when explicitly developing the coding-harness repository itself.
 4. **Initialize/update contract**
    - First-time: run `harness init` (start with `--dry-run` when risk is unclear; use `--track` before high-impact updates).
    - Existing setup: run `harness init --check-updates` then `harness init --update` when required.

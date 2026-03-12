@@ -36,6 +36,7 @@ const EXPECTED_TEMPLATE_PATHS = [
 	"biome.json",
 	".gitleaks.toml",
 	"prek.toml",
+	"scripts/codex-preflight.sh",
 	"scripts/check-environment.sh",
 	".mise.toml",
 	".codex/environments/environment.toml",
@@ -809,6 +810,10 @@ describe("runInit", () => {
 				join(tempDir, "scripts/check-environment.sh"),
 				"utf-8",
 			);
+			const codexPreflight = require("node:fs").readFileSync(
+				join(tempDir, "scripts/codex-preflight.sh"),
+				"utf-8",
+			);
 
 			expect(validateCommitMsg).toContain(
 				"Agent branches require exactly one Co-authored-by trailer",
@@ -842,6 +847,10 @@ describe("runInit", () => {
 			expect(semgrepRules).toContain("ts-no-shell-true");
 			expect(makefile).toContain("check: ## Run all required quality gates");
 			expect(makefile).toContain("\tpnpm check");
+			expect(makefile).toContain(
+				"preflight: ## Run repository preflight checks (required local-memory gate by default)",
+			);
+			expect(makefile).toContain("\t@bash ./scripts/codex-preflight.sh");
 			expect(makefile).toContain(
 				"hooks-pre-commit: ## Run local pre-commit gates before creating a commit",
 			);
@@ -987,8 +996,29 @@ describe("runInit", () => {
 			expect(environmentCheck).toContain("required Makefile target");
 			expect(environmentCheck).toContain("Codex environment action");
 			expect(environmentCheck).toContain("run_check_environment_with_runner()");
+			expect(environmentCheck).toContain(
+				"@brainwav/coding-harness is not installed globally via npm",
+			);
+			expect(environmentCheck).toContain(
+				'run_check_environment_with_runner "global npm harness ($(command -v harness))" harness',
+			);
 			expect(environmentCheck).toContain("npm i -g @brainwav/coding-harness");
 			expect(environmentCheck).toContain("repository secret NPM_TOKEN");
+			expect(environmentCheck).toContain("required_support_files=(");
+			expect(environmentCheck).toContain('"scripts/codex-preflight.sh"');
+			expect(environmentCheck).toContain("required_make_targets=(");
+			expect(environmentCheck).toContain('"preflight"');
+			expect(codexPreflight).toContain(
+				"Must-do: preflight_repo runs Local Memory checks in required mode by default.",
+			);
+			expect(codexPreflight).toContain(
+				'local local_memory_mode="${4:-required}" # off | optional | required',
+			);
+			expect(codexPreflight).toContain("preflight_local_memory_gold()");
+			expect(codexPreflight).toContain(
+				'local lm_config_path="${LOCAL_MEMORY_CONFIG_PATH:-${HOME}/.local-memory/config.yaml}"',
+			);
+			expect(codexPreflight).toContain("preflight_repo_local_memory()");
 			expect(refreshDiagrams).toContain(
 				"diagram manifest generation requires ROOT_DIR, TMP_DIR, and MANIFEST_PATH",
 			);

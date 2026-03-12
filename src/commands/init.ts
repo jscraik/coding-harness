@@ -13,6 +13,7 @@ import {
 } from "node:fs";
 import { dirname, join, relative, resolve, sep } from "node:path";
 import { cwd } from "node:process";
+import { fileURLToPath } from "node:url";
 import { diffLines } from "diff";
 import semver from "semver";
 import {
@@ -521,6 +522,18 @@ function renderInstallCommand(packageManager: string): string {
 
 function renderMemoryValidateCommand(): string {
 	return `test -f memory.json && jq -e '.meta.version == "1.0" and (.preamble.bootstrap | type == "boolean") and (.preamble.search | type == "boolean") and (.entries | type == "array")' memory.json >/dev/null`;
+}
+
+function renderCodexPreflightTemplate(): string {
+	const currentFilePath = fileURLToPath(import.meta.url);
+	const templatePath = resolve(
+		dirname(currentFilePath),
+		"..",
+		"..",
+		"scripts",
+		"codex-preflight.sh",
+	);
+	return readFileSync(templatePath, "utf-8");
 }
 
 interface PackageJsonLike {
@@ -2132,6 +2145,9 @@ Harness-managed repositories should keep this baseline available locally before 
 Recommended policy:
 
 - Pin repo-managed tooling in \`.mise.toml\` where possible.
+- Treat \`scripts/codex-preflight.sh\` as required project bootstrap infrastructure.
+- Keep \`preflight_repo\` in \`required\` mode by default; only relax mode (\`optional\` or \`off\`) when the project documents why.
+- Adjust preflight binary/path lists per project scope instead of deleting the script.
 - Treat \`scripts/check-environment.sh\` as the local readiness gate for required tooling.
 - Block merge or promotion work when a required CLI is missing rather than silently skipping the corresponding validation lane.
 - For repositories with explicit \`ui\` / \`chatgpt_apps_sdk\` capabilities or matching dependency signals, install \`@brainwav/design-system-guidance\` and treat its absence as a readiness failure.
@@ -3381,6 +3397,10 @@ CLAUDE_APPROVAL_POSTURE = "require"
 `,
 	},
 	{
+		path: "scripts/codex-preflight.sh",
+		render: () => renderCodexPreflightTemplate(),
+	},
+	{
 		path: "scripts/check-environment.sh",
 		render: () => {
 			const packagePolicy = DEFAULT_CONTRACT.toolingPolicy?.packagePolicy;
@@ -3679,65 +3699,34 @@ run_check_environment_with_runner() {
 	return 0
 }
 
-runner_succeeded=0
-
-if [[ -n "\${CODING_HARNESS_CLI_PATH:-}" ]]; then
-	if [[ -f "\${CODING_HARNESS_CLI_PATH}" ]]; then
-		if run_check_environment_with_runner "CODING_HARNESS_CLI_PATH" node "\${CODING_HARNESS_CLI_PATH}"; then
-			runner_succeeded=1
-		fi
-	elif command -v "\${CODING_HARNESS_CLI_PATH}" >/dev/null 2>&1; then
-		if run_check_environment_with_runner "CODING_HARNESS_CLI_PATH command" "\${CODING_HARNESS_CLI_PATH}"; then
-			runner_succeeded=1
-		fi
-	else
-		echo "Warning: CODING_HARNESS_CLI_PATH is set but not usable: \${CODING_HARNESS_CLI_PATH}"
-	fi
+if ! command -v npm >/dev/null 2>&1; then
+	echo "Error: npm is required to validate global harness installation."
+	exit 1
 fi
 
-if [[ "$runner_succeeded" -eq 0 ]] && command -v harness >/dev/null 2>&1; then
-	if run_check_environment_with_runner "PATH harness ($(command -v harness))" harness; then
-		runner_succeeded=1
-	fi
+if ! npm ls -g --depth=0 @brainwav/coding-harness >/dev/null 2>&1; then
+	echo "Error: @brainwav/coding-harness is not installed globally via npm."
+	echo "Install globally and retry:"
+	echo "  npm i -g @brainwav/coding-harness"
+	echo "Private registry auth is required:"
+	echo "  - Local shell: export NPM_TOKEN=<token>"
+	echo "  - GitHub Actions: add repository secret NPM_TOKEN and map it to workflow env"
+	echo '    env: NPM_TOKEN: \${{ secrets.NPM_TOKEN }}'
+	exit 1
 fi
 
-if [[ "$runner_succeeded" -eq 0 ]] && [[ -x /opt/homebrew/bin/harness ]]; then
-	if run_check_environment_with_runner "Homebrew harness (/opt/homebrew/bin/harness)" /opt/homebrew/bin/harness; then
-		runner_succeeded=1
-	fi
+if ! command -v harness >/dev/null 2>&1; then
+	echo "Error: global harness binary is not on PATH after npm installation."
+	echo "Fix: ensure npm global bin directory is on PATH, then retry."
+	exit 1
 fi
 
-if [[ "$runner_succeeded" -eq 0 ]] && [[ -f "$HOME/dev/coding-harness/dist/cli.js" ]]; then
-	if run_check_environment_with_runner "local coding-harness dist ($HOME/dev/coding-harness/dist/cli.js)" node "$HOME/dev/coding-harness/dist/cli.js"; then
-		runner_succeeded=1
-	fi
-fi
-
-if [[ "$runner_succeeded" -eq 0 ]] && [[ -x "$REPO_ROOT/dist/cli.js" ]]; then
-	if run_check_environment_with_runner "repo dist CLI ($REPO_ROOT/dist/cli.js)" node "$REPO_ROOT/dist/cli.js"; then
-		runner_succeeded=1
-	fi
-fi
-
-if [[ "$runner_succeeded" -eq 0 ]] && [[ -f "$REPO_ROOT/src/cli.ts" ]]; then
-	if run_check_environment_with_runner "repo source CLI ($REPO_ROOT/src/cli.ts)" pnpm exec tsx "$REPO_ROOT/src/cli.ts"; then
-		runner_succeeded=1
-	fi
-fi
-
-if [[ "$runner_succeeded" -eq 0 ]]; then
-	echo "Error: unable to run harness check-environment with a compatible CLI."
-	echo "Install or provide a compatible harness CLI, then retry."
-	echo "Options:"
-	echo "  1) Install globally (recommended for skills/config repos):"
-	echo "     npm i -g @brainwav/coding-harness"
-	echo "     Requires auth for the private package:"
-	echo "     - Local shell: export NPM_TOKEN=<token>"
-	echo "     - GitHub Actions: add repository secret NPM_TOKEN and map it to workflow env"
-	echo '       env: NPM_TOKEN: \${{ secrets.NPM_TOKEN }}'
-	echo "  2) Point to a known-good local CLI build:"
-	echo "     export CODING_HARNESS_CLI_PATH=\\\"$HOME/dev/coding-harness/dist/cli.js\\\""
-	echo "  3) Use any compatible harness binary on PATH."
+if ! run_check_environment_with_runner "global npm harness ($(command -v harness))" harness; then
+	echo "Error: global npm harness failed to run check-environment successfully."
+	echo "Reinstall and retry:"
+	echo "  npm i -g @brainwav/coding-harness"
+	echo "If this is CI, confirm:"
+	echo '  env: NPM_TOKEN: \${{ secrets.NPM_TOKEN }}'
 	exit 1
 fi
 
@@ -3761,6 +3750,7 @@ echo "Environment check passed (attestation: $ATTESTATION_PATH)"
 /harness.contract.json @jscraik
 /CONTRIBUTING.md @jscraik
 /AGENTS.md @jscraik
+/scripts/codex-preflight.sh @jscraik
 /scripts/check-environment.sh @jscraik
 `,
 	},
@@ -3769,7 +3759,7 @@ echo "Environment check passed (attestation: $ATTESTATION_PATH)"
 		render: () => `# Harness Development Makefile
 # Run \`make help\` to see available commands
 
-.PHONY: help install setup hooks hooks-pre-commit hooks-pre-push secrets-staged docs-style-changed related-tests semgrep-changed diagrams-check dev build lint docs-lint fmt typecheck test check audit secrets security clean reset ci diagrams env-check
+.PHONY: help install setup preflight hooks hooks-pre-commit hooks-pre-push secrets-staged docs-style-changed related-tests semgrep-changed diagrams-check dev build lint docs-lint fmt typecheck test check audit secrets security clean reset ci diagrams env-check
 
 # Default target
 help: ## Show this help message
@@ -3784,6 +3774,9 @@ install: ## Install dependencies
 	pnpm install
 
 setup: install hooks ## Full setup: install deps and configure git hooks
+
+preflight: ## Run repository preflight checks (required local-memory gate by default)
+	@bash ./scripts/codex-preflight.sh
 
 hooks: ## Setup git hooks
 	node scripts/setup-git-hooks.js

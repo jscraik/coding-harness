@@ -256,6 +256,7 @@ export const REQUIRED_MAKEFILE_TARGETS = [
 	"help",
 	"install",
 	"setup",
+	"preflight",
 	"hooks",
 	"hooks-pre-commit",
 	"hooks-pre-push",
@@ -281,6 +282,7 @@ export const REQUIRED_MAKEFILE_TARGETS = [
 ] as const;
 
 export const REQUIRED_HOOK_SUPPORT_FILES = [
+	"scripts/codex-preflight.sh",
 	"scripts/check-staged-secrets.sh",
 	"scripts/check-doc-style.sh",
 	"scripts/check-related-tests.sh",

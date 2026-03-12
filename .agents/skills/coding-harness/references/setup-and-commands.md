@@ -45,7 +45,7 @@ pnpm exec tsx src/cli.ts --help
 
 ## Install modes
 
-### Global (workstation)
+### Global npm install (required for generated preflight)
 
 ```bash
 npm install -g @brainwav/coding-harness
@@ -58,40 +58,24 @@ Recommended managed install:
 mise install -g npm:@brainwav/coding-harness
 ```
 
-### Project-local (repo)
+Required private package auth wiring:
 
 ```bash
-pnpm add -D @brainwav/coding-harness
-pnpm exec harness --help
+export NPM_TOKEN=<token>
+# GitHub Actions workflow env:
+# env:
+#   NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
 ```
 
-## Abbreviations
+### Project-local source CLI (only for coding-harness development)
 
-| Abbr | Meaning |
-| --- | --- |
-| `S` | State |
-| `E` | Event |
-| `G` | Guard |
-| `A` | Action |
-| `N` | Next |
+Use this only when developing inside the `coding-harness` source repository itself.
+Generated `scripts/check-environment.sh` in consumer repositories does not fall back
+to `pnpm exec tsx src/cli.ts ...`; it requires the global `harness` binary from npm.
 
-## Metadata
-| Field | Value |
-| --- | --- |
-| `owner` | `coding-harness-maintainers` |
-| `max_duration` | `single bootstrap/update run` |
-| `escalation` | `route to BX/UX fail state with unblock action` |
+## Bootstrap workflow
 
-## Invariants
-- Transition tables are canonical and deterministic.
-- Update flows must preserve rollback/migrate routes.
-- Validation state requires explicit checks execution.
-
-## States
-```txt
-B0 PREFLIGHT, B1 DEPS, B2 INIT_PREVIEW, B3 INIT_APPLY, B4 VALIDATE, B5 READY, BX FAIL
-U0 CHECK, U1 PREVIEW, U2 APPLY, U3 VALIDATE, U4 DONE, UX FAIL
-```
+1. Install dependencies:
 
 ## Transition Table (Canonical)
 `S | E | G | A | N`
