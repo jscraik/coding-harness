@@ -239,6 +239,9 @@ Use benchmark artifacts as release evidence:
 Use this checklist per task:
 
 1. Open PR with a complete title/body.
+   - Validate body content before requesting review:
+     - `harness pr-template-gate --pr-body-file /absolute/path/to/pr-body.md --json`
+     - or for an existing PR: `gh pr view <number> --json body --jq .body | harness pr-template-gate --pr-body-file - --json`
 2. Run and paste local gate output:
 
    - `pnpm check`

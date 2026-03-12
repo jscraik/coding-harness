@@ -7,6 +7,7 @@ import { runLinearGateCLI } from "../../commands/linear-gate.js";
 import { runLinearPrepareCLI } from "../../commands/linear-prepare.js";
 import { runLinearWorkflowCLI } from "../../commands/linear-workflow.js";
 import { runPolicyGateCLI } from "../../commands/policy-gate.js";
+import { runPrTemplateGateCLI } from "../../commands/pr-template-gate.js";
 import { runPreflightGateCLI } from "../../commands/preflight-gate.js";
 import { runReviewGateCLI } from "../../commands/review-gate.js";
 import { getFlagValue, parseCsvList, parseIntegerArg } from "./parse-utils.js";
@@ -152,6 +153,28 @@ const COMMAND_SPECS: CommandSpec[] = [
 			if (prBodyArg !== undefined) options.prBody = prBodyArg;
 
 			return runLinearGateCLI(options);
+		},
+	},
+	{
+		name: "pr-template-gate",
+		aliases: ["pr-template-check"],
+		summary:
+			"Validate PR template completion and placeholder replacement before merge",
+		errorLabel: "PR Template Gate Error",
+		execute: (args) => {
+			const jsonFlag = args.includes("--json");
+			const prBodyIndex = args.indexOf("--pr-body");
+			const prBodyFileIndex = args.indexOf("--pr-body-file");
+
+			const options: Parameters<typeof runPrTemplateGateCLI>[0] = {};
+
+			if (jsonFlag) options.json = true;
+			const prBodyArg = getFlagValue(args, prBodyIndex);
+			if (prBodyArg !== undefined) options.prBody = prBodyArg;
+			const prBodyFileArg = getFlagValue(args, prBodyFileIndex);
+			if (prBodyFileArg !== undefined) options.prBodyFile = prBodyFileArg;
+
+			return runPrTemplateGateCLI(options);
 		},
 	},
 	{

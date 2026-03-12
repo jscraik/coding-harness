@@ -109,9 +109,43 @@ Scaffolds a complete governance baseline into any repository:
 ### Governance commands
 
 | Command | Purpose |
-|---------|---------|
-| `linear` | Prepare Linear branch/PR metadata and manage workflow transitions |
-| `branch-protect` | Configure GitHub branch protection rules |
+| --- | --- |
+| `init` | Install harness contract, Greptile baseline, and PR governance templates into the current repository. |
+| `risk-tier` | Classify changed files by risk. |
+| `policy-gate` | Validate policy expectations from changed files. Alias: `risk-policy-gate`. |
+| `replay` | Re-run policy checks from saved snapshots. |
+| `evidence-verify` | Validate screenshot/evidence artifacts. |
+| `gardener` | Detect stale docs and broken links. |
+| `memory-gate` | Validate local-memory workflow compliance. |
+| `preflight-gate` | Run fast policy checks before expensive operations. |
+| `silent-error` | Detect silent error handling anti-patterns. |
+| `diff-budget` | Enforce diff budget constraints. |
+| `drift-gate` | Evaluate consistency drift across governance surfaces (advisory/health). |
+| `review-gate` | Enforce review checks and SHA guardrails. |
+| `branch-protect` | Configure/maintain branch protection rulesets and required status checks. |
+| `tooling-audit` | Audit cross-repo tooling baseline drift against contract and generated repo surfaces. |
+| `verify-greptile` | Verify required Greptile files, bridge workflow, ruleset wiring, and app/ruleset readiness. |
+| `request-greptile-review` | Post the standard `@greptileai` review trigger comment on a PR. |
+| `brainstorm-gate` | Validate brainstorm artifacts. |
+| `plan-gate` | Validate plan artifacts, plan IDs, acceptance evidence, and PR traceability back to plans. |
+| `prompt-gate` | Validate prompt template usage. |
+| `blast-radius` | Determine required checks from changed files. |
+| `observability-gate` | Check metrics cardinality limits. |
+| `ui:fast` | Run Storybook-first local UI loop. |
+| `ui:verify` | Run Playwright smoke tests with evidence. |
+| `ui:explore` | Run exploratory browser workflow. |
+| `context` | Search indexed brainstorm/plan context. |
+| `index-context` | Bulk index docs for semantic search. |
+| `remediate` | Apply automated fixes for findings. |
+| `check-authz` | Validate authorization policy for mutative operations. |
+| `check-environment` | Validate pilot environment governance checks. |
+| `docs-gate` | Enforce documentation parity for governance, tooling/runtime, architecture-context, tracked workflow-authority docs (including routing, validation, release, and testing-gate runbooks), and tracked compound-workflow artifacts such as ADRs, specs, plans, and brainstorms. |
+| `linear` | Prepare Linear-aware branch/PR metadata and move issues through claim, handoff, and close workflow states. |
+| `linear-gate` | Enforce Linear-first intake, branch naming, and PR linkage rules from the contract. |
+| `pr-template-gate` | Validate PR template sections, checklist status markers, and placeholder replacement before merge. |
+| `gap-case` | Track and resolve pilot gap-cases. |
+| `pilot-evaluate` | Evaluate pilot metrics and promotion readiness. |
+| `pilot-rollback` | Transition pilot mode (autonomous <-> manual). |
 
 ### Policy gates
 

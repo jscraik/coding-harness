@@ -320,6 +320,11 @@ function printUsage(): void {
 	);
 	console.info("  --json           Output as JSON");
 	console.info("");
+	console.info("PR Template Gate Options:");
+	console.info("  --pr-body        Pull request body markdown to validate");
+	console.info("  --pr-body-file   Path to markdown file (or - for stdin)");
+	console.info("  --json           Output as JSON");
+	console.info("");
 	console.info("Remediate Options:");
 	console.info(
 		"  --findings       JSON file path for findings (or - for stdin)",
