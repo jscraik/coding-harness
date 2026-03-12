@@ -210,7 +210,7 @@ function main() {
 
 	console.error("workflow-contract-v1: failed");
 	for (const result of failed) {
-		console.error(`\\n${result.path}`);
+		console.error(`\n${result.path}`);
 		for (const error of result.errors) {
 			console.error(`  - ${error}`);
 		}
