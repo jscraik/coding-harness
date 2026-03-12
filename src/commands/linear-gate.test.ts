@@ -4,6 +4,17 @@ import { join } from "node:path";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import { runLinearGate } from "./linear-gate.js";
 
+function restoreEnvVar(
+	key: "GITHUB_HEAD_REF" | "GITHUB_REF_NAME",
+	value?: string,
+) {
+	if (value === undefined) {
+		Reflect.deleteProperty(process.env, key);
+		return;
+	}
+	process.env[key] = value;
+}
+
 function writeHarnessContract(tempDir: string): void {
 	writeFileSync(
 		join(tempDir, "harness.contract.json"),
@@ -154,8 +165,8 @@ contact_links:
 
 		const previousGithubHeadRef = process.env.GITHUB_HEAD_REF;
 		const previousGithubRefName = process.env.GITHUB_REF_NAME;
-		process.env.GITHUB_HEAD_REF = "";
-		process.env.GITHUB_REF_NAME = "";
+		Reflect.deleteProperty(process.env, "GITHUB_HEAD_REF");
+		Reflect.deleteProperty(process.env, "GITHUB_REF_NAME");
 
 		const result = (() => {
 			try {
@@ -165,17 +176,8 @@ contact_links:
 					allowMissingPrMetadata: true,
 				});
 			} finally {
-				if (previousGithubHeadRef === undefined) {
-					process.env.GITHUB_HEAD_REF = "";
-				} else {
-					process.env.GITHUB_HEAD_REF = previousGithubHeadRef;
-				}
-
-				if (previousGithubRefName === undefined) {
-					process.env.GITHUB_REF_NAME = "";
-				} else {
-					process.env.GITHUB_REF_NAME = previousGithubRefName;
-				}
+				restoreEnvVar("GITHUB_HEAD_REF", previousGithubHeadRef);
+				restoreEnvVar("GITHUB_REF_NAME", previousGithubRefName);
 			}
 		})();
 
