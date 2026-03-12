@@ -188,7 +188,8 @@ jobs:
           - [x] I did not push directly to \`main\`; this PR is from a dedicated branch.
           - [x] Branch name follows policy (\`codex/*\` for agent-created branches).
           - [x] Linear issue key is present in the branch name or PR title/body for GitHub↔Linear linking.
-          - [x] Required local gates run: \`pnpm lint\`, \`pnpm typecheck\`, \`pnpm test\`, \`pnpm audit\`, \`pnpm check\` (or reason for deviation).
+          - [x] Required local gates run: \`pnpm lint\`, \`pnpm docs:lint\`, \`pnpm workflow:validate\`, \`pnpm typecheck\`, \`pnpm test\`, \`pnpm audit\`, \`pnpm check\` (or reason for deviation).
+          - [x] Workflow contract normalization reviewed: \`pnpm workflow:normalize\` run (no-op expected for release-only changes), then \`pnpm workflow:validate\` passes.
           - [x] Greptile setup verified with \`grepfile\` skill and \`.greptile/config.json\`, \`.greptile/rules.md\`, \`.greptile/files.json\`.
           - [ ] \`Greptile\` review completed and findings handled (or explicitly waived).
           - [ ] \`Codex\` review completed and findings handled (or explicitly waived).
@@ -200,6 +201,9 @@ jobs:
           ## Testing
 
           - Command: \`pnpm lint\` → \`pass\`
+          - Command: \`pnpm docs:lint\` → \`pass\`
+          - Command: \`pnpm workflow:normalize\` → \`pass\` (no-op)
+          - Command: \`pnpm workflow:validate\` → \`pass\`
           - Command: \`pnpm typecheck\` → \`pass\`
           - Command: \`pnpm test\` → \`pass\`
           - Command: \`pnpm audit\` → \`pass\`
