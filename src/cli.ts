@@ -8,6 +8,7 @@ import {
 	runBlastRadiusCLI,
 } from "./commands/blast-radius.js";
 import { runBrainstormGateCLI } from "./commands/brainstorm-gate.js";
+import { runContextHealthCLI } from "./commands/context-health.js";
 import { runContextCLI } from "./commands/context.js";
 import { runDiffBudgetCLI } from "./commands/diff-budget.js";
 import { runDriftGateCLI } from "./commands/drift-gate.js";
@@ -130,7 +131,11 @@ function printUsage(): void {
 		},
 		{
 			name: "index-context",
-			summary: "Bulk index brainstorms/plans for search",
+			summary: "Bulk index governed and supporting context for search",
+		},
+		{
+			name: "context-health",
+			summary: "Generate advisory context-integrity scorecards",
 		},
 		{
 			name: "pilot-evaluate",
@@ -421,7 +426,7 @@ function printUsage(): void {
 	console.info("  --branch         Branch name (default: main)");
 	console.info("  --ruleset        Ruleset name (default: protect)");
 	console.info("  --checks         Comma-separated required status checks");
-	console.info("  --required-approvals  Required PR approvals (default: 0)");
+	console.info("  --required-approvals  Required PR approvals (default: 1)");
 	console.info("  --dry-run        Preview payload without applying");
 	console.info("  --json           Output as JSON");
 	console.info("");
@@ -445,6 +450,23 @@ function printUsage(): void {
 	);
 	console.info("  --max-age        Max days old (default: 30)");
 	console.info("  --require-origin Require origin reference to brainstorm");
+	console.info(
+		"  --require-plan-id Require plan_id frontmatter on validated plans",
+	);
+	console.info(
+		"  --require-acceptance-evidence Require evidence refs on completed acceptance items",
+	);
+	console.info(
+		"  --require-traceability Require changed work to map back to plan IDs",
+	);
+	console.info("  --plan-ids       Comma-separated plan IDs to validate");
+	console.info(
+		"  --pr-title       Pull request title to extract plan IDs from",
+	);
+	console.info("  --pr-body        Pull request body to extract plan IDs from");
+	console.info(
+		"  --changed-files  Comma-separated changed file paths for traceability checks",
+	);
 	console.info("  --strict         Require all sections");
 	console.info("  --json           Output as JSON");
 	console.info("");
@@ -822,15 +844,31 @@ export function run(args: string[]): void {
 		const jsonFlag = args.includes("--json");
 		const strictFlag = args.includes("--strict");
 		const requireOriginFlag = args.includes("--require-origin");
+		const requirePlanIdFlag = args.includes("--require-plan-id");
+		const requireAcceptanceEvidenceFlag = args.includes(
+			"--require-acceptance-evidence",
+		);
+		const requireTraceabilityFlag = args.includes("--require-traceability");
 		const plansIndex = args.indexOf("--plans");
 		const typeIndex = args.indexOf("--type");
 		const maxAgeIndex = args.indexOf("--max-age");
+		const planIdsIndex = args.indexOf("--plan-ids");
+		const prTitleIndex = args.indexOf("--pr-title");
+		const prBodyIndex = args.indexOf("--pr-body");
+		const changedFilesIndex = args.indexOf("--changed-files");
 
 		const options: {
 			plansPath?: string;
 			type?: string;
 			maxAge?: number;
 			requireOrigin?: boolean;
+			requirePlanId?: boolean;
+			requireAcceptanceEvidence?: boolean;
+			requireTraceability?: boolean;
+			planIds?: string[];
+			prTitle?: string;
+			prBody?: string;
+			changedFiles?: string[];
 			strict?: boolean;
 			json?: boolean;
 		} = {};
@@ -838,6 +876,9 @@ export function run(args: string[]): void {
 		if (jsonFlag) options.json = true;
 		if (strictFlag) options.strict = true;
 		if (requireOriginFlag) options.requireOrigin = true;
+		if (requirePlanIdFlag) options.requirePlanId = true;
+		if (requireAcceptanceEvidenceFlag) options.requireAcceptanceEvidence = true;
+		if (requireTraceabilityFlag) options.requireTraceability = true;
 		const plansArg = getFlagValue(args, plansIndex);
 		if (plansArg) options.plansPath = plansArg;
 		const typeArg = getFlagValue(args, typeIndex);
@@ -847,6 +888,14 @@ export function run(args: string[]): void {
 			const parsedMaxAge = parseIntegerArg(maxAgeArg, 0);
 			if (parsedMaxAge !== undefined) options.maxAge = parsedMaxAge;
 		}
+		const planIdsArg = getFlagValue(args, planIdsIndex);
+		if (planIdsArg) options.planIds = parseCsvList(planIdsArg);
+		const prTitleArg = getFlagValue(args, prTitleIndex);
+		if (prTitleArg) options.prTitle = prTitleArg;
+		const prBodyArg = getFlagValue(args, prBodyIndex);
+		if (prBodyArg) options.prBody = prBodyArg;
+		const changedFilesArg = getFlagValue(args, changedFilesIndex);
+		if (changedFilesArg) options.changedFiles = parseCsvList(changedFilesArg);
 
 		const exitCode = runPlanGateCLI(options);
 		process.exit(exitCode);
@@ -1227,6 +1276,12 @@ export function run(args: string[]): void {
 		runIndexContextCLI(argsAfterCommand)
 			.then((exitCode) => process.exit(exitCode))
 			.catch((error) => handleFatalError("Index Context Error", error));
+		return;
+	}
+
+	if (command === "context-health") {
+		const argsAfterCommand = args.slice(1);
+		process.exit(runContextHealthCLI(argsAfterCommand));
 		return;
 	}
 

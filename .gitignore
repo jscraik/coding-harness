@@ -62,6 +62,7 @@ artifacts/pilot/
 artifacts/agent-runs/
 artifacts/policy/
 artifacts/consistency-gate/
+artifacts/context-integrity/
 
 # UI explore output
 ui-explore-output/

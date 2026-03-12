@@ -19,13 +19,34 @@ Every change must be checked by the smallest gate needed for risk, then by the f
 Enforces documentation parity for governance-sensitive changes.
 
 - **Trigger**: Pull requests and merge queue events.
-- **Behavior**: Classifies changed files into impact categories; verifies required docs exist.
+- **Behavior**: Classifies changed files into impact categories; verifies required docs exist, including tracked compound-workflow artifacts under `docs/adr/`, `docs/specs/`, `docs/plans/`, and `docs/brainstorms/`.
 - **Mode**: `advisory` (logs warnings) or `required` (fails CI).
 - **Exit codes**:
   - `0`: No drift or advisory mode
   - `10`: Drift detected (required mode)
   - `11-14`: Bootstrap gap, trust mismatch, policy error, runtime error
 - **Remediation**: Add missing docs or update `harness.contract.json` `docsGatePolicy.surfaces` to reflect new doc locations.
+
+### plan-gate
+
+Enforces plan-traceability and acceptance-evidence requirements for pull-request work.
+
+- **Trigger**: Pull requests via `risk-policy-gate`, plus any direct `harness plan-gate` run.
+- **Behavior**:
+  - extracts `Plan IDs` from PR title/body or explicit `--plan-ids`
+  - verifies each referenced ID resolves to a `docs/plans/*` file with matching `plan_id` frontmatter
+  - requires completed acceptance checklist items in referenced plans to carry evidence links/refs
+  - fails when changed work cannot be mapped back to at least one valid plan ID
+- **Mode**: required for pull requests; advisory only when a caller omits the enforcing flags.
+- **Exit codes**:
+  - `0`: traceability passes
+  - `5`: plan ID missing or unknown
+  - `6`: completed acceptance item missing evidence
+  - `7`: changed work not mapped to plan IDs
+- **Remediation**:
+  - add `plan_id` to the referenced plan frontmatter
+  - list the plan IDs in the PR summary
+  - add evidence refs to any completed acceptance items before merge
 
 ## Validation by change type
 
@@ -40,6 +61,7 @@ Enforces documentation parity for governance-sensitive changes.
 
 - Run full `pnpm check`.
 - Add any targeted tests if behavior changed.
+- For pull-requested work, also ensure the PR body lists valid plan IDs and the referenced plans' completed acceptance items carry evidence refs.
 
 ### Process/agent instruction edits
 

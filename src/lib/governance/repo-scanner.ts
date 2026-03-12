@@ -390,6 +390,83 @@ export function detectDrift(
 				});
 			}
 		}
+
+		const actualCapabilityDetectors = new Map(
+			actual.toolingPolicy.packagePolicy.capabilityDetectors.map((detector) => [
+				detector.capability,
+				new Set(detector.dependencyMarkers),
+			]),
+		);
+		for (const detector of base.toolingPolicy.packagePolicy
+			.capabilityDetectors) {
+			const actualMarkers = actualCapabilityDetectors.get(detector.capability);
+			if (!actualMarkers) {
+				findings.push({
+					path: "toolingPolicy.packagePolicy.capabilityDetectors",
+					expected: detector.capability,
+					actual: undefined,
+					severity: "warning",
+					description: `Missing tooling capability detector: ${detector.capability}`,
+				});
+				continue;
+			}
+			for (const marker of detector.dependencyMarkers) {
+				if (!actualMarkers.has(marker)) {
+					findings.push({
+						path: "toolingPolicy.packagePolicy.capabilityDetectors",
+						expected: marker,
+						actual: undefined,
+						severity: "warning",
+						description: `Missing dependency marker '${marker}' for capability '${detector.capability}'`,
+					});
+				}
+			}
+		}
+
+		const actualExplicitCapabilities = new Set(
+			actual.toolingPolicy.packagePolicy.explicitCapabilities ?? [],
+		);
+		for (const capability of base.toolingPolicy.packagePolicy
+			.explicitCapabilities ?? []) {
+			if (!actualExplicitCapabilities.has(capability)) {
+				findings.push({
+					path: "toolingPolicy.packagePolicy.explicitCapabilities",
+					expected: capability,
+					actual: undefined,
+					severity: "warning",
+					description: `Missing explicit tooling capability: ${capability}`,
+				});
+			}
+		}
+
+		const actualRequiredPackages = new Map(
+			actual.toolingPolicy.packagePolicy.requiredPackages.map((item) => [
+				item.package,
+				item,
+			]),
+		);
+		for (const item of base.toolingPolicy.packagePolicy.requiredPackages) {
+			const actualItem = actualRequiredPackages.get(item.package);
+			if (!actualItem) {
+				findings.push({
+					path: "toolingPolicy.packagePolicy.requiredPackages",
+					expected: item.package,
+					actual: undefined,
+					severity: "critical",
+					description: `Missing conditional package requirement: ${item.package}`,
+				});
+				continue;
+			}
+			if (actualItem.dependencyType !== item.dependencyType) {
+				findings.push({
+					path: `toolingPolicy.packagePolicy.requiredPackages.${item.package}`,
+					expected: item.dependencyType,
+					actual: actualItem.dependencyType,
+					severity: "warning",
+					description: `Conditional package dependency type drift for ${item.package}`,
+				});
+			}
+		}
 	}
 
 	return findings;

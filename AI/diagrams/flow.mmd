@@ -10,11 +10,11 @@ flowchart TD
   cli_test_4851f28b --> cli_dispatch_test_54c9f17b
   version_5ca4f385["version"]
   cli_dispatch_test_54c9f17b --> version_5ca4f385
+  preset_detection_b0f00a17["preset-detection"]
+  version_5ca4f385 --> preset_detection_b0f00a17
+  preset_detection_test_13b58525["preset-detection.test"]
+  preset_detection_b0f00a17 --> preset_detection_test_13b58525
   verify_greptile_227190f7["verify-greptile"]
-  version_5ca4f385 --> verify_greptile_227190f7
-  ui_loop_11660889["ui-loop"]
-  verify_greptile_227190f7 --> ui_loop_11660889
-  ui_loop_test_f0eabc42["ui-loop.test"]
-  ui_loop_11660889 --> ui_loop_test_f0eabc42
+  preset_detection_test_13b58525 --> verify_greptile_227190f7
   End(["End"])
-  ui_loop_test_f0eabc42 --> End
+  verify_greptile_227190f7 --> End

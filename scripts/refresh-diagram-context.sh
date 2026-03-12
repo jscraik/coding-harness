@@ -33,6 +33,7 @@ CONTEXT_FILE="$CONTEXT_DIR/diagram-context.md"
 META_FILE="$CONTEXT_DIR/diagram-context.meta.json"
 LOG_FILE="$CONTEXT_DIR/refresh.log"
 MIN_SECONDS="${DIAGRAM_REFRESH_MIN_SECONDS:-1800}"
+MAX_FILES="${DIAGRAM_REFRESH_MAX_FILES:-1000}"
 NOW_EPOCH="$(date +%s)"
 
 mkdir -p "$DIAGRAM_DIR" "$CONTEXT_DIR"
@@ -67,21 +68,23 @@ if [[ ! -f "$ROOT_DIR/src/diagram.js" ]] && ! command -v diagram >/dev/null 2>&1
 fi
 
 TRUNC_DIR=".tmp-diagram-refresh-XXXXXX"
-TMP_DIR="$(mktemp -d "${ROOT_DIR}/${TRUNC_DIR}")"
+TMP_DIR="$(mktemp -d "$ROOT_DIR/${TRUNC_DIR}")"
+TMP_BASENAME="$(basename "$TMP_DIR")"
+EXCLUDE_PATTERNS="node_modules/**,.git/**,dist/**,${TMP_BASENAME}/**"
 trap 'rm -rf "$TMP_DIR"' EXIT
 
 pushd "$ROOT_DIR" >/dev/null
 if [[ -f "$ROOT_DIR/src/diagram.js" ]]; then
   if [[ "$QUIET" -eq 1 ]]; then
-    node src/diagram.js all . --output-dir "$TMP_DIR/diagrams" >/dev/null 2>&1
+    node src/diagram.js all . --output-dir "$TMP_BASENAME/diagrams" --exclude "$EXCLUDE_PATTERNS" --max-files "$MAX_FILES" >/dev/null 2>&1
   else
-    node src/diagram.js all . --output-dir "$TMP_DIR/diagrams"
+    node src/diagram.js all . --output-dir "$TMP_BASENAME/diagrams" --exclude "$EXCLUDE_PATTERNS" --max-files "$MAX_FILES"
   fi
 else
   if [[ "$QUIET" -eq 1 ]]; then
-    diagram all . --output-dir "$TMP_DIR/diagrams" >/dev/null 2>&1
+    diagram all . --output-dir "$TMP_BASENAME/diagrams" --exclude "$EXCLUDE_PATTERNS" --max-files "$MAX_FILES" >/dev/null 2>&1
   else
-    diagram all . --output-dir "$TMP_DIR/diagrams"
+    diagram all . --output-dir "$TMP_BASENAME/diagrams" --exclude "$EXCLUDE_PATTERNS" --max-files "$MAX_FILES"
   fi
 fi
 popd >/dev/null
@@ -90,6 +93,206 @@ if ! ls "$TMP_DIR/diagrams"/*.mmd >/dev/null 2>&1; then
   log "error: no .mmd files produced"
   exit 1
 fi
+
+MANIFEST_PATH="$TMP_DIR/diagrams/manifest.json"
+ROOT_DIR="$ROOT_DIR" TMP_DIR="$TMP_DIR" MANIFEST_PATH="$MANIFEST_PATH" node <<'NODE'
+const { createHash } = require("node:crypto");
+const { readdirSync, readFileSync, writeFileSync } = require("node:fs");
+const { join } = require("node:path");
+
+const rootDir = process.env.ROOT_DIR;
+const tmpDir = process.env.TMP_DIR;
+const manifestPath = process.env.MANIFEST_PATH;
+
+if (!rootDir || !tmpDir || !manifestPath) {
+  throw new Error("diagram manifest generation requires ROOT_DIR, TMP_DIR, and MANIFEST_PATH");
+}
+
+const diagramsDir = join(tmpDir, "diagrams");
+const ensureTrailingNewline = (content) =>
+  content.endsWith("\n") ? content : `${content}\n`;
+const stableId = (prefix, value) => {
+  const slug = value
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "_")
+    .replace(/^_+|_+$/g, "")
+    .slice(0, 48) || prefix;
+  const digest = createHash("sha1").update(value).digest("hex").slice(0, 8);
+  return `${prefix}_${slug}_${digest}`;
+};
+
+const parseArchitecture = (content) => {
+  const lines = content.trimEnd().split(/\r?\n/);
+  const subgraphs = [];
+  let currentSubgraph = null;
+
+  for (const line of lines) {
+    const subgraphMatch = line.match(/^  subgraph (\S+)\["(.+)"\]$/);
+    if (subgraphMatch) {
+      currentSubgraph = {
+        rawId: subgraphMatch[1],
+        label: subgraphMatch[2],
+        nodes: [],
+      };
+      subgraphs.push(currentSubgraph);
+      continue;
+    }
+
+    if (line === "  end") {
+      currentSubgraph = null;
+      continue;
+    }
+
+    const nodeMatch = line.match(/^    (\S+)\["(.+)"\]$/);
+    if (nodeMatch && currentSubgraph) {
+      currentSubgraph.nodes.push({
+        rawId: nodeMatch[1],
+        label: nodeMatch[2],
+      });
+    }
+  }
+
+  return subgraphs;
+};
+
+const buildArchitecture = (subgraphs) => {
+  const nodeMap = new Map();
+  const lines = ["graph TD"];
+  const sortedSubgraphs = [...subgraphs].sort((left, right) =>
+    left.label.localeCompare(right.label),
+  );
+
+  for (const subgraph of sortedSubgraphs) {
+    const subgraphId = stableId("sg", subgraph.label);
+    lines.push(`  subgraph ${subgraphId}["${subgraph.label}"]`);
+    const sortedNodes = [...subgraph.nodes].sort((left, right) =>
+      left.label.localeCompare(right.label),
+    );
+    for (const node of sortedNodes) {
+      const nodeId = stableId("node", `${subgraph.label}/${node.label}`);
+      nodeMap.set(node.rawId, { canonicalId: nodeId, label: node.label });
+      lines.push(`    ${nodeId}["${node.label}"]`);
+    }
+    lines.push("  end");
+  }
+
+  return {
+    content: ensureTrailingNewline(lines.join("\n")),
+    nodeMap,
+  };
+};
+
+const buildDependency = (content, nodeMap) => {
+  const lines = content.trimEnd().split(/\r?\n/);
+  if (lines.length === 0) {
+    return ensureTrailingNewline(content);
+  }
+
+  const externalNodeMap = new Map();
+  const dependencyEdges = [];
+  const styleEntries = [];
+
+  for (const line of lines.slice(1)) {
+    const edgeMatch = line.match(/^  (\S+)\["(.+)"\] --> (\S+)$/);
+    if (edgeMatch) {
+      const [, rawSourceId, sourceLabel, rawTargetId] = edgeMatch;
+      const target = nodeMap.get(rawTargetId) ?? {
+        canonicalId: stableId("node", rawTargetId),
+        label: rawTargetId,
+      };
+      const sourceCanonicalId =
+        externalNodeMap.get(rawSourceId) ?? stableId("ext", sourceLabel);
+      externalNodeMap.set(rawSourceId, sourceCanonicalId);
+      dependencyEdges.push({
+        line: `  ${sourceCanonicalId}["${sourceLabel}"] --> ${target.canonicalId}`,
+        sortKey: `${sourceLabel}::${target.label}`,
+      });
+      continue;
+    }
+
+    const styleMatch = line.match(/^  style (\S+) (.+)$/);
+    if (styleMatch) {
+      const [, rawNodeId, styleSpec] = styleMatch;
+      const canonicalId = externalNodeMap.get(rawNodeId);
+      if (canonicalId) {
+        styleEntries.push({
+          line: `  style ${canonicalId} ${styleSpec}`,
+          sortKey: canonicalId,
+        });
+      }
+    }
+  }
+
+  return ensureTrailingNewline(
+    [
+      "graph LR",
+      ...dependencyEdges
+        .sort((left, right) => left.sortKey.localeCompare(right.sortKey))
+        .map((entry) => entry.line),
+      ...styleEntries
+        .sort((left, right) => left.sortKey.localeCompare(right.sortKey))
+        .map((entry) => entry.line),
+    ].join("\n"),
+  );
+};
+
+const diagramFiles = readdirSync(diagramsDir).filter((entry) => entry.endsWith(".mmd"));
+const architecturePath = join(diagramsDir, "architecture.mmd");
+const dependencyPath = join(diagramsDir, "dependency.mmd");
+
+if (diagramFiles.includes("architecture.mmd")) {
+  const architectureContent = readFileSync(architecturePath, "utf8");
+  const { content: canonicalArchitecture, nodeMap } = buildArchitecture(
+    parseArchitecture(architectureContent),
+  );
+  writeFileSync(architecturePath, canonicalArchitecture);
+
+  if (diagramFiles.includes("dependency.mmd")) {
+    const dependencyContent = readFileSync(dependencyPath, "utf8");
+    writeFileSync(dependencyPath, buildDependency(dependencyContent, nodeMap));
+  }
+}
+
+for (const file of diagramFiles) {
+  if (file === "architecture.mmd" || file === "dependency.mmd") {
+    continue;
+  }
+  const filePath = join(diagramsDir, file);
+  writeFileSync(filePath, ensureTrailingNewline(readFileSync(filePath, "utf8").trimEnd()));
+}
+
+const diagrams = readdirSync(diagramsDir)
+  .filter((file) => file.endsWith(".mmd"))
+  .sort()
+  .map((file) => {
+    const content = readFileSync(join(diagramsDir, file), "utf8");
+    return {
+      type: file.replace(/\.mmd$/, ""),
+      file,
+      outputPath: `AI/diagrams/${file}`,
+      lines: content.split(/\r?\n/).length,
+      bytes: Buffer.byteLength(content),
+      isPlaceholder:
+        /placeholder/i.test(content) ||
+        /not enough/i.test(content) ||
+        /limited to/i.test(content),
+    };
+  });
+
+writeFileSync(
+  manifestPath,
+  `${JSON.stringify(
+    {
+      generatedAt: new Date().toISOString(),
+      rootPath: rootDir,
+      diagramDir: "AI/diagrams",
+      diagrams,
+    },
+    null,
+    2,
+  )}\n`,
+);
+NODE
 
 TMP_CONTEXT="$TMP_DIR/diagram-context.md"
 {
@@ -118,11 +321,16 @@ if [[ -f "$CONTEXT_FILE" ]] && cmp -s "$TMP_CONTEXT" "$CONTEXT_FILE"; then
   CHANGED=false
 fi
 
+if [[ -f "$DIAGRAM_DIR/manifest.json" ]] && ! cmp -s "$TMP_DIR/diagrams/manifest.json" "$DIAGRAM_DIR/manifest.json"; then
+  CHANGED=true
+fi
+
 rm -f "$DIAGRAM_DIR"/*.mmd
 cp "$TMP_DIR"/diagrams/*.mmd "$DIAGRAM_DIR/"
+cp "$TMP_DIR/diagrams/manifest.json" "$DIAGRAM_DIR/manifest.json"
 cp "$TMP_CONTEXT" "$CONTEXT_FILE"
 
-jq -n \
+jq --tab -n \
   --arg generated_at "$(date -u +"%Y-%m-%dT%H:%M:%SZ")" \
   --arg git_head "$GIT_HEAD" \
   --arg context_sha256 "$CONTEXT_SHA" \

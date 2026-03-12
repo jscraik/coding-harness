@@ -122,7 +122,7 @@ describe("runBranchProtect", () => {
 			(rule) => rule.type === "pull_request",
 		);
 		expect(pullRequestRule?.parameters).toMatchObject({
-			required_approving_review_count: 0,
+			required_approving_review_count: 1,
 			require_code_owner_review: false,
 			require_last_push_approval: false,
 			required_review_thread_resolution: true,
@@ -605,7 +605,7 @@ describe("runBranchProtect", () => {
 			expect(result.output.action).toBe("dry_run");
 			expect(result.output.repositoryVisibility).toBe("public");
 			expect(result.output.managedPolicy).toMatchObject({
-				requiredApprovingReviewCount: 0,
+				requiredApprovingReviewCount: 1,
 				restrictDeletions: true,
 				blockForcePushes: true,
 				requireLinearHistory: true,
@@ -687,7 +687,7 @@ describe("runBranchProtect", () => {
 		expect(payload.action).toBe("dry_run");
 		expect(payload.repositoryVisibility).toBe("public");
 		expect(payload.managedPolicy).toMatchObject({
-			requiredApprovingReviewCount: 0,
+			requiredApprovingReviewCount: 1,
 			requireLinearHistory: true,
 			requireCodeOwnerReview: false,
 			requireLastPushApproval: false,

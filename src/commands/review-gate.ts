@@ -16,6 +16,7 @@ import {
 } from "../lib/github/comments.js";
 import { validateSha } from "../lib/github/sha.js";
 import { sanitizeError } from "../lib/input/sanitize.js";
+import { runPlanGate } from "../lib/plan-gate/detector.js";
 import { runCheckAuthz } from "./check-authz.js";
 
 export const EXIT_CODES = {
@@ -49,6 +50,8 @@ export interface ReviewGateOutput {
 	needsRerun: boolean;
 	timedOut?: boolean;
 	policy_gate_status: "pass" | "fail" | "pending" | "missing";
+	plan_traceability_status: "pass" | "fail" | "missing";
+	plan_ids: string[];
 	blockers: string[];
 	actionable_count: number;
 	informational_count: number;
@@ -69,6 +72,8 @@ const DEFAULT_REVIEW_GATE_AUTHZ_CONTRACT = "harness.contract.json";
 type BaseReviewGateOutput = Omit<
 	ReviewGateOutput,
 	| "policy_gate_status"
+	| "plan_traceability_status"
+	| "plan_ids"
 	| "blockers"
 	| "actionable_count"
 	| "informational_count"
@@ -77,6 +82,10 @@ type BaseReviewGateOutput = Omit<
 
 interface ReadinessOptions {
 	additionalBlockers?: string[];
+	planTraceability?: {
+		status: ReviewGateOutput["plan_traceability_status"];
+		planIds: string[];
+	};
 }
 
 function withReadinessFields(
@@ -93,6 +102,9 @@ function withReadinessFields(
 				: "pending";
 
 	const blockers: string[] = [];
+	const planTraceabilityStatus =
+		options.planTraceability?.status ?? ("missing" as const);
+	const planIds = options.planTraceability?.planIds ?? [];
 	if (policyGateStatus === "missing") {
 		blockers.push("risk-policy-gate check run not found for current HEAD SHA");
 	}
@@ -114,12 +126,15 @@ function withReadinessFields(
 	const informationalCount = base.verified ? 3 : 1;
 
 	const confidenceRubric: ReviewGateOutput["confidence_rubric"] =
-		actionableCount === 0 && policyGateStatus === "pass"
+		actionableCount === 0 &&
+		policyGateStatus === "pass" &&
+		planTraceabilityStatus === "pass"
 			? {
 					score: 5,
 					level: "high",
 					rationale: [
 						"risk-policy-gate passed for the current HEAD SHA",
+						"PR work maps to validated plan IDs",
 						"no merge blockers detected in review gate",
 					],
 				}
@@ -153,6 +168,8 @@ function withReadinessFields(
 	return {
 		...base,
 		policy_gate_status: policyGateStatus,
+		plan_traceability_status: planTraceabilityStatus,
+		plan_ids: planIds,
 		blockers,
 		actionable_count: actionableCount,
 		informational_count: informationalCount,
@@ -174,6 +191,13 @@ interface ReviewerIndependenceResult {
 
 interface ThreadReadinessResult {
 	passed: boolean;
+	blockers: string[];
+}
+
+interface PlanTraceabilityResult {
+	passed: boolean;
+	status: ReviewGateOutput["plan_traceability_status"];
+	planIds: string[];
 	blockers: string[];
 }
 
@@ -303,6 +327,45 @@ function evaluateRequiredChecks(
 	return blockers;
 }
 
+function evaluatePlanTraceability({
+	prTitle,
+	prBody,
+	changedFiles,
+}: {
+	prTitle?: string;
+	prBody?: string | null;
+	changedFiles: string[];
+}): PlanTraceabilityResult {
+	const result = runPlanGate({
+		...(prTitle ? { prTitle } : {}),
+		...(typeof prBody === "string" ? { prBody } : {}),
+		changedFiles,
+		maxAge: Number.MAX_SAFE_INTEGER,
+		requirePlanId: true,
+		requireAcceptanceEvidence: true,
+		requireTraceability: true,
+	});
+
+	const blockers = result.errors.map((error) => {
+		const prefix = error.path ? `${error.path}: ` : "";
+		return `Plan traceability: ${prefix}${error.message}`;
+	});
+
+	const status: ReviewGateOutput["plan_traceability_status"] =
+		result.traceability?.planIds.length === 0
+			? "missing"
+			: result.passed
+				? "pass"
+				: "fail";
+
+	return {
+		passed: result.passed,
+		status,
+		planIds: result.traceability?.planIds ?? [],
+		blockers,
+	};
+}
+
 function buildBotLoginSet(botLogin?: string): Set<string> {
 	return new Set<string>(
 		[
@@ -405,6 +468,18 @@ export async function runReviewGate(
 		// commit with a passing review check and bypass the intended gate.
 		const pullRequest = await client.getPullRequest(options.prNumber);
 		const pullRequestHeadSha = pullRequest.head.sha;
+		const changedFiles =
+			typeof (client as Partial<GitHubClient>).listPullRequestFiles ===
+			"function"
+				? (await client.listPullRequestFiles(options.prNumber)).map(
+						(file) => file.filename,
+					)
+				: [];
+		const planTraceability = evaluatePlanTraceability({
+			...(pullRequest.title ? { prTitle: pullRequest.title } : {}),
+			...(pullRequest.body !== undefined ? { prBody: pullRequest.body } : {}),
+			changedFiles,
+		});
 
 		if (pullRequestHeadSha.toLowerCase() !== options.headSha.toLowerCase()) {
 			return {
@@ -424,12 +499,21 @@ export async function runReviewGate(
 			if (!checkResult.found) {
 				return {
 					ok: true,
-					output: withReadinessFields({
-						verified: false,
-						headSha: pullRequestHeadSha,
-						checkStatus: "not_found",
-						needsRerun: true,
-					}),
+					output: withReadinessFields(
+						{
+							verified: false,
+							headSha: pullRequestHeadSha,
+							checkStatus: "not_found",
+							needsRerun: true,
+						},
+						{
+							additionalBlockers: planTraceability.blockers,
+							planTraceability: {
+								status: planTraceability.status,
+								planIds: planTraceability.planIds,
+							},
+						},
+					),
 				};
 			}
 
@@ -476,6 +560,7 @@ export async function runReviewGate(
 					...independence.blockers,
 					...threadReadiness.blockers,
 					...requiredCheckBlockers,
+					...planTraceability.blockers,
 				];
 				return {
 					ok: true,
@@ -493,6 +578,10 @@ export async function runReviewGate(
 						},
 						{
 							additionalBlockers,
+							planTraceability: {
+								status: planTraceability.status,
+								planIds: planTraceability.planIds,
+							},
 						},
 					),
 				};
@@ -502,13 +591,22 @@ export async function runReviewGate(
 			if (checkResult.status === "completed") {
 				return {
 					ok: true,
-					output: withReadinessFields({
-						verified: false,
-						headSha: pullRequestHeadSha,
-						checkStatus: checkResult.status,
-						checkConclusion: checkResult.conclusion ?? undefined,
-						needsRerun: true,
-					}),
+					output: withReadinessFields(
+						{
+							verified: false,
+							headSha: pullRequestHeadSha,
+							checkStatus: checkResult.status,
+							checkConclusion: checkResult.conclusion ?? undefined,
+							needsRerun: true,
+						},
+						{
+							additionalBlockers: planTraceability.blockers,
+							planTraceability: {
+								status: planTraceability.status,
+								planIds: planTraceability.planIds,
+							},
+						},
+					),
 				};
 			}
 
@@ -537,13 +635,22 @@ export async function runReviewGate(
 		// Warn mode - return needsRerun
 		return {
 			ok: true,
-			output: withReadinessFields({
-				verified: false,
-				headSha: pullRequestHeadSha,
-				checkStatus: "in_progress",
-				needsRerun: true,
-				timedOut: true,
-			}),
+			output: withReadinessFields(
+				{
+					verified: false,
+					headSha: pullRequestHeadSha,
+					checkStatus: "in_progress",
+					needsRerun: true,
+					timedOut: true,
+				},
+				{
+					additionalBlockers: planTraceability.blockers,
+					planTraceability: {
+						status: planTraceability.status,
+						planIds: planTraceability.planIds,
+					},
+				},
+			),
 		};
 	} catch (e) {
 		const errorMessage = e instanceof Error ? e.message : String(e);
@@ -732,6 +839,7 @@ export async function runReviewGateCLI(
 				`REVIEW_CONFIDENCE_SCORE=${output.confidence_rubric.score}/5`,
 				`REVIEW_CONFIDENCE_LEVEL=${output.confidence_rubric.level}`,
 				`REVIEW_POLICY_GATE=${output.policy_gate_status}`,
+				`REVIEW_PLAN_TRACEABILITY=${output.plan_traceability_status}`,
 				`REVIEW_ACTIONABLE=${output.actionable_count}`,
 				`REVIEW_INFORMATIONAL=${output.informational_count}`,
 			].join(" "),

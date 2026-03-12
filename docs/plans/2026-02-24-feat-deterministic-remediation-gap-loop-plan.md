@@ -3,6 +3,7 @@ title: feat: Deterministic remediation loop and harness-gap tracking
 status: superseded
 type: feat
 date: 2026-02-24
+plan_id: feat-deterministic-remediation-gap-loop
 origin: docs/brainstorms/2026-02-24-code-factory-remediation-gap-loop-brainstorm.md
 ---
 

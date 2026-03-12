@@ -1,12 +1,7 @@
 import { createHash } from "node:crypto";
-import {
-	existsSync,
-	mkdirSync,
-	readFileSync,
-	readdirSync,
-	writeFileSync,
-} from "node:fs";
+import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { join, relative } from "node:path";
+import { discoverContextSourceDocuments } from "../context-integrity/sources.js";
 import {
 	DEFAULT_HARNESS_DIR,
 	DEFAULT_LEXICAL_INDEX_FILENAME,
@@ -89,22 +84,6 @@ function parseFrontmatter(content: string): {
 	return { frontmatter, body: bodyContent ? bodyContent.trim() : "" };
 }
 
-function discoverMarkdownFiles(dir: string): string[] {
-	if (!existsSync(dir)) return [];
-
-	const files: string[] = [];
-	const entries = readdirSync(dir, { withFileTypes: true });
-	for (const entry of entries) {
-		const fullPath = join(dir, entry.name);
-		if (entry.isDirectory()) {
-			files.push(...discoverMarkdownFiles(fullPath));
-		} else if (entry.isFile() && entry.name.endsWith(".md")) {
-			files.push(fullPath);
-		}
-	}
-	return files;
-}
-
 function hashContent(content: string): string {
 	return createHash("sha256").update(content).digest("hex");
 }
@@ -148,22 +127,57 @@ function buildMetadata(
 	filepath: string,
 	type: DocumentMetadata["type"],
 	content: string,
+	overrides?: Partial<DocumentMetadata>,
 ): DocumentMetadata {
 	const { frontmatter } = parseFrontmatter(content);
 	const today = new Date().toISOString().split("T")[0] ?? "2026-01-01";
 	return {
 		type,
 		topic:
+			overrides?.topic ||
 			(typeof frontmatter.topic === "string" && frontmatter.topic) ||
 			(typeof frontmatter.title === "string" && frontmatter.title) ||
 			filepath.split("/").at(-1) ||
 			filepath,
-		date: (typeof frontmatter.date === "string" && frontmatter.date) || today,
-		...(typeof frontmatter.status === "string" && frontmatter.status
-			? { status: frontmatter.status }
+		date:
+			overrides?.date ||
+			(typeof frontmatter.date === "string" && frontmatter.date) ||
+			today,
+		...((typeof frontmatter.status === "string" && frontmatter.status) ||
+		overrides?.status
+			? {
+					status:
+						overrides?.status ||
+						(typeof frontmatter.status === "string"
+							? frontmatter.status
+							: undefined),
+				}
+			: {}),
+		...(overrides?.authority ? { authority: overrides.authority } : {}),
+		...(overrides?.family ? { family: overrides.family } : {}),
+		...(overrides?.stalenessState
+			? { stalenessState: overrides.stalenessState }
 			: {}),
 	};
 }
+
+const AUTHORITY_RANK: Record<
+	NonNullable<DocumentMetadata["authority"]>,
+	number
+> = {
+	canonical: 0,
+	governed: 1,
+	supporting: 2,
+};
+
+const STALENESS_RANK: Record<
+	NonNullable<DocumentMetadata["stalenessState"]>,
+	number
+> = {
+	fresh: 0,
+	unknown: 1,
+	stale: 2,
+};
 
 export function getLexicalIndexPath(
 	baseDir: string,
@@ -172,28 +186,8 @@ export function getLexicalIndexPath(
 	return join(baseDir, harnessDir, DEFAULT_LEXICAL_INDEX_FILENAME);
 }
 
-export function discoverContextSources(baseDir: string): Array<{
-	filepath: string;
-	type: DocumentMetadata["type"];
-}> {
-	return [
-		...discoverMarkdownFiles(join(baseDir, "docs/brainstorms")).map(
-			(filepath) => ({
-				filepath,
-				type: "brainstorm" as const,
-			}),
-		),
-		...discoverMarkdownFiles(join(baseDir, "docs/plans")).map((filepath) => ({
-			filepath,
-			type: "plan" as const,
-		})),
-		...discoverMarkdownFiles(join(baseDir, "docs/solutions")).map(
-			(filepath) => ({
-				filepath,
-				type: "solution" as const,
-			}),
-		),
-	];
+export function discoverContextSources(baseDir: string) {
+	return discoverContextSourceDocuments(baseDir);
 }
 
 export function writeLexicalIndex(
@@ -201,11 +195,16 @@ export function writeLexicalIndex(
 	harnessDir = DEFAULT_HARNESS_DIR,
 ): { path: string; indexed: number } {
 	const entries: LexicalIndexEntry[] = discoverContextSources(baseDir).map(
-		({ filepath, type }) => {
+		(document) => {
+			const { filepath, type, authority, family, stalenessState } = document;
 			const content = readFileSync(filepath, "utf-8");
 			return {
 				path: relative(baseDir, filepath).split("\\").join("/"),
-				metadata: buildMetadata(filepath, type, content),
+				metadata: buildMetadata(filepath, type, content, {
+					authority,
+					family,
+					stalenessState,
+				}),
 				contentHash: hashContent(content),
 			};
 		},
@@ -262,11 +261,16 @@ export function searchLexicalFallback(
 		({
 			schemaVersion: "context-lexical-index/v1",
 			generatedAt: new Date().toISOString(),
-			entries: discoverContextSources(baseDir).map(({ filepath, type }) => {
+			entries: discoverContextSources(baseDir).map((document) => {
+				const { filepath, type, authority, family, stalenessState } = document;
 				const content = readFileSync(filepath, "utf-8");
 				return {
 					path: relative(baseDir, filepath).split("\\").join("/"),
-					metadata: buildMetadata(filepath, type, content),
+					metadata: buildMetadata(filepath, type, content, {
+						authority,
+						family,
+						stalenessState,
+					}),
 					contentHash: hashContent(content),
 				};
 			}),
@@ -287,6 +291,28 @@ export function searchLexicalFallback(
 			};
 		})
 		.filter((result) => result.similarity > 0)
-		.sort((a, b) => b.similarity - a.similarity)
+		.sort((a, b) => {
+			if (b.similarity !== a.similarity) {
+				return b.similarity - a.similarity;
+			}
+			const authorityDelta =
+				(AUTHORITY_RANK[a.metadata?.authority ?? "supporting"] ?? 99) -
+				(AUTHORITY_RANK[b.metadata?.authority ?? "supporting"] ?? 99);
+			if (authorityDelta !== 0) {
+				return authorityDelta;
+			}
+			const stalenessDelta =
+				(STALENESS_RANK[a.metadata?.stalenessState ?? "unknown"] ?? 99) -
+				(STALENESS_RANK[b.metadata?.stalenessState ?? "unknown"] ?? 99);
+			if (stalenessDelta !== 0) {
+				return stalenessDelta;
+			}
+			const familyA = a.metadata?.family ?? "";
+			const familyB = b.metadata?.family ?? "";
+			if (familyA !== familyB) {
+				return familyA.localeCompare(familyB);
+			}
+			return a.path.localeCompare(b.path);
+		})
 		.slice(0, limit);
 }

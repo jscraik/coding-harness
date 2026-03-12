@@ -3,6 +3,7 @@ title: Phase 2 Contract and Policy Core
 type: feat
 status: superseded
 date: 2026-02-22
+plan_id: feat-phase-2-contract-policy-core
 origin: docs/brainstorms/2026-02-22-harness-gap-analysis-brainstorm.md
 deepened: 2026-02-22
 ---

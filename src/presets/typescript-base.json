@@ -23,7 +23,7 @@
 		"blockForcePushes": true,
 		"requireLinearHistory": true,
 		"requirePullRequest": true,
-		"requiredApprovingReviewCount": 0,
+		"requiredApprovingReviewCount": 1,
 		"dismissStaleReviewsOnPush": true,
 		"requireConversationResolution": true,
 		"requireCodeOwnerReview": false,
@@ -343,6 +343,9 @@
 				"install",
 				"setup",
 				"hooks",
+				"hooks-pre-commit",
+				"hooks-pre-push",
+				"diagrams-check",
 				"lint",
 				"docs-lint",
 				"fmt",
@@ -358,6 +361,40 @@
 				"diagrams",
 				"env-check"
 			]
+		},
+		"packagePolicy": {
+			"packageJsonPath": "package.json",
+			"capabilityDetectors": [
+				{
+					"capability": "ui",
+					"dependencyMarkers": [
+						"react",
+						"react-dom",
+						"next",
+						"vite",
+						"tailwindcss",
+						"@storybook/react",
+						"@storybook/react-vite",
+						"@radix-ui/react-slot"
+					]
+				},
+				{
+					"capability": "chatgpt_apps_sdk",
+					"dependencyMarkers": [
+						"@openai/chatkit",
+						"@openai/agents",
+						"@openai/agents-realtime"
+					]
+				}
+			],
+			"requiredPackages": [
+				{
+					"package": "@brainwav/design-system-guidance",
+					"dependencyType": "either",
+					"requiredWhenCapabilities": ["ui", "chatgpt_apps_sdk"]
+				}
+			],
+			"explicitCapabilities": []
 		}
 	}
 }

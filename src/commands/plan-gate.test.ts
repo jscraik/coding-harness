@@ -16,6 +16,7 @@ function createTestPlan(
 	content: string,
 	basePath: string,
 	origin?: string,
+	planId?: string,
 ): string {
 	const plansDir = join(basePath, "docs/plans");
 	if (!existsSync(plansDir)) {
@@ -33,6 +34,7 @@ function createTestPlan(
 		`type: ${type}`,
 		`status: ${status}`,
 		...(origin ? [`origin: ${origin}`] : []),
+		...(planId ? [`plan_id: ${planId}`] : []),
 		"---",
 	].join("\n");
 
@@ -81,6 +83,8 @@ describe("plan-gate command", () => {
 				"draft",
 				"## Implementation Steps\n\n- Step 1\n\n## Acceptance Criteria\n\n- Criterion 1",
 				testDir,
+				undefined,
+				"feat-test-feature",
 			);
 
 			const result = runPlanGate({ plansPath: join(testDir, "docs/plans") });
@@ -147,6 +151,7 @@ describe("plan-gate command", () => {
 				"## Implementation Steps\n\n## Acceptance Criteria",
 				testDir,
 				"docs/brainstorms/2026-02-20-test-feature-brainstorm.md",
+				"feat-test-feature",
 			);
 
 			const result = runPlanGate({
@@ -244,6 +249,142 @@ describe("plan-gate command", () => {
 
 			expect(result.passed).toBe(true);
 		});
+
+		it("requires plan_id when flag is set", () => {
+			createTestPlan(
+				"Traceability Plan",
+				"2026-03-12",
+				"feat",
+				"active",
+				"## Implementation Steps\n\n- Step 1\n\n## Acceptance Criteria\n\n- [ ] Criterion 1",
+				testDir,
+			);
+
+			const result = runPlanGate({
+				plansPath: join(testDir, "docs/plans"),
+				requirePlanId: true,
+			});
+
+			expect(result.passed).toBe(false);
+			expect(
+				result.errors.some((error) => error.code === "PLAN_ID_MISSING"),
+			).toBe(true);
+		});
+
+		it("validates referenced plan IDs from PR metadata", () => {
+			createTestPlan(
+				"Traceability Plan",
+				"2026-03-12",
+				"feat",
+				"active",
+				"## Implementation Steps\n\n- Step 1\n\n## Acceptance Criteria\n\n- [ ] Criterion 1",
+				testDir,
+				undefined,
+				"feat-traceability-plan",
+			);
+
+			const result = runPlanGate({
+				plansPath: join(testDir, "docs/plans"),
+				prBody: "- Plan IDs: `feat-traceability-plan`",
+				requireTraceability: true,
+				changedFiles: ["src/commands/review-gate.ts"],
+				requirePlanId: true,
+			});
+
+			expect(result.passed).toBe(true);
+			expect(result.traceability?.planIds).toEqual(["feat-traceability-plan"]);
+			expect(result.artifacts).toHaveLength(1);
+			expect(result.artifacts[0]?.planId).toBe("feat-traceability-plan");
+		});
+
+		it("fails when changed work has no plan IDs", () => {
+			createTestPlan(
+				"Traceability Plan",
+				"2026-03-12",
+				"feat",
+				"active",
+				"## Implementation Steps\n\n- Step 1\n\n## Acceptance Criteria\n\n- [ ] Criterion 1",
+				testDir,
+				undefined,
+				"feat-traceability-plan",
+			);
+
+			const result = runPlanGate({
+				plansPath: join(testDir, "docs/plans"),
+				requireTraceability: true,
+				changedFiles: ["src/commands/review-gate.ts"],
+			});
+
+			expect(result.passed).toBe(false);
+			expect(
+				result.errors.some((error) => error.code === "TRACEABILITY_MISSING"),
+			).toBe(true);
+		});
+
+		it("fails when completed acceptance items lack evidence refs", () => {
+			createTestPlan(
+				"Evidence Plan",
+				"2026-03-12",
+				"feat",
+				"active",
+				[
+					"## Implementation Steps",
+					"",
+					"- Step 1",
+					"",
+					"## Acceptance Checklist",
+					"",
+					"- [x] Completed without proof",
+				].join("\n"),
+				testDir,
+				undefined,
+				"feat-evidence-plan",
+			);
+
+			const result = runPlanGate({
+				plansPath: join(testDir, "docs/plans"),
+				planIds: ["feat-evidence-plan"],
+				requireAcceptanceEvidence: true,
+				requirePlanId: true,
+			});
+
+			expect(result.passed).toBe(false);
+			expect(
+				result.errors.some(
+					(error) => error.code === "ACCEPTANCE_EVIDENCE_MISSING",
+				),
+			).toBe(true);
+		});
+
+		it("passes when completed acceptance items carry evidence refs", () => {
+			createTestPlan(
+				"Evidence Plan",
+				"2026-03-12",
+				"feat",
+				"active",
+				[
+					"## Implementation Steps",
+					"",
+					"- Step 1",
+					"",
+					"## Acceptance Checklist",
+					"",
+					"- [x] Completed with evidence: [review-gate.ts](/Users/jamiecraik/dev/coding-harness/src/commands/review-gate.ts)",
+				].join("\n"),
+				testDir,
+				undefined,
+				"feat-evidence-plan",
+			);
+
+			const result = runPlanGate({
+				plansPath: join(testDir, "docs/plans"),
+				planIds: ["feat-evidence-plan"],
+				requireAcceptanceEvidence: true,
+				requirePlanId: true,
+			});
+
+			expect(result.passed).toBe(true);
+		});
 	});
 
 	describe("runPlanGateCLI", () => {
@@ -299,6 +440,27 @@ describe("plan-gate command", () => {
 			});
 
 			expect(exitCode).toBe(EXIT_CODES.ORIGIN_MISSING);
+		});
+
+		it("returns TRACEABILITY_ERROR when plan IDs are missing for changed work", () => {
+			createTestPlan(
+				"Traceability Plan",
+				"2026-03-12",
+				"feat",
+				"active",
+				"## Implementation Steps\n\n- Step 1\n\n## Acceptance Criteria\n\n- [ ] Criterion 1",
+				testDir,
+				undefined,
+				"feat-traceability-plan",
+			);
+
+			const exitCode = runPlanGateCLI({
+				plansPath: join(testDir, "docs/plans"),
+				requireTraceability: true,
+				changedFiles: ["src/commands/review-gate.ts"],
+			});
+
+			expect(exitCode).toBe(EXIT_CODES.TRACEABILITY_ERROR);
 		});
 	});
 });

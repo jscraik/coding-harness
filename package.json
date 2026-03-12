@@ -40,11 +40,15 @@
 		"audit": "pnpm audit --audit-level=moderate",
 		"audit:strict": "pnpm audit --audit-level=high",
 		"docs:lint": "pnpm markdownlint",
+		"docs:style:changed": "bash scripts/check-doc-style.sh",
 		"markdownlint": "markdownlint-cli2 \"**/*.md\"",
+		"secrets:staged": "bash scripts/check-staged-secrets.sh",
+		"semgrep:changed": "bash scripts/check-semgrep-changed.sh",
 		"test:artifacts": "bash scripts/test-with-artifacts.sh all",
 		"test:artifacts:unit": "bash scripts/test-with-artifacts.sh unit",
 		"test:artifacts:integration": "bash scripts/test-with-artifacts.sh integration",
 		"test:artifacts:e2e": "bash scripts/test-with-artifacts.sh e2e",
+		"test:related": "bash scripts/check-related-tests.sh",
 		"harness:ui:capture-browser-evidence": "pnpm exec tsx src/cli.ts ui:explore --mode execute --interactions --output artifacts/ui-evidence --json",
 		"postinstall": "command -v simple-git-hooks >/dev/null 2>&1 && simple-git-hooks || true",
 		"vale": "vale --config .vale.ini AGENTS.md CLAUDE.md docs"
@@ -90,9 +94,9 @@
 		}
 	},
 	"simple-git-hooks": {
-		"pre-commit": "pnpm lint && pnpm typecheck",
+		"pre-commit": "make hooks-pre-commit",
 		"commit-msg": "node scripts/validate-commit-msg.js $1",
-		"pre-push": "pnpm test"
+		"pre-push": "make hooks-pre-push"
 	},
 	"license": "Apache-2.0",
 	"homepage": "https://github.com/jscraik/coding-harness#readme"

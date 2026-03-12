@@ -3,6 +3,7 @@ title: Phase 3 GitHub Workflow Orchestration
 type: feat
 status: completed
 date: 2026-02-23
+plan_id: feat-github-workflow-orchestration
 origin: docs/brainstorms/2026-02-22-harness-gap-analysis-brainstorm.md
 deepened: 2026-02-23
 ---

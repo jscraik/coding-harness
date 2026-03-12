@@ -32,6 +32,8 @@ export interface Comment {
 
 export interface PullRequest {
 	number: number;
+	title?: string;
+	body?: string | null;
 	user?: {
 		login: string;
 	};
@@ -39,6 +41,11 @@ export interface PullRequest {
 		sha: string;
 		ref: string;
 	};
+}
+
+export interface PullRequestFile {
+	filename: string;
+	status?: string;
 }
 
 export interface PullRequestReview {
@@ -233,6 +240,23 @@ export class GitHubClient {
 				},
 			);
 			return response as PullRequestReview[];
+		} catch (error) {
+			throw this.classifyError(error);
+		}
+	}
+
+	async listPullRequestFiles(pullNumber: number): Promise<PullRequestFile[]> {
+		try {
+			const response = await this.octokit.paginate(
+				this.octokit.pulls.listFiles,
+				{
+					owner: this.owner,
+					repo: this.repo,
+					pull_number: pullNumber,
+					per_page: 100,
+				},
+			);
+			return response as PullRequestFile[];
 		} catch (error) {
 			throw this.classifyError(error);
 		}

@@ -37,6 +37,7 @@ This repository is a TypeScript control plane for agentic development and review
 - Prefer `rg`, `fd`, `jq`.
 - Confirm repo context with `pwd` and verify required binaries before mutating work.
 - Ask before adding dependencies or changing system-level settings.
+- Tooling/runtime changes to hooks, `Makefile`, `.mise.toml`, readiness scripts, or generated Codex environment actions should update [docs/agents/02-tooling-policy.md](./docs/agents/02-tooling-policy.md) and [docs/agents/06-security-and-governance.md](./docs/agents/06-security-and-governance.md) in the same change.
 
 ## Always-on PR governance
 1. Branch from `main`; never push directly to `main`.
@@ -66,7 +67,9 @@ Use [docs/agents/01-instruction-map.md](./docs/agents/01-instruction-map.md) as 
 
 Key docs:
 - [Architecture bootstrap](./docs/agents/00-architecture-bootstrap.md)
+- [Tooling policy](./docs/agents/02-tooling-policy.md)
 - [Validation and checks](./docs/agents/04-validation.md)
+- [Security and governance](./docs/agents/06-security-and-governance.md)
 - [Agent governance](./docs/agents/07b-agent-governance.md)
 - [Greptile AI governance](./docs/agents/12-greptile-ai-governance.md)
 - [Docs-gate rollout](./docs/agents/14-docs-gate-rollout.md)

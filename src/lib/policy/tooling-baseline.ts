@@ -3,6 +3,26 @@ export const TOOLING_READINESS_SCRIPT_PATH =
 export const TOOLING_CODEX_ENVIRONMENT_PATH =
 	".codex/environments/environment.toml" as const;
 export const TOOLING_MAKEFILE_PATH = "Makefile" as const;
+export const TOOLING_PACKAGE_JSON_PATH = "package.json" as const;
+export const TOOLING_PREK_CONFIG_PATH = "prek.toml" as const;
+
+export const REQUIRED_SIMPLE_GIT_HOOKS = {
+	"pre-commit": "make hooks-pre-commit",
+	"commit-msg": "node scripts/validate-commit-msg.js $1",
+	"pre-push": "make hooks-pre-push",
+} as const;
+
+export const REQUIRED_PREK_HOOKS = {
+	"pre-commit": ["make hooks-pre-commit"],
+	"pre-push": ["make hooks-pre-push"],
+} as const;
+
+export const REQUIRED_PACKAGE_SCRIPTS = {
+	"secrets:staged": "bash scripts/check-staged-secrets.sh",
+	"docs:style:changed": "bash scripts/check-doc-style.sh",
+	"test:related": "bash scripts/check-related-tests.sh",
+	"semgrep:changed": "bash scripts/check-semgrep-changed.sh",
+} as const;
 
 export const REQUIRED_TOOLING_DOC_TERMS = [
 	"node",
@@ -25,6 +45,7 @@ export const REQUIRED_TOOLING_DOC_TERMS = [
 	"eslint",
 	"agent-browser",
 	"agentation",
+	"mermaid-cli",
 	"markdownlint-cli2",
 	"wrangler",
 	"beautiful-mermaid",
@@ -54,6 +75,7 @@ export const REQUIRED_TOOLING_BINARIES = [
 	"eslint",
 	"agent-browser",
 	"agentation-mcp",
+	"mmdc",
 	"markdownlint-cli2",
 	"wrangler",
 	"beautiful-mermaid",
@@ -80,6 +102,7 @@ export const PROJECT_MISE_REQUIRED_TOOLS = [
 	["npm:agent-browser", "0.17.1"],
 	["npm:agentation", "2.3.2"],
 	["npm:agentation-mcp", "1.2.0"],
+	["npm:@mermaid-js/mermaid-cli", "11.12.0"],
 	["npm:@brainwav/rsearch", "0.1.6"],
 	["npm:@brainwav/wsearch-cli", "0.1.9"],
 	["npm:beautiful-mermaid", "1.1.3"],
@@ -158,6 +181,11 @@ export const REQUIRED_CODEX_TOOL_ACTIONS = [
 		command: "command -v agentation-mcp >/dev/null 2>&1\nagentation-mcp --help",
 	},
 	{
+		name: "Mermaid CLI",
+		icon: "tool",
+		command: "command -v mmdc >/dev/null 2>&1\nmmdc --help",
+	},
+	{
 		name: "MarkdownLint",
 		icon: "debug",
 		command:
@@ -229,6 +257,13 @@ export const REQUIRED_MAKEFILE_TARGETS = [
 	"install",
 	"setup",
 	"hooks",
+	"hooks-pre-commit",
+	"hooks-pre-push",
+	"secrets-staged",
+	"docs-style-changed",
+	"related-tests",
+	"semgrep-changed",
+	"diagrams-check",
 	"lint",
 	"docs-lint",
 	"fmt",
@@ -244,3 +279,45 @@ export const REQUIRED_MAKEFILE_TARGETS = [
 	"diagrams",
 	"env-check",
 ] as const;
+
+export const REQUIRED_HOOK_SUPPORT_FILES = [
+	"scripts/check-staged-secrets.sh",
+	"scripts/check-doc-style.sh",
+	"scripts/check-related-tests.sh",
+	"scripts/check-semgrep-changed.sh",
+	"scripts/semgrep-pre-push.yml",
+] as const;
+
+export const TOOLING_CAPABILITY_DEPENDENCY_MARKERS = [
+	{
+		capability: "ui",
+		dependencyMarkers: [
+			"react",
+			"react-dom",
+			"next",
+			"vite",
+			"tailwindcss",
+			"@storybook/react",
+			"@storybook/react-vite",
+			"@radix-ui/react-slot",
+		],
+	},
+	{
+		capability: "chatgpt_apps_sdk",
+		dependencyMarkers: [
+			"@openai/chatkit",
+			"@openai/agents",
+			"@openai/agents-realtime",
+		],
+	},
+] as const;
+
+export const REQUIRED_CONDITIONAL_PACKAGES = [
+	{
+		package: "@brainwav/design-system-guidance",
+		dependencyType: "either",
+		requiredWhenCapabilities: ["ui", "chatgpt_apps_sdk"],
+	},
+] as const;
+
+export const DEFAULT_EXPLICIT_TOOLING_CAPABILITIES = [] as const;

@@ -37,7 +37,7 @@ In 2026, the accepted baseline for auditable software delivery remains:
 3. require peer tooling review (human or automated),
 4. merge only after checks + reviews pass.
 
-This protects history, simplifies rollback, and provides a review trail even for solo projects.
+This protects history, simplifies rollback, and provides a review trail even for solo projects. Plan traceability is part of that trail: pull-request work should map back to durable plan IDs, and completed acceptance claims should carry direct evidence.
 
 ## Branching and PR rule
 
@@ -59,6 +59,7 @@ This protects history, simplifies rollback, and provides a review trail even for
    - Preferred PR title helper: `harness linear prepare --issue JSC-37 --field pr-title`
    - Link-only PR body line: `Refs JSC-37`
    - Auto-close on merge PR body line: `Fixes JSC-37`
+   - Add `Plan IDs: <plan-id>` to the PR summary/body and keep it aligned with `docs/plans/*` `plan_id` frontmatter.
    - `gh pr create --base main --head <branch> --title "..." --body "..."`.
 
 5. Merge only after:
@@ -91,6 +92,10 @@ For behavior-affecting changes:
 - `actions-pinning` GitHub Actions check
 - `security-scan` GitHub Actions check (gitleaks + trivy + semgrep)
 - `docs-gate` GitHub Actions check (documentation parity)
+- `risk-policy-gate` plan traceability:
+  - changed PR work maps to valid plan IDs,
+  - referenced plan files declare matching `plan_id` frontmatter,
+  - completed acceptance items in referenced plans include evidence links/refs
 
 For docs-only edits, run at minimum:
 
@@ -113,6 +118,7 @@ Harness-managed repositories should keep this baseline available locally before 
 - `eslint`
 - `agent-browser`
 - `agentation` (via the `agentation-mcp` CLI)
+- `mermaid-cli` (via the `mmdc` CLI)
 - `markdownlint-cli2`
 - `wrangler`
 - `beautiful-mermaid`
@@ -128,6 +134,7 @@ Policy:
 - Pin repo-managed tooling in `.mise.toml` where possible.
 - Treat `scripts/check-environment.sh` as the local readiness gate for required tooling.
 - Block merge or promotion work when a required CLI is missing rather than silently skipping the corresponding validation lane.
+- For repositories with explicit `ui` / `chatgpt_apps_sdk` capabilities or matching dependency signals, install `@brainwav/design-system-guidance` and treat its absence as a readiness failure.
 - Treat the root `Makefile` as part of the repo contract; missing core targets should block readiness.
 
 ## Greptile setup baseline

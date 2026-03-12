@@ -171,7 +171,7 @@ describe("validateContract", () => {
 					blockForcePushes: true,
 					requireLinearHistory: true,
 					requirePullRequest: true,
-					requiredApprovingReviewCount: 0,
+					requiredApprovingReviewCount: 1,
 					dismissStaleReviewsOnPush: true,
 					requireConversationResolution: true,
 					requireCodeOwnerReview: false,
@@ -321,7 +321,7 @@ describe("validateContract", () => {
 	describe("toolingPolicy", () => {
 		it("accepts the required tooling policy surface", () => {
 			const result = validateContract({
-				version: "1.4.0",
+				version: "1.5.0",
 				toolingPolicy: {
 					requiredDocumentationTerms: ["node", "pnpm"],
 					requiredBinaries: ["node", "pnpm"],
@@ -342,6 +342,20 @@ describe("validateContract", () => {
 						path: "Makefile",
 						requiredTargets: ["check", "env-check"],
 					},
+					packagePolicy: {
+						packageJsonPath: "package.json",
+						explicitCapabilities: ["ui"],
+						capabilityDetectors: [
+							{ capability: "ui", dependencyMarkers: ["react", "vite"] },
+						],
+						requiredPackages: [
+							{
+								package: "@brainwav/design-system-guidance",
+								dependencyType: "either",
+								requiredWhenCapabilities: ["ui"],
+							},
+						],
+					},
 				},
 			});
 
@@ -351,7 +365,7 @@ describe("validateContract", () => {
 
 		it("rejects invalid tooling action icons", () => {
 			const result = validateContract({
-				version: "1.4.0",
+				version: "1.5.0",
 				toolingPolicy: {
 					requiredDocumentationTerms: ["node"],
 					requiredBinaries: ["node"],
@@ -366,6 +380,20 @@ describe("validateContract", () => {
 						path: "Makefile",
 						requiredTargets: ["check"],
 					},
+					packagePolicy: {
+						packageJsonPath: "package.json",
+						explicitCapabilities: ["ui"],
+						capabilityDetectors: [
+							{ capability: "ui", dependencyMarkers: ["react"] },
+						],
+						requiredPackages: [
+							{
+								package: "@brainwav/design-system-guidance",
+								dependencyType: "either",
+								requiredWhenCapabilities: ["ui"],
+							},
+						],
+					},
 				},
 			});
 
@@ -375,7 +403,7 @@ describe("validateContract", () => {
 
 		it("rejects toolingPolicy with missing mise tool version", () => {
 			const result = validateContract({
-				version: "1.4.0",
+				version: "1.5.0",
 				toolingPolicy: {
 					requiredDocumentationTerms: ["node"],
 					requiredBinaries: ["node"],
@@ -389,6 +417,96 @@ describe("validateContract", () => {
 					makefile: {
 						path: "Makefile",
 						requiredTargets: ["check"],
+					},
+					packagePolicy: {
+						packageJsonPath: "package.json",
+						explicitCapabilities: ["ui"],
+						capabilityDetectors: [
+							{ capability: "ui", dependencyMarkers: ["react"] },
+						],
+						requiredPackages: [
+							{
+								package: "@brainwav/design-system-guidance",
+								dependencyType: "either",
+								requiredWhenCapabilities: ["ui"],
+							},
+						],
+					},
+				},
+			});
+
+			expect(result.success).toBe(false);
+			expect(result.errors[0]?.path).toBe("toolingPolicy");
+		});
+
+		it("rejects toolingPolicy with invalid conditional package dependency type", () => {
+			const result = validateContract({
+				version: "1.5.0",
+				toolingPolicy: {
+					requiredDocumentationTerms: ["node"],
+					requiredBinaries: ["node"],
+					requiredMiseTools: [{ tool: "node", version: "24.13.1" }],
+					miseFilePath: ".mise.toml",
+					readinessScriptPath: "scripts/check-environment.sh",
+					codexEnvironment: {
+						path: ".codex/environments/environment.toml",
+						requiredActions: [{ name: "Tools", icon: "tool" }],
+					},
+					makefile: {
+						path: "Makefile",
+						requiredTargets: ["check"],
+					},
+					packagePolicy: {
+						packageJsonPath: "package.json",
+						explicitCapabilities: ["ui"],
+						capabilityDetectors: [
+							{ capability: "ui", dependencyMarkers: ["react"] },
+						],
+						requiredPackages: [
+							{
+								package: "@brainwav/design-system-guidance",
+								dependencyType: "optional",
+								requiredWhenCapabilities: ["ui"],
+							},
+						],
+					},
+				},
+			});
+
+			expect(result.success).toBe(false);
+			expect(result.errors[0]?.path).toBe("toolingPolicy");
+		});
+
+		it("rejects toolingPolicy with invalid explicit capability", () => {
+			const result = validateContract({
+				version: "1.5.0",
+				toolingPolicy: {
+					requiredDocumentationTerms: ["node"],
+					requiredBinaries: ["node"],
+					requiredMiseTools: [{ tool: "node", version: "24.13.1" }],
+					miseFilePath: ".mise.toml",
+					readinessScriptPath: "scripts/check-environment.sh",
+					codexEnvironment: {
+						path: ".codex/environments/environment.toml",
+						requiredActions: [{ name: "Tools", icon: "tool" }],
+					},
+					makefile: {
+						path: "Makefile",
+						requiredTargets: ["check"],
+					},
+					packagePolicy: {
+						packageJsonPath: "package.json",
+						explicitCapabilities: ["native_ui"],
+						capabilityDetectors: [
+							{ capability: "ui", dependencyMarkers: ["react"] },
+						],
+						requiredPackages: [
+							{
+								package: "@brainwav/design-system-guidance",
+								dependencyType: "either",
+								requiredWhenCapabilities: ["ui"],
+							},
+						],
 					},
 				},
 			});
@@ -855,6 +973,136 @@ describe("validateContract", () => {
 			expect(result.data?.docsGatePolicy?.surfaces).toHaveLength(1);
 		});
 
+		it("accepts docsGatePolicy with tooling and architecture categories", () => {
+			const result = validateContract({
+				version: "1.0",
+				docsGatePolicy: {
+					enabled: true,
+					mode: "required",
+					rules: [
+						{
+							ruleId: "tooling-runtime-docs",
+							when: { categories: ["tooling_runtime"] },
+							requireDocs: ["docs/agents/02-tooling-policy.md"],
+							severity: "error",
+						},
+						{
+							ruleId: "architecture-context-docs",
+							when: { categories: ["architecture_context"] },
+							requireDocs: ["docs/agents/00-architecture-bootstrap.md"],
+							severity: "error",
+						},
+					],
+					surfaces: [
+						{
+							path: "docs/agents/02-tooling-policy.md",
+							surfaceType: "governance_doc",
+							owner: "workflow",
+							requiredFor: ["tooling_runtime"],
+						},
+						{
+							path: "docs/agents/00-architecture-bootstrap.md",
+							surfaceType: "governance_doc",
+							owner: "workflow",
+							requiredFor: ["architecture_context"],
+						},
+					],
+				},
+			});
+			expect(result.success).toBe(true);
+		});
+
+		it("accepts docsGatePolicy with workflow-authority surfaces", () => {
+			const result = validateContract({
+				version: "1.0",
+				docsGatePolicy: {
+					enabled: true,
+					mode: "required",
+					rules: [],
+					surfaces: [
+						{
+							path: "docs/agents/01-instruction-map.md",
+							surfaceType: "workflow_doc",
+							owner: "workflow",
+							requiredFor: ["workflow_authority"],
+						},
+						{
+							path: "docs/agents/14-docs-gate-rollout.md",
+							surfaceType: "workflow_doc",
+							owner: "workflow",
+							requiredFor: ["workflow_authority"],
+						},
+					],
+				},
+			});
+
+			expect(result.success).toBe(true);
+		});
+
+		it("accepts docsGatePolicy with tracked compound workflow artifact categories", () => {
+			const result = validateContract({
+				version: "1.0",
+				docsGatePolicy: {
+					enabled: true,
+					mode: "required",
+					rules: [
+						{
+							ruleId: "adr-artifact-docs",
+							when: { categories: ["adr_artifact"] },
+							requireDocs: ["docs/adr/"],
+							severity: "error",
+						},
+						{
+							ruleId: "spec-artifact-docs",
+							when: { categories: ["spec_artifact"] },
+							requireDocs: ["docs/specs/"],
+							severity: "error",
+						},
+						{
+							ruleId: "plan-artifact-docs",
+							when: { categories: ["plan_artifact"] },
+							requireDocs: ["docs/plans/"],
+							severity: "error",
+						},
+						{
+							ruleId: "brainstorm-artifact-docs",
+							when: { categories: ["brainstorm_artifact"] },
+							requireDocs: ["docs/brainstorms/"],
+							severity: "error",
+						},
+					],
+					surfaces: [
+						{
+							path: "docs/adr/",
+							surfaceType: "workflow_doc",
+							owner: "workflow",
+							requiredFor: ["adr_artifact"],
+						},
+						{
+							path: "docs/specs/",
+							surfaceType: "workflow_doc",
+							owner: "workflow",
+							requiredFor: ["spec_artifact"],
+						},
+						{
+							path: "docs/plans/",
+							surfaceType: "workflow_doc",
+							owner: "workflow",
+							requiredFor: ["plan_artifact"],
+						},
+						{
+							path: "docs/brainstorms/",
+							surfaceType: "workflow_doc",
+							owner: "workflow",
+							requiredFor: ["brainstorm_artifact"],
+						},
+					],
+				},
+			});
+
+			expect(result.success).toBe(true);
+		});
+
 		it("accepts docsGatePolicy with localHookEnabled", () => {
 			const result = validateContract({
 				version: "1.0",
@@ -1085,6 +1333,71 @@ describe("validateContract", () => {
 			});
 			expect(result.success).toBe(false);
 			expect(result.errors[0]?.path).toBe("controlPlanePolicy");
+		});
+	});
+
+	describe("contextIntegrityPolicy", () => {
+		it("accepts valid contextIntegrityPolicy", () => {
+			const result = validateContract({
+				version: "1.5.0",
+				contextIntegrityPolicy: {
+					mode: "shadow",
+					truthSources: [
+						{
+							path: "README.md",
+							kind: "file",
+							authority: "canonical",
+							required: true,
+						},
+					],
+					contradictionCatalog: [
+						{
+							id: "required-check-conflict",
+							category: "required_check_conflict",
+							severity: "error",
+							description: "Workflow checks must match contract checks.",
+						},
+					],
+					healthSampling: {
+						fixtureSetPath: "artifacts/context-integrity/fixtures.json",
+						fixtureSetId: "context-integrity-v1",
+						allowedTriggerTypes: ["current_checkout", "recent_artifacts"],
+						samplingCadence: "per_run",
+						dedupeScope: "query",
+					},
+				},
+			});
+
+			expect(result.success).toBe(true);
+			expect(result.data?.contextIntegrityPolicy?.mode).toBe("shadow");
+		});
+
+		it("rejects invalid contextIntegrityPolicy mode", () => {
+			const result = validateContract({
+				version: "1.5.0",
+				contextIntegrityPolicy: {
+					mode: "enforced",
+					truthSources: [
+						{
+							path: "README.md",
+							kind: "file",
+							authority: "canonical",
+							required: true,
+						},
+					],
+					contradictionCatalog: [],
+					healthSampling: {
+						fixtureSetPath: "artifacts/context-integrity/fixtures.json",
+						fixtureSetId: "context-integrity-v1",
+						allowedTriggerTypes: ["current_checkout"],
+						samplingCadence: "per_run",
+						dedupeScope: "query",
+					},
+				},
+			});
+
+			expect(result.success).toBe(false);
+			expect(result.errors[0]?.path).toBe("contextIntegrityPolicy");
 		});
 	});
 });

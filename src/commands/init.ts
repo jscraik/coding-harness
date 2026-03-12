@@ -29,7 +29,9 @@ import {
 	PROJECT_MISE_REQUIRED_TOOLS,
 	REQUIRED_CODEX_ACTION_PAIRS,
 	REQUIRED_CODEX_TOOL_ACTIONS,
+	REQUIRED_HOOK_SUPPORT_FILES,
 	REQUIRED_MAKEFILE_TARGETS,
+	REQUIRED_PACKAGE_SCRIPTS,
 	REQUIRED_PREK_HOOKS,
 	REQUIRED_SIMPLE_GIT_HOOKS,
 	REQUIRED_TOOLING_BINARIES,
@@ -190,6 +192,7 @@ export interface ContractSchema {
 			}>;
 		};
 	};
+	contextIntegrityPolicy?: unknown;
 	issueTrackingPolicy?: unknown;
 	evidencePolicy?: {
 		requiredFor: unknown[];
@@ -278,6 +281,9 @@ function addSchemaDefaults(contract: ContractSchema): ContractSchema {
 		packageManagerPolicy:
 			contract.packageManagerPolicy ??
 			(DEFAULT_CONTRACT.packageManagerPolicy as HarnessContract["packageManagerPolicy"]),
+		contextIntegrityPolicy:
+			contract.contextIntegrityPolicy ??
+			(DEFAULT_CONTRACT.contextIntegrityPolicy as HarnessContract["contextIntegrityPolicy"]),
 		remediationPolicy:
 			contract.remediationPolicy ??
 			(DEFAULT_CONTRACT.remediationPolicy as HarnessContract["remediationPolicy"]),
@@ -1440,6 +1446,7 @@ const TEMPLATES: Template[] = [
 							],
 						},
 					},
+					contextIntegrityPolicy: DEFAULT_CONTRACT.contextIntegrityPolicy,
 				},
 				null,
 				2,
@@ -2112,6 +2119,7 @@ Harness-managed repositories should keep this baseline available locally before 
 - \`eslint\`
 - \`agent-browser\`
 - \`agentation\` (backed by the \`agentation-mcp\` CLI)
+- \`mermaid-cli\` (via the \`mmdc\` CLI)
 - \`markdownlint-cli2\`
 - \`wrangler\`
 - \`beautiful-mermaid\`
@@ -2433,6 +2441,7 @@ const REQUIRED_HOOKS = {
 	"commit-msg": "${REQUIRED_SIMPLE_GIT_HOOKS["commit-msg"]}",
 	"pre-push": "${PRE_PUSH_MAKE_TARGET}",
 };
+const REQUIRED_SCRIPTS = ${JSON.stringify(REQUIRED_PACKAGE_SCRIPTS, null, 2)};
 const POSTINSTALL_BOOTSTRAP =
 	"command -v simple-git-hooks >/dev/null 2>&1 && simple-git-hooks || true";
 
@@ -2486,6 +2495,16 @@ function main() {
 		modified = true;
 	}
 
+	// Enforce required helper scripts used by the hook targets
+	const mergedScripts = { ...scripts, ...REQUIRED_SCRIPTS };
+	if (JSON.stringify(scripts) !== JSON.stringify(mergedScripts)) {
+		packageJson.scripts = mergedScripts;
+		console.info("✓ Enforced required hook helper scripts");
+		modified = true;
+	} else {
+		console.info("✓ Required hook helper scripts already present");
+	}
+
 	// Enforce required simple-git-hooks configuration
 	const existingHooks = packageJson["simple-git-hooks"] ?? {};
 	const mergedHooks = { ...existingHooks, ...REQUIRED_HOOKS };
@@ -2518,6 +2537,193 @@ function main() {
 }
 
 main();
+`,
+	},
+	{
+		path: "scripts/check-staged-secrets.sh",
+		render: () => `#!/usr/bin/env bash
+set -euo pipefail
+
+REPO_ROOT="$(cd -- "$(dirname -- "\${BASH_SOURCE[0]}")/.." && pwd)"
+cd "$REPO_ROOT"
+
+if ! command -v gitleaks >/dev/null 2>&1; then
+	echo "Error: required binary 'gitleaks' is not installed or not on PATH"
+	exit 1
+fi
+
+if git diff --cached --quiet --exit-code; then
+	echo "No staged changes detected for gitleaks."
+	exit 0
+fi
+
+config_args=()
+if [[ -f "$REPO_ROOT/.gitleaks.toml" ]]; then
+	config_args+=(--config "$REPO_ROOT/.gitleaks.toml")
+fi
+
+gitleaks git \\
+	--staged \\
+	--redact \\
+	--no-banner \\
+	"\${config_args[@]}"
+`,
+	},
+	{
+		path: "scripts/check-doc-style.sh",
+		render: () => `#!/usr/bin/env bash
+set -euo pipefail
+
+REPO_ROOT="$(cd -- "$(dirname -- "\${BASH_SOURCE[0]}")/.." && pwd)"
+cd "$REPO_ROOT"
+
+if ! command -v vale >/dev/null 2>&1; then
+	echo "Error: required binary 'vale' is not installed or not on PATH"
+	exit 1
+fi
+
+staged_docs=()
+while IFS= read -r -d "" path; do
+	[[ -n "$path" ]] || continue
+	staged_docs+=("$path")
+done < <(
+	git diff --cached --name-only --diff-filter=ACMR -z -- \\
+		README.md \\
+		CONTRIBUTING.md \\
+		AGENTS.md \\
+		":(glob)docs/**/*.md"
+)
+
+if [[ \${#staged_docs[@]} -eq 0 ]]; then
+	echo "No staged documentation changes detected for Vale."
+	exit 0
+fi
+
+vale --config .vale.ini "\${staged_docs[@]}"
+`,
+	},
+	{
+		path: "scripts/check-related-tests.sh",
+		render: () => `#!/usr/bin/env bash
+set -euo pipefail
+
+REPO_ROOT="$(cd -- "$(dirname -- "\${BASH_SOURCE[0]}")/.." && pwd)"
+cd "$REPO_ROOT"
+
+related_sources=()
+while IFS= read -r path; do
+	[[ -n "$path" ]] || continue
+	if [[ "$path" =~ ^src/.*\\.(ts|tsx|js|jsx|mts|cts)$ ]] && \\
+		[[ ! "$path" =~ \\.d\\.ts$ ]] && \\
+		[[ ! "$path" =~ \\.(test|spec)\\.(ts|tsx|js|jsx|mts|cts)$ ]]; then
+		related_sources+=("$path")
+	fi
+done < <(git diff --cached --name-only --diff-filter=ACMR)
+
+if [[ \${#related_sources[@]} -eq 0 ]]; then
+	echo "No staged src/** implementation changes detected for related tests."
+	exit 0
+fi
+
+pnpm exec vitest related --run --passWithNoTests "\${related_sources[@]}"
+`,
+	},
+	{
+		path: "scripts/check-semgrep-changed.sh",
+		render: () => `#!/usr/bin/env bash
+set -euo pipefail
+
+REPO_ROOT="$(cd -- "$(dirname -- "\${BASH_SOURCE[0]}")/.." && pwd)"
+RULESET_PATH="$REPO_ROOT/scripts/semgrep-pre-push.yml"
+cd "$REPO_ROOT"
+
+if ! command -v semgrep >/dev/null 2>&1; then
+	echo "Error: required binary 'semgrep' is not installed or not on PATH"
+	exit 1
+fi
+
+if [[ ! -f "$RULESET_PATH" ]]; then
+	echo "Error: missing Semgrep ruleset at $RULESET_PATH"
+	exit 1
+fi
+
+base_ref=""
+if git rev-parse --verify '@{upstream}' >/dev/null 2>&1; then
+	base_ref="$(git merge-base HEAD '@{upstream}')"
+else
+	for candidate in origin/main origin/master main master; do
+		if git rev-parse --verify "$candidate" >/dev/null 2>&1; then
+			base_ref="$(git merge-base HEAD "$candidate")"
+			break
+		fi
+	done
+fi
+
+if [[ -z "$base_ref" ]]; then
+	if git rev-parse --verify HEAD^ >/dev/null 2>&1; then
+		base_ref="HEAD^"
+	else
+		echo "No comparison base available for Semgrep changed-file scan."
+		exit 0
+	fi
+fi
+
+changed_sources=()
+while IFS= read -r -d "" path; do
+	[[ -n "$path" ]] || continue
+	if [[ "$path" =~ ^src/.*\\.(ts|tsx|js|jsx|mts|cts)$ ]] && \\
+		[[ ! "$path" =~ \\.d\\.ts$ ]] && \\
+		[[ ! "$path" =~ \\.(test|spec)\\.(ts|tsx|js|jsx|mts|cts)$ ]]; then
+		changed_sources+=("$path")
+	fi
+done < <(git diff --name-only --diff-filter=ACMR -z "$base_ref"...HEAD --)
+
+if [[ \${#changed_sources[@]} -eq 0 ]]; then
+	echo "No changed src/** implementation files detected for Semgrep."
+	exit 0
+fi
+
+semgrep scan \\
+	--config "$RULESET_PATH" \\
+	--disable-version-check \\
+	--error \\
+	--jobs 1 \\
+	"\${changed_sources[@]}"
+`,
+	},
+	{
+		path: "scripts/semgrep-pre-push.yml",
+		render: () => `rules:
+  - id: ts-no-eval
+    message: Avoid eval in src/** code.
+    severity: ERROR
+    languages: [javascript, typescript]
+    pattern: eval(...)
+
+  - id: ts-no-new-function
+    message: Avoid Function constructor usage in src/** code.
+    severity: ERROR
+    languages: [javascript, typescript]
+    pattern: new Function(...)
+
+  - id: ts-no-child-process-exec
+    message: Avoid child_process exec/execSync in src/** code.
+    severity: ERROR
+    languages: [javascript, typescript]
+    patterns:
+      - pattern-either:
+          - pattern: exec(...)
+          - pattern: execSync(...)
+
+  - id: ts-no-shell-true
+    message: Avoid shell:true in child process options in src/** code.
+    severity: ERROR
+    languages: [javascript, typescript]
+    pattern-either:
+      - pattern: spawn(..., { ..., shell: true, ... })
+      - pattern: spawnSync(..., { ..., shell: true, ... })
+      - pattern: execFile(..., { ..., shell: true, ... })
+      - pattern: execFileSync(..., { ..., shell: true, ... })
 `,
 	},
 	{
@@ -3228,6 +3434,14 @@ fi
 		exit 1
 	fi
 
+	required_support_files=(${REQUIRED_HOOK_SUPPORT_FILES.map((path) => `"${path}"`).join(" ")})
+	for support_file in "\${required_support_files[@]}"; do
+		if [[ ! -f "$REPO_ROOT/\${support_file}" ]]; then
+			echo "Error: missing required hook support file at $REPO_ROOT/\${support_file}"
+			exit 1
+		fi
+	done
+
 if ! command -v mise >/dev/null 2>&1; then
 	echo "Error: required binary 'mise' is not installed or not on PATH"
 	exit 1
@@ -3305,6 +3519,21 @@ fi
 	done
 
 	if [[ -f "$PACKAGE_JSON_PATH" ]]; then
+		required_package_scripts=(${Object.entries(REQUIRED_PACKAGE_SCRIPTS)
+			.map(([name, command]) => `"${name}|${command}"`)
+			.join(" ")})
+		for script_spec in "\${required_package_scripts[@]}"; do
+			script_name="\${script_spec%%|*}"
+			script_command="\${script_spec#*|}"
+			if ! jq -e --arg script_name "$script_name" --arg script_command "$script_command" '
+				(.scripts // {})[$script_name] == $script_command
+			' "$PACKAGE_JSON_PATH" >/dev/null; then
+				echo "Error: package script '\$script_name' is missing or out of date in $PACKAGE_JSON_PATH"
+				echo "Fix: run node scripts/setup-git-hooks.js"
+				exit 1
+			fi
+		done
+
 		required_simple_git_hooks=(${Object.entries(REQUIRED_SIMPLE_GIT_HOOKS)
 			.map(([hook, command]) => `"${hook}|${command.replaceAll("$", "\\$")}"`)
 			.join(" ")})
@@ -3439,7 +3668,7 @@ echo "Environment check passed (attestation: $ATTESTATION_PATH)"
 		render: () => `# Harness Development Makefile
 # Run \`make help\` to see available commands
 
-.PHONY: help install setup hooks hooks-pre-commit hooks-pre-push diagrams-check dev build lint docs-lint fmt typecheck test check audit secrets security clean reset ci diagrams env-check
+.PHONY: help install setup hooks hooks-pre-commit hooks-pre-push secrets-staged docs-style-changed related-tests semgrep-changed diagrams-check dev build lint docs-lint fmt typecheck test check audit secrets security clean reset ci diagrams env-check
 
 # Default target
 help: ## Show this help message
@@ -3462,14 +3691,31 @@ hooks-pre-commit: ## Run local pre-commit gates before creating a commit
 	pnpm lint
 	pnpm docs:lint
 	pnpm typecheck
+	$(MAKE) secrets-staged
+	$(MAKE) docs-style-changed
+	$(MAKE) related-tests
 
 hooks-pre-push: ## Run local pre-push governance gates before pushing
 	pnpm exec tsx src/cli.ts docs-gate --mode required --json
 	@bash ./scripts/check-diagram-freshness.sh
 	pnpm exec tsx src/cli.ts tooling-audit --path . --json
 	@bash ./scripts/check-environment.sh
+	$(MAKE) semgrep-changed
 	pnpm test
+	pnpm build
 	pnpm audit
+
+secrets-staged: ## Scan staged content for secrets before committing
+	pnpm run secrets:staged
+
+docs-style-changed: ## Run Vale on staged authoritative docs only
+	pnpm run docs:style:changed
+
+related-tests: ## Run Vitest related mode for staged src implementation files
+	pnpm run test:related
+
+semgrep-changed: ## Run narrow Semgrep rules against changed src implementation files
+	pnpm run semgrep:changed
 
 diagrams-check: ## Refresh architecture diagrams when sensitive paths change and fail on drift
 	@bash ./scripts/check-diagram-freshness.sh

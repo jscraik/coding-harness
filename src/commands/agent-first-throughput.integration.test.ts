@@ -119,6 +119,8 @@ describe("agent-first throughput integration", () => {
 		const mockListCheckRuns = vi.fn().mockResolvedValue(checkRuns);
 		const mockGetPullRequest = vi.fn().mockResolvedValue({
 			number: 1,
+			title: "Agent-first throughput remediation loop",
+			body: "- Plan IDs: `feat-context-integrity-control-plane`",
 			user: { login: "coding-actor" },
 			head: { sha: headSha, ref: "feature/throughput" },
 		});
@@ -191,6 +193,8 @@ describe("agent-first throughput integration", () => {
 		const mockListCheckRuns = vi.fn().mockResolvedValue(checkRuns);
 		const mockGetPullRequest = vi.fn().mockResolvedValue({
 			number: 1,
+			title: "Agent-first throughput remediation loop",
+			body: "- Plan IDs: `feat-context-integrity-control-plane`",
 			user: { login: "coding-actor" },
 			head: { sha: headSha, ref: "feature/throughput" },
 		});
@@ -273,6 +277,8 @@ describe("agent-first throughput integration", () => {
 		const mockListCheckRuns = vi.fn().mockResolvedValue(checkRuns);
 		const mockGetPullRequest = vi.fn().mockResolvedValue({
 			number: 1,
+			title: "Agent-first throughput remediation loop",
+			body: "- Plan IDs: `feat-context-integrity-control-plane`",
 			user: { login: "coding-actor" },
 			head: { sha: headSha, ref: "feature/throughput" },
 		});
@@ -352,6 +358,8 @@ describe("agent-first throughput integration", () => {
 		const mockListCheckRuns = vi.fn().mockResolvedValue(checkRuns);
 		const mockGetPullRequest = vi.fn().mockResolvedValue({
 			number: 1,
+			title: "Agent-first throughput performance loop",
+			body: "- Plan IDs: `feat-context-integrity-control-plane`",
 			user: { login: "coding-actor" },
 			head: { sha: headSha, ref: "feature/perf" },
 		});

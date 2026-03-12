@@ -36,6 +36,9 @@ export function runPlanGateCLI(options: PlanGateOptions): number {
 				console.info(`     Type: ${artifact.type}`);
 				console.info(`     Status: ${artifact.status}`);
 				console.info(`     Date: ${artifact.date}`);
+				if (artifact.planId) {
+					console.info(`     Plan ID: ${artifact.planId}`);
+				}
 				if (options.strict) {
 					const sections = [];
 					if (artifact.hasImplementationSteps)
@@ -62,6 +65,20 @@ export function runPlanGateCLI(options: PlanGateOptions): number {
 			console.info();
 		}
 
+		if (result.traceability) {
+			console.info("Traceability:");
+			console.info(
+				`  Plan IDs: ${result.traceability.planIds.join(", ") || "None"}`,
+			);
+			console.info(
+				`  Matched plan IDs: ${result.traceability.matchedPlanIds.join(", ") || "None"}`,
+			);
+			console.info(
+				`  Changed files: ${result.traceability.changedFiles.length}`,
+			);
+			console.info();
+		}
+
 		if (result.daysSincePlan !== undefined) {
 			console.info(`Days since plan: ${result.daysSincePlan}`);
 		}
@@ -78,9 +95,27 @@ export function runPlanGateCLI(options: PlanGateOptions): number {
 	const hasOriginMissing = result.errors.some(
 		(e) => e.code === "ORIGIN_MISSING",
 	);
+	const hasPlanIdError = result.errors.some(
+		(e) => e.code === "PLAN_ID_MISSING" || e.code === "PLAN_ID_NOT_FOUND",
+	);
+	const hasEvidenceError = result.errors.some(
+		(e) => e.code === "ACCEPTANCE_EVIDENCE_MISSING",
+	);
+	const hasTraceabilityError = result.errors.some(
+		(e) => e.code === "TRACEABILITY_MISSING",
+	);
 
 	if (hasOriginMissing) {
 		return EXIT_CODES.ORIGIN_MISSING;
+	}
+	if (hasTraceabilityError) {
+		return EXIT_CODES.TRACEABILITY_ERROR;
+	}
+	if (hasEvidenceError) {
+		return EXIT_CODES.ACCEPTANCE_EVIDENCE_ERROR;
+	}
+	if (hasPlanIdError) {
+		return EXIT_CODES.PLAN_ID_ERROR;
 	}
 	if (hasStale) {
 		return EXIT_CODES.PLAN_STALE;

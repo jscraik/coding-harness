@@ -1,6 +1,7 @@
 import { mkdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { afterEach, describe, expect, it } from "vitest";
+import { DEFAULT_CONTEXT_INTEGRITY_POLICY } from "../lib/contract/types.js";
 import { runDocsGate } from "./docs-gate.js";
 
 function write(path: string, content: string): void {
@@ -8,20 +9,41 @@ function write(path: string, content: string): void {
 	writeFileSync(path, content, "utf-8");
 }
 
+function seedRequiredTruthSources(root: string): void {
+	write(join(root, "README.md"), "# README\nUse `pnpm test`.\n");
+	write(join(root, "AGENTS.md"), "# AGENTS\nRun `pnpm test`.\n");
+	write(join(root, "CONTRIBUTING.md"), "# CONTRIBUTING\n");
+	write(join(root, "CLAUDE.md"), "# CLAUDE\n");
+	write(join(root, "AI/context/diagram-context.md"), "# Diagram Context\n");
+	write(
+		join(root, "docs/agents/00-architecture-bootstrap.md"),
+		"# Bootstrap\n",
+	);
+	write(
+		join(root, "package.json"),
+		JSON.stringify({ packageManager: "pnpm@10.0.0" }, null, 2),
+	);
+}
+
 function createContractWithDocsGate(
 	root: string,
 	docsGatePolicy: unknown,
+	{ seedTruthSources = true }: { seedTruthSources?: boolean } = {},
 ): void {
 	const contract = {
-		version: "1.0",
+		version: "1.5.0",
 		docsGatePolicy,
+		contextIntegrityPolicy: DEFAULT_CONTEXT_INTEGRITY_POLICY,
 	};
 	write(join(root, "harness.contract.json"), JSON.stringify(contract, null, 2));
+	if (seedTruthSources) {
+		seedRequiredTruthSources(root);
+	}
 }
 
 function createContractWithoutDocsGate(root: string): void {
 	const contract = {
-		version: "1.0",
+		version: "1.5.0",
 		riskTierRules: {},
 	};
 	write(join(root, "harness.contract.json"), JSON.stringify(contract, null, 2));
@@ -354,5 +376,313 @@ describe("docs-gate command", () => {
 		expect(result.report.categories).toContain("cli_surface");
 		expect(result.report.categories).toContain("ci_workflow");
 		expect(result.report.summary.required_surface_count).toBe(2);
+	});
+
+	it("requires tooling docs for local runtime policy changes", () => {
+		const root = join(process.cwd(), "artifacts", "docs-gate-test-13");
+		roots.push(root);
+		createContractWithDocsGate(root, {
+			enabled: true,
+			mode: "required",
+			rules: [
+				{
+					ruleId: "tooling-runtime-docs",
+					when: { categories: ["tooling_runtime"] },
+					requireDocs: [
+						"docs/agents/02-tooling-policy.md",
+						"docs/agents/06-security-and-governance.md",
+					],
+					severity: "error",
+				},
+			],
+		});
+
+		const result = runDocsGate({
+			repoRoot: root,
+			mode: "required",
+			changedFiles: ["Makefile"],
+		});
+
+		expect(result.exitCode).toBe(10);
+		expect(result.report.categories).toContain("tooling_runtime");
+		expect(result.report.summary.required_surface_count).toBe(2);
+	});
+
+	it("passes architecture context changes when bootstrap docs were updated", () => {
+		const root = join(process.cwd(), "artifacts", "docs-gate-test-14");
+		roots.push(root);
+		createContractWithDocsGate(root, {
+			enabled: true,
+			mode: "required",
+			rules: [
+				{
+					ruleId: "architecture-context-docs",
+					when: { categories: ["architecture_context"] },
+					requireDocs: ["docs/agents/00-architecture-bootstrap.md"],
+					severity: "error",
+				},
+			],
+		});
+
+		const result = runDocsGate({
+			repoRoot: root,
+			mode: "required",
+			changedFiles: [
+				"scripts/check-diagram-freshness.sh",
+				"docs/agents/00-architecture-bootstrap.md",
+			],
+		});
+
+		expect(result.exitCode).toBe(0);
+		expect(result.report.categories).toContain("architecture_context");
+		expect(result.report.summary.missing_surface_count).toBe(0);
+	});
+
+	it("tracks plan artifacts via directory-backed documentation surfaces", () => {
+		const root = join(process.cwd(), "artifacts", "docs-gate-test-15");
+		roots.push(root);
+		createContractWithDocsGate(root, {
+			enabled: true,
+			mode: "required",
+			rules: [
+				{
+					ruleId: "plan-artifact-docs",
+					when: { categories: ["plan_artifact"] },
+					requireDocs: ["docs/plans/"],
+					severity: "error",
+				},
+			],
+		});
+
+		const result = runDocsGate({
+			repoRoot: root,
+			mode: "required",
+			changedFiles: ["docs/plans/2026-03-11-example-plan.md"],
+		});
+
+		expect(result.exitCode).toBe(0);
+		expect(result.report.categories).toContain("plan_artifact");
+		expect(result.report.summary.missing_surface_count).toBe(0);
+		expect(
+			result.report.findings.some(
+				(f) =>
+					f.rule_id === "docs.surface.present" && f.surface === "docs/plans/",
+			),
+		).toBe(true);
+	});
+
+	it("tracks brainstorm and spec artifacts as governed workflow docs", () => {
+		const root = join(process.cwd(), "artifacts", "docs-gate-test-16");
+		roots.push(root);
+		createContractWithDocsGate(root, {
+			enabled: true,
+			mode: "required",
+			rules: [
+				{
+					ruleId: "brainstorm-artifact-docs",
+					when: { categories: ["brainstorm_artifact"] },
+					requireDocs: ["docs/brainstorms/"],
+					severity: "error",
+				},
+				{
+					ruleId: "spec-artifact-docs",
+					when: { categories: ["spec_artifact"] },
+					requireDocs: ["docs/specs/"],
+					severity: "error",
+				},
+			],
+		});
+
+		const result = runDocsGate({
+			repoRoot: root,
+			mode: "required",
+			changedFiles: [
+				"docs/brainstorms/2026-03-11-example-brainstorm.md",
+				"docs/specs/2026-03-11-example-spec.md",
+			],
+		});
+
+		expect(result.exitCode).toBe(0);
+		expect(result.report.categories).toContain("brainstorm_artifact");
+		expect(result.report.categories).toContain("spec_artifact");
+		expect(result.report.summary.missing_surface_count).toBe(0);
+	});
+
+	it("classifies authoritative workflow docs separately from agent governance", () => {
+		const root = join(process.cwd(), "artifacts", "docs-gate-test-17");
+		roots.push(root);
+		createContractWithDocsGate(root, {
+			enabled: true,
+			mode: "required",
+			rules: [],
+		});
+
+		const result = runDocsGate({
+			repoRoot: root,
+			mode: "required",
+			changedFiles: ["docs/agents/14-docs-gate-rollout.md"],
+		});
+
+		expect(result.exitCode).toBe(0);
+		expect(result.report.categories).toContain("workflow_authority");
+		expect(result.report.categories).not.toContain("agent_governance");
+	});
+
+	it("emits source_truth_missing contradictions for missing required truth sources", () => {
+		const root = join(
+			process.cwd(),
+			"artifacts",
+			"docs-gate-test-contradiction-1",
+		);
+		roots.push(root);
+		createContractWithDocsGate(
+			root,
+			{
+				enabled: true,
+				mode: "required",
+				rules: [],
+			},
+			{ seedTruthSources: false },
+		);
+
+		write(join(root, "README.md"), "# README\n");
+		write(join(root, "CONTRIBUTING.md"), "# CONTRIBUTING\n");
+		write(join(root, "CLAUDE.md"), "# CLAUDE\n");
+		write(join(root, "AI/context/diagram-context.md"), "# Diagram Context\n");
+		write(
+			join(root, "package.json"),
+			JSON.stringify({ packageManager: "pnpm@10.0.0" }, null, 2),
+		);
+
+		const result = runDocsGate({
+			repoRoot: root,
+			mode: "required",
+			changedFiles: ["README.md"],
+		});
+
+		expect(result.exitCode).toBe(13);
+		expect(result.report.outcome).toBe("policy_error");
+		expect(result.report.summary.contradiction_count).toBeGreaterThan(0);
+		expect(
+			result.report.findings.some(
+				(finding) =>
+					finding.category === "source_truth_missing" &&
+					finding.path === "AGENTS.md",
+			),
+		).toBe(true);
+		const historyPath = join(
+			root,
+			"artifacts/context-integrity/contradiction-history.jsonl",
+		);
+		expect(readFileSync(historyPath, "utf-8")).toContain('"status":"open"');
+	});
+
+	it("emits command_contract_conflict contradictions when canonical docs use the wrong package manager", () => {
+		const root = join(
+			process.cwd(),
+			"artifacts",
+			"docs-gate-test-contradiction-2",
+		);
+		roots.push(root);
+		createContractWithDocsGate(root, {
+			enabled: true,
+			mode: "required",
+			rules: [],
+		});
+
+		write(
+			join(root, "README.md"),
+			"Use `npm install` before running the harness.\n",
+		);
+		write(join(root, "AGENTS.md"), "# AGENTS\nRun `pnpm test`.\n");
+		write(join(root, "CONTRIBUTING.md"), "# CONTRIBUTING\n");
+		write(join(root, "CLAUDE.md"), "# CLAUDE\n");
+		write(join(root, "AI/context/diagram-context.md"), "# Diagram Context\n");
+		write(
+			join(root, "docs/agents/00-architecture-bootstrap.md"),
+			"# Bootstrap\n",
+		);
+		write(
+			join(root, "package.json"),
+			JSON.stringify({ packageManager: "pnpm@10.0.0" }, null, 2),
+		);
+
+		const result = runDocsGate({
+			repoRoot: root,
+			mode: "required",
+			changedFiles: ["README.md"],
+		});
+
+		expect(result.exitCode).toBe(10);
+		expect(result.report.outcome).toBe("drift_detected");
+		expect(
+			result.report.findings.some(
+				(finding) =>
+					finding.category === "command_contract_conflict" &&
+					finding.path === "README.md",
+			),
+		).toBe(true);
+	});
+
+	it("emits required_check_conflict contradictions when workflow checks drift from branch protection", () => {
+		const root = join(
+			process.cwd(),
+			"artifacts",
+			"docs-gate-test-contradiction-3",
+		);
+		roots.push(root);
+		createContractWithDocsGate(root, {
+			enabled: true,
+			mode: "required",
+			rules: [],
+		});
+
+		write(join(root, "README.md"), "# README\nUse `pnpm test`.\n");
+		write(join(root, "AGENTS.md"), "# AGENTS\nRun `pnpm test`.\n");
+		write(join(root, "CONTRIBUTING.md"), "# CONTRIBUTING\n");
+		write(join(root, "CLAUDE.md"), "# CLAUDE\n");
+		write(join(root, "AI/context/diagram-context.md"), "# Diagram Context\n");
+		write(
+			join(root, "docs/agents/00-architecture-bootstrap.md"),
+			"# Bootstrap\n",
+		);
+		write(
+			join(root, "package.json"),
+			JSON.stringify({ packageManager: "pnpm@10.0.0" }, null, 2),
+		);
+		write(
+			join(root, ".github/workflows/pr-pipeline.yml"),
+			[
+				"name: PR Pipeline",
+				"jobs:",
+				"  lint:",
+				"    name: lint",
+				"    runs-on: ubuntu-latest",
+			].join("\n"),
+		);
+		const contractPath = join(root, "harness.contract.json");
+		const contract = JSON.parse(readFileSync(contractPath, "utf-8")) as {
+			branchProtection?: { requiredChecks?: string[] };
+		};
+		contract.branchProtection = {
+			requiredChecks: ["lint", "typecheck", "Greptile Review"],
+		};
+		write(contractPath, JSON.stringify(contract, null, 2));
+
+		const result = runDocsGate({
+			repoRoot: root,
+			mode: "required",
+			changedFiles: [".github/workflows/pr-pipeline.yml"],
+		});
+
+		expect(result.exitCode).toBe(12);
+		expect(result.report.outcome).toBe("trust_mismatch");
+		expect(
+			result.report.findings.some(
+				(finding) =>
+					finding.category === "required_check_conflict" &&
+					finding.path === ".github/workflows/pr-pipeline.yml",
+			),
+		).toBe(true);
 	});
 });

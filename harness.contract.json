@@ -1,5 +1,5 @@
 {
-	"version": "1.4.0",
+	"version": "1.5.0",
 	"riskTierRules": {
 		"src/auth/**": "high",
 		"src/api/**": "high",
@@ -39,7 +39,7 @@
 		"blockForcePushes": true,
 		"requireLinearHistory": true,
 		"requirePullRequest": true,
-		"requiredApprovingReviewCount": 0,
+		"requiredApprovingReviewCount": 1,
 		"dismissStaleReviewsOnPush": true,
 		"requireConversationResolution": true,
 		"requireCodeOwnerReview": false,
@@ -165,6 +165,25 @@
 				"severity": "error"
 			},
 			{
+				"ruleId": "tooling-runtime-docs",
+				"when": {
+					"categories": ["tooling_runtime"]
+				},
+				"requireDocs": [
+					"docs/agents/02-tooling-policy.md",
+					"docs/agents/06-security-and-governance.md"
+				],
+				"severity": "error"
+			},
+			{
+				"ruleId": "architecture-context-docs",
+				"when": {
+					"categories": ["architecture_context"]
+				},
+				"requireDocs": ["docs/agents/00-architecture-bootstrap.md"],
+				"severity": "error"
+			},
+			{
 				"ruleId": "agent-governance-docs",
 				"when": {
 					"categories": ["agent_governance"]
@@ -179,6 +198,38 @@
 				},
 				"requireDocs": [],
 				"severity": "warning"
+			},
+			{
+				"ruleId": "adr-artifact-docs",
+				"when": {
+					"categories": ["adr_artifact"]
+				},
+				"requireDocs": ["docs/adr/"],
+				"severity": "error"
+			},
+			{
+				"ruleId": "spec-artifact-docs",
+				"when": {
+					"categories": ["spec_artifact"]
+				},
+				"requireDocs": ["docs/specs/"],
+				"severity": "error"
+			},
+			{
+				"ruleId": "plan-artifact-docs",
+				"when": {
+					"categories": ["plan_artifact"]
+				},
+				"requireDocs": ["docs/plans/"],
+				"severity": "error"
+			},
+			{
+				"ruleId": "brainstorm-artifact-docs",
+				"when": {
+					"categories": ["brainstorm_artifact"]
+				},
+				"requireDocs": ["docs/brainstorms/"],
+				"severity": "error"
 			}
 		],
 		"surfaces": [
@@ -218,6 +269,24 @@
 				"requiredFor": ["ci_workflow"]
 			},
 			{
+				"path": "docs/agents/00-architecture-bootstrap.md",
+				"surfaceType": "governance_doc",
+				"owner": "workflow",
+				"requiredFor": ["architecture_context"]
+			},
+			{
+				"path": "docs/agents/02-tooling-policy.md",
+				"surfaceType": "governance_doc",
+				"owner": "workflow",
+				"requiredFor": ["tooling_runtime"]
+			},
+			{
+				"path": "docs/agents/06-security-and-governance.md",
+				"surfaceType": "governance_doc",
+				"owner": "workflow",
+				"requiredFor": ["tooling_runtime"]
+			},
+			{
 				"path": "docs/agents/07b-agent-governance.md",
 				"surfaceType": "governance_doc",
 				"owner": "contract",
@@ -231,12 +300,152 @@
 			},
 			{
 				"path": "docs/agents/13-linear-production-workflow.md",
-				"surfaceType": "governance_doc",
-				"owner": "contract",
-				"requiredFor": ["ci_workflow"]
+				"surfaceType": "workflow_doc",
+				"owner": "workflow",
+				"requiredFor": ["workflow_authority"]
+			},
+			{
+				"path": "docs/adr/",
+				"surfaceType": "workflow_doc",
+				"owner": "workflow",
+				"requiredFor": ["adr_artifact"]
+			},
+			{
+				"path": "docs/specs/",
+				"surfaceType": "workflow_doc",
+				"owner": "workflow",
+				"requiredFor": ["spec_artifact"]
+			},
+			{
+				"path": "docs/plans/",
+				"surfaceType": "workflow_doc",
+				"owner": "workflow",
+				"requiredFor": ["plan_artifact"]
+			},
+			{
+				"path": "docs/brainstorms/",
+				"surfaceType": "workflow_doc",
+				"owner": "workflow",
+				"requiredFor": ["brainstorm_artifact"]
+			},
+			{
+				"path": "docs/agents/01-instruction-map.md",
+				"surfaceType": "workflow_doc",
+				"owner": "workflow",
+				"requiredFor": ["workflow_authority"]
+			},
+			{
+				"path": "docs/agents/14-docs-gate-rollout.md",
+				"surfaceType": "workflow_doc",
+				"owner": "workflow",
+				"requiredFor": ["workflow_authority"]
+			},
+			{
+				"path": "docs/agents/15-context-integrity-compact.md",
+				"surfaceType": "workflow_doc",
+				"owner": "workflow",
+				"requiredFor": ["workflow_authority"]
+			},
+			{
+				"path": "docs/agents/16-linear-production-compact.md",
+				"surfaceType": "workflow_doc",
+				"owner": "workflow",
+				"requiredFor": ["workflow_authority"]
 			}
 		],
 		"localHookEnabled": false
+	},
+	"contextIntegrityPolicy": {
+		"mode": "shadow",
+		"truthSources": [
+			{
+				"path": "README.md",
+				"kind": "file",
+				"authority": "canonical",
+				"required": true
+			},
+			{
+				"path": "AGENTS.md",
+				"kind": "file",
+				"authority": "canonical",
+				"required": true
+			},
+			{
+				"path": "CLAUDE.md",
+				"kind": "file",
+				"authority": "canonical",
+				"required": true
+			},
+			{
+				"path": "CONTRIBUTING.md",
+				"kind": "file",
+				"authority": "canonical",
+				"required": true
+			},
+			{
+				"path": "AI/context/diagram-context.md",
+				"kind": "file",
+				"authority": "canonical",
+				"required": true
+			},
+			{
+				"path": "docs/agents",
+				"kind": "directory",
+				"authority": "governed",
+				"required": true
+			},
+			{
+				"path": "docs/adr",
+				"kind": "directory",
+				"authority": "governed",
+				"required": false
+			},
+			{
+				"path": "docs/specs",
+				"kind": "directory",
+				"authority": "governed",
+				"required": false
+			}
+		],
+		"contradictionCatalog": [
+			{
+				"id": "command-contract-conflict",
+				"category": "command_contract_conflict",
+				"severity": "error",
+				"description": "Canonical governance docs disagree with executable package-manager or command contracts."
+			},
+			{
+				"id": "required-check-conflict",
+				"category": "required_check_conflict",
+				"severity": "error",
+				"description": "Configured required checks diverge from workflow-enforced required checks."
+			},
+			{
+				"id": "instruction-precedence-conflict",
+				"category": "instruction_precedence_conflict",
+				"severity": "warning",
+				"description": "Governance instruction surfaces disagree about authoritative workflow behavior."
+			},
+			{
+				"id": "workflow-policy-conflict",
+				"category": "workflow_policy_conflict",
+				"severity": "error",
+				"description": "Workflow or policy surfaces disagree on enforced rollout posture or gate ownership."
+			},
+			{
+				"id": "source-truth-missing",
+				"category": "source_truth_missing",
+				"severity": "error",
+				"description": "A configured canonical or governed truth source is missing from the repository."
+			}
+		],
+		"healthSampling": {
+			"fixtureSetPath": "artifacts/context-integrity/health-sampling-fixtures.json",
+			"fixtureSetId": "context-integrity-v1",
+			"allowedTriggerTypes": ["current_checkout", "recent_artifacts"],
+			"samplingCadence": "per_run",
+			"dedupeScope": "query"
+		}
 	},
 	"controlPlanePolicy": {
 		"overridePolicy": {
@@ -273,6 +482,7 @@
 			"eslint",
 			"agent-browser",
 			"agentation",
+			"mermaid-cli",
 			"markdownlint-cli2",
 			"wrangler",
 			"beautiful-mermaid",
@@ -301,6 +511,7 @@
 			"eslint",
 			"agent-browser",
 			"agentation-mcp",
+			"mmdc",
 			"markdownlint-cli2",
 			"wrangler",
 			"beautiful-mermaid",
@@ -370,6 +581,10 @@
 			{
 				"tool": "npm:agentation-mcp",
 				"version": "1.2.0"
+			},
+			{
+				"tool": "npm:@mermaid-js/mermaid-cli",
+				"version": "11.12.0"
 			},
 			{
 				"tool": "npm:@brainwav/rsearch",
@@ -482,6 +697,10 @@
 					"icon": "tool"
 				},
 				{
+					"name": "Mermaid CLI",
+					"icon": "tool"
+				},
+				{
 					"name": "MarkdownLint",
 					"icon": "debug"
 				},
@@ -534,6 +753,9 @@
 				"install",
 				"setup",
 				"hooks",
+				"hooks-pre-commit",
+				"hooks-pre-push",
+				"diagrams-check",
 				"lint",
 				"docs-lint",
 				"fmt",
@@ -549,6 +771,40 @@
 				"diagrams",
 				"env-check"
 			]
+		},
+		"packagePolicy": {
+			"packageJsonPath": "package.json",
+			"capabilityDetectors": [
+				{
+					"capability": "ui",
+					"dependencyMarkers": [
+						"react",
+						"react-dom",
+						"next",
+						"vite",
+						"tailwindcss",
+						"@storybook/react",
+						"@storybook/react-vite",
+						"@radix-ui/react-slot"
+					]
+				},
+				{
+					"capability": "chatgpt_apps_sdk",
+					"dependencyMarkers": [
+						"@openai/chatkit",
+						"@openai/agents",
+						"@openai/agents-realtime"
+					]
+				}
+			],
+			"requiredPackages": [
+				{
+					"package": "@brainwav/design-system-guidance",
+					"dependencyType": "either",
+					"requiredWhenCapabilities": ["ui", "chatgpt_apps_sdk"]
+				}
+			],
+			"explicitCapabilities": []
 		}
 	}
 }

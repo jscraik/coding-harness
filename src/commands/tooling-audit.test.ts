@@ -4,6 +4,12 @@ import { dirname, join } from "node:path";
 import { describe, expect, it } from "vitest";
 import { DEFAULT_CONTRACT } from "../lib/contract/types.js";
 import {
+	REQUIRED_HOOK_SUPPORT_FILES,
+	REQUIRED_PACKAGE_SCRIPTS,
+	REQUIRED_PREK_HOOKS,
+	REQUIRED_SIMPLE_GIT_HOOKS,
+} from "../lib/policy/tooling-baseline.js";
+import {
 	EXIT_CODES,
 	runToolingAudit,
 	runToolingAuditCLI,
@@ -26,7 +32,7 @@ function createCompliantRepo(
 	mkdirSync(join(root, ".git"), { recursive: true });
 	const contractBase = {
 		...DEFAULT_CONTRACT,
-		version: "1.4.0",
+		version: "1.5.0",
 	};
 	const contract = withExplicitToolingPolicy
 		? contractBase
@@ -63,6 +69,9 @@ function createCompliantRepo(
 required_bins=(${toolingPolicy.requiredBinaries.map((binary) => `"${binary}"`).join(" ")})
 required_codex_actions=(${toolingPolicy.codexEnvironment.requiredActions.map((action) => `"${action.name}|${action.icon}"`).join(" ")})
 required_make_targets=(${toolingPolicy.makefile.requiredTargets.map((target) => `"${target}"`).join(" ")})
+explicit_capabilities=(${(toolingPolicy.packagePolicy.explicitCapabilities ?? []).map((capability) => `"${capability}"`).join(" ")})
+capability_detectors=(${toolingPolicy.packagePolicy.capabilityDetectors.map((detector) => `"${detector.capability}" ${detector.dependencyMarkers.map((marker) => `"${marker}"`).join(" ")}`).join(" ")})
+required_package_specs=(${toolingPolicy.packagePolicy.requiredPackages.map((requiredPackage) => `"${requiredPackage.package}|${requiredPackage.dependencyType}|${requiredPackage.requiredWhenCapabilities.join(",")}"`).join(" ")})
 `;
 	writeRepoFile(root, toolingPolicy.readinessScriptPath, readinessScript);
 
@@ -70,6 +79,67 @@ required_make_targets=(${toolingPolicy.makefile.requiredTargets.map((target) => 
 		.map((target) => `${target}:\n\t@echo ${target}`)
 		.join("\n\n");
 	writeRepoFile(root, toolingPolicy.makefile.path, `${makefile}\n`);
+
+	for (const supportFile of REQUIRED_HOOK_SUPPORT_FILES) {
+		writeRepoFile(root, supportFile, "placeholder\n");
+	}
+
+	const packageJson = {
+		name: "fixture-repo",
+		version: "1.0.0",
+		scripts: REQUIRED_PACKAGE_SCRIPTS,
+		"simple-git-hooks": REQUIRED_SIMPLE_GIT_HOOKS,
+	};
+	writeRepoFile(root, "package.json", JSON.stringify(packageJson, null, 2));
+	writeRepoFile(
+		root,
+		"prek.toml",
+		`[hooks]
+pre-commit = ${JSON.stringify(REQUIRED_PREK_HOOKS["pre-commit"])}
+pre-push = ${JSON.stringify(REQUIRED_PREK_HOOKS["pre-push"])}
+`,
+	);
+}
+
+function writeUiPackageJson(
+	root: string,
+	includeDesignSystemGuidance: boolean,
+): void {
+	const packageJson = {
+		name: "fixture-ui-repo",
+		version: "1.0.0",
+		scripts: REQUIRED_PACKAGE_SCRIPTS,
+		"simple-git-hooks": REQUIRED_SIMPLE_GIT_HOOKS,
+		dependencies: {
+			react: "^19.0.0",
+			...(includeDesignSystemGuidance
+				? { "@brainwav/design-system-guidance": "^1.0.0" }
+				: {}),
+		},
+	};
+	writeRepoFile(root, "package.json", JSON.stringify(packageJson, null, 2));
+}
+
+function writeExplicitCapabilityContract(
+	root: string,
+	capability: "ui" | "chatgpt_apps_sdk",
+): void {
+	const contract = {
+		...DEFAULT_CONTRACT,
+		version: "1.5.0",
+		toolingPolicy: {
+			...DEFAULT_CONTRACT.toolingPolicy,
+			packagePolicy: {
+				...DEFAULT_CONTRACT.toolingPolicy?.packagePolicy,
+				explicitCapabilities: [capability],
+			},
+		},
+	};
+	writeRepoFile(
+		root,
+		"harness.contract.json",
+		JSON.stringify(contract, null, 2),
+	);
 }
 
 describe("tooling-audit command", () => {
@@ -141,6 +211,50 @@ describe("tooling-audit command", () => {
 		}
 	});
 
+	it("flags repos with missing hook helper scripts in package.json", async () => {
+		const tempRoot = mkdtempSync(join(tmpdir(), "tooling-audit-hook-scripts-"));
+		const repoDir = join(tempRoot, "repo");
+		mkdirSync(repoDir, { recursive: true });
+		createCompliantRepo(repoDir, true);
+
+		writeRepoFile(
+			repoDir,
+			"package.json",
+			JSON.stringify(
+				{
+					name: "fixture-repo",
+					version: "1.0.0",
+					scripts: {
+						"secrets:staged": REQUIRED_PACKAGE_SCRIPTS["secrets:staged"],
+					},
+					"simple-git-hooks": REQUIRED_SIMPLE_GIT_HOOKS,
+				},
+				null,
+				2,
+			),
+		);
+
+		try {
+			const result = await runToolingAudit({
+				path: tempRoot,
+				format: "json",
+			});
+
+			expect(result.ok).toBe(true);
+			if (result.ok) {
+				expect(result.value.exitCode).toBe(EXIT_CODES.DRIFT_DETECTED);
+				expect(result.value.result.findings.critical).toBeGreaterThan(0);
+				expect(
+					result.value.result.results[0]?.findings.some((finding) =>
+						finding.description.includes("package.json script"),
+					),
+				).toBe(true);
+			}
+		} finally {
+			rmSync(tempRoot, { recursive: true, force: true });
+		}
+	});
+
 	it("flags missing codex actions as critical drift", async () => {
 		const tempRoot = mkdtempSync(join(tmpdir(), "tooling-audit-drift-"));
 		const repoDir = join(tempRoot, "repo");
@@ -170,6 +284,141 @@ describe("tooling-audit command", () => {
 				expect(
 					result.value.result.results[0]?.findings.some((finding) =>
 						finding.description.includes("Missing Codex action mapping"),
+					),
+				).toBe(true);
+			}
+		} finally {
+			rmSync(tempRoot, { recursive: true, force: true });
+		}
+	});
+
+	it("flags UI repos that omit design-system guidance", async () => {
+		const tempRoot = mkdtempSync(join(tmpdir(), "tooling-audit-ui-drift-"));
+		const repoDir = join(tempRoot, "repo");
+		mkdirSync(repoDir, { recursive: true });
+		createCompliantRepo(repoDir, true);
+		writeUiPackageJson(repoDir, false);
+
+		try {
+			const result = await runToolingAudit({
+				path: tempRoot,
+				format: "json",
+			});
+
+			expect(result.ok).toBe(true);
+			if (result.ok) {
+				expect(result.value.exitCode).toBe(EXIT_CODES.DRIFT_DETECTED);
+				expect(result.value.result.findings.critical).toBeGreaterThan(0);
+				expect(
+					result.value.result.results[0]?.findings.some((finding) =>
+						finding.description.includes("@brainwav/design-system-guidance"),
+					),
+				).toBe(true);
+			}
+		} finally {
+			rmSync(tempRoot, { recursive: true, force: true });
+		}
+	});
+
+	it("flags repos with explicit UI capability even without dependency markers", async () => {
+		const tempRoot = mkdtempSync(join(tmpdir(), "tooling-audit-explicit-ui-"));
+		const repoDir = join(tempRoot, "repo");
+		mkdirSync(repoDir, { recursive: true });
+		createCompliantRepo(repoDir, true);
+		writeExplicitCapabilityContract(repoDir, "ui");
+		writeRepoFile(
+			repoDir,
+			"package.json",
+			JSON.stringify(
+				{
+					name: "fixture-explicit-ui-repo",
+					version: "1.0.0",
+					scripts: REQUIRED_PACKAGE_SCRIPTS,
+					"simple-git-hooks": REQUIRED_SIMPLE_GIT_HOOKS,
+				},
+				null,
+				2,
+			),
+		);
+
+		try {
+			const result = await runToolingAudit({
+				path: tempRoot,
+				format: "json",
+			});
+
+			expect(result.ok).toBe(true);
+			if (result.ok) {
+				expect(result.value.exitCode).toBe(EXIT_CODES.DRIFT_DETECTED);
+				expect(result.value.result.findings.critical).toBeGreaterThan(0);
+				expect(
+					result.value.result.results[0]?.findings.some((finding) =>
+						finding.description.includes("@brainwav/design-system-guidance"),
+					),
+				).toBe(true);
+			}
+		} finally {
+			rmSync(tempRoot, { recursive: true, force: true });
+		}
+	});
+
+	it("accepts UI repos that include design-system guidance", async () => {
+		const tempRoot = mkdtempSync(join(tmpdir(), "tooling-audit-ui-good-"));
+		const repoDir = join(tempRoot, "repo");
+		mkdirSync(repoDir, { recursive: true });
+		createCompliantRepo(repoDir, true);
+		writeUiPackageJson(repoDir, true);
+
+		try {
+			const result = await runToolingAudit({
+				path: tempRoot,
+				format: "json",
+			});
+
+			expect(result.ok).toBe(true);
+			if (result.ok) {
+				expect(result.value.exitCode).toBe(EXIT_CODES.SUCCESS);
+				expect(result.value.result.findings.total).toBe(0);
+			}
+		} finally {
+			rmSync(tempRoot, { recursive: true, force: true });
+		}
+	});
+
+	it("flags stale local hook policy drift", async () => {
+		const tempRoot = mkdtempSync(join(tmpdir(), "tooling-audit-hooks-drift-"));
+		const repoDir = join(tempRoot, "repo");
+		mkdirSync(repoDir, { recursive: true });
+		createCompliantRepo(repoDir, true);
+		writeRepoFile(
+			repoDir,
+			"package.json",
+			JSON.stringify(
+				{
+					name: "fixture-repo",
+					version: "1.0.0",
+					"simple-git-hooks": {
+						...REQUIRED_SIMPLE_GIT_HOOKS,
+						"pre-push": "pnpm test",
+					},
+				},
+				null,
+				2,
+			),
+		);
+
+		try {
+			const result = await runToolingAudit({
+				path: tempRoot,
+				format: "json",
+			});
+
+			expect(result.ok).toBe(true);
+			if (result.ok) {
+				expect(result.value.exitCode).toBe(EXIT_CODES.DRIFT_DETECTED);
+				expect(
+					result.value.result.results[0]?.findings.some((finding) =>
+						finding.description.includes("simple-git-hooks entry 'pre-push'"),
 					),
 				).toBe(true);
 			}

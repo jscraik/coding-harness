@@ -8,6 +8,9 @@ import type {
 	CodeQualitySeverity,
 	CodeScanningAlertsThreshold,
 	CodeScanningSecurityAlertsThreshold,
+	ContextIntegrityMode,
+	ContextIntegrityPolicy,
+	ContextIntegrityTruthSource,
 	ControlPlaneOverridePolicy,
 	ControlPlaneOverrideScope,
 	ControlPlanePolicy,
@@ -45,10 +48,13 @@ import type {
 	RiskTier,
 	RuntimePolicy,
 	TimeoutAction,
+	ToolingCapabilityDetector,
 	ToolingCodexAction,
 	ToolingCodexEnvironmentPolicy,
 	ToolingMakefilePolicy,
 	ToolingMiseTool,
+	ToolingPackagePolicy,
+	ToolingPackageRequirement,
 	ToolingPolicy,
 	UILoopPolicy,
 	UILoopSLO,
@@ -86,6 +92,7 @@ const VALID_TOP_LEVEL_KEYS = [
 	"branchProtection",
 	"issueTrackingPolicy",
 	"docsGatePolicy",
+	"contextIntegrityPolicy",
 	"controlPlanePolicy",
 	"toolingPolicy",
 	"extends",
@@ -140,6 +147,7 @@ const VALID_TOOLING_POLICY_KEYS = [
 	"readinessScriptPath",
 	"codexEnvironment",
 	"makefile",
+	"packagePolicy",
 ] as const;
 const VALID_TOOLING_CODEX_ENVIRONMENT_KEYS = [
 	"path",
@@ -148,6 +156,21 @@ const VALID_TOOLING_CODEX_ENVIRONMENT_KEYS = [
 const VALID_TOOLING_CODEX_ACTION_KEYS = ["name", "icon"] as const;
 const VALID_TOOLING_MAKEFILE_KEYS = ["path", "requiredTargets"] as const;
 const VALID_TOOLING_MISE_TOOL_KEYS = ["tool", "version"] as const;
+const VALID_TOOLING_PACKAGE_POLICY_KEYS = [
+	"packageJsonPath",
+	"explicitCapabilities",
+	"capabilityDetectors",
+	"requiredPackages",
+] as const;
+const VALID_TOOLING_CAPABILITY_DETECTOR_KEYS = [
+	"capability",
+	"dependencyMarkers",
+] as const;
+const VALID_TOOLING_PACKAGE_REQUIREMENT_KEYS = [
+	"package",
+	"dependencyType",
+	"requiredWhenCapabilities",
+] as const;
 const VALID_GAP_CASE_POLICY_KEYS = [
 	"requiredEvidenceStatuses",
 	"requiredCloseReasons",
@@ -419,6 +442,91 @@ function isValidToolingMakefile(
 	);
 }
 
+function isValidToolingCapabilityDetector(
+	value: unknown,
+): value is ToolingCapabilityDetector {
+	if (!isPlainObject(value)) return false;
+	const detector = value as Record<string, unknown>;
+	const unknownKeys = Object.keys(detector).filter(
+		(key) =>
+			!VALID_TOOLING_CAPABILITY_DETECTOR_KEYS.includes(
+				key as (typeof VALID_TOOLING_CAPABILITY_DETECTOR_KEYS)[number],
+			),
+	);
+	if (unknownKeys.length > 0) {
+		return false;
+	}
+
+	return (
+		(detector.capability === "ui" ||
+			detector.capability === "chatgpt_apps_sdk") &&
+		isNonEmptyStringArray(detector.dependencyMarkers)
+	);
+}
+
+function isValidToolingPackageRequirement(
+	value: unknown,
+): value is ToolingPackageRequirement {
+	if (!isPlainObject(value)) return false;
+	const requirement = value as Record<string, unknown>;
+	const unknownKeys = Object.keys(requirement).filter(
+		(key) =>
+			!VALID_TOOLING_PACKAGE_REQUIREMENT_KEYS.includes(
+				key as (typeof VALID_TOOLING_PACKAGE_REQUIREMENT_KEYS)[number],
+			),
+	);
+	if (unknownKeys.length > 0) {
+		return false;
+	}
+
+	return (
+		typeof requirement.package === "string" &&
+		requirement.package.trim().length > 0 &&
+		(requirement.dependencyType === "dependencies" ||
+			requirement.dependencyType === "devDependencies" ||
+			requirement.dependencyType === "either") &&
+		Array.isArray(requirement.requiredWhenCapabilities) &&
+		requirement.requiredWhenCapabilities.every(
+			(capability) => capability === "ui" || capability === "chatgpt_apps_sdk",
+		)
+	);
+}
+
+function isValidToolingPackagePolicy(
+	value: unknown,
+): value is ToolingPackagePolicy {
+	if (!isPlainObject(value)) return false;
+	const packagePolicy = value as Record<string, unknown>;
+	const unknownKeys = Object.keys(packagePolicy).filter(
+		(key) =>
+			!VALID_TOOLING_PACKAGE_POLICY_KEYS.includes(
+				key as (typeof VALID_TOOLING_PACKAGE_POLICY_KEYS)[number],
+			),
+	);
+	if (unknownKeys.length > 0) {
+		return false;
+	}
+
+	return (
+		typeof packagePolicy.packageJsonPath === "string" &&
+		packagePolicy.packageJsonPath.trim().length > 0 &&
+		(packagePolicy.explicitCapabilities === undefined ||
+			(Array.isArray(packagePolicy.explicitCapabilities) &&
+				packagePolicy.explicitCapabilities.every(
+					(capability) =>
+						capability === "ui" || capability === "chatgpt_apps_sdk",
+				))) &&
+		Array.isArray(packagePolicy.capabilityDetectors) &&
+		packagePolicy.capabilityDetectors.every((item) =>
+			isValidToolingCapabilityDetector(item),
+		) &&
+		Array.isArray(packagePolicy.requiredPackages) &&
+		packagePolicy.requiredPackages.every((item) =>
+			isValidToolingPackageRequirement(item),
+		)
+	);
+}
+
 function isValidToolingPolicy(value: unknown): value is ToolingPolicy {
 	if (!isPlainObject(value)) return false;
 	const policy = value as Record<string, unknown>;
@@ -442,7 +550,8 @@ function isValidToolingPolicy(value: unknown): value is ToolingPolicy {
 		typeof policy.readinessScriptPath === "string" &&
 		policy.readinessScriptPath.trim().length > 0 &&
 		isValidToolingCodexEnvironment(policy.codexEnvironment) &&
-		isValidToolingMakefile(policy.makefile)
+		isValidToolingMakefile(policy.makefile) &&
+		isValidToolingPackagePolicy(policy.packagePolicy)
 	);
 }
 
@@ -1377,6 +1486,13 @@ const VALID_DOCS_IMPACT_CATEGORIES: DocsImpactCategory[] = [
 	"ci_workflow",
 	"branch_protection_or_required_checks",
 	"init_scaffolding",
+	"tooling_runtime",
+	"architecture_context",
+	"workflow_authority",
+	"adr_artifact",
+	"spec_artifact",
+	"plan_artifact",
+	"brainstorm_artifact",
 	"agent_governance",
 	"doc_only",
 	"unknown_governance_change",
@@ -1394,6 +1510,25 @@ const VALID_DOCS_SURFACE_OWNERS = [
 	"template",
 ] as const;
 const VALID_DOCS_RULE_SEVERITIES = ["info", "warning", "error"] as const;
+const VALID_CONTEXT_INTEGRITY_MODES: ContextIntegrityMode[] = [
+	"shadow",
+	"advisory",
+	"required",
+];
+const VALID_CONTEXT_INTEGRITY_SOURCE_KINDS = ["file", "directory"] as const;
+const VALID_CONTEXT_INTEGRITY_AUTHORITIES = ["canonical", "governed"] as const;
+const VALID_CONTEXT_CONTRADICTION_CATEGORIES = [
+	"command_contract_conflict",
+	"required_check_conflict",
+	"instruction_precedence_conflict",
+	"workflow_policy_conflict",
+	"source_truth_missing",
+] as const;
+const VALID_CONTEXT_HEALTH_TRIGGER_TYPES = [
+	"current_checkout",
+	"recent_artifacts",
+] as const;
+const VALID_CONTEXT_HEALTH_DEDUPE_SCOPES = ["query", "run"] as const;
 
 function isValidDocsImpactCategory(
 	value: unknown,
@@ -1564,6 +1699,146 @@ export function isValidDocsGatePolicy(value: unknown): value is DocsGatePolicy {
 	}
 
 	return true;
+}
+
+function isValidContextIntegrityTruthSource(
+	value: unknown,
+): value is ContextIntegrityTruthSource {
+	if (!isPlainObject(value)) {
+		return false;
+	}
+
+	const source = value as Record<string, unknown>;
+	const validKeys = ["path", "kind", "authority", "required"] as const;
+	const invalidKeys = Object.keys(source).filter(
+		(key) => !validKeys.includes(key as (typeof validKeys)[number]),
+	);
+	if (invalidKeys.length > 0) {
+		return false;
+	}
+
+	return (
+		typeof source.path === "string" &&
+		source.path.length > 0 &&
+		typeof source.kind === "string" &&
+		VALID_CONTEXT_INTEGRITY_SOURCE_KINDS.includes(
+			source.kind as (typeof VALID_CONTEXT_INTEGRITY_SOURCE_KINDS)[number],
+		) &&
+		typeof source.authority === "string" &&
+		VALID_CONTEXT_INTEGRITY_AUTHORITIES.includes(
+			source.authority as (typeof VALID_CONTEXT_INTEGRITY_AUTHORITIES)[number],
+		) &&
+		typeof source.required === "boolean"
+	);
+}
+
+function isValidContextIntegrityPolicy(
+	value: unknown,
+): value is ContextIntegrityPolicy {
+	if (!isPlainObject(value)) {
+		return false;
+	}
+
+	const policy = value as Record<string, unknown>;
+	const validKeys = [
+		"mode",
+		"truthSources",
+		"contradictionCatalog",
+		"healthSampling",
+	] as const;
+	const invalidKeys = Object.keys(policy).filter(
+		(key) => !validKeys.includes(key as (typeof validKeys)[number]),
+	);
+	if (invalidKeys.length > 0) {
+		return false;
+	}
+
+	if (
+		typeof policy.mode !== "string" ||
+		!VALID_CONTEXT_INTEGRITY_MODES.includes(policy.mode as ContextIntegrityMode)
+	) {
+		return false;
+	}
+
+	if (
+		!Array.isArray(policy.truthSources) ||
+		policy.truthSources.length === 0 ||
+		!policy.truthSources.every(isValidContextIntegrityTruthSource)
+	) {
+		return false;
+	}
+
+	if (!Array.isArray(policy.contradictionCatalog)) {
+		return false;
+	}
+	for (const entry of policy.contradictionCatalog) {
+		if (!isPlainObject(entry)) {
+			return false;
+		}
+		const valueObject = entry as Record<string, unknown>;
+		const entryKeys = ["id", "category", "severity", "description"] as const;
+		const invalidEntryKeys = Object.keys(valueObject).filter(
+			(key) => !entryKeys.includes(key as (typeof entryKeys)[number]),
+		);
+		if (invalidEntryKeys.length > 0) {
+			return false;
+		}
+		if (
+			typeof valueObject.id !== "string" ||
+			valueObject.id.length === 0 ||
+			typeof valueObject.category !== "string" ||
+			!VALID_CONTEXT_CONTRADICTION_CATEGORIES.includes(
+				valueObject.category as (typeof VALID_CONTEXT_CONTRADICTION_CATEGORIES)[number],
+			) ||
+			(valueObject.severity !== "warning" &&
+				valueObject.severity !== "error") ||
+			typeof valueObject.description !== "string" ||
+			valueObject.description.length === 0
+		) {
+			return false;
+		}
+	}
+
+	if (!isPlainObject(policy.healthSampling)) {
+		return false;
+	}
+	const healthSampling = policy.healthSampling as Record<string, unknown>;
+	const healthSamplingKeys = [
+		"fixtureSetPath",
+		"fixtureSetId",
+		"allowedTriggerTypes",
+		"samplingCadence",
+		"dedupeScope",
+	] as const;
+	const invalidHealthSamplingKeys = Object.keys(healthSampling).filter(
+		(key) =>
+			!healthSamplingKeys.includes(key as (typeof healthSamplingKeys)[number]),
+	);
+	if (invalidHealthSamplingKeys.length > 0) {
+		return false;
+	}
+
+	return (
+		typeof healthSampling.fixtureSetPath === "string" &&
+		healthSampling.fixtureSetPath.length > 0 &&
+		typeof healthSampling.fixtureSetId === "string" &&
+		healthSampling.fixtureSetId.length > 0 &&
+		Array.isArray(healthSampling.allowedTriggerTypes) &&
+		healthSampling.allowedTriggerTypes.length > 0 &&
+		healthSampling.allowedTriggerTypes.every(
+			(value) =>
+				typeof value === "string" &&
+				VALID_CONTEXT_HEALTH_TRIGGER_TYPES.includes(
+					value as (typeof VALID_CONTEXT_HEALTH_TRIGGER_TYPES)[number],
+				),
+		) &&
+		typeof healthSampling.samplingCadence === "string" &&
+		healthSampling.samplingCadence.length > 0 &&
+		typeof healthSampling.dedupeScope === "string" &&
+		VALID_CONTEXT_HEALTH_DEDUPE_SCOPES.includes(
+			healthSampling.dedupeScope as (typeof VALID_CONTEXT_HEALTH_DEDUPE_SCOPES)[number],
+		)
+	);
 }
 
 function isValidTopLevel(
@@ -2367,6 +2642,29 @@ export function validateContract(
 		}
 	}
 
+	// Validate contextIntegrityPolicy (optional)
+	let contextIntegrityPolicy: ContextIntegrityPolicy | undefined;
+	if (
+		"contextIntegrityPolicy" in obj &&
+		obj.contextIntegrityPolicy !== undefined
+	) {
+		if (!isValidContextIntegrityPolicy(obj.contextIntegrityPolicy)) {
+			errors.push({
+				code: ValidationErrorCode.INVALID_VALUE,
+				path: "contextIntegrityPolicy",
+				message:
+					"contextIntegrityPolicy must declare mode, truthSources, contradictionCatalog, and healthSampling",
+				expected:
+					"{ mode: 'shadow' | 'advisory' | 'required', truthSources: [{ path: string, kind: 'file' | 'directory', authority: 'canonical' | 'governed', required: boolean }], contradictionCatalog: [{ id: string, category: string, severity: 'warning' | 'error', description: string }], healthSampling: { fixtureSetPath: string, fixtureSetId: string, allowedTriggerTypes: ('current_checkout' | 'recent_artifacts')[], samplingCadence: string, dedupeScope: 'query' | 'run' } }",
+				received: JSON.stringify(obj.contextIntegrityPolicy),
+				fix: "Ensure contextIntegrityPolicy uses supported mode, truth-source, contradiction, and health-sampling shapes",
+			});
+		} else {
+			contextIntegrityPolicy =
+				obj.contextIntegrityPolicy as ContextIntegrityPolicy;
+		}
+	}
+
 	// Validate toolingPolicy (optional)
 	let toolingPolicy: ToolingPolicy | undefined;
 	if ("toolingPolicy" in obj && obj.toolingPolicy !== undefined) {
@@ -2377,7 +2675,7 @@ export function validateContract(
 				message:
 					"toolingPolicy must declare required documentation terms, binaries, mise tool pins, readiness script path, Codex environment actions, and Makefile targets",
 				expected:
-					"{ requiredDocumentationTerms: string[], requiredBinaries: string[], requiredMiseTools: [{ tool: string, version: string }], miseFilePath: string, readinessScriptPath: string, codexEnvironment: { path: string, requiredActions: [{ name: string, icon: 'tool' | 'run' | 'debug' | 'test' }] }, makefile: { path: string, requiredTargets: string[] } }",
+					"{ requiredDocumentationTerms: string[], requiredBinaries: string[], requiredMiseTools: [{ tool: string, version: string }], miseFilePath: string, readinessScriptPath: string, codexEnvironment: { path: string, requiredActions: [{ name: string, icon: 'tool' | 'run' | 'debug' | 'test' }] }, makefile: { path: string, requiredTargets: string[] }, packagePolicy: { packageJsonPath: string, explicitCapabilities?: ('ui' | 'chatgpt_apps_sdk')[], capabilityDetectors: [{ capability: 'ui' | 'chatgpt_apps_sdk', dependencyMarkers: string[] }], requiredPackages: [{ package: string, dependencyType: 'dependencies' | 'devDependencies' | 'either', requiredWhenCapabilities: ('ui' | 'chatgpt_apps_sdk')[] }] } }",
 				received: JSON.stringify(obj.toolingPolicy),
 				fix: "Ensure toolingPolicy contains only supported keys and uses non-empty strings for terms, binaries, paths, tools, versions, action names, and target names",
 			});
@@ -2471,6 +2769,7 @@ export function validateContract(
 			pilotRollbackPolicy,
 			pilotAuthzPolicy,
 			docsGatePolicy,
+			contextIntegrityPolicy,
 			controlPlanePolicy,
 			toolingPolicy,
 			branchProtection,

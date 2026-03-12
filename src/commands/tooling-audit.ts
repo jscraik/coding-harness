@@ -6,6 +6,14 @@ import {
 	type HarnessContract,
 } from "../lib/contract/types.js";
 import { PathTraversalError, validatePath } from "../lib/input/validator.js";
+import {
+	REQUIRED_HOOK_SUPPORT_FILES,
+	REQUIRED_PACKAGE_SCRIPTS,
+	REQUIRED_PREK_HOOKS,
+	REQUIRED_SIMPLE_GIT_HOOKS,
+	TOOLING_PACKAGE_JSON_PATH,
+	TOOLING_PREK_CONFIG_PATH,
+} from "../lib/policy/tooling-baseline.js";
 import { type CliResult, err, ok } from "../lib/result/types.js";
 import { findRepositories } from "./org-audit.js";
 
@@ -56,6 +64,11 @@ export interface ToolingAuditResult {
 	results: ToolingAuditRepoResult[];
 }
 
+interface PackageManifest {
+	dependencies?: Record<string, string>;
+	devDependencies?: Record<string, string>;
+}
+
 function validatePathInput(
 	rawPath: string,
 	field: string,
@@ -91,6 +104,89 @@ function readTextFile(path: string): string | null {
 		return null;
 	}
 	return readFileSync(path, "utf-8");
+}
+
+function readPackageManifest(path: string): PackageManifest | null {
+	const content = readTextFile(path);
+	if (content === null) {
+		return null;
+	}
+	const parsed = JSON.parse(content) as unknown;
+	if (!parsed || typeof parsed !== "object" || Array.isArray(parsed)) {
+		throw new Error("package.json root must be an object");
+	}
+	const manifest = parsed as PackageManifest;
+	return manifest;
+}
+
+function readJsonObject(path: string): Record<string, unknown> | null {
+	const content = readTextFile(path);
+	if (content === null) {
+		return null;
+	}
+	const parsed = JSON.parse(content) as unknown;
+	if (!parsed || typeof parsed !== "object" || Array.isArray(parsed)) {
+		throw new Error("JSON root must be an object");
+	}
+	return parsed as Record<string, unknown>;
+}
+
+function collectPackageDependencies(manifest: PackageManifest): Set<string> {
+	return new Set([
+		...Object.keys(manifest.dependencies ?? {}),
+		...Object.keys(manifest.devDependencies ?? {}),
+	]);
+}
+
+function detectCapabilities(
+	contract: HarnessContract,
+	manifest: PackageManifest | null,
+): Set<string> {
+	const capabilities = new Set<string>();
+	const packagePolicy = contract.toolingPolicy?.packagePolicy;
+	if (!packagePolicy) {
+		return capabilities;
+	}
+
+	for (const capability of packagePolicy.explicitCapabilities ?? []) {
+		capabilities.add(capability);
+	}
+
+	if (manifest === null) {
+		return capabilities;
+	}
+
+	const dependencyNames = collectPackageDependencies(manifest);
+	for (const detector of packagePolicy.capabilityDetectors) {
+		if (
+			detector.dependencyMarkers.some((marker) => dependencyNames.has(marker))
+		) {
+			capabilities.add(detector.capability);
+		}
+	}
+
+	return capabilities;
+}
+
+function hasRequiredPackage(
+	manifest: PackageManifest,
+	packageName: string,
+	dependencyType: "dependencies" | "devDependencies" | "either",
+): boolean {
+	const dependencies = manifest.dependencies ?? {};
+	const devDependencies = manifest.devDependencies ?? {};
+
+	if (dependencyType === "dependencies") {
+		return Object.prototype.hasOwnProperty.call(dependencies, packageName);
+	}
+	if (dependencyType === "devDependencies") {
+		return Object.prototype.hasOwnProperty.call(devDependencies, packageName);
+	}
+
+	return (
+		Object.prototype.hasOwnProperty.call(dependencies, packageName) ||
+		Object.prototype.hasOwnProperty.call(devDependencies, packageName)
+	);
 }
 
 function collectMisePins(content: string): Map<string, string> {
@@ -216,6 +312,54 @@ function auditReadinessScript(
 			});
 		}
 	}
+
+	for (const detector of toolingPolicy.packagePolicy.capabilityDetectors) {
+		if (!content.includes(detector.capability)) {
+			findings.push({
+				path: "toolingPolicy.packagePolicy.capabilityDetectors",
+				severity: "warning",
+				description: `Readiness script no longer references capability detector '${detector.capability}'`,
+				expected: detector.capability,
+				actual: toolingPolicy.readinessScriptPath,
+			});
+		}
+		for (const marker of detector.dependencyMarkers) {
+			if (!content.includes(marker)) {
+				findings.push({
+					path: "toolingPolicy.packagePolicy.capabilityDetectors",
+					severity: "warning",
+					description: `Readiness script no longer references package marker '${marker}' for capability '${detector.capability}'`,
+					expected: marker,
+					actual: toolingPolicy.readinessScriptPath,
+				});
+			}
+		}
+	}
+
+	for (const capability of toolingPolicy.packagePolicy.explicitCapabilities ??
+		[]) {
+		if (!content.includes(`"${capability}"`)) {
+			findings.push({
+				path: "toolingPolicy.packagePolicy.explicitCapabilities",
+				severity: "warning",
+				description: `Readiness script no longer references explicit capability '${capability}'`,
+				expected: capability,
+				actual: toolingPolicy.readinessScriptPath,
+			});
+		}
+	}
+
+	for (const requiredPackage of toolingPolicy.packagePolicy.requiredPackages) {
+		if (!content.includes(requiredPackage.package)) {
+			findings.push({
+				path: "toolingPolicy.packagePolicy.requiredPackages",
+				severity: "warning",
+				description: `Readiness script no longer references required package '${requiredPackage.package}'`,
+				expected: requiredPackage.package,
+				actual: toolingPolicy.readinessScriptPath,
+			});
+		}
+	}
 }
 
 function auditMise(
@@ -324,6 +468,152 @@ function auditMakefile(
 	}
 }
 
+function auditPackagePolicy(
+	findings: ToolingAuditFinding[],
+	repoPath: string,
+	contract: HarnessContract,
+): void {
+	const toolingPolicy =
+		contract.toolingPolicy ?? DEFAULT_CONTRACT.toolingPolicy;
+	if (!toolingPolicy) {
+		return;
+	}
+
+	const packagePath = join(
+		repoPath,
+		toolingPolicy.packagePolicy.packageJsonPath,
+	);
+	let manifest: PackageManifest | null;
+	try {
+		manifest = readPackageManifest(packagePath);
+	} catch (error) {
+		findings.push({
+			path: "toolingPolicy.packagePolicy.packageJsonPath",
+			severity: "critical",
+			description: `Failed to parse package manifest at '${toolingPolicy.packagePolicy.packageJsonPath}'`,
+			expected: "Valid JSON object",
+			actual: error instanceof Error ? error.message : "Invalid JSON",
+		});
+		return;
+	}
+	if (manifest === null) {
+		return;
+	}
+
+	const capabilities = detectCapabilities(contract, manifest);
+	for (const requiredPackage of toolingPolicy.packagePolicy.requiredPackages) {
+		const shouldApply = requiredPackage.requiredWhenCapabilities.some(
+			(capability) => capabilities.has(capability),
+		);
+		if (!shouldApply) {
+			continue;
+		}
+		if (
+			!hasRequiredPackage(
+				manifest,
+				requiredPackage.package,
+				requiredPackage.dependencyType,
+			)
+		) {
+			findings.push({
+				path: "toolingPolicy.packagePolicy.requiredPackages",
+				severity: "critical",
+				description: `Missing required package '${requiredPackage.package}' for detected capabilities: ${requiredPackage.requiredWhenCapabilities.filter((capability) => capabilities.has(capability)).join(", ")}`,
+				expected: {
+					package: requiredPackage.package,
+					dependencyType: requiredPackage.dependencyType,
+				},
+				actual: toolingPolicy.packagePolicy.packageJsonPath,
+			});
+		}
+	}
+}
+
+function auditLocalHooks(
+	findings: ToolingAuditFinding[],
+	repoPath: string,
+): void {
+	for (const supportFile of REQUIRED_HOOK_SUPPORT_FILES) {
+		if (!existsSync(join(repoPath, supportFile))) {
+			addMissingFileFinding(findings, supportFile, "hook support file");
+		}
+	}
+
+	const prekPath = join(repoPath, TOOLING_PREK_CONFIG_PATH);
+	const prekContent = readTextFile(prekPath);
+	if (prekContent === null) {
+		addMissingFileFinding(findings, TOOLING_PREK_CONFIG_PATH, "prek config");
+	} else {
+		for (const [hookName, commands] of Object.entries(REQUIRED_PREK_HOOKS)) {
+			const expected = `${hookName} = ["${commands.join(" && ")}"]`;
+			if (!prekContent.includes(expected)) {
+				findings.push({
+					path: TOOLING_PREK_CONFIG_PATH,
+					severity: "critical",
+					description: `Prek hook '${hookName}' is missing or out of date`,
+					expected,
+				});
+			}
+		}
+	}
+
+	const packagePath = join(repoPath, TOOLING_PACKAGE_JSON_PATH);
+	let packageJson: Record<string, unknown> | null;
+	try {
+		packageJson = readJsonObject(packagePath);
+	} catch (error) {
+		findings.push({
+			path: TOOLING_PACKAGE_JSON_PATH,
+			severity: "critical",
+			description: `Failed to parse package manifest at '${TOOLING_PACKAGE_JSON_PATH}'`,
+			expected: "Valid JSON object",
+			actual: error instanceof Error ? error.message : "Invalid JSON",
+		});
+		return;
+	}
+	if (packageJson === null) {
+		return;
+	}
+
+	const scripts = packageJson.scripts;
+	const scriptObject =
+		scripts && typeof scripts === "object" && !Array.isArray(scripts)
+			? (scripts as Record<string, unknown>)
+			: null;
+	for (const [scriptName, expectedCommand] of Object.entries(
+		REQUIRED_PACKAGE_SCRIPTS,
+	)) {
+		if (!scriptObject || scriptObject[scriptName] !== expectedCommand) {
+			findings.push({
+				path: TOOLING_PACKAGE_JSON_PATH,
+				severity: "critical",
+				description: `package.json script '${scriptName}' is missing or out of date`,
+				expected: expectedCommand,
+				actual: scriptObject?.[scriptName],
+			});
+		}
+	}
+
+	const hooks = packageJson["simple-git-hooks"];
+	const hookObject =
+		hooks && typeof hooks === "object" && !Array.isArray(hooks)
+			? (hooks as Record<string, unknown>)
+			: null;
+	for (const [hookName, expectedCommand] of Object.entries(
+		REQUIRED_SIMPLE_GIT_HOOKS,
+	)) {
+		if (!hookObject || hookObject[hookName] !== expectedCommand) {
+			findings.push({
+				path: TOOLING_PACKAGE_JSON_PATH,
+				severity: "critical",
+				description: `simple-git-hooks entry '${hookName}' is missing or out of date`,
+				expected: expectedCommand,
+				actual: hookObject?.[hookName],
+			});
+		}
+	}
+}
+
 function auditBaseDrift(
 	findings: ToolingAuditFinding[],
 	contract: HarnessContract,
@@ -355,6 +645,78 @@ function auditBaseDrift(
 				severity: "critical",
 				description: `Contract drift: missing required binary '${binary}'`,
 				expected: binary,
+			});
+		}
+	}
+
+	const actualDetectors = new Map(
+		actualPolicy.packagePolicy.capabilityDetectors.map((detector) => [
+			detector.capability,
+			new Set(detector.dependencyMarkers),
+		]),
+	);
+	for (const detector of basePolicy.packagePolicy.capabilityDetectors) {
+		const actualMarkers = actualDetectors.get(detector.capability);
+		if (!actualMarkers) {
+			findings.push({
+				path: "toolingPolicy.packagePolicy.capabilityDetectors",
+				severity: "warning",
+				description: `Contract drift: missing capability detector '${detector.capability}'`,
+				expected: detector.capability,
+			});
+			continue;
+		}
+		for (const marker of detector.dependencyMarkers) {
+			if (!actualMarkers.has(marker)) {
+				findings.push({
+					path: "toolingPolicy.packagePolicy.capabilityDetectors",
+					severity: "warning",
+					description: `Contract drift: capability '${detector.capability}' no longer checks dependency marker '${marker}'`,
+					expected: marker,
+				});
+			}
+		}
+	}
+
+	const actualExplicitCapabilities = new Set(
+		actualPolicy.packagePolicy.explicitCapabilities ?? [],
+	);
+	for (const capability of basePolicy.packagePolicy.explicitCapabilities ??
+		[]) {
+		if (!actualExplicitCapabilities.has(capability)) {
+			findings.push({
+				path: "toolingPolicy.packagePolicy.explicitCapabilities",
+				severity: "warning",
+				description: `Contract drift: missing explicit tooling capability '${capability}'`,
+				expected: capability,
+			});
+		}
+	}
+
+	const actualRequiredPackages = new Map(
+		actualPolicy.packagePolicy.requiredPackages.map((requiredPackage) => [
+			requiredPackage.package,
+			requiredPackage,
+		]),
+	);
+	for (const requiredPackage of basePolicy.packagePolicy.requiredPackages) {
+		const actualPackage = actualRequiredPackages.get(requiredPackage.package);
+		if (!actualPackage) {
+			findings.push({
+				path: "toolingPolicy.packagePolicy.requiredPackages",
+				severity: "critical",
+				description: `Contract drift: missing conditional package '${requiredPackage.package}'`,
+				expected: requiredPackage.package,
+			});
+			continue;
+		}
+		if (actualPackage.dependencyType !== requiredPackage.dependencyType) {
+			findings.push({
+				path: `toolingPolicy.packagePolicy.requiredPackages.${requiredPackage.package}`,
+				severity: "warning",
+				description: `Contract drift: conditional package '${requiredPackage.package}' changed dependency type`,
+				expected: requiredPackage.dependencyType,
+				actual: actualPackage.dependencyType,
 			});
 		}
 	}
@@ -437,6 +799,8 @@ async function auditRepository(
 	auditMise(findings, repoPath, contract);
 	auditCodexEnvironment(findings, repoPath, contract);
 	auditMakefile(findings, repoPath, contract);
+	auditPackagePolicy(findings, repoPath, contract);
+	auditLocalHooks(findings, repoPath);
 	if (baseContract) {
 		auditBaseDrift(findings, contract, baseContract);
 	}
