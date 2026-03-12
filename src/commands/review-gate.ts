@@ -308,6 +308,7 @@ function buildBotLoginSet(botLogin?: string): Set<string> {
 		[
 			botLogin,
 			"greptile-apps",
+			"greptile-apps[bot]",
 			"greptile[bot]",
 			"greptileai[bot]",
 			"greptile",

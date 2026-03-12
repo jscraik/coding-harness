@@ -445,8 +445,10 @@ function verifyGreptileWorkflow(repoPath: string): GreptileCheck {
 		const content = readFileSync(workflowPath, "utf-8");
 
 		// Verify workflow triggers
+		// Use word-boundary-like check: trigger must be followed by whitespace (not underscore/word char)
+		// This prevents pull_request_review from matching inside pull_request_review_comment
 		const missingTriggers = REQUIRED_GREPTILE_WORKFLOW_TRIGGERS.filter(
-			(trigger) => !new RegExp(`on:[\\s\\S]*?${trigger}:`).test(content),
+			(trigger) => !new RegExp(`on:[\\s\\S]*?${trigger}:[\\s]`).test(content),
 		);
 		const hasChecksWritePermission = /checks:\s*write/.test(content);
 

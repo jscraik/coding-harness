@@ -30,6 +30,8 @@ import {
 	REQUIRED_CODEX_ACTION_PAIRS,
 	REQUIRED_CODEX_TOOL_ACTIONS,
 	REQUIRED_MAKEFILE_TARGETS,
+	REQUIRED_PREK_HOOKS,
+	REQUIRED_SIMPLE_GIT_HOOKS,
 	REQUIRED_TOOLING_BINARIES,
 	REQUIRED_TOOLING_DOC_TERMS,
 	TOOLING_CODEX_ENVIRONMENT_PATH,
@@ -108,6 +110,8 @@ export interface ProposedChange {
 
 /** Max size for interactive content reads to prevent DoS via large/special files */
 const MAX_INTERACTIVE_FILE_BYTES = 1024 * 1024; // 1 MiB
+const PRE_COMMIT_MAKE_TARGET = REQUIRED_SIMPLE_GIT_HOOKS["pre-commit"];
+const PRE_PUSH_MAKE_TARGET = REQUIRED_SIMPLE_GIT_HOOKS["pre-push"];
 
 // === Schema Migration Types ===
 
@@ -172,6 +176,19 @@ export interface ContractSchema {
 			path?: unknown;
 			requiredTargets?: string[];
 		};
+		packagePolicy?: {
+			packageJsonPath?: unknown;
+			explicitCapabilities?: string[];
+			capabilityDetectors?: Array<{
+				capability?: unknown;
+				dependencyMarkers?: string[];
+			}>;
+			requiredPackages?: Array<{
+				package?: unknown;
+				dependencyType?: unknown;
+				requiredWhenCapabilities?: string[];
+			}>;
+		};
 	};
 	issueTrackingPolicy?: unknown;
 	evidencePolicy?: {
@@ -227,7 +244,7 @@ export type MigrationResultType =
 	| { ok: false; error: InitErrorOutput };
 
 // Current latest schema version (must match template)
-export const CURRENT_SCHEMA_VERSION = "1.4.0";
+export const CURRENT_SCHEMA_VERSION = "1.5.0";
 
 function addSchemaDefaults(contract: ContractSchema): ContractSchema {
 	return {
@@ -338,6 +355,27 @@ function addSchemaDefaults(contract: ContractSchema): ContractSchema {
 											contract.toolingPolicy.makefile.requiredTargets ??
 											DEFAULT_CONTRACT.toolingPolicy?.makefile?.requiredTargets,
 									},
+						packagePolicy:
+							contract.toolingPolicy.packagePolicy === undefined
+								? DEFAULT_CONTRACT.toolingPolicy?.packagePolicy
+								: {
+										...(DEFAULT_CONTRACT.toolingPolicy?.packagePolicy ?? {}),
+										...contract.toolingPolicy.packagePolicy,
+										explicitCapabilities:
+											contract.toolingPolicy.packagePolicy
+												.explicitCapabilities ??
+											DEFAULT_CONTRACT.toolingPolicy?.packagePolicy
+												?.explicitCapabilities,
+										capabilityDetectors:
+											contract.toolingPolicy.packagePolicy
+												.capabilityDetectors ??
+											DEFAULT_CONTRACT.toolingPolicy?.packagePolicy
+												?.capabilityDetectors,
+										requiredPackages:
+											contract.toolingPolicy.packagePolicy.requiredPackages ??
+											DEFAULT_CONTRACT.toolingPolicy?.packagePolicy
+												?.requiredPackages,
+									},
 					} as HarnessContract["toolingPolicy"]),
 		issueTrackingPolicy:
 			contract.issueTrackingPolicy ??
@@ -398,6 +436,17 @@ const MIGRATIONS: Migration[] = [
 			({
 				...addSchemaDefaults(contract),
 				version: "1.4.0",
+			}) as ContractSchema,
+	},
+	{
+		fromVersion: "1.4.0",
+		toVersion: "1.5.0",
+		description:
+			"Inject conditional package policy defaults for UI and ChatGPT Apps SDK repositories",
+		migrate: (contract) =>
+			({
+				...addSchemaDefaults(contract),
+				version: "1.5.0",
 			}) as ContractSchema,
 	},
 ];
@@ -1186,7 +1235,7 @@ const TEMPLATES: Template[] = [
 						blockForcePushes: true,
 						requireLinearHistory: true,
 						requirePullRequest: true,
-						requiredApprovingReviewCount: 0,
+						requiredApprovingReviewCount: 1,
 						dismissStaleReviewsOnPush: true,
 						requireConversationResolution: true,
 						requireCodeOwnerReview: false,
@@ -2077,6 +2126,7 @@ Recommended policy:
 - Pin repo-managed tooling in \`.mise.toml\` where possible.
 - Treat \`scripts/check-environment.sh\` as the local readiness gate for required tooling.
 - Block merge or promotion work when a required CLI is missing rather than silently skipping the corresponding validation lane.
+- For repositories with explicit \`ui\` / \`chatgpt_apps_sdk\` capabilities or matching dependency signals, install \`@brainwav/design-system-guidance\` and treat its absence as a readiness failure.
 
 ## Greptile setup baseline
 
@@ -2379,9 +2429,9 @@ import { execFileSync } from "node:child_process";
 
 const PACKAGE_JSON_PATH = resolve(process.cwd(), "package.json");
 const REQUIRED_HOOKS = {
-	"pre-commit": "pnpm lint && pnpm docs:lint && pnpm typecheck",
-	"commit-msg": "node scripts/validate-commit-msg.js $1",
-	"pre-push": "pnpm test && pnpm audit",
+	"pre-commit": "${PRE_COMMIT_MAKE_TARGET}",
+	"commit-msg": "${REQUIRED_SIMPLE_GIT_HOOKS["commit-msg"]}",
+	"pre-push": "${PRE_PUSH_MAKE_TARGET}",
 };
 const POSTINSTALL_BOOTSTRAP =
 	"command -v simple-git-hooks >/dev/null 2>&1 && simple-git-hooks || true";
@@ -2459,15 +2509,515 @@ function main() {
 		execFileSync("pnpm", ["install"], { stdio: "inherit" });
 		console.info("\\n✓ Git hooks installed and active!");
 		console.info("\\nHooks enabled:");
-		console.info("  • pre-commit: pnpm lint && pnpm docs:lint && pnpm typecheck");
+		console.info("  • pre-commit: ${PRE_COMMIT_MAKE_TARGET}");
 		console.info("  • commit-msg: validates conventional commit format");
-		console.info("  • pre-push: pnpm test && pnpm audit");
+		console.info("  • pre-push: ${PRE_PUSH_MAKE_TARGET}");
 	} catch {
 		console.error("\\n⚠️  Failed to run pnpm install. Run it manually to activate hooks.");
 	}
 }
 
 main();
+`,
+	},
+	{
+		path: "scripts/refresh-diagram-context.sh",
+		render: () => `#!/usr/bin/env bash
+set -euo pipefail
+
+QUIET=0
+FORCE=0
+DRY_RUN=0
+
+while [[ $# -gt 0 ]]; do
+	case "$1" in
+		--quiet)
+			QUIET=1
+			shift
+			;;
+		--force)
+			FORCE=1
+			shift
+			;;
+		--dry-run)
+			DRY_RUN=1
+			shift
+			;;
+		*)
+			echo "Unknown option: $1" >&2
+			exit 2
+			;;
+	esac
+done
+
+ROOT_DIR="$(cd "$(dirname "${"${"}BASH_SOURCE[0]}")/.." && pwd)"
+DIAGRAM_DIR="$ROOT_DIR/.diagram"
+CONTEXT_DIR="$DIAGRAM_DIR/context"
+CONTEXT_FILE="$CONTEXT_DIR/diagram-context.md"
+META_FILE="$CONTEXT_DIR/diagram-context.meta.json"
+LOG_FILE="$CONTEXT_DIR/refresh.log"
+MIN_SECONDS="\${DIAGRAM_REFRESH_MIN_SECONDS:-1800}"
+MAX_FILES="\${DIAGRAM_REFRESH_MAX_FILES:-1000}"
+NOW_EPOCH="$(date +%s)"
+
+mkdir -p "$DIAGRAM_DIR" "$CONTEXT_DIR"
+
+log() {
+	local message="$1"
+	printf '[%s] %s\\n' "$(date -u +"%Y-%m-%dT%H:%M:%SZ")" "$message" >> "$LOG_FILE"
+	if [[ "$QUIET" -ne 1 ]]; then
+		printf '%s\\n' "$message"
+	fi
+}
+
+if [[ "$DRY_RUN" -eq 1 ]]; then
+	log "dry-run: would refresh diagrams into $DIAGRAM_DIR and context at $CONTEXT_FILE"
+	exit 0
+fi
+
+if [[ "$FORCE" -ne 1 && -f "$META_FILE" ]]; then
+	last_epoch="$(jq -r '.last_generated_epoch // 0' "$META_FILE" 2>/dev/null || echo 0)"
+	if [[ "$last_epoch" =~ ^[0-9]+$ ]]; then
+		age=$((NOW_EPOCH - last_epoch))
+		if (( age < MIN_SECONDS )); then
+			log "skip: cooldown active (\${age}s < \${MIN_SECONDS}s)"
+			exit 0
+		fi
+	fi
+fi
+
+if ! command -v diagram >/dev/null 2>&1; then
+	log "error: diagram CLI is not available"
+	exit 1
+fi
+
+TRUNC_DIR=".tmp-diagram-refresh-XXXXXX"
+TMP_DIR="$(mktemp -d "$ROOT_DIR/${"${"}TRUNC_DIR}")"
+TMP_BASENAME="$(basename "$TMP_DIR")"
+EXCLUDE_PATTERNS="node_modules/**,.git/**,dist/**,${"${"}TMP_BASENAME}/**"
+trap 'rm -rf "$TMP_DIR"' EXIT
+
+pushd "$ROOT_DIR" >/dev/null
+if [[ "$QUIET" -eq 1 ]]; then
+	pnpm exec diagram all . --output-dir "$TMP_BASENAME/diagrams" --exclude "$EXCLUDE_PATTERNS" --max-files "$MAX_FILES" >/dev/null 2>&1
+else
+	pnpm exec diagram all . --output-dir "$TMP_BASENAME/diagrams" --exclude "$EXCLUDE_PATTERNS" --max-files "$MAX_FILES"
+fi
+popd >/dev/null
+
+if ! ls "$TMP_DIR/diagrams"/*.mmd >/dev/null 2>&1; then
+	log "error: no .mmd files produced"
+	exit 1
+fi
+
+MANIFEST_PATH="$TMP_DIR/diagrams/manifest.json"
+ROOT_DIR="$ROOT_DIR" TMP_DIR="$TMP_DIR" MANIFEST_PATH="$MANIFEST_PATH" node <<'NODE'
+const { createHash } = require("node:crypto");
+const { readdirSync, readFileSync, writeFileSync } = require("node:fs");
+const { join } = require("node:path");
+
+const rootDir = process.env.ROOT_DIR;
+const tmpDir = process.env.TMP_DIR;
+const manifestPath = process.env.MANIFEST_PATH;
+
+if (!rootDir || !tmpDir || !manifestPath) {
+  throw new Error("diagram manifest generation requires ROOT_DIR, TMP_DIR, and MANIFEST_PATH");
+}
+
+const diagramsDir = join(tmpDir, "diagrams");
+const ensureTrailingNewline = (content) =>
+  content.endsWith("\\n") ? content : \`\${content}\\n\`;
+const stableId = (prefix, value) => {
+  const slug = value
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "_")
+    .replace(/^_+|_+$/g, "")
+    .slice(0, 48) || prefix;
+  const digest = createHash("sha1").update(value).digest("hex").slice(0, 8);
+  return \`\${prefix}_\${slug}_\${digest}\`;
+};
+
+const parseArchitecture = (content) => {
+  const lines = content.trimEnd().split(/\\r?\\n/);
+  const subgraphs = [];
+  let currentSubgraph = null;
+
+  for (const line of lines) {
+    const subgraphMatch = line.match(/^  subgraph (\\S+)\\["(.+)"\\]$/);
+    if (subgraphMatch) {
+      currentSubgraph = {
+        rawId: subgraphMatch[1],
+        label: subgraphMatch[2],
+        nodes: [],
+      };
+      subgraphs.push(currentSubgraph);
+      continue;
+    }
+
+    if (line === "  end") {
+      currentSubgraph = null;
+      continue;
+    }
+
+    const nodeMatch = line.match(/^    (\\S+)\\["(.+)"\\]$/);
+    if (nodeMatch && currentSubgraph) {
+      currentSubgraph.nodes.push({
+        rawId: nodeMatch[1],
+        label: nodeMatch[2],
+      });
+    }
+  }
+
+  return subgraphs;
+};
+
+const buildArchitecture = (subgraphs) => {
+  const nodeMap = new Map();
+  const lines = ["graph TD"];
+  const sortedSubgraphs = [...subgraphs].sort((left, right) =>
+    left.label.localeCompare(right.label),
+  );
+
+  for (const subgraph of sortedSubgraphs) {
+    const subgraphId = stableId("sg", subgraph.label);
+    lines.push(\`  subgraph \${subgraphId}["\${subgraph.label}"]\`);
+    const sortedNodes = [...subgraph.nodes].sort((left, right) =>
+      left.label.localeCompare(right.label),
+    );
+    for (const node of sortedNodes) {
+      const nodeId = stableId("node", \`\${subgraph.label}/\${node.label}\`);
+      nodeMap.set(node.rawId, { canonicalId: nodeId, label: node.label });
+      lines.push(\`    \${nodeId}["\${node.label}"]\`);
+    }
+    lines.push("  end");
+  }
+
+  return {
+    content: ensureTrailingNewline(lines.join("\\n")),
+    nodeMap,
+  };
+};
+
+const buildDependency = (content, nodeMap) => {
+  const lines = content.trimEnd().split(/\\r?\\n/);
+  if (lines.length === 0) {
+    return ensureTrailingNewline(content);
+  }
+
+  const externalNodeMap = new Map();
+  const dependencyEdges = [];
+  const styleEntries = [];
+
+  for (const line of lines.slice(1)) {
+    const edgeMatch = line.match(/^  (\\S+)\\["(.+)"\\] --> (\\S+)$/);
+    if (edgeMatch) {
+      const [, rawSourceId, sourceLabel, rawTargetId] = edgeMatch;
+      const target = nodeMap.get(rawTargetId) ?? {
+        canonicalId: stableId("node", rawTargetId),
+        label: rawTargetId,
+      };
+      const sourceCanonicalId =
+        externalNodeMap.get(rawSourceId) ?? stableId("ext", sourceLabel);
+      externalNodeMap.set(rawSourceId, sourceCanonicalId);
+      dependencyEdges.push({
+        line: \`  \${sourceCanonicalId}["\${sourceLabel}"] --> \${target.canonicalId}\`,
+        sortKey: \`\${sourceLabel}::\${target.label}\`,
+      });
+      continue;
+    }
+
+    const styleMatch = line.match(/^  style (\\S+) (.+)$/);
+    if (styleMatch) {
+      const [, rawNodeId, styleSpec] = styleMatch;
+      const canonicalId = externalNodeMap.get(rawNodeId);
+      if (canonicalId) {
+        styleEntries.push({
+          line: \`  style \${canonicalId} \${styleSpec}\`,
+          sortKey: canonicalId,
+        });
+      }
+    }
+  }
+
+  return ensureTrailingNewline(
+    [
+      "graph LR",
+      ...dependencyEdges
+        .sort((left, right) => left.sortKey.localeCompare(right.sortKey))
+        .map((entry) => entry.line),
+      ...styleEntries
+        .sort((left, right) => left.sortKey.localeCompare(right.sortKey))
+        .map((entry) => entry.line),
+    ].join("\\n"),
+  );
+};
+
+const diagramFiles = readdirSync(diagramsDir).filter((entry) => entry.endsWith(".mmd"));
+const architecturePath = join(diagramsDir, "architecture.mmd");
+const dependencyPath = join(diagramsDir, "dependency.mmd");
+
+if (diagramFiles.includes("architecture.mmd")) {
+  const architectureContent = readFileSync(architecturePath, "utf8");
+  const { content: canonicalArchitecture, nodeMap } = buildArchitecture(
+    parseArchitecture(architectureContent),
+  );
+  writeFileSync(architecturePath, canonicalArchitecture);
+
+  if (diagramFiles.includes("dependency.mmd")) {
+    const dependencyContent = readFileSync(dependencyPath, "utf8");
+    writeFileSync(dependencyPath, buildDependency(dependencyContent, nodeMap));
+  }
+}
+
+for (const file of diagramFiles) {
+  if (file === "architecture.mmd" || file === "dependency.mmd") {
+    continue;
+  }
+  const filePath = join(diagramsDir, file);
+  writeFileSync(filePath, ensureTrailingNewline(readFileSync(filePath, "utf8").trimEnd()));
+}
+
+const diagrams = readdirSync(diagramsDir)
+  .filter((file) => file.endsWith(".mmd"))
+  .sort()
+	.map((file) => {
+		const content = readFileSync(join(diagramsDir, file), "utf8");
+		return {
+			type: file.replace(/\\.mmd$/, ""),
+			file,
+			outputPath: \`.diagram/\${file}\`,
+			lines: content.split(/\\r?\\n/).length,
+			bytes: Buffer.byteLength(content),
+			isPlaceholder:
+				/placeholder/i.test(content) ||
+				/not enough/i.test(content) ||
+				/limited to/i.test(content),
+		};
+	});
+
+writeFileSync(
+	manifestPath,
+	\`\${JSON.stringify(
+		{
+			generatedAt: new Date().toISOString(),
+			rootPath: rootDir,
+			diagramDir: ".diagram",
+			diagrams,
+		},
+		null,
+		2,
+	)}\\n\`,
+);
+NODE
+
+TMP_CONTEXT="$TMP_DIR/diagram-context.md"
+{
+	echo "# Diagram Context Pack"
+	echo
+	echo "Generated: $(date -u +"%Y-%m-%dT%H:%M:%SZ")"
+	echo
+	for file in "$TMP_DIR"/diagrams/*.mmd; do
+		name="$(basename "$file" .mmd)"
+		echo "## \${name}"
+		echo
+		echo '\`\`\`mermaid'
+		cat "$file"
+		echo
+		echo '\`\`\`'
+		echo
+	done
+} > "$TMP_CONTEXT"
+
+CONTEXT_SHA="$(shasum -a 256 "$TMP_CONTEXT" | awk '{print $1}')"
+GIT_HEAD="$(git -C "$ROOT_DIR" rev-parse --short HEAD 2>/dev/null || echo "unknown")"
+DIAGRAM_COUNT="$(ls "$TMP_DIR/diagrams"/*.mmd | wc -l | tr -d ' ')"
+CHANGED=true
+
+if [[ -f "$CONTEXT_FILE" ]] && cmp -s "$TMP_CONTEXT" "$CONTEXT_FILE"; then
+	CHANGED=false
+fi
+
+if [[ -f "$DIAGRAM_DIR/manifest.json" ]] && ! cmp -s "$TMP_DIR/diagrams/manifest.json" "$DIAGRAM_DIR/manifest.json"; then
+	CHANGED=true
+fi
+
+rm -f "$DIAGRAM_DIR"/*.mmd
+cp "$TMP_DIR"/diagrams/*.mmd "$DIAGRAM_DIR/"
+cp "$TMP_DIR/diagrams/manifest.json" "$DIAGRAM_DIR/manifest.json"
+cp "$TMP_CONTEXT" "$CONTEXT_FILE"
+
+jq --tab -n \\
+	--arg generated_at "$(date -u +"%Y-%m-%dT%H:%M:%SZ")" \\
+	--arg git_head "$GIT_HEAD" \\
+	--arg context_sha256 "$CONTEXT_SHA" \\
+	--argjson diagram_count "$DIAGRAM_COUNT" \\
+	--argjson last_generated_epoch "$NOW_EPOCH" \\
+	--argjson min_interval_seconds "$MIN_SECONDS" \\
+	--arg changed "$CHANGED" \\
+	'{
+		schema_version: 1,
+		generated_at: $generated_at,
+		git_head: $git_head,
+		context_sha256: $context_sha256,
+		diagram_count: $diagram_count,
+		last_generated_epoch: $last_generated_epoch,
+		min_interval_seconds: $min_interval_seconds,
+		changed: ($changed == "true")
+	}' > "$META_FILE"
+
+log "ok: refreshed \${DIAGRAM_COUNT} diagrams (changed=\${CHANGED})"
+`,
+	},
+	{
+		path: "scripts/check-diagram-freshness.sh",
+		render: () => `#!/usr/bin/env bash
+set -euo pipefail
+
+SCRIPT_DIR="$(cd -- "$(dirname -- "${"${"}BASH_SOURCE[0]}")" && pwd)"
+REPO_ROOT="$(cd -- "$SCRIPT_DIR/.." && pwd)"
+
+TRACKED_ARTIFACT_PATHS=(
+	".diagram"
+	".diagram/context/diagram-context.md"
+	".diagram/context/diagram-context.meta.json"
+)
+
+is_ignored_change() {
+	local changed_path="$1"
+
+	case "$changed_path" in
+		src/*.test.ts|src/*.spec.ts|src/*.test.js|src/*.spec.js)
+			return 0
+			;;
+		*)
+			return 1
+			;;
+	esac
+}
+
+is_architecture_sensitive_change() {
+	local changed_path="$1"
+
+	case "$changed_path" in
+		package.json|tsconfig.json|.diagramrc|scripts/refresh-diagram-context.sh|scripts/check-diagram-freshness.sh)
+			return 0
+			;;
+		.diagram/*)
+			return 0
+			;;
+		src/*)
+			if is_ignored_change "$changed_path"; then
+				return 1
+			fi
+			return 0
+			;;
+		*)
+			return 1
+			;;
+	esac
+}
+
+snapshot_artifacts() {
+	local path
+	for path in "\${TRACKED_ARTIFACT_PATHS[@]}"; do
+		if [[ -d "$REPO_ROOT/$path" ]]; then
+			while IFS= read -r file; do
+				local rel_path="\${file#$REPO_ROOT/}"
+				local checksum
+				checksum="$(normalized_checksum "$file" "$rel_path")"
+				printf '%s %s\n' "$rel_path" "$checksum"
+			done < <(find "$REPO_ROOT/$path" -type f | sort)
+		elif [[ -f "$REPO_ROOT/$path" ]]; then
+			local checksum
+			checksum="$(normalized_checksum "$REPO_ROOT/$path" "$path")"
+			printf '%s %s\n' "$path" "$checksum"
+		fi
+	done
+}
+
+normalized_checksum() {
+	local file="$1"
+	local rel_path="$2"
+
+	case "$rel_path" in
+		*/diagram-context.md)
+			sed '/^Generated: /d' "$file" | shasum -a 256 | awk '{print $1}'
+			;;
+		*/diagram-context.meta.json)
+			jq -c 'del(.generated_at, .last_generated_epoch, .changed, .context_sha256)' "$file" | shasum -a 256 | awk '{print $1}'
+			;;
+		*/manifest.json)
+			jq -c 'del(.generatedAt)' "$file" | shasum -a 256 | awk '{print $1}'
+			;;
+		*)
+			shasum -a 256 "$file" | awk '{print $1}'
+			;;
+	esac
+}
+
+resolve_diff_base() {
+	if git -C "$REPO_ROOT" rev-parse --verify '@{upstream}' >/dev/null 2>&1; then
+		git -C "$REPO_ROOT" merge-base HEAD '@{upstream}'
+		return 0
+	fi
+
+	if git -C "$REPO_ROOT" rev-parse --verify main >/dev/null 2>&1; then
+		git -C "$REPO_ROOT" merge-base HEAD main
+		return 0
+	fi
+
+	if git -C "$REPO_ROOT" rev-parse --verify HEAD^ >/dev/null 2>&1; then
+		git -C "$REPO_ROOT" rev-parse HEAD^
+		return 0
+	fi
+
+	return 1
+}
+
+collect_changed_paths() {
+	local base
+	if base="$(resolve_diff_base)"; then
+		{
+			git -C "$REPO_ROOT" diff --name-only "$base...HEAD"
+			git -C "$REPO_ROOT" diff --name-only
+			git -C "$REPO_ROOT" diff --cached --name-only
+		} | awk 'NF { print }' | sort -u
+	else
+		{
+			git -C "$REPO_ROOT" diff --name-only
+			git -C "$REPO_ROOT" diff --cached --name-only
+		} | awk 'NF { print }' | sort -u
+	fi
+}
+
+should_refresh=0
+while IFS= read -r changed_path; do
+	[[ -n "$changed_path" ]] || continue
+	if is_architecture_sensitive_change "$changed_path"; then
+		should_refresh=1
+		break
+	fi
+done < <(collect_changed_paths)
+
+if [[ "$should_refresh" -ne 1 ]]; then
+	echo "Diagram freshness check skipped: no architecture-sensitive implementation paths changed."
+	exit 0
+fi
+
+echo "Refreshing architecture diagrams for changed sensitive paths..."
+before_snapshot="$(snapshot_artifacts)"
+bash "$REPO_ROOT/scripts/refresh-diagram-context.sh" --force --quiet
+after_snapshot="$(snapshot_artifacts)"
+
+if [[ "$before_snapshot" != "$after_snapshot" ]]; then
+	echo "Error: architecture diagram artifacts are stale after refresh."
+	echo "Changed tracked files:"
+	git -C "$REPO_ROOT" diff --name-only -- "\${TRACKED_ARTIFACT_PATHS[@]}"
+	echo "Fix: run 'bash scripts/refresh-diagram-context.sh --force' and commit the updated artifacts."
+	exit 1
+fi
+
+echo "Diagram freshness check passed."
 `,
 	},
 	{
@@ -2599,21 +3149,14 @@ regexes = [
 	},
 	{
 		path: "prek.toml",
-		render: (pm) => {
-			const lintCmd = pm === "npm" ? "npm run lint" : `${pm} lint`;
-			const docsLintCmd =
-				pm === "npm" ? "npm run docs:lint" : `${pm} docs:lint`;
-			const typecheckCmd =
-				pm === "npm" ? "npm run typecheck" : `${pm} typecheck`;
-			const testCmd = pm === "npm" ? "npm run test" : `${pm} test`;
-			const auditCmd = pm === "npm" ? "npm run audit" : `${pm} audit`;
+		render: () => {
 			return `# Prek configuration (Rust-based pre-commit replacement)
 # Install prek: mise install cargo-prek || cargo install prek
 # Run: prek install && prek run --all-files
 
 [hooks]
-pre-commit = ["${lintCmd}", "${docsLintCmd}", "${typecheckCmd}"]
-pre-push = ["${testCmd}", "${auditCmd}"]
+pre-commit = ${JSON.stringify(REQUIRED_PREK_HOOKS["pre-commit"])}
+pre-push = ${JSON.stringify(REQUIRED_PREK_HOOKS["pre-push"])}
 
 [tools]
 biome = "1.9.4"
@@ -2633,7 +3176,12 @@ CLAUDE_APPROVAL_POSTURE = "require"
 	},
 	{
 		path: "scripts/check-environment.sh",
-		render: () => `#!/usr/bin/env bash
+		render: () => {
+			const packagePolicy = DEFAULT_CONTRACT.toolingPolicy?.packagePolicy;
+			const explicitCapabilities = packagePolicy?.explicitCapabilities ?? [];
+			const capabilityDetectors = packagePolicy?.capabilityDetectors ?? [];
+			const requiredPackages = packagePolicy?.requiredPackages ?? [];
+			return `#!/usr/bin/env bash
 # Local environment preflight (strict)
 # Fails fast when required tooling is missing.
 
@@ -2646,6 +3194,8 @@ CONTRACT_PATH="$REPO_ROOT/harness.contract.json"
 	MISE_PATH="$REPO_ROOT/.mise.toml"
 	CODEX_ENVIRONMENT_PATH="$REPO_ROOT/.codex/environments/environment.toml"
 	MAKEFILE_PATH="$REPO_ROOT/Makefile"
+	PREK_CONFIG_PATH="$REPO_ROOT/prek.toml"
+	PACKAGE_JSON_PATH="$REPO_ROOT/${packagePolicy?.packageJsonPath ?? "package.json"}"
 	TOOLING_DOC_PATH="\${TOOLING_DOC_PATH:-$HOME/dev/config/codex/instructions/tooling.md}"
 
 if [[ ! -f "$CONTRACT_PATH" ]]; then
@@ -2672,6 +3222,22 @@ fi
 		echo "Error: missing required Makefile at $MAKEFILE_PATH"
 		exit 1
 	fi
+
+	if [[ ! -f "$PREK_CONFIG_PATH" ]]; then
+		echo "Error: missing required prek config at $PREK_CONFIG_PATH"
+		exit 1
+	fi
+
+if ! command -v mise >/dev/null 2>&1; then
+	echo "Error: required binary 'mise' is not installed or not on PATH"
+	exit 1
+fi
+
+# Bootstrap the full repo-managed environment so hook validation reflects the
+# pinned runtime versions and required approval posture, not only the caller
+# shell's PATH.
+eval "$(mise activate bash)"
+export CLAUDE_APPROVAL_POSTURE="\${CLAUDE_APPROVAL_POSTURE:-require}"
 
 required_mise_tools=(${PROJECT_MISE_REQUIRED_TOOLS.map(([tool]) => `"${tool}"`).join(" ")})
 for tool in "\${required_mise_tools[@]}"; do
@@ -2718,13 +3284,124 @@ fi
 		fi
 	done
 
-		required_make_targets=(${REQUIRED_MAKEFILE_TARGETS.map((target) => `"${target}"`).join(" ")})
-		for target in "\${required_make_targets[@]}"; do
-			if ! rg -q "^\${target}:" "$MAKEFILE_PATH"; then
-				echo "Error: required Makefile target '\$target' is missing from $MAKEFILE_PATH"
+	required_make_targets=(${REQUIRED_MAKEFILE_TARGETS.map((target) => `"${target}"`).join(" ")})
+	for target in "\${required_make_targets[@]}"; do
+		if ! rg -q "^\${target}:" "$MAKEFILE_PATH"; then
+			echo "Error: required Makefile target '\$target' is missing from $MAKEFILE_PATH"
+			exit 1
+		fi
+	done
+
+	required_prek_hooks=(${Object.entries(REQUIRED_PREK_HOOKS)
+		.map(([hook, commands]) => `"${hook}|${commands.join(" && ")}"`)
+		.join(" ")})
+	for hook_spec in "\${required_prek_hooks[@]}"; do
+		hook_name="\${hook_spec%%|*}"
+		hook_command="\${hook_spec#*|}"
+		if ! rg -Fq "\${hook_name} = [\"\${hook_command}\"]" "$PREK_CONFIG_PATH"; then
+			echo "Error: required prek hook '\$hook_name' is missing or out of date in $PREK_CONFIG_PATH"
+			exit 1
+		fi
+	done
+
+	if [[ -f "$PACKAGE_JSON_PATH" ]]; then
+		required_simple_git_hooks=(${Object.entries(REQUIRED_SIMPLE_GIT_HOOKS)
+			.map(([hook, command]) => `"${hook}|${command.replaceAll("$", "\\$")}"`)
+			.join(" ")})
+		for hook_spec in "\${required_simple_git_hooks[@]}"; do
+			hook_name="\${hook_spec%%|*}"
+			hook_command="\${hook_spec#*|}"
+			if ! jq -e --arg hook_name "$hook_name" --arg hook_command "$hook_command" '
+				.["simple-git-hooks"][$hook_name] == $hook_command
+			' "$PACKAGE_JSON_PATH" >/dev/null; then
+				echo "Error: simple-git-hooks entry '\$hook_name' is missing or out of date in $PACKAGE_JSON_PATH"
+				echo "Fix: run node scripts/setup-git-hooks.js"
 				exit 1
 			fi
 		done
+
+		has_package_marker() {
+			local marker="$1"
+			jq -e --arg marker "$marker" '
+				((.dependencies // {}) + (.devDependencies // {})) | has($marker)
+			' "$PACKAGE_JSON_PATH" >/dev/null
+		}
+
+		repo_capabilities=()
+		explicit_capabilities=(${explicitCapabilities.map((capability) => `"${capability}"`).join(" ")})
+		for capability in "\${explicit_capabilities[@]}"; do
+			[[ -n "$capability" ]] || continue
+			repo_capabilities+=("$capability")
+		done
+${capabilityDetectors
+	.map(
+		(
+			detector,
+		) => `		${detector.capability}_markers=(${detector.dependencyMarkers.map((marker) => `"${marker}"`).join(" ")})
+		for marker in "\${${detector.capability}_markers[@]}"; do
+			if has_package_marker "$marker"; then
+				repo_capabilities+=("${detector.capability}")
+				break
+			fi
+		done`,
+	)
+	.join("\n\n")}
+
+		has_capability() {
+			local wanted="$1"
+			for capability in "\${repo_capabilities[@]}"; do
+				if [[ "$capability" == "$wanted" ]]; then
+					return 0
+				fi
+			done
+			return 1
+		}
+
+		has_required_package() {
+			local pkg="$1"
+			local dependency_type="$2"
+			case "$dependency_type" in
+				dependencies)
+					jq -e --arg pkg "$pkg" '(.dependencies // {}) | has($pkg)' "$PACKAGE_JSON_PATH" >/dev/null
+					;;
+				devDependencies)
+					jq -e --arg pkg "$pkg" '(.devDependencies // {}) | has($pkg)' "$PACKAGE_JSON_PATH" >/dev/null
+					;;
+				either)
+					jq -e --arg pkg "$pkg" '((.dependencies // {}) | has($pkg)) or ((.devDependencies // {}) | has($pkg))' "$PACKAGE_JSON_PATH" >/dev/null
+					;;
+				*)
+					return 1
+					;;
+			esac
+		}
+
+		required_package_specs=(${requiredPackages
+			.map(
+				(requiredPackage) =>
+					`"${requiredPackage.package}|${requiredPackage.dependencyType}|${requiredPackage.requiredWhenCapabilities.join(",")}"`,
+			)
+			.join(" ")})
+		for spec in "\${required_package_specs[@]}"; do
+			pkg="\${spec%%|*}"
+			rest="\${spec#*|}"
+			dependency_type="\${rest%%|*}"
+			required_caps_csv="\${rest#*|}"
+			should_apply=0
+			IFS=',' read -r -a required_caps <<< "$required_caps_csv"
+			for capability in "\${required_caps[@]}"; do
+				if has_capability "$capability"; then
+					should_apply=1
+					break
+				fi
+		done
+			if [[ "$should_apply" -eq 1 ]] && ! has_required_package "$pkg" "$dependency_type"; then
+				echo "Error: required package '$pkg' is missing from $PACKAGE_JSON_PATH for explicit or detected UI/App SDK capabilities"
+				echo "Fix: npm i $pkg"
+				exit 1
+			fi
+		done
+	fi
 
 	mkdir -p "$REPO_ROOT/artifacts/policy"
 
@@ -2736,7 +3413,8 @@ pnpm exec tsx src/cli.ts check-environment \\
 
 jq -e '.passed == true' "$ATTESTATION_PATH" >/dev/null
 echo "Environment check passed (attestation: $ATTESTATION_PATH)"
-`,
+`;
+		},
 	},
 	{
 		path: CODEX_ENVIRONMENT_TEMPLATE_PATH,
@@ -2761,7 +3439,7 @@ echo "Environment check passed (attestation: $ATTESTATION_PATH)"
 		render: () => `# Harness Development Makefile
 # Run \`make help\` to see available commands
 
-.PHONY: help install setup hooks dev build lint docs-lint fmt typecheck test check audit secrets security clean reset ci diagrams env-check
+.PHONY: help install setup hooks hooks-pre-commit hooks-pre-push diagrams-check dev build lint docs-lint fmt typecheck test check audit secrets security clean reset ci diagrams env-check
 
 # Default target
 help: ## Show this help message
@@ -2779,6 +3457,22 @@ setup: install hooks ## Full setup: install deps and configure git hooks
 
 hooks: ## Setup git hooks
 	node scripts/setup-git-hooks.js
+
+hooks-pre-commit: ## Run local pre-commit gates before creating a commit
+	pnpm lint
+	pnpm docs:lint
+	pnpm typecheck
+
+hooks-pre-push: ## Run local pre-push governance gates before pushing
+	pnpm exec tsx src/cli.ts docs-gate --mode required --json
+	@bash ./scripts/check-diagram-freshness.sh
+	pnpm exec tsx src/cli.ts tooling-audit --path . --json
+	@bash ./scripts/check-environment.sh
+	pnpm test
+	pnpm audit
+
+diagrams-check: ## Refresh architecture diagrams when sensitive paths change and fail on drift
+	@bash ./scripts/check-diagram-freshness.sh
 
 # === Development ===
 
@@ -2835,12 +3529,12 @@ ci: ## Run CI-equivalent local checks
 # === Diagrams ===
 
 diagrams: ## Generate architecture diagrams
-	pnpm exec diagram all . --output-dir .diagram
+	@bash ./scripts/refresh-diagram-context.sh --force
 
 # === Environment ===
 
 env-check: ## Check environment policy envelope
-	@./scripts/check-environment.sh
+	@bash ./scripts/check-environment.sh
 `,
 	},
 ];

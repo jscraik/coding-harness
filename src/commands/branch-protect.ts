@@ -709,15 +709,7 @@ async function resolveRepositoryVisibility(
 	client: GitHubClient,
 ): Promise<string | undefined> {
 	try {
-		const resolver = (
-			client as GitHubClient & {
-				getRepositoryVisibility?: () => Promise<string>;
-			}
-		).getRepositoryVisibility;
-		if (typeof resolver !== "function") {
-			return undefined;
-		}
-		return await resolver.call(client);
+		return await client.getRepositoryVisibility();
 	} catch {
 		return undefined;
 	}
@@ -731,19 +723,14 @@ async function applyRepositoryMergeSettings(
 		allowRebaseMerge: boolean;
 	},
 ): Promise<void> {
-	const updater = (
-		client as GitHubClient & {
-			updateRepositoryMergeSettings?: (settings: {
-				allowMergeCommit: boolean;
-				allowSquashMerge: boolean;
-				allowRebaseMerge: boolean;
-			}) => Promise<void>;
+	try {
+		await client.updateRepositoryMergeSettings(settings);
+	} catch (error) {
+		if (error instanceof TypeError) {
+			return;
 		}
-	).updateRepositoryMergeSettings;
-	if (typeof updater !== "function") {
-		return;
+		throw error;
 	}
-	await updater.call(client, settings);
 }
 
 function refSelectorMatches(
