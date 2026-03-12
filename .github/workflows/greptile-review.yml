@@ -33,8 +33,10 @@ jobs:
         (
           github.event.comment.user.login == 'greptile[bot]' ||
           github.event.comment.user.login == 'greptileai[bot]' ||
+          github.event.comment.user.login == 'greptile-apps[bot]' ||
           github.event.comment.user.login == 'greptile' ||
-          github.event.comment.user.login == 'greptileai'
+          github.event.comment.user.login == 'greptileai' ||
+          github.event.comment.user.login == 'greptile-apps'
         )
       )
     steps:
@@ -126,8 +128,10 @@ jobs:
             const greptileLogins = new Set([
               'greptile[bot]',
               'greptileai[bot]',
+              'greptile-apps[bot]',
               'greptile',
-              'greptileai'
+              'greptileai',
+              'greptile-apps'
             ]);
 
             const greptileComments = comments.data
