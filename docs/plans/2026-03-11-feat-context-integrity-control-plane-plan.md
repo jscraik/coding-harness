@@ -1,7 +1,7 @@
 ---
 title: feat: Context Integrity Control Plane
 type: feat
-status: active
+status: completed
 date: 2026-03-11
 plan_id: feat-context-integrity-control-plane
 origin: docs/brainstorms/2026-03-11-context-integrity-control-plane-brainstorm.md
@@ -27,6 +27,7 @@ spec: docs/specs/2026-03-11-feat-context-integrity-control-plane-spec.md
 ## Enhancement Summary
 
 **Deepened on:** 2026-03-11  
+**Closed on:** 2026-03-12  
 **Key areas improved:** bootstrap and migration detail, checkpoint ownership, context-health execution splits, cross-run join integrity, and rollout/demotion readiness.
 
 - Splits planning cleanly between implementation-complete delivery and promotion-ready rollout evidence so advisory telemetry does not get mistaken for enforcement readiness.
@@ -804,17 +805,17 @@ Checkpoint gate:
 
 ## Acceptance Checklist
 
-- [ ] `contextIntegrityPolicy` is typed, validated, defaulted, and bootstrap-safe
-- [ ] retrieval discovery covers the authoritative source inventory named in the spec
-- [ ] `context` and `search` expose authority-aware additive metadata without breaking existing required fields
-- [ ] `docs-gate` emits real contradiction findings, non-placeholder contradiction counts, and contradiction-history records
-- [ ] `context-health` computes scorecards only from persisted typed producer artifacts
-- [ ] measurement-window, dedupe, and denominator rules are covered by automated tests
-- [ ] join-integrity failures degrade or block explicitly rather than being silently ignored
-- [ ] `init --update` can scaffold or migrate `contextIntegrityPolicy` safely
-- [ ] operator docs and rollout guidance describe the shipped behavior accurately
-- [ ] downgrade and demotion controls are verified before any promotion decision
-- [ ] the implementation passes targeted tests plus the full validation bundle
+- [x] `contextIntegrityPolicy` is typed, validated, defaulted, and bootstrap-safe. Refs: `src/lib/contract/types.ts`, `src/lib/contract/validator.ts`, `src/commands/init.ts`, `src/commands/init.test.ts`
+- [x] retrieval discovery covers the authoritative source inventory named in the spec. Refs: `src/lib/context-integrity/sources.ts`, `src/commands/index-context.ts`, `src/commands/context-integrity-acceptance.test.ts`
+- [x] `context` and `search` expose authority-aware additive metadata without breaking existing required fields. Refs: `src/lib/context-compound/types.ts`, `src/lib/context-compound/lexical-fallback.ts`, `src/commands/context.ts`, `src/commands/search.ts`, `src/commands/context-integrity-acceptance.test.ts`
+- [x] `docs-gate` emits real contradiction findings, non-placeholder contradiction counts, and contradiction-history records. Refs: `src/commands/docs-gate.ts`, `src/commands/docs-gate.test.ts`, `artifacts/context-integrity/contradiction-history.jsonl`
+- [x] `context-health` computes scorecards only from persisted typed producer artifacts. Refs: `src/commands/context-health.ts`, `src/commands/context-health.test.ts`
+- [x] measurement-window, dedupe, and denominator rules are covered by automated tests. Refs: `src/commands/context-integrity-acceptance.test.ts`, `src/commands/context-health.test.ts`
+- [x] join-integrity failures degrade or block explicitly rather than being silently ignored. Refs: `src/lib/pilot-evaluation/control-plane.ts`, `src/lib/pilot-evaluation/control-plane.test.ts`
+- [x] `init --update` can scaffold or migrate `contextIntegrityPolicy` safely. Refs: `src/commands/init.ts`, `src/commands/init.test.ts`, `harness.contract.json`
+- [x] operator docs and rollout guidance describe the shipped behavior accurately. Refs: `docs/agents/04-validation.md`, `docs/agents/08-release-and-change-control.md`, `docs/agents/14-docs-gate-rollout.md`, `docs/agents/15-context-integrity-compact.md`, `FORJAMIE.md`
+- [x] downgrade and demotion controls are verified before any promotion decision. Refs: `src/lib/pilot-evaluation/control-plane.test.ts`, `docs/agents/08-release-and-change-control.md`
+- [x] the implementation passes targeted tests plus the full validation bundle. Refs: `pnpm test src/commands/docs-gate.test.ts src/commands/context-health.test.ts src/commands/context-integrity-acceptance.test.ts src/lib/pilot-evaluation/control-plane.test.ts src/commands/init.test.ts`, `pnpm test:deep`
 
 ## Sources & References
 

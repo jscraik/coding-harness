@@ -494,6 +494,9 @@ function classifyChanges(
 	];
 	const workflowAuthorityDocs = new Set([
 		"docs/agents/01-instruction-map.md",
+		"docs/agents/04-validation.md",
+		"docs/agents/08-release-and-change-control.md",
+		"docs/agents/10-agent-testing-gates.md",
 		"docs/agents/13-linear-production-workflow.md",
 		"docs/agents/14-docs-gate-rollout.md",
 		"docs/agents/15-context-integrity-compact.md",

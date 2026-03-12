@@ -19,7 +19,7 @@ Every change must be checked by the smallest gate needed for risk, then by the f
 Enforces documentation parity for governance-sensitive changes.
 
 - **Trigger**: Pull requests and merge queue events.
-- **Behavior**: Classifies changed files into impact categories; verifies required docs exist, including tracked compound-workflow artifacts under `docs/adr/`, `docs/specs/`, `docs/plans/`, and `docs/brainstorms/`.
+- **Behavior**: Classifies changed files into impact categories; verifies required docs exist, including tracked workflow-authority docs such as `docs/agents/01-instruction-map.md`, `docs/agents/04-validation.md`, `docs/agents/08-release-and-change-control.md`, `docs/agents/10-agent-testing-gates.md`, `docs/agents/13-linear-production-workflow.md`, `docs/agents/14-docs-gate-rollout.md`, `docs/agents/15-context-integrity-compact.md`, and `docs/agents/16-linear-production-compact.md`, plus tracked compound-workflow artifacts under `docs/adr/`, `docs/specs/`, `docs/plans/`, and `docs/brainstorms/`.
 - **Mode**: `advisory` (logs warnings) or `required` (fails CI).
 - **Exit codes**:
   - `0`: No drift or advisory mode
