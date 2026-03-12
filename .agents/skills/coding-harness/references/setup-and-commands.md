@@ -2,9 +2,11 @@
 
 ## Table of Contents
 - [Prerequisites](#prerequisites)
+- [Command truth source](#command-truth-source)
 - [Install modes](#install-modes)
 - [Bootstrap workflow](#bootstrap-workflow)
 - [Update workflow for existing repos](#update-workflow-for-existing-repos)
+- [Validation ladder](#validation-ladder)
 - [environment.toml action sync behavior](#environmenttoml-action-sync-behavior)
 - [Command map](#command-map)
 - [Capability boundaries](#capability-boundaries)
@@ -15,6 +17,20 @@
 - `pnpm` (repo package manager)
 - Repository write access for `harness init` template changes
 - For remote GitHub checks, a valid token (GitHub App JWT is preferred when verifying App installation state)
+
+## Command truth source
+
+Prefer runtime command help over stale prose snapshots:
+
+```bash
+harness --help
+```
+
+If harness is not installed globally in the current shell, use:
+
+```bash
+pnpm exec tsx src/cli.ts --help
+```
 
 ## Install modes
 
@@ -40,15 +56,22 @@ pnpm exec harness --help
 
 ## Bootstrap workflow
 
-1. Install dependencies:
+1. Confirm repository preflight:
+
+   ```bash
+   source scripts/codex-preflight.sh && preflight_repo
+   ```
+
+2. Install dependencies:
 
    ```bash
    pnpm install
    ```
 
-2. Initialize harness templates:
+3. Preview and initialize harness templates:
 
    ```bash
+   harness init --dry-run
    harness init
    ```
 
@@ -58,13 +81,13 @@ pnpm exec harness --help
    - `.greptile/files.json`
    - `.github/workflows/greptile-review.yml`
 
-3. Run baseline quality gate:
+4. Run baseline quality gate:
 
    ```bash
    pnpm check
    ```
 
-4. Verify local Greptile configuration (if used):
+5. Verify local Greptile configuration (if used):
 
    ```bash
    harness verify-greptile
@@ -78,23 +101,59 @@ pnpm exec harness --help
    harness init --check-updates
    ```
 
-2. Apply updates:
+2. Preview update changes:
+
+   ```bash
+   harness init --dry-run --update
+   ```
+
+3. Apply updates:
 
    ```bash
    harness init --update
    ```
 
-3. If selective review is needed:
+4. If selective review is needed:
 
    ```bash
    harness init --interactive
    ```
 
-4. If rollback tracking is desired before updates:
+5. If rollback tracking is desired before updates:
 
    ```bash
    harness init --track
    ```
+
+6. Contract migration and rollback lanes:
+
+   ```bash
+   harness init --migrate
+   harness init --rollback
+   ```
+
+## Validation ladder
+
+Baseline gate:
+
+```bash
+pnpm check
+```
+
+Deep gate (when runtime behavior, contract behavior, or artifact handling changed):
+
+```bash
+pnpm test:deep
+```
+
+Situational governance checks:
+
+```bash
+harness check-authz --contract harness.contract.json --repo <owner/repo> --branch <branch>
+harness check-environment --contract harness.contract.json --attestation artifacts/check-environment-attestation.json
+harness docs-gate --mode advisory --json
+harness tooling-audit --path <directory> --format table
+```
 
 ## environment.toml action sync behavior
 
@@ -116,16 +175,22 @@ Important constraints:
 
 ## Command map
 
-### Installability and governance
+### Setup and governance
 
 - `harness init`
 - `harness init --check-updates`
 - `harness init --update`
+- `harness init --migrate`
+- `harness init --rollback`
 - `harness branch-protect`
 - `harness verify-greptile`
 - `harness request-greptile-review`
 - `harness check-authz`
 - `harness check-environment`
+- `harness docs-gate`
+- `harness org-audit`
+- `harness tooling-audit`
+- `harness preset`
 
 ### Risk and policy gates
 
@@ -151,6 +216,7 @@ Important constraints:
 - `harness context`
 - `harness search`
 - `harness index-context`
+- `harness context-health`
 - `harness remediate`
 - `harness replay`
 
@@ -164,6 +230,11 @@ Important constraints:
 - `harness ui:fast`
 - `harness ui:verify`
 - `harness ui:explore`
+
+### Intake and workflow governance
+
+- `harness linear`
+- `harness linear-gate`
 
 ## Capability boundaries
 
