@@ -31,11 +31,13 @@ export interface IndexOptions {
 	/** File path to index */
 	filepath: string;
 	/** Document type */
-	type: "brainstorm" | "plan" | "solution";
+	type: DocumentMetadata["type"];
 	/** Base directory for relative paths */
 	basePath?: string | undefined;
 	/** Force reindex even when content hash is unchanged */
 	force?: boolean | undefined;
+	/** Metadata overrides supplied by the caller */
+	metadata?: Partial<Omit<DocumentMetadata, "type">> | undefined;
 }
 
 /**
@@ -200,7 +202,13 @@ export async function indexFile(
 	ollama: OllamaClient,
 	store: VectorStore,
 ): Promise<IndexResult> {
-	const { filepath, type, basePath = process.cwd(), force = false } = options;
+	const {
+		filepath,
+		type,
+		basePath = process.cwd(),
+		force = false,
+		metadata: metadataOverrides,
+	} = options;
 
 	// Validate file exists
 	if (!existsSync(filepath)) {
@@ -263,11 +271,16 @@ export async function indexFile(
 	const metadata: DocumentMetadata = {
 		type,
 		topic:
+			metadataOverrides?.topic ||
 			(frontmatter.topic as string) ||
 			(frontmatter.title as string) ||
 			basename(filepath),
-		date: (frontmatter.date as string) || today,
-		status: (frontmatter.status as string) || undefined,
+		date: metadataOverrides?.date || (frontmatter.date as string) || today,
+		status:
+			metadataOverrides?.status || (frontmatter.status as string) || undefined,
+		authority: metadataOverrides?.authority,
+		family: metadataOverrides?.family,
+		stalenessState: metadataOverrides?.stalenessState,
 	};
 
 	// Generate embedding from content (frontmatter + body)

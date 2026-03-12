@@ -87,7 +87,7 @@ GitHub issue forms in this repository are retired; the repo now routes work inta
 
 | Command | Purpose |
 | --- | --- |
-| `init` | Install harness contract + PR governance templates into the current repository. |
+| `init` | Install harness contract, Greptile baseline, and PR governance templates into the current repository. |
 | `risk-tier` | Classify changed files by risk. |
 | `policy-gate` | Validate policy expectations from changed files. Alias: `risk-policy-gate`. |
 | `replay` | Re-run policy checks from saved snapshots. |
@@ -100,8 +100,11 @@ GitHub issue forms in this repository are retired; the repo now routes work inta
 | `drift-gate` | Evaluate consistency drift across governance surfaces (advisory/health). |
 | `review-gate` | Enforce review checks and SHA guardrails. |
 | `branch-protect` | Configure/maintain branch protection rulesets and required status checks. |
+| `tooling-audit` | Audit cross-repo tooling baseline drift against contract and generated repo surfaces. |
+| `verify-greptile` | Verify required Greptile files, bridge workflow, ruleset wiring, and app/ruleset readiness. |
+| `request-greptile-review` | Post the standard `@greptileai` review trigger comment on a PR. |
 | `brainstorm-gate` | Validate brainstorm artifacts. |
-| `plan-gate` | Validate plan artifacts. |
+| `plan-gate` | Validate plan artifacts, plan IDs, acceptance evidence, and PR traceability back to plans. |
 | `prompt-gate` | Validate prompt template usage. |
 | `blast-radius` | Determine required checks from changed files. |
 | `observability-gate` | Check metrics cardinality limits. |
@@ -113,7 +116,7 @@ GitHub issue forms in this repository are retired; the repo now routes work inta
 | `remediate` | Apply automated fixes for findings. |
 | `check-authz` | Validate authorization policy for mutative operations. |
 | `check-environment` | Validate pilot environment governance checks. |
-| `docs-gate` | Enforce documentation parity for governance changes. |
+| `docs-gate` | Enforce documentation parity for governance, tooling/runtime, architecture-context, tracked workflow-authority docs, and tracked compound-workflow artifacts such as ADRs, specs, plans, and brainstorms. |
 | `linear` | Prepare Linear-aware branch/PR metadata and move issues through claim, handoff, and close workflow states. |
 | `linear-gate` | Enforce Linear-first intake, branch naming, and PR linkage rules from the contract. |
 | `gap-case` | Track and resolve pilot gap-cases. |
@@ -121,6 +124,12 @@ GitHub issue forms in this repository are retired; the repo now routes work inta
 | `pilot-rollback` | Transition pilot mode (autonomous <-> manual). |
 
 Use `harness --help` (or `node dist/cli.js --help`) for the current global options surface.
+
+Branch protection is the non-negotiable merge gate surface that should be enforced in repository settings and CI. `diff-budget` remains a review-shaping budget and escalation signal, not a substitute for required branch protection or required status checks.
+
+The required local tooling surface now lives in `harness.contract.json` under `toolingPolicy`. Use `harness tooling-audit --path <dir>` to verify that sibling repositories have both the explicit contract entry and the expected `.mise.toml`, `.codex/environments/environment.toml`, `scripts/check-environment.sh`, and `Makefile` wiring. `toolingPolicy.packagePolicy` also enforces `@brainwav/design-system-guidance` when a repository advertises UI or ChatGPT Apps SDK dependency signals or when a preset/contract declares those capabilities explicitly.
+
+That required tooling baseline includes both Mermaid renderers: `beautiful-mermaid` for styled SVG or ASCII output and `mermaid-cli` via the `mmdc` binary for the canonical Mermaid CLI workflow.
 
 ## Evidence capture shortcut
 

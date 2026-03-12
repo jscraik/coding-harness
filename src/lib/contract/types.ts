@@ -2,6 +2,20 @@ import {
 	BRANCH_PROTECTION_REQUIRED_CHECKS,
 	REVIEW_POLICY_REQUIRED_CHECKS,
 } from "../policy/required-checks.js";
+import {
+	DEFAULT_EXPLICIT_TOOLING_CAPABILITIES,
+	PROJECT_MISE_REQUIRED_TOOLS,
+	REQUIRED_CODEX_ACTION_PAIRS,
+	REQUIRED_CONDITIONAL_PACKAGES,
+	REQUIRED_MAKEFILE_TARGETS,
+	REQUIRED_TOOLING_BINARIES,
+	REQUIRED_TOOLING_DOC_TERMS,
+	TOOLING_CAPABILITY_DEPENDENCY_MARKERS,
+	TOOLING_CODEX_ENVIRONMENT_PATH,
+	TOOLING_MAKEFILE_PATH,
+	TOOLING_PACKAGE_JSON_PATH,
+	TOOLING_READINESS_SCRIPT_PATH,
+} from "../policy/tooling-baseline.js";
 
 export type RiskTier = "high" | "medium" | "low";
 
@@ -54,6 +68,13 @@ export type DocsImpactCategory =
 	| "ci_workflow"
 	| "branch_protection_or_required_checks"
 	| "init_scaffolding"
+	| "tooling_runtime"
+	| "architecture_context"
+	| "workflow_authority"
+	| "adr_artifact"
+	| "spec_artifact"
+	| "plan_artifact"
+	| "brainstorm_artifact"
 	| "agent_governance"
 	| "doc_only"
 	| "unknown_governance_change";
@@ -199,8 +220,114 @@ export interface ReviewPolicy {
 	enforceReviewerIndependence?: boolean | undefined;
 }
 
+export type CodeQualitySeverity =
+	| "errors"
+	| "warnings_and_higher"
+	| "notes_and_higher"
+	| "all";
+
+export type CodeScanningAlertsThreshold =
+	| "errors"
+	| "errors_and_warnings"
+	| "all";
+
+export type CodeScanningSecurityAlertsThreshold =
+	| "high_or_higher"
+	| "medium_or_higher"
+	| "all";
+
+export interface BranchProtectionMergeMethods {
+	mergeCommit: boolean;
+	squash: boolean;
+	rebase: boolean;
+}
+
+export interface BranchProtectionCodeQualityPolicy {
+	required: boolean;
+	severity: CodeQualitySeverity;
+}
+
+export interface BranchProtectionCodeScanningPolicy {
+	required: boolean;
+	publicOnly: boolean;
+	tool: string;
+	alertsThreshold: CodeScanningAlertsThreshold;
+	securityAlertsThreshold: CodeScanningSecurityAlertsThreshold;
+}
+
 export interface BranchProtectionPolicy {
 	requiredChecks?: string[] | undefined;
+	restrictDeletions?: boolean | undefined;
+	blockForcePushes?: boolean | undefined;
+	requireLinearHistory?: boolean | undefined;
+	requirePullRequest?: boolean | undefined;
+	requiredApprovingReviewCount?: number | undefined;
+	dismissStaleReviewsOnPush?: boolean | undefined;
+	requireConversationResolution?: boolean | undefined;
+	requireCodeOwnerReview?: boolean | undefined;
+	requireLastPushApproval?: boolean | undefined;
+	requireBranchesUpToDate?: boolean | undefined;
+	allowedMergeMethods?: BranchProtectionMergeMethods | undefined;
+	codeQuality?: BranchProtectionCodeQualityPolicy | undefined;
+	publicCodeScanning?: BranchProtectionCodeScanningPolicy | undefined;
+}
+
+export type ToolingActionIcon = "tool" | "run" | "debug" | "test";
+
+export interface ToolingMiseTool {
+	tool: string;
+	version: string;
+}
+
+export interface ToolingCodexAction {
+	name: string;
+	icon: ToolingActionIcon;
+}
+
+export interface ToolingCodexEnvironmentPolicy {
+	path: string;
+	requiredActions: ToolingCodexAction[];
+}
+
+export interface ToolingMakefilePolicy {
+	path: string;
+	requiredTargets: string[];
+}
+
+export type ToolingCapability = "ui" | "chatgpt_apps_sdk";
+
+export type ToolingPackageDependencyType =
+	| "dependencies"
+	| "devDependencies"
+	| "either";
+
+export interface ToolingCapabilityDetector {
+	capability: ToolingCapability;
+	dependencyMarkers: string[];
+}
+
+export interface ToolingPackageRequirement {
+	package: string;
+	dependencyType: ToolingPackageDependencyType;
+	requiredWhenCapabilities: ToolingCapability[];
+}
+
+export interface ToolingPackagePolicy {
+	packageJsonPath: string;
+	explicitCapabilities?: ToolingCapability[] | undefined;
+	capabilityDetectors: ToolingCapabilityDetector[];
+	requiredPackages: ToolingPackageRequirement[];
+}
+
+export interface ToolingPolicy {
+	requiredDocumentationTerms: string[];
+	requiredBinaries: string[];
+	requiredMiseTools: ToolingMiseTool[];
+	miseFilePath: string;
+	readinessScriptPath: string;
+	codexEnvironment: ToolingCodexEnvironmentPolicy;
+	makefile: ToolingMakefilePolicy;
+	packagePolicy: ToolingPackagePolicy;
 }
 
 export type IssueTrackingProvider = "linear";
@@ -332,6 +459,76 @@ export interface PilotAuthzPolicy {
 	enforceBranchProtection: boolean;
 }
 
+export type ControlPlaneOverrideScope =
+	| "advisory_hold"
+	| "temporary_unblock"
+	| "temporary_promote";
+
+export type ControlPlaneNonOverridableControl =
+	| "canonical_runtime_invalid"
+	| "governance_trust_mismatch"
+	| "missing_required_instruction_surface"
+	| "missing_snapshot_integrity_verification";
+
+export interface ControlPlaneOverridePolicy {
+	/** Principals allowed to request or approve control-plane overrides */
+	authorizedPrincipals: string[];
+	/** Override scopes that require dual approval */
+	dualApprovalScopes: ControlPlaneOverrideScope[];
+	/** Maximum override lifetime in hours */
+	maxTtlHours: number;
+	/** Controls that cannot be bypassed by any override */
+	nonOverridableControls: ControlPlaneNonOverridableControl[];
+}
+
+export interface ControlPlanePolicy {
+	overridePolicy: ControlPlaneOverridePolicy;
+}
+
+export type ContextIntegrityMode = "shadow" | "advisory" | "required";
+
+export type ContextIntegritySourceKind = "file" | "directory";
+
+export type ContextIntegrityTruthSourceAuthority = "canonical" | "governed";
+
+export type ContextContradictionCategory =
+	| "command_contract_conflict"
+	| "required_check_conflict"
+	| "instruction_precedence_conflict"
+	| "workflow_policy_conflict"
+	| "source_truth_missing";
+
+export interface ContextIntegrityTruthSource {
+	path: string;
+	kind: ContextIntegritySourceKind;
+	authority: ContextIntegrityTruthSourceAuthority;
+	required: boolean;
+}
+
+export interface ContextContradictionCatalogEntry {
+	id: string;
+	category: ContextContradictionCategory;
+	severity: "warning" | "error";
+	description: string;
+}
+
+export type ContextHealthTriggerType = "current_checkout" | "recent_artifacts";
+
+export interface ContextHealthSamplingPolicy {
+	fixtureSetPath: string;
+	fixtureSetId: string;
+	allowedTriggerTypes: ContextHealthTriggerType[];
+	samplingCadence: string;
+	dedupeScope: "query" | "run";
+}
+
+export interface ContextIntegrityPolicy {
+	mode: ContextIntegrityMode;
+	truthSources: ContextIntegrityTruthSource[];
+	contradictionCatalog: ContextContradictionCatalogEntry[];
+	healthSampling: ContextHealthSamplingPolicy;
+}
+
 // === Default Values ===
 
 export const DEFAULT_REVIEW_POLICY: ReviewPolicy = {
@@ -343,6 +540,32 @@ export const DEFAULT_REVIEW_POLICY: ReviewPolicy = {
 
 export const DEFAULT_BRANCH_PROTECTION_POLICY: BranchProtectionPolicy = {
 	requiredChecks: [...BRANCH_PROTECTION_REQUIRED_CHECKS],
+	restrictDeletions: true,
+	blockForcePushes: true,
+	requireLinearHistory: true,
+	requirePullRequest: true,
+	requiredApprovingReviewCount: 1,
+	dismissStaleReviewsOnPush: true,
+	requireConversationResolution: true,
+	requireCodeOwnerReview: false,
+	requireLastPushApproval: false,
+	requireBranchesUpToDate: true,
+	allowedMergeMethods: {
+		mergeCommit: true,
+		squash: true,
+		rebase: true,
+	},
+	codeQuality: {
+		required: true,
+		severity: "all",
+	},
+	publicCodeScanning: {
+		required: true,
+		publicOnly: true,
+		tool: "CodeQL",
+		alertsThreshold: "errors",
+		securityAlertsThreshold: "high_or_higher",
+	},
 };
 
 export const DEFAULT_ISSUE_TRACKING_POLICY: IssueTrackingPolicy = {
@@ -359,6 +582,118 @@ export const DEFAULT_EVIDENCE_POLICY: EvidencePolicy = {
 	requiredFor: [],
 	allowedTypes: ["png", "jpeg"],
 	maxFileSizeBytes: 1024 * 1024, // 1MB
+};
+
+export const DEFAULT_CONTROL_PLANE_POLICY: ControlPlanePolicy = {
+	overridePolicy: {
+		authorizedPrincipals: [],
+		dualApprovalScopes: ["temporary_unblock", "temporary_promote"],
+		maxTtlHours: 24,
+		nonOverridableControls: [
+			"canonical_runtime_invalid",
+			"governance_trust_mismatch",
+			"missing_required_instruction_surface",
+			"missing_snapshot_integrity_verification",
+		],
+	},
+};
+
+export const DEFAULT_CONTEXT_INTEGRITY_POLICY: ContextIntegrityPolicy = {
+	mode: "shadow",
+	truthSources: [
+		{
+			path: "README.md",
+			kind: "file",
+			authority: "canonical",
+			required: true,
+		},
+		{
+			path: "AGENTS.md",
+			kind: "file",
+			authority: "canonical",
+			required: true,
+		},
+		{
+			path: "CLAUDE.md",
+			kind: "file",
+			authority: "canonical",
+			required: true,
+		},
+		{
+			path: "CONTRIBUTING.md",
+			kind: "file",
+			authority: "canonical",
+			required: true,
+		},
+		{
+			path: "AI/context/diagram-context.md",
+			kind: "file",
+			authority: "canonical",
+			required: true,
+		},
+		{
+			path: "docs/agents",
+			kind: "directory",
+			authority: "governed",
+			required: true,
+		},
+		{
+			path: "docs/adr",
+			kind: "directory",
+			authority: "governed",
+			required: false,
+		},
+		{
+			path: "docs/specs",
+			kind: "directory",
+			authority: "governed",
+			required: false,
+		},
+	],
+	contradictionCatalog: [
+		{
+			id: "command-contract-conflict",
+			category: "command_contract_conflict",
+			severity: "error",
+			description:
+				"Canonical governance docs disagree with executable package-manager or command contracts.",
+		},
+		{
+			id: "required-check-conflict",
+			category: "required_check_conflict",
+			severity: "error",
+			description:
+				"Configured required checks diverge from workflow-enforced required checks.",
+		},
+		{
+			id: "instruction-precedence-conflict",
+			category: "instruction_precedence_conflict",
+			severity: "warning",
+			description:
+				"Governance instruction surfaces disagree about authoritative workflow behavior.",
+		},
+		{
+			id: "workflow-policy-conflict",
+			category: "workflow_policy_conflict",
+			severity: "error",
+			description:
+				"Workflow or policy surfaces disagree on enforced rollout posture or gate ownership.",
+		},
+		{
+			id: "source-truth-missing",
+			category: "source_truth_missing",
+			severity: "error",
+			description:
+				"A configured canonical or governed truth source is missing from the repository.",
+		},
+	],
+	healthSampling: {
+		fixtureSetPath: "artifacts/context-integrity/health-sampling-fixtures.json",
+		fixtureSetId: "context-integrity-v1",
+		allowedTriggerTypes: ["current_checkout", "recent_artifacts"],
+		samplingCadence: "per_run",
+		dedupeScope: "query",
+	},
 };
 
 export const DEFAULT_REMEDIATION_POLICY: RemediationPolicy = {
@@ -490,6 +825,45 @@ export const DEFAULT_DOCS_GATE_POLICY: DocsGatePolicy = {
 			severity: "error",
 		},
 		{
+			ruleId: "tooling-runtime-docs",
+			when: { categories: ["tooling_runtime"] },
+			requireDocs: [
+				"docs/agents/02-tooling-policy.md",
+				"docs/agents/06-security-and-governance.md",
+			],
+			severity: "error",
+		},
+		{
+			ruleId: "architecture-context-docs",
+			when: { categories: ["architecture_context"] },
+			requireDocs: ["docs/agents/00-architecture-bootstrap.md"],
+			severity: "error",
+		},
+		{
+			ruleId: "adr-artifact-docs",
+			when: { categories: ["adr_artifact"] },
+			requireDocs: ["docs/adr/"],
+			severity: "error",
+		},
+		{
+			ruleId: "spec-artifact-docs",
+			when: { categories: ["spec_artifact"] },
+			requireDocs: ["docs/specs/"],
+			severity: "error",
+		},
+		{
+			ruleId: "plan-artifact-docs",
+			when: { categories: ["plan_artifact"] },
+			requireDocs: ["docs/plans/"],
+			severity: "error",
+		},
+		{
+			ruleId: "brainstorm-artifact-docs",
+			when: { categories: ["brainstorm_artifact"] },
+			requireDocs: ["docs/brainstorms/"],
+			severity: "error",
+		},
+		{
 			ruleId: "agent-governance-docs",
 			when: { categories: ["agent_governance"] },
 			requireDocs: ["AGENTS.md", "docs/agents/07b-agent-governance.md"],
@@ -545,6 +919,54 @@ export const DEFAULT_DOCS_GATE_POLICY: DocsGatePolicy = {
 			requiredFor: ["agent_governance"],
 		},
 		{
+			path: "docs/agents/01-instruction-map.md",
+			surfaceType: "workflow_doc",
+			owner: "workflow",
+			requiredFor: ["workflow_authority"],
+		},
+		{
+			path: "docs/agents/00-architecture-bootstrap.md",
+			surfaceType: "governance_doc",
+			owner: "workflow",
+			requiredFor: ["architecture_context"],
+		},
+		{
+			path: "docs/adr/",
+			surfaceType: "workflow_doc",
+			owner: "workflow",
+			requiredFor: ["adr_artifact"],
+		},
+		{
+			path: "docs/specs/",
+			surfaceType: "workflow_doc",
+			owner: "workflow",
+			requiredFor: ["spec_artifact"],
+		},
+		{
+			path: "docs/plans/",
+			surfaceType: "workflow_doc",
+			owner: "workflow",
+			requiredFor: ["plan_artifact"],
+		},
+		{
+			path: "docs/brainstorms/",
+			surfaceType: "workflow_doc",
+			owner: "workflow",
+			requiredFor: ["brainstorm_artifact"],
+		},
+		{
+			path: "docs/agents/02-tooling-policy.md",
+			surfaceType: "governance_doc",
+			owner: "workflow",
+			requiredFor: ["tooling_runtime"],
+		},
+		{
+			path: "docs/agents/06-security-and-governance.md",
+			surfaceType: "governance_doc",
+			owner: "workflow",
+			requiredFor: ["tooling_runtime"],
+		},
+		{
 			path: "docs/agents/12-greptile-ai-governance.md",
 			surfaceType: "governance_doc",
 			owner: "contract",
@@ -552,12 +974,73 @@ export const DEFAULT_DOCS_GATE_POLICY: DocsGatePolicy = {
 		},
 		{
 			path: "docs/agents/13-linear-production-workflow.md",
-			surfaceType: "governance_doc",
-			owner: "contract",
-			requiredFor: ["ci_workflow"],
+			surfaceType: "workflow_doc",
+			owner: "workflow",
+			requiredFor: ["workflow_authority"],
+		},
+		{
+			path: "docs/agents/14-docs-gate-rollout.md",
+			surfaceType: "workflow_doc",
+			owner: "workflow",
+			requiredFor: ["workflow_authority"],
+		},
+		{
+			path: "docs/agents/15-context-integrity-compact.md",
+			surfaceType: "workflow_doc",
+			owner: "workflow",
+			requiredFor: ["workflow_authority"],
+		},
+		{
+			path: "docs/agents/16-linear-production-compact.md",
+			surfaceType: "workflow_doc",
+			owner: "workflow",
+			requiredFor: ["workflow_authority"],
 		},
 	],
 	localHookEnabled: false,
+};
+
+export const DEFAULT_TOOLING_POLICY: ToolingPolicy = {
+	requiredDocumentationTerms: [...REQUIRED_TOOLING_DOC_TERMS],
+	requiredBinaries: [...REQUIRED_TOOLING_BINARIES],
+	requiredMiseTools: PROJECT_MISE_REQUIRED_TOOLS.map(([tool, version]) => ({
+		tool,
+		version,
+	})),
+	miseFilePath: ".mise.toml",
+	readinessScriptPath: TOOLING_READINESS_SCRIPT_PATH,
+	codexEnvironment: {
+		path: TOOLING_CODEX_ENVIRONMENT_PATH,
+		requiredActions: REQUIRED_CODEX_ACTION_PAIRS.map(({ name, icon }) => ({
+			name,
+			icon,
+		})),
+	},
+	makefile: {
+		path: TOOLING_MAKEFILE_PATH,
+		requiredTargets: [...REQUIRED_MAKEFILE_TARGETS],
+	},
+	packagePolicy: {
+		packageJsonPath: TOOLING_PACKAGE_JSON_PATH,
+		explicitCapabilities: [...DEFAULT_EXPLICIT_TOOLING_CAPABILITIES],
+		capabilityDetectors: TOOLING_CAPABILITY_DEPENDENCY_MARKERS.map(
+			({ capability, dependencyMarkers }) => ({
+				capability,
+				dependencyMarkers: [...dependencyMarkers],
+			}),
+		),
+		requiredPackages: REQUIRED_CONDITIONAL_PACKAGES.map(
+			({
+				package: requiredPackage,
+				dependencyType,
+				requiredWhenCapabilities,
+			}) => ({
+				package: requiredPackage,
+				dependencyType,
+				requiredWhenCapabilities: [...requiredWhenCapabilities],
+			}),
+		),
+	},
 };
 
 // === Contract Interface ===
@@ -599,10 +1082,16 @@ export interface HarnessContract {
 	loopStageContracts?: LoopStageContracts | undefined;
 	/** Docs gate policy for governance documentation parity enforcement */
 	docsGatePolicy?: DocsGatePolicy | undefined;
+	/** Context-integrity policy for authoritative retrieval, contradiction checks, and scorecard sampling */
+	contextIntegrityPolicy?: ContextIntegrityPolicy | undefined;
+	/** Control-plane override authority and non-overridable guardrails */
+	controlPlanePolicy?: ControlPlanePolicy | undefined;
+	/** Required local tooling surface enforced by scaffold and readiness checks */
+	toolingPolicy?: ToolingPolicy | undefined;
 }
 
 export const DEFAULT_CONTRACT: HarnessContract = {
-	version: "1.3.0",
+	version: "1.5.0",
 	riskTierRules: {},
 	reviewPolicy: DEFAULT_REVIEW_POLICY,
 	evidencePolicy: DEFAULT_EVIDENCE_POLICY,
@@ -614,6 +1103,9 @@ export const DEFAULT_CONTRACT: HarnessContract = {
 	remediationPolicy: DEFAULT_REMEDIATION_POLICY,
 	loopStageContracts: DEFAULT_LOOP_STAGE_CONTRACTS,
 	docsGatePolicy: DEFAULT_DOCS_GATE_POLICY,
+	contextIntegrityPolicy: DEFAULT_CONTEXT_INTEGRITY_POLICY,
+	controlPlanePolicy: DEFAULT_CONTROL_PLANE_POLICY,
+	toolingPolicy: DEFAULT_TOOLING_POLICY,
 };
 
 // === Preset Inheritance Types ===

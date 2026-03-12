@@ -24,8 +24,12 @@ function createRepoFixture(): string {
 		JSON.stringify(
 			{
 				version: "1",
-				strictness: 4,
-				confidence: { minMergeScore: 4 },
+				strictness: 2,
+				fileChangeLimit: 300,
+				commentTypes: ["bug-risk", "security"],
+				enableCrossFileGraphQueries: true,
+				requireIndependentValidation: true,
+				confidence: { minMergeScore: 4, targetScore: 5 },
 			},
 			null,
 			2,
@@ -38,6 +42,8 @@ function createRepoFixture(): string {
 		[
 			"on:",
 			"  pull_request:",
+			"  pull_request_review:",
+			"  pull_request_review_comment:",
 			"  issue_comment:",
 			"permissions:",
 			"  checks: write",
@@ -173,5 +179,24 @@ describe("runVerifyGreptile", () => {
 		expect(authorizationValue?.startsWith("Bearer ")).toBe(true);
 		expect(authorizationValue?.split(".").length).toBe(3);
 		expect(mockGitHubClient).not.toHaveBeenCalled();
+	});
+
+	it("fails when required local Greptile files are missing", async () => {
+		rmSync(join(repoPath, ".greptile", "rules.md"));
+		rmSync(join(repoPath, ".greptile", "files.json"));
+
+		const result = await runVerifyGreptile({
+			repoPath,
+		});
+
+		expect(result.ok).toBe(false);
+		expect(
+			result.checks.find((check) => check.name === ".greptile/rules.md")
+				?.status,
+		).toBe("fail");
+		expect(
+			result.checks.find((check) => check.name === ".greptile/files.json")
+				?.status,
+		).toBe("fail");
 	});
 });

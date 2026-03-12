@@ -3,6 +3,7 @@ title: Agent-First Throughput v1 Pilot
 type: feat
 status: completed
 date: 2026-02-25
+plan_id: feat-agent-first-throughput-v1-pilot
 origin: docs/brainstorms/2026-02-25-agent-first-throughput-v1-brainstorm.md
 deepened: 2026-02-25
 ---

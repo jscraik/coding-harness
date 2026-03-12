@@ -1,5 +1,12 @@
 import { loadContract } from "../lib/contract/loader.js";
 import {
+	type BranchProtectionCodeQualityPolicy,
+	type BranchProtectionCodeScanningPolicy,
+	type BranchProtectionMergeMethods,
+	type BranchProtectionPolicy,
+	DEFAULT_BRANCH_PROTECTION_POLICY,
+} from "../lib/contract/types.js";
+import {
 	GitHubClient,
 	type Ruleset,
 	type RulesetPayload,
@@ -17,6 +24,11 @@ const DEFAULT_RULESET_NAME = "protect";
 const DEFAULT_BRANCH = "main";
 const DEFAULT_CONTRACT_PATH = "harness.contract.json";
 const DEFAULT_REQUIRED_CHECKS = [...BRANCH_PROTECTION_REQUIRED_CHECKS];
+const DEFAULT_MERGE_METHODS: BranchProtectionMergeMethods = {
+	mergeCommit: true,
+	squash: true,
+	rebase: true,
+};
 
 export const EXIT_CODES = {
 	SUCCESS: 0,
@@ -48,6 +60,22 @@ export interface BranchProtectOutput {
 	rulesetName: string;
 	requiredChecks: string[];
 	ecosystem?: string | undefined;
+	repositoryVisibility?: string | undefined;
+	managedPolicy: {
+		requiredApprovingReviewCount: number;
+		restrictDeletions: boolean;
+		blockForcePushes: boolean;
+		requireLinearHistory: boolean;
+		requirePullRequest: boolean;
+		dismissStaleReviewsOnPush: boolean;
+		requireConversationResolution: boolean;
+		requireCodeOwnerReview: boolean;
+		requireLastPushApproval: boolean;
+		requireBranchesUpToDate: boolean;
+		allowedMergeMethods: BranchProtectionMergeMethods;
+		codeQuality?: BranchProtectionCodeQualityPolicy | undefined;
+		publicCodeScanning?: BranchProtectionCodeScanningPolicy | undefined;
+	};
 }
 
 export type BranchProtectResult =
@@ -75,7 +103,7 @@ function normalizeToken(value: string | undefined): string | undefined {
  */
 function resolveRequiredChecks(
 	options: BranchProtectOptions,
-	contractPath: string,
+	contractPolicy: BranchProtectionPolicy,
 ): { checks: string[]; ecosystem?: string } {
 	// 1. Explicit checks take highest priority
 	if (options.requiredChecks && options.requiredChecks.length > 0) {
@@ -94,13 +122,149 @@ function resolveRequiredChecks(
 	}
 
 	// 3. Contract
-	const contractChecks = resolveContractRequiredChecks({ contractPath });
+	const contractChecks = contractPolicy.requiredChecks;
 	if (contractChecks && contractChecks.length > 0) {
 		return { checks: normalizeChecks(contractChecks) };
 	}
 
 	// 4. Defaults
 	return { checks: normalizeChecks([...DEFAULT_REQUIRED_CHECKS]) };
+}
+
+interface ResolvedBranchProtectionPolicy {
+	requiredApprovals: number;
+	restrictDeletions: boolean;
+	blockForcePushes: boolean;
+	requireLinearHistory: boolean;
+	requirePullRequest: boolean;
+	dismissStaleReviewsOnPush: boolean;
+	requireConversationResolution: boolean;
+	requireCodeOwnerReview: boolean;
+	requireLastPushApproval: boolean;
+	requireBranchesUpToDate: boolean;
+	allowedMergeMethods: BranchProtectionMergeMethods;
+	codeQuality: BranchProtectionCodeQualityPolicy | undefined;
+	publicCodeScanning: BranchProtectionCodeScanningPolicy | undefined;
+}
+
+function resolveContractBranchProtectionPolicy(
+	contractPath: string,
+): BranchProtectionPolicy {
+	try {
+		const contract = loadContract(contractPath);
+		const legacyRequiredChecks =
+			contract.branchProtection?.requiredChecks &&
+			contract.branchProtection.requiredChecks.length > 0
+				? contract.branchProtection.requiredChecks
+				: contract.reviewPolicy?.requiredChecks;
+		return {
+			...DEFAULT_BRANCH_PROTECTION_POLICY,
+			...(contract.branchProtection ?? {}),
+			requiredChecks:
+				legacyRequiredChecks ?? DEFAULT_BRANCH_PROTECTION_POLICY.requiredChecks,
+			allowedMergeMethods: {
+				...DEFAULT_MERGE_METHODS,
+				...(contract.branchProtection?.allowedMergeMethods ?? {}),
+			},
+			codeQuality: contract.branchProtection?.codeQuality
+				? {
+						...(DEFAULT_BRANCH_PROTECTION_POLICY.codeQuality ?? {}),
+						...contract.branchProtection.codeQuality,
+					}
+				: DEFAULT_BRANCH_PROTECTION_POLICY.codeQuality,
+			publicCodeScanning: contract.branchProtection?.publicCodeScanning
+				? {
+						...(DEFAULT_BRANCH_PROTECTION_POLICY.publicCodeScanning ?? {}),
+						...contract.branchProtection.publicCodeScanning,
+					}
+				: DEFAULT_BRANCH_PROTECTION_POLICY.publicCodeScanning,
+		};
+	} catch {
+		return { ...DEFAULT_BRANCH_PROTECTION_POLICY };
+	}
+}
+
+function resolveManagedPolicy(
+	options: BranchProtectOptions,
+	contractPolicy: BranchProtectionPolicy,
+): ResolvedBranchProtectionPolicy {
+	return {
+		requiredApprovals:
+			options.requiredApprovingReviewCount ??
+			contractPolicy.requiredApprovingReviewCount ??
+			DEFAULT_BRANCH_PROTECTION_POLICY.requiredApprovingReviewCount ??
+			0,
+		restrictDeletions:
+			contractPolicy.restrictDeletions ??
+			DEFAULT_BRANCH_PROTECTION_POLICY.restrictDeletions ??
+			true,
+		blockForcePushes:
+			contractPolicy.blockForcePushes ??
+			DEFAULT_BRANCH_PROTECTION_POLICY.blockForcePushes ??
+			true,
+		requireLinearHistory:
+			contractPolicy.requireLinearHistory ??
+			DEFAULT_BRANCH_PROTECTION_POLICY.requireLinearHistory ??
+			true,
+		requirePullRequest:
+			contractPolicy.requirePullRequest ??
+			DEFAULT_BRANCH_PROTECTION_POLICY.requirePullRequest ??
+			true,
+		dismissStaleReviewsOnPush:
+			contractPolicy.dismissStaleReviewsOnPush ??
+			DEFAULT_BRANCH_PROTECTION_POLICY.dismissStaleReviewsOnPush ??
+			true,
+		requireConversationResolution:
+			contractPolicy.requireConversationResolution ??
+			DEFAULT_BRANCH_PROTECTION_POLICY.requireConversationResolution ??
+			true,
+		requireCodeOwnerReview:
+			contractPolicy.requireCodeOwnerReview ??
+			DEFAULT_BRANCH_PROTECTION_POLICY.requireCodeOwnerReview ??
+			false,
+		requireLastPushApproval:
+			contractPolicy.requireLastPushApproval ??
+			DEFAULT_BRANCH_PROTECTION_POLICY.requireLastPushApproval ??
+			false,
+		requireBranchesUpToDate:
+			contractPolicy.requireBranchesUpToDate ??
+			DEFAULT_BRANCH_PROTECTION_POLICY.requireBranchesUpToDate ??
+			true,
+		allowedMergeMethods: {
+			...DEFAULT_MERGE_METHODS,
+			...(contractPolicy.allowedMergeMethods ?? {}),
+		},
+		codeQuality:
+			contractPolicy.codeQuality ??
+			DEFAULT_BRANCH_PROTECTION_POLICY.codeQuality,
+		publicCodeScanning:
+			contractPolicy.publicCodeScanning ??
+			DEFAULT_BRANCH_PROTECTION_POLICY.publicCodeScanning,
+	};
+}
+
+function formatManagedPolicyOutput(
+	policy: ResolvedBranchProtectionPolicy,
+): BranchProtectOutput["managedPolicy"] {
+	return {
+		requiredApprovingReviewCount: policy.requiredApprovals,
+		restrictDeletions: policy.restrictDeletions,
+		blockForcePushes: policy.blockForcePushes,
+		requireLinearHistory: policy.requireLinearHistory,
+		requirePullRequest: policy.requirePullRequest,
+		dismissStaleReviewsOnPush: policy.dismissStaleReviewsOnPush,
+		requireConversationResolution: policy.requireConversationResolution,
+		requireCodeOwnerReview: policy.requireCodeOwnerReview,
+		requireLastPushApproval: policy.requireLastPushApproval,
+		requireBranchesUpToDate: policy.requireBranchesUpToDate,
+		allowedMergeMethods: { ...policy.allowedMergeMethods },
+		...(policy.codeQuality !== undefined
+			? { codeQuality: { ...policy.codeQuality } }
+			: {}),
+		...(policy.publicCodeScanning !== undefined
+			? { publicCodeScanning: { ...policy.publicCodeScanning } }
+			: {}),
+	};
 }
 
 export async function runBranchProtect(
@@ -150,9 +314,10 @@ export async function runBranchProtect(
 		}
 	}
 
+	const contractPolicy = resolveContractBranchProtectionPolicy(contractPath);
 	const { checks: requestedChecks, ecosystem } = resolveRequiredChecks(
 		options,
-		contractPath,
+		contractPolicy,
 	);
 	if (requestedChecks.length === 0) {
 		return {
@@ -164,7 +329,8 @@ export async function runBranchProtect(
 		};
 	}
 
-	const requiredApprovals = options.requiredApprovingReviewCount ?? 1;
+	const managedPolicy = resolveManagedPolicy(options, contractPolicy);
+	const requiredApprovals = managedPolicy.requiredApprovals;
 	if (!Number.isInteger(requiredApprovals) || requiredApprovals < 0) {
 		return {
 			ok: false,
@@ -191,12 +357,14 @@ export async function runBranchProtect(
 			existingSummary !== undefined
 				? await client.getRuleset(existingSummary.id)
 				: undefined;
+		const repositoryVisibility = await resolveRepositoryVisibility(client);
 
 		const payload = buildPayload({
 			branchRef,
 			rulesetName,
-			requiredApprovals,
 			requiredChecks: requestedChecks,
+			policy: managedPolicy,
+			repositoryVisibility,
 			existingRuleset,
 		});
 
@@ -210,6 +378,8 @@ export async function runBranchProtect(
 					rulesetName,
 					requiredChecks: requestedChecks,
 					ecosystem,
+					repositoryVisibility,
+					managedPolicy: formatManagedPolicyOutput(managedPolicy),
 					...(existingSummary !== undefined
 						? { rulesetId: existingSummary.id }
 						: {}),
@@ -221,6 +391,22 @@ export async function runBranchProtect(
 			existingSummary !== undefined
 				? await client.updateRuleset(existingSummary.id, payload)
 				: await client.createRuleset(payload);
+		try {
+			await applyRepositoryMergeSettings(client, {
+				allowMergeCommit: managedPolicy.allowedMergeMethods.mergeCommit,
+				allowSquashMerge: managedPolicy.allowedMergeMethods.squash,
+				allowRebaseMerge: managedPolicy.allowedMergeMethods.rebase,
+			});
+		} catch (error) {
+			const safeError = sanitizeError(error);
+			return {
+				ok: false,
+				error: {
+					code: "SYSTEM_ERROR",
+					message: `Configured branch protection ruleset, but failed to apply repository merge settings: ${safeError}`,
+				},
+			};
+		}
 
 		return {
 			ok: true,
@@ -232,6 +418,8 @@ export async function runBranchProtect(
 				rulesetName,
 				requiredChecks: requestedChecks,
 				ecosystem,
+				repositoryVisibility,
+				managedPolicy: formatManagedPolicyOutput(managedPolicy),
 			},
 		};
 	} catch (error) {
@@ -273,8 +461,9 @@ export async function runBranchProtect(
 interface BuildPayloadInput {
 	branchRef: string;
 	rulesetName: string;
-	requiredApprovals: number;
 	requiredChecks: string[];
+	policy: ResolvedBranchProtectionPolicy;
+	repositoryVisibility: string | undefined;
 	existingRuleset?: Ruleset | undefined;
 }
 
@@ -288,37 +477,41 @@ function buildPayload(input: BuildPayloadInput): RulesetPayload {
 		? [...input.existingRuleset.rules]
 		: [];
 
-	upsertRule(baseRules, { type: "deletion" });
-	upsertRule(baseRules, { type: "non_fast_forward" });
+	toggleRule(baseRules, "deletion", input.policy.restrictDeletions);
+	toggleRule(baseRules, "non_fast_forward", input.policy.blockForcePushes);
+	toggleRule(
+		baseRules,
+		"required_linear_history",
+		input.policy.requireLinearHistory,
+	);
 
-	const existingPullRequestRule = getRule(baseRules, "pull_request");
-	const existingPullParameters = normalizeParameters(
-		existingPullRequestRule?.parameters,
-	);
-	const existingRequireCodeOwnerReview = toBoolean(
-		existingPullParameters.require_code_owner_review,
-	);
-	const existingRequireLastPushApproval = toBoolean(
-		existingPullParameters.require_last_push_approval,
-	);
-	const existingRequiredApprovals = toNonNegativeInteger(
-		existingPullParameters.required_approving_review_count,
-	);
-	const pullRequestRule: RulesetRule = {
-		type: "pull_request",
-		parameters: {
-			...existingPullParameters,
-			dismiss_stale_reviews_on_push: true,
-			require_code_owner_review: existingRequireCodeOwnerReview ?? true,
-			require_last_push_approval: existingRequireLastPushApproval ?? true,
-			required_approving_review_count: Math.max(
-				input.requiredApprovals,
-				existingRequiredApprovals ?? 0,
-			),
-			required_review_thread_resolution: true,
-		},
-	};
-	upsertRule(baseRules, pullRequestRule);
+	if (input.policy.requirePullRequest) {
+		const existingPullRequestRule = getRule(baseRules, "pull_request");
+		const existingPullParameters = normalizeParameters(
+			existingPullRequestRule?.parameters,
+		);
+		const existingRequiredApprovals = toNonNegativeInteger(
+			existingPullParameters.required_approving_review_count,
+		);
+		const pullRequestRule: RulesetRule = {
+			type: "pull_request",
+			parameters: {
+				...existingPullParameters,
+				dismiss_stale_reviews_on_push: input.policy.dismissStaleReviewsOnPush,
+				require_code_owner_review: input.policy.requireCodeOwnerReview,
+				require_last_push_approval: input.policy.requireLastPushApproval,
+				required_approving_review_count: Math.max(
+					input.policy.requiredApprovals,
+					existingRequiredApprovals ?? 0,
+				),
+				required_review_thread_resolution:
+					input.policy.requireConversationResolution,
+			},
+		};
+		upsertRule(baseRules, pullRequestRule);
+	} else {
+		removeRule(baseRules, "pull_request");
+	}
 
 	const existingChecksRule = getRule(baseRules, "required_status_checks");
 	const existingChecksParameters = normalizeParameters(
@@ -336,12 +529,46 @@ function buildPayload(input: BuildPayloadInput): RulesetPayload {
 		type: "required_status_checks",
 		parameters: {
 			...existingChecksParameters,
-			strict_required_status_checks_policy: true,
+			strict_required_status_checks_policy:
+				input.policy.requireBranchesUpToDate,
 			do_not_enforce_on_create: false,
 			required_status_checks: mergedRequiredChecks,
 		},
 	};
 	upsertRule(baseRules, statusChecksRule);
+
+	if (input.policy.codeQuality?.required) {
+		upsertRule(baseRules, {
+			type: "code_quality",
+			parameters: {
+				severity: input.policy.codeQuality.severity,
+			},
+		});
+	} else {
+		removeRule(baseRules, "code_quality");
+	}
+
+	const shouldRequirePublicCodeScanning =
+		input.policy.publicCodeScanning?.required === true &&
+		(input.policy.publicCodeScanning.publicOnly !== true ||
+			input.repositoryVisibility === "public");
+	if (shouldRequirePublicCodeScanning && input.policy.publicCodeScanning) {
+		upsertRule(baseRules, {
+			type: "code_scanning",
+			parameters: {
+				code_scanning_tools: [
+					{
+						tool: input.policy.publicCodeScanning.tool,
+						alerts_threshold: input.policy.publicCodeScanning.alertsThreshold,
+						security_alerts_threshold:
+							input.policy.publicCodeScanning.securityAlertsThreshold,
+					},
+				],
+			},
+		});
+	} else {
+		removeRule(baseRules, "code_scanning");
+	}
 
 	return {
 		name: input.existingRuleset?.name ?? input.rulesetName,
@@ -373,13 +600,6 @@ function normalizeParameters(value: unknown): Record<string, unknown> {
 		return value as Record<string, unknown>;
 	}
 	return {};
-}
-
-function toBoolean(value: unknown): boolean | undefined {
-	if (typeof value === "boolean") {
-		return value;
-	}
-	return undefined;
 }
 
 function toNonNegativeInteger(value: unknown): number | undefined {
@@ -485,6 +705,34 @@ async function resolveDefaultBranchRef(client: GitHubClient): Promise<string> {
 	return `refs/heads/${DEFAULT_BRANCH}`;
 }
 
+async function resolveRepositoryVisibility(
+	client: GitHubClient,
+): Promise<string | undefined> {
+	try {
+		return await client.getRepositoryVisibility();
+	} catch {
+		return undefined;
+	}
+}
+
+async function applyRepositoryMergeSettings(
+	client: GitHubClient,
+	settings: {
+		allowMergeCommit: boolean;
+		allowSquashMerge: boolean;
+		allowRebaseMerge: boolean;
+	},
+): Promise<void> {
+	try {
+		await client.updateRepositoryMergeSettings(settings);
+	} catch (error) {
+		if (error instanceof TypeError) {
+			return;
+		}
+		throw error;
+	}
+}
+
 function refSelectorMatches(
 	selector: string,
 	branchRef: string,
@@ -558,29 +806,6 @@ function normalizeChecks(checks: string[] | undefined): string[] {
 	return Array.from(deduped);
 }
 
-interface ResolveContractRequiredChecksInput {
-	contractPath: string;
-}
-
-function resolveContractRequiredChecks(
-	input: ResolveContractRequiredChecksInput,
-): string[] | undefined {
-	try {
-		const contract = loadContract(input.contractPath);
-		const branchChecks = contract.branchProtection?.requiredChecks;
-		if (Array.isArray(branchChecks) && branchChecks.length > 0) {
-			return branchChecks;
-		}
-		const legacyReviewChecks = contract.reviewPolicy?.requiredChecks;
-		if (Array.isArray(legacyReviewChecks) && legacyReviewChecks.length > 0) {
-			return legacyReviewChecks;
-		}
-		return undefined;
-	} catch {
-		return undefined;
-	}
-}
-
 function getRule(rules: RulesetRule[], type: string): RulesetRule | undefined {
 	return rules.find((rule) => rule.type === type);
 }
@@ -592,6 +817,26 @@ function upsertRule(rules: RulesetRule[], nextRule: RulesetRule): void {
 		return;
 	}
 	rules.push(nextRule);
+}
+
+function removeRule(rules: RulesetRule[], type: string): void {
+	const existingIndex = rules.findIndex((rule) => rule.type === type);
+	if (existingIndex >= 0) {
+		rules.splice(existingIndex, 1);
+	}
+}
+
+function toggleRule(
+	rules: RulesetRule[],
+	type: string,
+	enabled: boolean,
+	parameters?: Record<string, unknown>,
+): void {
+	if (!enabled) {
+		removeRule(rules, type);
+		return;
+	}
+	upsertRule(rules, parameters ? { type, parameters } : { type });
 }
 
 export async function runBranchProtectCLI(

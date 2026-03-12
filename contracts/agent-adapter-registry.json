@@ -2,6 +2,36 @@
 	"schemaVersion": "agent-adapter-registry/v1",
 	"adapters": [
 		{
+			"adapterVersion": "control-plane-codex-v1",
+			"owner": "pilot-evaluation",
+			"introducedAt": "2026-03-10",
+			"sunsetBy": "active control-plane provider descriptor",
+			"blockAfter": null,
+			"clientFamily": "codex",
+			"providerId": "openai",
+			"status": "active"
+		},
+		{
+			"adapterVersion": "control-plane-claude-v1",
+			"owner": "pilot-evaluation",
+			"introducedAt": "2026-03-10",
+			"sunsetBy": "active control-plane provider descriptor",
+			"blockAfter": null,
+			"clientFamily": "claude_family",
+			"providerId": "anthropic",
+			"status": "active"
+		},
+		{
+			"adapterVersion": "control-plane-gemini-v1",
+			"owner": "pilot-evaluation",
+			"introducedAt": "2026-03-10",
+			"sunsetBy": "active control-plane provider descriptor",
+			"blockAfter": null,
+			"clientFamily": "gemini_family",
+			"providerId": "google",
+			"status": "active"
+		},
+		{
 			"adapterVersion": "legacy-jsonl-v1",
 			"owner": "pilot-evaluation",
 			"introducedAt": "2026-03-08",

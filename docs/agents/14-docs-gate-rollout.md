@@ -15,6 +15,8 @@
 
 This document defines the rollout procedures for promoting `docs-gate` from advisory to required posture, as well as operational guidance for maintaining healthy enforcement.
 
+Tracked workflow artifact families are part of the governed surface for this repository. In addition to governance, tooling/runtime, and architecture-context docs, `docs-gate` now tracks workflow-authoritative route/runbook docs such as `docs/agents/01-instruction-map.md`, `docs/agents/13-linear-production-workflow.md`, `docs/agents/14-docs-gate-rollout.md`, `docs/agents/15-context-integrity-compact.md`, and `docs/agents/16-linear-production-compact.md`, alongside compound-engineering artifacts in `docs/adr/`, `docs/specs/`, `docs/plans/`, and `docs/brainstorms/`.
+
 Current posture in this repository:
 - **Mode**: `advisory` (monitoring, non-blocking)
 - **Target**: `required` (blocking on drift)
@@ -202,6 +204,13 @@ Before promoting to required mode:
 - `ci_workflow`: CI workflow changes
 - `branch_protection_or_required_checks`: Required check changes
 - `init_scaffolding`: Init/template changes
+- `tooling_runtime`: Local toolchain, readiness, and hook policy changes
+- `architecture_context`: Diagram context and architecture artifact changes
+- `workflow_authority`: Routing indexes, rollout docs, and compact operational workflow guides
+- `adr_artifact`: Architecture decision record artifacts under `docs/adr/`
+- `spec_artifact`: Specification artifacts under `docs/specs/`
+- `plan_artifact`: Execution plan artifacts under `docs/plans/`
+- `brainstorm_artifact`: Brainstorm artifacts under `docs/brainstorms/`
 - `agent_governance`: Agent governance changes
 - `unknown_governance_change`: Unmatched governance-sensitive changes
 

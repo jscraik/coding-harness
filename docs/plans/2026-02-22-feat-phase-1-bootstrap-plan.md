@@ -3,6 +3,7 @@ title: Phase 1 Bootstrap and Deterministic Local Gate
 type: feat
 status: superseded
 date: 2026-02-22
+plan_id: feat-phase-1-bootstrap
 origin: docs/brainstorms/2026-02-22-harness-gap-analysis-brainstorm.md
 deepened: 2026-02-22
 ---

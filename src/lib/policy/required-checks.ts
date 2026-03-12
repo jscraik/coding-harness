@@ -79,6 +79,19 @@ export const ECOSYSTEM_PROFILES = {
  */
 export const BRANCH_PROTECTION_REQUIRED_CHECKS = ECOSYSTEM_PROFILES.harness;
 
+export function formatRequiredChecksInline(
+	checks: readonly string[] = BRANCH_PROTECTION_REQUIRED_CHECKS,
+): string {
+	return checks.map((check) => `\`${check}\``).join(", ");
+}
+
+export function formatRequiredChecksBulleted(
+	checks: readonly string[] = BRANCH_PROTECTION_REQUIRED_CHECKS,
+	indent = "  - ",
+): string {
+	return checks.map((check) => `${indent}\`${check}\``).join("\n");
+}
+
 /**
  * Get required checks for an ecosystem profile.
  * Returns undefined if the profile doesn't exist.

@@ -52,6 +52,12 @@ pnpm exec harness --help
    harness init
    ```
 
+   This scaffolds the Greptile baseline as well:
+   - `.greptile/config.json`
+   - `.greptile/rules.md`
+   - `.greptile/files.json`
+   - `.github/workflows/greptile-review.yml`
+
 3. Run baseline quality gate:
 
    ```bash
@@ -117,6 +123,7 @@ Important constraints:
 - `harness init --update`
 - `harness branch-protect`
 - `harness verify-greptile`
+- `harness request-greptile-review`
 - `harness check-authz`
 - `harness check-environment`
 

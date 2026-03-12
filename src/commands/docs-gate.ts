@@ -1,8 +1,12 @@
+import { createHash } from "node:crypto";
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
-import { dirname, resolve } from "node:path";
+import { dirname, join, resolve } from "node:path";
 import type {
+	ContextContradictionCategory,
+	ContextIntegrityPolicy,
 	DocsGatePolicy,
 	DocsImpactCategory,
+	HarnessContract,
 } from "../lib/contract/types.js";
 import { validateContract } from "../lib/contract/validator.js";
 import { sanitizeError } from "../lib/input/sanitize.js";
@@ -47,7 +51,7 @@ export interface DocsGateOptions {
 
 export interface DocsFinding {
 	rule_id: string;
-	category: DocsImpactCategory | "system";
+	category: DocsImpactCategory | ContextContradictionCategory | "system";
 	surface: string;
 	rule_result: DocsRuleResult;
 	result: "pass" | "fail" | "not_applicable" | "error";
@@ -107,15 +111,42 @@ export interface DocsGateResult {
 
 const DEFAULT_OUT_PATH = "artifacts/consistency-gate/docs-gate-report.json";
 const CONTRACT_PATH = "harness.contract.json";
+const PACKAGE_JSON_PATH = "package.json";
+const WORKFLOW_PATH = ".github/workflows/pr-pipeline.yml";
+const CONTRADICTION_HISTORY_PATH =
+	"artifacts/context-integrity/contradiction-history.jsonl";
+const NON_WORKFLOW_REQUIRED_CHECKS = new Set([
+	"Greptile Review",
+	"security-scan",
+]);
+
+interface LoadedContract {
+	contract: HarnessContract;
+}
+
+interface ContradictionRecord {
+	findingId: string;
+	category: ContextContradictionCategory;
+	status: "open" | "resolved";
+	message: string;
+	sourcePaths: string[];
+	detectedAt: string;
+	resolvedAt?: string;
+}
+
+interface ContradictionFinding extends DocsFinding {
+	finding_id: string;
+	source_paths: string[];
+}
 
 /**
  * Load and validate the docs-gate policy from contract.
  * Returns undefined if policy is missing or invalid.
  */
-function loadDocsGatePolicy(
+function loadValidatedContract(
 	repoRoot: string,
 	contractPath: string,
-): { policy?: DocsGatePolicy; error?: string } {
+): { loaded?: LoadedContract; error?: string } {
 	const resolvedPath = resolve(repoRoot, contractPath);
 	if (!existsSync(resolvedPath)) {
 		return { error: `Contract file not found: ${contractPath}` };
@@ -137,14 +168,303 @@ function loadDocsGatePolicy(
 		if (!contractData) {
 			return { error: "Contract validation returned no data" };
 		}
-		if (!contractData.docsGatePolicy) {
-			return { error: "docsGatePolicy is not defined in contract" };
-		}
-
-		return { policy: contractData.docsGatePolicy };
+		return { loaded: { contract: contractData } };
 	} catch (error) {
 		return { error: `Failed to load contract: ${sanitizeError(error)}` };
 	}
+}
+
+function loadFileIfPresent(path: string): string | null {
+	if (!existsSync(path)) {
+		return null;
+	}
+	return readFileSync(path, "utf-8");
+}
+
+function inferExpectedPackageManager(
+	contract: HarnessContract,
+	repoRoot: string,
+): string | null {
+	const packageManagerFromContract =
+		contract.packageManagerPolicy?.requiredManager;
+	if (packageManagerFromContract) {
+		return packageManagerFromContract;
+	}
+
+	const packageJsonRaw = loadFileIfPresent(join(repoRoot, PACKAGE_JSON_PATH));
+	if (!packageJsonRaw) {
+		return null;
+	}
+
+	try {
+		const packageJson = JSON.parse(packageJsonRaw) as {
+			packageManager?: string;
+		};
+		if (typeof packageJson.packageManager === "string") {
+			return packageJson.packageManager.split("@")[0] ?? null;
+		}
+	} catch {
+		return null;
+	}
+
+	return null;
+}
+
+function extractCommandManagers(content: string): string[] {
+	const managers = new Set<string>();
+	for (const line of content.split(/\r?\n/)) {
+		const trimmed = line.trim();
+		if (!trimmed || trimmed.startsWith("#")) {
+			continue;
+		}
+		const matches = trimmed.match(
+			/\b(pnpm|npm|yarn)\b(?=\s+(?:install|run|exec|test|lint|typecheck|check|audit|build|add))/g,
+		);
+		if (!matches) {
+			continue;
+		}
+		for (const match of matches) {
+			managers.add(match);
+		}
+	}
+	return Array.from(managers);
+}
+
+function parseWorkflowCheckNames(repoRoot: string): Set<string> {
+	const workflowPath = join(repoRoot, WORKFLOW_PATH);
+	const content = loadFileIfPresent(workflowPath);
+	if (!content) {
+		return new Set();
+	}
+
+	const checks = new Set<string>();
+	for (const line of content.split(/\r?\n/)) {
+		const match = line.match(/^ {2}[a-z0-9_-]+:\s*$/i);
+		if (match) {
+			continue;
+		}
+		const nameMatch = line.match(/^ {4}name:\s*(.+?)\s*$/);
+		if (nameMatch?.[1]) {
+			checks.add(nameMatch[1].trim().replace(/^['"]|['"]$/g, ""));
+		}
+	}
+	return checks;
+}
+
+function buildFindingId(
+	category: ContextContradictionCategory,
+	surface: string,
+	message: string,
+): string {
+	return createHash("sha256")
+		.update(`${category}\n${surface}\n${message}`)
+		.digest("hex")
+		.slice(0, 16);
+}
+
+function resolveContradictionSeverity(
+	policy: ContextIntegrityPolicy | undefined,
+	category: ContextContradictionCategory,
+): DocsSeverity {
+	return (
+		policy?.contradictionCatalog.find((entry) => entry.category === category)
+			?.severity ?? "error"
+	);
+}
+
+function collectContradictionFindings(
+	repoRoot: string,
+	contract: HarnessContract,
+	mode: DocsGateMode,
+): ContradictionFinding[] {
+	const findings: ContradictionFinding[] = [];
+	const contextIntegrityPolicy = contract.contextIntegrityPolicy;
+
+	for (const source of contextIntegrityPolicy?.truthSources ?? []) {
+		if (source.required && !existsSync(join(repoRoot, source.path))) {
+			const message = `Required truth source '${source.path}' is missing`;
+			findings.push({
+				finding_id: buildFindingId(
+					"source_truth_missing",
+					source.path,
+					message,
+				),
+				rule_id: "context-integrity.source_truth_missing",
+				category: "source_truth_missing",
+				surface: source.path,
+				rule_result: "fail",
+				result: "fail",
+				severity: resolveContradictionSeverity(
+					contextIntegrityPolicy,
+					"source_truth_missing",
+				),
+				message,
+				path: source.path,
+				source_paths: [source.path],
+			});
+		}
+	}
+
+	const expectedPackageManager = inferExpectedPackageManager(
+		contract,
+		repoRoot,
+	);
+	if (expectedPackageManager) {
+		for (const sourcePath of [
+			"README.md",
+			"AGENTS.md",
+			"CLAUDE.md",
+			"CONTRIBUTING.md",
+		]) {
+			const content = loadFileIfPresent(join(repoRoot, sourcePath));
+			if (!content) {
+				continue;
+			}
+			const managers = extractCommandManagers(content).filter(
+				(manager) => manager !== expectedPackageManager,
+			);
+			if (managers.length === 0) {
+				continue;
+			}
+			const unexpectedManagers = Array.from(new Set(managers)).sort();
+			const message = `Canonical command guidance uses ${unexpectedManagers.join(", ")} but package manager contract requires ${expectedPackageManager}`;
+			findings.push({
+				finding_id: buildFindingId(
+					"command_contract_conflict",
+					sourcePath,
+					message,
+				),
+				rule_id: "context-integrity.command_contract_conflict",
+				category: "command_contract_conflict",
+				surface: sourcePath,
+				rule_result: "fail",
+				result: "fail",
+				severity:
+					mode === "required"
+						? resolveContradictionSeverity(
+								contextIntegrityPolicy,
+								"command_contract_conflict",
+							)
+						: "warning",
+				message,
+				path: sourcePath,
+				source_paths: [sourcePath, PACKAGE_JSON_PATH],
+			});
+		}
+	}
+
+	const requiredChecks = contract.branchProtection?.requiredChecks ?? [];
+	if (requiredChecks.length > 0) {
+		const workflowChecks = parseWorkflowCheckNames(repoRoot);
+		const missingChecks = requiredChecks.filter(
+			(check) =>
+				!NON_WORKFLOW_REQUIRED_CHECKS.has(check) && !workflowChecks.has(check),
+		);
+		if (missingChecks.length > 0) {
+			const message = `Workflow is missing required checks: ${missingChecks.join(", ")}`;
+			findings.push({
+				finding_id: buildFindingId(
+					"required_check_conflict",
+					WORKFLOW_PATH,
+					message,
+				),
+				rule_id: "context-integrity.required_check_conflict",
+				category: "required_check_conflict",
+				surface: WORKFLOW_PATH,
+				rule_result: "fail",
+				result: "fail",
+				severity:
+					mode === "required"
+						? resolveContradictionSeverity(
+								contextIntegrityPolicy,
+								"required_check_conflict",
+							)
+						: "warning",
+				message,
+				path: WORKFLOW_PATH,
+				source_paths: [WORKFLOW_PATH, CONTRACT_PATH],
+				details: `Missing workflow checks: ${missingChecks.join(", ")}`,
+			});
+		}
+	}
+
+	return findings;
+}
+
+function loadOpenContradictions(
+	repoRoot: string,
+): Map<string, ContradictionRecord> {
+	const historyPath = join(repoRoot, CONTRADICTION_HISTORY_PATH);
+	const history = new Map<string, ContradictionRecord>();
+	const content = loadFileIfPresent(historyPath);
+	if (!content) {
+		return history;
+	}
+
+	for (const line of content.split(/\r?\n/)) {
+		if (!line.trim()) {
+			continue;
+		}
+		try {
+			const entry = JSON.parse(line) as ContradictionRecord;
+			history.set(entry.findingId, entry);
+		} catch {
+			// Ignore malformed history rows so a single bad line does not hide valid contradictions.
+		}
+	}
+
+	return history;
+}
+
+function appendContradictionHistory(
+	repoRoot: string,
+	findings: ContradictionFinding[],
+): void {
+	const historyPath = validatePath(repoRoot, CONTRADICTION_HISTORY_PATH);
+	const existing = loadOpenContradictions(repoRoot);
+	const timestamp = new Date().toISOString();
+	const currentIds = new Set(findings.map((finding) => finding.finding_id));
+	const appendEntries: ContradictionRecord[] = [];
+
+	for (const finding of findings) {
+		const previous = existing.get(finding.finding_id);
+		if (previous?.status === "open") {
+			continue;
+		}
+		appendEntries.push({
+			findingId: finding.finding_id,
+			category: finding.category as ContextContradictionCategory,
+			status: "open",
+			message: finding.message,
+			sourcePaths: finding.source_paths,
+			detectedAt: timestamp,
+		});
+	}
+
+	for (const [findingId, previous] of existing.entries()) {
+		if (previous.status !== "open" || currentIds.has(findingId)) {
+			continue;
+		}
+		appendEntries.push({
+			...previous,
+			status: "resolved",
+			resolvedAt: timestamp,
+		});
+	}
+
+	if (appendEntries.length === 0) {
+		return;
+	}
+
+	mkdirSync(dirname(historyPath), { recursive: true });
+	const existingContent = loadFileIfPresent(historyPath) ?? "";
+	const serializedEntries = appendEntries
+		.map((entry) => JSON.stringify(entry))
+		.join("\n");
+	const output = existingContent
+		? `${existingContent.trimEnd()}\n${serializedEntries}\n`
+		: `${serializedEntries}\n`;
+	writeFileSync(historyPath, output, "utf-8");
 }
 
 /**
@@ -166,8 +486,19 @@ function classifyChanges(
 		"harness.",
 		"scripts/setup",
 		"scripts/init",
+		".codex/environments/",
+		"AI/diagrams/",
+		"AI/context/",
+		".diagram/",
 		"ops/",
 	];
+	const workflowAuthorityDocs = new Set([
+		"docs/agents/01-instruction-map.md",
+		"docs/agents/13-linear-production-workflow.md",
+		"docs/agents/14-docs-gate-rollout.md",
+		"docs/agents/15-context-integrity-compact.md",
+		"docs/agents/16-linear-production-compact.md",
+	]);
 
 	for (const file of changedFiles) {
 		let matched = false;
@@ -209,10 +540,66 @@ function classifyChanges(
 			matched = true;
 		}
 
+		// Tooling/runtime policy and local hook changes
+		if (
+			file === "Makefile" ||
+			file === ".mise.toml" ||
+			file === "prek.toml" ||
+			file === ".codex/environments/environment.toml" ||
+			file.startsWith("scripts/check-environment") ||
+			file.startsWith("scripts/setup-git-hooks") ||
+			file.includes("tooling-baseline") ||
+			file.startsWith("src/commands/tooling-audit.") ||
+			file.startsWith("src/commands/check-environment.")
+		) {
+			categories.add("tooling_runtime");
+			matched = true;
+		}
+
+		// Diagram and architecture context changes
+		if (
+			file.startsWith("AI/diagrams/") ||
+			file.startsWith("AI/context/") ||
+			file.startsWith(".diagram/") ||
+			file.startsWith("scripts/refresh-diagram-context") ||
+			file.startsWith("scripts/check-diagram-freshness") ||
+			file.startsWith("docs/architecture/")
+		) {
+			categories.add("architecture_context");
+			matched = true;
+		}
+
+		// Workflow-authoritative routing and compact runbooks
+		if (workflowAuthorityDocs.has(file)) {
+			categories.add("workflow_authority");
+			matched = true;
+		}
+
+		// Compound workflow artifacts
+		if (file.startsWith("docs/adr/")) {
+			categories.add("adr_artifact");
+			matched = true;
+		}
+
+		if (file.startsWith("docs/specs/")) {
+			categories.add("spec_artifact");
+			matched = true;
+		}
+
+		if (file.startsWith("docs/plans/")) {
+			categories.add("plan_artifact");
+			matched = true;
+		}
+
+		if (file.startsWith("docs/brainstorms/")) {
+			categories.add("brainstorm_artifact");
+			matched = true;
+		}
+
 		// Agent governance changes
 		if (
 			file === "AGENTS.md" ||
-			file.startsWith("docs/agents/") ||
+			(file.startsWith("docs/agents/") && !workflowAuthorityDocs.has(file)) ||
 			file.includes("agent-governance")
 		) {
 			categories.add("agent_governance");
@@ -300,8 +687,11 @@ function checkSurfacePresence(
 	const findings: DocsFinding[] = [];
 
 	for (const surface of requiredSurfaces) {
-		const isChanged = changedFiles.some(
-			(f) => f === surface || f.endsWith(`/${surface}`),
+		const isDirectorySurface = surface.endsWith("/");
+		const isChanged = changedFiles.some((f) =>
+			isDirectorySurface
+				? f.startsWith(surface)
+				: f === surface || f.endsWith(`/${surface}`),
 		);
 
 		if (isChanged) {
@@ -389,14 +779,15 @@ export function runDocsGate(options: DocsGateOptions = {}): DocsGateResult {
 	const findings: DocsFinding[] = [];
 
 	// Load policy from contract
-	const policyResult = loadDocsGatePolicy(repoRoot, CONTRACT_PATH);
-	const policy = policyResult.policy;
+	const contractResult = loadValidatedContract(repoRoot, CONTRACT_PATH);
+	const contract = contractResult.loaded?.contract;
+	const policy = contract?.docsGatePolicy;
 
 	// Build execution context
 	const executionContext = buildExecutionContext(options, policy);
 
 	// Handle bootstrap gap
-	if (policyResult.error || !policy) {
+	if (contractResult.error || !contract || !policy) {
 		outcome = "bootstrap_gap";
 		if (mode === "required") {
 			status = "blocked";
@@ -410,7 +801,8 @@ export function runDocsGate(options: DocsGateOptions = {}): DocsGateResult {
 			rule_result: "error",
 			result: "error",
 			severity: mode === "required" ? "error" : "warning",
-			message: policyResult.error ?? "docsGatePolicy is missing from contract",
+			message:
+				contractResult.error ?? "docsGatePolicy is missing from contract",
 			details:
 				"Add docsGatePolicy to harness.contract.json or run 'harness init --update'",
 		});
@@ -538,6 +930,28 @@ export function runDocsGate(options: DocsGateOptions = {}): DocsGateResult {
 		outcome = "drift_detected";
 	}
 
+	const contradictionFindings = collectContradictionFindings(
+		repoRoot,
+		contract,
+		mode,
+	);
+	findings.push(...contradictionFindings);
+	if (
+		contradictionFindings.some(
+			(finding) => finding.category === "source_truth_missing",
+		)
+	) {
+		outcome = "policy_error";
+	} else if (
+		contradictionFindings.some(
+			(finding) => finding.category === "required_check_conflict",
+		)
+	) {
+		outcome = "trust_mismatch";
+	} else if (contradictionFindings.length > 0) {
+		outcome = "drift_detected";
+	}
+
 	// Determine status
 	const errorCount = findings.filter((f) => f.severity === "error").length;
 	const warningCount = findings.filter((f) => f.severity === "warning").length;
@@ -568,7 +982,7 @@ export function runDocsGate(options: DocsGateOptions = {}): DocsGateResult {
 			warning_count: warningCount,
 			required_surface_count: requiredSurfaces.length,
 			missing_surface_count: missing.length,
-			contradiction_count: 0, // v1: not implementing full parity checks yet
+			contradiction_count: contradictionFindings.length,
 			bootstrap_gap_count: 0,
 			unknown_category_count: unknownFiles.length,
 		},
@@ -585,6 +999,7 @@ export function runDocsGate(options: DocsGateOptions = {}): DocsGateResult {
 			`${JSON.stringify(report, null, 2)}\n`,
 			"utf-8",
 		);
+		appendContradictionHistory(repoRoot, contradictionFindings);
 	} catch (error) {
 		report.outcome = "runtime_error";
 		report.error_class = "io";

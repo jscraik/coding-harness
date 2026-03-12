@@ -8,6 +8,7 @@ import {
 	runBlastRadiusCLI,
 } from "./commands/blast-radius.js";
 import { runBrainstormGateCLI } from "./commands/brainstorm-gate.js";
+import { runContextHealthCLI } from "./commands/context-health.js";
 import { runContextCLI } from "./commands/context.js";
 import { runDiffBudgetCLI } from "./commands/diff-budget.js";
 import { runDriftGateCLI } from "./commands/drift-gate.js";
@@ -35,6 +36,7 @@ import { runRiskTierCLI } from "./commands/risk-tier.js";
 import { runSearchCLI } from "./commands/search.js";
 import { runSilentErrorDetectorCLI } from "./commands/silent-error.js";
 import { printSimulateUsage, runSimulateCLI } from "./commands/simulate.js";
+import { runToolingAuditCLI } from "./commands/tooling-audit.js";
 import {
 	runUIExploreCLI,
 	runUIFastCLI,
@@ -52,6 +54,7 @@ import {
 	parseIntegerArg,
 } from "./lib/cli/parse-utils.js";
 import { sanitizeError } from "./lib/input/sanitize.js";
+import type { PilotEvaluateOptions } from "./lib/pilot-evaluation/types.js";
 import { getVersion } from "./lib/version.js";
 
 // Consolidated error handler
@@ -128,7 +131,11 @@ function printUsage(): void {
 		},
 		{
 			name: "index-context",
-			summary: "Bulk index brainstorms/plans for search",
+			summary: "Bulk index governed and supporting context for search",
+		},
+		{
+			name: "context-health",
+			summary: "Generate advisory context-integrity scorecards",
 		},
 		{
 			name: "pilot-evaluate",
@@ -157,6 +164,10 @@ function printUsage(): void {
 		{
 			name: "org-audit",
 			summary: "Multi-repo governance visibility and drift detection",
+		},
+		{
+			name: "tooling-audit",
+			summary: "Multi-repo tooling baseline audit for managed repo surfaces",
 		},
 	];
 
@@ -211,6 +222,40 @@ function printUsage(): void {
 	console.info("  --attestation    Path to write attestation artifact");
 	console.info("  --json           Output as JSON");
 	console.info("");
+	console.info("Pilot Evaluate Options:");
+	console.info("  --artifacts      Artifacts directory (required)");
+	console.info("  --contract       Path to harness.contract.json");
+	console.info("  --output         Write evaluation JSON to file");
+	console.info("  --lane           advisory|health");
+	console.info("  --kill-switch    Force manual safe mode");
+	console.info("  --adapter-registry  Override adapter registry path");
+	console.info("  --metric-registry   Override metric registry path");
+	console.info("  --docs-gate-report  Trusted docs-gate machine report");
+	console.info("  --evaluation-mode   local|pr|merge_group");
+	console.info("  --rollout-stage    shadow|advisory|enforced");
+	console.info("  --pr-template-status  passed|failed|missing");
+	console.info("  --pr-template-ref     Trusted PR-template artifact ref");
+	console.info("  --actor-id        Explicit actor identifier");
+	console.info(
+		"  --client-family   codex|claude_family|gemini_family|kimi_family|custom",
+	);
+	console.info("  --provider-id     Provider identifier");
+	console.info("  --model-descriptor  Provider/model descriptor");
+	console.info("  --execution-mode  interactive|automation|ci");
+	console.info("  --operator-type   human_directed|automation|autonomous");
+	console.info(
+		"  --override-authorized-principal  Contract-authorized override principal",
+	);
+	console.info(
+		"  --override-scope  advisory_hold|temporary_unblock|temporary_promote",
+	);
+	console.info("  --override-reason  Human-readable override reason");
+	console.info("  --override-ticket  Ticket or approval reference");
+	console.info("  --override-approved-by  Comma-separated approver principals");
+	console.info("  --override-created-at  ISO timestamp for override creation");
+	console.info("  --override-expires-at  ISO timestamp for override expiry");
+	console.info("  --json            Output as JSON");
+	console.info("");
 	console.info("Docs Gate Options:");
 	console.info("  --mode           advisory|required (default: advisory)");
 	console.info("  --trigger        local|pull_request|merge_group|manual_ci");
@@ -222,6 +267,15 @@ function printUsage(): void {
 	console.info("  --trusted-workflow-sha  Expected workflow file SHA");
 	console.info("  --merge-queue-target-ref  Merge queue target branch");
 	console.info("  --merge-queue-base-sha    Merge queue base SHA");
+	console.info("  --json           Output as JSON");
+	console.info("");
+	console.info("Tooling Audit Options:");
+	console.info("  --path           Directory containing repos to scan");
+	console.info(
+		"  --base           Base harness.contract.json for drift comparison",
+	);
+	console.info("  --format         json|markdown|table");
+	console.info("  --include-missing  Include repos without contracts");
 	console.info("  --json           Output as JSON");
 	console.info("");
 	console.info("Linear Workflow Options:");
@@ -396,6 +450,23 @@ function printUsage(): void {
 	);
 	console.info("  --max-age        Max days old (default: 30)");
 	console.info("  --require-origin Require origin reference to brainstorm");
+	console.info(
+		"  --require-plan-id Require plan_id frontmatter on validated plans",
+	);
+	console.info(
+		"  --require-acceptance-evidence Require evidence refs on completed acceptance items",
+	);
+	console.info(
+		"  --require-traceability Require changed work to map back to plan IDs",
+	);
+	console.info("  --plan-ids       Comma-separated plan IDs to validate");
+	console.info(
+		"  --pr-title       Pull request title to extract plan IDs from",
+	);
+	console.info("  --pr-body        Pull request body to extract plan IDs from");
+	console.info(
+		"  --changed-files  Comma-separated changed file paths for traceability checks",
+	);
 	console.info("  --strict         Require all sections");
 	console.info("  --json           Output as JSON");
 	console.info("");
@@ -424,7 +495,7 @@ function printUsage(): void {
 	console.info("  --repo           Repository name");
 	console.info("  --pr             Pull request number");
 	console.info(
-		"  --message        Custom message to post (default: '@greptile please review the latest changes')",
+		"  --message        Custom message to post (default: '@greptileai please review the latest changes')",
 	);
 	console.info("  --json           Output as JSON");
 	console.info("");
@@ -773,15 +844,31 @@ export function run(args: string[]): void {
 		const jsonFlag = args.includes("--json");
 		const strictFlag = args.includes("--strict");
 		const requireOriginFlag = args.includes("--require-origin");
+		const requirePlanIdFlag = args.includes("--require-plan-id");
+		const requireAcceptanceEvidenceFlag = args.includes(
+			"--require-acceptance-evidence",
+		);
+		const requireTraceabilityFlag = args.includes("--require-traceability");
 		const plansIndex = args.indexOf("--plans");
 		const typeIndex = args.indexOf("--type");
 		const maxAgeIndex = args.indexOf("--max-age");
+		const planIdsIndex = args.indexOf("--plan-ids");
+		const prTitleIndex = args.indexOf("--pr-title");
+		const prBodyIndex = args.indexOf("--pr-body");
+		const changedFilesIndex = args.indexOf("--changed-files");
 
 		const options: {
 			plansPath?: string;
 			type?: string;
 			maxAge?: number;
 			requireOrigin?: boolean;
+			requirePlanId?: boolean;
+			requireAcceptanceEvidence?: boolean;
+			requireTraceability?: boolean;
+			planIds?: string[];
+			prTitle?: string;
+			prBody?: string;
+			changedFiles?: string[];
 			strict?: boolean;
 			json?: boolean;
 		} = {};
@@ -789,6 +876,9 @@ export function run(args: string[]): void {
 		if (jsonFlag) options.json = true;
 		if (strictFlag) options.strict = true;
 		if (requireOriginFlag) options.requireOrigin = true;
+		if (requirePlanIdFlag) options.requirePlanId = true;
+		if (requireAcceptanceEvidenceFlag) options.requireAcceptanceEvidence = true;
+		if (requireTraceabilityFlag) options.requireTraceability = true;
 		const plansArg = getFlagValue(args, plansIndex);
 		if (plansArg) options.plansPath = plansArg;
 		const typeArg = getFlagValue(args, typeIndex);
@@ -798,6 +888,14 @@ export function run(args: string[]): void {
 			const parsedMaxAge = parseIntegerArg(maxAgeArg, 0);
 			if (parsedMaxAge !== undefined) options.maxAge = parsedMaxAge;
 		}
+		const planIdsArg = getFlagValue(args, planIdsIndex);
+		if (planIdsArg) options.planIds = parseCsvList(planIdsArg);
+		const prTitleArg = getFlagValue(args, prTitleIndex);
+		if (prTitleArg) options.prTitle = prTitleArg;
+		const prBodyArg = getFlagValue(args, prBodyIndex);
+		if (prBodyArg) options.prBody = prBodyArg;
+		const changedFilesArg = getFlagValue(args, changedFilesIndex);
+		if (changedFilesArg) options.changedFiles = parseCsvList(changedFilesArg);
 
 		const exitCode = runPlanGateCLI(options);
 		process.exit(exitCode);
@@ -1181,6 +1279,12 @@ export function run(args: string[]): void {
 		return;
 	}
 
+	if (command === "context-health") {
+		const argsAfterCommand = args.slice(1);
+		process.exit(runContextHealthCLI(argsAfterCommand));
+		return;
+	}
+
 	if (command === "pilot-rollback") {
 		// Parse pilot-rollback options
 		const jsonFlag = args.includes("--json");
@@ -1238,6 +1342,26 @@ export function run(args: string[]): void {
 		const laneIndex = args.indexOf("--lane");
 		const adapterRegistryIndex = args.indexOf("--adapter-registry");
 		const metricRegistryIndex = args.indexOf("--metric-registry");
+		const docsGateReportIndex = args.indexOf("--docs-gate-report");
+		const evaluationModeIndex = args.indexOf("--evaluation-mode");
+		const rolloutStageIndex = args.indexOf("--rollout-stage");
+		const prTemplateStatusIndex = args.indexOf("--pr-template-status");
+		const prTemplateRefIndex = args.indexOf("--pr-template-ref");
+		const actorIdIndex = args.indexOf("--actor-id");
+		const clientFamilyIndex = args.indexOf("--client-family");
+		const providerIdIndex = args.indexOf("--provider-id");
+		const modelDescriptorIndex = args.indexOf("--model-descriptor");
+		const executionModeIndex = args.indexOf("--execution-mode");
+		const operatorTypeIndex = args.indexOf("--operator-type");
+		const overrideAuthorizedPrincipalIndex = args.indexOf(
+			"--override-authorized-principal",
+		);
+		const overrideScopeIndex = args.indexOf("--override-scope");
+		const overrideReasonIndex = args.indexOf("--override-reason");
+		const overrideTicketIndex = args.indexOf("--override-ticket");
+		const overrideApprovedByIndex = args.indexOf("--override-approved-by");
+		const overrideCreatedAtIndex = args.indexOf("--override-created-at");
+		const overrideExpiresAtIndex = args.indexOf("--override-expires-at");
 
 		const artifactsArg = getFlagValue(args, artifactsIndex);
 		if (!artifactsArg) {
@@ -1246,16 +1370,7 @@ export function run(args: string[]): void {
 			return;
 		}
 
-		const options: {
-			artifactsDir: string;
-			contractPath?: string;
-			outputPath?: string;
-			lane?: "advisory" | "health";
-			killSwitch?: boolean;
-			adapterRegistryPath?: string;
-			metricRegistryPath?: string;
-			json?: boolean;
-		} = {
+		const options: PilotEvaluateOptions = {
 			artifactsDir: artifactsArg,
 		};
 
@@ -1273,6 +1388,97 @@ export function run(args: string[]): void {
 		if (adapterRegistryArg) options.adapterRegistryPath = adapterRegistryArg;
 		const metricRegistryArg = getFlagValue(args, metricRegistryIndex);
 		if (metricRegistryArg) options.metricRegistryPath = metricRegistryArg;
+		const docsGateReportArg = getFlagValue(args, docsGateReportIndex);
+		if (docsGateReportArg) options.docsGateReportPath = docsGateReportArg;
+		const evaluationModeArg = getFlagValue(args, evaluationModeIndex);
+		if (
+			evaluationModeArg === "local" ||
+			evaluationModeArg === "pr" ||
+			evaluationModeArg === "merge_group"
+		) {
+			options.evaluationMode = evaluationModeArg;
+		}
+		const rolloutStageArg = getFlagValue(args, rolloutStageIndex);
+		if (
+			rolloutStageArg === "shadow" ||
+			rolloutStageArg === "advisory" ||
+			rolloutStageArg === "enforced"
+		) {
+			options.rolloutStage = rolloutStageArg;
+		}
+		const prTemplateStatusArg = getFlagValue(args, prTemplateStatusIndex);
+		if (
+			prTemplateStatusArg === "passed" ||
+			prTemplateStatusArg === "failed" ||
+			prTemplateStatusArg === "missing"
+		) {
+			options.prTemplateStatus = prTemplateStatusArg;
+		}
+		const prTemplateRefArg = getFlagValue(args, prTemplateRefIndex);
+		if (prTemplateRefArg) options.prTemplateRef = prTemplateRefArg;
+		const actorIdArg = getFlagValue(args, actorIdIndex);
+		if (actorIdArg) options.actorId = actorIdArg;
+		const clientFamilyArg = getFlagValue(args, clientFamilyIndex);
+		if (
+			clientFamilyArg === "codex" ||
+			clientFamilyArg === "claude_family" ||
+			clientFamilyArg === "gemini_family" ||
+			clientFamilyArg === "kimi_family" ||
+			clientFamilyArg === "custom"
+		) {
+			options.clientFamily = clientFamilyArg;
+		}
+		const providerIdArg = getFlagValue(args, providerIdIndex);
+		if (providerIdArg) options.providerId = providerIdArg;
+		const modelDescriptorArg = getFlagValue(args, modelDescriptorIndex);
+		if (modelDescriptorArg) options.modelDescriptor = modelDescriptorArg;
+		const executionModeArg = getFlagValue(args, executionModeIndex);
+		if (
+			executionModeArg === "interactive" ||
+			executionModeArg === "automation" ||
+			executionModeArg === "ci"
+		) {
+			options.executionMode = executionModeArg;
+		}
+		const operatorTypeArg = getFlagValue(args, operatorTypeIndex);
+		if (
+			operatorTypeArg === "human_directed" ||
+			operatorTypeArg === "automation" ||
+			operatorTypeArg === "autonomous"
+		) {
+			options.operatorType = operatorTypeArg;
+		}
+		const overrideAuthorizedPrincipalArg = getFlagValue(
+			args,
+			overrideAuthorizedPrincipalIndex,
+		);
+		if (overrideAuthorizedPrincipalArg) {
+			options.overrideAuthorizedPrincipal = overrideAuthorizedPrincipalArg;
+		}
+		const overrideScopeArg = getFlagValue(args, overrideScopeIndex);
+		if (
+			overrideScopeArg === "advisory_hold" ||
+			overrideScopeArg === "temporary_unblock" ||
+			overrideScopeArg === "temporary_promote"
+		) {
+			options.overrideScope = overrideScopeArg;
+		}
+		const overrideReasonArg = getFlagValue(args, overrideReasonIndex);
+		if (overrideReasonArg) options.overrideReason = overrideReasonArg;
+		const overrideTicketArg = getFlagValue(args, overrideTicketIndex);
+		if (overrideTicketArg) options.overrideTicketRef = overrideTicketArg;
+		const overrideApprovedByArg = getFlagValue(args, overrideApprovedByIndex);
+		if (overrideApprovedByArg !== undefined) {
+			options.overrideApprovedBy = parseCsvList(overrideApprovedByArg);
+		}
+		const overrideCreatedAtArg = getFlagValue(args, overrideCreatedAtIndex);
+		if (overrideCreatedAtArg) {
+			options.overrideCreatedAt = overrideCreatedAtArg;
+		}
+		const overrideExpiresAtArg = getFlagValue(args, overrideExpiresAtIndex);
+		if (overrideExpiresAtArg) {
+			options.overrideExpiresAt = overrideExpiresAtArg;
+		}
 
 		const exitCode = runPilotEvaluateCLI(options);
 		process.exit(exitCode);
@@ -1532,6 +1738,13 @@ export function run(args: string[]): void {
 		runOrgAuditCLI(args.slice(1))
 			.then((result) => process.exit(result.exitCode))
 			.catch((error) => handleFatalError("Org Audit Error", error));
+		return;
+	}
+
+	if (command === "tooling-audit") {
+		runToolingAuditCLI(args.slice(1))
+			.then((result) => process.exit(result.exitCode))
+			.catch((error) => handleFatalError("Tooling Audit Error", error));
 		return;
 	}
 

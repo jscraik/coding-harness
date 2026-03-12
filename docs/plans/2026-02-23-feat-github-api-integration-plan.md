@@ -3,6 +3,7 @@ title: Phase 4 GitHub API Integration
 type: feat
 status: completed
 date: 2026-02-23
+plan_id: feat-github-api-integration
 origin: docs/plans/2026-02-23-feat-github-workflow-orchestration-plan.md
 ---
 

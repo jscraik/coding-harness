@@ -13,12 +13,23 @@ import { EXIT_CODES, runInit } from "./init.js";
 const EXPECTED_TEMPLATE_PATHS = [
 	"harness.contract.json",
 	"memory.json",
+	".greptile/config.json",
+	".greptile/rules.md",
+	".greptile/files.json",
+	".github/workflows/greptile-review.yml",
 	".github/workflows/pr-pipeline.yml",
 	".github/workflows/secret-scan.yml",
 	"CONTRIBUTING.md",
 	".github/PULL_REQUEST_TEMPLATE.md",
 	"scripts/validate-commit-msg.js",
 	"scripts/setup-git-hooks.js",
+	"scripts/check-staged-secrets.sh",
+	"scripts/check-doc-style.sh",
+	"scripts/check-related-tests.sh",
+	"scripts/check-semgrep-changed.sh",
+	"scripts/semgrep-pre-push.yml",
+	"scripts/refresh-diagram-context.sh",
+	"scripts/check-diagram-freshness.sh",
 	".diagram/.gitkeep",
 	".diagram/context/diagram-context.md",
 	".diagramrc",
@@ -100,6 +111,7 @@ describe("runInit", () => {
 			expect(
 				existsSync(join(tempDir, ".github/workflows/pr-pipeline.yml")),
 			).toBe(false);
+			expect(existsSync(join(tempDir, ".greptile/config.json"))).toBe(false);
 			expect(existsSync(join(tempDir, "CONTRIBUTING.md"))).toBe(false);
 			expect(
 				existsSync(join(tempDir, ".github/PULL_REQUEST_TEMPLATE.md")),
@@ -122,6 +134,10 @@ describe("runInit", () => {
 			expect(existsSync(join(tempDir, "harness.contract.json"))).toBe(true);
 			expect(
 				existsSync(join(tempDir, ".github/workflows/pr-pipeline.yml")),
+			).toBe(true);
+			expect(existsSync(join(tempDir, ".greptile/config.json"))).toBe(true);
+			expect(
+				existsSync(join(tempDir, ".github/workflows/greptile-review.yml")),
 			).toBe(true);
 			expect(existsSync(join(tempDir, "CONTRIBUTING.md"))).toBe(true);
 			expect(
@@ -235,7 +251,7 @@ describe("runInit", () => {
 			const content = JSON.parse(
 				require("node:fs").readFileSync(contractPath, "utf-8"),
 			);
-			expect(content.version).toBe("1.2.0");
+			expect(content.version).toBe("1.5.0");
 			expect(content.reviewPolicy.timeoutSeconds).toBe(600);
 			expect(content.reviewPolicy.requiredChecks).toContain("security-scan");
 			expect(content.reviewPolicy.requiredChecks).not.toContain(
@@ -250,6 +266,100 @@ describe("runInit", () => {
 			expect(content.branchProtection.requiredChecks).toContain(
 				"Greptile Review",
 			);
+			expect(content.branchProtection.requiredApprovingReviewCount).toBe(1);
+			expect(content.branchProtection.requireCodeOwnerReview).toBe(false);
+			expect(content.branchProtection.requireLastPushApproval).toBe(false);
+			expect(content.branchProtection.requireLinearHistory).toBe(true);
+			expect(content.branchProtection.allowedMergeMethods).toEqual({
+				mergeCommit: true,
+				squash: true,
+				rebase: true,
+			});
+			expect(content.branchProtection.codeQuality).toEqual({
+				required: true,
+				severity: "all",
+			});
+			expect(content.branchProtection.publicCodeScanning).toEqual({
+				required: true,
+				publicOnly: true,
+				tool: "CodeQL",
+				alertsThreshold: "errors",
+				securityAlertsThreshold: "high_or_higher",
+			});
+			expect(content.toolingPolicy.miseFilePath).toBe(".mise.toml");
+			expect(content.toolingPolicy.readinessScriptPath).toBe(
+				"scripts/check-environment.sh",
+			);
+			expect(content.toolingPolicy.requiredDocumentationTerms).toContain(
+				"agent-browser",
+			);
+			expect(content.toolingPolicy.requiredDocumentationTerms).toContain(
+				"mermaid-cli",
+			);
+			expect(content.toolingPolicy.requiredBinaries).toContain("agent-browser");
+			expect(content.toolingPolicy.requiredBinaries).toContain("mmdc");
+			expect(content.toolingPolicy.requiredBinaries).not.toContain("gitleaks");
+			expect(content.toolingPolicy.requiredMiseTools).toEqual(
+				expect.arrayContaining([
+					expect.objectContaining({
+						tool: "npm:@brainwav/diagram",
+						version: "1.0.8",
+					}),
+					expect.objectContaining({
+						tool: "npm:agent-browser",
+						version: "0.17.1",
+					}),
+					expect.objectContaining({
+						tool: "npm:@mermaid-js/mermaid-cli",
+						version: "11.12.0",
+					}),
+				]),
+			);
+			expect(content.toolingPolicy.codexEnvironment.path).toBe(
+				".codex/environments/environment.toml",
+			);
+			expect(content.toolingPolicy.codexEnvironment.requiredActions).toEqual(
+				expect.arrayContaining([
+					expect.objectContaining({ name: "Tools", icon: "tool" }),
+					expect.objectContaining({ name: "Cloudflared", icon: "run" }),
+					expect.objectContaining({ name: "Vitest", icon: "test" }),
+					expect.objectContaining({ name: "Mermaid CLI", icon: "tool" }),
+				]),
+			);
+			expect(content.toolingPolicy.makefile.path).toBe("Makefile");
+			expect(content.toolingPolicy.makefile.requiredTargets).toContain(
+				"env-check",
+			);
+			expect(content.toolingPolicy.packagePolicy.packageJsonPath).toBe(
+				"package.json",
+			);
+			expect(content.toolingPolicy.packagePolicy.explicitCapabilities).toEqual(
+				[],
+			);
+			expect(content.toolingPolicy.packagePolicy.capabilityDetectors).toEqual(
+				expect.arrayContaining([
+					expect.objectContaining({
+						capability: "ui",
+						dependencyMarkers: expect.arrayContaining(["react", "vite"]),
+					}),
+					expect.objectContaining({
+						capability: "chatgpt_apps_sdk",
+						dependencyMarkers: expect.arrayContaining(["@openai/chatkit"]),
+					}),
+				]),
+			);
+			expect(content.toolingPolicy.packagePolicy.requiredPackages).toEqual(
+				expect.arrayContaining([
+					expect.objectContaining({
+						package: "@brainwav/design-system-guidance",
+						dependencyType: "either",
+						requiredWhenCapabilities: expect.arrayContaining([
+							"ui",
+							"chatgpt_apps_sdk",
+						]),
+					}),
+				]),
+			);
 			expect(content.issueTrackingPolicy.provider).toBe("linear");
 			expect(content.issueTrackingPolicy.requirePackageBugsUrl).toBe(true);
 			expect(content.issueTrackingPolicy.requirePrIssueKey).toBe(true);
@@ -258,6 +368,69 @@ describe("runInit", () => {
 				"loop-stage-contract/v1",
 			);
 			expect(content.loopStageContracts["review-gate"].timeoutMinutes).toBe(15);
+			expect(content.controlPlanePolicy.overridePolicy.maxTtlHours).toBe(24);
+			expect(
+				content.controlPlanePolicy.overridePolicy.nonOverridableControls,
+			).toContain("governance_trust_mismatch");
+			expect(content.contextIntegrityPolicy.mode).toBe("shadow");
+			expect(content.contextIntegrityPolicy.truthSources).toEqual(
+				expect.arrayContaining([
+					expect.objectContaining({
+						path: "README.md",
+						kind: "file",
+						authority: "canonical",
+						required: true,
+					}),
+					expect.objectContaining({
+						path: "docs/agents",
+						kind: "directory",
+						authority: "governed",
+					}),
+				]),
+			);
+			expect(
+				content.contextIntegrityPolicy.healthSampling.allowedTriggerTypes,
+			).toEqual(["current_checkout", "recent_artifacts"]);
+		});
+
+		it("scaffolds the Greptile baseline for distributed repos", () => {
+			const result = runInit(tempDir, { dryRun: false, force: false });
+
+			expect(result.ok).toBe(true);
+
+			const greptileConfig = JSON.parse(
+				require("node:fs").readFileSync(
+					join(tempDir, ".greptile/config.json"),
+					"utf-8",
+				),
+			);
+			const greptileFiles = JSON.parse(
+				require("node:fs").readFileSync(
+					join(tempDir, ".greptile/files.json"),
+					"utf-8",
+				),
+			);
+			const greptileRules = require("node:fs").readFileSync(
+				join(tempDir, ".greptile/rules.md"),
+				"utf-8",
+			);
+			const greptileWorkflow = require("node:fs").readFileSync(
+				join(tempDir, ".github/workflows/greptile-review.yml"),
+				"utf-8",
+			);
+
+			expect(greptileConfig.strictness).toBe(2);
+			expect(greptileConfig.requireIndependentValidation).toBe(true);
+			expect(greptileConfig.confidence.minMergeScore).toBe(4);
+			expect(
+				greptileFiles.contextFiles.some(
+					(entry: { path: string }) => entry.path === "harness.contract.json",
+				),
+			).toBe(true);
+			expect(greptileRules).toContain("Independent validation is mandatory");
+			expect(greptileWorkflow).toContain("pull_request_review:");
+			expect(greptileWorkflow).toContain("pull_request_review_comment:");
+			expect(greptileWorkflow).toContain("greptileai[bot]");
 		});
 
 		it("creates valid memory.json baseline", () => {
@@ -308,11 +481,51 @@ describe("runInit", () => {
 			expect(content).toContain('[[actions]]\nname = "Run"\nicon = "run"');
 			expect(content).toContain('[[actions]]\nname = "Debug"\nicon = "debug"');
 			expect(content).toContain('[[actions]]\nname = "Test"\nicon = "test"');
+			expect(content).toContain('name = "Prek"\nicon = "test"');
+			expect(content).toContain('name = "Diagram"\nicon = "tool"');
+			expect(content).toContain('name = "Ralph"\nicon = "debug"');
+			expect(content).toContain('name = "Mise"\nicon = "tool"');
+			expect(content).toContain('name = "Vale"\nicon = "debug"');
+			expect(content).toContain('name = "Argos"\nicon = "test"');
+			expect(content).toContain('name = "Cosign"\nicon = "debug"');
+			expect(content).toContain('name = "Cloudflared"\nicon = "run"');
+			expect(content).toContain('name = "Vitest"\nicon = "test"');
+			expect(content).toContain('name = "Ruff"\nicon = "debug"');
+			expect(content).toContain('name = "ESLint"\nicon = "debug"');
+			expect(content).toContain('name = "Agent Browser"\nicon = "tool"');
+			expect(content).toContain('name = "Agentation"\nicon = "tool"');
+			expect(content).toContain('name = "MarkdownLint"\nicon = "debug"');
+			expect(content).toContain('name = "Wrangler"\nicon = "run"');
+			expect(content).toContain('name = "1Password"\nicon = "tool"');
+			expect(content).toContain('name = "Beautiful Mermaid"\nicon = "tool"');
+			expect(content).toContain('name = "Auth0"\nicon = "tool"');
+			expect(content).toContain('name = "Semgrep"\nicon = "debug"');
+			expect(content).toContain('name = "Semver"\nicon = "tool"');
+			expect(content).toContain('name = "Trivy"\nicon = "debug"');
+			expect(content).toContain('name = "Gitleaks"\nicon = "debug"');
+			expect(content).toContain('name = "Research"\nicon = "tool"');
+			expect(content).toContain('name = "WSearch"\nicon = "tool"');
 			expect(content).toContain('name = "Script: dev"\nicon = "run"');
 			expect(content).toContain('name = "Script: check"\nicon = "debug"');
 			expect(content).toContain('name = "Script: test"\nicon = "test"');
 			expect(content).toContain('name = "Script: lint:fix"\nicon = "debug"');
+			expect(content).toContain("mise install");
 			expect(content).toContain("npm install");
+			expect(content).toContain("prek --version");
+			expect(content).toContain("diagram --help");
+			expect(content).toContain("ralph --help");
+			expect(content).toContain("cosign version");
+			expect(content).toContain("cloudflared --version");
+			expect(content).toContain("vitest --version");
+			expect(content).toContain("ruff --version");
+			expect(content).toContain("eslint --version");
+			expect(content).toContain("agent-browser --help");
+			expect(content).toContain("agentation-mcp --help");
+			expect(content).toContain("mmdc --help");
+			expect(content).toContain("wrangler --help");
+			expect(content).toContain("gitleaks --help");
+			expect(content).toContain("rsearch --help");
+			expect(content).toContain("wsearch --help");
 			expect(content).toContain("npm run 'dev'");
 			expect(content).toContain("npm run 'check'");
 			expect(content).toContain("npm run 'test'");
@@ -463,6 +676,37 @@ describe("runInit", () => {
 			expect(content).toContain("Semgrep");
 		});
 
+		it("keeps branch protection guidance aligned to the full required-check set", () => {
+			const result = runInit(tempDir, { dryRun: false, force: false });
+
+			expect(result.ok).toBe(true);
+
+			const contributingPath = join(tempDir, "CONTRIBUTING.md");
+			const content = require("node:fs").readFileSync(
+				contributingPath,
+				"utf-8",
+			);
+			expect(content).toContain("## Greptile setup baseline");
+			expect(content).toContain("`harness verify-greptile`");
+			expect(content).toContain(
+				"`harness request-greptile-review --owner <owner> --repo <repo> --pr <number>`",
+			);
+			expect(content).toContain("`@greptileai`");
+			expect(content).toContain("`docs-gate`");
+			expect(content).toContain("`Greptile Review`");
+			expect(content).toContain("`consistency-drift-health`");
+			expect(content).toContain("- Require status checks:\n  - `pr-template`");
+			expect(content).toContain(
+				"- Allow `0` required reviewers for solo-maintainer repositories.",
+			);
+			expect(content).toContain(
+				"- Require code quality results with severity `all`.",
+			);
+			expect(content).toContain(
+				"- Allow merge commits, squash merges, and rebase merges.",
+			);
+		});
+
 		it("routes issue intake to Linear via contact links", () => {
 			writeFileSync(
 				join(tempDir, "package.json"),
@@ -521,12 +765,44 @@ describe("runInit", () => {
 				join(tempDir, "scripts/setup-git-hooks.js"),
 				"utf-8",
 			);
+			const stagedSecrets = require("node:fs").readFileSync(
+				join(tempDir, "scripts/check-staged-secrets.sh"),
+				"utf-8",
+			);
+			const docStyle = require("node:fs").readFileSync(
+				join(tempDir, "scripts/check-doc-style.sh"),
+				"utf-8",
+			);
+			const relatedTests = require("node:fs").readFileSync(
+				join(tempDir, "scripts/check-related-tests.sh"),
+				"utf-8",
+			);
+			const semgrepChanged = require("node:fs").readFileSync(
+				join(tempDir, "scripts/check-semgrep-changed.sh"),
+				"utf-8",
+			);
+			const semgrepRules = require("node:fs").readFileSync(
+				join(tempDir, "scripts/semgrep-pre-push.yml"),
+				"utf-8",
+			);
+			const refreshDiagrams = require("node:fs").readFileSync(
+				join(tempDir, "scripts/refresh-diagram-context.sh"),
+				"utf-8",
+			);
+			const diagramFreshness = require("node:fs").readFileSync(
+				join(tempDir, "scripts/check-diagram-freshness.sh"),
+				"utf-8",
+			);
 			const makefile = require("node:fs").readFileSync(
 				join(tempDir, "Makefile"),
 				"utf-8",
 			);
 			const prek = require("node:fs").readFileSync(
 				join(tempDir, "prek.toml"),
+				"utf-8",
+			);
+			const miseToml = require("node:fs").readFileSync(
+				join(tempDir, ".mise.toml"),
 				"utf-8",
 			);
 			const environmentCheck = require("node:fs").readFileSync(
@@ -540,20 +816,212 @@ describe("runInit", () => {
 			expect(validateCommitMsg).toContain(
 				"Co-authored-by: Codex <noreply@openai.com>",
 			);
+			expect(setupHooks).toContain("make hooks-pre-commit");
+			expect(setupHooks).toContain("make hooks-pre-push");
 			expect(setupHooks).toContain(
-				"pnpm lint && pnpm docs:lint && pnpm typecheck",
+				'"secrets:staged": "bash scripts/check-staged-secrets.sh"',
 			);
-			expect(setupHooks).toContain("pnpm test && pnpm audit");
+			expect(setupHooks).toContain(
+				'"semgrep:changed": "bash scripts/check-semgrep-changed.sh"',
+			);
+			expect(stagedSecrets).toContain("gitleaks git");
+			expect(stagedSecrets).toContain("--staged");
+			expect(docStyle).toContain("vale --config .vale.ini");
+			expect(docStyle).toContain('":(glob)docs/**/*.md"');
+			expect(relatedTests).toContain(
+				"pnpm exec vitest related --run --passWithNoTests",
+			);
+			expect(semgrepChanged).toContain(
+				'RULESET_PATH="$REPO_ROOT/scripts/semgrep-pre-push.yml"',
+			);
+			expect(semgrepChanged).toContain(
+				'git diff --name-only --diff-filter=ACMR -z "$base_ref"...HEAD --',
+			);
+			expect(semgrepChanged).toContain("semgrep scan");
+			expect(semgrepRules).toContain("ts-no-eval");
+			expect(semgrepRules).toContain("ts-no-shell-true");
 			expect(makefile).toContain("check: ## Run all required quality gates");
 			expect(makefile).toContain("\tpnpm check");
+			expect(makefile).toContain(
+				"hooks-pre-commit: ## Run local pre-commit gates before creating a commit",
+			);
+			expect(makefile).toContain(
+				"hooks-pre-push: ## Run local pre-push governance gates before pushing",
+			);
+			expect(makefile).toContain("\t$(MAKE) secrets-staged");
+			expect(makefile).toContain("\t$(MAKE) docs-style-changed");
+			expect(makefile).toContain("\t$(MAKE) related-tests");
+			expect(makefile).toContain("\t$(MAKE) semgrep-changed");
+			expect(makefile).toContain(
+				"\tpnpm exec tsx src/cli.ts docs-gate --mode required --json",
+			);
+			expect(makefile).toContain(
+				"\t@bash ./scripts/check-diagram-freshness.sh",
+			);
+			expect(makefile).toContain(
+				"\tpnpm exec tsx src/cli.ts tooling-audit --path . --json",
+			);
+			expect(makefile).toContain("\t@bash ./scripts/check-environment.sh");
+			expect(makefile).toContain("\tpnpm build");
+			expect(makefile).toContain(
+				"diagrams-check: ## Refresh architecture diagrams when sensitive paths change and fail on drift",
+			);
 			expect(prek).toContain("pre-commit = [");
-			expect(prek).toContain("docs:lint");
-			expect(prek).toContain("typecheck");
+			expect(prek).toContain("make hooks-pre-commit");
 			expect(prek).toContain("pre-push = [");
-			expect(prek).toContain("test");
-			expect(prek).toContain("audit");
+			expect(prek).toContain("make hooks-pre-push");
+			expect(miseToml).toContain('"cargo:prek" = "0.3.4"');
+			expect(miseToml).toContain('"npm:@brainwav/diagram" = "1.0.8"');
+			expect(miseToml).toContain('"npm:@argos-ci/cli" = "4.1.1"');
+			expect(miseToml).toContain('"cosign" = "3.0.5"');
+			expect(miseToml).toContain('"cloudflared" = "2026.3.0"');
+			expect(miseToml).toContain('"npm:vitest" = "4.0.18"');
+			expect(miseToml).toContain('"ruff" = "0.15.5"');
+			expect(miseToml).toContain('"npm:eslint" = "10.0.3"');
+			expect(miseToml).toContain('"npm:agent-browser" = "0.17.1"');
+			expect(miseToml).toContain('"npm:agentation" = "2.3.2"');
+			expect(miseToml).toContain('"npm:agentation-mcp" = "1.2.0"');
+			expect(miseToml).toContain('"npm:@mermaid-js/mermaid-cli" = "11.12.0"');
+			expect(miseToml).toContain('"npm:@brainwav/rsearch" = "0.1.6"');
+			expect(miseToml).toContain('"npm:@brainwav/wsearch-cli" = "0.1.9"');
+			expect(miseToml).toContain('"npm:beautiful-mermaid" = "1.1.3"');
+			expect(miseToml).toContain('"npm:markdownlint-cli2" = "0.21.0"');
+			expect(miseToml).toContain('"npm:semver" = "7.7.4"');
+			expect(miseToml).toContain('"npm:wrangler" = "4.69.0"');
+			expect(miseToml).toContain('"semgrep" = "1.153.1"');
+			expect(miseToml).toContain('"trivy" = "0.69.3"');
+			expect(miseToml).toContain('"vale" = "3.13.1"');
+			expect(environmentCheck).toContain("required_tooling_doc_terms=(");
+			expect(environmentCheck).toContain('"make"');
+			expect(environmentCheck).toContain('"beautiful-mermaid"');
+			expect(environmentCheck).toContain('"cloudflared"');
+			expect(environmentCheck).toContain('"agentation"');
+			expect(environmentCheck).toContain('"mermaid-cli"');
+			expect(environmentCheck).toContain('"rsearch"');
+			expect(environmentCheck).toContain('"wsearch"');
+			expect(environmentCheck).toContain('"wrangler"');
+			expect(environmentCheck).not.toMatch(
+				/required_tooling_doc_terms=\([^\n]*"auth0"/,
+			);
+			expect(environmentCheck).not.toMatch(
+				/required_tooling_doc_terms=\([^\n]*"gitleaks"/,
+			);
+			expect(environmentCheck).not.toMatch(
+				/required_tooling_doc_terms=\([^\n]*"op"/,
+			);
+			expect(environmentCheck).not.toMatch(
+				/required_tooling_doc_terms=\([^\n]*"ralph"/,
+			);
+			expect(environmentCheck).toContain(
+				'CODEX_ENVIRONMENT_PATH="$REPO_ROOT/.codex/environments/environment.toml"',
+			);
+			expect(environmentCheck).toContain(
+				'PREK_CONFIG_PATH="$REPO_ROOT/prek.toml"',
+			);
+			expect(environmentCheck).toContain(
+				"echo \"Error: required binary 'mise' is not installed or not on PATH\"",
+			);
+			expect(environmentCheck).toContain('eval "$(mise activate bash)"');
+			expect(environmentCheck).toContain(
+				'export CLAUDE_APPROVAL_POSTURE="${CLAUDE_APPROVAL_POSTURE:-require}"',
+			);
+			expect(environmentCheck).toContain("required_bins=(");
+			expect(environmentCheck).toContain('"make"');
+			expect(environmentCheck).toContain('"diagram"');
+			expect(environmentCheck).toContain('"cloudflared"');
+			expect(environmentCheck).toContain('"agentation-mcp"');
+			expect(environmentCheck).toContain('"mmdc"');
+			expect(environmentCheck).toContain('"markdownlint-cli2"');
+			expect(environmentCheck).not.toMatch(/required_bins=\([^\n]*"auth0"/);
+			expect(environmentCheck).not.toMatch(/required_bins=\([^\n]*"gitleaks"/);
+			expect(environmentCheck).not.toMatch(/required_bins=\([^\n]*"op"/);
+			expect(environmentCheck).not.toMatch(/required_bins=\([^\n]*"ralph"/);
+			expect(environmentCheck).toContain("required_codex_actions=(");
+			expect(environmentCheck).toContain('"Prek|test"');
+			expect(environmentCheck).toContain('"Diagram|tool"');
+			expect(environmentCheck).toContain('"Cloudflared|run"');
+			expect(environmentCheck).toContain('"Agentation|tool"');
+			expect(environmentCheck).toContain('"Mermaid CLI|tool"');
+			expect(environmentCheck).toContain('"Wrangler|run"');
+			expect(environmentCheck).toContain('"Gitleaks|debug"');
+			expect(environmentCheck).toContain('"Research|tool"');
+			expect(environmentCheck).toContain('MAKEFILE_PATH="$REPO_ROOT/Makefile"');
+			expect(environmentCheck).toContain("required_support_files=(");
+			expect(environmentCheck).toContain('"scripts/check-semgrep-changed.sh"');
+			expect(environmentCheck).toContain('"scripts/semgrep-pre-push.yml"');
+			expect(environmentCheck).toContain("required_make_targets=(");
+			expect(environmentCheck).toContain(
+				'if ! rg -q "^${target}:" "$MAKEFILE_PATH"; then',
+			);
+			expect(environmentCheck).toContain("required_prek_hooks=(");
+			expect(environmentCheck).toContain("required_package_scripts=(");
+			expect(environmentCheck).toContain(
+				'"semgrep:changed|bash scripts/check-semgrep-changed.sh"',
+			);
+			expect(environmentCheck).toContain("required_simple_git_hooks=(");
+			expect(environmentCheck).toContain('"check"');
+			expect(environmentCheck).toContain('"env-check"');
+			expect(environmentCheck).toContain('"hooks-pre-commit"');
+			expect(environmentCheck).toContain('"hooks-pre-push"');
+			expect(environmentCheck).toContain('"secrets-staged"');
+			expect(environmentCheck).toContain('"docs-style-changed"');
+			expect(environmentCheck).toContain('"related-tests"');
+			expect(environmentCheck).toContain('"semgrep-changed"');
+			expect(environmentCheck).toContain('"diagrams-check"');
+			expect(environmentCheck).toContain(
+				'PACKAGE_JSON_PATH="$REPO_ROOT/package.json"',
+			);
+			expect(environmentCheck).toContain("explicit_capabilities=(");
+			expect(environmentCheck).toContain("ui_markers=(");
+			expect(environmentCheck).toContain('"react"');
+			expect(environmentCheck).toContain('"@openai/chatkit"');
+			expect(environmentCheck).toContain(
+				'required_package_specs=("@brainwav/design-system-guidance|either|ui,chatgpt_apps_sdk")',
+			);
+			expect(environmentCheck).toContain(
+				"required package '$pkg' is missing from $PACKAGE_JSON_PATH",
+			);
+			expect(environmentCheck).toContain(
+				"explicit or detected UI/App SDK capabilities",
+			);
+			expect(environmentCheck).toContain("required Makefile target");
+			expect(environmentCheck).toContain("Codex environment action");
 			expect(environmentCheck).toContain(
 				"pnpm exec tsx src/cli.ts check-environment",
+			);
+			expect(refreshDiagrams).toContain(
+				"diagram manifest generation requires ROOT_DIR, TMP_DIR, and MANIFEST_PATH",
+			);
+			expect(refreshDiagrams).toContain(
+				"const buildArchitecture = (subgraphs) => {",
+			);
+			expect(refreshDiagrams).toContain(
+				"const buildDependency = (content, nodeMap) => {",
+			);
+			expect(refreshDiagrams).toContain(
+				'const { createHash } = require("node:crypto");',
+			);
+			expect(refreshDiagrams).toContain(
+				'TRUNC_DIR=".tmp-diagram-refresh-XXXXXX"',
+			);
+			expect(refreshDiagrams).toContain(
+				'TMP_DIR="$(mktemp -d "$ROOT_DIR/${TRUNC_DIR}")"',
+			);
+			expect(refreshDiagrams).toContain(
+				'EXCLUDE_PATTERNS="node_modules/**,.git/**,dist/**,${TMP_BASENAME}/**"',
+			);
+			expect(refreshDiagrams).toContain(
+				'MAX_FILES="${DIAGRAM_REFRESH_MAX_FILES:-1000}"',
+			);
+			expect(refreshDiagrams).toContain('--max-files "$MAX_FILES"');
+			expect(refreshDiagrams).toContain('cp "$TMP_DIR/diagrams/manifest.json"');
+			expect(diagramFreshness).toContain("is_ignored_change()");
+			expect(diagramFreshness).toContain("is_architecture_sensitive_change()");
+			expect(diagramFreshness).toContain(".diagram/*)");
+			expect(diagramFreshness).toContain("src/*.test.ts|src/*.spec.ts");
+			expect(diagramFreshness).toContain("jq -c 'del(.generatedAt)'");
+			expect(diagramFreshness).toContain(
+				'bash "$REPO_ROOT/scripts/refresh-diagram-context.sh" --force --quiet',
 			);
 		});
 	});
@@ -675,7 +1143,9 @@ describe("--track flag", () => {
 		expect(result.ok).toBe(false);
 		if (!result.ok) {
 			expect(result.error.code).toBe("PATH_TRAVERSAL");
-			expect(result.error.path).toBe(".github/workflows/pr-pipeline.yml");
+			expect(result.error.path).toMatch(
+				/^\.github\/workflows\/(?:greptile-review|pr-pipeline)\.yml$/,
+			);
 		}
 		// Nothing should have been written to outsideDir
 		expect(existsSync(join(outsideDir, "workflows"))).toBe(false);
@@ -1170,7 +1640,7 @@ describe("--interactive flag", () => {
 			expect(contractChange).toBeDefined();
 			expect(contractChange?.action).toBe("modify");
 			expect(contractChange?.currentContent).toBe('{"version": "old"}');
-			expect(contractChange?.newContent).toContain('"version": "1.2.0"');
+			expect(contractChange?.newContent).toContain('"version": "1.5.0"');
 		}
 	});
 
@@ -1298,7 +1768,7 @@ describe("--migrate flag", () => {
 		writeFileSync(
 			join(tempDir, "harness.contract.json"),
 			JSON.stringify({
-				version: "1.3.0",
+				version: "1.5.0",
 				riskTierRules: {},
 				reviewPolicy: { timeoutSeconds: 600, timeoutAction: "fail" },
 			}),
@@ -1317,7 +1787,7 @@ describe("--migrate flag", () => {
 		}
 	});
 
-	it("migrates legacy 1.0.0 contracts to 1.3.0", () => {
+	it("migrates legacy 1.0.0 contracts to 1.5.0", () => {
 		writeFileSync(
 			join(tempDir, "harness.contract.json"),
 			JSON.stringify({
@@ -1342,10 +1812,17 @@ describe("--migrate flag", () => {
 					"utf-8",
 				),
 			);
-			expect(migrated.version).toBe("1.3.0");
+			expect(migrated.version).toBe("1.5.0");
 			expect(migrated.riskTierRules["src/legacy/*"]).toBe("low");
 			expect(migrated.reviewPolicy.timeoutSeconds).toBe(300);
 			expect(migrated.reviewPolicy.timeoutAction).toBe("warn");
+			expect(migrated.toolingPolicy.miseFilePath).toBe(".mise.toml");
+			expect(migrated.toolingPolicy.packagePolicy.packageJsonPath).toBe(
+				"package.json",
+			);
+			expect(migrated.toolingPolicy.packagePolicy.explicitCapabilities).toEqual(
+				[],
+			);
 		}
 	});
 
@@ -1416,16 +1893,29 @@ describe("--migrate flag", () => {
 				),
 			);
 			// Custom settings should be preserved
-			expect(migrated.version).toBe("1.3.0");
+			expect(migrated.version).toBe("1.5.0");
 			expect(migrated.riskTierRules["src/auth/*"]).toBe("high");
 			expect(migrated.reviewPolicy.timeoutSeconds).toBe(300);
+			expect(migrated.toolingPolicy.readinessScriptPath).toBe(
+				"scripts/check-environment.sh",
+			);
+			expect(migrated.toolingPolicy.packagePolicy.explicitCapabilities).toEqual(
+				[],
+			);
+			expect(migrated.toolingPolicy.packagePolicy.requiredPackages).toEqual(
+				expect.arrayContaining([
+					expect.objectContaining({
+						package: "@brainwav/design-system-guidance",
+					}),
+				]),
+			);
 		}
 	});
 
 	it("preserves contract content when already up to date", () => {
 		// Create a contract at current version with customizations
 		const originalContent = {
-			version: "1.3.0",
+			version: "1.5.0",
 			riskTierRules: { "src/api/*": "medium" },
 			reviewPolicy: { timeoutSeconds: 900, timeoutAction: "fail" },
 		};

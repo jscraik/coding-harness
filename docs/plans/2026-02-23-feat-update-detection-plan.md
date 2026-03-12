@@ -3,6 +3,7 @@ title: Patch 1 - Update Detection for harness init
 type: feat
 status: completed
 date: 2026-02-23
+plan_id: feat-update-detection
 origin: docs/brainstorms/2026-02-23-installability-patches-brainstorm.md
 ---
 

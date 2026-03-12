@@ -41,6 +41,8 @@ bash scripts/refresh-diagram-context.sh --force
 jq -r '.generated_at, .diagram_count, .changed' AI/context/diagram-context.meta.json
 ```
 
+The local `make hooks-pre-push` path also runs `scripts/check-diagram-freshness.sh`. That gate now skips refresh work unless architecture-sensitive implementation paths changed, and it ignores test-only source changes to keep the local loop tighter.
+
 ## Stop conditions
 
 Stop and ask for direction when any gate fails:

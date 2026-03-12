@@ -42,14 +42,20 @@ vi.mock("./check-authz.js", () => ({
 	runCheckAuthz: vi.fn(),
 }));
 
+vi.mock("../lib/plan-gate/detector.js", () => ({
+	runPlanGate: vi.fn(),
+}));
+
 import { loadContract } from "../lib/contract/loader.js";
 import { GitHubClient } from "../lib/github/client.js";
 import { validateSha } from "../lib/github/sha.js";
+import { runPlanGate } from "../lib/plan-gate/detector.js";
 import { runCheckAuthz } from "./check-authz.js";
 
 const mockGitHubClient = vi.mocked(GitHubClient);
 const mockLoadContract = vi.mocked(loadContract);
 const mockValidateSha = vi.mocked(validateSha);
+const mockRunPlanGate = vi.mocked(runPlanGate);
 const mockRunCheckAuthz = vi.mocked(runCheckAuthz);
 
 const authzPassOutput = {
@@ -79,6 +85,16 @@ describe("runReviewGate", () => {
 	beforeEach(() => {
 		vi.clearAllMocks();
 		mockValidateSha.mockReturnValue(undefined); // No-op = valid
+		mockRunPlanGate.mockReturnValue({
+			passed: true,
+			artifacts: [],
+			errors: [],
+			traceability: {
+				planIds: ["feat-review-gate-traceability"],
+				matchedPlanIds: ["feat-review-gate-traceability"],
+				changedFiles: ["src/commands/review-gate.ts"],
+			},
+		});
 		mockLoadContract.mockReturnValue({
 			version: "1.0",
 			riskTierRules: {},
@@ -103,9 +119,14 @@ describe("runReviewGate", () => {
 				({
 					getPullRequest: vi.fn().mockResolvedValue({
 						number: defaultOptions.prNumber,
+						title: "Traceability hardening",
+						body: "- Plan IDs: `feat-review-gate-traceability`",
 						user: { login: "coding-actor" },
 						head: { sha: validSha, ref: "feature/test" },
 					}),
+					listPullRequestFiles: vi
+						.fn()
+						.mockResolvedValue([{ filename: "src/commands/review-gate.ts" }]),
 					listCheckRunsForRef: vi.fn().mockResolvedValue([]),
 				}) as unknown as GitHubClient,
 		);
@@ -168,6 +189,9 @@ describe("runReviewGate", () => {
 						user: { login: "coding-actor" },
 						head: { sha: validSha, ref: "feature/test" },
 					}),
+					listPullRequestFiles: vi
+						.fn()
+						.mockResolvedValue([{ filename: "src/commands/review-gate.ts" }]),
 					listCheckRunsForRef: mockListCheckRuns,
 				}) as unknown as GitHubClient,
 		);
@@ -213,6 +237,9 @@ describe("runReviewGate", () => {
 		mockGitHubClient.mockImplementation(
 			() =>
 				({
+					listPullRequestFiles: vi
+						.fn()
+						.mockResolvedValue([{ filename: "src/commands/review-gate.ts" }]),
 					listCheckRunsForRef: mockListCheckRuns,
 					getPullRequest: mockGetPullRequest,
 					listPullRequestReviews: mockListReviews,
@@ -232,6 +259,111 @@ describe("runReviewGate", () => {
 			expect(result.output.actionable_count).toBe(0);
 			expect(result.output.informational_count).toBe(3);
 			expect(result.output.confidence_rubric.score).toBe(5);
+		}
+	});
+
+	it("blocks merge when plan traceability fails", async () => {
+		mockRunPlanGate.mockReturnValue({
+			passed: false,
+			artifacts: [],
+			errors: [
+				{
+					code: "TRACEABILITY_MISSING",
+					message:
+						"Changed work cannot be mapped to plan IDs; add plan IDs to the PR title/body or pass --plan-ids",
+				},
+			],
+			traceability: {
+				planIds: [],
+				matchedPlanIds: [],
+				changedFiles: ["src/commands/review-gate.ts"],
+			},
+		});
+
+		const mockCheckRuns: CheckRun[] = [
+			{
+				id: 1,
+				name: "review-check",
+				status: "completed",
+				conclusion: "success",
+				head_sha: validSha,
+			},
+		];
+		mockGitHubClient.mockImplementation(
+			() =>
+				({
+					getPullRequest: vi.fn().mockResolvedValue({
+						number: defaultOptions.prNumber,
+						title: "Traceability hardening",
+						body: "",
+						user: { login: "coding-actor" },
+						head: { sha: validSha, ref: "feature/test" },
+					}),
+					listPullRequestFiles: vi
+						.fn()
+						.mockResolvedValue([{ filename: "src/commands/review-gate.ts" }]),
+					listCheckRunsForRef: vi.fn().mockResolvedValue(mockCheckRuns),
+					listPullRequestReviews: vi.fn().mockResolvedValue([
+						{
+							state: "APPROVED",
+							commit_id: validSha,
+							user: { login: "independent-reviewer" },
+						},
+					]),
+				}) as unknown as GitHubClient,
+		);
+
+		const result = await runReviewGate(defaultOptions);
+
+		expect(result.ok).toBe(true);
+		if (result.ok) {
+			expect(result.output.verified).toBe(false);
+			expect(result.output.plan_traceability_status).toBe("missing");
+			expect(result.output.blockers.join(" ")).toContain("Plan traceability");
+			expect(result.output.plan_ids).toEqual([]);
+		}
+	});
+
+	it("surfaces referenced plan IDs in review output", async () => {
+		const mockCheckRuns: CheckRun[] = [
+			{
+				id: 1,
+				name: "review-check",
+				status: "completed",
+				conclusion: "success",
+				head_sha: validSha,
+			},
+		];
+		mockGitHubClient.mockImplementation(
+			() =>
+				({
+					getPullRequest: vi.fn().mockResolvedValue({
+						number: defaultOptions.prNumber,
+						title: "Traceability hardening",
+						body: "- Plan IDs: `feat-review-gate-traceability`",
+						user: { login: "coding-actor" },
+						head: { sha: validSha, ref: "feature/test" },
+					}),
+					listPullRequestFiles: vi
+						.fn()
+						.mockResolvedValue([{ filename: "src/commands/review-gate.ts" }]),
+					listCheckRunsForRef: vi.fn().mockResolvedValue(mockCheckRuns),
+					listPullRequestReviews: vi.fn().mockResolvedValue([
+						{
+							state: "APPROVED",
+							commit_id: validSha,
+							user: { login: "independent-reviewer" },
+						},
+					]),
+				}) as unknown as GitHubClient,
+		);
+
+		const result = await runReviewGate(defaultOptions);
+
+		expect(result.ok).toBe(true);
+		if (result.ok) {
+			expect(result.output.plan_traceability_status).toBe("pass");
+			expect(result.output.plan_ids).toEqual(["feat-review-gate-traceability"]);
 		}
 	});
 
@@ -261,6 +393,9 @@ describe("runReviewGate", () => {
 		mockGitHubClient.mockImplementation(
 			() =>
 				({
+					listPullRequestFiles: vi
+						.fn()
+						.mockResolvedValue([{ filename: "src/commands/review-gate.ts" }]),
 					listCheckRunsForRef: mockListCheckRuns,
 					getPullRequest: mockGetPullRequest,
 					listPullRequestReviews: mockListReviews,
@@ -317,6 +452,9 @@ describe("runReviewGate", () => {
 		mockGitHubClient.mockImplementation(
 			() =>
 				({
+					listPullRequestFiles: vi
+						.fn()
+						.mockResolvedValue([{ filename: "src/commands/review-gate.ts" }]),
 					listCheckRunsForRef: mockListCheckRuns,
 					getPullRequest: mockGetPullRequest,
 					listPullRequestReviews: mockListReviews,
@@ -364,6 +502,9 @@ describe("runReviewGate", () => {
 		mockGitHubClient.mockImplementation(
 			() =>
 				({
+					listPullRequestFiles: vi
+						.fn()
+						.mockResolvedValue([{ filename: "src/commands/review-gate.ts" }]),
 					listCheckRunsForRef: mockListCheckRuns,
 					getPullRequest: mockGetPullRequest,
 					listPullRequestReviews: mockListReviews,
@@ -435,6 +576,9 @@ describe("runReviewGate", () => {
 		mockGitHubClient.mockImplementation(
 			() =>
 				({
+					listPullRequestFiles: vi
+						.fn()
+						.mockResolvedValue([{ filename: "src/commands/review-gate.ts" }]),
 					listCheckRunsForRef: mockListCheckRuns,
 					getPullRequest: mockGetPullRequest,
 					listPullRequestReviews: mockListReviews,
@@ -485,6 +629,9 @@ describe("runReviewGate", () => {
 		mockGitHubClient.mockImplementation(
 			() =>
 				({
+					listPullRequestFiles: vi
+						.fn()
+						.mockResolvedValue([{ filename: "src/commands/review-gate.ts" }]),
 					listCheckRunsForRef: mockListCheckRuns,
 					getPullRequest: mockGetPullRequest,
 					listPullRequestReviews: mockListReviews,
@@ -527,6 +674,9 @@ describe("runReviewGate", () => {
 		mockGitHubClient.mockImplementation(
 			() =>
 				({
+					listPullRequestFiles: vi
+						.fn()
+						.mockResolvedValue([{ filename: "src/commands/review-gate.ts" }]),
 					listCheckRunsForRef: mockListCheckRuns,
 					getPullRequest: mockGetPullRequest,
 					listPullRequestReviews: mockListReviews,
@@ -583,6 +733,9 @@ describe("runReviewGate", () => {
 		mockGitHubClient.mockImplementation(
 			() =>
 				({
+					listPullRequestFiles: vi
+						.fn()
+						.mockResolvedValue([{ filename: "src/commands/review-gate.ts" }]),
 					listCheckRunsForRef: mockListCheckRuns,
 					getPullRequest: mockGetPullRequest,
 					listPullRequestReviews: mockListReviews,
@@ -658,6 +811,9 @@ describe("runReviewGate", () => {
 		mockGitHubClient.mockImplementation(
 			() =>
 				({
+					listPullRequestFiles: vi
+						.fn()
+						.mockResolvedValue([{ filename: "src/commands/review-gate.ts" }]),
 					listCheckRunsForRef: mockListCheckRuns,
 					getPullRequest: mockGetPullRequest,
 					listPullRequestReviews: mockListReviews,
@@ -687,6 +843,9 @@ describe("runReviewGate", () => {
 		mockGitHubClient.mockImplementation(
 			() =>
 				({
+					listPullRequestFiles: vi
+						.fn()
+						.mockResolvedValue([{ filename: "src/commands/review-gate.ts" }]),
 					listCheckRunsForRef: vi.fn().mockResolvedValue(mockCheckRuns),
 					getPullRequest: vi.fn().mockResolvedValue({
 						number: defaultOptions.prNumber,
@@ -734,6 +893,9 @@ describe("runReviewGate", () => {
 		mockGitHubClient.mockImplementation(
 			() =>
 				({
+					listPullRequestFiles: vi
+						.fn()
+						.mockResolvedValue([{ filename: "src/commands/review-gate.ts" }]),
 					listCheckRunsForRef: vi.fn().mockResolvedValue(mockCheckRuns),
 					getPullRequest: vi.fn().mockResolvedValue({
 						number: defaultOptions.prNumber,
@@ -816,6 +978,9 @@ describe("runReviewGate", () => {
 		mockGitHubClient.mockImplementation(
 			() =>
 				({
+					listPullRequestFiles: vi
+						.fn()
+						.mockResolvedValue([{ filename: "src/commands/review-gate.ts" }]),
 					listCheckRunsForRef: mockListCheckRuns,
 					getPullRequest: mockGetPullRequest,
 					listPullRequestReviews: mockListReviews,
@@ -850,6 +1015,9 @@ describe("runReviewGate", () => {
 						user: { login: "coding-actor" },
 						head: { sha: validSha, ref: "feature/test" },
 					}),
+					listPullRequestFiles: vi
+						.fn()
+						.mockResolvedValue([{ filename: "src/commands/review-gate.ts" }]),
 					listCheckRunsForRef: mockListCheckRuns,
 				}) as unknown as GitHubClient,
 		);
@@ -894,6 +1062,9 @@ describe("runReviewGate", () => {
 						user: { login: "coding-actor" },
 						head: { sha: validSha, ref: "feature/test" },
 					}),
+					listPullRequestFiles: vi
+						.fn()
+						.mockResolvedValue([{ filename: "src/commands/review-gate.ts" }]),
 					listCheckRunsForRef: mockListCheckRuns,
 				}) as unknown as GitHubClient,
 		);
@@ -923,6 +1094,16 @@ describe("runReviewGateCLI", () => {
 	beforeEach(() => {
 		vi.clearAllMocks();
 		mockValidateSha.mockReturnValue(undefined);
+		mockRunPlanGate.mockReturnValue({
+			passed: true,
+			artifacts: [],
+			errors: [],
+			traceability: {
+				planIds: ["feat-review-gate-traceability"],
+				matchedPlanIds: ["feat-review-gate-traceability"],
+				changedFiles: ["src/commands/review-gate.ts"],
+			},
+		});
 		mockLoadContract.mockReturnValue({
 			version: "1.0",
 			riskTierRules: {},
@@ -952,6 +1133,9 @@ describe("runReviewGateCLI", () => {
 						user: { login: "coding-actor" },
 						head: { sha: validSha, ref: "feature/test" },
 					}),
+					listPullRequestFiles: vi
+						.fn()
+						.mockResolvedValue([{ filename: "src/commands/review-gate.ts" }]),
 					listCheckRunsForRef: mockListCheckRuns,
 				}) as unknown as GitHubClient,
 		);

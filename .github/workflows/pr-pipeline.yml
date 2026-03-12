@@ -176,6 +176,24 @@ EOF
             --max-tier medium \
             --files "${CHANGED_FILES}" \
             --json
+          if [[ "${{ github.event_name }}" == "pull_request" ]]; then
+            PR_TITLE="${{ github.event.pull_request.title }}"
+            PR_BODY="$(cat <<'EOF'
+${{ github.event.pull_request.body }}
+EOF
+)"
+            pnpm exec tsx src/cli.ts plan-gate \
+              --pr-title "$PR_TITLE" \
+              --pr-body "$PR_BODY" \
+              --changed-files "$CHANGED_FILES" \
+              --max-age 3650 \
+              --require-traceability \
+              --require-plan-id \
+              --require-acceptance-evidence \
+              --json
+          else
+            echo "Skipping PR plan traceability validation for merge_group."
+          fi
 
   dependency-review:
     name: dependency-review

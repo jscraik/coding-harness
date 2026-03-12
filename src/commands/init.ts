@@ -23,7 +23,21 @@ import { sanitizeError } from "../lib/input/sanitize.js";
 import {
 	BRANCH_PROTECTION_REQUIRED_CHECKS,
 	REVIEW_POLICY_REQUIRED_CHECKS,
+	formatRequiredChecksBulleted,
 } from "../lib/policy/required-checks.js";
+import {
+	PROJECT_MISE_REQUIRED_TOOLS,
+	REQUIRED_CODEX_ACTION_PAIRS,
+	REQUIRED_CODEX_TOOL_ACTIONS,
+	REQUIRED_HOOK_SUPPORT_FILES,
+	REQUIRED_MAKEFILE_TARGETS,
+	REQUIRED_PACKAGE_SCRIPTS,
+	REQUIRED_PREK_HOOKS,
+	REQUIRED_SIMPLE_GIT_HOOKS,
+	REQUIRED_TOOLING_BINARIES,
+	REQUIRED_TOOLING_DOC_TERMS,
+	TOOLING_CODEX_ENVIRONMENT_PATH,
+} from "../lib/policy/tooling-baseline.js";
 import { getVersion } from "../lib/version.js";
 
 // Exit codes for programmatic consumption
@@ -98,6 +112,8 @@ export interface ProposedChange {
 
 /** Max size for interactive content reads to prevent DoS via large/special files */
 const MAX_INTERACTIVE_FILE_BYTES = 1024 * 1024; // 1 MiB
+const PRE_COMMIT_MAKE_TARGET = REQUIRED_SIMPLE_GIT_HOOKS["pre-commit"];
+const PRE_PUSH_MAKE_TARGET = REQUIRED_SIMPLE_GIT_HOOKS["pre-push"];
 
 // === Schema Migration Types ===
 
@@ -115,7 +131,68 @@ export interface ContractSchema {
 		| undefined;
 	branchProtection?: {
 		requiredChecks?: string[];
+		restrictDeletions?: boolean;
+		blockForcePushes?: boolean;
+		requireLinearHistory?: boolean;
+		requirePullRequest?: boolean;
+		requiredApprovingReviewCount?: number;
+		dismissStaleReviewsOnPush?: boolean;
+		requireConversationResolution?: boolean;
+		requireCodeOwnerReview?: boolean;
+		requireLastPushApproval?: boolean;
+		requireBranchesUpToDate?: boolean;
+		allowedMergeMethods?: {
+			mergeCommit?: boolean;
+			squash?: boolean;
+			rebase?: boolean;
+		};
+		codeQuality?: {
+			required?: boolean;
+			severity?: unknown;
+		};
+		publicCodeScanning?: {
+			required?: boolean;
+			publicOnly?: boolean;
+			tool?: unknown;
+			alertsThreshold?: unknown;
+			securityAlertsThreshold?: unknown;
+		};
 	};
+	toolingPolicy?: {
+		requiredDocumentationTerms?: string[];
+		requiredBinaries?: string[];
+		requiredMiseTools?: Array<{
+			tool?: unknown;
+			version?: unknown;
+		}>;
+		miseFilePath?: unknown;
+		readinessScriptPath?: unknown;
+		codexEnvironment?: {
+			path?: unknown;
+			requiredActions?: Array<{
+				name?: unknown;
+				icon?: unknown;
+			}>;
+		};
+		makefile?: {
+			path?: unknown;
+			requiredTargets?: string[];
+		};
+		packagePolicy?: {
+			packageJsonPath?: unknown;
+			explicitCapabilities?: string[];
+			capabilityDetectors?: Array<{
+				capability?: unknown;
+				dependencyMarkers?: string[];
+			}>;
+			requiredPackages?: Array<{
+				package?: unknown;
+				dependencyType?: unknown;
+				requiredWhenCapabilities?: string[];
+			}>;
+		};
+	};
+	contextIntegrityPolicy?: unknown;
 	issueTrackingPolicy?: unknown;
 	evidencePolicy?: {
 		requiredFor: unknown[];
@@ -170,7 +247,7 @@ export type MigrationResultType =
 	| { ok: false; error: InitErrorOutput };
 
 // Current latest schema version (must match template)
-export const CURRENT_SCHEMA_VERSION = "1.3.0";
+export const CURRENT_SCHEMA_VERSION = "1.5.0";
 
 function addSchemaDefaults(contract: ContractSchema): ContractSchema {
 	return {
@@ -204,6 +281,9 @@ function addSchemaDefaults(contract: ContractSchema): ContractSchema {
 		packageManagerPolicy:
 			contract.packageManagerPolicy ??
 			(DEFAULT_CONTRACT.packageManagerPolicy as HarnessContract["packageManagerPolicy"]),
+		contextIntegrityPolicy:
+			contract.contextIntegrityPolicy ??
+			(DEFAULT_CONTRACT.contextIntegrityPolicy as HarnessContract["contextIntegrityPolicy"]),
 		remediationPolicy:
 			contract.remediationPolicy ??
 			(DEFAULT_CONTRACT.remediationPolicy as HarnessContract["remediationPolicy"]),
@@ -211,8 +291,98 @@ function addSchemaDefaults(contract: ContractSchema): ContractSchema {
 			contract.gapCasePolicy ??
 			(DEFAULT_CONTRACT.gapCasePolicy as HarnessContract["gapCasePolicy"]),
 		branchProtection:
-			contract.branchProtection ??
-			(DEFAULT_CONTRACT.branchProtection as HarnessContract["branchProtection"]),
+			contract.branchProtection === undefined
+				? (DEFAULT_CONTRACT.branchProtection as HarnessContract["branchProtection"])
+				: ({
+						...(DEFAULT_CONTRACT.branchProtection as HarnessContract["branchProtection"]),
+						...contract.branchProtection,
+						allowedMergeMethods:
+							contract.branchProtection.allowedMergeMethods === undefined
+								? (DEFAULT_CONTRACT.branchProtection
+										?.allowedMergeMethods as HarnessContract["branchProtection"] extends {
+										allowedMergeMethods?: infer T;
+									}
+										? T
+										: never)
+								: {
+										...(DEFAULT_CONTRACT.branchProtection
+											?.allowedMergeMethods ?? {}),
+										...contract.branchProtection.allowedMergeMethods,
+									},
+						codeQuality:
+							contract.branchProtection.codeQuality === undefined
+								? DEFAULT_CONTRACT.branchProtection?.codeQuality
+								: {
+										...(DEFAULT_CONTRACT.branchProtection?.codeQuality ?? {}),
+										...contract.branchProtection.codeQuality,
+									},
+						publicCodeScanning:
+							contract.branchProtection.publicCodeScanning === undefined
+								? DEFAULT_CONTRACT.branchProtection?.publicCodeScanning
+								: {
+										...(DEFAULT_CONTRACT.branchProtection?.publicCodeScanning ??
+											{}),
+										...contract.branchProtection.publicCodeScanning,
+									},
+					} as HarnessContract["branchProtection"]),
+		toolingPolicy:
+			contract.toolingPolicy === undefined
+				? DEFAULT_CONTRACT.toolingPolicy
+				: ({
+						...(DEFAULT_CONTRACT.toolingPolicy ?? {}),
+						...contract.toolingPolicy,
+						requiredDocumentationTerms:
+							contract.toolingPolicy.requiredDocumentationTerms ??
+							DEFAULT_CONTRACT.toolingPolicy?.requiredDocumentationTerms,
+						requiredBinaries:
+							contract.toolingPolicy.requiredBinaries ??
+							DEFAULT_CONTRACT.toolingPolicy?.requiredBinaries,
+						requiredMiseTools:
+							contract.toolingPolicy.requiredMiseTools ??
+							DEFAULT_CONTRACT.toolingPolicy?.requiredMiseTools,
+						codexEnvironment:
+							contract.toolingPolicy.codexEnvironment === undefined
+								? DEFAULT_CONTRACT.toolingPolicy?.codexEnvironment
+								: {
+										...(DEFAULT_CONTRACT.toolingPolicy?.codexEnvironment ?? {}),
+										...contract.toolingPolicy.codexEnvironment,
+										requiredActions:
+											contract.toolingPolicy.codexEnvironment.requiredActions ??
+											DEFAULT_CONTRACT.toolingPolicy?.codexEnvironment
+												?.requiredActions,
+									},
+						makefile:
+							contract.toolingPolicy.makefile === undefined
+								? DEFAULT_CONTRACT.toolingPolicy?.makefile
+								: {
+										...(DEFAULT_CONTRACT.toolingPolicy?.makefile ?? {}),
+										...contract.toolingPolicy.makefile,
+										requiredTargets:
+											contract.toolingPolicy.makefile.requiredTargets ??
+											DEFAULT_CONTRACT.toolingPolicy?.makefile?.requiredTargets,
+									},
+						packagePolicy:
+							contract.toolingPolicy.packagePolicy === undefined
+								? DEFAULT_CONTRACT.toolingPolicy?.packagePolicy
+								: {
+										...(DEFAULT_CONTRACT.toolingPolicy?.packagePolicy ?? {}),
+										...contract.toolingPolicy.packagePolicy,
+										explicitCapabilities:
+											contract.toolingPolicy.packagePolicy
+												.explicitCapabilities ??
+											DEFAULT_CONTRACT.toolingPolicy?.packagePolicy
+												?.explicitCapabilities,
+										capabilityDetectors:
+											contract.toolingPolicy.packagePolicy
+												.capabilityDetectors ??
+											DEFAULT_CONTRACT.toolingPolicy?.packagePolicy
+												?.capabilityDetectors,
+										requiredPackages:
+											contract.toolingPolicy.packagePolicy.requiredPackages ??
+											DEFAULT_CONTRACT.toolingPolicy?.packagePolicy
+												?.requiredPackages,
+									},
+					} as HarnessContract["toolingPolicy"]),
 		issueTrackingPolicy:
 			contract.issueTrackingPolicy ??
 			(DEFAULT_CONTRACT.issueTrackingPolicy as HarnessContract["issueTrackingPolicy"]),
@@ -263,6 +433,28 @@ const MIGRATIONS: Migration[] = [
 				version: "1.3.0",
 			}) as ContractSchema,
 	},
+	{
+		fromVersion: "1.3.0",
+		toVersion: "1.4.0",
+		description:
+			"Inject tooling policy defaults for repo-managed readiness surfaces",
+		migrate: (contract) =>
+			({
+				...addSchemaDefaults(contract),
+				version: "1.4.0",
+			}) as ContractSchema,
+	},
+	{
+		fromVersion: "1.4.0",
+		toVersion: "1.5.0",
+		description:
+			"Inject conditional package policy defaults for UI and ChatGPT Apps SDK repositories",
+		migrate: (contract) =>
+			({
+				...addSchemaDefaults(contract),
+				version: "1.5.0",
+			}) as ContractSchema,
+	},
 ];
 
 export interface InitOutput {
@@ -288,7 +480,7 @@ export type InitResult =
 const HARNESS_DIR = ".harness";
 const BACKUPS_DIR = "backups";
 const MANIFEST_FILE = "restore-manifest.json";
-const CODEX_ENVIRONMENT_TEMPLATE_PATH = ".codex/environments/environment.toml";
+const CODEX_ENVIRONMENT_TEMPLATE_PATH = TOOLING_CODEX_ENVIRONMENT_PATH;
 const CODEX_ENVIRONMENT_AUTOGENERATED_HEADER =
 	"# THIS IS AUTOGENERATED. DO NOT EDIT MANUALLY";
 const RETIRED_TEMPLATE_PATHS = [
@@ -504,7 +696,7 @@ function renderCodexEnvironmentTemplate(
 	packageManager: string,
 	context: TemplateRenderContext,
 ): string {
-	const installCommand = renderInstallCommand(packageManager);
+	const installCommand = `mise install\n${renderInstallCommand(packageManager)}`;
 	const runScript = pickScriptForIcon(context.packageScripts, "run");
 	const debugScript = pickScriptForIcon(context.packageScripts, "debug");
 	const testScript = pickScriptForIcon(context.packageScripts, "test");
@@ -539,6 +731,16 @@ ${installCommand}`,
 				: renderMissingScriptActionCommand("test"),
 		},
 	];
+
+	for (const action of REQUIRED_CODEX_TOOL_ACTIONS) {
+		actions.push({
+			name: action.name,
+			icon: action.icon,
+			command: `set -euo pipefail
+
+${action.command}`,
+		});
+	}
 
 	for (const script of context.packageScripts) {
 		actions.push({
@@ -584,13 +786,437 @@ contact_links:
 `;
 }
 
+function renderGreptileConfig(): string {
+	return `${JSON.stringify(
+		{
+			version: "1.0",
+			strictness: 2,
+			fileChangeLimit: 300,
+			commentTypes: [
+				"bug-risk",
+				"security",
+				"performance",
+				"architecture",
+				"maintainability",
+			],
+			enableCrossFileGraphQueries: true,
+			requireIndependentValidation: true,
+			confidence: {
+				minMergeScore: 4,
+				targetScore: 5,
+			},
+			rules: [
+				{
+					id: "independent-ai-validation",
+					glob: "**/*",
+					description:
+						"Coding agent must not approve its own PR; separate review signal required.",
+					severity: "high",
+				},
+				{
+					id: "governance-parity",
+					glob: "**/*",
+					description:
+						"Changes to governance, workflow, or policy surfaces must keep docs, required checks, and implementation aligned.",
+					severity: "high",
+				},
+				{
+					id: "evidence-required-for-review-policy",
+					glob: "**/*",
+					description:
+						"Policy, workflow, or review-gate changes require validation evidence before merge.",
+					severity: "medium",
+				},
+			],
+			ignorePatterns: ["dist/**", "coverage/**", "node_modules/**"],
+		},
+		null,
+		2,
+	)}\n`;
+}
+
+function renderGreptileRules(): string {
+	return `# Harness-managed Greptile rules
+
+## Scope
+
+These rules define the baseline Greptile review expectations for harness-managed repositories.
+
+## Rule set
+
+### 1) Independent validation is mandatory
+
+- The coding agent must not act as approving reviewer on the same PR.
+- Every merge-ready decision requires an independent review signal.
+
+### 2) Governance surfaces must stay aligned
+
+If a PR changes governance, workflow, or policy files, reviewers must verify consistency across:
+
+- \`harness.contract.json\`
+- \`CONTRIBUTING.md\`
+- \`README.md\`
+- \`.github/PULL_REQUEST_TEMPLATE.md\`
+- \`.github/workflows/*.yml\`
+
+### 3) Policy changes require evidence
+
+- Policy, workflow, or review-gate changes must include test and validation evidence.
+- Any reduction in mandatory checks or review gates is high risk.
+
+### 4) Merge confidence threshold
+
+- Confidence below \`4/5\` is merge-blocking.
+- Confidence \`4/5\` may merge only when remaining items are low-risk polish.
+- Confidence \`5/5\` is merge-ready.
+`;
+}
+
+function renderGreptileFiles(): string {
+	return `${JSON.stringify(
+		{
+			contextFiles: [
+				{
+					path: "harness.contract.json",
+					role: "primary governance contract",
+				},
+				{
+					path: "package.json",
+					role: "project scripts and package metadata",
+				},
+				{
+					path: "README.md",
+					role: "operator-facing setup and workflow docs",
+				},
+				{
+					path: "CONTRIBUTING.md",
+					role: "contributor governance requirements",
+				},
+				{
+					path: ".github/workflows/pr-pipeline.yml",
+					role: "required checks workflow",
+				},
+			],
+			apiSpecs: [
+				"contracts/**/*.schema.json",
+				"openapi/**/*.json",
+				"openapi/**/*.yaml",
+				"src/**/*.ts",
+			],
+			schemaFiles: [
+				"contracts/**/*.schema.json",
+				"schemas/**/*.json",
+				"openapi/**/*.json",
+				"openapi/**/*.yaml",
+			],
+		},
+		null,
+		2,
+	)}\n`;
+}
+
+function renderGreptileReviewWorkflow(): string {
+	return `name: Greptile Review
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened, review_requested]
+  merge_group:
+  pull_request_review:
+    types: [submitted, dismissed]
+  pull_request_review_comment:
+    types: [created]
+  issue_comment:
+    types: [created]
+
+permissions:
+  contents: read
+  pull-requests: read
+  checks: write
+  statuses: write
+
+jobs:
+  greptile-review:
+    name: Greptile Review
+    runs-on: ubuntu-latest
+    if: |
+      github.event_name == 'pull_request' ||
+      github.event_name == 'merge_group' ||
+      github.event_name == 'pull_request_review' ||
+      github.event_name == 'pull_request_review_comment' ||
+      (
+        (
+          github.event.comment.user.login == 'greptile[bot]' ||
+          github.event.comment.user.login == 'greptileai[bot]' ||
+          github.event.comment.user.login == 'greptile-apps[bot]' ||
+          github.event.comment.user.login == 'greptile' ||
+          github.event.comment.user.login == 'greptileai' ||
+          github.event.comment.user.login == 'greptile-apps'
+        )
+    steps:
+      - name: Merge queue passthrough
+        if: github.event_name == 'merge_group'
+        run: echo "Greptile PR-context checks are evaluated on pull_request events."
+
+      - name: Get PR context
+        if: github.event_name != 'merge_group'
+        id: context
+        env:
+          EVENT_NAME: \${{ github.event_name }}
+          PR_NUMBER: \${{ github.event.pull_request.number || '' }}
+          ISSUE_NUMBER: \${{ github.event.issue.number || '' }}
+          REPO_OWNER: \${{ github.repository_owner }}
+          REPO_NAME: \${{ github.event.repository.name }}
+        uses: actions/github-script@f28e40c7f34bde8b3046d885e986cb6290c5673b # v7
+        with:
+          script: |
+            const eventName = process.env.EVENT_NAME;
+            const prNumber = eventName === 'issue_comment'
+              ? process.env.ISSUE_NUMBER
+              : process.env.PR_NUMBER;
+
+            if (!prNumber) {
+              core.setFailed(\`Could not determine PR number for event: \${eventName}\`);
+              return;
+            }
+
+            let headSha;
+
+            if (eventName === 'pull_request') {
+              headSha = context.payload.pull_request.head.sha;
+            } else {
+              const pr = await github.rest.pulls.get({
+                owner: process.env.REPO_OWNER,
+                repo: process.env.REPO_NAME,
+                pull_number: parseInt(prNumber, 10)
+              });
+              headSha = pr.data.head.sha;
+            }
+
+            core.setOutput('pr_number', prNumber);
+            core.setOutput('head_sha', headSha);
+            core.setOutput('repo_owner', process.env.REPO_OWNER);
+            core.setOutput('repo_name', process.env.REPO_NAME);
+
+      - name: Analyze Greptile review
+        if: github.event_name != 'merge_group'
+        id: analyze
+        env:
+          PR_NUMBER: \${{ steps.context.outputs.pr_number }}
+          REPO_OWNER: \${{ steps.context.outputs.repo_owner }}
+          REPO_NAME: \${{ steps.context.outputs.repo_name }}
+          MIN_MERGE_SCORE: '4'
+          EVENT_NAME: \${{ github.event_name }}
+        uses: actions/github-script@f28e40c7f34bde8b3046d885e986cb6290c5673b # v7
+        with:
+          script: |
+            const prNumber = parseInt(process.env.PR_NUMBER, 10);
+            const minMergeScore = parseInt(process.env.MIN_MERGE_SCORE, 10);
+            const owner = process.env.REPO_OWNER;
+            const repo = process.env.REPO_NAME;
+            const eventName = process.env.EVENT_NAME;
+            const action = context.payload.action || '';
+
+            if (eventName === 'pull_request' && action === 'synchronize') {
+              core.setOutput('found', 'false');
+              core.setOutput('status', 'pending');
+              core.setOutput('summary', 'Waiting for Greptile review on the current PR head commit...');
+              core.setOutput('comment_url', '');
+              core.setOutput('score', '');
+              console.log('Head SHA changed via synchronize event; waiting for fresh Greptile review');
+              return;
+            }
+
+            const comments = await github.rest.issues.listComments({
+              owner,
+              repo,
+              issue_number: prNumber
+            });
+
+            const greptileLogins = new Set([
+              'greptile[bot]',
+              'greptileai[bot]',
+              'greptile-apps[bot]',
+              'greptile',
+              'greptileai',
+              'greptile-apps'
+            ]);
+
+            const greptileComments = comments.data
+              .filter(c => c.user != null && greptileLogins.has(c.user.login))
+              .sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
+
+            if (greptileComments.length === 0) {
+              core.setOutput('found', 'false');
+              core.setOutput('status', 'pending');
+              core.setOutput('summary', 'Waiting for Greptile review on the current PR head commit...');
+              core.setOutput('comment_url', '');
+              core.setOutput('score', '');
+              console.log('No Greptile comments found for the current head commit');
+              return;
+            }
+
+            const latestComment = greptileComments[0];
+            const commentBody = (latestComment.body || '').toLowerCase();
+
+            core.setOutput('found', 'true');
+            core.setOutput('comment_url', latestComment.html_url);
+
+            let score = null;
+            const scorePatterns = [
+              /(?:confidence|score)[:\\s]*(\\d)(?:\\s*\\/\\s*5)?/,
+              /(\\d)\\s*\\/\\s*5.*confidence/,
+              /overall[:\\s]*(\\d)/,
+              /rating[:\\s]*(\\d)/
+            ];
+
+            for (const pattern of scorePatterns) {
+              const match = commentBody.match(pattern);
+              if (match) {
+                score = parseInt(match[1], 10);
+                break;
+              }
+            }
+
+            const hasApprovalKeywords = /\\b(approved?|pass(?:ed|ing)?|lgtm|looks good|ready to merge)\\b/.test(commentBody);
+            const hasBlockKeywords = /\\b(block(?:ed|ing)?|fail(?:ed|ing)?|needs? changes?|do not merge|dnm)\\b/.test(commentBody);
+
+            let status;
+            let summary;
+            let scoreOutput;
+
+            if (score !== null) {
+              scoreOutput = score.toString();
+              if (score >= minMergeScore) {
+                status = 'success';
+                summary = \`Greptile review passed with confidence score \${score}/5 (threshold: \${minMergeScore}/5)\`;
+              } else {
+                status = 'failure';
+                summary = \`Greptile review failed with confidence score \${score}/5 (minimum required: \${minMergeScore}/5)\`;
+              }
+            } else if (hasApprovalKeywords && !hasBlockKeywords) {
+              status = 'success';
+              scoreOutput = 'unknown';
+              summary = 'Greptile review indicates approval';
+            } else if (hasBlockKeywords) {
+              status = 'failure';
+              scoreOutput = 'unknown';
+              summary = 'Greptile review indicates changes are needed';
+            } else {
+              status = 'success';
+              scoreOutput = 'unknown';
+              summary = 'Greptile review completed (no explicit score detected)';
+            }
+
+            core.setOutput('status', status);
+            core.setOutput('summary', summary);
+            core.setOutput('score', scoreOutput);
+
+            console.log(\`Analysis complete: status=\${status}, score=\${scoreOutput}\`);
+
+      - name: Create or update check run
+        if: github.event_name != 'merge_group'
+        env:
+          HEAD_SHA: \${{ steps.context.outputs.head_sha }}
+          STATUS: \${{ steps.analyze.outputs.status }}
+          SUMMARY: \${{ steps.analyze.outputs.summary }}
+          FOUND: \${{ steps.analyze.outputs.found }}
+          COMMENT_URL: \${{ steps.analyze.outputs.comment_url }}
+          REPO_OWNER: \${{ steps.context.outputs.repo_owner }}
+          REPO_NAME: \${{ steps.context.outputs.repo_name }}
+        uses: actions/github-script@f28e40c7f34bde8b3046d885e986cb6290c5673b # v7
+        with:
+          script: |
+            const owner = process.env.REPO_OWNER;
+            const repo = process.env.REPO_NAME;
+            const headSha = process.env.HEAD_SHA;
+            const status = process.env.STATUS;
+            const summary = process.env.SUMMARY;
+            const found = process.env.FOUND;
+            const commentUrl = process.env.COMMENT_URL;
+            const checkName = 'Greptile Review';
+
+            const existingChecks = await github.rest.checks.listForRef({
+              owner,
+              repo,
+              ref: headSha,
+              check_name: checkName,
+              filter: 'latest'
+            });
+
+            const existingCheck = existingChecks.data.check_runs.find(
+              run => run.name === checkName
+            );
+
+            if (status === 'pending') {
+              const checkPayload = {
+                owner,
+                repo,
+                name: checkName,
+                head_sha: headSha,
+                status: 'completed',
+                conclusion: 'failure',
+                output: {
+                  title: 'Greptile Review Pending',
+                  summary: 'Greptile has not yet reviewed this PR head commit.'
+                }
+              };
+
+              if (existingCheck) {
+                await github.rest.checks.update({
+                  owner,
+                  repo,
+                  check_run_id: existingCheck.id,
+                  ...checkPayload
+                });
+              } else {
+                await github.rest.checks.create(checkPayload);
+              }
+              return;
+            }
+
+            const conclusion = status === 'success' ? 'success' : 'failure';
+            const output = {
+              title: checkName,
+              summary,
+              text: found === 'true' && commentUrl ? \`Greptile review comment: \${commentUrl}\` : undefined
+            };
+
+            if (existingCheck) {
+              await github.rest.checks.update({
+                owner,
+                repo,
+                check_run_id: existingCheck.id,
+                name: checkName,
+                status: 'completed',
+                conclusion,
+                output
+              });
+            } else {
+              await github.rest.checks.create({
+                owner,
+                repo,
+                name: checkName,
+                head_sha: headSha,
+                status: 'completed',
+                conclusion,
+                output
+              });
+            }
+
+            if (conclusion === 'failure') {
+              core.setFailed(summary);
+            }
+`;
+}
+
 const TEMPLATES: Template[] = [
 	{
 		path: "harness.contract.json",
 		render: (pm, context) =>
 			JSON.stringify(
 				{
-					version: "1.2.0",
+					version: CURRENT_SCHEMA_VERSION,
 					riskTierRules: {
 						"src/auth/**": "high",
 						"src/api/**": "high",
@@ -611,7 +1237,34 @@ const TEMPLATES: Template[] = [
 					},
 					branchProtection: {
 						requiredChecks: [...BRANCH_PROTECTION_REQUIRED_CHECKS],
+						restrictDeletions: true,
+						blockForcePushes: true,
+						requireLinearHistory: true,
+						requirePullRequest: true,
+						requiredApprovingReviewCount: 1,
+						dismissStaleReviewsOnPush: true,
+						requireConversationResolution: true,
+						requireCodeOwnerReview: false,
+						requireLastPushApproval: false,
+						requireBranchesUpToDate: true,
+						allowedMergeMethods: {
+							mergeCommit: true,
+							squash: true,
+							rebase: true,
+						},
+						codeQuality: {
+							required: true,
+							severity: "all",
+						},
+						publicCodeScanning: {
+							required: true,
+							publicOnly: true,
+							tool: "CodeQL",
+							alertsThreshold: "errors",
+							securityAlertsThreshold: "high_or_higher",
+						},
 					},
+					toolingPolicy: DEFAULT_CONTRACT.toolingPolicy,
 					issueTrackingPolicy: {
 						provider: "linear" as const,
 						...(context.issueTrackingUrl
@@ -780,6 +1433,20 @@ const TEMPLATES: Template[] = [
 						protectedBranchDenylist: ["main", "master", "release/*"],
 						enforceBranchProtection: true,
 					},
+					controlPlanePolicy: {
+						overridePolicy: {
+							authorizedPrincipals: [],
+							dualApprovalScopes: ["temporary_unblock", "temporary_promote"],
+							maxTtlHours: 24,
+							nonOverridableControls: [
+								"canonical_runtime_invalid",
+								"governance_trust_mismatch",
+								"missing_required_instruction_surface",
+								"missing_snapshot_integrity_verification",
+							],
+						},
+					},
+					contextIntegrityPolicy: DEFAULT_CONTRACT.contextIntegrityPolicy,
 				},
 				null,
 				2,
@@ -819,6 +1486,22 @@ const TEMPLATES: Template[] = [
 				null,
 				2,
 			),
+	},
+	{
+		path: ".greptile/config.json",
+		render: () => renderGreptileConfig(),
+	},
+	{
+		path: ".greptile/rules.md",
+		render: () => renderGreptileRules(),
+	},
+	{
+		path: ".greptile/files.json",
+		render: () => renderGreptileFiles(),
+	},
+	{
+		path: ".github/workflows/greptile-review.yml",
+		render: () => renderGreptileReviewWorkflow(),
 	},
 	{
 		path: ".github/workflows/pr-pipeline.yml",
@@ -1365,6 +2048,7 @@ jobs:
 - [Branching and PR rule](#branching-and-pr-rule)
 - [Branch name policy](#branch-name-policy)
 - [Required pre-merge gates](#required-pre-merge-gates)
+- [Required tooling baseline](#required-tooling-baseline)
 - [Greptile setup baseline](#greptile-setup-baseline)
 - [Greptile config hierarchy](#greptile-config-hierarchy)
 - [Greptile merge logic for multi-scope pull requests](#greptile-merge-logic-for-multi-scope-pull-requests)
@@ -1383,7 +2067,7 @@ jobs:
 - Pull request required for every merge.
 - Required checks must pass before merge.
 - Greptile + Codex review artifacts are required before merge.
-- Greptile must be configured correctly using the \`grepfile\` skill with all required Greptile files present.
+- Greptile must be configured correctly using the \`check-pr\` or \`greploop\` skill with all required Greptile files present.
 - The coding agent must not approve its own PR; review must be independent.
 - Merge only after all gates pass.
 - Delete branch/worktree after merge.
@@ -1418,6 +2102,89 @@ This workflow keeps delivery auditable, reversible, and consistent even for solo
 - ${auditCommand}
 - ${checkCommand}
 - ${memoryValidateCommand}
+
+## Required tooling baseline
+
+Harness-managed repositories should keep this baseline available locally before claiming the repo is ready:
+
+- \`prek\`
+- \`diagram\`
+- \`mise\`
+- \`vale\`
+- \`argos\`
+- \`cosign\`
+- \`cloudflared\`
+- \`vitest\`
+- \`ruff\`
+- \`eslint\`
+- \`agent-browser\`
+- \`agentation\` (backed by the \`agentation-mcp\` CLI)
+- \`mermaid-cli\` (via the \`mmdc\` CLI)
+- \`markdownlint-cli2\`
+- \`wrangler\`
+- \`beautiful-mermaid\`
+- \`semgrep\`
+- \`semver\`
+- \`trivy\`
+- \`rsearch\` (arXiv research)
+- \`wsearch\` (Wikidata search)
+
+Recommended policy:
+
+- Pin repo-managed tooling in \`.mise.toml\` where possible.
+- Treat \`scripts/check-environment.sh\` as the local readiness gate for required tooling.
+- Block merge or promotion work when a required CLI is missing rather than silently skipping the corresponding validation lane.
+- For repositories with explicit \`ui\` / \`chatgpt_apps_sdk\` capabilities or matching dependency signals, install \`@brainwav/design-system-guidance\` and treat its absence as a readiness failure.
+
+## Greptile setup baseline
+
+- Greptile must be configured correctly before relying on Greptile review gates.
+- \`harness init\` scaffolds the baseline Greptile files and bridge workflow into harness-managed repositories.
+- Required repo-local files:
+  - \`.greptile/config.json\`
+  - \`.greptile/rules.md\`
+  - \`.greptile/files.json\`
+- Required bridge workflow:
+  - \`.github/workflows/greptile-review.yml\`
+- Verify setup with:
+  - \`harness verify-greptile\`
+  - \`harness verify-greptile --token $GITHUB_TOKEN --owner <owner> --repo <repo>\`
+- Trigger or refresh a review with:
+  - \`harness request-greptile-review --owner <owner> --repo <repo> --pr <number>\`
+
+## Greptile config hierarchy
+
+1. Org-enforced dashboard rules.
+2. Directory-scoped \`.greptile/\` folders.
+3. Legacy \`greptile.json\` (ignored when \`.greptile/\` exists in the same directory).
+4. Dashboard defaults.
+
+## Greptile merge logic for multi-scope pull requests
+
+- strictness: most restrictive scope wins.
+- \`fileChangeLimit\`: lowest value wins.
+- comment types: union all requested types.
+- booleans: enabled if any scope enables them.
+
+## Greptile confidence score policy
+
+- \`5/5\`: merge-ready.
+- \`4/5\`: merge after minor polish.
+- \`3/5\`: fix findings and re-review.
+- \`0-2/5\`: blocked.
+
+## Greptile strictness policy
+
+- Strictness 1: security-critical or fresh-calibration scopes.
+- Strictness 2: default baseline for \`main\`/production-targeted changes.
+- Strictness 3: stable, non-critical internal infrastructure.
+
+## Greptile training and feedback loop
+
+- Use \`@greptileai\` on draft PRs or when settings/context changed and a forced re-review is needed.
+- Use targeted prompts for scoped checks (for example: \`@greptileai check for memory leaks\`).
+- React to comments with 👍 / 👎 and include a short rationale with 👎.
+- Treat three ignored comments on the same pattern as a calibration prompt.
 
 ## Recommended security scanner baseline
 
@@ -1463,8 +2230,18 @@ Configure GitHub branch protection (or rulesets) on \`main\`:
 - Token resolution for \`branch-protect\`:
   - \`--token <PAT>\` or env \`GITHUB_TOKEN\` / \`GITHUB_PERSONAL_ACCESS_TOKEN\`
 - Require pull request before merge.
-- Require at least one approval.
-- Require status checks: \`pr-template\`, \`linear-gate\`, \`risk-policy-gate\`, \`dependency-review\`, \`actions-pinning\`, \`consistency-drift-health\`, \`lint\`, \`typecheck\`, \`test\`, \`audit\`, \`check\`, \`memory\`, \`security-scan\`.
+- Allow \`0\` required reviewers for solo-maintainer repositories.
+- Dismiss stale approvals when new commits are pushed.
+- Require conversation resolution before merge.
+- Restrict branch deletions.
+- Block force pushes.
+- Require linear history.
+- Require status checks:
+${formatRequiredChecksBulleted(BRANCH_PROTECTION_REQUIRED_CHECKS, "  - ")}
+- Require branches to be up to date before merge.
+- Require code quality results with severity \`all\`.
+- In public repositories, require \`CodeQL\` code scanning results with \`high_or_higher\` security alerts and \`errors\` alerts thresholds.
+- Allow merge commits, squash merges, and rebase merges.
 - Require workflows to pin third-party actions to full commit SHAs.
 - Configure required checks workflows to run on both \`pull_request\` and \`merge_group\` when using merge queue.
 - Block direct pushes to \`main\`.
@@ -1660,10 +2437,11 @@ import { execFileSync } from "node:child_process";
 
 const PACKAGE_JSON_PATH = resolve(process.cwd(), "package.json");
 const REQUIRED_HOOKS = {
-	"pre-commit": "pnpm lint && pnpm docs:lint && pnpm typecheck",
-	"commit-msg": "node scripts/validate-commit-msg.js $1",
-	"pre-push": "pnpm test && pnpm audit",
+	"pre-commit": "${PRE_COMMIT_MAKE_TARGET}",
+	"commit-msg": "${REQUIRED_SIMPLE_GIT_HOOKS["commit-msg"]}",
+	"pre-push": "${PRE_PUSH_MAKE_TARGET}",
 };
+const REQUIRED_SCRIPTS = ${JSON.stringify(REQUIRED_PACKAGE_SCRIPTS, null, 2)};
 const POSTINSTALL_BOOTSTRAP =
 	"command -v simple-git-hooks >/dev/null 2>&1 && simple-git-hooks || true";
 
@@ -1717,6 +2495,16 @@ function main() {
 		modified = true;
 	}
 
+	// Enforce required helper scripts used by the hook targets
+	const mergedScripts = { ...scripts, ...REQUIRED_SCRIPTS };
+	if (JSON.stringify(scripts) !== JSON.stringify(mergedScripts)) {
+		packageJson.scripts = mergedScripts;
+		console.info("✓ Enforced required hook helper scripts");
+		modified = true;
+	} else {
+		console.info("✓ Required hook helper scripts already present");
+	}
+
 	// Enforce required simple-git-hooks configuration
 	const existingHooks = packageJson["simple-git-hooks"] ?? {};
 	const mergedHooks = { ...existingHooks, ...REQUIRED_HOOKS };
@@ -1740,15 +2528,702 @@ function main() {
 		execFileSync("pnpm", ["install"], { stdio: "inherit" });
 		console.info("\\n✓ Git hooks installed and active!");
 		console.info("\\nHooks enabled:");
-		console.info("  • pre-commit: pnpm lint && pnpm docs:lint && pnpm typecheck");
+		console.info("  • pre-commit: ${PRE_COMMIT_MAKE_TARGET}");
 		console.info("  • commit-msg: validates conventional commit format");
-		console.info("  • pre-push: pnpm test && pnpm audit");
+		console.info("  • pre-push: ${PRE_PUSH_MAKE_TARGET}");
 	} catch {
 		console.error("\\n⚠️  Failed to run pnpm install. Run it manually to activate hooks.");
 	}
 }
 
 main();
+`,
+	},
+	{
+		path: "scripts/check-staged-secrets.sh",
+		render: () => `#!/usr/bin/env bash
+set -euo pipefail
+
+REPO_ROOT="$(cd -- "$(dirname -- "\${BASH_SOURCE[0]}")/.." && pwd)"
+cd "$REPO_ROOT"
+
+if ! command -v gitleaks >/dev/null 2>&1; then
+	echo "Error: required binary 'gitleaks' is not installed or not on PATH"
+	exit 1
+fi
+
+if git diff --cached --quiet --exit-code; then
+	echo "No staged changes detected for gitleaks."
+	exit 0
+fi
+
+config_args=()
+if [[ -f "$REPO_ROOT/.gitleaks.toml" ]]; then
+	config_args+=(--config "$REPO_ROOT/.gitleaks.toml")
+fi
+
+gitleaks git \\
+	--staged \\
+	--redact \\
+	--no-banner \\
+	"\${config_args[@]}"
+`,
+	},
+	{
+		path: "scripts/check-doc-style.sh",
+		render: () => `#!/usr/bin/env bash
+set -euo pipefail
+
+REPO_ROOT="$(cd -- "$(dirname -- "\${BASH_SOURCE[0]}")/.." && pwd)"
+cd "$REPO_ROOT"
+
+if ! command -v vale >/dev/null 2>&1; then
+	echo "Error: required binary 'vale' is not installed or not on PATH"
+	exit 1
+fi
+
+staged_docs=()
+while IFS= read -r -d "" path; do
+	[[ -n "$path" ]] || continue
+	staged_docs+=("$path")
+done < <(
+	git diff --cached --name-only --diff-filter=ACMR -z -- \\
+		README.md \\
+		CONTRIBUTING.md \\
+		AGENTS.md \\
+		":(glob)docs/**/*.md"
+)
+
+if [[ \${#staged_docs[@]} -eq 0 ]]; then
+	echo "No staged documentation changes detected for Vale."
+	exit 0
+fi
+
+vale --config .vale.ini "\${staged_docs[@]}"
+`,
+	},
+	{
+		path: "scripts/check-related-tests.sh",
+		render: () => `#!/usr/bin/env bash
+set -euo pipefail
+
+REPO_ROOT="$(cd -- "$(dirname -- "\${BASH_SOURCE[0]}")/.." && pwd)"
+cd "$REPO_ROOT"
+
+related_sources=()
+while IFS= read -r path; do
+	[[ -n "$path" ]] || continue
+	if [[ "$path" =~ ^src/.*\\.(ts|tsx|js|jsx|mts|cts)$ ]] && \\
+		[[ ! "$path" =~ \\.d\\.ts$ ]] && \\
+		[[ ! "$path" =~ \\.(test|spec)\\.(ts|tsx|js|jsx|mts|cts)$ ]]; then
+		related_sources+=("$path")
+	fi
+done < <(git diff --cached --name-only --diff-filter=ACMR)
+
+if [[ \${#related_sources[@]} -eq 0 ]]; then
+	echo "No staged src/** implementation changes detected for related tests."
+	exit 0
+fi
+
+pnpm exec vitest related --run --passWithNoTests "\${related_sources[@]}"
+`,
+	},
+	{
+		path: "scripts/check-semgrep-changed.sh",
+		render: () => `#!/usr/bin/env bash
+set -euo pipefail
+
+REPO_ROOT="$(cd -- "$(dirname -- "\${BASH_SOURCE[0]}")/.." && pwd)"
+RULESET_PATH="$REPO_ROOT/scripts/semgrep-pre-push.yml"
+cd "$REPO_ROOT"
+
+if ! command -v semgrep >/dev/null 2>&1; then
+	echo "Error: required binary 'semgrep' is not installed or not on PATH"
+	exit 1
+fi
+
+if [[ ! -f "$RULESET_PATH" ]]; then
+	echo "Error: missing Semgrep ruleset at $RULESET_PATH"
+	exit 1
+fi
+
+base_ref=""
+if git rev-parse --verify '@{upstream}' >/dev/null 2>&1; then
+	base_ref="$(git merge-base HEAD '@{upstream}')"
+else
+	for candidate in origin/main origin/master main master; do
+		if git rev-parse --verify "$candidate" >/dev/null 2>&1; then
+			base_ref="$(git merge-base HEAD "$candidate")"
+			break
+		fi
+	done
+fi
+
+if [[ -z "$base_ref" ]]; then
+	if git rev-parse --verify HEAD^ >/dev/null 2>&1; then
+		base_ref="HEAD^"
+	else
+		echo "No comparison base available for Semgrep changed-file scan."
+		exit 0
+	fi
+fi
+
+changed_sources=()
+while IFS= read -r -d "" path; do
+	[[ -n "$path" ]] || continue
+	if [[ "$path" =~ ^src/.*\\.(ts|tsx|js|jsx|mts|cts)$ ]] && \\
+		[[ ! "$path" =~ \\.d\\.ts$ ]] && \\
+		[[ ! "$path" =~ \\.(test|spec)\\.(ts|tsx|js|jsx|mts|cts)$ ]]; then
+		changed_sources+=("$path")
+	fi
+done < <(git diff --name-only --diff-filter=ACMR -z "$base_ref"...HEAD --)
+
+if [[ \${#changed_sources[@]} -eq 0 ]]; then
+	echo "No changed src/** implementation files detected for Semgrep."
+	exit 0
+fi
+
+semgrep scan \\
+	--config "$RULESET_PATH" \\
+	--disable-version-check \\
+	--error \\
+	--jobs 1 \\
+	"\${changed_sources[@]}"
+`,
+	},
+	{
+		path: "scripts/semgrep-pre-push.yml",
+		render: () => `rules:
+  - id: ts-no-eval
+    message: Avoid eval in src/** code.
+    severity: ERROR
+    languages: [javascript, typescript]
+    pattern: eval(...)
+
+  - id: ts-no-new-function
+    message: Avoid Function constructor usage in src/** code.
+    severity: ERROR
+    languages: [javascript, typescript]
+    pattern: new Function(...)
+
+  - id: ts-no-child-process-exec
+    message: Avoid child_process exec/execSync in src/** code.
+    severity: ERROR
+    languages: [javascript, typescript]
+    patterns:
+      - pattern-either:
+          - pattern: exec(...)
+          - pattern: execSync(...)
+
+  - id: ts-no-shell-true
+    message: Avoid shell:true in child process options in src/** code.
+    severity: ERROR
+    languages: [javascript, typescript]
+    pattern-either:
+      - pattern: spawn(..., { ..., shell: true, ... })
+      - pattern: spawnSync(..., { ..., shell: true, ... })
+      - pattern: execFile(..., { ..., shell: true, ... })
+      - pattern: execFileSync(..., { ..., shell: true, ... })
+`,
+	},
+	{
+		path: "scripts/refresh-diagram-context.sh",
+		render: () => `#!/usr/bin/env bash
+set -euo pipefail
+
+QUIET=0
+FORCE=0
+DRY_RUN=0
+
+while [[ $# -gt 0 ]]; do
+	case "$1" in
+		--quiet)
+			QUIET=1
+			shift
+			;;
+		--force)
+			FORCE=1
+			shift
+			;;
+		--dry-run)
+			DRY_RUN=1
+			shift
+			;;
+		*)
+			echo "Unknown option: $1" >&2
+			exit 2
+			;;
+	esac
+done
+
+ROOT_DIR="$(cd "$(dirname "${"${"}BASH_SOURCE[0]}")/.." && pwd)"
+DIAGRAM_DIR="$ROOT_DIR/.diagram"
+CONTEXT_DIR="$DIAGRAM_DIR/context"
+CONTEXT_FILE="$CONTEXT_DIR/diagram-context.md"
+META_FILE="$CONTEXT_DIR/diagram-context.meta.json"
+LOG_FILE="$CONTEXT_DIR/refresh.log"
+MIN_SECONDS="\${DIAGRAM_REFRESH_MIN_SECONDS:-1800}"
+MAX_FILES="\${DIAGRAM_REFRESH_MAX_FILES:-1000}"
+NOW_EPOCH="$(date +%s)"
+
+mkdir -p "$DIAGRAM_DIR" "$CONTEXT_DIR"
+
+log() {
+	local message="$1"
+	printf '[%s] %s\\n' "$(date -u +"%Y-%m-%dT%H:%M:%SZ")" "$message" >> "$LOG_FILE"
+	if [[ "$QUIET" -ne 1 ]]; then
+		printf '%s\\n' "$message"
+	fi
+}
+
+if [[ "$DRY_RUN" -eq 1 ]]; then
+	log "dry-run: would refresh diagrams into $DIAGRAM_DIR and context at $CONTEXT_FILE"
+	exit 0
+fi
+
+if [[ "$FORCE" -ne 1 && -f "$META_FILE" ]]; then
+	last_epoch="$(jq -r '.last_generated_epoch // 0' "$META_FILE" 2>/dev/null || echo 0)"
+	if [[ "$last_epoch" =~ ^[0-9]+$ ]]; then
+		age=$((NOW_EPOCH - last_epoch))
+		if (( age < MIN_SECONDS )); then
+			log "skip: cooldown active (\${age}s < \${MIN_SECONDS}s)"
+			exit 0
+		fi
+	fi
+fi
+
+if ! command -v diagram >/dev/null 2>&1; then
+	log "error: diagram CLI is not available"
+	exit 1
+fi
+
+TRUNC_DIR=".tmp-diagram-refresh-XXXXXX"
+TMP_DIR="$(mktemp -d "$ROOT_DIR/${"${"}TRUNC_DIR}")"
+TMP_BASENAME="$(basename "$TMP_DIR")"
+EXCLUDE_PATTERNS="node_modules/**,.git/**,dist/**,${"${"}TMP_BASENAME}/**"
+trap 'rm -rf "$TMP_DIR"' EXIT
+
+pushd "$ROOT_DIR" >/dev/null
+if [[ "$QUIET" -eq 1 ]]; then
+	pnpm exec diagram all . --output-dir "$TMP_BASENAME/diagrams" --exclude "$EXCLUDE_PATTERNS" --max-files "$MAX_FILES" >/dev/null 2>&1
+else
+	pnpm exec diagram all . --output-dir "$TMP_BASENAME/diagrams" --exclude "$EXCLUDE_PATTERNS" --max-files "$MAX_FILES"
+fi
+popd >/dev/null
+
+if ! ls "$TMP_DIR/diagrams"/*.mmd >/dev/null 2>&1; then
+	log "error: no .mmd files produced"
+	exit 1
+fi
+
+MANIFEST_PATH="$TMP_DIR/diagrams/manifest.json"
+ROOT_DIR="$ROOT_DIR" TMP_DIR="$TMP_DIR" MANIFEST_PATH="$MANIFEST_PATH" node <<'NODE'
+const { createHash } = require("node:crypto");
+const { readdirSync, readFileSync, writeFileSync } = require("node:fs");
+const { join } = require("node:path");
+
+const rootDir = process.env.ROOT_DIR;
+const tmpDir = process.env.TMP_DIR;
+const manifestPath = process.env.MANIFEST_PATH;
+
+if (!rootDir || !tmpDir || !manifestPath) {
+  throw new Error("diagram manifest generation requires ROOT_DIR, TMP_DIR, and MANIFEST_PATH");
+}
+
+const diagramsDir = join(tmpDir, "diagrams");
+const ensureTrailingNewline = (content) =>
+  content.endsWith("\\n") ? content : \`\${content}\\n\`;
+const stableId = (prefix, value) => {
+  const slug = value
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "_")
+    .replace(/^_+|_+$/g, "")
+    .slice(0, 48) || prefix;
+  const digest = createHash("sha1").update(value).digest("hex").slice(0, 8);
+  return \`\${prefix}_\${slug}_\${digest}\`;
+};
+
+const parseArchitecture = (content) => {
+  const lines = content.trimEnd().split(/\\r?\\n/);
+  const subgraphs = [];
+  let currentSubgraph = null;
+
+  for (const line of lines) {
+    const subgraphMatch = line.match(/^  subgraph (\\S+)\\["(.+)"\\]$/);
+    if (subgraphMatch) {
+      currentSubgraph = {
+        rawId: subgraphMatch[1],
+        label: subgraphMatch[2],
+        nodes: [],
+      };
+      subgraphs.push(currentSubgraph);
+      continue;
+    }
+
+    if (line === "  end") {
+      currentSubgraph = null;
+      continue;
+    }
+
+    const nodeMatch = line.match(/^    (\\S+)\\["(.+)"\\]$/);
+    if (nodeMatch && currentSubgraph) {
+      currentSubgraph.nodes.push({
+        rawId: nodeMatch[1],
+        label: nodeMatch[2],
+      });
+    }
+  }
+
+  return subgraphs;
+};
+
+const buildArchitecture = (subgraphs) => {
+  const nodeMap = new Map();
+  const lines = ["graph TD"];
+  const sortedSubgraphs = [...subgraphs].sort((left, right) =>
+    left.label.localeCompare(right.label),
+  );
+
+  for (const subgraph of sortedSubgraphs) {
+    const subgraphId = stableId("sg", subgraph.label);
+    lines.push(\`  subgraph \${subgraphId}["\${subgraph.label}"]\`);
+    const sortedNodes = [...subgraph.nodes].sort((left, right) =>
+      left.label.localeCompare(right.label),
+    );
+    for (const node of sortedNodes) {
+      const nodeId = stableId("node", \`\${subgraph.label}/\${node.label}\`);
+      nodeMap.set(node.rawId, { canonicalId: nodeId, label: node.label });
+      lines.push(\`    \${nodeId}["\${node.label}"]\`);
+    }
+    lines.push("  end");
+  }
+
+  return {
+    content: ensureTrailingNewline(lines.join("\\n")),
+    nodeMap,
+  };
+};
+
+const buildDependency = (content, nodeMap) => {
+  const lines = content.trimEnd().split(/\\r?\\n/);
+  if (lines.length === 0) {
+    return ensureTrailingNewline(content);
+  }
+
+  const externalNodeMap = new Map();
+  const dependencyEdges = [];
+  const styleEntries = [];
+
+  for (const line of lines.slice(1)) {
+    const edgeMatch = line.match(/^  (\\S+)\\["(.+)"\\] --> (\\S+)$/);
+    if (edgeMatch) {
+      const [, rawSourceId, sourceLabel, rawTargetId] = edgeMatch;
+      const target = nodeMap.get(rawTargetId) ?? {
+        canonicalId: stableId("node", rawTargetId),
+        label: rawTargetId,
+      };
+      const sourceCanonicalId =
+        externalNodeMap.get(rawSourceId) ?? stableId("ext", sourceLabel);
+      externalNodeMap.set(rawSourceId, sourceCanonicalId);
+      dependencyEdges.push({
+        line: \`  \${sourceCanonicalId}["\${sourceLabel}"] --> \${target.canonicalId}\`,
+        sortKey: \`\${sourceLabel}::\${target.label}\`,
+      });
+      continue;
+    }
+
+    const styleMatch = line.match(/^  style (\\S+) (.+)$/);
+    if (styleMatch) {
+      const [, rawNodeId, styleSpec] = styleMatch;
+      const canonicalId = externalNodeMap.get(rawNodeId);
+      if (canonicalId) {
+        styleEntries.push({
+          line: \`  style \${canonicalId} \${styleSpec}\`,
+          sortKey: canonicalId,
+        });
+      }
+    }
+  }
+
+  return ensureTrailingNewline(
+    [
+      "graph LR",
+      ...dependencyEdges
+        .sort((left, right) => left.sortKey.localeCompare(right.sortKey))
+        .map((entry) => entry.line),
+      ...styleEntries
+        .sort((left, right) => left.sortKey.localeCompare(right.sortKey))
+        .map((entry) => entry.line),
+    ].join("\\n"),
+  );
+};
+
+const diagramFiles = readdirSync(diagramsDir).filter((entry) => entry.endsWith(".mmd"));
+const architecturePath = join(diagramsDir, "architecture.mmd");
+const dependencyPath = join(diagramsDir, "dependency.mmd");
+
+if (diagramFiles.includes("architecture.mmd")) {
+  const architectureContent = readFileSync(architecturePath, "utf8");
+  const { content: canonicalArchitecture, nodeMap } = buildArchitecture(
+    parseArchitecture(architectureContent),
+  );
+  writeFileSync(architecturePath, canonicalArchitecture);
+
+  if (diagramFiles.includes("dependency.mmd")) {
+    const dependencyContent = readFileSync(dependencyPath, "utf8");
+    writeFileSync(dependencyPath, buildDependency(dependencyContent, nodeMap));
+  }
+}
+
+for (const file of diagramFiles) {
+  if (file === "architecture.mmd" || file === "dependency.mmd") {
+    continue;
+  }
+  const filePath = join(diagramsDir, file);
+  writeFileSync(filePath, ensureTrailingNewline(readFileSync(filePath, "utf8").trimEnd()));
+}
+
+const diagrams = readdirSync(diagramsDir)
+  .filter((file) => file.endsWith(".mmd"))
+  .sort()
+	.map((file) => {
+		const content = readFileSync(join(diagramsDir, file), "utf8");
+		return {
+			type: file.replace(/\\.mmd$/, ""),
+			file,
+			outputPath: \`.diagram/\${file}\`,
+			lines: content.split(/\\r?\\n/).length,
+			bytes: Buffer.byteLength(content),
+			isPlaceholder:
+				/placeholder/i.test(content) ||
+				/not enough/i.test(content) ||
+				/limited to/i.test(content),
+		};
+	});
+
+writeFileSync(
+	manifestPath,
+	\`\${JSON.stringify(
+		{
+			generatedAt: new Date().toISOString(),
+			rootPath: rootDir,
+			diagramDir: ".diagram",
+			diagrams,
+		},
+		null,
+		2,
+	)}\\n\`,
+);
+NODE
+
+TMP_CONTEXT="$TMP_DIR/diagram-context.md"
+{
+	echo "# Diagram Context Pack"
+	echo
+	echo "Generated: $(date -u +"%Y-%m-%dT%H:%M:%SZ")"
+	echo
+	for file in "$TMP_DIR"/diagrams/*.mmd; do
+		name="$(basename "$file" .mmd)"
+		echo "## \${name}"
+		echo
+		echo '\`\`\`mermaid'
+		cat "$file"
+		echo
+		echo '\`\`\`'
+		echo
+	done
+} > "$TMP_CONTEXT"
+
+CONTEXT_SHA="$(shasum -a 256 "$TMP_CONTEXT" | awk '{print $1}')"
+GIT_HEAD="$(git -C "$ROOT_DIR" rev-parse --short HEAD 2>/dev/null || echo "unknown")"
+DIAGRAM_COUNT="$(ls "$TMP_DIR/diagrams"/*.mmd | wc -l | tr -d ' ')"
+CHANGED=true
+
+if [[ -f "$CONTEXT_FILE" ]] && cmp -s "$TMP_CONTEXT" "$CONTEXT_FILE"; then
+	CHANGED=false
+fi
+
+if [[ -f "$DIAGRAM_DIR/manifest.json" ]] && ! cmp -s "$TMP_DIR/diagrams/manifest.json" "$DIAGRAM_DIR/manifest.json"; then
+	CHANGED=true
+fi
+
+rm -f "$DIAGRAM_DIR"/*.mmd
+cp "$TMP_DIR"/diagrams/*.mmd "$DIAGRAM_DIR/"
+cp "$TMP_DIR/diagrams/manifest.json" "$DIAGRAM_DIR/manifest.json"
+cp "$TMP_CONTEXT" "$CONTEXT_FILE"
+
+jq --tab -n \\
+	--arg generated_at "$(date -u +"%Y-%m-%dT%H:%M:%SZ")" \\
+	--arg git_head "$GIT_HEAD" \\
+	--arg context_sha256 "$CONTEXT_SHA" \\
+	--argjson diagram_count "$DIAGRAM_COUNT" \\
+	--argjson last_generated_epoch "$NOW_EPOCH" \\
+	--argjson min_interval_seconds "$MIN_SECONDS" \\
+	--arg changed "$CHANGED" \\
+	'{
+		schema_version: 1,
+		generated_at: $generated_at,
+		git_head: $git_head,
+		context_sha256: $context_sha256,
+		diagram_count: $diagram_count,
+		last_generated_epoch: $last_generated_epoch,
+		min_interval_seconds: $min_interval_seconds,
+		changed: ($changed == "true")
+	}' > "$META_FILE"
+
+log "ok: refreshed \${DIAGRAM_COUNT} diagrams (changed=\${CHANGED})"
+`,
+	},
+	{
+		path: "scripts/check-diagram-freshness.sh",
+		render: () => `#!/usr/bin/env bash
+set -euo pipefail
+
+SCRIPT_DIR="$(cd -- "$(dirname -- "${"${"}BASH_SOURCE[0]}")" && pwd)"
+REPO_ROOT="$(cd -- "$SCRIPT_DIR/.." && pwd)"
+
+TRACKED_ARTIFACT_PATHS=(
+	".diagram"
+	".diagram/context/diagram-context.md"
+	".diagram/context/diagram-context.meta.json"
+)
+
+is_ignored_change() {
+	local changed_path="$1"
+
+	case "$changed_path" in
+		src/*.test.ts|src/*.spec.ts|src/*.test.js|src/*.spec.js)
+			return 0
+			;;
+		*)
+			return 1
+			;;
+	esac
+}
+
+is_architecture_sensitive_change() {
+	local changed_path="$1"
+
+	case "$changed_path" in
+		package.json|tsconfig.json|.diagramrc|scripts/refresh-diagram-context.sh|scripts/check-diagram-freshness.sh)
+			return 0
+			;;
+		.diagram/*)
+			return 0
+			;;
+		src/*)
+			if is_ignored_change "$changed_path"; then
+				return 1
+			fi
+			return 0
+			;;
+		*)
+			return 1
+			;;
+	esac
+}
+
+snapshot_artifacts() {
+	local path
+	for path in "\${TRACKED_ARTIFACT_PATHS[@]}"; do
+		if [[ -d "$REPO_ROOT/$path" ]]; then
+			while IFS= read -r file; do
+				local rel_path="\${file#$REPO_ROOT/}"
+				local checksum
+				checksum="$(normalized_checksum "$file" "$rel_path")"
+				printf '%s %s\n' "$rel_path" "$checksum"
+			done < <(find "$REPO_ROOT/$path" -type f | sort)
+		elif [[ -f "$REPO_ROOT/$path" ]]; then
+			local checksum
+			checksum="$(normalized_checksum "$REPO_ROOT/$path" "$path")"
+			printf '%s %s\n' "$path" "$checksum"
+		fi
+	done
+}
+
+normalized_checksum() {
+	local file="$1"
+	local rel_path="$2"
+
+	case "$rel_path" in
+		*/diagram-context.md)
+			sed '/^Generated: /d' "$file" | shasum -a 256 | awk '{print $1}'
+			;;
+		*/diagram-context.meta.json)
+			jq -c 'del(.generated_at, .last_generated_epoch, .changed, .context_sha256)' "$file" | shasum -a 256 | awk '{print $1}'
+			;;
+		*/manifest.json)
+			jq -c 'del(.generatedAt)' "$file" | shasum -a 256 | awk '{print $1}'
+			;;
+		*)
+			shasum -a 256 "$file" | awk '{print $1}'
+			;;
+	esac
+}
+
+resolve_diff_base() {
+	if git -C "$REPO_ROOT" rev-parse --verify '@{upstream}' >/dev/null 2>&1; then
+		git -C "$REPO_ROOT" merge-base HEAD '@{upstream}'
+		return 0
+	fi
+
+	if git -C "$REPO_ROOT" rev-parse --verify main >/dev/null 2>&1; then
+		git -C "$REPO_ROOT" merge-base HEAD main
+		return 0
+	fi
+
+	if git -C "$REPO_ROOT" rev-parse --verify HEAD^ >/dev/null 2>&1; then
+		git -C "$REPO_ROOT" rev-parse HEAD^
+		return 0
+	fi
+
+	return 1
+}
+
+collect_changed_paths() {
+	local base
+	if base="$(resolve_diff_base)"; then
+		{
+			git -C "$REPO_ROOT" diff --name-only "$base...HEAD"
+			git -C "$REPO_ROOT" diff --name-only
+			git -C "$REPO_ROOT" diff --cached --name-only
+		} | awk 'NF { print }' | sort -u
+	else
+		{
+			git -C "$REPO_ROOT" diff --name-only
+			git -C "$REPO_ROOT" diff --cached --name-only
+		} | awk 'NF { print }' | sort -u
+	fi
+}
+
+should_refresh=0
+while IFS= read -r changed_path; do
+	[[ -n "$changed_path" ]] || continue
+	if is_architecture_sensitive_change "$changed_path"; then
+		should_refresh=1
+		break
+	fi
+done < <(collect_changed_paths)
+
+if [[ "$should_refresh" -ne 1 ]]; then
+	echo "Diagram freshness check skipped: no architecture-sensitive implementation paths changed."
+	exit 0
+fi
+
+echo "Refreshing architecture diagrams for changed sensitive paths..."
+before_snapshot="$(snapshot_artifacts)"
+bash "$REPO_ROOT/scripts/refresh-diagram-context.sh" --force --quiet
+after_snapshot="$(snapshot_artifacts)"
+
+if [[ "$before_snapshot" != "$after_snapshot" ]]; then
+	echo "Error: architecture diagram artifacts are stale after refresh."
+	echo "Changed tracked files:"
+	git -C "$REPO_ROOT" diff --name-only -- "\${TRACKED_ARTIFACT_PATHS[@]}"
+	echo "Fix: run 'bash scripts/refresh-diagram-context.sh --force' and commit the updated artifacts."
+	exit 1
+fi
+
+echo "Diagram freshness check passed."
 `,
 	},
 	{
@@ -1880,21 +3355,14 @@ regexes = [
 	},
 	{
 		path: "prek.toml",
-		render: (pm) => {
-			const lintCmd = pm === "npm" ? "npm run lint" : `${pm} lint`;
-			const docsLintCmd =
-				pm === "npm" ? "npm run docs:lint" : `${pm} docs:lint`;
-			const typecheckCmd =
-				pm === "npm" ? "npm run typecheck" : `${pm} typecheck`;
-			const testCmd = pm === "npm" ? "npm run test" : `${pm} test`;
-			const auditCmd = pm === "npm" ? "npm run audit" : `${pm} audit`;
+		render: () => {
 			return `# Prek configuration (Rust-based pre-commit replacement)
 # Install prek: mise install cargo-prek || cargo install prek
 # Run: prek install && prek run --all-files
 
 [hooks]
-pre-commit = ["${lintCmd}", "${docsLintCmd}", "${typecheckCmd}"]
-pre-push = ["${testCmd}", "${auditCmd}"]
+pre-commit = ${JSON.stringify(REQUIRED_PREK_HOOKS["pre-commit"])}
+pre-push = ${JSON.stringify(REQUIRED_PREK_HOOKS["pre-push"])}
 
 [tools]
 biome = "1.9.4"
@@ -1906,10 +3374,7 @@ vitest = "3.2"
 	{
 		path: ".mise.toml",
 		render: () => `[tools]
-node = "24.13.1"
-pnpm = "10.0.0"
-python = "3.12"
-uv = "0.9.5"
+${PROJECT_MISE_REQUIRED_TOOLS.map(([tool, version]) => `"${tool}" = "${version}"`).join("\n")}
 
 [env]
 CLAUDE_APPROVAL_POSTURE = "require"
@@ -1917,7 +3382,12 @@ CLAUDE_APPROVAL_POSTURE = "require"
 	},
 	{
 		path: "scripts/check-environment.sh",
-		render: () => `#!/usr/bin/env bash
+		render: () => {
+			const packagePolicy = DEFAULT_CONTRACT.toolingPolicy?.packagePolicy;
+			const explicitCapabilities = packagePolicy?.explicitCapabilities ?? [];
+			const capabilityDetectors = packagePolicy?.capabilityDetectors ?? [];
+			const requiredPackages = packagePolicy?.requiredPackages ?? [];
+			return `#!/usr/bin/env bash
 # Local environment preflight (strict)
 # Fails fast when required tooling is missing.
 
@@ -1926,9 +3396,13 @@ set -euo pipefail
 SCRIPT_DIR="$(cd -- "$(dirname -- "${"${"}BASH_SOURCE[0]}")" && pwd)"
 REPO_ROOT="$(cd -- "$SCRIPT_DIR/.." && pwd)"
 CONTRACT_PATH="$REPO_ROOT/harness.contract.json"
-ATTESTATION_PATH="$REPO_ROOT/artifacts/policy/environment-attestation.json"
-MISE_PATH="$REPO_ROOT/.mise.toml"
-TOOLING_DOC_PATH="\${TOOLING_DOC_PATH:-$HOME/dev/config/codex/instructions/tooling.md}"
+	ATTESTATION_PATH="$REPO_ROOT/artifacts/policy/environment-attestation.json"
+	MISE_PATH="$REPO_ROOT/.mise.toml"
+	CODEX_ENVIRONMENT_PATH="$REPO_ROOT/.codex/environments/environment.toml"
+	MAKEFILE_PATH="$REPO_ROOT/Makefile"
+	PREK_CONFIG_PATH="$REPO_ROOT/prek.toml"
+	PACKAGE_JSON_PATH="$REPO_ROOT/${packagePolicy?.packageJsonPath ?? "package.json"}"
+	TOOLING_DOC_PATH="\${TOOLING_DOC_PATH:-$HOME/dev/config/codex/instructions/tooling.md}"
 
 if [[ ! -f "$CONTRACT_PATH" ]]; then
 	echo "Error: missing contract file at $CONTRACT_PATH"
@@ -1940,22 +3414,56 @@ if ! command -v rg >/dev/null 2>&1; then
 	exit 1
 fi
 
-if [[ ! -f "$MISE_PATH" ]]; then
-	echo "Error: missing mise config at $MISE_PATH"
+	if [[ ! -f "$MISE_PATH" ]]; then
+		echo "Error: missing mise config at $MISE_PATH"
+		exit 1
+	fi
+
+	if [[ ! -f "$CODEX_ENVIRONMENT_PATH" ]]; then
+		echo "Error: missing Codex environment file at $CODEX_ENVIRONMENT_PATH"
+		exit 1
+	fi
+
+	if [[ ! -f "$MAKEFILE_PATH" ]]; then
+		echo "Error: missing required Makefile at $MAKEFILE_PATH"
+		exit 1
+	fi
+
+	if [[ ! -f "$PREK_CONFIG_PATH" ]]; then
+		echo "Error: missing required prek config at $PREK_CONFIG_PATH"
+		exit 1
+	fi
+
+	required_support_files=(${REQUIRED_HOOK_SUPPORT_FILES.map((path) => `"${path}"`).join(" ")})
+	for support_file in "\${required_support_files[@]}"; do
+		if [[ ! -f "$REPO_ROOT/\${support_file}" ]]; then
+			echo "Error: missing required hook support file at $REPO_ROOT/\${support_file}"
+			exit 1
+		fi
+	done
+
+if ! command -v mise >/dev/null 2>&1; then
+	echo "Error: required binary 'mise' is not installed or not on PATH"
 	exit 1
 fi
 
-required_mise_tools=(node pnpm python uv)
+# Bootstrap the full repo-managed environment so hook validation reflects the
+# pinned runtime versions and required approval posture, not only the caller
+# shell's PATH.
+eval "$(mise activate bash)"
+export CLAUDE_APPROVAL_POSTURE="\${CLAUDE_APPROVAL_POSTURE:-require}"
+
+required_mise_tools=(${PROJECT_MISE_REQUIRED_TOOLS.map(([tool]) => `"${tool}"`).join(" ")})
 for tool in "\${required_mise_tools[@]}"; do
-	if ! rg -q "^[[:space:]]*\${tool}[[:space:]]*=" "$MISE_PATH"; then
+	if ! rg -Fq "\"\${tool}\" = " "$MISE_PATH" && ! rg -Fq "\${tool} = " "$MISE_PATH"; then
 		echo "Error: required tool '\$tool' is not pinned in $MISE_PATH [tools]"
-		echo "Fix: add '\$tool = \"<version>\"' to $MISE_PATH."
+		echo "Fix: add '\$tool = \\\"<version>\\\"' to $MISE_PATH."
 		exit 1
 	fi
 done
 
 if [[ -f "$TOOLING_DOC_PATH" ]]; then
-	required_tooling_doc_terms=(node pnpm python uv rg fd jq)
+	required_tooling_doc_terms=(${REQUIRED_TOOLING_DOC_TERMS.map((term) => `"${term}"`).join(" ")})
 	for term in "\${required_tooling_doc_terms[@]}"; do
 		if ! rg -qi "(^|[^A-Za-z0-9_-])\${term}([^A-Za-z0-9_-]|$)" "$TOOLING_DOC_PATH"; then
 			echo "Error: tooling doc missing expected term '\$term': $TOOLING_DOC_PATH"
@@ -1968,15 +3476,163 @@ else
 	echo "Warning: tooling doc not found at $TOOLING_DOC_PATH; skipping doc sync check."
 fi
 
-required_bins=(pnpm node jq rg fd)
-for bin in "\${required_bins[@]}"; do
-	if ! command -v "$bin" >/dev/null 2>&1; then
-		echo "Error: required binary '$bin' is not installed or not on PATH"
-		exit 1
-	fi
-done
+	required_bins=(${REQUIRED_TOOLING_BINARIES.map((bin) => `"${bin}"`).join(" ")})
+	for bin in "\${required_bins[@]}"; do
+		if ! command -v "$bin" >/dev/null 2>&1; then
+			echo "Error: required binary '$bin' is not installed or not on PATH"
+			exit 1
+		fi
+	done
 
-mkdir -p "$REPO_ROOT/artifacts/policy"
+	required_codex_actions=(${REQUIRED_CODEX_ACTION_PAIRS.map(({ name, icon }) => `"${name}|${icon}"`).join(" ")})
+	for action in "\${required_codex_actions[@]}"; do
+		name="\${action%%|*}"
+		icon="\${action##*|}"
+		if ! awk -v name="$name" -v icon="$icon" '
+			prev == "name = \\"" name "\\"" && $0 == "icon = \\"" icon "\\"" { found = 1 }
+			{ prev = $0 }
+			END { exit found ? 0 : 1 }
+		' "$CODEX_ENVIRONMENT_PATH"; then
+			echo "Error: Codex environment action '\$name' is missing or mapped to the wrong icon in $CODEX_ENVIRONMENT_PATH"
+			exit 1
+		fi
+	done
+
+	required_make_targets=(${REQUIRED_MAKEFILE_TARGETS.map((target) => `"${target}"`).join(" ")})
+	for target in "\${required_make_targets[@]}"; do
+		if ! rg -q "^\${target}:" "$MAKEFILE_PATH"; then
+			echo "Error: required Makefile target '\$target' is missing from $MAKEFILE_PATH"
+			exit 1
+		fi
+	done
+
+	required_prek_hooks=(${Object.entries(REQUIRED_PREK_HOOKS)
+		.map(([hook, commands]) => `"${hook}|${commands.join(" && ")}"`)
+		.join(" ")})
+	for hook_spec in "\${required_prek_hooks[@]}"; do
+		hook_name="\${hook_spec%%|*}"
+		hook_command="\${hook_spec#*|}"
+		if ! rg -Fq "\${hook_name} = [\"\${hook_command}\"]" "$PREK_CONFIG_PATH"; then
+			echo "Error: required prek hook '\$hook_name' is missing or out of date in $PREK_CONFIG_PATH"
+			exit 1
+		fi
+	done
+
+	if [[ -f "$PACKAGE_JSON_PATH" ]]; then
+		required_package_scripts=(${Object.entries(REQUIRED_PACKAGE_SCRIPTS)
+			.map(([name, command]) => `"${name}|${command}"`)
+			.join(" ")})
+		for script_spec in "\${required_package_scripts[@]}"; do
+			script_name="\${script_spec%%|*}"
+			script_command="\${script_spec#*|}"
+			if ! jq -e --arg script_name "$script_name" --arg script_command "$script_command" '
+				(.scripts // {})[$script_name] == $script_command
+			' "$PACKAGE_JSON_PATH" >/dev/null; then
+				echo "Error: package script '\$script_name' is missing or out of date in $PACKAGE_JSON_PATH"
+				echo "Fix: run node scripts/setup-git-hooks.js"
+				exit 1
+			fi
+		done
+
+		required_simple_git_hooks=(${Object.entries(REQUIRED_SIMPLE_GIT_HOOKS)
+			.map(([hook, command]) => `"${hook}|${command.replaceAll("$", "\\$")}"`)
+			.join(" ")})
+		for hook_spec in "\${required_simple_git_hooks[@]}"; do
+			hook_name="\${hook_spec%%|*}"
+			hook_command="\${hook_spec#*|}"
+			if ! jq -e --arg hook_name "$hook_name" --arg hook_command "$hook_command" '
+				.["simple-git-hooks"][$hook_name] == $hook_command
+			' "$PACKAGE_JSON_PATH" >/dev/null; then
+				echo "Error: simple-git-hooks entry '\$hook_name' is missing or out of date in $PACKAGE_JSON_PATH"
+				echo "Fix: run node scripts/setup-git-hooks.js"
+				exit 1
+			fi
+		done
+
+		has_package_marker() {
+			local marker="$1"
+			jq -e --arg marker "$marker" '
+				((.dependencies // {}) + (.devDependencies // {})) | has($marker)
+			' "$PACKAGE_JSON_PATH" >/dev/null
+		}
+
+		repo_capabilities=()
+		explicit_capabilities=(${explicitCapabilities.map((capability) => `"${capability}"`).join(" ")})
+		for capability in "\${explicit_capabilities[@]}"; do
+			[[ -n "$capability" ]] || continue
+			repo_capabilities+=("$capability")
+		done
+${capabilityDetectors
+	.map(
+		(
+			detector,
+		) => `		${detector.capability}_markers=(${detector.dependencyMarkers.map((marker) => `"${marker}"`).join(" ")})
+		for marker in "\${${detector.capability}_markers[@]}"; do
+			if has_package_marker "$marker"; then
+				repo_capabilities+=("${detector.capability}")
+				break
+			fi
+		done`,
+	)
+	.join("\n\n")}
+
+		has_capability() {
+			local wanted="$1"
+			for capability in "\${repo_capabilities[@]}"; do
+				if [[ "$capability" == "$wanted" ]]; then
+					return 0
+				fi
+			done
+			return 1
+		}
+
+		has_required_package() {
+			local pkg="$1"
+			local dependency_type="$2"
+			case "$dependency_type" in
+				dependencies)
+					jq -e --arg pkg "$pkg" '(.dependencies // {}) | has($pkg)' "$PACKAGE_JSON_PATH" >/dev/null
+					;;
+				devDependencies)
+					jq -e --arg pkg "$pkg" '(.devDependencies // {}) | has($pkg)' "$PACKAGE_JSON_PATH" >/dev/null
+					;;
+				either)
+					jq -e --arg pkg "$pkg" '((.dependencies // {}) | has($pkg)) or ((.devDependencies // {}) | has($pkg))' "$PACKAGE_JSON_PATH" >/dev/null
+					;;
+				*)
+					return 1
+					;;
+			esac
+		}
+
+		required_package_specs=(${requiredPackages
+			.map(
+				(requiredPackage) =>
+					`"${requiredPackage.package}|${requiredPackage.dependencyType}|${requiredPackage.requiredWhenCapabilities.join(",")}"`,
+			)
+			.join(" ")})
+		for spec in "\${required_package_specs[@]}"; do
+			pkg="\${spec%%|*}"
+			rest="\${spec#*|}"
+			dependency_type="\${rest%%|*}"
+			required_caps_csv="\${rest#*|}"
+			should_apply=0
+			IFS=',' read -r -a required_caps <<< "$required_caps_csv"
+			for capability in "\${required_caps[@]}"; do
+				if has_capability "$capability"; then
+					should_apply=1
+					break
+				fi
+		done
+			if [[ "$should_apply" -eq 1 ]] && ! has_required_package "$pkg" "$dependency_type"; then
+				echo "Error: required package '$pkg' is missing from $PACKAGE_JSON_PATH for explicit or detected UI/App SDK capabilities"
+				echo "Fix: npm i $pkg"
+				exit 1
+			fi
+		done
+	fi
+
+	mkdir -p "$REPO_ROOT/artifacts/policy"
 
 echo "Running harness environment preflight..."
 pnpm exec tsx src/cli.ts check-environment \\
@@ -1986,7 +3642,8 @@ pnpm exec tsx src/cli.ts check-environment \\
 
 jq -e '.passed == true' "$ATTESTATION_PATH" >/dev/null
 echo "Environment check passed (attestation: $ATTESTATION_PATH)"
-`,
+`;
+		},
 	},
 	{
 		path: CODEX_ENVIRONMENT_TEMPLATE_PATH,
@@ -2011,7 +3668,7 @@ echo "Environment check passed (attestation: $ATTESTATION_PATH)"
 		render: () => `# Harness Development Makefile
 # Run \`make help\` to see available commands
 
-.PHONY: help install setup hooks dev build lint docs-lint fmt typecheck test check audit secrets security clean reset ci diagrams env-check
+.PHONY: help install setup hooks hooks-pre-commit hooks-pre-push secrets-staged docs-style-changed related-tests semgrep-changed diagrams-check dev build lint docs-lint fmt typecheck test check audit secrets security clean reset ci diagrams env-check
 
 # Default target
 help: ## Show this help message
@@ -2029,6 +3686,39 @@ setup: install hooks ## Full setup: install deps and configure git hooks
 
 hooks: ## Setup git hooks
 	node scripts/setup-git-hooks.js
+
+hooks-pre-commit: ## Run local pre-commit gates before creating a commit
+	pnpm lint
+	pnpm docs:lint
+	pnpm typecheck
+	$(MAKE) secrets-staged
+	$(MAKE) docs-style-changed
+	$(MAKE) related-tests
+
+hooks-pre-push: ## Run local pre-push governance gates before pushing
+	pnpm exec tsx src/cli.ts docs-gate --mode required --json
+	@bash ./scripts/check-diagram-freshness.sh
+	pnpm exec tsx src/cli.ts tooling-audit --path . --json
+	@bash ./scripts/check-environment.sh
+	$(MAKE) semgrep-changed
+	pnpm test
+	pnpm build
+	pnpm audit
+
+secrets-staged: ## Scan staged content for secrets before committing
+	pnpm run secrets:staged
+
+docs-style-changed: ## Run Vale on staged authoritative docs only
+	pnpm run docs:style:changed
+
+related-tests: ## Run Vitest related mode for staged src implementation files
+	pnpm run test:related
+
+semgrep-changed: ## Run narrow Semgrep rules against changed src implementation files
+	pnpm run semgrep:changed
+
+diagrams-check: ## Refresh architecture diagrams when sensitive paths change and fail on drift
+	@bash ./scripts/check-diagram-freshness.sh
 
 # === Development ===
 
@@ -2085,12 +3775,12 @@ ci: ## Run CI-equivalent local checks
 # === Diagrams ===
 
 diagrams: ## Generate architecture diagrams
-	pnpm exec diagram all . --output-dir .diagram
+	@bash ./scripts/refresh-diagram-context.sh --force
 
 # === Environment ===
 
 env-check: ## Check environment policy envelope
-	@./scripts/check-environment.sh
+	@bash ./scripts/check-environment.sh
 `,
 	},
 ];

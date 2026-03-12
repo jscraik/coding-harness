@@ -71,6 +71,8 @@ export interface PilotEvaluationResult {
 	ingestion: PilotEvaluationIngestion;
 	/** Lane controls and rollout posture for this evaluation */
 	controls: PilotEvaluationControls;
+	/** Optional provider-neutral companion artifact summary */
+	controlPlane?: ControlPlaneSummary;
 }
 
 export interface PilotIngestionSourceMetadata {
@@ -155,6 +157,42 @@ export interface PilotEvaluateOptions {
 	metricRegistryPath?: string;
 	/** Optional override for persisted parity-window history */
 	parityHistoryPath?: string;
+	/** Trusted docs-gate machine report used for instruction parity */
+	docsGateReportPath?: string;
+	/** Evaluation context for control-plane decisions */
+	evaluationMode?: EvaluationMode;
+	/** Rollout stage that maps evaluation to enforcement */
+	rolloutStage?: RolloutStage;
+	/** Trusted PR-template validation status */
+	prTemplateStatus?: "passed" | "failed" | "missing";
+	/** Trusted PR-template validation artifact/reference */
+	prTemplateRef?: string;
+	/** Explicit actor identity for the evaluation */
+	actorId?: string;
+	/** Provider/client family under evaluation */
+	clientFamily?: ClientFamily;
+	/** Provider identifier backing the run */
+	providerId?: string;
+	/** Provider/model descriptor backing the run */
+	modelDescriptor?: string;
+	/** Execution mode for the evaluated run */
+	executionMode?: "interactive" | "automation" | "ci";
+	/** Operator mode that initiated the run */
+	operatorType?: "human_directed" | "automation" | "autonomous";
+	/** Optional control-plane override principal */
+	overrideAuthorizedPrincipal?: string;
+	/** Optional control-plane override scope */
+	overrideScope?: ControlPlaneOverrideScope;
+	/** Optional control-plane override reason */
+	overrideReason?: string;
+	/** Optional ticket reference that justifies the override */
+	overrideTicketRef?: string;
+	/** Optional explicit override approver list */
+	overrideApprovedBy?: string[];
+	/** Optional explicit override creation timestamp */
+	overrideCreatedAt?: string;
+	/** Optional explicit override expiry timestamp */
+	overrideExpiresAt?: string;
 }
 
 /**
@@ -296,4 +334,550 @@ export interface PendingIncident {
 	severity: "low" | "medium" | "high";
 	openedAt: string;
 	classificationDeadline: string;
+}
+
+export type ClientFamily =
+	| "codex"
+	| "claude_family"
+	| "gemini_family"
+	| "kimi_family"
+	| "custom";
+
+export type EvaluationMode = "local" | "pr" | "merge_group";
+
+export type RolloutStage = "shadow" | "advisory" | "enforced";
+
+export type ControlPlaneOverrideScope =
+	| "advisory_hold"
+	| "temporary_unblock"
+	| "temporary_promote";
+
+export type ControlPlaneBlockerCode =
+	| "governance_trust_mismatch"
+	| "canonical_runtime_invalid"
+	| "pr_template_invalid"
+	| "missing_snapshot_integrity_verification"
+	| "missing_required_instruction_surface"
+	| "instruction_parity_failed"
+	| "adapter_unresolved"
+	| "adapter_coverage_incomplete"
+	| "scorecard_denominator_insufficient"
+	| "telemetry_unavailable"
+	| "identity_degraded"
+	| "rollback_threshold_breached"
+	| "legacy_hold_required";
+
+export type ControlPlaneDecision =
+	| "promote"
+	| "hold"
+	| "rollback"
+	| "block_for_parity"
+	| "block_for_evidence"
+	| "block_for_adapter";
+
+export type ControlPlaneEnforcementDecision =
+	| "allow"
+	| "block"
+	| "non_blocking"
+	| "require_human_review";
+
+export interface ArtifactFileRef {
+	path: string;
+	exists: boolean;
+	required: boolean;
+	sha256?: string;
+	sizeBytes?: number;
+}
+
+export interface ControlPlaneArtifactMetadata {
+	compatibilityMajor: number;
+	producerVersion: string;
+}
+
+export interface ProviderAdapterDescriptor {
+	adapterVersion: string;
+	owner: string;
+	introducedAt: string;
+	sunsetBy: string;
+	blockAfter: string | null;
+	parityWindow?: {
+		minimumCanonicalCoverage: number;
+		minimumConsecutivePassingWindows: number;
+		maxCriticalDrifts: number;
+	};
+	clientFamily?: ClientFamily;
+	providerId?: string;
+	status?: "active" | "shadow" | "deprecated";
+}
+
+export interface AgentIdentity {
+	actorId: string;
+	clientFamily: ClientFamily;
+	providerId: string;
+	modelDescriptor: string;
+	executionMode: "interactive" | "automation" | "ci";
+	operatorType: "human_directed" | "automation" | "autonomous";
+	identityStatus: "verified" | "identity_degraded";
+	degradedReasons: string[];
+}
+
+export interface RequiredCheckSurfaceAlignment {
+	surfaceId: string;
+	sourceRef: ArtifactFileRef;
+	checks: string[];
+	missingFromSurface: string[];
+	extraInSurface: string[];
+	status: "pass" | "fail";
+}
+
+export interface RequiredCheckAlignment {
+	policyChecks: string[];
+	policyRef: ArtifactFileRef;
+	contractChecks: string[];
+	workflowChecks: string[];
+	initChecks: string[];
+	governedDocChecks: string[];
+	missingFromContract: string[];
+	extraInContract: string[];
+	missingFromWorkflow: string[];
+	missingFromInit: string[];
+	missingFromGovernedDocs: string[];
+	surfaceAlignments: RequiredCheckSurfaceAlignment[];
+	status: "pass" | "fail";
+}
+
+export interface GovernanceSnapshot extends ControlPlaneArtifactMetadata {
+	schemaVersion: "governance-snapshot/v1";
+	snapshotId: string;
+	capturedAt: string;
+	contractRef: ArtifactFileRef;
+	workflowRefs: ArtifactFileRef[];
+	requiredChecks: RequiredCheckAlignment;
+	branchPolicyRef: {
+		branch: string | null;
+		headSha: string | null;
+	};
+	instructionPolicyRefs: ArtifactFileRef[];
+	prTemplateRef: ArtifactFileRef;
+	prTemplateValidationStatus: "passed" | "failed" | "missing";
+	prTemplateValidationRef: string | null;
+	sourceTrustLevel: "trusted" | "degraded";
+	warnings: string[];
+}
+
+export interface InstructionSurfaceSummary {
+	surfaceId: string;
+	path: string;
+	kind: "canonical" | "mirror" | "provider_specific";
+	clientFamily: ClientFamily;
+	requiredMode: "required" | "optional";
+	sourceOfTruth: string;
+}
+
+export interface InstructionParityResult extends ControlPlaneArtifactMetadata {
+	schemaVersion: "instruction-parity/v1";
+	parityResultId: string;
+	governanceSnapshotRef: string;
+	evaluatedSurfaces: InstructionSurfaceSummary[];
+	status: "pass" | "fail" | "not_applicable" | "error";
+	contradictions: string[];
+	missingRequiredSurfaces: string[];
+	staleSurfaceRefs: string[];
+	normalizationWarnings: string[];
+	sourceReportRef: ArtifactFileRef | null;
+}
+
+export interface ControlPlaneScorecard extends ControlPlaneArtifactMetadata {
+	schemaVersion: "control-plane-scorecard/v1";
+	evaluationAttemptId: string;
+	runId: string;
+	recordedAt: string;
+	headSha: string | null;
+	evaluationDecision: ControlPlaneDecision;
+	enforcementDecision: ControlPlaneEnforcementDecision;
+	identityStatus: AgentIdentity["identityStatus"];
+	instructionParityStatus: InstructionParityResult["status"];
+	governanceTrustLevel: GovernanceSnapshot["sourceTrustLevel"];
+	falseBlockRate: number | null;
+	blockerCodes: ControlPlaneBlockerCode[];
+	decisionReasons: string[];
+	warnings: string[];
+}
+
+export interface ControlPlaneRun extends ControlPlaneArtifactMetadata {
+	schemaVersion: "control-plane-run/v1";
+	evaluationAttemptId: string;
+	runId: string;
+	recordedAt: string;
+	artifactRoot: string;
+	repoRoot: string;
+	branch: string | null;
+	headSha: string | null;
+	evaluationMode: EvaluationMode;
+	rolloutStage: RolloutStage;
+	metricsWindow: {
+		windowStart: string;
+		windowEnd: string;
+	};
+	agentIdentity: AgentIdentity;
+	governanceSnapshotRef: string;
+	instructionParityRef: string;
+}
+
+export interface ControlPlaneAuditLogEntry
+	extends ControlPlaneArtifactMetadata {
+	schemaVersion: "control-plane-audit-log-entry/v1";
+	evaluationAttemptId: string;
+	runId: string;
+	checkpointId: string;
+	phase: string;
+	command: string;
+	status: "completed" | "blocked" | "failed";
+	artifactRefs: string[];
+	sourceProvenance: string[];
+	blocker?: string;
+	followUp?: string;
+	recordedAt: string;
+	auditStatus: "recorded" | "adjudicated";
+	adjudication: "none" | "confirmed" | "false_block" | "operator_override";
+}
+
+export interface ControlPlanePhaseReport extends ControlPlaneArtifactMetadata {
+	schemaVersion: "control-plane-phase-report/v1";
+	evaluationAttemptId: string;
+	runId: string;
+	checkpointId: string;
+	phase: string;
+	command: string;
+	status: "completed" | "blocked" | "failed";
+	artifactRefs: string[];
+	sourceProvenance: string[];
+	blocker?: string;
+	followUp?: string;
+	recordedAt: string;
+}
+
+export interface OverridePolicyRecord extends ControlPlaneArtifactMetadata {
+	schemaVersion: "override-policy-record/v1";
+	evaluationAttemptId: string;
+	runId: string;
+	overrideId: string;
+	authorizedPrincipal: string;
+	scope: ControlPlaneOverrideScope;
+	reason: string;
+	ticketRef: string;
+	approvedBy: string[];
+	createdAt: string;
+	expiresAt: string;
+	nonOverridableControls: string[];
+	requestedBlockerCodes: ControlPlaneBlockerCode[];
+	status: "applied" | "rejected" | "expired";
+	rejectionReason?: string;
+	resultingEvaluationDecision: ControlPlaneDecision;
+	resultingEnforcementDecision: ControlPlaneEnforcementDecision;
+}
+
+// ==========================================
+// Phase 6: Rollout Window Tracking
+// ==========================================
+
+export interface RolloutWindowStageThresholds {
+	/** Minimum sample size for the window */
+	minimumSampleSize: number;
+	/** Minimum canonical coverage ratio */
+	minimumCanonicalCoverage: number;
+	/** Minimum identity completeness ratio */
+	minimumIdentityCompleteness: number;
+	/** Minimum adapter coverage ratio */
+	minimumAdapterCoverage: number;
+	/** Minimum governance parity pass rate */
+	minimumGovernanceParityPassRate: number;
+	/** Maximum critical drift count allowed */
+	maximumCriticalDrifts: number;
+	/** Maximum false block rate */
+	maximumFalseBlockRate: number;
+	/** Required consecutive passing windows for promotion */
+	requiredConsecutivePassingWindows: number;
+	/** Required maintainer approval for stage transition */
+	requiresMaintainerApproval: boolean;
+}
+
+export interface RolloutWindowMetrics {
+	/** Window start timestamp */
+	windowStart: string;
+	/** Window end timestamp */
+	windowEnd: string;
+	/** Current rollout stage */
+	stage: RolloutStage;
+	/** Number of eligible runs in window */
+	eligibleRuns: number;
+	/** Number of passing runs */
+	passingRuns: number;
+	/** Number of blocked runs */
+	blockedRuns: number;
+	/** Number of false blocks (adjudicated) */
+	falseBlocks: number;
+	/** Canonical coverage ratio */
+	canonicalCoverage: number;
+	/** Identity completeness ratio */
+	identityCompleteness: number;
+	/** Adapter coverage ratio */
+	adapterCoverage: number;
+	/** Instruction parity pass rate */
+	instructionParityPassRate: number;
+	/** Governance parity pass rate */
+	governanceParityPassRate: number;
+	/** Evidence completeness ratio */
+	evidenceCompleteness: number;
+	/** Critical drift count */
+	criticalDriftCount: number;
+	/** Override rate */
+	overrideRate: number;
+	/** Telemetry coverage gap rate */
+	telemetryCoverageGapRate: number;
+}
+
+export interface RolloutWindow extends ControlPlaneArtifactMetadata {
+	schemaVersion: "rollout-window/v1";
+	/** Unique window identifier */
+	windowId: string;
+	/** Current rollout stage */
+	stage: RolloutStage;
+	/** Window time bounds */
+	windowStart: string;
+	windowEnd: string;
+	/** Metrics snapshot for this window */
+	metrics: RolloutWindowMetrics;
+	/** Whether window passes stage exit criteria */
+	passesStageExitCriteria: boolean;
+	/** Stage-specific thresholds used */
+	thresholds: RolloutWindowStageThresholds;
+	/** Number of consecutive passing windows including this one */
+	consecutivePassingWindows: number;
+	/** Whether ready for stage transition */
+	readyForTransition: boolean;
+	/** Any blockers preventing stage transition */
+	transitionBlockers: string[];
+	/** Warnings for operator attention */
+	warnings: string[];
+	/** When window was recorded */
+	recordedAt: string;
+}
+
+export interface RolloutWindowHistory extends ControlPlaneArtifactMetadata {
+	schemaVersion: "rollout-window-history/v1";
+	/** Current rollout stage */
+	currentStage: RolloutStage;
+	/** All recorded windows */
+	windows: RolloutWindow[];
+	/** Current consecutive passing windows */
+	consecutivePassingWindows: number;
+	/** Whether currently eligible for promotion to next stage */
+	eligibleForPromotion: boolean;
+	/** Last promotion packet ID if any */
+	lastPromotionPacketId: string | null;
+	/** Any active demotion triggers */
+	activeDemotionTriggers: string[];
+	/** When history was last updated */
+	updatedAt: string;
+}
+
+// ==========================================
+// Promotion Packets
+// ==========================================
+
+export interface PromotionPacket extends ControlPlaneArtifactMetadata {
+	schemaVersion: "promotion-packet/v1";
+	/** Unique packet identifier */
+	packetId: string;
+	/** Source stage being promoted from */
+	fromStage: RolloutStage;
+	/** Target stage being promoted to */
+	toStage: RolloutStage;
+	/** Evaluation window for this promotion */
+	windowStart: string;
+	windowEnd: string;
+	/** Metrics snapshot */
+	metrics: RolloutWindowMetrics;
+	/** Threshold results */
+	thresholdResults: {
+		threshold: string;
+		required: number | boolean;
+		actual: number | boolean;
+		passed: boolean;
+	}[];
+	/** Unresolved drift count */
+	unresolvedDriftCount: number;
+	/** False block rate calculation */
+	falseBlockRate: {
+		falseBlocks: number;
+		totalBlocks: number;
+		rate: number;
+	};
+	/** Maintainer sign-offs */
+	signOffs: {
+		approver: string;
+		signedAt: string;
+		role: string;
+	}[];
+	/** Rollback proof - verification that rollback works */
+	rollbackProof: {
+		verifiedAt: string;
+		demotionTestPassed: boolean;
+		testDemotionId: string;
+	};
+	/** When packet was created */
+	createdAt: string;
+	/** Packet status */
+	status: "pending" | "approved" | "rejected" | "superseded";
+	/** Rejection reason if rejected */
+	rejectionReason?: string;
+}
+
+// ==========================================
+// Demotion Triggers
+// ==========================================
+
+export type DemotionTriggerReason =
+	| "critical_drift_detected"
+	| "false_block_rate_exceeded"
+	| "threshold_breach_repeated"
+	| "join_integrity_failure"
+	| "missing_trusted_evidence"
+	| "identity_degradation_spike"
+	| "adapter_coverage_drop"
+	| "manual_operator_trigger"
+	| "system_health_critical";
+
+export interface DemotionTrigger extends ControlPlaneArtifactMetadata {
+	schemaVersion: "demotion-trigger/v1";
+	/** Unique trigger identifier */
+	triggerId: string;
+	/** Reason for demotion */
+	reason: DemotionTriggerReason;
+	/** Stage being demoted from */
+	fromStage: RolloutStage;
+	/** Stage being demoted to */
+	toStage: RolloutStage;
+	/** Evidence supporting demotion */
+	evidence: {
+		description: string;
+		artifactRefs: string[];
+		metricSnapshots?: Record<string, number>;
+	};
+	/** Whether demotion was automatic or manual */
+	automatic: boolean;
+	/** Operator who triggered if manual */
+	triggeredBy?: string;
+	/** When trigger was created */
+	createdAt: string;
+	/** Trigger status */
+	status: "pending" | "executed" | "dismissed";
+	/** When demotion was executed */
+	executedAt?: string;
+	/** Follow-up actions required */
+	followUpActions: string[];
+}
+
+// ==========================================
+// Monitoring Metrics Persistence
+// ==========================================
+
+export interface MonitoringMetricsSnapshot
+	extends ControlPlaneArtifactMetadata {
+	schemaVersion: "monitoring-metrics/v1";
+	/** Snapshot timestamp */
+	snapshotAt: string;
+	/** Current rollout stage */
+	rolloutStage: RolloutStage;
+	/** Parity drift metrics */
+	parityDrift: {
+		/** Number of unresolved drift items */
+		unresolvedCount: number;
+		/** Surfaces with drift */
+		surfaces: {
+			surfaceId: string;
+			driftType: string;
+			detectedAt: string;
+		}[];
+	};
+	/** Adapter coverage metrics */
+	adapterCoverage: {
+		/** Coverage for active adapters */
+		active: number;
+		/** Coverage for shadow adapters */
+		shadow: number;
+		/** Gaps detected */
+		gaps: {
+			adapterId: string;
+			missingCapability: string;
+		}[];
+	};
+	/** Identity degradation metrics */
+	identityDegradation: {
+		/** Rate of degraded identities */
+		degradationRate: number;
+		/** Common degradation reasons */
+		topReasons: {
+			reason: string;
+			count: number;
+		}[];
+	};
+	/** Override usage metrics */
+	overrideUsage: {
+		/** Total overrides applied */
+		totalApplied: number;
+		/** Override rate */
+		rate: number;
+		/** Scopes used */
+		scopes: {
+			scope: ControlPlaneOverrideScope;
+			count: number;
+		}[];
+	};
+	/** False block adjudication metrics */
+	falseBlockAdjudication: {
+		/** Total false blocks adjudicated */
+		totalAdjudicated: number;
+		/** False block rate */
+		rate: number;
+		/** Pending adjudications */
+		pending: number;
+	};
+	/** PR-template validation metrics */
+	prTemplateValidation: {
+		/** Pass rate */
+		passRate: number;
+		/** Missing validation rate */
+		missingRate: number;
+		/** Failed validation rate */
+		failedRate: number;
+	};
+}
+
+export interface ControlPlaneArtifactSet {
+	controlPlaneRun: ControlPlaneRun;
+	governanceSnapshot: GovernanceSnapshot;
+	instructionParity: InstructionParityResult;
+	scorecard: ControlPlaneScorecard;
+	auditLog: ControlPlaneAuditLogEntry[];
+	phaseReports: ControlPlanePhaseReport[];
+	overridePolicyRecord?: OverridePolicyRecord | null;
+	rolloutWindow?: RolloutWindow | null;
+	rolloutWindowHistory?: RolloutWindowHistory | null;
+	latestPromotionPacket?: PromotionPacket | null;
+	latestDemotionTrigger?: DemotionTrigger | null;
+	monitoringMetricsSnapshot?: MonitoringMetricsSnapshot | null;
+}
+
+export interface ControlPlaneSummary {
+	artifactRoot: string;
+	evaluationAttemptId: string;
+	runId: string;
+	evaluationDecision: ControlPlaneDecision;
+	enforcementDecision: ControlPlaneEnforcementDecision;
+	identityStatus: AgentIdentity["identityStatus"];
+	instructionParityStatus: InstructionParityResult["status"];
+	governanceTrustLevel: GovernanceSnapshot["sourceTrustLevel"];
+	warnings: string[];
 }

@@ -110,10 +110,13 @@ export interface IndexerError {
  * Metadata for an indexed document.
  */
 export interface DocumentMetadata {
-	readonly type: "brainstorm" | "plan" | "solution";
+	readonly type: "brainstorm" | "plan" | "solution" | "reference";
 	readonly topic: string;
 	readonly date: string;
 	readonly status?: string | undefined;
+	readonly authority?: "canonical" | "governed" | "supporting" | undefined;
+	readonly family?: string | undefined;
+	readonly stalenessState?: "fresh" | "unknown" | "stale" | undefined;
 }
 
 /**

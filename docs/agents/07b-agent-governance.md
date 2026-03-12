@@ -20,6 +20,10 @@ Agents are expected to be deterministic and auditable. Recommended execution loo
 - `docs-gate` (CI check for documentation parity)
 - Code-review pass-through via PR workflow (no direct `main` commits).
 
+When agent work changes tooling/runtime contract surfaces or architecture-context refresh behavior, the matching docs are part of the required gate, not optional polish:
+- tooling/runtime changes should update `docs/agents/02-tooling-policy.md` and `docs/agents/06-security-and-governance.md`
+- architecture-context refresh changes should update `docs/agents/00-architecture-bootstrap.md`
+
 ## Evidence and communication
 
 Every agent handoff should include:

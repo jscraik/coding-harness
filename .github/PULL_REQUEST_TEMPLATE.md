@@ -3,6 +3,7 @@
 ## Summary
 
 - Linear issue:
+- Plan IDs:
 - What changed (brief):
 - Why this change was needed:
 - Risk and rollback plan:
@@ -12,6 +13,8 @@
 - [ ] I did not push directly to `main`; this PR is from a dedicated branch.
 - [ ] Branch name follows policy (`codex/*` for agent-created branches).
 - [ ] Linear issue key is present in the branch name or PR title/body for GitHub↔Linear linking.
+- [ ] Plan IDs are listed in the PR summary and resolve to existing `docs/plans/*` frontmatter `plan_id` values.
+- [ ] Completed acceptance items for referenced plans include evidence links/refs before requesting merge.
 - [ ] Required local gates run: `pnpm lint`, `pnpm typecheck`, `pnpm test`, `pnpm audit`, `pnpm check` (or reason for deviation).
 - [ ] `docs-gate` passes locally when modifying governance-sensitive surfaces (CLI, CI, contract, init, docs).
 - [ ] Greptile setup verified via `greploop` or `check-pr` skill with `.greptile/config.json`, `.greptile/rules.md`, `.greptile/files.json` present.

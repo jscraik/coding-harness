@@ -1,6 +1,7 @@
 ---
 title: Context Compound Implementation
 date: 2026-02-24
+plan_id: context-compound-implementation
 type: feature
 status: draft
 origin: docs/brainstorms/2026-02-24-context-compound-ollama-brainstorm.md

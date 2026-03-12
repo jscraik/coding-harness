@@ -97,7 +97,7 @@ export async function requestGreptileReview(
 
 		// Default trigger message
 		const message =
-			options.message?.trim() || "@greptile please review the latest changes";
+			options.message?.trim() || "@greptileai please review the latest changes";
 
 		// Post comment to trigger Greptile
 		const comment = await client.createIssueComment(options.pr, message);

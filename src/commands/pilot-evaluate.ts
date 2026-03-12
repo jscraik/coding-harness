@@ -5,13 +5,14 @@
  */
 
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
-import { dirname, resolve } from "node:path";
+import { dirname, join, resolve } from "node:path";
 import {
 	emitTerminalRunRecord,
 	hashRunRecordValue,
 } from "../lib/contract/run-record-emitter.js";
 import { PathTraversalError, validatePath } from "../lib/input/validator.js";
 
+import { buildControlPlaneArtifacts } from "../lib/pilot-evaluation/control-plane.js";
 import { capturePilotMetrics } from "../lib/pilot-evaluation/metrics-capture.js";
 import {
 	getAdapterRegistryEntry,
@@ -44,6 +45,29 @@ interface ParityHistoryEntry {
 interface ParityHistoryArtifact {
 	schemaVersion: "pilot-adapter-parity-history/v1";
 	windows: ParityHistoryEntry[];
+}
+
+function shouldBuildControlPlane(options: PilotEvaluateOptions): boolean {
+	return Boolean(
+		options.docsGateReportPath ||
+			options.evaluationMode ||
+			options.rolloutStage ||
+			options.prTemplateStatus ||
+			options.prTemplateRef ||
+			options.actorId ||
+			options.clientFamily ||
+			options.providerId ||
+			options.modelDescriptor ||
+			options.executionMode ||
+			options.operatorType ||
+			options.overrideAuthorizedPrincipal ||
+			options.overrideScope ||
+			options.overrideReason ||
+			options.overrideTicketRef ||
+			(options.overrideApprovedBy?.length ?? 0) > 0 ||
+			options.overrideCreatedAt ||
+			options.overrideExpiresAt,
+	);
 }
 
 /**
@@ -579,6 +603,10 @@ export function runPilotEvaluate(options: PilotEvaluateOptions): {
 	);
 	let manualSafeMode = options.killSwitch ?? false;
 	let outcome: PilotOutcome = computedOutcome;
+	let controlPlaneWarnings: string[] = [];
+	let controlPlane:
+		| NonNullable<PilotEvaluationResult["controlPlane"]>
+		| undefined;
 
 	if (lane === "health" && driftWarnings.length > 0) {
 		outcome = computedOutcome === "rollback" ? "rollback" : "hold";
@@ -703,6 +731,23 @@ export function runPilotEvaluate(options: PilotEvaluateOptions): {
 		},
 	};
 
+	if (shouldBuildControlPlane(options)) {
+		const controlPlaneResult = buildControlPlaneArtifacts({
+			artifactsDir,
+			metrics,
+			metricsErrors: errors,
+			legacyOutcome: outcome,
+			legacyHoldReasons: holdReasons,
+			options,
+		});
+		controlPlaneWarnings = controlPlaneResult.warnings;
+		controlPlane = controlPlaneResult.summary;
+		result.controlPlane = controlPlane;
+		if (controlPlaneWarnings.length > 0) {
+			result.warnings.push(...controlPlaneWarnings);
+		}
+	}
+
 	// Write output file if specified
 	if (options.outputPath) {
 		const cwd = process.cwd();
@@ -772,6 +817,7 @@ export function runPilotEvaluate(options: PilotEvaluateOptions): {
 			ingestion,
 			driftWarningCount: driftWarnings.length,
 			controls: result.controls,
+			...(controlPlane ? { controlPlane } : {}),
 		},
 		artifacts: [
 			{
@@ -790,6 +836,29 @@ export function runPilotEvaluate(options: PilotEvaluateOptions): {
 				type: "incidents",
 				path: resolve(artifactsDir, "incidents.jsonl"),
 			},
+			...(controlPlane
+				? [
+						{
+							type: "control-plane-run",
+							path: join(controlPlane.artifactRoot, "control-plane-run.json"),
+						},
+						{
+							type: "governance-snapshot",
+							path: join(controlPlane.artifactRoot, "governance-snapshot.json"),
+						},
+						{
+							type: "instruction-parity",
+							path: join(controlPlane.artifactRoot, "instruction-parity.json"),
+						},
+						{
+							type: "control-plane-scorecard",
+							path: join(
+								controlPlane.artifactRoot,
+								"control-plane-scorecard.json",
+							),
+						},
+					]
+				: []),
 			...(options.outputPath
 				? [
 						{
@@ -837,7 +906,7 @@ export function runPilotEvaluateCLI(options: PilotEvaluateOptions): number {
 		console.info(JSON.stringify(result, null, 2));
 	} else {
 		// Human-readable output
-		const { metrics, outcome, holdReasons, warnings } = result;
+		const { metrics, outcome, holdReasons, warnings, controlPlane } = result;
 
 		const outcomeIcon =
 			outcome === "promote" ? "✓" : outcome === "hold" ? "⏸" : "↩";
@@ -883,6 +952,20 @@ export function runPilotEvaluateCLI(options: PilotEvaluateOptions): number {
 			for (const warning of warnings) {
 				console.info(`  • ${warning}`);
 			}
+		}
+
+		if (controlPlane) {
+			console.info();
+			console.info("🛡 Control Plane:");
+			console.info(
+				`  Evaluation: ${controlPlane.evaluationDecision} (${controlPlane.identityStatus})`,
+			);
+			console.info(`  Enforcement: ${controlPlane.enforcementDecision}`);
+			console.info(`  Governance trust: ${controlPlane.governanceTrustLevel}`);
+			console.info(
+				`  Instruction parity: ${controlPlane.instructionParityStatus}`,
+			);
+			console.info(`  Artifacts: ${controlPlane.artifactRoot}`);
 		}
 
 		if (options.outputPath) {

@@ -3,6 +3,7 @@ title: "feat: Canonical Run/Eval Substrate Implementation"
 type: feat
 status: active
 date: 2026-03-08
+plan_id: feat-canonical-run-eval-substrate
 origin: docs/brainstorms/2026-02-25-agent-first-throughput-v1-brainstorm.md
 spec: docs/specs/2026-03-08-feat-canonical-run-eval-substrate-spec.md
 ---

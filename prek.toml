@@ -2,8 +2,8 @@
 # https://github.com/jdx/prek
 
 [hooks]
-pre-commit = ["pnpm lint", "pnpm docs:lint", "pnpm typecheck"]
-pre-push = ["pnpm test", "pnpm audit"]
+pre-commit = ["make hooks-pre-commit"]
+pre-push = ["make hooks-pre-push"]
 
 [tools]
 biome = "1.9.4"

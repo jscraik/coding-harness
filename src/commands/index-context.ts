@@ -1,10 +1,10 @@
 /**
  * Index Context CLI command
  *
- * Bulk index brainstorms, plans, and solutions for semantic search.
+ * Bulk index governed and supporting context surfaces for semantic search.
  */
 
-import { existsSync, lstatSync, readdirSync } from "node:fs";
+import { existsSync, lstatSync } from "node:fs";
 import { isAbsolute, join, relative, resolve, sep } from "node:path";
 import {
 	DEFAULT_DB_FILENAME,
@@ -12,9 +12,7 @@ import {
 } from "../lib/context-compound/constants.js";
 import {
 	type IndexResult,
-	brainstormIndexOptions,
 	indexBatch,
-	planIndexOptions,
 } from "../lib/context-compound/indexer.js";
 import { normalizeStoreInitError } from "../lib/context-compound/init-error.js";
 import {
@@ -27,6 +25,11 @@ import {
 	isCp4bLexicalFallbackEnabled,
 } from "../lib/context-compound/rollout.js";
 import { VectorStore } from "../lib/context-compound/store.js";
+import {
+	CONTEXT_SOURCE_DEFINITIONS,
+	discoverContextSourceDocuments,
+	writeContextSourceInventory,
+} from "../lib/context-integrity/sources.js";
 import { validatePath } from "../lib/input/validator.js";
 import { type CliResult, createError, err, ok } from "../lib/result/types.js";
 
@@ -67,6 +70,8 @@ export interface IndexContextOutput {
 	mode?: "semantic" | "lexical_degraded";
 	/** Lexical index artifact path when degraded mode is used */
 	lexicalIndexPath?: string;
+	/** Source inventory artifact path */
+	inventoryPath?: string;
 	/** Error message if failed */
 	error?: string;
 }
@@ -141,27 +146,6 @@ function getValidatedHarnessDir(
 }
 
 /**
- * Find all markdown files in a directory.
- */
-function findMarkdownFiles(dir: string): string[] {
-	if (!existsSync(dir)) return [];
-
-	const files: string[] = [];
-	const entries = readdirSync(dir, { withFileTypes: true });
-
-	for (const entry of entries) {
-		const fullPath = join(dir, entry.name);
-		if (entry.isDirectory()) {
-			files.push(...findMarkdownFiles(fullPath));
-		} else if (entry.isFile() && entry.name.endsWith(".md")) {
-			files.push(fullPath);
-		}
-	}
-
-	return files;
-}
-
-/**
  * Run bulk indexing and return structured result.
  */
 export async function runIndexContext(
@@ -181,36 +165,23 @@ export async function runIndexContext(
 		options.lexicalFallback,
 	);
 
-	// Collect files to index
-	const brainstormsDir = join(baseDir, "docs/brainstorms");
-	const plansDir = join(baseDir, "docs/plans");
-	const solutionsDir = join(baseDir, "docs/solutions");
-
-	const brainstormFiles = findMarkdownFiles(brainstormsDir);
-	const planFiles = findMarkdownFiles(plansDir);
-	const solutionFiles = findMarkdownFiles(solutionsDir);
-
-	const allFiles = [
-		...brainstormFiles.map((f) => ({
-			...brainstormIndexOptions(f, baseDir),
-			force: options.force,
-		})),
-		...planFiles.map((f) => ({
-			...planIndexOptions(f, baseDir),
-			force: options.force,
-		})),
-		...solutionFiles.map((f) => ({
-			filepath: f,
-			type: "solution" as const,
-			basePath: baseDir,
-			force: options.force,
-		})),
-	];
+	const sourceDocuments = discoverContextSourceDocuments(baseDir);
+	const allFiles = sourceDocuments.map((document) => ({
+		filepath: document.filepath,
+		type: document.type,
+		basePath: baseDir,
+		force: options.force,
+		metadata: {
+			authority: document.authority,
+			family: document.family,
+			stalenessState: document.stalenessState,
+		},
+	}));
 
 	if (allFiles.length === 0) {
 		return err(
 			createError("NOT_FOUND", "No files found to index", {
-				expectedDirs: [brainstormsDir, plansDir, solutionsDir],
+				expectedDirs: CONTEXT_SOURCE_DEFINITIONS.map(({ path }) => path),
 			}),
 		);
 	}
@@ -220,6 +191,10 @@ export async function runIndexContext(
 		const isAvailable = await ollama.isAvailable();
 		if (!isAvailable) {
 			const lexicalIndex = writeLexicalIndex(baseDir, harnessDir);
+			const inventory = writeContextSourceInventory(
+				baseDir,
+				sourceDocuments.map((document) => document.relativePath),
+			);
 			return ok({
 				success: true,
 				indexed: lexicalIndex.indexed,
@@ -231,6 +206,7 @@ export async function runIndexContext(
 				})),
 				mode: "lexical_degraded",
 				lexicalIndexPath: lexicalIndex.path,
+				inventoryPath: inventory.path,
 			});
 		}
 	}
@@ -313,6 +289,10 @@ export async function runIndexContext(
 	store.close();
 
 	const success = errors === 0;
+	const indexedRelativePaths = results
+		.filter((result) => result.indexed || !result.error)
+		.map((result) => relative(baseDir, result.path).split("\\").join("/"));
+	const inventory = writeContextSourceInventory(baseDir, indexedRelativePaths);
 
 	return ok({
 		success,
@@ -321,6 +301,7 @@ export async function runIndexContext(
 		errors,
 		results,
 		mode: "semantic",
+		inventoryPath: inventory.path,
 	});
 }
 
@@ -396,9 +377,9 @@ export async function runIndexContextCLI(args: string[]): Promise<number> {
 			console.error(`✗ ${error.message}`);
 			if (error.code === "NOT_FOUND") {
 				console.error("   Expected files in:");
-				console.error("   - docs/brainstorms");
-				console.error("   - docs/plans");
-				console.error("   - docs/solutions");
+				for (const definition of CONTEXT_SOURCE_DEFINITIONS) {
+					console.error(`   - ${definition.path}`);
+				}
 			} else if (error.code === "API_ERROR") {
 				console.error("   Install: https://ollama.com");
 				console.error("   Start: ollama serve");

@@ -32,6 +32,8 @@ export interface Comment {
 
 export interface PullRequest {
 	number: number;
+	title?: string;
+	body?: string | null;
 	user?: {
 		login: string;
 	};
@@ -39,6 +41,11 @@ export interface PullRequest {
 		sha: string;
 		ref: string;
 	};
+}
+
+export interface PullRequestFile {
+	filename: string;
+	status?: string;
 }
 
 export interface PullRequestReview {
@@ -111,6 +118,12 @@ export interface RulesetPayload {
 	bypass_actors: RulesetBypassActor[];
 	conditions: BranchRulesetConditions;
 	rules: RulesetRule[];
+}
+
+export interface RepositoryMergeSettings {
+	allowMergeCommit: boolean;
+	allowSquashMerge: boolean;
+	allowRebaseMerge: boolean;
 }
 
 function createOctokit(token: string): InstanceType<typeof MyOctokit> {
@@ -227,6 +240,23 @@ export class GitHubClient {
 				},
 			);
 			return response as PullRequestReview[];
+		} catch (error) {
+			throw this.classifyError(error);
+		}
+	}
+
+	async listPullRequestFiles(pullNumber: number): Promise<PullRequestFile[]> {
+		try {
+			const response = await this.octokit.paginate(
+				this.octokit.pulls.listFiles,
+				{
+					owner: this.owner,
+					repo: this.repo,
+					pull_number: pullNumber,
+					per_page: 100,
+				},
+			);
+			return response as PullRequestFile[];
 		} catch (error) {
 			throw this.classifyError(error);
 		}
@@ -351,6 +381,22 @@ export class GitHubClient {
 		}
 	}
 
+	async getRepositoryVisibility(): Promise<string> {
+		try {
+			const response = await this.octokit.repos.get({
+				owner: this.owner,
+				repo: this.repo,
+			});
+			const visibility = response.data.visibility;
+			if (typeof visibility === "string" && visibility.trim().length > 0) {
+				return visibility;
+			}
+			return response.data.private ? "private" : "public";
+		} catch (error) {
+			throw this.classifyError(error);
+		}
+	}
+
 	async listIssueComments(issueNumber: number): Promise<Comment[]> {
 		try {
 			const response = await this.octokit.paginate(
@@ -432,6 +478,24 @@ export class GitHubClient {
 				),
 			);
 			return response.data as Ruleset;
+		} catch (error) {
+			throw this.classifyError(error);
+		}
+	}
+
+	async updateRepositoryMergeSettings(
+		settings: RepositoryMergeSettings,
+	): Promise<void> {
+		try {
+			await mutationQueue.execute(() =>
+				this.octokit.repos.update({
+					owner: this.owner,
+					repo: this.repo,
+					allow_merge_commit: settings.allowMergeCommit,
+					allow_squash_merge: settings.allowSquashMerge,
+					allow_rebase_merge: settings.allowRebaseMerge,
+				}),
+			);
 		} catch (error) {
 			throw this.classifyError(error);
 		}
