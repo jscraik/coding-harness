@@ -18,7 +18,7 @@
 
 ## Install modes
 
-### Global (workstation)
+### Global npm install (required for generated preflight)
 
 ```bash
 npm install -g @brainwav/coding-harness
@@ -31,12 +31,20 @@ Recommended managed install:
 mise install -g npm:@brainwav/coding-harness
 ```
 
-### Project-local (repo)
+Required private package auth wiring:
 
 ```bash
-pnpm add -D @brainwav/coding-harness
-pnpm exec harness --help
+export NPM_TOKEN=<token>
+# GitHub Actions workflow env:
+# env:
+#   NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
 ```
+
+### Project-local source CLI (only for coding-harness development)
+
+Use this only when developing inside the `coding-harness` source repository itself.
+Generated `scripts/check-environment.sh` in consumer repositories does not fall back
+to `pnpm exec tsx src/cli.ts ...`; it requires the global `harness` binary from npm.
 
 ## Bootstrap workflow
 

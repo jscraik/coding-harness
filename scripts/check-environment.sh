@@ -45,7 +45,7 @@ if [[ ! -f "$PREK_CONFIG_PATH" ]]; then
 	exit 1
 fi
 
-required_support_files=("scripts/check-staged-secrets.sh" "scripts/check-doc-style.sh" "scripts/check-related-tests.sh" "scripts/check-semgrep-changed.sh" "scripts/semgrep-pre-push.yml")
+required_support_files=("scripts/codex-preflight.sh" "scripts/check-staged-secrets.sh" "scripts/check-doc-style.sh" "scripts/check-related-tests.sh" "scripts/check-semgrep-changed.sh" "scripts/semgrep-pre-push.yml")
 for support_file in "${required_support_files[@]}"; do
 	if [[ ! -f "$REPO_ROOT/${support_file}" ]]; then
 		echo "Error: missing required hook support file at $REPO_ROOT/${support_file}"
@@ -109,7 +109,7 @@ for action in "${required_codex_actions[@]}"; do
 	fi
 done
 
-required_make_targets=("help" "install" "setup" "hooks" "hooks-pre-commit" "hooks-pre-push" "diagrams-check" "lint" "docs-lint" "fmt" "typecheck" "test" "check" "audit" "secrets" "security" "clean" "reset" "ci" "diagrams" "env-check")
+required_make_targets=("help" "install" "setup" "preflight" "hooks" "hooks-pre-commit" "hooks-pre-push" "secrets-staged" "docs-style-changed" "related-tests" "semgrep-changed" "diagrams-check" "lint" "docs-lint" "fmt" "typecheck" "test" "check" "audit" "secrets" "security" "clean" "reset" "ci" "diagrams" "env-check")
 for target in "${required_make_targets[@]}"; do
 	if ! rg -q "^${target}:" "$MAKEFILE_PATH"; then
 		echo "Error: required Makefile target '$target' is missing from $MAKEFILE_PATH"
@@ -167,7 +167,6 @@ if [[ -f "$PACKAGE_JSON_PATH" ]]; then
 		[[ -n "$capability" ]] || continue
 		repo_capabilities+=("$capability")
 	done
-
 	ui_markers=("react" "react-dom" "next" "vite" "tailwindcss" "@storybook/react" "@storybook/react-vite" "@radix-ui/react-slot")
 	for marker in "${ui_markers[@]}"; do
 		if has_package_marker "$marker"; then
@@ -238,10 +237,80 @@ fi
 mkdir -p "$REPO_ROOT/artifacts/policy"
 
 echo "Running harness environment preflight..."
-pnpm exec tsx src/cli.ts check-environment \
-	--contract "$CONTRACT_PATH" \
-	--json \
-	--attestation "$ATTESTATION_PATH"
+
+run_check_environment_with_runner() {
+	local label="$1"
+	shift
+	local -a runner=("$@")
+	local output=""
+	local exit_code=0
+
+	rm -f "$ATTESTATION_PATH"
+
+	echo "Using harness runner: $label"
+	set +e
+	output="$("${runner[@]}" check-environment \
+		--contract "$CONTRACT_PATH" \
+		--json \
+		--attestation "$ATTESTATION_PATH" 2>&1)"
+	exit_code=$?
+	set -e
+
+	if [[ -n "$output" ]]; then
+		printf '%s\n' "$output"
+	fi
+
+	if [[ "$exit_code" -ne 0 ]]; then
+		echo "Runner failed: $label (exit $exit_code)"
+		return 1
+	fi
+
+	if [[ ! -f "$ATTESTATION_PATH" ]]; then
+		local json_line
+		json_line="$(printf '%s\n' "$output" | awk '/^\{/{line=$0} END{if(line!="") print line}')"
+		if [[ -n "$json_line" ]]; then
+			printf '%s\n' "$json_line" > "$ATTESTATION_PATH"
+		fi
+	fi
+
+	if [[ ! -f "$ATTESTATION_PATH" ]]; then
+		echo "Runner produced no attestation output: $label"
+		return 1
+	fi
+
+	return 0
+}
+
+if ! command -v npm >/dev/null 2>&1; then
+	echo "Error: npm is required to validate global harness installation."
+	exit 1
+fi
+
+if ! npm ls -g --depth=0 @brainwav/coding-harness >/dev/null 2>&1; then
+	echo "Error: @brainwav/coding-harness is not installed globally via npm."
+	echo "Install globally and retry:"
+	echo "  npm i -g @brainwav/coding-harness"
+	echo "Private registry auth is required:"
+	echo "  - Local shell: export NPM_TOKEN=<token>"
+	echo "  - GitHub Actions: add repository secret NPM_TOKEN and map it to workflow env"
+	echo '    env: NPM_TOKEN: ${{ secrets.NPM_TOKEN }}'
+	exit 1
+fi
+
+if ! command -v harness >/dev/null 2>&1; then
+	echo "Error: global harness binary is not on PATH after npm installation."
+	echo "Fix: ensure npm global bin directory is on PATH, then retry."
+	exit 1
+fi
+
+if ! run_check_environment_with_runner "global npm harness ($(command -v harness))" harness; then
+	echo "Error: global npm harness failed to run check-environment successfully."
+	echo "Reinstall and retry:"
+	echo "  npm i -g @brainwav/coding-harness"
+	echo "If this is CI, confirm:"
+	echo '  env: NPM_TOKEN: ${{ secrets.NPM_TOKEN }}'
+	exit 1
+fi
 
 jq -e '.passed == true' "$ATTESTATION_PATH" >/dev/null
 echo "Environment check passed (attestation: $ATTESTATION_PATH)"
