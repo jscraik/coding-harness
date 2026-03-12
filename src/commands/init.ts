@@ -982,12 +982,14 @@ jobs:
             const greptileLogins = new Set([
               'greptile[bot]',
               'greptileai[bot]',
+              'greptile-apps[bot]',
               'greptile',
-              'greptileai'
+              'greptileai',
+              'greptile-apps'
             ]);
 
             const greptileComments = comments.data
-              .filter(c => greptileLogins.has(c.user.login))
+              .filter(c => c.user != null && greptileLogins.has(c.user.login))
               .sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
 
             if (greptileComments.length === 0) {
