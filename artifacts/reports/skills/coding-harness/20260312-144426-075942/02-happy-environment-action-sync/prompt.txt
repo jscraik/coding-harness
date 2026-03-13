@@ -1,0 +1,1 @@
+In no-execution mode, explain how coding-harness keeps .codex/environments/environment.toml in sync and which action groups must always exist.

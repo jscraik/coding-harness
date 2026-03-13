@@ -58,6 +58,9 @@ gardener-report.json
 .test-traces-*/
 ops/metrics/skill-feedback/
 
+# E2E test recordings (contain API call data with potentially sensitive info)
+e2e/recordings/
+
 # Pilot artifacts
 artifacts/pilot/
 artifacts/agent-runs/
@@ -100,3 +103,4 @@ docs/sketches/
 
 # Local git worktrees
 .worktrees/
+artifacts/pilot-evaluate-test-*/

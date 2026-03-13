@@ -1,6 +1,54 @@
 import picomatch from "picomatch";
 import type { HarnessContract, RiskTier } from "../contract/types.js";
 
+// ============================================================================
+// Module-level Matcher Cache
+// ============================================================================
+
+/**
+ * Maximum number of compiled matchers to keep in cache.
+ * Matches the contract loader cache size for consistency.
+ */
+const MAX_MATCHER_CACHE_SIZE = 100;
+
+/**
+ * Module-level cache for compiled picomatch matchers.
+ * Key: pattern string, Value: compiled matcher function.
+ */
+const MATCHER_CACHE = new Map<string, (input: string) => boolean>();
+
+/**
+ * Get or create a compiled matcher for the given pattern.
+ * Uses caching to avoid recompiling patterns on every resolver creation.
+ *
+ * @param pattern - Glob pattern to compile
+ * @returns Compiled matcher function
+ */
+function getMatcher(pattern: string): (input: string) => boolean {
+	let matcher = MATCHER_CACHE.get(pattern);
+	if (matcher === undefined) {
+		matcher = picomatch(pattern);
+		// Enforce cache size limit with simple FIFO eviction
+		if (MATCHER_CACHE.size >= MAX_MATCHER_CACHE_SIZE) {
+			const firstKey = MATCHER_CACHE.keys().next().value;
+			if (firstKey !== undefined) {
+				MATCHER_CACHE.delete(firstKey);
+			}
+		}
+		MATCHER_CACHE.set(pattern, matcher);
+	}
+	return matcher;
+}
+
+/**
+ * Clear the matcher cache (useful for testing).
+ */
+export function clearMatcherCache(): void {
+	MATCHER_CACHE.clear();
+}
+
+// ============================================================================
+
 interface Rule {
 	pattern: string;
 	tier: RiskTier;
@@ -47,7 +95,7 @@ export function createResolver(
 		.map(([pattern, tier]) => ({
 			pattern,
 			tier,
-			matcher: picomatch(pattern),
+			matcher: getMatcher(pattern),
 		}))
 		.sort((a, b) => {
 			const specificityDiff =

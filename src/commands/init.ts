@@ -20,6 +20,32 @@ import {
 	DEFAULT_CONTRACT,
 	type HarnessContract,
 } from "../lib/contract/types.js";
+import {
+	BACKUPS_DIR,
+	type BackupResult,
+	CURRENT_SCHEMA_VERSION,
+	type ContractSchema,
+	EXIT_CODES,
+	HARNESS_DIR,
+	type InitErrorOutput,
+	type InitOptions,
+	type InitResult,
+	MANIFEST_FILE,
+	MAX_INTERACTIVE_FILE_BYTES,
+	type ManifestEntry,
+	type ManifestResult,
+	type Migration,
+	type MigrationResult,
+	type MigrationResultType,
+	type PackageManager,
+	type ProposedChange,
+	type RestoreManifest,
+	type RollbackResult,
+	type Template,
+	type TemplateRenderContext,
+	type UpdateCheckResult,
+	type UpdateResult,
+} from "../lib/init/types.js";
 import { sanitizeError } from "../lib/input/sanitize.js";
 import {
 	BRANCH_PROTECTION_REQUIRED_CHECKS,
@@ -41,214 +67,9 @@ import {
 } from "../lib/policy/tooling-baseline.js";
 import { getVersion } from "../lib/version.js";
 
-// Exit codes for programmatic consumption
-export const EXIT_CODES = {
-	SUCCESS: 0,
-	PATH_TRAVERSAL: 1,
-	WRITE_ERROR: 2,
-	INVALID_PATH: 3,
-} as const;
-
-export interface InitOptions {
-	dryRun: boolean;
-	force: boolean;
-	track?: boolean; // Create manifest + backups for rollback
-	rollback?: boolean; // Restore from manifest
-	checkUpdates?: boolean; // Check for template updates
-	update?: boolean; // Apply template updates
-	interactive?: boolean; // Interactive prompts for each change
-	migrate?: boolean; // Migrate contract schema to latest version
-}
-
-// === Rollback Types ===
-
-// Discriminated union for type-safe rollback handling
-export type ManifestEntry =
-	| { path: string; action: "created" } // New file, no backup
-	| { path: string; action: "modified"; backupHash: string }; // Existing file, backed up
-
-// Minimal manifest - no YAGNI metadata
-export interface RestoreManifest {
-	harnessVersion?: string; // CLI version at install/update time
-	files: ManifestEntry[];
-}
-
-// Result types for rollback operations
-export type BackupResult =
-	| { ok: true; value: string | null } // backupHash or null for new files
-	| { ok: false; error: InitErrorOutput };
-
-export type ManifestResult =
-	| { ok: true; value: RestoreManifest }
-	| { ok: false; error: InitErrorOutput };
-
-export type RollbackResult =
-	| { ok: true; value: { restored: string[]; deleted: string[] } }
-	| { ok: false; error: InitErrorOutput };
-
-// === Update Detection Types ===
-
-export interface UpdateCheckInfo {
-	currentVersion: string;
-	installedVersion: string;
-	updateAvailable: boolean;
-}
-
-export type UpdateCheckResult =
-	| { ok: true; value: UpdateCheckInfo }
-	| { ok: false; error: InitErrorOutput };
-
-export type UpdateResult =
-	| { ok: true; value: { updated: string[]; skipped: string[] } }
-	| { ok: false; error: InitErrorOutput };
-
-// === Interactive Mode Types ===
-
-export interface ProposedChange {
-	path: string;
-	action: "create" | "modify" | "skip";
-	currentContent: string | null; // null for new files
-	newContent: string;
-}
-
-/** Max size for interactive content reads to prevent DoS via large/special files */
-const MAX_INTERACTIVE_FILE_BYTES = 1024 * 1024; // 1 MiB
+// Local constants (not in types module)
 const PRE_COMMIT_MAKE_TARGET = REQUIRED_SIMPLE_GIT_HOOKS["pre-commit"];
 const PRE_PUSH_MAKE_TARGET = REQUIRED_SIMPLE_GIT_HOOKS["pre-push"];
-
-// === Schema Migration Types ===
-
-/** Typed contract schema for version-aware handling */
-export interface ContractSchema {
-	version: string;
-	riskTierRules?: Record<string, unknown>;
-	reviewPolicy?:
-		| {
-				timeoutSeconds: number;
-				timeoutAction: "fail" | "warn";
-				requiredChecks?: string[];
-				enforceReviewerIndependence?: boolean;
-		  }
-		| undefined;
-	branchProtection?: {
-		requiredChecks?: string[];
-		restrictDeletions?: boolean;
-		blockForcePushes?: boolean;
-		requireLinearHistory?: boolean;
-		requirePullRequest?: boolean;
-		requiredApprovingReviewCount?: number;
-		dismissStaleReviewsOnPush?: boolean;
-		requireConversationResolution?: boolean;
-		requireCodeOwnerReview?: boolean;
-		requireLastPushApproval?: boolean;
-		requireBranchesUpToDate?: boolean;
-		allowedMergeMethods?: {
-			mergeCommit?: boolean;
-			squash?: boolean;
-			rebase?: boolean;
-		};
-		codeQuality?: {
-			required?: boolean;
-			severity?: unknown;
-		};
-		publicCodeScanning?: {
-			required?: boolean;
-			publicOnly?: boolean;
-			tool?: unknown;
-			alertsThreshold?: unknown;
-			securityAlertsThreshold?: unknown;
-		};
-	};
-	toolingPolicy?: {
-		requiredDocumentationTerms?: string[];
-		requiredBinaries?: string[];
-		requiredMiseTools?: Array<{
-			tool?: unknown;
-			version?: unknown;
-		}>;
-		miseFilePath?: unknown;
-		readinessScriptPath?: unknown;
-		codexEnvironment?: {
-			path?: unknown;
-			requiredActions?: Array<{
-				name?: unknown;
-				icon?: unknown;
-			}>;
-		};
-		makefile?: {
-			path?: unknown;
-			requiredTargets?: string[];
-		};
-		packagePolicy?: {
-			packageJsonPath?: unknown;
-			explicitCapabilities?: string[];
-			capabilityDetectors?: Array<{
-				capability?: unknown;
-				dependencyMarkers?: string[];
-			}>;
-			requiredPackages?: Array<{
-				package?: unknown;
-				dependencyType?: unknown;
-				requiredWhenCapabilities?: string[];
-			}>;
-		};
-	};
-	contextIntegrityPolicy?: unknown;
-	issueTrackingPolicy?: unknown;
-	evidencePolicy?: {
-		requiredFor: unknown[];
-		allowedTypes: unknown[];
-		maxFileSizeBytes?: unknown;
-	};
-	mergePolicy?: unknown;
-	docsDriftRules?: Record<string, unknown>;
-	diffBudget?: {
-		maxFiles?: unknown;
-		maxNetLOC?: unknown;
-		overrideLabel?: unknown;
-	};
-	runtimePolicy?: unknown;
-	memoryPolicy?: unknown;
-	memoryMaintenancePolicy?: unknown;
-	memoryEvalPolicy?: unknown;
-	observabilityPolicy?: unknown;
-	packageManagerPolicy?: unknown;
-	remediationPolicy?: unknown;
-	gapCasePolicy?: unknown;
-	uiLoopPolicy?: {
-		fastCommand?: unknown;
-		verifyCommand?: unknown;
-		exploreCommand?: unknown;
-		sloTargets?: {
-			fastLoopSeconds?: unknown;
-			verifyLoopSeconds?: unknown;
-		};
-	};
-	[key: string]: unknown; // Allow additional user-defined fields
-}
-
-/** Migration function that transforms a contract from one version to the next */
-export interface Migration {
-	fromVersion: string;
-	toVersion: string;
-	description: string;
-	migrate: (contract: ContractSchema) => ContractSchema;
-}
-
-/** Result of a migration operation */
-export interface MigrationResult {
-	originalVersion: string;
-	finalVersion: string;
-	migrationsApplied: string[]; // List of migration descriptions
-	migratedContract: ContractSchema;
-}
-
-export type MigrationResultType =
-	| { ok: true; value: MigrationResult }
-	| { ok: false; error: InitErrorOutput };
-
-// Current latest schema version (must match template)
-export const CURRENT_SCHEMA_VERSION = "1.5.0";
 
 function addSchemaDefaults(contract: ContractSchema): ContractSchema {
 	return {
@@ -458,29 +279,8 @@ const MIGRATIONS: Migration[] = [
 	},
 ];
 
-export interface InitOutput {
-	packageManager: string;
-	created: string[];
-	skipped: string[];
-	updateCheck?: UpdateCheckInfo; // Populated when --check-updates used
-	proposedChanges?: ProposedChange[]; // Populated in interactive dry-run
-}
+// === Local Constants ===
 
-export interface InitErrorOutput {
-	code: string;
-	message: string;
-	path?: string;
-}
-
-export type InitResult =
-	| { ok: true; output: InitOutput }
-	| { ok: false; error: InitErrorOutput };
-
-// === Rollback Constants ===
-
-const HARNESS_DIR = ".harness";
-const BACKUPS_DIR = "backups";
-const MANIFEST_FILE = "restore-manifest.json";
 const CODEX_ENVIRONMENT_TEMPLATE_PATH = TOOLING_CODEX_ENVIRONMENT_PATH;
 const CODEX_ENVIRONMENT_AUTOGENERATED_HEADER =
 	"# THIS IS AUTOGENERATED. DO NOT EDIT MANUALLY";
@@ -491,19 +291,6 @@ const RETIRED_TEMPLATE_PATHS = [
 ] as const;
 
 // === Templates (inline) ===
-
-interface TemplateRenderContext {
-	targetDir: string;
-	packageScripts: string[];
-	issueTrackingUrl?: string;
-}
-
-interface Template {
-	path: string;
-	render: (pm: string, context: TemplateRenderContext) => string;
-}
-
-type PackageManager = "pnpm" | "yarn" | "npm";
 
 function renderScriptCommand(packageManager: string, script: string): string {
 	if (packageManager === "npm") {
@@ -5329,3 +5116,35 @@ export function runInitCLI(
 	}
 	return EXIT_CODES.INVALID_PATH;
 }
+
+// Re-export types for backward compatibility
+export type {
+	BackupResult,
+	ContractSchema,
+	InitErrorOutput,
+	InitOptions,
+	InitOutput,
+	InitResult,
+	ManifestEntry,
+	ManifestResult,
+	Migration,
+	MigrationResult,
+	MigrationResultType,
+	PackageManager,
+	ProposedChange,
+	RestoreManifest,
+	RollbackResult,
+	Template,
+	TemplateRenderContext,
+	UpdateCheckInfo,
+	UpdateCheckResult,
+	UpdateResult,
+} from "../lib/init/types.js";
+// Re-export constants (using local bindings to avoid duplicate identifier errors)
+export {
+	BACKUPS_DIR,
+	CURRENT_SCHEMA_VERSION,
+	EXIT_CODES,
+	HARNESS_DIR,
+	MANIFEST_FILE,
+};

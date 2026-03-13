@@ -9,6 +9,7 @@ import {
 
 import { dirname, join } from "node:path";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
+import { clearContractCache } from "../lib/contract/loader.js";
 import {
 	EXIT_CODES,
 	runPilotRollback,
@@ -20,6 +21,8 @@ describe("pilot-rollback", () => {
 	const contractPath = join(testDir, "harness.contract.json");
 
 	beforeEach(() => {
+		// Clear contract cache to prevent stale contract data between tests
+		clearContractCache();
 		// Create test directory and contract
 		rmSync(testDir, { recursive: true, force: true });
 	});

@@ -11,6 +11,11 @@ import type {
 import { DEFAULT_CONTRACT } from "../lib/contract/types.js";
 import type { HarnessContract } from "../lib/contract/types.js";
 import { sanitizeError } from "../lib/input/sanitize.js";
+import {
+	type CliErrorCode,
+	createJsonErrorOutput,
+	createJsonOutput,
+} from "../lib/result/types.js";
 
 // Exit codes for programmatic consumption
 export const EXIT_CODES = {
@@ -147,9 +152,29 @@ export function runBlastRadiusCLI(options: BlastRadiusOptions): number {
 
 	if (!result.ok) {
 		if (options.json) {
-			console.error(JSON.stringify({ error: result.error }, null, 2));
+			// Create structured JSON error with recovery hint
+			const errorCode = result.error.code as CliErrorCode;
+			const recoveryHint = getRecoveryHint(result.error.code);
+			const jsonOutput = createJsonErrorOutput(
+				"blast-radius",
+				{
+					code: errorCode,
+					message: result.error.message,
+					...(recoveryHint ? { recovery: recoveryHint } : {}),
+				},
+				result.error.code === "VALIDATION_ERROR"
+					? EXIT_CODES.VALIDATION_ERROR
+					: result.error.code === "NO_FILES"
+						? EXIT_CODES.NO_FILES
+						: EXIT_CODES.SYSTEM_ERROR,
+			);
+			console.error(JSON.stringify(jsonOutput, null, 2));
 		} else {
 			console.error(`Error: ${result.error.message}`);
+			const recoveryHint = getRecoveryHint(result.error.code);
+			if (recoveryHint) {
+				console.error(`Recovery: ${recoveryHint}`);
+			}
 		}
 		if (result.error.code === "VALIDATION_ERROR") {
 			return EXIT_CODES.VALIDATION_ERROR;
@@ -162,7 +187,8 @@ export function runBlastRadiusCLI(options: BlastRadiusOptions): number {
 	const { output } = result;
 
 	if (options.json) {
-		console.info(JSON.stringify(output, null, 2));
+		const jsonOutput = createJsonOutput("blast-radius", output);
+		console.info(JSON.stringify(jsonOutput, null, 2));
 	} else {
 		if (options.verbose) {
 			console.info(summarizeBlastRadius(output.files, output.rules));
@@ -185,4 +211,20 @@ export function runBlastRadiusCLI(options: BlastRadiusOptions): number {
 	}
 
 	return EXIT_CODES.SUCCESS;
+}
+
+/**
+ * Get recovery hint for common error codes.
+ */
+function getRecoveryHint(code: string): string | undefined {
+	switch (code) {
+		case "NO_FILES":
+			return "Use --files <paths> to specify which files to analyze, or pipe git diff output";
+		case "VALIDATION_ERROR":
+			return "Ensure harness.contract.json is valid JSON with the correct schema";
+		case "FILE_NOT_FOUND":
+			return "Ensure the contract file path is correct, or run without --contract to use defaults";
+		default:
+			return undefined;
+	}
 }

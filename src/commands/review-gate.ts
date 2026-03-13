@@ -17,6 +17,11 @@ import {
 import { validateSha } from "../lib/github/sha.js";
 import { sanitizeError } from "../lib/input/sanitize.js";
 import { runPlanGate } from "../lib/plan-gate/detector.js";
+import {
+	type CliErrorCode,
+	createJsonErrorOutput,
+	createJsonOutput,
+} from "../lib/result/types.js";
 import { runCheckAuthz } from "./check-authz.js";
 
 export const EXIT_CODES = {
@@ -826,6 +831,24 @@ async function runAuthzPreflight({
 }
 
 /**
+ * Get recovery hint for common error codes.
+ */
+function getRecoveryHint(code: string): string | undefined {
+	switch (code) {
+		case "VALIDATION_ERROR":
+			return "Ensure the SHA format is valid and matches the PR's current head SHA";
+		case "NOT_FOUND":
+			return "Verify the PR number, owner, and repo are correct and accessible";
+		case "PERMISSION_DENIED":
+			return "Ensure the GitHub token has repo scope and write access to checks";
+		case "TIMEOUT":
+			return "Increase timeoutSeconds in harness.contract.json or re-run the check";
+		default:
+			return undefined;
+	}
+}
+
+/**
  * CLI entry point with output formatting and exit codes.
  */
 export async function runReviewGateCLI(
@@ -879,8 +902,17 @@ export async function runReviewGateCLI(
 			}
 		}
 
+		const exitCode = result.output.verified
+			? EXIT_CODES.SUCCESS
+			: EXIT_CODES.REVIEW_NOT_VERIFIED;
+
 		if (options.json) {
-			console.info(JSON.stringify(result.output));
+			const jsonOutput = createJsonOutput(
+				"review-gate",
+				result.output,
+				exitCode,
+			);
+			console.info(JSON.stringify(jsonOutput, null, 2));
 		} else if (result.output.verified) {
 			console.info(`✓ Review verified for SHA ${result.output.headSha}`);
 			logConfidenceExport(result.output);
@@ -894,28 +926,45 @@ export async function runReviewGateCLI(
 			logConfidenceExport(result.output);
 		}
 
-		return result.output.verified
-			? EXIT_CODES.SUCCESS
-			: EXIT_CODES.REVIEW_NOT_VERIFIED;
+		return exitCode;
 	}
 
-	console.error(result.error.message);
+	const errorCode = result.error.code as CliErrorCode;
+	const recoveryHint = getRecoveryHint(result.error.code);
+	const exitCode = (() => {
+		switch (result.error.code) {
+			case "VALIDATION_ERROR":
+				return EXIT_CODES.VALIDATION_ERROR;
+			case "NOT_FOUND":
+				return EXIT_CODES.NOT_FOUND;
+			case "PERMISSION_DENIED":
+				return EXIT_CODES.PERMISSION_DENIED;
+			case "TIMEOUT":
+				return EXIT_CODES.TIMEOUT;
+			default:
+				return EXIT_CODES.SYSTEM_ERROR;
+		}
+	})();
+
 	if (options.json) {
-		console.error(JSON.stringify({ error: result.error }));
+		const jsonOutput = createJsonErrorOutput(
+			"review-gate",
+			{
+				code: errorCode,
+				message: result.error.message,
+				...(recoveryHint ? { recovery: recoveryHint } : {}),
+			},
+			exitCode,
+		);
+		console.error(JSON.stringify(jsonOutput, null, 2));
+	} else {
+		console.error(`Error: ${result.error.message}`);
+		if (recoveryHint) {
+			console.error(`Recovery: ${recoveryHint}`);
+		}
 	}
 
-	switch (result.error.code) {
-		case "VALIDATION_ERROR":
-			return EXIT_CODES.VALIDATION_ERROR;
-		case "NOT_FOUND":
-			return EXIT_CODES.NOT_FOUND;
-		case "PERMISSION_DENIED":
-			return EXIT_CODES.PERMISSION_DENIED;
-		case "TIMEOUT":
-			return EXIT_CODES.TIMEOUT;
-		default:
-			return EXIT_CODES.SYSTEM_ERROR;
-	}
+	return exitCode;
 }
 
 function sleep(ms: number): Promise<void> {

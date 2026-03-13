@@ -21,6 +21,11 @@ import {
 } from "../lib/deps/ralph-runtime.js";
 import { sanitizeError } from "../lib/input/sanitize.js";
 import { PathTraversalError, validatePath } from "../lib/input/validator.js";
+import {
+	type CliErrorCode,
+	createJsonErrorOutput,
+	createJsonOutput,
+} from "../lib/result/types.js";
 
 // Exit codes for programmatic consumption
 export const EXIT_CODES = {
@@ -518,6 +523,20 @@ export async function runCheckEnvironment(
 }
 
 /**
+ * Get recovery hint for common error codes.
+ */
+function getRecoveryHint(code: string): string | undefined {
+	switch (code) {
+		case "CONTRACT_ERROR":
+			return "Ensure harness.contract.json exists and is valid JSON with the correct schema";
+		case "VALIDATION_ERROR":
+			return "Fix the validation errors in the contract or environment configuration";
+		default:
+			return undefined;
+	}
+}
+
+/**
  * CLI entry point with output formatting and exit codes.
  */
 export async function runCheckEnvironmentCLI(
@@ -526,18 +545,38 @@ export async function runCheckEnvironmentCLI(
 	const result = await runCheckEnvironment(options);
 
 	if (!result.ok) {
+		const errorCode = result.error.code as CliErrorCode;
+		const exitCode = EXIT_CODES.CONTRACT_ERROR;
+		const recoveryHint = getRecoveryHint(result.error.code);
+
 		if (options.json) {
-			console.error(JSON.stringify({ error: result.error }, null, 2));
+			const jsonOutput = createJsonErrorOutput(
+				"check-environment",
+				{
+					code: errorCode,
+					message: result.error.message,
+					...(recoveryHint ? { recovery: recoveryHint } : {}),
+				},
+				exitCode,
+			);
+			console.error(JSON.stringify(jsonOutput, null, 2));
 		} else {
 			console.error(`Error: ${result.error.message}`);
+			if (recoveryHint) {
+				console.error(`Recovery: ${recoveryHint}`);
+			}
 		}
-		return EXIT_CODES.CONTRACT_ERROR;
+		return exitCode;
 	}
 
 	const { output } = result;
+	const exitCode = output.passed
+		? EXIT_CODES.SUCCESS
+		: EXIT_CODES.POLICY_VIOLATION;
 
 	if (options.json) {
-		console.info(JSON.stringify(output, null, 2));
+		const jsonOutput = createJsonOutput("check-environment", output, exitCode);
+		console.info(JSON.stringify(jsonOutput, null, 2));
 	} else {
 		if (output.passed) {
 			console.info("✓ Environment check passed");
@@ -577,5 +616,5 @@ export async function runCheckEnvironmentCLI(
 		}
 	}
 
-	return output.passed ? EXIT_CODES.SUCCESS : EXIT_CODES.POLICY_VIOLATION;
+	return exitCode;
 }

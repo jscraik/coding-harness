@@ -8,7 +8,7 @@ import {
 	writeFileSync,
 } from "node:fs";
 import { dirname, join, relative } from "node:path";
-import type { DocumentMetadata } from "../context-compound/types.js";
+import type { DocumentMetadata } from "./types.js";
 
 export type ContextSourceAuthority = "canonical" | "governed" | "supporting";
 export type ContextSourceKind = "file" | "directory";

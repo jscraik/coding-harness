@@ -1,0 +1,1 @@
+In no-execution mode, map the current coding-harness setup sequence with validation gates and what harness cannot automate.

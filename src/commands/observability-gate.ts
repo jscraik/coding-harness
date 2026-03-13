@@ -1,11 +1,11 @@
 import type {
 	CardinalityPolicy,
 	CardinalityViolation,
-} from "../lib/observability/cardinality.js";
+} from "../lib/policy/cardinality.js";
 import {
 	DEFAULT_CARDINALITY_POLICY,
 	validateMetricLabels,
-} from "../lib/observability/cardinality.js";
+} from "../lib/policy/cardinality.js";
 
 // Exit codes for programmatic consumption
 export const EXIT_CODES = {

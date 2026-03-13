@@ -29,6 +29,11 @@ import {
 	type PilotMetrics,
 	type PilotOutcome,
 } from "../lib/pilot-evaluation/types.js";
+import {
+	type CliErrorCode,
+	createJsonErrorOutput,
+	createJsonOutput,
+} from "../lib/result/types.js";
 
 interface ParityHistoryEntry {
 	windowStart: string;
@@ -887,6 +892,23 @@ export function runPilotEvaluate(options: PilotEvaluateOptions): {
 	};
 }
 
+function getRecoveryHint(code: string | undefined): string | undefined {
+	switch (code) {
+		case "E_ARTIFACTS_NOT_FOUND":
+			return "Ensure pilot artifacts have been generated and the artifacts directory is valid";
+		case "E_NO_METRICS":
+			return "Ensure pilot metrics have been captured and metrics files exist";
+		case "E_REGISTRY_VALIDATION":
+			return "Check metric/adapter registry files for schema compliance";
+		case "E_SCHEMA_VALIDATION":
+			return "Verify all required options are provided and paths are valid";
+		case "E_PATH_TRAVERSAL":
+			return "Use relative paths within the repo or specify a different --harness-dir";
+		default:
+			return undefined;
+	}
+}
+
 /**
  * CLI entry point for pilot-evaluate command
  */
@@ -894,16 +916,41 @@ export function runPilotEvaluateCLI(options: PilotEvaluateOptions): number {
 	const { ok, result, error, exitCode } = runPilotEvaluate(options);
 
 	if (!ok || !result) {
+		const errorCode = (error?.code ?? "UNKNOWN_ERROR") as CliErrorCode;
+		const recovery = getRecoveryHint(error?.code);
 		if (options.json) {
-			console.error(JSON.stringify({ error }, null, 2));
+			console.error(
+				JSON.stringify(
+					createJsonErrorOutput(
+						"pilot-evaluate",
+						{
+							code: errorCode,
+							message: error?.message ?? "Unknown error",
+							...(recovery ? { recovery } : {}),
+						},
+						exitCode,
+					),
+					null,
+					2,
+				),
+			);
 		} else {
 			console.error(`✗ ${error?.message}`);
+			if (recovery) {
+				console.error(`   Recovery: ${recovery}`);
+			}
 		}
 		return exitCode;
 	}
 
 	if (options.json) {
-		console.info(JSON.stringify(result, null, 2));
+		console.info(
+			JSON.stringify(
+				createJsonOutput("pilot-evaluate", result, exitCode),
+				null,
+				2,
+			),
+		);
 	} else {
 		// Human-readable output
 		const { metrics, outcome, holdReasons, warnings, controlPlane } = result;

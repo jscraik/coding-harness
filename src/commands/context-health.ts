@@ -5,7 +5,7 @@ import {
 	discoverContextSourceDocuments,
 	readContextSourceInventory,
 	writeContextSourceInventory,
-} from "../lib/context-integrity/sources.js";
+} from "../lib/context-compound/sources.js";
 import type {
 	ContextIntegrityPolicy,
 	HarnessContract,

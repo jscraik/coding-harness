@@ -3,7 +3,7 @@ import {
 	type AutomationKeyParts,
 	computeAutomationIdempotencyKey,
 	runAutomationWithIdempotency,
-} from "../lib/automation/idempotency.js";
+} from "../lib/contract/idempotency.js";
 import {
 	emitTerminalRunRecord,
 	hashRunRecordValue,

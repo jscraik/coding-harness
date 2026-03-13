@@ -1,6 +1,7 @@
 import { mkdirSync, rmSync, writeFileSync } from "node:fs";
 import { join, resolve } from "node:path";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
+import { clearContractCache } from "../lib/contract/loader.js";
 import { runCheckAuthz } from "./check-authz.js";
 
 describe("check-authz", () => {
@@ -8,6 +9,8 @@ describe("check-authz", () => {
 	let contractPath: string;
 
 	beforeEach(() => {
+		// Clear contract cache to prevent stale contract data between tests
+		clearContractCache();
 		const baseDir = resolve("artifacts");
 		mkdirSync(baseDir, { recursive: true });
 		testDir = join(baseDir, `check-authz-test-${Date.now()}`);

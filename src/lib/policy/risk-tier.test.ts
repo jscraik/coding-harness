@@ -1,5 +1,17 @@
-import { describe, expect, it } from "vitest";
-import { createResolver, resolveOverallTier } from "./risk-tier.js";
+import { afterEach, beforeEach, describe, expect, it } from "vitest";
+import {
+	clearMatcherCache,
+	createResolver,
+	resolveOverallTier,
+} from "./risk-tier.js";
+
+beforeEach(() => {
+	clearMatcherCache();
+});
+
+afterEach(() => {
+	clearMatcherCache();
+});
 
 describe("createResolver", () => {
 	const rules = {

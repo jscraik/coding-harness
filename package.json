@@ -49,6 +49,11 @@
 		"test:artifacts:integration": "bash scripts/test-with-artifacts.sh integration",
 		"test:artifacts:e2e": "bash scripts/test-with-artifacts.sh e2e",
 		"test:related": "bash scripts/check-related-tests.sh",
+		"e2e": "tsx e2e/run-e2e.ts",
+		"e2e:github": "tsx e2e/run-e2e.ts github-integration",
+		"e2e:linear": "tsx e2e/run-e2e.ts linear-integration",
+		"e2e:pipeline": "tsx e2e/run-e2e.ts command-pipeline",
+		"e2e:ci": "tsx e2e/run-e2e.ts --reporter json --parallel 2",
 		"harness:ui:capture-browser-evidence": "pnpm exec tsx src/cli.ts ui:explore --mode execute --interactions --output artifacts/ui-evidence --json",
 		"postinstall": "command -v simple-git-hooks >/dev/null 2>&1 && simple-git-hooks || true",
 		"vale": "vale --config .vale.ini AGENTS.md CLAUDE.md docs"

@@ -5,6 +5,25 @@ import type {
 } from "../contract/types.js";
 
 /**
+ * Module-level cache for compiled picomatch matchers.
+ * Key: pattern string, Value: compiled matcher function.
+ */
+const MATCHER_CACHE = new Map<string, ReturnType<typeof picomatch>>();
+
+/**
+ * Get or create a compiled matcher for the given pattern.
+ * Isomorphic: identical matching behavior, but caches compilation.
+ */
+function getMatcher(pattern: string): ReturnType<typeof picomatch> {
+	let matcher = MATCHER_CACHE.get(pattern);
+	if (!matcher) {
+		matcher = picomatch(pattern);
+		MATCHER_CACHE.set(pattern, matcher);
+	}
+	return matcher;
+}
+
+/**
  * Blast-radius merge mode.
  */
 const DEFAULT_BLAST_RADIUS_RULES_MODE: BlastRadiusRulesMode = "merge";
@@ -189,7 +208,7 @@ export function getChecksForFile(
 	const checks: string[] = [];
 
 	for (const rule of rules) {
-		const matcher = picomatch(rule.pattern);
+		const matcher = getMatcher(rule.pattern);
 		if (matcher(filePath)) {
 			checks.push(...rule.checks);
 		}
@@ -273,7 +292,7 @@ export function getBlastRadiusInfo(
 	for (const file of changedFiles) {
 		let fileChecks = 0;
 		for (const rule of rules) {
-			const matcher = picomatch(rule.pattern);
+			const matcher = getMatcher(rule.pattern);
 			if (matcher(file)) {
 				matchedPatterns.add(rule.pattern);
 				if (rule.description) {
