@@ -84,7 +84,7 @@ Run `harness --help` for current global options. Commands by category:
 
 | Category | Commands |
 |----------|----------|
-| **Governance** | `init`, `policy-gate`, `risk-tier`, `docs-gate`, `linear-gate`, `plan-gate`, `review-gate`, `drift-gate`, `branch-protect` |
+| **Governance** | `init`, `policy-gate`, `risk-tier`, `docs-gate`, `linear-gate`, `plan-gate`, `review-gate`, `drift-gate`, `branch-protect`, `license-gate` |
 | **Validation** | `evidence-verify`, `remediate`, `replay`, `blast-radius`, `preflight-gate`, `memory-gate`, `observability-gate` |
 | **Search** | `context`, `index-context`, `search` |
 | **UI/Automation** | `ui:explore`, `automation-run`, `check-authz` |
@@ -143,6 +143,7 @@ Scaffolds a complete governance baseline into any repository:
 | `linear` | Prepare Linear-aware branch/PR metadata and move issues through claim, handoff, and close workflow states. |
 | `linear-gate` | Enforce Linear-first intake, branch naming, and PR linkage rules from the contract. |
 | `pr-template-gate` | Validate PR template sections, checklist status markers, and placeholder replacement before merge. |
+| `license-gate` | Validate open-source license (MIT, Apache-2.0, etc.) from package.json or LICENSE files. |
 | `gap-case` | Track and resolve pilot gap-cases. |
 | `pilot-evaluate` | Evaluate pilot metrics and promotion readiness. |
 | `pilot-rollback` | Transition pilot mode (autonomous <-> manual). |
@@ -158,6 +159,7 @@ Scaffolds a complete governance baseline into any repository:
 | `plan-gate` | Validate plan IDs and acceptance evidence traceability |
 | `review-gate` | Enforce independent review requirements and SHA guardrails |
 | `drift-gate` | Detect governance consistency drift across contract, docs, and CI |
+| `license-gate` | Validate open-source license compliance (MIT, Apache-2.0, BSD, etc.) |
 
 ### Evidence and remediation
 

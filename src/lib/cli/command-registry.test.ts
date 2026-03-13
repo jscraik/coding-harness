@@ -26,6 +26,7 @@ describe("command registry", () => {
 			"check-authz",
 			"check-environment",
 			"docs-gate",
+			"license-gate",
 		]);
 	});
 
