@@ -15,6 +15,37 @@ import {
 const MAX_CONTRACT_SIZE = 1024 * 1024; // 1MB
 const MAX_JSON_DEPTH = 100;
 
+/** LRU cache for loaded contracts. Key: `${baseDir}:${path}` */
+const CONTRACT_CACHE = new Map<string, HarnessContract>();
+const MAX_CACHE_SIZE = 10;
+
+/** Generate cache key for contract lookup */
+function getCacheKey(baseDir: string, path: string): string {
+	return `${baseDir}:${path}`;
+}
+
+/** Get contract from cache if present */
+function getCachedContract(key: string): HarnessContract | undefined {
+	return CONTRACT_CACHE.get(key);
+}
+
+/** Store contract in cache with LRU eviction */
+function setCachedContract(key: string, contract: HarnessContract): void {
+	// Evict oldest if at capacity (simple LRU: re-insert on access)
+	if (CONTRACT_CACHE.size >= MAX_CACHE_SIZE && !CONTRACT_CACHE.has(key)) {
+		const firstKey = CONTRACT_CACHE.keys().next().value;
+		if (firstKey !== undefined) {
+			CONTRACT_CACHE.delete(firstKey);
+		}
+	}
+	CONTRACT_CACHE.set(key, contract);
+}
+
+/** Clear contract cache (useful for testing) */
+export function clearContractCache(): void {
+	CONTRACT_CACHE.clear();
+}
+
 /**
  * Normalize a merge policy value to canonical array form.
  * - Legacy array: returned as-is
@@ -84,6 +115,13 @@ export function loadContract(
 	baseDir = process.cwd(),
 	options?: { allowExtends?: boolean },
 ): HarnessContract {
+	// Check cache first (fast path for repeated loads)
+	const cacheKey = getCacheKey(baseDir, path);
+	const cached = getCachedContract(cacheKey);
+	if (cached !== undefined) {
+		return cached;
+	}
+
 	// Validate path stays within baseDir (symlink-aware)
 	let validatedPath: string;
 	try {
@@ -162,6 +200,9 @@ export function loadContract(
 	if (contract.mergePolicy) {
 		contract.mergePolicy = normalizeMergePolicy(contract.mergePolicy);
 	}
+
+	// Cache result before returning
+	setCachedContract(cacheKey, contract);
 
 	return contract;
 }

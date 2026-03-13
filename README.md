@@ -106,6 +106,13 @@ Scaffolds a complete governance baseline into any repository:
 - Required tooling baseline (`.mise.toml`, `Makefile`, `scripts/check-environment.sh`)
 - Documentation templates (`AGENTS.md`, `CONTRIBUTING.md`)
 
+### Governance commands
+
+| Command | Purpose |
+|---------|---------|
+| `linear` | Prepare Linear branch/PR metadata and manage workflow transitions |
+| `branch-protect` | Configure GitHub branch protection rules |
+
 ### Policy gates
 
 | Gate | Purpose |
@@ -151,6 +158,7 @@ Scaffolds a complete governance baseline into any repository:
 | `tooling-audit` | Audit cross-repo tooling baseline drift |
 | `silent-error` | Detect silent error handling anti-patterns |
 | `observability-gate` | Check metrics cardinality limits |
+| `check-environment` | Validate development environment setup |
 
 ### Pilot mode commands
 

@@ -431,7 +431,7 @@ This is a test plan for E2E testing.
 			});
 
 			expect(result).toBeDefined();
-			expect(result).toHaveProperty("ok");
+			expect(result).toHaveProperty("passed");
 		});
 	});
 
@@ -485,8 +485,7 @@ This is a test plan for E2E testing.
 			);
 
 			// Run init
-			const result = await runInit({
-				targetDir: testDir,
+			const result = runInit(testDir, {
 				force: true,
 				dryRun: false,
 				skipGitHub: true,

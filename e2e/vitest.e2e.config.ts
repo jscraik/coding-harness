@@ -8,21 +8,21 @@ export default defineConfig({
 		exclude: ["**/node_modules/**", "**/dist/**"],
 		testTimeout: 300000, // 5 minutes for E2E tests (real API calls)
 		hookTimeout: 60000, // 1 minute for hooks
-		maxConcurrency: 3, // Limit concurrent tests to avoid rate limits
+		// Memory-efficient configuration for E2E tests
+		pool: "forks", // Use process isolation instead of worker threads (better memory)
+		poolOptions: {
+			forks: {
+				singleFork: true, // Run tests sequentially to limit memory
+			},
+		},
+		maxConcurrency: 1, // Sequential execution to prevent memory overload
+		fileParallelism: false, // Run test files sequentially
 		sequence: {
 			shuffle: false, // Run tests in order for E2E
 		},
-		reporters: ["verbose", "html"],
-		outputFile: {
-			html: "e2e/reports/report.html",
-		},
-		coverage: {
-			provider: "v8",
-			reporter: ["text", "text-summary", "html"],
-			reportsDirectory: "./e2e/coverage",
-			include: ["src/**/*.ts"],
-			exclude: ["src/**/*.test.ts", "src/cli.ts"],
-		},
+		reporters: ["verbose"],
+		// Disable coverage in E2E config - run separately if needed
+		// Coverage adds significant memory overhead
 		// E2E-specific environment
 		env: {
 			E2E_MODE: "true",
