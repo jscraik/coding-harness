@@ -17,6 +17,7 @@ describe("command registry", () => {
 		expect(MIGRATED_COMMAND_NAMES).toEqual([
 			"linear",
 			"linear-gate",
+			"pr-template-gate",
 			"policy-gate",
 			"evidence-verify",
 			"preflight-gate",
@@ -36,6 +37,8 @@ describe("command registry", () => {
 	it("exposes migrated aliases alongside canonical command names", () => {
 		expect(MIGRATED_COMMAND_AND_ALIAS_NAMES).toContain("risk-policy-gate");
 		expect(MIGRATED_COMMAND_AND_ALIAS_NAMES).toContain("policy-gate");
+		expect(MIGRATED_COMMAND_AND_ALIAS_NAMES).toContain("pr-template-check");
+		expect(MIGRATED_COMMAND_AND_ALIAS_NAMES).toContain("pr-template-gate");
 	});
 
 	it("returns undefined for unknown commands", () => {
