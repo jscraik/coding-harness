@@ -9,6 +9,25 @@ import type {
 } from "./types.js";
 
 /**
+ * Module-level cache for compiled picomatch matchers.
+ * Key: pattern string, Value: compiled matcher function.
+ */
+const MATCHER_CACHE = new Map<string, ReturnType<typeof picomatch>>();
+
+/**
+ * Get or create a compiled matcher for the given pattern.
+ * Isomorphic: identical matching behavior, but caches compilation.
+ */
+function getMatcher(pattern: string): ReturnType<typeof picomatch> {
+	let matcher = MATCHER_CACHE.get(pattern);
+	if (!matcher) {
+		matcher = picomatch(pattern);
+		MATCHER_CACHE.set(pattern, matcher);
+	}
+	return matcher;
+}
+
+/**
  * Policy violation error codes.
  */
 export type PolicyViolationCode =
@@ -62,7 +81,7 @@ export function requiresEvidence(
 	patterns: string[],
 ): boolean {
 	for (const pattern of patterns) {
-		const matcher = picomatch(pattern);
+		const matcher = getMatcher(pattern);
 		if (matcher(filePath)) {
 			return true;
 		}
