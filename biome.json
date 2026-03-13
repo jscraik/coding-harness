@@ -28,6 +28,19 @@
 					}
 				}
 			}
+		},
+		{
+			"include": ["e2e/**/*.ts"],
+			"linter": {
+				"rules": {
+					"suspicious": {
+						"noConsoleLog": "off"
+					},
+					"style": {
+						"noNonNullAssertion": "off"
+					}
+				}
+			}
 		}
 	],
 	"linter": {

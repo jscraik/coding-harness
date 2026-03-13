@@ -5,6 +5,7 @@ import {
 	readdirSync,
 	writeFileSync,
 } from "node:fs";
+import { readFile } from "node:fs/promises";
 import { join } from "node:path";
 import { findRecentBrainstorms, loadBrainstorm } from "./brainstorm.js";
 
@@ -322,6 +323,25 @@ export function loadPlan(filepath: string): PlanMetadata {
 }
 
 /**
+ * Load a plan artifact by path (async version).
+ * Isomorphic: same behavior as loadPlan, but async for parallel batching.
+ */
+export async function loadPlanAsync(filepath: string): Promise<PlanMetadata> {
+	const content = await readFile(filepath, "utf-8");
+	const { frontmatter, body } = parseFrontmatter(content);
+	const normalized = normalizePlanFrontmatter(frontmatter);
+	if (!normalized) {
+		throw new Error(`Invalid plan frontmatter: ${filepath}`);
+	}
+
+	return {
+		path: filepath,
+		frontmatter: normalized,
+		content: body,
+	};
+}
+
+/**
  * Find all plans in the docs/plans directory.
  */
 export function findPlans(basePath = process.cwd()): PlanMetadata[] {
@@ -342,6 +362,36 @@ export function findPlans(basePath = process.cwd()): PlanMetadata[] {
 			}
 		})
 		.filter((p): p is PlanMetadata => p !== null);
+}
+
+/**
+ * Find all plans in the docs/plans directory (async parallel version).
+ * Isomorphic: same behavior as findPlans, but loads files in parallel.
+ * Expected improvement: N sequential file reads → 1 batch of parallel reads.
+ */
+export async function findPlansAsync(
+	basePath = process.cwd(),
+): Promise<PlanMetadata[]> {
+	const plansPath = join(basePath, PLANS_DIR);
+
+	if (!existsSync(plansPath)) {
+		return [];
+	}
+
+	const files = readdirSync(plansPath).filter((f) => f.endsWith("-plan.md"));
+
+	// Load all files in parallel for I/O throughput
+	const results = await Promise.all(
+		files.map(async (f): Promise<PlanMetadata | null> => {
+			try {
+				return await loadPlanAsync(join(plansPath, f));
+			} catch {
+				return null;
+			}
+		}),
+	);
+
+	return results.filter((p): p is PlanMetadata => p !== null);
 }
 
 /**

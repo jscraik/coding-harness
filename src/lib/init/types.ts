@@ -256,6 +256,27 @@ export interface Template {
 
 export type PackageManager = "pnpm" | "yarn" | "npm";
 
+// === Codex Environment Types ===
+
+/** Path where codex-environment.toml is generated */
+export const CODEX_ENVIRONMENT_TEMPLATE_PATH = ".codex/environment.toml";
+
+/** Icon types for Codex actions */
+export type CodexActionIcon = "tool" | "run" | "debug" | "test";
+
+/** Codex action definition for environment.toml */
+export interface CodexAction {
+	name: string;
+	icon: CodexActionIcon;
+	command: string;
+}
+
+/** Minimal package.json shape for script/issue extraction */
+export interface PackageJsonLike {
+	scripts?: Record<string, unknown>;
+	bugs?: string | { url?: unknown } | undefined;
+}
+
 // === Rollback Constants ===
 
 export const HARNESS_DIR = ".harness";

@@ -308,6 +308,7 @@ export async function runIndexContext(
 /**
  * CLI entry point for index-context command.
  */
+
 export async function runIndexContextCLI(args: string[]): Promise<number> {
 	// Parse arguments
 	let json = false;
