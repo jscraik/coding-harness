@@ -1,0 +1,16 @@
+{
+	"testName": "command-pipeline",
+	"startedAt": "2026-03-13T10:00:04.864Z",
+	"completedAt": "2026-03-13T10:00:05.289Z",
+	"resources": [],
+	"apiCalls": [
+		{
+			"provider": "linear",
+			"method": "workflowStates",
+			"durationMs": 421,
+			"error": "You need to authenticate to access this operation.",
+			"timestamp": "2026-03-13T10:00:05.286Z"
+		}
+	],
+	"errors": []
+}

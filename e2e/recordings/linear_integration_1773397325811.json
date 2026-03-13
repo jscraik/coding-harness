@@ -1,0 +1,18 @@
+{
+	"testName": "linear-integration",
+	"startedAt": "2026-03-13T10:22:05.811Z",
+	"completedAt": "2026-03-13T10:22:05.908Z",
+	"resources": [],
+	"apiCalls": [
+		{
+			"provider": "linear",
+			"method": "workflowStates",
+			"response": {
+				"count": 7
+			},
+			"durationMs": 95,
+			"timestamp": "2026-03-13T10:22:05.906Z"
+		}
+	],
+	"errors": []
+}

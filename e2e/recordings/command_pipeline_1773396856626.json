@@ -1,0 +1,18 @@
+{
+	"testName": "command-pipeline",
+	"startedAt": "2026-03-13T10:14:16.626Z",
+	"completedAt": "2026-03-13T10:14:17.193Z",
+	"resources": [],
+	"apiCalls": [
+		{
+			"provider": "linear",
+			"method": "workflowStates",
+			"response": {
+				"count": 7
+			},
+			"durationMs": 537,
+			"timestamp": "2026-03-13T10:14:17.164Z"
+		}
+	],
+	"errors": []
+}
