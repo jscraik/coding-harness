@@ -29,6 +29,11 @@ import {
 	type PilotMetrics,
 	type PilotOutcome,
 } from "../lib/pilot-evaluation/types.js";
+import {
+	type CliErrorCode,
+	createJsonErrorOutput,
+	createJsonOutput,
+} from "../lib/result/types.js";
 
 interface ParityHistoryEntry {
 	windowStart: string;
