@@ -124,6 +124,11 @@ export interface CliError {
 	readonly details?: unknown | undefined;
 	/** Original error if wrapped */
 	readonly cause?: Error | undefined;
+	/**
+	 * Recovery hint for self-healing.
+	 * Provides actionable guidance for agents and users.
+	 */
+	readonly recovery?: string | undefined;
 }
 
 /**
@@ -231,6 +236,197 @@ export async function tryCatchAsync<T>(
 			...(error instanceof Error ? { cause: error } : {}),
 		});
 	}
+}
+
+// ============================================================================
+// JSON Output Types (Robot-Mode Standard)
+// ============================================================================
+
+/**
+ * Current JSON output schema version.
+ * Increment when making breaking changes to output structure.
+ */
+export const JSON_OUTPUT_SCHEMA_VERSION = "1.0.0" as const;
+
+/**
+ * Base metadata included in all JSON outputs.
+ * Enables version-aware consumers and consistent telemetry.
+ */
+export interface JsonOutputMeta {
+	/** Schema version for programmatic detection of breaking changes */
+	readonly schemaVersion: typeof JSON_OUTPUT_SCHEMA_VERSION;
+	/** Command that produced this output */
+	readonly command: string;
+	/** ISO timestamp when output was generated */
+	readonly generated_at: string;
+}
+
+/**
+ * Standard JSON output wrapper for successful command results.
+ *
+ * @example
+ * ```typescript
+ * const output: JsonOutputSuccess<BlastRadiusData> = {
+ *   schemaVersion: "1.0.0",
+ *   command: "blast-radius",
+ *   generated_at: new Date().toISOString(),
+ *   ok: true,
+ *   data: { files: [...], checks: [...] },
+ *   exitCode: 0
+ * };
+ * ```
+ */
+export interface JsonOutputSuccess<T> extends JsonOutputMeta {
+	/** Discriminator for success */
+	readonly ok: true;
+	/** Command-specific output data */
+	readonly data: T;
+	/** Exit code for this result */
+	readonly exitCode: number;
+}
+
+/**
+ * Standard JSON output wrapper for command errors.
+ *
+ * @example
+ * ```typescript
+ * const output: JsonOutputError = {
+ *   schemaVersion: "1.0.0",
+ *   command: "blast-radius",
+ *   generated_at: new Date().toISOString(),
+ *   ok: false,
+ *   error: {
+ *     code: "MISSING_REQUIRED_OPTION",
+ *     message: "No files provided",
+ *     recovery: "Use --files <paths> to specify files"
+ *   },
+ *   exitCode: 1
+ * };
+ * ```
+ */
+export interface JsonOutputError extends JsonOutputMeta {
+	/** Discriminator for error */
+	readonly ok: false;
+	/** Structured error information */
+	readonly error: {
+		/** Error code for programmatic handling */
+		readonly code: CliErrorCode;
+		/** Human-readable error message */
+		readonly message: string;
+		/** Optional additional context */
+		readonly details?: unknown;
+		/**
+		 * Recovery hint for self-healing.
+		 * Provides actionable guidance for agents and users.
+		 */
+		readonly recovery?: string;
+	};
+	/** Exit code for this result */
+	readonly exitCode: number;
+}
+
+/**
+ * Union type for all JSON outputs.
+ */
+export type JsonOutput<T> = JsonOutputSuccess<T> | JsonOutputError;
+
+/**
+ * Create a successful JSON output envelope.
+ *
+ * @param command - Command name that produced this output
+ * @param data - Command-specific output data
+ * @param exitCode - Exit code (default: 0)
+ *
+ * @example
+ * ```typescript
+ * const output = createJsonOutput("blast-radius", {
+ *   files: ["src/cli.ts"],
+ *   checks: ["test", "lint"]
+ * });
+ * console.log(JSON.stringify(output, null, 2));
+ * ```
+ */
+export function createJsonOutput<T>(
+	command: string,
+	data: T,
+	exitCode = 0,
+): JsonOutputSuccess<T> {
+	return {
+		schemaVersion: JSON_OUTPUT_SCHEMA_VERSION,
+		command,
+		generated_at: new Date().toISOString(),
+		ok: true,
+		data,
+		exitCode,
+	};
+}
+
+/**
+ * Create an error JSON output envelope.
+ *
+ * @param command - Command name that produced this error
+ * @param error - CLI error with optional recovery hint
+ * @param exitCode - Exit code (default: 1)
+ *
+ * @example
+ * ```typescript
+ * const output = createJsonErrorOutput("blast-radius", {
+ *   code: "MISSING_REQUIRED_OPTION",
+ *   message: "No files provided",
+ *   recovery: "Use --files <paths> to specify files"
+ * });
+ * console.error(JSON.stringify(output, null, 2));
+ * ```
+ */
+export function createJsonErrorOutput(
+	command: string,
+	error: CliError,
+	exitCode = 1,
+): JsonOutputError {
+	return {
+		schemaVersion: JSON_OUTPUT_SCHEMA_VERSION,
+		command,
+		generated_at: new Date().toISOString(),
+		ok: false,
+		error: {
+			code: error.code,
+			message: error.message,
+			...(error.details !== undefined ? { details: error.details } : {}),
+			...(error.recovery !== undefined ? { recovery: error.recovery } : {}),
+		},
+		exitCode,
+	};
+}
+
+/**
+ * Convert a Result to a JSON output envelope.
+ *
+ * @param command - Command name
+ * @param result - Result from a command execution
+ * @param options - Exit code mappings
+ *
+ * @example
+ * ```typescript
+ * const result = runBlastRadius(options);
+ * const jsonOutput = resultToJsonOutput("blast-radius", result, {
+ *   successCode: 0,
+ *   errorCode: 2
+ * });
+ * console.log(JSON.stringify(jsonOutput, null, 2));
+ * ```
+ */
+export function resultToJsonOutput<T>(
+	command: string,
+	result: Result<T, CliError>,
+	options?: {
+		successCode?: number;
+		errorCode?: number;
+	},
+): JsonOutput<T> {
+	if (result.ok) {
+		return createJsonOutput(command, result.value, options?.successCode ?? 0);
+	}
+	return createJsonErrorOutput(command, result.error, options?.errorCode ?? 1);
 }
 
 /**

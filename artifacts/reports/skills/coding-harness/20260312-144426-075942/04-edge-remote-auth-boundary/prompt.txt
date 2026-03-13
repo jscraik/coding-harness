@@ -1,0 +1,1 @@
+Without running commands, explain why GitHub App JWT can be preferred over PAT for app-installation verification.
