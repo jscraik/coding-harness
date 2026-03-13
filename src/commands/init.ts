@@ -312,13 +312,8 @@ function renderMemoryValidateCommand(): string {
 }
 
 function renderCodexPreflightTemplate(): string {
-	const currentFilePath = fileURLToPath(import.meta.url);
-	const templatePath = resolve(
-		dirname(currentFilePath),
-		"..",
-		"..",
-		"scripts",
-		"codex-preflight.sh",
+	const templatePath = fileURLToPath(
+		new URL("../templates/codex-preflight.sh", import.meta.url),
 	);
 	return readFileSync(templatePath, "utf-8");
 }
@@ -3319,7 +3314,7 @@ fi
 	for hook_spec in "\${required_prek_hooks[@]}"; do
 		hook_name="\${hook_spec%%|*}"
 		hook_command="\${hook_spec#*|}"
-		if ! rg -Fq "\${hook_name} = [\"\${hook_command}\"]" "$PREK_CONFIG_PATH"; then
+		if ! rg -q "^[[:space:]]*\${hook_name}[[:space:]]*=[[:space:]]*\\\\[[[:space:]]*\\\"\${hook_command}\\\"[[:space:]]*\\\\][[:space:]]*$" "$PREK_CONFIG_PATH"; then
 			echo "Error: required prek hook '\$hook_name' is missing or out of date in $PREK_CONFIG_PATH"
 			exit 1
 		fi

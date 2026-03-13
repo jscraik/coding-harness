@@ -227,6 +227,7 @@ jobs:
           HEAD_SHA: ${{ steps.context.outputs.head_sha }}
           REPO_OWNER: ${{ steps.context.outputs.repo_owner }}
           REPO_NAME: ${{ steps.context.outputs.repo_name }}
+          GREPTILE_REQUIRED_KEYWORD: ${{ vars.GREPTILE_REQUIRED_KEYWORD || '' }}
         uses: actions/github-script@f28e40c7f34bde8b3046d885e986cb6290c5673b # v7
         with:
           script: |
@@ -234,16 +235,47 @@ jobs:
             const repo = process.env.REPO_NAME;
             const prNumber = parseInt(process.env.PR_NUMBER, 10);
             const headSha = process.env.HEAD_SHA;
+            const requiredKeyword = (process.env.GREPTILE_REQUIRED_KEYWORD || "").trim();
             const marker = `<!-- greptile-auto-request:${headSha} -->`;
 
-            const comments = await github.rest.issues.listComments({
+            if (requiredKeyword.length > 0) {
+              const pr = await github.rest.pulls.get({
+                owner,
+                repo,
+                pull_number: prNumber,
+              });
+
+              const title = pr.data.title || "";
+              const body = pr.data.body || "";
+              const keywordRegex = new RegExp(
+                requiredKeyword.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"),
+                "i",
+              );
+
+              if (!keywordRegex.test(title) && !keywordRegex.test(body)) {
+                const amendedBody = [body.trim(), "", `Greptile keyword: ${requiredKeyword}`]
+                  .join("\n")
+                  .trim();
+
+                await github.rest.pulls.update({
+                  owner,
+                  repo,
+                  pull_number: prNumber,
+                  body: amendedBody,
+                });
+
+                console.log(`Appended required Greptile keyword to PR body: ${requiredKeyword}`);
+              }
+            }
+
+            const comments = await github.paginate(github.rest.issues.listComments, {
               owner,
               repo,
               issue_number: prNumber,
-              per_page: 100
+              per_page: 100,
             });
 
-            const alreadyRequested = comments.data.some((comment) =>
+            const alreadyRequested = comments.some((comment) =>
               comment.user?.login === "github-actions[bot]" &&
               (comment.body ?? "").includes(marker),
             );

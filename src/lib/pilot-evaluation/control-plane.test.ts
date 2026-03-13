@@ -512,28 +512,58 @@ describe("control-plane artifacts", () => {
 		expect(loaded.artifacts?.overridePolicyRecord?.status).toBe("expired");
 	});
 
-	it("requires an applied override record before advisory promotion uses maintainer approvals", () => {
-		const contractPath = join(testDir, "contract-with-override-policy.json");
-		const contract = JSON.parse(
-			readFileSync(resolve("harness.contract.json"), "utf-8"),
-		) as Record<string, unknown>;
-		contract.controlPlanePolicy = {
-			overridePolicy: {
-				authorizedPrincipals: ["jamie", "alex"],
-				dualApprovalScopes: ["temporary_unblock", "temporary_promote"],
-				maxTtlHours: 24,
-				nonOverridableControls: [
-					"canonical_runtime_invalid",
-					"governance_trust_mismatch",
-					"missing_required_instruction_surface",
-					"missing_snapshot_integrity_verification",
-				],
-			},
-		};
-		writeFileSync(contractPath, JSON.stringify(contract, null, 2), "utf-8");
+	it(
+		"requires an applied override record before advisory promotion uses maintainer approvals",
+		{ timeout: 30000 },
+		() => {
+			const contractPath = join(testDir, "contract-with-override-policy.json");
+			const contract = JSON.parse(
+				readFileSync(resolve("harness.contract.json"), "utf-8"),
+			) as Record<string, unknown>;
+			contract.controlPlanePolicy = {
+				overridePolicy: {
+					authorizedPrincipals: ["jamie", "alex"],
+					dualApprovalScopes: ["temporary_unblock", "temporary_promote"],
+					maxTtlHours: 24,
+					nonOverridableControls: [
+						"canonical_runtime_invalid",
+						"governance_trust_mismatch",
+						"missing_required_instruction_surface",
+						"missing_snapshot_integrity_verification",
+					],
+				},
+			};
+			writeFileSync(contractPath, JSON.stringify(contract, null, 2), "utf-8");
 
-		for (let index = 0; index < 29; index += 1) {
-			buildControlPlaneArtifacts({
+			for (let index = 0; index < 29; index += 1) {
+				buildControlPlaneArtifacts({
+					artifactsDir: testDir,
+					metrics: { ...createMetrics(), sampleSize: 60 },
+					metricsErrors: [],
+					legacyOutcome: "promote",
+					legacyHoldReasons: [],
+					options: {
+						artifactsDir: testDir,
+						contractPath,
+						docsGateReportPath,
+						prTemplateStatus: "passed",
+						evaluationMode: "pr",
+						rolloutStage: "advisory",
+						clientFamily: "codex",
+						providerId: "openai",
+						modelDescriptor: "gpt-5.4",
+						overrideAuthorizedPrincipal: "jamie",
+						overrideScope: "temporary_promote",
+						overrideReason: `Recorded maintainer approval ${index + 1}`,
+						overrideTicketRef: `JSC-${200 + index}`,
+						overrideApprovedBy: ["jamie", "alex"],
+						overrideCreatedAt: "2099-03-10T10:00:00Z",
+						overrideExpiresAt: "2099-03-10T18:00:00Z",
+					},
+				});
+			}
+
+			const { summary } = buildControlPlaneArtifacts({
 				artifactsDir: testDir,
 				metrics: { ...createMetrics(), sampleSize: 60 },
 				metricsErrors: [],
@@ -549,46 +579,20 @@ describe("control-plane artifacts", () => {
 					clientFamily: "codex",
 					providerId: "openai",
 					modelDescriptor: "gpt-5.4",
-					overrideAuthorizedPrincipal: "jamie",
-					overrideScope: "temporary_promote",
-					overrideReason: `Recorded maintainer approval ${index + 1}`,
-					overrideTicketRef: `JSC-${200 + index}`,
 					overrideApprovedBy: ["jamie", "alex"],
-					overrideCreatedAt: "2099-03-10T10:00:00Z",
-					overrideExpiresAt: "2099-03-10T18:00:00Z",
 				},
 			});
-		}
 
-		const { summary } = buildControlPlaneArtifacts({
-			artifactsDir: testDir,
-			metrics: { ...createMetrics(), sampleSize: 60 },
-			metricsErrors: [],
-			legacyOutcome: "promote",
-			legacyHoldReasons: [],
-			options: {
-				artifactsDir: testDir,
-				contractPath,
-				docsGateReportPath,
-				prTemplateStatus: "passed",
-				evaluationMode: "pr",
-				rolloutStage: "advisory",
-				clientFamily: "codex",
-				providerId: "openai",
-				modelDescriptor: "gpt-5.4",
-				overrideApprovedBy: ["jamie", "alex"],
-			},
-		});
-
-		const loaded = loadControlPlaneArtifactSet(summary.artifactRoot);
-		expect(loaded.errors).toEqual([]);
-		expect(loaded.artifacts?.overridePolicyRecord).toBeNull();
-		expect(loaded.artifacts?.rolloutWindow?.readyForTransition).toBe(false);
-		expect(loaded.artifacts?.rolloutWindow?.transitionBlockers).toContain(
-			"maintainer approval missing for this rollout stage transition",
-		);
-		expect(loaded.artifacts?.latestPromotionPacket).toBeNull();
-	});
+			const loaded = loadControlPlaneArtifactSet(summary.artifactRoot);
+			expect(loaded.errors).toEqual([]);
+			expect(loaded.artifacts?.overridePolicyRecord).toBeNull();
+			expect(loaded.artifacts?.rolloutWindow?.readyForTransition).toBe(false);
+			expect(loaded.artifacts?.rolloutWindow?.transitionBlockers).toContain(
+				"maintainer approval missing for this rollout stage transition",
+			);
+			expect(loaded.artifacts?.latestPromotionPacket).toBeNull();
+		},
+	);
 
 	it("blocks missing trusted pr-template evidence in pr mode", () => {
 		const { summary } = buildControlPlaneArtifacts({

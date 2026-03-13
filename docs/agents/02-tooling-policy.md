@@ -99,6 +99,12 @@ For code changes:
 3. Run `pnpm lint`, `pnpm typecheck`, `pnpm test`.
 4. Run `pnpm check` before handoff.
 
+For harness setup or scaffold sync verification in this repository, run:
+
+1. `bash scripts/run-harness-setup-checks.sh`
+
+The helper codifies the required sequence: `preflight_repo`, `pnpm build`, `harness init --check-updates` (and `--update` when needed), `check-environment` with pinned `uv` (`mise which uv`), and `pnpm check`.
+
 ## Tooling verification checklist
 
 Before claiming a change is verified, confirm:

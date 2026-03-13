@@ -2,9 +2,23 @@
 
 ## Table of Contents
 - [Prerequisites](#prerequisites)
+- [Command truth source](#command-truth-source)
 - [Install modes](#install-modes)
 - [Bootstrap workflow](#bootstrap-workflow)
+- [Abbreviations](#abbreviations)
+- [Metadata](#metadata)
+- [Invariants](#invariants)
+- [States](#states)
+- [Transition Table (Canonical)](#transition-table-canonical)
 - [Update workflow for existing repos](#update-workflow-for-existing-repos)
+- [Error Handling](#error-handling)
+- [Idempotency](#idempotency)
+- [Execution Modes](#execution-modes)
+- [Dry-Run Simulation](#dry-run-simulation)
+- [Observability Logs](#observability-logs)
+- [Validation Checklist](#validation-checklist)
+- [Executor pseudocode](#executor-pseudocode)
+- [Validation ladder](#validation-ladder)
 - [environment.toml action sync behavior](#environmenttoml-action-sync-behavior)
 - [Command map](#command-map)
 - [Capability boundaries](#capability-boundaries)
@@ -15,6 +29,20 @@
 - `pnpm` (repo package manager)
 - Repository write access for `harness init` template changes
 - For remote GitHub checks, a valid token (GitHub App JWT is preferred when verifying App installation state)
+
+## Command truth source
+
+Prefer runtime command help over stale prose snapshots:
+
+```bash
+harness --help
+```
+
+If harness is not installed globally in the current shell, use:
+
+```bash
+pnpm exec tsx src/cli.ts --help
+```
 
 ## Install modes
 
@@ -50,59 +78,142 @@ to `pnpm exec tsx src/cli.ts ...`; it requires the global `harness` binary from 
 
 1. Install dependencies:
 
-   ```bash
-   pnpm install
-   ```
+## Abbreviations
+| Abbr | Meaning |
+| --- | --- |
+| `S` | state |
+| `E` | event |
+| `G` | guard |
+| `A` | action |
+| `N` | next state |
 
-2. Initialize harness templates:
+## Metadata
+| Field | Value |
+| --- | --- |
+| `owner` | `TODO` |
+| `max_duration` | `TODO` |
+| `escalation` | `TODO` |
 
-   ```bash
-   harness init
-   ```
+## Invariants
+- TODO invariant 1
+- TODO invariant 2
 
-   This scaffolds the Greptile baseline as well:
-   - `.greptile/config.json`
-   - `.greptile/rules.md`
-   - `.greptile/files.json`
-   - `.github/workflows/greptile-review.yml`
+## States
+```txt
+S0 (non-terminal)
+DONE (terminal)
+FAIL (terminal)
+BLOCKED (terminal)
+```
 
-3. Run baseline quality gate:
+## Transition Table (Canonical)
+`S | E | G | A | N`
 
-   ```bash
-   pnpm check
-   ```
+### State machine
 
-4. Verify local Greptile configuration (if used):
+```txt
+B0 PREFLIGHT -> B1 DEPS -> B2 INIT_PREVIEW -> B3 INIT_APPLY -> B4 VALIDATE -> B5 READY
+     |             |            |              |
+     +-----------> BX FAIL <----+--------------+
+```
 
-   ```bash
-   harness verify-greptile
-   ```
+### Transition table (`S | E | G | A | N`)
+
+| S | E | G | A | N |
+| --- | --- | --- | --- | --- |
+| `B0 PREFLIGHT` | `preflight_ok` | preflight script passes | `source scripts/codex-preflight.sh && preflight_repo` | `B1 DEPS` |
+| `B1 DEPS` | `deps_installed` | `pnpm` available | `pnpm install` | `B2 INIT_PREVIEW` |
+| `B2 INIT_PREVIEW` | `preview_ok` | dry-run exits clean | `harness init --dry-run` | `B3 INIT_APPLY` |
+| `B3 INIT_APPLY` | `init_applied` | templates generated | `harness init` | `B4 VALIDATE` |
+| `B4 VALIDATE` | `checks_pass` | baseline gate passes | `pnpm check` and optional `harness verify-greptile` | `B5 READY` |
+| `B*` | `error` | any guard fails | capture blocker + stop | `BX FAIL` |
+
+Expected scaffold lane in `B3`:
+- `.greptile/config.json`
+- `.greptile/rules.md`
+- `.greptile/files.json`
+- `.github/workflows/greptile-review.yml`
 
 ## Update workflow for existing repos
 
-1. Check pending harness template updates:
+### State machine
 
-   ```bash
-   harness init --check-updates
-   ```
+```txt
+U0 CHECK -> U1 PREVIEW -> U2 APPLY -> U3 VALIDATE -> U4 DONE
+   |          |           |             |
+   +--------> UX FAIL <---+-------------+
+```
 
-2. Apply updates:
+### Transition table (`S | E | G | A | N`)
 
-   ```bash
-   harness init --update
-   ```
+| S | E | G | A | N |
+| --- | --- | --- | --- | --- |
+| `U0 CHECK` | `updates_found` | update check runs | `harness init --check-updates` | `U1 PREVIEW` |
+| `U1 PREVIEW` | `preview_ok` | dry-run output reviewed | `harness init --dry-run --update` | `U2 APPLY` |
+| `U2 APPLY` | `apply_ok` | selected update strategy confirmed | `harness init --update` (or `--interactive`) | `U3 VALIDATE` |
+| `U2 APPLY` | `tracked_apply` | rollback tracking requested | `harness init --track` before apply | `U3 VALIDATE` |
+| `U3 VALIDATE` | `checks_pass` | validation ladder passes | run `pnpm check` (+ deep gate if needed) | `U4 DONE` |
+| `U*` | `migration_or_rollback` | contract transition needed | `harness init --migrate` or `harness init --rollback` | `U0 CHECK` |
+| `U*` | `error` | any guard fails | capture blocker + stop | `UX FAIL` |
 
-3. If selective review is needed:
+## Error Handling
+- `VALIDATION_ERROR`: invalid command invocation or malformed workflow input.
+- `BLOCKED_DEPENDENCY`: missing binaries/auth/dependencies required by guards.
+- `POLICY_FAIL`: required validation/policy gates fail.
+- `SYSTEM_ERROR`: runtime/process failures.
 
-   ```bash
-   harness init --interactive
-   ```
+## Idempotency
+- Key: `<lane>|<repo>|<event>|<target_state>`.
+- Re-running preview and validate steps must be side-effect free.
+- Apply steps should be replay-safe with guard checks.
 
-4. If rollback tracking is desired before updates:
+## Execution Modes
+- `STRICT`: stop on first violation/failure.
+- `ADVISORY`: collect warnings and continue where safe.
 
-   ```bash
-   harness init --track
-   ```
+## Dry-Run Simulation
+- No file mutations or external writes; no side effects.
+- Deterministic transition trace output based on guard evaluation.
+
+## Observability Logs
+`workflow_id, transition_code, from_state, to_state, correlation_id, result`
+
+## Validation Checklist
+- every non-terminal state has >=1 outbound transition
+- deterministic `(S,E)` handling
+- failure paths route to `FAIL`/`BLOCKED`
+- terminal states (`B5 READY`, `U4 DONE`) have no outbound transitions
+
+## Executor pseudocode
+
+```txt
+run bootstrap or update lane
+for each transition row, execute action when guard is true
+stop on first error transition and emit unblock guidance
+```
+
+## Validation ladder
+
+Baseline gate:
+
+```bash
+pnpm check
+```
+
+Deep gate (when runtime behavior, contract behavior, or artifact handling changed):
+
+```bash
+pnpm test:deep
+```
+
+Situational governance checks:
+
+```bash
+harness check-authz --contract harness.contract.json --repo <owner/repo> --branch <branch>
+harness check-environment --contract harness.contract.json --attestation artifacts/check-environment-attestation.json
+harness docs-gate --mode advisory --json
+harness tooling-audit --path <directory> --format table
+```
 
 ## environment.toml action sync behavior
 
@@ -124,16 +235,22 @@ Important constraints:
 
 ## Command map
 
-### Installability and governance
+### Setup and governance
 
 - `harness init`
 - `harness init --check-updates`
 - `harness init --update`
+- `harness init --migrate`
+- `harness init --rollback`
 - `harness branch-protect`
 - `harness verify-greptile`
 - `harness request-greptile-review`
 - `harness check-authz`
 - `harness check-environment`
+- `harness docs-gate`
+- `harness org-audit`
+- `harness tooling-audit`
+- `harness preset`
 
 ### Risk and policy gates
 
@@ -159,6 +276,7 @@ Important constraints:
 - `harness context`
 - `harness search`
 - `harness index-context`
+- `harness context-health`
 - `harness remediate`
 - `harness replay`
 
@@ -172,6 +290,11 @@ Important constraints:
 - `harness ui:fast`
 - `harness ui:verify`
 - `harness ui:explore`
+
+### Intake and workflow governance
+
+- `harness linear`
+- `harness linear-gate`
 
 ## Capability boundaries
 

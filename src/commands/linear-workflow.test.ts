@@ -139,6 +139,13 @@ describe("runLinearWorkflow", () => {
 			after: "In Progress",
 			changed: true,
 		});
+		expect(result.output.transition).toEqual({
+			code: "LW_CLAIM",
+			event: "claim",
+			from: "Backlog",
+			to: "In Progress",
+			changed: true,
+		});
 		expect(result.output.assignee).toBe("jamie@example.com");
 	});
 
@@ -193,6 +200,8 @@ describe("runLinearWorkflow", () => {
 			{ title: "Evidence", url: "https://example.com/evidence.json" },
 			{ title: "Reference 1", url: "https://example.com/runbook" },
 		]);
+		expect(result.output.transition.code).toBe("LW_HANDOFF");
+		expect(result.output.transition.event).toBe("handoff");
 	});
 
 	it("rejects unsupported assignee values", async () => {

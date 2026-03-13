@@ -22,6 +22,12 @@ const DEFAULT_STATE_BY_ACTION = {
 	close: "Done",
 } as const;
 
+const ACTION_TRANSITION_CODE = {
+	claim: "LW_CLAIM",
+	handoff: "LW_HANDOFF",
+	close: "LW_CLOSE",
+} as const;
+
 const UUID_PATTERN =
 	/^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 
@@ -56,6 +62,13 @@ export interface LinearWorkflowOutput {
 	state: {
 		before: string;
 		after: string;
+		changed: boolean;
+	};
+	transition: {
+		code: (typeof ACTION_TRANSITION_CODE)[LinearWorkflowAction];
+		event: LinearWorkflowAction;
+		from: string;
+		to: string;
 		changed: boolean;
 	};
 	commentCreated: boolean;
@@ -327,6 +340,13 @@ export async function runLinearWorkflow(
 					after: targetState.name,
 					changed: issue.state.id !== targetState.id,
 				},
+				transition: {
+					code: ACTION_TRANSITION_CODE[options.action],
+					event: options.action,
+					from: issue.state.name,
+					to: targetState.name,
+					changed: issue.state.id !== targetState.id,
+				},
 				commentCreated: true,
 				...(assignee.assigneeLabel ? { assignee: assignee.assigneeLabel } : {}),
 				attachments,
@@ -396,6 +416,9 @@ export async function runLinearWorkflowCLI(
 	} else {
 		console.info(
 			`${result.output.action}: ${result.output.issue.identifier} ${result.output.state.before} -> ${result.output.state.after}`,
+		);
+		console.info(
+			`  transition: ${result.output.transition.code} (${result.output.transition.event})`,
 		);
 		console.info(`  url: ${result.output.issue.url}`);
 		console.info(`  team: ${result.output.issue.teamKey}`);

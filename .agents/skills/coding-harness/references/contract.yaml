@@ -1,4 +1,4 @@
-schema_version: "1.1"
+schema_version: "1.2"
 
 purpose: >
   Install, initialize, update, and verify @brainwav/coding-harness usage in real
@@ -15,6 +15,7 @@ inputs:
   - Global install posture (`npm i -g @brainwav/coding-harness`) for consumer repositories.
   - Current harness state (new install, existing setup, update required, or broken).
   - Auth mode for remote checks (token/JWT + owner/repo when applicable).
+  - Execution mode (no-execution guidance vs execution with commands).
 
 outputs:
   - setup_summary: markdown summary of actions taken and key decisions.
@@ -24,6 +25,12 @@ outputs:
         - command
         - status
         - evidence
+  - validation_ladder:
+      schema_version: "1.0"
+      fields:
+        - baseline_gate
+        - deep_gate
+        - conditional_checks
   - capability_boundary_report:
       schema_version: "1.0"
       sections:
@@ -37,6 +44,7 @@ non_goals:
   - Managing credential generation or long-term secret storage.
 
 guardrails:
+  - Treat `harness --help` as command truth when docs disagree.
   - Require explicit approval before destructive or high-impact operations.
   - Redact tokens/secrets in logs and summaries.
   - Fail fast on first blocking validation gate and report exact remediation.
@@ -46,3 +54,4 @@ risks:
   - Treating stale local docs as source of truth instead of `harness --help` and repo files.
   - Overwriting user-owned environment configuration.
   - Misreporting capabilities when remote checks were skipped due to missing auth.
+  - Skipping deep validation (`pnpm test:deep`) when runtime/artifact behavior changed.

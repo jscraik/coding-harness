@@ -3,6 +3,7 @@
 	"version": "0.8.1",
 	"files": [
 		"dist",
+		"scripts/codex-preflight.sh",
 		"README.md",
 		"CHANGELOG.md",
 		"LICENSE",
@@ -25,7 +26,7 @@
 		"harness": "dist/cli.js"
 	},
 	"scripts": {
-		"check": "pnpm lint && pnpm docs:lint && pnpm typecheck && pnpm test && pnpm audit",
+		"check": "pnpm lint && pnpm docs:lint && pnpm workflow:validate && pnpm typecheck && pnpm test && pnpm audit",
 		"lint": "biome check .",
 		"lint:fix": "biome check . --write",
 		"fmt": "biome format . --write",
@@ -33,7 +34,7 @@
 		"test": "vitest run",
 		"test:watch": "vitest",
 		"test:deep": "pnpm check && pnpm test:artifacts",
-		"build": "tsc && cp -r src/presets dist/presets && chmod +x dist/cli.js",
+		"build": "tsc && cp -r src/presets dist/presets && cp -r src/templates dist/templates && chmod +x dist/cli.js",
 		"prepublishOnly": "pnpm check && pnpm build",
 		"changelog": "standard-version --skip.bump --skip.tag --skip.commit",
 		"release": "standard-version",
@@ -41,6 +42,8 @@
 		"audit:strict": "pnpm audit --audit-level=high",
 		"docs:lint": "pnpm markdownlint",
 		"docs:style:changed": "bash scripts/check-doc-style.sh",
+		"workflow:normalize": "node scripts/normalize-workflow-contracts.cjs",
+		"workflow:validate": "node scripts/validate-workflow-contracts.cjs",
 		"markdownlint": "markdownlint-cli2 \"**/*.md\"",
 		"secrets:staged": "bash scripts/check-staged-secrets.sh",
 		"semgrep:changed": "bash scripts/check-semgrep-changed.sh",

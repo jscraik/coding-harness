@@ -40,6 +40,7 @@ This repository follows conservative defaults:
 - No unauthorized command or toolchain mutation.
 - Validation gate outputs captured.
 - No secrets in docs/memory.
+- For harness scaffold/setup checks, run `bash scripts/run-harness-setup-checks.sh` so preflight, environment posture (`CLAUDE_APPROVAL_POSTURE=require`), pinned `uv`, and quality gates are evaluated as one auditable sequence.
 
 ## Pre-commit hooks
 

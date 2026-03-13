@@ -75,6 +75,43 @@ Create four interconnected components:
 3. **review-gate** - SHA-bound review verification with timeout handling
 4. **rerun-writer** - Canonical, deduplicated rerun comment mechanism
 
+## Operational Compact Contract
+
+Abbreviations:
+- `S`: state
+- `E`: event
+- `G`: guard
+- `A`: action
+- `N`: next
+
+State machine:
+
+```txt
+S0 PRECHECK -> S1 CI_FANOUT -> S2 REVIEW_GATE -> S3 MERGE_READY
+      |             |                |
+      +-----------> S4 BLOCKED <-----+
+```
+
+Transition table (`S | E | G | A | N`):
+
+| S | E | G | A | N |
+| --- | --- | --- | --- | --- |
+| `S0 PRECHECK` | `policy_pass` | risk/policy gate passes | run CI fanout jobs | `S1 CI_FANOUT` |
+| `S0 PRECHECK` | `policy_fail` | policy violation detected | emit actionable blocker output | `S4 BLOCKED` |
+| `S1 CI_FANOUT` | `ci_pass` | required jobs succeed | run SHA-bound review gate | `S2 REVIEW_GATE` |
+| `S1 CI_FANOUT` | `ci_fail` | any required job fails | emit failure summary + stop | `S4 BLOCKED` |
+| `S2 REVIEW_GATE` | `review_valid` | review artifact matches HEAD SHA and passes | mark PR merge-ready | `S3 MERGE_READY` |
+| `S2 REVIEW_GATE` | `review_missing_or_stale` | artifact missing or stale SHA | write deduplicated rerun request | `S4 BLOCKED` |
+| `S4 BLOCKED` | `rerun_complete` | remediation closes blocker condition | restart at precheck | `S0 PRECHECK` |
+
+Executor loop:
+
+```txt
+run first matching transition row
+persist decision artifact for every blocked edge
+allow merge only from S3 MERGE_READY
+```
+
 ## Technical Considerations
 
 ### Architecture
@@ -354,9 +391,9 @@ async function validateScopes(octokit: Octokit): Promise<void> {
 
 ### Security Requirements
 
-- [x] All workflow actions pinned to full SHA with version comment
+- [x] All workflow actions pinned to full SHA with version comment (evidence: `.github/workflows/greptile-review.yml`, `.github/workflows/auto-release-npm.yml`)
 - [x] `max-tier` parameter validated (must be 'high', 'medium', or 'low')
-- [x] Contract path validated before loading
+- [x] Contract path validated before loading (evidence: `src/commands/preflight-gate.ts`)
 
 ### Deferred to Phase 4
 
@@ -368,15 +405,15 @@ async function validateScopes(octokit: Octokit): Promise<void> {
 ### Agent-Native Requirements
 
 - [x] `--json` flag on all commands
-- [x] Exit codes: 0 (pass), 1 (validation fail), 2 (not found), 3 (permission), 10+ (system)
-- [x] Machine-readable error codes for each failure mode
+- [x] Exit codes: 0 (pass), 1 (validation fail), 2 (not found), 3 (permission), 10+ (system) (evidence: `src/commands/policy-gate.ts`)
+- [x] Machine-readable error codes for each failure mode (evidence: `src/commands/policy-gate.ts`)
 
 ### Quality Gates
 
 - [x] `pnpm check` passes (lint + typecheck + test)
-- [x] Unit tests for policy-gate command
+- [x] Unit tests for policy-gate command (evidence: `src/commands/policy-gate.test.ts`)
 - [x] Follows command pattern from `risk-tier.ts`
-- [x] Workflow YAML syntax valid
+- [x] Workflow YAML syntax valid (evidence: `.github/workflows/pr-pipeline.yml`)
 
 ## Success Metrics
 

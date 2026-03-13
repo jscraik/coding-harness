@@ -36,7 +36,7 @@ icon = "debug"
 command = '''
 set -euo pipefail
 
-pnpm run check
+pnpm 'check'
 '''
 
 [[actions]]
@@ -45,7 +45,7 @@ icon = "test"
 command = '''
 set -euo pipefail
 
-pnpm run test
+pnpm 'test'
 '''
 
 [[actions]]
@@ -304,7 +304,7 @@ icon = "debug"
 command = '''
 set -euo pipefail
 
-pnpm run check
+pnpm 'check'
 '''
 
 [[actions]]
@@ -313,7 +313,7 @@ icon = "debug"
 command = '''
 set -euo pipefail
 
-pnpm run lint
+pnpm 'lint'
 '''
 
 [[actions]]
@@ -322,7 +322,7 @@ icon = "debug"
 command = '''
 set -euo pipefail
 
-pnpm run lint:fix
+pnpm 'lint:fix'
 '''
 
 [[actions]]
@@ -331,7 +331,7 @@ icon = "tool"
 command = '''
 set -euo pipefail
 
-pnpm run fmt
+pnpm 'fmt'
 '''
 
 [[actions]]
@@ -340,7 +340,7 @@ icon = "debug"
 command = '''
 set -euo pipefail
 
-pnpm run typecheck
+pnpm 'typecheck'
 '''
 
 [[actions]]
@@ -349,7 +349,7 @@ icon = "test"
 command = '''
 set -euo pipefail
 
-pnpm run test
+pnpm 'test'
 '''
 
 [[actions]]
@@ -358,7 +358,16 @@ icon = "test"
 command = '''
 set -euo pipefail
 
-pnpm run test:watch
+pnpm 'test:watch'
+'''
+
+[[actions]]
+name = "Script: test:deep"
+icon = "test"
+command = '''
+set -euo pipefail
+
+pnpm 'test:deep'
 '''
 
 [[actions]]
@@ -367,7 +376,7 @@ icon = "tool"
 command = '''
 set -euo pipefail
 
-pnpm run build
+pnpm 'build'
 '''
 
 [[actions]]
@@ -376,7 +385,7 @@ icon = "tool"
 command = '''
 set -euo pipefail
 
-pnpm run prepublishOnly
+pnpm 'prepublishOnly'
 '''
 
 [[actions]]
@@ -385,7 +394,7 @@ icon = "tool"
 command = '''
 set -euo pipefail
 
-pnpm run changelog
+pnpm 'changelog'
 '''
 
 [[actions]]
@@ -394,7 +403,7 @@ icon = "tool"
 command = '''
 set -euo pipefail
 
-pnpm run release
+pnpm 'release'
 '''
 
 [[actions]]
@@ -403,7 +412,7 @@ icon = "tool"
 command = '''
 set -euo pipefail
 
-pnpm run audit
+pnpm 'audit'
 '''
 
 [[actions]]
@@ -412,7 +421,7 @@ icon = "tool"
 command = '''
 set -euo pipefail
 
-pnpm run audit:strict
+pnpm 'audit:strict'
 '''
 
 [[actions]]
@@ -421,7 +430,16 @@ icon = "debug"
 command = '''
 set -euo pipefail
 
-pnpm run docs:lint
+pnpm 'docs:lint'
+'''
+
+[[actions]]
+name = "Script: docs:style:changed"
+icon = "tool"
+command = '''
+set -euo pipefail
+
+pnpm 'docs:style:changed'
 '''
 
 [[actions]]
@@ -430,7 +448,25 @@ icon = "tool"
 command = '''
 set -euo pipefail
 
-pnpm run markdownlint
+pnpm 'markdownlint'
+'''
+
+[[actions]]
+name = "Script: secrets:staged"
+icon = "tool"
+command = '''
+set -euo pipefail
+
+pnpm 'secrets:staged'
+'''
+
+[[actions]]
+name = "Script: semgrep:changed"
+icon = "tool"
+command = '''
+set -euo pipefail
+
+pnpm 'semgrep:changed'
 '''
 
 [[actions]]
@@ -439,7 +475,7 @@ icon = "test"
 command = '''
 set -euo pipefail
 
-pnpm run test:artifacts
+pnpm 'test:artifacts'
 '''
 
 [[actions]]
@@ -448,7 +484,7 @@ icon = "test"
 command = '''
 set -euo pipefail
 
-pnpm run test:artifacts:unit
+pnpm 'test:artifacts:unit'
 '''
 
 [[actions]]
@@ -457,7 +493,7 @@ icon = "test"
 command = '''
 set -euo pipefail
 
-pnpm run test:artifacts:integration
+pnpm 'test:artifacts:integration'
 '''
 
 [[actions]]
@@ -466,7 +502,16 @@ icon = "test"
 command = '''
 set -euo pipefail
 
-pnpm run test:artifacts:e2e
+pnpm 'test:artifacts:e2e'
+'''
+
+[[actions]]
+name = "Script: test:related"
+icon = "test"
+command = '''
+set -euo pipefail
+
+pnpm 'test:related'
 '''
 
 [[actions]]
@@ -475,7 +520,7 @@ icon = "tool"
 command = '''
 set -euo pipefail
 
-pnpm run harness:ui:capture-browser-evidence
+pnpm 'harness:ui:capture-browser-evidence'
 '''
 
 [[actions]]
@@ -484,7 +529,7 @@ icon = "tool"
 command = '''
 set -euo pipefail
 
-pnpm run postinstall
+pnpm 'postinstall'
 '''
 
 [[actions]]
@@ -493,5 +538,5 @@ icon = "tool"
 command = '''
 set -euo pipefail
 
-pnpm run vale
+pnpm 'vale'
 '''

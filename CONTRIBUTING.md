@@ -132,6 +132,9 @@ Harness-managed repositories should keep this baseline available locally before 
 Policy:
 
 - Pin repo-managed tooling in `.mise.toml` where possible.
+- Treat `scripts/codex-preflight.sh` as required project bootstrap infrastructure.
+- Keep `preflight_repo` in `required` mode by default; only relax mode (`optional` or `off`) when the project documents why.
+- Adjust preflight binary/path lists per project scope instead of deleting the script.
 - Treat `scripts/check-environment.sh` as the local readiness gate for required tooling.
 - Block merge or promotion work when a required CLI is missing rather than silently skipping the corresponding validation lane.
 - For repositories with explicit `ui` / `chatgpt_apps_sdk` capabilities or matching dependency signals, install `@brainwav/design-system-guidance` and treat its absence as a readiness failure.

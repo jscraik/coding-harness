@@ -6,8 +6,19 @@
 ## Table of Contents
 
 - [Abbreviations](#abbreviations)
+- [Metadata](#metadata)
+- [Invariants](#invariants)
+- [States](#states)
+- [Transition Table (Canonical)](#transition-table-canonical)
+- [Error Handling](#error-handling)
+- [Idempotency](#idempotency)
+- [Execution Modes](#execution-modes)
+- [Dry-Run Simulation](#dry-run-simulation)
+- [Observability Logs](#observability-logs)
+- [Validation Checklist](#validation-checklist)
 - [Operating Model](#operating-model)
 - [Issue Lifecycle State Machine](#issue-lifecycle-state-machine)
+- [Executor Loop](#executor-loop)
 - [Command Surface](#command-surface)
 - [Intake Rules](#intake-rules)
 - [Label Taxonomy](#label-taxonomy)
@@ -25,6 +36,71 @@
 | PR | Pull Request |
 | CH | coding-harness |
 | LPW | Linear Production Workflow |
+
+## Metadata
+| Field | Value |
+| --- | --- |
+| `owner` | `coding-harness-maintainers` |
+| `max_duration` | `single issue lifecycle` |
+| `escalation` | `transition to Blocked with explicit unblock action` |
+
+## Invariants
+- Keep a single progress thread per issue.
+- Enforce `codex/<LK>-<slug>` branch naming.
+- Require policy checks before review/done transitions.
+
+## States
+```txt
+Triage (non-terminal)
+Ready (non-terminal)
+In Progress (non-terminal)
+In Review (non-terminal)
+Blocked (non-terminal)
+Delegated (non-terminal)
+Done (terminal)
+```
+
+## Transition Table (Canonical)
+`S | E | G | A | N`
+
+| S | E | G | A | N |
+| --- | --- | --- | --- | --- |
+| `Triage` | `scoped` | issue is triaged with clear next step | `harness linear prepare --issue <LK>` | `Ready` |
+| `Ready` | `start` | branch matches `codex/<LK>-<slug>` | `harness linear claim --issue <LK> --branch <name>` | `In Progress` |
+| `In Progress` | `progress_tick` | always | append to single running progress comment | `In Progress` |
+| `In Progress` | `handoff_ready` | lint + typecheck + test + audit + check pass | `harness linear handoff --issue <LK> --pr-url <url>` | `In Review` |
+| `In Review` | `merged` | required checks pass | `harness linear close --issue <LK> --pr-url <url>` | `Done` |
+| `In Review` | `pr_closed_unmerged` | PR closed without merge | `harness linear claim --issue <LK> --state "In Progress" --no-assign` | `In Progress` |
+| `*` | `blocked` | missing auth, permission, human input | label `Blocked`; record unblock action | `Blocked` |
+| `Blocked` | `unblocked` | dependency restored | remove `Blocked`; resume execution | `In Progress` |
+| `*` | `delegated` | delegation approved | assign delegate + transfer context | `Delegated` |
+
+## Error Handling
+- `VALIDATION_ERROR`: malformed `LK`/branch/PR payload.
+- `BLOCKED_DEPENDENCY`: missing permissions/auth/human dependency.
+- `POLICY_FAIL`: gate/check violations.
+- `SYSTEM_ERROR`: CLI/network/runtime failures.
+
+## Idempotency
+- Key: `<LK>|<event>|<from_state>|<pr_ref?>`.
+- Replayed events perform upsert behavior, never duplicate comments/handoff records.
+
+## Execution Modes
+- `STRICT`: hard-fail on violations.
+- `ADVISORY`: warn and continue when safe.
+
+## Dry-Run Simulation
+- No side effects.
+- Deterministic transition trace output.
+
+## Observability Logs
+`workflow_id, transition_code, from_state, to_state, correlation_id, result`
+
+## Validation Checklist
+- non-terminal states have outbound transitions
+- deterministic `(S,E)` resolution
+- failure events route to `FAIL`/`BLOCKED`
+- terminal state `Done` has no outbound transitions
 
 ---
 
@@ -55,7 +131,7 @@
 └─────────────────────────────────────────────────────────────────────┘
 ```
 
-### State Transitions
+## Executor Loop
 
 | From | To | Trigger | Agent Action |
 |------|-----|---------|--------------|
