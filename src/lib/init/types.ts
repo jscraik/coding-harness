@@ -259,7 +259,7 @@ export type PackageManager = "pnpm" | "yarn" | "npm";
 // === Codex Environment Types ===
 
 /** Path where codex-environment.toml is generated */
-export const CODEX_ENVIRONMENT_TEMPLATE_PATH = ".codex/environment.toml";
+export const CODEX_ENVIRONMENT_TEMPLATE_PATH = ".codex/environments/environment.toml";
 
 /** Icon types for Codex actions */
 export type CodexActionIcon = "tool" | "run" | "debug" | "test";
