@@ -1,0 +1,19 @@
+{
+	"testName": "github-integration",
+	"startedAt": "2026-03-13T10:22:16.786Z",
+	"completedAt": "2026-03-13T10:22:17.165Z",
+	"resources": [],
+	"apiCalls": [
+		{
+			"provider": "github",
+			"method": "git.createRef",
+			"request": {
+				"ref": "refs/heads/e2e-review-gate-1773397336786"
+			},
+			"durationMs": 378,
+			"error": "Failed to clone repo: Cloning into '/var/folders/tl/6bt8_lsn31b2j3sc_q5yr05c0000gn/T/github-e2e-1773397336786'...\nremote: Repository not found.\nfatal: repository 'https://github.com/jscraik/coding-harness-e2e-test.git/' not found\n",
+			"timestamp": "2026-03-13T10:22:17.164Z"
+		}
+	],
+	"errors": []
+}
