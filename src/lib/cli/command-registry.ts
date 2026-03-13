@@ -3,6 +3,7 @@ import { runCheckAuthzCLI } from "../../commands/check-authz.js";
 import { runCheckEnvironmentCLI } from "../../commands/check-environment.js";
 import { runDocsGateCLI } from "../../commands/docs-gate.js";
 import { runEvidenceVerifyCLI } from "../../commands/evidence-verify.js";
+import { runLicenseGateCLI } from "../../commands/license-gate.js";
 import { runLinearGateCLI } from "../../commands/linear-gate.js";
 import { runLinearPrepareCLI } from "../../commands/linear-prepare.js";
 import { runLinearWorkflowCLI } from "../../commands/linear-workflow.js";
@@ -501,6 +502,33 @@ const COMMAND_SPECS: CommandSpec[] = [
 				options.mergeQueueBaseSha = mergeQueueBaseShaArg;
 
 			return runDocsGateCLI(options);
+		},
+	},
+	{
+		name: "license-gate",
+		aliases: ["license-check"],
+		summary: "Validate open-source license (MIT, Apache-2.0, etc.)",
+		errorLabel: "License Gate Error",
+		execute: (args) => {
+			const jsonFlag = args.includes("--json");
+			const repoRootIndex = args.indexOf("--repo-root");
+			const allowedIndex = args.indexOf("--allowed");
+			const requireOsiFlag = args.includes("--require-osi");
+			const noCopyleftFlag = args.includes("--no-copyleft");
+
+			const options: Parameters<typeof runLicenseGateCLI>[0] = {};
+
+			if (jsonFlag) options.json = true;
+			if (requireOsiFlag) options.requireOsiApproved = true;
+			if (noCopyleftFlag) options.allowCopyleft = false;
+			const repoRootArg = getFlagValue(args, repoRootIndex);
+			if (repoRootArg) options.repoRoot = repoRootArg;
+			const allowedArg = getFlagValue(args, allowedIndex);
+			if (allowedArg !== undefined) {
+				options.allowedLicenses = parseCsvList(allowedArg);
+			}
+
+			return runLicenseGateCLI(options);
 		},
 	},
 ];
