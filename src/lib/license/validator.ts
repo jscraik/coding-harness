@@ -173,7 +173,7 @@ function detectLicenseFromFile(content: string): {
 
 	// Fallback to SPDX ID detection in text
 	const spdxMatch = content.match(/SPDX-License-Identifier:\s*([\w\-.]+)/i);
-	if (spdxMatch) {
+	if (spdxMatch?.[1]) {
 		const detected = getLicenseBySpdxId(spdxMatch[1]);
 		if (detected) {
 			return { spdxId: detected.spdxId, confidence: "high" };

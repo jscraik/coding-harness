@@ -13,6 +13,7 @@ import { EXIT_CODES, runInit } from "./init.js";
 const EXPECTED_TEMPLATE_PATHS = [
 	"harness.contract.json",
 	"memory.json",
+	".harness/ci-required-checks.json",
 	".greptile/config.json",
 	".greptile/rules.md",
 	".greptile/files.json",
@@ -147,6 +148,35 @@ describe("runInit", () => {
 			expect(existsSync(join(tempDir, "memory.json"))).toBe(true);
 		});
 
+		it("creates CircleCI templates when ciProvider is circleci", () => {
+			const result = runInit(tempDir, {
+				dryRun: false,
+				force: false,
+				ciProvider: "circleci",
+			});
+
+			expect(result.ok).toBe(true);
+			expect(existsSync(join(tempDir, ".circleci/config.yml"))).toBe(true);
+			expect(
+				existsSync(join(tempDir, ".github/workflows/pr-pipeline.yml")),
+			).toBe(false);
+			expect(
+				existsSync(join(tempDir, ".github/workflows/greptile-review.yml")),
+			).toBe(false);
+			expect(
+				existsSync(join(tempDir, ".github/workflows/secret-scan.yml")),
+			).toBe(false);
+
+			const requiredChecks = JSON.parse(
+				require("node:fs").readFileSync(
+					join(tempDir, ".harness/ci-required-checks.json"),
+					"utf-8",
+				),
+			);
+			expect(requiredChecks.activeProvider).toBe("circleci");
+			expect(requiredChecks.requiredChecks[0]?.sourceAppSlug).toBe("circleci");
+		});
+
 		it("skips existing files without --force", () => {
 			// Create existing file
 			mkdirSync(join(tempDir, ".github", "workflows"), { recursive: true });
@@ -232,6 +262,18 @@ describe("runInit", () => {
 		it("returns error for invalid base path", () => {
 			// Pass empty string as target
 			const result = runInit("", { dryRun: false, force: false });
+			expect(result.ok).toBe(false);
+			if (!result.ok) {
+				expect(result.error.code).toBe("INVALID_PATH");
+			}
+		});
+
+		it("returns error for unsupported ci provider", () => {
+			const result = runInit(tempDir, {
+				dryRun: false,
+				force: false,
+				ciProvider: "buildkite",
+			});
 			expect(result.ok).toBe(false);
 			if (!result.ok) {
 				expect(result.error.code).toBe("INVALID_PATH");
@@ -1097,6 +1139,13 @@ describe("--track flag", () => {
 
 		// Backups directory is created but may be empty for new files
 		expect(existsSync(join(tempDir, ".harness/backups"))).toBe(true);
+		const manifest = JSON.parse(
+			require("node:fs").readFileSync(
+				join(tempDir, ".harness/restore-manifest.json"),
+				"utf-8",
+			),
+		);
+		expect(manifest.ciProvider).toBe("github-actions");
 	});
 
 	it("creates backups for existing files", () => {
@@ -1128,6 +1177,7 @@ describe("--track flag", () => {
 		);
 		const manifest = JSON.parse(manifestContent);
 		expect(manifest.files).toHaveLength(EXPECTED_TEMPLATE_COUNT);
+		expect(manifest.ciProvider).toBe("github-actions");
 
 		// Find the modified entry
 		const modifiedEntry = manifest.files.find(
@@ -1136,6 +1186,24 @@ describe("--track flag", () => {
 		);
 		expect(modifiedEntry.action).toBe("modified");
 		expect(modifiedEntry.backupHash).toMatch(/^[a-f0-9]{16}$/);
+	});
+
+	it("records circleci as manifest provider when selected", () => {
+		const result = runInit(tempDir, {
+			dryRun: false,
+			force: false,
+			track: true,
+			ciProvider: "circleci",
+		});
+		expect(result.ok).toBe(true);
+
+		const manifest = JSON.parse(
+			require("node:fs").readFileSync(
+				join(tempDir, ".harness/restore-manifest.json"),
+				"utf-8",
+			),
+		);
+		expect(manifest.ciProvider).toBe("circleci");
 	});
 
 	it("rejects symlinks with error", () => {
@@ -1349,6 +1417,29 @@ describe("--rollback flag", () => {
 		}
 	});
 
+	it("fails rollback when manifest provider and requested provider mismatch", () => {
+		const installResult = runInit(tempDir, {
+			dryRun: false,
+			force: false,
+			track: true,
+			ciProvider: "github-actions",
+		});
+		expect(installResult.ok).toBe(true);
+
+		const result = runInit(tempDir, {
+			dryRun: false,
+			force: false,
+			rollback: true,
+			ciProvider: "circleci",
+		});
+
+		expect(result.ok).toBe(false);
+		if (!result.ok) {
+			expect(result.error.code).toBe("INVALID_PATH");
+			expect(result.error.message).toContain("manifest provider");
+		}
+	});
+
 	it("blocks path traversal in manifest", () => {
 		// Install first
 		const installResult = runInit(tempDir, {
@@ -1379,6 +1470,36 @@ describe("--rollback flag", () => {
 		expect(result.ok).toBe(false);
 		if (!result.ok) {
 			expect(result.error.message).toMatch(/traversal|blocked/i);
+		}
+	});
+
+	it("rejects tampered backup hash bindings in manifest", () => {
+		writeFileSync(join(tempDir, "AGENTS.md"), "legacy");
+		const installResult = runInit(tempDir, {
+			dryRun: false,
+			force: true,
+			track: true,
+		});
+		expect(installResult.ok).toBe(true);
+
+		const manifestPath = join(tempDir, ".harness/restore-manifest.json");
+		const manifest = JSON.parse(
+			require("node:fs").readFileSync(manifestPath, "utf-8"),
+		);
+		expect(manifest.files.length).toBeGreaterThan(0);
+		manifest.files[0].action = "modified";
+		manifest.files[0].backupHash = "0000000000000000";
+		require("node:fs").writeFileSync(manifestPath, JSON.stringify(manifest));
+
+		const result = runInit(tempDir, {
+			dryRun: false,
+			force: false,
+			rollback: true,
+		});
+
+		expect(result.ok).toBe(false);
+		if (!result.ok) {
+			expect(result.error.message).toContain("Manifest backup hash mismatch");
 		}
 	});
 });
@@ -1578,6 +1699,29 @@ describe("--update flag", () => {
 		if (result.ok) {
 			// Should have updated files (even if same content)
 			expect(result.output.created.length).toBeGreaterThanOrEqual(0);
+		}
+	});
+
+	it("fails update when manifest provider and requested provider mismatch", () => {
+		const installResult = runInit(tempDir, {
+			dryRun: false,
+			force: false,
+			track: true,
+			ciProvider: "github-actions",
+		});
+		expect(installResult.ok).toBe(true);
+
+		const result = runInit(tempDir, {
+			dryRun: false,
+			force: false,
+			update: true,
+			ciProvider: "circleci",
+		});
+
+		expect(result.ok).toBe(false);
+		if (!result.ok) {
+			expect(result.error.code).toBe("INVALID_PATH");
+			expect(result.error.message).toContain("manifest provider");
 		}
 	});
 });
@@ -1817,6 +1961,49 @@ describe("--migrate flag", () => {
 		}
 	});
 
+	it("fails when --migrate is combined with --dry-run", () => {
+		writeFileSync(
+			join(tempDir, "harness.contract.json"),
+			JSON.stringify({ version: "1.0.0" }),
+		);
+
+		const result = runInit(tempDir, {
+			dryRun: true,
+			force: false,
+			migrate: true,
+		});
+
+		expect(result.ok).toBe(false);
+		if (!result.ok) {
+			expect(result.error.code).toBe("INVALID_PATH");
+			expect(result.error.message).toContain(
+				"--migrate cannot be combined with --dry-run",
+			);
+		}
+	});
+
+	it("fails when --migrate is combined with --interactive", () => {
+		writeFileSync(
+			join(tempDir, "harness.contract.json"),
+			JSON.stringify({ version: "1.0.0" }),
+		);
+
+		const result = runInit(tempDir, {
+			dryRun: false,
+			force: false,
+			interactive: true,
+			migrate: true,
+		});
+
+		expect(result.ok).toBe(false);
+		if (!result.ok) {
+			expect(result.error.code).toBe("INVALID_PATH");
+			expect(result.error.message).toContain(
+				"--migrate cannot be combined with --interactive",
+			);
+		}
+	});
+
 	it("migrates legacy 1.0.0 contracts to 1.5.0", () => {
 		writeFileSync(
 			join(tempDir, "harness.contract.json"),
@@ -1852,6 +2039,31 @@ describe("--migrate flag", () => {
 			);
 			expect(migrated.toolingPolicy.packagePolicy.explicitCapabilities).toEqual(
 				[],
+			);
+		}
+	});
+
+	it("fails when no supported migration path exists", () => {
+		writeFileSync(
+			join(tempDir, "harness.contract.json"),
+			JSON.stringify({
+				version: "0.9.0",
+				riskTierRules: {},
+				reviewPolicy: { timeoutSeconds: 300, timeoutAction: "warn" },
+			}),
+		);
+
+		const result = runInit(tempDir, {
+			dryRun: false,
+			force: false,
+			migrate: true,
+		});
+
+		expect(result.ok).toBe(false);
+		if (!result.ok) {
+			expect(result.error.code).toBe("E_UNSUPPORTED_MIGRATION_PATH");
+			expect(result.error.message).toContain(
+				"No supported migration path from 0.9.0 to 1.5.0",
 			);
 		}
 	});
