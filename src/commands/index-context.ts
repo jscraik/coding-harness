@@ -24,12 +24,12 @@ import {
 	CP4B_ENABLED_ENV,
 	isCp4bLexicalFallbackEnabled,
 } from "../lib/context-compound/rollout.js";
-import { VectorStore } from "../lib/context-compound/store.js";
 import {
 	CONTEXT_SOURCE_DEFINITIONS,
 	discoverContextSourceDocuments,
 	writeContextSourceInventory,
-} from "../lib/context-integrity/sources.js";
+} from "../lib/context-compound/sources.js";
+import { VectorStore } from "../lib/context-compound/store.js";
 import { validatePath } from "../lib/input/validator.js";
 import { type CliResult, createError, err, ok } from "../lib/result/types.js";
 

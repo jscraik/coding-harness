@@ -1,11 +1,11 @@
 import { createHash } from "node:crypto";
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { join, relative } from "node:path";
-import { discoverContextSourceDocuments } from "../context-integrity/sources.js";
 import {
 	DEFAULT_HARNESS_DIR,
 	DEFAULT_LEXICAL_INDEX_FILENAME,
 } from "./constants.js";
+import { discoverContextSourceDocuments } from "./sources.js";
 import type { DocumentMetadata, SearchResult } from "./types.js";
 
 interface LexicalIndexEntry {
