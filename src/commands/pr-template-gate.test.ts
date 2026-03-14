@@ -1,4 +1,6 @@
-import { mkdirSync, rmSync, writeFileSync } from "node:fs";
+import { mkdirSync, mkdtempSync, rmSync, symlinkSync, writeFileSync } from "node:fs";
+import { tmpdir } from "node:os";
+
 import { dirname, join } from "node:path";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import {
@@ -79,6 +81,48 @@ describe("pr-template-gate command", () => {
 			expect(result.output.passed).toBe(true);
 			expect(result.output.errors).toEqual([]);
 			expect(result.output.source).toBe("file");
+		}
+	});
+
+	// Security regression: finding ef7d00b48248819187f403dcc5becaa5.
+	// Original check was resolved.startsWith(cwd) — bypassed by sibling dirs
+	// whose absolute path shares the same string prefix as cwd.
+	it("rejects an absolute path outside cwd (prefix-bypass guard)", () => {
+		const outsideDir = mkdtempSync(join(tmpdir(), "pr-gate-outside-"));
+		roots.push(outsideDir);
+		const outsideFile = join(outsideDir, "pr-body.md");
+		write(outsideFile, VALID_BODY);
+
+		const result = runPrTemplateGate({ prBodyFile: outsideFile });
+		expect(result.ok).toBe(false);
+		if (!result.ok) {
+			expect(result.error.code).toBe("VALIDATION_ERROR");
+			expect(result.error.message).toContain(
+				"PR body file must be within the current directory",
+			);
+		}
+	});
+
+	// Security regression: a symlink inside cwd that resolves outside must be rejected.
+	it("rejects a symlink inside cwd that points outside", () => {
+		const root = join(process.cwd(), "artifacts", "pr-template-gate-symlink");
+		const outsideDir = mkdtempSync(join(tmpdir(), "pr-gate-target-"));
+		roots.push(root, outsideDir);
+
+		const outsideFile = join(outsideDir, "secret.md");
+		write(outsideFile, VALID_BODY);
+
+		mkdirSync(root, { recursive: true });
+		const linkPath = join(root, "link.md");
+		symlinkSync(outsideFile, linkPath);
+
+		const result = runPrTemplateGate({ prBodyFile: linkPath });
+		expect(result.ok).toBe(false);
+		if (!result.ok) {
+			expect(result.error.code).toBe("VALIDATION_ERROR");
+			expect(result.error.message).toContain(
+				"PR body file must be within the current directory",
+			);
 		}
 	});
 

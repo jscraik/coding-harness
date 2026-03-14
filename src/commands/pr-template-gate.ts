@@ -1,10 +1,11 @@
 import { existsSync, readFileSync } from "node:fs";
-import { resolve } from "node:path";
 import {
 	sanitizeError,
 	sanitizePathForDisplay,
 } from "../lib/input/sanitize.js";
+import { PathTraversalError, validatePath } from "../lib/input/validator.js";
 import { validatePrTemplateBody } from "../lib/pr-template-validator.js";
+
 
 export const EXIT_CODES = {
 	SUCCESS: 0,
@@ -42,22 +43,24 @@ function readBodyFromFile(pathArg: string): string {
 		}
 		return content;
 	}
-	const resolved = resolve(process.cwd(), pathArg);
-	const cwd = process.cwd();
-
-	// Prevent path traversal: resolved path must start with cwd
-	if (!resolved.startsWith(cwd)) {
-		throw new Error(
-			`PR body file must be within the current directory: ${sanitizePathForDisplay(pathArg)}`,
-		);
+	let safePath: string;
+	try {
+		safePath = validatePath(process.cwd(), pathArg);
+	} catch (error) {
+		if (error instanceof PathTraversalError) {
+			throw new Error(
+				`PR body file must be within the current directory: ${sanitizePathForDisplay(pathArg)}`,
+			);
+		}
+		throw error;
 	}
 
-	if (!existsSync(resolved)) {
+	if (!existsSync(safePath)) {
 		throw new Error(
 			`PR body file not found: ${sanitizePathForDisplay(pathArg)}`,
 		);
 	}
-	const content = readFileSync(resolved, "utf-8");
+	const content = readFileSync(safePath, "utf-8");
 	if (content.length > MAX_BODY_LENGTH) {
 		throw new Error(
 			`PR body exceeds maximum length of ${MAX_BODY_LENGTH} characters.`,
