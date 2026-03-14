@@ -1,14 +1,11 @@
-import { randomUUID } from "node:crypto";
 import {
 	existsSync,
 	lstatSync,
 	mkdirSync,
 	readFileSync,
 	realpathSync,
-	renameSync,
 	rmSync,
 	statSync,
-	writeFileSync,
 } from "node:fs";
 import { dirname, join, relative, resolve, sep } from "node:path";
 import { cwd } from "node:process";
@@ -18,6 +15,7 @@ import {
 	detectContractVersion,
 	executeMigration,
 } from "../lib/init/migration.js";
+import { atomicWrite } from "../lib/init/migration.js";
 import {
 	createBackup,
 	executeRollback,
@@ -226,38 +224,6 @@ function sanitizePath(base: string, relativePath: string): PathResult {
 	}
 
 	return { ok: true, value: resolved };
-}
-
-// === Atomic Write ===
-
-type WriteResult =
-	| { ok: true; value: undefined }
-	| { ok: false; error: InitErrorOutput };
-
-function atomicWrite(filePath: string, content: string): WriteResult {
-	const tempPath = `${filePath}.${process.pid}.${randomUUID()}.tmp`;
-
-	try {
-		mkdirSync(dirname(filePath), { recursive: true });
-		writeFileSync(tempPath, content, "utf-8");
-		renameSync(tempPath, filePath);
-		return { ok: true, value: undefined };
-	} catch (e) {
-		// Cleanup temp file on failure
-		try {
-			rmSync(tempPath, { force: true });
-		} catch {
-			// Best-effort cleanup; ignore failures
-		}
-		return {
-			ok: false,
-			error: {
-				code: "WRITE_ERROR",
-				message: `Failed to write file: ${sanitizeError(e)}`,
-				path: filePath,
-			},
-		};
-	}
 }
 
 function collectProposedChanges(
