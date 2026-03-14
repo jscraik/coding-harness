@@ -958,7 +958,6 @@ export async function runReviewGateCLI(
 			console.error(
 				`Failed to emit review-gate decision artifacts: ${sanitizeError(error)}`,
 			);
-			return EXIT_CODES.SYSTEM_ERROR;
 		}
 
 		return exitCode;
