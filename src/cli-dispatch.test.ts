@@ -549,6 +549,8 @@ describe("cli command dispatch", () => {
 				".harness/ci-migrate-approvals/cutover-window-1.json",
 				"--merge-queue-evidence",
 				".harness/control-plane/merge-queue-cutover-evidence.json",
+				"--merge-queue-orchestrator",
+				".harness/control-plane/merge-queue-cutover-orchestrator",
 				"--auto-generate-proof-pack",
 			]),
 		).toThrowError("EXIT_69");
@@ -566,6 +568,8 @@ describe("cli command dispatch", () => {
 					".harness/ci-migrate-approvals/cutover-window-1.json",
 				mergeQueueEvidencePath:
 					".harness/control-plane/merge-queue-cutover-evidence.json",
+				mergeQueueOrchestratorPath:
+					".harness/control-plane/merge-queue-cutover-orchestrator",
 				autoGenerateProofPack: true,
 			},
 		);
@@ -607,6 +611,7 @@ describe("cli command dispatch", () => {
 				action: "commit",
 				breakGlassApprovalPath: undefined,
 				mergeQueueEvidencePath: undefined,
+				mergeQueueOrchestratorPath: undefined,
 				autoGenerateProofPack: false,
 			},
 		);
@@ -636,6 +641,7 @@ describe("cli command dispatch", () => {
 			action: "commit",
 			breakGlassApprovalPath: undefined,
 			mergeQueueEvidencePath: undefined,
+			mergeQueueOrchestratorPath: undefined,
 			autoGenerateProofPack: false,
 		});
 		expect(exitSpy).toHaveBeenCalledWith(69);

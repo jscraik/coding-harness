@@ -372,6 +372,9 @@ function printUsage(): void {
 		"  --merge-queue-evidence  Signed merge-queue cutover evidence path",
 	);
 	console.info(
+		"  --merge-queue-orchestrator  Executable to orchestrate pause/drain/revalidate and emit signed evidence",
+	);
+	console.info(
 		"  --auto-generate-proof-pack  Materialize trusted proof-pack inputs",
 	);
 	console.info("");
@@ -776,6 +779,9 @@ export function run(args: string[]): void {
 		const actionIndex = args.indexOf("--action");
 		const breakGlassApprovalIndex = args.indexOf("--break-glass-approval");
 		const mergeQueueEvidenceIndex = args.indexOf("--merge-queue-evidence");
+		const mergeQueueOrchestratorIndex = args.indexOf(
+			"--merge-queue-orchestrator",
+		);
 		const dryRunFlag = args.includes("--dry-run");
 		const applyFlag = args.includes("--apply");
 		const rollbackFlag = args.includes("--rollback");
@@ -788,6 +794,7 @@ export function run(args: string[]): void {
 			"--action",
 			"--break-glass-approval",
 			"--merge-queue-evidence",
+			"--merge-queue-orchestrator",
 		]);
 		const positionalArgs: string[] = [];
 		for (let index = 1; index < args.length; index++) {
@@ -832,6 +839,10 @@ export function run(args: string[]): void {
 		const snapshot = getFlagValue(args, snapshotIndex);
 		const breakGlassApprovalPath = getFlagValue(args, breakGlassApprovalIndex);
 		const mergeQueueEvidencePath = getFlagValue(args, mergeQueueEvidenceIndex);
+		const mergeQueueOrchestratorPath = getFlagValue(
+			args,
+			mergeQueueOrchestratorIndex,
+		);
 
 		const exitCode = runCIMigrateCLI(targetDir, {
 			provider,
@@ -842,6 +853,7 @@ export function run(args: string[]): void {
 			action: parsedAction,
 			breakGlassApprovalPath,
 			mergeQueueEvidencePath,
+			mergeQueueOrchestratorPath,
 			autoGenerateProofPack: autoGenerateProofPackFlag,
 		});
 		process.exit(exitCode);

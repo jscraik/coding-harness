@@ -33,8 +33,9 @@ Track implementation truth for the validated transition contract from legacy Git
 | --- | --- | --- |
 | Provider-neutral migration command surface (`ci-migrate`) | complete | `src/cli.ts`, `src/cli-dispatch.test.ts`, `src/commands/ci-migrate.ts` |
 | Signed snapshot/state attestation trust | complete | `src/commands/ci-migrate.ts`, `src/commands/ci-migrate.test.ts` |
-| Break-glass rollback weakening controls | complete | `src/commands/ci-migrate.ts`, `src/commands/ci-migrate.test.ts` |
+| Break-glass rollback weakening controls | complete | `src/commands/ci-migrate.ts`, `src/commands/ci-migrate.test.ts`, `.harness/control-plane/ci-migrate-break-glass-policy.json` policy enforcement |
 | Merge-queue cutover pause/drain/revalidate state machine | complete | `.harness/control-plane/merge-queue-cutover-window.json` handling in `src/commands/ci-migrate.ts` |
+| Merge-queue orchestrator execution hook (`--merge-queue-orchestrator`) | complete | `src/commands/ci-migrate.ts`, `src/commands/ci-migrate.test.ts`, `docs/examples/ci-migrate/merge-queue-cutover-orchestrator.template.sh` |
 | Signed merge-queue cutover evidence ingestion (`--merge-queue-evidence`) | complete | `src/commands/ci-migrate.ts`, `src/commands/ci-migrate.test.ts`, `src/cli.ts`; required-mode `commit` now fail-closes when signed evidence is missing |
 | Required-check ownership ambiguity fail-closed gate | complete | `src/commands/ci-migrate.ts`, satisfiability ownership tests |
 | Wrong-app publisher rejection | complete | `src/lib/ci/satisfiability.ts` |
@@ -56,10 +57,11 @@ Track implementation truth for the validated transition contract from legacy Git
 ## Migration UX and Rollback
 - `ci-migrate prepare` records migration report and signed state artifacts.
 - `ci-migrate commit` enforces prepared-state digest continuity and post-cutover satisfiability.
-- In `required` mode, explicit `ci-migrate commit` additionally requires signed merge-queue evidence (default path or `--merge-queue-evidence` override) before entering the cutover window.
+- In `required` mode, `ci-migrate` apply/commit fail-close without signed merge-queue evidence before entering the cutover window.
 - `ci-migrate abort` and `--rollback` restore signed snapshot state with break-glass controls where weakening risk exists.
+- Break-glass approvals now require signed governance policy validation (`.harness/control-plane/ci-migrate-break-glass-policy.json` + `.sig`) for approver allowlist, TTL cap, and dual-approval rollback-weakening requirements.
 - Merge-queue cutover window state transitions are persisted and must terminate (`revalidated` or `aborted`) before a new apply.
-- Optional signed merge-queue orchestration evidence can be bound into the cutover window via `--merge-queue-evidence`.
+- Signed merge-queue evidence can be supplied directly (`--merge-queue-evidence`) or generated during apply/commit by an executable orchestrator (`--merge-queue-orchestrator` or default `.harness/control-plane/merge-queue-cutover-orchestrator` when present).
 
 ## Legacy Import Strategy
 - Canonical manifest remains the source of truth.
@@ -82,9 +84,9 @@ Track implementation truth for the validated transition contract from legacy Git
   - post-cutover automatic rollback paths.
 
 ## Outstanding High-Impact Items
-- Operational break-glass approval workflow ownership and signer governance is not yet codified outside command flags.
-- Live merge-queue orchestration still relies on control-plane state transitions, not direct host-provider queue API integration.
-- Full parity/downstream proof pack generation still depends on collecting immutable CI artifacts from real runs.
+- Break-glass signer governance lifecycle remains an operations lane: owner roster onboarding/offboarding and rotation cadence automation are not yet managed by `ci-migrate`.
+- Live merge-queue pause/drain/revalidate still requires host-provider API integration wiring; `ci-migrate` currently enforces trust on produced evidence but does not drive provider queues itself.
+- Immutable CI artifact harvesting/provenance signing from provider APIs is still an external automation lane before fully automatic parity/downstream proof-pack generation.
 
 ## Next Gate to CircleCI-only Required Mode
 1. Generate a real signed proof pack for this repository from immutable CI artifacts covering the full required scenario matrix.

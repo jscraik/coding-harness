@@ -1,6 +1,7 @@
 import { spawnSync } from "node:child_process";
 import { createHash, createHmac } from "node:crypto";
 import {
+	chmodSync,
 	existsSync,
 	mkdirSync,
 	mkdtempSync,
@@ -76,6 +77,8 @@ const PARITY_PROVENANCE_ARTIFACT_INDEX_SIGNATURE_PATH =
 	".harness/ci-parity-proof-artifact-index.sig";
 const MERGE_QUEUE_EVIDENCE_PATH =
 	".harness/control-plane/merge-queue-cutover-evidence.json";
+const MERGE_QUEUE_ORCHESTRATOR_PATH =
+	".harness/control-plane/merge-queue-cutover-orchestrator";
 
 function signContent(content: string, signingKey: string): string {
 	return createHmac("sha256", signingKey)
@@ -464,9 +467,11 @@ function writeMergeQueueCutoverWindow(
 	mkdirSync(dirname(join(targetDir, MERGE_QUEUE_WINDOW_PATH)), {
 		recursive: true,
 	});
+	const windowContent = JSON.stringify(baseWindow, null, 2);
+	writeFileSync(join(targetDir, MERGE_QUEUE_WINDOW_PATH), windowContent);
 	writeFileSync(
-		join(targetDir, MERGE_QUEUE_WINDOW_PATH),
-		JSON.stringify(baseWindow, null, 2),
+		join(targetDir, `${MERGE_QUEUE_WINDOW_PATH}.sig`),
+		`${signContent(windowContent, TEST_SNAPSHOT_SIGNING_KEY)}\n`,
 	);
 }
 
@@ -540,6 +545,41 @@ function writeCIProviderPolicyContract(
 			2,
 		),
 	);
+}
+
+function buildMergeQueueEvidenceBinding(targetDir: string): {
+	repoFullName: string;
+	headSha: string;
+	trustedPolicyRef: string;
+	authorityConfigSha256: string;
+	requiredCheckManifestSha256: string;
+} {
+	const placeholderSha = "0".repeat(40);
+	const headSha = resolveHeadSha(targetDir) ?? placeholderSha;
+	const trustedPolicyRefResult = runTestGitCommand(targetDir, [
+		"rev-parse",
+		"--verify",
+		`${TEST_TRUSTED_POLICY_REF}^{commit}`,
+	]);
+	const trustedPolicyRef =
+		trustedPolicyRefResult.ok && trustedPolicyRefResult.stdout.length === 40
+			? trustedPolicyRefResult.stdout
+			: headSha;
+	const authorityConfigPath = join(targetDir, "harness.contract.json");
+	const requiredChecksPath = join(targetDir, TEST_REQUIRED_CHECK_MANIFEST_PATH);
+	const authorityConfigSha256 = existsSync(authorityConfigPath)
+		? hashContent(readFileSync(authorityConfigPath, "utf-8"))
+		: hashContent("{}");
+	const requiredCheckManifestSha256 = existsSync(requiredChecksPath)
+		? hashContent(readFileSync(requiredChecksPath, "utf-8"))
+		: hashContent("{}");
+	return {
+		repoFullName: TEST_REPO_FULL_NAME,
+		headSha,
+		trustedPolicyRef,
+		authorityConfigSha256,
+		requiredCheckManifestSha256,
+	};
 }
 
 function writeParityProofPack(
@@ -1349,17 +1389,33 @@ function writeParityProvenanceArtifactIndex(
 function writeSignedMergeQueueEvidence(
 	targetDir: string,
 	snapshotId: string,
-	options?: { includeLifecycle?: boolean | undefined },
+	options?: {
+		includeLifecycle?: boolean | undefined;
+		bindingOverride?:
+			| Partial<{
+					repoFullName: string;
+					headSha: string;
+					trustedPolicyRef: string;
+					authorityConfigSha256: string;
+					requiredCheckManifestSha256: string;
+			  }>
+			| undefined;
+	},
 ): void {
 	const now = new Date();
 	const pausedAt = now.toISOString();
 	const drainedAt = new Date(now.getTime() + 60_000).toISOString();
 	const revalidatedAt = new Date(now.getTime() + 120_000).toISOString();
 	const signingKeyId = hashSigningKeyId(TEST_SNAPSHOT_SIGNING_KEY);
+	const binding = {
+		...buildMergeQueueEvidenceBinding(targetDir),
+		...options?.bindingOverride,
+	};
 	const evidenceBase = {
-		schemaVersion: "ci-migrate-merge-queue-evidence/v1",
+		schemaVersion: "ci-migrate-merge-queue-evidence/v2",
 		snapshotId,
 		generatedAt: pausedAt,
+		binding,
 		pausedAt,
 		drainedAt: options?.includeLifecycle === false ? undefined : drainedAt,
 		revalidatedAt:
@@ -1399,6 +1455,85 @@ function writeSignedMergeQueueEvidence(
 		join(targetDir, `${MERGE_QUEUE_EVIDENCE_PATH}.sig`),
 		`${signContent(content, TEST_SNAPSHOT_SIGNING_KEY)}\n`,
 	);
+}
+
+function writeMergeQueueOrchestratorFixture(
+	targetDir: string,
+	options?: { shouldFail?: boolean | undefined },
+): void {
+	const orchestratorPath = join(targetDir, MERGE_QUEUE_ORCHESTRATOR_PATH);
+	mkdirSync(dirname(orchestratorPath), { recursive: true });
+	writeFileSync(
+		orchestratorPath,
+		`#!/usr/bin/env bash
+set -euo pipefail
+if [[ "${options?.shouldFail ? "1" : "0"}" == "1" ]]; then
+  echo "forced merge-queue orchestrator failure" >&2
+  exit 23
+fi
+snapshot_id="\${HARNESS_CI_MIGRATE_SNAPSHOT_ID:-}"
+evidence_path="\${HARNESS_CI_MIGRATE_EVIDENCE_PATH:-}"
+signing_key="\${HARNESS_CI_MIGRATE_SIGNING_KEY:-}"
+if [[ -z "$snapshot_id" || -z "$evidence_path" || -z "$signing_key" ]]; then
+  echo "missing orchestration env vars" >&2
+  exit 11
+fi
+mkdir -p "$(dirname "$evidence_path")"
+node <<'NODE'
+const fs = require("fs");
+const crypto = require("crypto");
+const env = process.env;
+const pausedAt = "2026-03-14T00:00:00.000Z";
+const fullLifecycle = env.HARNESS_CI_MIGRATE_REQUIRE_FULL_LIFECYCLE === "1";
+const evidence = {
+  schemaVersion: "ci-migrate-merge-queue-evidence/v2",
+  snapshotId: env.HARNESS_CI_MIGRATE_SNAPSHOT_ID,
+  generatedAt: pausedAt,
+  binding: {
+    repoFullName: env.HARNESS_CI_MIGRATE_BINDING_REPO_FULL_NAME,
+    headSha: env.HARNESS_CI_MIGRATE_BINDING_HEAD_SHA,
+    trustedPolicyRef: env.HARNESS_CI_MIGRATE_BINDING_TRUSTED_POLICY_REF,
+    authorityConfigSha256: env.HARNESS_CI_MIGRATE_BINDING_AUTHORITY_CONFIG_SHA256,
+    requiredCheckManifestSha256: env.HARNESS_CI_MIGRATE_BINDING_REQUIRED_CHECK_MANIFEST_SHA256,
+  },
+  pausedAt,
+  drainedAt: fullLifecycle ? "2026-03-14T00:01:00.000Z" : undefined,
+  revalidatedAt: fullLifecycle ? "2026-03-14T00:02:00.000Z" : undefined,
+  pausedQueueDepth: 2,
+  drainedCandidateCount: fullLifecycle ? 2 : undefined,
+  revalidatedCandidateCount: fullLifecycle ? 2 : undefined,
+  integrity: {
+    signatureAlgorithm: "hmac-sha256",
+    signingKeyId: crypto.createHash("sha256").update(env.HARNESS_CI_MIGRATE_SIGNING_KEY, "utf8").digest("hex").slice(0, 16),
+    payloadSha256: "",
+  },
+};
+const canonical = JSON.stringify({
+  schemaVersion: evidence.schemaVersion,
+  snapshotId: evidence.snapshotId,
+  generatedAt: evidence.generatedAt,
+  binding: evidence.binding,
+  pausedAt: evidence.pausedAt,
+  drainedAt: evidence.drainedAt,
+  revalidatedAt: evidence.revalidatedAt,
+  pausedQueueDepth: evidence.pausedQueueDepth,
+  drainedCandidateCount: evidence.drainedCandidateCount,
+  revalidatedCandidateCount: evidence.revalidatedCandidateCount,
+  integrity: {
+    signatureAlgorithm: evidence.integrity.signatureAlgorithm,
+    signingKeyId: evidence.integrity.signingKeyId,
+    payloadSha256: "",
+  },
+});
+evidence.integrity.payloadSha256 = crypto.createHash("sha256").update(canonical, "utf8").digest("hex");
+const content = JSON.stringify(evidence, null, 2);
+fs.writeFileSync(env.HARNESS_CI_MIGRATE_EVIDENCE_PATH, content);
+const signature = crypto.createHmac("sha256", env.HARNESS_CI_MIGRATE_SIGNING_KEY).update(content, "utf8").digest("hex");
+fs.writeFileSync(\`\${env.HARNESS_CI_MIGRATE_EVIDENCE_PATH}.sig\`, \`\${signature}\\n\`);
+NODE
+`,
+	);
+	chmodSync(orchestratorPath, 0o755);
 }
 
 function mutateParityProofPack(
@@ -1488,6 +1623,8 @@ function writeBreakGlassApproval(
 		allowExpiredSnapshotRestore?: boolean;
 		allowRollbackWeakening?: boolean;
 		expiresAt?: string;
+		approvedBy?: string;
+		approvers?: string[];
 	},
 ): string {
 	const approvalDir = join(targetDir, ".harness/ci-migrate-approvals");
@@ -1497,7 +1634,8 @@ function writeBreakGlassApproval(
 	const approval = {
 		schemaVersion: "ci-migrate-break-glass-approval/v1",
 		snapshotId,
-		approvedBy: "migration-admin",
+		approvedBy: options?.approvedBy ?? "migration-admin",
+		approvers: options?.approvers ?? ["migration-admin", "security-lead"],
 		reason: "approved emergency rollback override",
 		approvedAt: now.toISOString(),
 		expiresAt:
@@ -1515,6 +1653,64 @@ function writeBreakGlassApproval(
 		`${signContent(approvalContent, TEST_SNAPSHOT_SIGNING_KEY)}\n`,
 	);
 	return approvalPath;
+}
+
+function writeBreakGlassGovernancePolicy(
+	targetDir: string,
+	options?: {
+		approverAllowlist?: string[];
+		maxApprovalTtlHours?: number;
+		requireDualApprovalForRollbackWeakening?: boolean;
+	},
+): string {
+	const policyDir = join(targetDir, ".harness/control-plane");
+	mkdirSync(policyDir, { recursive: true });
+	const policyPath = join(policyDir, "ci-migrate-break-glass-policy.json");
+	const policy = {
+		schemaVersion: "ci-migrate-break-glass-policy/v1",
+		approverAllowlist: options?.approverAllowlist ?? [
+			"migration-admin",
+			"security-lead",
+		],
+		maxApprovalTtlHours: options?.maxApprovalTtlHours ?? 24,
+		requireDualApprovalForRollbackWeakening:
+			options?.requireDualApprovalForRollbackWeakening ?? true,
+		integrity: {
+			signatureAlgorithm: "hmac-sha256",
+			signingKeyId: hashSigningKeyId(TEST_SNAPSHOT_SIGNING_KEY),
+			payloadSha256: "",
+		},
+	};
+	const canonicalPolicy = JSON.stringify({
+		schemaVersion: policy.schemaVersion,
+		approverAllowlist: policy.approverAllowlist,
+		maxApprovalTtlHours: policy.maxApprovalTtlHours,
+		requireDualApprovalForRollbackWeakening:
+			policy.requireDualApprovalForRollbackWeakening,
+		integrity: {
+			signatureAlgorithm: policy.integrity.signatureAlgorithm,
+			signingKeyId: policy.integrity.signingKeyId,
+			payloadSha256: "",
+		},
+	});
+	const payloadSha256 = hashContent(canonicalPolicy);
+	const policyContent = JSON.stringify(
+		{
+			...policy,
+			integrity: {
+				...policy.integrity,
+				payloadSha256,
+			},
+		},
+		null,
+		2,
+	);
+	writeFileSync(policyPath, policyContent);
+	writeFileSync(
+		`${policyPath}.sig`,
+		`${signContent(policyContent, TEST_SNAPSHOT_SIGNING_KEY)}\n`,
+	);
+	return policyPath;
 }
 
 describe("runCIMigrateCLI", () => {
@@ -1651,6 +1847,25 @@ describe("runCIMigrateCLI", () => {
 			snapshotId: "cutover-active-drained",
 			stage: "drained",
 		});
+
+		const exitCode = runCIMigrateCLI(tempDir, {
+			provider: "circleci",
+			apply: true,
+			snapshot: "cutover-new",
+		});
+
+		expect(exitCode).toBe(EXIT_CODES.INVALID_PATH);
+		expect(vi.mocked(runInitCLI)).not.toHaveBeenCalled();
+	});
+
+	it("fails closed when existing merge-queue cutover window signature is missing", () => {
+		seedMigratableFixture(tempDir);
+		writeCIProviderPolicyContract(tempDir, "shadow");
+		writeMergeQueueCutoverWindow(tempDir, {
+			snapshotId: "cutover-active-paused",
+			stage: "paused",
+		});
+		rmSync(join(tempDir, `${MERGE_QUEUE_WINDOW_PATH}.sig`), { force: true });
 
 		const exitCode = runCIMigrateCLI(tempDir, {
 			provider: "circleci",
@@ -1814,6 +2029,124 @@ describe("runCIMigrateCLI", () => {
 		expect(mergeQueueWindow.evidence?.sourcePath).toBe(
 			MERGE_QUEUE_EVIDENCE_PATH,
 		);
+	});
+
+	it("runs merge-queue orchestrator on required-mode commit and accepts emitted signed evidence", () => {
+		seedMigratableFixture(tempDir);
+		writeCIProviderPolicyContract(tempDir, "required");
+		writeParityProofPack(tempDir);
+		writeMergeQueueOrchestratorFixture(tempDir);
+		const snapshotId = "cutover-required-commit-orchestrated";
+		vi.mocked(scanOpenPullRequestSatisfiability).mockReturnValue({
+			status: "satisfied",
+			scannedOpenPrs: 2,
+			failingPrs: [],
+		});
+
+		const prepareExitCode = runCIMigrateCLI(tempDir, {
+			provider: "circleci",
+			action: "prepare",
+			snapshot: snapshotId,
+		});
+		expect(prepareExitCode).toBe(EXIT_CODES.SUCCESS);
+
+		vi.clearAllMocks();
+		vi.mocked(scanOpenPullRequestSatisfiability).mockReturnValue({
+			status: "satisfied",
+			scannedOpenPrs: 2,
+			failingPrs: [],
+		});
+
+		const commitExitCode = runCIMigrateCLI(tempDir, {
+			provider: "circleci",
+			action: "commit",
+			snapshot: snapshotId,
+			mergeQueueOrchestratorPath: MERGE_QUEUE_ORCHESTRATOR_PATH,
+		});
+
+		expect(commitExitCode).toBe(EXIT_CODES.SUCCESS);
+		expect(vi.mocked(runInitCLI)).toHaveBeenCalled();
+		expect(existsSync(join(tempDir, MERGE_QUEUE_EVIDENCE_PATH))).toBe(true);
+		expect(existsSync(join(tempDir, `${MERGE_QUEUE_EVIDENCE_PATH}.sig`))).toBe(
+			true,
+		);
+	});
+
+	it("fails closed when merge-queue orchestrator exits non-zero", () => {
+		seedMigratableFixture(tempDir);
+		writeCIProviderPolicyContract(tempDir, "required");
+		writeParityProofPack(tempDir);
+		writeMergeQueueOrchestratorFixture(tempDir, { shouldFail: true });
+		const snapshotId = "cutover-required-commit-orchestrator-fails";
+		vi.mocked(scanOpenPullRequestSatisfiability).mockReturnValue({
+			status: "satisfied",
+			scannedOpenPrs: 2,
+			failingPrs: [],
+		});
+
+		const prepareExitCode = runCIMigrateCLI(tempDir, {
+			provider: "circleci",
+			action: "prepare",
+			snapshot: snapshotId,
+		});
+		expect(prepareExitCode).toBe(EXIT_CODES.SUCCESS);
+
+		vi.clearAllMocks();
+		vi.mocked(scanOpenPullRequestSatisfiability).mockReturnValue({
+			status: "satisfied",
+			scannedOpenPrs: 2,
+			failingPrs: [],
+		});
+
+		const commitExitCode = runCIMigrateCLI(tempDir, {
+			provider: "circleci",
+			action: "commit",
+			snapshot: snapshotId,
+			mergeQueueOrchestratorPath: MERGE_QUEUE_ORCHESTRATOR_PATH,
+		});
+
+		expect(commitExitCode).toBe(EXIT_CODES.INVALID_PATH);
+		expect(vi.mocked(runInitCLI)).not.toHaveBeenCalled();
+	});
+
+	it("rejects merge-queue evidence when binding does not match required-mode commit identity", () => {
+		seedMigratableFixture(tempDir);
+		writeCIProviderPolicyContract(tempDir, "required");
+		writeParityProofPack(tempDir);
+		const snapshotId = "cutover-required-commit-binding-mismatch";
+		writeSignedMergeQueueEvidence(tempDir, snapshotId, {
+			bindingOverride: {
+				headSha: "f".repeat(40),
+			},
+		});
+		vi.mocked(scanOpenPullRequestSatisfiability).mockReturnValue({
+			status: "satisfied",
+			scannedOpenPrs: 2,
+			failingPrs: [],
+		});
+
+		const prepareExitCode = runCIMigrateCLI(tempDir, {
+			provider: "circleci",
+			action: "prepare",
+			snapshot: snapshotId,
+		});
+		expect(prepareExitCode).toBe(EXIT_CODES.SUCCESS);
+
+		vi.clearAllMocks();
+		vi.mocked(scanOpenPullRequestSatisfiability).mockReturnValue({
+			status: "satisfied",
+			scannedOpenPrs: 2,
+			failingPrs: [],
+		});
+
+		const commitExitCode = runCIMigrateCLI(tempDir, {
+			provider: "circleci",
+			action: "commit",
+			snapshot: snapshotId,
+		});
+
+		expect(commitExitCode).toBe(EXIT_CODES.INVALID_PATH);
+		expect(vi.mocked(runInitCLI)).not.toHaveBeenCalled();
 	});
 
 	it("restores snapshot before rollback", () => {
@@ -2104,6 +2437,7 @@ describe("runCIMigrateCLI", () => {
 	it("allows required-mode rollback weakening with break-glass approval", () => {
 		seedMigratableFixture(tempDir);
 		writeCIProviderPolicyContract(tempDir, "required");
+		writeBreakGlassGovernancePolicy(tempDir);
 		const snapshotContent = JSON.stringify({
 			harnessVersion: "0.0.0",
 			ciProvider: "circleci",
@@ -2148,6 +2482,133 @@ describe("runCIMigrateCLI", () => {
 			migrate: false,
 			ciProvider: "github-actions",
 		});
+	});
+
+	it("rejects required-mode rollback weakening approval when governance policy is missing", () => {
+		seedMigratableFixture(tempDir);
+		writeCIProviderPolicyContract(tempDir, "required");
+		const snapshotContent = JSON.stringify({
+			harnessVersion: "0.0.0",
+			ciProvider: "circleci",
+			files: [],
+		});
+		writeSignedSnapshot(
+			tempDir,
+			"cutover-required-rollback-policy-missing",
+			snapshotContent,
+		);
+		writeMigrationState(
+			tempDir,
+			"cutover-required-rollback-policy-missing",
+			"committed",
+			"circleci",
+			"github-actions",
+		);
+		const approvalPath = writeBreakGlassApproval(
+			tempDir,
+			"cutover-required-rollback-policy-missing",
+			{
+				allowRollbackWeakening: true,
+			},
+		);
+
+		const exitCode = runCIMigrateCLI(tempDir, {
+			provider: "circleci",
+			rollback: true,
+			snapshot: "cutover-required-rollback-policy-missing",
+			breakGlassApprovalPath: approvalPath,
+		});
+
+		expect(exitCode).toBe(EXIT_CODES.INVALID_PATH);
+		expect(vi.mocked(runInitCLI)).not.toHaveBeenCalled();
+	});
+
+	it("rejects break-glass approval when approvers are not allowlisted by policy", () => {
+		seedMigratableFixture(tempDir);
+		writeCIProviderPolicyContract(tempDir, "required");
+		writeBreakGlassGovernancePolicy(tempDir, {
+			approverAllowlist: ["migration-admin", "security-lead"],
+		});
+		const snapshotContent = JSON.stringify({
+			harnessVersion: "0.0.0",
+			ciProvider: "circleci",
+			files: [],
+		});
+		writeSignedSnapshot(
+			tempDir,
+			"cutover-required-rollback-approver-not-allowlisted",
+			snapshotContent,
+		);
+		writeMigrationState(
+			tempDir,
+			"cutover-required-rollback-approver-not-allowlisted",
+			"committed",
+			"circleci",
+			"github-actions",
+		);
+		const approvalPath = writeBreakGlassApproval(
+			tempDir,
+			"cutover-required-rollback-approver-not-allowlisted",
+			{
+				allowRollbackWeakening: true,
+				approvedBy: "rogue-admin",
+				approvers: ["rogue-admin", "security-lead"],
+			},
+		);
+
+		const exitCode = runCIMigrateCLI(tempDir, {
+			provider: "circleci",
+			rollback: true,
+			snapshot: "cutover-required-rollback-approver-not-allowlisted",
+			breakGlassApprovalPath: approvalPath,
+		});
+
+		expect(exitCode).toBe(EXIT_CODES.INVALID_PATH);
+		expect(vi.mocked(runInitCLI)).not.toHaveBeenCalled();
+	});
+
+	it("rejects rollback weakening when governance policy requires dual approval and only one approver is present", () => {
+		seedMigratableFixture(tempDir);
+		writeCIProviderPolicyContract(tempDir, "required");
+		writeBreakGlassGovernancePolicy(tempDir, {
+			requireDualApprovalForRollbackWeakening: true,
+		});
+		const snapshotContent = JSON.stringify({
+			harnessVersion: "0.0.0",
+			ciProvider: "circleci",
+			files: [],
+		});
+		writeSignedSnapshot(
+			tempDir,
+			"cutover-required-rollback-single-approver",
+			snapshotContent,
+		);
+		writeMigrationState(
+			tempDir,
+			"cutover-required-rollback-single-approver",
+			"committed",
+			"circleci",
+			"github-actions",
+		);
+		const approvalPath = writeBreakGlassApproval(
+			tempDir,
+			"cutover-required-rollback-single-approver",
+			{
+				allowRollbackWeakening: true,
+				approvedBy: "migration-admin",
+				approvers: ["migration-admin"],
+			},
+		);
+
+		const exitCode = runCIMigrateCLI(tempDir, {
+			provider: "circleci",
+			rollback: true,
+			snapshot: "cutover-required-rollback-single-approver",
+			breakGlassApprovalPath: approvalPath,
+		});
+
+		expect(exitCode).toBe(EXIT_CODES.INVALID_PATH);
+		expect(vi.mocked(runInitCLI)).not.toHaveBeenCalled();
 	});
 
 	it("fails fast for conflicting mode flags", () => {
@@ -2223,6 +2684,9 @@ describe("runCIMigrateCLI", () => {
 	});
 
 	it("allows rollback from stale snapshot with break-glass approval", () => {
+		writeBreakGlassGovernancePolicy(tempDir, {
+			requireDualApprovalForRollbackWeakening: false,
+		});
 		writeMigrationState(
 			tempDir,
 			"cutover-stale-break-glass",
@@ -3370,6 +3834,7 @@ describe("runCIMigrateCLI", () => {
 				scannedOpenPrs: 2,
 				failingPrs: [],
 			});
+		writeSignedMergeQueueEvidence(tempDir, "cutover-auto-generated-proof-pack");
 
 		const exitCode = runCIMigrateCLI(tempDir, {
 			provider: "circleci",
@@ -3439,6 +3904,10 @@ describe("runCIMigrateCLI", () => {
 				scannedOpenPrs: 2,
 				failingPrs: [],
 			});
+		writeSignedMergeQueueEvidence(
+			tempDir,
+			"cutover-auto-generated-from-provenance",
+		);
 
 		const exitCode = runCIMigrateCLI(tempDir, {
 			provider: "circleci",
@@ -3512,6 +3981,10 @@ describe("runCIMigrateCLI", () => {
 				scannedOpenPrs: 2,
 				failingPrs: [],
 			});
+		writeSignedMergeQueueEvidence(
+			tempDir,
+			"cutover-auto-generated-from-provenance-input",
+		);
 
 		const exitCode = runCIMigrateCLI(tempDir, {
 			provider: "circleci",
@@ -3558,6 +4031,10 @@ describe("runCIMigrateCLI", () => {
 				scannedOpenPrs: 2,
 				failingPrs: [],
 			});
+		writeSignedMergeQueueEvidence(
+			tempDir,
+			"cutover-auto-generated-from-artifact-index",
+		);
 
 		const exitCode = runCIMigrateCLI(tempDir, {
 			provider: "circleci",
@@ -3847,6 +4324,7 @@ describe("runCIMigrateCLI", () => {
 				scannedOpenPrs: 2,
 				failingPrs: [],
 			});
+		writeSignedMergeQueueEvidence(tempDir, "cutover-proof-pack-verified");
 
 		const exitCode = runCIMigrateCLI(tempDir, {
 			provider: "circleci",
@@ -3888,6 +4366,7 @@ describe("runCIMigrateCLI", () => {
 			scannedOpenPrs: 0,
 			failingPrs: [],
 		});
+		writeSignedMergeQueueEvidence(tempDir, "cutover-proof-pack-no-open-prs");
 
 		const exitCode = runCIMigrateCLI(tempDir, {
 			provider: "circleci",
@@ -3914,6 +4393,7 @@ describe("runCIMigrateCLI", () => {
 				scannedOpenPrs: 0,
 				failingPrs: [],
 			});
+		writeSignedMergeQueueEvidence(tempDir, "cutover-postcheck-no-open-prs");
 
 		const exitCode = runCIMigrateCLI(tempDir, {
 			provider: "circleci",
