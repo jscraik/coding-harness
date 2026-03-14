@@ -1,0 +1,126 @@
+{
+	"schemaVersion": "ci-parity-proof-harvest-manifest/v1",
+	"generatedAt": "2026-03-14T00:00:00Z",
+	"repo": {
+		"fullName": "your-org/your-repo",
+		"originUrl": "https://github.com/your-org/your-repo.git",
+		"baseSha": "1111111111111111111111111111111111111111",
+		"headSha": "2222222222222222222222222222222222222222"
+	},
+	"behavioralParity": {
+		"scenarios": [
+			{
+				"scenario": "pull_request",
+				"providersCompared": ["github-actions", "circleci"],
+				"commitCount": 1,
+				"unexpectedDiffs": []
+			},
+			{
+				"scenario": "main",
+				"providersCompared": ["github-actions", "circleci"],
+				"commitCount": 1,
+				"unexpectedDiffs": []
+			},
+			{
+				"scenario": "merge_queue",
+				"providersCompared": ["github-actions", "circleci"],
+				"commitCount": 1,
+				"unexpectedDiffs": []
+			},
+			{
+				"scenario": "fork_pr",
+				"providersCompared": ["github-actions", "circleci"],
+				"commitCount": 1,
+				"unexpectedDiffs": []
+			},
+			{
+				"scenario": "docs_only_pr",
+				"providersCompared": ["github-actions", "circleci"],
+				"commitCount": 1,
+				"unexpectedDiffs": []
+			},
+			{
+				"scenario": "canceled_run",
+				"providersCompared": ["github-actions", "circleci"],
+				"commitCount": 1,
+				"unexpectedDiffs": []
+			},
+			{
+				"scenario": "flaky_retry",
+				"providersCompared": ["github-actions", "circleci"],
+				"commitCount": 1,
+				"unexpectedDiffs": []
+			},
+			{
+				"scenario": "release_candidate_tag",
+				"providersCompared": ["github-actions", "circleci"],
+				"commitCount": 1,
+				"unexpectedDiffs": []
+			}
+		]
+	},
+	"promotionGate": {
+		"zeroUnexpectedDiffs": true,
+		"outcomeParity": true,
+		"skippedSemanticsParity": true,
+		"artifactParity": true,
+		"greptileParity": true,
+		"releaseParity": true
+	},
+	"downstream": {
+		"repositories": [
+			{
+				"repo": "your-org/your-repo",
+				"ecosystemProfile": "typescript-cli",
+				"mergeQueue": true,
+				"parityMatrixVerified": true,
+				"rollbackRehearsed": true
+			},
+			{
+				"repo": "your-org/another-repo",
+				"ecosystemProfile": "node-service",
+				"mergeQueue": false,
+				"parityMatrixVerified": true,
+				"rollbackRehearsed": true
+			},
+			{
+				"repo": "your-org/third-repo",
+				"ecosystemProfile": "frontend-app",
+				"mergeQueue": false,
+				"parityMatrixVerified": true,
+				"rollbackRehearsed": true
+			}
+		]
+	},
+	"artifacts": [
+		{
+			"artifactId": "parity-summary",
+			"destinationPath": ".harness/ci-parity-proof-source-artifacts/parity-summary.json",
+			"sourceProvider": "github-actions",
+			"sourceRunId": "github-run-123456789",
+			"sourceWorkflowRef": ".github/workflows/ci.yml@refs/heads/main",
+			"sourceCommitSha": "2222222222222222222222222222222222222222",
+			"capturedAt": "2026-03-14T00:01:00Z",
+			"scenario": "pull_request",
+			"source": {
+				"url": "https://api.github.com/repos/your-org/your-repo/actions/artifacts/123456/zip",
+				"auth": "bearer-env",
+				"tokenEnv": "GITHUB_TOKEN",
+				"accept": "application/octet-stream"
+			}
+		},
+		{
+			"artifactId": "merge-queue-evidence",
+			"destinationPath": ".harness/ci-parity-proof-source-artifacts/merge-queue-evidence.json",
+			"sourceProvider": "circleci",
+			"sourceRunId": "circleci-job-987654321",
+			"sourceWorkflowRef": ".circleci/config.yml",
+			"sourceCommitSha": "2222222222222222222222222222222222222222",
+			"capturedAt": "2026-03-14T00:02:00Z",
+			"scenario": "merge_queue",
+			"source": {
+				"path": ".harness/ci-parity-proof-source-artifacts/raw/merge-queue-evidence.json"
+			}
+		}
+	]
+}

@@ -526,19 +526,33 @@ function seedMigratableFixture(targetDir: string): void {
 function writeCIProviderPolicyContract(
 	targetDir: string,
 	mode: "shadow" | "required",
+	overrides?: Partial<{
+		activeProvider: string;
+		migrationStage: string;
+		transitionStatusArtifactPath: string;
+		authorityConfigPath: string;
+		requiredCheckManifestPath: string;
+		trustedPolicyRef: string;
+	}>,
 ): void {
 	writeFileSync(
 		join(targetDir, "harness.contract.json"),
 		JSON.stringify(
 			{
 				ciProviderPolicy: {
-					activeProvider: "github-actions",
+					activeProvider: overrides?.activeProvider ?? "github-actions",
 					mode,
-					migrationStage: "dual-provider",
-					transitionStatusArtifactPath: TEST_TRANSITION_STATUS_ARTIFACT_PATH,
-					authorityConfigPath: "harness.contract.json",
-					requiredCheckManifestPath: TEST_REQUIRED_CHECK_MANIFEST_PATH,
-					trustedPolicyRef: TEST_TRUSTED_POLICY_REF,
+					migrationStage: overrides?.migrationStage ?? "dual-provider",
+					transitionStatusArtifactPath:
+						overrides?.transitionStatusArtifactPath ??
+						TEST_TRANSITION_STATUS_ARTIFACT_PATH,
+					authorityConfigPath:
+						overrides?.authorityConfigPath ?? "harness.contract.json",
+					requiredCheckManifestPath:
+						overrides?.requiredCheckManifestPath ??
+						TEST_REQUIRED_CHECK_MANIFEST_PATH,
+					trustedPolicyRef:
+						overrides?.trustedPolicyRef ?? TEST_TRUSTED_POLICY_REF,
 				},
 			},
 			null,
@@ -1898,6 +1912,7 @@ describe("runCIMigrateCLI", () => {
 	it("records signed merge-queue cutover evidence in window metadata when provided", () => {
 		seedMigratableFixture(tempDir);
 		writeCIProviderPolicyContract(tempDir, "shadow");
+		ensureProofPackFixtureHistory(tempDir);
 		writeSignedMergeQueueEvidence(tempDir, "cutover-with-evidence");
 
 		const exitCode = runCIMigrateCLI(tempDir, {
@@ -1914,6 +1929,51 @@ describe("runCIMigrateCLI", () => {
 		);
 		expect(mergeQueueWindow.evidence?.contentSha256).toMatch(/^[a-f0-9]{64}$/);
 		expect(mergeQueueWindow.evidence?.pausedQueueDepth).toBe(2);
+	});
+
+	it("rejects explicit merge-queue evidence when binding does not match apply identity in shadow mode", () => {
+		seedMigratableFixture(tempDir);
+		writeCIProviderPolicyContract(tempDir, "shadow");
+		ensureProofPackFixtureHistory(tempDir);
+		writeSignedMergeQueueEvidence(tempDir, "cutover-shadow-binding-mismatch", {
+			bindingOverride: {
+				headSha: "f".repeat(40),
+			},
+		});
+
+		const exitCode = runCIMigrateCLI(tempDir, {
+			provider: "circleci",
+			apply: true,
+			snapshot: "cutover-shadow-binding-mismatch",
+			mergeQueueEvidencePath: MERGE_QUEUE_EVIDENCE_PATH,
+		});
+
+		expect(exitCode).toBe(EXIT_CODES.INVALID_PATH);
+		expect(vi.mocked(runInitCLI)).not.toHaveBeenCalled();
+	});
+
+	it("rejects discovered merge-queue evidence when binding does not match apply identity in shadow mode", () => {
+		seedMigratableFixture(tempDir);
+		writeCIProviderPolicyContract(tempDir, "shadow");
+		ensureProofPackFixtureHistory(tempDir);
+		writeSignedMergeQueueEvidence(
+			tempDir,
+			"cutover-shadow-discovered-mismatch",
+			{
+				bindingOverride: {
+					headSha: "f".repeat(40),
+				},
+			},
+		);
+
+		const exitCode = runCIMigrateCLI(tempDir, {
+			provider: "circleci",
+			apply: true,
+			snapshot: "cutover-shadow-discovered-mismatch",
+		});
+
+		expect(exitCode).toBe(EXIT_CODES.INVALID_PATH);
+		expect(vi.mocked(runInitCLI)).not.toHaveBeenCalled();
 	});
 
 	it("fails apply when signed merge-queue evidence is required but lifecycle fields are missing in required mode", () => {
@@ -4501,6 +4561,70 @@ describe("runCIMigrateCLI", () => {
 	it("fails strict verify when required-check metadata or transition status are missing", () => {
 		seedMigratableFixture(tempDir);
 		writeCIProviderPolicyContract(tempDir, "required");
+
+		const exitCode = runCIMigrateCLI(tempDir, {
+			action: "verify",
+			provider: "circleci",
+		});
+
+		expect(exitCode).toBe(EXIT_CODES.INVALID_PATH);
+		expect(vi.mocked(runInitCLI)).not.toHaveBeenCalled();
+	});
+
+	it("fails strict verify when ciProviderPolicy migration metadata is malformed", () => {
+		seedMigratableFixture(tempDir);
+		writeCIProviderPolicyContract(tempDir, "required", {
+			migrationStage: "legacy-default",
+			transitionStatusArtifactPath: " ",
+		});
+
+		const exitCode = runCIMigrateCLI(tempDir, {
+			action: "verify",
+			provider: "circleci",
+		});
+
+		expect(exitCode).toBe(EXIT_CODES.INVALID_PATH);
+		expect(vi.mocked(runInitCLI)).not.toHaveBeenCalled();
+	});
+
+	it("fails strict verify when required checks use shadow namespace", () => {
+		seedMigratableFixture(tempDir);
+		writeCIProviderPolicyContract(tempDir, "required");
+		writeFileSync(
+			join(tempDir, TEST_TRANSITION_STATUS_ARTIFACT_PATH),
+			JSON.stringify(
+				{
+					schemaVersion: "ci-provider-transition-status/v1",
+					nextGateComplete: true,
+					updatedAt: "2026-03-14T00:00:00.000Z",
+				},
+				null,
+				2,
+			),
+		);
+		writeFileSync(
+			join(tempDir, TEST_REQUIRED_CHECK_MANIFEST_PATH),
+			JSON.stringify(
+				{
+					version: 1,
+					activeProvider: "github-actions",
+					requiredChecks: [
+						{
+							policyId: "required-check-shadow",
+							displayName: "shadow/pr-pipeline",
+							sourceAppSlug: "github-actions",
+							sourceAppId: "github-actions",
+							externalIdPattern: "^shadow/pr-pipeline$",
+							requiredOnEvents: ["pull_request", "merge_group"],
+							freshnessWindowDays: 7,
+							class: "required",
+						},
+					],
+				},
+				null,
+				2,
+			),
+		);
 
 		const exitCode = runCIMigrateCLI(tempDir, {
 			action: "verify",

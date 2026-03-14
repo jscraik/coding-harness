@@ -243,6 +243,7 @@ Features:
 - Signed break-glass governance policy enforcement at `.harness/control-plane/ci-migrate-break-glass-policy.json` for rollback weakening approvals (allowlist, TTL, dual-approval)
 - Required-mode CircleCI promotion fail-closes without signed merge-queue evidence at `.harness/control-plane/merge-queue-cutover-evidence.json` (or an explicit override path)
 - Signed artifact-index bootstrap (`.harness/ci-parity-proof-artifact-index.json`) for provenance/proof-pack auto-generation
+- Example provider artifact harvest automation templates in `docs/examples/ci-migrate/` to generate signed provenance input + artifact index for `--auto-generate-proof-pack`
 
 ## Issue reporting
 

@@ -2026,7 +2026,9 @@ function readContractProviderMode(targetDir: string): CIProviderMode | null {
 
 function readContractProviderPolicy(
 	targetDir: string,
+	options?: { strict?: boolean | undefined },
 ): { ok: true; value: CIProviderPolicyConfig } | { ok: false; error: string } {
+	const strictMode = options?.strict === true;
 	const contractPath = resolve(targetDir, "harness.contract.json");
 	if (!existsSync(contractPath)) {
 		return {
@@ -2061,17 +2063,37 @@ function readContractProviderPolicy(
 				error: "ciProviderPolicy.mode must be either shadow or required.",
 			};
 		}
-		const migrationStage =
+		let migrationStage: CIProviderMigrationStage;
+		if (
 			policy.migrationStage === "dual-provider" ||
 			policy.migrationStage === "circleci-primary" ||
 			policy.migrationStage === "circleci-only"
-				? policy.migrationStage
-				: "dual-provider";
-		const transitionStatusArtifactPath =
+		) {
+			migrationStage = policy.migrationStage;
+		} else if (strictMode) {
+			return {
+				ok: false,
+				error:
+					"ciProviderPolicy.migrationStage must be one of dual-provider, circleci-primary, or circleci-only.",
+			};
+		} else {
+			migrationStage = "dual-provider";
+		}
+		let transitionStatusArtifactPath: string;
+		if (
 			typeof policy.transitionStatusArtifactPath === "string" &&
 			policy.transitionStatusArtifactPath.trim().length > 0
-				? policy.transitionStatusArtifactPath.trim()
-				: DEFAULT_TRANSITION_STATUS_ARTIFACT_PATH;
+		) {
+			transitionStatusArtifactPath = policy.transitionStatusArtifactPath.trim();
+		} else if (strictMode) {
+			return {
+				ok: false,
+				error:
+					"ciProviderPolicy.transitionStatusArtifactPath is required and cannot be empty.",
+			};
+		} else {
+			transitionStatusArtifactPath = DEFAULT_TRANSITION_STATUS_ARTIFACT_PATH;
+		}
 		if (
 			typeof policy.trustedPolicyRef !== "string" ||
 			policy.trustedPolicyRef.trim().length === 0
@@ -5852,6 +5874,11 @@ function validateRequiredChecksForVerify(
 	const seenDisplayNames = new Set<string>();
 	for (const check of requiredChecks) {
 		const trimmedDisplayName = check.displayName.trim();
+		if (trimmedDisplayName.startsWith("shadow/")) {
+			violations.push(
+				`Required check ${trimmedDisplayName} uses forbidden shadow/* namespace. Reclassify this check before strict verify.`,
+			);
+		}
 		if (seenDisplayNames.has(trimmedDisplayName)) {
 			violations.push(
 				`Duplicate required check displayName detected: ${trimmedDisplayName}. Required check names must be unique to avoid merge deadlocks.`,
@@ -7123,7 +7150,7 @@ export function runCIMigrateCLI(
 		}
 
 		if (action === "verify") {
-			const policyResult = readContractProviderPolicy(dir);
+			const policyResult = readContractProviderPolicy(dir, { strict: true });
 			if (!policyResult.ok) {
 				console.error(`Error: ${policyResult.error}`);
 				return EXIT_CODES.INVALID_PATH;
@@ -7247,9 +7274,16 @@ export function runCIMigrateCLI(
 						existsSync(resolve(dir, DEFAULT_MERGE_QUEUE_ORCHESTRATOR_PATH))
 					? DEFAULT_MERGE_QUEUE_ORCHESTRATOR_PATH
 					: undefined;
+		const mergeQueueEvidencePathExplicitlyProvided =
+			options.mergeQueueEvidencePath !== undefined;
+		const hasExistingMergeQueueEvidence = existsSync(
+			resolve(dir, configuredMergeQueueEvidencePath),
+		);
 		if (
 			requireFullMergeQueueLifecycle ||
-			mergeQueueOrchestratorPath !== undefined
+			mergeQueueOrchestratorPath !== undefined ||
+			mergeQueueEvidencePathExplicitlyProvided ||
+			hasExistingMergeQueueEvidence
 		) {
 			const mergeQueueBindingResult = deriveMergeQueueEvidenceBinding(dir);
 			if (!mergeQueueBindingResult.ok) {
