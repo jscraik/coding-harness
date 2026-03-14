@@ -5,6 +5,9 @@ import type {
 	BranchProtectionCodeScanningPolicy,
 	BranchProtectionMergeMethods,
 	BranchProtectionPolicy,
+	CIProviderMigrationStage,
+	CIProviderPolicy,
+	CIProviderPolicyMode,
 	CodeQualitySeverity,
 	CodeScanningAlertsThreshold,
 	CodeScanningSecurityAlertsThreshold,
@@ -95,6 +98,7 @@ const VALID_TOP_LEVEL_KEYS = [
 	"contextIntegrityPolicy",
 	"controlPlanePolicy",
 	"toolingPolicy",
+	"ciProviderPolicy",
 	"extends",
 ] as const;
 const VALID_UI_LOOP_POLICY_KEYS = [
@@ -171,6 +175,15 @@ const VALID_TOOLING_PACKAGE_REQUIREMENT_KEYS = [
 	"dependencyType",
 	"requiredWhenCapabilities",
 ] as const;
+const VALID_CI_PROVIDER_POLICY_KEYS = [
+	"activeProvider",
+	"mode",
+	"migrationStage",
+	"transitionStatusArtifactPath",
+	"authorityConfigPath",
+	"requiredCheckManifestPath",
+	"trustedPolicyRef",
+] as const;
 const VALID_GAP_CASE_POLICY_KEYS = [
 	"requiredEvidenceStatuses",
 	"requiredCloseReasons",
@@ -215,6 +228,13 @@ const VALID_NON_OVERRIDABLE_CONTROLS = [
 	"missing_required_instruction_surface",
 	"missing_snapshot_integrity_verification",
 ] as const;
+const VALID_CI_PROVIDER_MODES: CIProviderPolicyMode[] = ["shadow", "required"];
+const VALID_CI_PROVIDER_MIGRATION_STAGES: CIProviderMigrationStage[] = [
+	"dual-provider",
+	"circleci-primary",
+	"circleci-only",
+];
+const VALID_CI_PROVIDERS = ["github-actions", "circleci"] as const;
 
 // Machine-readable error codes for programmatic handling
 export enum ValidationErrorCode {
@@ -855,6 +875,64 @@ export function isValidControlPlanePolicy(
 	}
 
 	return isValidControlPlaneOverridePolicy(policy.overridePolicy);
+}
+
+function isValidCIProviderPolicy(value: unknown): value is CIProviderPolicy {
+	if (!isPlainObject(value)) {
+		return false;
+	}
+	const policy = value as Record<string, unknown>;
+	const invalidKeys = Object.keys(policy).filter(
+		(key) =>
+			!VALID_CI_PROVIDER_POLICY_KEYS.includes(
+				key as (typeof VALID_CI_PROVIDER_POLICY_KEYS)[number],
+			),
+	);
+	if (invalidKeys.length > 0) {
+		return false;
+	}
+	if (
+		!VALID_CI_PROVIDERS.includes(
+			policy.activeProvider as (typeof VALID_CI_PROVIDERS)[number],
+		)
+	) {
+		return false;
+	}
+	if (!VALID_CI_PROVIDER_MODES.includes(policy.mode as CIProviderPolicyMode)) {
+		return false;
+	}
+	if (
+		!VALID_CI_PROVIDER_MIGRATION_STAGES.includes(
+			policy.migrationStage as CIProviderMigrationStage,
+		)
+	) {
+		return false;
+	}
+	if (
+		typeof policy.transitionStatusArtifactPath !== "string" ||
+		policy.transitionStatusArtifactPath.trim().length === 0
+	) {
+		return false;
+	}
+	if (
+		typeof policy.authorityConfigPath !== "string" ||
+		policy.authorityConfigPath.trim().length === 0
+	) {
+		return false;
+	}
+	if (
+		typeof policy.requiredCheckManifestPath !== "string" ||
+		policy.requiredCheckManifestPath.trim().length === 0
+	) {
+		return false;
+	}
+	if (
+		typeof policy.trustedPolicyRef !== "string" ||
+		policy.trustedPolicyRef.trim().length === 0
+	) {
+		return false;
+	}
+	return true;
 }
 
 function isValidLinearProjectUrl(value: string): boolean {
@@ -2684,6 +2762,25 @@ export function validateContract(
 		}
 	}
 
+	// Validate ciProviderPolicy (optional)
+	let ciProviderPolicy: CIProviderPolicy | undefined;
+	if ("ciProviderPolicy" in obj && obj.ciProviderPolicy !== undefined) {
+		if (!isValidCIProviderPolicy(obj.ciProviderPolicy)) {
+			errors.push({
+				code: ValidationErrorCode.INVALID_VALUE,
+				path: "ciProviderPolicy",
+				message:
+					"ciProviderPolicy must define activeProvider, mode, migrationStage, transitionStatusArtifactPath, authorityConfigPath, requiredCheckManifestPath, and trustedPolicyRef",
+				expected:
+					"{ activeProvider: 'github-actions' | 'circleci', mode: 'shadow' | 'required', migrationStage: 'dual-provider' | 'circleci-primary' | 'circleci-only', transitionStatusArtifactPath: string, authorityConfigPath: string, requiredCheckManifestPath: string, trustedPolicyRef: string }",
+				received: JSON.stringify(obj.ciProviderPolicy),
+				fix: "Ensure ciProviderPolicy contains only supported keys, valid enum values, and non-empty string paths",
+			});
+		} else {
+			ciProviderPolicy = obj.ciProviderPolicy as CIProviderPolicy;
+		}
+	}
+
 	// Validate blastRadiusRules (optional)
 	let blastRadiusRules: BlastRadiusRule[] | undefined;
 	if ("blastRadiusRules" in obj && obj.blastRadiusRules !== undefined) {
@@ -2772,6 +2869,7 @@ export function validateContract(
 			contextIntegrityPolicy,
 			controlPlanePolicy,
 			toolingPolicy,
+			ciProviderPolicy,
 			branchProtection,
 			issueTrackingPolicy,
 			blastRadiusRules,

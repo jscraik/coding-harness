@@ -15,6 +15,17 @@
 | `owner` | accountable maintainer/team |
 | `max_duration` | max execution window |
 | `escalation` | explicit escalation path |
+| `change_class` | one of `behavior`, `validation-only`, `docs-only` |
+
+## Validation Contract
+| Field | Requirement |
+| --- | --- |
+| `test_mode` | one of `tdd-required`, `validation-required`, `n/a` |
+| `test_tier` | one of `unit`, `integration`, `e2e`, `mixed`, `n/a` |
+| `tracer_bullet_first` | `yes` or `no` |
+| `red_evidence_required` | `yes` or `no` |
+| `exemption_reason` | required when `change_class = behavior` and `test_mode != tdd-required` |
+| `reviewed_by` | required when `exemption_reason` is set |
 
 ## Invariants
 - Every non-terminal state has at least one outbound transition.
@@ -22,6 +33,12 @@
 - Failure paths route to `FAIL` or `BLOCKED`.
 - Terminal states have no outbound transitions.
 - Transition table is canonical source of truth.
+- `change_class = behavior` must declare a non-`n/a` validation contract.
+- `test_mode = tdd-required` implies `red_evidence_required = yes`.
+- `change_class = behavior` and `test_mode != tdd-required` requires explicit exemption metadata.
+- `tracer_bullet_first = yes` means the first promoted slice must prove one end-to-end path before parity expansion.
+- Behavior-changing evidence should exercise public interfaces rather than implementation-detail probes.
+- `validation-only` and `docs-only` workflows must still declare deterministic validation strategy.
 
 ## States
 ```txt
@@ -76,3 +93,7 @@ Required schema fields:
 - `STRICT` and `ADVISORY` modes are declared
 - dry-run semantics include no side effects and deterministic trace output
 - required observability log fields are present
+- `change_class` metadata is declared
+- validation contract fields are declared
+- behavior-changing workflows include TDD or reviewed exemption metadata
+- `tdd-required` workflows require RED evidence

@@ -7,6 +7,10 @@ import {
 	runReviewGateCLI,
 } from "./review-gate.js";
 
+const { emitReviewGateDecisionArtifactsMock } = vi.hoisted(() => ({
+	emitReviewGateDecisionArtifactsMock: vi.fn(),
+}));
+
 // Mock the GitHub client
 vi.mock("../lib/github/client.js", () => ({
 	GitHubClient: vi.fn(),
@@ -46,10 +50,15 @@ vi.mock("../lib/plan-gate/detector.js", () => ({
 	runPlanGate: vi.fn(),
 }));
 
+vi.mock("../lib/review-gate/decision-packet.js", () => ({
+	emitReviewGateDecisionArtifacts: emitReviewGateDecisionArtifactsMock,
+}));
+
 import { loadContract } from "../lib/contract/loader.js";
 import { GitHubClient } from "../lib/github/client.js";
 import { validateSha } from "../lib/github/sha.js";
 import { runPlanGate } from "../lib/plan-gate/detector.js";
+import { emitReviewGateDecisionArtifacts } from "../lib/review-gate/decision-packet.js";
 import { runCheckAuthz } from "./check-authz.js";
 
 const mockGitHubClient = vi.mocked(GitHubClient);
@@ -57,6 +66,9 @@ const mockLoadContract = vi.mocked(loadContract);
 const mockValidateSha = vi.mocked(validateSha);
 const mockRunPlanGate = vi.mocked(runPlanGate);
 const mockRunCheckAuthz = vi.mocked(runCheckAuthz);
+const mockEmitReviewGateDecisionArtifacts = vi.mocked(
+	emitReviewGateDecisionArtifacts,
+);
 
 const authzPassOutput = {
 	passed: true,
@@ -84,6 +96,11 @@ describe("runReviewGate", () => {
 
 	beforeEach(() => {
 		vi.clearAllMocks();
+		mockEmitReviewGateDecisionArtifacts.mockReturnValue({
+			runId: "review-gate-run-1",
+			decisionPacketPath:
+				"/tmp/agent-runs/review-gate-run-1/decision-packet.json",
+		});
 		mockValidateSha.mockReturnValue(undefined); // No-op = valid
 		mockRunPlanGate.mockReturnValue({
 			passed: true,
@@ -1143,6 +1160,19 @@ describe("runReviewGateCLI", () => {
 		const exitCode = await runReviewGateCLI(defaultOptions);
 
 		expect(exitCode).toBe(EXIT_CODES.REVIEW_NOT_VERIFIED);
+		expect(mockEmitReviewGateDecisionArtifacts).toHaveBeenCalledWith(
+			expect.objectContaining({
+				options: expect.objectContaining({
+					owner: defaultOptions.owner,
+					repo: defaultOptions.repo,
+					prNumber: defaultOptions.prNumber,
+				}),
+				exitCode: EXIT_CODES.REVIEW_NOT_VERIFIED,
+				result: expect.objectContaining({
+					ok: true,
+				}),
+			}),
+		);
 	});
 
 	it("returns VALIDATION_ERROR for invalid invocation state", async () => {
@@ -1156,6 +1186,18 @@ describe("runReviewGateCLI", () => {
 		});
 
 		expect(exitCode).toBe(EXIT_CODES.VALIDATION_ERROR);
+		expect(mockEmitReviewGateDecisionArtifacts).toHaveBeenCalledWith(
+			expect.objectContaining({
+				exitCode: EXIT_CODES.VALIDATION_ERROR,
+				result: {
+					ok: false,
+					error: {
+						code: "VALIDATION_ERROR",
+						message: "Invalid SHA format: invalid",
+					},
+				},
+			}),
+		);
 	});
 });
 

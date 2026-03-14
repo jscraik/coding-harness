@@ -238,6 +238,9 @@ Features:
 - Parity proof packs with scenario validation (pull_request, merge_queue, fork_pr, etc.)
 - External control plane path tracking (rulesets, contexts, app installations)
 - HMAC-signed snapshots for migration integrity
+- Signed merge-queue orchestration evidence ingestion via `--merge-queue-evidence`
+- Required-mode `ci-migrate commit` fail-closes without signed merge-queue evidence at `.harness/control-plane/merge-queue-cutover-evidence.json` (or an explicit override path)
+- Signed artifact-index bootstrap (`.harness/ci-parity-proof-artifact-index.json`) for provenance/proof-pack auto-generation
 
 ## Issue reporting
 

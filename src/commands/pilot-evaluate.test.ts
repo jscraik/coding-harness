@@ -7,6 +7,7 @@ import {
 	mkdirSync,
 	mkdtempSync,
 	readFileSync,
+	readdirSync,
 	rmSync,
 	symlinkSync,
 	writeFileSync,
@@ -240,6 +241,36 @@ function writeCanonicalProducerBundle(options: {
 			},
 		},
 	});
+}
+
+function readSingleRunManifest(runRecordsDir: string): Record<string, unknown> {
+	const runDirs = readdirSync(runRecordsDir, { withFileTypes: true })
+		.filter((entry) => entry.isDirectory())
+		.map((entry) => join(runRecordsDir, entry.name));
+	expect(runDirs).toHaveLength(1);
+	const runDir = runDirs[0];
+	if (!runDir) {
+		throw new Error("Expected a single run directory");
+	}
+	return JSON.parse(
+		readFileSync(join(runDir, "manifest.json"), "utf-8"),
+	) as Record<string, unknown>;
+}
+
+function readSingleDecisionPacket(
+	runRecordsDir: string,
+): Record<string, unknown> {
+	const runDirs = readdirSync(runRecordsDir, { withFileTypes: true })
+		.filter((entry) => entry.isDirectory())
+		.map((entry) => join(runRecordsDir, entry.name));
+	expect(runDirs).toHaveLength(1);
+	const runDir = runDirs[0];
+	if (!runDir) {
+		throw new Error("Expected a single run directory");
+	}
+	return JSON.parse(
+		readFileSync(join(runDir, "decision-packet.json"), "utf-8"),
+	) as Record<string, unknown>;
 }
 
 describe("pilot-evaluate", () => {
@@ -709,6 +740,13 @@ describe("pilot-evaluate", () => {
 			expect(result.ok).toBe(false);
 			expect(result.error?.code).toBe("E_ARTIFACTS_NOT_FOUND");
 			expect(result.exitCode).toBe(PILOT_EVALUATE_EXIT_CODES.VALIDATION_ERROR);
+
+			const packet = readSingleDecisionPacket(runRecordsDir);
+			expect(packet.decision).toEqual({
+				state: "blocked-with-remediation",
+				promotionStatus: "evaluation-failed",
+				requiresHumanDecision: false,
+			});
 		});
 
 		it("returns hold for missing required artifact (sample size 0)", () => {
@@ -801,6 +839,22 @@ describe("pilot-evaluate", () => {
 			expect(result.ok).toBe(true);
 			expect(result.result?.outcome).toBe("promote");
 			expect(result.exitCode).toBe(PILOT_EVALUATE_EXIT_CODES.PROMOTE);
+
+			const packet = readSingleDecisionPacket(runRecordsDir);
+			expect(packet.decision).toEqual({
+				state: "green-and-ready",
+				promotionStatus: "ready-to-promote",
+				requiresHumanDecision: false,
+			});
+
+			const manifest = readSingleRunManifest(runRecordsDir);
+			expect(manifest.artifactRefs).toEqual(
+				expect.arrayContaining([
+					expect.objectContaining({
+						type: "decision-packet",
+					}),
+				]),
+			);
 		});
 
 		it("returns rollback when high-risk automation incidents exist", () => {
@@ -1359,7 +1413,7 @@ describe("pilot-evaluate", () => {
 			} finally {
 				rmSync(join(sharedRoot, runId), { recursive: true, force: true });
 			}
-		});
+		}, 20_000);
 
 		it("enforces the rollback trigger denominator guard from the metric registry in health lane", () => {
 			writePassingPilotArtifacts(artifactsDir);

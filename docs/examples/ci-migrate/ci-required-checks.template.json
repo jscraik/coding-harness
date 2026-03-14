@@ -1,0 +1,16 @@
+{
+	"version": 1,
+	"activeProvider": "github-actions",
+	"requiredChecks": [
+		{
+			"policyId": "required-check-lint",
+			"displayName": "lint",
+			"sourceAppSlug": "github-actions",
+			"sourceAppId": "github-actions",
+			"externalIdPattern": "^lint$",
+			"requiredOnEvents": ["pull_request", "merge_group"],
+			"freshnessWindowDays": 7,
+			"class": "required"
+		}
+	]
+}
