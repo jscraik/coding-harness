@@ -68,7 +68,7 @@ function isRequiredCheckIdentity(
 function toRepoRelativePath(targetDir: string, absolutePath: string): string {
 	const normalizedTargetDir = resolve(targetDir);
 	const normalizedAbsolutePath = resolve(absolutePath);
-	if (!normalizedAbsolutePath.startsWith(normalizedTargetDir)) {
+	if (!normalizedAbsolutePath.startsWith(normalizedTargetDir + "/")) {
 		return normalizedAbsolutePath;
 	}
 	const relative = normalizedAbsolutePath
