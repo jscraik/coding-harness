@@ -9,6 +9,9 @@
 import { existsSync, readFileSync, watch, writeFileSync } from "node:fs";
 import { resolve } from "node:path";
 
+import { PathTraversalError, validatePath } from "../lib/input/validator.js";
+
+
 export interface WorkflowGenerateOptions {
 	source?: string | undefined;
 	output?: string | undefined;
@@ -676,7 +679,23 @@ function generateWorkflowSpec(
 	}
 
 	if (options.output) {
-		const outputPath = resolve(options.output);
+		let outputPath: string;
+		try {
+			outputPath = validatePath(process.cwd(), options.output);
+		} catch (error) {
+			if (error instanceof PathTraversalError) {
+				console.error(
+					`Output path escapes working directory: ${options.output}`,
+				);
+				return 1;
+			}
+			console.error(
+				`Invalid output path: ${
+					error instanceof Error ? error.message : "Unknown error"
+				}`,
+			);
+			return 1;
+		}
 		writeFileSync(outputPath, outputContent, "utf8");
 		console.info(`Generated operational spec: ${outputPath}`);
 	} else {
@@ -685,6 +704,7 @@ function generateWorkflowSpec(
 
 	return 0;
 }
+
 
 export function runWorkflowGenerateCLI(
 	options: WorkflowGenerateOptions = {},
@@ -705,7 +725,21 @@ export function runWorkflowGenerateCLI(
 		return 1;
 	}
 
-	const sourcePath = resolve(source);
+	let sourcePath: string;
+	try {
+		sourcePath = validatePath(process.cwd(), source);
+	} catch (error) {
+		if (error instanceof PathTraversalError) {
+			console.error(`Source path escapes working directory: ${source}`);
+			return 1;
+		}
+		console.error(
+			`Invalid source path: ${
+				error instanceof Error ? error.message : "Unknown error"
+			}`,
+		);
+		return 1;
+	}
 
 	if (!watchMode) {
 		return generateWorkflowSpec(sourcePath, { json, dryRun, output });
