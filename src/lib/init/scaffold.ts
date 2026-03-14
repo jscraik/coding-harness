@@ -111,7 +111,7 @@ function renderCircleCIConfig(pm: string): string {
 jobs:
   pr-pipeline:
     docker:
-      - image: cimg/node:20.12
+      - image: cimg/node:24.13
     steps:
       - checkout
       - run:
