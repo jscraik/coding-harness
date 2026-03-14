@@ -613,6 +613,34 @@ describe("cli command dispatch", () => {
 		expect(exitSpy).toHaveBeenCalledWith(69);
 	});
 
+	it("does not treat --action value as target dir when a value flag is missing", async () => {
+		const { run } = await import("./cli.js");
+		const { runCIMigrateCLI } = await import("./commands/ci-migrate.js");
+
+		const exitSpy = vi.spyOn(process, "exit").mockImplementation(((
+			code?: number,
+		) => {
+			throw new Error(`EXIT_${String(code)}`);
+		}) as never);
+
+		expect(() =>
+			run(["ci-migrate", "--provider", "--action", "commit", "--dry-run"]),
+		).toThrowError("EXIT_69");
+
+		expect(vi.mocked(runCIMigrateCLI)).toHaveBeenCalledWith(undefined, {
+			provider: undefined,
+			dryRun: true,
+			apply: false,
+			rollback: false,
+			snapshot: undefined,
+			action: "commit",
+			breakGlassApprovalPath: undefined,
+			mergeQueueEvidencePath: undefined,
+			autoGenerateProofPack: false,
+		});
+		expect(exitSpy).toHaveBeenCalledWith(69);
+	});
+
 	it("fails ci-migrate dispatch when multiple target directories are provided", async () => {
 		const { run } = await import("./cli.js");
 		const { runCIMigrateCLI } = await import("./commands/ci-migrate.js");
