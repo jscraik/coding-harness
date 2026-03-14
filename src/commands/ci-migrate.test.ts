@@ -2169,6 +2169,56 @@ describe("runCIMigrateCLI", () => {
 		expect(vi.mocked(runInitCLI)).not.toHaveBeenCalled();
 	});
 
+	// Security regression: the default orchestrator path must NOT be auto-executed
+	// when the operator has not explicitly passed --merge-queue-orchestrator.
+	// An attacker who can add .harness/control-plane/merge-queue-cutover-orchestrator
+	// to a repo would otherwise get arbitrary code execution when ci-migrate apply
+	// is run against that repo in required mode.
+	it("does not auto-execute default orchestrator when flag is omitted", () => {
+		seedMigratableFixture(tempDir);
+		writeCIProviderPolicyContract(tempDir, "required");
+		writeParityProofPack(tempDir);
+		// Place a fixture orchestrator at the default well-known path — without
+		// passing --merge-queue-orchestrator to the CLI.
+		writeMergeQueueOrchestratorFixture(tempDir);
+		const snapshotId = "cutover-required-commit-no-auto-orchestrate";
+		vi.mocked(scanOpenPullRequestSatisfiability).mockReturnValue({
+			status: "satisfied",
+			scannedOpenPrs: 2,
+			failingPrs: [],
+		});
+
+		const prepareExitCode = runCIMigrateCLI(tempDir, {
+			provider: "circleci",
+			action: "prepare",
+			snapshot: snapshotId,
+		});
+		expect(prepareExitCode).toBe(EXIT_CODES.SUCCESS);
+
+		vi.clearAllMocks();
+		vi.mocked(scanOpenPullRequestSatisfiability).mockReturnValue({
+			status: "satisfied",
+			scannedOpenPrs: 2,
+			failingPrs: [],
+		});
+
+		// Commit WITHOUT --merge-queue-orchestrator: the default path file exists
+		// but must not be auto-executed.
+		void runCIMigrateCLI(tempDir, {
+			provider: "circleci",
+			action: "commit",
+			snapshot: snapshotId,
+			// mergeQueueOrchestratorPath intentionally omitted
+		});
+
+		// The commit may succeed or fail for unrelated reasons (missing evidence
+		// in required mode), but the key invariant is that the orchestrator was
+		// NOT executed — proven by the absence of the evidence file it would write.
+		expect(
+			existsSync(join(tempDir, MERGE_QUEUE_EVIDENCE_PATH)),
+		).toBe(false);
+	});
+
 	it("rejects merge-queue evidence when binding does not match required-mode commit identity", () => {
 		seedMigratableFixture(tempDir);
 		writeCIProviderPolicyContract(tempDir, "required");

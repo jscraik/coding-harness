@@ -94,8 +94,13 @@ const MERGE_QUEUE_WINDOW_PATH =
 	".harness/control-plane/merge-queue-cutover-window.json";
 const DEFAULT_MERGE_QUEUE_EVIDENCE_PATH =
 	".harness/control-plane/merge-queue-cutover-evidence.json";
+// Well-known path for the repo-controlled merge-queue orchestrator script.
+// Auto-execution from this path is intentionally prohibited — the operator
+// must pass --merge-queue-orchestrator explicitly.
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
 const DEFAULT_MERGE_QUEUE_ORCHESTRATOR_PATH =
 	".harness/control-plane/merge-queue-cutover-orchestrator";
+
 const BREAK_GLASS_POLICY_PATH =
 	".harness/control-plane/ci-migrate-break-glass-policy.json";
 const DEFAULT_TRANSITION_STATUS_ARTIFACT_PATH =
@@ -7693,10 +7698,7 @@ export function runCIMigrateCLI(
 		const mergeQueueOrchestratorPath =
 			configuredOrchestratorPath && configuredOrchestratorPath.length > 0
 				? configuredOrchestratorPath
-				: requireMergeQueueEvidence &&
-						existsSync(resolve(dir, DEFAULT_MERGE_QUEUE_ORCHESTRATOR_PATH))
-					? DEFAULT_MERGE_QUEUE_ORCHESTRATOR_PATH
-					: undefined;
+				: undefined;
 		const mergeQueueEvidencePathExplicitlyProvided =
 			options.mergeQueueEvidencePath !== undefined;
 		const hasExistingMergeQueueEvidence = existsSync(
