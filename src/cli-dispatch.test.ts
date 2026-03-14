@@ -549,6 +549,8 @@ describe("cli command dispatch", () => {
 				".harness/ci-migrate-approvals/cutover-window-1.json",
 				"--merge-queue-evidence",
 				".harness/control-plane/merge-queue-cutover-evidence.json",
+				"--merge-queue-orchestrator",
+				".harness/control-plane/merge-queue-cutover-orchestrator",
 				"--auto-generate-proof-pack",
 			]),
 		).toThrowError("EXIT_69");
@@ -566,6 +568,8 @@ describe("cli command dispatch", () => {
 					".harness/ci-migrate-approvals/cutover-window-1.json",
 				mergeQueueEvidencePath:
 					".harness/control-plane/merge-queue-cutover-evidence.json",
+				mergeQueueOrchestratorPath:
+					".harness/control-plane/merge-queue-cutover-orchestrator",
 				autoGenerateProofPack: true,
 			},
 		);
@@ -607,9 +611,39 @@ describe("cli command dispatch", () => {
 				action: "commit",
 				breakGlassApprovalPath: undefined,
 				mergeQueueEvidencePath: undefined,
+				mergeQueueOrchestratorPath: undefined,
 				autoGenerateProofPack: false,
 			},
 		);
+		expect(exitSpy).toHaveBeenCalledWith(69);
+	});
+
+	it("does not treat --action value as target dir when a value flag is missing", async () => {
+		const { run } = await import("./cli.js");
+		const { runCIMigrateCLI } = await import("./commands/ci-migrate.js");
+
+		const exitSpy = vi.spyOn(process, "exit").mockImplementation(((
+			code?: number,
+		) => {
+			throw new Error(`EXIT_${String(code)}`);
+		}) as never);
+
+		expect(() =>
+			run(["ci-migrate", "--provider", "--action", "commit", "--dry-run"]),
+		).toThrowError("EXIT_69");
+
+		expect(vi.mocked(runCIMigrateCLI)).toHaveBeenCalledWith(undefined, {
+			provider: undefined,
+			dryRun: true,
+			apply: false,
+			rollback: false,
+			snapshot: undefined,
+			action: "commit",
+			breakGlassApprovalPath: undefined,
+			mergeQueueEvidencePath: undefined,
+			mergeQueueOrchestratorPath: undefined,
+			autoGenerateProofPack: false,
+		});
 		expect(exitSpy).toHaveBeenCalledWith(69);
 	});
 

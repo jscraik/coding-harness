@@ -94,6 +94,10 @@ const MERGE_QUEUE_WINDOW_PATH =
 	".harness/control-plane/merge-queue-cutover-window.json";
 const DEFAULT_MERGE_QUEUE_EVIDENCE_PATH =
 	".harness/control-plane/merge-queue-cutover-evidence.json";
+const DEFAULT_MERGE_QUEUE_ORCHESTRATOR_PATH =
+	".harness/control-plane/merge-queue-cutover-orchestrator";
+const BREAK_GLASS_POLICY_PATH =
+	".harness/control-plane/ci-migrate-break-glass-policy.json";
 const DEFAULT_TRANSITION_STATUS_ARTIFACT_PATH =
 	".harness/ci-provider-transition-status.json";
 const VALID_PROVIDERS: CIProvider[] = ["github-actions", "circleci"];
@@ -124,6 +128,7 @@ export interface CIMigrateOptions {
 	action?: string | undefined;
 	breakGlassApprovalPath?: string | undefined;
 	mergeQueueEvidencePath?: string | undefined;
+	mergeQueueOrchestratorPath?: string | undefined;
 	autoGenerateProofPack?: boolean | undefined;
 }
 
@@ -410,6 +415,7 @@ interface BreakGlassApproval {
 	schemaVersion: "ci-migrate-break-glass-approval/v1";
 	snapshotId: string;
 	approvedBy: string;
+	approvers?: string[] | undefined;
 	reason: string;
 	approvedAt: string;
 	expiresAt: string;
@@ -417,6 +423,18 @@ interface BreakGlassApproval {
 	allowRollbackWeakening: boolean;
 	signatureAlgorithm: typeof SNAPSHOT_SIGNATURE_ALGORITHM;
 	signingKeyId: string;
+}
+
+interface BreakGlassGovernancePolicy {
+	schemaVersion: "ci-migrate-break-glass-policy/v1";
+	approverAllowlist: string[];
+	maxApprovalTtlHours: number;
+	requireDualApprovalForRollbackWeakening: boolean;
+	integrity: {
+		signatureAlgorithm: typeof SNAPSHOT_SIGNATURE_ALGORITHM;
+		signingKeyId: string;
+		payloadSha256: string;
+	};
 }
 
 interface ExternalControlPlaneStateSnapshot {
@@ -447,6 +465,7 @@ interface MergeQueueCutoverWindow {
 		| {
 				sourcePath: string;
 				contentSha256: string;
+				binding?: MergeQueueEvidenceBinding | undefined;
 				pausedAt: string;
 				drainedAt?: string | undefined;
 				revalidatedAt?: string | undefined;
@@ -457,10 +476,19 @@ interface MergeQueueCutoverWindow {
 		| undefined;
 }
 
+interface MergeQueueEvidenceBinding {
+	repoFullName: string;
+	headSha: string;
+	trustedPolicyRef: string;
+	authorityConfigSha256: string;
+	requiredCheckManifestSha256: string;
+}
+
 interface MergeQueueCutoverEvidence {
-	schemaVersion: "ci-migrate-merge-queue-evidence/v1";
+	schemaVersion: "ci-migrate-merge-queue-evidence/v2";
 	snapshotId: string;
 	generatedAt: string;
+	binding: MergeQueueEvidenceBinding;
 	pausedAt: string;
 	drainedAt?: string | undefined;
 	revalidatedAt?: string | undefined;
@@ -505,6 +533,27 @@ function isValidBranchProtectionSatisfiabilityReport(
 			parsedFailingPr.missingChecks.every((check) => typeof check === "string")
 		);
 	});
+}
+
+function isValidMergeQueueEvidenceBinding(
+	value: unknown,
+): value is MergeQueueEvidenceBinding {
+	if (!value || typeof value !== "object") {
+		return false;
+	}
+	const parsed = value as Partial<MergeQueueEvidenceBinding>;
+	return (
+		typeof parsed.repoFullName === "string" &&
+		parsed.repoFullName.trim().length > 0 &&
+		typeof parsed.headSha === "string" &&
+		isCommitSha(parsed.headSha) &&
+		typeof parsed.trustedPolicyRef === "string" &&
+		isCommitSha(parsed.trustedPolicyRef) &&
+		typeof parsed.authorityConfigSha256 === "string" &&
+		isHexDigest(parsed.authorityConfigSha256) &&
+		typeof parsed.requiredCheckManifestSha256 === "string" &&
+		isHexDigest(parsed.requiredCheckManifestSha256)
+	);
 }
 
 function isValidMergeQueueCutoverWindow(
@@ -573,6 +622,8 @@ function isValidMergeQueueCutoverWindow(
 				evidenceRecord.sourcePath.trim().length > 0 &&
 				typeof evidenceRecord.contentSha256 === "string" &&
 				isHexDigest(evidenceRecord.contentSha256) &&
+				(evidenceRecord.binding === undefined ||
+					isValidMergeQueueEvidenceBinding(evidenceRecord.binding)) &&
 				Number.isFinite(evidencePausedAtMs) &&
 				(evidenceRecord.drainedAt === undefined ||
 					Number.isFinite(evidenceDrainedAtMs)) &&
@@ -683,14 +734,29 @@ function getMergeQueueWindowPath(targetDir: string): string {
 	return resolve(targetDir, MERGE_QUEUE_WINDOW_PATH);
 }
 
+function getMergeQueueWindowSignaturePath(targetDir: string): string {
+	return `${getMergeQueueWindowPath(targetDir)}.sig`;
+}
+
 function writeMergeQueueWindow(
 	targetDir: string,
 	window: MergeQueueCutoverWindow,
 ): { ok: true } | { ok: false; error: string } {
+	const signingKeyResult = resolveSnapshotSigningKey();
+	if (!signingKeyResult.ok) {
+		return {
+			ok: false,
+			error: signingKeyResult.error,
+		};
+	}
 	try {
 		const windowPath = getMergeQueueWindowPath(targetDir);
+		const signaturePath = getMergeQueueWindowSignaturePath(targetDir);
+		const windowContent = JSON.stringify(window, null, 2);
+		const signature = signContent(windowContent, signingKeyResult.key);
 		mkdirSync(dirname(windowPath), { recursive: true });
-		writeFileSync(windowPath, JSON.stringify(window, null, 2));
+		writeFileSync(windowPath, windowContent);
+		writeFileSync(signaturePath, `${signature}\n`);
 		return { ok: true };
 	} catch (error) {
 		return {
@@ -706,11 +772,41 @@ function readMergeQueueWindowIfPresent(
 	| { ok: true; value: MergeQueueCutoverWindow | null }
 	| { ok: false; error: string } {
 	const windowPath = getMergeQueueWindowPath(targetDir);
+	const signaturePath = getMergeQueueWindowSignaturePath(targetDir);
 	if (!existsSync(windowPath)) {
 		return { ok: true, value: null };
 	}
+	if (!existsSync(signaturePath)) {
+		return {
+			ok: false,
+			error: `Merge-queue cutover window signature is missing: ${signaturePath}`,
+		};
+	}
+	const signingKeyResult = resolveSnapshotSigningKey();
+	if (!signingKeyResult.ok) {
+		return {
+			ok: false,
+			error: signingKeyResult.error,
+		};
+	}
 	try {
-		const parsed = JSON.parse(readFileSync(windowPath, "utf-8")) as unknown;
+		const windowContent = readFileSync(windowPath, "utf-8");
+		const signature = readFileSync(signaturePath, "utf-8").trim();
+		if (!isHexDigest(signature)) {
+			return {
+				ok: false,
+				error: `Merge-queue cutover window signature must be a sha256 hex digest: ${signaturePath}`,
+			};
+		}
+		const expectedSignature = signContent(windowContent, signingKeyResult.key);
+		if (signature !== expectedSignature) {
+			return {
+				ok: false,
+				error:
+					"Merge-queue cutover window signature mismatch. Refusing untrusted state.",
+			};
+		}
+		const parsed = JSON.parse(windowContent) as unknown;
 		if (!isValidMergeQueueCutoverWindow(parsed)) {
 			return {
 				ok: false,
@@ -877,11 +973,31 @@ function isValidBreakGlassApproval(
 		return false;
 	}
 	const parsed = value as Partial<BreakGlassApproval>;
+	const approvers =
+		Array.isArray(parsed.approvers) &&
+		parsed.approvers.every(
+			(approver) => typeof approver === "string" && approver.trim().length > 0,
+		)
+			? parsed.approvers.map((approver) => approver.trim())
+			: undefined;
+	const uniqueApprovers =
+		approvers === undefined
+			? undefined
+			: new Set(approvers.map((approver) => approver.toLowerCase()));
 	return (
 		parsed.schemaVersion === "ci-migrate-break-glass-approval/v1" &&
 		parsed.snapshotId === snapshotId &&
 		typeof parsed.approvedBy === "string" &&
 		parsed.approvedBy.trim().length > 0 &&
+		(approvers === undefined ||
+			(approvers.length > 0 &&
+				uniqueApprovers !== undefined &&
+				uniqueApprovers.size === approvers.length &&
+				approvers.some(
+					(approver) =>
+						approver.toLowerCase() ===
+						(parsed.approvedBy ?? "").trim().toLowerCase(),
+				))) &&
 		typeof parsed.reason === "string" &&
 		parsed.reason.trim().length > 0 &&
 		typeof parsed.approvedAt === "string" &&
@@ -892,6 +1008,178 @@ function isValidBreakGlassApproval(
 		parsed.signatureAlgorithm === SNAPSHOT_SIGNATURE_ALGORITHM &&
 		typeof parsed.signingKeyId === "string"
 	);
+}
+
+function normalizeBreakGlassApprovers(approval: BreakGlassApproval): string[] {
+	if (Array.isArray(approval.approvers) && approval.approvers.length > 0) {
+		return approval.approvers.map((approver) => approver.trim());
+	}
+	return [approval.approvedBy.trim()];
+}
+
+function canonicalizeBreakGlassGovernancePolicyForDigest(
+	policy: BreakGlassGovernancePolicy,
+): string {
+	return JSON.stringify({
+		schemaVersion: policy.schemaVersion,
+		approverAllowlist: policy.approverAllowlist,
+		maxApprovalTtlHours: policy.maxApprovalTtlHours,
+		requireDualApprovalForRollbackWeakening:
+			policy.requireDualApprovalForRollbackWeakening,
+		integrity: {
+			signatureAlgorithm: policy.integrity.signatureAlgorithm,
+			signingKeyId: policy.integrity.signingKeyId,
+			payloadSha256: "",
+		},
+	});
+}
+
+function isValidBreakGlassGovernancePolicy(
+	value: unknown,
+): value is BreakGlassGovernancePolicy {
+	if (!value || typeof value !== "object") {
+		return false;
+	}
+	const parsed = value as Partial<BreakGlassGovernancePolicy>;
+	if (
+		parsed.schemaVersion !== "ci-migrate-break-glass-policy/v1" ||
+		!Array.isArray(parsed.approverAllowlist) ||
+		parsed.approverAllowlist.length < 1 ||
+		typeof parsed.maxApprovalTtlHours !== "number" ||
+		!Number.isInteger(parsed.maxApprovalTtlHours) ||
+		parsed.maxApprovalTtlHours < 1 ||
+		parsed.maxApprovalTtlHours > 168 ||
+		typeof parsed.requireDualApprovalForRollbackWeakening !== "boolean" ||
+		parsed.integrity?.signatureAlgorithm !== SNAPSHOT_SIGNATURE_ALGORITHM ||
+		typeof parsed.integrity?.signingKeyId !== "string" ||
+		!HEX_TOKEN_PATTERN.test(parsed.integrity.signingKeyId) ||
+		typeof parsed.integrity?.payloadSha256 !== "string" ||
+		!isHexDigest(parsed.integrity.payloadSha256)
+	) {
+		return false;
+	}
+	const normalizedAllowlist = parsed.approverAllowlist.map((approver) =>
+		typeof approver === "string" ? approver.trim() : "",
+	);
+	if (normalizedAllowlist.some((approver) => approver.length === 0)) {
+		return false;
+	}
+	return (
+		new Set(normalizedAllowlist.map((approver) => approver.toLowerCase()))
+			.size === normalizedAllowlist.length
+	);
+}
+
+function readBreakGlassGovernancePolicy(
+	targetDir: string,
+):
+	| { ok: true; value: BreakGlassGovernancePolicy }
+	| { ok: false; error: string } {
+	const resolvedPath = resolve(targetDir, BREAK_GLASS_POLICY_PATH);
+	const signaturePath = `${resolvedPath}.sig`;
+	if (!existsSync(resolvedPath)) {
+		return {
+			ok: false,
+			error: `Break-glass governance policy file not found: ${BREAK_GLASS_POLICY_PATH}`,
+		};
+	}
+	if (!existsSync(signaturePath)) {
+		return {
+			ok: false,
+			error: `Break-glass governance policy signature is missing: ${BREAK_GLASS_POLICY_PATH}.sig`,
+		};
+	}
+	const signingKeyResult = resolveSnapshotSigningKey();
+	if (!signingKeyResult.ok) {
+		return { ok: false, error: signingKeyResult.error };
+	}
+	try {
+		const content = readFileSync(resolvedPath, "utf-8");
+		const signature = readFileSync(signaturePath, "utf-8").trim();
+		if (!isHexDigest(signature)) {
+			return {
+				ok: false,
+				error: `Break-glass governance policy signature must be a sha256 hex digest: ${BREAK_GLASS_POLICY_PATH}.sig`,
+			};
+		}
+		const expectedSignature = signContent(content, signingKeyResult.key);
+		if (signature !== expectedSignature) {
+			return {
+				ok: false,
+				error:
+					"Break-glass governance policy signature check failed. Refusing unsigned governance policy.",
+			};
+		}
+		const parsed = JSON.parse(content) as unknown;
+		if (!isValidBreakGlassGovernancePolicy(parsed)) {
+			return {
+				ok: false,
+				error:
+					"Break-glass governance policy schema is invalid. Expected ci-migrate-break-glass-policy/v1.",
+			};
+		}
+		if (parsed.integrity.signingKeyId !== signingKeyResult.keyId) {
+			return {
+				ok: false,
+				error:
+					"Break-glass governance policy signing key id does not match active signing key.",
+			};
+		}
+		const expectedPayloadSha256 = hashContent(
+			canonicalizeBreakGlassGovernancePolicyForDigest(parsed),
+		);
+		if (parsed.integrity.payloadSha256 !== expectedPayloadSha256) {
+			return {
+				ok: false,
+				error:
+					"Break-glass governance policy integrity payloadSha256 does not match signed payload.",
+			};
+		}
+		return { ok: true, value: parsed };
+	} catch (error) {
+		return {
+			ok: false,
+			error: `Failed to parse break-glass governance policy: ${sanitizeError(error)}`,
+		};
+	}
+}
+
+function validateBreakGlassApprovalAgainstPolicy(
+	approval: BreakGlassApproval,
+	policy: BreakGlassGovernancePolicy,
+	options?: { requireDualForRollbackWeakening?: boolean | undefined },
+): string[] {
+	const violations: string[] = [];
+	const normalizedAllowlist = new Set(
+		policy.approverAllowlist.map((approver) => approver.trim().toLowerCase()),
+	);
+	const approvers = normalizeBreakGlassApprovers(approval);
+	for (const approver of approvers) {
+		if (!normalizedAllowlist.has(approver.toLowerCase())) {
+			violations.push(
+				`Break-glass approver '${approver}' is not allowlisted by governance policy.`,
+			);
+		}
+	}
+	const approvedAtMs = Date.parse(approval.approvedAt);
+	const expiresAtMs = Date.parse(approval.expiresAt);
+	if (Number.isFinite(approvedAtMs) && Number.isFinite(expiresAtMs)) {
+		const ttlHours = (expiresAtMs - approvedAtMs) / (60 * 60 * 1000);
+		if (ttlHours > policy.maxApprovalTtlHours) {
+			violations.push(
+				`Break-glass approval TTL (${ttlHours.toFixed(2)}h) exceeds governance policy maxApprovalTtlHours (${policy.maxApprovalTtlHours}h).`,
+			);
+		}
+	}
+	const requireDual =
+		options?.requireDualForRollbackWeakening === true &&
+		policy.requireDualApprovalForRollbackWeakening;
+	if (requireDual && approvers.length < 2) {
+		violations.push(
+			"Break-glass governance policy requires dual approval for rollback weakening.",
+		);
+	}
+	return violations;
 }
 
 function readBreakGlassApproval(
@@ -987,6 +1275,7 @@ function canonicalizeMergeQueueEvidenceForDigest(
 		schemaVersion: evidence.schemaVersion,
 		snapshotId: evidence.snapshotId,
 		generatedAt: evidence.generatedAt,
+		binding: evidence.binding,
 		pausedAt: evidence.pausedAt,
 		drainedAt: evidence.drainedAt,
 		revalidatedAt: evidence.revalidatedAt,
@@ -1016,10 +1305,11 @@ function isValidMergeQueueCutoverEvidence(
 			Number.isFinite(count) &&
 			count >= 0);
 	return (
-		parsed.schemaVersion === "ci-migrate-merge-queue-evidence/v1" &&
+		parsed.schemaVersion === "ci-migrate-merge-queue-evidence/v2" &&
 		parsed.snapshotId === snapshotId &&
 		typeof parsed.generatedAt === "string" &&
 		Number.isFinite(Date.parse(parsed.generatedAt)) &&
+		isValidMergeQueueEvidenceBinding(parsed.binding) &&
 		typeof parsed.pausedAt === "string" &&
 		Number.isFinite(Date.parse(parsed.pausedAt)) &&
 		(parsed.drainedAt === undefined ||
@@ -1050,6 +1340,7 @@ function readMergeQueueEvidence(
 	snapshotId: string,
 	overridePath: string | undefined,
 	required: boolean,
+	expectedBinding: MergeQueueEvidenceBinding | null,
 ):
 	| { ok: true; value: MergeQueueEvidenceRecord | null }
 	| {
@@ -1126,6 +1417,24 @@ function readMergeQueueEvidence(
 					"Merge-queue orchestration evidence integrity payloadSha256 does not match signed payload.",
 			};
 		}
+		if (expectedBinding) {
+			const binding = parsed.binding;
+			if (
+				binding.repoFullName !== expectedBinding.repoFullName ||
+				binding.headSha !== expectedBinding.headSha ||
+				binding.trustedPolicyRef !== expectedBinding.trustedPolicyRef ||
+				binding.authorityConfigSha256 !==
+					expectedBinding.authorityConfigSha256 ||
+				binding.requiredCheckManifestSha256 !==
+					expectedBinding.requiredCheckManifestSha256
+			) {
+				return {
+					ok: false,
+					error:
+						"Merge-queue orchestration evidence binding does not match current repository/policy identity. Refusing replayed evidence.",
+				};
+			}
+		}
 		return {
 			ok: true,
 			value: {
@@ -1199,6 +1508,146 @@ function validateMergeQueueEvidenceLifecycle(
 		}
 	}
 	return violations;
+}
+
+function deriveMergeQueueEvidenceBinding(
+	targetDir: string,
+):
+	| { ok: true; value: MergeQueueEvidenceBinding }
+	| { ok: false; error: string } {
+	const policyResult = readContractProviderPolicy(targetDir);
+	if (!policyResult.ok) {
+		return { ok: false, error: policyResult.error };
+	}
+	const originUrl = readGitOriginUrl(targetDir);
+	if (!originUrl) {
+		return {
+			ok: false,
+			error:
+				"Git origin URL is required to bind merge-queue orchestration evidence identity.",
+		};
+	}
+	const repoFullName = normalizeRepoFullName(originUrl);
+	if (!repoFullName) {
+		return {
+			ok: false,
+			error: `Unsupported origin URL for merge-queue evidence binding: ${originUrl}`,
+		};
+	}
+	const headShaResult = resolveGitRefToCommit(targetDir, "HEAD");
+	if (!headShaResult.ok) {
+		return { ok: false, error: headShaResult.error };
+	}
+	const trustedPolicyRefResult = resolveGitRefToCommit(
+		targetDir,
+		policyResult.value.trustedPolicyRef,
+	);
+	if (!trustedPolicyRefResult.ok) {
+		return { ok: false, error: trustedPolicyRefResult.error };
+	}
+	const authorityDigestResult = readHashedPolicyFile(
+		targetDir,
+		policyResult.value.authorityConfigPath,
+	);
+	if (!authorityDigestResult.ok) {
+		return { ok: false, error: authorityDigestResult.error };
+	}
+	const requiredManifestDigestResult = readHashedPolicyFile(
+		targetDir,
+		policyResult.value.requiredCheckManifestPath,
+	);
+	if (!requiredManifestDigestResult.ok) {
+		return { ok: false, error: requiredManifestDigestResult.error };
+	}
+	return {
+		ok: true,
+		value: {
+			repoFullName,
+			headSha: headShaResult.commitSha,
+			trustedPolicyRef: trustedPolicyRefResult.commitSha,
+			authorityConfigSha256: authorityDigestResult.digest,
+			requiredCheckManifestSha256: requiredManifestDigestResult.digest,
+		},
+	};
+}
+
+function runMergeQueueOrchestrator(
+	targetDir: string,
+	orchestratorPath: string,
+	snapshotId: string,
+	evidencePath: string,
+	requireFullLifecycle: boolean,
+	binding: MergeQueueEvidenceBinding,
+	signingKey: string,
+): { ok: true } | { ok: false; error: string } {
+	const resolvedOrchestratorPath = resolve(targetDir, orchestratorPath);
+	if (!existsSync(resolvedOrchestratorPath)) {
+		return {
+			ok: false,
+			error: `Merge-queue orchestrator executable not found: ${orchestratorPath}`,
+		};
+	}
+	const resolvedEvidencePath = resolve(targetDir, evidencePath);
+	const args = [
+		"--snapshot",
+		snapshotId,
+		"--evidence-path",
+		resolvedEvidencePath,
+		"--require-full-lifecycle",
+		requireFullLifecycle ? "true" : "false",
+	];
+	const orchestratorResult = spawnSync(resolvedOrchestratorPath, args, {
+		cwd: targetDir,
+		encoding: "utf-8",
+		env: {
+			...env,
+			HARNESS_CI_MIGRATE_SNAPSHOT_ID: snapshotId,
+			HARNESS_CI_MIGRATE_EVIDENCE_PATH: resolvedEvidencePath,
+			HARNESS_CI_MIGRATE_EVIDENCE_REL_PATH: evidencePath,
+			HARNESS_CI_MIGRATE_REQUIRE_FULL_LIFECYCLE: requireFullLifecycle
+				? "1"
+				: "0",
+			HARNESS_CI_MIGRATE_SIGNING_KEY: signingKey,
+			HARNESS_CI_MIGRATE_BINDING_REPO_FULL_NAME: binding.repoFullName,
+			HARNESS_CI_MIGRATE_BINDING_HEAD_SHA: binding.headSha,
+			HARNESS_CI_MIGRATE_BINDING_TRUSTED_POLICY_REF: binding.trustedPolicyRef,
+			HARNESS_CI_MIGRATE_BINDING_AUTHORITY_CONFIG_SHA256:
+				binding.authorityConfigSha256,
+			HARNESS_CI_MIGRATE_BINDING_REQUIRED_CHECK_MANIFEST_SHA256:
+				binding.requiredCheckManifestSha256,
+		},
+	});
+	if (orchestratorResult.error) {
+		return {
+			ok: false,
+			error: `Failed to execute merge-queue orchestrator: ${sanitizeError(orchestratorResult.error)}`,
+		};
+	}
+	if (orchestratorResult.status !== 0) {
+		const stderr = orchestratorResult.stderr?.trim() ?? "";
+		const stdout = orchestratorResult.stdout?.trim() ?? "";
+		const detail = stderr.length > 0 ? stderr : stdout;
+		return {
+			ok: false,
+			error:
+				detail.length > 0
+					? `Merge-queue orchestrator failed: ${detail}`
+					: "Merge-queue orchestrator exited non-zero.",
+		};
+	}
+	if (!existsSync(resolvedEvidencePath)) {
+		return {
+			ok: false,
+			error: `Merge-queue orchestrator did not emit evidence file: ${evidencePath}`,
+		};
+	}
+	if (!existsSync(`${resolvedEvidencePath}.sig`)) {
+		return {
+			ok: false,
+			error: `Merge-queue orchestrator did not emit evidence signature: ${evidencePath}.sig`,
+		};
+	}
+	return { ok: true };
 }
 
 function isSafeRestorePath(targetDir: string, relativePath: string): boolean {
@@ -1577,7 +2026,9 @@ function readContractProviderMode(targetDir: string): CIProviderMode | null {
 
 function readContractProviderPolicy(
 	targetDir: string,
+	options?: { strict?: boolean | undefined },
 ): { ok: true; value: CIProviderPolicyConfig } | { ok: false; error: string } {
+	const strictMode = options?.strict === true;
 	const contractPath = resolve(targetDir, "harness.contract.json");
 	if (!existsSync(contractPath)) {
 		return {
@@ -1612,17 +2063,37 @@ function readContractProviderPolicy(
 				error: "ciProviderPolicy.mode must be either shadow or required.",
 			};
 		}
-		const migrationStage =
+		let migrationStage: CIProviderMigrationStage;
+		if (
 			policy.migrationStage === "dual-provider" ||
 			policy.migrationStage === "circleci-primary" ||
 			policy.migrationStage === "circleci-only"
-				? policy.migrationStage
-				: "dual-provider";
-		const transitionStatusArtifactPath =
+		) {
+			migrationStage = policy.migrationStage;
+		} else if (strictMode) {
+			return {
+				ok: false,
+				error:
+					"ciProviderPolicy.migrationStage must be one of dual-provider, circleci-primary, or circleci-only.",
+			};
+		} else {
+			migrationStage = "dual-provider";
+		}
+		let transitionStatusArtifactPath: string;
+		if (
 			typeof policy.transitionStatusArtifactPath === "string" &&
 			policy.transitionStatusArtifactPath.trim().length > 0
-				? policy.transitionStatusArtifactPath.trim()
-				: DEFAULT_TRANSITION_STATUS_ARTIFACT_PATH;
+		) {
+			transitionStatusArtifactPath = policy.transitionStatusArtifactPath.trim();
+		} else if (strictMode) {
+			return {
+				ok: false,
+				error:
+					"ciProviderPolicy.transitionStatusArtifactPath is required and cannot be empty.",
+			};
+		} else {
+			transitionStatusArtifactPath = DEFAULT_TRANSITION_STATUS_ARTIFACT_PATH;
+		}
 		if (
 			typeof policy.trustedPolicyRef !== "string" ||
 			policy.trustedPolicyRef.trim().length === 0
@@ -4424,6 +4895,16 @@ function maybeAutoGenerateParityProofPack(
 	const proofPackPath = resolve(targetDir, PARITY_PROOF_PACK_PATH);
 	const signaturePath = resolve(targetDir, PARITY_PROOF_PACK_SIGNATURE_PATH);
 	if (existsSync(proofPackPath) && existsSync(signaturePath)) {
+		const existingProofPackTrust = evaluatePromotionEvidence(
+			targetDir,
+			targetProvider,
+		);
+		if (existingProofPackTrust.status !== "verified") {
+			return {
+				ok: false,
+				error: `Existing parity proof pack failed trust verification. Refusing reuse for auto-generation path. ${existingProofPackTrust.violations.join(" ")}`,
+			};
+		}
 		return { ok: true, generated: false };
 	}
 	const policyResult = readContractProviderPolicy(targetDir);
@@ -5298,6 +5779,191 @@ function readOrImportRequiredChecks(
 	};
 }
 
+function escapeRegexLiteral(value: string): string {
+	return value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+}
+
+function readRequiredCheckNamesFromContract(targetDir: string): string[] {
+	const contractPath = resolve(targetDir, "harness.contract.json");
+	if (!existsSync(contractPath)) {
+		return [];
+	}
+	try {
+		const parsed = JSON.parse(readFileSync(contractPath, "utf-8")) as {
+			branchProtection?: { requiredChecks?: unknown } | undefined;
+			reviewPolicy?: { requiredChecks?: unknown } | undefined;
+		};
+		const branchChecks = Array.isArray(parsed.branchProtection?.requiredChecks)
+			? parsed.branchProtection?.requiredChecks
+			: [];
+		const reviewChecks = Array.isArray(parsed.reviewPolicy?.requiredChecks)
+			? parsed.reviewPolicy?.requiredChecks
+			: [];
+		return [...branchChecks, ...reviewChecks]
+			.filter((value): value is string => typeof value === "string")
+			.map((value) => value.trim())
+			.filter((value) => value.length > 0);
+	} catch {
+		return [];
+	}
+}
+
+function readRequiredCheckNamesFromSourceProviderConfig(
+	targetDir: string,
+	sourceProvider: CIProvider,
+): string[] {
+	if (sourceProvider !== "github-actions") {
+		return [];
+	}
+	const sourceAdapter = createCIProviderAdapter(sourceProvider);
+	const sourceConfigPaths = sourceAdapter.discoverConfigPaths(targetDir);
+	const checks = new Set<string>();
+	for (const configPath of sourceConfigPaths) {
+		const absolutePath = resolve(targetDir, configPath);
+		if (!existsSync(absolutePath)) {
+			continue;
+		}
+		try {
+			const content = readFileSync(absolutePath, "utf-8");
+			for (const line of content.split(/\r?\n/)) {
+				const nameMatch = line.match(/^ {4}name:\s*(.+?)\s*$/);
+				if (!nameMatch?.[1]) {
+					continue;
+				}
+				const displayName = nameMatch[1].trim().replace(/^['"]|['"]$/g, "");
+				if (displayName.length > 0) {
+					checks.add(displayName);
+				}
+			}
+		} catch {
+			// Best-effort legacy import: ignore unreadable workflow files.
+		}
+	}
+	return [...checks];
+}
+
+function buildImportedRequiredChecks(
+	displayNames: string[],
+	sourceProvider: CIProvider,
+): RequiredCheckIdentity[] {
+	return displayNames.map((displayName, index) => ({
+		policyId: `imported-required-check-${index + 1}`,
+		displayName,
+		sourceAppSlug: sourceProvider,
+		sourceAppId: sourceProvider,
+		externalIdPattern: `^${escapeRegexLiteral(displayName)}$`,
+		requiredOnEvents: ["pull_request", "merge_group"],
+		freshnessWindowDays: 7,
+		class: "required",
+	}));
+}
+
+function writeRequiredChecksManifest(
+	targetDir: string,
+	provider: CIProvider,
+	requiredChecks: RequiredCheckIdentity[],
+): { ok: true } | { ok: false; error: string } {
+	try {
+		const manifestPath = resolve(
+			targetDir,
+			HARNESS_DIR,
+			"ci-required-checks.json",
+		);
+		mkdirSync(dirname(manifestPath), { recursive: true });
+		writeFileSync(
+			manifestPath,
+			JSON.stringify(
+				{
+					version: 1,
+					activeProvider: provider,
+					requiredChecks,
+				},
+				null,
+				2,
+			),
+		);
+		return { ok: true };
+	} catch (error) {
+		return {
+			ok: false,
+			error: `Failed to write required checks manifest: ${sanitizeError(error)}`,
+		};
+	}
+}
+
+function readOrImportRequiredChecks(
+	targetDir: string,
+	sourceProvider: CIProvider,
+	allowPersistManifest: boolean,
+):
+	| {
+			ok: true;
+			value: RequiredCheckIdentity[];
+			imported: boolean;
+			persisted: boolean;
+	  }
+	| {
+			ok: false;
+			error: string;
+	  } {
+	const requiredChecksResult = readAllRequiredChecks(targetDir);
+	if (requiredChecksResult.ok) {
+		return {
+			ok: true,
+			value: requiredChecksResult.value,
+			imported: false,
+			persisted: false,
+		};
+	}
+	if (
+		requiredChecksResult.error !==
+		"Required checks manifest missing: .harness/ci-required-checks.json"
+	) {
+		return requiredChecksResult;
+	}
+
+	const contractCheckNames = readRequiredCheckNamesFromContract(targetDir);
+	const workflowCheckNames = readRequiredCheckNamesFromSourceProviderConfig(
+		targetDir,
+		sourceProvider,
+	);
+	const importedCheckNames = [
+		...new Set([...contractCheckNames, ...workflowCheckNames]),
+	]
+		.map((name) => name.trim())
+		.filter((name) => name.length > 0)
+		.sort((left, right) => left.localeCompare(right));
+
+	if (importedCheckNames.length === 0) {
+		return {
+			ok: false,
+			error:
+				"Required checks manifest missing and no legacy required checks were discovered from harness.contract.json or source workflow metadata.",
+		};
+	}
+
+	const importedChecks = buildImportedRequiredChecks(
+		importedCheckNames,
+		sourceProvider,
+	);
+	if (allowPersistManifest) {
+		const writeResult = writeRequiredChecksManifest(
+			targetDir,
+			sourceProvider,
+			importedChecks,
+		);
+		if (!writeResult.ok) {
+			return writeResult;
+		}
+	}
+	return {
+		ok: true,
+		value: importedChecks,
+		imported: true,
+		persisted: allowPersistManifest,
+	};
+}
+
 function readAllRequiredChecks(targetDir: string):
 	| {
 			ok: true;
@@ -5393,6 +6059,11 @@ function validateRequiredChecksForVerify(
 	const seenDisplayNames = new Set<string>();
 	for (const check of requiredChecks) {
 		const trimmedDisplayName = check.displayName.trim();
+		if (trimmedDisplayName.startsWith("shadow/")) {
+			violations.push(
+				`Required check ${trimmedDisplayName} uses forbidden shadow/* namespace. Reclassify this check before strict verify.`,
+			);
+		}
 		if (seenDisplayNames.has(trimmedDisplayName)) {
 			violations.push(
 				`Duplicate required check displayName detected: ${trimmedDisplayName}. Required check names must be unique to avoid merge deadlocks.`,
@@ -6283,12 +6954,14 @@ export function runCIMigrateCLI(
 	let sourceProviderForRollback: CIProvider = "github-actions";
 	let preparedState: MigrationPhaseState | null = null;
 	let breakGlassApproval: BreakGlassApproval | null = null;
+	let breakGlassGovernancePolicy: BreakGlassGovernancePolicy | null = null;
 	let mergeQueueWindowActive = false;
 	let mergeQueueWindowPreCutover: BranchProtectionSatisfiabilityReport | null =
 		null;
 	let mergeQueueWindowPausedAt: string | null = null;
 	let mergeQueueWindowDrainedAt: string | null = null;
 	let mergeQueueEvidence: MergeQueueEvidenceRecord | null = null;
+	let mergeQueueEvidenceBinding: MergeQueueEvidenceBinding | null = null;
 	const writeMergeQueueWindowStage = (
 		stage: MergeQueueCutoverWindow["stage"],
 		options?: {
@@ -6303,8 +6976,14 @@ export function runCIMigrateCLI(
 			return true;
 		}
 		const pausedAt =
-			options?.pausedAt ?? mergeQueueWindowPausedAt ?? new Date().toISOString();
-		const drainedAt = options?.drainedAt ?? mergeQueueWindowDrainedAt;
+			options?.pausedAt ??
+			mergeQueueEvidence?.evidence.pausedAt ??
+			mergeQueueWindowPausedAt ??
+			new Date().toISOString();
+		const drainedAt =
+			options?.drainedAt ??
+			mergeQueueEvidence?.evidence.drainedAt ??
+			mergeQueueWindowDrainedAt;
 		const window: MergeQueueCutoverWindow = {
 			schemaVersion: "ci-migrate-merge-queue-window/v1",
 			snapshotId,
@@ -6318,6 +6997,7 @@ export function runCIMigrateCLI(
 					: {
 							sourcePath: mergeQueueEvidence.sourcePath,
 							contentSha256: mergeQueueEvidence.contentSha256,
+							binding: mergeQueueEvidence.evidence.binding,
 							pausedAt: mergeQueueEvidence.evidence.pausedAt,
 							drainedAt: mergeQueueEvidence.evidence.drainedAt,
 							revalidatedAt: mergeQueueEvidence.evidence.revalidatedAt,
@@ -6332,7 +7012,10 @@ export function runCIMigrateCLI(
 			window.drainedAt = drainedAt ?? new Date().toISOString();
 		}
 		if (stage === "revalidated") {
-			window.revalidatedAt = options?.revalidatedAt ?? new Date().toISOString();
+			window.revalidatedAt =
+				options?.revalidatedAt ??
+				mergeQueueEvidence?.evidence.revalidatedAt ??
+				new Date().toISOString();
 		}
 		if (stage === "aborted") {
 			window.abortedAt = options?.abortedAt ?? new Date().toISOString();
@@ -6389,6 +7072,25 @@ export function runCIMigrateCLI(
 			return EXIT_CODES.INVALID_PATH;
 		}
 		breakGlassApproval = parsedBreakGlassResult.value;
+		const breakGlassPolicyResult = readBreakGlassGovernancePolicy(dir);
+		if (!breakGlassPolicyResult.ok) {
+			console.error(`Error: ${breakGlassPolicyResult.error}`);
+			return EXIT_CODES.INVALID_PATH;
+		}
+		breakGlassGovernancePolicy = breakGlassPolicyResult.value;
+		const policyViolations = validateBreakGlassApprovalAgainstPolicy(
+			breakGlassApproval,
+			breakGlassGovernancePolicy,
+		);
+		if (policyViolations.length > 0) {
+			console.error(
+				"Error: break-glass approval does not satisfy governance policy:",
+			);
+			for (const violation of policyViolations) {
+				console.error(`- ${violation}`);
+			}
+			return EXIT_CODES.INVALID_PATH;
+		}
 	}
 
 	if (action === "commit" || action === "abort" || (rollback && !action)) {
@@ -6518,6 +7220,28 @@ export function runCIMigrateCLI(
 			);
 			return EXIT_CODES.INVALID_PATH;
 		}
+		if (rollbackMayWeakenChecksOrRulesets && breakGlassApproval) {
+			if (!breakGlassGovernancePolicy) {
+				console.error(
+					`Error: break-glass governance policy is required for rollback weakening: ${BREAK_GLASS_POLICY_PATH}`,
+				);
+				return EXIT_CODES.INVALID_PATH;
+			}
+			const weakeningPolicyViolations = validateBreakGlassApprovalAgainstPolicy(
+				breakGlassApproval,
+				breakGlassGovernancePolicy,
+				{ requireDualForRollbackWeakening: true },
+			);
+			if (weakeningPolicyViolations.length > 0) {
+				console.error(
+					"Error: break-glass rollback-weakening approval failed governance policy checks:",
+				);
+				for (const violation of weakeningPolicyViolations) {
+					console.error(`- ${violation}`);
+				}
+				return EXIT_CODES.INVALID_PATH;
+			}
+		}
 	}
 
 	if (rollback && options.snapshot) {
@@ -6611,7 +7335,7 @@ export function runCIMigrateCLI(
 		}
 
 		if (action === "verify") {
-			const policyResult = readContractProviderPolicy(dir);
+			const policyResult = readContractProviderPolicy(dir, { strict: true });
 			if (!policyResult.ok) {
 				console.error(`Error: ${policyResult.error}`);
 				return EXIT_CODES.INVALID_PATH;
@@ -6702,14 +7426,86 @@ export function runCIMigrateCLI(
 	}
 
 	if (apply && !dryRun) {
+		const promotionEvidenceRequired = shouldRequirePromotionEvidence(
+			dir,
+			provider,
+		);
+		const requireFullMergeQueueLifecycle = promotionEvidenceRequired;
 		const requireMergeQueueEvidence =
 			options.mergeQueueEvidencePath !== undefined ||
-			(action === "commit" && shouldRequirePromotionEvidence(dir, provider));
+			requireFullMergeQueueLifecycle;
+		const configuredMergeQueueEvidencePath =
+			typeof options.mergeQueueEvidencePath === "string" &&
+			options.mergeQueueEvidencePath.trim().length > 0
+				? options.mergeQueueEvidencePath.trim()
+				: DEFAULT_MERGE_QUEUE_EVIDENCE_PATH;
+		const configuredOrchestratorPath =
+			typeof options.mergeQueueOrchestratorPath === "string"
+				? options.mergeQueueOrchestratorPath.trim()
+				: undefined;
+		if (
+			options.mergeQueueOrchestratorPath !== undefined &&
+			(!configuredOrchestratorPath || configuredOrchestratorPath.length === 0)
+		) {
+			console.error(
+				"Error: --merge-queue-orchestrator requires a non-empty executable path.",
+			);
+			return EXIT_CODES.INVALID_PATH;
+		}
+		const mergeQueueOrchestratorPath =
+			configuredOrchestratorPath && configuredOrchestratorPath.length > 0
+				? configuredOrchestratorPath
+				: requireMergeQueueEvidence &&
+						existsSync(resolve(dir, DEFAULT_MERGE_QUEUE_ORCHESTRATOR_PATH))
+					? DEFAULT_MERGE_QUEUE_ORCHESTRATOR_PATH
+					: undefined;
+		const mergeQueueEvidencePathExplicitlyProvided =
+			options.mergeQueueEvidencePath !== undefined;
+		const hasExistingMergeQueueEvidence = existsSync(
+			resolve(dir, configuredMergeQueueEvidencePath),
+		);
+		if (
+			requireFullMergeQueueLifecycle ||
+			mergeQueueOrchestratorPath !== undefined ||
+			mergeQueueEvidencePathExplicitlyProvided ||
+			hasExistingMergeQueueEvidence
+		) {
+			const mergeQueueBindingResult = deriveMergeQueueEvidenceBinding(dir);
+			if (!mergeQueueBindingResult.ok) {
+				console.error(`Error: ${mergeQueueBindingResult.error}`);
+				return EXIT_CODES.INVALID_PATH;
+			}
+			mergeQueueEvidenceBinding = mergeQueueBindingResult.value;
+		}
+		if (mergeQueueOrchestratorPath && mergeQueueEvidenceBinding) {
+			const signingKeyResult = resolveSnapshotSigningKey();
+			if (!signingKeyResult.ok) {
+				console.error(`Error: ${signingKeyResult.error}`);
+				return EXIT_CODES.INVALID_PATH;
+			}
+			const orchestratorRunResult = runMergeQueueOrchestrator(
+				dir,
+				mergeQueueOrchestratorPath,
+				snapshotId,
+				configuredMergeQueueEvidencePath,
+				requireFullMergeQueueLifecycle,
+				mergeQueueEvidenceBinding,
+				signingKeyResult.key,
+			);
+			if (!orchestratorRunResult.ok) {
+				console.error(`Error: ${orchestratorRunResult.error}`);
+				return EXIT_CODES.INVALID_PATH;
+			}
+		}
 		const mergeQueueEvidenceResult = readMergeQueueEvidence(
 			dir,
 			snapshotId,
-			options.mergeQueueEvidencePath,
-			requireMergeQueueEvidence,
+			options.mergeQueueEvidencePath !== undefined ||
+				mergeQueueOrchestratorPath !== undefined
+				? configuredMergeQueueEvidencePath
+				: undefined,
+			requireMergeQueueEvidence || mergeQueueOrchestratorPath !== undefined,
+			mergeQueueEvidenceBinding,
 		);
 		if (!mergeQueueEvidenceResult.ok) {
 			console.error(`Error: ${mergeQueueEvidenceResult.error}`);
@@ -6719,7 +7515,7 @@ export function runCIMigrateCLI(
 		if (mergeQueueEvidence) {
 			const evidenceViolations = validateMergeQueueEvidenceLifecycle(
 				mergeQueueEvidence,
-				shouldRequirePromotionEvidence(dir, provider),
+				requireFullMergeQueueLifecycle,
 			);
 			if (evidenceViolations.length > 0) {
 				console.error("Error: merge-queue orchestration evidence is invalid:");
