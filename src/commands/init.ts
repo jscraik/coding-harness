@@ -28,6 +28,7 @@ import {
 	detectPackageManager,
 	getTemplatesForProvider,
 	isTemplateEnabledForProvider,
+	normalizeCIProvider,
 	shouldAutoUpdateTemplate,
 } from "../lib/init/scaffold.js";
 import {
@@ -48,35 +49,12 @@ import { checkForUpdates, executeUpdate } from "../lib/init/update.js";
 import { sanitizeError } from "../lib/input/sanitize.js";
 import { getVersion } from "../lib/version.js";
 
-// Local constants (not in types module)
-const DEFAULT_CI_PROVIDER: CIProvider = "github-actions";
-
 // Retired template paths that should be cleaned up during init
 const RETIRED_TEMPLATE_PATHS = [
 	".github/ISSUE_TEMPLATE/issue.yml",
 	".github/ISSUE_TEMPLATE/feature.yml",
 	".github/ISSUE_TEMPLATE/security.yml",
 ] as const;
-
-function normalizeCIProvider(
-	value: string | undefined,
-): { ok: true; value: CIProvider } | { ok: false; error: InitErrorOutput } {
-	if (!value || value.trim().length === 0) {
-		return { ok: true, value: DEFAULT_CI_PROVIDER };
-	}
-
-	if (value === "github-actions" || value === "circleci") {
-		return { ok: true, value };
-	}
-
-	return {
-		ok: false,
-		error: {
-			code: "INVALID_PATH",
-			message: `Unsupported CI provider: ${value}. Expected one of: github-actions, circleci.`,
-		},
-	};
-}
 
 // === Path Sanitization ===
 

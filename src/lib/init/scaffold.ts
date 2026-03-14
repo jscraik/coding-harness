@@ -34,6 +34,7 @@ import {
 	CURRENT_SCHEMA_VERSION,
 	type CodexAction,
 	type CodexActionIcon,
+	type InitErrorOutput,
 	type PackageJsonLike,
 	type Template,
 	type TemplateRenderContext,
@@ -81,6 +82,8 @@ function renderRequiredChecksManifest(ciProvider: CIProvider): string {
 			sourceAppSlug: ciProvider,
 			sourceAppId: ciProvider,
 			externalIdPattern: `^${escapeRegexLiteral(displayName)}$`,
+			requiredOnEvents: ["pull_request", "merge_group"] as const,
+			freshnessWindowDays: 7,
 			class: "required" as const,
 		}),
 	);
@@ -204,6 +207,30 @@ export function detectPackageManager(dir: string): "pnpm" | "yarn" | "npm" {
 	if (existsSync(resolve(dir, "yarn.lock"))) return "yarn";
 	if (existsSync(resolve(dir, "package-lock.json"))) return "npm";
 	return "npm";
+}
+
+/**
+ * Normalize and validate a CI provider string.
+ * Returns the provider or an error if invalid.
+ */
+export function normalizeCIProvider(
+	value: string | undefined,
+): { ok: true; value: CIProvider } | { ok: false; error: InitErrorOutput } {
+	if (!value || value.trim().length === 0) {
+		return { ok: true, value: DEFAULT_CI_PROVIDER };
+	}
+
+	if (value === "github-actions" || value === "circleci") {
+		return { ok: true, value };
+	}
+
+	return {
+		ok: false,
+		error: {
+			code: "INVALID_PATH",
+			message: `Unsupported CI provider: ${value}. Expected one of: github-actions, circleci.`,
+		},
+	};
 }
 
 export function createTemplateRenderContext(
