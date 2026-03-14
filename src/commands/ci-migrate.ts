@@ -5779,6 +5779,191 @@ function readOrImportRequiredChecks(
 	};
 }
 
+function escapeRegexLiteral(value: string): string {
+	return value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+}
+
+function readRequiredCheckNamesFromContract(targetDir: string): string[] {
+	const contractPath = resolve(targetDir, "harness.contract.json");
+	if (!existsSync(contractPath)) {
+		return [];
+	}
+	try {
+		const parsed = JSON.parse(readFileSync(contractPath, "utf-8")) as {
+			branchProtection?: { requiredChecks?: unknown } | undefined;
+			reviewPolicy?: { requiredChecks?: unknown } | undefined;
+		};
+		const branchChecks = Array.isArray(parsed.branchProtection?.requiredChecks)
+			? parsed.branchProtection?.requiredChecks
+			: [];
+		const reviewChecks = Array.isArray(parsed.reviewPolicy?.requiredChecks)
+			? parsed.reviewPolicy?.requiredChecks
+			: [];
+		return [...branchChecks, ...reviewChecks]
+			.filter((value): value is string => typeof value === "string")
+			.map((value) => value.trim())
+			.filter((value) => value.length > 0);
+	} catch {
+		return [];
+	}
+}
+
+function readRequiredCheckNamesFromSourceProviderConfig(
+	targetDir: string,
+	sourceProvider: CIProvider,
+): string[] {
+	if (sourceProvider !== "github-actions") {
+		return [];
+	}
+	const sourceAdapter = createCIProviderAdapter(sourceProvider);
+	const sourceConfigPaths = sourceAdapter.discoverConfigPaths(targetDir);
+	const checks = new Set<string>();
+	for (const configPath of sourceConfigPaths) {
+		const absolutePath = resolve(targetDir, configPath);
+		if (!existsSync(absolutePath)) {
+			continue;
+		}
+		try {
+			const content = readFileSync(absolutePath, "utf-8");
+			for (const line of content.split(/\r?\n/)) {
+				const nameMatch = line.match(/^ {4}name:\s*(.+?)\s*$/);
+				if (!nameMatch?.[1]) {
+					continue;
+				}
+				const displayName = nameMatch[1].trim().replace(/^['"]|['"]$/g, "");
+				if (displayName.length > 0) {
+					checks.add(displayName);
+				}
+			}
+		} catch {
+			// Best-effort legacy import: ignore unreadable workflow files.
+		}
+	}
+	return [...checks];
+}
+
+function buildImportedRequiredChecks(
+	displayNames: string[],
+	sourceProvider: CIProvider,
+): RequiredCheckIdentity[] {
+	return displayNames.map((displayName, index) => ({
+		policyId: `imported-required-check-${index + 1}`,
+		displayName,
+		sourceAppSlug: sourceProvider,
+		sourceAppId: sourceProvider,
+		externalIdPattern: `^${escapeRegexLiteral(displayName)}$`,
+		requiredOnEvents: ["pull_request", "merge_group"],
+		freshnessWindowDays: 7,
+		class: "required",
+	}));
+}
+
+function writeRequiredChecksManifest(
+	targetDir: string,
+	provider: CIProvider,
+	requiredChecks: RequiredCheckIdentity[],
+): { ok: true } | { ok: false; error: string } {
+	try {
+		const manifestPath = resolve(
+			targetDir,
+			HARNESS_DIR,
+			"ci-required-checks.json",
+		);
+		mkdirSync(dirname(manifestPath), { recursive: true });
+		writeFileSync(
+			manifestPath,
+			JSON.stringify(
+				{
+					version: 1,
+					activeProvider: provider,
+					requiredChecks,
+				},
+				null,
+				2,
+			),
+		);
+		return { ok: true };
+	} catch (error) {
+		return {
+			ok: false,
+			error: `Failed to write required checks manifest: ${sanitizeError(error)}`,
+		};
+	}
+}
+
+function readOrImportRequiredChecks(
+	targetDir: string,
+	sourceProvider: CIProvider,
+	allowPersistManifest: boolean,
+):
+	| {
+			ok: true;
+			value: RequiredCheckIdentity[];
+			imported: boolean;
+			persisted: boolean;
+	  }
+	| {
+			ok: false;
+			error: string;
+	  } {
+	const requiredChecksResult = readAllRequiredChecks(targetDir);
+	if (requiredChecksResult.ok) {
+		return {
+			ok: true,
+			value: requiredChecksResult.value,
+			imported: false,
+			persisted: false,
+		};
+	}
+	if (
+		requiredChecksResult.error !==
+		"Required checks manifest missing: .harness/ci-required-checks.json"
+	) {
+		return requiredChecksResult;
+	}
+
+	const contractCheckNames = readRequiredCheckNamesFromContract(targetDir);
+	const workflowCheckNames = readRequiredCheckNamesFromSourceProviderConfig(
+		targetDir,
+		sourceProvider,
+	);
+	const importedCheckNames = [
+		...new Set([...contractCheckNames, ...workflowCheckNames]),
+	]
+		.map((name) => name.trim())
+		.filter((name) => name.length > 0)
+		.sort((left, right) => left.localeCompare(right));
+
+	if (importedCheckNames.length === 0) {
+		return {
+			ok: false,
+			error:
+				"Required checks manifest missing and no legacy required checks were discovered from harness.contract.json or source workflow metadata.",
+		};
+	}
+
+	const importedChecks = buildImportedRequiredChecks(
+		importedCheckNames,
+		sourceProvider,
+	);
+	if (allowPersistManifest) {
+		const writeResult = writeRequiredChecksManifest(
+			targetDir,
+			sourceProvider,
+			importedChecks,
+		);
+		if (!writeResult.ok) {
+			return writeResult;
+		}
+	}
+	return {
+		ok: true,
+		value: importedChecks,
+		imported: true,
+		persisted: allowPersistManifest,
+	};
+}
+
 function readAllRequiredChecks(targetDir: string):
 	| {
 			ok: true;
