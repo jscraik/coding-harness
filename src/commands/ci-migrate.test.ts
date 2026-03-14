@@ -7,10 +7,12 @@ import {
 	mkdtempSync,
 	readFileSync,
 	rmSync,
+	symlinkSync,
 	writeFileSync,
 } from "node:fs";
 import { tmpdir } from "node:os";
 import { dirname, join } from "node:path";
+import { pathToFileURL } from "node:url";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { scanOpenPullRequestSatisfiability } from "../lib/ci/satisfiability.js";
 import { EXIT_CODES } from "../lib/init/types.js";
@@ -79,6 +81,16 @@ const MERGE_QUEUE_EVIDENCE_PATH =
 	".harness/control-plane/merge-queue-cutover-evidence.json";
 const MERGE_QUEUE_ORCHESTRATOR_PATH =
 	".harness/control-plane/merge-queue-cutover-orchestrator";
+const MERGE_QUEUE_PROVIDER_API_PATH =
+	".harness/control-plane/merge-queue-provider-api.json";
+const BREAK_GLASS_POLICY_PATH =
+	".harness/control-plane/ci-migrate-break-glass-policy.json";
+const BREAK_GLASS_ROSTER_PATH =
+	".harness/control-plane/ci-migrate-break-glass-roster.json";
+const BREAK_GLASS_OPS_WORKFLOW_PATH =
+	".harness/control-plane/ci-migrate-break-glass-ops-workflow.json";
+const PARITY_PROOF_HARVEST_MANIFEST_PATH =
+	".harness/ci-parity-proof-harvest-manifest.json";
 
 function signContent(content: string, signingKey: string): string {
 	return createHmac("sha256", signingKey)
@@ -1727,6 +1739,273 @@ function writeBreakGlassGovernancePolicy(
 	return policyPath;
 }
 
+function writeBreakGlassRoster(
+	targetDir: string,
+	options?: {
+		approvers?: string[] | undefined;
+		maxApprovalTtlHours?: number | undefined;
+		requireDualApprovalForRollbackWeakening?: boolean | undefined;
+		cadenceHours?: number | undefined;
+		lastRotatedAt?: string | undefined;
+	},
+): string {
+	const rosterPath = join(targetDir, BREAK_GLASS_ROSTER_PATH);
+	mkdirSync(dirname(rosterPath), { recursive: true });
+	writeFileSync(
+		rosterPath,
+		JSON.stringify(
+			{
+				schemaVersion: "ci-migrate-break-glass-roster/v1",
+				generatedAt: new Date().toISOString(),
+				approvers: options?.approvers ?? ["migration-admin", "security-lead"],
+				maxApprovalTtlHours: options?.maxApprovalTtlHours ?? 24,
+				requireDualApprovalForRollbackWeakening:
+					options?.requireDualApprovalForRollbackWeakening ?? true,
+				rotation: {
+					cadenceHours: options?.cadenceHours ?? 72,
+					lastRotatedAt:
+						options?.lastRotatedAt ??
+						new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString(),
+					runbookUrl: "https://example.com/runbooks/break-glass",
+					owner: "security-team",
+				},
+			},
+			null,
+			2,
+		),
+	);
+	return rosterPath;
+}
+
+function writeMergeQueueProviderAPIFixture(
+	targetDir: string,
+	options?: { includeLifecycle?: boolean | undefined },
+): void {
+	const controlPlaneDir = join(targetDir, ".harness/control-plane");
+	mkdirSync(controlPlaneDir, { recursive: true });
+	const pausedResponsePath = join(
+		controlPlaneDir,
+		"merge-queue-provider-api.paused.json",
+	);
+	const drainedResponsePath = join(
+		controlPlaneDir,
+		"merge-queue-provider-api.drained.json",
+	);
+	const revalidatedResponsePath = join(
+		controlPlaneDir,
+		"merge-queue-provider-api.revalidated.json",
+	);
+	writeFileSync(
+		pausedResponsePath,
+		JSON.stringify(
+			{
+				pausedAt: "2026-03-14T00:00:00.000Z",
+				queueDepth: 3,
+			},
+			null,
+			2,
+		),
+	);
+	writeFileSync(
+		drainedResponsePath,
+		JSON.stringify(
+			{
+				drainedAt: "2026-03-14T00:01:00.000Z",
+				candidateCount: 0,
+			},
+			null,
+			2,
+		),
+	);
+	writeFileSync(
+		revalidatedResponsePath,
+		JSON.stringify(
+			{
+				revalidatedAt: "2026-03-14T00:02:00.000Z",
+				candidateCount: 0,
+			},
+			null,
+			2,
+		),
+	);
+	const includeLifecycle = options?.includeLifecycle !== false;
+	const config = {
+		schemaVersion: "ci-migrate-merge-queue-provider-api/v1",
+		provider: "circleci",
+		paused: {
+			url: pathToFileURL(pausedResponsePath).toString(),
+			timestampPath: "pausedAt",
+			queueDepthPath: "queueDepth",
+		},
+		...(includeLifecycle
+			? {
+					drained: {
+						url: pathToFileURL(drainedResponsePath).toString(),
+						timestampPath: "drainedAt",
+						candidateCountPath: "candidateCount",
+					},
+					revalidated: {
+						url: pathToFileURL(revalidatedResponsePath).toString(),
+						timestampPath: "revalidatedAt",
+						candidateCountPath: "candidateCount",
+					},
+				}
+			: {}),
+	};
+	writeFileSync(
+		join(targetDir, MERGE_QUEUE_PROVIDER_API_PATH),
+		JSON.stringify(config, null, 2),
+	);
+}
+
+function writeParityProofHarvestManifest(targetDir: string): void {
+	const history = ensureProofPackFixtureHistory(targetDir);
+	const controlPlaneDir = join(targetDir, ".harness/control-plane");
+	mkdirSync(controlPlaneDir, { recursive: true });
+	const generatedAt = new Date().toISOString();
+	const parityRawSourcePath = ".harness/control-plane/parity-summary.raw.json";
+	const downstreamRawSourcePath =
+		".harness/control-plane/downstream-proof.raw.json";
+	writeFileSync(
+		join(targetDir, parityRawSourcePath),
+		JSON.stringify(
+			{
+				scenarios: REQUIRED_PARITY_SCENARIOS.map((scenario) => ({
+					scenario,
+					commitCount: 2,
+				})),
+			},
+			null,
+			2,
+		),
+	);
+	writeFileSync(
+		join(targetDir, downstreamRawSourcePath),
+		JSON.stringify(
+			{
+				repositories: ["jamie/repo-a", "jamie/repo-b", "jamie/repo-c"],
+			},
+			null,
+			2,
+		),
+	);
+	const scheduleResponsePath = join(controlPlaneDir, "parity-harvest.schedule.json");
+	const discoveryResponsePath = join(
+		controlPlaneDir,
+		"parity-harvest.discovery.json",
+	);
+	writeFileSync(
+		scheduleResponsePath,
+		JSON.stringify({ scheduledAt: generatedAt }, null, 2),
+	);
+	writeFileSync(
+		discoveryResponsePath,
+		JSON.stringify(
+			{
+				artifactUrl: pathToFileURL(join(targetDir, parityRawSourcePath)).toString(),
+				sourceRunId: "run-harvest-parity-001",
+				sourceCommitSha: history.headSha,
+				capturedAt: generatedAt,
+			},
+			null,
+			2,
+		),
+	);
+	writeFileSync(
+		join(targetDir, PARITY_PROOF_HARVEST_MANIFEST_PATH),
+		JSON.stringify(
+			{
+				schemaVersion: "ci-parity-proof-harvest-manifest/v1",
+				generatedAt,
+				repo: {
+					baseSha: history.baseSha,
+					headSha: history.headSha,
+					fullName: TEST_REPO_FULL_NAME,
+					originUrl: TEST_REPO_ORIGIN_URL,
+				},
+				behavioralParity: {
+					scenarios: REQUIRED_PARITY_SCENARIOS.map((scenario) => ({
+						scenario,
+						providersCompared: ["github-actions", "circleci"],
+						commitCount: 2,
+						unexpectedDiffs: [],
+					})),
+				},
+				promotionGate: {
+					zeroUnexpectedDiffs: true,
+					outcomeParity: true,
+					skippedSemanticsParity: true,
+					artifactParity: true,
+					greptileParity: true,
+					releaseParity: true,
+				},
+				downstream: {
+					repositories: [
+						{
+							repo: "jamie/repo-a",
+							ecosystemProfile: "node-library",
+							mergeQueue: false,
+							parityMatrixVerified: true,
+							rollbackRehearsed: true,
+						},
+						{
+							repo: "jamie/repo-b",
+							ecosystemProfile: "worker-service",
+							mergeQueue: true,
+							parityMatrixVerified: true,
+							rollbackRehearsed: true,
+						},
+						{
+							repo: "jamie/repo-c",
+							ecosystemProfile: "node-library",
+							mergeQueue: false,
+							parityMatrixVerified: true,
+							rollbackRehearsed: true,
+						},
+					],
+				},
+				artifacts: [
+					{
+						artifactId: "parity-summary",
+						destinationPath:
+							".harness/ci-parity-proof-source-artifacts/parity-summary.json",
+						sourceProvider: "circleci",
+						sourceWorkflowRef: "circleci/parity@v1",
+						scenario: "merge_queue",
+						source: {
+							discovery: {
+								url: pathToFileURL(discoveryResponsePath).toString(),
+								artifactUrlPath: "artifactUrl",
+								sourceRunIdPath: "sourceRunId",
+								sourceCommitShaPath: "sourceCommitSha",
+								capturedAtPath: "capturedAt",
+								schedule: {
+									url: pathToFileURL(scheduleResponsePath).toString(),
+								},
+							},
+						},
+					},
+					{
+						artifactId: "downstream-proof",
+						destinationPath:
+							".harness/ci-parity-proof-source-artifacts/downstream-proof.json",
+						sourceProvider: "circleci",
+						sourceRunId: "run-harvest-downstream-001",
+						sourceWorkflowRef: "circleci/downstream@v1",
+						sourceCommitSha: history.headSha,
+						capturedAt: generatedAt,
+						source: {
+							path: downstreamRawSourcePath,
+						},
+					},
+				],
+			},
+			null,
+			2,
+		),
+	);
+}
+
 describe("runCIMigrateCLI", () => {
 	let tempDir: string;
 	let previousSnapshotSigningKey: string | undefined;
@@ -2169,6 +2448,138 @@ describe("runCIMigrateCLI", () => {
 		expect(vi.mocked(runInitCLI)).not.toHaveBeenCalled();
 	});
 
+	it("runs merge-queue provider API orchestrator and records signed evidence", () => {
+		seedMigratableFixture(tempDir);
+		writeCIProviderPolicyContract(tempDir, "required");
+		writeParityProofPack(tempDir);
+		writeMergeQueueProviderAPIFixture(tempDir);
+		const snapshotId = "cutover-required-commit-provider-api";
+		vi.mocked(scanOpenPullRequestSatisfiability).mockReturnValue({
+			status: "satisfied",
+			scannedOpenPrs: 2,
+			failingPrs: [],
+		});
+
+		const prepareExitCode = runCIMigrateCLI(tempDir, {
+			provider: "circleci",
+			action: "prepare",
+			snapshot: snapshotId,
+		});
+		expect(prepareExitCode).toBe(EXIT_CODES.SUCCESS);
+
+		vi.clearAllMocks();
+		vi.mocked(scanOpenPullRequestSatisfiability).mockReturnValue({
+			status: "satisfied",
+			scannedOpenPrs: 2,
+			failingPrs: [],
+		});
+
+		const commitExitCode = runCIMigrateCLI(tempDir, {
+			provider: "circleci",
+			action: "commit",
+			snapshot: snapshotId,
+			mergeQueueProviderAPIPath: MERGE_QUEUE_PROVIDER_API_PATH,
+		});
+
+		expect(commitExitCode).toBe(EXIT_CODES.SUCCESS);
+		expect(vi.mocked(runInitCLI)).toHaveBeenCalled();
+		const evidence = JSON.parse(
+			readFileSync(join(tempDir, MERGE_QUEUE_EVIDENCE_PATH), "utf-8"),
+		) as {
+			pausedAt: string;
+			drainedAt: string;
+			revalidatedAt: string;
+			pausedQueueDepth: number;
+			drainedCandidateCount: number;
+			revalidatedCandidateCount: number;
+		};
+		expect(evidence.pausedAt).toBe("2026-03-14T00:00:00.000Z");
+		expect(evidence.drainedAt).toBe("2026-03-14T00:01:00.000Z");
+		expect(evidence.revalidatedAt).toBe("2026-03-14T00:02:00.000Z");
+		expect(evidence.pausedQueueDepth).toBe(3);
+		expect(evidence.drainedCandidateCount).toBe(0);
+		expect(evidence.revalidatedCandidateCount).toBe(0);
+		expect(existsSync(join(tempDir, `${MERGE_QUEUE_EVIDENCE_PATH}.sig`))).toBe(
+			true,
+		);
+	});
+
+	it("fails required-mode commit when provider API orchestration omits drained/revalidated lifecycle", () => {
+		seedMigratableFixture(tempDir);
+		writeCIProviderPolicyContract(tempDir, "required");
+		writeParityProofPack(tempDir);
+		writeMergeQueueProviderAPIFixture(tempDir, { includeLifecycle: false });
+		const snapshotId = "cutover-required-commit-provider-api-missing-lifecycle";
+		vi.mocked(scanOpenPullRequestSatisfiability).mockReturnValue({
+			status: "satisfied",
+			scannedOpenPrs: 2,
+			failingPrs: [],
+		});
+
+		const prepareExitCode = runCIMigrateCLI(tempDir, {
+			provider: "circleci",
+			action: "prepare",
+			snapshot: snapshotId,
+		});
+		expect(prepareExitCode).toBe(EXIT_CODES.SUCCESS);
+
+		vi.clearAllMocks();
+		vi.mocked(scanOpenPullRequestSatisfiability).mockReturnValue({
+			status: "satisfied",
+			scannedOpenPrs: 2,
+			failingPrs: [],
+		});
+
+		const commitExitCode = runCIMigrateCLI(tempDir, {
+			provider: "circleci",
+			action: "commit",
+			snapshot: snapshotId,
+			mergeQueueProviderAPIPath: MERGE_QUEUE_PROVIDER_API_PATH,
+		});
+
+		expect(commitExitCode).toBe(EXIT_CODES.INVALID_PATH);
+		expect(vi.mocked(runInitCLI)).not.toHaveBeenCalled();
+	});
+
+	it("rejects commit when merge-queue executable and provider API orchestrators are both configured", () => {
+		seedMigratableFixture(tempDir);
+		writeCIProviderPolicyContract(tempDir, "required");
+		writeParityProofPack(tempDir);
+		writeMergeQueueOrchestratorFixture(tempDir);
+		writeMergeQueueProviderAPIFixture(tempDir);
+		const snapshotId = "cutover-required-commit-dual-orchestrators";
+		vi.mocked(scanOpenPullRequestSatisfiability).mockReturnValue({
+			status: "satisfied",
+			scannedOpenPrs: 2,
+			failingPrs: [],
+		});
+
+		const prepareExitCode = runCIMigrateCLI(tempDir, {
+			provider: "circleci",
+			action: "prepare",
+			snapshot: snapshotId,
+		});
+		expect(prepareExitCode).toBe(EXIT_CODES.SUCCESS);
+
+		vi.clearAllMocks();
+		vi.mocked(scanOpenPullRequestSatisfiability).mockReturnValue({
+			status: "satisfied",
+			scannedOpenPrs: 2,
+			failingPrs: [],
+		});
+
+		const commitExitCode = runCIMigrateCLI(tempDir, {
+			provider: "circleci",
+			action: "commit",
+			snapshot: snapshotId,
+			mergeQueueOrchestratorPath: MERGE_QUEUE_ORCHESTRATOR_PATH,
+			mergeQueueProviderAPIPath: MERGE_QUEUE_PROVIDER_API_PATH,
+		});
+
+		expect(commitExitCode).toBe(EXIT_CODES.INVALID_PATH);
+		expect(vi.mocked(runInitCLI)).not.toHaveBeenCalled();
+	});
+
 	// Security regression: the default orchestrator path must NOT be auto-executed
 	// when the operator has not explicitly passed --merge-queue-orchestrator.
 	// An attacker who can add .harness/control-plane/merge-queue-cutover-orchestrator
@@ -2515,6 +2926,56 @@ describe("runCIMigrateCLI", () => {
 
 		expect(exitCode).toBe(EXIT_CODES.INVALID_PATH);
 		expect(vi.mocked(runInitCLI)).not.toHaveBeenCalled();
+	});
+
+	it("syncs signed break-glass governance policy from roster when requested", () => {
+		seedMigratableFixture(tempDir);
+		writeBreakGlassRoster(tempDir);
+
+		const exitCode = runCIMigrateCLI(tempDir, {
+			provider: "circleci",
+			action: "prepare",
+			snapshot: "cutover-break-glass-roster-sync",
+			syncBreakGlassPolicy: true,
+			breakGlassRosterPath: BREAK_GLASS_ROSTER_PATH,
+		});
+
+		expect(exitCode).toBe(EXIT_CODES.SUCCESS);
+		expect(existsSync(join(tempDir, BREAK_GLASS_POLICY_PATH))).toBe(true);
+		expect(existsSync(join(tempDir, `${BREAK_GLASS_POLICY_PATH}.sig`))).toBe(
+			true,
+		);
+		expect(existsSync(join(tempDir, BREAK_GLASS_OPS_WORKFLOW_PATH))).toBe(true);
+		const policy = JSON.parse(
+			readFileSync(join(tempDir, BREAK_GLASS_POLICY_PATH), "utf-8"),
+		) as {
+			approverAllowlist: string[];
+			requireDualApprovalForRollbackWeakening: boolean;
+		};
+		expect(policy.approverAllowlist).toEqual([
+			"migration-admin",
+			"security-lead",
+		]);
+		expect(policy.requireDualApprovalForRollbackWeakening).toBe(true);
+	});
+
+	it("fails break-glass roster sync when requested roster file is missing", () => {
+		seedMigratableFixture(tempDir);
+
+		const exitCode = runCIMigrateCLI(tempDir, {
+			provider: "circleci",
+			action: "prepare",
+			snapshot: "cutover-break-glass-roster-sync-missing",
+			syncBreakGlassPolicy: true,
+			breakGlassRosterPath: BREAK_GLASS_ROSTER_PATH,
+		});
+
+		expect(exitCode).toBe(EXIT_CODES.INVALID_PATH);
+		expect(vi.mocked(runInitCLI)).not.toHaveBeenCalled();
+		expect(existsSync(join(tempDir, BREAK_GLASS_POLICY_PATH))).toBe(false);
+		expect(existsSync(join(tempDir, BREAK_GLASS_OPS_WORKFLOW_PATH))).toBe(
+			false,
+		);
 	});
 
 	it("blocks required-mode rollback weakening without break-glass approval", () => {
@@ -2926,6 +3387,65 @@ describe("runCIMigrateCLI", () => {
 		});
 
 		expect(exitCode).toBe(EXIT_CODES.INVALID_PATH);
+		expect(vi.mocked(runInitCLI)).not.toHaveBeenCalled();
+	});
+
+	// Security regression: isSafeRestorePath must reject symlinks even when the
+	// symlink sits at an allowlisted path.
+	it("refuses rollback when an external control-plane artifact path resolves through a symlink", () => {
+		writeMigrationState(
+			tempDir,
+			"cutover-symlink-external-path",
+			"committed",
+			"circleci",
+			"github-actions",
+		);
+		const snapshotContent = JSON.stringify({
+			harnessVersion: "0.0.0",
+			ciProvider: "github-actions",
+			files: [],
+		});
+		const externalStateContent = JSON.stringify(
+			{
+				schemaVersion: "ci-migrate-external-control-plane-state/v1",
+				snapshotId: "cutover-symlink-external-path",
+				capturedAt: new Date().toISOString(),
+				artifacts: [
+					{
+						relativePath: ".harness/control-plane/github-rulesets.json",
+						existed: true,
+						content: "{}",
+						contentDigest: hashContent("{}"),
+					},
+				],
+			},
+			null,
+			2,
+		);
+		writeSignedSnapshot(
+			tempDir,
+			"cutover-symlink-external-path",
+			snapshotContent,
+			{ externalStateContent },
+		);
+
+		// Place a symlink at the allowlisted path pointing outside the repo.
+		const externalTarget = join(tempDir, "..", "outside-rollback.txt");
+		writeFileSync(externalTarget, "do-not-touch");
+		mkdirSync(join(tempDir, ".harness/control-plane"), { recursive: true });
+		symlinkSync(
+			externalTarget,
+			join(tempDir, ".harness/control-plane/github-rulesets.json"),
+		);
+
+		const exitCode = runCIMigrateCLI(tempDir, {
+			provider: "circleci",
+			rollback: true,
+			snapshot: "cutover-symlink-external-path",
+		});
+
+		expect(exitCode).toBe(EXIT_CODES.INVALID_PATH);
+		expect(readFileSync(externalTarget, "utf-8")).toBe("do-not-touch");
 		expect(vi.mocked(runInitCLI)).not.toHaveBeenCalled();
 	});
 
@@ -4437,6 +4957,75 @@ describe("runCIMigrateCLI", () => {
 		expect(existsSync(join(tempDir, PARITY_PROOF_PACK_SIGNATURE_PATH))).toBe(
 			true,
 		);
+	});
+
+	it("auto-generates provenance input and proof-pack from harvest manifest discovery", () => {
+		seedMigratableFixture(tempDir);
+		writeCIProviderPolicyContract(tempDir, "required");
+		writeParityProofHarvestManifest(tempDir);
+		vi.mocked(scanOpenPullRequestSatisfiability)
+			.mockReturnValueOnce({
+				status: "satisfied",
+				scannedOpenPrs: 2,
+				failingPrs: [],
+			})
+			.mockReturnValueOnce({
+				status: "satisfied",
+				scannedOpenPrs: 2,
+				failingPrs: [],
+			});
+		writeSignedMergeQueueEvidence(tempDir, "cutover-auto-generated-from-harvest");
+
+		const exitCode = runCIMigrateCLI(tempDir, {
+			provider: "circleci",
+			apply: true,
+			autoGenerateProofPack: true,
+			snapshot: "cutover-auto-generated-from-harvest",
+		});
+
+		expect(exitCode).toBe(EXIT_CODES.SUCCESS);
+		expect(existsSync(join(tempDir, PARITY_PROVENANCE_INPUT_PATH))).toBe(true);
+		expect(
+			existsSync(join(tempDir, PARITY_PROVENANCE_ARTIFACT_INDEX_PATH)),
+		).toBe(true);
+		expect(existsSync(join(tempDir, PARITY_PROOF_INPUT_PATH))).toBe(true);
+		expect(existsSync(join(tempDir, PARITY_PROOF_PACK_PATH))).toBe(true);
+		expect(existsSync(join(tempDir, PARITY_PROOF_PACK_SIGNATURE_PATH))).toBe(
+			true,
+		);
+		const parsedInput = JSON.parse(
+			readFileSync(join(tempDir, PARITY_PROVENANCE_INPUT_PATH), "utf-8"),
+		) as {
+			artifacts: Array<{ artifactId: string; sourceRunId: string }>;
+		};
+		expect(parsedInput.artifacts).toEqual(
+			expect.arrayContaining([
+				expect.objectContaining({
+					artifactId: "parity-summary",
+					sourceRunId: "run-harvest-parity-001",
+				}),
+				expect.objectContaining({
+					artifactId: "downstream-proof",
+					sourceRunId: "run-harvest-downstream-001",
+				}),
+			]),
+		);
+		expect(
+			existsSync(
+				join(
+					tempDir,
+					".harness/ci-parity-proof-source-artifacts/parity-summary.json",
+				),
+			),
+		).toBe(true);
+		expect(
+			existsSync(
+				join(
+					tempDir,
+					".harness/ci-parity-proof-source-artifacts/downstream-proof.json",
+				),
+			),
+		).toBe(true);
 	});
 
 	it("fails auto-generation from artifact index when signature is invalid", () => {
