@@ -1,0 +1,11 @@
+{
+	"schemaVersion": "ci-migrate-break-glass-policy/v1",
+	"approverAllowlist": ["migration-admin", "security-lead"],
+	"maxApprovalTtlHours": 24,
+	"requireDualApprovalForRollbackWeakening": true,
+	"integrity": {
+		"signatureAlgorithm": "hmac-sha256",
+		"signingKeyId": "replace-with-active-signing-key-id",
+		"payloadSha256": ""
+	}
+}

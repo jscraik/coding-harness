@@ -13,6 +13,7 @@ import {
 import { PathTraversalError, validatePath } from "../lib/input/validator.js";
 
 import { buildControlPlaneArtifacts } from "../lib/pilot-evaluation/control-plane.js";
+import { writePilotEvaluateDecisionPacket } from "../lib/pilot-evaluation/decision-packet.js";
 import { capturePilotMetrics } from "../lib/pilot-evaluation/metrics-capture.js";
 import {
 	getAdapterRegistryEntry,
@@ -350,11 +351,22 @@ export function runPilotEvaluate(options: PilotEvaluateOptions): {
 		exitCode: number;
 		payload: Record<string, unknown>;
 		artifacts?: Array<{ type: string; path: string; checksum?: string }>;
+		result:
+			| { ok: true; result: PilotEvaluationResult }
+			| { ok: false; error: { code: string; message: string } };
 	}): string | null => {
 		try {
+			const decisionArtifact = writePilotEvaluateDecisionPacket({
+				options,
+				startedAt,
+				finishedAt: new Date().toISOString(),
+				exitCode: params.exitCode,
+				result: params.result,
+			});
 			emitTerminalRunRecord({
 				command: "pilot-evaluate",
 				startedAt,
+				runId: decisionArtifact.runId,
 				outcome:
 					params.outcome === "failed"
 						? "failed"
@@ -379,7 +391,14 @@ export function runPilotEvaluate(options: PilotEvaluateOptions): {
 				preconditions: {
 					artifactsDirExists: existsSync(resolve(options.artifactsDir)),
 				},
-				...(params.artifacts ? { artifacts: params.artifacts } : {}),
+				artifacts: [
+					...(params.artifacts ?? []),
+					{
+						type: "decision-packet",
+						path: decisionArtifact.decisionPacketPath,
+						checksum: decisionArtifact.checksum,
+					},
+				],
 				event: {
 					eventType: "decision",
 					status:
@@ -394,7 +413,16 @@ export function runPilotEvaluate(options: PilotEvaluateOptions): {
 							: params.classification === "manual_intervention_required"
 								? "warn"
 								: "error",
-					payload: params.payload,
+					payload: {
+						...params.payload,
+						decisionState: decisionArtifact.decisionState,
+						promotionStatus: decisionArtifact.promotionStatus,
+						requiresHumanDecision: decisionArtifact.requiresHumanDecision,
+						compactionRecommended: decisionArtifact.compactionRecommended,
+						guardrailPromotionRecommended:
+							decisionArtifact.guardrailPromotionRecommended,
+						decisionPacketPath: decisionArtifact.decisionPacketPath,
+					},
 				},
 			});
 			return null;
@@ -415,6 +443,13 @@ export function runPilotEvaluate(options: PilotEvaluateOptions): {
 			payload: {
 				error: "artifacts_not_found",
 				artifactsDir,
+			},
+			result: {
+				ok: false,
+				error: {
+					code: "E_ARTIFACTS_NOT_FOUND",
+					message: `Artifacts directory not found: ${artifactsDir}`,
+				},
 			},
 		});
 		if (runRecordError) {
@@ -486,6 +521,13 @@ export function runPilotEvaluate(options: PilotEvaluateOptions): {
 					path: resolve(artifactsDir, "pr-lead-time.json"),
 				},
 			],
+			result: {
+				ok: false,
+				error: {
+					code: "E_SCHEMA_VALIDATION",
+					message: `Artifact validation failed: ${errors.join("; ")}`,
+				},
+			},
 		});
 		if (runRecordError) {
 			return {
@@ -514,6 +556,13 @@ export function runPilotEvaluate(options: PilotEvaluateOptions): {
 			exitCode: PILOT_EVALUATE_EXIT_CODES.VALIDATION_ERROR,
 			payload: {
 				error: "no_metrics",
+			},
+			result: {
+				ok: false,
+				error: {
+					code: "E_NO_METRICS",
+					message: "No valid metrics captured from artifacts",
+				},
 			},
 		});
 		if (runRecordError) {
@@ -549,6 +598,13 @@ export function runPilotEvaluate(options: PilotEvaluateOptions): {
 			payload: {
 				error: "registry_validation_failed",
 				errors,
+			},
+			result: {
+				ok: false,
+				error: {
+					code: "E_REGISTRY_VALIDATION",
+					message: `Registry validation failed: ${errors.join("; ")}`,
+				},
 			},
 		});
 		if (runRecordError) {
@@ -769,6 +825,13 @@ export function runPilotEvaluate(options: PilotEvaluateOptions): {
 						error: "path_traversal",
 						outputPath: options.outputPath,
 					},
+					result: {
+						ok: false,
+						error: {
+							code: "E_PATH_TRAVERSAL",
+							message: "Output path escapes working directory",
+						},
+					},
 				});
 				if (runRecordError) {
 					return {
@@ -873,6 +936,10 @@ export function runPilotEvaluate(options: PilotEvaluateOptions): {
 					]
 				: []),
 		],
+		result: {
+			ok: true,
+			result,
+		},
 	});
 	if (runRecordError) {
 		return {

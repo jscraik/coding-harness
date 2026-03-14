@@ -238,6 +238,12 @@ Features:
 - Parity proof packs with scenario validation (pull_request, merge_queue, fork_pr, etc.)
 - External control plane path tracking (rulesets, contexts, app installations)
 - HMAC-signed snapshots for migration integrity
+- Signed merge-queue orchestration evidence ingestion via `--merge-queue-evidence` (`ci-migrate-merge-queue-evidence/v2`, with repo/policy binding)
+- Optional orchestration hook via `--merge-queue-orchestrator` (or default `.harness/control-plane/merge-queue-cutover-orchestrator` when present) to emit signed pause/drain/revalidate evidence during apply/commit
+- Signed break-glass governance policy enforcement at `.harness/control-plane/ci-migrate-break-glass-policy.json` for rollback weakening approvals (allowlist, TTL, dual-approval)
+- Required-mode CircleCI promotion fail-closes without signed merge-queue evidence at `.harness/control-plane/merge-queue-cutover-evidence.json` (or an explicit override path)
+- Signed artifact-index bootstrap (`.harness/ci-parity-proof-artifact-index.json`) for provenance/proof-pack auto-generation
+- Example provider artifact harvest automation templates in `docs/examples/ci-migrate/` to generate signed provenance input + artifact index for `--auto-generate-proof-pack`
 
 ## Issue reporting
 

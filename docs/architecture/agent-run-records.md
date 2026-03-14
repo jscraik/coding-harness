@@ -3,6 +3,7 @@
 ## Table of Contents
 - [Purpose](#purpose)
 - [Canonical Layout](#canonical-layout)
+- [Companion Artifacts](#companion-artifacts)
 - [Discovery Order](#discovery-order)
 - [Write Semantics](#write-semantics)
 - [Validation Rules](#validation-rules)
@@ -23,6 +24,39 @@ Legacy compatibility filenames remain recognized under the same run directory:
 - `run-manifest.json`
 - `run-events.jsonl`
 
+## Companion Artifacts
+
+Commands may write additive companion artifacts under the same run directory when
+they need richer operator or governance state without changing
+`agent-run-manifest/v1` or `agent-run-event/v1`.
+
+Current companion-artifact pattern:
+
+- `review-gate` writes `decision-packet.json`
+- `pilot-evaluate` writes `decision-packet.json`
+
+`decision-packet.json` is the operator-facing summary for the run and captures:
+
+- decision state:
+  - `green-and-ready`
+  - `blocked-with-remediation`
+  - `escalated-for-decision`
+- review-gate PR closure status:
+  - `ready-to-merge`
+  - `awaiting-remediation`
+  - `awaiting-operator-decision`
+- pilot-evaluate promotion status:
+  - `ready-to-promote`
+  - `hold`
+  - `rollback-required`
+  - `evaluation-failed`
+- compaction recommendations for repeated or noisy blocker states
+- guardrail-promotion candidates that should become reusable checks or policy
+
+Companion artifacts are additive evidence. Canonical manifest/event files remain
+the runtime truth foundation and should reference companion artifacts through
+`artifactRefs` when they are produced.
+
 ## Discovery Order
 
 Consumers must resolve each artifact family independently using this precedence:
@@ -37,12 +71,17 @@ If the canonical file exists but is invalid, fail closed; do not silently fall b
 - Manifest writes use temp-write then atomic rename.
 - Event append uses temp-copy + append + atomic rename.
 - Event streams enforce hash-chain continuity (`prevEventHash` -> previous `eventHash`).
+- Companion artifacts should be written before terminal manifest emission when
+  they need to appear in `artifactRefs`.
 
 ## Validation Rules
 
 - Manifest and event payloads must match schema versions:
   - `agent-run-manifest/v1`
   - `agent-run-event/v1`
+- Companion artifacts must use command-specific schema versions and remain
+  additive; do not extend canonical manifest/event schemas for v1 operator
+  state.
 - `repo.headSha` must be either a lowercase hex SHA or the explicit `unknown` sentinel for degraded provenance capture; producers must never fabricate a hash-shaped placeholder.
 - Artifacts must reject known sensitive key classes (`token`, `secret`, `password`, `apiKey`, `authorization`, `cookie`) before persistence.
 - Event logs must remain parseable line-by-line and hash-valid end-to-end.

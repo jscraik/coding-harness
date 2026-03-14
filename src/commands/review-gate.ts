@@ -22,6 +22,7 @@ import {
 	createJsonErrorOutput,
 	createJsonOutput,
 } from "../lib/result/types.js";
+import { emitReviewGateDecisionArtifacts } from "../lib/review-gate/decision-packet.js";
 import { runCheckAuthz } from "./check-authz.js";
 
 export const EXIT_CODES = {
@@ -45,7 +46,25 @@ export interface ReviewGateOptions {
 	botLogin?: string;
 	autoResolveBotThreads?: boolean;
 	json?: boolean;
+	runRecordsDir?: string;
 }
+
+export type ReviewDecisionState =
+	| "green-and-ready"
+	| "blocked-with-remediation"
+	| "escalated-for-decision";
+
+export type ReviewPRClosureStatus =
+	| "ready-to-merge"
+	| "awaiting-remediation"
+	| "awaiting-operator-decision";
+
+export type ReviewGateErrorCode =
+	| "VALIDATION_ERROR"
+	| "NOT_FOUND"
+	| "PERMISSION_DENIED"
+	| "TIMEOUT"
+	| "SYSTEM_ERROR";
 
 export interface ReviewGateOutput {
 	verified: boolean;
@@ -854,6 +873,7 @@ function getRecoveryHint(code: string): string | undefined {
 export async function runReviewGateCLI(
 	options: ReviewGateOptions,
 ): Promise<number> {
+	const startedAt = new Date().toISOString();
 	const result = await runReviewGate(options);
 
 	const logConfidenceExport = (output: ReviewGateOutput): void => {
@@ -926,6 +946,20 @@ export async function runReviewGateCLI(
 			logConfidenceExport(result.output);
 		}
 
+		try {
+			emitReviewGateDecisionArtifacts({
+				options,
+				startedAt,
+				finishedAt: new Date().toISOString(),
+				exitCode,
+				result,
+			});
+		} catch (error) {
+			console.error(
+				`Failed to emit review-gate decision artifacts: ${sanitizeError(error)}`,
+			);
+		}
+
 		return exitCode;
 	}
 
@@ -962,6 +996,27 @@ export async function runReviewGateCLI(
 		if (recoveryHint) {
 			console.error(`Recovery: ${recoveryHint}`);
 		}
+	}
+
+	try {
+		emitReviewGateDecisionArtifacts({
+			options,
+			startedAt,
+			finishedAt: new Date().toISOString(),
+			exitCode,
+			result: {
+				ok: false,
+				error: {
+					code: result.error.code as ReviewGateErrorCode,
+					message: result.error.message,
+				},
+			},
+		});
+	} catch (error) {
+		console.error(
+			`Failed to emit review-gate decision artifacts: ${sanitizeError(error)}`,
+		);
+		return EXIT_CODES.SYSTEM_ERROR;
 	}
 
 	return exitCode;

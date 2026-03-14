@@ -5,6 +5,7 @@ import {
 	existsSync,
 	mkdirSync,
 	readFileSync,
+	readdirSync,
 	rmSync,
 	writeFileSync,
 } from "node:fs";
@@ -38,6 +39,29 @@ const MIN_SNAPSHOT_SIGNING_KEY_BYTES = 16;
 const STATE_SIGNATURE_ALGORITHM = SNAPSHOT_SIGNATURE_ALGORITHM;
 const PARITY_PROOF_PACK_PATH = ".harness/ci-parity-proof-pack.json";
 const PARITY_PROOF_PACK_SIGNATURE_PATH = ".harness/ci-parity-proof-pack.sig";
+const PARITY_PROOF_PACK_INPUT_PATH = ".harness/ci-parity-proof-pack.input.json";
+const PARITY_PROOF_PACK_ARTIFACTS_DIR =
+	".harness/ci-parity-proof-pack-artifacts";
+const PARITY_PROVENANCE_INPUT_PATH =
+	".harness/ci-parity-proof-provenance.input.json";
+const PARITY_PROVENANCE_BUNDLE_PATH =
+	".harness/ci-parity-proof-provenance.bundle.json";
+const PARITY_PROVENANCE_MANIFEST_PATH =
+	".harness/ci-parity-proof-provenance.manifest.json";
+const PARITY_PROVENANCE_MANIFEST_SIGNATURE_PATH =
+	".harness/ci-parity-proof-provenance.manifest.sig";
+const PARITY_PROVENANCE_ARTIFACT_INDEX_PATH =
+	".harness/ci-parity-proof-artifact-index.json";
+const PARITY_PROVENANCE_ARTIFACT_INDEX_SIGNATURE_PATH =
+	".harness/ci-parity-proof-artifact-index.sig";
+const PARITY_PROVENANCE_BUNDLE_SCHEMA_VERSION =
+	"ci-parity-proof-provenance-bundle/v1";
+const PARITY_PROVENANCE_INPUT_SCHEMA_VERSION =
+	"ci-parity-proof-provenance-input/v1";
+const PARITY_PROVENANCE_MANIFEST_SCHEMA_VERSION =
+	"ci-parity-proof-provenance-manifest/v1";
+const PARITY_PROVENANCE_ARTIFACT_INDEX_SCHEMA_VERSION =
+	"ci-parity-proof-artifact-index/v2";
 const PARITY_PROOF_PACK_SIGNATURE_ALGORITHM = "hmac-sha256";
 const PARITY_PROOF_PACK_MAX_AGE_DAYS = 30;
 const PARITY_PROOF_PACK_MAX_FUTURE_SKEW_MINUTES = 5;
@@ -66,8 +90,18 @@ const MAX_SNAPSHOT_ID_LENGTH = 64;
 const SNAPSHOT_ID_PATTERN =
 	/^[A-Za-z0-9][A-Za-z0-9._-]*[A-Za-z0-9]$|^[A-Za-z0-9]$/;
 const PREPARED_STATE_MAX_AGE_HOURS = 24;
+const MERGE_QUEUE_WINDOW_PATH =
+	".harness/control-plane/merge-queue-cutover-window.json";
+const DEFAULT_MERGE_QUEUE_EVIDENCE_PATH =
+	".harness/control-plane/merge-queue-cutover-evidence.json";
+const DEFAULT_MERGE_QUEUE_ORCHESTRATOR_PATH =
+	".harness/control-plane/merge-queue-cutover-orchestrator";
+const BREAK_GLASS_POLICY_PATH =
+	".harness/control-plane/ci-migrate-break-glass-policy.json";
+const DEFAULT_TRANSITION_STATUS_ARTIFACT_PATH =
+	".harness/ci-provider-transition-status.json";
 const VALID_PROVIDERS: CIProvider[] = ["github-actions", "circleci"];
-const VALID_ACTIONS = ["prepare", "commit", "abort"] as const;
+const VALID_ACTIONS = ["prepare", "commit", "abort", "verify"] as const;
 const SHA256_HEX_PATTERN = /^[a-f0-9]{64}$/;
 const COMMIT_SHA_PATTERN = /^[a-f0-9]{40}$/;
 const HEX_TOKEN_PATTERN = /^[a-f0-9]+$/;
@@ -79,6 +113,10 @@ type MigrationClassification =
 	| "manual-mapping-required"
 	| "unsupported-blocking";
 type CIProviderMode = "shadow" | "required";
+type CIProviderMigrationStage =
+	| "dual-provider"
+	| "circleci-primary"
+	| "circleci-only";
 type RequiredParityScenario = (typeof REQUIRED_PARITY_SCENARIOS)[number];
 
 export interface CIMigrateOptions {
@@ -89,6 +127,9 @@ export interface CIMigrateOptions {
 	snapshot?: string | undefined;
 	action?: string | undefined;
 	breakGlassApprovalPath?: string | undefined;
+	mergeQueueEvidencePath?: string | undefined;
+	mergeQueueOrchestratorPath?: string | undefined;
+	autoGenerateProofPack?: boolean | undefined;
 }
 
 interface MigrationCheckClassification {
@@ -178,8 +219,107 @@ interface CIParityDownstreamRepositoryEvidence {
 	rollbackRehearsed: boolean;
 }
 
+interface CIParityProofPackInput {
+	schemaVersion: "ci-parity-proof-input/v1";
+	generatedAt?: string | undefined;
+	repo?: {
+		baseSha?: string | undefined;
+		headSha?: string | undefined;
+		fullName?: string | undefined;
+		originUrl?: string | undefined;
+	} | null;
+	behavioralParity: {
+		scenarios: CIParityScenarioEvidence[];
+	};
+	promotionGate: {
+		zeroUnexpectedDiffs: boolean;
+		outcomeParity: boolean;
+		skippedSemanticsParity: boolean;
+		artifactParity: boolean;
+		greptileParity: boolean;
+		releaseParity: boolean;
+	};
+	downstream: {
+		repositories: CIParityDownstreamRepositoryEvidence[];
+	};
+}
+
+interface CIParityProvenanceInputArtifact {
+	artifactId: string;
+	path: string;
+	sourceProvider: CIProvider;
+	sourceRunId: string;
+	sourceWorkflowRef: string;
+	sourceCommitSha?: string | undefined;
+	capturedAt?: string | undefined;
+	scenario?: RequiredParityScenario | undefined;
+}
+
+interface CIParityProvenanceInput {
+	schemaVersion: typeof PARITY_PROVENANCE_INPUT_SCHEMA_VERSION;
+	generatedAt?: string | undefined;
+	repo?: CIParityProofPackInput["repo"] | undefined;
+	behavioralParity: CIParityProofPackInput["behavioralParity"];
+	promotionGate: CIParityProofPackInput["promotionGate"];
+	downstream: CIParityProofPackInput["downstream"];
+	artifacts: CIParityProvenanceInputArtifact[];
+}
+
+interface CIParityProvenanceArtifactIndex {
+	schemaVersion: typeof PARITY_PROVENANCE_ARTIFACT_INDEX_SCHEMA_VERSION;
+	generatedAt: string;
+	repo?: CIParityProofPackInput["repo"] | undefined;
+	behavioralParity: CIParityProofPackInput["behavioralParity"];
+	promotionGate: CIParityProofPackInput["promotionGate"];
+	downstream: CIParityProofPackInput["downstream"];
+	artifacts: CIParityProvenanceArtifactRecord[];
+	integrity: {
+		signatureAlgorithm: typeof PARITY_PROOF_PACK_SIGNATURE_ALGORITHM;
+		signingKeyId: string;
+		payloadSha256: string;
+	};
+}
+
+interface CIParityProvenanceArtifactRecord {
+	artifactId: string;
+	path: string;
+	sha256: string;
+	signature: string;
+	sourceProvider: CIProvider;
+	sourceRunId: string;
+	sourceWorkflowRef: string;
+	sourceCommitSha: string;
+	capturedAt: string;
+	scenario?: RequiredParityScenario | undefined;
+}
+
+interface CIParityProvenanceBundle {
+	schemaVersion: typeof PARITY_PROVENANCE_BUNDLE_SCHEMA_VERSION;
+	generatedAt: string;
+	repo?: CIParityProofPackInput["repo"] | undefined;
+	behavioralParity: CIParityProofPackInput["behavioralParity"];
+	promotionGate: CIParityProofPackInput["promotionGate"];
+	downstream: CIParityProofPackInput["downstream"];
+	artifacts: CIParityProvenanceArtifactRecord[];
+}
+
+interface CIParityProvenanceManifest {
+	schemaVersion: typeof PARITY_PROVENANCE_MANIFEST_SCHEMA_VERSION;
+	generatedAt: string;
+	sourceBundlePath: string;
+	sourceBundleSha256: string;
+	artifacts: CIParityProvenanceArtifactRecord[];
+	integrity: {
+		signatureAlgorithm: typeof PARITY_PROOF_PACK_SIGNATURE_ALGORITHM;
+		signingKeyId: string;
+		payloadSha256: string;
+	};
+}
+
 interface CIProviderPolicyConfig {
 	mode: CIProviderMode;
+	migrationStage: CIProviderMigrationStage;
+	transitionStatusArtifactPath: string;
 	trustedPolicyRef: string;
 	requiredCheckManifestPath: string;
 	authorityConfigPath: string;
@@ -275,6 +415,7 @@ interface BreakGlassApproval {
 	schemaVersion: "ci-migrate-break-glass-approval/v1";
 	snapshotId: string;
 	approvedBy: string;
+	approvers?: string[] | undefined;
 	reason: string;
 	approvedAt: string;
 	expiresAt: string;
@@ -282,6 +423,18 @@ interface BreakGlassApproval {
 	allowRollbackWeakening: boolean;
 	signatureAlgorithm: typeof SNAPSHOT_SIGNATURE_ALGORITHM;
 	signingKeyId: string;
+}
+
+interface BreakGlassGovernancePolicy {
+	schemaVersion: "ci-migrate-break-glass-policy/v1";
+	approverAllowlist: string[];
+	maxApprovalTtlHours: number;
+	requireDualApprovalForRollbackWeakening: boolean;
+	integrity: {
+		signatureAlgorithm: typeof SNAPSHOT_SIGNATURE_ALGORITHM;
+		signingKeyId: string;
+		payloadSha256: string;
+	};
 }
 
 interface ExternalControlPlaneStateSnapshot {
@@ -296,6 +449,190 @@ interface ExternalControlPlaneStateArtifact {
 	existed: boolean;
 	content?: string | undefined;
 	contentDigest?: string | undefined;
+}
+
+interface MergeQueueCutoverWindow {
+	schemaVersion: "ci-migrate-merge-queue-window/v1";
+	snapshotId: string;
+	stage: "paused" | "drained" | "revalidated" | "aborted";
+	pausedAt: string;
+	drainedAt?: string | undefined;
+	revalidatedAt?: string | undefined;
+	abortedAt?: string | undefined;
+	preCutover: BranchProtectionSatisfiabilityReport;
+	postCutover?: BranchProtectionSatisfiabilityReport | undefined;
+	evidence?:
+		| {
+				sourcePath: string;
+				contentSha256: string;
+				binding?: MergeQueueEvidenceBinding | undefined;
+				pausedAt: string;
+				drainedAt?: string | undefined;
+				revalidatedAt?: string | undefined;
+				pausedQueueDepth?: number | undefined;
+				drainedCandidateCount?: number | undefined;
+				revalidatedCandidateCount?: number | undefined;
+		  }
+		| undefined;
+}
+
+interface MergeQueueEvidenceBinding {
+	repoFullName: string;
+	headSha: string;
+	trustedPolicyRef: string;
+	authorityConfigSha256: string;
+	requiredCheckManifestSha256: string;
+}
+
+interface MergeQueueCutoverEvidence {
+	schemaVersion: "ci-migrate-merge-queue-evidence/v2";
+	snapshotId: string;
+	generatedAt: string;
+	binding: MergeQueueEvidenceBinding;
+	pausedAt: string;
+	drainedAt?: string | undefined;
+	revalidatedAt?: string | undefined;
+	pausedQueueDepth?: number | undefined;
+	drainedCandidateCount?: number | undefined;
+	revalidatedCandidateCount?: number | undefined;
+	integrity: {
+		signatureAlgorithm: typeof SNAPSHOT_SIGNATURE_ALGORITHM;
+		signingKeyId: string;
+		payloadSha256: string;
+	};
+}
+
+function isValidBranchProtectionSatisfiabilityReport(
+	value: unknown,
+): value is BranchProtectionSatisfiabilityReport {
+	if (!value || typeof value !== "object") {
+		return false;
+	}
+	const parsed = value as Partial<BranchProtectionSatisfiabilityReport>;
+	if (
+		(parsed.status !== "satisfied" && parsed.status !== "unsatisfied") ||
+		typeof parsed.scannedOpenPrs !== "number" ||
+		!Number.isInteger(parsed.scannedOpenPrs) ||
+		parsed.scannedOpenPrs < 0 ||
+		!Array.isArray(parsed.failingPrs)
+	) {
+		return false;
+	}
+	return parsed.failingPrs.every((failingPr) => {
+		if (!failingPr || typeof failingPr !== "object") {
+			return false;
+		}
+		const parsedFailingPr = failingPr as {
+			number?: unknown;
+			missingChecks?: unknown;
+		};
+		return (
+			typeof parsedFailingPr.number === "number" &&
+			Number.isInteger(parsedFailingPr.number) &&
+			Array.isArray(parsedFailingPr.missingChecks) &&
+			parsedFailingPr.missingChecks.every((check) => typeof check === "string")
+		);
+	});
+}
+
+function isValidMergeQueueEvidenceBinding(
+	value: unknown,
+): value is MergeQueueEvidenceBinding {
+	if (!value || typeof value !== "object") {
+		return false;
+	}
+	const parsed = value as Partial<MergeQueueEvidenceBinding>;
+	return (
+		typeof parsed.repoFullName === "string" &&
+		parsed.repoFullName.trim().length > 0 &&
+		typeof parsed.headSha === "string" &&
+		isCommitSha(parsed.headSha) &&
+		typeof parsed.trustedPolicyRef === "string" &&
+		isCommitSha(parsed.trustedPolicyRef) &&
+		typeof parsed.authorityConfigSha256 === "string" &&
+		isHexDigest(parsed.authorityConfigSha256) &&
+		typeof parsed.requiredCheckManifestSha256 === "string" &&
+		isHexDigest(parsed.requiredCheckManifestSha256)
+	);
+}
+
+function isValidMergeQueueCutoverWindow(
+	value: unknown,
+): value is MergeQueueCutoverWindow {
+	if (!value || typeof value !== "object") {
+		return false;
+	}
+	const parsed = value as Partial<MergeQueueCutoverWindow>;
+	const pausedAtMs =
+		typeof parsed.pausedAt === "string"
+			? Date.parse(parsed.pausedAt)
+			: Number.NaN;
+	const drainedAtMs =
+		typeof parsed.drainedAt === "string"
+			? Date.parse(parsed.drainedAt)
+			: Number.NaN;
+	const revalidatedAtMs =
+		typeof parsed.revalidatedAt === "string"
+			? Date.parse(parsed.revalidatedAt)
+			: Number.NaN;
+	const abortedAtMs =
+		typeof parsed.abortedAt === "string"
+			? Date.parse(parsed.abortedAt)
+			: Number.NaN;
+	const evidence = parsed.evidence;
+	const evidenceRecord =
+		evidence && typeof evidence === "object"
+			? (evidence as Partial<MergeQueueCutoverWindow["evidence"]>)
+			: undefined;
+	const evidencePausedAtMs =
+		evidenceRecord && typeof evidenceRecord.pausedAt === "string"
+			? Date.parse(evidenceRecord.pausedAt)
+			: Number.NaN;
+	const evidenceDrainedAtMs =
+		evidenceRecord && typeof evidenceRecord.drainedAt === "string"
+			? Date.parse(evidenceRecord.drainedAt)
+			: Number.NaN;
+	const evidenceRevalidatedAtMs =
+		evidenceRecord && typeof evidenceRecord.revalidatedAt === "string"
+			? Date.parse(evidenceRecord.revalidatedAt)
+			: Number.NaN;
+	const evidenceQueueCountValid = (value: unknown): boolean =>
+		value === undefined ||
+		(typeof value === "number" &&
+			Number.isInteger(value) &&
+			Number.isFinite(value) &&
+			value >= 0);
+	return (
+		parsed.schemaVersion === "ci-migrate-merge-queue-window/v1" &&
+		typeof parsed.snapshotId === "string" &&
+		parsed.snapshotId.trim().length > 0 &&
+		(parsed.stage === "paused" ||
+			parsed.stage === "drained" ||
+			parsed.stage === "revalidated" ||
+			parsed.stage === "aborted") &&
+		Number.isFinite(pausedAtMs) &&
+		(parsed.drainedAt === undefined || Number.isFinite(drainedAtMs)) &&
+		(parsed.revalidatedAt === undefined || Number.isFinite(revalidatedAtMs)) &&
+		(parsed.abortedAt === undefined || Number.isFinite(abortedAtMs)) &&
+		isValidBranchProtectionSatisfiabilityReport(parsed.preCutover) &&
+		(parsed.postCutover === undefined ||
+			isValidBranchProtectionSatisfiabilityReport(parsed.postCutover)) &&
+		(evidenceRecord === undefined ||
+			(typeof evidenceRecord.sourcePath === "string" &&
+				evidenceRecord.sourcePath.trim().length > 0 &&
+				typeof evidenceRecord.contentSha256 === "string" &&
+				isHexDigest(evidenceRecord.contentSha256) &&
+				(evidenceRecord.binding === undefined ||
+					isValidMergeQueueEvidenceBinding(evidenceRecord.binding)) &&
+				Number.isFinite(evidencePausedAtMs) &&
+				(evidenceRecord.drainedAt === undefined ||
+					Number.isFinite(evidenceDrainedAtMs)) &&
+				(evidenceRecord.revalidatedAt === undefined ||
+					Number.isFinite(evidenceRevalidatedAtMs)) &&
+				evidenceQueueCountValid(evidenceRecord.pausedQueueDepth) &&
+				evidenceQueueCountValid(evidenceRecord.drainedCandidateCount) &&
+				evidenceQueueCountValid(evidenceRecord.revalidatedCandidateCount)))
+	);
 }
 
 function getSnapshotPath(targetDir: string, snapshotId: string): string {
@@ -391,6 +728,122 @@ function getStateAttestationSignaturePath(
 		SNAPSHOT_DIR,
 		`${snapshotId}.state.attestation.sig`,
 	);
+}
+
+function getMergeQueueWindowPath(targetDir: string): string {
+	return resolve(targetDir, MERGE_QUEUE_WINDOW_PATH);
+}
+
+function getMergeQueueWindowSignaturePath(targetDir: string): string {
+	return `${getMergeQueueWindowPath(targetDir)}.sig`;
+}
+
+function writeMergeQueueWindow(
+	targetDir: string,
+	window: MergeQueueCutoverWindow,
+): { ok: true } | { ok: false; error: string } {
+	const signingKeyResult = resolveSnapshotSigningKey();
+	if (!signingKeyResult.ok) {
+		return {
+			ok: false,
+			error: signingKeyResult.error,
+		};
+	}
+	try {
+		const windowPath = getMergeQueueWindowPath(targetDir);
+		const signaturePath = getMergeQueueWindowSignaturePath(targetDir);
+		const windowContent = JSON.stringify(window, null, 2);
+		const signature = signContent(windowContent, signingKeyResult.key);
+		mkdirSync(dirname(windowPath), { recursive: true });
+		writeFileSync(windowPath, windowContent);
+		writeFileSync(signaturePath, `${signature}\n`);
+		return { ok: true };
+	} catch (error) {
+		return {
+			ok: false,
+			error: `Failed to write merge-queue cutover window state: ${sanitizeError(error)}`,
+		};
+	}
+}
+
+function readMergeQueueWindowIfPresent(
+	targetDir: string,
+):
+	| { ok: true; value: MergeQueueCutoverWindow | null }
+	| { ok: false; error: string } {
+	const windowPath = getMergeQueueWindowPath(targetDir);
+	const signaturePath = getMergeQueueWindowSignaturePath(targetDir);
+	if (!existsSync(windowPath)) {
+		return { ok: true, value: null };
+	}
+	if (!existsSync(signaturePath)) {
+		return {
+			ok: false,
+			error: `Merge-queue cutover window signature is missing: ${signaturePath}`,
+		};
+	}
+	const signingKeyResult = resolveSnapshotSigningKey();
+	if (!signingKeyResult.ok) {
+		return {
+			ok: false,
+			error: signingKeyResult.error,
+		};
+	}
+	try {
+		const windowContent = readFileSync(windowPath, "utf-8");
+		const signature = readFileSync(signaturePath, "utf-8").trim();
+		if (!isHexDigest(signature)) {
+			return {
+				ok: false,
+				error: `Merge-queue cutover window signature must be a sha256 hex digest: ${signaturePath}`,
+			};
+		}
+		const expectedSignature = signContent(windowContent, signingKeyResult.key);
+		if (signature !== expectedSignature) {
+			return {
+				ok: false,
+				error:
+					"Merge-queue cutover window signature mismatch. Refusing untrusted state.",
+			};
+		}
+		const parsed = JSON.parse(windowContent) as unknown;
+		if (!isValidMergeQueueCutoverWindow(parsed)) {
+			return {
+				ok: false,
+				error: `Merge-queue cutover window schema is invalid: ${windowPath}`,
+			};
+		}
+		return { ok: true, value: parsed };
+	} catch (error) {
+		return {
+			ok: false,
+			error: `Failed to read merge-queue cutover window: ${sanitizeError(error)}`,
+		};
+	}
+}
+
+function assertNoBlockingMergeQueueCutoverWindow(
+	targetDir: string,
+	snapshotId: string,
+): { ok: true } | { ok: false; error: string } {
+	const windowResult = readMergeQueueWindowIfPresent(targetDir);
+	if (!windowResult.ok) {
+		return windowResult;
+	}
+	const window = windowResult.value;
+	if (!window) {
+		return { ok: true };
+	}
+	if (
+		(window.stage === "paused" || window.stage === "drained") &&
+		window.snapshotId !== snapshotId
+	) {
+		return {
+			ok: false,
+			error: `Active merge-queue cutover window blocks new apply: snapshot ${window.snapshotId} is ${window.stage}. Complete or abort the active window before starting snapshot ${snapshotId}.`,
+		};
+	}
+	return { ok: true };
 }
 
 function hashContent(content: string): string {
@@ -520,11 +973,31 @@ function isValidBreakGlassApproval(
 		return false;
 	}
 	const parsed = value as Partial<BreakGlassApproval>;
+	const approvers =
+		Array.isArray(parsed.approvers) &&
+		parsed.approvers.every(
+			(approver) => typeof approver === "string" && approver.trim().length > 0,
+		)
+			? parsed.approvers.map((approver) => approver.trim())
+			: undefined;
+	const uniqueApprovers =
+		approvers === undefined
+			? undefined
+			: new Set(approvers.map((approver) => approver.toLowerCase()));
 	return (
 		parsed.schemaVersion === "ci-migrate-break-glass-approval/v1" &&
 		parsed.snapshotId === snapshotId &&
 		typeof parsed.approvedBy === "string" &&
 		parsed.approvedBy.trim().length > 0 &&
+		(approvers === undefined ||
+			(approvers.length > 0 &&
+				uniqueApprovers !== undefined &&
+				uniqueApprovers.size === approvers.length &&
+				approvers.some(
+					(approver) =>
+						approver.toLowerCase() ===
+						(parsed.approvedBy ?? "").trim().toLowerCase(),
+				))) &&
 		typeof parsed.reason === "string" &&
 		parsed.reason.trim().length > 0 &&
 		typeof parsed.approvedAt === "string" &&
@@ -535,6 +1008,178 @@ function isValidBreakGlassApproval(
 		parsed.signatureAlgorithm === SNAPSHOT_SIGNATURE_ALGORITHM &&
 		typeof parsed.signingKeyId === "string"
 	);
+}
+
+function normalizeBreakGlassApprovers(approval: BreakGlassApproval): string[] {
+	if (Array.isArray(approval.approvers) && approval.approvers.length > 0) {
+		return approval.approvers.map((approver) => approver.trim());
+	}
+	return [approval.approvedBy.trim()];
+}
+
+function canonicalizeBreakGlassGovernancePolicyForDigest(
+	policy: BreakGlassGovernancePolicy,
+): string {
+	return JSON.stringify({
+		schemaVersion: policy.schemaVersion,
+		approverAllowlist: policy.approverAllowlist,
+		maxApprovalTtlHours: policy.maxApprovalTtlHours,
+		requireDualApprovalForRollbackWeakening:
+			policy.requireDualApprovalForRollbackWeakening,
+		integrity: {
+			signatureAlgorithm: policy.integrity.signatureAlgorithm,
+			signingKeyId: policy.integrity.signingKeyId,
+			payloadSha256: "",
+		},
+	});
+}
+
+function isValidBreakGlassGovernancePolicy(
+	value: unknown,
+): value is BreakGlassGovernancePolicy {
+	if (!value || typeof value !== "object") {
+		return false;
+	}
+	const parsed = value as Partial<BreakGlassGovernancePolicy>;
+	if (
+		parsed.schemaVersion !== "ci-migrate-break-glass-policy/v1" ||
+		!Array.isArray(parsed.approverAllowlist) ||
+		parsed.approverAllowlist.length < 1 ||
+		typeof parsed.maxApprovalTtlHours !== "number" ||
+		!Number.isInteger(parsed.maxApprovalTtlHours) ||
+		parsed.maxApprovalTtlHours < 1 ||
+		parsed.maxApprovalTtlHours > 168 ||
+		typeof parsed.requireDualApprovalForRollbackWeakening !== "boolean" ||
+		parsed.integrity?.signatureAlgorithm !== SNAPSHOT_SIGNATURE_ALGORITHM ||
+		typeof parsed.integrity?.signingKeyId !== "string" ||
+		!HEX_TOKEN_PATTERN.test(parsed.integrity.signingKeyId) ||
+		typeof parsed.integrity?.payloadSha256 !== "string" ||
+		!isHexDigest(parsed.integrity.payloadSha256)
+	) {
+		return false;
+	}
+	const normalizedAllowlist = parsed.approverAllowlist.map((approver) =>
+		typeof approver === "string" ? approver.trim() : "",
+	);
+	if (normalizedAllowlist.some((approver) => approver.length === 0)) {
+		return false;
+	}
+	return (
+		new Set(normalizedAllowlist.map((approver) => approver.toLowerCase()))
+			.size === normalizedAllowlist.length
+	);
+}
+
+function readBreakGlassGovernancePolicy(
+	targetDir: string,
+):
+	| { ok: true; value: BreakGlassGovernancePolicy }
+	| { ok: false; error: string } {
+	const resolvedPath = resolve(targetDir, BREAK_GLASS_POLICY_PATH);
+	const signaturePath = `${resolvedPath}.sig`;
+	if (!existsSync(resolvedPath)) {
+		return {
+			ok: false,
+			error: `Break-glass governance policy file not found: ${BREAK_GLASS_POLICY_PATH}`,
+		};
+	}
+	if (!existsSync(signaturePath)) {
+		return {
+			ok: false,
+			error: `Break-glass governance policy signature is missing: ${BREAK_GLASS_POLICY_PATH}.sig`,
+		};
+	}
+	const signingKeyResult = resolveSnapshotSigningKey();
+	if (!signingKeyResult.ok) {
+		return { ok: false, error: signingKeyResult.error };
+	}
+	try {
+		const content = readFileSync(resolvedPath, "utf-8");
+		const signature = readFileSync(signaturePath, "utf-8").trim();
+		if (!isHexDigest(signature)) {
+			return {
+				ok: false,
+				error: `Break-glass governance policy signature must be a sha256 hex digest: ${BREAK_GLASS_POLICY_PATH}.sig`,
+			};
+		}
+		const expectedSignature = signContent(content, signingKeyResult.key);
+		if (signature !== expectedSignature) {
+			return {
+				ok: false,
+				error:
+					"Break-glass governance policy signature check failed. Refusing unsigned governance policy.",
+			};
+		}
+		const parsed = JSON.parse(content) as unknown;
+		if (!isValidBreakGlassGovernancePolicy(parsed)) {
+			return {
+				ok: false,
+				error:
+					"Break-glass governance policy schema is invalid. Expected ci-migrate-break-glass-policy/v1.",
+			};
+		}
+		if (parsed.integrity.signingKeyId !== signingKeyResult.keyId) {
+			return {
+				ok: false,
+				error:
+					"Break-glass governance policy signing key id does not match active signing key.",
+			};
+		}
+		const expectedPayloadSha256 = hashContent(
+			canonicalizeBreakGlassGovernancePolicyForDigest(parsed),
+		);
+		if (parsed.integrity.payloadSha256 !== expectedPayloadSha256) {
+			return {
+				ok: false,
+				error:
+					"Break-glass governance policy integrity payloadSha256 does not match signed payload.",
+			};
+		}
+		return { ok: true, value: parsed };
+	} catch (error) {
+		return {
+			ok: false,
+			error: `Failed to parse break-glass governance policy: ${sanitizeError(error)}`,
+		};
+	}
+}
+
+function validateBreakGlassApprovalAgainstPolicy(
+	approval: BreakGlassApproval,
+	policy: BreakGlassGovernancePolicy,
+	options?: { requireDualForRollbackWeakening?: boolean | undefined },
+): string[] {
+	const violations: string[] = [];
+	const normalizedAllowlist = new Set(
+		policy.approverAllowlist.map((approver) => approver.trim().toLowerCase()),
+	);
+	const approvers = normalizeBreakGlassApprovers(approval);
+	for (const approver of approvers) {
+		if (!normalizedAllowlist.has(approver.toLowerCase())) {
+			violations.push(
+				`Break-glass approver '${approver}' is not allowlisted by governance policy.`,
+			);
+		}
+	}
+	const approvedAtMs = Date.parse(approval.approvedAt);
+	const expiresAtMs = Date.parse(approval.expiresAt);
+	if (Number.isFinite(approvedAtMs) && Number.isFinite(expiresAtMs)) {
+		const ttlHours = (expiresAtMs - approvedAtMs) / (60 * 60 * 1000);
+		if (ttlHours > policy.maxApprovalTtlHours) {
+			violations.push(
+				`Break-glass approval TTL (${ttlHours.toFixed(2)}h) exceeds governance policy maxApprovalTtlHours (${policy.maxApprovalTtlHours}h).`,
+			);
+		}
+	}
+	const requireDual =
+		options?.requireDualForRollbackWeakening === true &&
+		policy.requireDualApprovalForRollbackWeakening;
+	if (requireDual && approvers.length < 2) {
+		violations.push(
+			"Break-glass governance policy requires dual approval for rollback weakening.",
+		);
+	}
+	return violations;
 }
 
 function readBreakGlassApproval(
@@ -621,6 +1266,388 @@ function readBreakGlassApproval(
 			error: `Failed to parse break-glass approval: ${sanitizeError(error)}`,
 		};
 	}
+}
+
+function canonicalizeMergeQueueEvidenceForDigest(
+	evidence: MergeQueueCutoverEvidence,
+): string {
+	return JSON.stringify({
+		schemaVersion: evidence.schemaVersion,
+		snapshotId: evidence.snapshotId,
+		generatedAt: evidence.generatedAt,
+		binding: evidence.binding,
+		pausedAt: evidence.pausedAt,
+		drainedAt: evidence.drainedAt,
+		revalidatedAt: evidence.revalidatedAt,
+		pausedQueueDepth: evidence.pausedQueueDepth,
+		drainedCandidateCount: evidence.drainedCandidateCount,
+		revalidatedCandidateCount: evidence.revalidatedCandidateCount,
+		integrity: {
+			signatureAlgorithm: evidence.integrity.signatureAlgorithm,
+			signingKeyId: evidence.integrity.signingKeyId,
+			payloadSha256: "",
+		},
+	});
+}
+
+function isValidMergeQueueCutoverEvidence(
+	value: unknown,
+	snapshotId: string,
+): value is MergeQueueCutoverEvidence {
+	if (!value || typeof value !== "object") {
+		return false;
+	}
+	const parsed = value as Partial<MergeQueueCutoverEvidence>;
+	const queueCountValid = (count: unknown): boolean =>
+		count === undefined ||
+		(typeof count === "number" &&
+			Number.isInteger(count) &&
+			Number.isFinite(count) &&
+			count >= 0);
+	return (
+		parsed.schemaVersion === "ci-migrate-merge-queue-evidence/v2" &&
+		parsed.snapshotId === snapshotId &&
+		typeof parsed.generatedAt === "string" &&
+		Number.isFinite(Date.parse(parsed.generatedAt)) &&
+		isValidMergeQueueEvidenceBinding(parsed.binding) &&
+		typeof parsed.pausedAt === "string" &&
+		Number.isFinite(Date.parse(parsed.pausedAt)) &&
+		(parsed.drainedAt === undefined ||
+			(typeof parsed.drainedAt === "string" &&
+				Number.isFinite(Date.parse(parsed.drainedAt)))) &&
+		(parsed.revalidatedAt === undefined ||
+			(typeof parsed.revalidatedAt === "string" &&
+				Number.isFinite(Date.parse(parsed.revalidatedAt)))) &&
+		queueCountValid(parsed.pausedQueueDepth) &&
+		queueCountValid(parsed.drainedCandidateCount) &&
+		queueCountValid(parsed.revalidatedCandidateCount) &&
+		parsed.integrity?.signatureAlgorithm === SNAPSHOT_SIGNATURE_ALGORITHM &&
+		typeof parsed.integrity?.signingKeyId === "string" &&
+		HEX_TOKEN_PATTERN.test(parsed.integrity.signingKeyId) &&
+		typeof parsed.integrity?.payloadSha256 === "string" &&
+		isHexDigest(parsed.integrity.payloadSha256)
+	);
+}
+
+interface MergeQueueEvidenceRecord {
+	sourcePath: string;
+	contentSha256: string;
+	evidence: MergeQueueCutoverEvidence;
+}
+
+function readMergeQueueEvidence(
+	targetDir: string,
+	snapshotId: string,
+	overridePath: string | undefined,
+	required: boolean,
+	expectedBinding: MergeQueueEvidenceBinding | null,
+):
+	| { ok: true; value: MergeQueueEvidenceRecord | null }
+	| {
+			ok: false;
+			error: string;
+	  } {
+	const configuredPath =
+		typeof overridePath === "string" && overridePath.trim().length > 0
+			? overridePath.trim()
+			: DEFAULT_MERGE_QUEUE_EVIDENCE_PATH;
+	const resolvedPath = resolve(targetDir, configuredPath);
+	if (!existsSync(resolvedPath)) {
+		if (required || overridePath !== undefined) {
+			return {
+				ok: false,
+				error: `Merge-queue orchestration evidence file not found: ${configuredPath}`,
+			};
+		}
+		return { ok: true, value: null };
+	}
+	const signaturePath = `${resolvedPath}.sig`;
+	if (!existsSync(signaturePath)) {
+		return {
+			ok: false,
+			error: `Merge-queue orchestration evidence signature is missing: ${configuredPath}.sig`,
+		};
+	}
+	const signingKeyResult = resolveSnapshotSigningKey();
+	if (!signingKeyResult.ok) {
+		return {
+			ok: false,
+			error: signingKeyResult.error,
+		};
+	}
+	try {
+		const content = readFileSync(resolvedPath, "utf-8");
+		const signature = readFileSync(signaturePath, "utf-8").trim();
+		if (!isHexDigest(signature)) {
+			return {
+				ok: false,
+				error: `Merge-queue orchestration evidence signature must be a sha256 hex digest: ${configuredPath}.sig`,
+			};
+		}
+		const expectedSignature = signContent(content, signingKeyResult.key);
+		if (expectedSignature !== signature) {
+			return {
+				ok: false,
+				error:
+					"Merge-queue orchestration evidence signature mismatch. Refusing untrusted cutover evidence.",
+			};
+		}
+		const parsed = JSON.parse(content) as unknown;
+		if (!isValidMergeQueueCutoverEvidence(parsed, snapshotId)) {
+			return {
+				ok: false,
+				error:
+					"Merge-queue orchestration evidence schema is invalid for the requested snapshot id.",
+			};
+		}
+		if (parsed.integrity.signingKeyId !== signingKeyResult.keyId) {
+			return {
+				ok: false,
+				error:
+					"Merge-queue orchestration evidence integrity signingKeyId does not match active signing key.",
+			};
+		}
+		const expectedPayloadSha256 = hashContent(
+			canonicalizeMergeQueueEvidenceForDigest(parsed),
+		);
+		if (parsed.integrity.payloadSha256 !== expectedPayloadSha256) {
+			return {
+				ok: false,
+				error:
+					"Merge-queue orchestration evidence integrity payloadSha256 does not match signed payload.",
+			};
+		}
+		if (expectedBinding) {
+			const binding = parsed.binding;
+			if (
+				binding.repoFullName !== expectedBinding.repoFullName ||
+				binding.headSha !== expectedBinding.headSha ||
+				binding.trustedPolicyRef !== expectedBinding.trustedPolicyRef ||
+				binding.authorityConfigSha256 !==
+					expectedBinding.authorityConfigSha256 ||
+				binding.requiredCheckManifestSha256 !==
+					expectedBinding.requiredCheckManifestSha256
+			) {
+				return {
+					ok: false,
+					error:
+						"Merge-queue orchestration evidence binding does not match current repository/policy identity. Refusing replayed evidence.",
+				};
+			}
+		}
+		return {
+			ok: true,
+			value: {
+				sourcePath: configuredPath,
+				contentSha256: hashContent(content),
+				evidence: parsed,
+			},
+		};
+	} catch (error) {
+		return {
+			ok: false,
+			error: `Failed to parse merge-queue orchestration evidence: ${sanitizeError(error)}`,
+		};
+	}
+}
+
+function validateMergeQueueEvidenceLifecycle(
+	record: MergeQueueEvidenceRecord,
+	requireFullLifecycle: boolean,
+): string[] {
+	const violations: string[] = [];
+	const pausedAtMs = Date.parse(record.evidence.pausedAt);
+	const drainedAtMs =
+		typeof record.evidence.drainedAt === "string"
+			? Date.parse(record.evidence.drainedAt)
+			: Number.NaN;
+	const revalidatedAtMs =
+		typeof record.evidence.revalidatedAt === "string"
+			? Date.parse(record.evidence.revalidatedAt)
+			: Number.NaN;
+	if (Number.isFinite(drainedAtMs) && drainedAtMs < pausedAtMs) {
+		violations.push(
+			"Merge-queue orchestration evidence drainedAt must be on or after pausedAt.",
+		);
+	}
+	if (
+		Number.isFinite(revalidatedAtMs) &&
+		((Number.isFinite(drainedAtMs) && revalidatedAtMs < drainedAtMs) ||
+			revalidatedAtMs < pausedAtMs)
+	) {
+		violations.push(
+			"Merge-queue orchestration evidence revalidatedAt must be on or after drainedAt/pausedAt.",
+		);
+	}
+	if (requireFullLifecycle) {
+		if (!Number.isFinite(drainedAtMs)) {
+			violations.push(
+				"Merge-queue orchestration evidence must include drainedAt for required-mode commit windows.",
+			);
+		}
+		if (!Number.isFinite(revalidatedAtMs)) {
+			violations.push(
+				"Merge-queue orchestration evidence must include revalidatedAt for required-mode commit windows.",
+			);
+		}
+		if (
+			typeof record.evidence.drainedCandidateCount !== "number" ||
+			record.evidence.drainedCandidateCount < 1
+		) {
+			violations.push(
+				"Merge-queue orchestration evidence must include drainedCandidateCount >= 1 for required-mode commit windows.",
+			);
+		}
+		if (
+			typeof record.evidence.revalidatedCandidateCount !== "number" ||
+			record.evidence.revalidatedCandidateCount < 1
+		) {
+			violations.push(
+				"Merge-queue orchestration evidence must include revalidatedCandidateCount >= 1 for required-mode commit windows.",
+			);
+		}
+	}
+	return violations;
+}
+
+function deriveMergeQueueEvidenceBinding(
+	targetDir: string,
+):
+	| { ok: true; value: MergeQueueEvidenceBinding }
+	| { ok: false; error: string } {
+	const policyResult = readContractProviderPolicy(targetDir);
+	if (!policyResult.ok) {
+		return { ok: false, error: policyResult.error };
+	}
+	const originUrl = readGitOriginUrl(targetDir);
+	if (!originUrl) {
+		return {
+			ok: false,
+			error:
+				"Git origin URL is required to bind merge-queue orchestration evidence identity.",
+		};
+	}
+	const repoFullName = normalizeRepoFullName(originUrl);
+	if (!repoFullName) {
+		return {
+			ok: false,
+			error: `Unsupported origin URL for merge-queue evidence binding: ${originUrl}`,
+		};
+	}
+	const headShaResult = resolveGitRefToCommit(targetDir, "HEAD");
+	if (!headShaResult.ok) {
+		return { ok: false, error: headShaResult.error };
+	}
+	const trustedPolicyRefResult = resolveGitRefToCommit(
+		targetDir,
+		policyResult.value.trustedPolicyRef,
+	);
+	if (!trustedPolicyRefResult.ok) {
+		return { ok: false, error: trustedPolicyRefResult.error };
+	}
+	const authorityDigestResult = readHashedPolicyFile(
+		targetDir,
+		policyResult.value.authorityConfigPath,
+	);
+	if (!authorityDigestResult.ok) {
+		return { ok: false, error: authorityDigestResult.error };
+	}
+	const requiredManifestDigestResult = readHashedPolicyFile(
+		targetDir,
+		policyResult.value.requiredCheckManifestPath,
+	);
+	if (!requiredManifestDigestResult.ok) {
+		return { ok: false, error: requiredManifestDigestResult.error };
+	}
+	return {
+		ok: true,
+		value: {
+			repoFullName,
+			headSha: headShaResult.commitSha,
+			trustedPolicyRef: trustedPolicyRefResult.commitSha,
+			authorityConfigSha256: authorityDigestResult.digest,
+			requiredCheckManifestSha256: requiredManifestDigestResult.digest,
+		},
+	};
+}
+
+function runMergeQueueOrchestrator(
+	targetDir: string,
+	orchestratorPath: string,
+	snapshotId: string,
+	evidencePath: string,
+	requireFullLifecycle: boolean,
+	binding: MergeQueueEvidenceBinding,
+	signingKey: string,
+): { ok: true } | { ok: false; error: string } {
+	const resolvedOrchestratorPath = resolve(targetDir, orchestratorPath);
+	if (!existsSync(resolvedOrchestratorPath)) {
+		return {
+			ok: false,
+			error: `Merge-queue orchestrator executable not found: ${orchestratorPath}`,
+		};
+	}
+	const resolvedEvidencePath = resolve(targetDir, evidencePath);
+	const args = [
+		"--snapshot",
+		snapshotId,
+		"--evidence-path",
+		resolvedEvidencePath,
+		"--require-full-lifecycle",
+		requireFullLifecycle ? "true" : "false",
+	];
+	const orchestratorResult = spawnSync(resolvedOrchestratorPath, args, {
+		cwd: targetDir,
+		encoding: "utf-8",
+		env: {
+			...env,
+			HARNESS_CI_MIGRATE_SNAPSHOT_ID: snapshotId,
+			HARNESS_CI_MIGRATE_EVIDENCE_PATH: resolvedEvidencePath,
+			HARNESS_CI_MIGRATE_EVIDENCE_REL_PATH: evidencePath,
+			HARNESS_CI_MIGRATE_REQUIRE_FULL_LIFECYCLE: requireFullLifecycle
+				? "1"
+				: "0",
+			HARNESS_CI_MIGRATE_SIGNING_KEY: signingKey,
+			HARNESS_CI_MIGRATE_BINDING_REPO_FULL_NAME: binding.repoFullName,
+			HARNESS_CI_MIGRATE_BINDING_HEAD_SHA: binding.headSha,
+			HARNESS_CI_MIGRATE_BINDING_TRUSTED_POLICY_REF: binding.trustedPolicyRef,
+			HARNESS_CI_MIGRATE_BINDING_AUTHORITY_CONFIG_SHA256:
+				binding.authorityConfigSha256,
+			HARNESS_CI_MIGRATE_BINDING_REQUIRED_CHECK_MANIFEST_SHA256:
+				binding.requiredCheckManifestSha256,
+		},
+	});
+	if (orchestratorResult.error) {
+		return {
+			ok: false,
+			error: `Failed to execute merge-queue orchestrator: ${sanitizeError(orchestratorResult.error)}`,
+		};
+	}
+	if (orchestratorResult.status !== 0) {
+		const stderr = orchestratorResult.stderr?.trim() ?? "";
+		const stdout = orchestratorResult.stdout?.trim() ?? "";
+		const detail = stderr.length > 0 ? stderr : stdout;
+		return {
+			ok: false,
+			error:
+				detail.length > 0
+					? `Merge-queue orchestrator failed: ${detail}`
+					: "Merge-queue orchestrator exited non-zero.",
+		};
+	}
+	if (!existsSync(resolvedEvidencePath)) {
+		return {
+			ok: false,
+			error: `Merge-queue orchestrator did not emit evidence file: ${evidencePath}`,
+		};
+	}
+	if (!existsSync(`${resolvedEvidencePath}.sig`)) {
+		return {
+			ok: false,
+			error: `Merge-queue orchestrator did not emit evidence signature: ${evidencePath}.sig`,
+		};
+	}
+	return { ok: true };
 }
 
 function isSafeRestorePath(targetDir: string, relativePath: string): boolean {
@@ -809,7 +1836,7 @@ function normalizeAction(value: string | undefined):
 	}
 	return {
 		ok: false,
-		error: `Unsupported ci-migrate action: ${value}. Expected prepare, commit, or abort.`,
+		error: `Unsupported ci-migrate action: ${value}. Expected prepare, commit, abort, or verify.`,
 	};
 }
 
@@ -872,6 +1899,25 @@ function deriveModeFromAction(
 				apply: true,
 				rollback: false,
 				dryRun: false,
+				isExplicitAction: true,
+			},
+		};
+	}
+
+	if (action === "verify") {
+		if (options.apply === true || options.rollback === true) {
+			return {
+				ok: false,
+				error:
+					"Action 'verify' conflicts with --apply/--rollback. Use action alone or --dry-run.",
+			};
+		}
+		return {
+			ok: true,
+			value: {
+				apply: false,
+				rollback: false,
+				dryRun: true,
 				isExplicitAction: true,
 			},
 		};
@@ -980,7 +2026,9 @@ function readContractProviderMode(targetDir: string): CIProviderMode | null {
 
 function readContractProviderPolicy(
 	targetDir: string,
+	options?: { strict?: boolean | undefined },
 ): { ok: true; value: CIProviderPolicyConfig } | { ok: false; error: string } {
+	const strictMode = options?.strict === true;
 	const contractPath = resolve(targetDir, "harness.contract.json");
 	if (!existsSync(contractPath)) {
 		return {
@@ -994,6 +2042,8 @@ function readContractProviderPolicy(
 			ciProviderPolicy?:
 				| {
 						mode?: string | undefined;
+						migrationStage?: string | undefined;
+						transitionStatusArtifactPath?: string | undefined;
 						trustedPolicyRef?: string | undefined;
 						requiredCheckManifestPath?: string | undefined;
 						authorityConfigPath?: string | undefined;
@@ -1012,6 +2062,37 @@ function readContractProviderPolicy(
 				ok: false,
 				error: "ciProviderPolicy.mode must be either shadow or required.",
 			};
+		}
+		let migrationStage: CIProviderMigrationStage;
+		if (
+			policy.migrationStage === "dual-provider" ||
+			policy.migrationStage === "circleci-primary" ||
+			policy.migrationStage === "circleci-only"
+		) {
+			migrationStage = policy.migrationStage;
+		} else if (strictMode) {
+			return {
+				ok: false,
+				error:
+					"ciProviderPolicy.migrationStage must be one of dual-provider, circleci-primary, or circleci-only.",
+			};
+		} else {
+			migrationStage = "dual-provider";
+		}
+		let transitionStatusArtifactPath: string;
+		if (
+			typeof policy.transitionStatusArtifactPath === "string" &&
+			policy.transitionStatusArtifactPath.trim().length > 0
+		) {
+			transitionStatusArtifactPath = policy.transitionStatusArtifactPath.trim();
+		} else if (strictMode) {
+			return {
+				ok: false,
+				error:
+					"ciProviderPolicy.transitionStatusArtifactPath is required and cannot be empty.",
+			};
+		} else {
+			transitionStatusArtifactPath = DEFAULT_TRANSITION_STATUS_ARTIFACT_PATH;
 		}
 		if (
 			typeof policy.trustedPolicyRef !== "string" ||
@@ -1048,6 +2129,8 @@ function readContractProviderPolicy(
 			ok: true,
 			value: {
 				mode: policy.mode,
+				migrationStage,
+				transitionStatusArtifactPath,
 				trustedPolicyRef: policy.trustedPolicyRef.trim(),
 				requiredCheckManifestPath: policy.requiredCheckManifestPath.trim(),
 				authorityConfigPath: policy.authorityConfigPath.trim(),
@@ -1887,6 +2970,2139 @@ function canonicalizeParityProofPackForDigest(
 	});
 }
 
+function parseParityProofPackInput(
+	content: string,
+): { ok: true; value: CIParityProofPackInput } | { ok: false; error: string } {
+	try {
+		const parsed = JSON.parse(content) as unknown;
+		if (!parsed || typeof parsed !== "object") {
+			return {
+				ok: false,
+				error: "Parity proof pack input must be a JSON object.",
+			};
+		}
+		const record = parsed as Record<string, unknown>;
+		if (record.schemaVersion !== "ci-parity-proof-input/v1") {
+			return {
+				ok: false,
+				error:
+					"Parity proof pack input schemaVersion must be ci-parity-proof-input/v1.",
+			};
+		}
+		if (
+			record.generatedAt !== undefined &&
+			(typeof record.generatedAt !== "string" ||
+				!Number.isFinite(Date.parse(record.generatedAt)))
+		) {
+			return {
+				ok: false,
+				error:
+					"Parity proof pack input generatedAt must be a valid ISO timestamp when provided.",
+			};
+		}
+		const behavioralParity = record.behavioralParity;
+		const scenarios = (behavioralParity as { scenarios?: unknown })?.scenarios;
+		if (!behavioralParity || !Array.isArray(scenarios)) {
+			return {
+				ok: false,
+				error:
+					"Parity proof pack input behavioralParity.scenarios must be an array.",
+			};
+		}
+		const parsedScenarios: CIParityScenarioEvidence[] = [];
+		for (const scenario of scenarios) {
+			if (!scenario || typeof scenario !== "object") {
+				return {
+					ok: false,
+					error: "Parity proof pack input scenarios must be objects.",
+				};
+			}
+			const scenarioRecord = scenario as Record<string, unknown>;
+			if (
+				typeof scenarioRecord.scenario !== "string" ||
+				!isRequiredParityScenario(scenarioRecord.scenario)
+			) {
+				return {
+					ok: false,
+					error:
+						"Parity proof pack input scenarios must use supported scenario ids.",
+				};
+			}
+			if (!isCIProviderArray(scenarioRecord.providersCompared)) {
+				return {
+					ok: false,
+					error:
+						"Parity proof pack input scenario providersCompared must be a CI provider array.",
+				};
+			}
+			if (
+				typeof scenarioRecord.commitCount !== "number" ||
+				!Number.isInteger(scenarioRecord.commitCount) ||
+				scenarioRecord.commitCount < 1
+			) {
+				return {
+					ok: false,
+					error:
+						"Parity proof pack input scenario commitCount must be a positive integer.",
+				};
+			}
+			if (
+				!Array.isArray(scenarioRecord.unexpectedDiffs) ||
+				!scenarioRecord.unexpectedDiffs.every(
+					(entry) => typeof entry === "string",
+				)
+			) {
+				return {
+					ok: false,
+					error:
+						"Parity proof pack input scenario unexpectedDiffs must be an array of strings.",
+				};
+			}
+			parsedScenarios.push({
+				scenario: scenarioRecord.scenario,
+				providersCompared: scenarioRecord.providersCompared,
+				commitCount: scenarioRecord.commitCount,
+				unexpectedDiffs: scenarioRecord.unexpectedDiffs,
+			});
+		}
+
+		const promotionGate = record.promotionGate;
+		if (!promotionGate || typeof promotionGate !== "object") {
+			return {
+				ok: false,
+				error: "Parity proof pack input promotionGate section is required.",
+			};
+		}
+		const gateRecord = promotionGate as Record<string, unknown>;
+		const gateFields = [
+			"zeroUnexpectedDiffs",
+			"outcomeParity",
+			"skippedSemanticsParity",
+			"artifactParity",
+			"greptileParity",
+			"releaseParity",
+		] as const;
+		for (const field of gateFields) {
+			if (typeof gateRecord[field] !== "boolean") {
+				return {
+					ok: false,
+					error: `Parity proof pack input promotionGate.${field} must be a boolean.`,
+				};
+			}
+		}
+
+		const downstream = record.downstream;
+		const repositories = (downstream as { repositories?: unknown })
+			?.repositories;
+		if (!downstream || !Array.isArray(repositories)) {
+			return {
+				ok: false,
+				error:
+					"Parity proof pack input downstream.repositories must be an array.",
+			};
+		}
+		const parsedRepositories: CIParityDownstreamRepositoryEvidence[] = [];
+		for (const repository of repositories) {
+			if (!repository || typeof repository !== "object") {
+				return {
+					ok: false,
+					error:
+						"Parity proof pack input downstream repository entries must be objects.",
+				};
+			}
+			const repositoryRecord = repository as Record<string, unknown>;
+			if (
+				typeof repositoryRecord.repo !== "string" ||
+				repositoryRecord.repo.trim().length === 0
+			) {
+				return {
+					ok: false,
+					error:
+						"Parity proof pack input downstream repositories require a non-empty repo field.",
+				};
+			}
+			if (
+				typeof repositoryRecord.ecosystemProfile !== "string" ||
+				repositoryRecord.ecosystemProfile.trim().length === 0
+			) {
+				return {
+					ok: false,
+					error:
+						"Parity proof pack input downstream repositories require a non-empty ecosystemProfile field.",
+				};
+			}
+			if (
+				typeof repositoryRecord.mergeQueue !== "boolean" ||
+				typeof repositoryRecord.parityMatrixVerified !== "boolean" ||
+				typeof repositoryRecord.rollbackRehearsed !== "boolean"
+			) {
+				return {
+					ok: false,
+					error:
+						"Parity proof pack input downstream repository booleans are required.",
+				};
+			}
+			parsedRepositories.push({
+				repo: repositoryRecord.repo,
+				ecosystemProfile: repositoryRecord.ecosystemProfile,
+				mergeQueue: repositoryRecord.mergeQueue,
+				parityMatrixVerified: repositoryRecord.parityMatrixVerified,
+				rollbackRehearsed: repositoryRecord.rollbackRehearsed,
+			});
+		}
+
+		const repoRecord =
+			record.repo && typeof record.repo === "object"
+				? (record.repo as Record<string, unknown>)
+				: null;
+		const repo =
+			repoRecord === null
+				? null
+				: {
+						baseSha:
+							typeof repoRecord.baseSha === "string"
+								? repoRecord.baseSha
+								: undefined,
+						headSha:
+							typeof repoRecord.headSha === "string"
+								? repoRecord.headSha
+								: undefined,
+						fullName:
+							typeof repoRecord.fullName === "string"
+								? repoRecord.fullName
+								: undefined,
+						originUrl:
+							typeof repoRecord.originUrl === "string"
+								? repoRecord.originUrl
+								: undefined,
+					};
+
+		return {
+			ok: true,
+			value: {
+				schemaVersion: "ci-parity-proof-input/v1",
+				generatedAt:
+					typeof record.generatedAt === "string"
+						? record.generatedAt
+						: undefined,
+				repo,
+				behavioralParity: { scenarios: parsedScenarios },
+				promotionGate: {
+					zeroUnexpectedDiffs: gateRecord.zeroUnexpectedDiffs as boolean,
+					outcomeParity: gateRecord.outcomeParity as boolean,
+					skippedSemanticsParity: gateRecord.skippedSemanticsParity as boolean,
+					artifactParity: gateRecord.artifactParity as boolean,
+					greptileParity: gateRecord.greptileParity as boolean,
+					releaseParity: gateRecord.releaseParity as boolean,
+				},
+				downstream: { repositories: parsedRepositories },
+			},
+		};
+	} catch (error) {
+		return {
+			ok: false,
+			error: `Failed to parse parity proof pack input JSON: ${sanitizeError(error)}`,
+		};
+	}
+}
+
+function parseParityProvenanceInput(
+	content: string,
+): { ok: true; value: CIParityProvenanceInput } | { ok: false; error: string } {
+	try {
+		const parsed = JSON.parse(content) as unknown;
+		if (!parsed || typeof parsed !== "object") {
+			return {
+				ok: false,
+				error: "Parity provenance input must be a JSON object.",
+			};
+		}
+		const record = parsed as Record<string, unknown>;
+		if (record.schemaVersion !== PARITY_PROVENANCE_INPUT_SCHEMA_VERSION) {
+			return {
+				ok: false,
+				error: `Parity provenance input schemaVersion must be ${PARITY_PROVENANCE_INPUT_SCHEMA_VERSION}.`,
+			};
+		}
+		if (
+			record.generatedAt !== undefined &&
+			(typeof record.generatedAt !== "string" ||
+				!Number.isFinite(Date.parse(record.generatedAt)))
+		) {
+			return {
+				ok: false,
+				error:
+					"Parity provenance input generatedAt must be a valid ISO timestamp when provided.",
+			};
+		}
+		const parsedProofInputResult = parseParityProofPackInput(
+			JSON.stringify({
+				schemaVersion: "ci-parity-proof-input/v1",
+				generatedAt:
+					typeof record.generatedAt === "string"
+						? record.generatedAt
+						: undefined,
+				repo: record.repo,
+				behavioralParity: record.behavioralParity,
+				promotionGate: record.promotionGate,
+				downstream: record.downstream,
+			}),
+		);
+		if (!parsedProofInputResult.ok) {
+			return { ok: false, error: parsedProofInputResult.error };
+		}
+		if (!Array.isArray(record.artifacts) || record.artifacts.length === 0) {
+			return {
+				ok: false,
+				error: "Parity provenance input artifacts must be a non-empty array.",
+			};
+		}
+		const artifacts: CIParityProvenanceInputArtifact[] = [];
+		const artifactIds = new Set<string>();
+		for (const artifact of record.artifacts) {
+			if (!artifact || typeof artifact !== "object") {
+				return {
+					ok: false,
+					error: "Parity provenance input artifact entries must be objects.",
+				};
+			}
+			const artifactRecord = artifact as Record<string, unknown>;
+			if (
+				typeof artifactRecord.artifactId !== "string" ||
+				artifactRecord.artifactId.trim().length === 0
+			) {
+				return {
+					ok: false,
+					error:
+						"Parity provenance input artifact entries require a non-empty artifactId.",
+				};
+			}
+			if (artifactIds.has(artifactRecord.artifactId)) {
+				return {
+					ok: false,
+					error: `Parity provenance input artifactId must be unique. Duplicate: ${artifactRecord.artifactId}.`,
+				};
+			}
+			artifactIds.add(artifactRecord.artifactId);
+			if (
+				typeof artifactRecord.path !== "string" ||
+				artifactRecord.path.trim().length === 0
+			) {
+				return {
+					ok: false,
+					error:
+						"Parity provenance input artifact entries require a non-empty path.",
+				};
+			}
+			if (
+				artifactRecord.sourceProvider !== "github-actions" &&
+				artifactRecord.sourceProvider !== "circleci"
+			) {
+				return {
+					ok: false,
+					error:
+						"Parity provenance input artifact sourceProvider must be github-actions or circleci.",
+				};
+			}
+			if (
+				typeof artifactRecord.sourceRunId !== "string" ||
+				artifactRecord.sourceRunId.trim().length === 0
+			) {
+				return {
+					ok: false,
+					error:
+						"Parity provenance input artifact sourceRunId must be a non-empty string.",
+				};
+			}
+			if (
+				typeof artifactRecord.sourceWorkflowRef !== "string" ||
+				artifactRecord.sourceWorkflowRef.trim().length === 0
+			) {
+				return {
+					ok: false,
+					error:
+						"Parity provenance input artifact sourceWorkflowRef must be a non-empty string.",
+				};
+			}
+			if (
+				artifactRecord.sourceCommitSha !== undefined &&
+				(typeof artifactRecord.sourceCommitSha !== "string" ||
+					!isCommitSha(artifactRecord.sourceCommitSha))
+			) {
+				return {
+					ok: false,
+					error:
+						"Parity provenance input artifact sourceCommitSha must be a 40-character lowercase commit SHA when provided.",
+				};
+			}
+			if (
+				artifactRecord.capturedAt !== undefined &&
+				(typeof artifactRecord.capturedAt !== "string" ||
+					!Number.isFinite(Date.parse(artifactRecord.capturedAt)))
+			) {
+				return {
+					ok: false,
+					error:
+						"Parity provenance input artifact capturedAt must be a valid ISO timestamp when provided.",
+				};
+			}
+			if (
+				artifactRecord.scenario !== undefined &&
+				(typeof artifactRecord.scenario !== "string" ||
+					!isRequiredParityScenario(artifactRecord.scenario))
+			) {
+				return {
+					ok: false,
+					error:
+						"Parity provenance input artifact scenario must use supported scenario ids when provided.",
+				};
+			}
+			artifacts.push({
+				artifactId: artifactRecord.artifactId,
+				path: artifactRecord.path,
+				sourceProvider: artifactRecord.sourceProvider,
+				sourceRunId: artifactRecord.sourceRunId,
+				sourceWorkflowRef: artifactRecord.sourceWorkflowRef,
+				sourceCommitSha:
+					typeof artifactRecord.sourceCommitSha === "string"
+						? artifactRecord.sourceCommitSha
+						: undefined,
+				capturedAt:
+					typeof artifactRecord.capturedAt === "string"
+						? artifactRecord.capturedAt
+						: undefined,
+				scenario:
+					typeof artifactRecord.scenario === "string"
+						? artifactRecord.scenario
+						: undefined,
+			});
+		}
+		return {
+			ok: true,
+			value: {
+				schemaVersion: PARITY_PROVENANCE_INPUT_SCHEMA_VERSION,
+				generatedAt:
+					typeof record.generatedAt === "string"
+						? record.generatedAt
+						: undefined,
+				repo: parsedProofInputResult.value.repo ?? undefined,
+				behavioralParity: parsedProofInputResult.value.behavioralParity,
+				promotionGate: parsedProofInputResult.value.promotionGate,
+				downstream: parsedProofInputResult.value.downstream,
+				artifacts,
+			},
+		};
+	} catch (error) {
+		return {
+			ok: false,
+			error: `Failed to parse parity provenance input JSON: ${sanitizeError(error)}`,
+		};
+	}
+}
+
+function canonicalizeParityProvenanceArtifactIndexForDigest(
+	index: CIParityProvenanceArtifactIndex,
+): string {
+	return JSON.stringify({
+		schemaVersion: index.schemaVersion,
+		generatedAt: index.generatedAt,
+		repo: index.repo,
+		behavioralParity: index.behavioralParity,
+		promotionGate: index.promotionGate,
+		downstream: index.downstream,
+		artifacts: index.artifacts.map((artifact) => ({
+			artifactId: artifact.artifactId,
+			path: artifact.path,
+			sha256: artifact.sha256,
+			signature: artifact.signature,
+			sourceProvider: artifact.sourceProvider,
+			sourceRunId: artifact.sourceRunId,
+			sourceWorkflowRef: artifact.sourceWorkflowRef,
+			sourceCommitSha: artifact.sourceCommitSha,
+			capturedAt: artifact.capturedAt,
+			scenario: artifact.scenario,
+		})),
+		integrity: {
+			signatureAlgorithm: index.integrity.signatureAlgorithm,
+			signingKeyId: index.integrity.signingKeyId,
+			payloadSha256: "",
+		},
+	});
+}
+
+function parseParityProvenanceArtifactIndex(content: string):
+	| { ok: true; value: CIParityProvenanceArtifactIndex }
+	| {
+			ok: false;
+			error: string;
+	  } {
+	try {
+		const parsed = JSON.parse(content) as unknown;
+		if (!parsed || typeof parsed !== "object") {
+			return {
+				ok: false,
+				error: "Parity provenance artifact index must be a JSON object.",
+			};
+		}
+		const record = parsed as Record<string, unknown>;
+		if (
+			record.schemaVersion !== PARITY_PROVENANCE_ARTIFACT_INDEX_SCHEMA_VERSION
+		) {
+			return {
+				ok: false,
+				error: `Parity provenance artifact index schemaVersion must be ${PARITY_PROVENANCE_ARTIFACT_INDEX_SCHEMA_VERSION}.`,
+			};
+		}
+		if (
+			typeof record.generatedAt !== "string" ||
+			!Number.isFinite(Date.parse(record.generatedAt))
+		) {
+			return {
+				ok: false,
+				error:
+					"Parity provenance artifact index generatedAt must be a valid ISO timestamp.",
+			};
+		}
+		const parsedInputResult = parseParityProvenanceInput(
+			JSON.stringify({
+				schemaVersion: PARITY_PROVENANCE_INPUT_SCHEMA_VERSION,
+				generatedAt: record.generatedAt,
+				repo: record.repo ?? undefined,
+				behavioralParity: record.behavioralParity,
+				promotionGate: record.promotionGate,
+				downstream: record.downstream,
+				artifacts:
+					Array.isArray(record.artifacts) && record.artifacts.length > 0
+						? record.artifacts.map((artifact) => ({
+								artifactId:
+									typeof artifact === "object" &&
+									artifact !== null &&
+									"artifactId" in artifact
+										? (artifact as Record<string, unknown>).artifactId
+										: undefined,
+								path:
+									typeof artifact === "object" &&
+									artifact !== null &&
+									"path" in artifact
+										? (artifact as Record<string, unknown>).path
+										: undefined,
+								sourceProvider:
+									typeof artifact === "object" &&
+									artifact !== null &&
+									"sourceProvider" in artifact
+										? (artifact as Record<string, unknown>).sourceProvider
+										: undefined,
+								sourceRunId:
+									typeof artifact === "object" &&
+									artifact !== null &&
+									"sourceRunId" in artifact
+										? (artifact as Record<string, unknown>).sourceRunId
+										: undefined,
+								sourceWorkflowRef:
+									typeof artifact === "object" &&
+									artifact !== null &&
+									"sourceWorkflowRef" in artifact
+										? (artifact as Record<string, unknown>).sourceWorkflowRef
+										: undefined,
+								sourceCommitSha:
+									typeof artifact === "object" &&
+									artifact !== null &&
+									"sourceCommitSha" in artifact
+										? (artifact as Record<string, unknown>).sourceCommitSha
+										: undefined,
+								capturedAt:
+									typeof artifact === "object" &&
+									artifact !== null &&
+									"capturedAt" in artifact
+										? (artifact as Record<string, unknown>).capturedAt
+										: undefined,
+								scenario:
+									typeof artifact === "object" &&
+									artifact !== null &&
+									"scenario" in artifact
+										? (artifact as Record<string, unknown>).scenario
+										: undefined,
+							}))
+						: record.artifacts,
+			}),
+		);
+		if (!parsedInputResult.ok) {
+			return { ok: false, error: parsedInputResult.error };
+		}
+		if (!Array.isArray(record.artifacts) || record.artifacts.length === 0) {
+			return {
+				ok: false,
+				error:
+					"Parity provenance artifact index artifacts must be a non-empty array.",
+			};
+		}
+		const artifacts: CIParityProvenanceArtifactRecord[] = [];
+		const artifactIds = new Set<string>();
+		for (const artifactEntry of record.artifacts) {
+			if (!artifactEntry || typeof artifactEntry !== "object") {
+				return {
+					ok: false,
+					error:
+						"Parity provenance artifact index artifact entries must be objects.",
+				};
+			}
+			const artifactRecord = artifactEntry as Record<string, unknown>;
+			if (
+				typeof artifactRecord.artifactId !== "string" ||
+				artifactRecord.artifactId.trim().length === 0
+			) {
+				return {
+					ok: false,
+					error:
+						"Parity provenance artifact index artifact entries require a non-empty artifactId.",
+				};
+			}
+			if (artifactIds.has(artifactRecord.artifactId)) {
+				return {
+					ok: false,
+					error: `Parity provenance artifact index artifactId must be unique. Duplicate: ${artifactRecord.artifactId}.`,
+				};
+			}
+			artifactIds.add(artifactRecord.artifactId);
+			if (
+				typeof artifactRecord.sha256 !== "string" ||
+				!isHexDigest(artifactRecord.sha256)
+			) {
+				return {
+					ok: false,
+					error: `Parity provenance artifact index artifact sha256 is invalid for ${artifactRecord.artifactId}.`,
+				};
+			}
+			if (
+				typeof artifactRecord.signature !== "string" ||
+				!isHexDigest(artifactRecord.signature)
+			) {
+				return {
+					ok: false,
+					error: `Parity provenance artifact index artifact signature is invalid for ${artifactRecord.artifactId}.`,
+				};
+			}
+			if (
+				typeof artifactRecord.sourceCommitSha !== "string" ||
+				!isCommitSha(artifactRecord.sourceCommitSha)
+			) {
+				return {
+					ok: false,
+					error: `Parity provenance artifact index sourceCommitSha is invalid for ${artifactRecord.artifactId}.`,
+				};
+			}
+			if (
+				typeof artifactRecord.capturedAt !== "string" ||
+				!Number.isFinite(Date.parse(artifactRecord.capturedAt))
+			) {
+				return {
+					ok: false,
+					error: `Parity provenance artifact index capturedAt must be a valid ISO timestamp for ${artifactRecord.artifactId}.`,
+				};
+			}
+			const baseArtifact = parsedInputResult.value.artifacts.find(
+				(candidate) => candidate.artifactId === artifactRecord.artifactId,
+			);
+			if (!baseArtifact) {
+				return {
+					ok: false,
+					error: `Parity provenance artifact index artifact ${artifactRecord.artifactId} is missing normalized metadata.`,
+				};
+			}
+			artifacts.push({
+				artifactId: baseArtifact.artifactId,
+				path: baseArtifact.path,
+				sha256: artifactRecord.sha256,
+				signature: artifactRecord.signature,
+				sourceProvider: baseArtifact.sourceProvider,
+				sourceRunId: baseArtifact.sourceRunId,
+				sourceWorkflowRef: baseArtifact.sourceWorkflowRef,
+				sourceCommitSha: artifactRecord.sourceCommitSha,
+				capturedAt: artifactRecord.capturedAt,
+				scenario: baseArtifact.scenario,
+			});
+		}
+		const integrity =
+			record.integrity && typeof record.integrity === "object"
+				? (record.integrity as Record<string, unknown>)
+				: null;
+		if (
+			!integrity ||
+			integrity.signatureAlgorithm !== PARITY_PROOF_PACK_SIGNATURE_ALGORITHM ||
+			typeof integrity.signingKeyId !== "string" ||
+			!HEX_TOKEN_PATTERN.test(integrity.signingKeyId) ||
+			typeof integrity.payloadSha256 !== "string" ||
+			!isHexDigest(integrity.payloadSha256)
+		) {
+			return {
+				ok: false,
+				error:
+					"Parity provenance artifact index integrity metadata is invalid.",
+			};
+		}
+		return {
+			ok: true,
+			value: {
+				schemaVersion: PARITY_PROVENANCE_ARTIFACT_INDEX_SCHEMA_VERSION,
+				generatedAt: record.generatedAt,
+				repo: parsedInputResult.value.repo ?? undefined,
+				behavioralParity: parsedInputResult.value.behavioralParity,
+				promotionGate: parsedInputResult.value.promotionGate,
+				downstream: parsedInputResult.value.downstream,
+				artifacts,
+				integrity: {
+					signatureAlgorithm: PARITY_PROOF_PACK_SIGNATURE_ALGORITHM,
+					signingKeyId: integrity.signingKeyId,
+					payloadSha256: integrity.payloadSha256,
+				},
+			},
+		};
+	} catch (error) {
+		return {
+			ok: false,
+			error: `Failed to parse parity provenance artifact index: ${sanitizeError(error)}`,
+		};
+	}
+}
+
+function materializeProvenanceInputFromArtifactIndex(
+	targetDir: string,
+	signingKey: string,
+	signingKeyId: string,
+): { ok: true } | { ok: false; error: string } {
+	const artifactIndexPath = resolve(
+		targetDir,
+		PARITY_PROVENANCE_ARTIFACT_INDEX_PATH,
+	);
+	const artifactIndexSignaturePath = resolve(
+		targetDir,
+		PARITY_PROVENANCE_ARTIFACT_INDEX_SIGNATURE_PATH,
+	);
+	if (!existsSync(artifactIndexPath)) {
+		return {
+			ok: false,
+			error: `Missing parity provenance artifact index: ${PARITY_PROVENANCE_ARTIFACT_INDEX_PATH}`,
+		};
+	}
+	if (!existsSync(artifactIndexSignaturePath)) {
+		return {
+			ok: false,
+			error: `Missing parity provenance artifact index signature: ${PARITY_PROVENANCE_ARTIFACT_INDEX_SIGNATURE_PATH}`,
+		};
+	}
+	try {
+		const artifactIndexContent = readFileSync(artifactIndexPath, "utf-8");
+		const artifactIndexSignature = readFileSync(
+			artifactIndexSignaturePath,
+			"utf-8",
+		).trim();
+		if (!isHexDigest(artifactIndexSignature)) {
+			return {
+				ok: false,
+				error: `Parity provenance artifact index signature must be a sha256 hex digest: ${PARITY_PROVENANCE_ARTIFACT_INDEX_SIGNATURE_PATH}`,
+			};
+		}
+		const expectedSignature = signContent(artifactIndexContent, signingKey);
+		if (artifactIndexSignature !== expectedSignature) {
+			return {
+				ok: false,
+				error:
+					"Parity provenance artifact index signature mismatch. Refusing untrusted provenance automation input.",
+			};
+		}
+		const parsedIndexResult =
+			parseParityProvenanceArtifactIndex(artifactIndexContent);
+		if (!parsedIndexResult.ok) {
+			return { ok: false, error: parsedIndexResult.error };
+		}
+		const index = parsedIndexResult.value;
+		if (index.integrity.signingKeyId !== signingKeyId) {
+			return {
+				ok: false,
+				error:
+					"Parity provenance artifact index integrity signingKeyId does not match active signing key.",
+			};
+		}
+		const expectedPayloadSha256 = hashContent(
+			canonicalizeParityProvenanceArtifactIndexForDigest(index),
+		);
+		if (index.integrity.payloadSha256 !== expectedPayloadSha256) {
+			return {
+				ok: false,
+				error:
+					"Parity provenance artifact index payloadSha256 does not match signed payload.",
+			};
+		}
+		const normalizedArtifacts: CIParityProvenanceInputArtifact[] = [];
+		for (const artifact of index.artifacts) {
+			if (!isSafeProofArtifactPath(targetDir, artifact.path)) {
+				return {
+					ok: false,
+					error: `Parity provenance artifact index artifact path escapes repository root: ${artifact.path}`,
+				};
+			}
+			const artifactAbsolutePath = resolve(targetDir, artifact.path);
+			if (!existsSync(artifactAbsolutePath)) {
+				return {
+					ok: false,
+					error: `Parity provenance artifact index artifact missing from repository: ${artifact.path}`,
+				};
+			}
+			const artifactContent = readFileSync(artifactAbsolutePath, "utf-8");
+			const artifactSha256 = hashContent(artifactContent);
+			if (artifact.sha256 !== artifactSha256) {
+				return {
+					ok: false,
+					error: `Parity provenance artifact index artifact digest mismatch for ${artifact.path}.`,
+				};
+			}
+			const expectedArtifactSignature = signContent(
+				`${artifact.path}:${artifact.sha256}:${artifact.sourceProvider}:${artifact.sourceRunId}:${artifact.sourceCommitSha}:${artifact.capturedAt}`,
+				signingKey,
+			);
+			if (artifact.signature !== expectedArtifactSignature) {
+				return {
+					ok: false,
+					error: `Parity provenance artifact index artifact signature mismatch for ${artifact.path}.`,
+				};
+			}
+			normalizedArtifacts.push({
+				artifactId: artifact.artifactId,
+				path: artifact.path,
+				sourceProvider: artifact.sourceProvider,
+				sourceRunId: artifact.sourceRunId,
+				sourceWorkflowRef: artifact.sourceWorkflowRef,
+				sourceCommitSha: artifact.sourceCommitSha,
+				capturedAt: artifact.capturedAt,
+				scenario: artifact.scenario,
+			});
+		}
+		const provenanceInput: CIParityProvenanceInput = {
+			schemaVersion: PARITY_PROVENANCE_INPUT_SCHEMA_VERSION,
+			generatedAt: index.generatedAt,
+			repo: index.repo,
+			behavioralParity: index.behavioralParity,
+			promotionGate: index.promotionGate,
+			downstream: index.downstream,
+			artifacts: normalizedArtifacts,
+		};
+		const provenanceInputPath = resolve(
+			targetDir,
+			PARITY_PROVENANCE_INPUT_PATH,
+		);
+		mkdirSync(dirname(provenanceInputPath), { recursive: true });
+		writeFileSync(
+			provenanceInputPath,
+			JSON.stringify(provenanceInput, null, 2),
+		);
+		return { ok: true };
+	} catch (error) {
+		return {
+			ok: false,
+			error: `Failed to materialize provenance input from artifact index: ${sanitizeError(error)}`,
+		};
+	}
+}
+
+function materializeArtifactIndexFromProvenanceInput(
+	targetDir: string,
+	signingKey: string,
+	signingKeyId: string,
+): { ok: true } | { ok: false; error: string } {
+	const provenanceInputPath = resolve(targetDir, PARITY_PROVENANCE_INPUT_PATH);
+	if (!existsSync(provenanceInputPath)) {
+		return {
+			ok: false,
+			error: `Missing parity provenance input: ${PARITY_PROVENANCE_INPUT_PATH}`,
+		};
+	}
+	try {
+		const inputContent = readFileSync(provenanceInputPath, "utf-8");
+		const parsedInputResult = parseParityProvenanceInput(inputContent);
+		if (!parsedInputResult.ok) {
+			return { ok: false, error: parsedInputResult.error };
+		}
+		const input = parsedInputResult.value;
+		const generatedAt = input.generatedAt ?? new Date().toISOString();
+		const fallbackSourceCommitSha = input.repo?.headSha;
+		const sourceCommitShaResult =
+			typeof fallbackSourceCommitSha === "string" &&
+			isCommitSha(fallbackSourceCommitSha)
+				? { ok: true as const, commitSha: fallbackSourceCommitSha }
+				: resolveGitRefToCommit(targetDir, "HEAD");
+		if (
+			!sourceCommitShaResult.ok ||
+			!isCommitSha(sourceCommitShaResult.commitSha)
+		) {
+			return {
+				ok: false,
+				error: sourceCommitShaResult.ok
+					? "Parity provenance input fallback source commit SHA must be a 40-character lowercase commit SHA."
+					: sourceCommitShaResult.error,
+			};
+		}
+		const artifacts: CIParityProvenanceArtifactRecord[] = [];
+		const artifactIds = new Set<string>();
+		for (const artifact of input.artifacts) {
+			if (artifactIds.has(artifact.artifactId)) {
+				return {
+					ok: false,
+					error: `Parity provenance input artifactId must be unique. Duplicate: ${artifact.artifactId}.`,
+				};
+			}
+			artifactIds.add(artifact.artifactId);
+			if (!isSafeProofArtifactPath(targetDir, artifact.path)) {
+				return {
+					ok: false,
+					error: `Parity provenance input artifact path escapes repository root: ${artifact.path}`,
+				};
+			}
+			const artifactAbsolutePath = resolve(targetDir, artifact.path);
+			if (!existsSync(artifactAbsolutePath)) {
+				return {
+					ok: false,
+					error: `Parity provenance input artifact missing from repository: ${artifact.path}`,
+				};
+			}
+			const artifactContent = readFileSync(artifactAbsolutePath, "utf-8");
+			const sha256 = hashContent(artifactContent);
+			const sourceCommitSha =
+				artifact.sourceCommitSha ?? sourceCommitShaResult.commitSha;
+			if (!isCommitSha(sourceCommitSha)) {
+				return {
+					ok: false,
+					error: `Parity provenance input artifact sourceCommitSha is invalid for ${artifact.artifactId}.`,
+				};
+			}
+			const capturedAt = artifact.capturedAt ?? generatedAt;
+			if (!Number.isFinite(Date.parse(capturedAt))) {
+				return {
+					ok: false,
+					error: `Parity provenance input artifact capturedAt is invalid for ${artifact.artifactId}.`,
+				};
+			}
+			artifacts.push({
+				artifactId: artifact.artifactId,
+				path: artifact.path,
+				sha256,
+				signature: signContent(
+					`${artifact.path}:${sha256}:${artifact.sourceProvider}:${artifact.sourceRunId}:${sourceCommitSha}:${capturedAt}`,
+					signingKey,
+				),
+				sourceProvider: artifact.sourceProvider,
+				sourceRunId: artifact.sourceRunId,
+				sourceWorkflowRef: artifact.sourceWorkflowRef,
+				sourceCommitSha,
+				capturedAt,
+				scenario: artifact.scenario,
+			});
+		}
+		const indexBase: CIParityProvenanceArtifactIndex = {
+			schemaVersion: PARITY_PROVENANCE_ARTIFACT_INDEX_SCHEMA_VERSION,
+			generatedAt,
+			repo: input.repo,
+			behavioralParity: input.behavioralParity,
+			promotionGate: input.promotionGate,
+			downstream: input.downstream,
+			artifacts,
+			integrity: {
+				signatureAlgorithm: PARITY_PROOF_PACK_SIGNATURE_ALGORITHM,
+				signingKeyId,
+				payloadSha256: "",
+			},
+		};
+		const payloadSha256 = hashContent(
+			canonicalizeParityProvenanceArtifactIndexForDigest(indexBase),
+		);
+		const index: CIParityProvenanceArtifactIndex = {
+			...indexBase,
+			integrity: {
+				...indexBase.integrity,
+				payloadSha256,
+			},
+		};
+		const indexContent = JSON.stringify(index, null, 2);
+		const indexPath = resolve(targetDir, PARITY_PROVENANCE_ARTIFACT_INDEX_PATH);
+		const signaturePath = resolve(
+			targetDir,
+			PARITY_PROVENANCE_ARTIFACT_INDEX_SIGNATURE_PATH,
+		);
+		mkdirSync(dirname(indexPath), { recursive: true });
+		writeFileSync(indexPath, indexContent);
+		writeFileSync(signaturePath, `${signContent(indexContent, signingKey)}\n`);
+		return { ok: true };
+	} catch (error) {
+		return {
+			ok: false,
+			error: `Failed to materialize artifact index from provenance input: ${sanitizeError(error)}`,
+		};
+	}
+}
+
+function materializeArtifactIndexFromProvenanceBundle(
+	targetDir: string,
+	signingKey: string,
+	signingKeyId: string,
+): { ok: true } | { ok: false; error: string } {
+	const provenanceBundlePath = resolve(
+		targetDir,
+		PARITY_PROVENANCE_BUNDLE_PATH,
+	);
+	if (!existsSync(provenanceBundlePath)) {
+		return {
+			ok: false,
+			error: `Missing parity provenance bundle: ${PARITY_PROVENANCE_BUNDLE_PATH}`,
+		};
+	}
+	try {
+		const bundleContent = readFileSync(provenanceBundlePath, "utf-8");
+		const parsedBundleResult = parseParityProvenanceBundle(bundleContent);
+		if (!parsedBundleResult.ok) {
+			return { ok: false, error: parsedBundleResult.error };
+		}
+		const bundle = parsedBundleResult.value;
+		for (const artifact of bundle.artifacts) {
+			if (!isSafeProofArtifactPath(targetDir, artifact.path)) {
+				return {
+					ok: false,
+					error: `Parity provenance artifact path escapes repository root: ${artifact.path}`,
+				};
+			}
+			const artifactAbsolutePath = resolve(targetDir, artifact.path);
+			if (!existsSync(artifactAbsolutePath)) {
+				return {
+					ok: false,
+					error: `Parity provenance artifact missing from repository: ${artifact.path}`,
+				};
+			}
+			const artifactContent = readFileSync(artifactAbsolutePath, "utf-8");
+			const computedDigest = hashContent(artifactContent);
+			if (computedDigest !== artifact.sha256) {
+				return {
+					ok: false,
+					error: `Parity provenance artifact digest mismatch for ${artifact.path}.`,
+				};
+			}
+			const expectedSignature = signContent(
+				`${artifact.path}:${artifact.sha256}:${artifact.sourceProvider}:${artifact.sourceRunId}:${artifact.sourceCommitSha}:${artifact.capturedAt}`,
+				signingKey,
+			);
+			if (expectedSignature !== artifact.signature) {
+				return {
+					ok: false,
+					error: `Parity provenance artifact signature mismatch for ${artifact.path}.`,
+				};
+			}
+		}
+		const indexBase: CIParityProvenanceArtifactIndex = {
+			schemaVersion: PARITY_PROVENANCE_ARTIFACT_INDEX_SCHEMA_VERSION,
+			generatedAt: bundle.generatedAt,
+			repo: bundle.repo,
+			behavioralParity: bundle.behavioralParity,
+			promotionGate: bundle.promotionGate,
+			downstream: bundle.downstream,
+			artifacts: bundle.artifacts,
+			integrity: {
+				signatureAlgorithm: PARITY_PROOF_PACK_SIGNATURE_ALGORITHM,
+				signingKeyId,
+				payloadSha256: "",
+			},
+		};
+		const payloadSha256 = hashContent(
+			canonicalizeParityProvenanceArtifactIndexForDigest(indexBase),
+		);
+		const index: CIParityProvenanceArtifactIndex = {
+			...indexBase,
+			integrity: {
+				...indexBase.integrity,
+				payloadSha256,
+			},
+		};
+		const indexContent = JSON.stringify(index, null, 2);
+		const indexPath = resolve(targetDir, PARITY_PROVENANCE_ARTIFACT_INDEX_PATH);
+		const signaturePath = resolve(
+			targetDir,
+			PARITY_PROVENANCE_ARTIFACT_INDEX_SIGNATURE_PATH,
+		);
+		mkdirSync(dirname(indexPath), { recursive: true });
+		writeFileSync(indexPath, indexContent);
+		writeFileSync(signaturePath, `${signContent(indexContent, signingKey)}\n`);
+		return { ok: true };
+	} catch (error) {
+		return {
+			ok: false,
+			error: `Failed to materialize artifact index from provenance bundle: ${sanitizeError(error)}`,
+		};
+	}
+}
+
+function materializeProvenanceBundleFromInput(
+	targetDir: string,
+	signingKey: string,
+): { ok: true } | { ok: false; error: string } {
+	const inputPath = resolve(targetDir, PARITY_PROVENANCE_INPUT_PATH);
+	if (!existsSync(inputPath)) {
+		return {
+			ok: false,
+			error: `Missing parity provenance input: ${PARITY_PROVENANCE_INPUT_PATH}`,
+		};
+	}
+	const inputContent = readFileSync(inputPath, "utf-8");
+	const parsedInputResult = parseParityProvenanceInput(inputContent);
+	if (!parsedInputResult.ok) {
+		return { ok: false, error: parsedInputResult.error };
+	}
+	const input = parsedInputResult.value;
+	const generatedAt = input.generatedAt ?? new Date().toISOString();
+	let fallbackSourceCommitSha = input.repo?.headSha;
+	if (!fallbackSourceCommitSha) {
+		const headShaResult = resolveGitRefToCommit(targetDir, "HEAD");
+		if (!headShaResult.ok) {
+			return { ok: false, error: headShaResult.error };
+		}
+		fallbackSourceCommitSha = headShaResult.commitSha;
+	}
+	if (!isCommitSha(fallbackSourceCommitSha)) {
+		return {
+			ok: false,
+			error:
+				"Parity provenance input fallback source commit SHA must be a 40-character lowercase commit SHA.",
+		};
+	}
+	const artifacts: CIParityProvenanceArtifactRecord[] = [];
+	for (const artifact of input.artifacts) {
+		if (!isSafeProofArtifactPath(targetDir, artifact.path)) {
+			return {
+				ok: false,
+				error: `Parity provenance input artifact path escapes repository root: ${artifact.path}`,
+			};
+		}
+		const sourcePath = resolve(targetDir, artifact.path);
+		if (!existsSync(sourcePath)) {
+			return {
+				ok: false,
+				error: `Parity provenance input artifact missing from repository: ${artifact.path}`,
+			};
+		}
+		const sourceContent = readFileSync(sourcePath, "utf-8");
+		const sha256 = hashContent(sourceContent);
+		const sourceCommitSha = artifact.sourceCommitSha ?? fallbackSourceCommitSha;
+		if (!isCommitSha(sourceCommitSha)) {
+			return {
+				ok: false,
+				error: `Parity provenance input artifact sourceCommitSha is invalid for ${artifact.artifactId}.`,
+			};
+		}
+		const capturedAt = artifact.capturedAt ?? generatedAt;
+		artifacts.push({
+			artifactId: artifact.artifactId,
+			path: artifact.path,
+			sha256,
+			signature: signContent(
+				`${artifact.path}:${sha256}:${artifact.sourceProvider}:${artifact.sourceRunId}:${sourceCommitSha}:${capturedAt}`,
+				signingKey,
+			),
+			sourceProvider: artifact.sourceProvider,
+			sourceRunId: artifact.sourceRunId,
+			sourceWorkflowRef: artifact.sourceWorkflowRef,
+			sourceCommitSha,
+			capturedAt,
+			scenario: artifact.scenario,
+		});
+	}
+	const bundle: CIParityProvenanceBundle = {
+		schemaVersion: PARITY_PROVENANCE_BUNDLE_SCHEMA_VERSION,
+		generatedAt,
+		repo: input.repo,
+		behavioralParity: input.behavioralParity,
+		promotionGate: input.promotionGate,
+		downstream: input.downstream,
+		artifacts,
+	};
+	const bundlePath = resolve(targetDir, PARITY_PROVENANCE_BUNDLE_PATH);
+	mkdirSync(dirname(bundlePath), { recursive: true });
+	writeFileSync(bundlePath, JSON.stringify(bundle, null, 2));
+	return { ok: true };
+}
+
+function canonicalizeParityProvenanceManifestForDigest(
+	manifest: CIParityProvenanceManifest,
+): string {
+	return JSON.stringify({
+		schemaVersion: manifest.schemaVersion,
+		generatedAt: manifest.generatedAt,
+		sourceBundlePath: manifest.sourceBundlePath,
+		sourceBundleSha256: manifest.sourceBundleSha256,
+		artifacts: manifest.artifacts.map((artifact) => ({
+			artifactId: artifact.artifactId,
+			path: artifact.path,
+			sha256: artifact.sha256,
+			signature: artifact.signature,
+			sourceProvider: artifact.sourceProvider,
+			sourceRunId: artifact.sourceRunId,
+			sourceWorkflowRef: artifact.sourceWorkflowRef,
+			sourceCommitSha: artifact.sourceCommitSha,
+			capturedAt: artifact.capturedAt,
+			scenario: artifact.scenario,
+		})),
+		integrity: {
+			signatureAlgorithm: manifest.integrity.signatureAlgorithm,
+			signingKeyId: manifest.integrity.signingKeyId,
+			payloadSha256: "",
+		},
+	});
+}
+
+function parseParityProvenanceManifest(
+	content: string,
+):
+	| { ok: true; value: CIParityProvenanceManifest }
+	| { ok: false; error: string } {
+	try {
+		const parsed = JSON.parse(content) as unknown;
+		if (!parsed || typeof parsed !== "object") {
+			return {
+				ok: false,
+				error: "Parity provenance manifest must be a JSON object.",
+			};
+		}
+		const record = parsed as Record<string, unknown>;
+		if (record.schemaVersion !== PARITY_PROVENANCE_MANIFEST_SCHEMA_VERSION) {
+			return {
+				ok: false,
+				error: `Parity provenance manifest schemaVersion must be ${PARITY_PROVENANCE_MANIFEST_SCHEMA_VERSION}.`,
+			};
+		}
+		if (
+			typeof record.generatedAt !== "string" ||
+			!Number.isFinite(Date.parse(record.generatedAt))
+		) {
+			return {
+				ok: false,
+				error:
+					"Parity provenance manifest generatedAt must be a valid ISO timestamp.",
+			};
+		}
+		if (
+			record.sourceBundlePath !== PARITY_PROVENANCE_BUNDLE_PATH ||
+			typeof record.sourceBundleSha256 !== "string" ||
+			!isHexDigest(record.sourceBundleSha256)
+		) {
+			return {
+				ok: false,
+				error: "Parity provenance manifest source bundle metadata is invalid.",
+			};
+		}
+		if (!Array.isArray(record.artifacts) || record.artifacts.length === 0) {
+			return {
+				ok: false,
+				error:
+					"Parity provenance manifest artifacts must be a non-empty array.",
+			};
+		}
+		const parsedBundleResult = parseParityProvenanceBundle(
+			JSON.stringify({
+				schemaVersion: PARITY_PROVENANCE_BUNDLE_SCHEMA_VERSION,
+				generatedAt: record.generatedAt,
+				behavioralParity: {
+					scenarios: [
+						{
+							scenario: "pull_request",
+							providersCompared: ["github-actions"],
+							commitCount: 1,
+							unexpectedDiffs: [],
+						},
+					],
+				},
+				promotionGate: {
+					zeroUnexpectedDiffs: true,
+					outcomeParity: true,
+					skippedSemanticsParity: true,
+					artifactParity: true,
+					greptileParity: true,
+					releaseParity: true,
+				},
+				downstream: {
+					repositories: [
+						{
+							repo: "placeholder/repo",
+							ecosystemProfile: "placeholder",
+							mergeQueue: true,
+							parityMatrixVerified: true,
+							rollbackRehearsed: true,
+						},
+					],
+				},
+				artifacts: record.artifacts,
+			}),
+		);
+		if (!parsedBundleResult.ok) {
+			return { ok: false, error: parsedBundleResult.error };
+		}
+		const integrity = record.integrity;
+		if (!integrity || typeof integrity !== "object") {
+			return {
+				ok: false,
+				error: "Parity provenance manifest integrity section is required.",
+			};
+		}
+		const integrityRecord = integrity as Record<string, unknown>;
+		if (
+			integrityRecord.signatureAlgorithm !==
+				PARITY_PROOF_PACK_SIGNATURE_ALGORITHM ||
+			typeof integrityRecord.signingKeyId !== "string" ||
+			!HEX_TOKEN_PATTERN.test(integrityRecord.signingKeyId) ||
+			typeof integrityRecord.payloadSha256 !== "string" ||
+			!isHexDigest(integrityRecord.payloadSha256)
+		) {
+			return {
+				ok: false,
+				error: "Parity provenance manifest integrity metadata is invalid.",
+			};
+		}
+		return {
+			ok: true,
+			value: {
+				schemaVersion: PARITY_PROVENANCE_MANIFEST_SCHEMA_VERSION,
+				generatedAt: record.generatedAt,
+				sourceBundlePath: PARITY_PROVENANCE_BUNDLE_PATH,
+				sourceBundleSha256: record.sourceBundleSha256,
+				artifacts: parsedBundleResult.value.artifacts,
+				integrity: {
+					signatureAlgorithm: PARITY_PROOF_PACK_SIGNATURE_ALGORITHM,
+					signingKeyId: integrityRecord.signingKeyId,
+					payloadSha256: integrityRecord.payloadSha256,
+				},
+			},
+		};
+	} catch (error) {
+		return {
+			ok: false,
+			error: `Failed to parse parity provenance manifest JSON: ${sanitizeError(error)}`,
+		};
+	}
+}
+
+function evaluateProvenanceEvidence(
+	targetDir: string,
+	required: boolean,
+	proofPack: CIParityProofPack | undefined,
+	signingKey: string,
+	signingKeyId: string,
+): string[] {
+	const violations: string[] = [];
+	const manifestPath = resolve(targetDir, PARITY_PROVENANCE_MANIFEST_PATH);
+	const signaturePath = resolve(
+		targetDir,
+		PARITY_PROVENANCE_MANIFEST_SIGNATURE_PATH,
+	);
+	if (!required) {
+		return violations;
+	}
+	if (!existsSync(manifestPath)) {
+		violations.push(
+			`Missing required parity provenance manifest: ${PARITY_PROVENANCE_MANIFEST_PATH}`,
+		);
+		return violations;
+	}
+	if (!existsSync(signaturePath)) {
+		violations.push(
+			`Missing required parity provenance manifest signature: ${PARITY_PROVENANCE_MANIFEST_SIGNATURE_PATH}`,
+		);
+		return violations;
+	}
+	let manifestContent = "";
+	let signatureContent = "";
+	try {
+		manifestContent = readFileSync(manifestPath, "utf-8");
+		signatureContent = readFileSync(signaturePath, "utf-8").trim();
+	} catch (error) {
+		violations.push(
+			`Failed to read parity provenance manifest trust artifacts: ${sanitizeError(error)}`,
+		);
+		return violations;
+	}
+	if (!isHexDigest(signatureContent)) {
+		violations.push(
+			`Parity provenance manifest signature must be a sha256 hex digest: ${PARITY_PROVENANCE_MANIFEST_SIGNATURE_PATH}`,
+		);
+		return violations;
+	}
+	const expectedSignature = signContent(manifestContent, signingKey);
+	if (expectedSignature !== signatureContent) {
+		violations.push(
+			"Parity provenance manifest signature mismatch. Refusing unsigned or tampered provenance evidence.",
+		);
+		return violations;
+	}
+	const parsedManifestResult = parseParityProvenanceManifest(manifestContent);
+	if (!parsedManifestResult.ok) {
+		violations.push(parsedManifestResult.error);
+		return violations;
+	}
+	const manifest = parsedManifestResult.value;
+	if (manifest.integrity.signingKeyId !== signingKeyId) {
+		violations.push(
+			"Parity provenance manifest integrity signingKeyId does not match active signing key.",
+		);
+	}
+	const expectedPayloadDigest = hashContent(
+		canonicalizeParityProvenanceManifestForDigest(manifest),
+	);
+	if (expectedPayloadDigest !== manifest.integrity.payloadSha256) {
+		violations.push(
+			"Parity provenance manifest integrity payloadSha256 does not match signed payload.",
+		);
+	}
+	const sourceBundlePath = resolve(targetDir, PARITY_PROVENANCE_BUNDLE_PATH);
+	if (!existsSync(sourceBundlePath)) {
+		violations.push(
+			`Parity provenance source bundle is missing: ${PARITY_PROVENANCE_BUNDLE_PATH}`,
+		);
+		return violations;
+	}
+	const sourceBundleDigest = hashContent(
+		readFileSync(sourceBundlePath, "utf-8"),
+	);
+	if (sourceBundleDigest !== manifest.sourceBundleSha256) {
+		violations.push(
+			"Parity provenance source bundle digest does not match manifest metadata.",
+		);
+	}
+	if (!proofPack) {
+		return violations;
+	}
+	const proofByArtifactId = new Map(
+		proofPack.artifacts.map((artifact) => [artifact.artifactId, artifact]),
+	);
+	for (const manifestArtifact of manifest.artifacts) {
+		const expectedProvenanceSignature = signContent(
+			`${manifestArtifact.path}:${manifestArtifact.sha256}:${manifestArtifact.sourceProvider}:${manifestArtifact.sourceRunId}:${manifestArtifact.sourceCommitSha}:${manifestArtifact.capturedAt}`,
+			signingKey,
+		);
+		if (expectedProvenanceSignature !== manifestArtifact.signature) {
+			violations.push(
+				`Parity provenance manifest source signature mismatch for ${manifestArtifact.artifactId}.`,
+			);
+		}
+		if (!proofByArtifactId.has(manifestArtifact.artifactId)) {
+			violations.push(
+				`Parity proof pack is missing artifactId ${manifestArtifact.artifactId} required by provenance manifest.`,
+			);
+		}
+	}
+	const manifestByArtifact = new Map(
+		manifest.artifacts.map((artifact) => [artifact.artifactId, artifact]),
+	);
+	for (const proofArtifact of proofPack.artifacts) {
+		const manifestArtifact = manifestByArtifact.get(proofArtifact.artifactId);
+		if (!manifestArtifact) {
+			violations.push(
+				`Parity provenance manifest is missing artifactId ${proofArtifact.artifactId}.`,
+			);
+			continue;
+		}
+		if (manifestArtifact.sha256 !== proofArtifact.sha256) {
+			violations.push(
+				`Parity provenance manifest artifact digest mismatch for ${proofArtifact.artifactId}.`,
+			);
+		}
+	}
+	return violations;
+}
+
+function parseParityProvenanceBundle(
+	content: string,
+):
+	| { ok: true; value: CIParityProvenanceBundle }
+	| { ok: false; error: string } {
+	try {
+		const parsed = JSON.parse(content) as unknown;
+		if (!parsed || typeof parsed !== "object") {
+			return {
+				ok: false,
+				error: "Parity provenance bundle must be a JSON object.",
+			};
+		}
+		const record = parsed as Record<string, unknown>;
+		if (record.schemaVersion !== PARITY_PROVENANCE_BUNDLE_SCHEMA_VERSION) {
+			return {
+				ok: false,
+				error: `Parity provenance bundle schemaVersion must be ${PARITY_PROVENANCE_BUNDLE_SCHEMA_VERSION}.`,
+			};
+		}
+		if (
+			typeof record.generatedAt !== "string" ||
+			!Number.isFinite(Date.parse(record.generatedAt))
+		) {
+			return {
+				ok: false,
+				error:
+					"Parity provenance bundle generatedAt must be a valid ISO timestamp.",
+			};
+		}
+		const parsedInputResult = parseParityProofPackInput(
+			JSON.stringify({
+				schemaVersion: "ci-parity-proof-input/v1",
+				generatedAt: record.generatedAt,
+				repo: record.repo ?? undefined,
+				behavioralParity: record.behavioralParity,
+				promotionGate: record.promotionGate,
+				downstream: record.downstream,
+			}),
+		);
+		if (!parsedInputResult.ok) {
+			return { ok: false, error: parsedInputResult.error };
+		}
+		if (!Array.isArray(record.artifacts) || record.artifacts.length === 0) {
+			return {
+				ok: false,
+				error: "Parity provenance bundle artifacts must be a non-empty array.",
+			};
+		}
+		const artifacts: CIParityProvenanceArtifactRecord[] = [];
+		const artifactIds = new Set<string>();
+		for (const artifact of record.artifacts) {
+			if (!artifact || typeof artifact !== "object") {
+				return {
+					ok: false,
+					error: "Parity provenance artifact entries must be objects.",
+				};
+			}
+			const artifactRecord = artifact as Record<string, unknown>;
+			if (
+				typeof artifactRecord.artifactId !== "string" ||
+				artifactRecord.artifactId.trim().length === 0
+			) {
+				return {
+					ok: false,
+					error:
+						"Parity provenance artifact entries require a non-empty artifactId.",
+				};
+			}
+			if (artifactIds.has(artifactRecord.artifactId)) {
+				return {
+					ok: false,
+					error: `Parity provenance artifactId must be unique. Duplicate: ${artifactRecord.artifactId}.`,
+				};
+			}
+			artifactIds.add(artifactRecord.artifactId);
+			if (
+				typeof artifactRecord.path !== "string" ||
+				artifactRecord.path.trim().length === 0
+			) {
+				return {
+					ok: false,
+					error: "Parity provenance artifact entries require a non-empty path.",
+				};
+			}
+			if (
+				typeof artifactRecord.sha256 !== "string" ||
+				!isHexDigest(artifactRecord.sha256)
+			) {
+				return {
+					ok: false,
+					error:
+						"Parity provenance artifact sha256 values must be sha256 hex digests.",
+				};
+			}
+			if (
+				typeof artifactRecord.signature !== "string" ||
+				!isHexDigest(artifactRecord.signature)
+			) {
+				return {
+					ok: false,
+					error:
+						"Parity provenance artifact signatures must be sha256 hex digests.",
+				};
+			}
+			if (
+				artifactRecord.sourceProvider !== "github-actions" &&
+				artifactRecord.sourceProvider !== "circleci"
+			) {
+				return {
+					ok: false,
+					error:
+						"Parity provenance artifact sourceProvider must be github-actions or circleci.",
+				};
+			}
+			if (
+				typeof artifactRecord.sourceRunId !== "string" ||
+				artifactRecord.sourceRunId.trim().length === 0
+			) {
+				return {
+					ok: false,
+					error:
+						"Parity provenance artifact sourceRunId must be a non-empty string.",
+				};
+			}
+			if (
+				typeof artifactRecord.sourceWorkflowRef !== "string" ||
+				artifactRecord.sourceWorkflowRef.trim().length === 0
+			) {
+				return {
+					ok: false,
+					error:
+						"Parity provenance artifact sourceWorkflowRef must be a non-empty string.",
+				};
+			}
+			if (
+				typeof artifactRecord.sourceCommitSha !== "string" ||
+				!isCommitSha(artifactRecord.sourceCommitSha)
+			) {
+				return {
+					ok: false,
+					error:
+						"Parity provenance artifact sourceCommitSha must be a 40-character lowercase commit SHA.",
+				};
+			}
+			if (
+				typeof artifactRecord.capturedAt !== "string" ||
+				!Number.isFinite(Date.parse(artifactRecord.capturedAt))
+			) {
+				return {
+					ok: false,
+					error:
+						"Parity provenance artifact capturedAt must be a valid ISO timestamp.",
+				};
+			}
+			if (
+				artifactRecord.scenario !== undefined &&
+				(typeof artifactRecord.scenario !== "string" ||
+					!isRequiredParityScenario(artifactRecord.scenario))
+			) {
+				return {
+					ok: false,
+					error:
+						"Parity provenance artifact scenario must use supported scenario ids when provided.",
+				};
+			}
+			artifacts.push({
+				artifactId: artifactRecord.artifactId,
+				path: artifactRecord.path,
+				sha256: artifactRecord.sha256,
+				signature: artifactRecord.signature,
+				sourceProvider: artifactRecord.sourceProvider,
+				sourceRunId: artifactRecord.sourceRunId,
+				sourceWorkflowRef: artifactRecord.sourceWorkflowRef,
+				sourceCommitSha: artifactRecord.sourceCommitSha,
+				capturedAt: artifactRecord.capturedAt,
+				scenario: artifactRecord.scenario,
+			});
+		}
+		return {
+			ok: true,
+			value: {
+				schemaVersion: PARITY_PROVENANCE_BUNDLE_SCHEMA_VERSION,
+				generatedAt: record.generatedAt,
+				repo: parsedInputResult.value.repo,
+				behavioralParity: parsedInputResult.value.behavioralParity,
+				promotionGate: parsedInputResult.value.promotionGate,
+				downstream: parsedInputResult.value.downstream,
+				artifacts,
+			},
+		};
+	} catch (error) {
+		return {
+			ok: false,
+			error: `Failed to parse parity provenance bundle JSON: ${sanitizeError(error)}`,
+		};
+	}
+}
+
+function materializeProofPackInputsFromProvenanceBundle(
+	targetDir: string,
+	signingKey: string,
+	signingKeyId: string,
+): { ok: true } | { ok: false; error: string } {
+	const bundlePath = resolve(targetDir, PARITY_PROVENANCE_BUNDLE_PATH);
+	if (!existsSync(bundlePath)) {
+		return {
+			ok: false,
+			error: `Missing parity proof pack input (${PARITY_PROOF_PACK_INPUT_PATH}), provenance bundle (${PARITY_PROVENANCE_BUNDLE_PATH}), and provenance input (${PARITY_PROVENANCE_INPUT_PATH}).`,
+		};
+	}
+	const bundleContent = readFileSync(bundlePath, "utf-8");
+	const parsedBundleResult = parseParityProvenanceBundle(bundleContent);
+	if (!parsedBundleResult.ok) {
+		return { ok: false, error: parsedBundleResult.error };
+	}
+	const bundle = parsedBundleResult.value;
+	const artifactDir = resolve(targetDir, PARITY_PROOF_PACK_ARTIFACTS_DIR);
+	mkdirSync(artifactDir, { recursive: true });
+	for (const artifact of bundle.artifacts) {
+		if (!isSafeProofArtifactPath(targetDir, artifact.path)) {
+			return {
+				ok: false,
+				error: `Parity provenance artifact path escapes repository root: ${artifact.path}`,
+			};
+		}
+		const sourcePath = resolve(targetDir, artifact.path);
+		if (!existsSync(sourcePath)) {
+			return {
+				ok: false,
+				error: `Parity provenance artifact missing from repository: ${artifact.path}`,
+			};
+		}
+		const sourceContent = readFileSync(sourcePath, "utf-8");
+		const computedDigest = hashContent(sourceContent);
+		if (computedDigest !== artifact.sha256) {
+			return {
+				ok: false,
+				error: `Parity provenance artifact digest mismatch for ${artifact.path}.`,
+			};
+		}
+		const expectedSignature = signContent(
+			`${artifact.path}:${artifact.sha256}:${artifact.sourceProvider}:${artifact.sourceRunId}:${artifact.sourceCommitSha}:${artifact.capturedAt}`,
+			signingKey,
+		);
+		if (expectedSignature !== artifact.signature) {
+			return {
+				ok: false,
+				error: `Parity provenance artifact signature mismatch for ${artifact.path}.`,
+			};
+		}
+		const destinationPath = resolve(
+			targetDir,
+			PARITY_PROOF_PACK_ARTIFACTS_DIR,
+			`${artifact.artifactId}.json`,
+		);
+		copyFileSync(sourcePath, destinationPath);
+	}
+	const inputPayload: CIParityProofPackInput = {
+		schemaVersion: "ci-parity-proof-input/v1",
+		generatedAt: bundle.generatedAt,
+		repo: bundle.repo ?? null,
+		behavioralParity: bundle.behavioralParity,
+		promotionGate: bundle.promotionGate,
+		downstream: bundle.downstream,
+	};
+	const inputPath = resolve(targetDir, PARITY_PROOF_PACK_INPUT_PATH);
+	mkdirSync(dirname(inputPath), { recursive: true });
+	writeFileSync(inputPath, JSON.stringify(inputPayload, null, 2));
+
+	const manifestBase: CIParityProvenanceManifest = {
+		schemaVersion: PARITY_PROVENANCE_MANIFEST_SCHEMA_VERSION,
+		generatedAt: new Date().toISOString(),
+		sourceBundlePath: PARITY_PROVENANCE_BUNDLE_PATH,
+		sourceBundleSha256: hashContent(bundleContent),
+		artifacts: bundle.artifacts,
+		integrity: {
+			signatureAlgorithm: PARITY_PROOF_PACK_SIGNATURE_ALGORITHM,
+			signingKeyId,
+			payloadSha256: "",
+		},
+	};
+	const payloadSha256 = hashContent(
+		canonicalizeParityProvenanceManifestForDigest(manifestBase),
+	);
+	const manifest: CIParityProvenanceManifest = {
+		...manifestBase,
+		integrity: {
+			...manifestBase.integrity,
+			payloadSha256,
+		},
+	};
+	const manifestContent = JSON.stringify(manifest, null, 2);
+	const manifestPath = resolve(targetDir, PARITY_PROVENANCE_MANIFEST_PATH);
+	const manifestSignaturePath = resolve(
+		targetDir,
+		PARITY_PROVENANCE_MANIFEST_SIGNATURE_PATH,
+	);
+	writeFileSync(manifestPath, manifestContent);
+	writeFileSync(
+		manifestSignaturePath,
+		`${signContent(manifestContent, signingKey)}\n`,
+	);
+	return { ok: true };
+}
+
+function collectProofPackArtifacts(
+	targetDir: string,
+	signingKey: string,
+):
+	| { ok: true; artifacts: CIParityProofPackArtifact[] }
+	| { ok: false; error: string } {
+	const artifactRoot = resolve(targetDir, PARITY_PROOF_PACK_ARTIFACTS_DIR);
+	if (!existsSync(artifactRoot)) {
+		return {
+			ok: false,
+			error: `Parity proof pack artifacts directory missing: ${PARITY_PROOF_PACK_ARTIFACTS_DIR}`,
+		};
+	}
+	const entries = readdirSync(artifactRoot, { withFileTypes: true })
+		.filter((entry) => entry.isFile())
+		.map((entry) => entry.name)
+		.sort((left, right) => left.localeCompare(right));
+	if (entries.length === 0) {
+		return {
+			ok: false,
+			error: `Parity proof pack artifacts directory is empty: ${PARITY_PROOF_PACK_ARTIFACTS_DIR}`,
+		};
+	}
+	const artifacts: CIParityProofPackArtifact[] = [];
+	const artifactIds = new Set<string>();
+	for (const entryName of entries) {
+		const relativePath = `${PARITY_PROOF_PACK_ARTIFACTS_DIR}/${entryName}`;
+		if (!isSafeProofArtifactPath(targetDir, relativePath)) {
+			return {
+				ok: false,
+				error: `Parity proof artifact path escapes repository root: ${relativePath}`,
+			};
+		}
+		const artifactContent = readFileSync(
+			resolve(targetDir, relativePath),
+			"utf-8",
+		);
+		const digest = hashContent(artifactContent);
+		const artifactIdCandidate = entryName
+			.replace(/\.[^.]+$/, "")
+			.replace(/[^A-Za-z0-9_-]+/g, "-")
+			.replace(/^-+|-+$/g, "")
+			.toLowerCase();
+		const artifactId =
+			artifactIdCandidate.length > 0
+				? artifactIdCandidate
+				: `artifact-${artifacts.length + 1}`;
+		if (artifactIds.has(artifactId)) {
+			return {
+				ok: false,
+				error: `Duplicate artifact id derived from filenames: ${artifactId}`,
+			};
+		}
+		artifactIds.add(artifactId);
+		artifacts.push({
+			artifactId,
+			path: relativePath,
+			sha256: digest,
+			signature: signContent(`${relativePath}:${digest}`, signingKey),
+		});
+	}
+	return { ok: true, artifacts };
+}
+
+function resolveProofPackRepoBinding(
+	targetDir: string,
+	policy: CIProviderPolicyConfig,
+	input: CIParityProofPackInput,
+):
+	| { ok: true; value: CIParityProofPackRepoBinding }
+	| { ok: false; error: string } {
+	const repoInput = input.repo ?? undefined;
+	const originUrl = readGitOriginUrl(targetDir);
+	if (!originUrl) {
+		return {
+			ok: false,
+			error:
+				"Git origin URL is required to bind parity proof pack repository identity.",
+		};
+	}
+	if (repoInput?.originUrl && repoInput.originUrl !== originUrl) {
+		return {
+			ok: false,
+			error: `Parity proof input repo.originUrl (${repoInput.originUrl}) does not match repository origin (${originUrl}).`,
+		};
+	}
+	const normalizedFullName = normalizeRepoFullName(originUrl);
+	if (!normalizedFullName) {
+		return {
+			ok: false,
+			error: `Unsupported origin URL for repository identity binding: ${originUrl}`,
+		};
+	}
+	if (repoInput?.fullName && repoInput.fullName !== normalizedFullName) {
+		return {
+			ok: false,
+			error: `Parity proof input repo.fullName (${repoInput.fullName}) does not match repository origin identity (${normalizedFullName}).`,
+		};
+	}
+
+	const headShaResult = repoInput?.headSha
+		? { ok: true as const, commitSha: repoInput.headSha }
+		: resolveGitRefToCommit(targetDir, "HEAD");
+	if (!headShaResult.ok || !isCommitSha(headShaResult.commitSha)) {
+		return {
+			ok: false,
+			error: headShaResult.ok
+				? "Parity proof input repo.headSha must be a 40-character lowercase commit SHA."
+				: headShaResult.error,
+		};
+	}
+	const trustedPolicyRefResult = resolveGitRefToCommit(
+		targetDir,
+		policy.trustedPolicyRef,
+	);
+	if (!trustedPolicyRefResult.ok) {
+		return { ok: false, error: trustedPolicyRefResult.error };
+	}
+	let baseSha = repoInput?.baseSha ?? trustedPolicyRefResult.commitSha;
+	if (!isCommitSha(baseSha)) {
+		return {
+			ok: false,
+			error:
+				"Parity proof input repo.baseSha must be a 40-character lowercase commit SHA.",
+		};
+	}
+	if (baseSha === headShaResult.commitSha) {
+		const previousCommitResult = resolveGitRefToCommit(targetDir, "HEAD~1");
+		if (!previousCommitResult.ok) {
+			return {
+				ok: false,
+				error:
+					"Unable to derive distinct baseSha (trustedPolicyRef resolved to HEAD and HEAD~1 is unavailable).",
+			};
+		}
+		baseSha = previousCommitResult.commitSha;
+	}
+	const ancestryResult = isAncestorCommit(
+		targetDir,
+		baseSha,
+		headShaResult.commitSha,
+	);
+	if (!ancestryResult.ok) {
+		return { ok: false, error: ancestryResult.error };
+	}
+	if (!ancestryResult.isAncestor) {
+		return {
+			ok: false,
+			error: "Parity proof pack baseSha must be an ancestor of headSha.",
+		};
+	}
+	return {
+		ok: true,
+		value: {
+			fullName: normalizedFullName,
+			originUrl,
+			trustedPolicyRef: policy.trustedPolicyRef,
+			requiredCheckManifestPath: policy.requiredCheckManifestPath,
+			baseSha,
+			headSha: headShaResult.commitSha,
+		},
+	};
+}
+
+function maybeAutoGenerateParityProofPack(
+	targetDir: string,
+	targetProvider: CIProvider,
+	autoGenerate: boolean,
+): { ok: true; generated: boolean } | { ok: false; error: string } {
+	if (!autoGenerate) {
+		return { ok: true, generated: false };
+	}
+	if (!shouldRequirePromotionEvidence(targetDir, targetProvider)) {
+		return { ok: true, generated: false };
+	}
+	const proofPackPath = resolve(targetDir, PARITY_PROOF_PACK_PATH);
+	const signaturePath = resolve(targetDir, PARITY_PROOF_PACK_SIGNATURE_PATH);
+	if (existsSync(proofPackPath) && existsSync(signaturePath)) {
+		const existingProofPackTrust = evaluatePromotionEvidence(
+			targetDir,
+			targetProvider,
+		);
+		if (existingProofPackTrust.status !== "verified") {
+			return {
+				ok: false,
+				error: `Existing parity proof pack failed trust verification. Refusing reuse for auto-generation path. ${existingProofPackTrust.violations.join(" ")}`,
+			};
+		}
+		return { ok: true, generated: false };
+	}
+	const policyResult = readContractProviderPolicy(targetDir);
+	if (!policyResult.ok) {
+		return { ok: false, error: policyResult.error };
+	}
+	const signingKeyResult = resolveSnapshotSigningKey();
+	if (!signingKeyResult.ok) {
+		return { ok: false, error: signingKeyResult.error };
+	}
+	const inputPath = resolve(targetDir, PARITY_PROOF_PACK_INPUT_PATH);
+	const manifestPath = resolve(targetDir, PARITY_PROVENANCE_MANIFEST_PATH);
+	const provenanceInputPath = resolve(targetDir, PARITY_PROVENANCE_INPUT_PATH);
+	const provenanceBundlePath = resolve(
+		targetDir,
+		PARITY_PROVENANCE_BUNDLE_PATH,
+	);
+	const provenanceArtifactIndexPath = resolve(
+		targetDir,
+		PARITY_PROVENANCE_ARTIFACT_INDEX_PATH,
+	);
+	if (
+		!existsSync(provenanceInputPath) &&
+		existsSync(provenanceArtifactIndexPath)
+	) {
+		const artifactIndexMaterializationResult =
+			materializeProvenanceInputFromArtifactIndex(
+				targetDir,
+				signingKeyResult.key,
+				signingKeyResult.keyId,
+			);
+		if (!artifactIndexMaterializationResult.ok) {
+			return { ok: false, error: artifactIndexMaterializationResult.error };
+		}
+	}
+	if (
+		existsSync(provenanceInputPath) &&
+		!existsSync(provenanceArtifactIndexPath)
+	) {
+		const artifactIndexGenerationResult =
+			materializeArtifactIndexFromProvenanceInput(
+				targetDir,
+				signingKeyResult.key,
+				signingKeyResult.keyId,
+			);
+		if (!artifactIndexGenerationResult.ok) {
+			return { ok: false, error: artifactIndexGenerationResult.error };
+		}
+	}
+	if (
+		!existsSync(provenanceInputPath) &&
+		existsSync(provenanceBundlePath) &&
+		!existsSync(provenanceArtifactIndexPath)
+	) {
+		const artifactIndexGenerationResult =
+			materializeArtifactIndexFromProvenanceBundle(
+				targetDir,
+				signingKeyResult.key,
+				signingKeyResult.keyId,
+			);
+		if (!artifactIndexGenerationResult.ok) {
+			return { ok: false, error: artifactIndexGenerationResult.error };
+		}
+	}
+	if (!existsSync(provenanceBundlePath) && existsSync(provenanceInputPath)) {
+		const materializeBundleResult = materializeProvenanceBundleFromInput(
+			targetDir,
+			signingKeyResult.key,
+		);
+		if (!materializeBundleResult.ok) {
+			return { ok: false, error: materializeBundleResult.error };
+		}
+	}
+	if (!existsSync(inputPath)) {
+		const materializeInputsResult =
+			materializeProofPackInputsFromProvenanceBundle(
+				targetDir,
+				signingKeyResult.key,
+				signingKeyResult.keyId,
+			);
+		if (!materializeInputsResult.ok) {
+			return { ok: false, error: materializeInputsResult.error };
+		}
+	}
+	if (
+		existsSync(provenanceInputPath) &&
+		!existsSync(provenanceArtifactIndexPath)
+	) {
+		const artifactIndexGenerationResult =
+			materializeArtifactIndexFromProvenanceInput(
+				targetDir,
+				signingKeyResult.key,
+				signingKeyResult.keyId,
+			);
+		if (!artifactIndexGenerationResult.ok) {
+			return { ok: false, error: artifactIndexGenerationResult.error };
+		}
+	}
+	if (
+		!existsSync(provenanceInputPath) &&
+		existsSync(provenanceBundlePath) &&
+		!existsSync(provenanceArtifactIndexPath)
+	) {
+		const artifactIndexGenerationResult =
+			materializeArtifactIndexFromProvenanceBundle(
+				targetDir,
+				signingKeyResult.key,
+				signingKeyResult.keyId,
+			);
+		if (!artifactIndexGenerationResult.ok) {
+			return { ok: false, error: artifactIndexGenerationResult.error };
+		}
+	}
+	if (!existsSync(manifestPath) && existsSync(provenanceBundlePath)) {
+		const materializeInputsResult =
+			materializeProofPackInputsFromProvenanceBundle(
+				targetDir,
+				signingKeyResult.key,
+				signingKeyResult.keyId,
+			);
+		if (!materializeInputsResult.ok) {
+			return { ok: false, error: materializeInputsResult.error };
+		}
+	}
+	const parsedInputResult = parseParityProofPackInput(
+		readFileSync(inputPath, "utf-8"),
+	);
+	if (!parsedInputResult.ok) {
+		return { ok: false, error: parsedInputResult.error };
+	}
+	const input = parsedInputResult.value;
+	const artifactResult = collectProofPackArtifacts(
+		targetDir,
+		signingKeyResult.key,
+	);
+	if (!artifactResult.ok) {
+		return { ok: false, error: artifactResult.error };
+	}
+	const repoBindingResult = resolveProofPackRepoBinding(
+		targetDir,
+		policyResult.value,
+		input,
+	);
+	if (!repoBindingResult.ok) {
+		return { ok: false, error: repoBindingResult.error };
+	}
+	const authorityDigestResult = readHashedPolicyFile(
+		targetDir,
+		policyResult.value.authorityConfigPath,
+	);
+	if (!authorityDigestResult.ok) {
+		return { ok: false, error: authorityDigestResult.error };
+	}
+	const requiredManifestDigestResult = readHashedPolicyFile(
+		targetDir,
+		policyResult.value.requiredCheckManifestPath,
+	);
+	if (!requiredManifestDigestResult.ok) {
+		return { ok: false, error: requiredManifestDigestResult.error };
+	}
+	const proofPackBase: CIParityProofPack = {
+		schemaVersion: "ci-parity-proof-pack/v2",
+		generatedAt: input.generatedAt ?? new Date().toISOString(),
+		sourceProvider: "github-actions",
+		targetProvider: "circleci",
+		repo: repoBindingResult.value,
+		policyDigests: {
+			authorityConfigSha256: authorityDigestResult.digest,
+			requiredCheckManifestSha256: requiredManifestDigestResult.digest,
+		},
+		artifacts: artifactResult.artifacts,
+		behavioralParity: input.behavioralParity,
+		promotionGate: input.promotionGate,
+		downstream: input.downstream,
+		integrity: {
+			signatureAlgorithm: PARITY_PROOF_PACK_SIGNATURE_ALGORITHM,
+			signingKeyId: signingKeyResult.keyId,
+			payloadSha256: "",
+		},
+	};
+	const payloadSha256 = hashContent(
+		canonicalizeParityProofPackForDigest(proofPackBase),
+	);
+	const proofPack: CIParityProofPack = {
+		...proofPackBase,
+		integrity: {
+			...proofPackBase.integrity,
+			payloadSha256,
+		},
+	};
+	const proofPackContent = JSON.stringify(proofPack, null, 2);
+	const signature = signContent(proofPackContent, signingKeyResult.key);
+	mkdirSync(dirname(proofPackPath), { recursive: true });
+	writeFileSync(proofPackPath, proofPackContent);
+	writeFileSync(signaturePath, `${signature}\n`);
+	return { ok: true, generated: true };
+}
+
 function evaluatePromotionEvidence(
 	targetDir: string,
 	targetProvider: CIProvider,
@@ -2217,6 +5433,15 @@ function evaluatePromotionEvidence(
 			);
 		}
 	}
+	violations.push(
+		...evaluateProvenanceEvidence(
+			targetDir,
+			required,
+			proofPack,
+			signingKeyResult.key,
+			signingKeyResult.keyId,
+		),
+	);
 
 	const scenariosById = new Map(
 		proofPack.behavioralParity.scenarios.map((scenario) => [
@@ -2369,6 +5594,191 @@ function classifyChecks(
 	});
 }
 
+function escapeRegexLiteral(value: string): string {
+	return value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+}
+
+function readRequiredCheckNamesFromContract(targetDir: string): string[] {
+	const contractPath = resolve(targetDir, "harness.contract.json");
+	if (!existsSync(contractPath)) {
+		return [];
+	}
+	try {
+		const parsed = JSON.parse(readFileSync(contractPath, "utf-8")) as {
+			branchProtection?: { requiredChecks?: unknown } | undefined;
+			reviewPolicy?: { requiredChecks?: unknown } | undefined;
+		};
+		const branchChecks = Array.isArray(parsed.branchProtection?.requiredChecks)
+			? parsed.branchProtection?.requiredChecks
+			: [];
+		const reviewChecks = Array.isArray(parsed.reviewPolicy?.requiredChecks)
+			? parsed.reviewPolicy?.requiredChecks
+			: [];
+		return [...branchChecks, ...reviewChecks]
+			.filter((value): value is string => typeof value === "string")
+			.map((value) => value.trim())
+			.filter((value) => value.length > 0);
+	} catch {
+		return [];
+	}
+}
+
+function readRequiredCheckNamesFromSourceProviderConfig(
+	targetDir: string,
+	sourceProvider: CIProvider,
+): string[] {
+	if (sourceProvider !== "github-actions") {
+		return [];
+	}
+	const sourceAdapter = createCIProviderAdapter(sourceProvider);
+	const sourceConfigPaths = sourceAdapter.discoverConfigPaths(targetDir);
+	const checks = new Set<string>();
+	for (const configPath of sourceConfigPaths) {
+		const absolutePath = resolve(targetDir, configPath);
+		if (!existsSync(absolutePath)) {
+			continue;
+		}
+		try {
+			const content = readFileSync(absolutePath, "utf-8");
+			for (const line of content.split(/\r?\n/)) {
+				const nameMatch = line.match(/^ {4}name:\s*(.+?)\s*$/);
+				if (!nameMatch?.[1]) {
+					continue;
+				}
+				const displayName = nameMatch[1].trim().replace(/^['"]|['"]$/g, "");
+				if (displayName.length > 0) {
+					checks.add(displayName);
+				}
+			}
+		} catch {
+			// Best-effort legacy import: ignore unreadable workflow files.
+		}
+	}
+	return [...checks];
+}
+
+function buildImportedRequiredChecks(
+	displayNames: string[],
+	sourceProvider: CIProvider,
+): RequiredCheckIdentity[] {
+	return displayNames.map((displayName, index) => ({
+		policyId: `imported-required-check-${index + 1}`,
+		displayName,
+		sourceAppSlug: sourceProvider,
+		sourceAppId: sourceProvider,
+		externalIdPattern: `^${escapeRegexLiteral(displayName)}$`,
+		requiredOnEvents: ["pull_request", "merge_group"],
+		freshnessWindowDays: 7,
+		class: "required",
+	}));
+}
+
+function writeRequiredChecksManifest(
+	targetDir: string,
+	provider: CIProvider,
+	requiredChecks: RequiredCheckIdentity[],
+): { ok: true } | { ok: false; error: string } {
+	try {
+		const manifestPath = resolve(
+			targetDir,
+			HARNESS_DIR,
+			"ci-required-checks.json",
+		);
+		mkdirSync(dirname(manifestPath), { recursive: true });
+		writeFileSync(
+			manifestPath,
+			JSON.stringify(
+				{
+					version: 1,
+					activeProvider: provider,
+					requiredChecks,
+				},
+				null,
+				2,
+			),
+		);
+		return { ok: true };
+	} catch (error) {
+		return {
+			ok: false,
+			error: `Failed to write required checks manifest: ${sanitizeError(error)}`,
+		};
+	}
+}
+
+function readOrImportRequiredChecks(
+	targetDir: string,
+	sourceProvider: CIProvider,
+	allowPersistManifest: boolean,
+):
+	| {
+			ok: true;
+			value: RequiredCheckIdentity[];
+			imported: boolean;
+			persisted: boolean;
+	  }
+	| {
+			ok: false;
+			error: string;
+	  } {
+	const requiredChecksResult = readAllRequiredChecks(targetDir);
+	if (requiredChecksResult.ok) {
+		return {
+			ok: true,
+			value: requiredChecksResult.value,
+			imported: false,
+			persisted: false,
+		};
+	}
+	if (
+		requiredChecksResult.error !==
+		"Required checks manifest missing: .harness/ci-required-checks.json"
+	) {
+		return requiredChecksResult;
+	}
+
+	const contractCheckNames = readRequiredCheckNamesFromContract(targetDir);
+	const workflowCheckNames = readRequiredCheckNamesFromSourceProviderConfig(
+		targetDir,
+		sourceProvider,
+	);
+	const importedCheckNames = [
+		...new Set([...contractCheckNames, ...workflowCheckNames]),
+	]
+		.map((name) => name.trim())
+		.filter((name) => name.length > 0)
+		.sort((left, right) => left.localeCompare(right));
+
+	if (importedCheckNames.length === 0) {
+		return {
+			ok: false,
+			error:
+				"Required checks manifest missing and no legacy required checks were discovered from harness.contract.json or source workflow metadata.",
+		};
+	}
+
+	const importedChecks = buildImportedRequiredChecks(
+		importedCheckNames,
+		sourceProvider,
+	);
+	if (allowPersistManifest) {
+		const writeResult = writeRequiredChecksManifest(
+			targetDir,
+			sourceProvider,
+			importedChecks,
+		);
+		if (!writeResult.ok) {
+			return writeResult;
+		}
+	}
+	return {
+		ok: true,
+		value: importedChecks,
+		imported: true,
+		persisted: allowPersistManifest,
+	};
+}
+
 function readAllRequiredChecks(targetDir: string):
 	| {
 			ok: true;
@@ -2408,12 +5818,30 @@ function readAllRequiredChecks(targetDir: string):
 					return false;
 				}
 				const record = check as Record<string, unknown>;
+				const requiredOnEvents = record.requiredOnEvents as
+					| Array<unknown>
+					| undefined;
+				const requiredOnEventsValid =
+					requiredOnEvents === undefined ||
+					(Array.isArray(requiredOnEvents) &&
+						requiredOnEvents.every(
+							(event) => event === "pull_request" || event === "merge_group",
+						));
+				const freshnessWindowDays = record.freshnessWindowDays;
+				const freshnessWindowDaysValid =
+					freshnessWindowDays === undefined ||
+					(typeof freshnessWindowDays === "number" &&
+						Number.isInteger(freshnessWindowDays) &&
+						freshnessWindowDays >= 1 &&
+						freshnessWindowDays <= 7);
 				return (
 					typeof record.policyId === "string" &&
 					typeof record.displayName === "string" &&
 					typeof record.sourceAppSlug === "string" &&
 					typeof record.sourceAppId === "string" &&
 					typeof record.externalIdPattern === "string" &&
+					requiredOnEventsValid &&
+					freshnessWindowDaysValid &&
 					(record.class === "required" ||
 						record.class === "informational" ||
 						record.class === "shadow")
@@ -2436,6 +5864,120 @@ function readAllRequiredChecks(targetDir: string):
 			ok: false,
 			error: `Failed to parse required checks manifest: ${sanitizeError(error)}`,
 		};
+	}
+}
+
+function validateRequiredChecksForVerify(
+	requiredChecks: RequiredCheckIdentity[],
+): string[] {
+	const violations: string[] = [];
+	const seenDisplayNames = new Set<string>();
+	for (const check of requiredChecks) {
+		const trimmedDisplayName = check.displayName.trim();
+		if (trimmedDisplayName.startsWith("shadow/")) {
+			violations.push(
+				`Required check ${trimmedDisplayName} uses forbidden shadow/* namespace. Reclassify this check before strict verify.`,
+			);
+		}
+		if (seenDisplayNames.has(trimmedDisplayName)) {
+			violations.push(
+				`Duplicate required check displayName detected: ${trimmedDisplayName}. Required check names must be unique to avoid merge deadlocks.`,
+			);
+		}
+		seenDisplayNames.add(trimmedDisplayName);
+
+		const requiredOnEvents = check.requiredOnEvents;
+		if (!Array.isArray(requiredOnEvents)) {
+			violations.push(
+				`Required check ${trimmedDisplayName} is missing requiredOnEvents. Expected both pull_request and merge_group.`,
+			);
+		} else {
+			if (!requiredOnEvents.includes("pull_request")) {
+				violations.push(
+					`Required check ${trimmedDisplayName} is missing pull_request coverage in requiredOnEvents.`,
+				);
+			}
+			if (!requiredOnEvents.includes("merge_group")) {
+				violations.push(
+					`Required check ${trimmedDisplayName} is missing merge_group coverage in requiredOnEvents.`,
+				);
+			}
+		}
+
+		const freshnessWindowDays = check.freshnessWindowDays;
+		if (
+			typeof freshnessWindowDays !== "number" ||
+			!Number.isInteger(freshnessWindowDays) ||
+			freshnessWindowDays < 1 ||
+			freshnessWindowDays > 7
+		) {
+			violations.push(
+				`Required check ${trimmedDisplayName} must define freshnessWindowDays as an integer between 1 and 7.`,
+			);
+		}
+
+		if (check.sourceAppId.trim().length === 0) {
+			violations.push(
+				`Required check ${trimmedDisplayName} has an empty sourceAppId.`,
+			);
+		}
+
+		try {
+			void new RegExp(check.externalIdPattern);
+		} catch {
+			violations.push(
+				`Required check ${trimmedDisplayName} has an invalid externalIdPattern regex: ${check.externalIdPattern}`,
+			);
+		}
+	}
+	return violations;
+}
+
+function validateTransitionStatusArtifact(
+	targetDir: string,
+	relativePath: string,
+	requireNextGateComplete: boolean,
+): string[] {
+	const artifactPath = resolve(targetDir, relativePath);
+	if (!existsSync(artifactPath)) {
+		return [
+			`Transition status artifact missing: ${relativePath}. Create the artifact before running verify.`,
+		];
+	}
+	try {
+		const parsed = JSON.parse(readFileSync(artifactPath, "utf-8")) as {
+			schemaVersion?: string | undefined;
+			nextGateComplete?: boolean | undefined;
+			updatedAt?: string | undefined;
+		};
+		const violations: string[] = [];
+		if (parsed.schemaVersion !== "ci-provider-transition-status/v1") {
+			violations.push(
+				`Transition status artifact schemaVersion must be ci-provider-transition-status/v1 (received ${String(parsed.schemaVersion)}).`,
+			);
+		}
+		if (typeof parsed.nextGateComplete !== "boolean") {
+			violations.push(
+				"Transition status artifact must define nextGateComplete as a boolean.",
+			);
+		} else if (requireNextGateComplete && !parsed.nextGateComplete) {
+			violations.push(
+				"Transition status artifact nextGateComplete=false blocks strict verify for required-mode migration stages.",
+			);
+		}
+		if (
+			typeof parsed.updatedAt !== "string" ||
+			!Number.isFinite(Date.parse(parsed.updatedAt))
+		) {
+			violations.push(
+				"Transition status artifact must define updatedAt as a valid ISO-8601 timestamp.",
+			);
+		}
+		return violations;
+	} catch (error) {
+		return [
+			`Failed to parse transition status artifact ${relativePath}: ${sanitizeError(error)}`,
+		];
 	}
 }
 
@@ -2525,6 +6067,7 @@ function buildMigrationReport(
 	targetDir: string,
 	sourceProvider: CIProvider,
 	targetProvider: CIProvider,
+	requiredChecksOverride?: RequiredCheckIdentity[],
 ):
 	| {
 			ok: true;
@@ -2538,15 +6081,21 @@ function buildMigrationReport(
 	const targetAdapter = createCIProviderAdapter(targetProvider);
 	const sourceConfigPaths = sourceAdapter.discoverConfigPaths(targetDir);
 	const targetConfigPaths = targetAdapter.discoverConfigPaths(targetDir);
-	const checksResult = sourceAdapter.readRequiredChecks(targetDir);
+	const checksResult = requiredChecksOverride
+		? { ok: true as const, value: requiredChecksOverride }
+		: sourceAdapter.readRequiredChecks(targetDir);
 	if (!checksResult.ok) {
 		return { ok: false, error: checksResult.error };
 	}
-	const targetChecksResult = targetAdapter.readRequiredChecks(targetDir);
+	const targetChecksResult = requiredChecksOverride
+		? { ok: true as const, value: requiredChecksOverride }
+		: targetAdapter.readRequiredChecks(targetDir);
 	if (!targetChecksResult.ok) {
 		return { ok: false, error: targetChecksResult.error };
 	}
-	const allRequiredChecksResult = readAllRequiredChecks(targetDir);
+	const allRequiredChecksResult = requiredChecksOverride
+		? { ok: true as const, value: requiredChecksOverride }
+		: readAllRequiredChecks(targetDir);
 	if (!allRequiredChecksResult.ok) {
 		return { ok: false, error: allRequiredChecksResult.error };
 	}
@@ -3220,6 +6769,83 @@ export function runCIMigrateCLI(
 	let sourceProviderForRollback: CIProvider = "github-actions";
 	let preparedState: MigrationPhaseState | null = null;
 	let breakGlassApproval: BreakGlassApproval | null = null;
+	let breakGlassGovernancePolicy: BreakGlassGovernancePolicy | null = null;
+	let mergeQueueWindowActive = false;
+	let mergeQueueWindowPreCutover: BranchProtectionSatisfiabilityReport | null =
+		null;
+	let mergeQueueWindowPausedAt: string | null = null;
+	let mergeQueueWindowDrainedAt: string | null = null;
+	let mergeQueueEvidence: MergeQueueEvidenceRecord | null = null;
+	let mergeQueueEvidenceBinding: MergeQueueEvidenceBinding | null = null;
+	const writeMergeQueueWindowStage = (
+		stage: MergeQueueCutoverWindow["stage"],
+		options?: {
+			pausedAt?: string | undefined;
+			drainedAt?: string | undefined;
+			revalidatedAt?: string | undefined;
+			abortedAt?: string | undefined;
+			postCutover?: BranchProtectionSatisfiabilityReport | undefined;
+		},
+	): boolean => {
+		if (!mergeQueueWindowActive || !mergeQueueWindowPreCutover) {
+			return true;
+		}
+		const pausedAt =
+			options?.pausedAt ??
+			mergeQueueEvidence?.evidence.pausedAt ??
+			mergeQueueWindowPausedAt ??
+			new Date().toISOString();
+		const drainedAt =
+			options?.drainedAt ??
+			mergeQueueEvidence?.evidence.drainedAt ??
+			mergeQueueWindowDrainedAt;
+		const window: MergeQueueCutoverWindow = {
+			schemaVersion: "ci-migrate-merge-queue-window/v1",
+			snapshotId,
+			stage,
+			pausedAt,
+			preCutover: mergeQueueWindowPreCutover,
+			postCutover: options?.postCutover,
+			evidence:
+				mergeQueueEvidence === null
+					? undefined
+					: {
+							sourcePath: mergeQueueEvidence.sourcePath,
+							contentSha256: mergeQueueEvidence.contentSha256,
+							binding: mergeQueueEvidence.evidence.binding,
+							pausedAt: mergeQueueEvidence.evidence.pausedAt,
+							drainedAt: mergeQueueEvidence.evidence.drainedAt,
+							revalidatedAt: mergeQueueEvidence.evidence.revalidatedAt,
+							pausedQueueDepth: mergeQueueEvidence.evidence.pausedQueueDepth,
+							drainedCandidateCount:
+								mergeQueueEvidence.evidence.drainedCandidateCount,
+							revalidatedCandidateCount:
+								mergeQueueEvidence.evidence.revalidatedCandidateCount,
+						},
+		};
+		if (stage === "drained" || stage === "revalidated" || stage === "aborted") {
+			window.drainedAt = drainedAt ?? new Date().toISOString();
+		}
+		if (stage === "revalidated") {
+			window.revalidatedAt =
+				options?.revalidatedAt ??
+				mergeQueueEvidence?.evidence.revalidatedAt ??
+				new Date().toISOString();
+		}
+		if (stage === "aborted") {
+			window.abortedAt = options?.abortedAt ?? new Date().toISOString();
+		}
+		const writeResult = writeMergeQueueWindow(dir, window);
+		if (!writeResult.ok) {
+			console.error(`Error: ${writeResult.error}`);
+			return false;
+		}
+		mergeQueueWindowPausedAt = pausedAt;
+		if (window.drainedAt) {
+			mergeQueueWindowDrainedAt = window.drainedAt;
+		}
+		return true;
+	};
 
 	if (apply && rollback) {
 		console.error("Error: --apply and --rollback are mutually exclusive.");
@@ -3261,6 +6887,25 @@ export function runCIMigrateCLI(
 			return EXIT_CODES.INVALID_PATH;
 		}
 		breakGlassApproval = parsedBreakGlassResult.value;
+		const breakGlassPolicyResult = readBreakGlassGovernancePolicy(dir);
+		if (!breakGlassPolicyResult.ok) {
+			console.error(`Error: ${breakGlassPolicyResult.error}`);
+			return EXIT_CODES.INVALID_PATH;
+		}
+		breakGlassGovernancePolicy = breakGlassPolicyResult.value;
+		const policyViolations = validateBreakGlassApprovalAgainstPolicy(
+			breakGlassApproval,
+			breakGlassGovernancePolicy,
+		);
+		if (policyViolations.length > 0) {
+			console.error(
+				"Error: break-glass approval does not satisfy governance policy:",
+			);
+			for (const violation of policyViolations) {
+				console.error(`- ${violation}`);
+			}
+			return EXIT_CODES.INVALID_PATH;
+		}
 	}
 
 	if (action === "commit" || action === "abort" || (rollback && !action)) {
@@ -3390,6 +7035,28 @@ export function runCIMigrateCLI(
 			);
 			return EXIT_CODES.INVALID_PATH;
 		}
+		if (rollbackMayWeakenChecksOrRulesets && breakGlassApproval) {
+			if (!breakGlassGovernancePolicy) {
+				console.error(
+					`Error: break-glass governance policy is required for rollback weakening: ${BREAK_GLASS_POLICY_PATH}`,
+				);
+				return EXIT_CODES.INVALID_PATH;
+			}
+			const weakeningPolicyViolations = validateBreakGlassApprovalAgainstPolicy(
+				breakGlassApproval,
+				breakGlassGovernancePolicy,
+				{ requireDualForRollbackWeakening: true },
+			);
+			if (weakeningPolicyViolations.length > 0) {
+				console.error(
+					"Error: break-glass rollback-weakening approval failed governance policy checks:",
+				);
+				for (const violation of weakeningPolicyViolations) {
+					console.error(`- ${violation}`);
+				}
+				return EXIT_CODES.INVALID_PATH;
+			}
+		}
 	}
 
 	if (rollback && options.snapshot) {
@@ -3409,7 +7076,46 @@ export function runCIMigrateCLI(
 	if (!rollback) {
 		const sourceProvider = detectSourceProvider(dir);
 		sourceProviderForRollback = sourceProvider;
-		const reportResult = buildMigrationReport(dir, sourceProvider, provider);
+		const requiredChecksImportResult = readOrImportRequiredChecks(
+			dir,
+			sourceProvider,
+			apply && !dryRun,
+		);
+		if (!requiredChecksImportResult.ok) {
+			console.error(`Error: ${requiredChecksImportResult.error}`);
+			return EXIT_CODES.WRITE_ERROR;
+		}
+		if (requiredChecksImportResult.imported) {
+			if (requiredChecksImportResult.persisted) {
+				console.info(
+					"Required checks manifest bootstrapped from legacy contract/workflow evidence: .harness/ci-required-checks.json",
+				);
+			} else {
+				console.info(
+					"Required checks manifest missing; using imported legacy contract/workflow checks for this run (dry-run).",
+				);
+			}
+		}
+		const autoGenerateProofPackResult = maybeAutoGenerateParityProofPack(
+			dir,
+			provider,
+			options.autoGenerateProofPack === true,
+		);
+		if (!autoGenerateProofPackResult.ok) {
+			console.error(`Error: ${autoGenerateProofPackResult.error}`);
+			return EXIT_CODES.INVALID_PATH;
+		}
+		if (autoGenerateProofPackResult.generated) {
+			console.info(
+				`Parity proof pack generated: ${resolve(dir, PARITY_PROOF_PACK_PATH)}`,
+			);
+		}
+		const reportResult = buildMigrationReport(
+			dir,
+			sourceProvider,
+			provider,
+			requiredChecksImportResult.value,
+		);
 		if (!reportResult.ok) {
 			console.error(`Error: ${reportResult.error}`);
 			return EXIT_CODES.WRITE_ERROR;
@@ -3441,6 +7147,36 @@ export function runCIMigrateCLI(
 		);
 		if (reportExitCode !== EXIT_CODES.SUCCESS) {
 			return reportExitCode;
+		}
+
+		if (action === "verify") {
+			const policyResult = readContractProviderPolicy(dir, { strict: true });
+			if (!policyResult.ok) {
+				console.error(`Error: ${policyResult.error}`);
+				return EXIT_CODES.INVALID_PATH;
+			}
+			const requiredChecksResult = readAllRequiredChecks(dir);
+			if (!requiredChecksResult.ok) {
+				console.error(`Error: ${requiredChecksResult.error}`);
+				return EXIT_CODES.INVALID_PATH;
+			}
+			const verificationViolations = [
+				...validateRequiredChecksForVerify(requiredChecksResult.value),
+				...validateTransitionStatusArtifact(
+					dir,
+					policyResult.value.transitionStatusArtifactPath,
+					policyResult.value.mode === "required" &&
+						policyResult.value.migrationStage !== "circleci-only",
+				),
+			];
+			if (verificationViolations.length > 0) {
+				console.error("Error: strict verify failed:");
+				for (const violation of verificationViolations) {
+					console.error(`- ${violation}`);
+				}
+				return EXIT_CODES.INVALID_PATH;
+			}
+			return EXIT_CODES.SUCCESS;
 		}
 
 		const blockingCount =
@@ -3505,6 +7241,113 @@ export function runCIMigrateCLI(
 	}
 
 	if (apply && !dryRun) {
+		const promotionEvidenceRequired = shouldRequirePromotionEvidence(
+			dir,
+			provider,
+		);
+		const requireFullMergeQueueLifecycle = promotionEvidenceRequired;
+		const requireMergeQueueEvidence =
+			options.mergeQueueEvidencePath !== undefined ||
+			requireFullMergeQueueLifecycle;
+		const configuredMergeQueueEvidencePath =
+			typeof options.mergeQueueEvidencePath === "string" &&
+			options.mergeQueueEvidencePath.trim().length > 0
+				? options.mergeQueueEvidencePath.trim()
+				: DEFAULT_MERGE_QUEUE_EVIDENCE_PATH;
+		const configuredOrchestratorPath =
+			typeof options.mergeQueueOrchestratorPath === "string"
+				? options.mergeQueueOrchestratorPath.trim()
+				: undefined;
+		if (
+			options.mergeQueueOrchestratorPath !== undefined &&
+			(!configuredOrchestratorPath || configuredOrchestratorPath.length === 0)
+		) {
+			console.error(
+				"Error: --merge-queue-orchestrator requires a non-empty executable path.",
+			);
+			return EXIT_CODES.INVALID_PATH;
+		}
+		const mergeQueueOrchestratorPath =
+			configuredOrchestratorPath && configuredOrchestratorPath.length > 0
+				? configuredOrchestratorPath
+				: requireMergeQueueEvidence &&
+						existsSync(resolve(dir, DEFAULT_MERGE_QUEUE_ORCHESTRATOR_PATH))
+					? DEFAULT_MERGE_QUEUE_ORCHESTRATOR_PATH
+					: undefined;
+		const mergeQueueEvidencePathExplicitlyProvided =
+			options.mergeQueueEvidencePath !== undefined;
+		const hasExistingMergeQueueEvidence = existsSync(
+			resolve(dir, configuredMergeQueueEvidencePath),
+		);
+		if (
+			requireFullMergeQueueLifecycle ||
+			mergeQueueOrchestratorPath !== undefined ||
+			mergeQueueEvidencePathExplicitlyProvided ||
+			hasExistingMergeQueueEvidence
+		) {
+			const mergeQueueBindingResult = deriveMergeQueueEvidenceBinding(dir);
+			if (!mergeQueueBindingResult.ok) {
+				console.error(`Error: ${mergeQueueBindingResult.error}`);
+				return EXIT_CODES.INVALID_PATH;
+			}
+			mergeQueueEvidenceBinding = mergeQueueBindingResult.value;
+		}
+		if (mergeQueueOrchestratorPath && mergeQueueEvidenceBinding) {
+			const signingKeyResult = resolveSnapshotSigningKey();
+			if (!signingKeyResult.ok) {
+				console.error(`Error: ${signingKeyResult.error}`);
+				return EXIT_CODES.INVALID_PATH;
+			}
+			const orchestratorRunResult = runMergeQueueOrchestrator(
+				dir,
+				mergeQueueOrchestratorPath,
+				snapshotId,
+				configuredMergeQueueEvidencePath,
+				requireFullMergeQueueLifecycle,
+				mergeQueueEvidenceBinding,
+				signingKeyResult.key,
+			);
+			if (!orchestratorRunResult.ok) {
+				console.error(`Error: ${orchestratorRunResult.error}`);
+				return EXIT_CODES.INVALID_PATH;
+			}
+		}
+		const mergeQueueEvidenceResult = readMergeQueueEvidence(
+			dir,
+			snapshotId,
+			options.mergeQueueEvidencePath !== undefined ||
+				mergeQueueOrchestratorPath !== undefined
+				? configuredMergeQueueEvidencePath
+				: undefined,
+			requireMergeQueueEvidence || mergeQueueOrchestratorPath !== undefined,
+			mergeQueueEvidenceBinding,
+		);
+		if (!mergeQueueEvidenceResult.ok) {
+			console.error(`Error: ${mergeQueueEvidenceResult.error}`);
+			return EXIT_CODES.INVALID_PATH;
+		}
+		mergeQueueEvidence = mergeQueueEvidenceResult.value;
+		if (mergeQueueEvidence) {
+			const evidenceViolations = validateMergeQueueEvidenceLifecycle(
+				mergeQueueEvidence,
+				requireFullMergeQueueLifecycle,
+			);
+			if (evidenceViolations.length > 0) {
+				console.error("Error: merge-queue orchestration evidence is invalid:");
+				for (const violation of evidenceViolations) {
+					console.error(`- ${violation}`);
+				}
+				return EXIT_CODES.INVALID_PATH;
+			}
+		}
+		const mergeQueueAdmissionResult = assertNoBlockingMergeQueueCutoverWindow(
+			dir,
+			snapshotId,
+		);
+		if (!mergeQueueAdmissionResult.ok) {
+			console.error(`Error: ${mergeQueueAdmissionResult.error}`);
+			return EXIT_CODES.INVALID_PATH;
+		}
 		const snapshotExitCode = writeSnapshot(dir, snapshotId);
 		if (snapshotExitCode !== EXIT_CODES.SUCCESS) {
 			return snapshotExitCode;
@@ -3523,8 +7366,28 @@ export function runCIMigrateCLI(
 		ciProvider: provider,
 	};
 
+	if (apply && !dryRun && migrationReport) {
+		mergeQueueWindowActive = true;
+		mergeQueueWindowPreCutover = migrationReport.satisfiability.preCutover;
+		mergeQueueWindowPausedAt = new Date().toISOString();
+		if (
+			!writeMergeQueueWindowStage("paused", {
+				pausedAt: mergeQueueWindowPausedAt,
+			})
+		) {
+			return EXIT_CODES.WRITE_ERROR;
+		}
+	}
+
 	const exitCode = runInitCLI(dir, initOptions);
 	if (exitCode !== EXIT_CODES.SUCCESS) {
+		if (
+			!writeMergeQueueWindowStage("aborted", {
+				abortedAt: new Date().toISOString(),
+			})
+		) {
+			return EXIT_CODES.WRITE_ERROR;
+		}
 		return exitCode;
 	}
 
@@ -3555,7 +7418,22 @@ export function runCIMigrateCLI(
 	if (!dryRun && apply && migrationReport) {
 		const postCutoverRequiredChecksResult = readAllRequiredChecks(dir);
 		if (!postCutoverRequiredChecksResult.ok) {
+			if (
+				!writeMergeQueueWindowStage("aborted", {
+					abortedAt: new Date().toISOString(),
+				})
+			) {
+				return EXIT_CODES.WRITE_ERROR;
+			}
 			console.error(`Error: ${postCutoverRequiredChecksResult.error}`);
+			return EXIT_CODES.WRITE_ERROR;
+		}
+		mergeQueueWindowDrainedAt = new Date().toISOString();
+		if (
+			!writeMergeQueueWindowStage("drained", {
+				drainedAt: mergeQueueWindowDrainedAt,
+			})
+		) {
 			return EXIT_CODES.WRITE_ERROR;
 		}
 		const postCutoverSatisfiability = scanOpenPullRequestSatisfiability(
@@ -3571,6 +7449,14 @@ export function runCIMigrateCLI(
 		};
 		const reportExitCode = writeMigrationReport(dir, snapshotId, postReport);
 		if (reportExitCode !== EXIT_CODES.SUCCESS) {
+			if (
+				!writeMergeQueueWindowStage("aborted", {
+					abortedAt: new Date().toISOString(),
+					postCutover: postCutoverSatisfiability,
+				})
+			) {
+				return EXIT_CODES.WRITE_ERROR;
+			}
 			return reportExitCode;
 		}
 		const postCutoverMissingLiveEvidence =
@@ -3580,6 +7466,14 @@ export function runCIMigrateCLI(
 			postCutoverSatisfiability.status !== "satisfied" ||
 			postCutoverMissingLiveEvidence
 		) {
+			if (
+				!writeMergeQueueWindowStage("aborted", {
+					abortedAt: new Date().toISOString(),
+					postCutover: postCutoverSatisfiability,
+				})
+			) {
+				return EXIT_CODES.WRITE_ERROR;
+			}
 			const rollbackReason =
 				postCutoverSatisfiability.status !== "satisfied"
 					? "post-cutover satisfiability checks failed"
@@ -3638,6 +7532,14 @@ export function runCIMigrateCLI(
 				}
 			}
 			return EXIT_CODES.INVALID_PATH;
+		}
+		if (
+			!writeMergeQueueWindowStage("revalidated", {
+				revalidatedAt: new Date().toISOString(),
+				postCutover: postCutoverSatisfiability,
+			})
+		) {
+			return EXIT_CODES.WRITE_ERROR;
 		}
 
 		if (action === "commit" && preparedState) {

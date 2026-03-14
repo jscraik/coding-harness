@@ -49,6 +49,10 @@ vi.mock("./commands/init.js", () => ({
 	runInteractiveInitCLI: vi.fn(async () => 62),
 }));
 
+vi.mock("./commands/ci-migrate.js", () => ({
+	runCIMigrateCLI: vi.fn(() => 69),
+}));
+
 vi.mock("./commands/remediate.js", () => ({
 	runRemediateCLI: vi.fn(async () => 43),
 }));
@@ -519,6 +523,152 @@ describe("cli command dispatch", () => {
 			migrate: false,
 		});
 		expect(exitSpy).toHaveBeenCalledWith(61);
+	});
+
+	it("dispatches ci-migrate with positional action and target directory", async () => {
+		const { run } = await import("./cli.js");
+		const { runCIMigrateCLI } = await import("./commands/ci-migrate.js");
+
+		const exitSpy = vi.spyOn(process, "exit").mockImplementation(((
+			code?: number,
+		) => {
+			throw new Error(`EXIT_${String(code)}`);
+		}) as never);
+
+		expect(() =>
+			run([
+				"ci-migrate",
+				"prepare",
+				"/tmp/cutover-repo",
+				"--provider",
+				"circleci",
+				"--snapshot",
+				"cutover-window-1",
+				"--apply",
+				"--break-glass-approval",
+				".harness/ci-migrate-approvals/cutover-window-1.json",
+				"--merge-queue-evidence",
+				".harness/control-plane/merge-queue-cutover-evidence.json",
+				"--merge-queue-orchestrator",
+				".harness/control-plane/merge-queue-cutover-orchestrator",
+				"--auto-generate-proof-pack",
+			]),
+		).toThrowError("EXIT_69");
+
+		expect(vi.mocked(runCIMigrateCLI)).toHaveBeenCalledWith(
+			"/tmp/cutover-repo",
+			{
+				provider: "circleci",
+				dryRun: false,
+				apply: true,
+				rollback: false,
+				snapshot: "cutover-window-1",
+				action: "prepare",
+				breakGlassApprovalPath:
+					".harness/ci-migrate-approvals/cutover-window-1.json",
+				mergeQueueEvidencePath:
+					".harness/control-plane/merge-queue-cutover-evidence.json",
+				mergeQueueOrchestratorPath:
+					".harness/control-plane/merge-queue-cutover-orchestrator",
+				autoGenerateProofPack: true,
+			},
+		);
+		expect(exitSpy).toHaveBeenCalledWith(69);
+	});
+
+	it("dispatches ci-migrate with explicit --action and optional dry-run", async () => {
+		const { run } = await import("./cli.js");
+		const { runCIMigrateCLI } = await import("./commands/ci-migrate.js");
+
+		const exitSpy = vi.spyOn(process, "exit").mockImplementation(((
+			code?: number,
+		) => {
+			throw new Error(`EXIT_${String(code)}`);
+		}) as never);
+
+		expect(() =>
+			run([
+				"ci-migrate",
+				"/tmp/cutover-repo",
+				"--provider",
+				"circleci",
+				"--action",
+				"commit",
+				"--snapshot",
+				"cutover-window-2",
+				"--dry-run",
+			]),
+		).toThrowError("EXIT_69");
+
+		expect(vi.mocked(runCIMigrateCLI)).toHaveBeenCalledWith(
+			"/tmp/cutover-repo",
+			{
+				provider: "circleci",
+				dryRun: true,
+				apply: false,
+				rollback: false,
+				snapshot: "cutover-window-2",
+				action: "commit",
+				breakGlassApprovalPath: undefined,
+				mergeQueueEvidencePath: undefined,
+				mergeQueueOrchestratorPath: undefined,
+				autoGenerateProofPack: false,
+			},
+		);
+		expect(exitSpy).toHaveBeenCalledWith(69);
+	});
+
+	it("does not treat --action value as target dir when a value flag is missing", async () => {
+		const { run } = await import("./cli.js");
+		const { runCIMigrateCLI } = await import("./commands/ci-migrate.js");
+
+		const exitSpy = vi.spyOn(process, "exit").mockImplementation(((
+			code?: number,
+		) => {
+			throw new Error(`EXIT_${String(code)}`);
+		}) as never);
+
+		expect(() =>
+			run(["ci-migrate", "--provider", "--action", "commit", "--dry-run"]),
+		).toThrowError("EXIT_69");
+
+		expect(vi.mocked(runCIMigrateCLI)).toHaveBeenCalledWith(undefined, {
+			provider: undefined,
+			dryRun: true,
+			apply: false,
+			rollback: false,
+			snapshot: undefined,
+			action: "commit",
+			breakGlassApprovalPath: undefined,
+			mergeQueueEvidencePath: undefined,
+			mergeQueueOrchestratorPath: undefined,
+			autoGenerateProofPack: false,
+		});
+		expect(exitSpy).toHaveBeenCalledWith(69);
+	});
+
+	it("fails ci-migrate dispatch when multiple target directories are provided", async () => {
+		const { run } = await import("./cli.js");
+		const { runCIMigrateCLI } = await import("./commands/ci-migrate.js");
+
+		const exitSpy = vi.spyOn(process, "exit").mockImplementation(((
+			code?: number,
+		) => {
+			throw new Error(`EXIT_${String(code)}`);
+		}) as never);
+		const errorSpy = vi.spyOn(console, "error").mockImplementation(() => {
+			// silence expected error output
+		});
+
+		expect(() =>
+			run(["ci-migrate", "prepare", "/tmp/repo-a", "/tmp/repo-b", "--apply"]),
+		).toThrowError("EXIT_2");
+
+		expect(vi.mocked(runCIMigrateCLI)).not.toHaveBeenCalled();
+		expect(errorSpy).toHaveBeenCalledWith(
+			"Error: ci-migrate accepts at most one target directory positional argument.",
+		);
+		expect(exitSpy).toHaveBeenCalledWith(2);
 	});
 
 	it("dispatches policy-gate command and ignores missing contract value", async () => {

@@ -4,8 +4,8 @@ node_modules/
 # Build output
 dist/
 
-# Internal docs (do not commit)
-FORJAMIE.md
+# Internal handoff docs
+# NOTE: FORJAMIE.md is intentionally tracked for migration handoff continuity.
 
 # Secrets (never commit)
 .env
@@ -54,6 +54,7 @@ gardener-report.json
 
 # Local harness data
 .harness/
+.harness-memory-validator-*/
 .traces/
 .test-traces-*/
 ops/metrics/skill-feedback/

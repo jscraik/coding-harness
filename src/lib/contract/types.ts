@@ -485,6 +485,22 @@ export interface ControlPlanePolicy {
 	overridePolicy: ControlPlaneOverridePolicy;
 }
 
+export type CIProviderPolicyMode = "shadow" | "required";
+export type CIProviderMigrationStage =
+	| "dual-provider"
+	| "circleci-primary"
+	| "circleci-only";
+
+export interface CIProviderPolicy {
+	activeProvider: "github-actions" | "circleci";
+	mode: CIProviderPolicyMode;
+	migrationStage: CIProviderMigrationStage;
+	transitionStatusArtifactPath: string;
+	authorityConfigPath: string;
+	requiredCheckManifestPath: string;
+	trustedPolicyRef: string;
+}
+
 export type ContextIntegrityMode = "shadow" | "advisory" | "required";
 
 export type ContextIntegritySourceKind = "file" | "directory";
@@ -596,6 +612,16 @@ export const DEFAULT_CONTROL_PLANE_POLICY: ControlPlanePolicy = {
 			"missing_snapshot_integrity_verification",
 		],
 	},
+};
+
+export const DEFAULT_CI_PROVIDER_POLICY: CIProviderPolicy = {
+	activeProvider: "github-actions",
+	mode: "shadow",
+	migrationStage: "dual-provider",
+	transitionStatusArtifactPath: ".harness/ci-provider-transition-status.json",
+	authorityConfigPath: "harness.contract.json",
+	requiredCheckManifestPath: ".harness/ci-required-checks.json",
+	trustedPolicyRef: "refs/heads/main",
 };
 
 export const DEFAULT_CONTEXT_INTEGRITY_POLICY: ContextIntegrityPolicy = {
@@ -1100,6 +1126,8 @@ export interface HarnessContract {
 	controlPlanePolicy?: ControlPlanePolicy | undefined;
 	/** Required local tooling surface enforced by scaffold and readiness checks */
 	toolingPolicy?: ToolingPolicy | undefined;
+	/** CI provider transition policy for required checks and trusted policy refs */
+	ciProviderPolicy?: CIProviderPolicy | undefined;
 }
 
 export const DEFAULT_CONTRACT: HarnessContract = {
@@ -1118,6 +1146,7 @@ export const DEFAULT_CONTRACT: HarnessContract = {
 	contextIntegrityPolicy: DEFAULT_CONTEXT_INTEGRITY_POLICY,
 	controlPlanePolicy: DEFAULT_CONTROL_PLANE_POLICY,
 	toolingPolicy: DEFAULT_TOOLING_POLICY,
+	ciProviderPolicy: DEFAULT_CI_PROVIDER_POLICY,
 };
 
 // === Preset Inheritance Types ===

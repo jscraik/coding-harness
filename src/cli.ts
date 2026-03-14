@@ -8,6 +8,7 @@ import {
 	runBlastRadiusCLI,
 } from "./commands/blast-radius.js";
 import { runBrainstormGateCLI } from "./commands/brainstorm-gate.js";
+import { runCIMigrateCLI } from "./commands/ci-migrate.js";
 import { runContextHealthCLI } from "./commands/context-health.js";
 import { runContextCLI } from "./commands/context.js";
 import { runDiffBudgetCLI } from "./commands/diff-budget.js";
@@ -77,6 +78,10 @@ process.on("uncaughtException", (error) => {
 function printUsage(): void {
 	const legacyCommandRows = [
 		{ name: "init", summary: "Install harness in current directory" },
+		{
+			name: "ci-migrate",
+			summary: "Safely migrate CI execution from GitHub Actions to CircleCI",
+		},
 		{ name: "risk-tier", summary: "Classify files by risk tier" },
 		{ name: "gardener", summary: "Detect stale docs and broken links" },
 		{
@@ -351,6 +356,27 @@ function printUsage(): void {
 	console.info("  --update         Apply available template updates");
 	console.info("  --interactive    Review and approve each change");
 	console.info("  --migrate        Migrate contract schema to latest version");
+	console.info("");
+	console.info("CI Migrate Options:");
+	console.info("  ci-migrate [prepare|commit|abort|verify] [targetDir]");
+	console.info("  --provider       Target CI provider (for example: circleci)");
+	console.info("  --snapshot       Snapshot identifier");
+	console.info(
+		"  --action         prepare|commit|abort|verify (optional alternative)",
+	);
+	console.info("  --apply          Apply migration changes");
+	console.info("  --dry-run        Preview migration changes");
+	console.info("  --rollback       Restore from migration snapshot");
+	console.info("  --break-glass-approval  Signed break-glass approval path");
+	console.info(
+		"  --merge-queue-evidence  Signed merge-queue cutover evidence path",
+	);
+	console.info(
+		"  --merge-queue-orchestrator  Executable to orchestrate pause/drain/revalidate and emit signed evidence",
+	);
+	console.info(
+		"  --auto-generate-proof-pack  Materialize trusted proof-pack inputs",
+	);
 	console.info("");
 	console.info("Evidence Verify Options:");
 	console.info(
@@ -743,6 +769,93 @@ export function run(args: string[]): void {
 		}
 
 		const exitCode = runInitCLI(targetDir, options);
+		process.exit(exitCode);
+		return;
+	}
+
+	if (command === "ci-migrate") {
+		const providerIndex = args.indexOf("--provider");
+		const snapshotIndex = args.indexOf("--snapshot");
+		const actionIndex = args.indexOf("--action");
+		const breakGlassApprovalIndex = args.indexOf("--break-glass-approval");
+		const mergeQueueEvidenceIndex = args.indexOf("--merge-queue-evidence");
+		const mergeQueueOrchestratorIndex = args.indexOf(
+			"--merge-queue-orchestrator",
+		);
+		const dryRunFlag = args.includes("--dry-run");
+		const applyFlag = args.includes("--apply");
+		const rollbackFlag = args.includes("--rollback");
+		const autoGenerateProofPackFlag = args.includes(
+			"--auto-generate-proof-pack",
+		);
+		const valueFlags = new Set([
+			"--provider",
+			"--snapshot",
+			"--action",
+			"--break-glass-approval",
+			"--merge-queue-evidence",
+			"--merge-queue-orchestrator",
+		]);
+		const positionalArgs: string[] = [];
+		for (let index = 1; index < args.length; index++) {
+			const token = args[index];
+			if (!token) {
+				continue;
+			}
+			if (token.startsWith("--")) {
+				if (valueFlags.has(token)) {
+					const nextToken = args[index + 1];
+					if (nextToken && !nextToken.startsWith("-")) {
+						index += 1;
+					}
+				}
+				continue;
+			}
+			if (token.startsWith("-")) {
+				continue;
+			}
+			positionalArgs.push(token);
+		}
+
+		const validActions = new Set(["prepare", "commit", "abort", "verify"]);
+		const actionArg = getFlagValue(args, actionIndex);
+		let parsedAction = actionArg;
+		if (
+			!parsedAction &&
+			positionalArgs[0] &&
+			validActions.has(positionalArgs[0])
+		) {
+			parsedAction = positionalArgs.shift();
+		}
+		if (positionalArgs.length > 1) {
+			console.error(
+				"Error: ci-migrate accepts at most one target directory positional argument.",
+			);
+			process.exit(2);
+			return;
+		}
+		const targetDir = positionalArgs[0];
+		const provider = getFlagValue(args, providerIndex);
+		const snapshot = getFlagValue(args, snapshotIndex);
+		const breakGlassApprovalPath = getFlagValue(args, breakGlassApprovalIndex);
+		const mergeQueueEvidencePath = getFlagValue(args, mergeQueueEvidenceIndex);
+		const mergeQueueOrchestratorPath = getFlagValue(
+			args,
+			mergeQueueOrchestratorIndex,
+		);
+
+		const exitCode = runCIMigrateCLI(targetDir, {
+			provider,
+			dryRun: dryRunFlag,
+			apply: applyFlag,
+			rollback: rollbackFlag,
+			snapshot,
+			action: parsedAction,
+			breakGlassApprovalPath,
+			mergeQueueEvidencePath,
+			mergeQueueOrchestratorPath,
+			autoGenerateProofPack: autoGenerateProofPackFlag,
+		});
 		process.exit(exitCode);
 		return;
 	}
