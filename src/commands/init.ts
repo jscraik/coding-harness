@@ -25,6 +25,7 @@ import {
 	type CIProvider,
 	TEMPLATES,
 	createTemplateRenderContext,
+	detectPackageManager,
 	getTemplatesForProvider,
 	isTemplateEnabledForProvider,
 	shouldAutoUpdateTemplate,
@@ -40,7 +41,6 @@ import {
 	MANIFEST_FILE,
 	MAX_INTERACTIVE_FILE_BYTES,
 	type ManifestEntry,
-	type PackageManager,
 	type ProposedChange,
 	type RestoreManifest,
 } from "../lib/init/types.js";
@@ -57,14 +57,6 @@ const RETIRED_TEMPLATE_PATHS = [
 	".github/ISSUE_TEMPLATE/feature.yml",
 	".github/ISSUE_TEMPLATE/security.yml",
 ] as const;
-
-// Helper function to detect package manager from lock files
-function detectPackageManager(dir: string): PackageManager {
-	if (existsSync(resolve(dir, "pnpm-lock.yaml"))) return "pnpm";
-	if (existsSync(resolve(dir, "yarn.lock"))) return "yarn";
-	if (existsSync(resolve(dir, "package-lock.json"))) return "npm";
-	return "npm";
-}
 
 function normalizeCIProvider(
 	value: string | undefined,

@@ -195,6 +195,17 @@ function readIssueTrackingUrl(targetDir: string): string | undefined {
 	return undefined;
 }
 
+/**
+ * Detect package manager from lock files.
+ * Returns the package manager based on which lock file exists.
+ */
+export function detectPackageManager(dir: string): "pnpm" | "yarn" | "npm" {
+	if (existsSync(resolve(dir, "pnpm-lock.yaml"))) return "pnpm";
+	if (existsSync(resolve(dir, "yarn.lock"))) return "yarn";
+	if (existsSync(resolve(dir, "package-lock.json"))) return "npm";
+	return "npm";
+}
+
 export function createTemplateRenderContext(
 	targetDir: string,
 	ciProvider?: CIProvider,

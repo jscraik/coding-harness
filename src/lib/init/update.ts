@@ -17,6 +17,7 @@ import { atomicWrite } from "./migration.js";
 import { loadManifest, sanitizePath } from "./rollback.js";
 import {
 	createTemplateRenderContext,
+	detectPackageManager,
 	getTemplatesForProvider,
 } from "./scaffold.js";
 import {
@@ -138,16 +139,4 @@ export function executeUpdate(
 	}
 
 	return { ok: true, value: { updated, skipped } };
-}
-
-// Helper function - needed here to avoid circular imports
-function detectPackageManager(targetDir: string): "pnpm" | "yarn" | "npm" {
-	// Simple detection based on lock files
-	if (existsSync(resolve(targetDir, "pnpm-lock.yaml"))) {
-		return "pnpm";
-	}
-	if (existsSync(resolve(targetDir, "yarn.lock"))) {
-		return "yarn";
-	}
-	return "npm";
 }
