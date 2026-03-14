@@ -63,6 +63,12 @@ type PathResult =
 /**
  * Sanitize a path to prevent directory traversal attacks.
  * Returns resolved absolute path or error.
+ *
+ * Guards applied (in order):
+ * 1. Lexical containment — resolved path must start with base.
+ * 2. Symlink-walk — every existing segment of the resolved path is checked
+ *    with lstatSync; a symlinked directory anywhere in the chain is rejected.
+ *    This prevents ".github -> /etc" style escapes that pass the prefix check.
  */
 export function sanitizePath(base: string, relativePath: string): PathResult {
 	const resolved = resolve(base, relativePath);
@@ -81,6 +87,32 @@ export function sanitizePath(base: string, relativePath: string): PathResult {
 			},
 		};
 	}
+
+	// SECURITY: Walk each existing path segment and reject any symlink.
+	// resolve() is purely lexical — it doesn't follow symlinks, so a
+	// directory symlink (.github -> /etc) passes the prefix check above
+	// but would redirect writes outside the workspace.
+	const segments = resolved.slice(normalizedBase.length).split(sep).filter(Boolean);
+	let walkPath = normalizedBase;
+	for (const segment of segments) {
+		walkPath = `${walkPath}${sep}${segment}`;
+		try {
+			if (lstatSync(walkPath).isSymbolicLink()) {
+				return {
+					ok: false,
+					error: {
+						code: "PATH_TRAVERSAL",
+						message: `Symlink detected in path: ${relativePath}`,
+						path: relativePath,
+					},
+				};
+			}
+		} catch {
+			// segment doesn't exist yet — no symlink possible, stop walking
+			break;
+		}
+	}
+
 	return { ok: true, value: resolved };
 }
 
