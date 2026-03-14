@@ -176,6 +176,8 @@ const HARNESS_INIT_SOURCE_FALLBACK = resolve(
 const HARNESS_INIT_SOURCE_CANDIDATES = [
 	HARNESS_INIT_SOURCE_FALLBACK,
 	resolve(MODULE_DIR, "../../commands/init.js"),
+	resolve(MODULE_DIR, "../init/scaffold.ts"),
+	resolve(MODULE_DIR, "../init/scaffold.js"),
 ];
 
 function createControlPlaneMetadata(): ControlPlaneArtifactMetadata {
@@ -496,9 +498,21 @@ function buildSurfaceAlignment(
 }
 
 function buildHarnessInitSourceRef(): ArtifactFileRef {
-	const initPath = HARNESS_INIT_SOURCE_CANDIDATES.find((candidate) =>
-		existsSync(candidate),
-	);
+	// Look for a candidate that contains the shared required-check formatter patterns
+	const initPath = HARNESS_INIT_SOURCE_CANDIDATES.find((candidate) => {
+		if (!existsSync(candidate)) return false;
+		const content = readFileSync(candidate, "utf-8");
+		return (
+			content.includes(
+				"Require status checks: ${formatRequiredChecksInline()}",
+			) ||
+			content.includes(
+				'${formatRequiredChecksBulleted(BRANCH_PROTECTION_REQUIRED_CHECKS, "  - ")}',
+			) ||
+			content.includes("formatRequiredChecksBulleted") ||
+			content.includes("formatRequiredChecksInline")
+		);
+	});
 	if (!initPath) {
 		return {
 			path: HARNESS_INIT_SOURCE_FALLBACK,

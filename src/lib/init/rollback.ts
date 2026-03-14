@@ -64,7 +64,7 @@ type PathResult =
  * Sanitize a path to prevent directory traversal attacks.
  * Returns resolved absolute path or error.
  */
-function sanitizePath(base: string, relativePath: string): PathResult {
+export function sanitizePath(base: string, relativePath: string): PathResult {
 	const resolved = resolve(base, relativePath);
 	const normalizedBase = resolve(base);
 	const baseWithSep = normalizedBase.endsWith(sep)

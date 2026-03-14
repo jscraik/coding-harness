@@ -3490,3 +3490,22 @@ env-check: ## Check environment policy envelope
 `,
 	},
 ];
+
+export function isTemplateEnabledForProvider(
+	templatePath: string,
+	ciProvider: CIProvider,
+): boolean {
+	if (templatePath.startsWith(".github/workflows/")) {
+		return ciProvider === "github-actions";
+	}
+	if (templatePath === ".circleci/config.yml") {
+		return ciProvider === "circleci";
+	}
+	return true;
+}
+
+export function getTemplatesForProvider(ciProvider: CIProvider): Template[] {
+	return TEMPLATES.filter((template) =>
+		isTemplateEnabledForProvider(template.path, ciProvider),
+	);
+}

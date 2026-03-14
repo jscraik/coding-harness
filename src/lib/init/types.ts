@@ -168,6 +168,13 @@ export interface ContractSchema {
 			}>;
 		};
 	};
+	ciProviderPolicy?: {
+		activeProvider?: unknown;
+		mode?: unknown;
+		authorityConfigPath?: unknown;
+		requiredCheckManifestPath?: unknown;
+		trustedPolicyRef?: unknown;
+	};
 	contextIntegrityPolicy?: unknown;
 	issueTrackingPolicy?: unknown;
 	evidencePolicy?: {

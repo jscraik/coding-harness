@@ -53,7 +53,7 @@ type WriteResult =
  * Atomic file write with temp file + rename pattern.
  * Ensures file is either fully written or not touched at all.
  */
-function atomicWrite(filePath: string, content: string): WriteResult {
+export function atomicWrite(filePath: string, content: string): WriteResult {
 	const tempPath = `${filePath}.${process.pid}.${randomUUID()}.tmp`;
 
 	try {
