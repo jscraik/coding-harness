@@ -1,0 +1,49 @@
+flowchart LR
+  User(("User"))
+  cli_99bb8840["cli"]
+  User --> cli_99bb8840
+  cli_dispatch_test_54c9f17b["cli-dispatch.test"]
+  User --> cli_dispatch_test_54c9f17b
+  verify_greptile_227190f7["verify-greptile"]
+  User --> verify_greptile_227190f7
+  verify_greptile_test_17404b05["verify-greptile.test"]
+  User --> verify_greptile_test_17404b05
+  ui_loop_11660889["ui-loop"]
+  User --> ui_loop_11660889
+  ui_loop_test_f0eabc42["ui-loop.test"]
+  User --> ui_loop_test_f0eabc42
+  tooling_audit_test_d2aee28c["tooling-audit.test"]
+  User --> tooling_audit_test_d2aee28c
+  review_gate_09b579c4["review-gate"]
+  User --> review_gate_09b579c4
+  review_gate_test_000e2ed6["review-gate.test"]
+  User --> review_gate_test_000e2ed6
+  request_greptile_review_851df233["request-greptile-review"]
+  User --> request_greptile_review_851df233
+  request_greptile_review_test_b073e76e["request-greptile-review.test"]
+  User --> request_greptile_review_test_b073e76e
+  linear_workflow_c5cb6267["linear-workflow"]
+  User --> linear_workflow_c5cb6267
+  linear_workflow_test_a351dcb0["linear-workflow.test"]
+  User --> linear_workflow_test_a351dcb0
+  linear_prepare_0c613ba6["linear-prepare"]
+  User --> linear_prepare_0c613ba6
+  linear_prepare_test_678f11a9["linear-prepare.test"]
+  User --> linear_prepare_test_678f11a9
+  init_test_cbba76a6["init.test"]
+  User --> init_test_cbba76a6
+  evidence_verify_3b73c290["evidence-verify"]
+  User --> evidence_verify_3b73c290
+  check_environment_fe68d4be["check-environment"]
+  User --> check_environment_fe68d4be
+  check_authz_fee242b1["check-authz"]
+  User --> check_authz_fee242b1
+  branch_protect_b9d345eb["branch-protect"]
+  User --> branch_protect_b9d345eb
+  branch_protect_test_c8d80aab["branch-protect.test"]
+  User --> branch_protect_test_c8d80aab
+  agent_first_throughput_integration_test_dc677cc4["agent-first-throughput.integration.test"]
+  User --> agent_first_throughput_integration_test_dc677cc4
+  env_b77349bf["env"]
+  User --> env_b77349bf
+  classDef userNode fill:#16a34a,color:#fff

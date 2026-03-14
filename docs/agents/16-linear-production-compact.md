@@ -1,63 +1,49 @@
-# Linear Production Workflow — Agent-Optimized Contract
-
-> **Purpose:** Token-efficient, operationally unambiguous workflow for Linear-tracked work.
-> **Source:** [13-linear-production-workflow.md](./13-linear-production-workflow.md)
+# Linear Production Workflow — Compact Operational Spec
 
 ## Table of Contents
-
 - [Abbreviations](#abbreviations)
 - [Metadata](#metadata)
 - [Invariants](#invariants)
 - [States](#states)
 - [Transition Table (Canonical)](#transition-table-canonical)
+- [State Diagram](#state-diagram)
 - [Error Handling](#error-handling)
 - [Idempotency](#idempotency)
 - [Execution Modes](#execution-modes)
 - [Dry-Run Simulation](#dry-run-simulation)
 - [Observability Logs](#observability-logs)
 - [Validation Checklist](#validation-checklist)
-- [Operating Model](#operating-model)
-- [Issue Lifecycle State Machine](#issue-lifecycle-state-machine)
-- [Executor Loop](#executor-loop)
-- [Command Surface](#command-surface)
-- [Intake Rules](#intake-rules)
-- [Label Taxonomy](#label-taxonomy)
-- [System Boundaries](#system-boundaries)
-- [Definition of Done](#definition-of-done)
-
----
 
 ## Abbreviations
-
-| Abbr | Full |
-|------|------|
+| Term | Definition |
+| --- | --- |
 | LI | Linear Issue |
-| LK | Linear Key (e.g., `JSC-37`) |
+| LK | Linear Key (e.g., JSC-37) |
+| DoD | Definition of Done |
 | PR | Pull Request |
-| CH | coding-harness |
-| LPW | Linear Production Workflow |
 
 ## Metadata
 | Field | Value |
 | --- | --- |
 | `owner` | `coding-harness-maintainers` |
-| `max_duration` | `single issue lifecycle` |
-| `escalation` | `transition to Blocked with explicit unblock action` |
+| `max_duration` | `1 issue lifecycle` |
+| `escalation` | `set Blocked marker with explicit unblock action` |
 
 ## Invariants
-- Keep a single progress thread per issue.
-- Enforce `codex/<LK>-<slug>` branch naming.
-- Require policy checks before review/done transitions.
+- Exactly one running LI progress thread per issue.
+- Branch format is `codex/<lk>-<slug>`.
+- `S2 IN_PROGRESS -> S3 IN_REVIEW` requires DoD pre-review checks.
+- `pr_closed_unmerged` always routes back to active work.
+- `In Review` handoff is blocked when CI provider posture is unsatisfied for the current migration stage.
 
 ## States
 ```txt
-Triage (non-terminal)
-Ready (non-terminal)
-In Progress (non-terminal)
-In Review (non-terminal)
-Blocked (non-terminal)
-Delegated (non-terminal)
-Done (terminal)
+S0 TRIAGE (non-terminal)
+S1 READY (non-terminal)
+S2 IN_PROGRESS (non-terminal)
+S3 IN_REVIEW (non-terminal)
+S4 DONE (terminal)
+S5 BLOCKED (non-terminal)
 ```
 
 ## Transition Table (Canonical)
@@ -65,233 +51,66 @@ Done (terminal)
 
 | S | E | G | A | N |
 | --- | --- | --- | --- | --- |
-| `Triage` | `scoped` | issue is triaged with clear next step | `harness linear prepare --issue <LK>` | `Ready` |
-| `Ready` | `start` | branch matches `codex/<LK>-<slug>` | `harness linear claim --issue <LK> --branch <name>` | `In Progress` |
-| `In Progress` | `progress_tick` | always | append to single running progress comment | `In Progress` |
-| `In Progress` | `handoff_ready` | lint + typecheck + test + audit + check pass | `harness linear handoff --issue <LK> --pr-url <url>` | `In Review` |
-| `In Review` | `merged` | required checks pass | `harness linear close --issue <LK> --pr-url <url>` | `Done` |
-| `In Review` | `pr_closed_unmerged` | PR closed without merge | `harness linear claim --issue <LK> --state "In Progress" --no-assign` | `In Progress` |
-| `*` | `blocked` | missing auth, permission, human input | label `Blocked`; record unblock action | `Blocked` |
-| `Blocked` | `unblocked` | dependency restored | remove `Blocked`; resume execution | `In Progress` |
-| `*` | `delegated` | delegation approved | assign delegate + transfer context | `Delegated` |
+| `S0 TRIAGE` | `scoped` | issue has clear next action | move LI to ready queue | `S1 READY` |
+| `S1 READY` | `start` | branch created with `codex/` + `LK` | `harness linear claim --issue <LK> --branch <name>` | `S2 IN_PROGRESS` |
+| `S2 IN_PROGRESS` | `progress_tick` | always | update single running LI comment | `S2 IN_PROGRESS` |
+| `S2 IN_PROGRESS` | `pr_opened` | PR URL available | attach PR URL to LI | `S2 IN_PROGRESS` |
+| `S2 IN_PROGRESS` | `handoff_ready` | DoD pre-review checks pass | `harness linear handoff --issue <LK> --pr-url <url> --evidence-url <url[,url]>` | `S3 IN_REVIEW` |
+| `S3 IN_REVIEW` | `merged` | required checks pass | `harness linear close --issue <LK> --pr-url <url>` | `S4 DONE` |
+| `S3 IN_REVIEW` | `pr_closed_unmerged` | PR closed without merge | `harness linear claim --issue <LK> --state \"In Progress\" --no-assign` and add rationale note | `S2 IN_PROGRESS` |
+| `S2 IN_PROGRESS` | `blocked` | missing auth, permission, or human input | add `Blocked` marker and unblock action | `S5 BLOCKED` |
+| `S5 BLOCKED` | `unblocked` | dependency resolved | remove blocker marker and resume execution | `S2 IN_PROGRESS` |
+
+Transition table is the source of truth.
+
+## State Diagram
+```mermaid
+stateDiagram-v2
+    S0_TRIAGE --> S1_READY: scoped
+    S1_READY --> S2_IN_PROGRESS: start
+    S2_IN_PROGRESS --> S2_IN_PROGRESS: progress_tick
+    S2_IN_PROGRESS --> S2_IN_PROGRESS: pr_opened
+    S2_IN_PROGRESS --> S3_IN_REVIEW: handoff_ready
+    S3_IN_REVIEW --> S4_DONE: merged
+    S3_IN_REVIEW --> S2_IN_PROGRESS: pr_closed_unmerged
+    S2_IN_PROGRESS --> S5_BLOCKED: blocked
+    S5_BLOCKED --> S2_IN_PROGRESS: unblocked
+```
 
 ## Error Handling
-- `VALIDATION_ERROR`: malformed `LK`/branch/PR payload.
-- `BLOCKED_DEPENDENCY`: missing permissions/auth/human dependency.
-- `POLICY_FAIL`: gate/check violations.
-- `SYSTEM_ERROR`: CLI/network/runtime failures.
+- `VALIDATION_ERROR`
+- `BLOCKED_DEPENDENCY`
+- `POLICY_FAIL`
+- `SYSTEM_ERROR`
 
 ## Idempotency
-- Key: `<LK>|<event>|<from_state>|<pr_ref?>`.
-- Replayed events perform upsert behavior, never duplicate comments/handoff records.
+- Key: `<LK>|<state>|<event>|<pr_url?>`.
+- Replayed `progress_tick` and `pr_opened` events upsert existing LI artifacts.
+- Replayed `handoff_ready` must not duplicate evidence links/comments.
 
 ## Execution Modes
-- `STRICT`: hard-fail on violations.
-- `ADVISORY`: warn and continue when safe.
+- `STRICT`
+- `ADVISORY`
 
 ## Dry-Run Simulation
-- No side effects.
-- Deterministic transition trace output.
+- No side effects: no stateful writes to Linear/GitHub.
+- Guard evaluation and transition selection remain deterministic.
+- Emit transition trace rows: `S,E,G,A,N,decision`.
 
 ## Observability Logs
-`workflow_id, transition_code, from_state, to_state, correlation_id, result`
+```json
+{
+  "workflow_id": "linear-production-workflow",
+  "transition_code": "S2:handoff_ready",
+  "from_state": "S2 IN_PROGRESS",
+  "to_state": "S3 IN_REVIEW",
+  "correlation_id": "JSC-37:PR-123",
+  "result": "success|blocked|failed"
+}
+```
 
 ## Validation Checklist
-- non-terminal states have outbound transitions
-- deterministic `(S,E)` resolution
-- failure events route to `FAIL`/`BLOCKED`
-- terminal state `Done` has no outbound transitions
-
----
-
-## Operating Model
-
-| System | Role |
-|--------|------|
-| **Linear** | System of record: intake, ownership, prioritization, status |
-| **GitHub** | Source of truth: branches, PRs, CI, reviews, merge history |
-| **CH** | Execution engine: validation, evidence, handoff enforcement |
-
-**Key constraint:** GitHub Issues are NOT the default intake path.
-
----
-
-## Issue Lifecycle State Machine
-
-```
-┌─────────────────────────────────────────────────────────────────────┐
-│                                                                     │
-│  Triage ──► Ready ──► In Progress ──► In Review ──► Done           │
-│                           │              │                          │
-│                           ▼              │                          │
-│                        Blocked ◄─────────┘                          │
-│                           │                                         │
-│                           └──► Delegated                            │
-│                                                                     │
-└─────────────────────────────────────────────────────────────────────┘
-```
-
-## Executor Loop
-
-| From | To | Trigger | Agent Action |
-|------|-----|---------|--------------|
-| Triage | Ready | Triaged, scoped | `harness linear prepare --issue <LK>` |
-| Ready | In Progress | Branch created | `harness linear claim --issue <LK> --branch <name>` |
-| In Progress | In Review | PR opened | `harness linear handoff --issue <LK> --pr-url <url>` |
-| In Review | Done | PR merged | `harness linear close --issue <LK> --pr-url <url>` |
-| In Review | In Progress | PR closed without merge | `harness linear claim --issue <LK> --state "In Progress" --no-assign` |
-| * | Blocked | External dependency | Label `Blocked`, record unblock action |
-| Blocked | In Progress | Unblocked | Remove `Blocked`, resume work |
-| * | Delegated | Handed off | Assign to delegate, record context |
-
----
-
-## Command Surface
-
-### Quick Reference
-
-```bash
-# Generate branch/PR metadata from issue
-harness linear prepare --issue <LK> --field branch
-
-# Enforce contract policy (CI/local)
-harness linear-gate --branch <name> --pr-title <title> --pr-body <body>
-
-# Claim issue + create branch
-harness linear claim --issue <LK> --branch <name> [--workspace <path>]
-
-# Handoff to review
-harness linear handoff --issue <LK> --pr-url <url> [--evidence-url <url>]
-
-# Close after merge
-harness linear close --issue <LK> --pr-url <url>
-```
-
-### Command Contracts
-
-| Command | Purpose | Required Inputs | Side Effects |
-|---------|---------|-----------------|--------------|
-| `prepare` | Generate metadata | `--issue <LK>` | None (stdout only) |
-| `linear-gate` | Policy enforcement | `--branch`, `--pr-title`, `--pr-body` | Exit code 0/1 |
-| `claim` | Assign + branch | `--issue`, `--branch` | LI→In Progress, assignment |
-| `handoff` | Move to review | `--issue`, `--pr-url` | LI→In Review, comment posted |
-| `close` | Close after merge | `--issue`, `--pr-url` | LI→Done, comment posted |
-
-Automation lane:
-- `.github/workflows/linear-pr-sync.yml` runs on `pull_request` events (`opened`, `reopened`, `closed`) and mirrors lifecycle changes into Linear when `LINEAR_API_KEY` is available.
-- It fails closed on ambiguous metadata (more than one Linear key in title/body/branch) and skips when no key is present.
-
-### Output Formats
-
-| Field | Format | Example |
-|-------|--------|---------|
-| Branch | `codex/<LK>-<slug>` | `codex/jsc-37-enable-linear-automation` |
-| PR Title | `<LK>: <title>` | `JSC-37: Enable Linear automation` |
-| Link Line | `Refs <LK>` | `Refs JSC-37` |
-| Close Line | `Fixes <LK>` | `Fixes JSC-37` |
-
-### Policy Gates (`linear-gate`)
-
-| Check | Requirement |
-|-------|-------------|
-| `bugs.url` | Points to Linear project |
-| `ISSUE_TEMPLATE/config.yml` | Retires GitHub Issues, points to Linear |
-| Branch name | `codex/` prefix + LK present |
-| PR title | LK present |
-| PR body | `Refs <LK>` OR `Fixes <LK>` |
-
----
-
-## Intake Rules
-
-```
-IF reproducible bug/feature/policy-gap/workflow-regression/automation/release:
-  CREATE or UPDATE Linear issue
-  INCLUDE: repro steps, expected vs actual, evidence, doc links
-  LINK: PR/branch/commit once implementation starts
-
-IF matching active/historical issue exists:
-  REUSE instead of creating new
-
-IF cross-project:
-  MAY track outside coding-harness project
-ELSE:
-  MUST track in coding-harness project
-```
-
----
-
-## Label Taxonomy
-
-### Core Labels
-
-| Label | Use |
-|-------|-----|
-| `Bug` | Defects, regressions |
-| `Feature` | New capabilities |
-| `Improvement` | Enhancements to existing |
-| `Docs` | Documentation changes |
-| `Research` | Investigation, spikes |
-| `Refactor` | Code restructuring |
-| `Infra` | Infrastructure, CI |
-| `Chore` | Maintenance, deps |
-| `Security` | Security-relevant |
-
-### Workflow Labels
-
-| Label | Use |
-|-------|-----|
-| `Blocked` | External dependency |
-| `Automation` | Bot/CI work |
-| `Policy` | Governance changes |
-| `Agent` | Agent-specific work |
-| `Release` | Release milestones |
-
----
-
-## System Boundaries
-
-| Concern | System |
-|---------|--------|
-| Intake, ownership, status | Linear |
-| PR discussion, CI, reviews, merge | GitHub |
-| Durable technical detail | `docs/`, `todos/` |
-
-**Rule:** Do not duplicate verbose/volatile detail in tracker fields — link to repo docs.
-
----
-
-## Definition of Done
-
-Before `In Review`:
-
-```
-□ Linked branch/PR exists
-□ pnpm lint ✓
-□ pnpm typecheck ✓
-□ pnpm test ✓
-□ pnpm audit ✓
-□ pnpm check ✓
-□ CI gates pass (including docs-gate)
-□ Evidence attached/summarized
-□ Blockers/risks explicit
-□ Reviewer can continue without re-deriving context
-```
-
-Before `Done`:
-
-```
-□ PR merged
-□ Required checks passed
-□ `Fixes <LK>` in PR body (for auto-close)
-  OR manual `harness linear close` executed
-□ If PR closed without merge: issue moved back to active state with rationale
-```
-
----
-
-## Cross-References
-
-- Full workflow: [13-linear-production-workflow.md](./13-linear-production-workflow.md)
-- Agent governance: [07b-agent-governance.md](./07b-agent-governance.md)
-- Validation gates: [04-validation.md](./04-validation.md)
+- non-terminal states require at least one transition
+- events resolve deterministically
+- failures route to fail/blocked states
+- terminal states have no outbound transitions

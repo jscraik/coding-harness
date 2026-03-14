@@ -2196,7 +2196,7 @@ describe("detectContractVersion", () => {
 	});
 
 	it("returns null when contract doesn't exist", async () => {
-		const { detectContractVersion } = await import("./init.js");
+		const { detectContractVersion } = await import("../lib/init/migration.js");
 		const version = detectContractVersion(tempDir);
 		expect(version).toBeNull();
 	});
@@ -2207,7 +2207,7 @@ describe("detectContractVersion", () => {
 			JSON.stringify({ version: "2.5.0" }),
 		);
 
-		const { detectContractVersion } = await import("./init.js");
+		const { detectContractVersion } = await import("../lib/init/migration.js");
 		const version = detectContractVersion(tempDir);
 		expect(version).toBe("2.5.0");
 	});
@@ -2218,7 +2218,7 @@ describe("detectContractVersion", () => {
 			JSON.stringify({ riskTierRules: {} }),
 		);
 
-		const { detectContractVersion } = await import("./init.js");
+		const { detectContractVersion } = await import("../lib/init/migration.js");
 		const version = detectContractVersion(tempDir);
 		expect(version).toBeNull();
 	});
@@ -2226,7 +2226,7 @@ describe("detectContractVersion", () => {
 	it("returns null for invalid JSON", async () => {
 		writeFileSync(join(tempDir, "harness.contract.json"), "not valid json");
 
-		const { detectContractVersion } = await import("./init.js");
+		const { detectContractVersion } = await import("../lib/init/migration.js");
 		const version = detectContractVersion(tempDir);
 		expect(version).toBeNull();
 	});

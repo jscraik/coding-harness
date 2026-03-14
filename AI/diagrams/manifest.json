@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-03-12T10:58:25.546Z",
+  "generatedAt": "2026-03-14T08:28:02.267Z",
   "rootPath": "/Users/jamiecraik/dev/coding-harness",
   "diagramDir": "AI/diagrams",
   "diagrams": [
@@ -7,40 +7,80 @@
       "type": "architecture",
       "file": "architecture.mmd",
       "outputPath": "AI/diagrams/architecture.mmd",
-      "lines": 282,
-      "bytes": 15694,
-      "isPlaceholder": false
-    },
-    {
-      "type": "class",
-      "file": "class.mmd",
-      "outputPath": "AI/diagrams/class.mmd",
-      "lines": 50,
-      "bytes": 1141,
-      "isPlaceholder": false
-    },
-    {
-      "type": "dependency",
-      "file": "dependency.mmd",
-      "outputPath": "AI/diagrams/dependency.mmd",
-      "lines": 449,
-      "bytes": 36948,
-      "isPlaceholder": false
-    },
-    {
-      "type": "flow",
-      "file": "flow.mmd",
-      "outputPath": "AI/diagrams/flow.mmd",
-      "lines": 21,
-      "bytes": 799,
+      "lines": 115,
+      "bytes": 5057,
       "isPlaceholder": false
     },
     {
       "type": "sequence",
       "file": "sequence.mmd",
       "outputPath": "AI/diagrams/sequence.mmd",
-      "lines": 3,
-      "bytes": 54,
+      "lines": 2,
+      "bytes": 58,
+      "isPlaceholder": true
+    },
+    {
+      "type": "dependency",
+      "file": "dependency.mmd",
+      "outputPath": "AI/diagrams/dependency.mmd",
+      "lines": 292,
+      "bytes": 17600,
+      "isPlaceholder": false
+    },
+    {
+      "type": "class",
+      "file": "class.mmd",
+      "outputPath": "AI/diagrams/class.mmd",
+      "lines": 19,
+      "bytes": 482,
+      "isPlaceholder": false
+    },
+    {
+      "type": "flow",
+      "file": "flow.mmd",
+      "outputPath": "AI/diagrams/flow.mmd",
+      "lines": 20,
+      "bytes": 750,
+      "isPlaceholder": false
+    },
+    {
+      "type": "database",
+      "file": "database.mmd",
+      "outputPath": "AI/diagrams/database.mmd",
+      "lines": 56,
+      "bytes": 2603,
+      "isPlaceholder": false
+    },
+    {
+      "type": "user",
+      "file": "user.mmd",
+      "outputPath": "AI/diagrams/user.mmd",
+      "lines": 49,
+      "bytes": 2019,
+      "isPlaceholder": false
+    },
+    {
+      "type": "events",
+      "file": "events.mmd",
+      "outputPath": "AI/diagrams/events.mmd",
+      "lines": 11,
+      "bytes": 420,
+      "isPlaceholder": false
+    },
+    {
+      "type": "auth",
+      "file": "auth.mmd",
+      "outputPath": "AI/diagrams/auth.mmd",
+      "lines": 43,
+      "bytes": 1619,
+      "isPlaceholder": false
+    },
+    {
+      "type": "security",
+      "file": "security.mmd",
+      "outputPath": "AI/diagrams/security.mmd",
+      "lines": 109,
+      "bytes": 4792,
       "isPlaceholder": false
     }
   ]

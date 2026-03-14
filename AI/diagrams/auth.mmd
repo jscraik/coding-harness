@@ -1,0 +1,43 @@
+flowchart TD
+  Request["Authentication request"]
+  Boundary{"Auth Boundary"}
+  Request --> Boundary
+  review_gate_09b579c4["review-gate"]
+  Boundary --> review_gate_09b579c4
+  request_greptile_review_851df233["request-greptile-review"]
+  Boundary --> request_greptile_review_851df233
+  policy_gate_test_203a5261["policy-gate.test"]
+  Boundary --> policy_gate_test_203a5261
+  linear_workflow_c5cb6267["linear-workflow"]
+  Boundary --> linear_workflow_c5cb6267
+  init_bb54068a["init"]
+  Boundary --> init_bb54068a
+  init_test_cbba76a6["init.test"]
+  Boundary --> init_test_cbba76a6
+  docs_gate_test_a25e972f["docs-gate.test"]
+  Boundary --> docs_gate_test_a25e972f
+  context_test_57aad306["context.test"]
+  Boundary --> context_test_57aad306
+  ci_migrate_78bb70b1["ci-migrate"]
+  Boundary --> ci_migrate_78bb70b1
+  check_environment_fe68d4be["check-environment"]
+  Boundary --> check_environment_fe68d4be
+  check_authz_fee242b1["check-authz"]
+  Boundary --> check_authz_fee242b1
+  branch_protect_b9d345eb["branch-protect"]
+  Boundary --> branch_protect_b9d345eb
+  blast_radius_test_045450fc["blast-radius.test"]
+  Boundary --> blast_radius_test_045450fc
+  env_b77349bf["env"]
+  Boundary --> env_b77349bf
+  vitest_a9127f3d[("vitest")]
+  node_crypto_879f6cbe[("node:crypto")]
+  node_path_0e7d56ab[("node:path")]
+  node_process_09240432[("node:process")]
+  diff_df087996[("diff")]
+  semver_50449d83[("semver")]
+  _inquirer_prompts_21758d24[("@inquirer/prompts")]
+  node_os_e9717731[("node:os")]
+  node_fs_df6b52af[("node:fs")]
+  node_child_process_cb73900b[("node:child_process")]
+  classDef authNode fill:#7c3aed,color:#fff
