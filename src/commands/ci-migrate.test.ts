@@ -3675,6 +3675,282 @@ describe("runCIMigrateCLI", () => {
 		expect(report.parity.status).toBe("parity");
 	});
 
+	it("fails closed on apply when source provider config is missing", () => {
+		mkdirSync(join(tempDir, ".harness"), { recursive: true });
+		writeFileSync(
+			join(tempDir, ".harness/ci-required-checks.json"),
+			JSON.stringify(
+				{
+					version: 1,
+					activeProvider: "github-actions",
+					requiredChecks: [
+						{
+							policyId: "required-check-1",
+							displayName: "pr-pipeline",
+							sourceAppSlug: "github-actions",
+							sourceAppId: "github-actions",
+							externalIdPattern: "^pr-pipeline$",
+							class: "required",
+						},
+					],
+				},
+				null,
+				2,
+			),
+		);
+
+		const exitCode = runCIMigrateCLI(tempDir, {
+			provider: "circleci",
+			apply: true,
+			snapshot: "cutover-2",
+		});
+
+		expect(exitCode).toBe(EXIT_CODES.INVALID_PATH);
+		expect(vi.mocked(runInitCLI)).not.toHaveBeenCalled();
+		expect(
+			existsSync(
+				join(tempDir, ".harness/ci-migrate-snapshots/cutover-2.report.json"),
+			),
+		).toBe(true);
+	});
+
+	it("bootstraps required checks from legacy contract/workflow evidence in dry-run without writing manifest", () => {
+		mkdirSync(join(tempDir, ".harness"), { recursive: true });
+		mkdirSync(join(tempDir, ".github", "workflows"), { recursive: true });
+		writeFileSync(
+			join(tempDir, ".github/workflows/pr-pipeline.yml"),
+			[
+				"name: PR Pipeline",
+				"",
+				"jobs:",
+				"  lint:",
+				"    name: lint",
+				"    runs-on: ubuntu-latest",
+				"    steps:",
+				"      - run: echo lint",
+			].join("\n"),
+		);
+		writeFileSync(
+			join(tempDir, "harness.contract.json"),
+			JSON.stringify(
+				{
+					branchProtection: {
+						requiredChecks: ["lint", "typecheck"],
+					},
+				},
+				null,
+				2,
+			),
+		);
+
+		const exitCode = runCIMigrateCLI(tempDir, {
+			provider: "circleci",
+			dryRun: true,
+			snapshot: "dryrun-import-required-checks",
+		});
+
+		expect(exitCode).toBe(EXIT_CODES.SUCCESS);
+		expect(existsSync(join(tempDir, ".harness/ci-required-checks.json"))).toBe(
+			false,
+		);
+		const report = JSON.parse(
+			readFileSync(
+				join(
+					tempDir,
+					".harness/ci-migrate-snapshots/dryrun-import-required-checks.report.json",
+				),
+				"utf-8",
+			),
+		) as {
+			requiredCheckNames: string[];
+		};
+		expect(report.requiredCheckNames).toEqual(["lint", "typecheck"]);
+	});
+
+	it("writes imported required checks manifest on apply when manifest is missing", () => {
+		mkdirSync(join(tempDir, ".harness"), { recursive: true });
+		mkdirSync(join(tempDir, ".github", "workflows"), { recursive: true });
+		writeFileSync(
+			join(tempDir, ".harness/restore-manifest.json"),
+			JSON.stringify({
+				harnessVersion: "0.0.0",
+				ciProvider: "github-actions",
+				files: [],
+			}),
+		);
+		writeFileSync(
+			join(tempDir, ".github/workflows/pr-pipeline.yml"),
+			[
+				"name: PR Pipeline",
+				"",
+				"jobs:",
+				"  lint:",
+				"    name: lint",
+				"    runs-on: ubuntu-latest",
+				"    steps:",
+				"      - run: echo lint",
+			].join("\n"),
+		);
+		writeFileSync(
+			join(tempDir, "harness.contract.json"),
+			JSON.stringify(
+				{
+					branchProtection: {
+						requiredChecks: ["lint", "typecheck"],
+					},
+				},
+				null,
+				2,
+			),
+		);
+
+		const exitCode = runCIMigrateCLI(tempDir, {
+			provider: "circleci",
+			apply: true,
+			snapshot: "apply-import-required-checks",
+		});
+
+		expect(exitCode).toBe(EXIT_CODES.SUCCESS);
+		expect(existsSync(join(tempDir, ".harness/ci-required-checks.json"))).toBe(
+			true,
+		);
+		const manifest = JSON.parse(
+			readFileSync(join(tempDir, ".harness/ci-required-checks.json"), "utf-8"),
+		) as {
+			activeProvider: string;
+			requiredChecks: Array<{
+				displayName: string;
+				sourceAppSlug: string;
+				sourceAppId: string;
+			}>;
+		};
+		expect(manifest.activeProvider).toBe("github-actions");
+		expect(manifest.requiredChecks.map((check) => check.displayName)).toEqual([
+			"lint",
+			"typecheck",
+		]);
+		expect(
+			manifest.requiredChecks.every(
+				(check) => check.sourceAppSlug === "github-actions",
+			),
+		).toBe(true);
+		expect(
+			manifest.requiredChecks.every(
+				(check) => check.sourceAppId === "github-actions",
+			),
+		).toBe(true);
+	});
+
+	it("fails closed on apply when the required-check manifest contains malformed entries", () => {
+		mkdirSync(join(tempDir, ".harness"), { recursive: true });
+		mkdirSync(join(tempDir, ".github", "workflows"), { recursive: true });
+		writeFileSync(
+			join(tempDir, ".harness/restore-manifest.json"),
+			JSON.stringify({
+				harnessVersion: "0.0.0",
+				ciProvider: "github-actions",
+				files: [],
+			}),
+		);
+		writeFileSync(
+			join(tempDir, ".github/workflows/pr-pipeline.yml"),
+			"name: test",
+		);
+		writeFileSync(
+			join(tempDir, ".harness/ci-required-checks.json"),
+			JSON.stringify(
+				{
+					version: 1,
+					activeProvider: "github-actions",
+					requiredChecks: [
+						{
+							policyId: "required-check-1",
+							displayName: "pr-pipeline",
+							sourceAppSlug: "github-actions",
+							sourceAppId: "github-actions",
+							externalIdPattern: "^pr-pipeline$",
+							class: "required",
+						},
+						{
+							policyId: "required-check-2",
+							displayName: "missing-provider-fields",
+							class: "required",
+						},
+					],
+				},
+				null,
+				2,
+			),
+		);
+
+		const exitCode = runCIMigrateCLI(tempDir, {
+			provider: "circleci",
+			apply: true,
+			snapshot: "cutover-malformed-required-checks",
+		});
+
+		expect(exitCode).toBe(EXIT_CODES.WRITE_ERROR);
+		expect(vi.mocked(runInitCLI)).not.toHaveBeenCalled();
+	});
+
+	it("writes a parity report during dry-run mode", () => {
+		mkdirSync(join(tempDir, ".harness"), { recursive: true });
+		mkdirSync(join(tempDir, ".github", "workflows"), { recursive: true });
+		writeFileSync(
+			join(tempDir, ".github/workflows/pr-pipeline.yml"),
+			"name: test",
+		);
+		writeFileSync(
+			join(tempDir, ".harness/ci-required-checks.json"),
+			JSON.stringify(
+				{
+					version: 1,
+					activeProvider: "github-actions",
+					requiredChecks: [
+						{
+							policyId: "required-check-1",
+							displayName: "pr-pipeline",
+							sourceAppSlug: "github-actions",
+							sourceAppId: "github-actions",
+							externalIdPattern: "^pr-pipeline$",
+							class: "required",
+						},
+					],
+				},
+				null,
+				2,
+			),
+		);
+
+		const exitCode = runCIMigrateCLI(tempDir, {
+			provider: "circleci",
+			dryRun: true,
+			snapshot: "dryrun-1",
+		});
+
+		expect(exitCode).toBe(EXIT_CODES.SUCCESS);
+		expect(vi.mocked(runInitCLI)).toHaveBeenCalledWith(tempDir, {
+			dryRun: true,
+			force: false,
+			track: false,
+			rollback: false,
+			checkUpdates: false,
+			update: false,
+			interactive: false,
+			migrate: false,
+			ciProvider: "circleci",
+		});
+
+		const report = JSON.parse(
+			readFileSync(
+				join(tempDir, ".harness/ci-migrate-snapshots/dryrun-1.report.json"),
+				"utf-8",
+			),
+		);
+		expect(report.schemaVersion).toBe("ci-migrate-report/v1");
+		expect(report.parity.status).toBe("parity");
+	});
+
 	it("requires snapshot when rollback mode is requested", () => {
 		mkdirSync(join(tempDir, ".harness"), { recursive: true });
 		writeFileSync(

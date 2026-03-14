@@ -4159,8 +4159,12 @@ function parseParityProvenanceManifest(
 	| { ok: true; value: CIParityProvenanceManifest }
 	| { ok: false; error: string } {
 	try {
-		const parsed = JSON.parse(content) as unknown;
-		if (!parsed || typeof parsed !== "object") {
+		const artifactIndexContent = readFileSync(artifactIndexPath, "utf-8");
+		const artifactIndexSignature = readFileSync(
+			artifactIndexSignaturePath,
+			"utf-8",
+		).trim();
+		if (!isHexDigest(artifactIndexSignature)) {
 			return {
 				ok: false,
 				error: "Parity provenance manifest must be a JSON object.",
@@ -4603,6 +4607,240 @@ function parseParityProvenanceBundle(
 			},
 		};
 	} catch (error) {
+		return {
+			ok: false,
+			error: `Failed to parse parity provenance bundle JSON: ${sanitizeError(error)}`,
+		};
+	}
+}
+
+function materializeProofPackInputsFromProvenanceBundle(
+	targetDir: string,
+	signingKey: string,
+	signingKeyId: string,
+): { ok: true } | { ok: false; error: string } {
+	const bundlePath = resolve(targetDir, PARITY_PROVENANCE_BUNDLE_PATH);
+	if (!existsSync(bundlePath)) {
+		return {
+			ok: false,
+			error: `Missing parity proof pack input (${PARITY_PROOF_PACK_INPUT_PATH}), provenance bundle (${PARITY_PROVENANCE_BUNDLE_PATH}), and provenance input (${PARITY_PROVENANCE_INPUT_PATH}).`,
+		};
+	}
+	const bundleContent = readFileSync(bundlePath, "utf-8");
+	const parsedBundleResult = parseParityProvenanceBundle(bundleContent);
+	if (!parsedBundleResult.ok) {
+		return { ok: false, error: parsedBundleResult.error };
+	}
+	const bundle = parsedBundleResult.value;
+	const artifactDir = resolve(targetDir, PARITY_PROOF_PACK_ARTIFACTS_DIR);
+	mkdirSync(artifactDir, { recursive: true });
+	for (const artifact of bundle.artifacts) {
+		if (!isSafeProofArtifactPath(targetDir, artifact.path)) {
+			return {
+				ok: false,
+				error: `Parity provenance artifact path escapes repository root: ${artifact.path}`,
+			};
+		}
+		const sourcePath = resolve(targetDir, artifact.path);
+		if (!existsSync(sourcePath)) {
+			return {
+				ok: false,
+				error: `Parity provenance artifact missing from repository: ${artifact.path}`,
+			};
+		}
+		const sourceContent = readFileSync(sourcePath, "utf-8");
+		const computedDigest = hashContent(sourceContent);
+		if (computedDigest !== artifact.sha256) {
+			return {
+				ok: false,
+				error: `Parity provenance artifact digest mismatch for ${artifact.path}.`,
+			};
+		}
+		const expectedSignature = signContent(
+			`${artifact.path}:${artifact.sha256}:${artifact.sourceProvider}:${artifact.sourceRunId}:${artifact.sourceCommitSha}:${artifact.capturedAt}`,
+			signingKey,
+		);
+		if (expectedSignature !== artifact.signature) {
+			return {
+				ok: false,
+				error: `Parity provenance artifact signature mismatch for ${artifact.path}.`,
+			};
+		}
+		const destinationPath = resolve(
+			targetDir,
+			PARITY_PROOF_PACK_ARTIFACTS_DIR,
+			`${artifact.artifactId}.json`,
+		);
+		copyFileSync(sourcePath, destinationPath);
+	}
+	const inputPayload: CIParityProofPackInput = {
+		schemaVersion: "ci-parity-proof-input/v1",
+		generatedAt: bundle.generatedAt,
+		repo: bundle.repo ?? null,
+		behavioralParity: bundle.behavioralParity,
+		promotionGate: bundle.promotionGate,
+		downstream: bundle.downstream,
+	};
+	const inputPath = resolve(targetDir, PARITY_PROOF_PACK_INPUT_PATH);
+	mkdirSync(dirname(inputPath), { recursive: true });
+	writeFileSync(inputPath, JSON.stringify(inputPayload, null, 2));
+
+	const manifestBase: CIParityProvenanceManifest = {
+		schemaVersion: PARITY_PROVENANCE_MANIFEST_SCHEMA_VERSION,
+		generatedAt: new Date().toISOString(),
+		sourceBundlePath: PARITY_PROVENANCE_BUNDLE_PATH,
+		sourceBundleSha256: hashContent(bundleContent),
+		artifacts: bundle.artifacts,
+		integrity: {
+			signatureAlgorithm: PARITY_PROOF_PACK_SIGNATURE_ALGORITHM,
+			signingKeyId,
+			payloadSha256: "",
+		},
+	};
+	const payloadSha256 = hashContent(
+		canonicalizeParityProvenanceManifestForDigest(manifestBase),
+	);
+	const manifest: CIParityProvenanceManifest = {
+		...manifestBase,
+		integrity: {
+			...manifestBase.integrity,
+			payloadSha256,
+		},
+	};
+	const manifestContent = JSON.stringify(manifest, null, 2);
+	const manifestPath = resolve(targetDir, PARITY_PROVENANCE_MANIFEST_PATH);
+	const manifestSignaturePath = resolve(
+		targetDir,
+		PARITY_PROVENANCE_MANIFEST_SIGNATURE_PATH,
+	);
+	writeFileSync(manifestPath, manifestContent);
+	writeFileSync(
+		manifestSignaturePath,
+		`${signContent(manifestContent, signingKey)}\n`,
+	);
+	return { ok: true };
+}
+
+function collectProofPackArtifacts(
+	targetDir: string,
+	signingKey: string,
+):
+	| { ok: true; artifacts: CIParityProofPackArtifact[] }
+	| { ok: false; error: string } {
+	const artifactRoot = resolve(targetDir, PARITY_PROOF_PACK_ARTIFACTS_DIR);
+	if (!existsSync(artifactRoot)) {
+		return {
+			ok: false,
+			error: `Parity proof pack artifacts directory missing: ${PARITY_PROOF_PACK_ARTIFACTS_DIR}`,
+		};
+	}
+	const entries = readdirSync(artifactRoot, { withFileTypes: true })
+		.filter((entry) => entry.isFile())
+		.map((entry) => entry.name)
+		.sort((left, right) => left.localeCompare(right));
+	if (entries.length === 0) {
+		return {
+			ok: false,
+			error: `Parity proof pack artifacts directory is empty: ${PARITY_PROOF_PACK_ARTIFACTS_DIR}`,
+		};
+	}
+	const artifacts: CIParityProofPackArtifact[] = [];
+	const artifactIds = new Set<string>();
+	for (const entryName of entries) {
+		const relativePath = `${PARITY_PROOF_PACK_ARTIFACTS_DIR}/${entryName}`;
+		if (!isSafeProofArtifactPath(targetDir, relativePath)) {
+			return {
+				ok: false,
+				error: `Parity proof artifact path escapes repository root: ${relativePath}`,
+			};
+		}
+		const artifactContent = readFileSync(
+			resolve(targetDir, relativePath),
+			"utf-8",
+		);
+		const digest = hashContent(artifactContent);
+		const artifactIdCandidate = entryName
+			.replace(/\.[^.]+$/, "")
+			.replace(/[^A-Za-z0-9_-]+/g, "-")
+			.replace(/^-+|-+$/g, "")
+			.toLowerCase();
+		const artifactId =
+			artifactIdCandidate.length > 0
+				? artifactIdCandidate
+				: `artifact-${artifacts.length + 1}`;
+		if (artifactIds.has(artifactId)) {
+			return {
+				ok: false,
+				error: `Duplicate artifact id derived from filenames: ${artifactId}`,
+			};
+		}
+		artifactIds.add(artifactId);
+		artifacts.push({
+			artifactId,
+			path: relativePath,
+			sha256: digest,
+			signature: signContent(`${relativePath}:${digest}`, signingKey),
+		});
+	}
+	return { ok: true, artifacts };
+}
+
+function resolveProofPackRepoBinding(
+	targetDir: string,
+	policy: CIProviderPolicyConfig,
+	input: CIParityProofPackInput,
+):
+	| { ok: true; value: CIParityProofPackRepoBinding }
+	| { ok: false; error: string } {
+	const repoInput = input.repo ?? undefined;
+	const originUrl = readGitOriginUrl(targetDir);
+	if (!originUrl) {
+		return {
+			ok: false,
+			error:
+				"Git origin URL is required to bind parity proof pack repository identity.",
+		};
+	}
+	if (repoInput?.originUrl && repoInput.originUrl !== originUrl) {
+		return {
+			ok: false,
+			error: `Parity proof input repo.originUrl (${repoInput.originUrl}) does not match repository origin (${originUrl}).`,
+		};
+	}
+	const normalizedFullName = normalizeRepoFullName(originUrl);
+	if (!normalizedFullName) {
+		return {
+			ok: false,
+			error: `Unsupported origin URL for repository identity binding: ${originUrl}`,
+		};
+	}
+	if (repoInput?.fullName && repoInput.fullName !== normalizedFullName) {
+		return {
+			ok: false,
+			error: `Parity proof input repo.fullName (${repoInput.fullName}) does not match repository origin identity (${normalizedFullName}).`,
+		};
+	}
+
+	const headShaResult = repoInput?.headSha
+		? { ok: true as const, commitSha: repoInput.headSha }
+		: resolveGitRefToCommit(targetDir, "HEAD");
+	if (!headShaResult.ok || !isCommitSha(headShaResult.commitSha)) {
+		return {
+			ok: false,
+			error: headShaResult.ok
+				? "Parity proof input repo.headSha must be a 40-character lowercase commit SHA."
+				: headShaResult.error,
+		};
+	}
+	const trustedPolicyRefResult = resolveGitRefToCommit(
+		targetDir,
+		policy.trustedPolicyRef,
+	);
+	if (!trustedPolicyRefResult.ok) {
+		return { ok: false, error: trustedPolicyRefResult.error };
+	}
+	let baseSha = repoInput?.baseSha ?? trustedPolicyRefResult.commitSha;
+	if (!isCommitSha(baseSha)) {
 		return {
 			ok: false,
 			error: `Failed to parse parity provenance bundle JSON: ${sanitizeError(error)}`,
@@ -5592,6 +5830,191 @@ function classifyChecks(
 			reason: "Check identity can be migrated without renaming displayName.",
 		};
 	});
+}
+
+function escapeRegexLiteral(value: string): string {
+	return value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+}
+
+function readRequiredCheckNamesFromContract(targetDir: string): string[] {
+	const contractPath = resolve(targetDir, "harness.contract.json");
+	if (!existsSync(contractPath)) {
+		return [];
+	}
+	try {
+		const parsed = JSON.parse(readFileSync(contractPath, "utf-8")) as {
+			branchProtection?: { requiredChecks?: unknown } | undefined;
+			reviewPolicy?: { requiredChecks?: unknown } | undefined;
+		};
+		const branchChecks = Array.isArray(parsed.branchProtection?.requiredChecks)
+			? parsed.branchProtection?.requiredChecks
+			: [];
+		const reviewChecks = Array.isArray(parsed.reviewPolicy?.requiredChecks)
+			? parsed.reviewPolicy?.requiredChecks
+			: [];
+		return [...branchChecks, ...reviewChecks]
+			.filter((value): value is string => typeof value === "string")
+			.map((value) => value.trim())
+			.filter((value) => value.length > 0);
+	} catch {
+		return [];
+	}
+}
+
+function readRequiredCheckNamesFromSourceProviderConfig(
+	targetDir: string,
+	sourceProvider: CIProvider,
+): string[] {
+	if (sourceProvider !== "github-actions") {
+		return [];
+	}
+	const sourceAdapter = createCIProviderAdapter(sourceProvider);
+	const sourceConfigPaths = sourceAdapter.discoverConfigPaths(targetDir);
+	const checks = new Set<string>();
+	for (const configPath of sourceConfigPaths) {
+		const absolutePath = resolve(targetDir, configPath);
+		if (!existsSync(absolutePath)) {
+			continue;
+		}
+		try {
+			const content = readFileSync(absolutePath, "utf-8");
+			for (const line of content.split(/\r?\n/)) {
+				const nameMatch = line.match(/^ {4}name:\s*(.+?)\s*$/);
+				if (!nameMatch?.[1]) {
+					continue;
+				}
+				const displayName = nameMatch[1].trim().replace(/^['"]|['"]$/g, "");
+				if (displayName.length > 0) {
+					checks.add(displayName);
+				}
+			}
+		} catch {
+			// Best-effort legacy import: ignore unreadable workflow files.
+		}
+	}
+	return [...checks];
+}
+
+function buildImportedRequiredChecks(
+	displayNames: string[],
+	sourceProvider: CIProvider,
+): RequiredCheckIdentity[] {
+	return displayNames.map((displayName, index) => ({
+		policyId: `imported-required-check-${index + 1}`,
+		displayName,
+		sourceAppSlug: sourceProvider,
+		sourceAppId: sourceProvider,
+		externalIdPattern: `^${escapeRegexLiteral(displayName)}$`,
+		requiredOnEvents: ["pull_request", "merge_group"],
+		freshnessWindowDays: 7,
+		class: "required",
+	}));
+}
+
+function writeRequiredChecksManifest(
+	targetDir: string,
+	provider: CIProvider,
+	requiredChecks: RequiredCheckIdentity[],
+): { ok: true } | { ok: false; error: string } {
+	try {
+		const manifestPath = resolve(
+			targetDir,
+			HARNESS_DIR,
+			"ci-required-checks.json",
+		);
+		mkdirSync(dirname(manifestPath), { recursive: true });
+		writeFileSync(
+			manifestPath,
+			JSON.stringify(
+				{
+					version: 1,
+					activeProvider: provider,
+					requiredChecks,
+				},
+				null,
+				2,
+			),
+		);
+		return { ok: true };
+	} catch (error) {
+		return {
+			ok: false,
+			error: `Failed to write required checks manifest: ${sanitizeError(error)}`,
+		};
+	}
+}
+
+function readOrImportRequiredChecks(
+	targetDir: string,
+	sourceProvider: CIProvider,
+	allowPersistManifest: boolean,
+):
+	| {
+			ok: true;
+			value: RequiredCheckIdentity[];
+			imported: boolean;
+			persisted: boolean;
+	  }
+	| {
+			ok: false;
+			error: string;
+	  } {
+	const requiredChecksResult = readAllRequiredChecks(targetDir);
+	if (requiredChecksResult.ok) {
+		return {
+			ok: true,
+			value: requiredChecksResult.value,
+			imported: false,
+			persisted: false,
+		};
+	}
+	if (
+		requiredChecksResult.error !==
+		"Required checks manifest missing: .harness/ci-required-checks.json"
+	) {
+		return requiredChecksResult;
+	}
+
+	const contractCheckNames = readRequiredCheckNamesFromContract(targetDir);
+	const workflowCheckNames = readRequiredCheckNamesFromSourceProviderConfig(
+		targetDir,
+		sourceProvider,
+	);
+	const importedCheckNames = [
+		...new Set([...contractCheckNames, ...workflowCheckNames]),
+	]
+		.map((name) => name.trim())
+		.filter((name) => name.length > 0)
+		.sort((left, right) => left.localeCompare(right));
+
+	if (importedCheckNames.length === 0) {
+		return {
+			ok: false,
+			error:
+				"Required checks manifest missing and no legacy required checks were discovered from harness.contract.json or source workflow metadata.",
+		};
+	}
+
+	const importedChecks = buildImportedRequiredChecks(
+		importedCheckNames,
+		sourceProvider,
+	);
+	if (allowPersistManifest) {
+		const writeResult = writeRequiredChecksManifest(
+			targetDir,
+			sourceProvider,
+			importedChecks,
+		);
+		if (!writeResult.ok) {
+			return writeResult;
+		}
+	}
+	return {
+		ok: true,
+		value: importedChecks,
+		imported: true,
+		persisted: allowPersistManifest,
+	};
 }
 
 function escapeRegexLiteral(value: string): string {
