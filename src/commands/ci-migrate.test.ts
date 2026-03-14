@@ -241,7 +241,7 @@ function ensureProofPackFixtureHistory(targetDir: string): {
 		);
 	}
 	ensureCommand(
-		["branch", "-f", "main", "HEAD"],
+		["symbolic-ref", "HEAD", "refs/heads/main"],
 		"Unable to align fixture main branch",
 	);
 	return {
