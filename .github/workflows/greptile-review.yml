@@ -92,6 +92,7 @@ jobs:
         id: analyze
         env:
           PR_NUMBER: ${{ steps.context.outputs.pr_number }}
+          HEAD_SHA: ${{ steps.context.outputs.head_sha }}
           REPO_OWNER: ${{ steps.context.outputs.repo_owner }}
           REPO_NAME: ${{ steps.context.outputs.repo_name }}
           MIN_MERGE_SCORE: '4'
@@ -104,6 +105,7 @@ jobs:
             const owner = process.env.REPO_OWNER;
             const repo = process.env.REPO_NAME;
             const eventName = process.env.EVENT_NAME;
+            const headSha = process.env.HEAD_SHA;
             const action = context.payload.action || '';
 
             // Freshness is keyed to PR head SHA, not commit timestamps.
@@ -126,6 +128,17 @@ jobs:
               issue_number: prNumber
             });
 
+            const headCommit = await github.rest.repos.getCommit({
+              owner,
+              repo,
+              ref: headSha
+            });
+            const headCommittedAt = new Date(
+              headCommit.data.commit.committer?.date ||
+              headCommit.data.commit.author?.date ||
+              0
+            );
+
             const greptileLogins = new Set([
               'greptile[bot]',
               'greptileai[bot]',
@@ -136,7 +149,18 @@ jobs:
             ]);
 
             const greptileComments = comments.data
-              .filter(c => c.user != null && greptileLogins.has(c.user.login))
+              .filter(c => {
+                if (!(c.user != null && greptileLogins.has(c.user.login))) {
+                  return false;
+                }
+
+                const body = c.body || '';
+                const createdAt = new Date(c.created_at);
+                const referencesHeadSha = body.includes(headSha);
+                const isAfterHeadCommit = createdAt >= headCommittedAt;
+
+                return referencesHeadSha || isAfterHeadCommit;
+              })
               .sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
 
             if (greptileComments.length === 0) {
