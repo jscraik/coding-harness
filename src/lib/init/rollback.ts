@@ -20,7 +20,7 @@ import {
 	realpathSync,
 	rmSync,
 } from "node:fs";
-import { dirname, resolve, sep } from "node:path";
+import { dirname, join, relative, resolve, sep } from "node:path";
 import { sanitizeError } from "../input/sanitize.js";
 import {
 	BACKUPS_DIR,
@@ -65,14 +65,53 @@ type PathResult =
  * Returns resolved absolute path or error.
  *
  * Guards applied (in order):
- * 1. Lexical containment — resolved path must start with base.
- * 2. Symlink-walk — every existing segment of the resolved path is checked
- *    with lstatSync; a symlinked directory anywhere in the chain is rejected.
- *    This prevents ".github -> /etc" style escapes that pass the prefix check.
+ * 1. Input validation — base and relativePath must be non-empty strings.
+ * 2. Lexical containment — resolved path must start with base.
+ * 3. Symlink-walk — every existing segment is checked with lstatSync;
+ *    a symlinked directory anywhere in the chain is rejected.
+ *    Prevents ".github -> /etc" style escapes that pass the prefix check.
+ * 4. Realpath ancestor check — the nearest existing ancestor is canonicalised
+ *    with realpathSync and verified to reside within the real base dir.
+ *    This catches races and any edge case the walk misses.
  */
 export function sanitizePath(base: string, relativePath: string): PathResult {
+	if (!base || typeof base !== "string") {
+		return {
+			ok: false,
+			error: {
+				code: "INVALID_PATH",
+				message: "Base directory must be a non-empty string",
+			},
+		};
+	}
+
+	if (!relativePath || typeof relativePath !== "string") {
+		return {
+			ok: false,
+			error: {
+				code: "INVALID_PATH",
+				message: "Relative path must be a non-empty string",
+			},
+		};
+	}
+
 	const resolved = resolve(base, relativePath);
 	const normalizedBase = resolve(base);
+
+	// Resolve the real base dir (must exist).
+	let baseRealPath: string;
+	try {
+		baseRealPath = realpathSync(normalizedBase);
+	} catch {
+		return {
+			ok: false,
+			error: {
+				code: "INVALID_PATH",
+				message: `Base directory must exist and be resolvable: ${base}`,
+			},
+		};
+	}
+
 	const baseWithSep = normalizedBase.endsWith(sep)
 		? normalizedBase
 		: normalizedBase + sep;
@@ -91,11 +130,15 @@ export function sanitizePath(base: string, relativePath: string): PathResult {
 	// SECURITY: Walk each existing path segment and reject any symlink.
 	// resolve() is purely lexical — it doesn't follow symlinks, so a
 	// directory symlink (.github -> /etc) passes the prefix check above
-	// but would redirect writes outside the workspace.
-	const segments = resolved.slice(normalizedBase.length).split(sep).filter(Boolean);
+	// but would redirect reads/writes outside the workspace.
+	const relToBase = relative(normalizedBase, resolved);
+	const segments = relToBase.split(sep).filter((s) => s.length > 0);
 	let walkPath = normalizedBase;
 	for (const segment of segments) {
-		walkPath = `${walkPath}${sep}${segment}`;
+		walkPath = join(walkPath, segment);
+		if (!existsSync(walkPath)) {
+			break;
+		}
 		try {
 			if (lstatSync(walkPath).isSymbolicLink()) {
 				return {
@@ -107,10 +150,53 @@ export function sanitizePath(base: string, relativePath: string): PathResult {
 					},
 				};
 			}
-		} catch {
-			// segment doesn't exist yet — no symlink possible, stop walking
-			break;
+		} catch (e) {
+			return {
+				ok: false,
+				error: {
+					code: "INVALID_PATH",
+					message: `Failed to validate path safety: ${sanitizeError(e)}`,
+					path: relativePath,
+				},
+			};
 		}
+	}
+
+	// SECURITY: Realpath check on the nearest existing ancestor.
+	// This is a second line of defence: even if the walk missed something,
+	// canonicalising the ancestor and verifying it stays within the real
+	// base dir catches cases where a symlink was created between the walk
+	// and the eventual file operation (TOCTOU hardening).
+	let nearestExisting = resolved;
+	while (!existsSync(nearestExisting)) {
+		const parent = dirname(nearestExisting);
+		if (parent === nearestExisting) break; // filesystem root
+		nearestExisting = parent;
+	}
+	try {
+		const realNearest = realpathSync(nearestExisting);
+		const baseRealWithSep = baseRealPath.endsWith(sep)
+			? baseRealPath
+			: `${baseRealPath}${sep}`;
+		if (realNearest !== baseRealPath && !realNearest.startsWith(baseRealWithSep)) {
+			return {
+				ok: false,
+				error: {
+					code: "PATH_TRAVERSAL",
+					message: `Path traversal blocked: ${relativePath}`,
+					path: relativePath,
+				},
+			};
+		}
+	} catch (e) {
+		return {
+			ok: false,
+			error: {
+				code: "INVALID_PATH",
+				message: `Failed to resolve path safety: ${sanitizeError(e)}`,
+				path: relativePath,
+			},
+		};
 	}
 
 	return { ok: true, value: resolved };
