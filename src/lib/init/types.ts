@@ -34,7 +34,10 @@ export interface InitOptions {
 	update?: boolean; // Apply template updates
 	interactive?: boolean; // Interactive prompts for each change
 	migrate?: boolean; // Migrate contract schema to latest version
+	ciProvider?: string; // CI provider template set
 }
+
+export type CIProvider = "github-actions" | "circleci";
 
 // === Rollback Types ===
 
@@ -46,6 +49,7 @@ export type ManifestEntry =
 /** Minimal manifest - no YAGNI metadata */
 export interface RestoreManifest {
 	harnessVersion?: string; // CLI version at install/update time
+	ciProvider?: CIProvider; // CI provider used during tracked install/update
 	files: ManifestEntry[];
 }
 
@@ -245,6 +249,7 @@ export type InitResult =
 
 export interface TemplateRenderContext {
 	targetDir: string;
+	ciProvider?: CIProvider;
 	packageScripts: string[];
 	issueTrackingUrl?: string;
 }
