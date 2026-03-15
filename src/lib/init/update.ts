@@ -11,8 +11,8 @@
 
 import { existsSync, lstatSync, realpathSync } from "node:fs";
 import { dirname, resolve, sep } from "node:path";
-import { sanitizeError } from "../input/sanitize.js";
 import semver from "semver";
+import { sanitizeError } from "../input/sanitize.js";
 import { getVersion } from "../version.js";
 import { atomicWrite } from "./migration.js";
 import { loadManifest, sanitizePath } from "./rollback.js";

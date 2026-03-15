@@ -3,7 +3,6 @@ import { join } from "node:path";
 import { afterEach, describe, expect, it } from "vitest";
 import { clearContractCache, loadContract } from "./loader.js";
 
-
 describe("loadContract", () => {
 	const createdFiles: string[] = [];
 
@@ -14,7 +13,6 @@ describe("loadContract", () => {
 		createdFiles.length = 0;
 		clearContractCache();
 	});
-
 
 	it("loads a valid contract", () => {
 		const dir = join(process.cwd(), "artifacts");

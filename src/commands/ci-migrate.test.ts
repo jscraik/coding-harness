@@ -1889,7 +1889,10 @@ function writeParityProofHarvestManifest(targetDir: string): void {
 			2,
 		),
 	);
-	const scheduleResponsePath = join(controlPlaneDir, "parity-harvest.schedule.json");
+	const scheduleResponsePath = join(
+		controlPlaneDir,
+		"parity-harvest.schedule.json",
+	);
 	const discoveryResponsePath = join(
 		controlPlaneDir,
 		"parity-harvest.discovery.json",
@@ -1902,7 +1905,9 @@ function writeParityProofHarvestManifest(targetDir: string): void {
 		discoveryResponsePath,
 		JSON.stringify(
 			{
-				artifactUrl: pathToFileURL(join(targetDir, parityRawSourcePath)).toString(),
+				artifactUrl: pathToFileURL(
+					join(targetDir, parityRawSourcePath),
+				).toString(),
 				sourceRunId: "run-harvest-parity-001",
 				sourceCommitSha: history.headSha,
 				capturedAt: generatedAt,
@@ -2625,9 +2630,7 @@ describe("runCIMigrateCLI", () => {
 		// The commit may succeed or fail for unrelated reasons (missing evidence
 		// in required mode), but the key invariant is that the orchestrator was
 		// NOT executed — proven by the absence of the evidence file it would write.
-		expect(
-			existsSync(join(tempDir, MERGE_QUEUE_EVIDENCE_PATH)),
-		).toBe(false);
+		expect(existsSync(join(tempDir, MERGE_QUEUE_EVIDENCE_PATH))).toBe(false);
 	});
 
 	it("rejects merge-queue evidence when binding does not match required-mode commit identity", () => {
@@ -4974,7 +4977,10 @@ describe("runCIMigrateCLI", () => {
 				scannedOpenPrs: 2,
 				failingPrs: [],
 			});
-		writeSignedMergeQueueEvidence(tempDir, "cutover-auto-generated-from-harvest");
+		writeSignedMergeQueueEvidence(
+			tempDir,
+			"cutover-auto-generated-from-harvest",
+		);
 
 		const exitCode = runCIMigrateCLI(tempDir, {
 			provider: "circleci",

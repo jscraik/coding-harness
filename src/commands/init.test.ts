@@ -1757,15 +1757,12 @@ describe("--update flag", () => {
 			// during manifest re-validation (PATH_TRAVERSAL) or by the explicit
 			// symlink guard in executeUpdate (WRITE_ERROR / "escaped workspace").
 			// Either way the update must be rejected.
-			expect(["PATH_TRAVERSAL", "WRITE_ERROR"]).toContain(
-				result.error.code,
-			);
+			expect(["PATH_TRAVERSAL", "WRITE_ERROR"]).toContain(result.error.code);
 		}
 
 		rmSync(outsideDir, { recursive: true, force: true });
 	});
 });
-
 
 describe("--interactive flag", () => {
 	let tempDir: string;

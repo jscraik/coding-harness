@@ -99,7 +99,6 @@ function safeReadFile(path: string): string | undefined {
 	}
 }
 
-
 /**
  * Detect license from package.json content
  */
