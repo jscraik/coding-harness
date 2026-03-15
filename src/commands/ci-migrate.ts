@@ -3,14 +3,17 @@ import { createHash, createHmac } from "node:crypto";
 import {
 	copyFileSync,
 	existsSync,
+	lstatSync,
 	mkdirSync,
 	readFileSync,
 	readdirSync,
+	realpathSync,
 	rmSync,
 	writeFileSync,
 } from "node:fs";
 import { dirname, join, resolve, sep } from "node:path";
 import { cwd, env } from "node:process";
+import { fileURLToPath } from "node:url";
 import {
 	type RequiredCheckIdentity,
 	createCIProviderAdapter,
@@ -94,10 +97,19 @@ const MERGE_QUEUE_WINDOW_PATH =
 	".harness/control-plane/merge-queue-cutover-window.json";
 const DEFAULT_MERGE_QUEUE_EVIDENCE_PATH =
 	".harness/control-plane/merge-queue-cutover-evidence.json";
-const DEFAULT_MERGE_QUEUE_ORCHESTRATOR_PATH =
-	".harness/control-plane/merge-queue-cutover-orchestrator";
+
 const BREAK_GLASS_POLICY_PATH =
 	".harness/control-plane/ci-migrate-break-glass-policy.json";
+const DEFAULT_BREAK_GLASS_ROSTER_PATH =
+	".harness/control-plane/ci-migrate-break-glass-roster.json";
+const BREAK_GLASS_OPS_WORKFLOW_PATH =
+	".harness/control-plane/ci-migrate-break-glass-ops-workflow.json";
+const DEFAULT_MERGE_QUEUE_PROVIDER_API_PATH =
+	".harness/control-plane/merge-queue-provider-api.json";
+const PARITY_PROOF_HARVEST_MANIFEST_PATH =
+	".harness/ci-parity-proof-harvest-manifest.json";
+const PARITY_PROOF_SOURCE_ARTIFACTS_PREFIX =
+	".harness/ci-parity-proof-source-artifacts/";
 const DEFAULT_TRANSITION_STATUS_ARTIFACT_PATH =
 	".harness/ci-provider-transition-status.json";
 const VALID_PROVIDERS: CIProvider[] = ["github-actions", "circleci"];
@@ -127,8 +139,11 @@ export interface CIMigrateOptions {
 	snapshot?: string | undefined;
 	action?: string | undefined;
 	breakGlassApprovalPath?: string | undefined;
+	breakGlassRosterPath?: string | undefined;
+	syncBreakGlassPolicy?: boolean | undefined;
 	mergeQueueEvidencePath?: string | undefined;
 	mergeQueueOrchestratorPath?: string | undefined;
+	mergeQueueProviderAPIPath?: string | undefined;
 	autoGenerateProofPack?: boolean | undefined;
 }
 
@@ -435,6 +450,123 @@ interface BreakGlassGovernancePolicy {
 		signingKeyId: string;
 		payloadSha256: string;
 	};
+}
+
+interface BreakGlassRoster {
+	schemaVersion: "ci-migrate-break-glass-roster/v1";
+	generatedAt?: string | undefined;
+	approvers: string[];
+	maxApprovalTtlHours?: number | undefined;
+	requireDualApprovalForRollbackWeakening?: boolean | undefined;
+	rotation?:
+		| {
+				cadenceHours: number;
+				lastRotatedAt: string;
+				nextRotationDueAt?: string | undefined;
+				runbookUrl?: string | undefined;
+				owner?: string | undefined;
+		  }
+		| undefined;
+}
+
+interface BreakGlassOpsWorkflowRecord {
+	schemaVersion: "ci-migrate-break-glass-ops-workflow/v1";
+	generatedAt: string;
+	rosterPath: string;
+	policyPath: string;
+	lifecycle: {
+		addedApprovers: string[];
+		removedApprovers: string[];
+	};
+	rotation: {
+		cadenceHours?: number | undefined;
+		lastRotatedAt?: string | undefined;
+		nextRotationDueAt?: string | undefined;
+		status: "not-configured" | "healthy" | "due";
+		runbookUrl?: string | undefined;
+		owner?: string | undefined;
+	};
+	dualApproval: {
+		requiredForRollbackWeakening: boolean;
+		minimumApprovers: number;
+	};
+}
+
+interface MergeQueueProviderAPIAuthConfig {
+	mode: "none" | "bearer-env";
+	tokenEnv?: string | undefined;
+}
+
+interface MergeQueueProviderAPIRequestConfig {
+	url: string;
+	method?: "GET" | "POST" | "PUT" | "PATCH" | undefined;
+	headers?: Record<string, string> | undefined;
+	auth?: MergeQueueProviderAPIAuthConfig | undefined;
+	accept?: string | undefined;
+	body?: Record<string, unknown> | undefined;
+	timestampPath?: string | undefined;
+	queueDepthPath?: string | undefined;
+	candidateCountPath?: string | undefined;
+}
+
+interface MergeQueueProviderAPIConfig {
+	schemaVersion: "ci-migrate-merge-queue-provider-api/v1";
+	provider: "github" | "circleci" | "custom";
+	paused: MergeQueueProviderAPIRequestConfig;
+	drained?: MergeQueueProviderAPIRequestConfig | undefined;
+	revalidated?: MergeQueueProviderAPIRequestConfig | undefined;
+}
+
+interface HarvestSourceDiscoveryConfig {
+	url: string;
+	method?: "GET" | "POST" | undefined;
+	headers?: Record<string, string> | undefined;
+	auth?: MergeQueueProviderAPIAuthConfig | undefined;
+	accept?: string | undefined;
+	body?: Record<string, unknown> | undefined;
+	artifactUrlPath: string;
+	sourceRunIdPath?: string | undefined;
+	sourceCommitShaPath?: string | undefined;
+	capturedAtPath?: string | undefined;
+	schedule?:
+		| {
+				url: string;
+				method?: "GET" | "POST" | undefined;
+				headers?: Record<string, string> | undefined;
+				auth?: MergeQueueProviderAPIAuthConfig | undefined;
+				accept?: string | undefined;
+				body?: Record<string, unknown> | undefined;
+		  }
+		| undefined;
+}
+
+interface CIParityProofHarvestArtifact {
+	artifactId: string;
+	destinationPath: string;
+	sourceProvider: CIProvider;
+	sourceRunId?: string | undefined;
+	sourceWorkflowRef: string;
+	sourceCommitSha?: string | undefined;
+	capturedAt?: string | undefined;
+	scenario?: RequiredParityScenario | undefined;
+	source: {
+		path?: string | undefined;
+		url?: string | undefined;
+		auth?: "none" | "bearer-env" | undefined;
+		tokenEnv?: string | undefined;
+		accept?: string | undefined;
+		discovery?: HarvestSourceDiscoveryConfig | undefined;
+	};
+}
+
+interface CIParityProofHarvestManifest {
+	schemaVersion: "ci-parity-proof-harvest-manifest/v1";
+	generatedAt?: string | undefined;
+	repo?: CIParityProofPackInput["repo"] | undefined;
+	behavioralParity: CIParityProofPackInput["behavioralParity"];
+	promotionGate: CIParityProofPackInput["promotionGate"];
+	downstream: CIParityProofPackInput["downstream"];
+	artifacts: CIParityProofHarvestArtifact[];
 }
 
 interface ExternalControlPlaneStateSnapshot {
@@ -1032,6 +1164,366 @@ function canonicalizeBreakGlassGovernancePolicyForDigest(
 			payloadSha256: "",
 		},
 	});
+}
+
+function normalizeUniqueApprovers(
+	approvers: string[],
+): { ok: true; value: string[] } | { ok: false; error: string } {
+	const normalized = approvers
+		.map((approver) => approver.trim())
+		.filter((approver) => approver.length > 0);
+	if (normalized.length === 0) {
+		return {
+			ok: false,
+			error: "Break-glass roster must include at least one non-empty approver.",
+		};
+	}
+	if (
+		new Set(normalized.map((approver) => approver.toLowerCase())).size !==
+		normalized.length
+	) {
+		return {
+			ok: false,
+			error: "Break-glass approvers must be unique (case-insensitive).",
+		};
+	}
+	return { ok: true, value: normalized };
+}
+
+function resolveBreakGlassRosterPath(
+	targetDir: string,
+	overridePath: string | undefined,
+): string {
+	const configuredPath =
+		typeof overridePath === "string" && overridePath.trim().length > 0
+			? overridePath.trim()
+			: DEFAULT_BREAK_GLASS_ROSTER_PATH;
+	return resolve(targetDir, configuredPath);
+}
+
+function parseBreakGlassRoster(
+	content: string,
+): { ok: true; value: BreakGlassRoster } | { ok: false; error: string } {
+	try {
+		const parsed = JSON.parse(content) as unknown;
+		if (!parsed || typeof parsed !== "object") {
+			return {
+				ok: false,
+				error: "Break-glass roster must be a JSON object.",
+			};
+		}
+		const record = parsed as Record<string, unknown>;
+		if (record.schemaVersion !== "ci-migrate-break-glass-roster/v1") {
+			return {
+				ok: false,
+				error:
+					"Break-glass roster schemaVersion must be ci-migrate-break-glass-roster/v1.",
+			};
+		}
+		if (!Array.isArray(record.approvers)) {
+			return {
+				ok: false,
+				error: "Break-glass roster approvers must be an array.",
+			};
+		}
+		const approversResult = normalizeUniqueApprovers(
+			record.approvers.filter(
+				(entry): entry is string => typeof entry === "string",
+			),
+		);
+		if (!approversResult.ok) {
+			return approversResult;
+		}
+		if (
+			record.generatedAt !== undefined &&
+			(typeof record.generatedAt !== "string" ||
+				!Number.isFinite(Date.parse(record.generatedAt)))
+		) {
+			return {
+				ok: false,
+				error:
+					"Break-glass roster generatedAt must be a valid ISO timestamp when provided.",
+			};
+		}
+		if (
+			record.maxApprovalTtlHours !== undefined &&
+			(typeof record.maxApprovalTtlHours !== "number" ||
+				!Number.isInteger(record.maxApprovalTtlHours) ||
+				record.maxApprovalTtlHours < 1 ||
+				record.maxApprovalTtlHours > 168)
+		) {
+			return {
+				ok: false,
+				error:
+					"Break-glass roster maxApprovalTtlHours must be an integer between 1 and 168 when provided.",
+			};
+		}
+		if (
+			record.requireDualApprovalForRollbackWeakening !== undefined &&
+			typeof record.requireDualApprovalForRollbackWeakening !== "boolean"
+		) {
+			return {
+				ok: false,
+				error:
+					"Break-glass roster requireDualApprovalForRollbackWeakening must be a boolean when provided.",
+			};
+		}
+		let rotation: BreakGlassRoster["rotation"] | undefined = undefined;
+		if (record.rotation !== undefined) {
+			if (!record.rotation || typeof record.rotation !== "object") {
+				return {
+					ok: false,
+					error: "Break-glass roster rotation must be an object when provided.",
+				};
+			}
+			const rotationRecord = record.rotation as Record<string, unknown>;
+			if (
+				typeof rotationRecord.cadenceHours !== "number" ||
+				!Number.isInteger(rotationRecord.cadenceHours) ||
+				rotationRecord.cadenceHours < 1 ||
+				rotationRecord.cadenceHours > 24 * 90
+			) {
+				return {
+					ok: false,
+					error:
+						"Break-glass roster rotation.cadenceHours must be an integer between 1 and 2160.",
+				};
+			}
+			if (
+				typeof rotationRecord.lastRotatedAt !== "string" ||
+				!Number.isFinite(Date.parse(rotationRecord.lastRotatedAt))
+			) {
+				return {
+					ok: false,
+					error:
+						"Break-glass roster rotation.lastRotatedAt must be a valid ISO timestamp.",
+				};
+			}
+			if (
+				rotationRecord.nextRotationDueAt !== undefined &&
+				(typeof rotationRecord.nextRotationDueAt !== "string" ||
+					!Number.isFinite(Date.parse(rotationRecord.nextRotationDueAt)))
+			) {
+				return {
+					ok: false,
+					error:
+						"Break-glass roster rotation.nextRotationDueAt must be a valid ISO timestamp when provided.",
+				};
+			}
+			if (
+				rotationRecord.runbookUrl !== undefined &&
+				(typeof rotationRecord.runbookUrl !== "string" ||
+					rotationRecord.runbookUrl.trim().length === 0)
+			) {
+				return {
+					ok: false,
+					error:
+						"Break-glass roster rotation.runbookUrl must be a non-empty string when provided.",
+				};
+			}
+			if (
+				rotationRecord.owner !== undefined &&
+				(typeof rotationRecord.owner !== "string" ||
+					rotationRecord.owner.trim().length === 0)
+			) {
+				return {
+					ok: false,
+					error:
+						"Break-glass roster rotation.owner must be a non-empty string when provided.",
+				};
+			}
+			rotation = {
+				cadenceHours: rotationRecord.cadenceHours,
+				lastRotatedAt: rotationRecord.lastRotatedAt,
+				nextRotationDueAt:
+					typeof rotationRecord.nextRotationDueAt === "string"
+						? rotationRecord.nextRotationDueAt
+						: undefined,
+				runbookUrl:
+					typeof rotationRecord.runbookUrl === "string"
+						? rotationRecord.runbookUrl
+						: undefined,
+				owner:
+					typeof rotationRecord.owner === "string"
+						? rotationRecord.owner
+						: undefined,
+			};
+		}
+		return {
+			ok: true,
+			value: {
+				schemaVersion: "ci-migrate-break-glass-roster/v1",
+				generatedAt:
+					typeof record.generatedAt === "string"
+						? record.generatedAt
+						: undefined,
+				approvers: approversResult.value,
+				maxApprovalTtlHours:
+					typeof record.maxApprovalTtlHours === "number"
+						? record.maxApprovalTtlHours
+						: undefined,
+				requireDualApprovalForRollbackWeakening:
+					typeof record.requireDualApprovalForRollbackWeakening === "boolean"
+						? record.requireDualApprovalForRollbackWeakening
+						: undefined,
+				rotation,
+			},
+		};
+	} catch (error) {
+		return {
+			ok: false,
+			error: `Failed to parse break-glass roster: ${sanitizeError(error)}`,
+		};
+	}
+}
+
+function writeBreakGlassGovernancePolicyFromRoster(
+	targetDir: string,
+	rosterPath: string,
+	signingKey: string,
+	signingKeyId: string,
+):
+	| { ok: true; policy: BreakGlassGovernancePolicy }
+	| { ok: false; error: string } {
+	if (!existsSync(rosterPath)) {
+		return {
+			ok: false,
+			error: `Break-glass roster file not found: ${rosterPath}`,
+		};
+	}
+	const rosterResult = parseBreakGlassRoster(readFileSync(rosterPath, "utf-8"));
+	if (!rosterResult.ok) {
+		return { ok: false, error: rosterResult.error };
+	}
+	const existingPolicyResult = readBreakGlassGovernancePolicy(targetDir);
+	const existingApprovers = existingPolicyResult.ok
+		? existingPolicyResult.value.approverAllowlist
+		: [];
+	const policy: BreakGlassGovernancePolicy = {
+		schemaVersion: "ci-migrate-break-glass-policy/v1",
+		approverAllowlist: rosterResult.value.approvers,
+		maxApprovalTtlHours: rosterResult.value.maxApprovalTtlHours ?? 24,
+		requireDualApprovalForRollbackWeakening:
+			rosterResult.value.requireDualApprovalForRollbackWeakening ?? true,
+		integrity: {
+			signatureAlgorithm: SNAPSHOT_SIGNATURE_ALGORITHM,
+			signingKeyId,
+			payloadSha256: "",
+		},
+	};
+	const policyPayloadSha256 = hashContent(
+		canonicalizeBreakGlassGovernancePolicyForDigest(policy),
+	);
+	const signedPolicy: BreakGlassGovernancePolicy = {
+		...policy,
+		integrity: {
+			...policy.integrity,
+			payloadSha256: policyPayloadSha256,
+		},
+	};
+	const policyContent = JSON.stringify(signedPolicy, null, 2);
+	const policyPath = resolve(targetDir, BREAK_GLASS_POLICY_PATH);
+	mkdirSync(dirname(policyPath), { recursive: true });
+	writeFileSync(policyPath, policyContent);
+	writeFileSync(
+		`${policyPath}.sig`,
+		`${signContent(policyContent, signingKey)}\n`,
+	);
+	const addedApprovers = signedPolicy.approverAllowlist.filter(
+		(approver) =>
+			!existingApprovers.some(
+				(existingApprover) =>
+					existingApprover.toLowerCase() === approver.toLowerCase(),
+			),
+	);
+	const removedApprovers = existingApprovers.filter(
+		(existingApprover) =>
+			!signedPolicy.approverAllowlist.some(
+				(approver) => approver.toLowerCase() === existingApprover.toLowerCase(),
+			),
+	);
+	let rotationStatus: BreakGlassOpsWorkflowRecord["rotation"]["status"] =
+		"not-configured";
+	let nextRotationDueAt: string | undefined;
+	if (rosterResult.value.rotation) {
+		const lastRotatedAtMs = Date.parse(
+			rosterResult.value.rotation.lastRotatedAt,
+		);
+		const configuredNextDueMs =
+			typeof rosterResult.value.rotation.nextRotationDueAt === "string"
+				? Date.parse(rosterResult.value.rotation.nextRotationDueAt)
+				: Number.NaN;
+		const computedNextDueMs = Number.isFinite(configuredNextDueMs)
+			? configuredNextDueMs
+			: lastRotatedAtMs +
+				rosterResult.value.rotation.cadenceHours * 60 * 60 * 1000;
+		nextRotationDueAt = new Date(computedNextDueMs).toISOString();
+		rotationStatus = Date.now() <= computedNextDueMs ? "healthy" : "due";
+	}
+	const opsWorkflowRecord: BreakGlassOpsWorkflowRecord = {
+		schemaVersion: "ci-migrate-break-glass-ops-workflow/v1",
+		generatedAt: new Date().toISOString(),
+		rosterPath: rosterPath.startsWith(`${resolve(targetDir)}${sep}`)
+			? rosterPath.slice(resolve(targetDir).length + 1).replaceAll("\\", "/")
+			: rosterPath,
+		policyPath: BREAK_GLASS_POLICY_PATH,
+		lifecycle: {
+			addedApprovers,
+			removedApprovers,
+		},
+		rotation: {
+			cadenceHours: rosterResult.value.rotation?.cadenceHours,
+			lastRotatedAt: rosterResult.value.rotation?.lastRotatedAt,
+			nextRotationDueAt,
+			status: rotationStatus,
+			runbookUrl: rosterResult.value.rotation?.runbookUrl,
+			owner: rosterResult.value.rotation?.owner,
+		},
+		dualApproval: {
+			requiredForRollbackWeakening:
+				signedPolicy.requireDualApprovalForRollbackWeakening,
+			minimumApprovers: signedPolicy.requireDualApprovalForRollbackWeakening
+				? 2
+				: 1,
+		},
+	};
+	const opsWorkflowPath = resolve(targetDir, BREAK_GLASS_OPS_WORKFLOW_PATH);
+	writeFileSync(opsWorkflowPath, JSON.stringify(opsWorkflowRecord, null, 2));
+	return { ok: true, policy: signedPolicy };
+}
+
+function maybeSyncBreakGlassGovernance(
+	targetDir: string,
+	rosterPathOverride: string | undefined,
+	forceSync: boolean,
+): { ok: true; synced: boolean } | { ok: false; error: string } {
+	const resolvedRosterPath = resolveBreakGlassRosterPath(
+		targetDir,
+		rosterPathOverride,
+	);
+	if (!existsSync(resolvedRosterPath)) {
+		if (forceSync) {
+			return {
+				ok: false,
+				error: `Break-glass roster file not found: ${resolvedRosterPath}`,
+			};
+		}
+		return { ok: true, synced: false };
+	}
+	const signingKeyResult = resolveSnapshotSigningKey();
+	if (!signingKeyResult.ok) {
+		return { ok: false, error: signingKeyResult.error };
+	}
+	const syncResult = writeBreakGlassGovernancePolicyFromRoster(
+		targetDir,
+		resolvedRosterPath,
+		signingKeyResult.key,
+		signingKeyResult.keyId,
+	);
+	if (!syncResult.ok) {
+		return syncResult;
+	}
+	return { ok: true, synced: true };
 }
 
 function isValidBreakGlassGovernancePolicy(
@@ -1650,15 +2142,583 @@ function runMergeQueueOrchestrator(
 	return { ok: true };
 }
 
+function readJsonPathValue(value: unknown, path: string): unknown {
+	let current: unknown = value;
+	for (const segment of path.split(".").filter((entry) => entry.length > 0)) {
+		if (Array.isArray(current)) {
+			const index = Number(segment);
+			if (!Number.isInteger(index) || index < 0 || index >= current.length) {
+				return undefined;
+			}
+			current = current[index];
+			continue;
+		}
+		if (!current || typeof current !== "object") {
+			return undefined;
+		}
+		current = (current as Record<string, unknown>)[segment];
+	}
+	return current;
+}
+
+function buildProviderAPIHeaders(
+	auth: MergeQueueProviderAPIAuthConfig | undefined,
+	accept: string | undefined,
+	headers: Record<string, string> | undefined,
+	context: string,
+): { ok: true; value: string[] } | { ok: false; error: string } {
+	const requestHeaders: string[] = [];
+	if (typeof accept === "string" && accept.trim().length > 0) {
+		requestHeaders.push(`Accept: ${accept.trim()}`);
+	}
+	if (headers) {
+		for (const [name, headerValue] of Object.entries(headers)) {
+			if (name.trim().length === 0 || headerValue.trim().length === 0) {
+				return {
+					ok: false,
+					error: `${context} headers must use non-empty key/value pairs.`,
+				};
+			}
+			requestHeaders.push(`${name}: ${headerValue}`);
+		}
+	}
+	if (auth?.mode === "bearer-env") {
+		if (!auth.tokenEnv || auth.tokenEnv.trim().length === 0) {
+			return {
+				ok: false,
+				error: `${context} bearer-env auth requires tokenEnv.`,
+			};
+		}
+		const token = env[auth.tokenEnv];
+		if (!token || token.trim().length === 0) {
+			return {
+				ok: false,
+				error: `${context} bearer token environment variable is empty: ${auth.tokenEnv}`,
+			};
+		}
+		requestHeaders.push(`Authorization: Bearer ${token}`);
+	}
+	return { ok: true, value: requestHeaders };
+}
+
+function runProviderAPIRequest(
+	request: MergeQueueProviderAPIRequestConfig,
+	context: string,
+): { ok: true; body: string; json: unknown } | { ok: false; error: string } {
+	const method = (request.method ?? "GET").toUpperCase();
+	const supportedMethods = new Set(["GET", "POST", "PUT", "PATCH"]);
+	if (!supportedMethods.has(method)) {
+		return {
+			ok: false,
+			error: `${context} method '${method}' is unsupported.`,
+		};
+	}
+	const headersResult = buildProviderAPIHeaders(
+		request.auth,
+		request.accept,
+		request.headers,
+		context,
+	);
+	if (!headersResult.ok) {
+		return headersResult;
+	}
+	if (request.url.startsWith("file://")) {
+		try {
+			const filePath = fileURLToPath(request.url);
+			if (!existsSync(filePath)) {
+				return {
+					ok: false,
+					error: `${context} file URL source does not exist: ${request.url}`,
+				};
+			}
+			const fileContent = readFileSync(filePath, "utf-8");
+			const parsedJson =
+				fileContent.trim().length === 0 ? {} : JSON.parse(fileContent);
+			return { ok: true, body: fileContent, json: parsedJson };
+		} catch (error) {
+			return {
+				ok: false,
+				error: `${context} failed to read file URL source: ${sanitizeError(error)}`,
+			};
+		}
+	}
+	const args = [
+		"-sS",
+		"-L",
+		"--connect-timeout",
+		"15",
+		"--max-time",
+		"180",
+		"-X",
+		method,
+		request.url,
+		"-w",
+		"\n%{http_code}",
+	];
+	for (const header of headersResult.value) {
+		args.push("-H", header);
+	}
+	if (request.body !== undefined) {
+		args.push("-H", "Content-Type: application/json");
+		args.push("--data", JSON.stringify(request.body));
+	}
+	const requestResult = spawnSync("curl", args, {
+		encoding: "utf-8",
+	});
+	if (requestResult.error) {
+		return {
+			ok: false,
+			error: `${context} request failed: ${sanitizeError(requestResult.error)}`,
+		};
+	}
+	if (requestResult.status !== 0) {
+		return {
+			ok: false,
+			error: `${context} request exited non-zero: ${requestResult.stderr?.trim() ?? "unknown error"}`,
+		};
+	}
+	const output = requestResult.stdout ?? "";
+	const statusSplit = output.lastIndexOf("\n");
+	if (statusSplit < 0) {
+		return {
+			ok: false,
+			error: `${context} request produced malformed response (missing HTTP status marker).`,
+		};
+	}
+	const body = output.slice(0, statusSplit);
+	const statusToken = output.slice(statusSplit + 1).trim();
+	const statusCode = Number.parseInt(statusToken, 10);
+	if (!Number.isFinite(statusCode)) {
+		return {
+			ok: false,
+			error: `${context} request produced invalid HTTP status token: ${statusToken}`,
+		};
+	}
+	if (statusCode < 200 || statusCode >= 300) {
+		const compactBody = body.trim();
+		return {
+			ok: false,
+			error:
+				compactBody.length > 0
+					? `${context} request failed with HTTP ${statusCode}: ${compactBody}`
+					: `${context} request failed with HTTP ${statusCode}.`,
+		};
+	}
+	try {
+		const parsedJson = body.trim().length === 0 ? {} : JSON.parse(body);
+		return { ok: true, body, json: parsedJson };
+	} catch (error) {
+		return {
+			ok: false,
+			error: `${context} response is not valid JSON: ${sanitizeError(error)}`,
+		};
+	}
+}
+
+function parseMergeQueueProviderAPIConfig(
+	content: string,
+):
+	| { ok: true; value: MergeQueueProviderAPIConfig }
+	| { ok: false; error: string } {
+	try {
+		const parsed = JSON.parse(content) as unknown;
+		if (!parsed || typeof parsed !== "object") {
+			return {
+				ok: false,
+				error: "Merge-queue provider API config must be a JSON object.",
+			};
+		}
+		const record = parsed as Record<string, unknown>;
+		if (record.schemaVersion !== "ci-migrate-merge-queue-provider-api/v1") {
+			return {
+				ok: false,
+				error:
+					"Merge-queue provider API config schemaVersion must be ci-migrate-merge-queue-provider-api/v1.",
+			};
+		}
+		if (
+			record.provider !== "github" &&
+			record.provider !== "circleci" &&
+			record.provider !== "custom"
+		) {
+			return {
+				ok: false,
+				error:
+					"Merge-queue provider API config provider must be github, circleci, or custom.",
+			};
+		}
+		const parseRequest = (
+			value: unknown,
+			name: string,
+			required: boolean,
+		):
+			| { ok: true; value: MergeQueueProviderAPIRequestConfig | undefined }
+			| { ok: false; error: string } => {
+			if (value === undefined || value === null) {
+				if (required) {
+					return {
+						ok: false,
+						error: `Merge-queue provider API config requires '${name}' request configuration.`,
+					};
+				}
+				return { ok: true, value: undefined };
+			}
+			if (!value || typeof value !== "object") {
+				return {
+					ok: false,
+					error: `Merge-queue provider API config '${name}' must be an object.`,
+				};
+			}
+			const requestRecord = value as Record<string, unknown>;
+			if (
+				typeof requestRecord.url !== "string" ||
+				requestRecord.url.trim().length === 0
+			) {
+				return {
+					ok: false,
+					error: `Merge-queue provider API config '${name}.url' must be a non-empty string.`,
+				};
+			}
+			const method =
+				typeof requestRecord.method === "string" &&
+				requestRecord.method.trim().length > 0
+					? requestRecord.method.trim().toUpperCase()
+					: undefined;
+			if (
+				method !== undefined &&
+				method !== "GET" &&
+				method !== "POST" &&
+				method !== "PUT" &&
+				method !== "PATCH"
+			) {
+				return {
+					ok: false,
+					error: `Merge-queue provider API config '${name}.method' must be GET, POST, PUT, or PATCH.`,
+				};
+			}
+			let headers: Record<string, string> | undefined;
+			if (requestRecord.headers !== undefined) {
+				if (
+					!requestRecord.headers ||
+					typeof requestRecord.headers !== "object"
+				) {
+					return {
+						ok: false,
+						error: `Merge-queue provider API config '${name}.headers' must be an object when provided.`,
+					};
+				}
+				headers = {};
+				for (const [headerName, headerValue] of Object.entries(
+					requestRecord.headers as Record<string, unknown>,
+				)) {
+					if (
+						headerName.trim().length === 0 ||
+						typeof headerValue !== "string" ||
+						headerValue.trim().length === 0
+					) {
+						return {
+							ok: false,
+							error: `Merge-queue provider API config '${name}.headers' entries must use non-empty string key/value pairs.`,
+						};
+					}
+					headers[headerName] = headerValue;
+				}
+			}
+			let auth: MergeQueueProviderAPIAuthConfig | undefined;
+			if (requestRecord.auth !== undefined) {
+				if (!requestRecord.auth || typeof requestRecord.auth !== "object") {
+					return {
+						ok: false,
+						error: `Merge-queue provider API config '${name}.auth' must be an object when provided.`,
+					};
+				}
+				const authRecord = requestRecord.auth as Record<string, unknown>;
+				const authMode = authRecord.mode ?? authRecord.type;
+				if (authMode !== "none" && authMode !== "bearer-env") {
+					return {
+						ok: false,
+						error: `Merge-queue provider API config '${name}.auth.mode' must be none or bearer-env.`,
+					};
+				}
+				auth = {
+					mode: authMode,
+					tokenEnv:
+						typeof authRecord.tokenEnv === "string"
+							? authRecord.tokenEnv
+							: undefined,
+				};
+			}
+			return {
+				ok: true,
+				value: {
+					url: requestRecord.url.trim(),
+					method: method as MergeQueueProviderAPIRequestConfig["method"],
+					headers,
+					auth,
+					accept:
+						typeof requestRecord.accept === "string"
+							? requestRecord.accept
+							: undefined,
+					body:
+						requestRecord.body &&
+						typeof requestRecord.body === "object" &&
+						!Array.isArray(requestRecord.body)
+							? (requestRecord.body as Record<string, unknown>)
+							: undefined,
+					timestampPath:
+						typeof requestRecord.timestampPath === "string"
+							? requestRecord.timestampPath
+							: undefined,
+					queueDepthPath:
+						typeof requestRecord.queueDepthPath === "string"
+							? requestRecord.queueDepthPath
+							: undefined,
+					candidateCountPath:
+						typeof requestRecord.candidateCountPath === "string"
+							? requestRecord.candidateCountPath
+							: undefined,
+				},
+			};
+		};
+		const pausedResult = parseRequest(record.paused, "paused", true);
+		if (!pausedResult.ok || pausedResult.value === undefined) {
+			return pausedResult.ok
+				? {
+						ok: false,
+						error:
+							"Merge-queue provider API config requires paused request configuration.",
+					}
+				: pausedResult;
+		}
+		const drainedResult = parseRequest(record.drained, "drained", false);
+		if (!drainedResult.ok) {
+			return drainedResult;
+		}
+		const revalidatedResult = parseRequest(
+			record.revalidated,
+			"revalidated",
+			false,
+		);
+		if (!revalidatedResult.ok) {
+			return revalidatedResult;
+		}
+		return {
+			ok: true,
+			value: {
+				schemaVersion: "ci-migrate-merge-queue-provider-api/v1",
+				provider: record.provider,
+				paused: pausedResult.value,
+				drained: drainedResult.value,
+				revalidated: revalidatedResult.value,
+			},
+		};
+	} catch (error) {
+		return {
+			ok: false,
+			error: `Failed to parse merge-queue provider API config: ${sanitizeError(error)}`,
+		};
+	}
+}
+
+function runMergeQueueProviderAPIOrchestrator(
+	targetDir: string,
+	configPath: string,
+	snapshotId: string,
+	evidencePath: string,
+	requireFullLifecycle: boolean,
+	binding: MergeQueueEvidenceBinding,
+	signingKey: string,
+): { ok: true } | { ok: false; error: string } {
+	const resolvedConfigPath = resolve(targetDir, configPath);
+	if (!existsSync(resolvedConfigPath)) {
+		return {
+			ok: false,
+			error: `Merge-queue provider API config file not found: ${configPath}`,
+		};
+	}
+	const configResult = parseMergeQueueProviderAPIConfig(
+		readFileSync(resolvedConfigPath, "utf-8"),
+	);
+	if (!configResult.ok) {
+		return { ok: false, error: configResult.error };
+	}
+	const config = configResult.value;
+	const pausedRequestResult = runProviderAPIRequest(
+		config.paused,
+		"merge-queue pause operation",
+	);
+	if (!pausedRequestResult.ok) {
+		return { ok: false, error: pausedRequestResult.error };
+	}
+	const nowIso = new Date().toISOString();
+	const pausedAtValue =
+		typeof config.paused.timestampPath === "string"
+			? readJsonPathValue(pausedRequestResult.json, config.paused.timestampPath)
+			: undefined;
+	const pausedAt =
+		typeof pausedAtValue === "string" &&
+		Number.isFinite(Date.parse(pausedAtValue))
+			? pausedAtValue
+			: nowIso;
+	const pausedQueueDepthValue =
+		typeof config.paused.queueDepthPath === "string"
+			? readJsonPathValue(
+					pausedRequestResult.json,
+					config.paused.queueDepthPath,
+				)
+			: undefined;
+	const pausedQueueDepth =
+		typeof pausedQueueDepthValue === "number" &&
+		Number.isInteger(pausedQueueDepthValue) &&
+		pausedQueueDepthValue >= 0
+			? pausedQueueDepthValue
+			: undefined;
+	let drainedAt: string | undefined;
+	let revalidatedAt: string | undefined;
+	let drainedCandidateCount: number | undefined;
+	let revalidatedCandidateCount: number | undefined;
+	if (requireFullLifecycle) {
+		if (!config.drained || !config.revalidated) {
+			return {
+				ok: false,
+				error:
+					"Merge-queue provider API config must include drained and revalidated requests for required-mode commit windows.",
+			};
+		}
+		const drainedResult = runProviderAPIRequest(
+			config.drained,
+			"merge-queue drain operation",
+		);
+		if (!drainedResult.ok) {
+			return { ok: false, error: drainedResult.error };
+		}
+		const drainedTimestampValue =
+			typeof config.drained.timestampPath === "string"
+				? readJsonPathValue(drainedResult.json, config.drained.timestampPath)
+				: undefined;
+		drainedAt =
+			typeof drainedTimestampValue === "string" &&
+			Number.isFinite(Date.parse(drainedTimestampValue))
+				? drainedTimestampValue
+				: new Date().toISOString();
+		const drainedCandidateCountValue =
+			typeof config.drained.candidateCountPath === "string"
+				? readJsonPathValue(
+						drainedResult.json,
+						config.drained.candidateCountPath,
+					)
+				: undefined;
+		drainedCandidateCount =
+			typeof drainedCandidateCountValue === "number" &&
+			Number.isInteger(drainedCandidateCountValue) &&
+			drainedCandidateCountValue >= 0
+				? drainedCandidateCountValue
+				: undefined;
+		const revalidatedResult = runProviderAPIRequest(
+			config.revalidated,
+			"merge-queue revalidate operation",
+		);
+		if (!revalidatedResult.ok) {
+			return { ok: false, error: revalidatedResult.error };
+		}
+		const revalidatedTimestampValue =
+			typeof config.revalidated.timestampPath === "string"
+				? readJsonPathValue(
+						revalidatedResult.json,
+						config.revalidated.timestampPath,
+					)
+				: undefined;
+		revalidatedAt =
+			typeof revalidatedTimestampValue === "string" &&
+			Number.isFinite(Date.parse(revalidatedTimestampValue))
+				? revalidatedTimestampValue
+				: new Date().toISOString();
+		const revalidatedCandidateCountValue =
+			typeof config.revalidated.candidateCountPath === "string"
+				? readJsonPathValue(
+						revalidatedResult.json,
+						config.revalidated.candidateCountPath,
+					)
+				: undefined;
+		revalidatedCandidateCount =
+			typeof revalidatedCandidateCountValue === "number" &&
+			Number.isInteger(revalidatedCandidateCountValue) &&
+			revalidatedCandidateCountValue >= 0
+				? revalidatedCandidateCountValue
+				: undefined;
+	}
+	const signingKeyId = hashContent(signingKey).slice(0, 16);
+	const evidenceBase: MergeQueueCutoverEvidence = {
+		schemaVersion: "ci-migrate-merge-queue-evidence/v2",
+		snapshotId,
+		generatedAt: new Date().toISOString(),
+		binding,
+		pausedAt,
+		drainedAt,
+		revalidatedAt,
+		pausedQueueDepth,
+		drainedCandidateCount,
+		revalidatedCandidateCount,
+		integrity: {
+			signatureAlgorithm: SNAPSHOT_SIGNATURE_ALGORITHM,
+			signingKeyId,
+			payloadSha256: "",
+		},
+	};
+	const payloadSha256 = hashContent(
+		canonicalizeMergeQueueEvidenceForDigest(evidenceBase),
+	);
+	const evidence: MergeQueueCutoverEvidence = {
+		...evidenceBase,
+		integrity: {
+			...evidenceBase.integrity,
+			payloadSha256,
+		},
+	};
+	const evidenceContent = JSON.stringify(evidence, null, 2);
+	const resolvedEvidencePath = resolve(targetDir, evidencePath);
+	mkdirSync(dirname(resolvedEvidencePath), { recursive: true });
+	writeFileSync(resolvedEvidencePath, evidenceContent);
+	writeFileSync(
+		`${resolvedEvidencePath}.sig`,
+		`${signContent(evidenceContent, signingKey)}\n`,
+	);
+	return { ok: true };
+}
+
 function isSafeRestorePath(targetDir: string, relativePath: string): boolean {
 	if (!EXTERNAL_CONTROL_PLANE_PATH_SET.has(relativePath)) {
 		return false;
 	}
-	const rootPath = resolve(targetDir);
+	const rootPath = realpathSync(targetDir);
 	const absolutePath = resolve(targetDir, relativePath);
-	return (
-		absolutePath === rootPath || absolutePath.startsWith(`${rootPath}${sep}`)
-	);
+	const isWithinRoot = (p: string): boolean =>
+		p === rootPath || p.startsWith(`${rootPath}${sep}`);
+
+	if (existsSync(absolutePath)) {
+		// Path exists: reject symlinks immediately; canonicalize otherwise.
+		const stat = lstatSync(absolutePath);
+		if (stat.isSymbolicLink()) {
+			return false;
+		}
+		return isWithinRoot(realpathSync(absolutePath));
+	}
+
+	// Path doesn't exist yet: walk up to find the nearest existing ancestor
+	// and verify it is a real non-symlink directory within the root.
+	let ancestor = dirname(absolutePath);
+	while (!existsSync(ancestor)) {
+		const parent = dirname(ancestor);
+		if (parent === ancestor) {
+			return false; // reached filesystem root without finding anything
+		}
+		ancestor = parent;
+	}
+	const ancestorStat = lstatSync(ancestor);
+	if (!ancestorStat.isDirectory() || ancestorStat.isSymbolicLink()) {
+		return false;
+	}
+	return isWithinRoot(realpathSync(ancestor));
 }
 
 function captureExternalControlPlaneState(
@@ -1679,6 +2739,15 @@ function captureExternalControlPlaneState(
 						existed: false,
 					};
 				}
+				// Guard: reject symlinks — a symlink at an allowlisted path could point
+				// to a file outside the repo, leaking its contents into the snapshot.
+				const stat = lstatSync(absolutePath);
+				if (stat.isSymbolicLink()) {
+					return {
+						relativePath,
+						existed: false,
+					};
+				}
 				const content = readFileSync(absolutePath, "utf-8");
 				return {
 					relativePath,
@@ -1687,6 +2756,7 @@ function captureExternalControlPlaneState(
 					contentDigest: hashContent(content),
 				};
 			});
+
 		const snapshot: ExternalControlPlaneStateSnapshot = {
 			schemaVersion: "ci-migrate-external-control-plane-state/v1",
 			snapshotId,
@@ -3665,6 +4735,721 @@ function parseParityProvenanceArtifactIndex(content: string):
 	}
 }
 
+function parseParityProofHarvestManifest(
+	content: string,
+):
+	| { ok: true; value: CIParityProofHarvestManifest }
+	| { ok: false; error: string } {
+	try {
+		const parsed = JSON.parse(content) as unknown;
+		if (!parsed || typeof parsed !== "object") {
+			return {
+				ok: false,
+				error: "Parity proof harvest manifest must be a JSON object.",
+			};
+		}
+		const record = parsed as Record<string, unknown>;
+		if (record.schemaVersion !== "ci-parity-proof-harvest-manifest/v1") {
+			return {
+				ok: false,
+				error:
+					"Parity proof harvest manifest schemaVersion must be ci-parity-proof-harvest-manifest/v1.",
+			};
+		}
+		const parsedInputResult = parseParityProofPackInput(
+			JSON.stringify({
+				schemaVersion: "ci-parity-proof-input/v1",
+				generatedAt:
+					typeof record.generatedAt === "string"
+						? record.generatedAt
+						: undefined,
+				repo: record.repo ?? undefined,
+				behavioralParity: record.behavioralParity,
+				promotionGate: record.promotionGate,
+				downstream: record.downstream,
+			}),
+		);
+		if (!parsedInputResult.ok) {
+			return { ok: false, error: parsedInputResult.error };
+		}
+		if (!Array.isArray(record.artifacts) || record.artifacts.length === 0) {
+			return {
+				ok: false,
+				error:
+					"Parity proof harvest manifest artifacts must be a non-empty array.",
+			};
+		}
+		const artifacts: CIParityProofHarvestArtifact[] = [];
+		const artifactIds = new Set<string>();
+		for (const artifactEntry of record.artifacts) {
+			if (!artifactEntry || typeof artifactEntry !== "object") {
+				return {
+					ok: false,
+					error:
+						"Parity proof harvest manifest artifact entries must be objects.",
+				};
+			}
+			const artifact = artifactEntry as Record<string, unknown>;
+			if (
+				typeof artifact.artifactId !== "string" ||
+				artifact.artifactId.trim().length === 0
+			) {
+				return {
+					ok: false,
+					error:
+						"Parity proof harvest manifest artifact entries require a non-empty artifactId.",
+				};
+			}
+			if (artifactIds.has(artifact.artifactId)) {
+				return {
+					ok: false,
+					error: `Parity proof harvest manifest artifactId must be unique. Duplicate: ${artifact.artifactId}.`,
+				};
+			}
+			artifactIds.add(artifact.artifactId);
+			if (
+				typeof artifact.destinationPath !== "string" ||
+				artifact.destinationPath.trim().length === 0
+			) {
+				return {
+					ok: false,
+					error:
+						"Parity proof harvest manifest artifact entries require a non-empty destinationPath.",
+				};
+			}
+			if (
+				artifact.sourceProvider !== "github-actions" &&
+				artifact.sourceProvider !== "circleci"
+			) {
+				return {
+					ok: false,
+					error:
+						"Parity proof harvest manifest sourceProvider must be github-actions or circleci.",
+				};
+			}
+			if (
+				typeof artifact.sourceWorkflowRef !== "string" ||
+				artifact.sourceWorkflowRef.trim().length === 0
+			) {
+				return {
+					ok: false,
+					error:
+						"Parity proof harvest manifest sourceWorkflowRef must be a non-empty string.",
+				};
+			}
+			if (
+				artifact.sourceRunId !== undefined &&
+				(typeof artifact.sourceRunId !== "string" ||
+					artifact.sourceRunId.trim().length === 0)
+			) {
+				return {
+					ok: false,
+					error:
+						"Parity proof harvest manifest sourceRunId must be a non-empty string when provided.",
+				};
+			}
+			if (
+				artifact.sourceCommitSha !== undefined &&
+				(typeof artifact.sourceCommitSha !== "string" ||
+					!isCommitSha(artifact.sourceCommitSha))
+			) {
+				return {
+					ok: false,
+					error:
+						"Parity proof harvest manifest sourceCommitSha must be a 40-character lowercase commit SHA when provided.",
+				};
+			}
+			if (
+				artifact.capturedAt !== undefined &&
+				(typeof artifact.capturedAt !== "string" ||
+					!Number.isFinite(Date.parse(artifact.capturedAt)))
+			) {
+				return {
+					ok: false,
+					error:
+						"Parity proof harvest manifest capturedAt must be a valid ISO timestamp when provided.",
+				};
+			}
+			if (
+				artifact.scenario !== undefined &&
+				(typeof artifact.scenario !== "string" ||
+					!isRequiredParityScenario(artifact.scenario))
+			) {
+				return {
+					ok: false,
+					error:
+						"Parity proof harvest manifest scenario must use supported scenario ids when provided.",
+				};
+			}
+			if (!artifact.source || typeof artifact.source !== "object") {
+				return {
+					ok: false,
+					error:
+						"Parity proof harvest manifest source must be an object for each artifact.",
+				};
+			}
+			const sourceRecord = artifact.source as Record<string, unknown>;
+			const sourcePath =
+				typeof sourceRecord.path === "string" ? sourceRecord.path : undefined;
+			const sourceUrl =
+				typeof sourceRecord.url === "string" ? sourceRecord.url : undefined;
+			const discovery =
+				sourceRecord.discovery && typeof sourceRecord.discovery === "object"
+					? (sourceRecord.discovery as Record<string, unknown>)
+					: undefined;
+			if (sourcePath && sourceUrl) {
+				return {
+					ok: false,
+					error: `Parity proof harvest manifest artifact ${artifact.artifactId} must not specify both source.path and source.url.`,
+				};
+			}
+			if (!sourcePath && !sourceUrl && !discovery) {
+				return {
+					ok: false,
+					error: `Parity proof harvest manifest artifact ${artifact.artifactId} must specify source.path, source.url, or source.discovery.`,
+				};
+			}
+			let discoveryConfig: HarvestSourceDiscoveryConfig | undefined;
+			if (discovery) {
+				if (
+					typeof discovery.url !== "string" ||
+					discovery.url.trim().length === 0 ||
+					typeof discovery.artifactUrlPath !== "string" ||
+					discovery.artifactUrlPath.trim().length === 0
+				) {
+					return {
+						ok: false,
+						error: `Parity proof harvest manifest artifact ${artifact.artifactId} source.discovery requires non-empty url and artifactUrlPath.`,
+					};
+				}
+				const schedule =
+					discovery.schedule && typeof discovery.schedule === "object"
+						? (discovery.schedule as Record<string, unknown>)
+						: undefined;
+				discoveryConfig = {
+					url: discovery.url.trim(),
+					method:
+						discovery.method === "GET" || discovery.method === "POST"
+							? discovery.method
+							: undefined,
+					headers:
+						discovery.headers &&
+						typeof discovery.headers === "object" &&
+						!Array.isArray(discovery.headers)
+							? (Object.fromEntries(
+									Object.entries(
+										discovery.headers as Record<string, unknown>,
+									).filter(
+										([headerName, headerValue]) =>
+											headerName.trim().length > 0 &&
+											typeof headerValue === "string" &&
+											headerValue.trim().length > 0,
+									),
+								) as Record<string, string>)
+							: undefined,
+					auth:
+						discovery.auth === "none" || discovery.auth === "bearer-env"
+							? { mode: discovery.auth, tokenEnv: undefined }
+							: discovery.auth && typeof discovery.auth === "object"
+								? {
+										mode:
+											(discovery.auth as Record<string, unknown>).mode ===
+											"bearer-env"
+												? "bearer-env"
+												: "none",
+										tokenEnv:
+											typeof (discovery.auth as Record<string, unknown>)
+												.tokenEnv === "string"
+												? ((discovery.auth as Record<string, unknown>)
+														.tokenEnv as string)
+												: undefined,
+									}
+								: undefined,
+					accept:
+						typeof discovery.accept === "string" ? discovery.accept : undefined,
+					body:
+						discovery.body &&
+						typeof discovery.body === "object" &&
+						!Array.isArray(discovery.body)
+							? (discovery.body as Record<string, unknown>)
+							: undefined,
+					artifactUrlPath: discovery.artifactUrlPath.trim(),
+					sourceRunIdPath:
+						typeof discovery.sourceRunIdPath === "string"
+							? discovery.sourceRunIdPath
+							: undefined,
+					sourceCommitShaPath:
+						typeof discovery.sourceCommitShaPath === "string"
+							? discovery.sourceCommitShaPath
+							: undefined,
+					capturedAtPath:
+						typeof discovery.capturedAtPath === "string"
+							? discovery.capturedAtPath
+							: undefined,
+					schedule:
+						schedule &&
+						typeof schedule.url === "string" &&
+						schedule.url.trim().length > 0
+							? {
+									url: schedule.url.trim(),
+									method:
+										schedule.method === "GET" || schedule.method === "POST"
+											? schedule.method
+											: undefined,
+									headers:
+										schedule.headers &&
+										typeof schedule.headers === "object" &&
+										!Array.isArray(schedule.headers)
+											? (Object.fromEntries(
+													Object.entries(
+														schedule.headers as Record<string, unknown>,
+													).filter(
+														([headerName, headerValue]) =>
+															headerName.trim().length > 0 &&
+															typeof headerValue === "string" &&
+															headerValue.trim().length > 0,
+													),
+												) as Record<string, string>)
+											: undefined,
+									auth:
+										schedule.auth === "none" || schedule.auth === "bearer-env"
+											? { mode: schedule.auth, tokenEnv: undefined }
+											: schedule.auth && typeof schedule.auth === "object"
+												? {
+														mode:
+															(schedule.auth as Record<string, unknown>)
+																.mode === "bearer-env"
+																? "bearer-env"
+																: "none",
+														tokenEnv:
+															typeof (schedule.auth as Record<string, unknown>)
+																.tokenEnv === "string"
+																? ((schedule.auth as Record<string, unknown>)
+																		.tokenEnv as string)
+																: undefined,
+													}
+												: undefined,
+									accept:
+										typeof schedule.accept === "string"
+											? schedule.accept
+											: undefined,
+									body:
+										schedule.body &&
+										typeof schedule.body === "object" &&
+										!Array.isArray(schedule.body)
+											? (schedule.body as Record<string, unknown>)
+											: undefined,
+								}
+							: undefined,
+				};
+			}
+			artifacts.push({
+				artifactId: artifact.artifactId,
+				destinationPath: artifact.destinationPath,
+				sourceProvider: artifact.sourceProvider,
+				sourceRunId:
+					typeof artifact.sourceRunId === "string"
+						? artifact.sourceRunId
+						: undefined,
+				sourceWorkflowRef: artifact.sourceWorkflowRef,
+				sourceCommitSha:
+					typeof artifact.sourceCommitSha === "string"
+						? artifact.sourceCommitSha
+						: undefined,
+				capturedAt:
+					typeof artifact.capturedAt === "string"
+						? artifact.capturedAt
+						: undefined,
+				scenario:
+					typeof artifact.scenario === "string" ? artifact.scenario : undefined,
+				source: {
+					path: sourcePath,
+					url: sourceUrl,
+					auth:
+						sourceRecord.auth === "none" || sourceRecord.auth === "bearer-env"
+							? sourceRecord.auth
+							: undefined,
+					tokenEnv:
+						typeof sourceRecord.tokenEnv === "string"
+							? sourceRecord.tokenEnv
+							: undefined,
+					accept:
+						typeof sourceRecord.accept === "string"
+							? sourceRecord.accept
+							: undefined,
+					discovery: discoveryConfig,
+				},
+			});
+		}
+		return {
+			ok: true,
+			value: {
+				schemaVersion: "ci-parity-proof-harvest-manifest/v1",
+				generatedAt:
+					typeof record.generatedAt === "string"
+						? record.generatedAt
+						: undefined,
+				repo: parsedInputResult.value.repo ?? undefined,
+				behavioralParity: parsedInputResult.value.behavioralParity,
+				promotionGate: parsedInputResult.value.promotionGate,
+				downstream: parsedInputResult.value.downstream,
+				artifacts,
+			},
+		};
+	} catch (error) {
+		return {
+			ok: false,
+			error: `Failed to parse parity proof harvest manifest: ${sanitizeError(error)}`,
+		};
+	}
+}
+
+function downloadProofArtifactFromSource(
+	artifactId: string,
+	url: string,
+	destinationPath: string,
+	auth: "none" | "bearer-env" | undefined,
+	tokenEnv: string | undefined,
+	accept: string | undefined,
+): { ok: true } | { ok: false; error: string } {
+	if (url.startsWith("file://")) {
+		try {
+			const sourcePath = fileURLToPath(url);
+			if (!existsSync(sourcePath)) {
+				return {
+					ok: false,
+					error: `Harvest source file URL not found for ${artifactId}: ${url}`,
+				};
+			}
+			copyFileSync(sourcePath, destinationPath);
+			return { ok: true };
+		} catch (error) {
+			return {
+				ok: false,
+				error: `Harvest source file URL failed for ${artifactId}: ${sanitizeError(error)}`,
+			};
+		}
+	}
+	const args = [
+		"-fsSL",
+		"--retry",
+		"3",
+		"--retry-delay",
+		"1",
+		"--connect-timeout",
+		"15",
+		"--max-time",
+		"180",
+	];
+	if (typeof accept === "string" && accept.trim().length > 0) {
+		args.push("-H", `Accept: ${accept.trim()}`);
+	}
+	if (auth === "bearer-env") {
+		if (!tokenEnv || tokenEnv.trim().length === 0) {
+			return {
+				ok: false,
+				error: `Harvest source tokenEnv is required for bearer-env auth (${artifactId}).`,
+			};
+		}
+		const token = env[tokenEnv];
+		if (!token || token.trim().length === 0) {
+			return {
+				ok: false,
+				error: `Harvest source token environment variable is empty (${tokenEnv}) for ${artifactId}.`,
+			};
+		}
+		args.push("-H", `Authorization: Bearer ${token}`);
+	}
+	args.push(url, "-o", destinationPath);
+	const downloadResult = spawnSync("curl", args, { encoding: "utf-8" });
+	if (downloadResult.error || downloadResult.status !== 0) {
+		return {
+			ok: false,
+			error: `Failed to download harvest source artifact ${artifactId}: ${downloadResult.stderr?.trim() || sanitizeError(downloadResult.error)}`,
+		};
+	}
+	return { ok: true };
+}
+
+function materializeProvenanceInputFromHarvestManifest(
+	targetDir: string,
+	signingKey: string,
+	signingKeyId: string,
+): { ok: true } | { ok: false; error: string } {
+	const manifestPath = resolve(targetDir, PARITY_PROOF_HARVEST_MANIFEST_PATH);
+	if (!existsSync(manifestPath)) {
+		return {
+			ok: false,
+			error: `Missing parity proof harvest manifest: ${PARITY_PROOF_HARVEST_MANIFEST_PATH}`,
+		};
+	}
+	const parsedManifestResult = parseParityProofHarvestManifest(
+		readFileSync(manifestPath, "utf-8"),
+	);
+	if (!parsedManifestResult.ok) {
+		return { ok: false, error: parsedManifestResult.error };
+	}
+	const manifest = parsedManifestResult.value;
+	const generatedAt = manifest.generatedAt ?? new Date().toISOString();
+	const headCommitResult = resolveGitRefToCommit(targetDir, "HEAD");
+	const fallbackSourceCommitSha =
+		manifest.repo?.headSha && isCommitSha(manifest.repo.headSha)
+			? manifest.repo.headSha
+			: headCommitResult.ok
+				? headCommitResult.commitSha
+				: undefined;
+	if (!fallbackSourceCommitSha || !isCommitSha(fallbackSourceCommitSha)) {
+		return {
+			ok: false,
+			error:
+				"Unable to resolve fallback source commit SHA for parity proof harvest manifest.",
+		};
+	}
+	const provenanceInputArtifacts: CIParityProvenanceInputArtifact[] = [];
+	const indexArtifacts: CIParityProvenanceArtifactRecord[] = [];
+	for (const artifact of manifest.artifacts) {
+		if (
+			!artifact.destinationPath.startsWith(PARITY_PROOF_SOURCE_ARTIFACTS_PREFIX)
+		) {
+			return {
+				ok: false,
+				error: `Harvest artifact destinationPath must be under ${PARITY_PROOF_SOURCE_ARTIFACTS_PREFIX}: ${artifact.destinationPath}`,
+			};
+		}
+		if (!isSafeProofArtifactPath(targetDir, artifact.destinationPath)) {
+			return {
+				ok: false,
+				error: `Harvest artifact destinationPath escapes repository root: ${artifact.destinationPath}`,
+			};
+		}
+		const destinationPath = resolve(targetDir, artifact.destinationPath);
+		mkdirSync(dirname(destinationPath), { recursive: true });
+		let sourceRunId = artifact.sourceRunId;
+		let sourceCommitSha = artifact.sourceCommitSha ?? fallbackSourceCommitSha;
+		let capturedAt = artifact.capturedAt ?? generatedAt;
+		let sourceUrl = artifact.source.url;
+		if (artifact.source.discovery) {
+			const discovery = artifact.source.discovery;
+			if (discovery.schedule) {
+				const scheduleResult = runProviderAPIRequest(
+					{
+						url: discovery.schedule.url,
+						method: discovery.schedule.method,
+						headers: discovery.schedule.headers,
+						auth: discovery.schedule.auth,
+						accept: discovery.schedule.accept,
+						body: discovery.schedule.body,
+					},
+					`parity harvest schedule (${artifact.artifactId})`,
+				);
+				if (!scheduleResult.ok) {
+					return { ok: false, error: scheduleResult.error };
+				}
+			}
+			const discoveryResult = runProviderAPIRequest(
+				{
+					url: discovery.url,
+					method: discovery.method,
+					headers: discovery.headers,
+					auth: discovery.auth,
+					accept: discovery.accept,
+					body: discovery.body,
+				},
+				`parity harvest discovery (${artifact.artifactId})`,
+			);
+			if (!discoveryResult.ok) {
+				return { ok: false, error: discoveryResult.error };
+			}
+			const discoveredArtifactUrl = readJsonPathValue(
+				discoveryResult.json,
+				discovery.artifactUrlPath,
+			);
+			if (
+				typeof discoveredArtifactUrl !== "string" ||
+				discoveredArtifactUrl.trim().length === 0
+			) {
+				return {
+					ok: false,
+					error: `Parity harvest discovery did not resolve artifact URL for ${artifact.artifactId}.`,
+				};
+			}
+			sourceUrl = discoveredArtifactUrl.trim();
+			if (!sourceRunId && typeof discovery.sourceRunIdPath === "string") {
+				const discoveredRunId = readJsonPathValue(
+					discoveryResult.json,
+					discovery.sourceRunIdPath,
+				);
+				if (
+					typeof discoveredRunId === "string" &&
+					discoveredRunId.trim().length > 0
+				) {
+					sourceRunId = discoveredRunId.trim();
+				}
+			}
+			if (
+				(!artifact.sourceCommitSha ||
+					artifact.sourceCommitSha.trim().length === 0) &&
+				typeof discovery.sourceCommitShaPath === "string"
+			) {
+				const discoveredSourceCommitSha = readJsonPathValue(
+					discoveryResult.json,
+					discovery.sourceCommitShaPath,
+				);
+				if (
+					typeof discoveredSourceCommitSha === "string" &&
+					isCommitSha(discoveredSourceCommitSha)
+				) {
+					sourceCommitSha = discoveredSourceCommitSha;
+				}
+			}
+			if (
+				(!artifact.capturedAt || artifact.capturedAt.trim().length === 0) &&
+				typeof discovery.capturedAtPath === "string"
+			) {
+				const discoveredCapturedAt = readJsonPathValue(
+					discoveryResult.json,
+					discovery.capturedAtPath,
+				);
+				if (
+					typeof discoveredCapturedAt === "string" &&
+					Number.isFinite(Date.parse(discoveredCapturedAt))
+				) {
+					capturedAt = discoveredCapturedAt;
+				}
+			}
+		}
+		if (!sourceRunId || sourceRunId.trim().length === 0) {
+			return {
+				ok: false,
+				error: `Harvest artifact ${artifact.artifactId} is missing sourceRunId and discovery did not provide one.`,
+			};
+		}
+		if (!isCommitSha(sourceCommitSha)) {
+			return {
+				ok: false,
+				error: `Harvest artifact ${artifact.artifactId} sourceCommitSha is invalid.`,
+			};
+		}
+		if (!Number.isFinite(Date.parse(capturedAt))) {
+			return {
+				ok: false,
+				error: `Harvest artifact ${artifact.artifactId} capturedAt must be a valid ISO timestamp.`,
+			};
+		}
+		if (artifact.source.path) {
+			if (!isSafeProofArtifactPath(targetDir, artifact.source.path)) {
+				return {
+					ok: false,
+					error: `Harvest artifact source.path escapes repository root: ${artifact.source.path}`,
+				};
+			}
+			const sourcePath = resolve(targetDir, artifact.source.path);
+			if (!existsSync(sourcePath)) {
+				return {
+					ok: false,
+					error: `Harvest artifact source.path not found: ${artifact.source.path}`,
+				};
+			}
+			copyFileSync(sourcePath, destinationPath);
+		} else if (sourceUrl) {
+			const downloadResult = downloadProofArtifactFromSource(
+				artifact.artifactId,
+				sourceUrl,
+				destinationPath,
+				artifact.source.auth,
+				artifact.source.tokenEnv,
+				artifact.source.accept,
+			);
+			if (!downloadResult.ok) {
+				return downloadResult;
+			}
+		} else {
+			return {
+				ok: false,
+				error: `Harvest artifact ${artifact.artifactId} did not resolve a source.path or source.url.`,
+			};
+		}
+		const artifactContent = readFileSync(destinationPath, "utf-8");
+		const artifactSha256 = hashContent(artifactContent);
+		const artifactSignature = signContent(
+			`${artifact.destinationPath}:${artifactSha256}:${artifact.sourceProvider}:${sourceRunId}:${sourceCommitSha}:${capturedAt}`,
+			signingKey,
+		);
+		provenanceInputArtifacts.push({
+			artifactId: artifact.artifactId,
+			path: artifact.destinationPath,
+			sourceProvider: artifact.sourceProvider,
+			sourceRunId,
+			sourceWorkflowRef: artifact.sourceWorkflowRef,
+			sourceCommitSha,
+			capturedAt,
+			scenario: artifact.scenario,
+		});
+		indexArtifacts.push({
+			artifactId: artifact.artifactId,
+			path: artifact.destinationPath,
+			sha256: artifactSha256,
+			signature: artifactSignature,
+			sourceProvider: artifact.sourceProvider,
+			sourceRunId,
+			sourceWorkflowRef: artifact.sourceWorkflowRef,
+			sourceCommitSha,
+			capturedAt,
+			scenario: artifact.scenario,
+		});
+	}
+	const provenanceInputPayload: CIParityProvenanceInput = {
+		schemaVersion: PARITY_PROVENANCE_INPUT_SCHEMA_VERSION,
+		generatedAt,
+		repo: manifest.repo,
+		behavioralParity: manifest.behavioralParity,
+		promotionGate: manifest.promotionGate,
+		downstream: manifest.downstream,
+		artifacts: provenanceInputArtifacts,
+	};
+	const provenanceInputPath = resolve(targetDir, PARITY_PROVENANCE_INPUT_PATH);
+	mkdirSync(dirname(provenanceInputPath), { recursive: true });
+	writeFileSync(
+		provenanceInputPath,
+		JSON.stringify(provenanceInputPayload, null, 2),
+	);
+	const artifactIndexBase: CIParityProvenanceArtifactIndex = {
+		schemaVersion: PARITY_PROVENANCE_ARTIFACT_INDEX_SCHEMA_VERSION,
+		generatedAt,
+		repo: manifest.repo,
+		behavioralParity: manifest.behavioralParity,
+		promotionGate: manifest.promotionGate,
+		downstream: manifest.downstream,
+		artifacts: indexArtifacts,
+		integrity: {
+			signatureAlgorithm: PARITY_PROOF_PACK_SIGNATURE_ALGORITHM,
+			signingKeyId,
+			payloadSha256: "",
+		},
+	};
+	const payloadSha256 = hashContent(
+		canonicalizeParityProvenanceArtifactIndexForDigest(artifactIndexBase),
+	);
+	const signedArtifactIndex: CIParityProvenanceArtifactIndex = {
+		...artifactIndexBase,
+		integrity: {
+			...artifactIndexBase.integrity,
+			payloadSha256,
+		},
+	};
+	const artifactIndexPath = resolve(
+		targetDir,
+		PARITY_PROVENANCE_ARTIFACT_INDEX_PATH,
+	);
+	const artifactIndexContent = JSON.stringify(signedArtifactIndex, null, 2);
+	writeFileSync(artifactIndexPath, artifactIndexContent);
+	writeFileSync(
+		resolve(targetDir, PARITY_PROVENANCE_ARTIFACT_INDEX_SIGNATURE_PATH),
+		`${signContent(artifactIndexContent, signingKey)}\n`,
+	);
+	return { ok: true };
+}
+
 function materializeProvenanceInputFromArtifactIndex(
 	targetDir: string,
 	signingKey: string,
@@ -4159,12 +5944,8 @@ function parseParityProvenanceManifest(
 	| { ok: true; value: CIParityProvenanceManifest }
 	| { ok: false; error: string } {
 	try {
-		const artifactIndexContent = readFileSync(artifactIndexPath, "utf-8");
-		const artifactIndexSignature = readFileSync(
-			artifactIndexSignaturePath,
-			"utf-8",
-		).trim();
-		if (!isHexDigest(artifactIndexSignature)) {
+		const parsed: unknown = JSON.parse(content);
+		if (!parsed || typeof parsed !== "object") {
 			return {
 				ok: false,
 				error: "Parity provenance manifest must be a JSON object.",
@@ -4843,240 +6624,6 @@ function resolveProofPackRepoBinding(
 	if (!isCommitSha(baseSha)) {
 		return {
 			ok: false,
-			error: `Failed to parse parity provenance bundle JSON: ${sanitizeError(error)}`,
-		};
-	}
-}
-
-function materializeProofPackInputsFromProvenanceBundle(
-	targetDir: string,
-	signingKey: string,
-	signingKeyId: string,
-): { ok: true } | { ok: false; error: string } {
-	const bundlePath = resolve(targetDir, PARITY_PROVENANCE_BUNDLE_PATH);
-	if (!existsSync(bundlePath)) {
-		return {
-			ok: false,
-			error: `Missing parity proof pack input (${PARITY_PROOF_PACK_INPUT_PATH}), provenance bundle (${PARITY_PROVENANCE_BUNDLE_PATH}), and provenance input (${PARITY_PROVENANCE_INPUT_PATH}).`,
-		};
-	}
-	const bundleContent = readFileSync(bundlePath, "utf-8");
-	const parsedBundleResult = parseParityProvenanceBundle(bundleContent);
-	if (!parsedBundleResult.ok) {
-		return { ok: false, error: parsedBundleResult.error };
-	}
-	const bundle = parsedBundleResult.value;
-	const artifactDir = resolve(targetDir, PARITY_PROOF_PACK_ARTIFACTS_DIR);
-	mkdirSync(artifactDir, { recursive: true });
-	for (const artifact of bundle.artifacts) {
-		if (!isSafeProofArtifactPath(targetDir, artifact.path)) {
-			return {
-				ok: false,
-				error: `Parity provenance artifact path escapes repository root: ${artifact.path}`,
-			};
-		}
-		const sourcePath = resolve(targetDir, artifact.path);
-		if (!existsSync(sourcePath)) {
-			return {
-				ok: false,
-				error: `Parity provenance artifact missing from repository: ${artifact.path}`,
-			};
-		}
-		const sourceContent = readFileSync(sourcePath, "utf-8");
-		const computedDigest = hashContent(sourceContent);
-		if (computedDigest !== artifact.sha256) {
-			return {
-				ok: false,
-				error: `Parity provenance artifact digest mismatch for ${artifact.path}.`,
-			};
-		}
-		const expectedSignature = signContent(
-			`${artifact.path}:${artifact.sha256}:${artifact.sourceProvider}:${artifact.sourceRunId}:${artifact.sourceCommitSha}:${artifact.capturedAt}`,
-			signingKey,
-		);
-		if (expectedSignature !== artifact.signature) {
-			return {
-				ok: false,
-				error: `Parity provenance artifact signature mismatch for ${artifact.path}.`,
-			};
-		}
-		const destinationPath = resolve(
-			targetDir,
-			PARITY_PROOF_PACK_ARTIFACTS_DIR,
-			`${artifact.artifactId}.json`,
-		);
-		copyFileSync(sourcePath, destinationPath);
-	}
-	const inputPayload: CIParityProofPackInput = {
-		schemaVersion: "ci-parity-proof-input/v1",
-		generatedAt: bundle.generatedAt,
-		repo: bundle.repo ?? null,
-		behavioralParity: bundle.behavioralParity,
-		promotionGate: bundle.promotionGate,
-		downstream: bundle.downstream,
-	};
-	const inputPath = resolve(targetDir, PARITY_PROOF_PACK_INPUT_PATH);
-	mkdirSync(dirname(inputPath), { recursive: true });
-	writeFileSync(inputPath, JSON.stringify(inputPayload, null, 2));
-
-	const manifestBase: CIParityProvenanceManifest = {
-		schemaVersion: PARITY_PROVENANCE_MANIFEST_SCHEMA_VERSION,
-		generatedAt: new Date().toISOString(),
-		sourceBundlePath: PARITY_PROVENANCE_BUNDLE_PATH,
-		sourceBundleSha256: hashContent(bundleContent),
-		artifacts: bundle.artifacts,
-		integrity: {
-			signatureAlgorithm: PARITY_PROOF_PACK_SIGNATURE_ALGORITHM,
-			signingKeyId,
-			payloadSha256: "",
-		},
-	};
-	const payloadSha256 = hashContent(
-		canonicalizeParityProvenanceManifestForDigest(manifestBase),
-	);
-	const manifest: CIParityProvenanceManifest = {
-		...manifestBase,
-		integrity: {
-			...manifestBase.integrity,
-			payloadSha256,
-		},
-	};
-	const manifestContent = JSON.stringify(manifest, null, 2);
-	const manifestPath = resolve(targetDir, PARITY_PROVENANCE_MANIFEST_PATH);
-	const manifestSignaturePath = resolve(
-		targetDir,
-		PARITY_PROVENANCE_MANIFEST_SIGNATURE_PATH,
-	);
-	writeFileSync(manifestPath, manifestContent);
-	writeFileSync(
-		manifestSignaturePath,
-		`${signContent(manifestContent, signingKey)}\n`,
-	);
-	return { ok: true };
-}
-
-function collectProofPackArtifacts(
-	targetDir: string,
-	signingKey: string,
-):
-	| { ok: true; artifacts: CIParityProofPackArtifact[] }
-	| { ok: false; error: string } {
-	const artifactRoot = resolve(targetDir, PARITY_PROOF_PACK_ARTIFACTS_DIR);
-	if (!existsSync(artifactRoot)) {
-		return {
-			ok: false,
-			error: `Parity proof pack artifacts directory missing: ${PARITY_PROOF_PACK_ARTIFACTS_DIR}`,
-		};
-	}
-	const entries = readdirSync(artifactRoot, { withFileTypes: true })
-		.filter((entry) => entry.isFile())
-		.map((entry) => entry.name)
-		.sort((left, right) => left.localeCompare(right));
-	if (entries.length === 0) {
-		return {
-			ok: false,
-			error: `Parity proof pack artifacts directory is empty: ${PARITY_PROOF_PACK_ARTIFACTS_DIR}`,
-		};
-	}
-	const artifacts: CIParityProofPackArtifact[] = [];
-	const artifactIds = new Set<string>();
-	for (const entryName of entries) {
-		const relativePath = `${PARITY_PROOF_PACK_ARTIFACTS_DIR}/${entryName}`;
-		if (!isSafeProofArtifactPath(targetDir, relativePath)) {
-			return {
-				ok: false,
-				error: `Parity proof artifact path escapes repository root: ${relativePath}`,
-			};
-		}
-		const artifactContent = readFileSync(
-			resolve(targetDir, relativePath),
-			"utf-8",
-		);
-		const digest = hashContent(artifactContent);
-		const artifactIdCandidate = entryName
-			.replace(/\.[^.]+$/, "")
-			.replace(/[^A-Za-z0-9_-]+/g, "-")
-			.replace(/^-+|-+$/g, "")
-			.toLowerCase();
-		const artifactId =
-			artifactIdCandidate.length > 0
-				? artifactIdCandidate
-				: `artifact-${artifacts.length + 1}`;
-		if (artifactIds.has(artifactId)) {
-			return {
-				ok: false,
-				error: `Duplicate artifact id derived from filenames: ${artifactId}`,
-			};
-		}
-		artifactIds.add(artifactId);
-		artifacts.push({
-			artifactId,
-			path: relativePath,
-			sha256: digest,
-			signature: signContent(`${relativePath}:${digest}`, signingKey),
-		});
-	}
-	return { ok: true, artifacts };
-}
-
-function resolveProofPackRepoBinding(
-	targetDir: string,
-	policy: CIProviderPolicyConfig,
-	input: CIParityProofPackInput,
-):
-	| { ok: true; value: CIParityProofPackRepoBinding }
-	| { ok: false; error: string } {
-	const repoInput = input.repo ?? undefined;
-	const originUrl = readGitOriginUrl(targetDir);
-	if (!originUrl) {
-		return {
-			ok: false,
-			error:
-				"Git origin URL is required to bind parity proof pack repository identity.",
-		};
-	}
-	if (repoInput?.originUrl && repoInput.originUrl !== originUrl) {
-		return {
-			ok: false,
-			error: `Parity proof input repo.originUrl (${repoInput.originUrl}) does not match repository origin (${originUrl}).`,
-		};
-	}
-	const normalizedFullName = normalizeRepoFullName(originUrl);
-	if (!normalizedFullName) {
-		return {
-			ok: false,
-			error: `Unsupported origin URL for repository identity binding: ${originUrl}`,
-		};
-	}
-	if (repoInput?.fullName && repoInput.fullName !== normalizedFullName) {
-		return {
-			ok: false,
-			error: `Parity proof input repo.fullName (${repoInput.fullName}) does not match repository origin identity (${normalizedFullName}).`,
-		};
-	}
-
-	const headShaResult = repoInput?.headSha
-		? { ok: true as const, commitSha: repoInput.headSha }
-		: resolveGitRefToCommit(targetDir, "HEAD");
-	if (!headShaResult.ok || !isCommitSha(headShaResult.commitSha)) {
-		return {
-			ok: false,
-			error: headShaResult.ok
-				? "Parity proof input repo.headSha must be a 40-character lowercase commit SHA."
-				: headShaResult.error,
-		};
-	}
-	const trustedPolicyRefResult = resolveGitRefToCommit(
-		targetDir,
-		policy.trustedPolicyRef,
-	);
-	if (!trustedPolicyRefResult.ok) {
-		return { ok: false, error: trustedPolicyRefResult.error };
-	}
-	let baseSha = repoInput?.baseSha ?? trustedPolicyRefResult.commitSha;
-	if (!isCommitSha(baseSha)) {
-		return {
-			ok: false,
 			error:
 				"Parity proof input repo.baseSha must be a 40-character lowercase commit SHA.",
 		};
@@ -5164,6 +6711,25 @@ function maybeAutoGenerateParityProofPack(
 		targetDir,
 		PARITY_PROVENANCE_ARTIFACT_INDEX_PATH,
 	);
+	const harvestManifestPath = resolve(
+		targetDir,
+		PARITY_PROOF_HARVEST_MANIFEST_PATH,
+	);
+	if (
+		existsSync(harvestManifestPath) &&
+		!existsSync(provenanceInputPath) &&
+		!existsSync(provenanceArtifactIndexPath)
+	) {
+		const harvestMaterializationResult =
+			materializeProvenanceInputFromHarvestManifest(
+				targetDir,
+				signingKeyResult.key,
+				signingKeyResult.keyId,
+			);
+		if (!harvestMaterializationResult.ok) {
+			return { ok: false, error: harvestMaterializationResult.error };
+		}
+	}
 	if (
 		!existsSync(provenanceInputPath) &&
 		existsSync(provenanceArtifactIndexPath)
@@ -6017,191 +7583,6 @@ function readOrImportRequiredChecks(
 	};
 }
 
-function escapeRegexLiteral(value: string): string {
-	return value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
-}
-
-function readRequiredCheckNamesFromContract(targetDir: string): string[] {
-	const contractPath = resolve(targetDir, "harness.contract.json");
-	if (!existsSync(contractPath)) {
-		return [];
-	}
-	try {
-		const parsed = JSON.parse(readFileSync(contractPath, "utf-8")) as {
-			branchProtection?: { requiredChecks?: unknown } | undefined;
-			reviewPolicy?: { requiredChecks?: unknown } | undefined;
-		};
-		const branchChecks = Array.isArray(parsed.branchProtection?.requiredChecks)
-			? parsed.branchProtection?.requiredChecks
-			: [];
-		const reviewChecks = Array.isArray(parsed.reviewPolicy?.requiredChecks)
-			? parsed.reviewPolicy?.requiredChecks
-			: [];
-		return [...branchChecks, ...reviewChecks]
-			.filter((value): value is string => typeof value === "string")
-			.map((value) => value.trim())
-			.filter((value) => value.length > 0);
-	} catch {
-		return [];
-	}
-}
-
-function readRequiredCheckNamesFromSourceProviderConfig(
-	targetDir: string,
-	sourceProvider: CIProvider,
-): string[] {
-	if (sourceProvider !== "github-actions") {
-		return [];
-	}
-	const sourceAdapter = createCIProviderAdapter(sourceProvider);
-	const sourceConfigPaths = sourceAdapter.discoverConfigPaths(targetDir);
-	const checks = new Set<string>();
-	for (const configPath of sourceConfigPaths) {
-		const absolutePath = resolve(targetDir, configPath);
-		if (!existsSync(absolutePath)) {
-			continue;
-		}
-		try {
-			const content = readFileSync(absolutePath, "utf-8");
-			for (const line of content.split(/\r?\n/)) {
-				const nameMatch = line.match(/^ {4}name:\s*(.+?)\s*$/);
-				if (!nameMatch?.[1]) {
-					continue;
-				}
-				const displayName = nameMatch[1].trim().replace(/^['"]|['"]$/g, "");
-				if (displayName.length > 0) {
-					checks.add(displayName);
-				}
-			}
-		} catch {
-			// Best-effort legacy import: ignore unreadable workflow files.
-		}
-	}
-	return [...checks];
-}
-
-function buildImportedRequiredChecks(
-	displayNames: string[],
-	sourceProvider: CIProvider,
-): RequiredCheckIdentity[] {
-	return displayNames.map((displayName, index) => ({
-		policyId: `imported-required-check-${index + 1}`,
-		displayName,
-		sourceAppSlug: sourceProvider,
-		sourceAppId: sourceProvider,
-		externalIdPattern: `^${escapeRegexLiteral(displayName)}$`,
-		requiredOnEvents: ["pull_request", "merge_group"],
-		freshnessWindowDays: 7,
-		class: "required",
-	}));
-}
-
-function writeRequiredChecksManifest(
-	targetDir: string,
-	provider: CIProvider,
-	requiredChecks: RequiredCheckIdentity[],
-): { ok: true } | { ok: false; error: string } {
-	try {
-		const manifestPath = resolve(
-			targetDir,
-			HARNESS_DIR,
-			"ci-required-checks.json",
-		);
-		mkdirSync(dirname(manifestPath), { recursive: true });
-		writeFileSync(
-			manifestPath,
-			JSON.stringify(
-				{
-					version: 1,
-					activeProvider: provider,
-					requiredChecks,
-				},
-				null,
-				2,
-			),
-		);
-		return { ok: true };
-	} catch (error) {
-		return {
-			ok: false,
-			error: `Failed to write required checks manifest: ${sanitizeError(error)}`,
-		};
-	}
-}
-
-function readOrImportRequiredChecks(
-	targetDir: string,
-	sourceProvider: CIProvider,
-	allowPersistManifest: boolean,
-):
-	| {
-			ok: true;
-			value: RequiredCheckIdentity[];
-			imported: boolean;
-			persisted: boolean;
-	  }
-	| {
-			ok: false;
-			error: string;
-	  } {
-	const requiredChecksResult = readAllRequiredChecks(targetDir);
-	if (requiredChecksResult.ok) {
-		return {
-			ok: true,
-			value: requiredChecksResult.value,
-			imported: false,
-			persisted: false,
-		};
-	}
-	if (
-		requiredChecksResult.error !==
-		"Required checks manifest missing: .harness/ci-required-checks.json"
-	) {
-		return requiredChecksResult;
-	}
-
-	const contractCheckNames = readRequiredCheckNamesFromContract(targetDir);
-	const workflowCheckNames = readRequiredCheckNamesFromSourceProviderConfig(
-		targetDir,
-		sourceProvider,
-	);
-	const importedCheckNames = [
-		...new Set([...contractCheckNames, ...workflowCheckNames]),
-	]
-		.map((name) => name.trim())
-		.filter((name) => name.length > 0)
-		.sort((left, right) => left.localeCompare(right));
-
-	if (importedCheckNames.length === 0) {
-		return {
-			ok: false,
-			error:
-				"Required checks manifest missing and no legacy required checks were discovered from harness.contract.json or source workflow metadata.",
-		};
-	}
-
-	const importedChecks = buildImportedRequiredChecks(
-		importedCheckNames,
-		sourceProvider,
-	);
-	if (allowPersistManifest) {
-		const writeResult = writeRequiredChecksManifest(
-			targetDir,
-			sourceProvider,
-			importedChecks,
-		);
-		if (!writeResult.ok) {
-			return writeResult;
-		}
-	}
-	return {
-		ok: true,
-		value: importedChecks,
-		imported: true,
-		persisted: allowPersistManifest,
-	};
-}
-
 function readAllRequiredChecks(targetDir: string):
 	| {
 			ok: true;
@@ -6810,7 +8191,7 @@ function restoreSnapshot(
 		);
 		if (!externalRestoreResult.ok) {
 			console.error(`Error: ${externalRestoreResult.error}`);
-			return EXIT_CODES.WRITE_ERROR;
+			return EXIT_CODES.INVALID_PATH;
 		}
 		return EXIT_CODES.SUCCESS;
 	} catch (error) {
@@ -7299,6 +8680,25 @@ export function runCIMigrateCLI(
 		console.error("Error: --rollback requires --snapshot <id>.");
 		return EXIT_CODES.INVALID_PATH;
 	}
+	if (
+		options.syncBreakGlassPolicy === true ||
+		options.breakGlassRosterPath !== undefined
+	) {
+		const breakGlassSyncResult = maybeSyncBreakGlassGovernance(
+			dir,
+			options.breakGlassRosterPath,
+			true,
+		);
+		if (!breakGlassSyncResult.ok) {
+			console.error(`Error: ${breakGlassSyncResult.error}`);
+			return EXIT_CODES.INVALID_PATH;
+		}
+		if (breakGlassSyncResult.synced) {
+			console.info(
+				`Break-glass governance policy synchronized: ${BREAK_GLASS_POLICY_PATH}`,
+			);
+		}
+	}
 	if (options.breakGlassApprovalPath !== undefined) {
 		const parsedBreakGlassResult = readBreakGlassApproval(
 			dir,
@@ -7681,6 +9081,10 @@ export function runCIMigrateCLI(
 			typeof options.mergeQueueOrchestratorPath === "string"
 				? options.mergeQueueOrchestratorPath.trim()
 				: undefined;
+		const configuredProviderAPIPath =
+			typeof options.mergeQueueProviderAPIPath === "string"
+				? options.mergeQueueProviderAPIPath.trim()
+				: undefined;
 		if (
 			options.mergeQueueOrchestratorPath !== undefined &&
 			(!configuredOrchestratorPath || configuredOrchestratorPath.length === 0)
@@ -7690,13 +9094,34 @@ export function runCIMigrateCLI(
 			);
 			return EXIT_CODES.INVALID_PATH;
 		}
+		if (
+			options.mergeQueueProviderAPIPath !== undefined &&
+			(!configuredProviderAPIPath || configuredProviderAPIPath.length === 0)
+		) {
+			console.error(
+				`Error: --merge-queue-provider-api requires a non-empty path (or use ${DEFAULT_MERGE_QUEUE_PROVIDER_API_PATH}).`,
+			);
+			return EXIT_CODES.INVALID_PATH;
+		}
+		if (
+			configuredOrchestratorPath &&
+			configuredOrchestratorPath.length > 0 &&
+			configuredProviderAPIPath &&
+			configuredProviderAPIPath.length > 0
+		) {
+			console.error(
+				"Error: --merge-queue-orchestrator and --merge-queue-provider-api are mutually exclusive.",
+			);
+			return EXIT_CODES.INVALID_PATH;
+		}
 		const mergeQueueOrchestratorPath =
 			configuredOrchestratorPath && configuredOrchestratorPath.length > 0
 				? configuredOrchestratorPath
-				: requireMergeQueueEvidence &&
-						existsSync(resolve(dir, DEFAULT_MERGE_QUEUE_ORCHESTRATOR_PATH))
-					? DEFAULT_MERGE_QUEUE_ORCHESTRATOR_PATH
-					: undefined;
+				: undefined;
+		const mergeQueueProviderAPIPath =
+			configuredProviderAPIPath && configuredProviderAPIPath.length > 0
+				? configuredProviderAPIPath
+				: undefined;
 		const mergeQueueEvidencePathExplicitlyProvided =
 			options.mergeQueueEvidencePath !== undefined;
 		const hasExistingMergeQueueEvidence = existsSync(
@@ -7705,6 +9130,7 @@ export function runCIMigrateCLI(
 		if (
 			requireFullMergeQueueLifecycle ||
 			mergeQueueOrchestratorPath !== undefined ||
+			mergeQueueProviderAPIPath !== undefined ||
 			mergeQueueEvidencePathExplicitlyProvided ||
 			hasExistingMergeQueueEvidence
 		) {
@@ -7735,14 +9161,37 @@ export function runCIMigrateCLI(
 				return EXIT_CODES.INVALID_PATH;
 			}
 		}
+		if (mergeQueueProviderAPIPath && mergeQueueEvidenceBinding) {
+			const signingKeyResult = resolveSnapshotSigningKey();
+			if (!signingKeyResult.ok) {
+				console.error(`Error: ${signingKeyResult.error}`);
+				return EXIT_CODES.INVALID_PATH;
+			}
+			const providerAPIRunResult = runMergeQueueProviderAPIOrchestrator(
+				dir,
+				mergeQueueProviderAPIPath,
+				snapshotId,
+				configuredMergeQueueEvidencePath,
+				requireFullMergeQueueLifecycle,
+				mergeQueueEvidenceBinding,
+				signingKeyResult.key,
+			);
+			if (!providerAPIRunResult.ok) {
+				console.error(`Error: ${providerAPIRunResult.error}`);
+				return EXIT_CODES.INVALID_PATH;
+			}
+		}
 		const mergeQueueEvidenceResult = readMergeQueueEvidence(
 			dir,
 			snapshotId,
 			options.mergeQueueEvidencePath !== undefined ||
-				mergeQueueOrchestratorPath !== undefined
+				mergeQueueOrchestratorPath !== undefined ||
+				mergeQueueProviderAPIPath !== undefined
 				? configuredMergeQueueEvidencePath
 				: undefined,
-			requireMergeQueueEvidence || mergeQueueOrchestratorPath !== undefined,
+			requireMergeQueueEvidence ||
+				mergeQueueOrchestratorPath !== undefined ||
+				mergeQueueProviderAPIPath !== undefined,
 			mergeQueueEvidenceBinding,
 		);
 		if (!mergeQueueEvidenceResult.ok) {

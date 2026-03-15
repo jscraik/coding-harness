@@ -1,7 +1,7 @@
 import { mkdirSync, rmSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { afterEach, describe, expect, it } from "vitest";
-import { loadContract } from "./loader.js";
+import { clearContractCache, loadContract } from "./loader.js";
 
 describe("loadContract", () => {
 	const createdFiles: string[] = [];
@@ -11,6 +11,7 @@ describe("loadContract", () => {
 			rmSync(filePath, { force: true });
 		}
 		createdFiles.length = 0;
+		clearContractCache();
 	});
 
 	it("loads a valid contract", () => {
@@ -219,6 +220,36 @@ describe("loadContract", () => {
 			"utf-8",
 		);
 
+		expect(() =>
+			loadContract(path, process.cwd(), { allowExtends: false }),
+		).toThrow(/extends/i);
+	});
+
+	// Security regression: finding d88697dd20288191b8b2f7e253908500.
+	// getCacheKey previously ignored allowExtends, so a contract loaded once
+	// with default settings would be returned from cache even when a subsequent
+	// call set allowExtends:false (bypassing the inheritance restriction used
+	// by policy-gate). The fix includes allowExtends in the cache key.
+	it("does not reuse cache across different allowExtends modes", () => {
+		const dir = join(process.cwd(), "artifacts");
+		mkdirSync(dir, { recursive: true });
+		const path = join(dir, "contract-loader-extends-cache-isolation.json");
+		createdFiles.push(path);
+
+		writeFileSync(
+			path,
+			JSON.stringify({
+				version: "1.0",
+				extends: "typescript-base",
+			}),
+			"utf-8",
+		);
+
+		// Prime the cache with the default (extends-allowed) key.
+		const contract = loadContract(path);
+		expect(contract.version).toBe("1.0");
+
+		// Strict-mode load must still reject extends — not return the cached entry.
 		expect(() =>
 			loadContract(path, process.cwd(), { allowExtends: false }),
 		).toThrow(/extends/i);

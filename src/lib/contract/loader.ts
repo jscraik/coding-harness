@@ -20,8 +20,14 @@ const CONTRACT_CACHE = new Map<string, HarnessContract>();
 const MAX_CACHE_SIZE = 10;
 
 /** Generate cache key for contract lookup */
-function getCacheKey(baseDir: string, path: string): string {
-	return `${baseDir}:${path}`;
+function getCacheKey(
+	baseDir: string,
+	path: string,
+	options?: { allowExtends?: boolean },
+): string {
+	const extendsMode =
+		options?.allowExtends === false ? "no-extends" : "default";
+	return `${baseDir}:${path}:${extendsMode}`;
 }
 
 /** Get contract from cache if present */
@@ -116,7 +122,7 @@ export function loadContract(
 	options?: { allowExtends?: boolean },
 ): HarnessContract {
 	// Check cache first (fast path for repeated loads)
-	const cacheKey = getCacheKey(baseDir, path);
+	const cacheKey = getCacheKey(baseDir, path, options);
 	const cached = getCachedContract(cacheKey);
 	if (cached !== undefined) {
 		return cached;

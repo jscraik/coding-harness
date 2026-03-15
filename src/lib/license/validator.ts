@@ -5,7 +5,8 @@
  * Implements security hardening: path traversal prevention, file size limits.
  */
 
-import { readFileSync } from "node:fs";
+import { readFileSync, statSync } from "node:fs";
+
 import { resolve } from "node:path";
 import {
 	ALL_LICENSES,
@@ -88,11 +89,11 @@ function sanitizePathForDisplay(input: string): string {
  */
 function safeReadFile(path: string): string | undefined {
 	try {
-		const stats = readFileSync(path, { encoding: "utf-8" });
-		if (stats.length > MAX_FILE_SIZE) {
+		const stats = statSync(path);
+		if (stats.size > MAX_FILE_SIZE) {
 			return undefined;
 		}
-		return stats;
+		return readFileSync(path, { encoding: "utf-8" });
 	} catch {
 		return undefined;
 	}
@@ -173,8 +174,9 @@ function detectLicenseFromFile(content: string): {
 
 	// Fallback to SPDX ID detection in text
 	const spdxMatch = content.match(/SPDX-License-Identifier:\s*([\w\-.]+)/i);
-	if (spdxMatch?.[1]) {
-		const detected = getLicenseBySpdxId(spdxMatch[1]);
+	const spdxIdentifier = spdxMatch?.[1];
+	if (spdxIdentifier) {
+		const detected = getLicenseBySpdxId(spdxIdentifier);
 		if (detected) {
 			return { spdxId: detected.spdxId, confidence: "high" };
 		}

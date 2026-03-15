@@ -17,9 +17,9 @@
 			"provider": "linear",
 			"method": "viewer",
 			"response": {
-				"id": "8beb3128-f568-4628-b504-90c4da84b220",
-				"name": "jscraik@brainwav.io",
-				"email": "jscraik@brainwav.io"
+				"id": "00000000-0000-4000-8000-000000000000",
+				"name": "redacted@example.com",
+				"email": "redacted@example.com"
 			},
 			"durationMs": 191,
 			"timestamp": "2026-03-13T10:19:50.025Z"

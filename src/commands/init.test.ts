@@ -175,6 +175,15 @@ describe("runInit", () => {
 			);
 			expect(requiredChecks.activeProvider).toBe("circleci");
 			expect(requiredChecks.requiredChecks[0]?.sourceAppSlug).toBe("circleci");
+
+			const circleConfig = require("node:fs").readFileSync(
+				join(tempDir, ".circleci/config.yml"),
+				"utf-8",
+			);
+			expect(circleConfig).toContain("name: Ensure pnpm available");
+			expect(circleConfig).toContain('export NPM_CONFIG_PREFIX="$HOME/.local"');
+			expect(circleConfig).toContain("npm install --global pnpm@10.0.0");
+			expect(circleConfig).not.toContain("name: Enable corepack");
 		});
 
 		it("skips existing files without --force", () => {
@@ -1723,6 +1732,44 @@ describe("--update flag", () => {
 			expect(result.error.code).toBe("INVALID_PATH");
 			expect(result.error.message).toContain("manifest provider");
 		}
+	});
+
+	// Security regression: executeUpdate must not follow symlinks when writing
+	// template files. An attacker-controlled repo can replace a tracked directory
+	// (e.g. .github) with a symlink to an outside path; --update must detect
+	// this and fail rather than overwriting files outside the workspace.
+	it("rejects update when tracked path traverses through symlinked directory", () => {
+		const installResult = runInit(tempDir, {
+			dryRun: false,
+			force: false,
+			track: true,
+		});
+		expect(installResult.ok).toBe(true);
+
+		const githubDir = join(tempDir, ".github");
+		const outsideDir = join(tmpdir(), `harness-outside-${Date.now()}`);
+		mkdirSync(outsideDir, { recursive: true });
+
+		// Replace the tracked .github directory with a symlink to an outside location.
+		rmSync(githubDir, { recursive: true, force: true });
+		symlinkSync(outsideDir, githubDir);
+
+		const result = runInit(tempDir, {
+			dryRun: false,
+			force: false,
+			update: true,
+		});
+
+		expect(result.ok).toBe(false);
+		if (!result.ok) {
+			// The symlink may be caught either by sanitizePath's segment-walker
+			// during manifest re-validation (PATH_TRAVERSAL) or by the explicit
+			// symlink guard in executeUpdate (WRITE_ERROR / "escaped workspace").
+			// Either way the update must be rejected.
+			expect(["PATH_TRAVERSAL", "WRITE_ERROR"]).toContain(result.error.code);
+		}
+
+		rmSync(outsideDir, { recursive: true, force: true });
 	});
 });
 

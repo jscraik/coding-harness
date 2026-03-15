@@ -213,5 +213,43 @@ describe("validator", () => {
 			expect(result.copyleft).toBe(true);
 			expect(result.errors).toHaveLength(0);
 		});
+
+		// Security regression: safeReadFile must check file size BEFORE reading.
+		// Finding c4aeaac5aad48191a38d3c13f9dcb1d3 showed that readFileSync ran
+		// before the MAX_FILE_SIZE guard, allowing an attacker-controlled repo
+		// to exhaust memory with an oversized LICENSE file.
+		// The fix uses statSync first; these tests verify the observable behaviour.
+		it("skips a LICENSE file that exceeds the 100KB size limit", () => {
+			const tmpDir = mkdtempSync(join(tmpdir(), "license-test-"));
+			// 100_001 bytes — just over the limit
+			writeFileSync(join(tmpDir, "LICENSE"), "x".repeat(100_001));
+
+			const result = validateLicense({
+				repoRoot: tmpDir,
+				allowedLicenses: ["MIT"],
+			});
+
+			// The oversized file is skipped entirely, so no license is found.
+			expect(result.licenseFound).toBe(false);
+			expect(result.errors).toContain("No valid open-source license detected");
+		});
+
+		it("reads a LICENSE file that is exactly at the 100KB size limit", () => {
+			const tmpDir = mkdtempSync(join(tmpdir(), "license-test-"));
+			// exactly 100_000 bytes, padded with spaces after the MIT text
+			const content = "MIT License\n\nPermission is hereby granted".padEnd(
+				100_000,
+				" ",
+			);
+			writeFileSync(join(tmpDir, "LICENSE"), content);
+
+			const result = validateLicense({
+				repoRoot: tmpDir,
+				allowedLicenses: ["MIT"],
+			});
+
+			expect(result.licenseFound).toBe(true);
+			expect(result.spdxId).toBe("MIT");
+		});
 	});
 });

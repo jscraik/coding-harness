@@ -9,9 +9,10 @@
  * @module lib/init/update
  */
 
-import { existsSync } from "node:fs";
-import { resolve } from "node:path";
+import { existsSync, lstatSync, realpathSync } from "node:fs";
+import { dirname, resolve, sep } from "node:path";
 import semver from "semver";
+import { sanitizeError } from "../input/sanitize.js";
 import { getVersion } from "../version.js";
 import { atomicWrite } from "./migration.js";
 import { loadManifest, sanitizePath } from "./rollback.js";
@@ -106,6 +107,51 @@ export function executeUpdate(
 		}
 
 		const targetPath = pathResult.value;
+
+		// SECURITY: reject symlinked targets and parent-directory escapes.
+		// sanitizePath is lexical-only and does not resolve realpaths, so a
+		// symlinked directory (e.g. .github -> /etc) passes the prefix check.
+		// We mirror the same guard used in executeRollback.
+		try {
+			if (existsSync(targetPath) && lstatSync(targetPath).isSymbolicLink()) {
+				return {
+					ok: false,
+					error: {
+						code: "WRITE_ERROR",
+						message: `Symlink detected at update target: ${entry.path} — update rejected`,
+						path: entry.path,
+					},
+				};
+			}
+
+			const realTargetDir = realpathSync(targetDir);
+			const parentDir = dirname(targetPath);
+			const realParent = existsSync(parentDir)
+				? realpathSync(parentDir)
+				: parentDir;
+			if (
+				realParent !== realTargetDir &&
+				!realParent.startsWith(`${realTargetDir}${sep}`)
+			) {
+				return {
+					ok: false,
+					error: {
+						code: "WRITE_ERROR",
+						message: `Update path escaped workspace: ${entry.path}`,
+						path: entry.path,
+					},
+				};
+			}
+		} catch (e) {
+			return {
+				ok: false,
+				error: {
+					code: "WRITE_ERROR",
+					message: `Failed to validate update target: ${sanitizeError(e)}`,
+					path: entry.path,
+				},
+			};
+		}
 
 		// Check if file exists
 		if (!existsSync(targetPath)) {

@@ -111,12 +111,18 @@ function renderCircleCIConfig(pm: string): string {
 jobs:
   pr-pipeline:
     docker:
-      - image: cimg/node:20.12
+      - image: cimg/node:24.13
     steps:
       - checkout
       - run:
-          name: Enable corepack
-          command: corepack enable
+          name: Ensure pnpm available
+          command: |
+            if ! command -v pnpm >/dev/null 2>&1; then
+              export NPM_CONFIG_PREFIX="$HOME/.local"
+              export PATH="$NPM_CONFIG_PREFIX/bin:$PATH"
+              npm install --global pnpm@10.0.0
+            fi
+            pnpm --version
       - run:
           name: Install dependencies
           command: ${installCommand}
@@ -3125,7 +3131,8 @@ export CLAUDE_APPROVAL_POSTURE="\${CLAUDE_APPROVAL_POSTURE:-require}"
 
 required_mise_tools=(${PROJECT_MISE_REQUIRED_TOOLS.map(([tool]) => `"${tool}"`).join(" ")})
 for tool in "\${required_mise_tools[@]}"; do
-	if ! rg -Fq "\"\${tool}\" = " "$MISE_PATH" && ! rg -Fq "\${tool} = " "$MISE_PATH"; then
+	tool_pattern="$(printf '%s' "\$tool" | sed 's/[][(){}.^$*+?|\\\\]/\\\\&/g')"
+	if ! rg -q "^[[:space:]]*(\\\"\${tool_pattern}\\\"|\${tool_pattern})[[:space:]]*=" "$MISE_PATH"; then
 		echo "Error: required tool '\$tool' is not pinned in $MISE_PATH [tools]"
 		echo "Fix: add '\$tool = \\\"<version>\\\"' to $MISE_PATH."
 		exit 1
