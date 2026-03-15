@@ -263,26 +263,58 @@ jobs:
       - name: Enable corepack
         run: corepack enable
       - name: Install @brainwav/diagram
-        # Install diagram CLI globally for the gate steps below.
         run: npm install -g @brainwav/diagram@1.0.8
       - name: Generate fresh architecture diagrams
-        # Always regenerate so the manifest reflects the current PR HEAD.
+        # Always regenerate so artifacts reflect the current PR HEAD.
         run: diagram all . --output-dir AI/diagrams
-      - name: Gate required diagram types (no placeholders)
-        # Active gate: diagram manifest works in v1.0.8.
-        # TODO: switch to `diagram test . --format junit --output artifacts/architecture-gate.xml`
-        # once @brainwav/diagram fixes the missing ./rules module (tracked upstream).
+      - name: Gate required diagram types (manifest check)
+        # Validates architecture, dependency, security, auth types are present
+        # and non-placeholder using diagram manifest (works in v1.0.8).
         run: |
           diagram manifest . \
             --manifest-dir AI/diagrams \
             --require-types architecture,dependency,security,auth \
             --fail-on-placeholder
-      - name: Upload diagram artifacts
+      - name: Run architecture rules
+        # scripts/check-architecture-rules.cjs implements .architecture.yml rules
+        # using only Node built-ins (replaces `diagram test` which has a
+        # MODULE_NOT_FOUND: ./rules bug in @brainwav/diagram v1.0.8).
+        # Pre-existing tech-debt violations are baselined in .architecture-baseline.txt
+        # and are advisory-only. New violations are CI-blocking errors.
+        run: node scripts/check-architecture-rules.cjs --format json > artifacts/architecture-gate.json
+      - name: Print architecture gate summary
+        if: always()
+        run: |
+          if [ -f artifacts/architecture-gate.json ]; then
+            node -e "
+              const r = JSON.parse(require('fs').readFileSync('artifacts/architecture-gate.json','utf8'));
+              const s = r.summary;
+              console.log('Status:', r.status,
+                '| errors:', s.errors,
+                '| warnings:', s.warnings,
+                '| baselined:', s.baselined);
+              if (r.violations) {
+                r.violations.filter(v=>v.severity!=='baseline').forEach(v=>
+                  console.log((v.severity==='error'?'❌':'⚠️ '),'['+v.rule+']',v.file,'—',v.message)
+                );
+              }
+            "
+          fi
+      - name: Fail if new architecture errors found
+        run: |
+          STATUS=$(jq -r '.status' artifacts/architecture-gate.json)
+          if [ "$STATUS" = "fail" ]; then
+            echo "::error::New architecture violations found. See architecture-gate.json for details."
+            exit 1
+          fi
+      - name: Upload architecture artifacts
         if: always()
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         with:
-          name: architecture-diagrams
-          path: AI/diagrams/
+          name: architecture-gate
+          path: |
+            AI/diagrams/
+            artifacts/architecture-gate.json
 
   consistency-drift-advisory:
     name: consistency-drift-advisory
