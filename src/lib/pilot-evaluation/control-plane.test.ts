@@ -514,7 +514,6 @@ describe("control-plane artifacts", () => {
 
 	it(
 		"requires an applied override record before advisory promotion uses maintainer approvals",
-		{ timeout: 30000 },
 		() => {
 			const contractPath = join(testDir, "contract-with-override-policy.json");
 			const contract = JSON.parse(
