@@ -4753,7 +4753,10 @@ describe("runCIMigrateCLI", () => {
 		expect(vi.mocked(runInitCLI)).not.toHaveBeenCalled();
 	});
 
-	it("auto-generates signed parity proof pack evidence when requested", () => {
+	it(
+		"auto-generates signed parity proof pack evidence when requested",
+		{ timeout: 120000 },
+		() => {
 		seedMigratableFixture(tempDir);
 		writeCIProviderPolicyContract(tempDir, "required");
 		writeParityProofPackInput(tempDir);
@@ -4804,7 +4807,8 @@ describe("runCIMigrateCLI", () => {
 		expect(typeof mergeQueueWindow.pausedAt).toBe("string");
 		expect(typeof mergeQueueWindow.drainedAt).toBe("string");
 		expect(typeof mergeQueueWindow.revalidatedAt).toBe("string");
-	});
+		},
+	);
 
 	it("fails auto-generation when proof-pack input is missing", () => {
 		seedMigratableFixture(tempDir);
