@@ -15,6 +15,7 @@ Codex skill for reliable setup and operation of `@brainwav/coding-harness` in re
 - [Philosophy](#philosophy)
 - [Capabilities and boundaries](#capabilities-and-boundaries)
 - [Constraints](#constraints)
+- [Memory layer](#memory-layer)
 - [Workflow](#workflow)
 - [Validation](#validation)
 - [Anti-patterns](#anti-patterns)
@@ -80,6 +81,44 @@ Core boundaries to enforce:
 - Require user confirmation before mutative/destructive operations.
 - Do not claim success without command evidence from the current repository state.
 - If command help output conflicts with older docs, prioritize command output and call out the mismatch.
+
+## Memory layer
+
+Every repo with coding-harness installed has a per-project knowledge base at
+`.harness/memory/LEARNINGS.md` (gitignored, append-only).
+
+**Session-start bootstrap — run this when entering any harness-enabled repo:**
+
+```bash
+mkdir -p .harness/memory
+test -f .harness/memory/LEARNINGS.md || cat > .harness/memory/LEARNINGS.md << 'EOF'
+---
+schema_version: 1
+purpose: Per-project agent knowledge base — repo-specific gotchas and hard-won fixes.
+scope: This repo only.
+update_policy: |
+  Append after any bug, tool failure, or extra-effort fix specific to this repo.
+  Universal gotchas go in ~/.codex/instructions/Learnings.md instead.
+  Do NOT delete entries. Append only.
+  Format: **YYYY-MM-DD [Agent]:** <problem> → <fix>
+---
+
+# Learnings
+
+Repo-specific agent knowledge base. Append-only.
+
+> **Scope:** This repo only. Universal gotchas → `~/.codex/instructions/Learnings.md`.
+> **Format:** `**YYYY-MM-DD [Agent]:** <problem> → <fix>`
+EOF
+```
+
+**Read order at session start:**
+1. `~/.codex/instructions/Learnings.md` (always).
+2. `.harness/memory/LEARNINGS.md` (when present).
+
+**Write rule:** repo-specific → `.harness/memory/LEARNINGS.md`; universal → `~/.codex/instructions/Learnings.md`.
+
+If the repo has no `.harness/` directory, skip creation entirely.
 
 ## Workflow
 1. **Choose execution mode**

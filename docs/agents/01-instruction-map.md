@@ -27,7 +27,7 @@ When starting a task, follow this lookup order:
 3. Select one or more of the following based on intent:
 
    - **Environment/setup, command selection, or tool preference:** `02-tooling-policy.md`
-   - **Memory/checkpoint workflow:** `03-local-memory.md`
+   - **Memory/checkpoint workflow or per-project LEARNINGS.md:** `03-local-memory.md`
    - **Validation and gate planning:** `04-validation.md` + `10-agent-testing-gates.md`
    - **Flaky tests and evidence artifacts:** `11-flaky-test-artifacts.md`
    - **Greptile review policy, confidence thresholds, and `.greptile/` governance:** `12-greptile-ai-governance.md`
