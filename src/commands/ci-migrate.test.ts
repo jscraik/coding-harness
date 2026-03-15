@@ -1811,7 +1811,7 @@ function writeMergeQueueProviderAPIFixture(
 		JSON.stringify(
 			{
 				drainedAt: "2026-03-14T00:01:00.000Z",
-				candidateCount: 0,
+				candidateCount: 2,
 			},
 			null,
 			2,
@@ -1822,7 +1822,7 @@ function writeMergeQueueProviderAPIFixture(
 		JSON.stringify(
 			{
 				revalidatedAt: "2026-03-14T00:02:00.000Z",
-				candidateCount: 0,
+				candidateCount: 2,
 			},
 			null,
 			2,
@@ -1889,7 +1889,10 @@ function writeParityProofHarvestManifest(targetDir: string): void {
 			2,
 		),
 	);
-	const scheduleResponsePath = join(controlPlaneDir, "parity-harvest.schedule.json");
+	const scheduleResponsePath = join(
+		controlPlaneDir,
+		"parity-harvest.schedule.json",
+	);
 	const discoveryResponsePath = join(
 		controlPlaneDir,
 		"parity-harvest.discovery.json",
@@ -1902,7 +1905,9 @@ function writeParityProofHarvestManifest(targetDir: string): void {
 		discoveryResponsePath,
 		JSON.stringify(
 			{
-				artifactUrl: pathToFileURL(join(targetDir, parityRawSourcePath)).toString(),
+				artifactUrl: pathToFileURL(
+					join(targetDir, parityRawSourcePath),
+				).toString(),
 				sourceRunId: "run-harvest-parity-001",
 				sourceCommitSha: history.headSha,
 				capturedAt: generatedAt,
@@ -2009,11 +2014,29 @@ function writeParityProofHarvestManifest(targetDir: string): void {
 describe("runCIMigrateCLI", () => {
 	let tempDir: string;
 	let previousSnapshotSigningKey: string | undefined;
+	let consoleErrorSpy: ReturnType<typeof vi.spyOn> | undefined;
+	let consoleWarnSpy: ReturnType<typeof vi.spyOn> | undefined;
+	let consoleLogSpy: ReturnType<typeof vi.spyOn> | undefined;
+	let consoleInfoSpy: ReturnType<typeof vi.spyOn> | undefined;
 
 	beforeEach(() => {
 		tempDir = mkdtempSync(join(tmpdir(), "harness-ci-migrate-"));
 		previousSnapshotSigningKey = process.env[SNAPSHOT_SIGNING_KEY_ENV];
 		process.env[SNAPSHOT_SIGNING_KEY_ENV] = TEST_SNAPSHOT_SIGNING_KEY;
+		// This suite intentionally exercises many failure modes; suppressing
+		// console noise keeps Vitest worker IPC stable in long runs.
+		consoleErrorSpy = vi.spyOn(console, "error").mockImplementation(() => {
+			return undefined;
+		});
+		consoleWarnSpy = vi.spyOn(console, "warn").mockImplementation(() => {
+			return undefined;
+		});
+		consoleLogSpy = vi.spyOn(console, "log").mockImplementation(() => {
+			return undefined;
+		});
+		consoleInfoSpy = vi.spyOn(console, "info").mockImplementation(() => {
+			return undefined;
+		});
 		vi.clearAllMocks();
 		vi.mocked(scanOpenPullRequestSatisfiability).mockReturnValue({
 			status: "satisfied",
@@ -2023,6 +2046,14 @@ describe("runCIMigrateCLI", () => {
 	});
 
 	afterEach(() => {
+		consoleErrorSpy?.mockRestore();
+		consoleWarnSpy?.mockRestore();
+		consoleLogSpy?.mockRestore();
+		consoleInfoSpy?.mockRestore();
+		consoleErrorSpy = undefined;
+		consoleWarnSpy = undefined;
+		consoleLogSpy = undefined;
+		consoleInfoSpy = undefined;
 		if (previousSnapshotSigningKey === undefined) {
 			delete process.env[SNAPSHOT_SIGNING_KEY_ENV];
 		} else {
@@ -2497,8 +2528,8 @@ describe("runCIMigrateCLI", () => {
 		expect(evidence.drainedAt).toBe("2026-03-14T00:01:00.000Z");
 		expect(evidence.revalidatedAt).toBe("2026-03-14T00:02:00.000Z");
 		expect(evidence.pausedQueueDepth).toBe(3);
-		expect(evidence.drainedCandidateCount).toBe(0);
-		expect(evidence.revalidatedCandidateCount).toBe(0);
+		expect(evidence.drainedCandidateCount).toBe(2);
+		expect(evidence.revalidatedCandidateCount).toBe(2);
 		expect(existsSync(join(tempDir, `${MERGE_QUEUE_EVIDENCE_PATH}.sig`))).toBe(
 			true,
 		);
@@ -2625,9 +2656,7 @@ describe("runCIMigrateCLI", () => {
 		// The commit may succeed or fail for unrelated reasons (missing evidence
 		// in required mode), but the key invariant is that the orchestrator was
 		// NOT executed — proven by the absence of the evidence file it would write.
-		expect(
-			existsSync(join(tempDir, MERGE_QUEUE_EVIDENCE_PATH)),
-		).toBe(false);
+		expect(existsSync(join(tempDir, MERGE_QUEUE_EVIDENCE_PATH))).toBe(false);
 	});
 
 	it("rejects merge-queue evidence when binding does not match required-mode commit identity", () => {
@@ -4974,7 +5003,10 @@ describe("runCIMigrateCLI", () => {
 				scannedOpenPrs: 2,
 				failingPrs: [],
 			});
-		writeSignedMergeQueueEvidence(tempDir, "cutover-auto-generated-from-harvest");
+		writeSignedMergeQueueEvidence(
+			tempDir,
+			"cutover-auto-generated-from-harvest",
+		);
 
 		const exitCode = runCIMigrateCLI(tempDir, {
 			provider: "circleci",

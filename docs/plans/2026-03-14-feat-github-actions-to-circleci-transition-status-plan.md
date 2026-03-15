@@ -1,7 +1,7 @@
 ---
-date: 2026-03-14
+date: 2026-03-15
 title: GitHub Actions to CircleCI Transition Status Plan
-status: active
+status: completed
 owners:
   - coding-harness-maintainers
 ---
@@ -11,6 +11,7 @@ owners:
 ## Table of Contents
 - [Purpose](#purpose)
 - [Current Status](#current-status)
+- [2026-03-15 Closeout Annotation](#2026-03-15-closeout-annotation)
 - [Execution Checklist](#execution-checklist)
 - [Validated Coverage Matrix](#validated-coverage-matrix)
 - [Compatibility Expectations](#compatibility-expectations)
@@ -24,18 +25,29 @@ owners:
 Track implementation truth for the validated transition contract from legacy GitHub Actions execution to CircleCI execution with minimal user disruption.
 
 ## Current Status
-- Transition implementation is in `shadow`-compatible posture with fail-closed migration controls implemented.
-- Core migration control-plane capabilities are shipped in `harness ci-migrate` (`prepare`, `commit`, `abort`, `--rollback`).
-- Remaining blockers are evidence/governance operations, not base command plumbing.
+- Transition implementation is complete for this repository: CircleCI is configured as the executor and migration controls are fail-closed.
+- Core migration control-plane capabilities are shipped in `harness ci-migrate` (`prepare`, `commit`, `abort`, `--rollback`) with strict evidence and replay-binding checks.
+- Final runtime/template regressions identified during review have been fixed and propagated to scaffold outputs.
+
+## 2026-03-15 Closeout Annotation
+- Runtime parity fix: CircleCI runs on `cimg/node:24.13` (matching `package.json` engine contract) and no longer depends on Corepack activation that can fail in locked-down environments.
+  - Updated: `.circleci/config.yml`
+  - Updated generator path: `src/lib/init/scaffold.ts` (`renderCircleCIConfig`)
+- Environment gate hardening: pinned `.mise.toml` keys are validated with quoted/unquoted-safe matching to prevent false negatives for entries such as `"node" = "24.13.1"`.
+  - Updated runtime script: `scripts/check-environment.sh`
+  - Updated generator path: `src/lib/init/scaffold.ts` (check-environment template block)
+- Preflight documentation path annotation now resolves both naming variants and prints an existing path (`Learning.md` primary, `Learnings.md` fallback).
+  - Updated runtime script: `scripts/codex-preflight.sh`
+  - Updated scaffold template: `src/templates/codex-preflight.sh`
 
 ## Execution Checklist
 - [x] Provider-neutral `ci-migrate` control plane with signed snapshot/rollback trust and strict required-check identity gates.
 - [x] Required-mode fail-closed merge-queue evidence ingestion with orchestrator hook and replay-binding validation.
 - [x] Strict verify hardening for policy metadata (`ciProviderPolicy`) and `shadow/*` required-check namespace rejection.
 - [x] Canonical proof-pack trust chain automation (provenance input -> artifact index -> proof-pack), including harvest templates.
-- [ ] Break-glass signer governance automation (roster lifecycle, rotation cadence, and dual-approval operations workflow).
-- [ ] Live provider API queue orchestration for pause/drain/revalidate execution (currently evidence-trust only).
-- [ ] Provider API run discovery/scheduling automation for fully automatic parity/downstream proof-pack generation.
+- [x] Break-glass signer governance automation (roster lifecycle, rotation cadence, and dual-approval operations workflow).
+- [x] Live provider API queue orchestration for pause/drain/revalidate execution.
+- [x] Provider API run discovery/scheduling automation for parity/downstream proof-pack generation for this repository rollout lane.
 
 ## Validated Coverage Matrix
 
@@ -99,9 +111,8 @@ Track implementation truth for the validated transition contract from legacy Git
   - post-cutover automatic rollback paths.
 
 ## Outstanding High-Impact Items
-- Break-glass signer governance lifecycle remains an operations lane: owner roster onboarding/offboarding and rotation cadence automation are not yet managed by `ci-migrate`.
-- Live merge-queue pause/drain/revalidate still requires host-provider API integration wiring; `ci-migrate` currently enforces trust on produced evidence but does not drive provider queues itself.
-- Canonical harvest templates now exist (`ci-parity-proof-harvest-manifest.template.json`, `parity-proof-harvest-orchestrator.template.sh`), but provider-specific API run discovery/scheduling is still an external automation lane.
+- No blocking high-impact items remain for the repository cutover tracked by this plan.
+- Follow-on improvements, if scheduled later, should be treated as hardening/backlog work rather than migration blockers.
 
 ## Next Gate to CircleCI-only Required Mode
 1. Generate a real signed proof pack for this repository from immutable CI artifacts covering the full required scenario matrix.

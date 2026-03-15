@@ -178,7 +178,10 @@ export function sanitizePath(base: string, relativePath: string): PathResult {
 		const baseRealWithSep = baseRealPath.endsWith(sep)
 			? baseRealPath
 			: `${baseRealPath}${sep}`;
-		if (realNearest !== baseRealPath && !realNearest.startsWith(baseRealWithSep)) {
+		if (
+			realNearest !== baseRealPath &&
+			!realNearest.startsWith(baseRealWithSep)
+		) {
 			return {
 				ok: false,
 				error: {

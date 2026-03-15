@@ -6,7 +6,6 @@ import {
 import { PathTraversalError, validatePath } from "../lib/input/validator.js";
 import { validatePrTemplateBody } from "../lib/pr-template-validator.js";
 
-
 export const EXIT_CODES = {
 	SUCCESS: 0,
 	POLICY_VIOLATION: 1,

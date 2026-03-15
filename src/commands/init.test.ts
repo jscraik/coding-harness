@@ -181,9 +181,8 @@ describe("runInit", () => {
 				"utf-8",
 			);
 			expect(circleConfig).toContain("name: Ensure pnpm available");
-			expect(circleConfig).toContain(
-				"corepack prepare pnpm@10.0.0 --activate",
-			);
+			expect(circleConfig).toContain('export NPM_CONFIG_PREFIX="$HOME/.local"');
+			expect(circleConfig).toContain("npm install --global pnpm@10.0.0");
 			expect(circleConfig).not.toContain("name: Enable corepack");
 		});
 
@@ -1767,15 +1766,12 @@ describe("--update flag", () => {
 			// during manifest re-validation (PATH_TRAVERSAL) or by the explicit
 			// symlink guard in executeUpdate (WRITE_ERROR / "escaped workspace").
 			// Either way the update must be rejected.
-			expect(["PATH_TRAVERSAL", "WRITE_ERROR"]).toContain(
-				result.error.code,
-			);
+			expect(["PATH_TRAVERSAL", "WRITE_ERROR"]).toContain(result.error.code);
 		}
 
 		rmSync(outsideDir, { recursive: true, force: true });
 	});
 });
-
 
 describe("--interactive flag", () => {
 	let tempDir: string;

@@ -10,7 +10,9 @@ jobs:
           name: Ensure pnpm available
           command: |
             if ! command -v pnpm >/dev/null 2>&1; then
-              corepack prepare pnpm@10.0.0 --activate
+              export NPM_CONFIG_PREFIX="$HOME/.local"
+              export PATH="$NPM_CONFIG_PREFIX/bin:$PATH"
+              npm install --global pnpm@10.0.0
             fi
             pnpm --version
       - run:

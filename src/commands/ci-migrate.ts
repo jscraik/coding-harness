@@ -458,13 +458,15 @@ interface BreakGlassRoster {
 	approvers: string[];
 	maxApprovalTtlHours?: number | undefined;
 	requireDualApprovalForRollbackWeakening?: boolean | undefined;
-	rotation?: {
-		cadenceHours: number;
-		lastRotatedAt: string;
-		nextRotationDueAt?: string | undefined;
-		runbookUrl?: string | undefined;
-		owner?: string | undefined;
-	} | undefined;
+	rotation?:
+		| {
+				cadenceHours: number;
+				lastRotatedAt: string;
+				nextRotationDueAt?: string | undefined;
+				runbookUrl?: string | undefined;
+				owner?: string | undefined;
+		  }
+		| undefined;
 }
 
 interface BreakGlassOpsWorkflowRecord {
@@ -526,14 +528,16 @@ interface HarvestSourceDiscoveryConfig {
 	sourceRunIdPath?: string | undefined;
 	sourceCommitShaPath?: string | undefined;
 	capturedAtPath?: string | undefined;
-	schedule?: {
-		url: string;
-		method?: "GET" | "POST" | undefined;
-		headers?: Record<string, string> | undefined;
-		auth?: MergeQueueProviderAPIAuthConfig | undefined;
-		accept?: string | undefined;
-		body?: Record<string, unknown> | undefined;
-	} | undefined;
+	schedule?:
+		| {
+				url: string;
+				method?: "GET" | "POST" | undefined;
+				headers?: Record<string, string> | undefined;
+				auth?: MergeQueueProviderAPIAuthConfig | undefined;
+				accept?: string | undefined;
+				body?: Record<string, unknown> | undefined;
+		  }
+		| undefined;
 }
 
 interface CIParityProofHarvestArtifact {
@@ -1223,7 +1227,9 @@ function parseBreakGlassRoster(
 			};
 		}
 		const approversResult = normalizeUniqueApprovers(
-			record.approvers.filter((entry): entry is string => typeof entry === "string"),
+			record.approvers.filter(
+				(entry): entry is string => typeof entry === "string",
+			),
 		);
 		if (!approversResult.ok) {
 			return approversResult;
@@ -1262,9 +1268,7 @@ function parseBreakGlassRoster(
 					"Break-glass roster requireDualApprovalForRollbackWeakening must be a boolean when provided.",
 			};
 		}
-		let rotation:
-			| BreakGlassRoster["rotation"]
-			| undefined = undefined;
+		let rotation: BreakGlassRoster["rotation"] | undefined = undefined;
 		if (record.rotation !== undefined) {
 			if (!record.rotation || typeof record.rotation !== "object") {
 				return {
@@ -1378,7 +1382,9 @@ function writeBreakGlassGovernancePolicyFromRoster(
 	rosterPath: string,
 	signingKey: string,
 	signingKeyId: string,
-): { ok: true; policy: BreakGlassGovernancePolicy } | { ok: false; error: string } {
+):
+	| { ok: true; policy: BreakGlassGovernancePolicy }
+	| { ok: false; error: string } {
 	if (!existsSync(rosterPath)) {
 		return {
 			ok: false,
@@ -1419,7 +1425,10 @@ function writeBreakGlassGovernancePolicyFromRoster(
 	const policyPath = resolve(targetDir, BREAK_GLASS_POLICY_PATH);
 	mkdirSync(dirname(policyPath), { recursive: true });
 	writeFileSync(policyPath, policyContent);
-	writeFileSync(`${policyPath}.sig`, `${signContent(policyContent, signingKey)}\n`);
+	writeFileSync(
+		`${policyPath}.sig`,
+		`${signContent(policyContent, signingKey)}\n`,
+	);
 	const addedApprovers = signedPolicy.approverAllowlist.filter(
 		(approver) =>
 			!existingApprovers.some(
@@ -1437,7 +1446,9 @@ function writeBreakGlassGovernancePolicyFromRoster(
 		"not-configured";
 	let nextRotationDueAt: string | undefined;
 	if (rosterResult.value.rotation) {
-		const lastRotatedAtMs = Date.parse(rosterResult.value.rotation.lastRotatedAt);
+		const lastRotatedAtMs = Date.parse(
+			rosterResult.value.rotation.lastRotatedAt,
+		);
 		const configuredNextDueMs =
 			typeof rosterResult.value.rotation.nextRotationDueAt === "string"
 				? Date.parse(rosterResult.value.rotation.nextRotationDueAt)
@@ -1471,8 +1482,9 @@ function writeBreakGlassGovernancePolicyFromRoster(
 		dualApproval: {
 			requiredForRollbackWeakening:
 				signedPolicy.requireDualApprovalForRollbackWeakening,
-			minimumApprovers:
-				signedPolicy.requireDualApprovalForRollbackWeakening ? 2 : 1,
+			minimumApprovers: signedPolicy.requireDualApprovalForRollbackWeakening
+				? 2
+				: 1,
 		},
 	};
 	const opsWorkflowPath = resolve(targetDir, BREAK_GLASS_OPS_WORKFLOW_PATH);
@@ -2220,7 +2232,8 @@ function runProviderAPIRequest(
 				};
 			}
 			const fileContent = readFileSync(filePath, "utf-8");
-			const parsedJson = fileContent.trim().length === 0 ? {} : JSON.parse(fileContent);
+			const parsedJson =
+				fileContent.trim().length === 0 ? {} : JSON.parse(fileContent);
 			return { ok: true, body: fileContent, json: parsedJson };
 		} catch (error) {
 			return {
@@ -2304,7 +2317,9 @@ function runProviderAPIRequest(
 
 function parseMergeQueueProviderAPIConfig(
 	content: string,
-): { ok: true; value: MergeQueueProviderAPIConfig } | { ok: false; error: string } {
+):
+	| { ok: true; value: MergeQueueProviderAPIConfig }
+	| { ok: false; error: string } {
 	try {
 		const parsed = JSON.parse(content) as unknown;
 		if (!parsed || typeof parsed !== "object") {
@@ -2383,7 +2398,10 @@ function parseMergeQueueProviderAPIConfig(
 			}
 			let headers: Record<string, string> | undefined;
 			if (requestRecord.headers !== undefined) {
-				if (!requestRecord.headers || typeof requestRecord.headers !== "object") {
+				if (
+					!requestRecord.headers ||
+					typeof requestRecord.headers !== "object"
+				) {
 					return {
 						ok: false,
 						error: `Merge-queue provider API config '${name}.headers' must be an object when provided.`,
@@ -2467,7 +2485,8 @@ function parseMergeQueueProviderAPIConfig(
 			return pausedResult.ok
 				? {
 						ok: false,
-						error: "Merge-queue provider API config requires paused request configuration.",
+						error:
+							"Merge-queue provider API config requires paused request configuration.",
 					}
 				: pausedResult;
 		}
@@ -2537,12 +2556,16 @@ function runMergeQueueProviderAPIOrchestrator(
 			? readJsonPathValue(pausedRequestResult.json, config.paused.timestampPath)
 			: undefined;
 	const pausedAt =
-		typeof pausedAtValue === "string" && Number.isFinite(Date.parse(pausedAtValue))
+		typeof pausedAtValue === "string" &&
+		Number.isFinite(Date.parse(pausedAtValue))
 			? pausedAtValue
 			: nowIso;
 	const pausedQueueDepthValue =
 		typeof config.paused.queueDepthPath === "string"
-			? readJsonPathValue(pausedRequestResult.json, config.paused.queueDepthPath)
+			? readJsonPathValue(
+					pausedRequestResult.json,
+					config.paused.queueDepthPath,
+				)
 			: undefined;
 	const pausedQueueDepth =
 		typeof pausedQueueDepthValue === "number" &&
@@ -2580,7 +2603,10 @@ function runMergeQueueProviderAPIOrchestrator(
 				: new Date().toISOString();
 		const drainedCandidateCountValue =
 			typeof config.drained.candidateCountPath === "string"
-				? readJsonPathValue(drainedResult.json, config.drained.candidateCountPath)
+				? readJsonPathValue(
+						drainedResult.json,
+						config.drained.candidateCountPath,
+					)
 				: undefined;
 		drainedCandidateCount =
 			typeof drainedCandidateCountValue === "number" &&
@@ -4711,7 +4737,9 @@ function parseParityProvenanceArtifactIndex(content: string):
 
 function parseParityProofHarvestManifest(
 	content: string,
-): { ok: true; value: CIParityProofHarvestManifest } | { ok: false; error: string } {
+):
+	| { ok: true; value: CIParityProofHarvestManifest }
+	| { ok: false; error: string } {
 	try {
 		const parsed = JSON.parse(content) as unknown;
 		if (!parsed || typeof parsed !== "object") {
@@ -4747,7 +4775,8 @@ function parseParityProofHarvestManifest(
 		if (!Array.isArray(record.artifacts) || record.artifacts.length === 0) {
 			return {
 				ok: false,
-				error: "Parity proof harvest manifest artifacts must be a non-empty array.",
+				error:
+					"Parity proof harvest manifest artifacts must be a non-empty array.",
 			};
 		}
 		const artifacts: CIParityProofHarvestArtifact[] = [];
@@ -4907,7 +4936,7 @@ function parseParityProofHarvestManifest(
 						discovery.headers &&
 						typeof discovery.headers === "object" &&
 						!Array.isArray(discovery.headers)
-							? Object.fromEntries(
+							? (Object.fromEntries(
 									Object.entries(
 										discovery.headers as Record<string, unknown>,
 									).filter(
@@ -4916,7 +4945,7 @@ function parseParityProofHarvestManifest(
 											typeof headerValue === "string" &&
 											headerValue.trim().length > 0,
 									),
-							  ) as Record<string, string>
+								) as Record<string, string>)
 							: undefined,
 					auth:
 						discovery.auth === "none" || discovery.auth === "bearer-env"
@@ -4925,7 +4954,7 @@ function parseParityProofHarvestManifest(
 								? {
 										mode:
 											(discovery.auth as Record<string, unknown>).mode ===
-												"bearer-env"
+											"bearer-env"
 												? "bearer-env"
 												: "none",
 										tokenEnv:
@@ -4934,7 +4963,7 @@ function parseParityProofHarvestManifest(
 												? ((discovery.auth as Record<string, unknown>)
 														.tokenEnv as string)
 												: undefined,
-								  }
+									}
 								: undefined,
 					accept:
 						typeof discovery.accept === "string" ? discovery.accept : undefined,
@@ -4971,7 +5000,7 @@ function parseParityProofHarvestManifest(
 										schedule.headers &&
 										typeof schedule.headers === "object" &&
 										!Array.isArray(schedule.headers)
-											? Object.fromEntries(
+											? (Object.fromEntries(
 													Object.entries(
 														schedule.headers as Record<string, unknown>,
 													).filter(
@@ -4980,17 +5009,16 @@ function parseParityProofHarvestManifest(
 															typeof headerValue === "string" &&
 															headerValue.trim().length > 0,
 													),
-											  ) as Record<string, string>
+												) as Record<string, string>)
 											: undefined,
 									auth:
-										schedule.auth === "none" ||
-										schedule.auth === "bearer-env"
+										schedule.auth === "none" || schedule.auth === "bearer-env"
 											? { mode: schedule.auth, tokenEnv: undefined }
 											: schedule.auth && typeof schedule.auth === "object"
 												? {
 														mode:
-															(schedule.auth as Record<string, unknown>).mode ===
-																"bearer-env"
+															(schedule.auth as Record<string, unknown>)
+																.mode === "bearer-env"
 																? "bearer-env"
 																: "none",
 														tokenEnv:
@@ -4999,7 +5027,7 @@ function parseParityProofHarvestManifest(
 																? ((schedule.auth as Record<string, unknown>)
 																		.tokenEnv as string)
 																: undefined,
-												  }
+													}
 												: undefined,
 									accept:
 										typeof schedule.accept === "string"
@@ -5011,7 +5039,7 @@ function parseParityProofHarvestManifest(
 										!Array.isArray(schedule.body)
 											? (schedule.body as Record<string, unknown>)
 											: undefined,
-							  }
+								}
 							: undefined,
 				};
 			}
@@ -5033,9 +5061,7 @@ function parseParityProofHarvestManifest(
 						? artifact.capturedAt
 						: undefined,
 				scenario:
-					typeof artifact.scenario === "string"
-						? artifact.scenario
-						: undefined,
+					typeof artifact.scenario === "string" ? artifact.scenario : undefined,
 				source: {
 					path: sourcePath,
 					url: sourceUrl,
@@ -5261,7 +5287,8 @@ function materializeProvenanceInputFromHarvestManifest(
 				}
 			}
 			if (
-				(!artifact.sourceCommitSha || artifact.sourceCommitSha.trim().length === 0) &&
+				(!artifact.sourceCommitSha ||
+					artifact.sourceCommitSha.trim().length === 0) &&
 				typeof discovery.sourceCommitShaPath === "string"
 			) {
 				const discoveredSourceCommitSha = readJsonPathValue(
@@ -7555,7 +7582,6 @@ function readOrImportRequiredChecks(
 		persisted: allowPersistManifest,
 	};
 }
-
 
 function readAllRequiredChecks(targetDir: string):
 	| {

@@ -237,8 +237,10 @@ describe("validator", () => {
 		it("reads a LICENSE file that is exactly at the 100KB size limit", () => {
 			const tmpDir = mkdtempSync(join(tmpdir(), "license-test-"));
 			// exactly 100_000 bytes, padded with spaces after the MIT text
-			const content =
-				"MIT License\n\nPermission is hereby granted".padEnd(100_000, " ");
+			const content = "MIT License\n\nPermission is hereby granted".padEnd(
+				100_000,
+				" ",
+			);
 			writeFileSync(join(tmpDir, "LICENSE"), content);
 
 			const result = validateLicense({

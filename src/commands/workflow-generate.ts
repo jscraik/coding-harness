@@ -11,7 +11,6 @@ import { resolve } from "node:path";
 
 import { PathTraversalError, validatePath } from "../lib/input/validator.js";
 
-
 export interface WorkflowGenerateOptions {
 	source?: string | undefined;
 	output?: string | undefined;
@@ -704,7 +703,6 @@ function generateWorkflowSpec(
 
 	return 0;
 }
-
 
 export function runWorkflowGenerateCLI(
 	options: WorkflowGenerateOptions = {},

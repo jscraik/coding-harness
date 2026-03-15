@@ -1,5 +1,34 @@
 # FORJAMIE
 
+## 2026-03-15 - CircleCI Closeout + Durability Sweep
+
+### Plan / Annotation updates
+
+- Marked the CircleCI transition status plan as completed and added explicit closeout annotations in:
+  - `docs/plans/2026-03-14-feat-github-actions-to-circleci-transition-status-plan.md`
+- Annotated final review-driven fixes so future readers can trace why they were applied:
+  - Node runtime parity (`cimg/node:24.13`),
+  - Corepack-permission-safe pnpm bootstrap in CircleCI,
+  - quoted/unquoted `.mise.toml` key validation in environment checks,
+  - preflight learning-doc path fallback (`Learning.md` -> `Learnings.md`).
+
+### Durability fixes shipped in code + scaffold generation
+
+- Runtime workflow:
+  - `.circleci/config.yml`
+- Init scaffolding so new repos inherit the same behavior:
+  - `src/lib/init/scaffold.ts`
+  - `src/templates/codex-preflight.sh`
+- Test updates for generated CircleCI content:
+  - `src/commands/init.test.ts`
+
+### Verification this pass
+
+- `pnpm lint` -> pass.
+- `pnpm typecheck` -> pass.
+- `pnpm test` -> fails at runner teardown with `Error: [vitest-worker]: Timeout calling "onTaskUpdate"` after reporting all test files passed (`94 passed`).
+- `pnpm check` -> same Vitest runner timeout in its `pnpm test` phase after lint/docs/typecheck/workflow validation pass.
+
 ## 2026-03-14 - Transition Plan Status Refresh (Completed vs Remaining)
 
 ### Marked Completed in Plan

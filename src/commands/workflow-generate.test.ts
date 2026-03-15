@@ -1,6 +1,6 @@
 import { mkdtempSync, rmSync, symlinkSync, writeFileSync } from "node:fs";
-import { join } from "node:path";
 import { tmpdir } from "node:os";
+import { join } from "node:path";
 
 import { describe, expect, it } from "vitest";
 import type { WorkflowSpec } from "./workflow-generate.js";
@@ -84,9 +84,7 @@ describe("workflow-generate", () => {
 		it("rejects source paths outside cwd", () => {
 			const previousCwd = process.cwd();
 			const root = mkdtempSync(join(tmpdir(), "workflow-generate-root-"));
-			const outside = mkdtempSync(
-				join(tmpdir(), "workflow-generate-outside-"),
-			);
+			const outside = mkdtempSync(join(tmpdir(), "workflow-generate-outside-"));
 			const sourcePath = join(outside, "workflow.md");
 			writeFileSync(sourcePath, "# outside", "utf8");
 
@@ -107,9 +105,7 @@ describe("workflow-generate", () => {
 		it("rejects symlinked output paths that escape cwd", () => {
 			const previousCwd = process.cwd();
 			const root = mkdtempSync(join(tmpdir(), "workflow-generate-root-"));
-			const outside = mkdtempSync(
-				join(tmpdir(), "workflow-generate-outside-"),
-			);
+			const outside = mkdtempSync(join(tmpdir(), "workflow-generate-outside-"));
 			const sourcePath = join(root, "workflow.md");
 			const outsideOutput = join(outside, "owned.md");
 			const outputLink = join(root, "out.md");
@@ -183,4 +179,3 @@ describe("workflow-generate", () => {
 		});
 	});
 });
-
