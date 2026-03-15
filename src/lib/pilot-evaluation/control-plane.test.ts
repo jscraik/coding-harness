@@ -534,33 +534,32 @@ describe("control-plane artifacts", () => {
 			};
 			writeFileSync(contractPath, JSON.stringify(contract, null, 2), "utf-8");
 
-			for (let index = 0; index < 29; index += 1) {
-				buildControlPlaneArtifacts({
-					artifactsDir: testDir,
-					metrics: { ...createMetrics(), sampleSize: 60 },
-					metricsErrors: [],
-					legacyOutcome: "promote",
-					legacyHoldReasons: [],
-					options: {
-						artifactsDir: testDir,
-						contractPath,
-						docsGateReportPath,
-						prTemplateStatus: "passed",
-						evaluationMode: "pr",
-						rolloutStage: "advisory",
-						clientFamily: "codex",
-						providerId: "openai",
-						modelDescriptor: "gpt-5.4",
-						overrideAuthorizedPrincipal: "jamie",
-						overrideScope: "temporary_promote",
-						overrideReason: `Recorded maintainer approval ${index + 1}`,
-						overrideTicketRef: `JSC-${200 + index}`,
-						overrideApprovedBy: ["jamie", "alex"],
-						overrideCreatedAt: "2099-03-10T10:00:00Z",
-						overrideExpiresAt: "2099-03-10T18:00:00Z",
+			const historyPath = join(
+				testDir,
+				"control-plane",
+				"rollout-window-history.json",
+			);
+			mkdirSync(dirname(historyPath), { recursive: true });
+			writeFileSync(
+				historyPath,
+				JSON.stringify(
+					{
+						schemaVersion: "rollout-window-history/v1",
+						compatibilityMajor: 1,
+						producerVersion: "0.8.1-test",
+						currentStage: "advisory",
+						windows: [],
+						consecutivePassingWindows: 29,
+						eligibleForPromotion: false,
+						lastPromotionPacketId: null,
+						activeDemotionTriggers: [],
+						updatedAt: "2026-03-10T00:00:00Z",
 					},
-				});
-			}
+					null,
+					2,
+				),
+				"utf-8",
+			);
 
 			const { summary } = buildControlPlaneArtifacts({
 				artifactsDir: testDir,

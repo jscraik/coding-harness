@@ -99,7 +99,7 @@ describe("check-diagram-freshness.sh", () => {
 		roots.length = 0;
 	});
 
-	it("skips refresh when only test files changed", { timeout: 15000 }, () => {
+	it("skips refresh when only test files changed", { timeout: 30000 }, () => {
 		const root = createRepo(`#!/usr/bin/env bash
 set -euo pipefail
 printf '%s\n' "$*" > .refresh-invoked

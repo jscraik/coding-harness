@@ -1,0 +1,18 @@
+# Architecture rules baselines — pre-existing violations excluded from blocking CI.
+# These are known structural debts that need refactoring; adding more is a CI error.
+#
+# Format: "<rule-id>|<relative-file-path>"
+# Generated: 2026-03-15
+
+# ── commands-no-cross-import ─────────────────────────────────────────────────
+# review-gate calls runCheckAuthz; extract to src/lib/review-gate/authz.ts
+commands-no-cross-import|src/commands/review-gate.ts
+# ci-migrate calls runInitCLI; extract to src/lib/ci-migrate/init-bridge.ts
+commands-no-cross-import|src/commands/ci-migrate.ts
+# tooling-audit calls findRepositories from org-audit; extract to src/lib/
+commands-no-cross-import|src/commands/tooling-audit.ts
+
+# ── no-circular-deps ──────────────────────────────────────────────────────────
+# src/lib/review-gate/decision-packet.ts re-imports from src/commands/review-gate.ts
+# Fix: move shared types to src/lib/review-gate/types.ts
+no-circular-deps|src/commands/review-gate.ts

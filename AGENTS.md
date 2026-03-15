@@ -8,6 +8,7 @@
 - [Command preflight](#command-preflight)
 - [Always-on PR governance](#always-on-pr-governance)
 - [Internal work intake routing](#internal-work-intake-routing)
+- [Memory layer](#memory-layer)
 - [Implementation conventions](#implementation-conventions)
 - [Instruction map](#instruction-map)
 - [Repository preflight helper](#repository-preflight-helper)
@@ -37,6 +38,17 @@ This repository is a TypeScript control plane for agentic development and review
 - Prefer `rg`, `fd`, `jq`.
 - Confirm repo context with `pwd` and verify required binaries before mutating work.
 - Ask before adding dependencies or changing system-level settings.
+- Before installing private npm packages (for example `@brainwav/coding-harness`), verify auth loading works locally:
+  - Treat `~/.codex/.env` as a 1Password-managed FIFO (`-p`), not a regular file (`-f`).
+  - Verify 1Password session health first (`op account list`) before expecting env injection to work.
+  - Ensure bounded FIFO reads have a timeout-capable helper available (`gtimeout`/equivalent) so shell startup does not hang.
+  - Validate token presence without printing values (`printenv NPM_TOKEN | wc -c`, `printenv NODE_AUTH_TOKEN | wc -c`).
+  - Ensure npm auth mapping exists in `~/.npmrc` (for example `//registry.npmjs.org/:_authToken=\${NPM_TOKEN}` and scoped registry entries like `@brainwav:registry=https://registry.npmjs.org/` when needed).
+  - Validate auth before install retries: `npm whoami` and `npm view @brainwav/coding-harness dist-tags --json`.
+- After any Codex/mise PATH or version change, verify both shell modes resolve the same executable:
+  - `zsh -lc 'type -a codex; codex --version'`
+  - `zsh -ic 'type -a codex; codex --version'`
+- If non-interactive shells resolve stale binaries (for example `/usr/local/bin/codex`), prepend `~/.local/bin` and `~/.local/share/mise/shims` in login-shell startup files (`~/.zprofile`) as well as interactive startup (`~/.zshrc`).
 - Tooling/runtime changes to hooks, `Makefile`, `.mise.toml`, readiness scripts, or generated Codex environment actions should update [docs/agents/02-tooling-policy.md](./docs/agents/02-tooling-policy.md) and [docs/agents/06-security-and-governance.md](./docs/agents/06-security-and-governance.md) in the same change.
 
 ## Always-on PR governance
@@ -57,6 +69,47 @@ See [CONTRIBUTING.md](./CONTRIBUTING.md), [Agent governance](./docs/agents/07b-a
 - Reuse existing backlog issues when possible.
 - Include repro steps, expected vs actual behavior, validation evidence, and relevant doc/PR links.
 - Never print token values in logs, docs, or command output.
+
+## Memory layer
+
+Every repo with coding-harness installed has a per-project knowledge base at
+`.harness/memory/LEARNINGS.md` (gitignored, append-only).
+
+**Session-start bootstrap** — if `.harness/` exists but `memory/LEARNINGS.md`
+is missing, create it:
+
+```bash
+mkdir -p .harness/memory
+test -f .harness/memory/LEARNINGS.md || cat > .harness/memory/LEARNINGS.md << 'EOF'
+---
+schema_version: 1
+purpose: Per-project agent knowledge base — repo-specific gotchas and hard-won fixes.
+scope: This repo only.
+update_policy: |
+  Append after any bug, tool failure, or extra-effort fix specific to this repo.
+  Universal gotchas go in ~/.codex/instructions/Learnings.md instead.
+  Do NOT delete entries. Append only.
+  Format: **YYYY-MM-DD [Agent]:** <problem> → <fix>
+---
+
+# Learnings
+
+Repo-specific agent knowledge base. Append-only.
+
+> **Scope:** This repo only. Universal gotchas → `~/.codex/instructions/Learnings.md`.
+> **Format:** `**YYYY-MM-DD [Agent]:** <problem> → <fix>`
+EOF
+```
+
+**Read order at session start:**
+1. `~/.codex/instructions/Learnings.md` (always — global gotchas).
+2. `.harness/memory/LEARNINGS.md` (when present — repo-specific gotchas).
+
+**Write rule:** repo-specific fixes → `.harness/memory/LEARNINGS.md`;
+universal fixes → `~/.codex/instructions/Learnings.md`.
+
+See [`docs/agents/03-local-memory.md`](./docs/agents/03-local-memory.md) for
+full details.
 
 ## Implementation conventions
 - Local ESM imports must include `.js` extension.

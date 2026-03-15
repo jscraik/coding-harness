@@ -175,6 +175,15 @@ describe("runInit", () => {
 			);
 			expect(requiredChecks.activeProvider).toBe("circleci");
 			expect(requiredChecks.requiredChecks[0]?.sourceAppSlug).toBe("circleci");
+
+			const circleConfig = require("node:fs").readFileSync(
+				join(tempDir, ".circleci/config.yml"),
+				"utf-8",
+			);
+			expect(circleConfig).toContain("name: Ensure pnpm available");
+			expect(circleConfig).toContain('export NPM_CONFIG_PREFIX="$HOME/.local"');
+			expect(circleConfig).toContain("npm install --global pnpm@10.0.0");
+			expect(circleConfig).not.toContain("name: Enable corepack");
 		});
 
 		it("skips existing files without --force", () => {

@@ -1,5 +1,82 @@
 # Local-memory workflow
 
+## Table of Contents
+
+- [Per-project LEARNINGS.md (file-based)](#per-project-learningsmd-file-based)
+- [In-session observe() workflow (state machine)](#in-session-observe-workflow-state-machine)
+
+---
+
+## Per-project LEARNINGS.md (file-based)
+
+Every repository that has coding-harness installed uses `.harness/memory/LEARNINGS.md`
+as a durable, append-only knowledge base for repo-specific agent learnings.
+
+### Why `.harness/memory/`?
+
+coding-harness already creates a `.harness/` state directory in every project it
+is installed in. Storing `LEARNINGS.md` there avoids new dotfiles and keeps all
+harness-managed state in one place.
+
+### Bootstrap rule — auto-create at session start
+
+At the **start of every session**, if the repo has a `.harness/` directory,
+ensure `.harness/memory/LEARNINGS.md` exists:
+
+```bash
+mkdir -p .harness/memory
+test -f .harness/memory/LEARNINGS.md || cat > .harness/memory/LEARNINGS.md << 'EOF'
+---
+schema_version: 1
+purpose: Per-project agent knowledge base — repo-specific gotchas and hard-won fixes.
+scope: This repo only.
+update_policy: |
+  Append after any bug, tool failure, or extra-effort fix specific to this repo.
+  Universal gotchas go in ~/.codex/instructions/Learnings.md instead.
+  Do NOT delete entries. Append only.
+  Format: **YYYY-MM-DD [Agent]:** <problem> → <fix>
+---
+
+# Learnings
+
+Repo-specific agent knowledge base. Append-only.
+
+> **Scope:** This repo only. Universal gotchas → `~/.codex/instructions/Learnings.md`.
+> **Format:** `**YYYY-MM-DD [Agent]:** <problem> → <fix>`
+EOF
+echo 'Created .harness/memory/LEARNINGS.md'
+```
+
+If the repo has **no** `.harness/` directory (harness not installed), skip
+creation.
+
+### Writing rule
+
+After any bug, tool failure, or extra-effort fix:
+
+| Fix scope | Write to |
+| --- | --- |
+| **Repo-specific** (build commands, test runner quirks, lint config, harness config) | `.harness/memory/LEARNINGS.md` |
+| **Universal** (CLI quirks, shell PATH, mise trust, tool failures across repos) | `~/.codex/instructions/Learnings.md` |
+
+Format: `**YYYY-MM-DD [Agent]:** <problem> → <fix>`
+
+### Session-start read order
+
+1. Read `~/.codex/instructions/Learnings.md` (always).
+2. Check `.harness/memory/LEARNINGS.md` — if present, read it and apply
+   repo-scoped gotchas. If absent but `.harness/` exists, run the bootstrap
+   snippet above.
+
+### `.gitignore` note
+
+`.harness/memory/` is gitignored by coding-harness convention — entries stay
+local and are not committed to the repository.
+
+---
+
+## In-session observe() workflow (state machine)
+
 ## Abbreviations
 
 | Abbr | Meaning |

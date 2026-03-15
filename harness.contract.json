@@ -818,5 +818,14 @@
 			],
 			"explicitCapabilities": []
 		}
+	},
+	"ciProviderPolicy": {
+		"activeProvider": "github-actions",
+		"mode": "shadow",
+		"migrationStage": "dual-provider",
+		"transitionStatusArtifactPath": ".harness/ci-provider-transition-status.json",
+		"authorityConfigPath": "harness.contract.json",
+		"requiredCheckManifestPath": ".harness/ci-required-checks.json",
+		"trustedPolicyRef": "refs/heads/main"
 	}
 }

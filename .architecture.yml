@@ -1,0 +1,76 @@
+# Architecture rules for coding-harness
+# Validated by: diagram test . --format console
+# NOTE: diagram test v1.0.8 has a missing ./rules module bug.
+# These rules are authored for forward-compatibility and will auto-activate
+# when @brainwav/diagram >= next release ships the fix.
+# Active gate today: diagram manifest (see .github/workflows/pr-pipeline.yml → architecture-gate job)
+
+version: 1
+
+rules:
+  # ── No circular dependencies ──────────────────────────────────────────────
+  - id: no-circular-deps
+    description: >
+      Circular import chains are forbidden. All src/lib modules must be
+      acyclic — commands import lib, lib does not re-import commands.
+    rule: no-circular
+    severity: error
+    paths:
+      - src/
+
+  # ── Commands must not import other commands ───────────────────────────────
+  - id: commands-no-cross-import
+    description: >
+      src/commands/* files must not import from other src/commands/* files.
+      All shared logic must live in src/lib/.
+    rule: no-restricted-imports
+    severity: error
+    paths:
+      - src/commands/
+    forbidden:
+      - src/commands/
+
+  # ── Auth-boundary commands must use node:crypto for signing ──────────────
+  - id: auth-commands-use-crypto
+    description: >
+      Commands that cross the auth boundary (ci-migrate, check-authz,
+      branch-protect, evidence-verify) must import node:crypto directly
+      rather than delegating signing to ad-hoc string manipulation.
+    rule: required-import
+    severity: warning
+    paths:
+      - src/commands/ci-migrate.ts
+      - src/commands/check-authz.ts
+      - src/commands/branch-protect.ts
+      - src/commands/evidence-verify.ts
+    required:
+      - node:crypto
+
+  # ── No direct filesystem access in lib/github ────────────────────────────
+  - id: github-lib-no-fs
+    description: >
+      src/lib/github/* must not use node:fs directly. All filesystem
+      operations must go through the shared path-validation helpers in
+      src/lib/input/.
+    rule: no-restricted-imports
+    severity: error
+    paths:
+      - src/lib/github/
+    forbidden:
+      - node:fs
+      - fs
+
+  # ── Diagram freshness: required types must not be placeholders ────────────
+  - id: diagram-freshness
+    description: >
+      The architecture, dependency, security, and auth diagram types must
+      exist and must not be placeholders. Checked via `diagram manifest`.
+    rule: manifest-gate
+    severity: error
+    manifest: AI/diagrams/manifest.json
+    required-types:
+      - architecture
+      - dependency
+      - security
+      - auth
+    fail-on-placeholder: true
