@@ -4,10 +4,10 @@ import { join } from "node:path";
 import { describe, expect, it } from "vitest";
 import {
 	EXIT_CODES,
-	findRepositories,
 	runOrgAudit,
 	runOrgAuditCLI,
 } from "./org-audit.js";
+import { findRepositories } from "../lib/org/repositories.js";
 
 describe("org-audit command", () => {
 	describe("findRepositories", () => {

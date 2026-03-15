@@ -1,10 +1,50 @@
+import { existsSync, lstatSync, readdirSync } from "node:fs";
+import { join } from "node:path";
+
 /**
- * src/lib/org/repositories.ts
+ * Find git repositories in a directory.
  *
- * Re-exports `findRepositories` from src/commands/org-audit.ts so that
- * other commands (e.g. tooling-audit) can use it without a cross-command import.
- *
- * Long-term: findRepositories should live here exclusively and
- * src/commands/org-audit.ts should import from this module.
+ * Looks for directories containing a `.git` directory or `.git` file
+ * (for worktree-style repositories).
  */
-export { findRepositories } from "../../commands/org-audit.js";
+export function findRepositories(basePath: string): string[] {
+	const repos: string[] = [];
+
+	if (!existsSync(basePath)) {
+		return repos;
+	}
+
+	const baseGitPath = join(basePath, ".git");
+	if (existsSync(baseGitPath)) {
+		try {
+			const baseGitStat = lstatSync(baseGitPath);
+			if (baseGitStat.isDirectory() || baseGitStat.isFile()) {
+				repos.push(basePath);
+			}
+		} catch {
+			// Ignore invalid .git metadata and continue scanning children.
+		}
+	}
+
+	const entries = readdirSync(basePath, { withFileTypes: true });
+
+	for (const entry of entries) {
+		if (entry.isDirectory()) {
+			const fullPath = join(basePath, entry.name);
+			const gitPath = join(fullPath, ".git");
+
+			if (existsSync(gitPath)) {
+				try {
+					const gitStat = lstatSync(gitPath);
+					if (gitStat.isDirectory() || gitStat.isFile()) {
+						repos.push(fullPath);
+					}
+				} catch {
+					// Ignore invalid .git metadata and continue.
+				}
+			}
+		}
+	}
+
+	return repos;
+}

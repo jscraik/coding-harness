@@ -84,14 +84,15 @@ function collectTsFiles(dir, excludeTests = false) {
 function extractImports(filePath) {
   const content = fs.readFileSync(filePath, "utf-8");
   const imports = [];
-  // ESM static imports: import ... from '...'
-  const esmRe = /(?:^|\n)\s*import\s+(?:[^'"]*from\s+)?['"]([^'"]+)['"]/g;
+  // ESM static imports/exports: handle multiline, 'export type', etc.
+  // Match `import|export ... from '...'`
+  const esmRe = /(?:import|export)\s+(?:type\s+)?(?:[\s\S]*?from\s+)?['"]([^'"]+)['"]/g;
   let m;
   while ((m = esmRe.exec(content)) !== null) {
     imports.push(m[1]);
   }
-  // CommonJS: require('...')
-  const cjsRe = /require\s*\(\s*['"]([^'"]+)['"]\s*\)/g;
+  // CommonJS and Dynamic Import: require('.') or import('.')
+  const cjsRe = /(?:require|import)\s*\(\s*['"]([^'"]+)['"]\s*\)/g;
   while ((m = cjsRe.exec(content)) !== null) {
     imports.push(m[1]);
   }
@@ -365,5 +366,9 @@ if (FORMAT === "json") {
 }
 
 if (errors.length > 0) {
+  if (FORMAT === "json") {
+    // In JSON mode, exit 0 so the CI step can parse the JSON and manage the failure flow natively.
+    process.exit(0);
+  }
   process.exit(1);
 }

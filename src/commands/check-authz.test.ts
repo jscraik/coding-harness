@@ -2,7 +2,7 @@ import { mkdirSync, rmSync, writeFileSync } from "node:fs";
 import { join, resolve } from "node:path";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import { clearContractCache } from "../lib/contract/loader.js";
-import { runCheckAuthz } from "./check-authz.js";
+import { runCheckAuthz } from "../lib/review-gate/authz.js";
 
 describe("check-authz", () => {
 	let testDir: string;
@@ -140,8 +140,8 @@ describe("check-authz", () => {
 			);
 			// Should NOT also emit branch_not_allowed — main is in the allowlist
 			expect(
-				result.output.violations.filter((v) => v.type === "branch_not_allowed"),
-			).toHaveLength(0);
+				(result.output as any).violations.map((v: any) => v.type),
+			).not.toContain("branch_not_allowed");
 		}
 	});
 });
