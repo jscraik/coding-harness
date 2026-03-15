@@ -7,8 +7,12 @@ jobs:
     steps:
       - checkout
       - run:
-          name: Enable corepack
-          command: corepack enable
+          name: Ensure pnpm available
+          command: |
+            if ! command -v pnpm >/dev/null 2>&1; then
+              corepack prepare pnpm@10.0.0 --activate
+            fi
+            pnpm --version
       - run:
           name: Install dependencies
           command: pnpm install
