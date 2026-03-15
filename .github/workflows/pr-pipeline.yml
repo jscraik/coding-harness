@@ -251,6 +251,39 @@ jobs:
           done < <(rg -n "^[[:space:]]*(-[[:space:]]*)?uses:[[:space:]]*[^[:space:]]+" .github/workflows/*.yml)
           exit "$violations"
 
+  architecture-gate:
+    name: architecture-gate
+    runs-on: ubuntu-latest
+    needs: [risk-policy-gate]
+    steps:
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
+        with:
+          node-version: "24"
+      - name: Enable corepack
+        run: corepack enable
+      - name: Install @brainwav/diagram
+        # Install diagram CLI globally for the gate steps below.
+        run: npm install -g @brainwav/diagram@1.0.8
+      - name: Generate fresh architecture diagrams
+        # Always regenerate so the manifest reflects the current PR HEAD.
+        run: diagram all . --output-dir AI/diagrams
+      - name: Gate required diagram types (no placeholders)
+        # Active gate: diagram manifest works in v1.0.8.
+        # TODO: switch to `diagram test . --format junit --output artifacts/architecture-gate.xml`
+        # once @brainwav/diagram fixes the missing ./rules module (tracked upstream).
+        run: |
+          diagram manifest . \
+            --manifest-dir AI/diagrams \
+            --require-types architecture,dependency,security,auth \
+            --fail-on-placeholder
+      - name: Upload diagram artifacts
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: architecture-diagrams
+          path: AI/diagrams/
+
   consistency-drift-advisory:
     name: consistency-drift-advisory
     runs-on: ubuntu-latest
