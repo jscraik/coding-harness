@@ -4757,7 +4757,7 @@ describe("runCIMigrateCLI", () => {
 		"auto-generates signed parity proof pack evidence when requested",
 		{ timeout: 120000 },
 		() => {
-		seedMigratableFixture(tempDir);
+			seedMigratableFixture(tempDir);
 		writeCIProviderPolicyContract(tempDir, "required");
 		writeParityProofPackInput(tempDir);
 		writeParityProvenanceBundleInput(tempDir);
