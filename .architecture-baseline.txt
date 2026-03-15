@@ -1,18 +1,12 @@
 # Architecture rules baselines — pre-existing violations excluded from blocking CI.
-# These are known structural debts that need refactoring; adding more is a CI error.
+# Updated: 2026-03-15
 #
 # Format: "<rule-id>|<relative-file-path>"
-# Generated: 2026-03-15
-
-# ── commands-no-cross-import ─────────────────────────────────────────────────
-# review-gate calls runCheckAuthz; extract to src/lib/review-gate/authz.ts
-commands-no-cross-import|src/commands/review-gate.ts
-# ci-migrate calls runInitCLI; extract to src/lib/ci-migrate/init-bridge.ts
-commands-no-cross-import|src/commands/ci-migrate.ts
-# tooling-audit calls findRepositories from org-audit; extract to src/lib/
-commands-no-cross-import|src/commands/tooling-audit.ts
-
-# ── no-circular-deps ──────────────────────────────────────────────────────────
-# src/lib/review-gate/decision-packet.ts re-imports from src/commands/review-gate.ts
-# Fix: move shared types to src/lib/review-gate/types.ts
-no-circular-deps|src/commands/review-gate.ts
+# All 4 original violations have been fixed:
+#   - commands-no-cross-import: review-gate → check-authz (via lib/review-gate/authz.ts)
+#   - commands-no-cross-import: ci-migrate → init (via lib/ci-migrate/init-bridge.ts)
+#   - commands-no-cross-import: tooling-audit → org-audit (via lib/org/repositories.ts)
+#   - no-circular-deps: review-gate ↔ decision-packet (types moved to lib/review-gate/types.ts)
+#
+# This file is intentionally empty — add new entries only for deliberate tech-debt
+# that has been reviewed and accepted.

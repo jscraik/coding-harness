@@ -30,7 +30,7 @@ import {
 	MANIFEST_FILE,
 } from "../lib/init/types.js";
 import { sanitizeError } from "../lib/input/sanitize.js";
-import { runInitCLI } from "./init.js";
+import { runInitCLI } from "../lib/ci-migrate/init-bridge.js";
 
 const DEFAULT_PROVIDER = "circleci";
 const SNAPSHOT_DIR = "ci-migrate-snapshots";

@@ -15,7 +15,7 @@ import {
 	TOOLING_PREK_CONFIG_PATH,
 } from "../lib/policy/tooling-baseline.js";
 import { type CliResult, err, ok } from "../lib/result/types.js";
-import { findRepositories } from "./org-audit.js";
+import { findRepositories } from "../lib/org/repositories.js";
 
 export const EXIT_CODES = {
 	SUCCESS: 0,

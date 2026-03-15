@@ -7,12 +7,13 @@ import type {
 	ReviewGateOptions,
 	ReviewGateOutput,
 	ReviewPRClosureStatus,
-} from "../../commands/review-gate.js";
+} from "./types.js";
 import {
 	emitTerminalRunRecord,
 	hashRunRecordValue,
 } from "../contract/run-record-emitter.js";
 import { resolveRunRecordPaths } from "../contract/run-records.js";
+
 
 type ReviewGateArtifactInput = {
 	options: ReviewGateOptions;
