@@ -22,9 +22,9 @@ import {
 	createJsonErrorOutput,
 	createJsonOutput,
 } from "../lib/result/types.js";
-import { emitReviewGateDecisionArtifacts } from "../lib/review-gate/decision-packet.js";
 // Use the lib-layer bridge instead of importing directly from another command.
 import { runCheckAuthz } from "../lib/review-gate/authz.js";
+import { emitReviewGateDecisionArtifacts } from "../lib/review-gate/decision-packet.js";
 
 export const EXIT_CODES = {
 	SUCCESS: 0,
@@ -53,7 +53,6 @@ import type {
 	ReviewGateOutput,
 	ReviewGateResult,
 } from "../lib/review-gate/types.js";
-
 
 // Local aliases (not re-exported) still needed for internal use
 

@@ -6,6 +6,7 @@ import {
 	type HarnessContract,
 } from "../lib/contract/types.js";
 import { PathTraversalError, validatePath } from "../lib/input/validator.js";
+import { findRepositories } from "../lib/org/repositories.js";
 import {
 	REQUIRED_HOOK_SUPPORT_FILES,
 	REQUIRED_PACKAGE_SCRIPTS,
@@ -15,7 +16,6 @@ import {
 	TOOLING_PREK_CONFIG_PATH,
 } from "../lib/policy/tooling-baseline.js";
 import { type CliResult, err, ok } from "../lib/result/types.js";
-import { findRepositories } from "../lib/org/repositories.js";
 
 export const EXIT_CODES = {
 	SUCCESS: 0,

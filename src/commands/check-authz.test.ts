@@ -139,9 +139,9 @@ describe("check-authz", () => {
 				expect.objectContaining({ type: "branch_protected" }),
 			);
 			// Should NOT also emit branch_not_allowed — main is in the allowlist
-			expect(
-				(result.output as any).violations.map((v: any) => v.type),
-			).not.toContain("branch_not_allowed");
+			expect(result.output.violations.map((v) => v.type)).not.toContain(
+				"branch_not_allowed",
+			);
 		}
 	});
 });

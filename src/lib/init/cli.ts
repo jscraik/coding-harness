@@ -7,6 +7,8 @@ import {
 } from "node:fs";
 import { dirname, join, relative, resolve, sep } from "node:path";
 import { cwd } from "node:process";
+import { sanitizeError } from "../input/sanitize.js";
+import { getVersion } from "../version.js";
 import {
 	applyProposedChange,
 	collectProposedChanges,
@@ -18,11 +20,7 @@ import {
 	detectContractVersion,
 	executeMigration,
 } from "./migration.js";
-import {
-	createBackup,
-	executeRollback,
-	loadManifest,
-} from "./rollback.js";
+import { createBackup, executeRollback, loadManifest } from "./rollback.js";
 import {
 	TEMPLATES,
 	createTemplateRenderContext,
@@ -46,8 +44,6 @@ import {
 	type RestoreManifest,
 } from "./types.js";
 import { checkForUpdates, executeUpdate } from "./update.js";
-import { sanitizeError } from "../input/sanitize.js";
-import { getVersion } from "../version.js";
 
 // Retired template paths that should be cleaned up during init
 const RETIRED_TEMPLATE_PATHS = [

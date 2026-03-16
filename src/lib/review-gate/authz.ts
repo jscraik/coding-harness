@@ -1,10 +1,7 @@
 import { existsSync } from "node:fs";
 import { resolve } from "node:path";
 import { loadContract } from "../contract/loader.js";
-import type {
-	HarnessContract,
-	PilotAuthzPolicy,
-} from "../contract/types.js";
+import type { HarnessContract, PilotAuthzPolicy } from "../contract/types.js";
 import { DEFAULT_PILOT_AUTHZ_POLICY } from "../contract/types.js";
 import { sanitizeError } from "../input/sanitize.js";
 
