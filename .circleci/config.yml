@@ -31,7 +31,7 @@ jobs:
           command: pnpm typecheck
       - run:
           name: Test
-          command: pnpm test
+          command: pnpm vitest run --maxWorkers=1
       - run:
           name: Audit
           command: pnpm audit

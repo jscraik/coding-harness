@@ -17,3 +17,4 @@
 - Migration is still incomplete at policy level: contract status currently indicates `ciProviderPolicy.activeProvider = github-actions` in `shadow` mode; this remains outstanding if CircleCI should be authoritative.
 - From CircleCI improvement docs: next pipeline iteration should add test splitting with historical timings and test insights surfacing to reduce rerun cost and speed diagnosis.
 - CircleCI JUnit reporter flags (`--reporter=junit --outputFile.junit=...`) currently trigger `src/commands/ci-migrate.test.ts` failures in CI job context; keep canonical `pnpm test` until reporter-mode parity is debugged.
+- CircleCI full-suite test runs can trigger `src/commands/ci-migrate.test.ts` race-like failures when Vitest parallelism is unconstrained; pinning CI test execution to `--maxWorkers=1` is a practical stabilization step.
