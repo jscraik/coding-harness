@@ -219,6 +219,14 @@ The npm package includes a reusable Codex skill at `.agents/skills/coding-harnes
 node_modules/@brainwav/coding-harness/.agents/skills/coding-harness/
 ```
 
+Repository-local skill placement follows the same convention:
+
+```bash
+.agents/skills/<skill-name>/SKILL.md
+```
+
+Example: place `product-design-critic` at `.agents/skills/product-design-critic/SKILL.md`.
+
 ## CI migration workflow
 
 The `ci-migrate` command supports phased migration between GitHub Actions and CircleCI:

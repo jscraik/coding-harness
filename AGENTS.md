@@ -37,6 +37,8 @@ This repository is a TypeScript control plane for agentic development and review
 - Run shell commands via `zsh -lc`.
 - Prefer `rg`, `fd`, `jq`.
 - Confirm repo context with `pwd` and verify required binaries before mutating work.
+- For path checks in this repo, verify `docs/agents/` and `scripts/` (this repo does not use a top-level `instructions/` directory).
+- Skill assets in this repo live under `.agents/skills/`; place new skills (for example `product-design-critic`) at `.agents/skills/<skill-name>/SKILL.md`.
 - Ask before adding dependencies or changing system-level settings.
 - Before installing private npm packages (for example `@brainwav/coding-harness`), verify auth loading works locally:
   - Treat `~/.codex/.env` as a 1Password-managed FIFO (`-p`), not a regular file (`-f`).
