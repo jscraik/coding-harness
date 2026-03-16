@@ -4753,16 +4753,16 @@ describe("runCIMigrateCLI", () => {
 		expect(vi.mocked(runInitCLI)).not.toHaveBeenCalled();
 	});
 
-		it(
-			"auto-generates signed parity proof pack evidence when requested",
-			{ timeout: 120000 },
-			() => {
-				seedMigratableFixture(tempDir);
-				writeCIProviderPolicyContract(tempDir, "required");
-				writeParityProofPackInput(tempDir);
-				writeParityProvenanceBundleInput(tempDir);
-				vi.mocked(scanOpenPullRequestSatisfiability)
-					.mockReturnValueOnce({
+	it(
+		"auto-generates signed parity proof pack evidence when requested",
+		{ timeout: 120000 },
+		() => {
+			seedMigratableFixture(tempDir);
+			writeCIProviderPolicyContract(tempDir, "required");
+			writeParityProofPackInput(tempDir);
+			writeParityProvenanceBundleInput(tempDir);
+			vi.mocked(scanOpenPullRequestSatisfiability)
+				.mockReturnValueOnce({
 					status: "satisfied",
 					scannedOpenPrs: 2,
 					failingPrs: [],
@@ -4777,12 +4777,12 @@ describe("runCIMigrateCLI", () => {
 				"cutover-auto-generated-proof-pack",
 			);
 
-				const exitCode = runCIMigrateCLI(tempDir, {
-					provider: "circleci",
-					apply: true,
-					autoGenerateProofPack: true,
-					snapshot: "cutover-auto-generated-proof-pack",
-				});
+			const exitCode = runCIMigrateCLI(tempDir, {
+				provider: "circleci",
+				apply: true,
+				autoGenerateProofPack: true,
+				snapshot: "cutover-auto-generated-proof-pack",
+			});
 
 			expect(exitCode).toBe(EXIT_CODES.SUCCESS);
 			expect(
