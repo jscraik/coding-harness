@@ -42,7 +42,7 @@ vi.mock("../lib/github/sha.js", () => ({
 	},
 }));
 
-vi.mock("./check-authz.js", () => ({
+vi.mock("../lib/review-gate/authz.js", () => ({
 	runCheckAuthz: vi.fn(),
 }));
 
@@ -58,8 +58,8 @@ import { loadContract } from "../lib/contract/loader.js";
 import { GitHubClient } from "../lib/github/client.js";
 import { validateSha } from "../lib/github/sha.js";
 import { runPlanGate } from "../lib/plan-gate/detector.js";
+import { runCheckAuthz } from "../lib/review-gate/authz.js";
 import { emitReviewGateDecisionArtifacts } from "../lib/review-gate/decision-packet.js";
-import { runCheckAuthz } from "./check-authz.js";
 
 const mockGitHubClient = vi.mocked(GitHubClient);
 const mockLoadContract = vi.mocked(loadContract);

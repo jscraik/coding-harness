@@ -281,7 +281,9 @@ jobs:
         # MODULE_NOT_FOUND: ./rules bug in @brainwav/diagram v1.0.8).
         # Pre-existing tech-debt violations are baselined in .architecture-baseline.txt
         # and are advisory-only. New violations are CI-blocking errors.
-        run: node scripts/check-architecture-rules.cjs --format json > artifacts/architecture-gate.json
+        run: |
+          mkdir -p artifacts
+          node scripts/check-architecture-rules.cjs --format json > artifacts/architecture-gate.json
       - name: Print architecture gate summary
         if: always()
         run: |
