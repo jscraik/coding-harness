@@ -512,85 +512,82 @@ describe("control-plane artifacts", () => {
 		expect(loaded.artifacts?.overridePolicyRecord?.status).toBe("expired");
 	});
 
-	it(
-		"requires an applied override record before advisory promotion uses maintainer approvals",
-		() => {
-			const contractPath = join(testDir, "contract-with-override-policy.json");
-			const contract = JSON.parse(
-				readFileSync(resolve("harness.contract.json"), "utf-8"),
-			) as Record<string, unknown>;
-			contract.controlPlanePolicy = {
-				overridePolicy: {
-					authorizedPrincipals: ["jamie", "alex"],
-					dualApprovalScopes: ["temporary_unblock", "temporary_promote"],
-					maxTtlHours: 24,
-					nonOverridableControls: [
-						"canonical_runtime_invalid",
-						"governance_trust_mismatch",
-						"missing_required_instruction_surface",
-						"missing_snapshot_integrity_verification",
-					],
+	it("requires an applied override record before advisory promotion uses maintainer approvals", () => {
+		const contractPath = join(testDir, "contract-with-override-policy.json");
+		const contract = JSON.parse(
+			readFileSync(resolve("harness.contract.json"), "utf-8"),
+		) as Record<string, unknown>;
+		contract.controlPlanePolicy = {
+			overridePolicy: {
+				authorizedPrincipals: ["jamie", "alex"],
+				dualApprovalScopes: ["temporary_unblock", "temporary_promote"],
+				maxTtlHours: 24,
+				nonOverridableControls: [
+					"canonical_runtime_invalid",
+					"governance_trust_mismatch",
+					"missing_required_instruction_surface",
+					"missing_snapshot_integrity_verification",
+				],
+			},
+		};
+		writeFileSync(contractPath, JSON.stringify(contract, null, 2), "utf-8");
+
+		const historyPath = join(
+			testDir,
+			"control-plane",
+			"rollout-window-history.json",
+		);
+		mkdirSync(dirname(historyPath), { recursive: true });
+		writeFileSync(
+			historyPath,
+			JSON.stringify(
+				{
+					schemaVersion: "rollout-window-history/v1",
+					compatibilityMajor: 1,
+					producerVersion: "0.8.1-test",
+					currentStage: "advisory",
+					windows: [],
+					consecutivePassingWindows: 29,
+					eligibleForPromotion: false,
+					lastPromotionPacketId: null,
+					activeDemotionTriggers: [],
+					updatedAt: "2026-03-10T00:00:00Z",
 				},
-			};
-			writeFileSync(contractPath, JSON.stringify(contract, null, 2), "utf-8");
+				null,
+				2,
+			),
+			"utf-8",
+		);
 
-			const historyPath = join(
-				testDir,
-				"control-plane",
-				"rollout-window-history.json",
-			);
-			mkdirSync(dirname(historyPath), { recursive: true });
-			writeFileSync(
-				historyPath,
-				JSON.stringify(
-					{
-						schemaVersion: "rollout-window-history/v1",
-						compatibilityMajor: 1,
-						producerVersion: "0.8.1-test",
-						currentStage: "advisory",
-						windows: [],
-						consecutivePassingWindows: 29,
-						eligibleForPromotion: false,
-						lastPromotionPacketId: null,
-						activeDemotionTriggers: [],
-						updatedAt: "2026-03-10T00:00:00Z",
-					},
-					null,
-					2,
-				),
-				"utf-8",
-			);
-
-			const { summary } = buildControlPlaneArtifacts({
+		const { summary } = buildControlPlaneArtifacts({
+			artifactsDir: testDir,
+			metrics: { ...createMetrics(), sampleSize: 60 },
+			metricsErrors: [],
+			legacyOutcome: "promote",
+			legacyHoldReasons: [],
+			options: {
 				artifactsDir: testDir,
-				metrics: { ...createMetrics(), sampleSize: 60 },
-				metricsErrors: [],
-				legacyOutcome: "promote",
-				legacyHoldReasons: [],
-				options: {
-					artifactsDir: testDir,
-					contractPath,
-					docsGateReportPath,
-					prTemplateStatus: "passed",
-					evaluationMode: "pr",
-					rolloutStage: "advisory",
-					clientFamily: "codex",
-					providerId: "openai",
-					modelDescriptor: "gpt-5.4",
-					overrideApprovedBy: ["jamie", "alex"],
-				},
-			});
+				contractPath,
+				docsGateReportPath,
+				prTemplateStatus: "passed",
+				evaluationMode: "pr",
+				rolloutStage: "advisory",
+				clientFamily: "codex",
+				providerId: "openai",
+				modelDescriptor: "gpt-5.4",
+				overrideApprovedBy: ["jamie", "alex"],
+			},
+		});
 
-			const loaded = loadControlPlaneArtifactSet(summary.artifactRoot);
-			expect(loaded.errors).toEqual([]);
-			expect(loaded.artifacts?.overridePolicyRecord).toBeNull();
-			expect(loaded.artifacts?.rolloutWindow?.readyForTransition).toBe(false);
-			expect(loaded.artifacts?.rolloutWindow?.transitionBlockers).toContain(
-				"maintainer approval missing for this rollout stage transition",
-			);
-			expect(loaded.artifacts?.latestPromotionPacket).toBeNull();
-		},
-	);
+		const loaded = loadControlPlaneArtifactSet(summary.artifactRoot);
+		expect(loaded.errors).toEqual([]);
+		expect(loaded.artifacts?.overridePolicyRecord).toBeNull();
+		expect(loaded.artifacts?.rolloutWindow?.readyForTransition).toBe(false);
+		expect(loaded.artifacts?.rolloutWindow?.transitionBlockers).toContain(
+			"maintainer approval missing for this rollout stage transition",
+		);
+		expect(loaded.artifacts?.latestPromotionPacket).toBeNull();
+	});
 
 	it("blocks missing trusted pr-template evidence in pr mode", () => {
 		const { summary } = buildControlPlaneArtifacts({
