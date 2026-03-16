@@ -28,3 +28,7 @@
 - From CircleCI improvement docs: next pipeline iteration should add test splitting with historical timings and test insights surfacing to reduce rerun cost and speed diagnosis.
 - Outstanding: migration policy still shows `ciProviderPolicy.activeProvider = github-actions` in `shadow` mode; complete promotion to CircleCI required mode when governance evidence is ready.
 - Outstanding: keep watching for `[vitest-worker]: Timeout calling "onTaskUpdate"` runner instability after this wiring fix.
+- CircleCI `Typecheck` regression after the test hardening cherry-pick came from a stale type-only import path in `src/commands/ci-migrate.test.ts` (`../lib/init/cli.js` does not exist); importing `runInitCLI` type from `./init.js` fixes the failure.
+- Added overload-aware timing assertion guard (`src/lib/test/overload-guard.ts`) so performance checks skip only timing assertions under host overload, emit explicit diagnostics, and keep functional assertions executing.
+- Portable contract for common stacks now lives in env flags: `HARNESS_TEST_SKIP_TIMING_ASSERTIONS`, `HARNESS_TEST_OVERLOADED`, `HARNESS_TEST_MAX_LOAD_PER_CPU`, and `HARNESS_TEST_MIN_FREE_MEMORY_RATIO`.
+- Outstanding: integrate the overload-guard env contract into harness init/deployment scaffolding so downstream repos inherit the same timing-assertion behavior by default.

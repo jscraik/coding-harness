@@ -18,8 +18,8 @@ import type {
 	BranchProtectionSatisfiabilityReport,
 	scanOpenPullRequestSatisfiability as scanOpenPullRequestSatisfiabilityType,
 } from "../lib/ci/satisfiability.js";
-import type { runInitCLI as runInitCLIType } from "../lib/init/cli.js";
 import { EXIT_CODES } from "../lib/init/types.js";
+import type { runInitCLI as runInitCLIType } from "./init.js";
 
 type RunInitCLIImpl = typeof runInitCLIType;
 type ScanOpenPullRequestSatisfiabilityImpl =
