@@ -8,13 +8,13 @@ flowchart TD
   cli_99bb8840 --> cli_test_4851f28b
   cli_dispatch_test_54c9f17b["cli-dispatch.test"]
   cli_test_4851f28b --> cli_dispatch_test_54c9f17b
+  circleci_stale_management_664de1d9["circleci-stale-management"]
+  cli_dispatch_test_54c9f17b --> circleci_stale_management_664de1d9
+  circleci_linear_sync_19c0d6da["circleci-linear-sync"]
+  circleci_stale_management_664de1d9 --> circleci_linear_sync_19c0d6da
   vitest_e2e_config_4e2a61bc["vitest.e2e.config"]
-  cli_dispatch_test_54c9f17b --> vitest_e2e_config_4e2a61bc
+  circleci_linear_sync_19c0d6da --> vitest_e2e_config_4e2a61bc
   run_e2e_39efe696["run-e2e"]
   vitest_e2e_config_4e2a61bc --> run_e2e_39efe696
-  version_5ca4f385["version"]
-  run_e2e_39efe696 --> version_5ca4f385
-  preset_detection_b0f00a17["preset-detection"]
-  version_5ca4f385 --> preset_detection_b0f00a17
   End(["End"])
-  preset_detection_b0f00a17 --> End
+  run_e2e_39efe696 --> End

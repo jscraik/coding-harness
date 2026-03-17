@@ -50,8 +50,6 @@ flowchart TD
   Untrusted --> linear_gate_fac14a46
   license_gate_3d7eb57e["license-gate"]
   Untrusted --> license_gate_3d7eb57e
-  init_bb54068a["init"]
-  Untrusted --> init_bb54068a
   init_test_cbba76a6["init.test"]
   Untrusted --> init_test_cbba76a6
   gap_case_82e69111["gap-case"]
@@ -94,8 +92,10 @@ flowchart TD
   Untrusted --> context_test_57aad306
   blast_radius_test_045450fc["blast-radius.test"]
   Untrusted --> blast_radius_test_045450fc
-  env_b77349bf["env"]
-  Untrusted --> env_b77349bf
+  circleci_stale_management_664de1d9["circleci-stale-management"]
+  Untrusted --> circleci_stale_management_664de1d9
+  circleci_linear_sync_19c0d6da["circleci-linear-sync"]
+  Untrusted --> circleci_linear_sync_19c0d6da
   ui_loop_11660889["ui-loop"]
   Untrusted --> ui_loop_11660889
   request_greptile_review_test_b073e76e["request-greptile-review.test"]

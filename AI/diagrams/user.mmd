@@ -4,6 +4,8 @@ flowchart LR
   User --> cli_99bb8840
   cli_dispatch_test_54c9f17b["cli-dispatch.test"]
   User --> cli_dispatch_test_54c9f17b
+  circleci_linear_sync_19c0d6da["circleci-linear-sync"]
+  User --> circleci_linear_sync_19c0d6da
   verify_greptile_227190f7["verify-greptile"]
   User --> verify_greptile_227190f7
   verify_greptile_test_17404b05["verify-greptile.test"]
@@ -34,16 +36,16 @@ flowchart LR
   User --> init_test_cbba76a6
   evidence_verify_3b73c290["evidence-verify"]
   User --> evidence_verify_3b73c290
+  ci_migrate_78bb70b1["ci-migrate"]
+  User --> ci_migrate_78bb70b1
+  ci_migrate_test_2a015bb9["ci-migrate.test"]
+  User --> ci_migrate_test_2a015bb9
   check_environment_fe68d4be["check-environment"]
   User --> check_environment_fe68d4be
-  check_authz_fee242b1["check-authz"]
-  User --> check_authz_fee242b1
   branch_protect_b9d345eb["branch-protect"]
   User --> branch_protect_b9d345eb
   branch_protect_test_c8d80aab["branch-protect.test"]
   User --> branch_protect_test_c8d80aab
   agent_first_throughput_integration_test_dc677cc4["agent-first-throughput.integration.test"]
   User --> agent_first_throughput_integration_test_dc677cc4
-  env_b77349bf["env"]
-  User --> env_b77349bf
   classDef userNode fill:#16a34a,color:#fff

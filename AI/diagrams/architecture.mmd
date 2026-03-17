@@ -7,6 +7,10 @@ graph TD
     cli_test_4851f28b["cli.test"]
     cli_dispatch_test_54c9f17b["cli-dispatch.test"]
   end
+  subgraph scripts_8c5967fd["scripts"]
+    circleci_stale_management_664de1d9["circleci-stale-management"]
+    circleci_linear_sync_19c0d6da["circleci-linear-sync"]
+  end
   subgraph e2e_6d8749c4["e2e"]
     vitest_e2e_config_4e2a61bc["vitest.e2e.config"]
     run_e2e_39efe696["run-e2e"]
@@ -104,10 +108,6 @@ graph TD
     automation_run_22331800["automation-run"]
     automation_run_test_7b21d905["automation-run.test"]
     agent_first_throughput_integration_test_dc677cc4["agent-first-throughput.integration.test"]
-  end
-  subgraph e2e_utils_979d12b1["e2e/utils"]
-    resource_tracker_d95b6649["resource-tracker"]
-    env_b77349bf["env"]
   end
   subgraph e2e_tests_1179dfa0["e2e/tests"]
     linear_integration_e2e_test_dbc5e6db["linear-integration.e2e.test"]
