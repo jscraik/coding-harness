@@ -17,6 +17,13 @@ commands:
             fi
             pnpm --version
       - run:
+          name: Configure gh CLI token
+          command: |
+            # CircleCI doesn't inject GITHUB_TOKEN automatically like GitHub Actions.
+            # Map our PAT → GH_TOKEN so the gh CLI and git push authenticate correctly.
+            echo "export GH_TOKEN=${GITHUB_PERSONAL_ACCESS_TOKEN}" >> "$BASH_ENV"
+            git config --global url."https://${GITHUB_PERSONAL_ACCESS_TOKEN}@github.com/".insteadOf "https://github.com/"
+      - run:
           name: Install dependencies
           command: pnpm install
 
@@ -189,7 +196,7 @@ jobs:
             fi
 
             node dist/cli.js review-gate \
-              --token "$GITHUB_TOKEN" \
+              --token "$GITHUB_PERSONAL_ACCESS_TOKEN" \
               --owner "$CIRCLE_PROJECT_USERNAME" \
               --repo "$CIRCLE_PROJECT_REPONAME" \
               --pr "$PR_NUM" \
