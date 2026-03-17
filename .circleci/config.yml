@@ -19,6 +19,11 @@ jobs:
           name: Install dependencies
           command: pnpm install
       - run:
+          name: Docs and Workflow Contracts
+          command: |
+            pnpm docs:lint
+            pnpm workflow:validate
+      - run:
           name: Lint
           command: pnpm lint
       - run:
@@ -26,13 +31,10 @@ jobs:
           command: pnpm typecheck
       - run:
           name: Test
-          command: pnpm test
+          command: pnpm test:ci
       - run:
           name: Audit
           command: pnpm audit
-      - run:
-          name: Policy Bundle
-          command: pnpm check
 
 workflows:
   pr-pipeline:

@@ -32,6 +32,28 @@ import {
 } from "../lib/init/types.js";
 import { sanitizeError } from "../lib/input/sanitize.js";
 
+type RunInitCLIImpl = typeof runInitCLI;
+type ScanOpenPullRequestSatisfiabilityImpl =
+	typeof scanOpenPullRequestSatisfiability;
+
+let runInitCLIImpl: RunInitCLIImpl = runInitCLI;
+let scanOpenPullRequestSatisfiabilityImpl: ScanOpenPullRequestSatisfiabilityImpl =
+	scanOpenPullRequestSatisfiability;
+
+export function setCIMigrateTestOverrides(
+	overrides?: Readonly<{
+		runInitCLI?: RunInitCLIImpl | undefined;
+		scanOpenPullRequestSatisfiability?:
+			| ScanOpenPullRequestSatisfiabilityImpl
+			| undefined;
+	}>,
+): void {
+	runInitCLIImpl = overrides?.runInitCLI ?? runInitCLI;
+	scanOpenPullRequestSatisfiabilityImpl =
+		overrides?.scanOpenPullRequestSatisfiability ??
+		scanOpenPullRequestSatisfiability;
+}
+
 const DEFAULT_PROVIDER = "circleci";
 const SNAPSHOT_DIR = "ci-migrate-snapshots";
 const REPORT_SUFFIX = ".report.json";
@@ -7938,7 +7960,7 @@ function buildMigrationReport(
 	const unexpectedDiffs = [...sourceDisplayNames].filter(
 		(name) => !targetDisplayNames.has(name),
 	);
-	const preCutoverSatisfiability = scanOpenPullRequestSatisfiability(
+	const preCutoverSatisfiability = scanOpenPullRequestSatisfiabilityImpl(
 		targetDir,
 		allRequiredChecksResult.value,
 	);
@@ -9251,7 +9273,7 @@ export function runCIMigrateCLI(
 		}
 	}
 
-	const exitCode = runInitCLI(dir, initOptions);
+	const exitCode = runInitCLIImpl(dir, initOptions);
 	if (exitCode !== EXIT_CODES.SUCCESS) {
 		if (
 			!writeMergeQueueWindowStage("aborted", {
@@ -9308,7 +9330,7 @@ export function runCIMigrateCLI(
 		) {
 			return EXIT_CODES.WRITE_ERROR;
 		}
-		const postCutoverSatisfiability = scanOpenPullRequestSatisfiability(
+		const postCutoverSatisfiability = scanOpenPullRequestSatisfiabilityImpl(
 			dir,
 			postCutoverRequiredChecksResult.value,
 		);
@@ -9368,7 +9390,7 @@ export function runCIMigrateCLI(
 				return snapshotRestoreExitCode;
 			}
 
-			const rollbackExitCode = runInitCLI(dir, {
+			const rollbackExitCode = runInitCLIImpl(dir, {
 				dryRun: false,
 				force: false,
 				track: false,

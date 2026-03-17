@@ -367,40 +367,36 @@ if (FORMAT === "json") {
 		},
 		violations,
 	};
-	process.stdout.write(`${JSON.stringify(out, null, 2)}\n`);
+	console.log(JSON.stringify(out, null, 2));
 } else {
 	for (const v of errors) {
-		console.error(`❌ [${v.rule}] ${v.file}`);
-		console.error(`   ${v.message}`);
+		console.log(`❌ [${v.rule}] ${v.file}`);
+		console.log(`   ${v.message}`);
 	}
 	for (const v of warnings) {
-		console.info(`⚠️  [${v.rule}] ${v.file}`);
-		console.info(`   ${v.message}`);
+		console.log(`⚠️  [${v.rule}] ${v.file}`);
+		console.log(`   ${v.message}`);
 	}
 	if (VERBOSE) {
 		for (const v of baselined) {
-			console.info(`📋 [${v.rule}] ${v.file} (baselined — advisory only)`);
-			console.info(`   ${v.message}`);
+			console.log(`📋 [${v.rule}] ${v.file} (baselined — advisory only)`);
+			console.log(`   ${v.message}`);
 		}
 	}
 
 	if (violations.length === 0) {
-		console.info("✅ All architecture rules passed.");
+		console.log("✅ All architecture rules passed.");
 	} else if (errors.length === 0) {
-		console.info(
+		console.log(
 			`✅ No new violations. ${warnings.length} warning(s), ${baselined.length} baselined tech-debt item(s).`,
 		);
 	} else {
-		console.error(
+		console.log(
 			`\n❌ ${errors.length} new error(s), ${warnings.length} warning(s), ${baselined.length} baselined. Fix errors before merge.`,
 		);
 	}
 }
 
 if (errors.length > 0) {
-	if (FORMAT === "json") {
-		// In JSON mode, exit 0 so the CI step can parse the JSON and manage the failure flow natively.
-		process.exit(0);
-	}
 	process.exit(1);
 }

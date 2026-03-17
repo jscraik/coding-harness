@@ -14,22 +14,30 @@ import { tmpdir } from "node:os";
 import { dirname, join } from "node:path";
 import { pathToFileURL } from "node:url";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { scanOpenPullRequestSatisfiability } from "../lib/ci/satisfiability.js";
+import type {
+	BranchProtectionSatisfiabilityReport,
+	scanOpenPullRequestSatisfiability as scanOpenPullRequestSatisfiabilityType,
+} from "../lib/ci/satisfiability.js";
 import { EXIT_CODES } from "../lib/init/types.js";
-import { runCIMigrateCLI } from "./ci-migrate.js";
-import { runInitCLI } from "./init.js";
+import type { runInitCLI as runInitCLIType } from "./init.js";
 
-vi.mock("./init.js", () => ({
-	runInitCLI: vi.fn(() => 0),
-}));
+type RunInitCLIImpl = typeof runInitCLIType;
+type ScanOpenPullRequestSatisfiabilityImpl =
+	typeof scanOpenPullRequestSatisfiabilityType;
 
-vi.mock("../lib/ci/satisfiability.js", () => ({
-	scanOpenPullRequestSatisfiability: vi.fn(() => ({
-		status: "satisfied",
-		scannedOpenPrs: 0,
-		failingPrs: [],
-	})),
-}));
+const runInitCLIMock = vi.hoisted(() => vi.fn<RunInitCLIImpl>(() => 0));
+const scanOpenPullRequestSatisfiabilityMock = vi.hoisted(() =>
+	vi.fn<ScanOpenPullRequestSatisfiabilityImpl>(
+		(): BranchProtectionSatisfiabilityReport => ({
+			status: "satisfied",
+			scannedOpenPrs: 0,
+			failingPrs: [],
+		}),
+	),
+);
+const { runCIMigrateCLI, setCIMigrateTestOverrides } = await import(
+	"./ci-migrate.js"
+);
 
 function hashContent(content: string): string {
 	return createHash("sha256").update(content, "utf-8").digest("hex");
@@ -252,6 +260,13 @@ function ensureProofPackFixtureHistory(targetDir: string): {
 			"Proof pack fixture baseSha and headSha must differ to prove parity comparison.",
 		);
 	}
+	// CircleCI Linux images may default fixture repos to `master`.
+	// Force a concrete `refs/heads/main` ref so trustedPolicyRef ancestry checks
+	// behave consistently across platforms.
+	ensureCommand(
+		["update-ref", "refs/heads/main", headSha],
+		"Unable to align fixture main branch ref",
+	);
 	ensureCommand(
 		["symbolic-ref", "HEAD", "refs/heads/main"],
 		"Unable to align fixture main branch",
@@ -2038,7 +2053,11 @@ describe("runCIMigrateCLI", () => {
 			return undefined;
 		});
 		vi.clearAllMocks();
-		vi.mocked(scanOpenPullRequestSatisfiability).mockReturnValue({
+		setCIMigrateTestOverrides({
+			runInitCLI: runInitCLIMock,
+			scanOpenPullRequestSatisfiability: scanOpenPullRequestSatisfiabilityMock,
+		});
+		scanOpenPullRequestSatisfiabilityMock.mockReturnValue({
 			status: "satisfied",
 			scannedOpenPrs: 0,
 			failingPrs: [],
@@ -2059,6 +2078,7 @@ describe("runCIMigrateCLI", () => {
 		} else {
 			process.env[SNAPSHOT_SIGNING_KEY_ENV] = previousSnapshotSigningKey;
 		}
+		setCIMigrateTestOverrides();
 		rmSync(tempDir, { recursive: true, force: true });
 	});
 
@@ -2106,7 +2126,7 @@ describe("runCIMigrateCLI", () => {
 		});
 
 		expect(exitCode).toBe(EXIT_CODES.SUCCESS);
-		expect(vi.mocked(runInitCLI)).toHaveBeenCalledWith(tempDir, {
+		expect(runInitCLIMock).toHaveBeenCalledWith(tempDir, {
 			dryRun: false,
 			force: true,
 			track: true,
@@ -2161,7 +2181,7 @@ describe("runCIMigrateCLI", () => {
 		});
 
 		expect(exitCode).toBe(EXIT_CODES.INVALID_PATH);
-		expect(vi.mocked(runInitCLI)).not.toHaveBeenCalled();
+		expect(runInitCLIMock).not.toHaveBeenCalled();
 	});
 
 	it("fails closed on apply when another snapshot has an active drained cutover window", () => {
@@ -2179,7 +2199,7 @@ describe("runCIMigrateCLI", () => {
 		});
 
 		expect(exitCode).toBe(EXIT_CODES.INVALID_PATH);
-		expect(vi.mocked(runInitCLI)).not.toHaveBeenCalled();
+		expect(runInitCLIMock).not.toHaveBeenCalled();
 	});
 
 	it("fails closed when existing merge-queue cutover window signature is missing", () => {
@@ -2198,7 +2218,7 @@ describe("runCIMigrateCLI", () => {
 		});
 
 		expect(exitCode).toBe(EXIT_CODES.INVALID_PATH);
-		expect(vi.mocked(runInitCLI)).not.toHaveBeenCalled();
+		expect(runInitCLIMock).not.toHaveBeenCalled();
 	});
 
 	it("allows apply when prior cutover window is terminal", () => {
@@ -2216,7 +2236,7 @@ describe("runCIMigrateCLI", () => {
 		});
 
 		expect(exitCode).toBe(EXIT_CODES.SUCCESS);
-		expect(vi.mocked(runInitCLI)).toHaveBeenCalledTimes(1);
+		expect(runInitCLIMock).toHaveBeenCalledTimes(1);
 	});
 
 	it("records signed merge-queue cutover evidence in window metadata when provided", () => {
@@ -2259,7 +2279,7 @@ describe("runCIMigrateCLI", () => {
 		});
 
 		expect(exitCode).toBe(EXIT_CODES.INVALID_PATH);
-		expect(vi.mocked(runInitCLI)).not.toHaveBeenCalled();
+		expect(runInitCLIMock).not.toHaveBeenCalled();
 	});
 
 	it("rejects discovered merge-queue evidence when binding does not match apply identity in shadow mode", () => {
@@ -2283,7 +2303,7 @@ describe("runCIMigrateCLI", () => {
 		});
 
 		expect(exitCode).toBe(EXIT_CODES.INVALID_PATH);
-		expect(vi.mocked(runInitCLI)).not.toHaveBeenCalled();
+		expect(runInitCLIMock).not.toHaveBeenCalled();
 	});
 
 	it("fails apply when signed merge-queue evidence is required but lifecycle fields are missing in required mode", () => {
@@ -2293,7 +2313,7 @@ describe("runCIMigrateCLI", () => {
 		writeSignedMergeQueueEvidence(tempDir, "cutover-required-evidence", {
 			includeLifecycle: false,
 		});
-		vi.mocked(scanOpenPullRequestSatisfiability)
+		scanOpenPullRequestSatisfiabilityMock
 			.mockReturnValueOnce({
 				status: "satisfied",
 				scannedOpenPrs: 2,
@@ -2313,7 +2333,7 @@ describe("runCIMigrateCLI", () => {
 		});
 
 		expect(exitCode).toBe(EXIT_CODES.INVALID_PATH);
-		expect(vi.mocked(runInitCLI)).not.toHaveBeenCalled();
+		expect(runInitCLIMock).not.toHaveBeenCalled();
 	});
 
 	it("requires signed merge-queue evidence on explicit required-mode commit windows", () => {
@@ -2321,7 +2341,7 @@ describe("runCIMigrateCLI", () => {
 		writeCIProviderPolicyContract(tempDir, "required");
 		writeParityProofPack(tempDir);
 		const snapshotId = "cutover-required-commit-missing-evidence";
-		vi.mocked(scanOpenPullRequestSatisfiability).mockReturnValue({
+		scanOpenPullRequestSatisfiabilityMock.mockReturnValue({
 			status: "satisfied",
 			scannedOpenPrs: 2,
 			failingPrs: [],
@@ -2335,7 +2355,7 @@ describe("runCIMigrateCLI", () => {
 		expect(prepareExitCode).toBe(EXIT_CODES.SUCCESS);
 
 		vi.clearAllMocks();
-		vi.mocked(scanOpenPullRequestSatisfiability).mockReturnValue({
+		scanOpenPullRequestSatisfiabilityMock.mockReturnValue({
 			status: "satisfied",
 			scannedOpenPrs: 2,
 			failingPrs: [],
@@ -2348,7 +2368,7 @@ describe("runCIMigrateCLI", () => {
 		});
 
 		expect(commitExitCode).toBe(EXIT_CODES.INVALID_PATH);
-		expect(vi.mocked(runInitCLI)).not.toHaveBeenCalled();
+		expect(runInitCLIMock).not.toHaveBeenCalled();
 	});
 
 	it("accepts signed merge-queue evidence on explicit required-mode commit windows", () => {
@@ -2357,7 +2377,7 @@ describe("runCIMigrateCLI", () => {
 		writeParityProofPack(tempDir);
 		const snapshotId = "cutover-required-commit-with-evidence";
 		writeSignedMergeQueueEvidence(tempDir, snapshotId);
-		vi.mocked(scanOpenPullRequestSatisfiability).mockReturnValue({
+		scanOpenPullRequestSatisfiabilityMock.mockReturnValue({
 			status: "satisfied",
 			scannedOpenPrs: 2,
 			failingPrs: [],
@@ -2371,7 +2391,7 @@ describe("runCIMigrateCLI", () => {
 		expect(prepareExitCode).toBe(EXIT_CODES.SUCCESS);
 
 		vi.clearAllMocks();
-		vi.mocked(scanOpenPullRequestSatisfiability).mockReturnValue({
+		scanOpenPullRequestSatisfiabilityMock.mockReturnValue({
 			status: "satisfied",
 			scannedOpenPrs: 2,
 			failingPrs: [],
@@ -2384,7 +2404,7 @@ describe("runCIMigrateCLI", () => {
 		});
 
 		expect(commitExitCode).toBe(EXIT_CODES.SUCCESS);
-		expect(vi.mocked(runInitCLI)).toHaveBeenCalledWith(tempDir, {
+		expect(runInitCLIMock).toHaveBeenCalledWith(tempDir, {
 			dryRun: false,
 			force: true,
 			track: true,
@@ -2407,7 +2427,7 @@ describe("runCIMigrateCLI", () => {
 		writeParityProofPack(tempDir);
 		writeMergeQueueOrchestratorFixture(tempDir);
 		const snapshotId = "cutover-required-commit-orchestrated";
-		vi.mocked(scanOpenPullRequestSatisfiability).mockReturnValue({
+		scanOpenPullRequestSatisfiabilityMock.mockReturnValue({
 			status: "satisfied",
 			scannedOpenPrs: 2,
 			failingPrs: [],
@@ -2421,7 +2441,7 @@ describe("runCIMigrateCLI", () => {
 		expect(prepareExitCode).toBe(EXIT_CODES.SUCCESS);
 
 		vi.clearAllMocks();
-		vi.mocked(scanOpenPullRequestSatisfiability).mockReturnValue({
+		scanOpenPullRequestSatisfiabilityMock.mockReturnValue({
 			status: "satisfied",
 			scannedOpenPrs: 2,
 			failingPrs: [],
@@ -2435,7 +2455,7 @@ describe("runCIMigrateCLI", () => {
 		});
 
 		expect(commitExitCode).toBe(EXIT_CODES.SUCCESS);
-		expect(vi.mocked(runInitCLI)).toHaveBeenCalled();
+		expect(runInitCLIMock).toHaveBeenCalled();
 		expect(existsSync(join(tempDir, MERGE_QUEUE_EVIDENCE_PATH))).toBe(true);
 		expect(existsSync(join(tempDir, `${MERGE_QUEUE_EVIDENCE_PATH}.sig`))).toBe(
 			true,
@@ -2448,7 +2468,7 @@ describe("runCIMigrateCLI", () => {
 		writeParityProofPack(tempDir);
 		writeMergeQueueOrchestratorFixture(tempDir, { shouldFail: true });
 		const snapshotId = "cutover-required-commit-orchestrator-fails";
-		vi.mocked(scanOpenPullRequestSatisfiability).mockReturnValue({
+		scanOpenPullRequestSatisfiabilityMock.mockReturnValue({
 			status: "satisfied",
 			scannedOpenPrs: 2,
 			failingPrs: [],
@@ -2462,7 +2482,7 @@ describe("runCIMigrateCLI", () => {
 		expect(prepareExitCode).toBe(EXIT_CODES.SUCCESS);
 
 		vi.clearAllMocks();
-		vi.mocked(scanOpenPullRequestSatisfiability).mockReturnValue({
+		scanOpenPullRequestSatisfiabilityMock.mockReturnValue({
 			status: "satisfied",
 			scannedOpenPrs: 2,
 			failingPrs: [],
@@ -2476,7 +2496,7 @@ describe("runCIMigrateCLI", () => {
 		});
 
 		expect(commitExitCode).toBe(EXIT_CODES.INVALID_PATH);
-		expect(vi.mocked(runInitCLI)).not.toHaveBeenCalled();
+		expect(runInitCLIMock).not.toHaveBeenCalled();
 	});
 
 	it("runs merge-queue provider API orchestrator and records signed evidence", () => {
@@ -2485,7 +2505,7 @@ describe("runCIMigrateCLI", () => {
 		writeParityProofPack(tempDir);
 		writeMergeQueueProviderAPIFixture(tempDir);
 		const snapshotId = "cutover-required-commit-provider-api";
-		vi.mocked(scanOpenPullRequestSatisfiability).mockReturnValue({
+		scanOpenPullRequestSatisfiabilityMock.mockReturnValue({
 			status: "satisfied",
 			scannedOpenPrs: 2,
 			failingPrs: [],
@@ -2499,7 +2519,7 @@ describe("runCIMigrateCLI", () => {
 		expect(prepareExitCode).toBe(EXIT_CODES.SUCCESS);
 
 		vi.clearAllMocks();
-		vi.mocked(scanOpenPullRequestSatisfiability).mockReturnValue({
+		scanOpenPullRequestSatisfiabilityMock.mockReturnValue({
 			status: "satisfied",
 			scannedOpenPrs: 2,
 			failingPrs: [],
@@ -2513,7 +2533,7 @@ describe("runCIMigrateCLI", () => {
 		});
 
 		expect(commitExitCode).toBe(EXIT_CODES.SUCCESS);
-		expect(vi.mocked(runInitCLI)).toHaveBeenCalled();
+		expect(runInitCLIMock).toHaveBeenCalled();
 		const evidence = JSON.parse(
 			readFileSync(join(tempDir, MERGE_QUEUE_EVIDENCE_PATH), "utf-8"),
 		) as {
@@ -2541,7 +2561,7 @@ describe("runCIMigrateCLI", () => {
 		writeParityProofPack(tempDir);
 		writeMergeQueueProviderAPIFixture(tempDir, { includeLifecycle: false });
 		const snapshotId = "cutover-required-commit-provider-api-missing-lifecycle";
-		vi.mocked(scanOpenPullRequestSatisfiability).mockReturnValue({
+		scanOpenPullRequestSatisfiabilityMock.mockReturnValue({
 			status: "satisfied",
 			scannedOpenPrs: 2,
 			failingPrs: [],
@@ -2555,7 +2575,7 @@ describe("runCIMigrateCLI", () => {
 		expect(prepareExitCode).toBe(EXIT_CODES.SUCCESS);
 
 		vi.clearAllMocks();
-		vi.mocked(scanOpenPullRequestSatisfiability).mockReturnValue({
+		scanOpenPullRequestSatisfiabilityMock.mockReturnValue({
 			status: "satisfied",
 			scannedOpenPrs: 2,
 			failingPrs: [],
@@ -2569,7 +2589,7 @@ describe("runCIMigrateCLI", () => {
 		});
 
 		expect(commitExitCode).toBe(EXIT_CODES.INVALID_PATH);
-		expect(vi.mocked(runInitCLI)).not.toHaveBeenCalled();
+		expect(runInitCLIMock).not.toHaveBeenCalled();
 	});
 
 	it("rejects commit when merge-queue executable and provider API orchestrators are both configured", () => {
@@ -2579,7 +2599,7 @@ describe("runCIMigrateCLI", () => {
 		writeMergeQueueOrchestratorFixture(tempDir);
 		writeMergeQueueProviderAPIFixture(tempDir);
 		const snapshotId = "cutover-required-commit-dual-orchestrators";
-		vi.mocked(scanOpenPullRequestSatisfiability).mockReturnValue({
+		scanOpenPullRequestSatisfiabilityMock.mockReturnValue({
 			status: "satisfied",
 			scannedOpenPrs: 2,
 			failingPrs: [],
@@ -2593,7 +2613,7 @@ describe("runCIMigrateCLI", () => {
 		expect(prepareExitCode).toBe(EXIT_CODES.SUCCESS);
 
 		vi.clearAllMocks();
-		vi.mocked(scanOpenPullRequestSatisfiability).mockReturnValue({
+		scanOpenPullRequestSatisfiabilityMock.mockReturnValue({
 			status: "satisfied",
 			scannedOpenPrs: 2,
 			failingPrs: [],
@@ -2608,7 +2628,7 @@ describe("runCIMigrateCLI", () => {
 		});
 
 		expect(commitExitCode).toBe(EXIT_CODES.INVALID_PATH);
-		expect(vi.mocked(runInitCLI)).not.toHaveBeenCalled();
+		expect(runInitCLIMock).not.toHaveBeenCalled();
 	});
 
 	// Security regression: the default orchestrator path must NOT be auto-executed
@@ -2624,7 +2644,7 @@ describe("runCIMigrateCLI", () => {
 		// passing --merge-queue-orchestrator to the CLI.
 		writeMergeQueueOrchestratorFixture(tempDir);
 		const snapshotId = "cutover-required-commit-no-auto-orchestrate";
-		vi.mocked(scanOpenPullRequestSatisfiability).mockReturnValue({
+		scanOpenPullRequestSatisfiabilityMock.mockReturnValue({
 			status: "satisfied",
 			scannedOpenPrs: 2,
 			failingPrs: [],
@@ -2638,7 +2658,7 @@ describe("runCIMigrateCLI", () => {
 		expect(prepareExitCode).toBe(EXIT_CODES.SUCCESS);
 
 		vi.clearAllMocks();
-		vi.mocked(scanOpenPullRequestSatisfiability).mockReturnValue({
+		scanOpenPullRequestSatisfiabilityMock.mockReturnValue({
 			status: "satisfied",
 			scannedOpenPrs: 2,
 			failingPrs: [],
@@ -2669,7 +2689,7 @@ describe("runCIMigrateCLI", () => {
 				headSha: "f".repeat(40),
 			},
 		});
-		vi.mocked(scanOpenPullRequestSatisfiability).mockReturnValue({
+		scanOpenPullRequestSatisfiabilityMock.mockReturnValue({
 			status: "satisfied",
 			scannedOpenPrs: 2,
 			failingPrs: [],
@@ -2683,7 +2703,7 @@ describe("runCIMigrateCLI", () => {
 		expect(prepareExitCode).toBe(EXIT_CODES.SUCCESS);
 
 		vi.clearAllMocks();
-		vi.mocked(scanOpenPullRequestSatisfiability).mockReturnValue({
+		scanOpenPullRequestSatisfiabilityMock.mockReturnValue({
 			status: "satisfied",
 			scannedOpenPrs: 2,
 			failingPrs: [],
@@ -2696,7 +2716,7 @@ describe("runCIMigrateCLI", () => {
 		});
 
 		expect(commitExitCode).toBe(EXIT_CODES.INVALID_PATH);
-		expect(vi.mocked(runInitCLI)).not.toHaveBeenCalled();
+		expect(runInitCLIMock).not.toHaveBeenCalled();
 	});
 
 	it("restores snapshot before rollback", () => {
@@ -2721,7 +2741,7 @@ describe("runCIMigrateCLI", () => {
 		});
 
 		expect(exitCode).toBe(EXIT_CODES.SUCCESS);
-		expect(vi.mocked(runInitCLI)).toHaveBeenCalledWith(tempDir, {
+		expect(runInitCLIMock).toHaveBeenCalledWith(tempDir, {
 			dryRun: false,
 			force: false,
 			track: false,
@@ -2925,7 +2945,7 @@ describe("runCIMigrateCLI", () => {
 		});
 
 		expect(exitCode).toBe(EXIT_CODES.SUCCESS);
-		expect(vi.mocked(runInitCLI)).toHaveBeenCalledWith(tempDir, {
+		expect(runInitCLIMock).toHaveBeenCalledWith(tempDir, {
 			dryRun: false,
 			force: false,
 			track: false,
@@ -2954,7 +2974,7 @@ describe("runCIMigrateCLI", () => {
 		});
 
 		expect(exitCode).toBe(EXIT_CODES.INVALID_PATH);
-		expect(vi.mocked(runInitCLI)).not.toHaveBeenCalled();
+		expect(runInitCLIMock).not.toHaveBeenCalled();
 	});
 
 	it("syncs signed break-glass governance policy from roster when requested", () => {
@@ -3000,7 +3020,7 @@ describe("runCIMigrateCLI", () => {
 		});
 
 		expect(exitCode).toBe(EXIT_CODES.INVALID_PATH);
-		expect(vi.mocked(runInitCLI)).not.toHaveBeenCalled();
+		expect(runInitCLIMock).not.toHaveBeenCalled();
 		expect(existsSync(join(tempDir, BREAK_GLASS_POLICY_PATH))).toBe(false);
 		expect(existsSync(join(tempDir, BREAK_GLASS_OPS_WORKFLOW_PATH))).toBe(
 			false,
@@ -3031,7 +3051,7 @@ describe("runCIMigrateCLI", () => {
 		});
 
 		expect(exitCode).toBe(EXIT_CODES.INVALID_PATH);
-		expect(vi.mocked(runInitCLI)).not.toHaveBeenCalled();
+		expect(runInitCLIMock).not.toHaveBeenCalled();
 	});
 
 	it("allows required-mode rollback weakening with break-glass approval", () => {
@@ -3071,7 +3091,7 @@ describe("runCIMigrateCLI", () => {
 		});
 
 		expect(exitCode).toBe(EXIT_CODES.SUCCESS);
-		expect(vi.mocked(runInitCLI)).toHaveBeenCalledWith(tempDir, {
+		expect(runInitCLIMock).toHaveBeenCalledWith(tempDir, {
 			dryRun: false,
 			force: false,
 			track: false,
@@ -3120,7 +3140,7 @@ describe("runCIMigrateCLI", () => {
 		});
 
 		expect(exitCode).toBe(EXIT_CODES.INVALID_PATH);
-		expect(vi.mocked(runInitCLI)).not.toHaveBeenCalled();
+		expect(runInitCLIMock).not.toHaveBeenCalled();
 	});
 
 	it("rejects break-glass approval when approvers are not allowlisted by policy", () => {
@@ -3164,7 +3184,7 @@ describe("runCIMigrateCLI", () => {
 		});
 
 		expect(exitCode).toBe(EXIT_CODES.INVALID_PATH);
-		expect(vi.mocked(runInitCLI)).not.toHaveBeenCalled();
+		expect(runInitCLIMock).not.toHaveBeenCalled();
 	});
 
 	it("rejects rollback weakening when governance policy requires dual approval and only one approver is present", () => {
@@ -3208,7 +3228,7 @@ describe("runCIMigrateCLI", () => {
 		});
 
 		expect(exitCode).toBe(EXIT_CODES.INVALID_PATH);
-		expect(vi.mocked(runInitCLI)).not.toHaveBeenCalled();
+		expect(runInitCLIMock).not.toHaveBeenCalled();
 	});
 
 	it("fails fast for conflicting mode flags", () => {
@@ -3217,7 +3237,7 @@ describe("runCIMigrateCLI", () => {
 			rollback: true,
 		});
 		expect(exitCode).toBe(EXIT_CODES.INVALID_PATH);
-		expect(vi.mocked(runInitCLI)).not.toHaveBeenCalled();
+		expect(runInitCLIMock).not.toHaveBeenCalled();
 	});
 
 	it("refuses rollback from tampered snapshot", () => {
@@ -3246,7 +3266,7 @@ describe("runCIMigrateCLI", () => {
 		});
 
 		expect(exitCode).toBe(EXIT_CODES.INVALID_PATH);
-		expect(vi.mocked(runInitCLI)).not.toHaveBeenCalled();
+		expect(runInitCLIMock).not.toHaveBeenCalled();
 	});
 
 	it("refuses rollback from stale snapshot", () => {
@@ -3280,7 +3300,7 @@ describe("runCIMigrateCLI", () => {
 		});
 
 		expect(exitCode).toBe(EXIT_CODES.INVALID_PATH);
-		expect(vi.mocked(runInitCLI)).not.toHaveBeenCalled();
+		expect(runInitCLIMock).not.toHaveBeenCalled();
 	});
 
 	it("allows rollback from stale snapshot with break-glass approval", () => {
@@ -3325,7 +3345,7 @@ describe("runCIMigrateCLI", () => {
 		});
 
 		expect(exitCode).toBe(EXIT_CODES.SUCCESS);
-		expect(vi.mocked(runInitCLI)).toHaveBeenCalledWith(tempDir, {
+		expect(runInitCLIMock).toHaveBeenCalledWith(tempDir, {
 			dryRun: false,
 			force: false,
 			track: false,
@@ -3367,7 +3387,7 @@ describe("runCIMigrateCLI", () => {
 		});
 
 		expect(exitCode).toBe(EXIT_CODES.INVALID_PATH);
-		expect(vi.mocked(runInitCLI)).not.toHaveBeenCalled();
+		expect(runInitCLIMock).not.toHaveBeenCalled();
 	});
 
 	it("refuses rollback when external control-plane snapshot includes non-allowlisted paths", () => {
@@ -3416,7 +3436,7 @@ describe("runCIMigrateCLI", () => {
 		});
 
 		expect(exitCode).toBe(EXIT_CODES.INVALID_PATH);
-		expect(vi.mocked(runInitCLI)).not.toHaveBeenCalled();
+		expect(runInitCLIMock).not.toHaveBeenCalled();
 	});
 
 	// Security regression: isSafeRestorePath must reject symlinks even when the
@@ -3475,7 +3495,7 @@ describe("runCIMigrateCLI", () => {
 
 		expect(exitCode).toBe(EXIT_CODES.INVALID_PATH);
 		expect(readFileSync(externalTarget, "utf-8")).toBe("do-not-touch");
-		expect(vi.mocked(runInitCLI)).not.toHaveBeenCalled();
+		expect(runInitCLIMock).not.toHaveBeenCalled();
 	});
 
 	it("refuses rollback when external control-plane snapshot is missing", () => {
@@ -3511,7 +3531,7 @@ describe("runCIMigrateCLI", () => {
 		});
 
 		expect(exitCode).toBe(EXIT_CODES.INVALID_PATH);
-		expect(vi.mocked(runInitCLI)).not.toHaveBeenCalled();
+		expect(runInitCLIMock).not.toHaveBeenCalled();
 	});
 
 	it("fails apply when snapshot signing key env is missing", () => {
@@ -3525,7 +3545,7 @@ describe("runCIMigrateCLI", () => {
 		});
 
 		expect(exitCode).toBe(EXIT_CODES.INVALID_PATH);
-		expect(vi.mocked(runInitCLI)).not.toHaveBeenCalled();
+		expect(runInitCLIMock).not.toHaveBeenCalled();
 	});
 
 	it("fails fast for apply + dry-run combination", () => {
@@ -3534,7 +3554,7 @@ describe("runCIMigrateCLI", () => {
 			dryRun: true,
 		});
 		expect(exitCode).toBe(EXIT_CODES.INVALID_PATH);
-		expect(vi.mocked(runInitCLI)).not.toHaveBeenCalled();
+		expect(runInitCLIMock).not.toHaveBeenCalled();
 	});
 
 	it("requires snapshot for explicit abort action", () => {
@@ -3543,7 +3563,7 @@ describe("runCIMigrateCLI", () => {
 			action: "abort",
 		});
 		expect(exitCode).toBe(EXIT_CODES.INVALID_PATH);
-		expect(vi.mocked(runInitCLI)).not.toHaveBeenCalled();
+		expect(runInitCLIMock).not.toHaveBeenCalled();
 	});
 
 	it("requires prepared state for explicit commit action", () => {
@@ -3554,7 +3574,7 @@ describe("runCIMigrateCLI", () => {
 			snapshot: "phase-missing-state",
 		});
 		expect(exitCode).toBe(EXIT_CODES.INVALID_PATH);
-		expect(vi.mocked(runInitCLI)).not.toHaveBeenCalled();
+		expect(runInitCLIMock).not.toHaveBeenCalled();
 	});
 
 	it("rejects explicit commit when provider does not match prepared state", () => {
@@ -3573,7 +3593,7 @@ describe("runCIMigrateCLI", () => {
 			snapshot: "phase-provider-mismatch",
 		});
 		expect(commitExitCode).toBe(EXIT_CODES.INVALID_PATH);
-		expect(vi.mocked(runInitCLI)).not.toHaveBeenCalled();
+		expect(runInitCLIMock).not.toHaveBeenCalled();
 	});
 
 	it("refuses prepare when the snapshot id already has phased artifacts", () => {
@@ -3603,7 +3623,7 @@ describe("runCIMigrateCLI", () => {
 		});
 
 		expect(exitCode).toBe(EXIT_CODES.INVALID_PATH);
-		expect(vi.mocked(runInitCLI)).not.toHaveBeenCalled();
+		expect(runInitCLIMock).not.toHaveBeenCalled();
 	});
 
 	it("refuses legacy apply when the snapshot id already has phased artifacts", () => {
@@ -3633,7 +3653,7 @@ describe("runCIMigrateCLI", () => {
 		});
 
 		expect(exitCode).toBe(EXIT_CODES.INVALID_PATH);
-		expect(vi.mocked(runInitCLI)).not.toHaveBeenCalled();
+		expect(runInitCLIMock).not.toHaveBeenCalled();
 	});
 
 	it("writes prepared state for explicit prepare and commits it on explicit commit", () => {
@@ -3671,7 +3691,7 @@ describe("runCIMigrateCLI", () => {
 			),
 		);
 		expect(committedState.stage).toBe("committed");
-		expect(vi.mocked(runInitCLI)).toHaveBeenCalledWith(tempDir, {
+		expect(runInitCLIMock).toHaveBeenCalledWith(tempDir, {
 			dryRun: false,
 			force: true,
 			track: true,
@@ -3707,7 +3727,7 @@ describe("runCIMigrateCLI", () => {
 		});
 
 		expect(commitExitCode).toBe(EXIT_CODES.INVALID_PATH);
-		expect(vi.mocked(runInitCLI)).not.toHaveBeenCalled();
+		expect(runInitCLIMock).not.toHaveBeenCalled();
 	});
 
 	it("rejects commit when the prepared migration report is tampered after prepare", () => {
@@ -3742,7 +3762,7 @@ describe("runCIMigrateCLI", () => {
 		});
 
 		expect(commitExitCode).toBe(EXIT_CODES.INVALID_PATH);
-		expect(vi.mocked(runInitCLI)).not.toHaveBeenCalled();
+		expect(runInitCLIMock).not.toHaveBeenCalled();
 	});
 
 	it("persists proof-pack metadata in prepared migration state", () => {
@@ -3857,7 +3877,7 @@ describe("runCIMigrateCLI", () => {
 		});
 
 		expect(commitExitCode).toBe(EXIT_CODES.INVALID_PATH);
-		expect(vi.mocked(runInitCLI)).not.toHaveBeenCalled();
+		expect(runInitCLIMock).not.toHaveBeenCalled();
 	});
 
 	it("rejects commit when prepared state attestation signature is missing", () => {
@@ -3887,7 +3907,7 @@ describe("runCIMigrateCLI", () => {
 		});
 
 		expect(commitExitCode).toBe(EXIT_CODES.INVALID_PATH);
-		expect(vi.mocked(runInitCLI)).not.toHaveBeenCalled();
+		expect(runInitCLIMock).not.toHaveBeenCalled();
 	});
 
 	it("rejects commit when prepared state is stale", () => {
@@ -3927,7 +3947,7 @@ describe("runCIMigrateCLI", () => {
 		});
 
 		expect(commitExitCode).toBe(EXIT_CODES.INVALID_PATH);
-		expect(vi.mocked(runInitCLI)).not.toHaveBeenCalled();
+		expect(runInitCLIMock).not.toHaveBeenCalled();
 	});
 
 	it("rejects abort when snapshot is not in committed stage", () => {
@@ -3949,7 +3969,7 @@ describe("runCIMigrateCLI", () => {
 		});
 
 		expect(abortExitCode).toBe(EXIT_CODES.INVALID_PATH);
-		expect(vi.mocked(runInitCLI)).not.toHaveBeenCalled();
+		expect(runInitCLIMock).not.toHaveBeenCalled();
 	});
 
 	it("marks state aborted for explicit abort action", () => {
@@ -3977,7 +3997,7 @@ describe("runCIMigrateCLI", () => {
 			snapshot: snapshotId,
 		});
 		expect(abortExitCode).toBe(EXIT_CODES.SUCCESS);
-		expect(vi.mocked(runInitCLI)).toHaveBeenCalledWith(tempDir, {
+		expect(runInitCLIMock).toHaveBeenCalledWith(tempDir, {
 			dryRun: false,
 			force: false,
 			track: false,
@@ -4029,7 +4049,7 @@ describe("runCIMigrateCLI", () => {
 		});
 
 		expect(exitCode).toBe(EXIT_CODES.INVALID_PATH);
-		expect(vi.mocked(runInitCLI)).not.toHaveBeenCalled();
+		expect(runInitCLIMock).not.toHaveBeenCalled();
 		expect(
 			existsSync(
 				join(tempDir, ".harness/ci-migrate-snapshots/cutover-2.report.json"),
@@ -4213,7 +4233,7 @@ describe("runCIMigrateCLI", () => {
 		});
 
 		expect(exitCode).toBe(EXIT_CODES.WRITE_ERROR);
-		expect(vi.mocked(runInitCLI)).not.toHaveBeenCalled();
+		expect(runInitCLIMock).not.toHaveBeenCalled();
 	});
 
 	it("writes a parity report during dry-run mode", () => {
@@ -4252,7 +4272,7 @@ describe("runCIMigrateCLI", () => {
 		});
 
 		expect(exitCode).toBe(EXIT_CODES.SUCCESS);
-		expect(vi.mocked(runInitCLI)).toHaveBeenCalledWith(tempDir, {
+		expect(runInitCLIMock).toHaveBeenCalledWith(tempDir, {
 			dryRun: true,
 			force: false,
 			track: false,
@@ -4305,7 +4325,7 @@ describe("runCIMigrateCLI", () => {
 		});
 
 		expect(exitCode).toBe(EXIT_CODES.INVALID_PATH);
-		expect(vi.mocked(runInitCLI)).not.toHaveBeenCalled();
+		expect(runInitCLIMock).not.toHaveBeenCalled();
 		expect(
 			existsSync(
 				join(tempDir, ".harness/ci-migrate-snapshots/cutover-2.report.json"),
@@ -4489,7 +4509,7 @@ describe("runCIMigrateCLI", () => {
 		});
 
 		expect(exitCode).toBe(EXIT_CODES.WRITE_ERROR);
-		expect(vi.mocked(runInitCLI)).not.toHaveBeenCalled();
+		expect(runInitCLIMock).not.toHaveBeenCalled();
 	});
 
 	it("writes a parity report during dry-run mode", () => {
@@ -4528,7 +4548,7 @@ describe("runCIMigrateCLI", () => {
 		});
 
 		expect(exitCode).toBe(EXIT_CODES.SUCCESS);
-		expect(vi.mocked(runInitCLI)).toHaveBeenCalledWith(tempDir, {
+		expect(runInitCLIMock).toHaveBeenCalledWith(tempDir, {
 			dryRun: true,
 			force: false,
 			track: false,
@@ -4566,7 +4586,7 @@ describe("runCIMigrateCLI", () => {
 		});
 
 		expect(exitCode).toBe(EXIT_CODES.INVALID_PATH);
-		expect(vi.mocked(runInitCLI)).not.toHaveBeenCalled();
+		expect(runInitCLIMock).not.toHaveBeenCalled();
 	});
 
 	it("rejects invalid snapshot id values", () => {
@@ -4576,7 +4596,7 @@ describe("runCIMigrateCLI", () => {
 			snapshot: "../unsafe",
 		});
 		expect(exitCode).toBe(EXIT_CODES.INVALID_PATH);
-		expect(vi.mocked(runInitCLI)).not.toHaveBeenCalled();
+		expect(runInitCLIMock).not.toHaveBeenCalled();
 	});
 
 	it("fails closed on apply when required-check ownership is ambiguous", () => {
@@ -4631,7 +4651,7 @@ describe("runCIMigrateCLI", () => {
 		});
 
 		expect(exitCode).toBe(EXIT_CODES.INVALID_PATH);
-		expect(vi.mocked(runInitCLI)).not.toHaveBeenCalled();
+		expect(runInitCLIMock).not.toHaveBeenCalled();
 	});
 
 	it("fails closed on apply when a required check uses shadow namespace", () => {
@@ -4678,11 +4698,11 @@ describe("runCIMigrateCLI", () => {
 		});
 
 		expect(exitCode).toBe(EXIT_CODES.INVALID_PATH);
-		expect(vi.mocked(runInitCLI)).not.toHaveBeenCalled();
+		expect(runInitCLIMock).not.toHaveBeenCalled();
 	});
 
 	it("fails closed on apply when pre-cutover satisfiability is unsatisfied", () => {
-		vi.mocked(scanOpenPullRequestSatisfiability).mockReturnValueOnce({
+		scanOpenPullRequestSatisfiabilityMock.mockReturnValueOnce({
 			status: "unsatisfied",
 			scannedOpenPrs: 1,
 			failingPrs: [
@@ -4736,7 +4756,7 @@ describe("runCIMigrateCLI", () => {
 		});
 
 		expect(exitCode).toBe(EXIT_CODES.INVALID_PATH);
-		expect(vi.mocked(runInitCLI)).not.toHaveBeenCalled();
+		expect(runInitCLIMock).not.toHaveBeenCalled();
 	});
 
 	it("fails closed on apply when required mode is set and parity proof pack is missing", () => {
@@ -4750,7 +4770,7 @@ describe("runCIMigrateCLI", () => {
 		});
 
 		expect(exitCode).toBe(EXIT_CODES.INVALID_PATH);
-		expect(vi.mocked(runInitCLI)).not.toHaveBeenCalled();
+		expect(runInitCLIMock).not.toHaveBeenCalled();
 	});
 
 	it(
@@ -4825,7 +4845,7 @@ describe("runCIMigrateCLI", () => {
 		});
 
 		expect(exitCode).toBe(EXIT_CODES.INVALID_PATH);
-		expect(vi.mocked(runInitCLI)).not.toHaveBeenCalled();
+		expect(runInitCLIMock).not.toHaveBeenCalled();
 		expect(
 			existsSync(join(tempDir, ".harness/ci-parity-proof-pack.json")),
 		).toBe(false);
@@ -4835,7 +4855,7 @@ describe("runCIMigrateCLI", () => {
 		seedMigratableFixture(tempDir);
 		writeCIProviderPolicyContract(tempDir, "required");
 		writeParityProvenanceBundleInput(tempDir);
-		vi.mocked(scanOpenPullRequestSatisfiability)
+		scanOpenPullRequestSatisfiabilityMock
 			.mockReturnValueOnce({
 				status: "satisfied",
 				scannedOpenPrs: 2,
@@ -4912,7 +4932,7 @@ describe("runCIMigrateCLI", () => {
 		seedMigratableFixture(tempDir);
 		writeCIProviderPolicyContract(tempDir, "required");
 		writeParityProvenanceInput(tempDir);
-		vi.mocked(scanOpenPullRequestSatisfiability)
+		scanOpenPullRequestSatisfiabilityMock
 			.mockReturnValueOnce({
 				status: "satisfied",
 				scannedOpenPrs: 2,
@@ -4962,7 +4982,7 @@ describe("runCIMigrateCLI", () => {
 		seedMigratableFixture(tempDir);
 		writeCIProviderPolicyContract(tempDir, "required");
 		writeParityProvenanceArtifactIndex(tempDir);
-		vi.mocked(scanOpenPullRequestSatisfiability)
+		scanOpenPullRequestSatisfiabilityMock
 			.mockReturnValueOnce({
 				status: "satisfied",
 				scannedOpenPrs: 2,
@@ -4999,7 +5019,7 @@ describe("runCIMigrateCLI", () => {
 		seedMigratableFixture(tempDir);
 		writeCIProviderPolicyContract(tempDir, "required");
 		writeParityProofHarvestManifest(tempDir);
-		vi.mocked(scanOpenPullRequestSatisfiability)
+		scanOpenPullRequestSatisfiabilityMock
 			.mockReturnValueOnce({
 				status: "satisfied",
 				scannedOpenPrs: 2,
@@ -5080,7 +5100,7 @@ describe("runCIMigrateCLI", () => {
 		});
 
 		expect(exitCode).toBe(EXIT_CODES.INVALID_PATH);
-		expect(vi.mocked(runInitCLI)).not.toHaveBeenCalled();
+		expect(runInitCLIMock).not.toHaveBeenCalled();
 		expect(existsSync(join(tempDir, PARITY_PROOF_PACK_PATH))).toBe(false);
 	});
 
@@ -5097,7 +5117,7 @@ describe("runCIMigrateCLI", () => {
 		});
 
 		expect(exitCode).toBe(EXIT_CODES.INVALID_PATH);
-		expect(vi.mocked(runInitCLI)).not.toHaveBeenCalled();
+		expect(runInitCLIMock).not.toHaveBeenCalled();
 		expect(existsSync(join(tempDir, PARITY_PROOF_PACK_PATH))).toBe(false);
 	});
 
@@ -5117,7 +5137,7 @@ describe("runCIMigrateCLI", () => {
 		});
 
 		expect(exitCode).toBe(EXIT_CODES.INVALID_PATH);
-		expect(vi.mocked(runInitCLI)).not.toHaveBeenCalled();
+		expect(runInitCLIMock).not.toHaveBeenCalled();
 		expect(existsSync(join(tempDir, PARITY_PROOF_PACK_PATH))).toBe(false);
 	});
 
@@ -5134,7 +5154,7 @@ describe("runCIMigrateCLI", () => {
 		});
 
 		expect(exitCode).toBe(EXIT_CODES.INVALID_PATH);
-		expect(vi.mocked(runInitCLI)).not.toHaveBeenCalled();
+		expect(runInitCLIMock).not.toHaveBeenCalled();
 		expect(existsSync(join(tempDir, PARITY_PROOF_PACK_PATH))).toBe(false);
 	});
 
@@ -5161,7 +5181,7 @@ describe("runCIMigrateCLI", () => {
 		});
 
 		expect(exitCode).toBe(EXIT_CODES.INVALID_PATH);
-		expect(vi.mocked(runInitCLI)).not.toHaveBeenCalled();
+		expect(runInitCLIMock).not.toHaveBeenCalled();
 		expect(existsSync(join(tempDir, PARITY_PROOF_PACK_PATH))).toBe(false);
 	});
 
@@ -5178,7 +5198,7 @@ describe("runCIMigrateCLI", () => {
 		});
 
 		expect(exitCode).toBe(EXIT_CODES.INVALID_PATH);
-		expect(vi.mocked(runInitCLI)).not.toHaveBeenCalled();
+		expect(runInitCLIMock).not.toHaveBeenCalled();
 	});
 
 	it("fails closed on apply when required mode parity provenance manifest is missing", () => {
@@ -5194,7 +5214,7 @@ describe("runCIMigrateCLI", () => {
 		});
 
 		expect(exitCode).toBe(EXIT_CODES.INVALID_PATH);
-		expect(vi.mocked(runInitCLI)).not.toHaveBeenCalled();
+		expect(runInitCLIMock).not.toHaveBeenCalled();
 	});
 
 	it("fails closed on apply when required mode parity proof pack timestamp is too far in the future", () => {
@@ -5211,7 +5231,7 @@ describe("runCIMigrateCLI", () => {
 		});
 
 		expect(exitCode).toBe(EXIT_CODES.INVALID_PATH);
-		expect(vi.mocked(runInitCLI)).not.toHaveBeenCalled();
+		expect(runInitCLIMock).not.toHaveBeenCalled();
 	});
 
 	it("fails closed on apply when required mode parity proof pack contains duplicate scenarios", () => {
@@ -5231,7 +5251,7 @@ describe("runCIMigrateCLI", () => {
 		});
 
 		expect(exitCode).toBe(EXIT_CODES.INVALID_PATH);
-		expect(vi.mocked(runInitCLI)).not.toHaveBeenCalled();
+		expect(runInitCLIMock).not.toHaveBeenCalled();
 	});
 
 	it("fails closed on apply when required mode parity proof pack artifact digest mismatches content", () => {
@@ -5262,7 +5282,7 @@ describe("runCIMigrateCLI", () => {
 		});
 
 		expect(exitCode).toBe(EXIT_CODES.INVALID_PATH);
-		expect(vi.mocked(runInitCLI)).not.toHaveBeenCalled();
+		expect(runInitCLIMock).not.toHaveBeenCalled();
 	});
 
 	it("fails closed on apply when required mode parity proof pack artifact signature mismatches hash", () => {
@@ -5285,7 +5305,7 @@ describe("runCIMigrateCLI", () => {
 		});
 
 		expect(exitCode).toBe(EXIT_CODES.INVALID_PATH);
-		expect(vi.mocked(runInitCLI)).not.toHaveBeenCalled();
+		expect(runInitCLIMock).not.toHaveBeenCalled();
 	});
 
 	it("fails closed on apply when required mode parity proof pack evidence is insufficient", () => {
@@ -5320,14 +5340,14 @@ describe("runCIMigrateCLI", () => {
 		});
 
 		expect(exitCode).toBe(EXIT_CODES.INVALID_PATH);
-		expect(vi.mocked(runInitCLI)).not.toHaveBeenCalled();
+		expect(runInitCLIMock).not.toHaveBeenCalled();
 	});
 
 	it("allows apply when required mode parity proof pack evidence is verified", () => {
 		seedMigratableFixture(tempDir);
 		writeCIProviderPolicyContract(tempDir, "required");
 		writeParityProofPack(tempDir);
-		vi.mocked(scanOpenPullRequestSatisfiability)
+		scanOpenPullRequestSatisfiabilityMock
 			.mockReturnValueOnce({
 				status: "satisfied",
 				scannedOpenPrs: 2,
@@ -5347,7 +5367,7 @@ describe("runCIMigrateCLI", () => {
 		});
 
 		expect(exitCode).toBe(EXIT_CODES.SUCCESS);
-		expect(vi.mocked(runInitCLI)).toHaveBeenCalledWith(tempDir, {
+		expect(runInitCLIMock).toHaveBeenCalledWith(tempDir, {
 			dryRun: false,
 			force: true,
 			track: true,
@@ -5375,7 +5395,7 @@ describe("runCIMigrateCLI", () => {
 		seedMigratableFixture(tempDir);
 		writeCIProviderPolicyContract(tempDir, "required");
 		writeParityProofPack(tempDir);
-		vi.mocked(scanOpenPullRequestSatisfiability).mockReturnValueOnce({
+		scanOpenPullRequestSatisfiabilityMock.mockReturnValueOnce({
 			status: "satisfied",
 			scannedOpenPrs: 0,
 			failingPrs: [],
@@ -5389,14 +5409,14 @@ describe("runCIMigrateCLI", () => {
 		});
 
 		expect(exitCode).toBe(EXIT_CODES.INVALID_PATH);
-		expect(vi.mocked(runInitCLI)).not.toHaveBeenCalled();
+		expect(runInitCLIMock).not.toHaveBeenCalled();
 	});
 
 	it("auto-rolls back when required mode post-cutover satisfiability has zero open PR evidence", () => {
 		seedMigratableFixture(tempDir);
 		writeCIProviderPolicyContract(tempDir, "required");
 		writeParityProofPack(tempDir);
-		vi.mocked(scanOpenPullRequestSatisfiability)
+		scanOpenPullRequestSatisfiabilityMock
 			.mockReturnValueOnce({
 				status: "satisfied",
 				scannedOpenPrs: 2,
@@ -5416,19 +5436,19 @@ describe("runCIMigrateCLI", () => {
 		});
 
 		expect(exitCode).toBe(EXIT_CODES.INVALID_PATH);
-		expect(vi.mocked(runInitCLI)).toHaveBeenCalledTimes(2);
-		expect(vi.mocked(runInitCLI).mock.calls[0]?.[1]).toMatchObject({
+		expect(runInitCLIMock).toHaveBeenCalledTimes(2);
+		expect(runInitCLIMock.mock.calls[0]?.[1]).toMatchObject({
 			rollback: false,
 			ciProvider: "circleci",
 		});
-		expect(vi.mocked(runInitCLI).mock.calls[1]?.[1]).toMatchObject({
+		expect(runInitCLIMock.mock.calls[1]?.[1]).toMatchObject({
 			rollback: true,
 			ciProvider: "github-actions",
 		});
 	});
 
 	it("auto-rolls back when post-cutover satisfiability fails", () => {
-		vi.mocked(scanOpenPullRequestSatisfiability)
+		scanOpenPullRequestSatisfiabilityMock
 			.mockReturnValueOnce({
 				status: "satisfied",
 				scannedOpenPrs: 1,
@@ -5488,15 +5508,15 @@ describe("runCIMigrateCLI", () => {
 		});
 
 		expect(exitCode).toBe(EXIT_CODES.INVALID_PATH);
-		expect(vi.mocked(runInitCLI)).toHaveBeenCalledTimes(2);
-		expect(vi.mocked(runInitCLI).mock.calls[0]?.[1]).toMatchObject({
+		expect(runInitCLIMock).toHaveBeenCalledTimes(2);
+		expect(runInitCLIMock.mock.calls[0]?.[1]).toMatchObject({
 			dryRun: false,
 			force: true,
 			track: true,
 			rollback: false,
 			ciProvider: "circleci",
 		});
-		expect(vi.mocked(runInitCLI).mock.calls[1]?.[1]).toMatchObject({
+		expect(runInitCLIMock.mock.calls[1]?.[1]).toMatchObject({
 			dryRun: false,
 			force: false,
 			track: false,
@@ -5522,7 +5542,7 @@ describe("runCIMigrateCLI", () => {
 		});
 
 		expect(exitCode).toBe(EXIT_CODES.INVALID_PATH);
-		expect(vi.mocked(runInitCLI)).not.toHaveBeenCalled();
+		expect(runInitCLIMock).not.toHaveBeenCalled();
 	});
 
 	it("fails strict verify when ciProviderPolicy migration metadata is malformed", () => {
@@ -5538,7 +5558,7 @@ describe("runCIMigrateCLI", () => {
 		});
 
 		expect(exitCode).toBe(EXIT_CODES.INVALID_PATH);
-		expect(vi.mocked(runInitCLI)).not.toHaveBeenCalled();
+		expect(runInitCLIMock).not.toHaveBeenCalled();
 	});
 
 	it("fails strict verify when required checks use shadow namespace", () => {
@@ -5586,7 +5606,7 @@ describe("runCIMigrateCLI", () => {
 		});
 
 		expect(exitCode).toBe(EXIT_CODES.INVALID_PATH);
-		expect(vi.mocked(runInitCLI)).not.toHaveBeenCalled();
+		expect(runInitCLIMock).not.toHaveBeenCalled();
 	});
 
 	it("passes strict verify when required-check metadata and transition status are valid", () => {
@@ -5634,6 +5654,6 @@ describe("runCIMigrateCLI", () => {
 		});
 
 		expect(exitCode).toBe(EXIT_CODES.SUCCESS);
-		expect(vi.mocked(runInitCLI)).not.toHaveBeenCalled();
+		expect(runInitCLIMock).not.toHaveBeenCalled();
 	});
 });
