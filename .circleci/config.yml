@@ -1,11 +1,12 @@
 version: 2.1
 
-jobs:
-  pr-pipeline:
-    docker:
-      - image: cimg/node:24.13
+# ---------------------------------------------------------------------------
+# Reusable commands
+# ---------------------------------------------------------------------------
+commands:
+  setup-pnpm:
+    description: Ensure pnpm is available and install dependencies
     steps:
-      - checkout
       - run:
           name: Ensure pnpm available
           command: |
@@ -18,6 +19,18 @@ jobs:
       - run:
           name: Install dependencies
           command: pnpm install
+
+# ---------------------------------------------------------------------------
+# Jobs
+# ---------------------------------------------------------------------------
+jobs:
+  # --- PR quality gates (lint, typecheck, test, audit) ---
+  pr-pipeline:
+    docker:
+      - image: cimg/node:24.13
+    steps:
+      - checkout
+      - setup-pnpm
       - run:
           name: Docs and Workflow Contracts
           command: |
@@ -36,29 +49,131 @@ jobs:
           name: Audit
           command: pnpm audit
 
+  # --- Linear issue sync from PR metadata ---
   linear-sync:
     docker:
       - image: cimg/node:24.13
     steps:
       - checkout
-      - run:
-          name: Ensure pnpm available
-          command: |
-            if ! command -v pnpm >/dev/null 2>&1; then
-              export NPM_CONFIG_PREFIX="$HOME/.local"
-              export PATH="$NPM_CONFIG_PREFIX/bin:$PATH"
-              npm install --global pnpm@10.0.0
-            fi
-            pnpm --version
-      - run:
-          name: Install dependencies
-          command: pnpm install
+      - setup-pnpm
       - run:
           name: Sync Linear PR State
           command: pnpm exec tsx scripts/circleci-linear-sync.ts
 
+  # --- Security scanning (gitleaks + semgrep) ---
+  security-scan:
+    docker:
+      - image: cimg/python:3.12-node
+    steps:
+      - checkout
+      - run:
+          name: Install gitleaks
+          command: |
+            GITLEAKS_VERSION="8.21.2"
+            curl -sSfL "https://github.com/gitleaks/gitleaks/releases/download/v${GITLEAKS_VERSION}/gitleaks_${GITLEAKS_VERSION}_linux_x64.tar.gz" \
+              | tar xz -C /tmp
+            sudo mv /tmp/gitleaks /usr/local/bin/gitleaks
+            gitleaks version
+      - run:
+          name: Gitleaks Scan
+          command: gitleaks detect --source . --verbose
+      - run:
+          name: Semgrep Scan
+          command: |
+            pip install --quiet semgrep
+            semgrep scan \
+              --config p/security-audit \
+              --error \
+              --severity ERROR \
+              --exclude node_modules \
+              --exclude dist \
+              .
+
+  # --- Diagram refresh (main only, commits back) ---
+  diagram-refresh:
+    docker:
+      - image: cimg/node:24.13
+    steps:
+      - checkout
+      - setup-pnpm
+      - run:
+          name: Generate diagrams
+          command: pnpm exec diagram all . --output-dir AI/diagrams
+      - run:
+          name: Generate context file
+          command: |
+            mkdir -p AI/context
+            cat <<'MD' > AI/context/diagram-context.md
+            # Diagram Context Pack
+
+            Generated: $(date -u +"%Y-%m-%dT%H:%M:%SZ")
+
+            MD
+            for file in AI/diagrams/*.mmd; do
+              name="$(basename "$file" .mmd)"
+              {
+                echo "## ${name}"
+                echo ""
+                echo '```mermaid'
+                cat "$file"
+                echo ""
+                echo '```'
+                echo ""
+              } >> AI/context/diagram-context.md
+            done
+      - run:
+          name: Commit diagram updates
+          command: |
+            git config user.name "circleci[bot]"
+            git config user.email "circleci[bot]@users.noreply.github.com"
+            if git diff --quiet; then
+              echo "No diagram changes to commit"
+              exit 0
+            fi
+            git add AI/diagrams AI/context/diagram-context.md
+            git commit -m "chore(diagrams): auto-refresh architecture diagrams"
+            git push
+
+  # --- Branch cleanup (delete merged remote branches) ---
+  branch-cleanup:
+    docker:
+      - image: cimg/node:24.13
+    steps:
+      - checkout
+      - run:
+          name: Delete stale merged branches
+          command: |
+            git fetch --prune
+            for branch in $(git branch -r --merged origin/main | grep -vE 'main|master|HEAD' | sed 's|origin/||'); do
+              last_commit=$(git log -1 --format=%ci "origin/$branch" 2>/dev/null || echo "")
+              if [ -n "$last_commit" ]; then
+                age_days=$(( ( $(date +%s) - $(date -d "$last_commit" +%s) ) / 86400 ))
+                if [ "$age_days" -gt 30 ]; then
+                  echo "Deleting stale branch: $branch (last commit: $last_commit)"
+                  git push origin --delete "$branch" || true
+                fi
+              fi
+            done
+
+# ---------------------------------------------------------------------------
+# Workflows
+# ---------------------------------------------------------------------------
 workflows:
+  # Runs on every push (PRs + main merges)
   pr-pipeline:
     jobs:
       - pr-pipeline
       - linear-sync
+      - security-scan
+
+  # Runs only on main merges (post-merge housekeeping)
+  post-merge:
+    jobs:
+      - diagram-refresh:
+          filters:
+            branches:
+              only: main
+      - branch-cleanup:
+          filters:
+            branches:
+              only: main
