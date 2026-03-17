@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-03-17T23:46:38.439Z",
+  "generatedAt": "2026-03-17T23:46:57.047Z",
   "rootPath": "/home/circleci/project",
   "diagramDir": "AI/diagrams",
   "diagrams": [
@@ -8,7 +8,7 @@
       "file": "architecture.mmd",
       "outputPath": "AI/diagrams/architecture.mmd",
       "lines": 115,
-      "bytes": 5105,
+      "bytes": 5035,
       "isPlaceholder": false
     },
     {
@@ -23,8 +23,8 @@
       "type": "dependency",
       "file": "dependency.mmd",
       "outputPath": "AI/diagrams/dependency.mmd",
-      "lines": 294,
-      "bytes": 17836,
+      "lines": 289,
+      "bytes": 17448,
       "isPlaceholder": false
     },
     {
@@ -55,8 +55,8 @@
       "type": "user",
       "file": "user.mmd",
       "outputPath": "AI/diagrams/user.mmd",
-      "lines": 51,
-      "bytes": 2149,
+      "lines": 53,
+      "bytes": 2195,
       "isPlaceholder": false
     },
     {
@@ -71,16 +71,16 @@
       "type": "auth",
       "file": "auth.mmd",
       "outputPath": "AI/diagrams/auth.mmd",
-      "lines": 36,
-      "bytes": 1398,
+      "lines": 38,
+      "bytes": 1448,
       "isPlaceholder": false
     },
     {
       "type": "security",
       "file": "security.mmd",
       "outputPath": "AI/diagrams/security.mmd",
-      "lines": 109,
-      "bytes": 4906,
+      "lines": 107,
+      "bytes": 4711,
       "isPlaceholder": false
     }
   ]
