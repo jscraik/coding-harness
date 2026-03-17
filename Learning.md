@@ -3,6 +3,7 @@
 ## Table of Contents
 - [2026-03-15](#2026-03-15)
 - [2026-03-16](#2026-03-16)
+- [2026-03-17](#2026-03-17)
 
 ## 2026-03-15
 - CircleCI runtime must match the repository engine contract (`node >=24`): pin `cimg/node:24.13` in workflow templates and generated outputs.
@@ -36,3 +37,9 @@
 - Added a hardened CI test entrypoint (`pnpm test:ci` → `scripts/test-ci.sh`) that runs standard suites normally and isolates `ci-migrate` with scoped `--dangerouslyIgnoreUnhandledErrors` so functional failures still fail while the known transport bug is contained.
 - Resolved HubSpot redirects for CircleCI release notes/docs and captured actionable pipeline improvements: use GitHub trigger event options for non-draft PR behavior, and split growing workflows with multiple config files.
 - Outstanding: upstream the new `test:ci` strategy into harness init/deployment templates so all generated repositories inherit this CircleCI hardening by default.
+
+## 2026-03-17
+- CircleCI Linux jobs surfaced a cross-platform fixture bug in `ci-migrate.test.ts`: some hosts initialize git fixtures on `master`, so `trustedPolicyRef = refs/heads/main` verification failed and returned `EXIT_CODES.INVALID_PATH`.
+- Portable fix: in `ensureProofPackFixtureHistory`, explicitly `git update-ref refs/heads/main <headSha>` before `git symbolic-ref HEAD refs/heads/main` so `main` is a concrete ref on all stacks.
+- Validation evidence after fix: `pnpm test:ci` now passes locally with all 97 `ci-migrate` assertions green; only the already-known Vitest worker timeout diagnostic remains non-fatal in the isolated lane.
+- Outstanding: propagate this fixture-hardening pattern into harness deployment/package templates so generated repos inherit the same cross-platform CI stability by default.

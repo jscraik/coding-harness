@@ -260,6 +260,13 @@ function ensureProofPackFixtureHistory(targetDir: string): {
 			"Proof pack fixture baseSha and headSha must differ to prove parity comparison.",
 		);
 	}
+	// CircleCI Linux images may default fixture repos to `master`.
+	// Force a concrete `refs/heads/main` ref so trustedPolicyRef ancestry checks
+	// behave consistently across platforms.
+	ensureCommand(
+		["update-ref", "refs/heads/main", headSha],
+		"Unable to align fixture main branch ref",
+	);
 	ensureCommand(
 		["symbolic-ref", "HEAD", "refs/heads/main"],
 		"Unable to align fixture main branch",
