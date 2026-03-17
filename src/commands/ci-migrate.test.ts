@@ -4781,7 +4781,7 @@ describe("runCIMigrateCLI", () => {
 			writeCIProviderPolicyContract(tempDir, "required");
 			writeParityProofPackInput(tempDir);
 			writeParityProvenanceBundleInput(tempDir);
-			vi.mocked(scanOpenPullRequestSatisfiability)
+			scanOpenPullRequestSatisfiabilityMock
 				.mockReturnValueOnce({
 					status: "satisfied",
 					scannedOpenPrs: 2,

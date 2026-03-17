@@ -14,6 +14,7 @@ For all repo operations, this repository treats scripts and package manager sett
 - Discovery: `rg`, `fd`, and `jq` (when available).
 - File reads: keep snippets bounded and explicit.
 - Do not add dependencies or global tool changes unless requested.
+- Optional local shell helper: `source scripts/codex-shell-helpers.sh` to expose preflight wrappers and `codex_d`/`cdxd` launchers. These wrappers use `codex --profile d --cd <repo-root> "<PROMPT>"`, where the prompt is positional (not `-p`).
 
 ## Required tooling baseline
 
