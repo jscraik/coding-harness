@@ -409,7 +409,7 @@ jobs:
 # ---------------------------------------------------------------------------
 workflows:
   # Runs on every push (PRs + main merges)
-  pr-pipeline:
+  pr-checks:
     jobs:
       - pr-pipeline
       - linear-sync
