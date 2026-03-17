@@ -27,6 +27,7 @@
 	},
 	"scripts": {
 		"check": "pnpm lint && pnpm docs:lint && pnpm workflow:validate && pnpm typecheck && pnpm test && pnpm audit",
+		"publish:release": "pnpm check && pnpm build && npm publish --access restricted --ignore-scripts=false",
 		"lint": "biome check .",
 		"lint:fix": "biome check . --write",
 		"fmt": "biome format . --write",
@@ -39,7 +40,7 @@
 		"prepublishOnly": "pnpm check && pnpm build",
 		"changelog": "standard-version --skip.bump --skip.tag --skip.commit",
 		"release": "standard-version",
-		"audit": "pnpm audit --audit-level=moderate",
+		"audit": "bash scripts/run-audit-with-timeout.sh",
 		"audit:strict": "pnpm audit --audit-level=high",
 		"docs:lint": "pnpm markdownlint",
 		"docs:style:changed": "bash scripts/check-doc-style.sh",

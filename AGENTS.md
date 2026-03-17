@@ -47,6 +47,9 @@ This repository is a TypeScript control plane for agentic development and review
   - Validate token presence without printing values (`printenv NPM_TOKEN | wc -c`, `printenv NODE_AUTH_TOKEN | wc -c`).
   - Ensure npm auth mapping exists in `~/.npmrc` (for example `//registry.npmjs.org/:_authToken=\${NPM_TOKEN}` and scoped registry entries like `@brainwav:registry=https://registry.npmjs.org/` when needed).
   - Validate auth before install retries: `npm whoami` and `npm view @brainwav/coding-harness dist-tags --json`.
+  - Confirm published harness artifacts before pinning global defaults: verify the selected tag includes `dist/cli.js` (for example with `npm pack @brainwav/coding-harness@<tag>` and `tar -tzf`). If `latest` is missing CLI files, pin a known-good channel (currently `preview`) and document the exception.
+  - If a required npm package has no published `bin` entrypoint (for example `beautiful-mermaid`), add a local wrapper command in `~/.local/bin` and verify behavior with a real input sample.
+  - If `ralph` disappears from PATH while uv tool inventory no longer lists `ralph-gold`, rehydrate from source: clone `https://github.com/jscraik/ralph-gold.git` to `~/dev/ralph-gold`, then run `uv tool install --force ~/dev/ralph-gold`.
 - After any Codex/mise PATH or version change, verify both shell modes resolve the same executable:
   - `zsh -lc 'type -a codex; codex --version'`
   - `zsh -ic 'type -a codex; codex --version'`

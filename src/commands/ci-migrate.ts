@@ -22,6 +22,7 @@ import {
 	type BranchProtectionSatisfiabilityReport,
 	scanOpenPullRequestSatisfiability,
 } from "../lib/ci/satisfiability.js";
+import { runInitCLI } from "../lib/init/cli.js";
 import {
 	type CIProvider,
 	EXIT_CODES,
@@ -30,7 +31,6 @@ import {
 	MANIFEST_FILE,
 } from "../lib/init/types.js";
 import { sanitizeError } from "../lib/input/sanitize.js";
-import { runInitCLI } from "./init.js";
 
 type RunInitCLIImpl = typeof runInitCLI;
 type ScanOpenPullRequestSatisfiabilityImpl =

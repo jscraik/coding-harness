@@ -1,18 +1,18 @@
 import { randomUUID } from "node:crypto";
 import { mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { dirname, join, resolve } from "node:path";
+import {
+	emitTerminalRunRecord,
+	hashRunRecordValue,
+} from "../contract/run-record-emitter.js";
+import { resolveRunRecordPaths } from "../contract/run-records.js";
 import type {
 	ReviewDecisionState,
 	ReviewGateErrorCode,
 	ReviewGateOptions,
 	ReviewGateOutput,
 	ReviewPRClosureStatus,
-} from "../../commands/review-gate.js";
-import {
-	emitTerminalRunRecord,
-	hashRunRecordValue,
-} from "../contract/run-record-emitter.js";
-import { resolveRunRecordPaths } from "../contract/run-records.js";
+} from "./types.js";
 
 type ReviewGateArtifactInput = {
 	options: ReviewGateOptions;

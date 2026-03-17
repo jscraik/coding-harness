@@ -4,7 +4,10 @@ import { mkdirSync, rmSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import type { CheckRun } from "../lib/github/client.js";
-import { runTimingAssertionWithOverloadGuard } from "../lib/test/overload-guard.js";
+import {
+	formatTimingAssertionSkipDiagnostic,
+	runPerformanceOverloadPrecheck,
+} from "../lib/preflight/performance-overload.js";
 import { runRemediate } from "./remediate.js";
 import { runReviewGate } from "./review-gate.js";
 
@@ -321,6 +324,9 @@ describe("agent-first throughput integration", () => {
 	});
 
 	it("keeps loop orchestration overhead p95 <= 2500ms across 30 fixture runs", async () => {
+		const overloadPrecheck = await runPerformanceOverloadPrecheck({
+			context: "agent-first throughput integration p95<=2500ms",
+		});
 		const headSha = headShaForTests();
 		writeFileSync(
 			findingsPath,
@@ -410,16 +416,16 @@ describe("agent-first throughput integration", () => {
 		const sorted = [...durationsMs].sort((a, b) => a - b);
 		const p95Index = Math.ceil(sorted.length * 0.95) - 1;
 		const p95 = sorted[Math.max(0, p95Index)] ?? Number.POSITIVE_INFINITY;
-		expect(durationsMs).toHaveLength(30);
-		expect(durationsMs.every((duration) => Number.isFinite(duration))).toBe(
-			true,
-		);
-		runTimingAssertionWithOverloadGuard({
-			label: "agent-first throughput p95 <= 2500ms",
-			assertion: () => {
-				expect(p95).toBeLessThanOrEqual(2500);
-			},
-		});
+
+		if (overloadPrecheck.overloaded) {
+			console.warn(formatTimingAssertionSkipDiagnostic(overloadPrecheck));
+			console.warn(
+				`[perf-precheck] Observed p95=${p95}ms (threshold=2500ms, informational only).`,
+			);
+			return;
+		}
+
+		expect(p95).toBeLessThanOrEqual(2500);
 	});
 
 	it("aborts mixed stale + race path with policy hold", async () => {

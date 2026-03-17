@@ -91,15 +91,17 @@ function collectTsFiles(dir, excludeTests = false) {
 function extractImports(filePath) {
 	const content = fs.readFileSync(filePath, "utf-8");
 	const imports = [];
-	// ESM static imports: import ... from '...'
-	const esmRe = /(?:^|\n)\s*import\s+(?:[^'"]*from\s+)?['"]([^'"]+)['"]/g;
+	// ESM static imports/exports: handle multiline, 'export type', etc.
+	// Match `import|export ... from '...'`
+	const esmRe =
+		/(?:import|export)\s+(?:type\s+)?(?:[\s\S]*?from\s+)?['"]([^'"]+)['"]/g;
 	let m = esmRe.exec(content);
 	while (m !== null) {
 		imports.push(m[1]);
 		m = esmRe.exec(content);
 	}
-	// CommonJS: require('...')
-	const cjsRe = /require\s*\(\s*['"]([^'"]+)['"]\s*\)/g;
+	// CommonJS and Dynamic Import: require('.') or import('.')
+	const cjsRe = /(?:require|import)\s*\(\s*['"]([^'"]+)['"]\s*\)/g;
 	m = cjsRe.exec(content);
 	while (m !== null) {
 		imports.push(m[1]);
