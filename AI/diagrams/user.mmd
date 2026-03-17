@@ -1,11 +1,11 @@
 flowchart LR
   User(("User"))
-  circleci_linear_sync_19c0d6da["circleci-linear-sync"]
-  User --> circleci_linear_sync_19c0d6da
   cli_99bb8840["cli"]
   User --> cli_99bb8840
   cli_dispatch_test_54c9f17b["cli-dispatch.test"]
   User --> cli_dispatch_test_54c9f17b
+  circleci_linear_sync_19c0d6da["circleci-linear-sync"]
+  User --> circleci_linear_sync_19c0d6da
   verify_greptile_227190f7["verify-greptile"]
   User --> verify_greptile_227190f7
   verify_greptile_test_17404b05["verify-greptile.test"]
