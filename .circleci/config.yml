@@ -24,7 +24,7 @@ commands:
 # Jobs
 # ---------------------------------------------------------------------------
 jobs:
-  # --- PR quality gates (lint, typecheck, test, audit) ---
+  # === PR quality gates (lint, typecheck, test, audit) ===
   pr-pipeline:
     docker:
       - image: cimg/node:24.13
@@ -49,7 +49,7 @@ jobs:
           name: Audit
           command: pnpm audit
 
-  # --- Linear issue sync from PR metadata ---
+  # === Linear issue sync from PR metadata ===
   linear-sync:
     docker:
       - image: cimg/node:24.13
@@ -60,7 +60,7 @@ jobs:
           name: Sync Linear PR State
           command: pnpm exec tsx scripts/circleci-linear-sync.ts
 
-  # --- Security scanning (gitleaks + semgrep) ---
+  # === Security scanning (gitleaks + semgrep) ===
   security-scan:
     docker:
       - image: cimg/python:3.12-node
@@ -89,7 +89,7 @@ jobs:
               --exclude dist \
               .
 
-  # --- Diagram refresh (main only, commits back) ---
+  # === Diagram refresh (main only, commits back) ===
   diagram-refresh:
     docker:
       - image: cimg/node:24.13
@@ -134,7 +134,7 @@ jobs:
             git commit -m "chore(diagrams): auto-refresh architecture diagrams"
             git push
 
-  # --- Branch cleanup (delete merged remote branches) ---
+  # === Branch cleanup (delete stale merged branches) ===
   branch-cleanup:
     docker:
       - image: cimg/node:24.13
@@ -155,6 +155,250 @@ jobs:
               fi
             done
 
+  # === Auto release: prepare release PR or tag merged release ===
+  auto-release:
+    docker:
+      - image: cimg/node:24.13
+    steps:
+      - checkout
+      - run:
+          name: Configure git
+          command: |
+            git fetch --tags --force
+            git config user.name "circleci[bot]"
+            git config user.email "circleci[bot]@users.noreply.github.com"
+      - setup-pnpm
+      - run:
+          name: Build
+          command: pnpm build
+      - run:
+          name: Run post-merge review gate
+          command: |
+            set -euo pipefail
+            # Resolve merged PR from commit message
+            COMMIT_MSG="$(git log -1 --format=%s)"
+            PR_NUM="$(echo "$COMMIT_MSG" | grep -oP '\(#\K\d+' || true)"
+
+            if [ -z "$PR_NUM" ]; then
+              echo "No PR number in commit message, skipping review gate."
+              exit 0
+            fi
+
+            PR_SHA="$(gh pr view "$PR_NUM" --json headRefOid --jq .headRefOid 2>/dev/null || true)"
+            if [ -z "$PR_SHA" ]; then
+              echo "Could not resolve PR head SHA, skipping review gate."
+              exit 0
+            fi
+
+            node dist/cli.js review-gate \
+              --token "$GITHUB_TOKEN" \
+              --owner "$CIRCLE_PROJECT_USERNAME" \
+              --repo "$CIRCLE_PROJECT_REPONAME" \
+              --pr "$PR_NUM" \
+              --sha "$PR_SHA" \
+              --check "Greptile Review" \
+              --contract "harness.contract.json" \
+              --bot-login "greptile-apps" \
+              --auto-resolve-bot-threads \
+              --json || true
+      - run:
+          name: Prepare or tag release
+          command: |
+            set -euo pipefail
+            COMMIT_MSG="$(git log -1 --format=%s)"
+
+            # If this is a release commit that was just merged, tag it
+            RELEASE_VERSION="$(echo "$COMMIT_MSG" | grep -oP '^chore\(release\): v\K[0-9]+\.[0-9]+\.[0-9]+' || true)"
+            if [ -n "$RELEASE_VERSION" ]; then
+              PKG_VERSION="$(node -p "require('./package.json').version")"
+              if [ "$PKG_VERSION" != "$RELEASE_VERSION" ]; then
+                echo "Release commit version v$RELEASE_VERSION does not match package.json v$PKG_VERSION"
+                exit 1
+              fi
+              TAG_NAME="v${RELEASE_VERSION}"
+              if git ls-remote --tags origin "refs/tags/${TAG_NAME}" | grep -q .; then
+                echo "Tag $TAG_NAME already exists; skipping."
+                exit 0
+              fi
+              git tag "$TAG_NAME" "$CIRCLE_SHA1"
+              git push origin "refs/tags/$TAG_NAME"
+              echo "Tagged and pushed $TAG_NAME"
+              exit 0
+            fi
+
+            # Otherwise, prepare a release PR
+            pnpm check
+            pnpm exec standard-version --skip.commit --skip.tag
+
+            if git diff --quiet -- package.json CHANGELOG.md; then
+              echo "No release changes detected; skipping PR creation."
+              exit 0
+            fi
+
+            VERSION="$(node -p "require('./package.json').version")"
+            BRANCH="codex/release-v${VERSION}"
+
+            git checkout -B "$BRANCH"
+            git add package.json CHANGELOG.md
+            git commit -m "chore(release): v${VERSION}"
+            git push --force-with-lease origin "$BRANCH"
+
+            EXISTING_PR="$(gh pr list --base main --head "$BRANCH" --state open --json number --jq '.[0].number // empty' || true)"
+
+            if [ -n "$EXISTING_PR" ]; then
+              gh pr edit "$EXISTING_PR" --title "chore(release): v${VERSION}"
+              echo "Updated existing release PR #$EXISTING_PR for v${VERSION}."
+            else
+              gh pr create --base main --head "$BRANCH" --title "chore(release): v${VERSION}" --body "Automated release PR for v${VERSION}."
+            fi
+
+  # === Publish to private npm (triggered by tag) ===
+  publish-npm:
+    docker:
+      - image: cimg/node:24.13
+    steps:
+      - checkout
+      - setup-pnpm
+      - run:
+          name: Validate release candidate
+          command: pnpm check
+      - run:
+          name: Build
+          command: pnpm build
+      - run:
+          name: Smoke test packed CLI artifact
+          command: |
+            set -euo pipefail
+            TARBALL="$(npm pack --silent)"
+            TMP_DIR="$(mktemp -d)"
+            npm init -y --prefix "$TMP_DIR" >/dev/null 2>&1
+            npm install --prefix "$TMP_DIR" "./$TARBALL" >/dev/null
+            "$TMP_DIR/node_modules/.bin/harness" --version
+            node "$TMP_DIR/node_modules/@brainwav/coding-harness/dist/cli.js" --version
+      - run:
+          name: Verify tag matches package version
+          command: |
+            PKG_VERSION="$(node -p "require('./package.json').version")"
+            TAG_VERSION="${CIRCLE_TAG#v}"
+            if [ "$PKG_VERSION" != "$TAG_VERSION" ]; then
+              echo "Tag v$TAG_VERSION does not match package.json version v$PKG_VERSION"
+              exit 1
+            fi
+      - run:
+          name: Publish to npm
+          command: |
+            echo "//registry.npmjs.org/:_authToken=${NPM_TOKEN}" > ~/.npmrc
+            pnpm publish --no-git-checks --access restricted
+      - run:
+          name: Create GitHub Release
+          command: |
+            VERSION="$(node -p "require('./package.json').version")"
+            gh release create "v${VERSION}" --title "v${VERSION}" --notes-file CHANGELOG.md --latest || echo "Release already exists"
+
+  # === E2E tests ===
+  e2e-tests:
+    docker:
+      - image: cimg/node:24.13
+    steps:
+      - checkout
+      - setup-pnpm
+      - run:
+          name: Build
+          command: pnpm build
+      - run:
+          name: Run E2E Tests
+          no_output_timeout: 60m
+          command: pnpm e2e --reporter json --parallel 2
+      - store_artifacts:
+          path: e2e/recordings
+          destination: e2e-recordings
+      - store_artifacts:
+          path: e2e/reports
+          destination: e2e-reports
+
+  # === Gardener (docs maintenance) ===
+  gardener:
+    docker:
+      - image: cimg/node:24.13
+    steps:
+      - checkout
+      - setup-pnpm
+      - run:
+          name: Build
+          command: pnpm build
+      - run:
+          name: Run gardener analysis
+          command: node dist/cli.js gardener --json --dry-run > gardener-report.json || true
+      - run:
+          name: Create maintenance PR if needed
+          command: |
+            if [ ! -f gardener-report.json ]; then
+              echo "No gardener report; skipping."
+              exit 0
+            fi
+
+            NEEDS_PR="$(jq -r '.needsPR' gardener-report.json)"
+            if [ "$NEEDS_PR" != "true" ]; then
+              echo "No maintenance needed."
+              exit 0
+            fi
+
+            BRANCH_NAME="gardener/$(date +%Y-%m-%d-%H%M%S)"
+            git config user.name "circleci[bot]"
+            git config user.email "circleci[bot]@users.noreply.github.com"
+            git checkout -b "$BRANCH_NAME"
+            node dist/cli.js gardener --json || true
+            git add docs/QUALITY_SCORE.md
+            if git diff --cached --quiet; then
+              echo "No gardener changes to commit."
+              exit 0
+            fi
+            git commit -m "docs: gardening updates ($(date +%Y-%m-%d))"
+            git push -u origin "$BRANCH_NAME"
+            gh pr create --title "docs: gardening updates" --body "Automated gardening updates from harness gardener workflow" || echo "PR creation not permitted"
+      - store_artifacts:
+          path: gardener-report.json
+          destination: gardener-report
+
+  # === Stale issue/PR management ===
+  stale-management:
+    docker:
+      - image: cimg/node:24.13
+    steps:
+      - checkout
+      - setup-pnpm
+      - run:
+          name: Run stale management
+          command: pnpm exec tsx scripts/circleci-stale-management.ts
+
+  # === Automation dispatch (drift-check, pulse, upskill, green-prs) ===
+  automation:
+    docker:
+      - image: cimg/node:24.13
+    parameters:
+      automation-name:
+        type: string
+        default: "drift-check"
+    steps:
+      - checkout
+      - setup-pnpm
+      - run:
+          name: Run automation
+          command: |
+            mkdir -p artifacts/automation
+            INPUT_FINGERPRINT="$(printf "%s" "${CIRCLE_PROJECT_USERNAME}/${CIRCLE_PROJECT_REPONAME}:${CIRCLE_SHA1}:<< parameters.automation-name >>" | sha256sum | awk '{print $1}')"
+            pnpm exec tsx src/cli.ts automation-run \
+              --name "<< parameters.automation-name >>" \
+              --repo "${CIRCLE_PROJECT_USERNAME}/${CIRCLE_PROJECT_REPONAME}" \
+              --head-sha "${CIRCLE_SHA1}" \
+              --contract-version "1.2.0" \
+              --input-fingerprint "${INPUT_FINGERPRINT}" \
+              --artifacts-dir artifacts/automation \
+              --json
+      - store_artifacts:
+          path: artifacts/automation
+          destination: automation-artifacts
+
 # ---------------------------------------------------------------------------
 # Workflows
 # ---------------------------------------------------------------------------
@@ -174,6 +418,53 @@ workflows:
             branches:
               only: main
       - branch-cleanup:
+          filters:
+            branches:
+              only: main
+      - auto-release:
+          filters:
+            branches:
+              only: main
+
+  # Runs on version tags (publish to npm)
+  publish:
+    jobs:
+      - publish-npm:
+          filters:
+            tags:
+              only: /^v[0-9]+\.[0-9]+\.[0-9]+.*/
+            branches:
+              ignore: /.*/
+
+  # Scheduled workflows (configure triggers in CircleCI project settings)
+  # Schedule: daily at 1:30 UTC
+  nightly:
+    triggers:
+      - schedule:
+          cron: "30 1 * * *"
+          filters:
+            branches:
+              only: main
+    jobs:
+      - stale-management
+      - gardener
+
+  # Schedule: every 6 hours
+  periodic:
+    triggers:
+      - schedule:
+          cron: "0 */6 * * *"
+          filters:
+            branches:
+              only: main
+    jobs:
+      - e2e-tests
+
+  # On-demand automations (trigger via CircleCI API with parameters)
+  on-demand:
+    jobs:
+      - automation:
+          automation-name: "drift-check"
           filters:
             branches:
               only: main
