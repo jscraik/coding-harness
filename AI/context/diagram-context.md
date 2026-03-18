@@ -1,6 +1,6 @@
 # Diagram Context Pack
 
-Generated: 2026-03-18T00:23:29Z
+Generated: 2026-03-18T00:25:16Z
 
 ## architecture
 
@@ -9,14 +9,14 @@ graph TD
   subgraph __cdb4ee2a["."]
     vitest_config_a9f1245e["vitest.config"]
   end
+  subgraph scripts_8c5967fd["scripts"]
+    circleci_stale_management_664de1d9["circleci-stale-management"]
+    circleci_linear_sync_19c0d6da["circleci-linear-sync"]
+  end
   subgraph src_25a66342["src"]
     cli_99bb8840["cli"]
     cli_test_4851f28b["cli.test"]
     cli_dispatch_test_54c9f17b["cli-dispatch.test"]
-  end
-  subgraph scripts_8c5967fd["scripts"]
-    circleci_stale_management_664de1d9["circleci-stale-management"]
-    circleci_linear_sync_19c0d6da["circleci-linear-sync"]
   end
   subgraph e2e_6d8749c4["e2e"]
     vitest_e2e_config_4e2a61bc["vitest.e2e.config"]
@@ -252,6 +252,9 @@ flowchart TD
 ```mermaid
 graph LR
   vitest_a9127f3d["vitest"] --> vitest_config_a9f1245e
+  _octokit_rest_c557ffd5["@octokit/rest"] --> circleci_stale_management_664de1d9
+  node_child_process_cb73900b["node:child_process"] --> circleci_linear_sync_19c0d6da
+  _octokit_rest_c557ffd5["@octokit/rest"] --> circleci_linear_sync_19c0d6da
   node_fs_df6b52af["node:fs"] --> cli_99bb8840
   node_path_0e7d56ab["node:path"] --> cli_99bb8840
   node_url_b54ed078["node:url"] --> cli_99bb8840
@@ -261,9 +264,6 @@ graph LR
   node_url_b54ed078["node:url"] --> cli_test_4851f28b
   vitest_a9127f3d["vitest"] --> cli_test_4851f28b
   vitest_a9127f3d["vitest"] --> cli_dispatch_test_54c9f17b
-  _octokit_rest_c557ffd5["@octokit/rest"] --> circleci_stale_management_664de1d9
-  node_child_process_cb73900b["node:child_process"] --> circleci_linear_sync_19c0d6da
-  _octokit_rest_c557ffd5["@octokit/rest"] --> circleci_linear_sync_19c0d6da
   vitest_a9127f3d["vitest"] --> vitest_e2e_config_4e2a61bc
   node_child_process_cb73900b["node:child_process"] --> run_e2e_39efe696
   node_fs_df6b52af["node:fs"] --> run_e2e_39efe696
@@ -528,12 +528,12 @@ graph LR
   node_fs_df6b52af["node:fs"] --> resource_tracker_d95b6649
   node_path_0e7d56ab["node:path"] --> resource_tracker_d95b6649
   style vitest_a9127f3d fill:#f59e0b,color:#fff
+  style _octokit_rest_c557ffd5 fill:#f59e0b,color:#fff
+  style node_child_process_cb73900b fill:#f59e0b,color:#fff
   style node_fs_df6b52af fill:#f59e0b,color:#fff
   style node_path_0e7d56ab fill:#f59e0b,color:#fff
   style node_url_b54ed078 fill:#f59e0b,color:#fff
   style node_crypto_879f6cbe fill:#f59e0b,color:#fff
-  style _octokit_rest_c557ffd5 fill:#f59e0b,color:#fff
-  style node_child_process_cb73900b fill:#f59e0b,color:#fff
   style node_os_e9717731 fill:#f59e0b,color:#fff
   style node_process_09240432 fill:#f59e0b,color:#fff
   style fs_dce7cce0 fill:#f59e0b,color:#fff
@@ -566,18 +566,18 @@ flowchart TD
   Start(["Start"])
   vitest_config_a9f1245e["vitest.config"]
   Start --> vitest_config_a9f1245e
+  circleci_stale_management_664de1d9["circleci-stale-management"]
+  vitest_config_a9f1245e --> circleci_stale_management_664de1d9
+  circleci_linear_sync_19c0d6da["circleci-linear-sync"]
+  circleci_stale_management_664de1d9 --> circleci_linear_sync_19c0d6da
   cli_99bb8840["cli"]
-  vitest_config_a9f1245e --> cli_99bb8840
+  circleci_linear_sync_19c0d6da --> cli_99bb8840
   cli_test_4851f28b["cli.test"]
   cli_99bb8840 --> cli_test_4851f28b
   cli_dispatch_test_54c9f17b["cli-dispatch.test"]
   cli_test_4851f28b --> cli_dispatch_test_54c9f17b
-  circleci_stale_management_664de1d9["circleci-stale-management"]
-  cli_dispatch_test_54c9f17b --> circleci_stale_management_664de1d9
-  circleci_linear_sync_19c0d6da["circleci-linear-sync"]
-  circleci_stale_management_664de1d9 --> circleci_linear_sync_19c0d6da
   vitest_e2e_config_4e2a61bc["vitest.e2e.config"]
-  circleci_linear_sync_19c0d6da --> vitest_e2e_config_4e2a61bc
+  cli_dispatch_test_54c9f17b --> vitest_e2e_config_4e2a61bc
   run_e2e_39efe696["run-e2e"]
   vitest_e2e_config_4e2a61bc --> run_e2e_39efe696
   End(["End"])
@@ -708,12 +708,12 @@ sequenceDiagram
 ```mermaid
 flowchart LR
   User(("User"))
+  circleci_linear_sync_19c0d6da["circleci-linear-sync"]
+  User --> circleci_linear_sync_19c0d6da
   cli_99bb8840["cli"]
   User --> cli_99bb8840
   cli_dispatch_test_54c9f17b["cli-dispatch.test"]
   User --> cli_dispatch_test_54c9f17b
-  circleci_linear_sync_19c0d6da["circleci-linear-sync"]
-  User --> circleci_linear_sync_19c0d6da
   verify_greptile_227190f7["verify-greptile"]
   User --> verify_greptile_227190f7
   verify_greptile_test_17404b05["verify-greptile.test"]
