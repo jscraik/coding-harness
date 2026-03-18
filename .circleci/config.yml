@@ -102,6 +102,14 @@ jobs:
       - image: cimg/node:24.13
     steps:
       - checkout
+      - run:
+          name: Skip bot-triggered runs
+          command: |
+            COMMITTER="$(git log -1 --format=%cn)"
+            if [ "$COMMITTER" = "circleci[bot]" ]; then
+              echo "Skipping diagram refresh — triggered by circleci[bot] commit."
+              circleci step halt
+            fi
       - setup-pnpm
       - run:
           name: Generate diagrams
@@ -146,6 +154,14 @@ jobs:
     steps:
       - checkout
       - run:
+          name: Skip bot-triggered runs
+          command: |
+            COMMITTER="$(git log -1 --format=%cn)"
+            if [ "$COMMITTER" = "circleci[bot]" ]; then
+              echo "Skipping branch cleanup — triggered by circleci[bot] commit."
+              circleci step halt
+            fi
+      - run:
           name: Delete stale merged branches
           command: |
             git fetch --prune
@@ -166,6 +182,14 @@ jobs:
       - image: cimg/node:24.13
     steps:
       - checkout
+      - run:
+          name: Skip bot-triggered runs
+          command: |
+            COMMITTER="$(git log -1 --format=%cn)"
+            if [ "$COMMITTER" = "circleci[bot]" ]; then
+              echo "Skipping auto-release — triggered by circleci[bot] commit."
+              circleci step halt
+            fi
       - run:
           name: Configure git
           command: |
@@ -232,7 +256,11 @@ jobs:
             fi
 
             # Otherwise, prepare a release PR
-            pnpm check
+            pnpm lint
+            pnpm docs:lint
+            pnpm typecheck
+            pnpm test:ci
+            pnpm audit
             pnpm exec standard-version --skip.commit --skip.tag
 
             if git diff --quiet -- package.json CHANGELOG.md; then
