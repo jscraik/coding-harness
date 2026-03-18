@@ -2,14 +2,14 @@ graph TD
   subgraph __cdb4ee2a["."]
     vitest_config_a9f1245e["vitest.config"]
   end
+  subgraph scripts_8c5967fd["scripts"]
+    circleci_stale_management_664de1d9["circleci-stale-management"]
+    circleci_linear_sync_19c0d6da["circleci-linear-sync"]
+  end
   subgraph src_25a66342["src"]
     cli_99bb8840["cli"]
     cli_test_4851f28b["cli.test"]
     cli_dispatch_test_54c9f17b["cli-dispatch.test"]
-  end
-  subgraph scripts_8c5967fd["scripts"]
-    circleci_stale_management_664de1d9["circleci-stale-management"]
-    circleci_linear_sync_19c0d6da["circleci-linear-sync"]
   end
   subgraph e2e_6d8749c4["e2e"]
     vitest_e2e_config_4e2a61bc["vitest.e2e.config"]
