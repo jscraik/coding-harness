@@ -2,6 +2,7 @@ import { spawnSync } from "node:child_process";
 import { createHash, createHmac } from "node:crypto";
 import {
 	chmodSync,
+	cpSync,
 	existsSync,
 	mkdirSync,
 	mkdtempSync,
@@ -13,7 +14,7 @@ import {
 import { tmpdir } from "node:os";
 import { dirname, join } from "node:path";
 import { pathToFileURL } from "node:url";
-import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
 import type {
 	BranchProtectionSatisfiabilityReport,
 	scanOpenPullRequestSatisfiability as scanOpenPullRequestSatisfiabilityType,
@@ -2033,9 +2034,44 @@ describe("runCIMigrateCLI", () => {
 	let consoleWarnSpy: ReturnType<typeof vi.spyOn> | undefined;
 	let consoleLogSpy: ReturnType<typeof vi.spyOn> | undefined;
 	let consoleInfoSpy: ReturnType<typeof vi.spyOn> | undefined;
+	// Pre-seeded git template: built once, copied per test to avoid
+	// repeated git init+commit (the main cause of the 128s timeout).
+	let gitTemplateDir: string;
+
+	beforeAll(() => {
+		gitTemplateDir = mkdtempSync(join(tmpdir(), "harness-ci-migrate-git-template-"));
+		// Bootstrap a two-commit history so ensureProofPackFixtureHistory
+		// finds distinct baseSha / headSha without doing any git work.
+		const git = (args: string[]) =>
+			spawnSync("git", args, { cwd: gitTemplateDir, encoding: "utf-8" });
+		git(["init", "-q"]);
+		git(["config", "user.name", "Harness Test"]);
+		git(["config", "user.email", "harness@test.local"]);
+		mkdirSync(join(gitTemplateDir, ".harness"), { recursive: true });
+		writeFileSync(join(gitTemplateDir, ".harness/ci-migrate-history-seed.txt"), "proof pack fixture seed\n");
+		git(["add", "-A"]);
+		git(["commit", "-q", "-m", "test fixture initial commit"]);
+		writeFileSync(join(gitTemplateDir, ".harness/ci-migrate-history-head.txt"), `${Date.now()}\n`);
+		git(["add", "-A"]);
+		git(["commit", "-q", "-m", "test fixture head commit"]);
+	});
+
+	afterAll(() => {
+		rmSync(gitTemplateDir, { recursive: true, force: true });
+	});
 
 	beforeEach(() => {
 		tempDir = mkdtempSync(join(tmpdir(), "harness-ci-migrate-"));
+		// Copy the pre-seeded git history into the fresh tempDir so that
+		// any test calling ensureProofPackFixtureHistory skips git init/commit.
+		const gitDir = join(gitTemplateDir, ".git");
+		const harnessDir = join(gitTemplateDir, ".harness");
+		cpSync(gitDir, join(tempDir, ".git"), { recursive: true });
+		cpSync(harnessDir, join(tempDir, ".harness"), { recursive: true });
+		// Update the working tree to match HEAD so git status is clean.
+		spawnSync("git", ["checkout", "."], { cwd: tempDir, encoding: "utf-8" });
+		spawnSync("git", ["config", "user.name", "Harness Test"], { cwd: tempDir, encoding: "utf-8" });
+		spawnSync("git", ["config", "user.email", "harness@test.local"], { cwd: tempDir, encoding: "utf-8" });
 		previousSnapshotSigningKey = process.env[SNAPSHOT_SIGNING_KEY_ENV];
 		process.env[SNAPSHOT_SIGNING_KEY_ENV] = TEST_SNAPSHOT_SIGNING_KEY;
 		// This suite intentionally exercises many failure modes; suppressing
