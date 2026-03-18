@@ -5,12 +5,12 @@ version: 2.1
 # ---------------------------------------------------------------------------
 commands:
   setup-pnpm:
-    description: Ensure pnpm is available and install dependencies
+    description: Ensure pnpm is available, configure auth, and install dependencies (with cache)
     steps:
       - run:
           name: Ensure pnpm available
           command: |
-            if ! command -v pnpm >/dev/null 2>&1; then
+            if ! command -v pnpm > /dev/null 2>&1; then
               export NPM_CONFIG_PREFIX="$HOME/.local"
               export PATH="$NPM_CONFIG_PREFIX/bin:$PATH"
               npm install --global pnpm@10.0.0
@@ -23,9 +23,30 @@ commands:
             # Map our PAT → GH_TOKEN so the gh CLI and git push authenticate correctly.
             echo "export GH_TOKEN=${GITHUB_PERSONAL_ACCESS_TOKEN}" >> "$BASH_ENV"
             git config --global url."https://${GITHUB_PERSONAL_ACCESS_TOKEN}@github.com/".insteadOf "https://github.com/"
+      - restore_cache:
+          keys:
+            - pnpm-v1-{{ checksum "pnpm-lock.yaml" }}
+            - pnpm-v1-
       - run:
           name: Install dependencies
-          command: pnpm install
+          command: pnpm install --frozen-lockfile
+      - save_cache:
+          key: pnpm-v1-{{ checksum "pnpm-lock.yaml" }}
+          paths:
+            - ~/.pnpm-store
+            - node_modules
+
+  skip-if-bot:
+    description: Halt gracefully when the triggering commit was pushed by circleci[bot]
+    steps:
+      - run:
+          name: Skip bot-triggered runs
+          command: |
+            COMMITTER="$(git log -1 --format=%cn)"
+            if [ "$COMMITTER" = "circleci[bot]" ]; then
+              echo "Skipping — triggered by circleci[bot] commit."
+              circleci step halt
+            fi
 
 # ---------------------------------------------------------------------------
 # Jobs
@@ -55,6 +76,11 @@ jobs:
       - run:
           name: Audit
           command: pnpm audit
+      - store_test_results:
+          path: test-results
+      - store_artifacts:
+          path: test-results
+          destination: test-results
 
   # === Linear issue sync from PR metadata ===
   linear-sync:
@@ -102,14 +128,7 @@ jobs:
       - image: cimg/node:24.13
     steps:
       - checkout
-      - run:
-          name: Skip bot-triggered runs
-          command: |
-            COMMITTER="$(git log -1 --format=%cn)"
-            if [ "$COMMITTER" = "circleci[bot]" ]; then
-              echo "Skipping diagram refresh — triggered by circleci[bot] commit."
-              circleci step halt
-            fi
+      - skip-if-bot
       - setup-pnpm
       - run:
           name: Generate diagrams
@@ -153,14 +172,7 @@ jobs:
       - image: cimg/node:24.13
     steps:
       - checkout
-      - run:
-          name: Skip bot-triggered runs
-          command: |
-            COMMITTER="$(git log -1 --format=%cn)"
-            if [ "$COMMITTER" = "circleci[bot]" ]; then
-              echo "Skipping branch cleanup — triggered by circleci[bot] commit."
-              circleci step halt
-            fi
+      - skip-if-bot
       - run:
           name: Delete stale merged branches
           command: |
@@ -182,14 +194,7 @@ jobs:
       - image: cimg/node:24.13
     steps:
       - checkout
-      - run:
-          name: Skip bot-triggered runs
-          command: |
-            COMMITTER="$(git log -1 --format=%cn)"
-            if [ "$COMMITTER" = "circleci[bot]" ]; then
-              echo "Skipping auto-release — triggered by circleci[bot] commit."
-              circleci step halt
-            fi
+      - skip-if-bot
       - run:
           name: Configure git
           command: |
@@ -255,9 +260,10 @@ jobs:
               exit 0
             fi
 
-            # Otherwise, prepare a release PR
+            # Otherwise, validate and prepare a release PR
             pnpm lint
             pnpm docs:lint
+            pnpm workflow:validate
             pnpm typecheck
             pnpm test:ci
             pnpm audit
@@ -294,7 +300,13 @@ jobs:
       - setup-pnpm
       - run:
           name: Validate release candidate
-          command: pnpm check
+          command: |
+            pnpm lint
+            pnpm docs:lint
+            pnpm workflow:validate
+            pnpm typecheck
+            pnpm test:ci
+            pnpm audit
       - run:
           name: Build
           command: pnpm build
@@ -304,8 +316,8 @@ jobs:
             set -euo pipefail
             TARBALL="$(npm pack --silent)"
             TMP_DIR="$(mktemp -d)"
-            npm init -y --prefix "$TMP_DIR" >/dev/null 2>&1
-            npm install --prefix "$TMP_DIR" "./$TARBALL" >/dev/null
+            npm init -y --prefix "$TMP_DIR" > /dev/null 2>&1
+            npm install --prefix "$TMP_DIR" "./$TARBALL" > /dev/null
             "$TMP_DIR/node_modules/.bin/harness" --version
             node "$TMP_DIR/node_modules/@brainwav/coding-harness/dist/cli.js" --version
       - run:
@@ -318,17 +330,29 @@ jobs:
               exit 1
             fi
       - run:
+          name: Generate SBOM
+          command: |
+            npm install -g @cyclonedx/cyclonedx-npm --silent
+            cyclonedx-npm --output-format JSON --output-file sbom.json . || true
+      - run:
           name: Publish to npm
           command: |
             echo "//registry.npmjs.org/:_authToken=${NPM_TOKEN}" > ~/.npmrc
             pnpm publish --no-git-checks --access restricted
       - run:
-          name: Create GitHub Release
+          name: Create GitHub Release with SBOM
           command: |
             VERSION="$(node -p "require('./package.json').version")"
-            gh release create "v${VERSION}" --title "v${VERSION}" --notes-file CHANGELOG.md --latest || echo "Release already exists"
+            gh release create "v${VERSION}" \
+              --title "v${VERSION}" \
+              --notes-file CHANGELOG.md \
+              --latest \
+              sbom.json#sbom || echo "Release already exists"
+      - store_artifacts:
+          path: sbom.json
+          destination: sbom
 
-  # === E2E tests ===
+  # === E2E tests (scheduled) ===
   e2e-tests:
     docker:
       - image: cimg/node:24.13
@@ -341,7 +365,7 @@ jobs:
       - run:
           name: Run E2E Tests
           no_output_timeout: 60m
-          command: pnpm e2e --reporter json --parallel 2
+          command: pnpm e2e:ci
       - store_artifacts:
           path: e2e/recordings
           destination: e2e-recordings
@@ -404,7 +428,7 @@ jobs:
           name: Run stale management
           command: pnpm exec tsx scripts/circleci-stale-management.ts
 
-  # === Automation dispatch (drift-check, pulse, upskill, green-prs) ===
+  # === Automation dispatch (on-demand via CircleCI API only) ===
   automation:
     docker:
       - image: cimg/node:24.13
@@ -436,12 +460,21 @@ jobs:
 # Workflows
 # ---------------------------------------------------------------------------
 workflows:
-  # Runs on every push (PRs + main merges)
+  # Runs on PR branches only (not main — main is covered by post-merge)
   pr-checks:
     jobs:
-      - pr-pipeline
-      - linear-sync
-      - security-scan
+      - pr-pipeline:
+          filters:
+            branches:
+              ignore: main
+      - linear-sync:
+          filters:
+            branches:
+              ignore: main
+      - security-scan:
+          filters:
+            branches:
+              ignore: main
 
   # Runs only on main merges (post-merge housekeeping)
   post-merge:
@@ -469,8 +502,7 @@ workflows:
             branches:
               ignore: /.*/
 
-  # Scheduled workflows (configure triggers in CircleCI project settings)
-  # Schedule: daily at 1:30 UTC
+  # Scheduled: daily at 1:30 UTC
   nightly:
     triggers:
       - schedule:
@@ -482,7 +514,7 @@ workflows:
       - stale-management
       - gardener
 
-  # Schedule: every 6 hours
+  # Scheduled: every 6 hours
   periodic:
     triggers:
       - schedule:
@@ -492,12 +524,3 @@ workflows:
               only: main
     jobs:
       - e2e-tests
-
-  # On-demand automations (trigger via CircleCI API with parameters)
-  on-demand:
-    jobs:
-      - automation:
-          automation-name: "drift-check"
-          filters:
-            branches:
-              only: main
