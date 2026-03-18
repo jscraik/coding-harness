@@ -285,10 +285,16 @@ Configure repository settings on `main` to make the workflow enforceable:
   - `pr-template`
   - `linear-gate`
   - `risk-policy-gate`
+  - `dependency-review`
+  - `actions-pinning`
+  - `consistency-drift-health`
+  - `docs-gate`
   - `lint`
   - `typecheck`
   - `test`
   - `audit`
+  - `check`
+  - `memory`
   - `security-scan`
   - `Greptile Review`
 - Require branches to be up to date before merge.
