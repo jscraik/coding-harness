@@ -1,6 +1,6 @@
 # Diagram Context Pack
 
-Generated: 2026-03-18T00:35:47Z
+Generated: 2026-03-18T00:36:04Z
 
 ## architecture
 
@@ -116,9 +116,9 @@ graph TD
     automation_run_test_7b21d905["automation-run.test"]
     agent_first_throughput_integration_test_dc677cc4["agent-first-throughput.integration.test"]
   end
-  subgraph e2e_utils_979d12b1["e2e/utils"]
-    resource_tracker_d95b6649["resource-tracker"]
-    env_b77349bf["env"]
+  subgraph e2e_tests_1179dfa0["e2e/tests"]
+    linear_integration_e2e_test_dbc5e6db["linear-integration.e2e.test"]
+    github_integration_e2e_test_0b124522["github-integration.e2e.test"]
   end
 ```
 
@@ -151,8 +151,6 @@ flowchart TD
   Boundary --> branch_protect_b9d345eb
   blast_radius_test_045450fc["blast-radius.test"]
   Boundary --> blast_radius_test_045450fc
-  env_b77349bf["env"]
-  Boundary --> env_b77349bf
   vitest_a9127f3d[("vitest")]
   node_os_e9717731[("node:os")]
   node_path_0e7d56ab[("node:path")]
@@ -524,9 +522,14 @@ graph LR
   node_fs_df6b52af["node:fs"] --> agent_first_throughput_integration_test_dc677cc4
   node_path_0e7d56ab["node:path"] --> agent_first_throughput_integration_test_dc677cc4
   vitest_a9127f3d["vitest"] --> agent_first_throughput_integration_test_dc677cc4
-  node_fs_df6b52af["node:fs"] --> resource_tracker_d95b6649
-  node_fs_df6b52af["node:fs"] --> resource_tracker_d95b6649
-  node_path_0e7d56ab["node:path"] --> resource_tracker_d95b6649
+  node_fs_df6b52af["node:fs"] --> linear_integration_e2e_test_dbc5e6db
+  node_os_e9717731["node:os"] --> linear_integration_e2e_test_dbc5e6db
+  node_path_0e7d56ab["node:path"] --> linear_integration_e2e_test_dbc5e6db
+  vitest_a9127f3d["vitest"] --> linear_integration_e2e_test_dbc5e6db
+  node_fs_df6b52af["node:fs"] --> github_integration_e2e_test_0b124522
+  node_os_e9717731["node:os"] --> github_integration_e2e_test_0b124522
+  node_path_0e7d56ab["node:path"] --> github_integration_e2e_test_0b124522
+  vitest_a9127f3d["vitest"] --> github_integration_e2e_test_0b124522
   style vitest_a9127f3d fill:#f59e0b,color:#fff
   style node_fs_df6b52af fill:#f59e0b,color:#fff
   style node_path_0e7d56ab fill:#f59e0b,color:#fff
@@ -681,8 +684,6 @@ flowchart TD
   Untrusted --> context_test_57aad306
   blast_radius_test_045450fc["blast-radius.test"]
   Untrusted --> blast_radius_test_045450fc
-  env_b77349bf["env"]
-  Untrusted --> env_b77349bf
   circleci_stale_management_664de1d9["circleci-stale-management"]
   Untrusted --> circleci_stale_management_664de1d9
   circleci_linear_sync_19c0d6da["circleci-linear-sync"]
@@ -693,6 +694,10 @@ flowchart TD
   Untrusted --> request_greptile_review_test_b073e76e
   linear_gate_test_4fcca11a["linear-gate.test"]
   Untrusted --> linear_gate_test_4fcca11a
+  linear_integration_e2e_test_dbc5e6db["linear-integration.e2e.test"]
+  Untrusted --> linear_integration_e2e_test_dbc5e6db
+  github_integration_e2e_test_0b124522["github-integration.e2e.test"]
+  Untrusted --> github_integration_e2e_test_0b124522
   classDef securityNode fill:#dc2626,color:#fff
 ```
 
@@ -756,8 +761,6 @@ flowchart LR
   User --> branch_protect_test_c8d80aab
   agent_first_throughput_integration_test_dc677cc4["agent-first-throughput.integration.test"]
   User --> agent_first_throughput_integration_test_dc677cc4
-  env_b77349bf["env"]
-  User --> env_b77349bf
   classDef userNode fill:#16a34a,color:#fff
 ```
 
