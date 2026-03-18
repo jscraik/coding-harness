@@ -90,8 +90,7 @@ For behavior-affecting changes:
 - `pnpm check`
 - `dependency-review` GitHub Actions check
 - `actions-pinning` GitHub Actions check
-- `security-scan` GitHub Actions check (gitleaks + trivy + semgrep)
-- `docs-gate` GitHub Actions check (documentation parity)
+- `security-scan` CircleCI job (gitleaks + semgrep)
 - `risk-policy-gate` plan traceability:
   - changed PR work maps to valid plan IDs,
   - referenced plan files declare matching `plan_id` frontmatter,
@@ -286,16 +285,10 @@ Configure repository settings on `main` to make the workflow enforceable:
   - `pr-template`
   - `linear-gate`
   - `risk-policy-gate`
-  - `dependency-review`
-  - `actions-pinning`
-  - `consistency-drift-health`
-  - `docs-gate`
   - `lint`
   - `typecheck`
   - `test`
   - `audit`
-  - `check`
-  - `memory`
   - `security-scan`
   - `Greptile Review`
 - Require branches to be up to date before merge.

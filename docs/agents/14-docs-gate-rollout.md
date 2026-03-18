@@ -82,7 +82,7 @@ Freeze or demote to advisory immediately if any of the following occur:
 ### Demotion Procedure
 
 1. Update `harness.contract.json` `docsGatePolicy.mode` to `"advisory"`
-2. Update workflow `.github/workflows/pr-pipeline.yml` `--mode` flag to `advisory`
+2. Update `.circleci/config.yml` `pr-pipeline` job `docs-gate` step `--mode` flag to `advisory`
 3. Document the triggering event in this file under "Rollout History"
 4. Notify contributors of the temporary posture change
 5. Fix root cause before re-promoting
@@ -153,8 +153,8 @@ Before promoting to required mode:
 ### Incident Response
 
 **Finding**: Unexpected `trust_mismatch` errors
-- Check GitHub Actions trusted-base loading configuration
-- Verify `origin/$BASE_REF` is fetchable
+- Check CircleCI `pr-pipeline` job logs for trusted-base loading errors
+- Verify `.circleci/config.yml` `pr-pipeline` job has correct `GH_TOKEN` / `GITHUB_PERSONAL_ACCESS_TOKEN` wiring
 - Review recent changes to workflow or contract loading
 
 **Finding**: High false-positive rate on specific rule
