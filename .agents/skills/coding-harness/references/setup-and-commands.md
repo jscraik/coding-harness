@@ -251,6 +251,7 @@ Important constraints:
 - `harness org-audit`
 - `harness tooling-audit`
 - `harness preset`
+- `harness ci-migrate`
 
 ### Risk and policy gates
 
@@ -262,6 +263,9 @@ Important constraints:
 - `harness evidence-verify`
 - `harness silent-error`
 - `harness observability-gate`
+- `harness drift-gate`
+- `harness pr-template-gate`
+- `harness license-gate`
 
 ### Documentation and planning hygiene
 
@@ -270,6 +274,7 @@ Important constraints:
 - `harness plan-gate`
 - `harness prompt-gate`
 - `harness blast-radius`
+- `harness memory-gate`
 
 ### Context and remediation loops
 
@@ -295,6 +300,7 @@ Important constraints:
 
 - `harness linear`
 - `harness linear-gate`
+- `harness workflow-generate`
 
 ## Capability boundaries
 

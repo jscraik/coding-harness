@@ -14,7 +14,16 @@ import {
 import { tmpdir } from "node:os";
 import { dirname, join } from "node:path";
 import { pathToFileURL } from "node:url";
-import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
+import {
+	afterAll,
+	afterEach,
+	beforeAll,
+	beforeEach,
+	describe,
+	expect,
+	it,
+	vi,
+} from "vitest";
 import type {
 	BranchProtectionSatisfiabilityReport,
 	scanOpenPullRequestSatisfiability as scanOpenPullRequestSatisfiabilityType,
@@ -2039,7 +2048,9 @@ describe("runCIMigrateCLI", () => {
 	let gitTemplateDir: string;
 
 	beforeAll(() => {
-		gitTemplateDir = mkdtempSync(join(tmpdir(), "harness-ci-migrate-git-template-"));
+		gitTemplateDir = mkdtempSync(
+			join(tmpdir(), "harness-ci-migrate-git-template-"),
+		);
 		// Bootstrap a two-commit history so ensureProofPackFixtureHistory
 		// finds distinct baseSha / headSha without doing any git work.
 		const git = (args: string[]) =>
@@ -2048,10 +2059,16 @@ describe("runCIMigrateCLI", () => {
 		git(["config", "user.name", "Harness Test"]);
 		git(["config", "user.email", "harness@test.local"]);
 		mkdirSync(join(gitTemplateDir, ".harness"), { recursive: true });
-		writeFileSync(join(gitTemplateDir, ".harness/ci-migrate-history-seed.txt"), "proof pack fixture seed\n");
+		writeFileSync(
+			join(gitTemplateDir, ".harness/ci-migrate-history-seed.txt"),
+			"proof pack fixture seed\n",
+		);
 		git(["add", "-A"]);
 		git(["commit", "-q", "-m", "test fixture initial commit"]);
-		writeFileSync(join(gitTemplateDir, ".harness/ci-migrate-history-head.txt"), `${Date.now()}\n`);
+		writeFileSync(
+			join(gitTemplateDir, ".harness/ci-migrate-history-head.txt"),
+			`${Date.now()}\n`,
+		);
 		git(["add", "-A"]);
 		git(["commit", "-q", "-m", "test fixture head commit"]);
 	});
@@ -2070,8 +2087,14 @@ describe("runCIMigrateCLI", () => {
 		cpSync(harnessDir, join(tempDir, ".harness"), { recursive: true });
 		// Update the working tree to match HEAD so git status is clean.
 		spawnSync("git", ["checkout", "."], { cwd: tempDir, encoding: "utf-8" });
-		spawnSync("git", ["config", "user.name", "Harness Test"], { cwd: tempDir, encoding: "utf-8" });
-		spawnSync("git", ["config", "user.email", "harness@test.local"], { cwd: tempDir, encoding: "utf-8" });
+		spawnSync("git", ["config", "user.name", "Harness Test"], {
+			cwd: tempDir,
+			encoding: "utf-8",
+		});
+		spawnSync("git", ["config", "user.email", "harness@test.local"], {
+			cwd: tempDir,
+			encoding: "utf-8",
+		});
 		previousSnapshotSigningKey = process.env[SNAPSHOT_SIGNING_KEY_ENV];
 		process.env[SNAPSHOT_SIGNING_KEY_ENV] = TEST_SNAPSHOT_SIGNING_KEY;
 		// This suite intentionally exercises many failure modes; suppressing

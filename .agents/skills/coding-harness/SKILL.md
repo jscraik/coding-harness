@@ -153,6 +153,7 @@ If the repo has no `.harness/` directory, skip creation entirely.
   - `harness init --update`
   - `harness init --migrate`
   - `harness init --rollback`
+  - `harness ci-migrate [prepare|commit|abort|verify]`
 - Governance checks (as needed):
   - `harness verify-greptile`
   - `harness verify-greptile --token <token-or-jwt> --owner <owner> --repo <repo>`
@@ -160,6 +161,7 @@ If the repo has no `.harness/` directory, skip creation entirely.
   - `harness check-environment --contract <path> --attestation <path>`
   - `harness docs-gate --mode advisory --json`
   - `harness tooling-audit --path <dir> --format table`
+  - `harness evidence-verify --files <paths>`
 
 Fail fast on first blocking gate and report exact remediation.
 
