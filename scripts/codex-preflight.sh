@@ -368,6 +368,22 @@ preflight_repo_local_memory() {
 	preflight_repo "${1:-}" "${2:-git,bash,sed,rg,fd,jq,curl,python3}" "${3:-AGENTS.md,docs,docs/plans}" "required"
 }
 
-if [[ "${BASH_SOURCE[0]}" == "$0" ]]; then
-	preflight_repo "$@"
+# Fix #60: zsh-compatible direct-execution guard.
+# BASH_SOURCE is set in bash but unset in zsh, causing 'parameter not set' errors.
+# Strategy: detect shell, then use the correct idiom for each.
+if [[ -n "${BASH_VERSION:-}" ]]; then
+        # bash: BASH_SOURCE is reliable for sourced-vs-direct detection
+        if [[ "${BASH_SOURCE[0]}" == "$0" ]]; then
+                preflight_repo "$@"
+        fi
+elif [[ -n "${ZSH_VERSION:-}" ]]; then
+        # zsh: ZSH_EVAL_CONTEXT contains ':file' when run directly (not sourced)
+        if [[ "${ZSH_EVAL_CONTEXT:-}" == *:file* ]] || [[ "$0" == */codex-preflight.sh ]]; then
+                preflight_repo "$@"
+        fi
+else
+        # POSIX fallback: check $0 basename
+        case "$0" in
+                *codex-preflight.sh) preflight_repo "$@" ;;
+        esac
 fi

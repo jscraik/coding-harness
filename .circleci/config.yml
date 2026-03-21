@@ -206,7 +206,10 @@ jobs:
           name: Build
           command: pnpm build
       - run:
-          name: Run post-merge review gate
+          name: Run post-merge review gate (advisory)
+          # This step is advisory-only. The || true is intentional — a missing
+          # or neutral Greptile review on a direct-to-main push must not block
+          # the release pipeline. Governance enforcement happens at PR merge time.
           command: |
             set -euo pipefail
             # Resolve merged PR from commit message
@@ -214,13 +217,13 @@ jobs:
             PR_NUM="$(echo "$COMMIT_MSG" | grep -oP '\(#\K\d+' || true)"
 
             if [ -z "$PR_NUM" ]; then
-              echo "No PR number in commit message, skipping review gate."
+              echo "No PR number in commit message; skipping post-merge review gate."
               exit 0
             fi
 
             PR_SHA="$(gh pr view "$PR_NUM" --json headRefOid --jq .headRefOid 2>/dev/null || true)"
             if [ -z "$PR_SHA" ]; then
-              echo "Could not resolve PR head SHA, skipping review gate."
+              echo "Could not resolve PR head SHA; skipping post-merge review gate."
               exit 0
             fi
 
@@ -308,13 +311,20 @@ jobs:
             pnpm test:ci
             pnpm audit
       - run:
+          # Fix #70: build MUST run before npm pack so dist/ is present in the tarball
           name: Build
           command: pnpm build
       - run:
           name: Smoke test packed CLI artifact
+          # Fix #68: use portable grep instead of rg (not guaranteed on CI runner)
           command: |
             set -euo pipefail
             TARBALL="$(npm pack --silent)"
+            # Verify dist/cli.js is present in the packed tarball before installing
+            if ! tar -tzf "$TARBALL" | grep -q 'dist/cli.js'; then
+              echo "ERROR: dist/cli.js missing from tarball $TARBALL"
+              exit 1
+            fi
             TMP_DIR="$(mktemp -d)"
             npm init -y --prefix "$TMP_DIR" > /dev/null 2>&1
             npm install --prefix "$TMP_DIR" "./$TARBALL" > /dev/null

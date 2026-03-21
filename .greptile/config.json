@@ -15,6 +15,13 @@
 		"minMergeScore": 4,
 		"targetScore": 5
 	},
+	"repositories": [
+		{
+			"remote": "github",
+			"repository": "jscraik/coding-harness",
+			"branch": "main"
+		}
+	],
 	"rules": [
 		{
 			"id": "esm-local-import-extension",

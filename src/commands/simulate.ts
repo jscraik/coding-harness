@@ -14,8 +14,8 @@ import { createHash } from "node:crypto";
 import {
 	existsSync,
 	mkdirSync,
-	readdirSync,
 	readFileSync,
+	readdirSync,
 	statSync,
 	writeFileSync,
 } from "node:fs";
@@ -346,9 +346,10 @@ interface AgentRunEvent {
  * Read all agent-run manifests from an artifacts directory.
  * Bounded by SIMULATION_LIMITS.maxArtifactCount.
  */
-function readArtifactManifests(
-	artifactsDir: string,
-): { manifests: AgentRunManifest[]; fileCount: number } {
+function readArtifactManifests(artifactsDir: string): {
+	manifests: AgentRunManifest[];
+	fileCount: number;
+} {
 	if (!existsSync(artifactsDir)) return { manifests: [], fileCount: 0 };
 
 	let fileCount = 0;
@@ -365,17 +366,12 @@ function readArtifactManifests(
 
 			try {
 				const stat = statSync(manifestPath);
-				if (
-					stat.size >
-					SIMULATION_LIMITS.maxArtifactSizeMB * 1024 * 1024
-				) {
+				if (stat.size > SIMULATION_LIMITS.maxArtifactSizeMB * 1024 * 1024) {
 					continue; // skip oversized
 				}
 				const raw = readFileSync(manifestPath, "utf-8");
 				const parsed = JSON.parse(raw) as AgentRunManifest;
-				if (
-					parsed.schemaVersion?.startsWith("agent-run-manifest/")
-				) {
+				if (parsed.schemaVersion?.startsWith("agent-run-manifest/")) {
 					manifests.push(parsed);
 				}
 				fileCount++;
@@ -447,10 +443,7 @@ function readTraceFiles(tracesDir: string): {
 			if (!name.endsWith(".json") && !name.endsWith(".jsonl")) continue;
 			try {
 				const stat = statSync(join(tracesDir, name));
-				if (
-					stat.size >
-					SIMULATION_LIMITS.maxTraceSizeMB * 1024 * 1024
-				) {
+				if (stat.size > SIMULATION_LIMITS.maxTraceSizeMB * 1024 * 1024) {
 					continue;
 				}
 				// Detect legacy format by filename convention
@@ -553,7 +546,13 @@ function buildMetricDelta(
 	const delta = candidate - baseline;
 	const percentChange =
 		baseline !== 0 ? (delta / baseline) * 100 : candidate !== 0 ? 100 : 0;
-	return { baseline, candidate, delta, percentChange, ...(ciHalfWidth !== undefined ? { ciHalfWidth } : {}) };
+	return {
+		baseline,
+		candidate,
+		delta,
+		percentChange,
+		...(ciHalfWidth !== undefined ? { ciHalfWidth } : {}),
+	};
 }
 
 /**
@@ -591,15 +590,13 @@ function computeMetrics(
 	const hashB = computeContractHash(contractB);
 
 	// Separate manifests by which contract hash they used
-	const manifestsA = manifests.filter(
-		(m) => m.contract?.hash === hashA,
-	);
-	const manifestsB = manifests.filter(
-		(m) => m.contract?.hash === hashB,
-	);
+	const manifestsA = manifests.filter((m) => m.contract?.hash === hashA);
+	const manifestsB = manifests.filter((m) => m.contract?.hash === hashB);
 	// If both contracts are same hash, split evenly for comparison
 	const baselineSet =
-		manifestsA.length > 0 ? manifestsA : manifests.slice(0, Math.ceil(manifests.length / 2));
+		manifestsA.length > 0
+			? manifestsA
+			: manifests.slice(0, Math.ceil(manifests.length / 2));
 	const candidateSet =
 		manifestsB.length > 0
 			? manifestsB
@@ -648,10 +645,22 @@ function computeMetrics(
 	const ciHW = 1 / Math.sqrt(n); // ~1 std err at 68% CI; advisory only
 
 	return {
-		preventedRisk: buildMetricDelta(baselinePreventedRisk, candidatePreventedRisk, ciHW),
-		falseBlockRate: buildMetricDelta(baselineFalseBlock, candidateFalseBlock, ciHW),
+		preventedRisk: buildMetricDelta(
+			baselinePreventedRisk,
+			candidatePreventedRisk,
+			ciHW,
+		),
+		falseBlockRate: buildMetricDelta(
+			baselineFalseBlock,
+			candidateFalseBlock,
+			ciHW,
+		),
 		leadTimeDelta: buildMetricDelta(baselineLeadTime, candidateLeadTime, ciHW),
-		rollbackPressureDelta: buildMetricDelta(baselineRollback, candidateRollback, ciHW),
+		rollbackPressureDelta: buildMetricDelta(
+			baselineRollback,
+			candidateRollback,
+			ciHW,
+		),
 	};
 }
 
@@ -670,7 +679,8 @@ function computeOutcomeStats(manifests: AgentRunManifest[]): OutcomeStats {
 	let totalDurationMs = 0;
 
 	for (const m of manifests) {
-		const isRollback = m.command?.includes("rollback") || m.runId?.includes("rollback");
+		const isRollback =
+			m.command?.includes("rollback") || m.runId?.includes("rollback");
 		const isRemediate = m.command === "remediate";
 		const isSuccess = m.outcome === "success";
 		const isFailure = m.outcome === "failed";
@@ -686,7 +696,8 @@ function computeOutcomeStats(manifests: AgentRunManifest[]): OutcomeStats {
 		remediateSuccess,
 		unexpectedFailures,
 		rollbackCount,
-		avgDurationMs: manifests.length > 0 ? totalDurationMs / manifests.length : 0,
+		avgDurationMs:
+			manifests.length > 0 ? totalDurationMs / manifests.length : 0,
 	};
 }
 
@@ -718,13 +729,13 @@ function computeDeltas(
 	const candidateManifests = manifests.filter(
 		(m) => m.contract?.hash !== hashA,
 	);
-	const baselineManifests = manifests.filter(
-		(m) => m.contract?.hash === hashA,
-	);
+	const baselineManifests = manifests.filter((m) => m.contract?.hash === hashA);
 
 	// If no split, use outcome-based synthetic delta
-	const usingBaseline = baselineManifests.length > 0 ? baselineManifests : manifests;
-	const usingCandidate = candidateManifests.length > 0 ? candidateManifests : [];
+	const usingBaseline =
+		baselineManifests.length > 0 ? baselineManifests : manifests;
+	const usingCandidate =
+		candidateManifests.length > 0 ? candidateManifests : [];
 
 	const eventsTotal = { count: 0 };
 	const topDeltas: DecisionDelta[] = [];
@@ -736,7 +747,11 @@ function computeDeltas(
 	let eventIndex = 0;
 
 	for (const manifest of usingBaseline) {
-		const baselineEvents = readRunEvents(artifactsDir, manifest.runId, eventsTotal);
+		const baselineEvents = readRunEvents(
+			artifactsDir,
+			manifest.runId,
+			eventsTotal,
+		);
 		// Find matching candidate run (same command, different set)
 		const matchingCandidate = usingCandidate.find(
 			(m) => m.command === manifest.command,
@@ -762,22 +777,14 @@ function computeDeltas(
 			let deltaType: DeltaType = "none";
 
 			if (changed) {
-				if (
-					baselineAction === "block" &&
-					candidateAction !== "block"
-				) {
+				if (baselineAction === "block" && candidateAction !== "block") {
 					deltaType = "blocked_to_allowed";
 					blockedToAllowed++;
-				} else if (
-					baselineAction !== "block" &&
-					candidateAction === "block"
-				) {
+				} else if (baselineAction !== "block" && candidateAction === "block") {
 					deltaType = "allowed_to_blocked";
 					allowedToBlocked++;
 				}
-			} else if (
-				Math.abs(candidateConfidence - baselineConfidence) > 0.1
-			) {
+			} else if (Math.abs(candidateConfidence - baselineConfidence) > 0.1) {
 				deltaType = "confidence_change";
 				confidenceChanges++;
 			} else {
@@ -865,9 +872,7 @@ function generateRecommendations(
 			severity: "high",
 			category: "evidence",
 			title: "Insufficient data for reliable simulation",
-			rationale:
-				`Only ${confidence.dataQuality.effectiveSampleSize} effective sample(s) found. ` +
-				"Results are not statistically meaningful.",
+			rationale: `Only ${confidence.dataQuality.effectiveSampleSize} effective sample(s) found. Results are not statistically meaningful.`,
 			suggestion:
 				"Run at least 20 remediation cycles against the baseline contract before comparing.",
 			relatedMetrics: ["effectiveSampleSize", "traceCoverage"],
@@ -882,11 +887,7 @@ function generateRecommendations(
 			severity: "high",
 			category: "policy",
 			title: "Candidate policy increases false block rate",
-			rationale:
-				`False block rate increased by ${(metrics.falseBlockRate.delta * 100).toFixed(1)}% ` +
-				`(${(metrics.falseBlockRate.baseline * 100).toFixed(1)}% → ` +
-				`${(metrics.falseBlockRate.candidate * 100).toFixed(1)}%). ` +
-				"This may increase developer friction without proportional risk reduction.",
+			rationale: `False block rate increased by ${(metrics.falseBlockRate.delta * 100).toFixed(1)}% (${(metrics.falseBlockRate.baseline * 100).toFixed(1)}% → ${(metrics.falseBlockRate.candidate * 100).toFixed(1)}%). This may increase developer friction without proportional risk reduction.`,
 			suggestion:
 				"Review risk-tier thresholds in the candidate contract. Consider raising autoApplyMaxTier or adjusting pattern specificity.",
 			relatedMetrics: ["falseBlockRate"],
@@ -901,9 +902,7 @@ function generateRecommendations(
 			severity: "medium",
 			category: "workflow",
 			title: "Candidate policy increases average lead time",
-			rationale:
-				`Average run duration increased by ${metrics.leadTimeDelta.delta.toFixed(2)}h ` +
-				`under the candidate contract.`,
+			rationale: `Average run duration increased by ${metrics.leadTimeDelta.delta.toFixed(2)}h under the candidate contract.`,
 			suggestion:
 				"Check if new required checks or stricter timeoutAction settings are causing slowdowns.",
 			relatedMetrics: ["leadTimeDelta"],
@@ -918,9 +917,7 @@ function generateRecommendations(
 			severity: "info",
 			category: "workflow",
 			title: "Candidate policy reduces average lead time",
-			rationale:
-				`Average run duration decreased by ${Math.abs(metrics.leadTimeDelta.delta).toFixed(2)}h. ` +
-				"This is a positive throughput signal.",
+			rationale: `Average run duration decreased by ${Math.abs(metrics.leadTimeDelta.delta).toFixed(2)}h. This is a positive throughput signal.`,
 			suggestion:
 				"Confirm improvement is not due to fewer checks being enforced (verify requiredChecks coverage).",
 			relatedMetrics: ["leadTimeDelta"],
@@ -935,11 +932,7 @@ function generateRecommendations(
 			severity: "critical",
 			category: "policy",
 			title: "Candidate policy increases rollback pressure",
-			rationale:
-				`Rollback rate increased by ${(metrics.rollbackPressureDelta.delta * 100).toFixed(1)}% ` +
-				`(${(metrics.rollbackPressureDelta.baseline * 100).toFixed(1)}% → ` +
-				`${(metrics.rollbackPressureDelta.candidate * 100).toFixed(1)}%). ` +
-				"This suggests the candidate policy creates unsafe conditions that trigger auto-rollback.",
+			rationale: `Rollback rate increased by ${(metrics.rollbackPressureDelta.delta * 100).toFixed(1)}% (${(metrics.rollbackPressureDelta.baseline * 100).toFixed(1)}% → ${(metrics.rollbackPressureDelta.candidate * 100).toFixed(1)}%). This suggests the candidate policy creates unsafe conditions that trigger auto-rollback.`,
 			suggestion:
 				"Do not promote the candidate contract until rollback triggers are fully investigated.",
 			relatedMetrics: ["rollbackPressureDelta"],
@@ -958,11 +951,7 @@ function generateRecommendations(
 				severity: "medium",
 				category: "threshold",
 				title: "High decision churn between baseline and candidate",
-				rationale:
-					`${(changeRate * 100).toFixed(0)}% of evaluated decisions changed outcome ` +
-					`(${deltas.summary.blockedToAllowed} blocked→allowed, ` +
-					`${deltas.summary.allowedToBlocked} allowed→blocked). ` +
-					"Large-scale changes increase deployment risk.",
+				rationale: `${(changeRate * 100).toFixed(0)}% of evaluated decisions changed outcome (${deltas.summary.blockedToAllowed} blocked→allowed, ${deltas.summary.allowedToBlocked} allowed→blocked). Large-scale changes increase deployment risk.`,
 				suggestion:
 					"Consider a staged rollout: apply the candidate to a subset of repos first and monitor for regressions.",
 				relatedMetrics: ["blockedToAllowed", "allowedToBlocked"],
@@ -978,9 +967,7 @@ function generateRecommendations(
 			severity: "info",
 			category: "policy",
 			title: "Candidate policy prevents more risk",
-			rationale:
-				`Remediation success rate increased by ${(metrics.preventedRisk.delta * 100).toFixed(1)}% ` +
-				"under the candidate contract. This is a positive safety signal.",
+			rationale: `Remediation success rate increased by ${(metrics.preventedRisk.delta * 100).toFixed(1)}% under the candidate contract. This is a positive safety signal.`,
 			suggestion:
 				"Verify improvements are not coming from reduced enforcement scope (confirm requiredChecks coverage).",
 			relatedMetrics: ["preventedRisk"],
@@ -1169,7 +1156,9 @@ export function runSimulate(options: SimulateOptions): SimulateResult {
 				options.tracesDir ? resolve(options.tracesDir) : resolve("./.traces"),
 			).traceCount,
 			artifactsProcessed: readArtifactManifests(
-				options.artifactsDir ? resolve(options.artifactsDir) : resolve("./artifacts/agent-runs"),
+				options.artifactsDir
+					? resolve(options.artifactsDir)
+					: resolve("./artifacts/agent-runs"),
 			).fileCount,
 		},
 		dataQuality,
