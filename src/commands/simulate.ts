@@ -11,8 +11,15 @@
  */
 
 import { createHash } from "node:crypto";
-import { existsSync, mkdirSync, writeFileSync } from "node:fs";
-import { dirname, resolve } from "node:path";
+import {
+	existsSync,
+	mkdirSync,
+	readdirSync,
+	readFileSync,
+	statSync,
+	writeFileSync,
+} from "node:fs";
+import { dirname, join, resolve } from "node:path";
 
 import { loadContract } from "../lib/contract/loader.js";
 import type { HarnessContract } from "../lib/contract/types.js";
@@ -24,7 +31,11 @@ import {
 	type DataQualityAssessment,
 	type DecisionDelta,
 	type DeltaSummary,
+	type DeltaType,
+	type MetricDelta,
+	type PolicyAction,
 	SIMULATE_EXIT_CODES,
+	SIMULATION_LIMITS,
 	SIMULATION_SCHEMA_VERSION,
 	type SimulateOptions,
 	type SimulateResult,
@@ -304,85 +315,680 @@ function computeContractHash(contract: HarnessContract): string {
 }
 
 // ============================================================================
-// PLACEHOLDER IMPLEMENTATIONS (Phase 2+)
+// ARTIFACT / TRACE READER HELPERS
+// ============================================================================
+
+interface AgentRunManifest {
+	schemaVersion: string;
+	runId: string;
+	command: string;
+	startedAt: string;
+	finishedAt?: string;
+	durationMs?: number;
+	contract?: { hash?: string };
+	outcome: string;
+	exit?: { code?: number; classification?: string };
+}
+
+interface AgentRunEvent {
+	schemaVersion: string;
+	eventType: string;
+	status: string;
+	payload?: {
+		outcome?: string;
+		exitCode?: number;
+		effectiveMode?: string;
+		findingsProcessed?: number;
+	};
+}
+
+/**
+ * Read all agent-run manifests from an artifacts directory.
+ * Bounded by SIMULATION_LIMITS.maxArtifactCount.
+ */
+function readArtifactManifests(
+	artifactsDir: string,
+): { manifests: AgentRunManifest[]; fileCount: number } {
+	if (!existsSync(artifactsDir)) return { manifests: [], fileCount: 0 };
+
+	let fileCount = 0;
+	const manifests: AgentRunManifest[] = [];
+
+	try {
+		const entries = readdirSync(artifactsDir, { withFileTypes: true });
+		for (const entry of entries) {
+			if (manifests.length >= SIMULATION_LIMITS.maxArtifactCount) break;
+			if (!entry.isDirectory()) continue;
+
+			const manifestPath = join(artifactsDir, entry.name, "manifest.json");
+			if (!existsSync(manifestPath)) continue;
+
+			try {
+				const stat = statSync(manifestPath);
+				if (
+					stat.size >
+					SIMULATION_LIMITS.maxArtifactSizeMB * 1024 * 1024
+				) {
+					continue; // skip oversized
+				}
+				const raw = readFileSync(manifestPath, "utf-8");
+				const parsed = JSON.parse(raw) as AgentRunManifest;
+				if (
+					parsed.schemaVersion?.startsWith("agent-run-manifest/")
+				) {
+					manifests.push(parsed);
+				}
+				fileCount++;
+			} catch {
+				// skip malformed manifests
+			}
+		}
+	} catch {
+		// directory read error — return empty
+	}
+
+	return { manifests, fileCount };
+}
+
+/**
+ * Read JSONL events for a single run directory.
+ * Bounded by SIMULATION_LIMITS.maxEventCount.
+ */
+function readRunEvents(
+	artifactsDir: string,
+	runId: string,
+	total: { count: number },
+): AgentRunEvent[] {
+	const eventsPath = join(artifactsDir, runId, "events.jsonl");
+	if (!existsSync(eventsPath)) return [];
+
+	try {
+		const stat = statSync(eventsPath);
+		if (stat.size > SIMULATION_LIMITS.maxArtifactSizeMB * 1024 * 1024) {
+			return [];
+		}
+		const lines = readFileSync(eventsPath, "utf-8").split("\n");
+		const events: AgentRunEvent[] = [];
+		for (const line of lines) {
+			if (total.count >= SIMULATION_LIMITS.maxEventCount) break;
+			const trimmed = line.trim();
+			if (!trimmed) continue;
+			try {
+				events.push(JSON.parse(trimmed) as AgentRunEvent);
+				total.count++;
+			} catch {
+				// skip malformed lines
+			}
+		}
+		return events;
+	} catch {
+		return [];
+	}
+}
+
+/**
+ * Read trace files from the traces directory.
+ * Returns count of valid trace files found.
+ */
+function readTraceFiles(tracesDir: string): {
+	traceCount: number;
+	legacyCount: number;
+} {
+	if (!existsSync(tracesDir)) return { traceCount: 0, legacyCount: 0 };
+
+	let traceCount = 0;
+	let legacyCount = 0;
+
+	try {
+		const entries = readdirSync(tracesDir, { recursive: false });
+		for (const entry of entries) {
+			if (traceCount >= SIMULATION_LIMITS.maxTraceCount) break;
+			const name = typeof entry === "string" ? entry : entry.toString();
+			if (!name.endsWith(".json") && !name.endsWith(".jsonl")) continue;
+			try {
+				const stat = statSync(join(tracesDir, name));
+				if (
+					stat.size >
+					SIMULATION_LIMITS.maxTraceSizeMB * 1024 * 1024
+				) {
+					continue;
+				}
+				// Detect legacy format by filename convention
+				if (name.includes("-legacy-") || name.includes("_v0")) {
+					legacyCount++;
+				}
+				traceCount++;
+			} catch {
+				// skip
+			}
+		}
+	} catch {
+		// directory read error
+	}
+
+	return { traceCount, legacyCount };
+}
+
+// ============================================================================
+// PHASE 2 — DATA QUALITY ASSESSMENT
 // ============================================================================
 
 /**
- * Assess data quality from available inputs.
- * TODO: Phase 2 - Implement actual data quality assessment.
+ * Assess data quality from available artifact manifests and trace files.
+ * Reads actual files from disk; bounded by SIMULATION_LIMITS.
  */
 function assessDataQuality(
-	_contractA: HarnessContract,
+	contractA: HarnessContract,
 	_contractB: HarnessContract,
-	_artifactsDir: string | undefined,
-	_tracesDir: string | undefined,
+	artifactsDirOverride: string | undefined,
+	tracesDirOverride: string | undefined,
 ): DataQualityAssessment {
-	// V1 placeholder - returns default assessment
+	const artifactsDir = artifactsDirOverride
+		? resolve(artifactsDirOverride)
+		: resolve("./artifacts/agent-runs");
+	const tracesDir = tracesDirOverride
+		? resolve(tracesDirOverride)
+		: resolve("./.traces");
+
+	// Read artifacts
+	const { manifests, fileCount } = readArtifactManifests(artifactsDir);
+
+	// Read traces
+	const { traceCount } = readTraceFiles(tracesDir);
+
+	// Compute effective sample size: manifests with matching contract hash
+	const baselineHash = computeContractHash(contractA);
+	const matchingManifests = manifests.filter(
+		(m) => m.contract?.hash === baselineHash,
+	);
+	const effectiveSampleSize = matchingManifests.length || manifests.length;
+
+	// Artifact completeness: ratio of runs that have both manifest + events
+	const withEvents = manifests.filter((m) =>
+		existsSync(join(artifactsDir, m.runId, "events.jsonl")),
+	).length;
+	const artifactCompleteness =
+		manifests.length > 0
+			? Math.round((withEvents / manifests.length) * 100)
+			: 0;
+
+	// Trace coverage: ratio of trace files to artifact runs (capped at 100)
+	const traceCoverage =
+		fileCount > 0
+			? Math.min(100, Math.round((traceCount / fileCount) * 100))
+			: traceCount > 0
+				? 100
+				: 0;
+
+	// Sample size classification
+	let sampleSize: "adequate" | "marginal" | "insufficient";
+	if (effectiveSampleSize >= 20) {
+		sampleSize = "adequate";
+	} else if (effectiveSampleSize >= 5) {
+		sampleSize = "marginal";
+	} else {
+		sampleSize = "insufficient";
+	}
+
 	return {
-		sampleSize: "marginal",
-		traceCoverage: 50,
-		artifactCompleteness: 50,
-		effectiveSampleSize: 10,
+		sampleSize,
+		traceCoverage,
+		artifactCompleteness,
+		effectiveSampleSize,
 	};
 }
 
+// ============================================================================
+// PHASE 3 — METRIC AND DELTA COMPUTATION
+// ============================================================================
+
 /**
- * Compute simulation metrics comparing baseline vs candidate.
- * TODO: Phase 3 - Implement actual metric computation.
+ * Build MetricDelta from two counts with safe percent-change.
+ */
+function buildMetricDelta(
+	baseline: number,
+	candidate: number,
+	ciHalfWidth?: number,
+): MetricDelta {
+	const delta = candidate - baseline;
+	const percentChange =
+		baseline !== 0 ? (delta / baseline) * 100 : candidate !== 0 ? 100 : 0;
+	return { baseline, candidate, delta, percentChange, ...(ciHalfWidth !== undefined ? { ciHalfWidth } : {}) };
+}
+
+/**
+ * Compute simulation metrics comparing baseline vs candidate contract hashes
+ * against the actual event log in the artifacts directory.
  */
 function computeMetrics(
-	_contractA: HarnessContract,
-	_contractB: HarnessContract,
-	_dataQuality: DataQualityAssessment,
+	contractA: HarnessContract,
+	contractB: HarnessContract,
+	dataQuality: DataQualityAssessment,
 ): SimulationMetrics {
-	// V1 placeholder - returns zero deltas
-	const zeroDelta = {
-		baseline: 0,
-		candidate: 0,
-		delta: 0,
-		percentChange: 0,
-	};
+	const zeroDelta = buildMetricDelta(0, 0);
+
+	if (dataQuality.sampleSize === "insufficient") {
+		return {
+			preventedRisk: zeroDelta,
+			falseBlockRate: zeroDelta,
+			leadTimeDelta: zeroDelta,
+			rollbackPressureDelta: zeroDelta,
+		};
+	}
+
+	const artifactsDir = resolve("./artifacts/agent-runs");
+	const { manifests } = readArtifactManifests(artifactsDir);
+	if (manifests.length === 0) {
+		return {
+			preventedRisk: zeroDelta,
+			falseBlockRate: zeroDelta,
+			leadTimeDelta: zeroDelta,
+			rollbackPressureDelta: zeroDelta,
+		};
+	}
+
+	const hashA = computeContractHash(contractA);
+	const hashB = computeContractHash(contractB);
+
+	// Separate manifests by which contract hash they used
+	const manifestsA = manifests.filter(
+		(m) => m.contract?.hash === hashA,
+	);
+	const manifestsB = manifests.filter(
+		(m) => m.contract?.hash === hashB,
+	);
+	// If both contracts are same hash, split evenly for comparison
+	const baselineSet =
+		manifestsA.length > 0 ? manifestsA : manifests.slice(0, Math.ceil(manifests.length / 2));
+	const candidateSet =
+		manifestsB.length > 0
+			? manifestsB
+			: manifests.slice(Math.ceil(manifests.length / 2));
+
+	// Count outcomes for baseline set
+	const baselineStats = computeOutcomeStats(baselineSet);
+	const candidateStats = computeOutcomeStats(candidateSet);
+
+	// preventedRisk: fraction of remediations that succeeded
+	const baselinePreventedRisk =
+		baselineStats.total > 0
+			? baselineStats.remediateSuccess / baselineStats.total
+			: 0;
+	const candidatePreventedRisk =
+		candidateStats.total > 0
+			? candidateStats.remediateSuccess / candidateStats.total
+			: 0;
+
+	// falseBlockRate: fraction that failed unexpectedly (non-remediate failures)
+	const baselineFalseBlock =
+		baselineStats.total > 0
+			? baselineStats.unexpectedFailures / baselineStats.total
+			: 0;
+	const candidateFalseBlock =
+		candidateStats.total > 0
+			? candidateStats.unexpectedFailures / candidateStats.total
+			: 0;
+
+	// leadTimeDelta: average duration in hours
+	const baselineLeadTime = baselineStats.avgDurationMs / 3600000;
+	const candidateLeadTime = candidateStats.avgDurationMs / 3600000;
+
+	// rollbackPressureDelta: fraction of rollback runs
+	const baselineRollback =
+		baselineStats.total > 0
+			? baselineStats.rollbackCount / baselineStats.total
+			: 0;
+	const candidateRollback =
+		candidateStats.total > 0
+			? candidateStats.rollbackCount / candidateStats.total
+			: 0;
+
+	// Confidence interval half-width: simple normal approximation (n=effective sample)
+	const n = Math.max(dataQuality.effectiveSampleSize, 1);
+	const ciHW = 1 / Math.sqrt(n); // ~1 std err at 68% CI; advisory only
 
 	return {
-		preventedRisk: zeroDelta,
-		falseBlockRate: zeroDelta,
-		leadTimeDelta: zeroDelta,
-		rollbackPressureDelta: zeroDelta,
+		preventedRisk: buildMetricDelta(baselinePreventedRisk, candidatePreventedRisk, ciHW),
+		falseBlockRate: buildMetricDelta(baselineFalseBlock, candidateFalseBlock, ciHW),
+		leadTimeDelta: buildMetricDelta(baselineLeadTime, candidateLeadTime, ciHW),
+		rollbackPressureDelta: buildMetricDelta(baselineRollback, candidateRollback, ciHW),
+	};
+}
+
+interface OutcomeStats {
+	total: number;
+	remediateSuccess: number;
+	unexpectedFailures: number;
+	rollbackCount: number;
+	avgDurationMs: number;
+}
+
+function computeOutcomeStats(manifests: AgentRunManifest[]): OutcomeStats {
+	let remediateSuccess = 0;
+	let unexpectedFailures = 0;
+	let rollbackCount = 0;
+	let totalDurationMs = 0;
+
+	for (const m of manifests) {
+		const isRollback = m.command?.includes("rollback") || m.runId?.includes("rollback");
+		const isRemediate = m.command === "remediate";
+		const isSuccess = m.outcome === "success";
+		const isFailure = m.outcome === "failed";
+
+		if (isRollback) rollbackCount++;
+		if (isRemediate && isSuccess) remediateSuccess++;
+		if (isFailure && !isRollback) unexpectedFailures++;
+		totalDurationMs += m.durationMs ?? 0;
+	}
+
+	return {
+		total: manifests.length,
+		remediateSuccess,
+		unexpectedFailures,
+		rollbackCount,
+		avgDurationMs: manifests.length > 0 ? totalDurationMs / manifests.length : 0,
 	};
 }
 
 /**
- * Compute decision deltas between baseline and candidate.
- * TODO: Phase 3 - Implement actual delta computation.
+ * Compute decision deltas between baseline and candidate contracts
+ * by walking event logs and classifying each decision event.
  */
 function computeDeltas(
-	_contractA: HarnessContract,
+	contractA: HarnessContract,
 	_contractB: HarnessContract,
 ): { summary: DeltaSummary; topDeltas: DecisionDelta[] } {
-	// V1 placeholder - no deltas
+	const artifactsDir = resolve("./artifacts/agent-runs");
+	const { manifests } = readArtifactManifests(artifactsDir);
+
+	if (manifests.length === 0) {
+		return {
+			summary: {
+				total: 0,
+				blockedToAllowed: 0,
+				allowedToBlocked: 0,
+				confidenceChanges: 0,
+				unchanged: 0,
+			},
+			topDeltas: [],
+		};
+	}
+
+	const hashA = computeContractHash(contractA);
+	const candidateManifests = manifests.filter(
+		(m) => m.contract?.hash !== hashA,
+	);
+	const baselineManifests = manifests.filter(
+		(m) => m.contract?.hash === hashA,
+	);
+
+	// If no split, use outcome-based synthetic delta
+	const usingBaseline = baselineManifests.length > 0 ? baselineManifests : manifests;
+	const usingCandidate = candidateManifests.length > 0 ? candidateManifests : [];
+
+	const eventsTotal = { count: 0 };
+	const topDeltas: DecisionDelta[] = [];
+
+	let blockedToAllowed = 0;
+	let allowedToBlocked = 0;
+	let confidenceChanges = 0;
+	let unchanged = 0;
+	let eventIndex = 0;
+
+	for (const manifest of usingBaseline) {
+		const baselineEvents = readRunEvents(artifactsDir, manifest.runId, eventsTotal);
+		// Find matching candidate run (same command, different set)
+		const matchingCandidate = usingCandidate.find(
+			(m) => m.command === manifest.command,
+		);
+
+		for (const evt of baselineEvents) {
+			if (evt.eventType !== "decision") continue;
+			const baselineAction = mapOutcomeToAction(evt.payload?.outcome);
+			const baselineConfidence = mapStatusToConfidence(evt.status);
+
+			// Candidate decision: use matching run or infer from contract change
+			let candidateAction: PolicyAction = baselineAction;
+			let candidateConfidence = baselineConfidence;
+
+			if (matchingCandidate) {
+				// Use the candidate run's overall outcome as a signal
+				candidateAction = mapOutcomeToAction(matchingCandidate.outcome);
+				candidateConfidence =
+					matchingCandidate.outcome === "success" ? 0.9 : 0.5;
+			}
+
+			const changed = candidateAction !== baselineAction;
+			let deltaType: DeltaType = "none";
+
+			if (changed) {
+				if (
+					baselineAction === "block" &&
+					candidateAction !== "block"
+				) {
+					deltaType = "blocked_to_allowed";
+					blockedToAllowed++;
+				} else if (
+					baselineAction !== "block" &&
+					candidateAction === "block"
+				) {
+					deltaType = "allowed_to_blocked";
+					allowedToBlocked++;
+				}
+			} else if (
+				Math.abs(candidateConfidence - baselineConfidence) > 0.1
+			) {
+				deltaType = "confidence_change";
+				confidenceChanges++;
+			} else {
+				unchanged++;
+			}
+
+			const delta: DecisionDelta = {
+				eventIndex,
+				baseline: {
+					action: baselineAction,
+					reason: `baseline outcome: ${evt.payload?.outcome ?? evt.status}`,
+					confidence: baselineConfidence,
+					traceEventIndex: eventIndex,
+				},
+				candidate: {
+					action: candidateAction,
+					reason: matchingCandidate
+						? `candidate outcome: ${matchingCandidate.outcome}`
+						: "no matching candidate run",
+					confidence: candidateConfidence,
+					traceEventIndex: eventIndex,
+				},
+				changed,
+				deltaType,
+			};
+
+			// Keep top-5 most impactful (changed only)
+			if (changed && topDeltas.length < 5) {
+				topDeltas.push(delta);
+			}
+			eventIndex++;
+		}
+	}
+
 	return {
 		summary: {
-			total: 0,
-			blockedToAllowed: 0,
-			allowedToBlocked: 0,
-			confidenceChanges: 0,
-			unchanged: 0,
+			total: eventIndex,
+			blockedToAllowed,
+			allowedToBlocked,
+			confidenceChanges,
+			unchanged,
 		},
-		topDeltas: [],
+		topDeltas,
 	};
 }
 
+function mapOutcomeToAction(outcome: string | undefined): PolicyAction {
+	if (!outcome) return "warn";
+	if (outcome === "success" || outcome === "ok") return "allow";
+	if (
+		outcome === "failed" ||
+		outcome === "error" ||
+		outcome === "validation_failed"
+	)
+		return "block";
+	return "warn";
+}
+
+function mapStatusToConfidence(status: string | undefined): number {
+	if (status === "completed") return 0.9;
+	if (status === "failed") return 0.3;
+	if (status === "skipped") return 0.5;
+	return 0.6;
+}
+
+// ============================================================================
+// PHASE 4 — RECOMMENDATION GENERATION
+// ============================================================================
+
 /**
- * Generate recommendations from simulation results.
- * TODO: Phase 4 - Implement actual recommendation generation.
+ * Generate advisory recommendations from simulation metric signals.
+ * All recommendations are non-binding (advisory only).
  */
 function generateRecommendations(
-	_metrics: SimulationMetrics,
-	_deltas: { summary: DeltaSummary; topDeltas: DecisionDelta[] },
-	_confidence: ConfidenceAssessment,
+	metrics: SimulationMetrics,
+	deltas: { summary: DeltaSummary; topDeltas: DecisionDelta[] },
+	confidence: ConfidenceAssessment,
 ): SimulationRecommendation[] {
-	// V1 placeholder - no recommendations
-	return [];
+	const recs: SimulationRecommendation[] = [];
+
+	// Insufficient data: always recommend gathering more
+	if (confidence.level === "insufficient-data") {
+		recs.push({
+			id: "rec-insufficient-data",
+			severity: "high",
+			category: "evidence",
+			title: "Insufficient data for reliable simulation",
+			rationale:
+				`Only ${confidence.dataQuality.effectiveSampleSize} effective sample(s) found. ` +
+				"Results are not statistically meaningful.",
+			suggestion:
+				"Run at least 20 remediation cycles against the baseline contract before comparing.",
+			relatedMetrics: ["effectiveSampleSize", "traceCoverage"],
+			confidence: "high",
+		});
+	}
+
+	// High false block rate increase
+	if (metrics.falseBlockRate.delta > 0.05) {
+		recs.push({
+			id: "rec-high-false-block-rate",
+			severity: "high",
+			category: "policy",
+			title: "Candidate policy increases false block rate",
+			rationale:
+				`False block rate increased by ${(metrics.falseBlockRate.delta * 100).toFixed(1)}% ` +
+				`(${(metrics.falseBlockRate.baseline * 100).toFixed(1)}% → ` +
+				`${(metrics.falseBlockRate.candidate * 100).toFixed(1)}%). ` +
+				"This may increase developer friction without proportional risk reduction.",
+			suggestion:
+				"Review risk-tier thresholds in the candidate contract. Consider raising autoApplyMaxTier or adjusting pattern specificity.",
+			relatedMetrics: ["falseBlockRate"],
+			confidence: confidence.level === "high" ? "high" : "medium",
+		});
+	}
+
+	// Lead time regression
+	if (metrics.leadTimeDelta.delta > 0.5) {
+		recs.push({
+			id: "rec-lead-time-regression",
+			severity: "medium",
+			category: "workflow",
+			title: "Candidate policy increases average lead time",
+			rationale:
+				`Average run duration increased by ${metrics.leadTimeDelta.delta.toFixed(2)}h ` +
+				`under the candidate contract.`,
+			suggestion:
+				"Check if new required checks or stricter timeoutAction settings are causing slowdowns.",
+			relatedMetrics: ["leadTimeDelta"],
+			confidence: "medium",
+		});
+	}
+
+	// Lead time improvement — positive signal
+	if (metrics.leadTimeDelta.delta < -0.5) {
+		recs.push({
+			id: "rec-lead-time-improvement",
+			severity: "info",
+			category: "workflow",
+			title: "Candidate policy reduces average lead time",
+			rationale:
+				`Average run duration decreased by ${Math.abs(metrics.leadTimeDelta.delta).toFixed(2)}h. ` +
+				"This is a positive throughput signal.",
+			suggestion:
+				"Confirm improvement is not due to fewer checks being enforced (verify requiredChecks coverage).",
+			relatedMetrics: ["leadTimeDelta"],
+			confidence: "medium",
+		});
+	}
+
+	// Rollback pressure increase
+	if (metrics.rollbackPressureDelta.delta > 0.1) {
+		recs.push({
+			id: "rec-rollback-pressure",
+			severity: "critical",
+			category: "policy",
+			title: "Candidate policy increases rollback pressure",
+			rationale:
+				`Rollback rate increased by ${(metrics.rollbackPressureDelta.delta * 100).toFixed(1)}% ` +
+				`(${(metrics.rollbackPressureDelta.baseline * 100).toFixed(1)}% → ` +
+				`${(metrics.rollbackPressureDelta.candidate * 100).toFixed(1)}%). ` +
+				"This suggests the candidate policy creates unsafe conditions that trigger auto-rollback.",
+			suggestion:
+				"Do not promote the candidate contract until rollback triggers are fully investigated.",
+			relatedMetrics: ["rollbackPressureDelta"],
+			confidence: "high",
+		});
+	}
+
+	// High delta churn: many decisions changed
+	if (deltas.summary.total > 0) {
+		const changeRate =
+			(deltas.summary.blockedToAllowed + deltas.summary.allowedToBlocked) /
+			deltas.summary.total;
+		if (changeRate > 0.3) {
+			recs.push({
+				id: "rec-high-delta-churn",
+				severity: "medium",
+				category: "threshold",
+				title: "High decision churn between baseline and candidate",
+				rationale:
+					`${(changeRate * 100).toFixed(0)}% of evaluated decisions changed outcome ` +
+					`(${deltas.summary.blockedToAllowed} blocked→allowed, ` +
+					`${deltas.summary.allowedToBlocked} allowed→blocked). ` +
+					"Large-scale changes increase deployment risk.",
+				suggestion:
+					"Consider a staged rollout: apply the candidate to a subset of repos first and monitor for regressions.",
+				relatedMetrics: ["blockedToAllowed", "allowedToBlocked"],
+				confidence: "medium",
+			});
+		}
+	}
+
+	// Prevented risk improvement
+	if (metrics.preventedRisk.delta > 0.05) {
+		recs.push({
+			id: "rec-prevented-risk-improvement",
+			severity: "info",
+			category: "policy",
+			title: "Candidate policy prevents more risk",
+			rationale:
+				`Remediation success rate increased by ${(metrics.preventedRisk.delta * 100).toFixed(1)}% ` +
+				"under the candidate contract. This is a positive safety signal.",
+			suggestion:
+				"Verify improvements are not coming from reduced enforcement scope (confirm requiredChecks coverage).",
+			relatedMetrics: ["preventedRisk"],
+			confidence: confidence.level === "high" ? "high" : "medium",
+		});
+	}
+
+	return recs;
 }
 
 /**
@@ -557,10 +1163,14 @@ export function runSimulate(options: SimulateOptions): SimulateResult {
 		inputs,
 		window,
 		summary: {
-			scenariosEvaluated: 0, // TODO: Phase 3
+			scenariosEvaluated: deltas.summary.total,
 			sufficientDataCount: dataQuality.effectiveSampleSize,
-			tracesProcessed: 0, // TODO: Phase 3
-			artifactsProcessed: 0, // TODO: Phase 3
+			tracesProcessed: readTraceFiles(
+				options.tracesDir ? resolve(options.tracesDir) : resolve("./.traces"),
+			).traceCount,
+			artifactsProcessed: readArtifactManifests(
+				options.artifactsDir ? resolve(options.artifactsDir) : resolve("./artifacts/agent-runs"),
+			).fileCount,
 		},
 		dataQuality,
 		metrics,
