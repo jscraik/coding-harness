@@ -63,7 +63,9 @@ Ask clarifying questions only when one of these blocks safe execution.
 
 ## Capabilities and boundaries
 Use:
-- [`references/setup-and-commands.md`](./references/setup-and-commands.md)
+- [`references/agent-install.json`](./references/agent-install.json) — machine-readable install spec (phases, secrets, scaffolded files)
+- [`references/agent-install-guide.md`](./references/agent-install-guide.md) — human + agent step-by-step install guide
+- [`references/setup-and-commands.md`](./references/setup-and-commands.md) — full command map and lifecycle reference
 - [`references/contract.yaml`](./references/contract.yaml)
 - [`references/evals.yaml`](./references/evals.yaml)
 
@@ -128,9 +130,11 @@ If the repo has no `.harness/` directory, skip creation entirely.
    - Confirm repo root, available toolchain (`rg`, `fd`, `jq`, `node`, `pnpm`), and current harness state.
    - For path-sensitive or multi-step operations, run `source scripts/codex-preflight.sh && preflight_repo` when available.
 3. **Install/upgrade harness**
-   - Use global npm install for consumer repositories: `npm i -g @brainwav/coding-harness`.
-   - Ensure private package auth is wired (`NPM_TOKEN` locally and `secrets.NPM_TOKEN` in GitHub Actions).
+   - Use global npm install for consumer repositories: `mise install -g npm:@brainwav/coding-harness` (preferred) or `npm i -g @brainwav/coding-harness`.
+   - Ensure private package auth is wired (`NPM_TOKEN` locally and as a **CircleCI project environment variable** in CI — not a GitHub Actions secret).
+   - Always run `harness init --ci circleci` (this project's standard CI provider).
    - Use project-local/source execution only when explicitly developing the coding-harness repository itself.
+   - For a full new-project install: follow [`references/agent-install-guide.md`](./references/agent-install-guide.md) or parse [`references/agent-install.json`](./references/agent-install.json).
 4. **Initialize/update contract**
    - First-time: run `harness init` (start with `--dry-run` when risk is unclear; use `--track` before high-impact updates).
    - Existing setup: run `harness init --check-updates` then `harness init --update` when required.
