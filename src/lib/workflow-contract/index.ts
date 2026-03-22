@@ -11,6 +11,7 @@
  * - `checkCICompatibility()` — CI provider policy adapter (Slice 2)
  * - `createStateNormalizer()` — state normalization (Slice 3)
  * - `createGateBundle()` — gate bundle consolidation (Slice 4)
+ * - `generateScorecard()` — operator feedback dashboard (Slice 4a)
  * - Types: WorkflowContract, CheckResult, CheckFinding, etc.
  */
 
@@ -114,3 +115,21 @@ export type {
 	GateInput,
 	GateStatus,
 } from "./gate-bundle.js";
+
+// ─── Operator Feedback Dashboard (Slice 4a) ─────────────────────────────────────
+
+export {
+	generateScorecard,
+	validateScorecard,
+} from "./operator-scorecard.js";
+export type {
+	ConfidenceLevel,
+	ConfidenceRubric,
+	GateStatusRow,
+	OperatorScorecard,
+	RecommendedAction,
+	RemediationSuggestion,
+	ScorecardInput,
+	TestSummary,
+} from "./operator-scorecard.js";
+
