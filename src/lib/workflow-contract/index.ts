@@ -9,6 +9,7 @@
  * - `parseWorkflowFile()` — parse markdown workflow files
  * - `loadRegistry()` / `validateRegistry()` — artifact registry
  * - `checkCICompatibility()` — CI provider policy adapter (Slice 2)
+ * - `createStateNormalizer()` — state normalization (Slice 3)
  * - Types: WorkflowContract, CheckResult, CheckFinding, etc.
  */
 
@@ -68,4 +69,26 @@ export type {
 	MigrationStage,
 	WorkflowCIPolicy,
 } from "./ci-adapter.js";
+
+// ─── State Normalization (Slice 3) ──────────────────────────────────────────────
+
+export {
+	createStateNormalizer,
+	validateAliasMap,
+	validateTransitionsUseCanonical,
+	LINEAR_STATUS_ALIASES,
+	GITHUB_STATUS_ALIASES,
+	ALL_CANONICAL_STATES,
+	CANONICAL_TERMINAL_STATES,
+	CANONICAL_NON_TERMINAL_STATES,
+} from "./state-normalizer.js";
+export type {
+	AliasValidationFinding,
+	AliasValidationResult,
+	CanonicalState,
+	StateNormalizer,
+	StatusAlias,
+	StatusAliasMap,
+	TrackerProvider,
+} from "./state-normalizer.js";
 
