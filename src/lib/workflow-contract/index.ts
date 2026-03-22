@@ -12,6 +12,9 @@
  * - `createStateNormalizer()` — state normalization (Slice 3)
  * - `createGateBundle()` — gate bundle consolidation (Slice 4)
  * - `generateScorecard()` — operator feedback dashboard (Slice 4a)
+ * - `createGitFixture()` — git fixture utilities (Slice 5)
+ * - `assertGatePasses()` / `assertGateFails()` — compact validation (Slice 5)
+ * - `validateModuleTestManifest()` — module test manifest (Slice 5)
  * - Types: WorkflowContract, CheckResult, CheckFinding, etc.
  */
 
@@ -133,3 +136,25 @@ export type {
 	TestSummary,
 } from "./operator-scorecard.js";
 
+// ─── Agent-Native Test Harness (Slice 5) ─────────────────────────────────────
+
+export {
+	createGitFixture,
+	assertGatePasses,
+	assertGateFails,
+	runGateAssertions,
+	validateModuleTestManifest,
+	createRedEvidence,
+	createGreenEvidence,
+	validateTDDEvidencePair,
+	WORKFLOW_CONTRACT_MANIFESTS,
+} from "./test-harness.js";
+export type {
+	EvidenceFormat,
+	GateAssertionResult,
+	GitFixture,
+	GitFixtureOptions,
+	ManifestFinding,
+	ModuleTestManifest,
+	TDDEvidence,
+} from "./test-harness.js";
