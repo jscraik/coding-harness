@@ -6,7 +6,9 @@
  *
  * Public surface:
  * - `checkWorkflowContract()` — validate a workflow contract
+ * - `parseWorkflowFile()` — parse markdown workflow files
  * - `loadRegistry()` / `validateRegistry()` — artifact registry
+ * - `checkCICompatibility()` — CI provider policy adapter (Slice 2)
  * - Types: WorkflowContract, CheckResult, CheckFinding, etc.
  */
 
@@ -49,4 +51,21 @@ export type {
 
 export { parseWorkflowFile, parseFrontmatter } from "./parser.js";
 export type { ParseResult, ParseError } from "./parser.js";
+
+// ─── CI Provider Policy Adapter (Slice 2) ───────────────────────────────────────
+
+export {
+	checkCICompatibility,
+	validateWorkflowCIPolicy,
+	DEFAULT_WORKFLOW_CI_POLICY,
+} from "./ci-adapter.js";
+export type {
+	ActiveCIPolicy,
+	CIAdapterFinding,
+	CIAdapterResult,
+	CIProvider,
+	FailureBehavior,
+	MigrationStage,
+	WorkflowCIPolicy,
+} from "./ci-adapter.js";
 
