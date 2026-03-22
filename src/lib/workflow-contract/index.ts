@@ -10,6 +10,7 @@
  * - `loadRegistry()` / `validateRegistry()` — artifact registry
  * - `checkCICompatibility()` — CI provider policy adapter (Slice 2)
  * - `createStateNormalizer()` — state normalization (Slice 3)
+ * - `createGateBundle()` — gate bundle consolidation (Slice 4)
  * - Types: WorkflowContract, CheckResult, CheckFinding, etc.
  */
 
@@ -92,3 +93,24 @@ export type {
 	TrackerProvider,
 } from "./state-normalizer.js";
 
+// ─── Gate Bundle Consolidation (Slice 4) ────────────────────────────────────────
+
+export {
+	createGateBundle,
+	createGateBundleFromResults,
+	validateGateBundle,
+	isBundleReplaySafe,
+} from "./gate-bundle.js";
+export type {
+	BundleDecision,
+	BundleSummary,
+	GateBundleConfig,
+	GateBundleEnvelope,
+	GateBundleInput,
+	GateCategory,
+	GateEntry,
+	GateFinding,
+	GateFindingSeverity,
+	GateInput,
+	GateStatus,
+} from "./gate-bundle.js";
