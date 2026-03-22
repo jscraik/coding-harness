@@ -137,7 +137,8 @@ function parseMarkdownTable(tableText: string): string[][] {
 
 	const rows: string[][] = [];
 	for (let i = 0; i < lines.length; i++) {
-		const line = lines[i]!;
+		const line = lines.at(i);
+		if (!line) continue;
 
 		// Skip header separator (e.g. | --- | --- |)
 		if (/^\|[\s-:|]+\|$/.test(line)) continue;
@@ -158,9 +159,7 @@ function parseMarkdownTable(tableText: string): string[][] {
  * Extract content under specific markdown headings.
  * Returns a map of heading → content (everything until the next same-level+ heading).
  */
-function extractSections(
-	body: string,
-): Map<string, string> {
+function extractSections(body: string): Map<string, string> {
 	const sections = new Map<string, string>();
 	const lines = body.split(/\r?\n/);
 
@@ -177,7 +176,7 @@ function extractSections(
 					currentContent.join("\n").trim(),
 				);
 			}
-			currentHeading = headingMatch[1]!.trim();
+			currentHeading = headingMatch[1]?.trim();
 			currentContent = [];
 		} else {
 			currentContent.push(line);
@@ -207,8 +206,8 @@ function extractMetadata(
 
 	for (const row of rows) {
 		if (row.length >= 2) {
-			const key = row[0]!.replace(/^`|`$/g, "").trim();
-			const value = row[1]!.replace(/^`|`$/g, "").trim();
+			const key = row[0]?.replace(/^`|`$/g, "").trim();
+			const value = row[1]?.replace(/^`|`$/g, "").trim();
 			fieldMap.set(key, value);
 		}
 	}
@@ -218,9 +217,21 @@ function extractMetadata(
 	const escalation = fieldMap.get("escalation") ?? "";
 	const changeClass = fieldMap.get("change_class") ?? "";
 
-	if (!owner) errors.push({ code: "PARSE_MISSING_FIELD", message: "Metadata table missing 'owner' row" });
-	if (!maxDuration) errors.push({ code: "PARSE_MISSING_FIELD", message: "Metadata table missing 'max_duration' row" });
-	if (!escalation) errors.push({ code: "PARSE_MISSING_FIELD", message: "Metadata table missing 'escalation' row" });
+	if (!owner)
+		errors.push({
+			code: "PARSE_MISSING_FIELD",
+			message: "Metadata table missing 'owner' row",
+		});
+	if (!maxDuration)
+		errors.push({
+			code: "PARSE_MISSING_FIELD",
+			message: "Metadata table missing 'max_duration' row",
+		});
+	if (!escalation)
+		errors.push({
+			code: "PARSE_MISSING_FIELD",
+			message: "Metadata table missing 'escalation' row",
+		});
 
 	return {
 		owner,
@@ -231,25 +242,29 @@ function extractMetadata(
 }
 
 /** Extract validation contract from a 2-column Field|Requirement table. */
-function extractValidationContract(
-	tableContent: string,
-): ValidationContract {
+function extractValidationContract(tableContent: string): ValidationContract {
 	const rows = parseMarkdownTable(tableContent);
 	const fieldMap = new Map<string, string>();
 
 	for (const row of rows) {
 		if (row.length >= 2) {
-			const key = row[0]!.replace(/^`|`$/g, "").trim();
-			const value = row[1]!.replace(/^`|`$/g, "").trim();
+			const key = row[0]?.replace(/^`|`$/g, "").trim();
+			const value = row[1]?.replace(/^`|`$/g, "").trim();
 			fieldMap.set(key, value);
 		}
 	}
 
 	const vc: ValidationContract = {
-		test_mode: (fieldMap.get("test_mode") ?? "n/a") as ValidationContract["test_mode"],
-		test_tier: (fieldMap.get("test_tier") ?? "n/a") as ValidationContract["test_tier"],
-		tracer_bullet_first: (fieldMap.get("tracer_bullet_first") ?? "no") as "yes" | "no",
-		red_evidence_required: (fieldMap.get("red_evidence_required") ?? "no") as "yes" | "no",
+		test_mode: (fieldMap.get("test_mode") ??
+			"n/a") as ValidationContract["test_mode"],
+		test_tier: (fieldMap.get("test_tier") ??
+			"n/a") as ValidationContract["test_tier"],
+		tracer_bullet_first: (fieldMap.get("tracer_bullet_first") ?? "no") as
+			| "yes"
+			| "no",
+		red_evidence_required: (fieldMap.get("red_evidence_required") ?? "no") as
+			| "yes"
+			| "no",
 	};
 
 	const exemptionReason = fieldMap.get("exemption_reason");
@@ -279,7 +294,8 @@ function extractTransitions(
 	const transitions: TransitionRow[] = [];
 
 	// Skip header row when present.
-	const dataRows = rows.length > 0 && isHeaderRow(rows[0]!) ? rows.slice(1) : rows;
+	const dataRows =
+		rows.length > 0 && isHeaderRow(rows.at(0) ?? []) ? rows.slice(1) : rows;
 
 	for (const row of dataRows) {
 		if (row.length !== 5 && row.length !== 7) {
@@ -291,16 +307,16 @@ function extractTransitions(
 		}
 
 		const transition: TransitionRow = {
-			S: row[0]!.trim(),
-			E: row[1]!.trim(),
-			G: row[2]!.trim(),
-			A: row[3]!.trim(),
-			N: row[row.length === 7 ? 6 : 4]!.trim(),
+			S: row[0]?.trim(),
+			E: row[1]?.trim(),
+			G: row[2]?.trim(),
+			A: row[3]?.trim(),
+			N: row[row.length === 7 ? 6 : 4]?.trim(),
 		};
 
 		if (row.length === 7) {
-			transition.P = row[4]!.trim();
-			transition.R = row[5]!.trim();
+			transition.P = row[4]?.trim();
+			transition.R = row[5]?.trim();
 		}
 
 		transitions.push(transition);
@@ -324,9 +340,7 @@ function isHeaderRow(row: string[]): boolean {
 
 	if (row.length === 7) {
 		return (
-			normalized[4] === "p" &&
-			normalized[5] === "r" &&
-			normalized[6] === "n"
+			normalized[4] === "p" && normalized[5] === "r" && normalized[6] === "n"
 		);
 	}
 
@@ -344,7 +358,9 @@ function extractErrorCodes(sectionContent: string): string[] {
 	}
 
 	// Also match codes at start of bullet lines: - CODE_NAME: ...
-	const plainMatches = sectionContent.matchAll(/[-*]\s+([A-Z][A-Z_]+)(?::|\.|\s)/g);
+	const plainMatches = sectionContent.matchAll(
+		/[-*]\s+([A-Z][A-Z_]+)(?::|\.|\s)/g,
+	);
 	for (const m of plainMatches) {
 		if (m[1] && !codes.includes(m[1])) codes.push(m[1]);
 	}
@@ -364,7 +380,9 @@ function extractExecutionModes(sectionContent: string): ExecutionMode[] {
 function extractDryRun(sectionContent: string): DryRunSemantics {
 	return {
 		no_side_effects: /no side[- ]?effects/i.test(sectionContent),
-		deterministic_trace: /deterministic\s+(transition\s+)?trace/i.test(sectionContent),
+		deterministic_trace: /deterministic\s+(transition\s+)?trace/i.test(
+			sectionContent,
+		),
 	};
 }
 
@@ -431,11 +449,7 @@ export function parseWorkflowFile(content: string): ParseResult {
 		sections.get("validation checklist") ||
 		sections.get("invariants") ||
 		"";
-	if (
-		vcSection &&
-		vcSection.includes("|") &&
-		containsValidationContractFields(vcSection)
-	) {
+	if (vcSection?.includes("|") && containsValidationContractFields(vcSection)) {
 		validationContract = extractValidationContract(vcSection);
 	}
 
@@ -456,12 +470,16 @@ export function parseWorkflowFile(content: string): ParseResult {
 	}
 
 	// ── Error Codes ─────────────────────────────────────────────────────────
-	const errorSection = sections.get("error handling") || sections.get("error taxonomy") || "";
+	const errorSection =
+		sections.get("error handling") || sections.get("error taxonomy") || "";
 	const errorCodes = errorSection ? extractErrorCodes(errorSection) : [];
 
 	// ── Execution Modes ─────────────────────────────────────────────────────
-	const modesSection = sections.get("execution modes") || sections.get("modes") || "";
-	const executionModes = modesSection ? extractExecutionModes(modesSection) : [];
+	const modesSection =
+		sections.get("execution modes") || sections.get("modes") || "";
+	const executionModes = modesSection
+		? extractExecutionModes(modesSection)
+		: [];
 
 	// ── Dry-Run ─────────────────────────────────────────────────────────────
 	const dryRunSection =
@@ -472,7 +490,11 @@ export function parseWorkflowFile(content: string): ParseResult {
 	const dryRun = extractDryRun(dryRunSection);
 
 	// ── Log Fields ──────────────────────────────────────────────────────────
-	const logSection = sections.get("observability logs") || sections.get("observability") || sections.get("logging schema") || "";
+	const logSection =
+		sections.get("observability logs") ||
+		sections.get("observability") ||
+		sections.get("logging schema") ||
+		"";
 	const logFields = logSection ? extractLogFields(logSection) : [];
 
 	const contract: WorkflowContract = {
