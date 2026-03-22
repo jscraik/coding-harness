@@ -210,7 +210,9 @@ export function createGateBundle(
 	const gates: GateEntry[] = [];
 	for (const category of GATE_ORDER) {
 		const gateInput = input[category];
-		gates.push(buildGateEntry(category, gateInput, requiredGates.has(category)));
+		gates.push(
+			buildGateEntry(category, gateInput, requiredGates.has(category)),
+		);
 	}
 
 	// Compute decision
@@ -240,11 +242,42 @@ export function createGateBundle(
  */
 export function createGateBundleFromResults(
 	results: {
-		environment?: { passed: boolean; checks?: Array<{ id: string; passed: boolean; message?: string; durationMs?: number }> };
-		policy?: { ok: boolean; output?: { passed: boolean; tier?: string; violatingFiles?: string[] }; error?: { code: string; message: string } };
-		docs?: { exitCode: number; report?: { summary?: { error_count?: number; warning_count?: number }; findings?: Array<{ rule_id: string; severity: string; message: string }> } };
-		tests?: { passed: boolean; total?: number; failed?: number; errors?: string[] };
-		review?: { ok: boolean; output?: { verified: boolean; blockers?: string[] }; error?: { code: string; message: string } };
+		environment?: {
+			passed: boolean;
+			checks?: Array<{
+				id: string;
+				passed: boolean;
+				message?: string;
+				durationMs?: number;
+			}>;
+		};
+		policy?: {
+			ok: boolean;
+			output?: { passed: boolean; tier?: string; violatingFiles?: string[] };
+			error?: { code: string; message: string };
+		};
+		docs?: {
+			exitCode: number;
+			report?: {
+				summary?: { error_count?: number; warning_count?: number };
+				findings?: Array<{
+					rule_id: string;
+					severity: string;
+					message: string;
+				}>;
+			};
+		};
+		tests?: {
+			passed: boolean;
+			total?: number;
+			failed?: number;
+			errors?: string[];
+		};
+		review?: {
+			ok: boolean;
+			output?: { verified: boolean; blockers?: string[] };
+			error?: { code: string; message: string };
+		};
 	},
 	config?: GateBundleConfig,
 ): GateBundleEnvelope {
@@ -383,9 +416,10 @@ export function createGateBundleFromResults(
 /**
  * Validate that a gate bundle envelope is structurally correct.
  */
-export function validateGateBundle(
-	envelope: GateBundleEnvelope,
-): { valid: boolean; errors: string[] } {
+export function validateGateBundle(envelope: GateBundleEnvelope): {
+	valid: boolean;
+	errors: string[];
+} {
 	const errors: string[] = [];
 
 	if (envelope.schemaVersion !== "gate-bundle/v1") {
@@ -481,7 +515,8 @@ function buildGateEntry(
 		category,
 		status: input.passed ? "pass" : "fail",
 		required,
-		summary: input.summary ?? `${category} gate ${input.passed ? "passed" : "failed"}`,
+		summary:
+			input.summary ?? `${category} gate ${input.passed ? "passed" : "failed"}`,
 		durationMs: input.durationMs ?? -1,
 		findings,
 	};
@@ -501,9 +536,7 @@ function computeDecision(gates: GateEntry[]): BundleDecision {
 	}
 
 	// If a required gate was skipped, the bundle is blocked
-	const requiredSkips = gates.filter(
-		(g) => g.required && g.status === "skip",
-	);
+	const requiredSkips = gates.filter((g) => g.required && g.status === "skip");
 	if (requiredSkips.length > 0) {
 		return "blocked";
 	}
@@ -538,9 +571,7 @@ function computeSummary(gates: GateEntry[]): BundleSummary {
 		}
 
 		findingCount += gate.findings.length;
-		errorCount += gate.findings.filter(
-			(f) => f.severity === "error",
-		).length;
+		errorCount += gate.findings.filter((f) => f.severity === "error").length;
 		warningCount += gate.findings.filter(
 			(f) => f.severity === "warning",
 		).length;
@@ -563,10 +594,7 @@ function computeSummary(gates: GateEntry[]): BundleSummary {
 	};
 }
 
-function computeIdempotencyKey(
-	gates: GateEntry[],
-	timestamp: string,
-): string {
+function computeIdempotencyKey(gates: GateEntry[], timestamp: string): string {
 	// Build a deterministic string from the gate results
 	const parts: string[] = [timestamp];
 	for (const gate of gates) {

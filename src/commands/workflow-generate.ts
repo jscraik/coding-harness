@@ -152,7 +152,10 @@ function extractSections(content: string): Map<string, string> {
 		const headingMatch = line.match(/^##\s+(.+)$/);
 		if (headingMatch?.[1]) {
 			if (currentHeading) {
-				sections.set(normalizeHeading(currentHeading), currentContent.join("\n").trim());
+				sections.set(
+					normalizeHeading(currentHeading),
+					currentContent.join("\n").trim(),
+				);
 			}
 			currentHeading = headingMatch[1];
 			currentContent = [];
@@ -164,7 +167,10 @@ function extractSections(content: string): Map<string, string> {
 	}
 
 	if (currentHeading) {
-		sections.set(normalizeHeading(currentHeading), currentContent.join("\n").trim());
+		sections.set(
+			normalizeHeading(currentHeading),
+			currentContent.join("\n").trim(),
+		);
 	}
 
 	return sections;
@@ -230,7 +236,12 @@ function extractErrorsSection(
 	sections: Map<string, string>,
 ): WorkflowSpec["errors"] {
 	const errors: WorkflowSpec["errors"] = [];
-	const section = getSection(sections, "errors", "error handling", "error taxonomy");
+	const section = getSection(
+		sections,
+		"errors",
+		"error handling",
+		"error taxonomy",
+	);
 	if (!section) return errors;
 
 	const lines = section.split("\n");
@@ -262,9 +273,7 @@ function extractErrorsSection(
 			continue;
 		}
 
-		const bulletMatch = trimmed.match(
-			/^[-*]\s+`?([A-Z_]+)`?\s*:\s*(.+)$/,
-		);
+		const bulletMatch = trimmed.match(/^[-*]\s+`?([A-Z_]+)`?\s*:\s*(.+)$/);
 		if (
 			bulletMatch?.[1] &&
 			bulletMatch[2] &&
@@ -387,10 +396,7 @@ function extractInvariants(sections: Map<string, string>): string[] {
 			continue;
 		}
 
-		if (
-			trimmed.startsWith("|") &&
-			!/^\|\s*[-:\s|]+\|?$/.test(trimmed)
-		) {
+		if (trimmed.startsWith("|") && !/^\|\s*[-:\s|]+\|?$/.test(trimmed)) {
 			const cells = trimmed
 				.split("|")
 				.slice(1, -1)

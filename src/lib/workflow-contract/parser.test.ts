@@ -1,12 +1,12 @@
-import { describe, expect, it } from "vitest";
 import { readFileSync } from "node:fs";
 import { resolve } from "node:path";
-import {
-	parseWorkflowFile,
-	parseFrontmatter,
-	type ParseError,
-} from "./parser.js";
+import { describe, expect, it } from "vitest";
 import { checkWorkflowContract } from "./checker.js";
+import {
+	type ParseError,
+	parseFrontmatter,
+	parseWorkflowFile,
+} from "./parser.js";
 
 // ─── Helpers ────────────────────────────────────────────────────────────────────
 
@@ -143,18 +143,12 @@ describe("parseWorkflowFile", () => {
 	it("extracts validation contract", () => {
 		const result = parseWorkflowFile(minimalWorkflow());
 		expect(result.contract.validation_contract).toBeDefined();
-		expect(result.contract.validation_contract.test_mode).toBe(
-			"tdd-required",
-		);
-		expect(result.contract.validation_contract.test_tier).toBe(
-			"integration",
-		);
-		expect(result.contract.validation_contract.tracer_bullet_first).toBe(
+		expect(result.contract.validation_contract.test_mode).toBe("tdd-required");
+		expect(result.contract.validation_contract.test_tier).toBe("integration");
+		expect(result.contract.validation_contract.tracer_bullet_first).toBe("yes");
+		expect(result.contract.validation_contract.red_evidence_required).toBe(
 			"yes",
 		);
-		expect(
-			result.contract.validation_contract.red_evidence_required,
-		).toBe("yes");
 	});
 
 	it("extracts validation contract from an Invariants table", () => {
@@ -164,12 +158,8 @@ describe("parseWorkflowFile", () => {
 		);
 		const result = parseWorkflowFile(content);
 		expect(result.contract.validation_contract).toBeDefined();
-		expect(result.contract.validation_contract.test_mode).toBe(
-			"tdd-required",
-		);
-		expect(result.contract.validation_contract.test_tier).toBe(
-			"integration",
-		);
+		expect(result.contract.validation_contract.test_mode).toBe("tdd-required");
+		expect(result.contract.validation_contract.test_tier).toBe("integration");
 	});
 
 	it("extracts transitions from canonical table", () => {
@@ -353,16 +343,11 @@ describe("parse → check integration", () => {
 describe("real WORKFLOW.md integration", () => {
 	it("parses the real WORKFLOW.md file", () => {
 		const repoRoot = resolve(__dirname, "../../..");
-		const content = readFileSync(
-			resolve(repoRoot, "WORKFLOW.md"),
-			"utf-8",
-		);
+		const content = readFileSync(resolve(repoRoot, "WORKFLOW.md"), "utf-8");
 		const result = parseWorkflowFile(content);
 
 		// Should extract metadata
-		expect(result.contract.metadata.owner).toBe(
-			"coding-harness-maintainers",
-		);
+		expect(result.contract.metadata.owner).toBe("coding-harness-maintainers");
 		expect(result.contract.metadata.max_duration).toBeTruthy();
 		expect(result.contract.metadata.escalation).toBeTruthy();
 
@@ -372,10 +357,7 @@ describe("real WORKFLOW.md integration", () => {
 
 	it("extracts transitions from real WORKFLOW.md", () => {
 		const repoRoot = resolve(__dirname, "../../..");
-		const content = readFileSync(
-			resolve(repoRoot, "WORKFLOW.md"),
-			"utf-8",
-		);
+		const content = readFileSync(resolve(repoRoot, "WORKFLOW.md"), "utf-8");
 		const result = parseWorkflowFile(content);
 
 		expect(result.contract.transitions.length).toBeGreaterThan(0);
@@ -386,10 +368,7 @@ describe("real WORKFLOW.md integration", () => {
 
 	it("extracts all 4 error codes from real WORKFLOW.md", () => {
 		const repoRoot = resolve(__dirname, "../../..");
-		const content = readFileSync(
-			resolve(repoRoot, "WORKFLOW.md"),
-			"utf-8",
-		);
+		const content = readFileSync(resolve(repoRoot, "WORKFLOW.md"), "utf-8");
 		const result = parseWorkflowFile(content);
 
 		expect(result.contract.error_codes).toContain("VALIDATION_ERROR");
@@ -400,10 +379,7 @@ describe("real WORKFLOW.md integration", () => {
 
 	it("extracts both execution modes from real WORKFLOW.md", () => {
 		const repoRoot = resolve(__dirname, "../../..");
-		const content = readFileSync(
-			resolve(repoRoot, "WORKFLOW.md"),
-			"utf-8",
-		);
+		const content = readFileSync(resolve(repoRoot, "WORKFLOW.md"), "utf-8");
 		const result = parseWorkflowFile(content);
 
 		expect(result.contract.execution_modes).toContain("STRICT");
@@ -412,10 +388,7 @@ describe("real WORKFLOW.md integration", () => {
 
 	it("extracts dry-run semantics from real WORKFLOW.md", () => {
 		const repoRoot = resolve(__dirname, "../../..");
-		const content = readFileSync(
-			resolve(repoRoot, "WORKFLOW.md"),
-			"utf-8",
-		);
+		const content = readFileSync(resolve(repoRoot, "WORKFLOW.md"), "utf-8");
 		const result = parseWorkflowFile(content);
 
 		expect(result.contract.dry_run.no_side_effects).toBe(true);
@@ -424,10 +397,7 @@ describe("real WORKFLOW.md integration", () => {
 
 	it("extracts observability log fields from real WORKFLOW.md", () => {
 		const repoRoot = resolve(__dirname, "../../..");
-		const content = readFileSync(
-			resolve(repoRoot, "WORKFLOW.md"),
-			"utf-8",
-		);
+		const content = readFileSync(resolve(repoRoot, "WORKFLOW.md"), "utf-8");
 		const result = parseWorkflowFile(content);
 
 		expect(result.contract.log_fields).toContain("workflow_id");

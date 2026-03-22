@@ -317,9 +317,7 @@ export function validateAliasMap(
 
 	// Check that every canonical state has at least one alias
 	for (const state of ALL_CANONICAL_STATES) {
-		const aliases = aliasMap.aliases.filter(
-			(a) => a.canonical_state === state,
-		);
+		const aliases = aliasMap.aliases.filter((a) => a.canonical_state === state);
 		if (aliases.length === 0) {
 			findings.push({
 				code: "ALIAS_MISSING_STATE",

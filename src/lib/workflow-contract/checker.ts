@@ -9,10 +9,10 @@
  */
 
 import {
+	type ChangeClass,
 	type CheckFinding,
 	type CheckResult,
 	type CheckSeverity,
-	type ChangeClass,
 	type ExecutionMode,
 	REQUIRED_ERROR_CODES,
 	REQUIRED_LOG_FIELDS,
@@ -133,10 +133,7 @@ function checkMetadata(
 		);
 	}
 
-	if (
-		!meta.change_class ||
-		!VALID_CHANGE_CLASSES.includes(meta.change_class)
-	) {
+	if (!meta.change_class || !VALID_CHANGE_CLASSES.includes(meta.change_class)) {
 		findings.push(
 			error(
 				"INVALID_CHANGE_CLASS",
@@ -230,10 +227,7 @@ function checkValidationContract(
 	}
 
 	// Invariant: test_mode = tdd-required implies red_evidence_required = yes
-	if (
-		vc.test_mode === "tdd-required" &&
-		vc.red_evidence_required !== "yes"
-	) {
+	if (vc.test_mode === "tdd-required" && vc.red_evidence_required !== "yes") {
 		findings.push(
 			error(
 				"TDD_REQUIRES_RED_EVIDENCE",
@@ -334,7 +328,7 @@ function checkTransitions(
 						"INCOMPLETE_TRANSITION_ROW",
 						`Transition row ${i} has empty or missing field '${field}'`,
 						`transitions[${i}].${field}`,
-						`Each transition row must have 5 non-empty cells: S, E, G, A, N`,
+						"Each transition row must have 5 non-empty cells: S, E, G, A, N",
 					),
 				);
 			}
@@ -581,9 +575,7 @@ function checkLogFields(
  * Pure function — no I/O, no side effects. Returns a machine-readable
  * pass/fail report with all findings.
  */
-export function checkWorkflowContract(
-	contract: WorkflowContract,
-): CheckResult {
+export function checkWorkflowContract(contract: WorkflowContract): CheckResult {
 	const findings: CheckFinding[] = [];
 
 	// Run all checks

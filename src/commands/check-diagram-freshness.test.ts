@@ -45,14 +45,14 @@ function createRepo(refreshScript: string): string {
 	write(root, "scripts/refresh-diagram-context.sh", refreshScript);
 	write(root, "src/example.ts", "export const example = 1;\n");
 	write(root, "src/example.test.ts", "export const exampleTest = 1;\n");
-	write(root, "AI/diagrams/system.mmd", "graph TD\n  A[Start] --> B[Finish]\n");
+	write(root, ".diagram/system.mmd", "graph TD\n  A[Start] --> B[Finish]\n");
 	write(
 		root,
-		"AI/diagrams/manifest.json",
+		".diagram/manifest.json",
 		JSON.stringify(
 			{
 				generatedAt: "2026-03-11T00:00:00Z",
-				diagrams: [{ id: "system", path: "AI/diagrams/system.mmd" }],
+				diagrams: [{ id: "system", path: ".diagram/system.mmd" }],
 			},
 			null,
 			2,
@@ -60,12 +60,12 @@ function createRepo(refreshScript: string): string {
 	);
 	write(
 		root,
-		"AI/context/diagram-context.md",
+		".diagram/context/diagram-context.md",
 		"# Diagram Context Pack\n\nGenerated: 2026-03-11T00:00:00Z\n\n## system\n\n```mermaid\ngraph TD\n  A[Start] --> B[Finish]\n```\n",
 	);
 	write(
 		root,
-		"AI/context/diagram-context.meta.json",
+		".diagram/context/diagram-context.meta.json",
 		JSON.stringify(
 			{
 				schema_version: 1,
@@ -142,7 +142,7 @@ from pathlib import Path
 import json
 
 fence = chr(96) * 3
-context = Path("AI/context/diagram-context.md")
+context = Path(".diagram/context/diagram-context.md")
 context.write_text(
     (
         "# Diagram Context Pack\\n\\nGenerated: 2026-03-12T10:00:00Z\\n\\n## system\\n\\n"
@@ -155,12 +155,12 @@ context.write_text(
     encoding="utf-8",
 )
 
-manifest = Path("AI/diagrams/manifest.json")
+manifest = Path(".diagram/manifest.json")
 manifest.write_text(
     json.dumps(
         {
             "generatedAt": "2026-03-12T10:00:00Z",
-            "diagrams": [{"id": "system", "path": "AI/diagrams/system.mmd"}],
+            "diagrams": [{"id": "system", "path": ".diagram/system.mmd"}],
         },
         indent=2,
     )
@@ -168,7 +168,7 @@ manifest.write_text(
     encoding="utf-8",
 )
 
-meta = Path("AI/context/diagram-context.meta.json")
+meta = Path(".diagram/context/diagram-context.meta.json")
 meta.write_text(
     json.dumps(
         {
@@ -199,7 +199,7 @@ PY
 		const root = createRepo(`#!/usr/bin/env bash
 set -euo pipefail
 printf '%s\n' "$*" > .refresh-invoked
-printf '\n## Drift detected\n' >> AI/context/diagram-context.md
+printf '\n## Drift detected\n' >> .diagram/context/diagram-context.md
 `);
 		roots.push(root);
 
@@ -210,6 +210,6 @@ printf '\n## Drift detected\n' >> AI/context/diagram-context.md
 		expect(result.stdout).toContain(
 			"Error: architecture diagram artifacts are stale after refresh.",
 		);
-		expect(result.stdout).toContain("AI/context/diagram-context.md");
+		expect(result.stdout).toContain(".diagram/context/diagram-context.md");
 	});
 });

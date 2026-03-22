@@ -63,6 +63,11 @@ describe("simulate output path validation", () => {
 			json: true,
 		});
 
+		// Debug: log the error if the result is not ok
+		if (!result.ok) {
+			console.log("Result error:", JSON.stringify(result.error, null, 2));
+		}
+
 		expect(result.ok).toBe(true);
 		expect(result.exitCode).toBe(SIMULATE_EXIT_CODES.SUCCESS);
 		expect(existsSync(join(process.cwd(), outputPath))).toBe(true);

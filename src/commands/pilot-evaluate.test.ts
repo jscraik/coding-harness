@@ -676,7 +676,9 @@ describe("pilot-evaluate", () => {
 
 	describe("capturePilotMetrics", () => {
 		it("returns metrics with errors when artifacts missing", () => {
-			const { metrics, errors } = capturePilotMetrics(artifactsDir, { runRecordsDir });
+			const { metrics, errors } = capturePilotMetrics(artifactsDir, {
+				runRecordsDir,
+			});
 			// Function returns metrics even with missing files (graceful degradation)
 			// but errors will indicate missing files
 			expect(errors.length).toBeGreaterThan(0);
@@ -722,7 +724,9 @@ describe("pilot-evaluate", () => {
 			writeFileSync(join(artifactsDir, "remediation-events.jsonl"), "");
 			writeFileSync(join(artifactsDir, "incidents.jsonl"), "");
 
-			const { metrics, errors } = capturePilotMetrics(artifactsDir, { runRecordsDir });
+			const { metrics, errors } = capturePilotMetrics(artifactsDir, {
+				runRecordsDir,
+			});
 			expect(errors).toEqual([]);
 			expect(metrics).not.toBeNull();
 			expect(metrics?.sampleSize).toBe(1);

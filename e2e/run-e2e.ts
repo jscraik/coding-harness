@@ -34,28 +34,7 @@ interface RunResult {
 	recordingsDir?: string;
 }
 
-function printUsage(): void {
-	console.log(`
-E2E Test Runner for coding-harness
-
-Usage: pnpm e2e [options] [test-pattern]
-
-Options:
-  --bail              Stop on first failure
-  --reporter <name>   Reporter to use (verbose, json, html) [default: verbose]
-  --no-record         Disable API call recording
-  --parallel <n>      Number of concurrent tests [default: 3]
-  --timeout <ms>      Test timeout in milliseconds [default: 300000]
-  --help              Show this help
-
-Examples:
-  pnpm e2e                                    # Run all E2E tests
-  pnpm e2e github-integration                 # Run specific test file
-  pnpm e2e --bail                             # Stop on first failure
-  pnpm e2e --parallel 1                       # Run tests sequentially
-  pnpm e2e --reporter json                    # Use JSON reporter
-`);
-}
+function printUsage(): void {}
 
 function parseArgs(args: string[]): { options: RunOptions; pattern?: string } {
 	const options: RunOptions = {
@@ -103,11 +82,8 @@ function parseArgs(args: string[]): { options: RunOptions; pattern?: string } {
 }
 
 function validateEnvironment(): void {
-	console.log("🔍 Validating E2E environment...\n");
-
 	try {
 		validateE2EEnv();
-		console.log("✅ Environment variables validated\n");
 	} catch (error) {
 		console.error("❌ Environment validation failed:\n");
 		console.error(error instanceof Error ? error.message : String(error));
@@ -115,13 +91,7 @@ function validateEnvironment(): void {
 	}
 
 	// Verify API tokens work
-	const env = loadE2EEnv();
-
-	console.log("🔑 Testing API credentials...\n");
-	console.log(`  GitHub Owner: ${env.githubOwner}`);
-	console.log(`  GitHub Repo: ${env.githubTestRepo}`);
-	console.log(`  Linear Team: ${env.linearTestTeam}`);
-	console.log();
+	const _env = loadE2EEnv();
 }
 
 function setupRecordingsDir(): string {
@@ -151,13 +121,6 @@ async function runTests(
 	const recordingsDir = setupRecordingsDir();
 	generateRunConfig(options, recordingsDir);
 
-	console.log("🚀 Starting E2E tests...\n");
-	console.log(`  Pattern: ${pattern || "all tests"}`);
-	console.log(`  Parallel: ${options.parallel}`);
-	console.log(`  Timeout: ${options.timeout}ms`);
-	console.log(`  Recordings: ${recordingsDir}`);
-	console.log();
-
 	// Build vitest command
 	const args = ["vitest", "run", "--config", "e2e/vitest.e2e.config.ts"];
 
@@ -183,8 +146,6 @@ async function runTests(
 			args.push(pattern);
 		}
 	}
-
-	console.log(`  Command: pnpm ${args.join(" ")}\n`);
 
 	const result = spawnSync("pnpm", args, {
 		stdio: "inherit",
@@ -216,19 +177,11 @@ async function main(): Promise<void> {
 	validateEnvironment();
 
 	const result = await runTests(options, pattern);
-
-	console.log(`\n${"=".repeat(60)}`);
 	if (result.success) {
-		console.log("✅ E2E tests completed successfully");
 	} else {
-		console.log("❌ E2E tests failed");
 	}
-	console.log(`   Duration: ${(result.durationMs / 1000).toFixed(2)}s`);
-	console.log(`   Exit Code: ${result.exitCode}`);
 	if (result.recordingsDir) {
-		console.log(`   Recordings: ${result.recordingsDir}`);
 	}
-	console.log(`${"=".repeat(60)}\n`);
 
 	process.exit(result.exitCode);
 }

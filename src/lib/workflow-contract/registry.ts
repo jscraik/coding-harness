@@ -9,7 +9,7 @@
  */
 
 import { readFile } from "node:fs/promises";
-import { resolve, dirname } from "node:path";
+import { dirname, resolve } from "node:path";
 
 // ─── Types ──────────────────────────────────────────────────────────────────────
 
@@ -242,10 +242,7 @@ export function validateRegistry(
 			});
 		}
 
-		if (
-			entry.deprecation_policy === "sunset-date" &&
-			!entry.sunset_date
-		) {
+		if (entry.deprecation_policy === "sunset-date" && !entry.sunset_date) {
 			findings.push({
 				code: "SUNSET_NEEDS_DATE",
 				severity: "warning",
