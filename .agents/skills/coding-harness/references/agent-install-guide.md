@@ -10,13 +10,15 @@
 - [Phase 1: Auth and private registry](#phase-1-auth-and-private-registry)
 - [Phase 2: Install harness globally](#phase-2-install-harness-globally)
 - [Phase 3: Init scaffold](#phase-3-init-scaffold)
+- [Phase 3b: Migrate away from GitHub Actions (if applicable)](#phase-3b-migrate-away-from-github-actions)
 - [Phase 4: mise tool baseline](#phase-4-mise-tool-baseline)
-- [Phase 5: CircleCI environment variables and GitHub secrets](#phase-5-circleci-environment-variables-and-github-secrets)
+- [Phase 5: CircleCI environment variables](#phase-5-circleci-environment-variables)
 - [Phase 6: Branch protection](#phase-6-branch-protection)
 - [Phase 7: Greptile setup](#phase-7-greptile-setup)
 - [Phase 8: Memory layer bootstrap](#phase-8-memory-layer-bootstrap)
 - [Phase 9: Validate end-to-end](#phase-9-validate-end-to-end)
 - [What harness init scaffolds (file inventory)](#what-harness-init-scaffolds)
+- [What is enforced, adaptable, and optional](#what-is-enforced-adaptable-and-optional)
 - [Capability boundaries](#capability-boundaries)
 - [Troubleshooting](#troubleshooting)
 
@@ -107,8 +109,55 @@ harness init --ci circleci
 harness init --check-updates
 ```
 
-> **CI provider:** Always use `--ci circleci`. GitHub Actions is used **only** for
-> the Greptile review trigger (a GitHub App webhook), not for CI quality gates.
+> **CI provider:** `circleci` is the default — you do not need to pass `--ci circleci`
+> explicitly, but it is safe to do so. Greptile review runs as a **CircleCI job**
+> (`greptile-review`) — no GitHub Actions workflow file is written or required.
+
+---
+
+## Phase 3b: Migrate away from GitHub Actions
+
+**Skip this phase if the project has no `.github/workflows/` directory.**
+
+If the target repo already has GitHub Actions workflows, use the dedicated migration
+command to remove them safely and cut over to CircleCI. This is a staged, reversible
+process — do not manually delete workflow files.
+
+```bash
+# 3b.1 — Preview what will change (safe, no writes)
+harness ci-migrate prepare --provider circleci --dry-run
+```
+
+Review the output. Confirm the listed `.github/workflows/` files will be removed and
+that the CircleCI config is already present (from Phase 3). If anything looks wrong, STOP.
+
+```bash
+# 3b.2 — Create a recovery snapshot before applying
+harness ci-migrate prepare --provider circleci
+
+# 3b.3 — Apply the migration
+harness ci-migrate commit
+
+# 3b.4 — Verify migration is complete
+harness ci-migrate verify
+```
+
+**If something goes wrong:**
+
+```bash
+# Roll back to the pre-migration state
+harness ci-migrate abort
+```
+
+**What `ci-migrate` does:**
+- Removes `.github/workflows/` CI job files that conflict with CircleCI
+- Updates `harness.contract.json` `activeProvider` to `circleci`
+- Updates `.harness/ci-required-checks.json` to CircleCI check names
+- Creates a snapshot so rollback is always available
+- Does **not** touch `.github/PULL_REQUEST_TEMPLATE.md`, `CODEOWNERS`, or `ISSUE_TEMPLATE/` — those are PR hygiene, not CI
+
+> **Agent rule:** Never manually delete `.github/workflows/` files. Always use
+> `harness ci-migrate` so the snapshot + rollback path is available.
 
 **Key files every project MUST have after init:**
 
@@ -118,8 +167,7 @@ harness.contract.json               — governance contract (source of truth)
 .greptile/config.json               — Greptile AI review config (repo-scoped)
 .greptile/rules.md                  — Greptile custom rules
 .greptile/files.json                — Greptile context files
-.github/workflows/greptile-review.yml — Greptile GitHub App trigger only
-.circleci/config.yml                — All CI jobs (lint, test, security, release)
+.circleci/config.yml                — All CI jobs (lint, test, security, greptile-review, release)
 .github/PULL_REQUEST_TEMPLATE.md    — PR checklist
 scripts/codex-preflight.sh          — agent preflight script (source at session start)
 scripts/check-environment.sh        — harness env readiness script
@@ -182,6 +230,7 @@ Harness cannot create them — surface this to the user if any are missing.
 |---|---|---|
 | `NPM_TOKEN` | Install `@brainwav/coding-harness` in CI jobs | npm / 1Password |
 | `GITHUB_PERSONAL_ACCESS_TOKEN` | `gh` CLI auth for review-gate, PR creation, branch ops | GitHub PAT |
+| `GREPTILE_API_KEY` | Greptile API call in the `greptile-review` CircleCI job | Greptile dashboard |
 | `LINEAR_API_KEY` | Linear issue sync job | Linear settings |
 
 Check via CircleCI API:
@@ -193,17 +242,8 @@ curl -s --request GET \
   --header "Circle-Token: $CIRCLE_TOKEN" | jq '[.items[].name]'
 ```
 
-### GitHub repository secrets
-
-Used **only** by the Greptile GitHub Actions trigger — not CircleCI.
-
-| Secret name | Purpose | Source |
-|---|---|---|
-| `GREPTILE_API_KEY` | Greptile AI review trigger | Greptile dashboard |
-
-```bash
-gh secret list --repo <owner>/<repo>
-```
+> **No GitHub Actions secrets are required.** All CI including Greptile runs through
+> CircleCI. The only GitHub-side configuration is the Greptile GitHub App installation.
 
 ---
 
@@ -222,10 +262,13 @@ harness branch-protect \
 Required checks applied by `--ecosystem harness`:
 
 ```
-pr-template, linear-gate, risk-policy-gate, dependency-review,
-actions-pinning, consistency-drift-health, docs-gate,
+pr-template, linear-gate, risk-policy-gate, dependency-scan,
+orb-pinning, consistency-drift-health, docs-gate,
 lint, typecheck, test, audit, check, memory, security-scan, Greptile Review
 ```
+
+> `dependency-scan` = Trivy SCA (replaces GitHub Actions `dependency-review`)
+> `orb-pinning` = CircleCI orb version enforcement (replaces GitHub Actions `actions-pinning`)
 
 Verify after applying:
 
@@ -263,11 +306,18 @@ harness verify-greptile \
 If this fails: instruct the user to install the Greptile GitHub App from
 https://app.greptile.com and grant it access to this repository.
 
-### 7.3 Confirm Greptile workflow is present
+### 7.3 Confirm GREPTILE_API_KEY is set in CircleCI
+
+The `greptile-review` CircleCI job calls the Greptile API directly using
+`GREPTILE_API_KEY`. Verify it is set as a CircleCI project environment variable:
 
 ```bash
-cat .github/workflows/greptile-review.yml | head -5
+curl -s --request GET \
+  --url "https://circleci.com/api/v2/project/github/<owner>/<repo>/envvar" \
+  --header "Circle-Token: $CIRCLE_TOKEN" | jq '[.items[].name]' | grep GREPTILE
 ```
+
+If missing: ask the user to add `GREPTILE_API_KEY` in CircleCI project settings → Environment Variables.
 
 ---
 
@@ -350,7 +400,10 @@ Full file inventory — all paths relative to repo root.
 | `.greptile/config.json` | AI review config (strictness, rules, repo scope) |
 | `.greptile/rules.md` | Custom review rules |
 | `.greptile/files.json` | Priority context files for review |
-| `.github/workflows/greptile-review.yml` | GitHub App trigger (not a CI gate) |
+
+Greptile review is triggered via the `greptile-review` job in `.circleci/config.yml`.
+No GitHub Actions workflow file is needed — the Greptile GitHub App is installed
+on the repository and the CircleCI job calls its API.
 
 ### CI pipeline (CircleCI)
 
@@ -399,6 +452,65 @@ Full file inventory — all paths relative to repo root.
 | File | Purpose |
 |---|---|
 | `.codex/environments/environment.toml` | Codex action blocks (auto-generated from package.json scripts) |
+
+---
+
+## What is enforced, adaptable, and optional
+
+Use this table to decide whether to touch a file. When in doubt, check the column.
+
+### Enforced — harness owns these files
+
+`harness init --update` will overwrite these with the latest template. Do not
+hand-edit them — changes will be lost on the next update. Use harness commands to
+change the values they encode (for example `harness branch-protect` for required checks).
+
+| File | Owned by |
+|---|---|
+| `harness.contract.json` | `harness init` \u2014 source of truth for all policy |
+| `.harness/ci-required-checks.json` | `harness init` \u2014 required check list |
+| `memory.json` | `harness init` \u2014 harness state file |
+| `.circleci/config.yml` | `harness init` \u2014 full CI pipeline |
+| `scripts/check-environment.sh` | `harness init` \u2014 generated from tooling baseline |
+| `.codex/environments/environment.toml` | `harness init` \u2014 **only safe to edit if not harness-autogenerated** |
+
+### Adaptable — harness writes a starter, you own it after
+
+These are written once by `harness init` but treated as project-owned after that.
+`harness init --update` will **not** overwrite them unless you pass `--force`.
+
+| File | What to customise |
+|---|---|
+| `.greptile/rules.md` | Add project-specific review rules |
+| `.greptile/files.json` | Add priority context files for review |
+| `.greptile/config.json` | Adjust strictness or scope |
+| `.github/CODEOWNERS` | Set actual owners for this repo |
+| `.github/PULL_REQUEST_TEMPLATE.md` | Add project-specific checklist items |
+| `CONTRIBUTING.md` | Add project-specific contribution guidance |
+| `Makefile` | Add project-specific tasks |
+| `biome.json` | Tune lint/format rules for this project |
+| `prek.toml` | Add/remove hooks for this project |
+| `.mise.toml` | Pin additional tools needed by this project |
+| `.gitleaks.toml` | Add project-specific secret scan exclusions |
+| `scripts/codex-preflight.sh` | Add project-specific preflight checks |
+
+### Optional tooling — install only if the project needs it
+
+These are **not** scaffolded by `harness init`. Install with `mise install -g` if the
+project uses them. `harness check-environment` will surface which are missing.
+
+| Tool | Install command | When needed |
+|---|---|---|
+| `@brainwav/diagram` | `mise install -g npm:@brainwav/diagram` | Architecture diagram generation |
+| `@argos-ci/cli` | `mise install -g npm:@argos-ci/cli` | Visual regression CI |
+| `@mermaid-js/mermaid-cli` (`mmdc`) | `mise install -g npm:@mermaid-js/mermaid-cli` | Mermaid diagram rendering |
+| `agentation` | `mise install -g npm:agentation` | Agentation annotation CLI |
+| `agentation-mcp` | `mise install -g npm:agentation-mcp` | Agentation MCP server |
+| `agent-browser` | `mise install -g npm:agent-browser` | Deterministic browser automation |
+| `beautiful-mermaid` | `mise install -g npm:beautiful-mermaid` | Styled diagram output |
+| `markdownlint-cli2` | `mise install -g npm:markdownlint-cli2` | Docs linting |
+| `wrangler` | `mise install -g npm:wrangler` | Cloudflare Workers deploy |
+| `prek` | `mise install -g cargo:prek` | Pre-commit/pre-push hooks (required for hooks to run) |
 
 ---
 

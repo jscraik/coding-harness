@@ -17,9 +17,7 @@ const EXPECTED_TEMPLATE_PATHS = [
 	".greptile/config.json",
 	".greptile/rules.md",
 	".greptile/files.json",
-	".github/workflows/greptile-review.yml",
-	".github/workflows/pr-pipeline.yml",
-	".github/workflows/secret-scan.yml",
+	".circleci/config.yml",
 	"CONTRIBUTING.md",
 	".github/PULL_REQUEST_TEMPLATE.md",
 	"scripts/validate-commit-msg.js",
@@ -132,15 +130,13 @@ describe("runInit", () => {
 				expect(result.output.skipped).toHaveLength(0);
 			}
 
-			// Verify files were created
+			// Verify files were created (default provider is circleci)
 			expect(existsSync(join(tempDir, "harness.contract.json"))).toBe(true);
-			expect(
-				existsSync(join(tempDir, ".github/workflows/pr-pipeline.yml")),
-			).toBe(true);
+			expect(existsSync(join(tempDir, ".circleci/config.yml"))).toBe(true);
 			expect(existsSync(join(tempDir, ".greptile/config.json"))).toBe(true);
 			expect(
 				existsSync(join(tempDir, ".github/workflows/greptile-review.yml")),
-			).toBe(true);
+			).toBe(false);
 			expect(existsSync(join(tempDir, "CONTRIBUTING.md"))).toBe(true);
 			expect(
 				existsSync(join(tempDir, ".github/PULL_REQUEST_TEMPLATE.md")),
@@ -187,15 +183,15 @@ describe("runInit", () => {
 		});
 
 		it("skips existing files without --force", () => {
-			// Create existing file
-			mkdirSync(join(tempDir, ".github", "workflows"), { recursive: true });
+			// Create existing files that match the default circleci template set
+			mkdirSync(join(tempDir, ".circleci"), { recursive: true });
 			mkdirSync(join(tempDir, ".github"), { recursive: true });
 			mkdirSync(join(tempDir, "scripts"), { recursive: true });
 			mkdirSync(join(tempDir, ".diagram"), { recursive: true });
 			mkdirSync(join(tempDir, "AI", "context"), { recursive: true });
 			writeFileSync(join(tempDir, "harness.contract.json"), "{}");
 			writeFileSync(
-				join(tempDir, ".github/workflows/pr-pipeline.yml"),
+				join(tempDir, ".circleci/config.yml"),
 				"existing",
 			);
 			writeFileSync(join(tempDir, "CONTRIBUTING.md"), "existing");
@@ -466,10 +462,6 @@ describe("runInit", () => {
 				join(tempDir, ".greptile/rules.md"),
 				"utf-8",
 			);
-			const greptileWorkflow = require("node:fs").readFileSync(
-				join(tempDir, ".github/workflows/greptile-review.yml"),
-				"utf-8",
-			);
 
 			expect(greptileConfig.strictness).toBe(2);
 			expect(greptileConfig.requireIndependentValidation).toBe(true);
@@ -480,9 +472,28 @@ describe("runInit", () => {
 				),
 			).toBe(true);
 			expect(greptileRules).toContain("Independent validation is mandatory");
-			expect(greptileWorkflow).toContain("pull_request_review:");
-			expect(greptileWorkflow).toContain("pull_request_review_comment:");
-			expect(greptileWorkflow).toContain("greptileai[bot]");
+		});
+
+		it("scaffolds GHA workflow files when provider is github-actions", () => {
+			const result = runInit(tempDir, {
+				dryRun: false,
+				force: false,
+				ciProvider: "github-actions",
+			});
+
+			expect(result.ok).toBe(true);
+
+			// Verify GHA-specific templates are created
+			expect(
+				existsSync(join(tempDir, ".github/workflows/pr-pipeline.yml")),
+			).toBe(true);
+			expect(
+				existsSync(join(tempDir, ".github/workflows/secret-scan.yml")),
+			).toBe(true);
+			// CircleCI file should NOT be created
+			expect(
+				existsSync(join(tempDir, ".circleci/config.yml")),
+			).toBe(false);
 		});
 
 		it("creates valid memory.json baseline", () => {
@@ -672,11 +683,15 @@ describe("runInit", () => {
 			expect(Array.isArray(memory.entries)).toBe(true);
 		});
 
-		it("includes package manager in workflow", () => {
+		it("includes package manager in workflow (github-actions)", () => {
 			// Create pnpm lockfile
 			writeFileSync(join(tempDir, "pnpm-lock.yaml"), "");
 
-			const result = runInit(tempDir, { dryRun: false, force: false });
+			const result = runInit(tempDir, {
+				dryRun: false,
+				force: false,
+				ciProvider: "github-actions",
+			});
 
 			expect(result.ok).toBe(true);
 
@@ -694,7 +709,11 @@ describe("runInit", () => {
 
 		it("uses npm run for npm script commands", () => {
 			// No lockfile => npm
-			const result = runInit(tempDir, { dryRun: false, force: false });
+			const result = runInit(tempDir, {
+				dryRun: false,
+				force: false,
+				ciProvider: "github-actions",
+			});
 
 			expect(result.ok).toBe(true);
 
@@ -1054,7 +1073,7 @@ describe("runInit", () => {
 				'run_check_environment_with_runner "global npm harness ($(command -v harness))" harness',
 			);
 			expect(environmentCheck).toContain("npm i -g @brainwav/coding-harness");
-			expect(environmentCheck).toContain("repository secret NPM_TOKEN");
+			expect(environmentCheck).toContain("NPM_TOKEN");
 			expect(environmentCheck).toContain("required_support_files=(");
 			expect(environmentCheck).toContain('"scripts/codex-preflight.sh"');
 			expect(environmentCheck).toContain("required_make_targets=(");
@@ -1154,14 +1173,14 @@ describe("--track flag", () => {
 				"utf-8",
 			),
 		);
-		expect(manifest.ciProvider).toBe("github-actions");
+		expect(manifest.ciProvider).toBe("circleci");
 	});
 
 	it("creates backups for existing files", () => {
-		// Create existing file with unique content
-		mkdirSync(join(tempDir, ".github", "workflows"), { recursive: true });
+		// Create existing file with unique content (using circleci default)
+		mkdirSync(join(tempDir, ".circleci"), { recursive: true });
 		writeFileSync(
-			join(tempDir, ".github/workflows/pr-pipeline.yml"),
+			join(tempDir, ".circleci/config.yml"),
 			"old content",
 		);
 
@@ -1186,12 +1205,12 @@ describe("--track flag", () => {
 		);
 		const manifest = JSON.parse(manifestContent);
 		expect(manifest.files).toHaveLength(EXPECTED_TEMPLATE_COUNT);
-		expect(manifest.ciProvider).toBe("github-actions");
+		expect(manifest.ciProvider).toBe("circleci");
 
 		// Find the modified entry
 		const modifiedEntry = manifest.files.find(
 			(f: { path: string; action: string }) =>
-				f.path === ".github/workflows/pr-pipeline.yml",
+				f.path === ".circleci/config.yml",
 		);
 		expect(modifiedEntry.action).toBe("modified");
 		expect(modifiedEntry.backupHash).toMatch(/^[a-f0-9]{16}$/);
@@ -1251,7 +1270,7 @@ describe("--track flag", () => {
 		if (!result.ok) {
 			expect(result.error.code).toBe("PATH_TRAVERSAL");
 			expect(result.error.path).toMatch(
-				/^\.github\/workflows\/(?:greptile-review|pr-pipeline)\.yml$/,
+				/^\.github\//,
 			);
 		}
 		// Nothing should have been written to outsideDir
@@ -1352,11 +1371,11 @@ describe("--rollback flag", () => {
 	});
 
 	it("restores modified files from backup", () => {
-		// Create existing file
-		mkdirSync(join(tempDir, ".github", "workflows"), { recursive: true });
+		// Create existing file (using circleci default)
+		mkdirSync(join(tempDir, ".circleci"), { recursive: true });
 		const originalContent = "ORIGINAL CONTENT";
 		writeFileSync(
-			join(tempDir, ".github/workflows/pr-pipeline.yml"),
+			join(tempDir, ".circleci/config.yml"),
 			originalContent,
 		);
 
@@ -1370,7 +1389,7 @@ describe("--rollback flag", () => {
 
 		// Verify file was modified
 		const modifiedContent = require("node:fs").readFileSync(
-			join(tempDir, ".github/workflows/pr-pipeline.yml"),
+			join(tempDir, ".circleci/config.yml"),
 			"utf-8",
 		);
 		expect(modifiedContent).not.toBe(originalContent);
@@ -1385,7 +1404,7 @@ describe("--rollback flag", () => {
 
 		// Verify original content restored
 		const restoredContent = require("node:fs").readFileSync(
-			join(tempDir, ".github/workflows/pr-pipeline.yml"),
+			join(tempDir, ".circleci/config.yml"),
 			"utf-8",
 		);
 		expect(restoredContent).toBe(originalContent);
@@ -1898,9 +1917,9 @@ describe("--interactive flag", () => {
 		expect(result.ok).toBe(true);
 		if (result.ok) {
 			expect(result.output.packageManager).toBe("pnpm");
-			// The workflow template should contain pnpm
+			// The CI template should contain pnpm (default is circleci)
 			const workflowChange = result.output.proposedChanges?.find(
-				(c) => c.path === ".github/workflows/pr-pipeline.yml",
+				(c) => c.path === ".circleci/config.yml",
 			);
 			expect(workflowChange?.newContent).toContain("pnpm");
 		}

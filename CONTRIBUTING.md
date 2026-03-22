@@ -88,8 +88,8 @@ For behavior-affecting changes:
 - `pnpm test`
 - `pnpm audit`
 - `pnpm check`
-- `dependency-review` GitHub Actions check
-- `actions-pinning` GitHub Actions check
+- `dependency-scan` CircleCI job (Trivy SCA)
+- `orb-pinning` CircleCI job
 - `security-scan` CircleCI job (gitleaks + semgrep)
 - `risk-policy-gate` plan traceability:
   - changed PR work maps to valid plan IDs,
@@ -149,8 +149,9 @@ Policy:
   - `.greptile/config.json`
   - `.greptile/rules.md`
   - `.greptile/files.json`
-- Required bridge workflow:
-  - `.github/workflows/greptile-review.yml`
+- Required bridge workflow (for GitHub-hosted repos):
+  - `.github/workflows/greptile-review.yml` (scaffolded by `harness init --ci-provider github-actions`)
+  - For CircleCI repos, Greptile is integrated via the Greptile dashboard directly.
 - Verify setup with:
   - `harness verify-greptile`
   - `harness verify-greptile --token $GITHUB_TOKEN --owner <owner> --repo <repo>`
@@ -285,8 +286,8 @@ Configure repository settings on `main` to make the workflow enforceable:
   - `pr-template`
   - `linear-gate`
   - `risk-policy-gate`
-  - `dependency-review`
-  - `actions-pinning`
+  - `dependency-scan`
+  - `orb-pinning`
   - `consistency-drift-health`
   - `docs-gate`
   - `lint`

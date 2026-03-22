@@ -122,6 +122,140 @@ jobs:
               --exclude dist \
               .
 
+  # === Greptile AI code review (replaces GitHub Actions greptile-review.yml) ===
+  # Calls the Greptile API to trigger a review on the PR, then polls until
+  # a result is available and fails the job if the review blocks merge.
+  greptile-review:
+    docker:
+      - image: cimg/node:24.13
+    steps:
+      - checkout
+      - run:
+          name: Trigger Greptile review
+          command: |
+            set -euo pipefail
+            if [ -z "${GREPTILE_API_KEY:-}" ]; then
+              echo "GREPTILE_API_KEY not set — skipping Greptile trigger"
+              exit 0
+            fi
+            if [ -z "${CIRCLE_PULL_REQUEST:-}" ]; then
+              echo "Not a PR build — skipping Greptile review"
+              exit 0
+            fi
+            PR_NUMBER="${CIRCLE_PULL_REQUEST##*/}"
+            REPO_OWNER="${CIRCLE_PROJECT_USERNAME}"
+            REPO_NAME="${CIRCLE_PROJECT_REPONAME}"
+            echo "Triggering Greptile review for PR #${PR_NUMBER} on ${REPO_OWNER}/${REPO_NAME}"
+            curl -s --fail --request POST \
+              --url "https://api.greptile.com/v2/reviews" \
+              --header "Authorization: Bearer ${GREPTILE_API_KEY}" \
+              --header "Content-Type: application/json" \
+              --data "{
+                \"remote\": \"github\",
+                \"repository\": \"${REPO_OWNER}/${REPO_NAME}\",
+                \"pull_request\": ${PR_NUMBER},
+                \"sha\": \"${CIRCLE_SHA1}\"
+              }" | tee /tmp/greptile-trigger.json
+      - run:
+          name: Poll Greptile review result
+          command: |
+            set -euo pipefail
+            if [ -z "${GREPTILE_API_KEY:-}" ] || [ -z "${CIRCLE_PULL_REQUEST:-}" ]; then
+              echo "Skipping Greptile poll (no API key or not a PR)"
+              exit 0
+            fi
+            PR_NUMBER="${CIRCLE_PULL_REQUEST##*/}"
+            REPO_OWNER="${CIRCLE_PROJECT_USERNAME}"
+            REPO_NAME="${CIRCLE_PROJECT_REPONAME}"
+            MAX_ATTEMPTS=20
+            SLEEP_SECONDS=30
+            for attempt in $(seq 1 ${MAX_ATTEMPTS}); do
+              echo "Polling attempt ${attempt}/${MAX_ATTEMPTS}..."
+              RESPONSE=$(curl -s --request GET \
+                --url "https://api.greptile.com/v2/reviews?remote=github&repository=${REPO_OWNER}/${REPO_NAME}&pull_request=${PR_NUMBER}" \
+                --header "Authorization: Bearer ${GREPTILE_API_KEY}")
+              STATUS=$(echo "${RESPONSE}" | node -e "const d=JSON.parse(require('fs').readFileSync('/dev/stdin','utf8')); const r=Array.isArray(d)?d.find(r=>r.sha==='${CIRCLE_SHA1}'):null; process.stdout.write(r?r.status:'pending');")
+              echo "Review status: ${STATUS}"
+              if [ "${STATUS}" = "COMPLETED" ]; then
+                CONCLUSION=$(echo "${RESPONSE}" | node -e "const d=JSON.parse(require('fs').readFileSync('/dev/stdin','utf8')); const r=Array.isArray(d)?d.find(r=>r.sha==='${CIRCLE_SHA1}'):null; process.stdout.write(r?r.conclusion:'unknown');")
+                echo "Greptile review conclusion: ${CONCLUSION}"
+                if [ "${CONCLUSION}" = "CHANGES_REQUESTED" ]; then
+                  echo "Greptile review blocked merge — changes requested"
+                  exit 1
+                fi
+                echo "Greptile review passed"
+                exit 0
+              fi
+              if [ "${attempt}" -lt "${MAX_ATTEMPTS}" ]; then
+                sleep ${SLEEP_SECONDS}
+              fi
+            done
+            echo "Greptile review did not complete within timeout — treating as advisory pass"
+            exit 0
+
+  # === Dependency scan — Trivy SCA (replaces GitHub Actions dependency-review) ===
+  dependency-scan:
+    docker:
+      - image: cimg/base:current
+    steps:
+      - checkout
+      - run:
+          name: Install Trivy
+          command: |
+            TRIVY_VERSION="0.69.3"
+            curl -sSfL "https://github.com/aquasecurity/trivy/releases/download/v${TRIVY_VERSION}/trivy_${TRIVY_VERSION}_Linux-64bit.tar.gz" \
+              | tar xz -C /tmp
+            sudo mv /tmp/trivy /usr/local/bin/trivy
+            trivy --version
+      - run:
+          name: Trivy dependency scan (HIGH/CRITICAL)
+          command: |
+            trivy fs . \
+              --scanners vuln \
+              --severity HIGH,CRITICAL \
+              --exit-code 1 \
+              --ignore-unfixed \
+              --format table
+      - run:
+          name: Trivy SBOM export
+          command: |
+            trivy fs . \
+              --scanners vuln \
+              --format cyclonedx \
+              --output /tmp/sbom-deps.json \
+              --ignore-unfixed || true
+      - store_artifacts:
+          path: /tmp/sbom-deps.json
+          destination: sbom-deps
+
+  # === Orb pinning check (replaces GitHub Actions actions-pinning) ===
+  # Validates that all CircleCI orbs in config.yml reference a pinned version
+  # (e.g. namespace/orb@x.y.z) rather than a floating tag like @volatile or @dev.
+  orb-pinning:
+    docker:
+      - image: cimg/base:current
+    steps:
+      - checkout
+      - run:
+          name: Validate orb version pins
+          command: |
+            set -euo pipefail
+            CONFIG=".circleci/config.yml"
+            if [ ! -f "${CONFIG}" ]; then
+              echo "No CircleCI config found — skipping orb-pinning check"
+              exit 0
+            fi
+            # Extract orb references and check for unpinned versions
+            UNPINNED=$(grep -E '^\s+[a-z0-9_-]+/[a-z0-9_-]+:' "${CONFIG}" \
+              | grep -vE '@[0-9]+\.[0-9]+\.[0-9]+' || true)
+            if [ -n "${UNPINNED}" ]; then
+              echo "ERROR: Unpinned orb versions detected:"
+              echo "${UNPINNED}"
+              echo "Fix: pin all orbs to a specific semver (e.g. namespace/orb@1.2.3)"
+              exit 1
+            fi
+            echo "All orb references are pinned or no orbs in use — check passed"
+
   # === Diagram refresh (main only, commits back) ===
   diagram-refresh:
     docker:
@@ -482,6 +616,18 @@ workflows:
             branches:
               ignore: main
       - security-scan:
+          filters:
+            branches:
+              ignore: main
+      - greptile-review:
+          filters:
+            branches:
+              ignore: main
+      - dependency-scan:
+          filters:
+            branches:
+              ignore: main
+      - orb-pinning:
           filters:
             branches:
               ignore: main

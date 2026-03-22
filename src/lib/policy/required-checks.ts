@@ -1,7 +1,12 @@
+// CircleCI-based required checks.
+// Replaces the former GitHub Actions-specific checks:
+//   - "dependency-review" → "dependency-scan"  (Trivy SCA in CircleCI)
+//   - "actions-pinning"   → "orb-pinning"      (CircleCI orb version enforcement)
+
 export const REVIEW_POLICY_REQUIRED_CHECKS = [
 	"security-scan",
-	"dependency-review",
-	"actions-pinning",
+	"dependency-scan",
+	"orb-pinning",
 ] as const;
 
 /**
@@ -20,8 +25,8 @@ export const ECOSYSTEM_PROFILES = {
 		"pr-template",
 		"linear-gate",
 		"risk-policy-gate",
-		"dependency-review",
-		"actions-pinning",
+		"dependency-scan",
+		"orb-pinning",
 		"consistency-drift-health",
 		"docs-gate",
 		"lint",
@@ -43,13 +48,13 @@ export const ECOSYSTEM_PROFILES = {
 		"test",
 		"audit",
 		"security-scan",
-		"dependency-review",
+		"dependency-scan",
 	] as const,
 
 	/**
 	 * Python projects using uv/pytest.
 	 */
-	python: ["lint", "test", "security-scan", "dependency-review"] as const,
+	python: ["lint", "test", "security-scan", "dependency-scan"] as const,
 
 	/**
 	 * Rust projects using cargo.

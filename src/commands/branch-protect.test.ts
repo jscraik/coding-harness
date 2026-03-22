@@ -34,8 +34,8 @@ describe("runBranchProtect", () => {
 					"pr-template",
 					"linear-gate",
 					"risk-policy-gate",
-					"dependency-review",
-					"actions-pinning",
+					"dependency-scan",
+					"orb-pinning",
 					"consistency-drift-health",
 					"lint",
 					"typecheck",
@@ -453,8 +453,8 @@ describe("runBranchProtect", () => {
 				{ context: "pr-template" },
 				{ context: "linear-gate" },
 				{ context: "risk-policy-gate" },
-				{ context: "dependency-review" },
-				{ context: "actions-pinning" },
+				{ context: "dependency-scan" },
+				{ context: "orb-pinning" },
 				{ context: "consistency-drift-health" },
 				{ context: "lint" },
 				{ context: "typecheck" },
@@ -475,7 +475,7 @@ describe("runBranchProtect", () => {
 			reviewPolicy: {
 				timeoutSeconds: 600,
 				timeoutAction: "fail",
-				requiredChecks: ["security-scan", "dependency-review"],
+				requiredChecks: ["security-scan", "dependency-scan"],
 			},
 		});
 
@@ -515,7 +515,7 @@ describe("runBranchProtect", () => {
 		expect(requiredRule?.parameters).toMatchObject({
 			required_status_checks: [
 				{ context: "security-scan" },
-				{ context: "dependency-review" },
+				{ context: "dependency-scan" },
 			],
 		});
 	});
@@ -563,8 +563,8 @@ describe("runBranchProtect", () => {
 				{ context: "pr-template" },
 				{ context: "linear-gate" },
 				{ context: "risk-policy-gate" },
-				{ context: "dependency-review" },
-				{ context: "actions-pinning" },
+				{ context: "dependency-scan" },
+				{ context: "orb-pinning" },
 				{ context: "consistency-drift-health" },
 				{ context: "docs-gate" },
 				{ context: "lint" },
@@ -1326,7 +1326,7 @@ describe("runBranchProtect", () => {
 						"test",
 						"audit",
 						"security-scan",
-						"dependency-review",
+						"dependency-scan",
 					]),
 				);
 			}
@@ -1370,7 +1370,7 @@ describe("runBranchProtect", () => {
 						"lint",
 						"test",
 						"security-scan",
-						"dependency-review",
+						"dependency-scan",
 					]),
 				);
 			}
