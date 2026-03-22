@@ -44,3 +44,9 @@ export type {
 	WorkflowArtifactEntry,
 	WorkflowArtifactRegistry,
 } from "./registry.js";
+
+// ─── Parser ─────────────────────────────────────────────────────────────────────
+
+export { parseWorkflowFile, parseFrontmatter } from "./parser.js";
+export type { ParseResult, ParseError } from "./parser.js";
+
