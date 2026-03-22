@@ -13,6 +13,19 @@ import {
 export { runBrainstormGate, EXIT_CODES };
 export type { BrainstormGateOptions };
 
+// Re-export brainstorm CRUD utilities for automation and CLI consumers
+export {
+	createBrainstorm,
+	loadBrainstorm,
+	findBrainstorms,
+	findRecentBrainstorms,
+	updateBrainstormStatus,
+	requiresBrainstorm,
+	generateBrainstormFilename,
+	type BrainstormFrontmatter,
+	type BrainstormMetadata,
+} from "../lib/workflow/brainstorm.js";
+
 /**
  * CLI entry point for brainstorm gate
  */

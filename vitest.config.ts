@@ -4,6 +4,7 @@ export default defineConfig({
 	test: {
 		globals: true,
 		environment: "node",
+		pool: "forks",
 		testTimeout: 180000,
 		hookTimeout: 180000,
 		include: ["src/**/*.test.ts"],

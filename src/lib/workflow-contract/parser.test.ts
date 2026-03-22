@@ -157,6 +157,21 @@ describe("parseWorkflowFile", () => {
 		).toBe("yes");
 	});
 
+	it("extracts validation contract from an Invariants table", () => {
+		const content = minimalWorkflow().replace(
+			"## Validation Contract",
+			"## Invariants",
+		);
+		const result = parseWorkflowFile(content);
+		expect(result.contract.validation_contract).toBeDefined();
+		expect(result.contract.validation_contract.test_mode).toBe(
+			"tdd-required",
+		);
+		expect(result.contract.validation_contract.test_tier).toBe(
+			"integration",
+		);
+	});
+
 	it("extracts transitions from canonical table", () => {
 		const result = parseWorkflowFile(minimalWorkflow());
 		expect(result.contract.transitions).toHaveLength(4);
@@ -165,6 +180,62 @@ describe("parseWorkflowFile", () => {
 			E: "start",
 			G: "preflight passes",
 			A: "initialize workflow",
+			N: "S1",
+		});
+	});
+
+	it("extracts transitions from SEGAPRN tables", () => {
+		const content = `## Metadata
+| Field | Value |
+| --- | --- |
+| \`owner\` | team |
+| \`max_duration\` | 12 turns |
+| \`escalation\` | Block |
+| \`change_class\` | behavior |
+
+## Validation Contract
+| Field | Requirement |
+| --- | --- |
+| \`test_mode\` | tdd-required |
+| \`test_tier\` | integration |
+| \`tracer_bullet_first\` | yes |
+| \`red_evidence_required\` | yes |
+
+## Transition Table (Canonical)
+| S | E | G | A | P | R | N |
+| --- | --- | --- | --- | --- | --- | --- |
+| \`S0\` | \`start\` | ok | init | linear | success | \`S1\` |
+
+## Error Handling
+- \`VALIDATION_ERROR\`
+- \`BLOCKED_DEPENDENCY\`
+- \`POLICY_FAIL\`
+- \`SYSTEM_ERROR\`
+
+## Execution Modes
+- \`STRICT\`
+
+## Dry-Run Simulation
+- no side effects
+- deterministic trace
+
+## Observability Logs
+- \`workflow_id\`
+- \`transition_code\`
+- \`from_state\`
+- \`to_state\`
+- \`correlation_id\`
+- \`result\`
+`;
+		const result = parseWorkflowFile(content);
+		expect(result.errors).toEqual([]);
+		expect(result.contract.transitions[0]).toEqual({
+			S: "S0",
+			E: "start",
+			G: "ok",
+			A: "init",
+			P: "linear",
+			R: "success",
 			N: "S1",
 		});
 	});

@@ -259,6 +259,12 @@ export interface TemplateRenderContext {
 	ciProvider?: CIProvider;
 	packageScripts: string[];
 	issueTrackingUrl?: string;
+	/** Project name extracted from package.json for WORKFLOW.md rendering */
+	projectName?: string;
+	/** Repository URL extracted from package.json for workspace hooks */
+	repoUrl?: string;
+	/** Linear project slug extracted from issue tracking URL */
+	linearProjectSlug?: string;
 }
 
 export interface Template {
@@ -284,10 +290,15 @@ export interface CodexAction {
 	command: string;
 }
 
-/** Minimal package.json shape for script/issue extraction */
+/** Minimal package.json shape for script/issue/repo extraction */
 export interface PackageJsonLike {
+	name?: string;
 	scripts?: Record<string, unknown>;
 	bugs?: string | { url?: unknown } | undefined;
+	repository?:
+		| string
+		| { type?: string; url?: string; directory?: string }
+		| undefined;
 }
 
 // === Rollback Constants ===

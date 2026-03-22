@@ -10,6 +10,7 @@ import type {
 } from "../lib/evidence/index.js";
 import { loadEvidenceFile } from "../lib/evidence/index.js";
 import { DEFAULT_MAX_FILE_SIZE_BYTES } from "../lib/evidence/index.js";
+import { logger } from "../lib/evidence/logger.js";
 import { enforceEvidencePolicy } from "../lib/evidence/policy.js";
 import { sanitizeError } from "../lib/input/sanitize.js";
 
@@ -106,11 +107,22 @@ export function runEvidenceVerify(
 
 	// Verify each evidence file
 	for (const filePath of options.files) {
+		logger.debug("Verifying evidence file", { file: filePath });
 		const result = loadEvidenceFile(filePath, baseDir, maxFileSizeBytes);
 
 		if (result.ok) {
+			logger.debug("Evidence file verified", {
+				file: filePath,
+				type: result.file.type,
+				sizeBytes: result.file.sizeBytes,
+			});
 			verifiedFiles.push(result.file);
 		} else {
+			logger.warn("Evidence file failed verification", {
+				file: filePath,
+				code: result.code,
+				message: result.message,
+			});
 			errors.push(result);
 		}
 	}
@@ -135,6 +147,11 @@ export function runEvidenceVerify(
 		files: verifiedFiles,
 		errors,
 	};
+
+	logger.debug("Evidence verification complete", {
+		verified: output.verified,
+		failed: output.failed,
+	});
 
 	return { ok: true, output };
 }

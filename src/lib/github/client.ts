@@ -1,7 +1,7 @@
 import { retry } from "@octokit/plugin-retry";
 import { throttling } from "@octokit/plugin-throttling";
-import type { RequestError } from "@octokit/request-error";
 import { Octokit } from "@octokit/rest";
+import { GitHubApiError } from "./errors.js";
 import { mutationQueue } from "./mutation-queue.js";
 
 const MyOctokit = Octokit.plugin(throttling, retry);
@@ -502,26 +502,6 @@ export class GitHubClient {
 	}
 
 	private classifyError(error: unknown): Error {
-		if (error instanceof Error && error.name === "HttpError") {
-			const requestError = error as RequestError;
-			const status = requestError.status;
-
-			if (status === 404) {
-				const notFoundError = new Error("Resource not found");
-				notFoundError.name = "NotFoundError";
-				return notFoundError;
-			}
-			if (status === 403) {
-				const forbiddenError = new Error("Permission denied");
-				forbiddenError.name = "ForbiddenError";
-				return forbiddenError;
-			}
-			if (status === 401) {
-				const authError = new Error("Authentication failed");
-				authError.name = "UnauthorizedError";
-				return authError;
-			}
-		}
-		return error instanceof Error ? error : new Error(String(error));
+		return GitHubApiError.fromError(error);
 	}
 }

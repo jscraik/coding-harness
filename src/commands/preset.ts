@@ -12,6 +12,18 @@ import {
 } from "../lib/contract/preset-resolver.js";
 import { validateIdentifier } from "../lib/input/validation.js";
 
+// Re-export ecosystem detection for auto-preset consumers
+export {
+	detectEcosystem,
+	detectEcosystemDetailed,
+	getDefaultPresetForEcosystem,
+	getEcosystemDescription,
+	ecosystemSupportsTypeCheck,
+	getEcosystemCommands,
+	type Ecosystem,
+	type EcosystemMarker,
+} from "../lib/preset-detection.js";
+
 // Exit codes for programmatic consumption
 export const EXIT_CODES = {
 	SUCCESS: 0,

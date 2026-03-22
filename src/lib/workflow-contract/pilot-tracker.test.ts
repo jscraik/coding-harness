@@ -15,7 +15,10 @@ import {
 	DEFAULT_GATE_THRESHOLDS,
 	type RunOutcome,
 	type PilotLane,
+	type PilotGateId,
 	type OperatorScorecard,
+	type GateEvaluation,
+	type SupplementalGateActuals,
 } from "./index.js";
 
 // ─── Helpers ────────────────────────────────────────────────────────────────────
@@ -73,6 +76,39 @@ function makeMixedRuns(
 		);
 	}
 	return runs;
+}
+
+const HEALTHY_SUPPLEMENTAL_GATE_ACTUALS: SupplementalGateActuals = {
+	behavior_change_honesty: 1,
+	guardrail_capture: 1,
+	compaction_health: 0,
+	review_capacity: 0,
+};
+
+function evaluateWindowWithHealthySupplementalGates(
+	lane: PilotLane,
+	windowStart: string,
+	windowEnd: string,
+	overrides?: SupplementalGateActuals,
+) {
+	return evaluateWindow(lane, windowStart, windowEnd, {
+		...HEALTHY_SUPPLEMENTAL_GATE_ACTUALS,
+		...overrides,
+	});
+}
+
+function makeGateEvaluation(
+	gateId: PilotGateId,
+	passed: boolean,
+): GateEvaluation {
+	return {
+		gateId,
+		passed,
+		actual: passed ? 0 : 1,
+		threshold: passed ? 0 : 1,
+		comparison: "at_most",
+		message: `${gateId} ${passed ? "passed" : "failed"}`,
+	};
 }
 
 // ─── createPilotLane ────────────────────────────────────────────────────────────
@@ -331,7 +367,7 @@ describe("evaluateWindow", () => {
 			lane = recordRunOutcome(lane, r);
 		}
 
-		const evalResult = evaluateWindow(
+		const evalResult = evaluateWindowWithHealthySupplementalGates(
 			lane,
 			"2026-03-01T00:00:00Z",
 			"2026-03-15T00:00:00Z",
@@ -339,7 +375,7 @@ describe("evaluateWindow", () => {
 		expect(evalResult.passed).toBe(true);
 		expect(evalResult.stopCriteria).toEqual([]);
 		expect(evalResult.runCount).toBe(20);
-		expect(evalResult.gates.length).toBeGreaterThan(0);
+		expect(evalResult.gates).toHaveLength(9);
 	});
 
 	it("fails when pass rate below threshold", () => {
@@ -354,7 +390,7 @@ describe("evaluateWindow", () => {
 			lane = recordRunOutcome(lane, r);
 		}
 
-		const evalResult = evaluateWindow(
+		const evalResult = evaluateWindowWithHealthySupplementalGates(
 			lane,
 			"2026-03-01T00:00:00Z",
 			"2026-03-15T00:00:00Z",
@@ -378,7 +414,7 @@ describe("evaluateWindow", () => {
 			lane = recordRunOutcome(lane, r);
 		}
 
-		const evalResult = evaluateWindow(
+		const evalResult = evaluateWindowWithHealthySupplementalGates(
 			lane,
 			"2026-03-01T00:00:00Z",
 			"2026-03-15T00:00:00Z",
@@ -389,7 +425,7 @@ describe("evaluateWindow", () => {
 		);
 	});
 
-	it("detects operator speed warning", () => {
+	it("does not warn on the first slow operator-speed window", () => {
 		let lane = createPilotLane({
 			repoFullName: "jamie/test",
 			windowDurationDays: 14,
@@ -404,13 +440,196 @@ describe("evaluateWindow", () => {
 			lane = recordRunOutcome(lane, r);
 		}
 
+		const evalResult = evaluateWindowWithHealthySupplementalGates(
+			lane,
+			"2026-03-01T00:00:00Z",
+			"2026-03-15T00:00:00Z",
+		);
+		expect(evalResult.warningSignsDetected).not.toContain(
+			"operator_speed: p50 decision time above threshold",
+		);
+	});
+
+	it("warns after a second consecutive slow operator-speed window", () => {
+		let lane = createPilotLane({
+			repoFullName: "jamie/test",
+			windowDurationDays: 14,
+			requiredConsecutiveWindows: 2,
+		});
+		const firstWindowRuns = makePassingRuns(3, "2026-03-01T00:00:00Z").map(
+			(run) => ({
+				...run,
+				decisionTimeMs: 90000,
+			}),
+		);
+		for (const run of firstWindowRuns) {
+			lane = recordRunOutcome(lane, run);
+		}
+		const firstWindow = evaluateWindowWithHealthySupplementalGates(
+			lane,
+			"2026-03-01T00:00:00Z",
+			"2026-03-15T00:00:00Z",
+		);
+		lane = recordWindowEvaluation(lane, firstWindow);
+
+		const secondWindowRuns = makePassingRuns(3, "2026-03-15T00:00:00Z").map(
+			(run) => ({
+				...run,
+				decisionTimeMs: 95000,
+			}),
+		);
+		for (const run of secondWindowRuns) {
+			lane = recordRunOutcome(lane, run);
+		}
+
+		const secondWindow = evaluateWindowWithHealthySupplementalGates(
+			lane,
+			"2026-03-15T00:00:00Z",
+			"2026-03-29T00:00:00Z",
+		);
+		expect(secondWindow.warningSignsDetected).toContain(
+			"operator_speed: p50 decision time above threshold",
+		);
+	});
+
+	it("honors threshold overrides for operator metrics", () => {
+		let lane = createPilotLane({
+			repoFullName: "jamie/test",
+			windowDurationDays: 14,
+			requiredConsecutiveWindows: 2,
+			thresholdOverrides: {
+				decision_time_ms: 100000,
+				manual_intervention_rate: 0.4,
+				false_block_rate: 0.5,
+				pr_green_closure_rate: 0.5,
+			},
+		});
+		const runs = [
+			makeRun({
+				runId: "override-1",
+				timestamp: "2026-03-01T01:00:00Z",
+				decisionTimeMs: 90000,
+				manualIntervention: true,
+				falseBlock: true,
+			}),
+			makeRun({
+				runId: "override-2",
+				timestamp: "2026-03-01T02:00:00Z",
+				decisionTimeMs: 90000,
+				prReachedTerminal: false,
+			}),
+		];
+		for (const run of runs) {
+			lane = recordRunOutcome(lane, run);
+		}
+
+		const evalResult = evaluateWindowWithHealthySupplementalGates(
+			lane,
+			"2026-03-01T00:00:00Z",
+			"2026-03-15T00:00:00Z",
+		);
+		expect(evalResult.passed).toBe(true);
+		expect(
+			evalResult.gates.find((gate) => gate.gateId === "operator_speed")
+				?.threshold,
+		).toBe(100000);
+		expect(
+			evalResult.gates.find(
+				(gate) => gate.gateId === "solo_operator_efficiency",
+			)?.threshold,
+		).toBe(0.4);
+		expect(
+			evalResult.gates.find(
+				(gate) => gate.gateId === "false_block_control",
+			)?.threshold,
+		).toBe(0.5);
+		expect(
+			evalResult.gates.find((gate) => gate.gateId === "pr_green_closure")
+				?.threshold,
+		).toBe(0.5);
+	});
+
+	it("fails when required supplemental gate evidence is omitted", () => {
+		let lane = createPilotLane({
+			repoFullName: "jamie/test",
+			windowDurationDays: 14,
+			requiredConsecutiveWindows: 2,
+		});
+		const runs = makePassingRuns(5, "2026-03-01T00:00:00Z");
+		for (const run of runs) {
+			lane = recordRunOutcome(lane, run);
+		}
+
 		const evalResult = evaluateWindow(
 			lane,
 			"2026-03-01T00:00:00Z",
 			"2026-03-15T00:00:00Z",
 		);
-		expect(evalResult.warningSignsDetected).toContain(
-			"operator_speed: p50 decision time above threshold",
+		expect(evalResult.passed).toBe(false);
+		expect(evalResult.stopCriteria).toContain(
+			"behavior_change_honesty supplemental evidence missing",
+		);
+		expect(
+			evalResult.gates.find(
+				(gate) => gate.gateId === "behavior_change_honesty",
+			)?.message,
+		).toContain("supplemental evidence not provided");
+	});
+
+	it("defers 30-day guardrail_capture until 30 days of observation exist", () => {
+		let lane = createPilotLane({
+			repoFullName: "jamie/test",
+			windowDurationDays: 14,
+			requiredConsecutiveWindows: 2,
+		});
+		const runs = makePassingRuns(5, "2026-03-01T00:00:00Z");
+		for (const run of runs) {
+			lane = recordRunOutcome(lane, run);
+		}
+
+		const evalResult = evaluateWindowWithHealthySupplementalGates(
+			lane,
+			"2026-03-01T00:00:00Z",
+			"2026-03-15T00:00:00Z",
+			{ guardrail_capture: 0 },
+		);
+		expect(evalResult.passed).toBe(true);
+		expect(evalResult.stopCriteria).not.toContain(
+			"guardrail_capture threshold not met",
+		);
+		expect(
+			evalResult.gates.find((gate) => gate.gateId === "guardrail_capture")
+				?.message,
+		).toContain("requires a rolling 30-day observation window");
+	});
+
+	it("enforces 30-day guardrail_capture once enough history exists", () => {
+		let lane = createPilotLane(
+			{
+				repoFullName: "jamie/test",
+				windowDurationDays: 14,
+				requiredConsecutiveWindows: 2,
+			},
+			"2026-03-01T00:00:00Z",
+		);
+		const runs = [
+			...makePassingRuns(3, "2026-03-01T00:00:00Z"),
+			...makePassingRuns(3, "2026-03-20T00:00:00Z"),
+			...makePassingRuns(3, "2026-04-02T00:00:00Z"),
+		];
+		for (const run of runs) {
+			lane = recordRunOutcome(lane, run);
+		}
+
+		const evalResult = evaluateWindowWithHealthySupplementalGates(
+			lane,
+			"2026-04-01T00:00:00Z",
+			"2026-04-15T00:00:00Z",
+			{ guardrail_capture: 0 },
+		);
+		expect(evalResult.passed).toBe(false);
+		expect(evalResult.stopCriteria).toContain(
+			"guardrail_capture threshold not met",
 		);
 	});
 
@@ -595,7 +814,7 @@ describe("computeTransitionDecision", () => {
 		expect(result.summary).toContain("FREEZE");
 	});
 
-	it("returns demote after 2 consecutive failing windows", () => {
+	it("does not demote after 2 consecutive stop-criteria failures", () => {
 		let lane = createPilotLane({
 			repoFullName: "jamie/test",
 			windowDurationDays: 14,
@@ -620,6 +839,42 @@ describe("computeTransitionDecision", () => {
 			passed: false,
 			stopCriteria: ["pilot_stability"],
 			warningSignsDetected: [],
+		});
+
+		const result = computeTransitionDecision(lane);
+		expect(result.decision).toBe("hold");
+		expect(result.summary).toContain("HOLD");
+	});
+
+	it("demotes after 2 consecutive warning-threshold breaches", () => {
+		let lane = createPilotLane({
+			repoFullName: "jamie/test",
+			windowDurationDays: 14,
+			requiredConsecutiveWindows: 2,
+		});
+		lane = recordWindowEvaluation(lane, {
+			windowId: "w1",
+			windowStart: "2026-03-01T00:00:00Z",
+			windowEnd: "2026-03-15T00:00:00Z",
+			runCount: 10,
+			gates: [makeGateEvaluation("solo_operator_efficiency", false)],
+			passed: false,
+			stopCriteria: [],
+			warningSignsDetected: [
+				"solo_operator_efficiency: manual intervention exceeds threshold",
+			],
+		});
+		lane = recordWindowEvaluation(lane, {
+			windowId: "w2",
+			windowStart: "2026-03-15T00:00:00Z",
+			windowEnd: "2026-03-29T00:00:00Z",
+			runCount: 10,
+			gates: [makeGateEvaluation("solo_operator_efficiency", false)],
+			passed: false,
+			stopCriteria: [],
+			warningSignsDetected: [
+				"solo_operator_efficiency: manual intervention exceeds threshold",
+			],
 		});
 
 		const result = computeTransitionDecision(lane);
@@ -805,11 +1060,14 @@ describe("DEFAULT_METRIC_THRESHOLDS", () => {
 describe("DEFAULT_GATE_THRESHOLDS", () => {
 	it("has entries for all pilot gates", () => {
 		expect(DEFAULT_GATE_THRESHOLDS.pilot_stability).toBeDefined();
+		expect(DEFAULT_GATE_THRESHOLDS.behavior_change_honesty).toBeDefined();
 		expect(DEFAULT_GATE_THRESHOLDS.operator_speed).toBeDefined();
 		expect(DEFAULT_GATE_THRESHOLDS.false_block_control).toBeDefined();
 		expect(DEFAULT_GATE_THRESHOLDS.solo_operator_efficiency).toBeDefined();
 		expect(DEFAULT_GATE_THRESHOLDS.pr_green_closure).toBeDefined();
-		expect(DEFAULT_GATE_THRESHOLDS.behavior_change_honesty).toBeDefined();
+		expect(DEFAULT_GATE_THRESHOLDS.guardrail_capture).toBeDefined();
+		expect(DEFAULT_GATE_THRESHOLDS.compaction_health).toBeDefined();
+		expect(DEFAULT_GATE_THRESHOLDS.review_capacity).toBeDefined();
 	});
 
 	it("pilot_stability threshold is 0.95", () => {
@@ -832,7 +1090,7 @@ describe("end-to-end: two-window expansion", () => {
 		for (const r of w1Runs) {
 			lane = recordRunOutcome(lane, r);
 		}
-		const w1Eval = evaluateWindow(
+		const w1Eval = evaluateWindowWithHealthySupplementalGates(
 			lane,
 			"2026-03-01T00:00:00Z",
 			"2026-03-15T00:00:00Z",
@@ -849,7 +1107,7 @@ describe("end-to-end: two-window expansion", () => {
 		for (const r of w2Runs) {
 			lane = recordRunOutcome(lane, r);
 		}
-		const w2Eval = evaluateWindow(
+		const w2Eval = evaluateWindowWithHealthySupplementalGates(
 			lane,
 			"2026-03-15T00:00:00Z",
 			"2026-03-29T00:00:00Z",
@@ -877,7 +1135,7 @@ describe("end-to-end: two-window expansion", () => {
 		for (const r of w1Runs) {
 			lane = recordRunOutcome(lane, r);
 		}
-		const w1Eval = evaluateWindow(
+		const w1Eval = evaluateWindowWithHealthySupplementalGates(
 			lane,
 			"2026-03-01T00:00:00Z",
 			"2026-03-15T00:00:00Z",
@@ -890,7 +1148,7 @@ describe("end-to-end: two-window expansion", () => {
 		for (const r of w2Runs) {
 			lane = recordRunOutcome(lane, r);
 		}
-		const w2Eval = evaluateWindow(
+		const w2Eval = evaluateWindowWithHealthySupplementalGates(
 			lane,
 			"2026-03-15T00:00:00Z",
 			"2026-03-29T00:00:00Z",
@@ -904,7 +1162,7 @@ describe("end-to-end: two-window expansion", () => {
 		for (const r of w3Runs) {
 			lane = recordRunOutcome(lane, r);
 		}
-		const w3Eval = evaluateWindow(
+		const w3Eval = evaluateWindowWithHealthySupplementalGates(
 			lane,
 			"2026-03-29T00:00:00Z",
 			"2026-04-12T00:00:00Z",

@@ -27,6 +27,8 @@ describe("command registry", () => {
 			"check-environment",
 			"docs-gate",
 			"license-gate",
+			"symphony-check",
+			"workflow:generate",
 		]);
 	});
 
@@ -35,11 +37,25 @@ describe("command registry", () => {
 		expect(result?.spec.name).toBe("policy-gate");
 	});
 
+	it("resolves symphony:check alias to symphony-check spec", () => {
+		const result = dispatchRegistryCommand("symphony:check", []);
+		expect(result?.spec.name).toBe("symphony-check");
+	});
+
+	it("resolves workflow-generate alias to workflow:generate spec", () => {
+		const result = dispatchRegistryCommand("workflow-generate", []);
+		expect(result?.spec.name).toBe("workflow:generate");
+	});
+
 	it("exposes migrated aliases alongside canonical command names", () => {
 		expect(MIGRATED_COMMAND_AND_ALIAS_NAMES).toContain("risk-policy-gate");
 		expect(MIGRATED_COMMAND_AND_ALIAS_NAMES).toContain("policy-gate");
 		expect(MIGRATED_COMMAND_AND_ALIAS_NAMES).toContain("pr-template-check");
 		expect(MIGRATED_COMMAND_AND_ALIAS_NAMES).toContain("pr-template-gate");
+		expect(MIGRATED_COMMAND_AND_ALIAS_NAMES).toContain("symphony:check");
+		expect(MIGRATED_COMMAND_AND_ALIAS_NAMES).toContain("symphony-check");
+		expect(MIGRATED_COMMAND_AND_ALIAS_NAMES).toContain("workflow-generate");
+		expect(MIGRATED_COMMAND_AND_ALIAS_NAMES).toContain("workflow:generate");
 	});
 
 	it("returns undefined for unknown commands", () => {

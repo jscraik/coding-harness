@@ -187,6 +187,8 @@ export type {
 	PilotLane,
 	PilotLaneConfig,
 	RunOutcome,
+	SupplementalGateActuals,
+	SupplementalPilotGateId,
 	TransitionDecision,
 	TransitionResult,
 	WindowEvaluation,

@@ -75,6 +75,10 @@ export interface TransitionRow {
 	G: string;
 	/** Action to execute on transition. */
 	A: string;
+	/** Optional plugin column for S|E|G|A|P|R|N tables. */
+	P?: string;
+	/** Optional result column for S|E|G|A|P|R|N tables. */
+	R?: string;
 	/** Next state after the transition. */
 	N: string;
 }

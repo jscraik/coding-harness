@@ -301,3 +301,21 @@ export async function runPreflightGate(
 }
 
 export { EXIT_CODES };
+
+// Re-export performance overload precheck for timing-sensitive check consumers
+export {
+	runPerformanceOverloadPrecheck,
+	formatTimingAssertionSkipDiagnostic,
+	PERFORMANCE_PRECHECK_ENV,
+	type PerformanceOverloadPrecheckResult,
+	type PerformanceOverloadPrecheckOptions,
+	type PerformanceOverloadThresholds,
+	type PerformanceOverloadObserved,
+} from "./performance-overload.js";
+
+// Re-export timing assertion overload guard for test suite consumers
+export {
+	evaluateTimingAssertionOverload,
+	runTimingAssertionWithOverloadGuard,
+	type TimingAssertionOverloadCheck,
+} from "../test/overload-guard.js";

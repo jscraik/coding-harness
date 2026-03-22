@@ -261,7 +261,16 @@ function extractValidationContract(
 	return vc;
 }
 
-/** Extract transitions from a canonical S|E|G|A|N table. */
+function containsValidationContractFields(sectionContent: string): boolean {
+	return (
+		sectionContent.includes("test_mode") ||
+		sectionContent.includes("test_tier") ||
+		sectionContent.includes("tracer_bullet_first") ||
+		sectionContent.includes("red_evidence_required")
+	);
+}
+
+/** Extract transitions from canonical S|E|G|A|N or S|E|G|A|P|R|N tables. */
 function extractTransitions(
 	tableContent: string,
 	errors: ParseError[],
@@ -269,35 +278,59 @@ function extractTransitions(
 	const rows = parseMarkdownTable(tableContent);
 	const transitions: TransitionRow[] = [];
 
-	// Skip header row (first row is the header: S, E, G, A, N)
+	// Skip header row when present.
 	const dataRows = rows.length > 0 && isHeaderRow(rows[0]!) ? rows.slice(1) : rows;
 
 	for (const row of dataRows) {
-		if (row.length < 5) {
+		if (row.length !== 5 && row.length !== 7) {
 			errors.push({
 				code: "PARSE_INCOMPLETE_ROW",
-				message: `Transition row has ${row.length} cells, expected 5`,
+				message: `Transition row has ${row.length} cells, expected 5 or 7`,
 			});
 			continue;
 		}
 
-		transitions.push({
+		const transition: TransitionRow = {
 			S: row[0]!.trim(),
 			E: row[1]!.trim(),
 			G: row[2]!.trim(),
 			A: row[3]!.trim(),
-			N: row[4]!.trim(),
-		});
+			N: row[row.length === 7 ? 6 : 4]!.trim(),
+		};
+
+		if (row.length === 7) {
+			transition.P = row[4]!.trim();
+			transition.R = row[5]!.trim();
+		}
+
+		transitions.push(transition);
 	}
 
 	return transitions;
 }
 
-/** Check if a table row looks like a header (S, E, G, A, N). */
+/** Check if a table row looks like a canonical transition header. */
 function isHeaderRow(row: string[]): boolean {
-	if (row.length < 5) return false;
+	if (row.length !== 5 && row.length !== 7) return false;
 	const normalized = row.map((c) => c.trim().toLowerCase());
-	return normalized[0] === "s" && normalized[1] === "e" && normalized[2] === "g" && normalized[3] === "a" && normalized[4] === "n";
+	if (
+		normalized[0] !== "s" ||
+		normalized[1] !== "e" ||
+		normalized[2] !== "g" ||
+		normalized[3] !== "a"
+	) {
+		return false;
+	}
+
+	if (row.length === 7) {
+		return (
+			normalized[4] === "p" &&
+			normalized[5] === "r" &&
+			normalized[6] === "n"
+		);
+	}
+
+	return normalized[4] === "n";
 }
 
 /** Extract error codes from a bullet list or text content. */
@@ -393,8 +426,16 @@ export function parseWorkflowFile(content: string): ParseResult {
 
 	// ── Validation Contract ─────────────────────────────────────────────────
 	let validationContract: ValidationContract | undefined;
-	const vcSection = sections.get("validation contract") || sections.get("validation checklist") || "";
-	if (vcSection && vcSection.includes("|")) {
+	const vcSection =
+		sections.get("validation contract") ||
+		sections.get("validation checklist") ||
+		sections.get("invariants") ||
+		"";
+	if (
+		vcSection &&
+		vcSection.includes("|") &&
+		containsValidationContractFields(vcSection)
+	) {
 		validationContract = extractValidationContract(vcSection);
 	}
 

@@ -46,6 +46,21 @@ export type OperatorMetricId =
 	| "repeat_failure_recurrence"
 	| "compaction_event_rate";
 
+/** Gates that require supplemental evidence beyond per-run operator metrics. */
+export type SupplementalPilotGateId = Exclude<
+	PilotGateId,
+	| "pilot_stability"
+	| "operator_speed"
+	| "false_block_control"
+	| "solo_operator_efficiency"
+	| "pr_green_closure"
+>;
+
+/** Supplemental gate values for gates that cannot be derived from run metrics alone. */
+export type SupplementalGateActuals = Partial<
+	Record<SupplementalPilotGateId, number>
+>;
+
 /** Metric threshold definition. */
 export interface MetricThreshold {
 	/** Metric identifier. */
@@ -127,7 +142,7 @@ export interface PilotLaneConfig {
 	/** Required consecutive passing windows before expansion. */
 	requiredConsecutiveWindows: number;
 	/** Custom metric thresholds (overrides defaults). */
-	thresholdOverrides?: Record<OperatorMetricId, number> | undefined;
+	thresholdOverrides?: Partial<Record<OperatorMetricId, number>> | undefined;
 }
 
 /** A pilot lane with tracked state. */
@@ -379,94 +394,176 @@ export function evaluateWindow(
 	lane: PilotLane,
 	windowStart: string,
 	windowEnd: string,
+	supplementalGateActuals?: SupplementalGateActuals,
 ): WindowEvaluation {
 	const windowId = `window-${windowStart.slice(0, 10)}-${windowEnd.slice(0, 10)}`;
 	const runs = getRunsInWindow(lane.runs, windowStart, windowEnd);
 	const metrics = computeWindowMetrics(runs);
+	const windowDurationDays = computeDurationDays(windowStart, windowEnd);
+	const observationDurationDays = computeObservationDurationDays(
+		lane,
+		windowStart,
+		windowEnd,
+	);
 	const gates: GateEvaluation[] = [];
 	const stopCriteria: string[] = [];
 	const warningSignsDetected: string[] = [];
+	const previousWindow = lane.windows[lane.windows.length - 1] ?? null;
+	const decisionTimeThreshold = resolveMetricThreshold(
+		"decision_time_ms",
+		lane.config.thresholdOverrides,
+	);
+	const falseBlockThreshold = resolveMetricThreshold(
+		"false_block_rate",
+		lane.config.thresholdOverrides,
+	);
+	const manualInterventionThreshold = resolveMetricThreshold(
+		"manual_intervention_rate",
+		lane.config.thresholdOverrides,
+	);
+	const prClosureThreshold = resolveMetricThreshold(
+		"pr_green_closure_rate",
+		lane.config.thresholdOverrides,
+	);
 
 	// pilot_stability: pass rate >= 95% and zero policy bypasses
 	const stabilityPassed =
-		metrics.passRate >= 0.95 && metrics.policyBypassCount === 0;
+		compareAgainstThreshold(
+			metrics.passRate,
+			DEFAULT_GATE_THRESHOLDS.pilot_stability.threshold,
+			DEFAULT_GATE_THRESHOLDS.pilot_stability.comparison,
+		) && metrics.policyBypassCount === 0;
 	gates.push({
 		gateId: "pilot_stability",
 		passed: stabilityPassed,
 		actual: metrics.passRate,
-		threshold: 0.95,
-		comparison: "at_least",
+		threshold: DEFAULT_GATE_THRESHOLDS.pilot_stability.threshold,
+		comparison: DEFAULT_GATE_THRESHOLDS.pilot_stability.comparison,
 		message: stabilityPassed
 			? `Pass rate ${(metrics.passRate * 100).toFixed(1)}% meets threshold, 0 policy bypasses`
-			: `Pass rate ${(metrics.passRate * 100).toFixed(1)}% ${metrics.passRate < 0.95 ? "below 95% threshold" : ""} ${metrics.policyBypassCount > 0 ? `and ${metrics.policyBypassCount} policy bypass(es)` : ""}`.trim(),
+			: `Pass rate ${(metrics.passRate * 100).toFixed(1)}% ${metrics.passRate < DEFAULT_GATE_THRESHOLDS.pilot_stability.threshold ? `below ${(DEFAULT_GATE_THRESHOLDS.pilot_stability.threshold * 100).toFixed(0)}% threshold` : ""} ${metrics.policyBypassCount > 0 ? `and ${metrics.policyBypassCount} policy bypass(es)` : ""}`.trim(),
 	});
 	if (!stabilityPassed) {
 		stopCriteria.push("pilot_stability threshold not met");
 	}
 
-	// operator_speed: p50 decision time <= 60s
-	const speedPassed = metrics.p50DecisionTimeMs <= 60000;
+	// behavior_change_honesty: explicit RED/contract evidence is required
+	appendSupplementalGateEvaluation({
+		gateId: "behavior_change_honesty",
+		supplementalGateActuals,
+		windowDurationDays,
+		observationDurationDays,
+		gates,
+		stopCriteria,
+	});
+
+	// operator_speed: p50 decision time <= configured threshold
+	const speedPassed = compareAgainstThreshold(
+		metrics.p50DecisionTimeMs,
+		decisionTimeThreshold,
+		DEFAULT_GATE_THRESHOLDS.operator_speed.comparison,
+	);
 	gates.push({
 		gateId: "operator_speed",
 		passed: speedPassed,
 		actual: metrics.p50DecisionTimeMs,
-		threshold: 60000,
-		comparison: "at_most",
+		threshold: decisionTimeThreshold,
+		comparison: DEFAULT_GATE_THRESHOLDS.operator_speed.comparison,
 		message: speedPassed
-			? `p50 decision time ${metrics.p50DecisionTimeMs}ms within 60s threshold`
-			: `p50 decision time ${metrics.p50DecisionTimeMs}ms exceeds 60s threshold`,
+			? `p50 decision time ${metrics.p50DecisionTimeMs}ms within ${decisionTimeThreshold}ms threshold`
+			: `p50 decision time ${metrics.p50DecisionTimeMs}ms exceeds ${decisionTimeThreshold}ms threshold`,
 	});
-	if (!speedPassed) {
+	if (
+		!speedPassed &&
+		didWindowFailGate(previousWindow, "operator_speed")
+	) {
 		warningSignsDetected.push("operator_speed: p50 decision time above threshold");
 	}
 
-	// false_block_control: false block rate <= 5%
-	const falseBlockPassed = metrics.falseBlockRate <= 0.05;
+	// false_block_control: false block rate <= configured threshold
+	const falseBlockPassed = compareAgainstThreshold(
+		metrics.falseBlockRate,
+		falseBlockThreshold,
+		DEFAULT_GATE_THRESHOLDS.false_block_control.comparison,
+	);
 	gates.push({
 		gateId: "false_block_control",
 		passed: falseBlockPassed,
 		actual: metrics.falseBlockRate,
-		threshold: 0.05,
-		comparison: "at_most",
+		threshold: falseBlockThreshold,
+		comparison: DEFAULT_GATE_THRESHOLDS.false_block_control.comparison,
 		message: falseBlockPassed
 			? `False block rate ${(metrics.falseBlockRate * 100).toFixed(1)}% within threshold`
-			: `False block rate ${(metrics.falseBlockRate * 100).toFixed(1)}% exceeds 5% threshold`,
+			: `False block rate ${(metrics.falseBlockRate * 100).toFixed(1)}% exceeds ${(falseBlockThreshold * 100).toFixed(1)}% threshold`,
 	});
 	if (!falseBlockPassed) {
 		stopCriteria.push("false_block_control threshold not met");
 	}
 
-	// solo_operator_efficiency: manual intervention rate <= 20%
-	const soloEffPassed = metrics.manualInterventionRate <= 0.20;
+	// solo_operator_efficiency: manual intervention rate <= configured threshold
+	const soloEffPassed = compareAgainstThreshold(
+		metrics.manualInterventionRate,
+		manualInterventionThreshold,
+		DEFAULT_GATE_THRESHOLDS.solo_operator_efficiency.comparison,
+	);
 	gates.push({
 		gateId: "solo_operator_efficiency",
 		passed: soloEffPassed,
 		actual: metrics.manualInterventionRate,
-		threshold: 0.20,
-		comparison: "at_most",
+		threshold: manualInterventionThreshold,
+		comparison: DEFAULT_GATE_THRESHOLDS.solo_operator_efficiency.comparison,
 		message: soloEffPassed
 			? `Manual intervention rate ${(metrics.manualInterventionRate * 100).toFixed(1)}% within threshold`
-			: `Manual intervention rate ${(metrics.manualInterventionRate * 100).toFixed(1)}% exceeds 20% threshold`,
+			: `Manual intervention rate ${(metrics.manualInterventionRate * 100).toFixed(1)}% exceeds ${(manualInterventionThreshold * 100).toFixed(1)}% threshold`,
 	});
 	if (!soloEffPassed) {
 		warningSignsDetected.push("solo_operator_efficiency: manual intervention exceeds threshold");
 	}
 
-	// pr_green_closure: >= 90% PRs reach terminal state
-	const prClosurePassed = metrics.prGreenClosureRate >= 0.90;
+	// pr_green_closure: >= configured threshold of PRs reach terminal state
+	const prClosurePassed = compareAgainstThreshold(
+		metrics.prGreenClosureRate,
+		prClosureThreshold,
+		DEFAULT_GATE_THRESHOLDS.pr_green_closure.comparison,
+	);
 	gates.push({
 		gateId: "pr_green_closure",
 		passed: prClosurePassed,
 		actual: metrics.prGreenClosureRate,
-		threshold: 0.90,
-		comparison: "at_least",
+		threshold: prClosureThreshold,
+		comparison: DEFAULT_GATE_THRESHOLDS.pr_green_closure.comparison,
 		message: prClosurePassed
 			? `PR closure rate ${(metrics.prGreenClosureRate * 100).toFixed(1)}% meets threshold`
-			: `PR closure rate ${(metrics.prGreenClosureRate * 100).toFixed(1)}% below 90% threshold`,
+			: `PR closure rate ${(metrics.prGreenClosureRate * 100).toFixed(1)}% below ${(prClosureThreshold * 100).toFixed(1)}% threshold`,
 	});
 	if (!prClosurePassed) {
 		stopCriteria.push("pr_green_closure threshold not met");
 	}
+
+	appendSupplementalGateEvaluation({
+		gateId: "guardrail_capture",
+		supplementalGateActuals,
+		windowDurationDays,
+		observationDurationDays,
+		gates,
+		stopCriteria,
+	});
+	appendSupplementalGateEvaluation({
+		gateId: "compaction_health",
+		supplementalGateActuals,
+		windowDurationDays,
+		observationDurationDays,
+		gates,
+		stopCriteria,
+	});
+	appendSupplementalGateEvaluation({
+		gateId: "review_capacity",
+		supplementalGateActuals,
+		windowDurationDays,
+		observationDurationDays,
+		gates,
+		stopCriteria,
+	});
 
 	const passed = stopCriteria.length === 0;
 
@@ -574,14 +671,14 @@ export function computeTransitionDecision(
 		);
 	}
 
-	// Check for demotion: above warning thresholds for 2+ consecutive windows
+	// Check for demotion: warning-threshold breaches persisted across 2 windows
 	const shouldDemote =
 		secondLastWindow !== null &&
-		!secondLastWindow.passed &&
-		!lastWindow.passed;
+		hasWarningThresholdBreach(secondLastWindow) &&
+		hasWarningThresholdBreach(lastWindow);
 	if (shouldDemote) {
 		reasons.push(
-			"Above warning thresholds for 2 consecutive windows — demote",
+			"Warning-threshold breaches persisted for 2 consecutive windows — demote",
 		);
 	}
 
@@ -589,7 +686,7 @@ export function computeTransitionDecision(
 	let decision: TransitionDecision;
 	if (shouldDemote) {
 		decision = "demote";
-		reasons.push("Failed 2 consecutive windows — demote one tier");
+		reasons.push("Sustained warning-threshold breach for 30 days — demote one tier");
 	} else if (shouldFreeze) {
 		decision = "freeze";
 		reasons.push("Freeze new features until warning signs clear");
@@ -781,4 +878,142 @@ function renderTransitionSummary(data: {
 
 	lines.push("═══════════════════════════════════════════════════");
 	return lines.join("\n");
+}
+
+function resolveMetricThreshold(
+	metricId: OperatorMetricId,
+	thresholdOverrides?: Partial<Record<OperatorMetricId, number>>,
+): number {
+	const override = thresholdOverrides?.[metricId];
+	if (override !== undefined) {
+		return override;
+	}
+
+	const defaultThreshold = DEFAULT_METRIC_THRESHOLDS.find(
+		(metric) => metric.metricId === metricId,
+	);
+	if (!defaultThreshold) {
+		throw new Error(`Missing default metric threshold for ${metricId}`);
+	}
+
+	return defaultThreshold.healthyThreshold;
+}
+
+function compareAgainstThreshold(
+	actual: number,
+	threshold: number,
+	comparison: "at_most" | "at_least",
+): boolean {
+	return comparison === "at_most"
+		? actual <= threshold
+		: actual >= threshold;
+}
+
+function didWindowFailGate(
+	window: WindowEvaluation | null,
+	gateId: PilotGateId,
+): boolean {
+	if (!window) {
+		return false;
+	}
+
+	return window.gates.some((gate) => gate.gateId === gateId && !gate.passed);
+}
+
+function hasWarningThresholdBreach(window: WindowEvaluation): boolean {
+	return (
+		didWindowFailGate(window, "operator_speed") ||
+		didWindowFailGate(window, "solo_operator_efficiency")
+	);
+}
+
+function appendSupplementalGateEvaluation(input: {
+	gateId: SupplementalPilotGateId;
+	supplementalGateActuals: SupplementalGateActuals | undefined;
+	windowDurationDays: number;
+	observationDurationDays: number;
+	gates: GateEvaluation[];
+	stopCriteria: string[];
+}): void {
+	const gateThreshold = DEFAULT_GATE_THRESHOLDS[input.gateId];
+	const actual = input.supplementalGateActuals?.[input.gateId];
+	const requiredWindowDays = input.gateId === "guardrail_capture" ? 30 : 14;
+	const observedDays = Math.max(0, Math.floor(input.observationDurationDays));
+
+	if (input.gateId === "guardrail_capture") {
+		if (input.observationDurationDays < requiredWindowDays) {
+			input.gates.push({
+				gateId: input.gateId,
+				passed: true,
+				actual: Number.NaN,
+				threshold: gateThreshold.threshold,
+				comparison: gateThreshold.comparison,
+				message: `${input.gateId} requires a rolling ${requiredWindowDays}-day observation window; only ${observedDays} day(s) observed so far`,
+			});
+			return;
+		}
+	} else if (input.windowDurationDays < requiredWindowDays) {
+		input.gates.push({
+			gateId: input.gateId,
+			passed: true,
+			actual: Number.NaN,
+			threshold: gateThreshold.threshold,
+			comparison: gateThreshold.comparison,
+			message: `${input.gateId} is evaluated on a ${requiredWindowDays}-day window and is not applied to this ${input.windowDurationDays}-day lane`,
+		});
+		return;
+	}
+
+	if (actual === undefined) {
+		input.gates.push({
+			gateId: input.gateId,
+			passed: false,
+			actual: Number.NaN,
+			threshold: gateThreshold.threshold,
+			comparison: gateThreshold.comparison,
+			message: `${input.gateId} supplemental evidence not provided for this window`,
+		});
+		input.stopCriteria.push(`${input.gateId} supplemental evidence missing`);
+		return;
+	}
+
+	const passed = compareAgainstThreshold(
+		actual,
+		gateThreshold.threshold,
+		gateThreshold.comparison,
+	);
+	input.gates.push({
+		gateId: input.gateId,
+		passed,
+		actual,
+		threshold: gateThreshold.threshold,
+		comparison: gateThreshold.comparison,
+		message: passed
+			? `${input.gateId} supplemental evidence meets threshold`
+			: `${input.gateId} supplemental evidence does not meet threshold`,
+	});
+	if (!passed) {
+		input.stopCriteria.push(`${input.gateId} threshold not met`);
+	}
+}
+
+function computeDurationDays(start: string, end: string): number {
+	return (new Date(end).getTime() - new Date(start).getTime()) / 86_400_000;
+}
+
+function computeObservationDurationDays(
+	lane: PilotLane,
+	windowStart: string,
+	windowEnd: string,
+): number {
+	const observationStartCandidates = [windowStart, lane.createdAt, ...lane.runs.map((run) => run.timestamp)]
+		.map((timestamp) => new Date(timestamp).getTime())
+		.filter((value) => Number.isFinite(value));
+	const observationStartMs =
+		observationStartCandidates.length > 0
+			? Math.min(...observationStartCandidates)
+			: new Date(windowStart).getTime();
+	const observationEndMs = new Date(windowEnd).getTime();
+
+	return Math.max(0, (observationEndMs - observationStartMs) / 86_400_000);
 }

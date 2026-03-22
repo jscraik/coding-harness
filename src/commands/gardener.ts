@@ -186,3 +186,14 @@ export {
 	type GardenerOutput,
 	type GardenerResult,
 };
+
+// Re-export PR creation utilities for automation consumers
+export {
+	createMaintenancePR,
+	getRepoInfo,
+	hasGardenerToken,
+	getGardenerToken,
+	type PRCreatorOptions,
+	type PRCreatorResult,
+	type PRCreatorError,
+} from "../lib/gardener/pr-creator.js";

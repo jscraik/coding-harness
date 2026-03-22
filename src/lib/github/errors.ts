@@ -15,6 +15,20 @@ export interface GitHubErrorDetails {
 	requestId?: string | undefined;
 }
 
+function legacyErrorNameForCode(code: GitHubErrorCode): string {
+	switch (code) {
+		case "NOT_FOUND":
+			return "NotFoundError";
+		case "FORBIDDEN":
+		case "RATE_LIMITED":
+			return "ForbiddenError";
+		case "UNAUTHORIZED":
+			return "UnauthorizedError";
+		default:
+			return "GitHubApiError";
+	}
+}
+
 export class GitHubApiError extends Error {
 	public readonly code: GitHubErrorCode;
 	public readonly status: number;
@@ -22,7 +36,7 @@ export class GitHubApiError extends Error {
 
 	constructor(details: GitHubErrorDetails) {
 		super(details.message);
-		this.name = "GitHubApiError";
+		this.name = legacyErrorNameForCode(details.code);
 		this.code = details.code;
 		this.status = details.status;
 		this.requestId = details.requestId;

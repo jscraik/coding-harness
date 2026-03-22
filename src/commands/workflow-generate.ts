@@ -20,6 +20,29 @@ export interface WorkflowGenerateOptions {
 	watch?: boolean | undefined;
 }
 
+export function parseWorkflowGenerateArgs(
+	args: string[],
+): WorkflowGenerateOptions {
+	const sourceIndex = args.indexOf("--source");
+	const outputIndex = args.indexOf("--output");
+	const formatIndex = args.indexOf("--format");
+
+	const formatCandidate = formatIndex >= 0 ? args[formatIndex + 1] : undefined;
+	const format =
+		formatCandidate === "segarn" || formatCandidate === "segaprn"
+			? formatCandidate
+			: undefined;
+
+	return {
+		source: sourceIndex >= 0 ? args[sourceIndex + 1] : undefined,
+		output: outputIndex >= 0 ? args[outputIndex + 1] : undefined,
+		format,
+		json: args.includes("--json"),
+		dryRun: args.includes("--dry-run"),
+		watch: args.includes("--watch"),
+	};
+}
+
 export interface TransitionRow {
 	state: string;
 	event: string;
@@ -71,6 +94,8 @@ export interface WorkflowSpec {
 	};
 }
 
+type WorkflowOutputFormat = "json" | "segarn" | "segaprn";
+
 const REQUIRED_ERROR_CODES = [
 	"VALIDATION_ERROR",
 	"BLOCKED_DEPENDENCY",
@@ -109,13 +134,80 @@ function extractFrontmatter(content: string): Record<string, string> {
 	return frontmatter;
 }
 
-function extractMetadataSection(
-	content: string,
-): WorkflowSpec["metadata"] | null {
-	const match = content.match(/##\s+1\.\s*Metadata[\s\S]*?(?=##\s+2\.|$)/);
-	if (!match?.[0]) return null;
+function normalizeHeading(heading: string): string {
+	return heading
+		.replace(/^\d+\.\s*/, "")
+		.replace(/\s+[—-]\s+[A-Z]\s*(?:\|\s*[A-Z]\s*)+$/i, "")
+		.trim()
+		.toLowerCase();
+}
 
-	const section = match[0];
+function extractSections(content: string): Map<string, string> {
+	const sections = new Map<string, string>();
+	const lines = content.split("\n");
+	let currentHeading: string | null = null;
+	let currentContent: string[] = [];
+
+	for (const line of lines) {
+		const headingMatch = line.match(/^##\s+(.+)$/);
+		if (headingMatch?.[1]) {
+			if (currentHeading) {
+				sections.set(normalizeHeading(currentHeading), currentContent.join("\n").trim());
+			}
+			currentHeading = headingMatch[1];
+			currentContent = [];
+			continue;
+		}
+		if (currentHeading) {
+			currentContent.push(line);
+		}
+	}
+
+	if (currentHeading) {
+		sections.set(normalizeHeading(currentHeading), currentContent.join("\n").trim());
+	}
+
+	return sections;
+}
+
+function getSection(
+	sections: Map<string, string>,
+	...candidates: string[]
+): string {
+	const normalizedCandidates = candidates.map((candidate) =>
+		normalizeHeading(candidate),
+	);
+
+	for (const candidate of normalizedCandidates) {
+		const section = sections.get(candidate);
+		if (section) {
+			return section;
+		}
+	}
+
+	for (const [heading, section] of sections) {
+		if (
+			normalizedCandidates.some(
+				(candidate) =>
+					heading === candidate ||
+					heading.startsWith(`${candidate} `) ||
+					heading.startsWith(`${candidate} —`) ||
+					heading.startsWith(`${candidate} -`),
+			)
+		) {
+			return section;
+		}
+	}
+
+	return "";
+}
+
+function extractMetadataSection(
+	sections: Map<string, string>,
+): WorkflowSpec["metadata"] | null {
+	const section = getSection(sections, "metadata", "execution contract");
+	if (!section) return null;
+
 	const metadata: WorkflowSpec["metadata"] = {
 		owner: "",
 		max_duration: "",
@@ -134,53 +226,69 @@ function extractMetadataSection(
 	return metadata;
 }
 
-function extractErrorsSection(content: string): WorkflowSpec["errors"] {
+function extractErrorsSection(
+	sections: Map<string, string>,
+): WorkflowSpec["errors"] {
 	const errors: WorkflowSpec["errors"] = [];
+	const section = getSection(sections, "errors", "error handling", "error taxonomy");
+	if (!section) return errors;
 
-	// Try section 2 (Errors) first
-	let match = content.match(/##\s+2\.\s*Errors?[\s\S]*?(?=##\s+3\.|$)/);
-
-	// Fall back to searching for error table anywhere
-	if (!match) {
-		match = content.match(/(\|\s*Error\s*\|[\s\S]*?)(?=\n\s*##|\n\s*$)/);
-	}
-
-	if (!match) return errors;
-
-	const lines = match[0].split("\n");
+	const lines = section.split("\n");
 	for (const line of lines) {
 		const trimmed = line.trim();
-		if (!trimmed.startsWith("|") || trimmed.includes("---")) continue;
+		if (trimmed.startsWith("|") && !trimmed.includes("---")) {
+			const cells = trimmed
+				.split("|")
+				.slice(1, -1)
+				.map((c) => c.trim().replace(/^`|`$/g, ""));
 
-		const cells = trimmed
-			.split("|")
-			.slice(1, -1)
-			.map((c) => c.trim().replace(/^`|`$/g, ""));
-
-		if (cells.length >= 3) {
-			const code = cells[0];
-			const condition = cells[1];
-			const routing = cells[2];
-			if (code && condition && routing && REQUIRED_ERROR_CODES.includes(code)) {
-				errors.push({
-					code,
-					condition,
-					routing,
-				});
+			if (cells.length >= 3) {
+				const code = cells[0];
+				const condition = cells[1];
+				const routing = cells[2];
+				if (
+					code &&
+					condition &&
+					routing &&
+					REQUIRED_ERROR_CODES.includes(code)
+				) {
+					errors.push({
+						code,
+						condition,
+						routing,
+					});
+				}
 			}
+			continue;
+		}
+
+		const bulletMatch = trimmed.match(
+			/^[-*]\s+`?([A-Z_]+)`?\s*:\s*(.+)$/,
+		);
+		if (
+			bulletMatch?.[1] &&
+			bulletMatch[2] &&
+			REQUIRED_ERROR_CODES.includes(bulletMatch[1])
+		) {
+			errors.push({
+				code: bulletMatch[1],
+				condition: bulletMatch[2],
+				routing: bulletMatch[2],
+			});
 		}
 	}
 
 	return errors;
 }
 
-function extractStatesSection(content: string): WorkflowSpec["states"] {
+function extractStatesSection(
+	sections: Map<string, string>,
+): WorkflowSpec["states"] {
 	const states: WorkflowSpec["states"] = [];
+	const section = getSection(sections, "states");
+	if (!section) return states;
 
-	const match = content.match(/##\s+3\.\s*States?[\s\S]*?(?=##\s+4\.|$)/);
-	if (!match) return states;
-
-	const lines = match[0].split("\n");
+	const lines = section.split("\n");
 	for (const line of lines) {
 		const trimmed = line.trim();
 
@@ -200,23 +308,28 @@ function extractStatesSection(content: string): WorkflowSpec["states"] {
 	return states;
 }
 
-function extractTransitions(content: string): TransitionRow[] {
+function extractTransitions(sections: Map<string, string>): TransitionRow[] {
 	const transitions: TransitionRow[] = [];
-
-	// Find transition table (section 4)
-	const match = content.match(
-		/##\s+4\.\s*Transition Table.*?\n\s*\|\s*S\s*\|\s*E\s*\|\s*G\s*\|\s*A\s*\|\s*N\s*\|[\s\S]*?(?=##\s+5\.|$)/,
+	const section = getSection(
+		sections,
+		"transition table (canonical)",
+		"transition table",
+		"transitions",
 	);
-	if (!match) return transitions;
+	if (!section) return transitions;
 
-	const lines = match[0].split("\n");
+	const lines = section.split("\n");
 	let inTable = false;
 
 	for (const line of lines) {
 		const trimmed = line.trim();
 
 		if (!inTable) {
-			if (/^\|\s*S\s*\|\s*E\s*\|\s*G\s*\|\s*A\s*\|\s*N\s*\|/.test(trimmed)) {
+			if (
+				/^\|\s*S\s*\|\s*E\s*\|\s*G\s*\|\s*A\s*(?:\|\s*P\s*\|\s*R\s*)?\|\s*N\s*\|/.test(
+					trimmed,
+				)
+			) {
 				inTable = true;
 			}
 			continue;
@@ -230,12 +343,14 @@ function extractTransitions(content: string): TransitionRow[] {
 			.slice(1, -1)
 			.map((c) => c.trim());
 
-		if (cells.length === 5) {
+		if (cells.length === 5 || cells.length === 7) {
 			const state = cells[0]?.replace(/^`|`$/g, "");
 			const event = cells[1]?.replace(/^`|`$/g, "");
 			const guard = cells[2];
 			const action = cells[3];
-			const next = cells[4]?.replace(/^`|`$/g, "");
+			const plugin = cells.length === 7 ? cells[4] : undefined;
+			const result = cells.length === 7 ? cells[5] : undefined;
+			const next = cells[cells.length - 1]?.replace(/^`|`$/g, "");
 			if (
 				state &&
 				event &&
@@ -248,6 +363,8 @@ function extractTransitions(content: string): TransitionRow[] {
 					event,
 					guard,
 					action,
+					...(plugin !== undefined ? { plugin } : {}),
+					...(result !== undefined ? { result } : {}),
 					next,
 				});
 			}
@@ -257,35 +374,52 @@ function extractTransitions(content: string): TransitionRow[] {
 	return transitions;
 }
 
-function extractInvariants(content: string): string[] {
+function extractInvariants(sections: Map<string, string>): string[] {
 	const invariants: string[] = [];
+	const section = getSection(sections, "invariants");
+	if (!section) return invariants;
 
-	// Section 5 in standard format
-	const match = content.match(/##\s+5\.\s*Invariants?[\s\S]*?(?=##\s+6\.|$)/);
-	if (!match) return invariants;
-
-	const lines = match[0].split("\n");
+	const lines = section.split("\n");
 	for (const line of lines) {
 		const trimmed = line.trim();
 		if (trimmed.startsWith("- ")) {
 			invariants.push(trimmed.slice(2));
+			continue;
+		}
+
+		if (
+			trimmed.startsWith("|") &&
+			!/^\|\s*[-:\s|]+\|?$/.test(trimmed)
+		) {
+			const cells = trimmed
+				.split("|")
+				.slice(1, -1)
+				.map((cell) => cell.trim().replace(/^`|`$/g, ""));
+			const field = cells[0];
+			const value = cells[1];
+			if (
+				field &&
+				value &&
+				field.toLowerCase() !== "field" &&
+				value.toLowerCase() !== "value"
+			) {
+				invariants.push(`${field}: ${value}`);
+			}
 		}
 	}
 
 	return invariants;
 }
 
-function extractIdempotency(content: string): WorkflowSpec["idempotency"] {
+function extractIdempotency(
+	sections: Map<string, string>,
+): WorkflowSpec["idempotency"] {
 	const result: WorkflowSpec["idempotency"] = {
 		key: "",
 		notes: [],
 	};
-
-	// Section 6 in standard format
-	const match = content.match(/##\s+6\.\s*Idempotency[\s\S]*?(?=##\s+7\.|$)/);
-	if (!match) return result;
-
-	const section = match[0];
+	const section = getSection(sections, "idempotency");
+	if (!section) return result;
 
 	// Extract key
 	const keyMatch = section.match(/[Kk]ey:\s*([^\n]+)/);
@@ -303,21 +437,30 @@ function extractIdempotency(content: string): WorkflowSpec["idempotency"] {
 	return result;
 }
 
-function extractModes(content: string): WorkflowSpec["modes"] {
+function extractModes(sections: Map<string, string>): WorkflowSpec["modes"] {
 	const modes: WorkflowSpec["modes"] = {
 		strict: "",
 		advisory: "",
 	};
+	const section = getSection(sections, "execution modes", "modes");
+	if (!section) return modes;
 
-	// Usually section 10
-	const match = content.match(/##\s+10\.\s*Modes?[\s\S]*?(?=##\s+11\.|$)/);
-	if (!match) return modes;
-
-	const lines = match[0].split("\n");
+	const lines = section.split("\n");
 	let currentMode: "strict" | "advisory" | null = null;
 
 	for (const line of lines) {
 		const trimmed = line.trim();
+		const strictMatch = trimmed.match(/^[-*]\s+`?STRICT`?\s*:\s*(.+)$/);
+		if (strictMatch?.[1]) {
+			modes.strict = strictMatch[1];
+			continue;
+		}
+		const advisoryMatch = trimmed.match(/^[-*]\s+`?ADVISORY`?\s*:\s*(.+)$/);
+		if (advisoryMatch?.[1]) {
+			modes.advisory = advisoryMatch[1];
+			continue;
+		}
+
 		if (trimmed.includes("STRICT")) currentMode = "strict";
 		if (trimmed.includes("ADVISORY")) currentMode = "advisory";
 
@@ -334,17 +477,20 @@ function extractModes(content: string): WorkflowSpec["modes"] {
 	return modes;
 }
 
-function extractDryRun(content: string): WorkflowSpec["dryRun"] {
+function extractDryRun(sections: Map<string, string>): WorkflowSpec["dryRun"] {
 	const dryRun: WorkflowSpec["dryRun"] = {
 		description: "",
 		trace: "",
 	};
+	const section = getSection(
+		sections,
+		"dry-run simulation",
+		"dry-run",
+		"dry run",
+	);
+	if (!section) return dryRun;
 
-	// Usually section 11
-	const match = content.match(/##\s+11\.\s*Dry-Run[\s\S]*?(?=##\s+12\.|$)/);
-	if (!match) return dryRun;
-
-	const lines = match[0].split("\n");
+	const lines = section.split("\n");
 	for (const line of lines) {
 		const trimmed = line.trim();
 		if (trimmed.startsWith("- ")) {
@@ -360,17 +506,21 @@ function extractDryRun(content: string): WorkflowSpec["dryRun"] {
 	return dryRun;
 }
 
-function extractLogs(content: string): WorkflowSpec["logs"] {
+function extractLogs(sections: Map<string, string>): WorkflowSpec["logs"] {
 	const logs: WorkflowSpec["logs"] = {
 		workflow_id: "",
 		fields: [],
 	};
+	const section = getSection(
+		sections,
+		"observability logs",
+		"observability",
+		"log schema",
+		"logging schema",
+	);
+	if (!section) return logs;
 
-	// Usually section 9
-	const match = content.match(/##\s+9\.\s*Log Schema[\s\S]*?(?=##\s+10\.|$)/);
-	if (!match) return logs;
-
-	const jsonMatch = match[0].match(/```json\n([\s\S]*?)\n```/);
+	const jsonMatch = section.match(/```json\n([\s\S]*?)\n```/);
 	if (jsonMatch?.[1]) {
 		try {
 			const parsed = JSON.parse(jsonMatch[1]);
@@ -379,6 +529,19 @@ function extractLogs(content: string): WorkflowSpec["logs"] {
 		} catch {
 			// Ignore parse errors
 		}
+	}
+
+	if (logs.fields.length === 0) {
+		const fieldMatches = section.matchAll(/`([a-z_]+)`/g);
+		for (const match of fieldMatches) {
+			if (match[1] && !logs.fields.includes(match[1])) {
+				logs.fields.push(match[1]);
+			}
+		}
+	}
+
+	if (logs.workflow_id === "" && logs.fields.includes("workflow_id")) {
+		logs.workflow_id = "workflow_id";
 	}
 
 	return logs;
@@ -418,7 +581,10 @@ export function generateMermaidDiagram(spec: WorkflowSpec): string {
 	return diagram;
 }
 
-function generateSpecOutput(spec: WorkflowSpec, format: string): string {
+function generateSpecOutput(
+	spec: WorkflowSpec,
+	format: WorkflowOutputFormat,
+): string {
 	if (format === "json") {
 		return JSON.stringify(spec, null, 2);
 	}
@@ -470,7 +636,15 @@ date: ${spec.date}
 		output += `${state.id} ${state.name} (${state.terminal ? "terminal" : "non-terminal"})\n`;
 	}
 
-	output += `
+	const isSegaprn = format === "segaprn";
+	output += isSegaprn
+		? `
+## 4. Transition Table (Canonical) — S | E | G | A | P | R | N
+
+| S | E | G | A | P | R | N |
+|---|---|---|---|---|---|---|
+`
+		: `
 ## 4. Transition Table (Canonical) — S | E | G | A | N
 
 | S | E | G | A | N |
@@ -478,7 +652,9 @@ date: ${spec.date}
 `;
 
 	for (const t of spec.transitions) {
-		output += `| \`${t.state}\` | \`${t.event}\` | ${t.guard} | ${t.action} | \`${t.next}\` |\n`;
+		output += isSegaprn
+			? `| \`${t.state}\` | \`${t.event}\` | ${t.guard} | ${t.action} | ${t.plugin || ""} | ${t.result || ""} | \`${t.next}\` |\n`
+			: `| \`${t.state}\` | \`${t.event}\` | ${t.guard} | ${t.action} | \`${t.next}\` |\n`;
 	}
 
 	output += `
@@ -585,6 +761,7 @@ export function parseSourceFile(sourcePath: string): WorkflowSpec | null {
 
 	const content = readFileSync(sourcePath, "utf8");
 	const frontmatter = extractFrontmatter(content);
+	const sections = extractSections(content);
 
 	// Parse title from first heading or frontmatter
 	let title = frontmatter.title || "";
@@ -598,7 +775,7 @@ export function parseSourceFile(sourcePath: string): WorkflowSpec | null {
 		}
 	}
 
-	const metadata = extractMetadataSection(content);
+	const metadata = extractMetadataSection(sections);
 	if (!metadata) {
 		console.error("Could not extract metadata section");
 		return null;
@@ -611,14 +788,14 @@ export function parseSourceFile(sourcePath: string): WorkflowSpec | null {
 		date: frontmatter.date || new Date().toISOString().slice(0, 10),
 		origin: frontmatter.origin,
 		metadata,
-		errors: extractErrorsSection(content),
-		states: extractStatesSection(content),
-		transitions: extractTransitions(content),
-		invariants: extractInvariants(content),
-		idempotency: extractIdempotency(content),
-		modes: extractModes(content),
-		dryRun: extractDryRun(content),
-		logs: extractLogs(content),
+		errors: extractErrorsSection(sections),
+		states: extractStatesSection(sections),
+		transitions: extractTransitions(sections),
+		invariants: extractInvariants(sections),
+		idempotency: extractIdempotency(sections),
+		modes: extractModes(sections),
+		dryRun: extractDryRun(sections),
+		logs: extractLogs(sections),
 	};
 
 	return spec;
@@ -628,6 +805,7 @@ function generateWorkflowSpec(
 	sourcePath: string,
 	options: {
 		json?: boolean | undefined;
+		format?: "segarn" | "segaprn" | undefined;
 		dryRun?: boolean | undefined;
 		output?: string | undefined;
 	},
@@ -667,7 +845,7 @@ function generateWorkflowSpec(
 
 	const outputContent = generateSpecOutput(
 		spec,
-		options.json ? "json" : "markdown",
+		options.json ? "json" : (options.format ?? "segarn"),
 	);
 
 	if (options.dryRun) {
@@ -710,6 +888,7 @@ export function runWorkflowGenerateCLI(
 	const {
 		source,
 		output,
+		format = "segarn",
 		json = false,
 		dryRun = false,
 		watch: watchMode = false,
@@ -718,7 +897,7 @@ export function runWorkflowGenerateCLI(
 	if (!source) {
 		console.error("Error: --source is required");
 		console.error(
-			"Usage: harness workflow:generate --source <path> [--output <path>] [--json] [--dry-run] [--watch]",
+			"Usage: harness workflow:generate --source <path> [--output <path>] [--format <segarn|segaprn>] [--json] [--dry-run] [--watch]",
 		);
 		return 1;
 	}
@@ -740,7 +919,12 @@ export function runWorkflowGenerateCLI(
 	}
 
 	if (!watchMode) {
-		return generateWorkflowSpec(sourcePath, { json, dryRun, output });
+		return generateWorkflowSpec(sourcePath, {
+			json,
+			format,
+			dryRun,
+			output,
+		});
 	}
 
 	// Watch mode
@@ -756,6 +940,7 @@ export function runWorkflowGenerateCLI(
 	// Initial generation
 	let lastResult = generateWorkflowSpec(sourcePath, {
 		json,
+		format,
 		dryRun: false,
 		output,
 	});
@@ -768,6 +953,7 @@ export function runWorkflowGenerateCLI(
 			);
 			lastResult = generateWorkflowSpec(sourcePath, {
 				json,
+				format,
 				dryRun: false,
 				output,
 			});
@@ -797,25 +983,11 @@ export function runWorkflowGenerateCLI(
 
 // CLI entry point
 if (import.meta.url === `file://${process.argv[1]}`) {
-	const args = process.argv.slice(2);
-
-	const sourceIndex = args.indexOf("--source");
-	const outputIndex = args.indexOf("--output");
-	const jsonFlag = args.includes("--json");
-	const dryRunFlag = args.includes("--dry-run");
-	const watchFlag = args.includes("--watch");
-
-	const options: WorkflowGenerateOptions = {
-		source: sourceIndex >= 0 ? args[sourceIndex + 1] : undefined,
-		output: outputIndex >= 0 ? args[outputIndex + 1] : undefined,
-		json: jsonFlag,
-		dryRun: dryRunFlag,
-		watch: watchFlag,
-	};
+	const options = parseWorkflowGenerateArgs(process.argv.slice(2));
 
 	const exitCode = runWorkflowGenerateCLI(options);
 	// In watch mode, the process stays alive - don't exit
-	if (!watchFlag) {
+	if (!options.watch) {
 		process.exit(exitCode);
 	}
 }

@@ -1,3 +1,4 @@
+import { spawnSync } from "node:child_process";
 import {
 	existsSync,
 	mkdirSync,
@@ -42,6 +43,7 @@ const EXPECTED_TEMPLATE_PATHS = [
 	".github/ISSUE_TEMPLATE/config.yml",
 	".github/CODEOWNERS",
 	"Makefile",
+	"WORKFLOW.md",
 ];
 const EXPECTED_TEMPLATE_COUNT = EXPECTED_TEMPLATE_PATHS.length;
 
@@ -824,6 +826,184 @@ describe("runInit", () => {
 			expect(issueTemplateConfig).toContain("Private security disclosure");
 		});
 
+		it("creates WORKFLOW.md with auto-populated Symphony config", () => {
+			writeFileSync(
+				join(tempDir, "package.json"),
+				JSON.stringify(
+					{
+						name: "@acme/my-app",
+						bugs: {
+							url: "https://linear.app/acme/project/my-app-abc123",
+						},
+						repository: {
+							type: "git",
+							url: "git+https://github.com/acme/my-app.git",
+						},
+						scripts: {
+							dev: "vite",
+							test: "vitest",
+							check: "pnpm lint && pnpm test",
+						},
+					},
+					null,
+					2,
+				),
+				"utf-8",
+			);
+			writeFileSync(join(tempDir, "pnpm-lock.yaml"), "");
+
+			const result = runInit(tempDir, { dryRun: false, force: false });
+			expect(result.ok).toBe(true);
+
+			const workflowPath = join(tempDir, "WORKFLOW.md");
+			expect(existsSync(workflowPath)).toBe(true);
+
+			const content = require("node:fs").readFileSync(workflowPath, "utf-8");
+
+			// Verify YAML front matter auto-populated from package.json
+			expect(content).toContain('project_slug: "my-app-abc123"');
+			expect(content).toContain(
+				"https://github.com/acme/my-app.git",
+			);
+			expect(content).toContain("pnpm install --frozen-lockfile");
+
+			// Verify project name used in heading (scope stripped)
+			expect(content).toContain("# my-app Workflow");
+
+			// Verify essential Symphony contract sections
+			expect(content).toContain("## Invariants");
+			expect(content).toContain("## Transition Table (Canonical)");
+			expect(content).toContain("harness linear claim");
+			expect(content).toContain("harness linear handoff");
+			expect(content).toContain("harness linear close");
+			expect(content).toContain("## States");
+			expect(content).toContain("## Error Handling");
+			expect(content).toContain("## Validation Checklist");
+			expect(content).toContain("pnpm check");
+		});
+
+		it("creates WORKFLOW.md with placeholder defaults when no package.json", () => {
+			const result = runInit(tempDir, { dryRun: false, force: false });
+			expect(result.ok).toBe(true);
+
+			const workflowPath = join(tempDir, "WORKFLOW.md");
+			expect(existsSync(workflowPath)).toBe(true);
+
+			const content = require("node:fs").readFileSync(workflowPath, "utf-8");
+
+			// Verify placeholders used when no package.json fields available
+			expect(content).toContain('project_slug: "<your-project-slug>"');
+			expect(content).toContain("$SOURCE_REPO_URL");
+			expect(content).toContain("# <project-name> Workflow");
+			expect(content).toContain("git clone --depth 1 $SOURCE_REPO_URL .");
+			expect(content).not.toContain("git clone --depth 1 '$SOURCE_REPO_URL' .");
+		});
+
+		it("normalizes string-form repository URLs for WORKFLOW.md clone hooks", () => {
+			writeFileSync(
+				join(tempDir, "package.json"),
+				JSON.stringify(
+					{
+						name: "@acme/my-app",
+						repository: "git+https://github.com/acme/my-app.git",
+					},
+					null,
+					2,
+				),
+				"utf-8",
+			);
+
+			const result = runInit(tempDir, { dryRun: false, force: false });
+			expect(result.ok).toBe(true);
+
+			const workflowPath = join(tempDir, "WORKFLOW.md");
+			const content = require("node:fs").readFileSync(workflowPath, "utf-8");
+
+			expect(content).toContain(
+				"git clone --depth 1 'https://github.com/acme/my-app.git' .",
+			);
+			expect(content).not.toContain("git+https://github.com/acme/my-app.git");
+		});
+
+		it("normalizes repository shorthands for WORKFLOW.md clone hooks", () => {
+			writeFileSync(
+				join(tempDir, "package.json"),
+				JSON.stringify(
+					{
+						name: "@acme/my-app",
+						repository: "github:acme/my-app",
+					},
+					null,
+					2,
+				),
+				"utf-8",
+			);
+
+			const result = runInit(tempDir, { dryRun: false, force: false });
+			expect(result.ok).toBe(true);
+
+			const workflowPath = join(tempDir, "WORKFLOW.md");
+			const content = require("node:fs").readFileSync(workflowPath, "utf-8");
+
+			expect(content).toContain(
+				"git clone --depth 1 'https://github.com/acme/my-app.git' .",
+			);
+			expect(content).not.toContain(
+				'git clone --depth 1 "github:acme/my-app" .',
+			);
+		});
+
+		it("shell-escapes repository metadata in WORKFLOW.md clone hooks", () => {
+			writeFileSync(
+				join(tempDir, "package.json"),
+				JSON.stringify(
+					{
+						name: "@acme/my-app",
+						repository:
+							"https://github.com/acme/my-app.git$(touch /tmp/harness-pwned)",
+					},
+					null,
+					2,
+				),
+				"utf-8",
+			);
+
+			const result = runInit(tempDir, { dryRun: false, force: false });
+			expect(result.ok).toBe(true);
+
+			const workflowPath = join(tempDir, "WORKFLOW.md");
+			const content = require("node:fs").readFileSync(workflowPath, "utf-8");
+
+			expect(content).toContain(
+				"git clone --depth 1 'https://github.com/acme/my-app.git$(touch /tmp/harness-pwned)' .",
+			);
+		});
+
+		it("uses npm ci for npm repos in WORKFLOW.md bootstrap hooks", () => {
+			writeFileSync(
+				join(tempDir, "package.json"),
+				JSON.stringify(
+					{
+						name: "@acme/my-app",
+						repository: "git+https://github.com/acme/my-app.git",
+					},
+					null,
+					2,
+				),
+				"utf-8",
+			);
+			writeFileSync(join(tempDir, "package-lock.json"), "{}\n", "utf-8");
+
+			const result = runInit(tempDir, { dryRun: false, force: false });
+			expect(result.ok).toBe(true);
+
+			const workflowPath = join(tempDir, "WORKFLOW.md");
+			const content = require("node:fs").readFileSync(workflowPath, "utf-8");
+
+			expect(content).toContain("npm ci");
+			expect(content).not.toContain("npm install --frozen-lockfile");
+		});
+
 		it("enforces strict commit and hook governance in templates", () => {
 			const result = runInit(tempDir, { dryRun: false, force: false });
 			expect(result.ok).toBe(true);
@@ -1079,16 +1259,22 @@ describe("runInit", () => {
 			expect(environmentCheck).toContain("required_make_targets=(");
 			expect(environmentCheck).toContain('"preflight"');
 			expect(codexPreflight).toContain(
-				"Must-do: preflight_repo runs Local Memory checks in required mode by default.",
+				"--mode <off|optional|required>    Local Memory mode. Default: required",
 			);
 			expect(codexPreflight).toContain(
-				'local local_memory_mode="${4:-required}" # off | optional | required',
+				"local local_memory_mode='required'",
 			);
 			expect(codexPreflight).toContain("preflight_local_memory_gold()");
 			expect(codexPreflight).toContain(
 				'local lm_config_path="${LOCAL_MEMORY_CONFIG_PATH:-${HOME}/.local-memory/config.yaml}"',
 			);
-			expect(codexPreflight).toContain("preflight_repo_local_memory()");
+			expect(codexPreflight).toContain(
+				"log_ok 'local-memory preflight passed'",
+			);
+			expect(codexPreflight).toContain("preflight_repo() {");
+			expect(codexPreflight).toContain("resolve_script_path()");
+			expect(codexPreflight).toContain("is_script_sourced()");
+			expect(codexPreflight).toContain("if ! is_script_sourced; then");
 			expect(refreshDiagrams).toContain(
 				"diagram manifest generation requires ROOT_DIR, TMP_DIR, and MANIFEST_PATH",
 			);
@@ -1123,6 +1309,26 @@ describe("runInit", () => {
 			expect(diagramFreshness).toContain(
 				'bash "$REPO_ROOT/scripts/refresh-diagram-context.sh" --force --quiet',
 			);
+		});
+
+		it("scaffolds a zsh-sourceable codex preflight helper", () => {
+			const result = runInit(tempDir, { dryRun: false, force: false });
+			expect(result.ok).toBe(true);
+
+			const sourced = spawnSync(
+				"zsh",
+				[
+					"-lc",
+					"source scripts/codex-preflight.sh && whence -w preflight_repo >/dev/null",
+				],
+				{
+					cwd: tempDir,
+					encoding: "utf8",
+				},
+			);
+
+			expect(sourced.status).toBe(0);
+			expect(sourced.stderr).toBe("");
 		});
 	});
 });
