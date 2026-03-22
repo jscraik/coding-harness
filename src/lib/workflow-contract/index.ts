@@ -15,6 +15,9 @@
  * - `createGitFixture()` — git fixture utilities (Slice 5)
  * - `assertGatePasses()` / `assertGateFails()` — compact validation (Slice 5)
  * - `validateModuleTestManifest()` — module test manifest (Slice 5)
+ * - `createPilotLane()` — scale-out pilot lane management (Slice 6)
+ * - `evaluateWindow()` — 14-day window gate evaluation (Slice 6)
+ * - `computeTransitionDecision()` — expand/hold/freeze/demote logic (Slice 6)
  * - Types: WorkflowContract, CheckResult, CheckFinding, etc.
  */
 
@@ -158,3 +161,33 @@ export type {
 	ModuleTestManifest,
 	TDDEvidence,
 } from "./test-harness.js";
+
+// ─── Scale-out Pilot Tracker (Slice 6) ──────────────────────────────────────────
+
+export {
+	createPilotLane,
+	recordRunOutcome,
+	recordScorecardOutcome,
+	getRunsInWindow,
+	computeWindowMetrics,
+	evaluateWindow,
+	recordWindowEvaluation,
+	computeTransitionDecision,
+	freezeLane,
+	unfreezeLane,
+	validatePilotLane,
+	DEFAULT_METRIC_THRESHOLDS,
+	DEFAULT_GATE_THRESHOLDS,
+} from "./pilot-tracker.js";
+export type {
+	GateEvaluation,
+	MetricThreshold,
+	OperatorMetricId,
+	PilotGateId,
+	PilotLane,
+	PilotLaneConfig,
+	RunOutcome,
+	TransitionDecision,
+	TransitionResult,
+	WindowEvaluation,
+} from "./pilot-tracker.js";
