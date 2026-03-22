@@ -7,8 +7,8 @@ cd "$REPO_ROOT"
 related_sources=()
 while IFS= read -r path; do
 	[[ -n "$path" ]] || continue
-	if [[ "$path" =~ ^src/.*\.(ts|tsx|js|jsx|mts|cts)$ ]] &&
-		[[ ! "$path" =~ \.d\.ts$ ]] &&
+	if [[ "$path" =~ ^src/.*\.(ts|tsx|js|jsx|mts|cts)$ ]] && \
+		[[ ! "$path" =~ \.d\.ts$ ]] && \
 		[[ ! "$path" =~ \.(test|spec)\.(ts|tsx|js|jsx|mts|cts)$ ]]; then
 		related_sources+=("$path")
 	fi

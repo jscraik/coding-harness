@@ -308,6 +308,15 @@ pnpm 'check'
 '''
 
 [[actions]]
+name = "Script: publish:release"
+icon = "tool"
+command = '''
+set -euo pipefail
+
+pnpm 'publish:release'
+'''
+
+[[actions]]
 name = "Script: lint"
 icon = "debug"
 command = '''
@@ -350,6 +359,15 @@ command = '''
 set -euo pipefail
 
 pnpm 'test'
+'''
+
+[[actions]]
+name = "Script: test:ci"
+icon = "test"
+command = '''
+set -euo pipefail
+
+pnpm 'test:ci'
 '''
 
 [[actions]]
@@ -443,6 +461,24 @@ pnpm 'docs:style:changed'
 '''
 
 [[actions]]
+name = "Script: workflow:normalize"
+icon = "tool"
+command = '''
+set -euo pipefail
+
+pnpm 'workflow:normalize'
+'''
+
+[[actions]]
+name = "Script: workflow:validate"
+icon = "debug"
+command = '''
+set -euo pipefail
+
+pnpm 'workflow:validate'
+'''
+
+[[actions]]
 name = "Script: markdownlint"
 icon = "tool"
 command = '''
@@ -512,6 +548,51 @@ command = '''
 set -euo pipefail
 
 pnpm 'test:related'
+'''
+
+[[actions]]
+name = "Script: e2e"
+icon = "test"
+command = '''
+set -euo pipefail
+
+pnpm 'e2e'
+'''
+
+[[actions]]
+name = "Script: e2e:github"
+icon = "test"
+command = '''
+set -euo pipefail
+
+pnpm 'e2e:github'
+'''
+
+[[actions]]
+name = "Script: e2e:linear"
+icon = "test"
+command = '''
+set -euo pipefail
+
+pnpm 'e2e:linear'
+'''
+
+[[actions]]
+name = "Script: e2e:pipeline"
+icon = "test"
+command = '''
+set -euo pipefail
+
+pnpm 'e2e:pipeline'
+'''
+
+[[actions]]
+name = "Script: e2e:ci"
+icon = "test"
+command = '''
+set -euo pipefail
+
+pnpm 'e2e:ci'
 '''
 
 [[actions]]

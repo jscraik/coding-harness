@@ -1,27 +1,20 @@
-title = "Coding Harness gitleaks config"
+title = "Project gitleaks config"
 
 [extend]
 useDefault = true
 
 [allowlist]
-description = "Fixture-safe allowlist for docs/spec/tests/examples used in test data."
+description = "Allowlist for test fixtures and examples."
 paths = [
-  # General fixture/example directories
-  "(^|/)docs?/", 
-  "(^|/)examples?/", 
-  "(^|/)test/", 
-  "(^|/)tests?/", 
-  "(^|/)spec/", 
-  "(^|/)specs?/", 
-  "(^|/)__tests__/", 
-  "(^|/)test-data/", 
-
-  # Suffix-based fixture files in any directory
-  "(^|/)[^.]+\\.(test|spec)\\.[^.]+$", 
+  "(^|/)docs?/",
+  "(^|/)examples?/",
+  "(^|/)test/",
+  "(^|/)tests?/",
+  "(^|/)spec/",
+  "(^|/)__tests__/",
+  "(^|/)test-data/",
+  "(^|/)[^.]+\\.(test|spec)\\.[^.]+$",
 ]
-
-# Redacted fixture tokens used in test assertions are expected.
-# Do not broaden this list for production credential-like strings.
 regexes = [
   "\\[REDACTED\\]",
 ]

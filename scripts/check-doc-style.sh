@@ -5,7 +5,7 @@ REPO_ROOT="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")/.." && pwd)"
 cd "$REPO_ROOT"
 
 if ! command -v vale >/dev/null 2>&1; then
-	echo "Error: required binary vale is not installed or not on PATH"
+	echo "Error: required binary 'vale' is not installed or not on PATH"
 	exit 1
 fi
 

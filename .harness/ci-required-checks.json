@@ -42,7 +42,7 @@
       "class": "required"
     },
     {
-      "policyId": "required-check-4-dependency-scan",
+      "policyId": "required-check-4",
       "displayName": "dependency-scan",
       "sourceAppSlug": "circleci",
       "sourceAppId": "circleci",
@@ -55,7 +55,7 @@
       "class": "required"
     },
     {
-      "policyId": "required-check-5-orb-pinning",
+      "policyId": "required-check-5",
       "displayName": "orb-pinning",
       "sourceAppSlug": "circleci",
       "sourceAppId": "circleci",

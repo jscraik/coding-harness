@@ -11,7 +11,7 @@
 
 **Do not report security vulnerabilities through public GitHub issues.**
 
-For security issues, please email the maintainer directly at the address listed in the repository's CODEOWNERS file.
+Please email **jscraik@brainwav.io** directly.
 
 ### What to include
 
@@ -38,7 +38,7 @@ When contributing to this project:
 
 This repository uses:
 
-- **Socket Security**: Supply chain attack detection
 - **Gitleaks**: Secret detection in commits
 - **Semgrep**: Static analysis for security vulnerabilities
+- **Trivy**: Dependency and container vulnerability scanning
 - **pnpm audit**: Dependency vulnerability scanning

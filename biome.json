@@ -12,10 +12,7 @@
 			"node_modules",
 			"dist",
 			"coverage",
-			"artifacts",
-			".test-traces*",
-			".traces",
-			"AI/diagrams"
+			"artifacts"
 		]
 	},
 	"overrides": [
@@ -25,19 +22,6 @@
 				"rules": {
 					"style": {
 						"noDefaultExport": "off"
-					}
-				}
-			}
-		},
-		{
-			"include": ["e2e/**/*.ts"],
-			"linter": {
-				"rules": {
-					"suspicious": {
-						"noConsoleLog": "off"
-					},
-					"style": {
-						"noNonNullAssertion": "off"
 					}
 				}
 			}

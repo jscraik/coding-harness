@@ -110,6 +110,8 @@ For harness setup or scaffold sync verification in this repository, run:
 1. `bash scripts/run-harness-setup-checks.sh`
 
 The helper codifies the required sequence: `preflight_repo`, `pnpm build`, `harness init --check-updates` (and `--update` when needed), `check-environment` with pinned `uv` (`mise which uv`), and `pnpm check`.
+`scripts/codex-preflight.sh` must remain both executable and sourceable so `source scripts/codex-preflight.sh && preflight_repo` continues to work for bash-based setup flows.
+When Local Memory is enabled in required mode, `scripts/codex-preflight.sh` should validate the pinned REST host/port from `~/.local-memory/config.yaml` before trusting `local-memory status --json`, so healthy daemons on `127.0.0.1` do not trigger duplicate restart behavior from stale CLI status output.
 
 ## Tooling verification checklist
 

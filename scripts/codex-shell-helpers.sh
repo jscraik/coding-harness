@@ -1,91 +1,129 @@
 #!/usr/bin/env bash
+# Source this file from bash or zsh to get compatibility helpers for the
+# cleaned ./scripts/codex-preflight.sh interface.
+#
+# Example:
+#   source ~/dev/config/codex/codex-shell-helpers.sh
+#   preflight_js
+#   preflight_py my-repo-fragment
+#   codex_d "inspect the flaky test"
 
-# Source this file from ~/.zshrc or ~/.bashrc to expose:
-# - preflight_repo/preflight_js/preflight_py/preflight_rust/preflight_repo_local_memory
-#   (provided by scripts/codex-preflight.sh)
-# - codex_d / cdxd convenience launchers for profile "d"
-
-_codex_helpers_resolve_source() {
-	if [[ -n "${BASH_VERSION:-}" ]]; then
-		printf '%s' "${BASH_SOURCE[0]}"
-		return 0
-	fi
-
-	if [[ -n "${ZSH_VERSION:-}" ]]; then
-		eval 'printf "%s" "${(%):-%x}"'
-		return 0
-	fi
-
-	return 1
+_codex_git_root() {
+  command git rev-parse --show-toplevel 2>/dev/null
 }
 
-_codex_helpers_script_dir() {
-	local source_path
-	source_path="$(_codex_helpers_resolve_source)" || return 1
-	cd "$(dirname -- "${source_path}")" && pwd -P
+_codex_preflight_script() {
+  local root
+  root="$(_codex_git_root)" || {
+    printf 'not inside a git repo\n' >&2
+    return 1
+  }
+
+  local candidate
+  for candidate in \
+    "$root/scripts/codex-preflight.sh" \
+    "$root/codex-preflight.sh"
+  do
+    if [[ -f "$candidate" ]]; then
+      printf '%s\n' "$candidate"
+      return 0
+    fi
+  done
+
+  printf 'could not find codex-preflight.sh under %s\n' "$root" >&2
+  return 1
 }
 
-_codex_helpers_repo_root() {
-	local script_dir
-	script_dir="$(_codex_helpers_script_dir)" || return 1
-	cd "${script_dir}/.." && pwd -P
+_codex_run_preflight() {
+  local stack="$1"
+  local expected_repo="${2:-}"
+  local bins_csv="${3:-}"
+  local paths_csv="${4:-}"
+  local mode="${5:-required}"
+
+  local script
+  script="$(_codex_preflight_script)" || return 1
+
+  local -a args
+  args=(--stack "$stack" --mode "$mode")
+
+  if [[ -n "$expected_repo" ]]; then
+    args+=(--repo-fragment "$expected_repo")
+  fi
+  if [[ -n "$bins_csv" ]]; then
+    args+=(--bins "$bins_csv")
+  fi
+  if [[ -n "$paths_csv" ]]; then
+    args+=(--paths "$paths_csv")
+  fi
+
+  command bash "$script" "${args[@]}"
 }
 
-_codex_helpers_preflight_script() {
-	local repo_root
-	repo_root="$(_codex_helpers_repo_root)" || return 1
-	printf '%s/scripts/codex-preflight.sh\n' "${repo_root}"
+# Old-style compatibility entrypoints.
+preflight_repo() {
+  _codex_run_preflight \
+    repo \
+    "${1:-}" \
+    "${2:-git,bash,sed,rg,fd,jq,curl,python3}" \
+    "${3:-AGENTS.md,docs,docs/plans}" \
+    "${4:-required}"
 }
 
-_codex_helpers_default_prompt() {
-	printf '%s' "Read AGENTS.md, run source scripts/codex-preflight.sh && preflight_repo, then summarize the repo structure and any blockers."
+preflight_js() {
+  _codex_run_preflight \
+    js \
+    "${1:-}" \
+    "${2:-git,bash,sed,rg,fd,jq,curl,node,npm,python3}" \
+    "${3:-AGENTS.md,package.json,docs,docs/plans}" \
+    "${4:-required}"
 }
 
-_codex_helpers_load_preflight() {
-	local preflight_script
-	preflight_script="$(_codex_helpers_preflight_script)" || return 1
-	if [[ ! -f "${preflight_script}" ]]; then
-		echo "Warning: codex-preflight helper not found at ${preflight_script}" >&2
-		return 1
-	fi
-
-	# shellcheck source=/dev/null
-	source "${preflight_script}"
+preflight_py() {
+  _codex_run_preflight \
+    py \
+    "${1:-}" \
+    "${2:-git,bash,sed,rg,fd,jq,curl,python3}" \
+    "${3:-AGENTS.md,pyproject.toml,docs,docs/plans}" \
+    "${4:-required}"
 }
 
-_codex_helpers_load_preflight || true
+preflight_rust() {
+  _codex_run_preflight \
+    rust \
+    "${1:-}" \
+    "${2:-git,bash,sed,rg,fd,jq,curl,python3,cargo}" \
+    "${3:-AGENTS.md,Cargo.toml,docs,docs/plans}" \
+    "${4:-required}"
+}
 
+preflight_repo_local_memory() {
+  _codex_run_preflight \
+    repo \
+    "${1:-}" \
+    "${2:-git,bash,sed,rg,fd,jq,curl,python3}" \
+    "${3:-AGENTS.md,docs,docs/plans}" \
+    required
+}
+
+# Launch Codex with profile d, anchored at the repo root, with a default startup
+# prompt that forces orientation and preflight.
 codex_d() {
-	local repo_root prompt
-	repo_root="$(_codex_helpers_repo_root)" || return 1
+  local root
+  root="$(_codex_git_root)" || return 1
 
-	if [[ $# -gt 0 ]]; then
-		prompt="$*"
-	else
-		prompt="$(_codex_helpers_default_prompt)"
-	fi
+  local default_prompt
+  default_prompt='Read AGENTS.md, run ./scripts/codex-preflight.sh --stack auto --mode required, then summarize the repo structure and any blockers before making changes.'
 
-	command codex --profile d --cd "${repo_root}" "${prompt}"
+  local prompt="$default_prompt"
+  if [[ $# -gt 0 ]]; then
+    prompt+=" After that, continue with this task: $*"
+  fi
+
+  command codex --profile d --cd "$root" "$prompt"
 }
 
+# Short alias-like helper as a function.
 cdxd() {
-	codex_d "$@"
+  codex_d "$@"
 }
-
-if [[ -n "${BASH_VERSION:-}" ]] && [[ "${BASH_SOURCE[0]}" == "$0" ]]; then
-	cat <<'EOF'
-This file is intended to be sourced from your shell profile.
-
-Example:
-  source /absolute/path/to/scripts/codex-shell-helpers.sh
-
-Then use:
-  preflight_repo
-  preflight_js
-  preflight_py
-  preflight_rust
-  preflight_repo_local_memory
-  codex_d
-  cdxd
-EOF
-fi

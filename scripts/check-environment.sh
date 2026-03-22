@@ -267,6 +267,14 @@ run_check_environment_with_runner() {
 	fi
 
 	if [[ ! -f "$ATTESTATION_PATH" ]]; then
+		local json_line
+		json_line="$(printf '%s\n' "$output" | awk '/^\{/{line=$0} END{if(line!="") print line}')"
+		if [[ -n "$json_line" ]]; then
+			printf '%s\n' "$json_line" > "$ATTESTATION_PATH"
+		fi
+	fi
+
+	if [[ ! -f "$ATTESTATION_PATH" ]]; then
 		echo "Runner produced no attestation output: $label"
 		return 1
 	fi
@@ -285,8 +293,7 @@ if ! npm ls -g --depth=0 @brainwav/coding-harness >/dev/null 2>&1; then
 	echo "  npm i -g @brainwav/coding-harness"
 	echo "Private registry auth is required:"
 	echo "  - Local shell: export NPM_TOKEN=<token>"
-	echo "  - GitHub Actions: add repository secret NPM_TOKEN and map it to workflow env"
-	echo '    env: NPM_TOKEN: ${{ secrets.NPM_TOKEN }}'
+	echo "  - CI (CircleCI): set NPM_TOKEN as a project environment variable in CircleCI project settings"
 	exit 1
 fi
 
@@ -300,8 +307,7 @@ if ! run_check_environment_with_runner "global npm harness ($(command -v harness
 	echo "Error: global npm harness failed to run check-environment successfully."
 	echo "Reinstall and retry:"
 	echo "  npm i -g @brainwav/coding-harness"
-	echo "If this is CI, confirm:"
-	echo '  env: NPM_TOKEN: ${{ secrets.NPM_TOKEN }}'
+	echo "If this is CI (CircleCI), confirm NPM_TOKEN is set as a project environment variable."
 	exit 1
 fi
 

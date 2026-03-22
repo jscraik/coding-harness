@@ -6,7 +6,7 @@ RULESET_PATH="$REPO_ROOT/scripts/semgrep-pre-push.yml"
 cd "$REPO_ROOT"
 
 if ! command -v semgrep >/dev/null 2>&1; then
-	echo "Error: required binary semgrep is not installed or not on PATH"
+	echo "Error: required binary 'semgrep' is not installed or not on PATH"
 	exit 1
 fi
 
@@ -16,8 +16,8 @@ if [[ ! -f "$RULESET_PATH" ]]; then
 fi
 
 base_ref=""
-if git rev-parse --verify @{upstream} >/dev/null 2>&1; then
-	base_ref="$(git merge-base HEAD @{upstream})"
+if git rev-parse --verify '@{upstream}' >/dev/null 2>&1; then
+	base_ref="$(git merge-base HEAD '@{upstream}')"
 else
 	for candidate in origin/main origin/master main master; do
 		if git rev-parse --verify "$candidate" >/dev/null 2>&1; then
@@ -39,8 +39,8 @@ fi
 changed_sources=()
 while IFS= read -r -d "" path; do
 	[[ -n "$path" ]] || continue
-	if [[ "$path" =~ ^src/.*\.(ts|tsx|js|jsx|mts|cts)$ ]] &&
-		[[ ! "$path" =~ \.d\.ts$ ]] &&
+	if [[ "$path" =~ ^src/.*\.(ts|tsx|js|jsx|mts|cts)$ ]] && \
+		[[ ! "$path" =~ \.d\.ts$ ]] && \
 		[[ ! "$path" =~ \.(test|spec)\.(ts|tsx|js|jsx|mts|cts)$ ]]; then
 		changed_sources+=("$path")
 	fi
