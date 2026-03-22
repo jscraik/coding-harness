@@ -715,3 +715,19 @@
 ### Files changed
 - `docs/agents/linear-workflow-operational-spec.md` (new)
 - `harness.contract.json` (added surface registration)
+
+---
+
+## 2026-03-22 (Harness Upgrade Guardrails)
+
+**Downstream harness upgrades should recover baseline governance files through `harness init --update`, not manual repo surgery.**
+
+### What changed
+- `harness init` now scaffolds baseline `.npmrc` and `.harness/ci-provider-transition-status.json`.
+- `harness verify-greptile` now points missing `.npmrc` remediation back to `harness init --update`.
+- `harness ci-migrate verify` now points missing transition artifact remediation back to `harness init --update`.
+- Init tests now enforce Biome package-to-schema alignment so dependency bumps also update the repo config and scaffold template.
+
+### Why it matters
+- Downstream repos were tripping over missing baseline governance files during upgrade and migration workflows.
+- A scaffold-first recovery path is safer and more consistent than asking each repo to recreate those files manually.

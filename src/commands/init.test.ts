@@ -2,6 +2,7 @@ import { spawnSync } from "node:child_process";
 import {
 	existsSync,
 	mkdirSync,
+	readFileSync,
 	rmSync,
 	symlinkSync,
 	writeFileSync,
@@ -15,6 +16,8 @@ const EXPECTED_TEMPLATE_PATHS = [
 	"harness.contract.json",
 	"memory.json",
 	".harness/ci-required-checks.json",
+	".harness/ci-provider-transition-status.json",
+	".npmrc",
 	".greptile/config.json",
 	".greptile/rules.md",
 	".greptile/files.json",
@@ -135,6 +138,10 @@ describe("runInit", () => {
 			// Verify files were created (default provider is circleci)
 			expect(existsSync(join(tempDir, "harness.contract.json"))).toBe(true);
 			expect(existsSync(join(tempDir, ".circleci/config.yml"))).toBe(true);
+			expect(
+				existsSync(join(tempDir, ".harness/ci-provider-transition-status.json")),
+			).toBe(true);
+			expect(existsSync(join(tempDir, ".npmrc"))).toBe(true);
 			expect(existsSync(join(tempDir, ".greptile/config.json"))).toBe(true);
 			expect(
 				existsSync(join(tempDir, ".github/workflows/greptile-review.yml")),
@@ -182,6 +189,21 @@ describe("runInit", () => {
 			expect(circleConfig).toContain('export NPM_CONFIG_PREFIX="$HOME/.local"');
 			expect(circleConfig).toContain("npm install --global pnpm@10.0.0");
 			expect(circleConfig).not.toContain("name: Enable corepack");
+
+			const transitionStatus = JSON.parse(
+				readFileSync(
+					join(tempDir, ".harness/ci-provider-transition-status.json"),
+					"utf-8",
+				),
+			);
+			expect(transitionStatus.schemaVersion).toBe(
+				"ci-provider-transition-status/v1",
+			);
+			expect(transitionStatus.nextGateComplete).toBe(false);
+
+			const npmrc = readFileSync(join(tempDir, ".npmrc"), "utf-8");
+			expect(npmrc).toContain("ignore-scripts=true");
+			expect(npmrc).toContain("@brainwav:registry=https://npm.pkg.github.com");
 		});
 
 		it("skips existing files without --force", () => {
@@ -1329,6 +1351,44 @@ describe("runInit", () => {
 
 			expect(sourced.status).toBe(0);
 			expect(sourced.stderr).toBe("");
+		});
+	});
+
+	describe("tooling drift guards", () => {
+		it("keeps biome schema aligned between package.json, root config, and scaffolded template", () => {
+			const packageJson = JSON.parse(
+				readFileSync(join(process.cwd(), "package.json"), "utf-8"),
+			) as {
+				devDependencies?: Record<string, string>;
+			};
+			const expectedBiomeVersion =
+				packageJson.devDependencies?.["@biomejs/biome"]?.replace(/^[^\d]*/, "");
+			expect(expectedBiomeVersion).toBeTruthy();
+
+			const rootBiome = JSON.parse(
+				readFileSync(join(process.cwd(), "biome.json"), "utf-8"),
+			) as {
+				$schema?: string;
+			};
+
+			const result = runInit(tempDir, { dryRun: false, force: false });
+			expect(result.ok).toBe(true);
+
+			const scaffoldedBiome = JSON.parse(
+				readFileSync(join(tempDir, "biome.json"), "utf-8"),
+			) as {
+				$schema?: string;
+			};
+
+			const extractSchemaVersion = (schema: string | undefined): string | null => {
+				const match = schema?.match(/schemas\/([^/]+)\/schema\.json$/);
+				return match?.[1] ?? null;
+			};
+
+			expect(extractSchemaVersion(rootBiome.$schema)).toBe(expectedBiomeVersion);
+			expect(extractSchemaVersion(scaffoldedBiome.$schema)).toBe(
+				expectedBiomeVersion,
+			);
 		});
 	});
 });

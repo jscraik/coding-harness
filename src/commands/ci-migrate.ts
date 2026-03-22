@@ -7767,7 +7767,7 @@ function validateTransitionStatusArtifact(
 	const artifactPath = resolve(targetDir, relativePath);
 	if (!existsSync(artifactPath)) {
 		return [
-			`Transition status artifact missing: ${relativePath}. Create the artifact before running verify.`,
+			`Transition status artifact missing: ${relativePath}. Run 'harness init --update' to scaffold the baseline artifact, then record the approved cutover state before running verify.`,
 		];
 	}
 	try {

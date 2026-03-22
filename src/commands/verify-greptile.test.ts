@@ -199,4 +199,18 @@ describe("runVerifyGreptile", () => {
 				?.status,
 		).toBe("fail");
 	});
+
+	it("shows actionable warning when .npmrc is missing", async () => {
+		rmSync(join(repoPath, ".npmrc"));
+
+		const result = await runVerifyGreptile({
+			repoPath,
+		});
+
+		const npmrcCheck = result.checks.find(
+			(check) => check.name === ".npmrc configuration",
+		);
+		expect(npmrcCheck?.status).toBe("warn");
+		expect(npmrcCheck?.message).toContain("harness init --update");
+	});
 });

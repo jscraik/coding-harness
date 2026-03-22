@@ -137,7 +137,9 @@ Stop and ask before proceeding if:
 
 ## Private npm package setup
 
-When using `@brainwav/coding-harness` from a private npm registry, projects must configure `.npmrc`:
+Harness-managed repos should keep a project-level `.npmrc`. `harness init` now scaffolds a baseline `.npmrc` with security-first defaults, and operators should then add the provider-specific registry/auth entries needed for private packages.
+
+When using `@brainwav/coding-harness` from a private npm registry, projects must extend `.npmrc` like this:
 
 ### Option 1: GitHub Packages (recommended for GitHub workflows)
 
@@ -164,7 +166,7 @@ The registry will use OIDC token exchange for authentication.
 
 ### Verification
 
-Run `harness verify-greptile --check-npmrc` to verify `.npmrc` is configured correctly for the private package.
+Run `harness init --update` to restore the baseline `.npmrc` if it is missing, then run `harness verify-greptile --check-npmrc` to verify provider-specific configuration for the private package.
 
 ## Required .npmrc settings for this repository
 
@@ -177,3 +179,7 @@ The `.npmrc` in this repository sets:
 - `node-linker=hoisted` - Better compatibility
 
 Projects using coding-harness should adopt similar security-conscious defaults.
+
+## CI migration governance artifacts
+
+Harness-managed repos should also keep `.harness/ci-provider-transition-status.json` under source control. `harness init --update` scaffolds the baseline artifact with `nextGateComplete=false`; teams must explicitly update that artifact when a CI cutover is approved before running strict `harness ci-migrate verify`.
