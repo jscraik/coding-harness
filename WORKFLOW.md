@@ -57,9 +57,9 @@ codex:
 ## Metadata
 | Field | Value |
 | --- | --- |
-| `owner` | <owner> |
+| `owner` | coding-harness-maintainers |
 | `max_duration` | 60m |
-| `escalation` | <escalation-path> |
+| `escalation` | https://github.com/jscraik/coding-harness/issues |
 | `change_class` | behavior |
 
 ## Invariants

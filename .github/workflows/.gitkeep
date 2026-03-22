@@ -1,0 +1,2 @@
+# GitHub Workflows
+This repo uses CircleCI for CI/CD. See .circleci/config.yml
