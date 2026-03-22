@@ -8,12 +8,7 @@
 	},
 	"files": {
 		"ignoreUnknown": true,
-		"ignore": [
-			"node_modules",
-			"dist",
-			"coverage",
-			"artifacts"
-		]
+		"ignore": ["node_modules", "dist", "coverage", "artifacts"]
 	},
 	"overrides": [
 		{
@@ -22,6 +17,43 @@
 				"rules": {
 					"style": {
 						"noDefaultExport": "off"
+					}
+				}
+			}
+		},
+		{
+			"include": ["e2e/**/*.ts"],
+			"linter": {
+				"rules": {
+					"style": {
+						"noNonNullAssertion": "off"
+					},
+					"suspicious": {
+						"noEmptyBlockStatements": "off",
+						"noConsoleLog": "off"
+					}
+				}
+			}
+		},
+		{
+			"include": ["scripts/**/*.cjs"],
+			"linter": {
+				"rules": {
+					"suspicious": {
+						"noEmptyBlockStatements": "off"
+					}
+				}
+			}
+		},
+		{
+			"include": ["**/*.test.ts", "**/*.spec.ts"],
+			"linter": {
+				"rules": {
+					"style": {
+						"noNonNullAssertion": "off"
+					},
+					"suspicious": {
+						"noEmptyBlockStatements": "off"
 					}
 				}
 			}

@@ -119,8 +119,7 @@ function resolveLinearApiKeyAvailable(envFilePath?: string): boolean {
 				}
 			}
 		} catch {
-			// Ignore permission or read errors
-			continue;
+			// Expected: env var lookup failed, which is normal for absent secrets
 		}
 	}
 
@@ -138,7 +137,10 @@ function extractYamlFrontMatter(
 function extractYamlValue(yaml: string, key: string): string | null {
 	// Simple single-level extraction from YAML text.
 	// Handles:  project_slug: "value"  or  project_slug: value
-	const pattern = new RegExp(`^\\s*${key}:\\s*["']?([^"'\\n]+?)["']?\\s*$`, "m");
+	const pattern = new RegExp(
+		`^\\s*${key}:\\s*["']?([^"'\\n]+?)["']?\\s*$`,
+		"m",
+	);
 	const match = yaml.match(pattern);
 	return match?.[1]?.trim() ?? null;
 }
@@ -163,7 +165,9 @@ function extractNestedYamlValue(
 // 3. Core check logic
 // ---------------------------------------------------------------------------
 
-export function runSymphonyCheck(options: SymphonyCheckOptions): SymphonyCheckResult {
+export function runSymphonyCheck(
+	options: SymphonyCheckOptions,
+): SymphonyCheckResult {
 	const findings: Finding[] = [];
 	const repoRoot = resolve(options.repoRoot ?? process.cwd());
 	const workflowPath = options.workflowPath
@@ -279,9 +283,7 @@ export function runSymphonyCheck(options: SymphonyCheckOptions): SymphonyCheckRe
 
 	// ── Check 9: Canonical transition table exists ────────────────────
 	if (
-		!CANONICAL_TRANSITION_TABLE_HEADERS.some((header) =>
-			body.includes(header),
-		)
+		!CANONICAL_TRANSITION_TABLE_HEADERS.some((header) => body.includes(header))
 	) {
 		findings.push({
 			severity: "error",
@@ -389,9 +391,7 @@ export function runSymphonyCheckCLI(options: SymphonyCheckOptions): number {
 		if (result.pass && result.findings.length === 0) {
 			console.info("  All checks passed. Project is Symphony-ready.");
 		} else if (result.pass) {
-			console.info(
-				"\n  No blocking errors. Address warnings when convenient.",
-			);
+			console.info("\n  No blocking errors. Address warnings when convenient.");
 		} else {
 			console.info(
 				"\n  Fix errors above before running Symphony on this project.",

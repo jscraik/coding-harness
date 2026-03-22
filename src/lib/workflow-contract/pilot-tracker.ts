@@ -203,7 +203,7 @@ export const DEFAULT_METRIC_THRESHOLDS: readonly MetricThreshold[] = [
 	},
 	{
 		metricId: "manual_intervention_rate",
-		healthyThreshold: 0.20,
+		healthyThreshold: 0.2,
 		comparison: "at_most",
 		requiresConsecutiveWindowCheck: false,
 	},
@@ -215,7 +215,7 @@ export const DEFAULT_METRIC_THRESHOLDS: readonly MetricThreshold[] = [
 	},
 	{
 		metricId: "pr_green_closure_rate",
-		healthyThreshold: 0.90,
+		healthyThreshold: 0.9,
 		comparison: "at_least",
 		requiresConsecutiveWindowCheck: false,
 	},
@@ -227,7 +227,7 @@ export const DEFAULT_METRIC_THRESHOLDS: readonly MetricThreshold[] = [
 	},
 	{
 		metricId: "compaction_event_rate",
-		healthyThreshold: 0.10,
+		healthyThreshold: 0.1,
 		comparison: "at_most",
 		requiresConsecutiveWindowCheck: false,
 	},
@@ -236,13 +236,16 @@ export const DEFAULT_METRIC_THRESHOLDS: readonly MetricThreshold[] = [
 /**
  * Default pilot gate thresholds.
  */
-export const DEFAULT_GATE_THRESHOLDS: Record<PilotGateId, { threshold: number; comparison: "at_most" | "at_least" }> = {
+export const DEFAULT_GATE_THRESHOLDS: Record<
+	PilotGateId,
+	{ threshold: number; comparison: "at_most" | "at_least" }
+> = {
 	pilot_stability: { threshold: 0.95, comparison: "at_least" },
 	behavior_change_honesty: { threshold: 1.0, comparison: "at_least" },
 	operator_speed: { threshold: 60000, comparison: "at_most" },
 	false_block_control: { threshold: 0.05, comparison: "at_most" },
-	solo_operator_efficiency: { threshold: 0.20, comparison: "at_most" },
-	pr_green_closure: { threshold: 0.90, comparison: "at_least" },
+	solo_operator_efficiency: { threshold: 0.2, comparison: "at_most" },
+	pr_green_closure: { threshold: 0.9, comparison: "at_least" },
 	guardrail_capture: { threshold: 1.0, comparison: "at_least" },
 	compaction_health: { threshold: 0.0, comparison: "at_most" },
 	review_capacity: { threshold: 0.0, comparison: "at_most" },
@@ -473,11 +476,10 @@ export function evaluateWindow(
 			? `p50 decision time ${metrics.p50DecisionTimeMs}ms within ${decisionTimeThreshold}ms threshold`
 			: `p50 decision time ${metrics.p50DecisionTimeMs}ms exceeds ${decisionTimeThreshold}ms threshold`,
 	});
-	if (
-		!speedPassed &&
-		didWindowFailGate(previousWindow, "operator_speed")
-	) {
-		warningSignsDetected.push("operator_speed: p50 decision time above threshold");
+	if (!speedPassed && didWindowFailGate(previousWindow, "operator_speed")) {
+		warningSignsDetected.push(
+			"operator_speed: p50 decision time above threshold",
+		);
 	}
 
 	// false_block_control: false block rate <= configured threshold
@@ -517,7 +519,9 @@ export function evaluateWindow(
 			: `Manual intervention rate ${(metrics.manualInterventionRate * 100).toFixed(1)}% exceeds ${(manualInterventionThreshold * 100).toFixed(1)}% threshold`,
 	});
 	if (!soloEffPassed) {
-		warningSignsDetected.push("solo_operator_efficiency: manual intervention exceeds threshold");
+		warningSignsDetected.push(
+			"solo_operator_efficiency: manual intervention exceeds threshold",
+		);
 	}
 
 	// pr_green_closure: >= configured threshold of PRs reach terminal state
@@ -613,9 +617,7 @@ export function recordWindowEvaluation(
  * - **freeze**: 2+ warning signs in the same window
  * - **demote**: above warning thresholds for 30 days (2+ windows)
  */
-export function computeTransitionDecision(
-	lane: PilotLane,
-): TransitionResult {
+export function computeTransitionDecision(lane: PilotLane): TransitionResult {
 	const reasons: string[] = [];
 	const activeStopcriteria: string[] = [];
 	let warningSignCount = 0;
@@ -646,11 +648,12 @@ export function computeTransitionDecision(
 		};
 	}
 
-	const lastWindow = lane.windows[lane.windows.length - 1]!;
+	const lastWindow = lane.windows.at(-1);
+	if (!lastWindow) {
+		throw new Error("Expected at least one window in lane");
+	}
 	const secondLastWindow =
-		lane.windows.length >= 2
-			? lane.windows[lane.windows.length - 2]!
-			: null;
+		lane.windows.length >= 2 ? lane.windows.at(-2) : null;
 
 	// Collect stop criteria from last window
 	for (const sc of lastWindow.stopCriteria) {
@@ -686,7 +689,9 @@ export function computeTransitionDecision(
 	let decision: TransitionDecision;
 	if (shouldDemote) {
 		decision = "demote";
-		reasons.push("Sustained warning-threshold breach for 30 days — demote one tier");
+		reasons.push(
+			"Sustained warning-threshold breach for 30 days — demote one tier",
+		);
 	} else if (shouldFreeze) {
 		decision = "freeze";
 		reasons.push("Freeze new features until warning signs clear");
@@ -757,10 +762,7 @@ export function freezeLane(
 /**
  * Unfreeze a pilot lane.
  */
-export function unfreezeLane(
-	lane: PilotLane,
-	timestamp?: string,
-): PilotLane {
+export function unfreezeLane(lane: PilotLane, timestamp?: string): PilotLane {
 	return {
 		...lane,
 		frozen: false,
@@ -772,9 +774,10 @@ export function unfreezeLane(
 /**
  * Validate a pilot lane structure.
  */
-export function validatePilotLane(
-	lane: PilotLane,
-): { valid: boolean; errors: string[] } {
+export function validatePilotLane(lane: PilotLane): {
+	valid: boolean;
+	errors: string[];
+} {
 	const errors: string[] = [];
 
 	if (lane.schemaVersion !== "pilot-lane/v1") {
@@ -783,7 +786,10 @@ export function validatePilotLane(
 		);
 	}
 
-	if (!lane.config.repoFullName || lane.config.repoFullName.trim().length === 0) {
+	if (
+		!lane.config.repoFullName ||
+		lane.config.repoFullName.trim().length === 0
+	) {
 		errors.push("Missing repo full name");
 	}
 
@@ -830,7 +836,9 @@ function renderTransitionSummary(data: {
 }): string {
 	const lines: string[] = [];
 	lines.push("═══════════════════════════════════════════════════");
-	lines.push(`${data.icon}  PILOT TRANSITION: ${data.decision.toUpperCase()}  ${data.icon}`);
+	lines.push(
+		`${data.icon}  PILOT TRANSITION: ${data.decision.toUpperCase()}  ${data.icon}`,
+	);
 	lines.push("═══════════════════════════════════════════════════");
 	lines.push("");
 	lines.push(`  Repo:       ${data.repoFullName}`);
@@ -904,9 +912,7 @@ function compareAgainstThreshold(
 	threshold: number,
 	comparison: "at_most" | "at_least",
 ): boolean {
-	return comparison === "at_most"
-		? actual <= threshold
-		: actual >= threshold;
+	return comparison === "at_most" ? actual <= threshold : actual >= threshold;
 }
 
 function didWindowFailGate(
@@ -1006,7 +1012,11 @@ function computeObservationDurationDays(
 	windowStart: string,
 	windowEnd: string,
 ): number {
-	const observationStartCandidates = [windowStart, lane.createdAt, ...lane.runs.map((run) => run.timestamp)]
+	const observationStartCandidates = [
+		windowStart,
+		lane.createdAt,
+		...lane.runs.map((run) => run.timestamp),
+	]
 		.map((timestamp) => new Date(timestamp).getTime())
 		.filter((value) => Number.isFinite(value));
 	const observationStartMs =
