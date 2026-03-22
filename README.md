@@ -1,298 +1,290 @@
 # Coding Harness
 
-[![CI](https://github.com/jscraik/coding-harness/actions/workflows/pr-pipeline.yml/badge.svg)](https://github.com/jscraik/coding-harness/actions/workflows/pr-pipeline.yml)
-[![Security](https://github.com/jscraik/coding-harness/actions/workflows/security-scan.yml/badge.svg)](https://github.com/jscraik/coding-harness/actions/workflows/security-scan.yml)
+[![CircleCI](https://dl.circleci.com/status-badge/img/gh/jscraik/coding-harness/tree/main.svg?style=shield)](https://dl.circleci.com/status-badge/redirect/gh/jscraik/coding-harness/tree/main)
 [![npm](https://img.shields.io/npm/v/@brainwav/coding-harness?label=npm)](https://www.npmjs.com/package/@brainwav/coding-harness)
 [![License](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](LICENSE)
 
-Executable governance for repositories using AI coding agents. Coding Harness bridges the gap between policy documents and enforced behavior through a contract-driven control plane.
+Coding Harness is a CLI control plane for repositories that use AI coding agents.
+It turns repo policy, workflow docs, review gates, and rollout criteria into
+things you can scaffold, validate, and enforce.
 
-## What it does
+The shortest honest description of the project today is:
 
-| Capability | Commands | Value |
-|------------|----------|-------|
-| **Repository scaffolding** | `init` | Install harness contracts, Greptile baselines, GitHub workflows, branch protection, and PR templates in one command |
-| **Policy enforcement** | `policy-gate`, `docs-gate`, `plan-gate`, `review-gate`, `license-gate`, `linear-gate` | Validate code changes meet documentation parity, risk classification, plan traceability, Linear issue state, and license requirements |
-| **CI migration** | `ci-migrate` | Phased migration between CI providers (GitHub Actions ↔ CircleCI) with snapshots, rollback, and parity validation |
-| **Linear workflow** | `linear`, `linear-gate` | Automate Linear issue lifecycle with state transitions, PR attachment, and DoD handoff validation |
-| **Drift detection** | `drift-gate`, `org-audit` | Detect governance drift across contract, docs, CI; scan multi-repo orgs for baseline deviations |
-| **Evidence capture** | `evidence-verify`, `ui:explore`, `ui:verify` | Validate screenshot artifacts and run browser-based verification workflows |
-| **Semantic search** | `context`, `search`, `index-context` | Hybrid lexical + semantic search across brainstorms, plans, and specs using local SQLite + embeddings |
-| **Automation execution** | `automation-run`, `simulate` | Run idempotent automation playbooks (Pulse, Upskill, Green PRs) with counterfactual simulation |
-| **Workflow generation** | `workflow:generate` | Generate compact operational specs from annotated markdown with SEGAPRN format |
+- it bootstraps governed agent-ready repos
+- it gates risky changes with repo-local policy
+- it helps migrate CI and preserve proof of parity
+- it validates workflow contracts for Symphony-style automation
+- it evaluates pilot safety before you expand autonomy
 
-## Quick start
+## Table of Contents
+
+- [Why Teams Use It](#why-teams-use-it)
+- [Current Strengths](#current-strengths)
+- [Installation](#installation)
+- [Common Workflows](#common-workflows)
+- [Command Index](#command-index)
+- [Requirements](#requirements)
+- [Local Development](#local-development)
+- [Packaged Codex Skill](#packaged-codex-skill)
+- [Issue Reporting](#issue-reporting)
+
+## Why Teams Use It
+
+Teams usually adopt Coding Harness for one of four jobs:
+
+- **Bootstrap a repo once, then keep it aligned.** `harness init` can scaffold
+  contracts, workflow docs, CI policy surfaces, Greptile defaults, Linear-aware
+  templates, and rollback metadata instead of relying on tribal knowledge.
+- **Gate agent work with the same rules every time.** Commands like
+  `policy-gate`, `docs-gate`, `plan-gate`, `review-gate`, and `linear-gate`
+  move repo expectations out of “please remember” territory.
+- **Change CI or governance without losing trust.** `ci-migrate` is built for
+  staged migration, snapshots, rollback, and parity evidence rather than
+  one-shot YAML replacement.
+- **Roll out autonomy deliberately.** The pilot and workflow-contract tooling
+  exists to answer “is this safe to expand?” with artifacts, thresholds, and
+  explicit hold/freeze/demote behavior.
+
+## Current Strengths
+
+The code, tests, and recent history show a few strengths more clearly than the
+old README did.
+
+- **Repository bootstrap and update flows are a core surface.** The largest
+  command test file in the repo is `src/commands/init.test.ts`, and `init`
+  supports dry runs, tracked updates, rollback, migration, interactive review,
+  and generated `WORKFLOW.md` scaffolding.
+- **CI migration is more than a helper script.** `ci-migrate` has deep support
+  for snapshots, parity proof packs, merge-queue cutover evidence, break-glass
+  policy, and rollback. The corresponding test surface is also one of the
+  largest in the repo.
+- **Workflow contracts are now a real subsystem.** Recent slices added a
+  markdown parser, checker, artifact registry, state normalization, gate
+  bundles, operator scorecards, pilot tracking, and reusable test-harness
+  utilities. This repo is no longer just “a set of gates”; it also includes
+  machinery for defining and validating agent workflows.
+- **Pilot rollout control has become first-class.** `pilot-evaluate`,
+  `pilot-rollback`, scorecards, control-plane artifacts, decision packets, and
+  scale-out pilot tracking are all active surfaces, not future ideas.
+
+If you want the highest-confidence paths today, start with `init`,
+`ci-migrate`, workflow-contract checks, `docs-gate`/`review-gate`, and
+`pilot-evaluate`.
+
+## Installation
+
+Published package usage requires npm access to `@brainwav/coding-harness`.
 
 ```bash
-# Install and build
-pnpm install
-pnpm build
-
-# Initialize harness in a repository
-node dist/cli.js init
-
-# See all commands
-node dist/cli.js --help
+npm install -g @brainwav/coding-harness
+harness --help
 ```
 
-For local development without rebuilding:
+If your team uses `mise`, this also works:
 
 ```bash
-pnpm exec tsx src/cli.ts --help
+mise install -g npm:@brainwav/coding-harness
 ```
 
-## The contract system
+## Common Workflows
 
-Coding Harness centers on `harness.contract.json` — a single declarative file that defines governance policy for your repository. The contract supports:
+### 1. Bootstrap a repository
 
-- **Preset inheritance** — Extend bundled, local, or remote presets with merge strategies
-- **15+ policy domains** — Branch protection, CI provider, docs gates, evidence, remediation, context integrity, control-plane overrides, and more
-- **SRI verification** — Remote presets can be integrity-verified
+Start with a preview, then write tracked changes once the diff looks right.
 
-Example contract structure:
-
-```json
-{
-  "version": "1.5.0",
-  "riskTierRules": {
-    "src/auth/**": "high",
-    "src/api/**": "high",
-    "src/lib/**": "medium",
-    "**/*.test.ts": "low"
-  },
-  "branchProtection": {
-    "requiredChecks": ["lint", "test", "security-scan"],
-    "requirePullRequest": true,
-    "requireConversationResolution": true
-  },
-  "docsGatePolicy": {
-    "enabled": true,
-    "mode": "advisory",
-    "rules": [
-      { "ruleId": "cli-surface-docs", "when": { "categories": ["cli_surface"] }, "requireDocs": ["README.md"], "severity": "error" }
-    ]
-  }
-}
+```bash
+harness init --dry-run
+harness init --track
+harness symphony-check
 ```
 
-## CLI command index
+Use these follow-ups when the repo already has harness material:
 
-### Governance
+```bash
+harness init --check-updates
+harness init --update
+harness init --interactive
+```
+
+### 2. Gate a change before review
+
+This is the practical loop for “did we update the right things?”
+
+```bash
+harness preflight-gate --contract harness.contract.json --files src/cli.ts,README.md
+harness policy-gate --contract harness.contract.json --files src/cli.ts,README.md
+harness docs-gate --mode advisory --json
+harness plan-gate --require-plan-id --require-traceability --json
+```
+
+When you need remote merge-readiness checks:
+
+```bash
+harness review-gate --token "$GITHUB_TOKEN" --owner <owner> --repo <repo> --pr <number> --sha <head-sha>
+```
+
+### 3. Migrate CI with rollback and proof
+
+```bash
+harness ci-migrate prepare --provider circleci --dry-run
+harness ci-migrate prepare --provider circleci --apply
+harness ci-migrate verify --snapshot <snapshot-id>
+harness ci-migrate commit --snapshot <snapshot-id>
+```
+
+Use `abort` or `--rollback` if parity or external control-plane checks fail.
+
+### 4. Validate a Symphony workflow contract
+
+Coding Harness can scaffold a `WORKFLOW.md`, generate compact workflow specs,
+and validate readiness for Symphony-style execution.
+
+```bash
+harness workflow:generate --source docs/specs/my-flow.md --output WORKFLOW.md
+harness symphony-check
+pnpm workflow:validate
+```
+
+### 5. Evaluate a pilot before expanding autonomy
+
+```bash
+harness pilot-evaluate --artifacts artifacts/pilot --lane health --output artifacts/pilot/result.json
+harness pilot-rollback --mode manual
+```
+
+This part of the CLI is designed for artifact-backed rollout decisions, not
+just dashboard reporting.
+
+## Command Index
+
+The tables below keep README parity with the CLI while staying short. For full
+flags, use `harness --help`.
+
+### Bootstrap And Governance
 
 | Command | Purpose |
-|---------|---------|
-| `init` | Install harness contract, Greptile baseline, GitHub workflows, branch protection, and templates |
-| `ci-migrate` | Phased CI provider migration with prepare/commit/abort, snapshots, and parity proof packs |
-| `branch-protect` | Configure and maintain GitHub branch protection rulesets and required status checks |
-| `risk-tier` | Classify files by risk tier (high/medium/low) |
+| --- | --- |
+| `init` | Scaffold or update harness-managed repo surfaces |
+| `ci-migrate` | Stage, verify, commit, or abort CI migration |
+| `branch-protect` | Configure GitHub branch protection rulesets |
+| `verify-greptile` | Verify Greptile configuration and remote wiring |
+| `request-greptile-review` | Post the standard Greptile review request comment |
+| `preset` | List and inspect bundled presets |
+| `symphony-check` | Validate `WORKFLOW.md`, Linear config, and transition-table readiness |
+
+### Review And Policy Gates
+
+| Command | Purpose |
+| --- | --- |
 | `policy-gate` | Validate policy expectations from changed files |
-
-### Linear workflow
-
-| Command | Purpose |
-|---------|---------|
-| `linear` | Automate Linear issue lifecycle with state transitions, PR attachment, and DoD handoff validation |
-| `linear-gate` | Gate PRs on Linear issue state requirements and DoD pre-review checks |
-
-### Documentation gates
-
-| Command | Purpose |
-|---------|---------|
-| `docs-gate` | Enforce documentation parity for governance, tooling, architecture, and workflow docs |
-| `gardener` | Detect stale docs and broken links |
-| `verify-greptile` | Verify Greptile configuration, bridge workflow, and ruleset wiring |
-| `request-greptile-review` | Post the standard `@greptileai` review trigger comment on a PR |
-
-### Plan and review gates
-
-| Command | Purpose |
-|---------|---------|
-| `plan-gate` | Validate plan IDs, acceptance evidence, and PR traceability to plans |
-| `review-gate` | Enforce independent review requirements and SHA guardrails |
+| `preflight-gate` | Run fast policy checks before expensive work |
+| `review-gate` | Enforce merge-readiness and SHA-linked review checks |
+| `docs-gate` | Enforce documentation parity for governed changes |
+| `plan-gate` | Validate plan IDs, traceability, and acceptance evidence |
 | `brainstorm-gate` | Validate brainstorm artifacts |
 | `prompt-gate` | Validate prompt template usage |
-| `pr-template-gate` | Validate PR template sections and placeholder replacement |
-
-### Drift and consistency
-
-| Command | Purpose |
-|---------|---------|
-| `drift-gate` | Evaluate consistency drift across contract, docs, and CI surfaces |
-| `org-audit` | Multi-repo governance visibility and drift detection across an organization |
-| `tooling-audit` | Multi-repo tooling baseline audit for managed repo surfaces |
-| `context-health` | Generate advisory context-integrity scorecards with contradiction detection |
-
-### Search and context
-
-| Command | Purpose |
-|---------|---------|
-| `search` | Hybrid lexical (ripgrep) + semantic (embeddings) search with Ollama |
-| `context` | Semantic search across indexed brainstorms, plans, and specs |
-| `index-context` | Bulk index documents for local semantic search |
-| `blast-radius` | Determine required checks from changed files |
-
-### UI and evidence
-
-| Command | Purpose |
-|---------|---------|
-| `ui:fast` | Storybook-first local development loop |
-| `ui:verify` | Playwright smoke suite with evidence capture |
-| `ui:explore` | Agent browser exploratory testing |
-| `evidence-verify` | Validate screenshot/evidence artifacts against policy |
-
-### Automation and simulation
-
-| Command | Purpose |
-|---------|---------|
-| `automation-run` | Execute idempotent automation playbooks (Pulse, Upskill, Green PRs, Drift Check) |
-| `simulate` | Run counterfactual policy simulation before enforcement |
-| `remediate` | Auto-plan and execute deterministic remediation for scanner findings |
-| `replay` | Re-run policy checks from saved snapshots for debugging |
-
-### Pilot mode
-
-| Command | Purpose |
-|---------|---------|
-| `pilot-evaluate` | Evaluate pilot metrics and determine promotion readiness |
-| `pilot-rollback` | Transition pilot mode (autonomous ↔ manual) |
-| `gap-case` | Track and resolve production gap cases with SLA enforcement |
-
-### Issue tracking
-
-| Command | Purpose |
-|---------|---------|
-| `linear-gate` | Enforce Linear-first intake, branch naming, and PR linkage |
-| `linear-workflow` | Prepare Linear-aware branch/PR metadata and workflow state transitions |
-
-### Workflow generation
-
-| Command | Purpose |
-|---------|---------|
-| `workflow:generate` | Generate compact operational spec (`S/E/G/A/P/R/N` format) from annotated markdown |
-
-### Utility
-
-| Command | Purpose |
-|---------|---------|
-| `license-gate` | Validate open-source license compliance |
-| `diff-budget` | Enforce diff budget constraints |
-| `memory-gate` | Validate local-memory workflow compliance |
-| `observability-gate` | Check metrics cardinality limits |
-| `silent-error` | Detect silent error handling anti-patterns |
-| `preflight-gate` | Fast policy checks before expensive operations |
+| `pr-template-gate` | Validate PR template completion and placeholder replacement |
+| `license-gate` | Validate open-source license expectations |
 | `check-authz` | Validate authorization policy for mutative operations |
-| `check-environment` | Validate development environment setup |
-| `preset` | List and inspect bundled presets |
+| `check-environment` | Validate pilot environment governance checks |
+| `blast-radius` | Determine required checks from changed files |
+| `risk-tier` | Classify changed files by risk tier |
+| `diff-budget` | Enforce diff budget constraints |
+| `observability-gate` | Check metrics cardinality limits |
+| `silent-error` | Detect silent error-handling anti-patterns |
+| `memory-gate` | Validate local-memory workflow compliance |
 
-## Quality checks
+### Linear And Workflow Operations
+
+| Command | Purpose |
+| --- | --- |
+| `linear` | Prepare branch/PR metadata and manage Linear state transitions |
+| `linear prepare` | Pre-fill branch name, PR title, body, and closing line from a Linear issue |
+| `linear-gate` | Enforce Linear-first intake, branch naming, and PR linkage |
+| `workflow:generate` | Generate compact workflow specs from annotated markdown |
+
+### Pilot, Remediation, And Automation
+
+| Command | Purpose |
+| --- | --- |
+| `pilot-evaluate` | Evaluate pilot metrics and determine promotion readiness |
+| `pilot-rollback` | Move pilot mode between autonomous and manual states |
+| `simulate` | Run counterfactual policy simulation |
+| `automation-run` | Execute idempotent automation playbooks |
+| `gap-case` | Manage production gap cases |
+| `remediate` | Plan and run deterministic remediation for findings |
+| `replay` | Re-run policy checks from saved snapshots |
+
+### Drift, Search, And Evidence
+
+| Command | Purpose |
+| --- | --- |
+| `drift-gate` | Evaluate consistency drift across governance surfaces |
+| `org-audit` | Scan multi-repo governance and drift posture |
+| `tooling-audit` | Audit managed repo tooling baselines |
+| `gardener` | Detect stale docs and broken links |
+| `context-health` | Generate advisory context-integrity scorecards |
+| `search` | Run hybrid lexical and semantic search |
+| `context` | Search indexed plans, specs, and brainstorms |
+| `index-context` | Build the local semantic-search index |
+| `evidence-verify` | Validate screenshot and evidence artifacts |
+| `ui:fast` | Run a Storybook-first local UI loop |
+| `ui:verify` | Run Playwright smoke verification with evidence capture |
+| `ui:explore` | Run agent-browser exploratory testing |
+
+## Requirements
+
+- **Node.js:** `>= 24`
+- **Package manager for this repo:** `pnpm@10`
+- **GitHub auth:** required for commands that inspect or mutate remote GitHub
+  state, including `branch-protect`, `review-gate`, and remote Greptile checks
+- **Linear auth:** required for `linear*` flows and for a clean
+  `symphony-check` result
+- **Ollama/local embeddings:** required for the semantic side of
+  `search`, `context`, and `index-context`
+- **Browser automation tooling:** required for `ui:verify` and `ui:explore`
+  workflows
+
+Coding Harness does **not** create secrets for you and does **not** bypass
+branch protection or review policy.
+
+## Local Development
+
+If you are developing this repository itself:
 
 ```bash
-pnpm check        # lint + docs:lint + workflow:validate + typecheck + test + audit
-pnpm lint         # Biome linting
-pnpm docs:lint    # Markdown linting
-pnpm typecheck    # TypeScript strict mode
-pnpm test         # Vitest test suite
-pnpm audit        # Security audit (moderate threshold)
-pnpm test:deep    # Full check + artifact generation
+mise trust            # activate pinned toolchain from .mise.toml
+make setup            # installs deps + configures git hooks
+pnpm build
+pnpm exec tsx src/cli.ts --help
+pnpm check
 ```
 
-## Security scanner baseline
-
-Repositories using Harness should install:
-
-- **Gitleaks** — Secret scanning
-- **Trivy** — Vulnerability scanning
-- **Semgrep** — Static analysis
-
-Harness `init` enforces this baseline via the required `security-scan` check.
-
-## Packaged Codex skill
-
-The npm package includes a reusable Codex skill at `.agents/skills/coding-harness/SKILL.md`:
-
-- Install/setup/update workflows for harness-managed repositories
-- Capability-boundary guidance for safe harness usage
-- Command discovery and best-practice patterns
+When you change runtime behavior or artifact formats, run the deeper validation
+path as well:
 
 ```bash
-# After installing the package
-node_modules/@brainwav/coding-harness/.agents/skills/coding-harness/
+pnpm test:deep
 ```
 
-Repository-local skill placement follows the same convention:
+## Packaged Codex Skill
+
+The npm package ships a reusable Codex skill at
+`.agents/skills/coding-harness/SKILL.md`.
+
+It covers:
+
+- harness install and update workflows
+- capability boundaries and safe usage rules
+- command discovery and validation expectations
+
+Repository-local skills follow the same convention:
 
 ```bash
 .agents/skills/<skill-name>/SKILL.md
 ```
 
-Example: place `product-design-critic` at `.agents/skills/product-design-critic/SKILL.md`.
+## Issue Reporting
 
-## CI migration workflow
-
-The `ci-migrate` command supports phased migration between GitHub Actions and CircleCI:
-
-```bash
-# Prepare migration (dry-run by default)
-harness ci-migrate prepare --provider circleci
-
-# Commit migration with snapshot continuity
-harness ci-migrate commit --snapshot abc123
-
-# Abort and rollback if issues found
-harness ci-migrate abort --snapshot abc123
-```
-
-Features:
-- Parity proof packs with scenario validation (pull_request, merge_queue, fork_pr, etc.)
-- External control plane path tracking (rulesets, contexts, app installations)
-- HMAC-signed snapshots for migration integrity
-- Signed merge-queue orchestration evidence ingestion via `--merge-queue-evidence` (`ci-migrate-merge-queue-evidence/v2`, with repo/policy binding)
-- Optional orchestration hook via `--merge-queue-orchestrator` (or default `.harness/control-plane/merge-queue-cutover-orchestrator` when present) to emit signed pause/drain/revalidate evidence during apply/commit
-- Signed break-glass governance policy enforcement at `.harness/control-plane/ci-migrate-break-glass-policy.json` for rollback weakening approvals (allowlist, TTL, dual-approval)
-- Required-mode CircleCI promotion fail-closes without signed merge-queue evidence at `.harness/control-plane/merge-queue-cutover-evidence.json` (or an explicit override path)
-- Signed artifact-index bootstrap (`.harness/ci-parity-proof-artifact-index.json`) for provenance/proof-pack auto-generation
-- Example provider artifact harvest automation templates in `docs/examples/ci-migrate/` to generate signed provenance input + artifact index for `--auto-generate-proof-pack`
-
-## Issue reporting
-
-This repository uses **Linear-first** intake. Create or update work in the [coding-harness project](https://linear.app/jscraik/project/coding-harness-bb735dbbda79).
-
-Internal agents can create Linear work directly when `LINEAR_API_KEY` is available. GitHub issues route to Linear, docs, or private security disclosure.
-
-## Release flow
-
-Publishes as a private npm package from tagged releases:
-
-```bash
-pnpm changelog     # Update CHANGELOG.md
-pnpm release       # Cut release commit and tag
-git push --follow-tags  # Trigger CI publish
-```
-
-Supports token auth (`NPM_TOKEN`) and OIDC trusted publisher (`NPM_PUBLISH_AUTH=oidc`).
-
-## Documentation
-
-- [Architecture Bootstrap](docs/agents/00-architecture-bootstrap.md) — Architecture-sensitive task intake
-- [Instruction Map](docs/agents/01-instruction-map.md) — Navigate all documentation
-- [Tooling Policy](docs/agents/02-tooling-policy.md) — Required tooling baseline
-- [Validation](docs/agents/04-validation.md) — Check and gate reference
-- [Security and Governance](docs/agents/06-security-and-governance.md) — Security baseline
-- [Agent Governance](docs/agents/07b-agent-governance.md) — AI agent rules
-- [Release and Change Control](docs/agents/08-release-and-change-control.md) — Release workflow
-- [Agent Testing Gates](docs/agents/10-agent-testing-gates.md) — Testing requirements
-- [Greptile AI Governance](docs/agents/12-greptile-ai-governance.md) — Review automation
-- [Docs-Gate Rollout](docs/agents/14-docs-gate-rollout.md) — Documentation parity enforcement
-
-## Contributing
-
-See [`CONTRIBUTING.md`](CONTRIBUTING.md) for:
-- Branch naming (`codex/<linear-key>-<short-description>`)
-- Required pre-merge gates
-- Greptile setup and review workflow
-- Branch protection settings
-- Solo-developer friendly review setup
-
----
-
-**Key principle**: Branch protection is the non-negotiable merge gate. `diff-budget` is a review-shaping signal, not a substitute for required status checks.
+This repository uses **Linear-first** intake. Create or update work in the
+[coding-harness project](https://linear.app/jscraik/project/coding-harness-bb735dbbda79).
