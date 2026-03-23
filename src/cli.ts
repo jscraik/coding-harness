@@ -8,7 +8,7 @@ import {
 	runBlastRadiusCLI,
 } from "./commands/blast-radius.js";
 import { runBrainstormGateCLI } from "./commands/brainstorm-gate.js";
-import { runCIMigrateCLI } from "./commands/ci-migrate.js";
+import { runCIMigrateCLI, runSyncBranchProtectionCLI } from "./commands/ci-migrate.js";
 import { runContextHealthCLI } from "./commands/context-health.js";
 import { runContextCLI } from "./commands/context.js";
 import { runDiffBudgetCLI } from "./commands/diff-budget.js";
@@ -817,7 +817,7 @@ export function run(args: string[]): void {
 			positionalArgs.push(token);
 		}
 
-		const validActions = new Set(["prepare", "commit", "abort", "verify"]);
+		const validActions = new Set(["prepare", "commit", "abort", "verify", "sync-branch-protection"]);
 		const actionArg = getFlagValue(args, actionIndex);
 		let parsedAction = actionArg;
 		if (
@@ -835,6 +835,14 @@ export function run(args: string[]): void {
 			return;
 		}
 		const targetDir = positionalArgs[0];
+
+		// JSC-60: sync-branch-protection is a standalone subcommand
+		if (parsedAction === "sync-branch-protection") {
+			const exitCode = runSyncBranchProtectionCLI(targetDir, args.slice(2));
+			process.exit(exitCode);
+			return;
+		}
+
 		const provider = getFlagValue(args, providerIndex);
 		const snapshot = getFlagValue(args, snapshotIndex);
 		const breakGlassApprovalPath = getFlagValue(args, breakGlassApprovalIndex);

@@ -22,6 +22,12 @@ import {
 	type BranchProtectionSatisfiabilityReport,
 	scanOpenPullRequestSatisfiability,
 } from "../lib/ci/satisfiability.js";
+import {
+	buildBranchProtectSyncPlan,
+	formatBranchProtectSyncWarning,
+	getActiveGHAJobNames,
+	type CheckEntry,
+} from "../lib/ci/branch-protect-sync.js";
 import { runInitCLI } from "../lib/init/cli.js";
 import {
 	type CIProvider,
@@ -9467,5 +9473,157 @@ export function runCIMigrateCLI(
 		}
 	}
 
+	// JSC-60: After a successful commit, check for branch protection drift.
+	// Orphaned required checks (from deleted GHA workflows) will block all PRs.
+	if (action === "commit") {
+		try {
+			const contractPath = resolve(dir, "harness.contract.json");
+			let currentChecks: CheckEntry[] = [];
+			if (existsSync(contractPath)) {
+				const parsed = JSON.parse(readFileSync(contractPath, "utf-8")) as {
+					branchProtection?: {
+						requiredChecks?: string[] | undefined;
+					} | undefined;
+				};
+				currentChecks = (parsed.branchProtection?.requiredChecks ?? []).map(
+					(context) => ({ context }),
+				);
+			}
+			if (currentChecks.length > 0 || provider) {
+				const activeGHAJobNames = getActiveGHAJobNames(dir);
+				const syncPlan = buildBranchProtectSyncPlan({
+					currentChecks,
+					targetProvider: provider ?? "circleci",
+					activeGHAJobNames,
+				});
+				const warning = formatBranchProtectSyncWarning(syncPlan);
+				if (warning) {
+					console.info(warning);
+				}
+			}
+		} catch {
+			// Best-effort — don't block commit success on drift detection failure
+		}
+	}
+
 	return EXIT_CODES.SUCCESS;
+}
+
+/**
+ * CLI entry point for `harness ci-migrate sync-branch-protection`.
+ *
+ * JSC-60: Synchronise GitHub branch protection required checks after
+ * a CI provider migration — removes orphaned GHA checks, adds target
+ * provider checks. Delegates to `harness branch-protect` or prints the
+ * exact gh api command.
+ */
+export function runSyncBranchProtectionCLI(
+	targetDir: string | undefined,
+	args: string[],
+): number {
+	const dir = targetDir ?? cwd();
+	const dryRun = args.includes("--dry-run");
+	const jsonFlag = args.includes("--json");
+
+	if (args.includes("--help") || args.includes("-h")) {
+		console.log(
+			[
+				"",
+				"harness ci-migrate sync-branch-protection — sync required status checks (JSC-60)",
+				"",
+				"Usage: harness ci-migrate sync-branch-protection [targetDir] [options]",
+				"",
+				"Options:",
+				"  --dry-run    Detect drift only, do not update branch protection",
+				"  --json       Machine-readable output",
+				"  --owner      GitHub org/user (required for auto-update)",
+				"  --repo       GitHub repository name (required for auto-update)",
+				"  --provider   Target CI provider (default: circleci)",
+				"  --help       Show this help",
+				"",
+				"What this does:",
+				"  1. Reads branchProtection.requiredChecks from harness.contract.json",
+				"  2. Scans .github/workflows/*.yml for active job names",
+				"  3. Detects orphaned checks (no backing job + not from target provider)",
+				"  4. Prints the fix command or delegates to harness branch-protect",
+				"",
+				"Example:",
+				"  harness ci-migrate sync-branch-protection --owner myorg --repo myapp",
+				"",
+			].join("\n"),
+		);
+		return EXIT_CODES.SUCCESS;
+	}
+
+	// Parse --owner, --repo, --provider
+	const ownerIdx = args.indexOf("--owner");
+	const repoIdx = args.indexOf("--repo");
+	const providerIdx = args.indexOf("--provider");
+	const owner = ownerIdx >= 0 ? args[ownerIdx + 1] : undefined;
+	const repo = repoIdx >= 0 ? args[repoIdx + 1] : undefined;
+	const targetProvider =
+		(providerIdx >= 0 ? args[providerIdx + 1] : undefined) ?? "circleci";
+
+	let currentChecks: CheckEntry[] = [];
+	try {
+		const contractPath = resolve(dir, "harness.contract.json");
+		if (existsSync(contractPath)) {
+			const parsed = JSON.parse(readFileSync(contractPath, "utf-8")) as {
+				branchProtection?: { requiredChecks?: string[] | undefined } | undefined;
+			};
+			currentChecks = (parsed.branchProtection?.requiredChecks ?? []).map(
+				(context) => ({ context }),
+			);
+		}
+	} catch (err) {
+		const msg = `Failed to read harness.contract.json: ${sanitizeError(err)}`;
+		if (jsonFlag) {
+			console.log(JSON.stringify({ ok: false, error: msg }));
+		} else {
+			console.error(`Error: ${msg}`);
+		}
+		return EXIT_CODES.INVALID_PATH;
+	}
+
+	const activeGHAJobNames = getActiveGHAJobNames(dir);
+	const plan = buildBranchProtectSyncPlan({
+		currentChecks,
+		targetProvider,
+		activeGHAJobNames,
+		owner,
+		repo,
+	});
+
+	if (jsonFlag) {
+		console.log(JSON.stringify({ ok: true, ...plan }));
+		return EXIT_CODES.SUCCESS;
+	}
+
+	if (!plan.hasDrift) {
+		console.info("Branch protection required checks are in sync — no changes needed.");
+		return EXIT_CODES.SUCCESS;
+	}
+
+	const warning = formatBranchProtectSyncWarning(plan);
+	console.info(warning);
+
+	if (dryRun) {
+		console.info("[DRY RUN] No changes applied.");
+		return EXIT_CODES.SUCCESS;
+	}
+
+	console.info(
+		[
+			"To apply these changes, run:",
+			"",
+			`  ${plan.fixCommand}`,
+			"",
+			"Or use the GitHub API directly:",
+			`  ${plan.ghApiCommand ?? "(add --owner and --repo for the exact command)"}`,
+			"",
+		].join("\n"),
+	);
+
+	// Non-zero exit to signal drift was found (useful in CI)
+	return 1;
 }
