@@ -2563,3 +2563,127 @@ describe("detectContractVersion", () => {
 		expect(version).toBeNull();
 	});
 });
+
+// JSC-57: Tooling version detection
+describe("tooling version detection (JSC-57)", () => {
+	let tempDir: string;
+
+	beforeEach(() => {
+		tempDir = join(tmpdir(), `harness-tooling-version-test-${Date.now()}`);
+		mkdirSync(tempDir, { recursive: true });
+	});
+
+	afterEach(() => {
+		rmSync(tempDir, { recursive: true, force: true });
+	});
+
+	it("skips biome.json if existing version is newer than template", () => {
+		// Write a biome.json with a newer schema version than the template (1.9.4)
+		writeFileSync(
+			join(tempDir, "biome.json"),
+			JSON.stringify({
+				$schema: "https://biomejs.dev/schemas/2.3.13/schema.json",
+				organizeImports: { enabled: true },
+			}),
+		);
+
+		const result = runInit(tempDir, { dryRun: false, force: false });
+
+		expect(result.ok).toBe(true);
+		if (result.ok) {
+			expect(result.output.skipped).toContain("biome.json");
+			expect(result.output.created).not.toContain("biome.json");
+		}
+
+		// Original newer biome.json should be intact
+		const biomecontent = JSON.parse(
+			require("node:fs").readFileSync(join(tempDir, "biome.json"), "utf-8"),
+		);
+		expect(biomecontent.$schema).toContain("2.3.13");
+	});
+
+	it("overwrites biome.json if existing version is older than template", () => {
+		// Write a biome.json with an older schema version (0.5.0 is older than 1.9.4)
+		writeFileSync(
+			join(tempDir, "biome.json"),
+			JSON.stringify({
+				$schema: "https://biomejs.dev/schemas/0.5.0/schema.json",
+			}),
+		);
+
+		const result = runInit(tempDir, { dryRun: false, force: false });
+
+		expect(result.ok).toBe(true);
+		if (result.ok) {
+			expect(result.output.created).toContain("biome.json");
+		}
+
+		// Biome.json should now have the template version
+		const biomecontent = JSON.parse(
+			require("node:fs").readFileSync(join(tempDir, "biome.json"), "utf-8"),
+		);
+		expect(biomecontent.$schema).toContain("1.9.4");
+	});
+
+	it("skips biome.json if existing version equals template version", () => {
+		writeFileSync(
+			join(tempDir, "biome.json"),
+			JSON.stringify({
+				$schema: "https://biomejs.dev/schemas/1.9.4/schema.json",
+			}),
+		);
+
+		const result = runInit(tempDir, { dryRun: false, force: false });
+
+		expect(result.ok).toBe(true);
+		if (result.ok) {
+			expect(result.output.skipped).toContain("biome.json");
+		}
+	});
+
+	it("--force bypasses version check and overwrites biome.json anyway", () => {
+		writeFileSync(
+			join(tempDir, "biome.json"),
+			JSON.stringify({
+				$schema: "https://biomejs.dev/schemas/2.3.13/schema.json",
+			}),
+		);
+
+		const result = runInit(tempDir, { dryRun: false, force: true });
+
+		expect(result.ok).toBe(true);
+		if (result.ok) {
+			expect(result.output.created).toContain("biome.json");
+		}
+
+		// Should be overwritten with template version
+		const biomecontent = JSON.parse(
+			require("node:fs").readFileSync(join(tempDir, "biome.json"), "utf-8"),
+		);
+		expect(biomecontent.$schema).toContain("1.9.4");
+	});
+
+	it("interactive mode shows biome.json with newer version as 'skip'", () => {
+		writeFileSync(
+			join(tempDir, "biome.json"),
+			JSON.stringify({
+				$schema: "https://biomejs.dev/schemas/2.3.13/schema.json",
+			}),
+		);
+
+		const result = runInit(tempDir, {
+			dryRun: false,
+			force: false,
+			interactive: true,
+		});
+
+		expect(result.ok).toBe(true);
+		if (result.ok) {
+			const biomeChange = result.output.proposedChanges?.find(
+				(c) => c.path === "biome.json",
+			);
+			expect(biomeChange).toBeDefined();
+			expect(biomeChange?.action).toBe("skip");
+		}
+	});
+});

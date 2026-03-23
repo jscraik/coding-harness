@@ -26,6 +26,7 @@ import {
 	createTemplateRenderContext,
 	detectPackageManager,
 	getTemplatesForProvider,
+	getToolingVersionDecision,
 	isTemplateEnabledForProvider,
 	normalizeCIProvider,
 	shouldAutoUpdateTemplate,
@@ -376,11 +377,28 @@ export function runInit(
 		const autoUpdate =
 			exists && shouldAutoUpdateTemplate(template.path, targetPath);
 
-		// Skip existing files unless --force
-		if (exists && !options.force && !autoUpdate) {
+		// JSC-57: Version-aware handling for tooling configs (e.g. biome.json)
+		// - existing newer  → skip (don't downgrade)
+		// - existing older  → allow overwrite even without --force (upgrade)
+		// - no version info → fall through to normal skip/force logic
+		const versionDecision =
+			exists && !options.force
+				? getToolingVersionDecision(template.path, targetPath)
+				: "no_opinion";
+
+		if (versionDecision === "skip") {
 			skipped.push(template.path);
 			continue;
 		}
+
+		const versionForcedUpdate = versionDecision === "force_update";
+
+		// Skip existing files unless --force or auto-update or version-forced
+		if (exists && !options.force && !autoUpdate && !versionForcedUpdate) {
+			skipped.push(template.path);
+			continue;
+		}
+
 
 		// Dry-run: don't write, just track what would happen
 		if (options.dryRun) {
