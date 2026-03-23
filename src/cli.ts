@@ -48,6 +48,7 @@ import {
 	type HarnessUpgradeOptions,
 	runUpgradeCLI,
 } from "./commands/upgrade.js";
+import { runContractCLI } from "./commands/contract.js";
 import {
 	dispatchRegistryCommand,
 	getRegistryCommandHelpRows,
@@ -773,6 +774,15 @@ export function run(args: string[]): void {
 		}
 
 		const exitCode = runInitCLI(targetDir, options);
+		process.exit(exitCode);
+		return;
+	}
+
+	if (command === "contract") {
+		// JSC-69: harness contract validate / harness contract schema
+		const subArgs = args.slice(1); // remaining args after 'contract'
+		const jsonFlag = args.includes("--json");
+		const exitCode = runContractCLI(subArgs, { json: jsonFlag });
 		process.exit(exitCode);
 		return;
 	}
