@@ -61,6 +61,7 @@ import {
 } from "./lib/cli/parse-utils.js";
 import { sanitizeError } from "./lib/input/sanitize.js";
 import type { PilotEvaluateOptions } from "./lib/pilot-evaluation/types.js";
+import { runDoctorCLI } from "./commands/doctor.js";
 import { getVersion } from "./lib/version.js";
 
 // Consolidated error handler
@@ -83,6 +84,7 @@ process.on("uncaughtException", (error) => {
 function printUsage(): void {
 	const legacyCommandRows = [
 		{ name: "init", summary: "Install harness in current directory" },
+		{ name: "doctor", summary: "Check all gate prerequisites (tools, files, config, CI)" },
 		{
 			name: "ci-migrate",
 			summary: "Safely migrate CI execution from GitHub Actions to CircleCI",
@@ -1921,6 +1923,12 @@ export function run(args: string[]): void {
 		runPresetCLI(subcommandArgs)
 			.then((result) => process.exit(result.exitCode))
 			.catch((error) => handleFatalError("Preset Error", error));
+		return;
+	}
+
+	if (command === "doctor") {
+		const exitCode = runDoctorCLI(args.slice(1), getVersion);
+		process.exit(exitCode);
 		return;
 	}
 
