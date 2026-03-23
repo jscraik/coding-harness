@@ -26,6 +26,7 @@ import {
 	detectPackageManager,
 	getTemplatesForProvider,
 	shouldAutoUpdateTemplate,
+	shouldSkipDueToNewerToolingVersion,
 } from "./scaffold.js";
 import {
 	type CIProvider,
@@ -62,6 +63,17 @@ export function collectProposedChanges(
 		const newContent = template.render(packageManager, renderContext);
 		const autoUpdate =
 			exists && shouldAutoUpdateTemplate(template.path, targetPath);
+
+		// JSC-57: If existing tooling version is newer, treat as skip in interactive mode too
+		if (exists && !options.force && shouldSkipDueToNewerToolingVersion(template.path, targetPath)) {
+			proposed.push({
+				path: template.path,
+				action: "skip",
+				currentContent: null,
+				newContent,
+			});
+			continue;
+		}
 
 		if (exists && !options.force && !autoUpdate) {
 			// File exists and not forcing - would skip; no content read needed
