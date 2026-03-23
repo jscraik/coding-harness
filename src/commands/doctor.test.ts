@@ -1,0 +1,371 @@
+/**
+ * Tests for harness doctor command (JSC-65)
+ */
+import { describe, expect, it, vi, beforeEach, afterEach } from "vitest";
+import {
+	existsSync,
+	mkdirSync,
+	rmSync,
+	writeFileSync,
+} from "node:fs";
+import { join } from "node:path";
+import { tmpdir } from "node:os";
+import { spawnSync } from "node:child_process";
+import { runDoctor } from "./doctor.js";
+
+// Mock spawnSync for tool checks (node, pnpm, git, gh)
+vi.mock("node:child_process", async (importOriginal) => {
+	const original = await importOriginal<typeof import("node:child_process")>();
+	return { ...original, spawnSync: vi.fn(original.spawnSync) };
+});
+
+const mockSpawnSync = vi.mocked(spawnSync);
+
+function makeTmpDir(): string {
+	const d = join(tmpdir(), `doctor-test-${Date.now()}`);
+	mkdirSync(d, { recursive: true });
+	return d;
+}
+
+function makeSpawnResult(
+	status: number,
+	stdout = "",
+): ReturnType<typeof spawnSync> {
+	return {
+		status,
+		stdout,
+		stderr: "",
+		pid: 1,
+		output: [],
+		signal: null,
+	} as ReturnType<typeof spawnSync>;
+}
+
+/** Set up a happy-path spawn mock: node 24, pnpm, git all present; gh auth ok */
+function mockAllToolsOk(): void {
+	mockSpawnSync.mockImplementation((cmd, args) => {
+		const cmdStr = String(cmd);
+		const argsArr = Array.isArray(args) ? args.map(String) : [];
+
+		if (cmdStr === "command" || argsArr.includes("-v")) {
+			return makeSpawnResult(0, "found");
+		}
+		if (cmdStr === "node") return makeSpawnResult(0, "v24.0.0");
+		if (cmdStr === "pnpm") return makeSpawnResult(0, "10.0.0");
+		if (cmdStr === "git") return makeSpawnResult(0, "git version 2.44.0");
+		if (cmdStr === "gh") return makeSpawnResult(0, "gh version 2.0.0");
+		return makeSpawnResult(0, "");
+	});
+}
+
+describe("runDoctor — tool checks", () => {
+	let dir: string;
+
+	beforeEach(() => {
+		dir = makeTmpDir();
+		mockSpawnSync.mockClear();
+	});
+
+	afterEach(() => {
+		if (existsSync(dir)) rmSync(dir, { recursive: true, force: true });
+		vi.restoreAllMocks();
+	});
+
+	it("reports ok for node 24", () => {
+		mockAllToolsOk();
+		mockSpawnSync.mockImplementation((cmd) => {
+			if (String(cmd) === "node") return makeSpawnResult(0, "v24.1.0");
+			return makeSpawnResult(0, "found");
+		});
+
+		const report = runDoctor({ dir });
+		const nodeCheck = report.checks.find((c) => c.id === "tool:node");
+		expect(nodeCheck?.status).toBe("ok");
+	});
+
+	it("warns for node <24", () => {
+		mockAllToolsOk();
+		mockSpawnSync.mockImplementation((cmd) => {
+			if (String(cmd) === "node") return makeSpawnResult(0, "v20.0.0");
+			return makeSpawnResult(0, "found");
+		});
+
+		const report = runDoctor({ dir });
+		const nodeCheck = report.checks.find((c) => c.id === "tool:node");
+		expect(nodeCheck?.status).toBe("warn");
+		expect(nodeCheck?.fix).toContain("mise");
+	});
+
+	it("fails when node is not found", () => {
+		mockSpawnSync.mockReturnValue(makeSpawnResult(1, ""));
+
+		const report = runDoctor({ dir });
+		const nodeCheck = report.checks.find((c) => c.id === "tool:node");
+		expect(nodeCheck?.status).toBe("fail");
+	});
+
+	it("warns when gh is not authenticated", () => {
+		mockAllToolsOk();
+		// gh --version ok, gh auth status fails
+		mockSpawnSync.mockImplementation((cmd, args) => {
+			const cmdStr = String(cmd);
+			const argsArr = Array.isArray(args) ? args.map(String) : [];
+			if (cmdStr === "gh" && argsArr.includes("status")) {
+				return makeSpawnResult(1, "");
+			}
+			return makeSpawnResult(0, "v24.0.0");
+		});
+
+		const report = runDoctor({ dir });
+		const ghCheck = report.checks.find((c) => c.id === "tool:gh");
+		expect(ghCheck?.status).toBe("warn");
+		expect(ghCheck?.fix).toBe("gh auth login");
+	});
+});
+
+describe("runDoctor — file checks", () => {
+	let dir: string;
+
+	beforeEach(() => {
+		dir = makeTmpDir();
+		mockSpawnSync.mockClear();
+		mockAllToolsOk();
+	});
+
+	afterEach(() => {
+		if (existsSync(dir)) rmSync(dir, { recursive: true, force: true });
+		vi.restoreAllMocks();
+	});
+
+	it("fails when harness.contract.json is missing", () => {
+		mockAllToolsOk();
+		const report = runDoctor({ dir });
+		const check = report.checks.find(
+			(c) => c.id === "file:harness.contract.json",
+		);
+		expect(check?.status).toBe("fail");
+		expect(check?.fix).toContain("harness init");
+		expect(report.hasFailures).toBe(true);
+	});
+
+	it("fails when harness.contract.json is invalid JSON", () => {
+		writeFileSync(join(dir, "harness.contract.json"), "NOT JSON");
+		mockAllToolsOk();
+
+		const report = runDoctor({ dir });
+		const check = report.checks.find(
+			(c) => c.id === "file:harness.contract.json",
+		);
+		expect(check?.status).toBe("fail");
+		expect(check?.message).toContain("not valid JSON");
+	});
+
+	it("ok when harness.contract.json is valid", () => {
+		writeFileSync(
+			join(dir, "harness.contract.json"),
+			JSON.stringify({ version: "1.0.0" }),
+		);
+		mockAllToolsOk();
+
+		const report = runDoctor({ dir });
+		const check = report.checks.find(
+			(c) => c.id === "file:harness.contract.json",
+		);
+		expect(check?.status).toBe("ok");
+	});
+
+	it("warns when memory.json is missing", () => {
+		mockAllToolsOk();
+		const report = runDoctor({ dir });
+		const check = report.checks.find((c) => c.id === "file:memory.json");
+		expect(check?.status).toBe("warn");
+		expect(check?.fix).toContain("harness init");
+	});
+
+	it("warns when memory.json missing closeout.forjamie_updated", () => {
+		writeFileSync(
+			join(dir, "memory.json"),
+			JSON.stringify({ closeout: { date: "2026-01-01" } }),
+		);
+		mockAllToolsOk();
+
+		const report = runDoctor({ dir });
+		const check = report.checks.find((c) => c.id === "file:memory.json");
+		expect(check?.status).toBe("warn");
+		expect(check?.message).toContain("forjamie_updated");
+	});
+
+	it("ok when memory.json has full closeout structure", () => {
+		writeFileSync(
+			join(dir, "memory.json"),
+			JSON.stringify({
+				closeout: { date: "2026-01-01", forjamie_updated: true },
+			}),
+		);
+		mockAllToolsOk();
+
+		const report = runDoctor({ dir });
+		const check = report.checks.find((c) => c.id === "file:memory.json");
+		expect(check?.status).toBe("ok");
+	});
+
+	it("warns when drift-gate baseline is missing", () => {
+		mockAllToolsOk();
+		const report = runDoctor({ dir });
+		const check = report.checks.find(
+			(c) => c.id === "file:consistency-baseline",
+		);
+		expect(check?.status).toBe("warn");
+		expect(check?.fix).toContain("--seed-baseline");
+	});
+
+	it("ok when drift-gate baseline is present and valid", () => {
+		const baselineDir = join(dir, "artifacts/consistency-gate");
+		mkdirSync(baselineDir, { recursive: true });
+		writeFileSync(
+			join(baselineDir, "consistency-baseline-latest.json"),
+			JSON.stringify({ findings: [] }),
+		);
+		mockAllToolsOk();
+
+		const report = runDoctor({ dir });
+		const check = report.checks.find(
+			(c) => c.id === "file:consistency-baseline",
+		);
+		expect(check?.status).toBe("ok");
+	});
+
+	it("warns when agent-first-status.md is missing", () => {
+		mockAllToolsOk();
+		const report = runDoctor({ dir });
+		const check = report.checks.find(
+			(c) => c.id === "file:agent-first-status",
+		);
+		expect(check?.status).toBe("warn");
+	});
+
+	it("ok when agent-first-status.md is present", () => {
+		const statusDir = join(dir, "docs/roadmap");
+		mkdirSync(statusDir, { recursive: true });
+		writeFileSync(
+			join(statusDir, "agent-first-status.md"),
+			"# Agent First Status\n",
+		);
+		mockAllToolsOk();
+
+		const report = runDoctor({ dir });
+		const check = report.checks.find(
+			(c) => c.id === "file:agent-first-status",
+		);
+		expect(check?.status).toBe("ok");
+	});
+});
+
+describe("runDoctor — config checks", () => {
+	let dir: string;
+
+	beforeEach(() => {
+		dir = makeTmpDir();
+		mockSpawnSync.mockClear();
+		mockAllToolsOk();
+	});
+
+	afterEach(() => {
+		if (existsSync(dir)) rmSync(dir, { recursive: true, force: true });
+		vi.restoreAllMocks();
+	});
+
+	it("skips config checks when contract is missing", () => {
+		mockAllToolsOk();
+		const report = runDoctor({ dir });
+		const ctxCheck = report.checks.find(
+			(c) => c.id === "config:contextIntegrityPolicy",
+		);
+		expect(ctxCheck?.status).toBe("skip");
+	});
+
+	it("warns when contextIntegrityPolicy missing from contract", () => {
+		writeFileSync(
+			join(dir, "harness.contract.json"),
+			JSON.stringify({ version: "1.0.0" }),
+		);
+		mockAllToolsOk();
+
+		const report = runDoctor({ dir });
+		const check = report.checks.find(
+			(c) => c.id === "config:contextIntegrityPolicy",
+		);
+		expect(check?.status).toBe("warn");
+		expect(check?.fix).toBeTruthy();
+	});
+
+	it("ok when contextIntegrityPolicy present in contract", () => {
+		writeFileSync(
+			join(dir, "harness.contract.json"),
+			JSON.stringify({ contextIntegrityPolicy: { minCoverage: 0.9 } }),
+		);
+		mockAllToolsOk();
+
+		const report = runDoctor({ dir });
+		const check = report.checks.find(
+			(c) => c.id === "config:contextIntegrityPolicy",
+		);
+		expect(check?.status).toBe("ok");
+	});
+});
+
+describe("runDoctor — report structure", () => {
+	let dir: string;
+
+	beforeEach(() => {
+		dir = makeTmpDir();
+		mockSpawnSync.mockClear();
+	});
+
+	afterEach(() => {
+		if (existsSync(dir)) rmSync(dir, { recursive: true, force: true });
+		vi.restoreAllMocks();
+	});
+
+	it("report has required fields", () => {
+		mockAllToolsOk();
+		const report = runDoctor({ dir });
+
+		expect(report).toHaveProperty("version");
+		expect(report).toHaveProperty("dir");
+		expect(report).toHaveProperty("timestamp");
+		expect(report).toHaveProperty("checks");
+		expect(report).toHaveProperty("counts");
+		expect(report).toHaveProperty("hasFailures");
+		expect(report).toHaveProperty("postInitChecklist");
+		expect(Array.isArray(report.postInitChecklist)).toBe(true);
+		expect((report.postInitChecklist?.length ?? 0)).toBeGreaterThan(0);
+	});
+
+	it("every failing check has a fix command", () => {
+		mockSpawnSync.mockReturnValue(makeSpawnResult(1, ""));
+		// No contract, no memory.json, no baseline, etc.
+		const report = runDoctor({ dir });
+
+		for (const check of report.checks) {
+			if (check.status === "fail") {
+				expect(check.fix, `check ${check.id} has no fix`).toBeTruthy();
+			}
+		}
+	});
+
+	it("hasFailures is false when only warnings are present", () => {
+		mockAllToolsOk();
+		// No files at all → all file checks are warn, not fail
+		// (contract missing = fail, so we need contract to be present)
+		writeFileSync(
+			join(dir, "harness.contract.json"),
+			JSON.stringify({ version: "1.0.0" }),
+		);
+
+		const report = runDoctor({ dir });
+		// With contract present and tools ok, should only have warns (no fails)
+		expect(report.hasFailures).toBe(false);
+		expect(report.counts.warn).toBeGreaterThan(0);
+	});
+});
