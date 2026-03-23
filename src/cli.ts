@@ -62,6 +62,7 @@ import {
 import { sanitizeError } from "./lib/input/sanitize.js";
 import type { PilotEvaluateOptions } from "./lib/pilot-evaluation/types.js";
 import { runDoctorCLI } from "./commands/doctor.js";
+import { runHealthCLI } from "./commands/health.js";
 import { getVersion } from "./lib/version.js";
 
 // Consolidated error handler
@@ -85,6 +86,7 @@ function printUsage(): void {
 	const legacyCommandRows = [
 		{ name: "init", summary: "Install harness in current directory" },
 		{ name: "doctor", summary: "Check all gate prerequisites (tools, files, config, CI)" },
+		{ name: "health", summary: "Unified gate status scorecard (all gates)" },
 		{
 			name: "ci-migrate",
 			summary: "Safely migrate CI execution from GitHub Actions to CircleCI",
@@ -1928,6 +1930,12 @@ export function run(args: string[]): void {
 
 	if (command === "doctor") {
 		const exitCode = runDoctorCLI(args.slice(1), getVersion);
+		process.exit(exitCode);
+		return;
+	}
+
+	if (command === "health") {
+		const exitCode = runHealthCLI(args.slice(1), getVersion);
 		process.exit(exitCode);
 		return;
 	}
