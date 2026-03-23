@@ -8,7 +8,7 @@ import {
 	runBlastRadiusCLI,
 } from "./commands/blast-radius.js";
 import { runBrainstormGateCLI } from "./commands/brainstorm-gate.js";
-import { runCIMigrateCLI, runSyncBranchProtectionCLI } from "./commands/ci-migrate.js";
+import { runCIMigrateCLI, runPromoteModeCLI, runSyncBranchProtectionCLI } from "./commands/ci-migrate.js";
 import { runContextHealthCLI } from "./commands/context-health.js";
 import { runContextCLI } from "./commands/context.js";
 import { runDiffBudgetCLI } from "./commands/diff-budget.js";
@@ -856,7 +856,7 @@ export function run(args: string[]): void {
 			positionalArgs.push(token);
 		}
 
-		const validActions = new Set(["prepare", "commit", "abort", "verify", "sync-branch-protection"]);
+		const validActions = new Set(["prepare", "commit", "abort", "verify", "sync-branch-protection", "promote-mode"]);
 		const actionArg = getFlagValue(args, actionIndex);
 		let parsedAction = actionArg;
 		if (
@@ -878,6 +878,13 @@ export function run(args: string[]): void {
 		// JSC-60: sync-branch-protection is a standalone subcommand
 		if (parsedAction === "sync-branch-protection") {
 			const exitCode = runSyncBranchProtectionCLI(targetDir, args.slice(2));
+			process.exit(exitCode);
+			return;
+		}
+
+		// JSC-61: promote-mode is a standalone subcommand, not passed to runCIMigrateCLI
+		if (parsedAction === "promote-mode") {
+			const exitCode = runPromoteModeCLI(targetDir, args.slice(2));
 			process.exit(exitCode);
 			return;
 		}
