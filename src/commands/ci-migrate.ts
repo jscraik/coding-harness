@@ -14,6 +14,7 @@ import {
 import { dirname, join, resolve, sep } from "node:path";
 import { cwd, env } from "node:process";
 import { fileURLToPath } from "node:url";
+import { validateCIConfigSyntax } from "../lib/ci/config-validator.js";
 import {
 	type RequiredCheckIdentity,
 	createCIProviderAdapter,
@@ -9123,7 +9124,13 @@ export function runCIMigrateCLI(
 				console.error(`Error: ${requiredChecksResult.error}`);
 				return EXIT_CODES.INVALID_PATH;
 			}
+			// JSC-59: Validate CI config syntax before declaring verify success
+			const configSyntaxViolations = validateCIConfigSyntax(
+				dir,
+				provider === "circleci" ? "circleci" : "github-actions",
+			).map((v) => v.message);
 			const verificationViolations = [
+				...configSyntaxViolations,
 				...validateRequiredChecksForVerify(requiredChecksResult.value),
 				...validateTransitionStatusArtifact(
 					dir,
@@ -9133,6 +9140,7 @@ export function runCIMigrateCLI(
 						policyResult.value.migrationStage !== "circleci-only",
 				),
 			];
+
 			if (verificationViolations.length > 0) {
 				if (soloMode) {
 					console.info(
