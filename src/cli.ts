@@ -955,18 +955,25 @@ export function run(args: string[]): void {
 	if (command === "drift-gate") {
 		// Parse drift-gate options
 		const jsonFlag = args.includes("--json");
+		const seedBaselineFlag = args.includes("--seed-baseline");
+		const noSeedFlag = args.includes("--no-seed");
 		const modeIndex = args.indexOf("--mode");
 		const outIndex = args.indexOf("--out");
 		const baselineIndex = args.indexOf("--baseline");
+		const suppressIndex = args.indexOf("--suppress");
 
 		const options: {
 			mode?: "advisory" | "health";
 			json?: boolean;
 			outPath?: string;
 			baselinePath?: string;
+			seedBaseline?: boolean;
+			suppressions?: string[];
 		} = {};
 
 		if (jsonFlag) options.json = true;
+		if (seedBaselineFlag) options.seedBaseline = true;
+		if (noSeedFlag) options.seedBaseline = false;
 		const modeArg = getFlagValue(args, modeIndex);
 		if (modeArg) {
 			if (modeArg !== "advisory" && modeArg !== "health") {
@@ -980,6 +987,8 @@ export function run(args: string[]): void {
 		if (outArg) options.outPath = outArg;
 		const baselineArg = getFlagValue(args, baselineIndex);
 		if (baselineArg) options.baselinePath = baselineArg;
+		const suppressArg = getFlagValue(args, suppressIndex);
+		if (suppressArg) options.suppressions = parseCsvList(suppressArg);
 
 		const exitCode = runDriftGateCLI(options);
 		process.exit(exitCode);
