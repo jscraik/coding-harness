@@ -782,6 +782,7 @@ export function run(args: string[]): void {
 		const mergeQueueOrchestratorIndex = args.indexOf(
 			"--merge-queue-orchestrator",
 		);
+		const commitModeIndex = args.indexOf("--commit-mode");
 		const dryRunFlag = args.includes("--dry-run");
 		const applyFlag = args.includes("--apply");
 		const rollbackFlag = args.includes("--rollback");
@@ -795,6 +796,7 @@ export function run(args: string[]): void {
 			"--break-glass-approval",
 			"--merge-queue-evidence",
 			"--merge-queue-orchestrator",
+			"--commit-mode",
 		]);
 		const positionalArgs: string[] = [];
 		for (let index = 1; index < args.length; index++) {
@@ -844,6 +846,12 @@ export function run(args: string[]): void {
 			mergeQueueOrchestratorIndex,
 		);
 
+		const commitModeRaw = getFlagValue(args, commitModeIndex);
+		const commitMode =
+			commitModeRaw === "solo" || commitModeRaw === "enterprise"
+				? commitModeRaw
+				: undefined;
+
 		const exitCode = runCIMigrateCLI(targetDir, {
 			provider,
 			dryRun: dryRunFlag,
@@ -855,6 +863,7 @@ export function run(args: string[]): void {
 			mergeQueueEvidencePath,
 			mergeQueueOrchestratorPath,
 			autoGenerateProofPack: autoGenerateProofPackFlag,
+			commitMode,
 		});
 		process.exit(exitCode);
 		return;

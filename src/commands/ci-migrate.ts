@@ -167,6 +167,14 @@ export interface CIMigrateOptions {
 	mergeQueueOrchestratorPath?: string | undefined;
 	mergeQueueProviderAPIPath?: string | undefined;
 	autoGenerateProofPack?: boolean | undefined;
+	/**
+	 * JSC-58: Solo/lightweight commit mode.
+	 * "solo"       — skips proof-pack, merge-queue, and authority-config requirements.
+	 *                Suitable for single-maintainer or small-team repos.
+	 * "enterprise" — full ceremony (default).
+	 * Can also be set in harness.contract.json as ciProviderPolicy.commitMode.
+	 */
+	commitMode?: "solo" | "enterprise" | undefined;
 }
 
 interface MigrationCheckClassification {
@@ -3244,6 +3252,102 @@ function shouldRequirePromotionEvidence(
 		return false;
 	}
 	return readContractProviderMode(targetDir) === "required";
+}
+
+// ─── JSC-58: Solo / lightweight commit mode ──────────────────────────────────
+
+/**
+ * Read ciProviderPolicy.commitMode from harness.contract.json.
+ * Returns "solo" | "enterprise" | null if absent or unparseable.
+ */
+function readContractCommitMode(
+	targetDir: string,
+): "solo" | "enterprise" | null {
+	try {
+		const contractPath = resolve(targetDir, "harness.contract.json");
+		if (!existsSync(contractPath)) return null;
+		const parsed = JSON.parse(readFileSync(contractPath, "utf-8")) as {
+			ciProviderPolicy?: { commitMode?: string | undefined } | undefined;
+		};
+		const mode = parsed.ciProviderPolicy?.commitMode;
+		if (mode === "solo" || mode === "enterprise") return mode;
+	} catch {
+		// Best-effort
+	}
+	return null;
+}
+
+/**
+ * Auto-detect whether a contract is a solo/lightweight setup by checking
+ * whether the enterprise-required fields are absent or obviously stubbed.
+ * Returns true when contract is missing trustedPolicyRef AND authorityConfigPath.
+ */
+function contractAppearsToLackEnterpriseFields(targetDir: string): boolean {
+	try {
+		const contractPath = resolve(targetDir, "harness.contract.json");
+		if (!existsSync(contractPath)) return false;
+		const parsed = JSON.parse(readFileSync(contractPath, "utf-8")) as {
+			ciProviderPolicy?: {
+				trustedPolicyRef?: string | undefined;
+				authorityConfigPath?: string | undefined;
+			} | undefined;
+		};
+		const policy = parsed.ciProviderPolicy;
+		if (!policy) return false;
+		const hasTrustedRef =
+			typeof policy.trustedPolicyRef === "string" &&
+			policy.trustedPolicyRef.trim().length > 0;
+		const hasAuthority =
+			typeof policy.authorityConfigPath === "string" &&
+			policy.authorityConfigPath.trim().length > 0;
+		return !hasTrustedRef && !hasAuthority;
+	} catch {
+		return false;
+	}
+}
+
+/**
+ * JSC-58: Determine whether solo/lightweight commit mode is active.
+ *
+ * Priority:
+ * 1. Explicit CLI flag (--commit-mode=solo / --commit-mode=enterprise)
+ * 2. harness.contract.json ciProviderPolicy.commitMode
+ * 3. Auto-detect: if enterprise fields (trustedPolicyRef, authorityConfigPath)
+ *    are absent, infer solo mode and emit a one-time notice.
+ */
+export function isSoloCommitMode(
+	targetDir: string,
+	options: { commitMode?: "solo" | "enterprise" | undefined } = {},
+	logNotice = true,
+): boolean {
+	// 1. Explicit flag wins
+	if (options.commitMode === "solo") return true;
+	if (options.commitMode === "enterprise") return false;
+
+	// 2. Contract field
+	const contractMode = readContractCommitMode(targetDir);
+	if (contractMode === "solo") return true;
+	if (contractMode === "enterprise") return false;
+
+	// 3. Auto-detect from missing enterprise fields
+	if (contractAppearsToLackEnterpriseFields(targetDir)) {
+		if (logNotice) {
+			console.info(
+				[
+					"",
+					"ℹ️  AUTO-DETECTED SOLO MODE (JSC-58)",
+					"   ciProviderPolicy.trustedPolicyRef and authorityConfigPath are absent.",
+					"   Treating this as a solo/lightweight repository — skipping enterprise ceremony.",
+					"   To suppress this notice, set ciProviderPolicy.commitMode = \"solo\" in harness.contract.json",
+					"   To force enterprise mode: --commit-mode=enterprise",
+					"",
+				].join("\n"),
+			);
+		}
+		return true;
+	}
+
+	return false;
 }
 
 function isCIProviderArray(value: unknown): value is CIProvider[] {
@@ -8591,6 +8695,10 @@ export function runCIMigrateCLI(
 		return EXIT_CODES.INVALID_PATH;
 	}
 	const snapshotId = snapshotIdResult.value;
+
+	// JSC-58: Resolve solo mode once, passed downstream to all gating logic.
+	const soloMode = isSoloCommitMode(dir, { commitMode: options.commitMode });
+
 	let migrationReport: MigrationReport | null = null;
 	let sourceProviderForRollback: CIProvider = "github-actions";
 	let preparedState: MigrationPhaseState | null = null;
@@ -8995,7 +9103,11 @@ export function runCIMigrateCLI(
 		}
 
 		if (action === "verify") {
-			const policyResult = readContractProviderPolicy(dir, { strict: true });
+			// JSC-58: solo mode skips strict verify (no trustedPolicyRef / authorityConfigPath)
+			const policyResult = readContractProviderPolicy(
+				dir,
+				soloMode ? { strict: false } : { strict: true },
+			);
 			if (!policyResult.ok) {
 				console.error(`Error: ${policyResult.error}`);
 				return EXIT_CODES.INVALID_PATH;
@@ -9010,16 +9122,23 @@ export function runCIMigrateCLI(
 				...validateTransitionStatusArtifact(
 					dir,
 					policyResult.value.transitionStatusArtifactPath,
-					policyResult.value.mode === "required" &&
+					!soloMode &&
+						policyResult.value.mode === "required" &&
 						policyResult.value.migrationStage !== "circleci-only",
 				),
 			];
 			if (verificationViolations.length > 0) {
-				console.error("Error: strict verify failed:");
-				for (const violation of verificationViolations) {
-					console.error(`- ${violation}`);
+				if (soloMode) {
+					console.info(
+						`ℹ️  Solo mode: ${verificationViolations.length} verify check(s) skipped (not enforced in solo/lightweight mode).`,
+					);
+				} else {
+					console.error("Error: strict verify failed:");
+					for (const violation of verificationViolations) {
+						console.error(`- ${violation}`);
+					}
+					return EXIT_CODES.INVALID_PATH;
 				}
-				return EXIT_CODES.INVALID_PATH;
 			}
 			return EXIT_CODES.SUCCESS;
 		}
@@ -9053,6 +9172,7 @@ export function runCIMigrateCLI(
 
 		if (
 			apply &&
+			!soloMode &&
 			migrationReport.promotionEvidence.required &&
 			migrationReport.promotionEvidence.status !== "verified"
 		) {
@@ -9064,6 +9184,7 @@ export function runCIMigrateCLI(
 
 		if (
 			apply &&
+			!soloMode &&
 			migrationReport.promotionEvidence.required &&
 			migrationReport.parity.status !== "parity"
 		) {
@@ -9075,6 +9196,7 @@ export function runCIMigrateCLI(
 
 		if (
 			apply &&
+			!soloMode &&
 			migrationReport.promotionEvidence.required &&
 			migrationReport.satisfiability.preCutover.scannedOpenPrs < 1
 		) {
