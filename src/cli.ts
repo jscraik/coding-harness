@@ -45,6 +45,10 @@ import {
 } from "./commands/ui-loop.js";
 import { runVerifyGreptileCLI } from "./commands/verify-greptile.js";
 import {
+	type HarnessUpgradeOptions,
+	runUpgradeCLI,
+} from "./commands/upgrade.js";
+import {
 	dispatchRegistryCommand,
 	getRegistryCommandHelpRows,
 } from "./lib/cli/command-registry.js";
@@ -769,6 +773,25 @@ export function run(args: string[]): void {
 		}
 
 		const exitCode = runInitCLI(targetDir, options);
+		process.exit(exitCode);
+		return;
+	}
+
+	if (command === "upgrade") {
+		// JSC-66: version-aware upgrade path
+		const dryRunFlag = args.includes("--dry-run");
+		const forceFlag = args.includes("--force");
+		const skipContractFlag = args.includes("--skip-contract-migration");
+		const providerIndex = args.indexOf("--provider");
+		const provider = getFlagValue(args, providerIndex);
+		const targetDir = args.slice(1).find((arg) => !arg.startsWith("-"));
+		const upgradeOptions: HarnessUpgradeOptions = {
+			dryRun: dryRunFlag,
+			force: forceFlag,
+			provider: provider ?? undefined,
+			skipContractMigration: skipContractFlag,
+		};
+		const exitCode = runUpgradeCLI(targetDir, upgradeOptions);
 		process.exit(exitCode);
 		return;
 	}
