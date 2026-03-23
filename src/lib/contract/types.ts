@@ -485,11 +485,18 @@ export interface ControlPlanePolicy {
 	overridePolicy: ControlPlaneOverridePolicy;
 }
 
-export type CIProviderPolicyMode = "shadow" | "required";
+export type CIProviderPolicyMode = "shadow" | "primary" | "required";
 export type CIProviderMigrationStage =
+	| "pre-migration"
 	| "dual-provider"
 	| "circleci-primary"
-	| "circleci-only";
+	| "circleci-only"
+	| "gha-primary"
+	| "gha-only"
+	| "cutover-complete";
+
+/** Operating model tier for the repository. */
+export type CommitMode = "solo" | "team" | "enterprise";
 
 export interface CIProviderPolicy {
 	activeProvider: "github-actions" | "circleci";
@@ -498,7 +505,15 @@ export interface CIProviderPolicy {
 	transitionStatusArtifactPath: string;
 	authorityConfigPath: string;
 	requiredCheckManifestPath: string;
-	trustedPolicyRef: string;
+	/** Required for team/enterprise mode; omit for solo. */
+	trustedPolicyRef?: string | undefined;
+	/**
+	 * Operating model tier:
+	 * - solo: minimal ceremony, no proof packs
+	 * - team: branch-protection + PR gates
+	 * - enterprise: full proof-pack + merge-queue
+	 */
+	commitMode?: CommitMode | undefined;
 }
 
 export type ContextIntegrityMode = "shadow" | "advisory" | "required";

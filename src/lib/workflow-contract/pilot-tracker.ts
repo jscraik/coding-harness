@@ -676,7 +676,7 @@ export function computeTransitionDecision(lane: PilotLane): TransitionResult {
 
 	// Check for demotion: warning-threshold breaches persisted across 2 windows
 	const shouldDemote =
-		secondLastWindow !== null &&
+		secondLastWindow != null &&
 		hasWarningThresholdBreach(secondLastWindow) &&
 		hasWarningThresholdBreach(lastWindow);
 	if (shouldDemote) {

@@ -654,8 +654,8 @@
   },
   "ciProviderPolicy": {
     "activeProvider": "circleci",
-    "mode": "primary",
-    "migrationStage": "cutover-complete",
+    "mode": "required",
+    "migrationStage": "circleci-only",
     "transitionStatusArtifactPath": ".harness/ci-provider-transition-status.json",
     "authorityConfigPath": "harness.contract.json",
     "requiredCheckManifestPath": ".harness/ci-required-checks.json",

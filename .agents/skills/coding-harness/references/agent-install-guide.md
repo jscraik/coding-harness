@@ -12,7 +12,7 @@
 - [Phase 3: Init scaffold](#phase-3-init-scaffold)
 - [Phase 3b: Migrate away from GitHub Actions (if applicable)](#phase-3b-migrate-away-from-github-actions)
 - [Phase 4: mise tool baseline](#phase-4-mise-tool-baseline)
-- [Phase 5: CircleCI environment variables](#phase-5-circleci-environment-variables)
+- [Phase 5: CircleCI environment variables](#phase-5-circleci-environment-variables-and-github-secrets)
 - [Phase 6: Branch protection](#phase-6-branch-protection)
 - [Phase 7: Greptile setup](#phase-7-greptile-setup)
 - [Phase 8: Memory layer bootstrap](#phase-8-memory-layer-bootstrap)

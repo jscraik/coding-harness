@@ -183,6 +183,7 @@ const VALID_CI_PROVIDER_POLICY_KEYS = [
 	"authorityConfigPath",
 	"requiredCheckManifestPath",
 	"trustedPolicyRef",
+	"commitMode",
 ] as const;
 const VALID_GAP_CASE_POLICY_KEYS = [
 	"requiredEvidenceStatuses",
@@ -228,11 +229,19 @@ const VALID_NON_OVERRIDABLE_CONTROLS = [
 	"missing_required_instruction_surface",
 	"missing_snapshot_integrity_verification",
 ] as const;
-const VALID_CI_PROVIDER_MODES: CIProviderPolicyMode[] = ["shadow", "required"];
+const VALID_CI_PROVIDER_MODES: CIProviderPolicyMode[] = [
+	"shadow",
+	"primary",
+	"required",
+];
 const VALID_CI_PROVIDER_MIGRATION_STAGES: CIProviderMigrationStage[] = [
+	"pre-migration",
 	"dual-provider",
 	"circleci-primary",
 	"circleci-only",
+	"gha-primary",
+	"gha-only",
+	"cutover-complete",
 ];
 const VALID_CI_PROVIDERS = ["github-actions", "circleci"] as const;
 
@@ -926,9 +935,11 @@ function isValidCIProviderPolicy(value: unknown): value is CIProviderPolicy {
 	) {
 		return false;
 	}
+	// trustedPolicyRef is optional (required only for enterprise mode; checked in cross-field pass)
 	if (
-		typeof policy.trustedPolicyRef !== "string" ||
-		policy.trustedPolicyRef.trim().length === 0
+		policy.trustedPolicyRef !== undefined &&
+		(typeof policy.trustedPolicyRef !== "string" ||
+			policy.trustedPolicyRef.trim().length === 0)
 	) {
 		return false;
 	}
@@ -2836,6 +2847,77 @@ export function validateContract(
 				fix: `Remove unsupported reviewPolicy checks: ${missingChecks.join(", ")}`,
 			});
 		}
+	}
+
+	// ── Cross-field consistency checks (JSC-69) ───────────────────────────────
+
+	// Check 1: mode=shadow is inconsistent with migrationStage=cutover-complete or circleci-only/gha-only
+	if (ciProviderPolicy?.mode === "shadow") {
+		const completedStages = [
+			"cutover-complete",
+			"circleci-only",
+			"gha-only",
+		] as const;
+		const stage = ciProviderPolicy.migrationStage as string | undefined;
+		if (stage !== undefined && completedStages.includes(stage as (typeof completedStages)[number])) {
+			errors.push({
+				code: ValidationErrorCode.INVALID_VALUE,
+				path: "ciProviderPolicy.mode",
+				message: `ciProviderPolicy.mode is "shadow" but migrationStage is "${stage}" — migration is complete but mode still reports as shadow`,
+				expected: '"primary" or "required" when migrationStage is fully migrated',
+				received: `mode="${ciProviderPolicy.mode}", migrationStage="${stage}"`,
+				fix: 'Set ciProviderPolicy.mode to "primary" or "required" to match the completed migration stage',
+			});
+		}
+	}
+
+	// Check 2: mode=required is inconsistent with migrationStage=pre-migration or dual-provider
+	if (ciProviderPolicy?.mode === "required") {
+		const earlyStages = ["pre-migration", "dual-provider"] as const;
+		const stage = ciProviderPolicy.migrationStage as string | undefined;
+		if (stage !== undefined && earlyStages.includes(stage as (typeof earlyStages)[number])) {
+			errors.push({
+				code: ValidationErrorCode.INVALID_VALUE,
+				path: "ciProviderPolicy.migrationStage",
+				message: `ciProviderPolicy.migrationStage is "${stage}" but mode is "required" — CI can't be required when migration hasn't started`,
+				expected:
+					'"circleci-primary", "circleci-only", or "cutover-complete" when mode is "required"',
+				received: `mode="${ciProviderPolicy.mode}", migrationStage="${stage}"`,
+				fix: `Advance migrationStage to match the "required" mode, or revert mode to "shadow"`,
+			});
+		}
+	}
+
+	// Check 3: commitMode=solo is inconsistent with trustedPolicyRef (enterprise field)
+	if (
+		ciProviderPolicy?.commitMode === "solo" &&
+		ciProviderPolicy.trustedPolicyRef !== undefined
+	) {
+		errors.push({
+			code: ValidationErrorCode.INVALID_VALUE,
+			path: "ciProviderPolicy.commitMode",
+			message:
+				'ciProviderPolicy.commitMode is "solo" but trustedPolicyRef is set — solo mode skips enterprise policy gates',
+			expected: '"team" or "enterprise" commitMode when trustedPolicyRef is configured',
+			received: `commitMode="solo", trustedPolicyRef="${String(ciProviderPolicy.trustedPolicyRef)}"`,
+			fix: 'Change commitMode to "team" or "enterprise", or remove trustedPolicyRef',
+		});
+	}
+
+	// Check 4: commitMode=enterprise requires trustedPolicyRef
+	if (
+		ciProviderPolicy?.commitMode === "enterprise" &&
+		ciProviderPolicy.trustedPolicyRef === undefined
+	) {
+		errors.push({
+			code: ValidationErrorCode.INVALID_VALUE,
+			path: "ciProviderPolicy.trustedPolicyRef",
+			message:
+				'ciProviderPolicy.commitMode is "enterprise" but trustedPolicyRef is not set — enterprise mode requires a trusted policy reference',
+			expected: 'trustedPolicyRef: "refs/heads/main" or equivalent',
+			received: "trustedPolicyRef: undefined",
+			fix: 'Add trustedPolicyRef: "refs/heads/main" to ciProviderPolicy',
+		});
 	}
 
 	if (errors.length > 0) {
