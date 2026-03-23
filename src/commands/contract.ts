@@ -195,8 +195,12 @@ export function runContractCLI(
 	}
 
 	if (subcommand === "validate" || subcommand === undefined) {
-		// Support positional path: harness contract validate ./foo.json
-		const maybePath = subcommand === "validate" ? subArgs[1] : undefined;
+		// Extract positional path: harness contract validate ./foo.json --json
+		// Skip anything that starts with '-' so flags are never mistaken for paths.
+		const positionalArgs = (subcommand === "validate" ? subArgs.slice(1) : subArgs).filter(
+			(a) => !a.startsWith("-"),
+		);
+		const maybePath = positionalArgs[0];
 		return runContractValidateCLI(undefined, {
 			json: options.json,
 			contractPath: maybePath,
