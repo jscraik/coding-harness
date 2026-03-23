@@ -176,7 +176,7 @@ function extractSections(body: string): Map<string, string> {
 					currentContent.join("\n").trim(),
 				);
 			}
-			currentHeading = headingMatch[1]?.trim();
+			currentHeading = headingMatch[1]?.trim() ?? null;
 			currentContent = [];
 		} else {
 			currentContent.push(line);
@@ -206,8 +206,8 @@ function extractMetadata(
 
 	for (const row of rows) {
 		if (row.length >= 2) {
-			const key = row[0]?.replace(/^`|`$/g, "").trim();
-			const value = row[1]?.replace(/^`|`$/g, "").trim();
+			const key = row[0]?.replace(/^`|`$/g, "").trim() ?? "";
+			const value = row[1]?.replace(/^`|`$/g, "").trim() ?? "";
 			fieldMap.set(key, value);
 		}
 	}
@@ -248,8 +248,8 @@ function extractValidationContract(tableContent: string): ValidationContract {
 
 	for (const row of rows) {
 		if (row.length >= 2) {
-			const key = row[0]?.replace(/^`|`$/g, "").trim();
-			const value = row[1]?.replace(/^`|`$/g, "").trim();
+			const key = row[0]?.replace(/^`|`$/g, "").trim() ?? "";
+			const value = row[1]?.replace(/^`|`$/g, "").trim() ?? "";
 			fieldMap.set(key, value);
 		}
 	}
@@ -307,16 +307,18 @@ function extractTransitions(
 		}
 
 		const transition: TransitionRow = {
-			S: row[0]?.trim(),
-			E: row[1]?.trim(),
-			G: row[2]?.trim(),
-			A: row[3]?.trim(),
-			N: row[row.length === 7 ? 6 : 4]?.trim(),
+			S: row[0]?.trim() ?? "",
+			E: row[1]?.trim() ?? "",
+			G: row[2]?.trim() ?? "",
+			A: row[3]?.trim() ?? "",
+			N: row[row.length === 7 ? 6 : 4]?.trim() ?? "",
 		};
 
 		if (row.length === 7) {
-			transition.P = row[4]?.trim();
-			transition.R = row[5]?.trim();
+			const pVal = row[4]?.trim();
+			if (pVal) transition.P = pVal;
+			const rVal = row[5]?.trim();
+			if (rVal) transition.R = rVal;
 		}
 
 		transitions.push(transition);
