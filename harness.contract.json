@@ -42,8 +42,7 @@
       "audit",
       "check",
       "memory",
-      "security-scan",
-      "Greptile Review"
+      "security-scan"
     ],
     "restrictDeletions": true,
     "blockForcePushes": true,
