@@ -74,7 +74,7 @@ describe("drift-gate command", () => {
 		roots.length = 0;
 	});
 
-	it("returns advisory output with missing baseline as not_applicable", () => {
+	it("returns advisory output with missing baseline as not_applicable when auto-seed disabled", () => {
 		const root = join(process.cwd(), "artifacts", "drift-gate-test-1");
 		roots.push(root);
 		createRepoFixture(root);
@@ -82,6 +82,7 @@ describe("drift-gate command", () => {
 		const result = runDriftGate({
 			repoRoot: root,
 			mode: "advisory",
+			seedBaseline: false,
 		});
 
 		expect(result.exitCode).toBe(0);
@@ -263,5 +264,109 @@ describe("drift-gate command", () => {
 		};
 		expect(written.schemaVersion).toBe("1.0.0");
 		expect(written.command).toBe("drift-gate");
+	});
+
+	it("auto-seeds baseline on first run when no baseline exists", () => {
+		const root = join(process.cwd(), "artifacts", "drift-gate-test-seed-1");
+		roots.push(root);
+		createRepoFixture(root);
+
+		const result = runDriftGate({
+			repoRoot: root,
+			mode: "advisory",
+		});
+
+		expect(result.exitCode).toBe(0);
+		// Baseline should have been seeded — no "baseline.seed.missing" finding
+		expect(
+			result.report.findings.some((f) => f.rule_id === "baseline.seed.missing"),
+		).toBe(false);
+		// All findings should be preexisting after seeding
+		for (const finding of result.report.findings) {
+			expect(finding.baseline_state).toBe("preexisting");
+		}
+		// Baseline file should exist now
+		const baselinePath = join(
+			root,
+			"artifacts/consistency-gate/consistency-baseline-latest.json",
+		);
+		expect(() => readFileSync(baselinePath, "utf-8")).not.toThrow();
+		expect(result.report.baseline_seeded).toBe(true);
+	});
+
+	it("second run compares against auto-seeded baseline", () => {
+		const root = join(process.cwd(), "artifacts", "drift-gate-test-seed-2");
+		roots.push(root);
+		createRepoFixture(root);
+
+		// First run: seeds baseline
+		runDriftGate({ repoRoot: root, mode: "advisory" });
+
+		// Second run: should load baseline, no seed finding
+		const result = runDriftGate({ repoRoot: root, mode: "advisory" });
+
+		expect(result.report.baseline.loaded).toBe(true);
+		expect(
+			result.report.findings.some((f) => f.rule_id === "baseline.seed.missing"),
+		).toBe(false);
+		expect(result.report.baseline_seeded).toBeUndefined();
+	});
+
+	it("--no-seed disables auto-seeding", () => {
+		const root = join(process.cwd(), "artifacts", "drift-gate-test-noseed");
+		roots.push(root);
+		createRepoFixture(root);
+
+		const result = runDriftGate({
+			repoRoot: root,
+			mode: "advisory",
+			seedBaseline: false,
+		});
+
+		expect(
+			result.report.findings.some((f) => f.rule_id === "baseline.seed.missing"),
+		).toBe(true);
+	});
+
+	it("suppressions filter findings and report suppressed count", () => {
+		const root = join(process.cwd(), "artifacts", "drift-gate-test-suppress");
+		roots.push(root);
+		createRepoFixture(root);
+		// Remove status matrix to generate that finding
+		rmSync(join(root, "docs/roadmap/agent-first-status.md"));
+
+		const result = runDriftGate({
+			repoRoot: root,
+			mode: "advisory",
+			suppressions: ["status.matrix.missing"],
+		});
+
+		expect(
+			result.report.findings.some((f) => f.rule_id === "status.matrix.missing"),
+		).toBe(false);
+		expect(result.report.summary.suppressed_count).toBe(1);
+		expect(result.report.suppressed?.length).toBe(1);
+		expect(result.report.suppressed?.[0]?.rule_id).toBe("status.matrix.missing");
+	});
+
+	it("findings include fix guidance", () => {
+		const root = join(process.cwd(), "artifacts", "drift-gate-test-fix");
+		roots.push(root);
+		createRepoFixture(root);
+		// Remove status matrix to generate a finding with fix guidance
+		rmSync(join(root, "docs/roadmap/agent-first-status.md"));
+
+		const result = runDriftGate({
+			repoRoot: root,
+			mode: "advisory",
+		});
+
+		const statusFinding = result.report.findings.find(
+			(f) => f.rule_id === "status.matrix.missing",
+		);
+		expect(statusFinding).toBeDefined();
+		expect(statusFinding?.fix).toBeDefined();
+		expect(statusFinding?.fix?.manual).toContain("agent-first-status.md");
+		expect(statusFinding?.fix?.suppressible).toBe(true);
 	});
 });

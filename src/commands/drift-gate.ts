@@ -30,6 +30,14 @@ export interface DriftGateOptions {
 	outPath?: string;
 	baselinePath?: string;
 	repoRoot?: string;
+	seedBaseline?: boolean;
+	suppressions?: string[];
+}
+
+export interface DriftFixGuidance {
+	command?: string;
+	manual?: string;
+	suppressible?: boolean;
 }
 
 export interface DriftFinding {
@@ -41,6 +49,7 @@ export interface DriftFinding {
 	message: string;
 	path?: string;
 	details?: string;
+	fix?: DriftFixGuidance;
 }
 
 interface DriftBaselineInfo {
@@ -64,8 +73,11 @@ export interface DriftReport {
 		new_count: number;
 		preexisting_count: number;
 		error_count: number;
+		suppressed_count: number;
 	};
 	findings: DriftFinding[];
+	suppressed?: DriftFinding[];
+	baseline_seeded?: boolean;
 }
 
 export interface DriftGateResult {
@@ -236,6 +248,69 @@ function parseFrontmatterStatus(contents: string): string | undefined {
 	return statusMatch[1].trim().toLowerCase();
 }
 
+/** Fix guidance lookup keyed by rule_id */
+const FIX_GUIDANCE: Record<string, DriftFixGuidance> = {
+	"command.surface.sources.missing": {
+		manual: "Create the missing source file, or suppress if project type doesn't include a CLI.",
+		suppressible: true,
+	},
+	"command.surface.readme.missing": {
+		manual: "Add the command to the README command index table.",
+		suppressible: false,
+	},
+	"command.surface.dispatch.missing": {
+		manual: "Add a dispatch branch for this command in src/cli.ts, or remove from README.",
+		suppressible: false,
+	},
+	"command.surface.help.duplicate": {
+		manual: "Remove the duplicate help entry from src/cli.ts.",
+		suppressible: false,
+	},
+	"todo.lifecycle.status.missing": {
+		manual: "Add frontmatter with a status field to the todo file.",
+		suppressible: false,
+	},
+	"todo.lifecycle.status.mismatch": {
+		manual: "Update the frontmatter status to match the filename convention, or rename the file.",
+		suppressible: false,
+	},
+	"quality.score.missing": {
+		command: "harness gardener",
+		manual: "Create docs/QUALITY_SCORE.md with **Score:** N/100 and last_updated frontmatter.",
+		suppressible: true,
+	},
+	"quality.score.structure.invalid": {
+		manual: "Add required frontmatter (last_updated) and **Score:** N/100 to docs/QUALITY_SCORE.md.",
+		suppressible: false,
+	},
+	"quality.score.last_updated.invalid": {
+		manual: "Fix the last_updated date in docs/QUALITY_SCORE.md frontmatter to a valid ISO date.",
+		suppressible: false,
+	},
+	"quality.score.stale": {
+		command: "harness gardener",
+		manual: "Re-run gardener or update the last_updated date in docs/QUALITY_SCORE.md.",
+		suppressible: false,
+	},
+	"status.matrix.missing": {
+		manual: "Create docs/roadmap/agent-first-status.md with status sections.",
+		suppressible: true,
+	},
+	"status.narrative.coherence": {
+		manual: "Resolve remaining ready todos or update the status matrix to reflect incomplete status.",
+		suppressible: false,
+	},
+	"baseline.seed.missing": {
+		command: "harness drift-gate --seed-baseline",
+		manual: "Run drift-gate with --seed-baseline to create the initial baseline.",
+		suppressible: false,
+	},
+	"baseline.load.error": {
+		manual: "Fix or delete the corrupted baseline file and re-seed.",
+		suppressible: false,
+	},
+};
+
 function push(
 	collection: DriftFinding[],
 	finding: Omit<DriftFinding, "baseline_state">,
@@ -248,6 +323,11 @@ function push(
 	staged.baseline_state = baselineFingerprints.has(findingFingerprint(staged))
 		? "preexisting"
 		: "new";
+	// Attach fix guidance if available
+	const guidance = FIX_GUIDANCE[staged.rule_id];
+	if (guidance) {
+		staged.fix = guidance;
+	}
 	collection.push(staged);
 }
 
@@ -522,11 +602,24 @@ export function runDriftGate(options: DriftGateOptions = {}): DriftGateResult {
 	const mode: DriftGateMode = options.mode ?? "advisory";
 	const repoRoot = resolve(options.repoRoot ?? process.cwd());
 	const baselinePath = options.baselinePath ?? DEFAULT_BASELINE_PATH;
+	const suppressions = new Set(options.suppressions ?? []);
 	const baseline = loadBaselineFingerprints(repoRoot, baselinePath);
 
 	let outcome: DriftOutcome = "ok";
 	let errorClass: DriftErrorClass = "none";
-	const findings = evaluate(repoRoot, baseline.fingerprints);
+	let baselineSeeded = false;
+	const allFindings = evaluate(repoRoot, baseline.fingerprints);
+
+	// Separate suppressed findings
+	const suppressed: DriftFinding[] = [];
+	const findings: DriftFinding[] = [];
+	for (const finding of allFindings) {
+		if (suppressions.has(finding.rule_id)) {
+			suppressed.push(finding);
+		} else {
+			findings.push(finding);
+		}
+	}
 
 	if (baseline.loadingError) {
 		outcome = "error";
@@ -544,19 +637,64 @@ export function runDriftGate(options: DriftGateOptions = {}): DriftGateResult {
 			baseline.fingerprints,
 		);
 	} else if (!baseline.info.loaded) {
-		push(
-			findings,
-			{
-				rule_id: "baseline.seed.missing",
-				surface: "status",
-				rule_result: "not_applicable",
-				severity: "info",
-				message:
-					"Baseline seed is missing; reporting current findings as new until default-branch baseline is published.",
-				path: baselinePath,
-			},
-			baseline.fingerprints,
-		);
+		// JSC-64: Auto-seed baseline when missing
+		if (options.seedBaseline !== false) {
+			// Auto-seed: write current findings as baseline
+			try {
+				const resolvedBaseline = normalizePath(repoRoot, baselinePath);
+				mkdirSync(dirname(resolvedBaseline), { recursive: true });
+				const baselineReport = {
+					schemaVersion: "1.0.0",
+					generated_at: new Date().toISOString(),
+					findings: findings.map((f) => ({
+						rule_id: f.rule_id,
+						surface: f.surface,
+						path: f.path,
+					})),
+				};
+				writeFileSync(
+					resolvedBaseline,
+					`${JSON.stringify(baselineReport, null, 2)}\n`,
+					"utf-8",
+				);
+				// Mark all current findings as preexisting since we just seeded
+				for (const f of findings) {
+					f.baseline_state = "preexisting";
+				}
+				baseline.info.loaded = true;
+				delete baseline.info.reason;
+				baselineSeeded = true;
+			} catch {
+				// Fall through to "seed missing" finding if write fails
+				push(
+					findings,
+					{
+						rule_id: "baseline.seed.missing",
+						surface: "status",
+						rule_result: "not_applicable",
+						severity: "info",
+						message:
+							"Baseline seed is missing and auto-seed failed; reporting current findings as new.",
+						path: baselinePath,
+					},
+					baseline.fingerprints,
+				);
+			}
+		} else {
+			push(
+				findings,
+				{
+					rule_id: "baseline.seed.missing",
+					surface: "status",
+					rule_result: "not_applicable",
+					severity: "info",
+					message:
+						"Baseline seed is missing; reporting current findings as new until default-branch baseline is published.",
+					path: baselinePath,
+				},
+				baseline.fingerprints,
+			);
+		}
 	}
 
 	let status: DriftStatus = "success";
@@ -565,6 +703,7 @@ export function runDriftGate(options: DriftGateOptions = {}): DriftGateResult {
 	} else if (findings.length > 0) {
 		status = "partial";
 	}
+
 
 	const report: DriftReport = {
 		schemaVersion: "1.0.0",
@@ -583,8 +722,11 @@ export function runDriftGate(options: DriftGateOptions = {}): DriftGateResult {
 				(f) => f.baseline_state === "preexisting",
 			).length,
 			error_count: findings.filter((f) => f.rule_result === "error").length,
+			suppressed_count: suppressed.length,
 		},
 		findings,
+		...(suppressed.length > 0 ? { suppressed } : {}),
+		...(baselineSeeded ? { baseline_seeded: true } : {}),
 	};
 
 	const outPath =
@@ -623,6 +765,7 @@ export function runDriftGate(options: DriftGateOptions = {}): DriftGateResult {
 				).length,
 				error_count: report.findings.filter((f) => f.rule_result === "error")
 					.length,
+				suppressed_count: suppressed.length,
 			};
 		}
 	}
@@ -649,7 +792,16 @@ export function runDriftGateCLI(options: DriftGateOptions = {}): number {
 		console.info(
 			`Findings: ${result.report.summary.finding_count} (new: ${result.report.summary.new_count}, preexisting: ${result.report.summary.preexisting_count})`,
 		);
-		if (result.report.baseline.loaded) {
+		if (result.report.summary.suppressed_count > 0) {
+			console.info(
+				`Suppressed: ${result.report.summary.suppressed_count}`,
+			);
+		}
+		if (result.report.baseline_seeded) {
+			console.info(
+				`Baseline: seeded with ${result.report.summary.preexisting_count} findings`,
+			);
+		} else if (result.report.baseline.loaded) {
 			console.info(`Baseline: loaded from ${result.report.baseline.path}`);
 		} else {
 			console.info(
@@ -665,6 +817,14 @@ export function runDriftGateCLI(options: DriftGateOptions = {}): number {
 				console.info(
 					`- [${level}] ${finding.rule_id}: ${finding.message}${suffix}`,
 				);
+				// JSC-68: Show fix guidance in human-readable output
+				if (finding.fix) {
+					if (finding.fix.command) {
+						console.info(`  Fix: ${finding.fix.command}`);
+					} else if (finding.fix.manual) {
+						console.info(`  Fix: ${finding.fix.manual}`);
+					}
+				}
 			}
 		}
 	}
