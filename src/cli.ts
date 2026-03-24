@@ -318,6 +318,18 @@ function printUsage(): void {
 	console.info("  --token          Override LINEAR_API_KEY");
 	console.info("  --json           Output as JSON");
 	console.info("");
+	console.info("Linear Sync Options:");
+	console.info("  linear sync --findings <path|-> --team <key>");
+	console.info(
+		"  --findings       Path to findings JSON file (or - for stdin)",
+	);
+	console.info(
+		"  --team           Linear team key/name to create issues in",
+	);
+	console.info("  --dry-run        Preview changes without writing to Linear");
+	console.info("  --token          Override LINEAR_API_KEY");
+	console.info("  --json           Output as JSON");
+	console.info("");
 	console.info("Linear Gate Options:");
 	console.info("  --contract       Path to harness.contract.json");
 	console.info("  --repo-root      Repository root to inspect (default: cwd)");

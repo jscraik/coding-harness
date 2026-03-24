@@ -34,6 +34,27 @@ export interface LinearIssueSummary {
 	};
 }
 
+export interface LinearCreateIssueInput {
+	teamId: string;
+	title: string;
+	description?: string;
+	labelIds?: string[];
+	priority?: number;
+}
+
+export interface LinearCreatedIssueSummary {
+	id: string;
+	identifier: string;
+	title: string;
+	url: string;
+}
+
+export interface LinearLabelSummary {
+	id: string;
+	name: string;
+	team?: LinearTeamSummary | null;
+}
+
 export interface LinearWorkflowState {
 	id: string;
 	name: string;
@@ -223,4 +244,67 @@ export class LinearClient {
 			{ input },
 		);
 	}
+
+	async listTeams(): Promise<LinearTeamSummary[]> {
+		const data = await this.graphql<{
+			teams: { nodes: LinearTeamSummary[] };
+		}>(`
+			query Teams {
+				teams {
+					nodes {
+						id
+						key
+						name
+					}
+				}
+			}
+		`);
+		return data.teams.nodes;
+	}
+
+	async listLabels(teamId?: string): Promise<LinearLabelSummary[]> {
+		const data = await this.graphql<{
+			issueLabels: { nodes: LinearLabelSummary[] };
+		}>(`
+			query IssueLabels {
+				issueLabels {
+					nodes {
+						id
+						name
+						team {
+							id
+							key
+							name
+						}
+					}
+				}
+			}
+		`);
+		const all = data.issueLabels.nodes;
+		return teamId ? all.filter((l) => !l.team || l.team.id === teamId) : all;
+	}
+
+	async createIssue(
+		input: LinearCreateIssueInput,
+	): Promise<LinearCreatedIssueSummary> {
+		const data = await this.graphql<{
+			issueCreate: { issue: LinearCreatedIssueSummary };
+		}>(
+			`
+			mutation IssueCreate($input: IssueCreateInput!) {
+				issueCreate(input: $input) {
+					issue {
+						id
+						identifier
+						title
+						url
+					}
+				}
+			}
+		`,
+			{ input },
+		);
+		return data.issueCreate.issue;
+	}
 }
+

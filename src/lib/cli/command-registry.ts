@@ -6,6 +6,7 @@ import { runEvidenceVerifyCLI } from "../../commands/evidence-verify.js";
 import { runLicenseGateCLI } from "../../commands/license-gate.js";
 import { runLinearGateCLI } from "../../commands/linear-gate.js";
 import { runLinearPrepareCLI } from "../../commands/linear-prepare.js";
+import { runLinearSyncCLI } from "../../commands/linear-sync.js";
 import { runLinearWorkflowCLI } from "../../commands/linear-workflow.js";
 import { runPolicyGateCLI } from "../../commands/policy-gate.js";
 import { runPrTemplateGateCLI } from "../../commands/pr-template-gate.js";
@@ -32,7 +33,7 @@ const COMMAND_SPECS: CommandSpec[] = [
 	{
 		name: "linear",
 		summary:
-			"Prepare Linear branch/PR metadata and manage workflow transitions",
+			"Prepare Linear branch/PR metadata, manage workflow transitions, and sync findings",
 		errorLabel: "Linear Workflow Error",
 		execute: (args) => {
 			const action = args[0];
@@ -40,19 +41,22 @@ const COMMAND_SPECS: CommandSpec[] = [
 				action !== "claim" &&
 				action !== "handoff" &&
 				action !== "close" &&
-				action !== "prepare"
+				action !== "prepare" &&
+				action !== "sync"
 			) {
 				console.error(
-					"linear expects an action of claim, handoff, close, or prepare.",
+					"linear expects an action of claim, handoff, close, prepare, or sync.",
 				);
 				return 1;
 			}
 
 			const jsonFlag = args.includes("--json");
 			const noAssignFlag = args.includes("--no-assign");
+			const dryRunFlag = args.includes("--dry-run");
 			const issueIndex = args.indexOf("--issue");
 			const tokenIndex = args.indexOf("--token");
 			const teamIndex = args.indexOf("--team");
+			const findingsIndex = args.indexOf("--findings");
 			const stateIndex = args.indexOf("--state");
 			const assigneeIndex = args.indexOf("--assignee");
 			const commentIndex = args.indexOf("--comment");
@@ -63,6 +67,19 @@ const COMMAND_SPECS: CommandSpec[] = [
 			const linksIndex = args.indexOf("--links");
 			const branchPrefixIndex = args.indexOf("--branch-prefix");
 			const fieldIndex = args.indexOf("--field");
+
+			if (action === "sync") {
+				const syncOptions: Parameters<typeof runLinearSyncCLI>[0] = {};
+				if (jsonFlag) syncOptions.json = true;
+				if (dryRunFlag) syncOptions.dryRun = true;
+				const tokenArg = getFlagValue(args, tokenIndex);
+				if (tokenArg) syncOptions.token = tokenArg;
+				const teamArg = getFlagValue(args, teamIndex);
+				if (teamArg) syncOptions.team = teamArg;
+				const findingsArg = getFlagValue(args, findingsIndex);
+				if (findingsArg) syncOptions.findings = findingsArg;
+				return runLinearSyncCLI(syncOptions);
+			}
 
 			if (action === "prepare") {
 				const options: Parameters<typeof runLinearPrepareCLI>[0] = {};
