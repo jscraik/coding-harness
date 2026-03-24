@@ -4,6 +4,11 @@ jobs:
   pr-pipeline:
     docker:
       - image: cimg/node:24.13
+    # large: 4 vCPU / 8 GB. Required because ci-migrate.test.ts runs 97 tests
+    # with real RSA signing (~233s total). On medium (2 vCPU), the birpc IPC
+    # onTaskUpdate call stalls past the 60s timeout under CPU contention,
+    # causing the test run to fail despite all 1777 tests passing.
+    resource_class: large
     steps:
       - checkout
       - run:
@@ -26,6 +31,8 @@ jobs:
           command: pnpm typecheck
       - run:
           name: Test
+          # ci-migrate.test.ts runs 97 RSA-signing tests (~233s); allow 15m.
+          no_output_timeout: 15m
           command: pnpm test
       - run:
           name: Audit
