@@ -143,6 +143,8 @@ describe("runInit", () => {
 			).toBe(true);
 			expect(existsSync(join(tempDir, ".npmrc"))).toBe(true);
 			expect(existsSync(join(tempDir, ".greptile/config.json"))).toBe(true);
+			// greptile-review.yml is only scaffolded for github-actions provider;
+			// the default provider is circleci.
 			expect(
 				existsSync(join(tempDir, ".github/workflows/greptile-review.yml")),
 			).toBe(false);
@@ -165,6 +167,7 @@ describe("runInit", () => {
 			expect(
 				existsSync(join(tempDir, ".github/workflows/pr-pipeline.yml")),
 			).toBe(false);
+			// greptile-review.yml is GHA-only; must NOT be created for circleci provider
 			expect(
 				existsSync(join(tempDir, ".github/workflows/greptile-review.yml")),
 			).toBe(false);
@@ -514,6 +517,20 @@ describe("runInit", () => {
 			expect(
 				existsSync(join(tempDir, ".github/workflows/secret-scan.yml")),
 			).toBe(true);
+			// greptile-review.yml is GHA-only — must be created for github-actions provider
+			expect(
+				existsSync(join(tempDir, ".github/workflows/greptile-review.yml")),
+			).toBe(true);
+			// Verify the scaffolded workflow has all required triggers and checks:write
+			const greptileWorkflow = require("node:fs").readFileSync(
+				join(tempDir, ".github/workflows/greptile-review.yml"),
+				"utf-8",
+			);
+			expect(greptileWorkflow).toContain("pull_request:");
+			expect(greptileWorkflow).toContain("pull_request_review:");
+			expect(greptileWorkflow).toContain("pull_request_review_comment:");
+			expect(greptileWorkflow).toContain("issue_comment:");
+			expect(greptileWorkflow).toContain("checks: write");
 			// CircleCI file should NOT be created
 			expect(
 				existsSync(join(tempDir, ".circleci/config.yml")),

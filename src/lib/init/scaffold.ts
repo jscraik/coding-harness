@@ -760,6 +760,147 @@ function renderGreptileFiles(): string {
 	)}\n`;
 }
 
+function renderGreptileWorkflow(): string {
+	return `name: Greptile Review
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened, review_requested]
+  merge_group:
+  pull_request_review:
+    types: [submitted, dismissed]
+  pull_request_review_comment:
+    types: [created]
+  issue_comment:
+    types: [created]
+
+# Skip if the actor is github-actions[bot] to prevent the bot being
+# registered as a Greptile developer seat (Greptile bills per GitHub
+# identity that interacts with PRs near review time). Only real users
+# and the Greptile bot itself should trigger this workflow.
+
+permissions:
+  contents: read
+  pull-requests: write
+  issues: write
+  checks: write
+  statuses: write
+
+jobs:
+  greptile-review:
+    name: Greptile Review
+    runs-on: ubuntu-latest
+    if: |
+      github.actor != 'github-actions[bot]' &&
+      (
+        github.event_name == 'pull_request' ||
+        github.event_name == 'merge_group' ||
+        github.event_name == 'pull_request_review' ||
+        github.event_name == 'pull_request_review_comment' ||
+        (
+          github.event_name == 'issue_comment' &&
+          github.event.issue.pull_request &&
+          (
+            github.event.comment.user.login == 'greptile[bot]' ||
+            github.event.comment.user.login == 'greptileai[bot]' ||
+            github.event.comment.user.login == 'greptile-apps[bot]' ||
+            github.event.comment.user.login == 'greptile' ||
+            github.event.comment.user.login == 'greptileai' ||
+            github.event.comment.user.login == 'greptile-apps'
+          )
+        )
+      )
+    steps:
+      - name: Merge queue passthrough
+        if: github.event_name == 'merge_group'
+        run: echo "Greptile PR-context checks are evaluated on pull_request events."
+
+      - name: Check for Greptile review
+        if: github.event_name != 'merge_group'
+        env:
+          GITHUB_TOKEN: \${{ secrets.GITHUB_TOKEN }}
+          PR_NUMBER: \${{ github.event.pull_request.number || github.event.issue.number }}
+          REPO_OWNER: \${{ github.repository_owner }}
+          REPO_NAME: \${{ github.event.repository.name }}
+          MIN_MERGE_SCORE: '4'
+          EVENT_NAME: \${{ github.event_name }}
+          HEAD_SHA: \${{ github.event.pull_request.head.sha || github.sha }}
+        uses: actions/github-script@f28e40c7f34bde8b3046d885e986cb6290c5673b # v7
+        with:
+          script: |
+            const prNumber = parseInt(process.env.PR_NUMBER, 10);
+            const minMergeScore = parseInt(process.env.MIN_MERGE_SCORE, 10);
+            const owner = process.env.REPO_OWNER;
+            const repo = process.env.REPO_NAME;
+            const eventName = process.env.EVENT_NAME;
+            const headSha = process.env.HEAD_SHA;
+            const action = context.payload.action || '';
+
+            if (eventName === 'pull_request' && action === 'synchronize') {
+              core.setFailed('Waiting for Greptile review on the current PR head commit...');
+              return;
+            }
+
+            const comments = await github.rest.issues.listComments({
+              owner, repo, issue_number: prNumber
+            });
+
+            const greptileLogins = new Set([
+              'greptile[bot]', 'greptileai[bot]', 'greptile-apps[bot]',
+              'greptile', 'greptileai', 'greptile-apps'
+            ]);
+
+            const headCommit = await github.rest.repos.getCommit({ owner, repo, ref: headSha });
+            const headCommittedAt = new Date(
+              headCommit.data.commit.committer?.date ||
+              headCommit.data.commit.author?.date || 0
+            );
+
+            const greptileComments = comments.data
+              .filter(c => {
+                if (!(c.user != null && greptileLogins.has(c.user.login))) return false;
+                const body = c.body || '';
+                const createdAt = new Date(c.created_at);
+                return body.includes(headSha) || createdAt >= headCommittedAt;
+              })
+              .sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
+
+            if (greptileComments.length === 0) {
+              core.setFailed('No Greptile review comment found for the current PR head commit. Waiting for review...');
+              return;
+            }
+
+            const commentBody = (greptileComments[0].body || '').toLowerCase();
+            const scorePatterns = [
+              /(?:confidence|score)[:\\s]*(\\d)(?:\\s*\/\\s*5)?/,
+              /(\\d)\\s*\/\\s*5.*confidence/,
+              /overall[:\\s]*(\\d)/,
+              /rating[:\\s]*(\\d)/
+            ];
+
+            let score = null;
+            for (const pattern of scorePatterns) {
+              const match = commentBody.match(pattern);
+              if (match) { score = parseInt(match[1], 10); break; }
+            }
+
+            const hasApproval = /\\b(approved?|pass(?:ed|ing)?|lgtm|looks good|ready to merge)\\b/.test(commentBody);
+            const hasBlock = /\\b(block(?:ed|ing)?|fail(?:ed|ing)?|needs? changes?|do not merge|dnm)\\b/.test(commentBody);
+
+            if (score !== null) {
+              if (score >= minMergeScore) {
+                console.log(\`Greptile review passed: score \${score}/5 >= threshold \${minMergeScore}/5\`);
+              } else {
+                core.setFailed(\`Greptile review failed: score \${score}/5 < threshold \${minMergeScore}/5\`);
+              }
+            } else if (hasBlock) {
+              core.setFailed('Greptile review indicates changes are needed.');
+            } else {
+              console.log('Greptile review completed.');
+            }
+`;
+}
+
 function renderWorkflowTemplate(
 	pm: string,
 	context: TemplateRenderContext,
@@ -1216,8 +1357,14 @@ export const TEMPLATES: Template[] = [
 		path: ".greptile/files.json",
 		render: () => renderGreptileFiles(),
 	},
-	// greptile-review.yml removed: Greptile GitHub App listens to PR events
-	// natively via webhook — no GitHub Actions workflow is required.
+	{
+		// NOTE: greptile-review.yml is only scaffolded for github-actions provider.
+		// It acts as the bridge that creates "Greptile Review" GitHub check runs from
+		// Greptile bot comments. Without this workflow the ruleset status-check
+		// enforcement has nothing to evaluate, so merge stays unblocked.
+		path: ".github/workflows/greptile-review.yml",
+		render: () => renderGreptileWorkflow(),
+	},
 	{
 		path: ".github/workflows/pr-pipeline.yml",
 		render: (pm) => {
