@@ -8,6 +8,7 @@ import {
 import { dirname, join, resolve } from "node:path";
 import { sanitizeError } from "../lib/input/sanitize.js";
 import { validatePath } from "../lib/input/validator.js";
+import { normaliseDriftGateResult } from "../lib/output/normalise.js";
 
 export type DriftGateMode = "advisory" | "health";
 export type DriftStatus = "success" | "partial" | "blocked";
@@ -778,7 +779,8 @@ export function runDriftGateCLI(options: DriftGateOptions = {}): number {
 	const result = runDriftGate(options);
 
 	if (options.json) {
-		console.info(JSON.stringify(result.report, null, 2));
+		const gateResult = normaliseDriftGateResult(result);
+		process.stdout.write(`${JSON.stringify(gateResult, null, 2)}\n`);
 	} else {
 		const icon =
 			result.report.status === "success"

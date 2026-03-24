@@ -9,6 +9,7 @@ import type {
 } from "../lib/contract/types.js";
 import { DEFAULT_ISSUE_TRACKING_POLICY } from "../lib/contract/types.js";
 import { sanitizeError } from "../lib/input/sanitize.js";
+import { normaliseLinearGateResult } from "../lib/output/normalise.js";
 
 export const EXIT_CODES = {
 	SUCCESS: 0,
@@ -512,7 +513,8 @@ export async function runLinearGateCLI(
 	const result = runLinearGate(options);
 	if (!result.ok) {
 		if (options.json) {
-			console.info(JSON.stringify(result, null, 2));
+			const gateResult = normaliseLinearGateResult(result);
+			process.stdout.write(`${JSON.stringify(gateResult, null, 2)}\n`);
 		} else {
 			console.error(result.error.message);
 		}
@@ -522,7 +524,8 @@ export async function runLinearGateCLI(
 	}
 
 	if (options.json) {
-		console.info(JSON.stringify(result.output, null, 2));
+		const gateResult = normaliseLinearGateResult(result);
+		process.stdout.write(`${JSON.stringify(gateResult, null, 2)}\n`);
 	} else {
 		const statusIcon = result.output.passed ? "✓" : "✗";
 		const statusText = result.output.passed ? "PASSED" : "FAILED";

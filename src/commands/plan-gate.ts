@@ -9,7 +9,7 @@ import {
 	type PlanGateOptions,
 	runPlanGate,
 } from "../lib/plan-gate/detector.js";
-import { createJsonOutput } from "../lib/result/types.js";
+import { normalisePlanGateResult } from "../lib/output/normalise.js";
 
 // Re-export workflow plan utilities for plan management
 export {
@@ -96,8 +96,13 @@ export function runPlanGateCLI(options: PlanGateOptions): number {
 	}
 
 	if (options.json) {
-		const jsonOutput = createJsonOutput("plan-gate", result, exitCode);
-		console.info(JSON.stringify(jsonOutput, null, 2));
+		// Build recovery hints map from private getRecoveryHint (avoids lib→commands import)
+		const recoveryHints: Record<string, string | undefined> = {};
+		for (const e of result.errors) {
+			recoveryHints[e.code] = getRecoveryHint(e.code);
+		}
+		const gateResult = normalisePlanGateResult(result, recoveryHints);
+		process.stdout.write(`${JSON.stringify(gateResult, null, 2)}\n`);
 	} else {
 		// Print summary
 		const statusIcon = result.passed ? "✓" : "✗";

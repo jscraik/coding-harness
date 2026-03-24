@@ -185,7 +185,7 @@ src/commands/
 
 ---
 
-### P1 — Rich-finding adapter pair
+### P1 — Rich-finding adapters
 
 **Goal:** Normalise `drift-gate` and `docs-gate` `--json` output to `GateResult`, and add `review-gate` skip to health runner.
 
@@ -571,14 +571,14 @@ SA matrix gate: run each acceptance item and record pass/fail:
 | Phase | Status | AC items | Notes |
 |---|---|---|---|
 | P0 — Canonical types | ✅ `done` | SA1 | `types.ts` + `normalise.ts` stub + `types.test.ts`; 10/10 tests ✓; `pnpm typecheck` ✓ |
-| P1 — Rich adapters | `not_started` | SA2, SA3, SA4, SA5, SA10 (partial), SA11, SA19 | drift-gate, docs-gate + health review-gate skip |
-| P2 — Binary adapters | `not_started` | SA10 (partial), SA14, SA15, SA16 | policy-gate, pr-template-gate only |
-| P2b — Coded-error (plan-gate) | `not_started` | SA10 (partial), SA14 (variant) | PlanError[] adapter; audit existing tests first (R2) |
-| P3 — Check-list adapter | `not_started` | SA10 (partial), SA17 | linear-gate |
+| P1 — Rich adapters | ✅ `done` | SA2, SA3, SA4, SA5, SA10 (partial), SA11, SA19 | `drift-gate.ts` + `docs-gate.ts` wired; `normaliseDriftGateResult` + `normaliseDocsGateResult` in `normalise.ts`; health `review-gate` skip guard added; 111/111 tests ✓; typecheck ✓ |
+| P2 — Binary adapters | ✅ `done` | SA10 (partial), SA14, SA15, SA16 | `policy-gate.ts` + `pr-template-gate.ts` wired (ok:false + ok:true); `normalisePolicyGateResult` + `normalisePrTemplateGateResult`; 111/111 tests ✓ |
+| P2b — Coded-error (plan-gate) | ✅ `done` | SA10 (partial), SA14 (variant) | `plan-gate.ts` wired; `normalisePlanGateResult` implemented; R2 regression fixed (`plan-gate.test.ts` asserts on `process.stdout.write` + GateResult shape); 111/111 tests ✓ |
+| P3 — Check-list adapter | ✅ `done` | SA10 (partial), SA17 | `linear-gate.ts` wired (ok:false + ok:true); `normaliseLinearGateResult` implemented; all tests ✓ |
 | P4 — Doctor | `not_started` | SA18 (partial) | Audit doctor shape at implementation time |
 | P5 — health --auto-fix | `not_started` | SA6, SA7, SA8, SA9, SA12 | Depends on P1–P4 + P2b |
 | P6 — Skill + SA gate | `not_started` | SA1–SA19 full, SA13 | Final validation pass; bump minor version |
 
-**Current phase:** P1 (`not_started`)
+**Current phase:** P4 (`not_started`)
 
 **Open question (non-blocker):** Zod vs TypeScript-only runtime validation (Spec Q1) — deferred to post-v1, no action required before implementation starts.

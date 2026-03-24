@@ -15,6 +15,10 @@ import type {
 	DocsGateResult,
 	DocsFinding,
 } from "../../commands/docs-gate.js";
+import type { LinearGateResult } from "../../commands/linear-gate.js";
+import type { PolicyGateResult } from "../../commands/policy-gate.js";
+import type { PrTemplateGateResult } from "../../commands/pr-template-gate.js";
+import type { PlanGateResult } from "../plan-gate/types.js";
 import { getVersion } from "../version.js";
 import type { GateFinding, GateResult } from "./types.js";
 
@@ -142,48 +146,260 @@ export function normaliseDocsGateResult(result: DocsGateResult): GateResult {
 	};
 }
 
-// ─── P2 stub: policy-gate ─────────────────────────────────────────────────────
+// ─── P2: policy-gate adapter (binary-result) ─────────────────────────────────
 
 /**
- * Normalise a policy-gate binary result to canonical GateResult.
- * @throws Not yet implemented (stub — P2 phase)
+ * Normalise a PolicyGateResult (binary-result class) to canonical GateResult.
+ *
+ * Synthesis rules (spec §4.2):
+ *   ok:false           → one internal finding, status=fail
+ *   ok:true, passed    → findings=[], status=pass
+ *   ok:true, !passed   → one finding per violating file, status=fail
+ *                        (guard: if violatingFiles empty → synthetic unknown finding)
  */
-export function normalisePolicyGateResult(_result: unknown): GateResult {
-	throw new Error("not implemented: normalisePolicyGateResult (P2)");
+export function normalisePolicyGateResult(result: PolicyGateResult): GateResult {
+	const gate = "policy-gate";
+	const version = getVersion();
+	const timestamp = new Date().toISOString();
+
+	// ok:false — internal error before gate logic ran
+	if (!result.ok) {
+		const finding: GateFinding = {
+			id: "policy-gate.result.internal",
+			severity: "error",
+			gate,
+			message: result.error.message,
+			baseline: false,
+			fix: { suppressible: false },
+		};
+		return {
+			gate, version, timestamp,
+			status: "fail",
+			findings: [finding],
+			summary: { errors: 1, warnings: 0, info: 0, total: 1 },
+		};
+	}
+
+	// ok:true, passed — clean run
+	if (result.output.passed) {
+		return {
+			gate, version, timestamp,
+			status: "pass",
+			findings: [],
+			summary: { errors: 0, warnings: 0, info: 0, total: 0 },
+		};
+	}
+
+	// ok:true, !passed — synthesise one finding per violating file
+	// Guard: never emit empty findings when status=fail (spec §7 edge cases)
+	const violatingFiles = result.output.violatingFiles;
+	const findings: GateFinding[] =
+		violatingFiles.length > 0
+			? violatingFiles.map(
+					(file, index): GateFinding => ({
+						id: `policy-gate.result.error.${index}`,
+						severity: "error",
+						gate,
+						message: `File '${file}' exceeds policy tier (actual: ${result.output.tier}, max: ${result.output.maxAllowed ?? "unset"})`,
+						...(file ? { path: file } : {}),
+						baseline: false,
+						fix: { suppressible: false },
+					}),
+			  )
+			: [
+					{
+						id: "policy-gate.result.error.unknown",
+						severity: "error" as const,
+						gate,
+						message: "Gate reported failure without file details",
+						baseline: false,
+						fix: { suppressible: false },
+					},
+			  ];
+
+	return {
+		gate, version, timestamp,
+		status: "fail",
+		findings,
+		summary: { errors: findings.length, warnings: 0, info: 0, total: findings.length },
+	};
 }
 
-// ─── P2 stub: pr-template-gate ───────────────────────────────────────────────
+// ─── P2: pr-template-gate adapter (binary-result) ────────────────────────────
 
 /**
- * Normalise a pr-template-gate binary result to canonical GateResult.
- * @throws Not yet implemented (stub — P2 phase)
+ * Normalise a PrTemplateGateResult (binary-result class) to canonical GateResult.
+ *
+ * Synthesis rules (spec §4.2):
+ *   ok:false           → one internal finding, status=fail
+ *   ok:true, passed    → findings=[], status=pass
+ *   ok:true, !passed   → one finding per errors[index], status=fail
+ *                        (guard: if errors empty → synthetic unknown finding)
  */
-export function normalisePrTemplateGateResult(_result: unknown): GateResult {
-	throw new Error("not implemented: normalisePrTemplateGateResult (P2)");
+export function normalisePrTemplateGateResult(result: PrTemplateGateResult): GateResult {
+	const gate = "pr-template-gate";
+	const version = getVersion();
+	const timestamp = new Date().toISOString();
+
+	// ok:false — internal error
+	if (!result.ok) {
+		const finding: GateFinding = {
+			id: "pr-template-gate.result.internal",
+			severity: "error",
+			gate,
+			message: result.error.message,
+			baseline: false,
+			fix: { suppressible: false },
+		};
+		return {
+			gate, version, timestamp,
+			status: "fail",
+			findings: [finding],
+			summary: { errors: 1, warnings: 0, info: 0, total: 1 },
+		};
+	}
+
+	// ok:true, passed — clean run
+	if (result.output.passed) {
+		return {
+			gate, version, timestamp,
+			status: "pass",
+			findings: [],
+			summary: { errors: 0, warnings: 0, info: 0, total: 0 },
+		};
+	}
+
+	// ok:true, !passed — synthesise one finding per error string
+	// Guard: never emit empty findings when status=fail (spec §7 edge cases)
+	const errors = result.output.errors;
+	const findings: GateFinding[] =
+		errors.length > 0
+			? errors.map(
+					(msg, index): GateFinding => ({
+						id: `pr-template-gate.result.error.${index}`,
+						severity: "error",
+						gate,
+						message: msg,
+						baseline: false,
+						fix: { suppressible: false },
+					}),
+			  )
+			: [
+					{
+						id: "pr-template-gate.result.error.unknown",
+						severity: "error" as const,
+						gate,
+						message: "Gate reported failure without error details",
+						baseline: false,
+						fix: { suppressible: false },
+					},
+			  ];
+
+	return {
+		gate, version, timestamp,
+		status: "fail",
+		findings,
+		summary: { errors: findings.length, warnings: 0, info: 0, total: findings.length },
+	};
 }
 
-// ─── P2b stub: plan-gate (coded-error) ───────────────────────────────────────
+// ─── P2b: plan-gate adapter (coded-error) ────────────────────────────────────
 
 /**
  * Normalise a PlanGateResult (coded-error class) to canonical GateResult.
+ *
+ * @param result - The PlanGateResult from runPlanGate()
  * @param recoveryHints - Caller-provided map of { code → hint string } to avoid
  *                        a lib→commands import violation. Build in runPlanGateCLI
  *                        by calling getRecoveryHint() per error code before invoking.
- * @throws Not yet implemented (stub — P2b phase)
  */
 export function normalisePlanGateResult(
-	_result: unknown,
-	_recoveryHints: Record<string, string | undefined> = {},
+	result: PlanGateResult,
+	recoveryHints: Record<string, string | undefined> = {},
 ): GateResult {
-	throw new Error("not implemented: normalisePlanGateResult (P2b)");
+	const gate = "plan-gate";
+	const version = getVersion();
+	const timestamp = new Date().toISOString();
+
+	if (result.passed) {
+		return {
+			gate, version, timestamp,
+			status: "pass",
+			findings: [],
+			summary: { errors: 0, warnings: 0, info: 0, total: 0 },
+		};
+	}
+
+	const findings: GateFinding[] = result.errors.map((e) => {
+		const hint = recoveryHints[e.code];
+		return {
+			id: `plan-gate.result.error.${e.code}`,
+			severity: "error" as const,
+			gate,
+			message: e.message,
+			...(e.path !== undefined ? { path: e.path } : {}),
+			baseline: false,
+			fix: {
+				...(hint !== undefined ? { manual: hint } : {}),
+				suppressible: false,
+			},
+		};
+	});
+
+	return {
+		gate, version, timestamp,
+		status: "fail",
+		findings,
+		summary: { errors: findings.length, warnings: 0, info: 0, total: findings.length },
+	};
 }
 
-// ─── P3 stub: linear-gate ────────────────────────────────────────────────────
+// ─── P3: linear-gate adapter (check-list) ────────────────────────────────────
 
 /**
- * Normalise a linear-gate check-list result to canonical GateResult.
- * @throws Not yet implemented (stub — P3 phase)
+ * Normalise a LinearGateResult (check-list class) to canonical GateResult.
+ *
+ * Synthesis rules:
+ *   ok:false    → one internal finding, status=fail
+ *   ok:true     → one finding per failing check (code → id), status=fail|pass
  */
-export function normaliseLinearGateResult(_result: unknown): GateResult {
-	throw new Error("not implemented: normaliseLinearGateResult (P3)");
+export function normaliseLinearGateResult(result: LinearGateResult): GateResult {
+	const gate = "linear-gate";
+	const version = getVersion();
+	const timestamp = new Date().toISOString();
+
+	if (!result.ok) {
+		const finding: GateFinding = {
+			id: "linear-gate.result.internal",
+			severity: "error",
+			gate,
+			message: result.error.message,
+			baseline: false,
+			fix: { suppressible: false },
+		};
+		return {
+			gate, version, timestamp,
+			status: "fail",
+			findings: [finding],
+			summary: { errors: 1, warnings: 0, info: 0, total: 1 },
+		};
+	}
+
+	const failingChecks = result.output.checks.filter((c) => !c.passed);
+	const findings: GateFinding[] = failingChecks.map((c) => ({
+		id: `linear-gate.check.${c.code}`,
+		severity: "error" as const,
+		gate,
+		message: c.message,
+		baseline: false,
+		fix: { suppressible: false },
+	}));
+
+	const status = findings.length > 0 ? "fail" : "pass";
+	return {
+		gate, version, timestamp,
+		status,
+		findings,
+		summary: { errors: findings.length, warnings: 0, info: 0, total: findings.length },
+	};
 }

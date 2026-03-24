@@ -200,6 +200,19 @@ function runGate(
 		};
 	}
 
+	// P1: review-gate is an async gate excluded from structured-output normalisation v1.
+	// Return skipped without spawning, so health --auto-fix can never misinterpret it.
+	if (spec.gate === "review-gate") {
+		return {
+			gate: spec.gate,
+			displayName: spec.displayName,
+			status: "skipped",
+			summary: "async gate — excluded from normalisation v1",
+			exitCode: null,
+			skipReason: "async-gate-excluded-from-normalisation-v1",
+		};
+	}
+
 	const args = [spec.gate, ...spec.buildArgs(dir)];
 	const result = spawnSync(harnessCliPath, args, {
 		cwd: dir,

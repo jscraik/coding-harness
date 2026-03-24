@@ -201,19 +201,4 @@ describe("normalise.ts stub exports (SA1)", () => {
 			expect(typeof normalise[name]).toBe("function");
 		}
 	});
-
-	it("P0-T3b: P2/P2b/P3 stubs still throw 'not implemented'", async () => {
-		const normalise = await import("./normalise.js");
-		// Only the stubs (P2, P2b, P3) still accept unknown and throw
-		const remainingStubs = [
-			"normalisePolicyGateResult",
-			"normalisePrTemplateGateResult",
-			"normalisePlanGateResult",
-			"normaliseLinearGateResult",
-		] as const;
-
-		for (const name of remainingStubs) {
-			expect(() => normalise[name]({})).toThrow("not implemented");
-		}
-	});
 });
