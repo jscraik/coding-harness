@@ -3251,6 +3251,229 @@ function readContractProviderPolicy(
 	}
 }
 
+// ─── Shadow → Required mode promotion (JSC-61) ───────────────────────────────
+
+export interface PromoteModeResult {
+	/** Whether mode was actually changed (false if already required) */
+	promoted: boolean;
+	/** Previous mode value */
+	previousMode: CIProviderMode;
+	/** Current mode value after promotion */
+	currentMode: CIProviderMode;
+	/** The migrationStage that qualified for promotion */
+	migrationStage: CIProviderMigrationStage;
+	/** ISO timestamp of promotion */
+	promotedAt: string;
+}
+
+/**
+ * JSC-61: Promote ciProviderPolicy.mode from "shadow" to "required".
+ *
+ * Eligibility: migrationStage must be "circleci-only" (full migration complete).
+ * Refuses if already required. Updates harness.contract.json in-place, preserving
+ * all other fields. Returns a typed result for audit logging.
+ */
+export function promoteCIMode(
+	targetDir: string,
+	options: { dryRun?: boolean } = {},
+):
+	| { ok: true; value: PromoteModeResult }
+	| { ok: false; error: string } {
+	const contractPath = resolve(targetDir, "harness.contract.json");
+	if (!existsSync(contractPath)) {
+		return {
+			ok: false,
+			error: "harness.contract.json not found — run harness init first",
+		};
+	}
+
+	let contract: Record<string, unknown>;
+	try {
+		const rawContract = readFileSync(contractPath, "utf-8");
+		contract = JSON.parse(rawContract) as Record<string, unknown>;
+	} catch (err) {
+		return {
+			ok: false,
+			error: `Failed to parse harness.contract.json: ${sanitizeError(err)}`,
+		};
+	}
+
+	const policy = contract.ciProviderPolicy as
+		| Record<string, unknown>
+		| undefined;
+	if (!policy) {
+		return {
+			ok: false,
+			error:
+				"harness.contract.json is missing ciProviderPolicy — run ci-migrate init first",
+		};
+	}
+
+	const currentMode = policy.mode as string | undefined;
+	if (currentMode !== "shadow" && currentMode !== "required") {
+		return {
+			ok: false,
+			error: `ciProviderPolicy.mode is "${currentMode ?? "(missing)"}" — expected shadow or required`,
+		};
+	}
+
+	if (currentMode === "required") {
+		return {
+			ok: true,
+			value: {
+				promoted: false,
+				previousMode: "required",
+				currentMode: "required",
+				migrationStage: (policy.migrationStage as CIProviderMigrationStage) ?? "circleci-only",
+				promotedAt: new Date().toISOString(),
+			},
+		};
+	}
+
+	// Verify migration stage is eligible
+	const migrationStage = policy.migrationStage as string | undefined;
+	if (migrationStage !== "circleci-only") {
+		return {
+			ok: false,
+			error: [
+				`Cannot promote mode to required: migrationStage is "${migrationStage ?? "(missing)"}" — must be "circleci-only".`,
+				"Complete the full migration (ci-migrate commit) to circleci-only before promoting.",
+				`To manually override: set ciProviderPolicy.mode = "required" in harness.contract.json`,
+			].join("\n"),
+		};
+	}
+
+	const promotedAt = new Date().toISOString();
+
+	if (!options.dryRun) {
+		const updatedPolicy = {
+			...policy,
+			mode: "required",
+			_shadowPromotedAt: promotedAt,
+		};
+		const updatedContract = { ...contract, ciProviderPolicy: updatedPolicy };
+		try {
+			writeFileSync(
+				contractPath,
+				`${JSON.stringify(updatedContract, null, 2)}\n`,
+				"utf-8",
+			);
+		} catch (err) {
+			return {
+				ok: false,
+				error: `Failed to write harness.contract.json: ${sanitizeError(err)}`,
+			};
+		}
+	}
+
+	return {
+		ok: true,
+		value: {
+			promoted: true,
+			previousMode: "shadow",
+			currentMode: "required",
+			migrationStage: "circleci-only",
+			promotedAt,
+		},
+	};
+}
+
+/**
+ * CLI entry point for `harness ci-migrate promote-mode`.
+ *
+ * JSC-61: Explicit subcommand to transition ciProviderPolicy.mode
+ * from shadow → required after full migration to circleci-only.
+ */
+export function runPromoteModeCLI(
+	targetDir: string | undefined,
+	args: string[],
+): number {
+	const dir = targetDir ?? cwd();
+	const dryRun = args.includes("--dry-run");
+	const jsonFlag = args.includes("--json");
+
+	if (args.includes("--help") || args.includes("-h")) {
+		console.log(
+			[
+				"",
+				"harness ci-migrate promote-mode — promote shadow → required gate mode (JSC-61)",
+				"",
+				"Usage: harness ci-migrate promote-mode [targetDir] [options]",
+				"",
+				"Options:",
+				"  --dry-run    Preview the change without writing to harness.contract.json",
+				"  --json       Machine-readable output",
+				"  --help       Show this help",
+				"",
+				"Eligibility:",
+				"  ciProviderPolicy.migrationStage must be \"circleci-only\".",
+				"  ciProviderPolicy.mode must currently be \"shadow\".",
+				"",
+				"Shadow → Required lifecycle:",
+				"  1. ci-migrate prepare       — generates migration report",
+				"  2. ci-migrate commit        — activates CircleCI, stage=circleci-only, mode=shadow",
+				"  3. (validate CI is green for N days / sprints)",
+				"  4. ci-migrate promote-mode  ← promotes mode; gates now enforce",
+				"",
+			].join("\n"),
+		);
+		return EXIT_CODES.SUCCESS;
+	}
+
+	const result = promoteCIMode(dir, { dryRun });
+
+	if (!result.ok) {
+		if (jsonFlag) {
+			console.log(JSON.stringify({ ok: false, error: result.error }));
+		} else {
+			console.error(`Error: ${result.error}`);
+		}
+		return EXIT_CODES.INVALID_PATH;
+	}
+
+	const { value } = result;
+
+	if (jsonFlag) {
+		console.log(JSON.stringify({ ok: true, ...value }));
+		return EXIT_CODES.SUCCESS;
+	}
+
+	if (!value.promoted) {
+		console.info("ciProviderPolicy.mode is already required — no change needed.");
+		return EXIT_CODES.SUCCESS;
+	}
+
+	if (dryRun) {
+		console.info(
+			[
+				"",
+				"[DRY RUN] Would promote ciProviderPolicy.mode: shadow → required",
+				`  migrationStage: ${value.migrationStage}`,
+				`  contract:       ${resolve(dir, "harness.contract.json")}`,
+				"",
+				"Run without --dry-run to apply.",
+				"",
+			].join("\n"),
+		);
+	} else {
+		console.info(
+			[
+				"",
+				"✅ ciProviderPolicy.mode promoted: shadow → required",
+				`   migrationStage: ${value.migrationStage}`,
+				`   promotedAt:     ${value.promotedAt}`,
+				`   contract:       ${resolve(dir, "harness.contract.json")}`,
+				"",
+				"Harness gates will now enforce CircleCI check status.",
+				"Run: harness health  to verify all gates are passing.",
+				"",
+			].join("\n"),
+		);
+	}
+
+	return EXIT_CODES.SUCCESS;
+}
+
 function shouldRequirePromotionEvidence(
 	targetDir: string,
 	targetProvider: CIProvider,
@@ -9633,6 +9856,29 @@ export function runCIMigrateCLI(
 			}
 		} catch {
 			// Best-effort — don't block commit success on drift detection failure
+		}
+
+		// JSC-61: Also warn if mode is still shadow after reaching circleci-only stage.
+		// This is the most common path where operators forget to promote mode.
+		const shadowModePolicy = readContractProviderPolicy(dir);
+		if (
+			shadowModePolicy.ok &&
+			shadowModePolicy.value.mode === "shadow" &&
+			shadowModePolicy.value.migrationStage === "circleci-only"
+		) {
+			console.info(
+				[
+					"",
+					"⚠️  NOTICE: ciProviderPolicy.mode is still \"shadow\".",
+					"   Migration stage is now circleci-only, but harness gates are not yet enforcing.",
+					"   When you are ready to enforce CircleCI checks, run:",
+					"",
+					"     harness ci-migrate promote-mode",
+					"",
+					"   This promotes mode shadow → required so gates block on failing CI.",
+					"",
+				].join("\n"),
+			);
 		}
 	}
 
