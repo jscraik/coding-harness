@@ -1,6 +1,9 @@
 version: 2.1
 
 jobs:
+  # ───────────────────────────────────────────────────────────────────────────
+  # PR pipeline — runs on every PR branch (any branch except main)
+  # ───────────────────────────────────────────────────────────────────────────
   pr-pipeline:
     docker:
       - image: cimg/node:24.13
@@ -14,7 +17,7 @@ jobs:
       - run:
           name: Ensure pnpm available
           command: |
-            if ! command -v pnpm >/dev/null 2>&1; then
+            if ! command -v pnpm > /dev/null 2>&1; then
               export NPM_CONFIG_PREFIX="$HOME/.local"
               export PATH="$NPM_CONFIG_PREFIX/bin:$PATH"
               npm install --global pnpm@10.0.0
@@ -41,7 +44,98 @@ jobs:
           name: Policy Bundle
           command: pnpm check
 
+  # ───────────────────────────────────────────────────────────────────────────
+  # Release pipeline — runs on main branch merges only
+  #
+  # Required CircleCI environment variables (set in Project Settings → Env Vars):
+  #   NPM_TOKEN                    — npm access token with publish rights to @brainwav scope
+  #   GITHUB_PERSONAL_ACCESS_TOKEN — GitHub PAT with contents:write + workflow scopes
+  #                                  (used to push the version commit + tag back to main)
+  #
+  # Flow:
+  #   1. Validate secrets present
+  #   2. Run full pnpm check suite
+  #   3. standard-version bumps package.json + CHANGELOG.md, commits, tags
+  #   4. Push the commit + tag to main via authenticated remote
+  #   5. Build and publish to npm
+  # ───────────────────────────────────────────────────────────────────────────
+  release:
+    docker:
+      - image: cimg/node:24.13
+    resource_class: large
+    steps:
+      - checkout
+      - run:
+          name: Ensure pnpm available
+          command: |
+            if ! command -v pnpm > /dev/null 2>&1; then
+              export NPM_CONFIG_PREFIX="$HOME/.local"
+              export PATH="$NPM_CONFIG_PREFIX/bin:$PATH"
+              npm install --global pnpm@10.0.0
+            fi
+            pnpm --version
+      - run:
+          name: Install dependencies
+          command: pnpm install
+      - run:
+          name: Validate release secrets
+          command: |
+            missing=()
+            [ -z "$NPM_TOKEN" ]                    && missing+=("NPM_TOKEN")
+            [ -z "$GITHUB_PERSONAL_ACCESS_TOKEN" ] && missing+=("GITHUB_PERSONAL_ACCESS_TOKEN")
+            if [ ${#missing[@]} -gt 0 ]; then
+              echo "ERROR: Missing required environment variables: ${missing[*]}"
+              echo "Configure them in CircleCI Project Settings -> Environment Variables."
+              echo "  NPM_TOKEN                    - npm token with publish rights to @brainwav scope"
+              echo "  GITHUB_PERSONAL_ACCESS_TOKEN - GitHub PAT with contents:write + workflow scopes"
+              exit 1
+            fi
+            echo "Release secrets validated"
+      - run:
+          name: Full check suite
+          no_output_timeout: 15m
+          command: pnpm check
+      - run:
+          name: Configure git for release commit
+          command: |
+            git config user.name "CircleCI Release Bot"
+            git config user.email "ci@brainwav.io"
+            git remote set-url origin "https://${GITHUB_PERSONAL_ACCESS_TOKEN}@github.com/jscraik/coding-harness.git"
+      - run:
+          name: Bump version and generate changelog
+          command: |
+            pnpm release --no-verify
+            echo "Bumped to $(jq -r '.version' package.json)"
+      - run:
+          name: Push release commit and tag to main
+          command: |
+            VERSION="v$(jq -r '.version' package.json)"
+            git push origin main --follow-tags
+            echo "Pushed ${VERSION} to main"
+      - run:
+          name: Build package
+          command: pnpm build
+      - run:
+          name: Publish to npm
+          command: |
+            VERSION="$(jq -r '.version' package.json)"
+            echo "//registry.npmjs.org/:_authToken=${NPM_TOKEN}" > ~/.npmrc
+            npm publish --access restricted --ignore-scripts=false
+            echo "Published @brainwav/coding-harness@${VERSION}"
+
 workflows:
-  pr-pipeline:
+  # Runs on every PR branch push (all branches except main)
+  pr-workflow:
     jobs:
-      - pr-pipeline
+      - pr-pipeline:
+          filters:
+            branches:
+              ignore: main
+
+  # Runs only on main after PR merges
+  release-workflow:
+    jobs:
+      - release:
+          filters:
+            branches:
+              only: main
