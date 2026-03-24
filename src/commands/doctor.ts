@@ -765,12 +765,12 @@ export function runDoctorCLI(args: string[], getVersion: () => string): number {
 	report.version = getVersion();
 
 	if (checklistFlag) {
+		// checklist display removed; future: render POST_INIT_CHECKLIST here
 		return 0;
 	}
 
 	if (jsonFlag) {
-		process.stdout.write(`${JSON.stringify(report, null, 2)}
-`);
+		console.info(JSON.stringify(report));
 	} else {
 		process.stdout.write(renderReport(report));
 	}

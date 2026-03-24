@@ -509,11 +509,7 @@ function renderTextSummary(data: {
 	// Tests
 	if (data.testsExecuted) {
 		lines.push(
-			`  Tests:    ${data.testsExecuted.passed}/${data.testsExecuted.total} passed${
-				data.testsExecuted.failed > 0
-					? ` (${data.testsExecuted.failed} failed)`
-					: ""
-			}`,
+			`  Tests:    ${data.testsExecuted.passed}/${data.testsExecuted.total} passed${data.testsExecuted.failed > 0 ? ` (${data.testsExecuted.failed} failed)` : ""}`,
 		);
 	}
 	lines.push("");

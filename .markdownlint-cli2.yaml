@@ -23,4 +23,4 @@ ignores:
   - dist
   - .git
   - CHANGELOG.md   # Auto-generated, skip linting
-  - artifacts      # Generated test fixture directories
+  - artifacts      # Auto-generated test artefacts, not source docs
