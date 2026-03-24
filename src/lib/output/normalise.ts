@@ -7,29 +7,139 @@
  * @see docs/plans/2026-03-24-feature-structured-output-auto-fix-plan.md
  */
 
-import type { GateResult } from "./types.js";
+import type {
+	DriftGateResult,
+	DriftFinding,
+} from "../../commands/drift-gate.js";
+import type {
+	DocsGateResult,
+	DocsFinding,
+} from "../../commands/docs-gate.js";
+import { getVersion } from "../version.js";
+import type { GateFinding, GateResult } from "./types.js";
 
 // ─── Re-export canonical types for convenience ────────────────────────────────
 export type { GateFinding, GateResult, AutoFixResult } from "./types.js";
 
-// ─── P1 stub: drift-gate ──────────────────────────────────────────────────────
+// ─── P1: drift-gate adapter ───────────────────────────────────────────────────
+
+/** Map a DriftFinding to canonical GateFinding. Pure. */
+function adaptDriftFinding(f: DriftFinding): GateFinding {
+	const id = `drift-gate.${f.surface}.${f.rule_id}`;
+
+	// DriftSeverity vocab already matches canonical: error | warning | info
+	const severity = f.severity as GateFinding["severity"];
+
+	return {
+		id,
+		severity,
+		gate: "drift-gate",
+		message: f.message,
+		...(f.path !== undefined ? { path: f.path } : {}),
+		// baseline_state === "preexisting" means this existed before current run
+		baseline: f.baseline_state === "preexisting",
+		fix: {
+			...(f.fix?.command !== undefined ? { command: f.fix.command } : {}),
+			...(f.fix?.manual !== undefined ? { manual: f.fix.manual } : {}),
+			suppressible: f.fix?.suppressible ?? false,
+		},
+	};
+}
 
 /**
  * Normalise a DriftGateResult to canonical GateResult.
- * @throws Not yet implemented (stub — P1 phase)
+ * Status mapping:
+ *   report.outcome === "error" → "fail"
+ *   report.status  === "partial" → "warn"
+ *   otherwise → "pass"
  */
-export function normaliseDriftGateResult(_result: unknown): GateResult {
-	throw new Error("not implemented: normaliseDriftGateResult (P1)");
+export function normaliseDriftGateResult(result: DriftGateResult): GateResult {
+	const gate = "drift-gate";
+	const version = getVersion();
+	const timestamp = result.report.generated_at ?? new Date().toISOString();
+
+	const findings = result.report.findings.map(adaptDriftFinding);
+
+	const errors = findings.filter((f: GateFinding) => f.severity === "error").length;
+	const warnings = findings.filter((f: GateFinding) => f.severity === "warning").length;
+	const info = findings.filter((f: GateFinding) => f.severity === "info").length;
+
+	let status: GateResult["status"];
+	if (result.report.outcome === "error") {
+		status = "fail";
+	} else if (result.report.status === "partial") {
+		status = "warn";
+	} else {
+		status = "pass";
+	}
+
+	return {
+		gate,
+		version,
+		timestamp,
+		status,
+		findings,
+		summary: { errors, warnings, info, total: errors + warnings + info },
+	};
 }
 
-// ─── P1 stub: docs-gate ───────────────────────────────────────────────────────
+// ─── P1: docs-gate adapter ────────────────────────────────────────────────────
+
+/** Map a DocsFinding to canonical GateFinding. Pure. */
+function adaptDocsFinding(f: DocsFinding): GateFinding {
+	const id = `docs-gate.${f.surface}.${f.rule_id}`;
+
+	// DocsSeverity vocab already matches canonical: error | warning | info
+	const severity = f.severity as GateFinding["severity"];
+
+	return {
+		id,
+		severity,
+		gate: "docs-gate",
+		message: f.message,
+		...(f.path !== undefined ? { path: f.path } : {}),
+		// docs-gate has no baseline concept
+		baseline: false,
+		// docs-gate findings have no fix.command — no automatable remediation
+		fix: { suppressible: false },
+	};
+}
 
 /**
  * Normalise a DocsGateResult to canonical GateResult.
- * @throws Not yet implemented (stub — P1 phase)
+ * Status mapping:
+ *   report.outcome === "ok" → "pass"
+ *   report.status  === "partial" → "warn"
+ *   otherwise → "fail"
  */
-export function normaliseDocsGateResult(_result: unknown): GateResult {
-	throw new Error("not implemented: normaliseDocsGateResult (P1)");
+export function normaliseDocsGateResult(result: DocsGateResult): GateResult {
+	const gate = "docs-gate";
+	const version = getVersion();
+	const timestamp = result.report.generated_at ?? new Date().toISOString();
+
+	const findings = result.report.findings.map(adaptDocsFinding);
+
+	const errors = findings.filter((f: GateFinding) => f.severity === "error").length;
+	const warnings = findings.filter((f: GateFinding) => f.severity === "warning").length;
+	const info = findings.filter((f: GateFinding) => f.severity === "info").length;
+
+	let status: GateResult["status"];
+	if (result.report.outcome === "ok") {
+		status = "pass";
+	} else if (result.report.status === "partial") {
+		status = "warn";
+	} else {
+		status = "fail";
+	}
+
+	return {
+		gate,
+		version,
+		timestamp,
+		status,
+		findings,
+		summary: { errors, warnings, info, total: errors + warnings + info },
+	};
 }
 
 // ─── P2 stub: policy-gate ─────────────────────────────────────────────────────
