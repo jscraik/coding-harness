@@ -1,6 +1,6 @@
 {
 	"name": "@brainwav/coding-harness",
-	"version": "0.9.16",
+	"version": "0.9.17",
 	"files": [
 		"dist",
 		"scripts/codex-preflight.sh",
