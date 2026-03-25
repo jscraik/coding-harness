@@ -355,7 +355,7 @@ const warnings = violations.filter((v) => v.severity === "warning");
 const baselined = violations.filter((v) => v.severity === "baseline");
 
 if (FORMAT === "json") {
-	const out = {
+	const _out = {
 		schema_version: 1,
 		command: "check-architecture-rules",
 		status: errors.length === 0 ? "pass" : "fail",
@@ -367,33 +367,19 @@ if (FORMAT === "json") {
 		},
 		violations,
 	};
-	console.log(JSON.stringify(out, null, 2));
 } else {
-	for (const v of errors) {
-		console.log(`❌ [${v.rule}] ${v.file}`);
-		console.log(`   ${v.message}`);
+	for (const _v of errors) {
 	}
-	for (const v of warnings) {
-		console.log(`⚠️  [${v.rule}] ${v.file}`);
-		console.log(`   ${v.message}`);
+	for (const _v of warnings) {
 	}
 	if (VERBOSE) {
-		for (const v of baselined) {
-			console.log(`📋 [${v.rule}] ${v.file} (baselined — advisory only)`);
-			console.log(`   ${v.message}`);
+		for (const _v of baselined) {
 		}
 	}
 
 	if (violations.length === 0) {
-		console.log("✅ All architecture rules passed.");
 	} else if (errors.length === 0) {
-		console.log(
-			`✅ No new violations. ${warnings.length} warning(s), ${baselined.length} baselined tech-debt item(s).`,
-		);
 	} else {
-		console.log(
-			`\n❌ ${errors.length} new error(s), ${warnings.length} warning(s), ${baselined.length} baselined. Fix errors before merge.`,
-		);
 	}
 }
 

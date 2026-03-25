@@ -1368,7 +1368,6 @@ describe("runInit", () => {
 			expect(sourced.status).toBe(0);
 			expect(sourced.stderr).toBe("");
 		});
-
 	});
 
 	describe("tooling drift guards", () => {
