@@ -1347,6 +1347,12 @@ describe("runInit", () => {
 			const result = runInit(tempDir, { dryRun: false, force: false });
 			expect(result.ok).toBe(true);
 
+			// Skip on environments without zsh (e.g. cimg/node Docker on CircleCI).
+			const zshCheck = spawnSync("zsh", ["--version"], { encoding: "utf8" });
+			if (zshCheck.status !== 0 || zshCheck.error) {
+				return; // zsh not available — skip sourcing test
+			}
+
 			const sourced = spawnSync(
 				"zsh",
 				[
@@ -1362,6 +1368,7 @@ describe("runInit", () => {
 			expect(sourced.status).toBe(0);
 			expect(sourced.stderr).toBe("");
 		});
+
 	});
 
 	describe("tooling drift guards", () => {
