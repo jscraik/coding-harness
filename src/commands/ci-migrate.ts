@@ -3041,6 +3041,13 @@ function deriveModeFromAction(
 	}
 
 	if (action === "bootstrap") {
+		if (options.apply === true || options.rollback === true) {
+			return {
+				ok: false,
+				error:
+					"Action 'bootstrap' conflicts with --apply/--rollback. Use action alone or --force.",
+			};
+		}
 		// bootstrap is a standalone utility — no migration apply/rollback needed.
 		return {
 			ok: true,
@@ -9047,7 +9054,11 @@ export function runCIMigrateCLI(
 	// bootstrap action — generate draft transition-status governance artifact
 	// ---------------------------------------------------------------------------
 	if (action === "bootstrap") {
-		const artifactRelPath = DEFAULT_TRANSITION_STATUS_ARTIFACT_PATH;
+		let artifactRelPath = DEFAULT_TRANSITION_STATUS_ARTIFACT_PATH;
+		const policyResult = readContractProviderPolicy(dir);
+		if (policyResult.ok && policyResult.value.transitionStatusArtifactPath) {
+			artifactRelPath = policyResult.value.transitionStatusArtifactPath;
+		}
 		const artifactAbsPath = resolve(dir, artifactRelPath);
 		const force = options.force === true;
 		if (existsSync(artifactAbsPath) && !force) {
