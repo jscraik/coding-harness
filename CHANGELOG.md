@@ -2,6 +2,69 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [0.11.12](https://github.com/jscraik/coding-harness/compare/v0.11.11...v0.11.12) (2026-03-25)
+
+
+
+## [0.11.11](https://github.com/jscraik/coding-harness/compare/v0.11.10...v0.11.11) (2026-03-25)
+
+
+
+## [0.11.10](https://github.com/jscraik/coding-harness/compare/v0.11.9...v0.11.10) (2026-03-25)
+
+
+
+## [0.11.9](https://github.com/jscraik/coding-harness/compare/v0.11.8...v0.11.9) (2026-03-25)
+
+
+
+## [0.11.8](https://github.com/jscraik/coding-harness/compare/v0.11.7...v0.11.8) (2026-03-25)
+
+
+
+## [0.11.7](https://github.com/jscraik/coding-harness/compare/v0.11.6...v0.11.7) (2026-03-25)
+
+
+
+## [0.11.6](https://github.com/jscraik/coding-harness/compare/v0.11.5...v0.11.6) (2026-03-25)
+
+
+
+## [0.11.5](https://github.com/jscraik/coding-harness/compare/v0.11.4...v0.11.5) (2026-03-25)
+
+
+
+## [0.11.4](https://github.com/jscraik/coding-harness/compare/v0.11.3...v0.11.4) (2026-03-25)
+
+
+
+## [0.11.3](https://github.com/jscraik/coding-harness/compare/v0.11.2...v0.11.3) (2026-03-25)
+
+
+
+## [0.11.2](https://github.com/jscraik/coding-harness/compare/v0.11.1...v0.11.2) (2026-03-25)
+
+
+
+## [0.11.1](https://github.com/jscraik/coding-harness/compare/v0.11.0...v0.11.1) (2026-03-25)
+
+
+
+# [0.11.0](https://github.com/jscraik/coding-harness/compare/v0.10.0...v0.11.0) (2026-03-25)
+
+
+### Bug Fixes
+
+* harden CLI constants, atomic writes, and unfinished code paths ([1dc34fd](https://github.com/jscraik/coding-harness/commit/1dc34fdfe8f14297861fee6588b556a03a01571f))
+* **verify-greptile:** clarify .npmrc advisory message (JSC-55) ([58aec42](https://github.com/jscraik/coding-harness/commit/58aec42d1410570deea634864109797b9d5ef255))
+
+
+### Features
+
+* **ci-migrate:** add bootstrap subcommand + improve verify error messaging (JSC-54) ([#122](https://github.com/jscraik/coding-harness/issues/122)) ([dbaa62e](https://github.com/jscraik/coding-harness/commit/dbaa62e180165ec46b4980c9e554b6ca012109dd))
+
+
+
 # [0.10.0](https://github.com/jscraik/coding-harness/compare/v0.9.70...v0.10.0) (2026-03-25)
 
 
