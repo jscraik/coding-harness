@@ -572,6 +572,8 @@ describe("cli command dispatch", () => {
 				mergeQueueOrchestratorPath:
 					".harness/control-plane/merge-queue-cutover-orchestrator",
 				autoGenerateProofPack: true,
+				commitMode: undefined,
+				force: false,
 			},
 		);
 		expect(exitSpy).toHaveBeenCalledWith(69);
@@ -614,6 +616,8 @@ describe("cli command dispatch", () => {
 				mergeQueueEvidencePath: undefined,
 				mergeQueueOrchestratorPath: undefined,
 				autoGenerateProofPack: false,
+				commitMode: undefined,
+				force: false,
 			},
 		);
 		expect(exitSpy).toHaveBeenCalledWith(69);
@@ -644,6 +648,8 @@ describe("cli command dispatch", () => {
 			mergeQueueEvidencePath: undefined,
 			mergeQueueOrchestratorPath: undefined,
 			autoGenerateProofPack: false,
+			commitMode: undefined,
+			force: false,
 		});
 		expect(exitSpy).toHaveBeenCalledWith(69);
 	});

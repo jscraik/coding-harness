@@ -5735,3 +5735,78 @@ describe("runCIMigrateCLI", () => {
 		expect(runInitCLIMock).not.toHaveBeenCalled();
 	});
 });
+
+// ---------------------------------------------------------------------------
+// bootstrap action — JSC-54
+// ---------------------------------------------------------------------------
+describe("runCIMigrateCLI bootstrap action", () => {
+	let tempDir: string;
+	beforeEach(() => {
+		tempDir = mkdtempSync(join(tmpdir(), "ci-migrate-bootstrap-test-"));
+	});
+	afterEach(() => {
+		rmSync(tempDir, { recursive: true, force: true });
+	});
+
+	it("creates the draft transition-status artifact when it does not exist", () => {
+		const artifactPath = join(
+			tempDir,
+			".harness/ci-provider-transition-status.json",
+		);
+		const exitCode = runCIMigrateCLI(tempDir, { action: "bootstrap" });
+		expect(exitCode).toBe(EXIT_CODES.SUCCESS);
+		expect(existsSync(artifactPath)).toBe(true);
+		const parsed = JSON.parse(readFileSync(artifactPath, "utf-8")) as {
+			schemaVersion: string;
+			nextGateComplete: boolean;
+			updatedAt: string;
+		};
+		expect(parsed.schemaVersion).toBe("ci-provider-transition-status/v1");
+		expect(parsed.nextGateComplete).toBe(false);
+		expect(typeof parsed.updatedAt).toBe("string");
+		expect(Number.isFinite(Date.parse(parsed.updatedAt))).toBe(true);
+	});
+
+	it("skips without overwriting when the artifact already exists and --force is not set", () => {
+		const harnessDir = join(tempDir, ".harness");
+		mkdirSync(harnessDir, { recursive: true });
+		const artifactPath = join(harnessDir, "ci-provider-transition-status.json");
+		const original = JSON.stringify({
+			schemaVersion: "ci-provider-transition-status/v1",
+			nextGateComplete: true,
+			updatedAt: "2026-01-01T00:00:00.000Z",
+		});
+		writeFileSync(artifactPath, original, "utf-8");
+
+		const exitCode = runCIMigrateCLI(tempDir, { action: "bootstrap" });
+		expect(exitCode).toBe(EXIT_CODES.SUCCESS);
+		// File must be unchanged
+		expect(readFileSync(artifactPath, "utf-8")).toBe(original);
+	});
+
+	it("overwrites the existing artifact when --force is set", () => {
+		const harnessDir = join(tempDir, ".harness");
+		mkdirSync(harnessDir, { recursive: true });
+		const artifactPath = join(harnessDir, "ci-provider-transition-status.json");
+		writeFileSync(
+			artifactPath,
+			JSON.stringify({
+				schemaVersion: "ci-provider-transition-status/v1",
+				nextGateComplete: true,
+				updatedAt: "2020-01-01T00:00:00.000Z",
+			}),
+			"utf-8",
+		);
+
+		const exitCode = runCIMigrateCLI(tempDir, {
+			action: "bootstrap",
+			force: true,
+		});
+		expect(exitCode).toBe(EXIT_CODES.SUCCESS);
+		const parsed = JSON.parse(readFileSync(artifactPath, "utf-8")) as {
+			nextGateComplete: boolean;
+		};
+		// Should have been reset to false by bootstrap
+		expect(parsed.nextGateComplete).toBe(false);
+	});
+});

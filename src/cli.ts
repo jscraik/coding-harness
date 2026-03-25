@@ -863,6 +863,7 @@ export function run(args: string[]): void {
 		const autoGenerateProofPackFlag = args.includes(
 			"--auto-generate-proof-pack",
 		);
+		const forceFlag = args.includes("--force");
 		const valueFlags = new Set([
 			"--provider",
 			"--snapshot",
@@ -898,6 +899,7 @@ export function run(args: string[]): void {
 			"commit",
 			"abort",
 			"verify",
+			"bootstrap",
 			"sync-branch-protection",
 			"promote-mode",
 		]);
@@ -960,6 +962,7 @@ export function run(args: string[]): void {
 			mergeQueueOrchestratorPath,
 			autoGenerateProofPack: autoGenerateProofPackFlag,
 			commitMode,
+			force: forceFlag,
 		});
 		process.exit(exitCode);
 		return;
