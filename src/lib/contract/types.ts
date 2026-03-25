@@ -575,7 +575,7 @@ export const DEFAULT_BRANCH_PROTECTION_POLICY: BranchProtectionPolicy = {
 	blockForcePushes: true,
 	requireLinearHistory: true,
 	requirePullRequest: true,
-	requiredApprovingReviewCount: 1,
+	requiredApprovingReviewCount: 0,
 	dismissStaleReviewsOnPush: true,
 	requireConversationResolution: true,
 	requireCodeOwnerReview: false,

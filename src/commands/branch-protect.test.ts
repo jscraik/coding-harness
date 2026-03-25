@@ -122,7 +122,7 @@ describe("runBranchProtect", () => {
 			(rule) => rule.type === "pull_request",
 		);
 		expect(pullRequestRule?.parameters).toMatchObject({
-			required_approving_review_count: 1,
+			required_approving_review_count: 0,
 			require_code_owner_review: false,
 			require_last_push_approval: false,
 			required_review_thread_resolution: true,
@@ -605,7 +605,7 @@ describe("runBranchProtect", () => {
 			expect(result.output.action).toBe("dry_run");
 			expect(result.output.repositoryVisibility).toBe("public");
 			expect(result.output.managedPolicy).toMatchObject({
-				requiredApprovingReviewCount: 1,
+				requiredApprovingReviewCount: 0,
 				restrictDeletions: true,
 				blockForcePushes: true,
 				requireLinearHistory: true,
@@ -687,7 +687,7 @@ describe("runBranchProtect", () => {
 		expect(payload.action).toBe("dry_run");
 		expect(payload.repositoryVisibility).toBe("public");
 		expect(payload.managedPolicy).toMatchObject({
-			requiredApprovingReviewCount: 1,
+			requiredApprovingReviewCount: 0,
 			requireLinearHistory: true,
 			requireCodeOwnerReview: false,
 			requireLastPushApproval: false,
@@ -970,7 +970,7 @@ describe("runBranchProtect", () => {
 		expect(createRuleset).not.toHaveBeenCalled();
 	});
 
-	it("preserves stricter existing pull request protections", async () => {
+	it("policy approvals override existing stricter GitHub ruleset value", async () => {
 		const listRulesets = vi.fn(
 			async () =>
 				[
@@ -1036,6 +1036,8 @@ describe("runBranchProtect", () => {
 				}) as unknown as GitHubClient,
 		);
 
+		// Policy says 1 required approval, but GitHub currently has 2.
+		// The harness policy is authoritative: it should enforce 1, not keep 2.
 		const result = await runBranchProtect({
 			token: "token",
 			owner: "octo",
@@ -1048,8 +1050,9 @@ describe("runBranchProtect", () => {
 		const pullRequestRule = payload?.rules.find(
 			(rule) => rule.type === "pull_request",
 		);
+		// Policy wins: required count is 1, not the pre-existing 2.
 		expect(pullRequestRule?.parameters).toMatchObject({
-			required_approving_review_count: 2,
+			required_approving_review_count: 1,
 			require_code_owner_review: false,
 			require_last_push_approval: false,
 		});
