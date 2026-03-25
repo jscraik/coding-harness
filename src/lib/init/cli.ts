@@ -2,12 +2,18 @@ import {
 	existsSync,
 	lstatSync,
 	mkdirSync,
+	readFileSync,
 	realpathSync,
 	rmSync,
 } from "node:fs";
 import { dirname, join, relative, resolve, sep } from "node:path";
 import { cwd } from "node:process";
 import { sanitizeError } from "../input/sanitize.js";
+import { detectProjectType } from "../project-type/detector.js";
+import {
+	type ProjectType,
+	VALID_OVERRIDE_TYPES,
+} from "../project-type/types.js";
 import { getVersion } from "../version.js";
 import {
 	applyProposedChange,
@@ -207,8 +213,56 @@ export function runInit(
 		return ciProviderResult;
 	}
 	const ciProvider = ciProviderResult.value;
+
+	// P2: Validate --project-type flag if provided (SA10, SA16)
+	if (options.projectType !== undefined) {
+		if (
+			!(VALID_OVERRIDE_TYPES as readonly string[]).includes(options.projectType)
+		) {
+			return {
+				ok: false,
+				error: {
+					code: "INVALID_PATH",
+					message: `Invalid --project-type value: "${options.projectType}". Valid values: ${VALID_OVERRIDE_TYPES.join(" | ")}.`,
+				},
+			};
+		}
+	}
+
+	// P2: Detect project type (SA1–SA9, SA15). Pure read-only call.
+	const detectionResult = detectProjectType(
+		dir,
+		options.projectType as ProjectType | undefined,
+	);
+
+	// P2: Idempotency — read existing contract to preserve existing projectType on re-init unless
+	// --project-type override was explicitly supplied (I2, I3, SA11, SA12)
+	let projectTypeToWrite: ProjectType = detectionResult.projectType;
+	if (!options.projectType) {
+		const contractPath = resolve(dir, CONTRACT_FILE);
+		if (existsSync(contractPath)) {
+			try {
+				const existing = JSON.parse(
+					readFileSync(contractPath, "utf-8"),
+				) as Record<string, unknown>;
+				if (
+					typeof existing.projectType === "string" &&
+					existing.projectType.length > 0
+				) {
+					projectTypeToWrite = existing.projectType as ProjectType;
+				}
+			} catch {
+				// unreadable or malformed — proceed with detected value
+			}
+		}
+	}
+
 	const packageManager = detectPackageManager(dir);
-	const renderContext = createTemplateRenderContext(dir, ciProvider);
+	const renderContext = createTemplateRenderContext(
+		dir,
+		ciProvider,
+		projectTypeToWrite !== "unknown" ? projectTypeToWrite : undefined,
+	);
 	const templates = getTemplatesForProvider(ciProvider);
 
 	if (options.migrate && options.dryRun) {
@@ -399,7 +453,6 @@ export function runInit(
 			continue;
 		}
 
-
 		// Dry-run: don't write, just track what would happen
 		if (options.dryRun) {
 			created.push(template.path); // Track as "would create"
@@ -466,6 +519,36 @@ export function runInit(
 		}
 	}
 
+	// I3: If --project-type was explicitly provided and harness.contract.json already existed
+	// (and was skipped by the template loop), patch only the projectType field atomically.
+	// This avoids requiring --force alongside --project-type (which would be a footgun).
+	if (options.projectType && !options.dryRun) {
+		const contractPath = resolve(dir, CONTRACT_FILE);
+		if (existsSync(contractPath)) {
+			try {
+				const raw = readFileSync(contractPath, "utf-8");
+				const parsed = JSON.parse(raw) as Record<string, unknown>;
+				parsed.projectType = options.projectType;
+				const patchResult = atomicWrite(
+					contractPath,
+					`${JSON.stringify(parsed, null, 2)}\n`,
+				);
+				if (!patchResult.ok) {
+					return patchResult;
+				}
+				// Track in created if not already there (template loop may have skipped it)
+				if (!created.includes(CONTRACT_FILE)) {
+					created.push(CONTRACT_FILE);
+					// Remove from skipped if it was recorded there
+					const skipIdx = skipped.indexOf(CONTRACT_FILE);
+					if (skipIdx !== -1) skipped.splice(skipIdx, 1);
+				}
+			} catch {
+				// Malformed JSON — skip the patch; contract will be regenerated on next --force init
+			}
+		}
+	}
+
 	// Write manifest if tracking
 	if (options.track && !options.dryRun && manifestEntries.length > 0) {
 		const manifest: RestoreManifest = {
@@ -489,6 +572,7 @@ export function runInit(
 			packageManager,
 			created,
 			skipped,
+			projectTypeDetection: detectionResult,
 		},
 	};
 }
@@ -639,7 +723,19 @@ export function runInitCLI(
 	const result = runInit(targetDir, options);
 
 	if (result.ok) {
-		const { packageManager, created, skipped, updateCheck } = result.output;
+		const {
+			packageManager,
+			created,
+			skipped,
+			updateCheck,
+			projectTypeDetection,
+		} = result.output;
+
+		// --json: emit full structured output (SA13, SA14)
+		if (options.json) {
+			console.info(JSON.stringify(result.output, null, 2));
+			return EXIT_CODES.SUCCESS;
+		}
 
 		// Handle rollback output
 		if (options.rollback) {
@@ -695,6 +791,16 @@ export function runInitCLI(
 				console.info("\n✓ Contract migrated");
 			}
 			return EXIT_CODES.SUCCESS;
+		}
+
+		// SA9: warn when detection returned unknown
+		if (projectTypeDetection?.projectType === "unknown") {
+			console.warn(
+				"Warning: Could not detect project type. Using universal defaults.",
+			);
+			console.warn(
+				"  Run `harness init --project-type <cli|desktop|library|web>` to specify it explicitly.",
+			);
 		}
 
 		console.info(`Installing harness (package manager: ${packageManager})\n`);

@@ -2704,3 +2704,92 @@ describe("tooling version detection (JSC-57)", () => {
 		}
 	});
 });
+
+// ─── Project-type detection integration (SA11, SA12, SA10, I6) ───────────────
+
+describe("project-type detection integration", () => {
+	let tempDir: string;
+
+	beforeEach(() => {
+		tempDir = join(tmpdir(), `harness-pt-test-${Date.now()}`);
+		mkdirSync(tempDir, { recursive: true });
+	});
+
+	afterEach(() => {
+		rmSync(tempDir, { recursive: true, force: true });
+	});
+
+	it("SA11: re-init without --project-type preserves stored projectType in contract", () => {
+		// First init writes the contract (no prior contract → auto-detect; tempDir has no signals → unknown)
+		const first = runInit(tempDir, { dryRun: false, force: false });
+		expect(first.ok).toBe(true);
+
+		// Manually write a contract with a known projectType (simulates a repo that was previously typed)
+		const contractPath = join(tempDir, "harness.contract.json");
+		const existing = JSON.parse(readFileSync(contractPath, "utf-8"));
+		existing.projectType = "cli";
+		writeFileSync(contractPath, JSON.stringify(existing, null, 2));
+
+		// Re-init without --project-type: idempotency must not overwrite stored value
+		const second = runInit(tempDir, { dryRun: false, force: false });
+		expect(second.ok).toBe(true);
+
+		const afterContract = JSON.parse(readFileSync(contractPath, "utf-8"));
+		// The template loop skips the existing contract file, so projectType should remain "cli"
+		expect(afterContract.projectType).toBe("cli");
+	});
+
+	it("SA12: --project-type flag overwrites stored value without requiring --force", () => {
+		// Bootstrap the contract first
+		const first = runInit(tempDir, { dryRun: false, force: false });
+		expect(first.ok).toBe(true);
+
+		// Write a known stored value
+		const contractPath = join(tempDir, "harness.contract.json");
+		const existing = JSON.parse(readFileSync(contractPath, "utf-8"));
+		existing.projectType = "library";
+		writeFileSync(contractPath, JSON.stringify(existing, null, 2));
+
+		// Re-init with --project-type web: should patch contract without --force
+		const second = runInit(tempDir, {
+			dryRun: false,
+			force: false,
+			projectType: "web",
+		});
+		expect(second.ok).toBe(true);
+
+		const afterContract = JSON.parse(readFileSync(contractPath, "utf-8"));
+		expect(afterContract.projectType).toBe("web");
+	});
+
+	it("SA10/I6: invalid --project-type value returns an error", () => {
+		// "unknown" is not a valid explicit override value (I6)
+		const result = runInit(tempDir, {
+			dryRun: false,
+			force: false,
+			projectType: "unknown" as "cli",
+		});
+		expect(result.ok).toBe(false);
+		if (!result.ok) {
+			expect(result.error.message).toContain("Invalid --project-type");
+		}
+	});
+
+	it("first-time init writes detected projectType into new contract", () => {
+		// Place vite.config.ts to trigger web detection
+		writeFileSync(join(tempDir, "vite.config.ts"), "export default {}");
+
+		const result = runInit(tempDir, { dryRun: false, force: false });
+		expect(result.ok).toBe(true);
+		if (result.ok) {
+			expect(result.output.projectTypeDetection?.projectType).toBe("web");
+			expect(result.output.projectTypeDetection?.matchedRule).toBe("vite");
+		}
+
+		const contract = JSON.parse(
+			readFileSync(join(tempDir, "harness.contract.json"), "utf-8"),
+		);
+		expect(contract.projectType).toBe("web");
+	});
+});
+

@@ -28,6 +28,7 @@ import {
 	REQUIRED_TOOLING_BINARIES,
 	REQUIRED_TOOLING_DOC_TERMS,
 } from "../policy/tooling-baseline.js";
+import type { ProjectType } from "../project-type/types.js";
 import {
 	type CIProvider,
 	CODEX_ENVIRONMENT_TEMPLATE_PATH,
@@ -354,6 +355,7 @@ export function normalizeCIProvider(
 export function createTemplateRenderContext(
 	targetDir: string,
 	ciProvider?: CIProvider,
+	projectType?: ProjectType,
 ): TemplateRenderContext {
 	const issueTrackingUrl = readIssueTrackingUrl(targetDir);
 	const projectName = readProjectName(targetDir);
@@ -367,6 +369,7 @@ export function createTemplateRenderContext(
 		...(projectName ? { projectName } : {}),
 		...(repoUrl ? { repoUrl } : {}),
 		...(linearProjectSlug ? { linearProjectSlug } : {}),
+		...(projectType ? { projectType } : {}),
 	};
 }
 
@@ -534,8 +537,6 @@ export function shouldSkipDueToNewerToolingVersion(
 	const decision = getToolingVersionDecision(templatePath, targetPath);
 	return decision === "skip";
 }
-
-
 
 function renderCodexEnvironmentTemplate(
 	packageManager: string,
@@ -1292,6 +1293,9 @@ export const TEMPLATES: Template[] = [
 					},
 					ciProviderPolicy: DEFAULT_CONTRACT.ciProviderPolicy,
 					contextIntegrityPolicy: DEFAULT_CONTRACT.contextIntegrityPolicy,
+					...(context.projectType !== undefined
+						? { projectType: context.projectType }
+						: {}),
 				},
 				null,
 				2,
