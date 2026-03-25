@@ -616,8 +616,7 @@ export function runHealthCLI(args: string[], getVersion: () => string): number {
 	report.version = getVersion();
 
 	if (jsonFlag) {
-		process.stdout.write(`${JSON.stringify(report, null, 2)}
-`);
+		console.info(JSON.stringify(report));
 	} else {
 		process.stdout.write(renderScorecard(report));
 	}

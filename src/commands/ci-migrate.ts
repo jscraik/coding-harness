@@ -3430,7 +3430,7 @@ export function runPromoteModeCLI(
 
 	if (!result.ok) {
 		if (jsonFlag) {
-			// JSON mode: error surfaced via exit code only
+			console.info(JSON.stringify({ ok: false, error: result.error }));
 		} else {
 			console.error(`Error: ${result.error}`);
 		}
@@ -10032,7 +10032,7 @@ export function runSyncBranchProtectionCLI(
 	} catch (err) {
 		const msg = `Failed to read harness.contract.json: ${sanitizeError(err)}`;
 		if (jsonFlag) {
-			// JSON mode: error surfaced via exit code only
+			console.info(JSON.stringify({ ok: false, error: msg }));
 		} else {
 			console.error(`Error: ${msg}`);
 		}

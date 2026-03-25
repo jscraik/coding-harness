@@ -671,8 +671,7 @@ export function runDriftGate(options: DriftGateOptions = {}): DriftGateResult {
 				for (const f of findings) {
 					f.baseline_state = "preexisting";
 				}
-				baseline.info.loaded = true;
-				Reflect.deleteProperty(baseline.info, "reason");
+				baseline.info = { path: baseline.info.path, loaded: true };
 				baselineSeeded = true;
 			} catch {
 				// Fall through to "seed missing" finding if write fails
