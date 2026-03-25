@@ -1,15 +1,10 @@
+import { existsSync, mkdirSync, rmSync, writeFileSync } from "node:fs";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
 /**
  * Tests for JSC-58: solo/lightweight ci-migrate mode.
  */
-import { describe, expect, it, beforeEach, afterEach } from "vitest";
-import {
-	existsSync,
-	mkdirSync,
-	rmSync,
-	writeFileSync,
-} from "node:fs";
-import { join } from "node:path";
-import { tmpdir } from "node:os";
+import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import { isSoloCommitMode } from "./ci-migrate.js";
 
 // Helpers

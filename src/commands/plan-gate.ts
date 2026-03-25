@@ -4,12 +4,12 @@
  * Validates plan artifacts exist and are properly structured.
  */
 
+import { normalisePlanGateResult } from "../lib/output/normalise.js";
 import {
 	EXIT_CODES,
 	type PlanGateOptions,
 	runPlanGate,
 } from "../lib/plan-gate/detector.js";
-import { normalisePlanGateResult } from "../lib/output/normalise.js";
 
 // Re-export workflow plan utilities for plan management
 export {

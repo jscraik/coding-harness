@@ -15,25 +15,25 @@
  * - runContractCLI dispatch (validate / schema / unknown subcommand)
  */
 
-import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
-import { existsSync, rmSync, writeFileSync, mkdtempSync } from "node:fs";
-import { join } from "node:path";
+import { existsSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
+import { join } from "node:path";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import {
-	buildContractJsonSchema,
-	SCHEMA_VERSION,
+	CI_MIGRATION_STAGES,
 	CI_PROVIDERS,
 	CI_PROVIDER_MODES,
-	CI_MIGRATION_STAGES,
+	SCHEMA_VERSION,
+	buildContractJsonSchema,
 } from "../lib/contract/json-schema.js";
 
 import { validateContract } from "../lib/contract/validator.js";
 
 import {
-	runContractValidateCLI,
-	runContractSchemaCLI,
 	runContractCLI,
+	runContractSchemaCLI,
+	runContractValidateCLI,
 } from "./contract.js";
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
@@ -149,7 +149,9 @@ describe("validateContract: cross-field checks (JSC-69)", () => {
 		expect(result.success).toBe(false);
 		if (!result.success) {
 			expect(result.errors.some((e) => e.path.includes("mode"))).toBe(true);
-			expect(result.errors.some((e) => e.message.includes("shadow"))).toBe(true);
+			expect(result.errors.some((e) => e.message.includes("shadow"))).toBe(
+				true,
+			);
 		}
 	});
 
@@ -424,7 +426,10 @@ describe("runContractCLI dispatch", () => {
 
 	it("dispatches 'validate' to runContractValidateCLI", () => {
 		// Pass a non-existent path so we don't pick up the repo contract
-		const code = runContractCLI(["validate", join(dir, "no-such-file.json")], {});
+		const code = runContractCLI(
+			["validate", join(dir, "no-such-file.json")],
+			{},
+		);
 		expect(code).toBe(1);
 	});
 

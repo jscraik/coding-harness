@@ -16,10 +16,10 @@
  *   fixture.cleanup();
  */
 
+import { spawnSync } from "node:child_process";
 import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { dirname, join } from "node:path";
-import { spawnSync } from "node:child_process";
 
 // ─── Types ──────────────────────────────────────────────────────────────────────
 
@@ -34,10 +34,7 @@ export interface GitFixture {
 	/** Initial commit SHA. */
 	initialSha: string;
 	/** Commit files and return the new SHA. */
-	commitFiles: (
-		files: Record<string, string>,
-		message?: string,
-	) => string;
+	commitFiles: (files: Record<string, string>, message?: string) => string;
 	/** Run a git command in the fixture directory. */
 	git: (args: string[]) => { stdout: string; stderr: string; exitCode: number };
 }
@@ -274,9 +271,7 @@ export function assertGateFails(
  * Keeps passing runs short while preserving exact assertion detail
  * for failures.
  */
-export function runGateAssertions(
-	assertions: GateAssertionResult[],
-): {
+export function runGateAssertions(assertions: GateAssertionResult[]): {
 	allPassed: boolean;
 	total: number;
 	passed: number;
@@ -288,14 +283,13 @@ export function runGateAssertions(
 	const passed = assertions.filter((a) => a.ok).length;
 	const failed = assertions.length - passed;
 	const failures = assertions.filter((a) => !a.ok);
-	const totalDurationMs = assertions.reduce(
-		(sum, a) => sum + a.durationMs,
-		0,
-	);
+	const totalDurationMs = assertions.reduce((sum, a) => sum + a.durationMs, 0);
 
 	const summaryLines: string[] = [];
 	if (failed === 0) {
-		summaryLines.push(`✓ All ${passed} gate assertions passed (${totalDurationMs}ms)`);
+		summaryLines.push(
+			`✓ All ${passed} gate assertions passed (${totalDurationMs}ms)`,
+		);
 	} else {
 		summaryLines.push(
 			`✗ ${failed} of ${assertions.length} gate assertions failed (${totalDurationMs}ms)`,
@@ -321,9 +315,10 @@ export function runGateAssertions(
 /**
  * Validate a module test manifest.
  */
-export function validateModuleTestManifest(
-	manifest: ModuleTestManifest,
-): { valid: boolean; findings: ManifestFinding[] } {
+export function validateModuleTestManifest(manifest: ModuleTestManifest): {
+	valid: boolean;
+	findings: ManifestFinding[];
+} {
 	const findings: ManifestFinding[] = [];
 
 	if (!manifest.moduleName || manifest.moduleName.trim().length === 0) {
@@ -368,8 +363,7 @@ export function validateModuleTestManifest(
 		findings.push({
 			code: "MISSING_EVIDENCE_FORMAT",
 			severity: "error",
-			message:
-				"Evidence format is required when tddRequired is true",
+			message: "Evidence format is required when tddRequired is true",
 		});
 	}
 
@@ -478,7 +472,9 @@ export function validateTDDEvidencePair(
 	}
 
 	if (red.passed) {
-		errors.push("RED evidence must have passed=false (test should fail before fix)");
+		errors.push(
+			"RED evidence must have passed=false (test should fail before fix)",
+		);
 	}
 	if (red.failedCount === 0) {
 		errors.push("RED evidence must have failedCount > 0");
@@ -497,10 +493,12 @@ export function validateTDDEvidencePair(
 	if (red.capturedAt && green.capturedAt) {
 		const redTime = new Date(red.capturedAt).getTime();
 		const greenTime = new Date(green.capturedAt).getTime();
-		if (!Number.isNaN(redTime) && !Number.isNaN(greenTime) && greenTime < redTime) {
-			errors.push(
-				"GREEN evidence must be captured after RED evidence",
-			);
+		if (
+			!Number.isNaN(redTime) &&
+			!Number.isNaN(greenTime) &&
+			greenTime < redTime
+		) {
+			errors.push("GREEN evidence must be captured after RED evidence");
 		}
 	}
 
@@ -540,9 +538,7 @@ export const WORKFLOW_CONTRACT_MANIFESTS: readonly ModuleTestManifest[] = [
 			"npx vitest run src/lib/workflow-contract/registry.test.ts",
 		smokeTestCommand:
 			"npx vitest run src/lib/workflow-contract/registry.test.ts -t 'loadRegistry'",
-		expectedArtifacts: [
-			"docs/workflow-artifact-registry.json",
-		],
+		expectedArtifacts: ["docs/workflow-artifact-registry.json"],
 		tddRequired: false,
 	},
 	{

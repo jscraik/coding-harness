@@ -1,18 +1,18 @@
 import { existsSync, readFileSync } from "node:fs";
 import { join } from "node:path";
-import { describe, expect, it, afterEach } from "vitest";
+import { afterEach, describe, expect, it } from "vitest";
 import {
-	createGitFixture,
-	assertGatePasses,
-	assertGateFails,
-	runGateAssertions,
-	validateModuleTestManifest,
-	createRedEvidence,
-	createGreenEvidence,
-	validateTDDEvidencePair,
-	WORKFLOW_CONTRACT_MANIFESTS,
 	type GitFixture,
 	type ModuleTestManifest,
+	WORKFLOW_CONTRACT_MANIFESTS,
+	assertGateFails,
+	assertGatePasses,
+	createGitFixture,
+	createGreenEvidence,
+	createRedEvidence,
+	runGateAssertions,
+	validateModuleTestManifest,
+	validateTDDEvidencePair,
 } from "./test-harness.js";
 
 // ─── createGitFixture ───────────────────────────────────────────────────────────
@@ -50,12 +50,12 @@ describe("createGitFixture", () => {
 		});
 		fixtures.push(fixture);
 
-		expect(
-			readFileSync(join(fixture.dir, "README.md"), "utf-8"),
-		).toBe("# Test Project");
-		expect(
-			readFileSync(join(fixture.dir, "src/index.ts"), "utf-8"),
-		).toBe("export const x = 1;");
+		expect(readFileSync(join(fixture.dir, "README.md"), "utf-8")).toBe(
+			"# Test Project",
+		);
+		expect(readFileSync(join(fixture.dir, "src/index.ts"), "utf-8")).toBe(
+			"export const x = 1;",
+		);
 	});
 
 	it("commitFiles adds files and returns new SHA", () => {
@@ -69,9 +69,9 @@ describe("createGitFixture", () => {
 
 		expect(newSha).toMatch(/^[0-9a-f]{40}$/);
 		expect(newSha).not.toBe(fixture.initialSha);
-		expect(
-			readFileSync(join(fixture.dir, "new-file.txt"), "utf-8"),
-		).toBe("hello");
+		expect(readFileSync(join(fixture.dir, "new-file.txt"), "utf-8")).toBe(
+			"hello",
+		);
 	});
 
 	it("multiple commits create distinct SHAs", () => {
@@ -123,9 +123,9 @@ describe("createGitFixture", () => {
 		});
 		fixtures.push(fixture);
 
-		expect(
-			readFileSync(join(fixture.dir, "a/b/c/deep.txt"), "utf-8"),
-		).toBe("deep content");
+		expect(readFileSync(join(fixture.dir, "a/b/c/deep.txt"), "utf-8")).toBe(
+			"deep content",
+		);
 	});
 });
 
@@ -238,9 +238,7 @@ describe("validateModuleTestManifest", () => {
 	it("validates a correct manifest", () => {
 		const result = validateModuleTestManifest(validManifest);
 		expect(result.valid).toBe(true);
-		expect(result.findings.filter((f) => f.severity === "error")).toEqual(
-			[],
-		);
+		expect(result.findings.filter((f) => f.severity === "error")).toEqual([]);
 	});
 
 	it("rejects missing module name", () => {
@@ -334,12 +332,7 @@ describe("validateModuleTestManifest", () => {
 describe("TDD evidence", () => {
 	describe("createRedEvidence", () => {
 		it("creates RED evidence", () => {
-			const evidence = createRedEvidence(
-				"my-module",
-				"npx vitest run",
-				3,
-				10,
-			);
+			const evidence = createRedEvidence("my-module", "npx vitest run", 3, 10);
 			expect(evidence.phase).toBe("RED");
 			expect(evidence.passed).toBe(false);
 			expect(evidence.failedCount).toBe(3);
@@ -350,11 +343,7 @@ describe("TDD evidence", () => {
 
 	describe("createGreenEvidence", () => {
 		it("creates GREEN evidence", () => {
-			const evidence = createGreenEvidence(
-				"my-module",
-				"npx vitest run",
-				10,
-			);
+			const evidence = createGreenEvidence("my-module", "npx vitest run", 10);
 			expect(evidence.phase).toBe("GREEN");
 			expect(evidence.passed).toBe(true);
 			expect(evidence.failedCount).toBe(0);
@@ -377,9 +366,7 @@ describe("TDD evidence", () => {
 			const green = createGreenEvidence("mod-b", "test", 5);
 			const result = validateTDDEvidencePair(red, green);
 			expect(result.valid).toBe(false);
-			expect(result.errors.some((e) => e.includes("mismatch"))).toBe(
-				true,
-			);
+			expect(result.errors.some((e) => e.includes("mismatch"))).toBe(true);
 		});
 
 		it("rejects RED evidence that passes", () => {
@@ -390,9 +377,7 @@ describe("TDD evidence", () => {
 			const green = createGreenEvidence("mod", "test", 5);
 			const result = validateTDDEvidencePair(red, green);
 			expect(result.valid).toBe(false);
-			expect(
-				result.errors.some((e) => e.includes("passed=false")),
-			).toBe(true);
+			expect(result.errors.some((e) => e.includes("passed=false"))).toBe(true);
 		});
 
 		it("rejects GREEN evidence that fails", () => {
@@ -403,9 +388,7 @@ describe("TDD evidence", () => {
 			};
 			const result = validateTDDEvidencePair(red, green);
 			expect(result.valid).toBe(false);
-			expect(
-				result.errors.some((e) => e.includes("passed=true")),
-			).toBe(true);
+			expect(result.errors.some((e) => e.includes("passed=true"))).toBe(true);
 		});
 
 		it("rejects wrong temporal order", () => {
@@ -416,9 +399,7 @@ describe("TDD evidence", () => {
 			red.capturedAt = "2025-01-01T00:00:00.000Z";
 			const result = validateTDDEvidencePair(red, green);
 			expect(result.valid).toBe(false);
-			expect(
-				result.errors.some((e) => e.includes("after RED")),
-			).toBe(true);
+			expect(result.errors.some((e) => e.includes("after RED"))).toBe(true);
 		});
 
 		it("rejects swapped phases", () => {

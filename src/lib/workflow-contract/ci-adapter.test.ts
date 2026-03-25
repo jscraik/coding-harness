@@ -1,11 +1,11 @@
 import { describe, expect, it } from "vitest";
 import {
-	checkCICompatibility,
-	validateWorkflowCIPolicy,
-	DEFAULT_WORKFLOW_CI_POLICY,
 	type ActiveCIPolicy,
 	type CIAdapterFinding,
+	DEFAULT_WORKFLOW_CI_POLICY,
 	type WorkflowCIPolicy,
+	checkCICompatibility,
+	validateWorkflowCIPolicy,
 } from "./ci-adapter.js";
 
 // ─── Helpers ────────────────────────────────────────────────────────────────────
@@ -62,7 +62,9 @@ describe("validateWorkflowCIPolicy", () => {
 		policy.timeout = "";
 		const findings = validateWorkflowCIPolicy(policy);
 		expect(hasCode(findings, "CI_MISSING_TIMEOUT")).toBe(true);
-		expect(findings.find((f) => f.code === "CI_MISSING_TIMEOUT")?.severity).toBe("warning");
+		expect(
+			findings.find((f) => f.code === "CI_MISSING_TIMEOUT")?.severity,
+		).toBe("warning");
 	});
 
 	it("warns when escalation is empty", () => {

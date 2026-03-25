@@ -61,10 +61,7 @@ function parseTopLevelYAMLKeys(content: string): string[] {
  * Validate a CircleCI config file for structural correctness.
  * Returns a list of violation messages.
  */
-function validateCircleCIConfig(
-	configPath: string,
-	content: string,
-): string[] {
+function validateCircleCIConfig(configPath: string, content: string): string[] {
 	const violations: string[] = [];
 	const topLevelKeys = parseTopLevelYAMLKeys(content);
 
@@ -159,10 +156,7 @@ export function validateCIConfigSyntax(
 			const configPath = resolve(dir, configRelPath);
 			try {
 				const content = readFileSync(configPath, "utf-8");
-				const configViolations = validateCircleCIConfig(
-					configRelPath,
-					content,
-				);
+				const configViolations = validateCircleCIConfig(configRelPath, content);
 				for (const message of configViolations) {
 					violations.push({ configPath: configRelPath, message });
 				}
@@ -202,8 +196,7 @@ export function validateCIConfigSyntax(
 		if (workflowFiles.length === 0) {
 			violations.push({
 				configPath: ".github/workflows/",
-				message:
-					"No .yml/.yaml workflow files found in .github/workflows/.",
+				message: "No .yml/.yaml workflow files found in .github/workflows/.",
 			});
 			return violations;
 		}
@@ -212,10 +205,7 @@ export function validateCIConfigSyntax(
 			const fullPath = resolve(dir, relPath);
 			try {
 				const content = readFileSync(fullPath, "utf-8");
-				const configViolations = validateGitHubActionsConfig(
-					relPath,
-					content,
-				);
+				const configViolations = validateGitHubActionsConfig(relPath, content);
 				for (const message of configViolations) {
 					violations.push({ configPath: relPath, message });
 				}

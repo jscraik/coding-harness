@@ -16,6 +16,7 @@ Codex skill for reliable setup and operation of `@brainwav/coding-harness` in re
 - [Capabilities and boundaries](#capabilities-and-boundaries)
 - [Constraints](#constraints)
 - [Memory layer](#memory-layer)
+- [Structured JSON Output](#structured-json-output)
 - [Workflow](#workflow)
 - [Validation](#validation)
 - [Anti-patterns](#anti-patterns)
@@ -141,6 +142,75 @@ EOF
 
 If the repo has no `.harness/` directory, skip creation entirely.
 
+## Structured JSON Output
+
+All gate commands (`drift-gate`, `docs-gate`, `policy-gate`, `pr-template-gate`, `plan-gate`, `linear-gate`) emit a canonical **`GateResult`** JSON object when `--json` is passed via `process.stdout` (JSC-71, v0.8.x+).
+
+### GateResult schema
+
+```json
+{
+  "gate":      "drift-gate",
+  "version":   "0.8.2",
+  "timestamp": "2026-03-24T21:00:00.000Z",
+  "status":    "fail",
+  "findings": [
+    {
+      "id":          "drift-gate.docs.MD041/first-line-heading",
+      "severity":    "error",
+      "gate":        "drift-gate",
+      "message":     "First line must be a top-level heading",
+      "baseline":    false,
+      "fix": {
+        "command":      "harness drift-gate --seed-baseline",
+        "manual":       "Add # heading as first line",
+        "suppressible": true
+      }
+    }
+  ],
+  "summary": { "errors": 1, "warnings": 0, "info": 0, "total": 1 }
+}
+```
+
+### jq patterns for agent consumption
+
+```bash
+# Filter error-severity findings from drift-gate
+harness drift-gate --json | jq '.findings[] | select(.severity=="error")'
+
+# List all fixable findings (have fix.command) across all gates
+harness health --auto-fix --dry-run --json | jq '.findings[] | select(.command != null) | .command'
+
+# Count failing gates during health check
+harness health --json | jq '[.gates[] | select(.status == "error")] | length'
+
+# Extract all fix commands for safe automation
+harness drift-gate --json | jq -r '.findings[].fix.command // empty'
+```
+
+### `health --auto-fix` usage
+
+```bash
+# Dry run: see what would be fixed (no execution)
+harness health --auto-fix --dry-run
+
+# Execute safe fixes (excludes: branch-protect, contract, ci-migrate commit)
+harness health --auto-fix
+
+# JSON output of AutoFixResult for agent parsing
+harness health --auto-fix --dry-run --json | jq '.summary'
+
+# Target specific gates only
+harness health --gate drift-gate,plan-gate --auto-fix --dry-run
+```
+
+**Excluded fix prefixes** (require explicit human approval):
+- `harness branch-protect`
+- `harness contract`
+- `harness ci-migrate commit`
+
+**Exit codes for `--auto-fix`**: `0` = all fixes applied (or no fixable findings); `2` = one or more fix commands failed (remaining fixes continue).
+
 ## Workflow
 1. **Choose execution mode**
    - If user asks for planning/explanation only, stay in **no-execution mode** and provide commands/checklists without running tools.
@@ -151,8 +221,8 @@ If the repo has no `.harness/` directory, skip creation entirely.
 3. **Install/upgrade harness**
    - Use global npm install for consumer repositories: `mise install -g npm:@brainwav/coding-harness` (preferred) or `npm i -g @brainwav/coding-harness`.
    - Ensure private package auth is wired (`NPM_TOKEN` locally and as a **CircleCI project environment variable** in CI — not a GitHub Actions secret).
-   - Always run `harness init --ci circleci` (this project's standard CI provider; `circleci` is the default so flag is optional).
-   - **If the repo already has `.github/workflows/` CI files:** run `harness ci-migrate prepare --provider circleci --dry-run` first, then `harness ci-migrate prepare` + `harness ci-migrate commit`. Never delete GHA workflow files manually.
+   - Bootstrap with `harness init --dry-run`, then `harness init`. Do not pass `--ci circleci`: the current CLI treats the extra positional argument as a target directory.
+   - **If the repo already has `.github/workflows/` CI files:** run `harness ci-migrate prepare --provider circleci --dry-run`, then `harness ci-migrate prepare --provider circleci --apply`, `harness ci-migrate verify --snapshot <snapshot-id>`, and `harness ci-migrate commit --snapshot <snapshot-id>`. If verification fails or the cutover must be reversed, use `harness ci-migrate abort --snapshot <snapshot-id>`. Never delete GHA workflow files manually.
    - Use project-local/source execution only when explicitly developing the coding-harness repository itself.
    - For a full new-project install: follow [`references/agent-install-guide.md`](./references/agent-install-guide.md) or parse [`references/agent-install.json`](./references/agent-install.json).
 4. **Initialize/update contract**

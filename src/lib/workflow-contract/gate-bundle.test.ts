@@ -1,12 +1,12 @@
 import { describe, expect, it } from "vitest";
 import {
-	createGateBundle,
-	createGateBundleFromResults,
-	validateGateBundle,
-	isBundleReplaySafe,
+	type GateBundleConfig,
 	type GateBundleInput,
 	type GateInput,
-	type GateBundleConfig,
+	createGateBundle,
+	createGateBundleFromResults,
+	isBundleReplaySafe,
+	validateGateBundle,
 } from "./gate-bundle.js";
 
 // ─── Helpers ────────────────────────────────────────────────────────────────────
@@ -152,15 +152,15 @@ describe("createGateBundle", () => {
 				requiredGates: ["tests", "review"],
 			};
 			const bundle = createGateBundle(allPassingInput(), config);
-			expect(
-				bundle.gates.find((g) => g.category === "tests")?.required,
-			).toBe(true);
-			expect(
-				bundle.gates.find((g) => g.category === "review")?.required,
-			).toBe(true);
-			expect(
-				bundle.gates.find((g) => g.category === "docs")?.required,
-			).toBe(false);
+			expect(bundle.gates.find((g) => g.category === "tests")?.required).toBe(
+				true,
+			);
+			expect(bundle.gates.find((g) => g.category === "review")?.required).toBe(
+				true,
+			);
+			expect(bundle.gates.find((g) => g.category === "docs")?.required).toBe(
+				false,
+			);
 		});
 	});
 
@@ -202,9 +202,7 @@ describe("createGateBundle", () => {
 				...baseConfig(),
 				requiredGates: ["policy"],
 			});
-			const envGate = bundle.gates.find(
-				(g) => g.category === "environment",
-			);
+			const envGate = bundle.gates.find((g) => g.category === "environment");
 			expect(envGate?.durationMs).toBe(-1);
 			// Only policy duration should be counted
 			expect(bundle.summary.totalDurationMs).toBe(100);
@@ -276,9 +274,7 @@ describe("createGateBundle", () => {
 
 		it("skipped gates have descriptive summary", () => {
 			const bundle = createGateBundle({}, baseConfig());
-			const envGate = bundle.gates.find(
-				(g) => g.category === "environment",
-			);
+			const envGate = bundle.gates.find((g) => g.category === "environment");
 			expect(envGate?.summary).toContain("not evaluated");
 		});
 	});
@@ -501,10 +497,13 @@ describe("validateGateBundle", () => {
 
 describe("edge cases", () => {
 	it("empty input with no required gates passes", () => {
-		const bundle = createGateBundle({}, {
-			...baseConfig(),
-			requiredGates: [],
-		});
+		const bundle = createGateBundle(
+			{},
+			{
+				...baseConfig(),
+				requiredGates: [],
+			},
+		);
 		expect(bundle.decision).toBe("pass");
 		expect(bundle.summary.skipped).toBe(5);
 	});

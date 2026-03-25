@@ -15,7 +15,6 @@
 import { existsSync, readFileSync } from "node:fs";
 import { resolve } from "node:path";
 import { cwd } from "node:process";
-import { sanitizeError } from "../lib/input/sanitize.js";
 import { atomicWrite } from "../lib/init/migration.js";
 import { loadManifest } from "../lib/init/rollback.js";
 import {
@@ -24,22 +23,23 @@ import {
 	getTemplatesForProvider,
 	normalizeCIProvider,
 } from "../lib/init/scaffold.js";
-import { EXIT_CODES, HARNESS_DIR, type CIProvider } from "../lib/init/types.js";
+import {
+	formatMigrationChanges,
+	migrateContractSchema,
+} from "../lib/init/schema-migrate.js";
+import { type CIProvider, EXIT_CODES, HARNESS_DIR } from "../lib/init/types.js";
 import {
 	UPGRADE_MANIFEST_FILE,
+	type UpgradeManifest,
+	type UpgradeManifestEntry,
 	buildUpgradeManifest,
 	classifyFiles,
 	detectExistingInstall,
 	detectUpgradeContext,
 	fingerprintContent,
 	formatUpgradeSummary,
-	type UpgradeManifest,
-	type UpgradeManifestEntry,
 } from "../lib/init/upgrade.js";
-import {
-	formatMigrationChanges,
-	migrateContractSchema,
-} from "../lib/init/schema-migrate.js";
+import { sanitizeError } from "../lib/input/sanitize.js";
 
 export { detectExistingInstall } from "../lib/init/upgrade.js";
 
@@ -143,12 +143,14 @@ function upgradeTemplates(
 		? classifyFiles(targetDir, upgradeManifest)
 		: [];
 	const customizedPaths = new Set(
-		classified
-			.filter((c) => c.status === "customized")
-			.map((c) => c.path),
+		classified.filter((c) => c.status === "customized").map((c) => c.path),
 	);
 
-	const result: TemplateUpgradeResult = { updated: [], skipped: [], forced: [] };
+	const result: TemplateUpgradeResult = {
+		updated: [],
+		skipped: [],
+		forced: [],
+	};
 	const newEntries: Array<{ path: string; content: string }> = [];
 
 	for (const template of templates) {
@@ -329,9 +331,7 @@ export function runUpgradeCLI(
 		for (const f of updated) console.info(`  ✓ ${f}`);
 	}
 	if (forced.length > 0) {
-		console.info(
-			`${prefix}Force-updated ${forced.length} customized file(s):`,
-		);
+		console.info(`${prefix}Force-updated ${forced.length} customized file(s):`);
 		for (const f of forced) console.info(`  ⚠️  ${f}`);
 	}
 	if (skipped.length > 0 && (updated.length > 0 || forced.length > 0)) {
@@ -351,7 +351,9 @@ export function runUpgradeCLI(
 			"\n[DRY RUN] No files were written. Remove --dry-run to apply.",
 		);
 	} else {
-		console.info(`\n✅ Upgrade complete: ${ctx.fromVersion} → ${ctx.toVersion}`);
+		console.info(
+			`\n✅ Upgrade complete: ${ctx.fromVersion} → ${ctx.toVersion}`,
+		);
 		if (updated.length > 0 || forced.length > 0) {
 			console.info(
 				"   Run `harness doctor` to verify the installation is healthy.",

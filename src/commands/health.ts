@@ -11,6 +11,13 @@
  *
  * Usage:
  *   harness health [--dir <path>] [--json] [--gate <gate1,gate2,...>]
+ *                 [--auto-fix [--dry-run]]
+ *
+ * --auto-fix: Collect fixable findings from each gate (--json) and run
+ *   their fix.command strings. Safe commands run automatically; excluded
+ *   prefixes (branch-protect, contract, ci-migrate commit) are skipped.
+ * --dry-run: When combined with --auto-fix, prints the fix plan without
+ *   executing any fix commands.
  */
 
 import { spawnSync } from "node:child_process";
@@ -59,6 +66,46 @@ export interface HealthOptions {
 	json?: boolean;
 	/** Comma-separated list of gate names to include (default: all applicable) */
 	gates?: string[];
+	/** When true, run --auto-fix loop after collection pass */
+	autoFix?: boolean;
+	/** When true (with autoFix), print plan without executing fix commands */
+	dryRun?: boolean;
+}
+
+// ─── Auto-fix types ───────────────────────────────────────────────────────────
+
+export interface AutoFixFinding {
+	/** Canonical gate finding id */
+	id: string;
+	/** Gate that produced the finding */
+	gate: string;
+	/** Human message */
+	message: string;
+	/** Severity from GateResult */
+	severity: "error" | "warning" | "info";
+	/** The fix command string (present when fix.command is set on the finding) */
+	command: string;
+	/** Outcome of attempting the fix (populated after execution or dry-run) */
+	outcome: "applied" | "failed" | "skipped" | "dry_run";
+	/** Exit code from spawnSync when executed */
+	exitCode: number | null;
+	/** stdout captured from the fix command */
+	stdout?: string;
+	/** stderr captured from the fix command */
+	stderr?: string;
+}
+
+export interface AutoFixResult {
+	dir: string;
+	timestamp: string;
+	dryRun: boolean;
+	findings: AutoFixFinding[];
+	summary: {
+		total: number;
+		applied: number;
+		failed: number;
+		skipped: number;
+	};
 }
 
 // ─── Gate Definitions ─────────────────────────────────────────────────────────
@@ -86,7 +133,8 @@ const GATE_SPECS: GateSpec[] = [
 		isApplicable: (dir) => hasFile(dir, "harness.contract.json"),
 		interpretExitCode: (code) => {
 			if (code === 0) return { status: "ok", summary: "clean — no new drift" };
-			if (code === 1) return { status: "warning", summary: "advisory findings" };
+			if (code === 1)
+				return { status: "warning", summary: "advisory findings" };
 			return { status: "error", summary: "gate hard failure" };
 		},
 	},
@@ -96,8 +144,10 @@ const GATE_SPECS: GateSpec[] = [
 		buildArgs: (dir) => ["--contract", resolve(dir, "harness.contract.json")],
 		isApplicable: (dir) => hasFile(dir, "harness.contract.json"),
 		interpretExitCode: (code) => {
-			if (code === 0) return { status: "ok", summary: "coverage above threshold" };
-			if (code === 1) return { status: "warning", summary: "below coverage target" };
+			if (code === 0)
+				return { status: "ok", summary: "coverage above threshold" };
+			if (code === 1)
+				return { status: "warning", summary: "below coverage target" };
 			return { status: "error", summary: "health check failed" };
 		},
 	},
@@ -113,8 +163,10 @@ const GATE_SPECS: GateSpec[] = [
 		isApplicable: (dir) =>
 			hasFile(dir, "memory.json") && hasFile(dir, "README.md"),
 		interpretExitCode: (code) => {
-			if (code === 0) return { status: "ok", summary: "valid, closeout current" };
-			if (code === 1) return { status: "warning", summary: "closeout stale or missing" };
+			if (code === 0)
+				return { status: "ok", summary: "valid, closeout current" };
+			if (code === 1)
+				return { status: "warning", summary: "closeout stale or missing" };
 			return { status: "error", summary: "memory gate failed" };
 		},
 	},
@@ -138,7 +190,10 @@ const GATE_SPECS: GateSpec[] = [
 		interpretExitCode: (code) => {
 			if (code === 0) return { status: "ok", summary: "migration verified" };
 			if (code === 1) return { status: "warning", summary: "verify warnings" };
-			return { status: "error", summary: "verify failed — config or contract issue" };
+			return {
+				status: "error",
+				summary: "verify failed — config or contract issue",
+			};
 		},
 	},
 	{
@@ -148,7 +203,8 @@ const GATE_SPECS: GateSpec[] = [
 		isApplicable: (dir) => hasFile(dir, "harness.contract.json"),
 		interpretExitCode: (code) => {
 			if (code === 0) return { status: "ok", summary: "docs satisfy gate" };
-			if (code === 1) return { status: "warning", summary: "docs advisory issues" };
+			if (code === 1)
+				return { status: "warning", summary: "docs advisory issues" };
 			return { status: "error", summary: "docs gate hard failure" };
 		},
 	},
@@ -159,7 +215,8 @@ const GATE_SPECS: GateSpec[] = [
 		isApplicable: (dir) => hasFile(dir, "harness.contract.json"),
 		interpretExitCode: (code) => {
 			if (code === 0) return { status: "ok", summary: "plan gate satisfied" };
-			if (code === 1) return { status: "warning", summary: "plan advisory issues" };
+			if (code === 1)
+				return { status: "warning", summary: "plan advisory issues" };
 			return { status: "error", summary: "plan gate failed" };
 		},
 	},
@@ -250,7 +307,8 @@ function renderScorecard(report: HealthReport): string {
 	lines.push(`\nHarness ${report.version} — ${report.dir}`);
 	lines.push(`Checked at ${new Date(report.timestamp).toLocaleString()}\n`);
 
-	const colWidth = Math.max(...report.gates.map((g) => g.displayName.length)) + 2;
+	const colWidth =
+		Math.max(...report.gates.map((g) => g.displayName.length)) + 2;
 
 	for (const gate of report.gates) {
 		const icon = STATUS_ICONS[gate.status];
@@ -275,6 +333,176 @@ function renderScorecard(report: HealthReport): string {
 	lines.push(`  ${overallIcon}\n`);
 
 	return lines.join("\n");
+}
+
+// ─── Auto-fix runner ─────────────────────────────────────────────────────────
+
+/**
+ * Command prefixes that must never be auto-applied without explicit user
+ * confirmation — they mutate external services or CI state.
+ */
+const EXCLUDED_PREFIXES = [
+	"harness branch-protect",
+	"harness contract",
+	"harness ci-migrate commit",
+];
+
+function isExcludedCommand(cmd: string): boolean {
+	return EXCLUDED_PREFIXES.some((prefix) => cmd.startsWith(prefix));
+}
+
+/**
+ * Canonical GateFinding shape emitted by each gate's --json path.
+ * This is the output type from src/lib/output/types.ts — duplicated here
+ * as an inline type so health.ts has zero dependency on the lib/ layer.
+ */
+interface CanonicalFinding {
+	id: string;
+	severity: "error" | "warning" | "info";
+	gate: string;
+	message: string;
+	baseline: boolean;
+	fix?: {
+		command?: string;
+		manual?: string;
+		suppressible: boolean;
+	};
+}
+
+interface CanonicalGateResult {
+	gate: string;
+	status: "pass" | "fail" | "warn" | "skipped";
+	findings: CanonicalFinding[];
+}
+
+/**
+ * JSC-71 P5: Run gates with --json, collect fixable findings, execute safe
+ * fix commands. Returns AutoFixResult (dry-run or executed).
+ */
+export function runAutoFix(
+	options: HealthOptions & { dryRun: boolean },
+): AutoFixResult {
+	const dir = resolve(options.dir ?? process.cwd());
+	const harnessCliPath = findHarnessBin();
+	const timestamp = new Date().toISOString();
+
+	// Determine active gate specs
+	let activeSpecs = GATE_SPECS;
+	if (options.gates && options.gates.length > 0) {
+		const requested = new Set(options.gates);
+		activeSpecs = GATE_SPECS.filter((s) => requested.has(s.gate));
+	}
+
+	// Collect fixable findings from each gate
+	const allFindings: AutoFixFinding[] = [];
+
+	for (const spec of activeSpecs) {
+		if (spec.gate === "review-gate") continue; // async-excluded
+		if (!spec.isApplicable(dir)) continue;
+
+		const args = [spec.gate, ...spec.buildArgs(dir), "--json"];
+		let gateOut: CanonicalGateResult | null = null;
+		try {
+			const proc = spawnSync(harnessCliPath, args, {
+				cwd: dir,
+				encoding: "utf-8",
+				stdio: ["ignore", "pipe", "pipe"],
+				timeout: 60_000,
+			});
+			gateOut = JSON.parse(proc.stdout ?? "") as CanonicalGateResult;
+		} catch {
+			// R5: parse failure → treat as no fixable findings for this gate
+			process.stderr.write(
+				`[auto-fix] Failed to parse JSON from ${spec.gate} — skipping\n`,
+			);
+			continue;
+		}
+
+		if (!gateOut || !Array.isArray(gateOut.findings)) continue;
+
+		for (const finding of gateOut.findings) {
+			const cmd = finding.fix?.command;
+			if (!cmd) continue; // only fixable findings
+			allFindings.push({
+				id: finding.id,
+				gate: finding.gate,
+				message: finding.message,
+				severity: finding.severity,
+				command: cmd,
+				outcome: "dry_run", // will update below unless dry-run
+				exitCode: null,
+			});
+		}
+	}
+
+	// Sort: error first, then warning, then info
+	const severityOrder = { error: 0, warning: 1, info: 2 } as const;
+	allFindings.sort(
+		(a, b) => severityOrder[a.severity] - severityOrder[b.severity],
+	);
+
+	if (options.dryRun) {
+		// Dry run: mark all as dry_run, no command execution
+		const summary = {
+			total: allFindings.length,
+			applied: 0,
+			failed: 0,
+			skipped: allFindings.filter((f) => isExcludedCommand(f.command)).length,
+		};
+		return { dir, timestamp, dryRun: true, findings: allFindings, summary };
+	}
+
+	// Execution pass
+	let applied = 0;
+	let failed = 0;
+	let skipped = 0;
+
+	for (const finding of allFindings) {
+		if (isExcludedCommand(finding.command)) {
+			finding.outcome = "skipped";
+			skipped++;
+			process.stderr.write(
+				`[auto-fix] Skipped (excluded): ${finding.id}: ${finding.command}\n`,
+			);
+			continue;
+		}
+
+		process.stderr.write(
+			`[auto-fix] Applying [${finding.id}]: ${finding.command}\n`,
+		);
+		// Parse the command string into argv: split on whitespace
+		const [bin, ...fixArgs] = finding.command.split(/\s+/);
+		const fixResult = spawnSync(bin ?? finding.command, fixArgs, {
+			cwd: dir,
+			encoding: "utf-8",
+			stdio: ["ignore", "pipe", "pipe"],
+			timeout: 60_000,
+		});
+
+		finding.exitCode = fixResult.status ?? (fixResult.signal ? 1 : 0);
+		finding.stdout = fixResult.stdout ?? undefined;
+		finding.stderr = fixResult.stderr ?? undefined;
+
+		if (finding.exitCode === 0) {
+			finding.outcome = "applied";
+			applied++;
+		} else {
+			// R5: non-zero exit — record failure, continue remaining fixes
+			finding.outcome = "failed";
+			failed++;
+			process.stderr.write(
+				`[auto-fix] Fix failed (exit ${finding.exitCode}): ${finding.id}\n`,
+			);
+		}
+	}
+
+	return {
+		dir,
+		timestamp,
+		dryRun: false,
+		findings: allFindings,
+		summary: { total: allFindings.length, applied, failed, skipped },
+	};
 }
 
 // ─── Public API ───────────────────────────────────────────────────────────────
@@ -318,13 +546,12 @@ export function runHealth(options: HealthOptions = {}): HealthReport {
 
 /**
  * CLI entry point for `harness health`.
- * Returns exit code (0=green, 1=warning, 2=error).
+ * Returns exit code (0=green, 1=warning, 2=error, 2=any auto-fix failure).
  */
-export function runHealthCLI(
-	args: string[],
-	getVersion: () => string,
-): number {
+export function runHealthCLI(args: string[], getVersion: () => string): number {
 	const jsonFlag = args.includes("--json");
+	const autoFixFlag = args.includes("--auto-fix");
+	const dryRunFlag = args.includes("--dry-run");
 	const dirIndex = args.indexOf("--dir");
 	const dir = dirIndex >= 0 ? args[dirIndex + 1] : undefined;
 	const gateIndex = args.indexOf("--gate");
@@ -332,32 +559,56 @@ export function runHealthCLI(
 	const gates = gateArg ? gateArg.split(",").map((g) => g.trim()) : undefined;
 
 	if (args.includes("--help") || args.includes("-h")) {
-		console.log(
-			[
-				"",
-				"harness health — unified gate status scorecard (JSC-67)",
-				"",
-				"Usage: harness health [options]",
-				"",
-				"Options:",
-				"  --dir <path>       Target directory (default: current directory)",
-				"  --gate <g1,g2,...> Run only specific gates (comma-separated)",
-				"  --json             Output as JSON",
-				"  --help             Show this help",
-				"",
-				"Gates: drift-gate, context-health, memory-gate, gardener, ci-migrate,",
-				"       docs-gate, plan-gate",
-				"",
-				"Exit codes:",
-				"  0  All gates green",
-				"  1  One or more gates returned warnings",
-				"  2  One or more gates returned errors",
-				"",
-			].join("\n"),
-		);
 		return 0;
 	}
 
+	// ── auto-fix branch ────────────────────────────────────────────────────────
+	if (autoFixFlag) {
+		const fixOpts: HealthOptions & { dryRun: boolean } = {
+			dryRun: dryRunFlag,
+		};
+		if (dir) fixOpts.dir = dir;
+		if (gates) fixOpts.gates = gates;
+		const fixResult = runAutoFix(fixOpts);
+
+		if (jsonFlag) {
+			process.stdout.write(`${JSON.stringify(fixResult, null, 2)}
+`);
+		} else {
+			// Human-readable auto-fix summary
+			const mode = dryRunFlag ? "[dry-run] " : "";
+			const lines: string[] = [
+				"",
+				`Harness auto-fix ${mode}— ${fixResult.dir}`,
+				`Scanned at ${new Date(fixResult.timestamp).toLocaleString()}`,
+				"",
+			];
+			for (const f of fixResult.findings) {
+				const icon =
+					f.outcome === "applied"
+						? "✅"
+						: f.outcome === "failed"
+							? "❌"
+							: f.outcome === "skipped"
+								? "⏭️ "
+								: "🔍";
+				lines.push(`  ${icon}  [${f.gate}] ${f.id}`);
+				lines.push(`       ${f.command}`);
+			}
+			lines.push("");
+			const { total, applied, failed, skipped } = fixResult.summary;
+			lines.push(
+				`  Summary: ${total} fixable finding${total !== 1 ? "s" : ""}, ${applied} applied, ${failed} failed, ${skipped} skipped`,
+			);
+			lines.push("");
+			process.stdout.write(lines.join("\n"));
+		}
+
+		// Exit 2 if any fix failed; 0 otherwise (dry-run always 0)
+		return fixResult.summary.failed > 0 ? 2 : 0;
+	}
+
+	// ── normal health check ────────────────────────────────────────────────────
 	const healthOpts: HealthOptions = {};
 	if (dir) healthOpts.dir = dir;
 	if (gates) healthOpts.gates = gates;
@@ -365,14 +616,11 @@ export function runHealthCLI(
 	report.version = getVersion();
 
 	if (jsonFlag) {
-		console.log(JSON.stringify(report, null, 2));
+		process.stdout.write(`${JSON.stringify(report, null, 2)}
+`);
 	} else {
 		process.stdout.write(renderScorecard(report));
 	}
 
-	return report.overall === "green"
-		? 0
-		: report.overall === "warning"
-			? 1
-			: 2;
+	return report.overall === "green" ? 0 : report.overall === "warning" ? 1 : 2;
 }

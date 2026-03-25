@@ -1,97 +1,97 @@
 {
-  "$schema": "./workflow-artifact-registry.schema.json",
-  "version": "1.0",
-  "description": "Canonical workflow artifact registry for coding-harness. Each entry tracks a promoted workflow artifact with ownership, validation status, and deprecation info.",
-  "artifacts": [
-    {
-      "id": "linear-production-workflow",
-      "path": "WORKFLOW.md",
-      "owner": "coding-harness-maintainers",
-      "status": "active",
-      "last_validated_at": "2026-03-21T00:00:00Z",
-      "deprecation_policy": "none",
-      "description": "Primary Symphony WORKFLOW.md — Linear issue lifecycle with S|E|G|A|N transition table, tracker config, hooks, and agent execution contract."
-    },
-    {
-      "id": "review-gate-workflow-contract",
-      "path": "docs/agents/review-gate-workflow-contract.md",
-      "owner": "coding-harness-maintainers",
-      "status": "active",
-      "last_validated_at": "2026-03-21T00:00:00Z",
-      "deprecation_policy": "none",
-      "description": "Review gate state machine contract — PR verification workflow with check polling, approval evaluation, independence verification, and confidence scoring."
-    },
-    {
-      "id": "review-gate-operational-spec",
-      "path": "docs/agents/review-gate-operational-spec.md",
-      "owner": "coding-harness-maintainers",
-      "status": "active",
-      "last_validated_at": "2026-03-21T00:00:00Z",
-      "deprecation_policy": "none",
-      "description": "Compact operational spec for the review gate workflow. Distilled from the full workflow contract for agent consumption."
-    },
-    {
-      "id": "linear-workflow-operational-spec",
-      "path": "docs/agents/linear-workflow-operational-spec.md",
-      "owner": "coding-harness-maintainers",
-      "status": "active",
-      "last_validated_at": "2026-03-21T00:00:00Z",
-      "deprecation_policy": "none",
-      "description": "Compact operational spec for the Linear production workflow. Agent-facing distillation of WORKFLOW.md transitions and commands."
-    },
-    {
-      "id": "agent-testing-gates-operational-spec",
-      "path": "docs/agents/agent-testing-gates-operational-spec.md",
-      "owner": "coding-harness-maintainers",
-      "status": "active",
-      "last_validated_at": "2026-03-21T00:00:00Z",
-      "deprecation_policy": "none",
-      "description": "Compact operational spec for agent testing gates. Defines pre-commit and pre-handoff test requirements."
-    },
-    {
-      "id": "docs-gate-rollout-operational-spec",
-      "path": "docs/agents/docs-gate-rollout-operational-spec.md",
-      "owner": "coding-harness-maintainers",
-      "status": "active",
-      "last_validated_at": "2026-03-21T00:00:00Z",
-      "deprecation_policy": "none",
-      "description": "Compact operational spec for the docs gate rollout. Enforces documentation co-location and quality requirements."
-    },
-    {
-      "id": "release-change-control-operational-spec",
-      "path": "docs/agents/release-change-control-operational-spec.md",
-      "owner": "coding-harness-maintainers",
-      "status": "active",
-      "last_validated_at": "2026-03-21T00:00:00Z",
-      "deprecation_policy": "none",
-      "description": "Compact operational spec for release and change control. Governs versioning, tag creation, and npm publish lifecycle."
-    },
-    {
-      "id": "workflow-contract-v1-spec",
-      "path": "docs/specs/workflow-contract-v1.md",
-      "owner": "coding-harness-maintainers",
-      "status": "active",
-      "last_validated_at": "2026-03-21T00:00:00Z",
-      "deprecation_policy": "none",
-      "description": "Workflow contract specification v1. Defines the S|E|G|A|N format, metadata requirements, validation contract fields, error taxonomy, execution modes, and observability schema."
-    },
-    {
-      "id": "workflow-consistency-enforcer",
-      "path": "docs/prompts/workflow-consistency-enforcer.md",
-      "owner": "coding-harness-maintainers",
-      "status": "active",
-      "last_validated_at": "2026-03-21T00:00:00Z",
-      "deprecation_policy": "none",
-      "description": "Prompt template for transforming ad-hoc workflow descriptions into workflow-contract-v1 format."
-    },
-    {
-      "id": "symphony-harness-adoption-plan",
-      "path": "docs/plans/2026-03-13-feat-symphony-harness-adoption-plan.md",
-      "owner": "coding-harness-maintainers",
-      "status": "active",
-      "last_validated_at": "2026-03-21T00:00:00Z",
-      "deprecation_policy": "superseded-by-completion",
-      "description": "Adoption plan for integrating Symphony workflows into coding-harness. Defines 7 slices from contract checker through scale-out pilot."
-    }
-  ]
+	"$schema": "./workflow-artifact-registry.schema.json",
+	"version": "1.0",
+	"description": "Canonical workflow artifact registry for coding-harness. Each entry tracks a promoted workflow artifact with ownership, validation status, and deprecation info.",
+	"artifacts": [
+		{
+			"id": "linear-production-workflow",
+			"path": "WORKFLOW.md",
+			"owner": "coding-harness-maintainers",
+			"status": "active",
+			"last_validated_at": "2026-03-21T00:00:00Z",
+			"deprecation_policy": "none",
+			"description": "Primary Symphony WORKFLOW.md — Linear issue lifecycle with S|E|G|A|N transition table, tracker config, hooks, and agent execution contract."
+		},
+		{
+			"id": "review-gate-workflow-contract",
+			"path": "docs/agents/review-gate-workflow-contract.md",
+			"owner": "coding-harness-maintainers",
+			"status": "active",
+			"last_validated_at": "2026-03-21T00:00:00Z",
+			"deprecation_policy": "none",
+			"description": "Review gate state machine contract — PR verification workflow with check polling, approval evaluation, independence verification, and confidence scoring."
+		},
+		{
+			"id": "review-gate-operational-spec",
+			"path": "docs/agents/review-gate-operational-spec.md",
+			"owner": "coding-harness-maintainers",
+			"status": "active",
+			"last_validated_at": "2026-03-21T00:00:00Z",
+			"deprecation_policy": "none",
+			"description": "Compact operational spec for the review gate workflow. Distilled from the full workflow contract for agent consumption."
+		},
+		{
+			"id": "linear-workflow-operational-spec",
+			"path": "docs/agents/linear-workflow-operational-spec.md",
+			"owner": "coding-harness-maintainers",
+			"status": "active",
+			"last_validated_at": "2026-03-21T00:00:00Z",
+			"deprecation_policy": "none",
+			"description": "Compact operational spec for the Linear production workflow. Agent-facing distillation of WORKFLOW.md transitions and commands."
+		},
+		{
+			"id": "agent-testing-gates-operational-spec",
+			"path": "docs/agents/agent-testing-gates-operational-spec.md",
+			"owner": "coding-harness-maintainers",
+			"status": "active",
+			"last_validated_at": "2026-03-21T00:00:00Z",
+			"deprecation_policy": "none",
+			"description": "Compact operational spec for agent testing gates. Defines pre-commit and pre-handoff test requirements."
+		},
+		{
+			"id": "docs-gate-rollout-operational-spec",
+			"path": "docs/agents/docs-gate-rollout-operational-spec.md",
+			"owner": "coding-harness-maintainers",
+			"status": "active",
+			"last_validated_at": "2026-03-21T00:00:00Z",
+			"deprecation_policy": "none",
+			"description": "Compact operational spec for the docs gate rollout. Enforces documentation co-location and quality requirements."
+		},
+		{
+			"id": "release-change-control-operational-spec",
+			"path": "docs/agents/release-change-control-operational-spec.md",
+			"owner": "coding-harness-maintainers",
+			"status": "active",
+			"last_validated_at": "2026-03-21T00:00:00Z",
+			"deprecation_policy": "none",
+			"description": "Compact operational spec for release and change control. Governs versioning, tag creation, and npm publish lifecycle."
+		},
+		{
+			"id": "workflow-contract-v1-spec",
+			"path": "docs/specs/workflow-contract-v1.md",
+			"owner": "coding-harness-maintainers",
+			"status": "active",
+			"last_validated_at": "2026-03-21T00:00:00Z",
+			"deprecation_policy": "none",
+			"description": "Workflow contract specification v1. Defines the S|E|G|A|N format, metadata requirements, validation contract fields, error taxonomy, execution modes, and observability schema."
+		},
+		{
+			"id": "workflow-consistency-enforcer",
+			"path": "docs/prompts/workflow-consistency-enforcer.md",
+			"owner": "coding-harness-maintainers",
+			"status": "active",
+			"last_validated_at": "2026-03-21T00:00:00Z",
+			"deprecation_policy": "none",
+			"description": "Prompt template for transforming ad-hoc workflow descriptions into workflow-contract-v1 format."
+		},
+		{
+			"id": "symphony-harness-adoption-plan",
+			"path": "docs/plans/2026-03-13-feat-symphony-harness-adoption-plan.md",
+			"owner": "coding-harness-maintainers",
+			"status": "active",
+			"last_validated_at": "2026-03-21T00:00:00Z",
+			"deprecation_policy": "superseded-by-completion",
+			"description": "Adoption plan for integrating Symphony workflows into coding-harness. Defines 7 slices from contract checker through scale-out pilot."
+		}
+	]
 }

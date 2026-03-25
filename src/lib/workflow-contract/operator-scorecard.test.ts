@@ -1,17 +1,17 @@
 import { describe, expect, it } from "vitest";
 import {
-	generateScorecard,
-	validateScorecard,
-	type OperatorScorecard,
-	type ScorecardInput,
-} from "./operator-scorecard.js";
-import {
-	createGateBundle,
+	type GateBundleConfig,
 	type GateBundleEnvelope,
 	type GateBundleInput,
 	type GateInput,
-	type GateBundleConfig,
+	createGateBundle,
 } from "./gate-bundle.js";
+import {
+	type OperatorScorecard,
+	type ScorecardInput,
+	generateScorecard,
+	validateScorecard,
+} from "./operator-scorecard.js";
 
 // ─── Helpers ────────────────────────────────────────────────────────────────────
 
@@ -72,10 +72,7 @@ function allPassingBundle(): GateBundleEnvelope {
 describe("generateScorecard", () => {
 	describe("recommended action", () => {
 		it("returns continue for all-passing bundle with tests", () => {
-			const sc = generateScorecard(
-				allPassingBundle(),
-				scorecardInput(),
-			);
+			const sc = generateScorecard(allPassingBundle(), scorecardInput());
 			expect(sc.recommendedAction).toBe("continue");
 		});
 
@@ -142,10 +139,7 @@ describe("generateScorecard", () => {
 
 	describe("confidence rubric", () => {
 		it("gives high confidence (4+) for clean run", () => {
-			const sc = generateScorecard(
-				allPassingBundle(),
-				scorecardInput(),
-			);
+			const sc = generateScorecard(allPassingBundle(), scorecardInput());
 			expect(sc.confidence.score).toBeGreaterThanOrEqual(4);
 			expect(sc.confidence.level).toBe("high");
 		});
@@ -170,9 +164,7 @@ describe("generateScorecard", () => {
 				// no testSummary
 			});
 			expect(sc.confidence.score).toBeLessThanOrEqual(4);
-			expect(sc.confidence.rationale).toContain(
-				"No test summary available",
-			);
+			expect(sc.confidence.rationale).toContain("No test summary available");
 		});
 
 		it("reduces confidence for test failures", () => {
@@ -205,10 +197,7 @@ describe("generateScorecard", () => {
 
 	describe("blocking reason", () => {
 		it("is empty for passing bundle", () => {
-			const sc = generateScorecard(
-				allPassingBundle(),
-				scorecardInput(),
-			);
+			const sc = generateScorecard(allPassingBundle(), scorecardInput());
 			expect(sc.blockingReason).toBe("");
 		});
 
@@ -242,10 +231,7 @@ describe("generateScorecard", () => {
 
 	describe("remediation suggestions", () => {
 		it("has no remediations for passing bundle", () => {
-			const sc = generateScorecard(
-				allPassingBundle(),
-				scorecardInput(),
-			);
+			const sc = generateScorecard(allPassingBundle(), scorecardInput());
 			expect(sc.remediations).toEqual([]);
 		});
 
@@ -303,9 +289,7 @@ describe("generateScorecard", () => {
 				const urgencies = sc.remediations.map((r) => r.urgency);
 				const urgencyOrder = ["high", "medium", "low"];
 				for (let i = 0; i < urgencies.length - 1; i++) {
-					expect(
-						urgencyOrder.indexOf(urgencies[i]!),
-					).toBeLessThanOrEqual(
+					expect(urgencyOrder.indexOf(urgencies[i]!)).toBeLessThanOrEqual(
 						urgencyOrder.indexOf(urgencies[i + 1]!),
 					);
 				}
@@ -315,10 +299,7 @@ describe("generateScorecard", () => {
 
 	describe("scorecard structure", () => {
 		it("has correct schema version", () => {
-			const sc = generateScorecard(
-				allPassingBundle(),
-				scorecardInput(),
-			);
+			const sc = generateScorecard(allPassingBundle(), scorecardInput());
 			expect(sc.schemaVersion).toBe("scorecard/v1");
 		});
 
@@ -331,10 +312,7 @@ describe("generateScorecard", () => {
 		});
 
 		it("includes all gate rows", () => {
-			const sc = generateScorecard(
-				allPassingBundle(),
-				scorecardInput(),
-			);
+			const sc = generateScorecard(allPassingBundle(), scorecardInput());
 			expect(sc.gates.length).toBe(5);
 			expect(sc.gates.map((g) => g.gate)).toEqual([
 				"environment",
@@ -358,10 +336,7 @@ describe("generateScorecard", () => {
 		});
 
 		it("has non-negative decision time", () => {
-			const sc = generateScorecard(
-				allPassingBundle(),
-				scorecardInput(),
-			);
+			const sc = generateScorecard(allPassingBundle(), scorecardInput());
 			expect(sc.decisionTimeMs).toBeGreaterThanOrEqual(0);
 		});
 
@@ -388,10 +363,7 @@ describe("generateScorecard", () => {
 
 	describe("text summary", () => {
 		it("contains key elements", () => {
-			const sc = generateScorecard(
-				allPassingBundle(),
-				scorecardInput(),
-			);
+			const sc = generateScorecard(allPassingBundle(), scorecardInput());
 			expect(sc.textSummary).toContain("OPERATOR SCORECARD");
 			expect(sc.textSummary).toContain("S2 IN_REVIEW");
 			expect(sc.textSummary).toContain("PASS");
@@ -412,10 +384,7 @@ describe("generateScorecard", () => {
 		});
 
 		it("shows confidence rationale", () => {
-			const sc = generateScorecard(
-				allPassingBundle(),
-				scorecardInput(),
-			);
+			const sc = generateScorecard(allPassingBundle(), scorecardInput());
 			expect(sc.textSummary).toContain("Confidence rationale");
 		});
 
@@ -447,20 +416,14 @@ describe("generateScorecard", () => {
 
 describe("validateScorecard", () => {
 	it("validates a correct scorecard", () => {
-		const sc = generateScorecard(
-			allPassingBundle(),
-			scorecardInput(),
-		);
+		const sc = generateScorecard(allPassingBundle(), scorecardInput());
 		const result = validateScorecard(sc);
 		expect(result.valid).toBe(true);
 		expect(result.errors).toEqual([]);
 	});
 
 	it("rejects invalid schema version", () => {
-		const sc = generateScorecard(
-			allPassingBundle(),
-			scorecardInput(),
-		);
+		const sc = generateScorecard(allPassingBundle(), scorecardInput());
 		(sc as unknown as Record<string, unknown>).schemaVersion = "v99";
 		const result = validateScorecard(sc as unknown as OperatorScorecard);
 		expect(result.valid).toBe(false);
@@ -468,10 +431,7 @@ describe("validateScorecard", () => {
 	});
 
 	it("rejects invalid confidence score", () => {
-		const sc = generateScorecard(
-			allPassingBundle(),
-			scorecardInput(),
-		);
+		const sc = generateScorecard(allPassingBundle(), scorecardInput());
 		(sc.confidence as { score: number }).score = 0;
 		const result = validateScorecard(sc);
 		expect(result.valid).toBe(false);
@@ -479,10 +439,7 @@ describe("validateScorecard", () => {
 	});
 
 	it("rejects empty text summary", () => {
-		const sc = generateScorecard(
-			allPassingBundle(),
-			scorecardInput(),
-		);
+		const sc = generateScorecard(allPassingBundle(), scorecardInput());
 		sc.textSummary = "";
 		const result = validateScorecard(sc);
 		expect(result.valid).toBe(false);
@@ -490,10 +447,7 @@ describe("validateScorecard", () => {
 	});
 
 	it("rejects missing timestamp", () => {
-		const sc = generateScorecard(
-			allPassingBundle(),
-			scorecardInput(),
-		);
+		const sc = generateScorecard(allPassingBundle(), scorecardInput());
 		sc.generatedAt = "";
 		const result = validateScorecard(sc);
 		expect(result.valid).toBe(false);
@@ -552,7 +506,11 @@ describe("end-to-end scorecard", () => {
 				tests: {
 					passed: false,
 					findings: [
-						{ code: "TEST_FAIL", severity: "error", message: "unit test failed" },
+						{
+							code: "TEST_FAIL",
+							severity: "error",
+							message: "unit test failed",
+						},
 					],
 				},
 				review: passingGate("Review OK"),

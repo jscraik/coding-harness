@@ -521,6 +521,7 @@ describe("cli command dispatch", () => {
 			update: false,
 			interactive: false,
 			migrate: false,
+			json: false,
 		});
 		expect(exitSpy).toHaveBeenCalledWith(61);
 	});

@@ -8,17 +8,14 @@
  */
 
 import { describe, expect, it } from "vitest";
+import type { DocsFinding, DocsGateResult } from "../../commands/docs-gate.js";
 import type {
 	DriftFinding,
 	DriftGateResult,
 } from "../../commands/drift-gate.js";
-import type {
-	DocsFinding,
-	DocsGateResult,
-} from "../../commands/docs-gate.js";
 import {
-	normaliseDriftGateResult,
 	normaliseDocsGateResult,
+	normaliseDriftGateResult,
 } from "./normalise.js";
 
 // ─── Fixtures ─────────────────────────────────────────────────────────────────
@@ -37,7 +34,10 @@ function makeDriftFinding(overrides: Partial<DriftFinding> = {}): DriftFinding {
 
 function makeDriftResult(
 	findings: DriftFinding[],
-	overrides: { outcome?: "ok" | "error"; status?: "success" | "partial" | "blocked" } = {},
+	overrides: {
+		outcome?: "ok" | "error";
+		status?: "success" | "partial" | "blocked";
+	} = {},
 ): DriftGateResult {
 	return {
 		report: {
@@ -53,7 +53,9 @@ function makeDriftResult(
 			summary: {
 				finding_count: findings.length,
 				new_count: findings.filter((f) => f.baseline_state === "new").length,
-				preexisting_count: findings.filter((f) => f.baseline_state === "preexisting").length,
+				preexisting_count: findings.filter(
+					(f) => f.baseline_state === "preexisting",
+				).length,
 				error_count: findings.filter((f) => f.severity === "error").length,
 				suppressed_count: 0,
 			},
@@ -79,7 +81,13 @@ function makeDocsFinding(overrides: Partial<DocsFinding> = {}): DocsFinding {
 function makeDocsResult(
 	findings: DocsFinding[],
 	overrides: {
-		outcome?: "ok" | "drift_detected" | "bootstrap_gap" | "trust_mismatch" | "policy_error" | "runtime_error";
+		outcome?:
+			| "ok"
+			| "drift_detected"
+			| "bootstrap_gap"
+			| "trust_mismatch"
+			| "policy_error"
+			| "runtime_error";
 		status?: "success" | "partial" | "blocked";
 	} = {},
 ): DocsGateResult {
@@ -135,7 +143,12 @@ describe("normaliseDriftGateResult (SA2, SA10, SA11)", () => {
 		expect(result.gate).toBe("drift-gate");
 		expect(result.status).toBe("pass");
 		expect(result.findings).toHaveLength(0);
-		expect(result.summary).toEqual({ errors: 0, warnings: 0, info: 0, total: 0 });
+		expect(result.summary).toEqual({
+			errors: 0,
+			warnings: 0,
+			info: 0,
+			total: 0,
+		});
 	});
 
 	it("SA2-b: outcome=error → status=fail", () => {
@@ -183,8 +196,12 @@ describe("normaliseDriftGateResult (SA2, SA10, SA11)", () => {
 	it("SA10: severity vocab is error | warning | info", () => {
 		for (const severity of ["error", "warning", "info"] as const) {
 			const finding = makeDriftFinding({ severity });
-			const result = normaliseDriftGateResult(makeDriftResult([finding], { outcome: "error" }));
-			expect(["error", "warning", "info"]).toContain(result.findings[0]?.severity);
+			const result = normaliseDriftGateResult(
+				makeDriftResult([finding], { outcome: "error" }),
+			);
+			expect(["error", "warning", "info"]).toContain(
+				result.findings[0]?.severity,
+			);
 		}
 	});
 
@@ -201,7 +218,9 @@ describe("normaliseDriftGateResult (SA2, SA10, SA11)", () => {
 			makeDriftFinding({ severity: "warning", rule_id: "w" }),
 			makeDriftFinding({ severity: "info", rule_id: "i" }),
 		];
-		const result = normaliseDriftGateResult(makeDriftResult(findings, { outcome: "error" }));
+		const result = normaliseDriftGateResult(
+			makeDriftResult(findings, { outcome: "error" }),
+		);
 		expect(result.summary.errors).toBe(1);
 		expect(result.summary.warnings).toBe(1);
 		expect(result.summary.info).toBe(1);
@@ -231,7 +250,12 @@ describe("normaliseDocsGateResult (SA3, SA10, SA11)", () => {
 		expect(result.gate).toBe("docs-gate");
 		expect(result.status).toBe("pass");
 		expect(result.findings).toHaveLength(0);
-		expect(result.summary).toEqual({ errors: 0, warnings: 0, info: 0, total: 0 });
+		expect(result.summary).toEqual({
+			errors: 0,
+			warnings: 0,
+			info: 0,
+			total: 0,
+		});
 	});
 
 	it("SA3-b: outcome=drift_detected, status=blocked → status=fail", () => {
@@ -246,15 +270,24 @@ describe("normaliseDocsGateResult (SA3, SA10, SA11)", () => {
 
 	it("SA3-c: outcome=drift_detected, status=partial → status=warn", () => {
 		const result = normaliseDocsGateResult(
-			makeDocsResult([makeDocsFinding()], { outcome: "drift_detected", status: "partial" }),
+			makeDocsResult([makeDocsFinding()], {
+				outcome: "drift_detected",
+				status: "partial",
+			}),
 		);
 		expect(result.status).toBe("warn");
 	});
 
 	it("SA3-d: DocsFinding → GateFinding field mapping", () => {
-		const finding = makeDocsFinding({ path: "docs/specs/foo.md", severity: "error" });
+		const finding = makeDocsFinding({
+			path: "docs/specs/foo.md",
+			severity: "error",
+		});
 		const result = normaliseDocsGateResult(
-			makeDocsResult([finding], { outcome: "drift_detected", status: "blocked" }),
+			makeDocsResult([finding], {
+				outcome: "drift_detected",
+				status: "blocked",
+			}),
 		);
 		const gf = result.findings[0];
 
@@ -271,9 +304,14 @@ describe("normaliseDocsGateResult (SA3, SA10, SA11)", () => {
 		for (const severity of ["error", "warning", "info"] as const) {
 			const finding = makeDocsFinding({ severity });
 			const result = normaliseDocsGateResult(
-				makeDocsResult([finding], { outcome: "drift_detected", status: "partial" }),
+				makeDocsResult([finding], {
+					outcome: "drift_detected",
+					status: "partial",
+				}),
 			);
-			expect(["error", "warning", "info"]).toContain(result.findings[0]?.severity);
+			expect(["error", "warning", "info"]).toContain(
+				result.findings[0]?.severity,
+			);
 		}
 	});
 
@@ -291,7 +329,10 @@ describe("normaliseDocsGateResult (SA3, SA10, SA11)", () => {
 			makeDocsFinding({ severity: "info", rule_id: "i" }),
 		];
 		const result = normaliseDocsGateResult(
-			makeDocsResult(findings, { outcome: "drift_detected", status: "blocked" }),
+			makeDocsResult(findings, {
+				outcome: "drift_detected",
+				status: "blocked",
+			}),
 		);
 		expect(result.summary.errors).toBe(1);
 		expect(result.summary.warnings).toBe(1);

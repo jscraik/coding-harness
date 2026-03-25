@@ -139,7 +139,9 @@ describe("runInit", () => {
 			expect(existsSync(join(tempDir, "harness.contract.json"))).toBe(true);
 			expect(existsSync(join(tempDir, ".circleci/config.yml"))).toBe(true);
 			expect(
-				existsSync(join(tempDir, ".harness/ci-provider-transition-status.json")),
+				existsSync(
+					join(tempDir, ".harness/ci-provider-transition-status.json"),
+				),
 			).toBe(true);
 			expect(existsSync(join(tempDir, ".npmrc"))).toBe(true);
 			expect(existsSync(join(tempDir, ".greptile/config.json"))).toBe(true);
@@ -217,10 +219,7 @@ describe("runInit", () => {
 			mkdirSync(join(tempDir, ".diagram"), { recursive: true });
 			mkdirSync(join(tempDir, "AI", "context"), { recursive: true });
 			writeFileSync(join(tempDir, "harness.contract.json"), "{}");
-			writeFileSync(
-				join(tempDir, ".circleci/config.yml"),
-				"existing",
-			);
+			writeFileSync(join(tempDir, ".circleci/config.yml"), "existing");
 			writeFileSync(join(tempDir, "CONTRIBUTING.md"), "existing");
 			writeFileSync(
 				join(tempDir, ".github/PULL_REQUEST_TEMPLATE.md"),
@@ -532,9 +531,7 @@ describe("runInit", () => {
 			expect(greptileWorkflow).toContain("issue_comment:");
 			expect(greptileWorkflow).toContain("checks: write");
 			// CircleCI file should NOT be created
-			expect(
-				existsSync(join(tempDir, ".circleci/config.yml")),
-			).toBe(false);
+			expect(existsSync(join(tempDir, ".circleci/config.yml"))).toBe(false);
 		});
 
 		it("creates valid memory.json baseline", () => {
@@ -901,9 +898,7 @@ describe("runInit", () => {
 
 			// Verify YAML front matter auto-populated from package.json
 			expect(content).toContain('project_slug: "my-app-abc123"');
-			expect(content).toContain(
-				"https://github.com/acme/my-app.git",
-			);
+			expect(content).toContain("https://github.com/acme/my-app.git");
 			expect(content).toContain("pnpm install --frozen-lockfile");
 
 			// Verify project name used in heading (scope stripped)
@@ -1300,9 +1295,7 @@ describe("runInit", () => {
 			expect(codexPreflight).toContain(
 				"--mode <off|optional|required>    Local Memory mode. Default: required",
 			);
-			expect(codexPreflight).toContain(
-				"local local_memory_mode='required'",
-			);
+			expect(codexPreflight).toContain("local local_memory_mode='required'");
 			expect(codexPreflight).toContain("preflight_local_memory_gold()");
 			expect(codexPreflight).toContain(
 				'local lm_config_path="${LOCAL_MEMORY_CONFIG_PATH:-${HOME}/.local-memory/config.yaml}"',
@@ -1378,8 +1371,9 @@ describe("runInit", () => {
 			) as {
 				devDependencies?: Record<string, string>;
 			};
-			const expectedBiomeVersion =
-				packageJson.devDependencies?.["@biomejs/biome"]?.replace(/^[^\d]*/, "");
+			const expectedBiomeVersion = packageJson.devDependencies?.[
+				"@biomejs/biome"
+			]?.replace(/^[^\d]*/, "");
 			expect(expectedBiomeVersion).toBeTruthy();
 
 			const rootBiome = JSON.parse(
@@ -1397,12 +1391,16 @@ describe("runInit", () => {
 				$schema?: string;
 			};
 
-			const extractSchemaVersion = (schema: string | undefined): string | null => {
+			const extractSchemaVersion = (
+				schema: string | undefined,
+			): string | null => {
 				const match = schema?.match(/schemas\/([^/]+)\/schema\.json$/);
 				return match?.[1] ?? null;
 			};
 
-			expect(extractSchemaVersion(rootBiome.$schema)).toBe(expectedBiomeVersion);
+			expect(extractSchemaVersion(rootBiome.$schema)).toBe(
+				expectedBiomeVersion,
+			);
 			expect(extractSchemaVersion(scaffoldedBiome.$schema)).toBe(
 				expectedBiomeVersion,
 			);
@@ -1462,10 +1460,7 @@ describe("--track flag", () => {
 	it("creates backups for existing files", () => {
 		// Create existing file with unique content (using circleci default)
 		mkdirSync(join(tempDir, ".circleci"), { recursive: true });
-		writeFileSync(
-			join(tempDir, ".circleci/config.yml"),
-			"old content",
-		);
+		writeFileSync(join(tempDir, ".circleci/config.yml"), "old content");
 
 		const result = runInit(tempDir, {
 			dryRun: false,
@@ -1552,9 +1547,7 @@ describe("--track flag", () => {
 		expect(result.ok).toBe(false);
 		if (!result.ok) {
 			expect(result.error.code).toBe("PATH_TRAVERSAL");
-			expect(result.error.path).toMatch(
-				/^\.github\//,
-			);
+			expect(result.error.path).toMatch(/^\.github\//);
 		}
 		// Nothing should have been written to outsideDir
 		expect(existsSync(join(outsideDir, "workflows"))).toBe(false);
@@ -1657,10 +1650,7 @@ describe("--rollback flag", () => {
 		// Create existing file (using circleci default)
 		mkdirSync(join(tempDir, ".circleci"), { recursive: true });
 		const originalContent = "ORIGINAL CONTENT";
-		writeFileSync(
-			join(tempDir, ".circleci/config.yml"),
-			originalContent,
-		);
+		writeFileSync(join(tempDir, ".circleci/config.yml"), originalContent);
 
 		// Install with --track --force
 		const installResult = runInit(tempDir, {
@@ -2792,4 +2782,3 @@ describe("project-type detection integration", () => {
 		expect(contract.projectType).toBe("web");
 	});
 });
-

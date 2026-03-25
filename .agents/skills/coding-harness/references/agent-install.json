@@ -5,7 +5,7 @@
 	"registry_auth": "NPM_TOKEN",
 	"ci_provider": "circleci",
 	"install_command": "mise install -g npm:@brainwav/coding-harness",
-	"init_command": "harness init --ci circleci",
+	"init_command": "harness init",
 	"verify_command": "harness check-environment --json",
 
 	"phases": [
@@ -54,7 +54,7 @@
 			"label": "Scaffold governance files",
 			"steps": [
 				"harness init --dry-run",
-				"harness init --ci circleci",
+				"harness init",
 				"harness init --check-updates"
 			]
 		},
@@ -171,6 +171,14 @@
 			"all_must_pass": true
 		}
 	],
+
+	"migration_commands": {
+		"preview": "harness ci-migrate prepare --provider circleci --dry-run",
+		"apply": "harness ci-migrate prepare --provider circleci --apply",
+		"verify": "harness ci-migrate verify --snapshot <snapshot-id>",
+		"commit": "harness ci-migrate commit --snapshot <snapshot-id>",
+		"abort": "harness ci-migrate abort --snapshot <snapshot-id>"
+	},
 
 	"scaffolded_files": {
 		"core": [

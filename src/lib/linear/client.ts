@@ -307,4 +307,3 @@ export class LinearClient {
 		return data.issueCreate.issue;
 	}
 }
-

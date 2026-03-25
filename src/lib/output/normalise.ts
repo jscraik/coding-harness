@@ -7,14 +7,11 @@
  * @see docs/plans/2026-03-24-feature-structured-output-auto-fix-plan.md
  */
 
+import type { DocsFinding, DocsGateResult } from "../../commands/docs-gate.js";
 import type {
-	DriftGateResult,
 	DriftFinding,
+	DriftGateResult,
 } from "../../commands/drift-gate.js";
-import type {
-	DocsGateResult,
-	DocsFinding,
-} from "../../commands/docs-gate.js";
 import type { LinearGateResult } from "../../commands/linear-gate.js";
 import type { PolicyGateResult } from "../../commands/policy-gate.js";
 import type { PrTemplateGateResult } from "../../commands/pr-template-gate.js";
@@ -64,9 +61,15 @@ export function normaliseDriftGateResult(result: DriftGateResult): GateResult {
 
 	const findings = result.report.findings.map(adaptDriftFinding);
 
-	const errors = findings.filter((f: GateFinding) => f.severity === "error").length;
-	const warnings = findings.filter((f: GateFinding) => f.severity === "warning").length;
-	const info = findings.filter((f: GateFinding) => f.severity === "info").length;
+	const errors = findings.filter(
+		(f: GateFinding) => f.severity === "error",
+	).length;
+	const warnings = findings.filter(
+		(f: GateFinding) => f.severity === "warning",
+	).length;
+	const info = findings.filter(
+		(f: GateFinding) => f.severity === "info",
+	).length;
 
 	let status: GateResult["status"];
 	if (result.report.outcome === "error") {
@@ -123,9 +126,15 @@ export function normaliseDocsGateResult(result: DocsGateResult): GateResult {
 
 	const findings = result.report.findings.map(adaptDocsFinding);
 
-	const errors = findings.filter((f: GateFinding) => f.severity === "error").length;
-	const warnings = findings.filter((f: GateFinding) => f.severity === "warning").length;
-	const info = findings.filter((f: GateFinding) => f.severity === "info").length;
+	const errors = findings.filter(
+		(f: GateFinding) => f.severity === "error",
+	).length;
+	const warnings = findings.filter(
+		(f: GateFinding) => f.severity === "warning",
+	).length;
+	const info = findings.filter(
+		(f: GateFinding) => f.severity === "info",
+	).length;
 
 	let status: GateResult["status"];
 	if (result.report.outcome === "ok") {
@@ -157,7 +166,9 @@ export function normaliseDocsGateResult(result: DocsGateResult): GateResult {
  *   ok:true, !passed   → one finding per violating file, status=fail
  *                        (guard: if violatingFiles empty → synthetic unknown finding)
  */
-export function normalisePolicyGateResult(result: PolicyGateResult): GateResult {
+export function normalisePolicyGateResult(
+	result: PolicyGateResult,
+): GateResult {
 	const gate = "policy-gate";
 	const version = getVersion();
 	const timestamp = new Date().toISOString();
@@ -173,7 +184,9 @@ export function normalisePolicyGateResult(result: PolicyGateResult): GateResult 
 			fix: { suppressible: false },
 		};
 		return {
-			gate, version, timestamp,
+			gate,
+			version,
+			timestamp,
 			status: "fail",
 			findings: [finding],
 			summary: { errors: 1, warnings: 0, info: 0, total: 1 },
@@ -183,7 +196,9 @@ export function normalisePolicyGateResult(result: PolicyGateResult): GateResult 
 	// ok:true, passed — clean run
 	if (result.output.passed) {
 		return {
-			gate, version, timestamp,
+			gate,
+			version,
+			timestamp,
 			status: "pass",
 			findings: [],
 			summary: { errors: 0, warnings: 0, info: 0, total: 0 },
@@ -205,7 +220,7 @@ export function normalisePolicyGateResult(result: PolicyGateResult): GateResult 
 						baseline: false,
 						fix: { suppressible: false },
 					}),
-			  )
+				)
 			: [
 					{
 						id: "policy-gate.result.error.unknown",
@@ -215,13 +230,20 @@ export function normalisePolicyGateResult(result: PolicyGateResult): GateResult 
 						baseline: false,
 						fix: { suppressible: false },
 					},
-			  ];
+				];
 
 	return {
-		gate, version, timestamp,
+		gate,
+		version,
+		timestamp,
 		status: "fail",
 		findings,
-		summary: { errors: findings.length, warnings: 0, info: 0, total: findings.length },
+		summary: {
+			errors: findings.length,
+			warnings: 0,
+			info: 0,
+			total: findings.length,
+		},
 	};
 }
 
@@ -236,7 +258,9 @@ export function normalisePolicyGateResult(result: PolicyGateResult): GateResult 
  *   ok:true, !passed   → one finding per errors[index], status=fail
  *                        (guard: if errors empty → synthetic unknown finding)
  */
-export function normalisePrTemplateGateResult(result: PrTemplateGateResult): GateResult {
+export function normalisePrTemplateGateResult(
+	result: PrTemplateGateResult,
+): GateResult {
 	const gate = "pr-template-gate";
 	const version = getVersion();
 	const timestamp = new Date().toISOString();
@@ -252,7 +276,9 @@ export function normalisePrTemplateGateResult(result: PrTemplateGateResult): Gat
 			fix: { suppressible: false },
 		};
 		return {
-			gate, version, timestamp,
+			gate,
+			version,
+			timestamp,
 			status: "fail",
 			findings: [finding],
 			summary: { errors: 1, warnings: 0, info: 0, total: 1 },
@@ -262,7 +288,9 @@ export function normalisePrTemplateGateResult(result: PrTemplateGateResult): Gat
 	// ok:true, passed — clean run
 	if (result.output.passed) {
 		return {
-			gate, version, timestamp,
+			gate,
+			version,
+			timestamp,
 			status: "pass",
 			findings: [],
 			summary: { errors: 0, warnings: 0, info: 0, total: 0 },
@@ -283,7 +311,7 @@ export function normalisePrTemplateGateResult(result: PrTemplateGateResult): Gat
 						baseline: false,
 						fix: { suppressible: false },
 					}),
-			  )
+				)
 			: [
 					{
 						id: "pr-template-gate.result.error.unknown",
@@ -293,13 +321,20 @@ export function normalisePrTemplateGateResult(result: PrTemplateGateResult): Gat
 						baseline: false,
 						fix: { suppressible: false },
 					},
-			  ];
+				];
 
 	return {
-		gate, version, timestamp,
+		gate,
+		version,
+		timestamp,
 		status: "fail",
 		findings,
-		summary: { errors: findings.length, warnings: 0, info: 0, total: findings.length },
+		summary: {
+			errors: findings.length,
+			warnings: 0,
+			info: 0,
+			total: findings.length,
+		},
 	};
 }
 
@@ -323,7 +358,9 @@ export function normalisePlanGateResult(
 
 	if (result.passed) {
 		return {
-			gate, version, timestamp,
+			gate,
+			version,
+			timestamp,
 			status: "pass",
 			findings: [],
 			summary: { errors: 0, warnings: 0, info: 0, total: 0 },
@@ -347,10 +384,17 @@ export function normalisePlanGateResult(
 	});
 
 	return {
-		gate, version, timestamp,
+		gate,
+		version,
+		timestamp,
 		status: "fail",
 		findings,
-		summary: { errors: findings.length, warnings: 0, info: 0, total: findings.length },
+		summary: {
+			errors: findings.length,
+			warnings: 0,
+			info: 0,
+			total: findings.length,
+		},
 	};
 }
 
@@ -363,7 +407,9 @@ export function normalisePlanGateResult(
  *   ok:false    → one internal finding, status=fail
  *   ok:true     → one finding per failing check (code → id), status=fail|pass
  */
-export function normaliseLinearGateResult(result: LinearGateResult): GateResult {
+export function normaliseLinearGateResult(
+	result: LinearGateResult,
+): GateResult {
 	const gate = "linear-gate";
 	const version = getVersion();
 	const timestamp = new Date().toISOString();
@@ -378,7 +424,9 @@ export function normaliseLinearGateResult(result: LinearGateResult): GateResult 
 			fix: { suppressible: false },
 		};
 		return {
-			gate, version, timestamp,
+			gate,
+			version,
+			timestamp,
 			status: "fail",
 			findings: [finding],
 			summary: { errors: 1, warnings: 0, info: 0, total: 1 },
@@ -397,9 +445,16 @@ export function normaliseLinearGateResult(result: LinearGateResult): GateResult 
 
 	const status = findings.length > 0 ? "fail" : "pass";
 	return {
-		gate, version, timestamp,
+		gate,
+		version,
+		timestamp,
 		status,
 		findings,
-		summary: { errors: findings.length, warnings: 0, info: 0, total: findings.length },
+		summary: {
+			errors: findings.length,
+			warnings: 0,
+			info: 0,
+			total: findings.length,
+		},
 	};
 }

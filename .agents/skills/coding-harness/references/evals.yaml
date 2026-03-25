@@ -10,7 +10,17 @@ cases:
     prompt: "In no-execution mode, map the current coding-harness setup sequence with validation gates and what harness cannot automate."
     acceptance:
       - type: regex
-        value: "(?i)(harness init|pnpm check|cannot|credentials|token)"
+        value: "(?i)(harness init --dry-run|harness init|pnpm check|cannot|credentials|token)"
+
+  - id: happy-ci-migration-sequence
+    name: happy ci migration sequence
+    category: happy
+    should_trigger: true
+    prepend_skill: false
+    prompt: "In no-execution mode, show the current safe GitHub Actions to CircleCI migration flow for coding-harness, including preview, apply, verify, commit, and rollback."
+    acceptance:
+      - type: regex
+        value: '(?i)(prepare --provider circleci --dry-run|prepare --provider circleci --apply|verify --snapshot|commit --snapshot|abort --snapshot)'
 
   - id: happy-environment-action-sync
     name: happy environment action sync
@@ -99,6 +109,6 @@ cases:
         value: "(?i)(cloudflare|pages|deploy|cannot|out of scope)"
 
 metadata:
-  last_updated: "2026-03-12"
+  last_updated: "2026-03-24"
   author: "Codex"
   review_status: "reviewed"

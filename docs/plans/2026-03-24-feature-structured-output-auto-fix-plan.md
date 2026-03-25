@@ -575,10 +575,10 @@ SA matrix gate: run each acceptance item and record pass/fail:
 | P2 — Binary adapters | ✅ `done` | SA10 (partial), SA14, SA15, SA16 | `policy-gate.ts` + `pr-template-gate.ts` wired (ok:false + ok:true); `normalisePolicyGateResult` + `normalisePrTemplateGateResult`; 111/111 tests ✓ |
 | P2b — Coded-error (plan-gate) | ✅ `done` | SA10 (partial), SA14 (variant) | `plan-gate.ts` wired; `normalisePlanGateResult` implemented; R2 regression fixed (`plan-gate.test.ts` asserts on `process.stdout.write` + GateResult shape); 111/111 tests ✓ |
 | P3 — Check-list adapter | ✅ `done` | SA10 (partial), SA17 | `linear-gate.ts` wired (ok:false + ok:true); `normaliseLinearGateResult` implemented; all tests ✓ |
-| P4 — Doctor | `not_started` | SA18 (partial) | Audit doctor shape at implementation time |
-| P5 — health --auto-fix | `not_started` | SA6, SA7, SA8, SA9, SA12 | Depends on P1–P4 + P2b |
-| P6 — Skill + SA gate | `not_started` | SA1–SA19 full, SA13 | Final validation pass; bump minor version |
+| P4 — Doctor | ✅ `done` | SA18 (partial) | `doctor.ts` + `health.ts` JSON paths switched to `process.stdout.write` + template literals; DoctorReport shape kept canonical (no GateResult wrapper per plan decision); Biome non-null assertion fixed; 20/20 doctor tests ✓ |
+| P5 — health --auto-fix | ✅ `done` | SA6, SA7, SA8, SA9, SA12 | `runAutoFix()` + `AutoFixFinding`/`AutoFixResult` types in `health.ts`; `--auto-fix`/`--dry-run` flags wired in `runHealthCLI`; excluded-prefix guard (branch-protect, contract, ci-migrate commit); 5/5 P5 tests ✓ (P5-T1–T5); `exactOptionalPropertyTypes` lint fixed |
+| P6 — Skill + SA gate | ✅ `done` | SA1–SA19 full, SA13 | SKILL.md updated with `## Structured JSON Output` section: GateResult schema, jq patterns, `--auto-fix` usage + exit codes; ToC updated; typecheck ✓; 62/62 targeted tests ✓; pre-existing flaky failures in ci-migrate/pilot-evaluate unchanged |
 
-**Current phase:** P4 (`not_started`)
+**Current phase:** P6 (`done`) — All phases complete.
 
 **Open question (non-blocker):** Zod vs TypeScript-only runtime validation (Spec Q1) — deferred to post-v1, no action required before implementation starts.

@@ -1,23 +1,18 @@
+import { existsSync, mkdirSync, rmSync, writeFileSync } from "node:fs";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
 /**
  * Tests for branch-protect-sync (JSC-60)
  */
-import { describe, expect, it, beforeEach, afterEach } from "vitest";
+import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import {
-	existsSync,
-	mkdirSync,
-	rmSync,
-	writeFileSync,
-} from "node:fs";
-import { join } from "node:path";
-import { tmpdir } from "node:os";
-import {
-	extractGHAJobNames,
-	getActiveGHAJobNames,
-	detectOrphanedChecks,
-	buildBranchProtectSyncPlan,
-	formatBranchProtectSyncWarning,
 	CIRCLECI_APP_ID,
 	CIRCLECI_PRIMARY_CHECK,
+	buildBranchProtectSyncPlan,
+	detectOrphanedChecks,
+	extractGHAJobNames,
+	formatBranchProtectSyncWarning,
+	getActiveGHAJobNames,
 } from "./branch-protect-sync.js";
 
 // ─── extractGHAJobNames ────────────────────────────────────────────────────────
@@ -111,7 +106,7 @@ describe("getActiveGHAJobNames", () => {
 	it("reads job names from single workflow file", () => {
 		writeFileSync(
 			join(dir, ".github", "workflows", "ci.yml"),
-			`jobs:\n  build:\n    runs-on: ubuntu-latest\n`,
+			"jobs:\n  build:\n    runs-on: ubuntu-latest\n",
 		);
 		expect(getActiveGHAJobNames(dir)).toContain("build");
 	});
@@ -119,11 +114,11 @@ describe("getActiveGHAJobNames", () => {
 	it("unions job names from multiple workflow files", () => {
 		writeFileSync(
 			join(dir, ".github", "workflows", "ci.yml"),
-			`jobs:\n  test:\n    runs-on: ubuntu-latest\n`,
+			"jobs:\n  test:\n    runs-on: ubuntu-latest\n",
 		);
 		writeFileSync(
 			join(dir, ".github", "workflows", "security.yml"),
-			`jobs:\n  security-scan:\n    runs-on: ubuntu-latest\n`,
+			"jobs:\n  security-scan:\n    runs-on: ubuntu-latest\n",
 		);
 		const names = getActiveGHAJobNames(dir);
 		expect(names).toContain("test");
@@ -150,10 +145,7 @@ describe("detectOrphanedChecks", () => {
 
 	it("detects checks with no backing job and not in target provider", () => {
 		const orphaned = detectOrphanedChecks({
-			currentChecks: [
-				{ context: "quality-gates" },
-				{ context: "pr-pipeline" },
-			],
+			currentChecks: [{ context: "quality-gates" }, { context: "pr-pipeline" }],
 			activeJobNames: ["pr-pipeline"],
 			targetProviderChecks: ["pr-pipeline"],
 		});
@@ -181,10 +173,7 @@ describe("detectOrphanedChecks", () => {
 
 	it("returns all current checks as orphaned when nothing is active", () => {
 		const orphaned = detectOrphanedChecks({
-			currentChecks: [
-				{ context: "old-check-1" },
-				{ context: "old-check-2" },
-			],
+			currentChecks: [{ context: "old-check-1" }, { context: "old-check-2" }],
 			activeJobNames: [],
 			targetProviderChecks: [],
 		});
@@ -259,8 +248,8 @@ describe("buildBranchProtectSyncPlan — circleci target", () => {
 	it("keeps non-orphaned checks in fix command", () => {
 		const plan = buildBranchProtectSyncPlan({
 			currentChecks: [
-				{ context: "Greptile Review" },   // not orphaned — still active / known
-				{ context: "quality-gates" },      // orphaned
+				{ context: "Greptile Review" }, // not orphaned — still active / known
+				{ context: "quality-gates" }, // orphaned
 			],
 			targetProvider: "circleci",
 			activeGHAJobNames: ["Greptile Review"],

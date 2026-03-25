@@ -1,10 +1,3 @@
-/**
- * Tests for ci-migrate promote-mode (JSC-61)
- *
- * Tests promoteCIMode() which patches harness.contract.json
- * to transition ciProviderPolicy.mode: shadow → required.
- */
-import { describe, expect, it, beforeEach, afterEach } from "vitest";
 import {
 	existsSync,
 	mkdirSync,
@@ -12,8 +5,15 @@ import {
 	rmSync,
 	writeFileSync,
 } from "node:fs";
-import { join } from "node:path";
 import { tmpdir } from "node:os";
+import { join } from "node:path";
+/**
+ * Tests for ci-migrate promote-mode (JSC-61)
+ *
+ * Tests promoteCIMode() which patches harness.contract.json
+ * to transition ciProviderPolicy.mode: shadow → required.
+ */
+import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import { promoteCIMode } from "./ci-migrate.js";
 
 function makeTmpDir(): string {

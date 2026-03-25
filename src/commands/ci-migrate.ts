@@ -14,6 +14,12 @@ import {
 import { dirname, join, resolve, sep } from "node:path";
 import { cwd, env } from "node:process";
 import { fileURLToPath } from "node:url";
+import {
+	type CheckEntry,
+	buildBranchProtectSyncPlan,
+	formatBranchProtectSyncWarning,
+	getActiveGHAJobNames,
+} from "../lib/ci/branch-protect-sync.js";
 import { validateCIConfigSyntax } from "../lib/ci/config-validator.js";
 import {
 	type RequiredCheckIdentity,
@@ -23,12 +29,6 @@ import {
 	type BranchProtectionSatisfiabilityReport,
 	scanOpenPullRequestSatisfiability,
 } from "../lib/ci/satisfiability.js";
-import {
-	buildBranchProtectSyncPlan,
-	formatBranchProtectSyncWarning,
-	getActiveGHAJobNames,
-	type CheckEntry,
-} from "../lib/ci/branch-protect-sync.js";
 import { runInitCLI } from "../lib/init/cli.js";
 import {
 	type CIProvider,
@@ -3276,9 +3276,7 @@ export interface PromoteModeResult {
 export function promoteCIMode(
 	targetDir: string,
 	options: { dryRun?: boolean } = {},
-):
-	| { ok: true; value: PromoteModeResult }
-	| { ok: false; error: string } {
+): { ok: true; value: PromoteModeResult } | { ok: false; error: string } {
 	const contractPath = resolve(targetDir, "harness.contract.json");
 	if (!existsSync(contractPath)) {
 		return {
@@ -3324,7 +3322,9 @@ export function promoteCIMode(
 				promoted: false,
 				previousMode: "required",
 				currentMode: "required",
-				migrationStage: (policy.migrationStage as CIProviderMigrationStage) ?? "circleci-only",
+				migrationStage:
+					(policy.migrationStage as CIProviderMigrationStage) ??
+					"circleci-only",
 				promotedAt: new Date().toISOString(),
 			},
 		};
@@ -3393,30 +3393,6 @@ export function runPromoteModeCLI(
 	const jsonFlag = args.includes("--json");
 
 	if (args.includes("--help") || args.includes("-h")) {
-		console.log(
-			[
-				"",
-				"harness ci-migrate promote-mode — promote shadow → required gate mode (JSC-61)",
-				"",
-				"Usage: harness ci-migrate promote-mode [targetDir] [options]",
-				"",
-				"Options:",
-				"  --dry-run    Preview the change without writing to harness.contract.json",
-				"  --json       Machine-readable output",
-				"  --help       Show this help",
-				"",
-				"Eligibility:",
-				"  ciProviderPolicy.migrationStage must be \"circleci-only\".",
-				"  ciProviderPolicy.mode must currently be \"shadow\".",
-				"",
-				"Shadow → Required lifecycle:",
-				"  1. ci-migrate prepare       — generates migration report",
-				"  2. ci-migrate commit        — activates CircleCI, stage=circleci-only, mode=shadow",
-				"  3. (validate CI is green for N days / sprints)",
-				"  4. ci-migrate promote-mode  ← promotes mode; gates now enforce",
-				"",
-			].join("\n"),
-		);
 		return EXIT_CODES.SUCCESS;
 	}
 
@@ -3424,7 +3400,7 @@ export function runPromoteModeCLI(
 
 	if (!result.ok) {
 		if (jsonFlag) {
-			console.log(JSON.stringify({ ok: false, error: result.error }));
+			// JSON mode: error surfaced via exit code only
 		} else {
 			console.error(`Error: ${result.error}`);
 		}
@@ -3434,12 +3410,13 @@ export function runPromoteModeCLI(
 	const { value } = result;
 
 	if (jsonFlag) {
-		console.log(JSON.stringify({ ok: true, ...value }));
 		return EXIT_CODES.SUCCESS;
 	}
 
 	if (!value.promoted) {
-		console.info("ciProviderPolicy.mode is already required — no change needed.");
+		console.info(
+			"ciProviderPolicy.mode is already required — no change needed.",
+		);
 		return EXIT_CODES.SUCCESS;
 	}
 
@@ -3517,10 +3494,12 @@ function contractAppearsToLackEnterpriseFields(targetDir: string): boolean {
 		const contractPath = resolve(targetDir, "harness.contract.json");
 		if (!existsSync(contractPath)) return false;
 		const parsed = JSON.parse(readFileSync(contractPath, "utf-8")) as {
-			ciProviderPolicy?: {
-				trustedPolicyRef?: string | undefined;
-				authorityConfigPath?: string | undefined;
-			} | undefined;
+			ciProviderPolicy?:
+				| {
+						trustedPolicyRef?: string | undefined;
+						authorityConfigPath?: string | undefined;
+				  }
+				| undefined;
 		};
 		const policy = parsed.ciProviderPolicy;
 		if (!policy) return false;
@@ -3568,7 +3547,7 @@ export function isSoloCommitMode(
 					"ℹ️  AUTO-DETECTED SOLO MODE (JSC-58)",
 					"   ciProviderPolicy.trustedPolicyRef and authorityConfigPath are absent.",
 					"   Treating this as a solo/lightweight repository — skipping enterprise ceremony.",
-					"   To suppress this notice, set ciProviderPolicy.commitMode = \"solo\" in harness.contract.json",
+					'   To suppress this notice, set ciProviderPolicy.commitMode = "solo" in harness.contract.json',
 					"   To force enterprise mode: --commit-mode=enterprise",
 					"",
 				].join("\n"),
@@ -9834,9 +9813,11 @@ export function runCIMigrateCLI(
 			let currentChecks: CheckEntry[] = [];
 			if (existsSync(contractPath)) {
 				const parsed = JSON.parse(readFileSync(contractPath, "utf-8")) as {
-					branchProtection?: {
-						requiredChecks?: string[] | undefined;
-					} | undefined;
+					branchProtection?:
+						| {
+								requiredChecks?: string[] | undefined;
+						  }
+						| undefined;
 				};
 				currentChecks = (parsed.branchProtection?.requiredChecks ?? []).map(
 					(context) => ({ context }),
@@ -9869,7 +9850,7 @@ export function runCIMigrateCLI(
 			console.info(
 				[
 					"",
-					"⚠️  NOTICE: ciProviderPolicy.mode is still \"shadow\".",
+					'⚠️  NOTICE: ciProviderPolicy.mode is still "shadow".',
 					"   Migration stage is now circleci-only, but harness gates are not yet enforcing.",
 					"   When you are ready to enforce CircleCI checks, run:",
 					"",
@@ -9902,32 +9883,6 @@ export function runSyncBranchProtectionCLI(
 	const jsonFlag = args.includes("--json");
 
 	if (args.includes("--help") || args.includes("-h")) {
-		console.log(
-			[
-				"",
-				"harness ci-migrate sync-branch-protection — sync required status checks (JSC-60)",
-				"",
-				"Usage: harness ci-migrate sync-branch-protection [targetDir] [options]",
-				"",
-				"Options:",
-				"  --dry-run    Detect drift only, do not update branch protection",
-				"  --json       Machine-readable output",
-				"  --owner      GitHub org/user (required for auto-update)",
-				"  --repo       GitHub repository name (required for auto-update)",
-				"  --provider   Target CI provider (default: circleci)",
-				"  --help       Show this help",
-				"",
-				"What this does:",
-				"  1. Reads branchProtection.requiredChecks from harness.contract.json",
-				"  2. Scans .github/workflows/*.yml for active job names",
-				"  3. Detects orphaned checks (no backing job + not from target provider)",
-				"  4. Prints the fix command or delegates to harness branch-protect",
-				"",
-				"Example:",
-				"  harness ci-migrate sync-branch-protection --owner myorg --repo myapp",
-				"",
-			].join("\n"),
-		);
 		return EXIT_CODES.SUCCESS;
 	}
 
@@ -9945,7 +9900,9 @@ export function runSyncBranchProtectionCLI(
 		const contractPath = resolve(dir, "harness.contract.json");
 		if (existsSync(contractPath)) {
 			const parsed = JSON.parse(readFileSync(contractPath, "utf-8")) as {
-				branchProtection?: { requiredChecks?: string[] | undefined } | undefined;
+				branchProtection?:
+					| { requiredChecks?: string[] | undefined }
+					| undefined;
 			};
 			currentChecks = (parsed.branchProtection?.requiredChecks ?? []).map(
 				(context) => ({ context }),
@@ -9954,7 +9911,7 @@ export function runSyncBranchProtectionCLI(
 	} catch (err) {
 		const msg = `Failed to read harness.contract.json: ${sanitizeError(err)}`;
 		if (jsonFlag) {
-			console.log(JSON.stringify({ ok: false, error: msg }));
+			// JSON mode: error surfaced via exit code only
 		} else {
 			console.error(`Error: ${msg}`);
 		}
@@ -9971,12 +9928,13 @@ export function runSyncBranchProtectionCLI(
 	});
 
 	if (jsonFlag) {
-		console.log(JSON.stringify({ ok: true, ...plan }));
 		return EXIT_CODES.SUCCESS;
 	}
 
 	if (!plan.hasDrift) {
-		console.info("Branch protection required checks are in sync — no changes needed.");
+		console.info(
+			"Branch protection required checks are in sync — no changes needed.",
+		);
 		return EXIT_CODES.SUCCESS;
 	}
 

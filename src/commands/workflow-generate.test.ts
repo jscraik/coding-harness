@@ -12,8 +12,8 @@ import { describe, expect, it } from "vitest";
 import type { WorkflowSpec } from "./workflow-generate.js";
 import {
 	generateMermaidDiagram,
-	parseWorkflowGenerateArgs,
 	parseSourceFile,
+	parseWorkflowGenerateArgs,
 	runWorkflowGenerateCLI,
 } from "./workflow-generate.js";
 

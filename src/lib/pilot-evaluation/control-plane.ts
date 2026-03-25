@@ -598,7 +598,7 @@ function compareRequiredChecks(
 			contributingSurface.checks,
 			contributingSurface.extras,
 			policyChecks,
-			{ requiredOnMissing: false },
+			{ requiredOnMissing: false, allowExtras: true },
 		),
 	];
 	const governedDocChecks = contributingRef.exists

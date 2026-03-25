@@ -50,7 +50,11 @@ describe("GateFinding interface (SA1)", () => {
 	});
 
 	it("P0-T2c: severity must be one of error | warning | info", () => {
-		const severities: Array<GateFinding["severity"]> = ["error", "warning", "info"];
+		const severities: Array<GateFinding["severity"]> = [
+			"error",
+			"warning",
+			"info",
+		];
 		for (const s of severities) {
 			const f: GateFinding = {
 				id: `test.${s}`,
@@ -90,13 +94,18 @@ describe("GateResult interface (SA1)", () => {
 		expect(json.status).toBe("fail");
 		expect(json.findings).toHaveLength(1);
 		expect(json.summary.total).toBe(1);
-		expect(json.summary.errors + json.summary.warnings + json.summary.info).toBe(
-			json.summary.total,
-		);
+		expect(
+			json.summary.errors + json.summary.warnings + json.summary.info,
+		).toBe(json.summary.total);
 	});
 
 	it("P0-T2e: GateResult status values cover all four states", () => {
-		const statuses: Array<GateResult["status"]> = ["pass", "warn", "fail", "skipped"];
+		const statuses: Array<GateResult["status"]> = [
+			"pass",
+			"warn",
+			"fail",
+			"skipped",
+		];
 		for (const status of statuses) {
 			const r: GateResult = {
 				gate: "test",
@@ -120,7 +129,9 @@ describe("GateResult interface (SA1)", () => {
 			summary: { errors: 0, warnings: 0, info: 0, total: 0 },
 			meta: { reason: "async-gate-excluded-from-normalisation-v1" },
 		};
-		expect(result.meta?.["reason"]).toBe("async-gate-excluded-from-normalisation-v1");
+		expect(result.meta?.reason).toBe(
+			"async-gate-excluded-from-normalisation-v1",
+		);
 	});
 
 	it("P0-T2g: summary.total invariant — errors + warnings + info === total", () => {
@@ -132,9 +143,9 @@ describe("GateResult interface (SA1)", () => {
 			findings: [],
 			summary: { errors: 2, warnings: 3, info: 1, total: 6 },
 		};
-		expect(result.summary.errors + result.summary.warnings + result.summary.info).toBe(
-			result.summary.total,
-		);
+		expect(
+			result.summary.errors + result.summary.warnings + result.summary.info,
+		).toBe(result.summary.total);
 	});
 });
 

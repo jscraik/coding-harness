@@ -13,7 +13,7 @@
  *  - formatBranchProtectSyncWarning()    — human-readable CLI warning
  */
 
-import { existsSync, readdirSync, readFileSync } from "node:fs";
+import { existsSync, readFileSync, readdirSync } from "node:fs";
 import { join, resolve } from "node:path";
 
 // ─── Provider check name mapping ─────────────────────────────────────────────
@@ -86,7 +86,7 @@ export function extractGHAJobNames(yamlContent: string): string[] {
 		}
 		if (inJobsBlock) {
 			// Any top-level key under jobs: at 2-space indent
-			const match = /^  ([a-zA-Z0-9_-]+)\s*:/.exec(line);
+			const match = /^ {2}([a-zA-Z0-9_-]+)\s*:/.exec(line);
 			if (match?.[1]) {
 				jobNames.push(match[1]);
 			}
@@ -152,7 +152,9 @@ export function detectOrphanedChecks(options: {
 	targetProviderChecks: string[];
 }): CheckEntry[] {
 	const { currentChecks, activeJobNames, targetProviderChecks } = options;
-	const activeNames = new Set(activeJobNames.map((n) => n.trim().toLowerCase()));
+	const activeNames = new Set(
+		activeJobNames.map((n) => n.trim().toLowerCase()),
+	);
 	const targetNames = new Set(
 		targetProviderChecks.map((n) => n.trim().toLowerCase()),
 	);
@@ -218,9 +220,7 @@ export function buildBranchProtectSyncPlan(
 		.filter((c) => !currentContexts.has(c.trim().toLowerCase()))
 		.map((context) => ({
 			context,
-			...(targetProvider === "circleci"
-				? { appId: CIRCLECI_APP_ID }
-				: {}),
+			...(targetProvider === "circleci" ? { appId: CIRCLECI_APP_ID } : {}),
 		}));
 
 	const hasDrift = orphanedChecks.length > 0 || recommendedAdditions.length > 0;
@@ -248,8 +248,7 @@ export function buildBranchProtectSyncPlan(
 				(c) =>
 					!orphanedChecks.some(
 						(o) =>
-							o.context.trim().toLowerCase() ===
-							c.context.trim().toLowerCase(),
+							o.context.trim().toLowerCase() === c.context.trim().toLowerCase(),
 					),
 			)
 			.map((c) => c.context),
@@ -257,10 +256,10 @@ export function buildBranchProtectSyncPlan(
 	];
 
 	const repoFlag =
-		owner && repo ? ` --owner ${owner} --repo ${repo}` : " --owner <owner> --repo <repo>";
-	const checksFlag = allDesiredChecks
-		.map((c) => `--checks "${c}"`)
-		.join(" ");
+		owner && repo
+			? ` --owner ${owner} --repo ${repo}`
+			: " --owner <owner> --repo <repo>";
+	const checksFlag = allDesiredChecks.map((c) => `--checks "${c}"`).join(" ");
 	const fixCommand = `harness branch-protect${repoFlag} ${checksFlag}`;
 
 	// gh api command as alternative

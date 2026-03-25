@@ -283,8 +283,8 @@ function normalizeRepoUrl(repositoryUrl: string): string | undefined {
 		/^(github|gitlab|bitbucket):([^/][^#]+)$/i,
 	);
 	if (shorthandPrefixMatch) {
-		const provider = shorthandPrefixMatch[1]!.toLowerCase();
-		const repoPath = shorthandPrefixMatch[2]!.replace(/\.git$/, "");
+		const provider = shorthandPrefixMatch[1]?.toLowerCase();
+		const repoPath = shorthandPrefixMatch[2]?.replace(/\.git$/, "");
 		const host =
 			provider === "github"
 				? "github.com"
@@ -490,7 +490,7 @@ function readExistingBiomeVersion(targetPath: string): string | undefined {
 		const content = readFileSync(targetPath, "utf-8");
 		const parsed = JSON.parse(content) as unknown;
 		if (!parsed || typeof parsed !== "object") return undefined;
-		const schema = (parsed as Record<string, unknown>)["$schema"];
+		const schema = (parsed as Record<string, unknown>).$schema;
 		if (typeof schema !== "string") return undefined;
 		return extractBiomeSchemaVersion(schema);
 	} catch {

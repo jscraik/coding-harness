@@ -1,24 +1,24 @@
 import { describe, expect, it } from "vitest";
 import {
+	DEFAULT_GATE_THRESHOLDS,
+	DEFAULT_METRIC_THRESHOLDS,
+	type GateEvaluation,
+	type OperatorScorecard,
+	type PilotGateId,
+	type PilotLane,
+	type RunOutcome,
+	type SupplementalGateActuals,
+	computeTransitionDecision,
+	computeWindowMetrics,
 	createPilotLane,
+	evaluateWindow,
+	freezeLane,
+	getRunsInWindow,
 	recordRunOutcome,
 	recordScorecardOutcome,
-	getRunsInWindow,
-	computeWindowMetrics,
-	evaluateWindow,
 	recordWindowEvaluation,
-	computeTransitionDecision,
-	freezeLane,
 	unfreezeLane,
 	validatePilotLane,
-	DEFAULT_METRIC_THRESHOLDS,
-	DEFAULT_GATE_THRESHOLDS,
-	type RunOutcome,
-	type PilotLane,
-	type PilotGateId,
-	type OperatorScorecard,
-	type GateEvaluation,
-	type SupplementalGateActuals,
 } from "./index.js";
 
 // ─── Helpers ────────────────────────────────────────────────────────────────────
@@ -68,9 +68,7 @@ function makeMixedRuns(
 		runs.push(
 			makeRun({
 				runId: `fail-${i}`,
-				timestamp: new Date(
-					start + (passCount + i) * 3600000,
-				).toISOString(),
+				timestamp: new Date(start + (passCount + i) * 3600000).toISOString(),
 				passed: false,
 			}),
 		);
@@ -260,9 +258,7 @@ describe("getRunsInWindow", () => {
 	});
 
 	it("returns empty for no matching runs", () => {
-		const runs = [
-			makeRun({ runId: "r1", timestamp: "2026-01-01T00:00:00Z" }),
-		];
+		const runs = [makeRun({ runId: "r1", timestamp: "2026-01-01T00:00:00Z" })];
 		const filtered = getRunsInWindow(
 			runs,
 			"2026-03-01T00:00:00Z",
@@ -539,9 +535,8 @@ describe("evaluateWindow", () => {
 			)?.threshold,
 		).toBe(0.4);
 		expect(
-			evalResult.gates.find(
-				(gate) => gate.gateId === "false_block_control",
-			)?.threshold,
+			evalResult.gates.find((gate) => gate.gateId === "false_block_control")
+				?.threshold,
 		).toBe(0.5);
 		expect(
 			evalResult.gates.find((gate) => gate.gateId === "pr_green_closure")
@@ -570,9 +565,8 @@ describe("evaluateWindow", () => {
 			"behavior_change_honesty supplemental evidence missing",
 		);
 		expect(
-			evalResult.gates.find(
-				(gate) => gate.gateId === "behavior_change_honesty",
-			)?.message,
+			evalResult.gates.find((gate) => gate.gateId === "behavior_change_honesty")
+				?.message,
 		).toContain("supplemental evidence not provided");
 	});
 
@@ -978,9 +972,7 @@ describe("validatePilotLane", () => {
 		});
 		const result = validatePilotLane(lane);
 		expect(result.valid).toBe(false);
-		expect(result.errors.some((e) => e.includes("repo full name"))).toBe(
-			true,
-		);
+		expect(result.errors.some((e) => e.includes("repo full name"))).toBe(true);
 	});
 
 	it("rejects invalid window duration", () => {
@@ -991,9 +983,7 @@ describe("validatePilotLane", () => {
 		});
 		const result = validatePilotLane(lane);
 		expect(result.valid).toBe(false);
-		expect(result.errors.some((e) => e.includes("window duration"))).toBe(
-			true,
-		);
+		expect(result.errors.some((e) => e.includes("window duration"))).toBe(true);
 	});
 
 	it("rejects invalid consecutive windows", () => {
@@ -1004,9 +994,9 @@ describe("validatePilotLane", () => {
 		});
 		const result = validatePilotLane(lane);
 		expect(result.valid).toBe(false);
-		expect(
-			result.errors.some((e) => e.includes("consecutive windows")),
-		).toBe(true);
+		expect(result.errors.some((e) => e.includes("consecutive windows"))).toBe(
+			true,
+		);
 	});
 
 	it("rejects invalid schema version", () => {
@@ -1021,9 +1011,7 @@ describe("validatePilotLane", () => {
 		};
 		const result = validatePilotLane(bad);
 		expect(result.valid).toBe(false);
-		expect(result.errors.some((e) => e.includes("schema version"))).toBe(
-			true,
-		);
+		expect(result.errors.some((e) => e.includes("schema version"))).toBe(true);
 	});
 
 	it("detects expansionReady inconsistency", () => {
@@ -1036,9 +1024,7 @@ describe("validatePilotLane", () => {
 		const result = validatePilotLane(bad);
 		expect(result.valid).toBe(false);
 		expect(
-			result.errors.some((e) =>
-				e.includes("expansionReady is true"),
-			),
+			result.errors.some((e) => e.includes("expansionReady is true")),
 		).toBe(true);
 	});
 });
