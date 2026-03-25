@@ -9252,6 +9252,7 @@ export function runCIMigrateCLI(
 				console.info(
 					"Required checks manifest bootstrapped from legacy contract/workflow evidence: .harness/ci-required-checks.json",
 				);
+				printProviderCheckNameAdvice(provider);
 			} else {
 				console.info(
 					"Required checks manifest missing; using imported legacy contract/workflow checks for this run (dry-run).",
@@ -9864,6 +9865,43 @@ export function runCIMigrateCLI(
 	}
 
 	return EXIT_CODES.SUCCESS;
+}
+
+/**
+ * JSC-70: Print the expected GitHub check-run names for the active CI provider.
+ *
+ * CircleCI reports ONE check run per workflow (not per job), so GitHub branch
+ * protection must use the workflow name (e.g. "pr-pipeline"), not job names
+ * like "lint" or "test". GitHub Actions reports one check per job.
+ *
+ * This advisory is printed after bootstrap and after commit so operators know
+ * exactly what to configure in GitHub branch protection rulesets.
+ */
+function printProviderCheckNameAdvice(provider: CIProvider): void {
+	const lines: string[] = [""];
+	if (provider === "circleci") {
+		lines.push(
+			"ℹ️  CircleCI reports one GitHub check-run per workflow (not per job).",
+			"   Individual CI jobs (lint, test, …) are NOT visible as separate GitHub checks.",
+			"   Add these workflow names to GitHub branch protection rulesets:",
+			"",
+			"     pr-pipeline    ← main CI workflow",
+			"     harness-gates  ← harness gate workflow (if present)",
+			"",
+			"   Run: harness branch-protect --apply to sync ruleset required checks.",
+			"   See: docs/agents/17-ci-required-checks.md for the full explanation.",
+		);
+	} else if (provider === "github-actions") {
+		lines.push(
+			"ℹ️  GitHub Actions reports one GitHub check-run per job.",
+			"   Individual job names (lint, test, …) are each visible as separate GitHub checks.",
+			"   Add the job names you want to enforce to GitHub branch protection rulesets.",
+			"",
+			"   See: docs/agents/17-ci-required-checks.md for the full explanation.",
+		);
+	}
+	lines.push("");
+	console.info(lines.join("\n"));
 }
 
 /**
