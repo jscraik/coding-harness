@@ -492,7 +492,7 @@ function verifyNpmrc(repoPath: string): GreptileCheck {
 			name: ".npmrc configuration",
 			status: "warn",
 			message:
-				"No .npmrc file found. Run 'harness init --update' to scaffold a baseline .npmrc, then add registry/auth entries if this repo consumes private packages.",
+				"No .npmrc file found. Run 'harness init' to scaffold a baseline .npmrc with security defaults (ignore-scripts=true). Registry/auth configuration is only required if this repo installs private packages.",
 			details: { path: npmrcPath },
 		};
 	}

@@ -211,6 +211,7 @@ describe("runVerifyGreptile", () => {
 			(check) => check.name === ".npmrc configuration",
 		);
 		expect(npmrcCheck?.status).toBe("warn");
-		expect(npmrcCheck?.message).toContain("harness init --update");
+		expect(npmrcCheck?.message).toContain("harness init");
+		expect(npmrcCheck?.message).toContain("ignore-scripts=true");
 	});
 });
