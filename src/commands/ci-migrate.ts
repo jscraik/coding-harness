@@ -142,7 +142,13 @@ const PARITY_PROOF_SOURCE_ARTIFACTS_PREFIX =
 const DEFAULT_TRANSITION_STATUS_ARTIFACT_PATH =
 	".harness/ci-provider-transition-status.json";
 const VALID_PROVIDERS: CIProvider[] = ["github-actions", "circleci"];
-const VALID_ACTIONS = ["prepare", "commit", "abort", "verify"] as const;
+const VALID_ACTIONS = [
+	"prepare",
+	"commit",
+	"abort",
+	"verify",
+	"bootstrap",
+] as const;
 const SHA256_HEX_PATTERN = /^[a-f0-9]{64}$/;
 const COMMIT_SHA_PATTERN = /^[a-f0-9]{40}$/;
 const HEX_TOKEN_PATTERN = /^[a-f0-9]+$/;
@@ -182,6 +188,10 @@ export interface CIMigrateOptions {
 	 * Can also be set in harness.contract.json as ciProviderPolicy.commitMode.
 	 */
 	commitMode?: "solo" | "enterprise" | undefined;
+	/**
+	 * JSC-54: bootstrap action — overwrite existing artifact if true.
+	 */
+	force?: boolean | undefined;
 }
 
 interface MigrationCheckClassification {
@@ -2943,7 +2953,7 @@ function normalizeAction(value: string | undefined):
 	}
 	return {
 		ok: false,
-		error: `Unsupported ci-migrate action: ${value}. Expected prepare, commit, abort, or verify.`,
+		error: `Unsupported ci-migrate action: ${value}. Expected prepare, commit, abort, verify, or bootstrap.`,
 	};
 }
 
@@ -3019,6 +3029,19 @@ function deriveModeFromAction(
 					"Action 'verify' conflicts with --apply/--rollback. Use action alone or --dry-run.",
 			};
 		}
+		return {
+			ok: true,
+			value: {
+				apply: false,
+				rollback: false,
+				dryRun: true,
+				isExplicitAction: true,
+			},
+		};
+	}
+
+	if (action === "bootstrap") {
+		// bootstrap is a standalone utility — no migration apply/rollback needed.
 		return {
 			ok: true,
 			value: {
@@ -8080,7 +8103,7 @@ function validateTransitionStatusArtifact(
 	const artifactPath = resolve(targetDir, relativePath);
 	if (!existsSync(artifactPath)) {
 		return [
-			`Transition status artifact missing: ${relativePath}. Run 'harness init --update' to scaffold the baseline artifact, then record the approved cutover state before running verify.`,
+			`Governance artifact missing: ${relativePath}\n  This is a governance record — it is separate from CI parity checks.\n  CI parity (jobs/checks passing) does not unblock cleanup on its own.\n  Run 'harness ci-migrate bootstrap' to generate a draft artifact, then set\n  nextGateComplete=true when you have verified the CircleCI pipeline is stable.`,
 		];
 	}
 	try {
@@ -9019,6 +9042,55 @@ export function runCIMigrateCLI(
 		console.error("Error: --rollback requires --snapshot <id>.");
 		return EXIT_CODES.INVALID_PATH;
 	}
+
+	// ---------------------------------------------------------------------------
+	// bootstrap action — generate draft transition-status governance artifact
+	// ---------------------------------------------------------------------------
+	if (action === "bootstrap") {
+		const artifactRelPath = DEFAULT_TRANSITION_STATUS_ARTIFACT_PATH;
+		const artifactAbsPath = resolve(dir, artifactRelPath);
+		const force = options.force === true;
+		if (existsSync(artifactAbsPath) && !force) {
+			console.info(
+				`ℹ️  ${artifactRelPath} already exists. Use --force to overwrite.`,
+			);
+			console.info(
+				"Review and set nextGateComplete=true when your CircleCI pipeline is stable.",
+			);
+			return EXIT_CODES.SUCCESS;
+		}
+		const draft = JSON.stringify(
+			{
+				schemaVersion: "ci-provider-transition-status/v1",
+				nextGateComplete: false,
+				updatedAt: new Date().toISOString(),
+			},
+			null,
+			2,
+		);
+		const artifactDir = dirname(artifactAbsPath);
+		if (!existsSync(artifactDir)) {
+			mkdirSync(artifactDir, { recursive: true });
+		}
+		try {
+			writeFileSync(artifactAbsPath, `${draft}\n`, "utf-8");
+		} catch (err) {
+			console.error(
+				`Error: failed to write ${artifactRelPath}: ${sanitizeError(err)}`,
+			);
+			return EXIT_CODES.INVALID_PATH;
+		}
+		console.info(`✅ Created draft ${artifactRelPath}`);
+		console.info("");
+		console.info("Next steps:");
+		console.info(
+			"  1. Confirm your CircleCI pipeline is stable (all required checks pass).",
+		);
+		console.info(`  2. Set nextGateComplete=true in ${artifactRelPath}.`);
+		console.info("  3. Commit the file, then run: harness ci-migrate verify");
+		return EXIT_CODES.SUCCESS;
+	}
+
 	if (
 		options.syncBreakGlassPolicy === true ||
 		options.breakGlassRosterPath !== undefined
