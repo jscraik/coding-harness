@@ -27,5 +27,5 @@
 - Report changed files, commands run, outcomes, and any risks/rollback notes.
 
 ## Command preflight helper
-- Source `scripts/codex-preflight.sh` and run `preflight_repo` before command-heavy, destructive, or path-sensitive work.
+- Run `./scripts/codex-preflight.sh --stack auto --mode required` before command-heavy, destructive, or path-sensitive work.
 - Validate required bins and target paths first so mistakes are prevented before edits.

@@ -41,7 +41,7 @@ Notes:
 - Prefer `rg`, `fd`, and `jq`.
 - Before mutating work, confirm `pwd`, repo root, required binaries, and target paths.
 - For this repo, verify `docs/agents/` and `scripts/` for path-sensitive work.
-- Use `source scripts/codex-preflight.sh && preflight_repo` before multi-step, destructive, or path-sensitive workflows.
+- Run `./scripts/codex-preflight.sh --stack auto --mode required` before multi-step, destructive, or path-sensitive workflows.
 - Ask before adding dependencies or changing system-level settings.
 
 ## Repo Workflow
@@ -80,12 +80,12 @@ Start with [docs/agents/01-instruction-map.md](./docs/agents/01-instruction-map.
 
 ## Memory Layer
 - Read `~/.codex/instructions/Learnings.md` at session start.
-- If `.harness/` exists, also read `.harness/memory/LEARNINGS.md`; if it is missing, bootstrap it per [docs/agents/03-local-memory.md](./docs/agents/03-local-memory.md).
+- If `.harness/memory/LEARNINGS.md` exists, read it; if it is missing, bootstrap it per [docs/agents/03-local-memory.md](./docs/agents/03-local-memory.md).
 - Repo-specific fixes belong in `.harness/memory/LEARNINGS.md`; universal fixes belong in `~/.codex/instructions/Learnings.md`.
 
 ## Implementation Conventions
 - Local ESM imports must include `.js` extensions.
-- Skill assets in this repo live under `.agents/skills/`.
+- This repo publishes a harness skill to downstream repos via `harness init`. The installed skill lands in the target repo's `.agents/skills/coding-harness/` — it is not a local skill directory for this repo.
 - Use repo scripts as the command contract: `pnpm lint`, `pnpm typecheck`, `pnpm test`, `pnpm audit`, `pnpm build`, `pnpm check`, and `pnpm test:artifacts`.
 - Node `>=24.0.0` required (see `engines` in `package.json`).
 - Linter/formatter: Biome (`biome.json`). Run with `pnpm lint` / `pnpm fmt`.
