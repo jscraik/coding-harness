@@ -2,6 +2,93 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+# [0.9.0](https://github.com/jscraik/coding-harness/compare/v0.8.1...v0.9.0) (2026-03-25)
+
+
+### Bug Fixes
+
+* address PR review findings for preset and search flows ([6eaba99](https://github.com/jscraik/coding-harness/commit/6eaba99b146e2428fd5b468c7f8240f94854144f))
+* address review comments on ecosystem and preset JSON ([626aad4](https://github.com/jscraik/coding-harness/commit/626aad4ce85b764654a56f9bfef4bbdf3a65c72a))
+* align CI defaults to CircleCI and fix all test assertions ([a7533fb](https://github.com/jscraik/coding-harness/commit/a7533fb95a6ff02df7ebd7270c3ab0ab466d0dcc))
+* CI/security hardening batch ([#100](https://github.com/jscraik/coding-harness/issues/100)) ([a5ea4e1](https://github.com/jscraik/coding-harness/commit/a5ea4e12c9479dbdfc77d0509b16f4bb03bd2a7b))
+* **ci:** avoid stuck queued Greptile check runs ([b259e5f](https://github.com/jscraik/coding-harness/commit/b259e5fba8764fd0442d548bc77d1b377f302927))
+* **ci:** break diagram-refresh loop and fix post-merge test command ([d50f09c](https://github.com/jscraik/coding-harness/commit/d50f09c270d336cfaea31ebba79eb9b5318e13c0))
+* **ci:** close CircleCI gap analysis findings ([d003030](https://github.com/jscraik/coding-harness/commit/d00303001639d8458289d230c9b10ae5143528b1))
+* **ci:** replace broken diagram test with native architecture rule checker ([c81a20e](https://github.com/jscraik/coding-harness/commit/c81a20ea3ff48565378bf446d27cd36dc7d0a7a3))
+* **ci:** unblock pr-template and review-thread gating ([33a0025](https://github.com/jscraik/coding-harness/commit/33a00258a7e18fac4f122389df7a88dcf86006e6))
+* **ci:** update Greptile check runs instead of creating duplicates ([#86](https://github.com/jscraik/coding-harness/issues/86)) ([7109d4c](https://github.com/jscraik/coding-harness/commit/7109d4c3b02a55f8ba432a0c54caf9e201f0ccc4)), closes [#84](https://github.com/jscraik/coding-harness/issues/84)
+* enforce global harness preflight install path ([#90](https://github.com/jscraik/coding-harness/issues/90)) ([362c519](https://github.com/jscraik/coding-harness/commit/362c51974b908942277ac4e94f37eb1c888fd11a))
+* **greptile:** prevent github-actions[bot] from consuming a developer seat ([24ad443](https://github.com/jscraik/coding-harness/commit/24ad4438b7a84e4d7e6129ee7157bea8290ef3d8))
+* harden downstream harness recovery ([c207fc0](https://github.com/jscraik/coding-harness/commit/c207fc09d1526a399dc361e73df725a8ff8b0a00))
+* **harness:** remove Greptile Review from required checks (billing issue) ([dfc99c1](https://github.com/jscraik/coding-harness/commit/dfc99c198c2a191d244c68f8725b6cdfaecc5487))
+* **JSC-51:** restore greptile-review.yml scaffold for github-actions provider ([d1d201f](https://github.com/jscraik/coding-harness/commit/d1d201fb5e815a58789bd33bf6a9dec203fb5aa0))
+* **pilot-eval:** restore governance trust for CircleCI repos ([d9b612b](https://github.com/jscraik/coding-harness/commit/d9b612bbd694ee8e4f979231cc317c8f46279455))
+* remove trailing newlines for ci-migrate ([a43795b](https://github.com/jscraik/coding-harness/commit/a43795b352630a8a6d7a1fa6a44af0e4f75feef9))
+* repair tests failing after CircleCI migration ([37b54e6](https://github.com/jscraik/coding-harness/commit/37b54e6f50ce658eee7637492fa0a6c8e02a6666))
+* resolve 7 open issues across CI, preflight, and Greptile config ([8dcfe5b](https://github.com/jscraik/coding-harness/commit/8dcfe5bacd13e080156df2a78858c1e3985b781e)), closes [#65](https://github.com/jscraik/coding-harness/issues/65) [#70](https://github.com/jscraik/coding-harness/issues/70) [#68](https://github.com/jscraik/coding-harness/issues/68) [#60](https://github.com/jscraik/coding-harness/issues/60) [#67](https://github.com/jscraik/coding-harness/issues/67) [#58](https://github.com/jscraik/coding-harness/issues/58) [#59](https://github.com/jscraik/coding-harness/issues/59) [#61](https://github.com/jscraik/coding-harness/issues/61)
+* resolve CircleCI config validation errors (heredoc + cron syntax) ([#105](https://github.com/jscraik/coding-harness/issues/105)) ([dce8af4](https://github.com/jscraik/coding-harness/commit/dce8af44c2e93f82b2382b9e0b20e78a8814cd54))
+* resolve lint errors and align CircleCI with current codebase ([d230d9c](https://github.com/jscraik/coding-harness/commit/d230d9cbd7259009c6c355319de46bc88a69d89f)), closes [#107](https://github.com/jscraik/coding-harness/issues/107)
+* resolve TypeScript errors blocking diagram commit ([e843707](https://github.com/jscraik/coding-harness/commit/e843707c8d375efcf92e738dea57e95ea446ac1e))
+* **security:** batch security fixes from Codex scan 2026-03-14 ([#99](https://github.com/jscraik/coding-harness/issues/99)) ([a5cef18](https://github.com/jscraik/coding-harness/commit/a5cef189d5c22a0dccaac6cf6ad19090778d75b8))
+* **security:** harden interactive init and review-gate ([f7fcf5c](https://github.com/jscraik/coding-harness/commit/f7fcf5cc8debe2aa193f340af85bc356838e6141))
+* **security:** pin policy-gate contract to base branch in PR workflows ([20ba1aa](https://github.com/jscraik/coding-harness/commit/20ba1aaff35cd7fd4f6b9570a8feeb013dd9d3c2))
+* **test:** restore 15-check list in CONTRIBUTING.md branch protection section ([030a3a6](https://github.com/jscraik/coding-harness/commit/030a3a6200f2ee06974af5727c105f91ccc50d43))
+* **types:** add CIProvider type and ciProvider fields (JSC-52) ([2b3816b](https://github.com/jscraik/coding-harness/commit/2b3816bf578101bb9ac8a6547d2ab89d9d807cb5))
+* unblock org-audit base paths and greptile freshness ([8b5c57d](https://github.com/jscraik/coding-harness/commit/8b5c57d416595f76ab9e2994368db881b09d2bc3))
+* wire GITHUB_PERSONAL_ACCESS_TOKEN to GH_TOKEN for gh CLI in CircleCI ([#106](https://github.com/jscraik/coding-harness/issues/106)) ([bf0d89f](https://github.com/jscraik/coding-harness/commit/bf0d89ff86dba5559ca87e96d8e5dadbefa4a314))
+
+
+### Features
+
+* add agent-native test harness utilities (Slice 5) ([d0aee9c](https://github.com/jscraik/coding-harness/commit/d0aee9cb2581ac71c7806175198c289f2a6f1ce1))
+* add canonical run record substrate foundations ([9fa5151](https://github.com/jscraik/coding-harness/commit/9fa5151f231c83c79012dcc176bb3246680f0178))
+* add CI provider policy adapter (Slice 2) ([81c8641](https://github.com/jscraik/coding-harness/commit/81c8641b838320d42fb960bb93f3e60b3ff3742d))
+* add ecosystem profiles in branch-protect ([f7fd9ba](https://github.com/jscraik/coding-harness/commit/f7fd9ba3d9eae2bd141cab8a688e010ed42fbc0e))
+* add ecosystem profiles in branch-protect ([3331524](https://github.com/jscraik/coding-harness/commit/33315243111d86d852c455ef573209f7ada4f4a3))
+* add gate bundle consolidation (Slice 4) ([f8ab1ce](https://github.com/jscraik/coding-harness/commit/f8ab1ce90a08b7eb30540ebd2346aa9af192038c))
+* add linear enforcement and docs-gate design ([15ed8f9](https://github.com/jscraik/coding-harness/commit/15ed8f9960540fbf543a3720772d7c59a5d761f4))
+* add local PR template gate command ([#92](https://github.com/jscraik/coding-harness/issues/92)) ([a83288f](https://github.com/jscraik/coding-harness/commit/a83288f30eb0d81f1786dfc57e9d6e3159a6732c))
+* add operator feedback dashboard scorecard (Slice 4a) ([9503d5b](https://github.com/jscraik/coding-harness/commit/9503d5befdb93446d7b5cf1b938a60649aaaf862))
+* add request-greptile-review command and fix CI ([265748f](https://github.com/jscraik/coding-harness/commit/265748f2345975d991e26c85885bc64370c8d541))
+* add scale-out pilot tracker (Slice 6) ([66371ba](https://github.com/jscraik/coding-harness/commit/66371bafe686b86195e24c3f1d00c17b780b1d5c))
+* add workflow contract markdown parser (Slice 1) ([497bc49](https://github.com/jscraik/coding-harness/commit/497bc49b2f64ffd60abab2b1d83e20f1bdb9dd88))
+* add workflow contract preset templates (Slice 1) ([c9ea766](https://github.com/jscraik/coding-harness/commit/c9ea766ffc451f2ab20aaae9866629a91bf16fec))
+* add workflow state normalization (Slice 3) ([dd33e35](https://github.com/jscraik/coding-harness/commit/dd33e3523288c4bead6ac9506700489f93c73c30))
+* add workflow-contract checker and artifact registry (Slice 1) ([dfa5e59](https://github.com/jscraik/coding-harness/commit/dfa5e594c6cd7c36dba46baa15ae8e5b19c4c7ea))
+* branded types for PresetSource and I/O separation foundation ([f5b34eb](https://github.com/jscraik/coding-harness/commit/f5b34eb72c6474b6e1802328804da7b4d91e848d))
+* **ci-migrate:** orphan check detection + sync-branch-protection (JSC-60) ([#114](https://github.com/jscraik/coding-harness/issues/114)) ([26d00f6](https://github.com/jscraik/coding-harness/commit/26d00f6723a914b36b4fc116127a1d86275ca3f3))
+* **ci-migrate:** shadow → required mode promotion (JSC-61) ([9f2c4ce](https://github.com/jscraik/coding-harness/commit/9f2c4ce1d480956a95e76be7ede1c97412a9616f))
+* **ci-migrate:** solo/lightweight commit mode (JSC-58) ([#115](https://github.com/jscraik/coding-harness/issues/115)) ([0116877](https://github.com/jscraik/coding-harness/commit/011687706f72a9c6db3dd504e77c4fdb4395e437))
+* **ci-migrate:** tighten verify and add transition templates ([#96](https://github.com/jscraik/coding-harness/issues/96)) ([c319d97](https://github.com/jscraik/coding-harness/commit/c319d97aafe9da6ba7e9327394d6965a8845875e))
+* **ci-migrate:** validate CI config syntax in verify; add shell quality tests (JSC-59, JSC-62) ([#110](https://github.com/jscraik/coding-harness/issues/110)) ([f91d32d](https://github.com/jscraik/coding-harness/commit/f91d32d6df3d42e025a63d43b23c33e72c716b1e)), closes [#57](https://github.com/jscraik/coding-harness/issues/57) [#58](https://github.com/jscraik/coding-harness/issues/58) [#60](https://github.com/jscraik/coding-harness/issues/60)
+* **ci:** add architecture drift gate to PR pipeline ([ddedfaf](https://github.com/jscraik/coding-harness/commit/ddedfafbf27b4603acb58650b12fbebe1b5d491a))
+* **ci:** add CircleCI release pipeline (JSC-43) ([4b8de13](https://github.com/jscraik/coding-harness/commit/4b8de13b0b5950b4c33bd2a347d68c07a8f3d10f))
+* **contract:** version-aware upgrade path + JSON schema + validate command (JSC-66, JSC-69) ([#116](https://github.com/jscraik/coding-harness/issues/116)) ([4628584](https://github.com/jscraik/coding-harness/commit/4628584eaefc01858c9ecb4c3ce149a17f7fc45d))
+* control-plane required check parity + agent-optimized docs ([#87](https://github.com/jscraik/coding-harness/issues/87)) ([745cf0d](https://github.com/jscraik/coding-harness/commit/745cf0df1ede1f03e0821127c77f966ddd04a087))
+* cross-project governance platform with security hardening ([a495f1e](https://github.com/jscraik/coding-harness/commit/a495f1e265c1fc5238097e85436333b35afff488))
+* **docs:** add compact operational specs for core workflows ([bc79d99](https://github.com/jscraik/coding-harness/commit/bc79d99524e1b4da3724e44d52157694d6c97b47))
+* **doctor:** add harness doctor prerequisite checker (JSC-65) ([#112](https://github.com/jscraik/coding-harness/issues/112)) ([0d81ad1](https://github.com/jscraik/coding-harness/commit/0d81ad18e37b231fcb2b0db57367505bb99a194a))
+* **drift-gate:** auto-seed baseline, suppressions, fix guidance (JSC-63, JSC-64, JSC-68) ([1483161](https://github.com/jscraik/coding-harness/commit/1483161fc4583ea7e79f0488a24134ef04cc8e89))
+* extend workflow-contract, symphony-check, and scaffold ([f3e0800](https://github.com/jscraik/coding-harness/commit/f3e0800314eef57e4481312853b2c46b8b6759a9))
+* **health:** unified gate status scorecard (JSC-67) ([09a74af](https://github.com/jscraik/coding-harness/commit/09a74af650d16d47b74ae102a165ebd13c6f2688))
+* implement docs-gate governance parity (Phases 0-6) ([6f8d096](https://github.com/jscraik/coding-harness/commit/6f8d09688d88add53497337796965634ed4a74b2))
+* implement license-gate command for open-source license validation ([9dbe5de](https://github.com/jscraik/coding-harness/commit/9dbe5de6ef9b924c5bf3e413c5282473d2da4e56))
+* **init:** tooling version detection prevents biome.json downgrade (JSC-57) ([#109](https://github.com/jscraik/coding-harness/issues/109)) ([3ba5bd5](https://github.com/jscraik/coding-harness/commit/3ba5bd5b4aa0c58889e7ceba703631fc9aa45a71))
+* **JSC-44:** implement harness linear sync command ([7802633](https://github.com/jscraik/coding-harness/commit/780263387edc3ca3a890b4a46447a6fa40c30f37))
+* **JSC-71:** structured output, auto-fix health, and project-type auto-detection ([#121](https://github.com/jscraik/coding-harness/issues/121)) ([61c6615](https://github.com/jscraik/coding-harness/commit/61c6615bda4ba979c4d9b25c7e797d43647e1099))
+* migrate linear PR sync from GitHub Actions to CircleCI ([#104](https://github.com/jscraik/coding-harness/issues/104)) ([aacb8d9](https://github.com/jscraik/coding-harness/commit/aacb8d966b38eaf7ccc7757fd73032b7b980781a))
+* Phase 4 - input validation, Result types, scan caching, ADRs ([bf9ac92](https://github.com/jscraik/coding-harness/commit/bf9ac92c1bf1cab4d385ba3367f2047732d068fa))
+* **review-gate:** block merge on unresolved non-bot review threads ([0d289b4](https://github.com/jscraik/coding-harness/commit/0d289b4cf1189386e220bda480994632e41fbf7b))
+* **simulate:** implement Phase 2/3/4 — real artifact ingestion, metrics, deltas, and recommendations ([ed7b0ca](https://github.com/jscraik/coding-harness/commit/ed7b0cad1f952ba0d1e9ad564212f1364d1b4a4a))
+* **workflow:** add workflow:generate command with --watch flag ([f1da97a](https://github.com/jscraik/coding-harness/commit/f1da97a73e3229f55b5d9d5b0989a3710dbb5d4a))
+
+
+### Performance Improvements
+
+* **test:** pre-seed git fixture in beforeAll to fix 128s timeout ([ad06c0c](https://github.com/jscraik/coding-harness/commit/ad06c0ccfdb9e269c9819bc6bfb0298ec12520d3))
+
+
+
 ## [0.8.1](https://github.com/jscraik/coding-harness/compare/v0.8.0...v0.8.1) (2026-03-08)
 
 
