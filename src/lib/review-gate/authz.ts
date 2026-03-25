@@ -1,4 +1,4 @@
-import { existsSync } from "node:fs";
+import { existsSync, readFileSync } from "node:fs";
 import { resolve } from "node:path";
 import { loadContract } from "../contract/loader.js";
 import type { HarnessContract, PilotAuthzPolicy } from "../contract/types.js";
@@ -24,7 +24,8 @@ export interface AuthzViolation {
 		| "repo_not_allowed"
 		| "branch_not_allowed"
 		| "branch_protected"
-		| "scope_missing";
+		| "scope_missing"
+		| "gitignore_missing";
 	/** Human-readable message */
 	message: string;
 	/** The value that caused the violation */
@@ -214,11 +215,46 @@ export async function runCheckAuthz(
 	}
 
 	// Check that artifacts/pilot/ is excluded from git tracking
-	// (This is a safety check to prevent pilot artifacts from being committed)
+	// to prevent pilot artifacts from being accidentally committed.
 	const gitignorePath = resolve(process.cwd(), ".gitignore");
 	if (existsSync(gitignorePath)) {
-		// We could check .gitignore contents, but for v1 we just note this should be verified
-		// A more thorough implementation would parse .gitignore
+		try {
+			const gitignoreContent = readFileSync(gitignorePath, "utf-8");
+			// Parse non-comment, non-empty lines and check for coverage of artifacts/pilot/
+			const patterns = gitignoreContent
+				.split("\n")
+				.map((l) => l.trim())
+				.filter(
+					(l) => l.length > 0 && !l.startsWith("#") && !l.startsWith("!"),
+				);
+			const covered = patterns.some(
+				(p) =>
+					p === "artifacts/pilot/" ||
+					p === "artifacts/pilot" ||
+					p === "artifacts/" ||
+					p === "/artifacts/pilot/" ||
+					p === "artifacts/**",
+			);
+			if (!covered) {
+				violations.push({
+					type: "gitignore_missing",
+					message:
+						"artifacts/pilot/ is not covered by .gitignore — pilot artifacts may be committed accidentally. Add 'artifacts/pilot/' to .gitignore.",
+					value: "not covered",
+					expected: "artifacts/pilot/ listed in .gitignore",
+				});
+			}
+		} catch {
+			// .gitignore read failed; skip the check rather than hard-fail
+		}
+	} else {
+		violations.push({
+			type: "gitignore_missing",
+			message:
+				".gitignore not found — create one and add 'artifacts/pilot/' to prevent pilot artifacts from being committed.",
+			value: "missing",
+			expected: ".gitignore with artifacts/pilot/ entry",
+		});
 	}
 
 	const output: CheckAuthzOutput = {

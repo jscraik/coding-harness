@@ -361,6 +361,9 @@ export function createTemplateRenderContext(
 	const projectName = readProjectName(targetDir);
 	const repoUrl = readRepoUrl(targetDir);
 	const linearProjectSlug = extractLinearProjectSlug(issueTrackingUrl);
+	// Resolve security contact email: env var override, then safe placeholder
+	const securityEmail =
+		process.env.HARNESS_SECURITY_EMAIL ?? "security@example.com";
 	return {
 		targetDir,
 		...(ciProvider ? { ciProvider } : {}),
@@ -370,6 +373,7 @@ export function createTemplateRenderContext(
 		...(repoUrl ? { repoUrl } : {}),
 		...(linearProjectSlug ? { linearProjectSlug } : {}),
 		...(projectType ? { projectType } : {}),
+		securityEmail,
 	};
 }
 
@@ -617,6 +621,7 @@ ${actionBlocks}
 
 function renderIssueTemplateConfig(context: TemplateRenderContext): string {
 	const linearUrl = context.issueTrackingUrl ?? "https://linear.app/";
+	const securityEmail = context.securityEmail ?? "security@example.com";
 	return `# Issue template configuration
 blank_issues_enabled: false
 contact_links:
@@ -627,7 +632,7 @@ contact_links:
     url: https://github.com/jscraik/coding-harness#readme
     about: Review setup, workflow, and command documentation before opening new work.
   - name: Private security disclosure
-    url: mailto:jamie@brainwav.ai
+    url: mailto:${securityEmail}
     about: Report security vulnerabilities privately instead of using public issue flows.
 `;
 }

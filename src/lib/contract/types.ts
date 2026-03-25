@@ -153,6 +153,12 @@ export interface MemoryPolicy {
 	requireStartRead: boolean;
 	requireCloseoutSummary: boolean;
 	forbiddenContentPatterns: string[];
+	/**
+	 * Path to the session-log file checked by memory-gate.
+	 * Defaults to "FORJAMIE.md" for backward compatibility.
+	 * Set this in harness.contract.json to use a project-specific name.
+	 */
+	sessionLogPath?: string;
 }
 
 export interface MemoryMaintenancePolicy {

@@ -9,7 +9,9 @@ import {
 	existsSync,
 	mkdirSync,
 	readFileSync,
+	renameSync,
 	statSync,
+	unlinkSync,
 	writeFileSync,
 } from "node:fs";
 
@@ -155,7 +157,9 @@ function loadStore(storePath: string): GapCaseStoreV1 {
 }
 
 /**
- * Save gap-case store to disk (atomic write with directory creation)
+ * Save gap-case store to disk.
+ * Uses a write-to-temp-then-rename pattern to prevent store corruption
+ * if the process is interrupted mid-write.
  */
 function saveStore(storePath: string, store: GapCaseStoreV1): void {
 	const absolutePath = resolve(storePath);
@@ -177,8 +181,24 @@ function saveStore(storePath: string, store: GapCaseStoreV1): void {
 		mkdirSync(dir, { recursive: true });
 	}
 
-	// Write atomically (write to temp, then rename would be better but keep simple for v1)
-	writeFileSync(absolutePath, JSON.stringify(store, null, 2), "utf-8");
+	// Write atomically: write to sibling temp file, then rename over target.
+	// renameSync is atomic on POSIX when src and dst are on the same filesystem,
+	// so readers always see either the old or the new content — never a partial write.
+	const tmpPath = `${absolutePath}.tmp`;
+	try {
+		writeFileSync(tmpPath, JSON.stringify(store, null, 2), "utf-8");
+		renameSync(tmpPath, absolutePath);
+	} catch (err) {
+		// Best-effort cleanup of the temp file on failure
+		try {
+			if (existsSync(tmpPath)) {
+				unlinkSync(tmpPath);
+			}
+		} catch {
+			// ignore cleanup errors
+		}
+		throw err;
+	}
 }
 
 /**

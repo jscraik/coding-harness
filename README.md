@@ -172,6 +172,9 @@ flags, use `harness --help`.
 | Command | Purpose |
 | --- | --- |
 | `init` | Scaffold or update harness-managed repo surfaces (`--project-type`, `--json`, `--dry-run`, `--force`, `--track`, `--update`, `--migrate`) |
+| `doctor` | Check all gate prerequisites (tools, files, config, CI) |
+| `health` | Unified gate status scorecard across all gates |
+| `upgrade` | Upgrade harness in a repo to a newer version (`--dry-run` supported) |
 | `ci-migrate` | Stage, verify, commit, or abort CI migration |
 | `branch-protect` | Configure GitHub branch protection rulesets |
 | `verify-greptile` | Verify Greptile configuration and remote wiring |

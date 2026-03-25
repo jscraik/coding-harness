@@ -2,6 +2,20 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+# [0.10.0](https://github.com/jscraik/coding-harness/compare/v0.9.70...v0.10.0) (2026-03-25)
+
+
+### Bug Fixes
+
+* **branch-protect:** enforce solo-dev posture and policy-authoritative approval count (JSC-50) ([86e3eee](https://github.com/jscraik/coding-harness/commit/86e3eee406c29bbebff25ce277ca62893b8cc10c))
+
+
+### Features
+
+* **ci-checks:** clarify ci-required-checks.json vs GitHub branch protection (JSC-70) ([784514c](https://github.com/jscraik/coding-harness/commit/784514ca6af8cd77030c7c134c5a45121d71d259))
+
+
+
 ## [0.9.70](https://github.com/jscraik/coding-harness/compare/v0.9.69...v0.9.70) (2026-03-25)
 
 

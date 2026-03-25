@@ -41,17 +41,19 @@ Notes:
 - Prefer `rg`, `fd`, and `jq`.
 - Before mutating work, confirm `pwd`, repo root, required binaries, and target paths.
 - For this repo, verify `docs/agents/` and `scripts/` for path-sensitive work.
-- Use `source scripts/codex-preflight.sh && preflight_repo` before multi-step, destructive, or path-sensitive workflows.
+- Run `./scripts/codex-preflight.sh --stack auto --mode required` before multi-step, destructive, or path-sensitive workflows.
 - Ask before adding dependencies or changing system-level settings.
 
 ## Repo Workflow
 - Branch from `main`; never push directly to `main`.
 - Use `codex/<linear-key>-<short-description>` when the work is tracked in Linear.
 - Open a PR for every merge to `main`.
+- **PR description linking:** use `Refs JSC-N` while the issue is still in review; use `Closes JSC-N` only when the merge fully completes the issue.
 - Run the smallest focused validation first, then `pnpm check` before handoff when behavior changed.
 - Greptile review must remain independent; the coding agent cannot self-approve.
 - If you touch tooling/runtime contract surfaces such as hooks, `Makefile`, `.mise.toml`, readiness scripts, or generated Codex environment actions, update [docs/agents/02-tooling-policy.md](./docs/agents/02-tooling-policy.md) and [docs/agents/06-security-and-governance.md](./docs/agents/06-security-and-governance.md) in the same change.
 - If you find a reproducible bug, policy gap, workflow regression, automation follow-up, or release follow-up, create or update the matching Linear issue before handoff.
+- See [docs/agents/18-github-linear-automation.md](./docs/agents/18-github-linear-automation.md) for the full GitHub → Linear automation config and known gaps.
 
 ## Instruction Routing
 Start with [docs/agents/01-instruction-map.md](./docs/agents/01-instruction-map.md), then open only the docs that match the task:
@@ -72,16 +74,18 @@ Start with [docs/agents/01-instruction-map.md](./docs/agents/01-instruction-map.
 - Docs-gate rollout and promotion: [docs/agents/14-docs-gate-rollout.md](./docs/agents/14-docs-gate-rollout.md)
 - Context integrity (agent-optimized): [docs/agents/15-context-integrity-compact.md](./docs/agents/15-context-integrity-compact.md)
 - Linear workflow (agent-optimized): [docs/agents/16-linear-production-compact.md](./docs/agents/16-linear-production-compact.md)
+- GitHub → Linear automation config: [docs/agents/18-github-linear-automation.md](./docs/agents/18-github-linear-automation.md)
+- Linear templates, saved views, and blocked-routing: [docs/agents/19-linear-templates.md](./docs/agents/19-linear-templates.md)
 - Symphony workflow definition: [WORKFLOW.md](./WORKFLOW.md)
 
 ## Memory Layer
 - Read `~/.codex/instructions/Learnings.md` at session start.
-- If `.harness/` exists, also read `.harness/memory/LEARNINGS.md`; if it is missing, bootstrap it per [docs/agents/03-local-memory.md](./docs/agents/03-local-memory.md).
+- If `.harness/memory/LEARNINGS.md` exists, read it; if it is missing, bootstrap it per [docs/agents/03-local-memory.md](./docs/agents/03-local-memory.md).
 - Repo-specific fixes belong in `.harness/memory/LEARNINGS.md`; universal fixes belong in `~/.codex/instructions/Learnings.md`.
 
 ## Implementation Conventions
 - Local ESM imports must include `.js` extensions.
-- Skill assets in this repo live under `.agents/skills/`.
+- This repo publishes a harness skill to downstream repos via `harness init`. The installed skill lands in the target repo's `.agents/skills/coding-harness/` — it is not a local skill directory for this repo.
 - Use repo scripts as the command contract: `pnpm lint`, `pnpm typecheck`, `pnpm test`, `pnpm audit`, `pnpm build`, `pnpm check`, and `pnpm test:artifacts`.
 - Node `>=24.0.0` required (see `engines` in `package.json`).
 - Linter/formatter: Biome (`biome.json`). Run with `pnpm lint` / `pnpm fmt`.

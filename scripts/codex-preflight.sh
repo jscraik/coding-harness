@@ -1,26 +1,7 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-resolve_script_path() {
-	if [[ -n "${ZSH_VERSION:-}" ]]; then
-		eval 'printf "%s\n" "${(%):-%N}"'
-		return
-	fi
-	printf '%s\n' "${BASH_SOURCE[0]:-$0}"
-}
-
-is_script_sourced() {
-	if [[ -n "${ZSH_VERSION:-}" ]]; then
-		local source_path
-		source_path="$(resolve_script_path)"
-		[[ "${source_path}" != "$0" ]]
-		return
-	fi
-	[[ "${BASH_SOURCE[0]:-$0}" != "$0" ]]
-}
-
-SCRIPT_PATH="$(resolve_script_path)"
-SCRIPT_DIR="$(cd -- "$(dirname -- "${SCRIPT_PATH}")" && pwd -P)"
+SCRIPT_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd -P)"
 WORKSPACE_ROOT="$(cd -- "${SCRIPT_DIR}/.." && pwd -P)"
 
 usage() {
@@ -39,8 +20,13 @@ Options:
 Examples:
   ./scripts/codex-preflight.sh
   ./scripts/codex-preflight.sh --stack js
-  ./scripts/codex-preflight.sh --stack py --mode required
+  ./scripts/codex-preflight.sh --stack py --mode optional
   ./scripts/codex-preflight.sh --repo-fragment local-memory
+
+Legacy compatibility:
+  ./scripts/codex-preflight.sh <repo-fragment> [bins-csv] [paths-csv]
+  This preserves the older positional interface used by parent-repo checks and
+  runs with Local Memory disabled unless the new flag-based mode is used.
 USAGE
 }
 
@@ -81,11 +67,6 @@ extract_local_memory_rest_value() {
 			exit
 		}
 	' "${config_path}"
-}
-
-is_local_memory_pidfile_sandbox_block() {
-	local output="${1:-}"
-	[[ "${output}" == *"failed to write PID file"* && "${output}" == *"operation not permitted"* ]]
 }
 
 
@@ -275,6 +256,7 @@ preflight_local_memory_gold() {
 		log_err 'local-memory daemon is not running'
 		return 1
 	fi
+
 	if ! health_json="$(curl -fsS "${health_url}")"; then
 		log_err "REST health endpoint unreachable at ${health_url}"
 		return 1
@@ -292,21 +274,15 @@ preflight_local_memory_gold() {
 
 	local observe_a_json
 	local observe_b_json
-	local observe_a_output
-	if ! observe_a_output="$(local-memory observe "${content_a}" --domain 'coding-harness' --tags 'preflight,local-memory' --source 'codex_preflight' --json 2>&1)"; then
-		if is_local_memory_pidfile_sandbox_block "${observe_a_output}"; then
-			log_warn 'local-memory CLI smoke write skipped: sandbox blocked PID file write while daemon health was already verified'
-			log_ok 'local-memory preflight passed'
-			return 0
-		fi
+	observe_a_json="$(local-memory observe "${content_a}" --domain 'coding-harness' --tags 'preflight,local-memory' --source 'codex_preflight' --json 2>/dev/null)" || {
 		log_err 'observe A failed'
 		return 1
-	fi
-	observe_a_json="$(extract_last_json_line "${observe_a_output}")"
-	if ! observe_b_json="$(local-memory observe "${content_b}" --domain 'coding-harness' --tags 'preflight,local-memory' --source 'codex_preflight' --json 2>/dev/null)"; then
+	}
+	observe_b_json="$(local-memory observe "${content_b}" --domain 'coding-harness' --tags 'preflight,local-memory' --source 'codex_preflight' --json 2>/dev/null)" || {
 		log_err 'observe B failed'
 		return 1
-	fi
+	}
+	observe_a_json="$(extract_last_json_line "${observe_a_json}")"
 	observe_b_json="$(extract_last_json_line "${observe_b_json}")"
 
 	local id_a
@@ -397,71 +373,7 @@ preflight_local_memory_gold() {
 		log_warn "daemon log not found at ${daemon_log}"
 	fi
 
-log_ok 'local-memory preflight passed'
-}
-
-run_preflight_profile() {
-	local stack="$1"
-	local expected_repo="${2:-}"
-	local bins_csv="${3:-}"
-	local paths_csv="${4:-}"
-	local local_memory_mode="${5:-required}"
-	local -a args=(
-		--stack "${stack}"
-		--mode "${local_memory_mode}"
-	)
-
-	if [[ -n "${expected_repo}" ]]; then
-		args+=(--repo-fragment "${expected_repo}")
-	fi
-	if [[ -n "${bins_csv}" ]]; then
-		args+=(--bins "${bins_csv}")
-	fi
-	if [[ -n "${paths_csv}" ]]; then
-		args+=(--paths "${paths_csv}")
-	fi
-
-	main "${args[@]}"
-}
-
-preflight_repo() {
-	run_preflight_profile \
-		repo \
-		"${1:-}" \
-		"${2:-git,bash,sed,rg,fd,jq,curl,python3}" \
-		"${3:-AGENTS.md,docs,docs/plans}" \
-		"${4:-required}"
-}
-
-preflight_js() {
-	run_preflight_profile \
-		js \
-		"${1:-}" \
-		"${2:-git,bash,sed,rg,fd,jq,curl,node,npm,python3}" \
-		"${3:-AGENTS.md,package.json,docs,docs/plans}" \
-		"${4:-required}"
-}
-
-preflight_py() {
-	run_preflight_profile \
-		py \
-		"${1:-}" \
-		"${2:-git,bash,sed,rg,fd,jq,curl,python3}" \
-		"${3:-AGENTS.md,pyproject.toml,docs,docs/plans}" \
-		"${4:-required}"
-}
-
-preflight_rust() {
-	run_preflight_profile \
-		rust \
-		"${1:-}" \
-		"${2:-git,bash,sed,rg,fd,jq,curl,python3,cargo}" \
-		"${3:-AGENTS.md,Cargo.toml,docs,docs/plans}" \
-		"${4:-required}"
-}
-
-preflight_repo_local_memory() {
-	preflight_repo "${1:-}" "${2:-git,bash,sed,rg,fd,jq,curl,python3}" "${3:-AGENTS.md,docs,docs/plans}" required
+	log_ok 'local-memory preflight passed'
 }
 
 main() {
@@ -470,6 +382,19 @@ main() {
 	local expected_repo=''
 	local bins_csv=''
 	local paths_csv=''
+
+	if (( $# > 0 )) && [[ "${1}" != --* ]] && [[ "${1}" != '-h' ]]; then
+		if (( $# > 3 )); then
+			log_err "legacy positional mode accepts at most 3 arguments"
+			usage >&2
+			exit 2
+		fi
+		expected_repo="${1:-}"
+		bins_csv="${2:-}"
+		paths_csv="${3:-}"
+		local_memory_mode='off'
+		set --
+	fi
 
 	while (( $# > 0 )); do
 		case "$1" in
@@ -518,28 +443,29 @@ main() {
 		exit 2
 	fi
 
-	local root
-	if ! root="$(git rev-parse --show-toplevel 2>/dev/null)"; then
+	local git_root
+	if ! git_root="$(git rev-parse --show-toplevel 2>/dev/null)"; then
 		log_err 'not inside a git repo (git rev-parse failed)'
 		exit 2
 	fi
-	if [[ -z "${root}" ]]; then
+	if [[ -z "${git_root}" ]]; then
 		log_err 'git rev-parse returned empty root'
 		exit 2
 	fi
-	root="$(cd -- "${root}" && pwd -P)"
-	echo "repo root: ${root}"
+	git_root="$(cd -- "${git_root}" && pwd -P)"
+	echo "git root: ${git_root}"
+	echo "workspace root: ${WORKSPACE_ROOT}"
 
-	if [[ "${root}" != "${WORKSPACE_ROOT}" ]]; then
-		log_err "script workspace mismatch: expected ${WORKSPACE_ROOT}"
+	if [[ "${WORKSPACE_ROOT}" != "${git_root}" && "${WORKSPACE_ROOT}" != "${git_root}"/* ]]; then
+		log_err "script workspace mismatch: ${WORKSPACE_ROOT} is not inside git root ${git_root}"
 		exit 2
 	fi
-	if [[ -n "${expected_repo}" && "${root}" != *"${expected_repo}"* ]]; then
-		log_err "repo mismatch: expected fragment '${expected_repo}' in '${root}'"
+	if [[ -n "${expected_repo}" && "${WORKSPACE_ROOT}" != *"${expected_repo}"* ]]; then
+		log_err "repo mismatch: expected fragment '${expected_repo}' in '${WORKSPACE_ROOT}'"
 		exit 2
 	fi
 
-	cd "${root}"
+	cd "${WORKSPACE_ROOT}"
 
 	if [[ "${stack}" == 'auto' ]]; then
 		stack="$(detect_stack)"
@@ -554,10 +480,10 @@ main() {
 	fi
 
 	check_bins "${bins_csv}"
-	check_paths "${root}" "${paths_csv}"
+	check_paths "${WORKSPACE_ROOT}" "${paths_csv}"
 
-	echo "git branch: $(git rev-parse --abbrev-ref HEAD)"
-	echo "clean?: $(git status --porcelain | wc -l | tr -d ' ') changes"
+	echo "git branch: $(git -C "${WORKSPACE_ROOT}" rev-parse --abbrev-ref HEAD)"
+	echo "clean?: $(git -C "${WORKSPACE_ROOT}" status --porcelain -- . | wc -l | tr -d ' ') changes"
 
 	if [[ "${local_memory_mode}" != 'off' ]]; then
 		if ! preflight_local_memory_gold; then
@@ -572,6 +498,4 @@ main() {
 	log_ok 'preflight passed'
 }
 
-if ! is_script_sourced; then
-	main "$@"
-fi
+main "$@"
