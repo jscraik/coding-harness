@@ -19,14 +19,17 @@ These templates are tracked examples for strict `harness ci-migrate verify` pref
 - `parity-proof-harvest-orchestrator.template.sh`: example executable that downloads/copies immutable CI artifacts and emits signed provenance input + artifact index artifacts for `--auto-generate-proof-pack`.
 
 ## Usage
-1. Preferred path: run `harness init --update` to scaffold the baseline required-checks manifest and transition-status artifact.
-2. For older repos or scaffold repair, copy each template into your repository-local `.harness/` directory.
-3. Rename to:
-   - `.harness/ci-required-checks.json`
-   - `.harness/ci-provider-transition-status.json`
-   - `.harness/control-plane/ci-migrate-break-glass-policy.json`
-4. Update values to match your repository and provider state.
-5. Run `harness ci-migrate verify`.
+1. Run `harness ci-migrate bootstrap` to generate a draft `.harness/ci-provider-transition-status.json`
+   in your repo (skip-if-exists by default; use `--force` to overwrite).
+2. Confirm your CircleCI pipeline is stable, then set `nextGateComplete=true` in the generated file.
+3. Commit the file, then run `harness ci-migrate verify`.
+
+For older repos or scaffold repair without running `bootstrap`, you can still copy each template
+into your repository-local `.harness/` directory manually:
+- `.harness/ci-required-checks.json`
+- `.harness/ci-provider-transition-status.json`
+- `.harness/control-plane/ci-migrate-break-glass-policy.json`
+
 
 ## Merge-Queue Orchestrator Template
 Use `merge-queue-cutover-orchestrator.template.sh` as a starting point for `--merge-queue-orchestrator` automation in required-mode cutovers.
