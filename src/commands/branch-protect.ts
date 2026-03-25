@@ -490,9 +490,6 @@ function buildPayload(input: BuildPayloadInput): RulesetPayload {
 		const existingPullParameters = normalizeParameters(
 			existingPullRequestRule?.parameters,
 		);
-		const existingRequiredApprovals = toNonNegativeInteger(
-			existingPullParameters.required_approving_review_count,
-		);
 		const pullRequestRule: RulesetRule = {
 			type: "pull_request",
 			parameters: {
@@ -500,10 +497,10 @@ function buildPayload(input: BuildPayloadInput): RulesetPayload {
 				dismiss_stale_reviews_on_push: input.policy.dismissStaleReviewsOnPush,
 				require_code_owner_review: input.policy.requireCodeOwnerReview,
 				require_last_push_approval: input.policy.requireLastPushApproval,
-				required_approving_review_count: Math.max(
-					input.policy.requiredApprovals,
-					existingRequiredApprovals ?? 0,
-				),
+				// Policy is authoritative: always use the resolved policy value so
+				// the harness can reduce approvals (e.g. solo-dev posture → 0) and
+				// not be permanently overridden by existing GitHub state.
+				required_approving_review_count: input.policy.requiredApprovals,
 				required_review_thread_resolution:
 					input.policy.requireConversationResolution,
 			},
@@ -600,13 +597,6 @@ function normalizeParameters(value: unknown): Record<string, unknown> {
 		return value as Record<string, unknown>;
 	}
 	return {};
-}
-
-function toNonNegativeInteger(value: unknown): number | undefined {
-	if (typeof value !== "number" || !Number.isInteger(value) || value < 0) {
-		return undefined;
-	}
-	return value;
 }
 
 function normalizeStringList(value: unknown): string[] {
