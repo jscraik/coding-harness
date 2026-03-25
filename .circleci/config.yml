@@ -43,9 +43,11 @@ jobs:
           name: Audit
           command: pnpm audit
       - run:
-          name: Policy Bundle (pnpm check)
-          no_output_timeout: 10m
-          command: pnpm check
+          name: Docs lint
+          command: pnpm docs:lint
+      - run:
+          name: Skill + workflow validation
+          command: pnpm skill:validate && pnpm workflow:validate
 
   # ─────────────────────────────────────────────────────────────────────────────
   # PR pipeline (slow) — isolated pilot-evaluate suite.
