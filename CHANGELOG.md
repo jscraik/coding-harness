@@ -2,6 +2,10 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [0.9.55](https://github.com/jscraik/coding-harness/compare/v0.9.54...v0.9.55) (2026-03-25)
+
+
+
 ## [0.9.54](https://github.com/jscraik/coding-harness/compare/v0.9.53...v0.9.54) (2026-03-25)
 
 
