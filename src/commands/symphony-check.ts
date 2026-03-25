@@ -47,10 +47,7 @@ export interface SymphonyCheckResult {
 
 function getCodexEnvPaths(): string[] {
 	const home = process.env.HOME ?? "~";
-	return [
-		resolve(home, ".codex/.env"),
-		resolve(home, ".codex/env"),
-	];
+	return [resolve(home, ".codex/.env"), resolve(home, ".codex/env")];
 }
 
 const CANONICAL_TRANSITION_TABLE_HEADERS = [
