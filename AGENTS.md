@@ -75,6 +75,7 @@ Start with [docs/agents/01-instruction-map.md](./docs/agents/01-instruction-map.
 - Context integrity (agent-optimized): [docs/agents/15-context-integrity-compact.md](./docs/agents/15-context-integrity-compact.md)
 - Linear workflow (agent-optimized): [docs/agents/16-linear-production-compact.md](./docs/agents/16-linear-production-compact.md)
 - GitHub → Linear automation config: [docs/agents/18-github-linear-automation.md](./docs/agents/18-github-linear-automation.md)
+- Linear templates, saved views, and blocked-routing: [docs/agents/19-linear-templates.md](./docs/agents/19-linear-templates.md)
 - Symphony workflow definition: [WORKFLOW.md](./WORKFLOW.md)
 
 ## Memory Layer

@@ -115,3 +115,4 @@ These deep-dive specs live alongside their parent SOPs and are not auto-discover
 - [Context-integrity compact](./15-context-integrity-compact.md)
 - [CI required checks vs branch protection](./17-ci-required-checks.md)
 - [GitHub to Linear automation](./18-github-linear-automation.md)
+- [Linear templates and saved views](./19-linear-templates.md)
