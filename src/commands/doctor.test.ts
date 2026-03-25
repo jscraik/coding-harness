@@ -360,3 +360,96 @@ describe("runDoctor — report structure", () => {
 		expect(report.counts.warn).toBeGreaterThan(0);
 	});
 });
+
+describe("runDoctor — ci:check-alignment check", () => {
+	let dir: string;
+
+	beforeEach(() => {
+		dir = makeTmpDir();
+		mockAllToolsOk();
+	});
+
+	afterEach(() => {
+		if (existsSync(dir)) rmSync(dir, { recursive: true, force: true });
+		vi.restoreAllMocks();
+	});
+
+	it("skips when .harness/ci-required-checks.json is missing", () => {
+		const report = runDoctor({ dir });
+		const check = report.checks.find((c) => c.id === "ci:check-alignment");
+		expect(check?.status).toBe("skip");
+	});
+
+	it("warns when githubCheckName fields are absent", () => {
+		mkdirSync(`${dir}/.harness`, { recursive: true });
+		writeFileSync(
+			`${dir}/.harness/ci-required-checks.json`,
+			JSON.stringify({
+				version: 1,
+				activeProvider: "circleci",
+				requiredChecks: [
+					{ policyId: "c1", displayName: "lint", class: "required" },
+				],
+			}),
+		);
+		const report = runDoctor({ dir });
+		const check = report.checks.find((c) => c.id === "ci:check-alignment");
+		expect(check?.status).toBe("warn");
+		expect(check?.message).toContain("no githubCheckName");
+		expect(check?.fix).toContain("docs/agents/17-ci-required-checks.md");
+	});
+
+	it("warns when a CircleCI entry uses a job name as githubCheckName", () => {
+		mkdirSync(`${dir}/.harness`, { recursive: true });
+		writeFileSync(
+			`${dir}/.harness/ci-required-checks.json`,
+			JSON.stringify({
+				version: 1,
+				activeProvider: "circleci",
+				requiredChecks: [
+					{
+						policyId: "c1",
+						displayName: "lint",
+						githubCheckName: "lint",
+						class: "required",
+					},
+				],
+			}),
+		);
+		const report = runDoctor({ dir });
+		const check = report.checks.find((c) => c.id === "ci:check-alignment");
+		expect(check?.status).toBe("warn");
+		expect(check?.message).toContain("lint");
+		expect(check?.message).toContain("pr-pipeline");
+		expect(check?.fix).toContain("docs/agents/17-ci-required-checks.md");
+	});
+
+	it("reports ok when CircleCI entries use workflow name as githubCheckName", () => {
+		mkdirSync(`${dir}/.harness`, { recursive: true });
+		writeFileSync(
+			`${dir}/.harness/ci-required-checks.json`,
+			JSON.stringify({
+				version: 1,
+				activeProvider: "circleci",
+				requiredChecks: [
+					{
+						policyId: "c1",
+						displayName: "lint",
+						githubCheckName: "pr-pipeline",
+						class: "required",
+					},
+					{
+						policyId: "c2",
+						displayName: "docs-gate",
+						githubCheckName: "harness-gates",
+						class: "required",
+					},
+				],
+			}),
+		);
+		const report = runDoctor({ dir });
+		const check = report.checks.find((c) => c.id === "ci:check-alignment");
+		expect(check?.status).toBe("ok");
+		expect(check?.message).toContain("circleci");
+	});
+});

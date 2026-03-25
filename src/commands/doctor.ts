@@ -528,6 +528,120 @@ const CHECKS: CheckFn[] = [
 			message: "present and references GH_TOKEN",
 		};
 	},
+
+	// ── CI: check alignment (JSC-70) — advisory ─────────────────────────────
+	// Warns when githubCheckName entries in ci-required-checks.json don't match
+	// the expected workflow-level check name for the active CI provider.
+	// CircleCI: one check run per workflow (not per job) — branch protection
+	// must use the workflow name (e.g. "pr-pipeline"), never job names.
+	(dir) => {
+		const manifestPath = resolve(dir, ".harness/ci-required-checks.json");
+		if (!existsSync(manifestPath)) {
+			return {
+				id: "ci:check-alignment",
+				category: "ci",
+				label: "CI check alignment",
+				status: "skip",
+				message:
+					".harness/ci-required-checks.json not found — skipping alignment check",
+			};
+		}
+
+		const manifest = readJsonFile(manifestPath);
+		if (
+			manifest === null ||
+			typeof manifest !== "object" ||
+			!hasJsonKey(manifest, "activeProvider") ||
+			!hasJsonKey(manifest, "requiredChecks")
+		) {
+			return {
+				id: "ci:check-alignment",
+				category: "ci",
+				label: "CI check alignment",
+				status: "warn",
+				message:
+					".harness/ci-required-checks.json exists but is not valid — cannot check alignment",
+				fix: "Run: harness ci-migrate bootstrap to regenerate the manifest",
+			};
+		}
+
+		const typed = manifest as {
+			activeProvider: string;
+			requiredChecks: Array<{ displayName?: string; githubCheckName?: string }>;
+		};
+		const provider = typed.activeProvider;
+		const checks = typed.requiredChecks;
+
+		// Collect all non-empty githubCheckName values
+		const githubCheckNames = checks
+			.map((c) => c.githubCheckName)
+			.filter((n): n is string => typeof n === "string" && n.length > 0);
+
+		if (githubCheckNames.length === 0) {
+			// Advisory: file exists but no githubCheckName fields set
+			return {
+				id: "ci:check-alignment",
+				category: "ci",
+				label: "CI check alignment",
+				status: "warn",
+				message:
+					"ci-required-checks.json has no githubCheckName fields — branch protection" +
+					" check names are undocumented",
+				fix:
+					"Add githubCheckName to each entry in .harness/ci-required-checks.json." +
+					" See docs/agents/17-ci-required-checks.md",
+			};
+		}
+
+		// For CircleCI, individual job names (lint, test, …) should never appear
+		// as githubCheckName because CircleCI doesn't create per-job GitHub check runs.
+		const JOB_NAMES_FOR_CIRCLECI = new Set([
+			"lint",
+			"typecheck",
+			"test",
+			"audit",
+			"check",
+			"build",
+			"memory",
+			"security-scan",
+			"dependency-scan",
+			"orb-pinning",
+			"docs-gate",
+			"linear-gate",
+			"risk-policy-gate",
+			"consistency-drift-health",
+			"pr-template",
+		]);
+
+		const suspicious: string[] = [];
+		if (provider === "circleci") {
+			for (const name of githubCheckNames) {
+				if (JOB_NAMES_FOR_CIRCLECI.has(name)) {
+					suspicious.push(name);
+				}
+			}
+			if (suspicious.length > 0) {
+				return {
+					id: "ci:check-alignment",
+					category: "ci",
+					label: "CI check alignment",
+					status: "warn",
+					message: `ci-required-checks.json has githubCheckName values that look like CircleCI job names, not workflow names: ${suspicious.join(", ")}. CircleCI reports ONE check run per workflow (e.g. "pr-pipeline"), not per job.`,
+					fix:
+						"Update githubCheckName fields to workflow names (pr-pipeline / harness-gates)." +
+						" See docs/agents/17-ci-required-checks.md",
+				};
+			}
+		}
+
+		return {
+			id: "ci:check-alignment",
+			category: "ci",
+			label: "CI check alignment",
+			status: "ok",
+			message: `githubCheckName fields look correct for provider "${provider}"`,
+		};
+	},
 ];
 
 // ─── Post-init checklist ──────────────────────────────────────────────────────
