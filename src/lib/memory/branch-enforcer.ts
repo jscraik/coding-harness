@@ -162,6 +162,8 @@ function validateBranchNaming(branch: string): {
  */
 export function enforceCodexBranch(options?: {
 	forjamiePath?: string;
+	/** Path from contract.memoryPolicy.sessionLogPath (project-level override) */
+	contractSessionLogPath?: string;
 	maxAgeHours?: number;
 }): CodexEnforcementResult {
 	const branchInfo = detectCurrentBranch();
@@ -183,8 +185,11 @@ export function enforceCodexBranch(options?: {
 	const namingResult = validateBranchNaming(branchName);
 	violations.push(...namingResult.violations);
 
-	// 2. Check FORJAMIE.md compliance
-	const forjamiePath = resolve(options?.forjamiePath ?? "FORJAMIE.md");
+	// 2. Check session-log compliance.
+	// Resolution order: explicit CLI flag → contract.memoryPolicy.sessionLogPath → "FORJAMIE.md"
+	const forjamiePath = resolve(
+		options?.forjamiePath ?? options?.contractSessionLogPath ?? "FORJAMIE.md",
+	);
 	const forjamieResult = checkForjamieCompliance(forjamiePath, options);
 	violations.push(...forjamieResult.violations);
 

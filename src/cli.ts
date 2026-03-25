@@ -191,6 +191,14 @@ function printUsage(): void {
 			name: "tooling-audit",
 			summary: "Multi-repo tooling baseline audit for managed repo surfaces",
 		},
+		{
+			name: "upgrade",
+			summary: "Upgrade harness scaffold to the latest version",
+		},
+		{
+			name: "replay",
+			summary: "Replay or list captured agent automation traces",
+		},
 	];
 
 	console.info("Usage: harness <command> [options]");
@@ -431,7 +439,9 @@ function printUsage(): void {
 	console.info("");
 	console.info("Memory Gate Options:");
 	console.info("  --memory         Path to memory.json (default: memory.json)");
-	console.info("  --forjamie       Path to FORJAMIE.md (default: FORJAMIE.md)");
+	console.info(
+		"  --forjamie       Path to session-log file (default: FORJAMIE.md; override with contract.memoryPolicy.sessionLogPath)",
+	);
 	console.info(
 		"  --metrics        Path to metrics storage (default: .memory-metrics.json)",
 	);
@@ -463,7 +473,39 @@ function printUsage(): void {
 	console.info(
 		"  --baseline       Baseline report path (default: artifacts/consistency-gate/consistency-baseline-latest.json)",
 	);
+	console.info(
+		"  --seed-baseline  Write current state as baseline (initial seeding)",
+	);
+	console.info(
+		"  --suppress <ids> Comma-separated check IDs to suppress from results",
+	);
 	console.info("  --json           Output results as JSON");
+	console.info("");
+	console.info("Symphony Check Options:");
+	console.info("  --repo-root      Repository root to inspect (default: cwd)");
+	console.info(
+		"  --workflow       Path to WORKFLOW.md (default: WORKFLOW.md in repo root)",
+	);
+	console.info(
+		"  --env-file       Override path to env file (default: ~/.codex/.env)",
+	);
+	console.info("  --json           Output as JSON");
+	console.info("");
+	console.info("Upgrade Options:");
+	console.info("  --dry-run        Preview changes without writing");
+	console.info("  --force          Overwrite even if already up to date");
+	console.info("  --provider       CI provider targeting override");
+	console.info(
+		"  --skip-contract-migration  Skip contract schema migration step",
+	);
+	console.info("  --json           Output as JSON");
+	console.info("");
+	console.info("Replay Options:");
+	console.info("  --trace-id       Trace ID to replay (or positional arg)");
+	console.info("  --trace-dir      Directory containing trace files");
+	console.info("  --list           List available trace IDs");
+	console.info("  --dry-run        Show replay plan without executing");
+	console.info("  --json           Output as JSON");
 	console.info("");
 	console.info("Review Gate Options:");
 	console.info("  --token          GitHub token (required)");

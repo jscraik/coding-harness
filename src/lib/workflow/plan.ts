@@ -268,7 +268,11 @@ export function createPlan(options: CreatePlanOptions): string {
 				decisions: brainstorm.frontmatter.decisions,
 			};
 		} catch {
-			// Brainstorm not found, will proceed without origin
+			// Brainstorm not found — warn so callers know the origin reference
+			// was not resolved; proceed without origin data rather than hard-failing.
+			console.warn(
+				`[plan-gate] Warning: brainstorm '${options.originBrainstorm}' not found; plan will be created without an origin reference.`,
+			);
 		}
 	} else {
 		// Try to find matching brainstorm
