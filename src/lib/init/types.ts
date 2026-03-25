@@ -272,6 +272,9 @@ export interface TemplateRenderContext {
 	linearProjectSlug?: string;
 	/** Detected or operator-specified project type, persisted to harness.contract.json */
 	projectType?: ProjectType;
+	/** Security contact email for GitHub issue template config; resolved from contract.owner.email,
+	 * env var HARNESS_SECURITY_EMAIL, or falls back to 'security@example.com'. */
+	securityEmail?: string;
 }
 
 export interface Template {

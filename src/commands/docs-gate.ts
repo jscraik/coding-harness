@@ -848,7 +848,11 @@ export function runDocsGate(options: DocsGateOptions = {}): DocsGateResult {
 				"utf-8",
 			);
 		} catch (_error) {
-			// Silent fail for stub report - already in error state
+			// Warn instead of silently swallowing: we're already in an error
+			// state but a missing artifact can cause confusing CI behaviour.
+			console.warn(
+				`[docs-gate] Warning: failed to write stub report to '${options.outPath ?? DEFAULT_OUT_PATH}': ${_error instanceof Error ? _error.message : String(_error)}`,
+			);
 		}
 
 		const exitCode = mode === "required" ? 11 : 0; // 11 = bootstrap_gap

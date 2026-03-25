@@ -357,8 +357,14 @@ export async function runPilotRollback(
 		const rollbackPolicy = readRollbackPolicy(contractPath);
 		const modeBefore = rollbackPolicy?.mode ?? readCurrentMode(contractPath);
 
-		// 6. Validate transition (v1: any transition is allowed, but we record it)
-		// In future versions, we may enforce specific transition rules
+		// 6. Validate transition: warn if the requested mode is the same as
+		// the current mode (self-transition). Cross-mode transitions
+		// (autonomous ↔ manual) are always allowed.
+		if (modeBefore === options.mode) {
+			process.stderr.write(
+				`[pilot-rollback] Warning: requested mode '${options.mode}' is already the active mode \u2014 recording event but no state change will occur.\n`,
+			);
+		}
 		const requestedAt = nowIso();
 
 		// 7. Generate event ID and create event record
