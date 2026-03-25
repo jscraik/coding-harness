@@ -59,7 +59,7 @@ jobs:
   pr-slow:
     docker:
       - image: cimg/node:24.13
-    resource_class: xlarge
+    resource_class: large
     steps:
       - checkout
       - run:
