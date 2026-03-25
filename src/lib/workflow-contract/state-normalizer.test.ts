@@ -1,23 +1,20 @@
 import { describe, expect, it } from "vitest";
 import {
+	ALL_CANONICAL_STATES,
+	CANONICAL_NON_TERMINAL_STATES,
+	CANONICAL_TERMINAL_STATES,
+	type CanonicalState,
+	GITHUB_STATUS_ALIASES,
+	LINEAR_STATUS_ALIASES,
+	type StatusAliasMap,
 	createStateNormalizer,
 	validateAliasMap,
 	validateTransitionsUseCanonical,
-	LINEAR_STATUS_ALIASES,
-	GITHUB_STATUS_ALIASES,
-	ALL_CANONICAL_STATES,
-	CANONICAL_TERMINAL_STATES,
-	CANONICAL_NON_TERMINAL_STATES,
-	type CanonicalState,
-	type StatusAliasMap,
 } from "./state-normalizer.js";
 
 // ─── Helpers ────────────────────────────────────────────────────────────────────
 
-function hasCode(
-	findings: Array<{ code: string }>,
-	code: string,
-): boolean {
+function hasCode(findings: Array<{ code: string }>, code: string): boolean {
 	return findings.some((f) => f.code === code);
 }
 
@@ -117,9 +114,7 @@ describe("createStateNormalizer", () => {
 		it("translates GitHub statuses", () => {
 			expect(normalizer.toCanonical("open")).toBe("S0 TODO");
 			expect(normalizer.toCanonical("in_progress")).toBe("S1 IN_PROGRESS");
-			expect(normalizer.toCanonical("review_requested")).toBe(
-				"S2 IN_REVIEW",
-			);
+			expect(normalizer.toCanonical("review_requested")).toBe("S2 IN_REVIEW");
 			expect(normalizer.toCanonical("closed")).toBe("S3 DONE");
 			expect(normalizer.toCanonical("merged")).toBe("S3 DONE");
 		});
@@ -307,9 +302,7 @@ describe("validateTransitionsUseCanonical", () => {
 		const findings = validateTransitionsUseCanonical(transitions);
 		expect(findings.length).toBeGreaterThan(0);
 		expect(
-			findings.every(
-				(f) => f.code === "TRANSITION_NON_CANONICAL_STATE",
-			),
+			findings.every((f) => f.code === "TRANSITION_NON_CANONICAL_STATE"),
 		).toBe(true);
 	});
 

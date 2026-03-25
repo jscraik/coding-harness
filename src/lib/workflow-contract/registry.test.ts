@@ -1,11 +1,11 @@
-import { describe, expect, it } from "vitest";
 import { resolve } from "node:path";
+import { describe, expect, it } from "vitest";
 import {
+	type RegistryFinding,
+	type WorkflowArtifactRegistry,
 	loadRegistry,
 	validateRegistry,
 	validateRegistryPaths,
-	type WorkflowArtifactRegistry,
-	type RegistryFinding,
 } from "./registry.js";
 
 // ─── Helpers ────────────────────────────────────────────────────────────────────
@@ -78,9 +78,7 @@ describe("validateRegistry", () => {
 
 	it("fails when artifact id is missing", () => {
 		const registry = validRegistry();
-		(
-			registry.artifacts[0] as unknown as Record<string, unknown>
-		).id = "";
+		(registry.artifacts[0] as unknown as Record<string, unknown>).id = "";
 
 		const result = validateRegistry(registry);
 		expect(result.pass).toBe(false);
@@ -101,9 +99,8 @@ describe("validateRegistry", () => {
 
 	it("fails on invalid id format (non-kebab)", () => {
 		const registry = validRegistry();
-		(
-			registry.artifacts[0] as unknown as Record<string, unknown>
-		).id = "CamelCase";
+		(registry.artifacts[0] as unknown as Record<string, unknown>).id =
+			"CamelCase";
 
 		const result = validateRegistry(registry);
 		expect(result.pass).toBe(false);
@@ -112,9 +109,7 @@ describe("validateRegistry", () => {
 
 	it("fails when path is missing", () => {
 		const registry = validRegistry();
-		(
-			registry.artifacts[0] as unknown as Record<string, unknown>
-		).path = "";
+		(registry.artifacts[0] as unknown as Record<string, unknown>).path = "";
 
 		const result = validateRegistry(registry);
 		expect(result.pass).toBe(false);
@@ -123,9 +118,7 @@ describe("validateRegistry", () => {
 
 	it("fails when owner is missing", () => {
 		const registry = validRegistry();
-		(
-			registry.artifacts[0] as unknown as Record<string, unknown>
-		).owner = "";
+		(registry.artifacts[0] as unknown as Record<string, unknown>).owner = "";
 
 		const result = validateRegistry(registry);
 		expect(result.pass).toBe(false);
@@ -134,9 +127,8 @@ describe("validateRegistry", () => {
 
 	it("fails on invalid status", () => {
 		const registry = validRegistry();
-		(
-			registry.artifacts[0] as unknown as Record<string, unknown>
-		).status = "unknown";
+		(registry.artifacts[0] as unknown as Record<string, unknown>).status =
+			"unknown";
 
 		const result = validateRegistry(registry);
 		expect(result.pass).toBe(false);
@@ -151,9 +143,9 @@ describe("validateRegistry", () => {
 
 		const result = validateRegistry(registry);
 		expect(result.pass).toBe(false);
-		expect(
-			hasFinding(result.findings, "INVALID_DEPRECATION_POLICY"),
-		).toBe(true);
+		expect(hasFinding(result.findings, "INVALID_DEPRECATION_POLICY")).toBe(
+			true,
+		);
 	});
 
 	it("warns when deprecated artifact lacks superseded_by", () => {
@@ -162,13 +154,12 @@ describe("validateRegistry", () => {
 
 		const result = validateRegistry(registry);
 		// warning, not error
-		expect(
-			hasFinding(result.findings, "DEPRECATED_NEEDS_SUCCESSOR"),
-		).toBe(true);
+		expect(hasFinding(result.findings, "DEPRECATED_NEEDS_SUCCESSOR")).toBe(
+			true,
+		);
 		expect(
 			result.findings.find(
-				(f: RegistryFinding) =>
-					f.code === "DEPRECATED_NEEDS_SUCCESSOR",
+				(f: RegistryFinding) => f.code === "DEPRECATED_NEEDS_SUCCESSOR",
 			)?.severity,
 		).toBe("warning");
 	});
@@ -188,9 +179,7 @@ describe("validateRegistry", () => {
 		).last_validated_at = "";
 
 		const result = validateRegistry(registry);
-		expect(hasFinding(result.findings, "MISSING_LAST_VALIDATED")).toBe(
-			true,
-		);
+		expect(hasFinding(result.findings, "MISSING_LAST_VALIDATED")).toBe(true);
 	});
 });
 

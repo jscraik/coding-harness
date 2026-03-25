@@ -1,6 +1,7 @@
 import { ContractLoadError, loadContract } from "../lib/contract/loader.js";
 import type { RiskTier } from "../lib/contract/types.js";
 import { sanitizeError } from "../lib/input/sanitize.js";
+import { normalisePolicyGateResult } from "../lib/output/normalise.js";
 import { resolveOverallTier } from "../lib/policy/risk-tier.js";
 
 // Exit codes for programmatic consumption
@@ -133,7 +134,8 @@ export function runPolicyGateCLI(options: PolicyGateOptions): number {
 
 	if (result.ok) {
 		if (options.json) {
-			console.info(JSON.stringify(result.output));
+			const gateResult = normalisePolicyGateResult(result);
+			process.stdout.write(`${JSON.stringify(gateResult, null, 2)}\n`);
 		} else if (result.output.passed) {
 			console.info(`✓ Policy gate passed (tier: ${result.output.tier})`);
 		} else {
@@ -149,7 +151,8 @@ export function runPolicyGateCLI(options: PolicyGateOptions): number {
 	// Error output always to stderr
 	console.error(result.error.message);
 	if (options.json) {
-		console.error(JSON.stringify({ error: result.error }));
+		const gateResult = normalisePolicyGateResult(result);
+		process.stdout.write(`${JSON.stringify(gateResult, null, 2)}\n`);
 	}
 
 	// Map error codes to exit codes

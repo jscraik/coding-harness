@@ -103,14 +103,15 @@ harness init --dry-run
 # Review the planned files. If anything looks wrong, STOP.
 
 # 3.2 — Apply (CircleCI is the standard CI provider for this project)
-harness init --ci circleci
+harness init
 
 # 3.3 — Verify scaffold applied
 harness init --check-updates
 ```
 
-> **CI provider:** `circleci` is the default — you do not need to pass `--ci circleci`
-> explicitly, but it is safe to do so. Greptile review runs as a **CircleCI job**
+> **CI provider:** `circleci` is the default. Do **not** pass `--ci circleci` here:
+> the current CLI treats that extra positional argument as a target directory.
+> Greptile review runs as a **CircleCI job**
 > (`greptile-review`) — no GitHub Actions workflow file is written or required.
 
 ---
@@ -132,21 +133,21 @@ Review the output. Confirm the listed `.github/workflows/` files will be removed
 that the CircleCI config is already present (from Phase 3). If anything looks wrong, STOP.
 
 ```bash
-# 3b.2 — Create a recovery snapshot before applying
-harness ci-migrate prepare --provider circleci
+# 3b.2 — Apply the migration and create the recovery snapshot
+harness ci-migrate prepare --provider circleci --apply
 
-# 3b.3 — Apply the migration
-harness ci-migrate commit
+# 3b.3 — Verify migration is complete (uses the snapshot id from prepare output)
+harness ci-migrate verify --snapshot <snapshot-id>
 
-# 3b.4 — Verify migration is complete
-harness ci-migrate verify
+# 3b.4 — Commit the cutover once verification passes
+harness ci-migrate commit --snapshot <snapshot-id>
 ```
 
 **If something goes wrong:**
 
 ```bash
 # Roll back to the pre-migration state
-harness ci-migrate abort
+harness ci-migrate abort --snapshot <snapshot-id>
 ```
 
 **What `ci-migrate` does:**

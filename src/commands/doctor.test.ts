@@ -1,16 +1,11 @@
+import { spawnSync } from "node:child_process";
+import { existsSync, mkdirSync, rmSync, writeFileSync } from "node:fs";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
 /**
  * Tests for harness doctor command (JSC-65)
  */
-import { describe, expect, it, vi, beforeEach, afterEach } from "vitest";
-import {
-	existsSync,
-	mkdirSync,
-	rmSync,
-	writeFileSync,
-} from "node:fs";
-import { join } from "node:path";
-import { tmpdir } from "node:os";
-import { spawnSync } from "node:child_process";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { runDoctor } from "./doctor.js";
 
 // Mock spawnSync for tool checks (node, pnpm, git, gh)
@@ -238,9 +233,7 @@ describe("runDoctor — file checks", () => {
 	it("warns when agent-first-status.md is missing", () => {
 		mockAllToolsOk();
 		const report = runDoctor({ dir });
-		const check = report.checks.find(
-			(c) => c.id === "file:agent-first-status",
-		);
+		const check = report.checks.find((c) => c.id === "file:agent-first-status");
 		expect(check?.status).toBe("warn");
 	});
 
@@ -254,9 +247,7 @@ describe("runDoctor — file checks", () => {
 		mockAllToolsOk();
 
 		const report = runDoctor({ dir });
-		const check = report.checks.find(
-			(c) => c.id === "file:agent-first-status",
-		);
+		const check = report.checks.find((c) => c.id === "file:agent-first-status");
 		expect(check?.status).toBe("ok");
 	});
 });
@@ -339,7 +330,7 @@ describe("runDoctor — report structure", () => {
 		expect(report).toHaveProperty("hasFailures");
 		expect(report).toHaveProperty("postInitChecklist");
 		expect(Array.isArray(report.postInitChecklist)).toBe(true);
-		expect((report.postInitChecklist?.length ?? 0)).toBeGreaterThan(0);
+		expect(report.postInitChecklist?.length ?? 0).toBeGreaterThan(0);
 	});
 
 	it("every failing check has a fix command", () => {

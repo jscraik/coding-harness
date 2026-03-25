@@ -4,6 +4,7 @@ import {
 	sanitizePathForDisplay,
 } from "../lib/input/sanitize.js";
 import { PathTraversalError, validatePath } from "../lib/input/validator.js";
+import { normalisePrTemplateGateResult } from "../lib/output/normalise.js";
 import { validatePrTemplateBody } from "../lib/pr-template-validator.js";
 
 export const EXIT_CODES = {
@@ -148,7 +149,8 @@ export function runPrTemplateGateCLI(options: PrTemplateGateOptions): number {
 
 	if (!result.ok) {
 		if (options.json) {
-			console.info(JSON.stringify(result, null, 2));
+			const gateResult = normalisePrTemplateGateResult(result);
+			process.stdout.write(`${JSON.stringify(gateResult, null, 2)}\n`);
 		} else {
 			console.error(`Error: ${result.error.message}`);
 		}
@@ -156,7 +158,8 @@ export function runPrTemplateGateCLI(options: PrTemplateGateOptions): number {
 	}
 
 	if (options.json) {
-		console.info(JSON.stringify(result.output, null, 2));
+		const gateResult = normalisePrTemplateGateResult(result);
+		process.stdout.write(`${JSON.stringify(gateResult, null, 2)}\n`);
 	} else if (result.output.passed) {
 		console.info("PR template gate passed.");
 	} else {

@@ -39,9 +39,7 @@ type ContractTransform = {
 	/** Friendly description for changelog */
 	description: string;
 	/** Apply the transform; return true if a change was made */
-	apply(
-		contract: Record<string, unknown>,
-	): ContractMigrationChange | null;
+	apply(contract: Record<string, unknown>): ContractMigrationChange | null;
 };
 
 /**
@@ -70,8 +68,7 @@ const CONTRACT_TRANSFORMS: ContractTransform[] = [
 	// v0.8.0: ciProviderPolicy.migrationStage
 	{
 		sinceVersion: "0.8.0",
-		description:
-			'ciProviderPolicy.migrationStage defaults to "pre-migration"',
+		description: 'ciProviderPolicy.migrationStage defaults to "pre-migration"',
 		apply(contract) {
 			const policy = getOrCreateObject(contract, "ciProviderPolicy");
 			if (typeof policy.migrationStage !== "string") {
@@ -118,10 +115,15 @@ const CONTRACT_TRANSFORMS: ContractTransform[] = [
 			const hasAuthority =
 				typeof policy.authorityConfigPath === "string" &&
 				policy.authorityConfigPath.trim().length > 0;
-			if (!hasTrustedRef && !hasAuthority && typeof policy.commitMode !== "string") {
+			if (
+				!hasTrustedRef &&
+				!hasAuthority &&
+				typeof policy.commitMode !== "string"
+			) {
 				policy.commitMode = "solo";
 				return {
-					description: 'Added ciProviderPolicy.commitMode = "solo" (auto-detected from absent enterprise fields)',
+					description:
+						'Added ciProviderPolicy.commitMode = "solo" (auto-detected from absent enterprise fields)',
 					field: "ciProviderPolicy.commitMode",
 					defaultValue: "solo",
 				};

@@ -135,13 +135,15 @@ export interface UpgradeContext {
  * Reads the restore-manifest for the installed version, then cross-checks
  * the upgrade-manifest (if it exists) to classify stock vs customized files.
  */
-export function detectUpgradeContext(targetDir: string): {
-	ok: true;
-	value: UpgradeContext;
-} | {
-	ok: false;
-	error: string;
-} {
+export function detectUpgradeContext(targetDir: string):
+	| {
+			ok: true;
+			value: UpgradeContext;
+	  }
+	| {
+			ok: false;
+			error: string;
+	  } {
 	const upgradeManifestPath = resolve(
 		targetDir,
 		HARNESS_DIR,
@@ -152,7 +154,7 @@ export function detectUpgradeContext(targetDir: string): {
 	// Read from restore-manifest for installed version
 	const manifestResult = loadManifest(targetDir);
 	const fromVersion = manifestResult.ok
-		? manifestResult.value.harnessVersion ?? "0.0.0"
+		? (manifestResult.value.harnessVersion ?? "0.0.0")
 		: "0.0.0";
 
 	if (!semver.valid(fromVersion)) {
@@ -248,9 +250,7 @@ export function formatUpgradeSummary(ctx: UpgradeContext): string {
 			"   This may overwrite files with older templates. Use --commit-mode=enterprise to abort.",
 		);
 	} else if (ctx.upgradeNeeded) {
-		lines.push(
-			`🔄 UPGRADE READY: ${ctx.fromVersion} → ${ctx.toVersion}`,
-		);
+		lines.push(`🔄 UPGRADE READY: ${ctx.fromVersion} → ${ctx.toVersion}`);
 	} else {
 		lines.push(`✅ Already at ${ctx.toVersion} — no template changes needed.`);
 		return lines.join("\n");
@@ -261,9 +261,7 @@ export function formatUpgradeSummary(ctx: UpgradeContext): string {
 		lines.push(
 			"   ℹ️  No upgrade-manifest.json found. Run `harness init --track` first to enable",
 		);
-		lines.push(
-			"      stock-vs-customized tracking for future upgrades.",
-		);
+		lines.push("      stock-vs-customized tracking for future upgrades.");
 	} else {
 		if (ctx.customizedFiles.length > 0) {
 			lines.push("");

@@ -106,6 +106,13 @@ harness init --update
 harness init --interactive
 ```
 
+To specify or override the detected project type during init:
+
+```bash
+harness init --project-type web       # explicit: cli | desktop | library | web
+harness init --project-type cli --json  # machine-readable structured output
+```
+
 ### 2. Gate a change before review
 
 This is the practical loop for “did we update the right things?”
@@ -164,7 +171,7 @@ flags, use `harness --help`.
 
 | Command | Purpose |
 | --- | --- |
-| `init` | Scaffold or update harness-managed repo surfaces |
+| `init` | Scaffold or update harness-managed repo surfaces (`--project-type`, `--json`, `--dry-run`, `--force`, `--track`, `--update`, `--migrate`) |
 | `ci-migrate` | Stage, verify, commit, or abort CI migration |
 | `branch-protect` | Configure GitHub branch protection rulesets |
 | `verify-greptile` | Verify Greptile configuration and remote wiring |
@@ -277,6 +284,12 @@ It covers:
 - harness install and update workflows
 - capability boundaries and safe usage rules
 - command discovery and validation expectations
+
+Run the packaged-skill validation lane after changing the bundle:
+
+```bash
+pnpm skill:validate
+```
 
 Repository-local skills follow the same convention:
 

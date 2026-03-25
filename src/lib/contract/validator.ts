@@ -2859,12 +2859,16 @@ export function validateContract(
 			"gha-only",
 		] as const;
 		const stage = ciProviderPolicy.migrationStage as string | undefined;
-		if (stage !== undefined && completedStages.includes(stage as (typeof completedStages)[number])) {
+		if (
+			stage !== undefined &&
+			completedStages.includes(stage as (typeof completedStages)[number])
+		) {
 			errors.push({
 				code: ValidationErrorCode.INVALID_VALUE,
 				path: "ciProviderPolicy.mode",
 				message: `ciProviderPolicy.mode is "shadow" but migrationStage is "${stage}" — migration is complete but mode still reports as shadow`,
-				expected: '"primary" or "required" when migrationStage is fully migrated',
+				expected:
+					'"primary" or "required" when migrationStage is fully migrated',
 				received: `mode="${ciProviderPolicy.mode}", migrationStage="${stage}"`,
 				fix: 'Set ciProviderPolicy.mode to "primary" or "required" to match the completed migration stage',
 			});
@@ -2875,7 +2879,10 @@ export function validateContract(
 	if (ciProviderPolicy?.mode === "required") {
 		const earlyStages = ["pre-migration", "dual-provider"] as const;
 		const stage = ciProviderPolicy.migrationStage as string | undefined;
-		if (stage !== undefined && earlyStages.includes(stage as (typeof earlyStages)[number])) {
+		if (
+			stage !== undefined &&
+			earlyStages.includes(stage as (typeof earlyStages)[number])
+		) {
 			errors.push({
 				code: ValidationErrorCode.INVALID_VALUE,
 				path: "ciProviderPolicy.migrationStage",
@@ -2898,7 +2905,8 @@ export function validateContract(
 			path: "ciProviderPolicy.commitMode",
 			message:
 				'ciProviderPolicy.commitMode is "solo" but trustedPolicyRef is set — solo mode skips enterprise policy gates',
-			expected: '"team" or "enterprise" commitMode when trustedPolicyRef is configured',
+			expected:
+				'"team" or "enterprise" commitMode when trustedPolicyRef is configured',
 			received: `commitMode="solo", trustedPolicyRef="${String(ciProviderPolicy.trustedPolicyRef)}"`,
 			fix: 'Change commitMode to "team" or "enterprise", or remove trustedPolicyRef',
 		});

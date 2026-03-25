@@ -1143,6 +1143,8 @@ export interface HarnessContract {
 	toolingPolicy?: ToolingPolicy | undefined;
 	/** CI provider transition policy for required checks and trusted policy refs */
 	ciProviderPolicy?: CIProviderPolicy | undefined;
+	/** Auto-detected or operator-specified project type. Absence is treated as "unknown" at all read sites. */
+	projectType?: "cli" | "desktop" | "library" | "web" | "unknown" | undefined;
 }
 
 export const DEFAULT_CONTRACT: HarnessContract = {

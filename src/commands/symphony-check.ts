@@ -45,10 +45,10 @@ export interface SymphonyCheckResult {
 // 2. Helpers
 // ---------------------------------------------------------------------------
 
-const CODEX_ENV_PATHS = [
-	resolve(process.env.HOME ?? "~", ".codex/.env"),
-	resolve(process.env.HOME ?? "~", ".codex/env"),
-];
+function getCodexEnvPaths(): string[] {
+	const home = process.env.HOME ?? "~";
+	return [resolve(home, ".codex/.env"), resolve(home, ".codex/env")];
+}
 
 const CANONICAL_TRANSITION_TABLE_HEADERS = [
 	"S | E | G | A | N",
@@ -79,7 +79,8 @@ function resolveLinearApiKeyAvailable(envFilePath?: string): boolean {
 	}
 
 	// 2. Check specified env-file or default codex env paths
-	const candidates = envFilePath ? [envFilePath] : CODEX_ENV_PATHS;
+	const codexEnvPaths = getCodexEnvPaths();
+	const candidates = envFilePath ? [envFilePath] : codexEnvPaths;
 	for (const candidate of candidates) {
 		try {
 			if (!existsSync(candidate)) {
@@ -91,7 +92,7 @@ function resolveLinearApiKeyAvailable(envFilePath?: string): boolean {
 				// The canonical Codex env source is a 1Password-backed FIFO on many
 				// local machines. For readiness purposes, treat that default source as
 				// a valid configured secret input without trying to synchronously drain it.
-				if (!envFilePath && CODEX_ENV_PATHS.includes(candidate)) {
+				if (!envFilePath && getCodexEnvPaths().includes(candidate)) {
 					return true;
 				}
 				continue;

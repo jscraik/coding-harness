@@ -1,16 +1,17 @@
 version: 2.1
 
 jobs:
-  # ───────────────────────────────────────────────────────────────────────────
-  # PR pipeline — runs on every PR branch (any branch except main)
-  # ───────────────────────────────────────────────────────────────────────────
-  pr-pipeline:
+  # ─────────────────────────────────────────────────────────────────────────────
+  # PR pipeline (fast) — lint, typecheck, audit, and the full test suite
+  # excluding the slow pilot-evaluate suite.
+  #
+  # resource_class: large (4 vCPU / 8 GB) — required because ci-migrate.test.ts
+  # runs 97 RSA-signing tests (~233s). On medium (2 vCPU) the vitest birpc IPC
+  # onTaskUpdate call stalls past the 60s timeout under CPU contention.
+  # ─────────────────────────────────────────────────────────────────────────────
+  pr-fast:
     docker:
       - image: cimg/node:24.13
-    # large: 4 vCPU / 8 GB. Required because ci-migrate.test.ts runs 97 tests
-    # with real RSA signing (~233s total). On medium (2 vCPU), the birpc IPC
-    # onTaskUpdate call stalls past the 60s timeout under CPU contention,
-    # causing the test run to fail despite all 1777 tests passing.
     resource_class: large
     steps:
       - checkout
@@ -28,23 +29,57 @@ jobs:
           command: pnpm install
       - run:
           name: Lint
-          command: pnpm lint || echo "::warning::Lint check has known issues (84 errors) - see issue #XX"
+          command: pnpm lint
       - run:
           name: Typecheck
           command: pnpm typecheck
       - run:
-          name: Test
-          # ci-migrate.test.ts runs 97 RSA-signing tests (~233s); allow 15m.
-          no_output_timeout: 15m
-          command: pnpm test
+          name: Test (excluding pilot-evaluate)
+          # Excludes the slow pilot-evaluate suite; it runs in pr-slow.
+          # ci-migrate.test.ts alone runs ~233s of RSA signing — allow 12m.
+          no_output_timeout: 12m
+          command: pnpm exec vitest run --exclude '**/pilot-evaluate.test.ts'
       - run:
           name: Audit
           command: pnpm audit
       - run:
-          name: Policy Bundle
-          command: pnpm check
+          name: Docs lint
+          command: pnpm docs:lint
+      - run:
+          name: Skill + workflow validation
+          command: pnpm skill:validate && pnpm workflow:validate
 
-  # ───────────────────────────────────────────────────────────────────────────
+  # ─────────────────────────────────────────────────────────────────────────────
+  # PR pipeline (slow) — isolated pilot-evaluate suite.
+  #
+  # pilot-evaluate.test.ts runs long-running evaluation windows and RSA signing
+  # loops. On large (4 vCPU) the vitest worker IPC can time out when run
+  # alongside other heavy suites. Isolated here on xlarge with its own timeout.
+  # ─────────────────────────────────────────────────────────────────────────────
+  pr-slow:
+    docker:
+      - image: cimg/node:24.13
+    resource_class: large
+    steps:
+      - checkout
+      - run:
+          name: Ensure pnpm available
+          command: |
+            if ! command -v pnpm > /dev/null 2>&1; then
+              export NPM_CONFIG_PREFIX="$HOME/.local"
+              export PATH="$NPM_CONFIG_PREFIX/bin:$PATH"
+              npm install --global pnpm@10.0.0
+            fi
+            pnpm --version
+      - run:
+          name: Install dependencies
+          command: pnpm install
+      - run:
+          name: Test (pilot-evaluate only)
+          no_output_timeout: 20m
+          command: pnpm exec vitest run src/commands/pilot-evaluate.test.ts
+
+  # ─────────────────────────────────────────────────────────────────────────────
   # Release pipeline — runs on main branch merges only
   #
   # Required CircleCI environment variables (set in Project Settings → Env Vars):
@@ -58,7 +93,7 @@ jobs:
   #   3. standard-version bumps package.json + CHANGELOG.md, commits, tags
   #   4. Push the commit + tag to main via authenticated remote
   #   5. Build and publish to npm
-  # ───────────────────────────────────────────────────────────────────────────
+  # ─────────────────────────────────────────────────────────────────────────────
   release:
     docker:
       - image: cimg/node:24.13
@@ -124,10 +159,15 @@ jobs:
             echo "Published @brainwav/coding-harness@${VERSION}"
 
 workflows:
-  # Runs on every PR branch push (all branches except main)
+  # Runs on every PR branch push (all branches except main).
+  # pr-fast and pr-slow run in parallel.
   pr-workflow:
     jobs:
-      - pr-pipeline:
+      - pr-fast:
+          filters:
+            branches:
+              ignore: main
+      - pr-slow:
           filters:
             branches:
               ignore: main

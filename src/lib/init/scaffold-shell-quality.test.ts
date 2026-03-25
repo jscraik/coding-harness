@@ -13,7 +13,11 @@
  * - shellcheck is not guaranteed to be installed in all environments
  */
 import { describe, expect, it } from "vitest";
-import { type Template, type TemplateRenderContext, getTemplatesForProvider } from "../../lib/init/scaffold.js";
+import {
+	type Template,
+	type TemplateRenderContext,
+	getTemplatesForProvider,
+} from "../../lib/init/scaffold.js";
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -29,7 +33,10 @@ const STUB_CONTEXT: TemplateRenderContext = {
 };
 
 function renderTemplate(template: Template): ShellTemplate {
-	return { path: template.path, content: template.render("pnpm", STUB_CONTEXT) };
+	return {
+		path: template.path,
+		content: template.render("pnpm", STUB_CONTEXT),
+	};
 }
 
 function getShellTemplates(): ShellTemplate[] {
@@ -46,7 +53,6 @@ function getShellTemplates(): ShellTemplate[] {
 			return true;
 		});
 }
-
 
 function findOptionalToolsWithoutGuard(content: string): string[] {
 	// Only flag lines where `diagram` is actually being EXECUTED as a command,
@@ -74,7 +80,10 @@ function findOptionalToolsWithoutGuard(content: string): string[] {
 				// Check if there's a command -v guard in nearby lines (10 lines context)
 				const contextStart = Math.max(0, i - 10);
 				const context = lines.slice(contextStart, i + 1).join("\n");
-				if (!context.includes("command -v diagram") && !context.includes("command -v")) {
+				if (
+					!context.includes("command -v diagram") &&
+					!context.includes("command -v")
+				) {
 					violations.push(`Line ${i + 1}: ${line.trim()}`);
 				}
 			}
@@ -83,7 +92,6 @@ function findOptionalToolsWithoutGuard(content: string): string[] {
 
 	return violations;
 }
-
 
 // ─── Tests ────────────────────────────────────────────────────────────────────
 
@@ -106,7 +114,9 @@ describe("generated shell script quality (JSC-62)", () => {
 		for (const template of shellTemplates) {
 			const firstLine = template.content.split("\n")[0] ?? "";
 			if (!firstLine.startsWith("#!/")) {
-				violations.push(`${template.path}: missing shebang (got: ${firstLine.slice(0, 40)})`);
+				violations.push(
+					`${template.path}: missing shebang (got: ${firstLine.slice(0, 40)})`,
+				);
 			}
 		}
 		if (violations.length > 0) {
@@ -139,9 +149,7 @@ describe("generated shell script quality (JSC-62)", () => {
 		for (const template of shellTemplates) {
 			const violations = findOptionalToolsWithoutGuard(template.content);
 			if (violations.length > 0) {
-				allViolations.push(
-					`== ${template.path} ==\n${violations.join("\n")}`,
-				);
+				allViolations.push(`== ${template.path} ==\n${violations.join("\n")}`);
 			}
 		}
 		if (allViolations.length > 0) {

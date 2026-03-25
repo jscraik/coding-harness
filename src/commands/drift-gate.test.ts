@@ -346,7 +346,9 @@ describe("drift-gate command", () => {
 		).toBe(false);
 		expect(result.report.summary.suppressed_count).toBe(1);
 		expect(result.report.suppressed?.length).toBe(1);
-		expect(result.report.suppressed?.[0]?.rule_id).toBe("status.matrix.missing");
+		expect(result.report.suppressed?.[0]?.rule_id).toBe(
+			"status.matrix.missing",
+		);
 	});
 
 	it("findings include fix guidance", () => {

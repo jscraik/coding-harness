@@ -83,8 +83,7 @@ function hasFindingWithMessage(
 	messagePart: string,
 ): boolean {
 	return findings.some(
-		(f: CheckFinding) =>
-			f.code === code && f.message.includes(messagePart),
+		(f: CheckFinding) => f.code === code && f.message.includes(messagePart),
 	);
 }
 
@@ -128,7 +127,8 @@ describe("checkWorkflowContract", () => {
 
 		it("fails when max_duration is missing", () => {
 			const contract = validContract();
-			(contract.metadata as unknown as Record<string, unknown>).max_duration = "";
+			(contract.metadata as unknown as Record<string, unknown>).max_duration =
+				"";
 
 			const result = checkWorkflowContract(contract);
 			expect(result.pass).toBe(false);
@@ -155,11 +155,7 @@ describe("checkWorkflowContract", () => {
 		});
 
 		it("accepts all valid change_class values", () => {
-			for (const cc of [
-				"behavior",
-				"validation-only",
-				"docs-only",
-			] as const) {
+			for (const cc of ["behavior", "validation-only", "docs-only"] as const) {
 				const contract = validContract();
 				contract.metadata.change_class = cc;
 				// Adjust validation contract for non-behavior changes
@@ -179,30 +175,33 @@ describe("checkWorkflowContract", () => {
 	describe("validation_contract", () => {
 		it("fails when behavior change_class has no validation_contract", () => {
 			const contract = validContract();
-			(contract as unknown as Record<string, unknown>).validation_contract = undefined;
+			(contract as unknown as Record<string, unknown>).validation_contract =
+				undefined;
 
 			const result = checkWorkflowContract(contract);
 			expect(result.pass).toBe(false);
-			expect(
-				hasFinding(result.findings, "MISSING_VALIDATION_CONTRACT"),
-			).toBe(true);
+			expect(hasFinding(result.findings, "MISSING_VALIDATION_CONTRACT")).toBe(
+				true,
+			);
 		});
 
 		it("does not fail when non-behavior change_class has no validation_contract", () => {
 			const contract = validContract();
 			contract.metadata.change_class = "docs-only";
-			(contract as unknown as Record<string, unknown>).validation_contract = undefined;
+			(contract as unknown as Record<string, unknown>).validation_contract =
+				undefined;
 
 			const result = checkWorkflowContract(contract);
-			expect(
-				hasFinding(result.findings, "MISSING_VALIDATION_CONTRACT"),
-			).toBe(false);
+			expect(hasFinding(result.findings, "MISSING_VALIDATION_CONTRACT")).toBe(
+				false,
+			);
 		});
 
 		it("fails when test_mode is invalid", () => {
 			const contract = validContract();
-			(contract.validation_contract as unknown as Record<string, unknown>).test_mode =
-				"yolo";
+			(
+				contract.validation_contract as unknown as Record<string, unknown>
+			).test_mode = "yolo";
 
 			const result = checkWorkflowContract(contract);
 			expect(result.pass).toBe(false);
@@ -211,8 +210,9 @@ describe("checkWorkflowContract", () => {
 
 		it("fails when test_tier is invalid", () => {
 			const contract = validContract();
-			(contract.validation_contract as unknown as Record<string, unknown>).test_tier =
-				"smoke";
+			(
+				contract.validation_contract as unknown as Record<string, unknown>
+			).test_tier = "smoke";
 
 			const result = checkWorkflowContract(contract);
 			expect(result.pass).toBe(false);
@@ -227,9 +227,9 @@ describe("checkWorkflowContract", () => {
 
 			const result = checkWorkflowContract(contract);
 			expect(result.pass).toBe(false);
-			expect(
-				hasFinding(result.findings, "INVALID_TRACER_BULLET_FIRST"),
-			).toBe(true);
+			expect(hasFinding(result.findings, "INVALID_TRACER_BULLET_FIRST")).toBe(
+				true,
+			);
 		});
 
 		it("fails when red_evidence_required is invalid", () => {
@@ -240,9 +240,9 @@ describe("checkWorkflowContract", () => {
 
 			const result = checkWorkflowContract(contract);
 			expect(result.pass).toBe(false);
-			expect(
-				hasFinding(result.findings, "INVALID_RED_EVIDENCE_REQUIRED"),
-			).toBe(true);
+			expect(hasFinding(result.findings, "INVALID_RED_EVIDENCE_REQUIRED")).toBe(
+				true,
+			);
 		});
 
 		it("fails when behavior + n/a test_mode", () => {
@@ -252,9 +252,9 @@ describe("checkWorkflowContract", () => {
 
 			const result = checkWorkflowContract(contract);
 			expect(result.pass).toBe(false);
-			expect(
-				hasFinding(result.findings, "BEHAVIOR_REQUIRES_VALIDATION"),
-			).toBe(true);
+			expect(hasFinding(result.findings, "BEHAVIOR_REQUIRES_VALIDATION")).toBe(
+				true,
+			);
 		});
 
 		it("fails when tdd-required but red_evidence_required != yes", () => {
@@ -264,9 +264,9 @@ describe("checkWorkflowContract", () => {
 
 			const result = checkWorkflowContract(contract);
 			expect(result.pass).toBe(false);
-			expect(
-				hasFinding(result.findings, "TDD_REQUIRES_RED_EVIDENCE"),
-			).toBe(true);
+			expect(hasFinding(result.findings, "TDD_REQUIRES_RED_EVIDENCE")).toBe(
+				true,
+			);
 		});
 
 		it("fails when behavior + validation-required but no exemption_reason", () => {
@@ -276,17 +276,16 @@ describe("checkWorkflowContract", () => {
 
 			const result = checkWorkflowContract(contract);
 			expect(result.pass).toBe(false);
-			expect(
-				hasFinding(result.findings, "MISSING_EXEMPTION_REASON"),
-			).toBe(true);
+			expect(hasFinding(result.findings, "MISSING_EXEMPTION_REASON")).toBe(
+				true,
+			);
 		});
 
 		it("fails when exemption_reason is set but reviewed_by is missing", () => {
 			const contract = validContract();
 			contract.validation_contract.test_mode = "validation-required";
 			contract.validation_contract.red_evidence_required = "no";
-			contract.validation_contract.exemption_reason =
-				"legacy migration path";
+			contract.validation_contract.exemption_reason = "legacy migration path";
 
 			const result = checkWorkflowContract(contract);
 			expect(result.pass).toBe(false);
@@ -297,8 +296,7 @@ describe("checkWorkflowContract", () => {
 			const contract = validContract();
 			contract.validation_contract.test_mode = "validation-required";
 			contract.validation_contract.red_evidence_required = "no";
-			contract.validation_contract.exemption_reason =
-				"legacy migration path";
+			contract.validation_contract.exemption_reason = "legacy migration path";
 			contract.validation_contract.reviewed_by = "jamie";
 
 			const result = checkWorkflowContract(contract);
@@ -315,8 +313,7 @@ describe("checkWorkflowContract", () => {
 			const result = checkWorkflowContract(contract);
 			// Should be a warning, not an error
 			const finding = result.findings.find(
-				(f: CheckFinding) =>
-					f.code === "VALIDATION_ONLY_NEEDS_STRATEGY",
+				(f: CheckFinding) => f.code === "VALIDATION_ONLY_NEEDS_STRATEGY",
 			);
 			expect(finding).toBeDefined();
 			expect(finding?.severity).toBe("warning");
@@ -352,9 +349,9 @@ describe("checkWorkflowContract", () => {
 
 			const result = checkWorkflowContract(contract);
 			expect(result.pass).toBe(false);
-			expect(
-				hasFinding(result.findings, "INCOMPLETE_TRANSITION_ROW"),
-			).toBe(true);
+			expect(hasFinding(result.findings, "INCOMPLETE_TRANSITION_ROW")).toBe(
+				true,
+			);
 		});
 
 		it("fails when terminal state has outbound transition", () => {
@@ -369,9 +366,7 @@ describe("checkWorkflowContract", () => {
 
 			const result = checkWorkflowContract(contract);
 			expect(result.pass).toBe(false);
-			expect(hasFinding(result.findings, "TERMINAL_HAS_OUTBOUND")).toBe(
-				true,
-			);
+			expect(hasFinding(result.findings, "TERMINAL_HAS_OUTBOUND")).toBe(true);
 		});
 
 		it("fails when (S,E) pair has duplicate guards (non-deterministic)", () => {
@@ -409,18 +404,18 @@ describe("checkWorkflowContract", () => {
 
 			const result = checkWorkflowContract(contract);
 			expect(result.pass).toBe(false);
-			expect(
-				hasFinding(result.findings, "NON_DETERMINISTIC_TRANSITION"),
-			).toBe(true);
+			expect(hasFinding(result.findings, "NON_DETERMINISTIC_TRANSITION")).toBe(
+				true,
+			);
 		});
 
 		it("passes when (S,E) pair has distinct guards", () => {
 			const contract = validContract();
 			// Existing transitions already have distinct guards for S1|error vs S1|advance
 			const result = checkWorkflowContract(contract);
-			expect(
-				hasFinding(result.findings, "NON_DETERMINISTIC_TRANSITION"),
-			).toBe(false);
+			expect(hasFinding(result.findings, "NON_DETERMINISTIC_TRANSITION")).toBe(
+				false,
+			);
 		});
 
 		it("detects dead states with no outbound transitions", () => {
@@ -436,11 +431,7 @@ describe("checkWorkflowContract", () => {
 
 			const result = checkWorkflowContract(contract);
 			expect(
-				hasFindingWithMessage(
-					result.findings,
-					"DEAD_STATE",
-					"ORPHAN",
-				),
+				hasFindingWithMessage(result.findings, "DEAD_STATE", "ORPHAN"),
 			).toBe(true);
 		});
 
@@ -492,13 +483,12 @@ describe("checkWorkflowContract", () => {
 	describe("execution_modes", () => {
 		it("fails when execution_modes is missing", () => {
 			const contract = validContract();
-			(contract as unknown as Record<string, unknown>).execution_modes = undefined;
+			(contract as unknown as Record<string, unknown>).execution_modes =
+				undefined;
 
 			const result = checkWorkflowContract(contract);
 			expect(result.pass).toBe(false);
-			expect(
-				hasFinding(result.findings, "MISSING_EXECUTION_MODES"),
-			).toBe(true);
+			expect(hasFinding(result.findings, "MISSING_EXECUTION_MODES")).toBe(true);
 		});
 
 		it("fails when STRICT is missing", () => {
@@ -550,9 +540,7 @@ describe("checkWorkflowContract", () => {
 
 			const result = checkWorkflowContract(contract);
 			expect(result.pass).toBe(false);
-			expect(hasFinding(result.findings, "DRY_RUN_SIDE_EFFECTS")).toBe(
-				true,
-			);
+			expect(hasFinding(result.findings, "DRY_RUN_SIDE_EFFECTS")).toBe(true);
 		});
 
 		it("fails when deterministic_trace is false", () => {
@@ -561,9 +549,9 @@ describe("checkWorkflowContract", () => {
 
 			const result = checkWorkflowContract(contract);
 			expect(result.pass).toBe(false);
-			expect(
-				hasFinding(result.findings, "DRY_RUN_NON_DETERMINISTIC"),
-			).toBe(true);
+			expect(hasFinding(result.findings, "DRY_RUN_NON_DETERMINISTIC")).toBe(
+				true,
+			);
 		});
 	});
 

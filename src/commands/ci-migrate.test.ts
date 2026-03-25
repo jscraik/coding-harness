@@ -5671,6 +5671,25 @@ describe("runCIMigrateCLI", () => {
 	it("passes strict verify when required-check metadata and transition status are valid", () => {
 		seedMigratableFixture(tempDir);
 		writeCIProviderPolicyContract(tempDir, "required");
+		// Create a valid CircleCI config so validateCIConfigSyntax (JSC-59) passes.
+		mkdirSync(join(tempDir, ".circleci"), { recursive: true });
+		writeFileSync(
+			join(tempDir, ".circleci/config.yml"),
+			[
+				"version: 2.1",
+				"workflows:",
+				"  build:",
+				"    jobs:",
+				"      - pr-pipeline",
+				"jobs:",
+				"  pr-pipeline:",
+				"    docker:",
+				"      - image: cimg/node:20.0",
+				"    steps:",
+				"      - run: echo ok",
+				"",
+			].join("\n"),
+		);
 		writeFileSync(
 			join(tempDir, TEST_TRANSITION_STATUS_ARTIFACT_PATH),
 			JSON.stringify(

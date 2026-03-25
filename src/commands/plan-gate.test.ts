@@ -389,9 +389,9 @@ describe("plan-gate command", () => {
 
 	describe("runPlanGateCLI", () => {
 		it("outputs JSON when --json flag is set", () => {
-			const consoleSpy = vi.spyOn(console, "info").mockImplementation(() => {
-				// noop for assertion
-			});
+			const stdoutSpy = vi
+				.spyOn(process.stdout, "write")
+				.mockImplementation(() => true);
 
 			createTestPlan(
 				"Test Feature",
@@ -408,12 +408,15 @@ describe("plan-gate command", () => {
 			});
 
 			expect(exitCode).toBe(EXIT_CODES.SUCCESS);
-			expect(consoleSpy).toHaveBeenCalled();
+			expect(stdoutSpy).toHaveBeenCalled();
 
-			const output = consoleSpy.mock.calls[0]?.[0];
-			expect(output).toContain('"passed"');
+			const written = stdoutSpy.mock.calls[0]?.[0] as string;
+			const parsed = JSON.parse(written) as Record<string, unknown>;
+			expect(parsed).toHaveProperty("gate", "plan-gate");
+			expect(parsed).toHaveProperty("status", "pass");
+			expect(parsed).toHaveProperty("findings");
 
-			consoleSpy.mockRestore();
+			stdoutSpy.mockRestore();
 		});
 
 		it("returns PLAN_MISSING when no plans found", () => {

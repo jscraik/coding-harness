@@ -23,10 +23,7 @@
  *   });
  */
 
-import type {
-	GateBundleEnvelope,
-	GateEntry,
-} from "./gate-bundle.js";
+import type { GateBundleEnvelope, GateEntry } from "./gate-bundle.js";
 
 // ─── Types ──────────────────────────────────────────────────────────────────────
 
@@ -216,9 +213,10 @@ export function generateScorecard(
 /**
  * Validate a scorecard is structurally correct.
  */
-export function validateScorecard(
-	scorecard: OperatorScorecard,
-): { valid: boolean; errors: string[] } {
+export function validateScorecard(scorecard: OperatorScorecard): {
+	valid: boolean;
+	errors: string[];
+} {
 	const errors: string[] = [];
 
 	if (scorecard.schemaVersion !== "scorecard/v1") {
@@ -229,15 +227,10 @@ export function validateScorecard(
 
 	const validActions: RecommendedAction[] = ["continue", "intervene", "stop"];
 	if (!validActions.includes(scorecard.recommendedAction)) {
-		errors.push(
-			`Invalid recommended action '${scorecard.recommendedAction}'`,
-		);
+		errors.push(`Invalid recommended action '${scorecard.recommendedAction}'`);
 	}
 
-	if (
-		scorecard.confidence.score < 1 ||
-		scorecard.confidence.score > 5
-	) {
+	if (scorecard.confidence.score < 1 || scorecard.confidence.score > 5) {
 		errors.push(
 			`Invalid confidence score ${scorecard.confidence.score}, must be 1–5`,
 		);
@@ -245,9 +238,7 @@ export function validateScorecard(
 
 	const validLevels: ConfidenceLevel[] = ["high", "medium", "low"];
 	if (!validLevels.includes(scorecard.confidence.level)) {
-		errors.push(
-			`Invalid confidence level '${scorecard.confidence.level}'`,
-		);
+		errors.push(`Invalid confidence level '${scorecard.confidence.level}'`);
 	}
 
 	if (scorecard.decisionTimeMs < 0) {
@@ -284,9 +275,7 @@ function buildRemediations(gates: GateEntry[]): RemediationSuggestion[] {
 
 	for (const gate of gates) {
 		if (gate.status === "fail" || gate.status === "error") {
-			const errorFindings = gate.findings.filter(
-				(f) => f.severity === "error",
-			);
+			const errorFindings = gate.findings.filter((f) => f.severity === "error");
 			const warningFindings = gate.findings.filter(
 				(f) => f.severity === "warning",
 			);
@@ -329,8 +318,7 @@ function buildRemediations(gates: GateEntry[]): RemediationSuggestion[] {
 		low: 2,
 	};
 	remediations.sort(
-		(a, b) =>
-			(urgencyOrder[a.urgency] ?? 99) - (urgencyOrder[b.urgency] ?? 99),
+		(a, b) => (urgencyOrder[a.urgency] ?? 99) - (urgencyOrder[b.urgency] ?? 99),
 	);
 
 	return remediations;
@@ -361,9 +349,7 @@ function computeConfidence(
 	// Deduct for failed gates
 	if (bundle.summary.failed > 0) {
 		score -= Math.min(bundle.summary.failed, 2);
-		rationale.push(
-			`${bundle.summary.failed} gate(s) failed`,
-		);
+		rationale.push(`${bundle.summary.failed} gate(s) failed`);
 	}
 
 	// Deduct for skipped required gates
@@ -372,25 +358,19 @@ function computeConfidence(
 	).length;
 	if (skippedRequired > 0) {
 		score -= Math.min(skippedRequired, 2);
-		rationale.push(
-			`${skippedRequired} required gate(s) were skipped`,
-		);
+		rationale.push(`${skippedRequired} required gate(s) were skipped`);
 	}
 
 	// Deduct for warnings
 	if (bundle.summary.warningCount > 3) {
 		score -= 1;
-		rationale.push(
-			`${bundle.summary.warningCount} warnings raised`,
-		);
+		rationale.push(`${bundle.summary.warningCount} warnings raised`);
 	}
 
 	// Boost for test coverage
 	if (testSummary && testSummary.total > 0) {
 		if (testSummary.failed === 0) {
-			rationale.push(
-				`All ${testSummary.total} tests passed`,
-			);
+			rationale.push(`All ${testSummary.total} tests passed`);
 		} else {
 			score -= 1;
 			rationale.push(
@@ -459,9 +439,7 @@ function computeBlockingReason(gates: GateEntry[]): string {
 				.filter((f) => f.severity === "error")
 				.map((f) => f.message);
 			if (errorMsgs.length > 0) {
-				blockers.push(
-					`${gate.category}: ${errorMsgs.slice(0, 2).join("; ")}`,
-				);
+				blockers.push(`${gate.category}: ${errorMsgs.slice(0, 2).join("; ")}`);
 			} else {
 				blockers.push(`${gate.category}: gate failed`);
 			}
@@ -503,9 +481,7 @@ function renderTextSummary(data: {
 	lines.push("");
 	lines.push(`  State:       ${data.stateReached}`);
 	lines.push(`  Decision:    ${data.bundleDecision.toUpperCase()}`);
-	lines.push(
-		`  Action:      ${data.recommendedAction.toUpperCase()}`,
-	);
+	lines.push(`  Action:      ${data.recommendedAction.toUpperCase()}`);
 	lines.push(
 		`  Confidence:  ${data.confidence.score}/5 (${data.confidence.level})`,
 	);
@@ -517,7 +493,7 @@ function renderTextSummary(data: {
 	lines.push("  ├─────────────┼────────┼──────────┼──────────┤");
 	for (const gate of data.gates) {
 		const name = gate.gate.padEnd(11);
-		const status = statusIcon(gate.status) + " " + gate.status.padEnd(4);
+		const status = `${statusIcon(gate.status)} ${gate.status.padEnd(4)}`;
 		const req = gate.required ? "yes" : "no ";
 		const findings = String(gate.findings).padStart(4);
 		lines.push(`  │ ${name} │ ${status} │   ${req}    │   ${findings}   │`);
@@ -533,10 +509,11 @@ function renderTextSummary(data: {
 	// Tests
 	if (data.testsExecuted) {
 		lines.push(
-			`  Tests:    ${data.testsExecuted.passed}/${data.testsExecuted.total} passed` +
-				(data.testsExecuted.failed > 0
+			`  Tests:    ${data.testsExecuted.passed}/${data.testsExecuted.total} passed${
+				data.testsExecuted.failed > 0
 					? ` (${data.testsExecuted.failed} failed)`
-					: ""),
+					: ""
+			}`,
 		);
 	}
 	lines.push("");

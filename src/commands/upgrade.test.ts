@@ -12,30 +12,30 @@
  * - formatUpgradeSummary
  */
 
-import { describe, it, expect, beforeEach, afterEach } from "vitest";
 import {
 	existsSync,
 	mkdirSync,
+	mkdtempSync,
 	rmSync,
 	writeFileSync,
-	mkdtempSync,
 } from "node:fs";
-import { join } from "node:path";
 import { tmpdir } from "node:os";
+import { join } from "node:path";
+import { afterEach, beforeEach, describe, expect, it } from "vitest";
 
 import {
-	fingerprintContent,
+	type UpgradeManifest,
 	buildUpgradeManifest,
 	classifyFiles,
 	detectExistingInstall,
 	detectUpgradeContext,
+	fingerprintContent,
 	formatUpgradeSummary,
-	type UpgradeManifest,
 } from "../lib/init/upgrade.js";
 
 import {
-	migrateContractSchema,
 	formatMigrationChanges,
+	migrateContractSchema,
 } from "../lib/init/schema-migrate.js";
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
@@ -94,9 +94,7 @@ describe("buildUpgradeManifest", () => {
 	});
 
 	it("sets customized=false on all entries at write time", () => {
-		const manifest = buildUpgradeManifest([
-			{ path: "foo.yml", content: "a" },
-		]);
+		const manifest = buildUpgradeManifest([{ path: "foo.yml", content: "a" }]);
 		expect(manifest.files[0]?.customized).toBe(false);
 	});
 
@@ -272,9 +270,9 @@ describe("migrateContractSchema", () => {
 		const result = migrateContractSchema(contract, "0.7.4");
 		const policy = result.contract.ciProviderPolicy as Record<string, unknown>;
 		expect(policy.mode).toBe("shadow");
-		expect(result.changes.some((c) => c.field === "ciProviderPolicy.mode")).toBe(
-			true,
-		);
+		expect(
+			result.changes.some((c) => c.field === "ciProviderPolicy.mode"),
+		).toBe(true);
 	});
 
 	it("does NOT overwrite existing ciProviderPolicy.mode", () => {

@@ -36,15 +36,17 @@ vi.mock("../lib/linear/client.js", () => {
 							i.title.includes(term) ||
 							// Simulate fingerprint search by checking if any mock issue
 							// has a comment with the label name — simplified: just title match
-							term.startsWith("harness-sync:") &&
-								i.title.includes("harness-sync"),
+							(term.startsWith("harness-sync:") &&
+								i.title.includes("harness-sync")),
 					),
 				);
 			}),
-			createComment: vi.fn().mockImplementation((issueId: string, body: string) => {
-				mockComments.push({ issueId, body });
-				return Promise.resolve();
-			}),
+			createComment: vi
+				.fn()
+				.mockImplementation((issueId: string, body: string) => {
+					mockComments.push({ issueId, body });
+					return Promise.resolve();
+				}),
 			updateIssue: vi
 				.fn()
 				.mockImplementation(
@@ -53,16 +55,18 @@ vi.mock("../lib/linear/client.js", () => {
 						return Promise.resolve();
 					},
 				),
-			createIssue: vi.fn().mockImplementation((input: Record<string, unknown>) => {
-				mockCreated.push({ input });
-				const id = `JSC-${100 + mockCreated.length}`;
-				return Promise.resolve({
-					id,
-					identifier: id,
-					title: input.title as string,
-					url: `https://linear.app/jscraik/issue/${id}`,
-				});
-			}),
+			createIssue: vi
+				.fn()
+				.mockImplementation((input: Record<string, unknown>) => {
+					mockCreated.push({ input });
+					const id = `JSC-${100 + mockCreated.length}`;
+					return Promise.resolve({
+						id,
+						identifier: id,
+						title: input.title as string,
+						url: `https://linear.app/jscraik/issue/${id}`,
+					});
+				}),
 		})),
 	};
 });
@@ -104,7 +108,7 @@ describe("runLinearSync", () => {
 
 	it("returns error when token is missing", async () => {
 		const saved = process.env.LINEAR_API_KEY;
-		delete process.env.LINEAR_API_KEY;
+		process.env.LINEAR_API_KEY = undefined;
 		try {
 			const result = await runLinearSync({
 				findingsData: [sampleFinding],

@@ -8,13 +8,20 @@ import {
 	runBlastRadiusCLI,
 } from "./commands/blast-radius.js";
 import { runBrainstormGateCLI } from "./commands/brainstorm-gate.js";
-import { runCIMigrateCLI, runPromoteModeCLI, runSyncBranchProtectionCLI } from "./commands/ci-migrate.js";
+import {
+	runCIMigrateCLI,
+	runPromoteModeCLI,
+	runSyncBranchProtectionCLI,
+} from "./commands/ci-migrate.js";
 import { runContextHealthCLI } from "./commands/context-health.js";
 import { runContextCLI } from "./commands/context.js";
+import { runContractCLI } from "./commands/contract.js";
 import { runDiffBudgetCLI } from "./commands/diff-budget.js";
+import { runDoctorCLI } from "./commands/doctor.js";
 import { runDriftGateCLI } from "./commands/drift-gate.js";
 import { runGapCaseCLI } from "./commands/gap-case.js";
 import { runGardenerCLI } from "./commands/gardener.js";
+import { runHealthCLI } from "./commands/health.js";
 import { runIndexContextCLI } from "./commands/index-context.js";
 import { runInitCLI, runInteractiveInitCLI } from "./commands/init.js";
 import { runMemoryGateCLI } from "./commands/memory-gate.js";
@@ -43,12 +50,11 @@ import {
 	runUIFastCLI,
 	runUIVerifyCLI,
 } from "./commands/ui-loop.js";
-import { runVerifyGreptileCLI } from "./commands/verify-greptile.js";
 import {
 	type HarnessUpgradeOptions,
 	runUpgradeCLI,
 } from "./commands/upgrade.js";
-import { runContractCLI } from "./commands/contract.js";
+import { runVerifyGreptileCLI } from "./commands/verify-greptile.js";
 import {
 	dispatchRegistryCommand,
 	getRegistryCommandHelpRows,
@@ -61,8 +67,7 @@ import {
 } from "./lib/cli/parse-utils.js";
 import { sanitizeError } from "./lib/input/sanitize.js";
 import type { PilotEvaluateOptions } from "./lib/pilot-evaluation/types.js";
-import { runDoctorCLI } from "./commands/doctor.js";
-import { runHealthCLI } from "./commands/health.js";
+import type { ProjectType } from "./lib/project-type/types.js";
 import { getVersion } from "./lib/version.js";
 
 // Consolidated error handler
@@ -85,7 +90,10 @@ process.on("uncaughtException", (error) => {
 function printUsage(): void {
 	const legacyCommandRows = [
 		{ name: "init", summary: "Install harness in current directory" },
-		{ name: "doctor", summary: "Check all gate prerequisites (tools, files, config, CI)" },
+		{
+			name: "doctor",
+			summary: "Check all gate prerequisites (tools, files, config, CI)",
+		},
 		{ name: "health", summary: "Unified gate status scorecard (all gates)" },
 		{
 			name: "ci-migrate",
@@ -323,9 +331,7 @@ function printUsage(): void {
 	console.info(
 		"  --findings       Path to findings JSON file (or - for stdin)",
 	);
-	console.info(
-		"  --team           Linear team key/name to create issues in",
-	);
+	console.info("  --team           Linear team key/name to create issues in");
 	console.info("  --dry-run        Preview changes without writing to Linear");
 	console.info("  --token          Override LINEAR_API_KEY");
 	console.info("  --json           Output as JSON");
@@ -377,6 +383,10 @@ function printUsage(): void {
 	console.info("  --update         Apply available template updates");
 	console.info("  --interactive    Review and approve each change");
 	console.info("  --migrate        Migrate contract schema to latest version");
+	console.info(
+		"  --project-type   Override detected project type (cli|desktop|library|web)",
+	);
+	console.info("  --json           Output as structured JSON");
 	console.info("");
 	console.info("CI Migrate Options:");
 	console.info("  ci-migrate [prepare|commit|abort|verify] [targetDir]");
@@ -765,10 +775,23 @@ export function run(args: string[]): void {
 		const updateFlag = args.includes("--update");
 		const interactiveFlag = args.includes("--interactive");
 		const migrateFlag = args.includes("--migrate");
+		const jsonFlag = args.includes("--json");
+
+		// --project-type <value>
+		const projectTypeIndex = args.indexOf("--project-type");
+		const projectTypeArg =
+			projectTypeIndex !== -1 ? args[projectTypeIndex + 1] : undefined;
 
 		// Get optional target directory (first non-flag arg after init)
 		// Exclude both long flags (--) and short flags (-)
-		const targetDir = args.slice(1).find((arg) => !arg.startsWith("-"));
+		// Also skip the value after --project-type
+		const targetDir = args.slice(1).find((arg, i, arr) => {
+			if (arg.startsWith("-")) return false;
+			// skip values consumed by --project-type
+			const prev = arr[i - 1];
+			if (prev === "--project-type") return false;
+			return true;
+		});
 
 		const options = {
 			dryRun: dryRunFlag,
@@ -779,6 +802,8 @@ export function run(args: string[]): void {
 			update: updateFlag,
 			interactive: interactiveFlag,
 			migrate: migrateFlag,
+			json: jsonFlag,
+			...(projectTypeArg ? { projectType: projectTypeArg as ProjectType } : {}),
 		};
 
 		// Handle interactive mode with async
@@ -868,7 +893,14 @@ export function run(args: string[]): void {
 			positionalArgs.push(token);
 		}
 
-		const validActions = new Set(["prepare", "commit", "abort", "verify", "sync-branch-protection", "promote-mode"]);
+		const validActions = new Set([
+			"prepare",
+			"commit",
+			"abort",
+			"verify",
+			"sync-branch-protection",
+			"promote-mode",
+		]);
 		const actionArg = getFlagValue(args, actionIndex);
 		let parsedAction = actionArg;
 		if (

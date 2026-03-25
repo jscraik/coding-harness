@@ -63,9 +63,8 @@ Required private package auth wiring:
 
 ```bash
 export NPM_TOKEN=<token>
-# GitHub Actions workflow env:
-# env:
-#   NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
+# CircleCI project settings -> Environment Variables:
+#   NPM_TOKEN
 ```
 
 ### Project-local source CLI (only for coding-harness development)

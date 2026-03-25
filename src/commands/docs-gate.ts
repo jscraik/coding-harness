@@ -11,6 +11,7 @@ import type {
 import { validateContract } from "../lib/contract/validator.js";
 import { sanitizeError } from "../lib/input/sanitize.js";
 import { validatePath } from "../lib/input/validator.js";
+import { normaliseDocsGateResult } from "../lib/output/normalise.js";
 
 export type DocsGateMode = "advisory" | "required";
 export type DocsGateTrigger =
@@ -1043,7 +1044,8 @@ export function runDocsGateCLI(options: DocsGateOptions = {}): number {
 	const result = runDocsGate(options);
 
 	if (options.json) {
-		console.info(JSON.stringify(result.report, null, 2));
+		const gateResult = normaliseDocsGateResult(result);
+		process.stdout.write(`${JSON.stringify(gateResult, null, 2)}\n`);
 	} else {
 		const icon =
 			result.report.status === "success"

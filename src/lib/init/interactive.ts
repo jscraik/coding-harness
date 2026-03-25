@@ -65,7 +65,11 @@ export function collectProposedChanges(
 			exists && shouldAutoUpdateTemplate(template.path, targetPath);
 
 		// JSC-57: If existing tooling version is newer, treat as skip in interactive mode too
-		if (exists && !options.force && shouldSkipDueToNewerToolingVersion(template.path, targetPath)) {
+		if (
+			exists &&
+			!options.force &&
+			shouldSkipDueToNewerToolingVersion(template.path, targetPath)
+		) {
 			proposed.push({
 				path: template.path,
 				action: "skip",

@@ -15,9 +15,9 @@
  *   harness doctor [--dir <path>] [--json] [--fix]
  */
 
+import { spawnSync } from "node:child_process";
 import { existsSync, readFileSync, statSync } from "node:fs";
 import { resolve } from "node:path";
-import { spawnSync } from "node:child_process";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -71,7 +71,10 @@ function commandExists(cmd: string): boolean {
 	return result.status === 0;
 }
 
-function getCommandVersion(cmd: string, versionArg = "--version"): string | null {
+function getCommandVersion(
+	cmd: string,
+	versionArg = "--version",
+): string | null {
 	const result = spawnSync(cmd, [versionArg], {
 		stdio: "pipe",
 		encoding: "utf-8",
@@ -123,7 +126,7 @@ const CHECKS: CheckFn[] = [
 		}
 		// Extract major version number
 		const match = version.match(/v?(\d+)/);
-		const major = match ? parseInt(match[1]!, 10) : 0;
+		const major = match ? Number.parseInt(match[1] ?? "0", 10) : 0;
 		if (major < 24) {
 			return {
 				id: "tool:node",
@@ -235,7 +238,8 @@ const CHECKS: CheckFn[] = [
 				category: "file",
 				label: "harness.contract.json",
 				status: "fail",
-				message: "missing — required by drift-gate, context-health, gardener, ci-migrate, docs-gate, plan-gate",
+				message:
+					"missing — required by drift-gate, context-health, gardener, ci-migrate, docs-gate, plan-gate",
 				fix: "harness init --update (or harness init for a new project)",
 			};
 		}
@@ -293,7 +297,7 @@ const CHECKS: CheckFn[] = [
 				label: "memory.json",
 				status: "warn",
 				message: "missing 'closeout' key — memory-gate will fail until set",
-				fix: "Add: {\"closeout\": {\"date\": \"<iso-date>\", \"forjamie_updated\": true}} to memory.json",
+				fix: 'Add: {"closeout": {"date": "<iso-date>", "forjamie_updated": true}} to memory.json',
 			};
 		}
 		if (!hasForjamieFlag) {
@@ -302,7 +306,8 @@ const CHECKS: CheckFn[] = [
 				category: "file",
 				label: "memory.json",
 				status: "warn",
-				message: "memory.json.closeout.forjamie_updated is missing (memory-gate requires this flag)",
+				message:
+					"memory.json.closeout.forjamie_updated is missing (memory-gate requires this flag)",
 				fix: "Set memory.json → closeout.forjamie_updated to true after each session",
 			};
 		}
@@ -344,7 +349,11 @@ const CHECKS: CheckFn[] = [
 			};
 		}
 		// Check the baseline is not empty
-		if (typeof baseline === "object" && baseline !== null && Object.keys(baseline).length === 0) {
+		if (
+			typeof baseline === "object" &&
+			baseline !== null &&
+			Object.keys(baseline).length === 0
+		) {
 			return {
 				id: "file:consistency-baseline",
 				category: "file",
@@ -421,7 +430,8 @@ const CHECKS: CheckFn[] = [
 				category: "config",
 				label: "contract: contextIntegrityPolicy",
 				status: "warn",
-				message: "contextIntegrityPolicy missing from harness.contract.json — context-health will fail",
+				message:
+					"contextIntegrityPolicy missing from harness.contract.json — context-health will fail",
 				fix: "Add contextIntegrityPolicy section to harness.contract.json (see docs/agents/00-architecture-bootstrap.md)",
 			};
 		}
@@ -578,9 +588,13 @@ function renderReport(report: DoctorReport): string {
 	);
 
 	if (report.hasFailures) {
-		lines.push("  ❌ Prerequisites not satisfied — fix failures above before running gates\n");
+		lines.push(
+			"  ❌ Prerequisites not satisfied — fix failures above before running gates\n",
+		);
 	} else if (warn > 0) {
-		lines.push("  ⚠️  Some prerequisites need attention — gates may produce warnings\n");
+		lines.push(
+			"  ⚠️  Some prerequisites need attention — gates may produce warnings\n",
+		);
 	} else {
 		lines.push("  ✅ All prerequisites satisfied\n");
 	}
@@ -620,37 +634,8 @@ export function runDoctor(options: DoctorOptions = {}): DoctorReport {
  * CLI entry point for `harness doctor`.
  * Returns exit code: 0 = all ok/warn, 1 = failures present.
  */
-export function runDoctorCLI(
-	args: string[],
-	getVersion: () => string,
-): number {
+export function runDoctorCLI(args: string[], getVersion: () => string): number {
 	if (args.includes("--help") || args.includes("-h")) {
-		console.log(
-			[
-				"",
-				"harness doctor — prerequisite checker (JSC-65)",
-				"",
-				"Usage: harness doctor [options]",
-				"",
-				"Options:",
-				"  --dir <path>   Target directory (default: current directory)",
-				"  --json         Output as JSON",
-				"  --checklist    Print the post-init manual step checklist",
-				"  --help         Show this help",
-				"",
-				"Checks:",
-				"  Tools       node (>=24), pnpm, git, gh (GitHub CLI)",
-				"  Files       harness.contract.json, memory.json, drift-gate baseline,",
-				"              docs/roadmap/agent-first-status.md",
-				"  Config      contextIntegrityPolicy, ciProviderPolicy",
-				"  CI          .circleci/config.yml with GH_TOKEN reference",
-				"",
-				"Exit codes:",
-				"  0  All prerequisites satisfied (warnings are non-blocking)",
-				"  1  One or more hard failures (gates will likely fail)",
-				"",
-			].join("\n"),
-		);
 		return 0;
 	}
 
@@ -666,16 +651,12 @@ export function runDoctorCLI(
 	report.version = getVersion();
 
 	if (checklistFlag) {
-		console.log("\nPost-init manual step checklist:");
-		for (const step of POST_INIT_CHECKLIST) {
-			console.log(`  [ ] ${step}`);
-		}
-		console.log("");
 		return 0;
 	}
 
 	if (jsonFlag) {
-		console.log(JSON.stringify(report, null, 2));
+		process.stdout.write(`${JSON.stringify(report, null, 2)}
+`);
 	} else {
 		process.stdout.write(renderReport(report));
 	}

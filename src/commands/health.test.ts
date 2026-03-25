@@ -1,12 +1,12 @@
+import { spawnSync } from "node:child_process";
+import { existsSync, mkdirSync, rmSync, writeFileSync } from "node:fs";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
 /**
  * Tests for harness health command (JSC-67)
  */
-import { describe, expect, it, vi, beforeEach, afterEach } from "vitest";
-import { existsSync, mkdirSync, rmSync, writeFileSync } from "node:fs";
-import { join } from "node:path";
-import { tmpdir } from "node:os";
-import { spawnSync } from "node:child_process";
-import { runHealth, type HealthOptions } from "./health.js";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { type HealthOptions, runAutoFix, runHealth } from "./health.js";
 
 // Mock spawnSync to control gate subprocess results
 vi.mock("node:child_process", async (importOriginal) => {
@@ -64,7 +64,6 @@ describe("runHealth", () => {
 			pid: 1,
 			output: [],
 			signal: null,
-			
 		});
 
 		const report = runHealth({ dir });
@@ -86,7 +85,6 @@ describe("runHealth", () => {
 			pid: 1,
 			output: [],
 			signal: null,
-			
 		}));
 
 		const report = runHealth({ dir, gates: ["drift-gate"] });
@@ -106,7 +104,6 @@ describe("runHealth", () => {
 			pid: 1,
 			output: [],
 			signal: null,
-			
 		});
 
 		const report = runHealth({ dir, gates: ["drift-gate"] });
@@ -124,7 +121,6 @@ describe("runHealth", () => {
 			pid: 1,
 			output: [],
 			signal: null,
-			
 		});
 
 		const options: HealthOptions = { dir, gates: ["drift-gate"] };
@@ -168,7 +164,6 @@ describe("runHealth", () => {
 			pid: 1,
 			output: [],
 			signal: null,
-			
 		});
 
 		const report = runHealth({ dir, gates: ["memory-gate"] });
@@ -185,7 +180,6 @@ describe("runHealth", () => {
 			pid: 1,
 			output: [],
 			signal: null,
-			
 		});
 
 		const report = runHealth({ dir });
@@ -211,5 +205,231 @@ describe("runHealth", () => {
 		expect(typeof report.timestamp).toBe("string");
 		// timestamp should be a valid ISO date
 		expect(new Date(report.timestamp).getTime()).toBeGreaterThan(0);
+	});
+});
+
+// ─── P5: runAutoFix tests ─────────────────────────────────────────────────────
+
+function makeGateResult(
+	gate: string,
+	findings: Array<{ id: string; command?: string; severity?: string }>,
+): string {
+	return JSON.stringify({
+		gate,
+		version: "0.8.2",
+		timestamp: new Date().toISOString(),
+		status: findings.length === 0 ? "pass" : "fail",
+		findings: findings.map((f) => ({
+			id: f.id,
+			severity: f.severity ?? "error",
+			gate,
+			message: `${f.id} issue`,
+			baseline: false,
+			fix: {
+				command: f.command,
+				suppressible: false,
+			},
+		})),
+		summary: {
+			errors: findings.length,
+			warnings: 0,
+			info: 0,
+			total: findings.length,
+		},
+	});
+}
+
+describe("runAutoFix (P5)", () => {
+	let dir: string;
+
+	beforeEach(() => {
+		dir = makeTmpDir();
+		writeContract(dir);
+		mockSpawnSync.mockClear();
+	});
+
+	afterEach(() => {
+		if (existsSync(dir)) {
+			rmSync(dir, { recursive: true, force: true });
+		}
+		vi.restoreAllMocks();
+	});
+
+	it("P5-T1: dry-run returns findings but does not call spawnSync for fixes", () => {
+		// First call = gate --json subprocess; returns a fixable finding
+		mockSpawnSync.mockReturnValue({
+			status: 1,
+			stdout: makeGateResult("drift-gate", [
+				{
+					id: "drift-gate.test.rule",
+					command: "harness drift-gate --seed-baseline",
+				},
+			]),
+			stderr: "",
+			pid: 1,
+			output: [],
+			signal: null,
+		});
+
+		const result = runAutoFix({ dir, gates: ["drift-gate"], dryRun: true });
+
+		// Should have collected the fixable finding
+		expect(result.dryRun).toBe(true);
+		expect(result.findings.length).toBeGreaterThanOrEqual(1);
+		expect(result.findings[0]?.outcome).toBe("dry_run");
+		// spawnSync called once for the gate --json scan, NOT for fix execution
+		expect(mockSpawnSync).toHaveBeenCalledTimes(1);
+	});
+
+	it("P5-T2: two fixable findings → spawnSync called twice (once each) after collection", () => {
+		let callCount = 0;
+		mockSpawnSync.mockImplementation(() => {
+			callCount++;
+			if (callCount === 1) {
+				// First call: gate --json — return two fixable findings
+				return {
+					status: 1,
+					stdout: makeGateResult("drift-gate", [
+						{
+							id: "drift-gate.test.rule1",
+							command: "harness drift-gate --seed-baseline",
+						},
+						{
+							id: "drift-gate.test.rule2",
+							command: "harness drift-gate --seed-baseline",
+						},
+					]),
+					stderr: "",
+					pid: 1,
+					output: [],
+					signal: null,
+				};
+			}
+			// calls 2 + 3: fix commands → success
+			return {
+				status: 0,
+				stdout: "ok",
+				stderr: "",
+				pid: 1,
+				output: [],
+				signal: null,
+			};
+		});
+
+		const result = runAutoFix({ dir, gates: ["drift-gate"], dryRun: false });
+
+		expect(result.findings.length).toBe(2);
+		// 1 gate scan + 2 fix executions
+		expect(mockSpawnSync).toHaveBeenCalledTimes(3);
+		expect(result.summary.applied).toBe(2);
+		expect(result.summary.failed).toBe(0);
+	});
+
+	it("P5-T3: excluded command prefix is skipped, not executed", () => {
+		mockSpawnSync.mockReturnValue({
+			status: 1,
+			stdout: makeGateResult("drift-gate", [
+				{
+					id: "drift-gate.branch.rule",
+					// Excluded prefix command
+					command: "harness branch-protect --repo org/repo",
+				},
+			]),
+			stderr: "",
+			pid: 1,
+			output: [],
+			signal: null,
+		});
+
+		const result = runAutoFix({ dir, gates: ["drift-gate"], dryRun: false });
+
+		expect(result.findings[0]?.outcome).toBe("skipped");
+		expect(result.summary.skipped).toBe(1);
+		expect(result.summary.applied).toBe(0);
+		// Only the gate --json collection call should have been made (not the excluded fix)
+		expect(mockSpawnSync).toHaveBeenCalledTimes(1);
+	});
+
+	it("P5-T4: result has AutoFixResult shape with required fields", () => {
+		mockSpawnSync.mockReturnValue({
+			status: 0,
+			stdout: makeGateResult("drift-gate", []),
+			stderr: "",
+			pid: 1,
+			output: [],
+			signal: null,
+		});
+
+		const result = runAutoFix({ dir, gates: ["drift-gate"], dryRun: true });
+
+		expect(result).toHaveProperty("dir");
+		expect(result).toHaveProperty("timestamp");
+		expect(result).toHaveProperty("dryRun", true);
+		expect(result).toHaveProperty("findings");
+		expect(result).toHaveProperty("summary");
+		expect(result.summary).toHaveProperty("total");
+		expect(result.summary).toHaveProperty("applied");
+		expect(result.summary).toHaveProperty("failed");
+		expect(result.summary).toHaveProperty("skipped");
+	});
+
+	it("P5-T5: fix command exits non-zero → outcome=failed, remaining fixes continue", () => {
+		let callCount = 0;
+		mockSpawnSync.mockImplementation(() => {
+			callCount++;
+			if (callCount === 1) {
+				// Gate scan: two fixable findings
+				return {
+					status: 1,
+					stdout: makeGateResult("drift-gate", [
+						{
+							id: "drift-gate.rule.a",
+							command: "harness drift-gate --seed-baseline",
+						},
+						{
+							id: "drift-gate.rule.b",
+							command: "harness drift-gate --seed-baseline",
+						},
+					]),
+					stderr: "",
+					pid: 1,
+					output: [],
+					signal: null,
+				};
+			}
+			if (callCount === 2) {
+				// First fix: fails
+				return {
+					status: 1,
+					stdout: "",
+					stderr: "error output",
+					pid: 1,
+					output: [],
+					signal: null,
+				};
+			}
+			// Second fix: succeeds
+			return {
+				status: 0,
+				stdout: "done",
+				stderr: "",
+				pid: 1,
+				output: [],
+				signal: null,
+			};
+		});
+
+		const result = runAutoFix({ dir, gates: ["drift-gate"], dryRun: false });
+
+		// Both findings processed (continues after failure)
+		expect(result.findings.length).toBe(2);
+		expect(result.summary.failed).toBe(1);
+		expect(result.summary.applied).toBe(1);
+		// 1 scan + 2 fix attempts = 3 calls
+		expect(mockSpawnSync).toHaveBeenCalledTimes(3);
+		// Failed finding has outcome "failed"
+		const failedFinding = result.findings.find((f) => f.outcome === "failed");
+		expect(failedFinding).toBeTruthy();
+		expect(failedFinding?.exitCode).toBe(1);
 	});
 });

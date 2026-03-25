@@ -22,9 +22,15 @@
 import { existsSync, readFileSync } from "node:fs";
 import { resolve } from "node:path";
 import { cwd } from "node:process";
+import {
+	SCHEMA_VERSION,
+	buildContractJsonSchema,
+} from "../lib/contract/json-schema.js";
+import {
+	type ValidationError,
+	validateContract,
+} from "../lib/contract/validator.js";
 import { sanitizeError } from "../lib/input/sanitize.js";
-import { buildContractJsonSchema, SCHEMA_VERSION } from "../lib/contract/json-schema.js";
-import { validateContract, type ValidationError } from "../lib/contract/validator.js";
 
 /** Default contract filename relative to targetDir. */
 const DEFAULT_CONTRACT_FILE = "harness.contract.json";
@@ -39,10 +45,7 @@ export interface ContractValidateOptions {
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
 function formatError(err: ValidationError, index: number): string {
-	const lines = [
-		`  ${index + 1}. Path: ${err.path}`,
-		`     ${err.message}`,
-	];
+	const lines = [`  ${index + 1}. Path: ${err.path}`, `     ${err.message}`];
 	if (err.expected) lines.push(`     Expected: ${err.expected}`);
 	if (err.received) lines.push(`     Got:      ${err.received}`);
 	if (err.fix) lines.push(`     Fix:      ${err.fix}`);
@@ -134,7 +137,7 @@ export function runContractValidateCLI(
 		console.info(
 			[
 				"",
-				`✅ harness.contract.json is valid`,
+				"✅ harness.contract.json is valid",
 				`   Schema version: ${SCHEMA_VERSION}`,
 				`   Contract path:  ${contractPath}`,
 				"",
@@ -197,9 +200,9 @@ export function runContractCLI(
 	if (subcommand === "validate" || subcommand === undefined) {
 		// Extract positional path: harness contract validate ./foo.json --json
 		// Skip anything that starts with '-' so flags are never mistaken for paths.
-		const positionalArgs = (subcommand === "validate" ? subArgs.slice(1) : subArgs).filter(
-			(a) => !a.startsWith("-"),
-		);
+		const positionalArgs = (
+			subcommand === "validate" ? subArgs.slice(1) : subArgs
+		).filter((a) => !a.startsWith("-"));
 		const maybePath = positionalArgs[0];
 		return runContractValidateCLI(undefined, {
 			json: options.json,

@@ -95,10 +95,7 @@ export const DEFAULT_WORKFLOW_CI_POLICY: WorkflowCIPolicy = {
 
 // ─── Validation Constants ───────────────────────────────────────────────────────
 
-const VALID_PROVIDERS: readonly CIProvider[] = [
-	"github-actions",
-	"circleci",
-];
+const VALID_PROVIDERS: readonly CIProvider[] = ["github-actions", "circleci"];
 
 const VALID_MIGRATION_STAGES: readonly MigrationStage[] = [
 	"dual-provider",
@@ -235,9 +232,7 @@ export function checkCICompatibility(
 		} else {
 			// In single-provider modes, mismatch is an error
 			const severity =
-				workflowPolicy.failure_behavior === "fail-closed"
-					? "error"
-					: "warning";
+				workflowPolicy.failure_behavior === "fail-closed" ? "error" : "warning";
 			findings.push({
 				code: "CI_PROVIDER_MISMATCH",
 				severity,
@@ -247,13 +242,9 @@ export function checkCICompatibility(
 	}
 
 	// ── Step 3: Migration stage compatibility ──────────────────────────────
-	if (
-		!workflowPolicy.compatible_stages.includes(activePolicy.migrationStage)
-	) {
+	if (!workflowPolicy.compatible_stages.includes(activePolicy.migrationStage)) {
 		const severity =
-			workflowPolicy.failure_behavior === "fail-closed"
-				? "error"
-				: "warning";
+			workflowPolicy.failure_behavior === "fail-closed" ? "error" : "warning";
 		findings.push({
 			code: "CI_STAGE_INCOMPATIBLE",
 			severity,

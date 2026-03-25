@@ -235,7 +235,8 @@ export function buildContractJsonSchema(): Record<string, unknown> {
 					timeoutSeconds: {
 						type: "integer",
 						minimum: 1,
-						description: "Seconds before a pending review is considered timed out.",
+						description:
+							"Seconds before a pending review is considered timed out.",
 					},
 					timeoutAction: {
 						type: "string",
@@ -284,7 +285,12 @@ export function buildContractJsonSchema(): Record<string, unknown> {
 				type: "object",
 				description:
 					"Checks for contradictions between canonical governance documents.",
-				required: ["mode", "truthSources", "contradictionCatalog", "healthSampling"],
+				required: [
+					"mode",
+					"truthSources",
+					"contradictionCatalog",
+					"healthSampling",
+				],
 				additionalProperties: false,
 				properties: {
 					mode: {
@@ -448,8 +454,7 @@ export function buildContractJsonSchema(): Record<string, unknown> {
 			observabilityPolicy: {
 				type: "object",
 				additionalProperties: true,
-				description:
-					"Configures telemetry provider and collector endpoint.",
+				description: "Configures telemetry provider and collector endpoint.",
 			},
 			packageManagerPolicy: {
 				type: "object",
@@ -480,7 +485,8 @@ export function buildContractJsonSchema(): Record<string, unknown> {
 			pilotAuthzPolicy: {
 				type: "object",
 				additionalProperties: true,
-				description: "Controls which repos/branches are authorized for pilot mode.",
+				description:
+					"Controls which repos/branches are authorized for pilot mode.",
 			},
 			controlPlanePolicy: {
 				type: "object",

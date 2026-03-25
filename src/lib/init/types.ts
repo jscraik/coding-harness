@@ -12,6 +12,7 @@
  */
 
 import type { HarnessContract } from "../contract/types.js";
+import type { DetectionResult, ProjectType } from "../project-type/types.js";
 
 // === Exit Codes ===
 
@@ -35,6 +36,8 @@ export interface InitOptions {
 	interactive?: boolean; // Interactive prompts for each change
 	migrate?: boolean; // Migrate contract schema to latest version
 	ciProvider?: string; // CI provider template set
+	projectType?: ProjectType; // Explicit override from --project-type flag; undefined = auto-detect
+	json?: boolean; // Emit structured JSON output instead of human-readable
 }
 
 export type CIProvider = "github-actions" | "circleci";
@@ -96,6 +99,7 @@ export interface ProposedChange {
 /** Typed contract schema for version-aware handling */
 export interface ContractSchema {
 	version: string;
+	projectType?: ProjectType;
 	riskTierRules?: Record<string, unknown>;
 	reviewPolicy?:
 		| {
@@ -240,6 +244,7 @@ export interface InitOutput {
 	skipped: string[];
 	updateCheck?: UpdateCheckInfo; // Populated when --check-updates used
 	proposedChanges?: ProposedChange[]; // Populated in interactive dry-run
+	projectTypeDetection?: DetectionResult; // Populated on all normal init runs
 }
 
 export interface InitErrorOutput {
@@ -265,6 +270,8 @@ export interface TemplateRenderContext {
 	repoUrl?: string;
 	/** Linear project slug extracted from issue tracking URL */
 	linearProjectSlug?: string;
+	/** Detected or operator-specified project type, persisted to harness.contract.json */
+	projectType?: ProjectType;
 }
 
 export interface Template {

@@ -8,6 +8,7 @@ import {
 import { dirname, join, resolve } from "node:path";
 import { sanitizeError } from "../lib/input/sanitize.js";
 import { validatePath } from "../lib/input/validator.js";
+import { normaliseDriftGateResult } from "../lib/output/normalise.js";
 
 export type DriftGateMode = "advisory" | "health";
 export type DriftStatus = "success" | "partial" | "blocked";
@@ -251,7 +252,8 @@ function parseFrontmatterStatus(contents: string): string | undefined {
 /** Fix guidance lookup keyed by rule_id */
 const FIX_GUIDANCE: Record<string, DriftFixGuidance> = {
 	"command.surface.sources.missing": {
-		manual: "Create the missing source file, or suppress if project type doesn't include a CLI.",
+		manual:
+			"Create the missing source file, or suppress if project type doesn't include a CLI.",
 		suppressible: true,
 	},
 	"command.surface.readme.missing": {
@@ -259,7 +261,8 @@ const FIX_GUIDANCE: Record<string, DriftFixGuidance> = {
 		suppressible: false,
 	},
 	"command.surface.dispatch.missing": {
-		manual: "Add a dispatch branch for this command in src/cli.ts, or remove from README.",
+		manual:
+			"Add a dispatch branch for this command in src/cli.ts, or remove from README.",
 		suppressible: false,
 	},
 	"command.surface.help.duplicate": {
@@ -271,25 +274,30 @@ const FIX_GUIDANCE: Record<string, DriftFixGuidance> = {
 		suppressible: false,
 	},
 	"todo.lifecycle.status.mismatch": {
-		manual: "Update the frontmatter status to match the filename convention, or rename the file.",
+		manual:
+			"Update the frontmatter status to match the filename convention, or rename the file.",
 		suppressible: false,
 	},
 	"quality.score.missing": {
 		command: "harness gardener",
-		manual: "Create docs/QUALITY_SCORE.md with **Score:** N/100 and last_updated frontmatter.",
+		manual:
+			"Create docs/QUALITY_SCORE.md with **Score:** N/100 and last_updated frontmatter.",
 		suppressible: true,
 	},
 	"quality.score.structure.invalid": {
-		manual: "Add required frontmatter (last_updated) and **Score:** N/100 to docs/QUALITY_SCORE.md.",
+		manual:
+			"Add required frontmatter (last_updated) and **Score:** N/100 to docs/QUALITY_SCORE.md.",
 		suppressible: false,
 	},
 	"quality.score.last_updated.invalid": {
-		manual: "Fix the last_updated date in docs/QUALITY_SCORE.md frontmatter to a valid ISO date.",
+		manual:
+			"Fix the last_updated date in docs/QUALITY_SCORE.md frontmatter to a valid ISO date.",
 		suppressible: false,
 	},
 	"quality.score.stale": {
 		command: "harness gardener",
-		manual: "Re-run gardener or update the last_updated date in docs/QUALITY_SCORE.md.",
+		manual:
+			"Re-run gardener or update the last_updated date in docs/QUALITY_SCORE.md.",
 		suppressible: false,
 	},
 	"status.matrix.missing": {
@@ -297,12 +305,14 @@ const FIX_GUIDANCE: Record<string, DriftFixGuidance> = {
 		suppressible: true,
 	},
 	"status.narrative.coherence": {
-		manual: "Resolve remaining ready todos or update the status matrix to reflect incomplete status.",
+		manual:
+			"Resolve remaining ready todos or update the status matrix to reflect incomplete status.",
 		suppressible: false,
 	},
 	"baseline.seed.missing": {
 		command: "harness drift-gate --seed-baseline",
-		manual: "Run drift-gate with --seed-baseline to create the initial baseline.",
+		manual:
+			"Run drift-gate with --seed-baseline to create the initial baseline.",
 		suppressible: false,
 	},
 	"baseline.load.error": {
@@ -662,7 +672,7 @@ export function runDriftGate(options: DriftGateOptions = {}): DriftGateResult {
 					f.baseline_state = "preexisting";
 				}
 				baseline.info.loaded = true;
-				delete baseline.info.reason;
+				Reflect.deleteProperty(baseline.info, "reason");
 				baselineSeeded = true;
 			} catch {
 				// Fall through to "seed missing" finding if write fails
@@ -703,7 +713,6 @@ export function runDriftGate(options: DriftGateOptions = {}): DriftGateResult {
 	} else if (findings.length > 0) {
 		status = "partial";
 	}
-
 
 	const report: DriftReport = {
 		schemaVersion: "1.0.0",
@@ -778,7 +787,8 @@ export function runDriftGateCLI(options: DriftGateOptions = {}): number {
 	const result = runDriftGate(options);
 
 	if (options.json) {
-		console.info(JSON.stringify(result.report, null, 2));
+		const gateResult = normaliseDriftGateResult(result);
+		process.stdout.write(`${JSON.stringify(gateResult, null, 2)}\n`);
 	} else {
 		const icon =
 			result.report.status === "success"
@@ -793,9 +803,7 @@ export function runDriftGateCLI(options: DriftGateOptions = {}): number {
 			`Findings: ${result.report.summary.finding_count} (new: ${result.report.summary.new_count}, preexisting: ${result.report.summary.preexisting_count})`,
 		);
 		if (result.report.summary.suppressed_count > 0) {
-			console.info(
-				`Suppressed: ${result.report.summary.suppressed_count}`,
-			);
+			console.info(`Suppressed: ${result.report.summary.suppressed_count}`);
 		}
 		if (result.report.baseline_seeded) {
 			console.info(

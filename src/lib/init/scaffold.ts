@@ -28,6 +28,7 @@ import {
 	REQUIRED_TOOLING_BINARIES,
 	REQUIRED_TOOLING_DOC_TERMS,
 } from "../policy/tooling-baseline.js";
+import type { ProjectType } from "../project-type/types.js";
 import {
 	type CIProvider,
 	CODEX_ENVIRONMENT_TEMPLATE_PATH,
@@ -282,8 +283,8 @@ function normalizeRepoUrl(repositoryUrl: string): string | undefined {
 		/^(github|gitlab|bitbucket):([^/][^#]+)$/i,
 	);
 	if (shorthandPrefixMatch) {
-		const provider = shorthandPrefixMatch[1]!.toLowerCase();
-		const repoPath = shorthandPrefixMatch[2]!.replace(/\.git$/, "");
+		const provider = shorthandPrefixMatch[1]?.toLowerCase();
+		const repoPath = shorthandPrefixMatch[2]?.replace(/\.git$/, "");
 		const host =
 			provider === "github"
 				? "github.com"
@@ -354,6 +355,7 @@ export function normalizeCIProvider(
 export function createTemplateRenderContext(
 	targetDir: string,
 	ciProvider?: CIProvider,
+	projectType?: ProjectType,
 ): TemplateRenderContext {
 	const issueTrackingUrl = readIssueTrackingUrl(targetDir);
 	const projectName = readProjectName(targetDir);
@@ -367,6 +369,7 @@ export function createTemplateRenderContext(
 		...(projectName ? { projectName } : {}),
 		...(repoUrl ? { repoUrl } : {}),
 		...(linearProjectSlug ? { linearProjectSlug } : {}),
+		...(projectType ? { projectType } : {}),
 	};
 }
 
@@ -487,7 +490,7 @@ function readExistingBiomeVersion(targetPath: string): string | undefined {
 		const content = readFileSync(targetPath, "utf-8");
 		const parsed = JSON.parse(content) as unknown;
 		if (!parsed || typeof parsed !== "object") return undefined;
-		const schema = (parsed as Record<string, unknown>)["$schema"];
+		const schema = (parsed as Record<string, unknown>).$schema;
 		if (typeof schema !== "string") return undefined;
 		return extractBiomeSchemaVersion(schema);
 	} catch {
@@ -534,8 +537,6 @@ export function shouldSkipDueToNewerToolingVersion(
 	const decision = getToolingVersionDecision(templatePath, targetPath);
 	return decision === "skip";
 }
-
-
 
 function renderCodexEnvironmentTemplate(
 	packageManager: string,
@@ -1292,6 +1293,9 @@ export const TEMPLATES: Template[] = [
 					},
 					ciProviderPolicy: DEFAULT_CONTRACT.ciProviderPolicy,
 					contextIntegrityPolicy: DEFAULT_CONTRACT.contextIntegrityPolicy,
+					...(context.projectType !== undefined
+						? { projectType: context.projectType }
+						: {}),
 				},
 				null,
 				2,

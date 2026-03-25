@@ -1,7 +1,7 @@
 import { existsSync, mkdirSync, rmSync, writeFileSync } from "node:fs";
-import { join } from "node:path";
 import { tmpdir } from "node:os";
-import { describe, expect, it, beforeEach, afterEach } from "vitest";
+import { join } from "node:path";
+import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import { validateCIConfigSyntax } from "./config-validator.js";
 
 function makeTmpDir(): string {
@@ -105,8 +105,8 @@ describe("validateCIConfigSyntax", () => {
 			);
 
 			const violations = validateCIConfigSyntax(dir, "circleci");
-			const contentViolation = violations.find((v) =>
-				v.message.includes("jobs") || v.message.includes("workflows"),
+			const contentViolation = violations.find(
+				(v) => v.message.includes("jobs") || v.message.includes("workflows"),
 			);
 			expect(contentViolation).toBeDefined();
 		});
@@ -255,7 +255,15 @@ describe("validateCIConfigSyntax", () => {
 			// One valid, one with missing 'jobs:'
 			writeFileSync(
 				join(workflowsPath, "ci.yml"),
-				["name: CI", "on:", "  push:", "", "jobs:", "  build:", "    runs-on: ubuntu-latest"].join("\n"),
+				[
+					"name: CI",
+					"on:",
+					"  push:",
+					"",
+					"jobs:",
+					"  build:",
+					"    runs-on: ubuntu-latest",
+				].join("\n"),
 			);
 			writeFileSync(
 				join(workflowsPath, "release.yml"),
@@ -264,8 +272,9 @@ describe("validateCIConfigSyntax", () => {
 
 			const violations = validateCIConfigSyntax(dir, "github-actions");
 			// release.yml should have a jobs violation
-			const releaseViolation = violations.find((v) =>
-				v.configPath.includes("release") && v.message.includes("'jobs:'"),
+			const releaseViolation = violations.find(
+				(v) =>
+					v.configPath.includes("release") && v.message.includes("'jobs:'"),
 			);
 			expect(releaseViolation).toBeDefined();
 		});
