@@ -183,3 +183,29 @@ Projects using coding-harness should adopt similar security-conscious defaults.
 ## CI migration governance artifacts
 
 Harness-managed repos should also keep `.harness/ci-provider-transition-status.json` under source control. `harness init --update` scaffolds the baseline artifact with `nextGateComplete=false`; teams must explicitly update that artifact when a CI cutover is approved before running strict `harness ci-migrate verify`.
+
+## Project-type auto-detection
+
+`harness init` automatically detects the project type from filesystem signals and persists it into `harness.contract.json` as `projectType`. Detection is pure and read-only.
+
+| Rule | Type | Signal |
+| --- | --- | --- |
+| `tauri` | `desktop` | `src-tauri/` directory present |
+| `cli-ts` | `cli` | `src/cli.ts` file present |
+| `cli-js` | `cli` | `src/cli.js` file present |
+| `vite` | `web` | `vite.config.*` glob match at root |
+| `next` | `web` | `next.config.*` glob match at root |
+| `nuxt` | `web` | `nuxt.config.*` glob match at root |
+| `library` | `library` | `src/index.ts` file present |
+
+Rules are priority-ordered (lower = higher priority). `"unknown"` is emitted when no rule matches and init proceeds with universal defaults.
+
+**CLI flags:**
+- `harness init --project-type <cli|desktop|library|web>` — explicit override; patches the existing contract atomically without requiring `--force`
+- `harness init --json` — emits the full `InitOutput` structure as JSON, including `projectTypeDetection`
+
+**Idempotency:**
+- Re-init without `--project-type` preserves the stored value in `harness.contract.json`
+- `--project-type` always wins and overwrites the stored value
+- `"unknown"` is printed as a `console.warn` in human mode but suppressed in `--json` mode (result still appears in `projectTypeDetection`)
+
