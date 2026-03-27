@@ -262,8 +262,9 @@ export function runInit(
 		dir,
 		ciProvider,
 		projectTypeToWrite !== "unknown" ? projectTypeToWrite : undefined,
+		options,
 	);
-	const templates = getTemplatesForProvider(ciProvider);
+	const templates = getTemplatesForProvider(ciProvider, options);
 
 	if (options.migrate && options.dryRun) {
 		return {

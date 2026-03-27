@@ -13,6 +13,7 @@ import { existsSync, lstatSync, readFileSync, realpathSync } from "node:fs";
 import { dirname, resolve, sep } from "node:path";
 import semver from "semver";
 import { mergeContracts } from "../contract/merger.js";
+import { loadContract } from "../contract/loader.js";
 import type { HarnessContract } from "../contract/types.js";
 import { sanitizeError } from "../input/sanitize.js";
 import { getVersion } from "../version.js";
@@ -26,6 +27,8 @@ import {
 import {
 	type CIProvider,
 	HARNESS_DIR,
+	type InitErrorOutput,
+	type InitOptions,
 	type InitErrorOutput,
 	MANIFEST_FILE,
 	type OwnershipDecision,
@@ -81,6 +84,10 @@ function parseContractRecord(
 }
 
 function isPlainObject(value: unknown): value is Record<string, unknown> {
+	return typeof value === "object" && value !== null && !Array.isArray(value);
+}
+
+function isRecord(value: unknown): value is Record<string, unknown> {
 	return typeof value === "object" && value !== null && !Array.isArray(value);
 }
 
@@ -350,8 +357,63 @@ export function executeUpdate(
 	ciProvider: CIProvider,
 ): UpdateResult {
 	const packageManager = detectPackageManager(targetDir);
-	const renderContext = createTemplateRenderContext(targetDir, ciProvider);
-	const templates = getTemplatesForProvider(ciProvider);
+
+	const extractedOptions: InitOptions = {
+		dryRun: false,
+		force: false,
+	};
+
+	try {
+		const contractPath = resolve(targetDir, CONTRACT_FILE);
+		const rawContract = JSON.parse(readFileSync(contractPath, "utf-8")) as unknown;
+		const contract = loadContract(CONTRACT_FILE, targetDir);
+		const rawIssueTrackingPolicy =
+			isRecord(rawContract) && isRecord(rawContract.issueTrackingPolicy)
+				? rawContract.issueTrackingPolicy
+				: undefined;
+		const rawReviewPolicy =
+			isRecord(rawContract) && isRecord(rawContract.reviewPolicy)
+				? rawContract.reviewPolicy
+				: undefined;
+		const rawRemediationPolicy =
+			isRecord(rawContract) && isRecord(rawContract.remediationPolicy)
+				? rawContract.remediationPolicy
+				: undefined;
+		const rawProviderDefaults =
+			rawRemediationPolicy && isRecord(rawRemediationPolicy.providerDefaults)
+				? rawRemediationPolicy.providerDefaults
+				: undefined;
+
+		if (rawIssueTrackingPolicy) {
+			extractedOptions.issueTracker = contract.issueTrackingPolicy
+				?.provider as string | undefined;
+		} else if (manifest.issueTracker) {
+			extractedOptions.issueTracker = manifest.issueTracker;
+		} else if (existsSync(resolve(targetDir, ".linear"))) {
+			extractedOptions.issueTracker = "linear";
+		} else if (
+			existsSync(resolve(targetDir, ".github/ISSUE_TEMPLATE/config.yml"))
+		) {
+			extractedOptions.issueTracker = "github";
+		} else {
+			extractedOptions.issueTracker = "none";
+		}
+
+		if (!rawReviewPolicy && !rawProviderDefaults?.greptile) {
+			extractedOptions.greptile = false;
+		}
+	} catch {
+		extractedOptions.minimal = true;
+		extractedOptions.greptile = false;
+	}
+
+	const renderContext = createTemplateRenderContext(
+		targetDir,
+		ciProvider,
+		undefined,
+		extractedOptions,
+	);
+	const templates = getTemplatesForProvider(ciProvider, extractedOptions);
 	const updated: string[] = [];
 	const skipped: string[] = [];
 	const ownershipDecisions: OwnershipDecision[] = [];

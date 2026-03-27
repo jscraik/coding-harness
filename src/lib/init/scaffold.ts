@@ -36,6 +36,7 @@ import {
 	type CodexAction,
 	type CodexActionIcon,
 	type InitErrorOutput,
+	type InitOptions,
 	type PackageJsonLike,
 	type Template,
 	type TemplateRenderContext,
@@ -625,11 +626,19 @@ export function createTemplateRenderContext(
 	targetDir: string,
 	ciProvider?: CIProvider,
 	projectType?: ProjectType,
+	options?: InitOptions,
 ): TemplateRenderContext {
 	const issueTrackingUrl = readIssueTrackingUrl(targetDir);
 	const projectName = readProjectName(targetDir);
 	const repoUrl = readRepoUrl(targetDir);
-	const linearProjectSlug = extractLinearProjectSlug(issueTrackingUrl);
+	let linearProjectSlug = extractLinearProjectSlug(issueTrackingUrl);
+
+	// Solo orchestration overrides
+	if (options?.issueTracker === "none" || options?.issueTracker === "github") {
+		// Suppress linear project slug if an alternative tracker or 'none' is explicitly requested
+		linearProjectSlug = undefined;
+	}
+
 	// Resolve security contact email: env var override, then safe placeholder
 	const securityEmail =
 		process.env.HARNESS_SECURITY_EMAIL ?? "security@example.com";
@@ -643,6 +652,11 @@ export function createTemplateRenderContext(
 		...(linearProjectSlug ? { linearProjectSlug } : {}),
 		...(projectType ? { projectType } : {}),
 		securityEmail,
+		...(options?.minimal ? { minimal: true } : {}),
+		...(options?.issueTracker ? { issueTracker: options.issueTracker } : {}),
+		...(options?.greptile !== undefined
+			? { useGreptile: options.greptile }
+			: {}),
 	};
 }
 
@@ -1348,12 +1362,16 @@ export const TEMPLATES: Template[] = [
 						low: [],
 					},
 					docsDriftRules: {},
-					reviewPolicy: {
-						timeoutSeconds: 600,
-						timeoutAction: "fail" as const,
-						requiredChecks: [...REVIEW_POLICY_REQUIRED_CHECKS],
-						enforceReviewerIndependence: true,
-					},
+					...(context.useGreptile !== false
+						? {
+								reviewPolicy: {
+									timeoutSeconds: 600,
+									timeoutAction: "fail" as const,
+									requiredChecks: [...REVIEW_POLICY_REQUIRED_CHECKS],
+									enforceReviewerIndependence: true,
+								},
+							}
+						: {}),
 					branchProtection: {
 						requiredChecks: [...BRANCH_PROTECTION_REQUIRED_CHECKS],
 						restrictDeletions: true,
@@ -1458,10 +1476,14 @@ export const TEMPLATES: Template[] = [
 					},
 					remediationPolicy: {
 						providerDefaults: {
-							greptile: {
-								autoApplyMaxTier: "medium",
-								dryRunOnlyByDefault: false,
-							},
+							...(context.useGreptile !== false
+								? {
+										greptile: {
+											autoApplyMaxTier: "medium",
+											dryRunOnlyByDefault: false,
+										},
+									}
+								: {}),
 							codex: {
 								autoApplyMaxTier: "medium",
 								dryRunOnlyByDefault: false,
@@ -4070,8 +4092,55 @@ export function isTemplateEnabledForProvider(
 	return true;
 }
 
-export function getTemplatesForProvider(ciProvider: CIProvider): Template[] {
-	return TEMPLATES.filter((template) =>
-		isTemplateEnabledForProvider(template.path, ciProvider),
-	);
+export function getTemplatesForProvider(
+	ciProvider: CIProvider,
+	options?: InitOptions,
+): Template[] {
+	return TEMPLATES.filter((template) => {
+		if (!isTemplateEnabledForProvider(template.path, ciProvider)) {
+			return false;
+		}
+
+		// Minimal mode skips enterprise governance templates
+		if (options?.minimal) {
+			const minimalOmit = [
+				".github/CODEOWNERS",
+				"docs/PRODUCT-PLAN.md",
+				".harness/policy/ci-required-checks.json",
+			];
+			if (minimalOmit.includes(template.path)) {
+				return false;
+			}
+		}
+
+		// Issue tracker skips (linear templates are implicitly skipped in minimal mode)
+		if (
+			options?.minimal ||
+			options?.issueTracker === "none" ||
+			options?.issueTracker === "github"
+		) {
+			if (template.path.startsWith(".linear/")) {
+				return false;
+			}
+		}
+
+		if (options?.issueTracker === "none") {
+			if (template.path.includes("ISSUE_TEMPLATE")) {
+				return false;
+			}
+		}
+
+		// Greptile skips: if explicitly disabled via flag OR implied disabled via minimal mode
+		const omitGreptile = options?.greptile === false || options?.minimal;
+		if (omitGreptile) {
+			if (
+				template.path.startsWith(".greptile") ||
+				template.path.includes("greptile-review.yml")
+			) {
+				return false;
+			}
+		}
+
+		return true;
+	});
 }

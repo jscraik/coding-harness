@@ -19,6 +19,7 @@ import { runContractCLI } from "./commands/contract.js";
 import { runDiffBudgetCLI } from "./commands/diff-budget.js";
 import { runDoctorCLI } from "./commands/doctor.js";
 import { runDriftGateCLI } from "./commands/drift-gate.js";
+import { runEjectCLI } from "./commands/eject.js";
 import { runGapCaseCLI } from "./commands/gap-case.js";
 import { runGardenerCLI } from "./commands/gardener.js";
 import { runHealthCLI } from "./commands/health.js";
@@ -90,6 +91,10 @@ process.on("uncaughtException", (error) => {
 function printUsage(): void {
 	const legacyCommandRows = [
 		{ name: "init", summary: "Install harness in current directory" },
+		{
+			name: "eject",
+			summary: "Eject harness configuration from the repository",
+		},
 		{
 			name: "doctor",
 			summary: "Check all gate prerequisites (tools, files, config, CI)",
@@ -399,7 +404,15 @@ function printUsage(): void {
 	console.info(
 		"  --project-type   Override detected project type (cli|desktop|library|web)",
 	);
+	console.info("  --minimal        Use minimal mode without strict governance");
+	console.info("  --no-greptile    Omit Greptile templates and configurations");
+	console.info("  --issue-tracker  Set issue tracker (linear|github|none)");
 	console.info("  --json           Output as structured JSON");
+	console.info("");
+	console.info("Eject Options:");
+	console.info(
+		"  --force, -f      Bypass prompt and forcefully eject harness config",
+	);
 	console.info("");
 	console.info("CI Migrate Options:");
 	console.info("  ci-migrate [prepare|commit|abort|verify] [targetDir]");
@@ -830,14 +843,50 @@ export function run(args: string[]): void {
 		const projectTypeArg =
 			projectTypeIndex !== -1 ? args[projectTypeIndex + 1] : undefined;
 
+		// Solo Orchestration Flags
+		const minimalFlag = args.includes("--minimal");
+		const noGreptileFlag = args.includes("--no-greptile");
+
+		const issueTrackerIndex = args.indexOf("--issue-tracker");
+		const issueTrackerArg =
+			issueTrackerIndex !== -1 ? args[issueTrackerIndex + 1] : undefined;
+
+		// Validation: --minimal cannot be used with explicit granular overrides
+		if (minimalFlag) {
+			if (noGreptileFlag) {
+				console.error(
+					"Error: --no-greptile cannot be used with --minimal as minimal mode already drops parity layers.",
+				);
+				process.exit(2);
+				return;
+			}
+			if (issueTrackerArg !== undefined) {
+				console.error(
+					"Error: --issue-tracker cannot be used with --minimal. Granular options conflict with minimal mode.",
+				);
+				process.exit(2);
+				return;
+			}
+		}
+
+		if (
+			issueTrackerArg !== undefined &&
+			!["linear", "github", "none"].includes(issueTrackerArg)
+		) {
+			console.error(
+				`Error: Invalid --issue-tracker value: "${issueTrackerArg}". Valid values: linear | github | none.`,
+			);
+			process.exit(2);
+			return;
+		}
+
 		// Get optional target directory (first non-flag arg after init)
 		// Exclude both long flags (--) and short flags (-)
-		// Also skip the value after --project-type
+		// Also skip the values consumed by other flags
 		const targetDir = args.slice(1).find((arg, i, arr) => {
 			if (arg.startsWith("-")) return false;
-			// skip values consumed by --project-type
 			const prev = arr[i - 1];
-			if (prev === "--project-type") return false;
+			if (prev === "--project-type" || prev === "--issue-tracker") return false;
 			return true;
 		});
 
@@ -852,6 +901,11 @@ export function run(args: string[]): void {
 			interactive: interactiveFlag,
 			migrate: migrateFlag,
 			json: jsonFlag,
+			...(minimalFlag ? { minimal: true } : {}),
+			...(issueTrackerArg !== undefined
+				? { issueTracker: issueTrackerArg }
+				: {}),
+			...(noGreptileFlag ? { greptile: false } : {}),
 			...(projectTypeArg ? { projectType: projectTypeArg as ProjectType } : {}),
 		};
 
@@ -865,6 +919,16 @@ export function run(args: string[]): void {
 
 		const exitCode = runInitCLI(targetDir, options);
 		process.exit(exitCode);
+		return;
+	}
+
+	if (command === "eject") {
+		const forceFlag = args.includes("--force") || args.includes("-f");
+		const targetDir = args.slice(1).find((arg) => !arg.startsWith("-"));
+
+		runEjectCLI(targetDir, { force: forceFlag })
+			.then((exitCode: number) => process.exit(exitCode))
+			.catch((error: unknown) => handleFatalError("Eject Error", error));
 		return;
 	}
 

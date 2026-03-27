@@ -39,6 +39,9 @@ export interface InitOptions {
 	projectType?: ProjectType; // Explicit override from --project-type flag; undefined = auto-detect
 	json?: boolean; // Emit structured JSON output instead of human-readable
 	explainOwnership?: boolean; // Show ownership decisions for schema-aware update paths
+	minimal?: boolean; // Opt-out of strict enterprise governance layers
+	issueTracker?: string; // "linear" | "github" | "none"
+	greptile?: boolean; // false to omit greptile configuration
 }
 
 export type CIProvider = "github-actions" | "circleci";
@@ -291,6 +294,12 @@ export interface TemplateRenderContext {
 	/** Security contact email for GitHub issue template config; resolved from contract.owner.email,
 	 * env var HARNESS_SECURITY_EMAIL, or falls back to 'security@example.com'. */
 	securityEmail?: string;
+	/** Whether to emit a minimal contract and bypass strict governance/parity layers */
+	minimal?: boolean;
+	/** Specific issue tracker selection ('linear', 'github', 'none') */
+	issueTracker?: string;
+	/** Whether to provision .greptile files and workflow integration */
+	useGreptile?: boolean;
 }
 
 export interface Template {
