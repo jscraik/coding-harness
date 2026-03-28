@@ -1,7 +1,22 @@
-import { describe, expect, it } from "vitest";
-import { getTemplatesForProvider } from "./scaffold.js";
+import { mkdtempSync, rmSync, writeFileSync } from "node:fs";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
+import { afterEach, describe, expect, it } from "vitest";
+import {
+	TEMPLATES,
+	createTemplateRenderContext,
+	getTemplatesForProvider,
+} from "./scaffold.js";
 
 describe("scaffold templates resolution", () => {
+	const tempDirs: string[] = [];
+
+	afterEach(() => {
+		for (const dir of tempDirs.splice(0)) {
+			rmSync(dir, { recursive: true, force: true });
+		}
+	});
+
 	it("includes .greptile by default", () => {
 		const templates = getTemplatesForProvider("circleci");
 		const greptileTemplates = templates.filter((t) =>
@@ -68,5 +83,52 @@ describe("scaffold templates resolution", () => {
 			t.path.includes("ISSUE_TEMPLATE"),
 		);
 		expect(issueTemplates.length).toBe(0);
+	});
+
+	it("omits linear issue tracking policy when tracker is github", () => {
+		const tempDir = mkdtempSync(join(tmpdir(), "harness-scaffold-test-"));
+		tempDirs.push(tempDir);
+		writeFileSync(
+			join(tempDir, "package.json"),
+			JSON.stringify({ name: "demo" }),
+		);
+
+		const context = createTemplateRenderContext(
+			tempDir,
+			"circleci",
+			undefined,
+			{
+				dryRun: false,
+				force: false,
+				issueTracker: "github",
+			},
+		);
+		const contractTemplate = TEMPLATES.find(
+			(template) => template.path === "harness.contract.json",
+		);
+
+		expect(contractTemplate).toBeDefined();
+		const rendered = JSON.parse(contractTemplate!.render("pnpm", context));
+
+		expect(rendered.issueTrackingPolicy).toBeUndefined();
+	});
+
+	it("keeps linear issue tracking policy by default", () => {
+		const tempDir = mkdtempSync(join(tmpdir(), "harness-scaffold-test-"));
+		tempDirs.push(tempDir);
+		writeFileSync(
+			join(tempDir, "package.json"),
+			JSON.stringify({ name: "demo" }),
+		);
+
+		const context = createTemplateRenderContext(tempDir, "circleci");
+		const contractTemplate = TEMPLATES.find(
+			(template) => template.path === "harness.contract.json",
+		);
+
+		expect(contractTemplate).toBeDefined();
+		const rendered = JSON.parse(contractTemplate!.render("pnpm", context));
+
+		expect(rendered.issueTrackingPolicy?.provider).toBe("linear");
 	});
 });

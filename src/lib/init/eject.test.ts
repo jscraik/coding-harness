@@ -42,4 +42,28 @@ describe("ejectHarness", () => {
 		// Unrelated files should remain
 		expect(existsSync(join(tempDir, "user.txt"))).toBe(true);
 	});
+
+	it("supports dry-run without deleting harness footprints", async () => {
+		mkdirSync(join(tempDir, ".harness"));
+		mkdirSync(join(tempDir, ".greptile"));
+		mkdirSync(join(tempDir, ".agents/skills/coding-harness"), {
+			recursive: true,
+		});
+		writeFileSync(join(tempDir, "harness.contract.json"), "{}");
+
+		await ejectHarness(tempDir, { dryRun: true, force: true });
+
+		expect(existsSync(join(tempDir, ".harness"))).toBe(true);
+		expect(existsSync(join(tempDir, ".greptile"))).toBe(true);
+		expect(existsSync(join(tempDir, ".agents/skills/coding-harness"))).toBe(
+			true,
+		);
+		expect(existsSync(join(tempDir, "harness.contract.json"))).toBe(true);
+	});
+
+	it("throws when no harness footprint exists", async () => {
+		await expect(ejectHarness(tempDir, { force: true })).rejects.toThrow(
+			"No harness integration found",
+		);
+	});
 });

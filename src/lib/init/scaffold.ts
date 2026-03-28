@@ -1402,18 +1402,23 @@ export const TEMPLATES: Template[] = [
 						},
 					},
 					toolingPolicy: DEFAULT_CONTRACT.toolingPolicy,
-					issueTrackingPolicy: {
-						provider: "linear" as const,
-						...(context.issueTrackingUrl
-							? { projectUrl: context.issueTrackingUrl }
-							: {}),
-						requirePackageBugsUrl: true,
-						disableGitHubIssues: true,
-						requireBranchIssueKey: true,
-						requirePrIssueKey: true,
-						prReferenceMode: "either" as const,
-						branchPrefix: "codex",
-					},
+					...(context.issueTracker === "github" ||
+					context.issueTracker === "none"
+						? {}
+						: {
+								issueTrackingPolicy: {
+									provider: "linear" as const,
+									...(context.issueTrackingUrl
+										? { projectUrl: context.issueTrackingUrl }
+										: {}),
+									requirePackageBugsUrl: true,
+									disableGitHubIssues: true,
+									requireBranchIssueKey: true,
+									requirePrIssueKey: true,
+									prReferenceMode: "either" as const,
+									branchPrefix: "codex",
+								},
+							}),
 					evidencePolicy: {
 						requiredFor: [],
 						allowedTypes: ["png", "jpeg"],

@@ -4,6 +4,7 @@ import * as readline from "node:readline/promises";
 
 export interface EjectOptions {
 	force?: boolean;
+	dryRun?: boolean;
 }
 
 export async function ejectHarness(
@@ -21,7 +22,7 @@ export async function ejectHarness(
 		throw new Error(`No harness integration found in ${cwd}.`);
 	}
 
-	if (!options.force) {
+	if (!options.force && !options.dryRun) {
 		const rl = readline.createInterface({
 			input: process.stdin,
 			output: process.stdout,
@@ -46,6 +47,10 @@ export async function ejectHarness(
 	for (const p of pathsToRemove) {
 		const fullPath = join(cwd, p);
 		if (existsSync(fullPath)) {
+			if (options.dryRun) {
+				console.info(`Would delete: ${p}`);
+				continue;
+			}
 			try {
 				rmSync(fullPath, { recursive: true, force: true });
 				console.info(`Deleted: ${p}`);
@@ -55,6 +60,13 @@ export async function ejectHarness(
 				);
 			}
 		}
+	}
+
+	if (options.dryRun) {
+		console.info(
+			"\nDry-run complete. No files were deleted. Run without --dry-run to execute.",
+		);
+		return;
 	}
 
 	console.info(

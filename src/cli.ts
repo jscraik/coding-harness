@@ -413,6 +413,9 @@ function printUsage(): void {
 	console.info(
 		"  --force, -f      Bypass prompt and forcefully eject harness config",
 	);
+	console.info(
+		"  --dry-run        Preview harness ejection without deleting files",
+	);
 	console.info("");
 	console.info("CI Migrate Options:");
 	console.info("  ci-migrate [prepare|commit|abort|verify] [targetDir]");
@@ -924,9 +927,10 @@ export function run(args: string[]): void {
 
 	if (command === "eject") {
 		const forceFlag = args.includes("--force") || args.includes("-f");
+		const dryRunFlag = args.includes("--dry-run");
 		const targetDir = args.slice(1).find((arg) => !arg.startsWith("-"));
 
-		runEjectCLI(targetDir, { force: forceFlag })
+		runEjectCLI(targetDir, { force: forceFlag, dryRun: dryRunFlag })
 			.then((exitCode: number) => process.exit(exitCode))
 			.catch((error: unknown) => handleFatalError("Eject Error", error));
 		return;
