@@ -27,7 +27,6 @@ import {
 import {
 	type CIProvider,
 	HARNESS_DIR,
-	type InitErrorOutput,
 	type InitOptions,
 	type InitErrorOutput,
 	MANIFEST_FILE,
@@ -36,7 +35,6 @@ import {
 	type UpdateCheckResult,
 	type UpdateResult,
 } from "./types.js";
-
 const PROTECTED_CONTRACT_KEYS = [
 	"ciProviderPolicy",
 	"contextIntegrityPolicy",
@@ -372,22 +370,24 @@ export function executeUpdate(
 		const rawContract = JSON.parse(readFileSync(contractPath, "utf-8")) as unknown;
 		const contract = loadContract(CONTRACT_FILE, targetDir);
 		const rawIssueTrackingPolicy =
-			isRecord(rawContract) && isRecord(rawContract.issueTrackingPolicy)
+			isPlainObject(rawContract) &&
+			isPlainObject(rawContract.issueTrackingPolicy)
 				? rawContract.issueTrackingPolicy
 				: undefined;
 		const rawReviewPolicy =
-			isRecord(rawContract) && isRecord(rawContract.reviewPolicy)
+			isPlainObject(rawContract) && isPlainObject(rawContract.reviewPolicy)
 				? rawContract.reviewPolicy
 				: undefined;
 		const rawRemediationPolicy =
-			isRecord(rawContract) && isRecord(rawContract.remediationPolicy)
+			isPlainObject(rawContract) &&
+			isPlainObject(rawContract.remediationPolicy)
 				? rawContract.remediationPolicy
 				: undefined;
 		const rawProviderDefaults =
-			rawRemediationPolicy && isRecord(rawRemediationPolicy.providerDefaults)
+			rawRemediationPolicy &&
+			isPlainObject(rawRemediationPolicy.providerDefaults)
 				? rawRemediationPolicy.providerDefaults
 				: undefined;
-
 		if (rawIssueTrackingPolicy) {
 			extractedOptions.issueTracker = contract.issueTrackingPolicy
 				?.provider as string | undefined;

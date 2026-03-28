@@ -2473,6 +2473,85 @@ describe("--update flag", () => {
 		expect(contract.issueTrackingPolicy).toBeUndefined();
 	});
 
+	it("preserves github issue-tracker mode during update when the manifest lacks issueTracker", () => {
+		const installResult = runInit(tempDir, {
+			dryRun: false,
+			force: false,
+			track: true,
+			issueTracker: "github",
+		});
+		expect(installResult.ok).toBe(true);
+		expect(existsSync(join(tempDir, ".github/ISSUE_TEMPLATE/config.yml"))).toBe(
+			true,
+		);
+		expect(existsSync(join(tempDir, ".linear"))).toBe(false);
+
+		const manifestPath = join(tempDir, ".harness/restore-manifest.json");
+		const manifest = JSON.parse(readFileSync(manifestPath, "utf-8"));
+		manifest.issueTracker = undefined;
+		manifest.harnessVersion = "0.0.1";
+		writeFileSync(manifestPath, JSON.stringify(manifest));
+		const contractPath = join(tempDir, "harness.contract.json");
+		const contractBeforeUpdate = JSON.parse(
+			readFileSync(contractPath, "utf-8"),
+		);
+		contractBeforeUpdate.issueTrackingPolicy = undefined;
+		writeFileSync(contractPath, JSON.stringify(contractBeforeUpdate, null, 2));
+
+		const result = runInit(tempDir, {
+			dryRun: false,
+			force: false,
+			update: true,
+		});
+
+		expect(result.ok).toBe(true);
+		expect(existsSync(join(tempDir, ".github/ISSUE_TEMPLATE/config.yml"))).toBe(
+			true,
+		);
+		expect(existsSync(join(tempDir, ".linear"))).toBe(false);
+
+		const contract = JSON.parse(
+			readFileSync(join(tempDir, "harness.contract.json"), "utf-8"),
+		);
+		expect(contract.issueTrackingPolicy).toBeUndefined();
+	});
+
+	it("preserves no-greptile update mode from the raw contract", () => {
+		const installResult = runInit(tempDir, {
+			dryRun: false,
+			force: false,
+			track: true,
+			greptile: false,
+		});
+		expect(installResult.ok).toBe(true);
+		expect(existsSync(join(tempDir, ".greptile/config.json"))).toBe(false);
+
+		const manifestPath = join(tempDir, ".harness/restore-manifest.json");
+		const manifest = JSON.parse(readFileSync(manifestPath, "utf-8"));
+		manifest.harnessVersion = "0.0.1";
+		writeFileSync(manifestPath, JSON.stringify(manifest));
+
+		const result = runInit(tempDir, {
+			dryRun: false,
+			force: false,
+			update: true,
+		});
+
+		expect(result.ok).toBe(true);
+		expect(existsSync(join(tempDir, ".greptile/config.json"))).toBe(false);
+		expect(
+			existsSync(join(tempDir, ".github/workflows/greptile-review.yml")),
+		).toBe(false);
+
+		const contract = JSON.parse(
+			readFileSync(join(tempDir, "harness.contract.json"), "utf-8"),
+		);
+		expect(contract.reviewPolicy).toBeUndefined();
+		expect(
+			contract.remediationPolicy?.providerDefaults?.greptile,
+		).toBeUndefined();
+	});
+
 	it("fails update when manifest provider and requested provider mismatch", () => {
 		const installResult = runInit(tempDir, {
 			dryRun: false,
