@@ -363,6 +363,10 @@ export function executeUpdate(
 		force: false,
 	};
 
+	if (manifest.issueTracker) {
+		extractedOptions.issueTracker = manifest.issueTracker;
+	}
+
 	try {
 		const contractPath = resolve(targetDir, CONTRACT_FILE);
 		const rawContract = JSON.parse(readFileSync(contractPath, "utf-8")) as unknown;

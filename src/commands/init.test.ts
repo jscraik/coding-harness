@@ -1877,6 +1877,24 @@ describe("--track flag", () => {
 		expect(manifest.ciProvider).toBe("circleci");
 	});
 
+	it("records issueTracker in the manifest when explicitly configured", () => {
+		const result = runInit(tempDir, {
+			dryRun: false,
+			force: false,
+			track: true,
+			issueTracker: "github",
+		});
+		expect(result.ok).toBe(true);
+
+		const manifest = JSON.parse(
+			require("node:fs").readFileSync(
+				join(tempDir, ".harness/restore-manifest.json"),
+				"utf-8",
+			),
+		);
+		expect(manifest.issueTracker).toBe("github");
+	});
+
 	it("rejects symlinks with error", () => {
 		// Create symlink to a file outside the repo
 		mkdirSync(join(tempDir, ".github", "workflows"), { recursive: true });
@@ -2414,6 +2432,45 @@ describe("--update flag", () => {
 			// Should have updated files (even if same content)
 			expect(result.output.created.length).toBeGreaterThanOrEqual(0);
 		}
+	});
+
+	it("preserves a tracked issueTracker=none selection during update", () => {
+		const installResult = runInit(tempDir, {
+			dryRun: false,
+			force: false,
+			track: true,
+			issueTracker: "none",
+		});
+		expect(installResult.ok).toBe(true);
+		expect(existsSync(join(tempDir, ".github/ISSUE_TEMPLATE/config.yml"))).toBe(
+			false,
+		);
+
+		const manifestPath = join(tempDir, ".harness/restore-manifest.json");
+		const manifest = JSON.parse(
+			require("node:fs").readFileSync(manifestPath, "utf-8"),
+		);
+		manifest.harnessVersion = "0.0.1";
+		require("node:fs").writeFileSync(manifestPath, JSON.stringify(manifest));
+
+		const result = runInit(tempDir, {
+			dryRun: false,
+			force: false,
+			update: true,
+		});
+
+		expect(result.ok).toBe(true);
+		expect(existsSync(join(tempDir, ".github/ISSUE_TEMPLATE/config.yml"))).toBe(
+			false,
+		);
+
+		const contract = JSON.parse(
+			require("node:fs").readFileSync(
+				join(tempDir, "harness.contract.json"),
+				"utf-8",
+			),
+		);
+		expect(contract.issueTrackingPolicy).toBeUndefined();
 	});
 
 	it("fails update when manifest provider and requested provider mismatch", () => {

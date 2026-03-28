@@ -57,6 +57,7 @@ export type ManifestEntry =
 export interface RestoreManifest {
 	harnessVersion?: string; // CLI version at install/update time
 	ciProvider?: CIProvider; // CI provider used during tracked install/update
+	issueTracker?: string; // "linear" | "github" | "none"
 	files: ManifestEntry[];
 }
 

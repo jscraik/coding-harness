@@ -572,6 +572,11 @@ export function runInit(
 		const manifest: RestoreManifest = {
 			harnessVersion: getVersion(),
 			ciProvider,
+			...(options.minimal
+				? { issueTracker: "none" }
+				: options.issueTracker
+					? { issueTracker: options.issueTracker }
+					: {}),
 			files: manifestEntries,
 		};
 		const manifestPath = resolve(dir, HARNESS_DIR, MANIFEST_FILE);
