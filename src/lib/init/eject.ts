@@ -18,8 +18,7 @@ export async function ejectHarness(
 
 	// Ensure we only eject if we actually detect our footprint.
 	if (!hasContract && !hasHarnessDir) {
-		console.error(`Error: No harness integration found in ${cwd}.`);
-		process.exit(1);
+		throw new Error(`No harness integration found in ${cwd}.`);
 	}
 
 	if (!options.force) {
