@@ -94,14 +94,19 @@
 		"better-sqlite3": "^12.6.2",
 		"diff": "^8.0.3",
 		"lodash": "^4.17.21",
-		"picomatch": "^4.0.3",
+		"picomatch": "^4.0.4",
 		"semver": "^7.7.4",
 		"sqlite-vec": "0.1.7-alpha.2"
 	},
 	"pnpm": {
 		"overrides": {
+			"brace-expansion": "^5.0.5",
+			"handlebars": "^4.7.9",
+			"micromatch>picomatch": "^2.3.2",
+			"minimatch": "^10.2.3",
+			"picomatch": "^4.0.4",
 			"tar": "^7.5.10",
-			"minimatch": "^10.2.3"
+			"yaml": "^2.8.3"
 		}
 	},
 	"simple-git-hooks": {
