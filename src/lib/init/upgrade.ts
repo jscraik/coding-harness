@@ -151,11 +151,25 @@ export function detectUpgradeContext(targetDir: string):
 	);
 	const toVersion = getVersion();
 
-	// Read from restore-manifest for installed version
-	const manifestResult = loadManifest(targetDir);
-	const fromVersion = manifestResult.ok
-		? (manifestResult.value.harnessVersion ?? "0.0.0")
-		: "0.0.0";
+	let fromVersion = "0.0.0";
+	const restoreManifestPath = resolve(targetDir, HARNESS_DIR, MANIFEST_FILE);
+	if (existsSync(restoreManifestPath)) {
+		const manifestResult = loadManifest(targetDir, {
+			requireMetadata: true,
+			operation: "upgrade",
+		});
+		if (!manifestResult.ok) {
+			return { ok: false, error: manifestResult.error.message };
+		}
+		if (manifestResult.value.harnessVersion === undefined) {
+			return {
+				ok: false,
+				error:
+					"Restore manifest is incomplete for upgrade: missing harnessVersion.",
+			};
+		}
+		fromVersion = manifestResult.value.harnessVersion;
+	}
 
 	if (!semver.valid(fromVersion)) {
 		return {

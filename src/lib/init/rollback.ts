@@ -44,6 +44,11 @@ export type {
 	CIProvider,
 };
 
+interface LoadManifestOptions {
+	requireMetadata?: boolean;
+	operation?: string;
+}
+
 /**
  * Calculate backup hash from relative path.
  * Uses SHA256 hash of relative path for collision-safe naming.
@@ -275,7 +280,25 @@ export function createBackup(
  * Load and validate manifest from disk.
  * Re-validates all paths to prevent manifest tampering.
  */
-export function loadManifest(targetDir: string): ManifestResult {
+function buildIncompleteManifestError(
+	missingFields: string[],
+	options: LoadManifestOptions,
+): ManifestResult {
+	const operationSuffix = options.operation ? ` for ${options.operation}` : "";
+	return {
+		ok: false,
+		error: {
+			code: "INCOMPLETE_MANIFEST",
+			message: `Restore manifest is incomplete${operationSuffix}: missing ${missingFields.join(", ")}. Repair .harness/${MANIFEST_FILE} from a known-good tracked install, or remove .harness and re-run \`harness init --track\` when bootstrapping a fresh repo.`,
+			path: MANIFEST_FILE,
+		},
+	};
+}
+
+export function loadManifest(
+	targetDir: string,
+	options: LoadManifestOptions = {},
+): ManifestResult {
 	const manifestPath = resolve(targetDir, HARNESS_DIR, MANIFEST_FILE);
 
 	if (!existsSync(manifestPath)) {
@@ -400,7 +423,23 @@ export function loadManifest(targetDir: string): ManifestResult {
 			}
 		}
 
-		// Extract harnessVersion (defaults to "0.0.0" for backward compatibility)
+		const missingFields: string[] = [];
+		if (
+			typeof manifest.harnessVersion !== "string" ||
+			manifest.harnessVersion.length === 0
+		) {
+			missingFields.push("harnessVersion");
+		}
+		if (
+			manifest.ciProvider !== "github-actions" &&
+			manifest.ciProvider !== "circleci"
+		) {
+			missingFields.push("ciProvider");
+		}
+		if (options.requireMetadata && missingFields.length > 0) {
+			return buildIncompleteManifestError(missingFields, options);
+		}
+
 		const harnessVersion =
 			typeof manifest.harnessVersion === "string"
 				? manifest.harnessVersion

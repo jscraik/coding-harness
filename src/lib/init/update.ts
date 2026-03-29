@@ -9,12 +9,14 @@
  * @module lib/init/update
  */
 
-import { existsSync, lstatSync, realpathSync } from "node:fs";
+import { existsSync, lstatSync, readFileSync, realpathSync } from "node:fs";
 import { dirname, resolve, sep } from "node:path";
 import semver from "semver";
+import { mergeContracts } from "../contract/merger.js";
+import type { HarnessContract } from "../contract/types.js";
 import { sanitizeError } from "../input/sanitize.js";
 import { getVersion } from "../version.js";
-import { atomicWrite } from "./migration.js";
+import { CONTRACT_FILE, atomicWrite } from "./migration.js";
 import { loadManifest, sanitizePath } from "./rollback.js";
 import {
 	createTemplateRenderContext,
@@ -24,24 +26,286 @@ import {
 import {
 	type CIProvider,
 	HARNESS_DIR,
+	type InitErrorOutput,
 	MANIFEST_FILE,
+	type OwnershipDecision,
 	type RestoreManifest,
 	type UpdateCheckResult,
 	type UpdateResult,
 } from "./types.js";
+
+const PROTECTED_CONTRACT_KEYS = [
+	"ciProviderPolicy",
+	"contextIntegrityPolicy",
+	"docsGatePolicy",
+	"mergeQueueEvidenceBinding",
+] as const;
+
+function parseContractRecord(
+	content: string,
+	path: string,
+	label: string,
+):
+	| { ok: true; value: Record<string, unknown> }
+	| {
+			ok: false;
+			error: InitErrorOutput;
+	  } {
+	try {
+		const parsed = JSON.parse(content) as unknown;
+		if (!parsed || typeof parsed !== "object" || Array.isArray(parsed)) {
+			return {
+				ok: false,
+				error: {
+					code: "WRITE_ERROR",
+					message: `${label} contract must be a JSON object`,
+					path,
+				},
+			};
+		}
+
+		return {
+			ok: true,
+			value: parsed as Record<string, unknown>,
+		};
+	} catch (error) {
+		return {
+			ok: false,
+			error: {
+				code: "WRITE_ERROR",
+				message: `Failed to parse ${label} contract JSON: ${sanitizeError(error)}`,
+				path,
+			},
+		};
+	}
+}
+
+function isPlainObject(value: unknown): value is Record<string, unknown> {
+	return typeof value === "object" && value !== null && !Array.isArray(value);
+}
+
+function valuesEqual(left: unknown, right: unknown): boolean {
+	return JSON.stringify(left) === JSON.stringify(right);
+}
+
+function collectOwnershipDecisions(
+	existingValue: Record<string, unknown>,
+	renderedValue: Record<string, unknown>,
+	mergedValue: Record<string, unknown>,
+	basePath = "",
+): OwnershipDecision[] {
+	const decisions: OwnershipDecision[] = [];
+	const keys = new Set([
+		...Object.keys(existingValue),
+		...Object.keys(renderedValue),
+		...Object.keys(mergedValue),
+	]);
+
+	for (const key of keys) {
+		const path = basePath ? `${basePath}.${key}` : key;
+		const hasExisting = Object.prototype.hasOwnProperty.call(
+			existingValue,
+			key,
+		);
+		const hasRendered = Object.prototype.hasOwnProperty.call(
+			renderedValue,
+			key,
+		);
+		const existingEntry = existingValue[key];
+		const renderedEntry = renderedValue[key];
+		const mergedEntry = mergedValue[key];
+
+		if (
+			isPlainObject(mergedEntry) &&
+			(isPlainObject(existingEntry) || isPlainObject(renderedEntry))
+		) {
+			decisions.push(
+				...collectOwnershipDecisions(
+					isPlainObject(existingEntry) ? existingEntry : {},
+					isPlainObject(renderedEntry) ? renderedEntry : {},
+					mergedEntry,
+					path,
+				),
+			);
+			continue;
+		}
+
+		if (
+			!hasExisting &&
+			hasRendered &&
+			valuesEqual(mergedEntry, renderedEntry)
+		) {
+			decisions.push({
+				file: CONTRACT_FILE,
+				path,
+				owner: "template",
+				action: "added",
+			});
+			continue;
+		}
+
+		if (
+			hasExisting &&
+			!hasRendered &&
+			valuesEqual(mergedEntry, existingEntry)
+		) {
+			decisions.push({
+				file: CONTRACT_FILE,
+				path,
+				owner: "repo",
+				action: "preserved",
+			});
+			continue;
+		}
+
+		if (
+			!hasExisting ||
+			!hasRendered ||
+			valuesEqual(existingEntry, renderedEntry)
+		) {
+			continue;
+		}
+
+		if (valuesEqual(mergedEntry, existingEntry)) {
+			decisions.push({
+				file: CONTRACT_FILE,
+				path,
+				owner: "repo",
+				action: "preserved",
+			});
+			continue;
+		}
+
+		if (valuesEqual(mergedEntry, renderedEntry)) {
+			decisions.push({
+				file: CONTRACT_FILE,
+				path,
+				owner: "template",
+				action: "updated",
+			});
+		}
+	}
+
+	return decisions;
+}
+
+function prepareContractRefresh(
+	targetPath: string,
+	renderedContent: string,
+):
+	| {
+			ok: true;
+			value: { content: string; ownershipDecisions: OwnershipDecision[] };
+	  }
+	| { ok: false; error: InitErrorOutput } {
+	const existingContract = parseContractRecord(
+		readFileSync(targetPath, "utf-8"),
+		CONTRACT_FILE,
+		"existing",
+	);
+	if (!existingContract.ok) {
+		return existingContract;
+	}
+
+	const renderedContract = parseContractRecord(
+		renderedContent,
+		CONTRACT_FILE,
+		"rendered",
+	);
+	if (!renderedContract.ok) {
+		return renderedContract;
+	}
+
+	const existingVersion =
+		typeof existingContract.value.version === "string"
+			? existingContract.value.version
+			: null;
+	const renderedVersion =
+		typeof renderedContract.value.version === "string"
+			? renderedContract.value.version
+			: null;
+	if (
+		existingVersion &&
+		renderedVersion &&
+		semver.valid(existingVersion) &&
+		semver.valid(renderedVersion) &&
+		semver.gt(existingVersion, renderedVersion)
+	) {
+		return {
+			ok: false,
+			error: {
+				code: "WRITE_ERROR",
+				message: `Update would downgrade ${CONTRACT_FILE} from v${existingVersion} to v${renderedVersion}. Use \`harness upgrade --dry-run\` to preview a safe upgrade path instead.`,
+				path: CONTRACT_FILE,
+			},
+		};
+	}
+
+	const mergedContract = mergeContracts(
+		renderedContract.value as unknown as HarnessContract,
+		existingContract.value as unknown as Partial<HarnessContract>,
+	) as unknown as Record<string, unknown>;
+	if (renderedVersion) {
+		mergedContract.version = renderedVersion;
+	}
+	const ownershipDecisions = collectOwnershipDecisions(
+		existingContract.value,
+		renderedContract.value,
+		mergedContract,
+	);
+
+	const removedProtectedKeys = PROTECTED_CONTRACT_KEYS.filter((key) => {
+		return (
+			Object.prototype.hasOwnProperty.call(existingContract.value, key) &&
+			!Object.prototype.hasOwnProperty.call(mergedContract, key)
+		);
+	});
+	if (removedProtectedKeys.length > 0) {
+		return {
+			ok: false,
+			error: {
+				code: "WRITE_ERROR",
+				message: `Update would remove protected contract keys (${removedProtectedKeys.join(", ")}). Use \`harness upgrade --dry-run\` to preview a safe upgrade path instead.`,
+				path: CONTRACT_FILE,
+			},
+		};
+	}
+
+	return {
+		ok: true,
+		value: {
+			content: JSON.stringify(mergedContract, null, 2),
+			ownershipDecisions,
+		},
+	};
+}
 
 /**
  * Check if template updates are available.
  * Compares manifest version against current CLI version.
  */
 export function checkForUpdates(targetDir: string): UpdateCheckResult {
-	const manifestResult = loadManifest(targetDir);
+	const manifestResult = loadManifest(targetDir, {
+		requireMetadata: true,
+		operation: "check-updates",
+	});
 	if (!manifestResult.ok) {
 		return manifestResult;
 	}
 
 	const currentVersion = getVersion();
-	const installedVersion = manifestResult.value.harnessVersion || "0.0.0";
+	const installedVersion = manifestResult.value.harnessVersion;
+	if (installedVersion === undefined) {
+		return {
+			ok: false,
+			error: {
+				code: "INCOMPLETE_MANIFEST",
+				message:
+					"Restore manifest is incomplete for check-updates: missing harnessVersion.",
+				path: MANIFEST_FILE,
+			},
+		};
+	}
 
 	// Validate versions
 	if (!semver.valid(currentVersion)) {
@@ -90,6 +354,7 @@ export function executeUpdate(
 	const templates = getTemplatesForProvider(ciProvider);
 	const updated: string[] = [];
 	const skipped: string[] = [];
+	const ownershipDecisions: OwnershipDecision[] = [];
 
 	for (const entry of manifest.files) {
 		// Find matching template
@@ -160,7 +425,17 @@ export function executeUpdate(
 		}
 
 		// Render and write
-		const content = template.render(packageManager, renderContext);
+		let content = template.render(packageManager, renderContext);
+		if (entry.path === CONTRACT_FILE) {
+			const contractRefreshResult = prepareContractRefresh(targetPath, content);
+			if (!contractRefreshResult.ok) {
+				return contractRefreshResult;
+			}
+			content = contractRefreshResult.value.content;
+			ownershipDecisions.push(
+				...contractRefreshResult.value.ownershipDecisions,
+			);
+		}
 		const writeResult = atomicWrite(targetPath, content);
 		if (!writeResult.ok) {
 			return writeResult;
@@ -184,5 +459,5 @@ export function executeUpdate(
 		return manifestResult;
 	}
 
-	return { ok: true, value: { updated, skipped } };
+	return { ok: true, value: { updated, skipped, ownershipDecisions } };
 }

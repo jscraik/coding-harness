@@ -1360,6 +1360,12 @@ describe("pilot-evaluate", () => {
 		it("holds when canonical bundle discovery finds runId collisions across roots", () => {
 			writePassingPilotArtifacts(artifactsDir);
 			const localRoot = join(artifactsDir, "agent-runs");
+			const originalCwd = process.cwd();
+			process.chdir(testDir);
+			writeFileSync(
+				join(testDir, "harness.contract.json"),
+				JSON.stringify({ schemaVersion: 1 }, null, 2),
+			);
 			const sharedRoot = resolve("artifacts/agent-runs");
 			const runId = "collision-bundle";
 			const localArtifactPath = join(
@@ -1407,6 +1413,14 @@ describe("pilot-evaluate", () => {
 				const result = runPilotEvaluate({
 					artifactsDir,
 					lane: "health",
+					adapterRegistryPath: resolve(
+						originalCwd,
+						"contracts/agent-adapter-registry.json",
+					),
+					metricRegistryPath: resolve(
+						originalCwd,
+						"contracts/agent-metric-registry.json",
+					),
 				});
 				expect(result.ok).toBe(true);
 				expect(result.result?.outcome).toBe("hold");
@@ -1415,6 +1429,7 @@ describe("pilot-evaluate", () => {
 					expect.stringContaining("RunId collision count"),
 				);
 			} finally {
+				process.chdir(originalCwd);
 				rmSync(join(sharedRoot, runId), { recursive: true, force: true });
 			}
 		}, 20_000);

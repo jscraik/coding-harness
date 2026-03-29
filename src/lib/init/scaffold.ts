@@ -70,11 +70,34 @@ function renderInstallCommand(packageManager: string): string {
 	return `${packageManager} install`;
 }
 
+function renderAddPackageCommand(
+	packageManager: string,
+	packageName: string,
+): string {
+	if (packageManager === "npm") {
+		return `npm install --save-dev ${packageName}`;
+	}
+	if (packageManager === "yarn") {
+		return `yarn add --dev ${packageName}`;
+	}
+	return `${packageManager} add -D ${packageName}`;
+}
+
 function renderWorkflowBootstrapInstallCommand(packageManager: string): string {
 	if (packageManager === "npm") {
 		return "npm ci";
 	}
 	return `${renderInstallCommand(packageManager)} --frozen-lockfile`;
+}
+
+function renderLocalHarnessExecCommand(packageManager: string): string {
+	if (packageManager === "npm") {
+		return "npm exec harness --";
+	}
+	if (packageManager === "yarn") {
+		return "yarn harness";
+	}
+	return `${packageManager} exec harness`;
 }
 
 function renderMemoryValidateCommand(): string {
@@ -123,16 +146,16 @@ function renderTransitionStatusArtifact(): string {
 }
 
 function renderDefaultNpmrc(): string {
-	return `ignore-scripts=true
+	return `@brainwav:registry=https://registry.npmjs.org/
+ignore-scripts=true
 strict-peer-dependencies=false
 auto-install-peers=false
 shamefully-hoist=false
 node-linker=hoisted
 
-# Add provider-specific registry/auth entries below when consuming private packages.
-# Example (GitHub Packages):
-# @brainwav:registry=https://npm.pkg.github.com
-# //npm.pkg.github.com/:_authToken=\${NPM_TOKEN}
+# Auth should come from user-level ~/.npmrc or CI-injected ~/.npmrc, not this repo.
+# Do not add //registry.npmjs.org/:_authToken=... here, because it can override
+# a valid npm login and break local installs.
 `;
 }
 
@@ -191,6 +214,82 @@ function renderCodexPreflightTemplate(): string {
 		new URL("../../templates/codex-preflight.sh", import.meta.url),
 	);
 	return readFileSync(templatePath, "utf-8");
+}
+
+function renderHarnessCliWrapper(packageManager: string): string {
+	const installCommand = renderInstallCommand(packageManager);
+	const addCommand = renderAddPackageCommand(
+		packageManager,
+		"@brainwav/coding-harness",
+	);
+	const execCommand = renderLocalHarnessExecCommand(packageManager);
+
+	return `#!/usr/bin/env bash
+set -euo pipefail
+
+SCRIPT_DIR="$(cd -- "$(dirname -- "${"${"}BASH_SOURCE[0]}")" && pwd)"
+REPO_ROOT="$(cd -- "$SCRIPT_DIR/.." && pwd)"
+
+if ! command -v node >/dev/null 2>&1; then
+	echo "Error: node is required to run scripts/harness-cli.sh." >&2
+	echo "Install Node.js and retry." >&2
+	exit 1
+fi
+
+set +e
+CLI_PATH="$(
+	REPO_ROOT="$REPO_ROOT" node <<'NODE'
+const { createRequire } = require("node:module");
+const { resolve } = require("node:path");
+
+const repoRoot = process.env.REPO_ROOT;
+
+try {
+	const requireFromRepo = createRequire(resolve(repoRoot, "package.json"));
+	process.stdout.write(
+		requireFromRepo.resolve("@brainwav/coding-harness/dist/cli.js"),
+	);
+} catch (error) {
+	if (
+		error &&
+		typeof error === "object" &&
+		"code" in error &&
+		error.code === "MODULE_NOT_FOUND"
+	) {
+		process.exit(42);
+	}
+
+	console.error(error instanceof Error ? error.message : String(error));
+	process.exit(43);
+}
+NODE
+)"
+resolution_status=$?
+set -e
+
+if [[ $resolution_status -eq 42 || -z "$CLI_PATH" ]]; then
+	echo "Error: local @brainwav/coding-harness could not be resolved from this repo." >&2
+	echo "This is a local install/bootstrap problem, not a harness command failure." >&2
+	echo "Repair from the repo root with one of:" >&2
+	echo "  ${installCommand}" >&2
+	echo "  ${addCommand}" >&2
+	echo "After the package is installed, rerun:" >&2
+	echo "  bash scripts/harness-cli.sh <command>" >&2
+	echo "  ${execCommand} <command>" >&2
+	exit 1
+fi
+
+if [[ $resolution_status -ne 0 ]]; then
+	echo "Error: failed to resolve the local @brainwav/coding-harness CLI entrypoint." >&2
+	echo "This indicates a local install/bootstrap problem, not a harness command failure." >&2
+	echo "Repair from the repo root with one of:" >&2
+	echo "  ${installCommand}" >&2
+	echo "  ${addCommand}" >&2
+	exit 1
+fi
+
+exec node "$CLI_PATH" "$@"
+`;
 }
 
 function readPackageJson(targetDir: string): PackageJsonLike | undefined {
@@ -1914,6 +2013,12 @@ jobs:
 			const auditCommand = renderScriptCommand(pm, "audit");
 			const checkCommand = renderScriptCommand(pm, "check");
 			const memoryValidateCommand = renderMemoryValidateCommand();
+			const installCommand = renderInstallCommand(pm);
+			const addCommand = renderAddPackageCommand(
+				pm,
+				"@brainwav/coding-harness",
+			);
+			const localExecCommand = renderLocalHarnessExecCommand(pm);
 			return `# Contributing
 
 ## Table of Contents
@@ -1924,6 +2029,7 @@ jobs:
 - [Branch name policy](#branch-name-policy)
 - [Required pre-merge gates](#required-pre-merge-gates)
 - [Required tooling baseline](#required-tooling-baseline)
+- [Repo-local harness wrapper](#repo-local-harness-wrapper)
 - [Greptile setup baseline](#greptile-setup-baseline)
 - [Greptile config hierarchy](#greptile-config-hierarchy)
 - [Greptile merge logic for multi-scope pull requests](#greptile-merge-logic-for-multi-scope-pull-requests)
@@ -2013,6 +2119,18 @@ Recommended policy:
 - Treat \`scripts/check-environment.sh\` as the local readiness gate for required tooling.
 - Block merge or promotion work when a required CLI is missing rather than silently skipping the corresponding validation lane.
 - For repositories with explicit \`ui\` / \`chatgpt_apps_sdk\` capabilities or matching dependency signals, install \`@brainwav/design-system-guidance\` and treat its absence as a readiness failure.
+
+## Repo-local harness wrapper
+
+- \`harness init\` also scaffolds \`scripts/harness-cli.sh\` for repositories that want a repo-local wrapper around the published CLI package.
+- The wrapper resolves \`@brainwav/coding-harness/dist/cli.js\` from the current repository before running any harness command.
+- If the wrapper cannot resolve the package, treat that as local install/bootstrap drift rather than a harness command failure.
+- Repair from the repo root with:
+  - \`${installCommand}\`
+  - \`${addCommand}\`
+- After repair, rerun:
+  - \`bash scripts/harness-cli.sh <command>\`
+  - \`${localExecCommand} <command>\`
 
 ## Greptile setup baseline
 
@@ -3263,6 +3381,10 @@ CLAUDE_APPROVAL_POSTURE = "require"
 		render: () => renderCodexPreflightTemplate(),
 	},
 	{
+		path: "scripts/harness-cli.sh",
+		render: (pm) => renderHarnessCliWrapper(pm),
+	},
+	{
 		path: "scripts/check-environment.sh",
 		render: () => {
 			const packagePolicy = DEFAULT_CONTRACT.toolingPolicy?.packagePolicy;
@@ -3612,6 +3734,7 @@ echo "Environment check passed (attestation: $ATTESTATION_PATH)"
 /CONTRIBUTING.md @jscraik
 /AGENTS.md @jscraik
 /scripts/codex-preflight.sh @jscraik
+/scripts/harness-cli.sh @jscraik
 /scripts/check-environment.sh @jscraik
 `,
 	},

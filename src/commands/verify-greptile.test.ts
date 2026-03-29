@@ -214,4 +214,25 @@ describe("runVerifyGreptile", () => {
 		expect(npmrcCheck?.message).toContain("harness init");
 		expect(npmrcCheck?.message).toContain("ignore-scripts=true");
 	});
+
+	it("warns when repo .npmrc contains an auth token override", async () => {
+		writeFileSync(
+			join(repoPath, ".npmrc"),
+			[
+				"@brainwav:registry=https://registry.npmjs.org/",
+				"//registry.npmjs.org/:_authToken=${NPM_TOKEN}",
+				"ignore-scripts=true",
+			].join("\n"),
+		);
+
+		const result = await runVerifyGreptile({
+			repoPath,
+		});
+
+		const npmrcCheck = result.checks.find(
+			(check) => check.name === ".npmrc configuration",
+		);
+		expect(npmrcCheck?.status).toBe("warn");
+		expect(npmrcCheck?.message).toContain("user-level ~/.npmrc");
+	});
 });

@@ -21,6 +21,7 @@ The shortest honest description of the project today is:
 - [Why Teams Use It](#why-teams-use-it)
 - [Current Strengths](#current-strengths)
 - [Installation](#installation)
+- [Repo-local Wrapper](#repo-local-wrapper)
 - [Common Workflows](#common-workflows)
 - [Command Index](#command-index)
 - [Requirements](#requirements)
@@ -86,6 +87,27 @@ If your team uses `mise`, this also works:
 mise install -g npm:@brainwav/coding-harness
 ```
 
+## Repo-local Wrapper
+
+`harness init` now scaffolds `scripts/harness-cli.sh` for downstream repos that
+want a repo-local wrapper around the published CLI package.
+
+Use it like this:
+
+```bash
+bash scripts/harness-cli.sh verify-greptile
+```
+
+If the wrapper cannot resolve local `@brainwav/coding-harness`, treat that as a
+repo bootstrap/install problem, not a harness command failure. In a pnpm repo,
+repair it with:
+
+```bash
+pnpm install
+pnpm add -D @brainwav/coding-harness
+pnpm exec harness <command>
+```
+
 ## Common Workflows
 
 ### 1. Bootstrap a repository
@@ -102,6 +124,13 @@ Use these follow-ups when the repo already has harness material:
 
 ```bash
 harness init --check-updates
+harness upgrade --dry-run
+harness upgrade
+```
+
+If tracked baseline files are missing and you need to re-scaffold them:
+
+```bash
 harness init --update
 harness init --interactive
 ```
@@ -171,10 +200,10 @@ flags, use `harness --help`.
 
 | Command | Purpose |
 | --- | --- |
-| `init` | Scaffold or update harness-managed repo surfaces (`--project-type`, `--json`, `--dry-run`, `--force`, `--track`, `--update`, `--migrate`) |
+| `init` | Scaffold or re-scaffold harness-managed repo surfaces (`--project-type`, `--json`, `--dry-run`, `--force`, `--track`, `--update`, `--migrate`) |
 | `doctor` | Check all gate prerequisites (tools, files, config, CI) |
 | `health` | Unified gate status scorecard across all gates |
-| `upgrade` | Upgrade harness in a repo to a newer version (`--dry-run` supported) |
+| `upgrade` | Safely upgrade harness in an existing repo (`--dry-run` supported) |
 | `ci-migrate` | Stage, verify, commit, or abort CI migration |
 | `branch-protect` | Configure GitHub branch protection rulesets |
 | `verify-greptile` | Verify Greptile configuration and remote wiring |

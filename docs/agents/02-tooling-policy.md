@@ -91,6 +91,7 @@ Exception for harness readiness:
 - Private package auth must be wired in both places:
   - Local shell: `export NPM_TOKEN=<token>`
   - GitHub Actions: `env: NPM_TOKEN: ${{ secrets.NPM_TOKEN }}`
+- Harness-managed repos may also scaffold `scripts/harness-cli.sh` as the repo-local wrapper for the published CLI package. That wrapper must resolve `@brainwav/coding-harness/dist/cli.js` from the current repo and fail with actionable install hints such as `pnpm install`, `pnpm add -D @brainwav/coding-harness`, and `pnpm exec harness <command>` instead of surfacing a raw `MODULE_NOT_FOUND`.
 
 ## Recommended command order
 
@@ -137,36 +138,43 @@ Stop and ask before proceeding if:
 
 ## Private npm package setup
 
-Harness-managed repos should keep a project-level `.npmrc`. `harness init` now scaffolds a baseline `.npmrc` with security-first defaults, and operators should then add the provider-specific registry/auth entries needed for private packages.
+Harness-managed repos should keep a project-level `.npmrc`, but it must stay
+scope-only and auth-free. `harness init` scaffolds the baseline file with
+security defaults plus the `@brainwav` scope mapping to `registry.npmjs.org`.
 
-When using `@brainwav/coding-harness` from a private npm registry, projects must extend `.npmrc` like this:
-
-### Option 1: GitHub Packages (recommended for GitHub workflows)
-
-```bash
-# .npmrc
-@brainwav:registry=https://npm.pkg.github.com
-//npm.pkg.github.com/:_authToken=${NPM_TOKEN}
-```
-
-Set `NPM_TOKEN` as an environment variable (GitHub PAT with `read:packages` scope).
-
-For CI repos, also set repository secret `NPM_TOKEN` and map it into workflow/job `env`.
-
-### Option 2: npm registry with OIDC trusted publisher
-
-For CI/CD with OIDC:
+Use this project-level shape:
 
 ```bash
 # .npmrc
 @brainwav:registry=https://registry.npmjs.org/
+ignore-scripts=true
 ```
 
-The registry will use OIDC token exchange for authentication.
+Do not put `//registry.npmjs.org/:_authToken=...` in the repo `.npmrc`. That can
+override a valid user `npm login` and break local installs.
+
+### Local auth
+
+For developer machines, auth should come from user-level `~/.npmrc` or a valid
+`npm login` session. A workstation may also source `NPM_TOKEN` from 1Password,
+but that token should populate user-level npm auth rather than a repo-local
+auth override.
+
+### CI auth
+
+For CI repos, inject auth into `~/.npmrc` at runtime using repository secrets,
+for example by appending `//registry.npmjs.org/:_authToken=$NPM_TOKEN` in the
+workflow before install steps.
 
 ### Verification
 
-Run `harness init --update` to restore the baseline `.npmrc` if it is missing, then run `harness verify-greptile --check-npmrc` to verify provider-specific configuration for the private package.
+Start with `harness upgrade --dry-run` for routine upgrades in existing installs.
+If the baseline `.npmrc` is missing and needs to be re-scaffolded, run
+`harness init --update`, then `harness verify-greptile --check-npmrc` to confirm
+that the repo keeps scope routing and security defaults without a repo-local
+auth token override. If a scaffolded `scripts/harness-cli.sh` wrapper cannot
+resolve the local package, treat that as bootstrap drift in the repo install,
+not as a harness command logic failure.
 
 ## Required .npmrc settings for this repository
 
@@ -182,7 +190,7 @@ Projects using coding-harness should adopt similar security-conscious defaults.
 
 ## CI migration governance artifacts
 
-Harness-managed repos should also keep `.harness/ci-provider-transition-status.json` under source control. `harness init --update` scaffolds the baseline artifact with `nextGateComplete=false`; teams must explicitly update that artifact when a CI cutover is approved before running strict `harness ci-migrate verify`.
+Harness-managed repos should also keep `.harness/ci-provider-transition-status.json` under source control. Use `harness upgrade --dry-run` for routine upgrade planning; if the transition artifact is missing and must be re-scaffolded, `harness init --update` writes the baseline file with `nextGateComplete=false`. Teams must explicitly update that artifact when a CI cutover is approved before running strict `harness ci-migrate verify`.
 
 ## Project-type auto-detection
 
@@ -208,4 +216,3 @@ Rules are priority-ordered (lower = higher priority). `"unknown"` is emitted whe
 - Re-init without `--project-type` preserves the stored value in `harness.contract.json`
 - `--project-type` always wins and overwrites the stored value
 - `"unknown"` is printed as a `console.warn` in human mode but suppressed in `--json` mode (result still appears in `projectTypeDetection`)
-

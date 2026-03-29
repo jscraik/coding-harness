@@ -279,11 +279,23 @@ export function runUpgradeCLI(
 	}
 
 	// 4. Determine CI provider
-	const manifestResult = loadManifest(dir);
+	const manifestResult = loadManifest(dir, {
+		requireMetadata: true,
+		operation: "upgrade",
+	});
+	if (!manifestResult.ok && options.provider === undefined) {
+		console.error(`Error: ${manifestResult.error.message}`);
+		return EXIT_CODES.WRITE_ERROR;
+	}
 	const rawProvider =
 		options.provider ??
-		(manifestResult.ok ? manifestResult.value.ciProvider : undefined) ??
-		"circleci";
+		(manifestResult.ok ? manifestResult.value.ciProvider : undefined);
+	if (!rawProvider) {
+		console.error(
+			"Error: Restore manifest is incomplete for upgrade: missing ciProvider.",
+		);
+		return EXIT_CODES.WRITE_ERROR;
+	}
 
 	const providerResult = normalizeCIProvider(rawProvider);
 	if (!providerResult.ok) {

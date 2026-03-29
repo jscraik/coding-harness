@@ -285,6 +285,17 @@ export function runInit(
 		};
 	}
 
+	if (options.update && options.track) {
+		return {
+			ok: false,
+			error: {
+				code: "INVALID_OPTIONS",
+				message:
+					"--update cannot be combined with --track. Use `harness upgrade --dry-run` for existing installs, or run `harness init --track` separately when bootstrapping tracked files.",
+			},
+		};
+	}
+
 	// Handle --rollback: restore from manifest
 	if (options.rollback) {
 		const manifestResult = loadManifest(dir);
@@ -342,7 +353,10 @@ export function runInit(
 
 	// Handle --update: apply template updates
 	if (options.update) {
-		const manifestResult = loadManifest(dir);
+		const manifestResult = loadManifest(dir, {
+			requireMetadata: true,
+			operation: "update",
+		});
 		if (!manifestResult.ok) {
 			return manifestResult;
 		}
@@ -371,6 +385,9 @@ export function runInit(
 				packageManager,
 				created: updateResult.value.updated,
 				skipped: updateResult.value.skipped,
+				...(updateResult.value.ownershipDecisions
+					? { ownershipDecisions: updateResult.value.ownershipDecisions }
+					: {}),
 			},
 		};
 	}
@@ -609,7 +626,10 @@ export async function runInteractiveInitCLI(
 		if (result.error.code === "PATH_TRAVERSAL") {
 			return EXIT_CODES.PATH_TRAVERSAL;
 		}
-		if (result.error.code === "WRITE_ERROR") {
+		if (
+			result.error.code === "WRITE_ERROR" ||
+			result.error.code === "INCOMPLETE_MANIFEST"
+		) {
 			return EXIT_CODES.WRITE_ERROR;
 		}
 		return EXIT_CODES.INVALID_PATH;
@@ -727,6 +747,7 @@ export function runInitCLI(
 			packageManager,
 			created,
 			skipped,
+			ownershipDecisions,
 			updateCheck,
 			projectTypeDetection,
 		} = result.output;
@@ -753,7 +774,7 @@ export function runInitCLI(
 				console.info(
 					`Update available: v${updateCheck.installedVersion} → v${updateCheck.currentVersion}`,
 				);
-				console.info("\n  Run: harness init --update");
+				console.info("\n  Run: harness upgrade --dry-run");
 			} else {
 				console.info(`Up to date (v${updateCheck.currentVersion})`);
 			}
@@ -765,7 +786,7 @@ export function runInitCLI(
 			if (created.length === 0 && skipped.length === 0) {
 				console.info("Already up to date.");
 			} else {
-				console.info(`Updating harness (v${getVersion()})\n`);
+				console.info(`Refreshing tracked templates (v${getVersion()})\n`);
 				for (const path of created) {
 					console.info(`  updated ${path}`);
 				}
@@ -773,6 +794,17 @@ export function runInitCLI(
 					console.info(`  skipped ${path}`);
 				}
 				console.info(`\n✓ Updated ${created.length} file(s)`);
+				console.info(
+					"  Prefer `harness upgrade --dry-run` for routine upgrades in existing installs.",
+				);
+				if (options.explainOwnership && ownershipDecisions?.length) {
+					console.info("\n  Ownership decisions:");
+					for (const decision of ownershipDecisions) {
+						console.info(
+							`    ${decision.action.padEnd(9)} ${decision.owner.padEnd(8)} ${decision.path}`,
+						);
+					}
+				}
 			}
 			return EXIT_CODES.SUCCESS;
 		}
@@ -790,6 +822,8 @@ export function runInitCLI(
 				);
 				console.info("\n✓ Contract migrated");
 			}
+			console.info("  Note: --migrate only updates harness.contract.json.");
+			console.info("  Use `harness ci-migrate ...` for CI provider cutovers.");
 			return EXIT_CODES.SUCCESS;
 		}
 
@@ -847,7 +881,10 @@ export function runInitCLI(
 	if (result.error.code === "PATH_TRAVERSAL") {
 		return EXIT_CODES.PATH_TRAVERSAL;
 	}
-	if (result.error.code === "WRITE_ERROR") {
+	if (
+		result.error.code === "WRITE_ERROR" ||
+		result.error.code === "INCOMPLETE_MANIFEST"
+	) {
 		return EXIT_CODES.WRITE_ERROR;
 	}
 	return EXIT_CODES.INVALID_PATH;

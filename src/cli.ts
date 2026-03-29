@@ -387,10 +387,15 @@ function printUsage(): void {
 	console.info("  --force          Overwrite existing files");
 	console.info("  --track          Create manifest + backups for rollback");
 	console.info("  --rollback       Restore from manifest (undo init)");
-	console.info("  --check-updates  Check for template updates");
-	console.info("  --update         Apply available template updates");
+	console.info("  --check-updates  Check for tracked-template updates");
+	console.info("  --update         Refresh tracked templates (prefer upgrade)");
+	console.info(
+		"  --explain-ownership  Show contract ownership decisions for --update",
+	);
 	console.info("  --interactive    Review and approve each change");
-	console.info("  --migrate        Migrate contract schema to latest version");
+	console.info(
+		"  --migrate        Migrate contract schema only (not ci-migrate)",
+	);
 	console.info(
 		"  --project-type   Override detected project type (cli|desktop|library|web)",
 	);
@@ -815,6 +820,7 @@ export function run(args: string[]): void {
 		const rollbackFlag = args.includes("--rollback");
 		const checkUpdatesFlag = args.includes("--check-updates");
 		const updateFlag = args.includes("--update");
+		const explainOwnershipFlag = args.includes("--explain-ownership");
 		const interactiveFlag = args.includes("--interactive");
 		const migrateFlag = args.includes("--migrate");
 		const jsonFlag = args.includes("--json");
@@ -842,6 +848,7 @@ export function run(args: string[]): void {
 			rollback: rollbackFlag,
 			checkUpdates: checkUpdatesFlag,
 			update: updateFlag,
+			explainOwnership: explainOwnershipFlag,
 			interactive: interactiveFlag,
 			migrate: migrateFlag,
 			json: jsonFlag,

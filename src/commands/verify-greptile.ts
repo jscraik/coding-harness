@@ -508,12 +508,16 @@ function verifyNpmrc(repoPath: string): GreptileCheck {
 		const hasIgnoreScripts = /ignore-scripts\s*=\s*true/m.test(content);
 
 		if (hasScopedRegistry) features.push("scoped registry");
-		if (hasAuthToken) features.push("auth token configured");
 		if (hasIgnoreScripts) features.push("ignore-scripts=true (security)");
 
 		// Check for security best practices
 		if (!hasIgnoreScripts) {
 			issues.push("consider setting ignore-scripts=true for security");
+		}
+		if (hasAuthToken) {
+			issues.push(
+				"move auth token config to user-level ~/.npmrc or CI-injected ~/.npmrc instead of repo .npmrc",
+			);
 		}
 
 		if (issues.length > 0) {

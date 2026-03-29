@@ -10,6 +10,7 @@ import {
 import { tmpdir } from "node:os";
 import { dirname, join } from "node:path";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
+import { CURRENT_SCHEMA_VERSION } from "../lib/init/types.js";
 import { EXIT_CODES, runInit } from "./init.js";
 
 const EXPECTED_TEMPLATE_PATHS = [
@@ -40,6 +41,7 @@ const EXPECTED_TEMPLATE_PATHS = [
 	".gitleaks.toml",
 	"prek.toml",
 	"scripts/codex-preflight.sh",
+	"scripts/harness-cli.sh",
 	"scripts/check-environment.sh",
 	".mise.toml",
 	".codex/environments/environment.toml",
@@ -208,7 +210,8 @@ describe("runInit", () => {
 
 			const npmrc = readFileSync(join(tempDir, ".npmrc"), "utf-8");
 			expect(npmrc).toContain("ignore-scripts=true");
-			expect(npmrc).toContain("@brainwav:registry=https://npm.pkg.github.com");
+			expect(npmrc).toContain("@brainwav:registry=https://registry.npmjs.org/");
+			expect(npmrc).not.toMatch(/^\/\/registry\.npmjs\.org\/:_authToken=/m);
 		});
 
 		it("skips existing files without --force", () => {
@@ -1090,6 +1093,10 @@ describe("runInit", () => {
 				join(tempDir, ".mise.toml"),
 				"utf-8",
 			);
+			const harnessCli = require("node:fs").readFileSync(
+				join(tempDir, "scripts/harness-cli.sh"),
+				"utf-8",
+			);
 			const environmentCheck = require("node:fs").readFileSync(
 				join(tempDir, "scripts/check-environment.sh"),
 				"utf-8",
@@ -1184,6 +1191,17 @@ describe("runInit", () => {
 			expect(miseToml).toContain('"semgrep" = "1.153.1"');
 			expect(miseToml).toContain('"trivy" = "0.69.3"');
 			expect(miseToml).toContain('"vale" = "3.13.1"');
+			expect(harnessCli).toContain(
+				"local @brainwav/coding-harness could not be resolved from this repo",
+			);
+			expect(harnessCli).toContain(
+				"local install/bootstrap problem, not a harness command failure",
+			);
+			expect(harnessCli).toContain("npm install");
+			expect(harnessCli).toContain(
+				"npm install --save-dev @brainwav/coding-harness",
+			);
+			expect(harnessCli).toContain("npm exec harness -- <command>");
 			expect(environmentCheck).toContain("required_tooling_doc_terms=(");
 			expect(environmentCheck).toContain('"make"');
 			expect(environmentCheck).toContain('"beautiful-mermaid"');
@@ -1367,6 +1385,43 @@ describe("runInit", () => {
 
 			expect(sourced.status).toBe(0);
 			expect(sourced.stderr).toBe("");
+		});
+
+		it("makes missing local harness installs actionable in the scaffolded wrapper", () => {
+			writeFileSync(
+				join(tempDir, "package.json"),
+				JSON.stringify({ name: "fixture", private: true }, null, 2),
+				"utf-8",
+			);
+			writeFileSync(
+				join(tempDir, "pnpm-lock.yaml"),
+				"lockfileVersion: '9.0'\n",
+				"utf-8",
+			);
+
+			const result = runInit(tempDir, { dryRun: false, force: false });
+			expect(result.ok).toBe(true);
+
+			const wrapper = spawnSync(
+				"bash",
+				["scripts/harness-cli.sh", "verify-greptile"],
+				{
+					cwd: tempDir,
+					encoding: "utf8",
+				},
+			);
+
+			expect(wrapper.status).toBe(1);
+			expect(wrapper.stderr).toContain(
+				"local @brainwav/coding-harness could not be resolved from this repo",
+			);
+			expect(wrapper.stderr).toContain(
+				"local install/bootstrap problem, not a harness command failure",
+			);
+			expect(wrapper.stderr).toContain("pnpm install");
+			expect(wrapper.stderr).toContain("pnpm add -D @brainwav/coding-harness");
+			expect(wrapper.stderr).toContain("pnpm exec harness <command>");
+			expect(wrapper.stdout).toBe("");
 		});
 	});
 
@@ -1892,7 +1947,7 @@ describe("--check-updates flag", () => {
 		}
 	});
 
-	it("defaults to 0.0.0 for manifest without version", () => {
+	it("fails closed when manifest is missing harnessVersion", () => {
 		// Install first
 		const installResult = runInit(tempDir, {
 			dryRun: false,
@@ -1916,10 +1971,11 @@ describe("--check-updates flag", () => {
 			checkUpdates: true,
 		});
 
-		expect(result.ok).toBe(true);
-		if (result.ok) {
-			expect(result.output.updateCheck?.installedVersion).toBe("0.0.0");
-			expect(result.output.updateCheck?.updateAvailable).toBe(true);
+		expect(result.ok).toBe(false);
+		if (!result.ok) {
+			expect(result.error.code).toBe("INCOMPLETE_MANIFEST");
+			expect(result.error.message).toContain("Restore manifest is incomplete");
+			expect(result.error.message).toContain("harnessVersion");
 		}
 	});
 });
@@ -1947,6 +2003,24 @@ describe("--update flag", () => {
 		if (!result.ok) {
 			expect(result.error.code).toBe("WRITE_ERROR");
 			expect(result.error.message).toContain("No restore manifest found");
+		}
+	});
+
+	it("rejects --update when combined with --track", () => {
+		const result = runInit(tempDir, {
+			dryRun: false,
+			force: false,
+			update: true,
+			track: true,
+		});
+
+		expect(result.ok).toBe(false);
+		if (!result.ok) {
+			expect(result.error.code).toBe("INVALID_OPTIONS");
+			expect(result.error.message).toContain(
+				"--update cannot be combined with --track",
+			);
+			expect(result.error.message).toContain("harness upgrade --dry-run");
 		}
 	});
 
@@ -1984,6 +2058,35 @@ describe("--update flag", () => {
 			require("node:fs").readFileSync(manifestPath, "utf-8"),
 		);
 		expect(updatedManifest.harnessVersion).not.toBe("0.0.1");
+	});
+
+	it("fails closed when manifest is missing ciProvider", () => {
+		const installResult = runInit(tempDir, {
+			dryRun: false,
+			force: false,
+			track: true,
+		});
+		expect(installResult.ok).toBe(true);
+
+		const manifestPath = join(tempDir, ".harness/restore-manifest.json");
+		const manifest = JSON.parse(
+			require("node:fs").readFileSync(manifestPath, "utf-8"),
+		);
+		manifest.ciProvider = undefined;
+		require("node:fs").writeFileSync(manifestPath, JSON.stringify(manifest));
+
+		const result = runInit(tempDir, {
+			dryRun: false,
+			force: false,
+			update: true,
+		});
+
+		expect(result.ok).toBe(false);
+		if (!result.ok) {
+			expect(result.error.code).toBe("INCOMPLETE_MANIFEST");
+			expect(result.error.message).toContain("Restore manifest is incomplete");
+			expect(result.error.message).toContain("ciProvider");
+		}
 	});
 
 	it("is no-op when already up to date", () => {
@@ -2029,6 +2132,124 @@ describe("--update flag", () => {
 		if (!result.ok) {
 			expect(result.error.code).toBe("INVALID_PATH");
 			expect(result.error.message).toContain("manifest provider");
+		}
+	});
+
+	it("merges updates with existing protected and customized contract fields", () => {
+		const installResult = runInit(tempDir, {
+			dryRun: false,
+			force: false,
+			track: true,
+		});
+		expect(installResult.ok).toBe(true);
+
+		writeFileSync(
+			join(tempDir, "harness.contract.json"),
+			JSON.stringify(
+				{
+					...JSON.parse(
+						readFileSync(join(tempDir, "harness.contract.json"), "utf-8"),
+					),
+					version: "1.4.0",
+					ciProviderPolicy: {
+						mode: "required",
+					},
+					mergeQueueEvidenceBinding: {
+						provider: "github",
+						queue: "main",
+					},
+				},
+				null,
+				2,
+			),
+		);
+
+		const result = runInit(tempDir, {
+			dryRun: false,
+			force: false,
+			update: true,
+		});
+
+		expect(result.ok).toBe(true);
+		if (result.ok) {
+			const updatedContract = JSON.parse(
+				readFileSync(join(tempDir, "harness.contract.json"), "utf-8"),
+			) as Record<string, unknown>;
+			const ownershipDecisions = result.output.ownershipDecisions ?? [];
+			expect(updatedContract.version).toBe(CURRENT_SCHEMA_VERSION);
+			expect(updatedContract.mergeQueueEvidenceBinding).toEqual({
+				provider: "github",
+				queue: "main",
+			});
+
+			const ciProviderPolicy = updatedContract.ciProviderPolicy as Record<
+				string,
+				unknown
+			>;
+			expect(ciProviderPolicy.mode).toBe("required");
+			expect(ciProviderPolicy.migrationStage).toBeDefined();
+			expect(ciProviderPolicy.authorityConfigPath).toBe(
+				"harness.contract.json",
+			);
+			expect(ciProviderPolicy.trustedPolicyRef).toBe("refs/heads/main");
+			expect(ownershipDecisions).toEqual(
+				expect.arrayContaining([
+					expect.objectContaining({
+						file: "harness.contract.json",
+						path: "version",
+						owner: "template",
+						action: "updated",
+					}),
+					expect.objectContaining({
+						file: "harness.contract.json",
+						path: "mergeQueueEvidenceBinding.provider",
+						owner: "repo",
+						action: "preserved",
+					}),
+					expect.objectContaining({
+						file: "harness.contract.json",
+						path: "ciProviderPolicy.authorityConfigPath",
+						owner: "template",
+						action: "added",
+					}),
+				]),
+			);
+		}
+	});
+
+	it("rejects updates that would downgrade the contract version", () => {
+		const installResult = runInit(tempDir, {
+			dryRun: false,
+			force: false,
+			track: true,
+		});
+		expect(installResult.ok).toBe(true);
+
+		writeFileSync(
+			join(tempDir, "harness.contract.json"),
+			JSON.stringify(
+				{
+					...JSON.parse(
+						readFileSync(join(tempDir, "harness.contract.json"), "utf-8"),
+					),
+					version: "9.9.9",
+				},
+				null,
+				2,
+			),
+		);
+
+		const result = runInit(tempDir, {
+			dryRun: false,
+			force: false,
+			update: true,
+		});
+
+		expect(result.ok).toBe(false);
+		if (!result.ok) {
+			expect(result.error.code).toBe("WRITE_ERROR");
+			expect(result.error.message).toContain("downgrade harness.contract.json");
+			expect(result.error.message).toContain("harness upgrade --dry-run");
 		}
 	});
 

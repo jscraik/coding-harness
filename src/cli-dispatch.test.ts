@@ -519,6 +519,7 @@ describe("cli command dispatch", () => {
 			rollback: false,
 			checkUpdates: false,
 			update: false,
+			explainOwnership: false,
 			interactive: false,
 			migrate: false,
 			json: false,
