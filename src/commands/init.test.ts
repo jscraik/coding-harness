@@ -2016,7 +2016,7 @@ describe("--update flag", () => {
 
 		expect(result.ok).toBe(false);
 		if (!result.ok) {
-			expect(result.error.code).toBe("INVALID_PATH");
+			expect(result.error.code).toBe("INVALID_OPTIONS");
 			expect(result.error.message).toContain(
 				"--update cannot be combined with --track",
 			);

@@ -282,6 +282,9 @@ export function runInit(
 				code: "INVALID_PATH",
 				message: "--migrate cannot be combined with --interactive.",
 			},
+		};
+	}
+
 	if (options.update && options.track) {
 		return {
 			ok: false,
@@ -291,7 +294,6 @@ export function runInit(
 					"--update cannot be combined with --track. Use `harness upgrade --dry-run` for existing installs, or run `harness init --track` separately when bootstrapping tracked files.",
 			},
 		};
-	}
 	}
 
 	// Handle --rollback: restore from manifest
