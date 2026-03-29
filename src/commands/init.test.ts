@@ -10,6 +10,7 @@ import {
 import { tmpdir } from "node:os";
 import { dirname, join } from "node:path";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
+import { CURRENT_SCHEMA_VERSION } from "../lib/init/types.js";
 import { EXIT_CODES, runInit } from "./init.js";
 
 const EXPECTED_TEMPLATE_PATHS = [
@@ -2050,7 +2051,7 @@ describe("--update flag", () => {
 		}
 	});
 
-	it("rejects updates that would remove protected contract keys", () => {
+	it("merges updates with existing protected and customized contract fields", () => {
 		const installResult = runInit(tempDir, {
 			dryRun: false,
 			force: false,
@@ -2065,6 +2066,10 @@ describe("--update flag", () => {
 					...JSON.parse(
 						readFileSync(join(tempDir, "harness.contract.json"), "utf-8"),
 					),
+					version: "1.4.0",
+					ciProviderPolicy: {
+						mode: "required",
+					},
 					mergeQueueEvidenceBinding: {
 						provider: "github",
 						queue: "main",
@@ -2081,11 +2086,27 @@ describe("--update flag", () => {
 			update: true,
 		});
 
-		expect(result.ok).toBe(false);
-		if (!result.ok) {
-			expect(result.error.code).toBe("WRITE_ERROR");
-			expect(result.error.message).toContain("mergeQueueEvidenceBinding");
-			expect(result.error.message).toContain("harness upgrade --dry-run");
+		expect(result.ok).toBe(true);
+		if (result.ok) {
+			const updatedContract = JSON.parse(
+				readFileSync(join(tempDir, "harness.contract.json"), "utf-8"),
+			) as Record<string, unknown>;
+			expect(updatedContract.version).toBe(CURRENT_SCHEMA_VERSION);
+			expect(updatedContract.mergeQueueEvidenceBinding).toEqual({
+				provider: "github",
+				queue: "main",
+			});
+
+			const ciProviderPolicy = updatedContract.ciProviderPolicy as Record<
+				string,
+				unknown
+			>;
+			expect(ciProviderPolicy.mode).toBe("required");
+			expect(ciProviderPolicy.migrationStage).toBeDefined();
+			expect(ciProviderPolicy.authorityConfigPath).toBe(
+				"harness.contract.json",
+			);
+			expect(ciProviderPolicy.trustedPolicyRef).toBe("refs/heads/main");
 		}
 	});
 

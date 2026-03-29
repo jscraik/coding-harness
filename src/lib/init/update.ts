@@ -12,6 +12,8 @@
 import { existsSync, lstatSync, readFileSync, realpathSync } from "node:fs";
 import { dirname, resolve, sep } from "node:path";
 import semver from "semver";
+import { mergeContracts } from "../contract/merger.js";
+import type { HarnessContract } from "../contract/types.js";
 import { sanitizeError } from "../input/sanitize.js";
 import { getVersion } from "../version.js";
 import { CONTRACT_FILE, atomicWrite } from "./migration.js";
@@ -77,10 +79,10 @@ function parseContractRecord(
 	}
 }
 
-function validateContractRefresh(
+function prepareContractRefresh(
 	targetPath: string,
 	renderedContent: string,
-): { ok: true; value: undefined } | { ok: false; error: InitErrorOutput } {
+): { ok: true; value: string } | { ok: false; error: InitErrorOutput } {
 	const existingContract = parseContractRecord(
 		readFileSync(targetPath, "utf-8"),
 		CONTRACT_FILE,
@@ -124,10 +126,18 @@ function validateContractRefresh(
 		};
 	}
 
+	const mergedContract = mergeContracts(
+		renderedContract.value as unknown as HarnessContract,
+		existingContract.value as unknown as Partial<HarnessContract>,
+	) as unknown as Record<string, unknown>;
+	if (renderedVersion) {
+		mergedContract.version = renderedVersion;
+	}
+
 	const removedProtectedKeys = PROTECTED_CONTRACT_KEYS.filter((key) => {
 		return (
 			Object.prototype.hasOwnProperty.call(existingContract.value, key) &&
-			!Object.prototype.hasOwnProperty.call(renderedContract.value, key)
+			!Object.prototype.hasOwnProperty.call(mergedContract, key)
 		);
 	});
 	if (removedProtectedKeys.length > 0) {
@@ -141,7 +151,7 @@ function validateContractRefresh(
 		};
 	}
 
-	return { ok: true, value: undefined };
+	return { ok: true, value: JSON.stringify(mergedContract, null, 2) };
 }
 
 /**
@@ -274,15 +284,13 @@ export function executeUpdate(
 		}
 
 		// Render and write
-		const content = template.render(packageManager, renderContext);
+		let content = template.render(packageManager, renderContext);
 		if (entry.path === CONTRACT_FILE) {
-			const contractRefreshResult = validateContractRefresh(
-				targetPath,
-				content,
-			);
+			const contractRefreshResult = prepareContractRefresh(targetPath, content);
 			if (!contractRefreshResult.ok) {
 				return contractRefreshResult;
 			}
+			content = contractRefreshResult.value;
 		}
 		const writeResult = atomicWrite(targetPath, content);
 		if (!writeResult.ok) {
