@@ -209,7 +209,8 @@ describe("runInit", () => {
 
 			const npmrc = readFileSync(join(tempDir, ".npmrc"), "utf-8");
 			expect(npmrc).toContain("ignore-scripts=true");
-			expect(npmrc).toContain("@brainwav:registry=https://npm.pkg.github.com");
+			expect(npmrc).toContain("@brainwav:registry=https://registry.npmjs.org/");
+			expect(npmrc).not.toMatch(/^\/\/registry\.npmjs\.org\/:_authToken=/m);
 		});
 
 		it("skips existing files without --force", () => {

@@ -137,36 +137,41 @@ Stop and ask before proceeding if:
 
 ## Private npm package setup
 
-Harness-managed repos should keep a project-level `.npmrc`. `harness init` now scaffolds a baseline `.npmrc` with security-first defaults, and operators should then add the provider-specific registry/auth entries needed for private packages.
+Harness-managed repos should keep a project-level `.npmrc`, but it must stay
+scope-only and auth-free. `harness init` scaffolds the baseline file with
+security defaults plus the `@brainwav` scope mapping to `registry.npmjs.org`.
 
-When using `@brainwav/coding-harness` from a private npm registry, projects must extend `.npmrc` like this:
-
-### Option 1: GitHub Packages (recommended for GitHub workflows)
-
-```bash
-# .npmrc
-@brainwav:registry=https://npm.pkg.github.com
-//npm.pkg.github.com/:_authToken=${NPM_TOKEN}
-```
-
-Set `NPM_TOKEN` as an environment variable (GitHub PAT with `read:packages` scope).
-
-For CI repos, also set repository secret `NPM_TOKEN` and map it into workflow/job `env`.
-
-### Option 2: npm registry with OIDC trusted publisher
-
-For CI/CD with OIDC:
+Use this project-level shape:
 
 ```bash
 # .npmrc
 @brainwav:registry=https://registry.npmjs.org/
+ignore-scripts=true
 ```
 
-The registry will use OIDC token exchange for authentication.
+Do not put `//registry.npmjs.org/:_authToken=...` in the repo `.npmrc`. That can
+override a valid user `npm login` and break local installs.
+
+### Local auth
+
+For developer machines, auth should come from user-level `~/.npmrc` or a valid
+`npm login` session. A workstation may also source `NPM_TOKEN` from 1Password,
+but that token should populate user-level npm auth rather than a repo-local
+auth override.
+
+### CI auth
+
+For CI repos, inject auth into `~/.npmrc` at runtime using repository secrets,
+for example by appending `//registry.npmjs.org/:_authToken=$NPM_TOKEN` in the
+workflow before install steps.
 
 ### Verification
 
-Start with `harness upgrade --dry-run` for routine upgrades in existing installs. If the baseline `.npmrc` is missing and needs to be re-scaffolded, run `harness init --update`, then `harness verify-greptile --check-npmrc` to confirm provider-specific configuration for the private package.
+Start with `harness upgrade --dry-run` for routine upgrades in existing installs.
+If the baseline `.npmrc` is missing and needs to be re-scaffolded, run
+`harness init --update`, then `harness verify-greptile --check-npmrc` to confirm
+that the repo keeps scope routing and security defaults without a repo-local
+auth token override.
 
 ## Required .npmrc settings for this repository
 

@@ -45,7 +45,7 @@ This repository follows conservative defaults:
 - Keep `scripts/codex-preflight.sh` sourceable as well as executable so bash-based flows can still use `source scripts/codex-preflight.sh && preflight_repo`.
 - For Local Memory enforcement, pin `~/.local-memory/config.yaml` to `host: 127.0.0.1` and `auto_port: false`, and prefer the pinned REST health endpoint as the source of truth when CLI status output is stale under sandboxed execution.
 - If using local shell helpers, prefer `source scripts/codex-shell-helpers.sh` and launch through `codex_d`/`cdxd` so Codex runs with `--profile d` and `--cd` anchored to the repo root.
-- Treat harness-scaffolded governance artifacts as part of the runtime contract: `.npmrc` should exist with the baseline security defaults, and `.harness/ci-provider-transition-status.json` should exist before strict `ci-migrate verify`.
+- Treat harness-scaffolded governance artifacts as part of the runtime contract: `.npmrc` should exist with the baseline security defaults plus scope-only registry routing, and `.harness/ci-provider-transition-status.json` should exist before strict `ci-migrate verify`. Repo `.npmrc` files must not carry auth token overrides; auth belongs in user-level or CI-injected `~/.npmrc`.
 - When bumping tooling dependencies that have mirrored configuration schemas, update the package version, the repo config, and the scaffold template in the same change. The init suite enforces this for the Biome schema URL.
 
 ## Pre-commit hooks

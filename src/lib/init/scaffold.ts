@@ -123,16 +123,16 @@ function renderTransitionStatusArtifact(): string {
 }
 
 function renderDefaultNpmrc(): string {
-	return `ignore-scripts=true
+	return `@brainwav:registry=https://registry.npmjs.org/
+ignore-scripts=true
 strict-peer-dependencies=false
 auto-install-peers=false
 shamefully-hoist=false
 node-linker=hoisted
 
-# Add provider-specific registry/auth entries below when consuming private packages.
-# Example (GitHub Packages):
-# @brainwav:registry=https://npm.pkg.github.com
-# //npm.pkg.github.com/:_authToken=\${NPM_TOKEN}
+# Auth should come from user-level ~/.npmrc or CI-injected ~/.npmrc, not this repo.
+# Do not add //registry.npmjs.org/:_authToken=... here, because it can override
+# a valid npm login and break local installs.
 `;
 }
 
