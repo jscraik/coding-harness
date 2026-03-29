@@ -382,6 +382,9 @@ export function runInit(
 				packageManager,
 				created: updateResult.value.updated,
 				skipped: updateResult.value.skipped,
+				...(updateResult.value.ownershipDecisions
+					? { ownershipDecisions: updateResult.value.ownershipDecisions }
+					: {}),
 			},
 		};
 	}
@@ -738,6 +741,7 @@ export function runInitCLI(
 			packageManager,
 			created,
 			skipped,
+			ownershipDecisions,
 			updateCheck,
 			projectTypeDetection,
 		} = result.output;
@@ -787,6 +791,14 @@ export function runInitCLI(
 				console.info(
 					"  Prefer `harness upgrade --dry-run` for routine upgrades in existing installs.",
 				);
+				if (options.explainOwnership && ownershipDecisions?.length) {
+					console.info("\n  Ownership decisions:");
+					for (const decision of ownershipDecisions) {
+						console.info(
+							`    ${decision.action.padEnd(9)} ${decision.owner.padEnd(8)} ${decision.path}`,
+						);
+					}
+				}
 			}
 			return EXIT_CODES.SUCCESS;
 		}

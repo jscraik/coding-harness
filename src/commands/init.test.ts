@@ -2091,6 +2091,7 @@ describe("--update flag", () => {
 			const updatedContract = JSON.parse(
 				readFileSync(join(tempDir, "harness.contract.json"), "utf-8"),
 			) as Record<string, unknown>;
+			const ownershipDecisions = result.output.ownershipDecisions ?? [];
 			expect(updatedContract.version).toBe(CURRENT_SCHEMA_VERSION);
 			expect(updatedContract.mergeQueueEvidenceBinding).toEqual({
 				provider: "github",
@@ -2107,6 +2108,28 @@ describe("--update flag", () => {
 				"harness.contract.json",
 			);
 			expect(ciProviderPolicy.trustedPolicyRef).toBe("refs/heads/main");
+			expect(ownershipDecisions).toEqual(
+				expect.arrayContaining([
+					expect.objectContaining({
+						file: "harness.contract.json",
+						path: "version",
+						owner: "template",
+						action: "updated",
+					}),
+					expect.objectContaining({
+						file: "harness.contract.json",
+						path: "mergeQueueEvidenceBinding.provider",
+						owner: "repo",
+						action: "preserved",
+					}),
+					expect.objectContaining({
+						file: "harness.contract.json",
+						path: "ciProviderPolicy.authorityConfigPath",
+						owner: "template",
+						action: "added",
+					}),
+				]),
+			);
 		}
 	});
 

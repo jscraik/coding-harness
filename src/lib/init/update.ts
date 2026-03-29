@@ -28,6 +28,7 @@ import {
 	HARNESS_DIR,
 	type InitErrorOutput,
 	MANIFEST_FILE,
+	type OwnershipDecision,
 	type RestoreManifest,
 	type UpdateCheckResult,
 	type UpdateResult,
@@ -79,10 +80,124 @@ function parseContractRecord(
 	}
 }
 
+function isPlainObject(value: unknown): value is Record<string, unknown> {
+	return typeof value === "object" && value !== null && !Array.isArray(value);
+}
+
+function valuesEqual(left: unknown, right: unknown): boolean {
+	return JSON.stringify(left) === JSON.stringify(right);
+}
+
+function collectOwnershipDecisions(
+	existingValue: Record<string, unknown>,
+	renderedValue: Record<string, unknown>,
+	mergedValue: Record<string, unknown>,
+	basePath = "",
+): OwnershipDecision[] {
+	const decisions: OwnershipDecision[] = [];
+	const keys = new Set([
+		...Object.keys(existingValue),
+		...Object.keys(renderedValue),
+		...Object.keys(mergedValue),
+	]);
+
+	for (const key of keys) {
+		const path = basePath ? `${basePath}.${key}` : key;
+		const hasExisting = Object.prototype.hasOwnProperty.call(
+			existingValue,
+			key,
+		);
+		const hasRendered = Object.prototype.hasOwnProperty.call(
+			renderedValue,
+			key,
+		);
+		const existingEntry = existingValue[key];
+		const renderedEntry = renderedValue[key];
+		const mergedEntry = mergedValue[key];
+
+		if (
+			isPlainObject(mergedEntry) &&
+			(isPlainObject(existingEntry) || isPlainObject(renderedEntry))
+		) {
+			decisions.push(
+				...collectOwnershipDecisions(
+					isPlainObject(existingEntry) ? existingEntry : {},
+					isPlainObject(renderedEntry) ? renderedEntry : {},
+					mergedEntry,
+					path,
+				),
+			);
+			continue;
+		}
+
+		if (
+			!hasExisting &&
+			hasRendered &&
+			valuesEqual(mergedEntry, renderedEntry)
+		) {
+			decisions.push({
+				file: CONTRACT_FILE,
+				path,
+				owner: "template",
+				action: "added",
+			});
+			continue;
+		}
+
+		if (
+			hasExisting &&
+			!hasRendered &&
+			valuesEqual(mergedEntry, existingEntry)
+		) {
+			decisions.push({
+				file: CONTRACT_FILE,
+				path,
+				owner: "repo",
+				action: "preserved",
+			});
+			continue;
+		}
+
+		if (
+			!hasExisting ||
+			!hasRendered ||
+			valuesEqual(existingEntry, renderedEntry)
+		) {
+			continue;
+		}
+
+		if (valuesEqual(mergedEntry, existingEntry)) {
+			decisions.push({
+				file: CONTRACT_FILE,
+				path,
+				owner: "repo",
+				action: "preserved",
+			});
+			continue;
+		}
+
+		if (valuesEqual(mergedEntry, renderedEntry)) {
+			decisions.push({
+				file: CONTRACT_FILE,
+				path,
+				owner: "template",
+				action: "updated",
+			});
+		}
+	}
+
+	return decisions;
+}
+
 function prepareContractRefresh(
 	targetPath: string,
 	renderedContent: string,
-): { ok: true; value: string } | { ok: false; error: InitErrorOutput } {
+):
+	| {
+			ok: true;
+			value: { content: string; ownershipDecisions: OwnershipDecision[] };
+	  }
+	| { ok: false; error: InitErrorOutput } {
 	const existingContract = parseContractRecord(
 		readFileSync(targetPath, "utf-8"),
 		CONTRACT_FILE,
@@ -133,6 +248,11 @@ function prepareContractRefresh(
 	if (renderedVersion) {
 		mergedContract.version = renderedVersion;
 	}
+	const ownershipDecisions = collectOwnershipDecisions(
+		existingContract.value,
+		renderedContract.value,
+		mergedContract,
+	);
 
 	const removedProtectedKeys = PROTECTED_CONTRACT_KEYS.filter((key) => {
 		return (
@@ -151,7 +271,13 @@ function prepareContractRefresh(
 		};
 	}
 
-	return { ok: true, value: JSON.stringify(mergedContract, null, 2) };
+	return {
+		ok: true,
+		value: {
+			content: JSON.stringify(mergedContract, null, 2),
+			ownershipDecisions,
+		},
+	};
 }
 
 /**
@@ -214,6 +340,7 @@ export function executeUpdate(
 	const templates = getTemplatesForProvider(ciProvider);
 	const updated: string[] = [];
 	const skipped: string[] = [];
+	const ownershipDecisions: OwnershipDecision[] = [];
 
 	for (const entry of manifest.files) {
 		// Find matching template
@@ -290,7 +417,10 @@ export function executeUpdate(
 			if (!contractRefreshResult.ok) {
 				return contractRefreshResult;
 			}
-			content = contractRefreshResult.value;
+			content = contractRefreshResult.value.content;
+			ownershipDecisions.push(
+				...contractRefreshResult.value.ownershipDecisions,
+			);
 		}
 		const writeResult = atomicWrite(targetPath, content);
 		if (!writeResult.ok) {
@@ -315,5 +445,5 @@ export function executeUpdate(
 		return manifestResult;
 	}
 
-	return { ok: true, value: { updated, skipped } };
+	return { ok: true, value: { updated, skipped, ownershipDecisions } };
 }

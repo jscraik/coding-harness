@@ -38,6 +38,7 @@ export interface InitOptions {
 	ciProvider?: string; // CI provider template set
 	projectType?: ProjectType; // Explicit override from --project-type flag; undefined = auto-detect
 	json?: boolean; // Emit structured JSON output instead of human-readable
+	explainOwnership?: boolean; // Show ownership decisions for schema-aware update paths
 }
 
 export type CIProvider = "github-actions" | "circleci";
@@ -77,12 +78,26 @@ export interface UpdateCheckInfo {
 	updateAvailable: boolean;
 }
 
+export interface OwnershipDecision {
+	file: string;
+	path: string;
+	owner: "repo" | "template";
+	action: "preserved" | "added" | "updated";
+}
+
 export type UpdateCheckResult =
 	| { ok: true; value: UpdateCheckInfo }
 	| { ok: false; error: InitErrorOutput };
 
 export type UpdateResult =
-	| { ok: true; value: { updated: string[]; skipped: string[] } }
+	| {
+			ok: true;
+			value: {
+				updated: string[];
+				skipped: string[];
+				ownershipDecisions?: OwnershipDecision[];
+			};
+	  }
 	| { ok: false; error: InitErrorOutput };
 
 // === Interactive Mode Types ===
@@ -245,6 +260,7 @@ export interface InitOutput {
 	updateCheck?: UpdateCheckInfo; // Populated when --check-updates used
 	proposedChanges?: ProposedChange[]; // Populated in interactive dry-run
 	projectTypeDetection?: DetectionResult; // Populated on all normal init runs
+	ownershipDecisions?: OwnershipDecision[]; // Populated for schema-aware update paths
 }
 
 export interface InitErrorOutput {
