@@ -285,13 +285,27 @@ function prepareContractRefresh(
  * Compares manifest version against current CLI version.
  */
 export function checkForUpdates(targetDir: string): UpdateCheckResult {
-	const manifestResult = loadManifest(targetDir);
+	const manifestResult = loadManifest(targetDir, {
+		requireMetadata: true,
+		operation: "check-updates",
+	});
 	if (!manifestResult.ok) {
 		return manifestResult;
 	}
 
 	const currentVersion = getVersion();
-	const installedVersion = manifestResult.value.harnessVersion || "0.0.0";
+	const installedVersion = manifestResult.value.harnessVersion;
+	if (installedVersion === undefined) {
+		return {
+			ok: false,
+			error: {
+				code: "INCOMPLETE_MANIFEST",
+				message:
+					"Restore manifest is incomplete for check-updates: missing harnessVersion.",
+				path: MANIFEST_FILE,
+			},
+		};
+	}
 
 	// Validate versions
 	if (!semver.valid(currentVersion)) {

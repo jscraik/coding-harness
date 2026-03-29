@@ -1894,7 +1894,7 @@ describe("--check-updates flag", () => {
 		}
 	});
 
-	it("defaults to 0.0.0 for manifest without version", () => {
+	it("fails closed when manifest is missing harnessVersion", () => {
 		// Install first
 		const installResult = runInit(tempDir, {
 			dryRun: false,
@@ -1918,10 +1918,11 @@ describe("--check-updates flag", () => {
 			checkUpdates: true,
 		});
 
-		expect(result.ok).toBe(true);
-		if (result.ok) {
-			expect(result.output.updateCheck?.installedVersion).toBe("0.0.0");
-			expect(result.output.updateCheck?.updateAvailable).toBe(true);
+		expect(result.ok).toBe(false);
+		if (!result.ok) {
+			expect(result.error.code).toBe("INCOMPLETE_MANIFEST");
+			expect(result.error.message).toContain("Restore manifest is incomplete");
+			expect(result.error.message).toContain("harnessVersion");
 		}
 	});
 });
@@ -2004,6 +2005,35 @@ describe("--update flag", () => {
 			require("node:fs").readFileSync(manifestPath, "utf-8"),
 		);
 		expect(updatedManifest.harnessVersion).not.toBe("0.0.1");
+	});
+
+	it("fails closed when manifest is missing ciProvider", () => {
+		const installResult = runInit(tempDir, {
+			dryRun: false,
+			force: false,
+			track: true,
+		});
+		expect(installResult.ok).toBe(true);
+
+		const manifestPath = join(tempDir, ".harness/restore-manifest.json");
+		const manifest = JSON.parse(
+			require("node:fs").readFileSync(manifestPath, "utf-8"),
+		);
+		manifest.ciProvider = undefined;
+		require("node:fs").writeFileSync(manifestPath, JSON.stringify(manifest));
+
+		const result = runInit(tempDir, {
+			dryRun: false,
+			force: false,
+			update: true,
+		});
+
+		expect(result.ok).toBe(false);
+		if (!result.ok) {
+			expect(result.error.code).toBe("INCOMPLETE_MANIFEST");
+			expect(result.error.message).toContain("Restore manifest is incomplete");
+			expect(result.error.message).toContain("ciProvider");
+		}
 	});
 
 	it("is no-op when already up to date", () => {

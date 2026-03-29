@@ -49,11 +49,15 @@ function ensureHarnessDir(dir: string): void {
 }
 
 /** Write a minimal restore-manifest so detectExistingInstall finds an install */
-function writeRestoreManifest(dir: string, harnessVersion: string): void {
+function writeRestoreManifest(
+	dir: string,
+	harnessVersion: string,
+	ciProvider = "circleci",
+): void {
 	ensureHarnessDir(dir);
 	writeFileSync(
 		join(dir, ".harness", "restore-manifest.json"),
-		JSON.stringify({ harnessVersion, files: [] }),
+		JSON.stringify({ harnessVersion, ciProvider, files: [] }),
 	);
 }
 
@@ -258,6 +262,34 @@ describe("detectUpgradeContext", () => {
 		expect(result.ok).toBe(true);
 		if (result.ok) {
 			expect(result.value.downgradeDetected).toBe(false);
+		}
+	});
+
+	it("fails when restore-manifest is missing harnessVersion", () => {
+		ensureHarnessDir(dir);
+		writeFileSync(
+			join(dir, ".harness", "restore-manifest.json"),
+			JSON.stringify({ ciProvider: "circleci", files: [] }),
+		);
+		const result = detectUpgradeContext(dir);
+		expect(result.ok).toBe(false);
+		if (!result.ok) {
+			expect(result.error).toContain("Restore manifest is incomplete");
+			expect(result.error).toContain("harnessVersion");
+		}
+	});
+
+	it("fails when restore-manifest is missing ciProvider", () => {
+		ensureHarnessDir(dir);
+		writeFileSync(
+			join(dir, ".harness", "restore-manifest.json"),
+			JSON.stringify({ harnessVersion: "0.8.0", files: [] }),
+		);
+		const result = detectUpgradeContext(dir);
+		expect(result.ok).toBe(false);
+		if (!result.ok) {
+			expect(result.error).toContain("Restore manifest is incomplete");
+			expect(result.error).toContain("ciProvider");
 		}
 	});
 });

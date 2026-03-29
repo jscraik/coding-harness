@@ -353,7 +353,10 @@ export function runInit(
 
 	// Handle --update: apply template updates
 	if (options.update) {
-		const manifestResult = loadManifest(dir);
+		const manifestResult = loadManifest(dir, {
+			requireMetadata: true,
+			operation: "update",
+		});
 		if (!manifestResult.ok) {
 			return manifestResult;
 		}
@@ -623,7 +626,10 @@ export async function runInteractiveInitCLI(
 		if (result.error.code === "PATH_TRAVERSAL") {
 			return EXIT_CODES.PATH_TRAVERSAL;
 		}
-		if (result.error.code === "WRITE_ERROR") {
+		if (
+			result.error.code === "WRITE_ERROR" ||
+			result.error.code === "INCOMPLETE_MANIFEST"
+		) {
 			return EXIT_CODES.WRITE_ERROR;
 		}
 		return EXIT_CODES.INVALID_PATH;
@@ -875,7 +881,10 @@ export function runInitCLI(
 	if (result.error.code === "PATH_TRAVERSAL") {
 		return EXIT_CODES.PATH_TRAVERSAL;
 	}
-	if (result.error.code === "WRITE_ERROR") {
+	if (
+		result.error.code === "WRITE_ERROR" ||
+		result.error.code === "INCOMPLETE_MANIFEST"
+	) {
 		return EXIT_CODES.WRITE_ERROR;
 	}
 	return EXIT_CODES.INVALID_PATH;
