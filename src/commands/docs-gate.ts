@@ -808,7 +808,7 @@ export function runDocsGate(options: DocsGateOptions = {}): DocsGateResult {
 			message:
 				contractResult.error ?? "docsGatePolicy is missing from contract",
 			details:
-				"Add docsGatePolicy to harness.contract.json or run 'harness init --update'",
+				"Add docsGatePolicy to harness.contract.json, run 'harness upgrade --dry-run' for the safe upgrade path, or use 'harness init --update' when tracked baseline files must be re-scaffolded",
 		});
 
 		const report: DocsGateReport = {

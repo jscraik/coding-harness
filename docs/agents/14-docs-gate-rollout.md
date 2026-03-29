@@ -229,18 +229,24 @@ For repositories upgrading to docs-gate enforcement:
    pnpm add -D @brainwav/coding-harness@latest
    ```
 
-2. **Run init update**:
+2. **Preview the safe upgrade path**:
    ```bash
-   harness init --update
+   harness upgrade --dry-run
    ```
-   This adds `docsGatePolicy` defaults and workflow wiring.
+   This previews the additive upgrade path for existing installs.
 
-3. **Verify configuration**:
+3. **Apply the upgrade**:
+   ```bash
+   harness upgrade
+   ```
+   This adds `docsGatePolicy` defaults and workflow wiring without re-rendering tracked templates wholesale.
+
+4. **Verify configuration**:
    - Check `harness.contract.json` has `docsGatePolicy` section
    - Verify workflow includes docs-gate job
    - Confirm local hooks if desired
 
-4. **Start in advisory mode**:
+5. **Start in advisory mode**:
    - Set `docsGatePolicy.mode` to `"advisory"`
    - Monitor for 1-2 weeks before considering required mode
 
@@ -249,9 +255,10 @@ For repositories upgrading to docs-gate enforcement:
 If downstream repo shows `bootstrap_gap`:
 
 1. Check contract version: must be 1.3.0+ for `docsGatePolicy`
-2. Run `harness init --update --dry-run` to preview changes
-3. Apply updates: `harness init --update`
-4. Verify: `harness docs-gate --mode advisory --trigger local`
+2. Run `harness upgrade --dry-run` to preview additive contract changes
+3. Apply updates: `harness upgrade`
+4. If tracked baseline files are missing, re-scaffold them with `harness init --update`
+5. Verify: `harness docs-gate --mode advisory --trigger local`
 
 ### Expected Timeline
 

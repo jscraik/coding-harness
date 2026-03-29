@@ -1950,6 +1950,24 @@ describe("--update flag", () => {
 		}
 	});
 
+	it("rejects --update when combined with --track", () => {
+		const result = runInit(tempDir, {
+			dryRun: false,
+			force: false,
+			update: true,
+			track: true,
+		});
+
+		expect(result.ok).toBe(false);
+		if (!result.ok) {
+			expect(result.error.code).toBe("INVALID_PATH");
+			expect(result.error.message).toContain(
+				"--update cannot be combined with --track",
+			);
+			expect(result.error.message).toContain("harness upgrade --dry-run");
+		}
+	});
+
 	it("updates files and manifest version", () => {
 		// Install first
 		const installResult = runInit(tempDir, {
@@ -2029,6 +2047,81 @@ describe("--update flag", () => {
 		if (!result.ok) {
 			expect(result.error.code).toBe("INVALID_PATH");
 			expect(result.error.message).toContain("manifest provider");
+		}
+	});
+
+	it("rejects updates that would remove protected contract keys", () => {
+		const installResult = runInit(tempDir, {
+			dryRun: false,
+			force: false,
+			track: true,
+		});
+		expect(installResult.ok).toBe(true);
+
+		writeFileSync(
+			join(tempDir, "harness.contract.json"),
+			JSON.stringify(
+				{
+					...JSON.parse(
+						readFileSync(join(tempDir, "harness.contract.json"), "utf-8"),
+					),
+					mergeQueueEvidenceBinding: {
+						provider: "github",
+						queue: "main",
+					},
+				},
+				null,
+				2,
+			),
+		);
+
+		const result = runInit(tempDir, {
+			dryRun: false,
+			force: false,
+			update: true,
+		});
+
+		expect(result.ok).toBe(false);
+		if (!result.ok) {
+			expect(result.error.code).toBe("WRITE_ERROR");
+			expect(result.error.message).toContain("mergeQueueEvidenceBinding");
+			expect(result.error.message).toContain("harness upgrade --dry-run");
+		}
+	});
+
+	it("rejects updates that would downgrade the contract version", () => {
+		const installResult = runInit(tempDir, {
+			dryRun: false,
+			force: false,
+			track: true,
+		});
+		expect(installResult.ok).toBe(true);
+
+		writeFileSync(
+			join(tempDir, "harness.contract.json"),
+			JSON.stringify(
+				{
+					...JSON.parse(
+						readFileSync(join(tempDir, "harness.contract.json"), "utf-8"),
+					),
+					version: "9.9.9",
+				},
+				null,
+				2,
+			),
+		);
+
+		const result = runInit(tempDir, {
+			dryRun: false,
+			force: false,
+			update: true,
+		});
+
+		expect(result.ok).toBe(false);
+		if (!result.ok) {
+			expect(result.error.code).toBe("WRITE_ERROR");
+			expect(result.error.message).toContain("downgrade harness.contract.json");
+			expect(result.error.message).toContain("harness upgrade --dry-run");
 		}
 	});
 

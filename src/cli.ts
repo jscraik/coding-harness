@@ -387,10 +387,12 @@ function printUsage(): void {
 	console.info("  --force          Overwrite existing files");
 	console.info("  --track          Create manifest + backups for rollback");
 	console.info("  --rollback       Restore from manifest (undo init)");
-	console.info("  --check-updates  Check for template updates");
-	console.info("  --update         Apply available template updates");
+	console.info("  --check-updates  Check for tracked-template updates");
+	console.info("  --update         Refresh tracked templates (prefer upgrade)");
 	console.info("  --interactive    Review and approve each change");
-	console.info("  --migrate        Migrate contract schema to latest version");
+	console.info(
+		"  --migrate        Migrate contract schema only (not ci-migrate)",
+	);
 	console.info(
 		"  --project-type   Override detected project type (cli|desktop|library|web)",
 	);

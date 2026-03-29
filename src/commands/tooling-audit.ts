@@ -791,7 +791,7 @@ async function auditRepository(
 			path: "toolingPolicy",
 			severity: "warning",
 			description:
-				"Contract relies on implicit tooling defaults; run 'harness init --update' to persist toolingPolicy explicitly",
+				"Contract relies on implicit tooling defaults; run 'harness upgrade --dry-run' to preview a safe upgrade path, or 'harness init --update' to re-scaffold tracked files when needed",
 		});
 	}
 

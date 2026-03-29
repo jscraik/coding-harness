@@ -166,7 +166,7 @@ The registry will use OIDC token exchange for authentication.
 
 ### Verification
 
-Run `harness init --update` to restore the baseline `.npmrc` if it is missing, then run `harness verify-greptile --check-npmrc` to verify provider-specific configuration for the private package.
+Start with `harness upgrade --dry-run` for routine upgrades in existing installs. If the baseline `.npmrc` is missing and needs to be re-scaffolded, run `harness init --update`, then `harness verify-greptile --check-npmrc` to confirm provider-specific configuration for the private package.
 
 ## Required .npmrc settings for this repository
 
@@ -182,7 +182,7 @@ Projects using coding-harness should adopt similar security-conscious defaults.
 
 ## CI migration governance artifacts
 
-Harness-managed repos should also keep `.harness/ci-provider-transition-status.json` under source control. `harness init --update` scaffolds the baseline artifact with `nextGateComplete=false`; teams must explicitly update that artifact when a CI cutover is approved before running strict `harness ci-migrate verify`.
+Harness-managed repos should also keep `.harness/ci-provider-transition-status.json` under source control. Use `harness upgrade --dry-run` for routine upgrade planning; if the transition artifact is missing and must be re-scaffolded, `harness init --update` writes the baseline file with `nextGateComplete=false`. Teams must explicitly update that artifact when a CI cutover is approved before running strict `harness ci-migrate verify`.
 
 ## Project-type auto-detection
 
@@ -208,4 +208,3 @@ Rules are priority-ordered (lower = higher priority). `"unknown"` is emitted whe
 - Re-init without `--project-type` preserves the stored value in `harness.contract.json`
 - `--project-type` always wins and overwrites the stored value
 - `"unknown"` is printed as a `console.warn` in human mode but suppressed in `--json` mode (result still appears in `projectTypeDetection`)
-

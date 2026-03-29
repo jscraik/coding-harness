@@ -9,12 +9,12 @@
  * @module lib/init/update
  */
 
-import { existsSync, lstatSync, realpathSync } from "node:fs";
+import { existsSync, lstatSync, readFileSync, realpathSync } from "node:fs";
 import { dirname, resolve, sep } from "node:path";
 import semver from "semver";
 import { sanitizeError } from "../input/sanitize.js";
 import { getVersion } from "../version.js";
-import { atomicWrite } from "./migration.js";
+import { CONTRACT_FILE, atomicWrite } from "./migration.js";
 import { loadManifest, sanitizePath } from "./rollback.js";
 import {
 	createTemplateRenderContext,
@@ -24,11 +24,125 @@ import {
 import {
 	type CIProvider,
 	HARNESS_DIR,
+	type InitErrorOutput,
 	MANIFEST_FILE,
 	type RestoreManifest,
 	type UpdateCheckResult,
 	type UpdateResult,
 } from "./types.js";
+
+const PROTECTED_CONTRACT_KEYS = [
+	"ciProviderPolicy",
+	"contextIntegrityPolicy",
+	"docsGatePolicy",
+	"mergeQueueEvidenceBinding",
+] as const;
+
+function parseContractRecord(
+	content: string,
+	path: string,
+	label: string,
+):
+	| { ok: true; value: Record<string, unknown> }
+	| {
+			ok: false;
+			error: InitErrorOutput;
+	  } {
+	try {
+		const parsed = JSON.parse(content) as unknown;
+		if (!parsed || typeof parsed !== "object" || Array.isArray(parsed)) {
+			return {
+				ok: false,
+				error: {
+					code: "WRITE_ERROR",
+					message: `${label} contract must be a JSON object`,
+					path,
+				},
+			};
+		}
+
+		return {
+			ok: true,
+			value: parsed as Record<string, unknown>,
+		};
+	} catch (error) {
+		return {
+			ok: false,
+			error: {
+				code: "WRITE_ERROR",
+				message: `Failed to parse ${label} contract JSON: ${sanitizeError(error)}`,
+				path,
+			},
+		};
+	}
+}
+
+function validateContractRefresh(
+	targetPath: string,
+	renderedContent: string,
+): { ok: true; value: undefined } | { ok: false; error: InitErrorOutput } {
+	const existingContract = parseContractRecord(
+		readFileSync(targetPath, "utf-8"),
+		CONTRACT_FILE,
+		"existing",
+	);
+	if (!existingContract.ok) {
+		return existingContract;
+	}
+
+	const renderedContract = parseContractRecord(
+		renderedContent,
+		CONTRACT_FILE,
+		"rendered",
+	);
+	if (!renderedContract.ok) {
+		return renderedContract;
+	}
+
+	const existingVersion =
+		typeof existingContract.value.version === "string"
+			? existingContract.value.version
+			: null;
+	const renderedVersion =
+		typeof renderedContract.value.version === "string"
+			? renderedContract.value.version
+			: null;
+	if (
+		existingVersion &&
+		renderedVersion &&
+		semver.valid(existingVersion) &&
+		semver.valid(renderedVersion) &&
+		semver.gt(existingVersion, renderedVersion)
+	) {
+		return {
+			ok: false,
+			error: {
+				code: "WRITE_ERROR",
+				message: `Update would downgrade ${CONTRACT_FILE} from v${existingVersion} to v${renderedVersion}. Use \`harness upgrade --dry-run\` to preview a safe upgrade path instead.`,
+				path: CONTRACT_FILE,
+			},
+		};
+	}
+
+	const removedProtectedKeys = PROTECTED_CONTRACT_KEYS.filter((key) => {
+		return (
+			Object.prototype.hasOwnProperty.call(existingContract.value, key) &&
+			!Object.prototype.hasOwnProperty.call(renderedContract.value, key)
+		);
+	});
+	if (removedProtectedKeys.length > 0) {
+		return {
+			ok: false,
+			error: {
+				code: "WRITE_ERROR",
+				message: `Update would remove protected contract keys (${removedProtectedKeys.join(", ")}). Use \`harness upgrade --dry-run\` to preview a safe upgrade path instead.`,
+				path: CONTRACT_FILE,
+			},
+		};
+	}
+
+	return { ok: true, value: undefined };
+}
 
 /**
  * Check if template updates are available.
@@ -161,6 +275,15 @@ export function executeUpdate(
 
 		// Render and write
 		const content = template.render(packageManager, renderContext);
+		if (entry.path === CONTRACT_FILE) {
+			const contractRefreshResult = validateContractRefresh(
+				targetPath,
+				content,
+			);
+			if (!contractRefreshResult.ok) {
+				return contractRefreshResult;
+			}
+		}
 		const writeResult = atomicWrite(targetPath, content);
 		if (!writeResult.ok) {
 			return writeResult;
