@@ -41,6 +41,7 @@ const EXPECTED_TEMPLATE_PATHS = [
 	".gitleaks.toml",
 	"prek.toml",
 	"scripts/codex-preflight.sh",
+	"scripts/harness-cli.sh",
 	"scripts/check-environment.sh",
 	".mise.toml",
 	".codex/environments/environment.toml",
@@ -1092,6 +1093,10 @@ describe("runInit", () => {
 				join(tempDir, ".mise.toml"),
 				"utf-8",
 			);
+			const harnessCli = require("node:fs").readFileSync(
+				join(tempDir, "scripts/harness-cli.sh"),
+				"utf-8",
+			);
 			const environmentCheck = require("node:fs").readFileSync(
 				join(tempDir, "scripts/check-environment.sh"),
 				"utf-8",
@@ -1186,6 +1191,17 @@ describe("runInit", () => {
 			expect(miseToml).toContain('"semgrep" = "1.153.1"');
 			expect(miseToml).toContain('"trivy" = "0.69.3"');
 			expect(miseToml).toContain('"vale" = "3.13.1"');
+			expect(harnessCli).toContain(
+				"local @brainwav/coding-harness could not be resolved from this repo",
+			);
+			expect(harnessCli).toContain(
+				"local install/bootstrap problem, not a harness command failure",
+			);
+			expect(harnessCli).toContain("npm install");
+			expect(harnessCli).toContain(
+				"npm install --save-dev @brainwav/coding-harness",
+			);
+			expect(harnessCli).toContain("npm exec harness -- <command>");
 			expect(environmentCheck).toContain("required_tooling_doc_terms=(");
 			expect(environmentCheck).toContain('"make"');
 			expect(environmentCheck).toContain('"beautiful-mermaid"');
@@ -1369,6 +1385,43 @@ describe("runInit", () => {
 
 			expect(sourced.status).toBe(0);
 			expect(sourced.stderr).toBe("");
+		});
+
+		it("makes missing local harness installs actionable in the scaffolded wrapper", () => {
+			writeFileSync(
+				join(tempDir, "package.json"),
+				JSON.stringify({ name: "fixture", private: true }, null, 2),
+				"utf-8",
+			);
+			writeFileSync(
+				join(tempDir, "pnpm-lock.yaml"),
+				"lockfileVersion: '9.0'\n",
+				"utf-8",
+			);
+
+			const result = runInit(tempDir, { dryRun: false, force: false });
+			expect(result.ok).toBe(true);
+
+			const wrapper = spawnSync(
+				"bash",
+				["scripts/harness-cli.sh", "verify-greptile"],
+				{
+					cwd: tempDir,
+					encoding: "utf8",
+				},
+			);
+
+			expect(wrapper.status).toBe(1);
+			expect(wrapper.stderr).toContain(
+				"local @brainwav/coding-harness could not be resolved from this repo",
+			);
+			expect(wrapper.stderr).toContain(
+				"local install/bootstrap problem, not a harness command failure",
+			);
+			expect(wrapper.stderr).toContain("pnpm install");
+			expect(wrapper.stderr).toContain("pnpm add -D @brainwav/coding-harness");
+			expect(wrapper.stderr).toContain("pnpm exec harness <command>");
+			expect(wrapper.stdout).toBe("");
 		});
 	});
 

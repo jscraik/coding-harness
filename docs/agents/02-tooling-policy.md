@@ -91,6 +91,7 @@ Exception for harness readiness:
 - Private package auth must be wired in both places:
   - Local shell: `export NPM_TOKEN=<token>`
   - GitHub Actions: `env: NPM_TOKEN: ${{ secrets.NPM_TOKEN }}`
+- Harness-managed repos may also scaffold `scripts/harness-cli.sh` as the repo-local wrapper for the published CLI package. That wrapper must resolve `@brainwav/coding-harness/dist/cli.js` from the current repo and fail with actionable install hints such as `pnpm install`, `pnpm add -D @brainwav/coding-harness`, and `pnpm exec harness <command>` instead of surfacing a raw `MODULE_NOT_FOUND`.
 
 ## Recommended command order
 
@@ -171,7 +172,9 @@ Start with `harness upgrade --dry-run` for routine upgrades in existing installs
 If the baseline `.npmrc` is missing and needs to be re-scaffolded, run
 `harness init --update`, then `harness verify-greptile --check-npmrc` to confirm
 that the repo keeps scope routing and security defaults without a repo-local
-auth token override.
+auth token override. If a scaffolded `scripts/harness-cli.sh` wrapper cannot
+resolve the local package, treat that as bootstrap drift in the repo install,
+not as a harness command logic failure.
 
 ## Required .npmrc settings for this repository
 
