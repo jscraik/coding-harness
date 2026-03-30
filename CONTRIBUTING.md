@@ -106,7 +106,7 @@ Recommended policy:
   - `.greptile/config.json`
   - `.greptile/rules.md`
   - `.greptile/files.json`
-- Required bridge workflow:
+- Required bridge workflow in harness-managed legacy repositories:
   - `.github/workflows/greptile-review.yml`
 - Verify setup with:
   - `harness verify-greptile`

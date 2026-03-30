@@ -83,7 +83,7 @@ These events are configured at the GitHub App level (not repository level). To v
 
 ## Greptile Review bridge workflow
 
-Since Greptile posts PR comments but doesn't create GitHub check runs, this repository uses a bridge workflow:
+Since Greptile posts PR comments but doesn't create GitHub check runs, legacy Greptile-bridged repositories use a bridge workflow:
 
 - `.github/workflows/greptile-review.yml` - creates "Greptile Review" check runs
 - Triggers on PR events, review events, and Greptile comments
