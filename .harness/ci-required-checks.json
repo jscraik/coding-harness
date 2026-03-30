@@ -200,17 +200,17 @@
     },
     {
       "policyId": "required-check-15",
-      "displayName": "Greptile Review",
-      "sourceAppSlug": "circleci",
-      "sourceAppId": "circleci",
-      "externalIdPattern": "^Greptile Review$",
+      "displayName": "CodeRabbit",
+      "sourceAppSlug": "coderabbit",
+      "sourceAppId": "coderabbit",
+      "externalIdPattern": "^CodeRabbit$",
       "requiredOnEvents": [
         "pull_request",
         "merge_group"
       ],
       "freshnessWindowDays": 7,
       "class": "required",
-      "githubCheckName": "pr-pipeline"
+      "githubCheckName": "CodeRabbit"
     }
   ]
 }

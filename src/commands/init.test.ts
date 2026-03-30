@@ -340,9 +340,7 @@ describe("runInit", () => {
 				"security-scan",
 			);
 			expect(content.branchProtection.requiredChecks).toContain("linear-gate");
-			expect(content.branchProtection.requiredChecks).toContain(
-				"Greptile Review",
-			);
+			expect(content.branchProtection.requiredChecks).toContain("CodeRabbit");
 			expect(content.branchProtection.requiredApprovingReviewCount).toBe(1);
 			expect(content.branchProtection.requireCodeOwnerReview).toBe(false);
 			expect(content.branchProtection.requireLastPushApproval).toBe(false);
@@ -805,7 +803,7 @@ describe("runInit", () => {
 			);
 			expect(content).toContain("`@greptileai`");
 			expect(content).toContain("`docs-gate`");
-			expect(content).toContain("`Greptile Review`");
+			expect(content).toContain("`CodeRabbit`");
 			expect(content).toContain("`consistency-drift-health`");
 			expect(content).toContain("- Require status checks:\n  - `pr-template`");
 			expect(content).toContain(

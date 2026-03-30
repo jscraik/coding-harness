@@ -33,7 +33,8 @@
 			"audit",
 			"check",
 			"memory",
-			"security-scan"
+			"security-scan",
+			"CodeRabbit"
 		],
 		"restrictDeletions": true,
 		"blockForcePushes": true,

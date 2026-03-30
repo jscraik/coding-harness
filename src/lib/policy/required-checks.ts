@@ -36,7 +36,7 @@ export const ECOSYSTEM_PROFILES = {
 		"check",
 		"memory",
 		"security-scan",
-		"Greptile Review",
+		"CodeRabbit",
 	] as const,
 
 	/**

@@ -1132,7 +1132,7 @@ describe("cli command dispatch", () => {
 			"--repo",
 			"harness",
 			"--checks",
-			"Greptile Review,Socket Security: Pull Request Alerts",
+			"CodeRabbit,Socket Security: Pull Request Alerts",
 			"--required-approvals",
 			"2",
 			"--dry-run",
@@ -1148,10 +1148,7 @@ describe("cli command dispatch", () => {
 		expect(vi.mocked(runBranchProtectCLI)).toHaveBeenCalledWith({
 			owner: "octo",
 			repo: "harness",
-			requiredChecks: [
-				"Greptile Review",
-				"Socket Security: Pull Request Alerts",
-			],
+			requiredChecks: ["CodeRabbit", "Socket Security: Pull Request Alerts"],
 			requiredApprovingReviewCount: 2,
 			dryRun: true,
 			json: true,

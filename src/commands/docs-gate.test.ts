@@ -689,7 +689,7 @@ describe("docs-gate command", () => {
 			branchProtection?: { requiredChecks?: string[] };
 		};
 		contract.branchProtection = {
-			requiredChecks: ["lint", "typecheck", "Greptile Review"],
+			requiredChecks: ["lint", "typecheck", "CodeRabbit"],
 		};
 		write(contractPath, JSON.stringify(contract, null, 2));
 

@@ -721,7 +721,7 @@ describe("runReviewGate", () => {
 			reviewPolicy: {
 				timeoutSeconds: 600,
 				timeoutAction: "fail",
-				requiredChecks: ["security-scan", "Greptile Review", "Codex Review"],
+				requiredChecks: ["security-scan", "CodeRabbit", "Codex Review"],
 			},
 		});
 
@@ -766,7 +766,7 @@ describe("runReviewGate", () => {
 			expect(result.output.verified).toBe(false);
 			expect(result.output.policy_gate_status).toBe("pass");
 			expect(result.output.blockers.join(" ")).toContain("security-scan");
-			expect(result.output.blockers.join(" ")).toContain("Greptile Review");
+			expect(result.output.blockers.join(" ")).toContain("CodeRabbit");
 			expect(result.output.blockers.join(" ")).toContain("Codex Review");
 		}
 	});
@@ -778,7 +778,7 @@ describe("runReviewGate", () => {
 			reviewPolicy: {
 				timeoutSeconds: 600,
 				timeoutAction: "fail",
-				requiredChecks: ["security-scan", "Greptile Review", "Codex Review"],
+				requiredChecks: ["security-scan", "CodeRabbit", "Codex Review"],
 			},
 		});
 
@@ -799,7 +799,7 @@ describe("runReviewGate", () => {
 			},
 			{
 				id: 3,
-				name: "Greptile Review",
+				name: "CodeRabbit",
 				status: "completed",
 				conclusion: "success",
 				head_sha: validSha,
