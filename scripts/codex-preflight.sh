@@ -530,7 +530,7 @@ preflight_local_memory_gold() {
 		log_warn "daemon log not found at ${daemon_log}"
 	fi
 
-log_ok 'local-memory preflight passed'
+	log_ok 'local-memory preflight passed'
 }
 
 run_preflight_profile() {
