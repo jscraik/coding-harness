@@ -1,7 +1,7 @@
 # Harness Development Makefile
 # Run `make help` to see available commands
 
-.PHONY: help install setup preflight hooks hooks-pre-commit hooks-pre-push secrets-staged docs-style-changed related-tests semgrep-changed diagrams-check dev build lint docs-lint fmt typecheck test check audit secrets security clean reset ci diagrams env-check
+.PHONY: help install setup preflight verify-work hooks hooks-pre-commit hooks-pre-push secrets-staged docs-style-changed related-tests semgrep-changed diagrams-check dev build lint docs-lint fmt typecheck test check audit secrets security clean reset ci diagrams env-check
 
 # Default target
 help: ## Show this help message
@@ -19,6 +19,9 @@ setup: install hooks ## Full setup: install deps and configure git hooks
 
 preflight: ## Run repository preflight checks (required local-memory gate by default)
 	@bash ./scripts/codex-preflight.sh
+
+verify-work: ## Run canonical repo-local verification wrapper
+	@bash ./scripts/verify-work.sh
 
 hooks: ## Setup git hooks
 	node scripts/setup-git-hooks.js

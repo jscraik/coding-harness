@@ -4,4 +4,5 @@
 /CONTRIBUTING.md @jscraik
 /AGENTS.md @jscraik
 /scripts/codex-preflight.sh @jscraik
+/scripts/verify-work.sh @jscraik
 /scripts/check-environment.sh @jscraik

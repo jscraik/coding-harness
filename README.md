@@ -22,6 +22,7 @@ The shortest honest description of the project today is:
 - [Current Strengths](#current-strengths)
 - [Installation](#installation)
 - [Repo-local Wrapper](#repo-local-wrapper)
+- [Repo-local Verification](#repo-local-verification)
 - [Common Workflows](#common-workflows)
 - [Command Index](#command-index)
 - [Requirements](#requirements)
@@ -108,6 +109,18 @@ pnpm add -D @brainwav/coding-harness
 pnpm exec harness <command>
 ```
 
+## Repo-local Verification
+
+Use `bash scripts/verify-work.sh` as the canonical repo-local verification
+entrypoint. It runs repo-local preflight in `required` Local Memory mode and
+then executes the full verification bundle.
+
+For a quicker local loop, use:
+
+```bash
+bash scripts/verify-work.sh --fast
+```
+
 ## Common Workflows
 
 ### 1. Bootstrap a repository
@@ -142,6 +155,17 @@ harness init --project-type web       # explicit: cli | desktop | library | web
 harness init --project-type cli --json  # machine-readable structured output
 ```
 
+### 1b. Validate or export the contract
+
+Use the built-in contract surface when you want confidence that the repo policy
+file is still valid or you need a schema for editor and automation tooling.
+
+```bash
+harness contract validate
+harness contract validate --json
+harness contract schema > harness.contract.schema.json
+```
+
 ### 2. Gate a change before review
 
 This is the practical loop for “did we update the right things?”
@@ -169,6 +193,12 @@ harness ci-migrate commit --snapshot <snapshot-id>
 ```
 
 Use `abort` or `--rollback` if parity or external control-plane checks fail.
+For cutover follow-through, the same command family also supports:
+
+```bash
+harness ci-migrate sync-branch-protection
+harness ci-migrate promote-mode
+```
 
 ### 4. Validate a Symphony workflow contract
 
@@ -179,6 +209,13 @@ and validate readiness for Symphony-style execution.
 harness workflow:generate --source docs/specs/my-flow.md --output WORKFLOW.md
 harness symphony-check
 pnpm workflow:validate
+```
+
+To keep Linear metadata and findings aligned from the same CLI surface:
+
+```bash
+harness linear prepare --issue JSC-123
+harness linear sync --findings findings.json --team JSC
 ```
 
 ### 5. Evaluate a pilot before expanding autonomy
@@ -203,8 +240,9 @@ flags, use `harness --help`.
 | `init` | Scaffold or re-scaffold harness-managed repo surfaces (`--project-type`, `--json`, `--dry-run`, `--force`, `--track`, `--update`, `--migrate`) |
 | `doctor` | Check all gate prerequisites (tools, files, config, CI) |
 | `health` | Unified gate status scorecard across all gates |
+| `contract` | Validate `harness.contract.json` or print the JSON Schema (`validate`, `schema`) |
 | `upgrade` | Safely upgrade harness in an existing repo (`--dry-run` supported) |
-| `ci-migrate` | Stage, verify, commit, or abort CI migration |
+| `ci-migrate` | Stage, verify, commit, abort, sync branch protection, or promote CI mode |
 | `branch-protect` | Configure GitHub branch protection rulesets |
 | `verify-greptile` | Verify Greptile configuration and remote wiring |
 | `request-greptile-review` | Post the standard Greptile review request comment |
@@ -237,8 +275,9 @@ flags, use `harness --help`.
 
 | Command | Purpose |
 | --- | --- |
-| `linear` | Prepare branch/PR metadata and manage Linear state transitions |
+| `linear` | Claim, hand off, close, prepare, or sync Linear work from one command family |
 | `linear prepare` | Pre-fill branch name, PR title, body, and closing line from a Linear issue |
+| `linear sync` | Promote harness findings into Linear issues idempotently |
 | `linear-gate` | Enforce Linear-first intake, branch naming, and PR linkage |
 | `workflow:generate` | Generate compact workflow specs from annotated markdown |
 

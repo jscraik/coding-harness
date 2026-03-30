@@ -41,6 +41,7 @@ const EXPECTED_TEMPLATE_PATHS = [
 	".gitleaks.toml",
 	"prek.toml",
 	"scripts/codex-preflight.sh",
+	"scripts/verify-work.sh",
 	"scripts/harness-cli.sh",
 	"scripts/check-environment.sh",
 	".mise.toml",
@@ -157,6 +158,7 @@ describe("runInit", () => {
 				existsSync(join(tempDir, ".github/PULL_REQUEST_TEMPLATE.md")),
 			).toBe(true);
 			expect(existsSync(join(tempDir, "memory.json"))).toBe(true);
+			expect(existsSync(join(tempDir, "scripts/verify-work.sh"))).toBe(true);
 		});
 
 		it("creates CircleCI templates when ciProvider is circleci", () => {
@@ -1095,6 +1097,10 @@ describe("runInit", () => {
 				join(tempDir, "scripts/harness-cli.sh"),
 				"utf-8",
 			);
+			const verifyWork = require("node:fs").readFileSync(
+				join(tempDir, "scripts/verify-work.sh"),
+				"utf-8",
+			);
 			const environmentCheck = require("node:fs").readFileSync(
 				join(tempDir, "scripts/check-environment.sh"),
 				"utf-8",
@@ -1140,6 +1146,10 @@ describe("runInit", () => {
 				"preflight: ## Run repository preflight checks (required local-memory gate by default)",
 			);
 			expect(makefile).toContain("\t@bash ./scripts/codex-preflight.sh");
+			expect(makefile).toContain(
+				"verify-work: ## Run canonical repo-local verification wrapper",
+			);
+			expect(makefile).toContain("\t@bash ./scripts/verify-work.sh");
 			expect(makefile).toContain(
 				"hooks-pre-commit: ## Run local pre-commit gates before creating a commit",
 			);
@@ -1200,6 +1210,15 @@ describe("runInit", () => {
 				"npm install --save-dev @brainwav/coding-harness",
 			);
 			expect(harnessCli).toContain("npm exec harness -- <command>");
+			expect(verifyWork).toContain("Canonical repo-local verification runner.");
+			expect(verifyWork).toContain("--mode required");
+			expect(verifyWork).toContain("scripts/verify-work.sh");
+			expect(verifyWork).toContain("==> codex-preflight");
+			expect(verifyWork).toContain("==> check");
+			expect(verifyWork).toContain("==> test:related");
+			expect(verifyWork).toContain(
+				"test:related unavailable; falling back to full test run",
+			);
 			expect(environmentCheck).toContain("required_tooling_doc_terms=(");
 			expect(environmentCheck).toContain('"make"');
 			expect(environmentCheck).toContain('"beautiful-mermaid"');
@@ -1256,6 +1275,7 @@ describe("runInit", () => {
 			expect(environmentCheck).toContain('"Research|tool"');
 			expect(environmentCheck).toContain('MAKEFILE_PATH="$REPO_ROOT/Makefile"');
 			expect(environmentCheck).toContain("required_support_files=(");
+			expect(environmentCheck).toContain('"scripts/verify-work.sh"');
 			expect(environmentCheck).toContain('"scripts/check-semgrep-changed.sh"');
 			expect(environmentCheck).toContain('"scripts/semgrep-pre-push.yml"');
 			expect(environmentCheck).toContain("required_make_targets=(");
@@ -1272,6 +1292,7 @@ describe("runInit", () => {
 			expect(environmentCheck).toContain('"env-check"');
 			expect(environmentCheck).toContain('"hooks-pre-commit"');
 			expect(environmentCheck).toContain('"hooks-pre-push"');
+			expect(environmentCheck).toContain('"verify-work"');
 			expect(environmentCheck).toContain('"secrets-staged"');
 			expect(environmentCheck).toContain('"docs-style-changed"');
 			expect(environmentCheck).toContain('"related-tests"');
@@ -1311,8 +1332,10 @@ describe("runInit", () => {
 			expect(codexPreflight).toContain(
 				"--mode <off|optional|required>    Local Memory mode. Default: required",
 			);
+			expect(codexPreflight).toContain("Legacy compatibility:");
 			expect(codexPreflight).toContain("local local_memory_mode='required'");
 			expect(codexPreflight).toContain("preflight_local_memory_gold()");
+			expect(codexPreflight).toContain("scripts/verify-work.sh");
 			expect(codexPreflight).toContain(
 				'local lm_config_path="${LOCAL_MEMORY_CONFIG_PATH:-${HOME}/.local-memory/config.yaml}"',
 			);
@@ -1421,6 +1444,256 @@ describe("runInit", () => {
 			expect(wrapper.stderr).toContain("pnpm exec harness <command>");
 			expect(wrapper.stdout).toBe("");
 		});
+
+		it("passes the scaffolded repo-local verify-work wrapper outside /codex", () => {
+			if (
+				spawnSync("jq", ["--version"], { encoding: "utf8" }).status !== 0 ||
+				spawnSync("python3", ["--version"], { encoding: "utf8" }).status !== 0
+			) {
+				return;
+			}
+
+			writeFileSync(
+				join(tempDir, "package.json"),
+				JSON.stringify(
+					{
+						name: "fixture",
+						private: true,
+						scripts: {
+							check: "echo check",
+							lint: "echo lint",
+							typecheck: "echo typecheck",
+							test: "echo test",
+							"test:related": "echo related",
+						},
+					},
+					null,
+					2,
+				),
+				"utf-8",
+			);
+			writeFileSync(
+				join(tempDir, "pnpm-lock.yaml"),
+				"lockfileVersion: '9.0'\n",
+				"utf-8",
+			);
+
+			const result = runInit(tempDir, { dryRun: false, force: false });
+			expect(result.ok).toBe(true);
+
+			const gitInit = spawnSync("git", ["init"], {
+				cwd: tempDir,
+				encoding: "utf8",
+			});
+			expect(gitInit.status).toBe(0);
+
+			const fakeBin = join(tempDir, ".fake-bin");
+			mkdirSync(fakeBin, { recursive: true });
+
+			const fakeLocalMemory = join(fakeBin, "local-memory");
+			writeFileSync(
+				fakeLocalMemory,
+				`#!/usr/bin/env bash
+set -euo pipefail
+case "\${1:-}" in
+	--version)
+		echo "local-memory 0.0.0-test"
+		;;
+	status)
+		echo '{"data":{"running":true}}'
+		;;
+	*)
+		echo "unsupported local-memory args: $*" >&2
+		exit 1
+		;;
+esac
+`,
+				"utf-8",
+			);
+
+			const fakeCurl = join(fakeBin, "curl");
+			writeFileSync(
+				fakeCurl,
+				`#!/usr/bin/env bash
+set -euo pipefail
+output_file=""
+write_format=""
+payload=""
+url=""
+
+while (( $# > 0 )); do
+	case "$1" in
+		-o)
+			output_file="$2"
+			shift 2
+			;;
+		-w)
+			write_format="$2"
+			shift 2
+			;;
+		-d)
+			payload="$2"
+			shift 2
+			;;
+		-H|-X)
+			shift 2
+			;;
+		-s|-S|-sS|-f|-fs|-fsS)
+			shift
+			;;
+		http://*|https://*)
+			url="$1"
+			shift
+			;;
+		*)
+			shift
+			;;
+	esac
+done
+
+body='{}'
+status='200'
+state_file="\${FAKE_CURL_STATE_FILE:?}"
+
+case "$url" in
+	*/api/v1/health)
+		body='{"success":true}'
+		;;
+	*/api/v1/observe)
+		if [[ "$payload" == '{"level":"observation"}' ]]; then
+			body='{"success":false,"error":"invalid payload"}'
+			status='400'
+		else
+			count=0
+			if [[ -f "$state_file" ]]; then
+				count="$(cat "$state_file")"
+			fi
+			count=$((count + 1))
+			printf '%s' "$count" > "$state_file"
+			body="{\\"id\\":\\"mem-$count\\",\\"success\\":true}"
+		fi
+		;;
+	*/api/v1/relationships|*/api/v1/relate)
+		body='{"id":"rel-1","success":true}'
+		;;
+	*/api/v1/memories/search)
+		body='{"results":[{"id":"mem-1"}]}'
+		;;
+	*)
+		body='{"success":true}'
+		;;
+esac
+
+if [[ -n "$output_file" ]]; then
+	printf '%s' "$body" > "$output_file"
+else
+	printf '%s' "$body"
+fi
+
+if [[ -n "$write_format" ]]; then
+	printf '%s' "$status"
+fi
+`,
+				"utf-8",
+			);
+
+			const fakePnpm = join(fakeBin, "pnpm");
+			writeFileSync(
+				fakePnpm,
+				`#!/usr/bin/env bash
+set -euo pipefail
+printf '%s\n' "$*" >> "\${FAKE_PNPM_LOG:?}"
+exit 0
+`,
+				"utf-8",
+			);
+
+			const fakeRg = join(fakeBin, "rg");
+			writeFileSync(
+				fakeRg,
+				`#!/usr/bin/env bash
+set -euo pipefail
+quiet=0
+pattern=""
+file=""
+
+while (( $# > 0 )); do
+	case "$1" in
+		-q)
+			quiet=1
+			shift
+			;;
+		-n|-m)
+			shift 2
+			;;
+		--*)
+			shift
+			;;
+		*)
+			if [[ -z "$pattern" ]]; then
+				pattern="$1"
+			elif [[ -z "$file" ]]; then
+				file="$1"
+			fi
+			shift
+			;;
+	esac
+done
+
+if [[ -n "$file" && -f "$file" ]]; then
+	if grep -Eq "$pattern" "$file"; then
+		if [[ "$quiet" -eq 0 ]]; then
+			grep -En "$pattern" "$file"
+		fi
+		exit 0
+	fi
+fi
+exit 1
+`,
+				"utf-8",
+			);
+
+			for (const toolPath of [fakeLocalMemory, fakeCurl, fakePnpm, fakeRg]) {
+				const chmod = spawnSync("chmod", ["+x", toolPath], {
+					encoding: "utf8",
+				});
+				expect(chmod.status).toBe(0);
+			}
+
+			const localMemoryConfig = join(tempDir, "local-memory-config.yaml");
+			writeFileSync(
+				localMemoryConfig,
+				`rest_api:
+  host: 127.0.0.1
+  port: 3002
+host: 127.0.0.1
+auto_port: false
+`,
+				"utf-8",
+			);
+
+			const fakeCurlState = join(tempDir, ".fake-curl-state");
+			const fakePnpmLog = join(tempDir, ".fake-pnpm-log");
+
+			const verify = spawnSync("bash", ["scripts/verify-work.sh"], {
+				cwd: tempDir,
+				encoding: "utf8",
+				env: {
+					...process.env,
+					LOCAL_MEMORY_CONFIG_PATH: localMemoryConfig,
+					FAKE_CURL_STATE_FILE: fakeCurlState,
+					FAKE_PNPM_LOG: fakePnpmLog,
+					PATH: `${fakeBin}:${process.env.PATH ?? ""}`,
+				},
+			});
+
+			expect(verify.status).toBe(0);
+			expect(verify.stdout).toContain("[verify-work] repo root:");
+			expect(verify.stdout).toContain("==> codex-preflight");
+			expect(verify.stdout).toContain("local-memory preflight passed");
+			expect(verify.stdout).toContain("==> check");
+			expect(readFileSync(fakePnpmLog, "utf-8")).toContain("check");
+		});
 	});
 
 	describe("tooling drift guards", () => {
@@ -1463,6 +1736,39 @@ describe("runInit", () => {
 			expect(extractSchemaVersion(scaffoldedBiome.$schema)).toBe(
 				expectedBiomeVersion,
 			);
+		});
+
+		it("keeps the repo runtime codex preflight aligned with the scaffold template", () => {
+			const runtimeScript = readFileSync(
+				join(process.cwd(), "scripts/codex-preflight.sh"),
+				"utf-8",
+			);
+			const templateScript = readFileSync(
+				join(process.cwd(), "src/templates/codex-preflight.sh"),
+				"utf-8",
+			);
+			expect(runtimeScript).toBe(templateScript);
+		});
+
+		it("keeps the repo-local verify-work wrapper aligned with scaffold output", () => {
+			writeFileSync(
+				join(tempDir, "pnpm-lock.yaml"),
+				"lockfileVersion: '9.0'\n",
+				"utf-8",
+			);
+
+			const result = runInit(tempDir, { dryRun: false, force: false });
+			expect(result.ok).toBe(true);
+
+			const runtimeScript = readFileSync(
+				join(process.cwd(), "scripts/verify-work.sh"),
+				"utf-8",
+			);
+			const scaffoldedScript = readFileSync(
+				join(tempDir, "scripts/verify-work.sh"),
+				"utf-8",
+			);
+			expect(scaffoldedScript).toBe(runtimeScript);
 		});
 	});
 });

@@ -1,0 +1,12 @@
+cff-version: 1.2.0
+message: "If you use Coding Harness, please cite it using this metadata."
+title: "Coding Harness"
+type: software
+authors:
+  - family-names: "Craik"
+    given-names: "Jamie Scott"
+repository-code: "https://github.com/jscraik/coding-harness"
+url: "https://github.com/jscraik/coding-harness"
+abstract: "Control plane for agentic development."
+version: "0.11.12"
+license: "Apache-2.0"
