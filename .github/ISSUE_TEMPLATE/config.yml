@@ -8,5 +8,5 @@ contact_links:
     url: https://github.com/jscraik/coding-harness#readme
     about: Review setup, workflow, and command documentation before opening new work.
   - name: Private security disclosure
-    url: mailto:jamie@brainwav.ai
+    url: mailto:jscraik@brainwav.io
     about: Report security vulnerabilities privately instead of using public issue flows.
