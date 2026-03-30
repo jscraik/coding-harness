@@ -79,6 +79,18 @@ jobs:
           no_output_timeout: 20m
           command: pnpm exec vitest run src/commands/pilot-evaluate.test.ts
 
+  # Canonical PR status aggregator — preserves the historical CircleCI
+  # `pr-pipeline` status context that branch protection and harness metadata
+  # expect, while still letting the fast/slow jobs run independently.
+  pr-pipeline:
+    docker:
+      - image: cimg/base:stable
+    resource_class: small
+    steps:
+      - run:
+          name: Aggregate PR pipeline status
+          command: echo "pr-fast and pr-slow completed successfully"
+
   # ─────────────────────────────────────────────────────────────────────────────
   # Release pipeline — runs on main branch merges only
   #
@@ -160,7 +172,8 @@ jobs:
 
 workflows:
   # Runs on every PR branch push (all branches except main).
-  # pr-fast and pr-slow run in parallel.
+  # pr-fast and pr-slow run in parallel, then the no-op pr-pipeline aggregator
+  # publishes the canonical PR status context used by branch protection.
   pr-workflow:
     jobs:
       - pr-fast:
@@ -168,6 +181,13 @@ workflows:
             branches:
               ignore: main
       - pr-slow:
+          filters:
+            branches:
+              ignore: main
+      - pr-pipeline:
+          requires:
+            - pr-fast
+            - pr-slow
           filters:
             branches:
               ignore: main
