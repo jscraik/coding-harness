@@ -19,6 +19,9 @@
 
 ## Testing
 
+- verification_commands: list exact commands run here
+- verification_outcomes: record pass/fail/blocked for each command here
+- blocked_steps_reason: none if all planned steps ran
 - Command: `pnpm lint` -> pass/fail
 - Command: `pnpm typecheck` -> pass/fail
 - Command: `pnpm test` -> pass/fail

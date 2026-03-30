@@ -15,6 +15,21 @@ const PLACEHOLDERS = [
 	"Add one-paragraph merge rationale here.",
 ] as const;
 
+const REQUIRED_TESTING_FIELDS = [
+	{
+		label: "verification_commands",
+		placeholder: "list exact commands run here",
+	},
+	{
+		label: "verification_outcomes",
+		placeholder: "record pass/fail/blocked for each command here",
+	},
+	{
+		label: "blocked_steps_reason",
+		placeholder: "none if all planned steps ran",
+	},
+] as const;
+
 function extractSectionBody(body: string, heading: string): string | null {
 	const escapedHeading = heading.replace(/[.*+?^${}()|[\]]/g, "\\$&");
 	const pattern = new RegExp(
@@ -78,6 +93,31 @@ function collectPlaceholderErrors(body: string): string[] {
 	return errors;
 }
 
+function collectTestingFieldErrors(body: string): string[] {
+	const testingBody = extractSectionBody(body, "## Testing");
+	if (testingBody === null) {
+		return ["Missing testing block."];
+	}
+
+	const errors: string[] = [];
+
+	for (const field of REQUIRED_TESTING_FIELDS) {
+		const pattern = new RegExp(`^-\\s*${field.label}:\\s*(.+)$`, "im");
+		const match = testingBody.match(pattern);
+		if (!match) {
+			errors.push(`Missing required testing field: ${field.label}`);
+			continue;
+		}
+
+		const value = match[1]?.trim() ?? "";
+		if (value.length === 0 || value === field.placeholder) {
+			errors.push(`Replace testing field placeholder: ${field.label}`);
+		}
+	}
+
+	return errors;
+}
+
 export function validatePrTemplateBody(body: string): string[] {
 	const errors: string[] = [];
 	if (body.length > MAX_BODY_LENGTH) {
@@ -98,6 +138,7 @@ export function validatePrTemplateBody(body: string): string[] {
 	}
 
 	errors.push(...collectChecklistErrors(body));
+	errors.push(...collectTestingFieldErrors(body));
 	errors.push(...collectPlaceholderErrors(body));
 
 	return errors;

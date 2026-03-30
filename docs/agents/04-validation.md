@@ -63,6 +63,7 @@ Enforces plan-traceability and acceptance-evidence requirements for pull-request
 - Add any targeted tests if behavior changed.
 - For pull-requested work, also ensure the PR body lists valid plan IDs and the referenced plans' completed acceptance items carry evidence refs.
 - When review-policy or PR-template behavior changes, ensure the PR body and related docs stay truthful about required CodeRabbit and Codex review artifacts.
+- For this repository, keep `## Testing` in the PR body structured with `verification_commands`, `verification_outcomes`, and `blocked_steps_reason` so CodeRabbit can evaluate validation evidence deterministically.
 
 ### Process/agent instruction edits
 

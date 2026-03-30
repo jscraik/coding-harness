@@ -15,6 +15,9 @@ const VALID_BODY = `## Summary
 
 ## Testing
 
+- verification_commands: \`pnpm lint\`; \`pnpm typecheck\`; \`pnpm test\`; \`pnpm audit\`; \`pnpm check\`
+- verification_outcomes: \`pass\`; \`pass\`; \`pass\`; \`pass\`; \`pass\`
+- blocked_steps_reason: none
 - Command: \`pnpm lint\` -> \`pass\`
 - Command: \`pnpm typecheck\` -> \`pass\`
 - Command: \`pnpm test\` -> \`pass\`

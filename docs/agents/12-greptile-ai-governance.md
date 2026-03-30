@@ -20,6 +20,7 @@ This repository enforces an AI-integrated review policy with CodeRabbit as the p
 - [Feedback loops and calibration](#feedback-loops-and-calibration)
 - [Custom context and pattern repositories](#custom-context-and-pattern-repositories)
 - [MCP loop workflow and manual triggers](#mcp-loop-workflow-and-manual-triggers)
+- [Local CodeRabbit CLI](#local-coderabbit-cli)
 - [Verification command](#verification-command)
 
 ## Absolute grounding
@@ -158,6 +159,27 @@ Manual trigger standards:
 - use `@greptileai` for draft PR reviews on legacy Greptile-bridged repositories,
 - force re-review after config changes,
 - request targeted checks when needed.
+
+## Local CodeRabbit CLI
+
+The local CodeRabbit CLI is optional for `coding-harness`. It is useful for
+drafting or previewing review prompts, but it does not replace the GitHub App
+check that branch protection enforces on this repository.
+
+Recommended local flow:
+
+```bash
+curl -fsSL https://cli.coderabbit.ai/install.sh | sh
+coderabbit auth login
+coderabbit review --base main --cwd /path/to/coding-harness -c .coderabbit.yaml
+```
+
+Notes:
+
+- The CLI requires interactive `coderabbit auth login` or `--api-key`.
+- Use `.coderabbit.yaml` as the repo-local instruction source.
+- Treat local CLI output as advisory; merge authority still comes from the
+  GitHub `CodeRabbit` check on the PR head SHA.
 
 ## Verification command
 
