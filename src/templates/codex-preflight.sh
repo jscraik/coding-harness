@@ -41,6 +41,11 @@ Examples:
   ./scripts/codex-preflight.sh --stack js
   ./scripts/codex-preflight.sh --stack py --mode required
   ./scripts/codex-preflight.sh --repo-fragment local-memory
+
+Legacy compatibility:
+  ./scripts/codex-preflight.sh <repo-fragment> [bins-csv] [paths-csv]
+  This preserves the older positional interface used by parent-repo checks and
+  runs with Local Memory disabled unless the new flag-based mode is used.
 USAGE
 }
 
@@ -90,7 +95,50 @@ is_local_memory_pidfile_sandbox_block() {
 
 
 make_tmp_file() {
-	mktemp "${TMPDIR:-/tmp}/local-memory-preflight.XXXXXX.json"
+	mktemp "${TMPDIR:-/tmp}/local-memory-preflight.XXXXXX"
+}
+
+cleanup_tmp_files() {
+	local path
+	for path in "$@"; do
+		[[ -n "${path}" ]] || continue
+		rm -f -- "${path}"
+	done
+}
+
+set_cleanup_trap() {
+	local trap_cmd='cleanup_tmp_files'
+	local path
+	for path in "$@"; do
+		trap_cmd+=" $(printf '%q' "${path}")"
+	done
+	trap "${trap_cmd}" RETURN
+}
+
+create_tmp_file() {
+	local label="$1"
+	local tmp_file=''
+
+	if ! tmp_file="$(make_tmp_file)"; then
+		log_err "mktemp failed for ${label}"
+		return 1
+	fi
+	if [[ -z "${tmp_file}" ]]; then
+		log_err "mktemp returned empty path for ${label}"
+		return 1
+	fi
+	printf '%s\n' "${tmp_file}"
+}
+
+post_json_to_file() {
+	local output_path="$1"
+	local url="$2"
+	local payload="$3"
+
+	curl -sS -o "${output_path}" -w '%{http_code}' \
+		-H 'Content-Type: application/json' \
+		-d "${payload}" \
+		"${url}"
 }
 
 detect_stack() {
@@ -111,20 +159,20 @@ detect_stack() {
 
 stack_bins_csv() {
 	case "$1" in
-		js) echo 'git,bash,sed,rg,fd,jq,curl,node,npm,python3' ;;
-		py) echo 'git,bash,sed,rg,fd,jq,curl,python3' ;;
-		rust) echo 'git,bash,sed,rg,fd,jq,curl,python3,cargo' ;;
-		repo) echo 'git,bash,sed,rg,fd,jq,curl,python3' ;;
+		js) echo 'git,bash,sed,rg,jq,curl,node,npm,python3' ;;
+		py) echo 'git,bash,sed,rg,jq,curl,python3' ;;
+		rust) echo 'git,bash,sed,rg,jq,curl,python3,cargo' ;;
+		repo) echo 'git,bash,sed,rg,jq,curl,python3' ;;
 		*) log_err "unknown stack: $1"; return 2 ;;
 	esac
 }
 
 stack_paths_csv() {
 	case "$1" in
-		js) echo 'AGENTS.md,package.json,docs,docs/plans' ;;
-		py) echo 'AGENTS.md,pyproject.toml,docs,docs/plans' ;;
-		rust) echo 'AGENTS.md,Cargo.toml,docs,docs/plans' ;;
-		repo) echo 'AGENTS.md,docs,docs/plans' ;;
+		js) echo 'package.json,CONTRIBUTING.md,Makefile,scripts,scripts/codex-preflight.sh,scripts/verify-work.sh' ;;
+		py) echo 'pyproject.toml,CONTRIBUTING.md,Makefile,scripts,scripts/codex-preflight.sh,scripts/verify-work.sh' ;;
+		rust) echo 'Cargo.toml,CONTRIBUTING.md,Makefile,scripts,scripts/codex-preflight.sh,scripts/verify-work.sh' ;;
+		repo) echo 'CONTRIBUTING.md,Makefile,scripts,scripts/codex-preflight.sh,scripts/verify-work.sh' ;;
 		*) log_err "unknown stack: $1"; return 2 ;;
 	esac
 }
@@ -289,25 +337,82 @@ preflight_local_memory_gold() {
 	probe="LM-PREFLIGHT-$(date +%Y%m%d-%H%M%S)-$$"
 	local content_a="Preflight anchor ${probe}"
 	local content_b="Preflight evidence ${probe}"
+	local observe_url="http://${rest_host}:${rest_port}/api/v1/observe"
+	local relationships_url="http://${rest_host}:${rest_port}/api/v1/relationships"
+	local relate_url="http://${rest_host}:${rest_port}/api/v1/relate"
+	local search_url="http://${rest_host}:${rest_port}/api/v1/memories/search"
+	local malformed_output=''
+	local dup_output_1=''
+	local dup_output_2=''
+	local observe_a_output=''
+	local observe_b_output=''
+	local relate_output=''
+	local search_output=''
 
-	local observe_a_json
-	local observe_b_json
-	local observe_a_output
-	if ! observe_a_output="$(local-memory observe "${content_a}" --domain 'coding-harness' --tags 'preflight,local-memory' --source 'codex_preflight' --json 2>&1)"; then
-		if is_local_memory_pidfile_sandbox_block "${observe_a_output}"; then
-			log_warn 'local-memory CLI smoke write skipped: sandbox blocked PID file write while daemon health was already verified'
-			log_ok 'local-memory preflight passed'
-			return 0
-		fi
+	if ! malformed_output="$(create_tmp_file 'malformed payload response')"; then
+		return 1
+	fi
+	if ! dup_output_1="$(create_tmp_file 'duplicate response one')"; then
+		cleanup_tmp_files "${malformed_output}"
+		return 1
+	fi
+	if ! dup_output_2="$(create_tmp_file 'duplicate response two')"; then
+		cleanup_tmp_files "${malformed_output}" "${dup_output_1}"
+		return 1
+	fi
+	if ! observe_a_output="$(create_tmp_file 'observe response A')"; then
+		cleanup_tmp_files "${malformed_output}" "${dup_output_1}" "${dup_output_2}"
+		return 1
+	fi
+	if ! observe_b_output="$(create_tmp_file 'observe response B')"; then
+		cleanup_tmp_files "${malformed_output}" "${dup_output_1}" "${dup_output_2}" "${observe_a_output}"
+		return 1
+	fi
+	if ! relate_output="$(create_tmp_file 'relationship response')"; then
+		cleanup_tmp_files "${malformed_output}" "${dup_output_1}" "${dup_output_2}" "${observe_a_output}" "${observe_b_output}"
+		return 1
+	fi
+	if ! search_output="$(create_tmp_file 'search response')"; then
+		cleanup_tmp_files "${malformed_output}" "${dup_output_1}" "${dup_output_2}" "${observe_a_output}" "${observe_b_output}" "${relate_output}"
+		return 1
+	fi
+	set_cleanup_trap \
+		"${malformed_output}" \
+		"${dup_output_1}" \
+		"${dup_output_2}" \
+		"${observe_a_output}" \
+		"${observe_b_output}" \
+		"${relate_output}" \
+		"${search_output}"
+
+	local observe_a_payload
+	observe_a_payload="$(jq -nc --arg c "${content_a}" '{content:$c,domain:"coding-harness",source:"codex_preflight",tags:["preflight","local-memory"]}')"
+	local observe_b_payload
+	observe_b_payload="$(jq -nc --arg c "${content_b}" '{content:$c,domain:"coding-harness",source:"codex_preflight",tags:["preflight","local-memory"]}')"
+
+	local observe_code_a
+	local observe_code_b
+	if ! observe_code_a="$(post_json_to_file "${observe_a_output}" "${observe_url}" "${observe_a_payload}")"; then
 		log_err 'observe A failed'
 		return 1
 	fi
-	observe_a_json="$(extract_last_json_line "${observe_a_output}")"
-	if ! observe_b_json="$(local-memory observe "${content_b}" --domain 'coding-harness' --tags 'preflight,local-memory' --source 'codex_preflight' --json 2>/dev/null)"; then
+	if [[ "${observe_code_a}" -ge 400 ]]; then
+		log_err "observe A returned HTTP ${observe_code_a}"
+		return 1
+	fi
+	if ! observe_code_b="$(post_json_to_file "${observe_b_output}" "${observe_url}" "${observe_b_payload}")"; then
 		log_err 'observe B failed'
 		return 1
 	fi
-	observe_b_json="$(extract_last_json_line "${observe_b_json}")"
+	if [[ "${observe_code_b}" -ge 400 ]]; then
+		log_err "observe B returned HTTP ${observe_code_b}"
+		return 1
+	fi
+
+	local observe_a_json
+	local observe_b_json
+	observe_a_json="$(cat "${observe_a_output}")"
+	observe_b_json="$(cat "${observe_b_output}")"
 
 	local id_a
 	local id_b
@@ -318,12 +423,28 @@ preflight_local_memory_gold() {
 		return 1
 	fi
 
-	local relate_json
-	relate_json="$(local-memory relate "${id_a}" "${id_b}" --type 'references' --strength 0.8 --confirm --json 2>/dev/null)" || {
-		log_err 'relate failed'
+	local relate_payload
+	relate_payload="$(jq -nc \
+		--arg source "${id_a}" \
+		--arg target "${id_b}" \
+		'{source_memory_id:$source,target_memory_id:$target,relationship_type:"references",strength:0.8,context:"codex preflight smoke cycle"}')"
+	local relate_code
+	if ! relate_code="$(post_json_to_file "${relate_output}" "${relationships_url}" "${relate_payload}")"; then
+		log_err 'relationships create failed'
 		return 1
-	}
-	relate_json="$(extract_last_json_line "${relate_json}")"
+	fi
+	if [[ "${relate_code}" -ge 400 ]]; then
+		if ! relate_code="$(post_json_to_file "${relate_output}" "${relate_url}" "${relate_payload}")"; then
+			log_err 'relate fallback failed'
+			return 1
+		fi
+	fi
+	if [[ "${relate_code}" -ge 400 ]]; then
+		log_err "relationship create returned HTTP ${relate_code}"
+		return 1
+	fi
+	local relate_json
+	relate_json="$(cat "${relate_output}")"
 	local relationship_id
 	relationship_id="$(echo "${relate_json}" | jq -r '.id // .data.id // .relationship_id // .data.relationship_id // empty')"
 	local relate_ok
@@ -333,15 +454,42 @@ preflight_local_memory_gold() {
 		return 1
 	fi
 
+	local search_payload
+	search_payload="$(jq -nc --arg query "${probe}" '{query:$query,limit:10,response_format:"ids_only"}')"
+	local search_code=''
+	local search_attempt=1
+	while (( search_attempt <= 5 )); do
+		if ! search_code="$(post_json_to_file "${search_output}" "${search_url}" "${search_payload}")"; then
+			log_err 'search failed'
+			return 1
+		fi
+		if [[ "${search_code}" -ge 400 ]]; then
+			log_err "search returned HTTP ${search_code}"
+			return 1
+		fi
+		local search_json_attempt
+		search_json_attempt="$(cat "${search_output}")"
+		local search_hits_attempt
+		search_hits_attempt="$(echo "${search_json_attempt}" | jq -r '
+			if type == "array" then length
+			elif .search_info.total_results != null then .search_info.total_results
+			elif .results then (.results | length)
+			elif .data.results then (.data.results | length)
+			elif .data then (.data | length)
+			else 0 end
+		')"
+		if [[ "${search_hits_attempt}" -ge 1 ]]; then
+			break
+		fi
+		sleep 0.2
+		search_attempt=$((search_attempt + 1))
+	done
 	local search_json
-	search_json="$(local-memory search "${probe}" --limit 10 --json 2>/dev/null)" || {
-		log_err 'search failed'
-		return 1
-	}
-	search_json="$(extract_last_json_line "${search_json}")"
+	search_json="$(cat "${search_output}")"
 	local search_hits
 	search_hits="$(echo "${search_json}" | jq -r '
 		if type == "array" then length
+		elif .search_info.total_results != null then .search_info.total_results
 		elif .results then (.results | length)
 		elif .data.results then (.data.results | length)
 		elif .data then (.data | length)
@@ -353,17 +501,8 @@ preflight_local_memory_gold() {
 	fi
 	log_ok "smoke cycle ok: ids ${id_a}, ${id_b}; relationship ${relationship_id}"
 
-	local malformed_output dup_output_1 dup_output_2
-	malformed_output="$(make_tmp_file)"
-	dup_output_1="$(make_tmp_file)"
-	dup_output_2="$(make_tmp_file)"
-	trap 'rm -f "${malformed_output}" "${dup_output_1}" "${dup_output_2}"' RETURN
-
 	local malformed_code
-	malformed_code="$(curl -sS -o "${malformed_output}" -w '%{http_code}' \
-		-H 'Content-Type: application/json' \
-		-d '{"level":"observation"}' \
-		"http://127.0.0.1:${rest_port}/api/v1/observe")"
+	malformed_code="$(post_json_to_file "${malformed_output}" "${observe_url}" '{"level":"observation"}')"
 	if [[ "${malformed_code}" -lt 400 ]]; then
 		log_err "malformed payload did not return an error (HTTP ${malformed_code})"
 		return 1
@@ -374,14 +513,8 @@ preflight_local_memory_gold() {
 	dup_payload="$(jq -nc --arg c "${content_a}" '{content:$c,domain:"coding-harness",source:"codex_preflight",tags:["preflight","duplicate-check"]}')"
 	local dup_code_1
 	local dup_code_2
-	dup_code_1="$(curl -sS -o "${dup_output_1}" -w '%{http_code}' \
-		-H 'Content-Type: application/json' \
-		-d "${dup_payload}" \
-		"http://127.0.0.1:${rest_port}/api/v1/observe")"
-	dup_code_2="$(curl -sS -o "${dup_output_2}" -w '%{http_code}' \
-		-H 'Content-Type: application/json' \
-		-d "${dup_payload}" \
-		"http://127.0.0.1:${rest_port}/api/v1/observe")"
+	dup_code_1="$(post_json_to_file "${dup_output_1}" "${observe_url}" "${dup_payload}")"
+	dup_code_2="$(post_json_to_file "${dup_output_2}" "${observe_url}" "${dup_payload}")"
 	echo "ℹ️ duplicate behavior snapshot: first=${dup_code_1}, second=${dup_code_2}"
 
 	local daemon_log="${HOME}/.local-memory/daemon.log"
@@ -428,8 +561,8 @@ preflight_repo() {
 	run_preflight_profile \
 		repo \
 		"${1:-}" \
-		"${2:-git,bash,sed,rg,fd,jq,curl,python3}" \
-		"${3:-AGENTS.md,docs,docs/plans}" \
+		"${2:-git,bash,sed,rg,jq,curl,python3}" \
+		"${3:-CONTRIBUTING.md,Makefile,scripts,scripts/codex-preflight.sh,scripts/verify-work.sh}" \
 		"${4:-required}"
 }
 
@@ -437,8 +570,8 @@ preflight_js() {
 	run_preflight_profile \
 		js \
 		"${1:-}" \
-		"${2:-git,bash,sed,rg,fd,jq,curl,node,npm,python3}" \
-		"${3:-AGENTS.md,package.json,docs,docs/plans}" \
+		"${2:-git,bash,sed,rg,jq,curl,node,npm,python3}" \
+		"${3:-package.json,CONTRIBUTING.md,Makefile,scripts,scripts/codex-preflight.sh,scripts/verify-work.sh}" \
 		"${4:-required}"
 }
 
@@ -446,8 +579,8 @@ preflight_py() {
 	run_preflight_profile \
 		py \
 		"${1:-}" \
-		"${2:-git,bash,sed,rg,fd,jq,curl,python3}" \
-		"${3:-AGENTS.md,pyproject.toml,docs,docs/plans}" \
+		"${2:-git,bash,sed,rg,jq,curl,python3}" \
+		"${3:-pyproject.toml,CONTRIBUTING.md,Makefile,scripts,scripts/codex-preflight.sh,scripts/verify-work.sh}" \
 		"${4:-required}"
 }
 
@@ -455,13 +588,13 @@ preflight_rust() {
 	run_preflight_profile \
 		rust \
 		"${1:-}" \
-		"${2:-git,bash,sed,rg,fd,jq,curl,python3,cargo}" \
-		"${3:-AGENTS.md,Cargo.toml,docs,docs/plans}" \
+		"${2:-git,bash,sed,rg,jq,curl,python3,cargo}" \
+		"${3:-Cargo.toml,CONTRIBUTING.md,Makefile,scripts,scripts/codex-preflight.sh,scripts/verify-work.sh}" \
 		"${4:-required}"
 }
 
 preflight_repo_local_memory() {
-	preflight_repo "${1:-}" "${2:-git,bash,sed,rg,fd,jq,curl,python3}" "${3:-AGENTS.md,docs,docs/plans}" required
+	preflight_repo "${1:-}" "${2:-git,bash,sed,rg,jq,curl,python3}" "${3:-CONTRIBUTING.md,Makefile,scripts,scripts/codex-preflight.sh,scripts/verify-work.sh}" required
 }
 
 main() {
@@ -470,6 +603,19 @@ main() {
 	local expected_repo=''
 	local bins_csv=''
 	local paths_csv=''
+
+	if (( $# > 0 )) && [[ "${1}" != --* ]] && [[ "${1}" != '-h' ]]; then
+		if (( $# > 3 )); then
+			log_err "legacy positional mode accepts at most 3 arguments"
+			usage >&2
+			exit 2
+		fi
+		expected_repo="${1:-}"
+		bins_csv="${2:-}"
+		paths_csv="${3:-}"
+		local_memory_mode='off'
+		set --
+	fi
 
 	while (( $# > 0 )); do
 		case "$1" in
@@ -518,28 +664,29 @@ main() {
 		exit 2
 	fi
 
-	local root
-	if ! root="$(git rev-parse --show-toplevel 2>/dev/null)"; then
+	local git_root
+	if ! git_root="$(git rev-parse --show-toplevel 2>/dev/null)"; then
 		log_err 'not inside a git repo (git rev-parse failed)'
 		exit 2
 	fi
-	if [[ -z "${root}" ]]; then
+	if [[ -z "${git_root}" ]]; then
 		log_err 'git rev-parse returned empty root'
 		exit 2
 	fi
-	root="$(cd -- "${root}" && pwd -P)"
-	echo "repo root: ${root}"
+	git_root="$(cd -- "${git_root}" && pwd -P)"
+	echo "git root: ${git_root}"
+	echo "workspace root: ${WORKSPACE_ROOT}"
 
-	if [[ "${root}" != "${WORKSPACE_ROOT}" ]]; then
-		log_err "script workspace mismatch: expected ${WORKSPACE_ROOT}"
+	if [[ "${WORKSPACE_ROOT}" != "${git_root}" && "${WORKSPACE_ROOT}" != "${git_root}"/* ]]; then
+		log_err "script workspace mismatch: ${WORKSPACE_ROOT} is not inside git root ${git_root}"
 		exit 2
 	fi
-	if [[ -n "${expected_repo}" && "${root}" != *"${expected_repo}"* ]]; then
-		log_err "repo mismatch: expected fragment '${expected_repo}' in '${root}'"
+	if [[ -n "${expected_repo}" && "${WORKSPACE_ROOT}" != *"${expected_repo}"* ]]; then
+		log_err "repo mismatch: expected fragment '${expected_repo}' in '${WORKSPACE_ROOT}'"
 		exit 2
 	fi
 
-	cd "${root}"
+	cd "${WORKSPACE_ROOT}"
 
 	if [[ "${stack}" == 'auto' ]]; then
 		stack="$(detect_stack)"
@@ -554,10 +701,12 @@ main() {
 	fi
 
 	check_bins "${bins_csv}"
-	check_paths "${root}" "${paths_csv}"
+	check_paths "${WORKSPACE_ROOT}" "${paths_csv}"
 
-	echo "git branch: $(git rev-parse --abbrev-ref HEAD)"
-	echo "clean?: $(git status --porcelain | wc -l | tr -d ' ') changes"
+	local branch_name
+	branch_name="$(git -C "${WORKSPACE_ROOT}" rev-parse --abbrev-ref HEAD 2>/dev/null || true)"
+	echo "git branch: ${branch_name:-HEAD}"
+	echo "clean?: $(git -C "${WORKSPACE_ROOT}" status --porcelain -- . | wc -l | tr -d ' ') changes"
 
 	if [[ "${local_memory_mode}" != 'off' ]]; then
 		if ! preflight_local_memory_gold; then
