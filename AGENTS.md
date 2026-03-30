@@ -42,6 +42,7 @@ Notes:
 - Before mutating work, confirm `pwd`, repo root, required binaries, and target paths.
 - For this repo, verify `docs/agents/` and `scripts/` for path-sensitive work.
 - Run `./scripts/codex-preflight.sh --stack auto --mode required` before multi-step, destructive, or path-sensitive workflows.
+- Use `./scripts/verify-work.sh` as the canonical repo-local verification entrypoint; keep `scripts/codex-preflight.sh` as the lower-level bootstrap gate beneath it.
 - Ask before adding dependencies or changing system-level settings.
 
 ## Repo Workflow
@@ -87,6 +88,7 @@ Start with [docs/agents/01-instruction-map.md](./docs/agents/01-instruction-map.
 - Local ESM imports must include `.js` extensions.
 - This repo publishes a harness skill to downstream repos via `harness init`. The installed skill lands in the target repo's `.agents/skills/coding-harness/` — it is not a local skill directory for this repo.
 - Use repo scripts as the command contract: `pnpm lint`, `pnpm typecheck`, `pnpm test`, `pnpm audit`, `pnpm build`, `pnpm check`, and `pnpm test:artifacts`.
+- Canonical repo-local verification entrypoint: `bash scripts/verify-work.sh` (`--fast` for preflight + lint + typecheck + focused tests).
 - Node `>=24.0.0` required (see `engines` in `package.json`).
 - Linter/formatter: Biome (`biome.json`). Run with `pnpm lint` / `pnpm fmt`.
 - Git hooks: `simple-git-hooks` wired through `Makefile` targets (`hooks-pre-commit`, `hooks-pre-push`).

@@ -216,6 +216,176 @@ function renderCodexPreflightTemplate(): string {
 	return readFileSync(templatePath, "utf-8");
 }
 
+function renderVerifyWorkScript(packageManager: string): string {
+	const checkCommand = renderScriptCommand(packageManager, "check");
+	const lintCommand = renderScriptCommand(packageManager, "lint");
+	const typecheckCommand = renderScriptCommand(packageManager, "typecheck");
+	const testCommand = renderScriptCommand(packageManager, "test");
+	const relatedTestCommand = renderScriptCommand(
+		packageManager,
+		"test:related",
+	);
+
+	return `#!/usr/bin/env bash
+set -euo pipefail
+
+SCRIPT_DIR="$(cd -- "$(dirname -- "${"${"}BASH_SOURCE[0]}")" && pwd -P)"
+REPO_ROOT="$(cd -- "$SCRIPT_DIR/.." && pwd -P)"
+
+changed_only=1
+fast_mode=0
+strict_mode=0
+repo_root=""
+
+usage() {
+	cat <<'USAGE'
+Usage: scripts/verify-work.sh [options]
+
+Canonical repo-local verification runner.
+
+Options:
+  --all              Run full test coverage in --fast mode
+  --changed-only     Prefer changed-file validation in --fast mode (default)
+  --strict           Fail when fast-mode fallbacks are needed
+  --fast             Run preflight + lint + typecheck + tests instead of the full check bundle
+  --repo-root PATH   Run checks in a specific repository root
+  -h, --help         Show this help text
+USAGE
+}
+
+detect_stack() {
+	if [[ -f package.json ]]; then
+		echo js
+		return
+	fi
+	if [[ -f pyproject.toml ]]; then
+		echo py
+		return
+	fi
+	if [[ -f Cargo.toml ]]; then
+		echo rust
+		return
+	fi
+	echo repo
+}
+
+preflight_bins_csv() {
+	case "$1" in
+		js) echo 'git,bash,sed,rg,jq,curl,node,python3,${packageManager}' ;;
+		py) echo 'git,bash,sed,rg,jq,curl,python3' ;;
+		rust) echo 'git,bash,sed,rg,jq,curl,python3,cargo' ;;
+		repo) echo 'git,bash,sed,rg,jq,curl,python3' ;;
+		*) echo "[verify-work] unknown stack: $1" >&2; return 2 ;;
+	esac
+}
+
+preflight_paths_csv() {
+	case "$1" in
+		js) echo 'package.json,CONTRIBUTING.md,Makefile,scripts,scripts/codex-preflight.sh,scripts/verify-work.sh' ;;
+		py) echo 'pyproject.toml,CONTRIBUTING.md,Makefile,scripts,scripts/codex-preflight.sh,scripts/verify-work.sh' ;;
+		rust) echo 'Cargo.toml,CONTRIBUTING.md,Makefile,scripts,scripts/codex-preflight.sh,scripts/verify-work.sh' ;;
+		repo) echo 'CONTRIBUTING.md,Makefile,scripts,scripts/codex-preflight.sh,scripts/verify-work.sh' ;;
+		*) echo "[verify-work] unknown stack: $1" >&2; return 2 ;;
+	esac
+}
+
+has_package_script() {
+	local script_name="$1"
+	[[ -f "$repo_root/package.json" ]] || return 1
+	jq -e --arg script_name "$script_name" '(.scripts // {}) | has($script_name)' "$repo_root/package.json" >/dev/null 2>&1
+}
+
+while (( $# > 0 )); do
+	case "$1" in
+		--all|--all-skills)
+			changed_only=0
+			shift
+			;;
+		--changed-only)
+			changed_only=1
+			shift
+			;;
+		--strict)
+			strict_mode=1
+			shift
+			;;
+		--fast)
+			fast_mode=1
+			shift
+			;;
+		--repo-root)
+			repo_root="${"${"}2:-}"
+			shift 2
+			;;
+		-h|--help)
+			usage
+			exit 0
+			;;
+		*)
+			echo "[verify-work] unknown argument: $1" >&2
+			usage >&2
+			exit 2
+			;;
+	esac
+done
+
+if [[ -z "$repo_root" ]]; then
+	repo_root="$REPO_ROOT"
+fi
+
+cd "$repo_root"
+echo "[verify-work] repo root: $repo_root"
+
+stack="$(detect_stack)"
+bins_csv="$(preflight_bins_csv "$stack")"
+paths_csv="$(preflight_paths_csv "$stack")"
+
+echo
+echo "==> codex-preflight"
+bash "$repo_root/scripts/codex-preflight.sh" \\
+	--stack "$stack" \\
+	--mode required \\
+	--bins "$bins_csv" \\
+	--paths "$paths_csv"
+
+if [[ "$fast_mode" -eq 0 ]]; then
+	echo
+	echo "==> check"
+	${checkCommand}
+	exit 0
+fi
+
+echo
+echo "==> lint"
+${lintCommand}
+
+echo
+echo "==> typecheck"
+${typecheckCommand}
+
+if [[ "$changed_only" -eq 1 ]]; then
+	if has_package_script "test:related"; then
+		echo
+		echo "==> test:related"
+		${relatedTestCommand}
+	else
+		if [[ "$strict_mode" -eq 1 ]]; then
+			echo "[verify-work] missing package script: test:related" >&2
+			exit 1
+		fi
+		echo "[verify-work] test:related unavailable; falling back to full test run"
+		echo
+		echo "==> test"
+		${testCommand}
+	fi
+else
+	echo
+	echo "==> test"
+	${testCommand}
+fi
+`;
+}
+
 function renderHarnessCliWrapper(packageManager: string): string {
 	const installCommand = renderInstallCommand(packageManager);
 	const addCommand = renderAddPackageCommand(
@@ -2029,6 +2199,7 @@ jobs:
 - [Branch name policy](#branch-name-policy)
 - [Required pre-merge gates](#required-pre-merge-gates)
 - [Required tooling baseline](#required-tooling-baseline)
+- [Repo-local verification wrapper](#repo-local-verification-wrapper)
 - [Repo-local harness wrapper](#repo-local-harness-wrapper)
 - [Greptile setup baseline](#greptile-setup-baseline)
 - [Greptile config hierarchy](#greptile-config-hierarchy)
@@ -2116,9 +2287,17 @@ Recommended policy:
 - Treat \`scripts/codex-preflight.sh\` as required project bootstrap infrastructure.
 - Keep \`preflight_repo\` in \`required\` mode by default; only relax mode (\`optional\` or \`off\`) when the project documents why.
 - Adjust preflight binary/path lists per project scope instead of deleting the script.
+- Treat \`scripts/verify-work.sh\` as the canonical repo-facing verification command and keep it wired to repo-local preflight defaults.
 - Treat \`scripts/check-environment.sh\` as the local readiness gate for required tooling.
 - Block merge or promotion work when a required CLI is missing rather than silently skipping the corresponding validation lane.
 - For repositories with explicit \`ui\` / \`chatgpt_apps_sdk\` capabilities or matching dependency signals, install \`@brainwav/design-system-guidance\` and treat its absence as a readiness failure.
+
+## Repo-local verification wrapper
+
+- \`harness init\` scaffolds \`scripts/verify-work.sh\` as the canonical repo-local verification entrypoint.
+- The wrapper always runs \`scripts/codex-preflight.sh\` in \`required\` Local Memory mode with scaffold-safe path and binary expectations.
+- Use \`bash scripts/verify-work.sh\` for the full verification bundle.
+- Use \`bash scripts/verify-work.sh --fast\` for preflight + lint + typecheck + focused test coverage.
 
 ## Repo-local harness wrapper
 
@@ -3381,6 +3560,10 @@ CLAUDE_APPROVAL_POSTURE = "require"
 		render: () => renderCodexPreflightTemplate(),
 	},
 	{
+		path: "scripts/verify-work.sh",
+		render: (pm) => renderVerifyWorkScript(pm),
+	},
+	{
 		path: "scripts/harness-cli.sh",
 		render: (pm) => renderHarnessCliWrapper(pm),
 	},
@@ -3734,6 +3917,7 @@ echo "Environment check passed (attestation: $ATTESTATION_PATH)"
 /CONTRIBUTING.md @jscraik
 /AGENTS.md @jscraik
 /scripts/codex-preflight.sh @jscraik
+/scripts/verify-work.sh @jscraik
 /scripts/harness-cli.sh @jscraik
 /scripts/check-environment.sh @jscraik
 `,
@@ -3743,7 +3927,7 @@ echo "Environment check passed (attestation: $ATTESTATION_PATH)"
 		render: () => `# Harness Development Makefile
 # Run \`make help\` to see available commands
 
-.PHONY: help install setup preflight hooks hooks-pre-commit hooks-pre-push secrets-staged docs-style-changed related-tests semgrep-changed diagrams-check dev build lint docs-lint fmt typecheck test check audit secrets security clean reset ci diagrams env-check
+.PHONY: help install setup preflight verify-work hooks hooks-pre-commit hooks-pre-push secrets-staged docs-style-changed related-tests semgrep-changed diagrams-check dev build lint docs-lint fmt typecheck test check audit secrets security clean reset ci diagrams env-check
 
 # Default target
 help: ## Show this help message
@@ -3761,6 +3945,9 @@ setup: install hooks ## Full setup: install deps and configure git hooks
 
 preflight: ## Run repository preflight checks (required local-memory gate by default)
 	@bash ./scripts/codex-preflight.sh
+
+verify-work: ## Run canonical repo-local verification wrapper
+	@bash ./scripts/verify-work.sh
 
 hooks: ## Setup git hooks
 	node scripts/setup-git-hooks.js

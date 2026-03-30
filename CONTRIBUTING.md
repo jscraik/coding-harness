@@ -8,6 +8,7 @@
 - [Branch name policy](#branch-name-policy)
 - [Required pre-merge gates](#required-pre-merge-gates)
 - [Required tooling baseline](#required-tooling-baseline)
+- [Repo-local verification wrapper](#repo-local-verification-wrapper)
 - [Greptile setup baseline](#greptile-setup-baseline)
 - [Greptile config hierarchy](#greptile-config-hierarchy)
 - [Greptile merge logic for multi-scope pull requests](#greptile-merge-logic-for-multi-scope-pull-requests)
@@ -94,9 +95,17 @@ Recommended policy:
 - Treat `scripts/codex-preflight.sh` as required project bootstrap infrastructure.
 - Keep `preflight_repo` in `required` mode by default; only relax mode (`optional` or `off`) when the project documents why.
 - Adjust preflight binary/path lists per project scope instead of deleting the script.
+- Treat `scripts/verify-work.sh` as the canonical repo-local verification command and keep it wired to repo-local preflight defaults.
 - Treat `scripts/check-environment.sh` as the local readiness gate for required tooling.
 - Block merge or promotion work when a required CLI is missing rather than silently skipping the corresponding validation lane.
 - For repositories with explicit `ui` / `chatgpt_apps_sdk` capabilities or matching dependency signals, install `@brainwav/design-system-guidance` and treat its absence as a readiness failure.
+
+## Repo-local verification wrapper
+
+- `scripts/verify-work.sh` is the canonical repo-local verification entrypoint.
+- The wrapper always runs `scripts/codex-preflight.sh` in `required` Local Memory mode with scaffold-safe path and binary expectations.
+- Use `bash scripts/verify-work.sh` for the full verification bundle.
+- Use `bash scripts/verify-work.sh --fast` for preflight + lint + typecheck + focused test coverage.
 
 ## Greptile setup baseline
 
