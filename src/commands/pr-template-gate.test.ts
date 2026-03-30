@@ -39,8 +39,7 @@ const VALID_BODY = `## Summary
 
 ## Review artifacts
 
-- Greptile: https://example.com/greptile
-- Greptile confidence score: 4/5
+- CodeRabbit: https://example.com/coderabbit
 - Independent reviewer evidence: N/A (solo mode)
 - Codex: https://example.com/codex
 - Additional evidence (if any): none
@@ -134,15 +133,15 @@ describe("pr-template-gate command", () => {
 
 	it("fails with unresolved placeholders", () => {
 		const invalid = VALID_BODY.replace(
-			"Greptile confidence score: 4/5",
-			"Greptile confidence score: <0-5>",
+			"CodeRabbit: https://example.com/coderabbit",
+			"CodeRabbit: <link / artifact path / comment ID>",
 		);
 		const result = runPrTemplateGate({ prBody: invalid });
 		expect(result.ok).toBe(true);
 		if (result.ok) {
 			expect(result.output.passed).toBe(false);
 			expect(result.output.errors).toContain(
-				"Replace template placeholder: <0-5>",
+				"Replace template placeholder: <link / artifact path / comment ID>",
 			);
 		}
 	});
@@ -163,7 +162,7 @@ describe("pr-template-gate command", () => {
 			.mockImplementation(() => undefined);
 		const exitCode = runPrTemplateGateCLI({
 			prBody:
-				"## Summary\n\n## Checklist\n\n- [ ] todo\n\n## Testing\n\npass/fail\n\n## Review artifacts\n\n<0-5>\n\n## Notes\n\nAdd one-paragraph merge rationale here.",
+				"## Summary\n\n## Checklist\n\n- [ ] todo\n\n## Testing\n\npass/fail\n\n## Review artifacts\n\n<link / artifact path / comment ID>\n\n## Notes\n\nAdd one-paragraph merge rationale here.",
 		});
 		expect(exitCode).toBe(EXIT_CODES.POLICY_VIOLATION);
 		expect(consoleError).toHaveBeenCalled();

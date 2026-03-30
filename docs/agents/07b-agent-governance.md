@@ -40,11 +40,11 @@ Every agent handoff should include:
 - If command tooling is unavailable: mark check as blocked and escalate environment dependency.
 - If instructions conflict: resolve precedence before further edits.
 - Agent-created branches must use `codex/<linear-key>-<short-description>` naming when the work is tracked in Linear.
-- Greptile must be configured with all required files via the `greploop` or `check-pr` skill before relying on Greptile review artifacts (`.greptile/config.json`, `.greptile/rules.md`, `.greptile/files.json`).
-- Greptile review must be independent from code authorship (coding agent cannot act as approving review agent).
+- CodeRabbit review must be independent from code authorship (coding agent cannot act as approving review agent).
+- Legacy Greptile bridge workflows remain supported for harness-managed repositories, but they are not the primary review authority for this repository.
 - If a reproducible coding-harness bug, policy gap, workflow regression, automation task, or release follow-up is found: create or update a Linear issue with repro + evidence before handoff.
-- If PR review artifacts are missing (Greptile/Codex for this repo): do not merge; complete reviews or explicitly escalate the exception.
-- If Greptile confidence score is below `4/5`: do not merge.
+- If PR review artifacts are missing (CodeRabbit/Codex for this repo): do not merge; complete reviews or explicitly escalate the exception.
+- If the `CodeRabbit` check is absent, pending, or failing for the current head SHA: do not merge.
 - After merge completion: clean up branch/worktree to keep an auditable branch lifecycle.
 
 ## Optional quality expectations

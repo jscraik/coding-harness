@@ -14,6 +14,7 @@ For any behavior-affecting change:
 
 - `pnpm build` when CLI output, entrypoints, or distribution artifacts change.
 - Manual smoke checks for command-flow changes.
+- PR-template and review-policy changes should also be checked against the current pull-request artifact contract (CodeRabbit plus Codex for this repository).
 
 ## Gate-by-gate intent
 

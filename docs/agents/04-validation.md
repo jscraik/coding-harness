@@ -62,6 +62,7 @@ Enforces plan-traceability and acceptance-evidence requirements for pull-request
 - Run full `pnpm check`.
 - Add any targeted tests if behavior changed.
 - For pull-requested work, also ensure the PR body lists valid plan IDs and the referenced plans' completed acceptance items carry evidence refs.
+- When review-policy or PR-template behavior changes, ensure the PR body and related docs stay truthful about required CodeRabbit and Codex review artifacts.
 
 ### Process/agent instruction edits
 

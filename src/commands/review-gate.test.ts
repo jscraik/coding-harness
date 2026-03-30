@@ -897,7 +897,7 @@ describe("runReviewGate", () => {
 		}
 	});
 
-	it("allows unresolved bot-only review threads", async () => {
+	it("allows unresolved CodeRabbit-only review threads", async () => {
 		const mockCheckRuns: CheckRun[] = [
 			{
 				id: 1,
@@ -930,7 +930,7 @@ describe("runReviewGate", () => {
 						{
 							id: "thread-1",
 							isResolved: false,
-							comments: [{ author: { login: "greptile[bot]" } }],
+							comments: [{ author: { login: "coderabbitai[bot]" } }],
 						},
 					]),
 				}) as unknown as GitHubClient,

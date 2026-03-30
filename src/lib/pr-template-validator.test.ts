@@ -25,8 +25,7 @@ const VALID_BODY = `## Summary
 
 ## Review artifacts
 
-- Greptile: https://example.com/greptile
-- Greptile confidence score: 4/5
+- CodeRabbit: https://example.com/coderabbit
 - Independent reviewer evidence: N/A (solo mode)
 - Codex: https://example.com/codex
 - Additional evidence (if any): none
@@ -66,16 +65,12 @@ describe("validatePrTemplateBody", () => {
 
 	it("fails unresolved placeholders", () => {
 		const body = VALID_BODY.replace(
-			"Greptile: https://example.com/greptile",
-			"Greptile: <link / artifact path / comment ID>",
-		).replace(
-			"Greptile confidence score: 4/5",
-			"Greptile confidence score: <0-5>",
+			"CodeRabbit: https://example.com/coderabbit",
+			"CodeRabbit: <link / artifact path / comment ID>",
 		);
 		const errors = validatePrTemplateBody(body);
 		expect(errors).toContain(
 			"Replace template placeholder: <link / artifact path / comment ID>",
 		);
-		expect(errors).toContain("Replace template placeholder: <0-5>");
 	});
 });

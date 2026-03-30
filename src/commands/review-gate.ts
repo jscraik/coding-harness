@@ -360,6 +360,8 @@ function buildBotLoginSet(botLogin?: string): Set<string> {
 	return new Set<string>(
 		[
 			botLogin,
+			"coderabbitai",
+			"coderabbitai[bot]",
 			"greptile-apps",
 			"greptile-apps[bot]",
 			"greptile[bot]",

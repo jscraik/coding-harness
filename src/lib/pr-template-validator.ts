@@ -11,7 +11,6 @@ const MAX_BODY_LENGTH = 100_000; // 100KB limit to prevent ReDoS
 const PLACEHOLDERS = [
 	"pass/fail",
 	"<link / artifact path / comment ID>",
-	"<0-5>",
 	"<reviewer + link>",
 	"Add one-paragraph merge rationale here.",
 ] as const;
