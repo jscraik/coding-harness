@@ -88,7 +88,10 @@ describe("scaffold templates resolution", () => {
 		tempDirs.push(tempDir);
 		writeFileSync(
 			join(tempDir, "package.json"),
-			JSON.stringify({ name: "demo" }),
+			JSON.stringify({
+				name: "demo",
+				repository: "https://github.com/brainwav/coding-harness.git",
+			}),
 		);
 
 		const context = createTemplateRenderContext(
@@ -116,7 +119,10 @@ describe("scaffold templates resolution", () => {
 		tempDirs.push(tempDir);
 		writeFileSync(
 			join(tempDir, "package.json"),
-			JSON.stringify({ name: "demo" }),
+			JSON.stringify({
+				name: "demo",
+				repository: "https://github.com/brainwav/coding-harness.git",
+			}),
 		);
 
 		const context = createTemplateRenderContext(tempDir, "circleci");
@@ -135,7 +141,10 @@ describe("scaffold templates resolution", () => {
 		tempDirs.push(tempDir);
 		writeFileSync(
 			join(tempDir, "package.json"),
-			JSON.stringify({ name: "demo" }),
+			JSON.stringify({
+				name: "demo",
+				repository: "https://github.com/brainwav/coding-harness.git",
+			}),
 		);
 
 		const context = createTemplateRenderContext(
@@ -158,5 +167,39 @@ describe("scaffold templates resolution", () => {
 		expect(rendered).not.toContain("Linear work intake");
 		expect(rendered).toContain("Repository docs");
 		expect(rendered).toContain("Private security disclosure");
+	});
+
+	it("normalizes ssh repository URLs for issue-template docs links", () => {
+		const tempDir = mkdtempSync(join(tmpdir(), "harness-scaffold-test-"));
+		tempDirs.push(tempDir);
+		writeFileSync(
+			join(tempDir, "package.json"),
+			JSON.stringify({
+				name: "demo",
+				repository: "git@github.com:brainwav/coding-harness.git",
+			}),
+		);
+
+		const context = createTemplateRenderContext(
+			tempDir,
+			"circleci",
+			undefined,
+			{
+				dryRun: false,
+				force: false,
+				issueTracker: "github",
+			},
+		);
+		const configTemplate = TEMPLATES.find(
+			(template) => template.path === ".github/ISSUE_TEMPLATE/config.yml",
+		);
+
+		expect(configTemplate).toBeDefined();
+		const rendered = configTemplate!.render("pnpm", context);
+
+		expect(rendered).toContain(
+			"url: https://github.com/brainwav/coding-harness#readme",
+		);
+		expect(rendered).not.toContain("git@github.com:");
 	});
 });

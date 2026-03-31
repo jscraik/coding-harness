@@ -2580,6 +2580,10 @@ describe("--update flag", () => {
 		expect(existsSync(join(tempDir, ".github/ISSUE_TEMPLATE/config.yml"))).toBe(
 			false,
 		);
+		const updatedManifest = JSON.parse(
+			require("node:fs").readFileSync(manifestPath, "utf-8"),
+		);
+		expect(updatedManifest.issueTracker).toBe("none");
 
 		const contract = JSON.parse(
 			require("node:fs").readFileSync(
@@ -2626,6 +2630,12 @@ describe("--update flag", () => {
 			true,
 		);
 		expect(existsSync(join(tempDir, ".linear"))).toBe(false);
+		const issueTemplateConfig = readFileSync(
+			join(tempDir, ".github/ISSUE_TEMPLATE/config.yml"),
+			"utf-8",
+		);
+		expect(issueTemplateConfig).not.toContain("Linear work intake");
+		expect(issueTemplateConfig).toContain("Private security disclosure");
 
 		const contract = JSON.parse(
 			readFileSync(join(tempDir, "harness.contract.json"), "utf-8"),
@@ -2669,6 +2679,45 @@ describe("--update flag", () => {
 		}
 	});
 
+	it("fails update when the tracked contract is missing", () => {
+		const installResult = runInit(tempDir, {
+			dryRun: false,
+			force: false,
+			track: true,
+			issueTracker: "github",
+		});
+		expect(installResult.ok).toBe(true);
+
+		const manifestPath = join(tempDir, ".harness/restore-manifest.json");
+		const manifest = JSON.parse(readFileSync(manifestPath, "utf-8"));
+		manifest.harnessVersion = "0.0.1";
+		writeFileSync(manifestPath, JSON.stringify(manifest));
+		rmSync(join(tempDir, "harness.contract.json"));
+
+		const result = runInit(tempDir, {
+			dryRun: false,
+			force: false,
+			update: true,
+		});
+
+		expect(result.ok).toBe(false);
+		if (!result.ok) {
+			expect(result.error.code).toBe("WRITE_ERROR");
+			expect(result.error.path).toBe("harness.contract.json");
+			expect(result.error.message).toContain(
+				"Update requires harness.contract.json",
+			);
+		}
+
+		const issueTemplateConfig = readFileSync(
+			join(tempDir, ".github/ISSUE_TEMPLATE/config.yml"),
+			"utf-8",
+		);
+		expect(issueTemplateConfig).not.toContain("Linear work intake");
+		expect(issueTemplateConfig).toContain("Private security disclosure");
+		expect(existsSync(join(tempDir, ".linear"))).toBe(false);
+	});
+
 	it("preserves no-greptile update mode from the raw contract", () => {
 		const installResult = runInit(tempDir, {
 			dryRun: false,
@@ -2682,7 +2731,10 @@ describe("--update flag", () => {
 		const manifestPath = join(tempDir, ".harness/restore-manifest.json");
 		const manifest = JSON.parse(readFileSync(manifestPath, "utf-8"));
 		manifest.harnessVersion = "0.0.1";
+		manifest.greptile = undefined;
 		writeFileSync(manifestPath, JSON.stringify(manifest));
+		const clearedManifest = JSON.parse(readFileSync(manifestPath, "utf-8"));
+		expect("greptile" in clearedManifest).toBe(false);
 
 		const result = runInit(tempDir, {
 			dryRun: false,

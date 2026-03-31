@@ -563,6 +563,16 @@ function normalizeRepoUrl(repositoryUrl: string): string | undefined {
 
 	const withoutGitPrefix = trimmed.replace(/^git\+/, "");
 	const withoutFragment = withoutGitPrefix.replace(/#[^#]+$/, "");
+	const sshStyleMatch = withoutFragment.match(
+		/^(?:ssh:\/\/)?git@([^/:]+)[:/]([^#]+)$/i,
+	);
+	if (sshStyleMatch) {
+		const host = sshStyleMatch[1];
+		const repoPath = sshStyleMatch[2]?.replace(/\.git$/, "");
+		if (host && repoPath) {
+			return `https://${host}/${repoPath}.git`;
+		}
+	}
 
 	const shorthandPrefixMatch = withoutFragment.match(
 		/^(github|gitlab|bitbucket):([^/][^#]+)$/i,

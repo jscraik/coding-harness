@@ -367,59 +367,62 @@ export function executeUpdate(
 
 	const contractPath = resolve(targetDir, CONTRACT_FILE);
 	if (!existsSync(contractPath)) {
-		extractedOptions.minimal = true;
-		extractedOptions.greptile = false;
+		return {
+			ok: false,
+			error: {
+				code: "WRITE_ERROR",
+				message: `Update requires ${CONTRACT_FILE}; re-run \`harness init --track\` or restore the missing contract before updating.`,
+				path: CONTRACT_FILE,
+			},
+		};
+	}
+	const rawContractResult = parseContractRecord(
+		readFileSync(contractPath, "utf-8"),
+		CONTRACT_FILE,
+		"existing",
+	);
+	if (!rawContractResult.ok) {
+		return {
+			ok: false,
+			error: rawContractResult.error,
+		};
+	}
+	const rawContract = rawContractResult.value;
+	const rawIssueTrackingPolicy =
+		isPlainObject(rawContract) && isPlainObject(rawContract.issueTrackingPolicy)
+			? rawContract.issueTrackingPolicy
+			: undefined;
+	const rawReviewPolicy =
+		isPlainObject(rawContract) && isPlainObject(rawContract.reviewPolicy)
+			? rawContract.reviewPolicy
+			: undefined;
+	const rawRemediationPolicy =
+		isPlainObject(rawContract) && isPlainObject(rawContract.remediationPolicy)
+			? rawContract.remediationPolicy
+			: undefined;
+	const rawProviderDefaults =
+		rawRemediationPolicy && isPlainObject(rawRemediationPolicy.providerDefaults)
+			? rawRemediationPolicy.providerDefaults
+			: undefined;
+	if (
+		rawIssueTrackingPolicy &&
+		isIssueTracker(rawIssueTrackingPolicy.provider)
+	) {
+		extractedOptions.issueTracker = rawIssueTrackingPolicy.provider;
+	} else if (manifest.issueTracker) {
+		extractedOptions.issueTracker = manifest.issueTracker;
+	} else if (existsSync(resolve(targetDir, ".linear"))) {
+		extractedOptions.issueTracker = "linear";
+	} else if (
+		existsSync(resolve(targetDir, ".github/ISSUE_TEMPLATE/config.yml"))
+	) {
+		extractedOptions.issueTracker = "github";
 	} else {
-		const rawContractResult = parseContractRecord(
-			readFileSync(contractPath, "utf-8"),
-			CONTRACT_FILE,
-			"existing",
-		);
-		if (!rawContractResult.ok) {
-			return {
-				ok: false,
-				error: rawContractResult.error,
-			};
-		}
-		const rawContract = rawContractResult.value;
-		const rawIssueTrackingPolicy =
-			isPlainObject(rawContract) &&
-			isPlainObject(rawContract.issueTrackingPolicy)
-				? rawContract.issueTrackingPolicy
-				: undefined;
-		const rawReviewPolicy =
-			isPlainObject(rawContract) && isPlainObject(rawContract.reviewPolicy)
-				? rawContract.reviewPolicy
-				: undefined;
-		const rawRemediationPolicy =
-			isPlainObject(rawContract) && isPlainObject(rawContract.remediationPolicy)
-				? rawContract.remediationPolicy
-				: undefined;
-		const rawProviderDefaults =
-			rawRemediationPolicy &&
-			isPlainObject(rawRemediationPolicy.providerDefaults)
-				? rawRemediationPolicy.providerDefaults
-				: undefined;
-		if (
-			rawIssueTrackingPolicy &&
-			isIssueTracker(rawIssueTrackingPolicy.provider)
-		) {
-			extractedOptions.issueTracker = rawIssueTrackingPolicy.provider;
-		} else if (manifest.issueTracker) {
-			extractedOptions.issueTracker = manifest.issueTracker;
-		} else if (existsSync(resolve(targetDir, ".linear"))) {
-			extractedOptions.issueTracker = "linear";
-		} else if (
-			existsSync(resolve(targetDir, ".github/ISSUE_TEMPLATE/config.yml"))
-		) {
-			extractedOptions.issueTracker = "github";
-		} else {
-			extractedOptions.issueTracker = "none";
-		}
+		extractedOptions.issueTracker = "none";
+	}
 
-		if (!rawReviewPolicy && !rawProviderDefaults?.greptile) {
-			extractedOptions.greptile = false;
-		}
+	if (!rawReviewPolicy && !rawProviderDefaults?.greptile) {
+		extractedOptions.greptile = false;
 	}
 
 	const renderContext = createTemplateRenderContext(

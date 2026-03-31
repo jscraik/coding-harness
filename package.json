@@ -32,7 +32,7 @@
 		"lint:fix": "biome check . --write",
 		"fmt": "biome format . --write",
 		"typecheck": "tsc --noEmit",
-		"test": "bash scripts/test-ci.sh",
+		"test": "vitest run",
 		"test:ci": "bash scripts/test-ci.sh",
 		"test:raw": "vitest run",
 		"test:watch": "vitest",
