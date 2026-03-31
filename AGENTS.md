@@ -6,6 +6,7 @@
 - [Required Essentials](#required-essentials)
 - [Codex Discovery Order](#codex-discovery-order)
 - [Command Preflight](#command-preflight)
+- [Fresh Worktree Bootstrap](#fresh-worktree-bootstrap)
 - [Repo Workflow](#repo-workflow)
 - [Instruction Routing](#instruction-routing)
 - [Memory Layer](#memory-layer)
@@ -44,6 +45,11 @@ Notes:
 - Run `./scripts/codex-preflight.sh --stack auto --mode required` before multi-step, destructive, or path-sensitive workflows.
 - Use `./scripts/verify-work.sh` as the canonical repo-local verification entrypoint; keep `scripts/codex-preflight.sh` as the lower-level bootstrap gate beneath it.
 - Ask before adding dependencies or changing system-level settings.
+
+## Fresh Worktree Bootstrap
+- Before the first push from a newly created git worktree, run `bash scripts/prepare-worktree.sh` (or `make worktree-ready`).
+- Reason: local pre-push hooks execute in the current worktree, and fresh worktrees often do not have `node_modules/` yet.
+- After bootstrap, run `bash scripts/verify-work.sh --fast` before pushing.
 
 ## Repo Workflow
 - Branch from `main`; never push directly to `main`.

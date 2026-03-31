@@ -29,3 +29,8 @@
 ## Command preflight helper
 - Run `./scripts/codex-preflight.sh --stack auto --mode required` before command-heavy, destructive, or path-sensitive work.
 - Validate required bins and target paths first so mistakes are prevented before edits.
+
+## Fresh worktree helper
+- Before first push from a newly created worktree, run `bash scripts/prepare-worktree.sh` (or `make worktree-ready`).
+- Reason: local pre-push hooks run in the active worktree and can fail when dependencies are not installed yet.
+- Then run `bash scripts/verify-work.sh --fast` before push.

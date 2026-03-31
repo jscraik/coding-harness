@@ -257,6 +257,7 @@ export const REQUIRED_MAKEFILE_TARGETS = [
 	"install",
 	"setup",
 	"preflight",
+	"worktree-ready",
 	"verify-work",
 	"hooks",
 	"hooks-pre-commit",
@@ -285,6 +286,7 @@ export const REQUIRED_MAKEFILE_TARGETS = [
 export const REQUIRED_HOOK_SUPPORT_FILES = [
 	"scripts/codex-preflight.sh",
 	"scripts/verify-work.sh",
+	"scripts/prepare-worktree.sh",
 	"scripts/check-staged-secrets.sh",
 	"scripts/check-doc-style.sh",
 	"scripts/check-related-tests.sh",

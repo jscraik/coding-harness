@@ -16,12 +16,13 @@ import {
 	existsSync,
 	mkdirSync,
 	mkdtempSync,
+	readFileSync,
 	rmSync,
 	writeFileSync,
 } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { afterEach, beforeEach, describe, expect, it } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import {
 	type UpgradeManifest,
@@ -37,6 +38,7 @@ import {
 	formatMigrationChanges,
 	migrateContractSchema,
 } from "../lib/init/schema-migrate.js";
+import { runUpgradeCLI } from "./upgrade.js";
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -423,5 +425,54 @@ describe("formatUpgradeSummary", () => {
 		const out = formatUpgradeSummary(ctx);
 		expect(out).toContain("customized");
 		expect(out).toContain(".github/workflows/harness-gates.yml");
+	});
+});
+
+// ─── runUpgradeCLI defaults backfill ─────────────────────────────────────────
+
+describe("runUpgradeCLI", () => {
+	let dir: string;
+
+	beforeEach(() => {
+		dir = makeTmpDir();
+	});
+
+	afterEach(() => {
+		if (existsSync(dir)) rmSync(dir, { recursive: true, force: true });
+	});
+
+	it("backfills missing docsGatePolicy even when version is already current", () => {
+		writeRestoreManifest(dir, "0.11.12");
+		writeFileSync(
+			join(dir, "harness.contract.json"),
+			JSON.stringify({
+				version: "1.5.0",
+				riskTierRules: {},
+				mergePolicy: { high: [], medium: [], low: [] },
+			}),
+		);
+
+		const exitCode = runUpgradeCLI(dir, { dryRun: false });
+		expect(exitCode).toBe(0);
+
+		const contract = JSON.parse(
+			readFileSync(join(dir, "harness.contract.json"), "utf-8"),
+		) as { docsGatePolicy?: unknown };
+		expect(contract.docsGatePolicy).toBeDefined();
+	});
+
+	it("prints downstream repair guidance when no install is detected", () => {
+		const infoSpy = vi.spyOn(console, "info").mockImplementation(() => {});
+		try {
+			const exitCode = runUpgradeCLI(dir, { dryRun: true });
+			expect(exitCode).toBe(0);
+			const output = infoSpy.mock.calls
+				.map((call) => String(call[0] ?? ""))
+				.join("\n");
+			expect(output).toContain("harness init --track");
+			expect(output).toContain("harness upgrade");
+		} finally {
+			infoSpy.mockRestore();
+		}
 	});
 });

@@ -386,6 +386,93 @@ fi
 `;
 }
 
+function renderPrepareWorktreeScript(packageManager: string): string {
+	const installCommand = renderInstallCommand(packageManager);
+	return `#!/usr/bin/env bash
+set -euo pipefail
+
+SCRIPT_DIR="$(cd -- "$(dirname -- "${"${"}BASH_SOURCE[0]}")" && pwd -P)"
+REPO_ROOT="$(cd -- "$SCRIPT_DIR/.." && pwd -P)"
+
+usage() {
+	cat <<'USAGE'
+Usage: scripts/prepare-worktree.sh [options]
+
+Prepare a freshly created git worktree for local hooks and pre-push checks.
+
+Options:
+  --force-install   Run ${installCommand} even if node_modules already exists
+  -h, --help        Show this help text
+USAGE
+}
+
+force_install=0
+while (( $# > 0 )); do
+	case "$1" in
+		--force-install)
+			force_install=1
+			shift
+			;;
+		-h|--help)
+			usage
+			exit 0
+			;;
+		*)
+			echo "[prepare-worktree] unknown argument: $1" >&2
+			usage >&2
+			exit 2
+			;;
+	esac
+done
+
+cd "$REPO_ROOT"
+
+if ! git rev-parse --show-toplevel >/dev/null 2>&1; then
+	echo "[prepare-worktree] not inside a git work tree" >&2
+	exit 1
+fi
+git_common_dir="$(git rev-parse --git-common-dir)"
+
+if [[ ! -f package.json ]]; then
+	echo "[prepare-worktree] package.json not found; nothing to bootstrap for this repo shape"
+	exit 0
+fi
+
+if ! command -v ${packageManager} >/dev/null 2>&1; then
+	echo "[prepare-worktree] ${packageManager} is required but not on PATH" >&2
+	exit 1
+fi
+
+if ! command -v node >/dev/null 2>&1; then
+	echo "[prepare-worktree] node is required but not on PATH" >&2
+	exit 1
+fi
+
+echo "[prepare-worktree] repo: $REPO_ROOT"
+
+if [[ "$force_install" -eq 1 || ! -d node_modules ]]; then
+	echo "[prepare-worktree] installing dependencies (${installCommand})"
+	${installCommand}
+else
+	echo "[prepare-worktree] node_modules already present; skipping install"
+fi
+
+echo "[prepare-worktree] syncing git hooks"
+git config --local core.hooksPath "$git_common_dir/hooks"
+node scripts/setup-git-hooks.js
+if [[ -x "$REPO_ROOT/node_modules/.bin/simple-git-hooks" ]]; then
+	"$REPO_ROOT/node_modules/.bin/simple-git-hooks"
+else
+	echo "[prepare-worktree] simple-git-hooks binary not found under node_modules/.bin" >&2
+	echo "[prepare-worktree] rerun ${installCommand} and retry" >&2
+	exit 1
+fi
+
+echo "[prepare-worktree] ready"
+echo "[prepare-worktree] next: bash scripts/verify-work.sh --fast"
+`;
+}
+
 function renderHarnessCliWrapper(packageManager: string): string {
 	const installCommand = renderInstallCommand(packageManager);
 	const addCommand = renderAddPackageCommand(
@@ -2288,6 +2375,7 @@ Recommended policy:
 - Keep \`preflight_repo\` in \`required\` mode by default; only relax mode (\`optional\` or \`off\`) when the project documents why.
 - Adjust preflight binary/path lists per project scope instead of deleting the script.
 - Treat \`scripts/verify-work.sh\` as the canonical repo-facing verification command and keep it wired to repo-local preflight defaults.
+- Treat \`scripts/prepare-worktree.sh\` as required first-push bootstrap for freshly created worktrees so local hooks run with dependencies and canonical hook wiring.
 - Treat \`scripts/check-environment.sh\` as the local readiness gate for required tooling.
 - Block merge or promotion work when a required CLI is missing rather than silently skipping the corresponding validation lane.
 - For repositories with explicit \`ui\` / \`chatgpt_apps_sdk\` capabilities or matching dependency signals, install \`@brainwav/design-system-guidance\` and treat its absence as a readiness failure.
@@ -2298,6 +2386,7 @@ Recommended policy:
 - The wrapper always runs \`scripts/codex-preflight.sh\` in \`required\` Local Memory mode with scaffold-safe path and binary expectations.
 - Use \`bash scripts/verify-work.sh\` for the full verification bundle.
 - Use \`bash scripts/verify-work.sh --fast\` for preflight + lint + typecheck + focused test coverage.
+- Before the first push from a fresh worktree, run \`bash scripts/prepare-worktree.sh\`.
 
 ## Repo-local harness wrapper
 
@@ -3564,6 +3653,10 @@ CLAUDE_APPROVAL_POSTURE = "require"
 		render: (pm) => renderVerifyWorkScript(pm),
 	},
 	{
+		path: "scripts/prepare-worktree.sh",
+		render: (pm) => renderPrepareWorktreeScript(pm),
+	},
+	{
 		path: "scripts/harness-cli.sh",
 		render: (pm) => renderHarnessCliWrapper(pm),
 	},
@@ -3918,6 +4011,7 @@ echo "Environment check passed (attestation: $ATTESTATION_PATH)"
 /AGENTS.md @jscraik
 /scripts/codex-preflight.sh @jscraik
 /scripts/verify-work.sh @jscraik
+/scripts/prepare-worktree.sh @jscraik
 /scripts/harness-cli.sh @jscraik
 /scripts/check-environment.sh @jscraik
 `,
@@ -3927,7 +4021,7 @@ echo "Environment check passed (attestation: $ATTESTATION_PATH)"
 		render: () => `# Harness Development Makefile
 # Run \`make help\` to see available commands
 
-.PHONY: help install setup preflight verify-work hooks hooks-pre-commit hooks-pre-push secrets-staged docs-style-changed related-tests semgrep-changed diagrams-check dev build lint docs-lint fmt typecheck test check audit secrets security clean reset ci diagrams env-check
+.PHONY: help install setup preflight worktree-ready verify-work hooks hooks-pre-commit hooks-pre-push secrets-staged docs-style-changed related-tests semgrep-changed diagrams-check dev build lint docs-lint fmt typecheck test check audit secrets security clean reset ci diagrams env-check
 
 # Default target
 help: ## Show this help message
@@ -3945,6 +4039,9 @@ setup: install hooks ## Full setup: install deps and configure git hooks
 
 preflight: ## Run repository preflight checks (required local-memory gate by default)
 	@bash ./scripts/codex-preflight.sh
+
+worktree-ready: ## Bootstrap a fresh git worktree before first push
+	@bash ./scripts/prepare-worktree.sh
 
 verify-work: ## Run canonical repo-local verification wrapper
 	@bash ./scripts/verify-work.sh

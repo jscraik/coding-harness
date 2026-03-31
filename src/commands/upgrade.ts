@@ -15,6 +15,11 @@
 import { existsSync, readFileSync } from "node:fs";
 import { resolve } from "node:path";
 import { cwd } from "node:process";
+import { mergeContracts } from "../lib/contract/merger.js";
+import {
+	DEFAULT_CONTRACT,
+	type HarnessContract,
+} from "../lib/contract/types.js";
 import { atomicWrite } from "../lib/init/migration.js";
 import { loadManifest } from "../lib/init/rollback.js";
 import {
@@ -118,6 +123,64 @@ function applyContractMigration(
 	}
 
 	return { ok: true, summary };
+}
+
+function backfillContractDefaults(
+	targetDir: string,
+	dryRun: boolean,
+):
+	| { ok: true; summary: string; changed: boolean }
+	| { ok: false; error: string } {
+	const contractPath = resolve(targetDir, "harness.contract.json");
+	if (!existsSync(contractPath)) {
+		return { ok: true, summary: "", changed: false };
+	}
+
+	let existingContract: Record<string, unknown>;
+	try {
+		existingContract = JSON.parse(
+			readFileSync(contractPath, "utf-8"),
+		) as Record<string, unknown>;
+	} catch (err) {
+		return {
+			ok: false,
+			error: `Could not parse harness.contract.json: ${sanitizeError(err)}`,
+		};
+	}
+
+	const mergedContract = mergeContracts(
+		DEFAULT_CONTRACT,
+		existingContract as Partial<HarnessContract>,
+	) as unknown as Record<string, unknown>;
+	if (typeof existingContract.version === "string") {
+		mergedContract.version = existingContract.version;
+	}
+
+	const changed =
+		JSON.stringify(existingContract) !== JSON.stringify(mergedContract);
+	if (!changed) {
+		return { ok: true, summary: "", changed: false };
+	}
+
+	if (!dryRun) {
+		const writeResult = atomicWrite(
+			contractPath,
+			`${JSON.stringify(mergedContract, null, 2)}\n`,
+		);
+		if (!writeResult.ok) {
+			return {
+				ok: false,
+				error: `Failed to write healed contract defaults: ${writeResult.error.message}`,
+			};
+		}
+	}
+
+	return {
+		ok: true,
+		summary:
+			"Contract defaults backfilled (including missing policy keys such as docsGatePolicy).",
+		changed: true,
+	};
 }
 
 // ─── Template upgrade ──────────────────────────────────────────────────────────
@@ -250,6 +313,8 @@ export function runUpgradeCLI(
 				"",
 				"ℹ️  No existing harness installation detected.",
 				"   Run `harness init` to install harness in this directory.",
+				"   For downstream repair flows, run `harness init --track` so future",
+				"   `harness init --update`/`harness upgrade` can repair contract defaults.",
 				"",
 			].join("\n"),
 		);
@@ -266,6 +331,16 @@ export function runUpgradeCLI(
 
 	// 3. Print summary
 	console.info(formatUpgradeSummary(ctx));
+
+	const defaultsBackfillResult = backfillContractDefaults(dir, dryRun);
+	if (!defaultsBackfillResult.ok) {
+		console.error(`Error: ${defaultsBackfillResult.error}`);
+		return EXIT_CODES.WRITE_ERROR;
+	}
+	if (defaultsBackfillResult.summary) {
+		const prefix = dryRun ? "[DRY RUN] " : "";
+		console.info(`${prefix}${defaultsBackfillResult.summary}`);
+	}
 
 	if (!ctx.upgradeNeeded && !ctx.downgradeDetected) {
 		return EXIT_CODES.SUCCESS;
