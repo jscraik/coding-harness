@@ -66,6 +66,7 @@ import {
 	parseCsvList,
 	parseIntegerArg,
 } from "./lib/cli/parse-utils.js";
+import type { IssueTracker } from "./lib/init/types.js";
 import { sanitizeError } from "./lib/input/sanitize.js";
 import type { PilotEvaluateOptions } from "./lib/pilot-evaluation/types.js";
 import type { ProjectType } from "./lib/project-type/types.js";
@@ -883,6 +884,8 @@ export function run(args: string[]): void {
 			return;
 		}
 
+		const issueTracker = issueTrackerArg as IssueTracker | undefined;
+
 		// Get optional target directory (first non-flag arg after init)
 		// Exclude both long flags (--) and short flags (-)
 		// Also skip the values consumed by other flags
@@ -905,9 +908,7 @@ export function run(args: string[]): void {
 			migrate: migrateFlag,
 			json: jsonFlag,
 			...(minimalFlag ? { minimal: true } : {}),
-			...(issueTrackerArg !== undefined
-				? { issueTracker: issueTrackerArg }
-				: {}),
+			...(issueTracker ? { issueTracker } : {}),
 			...(noGreptileFlag ? { greptile: false } : {}),
 			...(projectTypeArg ? { projectType: projectTypeArg as ProjectType } : {}),
 		};

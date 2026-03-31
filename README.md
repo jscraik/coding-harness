@@ -237,7 +237,6 @@ flags, use `harness --help`.
 
 | Command | Purpose |
 | --- | --- |
-<<<<<<< HEAD
 | `init` | Scaffold or update harness-managed repo surfaces (`--project-type`, `--json`, `--dry-run`, `--force`, `--track`, `--update`, `--migrate`, `--minimal`, `--issue-tracker`, `--no-greptile`) |
 | `eject` | Safely remove harness-managed files and templates while preserving custom CI workflows (`--dry-run`, `--force`) |
 | `doctor` | Check all gate prerequisites (tools, files, config, CI) |

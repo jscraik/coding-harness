@@ -458,7 +458,7 @@ export function loadManifest(
 			value: {
 				harnessVersion,
 				ciProvider,
-				issueTracker,
+				...(issueTracker ? { issueTracker } : {}),
 				files: validatedFiles,
 			},
 		};

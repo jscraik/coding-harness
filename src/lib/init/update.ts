@@ -12,8 +12,8 @@
 import { existsSync, lstatSync, readFileSync, realpathSync } from "node:fs";
 import { dirname, resolve, sep } from "node:path";
 import semver from "semver";
-import { mergeContracts } from "../contract/merger.js";
 import { loadContract } from "../contract/loader.js";
+import { mergeContracts } from "../contract/merger.js";
 import type { HarnessContract } from "../contract/types.js";
 import { sanitizeError } from "../input/sanitize.js";
 import { getVersion } from "../version.js";
@@ -27,8 +27,9 @@ import {
 import {
 	type CIProvider,
 	HARNESS_DIR,
-	type InitOptions,
 	type InitErrorOutput,
+	type InitOptions,
+	type IssueTracker,
 	MANIFEST_FILE,
 	type OwnershipDecision,
 	type RestoreManifest,
@@ -82,10 +83,6 @@ function parseContractRecord(
 }
 
 function isPlainObject(value: unknown): value is Record<string, unknown> {
-	return typeof value === "object" && value !== null && !Array.isArray(value);
-}
-
-function isRecord(value: unknown): value is Record<string, unknown> {
 	return typeof value === "object" && value !== null && !Array.isArray(value);
 }
 
@@ -367,7 +364,9 @@ export function executeUpdate(
 
 	try {
 		const contractPath = resolve(targetDir, CONTRACT_FILE);
-		const rawContract = JSON.parse(readFileSync(contractPath, "utf-8")) as unknown;
+		const rawContract = JSON.parse(
+			readFileSync(contractPath, "utf-8"),
+		) as unknown;
 		const contract = loadContract(CONTRACT_FILE, targetDir);
 		const rawIssueTrackingPolicy =
 			isPlainObject(rawContract) &&
@@ -379,8 +378,7 @@ export function executeUpdate(
 				? rawContract.reviewPolicy
 				: undefined;
 		const rawRemediationPolicy =
-			isPlainObject(rawContract) &&
-			isPlainObject(rawContract.remediationPolicy)
+			isPlainObject(rawContract) && isPlainObject(rawContract.remediationPolicy)
 				? rawContract.remediationPolicy
 				: undefined;
 		const rawProviderDefaults =
@@ -388,9 +386,9 @@ export function executeUpdate(
 			isPlainObject(rawRemediationPolicy.providerDefaults)
 				? rawRemediationPolicy.providerDefaults
 				: undefined;
-		if (rawIssueTrackingPolicy) {
+		if (rawIssueTrackingPolicy && contract.issueTrackingPolicy?.provider) {
 			extractedOptions.issueTracker = contract.issueTrackingPolicy
-				?.provider as string | undefined;
+				.provider as IssueTracker;
 		} else if (manifest.issueTracker) {
 			extractedOptions.issueTracker = manifest.issueTracker;
 		} else if (existsSync(resolve(targetDir, ".linear"))) {
