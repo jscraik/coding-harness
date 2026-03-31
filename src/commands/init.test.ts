@@ -1913,6 +1913,25 @@ describe("--track flag", () => {
 		expect(manifest.issueTracker).toBe("github");
 	});
 
+	it("preserves an explicit issueTracker when minimal tracked init is requested", () => {
+		const result = runInit(tempDir, {
+			dryRun: false,
+			force: false,
+			track: true,
+			minimal: true,
+			issueTracker: "github",
+		});
+		expect(result.ok).toBe(true);
+
+		const manifest = JSON.parse(
+			require("node:fs").readFileSync(
+				join(tempDir, ".harness/restore-manifest.json"),
+				"utf-8",
+			),
+		);
+		expect(manifest.issueTracker).toBe("github");
+	});
+
 	it("rejects symlinks with error", () => {
 		// Create symlink to a file outside the repo
 		mkdirSync(join(tempDir, ".github", "workflows"), { recursive: true });

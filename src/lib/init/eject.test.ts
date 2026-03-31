@@ -3,7 +3,7 @@ import { mkdtempSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
-import { ejectHarness } from "./eject.js";
+import { EjectCancelledError, ejectHarness } from "./eject.js";
 
 describe("ejectHarness", () => {
 	let tempDir: string;
@@ -58,6 +58,16 @@ describe("ejectHarness", () => {
 		expect(existsSync(join(tempDir, ".agents/skills/coding-harness"))).toBe(
 			true,
 		);
+		expect(existsSync(join(tempDir, "harness.contract.json"))).toBe(true);
+	});
+
+	it("fails closed when the user declines the eject prompt", async () => {
+		writeFileSync(join(tempDir, "harness.contract.json"), "{}");
+		await expect(
+			ejectHarness(tempDir, {
+				confirmPrompt: async () => "n",
+			}),
+		).rejects.toBeInstanceOf(EjectCancelledError);
 		expect(existsSync(join(tempDir, "harness.contract.json"))).toBe(true);
 	});
 

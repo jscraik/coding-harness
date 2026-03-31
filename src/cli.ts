@@ -417,6 +417,7 @@ function printUsage(): void {
 	console.info(
 		"  --dry-run        Preview harness ejection without deleting files",
 	);
+	console.info("  --json           Output as structured JSON");
 	console.info("");
 	console.info("CI Migrate Options:");
 	console.info("  ci-migrate [prepare|commit|abort|verify] [targetDir]");
@@ -929,9 +930,14 @@ export function run(args: string[]): void {
 	if (command === "eject") {
 		const forceFlag = args.includes("--force") || args.includes("-f");
 		const dryRunFlag = args.includes("--dry-run");
+		const jsonFlag = args.includes("--json");
 		const targetDir = args.slice(1).find((arg) => !arg.startsWith("-"));
 
-		runEjectCLI(targetDir, { force: forceFlag, dryRun: dryRunFlag })
+		runEjectCLI(targetDir, {
+			force: forceFlag,
+			dryRun: dryRunFlag,
+			json: jsonFlag,
+		})
 			.then((exitCode: number) => process.exit(exitCode))
 			.catch((error: unknown) => handleFatalError("Eject Error", error));
 		return;

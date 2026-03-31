@@ -34,6 +34,7 @@
 		"typecheck": "tsc --noEmit",
 		"test": "bash scripts/test-ci.sh",
 		"test:ci": "bash scripts/test-ci.sh",
+		"test:ci:fast": "pnpm exec vitest run --maxWorkers=1 --exclude '**/pilot-evaluate.test.ts' --exclude src/commands/ci-migrate.test.ts && pnpm exec vitest run --maxWorkers=1 --dangerouslyIgnoreUnhandledErrors src/commands/ci-migrate.test.ts",
 		"test:raw": "vitest run",
 		"test:watch": "vitest",
 		"test:deep": "pnpm check && pnpm test:artifacts",

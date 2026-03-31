@@ -46,8 +46,13 @@ export function collectProposedChanges(
 	ciProvider: CIProvider,
 ): ProposedChange[] {
 	const packageManager = detectPackageManager(targetDir);
-	const renderContext = createTemplateRenderContext(targetDir, ciProvider);
-	const templates = getTemplatesForProvider(ciProvider);
+	const renderContext = createTemplateRenderContext(
+		targetDir,
+		ciProvider,
+		undefined,
+		options,
+	);
+	const templates = getTemplatesForProvider(ciProvider, options);
 	const proposed: ProposedChange[] = [];
 
 	for (const template of templates) {

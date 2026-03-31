@@ -53,9 +53,7 @@ describe("scaffold templates resolution", () => {
 		expect(greptileTemplates.length).toBe(0);
 		expect(codeownersTemplates.length).toBe(0);
 
-		// .github/workflows/pr-pipeline.yml is omitted in minimal mode
-		// Let's just check `.github` related stuff except issue templates which are removed
-		// We expect strict reduction in templates
+		// Minimal mode keeps provider workflows but still reduces the managed set.
 		expect(templates.length).toBeLessThan(
 			getTemplatesForProvider("circleci").length,
 		);

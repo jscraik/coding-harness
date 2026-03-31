@@ -654,9 +654,7 @@ export function createTemplateRenderContext(
 		securityEmail,
 		...(options?.minimal ? { minimal: true } : {}),
 		...(options?.issueTracker ? { issueTracker: options.issueTracker } : {}),
-		...(options?.greptile !== undefined
-			? { useGreptile: options.greptile }
-			: {}),
+		useGreptile: options?.greptile ?? !options?.minimal,
 	};
 }
 
@@ -4123,7 +4121,7 @@ export function getTemplatesForProvider(
 			const minimalOmit = [
 				".github/CODEOWNERS",
 				"docs/PRODUCT-PLAN.md",
-				".harness/policy/ci-required-checks.json",
+				".harness/ci-required-checks.json",
 			];
 			if (minimalOmit.includes(template.path)) {
 				return false;

@@ -27,6 +27,7 @@ This repository follows conservative defaults:
 - If checks fail repeatedly, stop and request decision on risk acceptance.
 - Treat stale check output as non-evidence.
 - CircleCI test reliability guardrail: use `pnpm test:ci` so the long-running `ci-migrate` suite executes in an isolated lane with scoped Vitest worker-timeout mitigation (`--dangerouslyIgnoreUnhandledErrors`) while all functional assertions remain enforced.
+- The hosted CircleCI `pr-fast` workflow must call the repo-managed `pnpm test:ci:fast` script instead of inlining Vitest commands so the audited repository command contract remains the single source of truth for the fast lane.
 
 ## Governance escalation
 

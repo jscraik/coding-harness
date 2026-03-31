@@ -7,10 +7,23 @@ deepened: 2026-03-25
 
 # Solo Orchestration & Scaffold Flexibility Plan
 
-> **Enhancement Summary**
-> *(2026-03-25)* Deepened plan to align with `InitOptions` flow and `getTemplatesForProvider`. Explicitly defined how CLI args from commander map to `TemplateRenderContext`, how `eject.ts` targets files safely, and the exact shape of `--minimal` contract rendering.
-> *(2026-03-25)* Conducted adversarial review and CE technical review to fix state desync in updates, caller breakages for `getTemplatesForProvider`, precedence conflicts via Commander, and destructive ejection risks.
-> *(2026-03-25)* Deepened plan (`ce-deepen-plan` pass) to strengthen system-wide risk treatment around downstream verification scripts (`ci-migrate`), add schema degradation implications, and include a formal documentation rollout phase.
+## Table of Contents
+
+- [Enhancement Summary](#enhancement-summary)
+- [Background & Constraints](#background--constraints)
+- [Phase 0: CLI Arg Parsing & Options Extension](#phase-0-cli-arg-parsing--options-extension)
+- [Phase 1: Minimal Scaffold Definitions](#phase-1-minimal-scaffold-definitions)
+- [Phase 2: Building the Ejection Path (`harness eject`)](#phase-2-building-the-ejection-path-harness-eject)
+- [System-Wide Impact & Risk Treatment](#system-wide-impact--risk-treatment)
+- [Phase 3: Testing & Validation](#phase-3-testing--validation)
+- [Phase 4: Documentation & Rollout](#phase-4-documentation--rollout)
+- [Acceptance Criteria](#acceptance-criteria)
+- [Execution Ledger](#execution-ledger)
+
+## Enhancement Summary
+*(2026-03-25)* Deepened plan to align with `InitOptions` flow and `getTemplatesForProvider`. Explicitly defined how CLI args from commander map to `TemplateRenderContext`, how `eject.ts` targets files safely, and the exact shape of `--minimal` contract rendering.
+*(2026-03-25)* Conducted adversarial review and CE technical review to fix state desync in updates, caller breakages for `getTemplatesForProvider`, precedence conflicts via Commander, and destructive ejection risks.
+*(2026-03-25)* Deepened plan (`ce-deepen-plan` pass) to strengthen system-wide risk treatment around downstream verification scripts (`ci-migrate`), add schema degradation implications, and include a formal documentation rollout phase.
 
 ## Background & Constraints
 The current `harness init` command is highly prescriptive and enforces an enterprise-grade contract (Linear issue tracking, strict Greptile integration, risk SLA layers, and rigid PR templates). The user has requested to adapt the scaffold for **solo orchestration**, specifically:
@@ -85,6 +98,7 @@ Goal: Expose the new capabilities consistently across all agent and developer su
 - **P4.1**: Update `README.md` to document the `--minimal`, `--issue-tracker`, and `--no-greptile` CLI flags, demonstrating how to use them for solo or lightweight projects.
 - **P4.2**: Update `README.md` to document the `harness eject` command alongside clear notes that the command operates locally and leaves custom CI files intact.
 - **P4.3**: Update `CLAUDE.md` and `AGENTS.md` (if applicable) to record that `coding-harness` now supports progressive adoption and safe ejections, explicitly stating the system boundary logic for local configurations.
+- **P4.4**: Update `docs/agents/02-tooling-policy.md` and `docs/agents/06-security-and-governance.md` whenever this rollout changes tooling/runtime contract surfaces such as hooks, `Makefile`, `.mise.toml`, readiness scripts, or generated Codex environment actions.
 
 *Exit Criteria:* Command line usage and feature documentation are accurate, guiding developers clearly on how to opt-out of enterprise constraints.
 
