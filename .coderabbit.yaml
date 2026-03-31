@@ -1,0 +1,65 @@
+# CodeRabbit pilot configuration for coding-harness.
+# This is intentionally advisory-first: existing Greptile/Codex merge policy
+# remains unchanged until the repo's governance contract is updated.
+
+reviews:
+  profile: "assertive"
+  request_changes_workflow: false
+  review_details: true
+  commit_status: true
+  fail_commit_status: false
+  poem: false
+  auto_review:
+    enabled: true
+    auto_incremental_review: true
+    auto_pause_after_reviewed_commits: 0
+    drafts: true
+  path_filters:
+    - "!artifacts/**"
+    - "!coverage/**"
+    - "!dist/**"
+  path_instructions:
+    - path: "src/**"
+      instructions: |
+        This repository is a TypeScript control plane for coding-harness policy and review workflows.
+        Focus on behavioral regressions in CLI commands, policy derivation, generated contract boundaries, and required-check naming.
+        When command or policy behavior changes, expect matching tests or updated validation coverage.
+    - path: "scripts/**"
+      instructions: |
+        Shell and bootstrap scripts are contract surfaces here.
+        Check bash vs zsh assumptions, path handling, repo-root detection, and failure modes carefully.
+        Flag changes that silently weaken required preflight or verification behavior.
+    - path: ".github/**"
+      instructions: |
+        Treat workflow and template changes as governance changes.
+        Check status-check names, trigger coverage, and PR-template expectations for parity with the actual repository policy and implementation.
+        Flag any change that would weaken merge gates without an explicit policy update.
+    - path: "docs/**/*.md"
+      instructions: |
+        This repo relies on docs as executable governance.
+        Check that commands, required checks, review-provider expectations, and validation steps are accurate for the current repository state.
+        Flag stale Greptile or CodeRabbit guidance, contradictions, or references to checks that no longer exist.
+    - path: "AGENTS.md"
+      instructions: |
+        Keep instructions precise and consistent with the current command contract, repo workflow, and validation expectations.
+        Flag contradictions with the implementation or deeper scoped instruction docs.
+    - path: "CONTRIBUTING.md"
+      instructions: |
+        This file is part of the repo's merge contract.
+        Check required gates, review-provider expectations, and branch-protection guidance for truthfulness against the actual implementation.
+    - path: "WORKFLOW.md"
+      instructions: |
+        Check that workflow stages, responsibilities, and gating language remain aligned with the current harness behavior.
+  pre_merge_checks:
+    title:
+      mode: "warning"
+      requirements: "Use a concise, descriptive title that explains the change scope."
+    description:
+      mode: "warning"
+    custom_checks:
+      - name: "Governance Parity"
+        mode: "warning"
+        instructions: "Apply this check only when the PR touches `.coderabbit.yaml`, `.github/**`, `harness.contract.json`, `.harness/ci-required-checks.json`, `src/lib/policy/required-checks.ts`, `src/commands/review-gate.ts`, `src/commands/branch-protect.ts`, `src/commands/ci-migrate.ts`, or `docs/agents/**`. Pass only when the changed policy surface is reflected in the matching governance docs and contract surfaces: `.github/PULL_REQUEST_TEMPLATE.md`, `docs/agents/04-validation.md`, `docs/agents/07b-agent-governance.md`, `docs/agents/12-greptile-ai-governance.md`, and `docs/agents/17-ci-required-checks.md` when applicable. If none of those trigger paths changed, mark this check as passing."
+      - name: "Validation Evidence"
+        mode: "warning"
+        instructions: "Read the PR description and pass only when `## Testing` includes non-empty values for `verification_commands:`, `verification_outcomes:`, and `blocked_steps_reason:`. Also require each `Command:` line in `## Testing` to record an explicit result and require non-placeholder values for `CodeRabbit:` and `Codex:` under `## Review artifacts`."

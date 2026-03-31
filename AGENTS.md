@@ -51,7 +51,7 @@ Notes:
 - Open a PR for every merge to `main`.
 - **PR description linking:** use `Refs JSC-N` while the issue is still in review; use `Closes JSC-N` only when the merge fully completes the issue.
 - Run the smallest focused validation first, then `pnpm check` before handoff when behavior changed.
-- Greptile review must remain independent; the coding agent cannot self-approve.
+- CodeRabbit review must remain independent; the coding agent cannot self-approve.
 - If you touch tooling/runtime contract surfaces such as hooks, `Makefile`, `.mise.toml`, readiness scripts, or generated Codex environment actions, update [docs/agents/02-tooling-policy.md](./docs/agents/02-tooling-policy.md) and [docs/agents/06-security-and-governance.md](./docs/agents/06-security-and-governance.md) in the same change.
 - If you find a reproducible bug, policy gap, workflow regression, automation follow-up, or release follow-up, create or update the matching Linear issue before handoff.
 - See [docs/agents/18-github-linear-automation.md](./docs/agents/18-github-linear-automation.md) for the full GitHub → Linear automation config and known gaps.
@@ -70,7 +70,7 @@ Start with [docs/agents/01-instruction-map.md](./docs/agents/01-instruction-map.
 - Auditability requirements: [docs/agents/09-audit-trail-policy.md](./docs/agents/09-audit-trail-policy.md)
 - Agent test policy and rollout gates: [docs/agents/10-agent-testing-gates.md](./docs/agents/10-agent-testing-gates.md)
 - Flaky test artifacts and evidence capture: [docs/agents/11-flaky-test-artifacts.md](./docs/agents/11-flaky-test-artifacts.md)
-- Greptile review workflow: [docs/agents/12-greptile-ai-governance.md](./docs/agents/12-greptile-ai-governance.md)
+- AI review workflow (CodeRabbit primary, Greptile legacy bridge): [docs/agents/12-greptile-ai-governance.md](./docs/agents/12-greptile-ai-governance.md)
 - Linear-first work intake: [docs/agents/13-linear-production-workflow.md](./docs/agents/13-linear-production-workflow.md)
 - Docs-gate rollout and promotion: [docs/agents/14-docs-gate-rollout.md](./docs/agents/14-docs-gate-rollout.md)
 - Context integrity (agent-optimized): [docs/agents/15-context-integrity-compact.md](./docs/agents/15-context-integrity-compact.md)

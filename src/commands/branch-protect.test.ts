@@ -44,7 +44,7 @@ describe("runBranchProtect", () => {
 					"check",
 					"memory",
 					"security-scan",
-					"Greptile Review",
+					"CodeRabbit",
 				],
 			},
 		});
@@ -97,7 +97,7 @@ describe("runBranchProtect", () => {
 			owner: "octo",
 			repo: "harness",
 			branch: "main",
-			requiredChecks: ["Greptile Review"],
+			requiredChecks: ["CodeRabbit"],
 		});
 
 		expect(result.ok).toBe(true);
@@ -260,7 +260,7 @@ describe("runBranchProtect", () => {
 			token: "token",
 			owner: "octo",
 			repo: "harness",
-			requiredChecks: ["Greptile Review"],
+			requiredChecks: ["CodeRabbit"],
 		});
 
 		expect(result.ok).toBe(true);
@@ -276,7 +276,7 @@ describe("runBranchProtect", () => {
 		expect(requiredRule?.parameters).toMatchObject({
 			required_status_checks: [
 				{ context: "existing-check" },
-				{ context: "Greptile Review" },
+				{ context: "CodeRabbit" },
 			],
 		});
 		expect(payload?.conditions?.ref_name?.include).toEqual(["refs/heads/main"]);
@@ -463,7 +463,7 @@ describe("runBranchProtect", () => {
 				{ context: "check" },
 				{ context: "memory" },
 				{ context: "security-scan" },
-				{ context: "Greptile Review" },
+				{ context: "CodeRabbit" },
 			],
 		});
 	});
@@ -574,7 +574,7 @@ describe("runBranchProtect", () => {
 				{ context: "check" },
 				{ context: "memory" },
 				{ context: "security-scan" },
-				{ context: "Greptile Review" },
+				{ context: "CodeRabbit" },
 			],
 		});
 	});

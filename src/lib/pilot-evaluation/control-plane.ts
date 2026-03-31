@@ -6,6 +6,7 @@ import {
 	mkdirSync,
 	readFileSync,
 	readdirSync,
+	statSync,
 	writeFileSync,
 } from "node:fs";
 import { basename, dirname, join, resolve } from "node:path";
@@ -206,6 +207,15 @@ function buildFileRef(
 		return {
 			path: resolvedPath,
 			exists: false,
+			required: options?.required ?? false,
+		};
+	}
+
+	const stat = statSync(resolvedPath);
+	if (stat.isDirectory()) {
+		return {
+			path: resolvedPath,
+			exists: true,
 			required: options?.required ?? false,
 		};
 	}

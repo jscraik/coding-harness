@@ -115,7 +115,7 @@ Recommended policy:
   - `.greptile/config.json`
   - `.greptile/rules.md`
   - `.greptile/files.json`
-- Required bridge workflow:
+- Required bridge workflow in harness-managed legacy repositories:
   - `.github/workflows/greptile-review.yml`
 - Verify setup with:
   - `harness verify-greptile`
@@ -222,7 +222,7 @@ Configure GitHub branch protection (or rulesets) on `main`:
   - `check`
   - `memory`
   - `security-scan`
-  - `Greptile Review`
+  - `CodeRabbit`
 - Require branches to be up to date before merge.
 - Require code quality results with severity `all`.
 - In public repositories, require `CodeQL` code scanning results with `high_or_higher` security alerts and `errors` alerts thresholds.

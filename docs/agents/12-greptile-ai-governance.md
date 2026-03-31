@@ -1,42 +1,51 @@
-# Greptile AI governance
+# AI review governance
 
 ## Purpose
 
-This repository enforces an AI-integrated review policy for Greptile that prioritizes architectural consistency, objective validation, and auditable merge decisions.
+This repository enforces an AI-integrated review policy with CodeRabbit as the primary review authority for `coding-harness`, while preserving Greptile bridge guidance for legacy harness-managed repositories that still rely on `.greptile/` scaffolding.
 
 ## Table of Contents
 
 - [Absolute grounding](#absolute-grounding)
+- [Current repository authority](#current-repository-authority)
 - [Independent validation and compliance](#independent-validation-and-compliance)
 - [Configuration standards and cascading governance](#configuration-standards-and-cascading-governance)
 - [Required local `.greptile/` structure](#required-local-greptile-structure)
 - [Webhook and event requirements](#webhook-and-event-requirements)
 - [Greptile Review bridge workflow](#greptile-review-bridge-workflow)
 - [Merge logic for multi-scope pull requests](#merge-logic-for-multi-scope-pull-requests)
-- [Confidence score policy](#confidence-score-policy)
+- [Legacy Greptile confidence score policy](#legacy-greptile-confidence-score-policy)
 - [Strictness and branch protection expectations](#strictness-and-branch-protection-expectations)
 - [Indexing vs review warning](#indexing-vs-review-warning)
 - [Feedback loops and calibration](#feedback-loops-and-calibration)
 - [Custom context and pattern repositories](#custom-context-and-pattern-repositories)
 - [MCP loop workflow and manual triggers](#mcp-loop-workflow-and-manual-triggers)
+- [Local CodeRabbit CLI](#local-coderabbit-cli)
 - [Verification command](#verification-command)
 
 ## Absolute grounding
 
-This document is the repository-local grounding for Greptile interactions:
+This document is the repository-local grounding for automated review interactions:
 
-- repository indexing,
-- graph/context setup,
+- CodeRabbit review and merge authority for this repository,
+- Greptile repository indexing and bridge setup for legacy harness-managed repositories,
 - review and validation,
 - merge decisions.
 
-All Greptile usage in this repository must align with this policy and linked governance docs.
+All automated review usage in this repository must align with this policy and linked governance docs.
+
+## Current repository authority
+
+- `coding-harness` uses the native GitHub `CodeRabbit` check as its primary automated review signal.
+- `.coderabbit.yaml` is the active repository-local review configuration for this repository.
+- Greptile-specific files and bridge workflows remain documented because `harness init` still scaffolds them for legacy or downstream repository compatibility.
 
 ## Independent validation and compliance
 
 - Coding and validation duties must remain separate.
 - The coding agent must not self-approve.
 - Every PR requires an independent review signal before merge.
+- For this repository, that signal is expected to come from CodeRabbit plus the existing Codex review process unless an explicit waiver is recorded.
 
 ## Configuration standards and cascading governance
 
@@ -75,7 +84,7 @@ These events are configured at the GitHub App level (not repository level). To v
 
 ## Greptile Review bridge workflow
 
-Since Greptile posts PR comments but doesn't create GitHub check runs, this repository uses a bridge workflow:
+Since Greptile posts PR comments but doesn't create GitHub check runs, legacy Greptile-bridged repositories use a bridge workflow:
 
 - `.github/workflows/greptile-review.yml` - creates "Greptile Review" check runs
 - Triggers on PR events, review events, and Greptile comments
@@ -83,7 +92,7 @@ Since Greptile posts PR comments but doesn't create GitHub check runs, this repo
 - Uses `minMergeScore` from `.greptile/config.json` as pass threshold
 - Creates a failing pending-state check when Greptile has not reviewed the current head commit yet so merge stays blocked until review evidence exists
 
-The repository ruleset requires "Greptile Review" as a passing status check.
+Legacy Greptile-bridged repositories require "Greptile Review" as a passing status check.
 
 ## Merge logic for multi-scope pull requests
 
@@ -94,7 +103,7 @@ When a PR spans directories with different configs:
 - comment types: union all requested types,
 - booleans: enabled if any scope enables (`OR`).
 
-## Confidence score policy
+## Legacy Greptile confidence score policy
 
 - `5/5`: merge-ready.
 - `4/5`: merge after minor polish.
@@ -102,7 +111,7 @@ When a PR spans directories with different configs:
 - `2/5`: blocked.
 - `0-1/5`: blocked.
 
-Repository merge rule: do not merge below `4/5`.
+Legacy repository merge rule for Greptile-bridged repositories: do not merge below `4/5`.
 
 ## Strictness and branch protection expectations
 
@@ -115,7 +124,7 @@ Required status checks include:
 - `dependency-review`, `actions-pinning`, `consistency-drift-health`
 - `docs-gate` (documentation parity)
 - `lint`, `typecheck`, `test`, `audit`, `check`, `memory`
-- `security-scan`, `Greptile Review`
+- `security-scan`, `CodeRabbit`
 
 ## Indexing vs review warning
 
@@ -146,13 +155,35 @@ Manual fix workflow:
 
 Manual trigger standards:
 
-- use `@greptileai` for draft PR reviews,
+- use `@coderabbitai review` or `@coderabbitai full review` for `coding-harness`,
+- use `@greptileai` for draft PR reviews on legacy Greptile-bridged repositories,
 - force re-review after config changes,
 - request targeted checks when needed.
 
+## Local CodeRabbit CLI
+
+The local CodeRabbit CLI is optional for `coding-harness`. It is useful for
+drafting or previewing review prompts, but it does not replace the GitHub App
+check that branch protection enforces on this repository.
+
+Recommended local flow:
+
+```bash
+curl -fsSL https://cli.coderabbit.ai/install.sh | sh
+coderabbit auth login
+coderabbit review --base main --cwd /path/to/coding-harness -c .coderabbit.yaml
+```
+
+Notes:
+
+- The CLI requires interactive `coderabbit auth login` or `--api-key`.
+- Use `.coderabbit.yaml` as the repo-local instruction source.
+- Treat local CLI output as advisory; merge authority still comes from the
+  GitHub `CodeRabbit` check on the PR head SHA.
+
 ## Verification command
 
-Run `harness verify-greptile` to verify the Greptile setup:
+Run `harness verify-greptile` to verify the legacy Greptile setup when you are working on a Greptile-bridged repository:
 
 ```bash
 # Local verification only
@@ -193,5 +224,5 @@ The verification checks:
 3. `.greptile/files.json` exists and points to graph-review context/schema sources
 4. `.github/workflows/greptile-review.yml` exists with required triggers
 5. GitHub App is installed (best verified via `--app-id` + `--app-private-key-path`)
-6. Ruleset requires "Greptile Review" status check
+6. Legacy ruleset requires "Greptile Review" status check
 7. Webhook events are properly configured

@@ -117,6 +117,7 @@ const WORKFLOW_PATH = ".github/workflows/pr-pipeline.yml";
 const CONTRADICTION_HISTORY_PATH =
 	"artifacts/context-integrity/contradiction-history.jsonl";
 const NON_WORKFLOW_REQUIRED_CHECKS = new Set([
+	"CodeRabbit",
 	"Greptile Review",
 	"security-scan",
 ]);

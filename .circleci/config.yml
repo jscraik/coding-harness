@@ -160,8 +160,8 @@ jobs:
 
 workflows:
   # Runs on every PR branch push (all branches except main).
-  # pr-fast and pr-slow run in parallel.
-  pr-workflow:
+  # Keep the workflow name aligned to the canonical GitHub-required check name.
+  pr-pipeline:
     jobs:
       - pr-fast:
           filters:

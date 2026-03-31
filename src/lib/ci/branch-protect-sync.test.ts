@@ -248,16 +248,17 @@ describe("buildBranchProtectSyncPlan — circleci target", () => {
 	it("keeps non-orphaned checks in fix command", () => {
 		const plan = buildBranchProtectSyncPlan({
 			currentChecks: [
-				{ context: "Greptile Review" }, // not orphaned — still active / known
+				{ context: "CodeRabbit" }, // preserved by manifest / targetProviderChecks
 				{ context: "quality-gates" }, // orphaned
 			],
 			targetProvider: "circleci",
-			activeGHAJobNames: ["Greptile Review"],
+			activeGHAJobNames: [],
+			targetProviderChecks: ["pr-pipeline", "CodeRabbit"],
 			owner: "acme",
 			repo: "my-app",
 		});
 
-		expect(plan.fixCommand).toContain("Greptile Review");
+		expect(plan.fixCommand).toContain("CodeRabbit");
 		expect(plan.fixCommand).toContain("pr-pipeline");
 		expect(plan.fixCommand).not.toContain("quality-gates");
 	});
