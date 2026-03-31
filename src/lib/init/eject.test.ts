@@ -2,8 +2,9 @@ import { existsSync, mkdirSync, rmSync, writeFileSync } from "node:fs";
 import { mkdtempSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { afterEach, beforeEach, describe, expect, it } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { EjectCancelledError, ejectHarness } from "./eject.js";
+import { sanitizePath } from "./rollback.js";
 import { HARNESS_DIR, MANIFEST_FILE } from "./types.js";
 
 function writeRestoreManifest(
@@ -143,5 +144,85 @@ describe("ejectHarness", () => {
 			true,
 		);
 		expect(existsSync(join(tempDir, ".greptile"))).toBe(false);
+	});
+
+	it("rejects manifest path traversal entries without deleting outside files", async () => {
+		writeFileSync(join(tempDir, "harness.contract.json"), "{}");
+		const outsideDir = mkdtempSync(join(tmpdir(), "harness-eject-outside-"));
+		const outsideFile = join(outsideDir, "file.txt");
+		writeFileSync(outsideFile, "preserve me");
+		writeRestoreManifest(tempDir, [
+			{ path: "../outside-repo/file", action: "created" },
+		]);
+
+		const sanitizeResult = sanitizePath(tempDir, "../outside-repo/file");
+		expect(sanitizeResult.ok).toBe(false);
+
+		await expect(ejectHarness(tempDir, { force: true })).rejects.toThrow(
+			"Path traversal blocked in manifest",
+		);
+		expect(existsSync(outsideFile)).toBe(true);
+
+		rmSync(outsideDir, { recursive: true, force: true });
+	});
+
+	it("surfaces deletionFailed warnings and the failing path when deletion throws", async () => {
+		writeFileSync(join(tempDir, "harness.contract.json"), "{}");
+		const contractPath = join(tempDir, "harness.contract.json");
+		const warnSpy = vi.spyOn(console, "warn").mockImplementation(() => {});
+
+		await expect(
+			ejectHarness(tempDir, {
+				force: true,
+				rmSyncImpl: (path, options) => {
+					if (String(path) === contractPath) {
+						throw new Error("disk busy");
+					}
+					return rmSync(path, options);
+				},
+			}),
+		).rejects.toThrow("harness.contract.json");
+		expect(warnSpy).toHaveBeenCalledWith(
+			expect.stringContaining("deletionFailed: harness.contract.json"),
+		);
+		expect(existsSync(contractPath)).toBe(true);
+
+		warnSpy.mockRestore();
+	});
+
+	it("suppresses console output in json mode while returning deleted paths and warnings", async () => {
+		writeFileSync(join(tempDir, "harness.contract.json"), "{}");
+		mkdirSync(join(tempDir, ".greptile"), { recursive: true });
+		writeFileSync(join(tempDir, ".greptile/config.json"), "{}");
+		mkdirSync(join(tempDir, ".github/workflows"), { recursive: true });
+		writeFileSync(
+			join(tempDir, ".github/workflows/pr-pipeline.yml"),
+			"name: keep for manual review\n",
+		);
+		writeRestoreManifest(tempDir, [
+			{ path: ".github/workflows/pr-pipeline.yml", action: "created" },
+			{ path: ".greptile/config.json", action: "created" },
+		]);
+		const infoSpy = vi.spyOn(console, "info").mockImplementation(() => {});
+		const warnSpy = vi.spyOn(console, "warn").mockImplementation(() => {});
+
+		const result = await ejectHarness(tempDir, {
+			json: true,
+			force: true,
+		});
+
+		expect(infoSpy).not.toHaveBeenCalled();
+		expect(warnSpy).not.toHaveBeenCalled();
+		expect(result.deleted).toContain(".greptile");
+		expect(result.warnings).toEqual(
+			expect.arrayContaining([
+				expect.stringContaining(
+					"Left workflow for manual review: .github/workflows/pr-pipeline.yml",
+				),
+			]),
+		);
+
+		infoSpy.mockRestore();
+		warnSpy.mockRestore();
 	});
 });

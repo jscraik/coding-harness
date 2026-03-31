@@ -2510,7 +2510,7 @@ Recommended policy:
 Each PR must include:
 
 ${reviewArtifactsLines}
-If either artifact is missing, block merge until it is added or explicitly waived by repository policy.
+If a required review artifact is missing, block merge until it is added or explicitly waived by repository policy.
 
 ## Credential-safe evidence snippets
 

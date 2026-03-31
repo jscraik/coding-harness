@@ -1,4 +1,4 @@
-import { existsSync, rmSync } from "node:fs";
+import * as fs from "node:fs";
 import { join, resolve } from "node:path";
 import * as readline from "node:readline/promises";
 import { loadManifest, sanitizePath } from "./rollback.js";
@@ -9,6 +9,7 @@ export interface EjectOptions {
 	dryRun?: boolean;
 	json?: boolean;
 	confirmPrompt?: (question: string) => Promise<string>;
+	rmSyncImpl?: typeof fs.rmSync;
 }
 
 export interface EjectResult {
@@ -31,6 +32,7 @@ export async function ejectHarness(
 	const repoRoot = resolve(targetDir);
 	const deleted: string[] = [];
 	const warnings: string[] = [];
+	const removePath = options.rmSyncImpl ?? fs.rmSync;
 	const info = (message: string): void => {
 		if (!options.json) {
 			console.info(message);
@@ -44,9 +46,9 @@ export async function ejectHarness(
 	};
 
 	// Execution Context Check: prevent deleting things in ~ or places where it wasn't initialized
-	const hasContract = existsSync(join(repoRoot, "harness.contract.json"));
+	const hasContract = fs.existsSync(join(repoRoot, "harness.contract.json"));
 	const manifestPath = join(repoRoot, HARNESS_DIR, MANIFEST_FILE);
-	const hasManifest = existsSync(manifestPath);
+	const hasManifest = fs.existsSync(manifestPath);
 
 	// Ensure we only eject if we actually detect our footprint.
 	if (!hasContract && !hasManifest) {
@@ -65,11 +67,14 @@ export async function ejectHarness(
 	}
 
 	const workflowPaths = new Set<string>();
-	const pathsToRemove = new Set<string>([
-		".harness",
-		".greptile",
-		".agents/skills/coding-harness",
-		"harness.contract.json",
+	const pathsToRemove = new Map<string, string>([
+		[".harness", join(repoRoot, ".harness")],
+		[".greptile", join(repoRoot, ".greptile")],
+		[
+			".agents/skills/coding-harness",
+			join(repoRoot, ".agents/skills/coding-harness"),
+		],
+		["harness.contract.json", join(repoRoot, "harness.contract.json")],
 	]);
 
 	if (hasManifest) {
@@ -93,40 +98,34 @@ export async function ejectHarness(
 				throw new Error(pathResult.error.message);
 			}
 
-			pathsToRemove.add(entry.path);
+			pathsToRemove.set(entry.path, pathResult.value);
 		}
 	}
-	let deletionFailed = false;
+	const deletionFailedPaths: string[] = [];
 
 	for (const workflowPath of workflowPaths) {
-		if (existsSync(join(repoRoot, workflowPath))) {
+		if (fs.existsSync(join(repoRoot, workflowPath))) {
 			warn(
 				`Left workflow for manual review: ${workflowPath}. Harness eject does not delete CI workflows automatically.`,
 			);
 		}
 	}
 
-	for (const p of pathsToRemove) {
-		const pathResult = sanitizePath(repoRoot, p);
-		if (!pathResult.ok) {
-			throw new Error(pathResult.error.message);
-		}
-
-		const fullPath = pathResult.value;
-		if (existsSync(fullPath)) {
+	for (const [relativePath, validatedPath] of pathsToRemove) {
+		if (fs.existsSync(validatedPath)) {
 			if (options.dryRun) {
-				deleted.push(p);
-				info(`Would delete: ${p}`);
+				deleted.push(relativePath);
+				info(`Would delete: ${relativePath}`);
 				continue;
 			}
 			try {
-				rmSync(fullPath, { recursive: true, force: true });
-				deleted.push(p);
-				info(`Deleted: ${p}`);
+				removePath(validatedPath, { recursive: true, force: true });
+				deleted.push(relativePath);
+				info(`Deleted: ${relativePath}`);
 			} catch (err) {
-				deletionFailed = true;
+				deletionFailedPaths.push(relativePath);
 				warn(
-					`Failed to delete ${p}: ${err instanceof Error ? err.message : String(err)}`,
+					`deletionFailed: ${relativePath}: ${err instanceof Error ? err.message : String(err)}`,
 				);
 			}
 		}
@@ -143,8 +142,10 @@ export async function ejectHarness(
 		};
 	}
 
-	if (deletionFailed) {
-		throw new Error("Harness eject completed with deletion failures.");
+	if (deletionFailedPaths.length > 0) {
+		throw new Error(
+			`Harness eject completed with deletion failures: ${deletionFailedPaths.join(", ")}`,
+		);
 	}
 
 	info(
