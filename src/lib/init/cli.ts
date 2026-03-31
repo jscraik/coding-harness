@@ -33,7 +33,6 @@ import {
 	detectPackageManager,
 	getTemplatesForProvider,
 	getToolingVersionDecision,
-	isTemplateEnabledForProvider,
 	normalizeCIProvider,
 	shouldAutoUpdateTemplate,
 } from "./scaffold.js";
@@ -262,8 +261,9 @@ export function runInit(
 		dir,
 		ciProvider,
 		projectTypeToWrite !== "unknown" ? projectTypeToWrite : undefined,
+		options,
 	);
-	const templates = getTemplatesForProvider(ciProvider);
+	const templates = getTemplatesForProvider(ciProvider, options);
 
 	if (options.migrate && options.dryRun) {
 		return {
@@ -292,6 +292,22 @@ export function runInit(
 				code: "INVALID_OPTIONS",
 				message:
 					"--update cannot be combined with --track. Use `harness upgrade --dry-run` for existing installs, or run `harness init --track` separately when bootstrapping tracked files.",
+			},
+		};
+	}
+
+	if (
+		options.update &&
+		(options.minimal !== undefined ||
+			options.issueTracker !== undefined ||
+			options.greptile === false)
+	) {
+		return {
+			ok: false,
+			error: {
+				code: "INVALID_OPTIONS",
+				message:
+					"--update reuses the tracked scaffold configuration and cannot be combined with --minimal, --issue-tracker, or --no-greptile. Re-run without those flags.",
 			},
 		};
 	}
@@ -513,6 +529,9 @@ export function runInit(
 	}
 
 	if (options.force && !options.dryRun) {
+		const activeTemplatePaths = new Set(
+			templates.map((template) => template.path),
+		);
 		for (const retiredPath of RETIRED_TEMPLATE_PATHS) {
 			const retiredResult = sanitizePath(dir, retiredPath);
 			if (!retiredResult.ok) {
@@ -523,7 +542,7 @@ export function runInit(
 			}
 		}
 		for (const template of TEMPLATES) {
-			if (isTemplateEnabledForProvider(template.path, ciProvider)) {
+			if (activeTemplatePaths.has(template.path)) {
 				continue;
 			}
 			const legacyResult = sanitizePath(dir, template.path);
@@ -571,6 +590,12 @@ export function runInit(
 		const manifest: RestoreManifest = {
 			harnessVersion: getVersion(),
 			ciProvider,
+			...(options.minimal ? { minimal: true } : {}),
+			...(options.issueTracker
+				? { issueTracker: options.issueTracker }
+				: options.minimal
+					? { issueTracker: "none" }
+					: {}),
 			files: manifestEntries,
 		};
 		const manifestPath = resolve(dir, HARNESS_DIR, MANIFEST_FILE);

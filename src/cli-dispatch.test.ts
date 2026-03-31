@@ -120,6 +120,28 @@ describe("cli command dispatch", () => {
 		vi.restoreAllMocks();
 	});
 
+	it("groups init and eject JSON help under distinct sections", async () => {
+		const { run } = await import("./cli.js");
+		const infoSpy = vi.spyOn(console, "info").mockImplementation(() => {});
+
+		run(["--help"]);
+
+		const output = infoSpy.mock.calls.map(([line]) => String(line));
+		const initHeader = output.indexOf("Init Options:");
+		const initJson = output.indexOf(
+			"  --json           Output as structured JSON",
+		);
+		const ejectHeader = output.indexOf("Eject Options:");
+		const secondJson = output.lastIndexOf(
+			"  --json           Output as structured JSON",
+		);
+
+		expect(initHeader).toBeGreaterThan(-1);
+		expect(initJson).toBeGreaterThan(initHeader);
+		expect(initJson).toBeLessThan(ejectHeader);
+		expect(secondJson).toBeGreaterThan(ejectHeader);
+	});
+
 	it("dispatches risk-tier command and ignores missing contract value", async () => {
 		const { run } = await import("./cli.js");
 		const { runRiskTierCLI } = await import("./commands/risk-tier.js");

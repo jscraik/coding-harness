@@ -446,10 +446,22 @@ export function loadManifest(
 				: "0.0.0";
 		const ciProvider =
 			manifest.ciProvider === "circleci" ? "circleci" : "github-actions";
+		const issueTracker =
+			manifest.issueTracker === "github" || manifest.issueTracker === "none"
+				? manifest.issueTracker
+				: manifest.issueTracker === "linear"
+					? "linear"
+					: undefined;
 
 		return {
 			ok: true,
-			value: { harnessVersion, ciProvider, files: validatedFiles },
+			value: {
+				harnessVersion,
+				ciProvider,
+				...(manifest.minimal === true ? { minimal: true } : {}),
+				...(issueTracker ? { issueTracker } : {}),
+				files: validatedFiles,
+			},
 		};
 	} catch (e) {
 		return {

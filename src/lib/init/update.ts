@@ -27,13 +27,14 @@ import {
 	type CIProvider,
 	HARNESS_DIR,
 	type InitErrorOutput,
+	type InitOptions,
+	type IssueTracker,
 	MANIFEST_FILE,
 	type OwnershipDecision,
 	type RestoreManifest,
 	type UpdateCheckResult,
 	type UpdateResult,
 } from "./types.js";
-
 const PROTECTED_CONTRACT_KEYS = [
 	"ciProviderPolicy",
 	"contextIntegrityPolicy",
@@ -82,6 +83,10 @@ function parseContractRecord(
 
 function isPlainObject(value: unknown): value is Record<string, unknown> {
 	return typeof value === "object" && value !== null && !Array.isArray(value);
+}
+
+function isIssueTracker(value: unknown): value is IssueTracker {
+	return value === "linear" || value === "github" || value === "none";
 }
 
 function valuesEqual(left: unknown, right: unknown): boolean {
@@ -350,8 +355,84 @@ export function executeUpdate(
 	ciProvider: CIProvider,
 ): UpdateResult {
 	const packageManager = detectPackageManager(targetDir);
-	const renderContext = createTemplateRenderContext(targetDir, ciProvider);
-	const templates = getTemplatesForProvider(ciProvider);
+
+	const extractedOptions: InitOptions = {
+		dryRun: false,
+		force: false,
+		...(manifest.minimal === true ? { minimal: true } : {}),
+	};
+
+	if (manifest.issueTracker) {
+		extractedOptions.issueTracker = manifest.issueTracker;
+	}
+
+	const contractPath = resolve(targetDir, CONTRACT_FILE);
+	if (!existsSync(contractPath)) {
+		return {
+			ok: false,
+			error: {
+				code: "WRITE_ERROR",
+				message: `Update requires ${CONTRACT_FILE}; re-run \`harness init --track\` or restore the missing contract before updating.`,
+				path: CONTRACT_FILE,
+			},
+		};
+	}
+	const rawContractResult = parseContractRecord(
+		readFileSync(contractPath, "utf-8"),
+		CONTRACT_FILE,
+		"existing",
+	);
+	if (!rawContractResult.ok) {
+		return {
+			ok: false,
+			error: rawContractResult.error,
+		};
+	}
+	const rawContract = rawContractResult.value;
+	const rawIssueTrackingPolicy =
+		isPlainObject(rawContract) && isPlainObject(rawContract.issueTrackingPolicy)
+			? rawContract.issueTrackingPolicy
+			: undefined;
+	const rawReviewPolicy =
+		isPlainObject(rawContract) && isPlainObject(rawContract.reviewPolicy)
+			? rawContract.reviewPolicy
+			: undefined;
+	const rawRemediationPolicy =
+		isPlainObject(rawContract) && isPlainObject(rawContract.remediationPolicy)
+			? rawContract.remediationPolicy
+			: undefined;
+	const rawProviderDefaults =
+		rawRemediationPolicy && isPlainObject(rawRemediationPolicy.providerDefaults)
+			? rawRemediationPolicy.providerDefaults
+			: undefined;
+	if (
+		rawIssueTrackingPolicy &&
+		isIssueTracker(rawIssueTrackingPolicy.provider)
+	) {
+		extractedOptions.issueTracker = rawIssueTrackingPolicy.provider;
+	} else if (manifest.issueTracker) {
+		extractedOptions.issueTracker = manifest.issueTracker;
+	} else if (existsSync(resolve(targetDir, ".linear"))) {
+		extractedOptions.issueTracker = "linear";
+	} else if (
+		existsSync(resolve(targetDir, ".github/ISSUE_TEMPLATE/config.yml"))
+	) {
+		extractedOptions.issueTracker = "github";
+	} else {
+		extractedOptions.issueTracker = "none";
+	}
+
+	if (!rawReviewPolicy && !rawProviderDefaults?.greptile) {
+		extractedOptions.greptile = false;
+	}
+
+	const renderContext = createTemplateRenderContext(
+		targetDir,
+		ciProvider,
+		undefined,
+		extractedOptions,
+	);
+	const templates = getTemplatesForProvider(ciProvider, extractedOptions);
 	const updated: string[] = [];
 	const skipped: string[] = [];
 	const ownershipDecisions: OwnershipDecision[] = [];
@@ -449,6 +530,10 @@ export function executeUpdate(
 		...manifest,
 		harnessVersion: getVersion(),
 		ciProvider,
+		...(extractedOptions.minimal ? { minimal: true } : {}),
+		...(extractedOptions.issueTracker
+			? { issueTracker: extractedOptions.issueTracker }
+			: {}),
 	};
 	const manifestPath = resolve(targetDir, HARNESS_DIR, MANIFEST_FILE);
 	const manifestResult = atomicWrite(

@@ -869,6 +869,76 @@ describe("runInit", () => {
 			expect(issueTemplateConfig).toContain("Private security disclosure");
 		});
 
+		it("omits the linear issue-template contact link in github tracker mode", () => {
+			writeFileSync(
+				join(tempDir, "package.json"),
+				JSON.stringify(
+					{
+						repository: {
+							type: "git",
+							url: "https://github.com/acme/my-app.git",
+						},
+					},
+					null,
+					2,
+				),
+				"utf-8",
+			);
+			const result = runInit(tempDir, {
+				dryRun: false,
+				force: true,
+				issueTracker: "github",
+			});
+			expect(result.ok).toBe(true);
+
+			const issueTemplateConfig = require("node:fs").readFileSync(
+				join(tempDir, ".github/ISSUE_TEMPLATE/config.yml"),
+				"utf-8",
+			);
+
+			expect(issueTemplateConfig).not.toContain("Linear work intake");
+			expect(issueTemplateConfig).toContain("Repository docs");
+			expect(issueTemplateConfig).toContain("Private security disclosure");
+		});
+
+		it("renders github tracker workflow assets without linear-only gates", () => {
+			const result = runInit(tempDir, {
+				dryRun: false,
+				force: true,
+				ciProvider: "github-actions",
+				issueTracker: "github",
+			});
+			expect(result.ok).toBe(true);
+
+			const workflowContent = require("node:fs").readFileSync(
+				join(tempDir, "WORKFLOW.md"),
+				"utf-8",
+			);
+			const pipelineContent = require("node:fs").readFileSync(
+				join(tempDir, ".github/workflows/pr-pipeline.yml"),
+				"utf-8",
+			);
+			const checksManifest = JSON.parse(
+				require("node:fs").readFileSync(
+					join(tempDir, ".harness/ci-required-checks.json"),
+					"utf-8",
+				),
+			);
+
+			expect(workflowContent).toContain("kind: github");
+			expect(workflowContent).not.toContain("harness linear claim");
+			expect(workflowContent).toContain(
+				"open PR and attach validation evidence",
+			);
+			expect(pipelineContent).not.toContain("linear-gate:");
+			expect(pipelineContent).toContain("needs: [pr-template]");
+			expect(
+				checksManifest.requiredChecks.map(
+					(entry: { displayName: string }) => entry.displayName,
+				),
+			).not.toContain("linear-gate");
+		});
+
 		it("creates WORKFLOW.md with auto-populated Symphony config", () => {
 			writeFileSync(
 				join(tempDir, "package.json"),
@@ -1914,6 +1984,67 @@ describe("--track flag", () => {
 		expect(manifest.ciProvider).toBe("circleci");
 	});
 
+	it("records issueTracker in the manifest when explicitly configured", () => {
+		const result = runInit(tempDir, {
+			dryRun: false,
+			force: false,
+			track: true,
+			issueTracker: "github",
+		});
+		expect(result.ok).toBe(true);
+
+		const manifest = JSON.parse(
+			require("node:fs").readFileSync(
+				join(tempDir, ".harness/restore-manifest.json"),
+				"utf-8",
+			),
+		);
+		expect(manifest.issueTracker).toBe("github");
+	});
+
+	it("preserves an explicit issueTracker when minimal tracked init is requested", () => {
+		const result = runInit(tempDir, {
+			dryRun: false,
+			force: false,
+			track: true,
+			minimal: true,
+			issueTracker: "github",
+		});
+		expect(result.ok).toBe(true);
+
+		const manifest = JSON.parse(
+			require("node:fs").readFileSync(
+				join(tempDir, ".harness/restore-manifest.json"),
+				"utf-8",
+			),
+		);
+		expect(manifest.issueTracker).toBe("github");
+		expect(manifest.minimal).toBe(true);
+
+		manifest.harnessVersion = "0.0.1";
+		require("node:fs").writeFileSync(
+			join(tempDir, ".harness/restore-manifest.json"),
+			JSON.stringify(manifest),
+		);
+
+		const updateResult = runInit(tempDir, {
+			dryRun: false,
+			force: false,
+			update: true,
+		});
+		expect(updateResult.ok).toBe(true);
+		expect(existsSync(join(tempDir, ".github/CODEOWNERS"))).toBe(false);
+		expect(existsSync(join(tempDir, ".harness/ci-required-checks.json"))).toBe(
+			false,
+		);
+		expect(existsSync(join(tempDir, ".greptile/config.json"))).toBe(false);
+		expect(existsSync(join(tempDir, ".greptile/rules.md"))).toBe(false);
+		expect(existsSync(join(tempDir, ".greptile/files.json"))).toBe(false);
+		expect(
+			existsSync(join(tempDir, ".github/workflows/greptile-review.yml")),
+		).toBe(false);
+	});
+
 	it("rejects symlinks with error", () => {
 		// Create symlink to a file outside the repo
 		mkdirSync(join(tempDir, ".github", "workflows"), { recursive: true });
@@ -2365,6 +2496,34 @@ describe("--update flag", () => {
 		}
 	});
 
+	it("rejects scaffold-shape flags when combined with --update", () => {
+		const cases = [
+			{ minimal: true },
+			{ issueTracker: "github" as const },
+			{ greptile: false },
+		];
+
+		for (const extraOptions of cases) {
+			const result = runInit(tempDir, {
+				dryRun: false,
+				force: false,
+				update: true,
+				...extraOptions,
+			});
+
+			expect(result.ok).toBe(false);
+			if (!result.ok) {
+				expect(result.error.code).toBe("INVALID_OPTIONS");
+				expect(result.error.message).toContain(
+					"--update reuses the tracked scaffold configuration",
+				);
+				expect(result.error.message).toContain("--minimal");
+				expect(result.error.message).toContain("--issue-tracker");
+				expect(result.error.message).toContain("--no-greptile");
+			}
+		}
+	});
+
 	it("updates files and manifest version", () => {
 		// Install first
 		const installResult = runInit(tempDir, {
@@ -2451,6 +2610,237 @@ describe("--update flag", () => {
 			// Should have updated files (even if same content)
 			expect(result.output.created.length).toBeGreaterThanOrEqual(0);
 		}
+	});
+
+	it("preserves a tracked issueTracker=none selection during update", () => {
+		const installResult = runInit(tempDir, {
+			dryRun: false,
+			force: false,
+			track: true,
+			issueTracker: "none",
+		});
+		expect(installResult.ok).toBe(true);
+		expect(existsSync(join(tempDir, ".github/ISSUE_TEMPLATE/config.yml"))).toBe(
+			false,
+		);
+
+		const manifestPath = join(tempDir, ".harness/restore-manifest.json");
+		const manifest = JSON.parse(
+			require("node:fs").readFileSync(manifestPath, "utf-8"),
+		);
+		manifest.harnessVersion = "0.0.1";
+		require("node:fs").writeFileSync(manifestPath, JSON.stringify(manifest));
+
+		const result = runInit(tempDir, {
+			dryRun: false,
+			force: false,
+			update: true,
+		});
+
+		expect(result.ok).toBe(true);
+		expect(existsSync(join(tempDir, ".github/ISSUE_TEMPLATE/config.yml"))).toBe(
+			false,
+		);
+		const updatedManifest = JSON.parse(
+			require("node:fs").readFileSync(manifestPath, "utf-8"),
+		);
+		expect(updatedManifest.issueTracker).toBe("none");
+
+		const contract = JSON.parse(
+			require("node:fs").readFileSync(
+				join(tempDir, "harness.contract.json"),
+				"utf-8",
+			),
+		);
+		expect(contract.issueTrackingPolicy).toBeUndefined();
+	});
+
+	it("preserves github issue-tracker mode during update when the manifest lacks issueTracker", () => {
+		const installResult = runInit(tempDir, {
+			dryRun: false,
+			force: false,
+			track: true,
+			issueTracker: "github",
+		});
+		expect(installResult.ok).toBe(true);
+		expect(existsSync(join(tempDir, ".github/ISSUE_TEMPLATE/config.yml"))).toBe(
+			true,
+		);
+		expect(existsSync(join(tempDir, ".linear"))).toBe(false);
+
+		const manifestPath = join(tempDir, ".harness/restore-manifest.json");
+		const manifest = JSON.parse(readFileSync(manifestPath, "utf-8"));
+		manifest.issueTracker = undefined;
+		manifest.harnessVersion = "0.0.1";
+		writeFileSync(manifestPath, JSON.stringify(manifest));
+		const contractPath = join(tempDir, "harness.contract.json");
+		const contractBeforeUpdate = JSON.parse(
+			readFileSync(contractPath, "utf-8"),
+		);
+		contractBeforeUpdate.issueTrackingPolicy = undefined;
+		writeFileSync(contractPath, JSON.stringify(contractBeforeUpdate, null, 2));
+
+		const result = runInit(tempDir, {
+			dryRun: false,
+			force: false,
+			update: true,
+		});
+
+		expect(result.ok).toBe(true);
+		expect(existsSync(join(tempDir, ".github/ISSUE_TEMPLATE/config.yml"))).toBe(
+			true,
+		);
+		expect(existsSync(join(tempDir, ".linear"))).toBe(false);
+		const issueTemplateConfig = readFileSync(
+			join(tempDir, ".github/ISSUE_TEMPLATE/config.yml"),
+			"utf-8",
+		);
+		expect(issueTemplateConfig).not.toContain("Linear work intake");
+		expect(issueTemplateConfig).toContain("Private security disclosure");
+
+		const contract = JSON.parse(
+			readFileSync(join(tempDir, "harness.contract.json"), "utf-8"),
+		);
+		expect(contract.issueTrackingPolicy).toBeUndefined();
+		const updatedManifest = JSON.parse(readFileSync(manifestPath, "utf-8"));
+		expect(updatedManifest.issueTracker).toBe("github");
+	});
+
+	it("fails update when the existing contract JSON is malformed", () => {
+		const installResult = runInit(tempDir, {
+			dryRun: false,
+			force: false,
+			track: true,
+		});
+		expect(installResult.ok).toBe(true);
+
+		const manifestPath = join(tempDir, ".harness/restore-manifest.json");
+		const manifest = JSON.parse(readFileSync(manifestPath, "utf-8"));
+		manifest.harnessVersion = "0.0.1";
+		writeFileSync(manifestPath, JSON.stringify(manifest));
+		writeFileSync(
+			join(tempDir, "harness.contract.json"),
+			"{not valid json",
+			"utf-8",
+		);
+
+		const result = runInit(tempDir, {
+			dryRun: false,
+			force: false,
+			update: true,
+		});
+
+		expect(result.ok).toBe(false);
+		if (!result.ok) {
+			expect(result.error.code).toBe("WRITE_ERROR");
+			expect(result.error.message).toContain(
+				"Failed to parse existing contract JSON",
+			);
+			expect(result.error.path).toBe("harness.contract.json");
+		}
+	});
+
+	it("fails update when the tracked contract is missing", () => {
+		const installResult = runInit(tempDir, {
+			dryRun: false,
+			force: false,
+			track: true,
+			issueTracker: "github",
+		});
+		expect(installResult.ok).toBe(true);
+
+		const manifestPath = join(tempDir, ".harness/restore-manifest.json");
+		const manifest = JSON.parse(readFileSync(manifestPath, "utf-8"));
+		manifest.harnessVersion = "0.0.1";
+		writeFileSync(manifestPath, JSON.stringify(manifest));
+		rmSync(join(tempDir, "harness.contract.json"));
+
+		const result = runInit(tempDir, {
+			dryRun: false,
+			force: false,
+			update: true,
+		});
+
+		expect(result.ok).toBe(false);
+		if (!result.ok) {
+			expect(result.error.code).toBe("WRITE_ERROR");
+			expect(result.error.path).toBe("harness.contract.json");
+			expect(result.error.message).toContain(
+				"Update requires harness.contract.json",
+			);
+		}
+
+		const issueTemplateConfig = readFileSync(
+			join(tempDir, ".github/ISSUE_TEMPLATE/config.yml"),
+			"utf-8",
+		);
+		expect(issueTemplateConfig).not.toContain("Linear work intake");
+		expect(issueTemplateConfig).toContain("Private security disclosure");
+		expect(existsSync(join(tempDir, ".linear"))).toBe(false);
+	});
+
+	it("preserves no-greptile update mode from the raw contract", () => {
+		const installResult = runInit(tempDir, {
+			dryRun: false,
+			force: false,
+			track: true,
+			greptile: false,
+		});
+		expect(installResult.ok).toBe(true);
+		expect(existsSync(join(tempDir, ".greptile/config.json"))).toBe(false);
+
+		const manifestPath = join(tempDir, ".harness/restore-manifest.json");
+		const manifest = JSON.parse(readFileSync(manifestPath, "utf-8"));
+		manifest.harnessVersion = "0.0.1";
+		manifest.greptile = undefined;
+		writeFileSync(manifestPath, JSON.stringify(manifest));
+		const clearedManifest = JSON.parse(readFileSync(manifestPath, "utf-8"));
+		expect("greptile" in clearedManifest).toBe(false);
+
+		const result = runInit(tempDir, {
+			dryRun: false,
+			force: false,
+			update: true,
+		});
+
+		expect(result.ok).toBe(true);
+		expect(existsSync(join(tempDir, ".greptile/config.json"))).toBe(false);
+		expect(
+			existsSync(join(tempDir, ".github/workflows/greptile-review.yml")),
+		).toBe(false);
+
+		const contract = JSON.parse(
+			readFileSync(join(tempDir, "harness.contract.json"), "utf-8"),
+		);
+		expect(contract.reviewPolicy).toBeUndefined();
+		expect(
+			contract.remediationPolicy?.providerDefaults?.greptile,
+		).toBeUndefined();
+	});
+
+	it("omits greptile guidance from contributor surfaces when disabled", () => {
+		const result = runInit(tempDir, {
+			dryRun: false,
+			force: false,
+			greptile: false,
+		});
+		expect(result.ok).toBe(true);
+
+		const contributing = readFileSync(
+			join(tempDir, "CONTRIBUTING.md"),
+			"utf-8",
+		);
+		const prTemplate = readFileSync(
+			join(tempDir, ".github/PULL_REQUEST_TEMPLATE.md"),
+			"utf-8",
+		);
+
+		expect(contributing).not.toContain("## Greptile setup baseline");
+		expect(contributing).not.toContain("@greptileai");
+		expect(contributing).not.toContain("Greptile confidence score");
+		expect(prTemplate).not.toContain("Greptile review completed");
+		expect(prTemplate).not.toContain("Greptile confidence score");
+		expect(prTemplate).toContain("Codex: <link / artifact path / comment ID>");
 	});
 
 	it("fails update when manifest provider and requested provider mismatch", () => {

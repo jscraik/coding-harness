@@ -36,6 +36,7 @@ import {
 	type CodexAction,
 	type CodexActionIcon,
 	type InitErrorOutput,
+	type InitOptions,
 	type PackageJsonLike,
 	type Template,
 	type TemplateRenderContext,
@@ -108,8 +109,23 @@ function escapeRegexLiteral(value: string): string {
 	return value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 }
 
-function renderRequiredChecksManifest(ciProvider: CIProvider): string {
-	const requiredChecks = BRANCH_PROTECTION_REQUIRED_CHECKS.map(
+function getBranchProtectionRequiredChecks(
+	context?: Pick<TemplateRenderContext, "issueTracker">,
+): readonly string[] {
+	if (context?.issueTracker === "github" || context?.issueTracker === "none") {
+		return BRANCH_PROTECTION_REQUIRED_CHECKS.filter(
+			(check) => check !== "linear-gate",
+		);
+	}
+
+	return BRANCH_PROTECTION_REQUIRED_CHECKS;
+}
+
+function renderRequiredChecksManifest(
+	ciProvider: CIProvider,
+	context?: Pick<TemplateRenderContext, "issueTracker">,
+): string {
+	const requiredChecks = getBranchProtectionRequiredChecks(context).map(
 		(displayName, index) => ({
 			policyId: `required-check-${index + 1}`,
 			displayName,
@@ -634,6 +650,16 @@ function normalizeRepoUrl(repositoryUrl: string): string | undefined {
 
 	const withoutGitPrefix = trimmed.replace(/^git\+/, "");
 	const withoutFragment = withoutGitPrefix.replace(/#[^#]+$/, "");
+	const sshStyleMatch = withoutFragment.match(
+		/^(?:ssh:\/\/)?git@([^/:]+)[:/]([^#]+)$/i,
+	);
+	if (sshStyleMatch) {
+		const host = sshStyleMatch[1];
+		const repoPath = sshStyleMatch[2]?.replace(/\.git$/, "");
+		if (host && repoPath) {
+			return `https://${host}/${repoPath}.git`;
+		}
+	}
 
 	const shorthandPrefixMatch = withoutFragment.match(
 		/^(github|gitlab|bitbucket):([^/][^#]+)$/i,
@@ -712,11 +738,19 @@ export function createTemplateRenderContext(
 	targetDir: string,
 	ciProvider?: CIProvider,
 	projectType?: ProjectType,
+	options?: InitOptions,
 ): TemplateRenderContext {
 	const issueTrackingUrl = readIssueTrackingUrl(targetDir);
 	const projectName = readProjectName(targetDir);
 	const repoUrl = readRepoUrl(targetDir);
-	const linearProjectSlug = extractLinearProjectSlug(issueTrackingUrl);
+	let linearProjectSlug = extractLinearProjectSlug(issueTrackingUrl);
+
+	// Solo orchestration overrides
+	if (options?.issueTracker === "none" || options?.issueTracker === "github") {
+		// Suppress linear project slug if an alternative tracker or 'none' is explicitly requested
+		linearProjectSlug = undefined;
+	}
+
 	// Resolve security contact email: env var override, then safe placeholder
 	const securityEmail =
 		process.env.HARNESS_SECURITY_EMAIL ?? "security@example.com";
@@ -730,6 +764,9 @@ export function createTemplateRenderContext(
 		...(linearProjectSlug ? { linearProjectSlug } : {}),
 		...(projectType ? { projectType } : {}),
 		securityEmail,
+		...(options?.minimal ? { minimal: true } : {}),
+		...(options?.issueTracker ? { issueTracker: options.issueTracker } : {}),
+		useGreptile: options?.greptile ?? !options?.minimal,
 	};
 }
 
@@ -976,20 +1013,37 @@ ${actionBlocks}
 }
 
 function renderIssueTemplateConfig(context: TemplateRenderContext): string {
-	const linearUrl = context.issueTrackingUrl ?? "https://linear.app/";
 	const securityEmail = context.securityEmail ?? "security@example.com";
+	const repoDocsUrl = context.repoUrl
+		? `${context.repoUrl.replace(/\.git$/, "")}#readme`
+		: undefined;
+	const contactLinks = [];
+
+	if (context.issueTracker !== "github" && context.issueTracker !== "none") {
+		const linearUrl = context.issueTrackingUrl ?? "https://linear.app/";
+		contactLinks.push(
+			`  - name: Linear work intake
+    url: ${linearUrl}
+    about: Create or update bugs, features, policy gaps, automation work, and release follow-ups in Linear.`,
+		);
+	}
+
+	if (repoDocsUrl) {
+		contactLinks.push(
+			`  - name: Repository docs
+    url: ${repoDocsUrl}
+    about: Review setup, workflow, and command documentation before opening new work.`,
+		);
+	}
+	contactLinks.push(
+		`  - name: Private security disclosure
+    url: mailto:${securityEmail}
+    about: Report security vulnerabilities privately instead of using public issue flows.`,
+	);
 	return `# Issue template configuration
 blank_issues_enabled: false
 contact_links:
-  - name: Linear work intake
-    url: ${linearUrl}
-    about: Create or update bugs, features, policy gaps, automation work, and release follow-ups in Linear.
-  - name: Repository docs
-    url: https://github.com/jscraik/coding-harness#readme
-    about: Review setup, workflow, and command documentation before opening new work.
-  - name: Private security disclosure
-    url: mailto:${securityEmail}
-    about: Report security vulnerabilities privately instead of using public issue flows.
+${contactLinks.join("\n")}
 `;
 }
 
@@ -1270,15 +1324,14 @@ function renderWorkflowTemplate(
 	const projectSlug = context.linearProjectSlug || "<your-project-slug>";
 	const projectName = context.projectName || "<project-name>";
 	const repoUrl = context.repoUrl || "$SOURCE_REPO_URL";
+	const trackerKind = context.issueTracker ?? "linear";
 	const renderedRepoUrl =
 		repoUrl === "$SOURCE_REPO_URL" ? repoUrl : shellEscapeArg(repoUrl);
 	const installCommand = renderWorkflowBootstrapInstallCommand(pm);
 	const checkCommand = renderScriptCommand(pm, "check");
-
-	return `---
-# Symphony Workflow Configuration
-# Generated by harness init — customize values below for your project.
-tracker:
+	const trackerBlock =
+		trackerKind === "linear"
+			? `tracker:
   kind: linear
   api_key: $LINEAR_API_KEY
   project_slug: "${projectSlug}"
@@ -1288,7 +1341,38 @@ tracker:
   terminal_states:
     - Done
     - Canceled
-    - Duplicate
+    - Duplicate`
+			: trackerKind === "github"
+				? `tracker:
+  kind: github
+  active_states:
+    - OPEN
+  terminal_states:
+    - MERGED
+    - CLOSED`
+				: `tracker:
+  kind: none`;
+	const transitionRows =
+		trackerKind === "linear"
+			? `| \`S0 TODO\` | \`claim\` | preflight passes | \`harness linear claim --issue <LK> --branch <codex/...>\` | \`S1 IN_PROGRESS\` |
+| \`S1 IN_PROGRESS\` | \`advance\` | \`${checkCommand}\` passes | \`harness linear handoff --issue <LK> --pr-url <url> --evidence-urls <url>\` | \`S2 IN_REVIEW\` |
+| \`S1 IN_PROGRESS\` | \`blocked\` | dependency unavailable | emit unblock payload | \`S4 BLOCKED\` |
+| \`S1 IN_PROGRESS\` | \`error\` | unrecoverable runtime/policy issue | record failure artifact | \`S5 FAIL\` |
+| \`S2 IN_REVIEW\` | \`approved\` | review and CI pass | \`harness linear close --issue <LK> --pr-url <url>\` | \`S3 DONE\` |
+| \`S2 IN_REVIEW\` | \`rejected\` | review gate fails | route back to working | \`S1 IN_PROGRESS\` |
+| \`S4 BLOCKED\` | \`unblocked\` | dependency restored | resume execution | \`S1 IN_PROGRESS\` |`
+			: `| \`S0 TODO\` | \`claim\` | preflight passes | create branch/worktree and start implementation | \`S1 IN_PROGRESS\` |
+| \`S1 IN_PROGRESS\` | \`advance\` | \`${checkCommand}\` passes | open PR and attach validation evidence | \`S2 IN_REVIEW\` |
+| \`S1 IN_PROGRESS\` | \`blocked\` | dependency unavailable | emit unblock payload | \`S4 BLOCKED\` |
+| \`S1 IN_PROGRESS\` | \`error\` | unrecoverable runtime/policy issue | record failure artifact | \`S5 FAIL\` |
+| \`S2 IN_REVIEW\` | \`approved\` | review and CI pass | merge PR and record closeout evidence | \`S3 DONE\` |
+| \`S2 IN_REVIEW\` | \`rejected\` | review gate fails | route back to working | \`S1 IN_PROGRESS\` |
+| \`S4 BLOCKED\` | \`unblocked\` | dependency restored | resume execution | \`S1 IN_PROGRESS\` |`;
+
+	return `---
+# Symphony Workflow Configuration
+# Generated by harness init — customize values below for your project.
+${trackerBlock}
 workspace:
   root: $SYMPHONY_WORKSPACE_ROOT
 hooks:
@@ -1362,13 +1446,7 @@ S5 FAIL (terminal)
 
 | S | E | G | A | N |
 | --- | --- | --- | --- | --- |
-| \`S0 TODO\` | \`claim\` | preflight passes | \`harness linear claim --issue <LK> --branch <codex/...>\` | \`S1 IN_PROGRESS\` |
-| \`S1 IN_PROGRESS\` | \`advance\` | \`${checkCommand}\` passes | \`harness linear handoff --issue <LK> --pr-url <url> --evidence-urls <url>\` | \`S2 IN_REVIEW\` |
-| \`S1 IN_PROGRESS\` | \`blocked\` | dependency unavailable | emit unblock payload | \`S4 BLOCKED\` |
-| \`S1 IN_PROGRESS\` | \`error\` | unrecoverable runtime/policy issue | record failure artifact | \`S5 FAIL\` |
-| \`S2 IN_REVIEW\` | \`approved\` | review and CI pass | \`harness linear close --issue <LK> --pr-url <url>\` | \`S3 DONE\` |
-| \`S2 IN_REVIEW\` | \`rejected\` | review gate fails | route back to working | \`S1 IN_PROGRESS\` |
-| \`S4 BLOCKED\` | \`unblocked\` | dependency restored | resume execution | \`S1 IN_PROGRESS\` |
+${transitionRows}
 
 ## Error Handling
 - \`VALIDATION_ERROR\`: invalid input, malformed data, or missing required fields.
@@ -1412,7 +1490,7 @@ S5 FAIL (terminal)
 - [ ] \`change_class\` metadata is declared
 - [ ] validation contract fields are declared
 - [ ] behavior-changing workflows include TDD or reviewed exemption metadata
-- [ ] \`harness linear\` commands are wired into transition actions
+- [ ] tracker-specific workflow actions are wired into transition actions
 `;
 }
 
@@ -1435,14 +1513,18 @@ export const TEMPLATES: Template[] = [
 						low: [],
 					},
 					docsDriftRules: {},
-					reviewPolicy: {
-						timeoutSeconds: 600,
-						timeoutAction: "fail" as const,
-						requiredChecks: [...REVIEW_POLICY_REQUIRED_CHECKS],
-						enforceReviewerIndependence: true,
-					},
+					...(context.useGreptile !== false
+						? {
+								reviewPolicy: {
+									timeoutSeconds: 600,
+									timeoutAction: "fail" as const,
+									requiredChecks: [...REVIEW_POLICY_REQUIRED_CHECKS],
+									enforceReviewerIndependence: true,
+								},
+							}
+						: {}),
 					branchProtection: {
-						requiredChecks: [...BRANCH_PROTECTION_REQUIRED_CHECKS],
+						requiredChecks: [...getBranchProtectionRequiredChecks(context)],
 						restrictDeletions: true,
 						blockForcePushes: true,
 						requireLinearHistory: true,
@@ -1471,18 +1553,23 @@ export const TEMPLATES: Template[] = [
 						},
 					},
 					toolingPolicy: DEFAULT_CONTRACT.toolingPolicy,
-					issueTrackingPolicy: {
-						provider: "linear" as const,
-						...(context.issueTrackingUrl
-							? { projectUrl: context.issueTrackingUrl }
-							: {}),
-						requirePackageBugsUrl: true,
-						disableGitHubIssues: true,
-						requireBranchIssueKey: true,
-						requirePrIssueKey: true,
-						prReferenceMode: "either" as const,
-						branchPrefix: "codex",
-					},
+					...(context.issueTracker === "github" ||
+					context.issueTracker === "none"
+						? {}
+						: {
+								issueTrackingPolicy: {
+									provider: "linear" as const,
+									...(context.issueTrackingUrl
+										? { projectUrl: context.issueTrackingUrl }
+										: {}),
+									requirePackageBugsUrl: true,
+									disableGitHubIssues: true,
+									requireBranchIssueKey: true,
+									requirePrIssueKey: true,
+									prReferenceMode: "either" as const,
+									branchPrefix: "codex",
+								},
+							}),
 					evidencePolicy: {
 						requiredFor: [],
 						allowedTypes: ["png", "jpeg"],
@@ -1545,10 +1632,14 @@ export const TEMPLATES: Template[] = [
 					},
 					remediationPolicy: {
 						providerDefaults: {
-							greptile: {
-								autoApplyMaxTier: "medium",
-								dryRunOnlyByDefault: false,
-							},
+							...(context.useGreptile !== false
+								? {
+										greptile: {
+											autoApplyMaxTier: "medium",
+											dryRunOnlyByDefault: false,
+										},
+									}
+								: {}),
 							codex: {
 								autoApplyMaxTier: "medium",
 								dryRunOnlyByDefault: false,
@@ -1700,7 +1791,10 @@ export const TEMPLATES: Template[] = [
 	{
 		path: ".harness/ci-required-checks.json",
 		render: (_pm, context) =>
-			renderRequiredChecksManifest(context.ciProvider ?? DEFAULT_CI_PROVIDER),
+			renderRequiredChecksManifest(
+				context.ciProvider ?? DEFAULT_CI_PROVIDER,
+				context,
+			),
 	},
 	{
 		path: ".harness/ci-provider-transition-status.json",
@@ -1732,7 +1826,7 @@ export const TEMPLATES: Template[] = [
 	},
 	{
 		path: ".github/workflows/pr-pipeline.yml",
-		render: (pm) => {
+		render: (pm, context) => {
 			const installCommand = renderInstallCommand(pm);
 			const lintCommand = renderScriptCommand(pm, "lint");
 			const typecheckCommand = renderScriptCommand(pm, "typecheck");
@@ -1740,6 +1834,56 @@ export const TEMPLATES: Template[] = [
 			const auditCommand = renderScriptCommand(pm, "audit");
 			const checkCommand = renderScriptCommand(pm, "check");
 			const memoryValidateCommand = renderMemoryValidateCommand();
+			const linearTrackingEnabled =
+				context.issueTracker !== "github" && context.issueTracker !== "none";
+			const riskPolicyNeeds = linearTrackingEnabled
+				? "[pr-template, linear-gate]"
+				: "[pr-template]";
+			const riskPolicyIf = linearTrackingEnabled
+				? "${{ always() && (github.event_name == 'merge_group' || (needs.pr-template.result == 'success' && needs.linear-gate.result == 'success')) }}"
+				: "${{ always() && (github.event_name == 'merge_group' || needs.pr-template.result == 'success') }}";
+			const linearGateJob = linearTrackingEnabled
+				? `
+  linear-gate:
+    name: linear-gate
+    runs-on: ubuntu-latest
+    needs: [pr-template]
+    if: ${"${{ always() && (github.event_name == 'merge_group' || needs.pr-template.result == 'success') }}"}
+    steps:
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
+        with:
+          node-version: "24"
+      - name: Enable corepack
+        run: corepack enable
+      - name: Install dependencies
+        run: ${installCommand}
+      - name: Enforce Linear-first issue tracking policy
+        shell: bash
+        run: |
+          if [[ "${"${{ github.event_name }}"}" == "pull_request" ]]; then
+            BRANCH="${"${{ github.head_ref }}"}"
+            PR_TITLE="$(cat <<'EOF'
+${"${{ github.event.pull_request.title }}"}
+EOF
+)"
+            PR_BODY="$(cat <<'EOF'
+${"${{ github.event.pull_request.body }}"}
+EOF
+)"
+            pnpm exec tsx src/cli.ts linear-gate \\
+              --branch "$BRANCH" \\
+              --pr-title "$PR_TITLE" \\
+              --pr-body "$PR_BODY" \\
+              --json
+          else
+            pnpm exec tsx src/cli.ts linear-gate \\
+              --allow-missing-branch \\
+              --allow-missing-pr \\
+              --json
+          fi
+`
+				: "";
 			return `name: Harness PR Pipeline
 
 on:
@@ -1834,51 +1978,13 @@ jobs:
       - name: Skip PR template enforcement for merge queue
         if: github.event_name == 'merge_group'
         run: echo "merge_group event detected; PR template enforcement is pull_request-only."
-
-  linear-gate:
-    name: linear-gate
-    runs-on: ubuntu-latest
-    needs: [pr-template]
-    if: ${"${{ always() && (github.event_name == 'merge_group' || needs.pr-template.result == 'success') }}"}
-    steps:
-      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
-      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
-        with:
-          node-version: "24"
-      - name: Enable corepack
-        run: corepack enable
-      - name: Install dependencies
-        run: ${installCommand}
-      - name: Enforce Linear-first issue tracking policy
-        shell: bash
-        run: |
-          if [[ "${"${{ github.event_name }}"}" == "pull_request" ]]; then
-            BRANCH="${"${{ github.head_ref }}"}"
-            PR_TITLE="$(cat <<'EOF'
-${"${{ github.event.pull_request.title }}"}
-EOF
-)"
-            PR_BODY="$(cat <<'EOF'
-${"${{ github.event.pull_request.body }}"}
-EOF
-)"
-            pnpm exec tsx src/cli.ts linear-gate \\
-              --branch "$BRANCH" \\
-              --pr-title "$PR_TITLE" \\
-              --pr-body "$PR_BODY" \\
-              --json
-          else
-            pnpm exec tsx src/cli.ts linear-gate \\
-              --allow-missing-branch \\
-              --allow-missing-pr \\
-              --json
-          fi
+${linearGateJob}
 
   risk-policy-gate:
     name: risk-policy-gate
     runs-on: ubuntu-latest
-    needs: [pr-template, linear-gate]
-    if: ${"${{ always() && (github.event_name == 'merge_group' || (needs.pr-template.result == 'success' && needs.linear-gate.result == 'success')) }}"}
+    needs: ${riskPolicyNeeds}
+    if: ${riskPolicyIf}
     steps:
       - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
         with:
@@ -2263,7 +2369,7 @@ jobs:
 	},
 	{
 		path: "CONTRIBUTING.md",
-		render: (pm) => {
+		render: (pm, context) => {
 			const lintCommand = renderScriptCommand(pm, "lint");
 			const typecheckCommand = renderScriptCommand(pm, "typecheck");
 			const testCommand = renderScriptCommand(pm, "test");
@@ -2276,6 +2382,87 @@ jobs:
 				"@brainwav/coding-harness",
 			);
 			const localExecCommand = renderLocalHarnessExecCommand(pm);
+			const includesGreptile = context.useGreptile !== false;
+			const requiredChecksList = formatRequiredChecksBulleted(
+				getBranchProtectionRequiredChecks(context),
+				"  - ",
+			);
+			const greptileToc = includesGreptile
+				? `- [Greptile setup baseline](#greptile-setup-baseline)
+- [Greptile config hierarchy](#greptile-config-hierarchy)
+- [Greptile merge logic for multi-scope pull requests](#greptile-merge-logic-for-multi-scope-pull-requests)
+- [Greptile confidence score policy](#greptile-confidence-score-policy)
+- [Greptile strictness policy](#greptile-strictness-policy)
+- [Greptile training and feedback loop](#greptile-training-and-feedback-loop)
+`
+				: "";
+			const greptileContractLines = includesGreptile
+				? `- Greptile + Codex review artifacts are required before merge.
+- Greptile must be configured correctly using the \`check-pr\` or \`greploop\` skill with all required Greptile files present.
+`
+				: `- Codex review artifacts are required before merge.
+`;
+			const greptileSections = includesGreptile
+				? `
+## Greptile setup baseline
+
+- Greptile must be configured correctly before relying on Greptile review gates.
+- \`harness init\` scaffolds the baseline Greptile files and bridge workflow into harness-managed repositories.
+- Required repo-local files:
+  - \`.greptile/config.json\`
+  - \`.greptile/rules.md\`
+  - \`.greptile/files.json\`
+- Required bridge workflow:
+  - \`.github/workflows/greptile-review.yml\`
+- Verify setup with:
+  - \`harness verify-greptile\`
+  - \`harness verify-greptile --token $GITHUB_TOKEN --owner <owner> --repo <repo>\`
+- Trigger or refresh a review with:
+  - \`harness request-greptile-review --owner <owner> --repo <repo> --pr <number>\`
+
+## Greptile config hierarchy
+
+1. Org-enforced dashboard rules.
+2. Directory-scoped \`.greptile/\` folders.
+3. Legacy \`greptile.json\` (ignored when \`.greptile/\` exists in the same directory).
+4. Dashboard defaults.
+
+## Greptile merge logic for multi-scope pull requests
+
+- strictness: most restrictive scope wins.
+- \`fileChangeLimit\`: lowest value wins.
+- comment types: union all requested types.
+- booleans: enabled if any scope enables them.
+
+## Greptile confidence score policy
+
+- \`5/5\`: merge-ready.
+- \`4/5\`: merge after minor polish.
+- \`3/5\`: fix findings and re-review.
+- \`0-2/5\`: blocked.
+
+## Greptile strictness policy
+
+- Strictness 1: security-critical or fresh-calibration scopes.
+- Strictness 2: default baseline for \`main\`/production-targeted changes.
+- Strictness 3: stable, non-critical internal infrastructure.
+
+## Greptile training and feedback loop
+
+- Use \`@greptileai\` on draft PRs or when settings/context changed and a forced re-review is needed.
+- Use targeted prompts for scoped checks (for example: \`@greptileai check for memory leaks\`).
+- React to comments with 👍 / 👎 and include a short rationale with 👎.
+- Treat three ignored comments on the same pattern as a calibration prompt.
+`
+				: "";
+			const reviewArtifactsLines = includesGreptile
+				? `- Greptile review artifact (URL, report, or comment reference).
+- Codex review artifact (URL, report, or comment reference).
+- Greptile confidence score for the PR.
+- Confirmation that reviewer agent is independent from coding agent.
+`
+				: `- Codex review artifact (URL, report, or comment reference).
+`;
 			return `# Contributing
 
 ## Table of Contents
@@ -2288,13 +2475,7 @@ jobs:
 - [Required tooling baseline](#required-tooling-baseline)
 - [Repo-local verification wrapper](#repo-local-verification-wrapper)
 - [Repo-local harness wrapper](#repo-local-harness-wrapper)
-- [Greptile setup baseline](#greptile-setup-baseline)
-- [Greptile config hierarchy](#greptile-config-hierarchy)
-- [Greptile merge logic for multi-scope pull requests](#greptile-merge-logic-for-multi-scope-pull-requests)
-- [Greptile confidence score policy](#greptile-confidence-score-policy)
-- [Greptile strictness policy](#greptile-strictness-policy)
-- [Greptile training and feedback loop](#greptile-training-and-feedback-loop)
-- [Recommended security scanner baseline](#recommended-security-scanner-baseline)
+${greptileToc}- [Recommended security scanner baseline](#recommended-security-scanner-baseline)
 - [Review artifacts requirement](#review-artifacts-requirement)
 - [Credential-safe evidence snippets](#credential-safe-evidence-snippets)
 - [Branch protection recommendation](#branch-protection-recommendation)
@@ -2305,9 +2486,7 @@ jobs:
 - No direct push to \`main\`.
 - Pull request required for every merge.
 - Required checks must pass before merge.
-- Greptile + Codex review artifacts are required before merge.
-- Greptile must be configured correctly using the \`check-pr\` or \`greploop\` skill with all required Greptile files present.
-- The coding agent must not approve its own PR; review must be independent.
+${greptileContractLines}- The coding agent must not approve its own PR; review must be independent.
 - Merge only after all gates pass.
 - Delete branch/worktree after merge.
 
@@ -2399,56 +2578,7 @@ Recommended policy:
 - After repair, rerun:
   - \`bash scripts/harness-cli.sh <command>\`
   - \`${localExecCommand} <command>\`
-
-## Greptile setup baseline
-
-- Greptile must be configured correctly before relying on Greptile review gates.
-- \`harness init\` scaffolds the baseline Greptile files and bridge workflow into harness-managed repositories.
-- Required repo-local files:
-  - \`.greptile/config.json\`
-  - \`.greptile/rules.md\`
-  - \`.greptile/files.json\`
-- Required bridge workflow:
-  - \`.github/workflows/greptile-review.yml\`
-- Verify setup with:
-  - \`harness verify-greptile\`
-  - \`harness verify-greptile --token $GITHUB_TOKEN --owner <owner> --repo <repo>\`
-- Trigger or refresh a review with:
-  - \`harness request-greptile-review --owner <owner> --repo <repo> --pr <number>\`
-
-## Greptile config hierarchy
-
-1. Org-enforced dashboard rules.
-2. Directory-scoped \`.greptile/\` folders.
-3. Legacy \`greptile.json\` (ignored when \`.greptile/\` exists in the same directory).
-4. Dashboard defaults.
-
-## Greptile merge logic for multi-scope pull requests
-
-- strictness: most restrictive scope wins.
-- \`fileChangeLimit\`: lowest value wins.
-- comment types: union all requested types.
-- booleans: enabled if any scope enables them.
-
-## Greptile confidence score policy
-
-- \`5/5\`: merge-ready.
-- \`4/5\`: merge after minor polish.
-- \`3/5\`: fix findings and re-review.
-- \`0-2/5\`: blocked.
-
-## Greptile strictness policy
-
-- Strictness 1: security-critical or fresh-calibration scopes.
-- Strictness 2: default baseline for \`main\`/production-targeted changes.
-- Strictness 3: stable, non-critical internal infrastructure.
-
-## Greptile training and feedback loop
-
-- Use \`@greptileai\` on draft PRs or when settings/context changed and a forced re-review is needed.
-- Use targeted prompts for scoped checks (for example: \`@greptileai check for memory leaks\`).
-- React to comments with 👍 / 👎 and include a short rationale with 👎.
-- Treat three ignored comments on the same pattern as a calibration prompt.
+${greptileSections}
 
 ## Recommended security scanner baseline
 
@@ -2468,12 +2598,8 @@ Recommended policy:
 
 Each PR must include:
 
-- Greptile review artifact (URL, report, or comment reference).
-- Codex review artifact (URL, report, or comment reference).
-- Greptile confidence score for the PR.
-- Confirmation that reviewer agent is independent from coding agent.
-
-If either artifact is missing, block merge until it is added or explicitly waived by repository policy.
+${reviewArtifactsLines}
+If a required review artifact is missing, block merge until it is added or explicitly waived by repository policy.
 
 ## Credential-safe evidence snippets
 
@@ -2501,7 +2627,7 @@ Configure GitHub branch protection (or rulesets) on \`main\`:
 - Block force pushes.
 - Require linear history.
 - Require status checks:
-${formatRequiredChecksBulleted(BRANCH_PROTECTION_REQUIRED_CHECKS, "  - ")}
+${requiredChecksList}
 - Require branches to be up to date before merge.
 - Require code quality results with severity \`all\`.
 - In public repositories, require \`CodeQL\` code scanning results with \`high_or_higher\` security alerts and \`errors\` alerts thresholds.
@@ -2514,13 +2640,26 @@ ${formatRequiredChecksBulleted(BRANCH_PROTECTION_REQUIRED_CHECKS, "  - ")}
 	},
 	{
 		path: ".github/PULL_REQUEST_TEMPLATE.md",
-		render: (pm) => {
+		render: (pm, context) => {
 			const lintCommand = renderScriptCommand(pm, "lint");
 			const typecheckCommand = renderScriptCommand(pm, "typecheck");
 			const testCommand = renderScriptCommand(pm, "test");
 			const auditCommand = renderScriptCommand(pm, "audit");
 			const checkCommand = renderScriptCommand(pm, "check");
 			const memoryValidateCommand = renderMemoryValidateCommand();
+			const includesGreptile = context.useGreptile !== false;
+			const greptileChecklist = includesGreptile
+				? `- [ ] Greptile review completed and findings handled (or explicitly waived).
+- [ ] Greptile review was performed by an independent reviewer (not the coding agent).
+- [ ] Greptile confidence score is \`>= 4/5\` for merge eligibility.
+`
+				: "";
+			const greptileArtifacts = includesGreptile
+				? `- Greptile: <link / artifact path / comment ID>
+- Greptile confidence score: <0-5>
+- Independent reviewer evidence: <reviewer + link>
+`
+				: "";
 			return `# Pull request checklist
 
 ## Summary
@@ -2534,10 +2673,7 @@ ${formatRequiredChecksBulleted(BRANCH_PROTECTION_REQUIRED_CHECKS, "  - ")}
 - [ ] I did not push directly to \`main\`; this PR is from a dedicated branch.
 - [ ] Branch name follows policy (\`codex/*\` for agent-created branches).
 - [ ] Required local gates run: \`${lintCommand}\`, \`${typecheckCommand}\`, \`${testCommand}\`, \`${auditCommand}\`, \`${checkCommand}\`, \`${memoryValidateCommand}\`.
-- [ ] Greptile review completed and findings handled (or explicitly waived).
-- [ ] Codex review completed and findings handled (or explicitly waived).
-- [ ] Greptile review was performed by an independent reviewer (not the coding agent).
-- [ ] Greptile confidence score is \`>= 4/5\` for merge eligibility.
+${greptileChecklist}- [ ] Codex review completed and findings handled (or explicitly waived).
 - [ ] Merge is blocked until all required checks pass.
 - [ ] I will delete branch/worktree after merge.
 
@@ -2553,10 +2689,7 @@ ${formatRequiredChecksBulleted(BRANCH_PROTECTION_REQUIRED_CHECKS, "  - ")}
 
 ## Review artifacts
 
-- Greptile: <link / artifact path / comment ID>
-- Greptile confidence score: <0-5>
-- Independent reviewer evidence: <reviewer + link>
-- Codex: <link / artifact path / comment ID>
+${greptileArtifacts}- Codex: <link / artifact path / comment ID>
 - Additional evidence (if any):
 
 ## Notes
@@ -4167,8 +4300,55 @@ export function isTemplateEnabledForProvider(
 	return true;
 }
 
-export function getTemplatesForProvider(ciProvider: CIProvider): Template[] {
-	return TEMPLATES.filter((template) =>
-		isTemplateEnabledForProvider(template.path, ciProvider),
-	);
+export function getTemplatesForProvider(
+	ciProvider: CIProvider,
+	options?: InitOptions,
+): Template[] {
+	return TEMPLATES.filter((template) => {
+		if (!isTemplateEnabledForProvider(template.path, ciProvider)) {
+			return false;
+		}
+
+		// Minimal mode skips enterprise governance templates
+		if (options?.minimal) {
+			const minimalOmit = [
+				".github/CODEOWNERS",
+				"docs/PRODUCT-PLAN.md",
+				".harness/ci-required-checks.json",
+			];
+			if (minimalOmit.includes(template.path)) {
+				return false;
+			}
+		}
+
+		// Issue tracker skips (linear templates are implicitly skipped in minimal mode)
+		if (
+			options?.minimal ||
+			options?.issueTracker === "none" ||
+			options?.issueTracker === "github"
+		) {
+			if (template.path.startsWith(".linear/")) {
+				return false;
+			}
+		}
+
+		if (options?.issueTracker === "none") {
+			if (template.path.includes("ISSUE_TEMPLATE")) {
+				return false;
+			}
+		}
+
+		// Greptile skips: if explicitly disabled via flag OR implied disabled via minimal mode
+		const omitGreptile = options?.greptile === false || options?.minimal;
+		if (omitGreptile) {
+			if (
+				template.path.startsWith(".greptile") ||
+				template.path.includes("greptile-review.yml")
+			) {
+				return false;
+			}
+		}
+
+		return true;
+	});
 }
