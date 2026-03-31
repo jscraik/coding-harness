@@ -12,7 +12,6 @@
 import { existsSync, lstatSync, readFileSync, realpathSync } from "node:fs";
 import { dirname, resolve, sep } from "node:path";
 import semver from "semver";
-import { loadContract } from "../contract/loader.js";
 import { mergeContracts } from "../contract/merger.js";
 import type { HarnessContract } from "../contract/types.js";
 import { sanitizeError } from "../input/sanitize.js";
@@ -84,6 +83,10 @@ function parseContractRecord(
 
 function isPlainObject(value: unknown): value is Record<string, unknown> {
 	return typeof value === "object" && value !== null && !Array.isArray(value);
+}
+
+function isIssueTracker(value: unknown): value is IssueTracker {
+	return value === "linear" || value === "github" || value === "none";
 }
 
 function valuesEqual(left: unknown, right: unknown): boolean {
@@ -362,12 +365,23 @@ export function executeUpdate(
 		extractedOptions.issueTracker = manifest.issueTracker;
 	}
 
-	try {
-		const contractPath = resolve(targetDir, CONTRACT_FILE);
-		const rawContract = JSON.parse(
+	const contractPath = resolve(targetDir, CONTRACT_FILE);
+	if (!existsSync(contractPath)) {
+		extractedOptions.minimal = true;
+		extractedOptions.greptile = false;
+	} else {
+		const rawContractResult = parseContractRecord(
 			readFileSync(contractPath, "utf-8"),
-		) as unknown;
-		const contract = loadContract(CONTRACT_FILE, targetDir);
+			CONTRACT_FILE,
+			"existing",
+		);
+		if (!rawContractResult.ok) {
+			return {
+				ok: false,
+				error: rawContractResult.error,
+			};
+		}
+		const rawContract = rawContractResult.value;
 		const rawIssueTrackingPolicy =
 			isPlainObject(rawContract) &&
 			isPlainObject(rawContract.issueTrackingPolicy)
@@ -386,9 +400,11 @@ export function executeUpdate(
 			isPlainObject(rawRemediationPolicy.providerDefaults)
 				? rawRemediationPolicy.providerDefaults
 				: undefined;
-		if (rawIssueTrackingPolicy && contract.issueTrackingPolicy?.provider) {
-			extractedOptions.issueTracker = contract.issueTrackingPolicy
-				.provider as IssueTracker;
+		if (
+			rawIssueTrackingPolicy &&
+			isIssueTracker(rawIssueTrackingPolicy.provider)
+		) {
+			extractedOptions.issueTracker = rawIssueTrackingPolicy.provider;
 		} else if (manifest.issueTracker) {
 			extractedOptions.issueTracker = manifest.issueTracker;
 		} else if (existsSync(resolve(targetDir, ".linear"))) {
@@ -404,9 +420,6 @@ export function executeUpdate(
 		if (!rawReviewPolicy && !rawProviderDefaults?.greptile) {
 			extractedOptions.greptile = false;
 		}
-	} catch {
-		extractedOptions.minimal = true;
-		extractedOptions.greptile = false;
 	}
 
 	const renderContext = createTemplateRenderContext(

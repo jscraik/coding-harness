@@ -903,20 +903,32 @@ ${actionBlocks}
 }
 
 function renderIssueTemplateConfig(context: TemplateRenderContext): string {
-	const linearUrl = context.issueTrackingUrl ?? "https://linear.app/";
 	const securityEmail = context.securityEmail ?? "security@example.com";
+	const contactLinks = [];
+
+	if (context.issueTracker !== "github" && context.issueTracker !== "none") {
+		const linearUrl = context.issueTrackingUrl ?? "https://linear.app/";
+		contactLinks.push(
+			`  - name: Linear work intake
+    url: ${linearUrl}
+    about: Create or update bugs, features, policy gaps, automation work, and release follow-ups in Linear.`,
+		);
+	}
+
+	contactLinks.push(
+		`  - name: Repository docs
+    url: https://github.com/jscraik/coding-harness#readme
+    about: Review setup, workflow, and command documentation before opening new work.`,
+	);
+	contactLinks.push(
+		`  - name: Private security disclosure
+    url: mailto:${securityEmail}
+    about: Report security vulnerabilities privately instead of using public issue flows.`,
+	);
 	return `# Issue template configuration
 blank_issues_enabled: false
 contact_links:
-  - name: Linear work intake
-    url: ${linearUrl}
-    about: Create or update bugs, features, policy gaps, automation work, and release follow-ups in Linear.
-  - name: Repository docs
-    url: https://github.com/jscraik/coding-harness#readme
-    about: Review setup, workflow, and command documentation before opening new work.
-  - name: Private security disclosure
-    url: mailto:${securityEmail}
-    about: Report security vulnerabilities privately instead of using public issue flows.
+${contactLinks.join("\n")}
 `;
 }
 

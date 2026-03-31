@@ -131,4 +131,34 @@ describe("scaffold templates resolution", () => {
 
 		expect(rendered.issueTrackingPolicy?.provider).toBe("linear");
 	});
+
+	it("omits the linear contact link when tracker mode is github", () => {
+		const tempDir = mkdtempSync(join(tmpdir(), "harness-scaffold-test-"));
+		tempDirs.push(tempDir);
+		writeFileSync(
+			join(tempDir, "package.json"),
+			JSON.stringify({ name: "demo" }),
+		);
+
+		const context = createTemplateRenderContext(
+			tempDir,
+			"circleci",
+			undefined,
+			{
+				dryRun: false,
+				force: false,
+				issueTracker: "github",
+			},
+		);
+		const configTemplate = TEMPLATES.find(
+			(template) => template.path === ".github/ISSUE_TEMPLATE/config.yml",
+		);
+
+		expect(configTemplate).toBeDefined();
+		const rendered = configTemplate!.render("pnpm", context);
+
+		expect(rendered).not.toContain("Linear work intake");
+		expect(rendered).toContain("Repository docs");
+		expect(rendered).toContain("Private security disclosure");
+	});
 });
