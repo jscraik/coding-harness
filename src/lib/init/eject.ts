@@ -55,13 +55,14 @@ export async function ejectHarness(
 		throw new Error(`No harness integration found in ${repoRoot}.`);
 	}
 
-	if (!options.force && !options.dryRun) {
+	if (!options.force && !options.dryRun && !options.json) {
 		const answer = options.confirmPrompt
 			? await options.confirmPrompt(
 					"Are you sure you want to remove the coding-harness integration? [y/N] ",
 				)
 			: await promptForConfirmation();
-		if (answer.toLowerCase() !== "y") {
+		const normalizedAnswer = (answer ?? "").trim().toLowerCase();
+		if (normalizedAnswer !== "y") {
 			throw new EjectCancelledError();
 		}
 	}

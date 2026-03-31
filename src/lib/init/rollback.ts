@@ -458,6 +458,7 @@ export function loadManifest(
 			value: {
 				harnessVersion,
 				ciProvider,
+				...(manifest.minimal === true ? { minimal: true } : {}),
 				...(issueTracker ? { issueTracker } : {}),
 				files: validatedFiles,
 			},

@@ -590,6 +590,7 @@ export function runInit(
 		const manifest: RestoreManifest = {
 			harnessVersion: getVersion(),
 			ciProvider,
+			...(options.minimal ? { minimal: true } : {}),
 			...(options.issueTracker
 				? { issueTracker: options.issueTracker }
 				: options.minimal

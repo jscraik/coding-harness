@@ -30,6 +30,7 @@ describe("ejectHarness", () => {
 	});
 
 	afterEach(() => {
+		vi.restoreAllMocks();
 		try {
 			rmSync(tempDir, { recursive: true, force: true });
 		} catch (_e) {
@@ -186,8 +187,6 @@ describe("ejectHarness", () => {
 			expect.stringContaining("deletionFailed: harness.contract.json"),
 		);
 		expect(existsSync(contractPath)).toBe(true);
-
-		warnSpy.mockRestore();
 	});
 
 	it("suppresses console output in json mode while returning deleted paths and warnings", async () => {
@@ -221,8 +220,23 @@ describe("ejectHarness", () => {
 				),
 			]),
 		);
+	});
 
-		infoSpy.mockRestore();
-		warnSpy.mockRestore();
+	it("skips prompting in json mode when force is not set", async () => {
+		writeFileSync(join(tempDir, "harness.contract.json"), "{}");
+		const confirmPrompt = vi.fn(async () => "n");
+		const infoSpy = vi.spyOn(console, "info").mockImplementation(() => {});
+		const warnSpy = vi.spyOn(console, "warn").mockImplementation(() => {});
+
+		const result = await ejectHarness(tempDir, {
+			json: true,
+			confirmPrompt,
+		});
+
+		expect(confirmPrompt).not.toHaveBeenCalled();
+		expect(infoSpy).not.toHaveBeenCalled();
+		expect(warnSpy).not.toHaveBeenCalled();
+		expect(result.deleted).toContain("harness.contract.json");
+		expect(existsSync(join(tempDir, "harness.contract.json"))).toBe(false);
 	});
 });

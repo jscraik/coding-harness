@@ -1982,6 +1982,30 @@ describe("--track flag", () => {
 			),
 		);
 		expect(manifest.issueTracker).toBe("github");
+		expect(manifest.minimal).toBe(true);
+
+		manifest.harnessVersion = "0.0.1";
+		require("node:fs").writeFileSync(
+			join(tempDir, ".harness/restore-manifest.json"),
+			JSON.stringify(manifest),
+		);
+
+		const updateResult = runInit(tempDir, {
+			dryRun: false,
+			force: false,
+			update: true,
+		});
+		expect(updateResult.ok).toBe(true);
+		expect(existsSync(join(tempDir, ".github/CODEOWNERS"))).toBe(false);
+		expect(existsSync(join(tempDir, ".harness/ci-required-checks.json"))).toBe(
+			false,
+		);
+		expect(existsSync(join(tempDir, ".greptile/config.json"))).toBe(false);
+		expect(existsSync(join(tempDir, ".greptile/rules.md"))).toBe(false);
+		expect(existsSync(join(tempDir, ".greptile/files.json"))).toBe(false);
+		expect(
+			existsSync(join(tempDir, ".github/workflows/greptile-review.yml")),
+		).toBe(false);
 	});
 
 	it("rejects symlinks with error", () => {

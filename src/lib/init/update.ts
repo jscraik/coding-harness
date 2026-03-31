@@ -359,6 +359,7 @@ export function executeUpdate(
 	const extractedOptions: InitOptions = {
 		dryRun: false,
 		force: false,
+		...(manifest.minimal === true ? { minimal: true } : {}),
 	};
 
 	if (manifest.issueTracker) {
@@ -529,6 +530,7 @@ export function executeUpdate(
 		...manifest,
 		harnessVersion: getVersion(),
 		ciProvider,
+		...(extractedOptions.minimal ? { minimal: true } : {}),
 		...(extractedOptions.issueTracker
 			? { issueTracker: extractedOptions.issueTracker }
 			: {}),
