@@ -296,6 +296,22 @@ export function runInit(
 		};
 	}
 
+	if (
+		options.update &&
+		(options.minimal !== undefined ||
+			options.issueTracker !== undefined ||
+			options.greptile === false)
+	) {
+		return {
+			ok: false,
+			error: {
+				code: "INVALID_OPTIONS",
+				message:
+					"--update reuses the tracked scaffold configuration and cannot be combined with --minimal, --issue-tracker, or --no-greptile. Re-run without those flags.",
+			},
+		};
+	}
+
 	// Handle --rollback: restore from manifest
 	if (options.rollback) {
 		const manifestResult = loadManifest(dir);

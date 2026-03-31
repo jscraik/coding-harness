@@ -2383,6 +2383,34 @@ describe("--update flag", () => {
 		}
 	});
 
+	it("rejects scaffold-shape flags when combined with --update", () => {
+		const cases = [
+			{ minimal: true },
+			{ issueTracker: "github" as const },
+			{ greptile: false },
+		];
+
+		for (const extraOptions of cases) {
+			const result = runInit(tempDir, {
+				dryRun: false,
+				force: false,
+				update: true,
+				...extraOptions,
+			});
+
+			expect(result.ok).toBe(false);
+			if (!result.ok) {
+				expect(result.error.code).toBe("INVALID_OPTIONS");
+				expect(result.error.message).toContain(
+					"--update reuses the tracked scaffold configuration",
+				);
+				expect(result.error.message).toContain("--minimal");
+				expect(result.error.message).toContain("--issue-tracker");
+				expect(result.error.message).toContain("--no-greptile");
+			}
+		}
+	});
+
 	it("updates files and manifest version", () => {
 		// Install first
 		const installResult = runInit(tempDir, {

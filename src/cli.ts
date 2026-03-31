@@ -399,6 +399,7 @@ function printUsage(): void {
 		"  --explain-ownership  Show contract ownership decisions for --update",
 	);
 	console.info("  --interactive    Review and approve each change");
+	console.info("  --json           Output as structured JSON");
 	console.info(
 		"  --migrate        Migrate contract schema only (not ci-migrate)",
 	);
@@ -408,7 +409,6 @@ function printUsage(): void {
 	console.info("  --minimal        Use minimal mode without strict governance");
 	console.info("  --no-greptile    Omit Greptile templates and configurations");
 	console.info("  --issue-tracker  Set issue tracker (linear|github|none)");
-	console.info("  --json           Output as structured JSON");
 	console.info("");
 	console.info("Eject Options:");
 	console.info(
