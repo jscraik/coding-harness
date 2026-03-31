@@ -16,7 +16,10 @@ import { existsSync, readFileSync } from "node:fs";
 import { resolve } from "node:path";
 import { cwd } from "node:process";
 import { mergeContracts } from "../lib/contract/merger.js";
-import { DEFAULT_CONTRACT, type HarnessContract } from "../lib/contract/types.js";
+import {
+	DEFAULT_CONTRACT,
+	type HarnessContract,
+} from "../lib/contract/types.js";
 import { atomicWrite } from "../lib/init/migration.js";
 import { loadManifest } from "../lib/init/rollback.js";
 import {
@@ -125,7 +128,9 @@ function applyContractMigration(
 function backfillContractDefaults(
 	targetDir: string,
 	dryRun: boolean,
-): { ok: true; summary: string; changed: boolean } | { ok: false; error: string } {
+):
+	| { ok: true; summary: string; changed: boolean }
+	| { ok: false; error: string } {
 	const contractPath = resolve(targetDir, "harness.contract.json");
 	if (!existsSync(contractPath)) {
 		return { ok: true, summary: "", changed: false };
@@ -133,10 +138,9 @@ function backfillContractDefaults(
 
 	let existingContract: Record<string, unknown>;
 	try {
-		existingContract = JSON.parse(readFileSync(contractPath, "utf-8")) as Record<
-			string,
-			unknown
-		>;
+		existingContract = JSON.parse(
+			readFileSync(contractPath, "utf-8"),
+		) as Record<string, unknown>;
 	} catch (err) {
 		return {
 			ok: false,
@@ -309,6 +313,8 @@ export function runUpgradeCLI(
 				"",
 				"ℹ️  No existing harness installation detected.",
 				"   Run `harness init` to install harness in this directory.",
+				"   For downstream repair flows, run `harness init --track` so future",
+				"   `harness init --update`/`harness upgrade` can repair contract defaults.",
 				"",
 			].join("\n"),
 		);

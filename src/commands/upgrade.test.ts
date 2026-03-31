@@ -22,7 +22,7 @@ import {
 } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { afterEach, beforeEach, describe, expect, it } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import {
 	type UpgradeManifest,
@@ -459,5 +459,20 @@ describe("runUpgradeCLI", () => {
 			readFileSync(join(dir, "harness.contract.json"), "utf-8"),
 		) as { docsGatePolicy?: unknown };
 		expect(contract.docsGatePolicy).toBeDefined();
+	});
+
+	it("prints downstream repair guidance when no install is detected", () => {
+		const infoSpy = vi.spyOn(console, "info").mockImplementation(() => {});
+		try {
+			const exitCode = runUpgradeCLI(dir, { dryRun: true });
+			expect(exitCode).toBe(0);
+			const output = infoSpy.mock.calls
+				.map((call) => String(call[0] ?? ""))
+				.join("\n");
+			expect(output).toContain("harness init --track");
+			expect(output).toContain("harness upgrade");
+		} finally {
+			infoSpy.mockRestore();
+		}
 	});
 });
