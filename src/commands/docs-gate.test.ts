@@ -78,6 +78,10 @@ describe("docs-gate command", () => {
 				(f) => f.rule_id === "docs.gate.bootstrap_gap",
 			),
 		).toBe(true);
+		const bootstrapGapFinding = result.report.findings.find(
+			(f) => f.rule_id === "docs.gate.bootstrap_gap",
+		);
+		expect(bootstrapGapFinding?.details).toContain("harness init --track");
 	});
 
 	it("blocks on bootstrap_gap in required mode", () => {

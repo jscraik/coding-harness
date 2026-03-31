@@ -42,6 +42,7 @@ const EXPECTED_TEMPLATE_PATHS = [
 	"prek.toml",
 	"scripts/codex-preflight.sh",
 	"scripts/verify-work.sh",
+	"scripts/prepare-worktree.sh",
 	"scripts/harness-cli.sh",
 	"scripts/check-environment.sh",
 	".mise.toml",
@@ -159,6 +160,9 @@ describe("runInit", () => {
 			).toBe(true);
 			expect(existsSync(join(tempDir, "memory.json"))).toBe(true);
 			expect(existsSync(join(tempDir, "scripts/verify-work.sh"))).toBe(true);
+			expect(existsSync(join(tempDir, "scripts/prepare-worktree.sh"))).toBe(
+				true,
+			);
 		});
 
 		it("creates CircleCI templates when ciProvider is circleci", () => {
@@ -1171,6 +1175,10 @@ describe("runInit", () => {
 				join(tempDir, "scripts/verify-work.sh"),
 				"utf-8",
 			);
+			const prepareWorktree = require("node:fs").readFileSync(
+				join(tempDir, "scripts/prepare-worktree.sh"),
+				"utf-8",
+			);
 			const environmentCheck = require("node:fs").readFileSync(
 				join(tempDir, "scripts/check-environment.sh"),
 				"utf-8",
@@ -1289,6 +1297,12 @@ describe("runInit", () => {
 			expect(verifyWork).toContain(
 				"test:related unavailable; falling back to full test run",
 			);
+			expect(prepareWorktree).toContain(
+				"Prepare a freshly created git worktree for local hooks and pre-push checks.",
+			);
+			expect(prepareWorktree).toContain("git rev-parse --git-common-dir");
+			expect(prepareWorktree).toContain("node scripts/setup-git-hooks.js");
+			expect(prepareWorktree).toContain("simple-git-hooks binary not found");
 			expect(environmentCheck).toContain("required_tooling_doc_terms=(");
 			expect(environmentCheck).toContain('"make"');
 			expect(environmentCheck).toContain('"beautiful-mermaid"');
@@ -1346,6 +1360,7 @@ describe("runInit", () => {
 			expect(environmentCheck).toContain('MAKEFILE_PATH="$REPO_ROOT/Makefile"');
 			expect(environmentCheck).toContain("required_support_files=(");
 			expect(environmentCheck).toContain('"scripts/verify-work.sh"');
+			expect(environmentCheck).toContain('"scripts/prepare-worktree.sh"');
 			expect(environmentCheck).toContain('"scripts/check-semgrep-changed.sh"');
 			expect(environmentCheck).toContain('"scripts/semgrep-pre-push.yml"');
 			expect(environmentCheck).toContain("required_make_targets=(");
@@ -1399,6 +1414,7 @@ describe("runInit", () => {
 			expect(environmentCheck).toContain('"scripts/codex-preflight.sh"');
 			expect(environmentCheck).toContain("required_make_targets=(");
 			expect(environmentCheck).toContain('"preflight"');
+			expect(environmentCheck).toContain('"worktree-ready"');
 			expect(codexPreflight).toContain(
 				"--mode <off|optional|required>    Local Memory mode. Default: required",
 			);
@@ -1836,6 +1852,27 @@ auto_port: false
 			);
 			const scaffoldedScript = readFileSync(
 				join(tempDir, "scripts/verify-work.sh"),
+				"utf-8",
+			);
+			expect(scaffoldedScript).toBe(runtimeScript);
+		});
+
+		it("keeps the repo-local prepare-worktree helper aligned with scaffold output", () => {
+			writeFileSync(
+				join(tempDir, "pnpm-lock.yaml"),
+				"lockfileVersion: '9.0'\n",
+				"utf-8",
+			);
+
+			const result = runInit(tempDir, { dryRun: false, force: false });
+			expect(result.ok).toBe(true);
+
+			const runtimeScript = readFileSync(
+				join(process.cwd(), "scripts/prepare-worktree.sh"),
+				"utf-8",
+			);
+			const scaffoldedScript = readFileSync(
+				join(tempDir, "scripts/prepare-worktree.sh"),
 				"utf-8",
 			);
 			expect(scaffoldedScript).toBe(runtimeScript);

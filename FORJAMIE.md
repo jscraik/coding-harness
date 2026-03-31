@@ -731,3 +731,19 @@
 ### Why it matters
 - Downstream repos were tripping over missing baseline governance files during upgrade and migration workflows.
 - A scaffold-first recovery path is safer and more consistent than asking each repo to recreate those files manually.
+
+---
+
+## 2026-03-31 (Pre-push Hook Fails In Fresh Temp Worktrees)
+
+**Root cause: the pre-push hook runs inside the current worktree, and fresh temp worktrees often do not have dependencies installed yet.**
+
+### What happened
+- The repo pre-push hook executes `pnpm test`.
+- In a newly created temp worktree, `node_modules/` was missing.
+- Push was blocked by hook execution context, not by a code regression.
+
+### How we resolve it
+- Before first push from any fresh worktree, run `pnpm install` in that exact worktree.
+- Run `pnpm check` and `pnpm test` locally in the same worktree to match hook behavior.
+- Prefer pushing from a prepared worktree unless isolation is required.
