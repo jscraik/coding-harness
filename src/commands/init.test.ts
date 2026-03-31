@@ -866,6 +866,20 @@ describe("runInit", () => {
 		});
 
 		it("omits the linear issue-template contact link in github tracker mode", () => {
+			writeFileSync(
+				join(tempDir, "package.json"),
+				JSON.stringify(
+					{
+						repository: {
+							type: "git",
+							url: "https://github.com/acme/my-app.git",
+						},
+					},
+					null,
+					2,
+				),
+				"utf-8",
+			);
 			const result = runInit(tempDir, {
 				dryRun: false,
 				force: true,
@@ -881,6 +895,44 @@ describe("runInit", () => {
 			expect(issueTemplateConfig).not.toContain("Linear work intake");
 			expect(issueTemplateConfig).toContain("Repository docs");
 			expect(issueTemplateConfig).toContain("Private security disclosure");
+		});
+
+		it("renders github tracker workflow assets without linear-only gates", () => {
+			const result = runInit(tempDir, {
+				dryRun: false,
+				force: true,
+				ciProvider: "github-actions",
+				issueTracker: "github",
+			});
+			expect(result.ok).toBe(true);
+
+			const workflowContent = require("node:fs").readFileSync(
+				join(tempDir, "WORKFLOW.md"),
+				"utf-8",
+			);
+			const pipelineContent = require("node:fs").readFileSync(
+				join(tempDir, ".github/workflows/pr-pipeline.yml"),
+				"utf-8",
+			);
+			const checksManifest = JSON.parse(
+				require("node:fs").readFileSync(
+					join(tempDir, ".harness/ci-required-checks.json"),
+					"utf-8",
+				),
+			);
+
+			expect(workflowContent).toContain("kind: github");
+			expect(workflowContent).not.toContain("harness linear claim");
+			expect(workflowContent).toContain(
+				"open PR and attach validation evidence",
+			);
+			expect(pipelineContent).not.toContain("linear-gate:");
+			expect(pipelineContent).toContain("needs: [pr-template]");
+			expect(
+				checksManifest.requiredChecks.map(
+					(entry: { displayName: string }) => entry.displayName,
+				),
+			).not.toContain("linear-gate");
 		});
 
 		it("creates WORKFLOW.md with auto-populated Symphony config", () => {
@@ -2651,6 +2703,31 @@ describe("--update flag", () => {
 		expect(
 			contract.remediationPolicy?.providerDefaults?.greptile,
 		).toBeUndefined();
+	});
+
+	it("omits greptile guidance from contributor surfaces when disabled", () => {
+		const result = runInit(tempDir, {
+			dryRun: false,
+			force: false,
+			greptile: false,
+		});
+		expect(result.ok).toBe(true);
+
+		const contributing = readFileSync(
+			join(tempDir, "CONTRIBUTING.md"),
+			"utf-8",
+		);
+		const prTemplate = readFileSync(
+			join(tempDir, ".github/PULL_REQUEST_TEMPLATE.md"),
+			"utf-8",
+		);
+
+		expect(contributing).not.toContain("## Greptile setup baseline");
+		expect(contributing).not.toContain("@greptileai");
+		expect(contributing).not.toContain("Greptile confidence score");
+		expect(prTemplate).not.toContain("Greptile review completed");
+		expect(prTemplate).not.toContain("Greptile confidence score");
+		expect(prTemplate).toContain("Codex: <link / artifact path / comment ID>");
 	});
 
 	it("fails update when manifest provider and requested provider mismatch", () => {

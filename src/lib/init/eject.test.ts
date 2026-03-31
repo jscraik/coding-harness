@@ -4,6 +4,22 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import { EjectCancelledError, ejectHarness } from "./eject.js";
+import { HARNESS_DIR, MANIFEST_FILE } from "./types.js";
+
+function writeRestoreManifest(
+	root: string,
+	files: Array<{
+		path: string;
+		action: "created" | "modified";
+		backupHash?: string;
+	}>,
+): void {
+	mkdirSync(join(root, HARNESS_DIR), { recursive: true });
+	writeFileSync(
+		join(root, HARNESS_DIR, MANIFEST_FILE),
+		JSON.stringify({ files }, null, 2),
+	);
+}
 
 describe("ejectHarness", () => {
 	let tempDir: string;
@@ -51,7 +67,7 @@ describe("ejectHarness", () => {
 		});
 		writeFileSync(join(tempDir, "harness.contract.json"), "{}");
 
-		await ejectHarness(tempDir, { dryRun: true, force: true });
+		const result = await ejectHarness(tempDir, { dryRun: true, force: true });
 
 		expect(existsSync(join(tempDir, ".harness"))).toBe(true);
 		expect(existsSync(join(tempDir, ".greptile"))).toBe(true);
@@ -59,6 +75,14 @@ describe("ejectHarness", () => {
 			true,
 		);
 		expect(existsSync(join(tempDir, "harness.contract.json"))).toBe(true);
+		expect(result.deleted).toEqual(
+			expect.arrayContaining([
+				".harness",
+				".greptile",
+				".agents/skills/coding-harness",
+				"harness.contract.json",
+			]),
+		);
 	});
 
 	it("fails closed when the user declines the eject prompt", async () => {
@@ -75,5 +99,49 @@ describe("ejectHarness", () => {
 		await expect(ejectHarness(tempDir, { force: true })).rejects.toThrow(
 			"No harness integration found",
 		);
+	});
+
+	it("throws when only an unrelated .harness directory exists", async () => {
+		mkdirSync(join(tempDir, ".harness"));
+		await expect(ejectHarness(tempDir, { force: true })).rejects.toThrow(
+			"No harness integration found",
+		);
+	});
+
+	it("deletes only manifest-owned created files and leaves user files intact", async () => {
+		writeFileSync(join(tempDir, "harness.contract.json"), "{}");
+		writeFileSync(join(tempDir, "CONTRIBUTING.md"), "user-owned");
+		mkdirSync(join(tempDir, ".github/workflows"), { recursive: true });
+		writeFileSync(
+			join(tempDir, ".github/workflows/pr-pipeline.yml"),
+			"name: keep for manual review\n",
+		);
+		writeRestoreManifest(tempDir, [
+			{
+				path: "CONTRIBUTING.md",
+				action: "modified",
+				backupHash: "eca12c0a30e25b4b",
+			},
+			{ path: ".github/workflows/pr-pipeline.yml", action: "created" },
+			{ path: ".greptile/config.json", action: "created" },
+		]);
+		mkdirSync(join(tempDir, ".greptile"), { recursive: true });
+		writeFileSync(join(tempDir, ".greptile/config.json"), "{}");
+
+		const result = await ejectHarness(tempDir, { force: true });
+
+		expect(result.deleted).toContain(".greptile");
+		expect(result.warnings).toEqual(
+			expect.arrayContaining([
+				expect.stringContaining(
+					"Left workflow for manual review: .github/workflows/pr-pipeline.yml",
+				),
+			]),
+		);
+		expect(existsSync(join(tempDir, "CONTRIBUTING.md"))).toBe(true);
+		expect(existsSync(join(tempDir, ".github/workflows/pr-pipeline.yml"))).toBe(
+			true,
+		);
+		expect(existsSync(join(tempDir, ".greptile"))).toBe(false);
 	});
 });

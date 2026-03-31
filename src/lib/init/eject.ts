@@ -1,7 +1,8 @@
 import { existsSync, rmSync } from "node:fs";
 import { join, resolve } from "node:path";
 import * as readline from "node:readline/promises";
-import { TEMPLATES } from "./scaffold.js";
+import { loadManifest, sanitizePath } from "./rollback.js";
+import { HARNESS_DIR, MANIFEST_FILE } from "./types.js";
 
 export interface EjectOptions {
 	force?: boolean;
@@ -44,10 +45,11 @@ export async function ejectHarness(
 
 	// Execution Context Check: prevent deleting things in ~ or places where it wasn't initialized
 	const hasContract = existsSync(join(repoRoot, "harness.contract.json"));
-	const hasHarnessDir = existsSync(join(repoRoot, ".harness"));
+	const manifestPath = join(repoRoot, HARNESS_DIR, MANIFEST_FILE);
+	const hasManifest = existsSync(manifestPath);
 
 	// Ensure we only eject if we actually detect our footprint.
-	if (!hasContract && !hasHarnessDir) {
+	if (!hasContract && !hasManifest) {
 		throw new Error(`No harness integration found in ${repoRoot}.`);
 	}
 
@@ -62,20 +64,38 @@ export async function ejectHarness(
 		}
 	}
 
-	const workflowPaths = TEMPLATES.map((template) => template.path).filter(
-		(path) => path.startsWith(".github/workflows/"),
-	);
-	const pathsToRemove = Array.from(
-		new Set([
-			...TEMPLATES.map((template) => template.path).filter(
-				(path) => !path.startsWith(".github/workflows/"),
-			),
-			".harness",
-			".greptile",
-			".agents/skills/coding-harness",
-			"harness.contract.json",
-		]),
-	);
+	const workflowPaths = new Set<string>();
+	const pathsToRemove = new Set<string>([
+		".harness",
+		".greptile",
+		".agents/skills/coding-harness",
+		"harness.contract.json",
+	]);
+
+	if (hasManifest) {
+		const manifest = loadManifest(repoRoot, { operation: "eject" });
+		if (!manifest.ok) {
+			throw new Error(manifest.error.message);
+		}
+
+		for (const entry of manifest.value.files) {
+			if (entry.action !== "created") {
+				continue;
+			}
+
+			if (entry.path.startsWith(".github/workflows/")) {
+				workflowPaths.add(entry.path);
+				continue;
+			}
+
+			const pathResult = sanitizePath(repoRoot, entry.path);
+			if (!pathResult.ok) {
+				throw new Error(pathResult.error.message);
+			}
+
+			pathsToRemove.add(entry.path);
+		}
+	}
 	let deletionFailed = false;
 
 	for (const workflowPath of workflowPaths) {
@@ -87,9 +107,15 @@ export async function ejectHarness(
 	}
 
 	for (const p of pathsToRemove) {
-		const fullPath = join(repoRoot, p);
+		const pathResult = sanitizePath(repoRoot, p);
+		if (!pathResult.ok) {
+			throw new Error(pathResult.error.message);
+		}
+
+		const fullPath = pathResult.value;
 		if (existsSync(fullPath)) {
 			if (options.dryRun) {
+				deleted.push(p);
 				info(`Would delete: ${p}`);
 				continue;
 			}
