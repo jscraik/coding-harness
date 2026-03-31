@@ -2551,6 +2551,8 @@ describe("--update flag", () => {
 			readFileSync(join(tempDir, "harness.contract.json"), "utf-8"),
 		);
 		expect(contract.issueTrackingPolicy).toBeUndefined();
+		const updatedManifest = JSON.parse(readFileSync(manifestPath, "utf-8"));
+		expect(updatedManifest.issueTracker).toBe("github");
 	});
 
 	it("fails update when the existing contract JSON is malformed", () => {

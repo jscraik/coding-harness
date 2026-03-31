@@ -36,7 +36,12 @@ jobs:
       - run:
           name: Test (excluding pilot-evaluate)
           no_output_timeout: 12m
-          command: pnpm test:ci:fast
+          # Excludes the slow pilot-evaluate suite; it runs in pr-slow.
+          # ci-migrate.test.ts alone runs ~233s of RSA signing and needs the
+          # isolated worker-timeout mitigation from scripts/test-ci.sh.
+          command: |
+            pnpm exec vitest run --maxWorkers=1 --exclude '**/pilot-evaluate.test.ts' --exclude src/commands/ci-migrate.test.ts
+            pnpm exec vitest run --maxWorkers=1 --dangerouslyIgnoreUnhandledErrors src/commands/ci-migrate.test.ts
       - run:
           name: Audit
           command: pnpm audit

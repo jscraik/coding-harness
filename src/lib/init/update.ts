@@ -526,6 +526,9 @@ export function executeUpdate(
 		...manifest,
 		harnessVersion: getVersion(),
 		ciProvider,
+		...(extractedOptions.issueTracker
+			? { issueTracker: extractedOptions.issueTracker }
+			: {}),
 	};
 	const manifestPath = resolve(targetDir, HARNESS_DIR, MANIFEST_FILE);
 	const manifestResult = atomicWrite(
