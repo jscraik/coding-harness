@@ -248,9 +248,31 @@ function renderCodexEnforcedTemplate(): string {
 	return readFileSync(templatePath, "utf-8");
 }
 
+function renderCodestyleTemplate(): string {
+	// Prefer the packaged template so published builds do not depend on a
+	// user-home symlink. Source checkouts fall back to the repo-root path.
+	const packagedTemplatePath = fileURLToPath(
+		new URL("../../templates/CODESTYLE.md", import.meta.url),
+	);
+	if (existsSync(packagedTemplatePath)) {
+		return readFileSync(packagedTemplatePath, "utf-8");
+	}
+	const repoTemplatePath = fileURLToPath(
+		new URL("../../../CODESTYLE.md", import.meta.url),
+	);
+	return readFileSync(repoTemplatePath, "utf-8");
+}
+
 function renderVerifyWorkScript(_packageManager: string): string {
 	const templatePath = fileURLToPath(
 		new URL("../../../scripts/verify-work.sh", import.meta.url),
+	);
+	return readFileSync(templatePath, "utf-8");
+}
+
+function renderValidateCodestyleScript(): string {
+	const templatePath = fileURLToPath(
+		new URL("../../../scripts/validate-codestyle.sh", import.meta.url),
 	);
 	return readFileSync(templatePath, "utf-8");
 }
@@ -2561,11 +2583,8 @@ jobs:
 	{
 		path: "CONTRIBUTING.md",
 		render: (pm, context) => {
-			const lintCommand = renderScriptCommand(pm, "lint");
-			const typecheckCommand = renderScriptCommand(pm, "typecheck");
-			const testCommand = renderScriptCommand(pm, "test");
-			const auditCommand = renderScriptCommand(pm, "audit");
 			const checkCommand = renderScriptCommand(pm, "check");
+			const codestyleCommand = "bash scripts/validate-codestyle.sh";
 			const memoryValidateCommand = renderMemoryValidateCommand();
 			const installCommand = renderInstallCommand(pm);
 			const addCommand = renderAddPackageCommand(
@@ -2633,10 +2652,7 @@ This workflow keeps delivery auditable, reversible, and consistent even for solo
 
 ## Required pre-merge gates
 
-- ${lintCommand}
-- ${typecheckCommand}
-- ${testCommand}
-- ${auditCommand}
+- ${codestyleCommand}
 - ${checkCommand}
 - ${memoryValidateCommand}
 
@@ -2670,11 +2686,14 @@ Recommended policy:
 
 - Pin repo-managed tooling in \`.mise.toml\` where possible.
 - Treat \`scripts/codex-preflight.sh\` as required project bootstrap infrastructure.
+- Treat \`CODESTYLE.md\` and \`scripts/validate-codestyle.sh\` as required repo-local contract files.
+- Keep \`CODESTYLE.md\` as a real repo-local file in generated repositories even when the harness authoring source is maintained globally.
 - Scaffold \`scripts/codex-enforced\` and \`scripts/codex-learn\` together with preflight so repo-local wrappers own repo-local state.
 - Keep \`preflight_repo\` in \`required\` mode by default; only relax mode (\`optional\` or \`off\`) when the project documents why.
 - Adjust preflight binary/path lists per project scope instead of deleting the script.
 - Keep repo-scoped telemetry and learned overrides under \`.harness/memory/\`, and global telemetry under \`~/.codex/\`.
 - Treat \`scripts/verify-work.sh\` as the canonical repo-facing verification command and keep it wired to repo-local preflight defaults.
+- Treat \`scripts/validate-codestyle.sh\` as the fail-closed codestyle gate and require exact proof-of-pass in change summaries and PRs.
 - Treat \`scripts/prepare-worktree.sh\` as required first-push bootstrap for freshly created worktrees so local hooks run with dependencies and canonical hook wiring.
 - Treat \`scripts/check-environment.sh\` as the local readiness gate for required tooling.
 - Block merge or promotion work when a required CLI is missing rather than silently skipping the corresponding validation lane.
@@ -2684,10 +2703,13 @@ Recommended policy:
 
 - \`harness init\` scaffolds \`scripts/verify-work.sh\` as the canonical repo-local verification entrypoint.
 - The wrapper always runs \`scripts/codex-preflight.sh\` in \`required\` Local Memory mode with scaffold-safe path and binary expectations.
+- \`scripts/validate-codestyle.sh\` is the canonical fail-closed codestyle gate and is reused by \`verify-work\`, local hooks, and downstream repo docs.
 - Repo-local launches should prefer \`./scripts/codex-enforced\` so preflight failures are recorded into repo-scoped learn state.
 - Use \`./scripts/codex-learn analyze\` and \`./scripts/codex-learn apply\` to inspect repo-scoped failure patterns and write override files into \`.harness/memory/\`.
-- Use \`bash scripts/verify-work.sh\` for the full verification bundle.
-- Use \`bash scripts/verify-work.sh --fast\` for preflight + lint + typecheck + focused test coverage.
+- Use \`bash scripts/validate-codestyle.sh --fast\` during iteration for focused codestyle validation.
+- Use \`bash scripts/validate-codestyle.sh\` before handoff for the fail-closed codestyle bundle.
+- Use \`bash scripts/verify-work.sh\` for the broader verification bundle.
+- Use \`bash scripts/verify-work.sh --fast\` for preflight + codestyle fast lane coverage.
 - Before the first push from a fresh worktree, run \`bash scripts/prepare-worktree.sh\`.
 
 ## Repo-local harness wrapper
@@ -2763,11 +2785,8 @@ ${requiredChecksList}
 	{
 		path: ".github/PULL_REQUEST_TEMPLATE.md",
 		render: (pm) => {
-			const lintCommand = renderScriptCommand(pm, "lint");
-			const typecheckCommand = renderScriptCommand(pm, "typecheck");
-			const testCommand = renderScriptCommand(pm, "test");
-			const auditCommand = renderScriptCommand(pm, "audit");
 			const checkCommand = renderScriptCommand(pm, "check");
+			const codestyleCommand = "bash scripts/validate-codestyle.sh";
 			const memoryValidateCommand = renderMemoryValidateCommand();
 			const codeRabbitChecklist = `- [ ] CodeRabbit review completed and findings handled (or explicitly waived).
 - [ ] CodeRabbit review was performed by an independent reviewer (not the coding agent).
@@ -2787,7 +2806,7 @@ ${requiredChecksList}
 
 - [ ] I did not push directly to \`main\`; this PR is from a dedicated branch.
 - [ ] Branch name follows policy (\`codex/*\` for agent-created branches).
-- [ ] Required local gates run: \`${lintCommand}\`, \`${typecheckCommand}\`, \`${testCommand}\`, \`${auditCommand}\`, \`${checkCommand}\`, \`${memoryValidateCommand}\`.
+- [ ] Required local gates run: \`${codestyleCommand}\`, \`${checkCommand}\`, \`${memoryValidateCommand}\`.
 ${codeRabbitChecklist}- [ ] Codex review completed and findings handled (or explicitly waived).
 - [ ] Any CodeRabbit Semgrep findings were either fixed or explicitly justified when warning-level-only.
 - [ ] Merge is blocked until all required checks pass.
@@ -2798,10 +2817,7 @@ ${codeRabbitChecklist}- [ ] Codex review completed and findings handled (or expl
 - verification_commands: list exact commands run here
 - verification_outcomes: record pass/fail/blocked for each command here
 - blocked_steps_reason: none if all planned steps ran
-- Command: \`${lintCommand}\` -> pass/fail
-- Command: \`${typecheckCommand}\` -> pass/fail
-- Command: \`${testCommand}\` -> pass/fail
-- Command: \`${auditCommand}\` -> pass/fail
+- Command: \`${codestyleCommand}\` -> pass/fail
 - Command: \`${checkCommand}\` -> pass/fail
 - Command: \`${memoryValidateCommand}\` -> pass/fail
 - Any other command(s):
@@ -3898,6 +3914,10 @@ CLAUDE_APPROVAL_POSTURE = "require"
 `,
 	},
 	{
+		path: "CODESTYLE.md",
+		render: () => renderCodestyleTemplate(),
+	},
+	{
 		path: "scripts/codex-preflight.sh",
 		render: () => renderCodexPreflightTemplate(),
 	},
@@ -3912,6 +3932,10 @@ CLAUDE_APPROVAL_POSTURE = "require"
 	{
 		path: "scripts/verify-work.sh",
 		render: (pm) => renderVerifyWorkScript(pm),
+	},
+	{
+		path: "scripts/validate-codestyle.sh",
+		render: () => renderValidateCodestyleScript(),
 	},
 	{
 		path: "scripts/prepare-worktree.sh",
@@ -3943,6 +3967,7 @@ CONTRACT_PATH="$REPO_ROOT/harness.contract.json"
 	MAKEFILE_PATH="$REPO_ROOT/Makefile"
 	PREK_CONFIG_PATH="$REPO_ROOT/prek.toml"
 	PACKAGE_JSON_PATH="$REPO_ROOT/${packagePolicy?.packageJsonPath ?? "package.json"}"
+	CODESTYLE_PATH="$REPO_ROOT/CODESTYLE.md"
 	TOOLING_DOC_PATH="\${TOOLING_DOC_PATH:-$HOME/dev/config/codex/instructions/tooling.md}"
 
 if [[ ! -f "$CONTRACT_PATH" ]]; then
@@ -3972,6 +3997,11 @@ fi
 
 	if [[ ! -f "$PREK_CONFIG_PATH" ]]; then
 		echo "Error: missing required prek config at $PREK_CONFIG_PATH"
+		exit 1
+	fi
+
+	if [[ ! -f "$CODESTYLE_PATH" ]]; then
+		echo "Error: missing CODESTYLE contract at $CODESTYLE_PATH"
 		exit 1
 	fi
 
@@ -4289,6 +4319,7 @@ echo "Environment check passed (attestation: $ATTESTATION_PATH)"
 /AGENTS.md @jscraik
 /scripts/codex-preflight.sh @jscraik
 /scripts/verify-work.sh @jscraik
+/scripts/validate-codestyle.sh @jscraik
 /scripts/prepare-worktree.sh @jscraik
 /scripts/harness-cli.sh @jscraik
 /scripts/check-environment.sh @jscraik
@@ -4299,7 +4330,7 @@ echo "Environment check passed (attestation: $ATTESTATION_PATH)"
 		render: () => `# Harness Development Makefile
 # Run \`make help\` to see available commands
 
-.PHONY: help install setup preflight worktree-ready verify-work hooks hooks-pre-commit hooks-pre-push secrets-staged docs-style-changed related-tests semgrep-changed diagrams-check dev build lint docs-lint fmt typecheck test check audit secrets security clean reset ci diagrams env-check
+.PHONY: help install setup preflight worktree-ready verify-work codestyle hooks hooks-pre-commit hooks-pre-push secrets-staged docs-style-changed related-tests semgrep-changed diagrams-check dev build lint docs-lint fmt typecheck test check audit secrets security clean reset ci diagrams env-check
 
 # Default target
 help: ## Show this help message
@@ -4324,6 +4355,9 @@ worktree-ready: ## Bootstrap a fresh git worktree before first push
 verify-work: ## Run canonical repo-local verification wrapper
 	@bash ./scripts/verify-work.sh
 
+codestyle: ## Run fail-closed codestyle validation
+	@bash ./scripts/validate-codestyle.sh
+
 hooks: ## Setup git hooks
 	node scripts/setup-git-hooks.js
 
@@ -4341,9 +4375,8 @@ hooks-pre-push: ## Run local pre-push governance gates before pushing
 	pnpm exec tsx src/cli.ts tooling-audit --path . --json
 	@bash ./scripts/check-environment.sh
 	$(MAKE) semgrep-changed
-	pnpm test
+	$(MAKE) codestyle
 	pnpm build
-	pnpm audit
 
 secrets-staged: ## Scan staged content for secrets before committing
 	pnpm run secrets:staged

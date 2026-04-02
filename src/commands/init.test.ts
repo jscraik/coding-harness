@@ -41,10 +41,12 @@ const EXPECTED_TEMPLATE_PATHS = [
 	"biome.json",
 	".gitleaks.toml",
 	"prek.toml",
+	"CODESTYLE.md",
 	"scripts/codex-preflight.sh",
 	"scripts/codex-learn",
 	"scripts/codex-enforced",
 	"scripts/verify-work.sh",
+	"scripts/validate-codestyle.sh",
 	"scripts/prepare-worktree.sh",
 	"scripts/harness-cli.sh",
 	"scripts/check-environment.sh",
@@ -163,6 +165,10 @@ describe("runInit", () => {
 			expect(existsSync(join(tempDir, "scripts/codex-learn"))).toBe(true);
 			expect(existsSync(join(tempDir, "scripts/codex-enforced"))).toBe(true);
 			expect(existsSync(join(tempDir, "scripts/verify-work.sh"))).toBe(true);
+			expect(existsSync(join(tempDir, "CODESTYLE.md"))).toBe(true);
+			expect(existsSync(join(tempDir, "scripts/validate-codestyle.sh"))).toBe(
+				true,
+			);
 			expect(existsSync(join(tempDir, "scripts/prepare-worktree.sh"))).toBe(
 				true,
 			);
@@ -1279,11 +1285,9 @@ describe("runInit", () => {
 			expect(verifyWork).toContain("--mode required");
 			expect(verifyWork).toContain("scripts/verify-work.sh");
 			expect(verifyWork).toContain("==> codex-preflight");
-			expect(verifyWork).toContain("==> check");
-			expect(verifyWork).toContain("==> test:related");
-			expect(verifyWork).toContain(
-				"test:related unavailable; falling back to full test run",
-			);
+			expect(verifyWork).toContain("==> validate-codestyle");
+			expect(verifyWork).toContain("==> validate-codestyle --fast");
+			expect(verifyWork).toContain("scripts/validate-codestyle.sh");
 			expect(prepareWorktree).toContain(
 				"Prepare a freshly created git worktree for local hooks and pre-push checks.",
 			);
