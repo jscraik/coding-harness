@@ -55,10 +55,7 @@ This workflow keeps delivery auditable, reversible, and consistent even for solo
 
 ## Required pre-merge gates
 
-- pnpm lint
-- pnpm typecheck
-- pnpm test
-- pnpm audit
+- bash scripts/validate-code-style.sh
 - pnpm check
 - test -f memory.json && jq -e '.meta.version == "1.0" and (.preamble.bootstrap | type == "boolean") and (.preamble.search | type == "boolean") and (.entries | type == "array")' memory.json >/dev/null
 
@@ -92,11 +89,13 @@ Recommended policy:
 
 - Pin repo-managed tooling in `.mise.toml` where possible.
 - Treat `scripts/codex-preflight.sh` as required project bootstrap infrastructure.
+- Treat `CODESTYLE.md` and `scripts/validate-code-style.sh` as required repo-local contract files.
 - Scaffold `scripts/codex-enforced` and `scripts/codex-learn` together with preflight so repo-local wrappers own repo-local state.
 - Keep `preflight_repo` in `required` mode by default; only relax mode (`optional` or `off`) when the project documents why.
 - Adjust preflight binary/path lists per project scope instead of deleting the script.
 - Keep repo-scoped telemetry and learned overrides under `.harness/memory/`, and global telemetry under `~/.codex/`.
 - Treat `scripts/verify-work.sh` as the canonical repo-local verification command and keep it wired to repo-local preflight defaults.
+- Treat `scripts/validate-code-style.sh` as the fail-closed code-style gate and require exact proof-of-pass in change summaries and PRs.
 - Treat `scripts/check-environment.sh` as the local readiness gate for required tooling.
 - Block merge or promotion work when a required CLI is missing rather than silently skipping the corresponding validation lane.
 - For repositories with explicit `ui` / `chatgpt_apps_sdk` capabilities or matching dependency signals, install `@brainwav/design-system-guidance` and treat its absence as a readiness failure.
@@ -105,10 +104,13 @@ Recommended policy:
 
 - `scripts/verify-work.sh` is the canonical repo-local verification entrypoint.
 - The wrapper always runs `scripts/codex-preflight.sh` in `required` Local Memory mode with scaffold-safe path and binary expectations.
+- `scripts/validate-code-style.sh` is the canonical fail-closed code-style gate and is reused by `verify-work`, local hooks, and downstream repo docs.
 - Repo-local launches should prefer `./scripts/codex-enforced` so preflight failures are recorded into repo-scoped learn state.
 - Use `./scripts/codex-learn analyze` and `./scripts/codex-learn apply` to inspect repo-scoped failure patterns and write override files into `.harness/memory/`.
-- Use `bash scripts/verify-work.sh` for the full verification bundle.
-- Use `bash scripts/verify-work.sh --fast` for preflight + lint + typecheck + focused test coverage.
+- Use `bash scripts/validate-code-style.sh --fast` during iteration for focused code-style validation.
+- Use `bash scripts/validate-code-style.sh` before handoff for the fail-closed code-style bundle.
+- Use `bash scripts/verify-work.sh` for the broader verification bundle.
+- Use `bash scripts/verify-work.sh --fast` for preflight + code-style fast lane coverage.
 
 ## CodeRabbit setup baseline
 

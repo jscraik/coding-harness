@@ -1,18 +1,5 @@
 # Security and governance
 
-- [Security posture](#security-posture)
-- [Secret handling](#secret-handling)
-- [Code and data governance](#code-and-data-governance)
-- [Risk controls](#risk-controls)
-- [Governance escalation](#governance-escalation)
-- [Operational check list](#operational-check-list)
-- [Pre-commit hooks](#pre-commit-hooks)
-- [Hooks installed](#hooks-installed)
-- [Setup](#setup)
-- [Commit message format](#commit-message-format)
-- [PR template reminder](#pr-template-reminder)
-- [Plan traceability](#plan-traceability)
-
 ## Security posture
 
 This repository follows conservative defaults:
@@ -22,6 +9,7 @@ This repository follows conservative defaults:
 - Preserve existing dependency and execution boundaries (`pnpm` + lockfile-driven installs).
 - Treat the repo-root `CODESTYLE.md` path plus `scripts/validate-codestyle.sh` as governed contract surfaces: if either drifts, readiness and closeout claims must fail closed.
 - Repo-specific exception: this repository may satisfy that `CODESTYLE.md` path with a symlink to `/Users/jamiecraik/.codex/instructions/CODESTYLE.md`, but downstream harness-managed repos should keep a real repo-local `CODESTYLE.md` copy.
+<<<<<<< HEAD
 - Repo-specific preflight rule: `scripts/codex-preflight.sh` may allow that one documented `CODESTYLE.md` symlink when it matches the repo-local allow-list in `.codex/preflight-allowed-external-paths.txt` (or `CODEX_PREFLIGHT_ALLOWED_EXTERNAL_PATHS`), even though it resolves outside repo root; other out-of-repo paths must still fail closed.
 - Repo-specific preflight maintenance rule: author downstream-facing changes in `src/templates/codex-preflight.sh`, then sync the repo runtime mirror with `node scripts/sync-codex-preflight.cjs --write`. `pnpm lint` runs the matching `--check` gate so runtime/template drift is treated as a policy failure, not a later merge surprise.
 - Local Memory preflight fallback probes must fail fast: keep bounded curl timeouts in `scripts/codex-preflight-local-memory-legacy.sh`, validate only the `rest_api.*` settings actually used to construct the health URL, and treat helper-runner exit code `3` as "unavailable, try the next runner" rather than a terminal failure.
@@ -33,6 +21,7 @@ This repository follows conservative defaults:
 - Never place tokens, keys, or PII in docs, command output, commit text, or memory notes.
 - If sensitive material appears in a file, sanitize and rotate as soon as practical.
 - Keep environment-specific credentials outside repo and out of command snippets unless placeholders are explicit.
+<<<<<<< HEAD
 - Keep repo-specific Gitleaks allow lists in the repo-root `.gitleaks.toml` so staged scans and manual secret scans share the same reviewed exceptions.
 - Scaffolded `secret-scan.yml` workflows should default to least privilege. Do not grant `pull-requests: write` unless PR commenting is intentionally enabled for a scanner; the default scaffold should keep `contents: read` only.
 
@@ -89,8 +78,6 @@ This repository uses `simple-git-hooks` to install local hooks, and `prek.toml` 
 | `pre-commit` | Runs `make hooks-pre-commit` (`pnpm lint`, `pnpm docs:lint`, `pnpm typecheck`, staged `gitleaks`, staged-doc `vale`, related tests) |
 | `commit-msg` | Validates conventional commit format, reminds about PR template |
 | `pre-push` | Runs `make hooks-pre-push` (`docs-gate --mode required`, diagram freshness, `tooling-audit`, `check-environment`, changed-file `semgrep`, `make codestyle`, `pnpm build`) |
-
-The staged `gitleaks` lane should prefer the repo-root `.gitleaks.toml` when present so approved fixture/example exceptions are consistent across local hooks, manual scans, and downstream scaffold expectations.
 
 `docs-gate` no longer covers only branch/CI governance wording. Local hook, readiness, and tooling-runtime changes are expected to update this guide and `docs/agents/02-tooling-policy.md` in the same change so pre-push drift is caught before GitHub does.
 
