@@ -713,4 +713,75 @@ describe("docs-gate command", () => {
 			),
 		).toBe(true);
 	});
+
+	it("ignores shared non-workflow required checks when evaluating workflow drift", () => {
+		const root = join(process.cwd(), "artifacts", "docs-gate-test-19");
+		roots.push(root);
+		createContractWithDocsGate(
+			root,
+			{
+				enabled: true,
+				mode: "required",
+				rules: [],
+			},
+			{ seedTruthSources: false },
+		);
+
+		write(
+			join(root, "README.md"),
+			"# README\nUse `pnpm lint` and rely on external checks.\n",
+		);
+		write(join(root, "AGENTS.md"), "# AGENTS\n");
+		write(
+			join(root, "CONTRIBUTING.md"),
+			"# CONTRIBUTING\n\n- Require status checks: `lint`, `CodeRabbit`, `Greptile Review`, `security-scan`\n",
+		);
+		write(join(root, "CLAUDE.md"), "# CLAUDE\n");
+		write(join(root, "AI/context/diagram-context.md"), "# Diagram Context\n");
+		write(
+			join(root, "docs/agents/00-architecture-bootstrap.md"),
+			"# Bootstrap\n",
+		);
+		write(
+			join(root, "package.json"),
+			JSON.stringify({ packageManager: "pnpm@10.0.0" }, null, 2),
+		);
+		write(
+			join(root, ".github/workflows/pr-pipeline.yml"),
+			[
+				"name: PR Pipeline",
+				"jobs:",
+				"  lint:",
+				"    name: lint",
+				"    runs-on: ubuntu-latest",
+			].join("\n"),
+		);
+		const contractPath = join(root, "harness.contract.json");
+		const contract = JSON.parse(readFileSync(contractPath, "utf-8")) as {
+			branchProtection?: { requiredChecks?: string[] };
+		};
+		contract.branchProtection = {
+			requiredChecks: [
+				"lint",
+				"CodeRabbit",
+				"Greptile Review",
+				"security-scan",
+			],
+		};
+		write(contractPath, JSON.stringify(contract, null, 2));
+
+		const result = runDocsGate({
+			repoRoot: root,
+			mode: "required",
+			changedFiles: [".github/workflows/pr-pipeline.yml"],
+		});
+
+		expect(result.exitCode).toBe(0);
+		expect(result.report.outcome).toBe("ok");
+		expect(
+			result.report.findings.some(
+				(finding) => finding.category === "required_check_conflict",
+			),
+		).toBe(false);
+	});
 });

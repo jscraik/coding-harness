@@ -11,11 +11,13 @@
 
 import { randomUUID } from "node:crypto";
 import {
+	chmodSync,
 	existsSync,
 	mkdirSync,
 	readFileSync,
 	renameSync,
 	rmSync,
+	statSync,
 	writeFileSync,
 } from "node:fs";
 import { dirname, resolve } from "node:path";
@@ -55,11 +57,26 @@ type WriteResult =
  */
 export function atomicWrite(filePath: string, content: string): WriteResult {
 	const tempPath = `${filePath}.${process.pid}.${randomUUID()}.tmp`;
+	const executableMode = 0o755;
+	const existingMode = existsSync(filePath)
+		? statSync(filePath).mode & 0o777
+		: undefined;
+	const targetMode = content.startsWith("#!") ? executableMode : existingMode;
 
 	try {
 		mkdirSync(dirname(filePath), { recursive: true });
-		writeFileSync(tempPath, content, "utf-8");
+		if (targetMode !== undefined) {
+			writeFileSync(tempPath, content, {
+				encoding: "utf-8",
+				mode: targetMode,
+			});
+		} else {
+			writeFileSync(tempPath, content, "utf-8");
+		}
 		renameSync(tempPath, filePath);
+		if (targetMode !== undefined) {
+			chmodSync(filePath, targetMode);
+		}
 		return { ok: true, value: undefined };
 	} catch (e) {
 		// Cleanup temp file on failure

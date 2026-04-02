@@ -93,7 +93,7 @@
 		"@octokit/rest": "^21.1.1",
 		"better-sqlite3": "^12.6.2",
 		"diff": "^8.0.3",
-		"lodash": "^4.17.21",
+		"lodash": "^4.18.1",
 		"picomatch": "^4.0.4",
 		"semver": "^7.7.4",
 		"sqlite-vec": "0.1.7-alpha.2"
@@ -102,6 +102,7 @@
 		"overrides": {
 			"brace-expansion": "^5.0.5",
 			"handlebars": "^4.7.9",
+			"lodash": "^4.18.1",
 			"micromatch>picomatch": "^2.3.2",
 			"minimatch": "^10.2.3",
 			"picomatch": "^4.0.4",

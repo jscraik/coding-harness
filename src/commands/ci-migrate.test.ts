@@ -4713,6 +4713,67 @@ describe("runCIMigrateCLI", () => {
 		expect(runInitCLIMock).not.toHaveBeenCalled();
 	});
 
+	it("allows external GitHub App checks during apply ownership validation", () => {
+		mkdirSync(join(tempDir, ".harness"), { recursive: true });
+		mkdirSync(join(tempDir, ".github", "workflows"), { recursive: true });
+		writeFileSync(
+			join(tempDir, ".harness/restore-manifest.json"),
+			JSON.stringify({
+				harnessVersion: "0.0.0",
+				ciProvider: "github-actions",
+				files: [],
+			}),
+		);
+		writeFileSync(
+			join(tempDir, ".github/workflows/pr-pipeline.yml"),
+			"name: test",
+		);
+		writeFileSync(
+			join(tempDir, ".harness/ci-required-checks.json"),
+			JSON.stringify(
+				{
+					version: 1,
+					activeProvider: "github-actions",
+					requiredChecks: [
+						{
+							policyId: "required-check-1",
+							displayName: "pr-pipeline",
+							sourceAppSlug: "github-actions",
+							sourceAppId: "github-actions",
+							externalIdPattern: "^pr-pipeline$",
+							class: "required",
+						},
+						{
+							policyId: "required-check-2",
+							displayName: "CodeRabbit",
+							sourceAppSlug: "coderabbit",
+							sourceAppId: "coderabbit",
+							externalIdPattern: "^CodeRabbit$",
+							class: "required",
+							githubCheckName: "CodeRabbit",
+						},
+					],
+				},
+				null,
+				2,
+			),
+		);
+
+		scanOpenPullRequestSatisfiabilityMock.mockReturnValueOnce({
+			status: "satisfied",
+			scannedOpenPrs: 0,
+			failingPrs: [],
+		});
+
+		const exitCode = runCIMigrateCLI(tempDir, {
+			provider: "circleci",
+			apply: true,
+			snapshot: "cutover-external-check-owner",
+		});
+
+		expect(exitCode).not.toBe(EXIT_CODES.INVALID_PATH);
+	});
+
 	it("fails closed on apply when a required check uses shadow namespace", () => {
 		mkdirSync(join(tempDir, ".harness"), { recursive: true });
 		mkdirSync(join(tempDir, ".github", "workflows"), { recursive: true });

@@ -76,4 +76,21 @@ describe("validatePrTemplateBody", () => {
 			"Replace template placeholder: <link / artifact path / comment ID>",
 		);
 	});
+
+	it("fails testing placeholders wrapped in markdown code", () => {
+		const body = VALID_BODY.replace(
+			"- verification_commands: `pnpm lint`; `pnpm typecheck`; `pnpm test`; `pnpm audit`; `pnpm check`",
+			"- verification_commands: ``` list exact commands run here ```",
+		).replace(
+			"- blocked_steps_reason: none",
+			"- blocked_steps_reason: `none if all planned steps ran`",
+		);
+		const errors = validatePrTemplateBody(body);
+		expect(errors).toContain(
+			"Replace testing field placeholder: verification_commands",
+		);
+		expect(errors).toContain(
+			"Replace testing field placeholder: blocked_steps_reason",
+		);
+	});
 });

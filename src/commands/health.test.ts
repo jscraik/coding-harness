@@ -152,6 +152,43 @@ describe("runHealth", () => {
 		expect(driftResult?.status).toBe("error");
 	});
 
+	it("never executes a cwd-controlled harness binary", () => {
+		writeContract(dir);
+		mockSpawnSync.mockReturnValue({
+			status: 0,
+			stdout: "",
+			stderr: "",
+			pid: 1,
+			output: [],
+			signal: null,
+		});
+
+		runHealth({ dir, gates: ["drift-gate"] });
+
+		const firstCall = mockSpawnSync.mock.calls[0];
+		expect(firstCall).toBeDefined();
+		const command = firstCall?.[0];
+		const args = firstCall?.[1];
+		expect(command).toBe(process.execPath);
+		expect(Array.isArray(args)).toBe(true);
+		if (!Array.isArray(args)) {
+			throw new Error("Expected spawn args to be an array");
+		}
+		expect(
+			args.some(
+				(arg: string) => arg.endsWith("cli.ts") || arg.endsWith("cli.js"),
+			),
+		).toBe(true);
+		expect(args).toContain("drift-gate");
+		if (process.execArgv.length === 0) {
+			expect(args).toEqual(expect.arrayContaining(["--import", "tsx"]));
+		} else {
+			expect(args.slice(0, process.execArgv.length)).toEqual(process.execArgv);
+		}
+		// Must NOT invoke a bare "harness" string from PATH/node_modules
+		expect(command).not.toBe("harness");
+	});
+
 	it("memory-gate is skipped when memory.json is missing", () => {
 		writeContract(dir);
 		// No memory.json, so memory-gate is not applicable

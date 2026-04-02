@@ -10,6 +10,24 @@ export const REVIEW_POLICY_REQUIRED_CHECKS = [
 ] as const;
 
 /**
+ * Required checks enforced by branch protection that are not expected to appear
+ * as merge-authoritative workflow job names.
+ */
+export const NON_WORKFLOW_REQUIRED_CHECKS = [
+	"CodeRabbit",
+	"Greptile Review",
+	"security-scan",
+] as const;
+
+const NON_WORKFLOW_REQUIRED_CHECK_SET = new Set<string>(
+	NON_WORKFLOW_REQUIRED_CHECKS,
+);
+
+export function isNonWorkflowRequiredCheck(check: string): boolean {
+	return NON_WORKFLOW_REQUIRED_CHECK_SET.has(check);
+}
+
+/**
  * Ecosystem profiles for branch protection required checks.
  *
  * These profiles provide sensible defaults for different technology stacks.

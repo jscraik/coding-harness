@@ -285,6 +285,8 @@ export const REQUIRED_MAKEFILE_TARGETS = [
 
 export const REQUIRED_HOOK_SUPPORT_FILES = [
 	"scripts/codex-preflight.sh",
+	"scripts/codex-learn",
+	"scripts/codex-enforced",
 	"scripts/verify-work.sh",
 	"scripts/prepare-worktree.sh",
 	"scripts/check-staged-secrets.sh",

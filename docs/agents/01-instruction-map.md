@@ -32,7 +32,7 @@ When starting a task, follow this lookup order:
    - **Memory/checkpoint workflow or per-project LEARNINGS.md:** `03-local-memory.md`
    - **Validation and gate planning:** `04-validation.md` + `10-agent-testing-gates.md`
    - **Flaky tests and evidence artifacts:** `11-flaky-test-artifacts.md`
-   - **AI review policy, CodeRabbit merge authority, and legacy `.greptile/` governance:** `12-greptile-ai-governance.md`
+   - **AI review policy, CodeRabbit governance, and legacy `.greptile/` compatibility:** `12-ai-review-governance.md`
    - **Linear-first intake and production tracker workflow:** `13-linear-production-workflow.md`
    - **Linear workflow (agent-optimized):** `16-linear-production-compact.md`
    - **Docs-gate rollout and promotion:** `14-docs-gate-rollout.md`
@@ -90,8 +90,8 @@ These deep-dive specs live alongside their parent SOPs and are not auto-discover
 - [Docs-gate rollout ops spec](./docs-gate-rollout-operational-spec.md) — companion to `14-docs-gate-rollout.md`
 - [Linear workflow ops spec](./linear-workflow-operational-spec.md) — companion to `13-linear-production-workflow.md`
 - [Release change control ops spec](./release-change-control-operational-spec.md) — companion to `08-release-and-change-control.md`
-- [Review gate ops spec](./review-gate-operational-spec.md) — companion to `12-greptile-ai-governance.md`
-- [Review gate workflow contract](./review-gate-workflow-contract.md) — companion to `12-greptile-ai-governance.md`
+- [Review gate ops spec](./review-gate-operational-spec.md) — companion to `12-ai-review-governance.md`
+- [Review gate workflow contract](./review-gate-workflow-contract.md) — companion to `12-ai-review-governance.md`
 
 ## Canonical links
 
@@ -108,7 +108,7 @@ These deep-dive specs live alongside their parent SOPs and are not auto-discover
 - [Audit trail policy](./09-audit-trail-policy.md)
 - [Agent testing gates](./10-agent-testing-gates.md)
 - [Flaky test artifact capture standard](./11-flaky-test-artifacts.md)
-- [AI review governance](./12-greptile-ai-governance.md)
+- [AI review governance](./12-ai-review-governance.md)
 - [Linear production workflow](./13-linear-production-workflow.md)
 - [Linear production compact](./16-linear-production-compact.md)
 - [Docs-gate rollout](./14-docs-gate-rollout.md)

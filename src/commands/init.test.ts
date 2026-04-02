@@ -1,9 +1,12 @@
 import { spawnSync } from "node:child_process";
 import {
 	existsSync,
+	lstatSync,
 	mkdirSync,
 	readFileSync,
+	realpathSync,
 	rmSync,
+	statSync,
 	symlinkSync,
 	writeFileSync,
 } from "node:fs";
@@ -41,6 +44,8 @@ const EXPECTED_TEMPLATE_PATHS = [
 	".gitleaks.toml",
 	"prek.toml",
 	"scripts/codex-preflight.sh",
+	"scripts/codex-learn",
+	"scripts/codex-enforced",
 	"scripts/verify-work.sh",
 	"scripts/prepare-worktree.sh",
 	"scripts/harness-cli.sh",
@@ -159,10 +164,24 @@ describe("runInit", () => {
 				existsSync(join(tempDir, ".github/PULL_REQUEST_TEMPLATE.md")),
 			).toBe(true);
 			expect(existsSync(join(tempDir, "memory.json"))).toBe(true);
+			expect(existsSync(join(tempDir, "scripts/codex-learn"))).toBe(true);
+			expect(existsSync(join(tempDir, "scripts/codex-enforced"))).toBe(true);
 			expect(existsSync(join(tempDir, "scripts/verify-work.sh"))).toBe(true);
 			expect(existsSync(join(tempDir, "scripts/prepare-worktree.sh"))).toBe(
 				true,
 			);
+			expect(
+				statSync(join(tempDir, "scripts/codex-preflight.sh")).mode & 0o111,
+			).toBeTruthy();
+			expect(
+				statSync(join(tempDir, "scripts/codex-learn")).mode & 0o111,
+			).toBeTruthy();
+			expect(
+				statSync(join(tempDir, "scripts/codex-enforced")).mode & 0o111,
+			).toBeTruthy();
+			expect(
+				statSync(join(tempDir, "scripts/verify-work.sh")).mode & 0o111,
+			).toBeTruthy();
 		});
 
 		it("creates CircleCI templates when ciProvider is circleci", () => {
@@ -345,6 +364,7 @@ describe("runInit", () => {
 			expect(content.branchProtection.requiredChecks).toContain(
 				"security-scan",
 			);
+			expect(content.ciProviderPolicy.activeProvider).toBe("circleci");
 			expect(content.branchProtection.requiredChecks).toContain("linear-gate");
 			expect(content.branchProtection.requiredChecks).toContain("CodeRabbit");
 			expect(content.branchProtection.requiredApprovingReviewCount).toBe(1);
@@ -802,7 +822,7 @@ describe("runInit", () => {
 				contributingPath,
 				"utf-8",
 			);
-			expect(content).toContain("## Greptile setup baseline");
+			expect(content).toContain("## Legacy Greptile setup baseline");
 			expect(content).toContain("`harness verify-greptile`");
 			expect(content).toContain(
 				"`harness request-greptile-review --owner <owner> --repo <repo> --pr <number>`",
@@ -1179,6 +1199,14 @@ describe("runInit", () => {
 				join(tempDir, "scripts/prepare-worktree.sh"),
 				"utf-8",
 			);
+			const codexLearn = require("node:fs").readFileSync(
+				join(tempDir, "scripts/codex-learn"),
+				"utf-8",
+			);
+			const codexEnforced = require("node:fs").readFileSync(
+				join(tempDir, "scripts/codex-enforced"),
+				"utf-8",
+			);
 			const environmentCheck = require("node:fs").readFileSync(
 				join(tempDir, "scripts/check-environment.sh"),
 				"utf-8",
@@ -1303,6 +1331,23 @@ describe("runInit", () => {
 			expect(prepareWorktree).toContain("git rev-parse --git-common-dir");
 			expect(prepareWorktree).toContain("node scripts/setup-git-hooks.js");
 			expect(prepareWorktree).toContain("simple-git-hooks binary not found");
+			expect(codexLearn).toContain(
+				"Usage: codex-learn [--scope auto|global|repo] <command>",
+			);
+			expect(codexLearn).toContain(".harness/memory/codex-learned");
+			expect(codexLearn).toContain(
+				".harness/memory/codex-preflight-overrides.env",
+			);
+			expect(codexLearn).toContain(
+				"Manual review still required for path hints",
+			);
+			expect(codexEnforced).toContain(
+				"Runs repo-local preflight before executing codex.",
+			);
+			expect(codexEnforced).toContain(
+				"./scripts/codex-enforced --skip-preflight <your prompt>",
+			);
+			expect(codexEnforced).toContain("./scripts/codex-learn analyze");
 			expect(environmentCheck).toContain("required_tooling_doc_terms=(");
 			expect(environmentCheck).toContain('"make"');
 			expect(environmentCheck).toContain('"beautiful-mermaid"');
@@ -1360,6 +1405,8 @@ describe("runInit", () => {
 			expect(environmentCheck).toContain('MAKEFILE_PATH="$REPO_ROOT/Makefile"');
 			expect(environmentCheck).toContain("required_support_files=(");
 			expect(environmentCheck).toContain('"scripts/verify-work.sh"');
+			expect(environmentCheck).toContain('"scripts/codex-learn"');
+			expect(environmentCheck).toContain('"scripts/codex-enforced"');
 			expect(environmentCheck).toContain('"scripts/prepare-worktree.sh"');
 			expect(environmentCheck).toContain('"scripts/check-semgrep-changed.sh"');
 			expect(environmentCheck).toContain('"scripts/semgrep-pre-push.yml"');
@@ -1417,6 +1464,9 @@ describe("runInit", () => {
 			expect(environmentCheck).toContain('"worktree-ready"');
 			expect(codexPreflight).toContain(
 				"--mode <off|optional|required>    Local Memory mode. Default: required",
+			);
+			expect(codexPreflight).toContain(
+				'PREFLIGHT_OVERRIDES_FILE="${WORKSPACE_ROOT}/.harness/memory/codex-preflight-overrides.env"',
 			);
 			expect(codexPreflight).toContain("Legacy compatibility:");
 			expect(codexPreflight).toContain("local local_memory_mode='required'");
@@ -1573,115 +1623,17 @@ describe("runInit", () => {
 			});
 			expect(gitInit.status).toBe(0);
 
+			writeFileSync(
+				join(tempDir, "scripts/codex-preflight.sh"),
+				`#!/usr/bin/env bash
+set -euo pipefail
+echo "local-memory preflight passed"
+`,
+				"utf-8",
+			);
+
 			const fakeBin = join(tempDir, ".fake-bin");
 			mkdirSync(fakeBin, { recursive: true });
-
-			const fakeLocalMemory = join(fakeBin, "local-memory");
-			writeFileSync(
-				fakeLocalMemory,
-				`#!/usr/bin/env bash
-set -euo pipefail
-case "\${1:-}" in
-	--version)
-		echo "local-memory 0.0.0-test"
-		;;
-	status)
-		echo '{"data":{"running":true}}'
-		;;
-	*)
-		echo "unsupported local-memory args: $*" >&2
-		exit 1
-		;;
-esac
-`,
-				"utf-8",
-			);
-
-			const fakeCurl = join(fakeBin, "curl");
-			writeFileSync(
-				fakeCurl,
-				`#!/usr/bin/env bash
-set -euo pipefail
-output_file=""
-write_format=""
-payload=""
-url=""
-
-while (( $# > 0 )); do
-	case "$1" in
-		-o)
-			output_file="$2"
-			shift 2
-			;;
-		-w)
-			write_format="$2"
-			shift 2
-			;;
-		-d)
-			payload="$2"
-			shift 2
-			;;
-		-H|-X)
-			shift 2
-			;;
-		-s|-S|-sS|-f|-fs|-fsS)
-			shift
-			;;
-		http://*|https://*)
-			url="$1"
-			shift
-			;;
-		*)
-			shift
-			;;
-	esac
-done
-
-body='{}'
-status='200'
-state_file="\${FAKE_CURL_STATE_FILE:?}"
-
-case "$url" in
-	*/api/v1/health)
-		body='{"success":true}'
-		;;
-	*/api/v1/observe)
-		if [[ "$payload" == '{"level":"observation"}' ]]; then
-			body='{"success":false,"error":"invalid payload"}'
-			status='400'
-		else
-			count=0
-			if [[ -f "$state_file" ]]; then
-				count="$(cat "$state_file")"
-			fi
-			count=$((count + 1))
-			printf '%s' "$count" > "$state_file"
-			body="{\\"id\\":\\"mem-$count\\",\\"success\\":true}"
-		fi
-		;;
-	*/api/v1/relationships|*/api/v1/relate)
-		body='{"id":"rel-1","success":true}'
-		;;
-	*/api/v1/memories/search)
-		body='{"results":[{"id":"mem-1"}]}'
-		;;
-	*)
-		body='{"success":true}'
-		;;
-esac
-
-if [[ -n "$output_file" ]]; then
-	printf '%s' "$body" > "$output_file"
-else
-	printf '%s' "$body"
-fi
-
-if [[ -n "$write_format" ]]; then
-	printf '%s' "$status"
-fi
-`,
-				"utf-8",
-			);
 
 			const fakePnpm = join(fakeBin, "pnpm");
 			writeFileSync(
@@ -1694,71 +1646,15 @@ exit 0
 				"utf-8",
 			);
 
-			const fakeRg = join(fakeBin, "rg");
-			writeFileSync(
-				fakeRg,
-				`#!/usr/bin/env bash
-set -euo pipefail
-quiet=0
-pattern=""
-file=""
-
-while (( $# > 0 )); do
-	case "$1" in
-		-q)
-			quiet=1
-			shift
-			;;
-		-n|-m)
-			shift 2
-			;;
-		--*)
-			shift
-			;;
-		*)
-			if [[ -z "$pattern" ]]; then
-				pattern="$1"
-			elif [[ -z "$file" ]]; then
-				file="$1"
-			fi
-			shift
-			;;
-	esac
-done
-
-if [[ -n "$file" && -f "$file" ]]; then
-	if grep -Eq "$pattern" "$file"; then
-		if [[ "$quiet" -eq 0 ]]; then
-			grep -En "$pattern" "$file"
-		fi
-		exit 0
-	fi
-fi
-exit 1
-`,
-				"utf-8",
-			);
-
-			for (const toolPath of [fakeLocalMemory, fakeCurl, fakePnpm, fakeRg]) {
+			for (const toolPath of [
+				join(tempDir, "scripts/codex-preflight.sh"),
+				fakePnpm,
+			]) {
 				const chmod = spawnSync("chmod", ["+x", toolPath], {
 					encoding: "utf8",
 				});
 				expect(chmod.status).toBe(0);
 			}
-
-			const localMemoryConfig = join(tempDir, "local-memory-config.yaml");
-			writeFileSync(
-				localMemoryConfig,
-				`rest_api:
-  host: 127.0.0.1
-  port: 3002
-host: 127.0.0.1
-auto_port: false
-`,
-				"utf-8",
-			);
-
-			const fakeCurlState = join(tempDir, ".fake-curl-state");
 			const fakePnpmLog = join(tempDir, ".fake-pnpm-log");
 
 			const verify = spawnSync("bash", ["scripts/verify-work.sh"], {
@@ -1766,8 +1662,6 @@ auto_port: false
 				encoding: "utf8",
 				env: {
 					...process.env,
-					LOCAL_MEMORY_CONFIG_PATH: localMemoryConfig,
-					FAKE_CURL_STATE_FILE: fakeCurlState,
 					FAKE_PNPM_LOG: fakePnpmLog,
 					PATH: `${fakeBin}:${process.env.PATH ?? ""}`,
 				},
@@ -1831,6 +1725,30 @@ auto_port: false
 			);
 			const templateScript = readFileSync(
 				join(process.cwd(), "src/templates/codex-preflight.sh"),
+				"utf-8",
+			);
+			expect(runtimeScript).toBe(templateScript);
+		});
+
+		it("keeps the repo runtime codex learn helper aligned with the scaffold template", () => {
+			const runtimeScript = readFileSync(
+				join(process.cwd(), "scripts/codex-learn"),
+				"utf-8",
+			);
+			const templateScript = readFileSync(
+				join(process.cwd(), "src/templates/codex-learn.sh"),
+				"utf-8",
+			);
+			expect(runtimeScript).toBe(templateScript);
+		});
+
+		it("keeps the repo runtime codex enforced helper aligned with the scaffold template", () => {
+			const runtimeScript = readFileSync(
+				join(process.cwd(), "scripts/codex-enforced"),
+				"utf-8",
+			);
+			const templateScript = readFileSync(
+				join(process.cwd(), "src/templates/codex-enforced.sh"),
 				"utf-8",
 			);
 			expect(runtimeScript).toBe(templateScript);
@@ -2274,6 +2192,30 @@ describe("--rollback flag", () => {
 		}
 	});
 
+	it("reuses the tracked provider during rollback when no ciProvider flag is passed", () => {
+		const installResult = runInit(tempDir, {
+			dryRun: false,
+			force: false,
+			track: true,
+			ciProvider: "github-actions",
+		});
+		expect(installResult.ok).toBe(true);
+
+		const rollbackResult = runInit(tempDir, {
+			dryRun: false,
+			force: false,
+			rollback: true,
+		});
+
+		expect(rollbackResult.ok).toBe(true);
+		expect(existsSync(join(tempDir, ".github/workflows/pr-pipeline.yml"))).toBe(
+			false,
+		);
+		expect(existsSync(join(tempDir, ".harness/restore-manifest.json"))).toBe(
+			false,
+		);
+	});
+
 	it("blocks path traversal in manifest", () => {
 		// Install first
 		const installResult = runInit(tempDir, {
@@ -2560,7 +2502,62 @@ describe("--update flag", () => {
 		expect(updatedManifest.harnessVersion).not.toBe("0.0.1");
 	});
 
-	it("fails closed when manifest is missing ciProvider", () => {
+	it("adopts newly introduced scaffolded scripts during update when older manifests do not track them", () => {
+		const installResult = runInit(tempDir, {
+			dryRun: false,
+			force: false,
+			track: true,
+		});
+		expect(installResult.ok).toBe(true);
+
+		const manifestPath = join(tempDir, ".harness/restore-manifest.json");
+		const manifest = JSON.parse(readFileSync(manifestPath, "utf-8")) as {
+			harnessVersion?: string;
+			files: Array<{ path: string; action: string }>;
+		};
+		manifest.harnessVersion = "0.0.1";
+		manifest.files = manifest.files.filter(
+			(entry) =>
+				entry.path !== "scripts/codex-learn" &&
+				entry.path !== "scripts/codex-enforced",
+		);
+		writeFileSync(manifestPath, JSON.stringify(manifest));
+
+		rmSync(join(tempDir, "scripts/codex-learn"), { force: true });
+		rmSync(join(tempDir, "scripts/codex-enforced"), { force: true });
+
+		const result = runInit(tempDir, {
+			dryRun: false,
+			force: false,
+			update: true,
+		});
+
+		expect(result.ok).toBe(true);
+		expect(existsSync(join(tempDir, "scripts/codex-learn"))).toBe(true);
+		expect(existsSync(join(tempDir, "scripts/codex-enforced"))).toBe(true);
+		expect(
+			statSync(join(tempDir, "scripts/codex-learn")).mode & 0o111,
+		).toBeTruthy();
+		expect(
+			statSync(join(tempDir, "scripts/codex-enforced")).mode & 0o111,
+		).toBeTruthy();
+
+		const updatedManifest = JSON.parse(readFileSync(manifestPath, "utf-8")) as {
+			files: Array<{ path: string }>;
+		};
+		expect(
+			updatedManifest.files.some(
+				(entry) => entry.path === "scripts/codex-learn",
+			),
+		).toBe(true);
+		expect(
+			updatedManifest.files.some(
+				(entry) => entry.path === "scripts/codex-enforced",
+			),
+		).toBe(true);
+	});
+
+	it("auto-repairs manifest when ciProvider is missing via the requested/default provider", () => {
 		const installResult = runInit(tempDir, {
 			dryRun: false,
 			force: false,
@@ -2581,12 +2578,61 @@ describe("--update flag", () => {
 			update: true,
 		});
 
-		expect(result.ok).toBe(false);
-		if (!result.ok) {
-			expect(result.error.code).toBe("INCOMPLETE_MANIFEST");
-			expect(result.error.message).toContain("Restore manifest is incomplete");
-			expect(result.error.message).toContain("ciProvider");
-		}
+		expect(result.ok).toBe(true);
+		const repairedManifest = JSON.parse(
+			require("node:fs").readFileSync(manifestPath, "utf-8"),
+		);
+		expect(repairedManifest.ciProvider).toBe("circleci");
+	});
+
+	it("reuses the tracked provider during update when no ciProvider flag is passed", () => {
+		const installResult = runInit(tempDir, {
+			dryRun: false,
+			force: false,
+			track: true,
+			ciProvider: "github-actions",
+		});
+		expect(installResult.ok).toBe(true);
+		expect(existsSync(join(tempDir, ".github/workflows/pr-pipeline.yml"))).toBe(
+			true,
+		);
+		expect(existsSync(join(tempDir, ".circleci/config.yml"))).toBe(false);
+
+		const result = runInit(tempDir, {
+			dryRun: false,
+			force: false,
+			update: true,
+		});
+
+		expect(result.ok).toBe(true);
+		expect(existsSync(join(tempDir, ".github/workflows/pr-pipeline.yml"))).toBe(
+			true,
+		);
+		expect(existsSync(join(tempDir, ".circleci/config.yml"))).toBe(false);
+	});
+
+	it("prefers the requested/default provider when ci layout is ambiguous", () => {
+		const manifestPath = join(tempDir, ".harness/restore-manifest.json");
+		mkdirSync(join(tempDir, ".harness"), { recursive: true });
+		writeFileSync(
+			manifestPath,
+			JSON.stringify({ harnessVersion: "0.8.1", files: [] }),
+		);
+		mkdirSync(join(tempDir, ".circleci"), { recursive: true });
+		writeFileSync(join(tempDir, ".circleci/config.yml"), "version: 2.1\n");
+		mkdirSync(join(tempDir, ".github", "workflows"), { recursive: true });
+
+		const result = runInit(tempDir, {
+			dryRun: false,
+			force: false,
+			update: true,
+		});
+
+		expect(result.ok).toBe(true);
+		const repairedManifest = JSON.parse(
+			require("node:fs").readFileSync(manifestPath, "utf-8"),
+		);
+		expect(repairedManifest.ciProvider).toBe("circleci");
 	});
 
 	it("is no-op when already up to date", () => {
@@ -2982,6 +3028,36 @@ describe("--update flag", () => {
 			expect(result.error.message).toContain("downgrade harness.contract.json");
 			expect(result.error.message).toContain("harness upgrade --dry-run");
 		}
+	});
+
+	it("updates tracked files through safe in-repo symlinks without replacing the symlink", () => {
+		const installResult = runInit(tempDir, {
+			dryRun: false,
+			force: false,
+			track: true,
+			ciProvider: "github-actions",
+		});
+		expect(installResult.ok).toBe(true);
+
+		const linkPath = join(tempDir, ".mise.toml");
+		const targetDir = join(tempDir, "mise");
+		const targetPath = join(targetDir, "config.toml");
+		mkdirSync(targetDir, { recursive: true });
+		rmSync(linkPath, { force: true });
+		writeFileSync(targetPath, "legacy = true\n");
+		symlinkSync("mise/config.toml", linkPath);
+
+		const result = runInit(tempDir, {
+			dryRun: false,
+			force: false,
+			update: true,
+			ciProvider: "github-actions",
+		});
+
+		expect(result.ok).toBe(true);
+		expect(lstatSync(linkPath).isSymbolicLink()).toBe(true);
+		expect(realpathSync(linkPath)).toBe(realpathSync(targetPath));
+		expect(readFileSync(targetPath, "utf-8")).not.toContain("legacy = true");
 	});
 
 	// Security regression: executeUpdate must not follow symlinks when writing

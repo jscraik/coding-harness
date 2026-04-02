@@ -13,6 +13,7 @@ import { basename, dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { loadContract } from "../contract/loader.js";
 import { DEFAULT_CONTRACT } from "../contract/types.js";
+import { isNonWorkflowRequiredCheck } from "../policy/required-checks.js";
 import type {
 	AgentIdentity,
 	ArtifactFileRef,
@@ -49,7 +50,11 @@ import type {
 	RolloutWindowStageThresholds,
 } from "./types.js";
 
-const DEFAULT_ADAPTER_REGISTRY_PATH = "contracts/agent-adapter-registry.json";
+const MODULE_DIR = dirname(fileURLToPath(import.meta.url));
+const DEFAULT_ADAPTER_REGISTRY_PATH = resolve(
+	MODULE_DIR,
+	"../../../contracts/agent-adapter-registry.json",
+);
 const CONTROL_PLANE_COMPATIBILITY_MAJOR = 1;
 const DEFAULT_OVERRIDE_POLICY = DEFAULT_CONTRACT.controlPlanePolicy
 	?.overridePolicy ?? {
@@ -169,7 +174,6 @@ const ROLLOUT_STAGE_THRESHOLDS: Record<
 	},
 };
 
-const MODULE_DIR = dirname(fileURLToPath(import.meta.url));
 const HARNESS_INIT_SOURCE_FALLBACK = resolve(
 	MODULE_DIR,
 	"../../commands/init.ts",
@@ -196,7 +200,7 @@ function writeJsonFile(path: string, value: unknown): void {
 	writeFileSync(path, JSON.stringify(value, null, 2), "utf-8");
 }
 
-function buildFileRef(
+export function buildFileRef(
 	path: string,
 	options?: { required?: boolean },
 ): ArtifactFileRef {
@@ -211,8 +215,7 @@ function buildFileRef(
 		};
 	}
 
-	const stat = statSync(resolvedPath);
-	if (stat.isDirectory()) {
+	if (statSync(resolvedPath).isDirectory()) {
 		return {
 			path: resolvedPath,
 			exists: true,
@@ -543,12 +546,8 @@ function extractInitRequiredChecks(
 
 	const content = readFileSync(initRef.path, "utf-8");
 	const usesSharedRequiredChecksFormatter =
-		content.includes(
-			"Require status checks: ${formatRequiredChecksInline()}",
-		) ||
-		content.includes(
-			'${formatRequiredChecksBulleted(BRANCH_PROTECTION_REQUIRED_CHECKS, "  - ")}',
-		);
+		content.includes("formatRequiredChecksBulleted(") ||
+		content.includes("formatRequiredChecksInline(");
 	return usesSharedRequiredChecksFormatter
 		? { checks: [...policyChecks], extras: [] }
 		: { checks: [], extras: [] };
@@ -562,6 +561,9 @@ function compareRequiredChecks(
 ): RequiredCheckAlignment {
 	const policyChecks = unique(contractChecks);
 	const policyCheckSet = new Set<string>(policyChecks);
+	const workflowPolicyChecks = policyChecks.filter(
+		(check) => !isNonWorkflowRequiredCheck(check),
+	);
 	const policyRef = contractRef;
 	const relevantContractChecks = unique(contractChecks);
 	const workflowJobNames = unique(
@@ -569,7 +571,7 @@ function compareRequiredChecks(
 	);
 	const relevantWorkflowChecks = filterChecksByPolicy(
 		workflowJobNames,
-		policyChecks,
+		workflowPolicyChecks,
 	);
 	const contributingRef = buildFileRef("CONTRIBUTING.md");
 	const contributingSurface = extractBulletedCheckList(
@@ -592,7 +594,7 @@ function compareRequiredChecks(
 			workflowRefs[0] ?? buildFileRef(".github/workflows", { required: true }),
 			relevantWorkflowChecks,
 			workflowJobNames.filter((check) => !policyCheckSet.has(check)),
-			policyChecks,
+			workflowPolicyChecks,
 			{ allowExtras: true },
 		),
 		buildSurfaceAlignment(
@@ -628,7 +630,7 @@ function compareRequiredChecks(
 		extraInContract: relevantContractChecks.filter(
 			(check) => !policyCheckSet.has(check),
 		),
-		missingFromWorkflow: policyChecks.filter(
+		missingFromWorkflow: workflowPolicyChecks.filter(
 			(check) => !relevantWorkflowChecks.includes(check),
 		),
 		missingFromInit: policyChecks.filter(

@@ -30,6 +30,22 @@ const REQUIRED_TESTING_FIELDS = [
 	},
 ] as const;
 
+function normalizeTestingFieldValue(value: string): string {
+	let normalized = value.trim();
+
+	const fencedMatch = normalized.match(/^```[\w-]*\s*([\s\S]*?)\s*```$/);
+	if (fencedMatch) {
+		normalized = fencedMatch[1] ?? "";
+	}
+
+	const inlineCodeMatch = normalized.match(/^`([^`]+)`$/);
+	if (inlineCodeMatch) {
+		normalized = inlineCodeMatch[1] ?? "";
+	}
+
+	return normalized.replace(/\s+/g, " ").trim();
+}
+
 function extractSectionBody(body: string, heading: string): string | null {
 	const escapedHeading = heading.replace(/[.*+?^${}()|[\]]/g, "\\$&");
 	const pattern = new RegExp(
@@ -109,8 +125,9 @@ function collectTestingFieldErrors(body: string): string[] {
 			continue;
 		}
 
-		const value = match[1]?.trim() ?? "";
-		if (value.length === 0 || value === field.placeholder) {
+		const value = normalizeTestingFieldValue(match[1] ?? "");
+		const placeholder = normalizeTestingFieldValue(field.placeholder);
+		if (value.length === 0 || value === placeholder) {
 			errors.push(`Replace testing field placeholder: ${field.label}`);
 		}
 	}

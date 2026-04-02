@@ -16,7 +16,7 @@ import { resolve } from "node:path";
 import semver from "semver";
 import { getVersion } from "../version.js";
 import { loadManifest } from "./rollback.js";
-import { HARNESS_DIR, MANIFEST_FILE } from "./types.js";
+import { type CIProvider, HARNESS_DIR, MANIFEST_FILE } from "./types.js";
 
 // ─── Template fingerprinting ──────────────────────────────────────────────────
 
@@ -135,7 +135,10 @@ export interface UpgradeContext {
  * Reads the restore-manifest for the installed version, then cross-checks
  * the upgrade-manifest (if it exists) to classify stock vs customized files.
  */
-export function detectUpgradeContext(targetDir: string):
+export function detectUpgradeContext(
+	targetDir: string,
+	preferredCiProvider?: CIProvider,
+):
 	| {
 			ok: true;
 			value: UpgradeContext;
@@ -157,6 +160,7 @@ export function detectUpgradeContext(targetDir: string):
 		const manifestResult = loadManifest(targetDir, {
 			requireMetadata: true,
 			operation: "upgrade",
+			...(preferredCiProvider !== undefined ? { preferredCiProvider } : {}),
 		});
 		if (!manifestResult.ok) {
 			return { ok: false, error: manifestResult.error.message };

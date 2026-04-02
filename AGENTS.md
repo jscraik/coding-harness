@@ -42,6 +42,7 @@ Notes:
 - Prefer `rg`, `fd`, and `jq`.
 - Before mutating work, confirm `pwd`, repo root, required binaries, and target paths.
 - For this repo, verify `docs/agents/` and `scripts/` for path-sensitive work.
+- Prefer `./scripts/codex-enforced "<prompt>"` for repo-local Codex launches so failures are recorded into repo-scoped learn state.
 - Run `./scripts/codex-preflight.sh --stack auto --mode required` before multi-step, destructive, or path-sensitive workflows.
 - Use `./scripts/verify-work.sh` as the canonical repo-local verification entrypoint; keep `scripts/codex-preflight.sh` as the lower-level bootstrap gate beneath it.
 - Ask before adding dependencies or changing system-level settings.
@@ -57,7 +58,7 @@ Notes:
 - Open a PR for every merge to `main`.
 - **PR description linking:** use `Refs JSC-N` while the issue is still in review; use `Closes JSC-N` only when the merge fully completes the issue.
 - Run the smallest focused validation first, then `pnpm check` before handoff when behavior changed.
-- CodeRabbit review must remain independent; the coding agent cannot self-approve.
+- Greptile review must remain independent; the coding agent cannot self-approve.
 - If you touch tooling/runtime contract surfaces such as hooks, `Makefile`, `.mise.toml`, readiness scripts, or generated Codex environment actions, update [docs/agents/02-tooling-policy.md](./docs/agents/02-tooling-policy.md) and [docs/agents/06-security-and-governance.md](./docs/agents/06-security-and-governance.md) in the same change.
 - If you find a reproducible bug, policy gap, workflow regression, automation follow-up, or release follow-up, create or update the matching Linear issue before handoff.
 - See [docs/agents/18-github-linear-automation.md](./docs/agents/18-github-linear-automation.md) for the full GitHub → Linear automation config and known gaps.
@@ -76,7 +77,7 @@ Start with [docs/agents/01-instruction-map.md](./docs/agents/01-instruction-map.
 - Auditability requirements: [docs/agents/09-audit-trail-policy.md](./docs/agents/09-audit-trail-policy.md)
 - Agent test policy and rollout gates: [docs/agents/10-agent-testing-gates.md](./docs/agents/10-agent-testing-gates.md)
 - Flaky test artifacts and evidence capture: [docs/agents/11-flaky-test-artifacts.md](./docs/agents/11-flaky-test-artifacts.md)
-- AI review workflow (CodeRabbit primary, Greptile legacy bridge): [docs/agents/12-greptile-ai-governance.md](./docs/agents/12-greptile-ai-governance.md)
+- AI review workflow: [docs/agents/12-ai-review-governance.md](./docs/agents/12-ai-review-governance.md)
 - Linear-first work intake: [docs/agents/13-linear-production-workflow.md](./docs/agents/13-linear-production-workflow.md)
 - Docs-gate rollout and promotion: [docs/agents/14-docs-gate-rollout.md](./docs/agents/14-docs-gate-rollout.md)
 - Context integrity (agent-optimized): [docs/agents/15-context-integrity-compact.md](./docs/agents/15-context-integrity-compact.md)
@@ -88,6 +89,7 @@ Start with [docs/agents/01-instruction-map.md](./docs/agents/01-instruction-map.
 ## Memory Layer
 - Read `~/.codex/instructions/Learnings.md` at session start.
 - If `.harness/memory/LEARNINGS.md` exists, read it; if it is missing, bootstrap it per [docs/agents/03-local-memory.md](./docs/agents/03-local-memory.md).
+- Repo-local preflight telemetry lives under `.harness/memory/codex-learned/`; repo-local override writes land in `.harness/memory/codex-preflight-overrides.env`.
 - Repo-specific fixes belong in `.harness/memory/LEARNINGS.md`; universal fixes belong in `~/.codex/instructions/Learnings.md`.
 
 ## Implementation Conventions

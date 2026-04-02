@@ -9,12 +9,12 @@
 - [Required pre-merge gates](#required-pre-merge-gates)
 - [Required tooling baseline](#required-tooling-baseline)
 - [Repo-local verification wrapper](#repo-local-verification-wrapper)
-- [Greptile setup baseline](#greptile-setup-baseline)
-- [Greptile config hierarchy](#greptile-config-hierarchy)
-- [Greptile merge logic for multi-scope pull requests](#greptile-merge-logic-for-multi-scope-pull-requests)
-- [Greptile confidence score policy](#greptile-confidence-score-policy)
-- [Greptile strictness policy](#greptile-strictness-policy)
-- [Greptile training and feedback loop](#greptile-training-and-feedback-loop)
+- [Legacy Greptile setup baseline](#legacy-greptile-setup-baseline)
+- [Legacy Greptile config hierarchy](#legacy-greptile-config-hierarchy)
+- [Legacy Greptile merge logic for multi-scope pull requests](#legacy-greptile-merge-logic-for-multi-scope-pull-requests)
+- [Legacy Greptile confidence score policy](#legacy-greptile-confidence-score-policy)
+- [Legacy Greptile strictness policy](#legacy-greptile-strictness-policy)
+- [Legacy Greptile training and feedback loop](#legacy-greptile-training-and-feedback-loop)
 - [Recommended security scanner baseline](#recommended-security-scanner-baseline)
 - [Review artifacts requirement](#review-artifacts-requirement)
 - [Credential-safe evidence snippets](#credential-safe-evidence-snippets)
@@ -26,8 +26,8 @@
 - No direct push to `main`.
 - Pull request required for every merge.
 - Required checks must pass before merge.
-- Greptile + Codex review artifacts are required before merge.
-- Greptile must be configured correctly using the `check-pr` or `greploop` skill with all required Greptile files present.
+- CodeRabbit + Codex review artifacts are required before merge for this repository.
+- Legacy Greptile setup remains relevant only for harness-managed repositories that still rely on the bridge workflow and `.greptile/` files.
 - The coding agent must not approve its own PR; review must be independent.
 - Merge only after all gates pass.
 - Delete branch/worktree after merge.
@@ -93,8 +93,10 @@ Recommended policy:
 
 - Pin repo-managed tooling in `.mise.toml` where possible.
 - Treat `scripts/codex-preflight.sh` as required project bootstrap infrastructure.
+- Scaffold `scripts/codex-enforced` and `scripts/codex-learn` together with preflight so repo-local wrappers own repo-local state.
 - Keep `preflight_repo` in `required` mode by default; only relax mode (`optional` or `off`) when the project documents why.
 - Adjust preflight binary/path lists per project scope instead of deleting the script.
+- Keep repo-scoped telemetry and learned overrides under `.harness/memory/`, and global telemetry under `~/.codex/`.
 - Treat `scripts/verify-work.sh` as the canonical repo-local verification command and keep it wired to repo-local preflight defaults.
 - Treat `scripts/check-environment.sh` as the local readiness gate for required tooling.
 - Block merge or promotion work when a required CLI is missing rather than silently skipping the corresponding validation lane.
@@ -104,18 +106,21 @@ Recommended policy:
 
 - `scripts/verify-work.sh` is the canonical repo-local verification entrypoint.
 - The wrapper always runs `scripts/codex-preflight.sh` in `required` Local Memory mode with scaffold-safe path and binary expectations.
+- Repo-local launches should prefer `./scripts/codex-enforced` so preflight failures are recorded into repo-scoped learn state.
+- Use `./scripts/codex-learn analyze` and `./scripts/codex-learn apply` to inspect repo-scoped failure patterns and write override files into `.harness/memory/`.
 - Use `bash scripts/verify-work.sh` for the full verification bundle.
 - Use `bash scripts/verify-work.sh --fast` for preflight + lint + typecheck + focused test coverage.
 
-## Greptile setup baseline
+## Legacy Greptile setup baseline
 
-- Greptile must be configured correctly before relying on Greptile review gates.
-- `harness init` scaffolds the baseline Greptile files and bridge workflow into harness-managed repositories.
+- `coding-harness` itself uses `CodeRabbit` as the primary automated review check.
+- The Greptile guidance in this section is legacy-only for harness-managed repositories that still rely on `.greptile/` files and the bridge workflow.
+- `harness init` scaffolds the baseline Greptile files and legacy bridge workflow into harness-managed repositories.
 - Required repo-local files:
   - `.greptile/config.json`
   - `.greptile/rules.md`
   - `.greptile/files.json`
-- Required bridge workflow in harness-managed legacy repositories:
+- Legacy bridge workflow:
   - `.github/workflows/greptile-review.yml`
 - Verify setup with:
   - `harness verify-greptile`
@@ -123,34 +128,34 @@ Recommended policy:
 - Trigger or refresh a review with:
   - `harness request-greptile-review --owner <owner> --repo <repo> --pr <number>`
 
-## Greptile config hierarchy
+## Legacy Greptile config hierarchy
 
 1. Org-enforced dashboard rules.
 2. Directory-scoped `.greptile/` folders.
 3. Legacy `greptile.json` (ignored when `.greptile/` exists in the same directory).
 4. Dashboard defaults.
 
-## Greptile merge logic for multi-scope pull requests
+## Legacy Greptile merge logic for multi-scope pull requests
 
 - strictness: most restrictive scope wins.
 - `fileChangeLimit`: lowest value wins.
 - comment types: union all requested types.
 - booleans: enabled if any scope enables them.
 
-## Greptile confidence score policy
+## Legacy Greptile confidence score policy
 
 - `5/5`: merge-ready.
 - `4/5`: merge after minor polish.
 - `3/5`: fix findings and re-review.
 - `0-2/5`: blocked.
 
-## Greptile strictness policy
+## Legacy Greptile strictness policy
 
 - Strictness 1: security-critical or fresh-calibration scopes.
 - Strictness 2: default baseline for `main`/production-targeted changes.
 - Strictness 3: stable, non-critical internal infrastructure.
 
-## Greptile training and feedback loop
+## Legacy Greptile training and feedback loop
 
 - Use `@greptileai` on draft PRs or when settings/context changed and a forced re-review is needed.
 - Use targeted prompts for scoped checks (for example: `@greptileai check for memory leaks`).
@@ -175,9 +180,8 @@ Recommended policy:
 
 Each PR must include:
 
-- Greptile review artifact (URL, report, or comment reference).
+- CodeRabbit review artifact (URL, report, or comment reference).
 - Codex review artifact (URL, report, or comment reference).
-- Greptile confidence score for the PR.
 - Confirmation that reviewer agent is independent from coding agent.
 
 If either artifact is missing, block merge until it is added or explicitly waived by repository policy.

@@ -281,7 +281,63 @@ describe("detectUpgradeContext", () => {
 		}
 	});
 
-	it("fails when restore-manifest is missing ciProvider", () => {
+	it("auto-repairs restore-manifest when contract declares ciProvider", () => {
+		ensureHarnessDir(dir);
+		writeFileSync(
+			join(dir, ".harness", "restore-manifest.json"),
+			JSON.stringify({ harnessVersion: "0.8.0", files: [] }),
+		);
+		writeFileSync(
+			join(dir, "harness.contract.json"),
+			JSON.stringify({
+				ciProviderPolicy: { activeProvider: "circleci" },
+			}),
+		);
+		const result = detectUpgradeContext(dir);
+		expect(result.ok).toBe(true);
+		if (result.ok) {
+			expect(result.value.fromVersion).toBe("0.8.0");
+		}
+		const repairedManifest = JSON.parse(
+			readFileSync(join(dir, ".harness", "restore-manifest.json"), "utf-8"),
+		) as { ciProvider?: string | undefined };
+		expect(repairedManifest.ciProvider).toBe("circleci");
+	});
+
+	it("auto-repairs restore-manifest when ci layout is unambiguous", () => {
+		ensureHarnessDir(dir);
+		writeFileSync(
+			join(dir, ".harness", "restore-manifest.json"),
+			JSON.stringify({ harnessVersion: "0.8.0", files: [] }),
+		);
+		mkdirSync(join(dir, ".circleci"), { recursive: true });
+		writeFileSync(join(dir, ".circleci", "config.yml"), "version: 2.1\n");
+		const result = detectUpgradeContext(dir);
+		expect(result.ok).toBe(true);
+		const repairedManifest = JSON.parse(
+			readFileSync(join(dir, ".harness", "restore-manifest.json"), "utf-8"),
+		) as { ciProvider?: string | undefined };
+		expect(repairedManifest.ciProvider).toBe("circleci");
+	});
+
+	it("prefers the requested/default provider when ci layout is ambiguous", () => {
+		ensureHarnessDir(dir);
+		writeFileSync(
+			join(dir, ".harness", "restore-manifest.json"),
+			JSON.stringify({ harnessVersion: "0.8.0", files: [] }),
+		);
+		mkdirSync(join(dir, ".circleci"), { recursive: true });
+		writeFileSync(join(dir, ".circleci", "config.yml"), "version: 2.1\n");
+		mkdirSync(join(dir, ".github", "workflows"), { recursive: true });
+		const result = detectUpgradeContext(dir, "circleci");
+		expect(result.ok).toBe(true);
+		const repairedManifest = JSON.parse(
+			readFileSync(join(dir, ".harness", "restore-manifest.json"), "utf-8"),
+		) as { ciProvider?: string | undefined };
+		expect(repairedManifest.ciProvider).toBe("circleci");
+	});
+
+	it("fails when restore-manifest is missing ciProvider and provider cannot be inferred", () => {
 		ensureHarnessDir(dir);
 		writeFileSync(
 			join(dir, ".harness", "restore-manifest.json"),

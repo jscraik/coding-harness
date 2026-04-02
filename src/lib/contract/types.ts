@@ -1014,7 +1014,7 @@ export const DEFAULT_DOCS_GATE_POLICY: DocsGatePolicy = {
 			requiredFor: ["tooling_runtime"],
 		},
 		{
-			path: "docs/agents/12-greptile-ai-governance.md",
+			path: "docs/agents/12-ai-review-governance.md",
 			surfaceType: "governance_doc",
 			owner: "contract",
 			requiredFor: ["agent_governance"],

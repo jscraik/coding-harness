@@ -141,6 +141,11 @@ harness upgrade --dry-run
 harness upgrade
 ```
 
+If a legacy `.harness/restore-manifest.json` is missing `ciProvider`, harness
+will repair it automatically when the active provider can be inferred from
+`harness.contract.json`, an unambiguous CI layout on disk, or the requested or
+default init/upgrade provider.
+
 If tracked baseline files are missing and you need to re-scaffold them:
 
 ```bash
