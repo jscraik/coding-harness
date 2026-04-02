@@ -8,6 +8,7 @@ This repository follows conservative defaults:
 - Explicitly avoid ad hoc global installs and hidden mutation.
 - Preserve existing dependency and execution boundaries (`pnpm` + lockfile-driven installs).
 - Harness-managed consumer repositories are a defined exception: `scripts/check-environment.sh` should prefer a repo-local CLI runner or wrapper, and use a global npm install of `@brainwav/coding-harness` only as the final fallback with explicit `NPM_TOKEN` auth wiring.
+- Security/policy hook configuration files must fail closed because of findings, not because the config is syntactically broken; keep Semgrep rule YAML quoted where patterns include mapping-like text such as `shell: true`.
 
 ## Secret handling
 
