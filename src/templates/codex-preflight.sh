@@ -81,21 +81,11 @@ append_csv_values() {
 	printf '%s,%s\n' "${base_csv}" "${extra_csv}"
 }
 
-# load_preflight_overrides loads an optional environment file and populates PREFLIGHT_OVERRIDE_* variables.
-#
-# If the provided file path does not exist, the function returns success and leaves:
-# PREFLIGHT_OVERRIDE_BINS and PREFLIGHT_OVERRIDE_PATHS empty, and PREFLIGHT_OVERRIDE_ALLOWED_EXTERNAL_PATHS set from CODEX_PREFLIGHT_ALLOWED_EXTERNAL_PATHS or empty.
-#
-# If the file exists, it is sourced and the following are set from the sourced environment (falling back to empty if unset):
-# - PREFLIGHT_OVERRIDE_BINS from CODEX_PREFLIGHT_EXTRA_BINS
-# - PREFLIGHT_OVERRIDE_PATHS from CODEX_PREFLIGHT_EXTRA_PATHS
-# - PREFLIGHT_OVERRIDE_ALLOWED_EXTERNAL_PATHS from CODEX_PREFLIGHT_ALLOWED_EXTERNAL_PATHS
 load_preflight_overrides() {
 	local override_file="$1"
 
 	PREFLIGHT_OVERRIDE_BINS=''
 	PREFLIGHT_OVERRIDE_PATHS=''
-	PREFLIGHT_OVERRIDE_ALLOWED_EXTERNAL_PATHS="${CODEX_PREFLIGHT_ALLOWED_EXTERNAL_PATHS:-}"
 	if [[ ! -f "${override_file}" ]]; then
 		return 0
 	fi
@@ -104,10 +94,8 @@ load_preflight_overrides() {
 	source "${override_file}"
 	PREFLIGHT_OVERRIDE_BINS="${CODEX_PREFLIGHT_EXTRA_BINS:-}"
 	PREFLIGHT_OVERRIDE_PATHS="${CODEX_PREFLIGHT_EXTRA_PATHS:-}"
-	PREFLIGHT_OVERRIDE_ALLOWED_EXTERNAL_PATHS="${CODEX_PREFLIGHT_ALLOWED_EXTERNAL_PATHS:-}"
 }
 
-# extract_last_json_line extracts the last line that begins with `{` from the given input and echoes it to stdout.
 extract_last_json_line() {
 	local raw="${1:-}"
 	printf '%s\n' "${raw}" | awk '/^\{/{line=$0} END{if (line != "") print line}'
@@ -263,15 +251,14 @@ stack_bins_csv() {
 
 stack_paths_csv() {
 	case "$1" in
-		js) echo 'package.json,CODESTYLE.md,CONTRIBUTING.md,Makefile,scripts,scripts/codex-preflight.sh,scripts/verify-work.sh,scripts/validate-codestyle.sh' ;;
-		py) echo 'pyproject.toml,CODESTYLE.md,CONTRIBUTING.md,Makefile,scripts,scripts/codex-preflight.sh,scripts/verify-work.sh,scripts/validate-codestyle.sh' ;;
-		rust) echo 'Cargo.toml,CODESTYLE.md,CONTRIBUTING.md,Makefile,scripts,scripts/codex-preflight.sh,scripts/verify-work.sh,scripts/validate-codestyle.sh' ;;
-		repo) echo 'CODESTYLE.md,CONTRIBUTING.md,Makefile,scripts,scripts/codex-preflight.sh,scripts/verify-work.sh,scripts/validate-codestyle.sh' ;;
+		js) echo 'package.json,CONTRIBUTING.md,Makefile,scripts,scripts/codex-preflight.sh,scripts/verify-work.sh' ;;
+		py) echo 'pyproject.toml,CONTRIBUTING.md,Makefile,scripts,scripts/codex-preflight.sh,scripts/verify-work.sh' ;;
+		rust) echo 'Cargo.toml,CONTRIBUTING.md,Makefile,scripts,scripts/codex-preflight.sh,scripts/verify-work.sh' ;;
+		repo) echo 'CONTRIBUTING.md,Makefile,scripts,scripts/codex-preflight.sh,scripts/verify-work.sh' ;;
 		*) log_err "unknown stack: $1"; return 2 ;;
 	esac
 }
 
-# check_bins checks each command in a comma-separated list exists in PATH; logs missing binaries and returns 2 when any are missing, otherwise logs success.
 check_bins() {
 	local bins_csv="$1"
 	local -a bins=()
@@ -293,60 +280,6 @@ check_bins() {
 	log_ok "binaries ok: ${bins_csv}"
 }
 
-# is_allowed_repo_external_path determines whether a path that would otherwise escape the repository root is permitted when the matched file is the symlink `CODESTYLE.md` and its target matches an allowed external path.
-# It consults the repository's `.codex/preflight-allowed-external-paths.txt` plus any values from `PREFLIGHT_OVERRIDE_ALLOWED_EXTERNAL_PATHS`, performs simple ${HOME} and ${REPO_ROOT} substitutions, and compares against the symlink target and the resolved absolute path.
-# Arguments: root (repository root), match (path name being checked), abs (resolved absolute path of the matched file).
-# Returns: exit code 0 when the path is allowed, 1 otherwise.
-is_allowed_repo_external_path() {
-	local root="$1"
-	local match="$2"
-	local abs="$3"
-	local link_target=''
-	local config_path="${root}/.codex/preflight-allowed-external-paths.txt"
-	local candidate=''
-	local candidate_abs=''
-	if [[ "${match}" != "CODESTYLE.md" ]]; then
-		return 1
-	fi
-	if [[ ! -L "${match}" ]]; then
-		return 1
-	fi
-
-	link_target="$(readlink "${match}" 2>/dev/null || true)"
-	case "${link_target}" in
-		*/.codex/instructions/CODESTYLE.md) ;;
-		*) return 1 ;;
-	esac
-
-	while IFS= read -r candidate; do
-		[[ -z "${candidate}" ]] && continue
-		candidate="${candidate//\$\{HOME\}/${HOME}}"
-		candidate="${candidate//\$HOME/${HOME}}"
-		candidate="${candidate//\$\{REPO_ROOT\}/${root}}"
-		candidate="${candidate//\$REPO_ROOT/${root}}"
-		if [[ "${link_target}" == "${candidate}" || "${abs}" == "${candidate}" ]]; then
-			return 0
-		fi
-		if candidate_abs="$(
-			python3 -c 'import os, sys; print(os.path.realpath(sys.argv[1]))' "${candidate}" 2>/dev/null
-		)" && [[ "${abs}" == "${candidate_abs}" ]]; then
-			return 0
-		fi
-	done < <(
-		{
-			if [[ -f "${config_path}" ]]; then
-				sed -e 's/#.*$//' -e '/^[[:space:]]*$/d' "${config_path}"
-			fi
-			if [[ -n "${PREFLIGHT_OVERRIDE_ALLOWED_EXTERNAL_PATHS:-}" ]]; then
-				printf '%s\n' "${PREFLIGHT_OVERRIDE_ALLOWED_EXTERNAL_PATHS}" | tr ',' '\n'
-			fi
-		}
-	)
-
-	return 1
-}
-
-# check_paths verifies that each comma-separated path pattern exists and resolves to a location under the given repository root, and errors if any pattern has no matches or resolves outside the root unless an allowed external path case applies.
 check_paths() {
 	local root="$1"
 	local paths_csv="$2"
@@ -379,9 +312,6 @@ check_paths() {
 					return 2
 				fi
 				if [[ "${abs}" != "${root}" && "${abs}" != "${root}"/* ]]; then
-					if is_allowed_repo_external_path "${root}" "${match}" "${abs}"; then
-						continue
-					fi
 					log_err "path escapes repo root: ${match} -> ${abs}"
 					return 2
 				fi
@@ -717,7 +647,7 @@ preflight_repo() {
 		repo \
 		"${1:-}" \
 		"${2:-git,bash,sed,rg,jq,curl,python3}" \
-		"${3:-CODESTYLE.md,CONTRIBUTING.md,Makefile,scripts,scripts/codex-preflight.sh,scripts/verify-work.sh,scripts/validate-codestyle.sh}" \
+		"${3:-CONTRIBUTING.md,Makefile,scripts,scripts/codex-preflight.sh,scripts/verify-work.sh}" \
 		"${4:-required}"
 }
 
@@ -726,7 +656,7 @@ preflight_js() {
 		js \
 		"${1:-}" \
 		"${2:-git,bash,sed,rg,jq,curl,node,npm,python3}" \
-		"${3:-package.json,CODESTYLE.md,CONTRIBUTING.md,Makefile,scripts,scripts/codex-preflight.sh,scripts/verify-work.sh,scripts/validate-codestyle.sh}" \
+		"${3:-package.json,CONTRIBUTING.md,Makefile,scripts,scripts/codex-preflight.sh,scripts/verify-work.sh}" \
 		"${4:-required}"
 }
 
@@ -735,7 +665,7 @@ preflight_py() {
 		py \
 		"${1:-}" \
 		"${2:-git,bash,sed,rg,jq,curl,python3}" \
-		"${3:-pyproject.toml,CODESTYLE.md,CONTRIBUTING.md,Makefile,scripts,scripts/codex-preflight.sh,scripts/verify-work.sh,scripts/validate-codestyle.sh}" \
+		"${3:-pyproject.toml,CONTRIBUTING.md,Makefile,scripts,scripts/codex-preflight.sh,scripts/verify-work.sh}" \
 		"${4:-required}"
 }
 
@@ -744,12 +674,12 @@ preflight_rust() {
 		rust \
 		"${1:-}" \
 		"${2:-git,bash,sed,rg,jq,curl,python3,cargo}" \
-		"${3:-Cargo.toml,CODESTYLE.md,CONTRIBUTING.md,Makefile,scripts,scripts/codex-preflight.sh,scripts/verify-work.sh,scripts/validate-codestyle.sh}" \
+		"${3:-Cargo.toml,CONTRIBUTING.md,Makefile,scripts,scripts/codex-preflight.sh,scripts/verify-work.sh}" \
 		"${4:-required}"
 }
 
 preflight_repo_local_memory() {
-	preflight_repo "${1:-}" "${2:-git,bash,sed,rg,jq,curl,python3}" "${3:-CODESTYLE.md,CONTRIBUTING.md,Makefile,scripts,scripts/codex-preflight.sh,scripts/verify-work.sh,scripts/validate-codestyle.sh}" required
+	preflight_repo "${1:-}" "${2:-git,bash,sed,rg,jq,curl,python3}" "${3:-CONTRIBUTING.md,Makefile,scripts,scripts/codex-preflight.sh,scripts/verify-work.sh}" required
 }
 
 main() {

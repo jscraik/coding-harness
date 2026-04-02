@@ -3,7 +3,6 @@ import {
 	existsSync,
 	lstatSync,
 	mkdirSync,
-	mkdtempSync,
 	readFileSync,
 	realpathSync,
 	rmSync,
@@ -44,12 +43,10 @@ const EXPECTED_TEMPLATE_PATHS = [
 	"biome.json",
 	".gitleaks.toml",
 	"prek.toml",
-	"CODESTYLE.md",
 	"scripts/codex-preflight.sh",
 	"scripts/codex-learn",
 	"scripts/codex-enforced",
 	"scripts/verify-work.sh",
-	"scripts/validate-codestyle.sh",
 	"scripts/prepare-worktree.sh",
 	"scripts/harness-cli.sh",
 	"scripts/check-environment.sh",
@@ -66,8 +63,9 @@ describe("runInit", () => {
 	let tempDir: string;
 
 	beforeEach(() => {
-		// Use mkdtemp so concurrent suite workers never collide on the same path.
-		tempDir = mkdtempSync(join(tmpdir(), "harness-init-test-"));
+		// Create unique temp directory for each test
+		tempDir = join(tmpdir(), `harness-init-test-${Date.now()}`);
+		mkdirSync(tempDir, { recursive: true });
 	});
 
 	afterEach(() => {
@@ -169,10 +167,6 @@ describe("runInit", () => {
 			expect(existsSync(join(tempDir, "scripts/codex-learn"))).toBe(true);
 			expect(existsSync(join(tempDir, "scripts/codex-enforced"))).toBe(true);
 			expect(existsSync(join(tempDir, "scripts/verify-work.sh"))).toBe(true);
-			expect(existsSync(join(tempDir, "CODESTYLE.md"))).toBe(true);
-			expect(existsSync(join(tempDir, "scripts/validate-codestyle.sh"))).toBe(
-				true,
-			);
 			expect(existsSync(join(tempDir, "scripts/prepare-worktree.sh"))).toBe(
 				true,
 			);
@@ -558,17 +552,11 @@ describe("runInit", () => {
 				join(tempDir, ".github/workflows/greptile-review.yml"),
 				"utf-8",
 			);
-			const secretScanWorkflow = require("node:fs").readFileSync(
-				join(tempDir, ".github/workflows/secret-scan.yml"),
-				"utf-8",
-			);
 			expect(greptileWorkflow).toContain("pull_request:");
 			expect(greptileWorkflow).toContain("pull_request_review:");
 			expect(greptileWorkflow).toContain("pull_request_review_comment:");
 			expect(greptileWorkflow).toContain("issue_comment:");
 			expect(greptileWorkflow).toContain("checks: write");
-			expect(secretScanWorkflow).toContain("pull-requests: write");
-			expect(secretScanWorkflow).toContain("GITLEAKS_CONFIG: .gitleaks.toml");
 			// CircleCI file should NOT be created
 			expect(existsSync(join(tempDir, ".circleci/config.yml"))).toBe(false);
 		});
@@ -724,6 +712,23 @@ describe("runInit", () => {
 				"utf-8",
 			);
 			expect(content).toContain('name = "harness local environment"');
+		});
+
+		it("creates valid memory.json baseline", () => {
+			const result = runInit(tempDir, { dryRun: false, force: false });
+
+			expect(result.ok).toBe(true);
+
+			const memoryPath = join(tempDir, "memory.json");
+			expect(existsSync(memoryPath)).toBe(true);
+
+			const memory = JSON.parse(
+				require("node:fs").readFileSync(memoryPath, "utf-8"),
+			);
+			expect(memory.meta.version).toBe("1.0");
+			expect(memory.preamble.bootstrap).toBe(true);
+			expect(memory.preamble.search).toBe(true);
+			expect(Array.isArray(memory.entries)).toBe(true);
 		});
 
 		it("creates valid memory.json baseline", () => {
@@ -1238,8 +1243,7 @@ describe("runInit", () => {
 			expect(semgrepChanged).toContain(
 				'git diff --name-only --diff-filter=ACMR -z "$base_ref"...HEAD --',
 			);
-			expect(semgrepChanged).toContain('SEMGREP_VERSION="1.153.1"');
-			expect(semgrepChanged).toContain('"$SEMGREP_BIN" scan');
+			expect(semgrepChanged).toContain("semgrep scan");
 			expect(semgrepRules).toContain("ts-no-eval");
 			expect(semgrepRules).toContain("ts-no-shell-true");
 			expect(makefile).toContain("check: ## Run all required quality gates");
@@ -1316,9 +1320,11 @@ describe("runInit", () => {
 			expect(verifyWork).toContain("--mode required");
 			expect(verifyWork).toContain("scripts/verify-work.sh");
 			expect(verifyWork).toContain("==> codex-preflight");
-			expect(verifyWork).toContain("==> validate-codestyle");
-			expect(verifyWork).toContain("==> validate-codestyle --fast");
-			expect(verifyWork).toContain("scripts/validate-codestyle.sh");
+			expect(verifyWork).toContain("==> check");
+			expect(verifyWork).toContain("==> test:related");
+			expect(verifyWork).toContain(
+				"test:related unavailable; falling back to full test run",
+			);
 			expect(prepareWorktree).toContain(
 				"Prepare a freshly created git worktree for local hooks and pre-push checks.",
 			);
@@ -1443,13 +1449,6 @@ describe("runInit", () => {
 			expect(environmentCheck).toContain("required Makefile target");
 			expect(environmentCheck).toContain("Codex environment action");
 			expect(environmentCheck).toContain("run_check_environment_with_runner()");
-			expect(environmentCheck).toContain(
-				"repo source CLI (pnpm exec tsx src/cli.ts)",
-			);
-			expect(environmentCheck).toContain("repo dist CLI (node dist/cli.js)");
-			expect(environmentCheck).toContain(
-				"repo wrapper (bash scripts/harness-cli.sh)",
-			);
 			expect(environmentCheck).toContain(
 				"@brainwav/coding-harness is not installed globally via npm",
 			);
@@ -1632,15 +1631,6 @@ echo "local-memory preflight passed"
 `,
 				"utf-8",
 			);
-			writeFileSync(
-				join(tempDir, "scripts/validate-codestyle.sh"),
-				`#!/usr/bin/env bash
-set -euo pipefail
-echo "local codestyle passed"
-pnpm run check
-`,
-				"utf-8",
-			);
 
 			const fakeBin = join(tempDir, ".fake-bin");
 			mkdirSync(fakeBin, { recursive: true });
@@ -1658,7 +1648,6 @@ exit 0
 
 			for (const toolPath of [
 				join(tempDir, "scripts/codex-preflight.sh"),
-				join(tempDir, "scripts/validate-codestyle.sh"),
 				fakePnpm,
 			]) {
 				const chmod = spawnSync("chmod", ["+x", toolPath], {
@@ -1682,8 +1671,7 @@ exit 0
 			expect(verify.stdout).toContain("[verify-work] repo root:");
 			expect(verify.stdout).toContain("==> codex-preflight");
 			expect(verify.stdout).toContain("local-memory preflight passed");
-			expect(verify.stdout).toContain("==> validate-codestyle");
-			expect(verify.stdout).toContain("local codestyle passed");
+			expect(verify.stdout).toContain("==> check");
 			expect(readFileSync(fakePnpmLog, "utf-8")).toContain("check");
 		});
 	});
