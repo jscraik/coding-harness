@@ -199,8 +199,11 @@ function sanitizePath(base: string, relativePath: string): PathResult {
 }
 
 /**
- * Run harness init and return structured result.
- * This function is usable as a library (does not output to console).
+ * Perform harness initialization and return a structured result describing what was done or would be done.
+ *
+ * @param targetDir - Directory to initialize; if omitted, the current working directory is used.
+ * @param options - Initialization options that control mode and flags (for example: dry-run, update, rollback, migrate, interactive, track, force, project-type, ciProvider).
+ * @returns On success, an InitResult whose `output` contains `packageManager`, `created`, `skipped`, and `projectTypeDetection` (and other mode-specific fields such as `updateCheck`, `proposedChanges`, or `ownershipDecisions` when applicable). On failure, an InitResult whose `error` contains a machine-readable `code` and human-readable `message` (and optional `path`).
  */
 export function runInit(
 	targetDir: string | undefined,

@@ -17,6 +17,7 @@ YELLOW='\033[1;33m'
 BLUE='\033[0;34m'
 NC='\033[0m'
 
+# usage prints the usage information and supported commands for the codex-learn CLI.
 usage() {
 	echo "Usage: codex-learn [--scope auto|global|repo] <command>"
 	echo ""
@@ -28,6 +29,8 @@ usage() {
 	echo "  clear                          Clear scoped learning history"
 }
 
+# resolve_scope_context sets scope-dependent paths and filenames (LEARN_SCOPE, LEARN_DIR, OVERRIDES_FILE, PREFLIGHT_SCRIPT, SUGGESTIONS_FILE) and ensures the learn directory exists.
+# requested_scope is one of "auto", "repo", or "global" (defaults to DEFAULT_SCOPE); on invalid scope the function prints an error to stderr and exits with status 1.
 resolve_scope_context() {
 	local requested_scope="${1:-${DEFAULT_SCOPE}}"
 
@@ -54,6 +57,7 @@ resolve_scope_context() {
 	mkdir -p "${LEARN_DIR}"
 }
 
+# check_missing_binaries checks for presence of required CLI binaries and echoes a JSON array (e.g., ["git","jq"]) listing any that are missing.
 check_missing_binaries() {
 	local missing=()
 	local bin=''
@@ -67,6 +71,9 @@ check_missing_binaries() {
 	printf '%s\n' "${missing[@]}" | jq -R . | jq -s .
 }
 
+# record_failure records a preflight failure as a timestamped JSON file in the current learn directory.
+# The JSON includes timestamp, scope, repo root, error_type, details, current working directory, a snapshot of up to 20 files in the cwd, selected environment previews, and a list of detected missing binaries.
+# Parameters: first argument is `error_type` (defaults to "unknown"), second argument is `details` (optional).
 record_failure() {
 	local error_type="${1:-unknown}"
 	local details="${2:-}"
@@ -100,6 +107,7 @@ EOF
 	echo "Learned: ${record_file}"
 }
 
+# analyze_failures analyzes recorded failure JSON files in the current learn directory, aggregates error frequencies, derives suggested `extraBins` and `pathHints`, writes them to `suggestions.json`, and prints a human-readable summary of suggestions.
 analyze_failures() {
 	local files=()
 	local extra_bins_json='[]'
@@ -166,6 +174,7 @@ EOF
 	echo "Suggestions written to: ${SUGGESTIONS_FILE}"
 }
 
+# apply_updates writes an overrides env file from the generated suggestions.json, creating the overrides directory if needed and printing status messages; exits with code 1 if no suggestions are available.
 apply_updates() {
 	local extra_bins_csv=''
 
@@ -191,6 +200,7 @@ EOF
 	fi
 }
 
+# list_failures prints up to 10 most recent recorded failure entries for the current scope as tab-separated rows of `timestamp`, `error_type`, and `cwd`.
 list_failures() {
 	local files=()
 
@@ -207,6 +217,7 @@ list_failures() {
 	done
 }
 
+# clear_failures prompts for confirmation and, if confirmed, deletes all stored learning records for the current scope.
 clear_failures() {
 	if [[ ! -d "${LEARN_DIR}" ]]; then
 		echo "No learning history recorded."

@@ -10,11 +10,13 @@ TRACKED_ARTIFACT_PATHS=(
 	".diagram/context/diagram-context.meta.json"
 )
 
+# is_git_tracked checks whether a path is tracked by Git in REPO_ROOT, returning success (0) if tracked and failure (non-zero) otherwise.
 is_git_tracked() {
 	local path="$1"
 	git -C "$REPO_ROOT" ls-files --error-unmatch -- "$path" >/dev/null 2>&1
 }
 
+# is_ignored_change returns success for paths under src/ that match *.test.ts, *.spec.ts, *.test.js, or *.spec.js.
 is_ignored_change() {
 	local changed_path="$1"
 
@@ -50,6 +52,8 @@ is_architecture_sensitive_change() {
 	esac
 }
 
+# snapshot_artifacts generates a newline-delimited list of git-tracked artifact paths (relative to REPO_ROOT) paired with their normalized SHA-256 checksums.
+# For directory entries in TRACKED_ARTIFACT_PATHS it recursively lists files (sorted) and skips files not tracked by git; for file entries it includes the file only if it exists and is git-tracked.
 snapshot_artifacts() {
 	local path
 	for path in "${TRACKED_ARTIFACT_PATHS[@]}"; do

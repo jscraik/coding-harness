@@ -24,6 +24,7 @@ SCRIPT_DIR="$(cd -- "$(dirname -- "${SCRIPT_PATH}")" && pwd -P)"
 WORKSPACE_ROOT="$(cd -- "${SCRIPT_DIR}/.." && pwd -P)"
 PREFLIGHT_OVERRIDES_FILE="${WORKSPACE_ROOT}/.harness/memory/codex-preflight-overrides.env"
 
+# usage prints the script's help text describing available options, legacy positional interface, and examples.
 usage() {
 	cat <<'USAGE'
 Usage:
@@ -62,10 +63,12 @@ log_warn() {
 	printf '⚠️ %s\n' "$*"
 }
 
+# log_err prints its arguments prefixed with "❌ " and writes the resulting message to stderr.
 log_err() {
 	printf '❌ %s\n' "$*" >&2
 }
 
+# append_csv_values merges two comma-separated strings and echoes the combined CSV to stdout; if one argument is empty it echoes the other.
 append_csv_values() {
 	local base_csv="${1:-}"
 	local extra_csv="${2:-}"
@@ -81,6 +84,9 @@ append_csv_values() {
 	printf '%s,%s\n' "${base_csv}" "${extra_csv}"
 }
 
+# load_preflight_overrides loads preflight override variables from the given file into PREFLIGHT_OVERRIDE_BINS and PREFLIGHT_OVERRIDE_PATHS.
+# If the file does not exist, the function returns success and leaves both variables empty.
+# When the file exists, it is sourced and `CODEX_PREFLIGHT_EXTRA_BINS` and `CODEX_PREFLIGHT_EXTRA_PATHS` (if set) are copied into PREFLIGHT_OVERRIDE_BINS and PREFLIGHT_OVERRIDE_PATHS respectively.
 load_preflight_overrides() {
 	local override_file="$1"
 
@@ -96,6 +102,7 @@ load_preflight_overrides() {
 	PREFLIGHT_OVERRIDE_PATHS="${CODEX_PREFLIGHT_EXTRA_PATHS:-}"
 }
 
+# extract_last_json_line prints the last line from the given input that begins with `{`, commonly used to extract the final JSON object from multi-line command output.
 extract_last_json_line() {
 	local raw="${1:-}"
 	printf '%s\n' "${raw}" | awk '/^\{/{line=$0} END{if (line != "") print line}'
@@ -119,11 +126,15 @@ extract_local_memory_rest_value() {
 	' "${config_path}"
 }
 
+# is_local_memory_pidfile_sandbox_block reports whether the provided output contains both "failed to write PID file" and "operation not permitted", indicating a sandboxed PID-file write permission error.
 is_local_memory_pidfile_sandbox_block() {
 	local output="${1:-}"
 	[[ "${output}" == *"failed to write PID file"* && "${output}" == *"operation not permitted"* ]]
 }
 
+# wait_for_local_memory_health waits for the local-memory REST health endpoint to report `"success": true` and prints the returned health JSON on success.
+# wait_for_local_memory_health takes the health endpoint URL as the first argument and an optional maximum attempt count as the second argument (default 10).
+# On success it echoes the full health JSON to stdout and returns 0; after exhausting attempts it returns 1.
 wait_for_local_memory_health() {
 	local health_url="$1"
 	local max_attempts="${2:-10}"
@@ -145,6 +156,8 @@ wait_for_local_memory_health() {
 	return 1
 }
 
+# start_local_memory_daemon_if_needed starts the local-memory daemon if it appears stopped and verifies its REST health at the provided URL.
+# It attempts to start the daemon, tolerates a sandbox PID-file permission error by continuing to probe the health endpoint, waits for the health URL to report success (uses a 12-attempt window), and returns 0 on success or non-zero on failure.
 start_local_memory_daemon_if_needed() {
 	local health_url="$1"
 	local start_output=''
@@ -176,6 +189,7 @@ start_local_memory_daemon_if_needed() {
 }
 
 
+# make_tmp_file creates a temporary file in ${TMPDIR:-/tmp} with prefix "local-memory-preflight." and echoes the created file path (exits non-zero if creation fails).
 make_tmp_file() {
 	mktemp "${TMPDIR:-/tmp}/local-memory-preflight.XXXXXX"
 }
@@ -326,6 +340,7 @@ check_paths() {
 	log_ok "paths ok: ${paths_csv}"
 }
 
+# preflight_local_memory_gold performs a local-memory preflight: verifies required binaries and config, ensures the daemon and REST health (starting the daemon if needed), runs observe/relate/search and malformed/duplicate smoke checks, and reports success or failure.
 preflight_local_memory_gold() {
 	log_section "Local Memory Preflight"
 
@@ -682,6 +697,7 @@ preflight_repo_local_memory() {
 	preflight_repo "${1:-}" "${2:-git,bash,sed,rg,jq,curl,python3}" "${3:-CONTRIBUTING.md,Makefile,scripts,scripts/codex-preflight.sh,scripts/verify-work.sh}" required
 }
 
+# main parses command-line options and runs the Codex preflight checks for the current workspace, verifying git/workspace relationship, detecting or using the specified stack, validating required binaries and paths (with workspace overrides), reporting git status, and optionally performing local-memory health and REST smoke checks; it exits non-zero on failure.
 main() {
 	local stack='auto'
 	local local_memory_mode='required'

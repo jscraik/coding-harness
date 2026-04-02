@@ -290,8 +290,10 @@ function prepareContractRefresh(
 }
 
 /**
- * Check if template updates are available.
- * Compares manifest version against current CLI version.
+ * Determine whether the project's init templates are out-of-date compared to the running CLI.
+ *
+ * @param preferredCiProvider - Optional preferred CI provider to pass to manifest loading which may influence manifest resolution.
+ * @returns On success, an object containing `currentVersion` (CLI version), `installedVersion` (manifest's harnessVersion), and `updateAvailable` (`true` if `currentVersion` is greater than `installedVersion`, `false` otherwise). On failure, an error result describing the validation or manifest problem.
  */
 export function checkForUpdates(
 	targetDir: string,
@@ -354,8 +356,9 @@ export function checkForUpdates(
 }
 
 /**
- * Execute template updates.
- * Re-renders all tracked templates and updates manifest version.
+ * Re-render tracked and new templates for a workspace, refresh the contracts file when applicable, and update the init manifest's harnessVersion.
+ *
+ * @returns On success, an object containing `updated` (paths that were written), `skipped` (paths that were not written), and `ownershipDecisions` (contract ownership decisions produced during refresh). On failure, an error result describing the write/validation failure.
  */
 export function executeUpdate(
 	targetDir: string,

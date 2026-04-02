@@ -30,6 +30,12 @@ const REQUIRED_TESTING_FIELDS = [
 	},
 ] as const;
 
+/**
+ * Normalize a testing-field string by trimming, unwrapping code blocks or single inline code, and collapsing whitespace.
+ *
+ * @param value - Raw testing field text extracted from a PR body
+ * @returns The normalized string: trimmed, with fenced code block or single inline code unwrapped, and internal whitespace collapsed to single spaces
+ */
 function normalizeTestingFieldValue(value: string): string {
 	let normalized = value.trim();
 
@@ -46,6 +52,17 @@ function normalizeTestingFieldValue(value: string): string {
 	return normalized.replace(/\s+/g, " ").trim();
 }
 
+/**
+ * Extracts the body content for the given section heading from a Markdown PR body.
+ *
+ * Matches the provided heading exactly (case-insensitive) and returns the text
+ * after that heading up to the next top-level heading (`# ` or `## `) or the end
+ * of the string.
+ *
+ * @param body - The full Markdown text to search
+ * @param heading - The exact section heading to locate (for example `"## Testing"`)
+ * @returns The section content as a string if the heading is present (may be an empty string), or `null` if the heading is not found
+ */
 function extractSectionBody(body: string, heading: string): string | null {
 	const escapedHeading = heading.replace(/[.*+?^${}()|[\]]/g, "\\$&");
 	const pattern = new RegExp(
@@ -109,6 +126,16 @@ function collectPlaceholderErrors(body: string): string[] {
 	return errors;
 }
 
+/**
+ * Validate required testing fields inside the `## Testing` section of a PR body.
+ *
+ * Checks for a `## Testing` section and ensures each entry from REQUIRED_TESTING_FIELDS
+ * is present and not left as its placeholder value.
+ *
+ * @param body - The full pull-request template body to inspect
+ * @returns An array of error messages discovered in the `## Testing` section; empty if no errors.
+ *          If the `## Testing` section is missing, the array contains `"Missing testing block."`.
+ */
 function collectTestingFieldErrors(body: string): string[] {
 	const testingBody = extractSectionBody(body, "## Testing");
 	if (testingBody === null) {

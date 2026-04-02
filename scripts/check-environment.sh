@@ -239,6 +239,7 @@ fi
 
 echo "Running harness environment preflight..."
 
+# run_check_environment_with_runner runs the given harness runner command to produce an attestation JSON at $ATTESTATION_PATH, prints the runner output, attempts to extract a JSON object from the output if the attestation file is not created, and returns non-zero on failure.
 run_check_environment_with_runner() {
 	local label="$1"
 	shift

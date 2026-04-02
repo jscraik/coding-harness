@@ -52,8 +52,11 @@ type WriteResult =
 // === Atomic Write Helper ===
 
 /**
- * Atomic file write with temp file + rename pattern.
- * Ensures file is either fully written or not touched at all.
+ * Writes content to filePath using a temporary file and rename to ensure atomic replacement.
+ *
+ * @param filePath - Destination file path.
+ * @param content - File contents; if `content` starts with `#!` the written file is given executable permissions.
+ * @returns `{ ok: true }` on success, or `{ ok: false, error }` where `error.code` is `"WRITE_ERROR"` and `error.message` describes the failure.
  */
 export function atomicWrite(filePath: string, content: string): WriteResult {
 	const tempPath = `${filePath}.${process.pid}.${randomUUID()}.tmp`;

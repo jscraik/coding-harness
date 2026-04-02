@@ -24,6 +24,7 @@ SCRIPT_DIR="$(cd -- "$(dirname -- "${SCRIPT_PATH}")" && pwd -P)"
 WORKSPACE_ROOT="$(cd -- "${SCRIPT_DIR}/.." && pwd -P)"
 PREFLIGHT_OVERRIDES_FILE="${WORKSPACE_ROOT}/.harness/memory/codex-preflight-overrides.env"
 
+# usage prints the help text showing available flags, legacy positional usage, and examples for the codex preflight script.
 usage() {
 	cat <<'USAGE'
 Usage:
@@ -62,10 +63,12 @@ log_warn() {
 	printf '⚠️ %s\n' "$*"
 }
 
+# log_err writes the given message(s) to stderr prefixed with ❌.
 log_err() {
 	printf '❌ %s\n' "$*" >&2
 }
 
+# append_csv_values combines two comma-separated lists into a single CSV, returning the non-empty input if one is empty or joining them with a comma otherwise.
 append_csv_values() {
 	local base_csv="${1:-}"
 	local extra_csv="${2:-}"
@@ -81,6 +84,7 @@ append_csv_values() {
 	printf '%s,%s\n' "${base_csv}" "${extra_csv}"
 }
 
+# load_preflight_overrides loads a workspace-local overrides file (path given as the first argument) if it exists and sets PREFLIGHT_OVERRIDE_BINS and PREFLIGHT_OVERRIDE_PATHS from CODEX_PREFLIGHT_EXTRA_BINS and CODEX_PREFLIGHT_EXTRA_PATHS; returns success when the file is absent.
 load_preflight_overrides() {
 	local override_file="$1"
 
@@ -96,6 +100,7 @@ load_preflight_overrides() {
 	PREFLIGHT_OVERRIDE_PATHS="${CODEX_PREFLIGHT_EXTRA_PATHS:-}"
 }
 
+# extract_last_json_line extracts the last line that begins with `{` from the provided raw text and echoes it to stdout.
 extract_last_json_line() {
 	local raw="${1:-}"
 	printf '%s\n' "${raw}" | awk '/^\{/{line=$0} END{if (line != "") print line}'
@@ -119,11 +124,13 @@ extract_local_memory_rest_value() {
 	' "${config_path}"
 }
 
+# is_local_memory_pidfile_sandbox_block checks whether the given output contains both "failed to write PID file" and "operation not permitted".
 is_local_memory_pidfile_sandbox_block() {
 	local output="${1:-}"
 	[[ "${output}" == *"failed to write PID file"* && "${output}" == *"operation not permitted"* ]]
 }
 
+# wait_for_local_memory_health polls the given health URL up to a maximum number of attempts and echoes the health JSON when its `.success` field is `true`.
 wait_for_local_memory_health() {
 	local health_url="$1"
 	local max_attempts="${2:-10}"
@@ -145,6 +152,10 @@ wait_for_local_memory_health() {
 	return 1
 }
 
+# start_local_memory_daemon_if_needed attempts to start the local-memory daemon when it appears stopped and waits for its health endpoint to report ready.
+# It takes one argument: the health URL to poll for readiness.
+# If `local-memory start` fails due to a pidfile sandbox limitation, it logs a warning and continues by probing the health URL instead of failing immediately.
+# Returns 0 when the daemon becomes healthy, non-zero if the start attempt fails or the health URL does not report success within the retry window.
 start_local_memory_daemon_if_needed() {
 	local health_url="$1"
 	local start_output=''
@@ -176,6 +187,7 @@ start_local_memory_daemon_if_needed() {
 }
 
 
+# make_tmp_file creates a temporary file in ${TMPDIR:-/tmp} with the prefix "local-memory-preflight." and echoes the filepath.
 make_tmp_file() {
 	mktemp "${TMPDIR:-/tmp}/local-memory-preflight.XXXXXX"
 }
@@ -326,6 +338,7 @@ check_paths() {
 	log_ok "paths ok: ${paths_csv}"
 }
 
+# preflight_local_memory_gold performs an end-to-end local-memory smoke test: verifies required binaries and config, ensures the daemon is running (starting it if needed), checks REST health, exercises observe/relationships/search endpoints (including malformed and duplicate payload checks), and returns non-zero on failure.
 preflight_local_memory_gold() {
 	log_section "Local Memory Preflight"
 
@@ -682,6 +695,7 @@ preflight_repo_local_memory() {
 	preflight_repo "${1:-}" "${2:-git,bash,sed,rg,jq,curl,python3}" "${3:-CONTRIBUTING.md,Makefile,scripts,scripts/codex-preflight.sh,scripts/verify-work.sh}" required
 }
 
+# main runs the Codex preflight: parses command-line options (including legacy positional form), validates the git workspace and required binaries/paths for the detected stack (applying overrides), and optionally performs the local-memory health and smoke tests, exiting non-zero on failure.
 main() {
 	local stack='auto'
 	local local_memory_mode='required'

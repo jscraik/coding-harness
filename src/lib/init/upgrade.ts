@@ -130,10 +130,12 @@ export interface UpgradeContext {
 }
 
 /**
- * JSC-66: Detect the upgrade context from an existing harness installation.
+ * Determine the upgrade context for an existing harness installation.
  *
- * Reads the restore-manifest for the installed version, then cross-checks
- * the upgrade-manifest (if it exists) to classify stock vs customized files.
+ * Reads the installed restore manifest (if present) to determine the installed harness version, compares it to the current harness version, and—if an upgrade-manifest exists—classifies tracked files as customized or absent.
+ *
+ * @param preferredCiProvider - Optional CI provider hint passed through to manifest loading to influence manifest resolution
+ * @returns On success, an object with `{ ok: true, value: UpgradeContext }` containing version comparison flags and classified file lists; on failure, an object with `{ ok: false, error: string }` describing the problem.
  */
 export function detectUpgradeContext(
 	targetDir: string,

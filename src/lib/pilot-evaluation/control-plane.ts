@@ -192,6 +192,12 @@ function createControlPlaneMetadata(): ControlPlaneArtifactMetadata {
 	};
 }
 
+/**
+ * Writes `value` as pretty-printed JSON to `path`, creating any missing parent directories.
+ *
+ * @param path - Destination file path for the JSON output
+ * @param value - The value to serialize and write to disk
+ */
 function writeJsonFile(path: string, value: unknown): void {
 	const dir = dirname(path);
 	if (!existsSync(dir)) {
@@ -200,6 +206,14 @@ function writeJsonFile(path: string, value: unknown): void {
 	writeFileSync(path, JSON.stringify(value, null, 2), "utf-8");
 }
 
+/**
+ * Builds an ArtifactFileRef for the given filesystem path, resolving to an absolute path and reporting existence and file metadata.
+ *
+ * @param path - Filesystem path to resolve
+ * @param options - Optional settings
+ * @param options.required - When true, mark the returned ref as required even if the path does not exist
+ * @returns An ArtifactFileRef describing the resolved `path`, `exists` flag, `required` flag, and for regular files the `sha256` digest and `sizeBytes`
+ */
 export function buildFileRef(
 	path: string,
 	options?: { required?: boolean },
@@ -536,6 +550,18 @@ function buildHarnessInitSourceRef(): ArtifactFileRef {
 	return buildFileRef(initPath, { required: true });
 }
 
+/**
+ * Determine which policy-required status checks are declared by a harness init source file.
+ *
+ * Detects whether the provided init source contains a shared required-checks formatter; if so,
+ * all entries from `policyChecks` are treated as required by that surface.
+ *
+ * @param initRef - Artifact file reference for the harness initialization source
+ * @param policyChecks - The normalized list of policy-required check identifiers to evaluate
+ * @returns An object with:
+ *   - `checks`: the policy checks implied by the init source (all `policyChecks` when the shared formatter is present, otherwise an empty array)
+ *   - `extras`: extracted checks not present in `policyChecks` (always empty for the current detection logic)
+ */
 function extractInitRequiredChecks(
 	initRef: ArtifactFileRef,
 	policyChecks: readonly string[],
@@ -553,6 +579,21 @@ function extractInitRequiredChecks(
 		: { checks: [], extras: [] };
 }
 
+/**
+ * Builds an alignment report comparing required branch-protection/status checks declared by the contract against evidence found in workflows, init guidance, and governed docs.
+ *
+ * @param contractRef - File reference to the loaded contract artifact
+ * @param contractChecks - Raw list of required checks declared in the contract's branch protection section
+ * @param workflowRefs - File references for discovered workflow files to inspect for job names
+ * @param opts.skipWorkflowSurface - If true, exclude the workflow surface when computing the overall `status`
+ * @returns An object describing normalized policy checks and per-surface findings including:
+ * - `policyChecks`: normalized, deduplicated checks from the contract
+ * - `policyRef`: the contract file reference used
+ * - `contractChecks`, `workflowChecks`, `initChecks`, `governedDocChecks`: checks discovered per surface
+ * - `missingFromContract`, `extraInContract`, `missingFromWorkflow`, `missingFromInit`, `missingFromGovernedDocs`: sets of missing/extra checks
+ * - `surfaceAlignments`: detailed alignment objects for each surface
+ * - `status`: overall `"pass"` when all considered surfaces pass, otherwise `"fail"`
+ */
 function compareRequiredChecks(
 	contractRef: ArtifactFileRef,
 	contractChecks: string[],

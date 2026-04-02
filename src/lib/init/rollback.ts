@@ -67,6 +67,13 @@ type PathResult =
 	| { ok: true; value: string }
 	| { ok: false; error: { code: string; message: string; path?: string } };
 
+/**
+ * Check whether a candidate path is located at or inside a canonical base directory.
+ *
+ * @param baseRealPath - The canonical (real) absolute path of the base directory
+ * @param candidatePath - The path to test (should be absolute/canonical for correct results)
+ * @returns `true` if `candidatePath` is equal to `baseRealPath` or is a descendant of it, `false` otherwise.
+ */
 function isPathWithinBase(
 	baseRealPath: string,
 	candidatePath: string,
@@ -78,18 +85,16 @@ function isPathWithinBase(
 }
 
 /**
- * Sanitize a path to prevent directory traversal attacks.
- * Returns resolved absolute path or error.
+ * Validate and resolve a relative path to an absolute path confined within a base directory.
  *
- * Guards applied (in order):
- * 1. Input validation — base and relativePath must be non-empty strings.
- * 2. Lexical containment — resolved path must start with base.
- * 3. Symlink-walk — every existing segment is checked with lstatSync;
- *    a symlinked directory anywhere in the chain is rejected.
- *    Prevents ".github -> /etc" style escapes that pass the prefix check.
- * 4. Realpath ancestor check — the nearest existing ancestor is canonicalised
- *    with realpathSync and verified to reside within the real base dir.
- *    This catches races and any edge case the walk misses.
+ * Ensures the resolved path does not escape `base` via lexical traversal or symlink-based escapes
+ * and performs canonicalization checks to harden against TOCTOU races.
+ *
+ * @param base - The base directory to confine the resolved path to.
+ * @param relativePath - A path relative to `base` to validate and resolve.
+ * @returns On success, an object with `value` set to the resolved absolute path. On failure, an error result
+ *          with `code` of either `"INVALID_PATH"` (invalid or unresolvable path) or `"PATH_TRAVERSAL"`
+ *          (detected traversal or symlink escape), and an explanatory `message`.
  */
 export function sanitizePath(base: string, relativePath: string): PathResult {
 	if (!base || typeof base !== "string") {
@@ -222,6 +227,15 @@ export function sanitizePath(base: string, relativePath: string): PathResult {
 	return { ok: true, value: resolved };
 }
 
+/**
+ * Validate that a symlink at `relativePath` inside `base` resolves to a location within the workspace and return its canonical path.
+ *
+ * On success returns the symlink target's canonical real path. On failure returns a structured error:
+ * - `PATH_TRAVERSAL` when the target is not an existing symlink or its resolved target lies outside the workspace.
+ * - `INVALID_PATH` when the base cannot be resolved or path validation fails.
+ *
+ * @returns `{ ok: true, value: string }` with the canonical realpath of the symlink target when safe; otherwise `{ ok: false, error: { code: string, message: string, path?: string } }`
+ */
 export function resolveSafeWorkspaceSymlink(
 	base: string,
 	relativePath: string,
@@ -346,8 +360,11 @@ export function createBackup(
 }
 
 /**
- * Load and validate manifest from disk.
- * Re-validates all paths to prevent manifest tampering.
+ * Construct a structured `INCOMPLETE_MANIFEST` failure result indicating which manifest fields are missing.
+ *
+ * @param missingFields - Names of required manifest fields that are absent
+ * @param options - Load options; if `options.operation` is set it is appended to the error message
+ * @returns A `ManifestResult` with `ok: false` and an error object (code `INCOMPLETE_MANIFEST`) referencing the manifest file path
  */
 function buildIncompleteManifestError(
 	missingFields: string[],
@@ -364,6 +381,12 @@ function buildIncompleteManifestError(
 	};
 }
 
+/**
+ * Detects a CI provider declared in a `harness.contract.json` file under the provided directory.
+ *
+ * @param targetDir - Path to the repository root containing `harness.contract.json`.
+ * @returns The provider `"github-actions"` or `"circleci"` when explicitly specified and valid, `null` otherwise.
+ */
 function readContractProvider(targetDir: string): CIProvider | null {
 	const contractPath = resolve(targetDir, "harness.contract.json");
 	if (!existsSync(contractPath)) {
@@ -385,6 +408,13 @@ function readContractProvider(targetDir: string): CIProvider | null {
 	return null;
 }
 
+/**
+ * Infer the CI provider for a repository by checking detection files or an optional preference.
+ *
+ * @param targetDir - Filesystem path of the repository root to inspect for CI config files
+ * @param preferredCiProvider - Optional fallback provider to use when detection is inconclusive
+ * @returns An object with `provider` set to `"github-actions"` or `"circleci"` and `source` describing how it was inferred, or `null` if no provider could be determined
+ */
 function inferLegacyManifestProvider(
 	targetDir: string,
 	preferredCiProvider?: CIProvider,
@@ -420,6 +450,20 @@ function inferLegacyManifestProvider(
 	return null;
 }
 
+/**
+ * Attempt to infer a missing legacy CI provider, persist the repaired manifest, and update the in-memory manifest.
+ *
+ * Tries to infer a CI provider for a legacy manifest and, if one is found, writes a repaired manifest file with
+ * `ciProvider` set to the inferred value. On successful write the provided `manifest` object is mutated in-place
+ * to include the inferred `ciProvider`.
+ *
+ * @param targetDir - Directory used to infer the CI provider (workspace root)
+ * @param manifestPath - Filesystem path to the manifest file that should be repaired
+ * @param manifest - Parsed manifest object which will be mutated to set `ciProvider` on successful repair
+ * @param preferredCiProvider - Optional fallback CI provider to prefer when inferring from the workspace
+ * @returns `null` if no repair was required or if the repair succeeded; a `ManifestResult` failure with `WRITE_ERROR`
+ *          if persisting the repaired manifest fails
+ */
 function maybeRepairLegacyManifestProvider(
 	targetDir: string,
 	manifestPath: string,
@@ -454,6 +498,20 @@ function maybeRepairLegacyManifestProvider(
 	return null;
 }
 
+/**
+ * Loads, validates, and optionally repairs the on-disk restore manifest for a workspace.
+ *
+ * Performs structural validation of the manifest JSON, re-sanitizes every recorded file path
+ * to defend against path traversal or symlink escape attacks, validates backup-hash formats
+ * and consistency, and (when enabled) repairs legacy CI provider metadata.
+ *
+ * @param targetDir - Absolute path to the workspace root containing the `.harness` directory.
+ * @param options - Load and validation options. Recognized fields:
+ *   - `requireMetadata` (boolean): if true, fail when required manifest metadata (harnessVersion or ciProvider) is missing.
+ *   - `operation` (string): when set to `"check-updates" | "update" | "upgrade"`, allows certain safe workspace symlinks as alternatives to strict path sanitization.
+ *   - `preferredCiProvider` (CIProvider): optional hint used when repairing legacy manifest provider metadata.
+ * @returns A `ManifestResult` that on success contains normalized manifest metadata (`harnessVersion`, `ciProvider`, optional `minimal`, optional `issueTracker`) and a `files` array of validated entries; on failure contains an error object with a code (`WRITE_ERROR`, `INVALID_PATH`, `PATH_TRAVERSAL`, or `INCOMPLETE_MANIFEST`) and diagnostic message/path.
+ */
 export function loadManifest(
 	targetDir: string,
 	options: LoadManifestOptions = {},

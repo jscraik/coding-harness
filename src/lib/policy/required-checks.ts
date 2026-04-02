@@ -23,6 +23,12 @@ const NON_WORKFLOW_REQUIRED_CHECK_SET = new Set<string>(
 	NON_WORKFLOW_REQUIRED_CHECKS,
 );
 
+/**
+ * Determines whether a check name is one of the non-workflow required checks.
+ *
+ * @param check - The check name to test
+ * @returns `true` if `check` is listed in the non-workflow required checks, `false` otherwise
+ */
 export function isNonWorkflowRequiredCheck(check: string): boolean {
 	return NON_WORKFLOW_REQUIRED_CHECK_SET.has(check);
 }

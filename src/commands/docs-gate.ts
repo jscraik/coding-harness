@@ -269,6 +269,14 @@ function resolveContradictionSeverity(
 	);
 }
 
+/**
+ * Identifies contradictions between repository surfaces and the contract's context-integrity policy.
+ *
+ * @param repoRoot - Filesystem path to the repository root used to resolve referenced files
+ * @param contract - Loaded harness contract containing context-integrity, package manager, CI, and branch-protection policies
+ * @param mode - Gate mode; affects severity assignment for certain findings
+ * @returns An array of contradiction findings describing missing truth sources, command vs package-manager conflicts, and missing workflow-required checks
+ */
 function collectContradictionFindings(
 	repoRoot: string,
 	contract: HarnessContract,

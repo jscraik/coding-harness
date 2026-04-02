@@ -7767,6 +7767,12 @@ function escapeRegexLiteral(value: string): string {
 	return value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 }
 
+/**
+ * Extracts required check display names from a repository's harness.contract.json if available.
+ *
+ * @param targetDir - Path to the repository root containing harness.contract.json
+ * @returns An array of trimmed, non-empty required check names gathered from `branchProtection.requiredChecks` and `reviewPolicy.requiredChecks`; returns an empty array if the contract file is missing or malformed
+ */
 function readRequiredCheckNamesFromContract(targetDir: string): string[] {
 	const contractPath = resolve(targetDir, "harness.contract.json");
 	if (!existsSync(contractPath)) {
@@ -7792,6 +7798,15 @@ function readRequiredCheckNamesFromContract(targetDir: string): string[] {
 	}
 }
 
+/**
+ * Extracts workflow `name` entries from discovered source-provider configuration files when the provider is GitHub Actions.
+ *
+ * This is a best-effort importer: it scans discovered config file paths, reads each file if accessible, and collects unique `name` values from lines that match the pattern of a workflow job name (four-space indentation followed by `name:`). Unreadable files are ignored; non-GitHub providers are not scanned.
+ *
+ * @param targetDir - Repository root used to resolve discovered config paths
+ * @param sourceProvider - If not `"github-actions"`, the function returns an empty array
+ * @returns An array of unique workflow display names found in the source provider config files (possibly empty)
+ */
 function readRequiredCheckNamesFromSourceProviderConfig(
 	targetDir: string,
 	sourceProvider: CIProvider,
@@ -8150,6 +8165,12 @@ function validateTransitionStatusArtifact(
 	}
 }
 
+/**
+ * Determine which known CI providers are indicated by a required check's source metadata.
+ *
+ * @param check - The required-check identity whose `sourceAppSlug` and `sourceAppId` are inspected
+ * @returns An array of recognized providers (`"github-actions"` and/or `"circleci"`), or an empty array if neither is indicated
+ */
 function normalizeCheckProviders(check: RequiredCheckIdentity): CIProvider[] {
 	const providers = new Set<CIProvider>();
 	if (
@@ -8164,6 +8185,12 @@ function normalizeCheckProviders(check: RequiredCheckIdentity): CIProvider[] {
 	return [...providers];
 }
 
+/**
+ * Determines whether a required check advertises publisher metadata that is from an external provider.
+ *
+ * @param check - The required-check identity to inspect for publisher metadata
+ * @returns `true` if one or more non-empty publisher metadata fields are present and none equal `github-actions` or `circleci`, `false` otherwise.
+ */
 function hasExternalPublisherMetadata(check: RequiredCheckIdentity): boolean {
 	const metadata = [check.sourceAppSlug, check.sourceAppId]
 		.map((value) => value.trim())
@@ -8176,6 +8203,14 @@ function hasExternalPublisherMetadata(check: RequiredCheckIdentity): boolean {
 	);
 }
 
+/**
+ * Builds an ownership report that groups required checks by display name and determines
+ * each check's pre-cutover owner, post-cutover owner, and any ownership violations.
+ *
+ * @param requiredChecks - The list of required check identities to analyze.
+ * @param targetProvider - The CI provider that will own checks after cutover.
+ * @returns An ownership report containing per-check entries (with `displayName`, `preCutoverOwner`, `postCutoverOwner`, and optional `violation`) and an aggregated list of violation messages.
+ */
 function buildOwnershipReport(
 	requiredChecks: RequiredCheckIdentity[],
 	targetProvider: CIProvider,
@@ -8924,6 +8959,18 @@ function hashRequiredCheckNames(requiredCheckNames: string[]): string {
 	return hashContent(JSON.stringify([...requiredCheckNames].sort()));
 }
 
+/**
+ * Execute the `harness ci-migrate` CLI flow for the repository at `targetDir`.
+ *
+ * Runs the selected action (prepare, commit, abort, verify, bootstrap or default apply/rollback flow),
+ * performs validation and gating (break-glass, required-checks import/validation, promotion/parity evidence,
+ * merge-queue orchestration and evidence capture), writes/read migration artifacts (snapshots, reports, state),
+ * and invokes the underlying init/rollback implementation to apply or revert CI provider changes.
+ *
+ * @param targetDir - Filesystem path of the repository to operate on; uses the current working directory when undefined.
+ * @param options - Parsed CLI options controlling action, provider, snapshot id, merge-queue orchestration, break-glass behavior, and other flags.
+ * @returns An exit code from the CLI (one of EXIT_CODES), where EXIT_CODES.SUCCESS indicates success and other codes indicate specific error/failure conditions.
+ */
 export function runCIMigrateCLI(
 	targetDir: string | undefined,
 	options: CIMigrateOptions,

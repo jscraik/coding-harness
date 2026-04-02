@@ -233,6 +233,16 @@ interface HarnessInvocation {
 
 const require = createRequire(import.meta.url);
 
+/**
+ * Produce the Node runtime arguments required to invoke a harness CLI entry based on its file type and the current process runtime.
+ *
+ * @param cliEntry - Path to the CLI entry file (typically a `.js` or source file)
+ * @returns An array of arguments to pass to `process.execPath` that will launch the CLI entry:
+ * - If `cliEntry` ends with `.js`, returns `[cliEntry]`.
+ * - If the current process has runtime flags (`process.execArgv`), returns those flags followed by `cliEntry`.
+ * - If no runtime flags are present and the `tsx` package is resolvable, returns `["--import", "tsx", cliEntry]`.
+ * - Otherwise returns `[cliEntry]`.
+ */
 function resolveCliRuntimeArgs(cliEntry: string): string[] {
 	if (cliEntry.endsWith(".js")) {
 		return [cliEntry];
@@ -253,7 +263,13 @@ function resolveCliRuntimeArgs(cliEntry: string): string[] {
 	}
 }
 
-/** Resolve a trusted harness CLI invocation from this package only. */
+/**
+ * Locate a trusted harness CLI entry bundled with this package and return how to invoke it.
+ *
+ * Looks for ../cli.js and ../cli.ts adjacent to this module; if a candidate is found, returns the current Node executable together with any runtime arguments required to load that entry. If none are found, returns the current Node executable with no prefix arguments (explicitly avoids using project-local binaries or PATH).
+ *
+ * @returns An object whose `command` is the Node executable path and whose `prefixArgs` are the runtime arguments to prepend before the gate name and its arguments.
+ */
 function findHarnessInvocation(): HarnessInvocation {
 	const moduleDir = dirname(fileURLToPath(import.meta.url));
 	const cliCandidates = [
@@ -272,6 +288,15 @@ function findHarnessInvocation(): HarnessInvocation {
 	return { command: process.execPath, prefixArgs: [] };
 }
 
+/**
+ * Executes a single gate subprocess for the given directory and converts its outcome into a GateResult.
+ *
+ * Runs the gate only if it is applicable to the directory; certain gates (e.g., `review-gate`) are skipped by policy.
+ *
+ * @param spec - Gate specification describing the gate name, displayName, applicability, argument builder, and exit-code interpreter
+ * @param dir - Target directory in which the gate subprocess should be executed
+ * @param harnessInvocation - Invocation details for the trusted harness CLI: the executable `command` and any `prefixArgs` to prepend
+ * @returns A GateResult describing the gate name, display name, mapped `status` (`ok` | `warning` | `error` | `skipped`), human-readable `summary`, and `exitCode` (or `null` when skipped).
 function runGate(
 	spec: GateSpec,
 	dir: string,
@@ -411,8 +436,14 @@ interface CanonicalGateResult {
 }
 
 /**
- * JSC-71 P5: Run gates with --json, collect fixable findings, execute safe
- * fix commands. Returns AutoFixResult (dry-run or executed).
+ * Collects fixable findings by running applicable gates with `--json` and applies allowed fixes, or simulates them in dry-run mode.
+ *
+ * Runs each active gate's JSON output, extracts findings that include a `fix.command`, sorts findings by severity (`error` → `warning` → `info`), and either:
+ * - if `options.dryRun` is true: returns the collected findings with `outcome: "dry_run"` without executing commands; or
+ * - otherwise: executes non-excluded fix commands, capturing `exitCode`, `stdout`, `stderr` and setting each finding's `outcome` to `applied`, `failed`, or `skipped`.
+ *
+ * @param options - Health options with `dryRun`. `dir` selects the target directory (defaults to process.cwd()); `gates` can restrict which gates to run; `dryRun` controls whether fixes are executed.
+ * @returns An AutoFixResult containing `dir`, `timestamp`, `dryRun`, the list of findings (with updated `outcome`, `exitCode`, `stdout`, `stderr` where applicable), and a `summary` with counts for `total`, `applied`, `failed`, and `skipped`.
  */
 export function runAutoFix(
 	options: HealthOptions & { dryRun: boolean },
@@ -548,7 +579,10 @@ export function runAutoFix(
 // ─── Public API ───────────────────────────────────────────────────────────────
 
 /**
- * JSC-67: Run all applicable harness gates and return a unified health report.
+ * Run all applicable harness gates for a target directory and produce a consolidated health report.
+ *
+ * @param options - Options to select the target directory and filter which gates to run
+ * @returns A `HealthReport` containing per-gate `GateResult`s, aggregate counts (`ok`, `warning`, `error`, `skipped`), overall status (`green | warning | error`), and a timestamp
  */
 export function runHealth(options: HealthOptions = {}): HealthReport {
 	const dir = resolve(options.dir ?? process.cwd());

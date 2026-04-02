@@ -16,6 +16,7 @@ YELLOW='\033[1;33m'
 BLUE='\033[0;34m'
 NC='\033[0m'
 
+# usage prints the help/usage message describing available flags and that remaining arguments are forwarded to codex.
 usage() {
 	echo "Usage: codex-enforced [options] <prompt>"
 	echo ""

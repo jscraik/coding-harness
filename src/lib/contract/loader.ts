@@ -117,6 +117,16 @@ function safeParseJson(content: string): unknown {
 	return data;
 }
 
+/**
+ * Load, validate, and return a harness contract from a filesystem path with caching and optional inheritance restriction.
+ *
+ * @param path - Path to the contract file; may be absolute or relative to `baseDir`
+ * @param baseDir - Directory used for path validation and cache key computation
+ * @param options.allowExtends - When `false`, reject contracts that contain an own `extends` property
+ * @returns The finalized `HarnessContract` merged with defaults; if present, `mergePolicy` is normalized to canonical form
+ * @throws {ContractLoadError} If path traversal is detected, JSON parsing fails, inheritance is disallowed but `extends` is present, or contract validation fails
+ * @throws {Error} If the contract file's UTF-8 byte size exceeds the maximum allowed size
+ */
 export function loadContract(
 	path: string,
 	baseDir = process.cwd(),

@@ -228,6 +228,11 @@ workflows:
 `;
 }
 
+/**
+ * Loads the bundled Codex preflight shell script template.
+ *
+ * @returns The text content of the templates/codex-preflight.sh file
+ */
 function renderCodexPreflightTemplate(): string {
 	const templatePath = fileURLToPath(
 		new URL("../../templates/codex-preflight.sh", import.meta.url),
@@ -235,6 +240,11 @@ function renderCodexPreflightTemplate(): string {
 	return readFileSync(templatePath, "utf-8");
 }
 
+/**
+ * Read and return the bundled Codex "learn" shell script template.
+ *
+ * @returns The contents of the `templates/codex-learn.sh` template as a string
+ */
 function renderCodexLearnTemplate(): string {
 	const templatePath = fileURLToPath(
 		new URL("../../templates/codex-learn.sh", import.meta.url),
@@ -242,6 +252,11 @@ function renderCodexLearnTemplate(): string {
 	return readFileSync(templatePath, "utf-8");
 }
 
+/**
+ * Load and return the bundled Codex "enforced" shell template.
+ *
+ * @returns The contents of the packaged templates/codex-enforced.sh file
+ */
 function renderCodexEnforcedTemplate(): string {
 	const templatePath = fileURLToPath(
 		new URL("../../templates/codex-enforced.sh", import.meta.url),
@@ -249,6 +264,11 @@ function renderCodexEnforcedTemplate(): string {
 	return readFileSync(templatePath, "utf-8");
 }
 
+/**
+ * Loads and returns the packaged verify-work shell script template.
+ *
+ * @returns The UTF-8 contents of the bundled scripts/verify-work.sh file
+ */
 function renderVerifyWorkScript(_packageManager: string): string {
 	const templatePath = fileURLToPath(
 		new URL("../../../scripts/verify-work.sh", import.meta.url),
@@ -256,6 +276,17 @@ function renderVerifyWorkScript(_packageManager: string): string {
 	return readFileSync(templatePath, "utf-8");
 }
 
+/**
+ * Produce a POSIX Bash script that bootstraps a repository worktree for local development.
+ *
+ * The generated script validates it's running inside a git work tree, ensures `package.json`
+ * exists, verifies `node` and the specified package manager are on PATH, optionally installs
+ * dependencies, configures git hooks, and runs repository hook setup (`scripts/setup-git-hooks.js`)
+ * and the `simple-git-hooks` installer from node_modules.
+ *
+ * @param packageManager - The package manager executable name to use for install commands (e.g., "npm", "yarn", "pnpm")
+ * @returns The complete Bash script source as a string
+ */
 function renderPrepareWorktreeScript(packageManager: string): string {
 	const installCommand = renderInstallCommand(packageManager);
 	return `#!/usr/bin/env bash

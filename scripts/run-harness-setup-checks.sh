@@ -4,6 +4,7 @@ set -euo pipefail
 ROOT="$(git rev-parse --show-toplevel)"
 cd "$ROOT"
 
+# warn_legacy_manifest prints a warning and remediation instructions about legacy .harness/restore-manifest.json metadata blocks that can block update checks.
 warn_legacy_manifest() {
   printf '%s\n' \
     "warning: legacy .harness/restore-manifest.json metadata blocks tracked update checks; continuing with remaining setup gates" \
