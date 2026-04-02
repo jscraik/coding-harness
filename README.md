@@ -75,10 +75,10 @@ If you want the highest-confidence paths today, start with `init`,
 
 ## Installation
 
-Published package usage requires npm access to `@brainwav/coding-harness`.
+Published package usage requires registry access to `@brainwav/coding-harness`.
 
 ```bash
-npm install -g @brainwav/coding-harness
+pnpm add -g @brainwav/coding-harness
 harness --help
 ```
 

@@ -276,6 +276,7 @@ function collectContradictionFindings(
 ): ContradictionFinding[] {
 	const findings: ContradictionFinding[] = [];
 	const contextIntegrityPolicy = contract.contextIntegrityPolicy;
+	const activeProvider = contract.ciProviderPolicy?.activeProvider;
 
 	for (const source of contextIntegrityPolicy?.truthSources ?? []) {
 		if (source.required && !existsSync(join(repoRoot, source.path))) {
@@ -351,7 +352,7 @@ function collectContradictionFindings(
 	}
 
 	const requiredChecks = contract.branchProtection?.requiredChecks ?? [];
-	if (requiredChecks.length > 0) {
+	if (requiredChecks.length > 0 && activeProvider !== "circleci") {
 		const workflowChecks = parseWorkflowCheckNames(repoRoot);
 		const missingChecks = requiredChecks.filter(
 			(check) =>
