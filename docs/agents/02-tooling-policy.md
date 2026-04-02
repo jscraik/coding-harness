@@ -122,6 +122,7 @@ If provider inference is still ambiguous, treat the incomplete manifest as a rep
 `scripts/codex-preflight.sh` must remain both executable and sourceable so `source scripts/codex-preflight.sh && preflight_repo` continues to work for bash-based setup flows.
 When Local Memory is enabled in required mode, `scripts/codex-preflight.sh` should validate the pinned REST host/port from `~/.local-memory/config.yaml` before trusting `local-memory status --json`, so healthy daemons on `127.0.0.1` do not trigger duplicate restart behavior from stale CLI status output.
 `scripts/verify-work.sh` is the canonical repo-local verification entrypoint for harness-managed repos. Keep it repo-local, default it to `required` Local Memory mode, and scope its preflight path/binary expectations to scaffolded repo artifacts rather than codex-maintenance-only paths.
+`scripts/check-diagram-freshness.sh` should compare only git-tracked diagram artifacts before and after refresh. gitignored `.diagram/` refresh output outside tracked files must not fail `pre-push` with an empty "Changed tracked files" list.
 
 ## Tooling verification checklist
 
