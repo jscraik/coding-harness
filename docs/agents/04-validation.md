@@ -1,29 +1,13 @@
 # Validation and checks
 
-## Table of Contents
-
-- [Core principle](#core-principle)
-- [Required baseline gates](#required-baseline-gates)
-- [CI gates](#ci-gates)
-- [docs-gate](#docs-gate)
-- [plan-gate](#plan-gate)
-- [Validation by change type](#validation-by-change-type)
-- [Docs-only edits](#docs-only-edits)
-- [Code + command behavior edits](#code--command-behavior-edits)
-- [Process/agent instruction edits](#processagent-instruction-edits)
-- [Execution order and restart policy](#execution-order-and-restart-policy)
-- [Evidence reporting](#evidence-reporting)
-- [Non-code verification options](#non-code-verification-options)
-- [Failure handling](#failure-handling)
-
 ## Core principle
 
 Every change must be checked by the smallest gate needed for risk, then by the fail-closed code-style gate, then by any deeper aggregate gate required by the behavior change.
 
 ## Required baseline gates
 
-1. `bash scripts/validate-codestyle.sh --fast`
-2. `bash scripts/validate-codestyle.sh`
+1. `bash scripts/validate-code-style.sh --fast`
+2. `bash scripts/validate-code-style.sh`
 3. `pnpm test:deep` when artifact/runtime behavior changed beyond the baseline gate
 
 ## CI gates
@@ -66,15 +50,13 @@ Enforces plan-traceability and acceptance-evidence requirements for pull-request
 
 ### Docs-only edits
 
-- If no code path changed, still run the full required baseline gates before handoff:
-  - `bash scripts/validate-codestyle.sh --fast`
-  - `bash scripts/validate-codestyle.sh`
-- `--fast` can be used as the first iteration gate, but it does not replace the full `scripts/validate-codestyle.sh` proof-of-pass requirement.
+- If no code path changed, run at least:
+  - `bash scripts/validate-code-style.sh --fast` if the docs change touches governed docs, generated templates, or command-contract text.
 - Still report status of unavailable commands if missing.
 
 ### Code + command behavior edits
 
-- Run `bash scripts/validate-codestyle.sh`.
+- Run `bash scripts/validate-code-style.sh`.
 - Add any targeted tests if behavior changed.
 - Run `pnpm test:deep` when runtime/artifact behavior changed or when deeper promotion evidence is required.
 - For pull-requested work, also ensure the PR body lists valid plan IDs and the referenced plans' completed acceptance items carry evidence refs.
@@ -100,7 +82,7 @@ For each gate run, include:
 - Exact command
 - Final status (`pass`/`fail`/`blocked`)
 - Blocker details when blocked (missing tool, lock mismatch, environment issue)
-- Do not collapse `validate-codestyle.sh` into a hand-wavy "lint/tests passed" summary; report the wrapper command explicitly so downstream repos inherit auditable proof-of-pass language.
+- Do not collapse `validate-code-style.sh` into a hand-wavy "lint/tests passed" summary; report the wrapper command explicitly so downstream repos inherit auditable proof-of-pass language.
 
 ## Non-code verification options
 
