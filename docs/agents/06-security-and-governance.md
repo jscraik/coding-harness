@@ -7,7 +7,7 @@ This repository follows conservative defaults:
 - Minimal command surface in docs and scripts.
 - Explicitly avoid ad hoc global installs and hidden mutation.
 - Preserve existing dependency and execution boundaries (`pnpm` + lockfile-driven installs).
-- Harness-managed consumer repositories are a defined exception: `scripts/check-environment.sh` requires global npm install of `@brainwav/coding-harness` with explicit `NPM_TOKEN` auth wiring.
+- Harness-managed consumer repositories are a defined exception: `scripts/check-environment.sh` should prefer a repo-local CLI runner or wrapper, and use a global npm install of `@brainwav/coding-harness` only as the final fallback with explicit `NPM_TOKEN` auth wiring.
 
 ## Secret handling
 
