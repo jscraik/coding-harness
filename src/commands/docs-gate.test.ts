@@ -1,7 +1,10 @@
 import { mkdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { afterEach, describe, expect, it } from "vitest";
-import { DEFAULT_CONTEXT_INTEGRITY_POLICY } from "../lib/contract/types.js";
+import {
+	DEFAULT_CI_PROVIDER_POLICY,
+	DEFAULT_CONTEXT_INTEGRITY_POLICY,
+} from "../lib/contract/types.js";
 import { runDocsGate } from "./docs-gate.js";
 
 function write(path: string, content: string): void {
@@ -769,6 +772,50 @@ describe("docs-gate command", () => {
 			repoRoot: root,
 			mode: "required",
 			changedFiles: [".github/workflows/pr-pipeline.yml"],
+		});
+
+		expect(result.exitCode).toBe(0);
+		expect(result.report.outcome).toBe("ok");
+		expect(
+			result.report.findings.some(
+				(finding) => finding.category === "required_check_conflict",
+			),
+		).toBe(false);
+	});
+
+	it("skips workflow drift checks when CircleCI is the active provider", () => {
+		const root = join(process.cwd(), "artifacts", "docs-gate-test-20");
+		roots.push(root);
+		createContractWithDocsGate(root, {
+			enabled: true,
+			mode: "required",
+			rules: [],
+		});
+
+		const contractPath = join(root, "harness.contract.json");
+		const contract = JSON.parse(readFileSync(contractPath, "utf-8")) as {
+			branchProtection?: { requiredChecks?: string[] };
+			ciProviderPolicy?: {
+				activeProvider?: string;
+				migrationStage?: string;
+				mode?: string;
+			};
+		};
+		contract.branchProtection = {
+			requiredChecks: ["lint", "typecheck", "CodeRabbit"],
+		};
+		contract.ciProviderPolicy = {
+			...DEFAULT_CI_PROVIDER_POLICY,
+			activeProvider: "circleci",
+			migrationStage: "circleci-only",
+			mode: "required",
+		};
+		write(contractPath, JSON.stringify(contract, null, 2));
+
+		const result = runDocsGate({
+			repoRoot: root,
+			mode: "required",
+			changedFiles: ["README.md"],
 		});
 
 		expect(result.exitCode).toBe(0);
