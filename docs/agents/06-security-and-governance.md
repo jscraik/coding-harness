@@ -7,6 +7,8 @@ This repository follows conservative defaults:
 - Minimal command surface in docs and scripts.
 - Explicitly avoid ad hoc global installs and hidden mutation.
 - Preserve existing dependency and execution boundaries (`pnpm` + lockfile-driven installs).
+- Treat the repo-root `CODESTYLE.md` path plus `scripts/validate-codestyle.sh` as governed contract surfaces: if either drifts, readiness and closeout claims must fail closed.
+- Repo-specific exception: this repository may satisfy that `CODESTYLE.md` path with a symlink to `/Users/jamiecraik/.codex/instructions/CODESTYLE.md`, but downstream harness-managed repos should keep a real repo-local `CODESTYLE.md` copy.
 - Harness-managed consumer repositories are a defined exception: `scripts/check-environment.sh` should prefer a repo-local CLI runner or wrapper, and use a global npm install of `@brainwav/coding-harness` only as the final fallback with explicit `NPM_TOKEN` auth wiring.
 - Security/policy hook configuration files must fail closed because of findings, not because the config is syntactically broken; keep Semgrep rule YAML quoted where patterns include mapping-like text such as `shell: true`.
 
@@ -21,12 +23,14 @@ This repository follows conservative defaults:
 - Validate behavior changes before merge using documented gates.
 - Keep audit trail artifacts (closeout outputs, validation status) in the task record.
 - For high-risk edits (policy/validation gates), include rollback expectations in docs.
+- Validation evidence must name the wrapper that ran (`validate-codestyle.sh`, `verify-work.sh`, or deeper gates), not just the underlying tool categories.
 
 ## Risk controls
 
 - Do not skip required gates to save time.
 - If checks fail repeatedly, stop and request decision on risk acceptance.
 - Treat stale check output as non-evidence.
+- Do not replace `bash scripts/validate-codestyle.sh` with an informal list of roughly equivalent commands when documenting or attesting verification; the wrapper is the governed proof surface.
 - CircleCI test reliability guardrail: use `pnpm test:ci` so the long-running `ci-migrate` suite executes in an isolated lane with scoped Vitest worker-timeout mitigation (`--dangerouslyIgnoreUnhandledErrors`) while all functional assertions remain enforced.
 
 ## Governance escalation
@@ -41,6 +45,7 @@ This repository follows conservative defaults:
 - Package manager consistency verified in repo files.
 - No unauthorized command or toolchain mutation.
 - Validation gate outputs captured.
+- `bash scripts/validate-codestyle.sh` output captured whenever behavior or command-contract surfaces changed.
 - No secrets in docs/memory.
 - For harness scaffold/setup checks, run `bash scripts/run-harness-setup-checks.sh` so preflight, environment posture (`CLAUDE_APPROVAL_POSTURE=require`), pinned `uv`, and quality gates are evaluated as one auditable sequence.
 - For fresh git worktrees, run `bash scripts/prepare-worktree.sh` before the first push so local pre-push hooks do not fail from missing dependencies in the new worktree.
@@ -65,7 +70,7 @@ This repository uses `simple-git-hooks` to install local hooks, and `prek.toml` 
 | --- | --- |
 | `pre-commit` | Runs `make hooks-pre-commit` (`pnpm lint`, `pnpm docs:lint`, `pnpm typecheck`, staged `gitleaks`, staged-doc `vale`, related tests) |
 | `commit-msg` | Validates conventional commit format, reminds about PR template |
-| `pre-push` | Runs `make hooks-pre-push` (`docs-gate --mode required`, diagram freshness, `tooling-audit`, `check-environment`, changed-file `semgrep`, `pnpm test`, `pnpm build`, `pnpm audit`) |
+| `pre-push` | Runs `make hooks-pre-push` (`docs-gate --mode required`, diagram freshness, `tooling-audit`, `check-environment`, changed-file `semgrep`, `make codestyle`, `pnpm build`) |
 
 `docs-gate` no longer covers only branch/CI governance wording. Local hook, readiness, and tooling-runtime changes are expected to update this guide and `docs/agents/02-tooling-policy.md` in the same change so pre-push drift is caught before GitHub does.
 

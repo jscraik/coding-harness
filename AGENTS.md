@@ -19,11 +19,13 @@ This repository is a TypeScript control plane for agentic development and review
 ## Mandatory Workflow Snippet
 1. Explore project first, then invoke skill.
 2. IMPORTANT: Prefer retrieval-led reasoning over pre-training-led reasoning for any React, Tauri, Apps-SDK-ui, Tailwind, Vite, Storybook + Chat Widget tasks.
-3. Add a Table of Contents for docs.
+3. Read the repo-root [CODESTYLE.md](./CODESTYLE.md) before making edits or claiming validation.
+4. Add a Table of Contents for docs.
 
 ## Required Essentials
 - Package manager: `pnpm` (`packageManager: "pnpm@10.0.0"`).
 - Baseline aggregate gate: `pnpm check`.
+- Fail-closed code-style gate: `bash scripts/validate-code-style.sh`.
 - Compatibility posture: canonical-only.
 - Treat repo evidence (`package.json`, lockfiles, tsconfig, scripts) as authoritative over copied instructions.
 
@@ -34,7 +36,7 @@ This repository is a TypeScript control plane for agentic development and review
 
 Notes:
 - `docs/agents/*.md` are progressive-disclosure references, not auto-discovered instruction files.
-- `CLAUDE.md` is a mirrored tool-specific surface in this repo, not part of Codex's default project-doc discovery unless fallback filenames are explicitly configured.
+- `CLAUDE.md` and `GEMINI.md` are mirrored tool-specific surfaces in this repo, not part of Codex's default project-doc discovery unless fallback filenames are explicitly configured.
 - If instruction precedence is unclear, stop and resolve it before editing behavior.
 
 ## Command Preflight
@@ -44,6 +46,7 @@ Notes:
 - For this repo, verify `docs/agents/` and `scripts/` for path-sensitive work.
 - Prefer `./scripts/codex-enforced "<prompt>"` for repo-local Codex launches so failures are recorded into repo-scoped learn state.
 - Run `./scripts/codex-preflight.sh --stack auto --mode required` before multi-step, destructive, or path-sensitive workflows.
+- Treat the repo-root `CODESTYLE.md` path and `scripts/validate-code-style.sh` as required contract files for local verification.
 - Use `./scripts/verify-work.sh` as the canonical repo-local verification entrypoint; keep `scripts/codex-preflight.sh` as the lower-level bootstrap gate beneath it.
 - Ask before adding dependencies or changing system-level settings.
 
@@ -57,7 +60,7 @@ Notes:
 - Use `codex/<linear-key>-<short-description>` when the work is tracked in Linear.
 - Open a PR for every merge to `main`.
 - **PR description linking:** use `Refs JSC-N` while the issue is still in review; use `Closes JSC-N` only when the merge fully completes the issue.
-- Run the smallest focused validation first, then `pnpm check` before handoff when behavior changed.
+- Run the smallest focused validation first, then `bash scripts/validate-code-style.sh --fast` during iteration and `bash scripts/validate-code-style.sh` before handoff when behavior changed.
 - Greptile review must remain independent; the coding agent cannot self-approve.
 - If you touch tooling/runtime contract surfaces such as hooks, `Makefile`, `.mise.toml`, readiness scripts, or generated Codex environment actions, update [docs/agents/02-tooling-policy.md](./docs/agents/02-tooling-policy.md) and [docs/agents/06-security-and-governance.md](./docs/agents/06-security-and-governance.md) in the same change.
 - If you find a reproducible bug, policy gap, workflow regression, automation follow-up, or release follow-up, create or update the matching Linear issue before handoff.
@@ -95,8 +98,11 @@ Start with [docs/agents/01-instruction-map.md](./docs/agents/01-instruction-map.
 ## Implementation Conventions
 - Local ESM imports must include `.js` extensions.
 - This repo publishes a harness skill to downstream repos via `harness init`. The installed skill lands in the target repo's `.agents/skills/coding-harness/` — it is not a local skill directory for this repo.
+- This repo keeps the repo-root `CODESTYLE.md` path as a symlink to `/Users/jamiecraik/.codex/instructions/CODESTYLE.md` so the authoring source stays global while local enforcement still targets the repo-root path.
+- Downstream harness-managed repositories should keep a real repo-local `CODESTYLE.md` scaffolded from that canonical source rather than a user-home symlink.
 - Use repo scripts as the command contract: `pnpm lint`, `pnpm typecheck`, `pnpm test`, `pnpm audit`, `pnpm build`, `pnpm check`, and `pnpm test:artifacts`.
-- Canonical repo-local verification entrypoint: `bash scripts/verify-work.sh` (`--fast` for preflight + lint + typecheck + focused tests).
+- Canonical code-style gate: `bash scripts/validate-code-style.sh` (`--fast` for focused iteration).
+- Canonical repo-local verification entrypoint: `bash scripts/verify-work.sh` (`--fast` delegates to the code-style fast lane after preflight).
 - Node `>=24.0.0` required (see `engines` in `package.json`).
 - Linter/formatter: Biome (`biome.json`). Run with `pnpm lint` / `pnpm fmt`.
 - Git hooks: `simple-git-hooks` wired through `Makefile` targets (`hooks-pre-commit`, `hooks-pre-push`).
@@ -107,6 +113,7 @@ Start with [docs/agents/01-instruction-map.md](./docs/agents/01-instruction-map.
 - [Instruction map](./docs/agents/01-instruction-map.md)
 - [CONTRIBUTING.md](./CONTRIBUTING.md)
 - [CLAUDE.md](./CLAUDE.md)
+- [GEMINI.md](./GEMINI.md)
 - `/Users/jamiecraik/.codex/AGENTS.md`
 - `/Users/jamiecraik/.codex/instructions/standards.md`
 - `/Users/jamiecraik/.codex/instructions/rvcp-common.md`

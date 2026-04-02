@@ -1,7 +1,7 @@
 # Harness Development Makefile
 # Run `make help` to see available commands
 
-.PHONY: help install setup preflight worktree-ready verify-work hooks hooks-pre-commit hooks-pre-push secrets-staged docs-style-changed related-tests semgrep-changed diagrams-check dev build lint docs-lint fmt typecheck test check audit secrets security clean reset ci diagrams env-check
+.PHONY: help install setup preflight worktree-ready verify-work codestyle hooks hooks-pre-commit hooks-pre-push secrets-staged docs-style-changed related-tests semgrep-changed diagrams-check dev build lint docs-lint fmt typecheck test check audit secrets security clean reset ci diagrams env-check
 
 # Default target
 help: ## Show this help message
@@ -26,6 +26,9 @@ worktree-ready: ## Bootstrap a fresh git worktree before first push
 verify-work: ## Run canonical repo-local verification wrapper
 	@bash ./scripts/verify-work.sh
 
+codestyle: ## Run fail-closed codestyle validation
+	@bash ./scripts/validate-codestyle.sh
+
 hooks: ## Setup git hooks
 	node scripts/setup-git-hooks.js
 
@@ -43,9 +46,8 @@ hooks-pre-push: ## Run local pre-push governance gates before pushing
 	pnpm exec tsx src/cli.ts tooling-audit --path . --json
 	@bash ./scripts/check-environment.sh
 	$(MAKE) semgrep-changed
-	pnpm test
+	$(MAKE) codestyle
 	pnpm build
-	pnpm audit
 
 secrets-staged: ## Scan staged content for secrets before committing
 	pnpm run secrets:staged

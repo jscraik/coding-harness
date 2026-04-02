@@ -25,6 +25,19 @@ describe("scaffold templates resolution", () => {
 		expect(greptileTemplates.length).toBeGreaterThan(0);
 	});
 
+	it("includes codestyle contract templates by default", () => {
+		const templates = getTemplatesForProvider("circleci");
+
+		expect(templates.some((template) => template.path === "CODESTYLE.md")).toBe(
+			true,
+		);
+		expect(
+			templates.some(
+				(template) => template.path === "scripts/validate-codestyle.sh",
+			),
+		).toBe(true);
+	});
+
 	it("omits .greptile when greptile option is explicitly false", () => {
 		const templates = getTemplatesForProvider("circleci", {
 			dryRun: false,

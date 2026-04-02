@@ -14,7 +14,7 @@
 This repository keeps operational guidance in layers so operators can find the most relevant instructions without scanning every file.
 
 - `AGENTS.md` gives the mandatory top-level baseline.
-- `CLAUDE.md` holds mirrored Claude-facing guidance for this repo and should stay aligned with the canonical `AGENTS.md`.
+- `CLAUDE.md` and `GEMINI.md` hold mirrored tool-facing guidance for this repo and should stay aligned with the canonical `AGENTS.md`.
 - `00-architecture-bootstrap.md` defines architecture-artifact-first intake for high-impact tasks.
 - `docs/agents/*.md` stores focused SOPs by task type.
 - `docs/plans/*` and `todos/*` capture larger initiatives and backlog context.
@@ -24,7 +24,7 @@ This repository keeps operational guidance in layers so operators can find the m
 When starting a task, follow this lookup order:
 
 1. Read `AGENTS.md` first.
-2. Inspect `CLAUDE.md` only when checking mirrored cross-tool guidance or parity work; do not treat it as an auto-discovered Codex instruction file unless fallback filenames are explicitly configured.
+2. Inspect `CLAUDE.md` or `GEMINI.md` only when checking mirrored cross-tool guidance or parity work; do not treat either as an auto-discovered Codex instruction file unless fallback filenames are explicitly configured.
 3. Run `00-architecture-bootstrap.md` for architecture, policy, or cross-command changes.
 4. Select one or more of the following based on intent:
 
@@ -59,6 +59,12 @@ When starting a task, follow this lookup order:
 
 - Mirrored Claude-facing reminders.
 - Canonical imports for Claude workflows.
+- Not part of Codex's default project-doc discovery unless fallback filenames are configured.
+
+### `GEMINI.md`
+
+- Mirrored Gemini-facing reminders.
+- Canonical imports for Gemini workflows.
 - Not part of Codex's default project-doc discovery unless fallback filenames are configured.
 
 ### `docs/agents/` family
@@ -96,6 +102,8 @@ These deep-dive specs live alongside their parent SOPs and are not auto-discover
 ## Canonical links
 
 - [Root AGENTS](../../AGENTS.md)
+- [Root CLAUDE](../../CLAUDE.md)
+- [Root GEMINI](../../GEMINI.md)
 - [Architecture bootstrap](./00-architecture-bootstrap.md)
 - [Tooling policy](./02-tooling-policy.md)
 - [Local-memory workflow](./03-local-memory.md)

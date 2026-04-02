@@ -18,6 +18,7 @@ export const REQUIRED_PREK_HOOKS = {
 } as const;
 
 export const REQUIRED_PACKAGE_SCRIPTS = {
+	"codestyle:validate": "bash scripts/validate-codestyle.sh",
 	"secrets:staged": "bash scripts/check-staged-secrets.sh",
 	"docs:style:changed": "bash scripts/check-doc-style.sh",
 	"test:related": "bash scripts/check-related-tests.sh",
@@ -259,6 +260,7 @@ export const REQUIRED_MAKEFILE_TARGETS = [
 	"preflight",
 	"worktree-ready",
 	"verify-work",
+	"codestyle",
 	"hooks",
 	"hooks-pre-commit",
 	"hooks-pre-push",
@@ -288,6 +290,7 @@ export const REQUIRED_HOOK_SUPPORT_FILES = [
 	"scripts/codex-learn",
 	"scripts/codex-enforced",
 	"scripts/verify-work.sh",
+	"scripts/validate-codestyle.sh",
 	"scripts/prepare-worktree.sh",
 	"scripts/check-staged-secrets.sh",
 	"scripts/check-doc-style.sh",

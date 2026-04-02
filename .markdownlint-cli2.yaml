@@ -22,5 +22,6 @@ ignores:
   - .worktrees
   - dist
   - .git
+  - CODESTYLE.md  # Global canonical codestyle doc is enforced separately
   - CHANGELOG.md   # Auto-generated, skip linting
   - artifacts      # Auto-generated test artefacts, not source docs
