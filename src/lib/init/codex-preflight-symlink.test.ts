@@ -2,10 +2,9 @@
  * Tests for the `is_allowed_repo_external_path` function added to
  * scripts/codex-preflight.sh and src/templates/codex-preflight.sh.
  *
- * This function gates a narrow, repo-specific exception: the CODESTYLE.md
- * symlink in the coding-harness repo is allowed to resolve outside the repo
- * root to a known global config location. All other out-of-root paths must
- * still fail closed.
+ * This function gates a narrow, repo-configured exception: the CODESTYLE.md
+ * symlink may resolve outside the repo root only when the link target or the
+ * resolved absolute path matches an entry in the repo-local allow-list.
  */
 import { spawnSync } from "node:child_process";
 import {
@@ -22,19 +21,26 @@ import { afterEach, beforeEach, describe, expect, it } from "vitest";
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 
-/** The hardcoded allowed repo root that the function checks. */
-const ALLOWED_ROOT = "/Users/jamiecraik/dev/coding-harness";
-/** The hardcoded allowed symlink target. */
-const ALLOWED_LINK_TARGET = "/Users/jamiecraik/.codex/instructions/CODESTYLE.md";
-/** One of the two allowed resolved absolute paths. */
-const ALLOWED_ABS_1 =
-	"/Users/jamiecraik/dev/config/codex/instructions/CODESTYLE.md";
-/** The other allowed resolved absolute path. */
+/** The canonical symlink target pattern accepted by the guard. */
+const ALLOWED_LINK_TARGET =
+	"/Users/jamiecraik/.codex/instructions/CODESTYLE.md";
+/** One allowed resolved absolute path. */
+const ALLOWED_ABS_1 = "/tmp/codex-preflight-allowed/CODESTYLE.md";
+/** Another allowed resolved absolute path. */
 const ALLOWED_ABS_2 = "/Users/jamiecraik/.codex/instructions/CODESTYLE.md";
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
 const PREFLIGHT_PATH = join(process.cwd(), "scripts/codex-preflight.sh");
+
+function writeAllowList(root: string, entries: string[]): void {
+	mkdirSync(join(root, ".codex"), { recursive: true });
+	writeFileSync(
+		join(root, ".codex/preflight-allowed-external-paths.txt"),
+		`${entries.join("\n")}\n`,
+		"utf-8",
+	);
+}
 
 /**
  * Runs a bash snippet that sources codex-preflight.sh and then calls
@@ -73,12 +79,11 @@ describe("is_allowed_repo_external_path", () => {
 		rmSync(tempDir, { recursive: true, force: true });
 	});
 
-	it("returns failure (1) when root does not match the allowed repo root", () => {
-		// Create a CODESTYLE.md symlink pointing to the canonical target
+	it("returns failure (1) when root has no allow-list entry for the symlink target", () => {
 		symlinkSync(ALLOWED_LINK_TARGET, join(tempDir, "CODESTYLE.md"));
 
 		const status = runIsAllowedRepoExternalPath(
-			"/some/other/repo",
+			tempDir,
 			"CODESTYLE.md",
 			ALLOWED_ABS_1,
 			tempDir,
@@ -89,9 +94,10 @@ describe("is_allowed_repo_external_path", () => {
 	it("returns failure (1) when match is not CODESTYLE.md", () => {
 		// Create a different symlink name
 		symlinkSync(ALLOWED_LINK_TARGET, join(tempDir, "OTHER.md"));
+		writeAllowList(tempDir, [ALLOWED_LINK_TARGET]);
 
 		const status = runIsAllowedRepoExternalPath(
-			ALLOWED_ROOT,
+			tempDir,
 			"OTHER.md",
 			ALLOWED_ABS_1,
 			tempDir,
@@ -102,9 +108,10 @@ describe("is_allowed_repo_external_path", () => {
 	it("returns failure (1) when the match path is a regular file, not a symlink", () => {
 		// Create a plain file (not a symlink)
 		writeFileSync(join(tempDir, "CODESTYLE.md"), "# Code Style\n", "utf-8");
+		writeAllowList(tempDir, [ALLOWED_LINK_TARGET]);
 
 		const status = runIsAllowedRepoExternalPath(
-			ALLOWED_ROOT,
+			tempDir,
 			"CODESTYLE.md",
 			ALLOWED_ABS_1,
 			tempDir,
@@ -114,8 +121,9 @@ describe("is_allowed_repo_external_path", () => {
 
 	it("returns failure (1) when the match path does not exist", () => {
 		// Do not create any file at CODESTYLE.md
+		writeAllowList(tempDir, [ALLOWED_LINK_TARGET]);
 		const status = runIsAllowedRepoExternalPath(
-			ALLOWED_ROOT,
+			tempDir,
 			"CODESTYLE.md",
 			ALLOWED_ABS_1,
 			tempDir,
@@ -126,9 +134,10 @@ describe("is_allowed_repo_external_path", () => {
 	it("returns failure (1) when symlink target is a different path", () => {
 		// Symlink points to a different target
 		symlinkSync("/some/other/path.md", join(tempDir, "CODESTYLE.md"));
+		writeAllowList(tempDir, [ALLOWED_LINK_TARGET]);
 
 		const status = runIsAllowedRepoExternalPath(
-			ALLOWED_ROOT,
+			tempDir,
 			"CODESTYLE.md",
 			ALLOWED_ABS_1,
 			tempDir,
@@ -136,25 +145,25 @@ describe("is_allowed_repo_external_path", () => {
 		expect(status).toBe(1);
 	});
 
-	it("returns failure (1) when abs does not match either allowed path", () => {
-		// Correct symlink target, correct root and match, but wrong abs
+	it("returns success (0) when the symlink target itself matches an allow-list entry", () => {
 		symlinkSync(ALLOWED_LINK_TARGET, join(tempDir, "CODESTYLE.md"));
+		writeAllowList(tempDir, [ALLOWED_LINK_TARGET]);
 
 		const status = runIsAllowedRepoExternalPath(
-			ALLOWED_ROOT,
+			tempDir,
 			"CODESTYLE.md",
 			"/some/unexpected/resolved/path.md",
 			tempDir,
 		);
-		expect(status).toBe(1);
+		expect(status).toBe(0);
 	});
 
 	it("returns success (0) when all conditions match and abs is the first allowed path", () => {
-		// Correct symlink, correct root, correct abs (variant 1)
 		symlinkSync(ALLOWED_LINK_TARGET, join(tempDir, "CODESTYLE.md"));
+		writeAllowList(tempDir, [ALLOWED_ABS_1]);
 
 		const status = runIsAllowedRepoExternalPath(
-			ALLOWED_ROOT,
+			tempDir,
 			"CODESTYLE.md",
 			ALLOWED_ABS_1,
 			tempDir,
@@ -163,11 +172,11 @@ describe("is_allowed_repo_external_path", () => {
 	});
 
 	it("returns success (0) when all conditions match and abs is the second allowed path", () => {
-		// Correct symlink, correct root, correct abs (variant 2)
 		symlinkSync(ALLOWED_LINK_TARGET, join(tempDir, "CODESTYLE.md"));
+		writeAllowList(tempDir, [ALLOWED_ABS_2]);
 
 		const status = runIsAllowedRepoExternalPath(
-			ALLOWED_ROOT,
+			tempDir,
 			"CODESTYLE.md",
 			ALLOWED_ABS_2,
 			tempDir,
@@ -175,12 +184,12 @@ describe("is_allowed_repo_external_path", () => {
 		expect(status).toBe(0);
 	});
 
-	it("returns failure (1) when root matches but the third argument has wrong prefix", () => {
-		// abs has the right filename but wrong directory
+	it("returns failure (1) when neither link_target nor abs match the allow-list", () => {
 		symlinkSync(ALLOWED_LINK_TARGET, join(tempDir, "CODESTYLE.md"));
+		writeAllowList(tempDir, ["/Users/jamiecraik/.codex/instructions/OTHER.md"]);
 
 		const status = runIsAllowedRepoExternalPath(
-			ALLOWED_ROOT,
+			tempDir,
 			"CODESTYLE.md",
 			"/Users/jamiecraik/.codex/instructions/DIFFERENT.md",
 			tempDir,
@@ -192,9 +201,10 @@ describe("is_allowed_repo_external_path", () => {
 		// match with a path prefix should not be allowed
 		mkdirSync(join(tempDir, "subdir"), { recursive: true });
 		symlinkSync(ALLOWED_LINK_TARGET, join(tempDir, "subdir/CODESTYLE.md"));
+		writeAllowList(tempDir, [ALLOWED_LINK_TARGET]);
 
 		const status = runIsAllowedRepoExternalPath(
-			ALLOWED_ROOT,
+			tempDir,
 			"subdir/CODESTYLE.md",
 			ALLOWED_ABS_1,
 			tempDir,
@@ -246,12 +256,10 @@ describe("check_paths with is_allowed_repo_external_path exemption", () => {
 		// Create the CODESTYLE.md symlink pointing to the canonical allowed target
 		symlinkSync(ALLOWED_LINK_TARGET, join(tempDir, "CODESTYLE.md"));
 
-		// We pass ALLOWED_ROOT as the repo root so the exception guard fires.
-		// python3 is used to realpath inside check_paths, but since the symlink
-		// target doesn't exist it will return the symlink path itself; we still
-		// verify the function does not emit "path escapes repo root".
+		writeAllowList(tempDir, [ALLOWED_LINK_TARGET]);
+
 		const { stdout, stderr, status } = runCheckPaths(
-			ALLOWED_ROOT,
+			tempDir,
 			"CODESTYLE.md",
 			tempDir,
 		);
@@ -306,8 +314,7 @@ describe("codex-preflight.sh template sync", () => {
 		);
 
 		// Extract the function body from each script
-		const functionPattern =
-			/is_allowed_repo_external_path\(\)[\s\S]*?\n\}/;
+		const functionPattern = /is_allowed_repo_external_path\(\)[\s\S]*?\n\}/;
 		const runtimeMatch = runtimeScript.match(functionPattern)?.[0];
 		const templateMatch = templateScript.match(functionPattern)?.[0];
 

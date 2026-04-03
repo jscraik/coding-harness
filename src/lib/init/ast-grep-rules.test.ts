@@ -37,9 +37,7 @@ describe("rules/require-relative-import-js-extension.yml", () => {
 	it("id matches the filename (without .yml)", () => {
 		const idMatch = RAW.match(/^id:\s*(.+)$/m);
 		expect(idMatch).not.toBeNull();
-		expect(idMatch![1]!.trim()).toBe(
-			"require-relative-import-js-extension",
-		);
+		expect(idMatch![1]!.trim()).toBe("require-relative-import-js-extension");
 	});
 
 	it("targets TypeScript language", () => {
@@ -91,26 +89,26 @@ describe("rules/require-relative-import-js-extension.yml", () => {
 			expect(relativePathPattern.test("/absolute/path")).toBe(false);
 		});
 
-		// The rule uses "not: regex: \\.[A-Za-z0-9]+$" to exclude paths that
-		// already have an extension, so we verify its intent here:
-		const extensionPattern = /\.[A-Za-z0-9]+$/;
+		// The rule now positively requires a .js suffix for relative ESM imports.
+		const jsExtensionPattern = /\.js$/;
 
-		it("extension pattern matches paths that already have a file extension", () => {
-			expect(extensionPattern.test("./utils.js")).toBe(true);
-			expect(extensionPattern.test("./components/Button.ts")).toBe(true);
-			expect(extensionPattern.test("../helpers.mjs")).toBe(true);
-			expect(extensionPattern.test("./index.json")).toBe(true);
+		it("extension pattern matches paths that already have a .js extension", () => {
+			expect(jsExtensionPattern.test("./utils.js")).toBe(true);
+			expect(jsExtensionPattern.test("./components/Button.js")).toBe(true);
+			expect(jsExtensionPattern.test("../helpers.js")).toBe(true);
 		});
 
-		it("extension pattern does not match paths without an extension", () => {
-			expect(extensionPattern.test("./utils")).toBe(false);
-			expect(extensionPattern.test("../helpers")).toBe(false);
-			expect(extensionPattern.test("./index")).toBe(false);
+		it("extension pattern does not match paths without a .js extension", () => {
+			expect(jsExtensionPattern.test("./utils")).toBe(false);
+			expect(jsExtensionPattern.test("../helpers")).toBe(false);
+			expect(jsExtensionPattern.test("./index")).toBe(false);
+			expect(jsExtensionPattern.test("./data.json")).toBe(false);
+			expect(jsExtensionPattern.test("./helper.mjs")).toBe(false);
 		});
 
 		it("extension pattern does not match directory-like paths ending with /", () => {
 			// Paths ending with "/" have no extension
-			expect(extensionPattern.test("./components/")).toBe(false);
+			expect(jsExtensionPattern.test("./components/")).toBe(false);
 		});
 	});
 
@@ -118,12 +116,12 @@ describe("rules/require-relative-import-js-extension.yml", () => {
 		/**
 		 * Simulates the rule's combined condition:
 		 * - IS relative (starts with ./ or ../)
-		 * - does NOT already have a file extension
+		 * - ends with .js
 		 */
 		function wouldBeFlagged(importPath: string): boolean {
 			const isRelative = /^\.{1,2}\//.test(importPath);
-			const hasExtension = /\.[A-Za-z0-9]+$/.test(importPath);
-			return isRelative && !hasExtension;
+			const hasJsExtension = /\.js$/.test(importPath);
+			return isRelative && !hasJsExtension;
 		}
 
 		it("flags bare relative imports without extension", () => {
@@ -139,11 +137,11 @@ describe("rules/require-relative-import-js-extension.yml", () => {
 			expect(wouldBeFlagged("../lib/helpers.js")).toBe(false);
 		});
 
-		it("does not flag relative imports with other valid extensions", () => {
-			expect(wouldBeFlagged("./data.json")).toBe(false);
-			expect(wouldBeFlagged("./styles.css")).toBe(false);
-			expect(wouldBeFlagged("./helper.mjs")).toBe(false);
-			expect(wouldBeFlagged("./types.d")).toBe(false);
+		it("flags relative imports with non-.js extensions", () => {
+			expect(wouldBeFlagged("./data.json")).toBe(true);
+			expect(wouldBeFlagged("./styles.css")).toBe(true);
+			expect(wouldBeFlagged("./helper.mjs")).toBe(true);
+			expect(wouldBeFlagged("./types.d")).toBe(true);
 		});
 
 		it("does not flag bare package imports (non-relative)", () => {
@@ -167,13 +165,14 @@ describe("rules/require-relative-import-js-extension.yml", () => {
 		expect(RAW).toContain("kind: string_fragment");
 	});
 
-	it("rule scopes to import_statement and call_expression (dynamic import)", () => {
+	it("rule scopes to import_statement, export_statement, and call_expression", () => {
 		expect(RAW).toContain("kind: import_statement");
+		expect(RAW).toContain("kind: export_statement");
 		expect(RAW).toContain("kind: call_expression");
 	});
 
-	it("rule includes a 'not' clause to exclude already-extended paths", () => {
-		expect(RAW).toContain("not:");
+	it("rule includes a positive .js suffix requirement", () => {
+		expect(RAW).toContain('regex: "\\\\.js$"');
 	});
 
 	it("rule uses 'any' to match both static and dynamic imports", () => {
