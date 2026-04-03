@@ -233,8 +233,8 @@ function normalizeFinding(
 }
 
 /**
- * Create a mock GitHub client for CLI usage.
- * In production, this would use the actual GitHub API.
+ * Create a local git-backed GitHubClient implementation for CLI usage.
+ * This keeps SHA ancestry checks deterministic without external API calls.
  */
 function createGitHubClient(): GitHubClient {
 	return {

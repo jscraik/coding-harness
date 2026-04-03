@@ -300,16 +300,14 @@ export function runInit(
 
 	if (
 		options.update &&
-		(options.minimal !== undefined ||
-			options.issueTracker !== undefined ||
-			options.greptile === false)
+		(options.minimal !== undefined || options.issueTracker !== undefined)
 	) {
 		return {
 			ok: false,
 			error: {
 				code: "INVALID_OPTIONS",
 				message:
-					"--update reuses the tracked scaffold configuration and cannot be combined with --minimal, --issue-tracker, or --no-greptile. Re-run without those flags.",
+					"--update reuses the tracked scaffold configuration and cannot be combined with --minimal or --issue-tracker. Re-run without those flags.",
 			},
 		};
 	}

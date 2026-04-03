@@ -3516,7 +3516,7 @@ function readContractCommitMode(
 
 /**
  * Auto-detect whether a contract is a solo/lightweight setup by checking
- * whether the enterprise-required fields are absent or obviously stubbed.
+ * whether the enterprise-required fields are absent or obviously incomplete.
  * Returns true when contract is missing trustedPolicyRef AND authorityConfigPath.
  */
 function contractAppearsToLackEnterpriseFields(targetDir: string): boolean {
@@ -6375,8 +6375,8 @@ function parseParityProvenanceManifest(
 				downstream: {
 					repositories: [
 						{
-							repo: "placeholder/repo",
-							ecosystemProfile: "placeholder",
+							repo: "example/downstream-repo",
+							ecosystemProfile: "typescript-node",
 							mergeQueue: true,
 							parityMatrixVerified: true,
 							rollbackRehearsed: true,

@@ -116,7 +116,11 @@ export function printSimulateUsage(): void {
 /**
  * Validate simulation options.
  */
-function validateOptions(options: SimulateOptions): SimulateResult {
+type SimulateValidationResult =
+	| { ok: true }
+	| { ok: false; error: { code: string; message: string }; exitCode: number };
+
+function validateOptions(options: SimulateOptions): SimulateValidationResult {
 	const cwd = process.cwd();
 
 	// Validate contract A
@@ -293,12 +297,8 @@ function validateOptions(options: SimulateOptions): SimulateResult {
 		}
 	}
 
-	// Validation passed - return placeholder to indicate success
-	// The actual report will be built in runSimulate
 	return {
 		ok: true,
-		report: {} as CounterfactualSimulationReport,
-		exitCode: SIMULATE_EXIT_CODES.SUCCESS,
 	};
 }
 

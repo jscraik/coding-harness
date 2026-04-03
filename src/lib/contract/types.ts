@@ -749,10 +749,6 @@ export const DEFAULT_REMEDIATION_POLICY: RemediationPolicy = {
 			autoApplyMaxTier: "medium",
 			dryRunOnlyByDefault: false,
 		},
-		greptile: {
-			autoApplyMaxTier: "medium",
-			dryRunOnlyByDefault: false,
-		},
 		codex: {
 			autoApplyMaxTier: "low",
 			dryRunOnlyByDefault: true,

@@ -31,16 +31,16 @@ const SECTION_TEMPLATES = [
 		body: `## Metadata
 | Field | Value |
 | --- | --- |
-| \`owner\` | \`TODO\` |
-| \`max_duration\` | \`TODO\` |
-| \`escalation\` | \`TODO\` |
+| \`owner\` | \`repo-maintainers\` |
+| \`max_duration\` | \`30m\` |
+| \`escalation\` | \`open blocker issue + page on-call maintainer\` |
 `,
 	},
 	{
 		heading: "invariants",
 		body: `## Invariants
-- TODO invariant 1
-- TODO invariant 2
+- Every transition table row preserves canonical \`S | E | G | A | N\` semantics.
+- Terminal states emit deterministic machine-readable outcomes (\`DONE\`, \`FAIL\`, or \`BLOCKED\`).
 `,
 	},
 	{

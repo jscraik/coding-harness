@@ -358,18 +358,7 @@ function evaluatePlanTraceability({
 
 function buildBotLoginSet(botLogin?: string): Set<string> {
 	return new Set<string>(
-		[
-			botLogin,
-			"coderabbitai",
-			"coderabbitai[bot]",
-			"greptile-apps",
-			"greptile-apps[bot]",
-			"greptile[bot]",
-			"greptileai[bot]",
-			"greptile",
-			"greptileai",
-			"chatgpt-codex-connector",
-		]
+		[botLogin, "coderabbitai", "coderabbitai[bot]", "chatgpt-codex-connector"]
 			.map((login) => normalizeBotLogin(login))
 			.filter((login): login is string => login !== undefined),
 	);

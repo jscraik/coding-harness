@@ -429,18 +429,6 @@ export function executeUpdate(
 		isPlainObject(rawContract) && isPlainObject(rawContract.issueTrackingPolicy)
 			? rawContract.issueTrackingPolicy
 			: undefined;
-	const rawReviewPolicy =
-		isPlainObject(rawContract) && isPlainObject(rawContract.reviewPolicy)
-			? rawContract.reviewPolicy
-			: undefined;
-	const rawRemediationPolicy =
-		isPlainObject(rawContract) && isPlainObject(rawContract.remediationPolicy)
-			? rawContract.remediationPolicy
-			: undefined;
-	const rawProviderDefaults =
-		rawRemediationPolicy && isPlainObject(rawRemediationPolicy.providerDefaults)
-			? rawRemediationPolicy.providerDefaults
-			: undefined;
 	if (
 		rawIssueTrackingPolicy &&
 		isIssueTracker(rawIssueTrackingPolicy.provider)
@@ -456,10 +444,6 @@ export function executeUpdate(
 		extractedOptions.issueTracker = "github";
 	} else {
 		extractedOptions.issueTracker = "none";
-	}
-
-	if (!rawReviewPolicy && !rawProviderDefaults?.greptile) {
-		extractedOptions.greptile = false;
 	}
 
 	const renderContext = createTemplateRenderContext(

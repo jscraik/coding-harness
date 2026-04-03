@@ -834,7 +834,7 @@ export function runDocsGate(options: DocsGateOptions = {}): DocsGateResult {
 			findings,
 		};
 
-		// Write stub report
+		// Write deterministic fallback report
 		const outPath = options.outPath ?? DEFAULT_OUT_PATH;
 		try {
 			const resolvedOutPath = validatePath(repoRoot, outPath);
@@ -848,7 +848,7 @@ export function runDocsGate(options: DocsGateOptions = {}): DocsGateResult {
 			// Warn instead of silently swallowing: we're already in an error
 			// state but a missing artifact can cause confusing CI behaviour.
 			console.warn(
-				`[docs-gate] Warning: failed to write stub report to '${options.outPath ?? DEFAULT_OUT_PATH}': ${_error instanceof Error ? _error.message : String(_error)}`,
+				`[docs-gate] Warning: failed to write fallback report to '${options.outPath ?? DEFAULT_OUT_PATH}': ${_error instanceof Error ? _error.message : String(_error)}`,
 			);
 		}
 

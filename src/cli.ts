@@ -55,7 +55,7 @@ import {
 	type HarnessUpgradeOptions,
 	runUpgradeCLI,
 } from "./commands/upgrade.js";
-import { runVerifyGreptileCLI } from "./commands/verify-greptile.js";
+import { runVerifyCodeRabbitCLI } from "./commands/verify-coderabbit.js";
 import {
 	dispatchRegistryCommand,
 	getRegistryCommandHelpRows,
@@ -174,16 +174,12 @@ function printUsage(): void {
 			summary: "Transition pilot mode (autonomous <-> manual)",
 		},
 		{
+			name: "verify-coderabbit",
+			summary: "Verify CodeRabbit setup and configuration",
+		},
+		{
 			name: "simulate",
 			summary: "Run counterfactual policy simulation",
-		},
-		{
-			name: "verify-greptile",
-			summary: "Verify Greptile setup and configuration",
-		},
-		{
-			name: "request-greptile-review",
-			summary: "Request a Greptile review on a PR",
 		},
 		{
 			name: "preset",
@@ -407,7 +403,6 @@ function printUsage(): void {
 		"  --project-type   Override detected project type (cli|desktop|library|web)",
 	);
 	console.info("  --minimal        Use minimal mode without strict governance");
-	console.info("  --no-greptile    Omit Greptile templates and configurations");
 	console.info("  --issue-tracker  Set issue tracker (linear|github|none)");
 	console.info("");
 	console.info("Eject Options:");
@@ -598,32 +593,14 @@ function printUsage(): void {
 	console.info("  --json           Output as JSON");
 	console.info("");
 	console.info("");
-	console.info("Verify Greptile Options:");
+	console.info("Verify CodeRabbit Options:");
 	console.info(
 		"  --token          GitHub token for ruleset checks (or env GITHUB_TOKEN / GITHUB_PERSONAL_ACCESS_TOKEN)",
 	);
 	console.info("  --owner          Repository owner for remote checks");
 	console.info("  --repo           Repository name for remote checks");
-	console.info(
-		"  --app-id         GitHub App ID for app-installation checks (or env GITHUB_APP_ID)",
-	);
-	console.info(
-		"  --app-private-key-path  Path to GitHub App private key PEM (or env GITHUB_APP_PRIVATE_KEY_PATH)",
-	);
 	console.info("  --repo-path      Repository path for local file checks");
 	console.info("  --verbose        Include detailed check output");
-	console.info("  --json           Output as JSON");
-	console.info("");
-	console.info("Request Greptile Review Options:");
-	console.info(
-		"  --token          GitHub token (or env GITHUB_TOKEN / GITHUB_PERSONAL_ACCESS_TOKEN)",
-	);
-	console.info("  --owner          Repository owner");
-	console.info("  --repo           Repository name");
-	console.info("  --pr             Pull request number");
-	console.info(
-		"  --message        Custom message to post (default: '@greptileai please review the latest changes')",
-	);
 	console.info("  --json           Output as JSON");
 	console.info("");
 	console.info("");
@@ -850,7 +827,6 @@ export function run(args: string[]): void {
 
 		// Solo Orchestration Flags
 		const minimalFlag = args.includes("--minimal");
-		const noGreptileFlag = args.includes("--no-greptile");
 
 		const issueTrackerIndex = args.indexOf("--issue-tracker");
 		const issueTrackerArg =
@@ -858,13 +834,6 @@ export function run(args: string[]): void {
 
 		// Validation: --minimal cannot be used with explicit granular overrides
 		if (minimalFlag) {
-			if (noGreptileFlag) {
-				console.error(
-					"Error: --no-greptile cannot be used with --minimal as minimal mode already drops parity layers.",
-				);
-				process.exit(2);
-				return;
-			}
 			if (issueTrackerArg !== undefined) {
 				console.error(
 					"Error: --issue-tracker cannot be used with --minimal. Granular options conflict with minimal mode.",
@@ -910,7 +879,6 @@ export function run(args: string[]): void {
 			json: jsonFlag,
 			...(minimalFlag ? { minimal: true } : {}),
 			...(issueTracker ? { issueTracker } : {}),
-			...(noGreptileFlag ? { greptile: false } : {}),
 			...(projectTypeArg ? { projectType: projectTypeArg as ProjectType } : {}),
 		};
 
@@ -1911,23 +1879,19 @@ export function run(args: string[]): void {
 		process.exit(exitCode);
 		return;
 	}
-	if (command === "verify-greptile") {
+	if (command === "verify-coderabbit") {
 		const jsonFlag = args.includes("--json");
 		const verboseFlag = args.includes("--verbose");
 		const tokenIndex = args.indexOf("--token");
 		const ownerIndex = args.indexOf("--owner");
 		const repoIndex = args.indexOf("--repo");
 		const repoPathIndex = args.indexOf("--repo-path");
-		const appIdIndex = args.indexOf("--app-id");
-		const appPrivateKeyPathIndex = args.indexOf("--app-private-key-path");
 
 		const options: {
 			token?: string;
 			owner?: string;
 			repo?: string;
 			repoPath?: string;
-			appId?: string;
-			appPrivateKeyPath?: string;
 			json?: boolean;
 			verbose?: boolean;
 		} = {};
@@ -1942,56 +1906,10 @@ export function run(args: string[]): void {
 		if (repoArg) options.repo = repoArg;
 		const repoPathArg = getFlagValue(args, repoPathIndex);
 		if (repoPathArg) options.repoPath = repoPathArg;
-		const appIdArg = getFlagValue(args, appIdIndex);
-		if (appIdArg) options.appId = appIdArg;
-		const appPrivateKeyPathArg = getFlagValue(args, appPrivateKeyPathIndex);
-		if (appPrivateKeyPathArg) options.appPrivateKeyPath = appPrivateKeyPathArg;
 
-		runVerifyGreptileCLI(options)
+		runVerifyCodeRabbitCLI(options)
 			.then((exitCode) => process.exit(exitCode))
-			.catch((error) => handleFatalError("Verify Greptile Error", error));
-		return;
-	}
-	if (command === "request-greptile-review") {
-		const jsonFlag = args.includes("--json");
-		const tokenIndex = args.indexOf("--token");
-		const ownerIndex = args.indexOf("--owner");
-		const repoIndex = args.indexOf("--repo");
-		const prIndex = args.indexOf("--pr");
-		const messageIndex = args.indexOf("--message");
-
-		const options: {
-			token?: string;
-			owner?: string;
-			repo?: string;
-			pr?: number;
-			message?: string;
-			json?: boolean;
-		} = {};
-
-		if (jsonFlag) options.json = true;
-		const tokenArg = getFlagValue(args, tokenIndex);
-		if (tokenArg) options.token = tokenArg;
-		const ownerArg = getFlagValue(args, ownerIndex);
-		if (ownerArg) options.owner = ownerArg;
-		const repoArg = getFlagValue(args, repoIndex);
-		if (repoArg) options.repo = repoArg;
-		const prArg = getFlagValue(args, prIndex);
-		if (prArg) {
-			const parsed = parseIntegerArg(prArg, 1);
-			if (parsed !== undefined) options.pr = parsed;
-		}
-		const messageArg = getFlagValue(args, messageIndex);
-		if (messageArg) options.message = messageArg;
-
-		import("./commands/request-greptile-review.js")
-			.then(({ runRequestGreptileReviewCLI }) =>
-				runRequestGreptileReviewCLI(options),
-			)
-			.then((exitCode) => process.exit(exitCode))
-			.catch((error) =>
-				handleFatalError("Request Greptile Review Error", error),
-			);
+			.catch((error) => handleFatalError("Verify CodeRabbit Error", error));
 		return;
 	}
 	if (command === "gap-case") {

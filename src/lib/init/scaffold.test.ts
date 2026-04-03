@@ -17,12 +17,11 @@ describe("scaffold templates resolution", () => {
 		}
 	});
 
-	it("includes .greptile by default", () => {
+	it("includes .coderabbit.yaml by default", () => {
 		const templates = getTemplatesForProvider("circleci");
-		const greptileTemplates = templates.filter((t) =>
-			t.path.includes(".greptile"),
-		);
-		expect(greptileTemplates.length).toBeGreaterThan(0);
+		expect(
+			templates.some((template) => template.path === ".coderabbit.yaml"),
+		).toBe(true);
 	});
 
 	it("includes codestyle contract templates by default", () => {
@@ -38,19 +37,15 @@ describe("scaffold templates resolution", () => {
 		).toBe(true);
 	});
 
-	it("omits .greptile when greptile option is explicitly false", () => {
-		const templates = getTemplatesForProvider("circleci", {
-			dryRun: false,
-			force: false,
-			greptile: false,
-		});
+	it("never includes .greptile templates", () => {
+		const templates = getTemplatesForProvider("circleci");
 		const greptileTemplates = templates.filter((t) =>
 			t.path.includes(".greptile"),
 		);
 		expect(greptileTemplates.length).toBe(0);
 	});
 
-	it("omits .greptile and non-essential templates when minimal mode is enabled", () => {
+	it("omits non-essential templates when minimal mode is enabled", () => {
 		const templates = getTemplatesForProvider("circleci", {
 			dryRun: false,
 			force: false,

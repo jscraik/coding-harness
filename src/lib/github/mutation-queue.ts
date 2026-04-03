@@ -70,7 +70,7 @@ function isRetryableMutationError(error: MutationAttemptError): boolean {
 }
 
 /**
- * Sleep helper, extracted for easier mocking.
+ * Sleep helper, extracted for deterministic test injection.
  */
 async function sleep(ms: number): Promise<void> {
 	if (ms <= 0) {

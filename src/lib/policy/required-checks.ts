@@ -15,7 +15,6 @@ export const REVIEW_POLICY_REQUIRED_CHECKS = [
  */
 export const NON_WORKFLOW_REQUIRED_CHECKS = [
 	"CodeRabbit",
-	"Greptile Review",
 	"security-scan",
 ] as const;
 
