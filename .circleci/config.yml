@@ -18,9 +18,11 @@ jobs:
       - run:
           name: Ensure pnpm available
           command: |
+            # Persist toolchain PATH for subsequent CircleCI steps.
+            echo 'export NPM_CONFIG_PREFIX="$HOME/.local"' >> "$BASH_ENV"
+            echo 'export PATH="$HOME/.local/bin:$PATH"' >> "$BASH_ENV"
+            source "$BASH_ENV"
             if ! command -v pnpm > /dev/null 2>&1; then
-              export NPM_CONFIG_PREFIX="$HOME/.local"
-              export PATH="$NPM_CONFIG_PREFIX/bin:$PATH"
               npm install --global pnpm@10.0.0
             fi
             pnpm --version
@@ -68,9 +70,11 @@ jobs:
       - run:
           name: Ensure pnpm available
           command: |
+            # Persist toolchain PATH for subsequent CircleCI steps.
+            echo 'export NPM_CONFIG_PREFIX="$HOME/.local"' >> "$BASH_ENV"
+            echo 'export PATH="$HOME/.local/bin:$PATH"' >> "$BASH_ENV"
+            source "$BASH_ENV"
             if ! command -v pnpm > /dev/null 2>&1; then
-              export NPM_CONFIG_PREFIX="$HOME/.local"
-              export PATH="$NPM_CONFIG_PREFIX/bin:$PATH"
               npm install --global pnpm@10.0.0
             fi
             pnpm --version
@@ -118,9 +122,11 @@ jobs:
       - run:
           name: Ensure pnpm available
           command: |
+            # Persist toolchain PATH for subsequent CircleCI steps.
+            echo 'export NPM_CONFIG_PREFIX="$HOME/.local"' >> "$BASH_ENV"
+            echo 'export PATH="$HOME/.local/bin:$PATH"' >> "$BASH_ENV"
+            source "$BASH_ENV"
             if ! command -v pnpm > /dev/null 2>&1; then
-              export NPM_CONFIG_PREFIX="$HOME/.local"
-              export PATH="$NPM_CONFIG_PREFIX/bin:$PATH"
               npm install --global pnpm@10.0.0
             fi
             pnpm --version
