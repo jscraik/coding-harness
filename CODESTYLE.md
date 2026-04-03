@@ -1,1 +1,1 @@
-/Users/jamiecraik/.codex/instructions/CODESTYLE.md
+# CODESTYLE
