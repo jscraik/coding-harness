@@ -47,6 +47,7 @@ Repo-managed pins should live in `.mise.toml` where the tool can be managed ther
 The root `Makefile` is also part of the enforced baseline and must retain the harness contract targets required by `scripts/check-environment.sh`.
 `CODESTYLE.md` and `scripts/validate-code-style.sh` are part of the same baseline. A harness-managed repo should fail readiness if either file is missing or if the validator no longer maps cleanly to repo-defined scripts.
 For this repository only, the repo-root `CODESTYLE.md` path may be a symlink to `/Users/jamiecraik/.codex/instructions/CODESTYLE.md` so the authoring source stays global while repo-local enforcement still targets the root path.
+For this repository only, `scripts/codex-preflight.sh` should honor that documented `CODESTYLE.md` symlink exception instead of failing the repo-root path check.
 For shared or distributed harness-managed repos, keep `CODESTYLE.md` as a real repo-local file scaffolded from the canonical authoring source rather than a user-home symlink.
 This baseline is now a first-class contract surface under `harness.contract.json > toolingPolicy`, and `harness tooling-audit --path <dir>` should be used when checking rollout drift across multiple repositories.
 For repositories with UI or ChatGPT Apps SDK dependency signals, `toolingPolicy.packagePolicy` also requires `@brainwav/design-system-guidance` in `package.json`.
@@ -55,8 +56,10 @@ For repositories with UI or ChatGPT Apps SDK dependency signals, `toolingPolicy.
 The local hook contract is intentionally split by drag profile:
 
 - `pre-commit` stays fast and now adds staged `gitleaks`, staged-doc `vale`, and `vitest related` alongside `lint`, `docs:lint`, and `typecheck`.
+- The staged secret scan should use the repo-root `.gitleaks.toml` when present so fixture/example allow lists live in version control instead of hidden local defaults.
 - `pre-push` keeps the heavier governance lane and now adds a narrow changed-files `semgrep` scan for `src/**` plus `pnpm build` before `audit`.
 - The Semgrep lane is path-filtered to changed implementation files under `src/**` and uses the local ruleset at `scripts/semgrep-pre-push.yml` to avoid turning pre-push into a full repo scan.
+- CodeRabbit custom `ast-grep` rules for this repository live under `rules/`; keep them narrowly scoped to repo-specific contracts such as the required `.js` extension on relative ESM imports.
 
 ## Codex environment actions
 
