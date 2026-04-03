@@ -111,9 +111,12 @@ chat:
     linear:
       usage: "enabled"
 knowledge_base:
-  issues: "local"
-  pull_requests: "local"
-  learnings: "local"
+  issues:
+    scope: "local"
+  pull_requests:
+    scope: "local"
+  learnings:
+    scope: "local"
   linear:
     usage: "disabled"
   code_guidelines:
