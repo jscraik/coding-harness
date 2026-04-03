@@ -32,7 +32,7 @@ When starting a task, follow this lookup order:
    - **Memory/checkpoint workflow or per-project LEARNINGS.md:** `03-local-memory.md`
    - **Validation and gate planning:** `04-validation.md` + `10-agent-testing-gates.md`
    - **Flaky tests and evidence artifacts:** `11-flaky-test-artifacts.md`
-   - **AI review policy, CodeRabbit governance, and legacy `.greptile/` compatibility:** `12-ai-review-governance.md`
+   - **AI review policy and CodeRabbit governance:** `12-ai-review-governance.md`
    - **Linear-first intake and production tracker workflow:** `13-linear-production-workflow.md`
    - **Linear workflow (agent-optimized):** `16-linear-production-compact.md`
    - **Docs-gate rollout and promotion:** `14-docs-gate-rollout.md`

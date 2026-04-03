@@ -198,7 +198,7 @@ describe("runInit", () => {
 			expect(
 				existsSync(join(tempDir, ".github/workflows/pr-pipeline.yml")),
 			).toBe(false);
-			// greptile-review.yml is not scaffolded (Greptile removed)
+			// legacy review bridge workflow is not scaffolded
 			expect(
 				existsSync(join(tempDir, ".github/workflows/greptile-review.yml")),
 			).toBe(false);
@@ -490,7 +490,7 @@ describe("runInit", () => {
 			).toEqual(["current_checkout", "recent_artifacts"]);
 		});
 
-		it("does not scaffold Greptile files (Greptile removed)", () => {
+		it("does not scaffold legacy .greptile files", () => {
 			const result = runInit(tempDir, { dryRun: false, force: false });
 
 			expect(result.ok).toBe(true);
@@ -515,7 +515,7 @@ describe("runInit", () => {
 			expect(
 				existsSync(join(tempDir, ".github/workflows/secret-scan.yml")),
 			).toBe(true);
-			// greptile-review.yml is no longer scaffolded (Greptile removed)
+			// legacy review bridge workflow is no longer scaffolded
 			expect(
 				existsSync(join(tempDir, ".github/workflows/greptile-review.yml")),
 			).toBe(false);
@@ -773,7 +773,8 @@ describe("runInit", () => {
 				contributingPath,
 				"utf-8",
 			);
-			expect(content).not.toContain("Greptile");
+			expect(content).not.toContain(".greptile/");
+			expect(content).not.toContain("greptile-review.yml");
 			expect(content).toContain("CodeRabbit");
 			expect(content).toContain("`docs-gate`");
 			expect(content).toContain("`CodeRabbit`");
@@ -1514,7 +1515,7 @@ describe("runInit", () => {
 
 			const wrapper = spawnSync(
 				"bash",
-				["scripts/harness-cli.sh", "verify-greptile"],
+				["scripts/harness-cli.sh", "verify-coderabbit"],
 				{
 					cwd: tempDir,
 					encoding: "utf8",
@@ -2784,7 +2785,7 @@ describe("--update flag", () => {
 		expect(existsSync(join(tempDir, ".linear"))).toBe(false);
 	});
 
-	it("never scaffolds .greptile files", () => {
+	it("never scaffolds legacy .greptile files", () => {
 		const result = runInit(tempDir, {
 			dryRun: false,
 			force: false,
@@ -2800,11 +2801,11 @@ describe("--update flag", () => {
 			readFileSync(join(tempDir, "harness.contract.json"), "utf-8"),
 		);
 		expect(
-			contract.remediationPolicy?.providerDefaults?.greptile,
+			contract.remediationPolicy?.providerDefaults?.coderabbit,
 		).toBeUndefined();
 	});
 
-	it("never includes greptile guidance in contributor surfaces", () => {
+	it("never includes legacy review bridge guidance in contributor surfaces", () => {
 		const result = runInit(tempDir, {
 			dryRun: false,
 			force: false,
@@ -2820,9 +2821,10 @@ describe("--update flag", () => {
 			"utf-8",
 		);
 
-		expect(contributing).not.toContain("Greptile");
+		expect(contributing).not.toContain("@greptileai");
+		expect(contributing).not.toContain("greptile-review.yml");
 		expect(contributing).toContain("CodeRabbit");
-		expect(prTemplate).not.toContain("Greptile");
+		expect(prTemplate).not.toContain("@greptileai");
 		expect(prTemplate).toContain("Codex: <link / artifact path / comment ID>");
 	});
 

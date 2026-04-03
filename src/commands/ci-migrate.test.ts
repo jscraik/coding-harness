@@ -341,7 +341,7 @@ function canonicalizeParityProofPackForDigest(
 			outcomeParity: promotionGate.outcomeParity,
 			skippedSemanticsParity: promotionGate.skippedSemanticsParity,
 			artifactParity: promotionGate.artifactParity,
-			greptileParity: promotionGate.greptileParity,
+			codeRabbitParity: promotionGate.codeRabbitParity,
 			releaseParity: promotionGate.releaseParity,
 		},
 		downstream: {
@@ -654,7 +654,7 @@ function writeParityProofPack(
 					outcomeParity: boolean;
 					skippedSemanticsParity: boolean;
 					artifactParity: boolean;
-					greptileParity: boolean;
+					codeRabbitParity: boolean;
 					releaseParity: boolean;
 			  }>
 			| undefined;
@@ -702,7 +702,7 @@ function writeParityProofPack(
 		outcomeParity: true,
 		skippedSemanticsParity: true,
 		artifactParity: true,
-		greptileParity: true,
+		codeRabbitParity: true,
 		releaseParity: true,
 		...options?.overridePromotionGate,
 	};
@@ -954,7 +954,7 @@ function writeParityProofPackInput(targetDir: string): void {
 					outcomeParity: true,
 					skippedSemanticsParity: true,
 					artifactParity: true,
-					greptileParity: true,
+					codeRabbitParity: true,
 					releaseParity: true,
 				},
 				downstream: {
@@ -1048,7 +1048,7 @@ function writeParityProvenanceBundleInput(targetDir: string): void {
 					outcomeParity: true,
 					skippedSemanticsParity: true,
 					artifactParity: true,
-					greptileParity: true,
+					codeRabbitParity: true,
 					releaseParity: true,
 				},
 				downstream: {
@@ -1206,7 +1206,7 @@ function writeParityProvenanceInput(
 					outcomeParity: true,
 					skippedSemanticsParity: true,
 					artifactParity: true,
-					greptileParity: true,
+					codeRabbitParity: true,
 					releaseParity: true,
 				},
 				downstream: {
@@ -1354,7 +1354,7 @@ function writeParityProvenanceArtifactIndex(
 			outcomeParity: true,
 			skippedSemanticsParity: true,
 			artifactParity: true,
-			greptileParity: true,
+			codeRabbitParity: true,
 			releaseParity: true,
 		},
 		downstream: {
@@ -1966,7 +1966,7 @@ function writeParityProofHarvestManifest(targetDir: string): void {
 					outcomeParity: true,
 					skippedSemanticsParity: true,
 					artifactParity: true,
-					greptileParity: true,
+					codeRabbitParity: true,
 					releaseParity: true,
 				},
 				downstream: {

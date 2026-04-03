@@ -35,7 +35,7 @@ The shortest honest description of the project today is:
 Teams usually adopt Coding Harness for one of four jobs:
 
 - **Bootstrap a repo once, then keep it aligned.** `harness init` can scaffold
-  contracts, workflow docs, CI policy surfaces, Greptile defaults, Linear-aware
+  contracts, workflow docs, CI policy surfaces, CodeRabbit defaults, Linear-aware
   templates, and rollback metadata instead of relying on tribal knowledge.
 - **Gate agent work with the same rules every time.** Commands like
   `policy-gate`, `docs-gate`, `plan-gate`, `review-gate`, and `linear-gate`
@@ -96,7 +96,7 @@ want a repo-local wrapper around the published CLI package.
 Use it like this:
 
 ```bash
-bash scripts/harness-cli.sh verify-greptile
+bash scripts/harness-cli.sh verify-coderabbit
 ```
 
 If the wrapper cannot resolve local `@brainwav/coding-harness`, treat that as a
@@ -242,7 +242,7 @@ flags, use `harness --help`.
 
 | Command | Purpose |
 | --- | --- |
-| `init` | Scaffold or update harness-managed repo surfaces (`--project-type`, `--json`, `--dry-run`, `--force`, `--track`, `--update`, `--migrate`, `--minimal`, `--issue-tracker`, `--no-greptile`) |
+| `init` | Scaffold or update harness-managed repo surfaces (`--project-type`, `--json`, `--dry-run`, `--force`, `--track`, `--update`, `--migrate`, `--minimal`, `--issue-tracker`) |
 | `eject` | Safely remove harness-managed files and templates while preserving custom CI workflows (`--dry-run`, `--force`) |
 | `doctor` | Check all gate prerequisites (tools, files, config, CI) |
 | `health` | Unified gate status scorecard across all gates |
@@ -250,8 +250,7 @@ flags, use `harness --help`.
 | `upgrade` | Safely upgrade harness in an existing repo (`--dry-run` supported) |
 | `ci-migrate` | Stage, verify, commit, abort, sync branch protection, or promote CI mode |
 | `branch-protect` | Configure GitHub branch protection rulesets |
-| `verify-greptile` | Verify Greptile configuration and remote wiring |
-| `request-greptile-review` | Post the standard Greptile review request comment |
+| `verify-coderabbit` | Verify CodeRabbit configuration and remote wiring |
 | `preset` | List and inspect bundled presets |
 | `symphony-check` | Validate `WORKFLOW.md`, Linear config, and transition-table readiness |
 
@@ -321,7 +320,7 @@ flags, use `harness --help`.
 - **Node.js:** `>= 24`
 - **Package manager for this repo:** `pnpm@10`
 - **GitHub auth:** required for commands that inspect or mutate remote GitHub
-  state, including `branch-protect`, `review-gate`, and remote Greptile checks
+  state, including `branch-protect`, `review-gate`, and remote CodeRabbit checks
 - **Linear auth:** required for `linear*` flows and for a clean
   `symphony-check` result
 - **Ollama/local embeddings:** required for the semantic side of

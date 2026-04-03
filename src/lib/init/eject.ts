@@ -70,6 +70,7 @@ export async function ejectHarness(
 	const workflowPaths = new Set<string>();
 	const pathsToRemove = new Map<string, string>([
 		[".harness", join(repoRoot, ".harness")],
+		[".coderabbit.yaml", join(repoRoot, ".coderabbit.yaml")],
 		[".greptile", join(repoRoot, ".greptile")],
 		[
 			".agents/skills/coding-harness",

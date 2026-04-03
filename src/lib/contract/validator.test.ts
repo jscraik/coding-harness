@@ -106,7 +106,7 @@ describe("validateContract", () => {
 				reviewPolicy: {
 					timeoutSeconds: 600,
 					timeoutAction: "fail",
-					requiredChecks: ["security-scan", "Greptile Review", "Codex Review"],
+					requiredChecks: ["security-scan", "CodeRabbit", "Codex Review"],
 				},
 			});
 			expect(result.success).toBe(true);
@@ -156,7 +156,7 @@ describe("validateContract", () => {
 			const result = validateContract({
 				version: "1.0",
 				branchProtection: {
-					requiredChecks: ["security-scan", "Greptile Review"],
+					requiredChecks: ["security-scan", "CodeRabbit"],
 				},
 			});
 			expect(result.success).toBe(true);
@@ -166,7 +166,7 @@ describe("validateContract", () => {
 			const result = validateContract({
 				version: "1.0",
 				branchProtection: {
-					requiredChecks: ["security-scan", "Greptile Review"],
+					requiredChecks: ["security-scan", "CodeRabbit"],
 					restrictDeletions: true,
 					blockForcePushes: true,
 					requireLinearHistory: true,
@@ -218,7 +218,7 @@ describe("validateContract", () => {
 					requiredChecks: ["security-scan", "Codex Review"],
 				},
 				branchProtection: {
-					requiredChecks: ["security-scan", "Greptile Review"],
+					requiredChecks: ["security-scan", "CodeRabbit"],
 				},
 			});
 			expect(result.success).toBe(false);
@@ -263,7 +263,7 @@ describe("validateContract", () => {
 					requiredChecks: ["security-scan"],
 				},
 				branchProtection: {
-					requiredChecks: ["security-scan", "Greptile Review"],
+					requiredChecks: ["security-scan", "CodeRabbit"],
 				},
 			});
 			expect(result.success).toBe(true);
@@ -759,7 +759,7 @@ describe("validateContract", () => {
 				version: "1.0",
 				remediationPolicy: {
 					providerDefaults: {
-						greptile: {
+						coderabbit: {
 							autoApplyMaxTier: "medium",
 							dryRunOnlyByDefault: false,
 						},
@@ -779,7 +779,7 @@ describe("validateContract", () => {
 				version: "1.0",
 				remediationPolicy: {
 					providerDefaults: {
-						greptile: {
+						coderabbit: {
 							autoApplyMaxTier: "critical",
 							dryRunOnlyByDefault: false,
 						},

@@ -9,12 +9,12 @@
 - [Required pre-merge gates](#required-pre-merge-gates)
 - [Required tooling baseline](#required-tooling-baseline)
 - [Repo-local verification wrapper](#repo-local-verification-wrapper)
-- [Legacy Greptile setup baseline](#legacy-greptile-setup-baseline)
-- [Legacy Greptile config hierarchy](#legacy-greptile-config-hierarchy)
-- [Legacy Greptile merge logic for multi-scope pull requests](#legacy-greptile-merge-logic-for-multi-scope-pull-requests)
-- [Legacy Greptile confidence score policy](#legacy-greptile-confidence-score-policy)
-- [Legacy Greptile strictness policy](#legacy-greptile-strictness-policy)
-- [Legacy Greptile training and feedback loop](#legacy-greptile-training-and-feedback-loop)
+- [CodeRabbit setup baseline](#coderabbit-setup-baseline)
+- [CodeRabbit configuration hierarchy](#coderabbit-configuration-hierarchy)
+- [CodeRabbit review policy for multi-scope pull requests](#coderabbit-review-policy-for-multi-scope-pull-requests)
+- [CodeRabbit score interpretation policy](#coderabbit-score-interpretation-policy)
+- [CodeRabbit strictness policy](#coderabbit-strictness-policy)
+- [CodeRabbit training and feedback loop](#coderabbit-training-and-feedback-loop)
 - [Recommended security scanner baseline](#recommended-security-scanner-baseline)
 - [Review artifacts requirement](#review-artifacts-requirement)
 - [Credential-safe evidence snippets](#credential-safe-evidence-snippets)
@@ -27,7 +27,6 @@
 - Pull request required for every merge.
 - Required checks must pass before merge.
 - CodeRabbit + Codex review artifacts are required before merge for this repository.
-- Legacy Greptile setup remains relevant only for harness-managed repositories that still rely on the bridge workflow and `.greptile/` files.
 - The coding agent must not approve its own PR; review must be independent.
 - Merge only after all gates pass.
 - Delete branch/worktree after merge.
@@ -113,56 +112,45 @@ Recommended policy:
 - Use `bash scripts/verify-work.sh` for the broader verification bundle.
 - Use `bash scripts/verify-work.sh --fast` for preflight + code-style fast lane coverage.
 
-## Legacy Greptile setup baseline
+## CodeRabbit setup baseline
 
-- `coding-harness` itself uses `CodeRabbit` as the primary automated review check.
-- The Greptile guidance in this section is legacy-only for harness-managed repositories that still rely on `.greptile/` files and the bridge workflow.
-- `harness init` scaffolds the baseline Greptile files and legacy bridge workflow into harness-managed repositories.
-- Required repo-local files:
-  - `.greptile/config.json`
-  - `.greptile/rules.md`
-  - `.greptile/files.json`
-- Legacy bridge workflow:
-  - `.github/workflows/greptile-review.yml`
+- `coding-harness` uses `CodeRabbit` as the primary automated review check.
+- `harness init` scaffolds `.coderabbit.yaml` into harness-managed repositories.
 - Verify setup with:
-  - `harness verify-greptile`
-  - `harness verify-greptile --token $GITHUB_TOKEN --owner <owner> --repo <repo>`
+  - `harness verify-coderabbit`
+  - `harness verify-coderabbit --token $GITHUB_TOKEN --owner <owner> --repo <repo>`
 - Trigger or refresh a review with:
-  - `harness request-greptile-review --owner <owner> --repo <repo> --pr <number>`
+  - `@coderabbitai review`
+  - `@coderabbitai full review`
+  - `@coderabbitai autofix`
 
-## Legacy Greptile config hierarchy
+## CodeRabbit configuration hierarchy
 
 1. Org-enforced dashboard rules.
-2. Directory-scoped `.greptile/` folders.
-3. Legacy `greptile.json` (ignored when `.greptile/` exists in the same directory).
-4. Dashboard defaults.
+2. Repository `.coderabbit.yaml` settings.
+3. Pull-request comment triggers for review/autofix actions.
 
-## Legacy Greptile merge logic for multi-scope pull requests
+## CodeRabbit review policy for multi-scope pull requests
 
-- strictness: most restrictive scope wins.
-- `fileChangeLimit`: lowest value wins.
-- comment types: union all requested types.
-- booleans: enabled if any scope enables them.
+- repository policy remains fail-closed: merge only after required checks pass.
+- unresolved CodeRabbit findings are blockers unless explicitly waived with rationale.
+- review artifacts should be recorded in the PR body for traceability.
 
-## Legacy Greptile confidence score policy
+## CodeRabbit score interpretation policy
 
-- `5/5`: merge-ready.
-- `4/5`: merge after minor polish.
-- `3/5`: fix findings and re-review.
-- `0-2/5`: blocked.
+- blocking findings: must be addressed or explicitly waived.
+- advisory findings: may remain only with documented rationale.
 
-## Legacy Greptile strictness policy
+## CodeRabbit strictness policy
 
-- Strictness 1: security-critical or fresh-calibration scopes.
-- Strictness 2: default baseline for `main`/production-targeted changes.
-- Strictness 3: stable, non-critical internal infrastructure.
+- security-critical and governance-critical surfaces should stay in strict review posture.
+- stable non-critical internal surfaces can use narrower review prompts when appropriate.
 
-## Legacy Greptile training and feedback loop
+## CodeRabbit training and feedback loop
 
-- Use `@greptileai` on draft PRs or when settings/context changed and a forced re-review is needed.
-- Use targeted prompts for scoped checks (for example: `@greptileai check for memory leaks`).
-- React to comments with 👍 / 👎 and include a short rationale with 👎.
-- Treat three ignored comments on the same pattern as a calibration prompt.
+- use targeted prompts for scoped follow-up checks.
+- provide rationale when dismissing or waiving findings.
+- re-run review after substantial config or policy changes.
 
 ## Recommended security scanner baseline
 

@@ -37,12 +37,12 @@ describe("scaffold templates resolution", () => {
 		).toBe(true);
 	});
 
-	it("never includes .greptile templates", () => {
+	it("never includes legacy .greptile templates", () => {
 		const templates = getTemplatesForProvider("circleci");
-		const greptileTemplates = templates.filter((t) =>
+		const legacyTemplates = templates.filter((t) =>
 			t.path.includes(".greptile"),
 		);
-		expect(greptileTemplates.length).toBe(0);
+		expect(legacyTemplates.length).toBe(0);
 	});
 
 	it("omits non-essential templates when minimal mode is enabled", () => {
@@ -51,14 +51,14 @@ describe("scaffold templates resolution", () => {
 			force: false,
 			minimal: true,
 		});
-		const greptileTemplates = templates.filter((t) =>
+		const legacyTemplates = templates.filter((t) =>
 			t.path.includes(".greptile"),
 		);
 		const codeownersTemplates = templates.filter((t) =>
 			t.path.includes("CODEOWNERS"),
 		);
 
-		expect(greptileTemplates.length).toBe(0);
+		expect(legacyTemplates.length).toBe(0);
 		expect(codeownersTemplates.length).toBe(0);
 
 		// Minimal mode keeps provider workflows but still reduces the managed set.

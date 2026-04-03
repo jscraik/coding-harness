@@ -61,7 +61,7 @@ Notes:
 - Open a PR for every merge to `main`.
 - **PR description linking:** use `Refs JSC-N` while the issue is still in review; use `Closes JSC-N` only when the merge fully completes the issue.
 - Run the smallest focused validation first, then `bash scripts/validate-codestyle.sh --fast` during iteration and `bash scripts/validate-codestyle.sh` before handoff when behavior changed.
-- Greptile review must remain independent; the coding agent cannot self-approve.
+- CodeRabbit review must remain independent; the coding agent cannot self-approve.
 - If you touch tooling/runtime contract surfaces such as hooks, `Makefile`, `.mise.toml`, readiness scripts, or generated Codex environment actions, update [docs/agents/02-tooling-policy.md](./docs/agents/02-tooling-policy.md) and [docs/agents/06-security-and-governance.md](./docs/agents/06-security-and-governance.md) in the same change.
 - If you find a reproducible bug, policy gap, workflow regression, automation follow-up, or release follow-up, create or update the matching Linear issue before handoff.
 - See [docs/agents/18-github-linear-automation.md](./docs/agents/18-github-linear-automation.md) for the full GitHub → Linear automation config and known gaps.

@@ -231,7 +231,7 @@ interface CIParityProofPack {
 		outcomeParity: boolean;
 		skippedSemanticsParity: boolean;
 		artifactParity: boolean;
-		greptileParity: boolean;
+		codeRabbitParity: boolean;
 		releaseParity: boolean;
 	};
 	downstream: {
@@ -298,7 +298,7 @@ interface CIParityProofPackInput {
 		outcomeParity: boolean;
 		skippedSemanticsParity: boolean;
 		artifactParity: boolean;
-		greptileParity: boolean;
+		codeRabbitParity: boolean;
 		releaseParity: boolean;
 	};
 	downstream: {
@@ -4223,7 +4223,7 @@ function parseParityProofPack(
 			"outcomeParity",
 			"skippedSemanticsParity",
 			"artifactParity",
-			"greptileParity",
+			"codeRabbitParity",
 			"releaseParity",
 		] as const;
 		for (const field of requiredGateFields) {
@@ -4331,7 +4331,7 @@ function parseParityProofPack(
 					outcomeParity: gateRecord.outcomeParity as boolean,
 					skippedSemanticsParity: gateRecord.skippedSemanticsParity as boolean,
 					artifactParity: gateRecord.artifactParity as boolean,
-					greptileParity: gateRecord.greptileParity as boolean,
+					codeRabbitParity: gateRecord.codeRabbitParity as boolean,
 					releaseParity: gateRecord.releaseParity as boolean,
 				},
 				downstream: { repositories: parsedRepositories },
@@ -4385,7 +4385,7 @@ function canonicalizeParityProofPackForDigest(
 			outcomeParity: proofPack.promotionGate.outcomeParity,
 			skippedSemanticsParity: proofPack.promotionGate.skippedSemanticsParity,
 			artifactParity: proofPack.promotionGate.artifactParity,
-			greptileParity: proofPack.promotionGate.greptileParity,
+			codeRabbitParity: proofPack.promotionGate.codeRabbitParity,
 			releaseParity: proofPack.promotionGate.releaseParity,
 		},
 		downstream: {
@@ -4514,7 +4514,7 @@ function parseParityProofPackInput(
 			"outcomeParity",
 			"skippedSemanticsParity",
 			"artifactParity",
-			"greptileParity",
+			"codeRabbitParity",
 			"releaseParity",
 		] as const;
 		for (const field of gateFields) {
@@ -4627,7 +4627,7 @@ function parseParityProofPackInput(
 					outcomeParity: gateRecord.outcomeParity as boolean,
 					skippedSemanticsParity: gateRecord.skippedSemanticsParity as boolean,
 					artifactParity: gateRecord.artifactParity as boolean,
-					greptileParity: gateRecord.greptileParity as boolean,
+					codeRabbitParity: gateRecord.codeRabbitParity as boolean,
 					releaseParity: gateRecord.releaseParity as boolean,
 				},
 				downstream: { repositories: parsedRepositories },
@@ -6369,7 +6369,7 @@ function parseParityProvenanceManifest(
 					outcomeParity: true,
 					skippedSemanticsParity: true,
 					artifactParity: true,
-					greptileParity: true,
+					codeRabbitParity: true,
 					releaseParity: true,
 				},
 				downstream: {
@@ -7649,11 +7649,11 @@ function evaluatePromotionEvidence(
 		proofPack.promotionGate.outcomeParity !== true ||
 		proofPack.promotionGate.skippedSemanticsParity !== true ||
 		proofPack.promotionGate.artifactParity !== true ||
-		proofPack.promotionGate.greptileParity !== true ||
+		proofPack.promotionGate.codeRabbitParity !== true ||
 		proofPack.promotionGate.releaseParity !== true
 	) {
 		violations.push(
-			"Promotion gate booleans must all be true (zeroUnexpectedDiffs, outcomeParity, skippedSemanticsParity, artifactParity, greptileParity, releaseParity).",
+			"Promotion gate booleans must all be true (zeroUnexpectedDiffs, outcomeParity, skippedSemanticsParity, artifactParity, codeRabbitParity, releaseParity).",
 		);
 	}
 

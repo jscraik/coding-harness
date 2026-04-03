@@ -64,7 +64,7 @@
 		"outcomeParity": true,
 		"skippedSemanticsParity": true,
 		"artifactParity": true,
-		"greptileParity": true,
+		"codeRabbitParity": true,
 		"releaseParity": true
 	},
 	"downstream": {

@@ -209,7 +209,7 @@ workflow before install steps.
 
 Start with `harness upgrade --dry-run` for routine upgrades in existing installs.
 If the baseline `.npmrc` is missing and needs to be re-scaffolded, run
-`harness init --update`, then `harness verify-greptile --check-npmrc` to confirm
+`harness init --update`, then `harness verify-coderabbit --check-npmrc` to confirm
 that the repo keeps scope routing and security defaults without a repo-local
 auth token override. If a scaffolded `scripts/harness-cli.sh` wrapper cannot
 resolve the local package, treat that as bootstrap drift in the repo install,
