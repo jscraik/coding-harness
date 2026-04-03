@@ -1,5 +1,21 @@
 # Validation and checks
 
+## Table of Contents
+
+- [Core principle](#core-principle)
+- [Required baseline gates](#required-baseline-gates)
+- [CI gates](#ci-gates)
+- [docs-gate](#docs-gate)
+- [plan-gate](#plan-gate)
+- [Validation by change type](#validation-by-change-type)
+- [Docs-only edits](#docs-only-edits)
+- [Code + command behavior edits](#code--command-behavior-edits)
+- [Process/agent instruction edits](#processagent-instruction-edits)
+- [Execution order and restart policy](#execution-order-and-restart-policy)
+- [Evidence reporting](#evidence-reporting)
+- [Non-code verification options](#non-code-verification-options)
+- [Failure handling](#failure-handling)
+
 ## Core principle
 
 Every change must be checked by the smallest gate needed for risk, then by the fail-closed code-style gate, then by any deeper aggregate gate required by the behavior change.
