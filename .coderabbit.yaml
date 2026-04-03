@@ -88,7 +88,7 @@ reviews:
     unit_tests:
       enabled: true
     simplify:
-      enabled: true
+      enabled: false
   pre_merge_checks:
     override_requested_reviewers_only: true
     title:
@@ -118,7 +118,7 @@ knowledge_base:
     scope: "local"
   learnings:
     scope: "local"
-  linear:
+  linear: # Keep Linear out of review grounding so issue text is not treated as repository knowledge-base context.
     usage: "disabled"
   code_guidelines:
     enabled: true

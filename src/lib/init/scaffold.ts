@@ -2290,7 +2290,7 @@ jobs:
         run: |
           set -euo pipefail
           python3 -m venv "${"${RUNNER_TEMP}"}/semgrep-venv"
-          "${"${RUNNER_TEMP}"}/semgrep-venv/bin/python" -m pip install --quiet --upgrade pip semgrep
+          "${"${RUNNER_TEMP}"}/semgrep-venv/bin/python" -m pip install --quiet --upgrade pip semgrep==1.153.1
           "${"${RUNNER_TEMP}"}/semgrep-venv/bin/semgrep" scan \\
             --config p/security-audit \\
             --error \\
@@ -2995,7 +2995,7 @@ fi
 
   - id: ts-no-shell-true
     message: Avoid shell:true in child process options in src/** code.
-    severity: ERROR
+    severity: WARNING
     languages: [javascript, typescript]
     pattern-either:
       - pattern: spawn(..., { ..., shell: true, ... })

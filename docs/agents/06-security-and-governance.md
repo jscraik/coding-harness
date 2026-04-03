@@ -1,5 +1,18 @@
 # Security and governance
 
+- [Security posture](#security-posture)
+- [Secret handling](#secret-handling)
+- [Code and data governance](#code-and-data-governance)
+- [Risk controls](#risk-controls)
+- [Governance escalation](#governance-escalation)
+- [Operational check list](#operational-check-list)
+- [Pre-commit hooks](#pre-commit-hooks)
+- [Hooks installed](#hooks-installed)
+- [Setup](#setup)
+- [Commit message format](#commit-message-format)
+- [PR template reminder](#pr-template-reminder)
+- [Plan traceability](#plan-traceability)
+
 ## Security posture
 
 This repository follows conservative defaults:
