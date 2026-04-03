@@ -18,13 +18,8 @@ jobs:
       - run:
           name: Ensure pnpm available
           command: |
-            # Persist toolchain PATH for subsequent CircleCI steps.
-            echo 'export NPM_CONFIG_PREFIX="$HOME/.local"' >> "$BASH_ENV"
-            echo 'export PATH="$HOME/.local/bin:$PATH"' >> "$BASH_ENV"
-            source "$BASH_ENV"
-            if ! command -v pnpm > /dev/null 2>&1; then
-              npm install --global pnpm@10.0.0
-            fi
+            corepack enable
+            corepack prepare pnpm@10.0.0 --activate
             pnpm --version
       - run:
           name: Install dependencies
@@ -70,13 +65,8 @@ jobs:
       - run:
           name: Ensure pnpm available
           command: |
-            # Persist toolchain PATH for subsequent CircleCI steps.
-            echo 'export NPM_CONFIG_PREFIX="$HOME/.local"' >> "$BASH_ENV"
-            echo 'export PATH="$HOME/.local/bin:$PATH"' >> "$BASH_ENV"
-            source "$BASH_ENV"
-            if ! command -v pnpm > /dev/null 2>&1; then
-              npm install --global pnpm@10.0.0
-            fi
+            corepack enable
+            corepack prepare pnpm@10.0.0 --activate
             pnpm --version
       - run:
           name: Install dependencies
@@ -122,13 +112,8 @@ jobs:
       - run:
           name: Ensure pnpm available
           command: |
-            # Persist toolchain PATH for subsequent CircleCI steps.
-            echo 'export NPM_CONFIG_PREFIX="$HOME/.local"' >> "$BASH_ENV"
-            echo 'export PATH="$HOME/.local/bin:$PATH"' >> "$BASH_ENV"
-            source "$BASH_ENV"
-            if ! command -v pnpm > /dev/null 2>&1; then
-              npm install --global pnpm@10.0.0
-            fi
+            corepack enable
+            corepack prepare pnpm@10.0.0 --activate
             pnpm --version
       - run:
           name: Install dependencies
