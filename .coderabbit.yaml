@@ -117,7 +117,7 @@ knowledge_base:
     scope: "local"
   learnings:
     scope: "local"
-  linear: # Keep Linear out of review grounding so issue text is not treated as repository knowledge-base context.
+  linear:
     usage: "disabled"
   code_guidelines:
     enabled: true
