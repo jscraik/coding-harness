@@ -44,6 +44,7 @@ dockercfg*
 
 # Logs
 *.log
+isolate-*-v8*.log
 logs/
 
 # Test coverage
