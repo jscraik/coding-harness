@@ -75,6 +75,8 @@ function runIsAllowedRepoExternalPath(
 	return result.status ?? 127;
 }
 
+type SpawnEnv = Record<string, string | undefined>;
+
 // ─── Tests ────────────────────────────────────────────────────────────────────
 
 describe("is_allowed_repo_external_path", () => {
@@ -243,6 +245,7 @@ describe("check_paths with is_allowed_repo_external_path exemption", () => {
 		root: string,
 		paths: string,
 		cwd: string,
+		env?: SpawnEnv,
 	): { stdout: string; stderr: string; status: number } {
 		const script = [
 			`source "${PREFLIGHT_PATH}"`,
@@ -252,6 +255,7 @@ describe("check_paths with is_allowed_repo_external_path exemption", () => {
 		const result = spawnSync("bash", ["-c", script], {
 			cwd,
 			encoding: "utf8",
+			env: { ...process.env, ...env },
 		});
 
 		return {
@@ -262,15 +266,20 @@ describe("check_paths with is_allowed_repo_external_path exemption", () => {
 	}
 
 	it("allows CODESTYLE.md symlink to external path when all conditions are met", () => {
+		const fakeHome = join(tempDir, "home");
+		const fakeTarget = join(fakeHome, ".codex", "instructions", "CODESTYLE.md");
+		mkdirSync(join(fakeHome, ".codex", "instructions"), { recursive: true });
+		writeFileSync(fakeTarget, "# Code Style\n", "utf-8");
 		// Create the CODESTYLE.md symlink pointing to the canonical allowed target
-		symlinkSync(ALLOWED_LINK_TARGET, join(tempDir, "CODESTYLE.md"));
+		symlinkSync(fakeTarget, join(tempDir, "CODESTYLE.md"));
 
-		writeAllowList(tempDir, [ALLOWED_LINK_TARGET]);
+		writeAllowList(tempDir, ["$HOME/.codex/instructions/CODESTYLE.md"]);
 
 		const { stdout, stderr, status } = runCheckPaths(
 			tempDir,
 			"CODESTYLE.md",
 			tempDir,
+			{ HOME: fakeHome },
 		);
 
 		// Should not produce an "escapes repo root" error.
