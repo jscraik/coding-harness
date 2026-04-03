@@ -66,6 +66,7 @@ log_err() {
 	printf '❌ %s\n' "$*" >&2
 }
 
+# append_csv_values combines two comma-separated strings and echoes the merged CSV, returning the non-empty input if the other is empty.
 append_csv_values() {
 	local base_csv="${1:-}"
 	local extra_csv="${2:-}"
@@ -81,6 +82,13 @@ append_csv_values() {
 	printf '%s,%s\n' "${base_csv}" "${extra_csv}"
 }
 
+# load_preflight_overrides loads preflight override variables from an optional override file.
+# If the file exists it is sourced and the globals PREFLIGHT_OVERRIDE_BINS,
+# PREFLIGHT_OVERRIDE_PATHS, and PREFLIGHT_OVERRIDE_ALLOWED_EXTERNAL_PATHS are set
+# from CODEX_PREFLIGHT_EXTRA_BINS, CODEX_PREFLIGHT_EXTRA_PATHS, and
+# CODEX_PREFLIGHT_ALLOWED_EXTERNAL_PATHS respectively. If the file does not exist,
+# the globals are initialized to empty (allowed-external falls back to the existing env value).
+# override_file is the path to the optional shell file to source.
 load_preflight_overrides() {
 	local override_file="$1"
 
@@ -98,6 +106,7 @@ load_preflight_overrides() {
 	PREFLIGHT_OVERRIDE_ALLOWED_EXTERNAL_PATHS="${CODEX_PREFLIGHT_ALLOWED_EXTERNAL_PATHS:-}"
 }
 
+# extract_last_json_line extracts the last line beginning with `{` from the given raw text and prints it.
 extract_last_json_line() {
 	local raw="${1:-}"
 	printf '%s\n' "${raw}" | awk '/^\{/{line=$0} END{if (line != "") print line}'
@@ -251,6 +260,10 @@ stack_bins_csv() {
 	esac
 }
 
+# stack_paths_csv returns a comma-separated list of repository files and directories expected for the given stack.
+# Accepted stack values: "js", "py", "rust", "repo".
+# For "js"/"py"/"rust" the list includes the stack manifest plus shared repo scripts and docs; "repo" omits a stack manifest.
+# The CSV is printed to stdout. On an unknown stack the function logs an error and returns exit code 2.
 stack_paths_csv() {
 	case "$1" in
 		js) echo 'package.json,CODESTYLE.md,CONTRIBUTING.md,Makefile,scripts,scripts/codex-preflight.sh,scripts/verify-work.sh,scripts/validate-codestyle.sh' ;;
@@ -261,6 +274,7 @@ stack_paths_csv() {
 	esac
 }
 
+# check_bins checks that each executable in a comma-separated list exists in PATH; logs an error and returns 2 if any are missing, otherwise logs success.
 check_bins() {
 	local bins_csv="$1"
 	local -a bins=()
@@ -282,6 +296,7 @@ check_bins() {
 	log_ok "binaries ok: ${bins_csv}"
 }
 
+# is_allowed_repo_external_path determines whether a symlink named CODESTYLE.md points to an allowed external .codex/instructions/CODESTYLE.md target or whether the provided absolute path matches an allowed external path listed in the repo's .codex/preflight-allowed-external-paths.txt (with support for PREFLIGHT_OVERRIDE_ALLOWED_EXTERNAL_PATHS and ${HOME}/${REPO_ROOT} variable substitution).
 is_allowed_repo_external_path() {
 	local root="$1"
 	local match="$2"
@@ -331,6 +346,9 @@ is_allowed_repo_external_path() {
 	return 1
 }
 
+# check_paths validates that each entry in a comma-separated paths list exists (globs expanded) and resolves to a location at or under the given repository root.
+# root is the repository root directory; paths_csv is a comma-separated list of paths or globs.
+# On a missing path or when a resolved path lies outside the repo root (unless explicitly allowed), it logs an error and returns 2; on success it logs OK and returns 0.
 check_paths() {
 	local root="$1"
 	local paths_csv="$2"

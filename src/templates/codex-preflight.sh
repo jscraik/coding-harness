@@ -66,6 +66,7 @@ log_err() {
 	printf '❌ %s\n' "$*" >&2
 }
 
+# append_csv_values combines two comma-separated lists: if one is empty returns the other, otherwise returns both joined with a single comma.
 append_csv_values() {
 	local base_csv="${1:-}"
 	local extra_csv="${2:-}"
@@ -81,6 +82,7 @@ append_csv_values() {
 	printf '%s,%s\n' "${base_csv}" "${extra_csv}"
 }
 
+# load_preflight_overrides loads preflight override variables from a file into PREFLIGHT_OVERRIDE_BINS, PREFLIGHT_OVERRIDE_PATHS, and PREFLIGHT_OVERRIDE_ALLOWED_EXTERNAL_PATHS; if the file does not exist the variables are set to empty and the function returns success.
 load_preflight_overrides() {
 	local override_file="$1"
 
@@ -98,6 +100,7 @@ load_preflight_overrides() {
 	PREFLIGHT_OVERRIDE_ALLOWED_EXTERNAL_PATHS="${CODEX_PREFLIGHT_ALLOWED_EXTERNAL_PATHS:-}"
 }
 
+# extract_last_json_line prints the last input line that begins with `{` (commonly the final JSON object line) to stdout. If no such line exists it prints nothing.
 extract_last_json_line() {
 	local raw="${1:-}"
 	printf '%s\n' "${raw}" | awk '/^\{/{line=$0} END{if (line != "") print line}'
@@ -251,6 +254,8 @@ stack_bins_csv() {
 	esac
 }
 
+# stack_paths_csv returns a comma-separated list of repository paths required for the specified stack (`js`, `py`, `rust`, or `repo`).
+# On unknown stack values it logs an error and returns exit code 2.
 stack_paths_csv() {
 	case "$1" in
 		js) echo 'package.json,CODESTYLE.md,CONTRIBUTING.md,Makefile,scripts,scripts/codex-preflight.sh,scripts/verify-work.sh,scripts/validate-codestyle.sh' ;;
@@ -261,6 +266,7 @@ stack_paths_csv() {
 	esac
 }
 
+# check_bins verifies each binary named in a comma-separated list is available on PATH; logs missing binaries and returns 2 if any are absent.
 check_bins() {
 	local bins_csv="$1"
 	local -a bins=()
@@ -282,6 +288,8 @@ check_bins() {
 	log_ok "binaries ok: ${bins_csv}"
 }
 
+# is_allowed_repo_external_path determines whether a symlinked CODESTYLE.md or its resolved absolute path is allowed to point outside the repository by matching against entries in `${root}/.codex/preflight-allowed-external-paths.txt` and the `PREFLIGHT_OVERRIDE_ALLOWED_EXTERNAL_PATHS` overrides.
+# `root` is the repository root used for variable substitution; `match` is expected to be "CODESTYLE.md" (must be a symlink); `abs` is the resolved absolute path of `match`.
 is_allowed_repo_external_path() {
 	local root="$1"
 	local match="$2"
@@ -331,6 +339,10 @@ is_allowed_repo_external_path() {
 	return 1
 }
 
+# check_paths validates that each path (comma-separated, supports globs) exists and is located inside the repository root.
+# It treats unmatched globs as literal entries, resolves symlinks/real paths, and returns nonzero if any required path is missing or resolves outside `root` (except for allowed external exceptions).
+# @param root repository root absolute path used as the containment boundary
+# @param paths_csv comma-separated list of required paths or globs to validate
 check_paths() {
 	local root="$1"
 	local paths_csv="$2"

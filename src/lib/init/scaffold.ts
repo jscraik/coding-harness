@@ -979,6 +979,15 @@ function renderCodeRabbitTemplate(): string {
 	return readFileSync(repoTemplatePath, "utf-8");
 }
 
+/**
+ * Produces the repository Greptile configuration as a pretty-printed JSON string.
+ *
+ * The configuration enables cross-file queries and independent validation, sets strictness
+ * and confidence thresholds, defines comment categories and ignore patterns, and includes
+ * rules enforcing independent AI validation and governance parity.
+ *
+ * @returns A formatted JSON string (2-space indentation) containing the Greptile configuration, terminated with a newline.
+ */
 function renderGreptileConfig(): string {
 	return `${JSON.stringify(
 		{
@@ -1028,6 +1037,14 @@ function renderGreptileConfig(): string {
 	)}\n`;
 }
 
+/**
+ * Produces the repository's Harness-managed Greptile rules document in Markdown.
+ *
+ * The returned content defines baseline review expectations, required reviewer independence,
+ * governance alignment checks, evidence requirements for policy changes, and merge confidence thresholds.
+ *
+ * @returns A Markdown string containing the Greptile rules for repository review and gating.
+ */
 function renderGreptileRules(): string {
 	return `# Harness-managed Greptile rules
 
@@ -1065,6 +1082,14 @@ If a PR changes governance, workflow, or policy files, reviewers must verify con
 `;
 }
 
+/**
+ * Produces the Greptile files descriptor used by the Greptile workflow.
+ *
+ * The output is a pretty-printed JSON object describing `contextFiles`, `apiSpecs`, and `schemaFiles`
+ * that Greptile should consider when scanning or enforcing rules. The string ends with a trailing newline.
+ *
+ * @returns A JSON-formatted string (indented with two spaces) containing `contextFiles`, `apiSpecs`, and `schemaFiles`
+ */
 function renderGreptileFiles(): string {
 	return `${JSON.stringify(
 		{
@@ -1108,6 +1133,15 @@ function renderGreptileFiles(): string {
 	)}\n`;
 }
 
+/**
+ * Generate a GitHub Actions workflow YAML that enforces Greptile automated review comments on pull requests.
+ *
+ * The workflow triggers on PR-related events and ignores runs initiated by the GitHub Actions bot. It locates
+ * Greptile-authored comments for the current PR head commit, parses scores and approval/block indicators, and
+ * fails the job when no valid Greptile review is found or when an extracted score is below the configured threshold.
+ *
+ * @returns The workflow YAML content as a string
+ */
 function renderGreptileWorkflow(): string {
 	return `name: Greptile Review
 
