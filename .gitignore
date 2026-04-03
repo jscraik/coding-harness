@@ -44,7 +44,6 @@ dockercfg*
 
 # Logs
 *.log
-isolate-*-v8*.log
 logs/
 
 # Test coverage
@@ -110,3 +109,4 @@ docs/sketches/
 
 # Local git worktrees
 .worktrees/
+artifacts/pilot-evaluate-test-*/
