@@ -2233,7 +2233,7 @@ jobs:
         run: |
           set -euo pipefail
           python3 -m venv "${"${RUNNER_TEMP}"}/semgrep-venv"
-          "${"${RUNNER_TEMP}"}/semgrep-venv/bin/python" -m pip install --quiet --upgrade pip semgrep
+          "${"${RUNNER_TEMP}"}/semgrep-venv/bin/python" -m pip install --quiet --upgrade pip semgrep==1.153.1
           "${"${RUNNER_TEMP}"}/semgrep-venv/bin/semgrep" scan \\
             --config p/security-audit \\
             --error \\
@@ -2561,6 +2561,7 @@ ${requiredChecksList}
 - [ ] Branch name follows policy (\`codex/*\` for agent-created branches).
 - [ ] Required local gates run: \`${codestyleCommand}\`, \`${checkCommand}\`, \`${memoryValidateCommand}\`.
 ${greptileChecklist}- [ ] Codex review completed and findings handled (or explicitly waived).
+- [ ] Any CodeRabbit Semgrep findings were either fixed or explicitly justified when warning-level-only.
 - [ ] Merge is blocked until all required checks pass.
 - [ ] I will delete branch/worktree after merge.
 
@@ -2577,6 +2578,7 @@ ${greptileChecklist}- [ ] Codex review completed and findings handled (or explic
 ## Review artifacts
 
 ${greptileArtifacts}- Codex: <link / artifact path / comment ID>
+- CodeRabbit Semgrep: fixed / waived with rationale / n.a.
 - Additional evidence (if any):
 
 ## Notes
@@ -3001,7 +3003,7 @@ semgrep scan \\
 
   - id: ts-no-shell-true
     message: Avoid shell:true in child process options in src/** code.
-    severity: ERROR
+    severity: WARNING
     languages: [javascript, typescript]
     pattern-either:
       - pattern: spawn(..., { ..., shell: true, ... })

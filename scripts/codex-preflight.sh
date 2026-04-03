@@ -86,6 +86,7 @@ load_preflight_overrides() {
 
 	PREFLIGHT_OVERRIDE_BINS=''
 	PREFLIGHT_OVERRIDE_PATHS=''
+	PREFLIGHT_OVERRIDE_ALLOWED_EXTERNAL_PATHS="${CODEX_PREFLIGHT_ALLOWED_EXTERNAL_PATHS:-}"
 	if [[ ! -f "${override_file}" ]]; then
 		return 0
 	fi
@@ -94,6 +95,7 @@ load_preflight_overrides() {
 	source "${override_file}"
 	PREFLIGHT_OVERRIDE_BINS="${CODEX_PREFLIGHT_EXTRA_BINS:-}"
 	PREFLIGHT_OVERRIDE_PATHS="${CODEX_PREFLIGHT_EXTRA_PATHS:-}"
+	PREFLIGHT_OVERRIDE_ALLOWED_EXTERNAL_PATHS="${CODEX_PREFLIGHT_ALLOWED_EXTERNAL_PATHS:-}"
 }
 
 extract_last_json_line() {
@@ -285,18 +287,9 @@ is_allowed_repo_external_path() {
 	local match="$2"
 	local abs="$3"
 	local link_target=''
-	local git_root=''
-	local canonical_harness_path='/Users/jamiecraik/dev/coding-harness'
-
-	# Only allow this exception if we are in the coding-harness repo itself
-	if ! git_root="$(git rev-parse --show-toplevel 2>/dev/null)"; then
-		return 1
-	fi
-	git_root="$(cd -- "${git_root}" && pwd -P)"
-
-	if [[ "${git_root}" != "${canonical_harness_path}" ]]; then
-		return 1
-	fi
+	local config_path="${root}/.codex/preflight-allowed-external-paths.txt"
+	local candidate=''
+	local candidate_abs=''
 	if [[ "${match}" != "CODESTYLE.md" ]]; then
 		return 1
 	fi
@@ -305,9 +298,35 @@ is_allowed_repo_external_path() {
 	fi
 
 	link_target="$(readlink "${match}" 2>/dev/null || true)"
-	if [[ "${link_target}" == "/Users/jamiecraik/.codex/instructions/CODESTYLE.md" ]] && [[ "${abs}" == "/Users/jamiecraik/dev/config/codex/instructions/CODESTYLE.md" || "${abs}" == "/Users/jamiecraik/.codex/instructions/CODESTYLE.md" ]]; then
-		return 0
-	fi
+	case "${link_target}" in
+		*/.codex/instructions/CODESTYLE.md) ;;
+		*) return 1 ;;
+	esac
+
+	while IFS= read -r candidate; do
+		[[ -z "${candidate}" ]] && continue
+		candidate="${candidate//\$\{HOME\}/${HOME}}"
+		candidate="${candidate//\$HOME/${HOME}}"
+		candidate="${candidate//\$\{REPO_ROOT\}/${root}}"
+		candidate="${candidate//\$REPO_ROOT/${root}}"
+		if [[ "${link_target}" == "${candidate}" || "${abs}" == "${candidate}" ]]; then
+			return 0
+		fi
+		if candidate_abs="$(
+			python3 -c 'import os, sys; print(os.path.realpath(sys.argv[1]))' "${candidate}" 2>/dev/null
+		)" && [[ "${abs}" == "${candidate_abs}" ]]; then
+			return 0
+		fi
+	done < <(
+		{
+			if [[ -f "${config_path}" ]]; then
+				sed -e 's/#.*$//' -e '/^[[:space:]]*$/d' "${config_path}"
+			fi
+			if [[ -n "${PREFLIGHT_OVERRIDE_ALLOWED_EXTERNAL_PATHS:-}" ]]; then
+				printf '%s\n' "${PREFLIGHT_OVERRIDE_ALLOWED_EXTERNAL_PATHS}" | tr ',' '\n'
+			fi
+		}
+	)
 
 	return 1
 }
