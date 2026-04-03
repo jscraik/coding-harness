@@ -461,15 +461,6 @@ pnpm 'docs:style:changed'
 '''
 
 [[actions]]
-name = "Script: skill:validate"
-icon = "debug"
-command = '''
-set -euo pipefail
-
-pnpm 'skill:validate'
-'''
-
-[[actions]]
 name = "Script: workflow:normalize"
 icon = "tool"
 command = '''
