@@ -31,12 +31,7 @@ const ALLOWED_LINK_TARGET = join(
 /** One allowed resolved absolute path. */
 const ALLOWED_ABS_1 = join(tmpdir(), "codex-preflight-allowed", "CODESTYLE.md");
 /** Another allowed resolved absolute path. */
-const ALLOWED_ABS_2 = join(
-	homedir(),
-	".codex",
-	"instructions",
-	"CODESTYLE.md",
-);
+const ALLOWED_ABS_2 = join(homedir(), ".codex", "instructions", "CODESTYLE.md");
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -357,17 +352,14 @@ describe("codex-preflight.sh template sync", () => {
 			"utf-8",
 		);
 
-		// Find the check_paths function block
-		const checkPathsMatch = runtimeScript.match(
-			/function check_paths[\s\S]*?(?=\nfunction [A-Za-z_][A-Za-z0-9_]*\(|$)/,
-		);
+		const checkPathsMatch = extractShellFunction(runtimeScript, "check_paths");
 		expect(checkPathsMatch).toBeTruthy();
 
-		const checkPathsBlock = checkPathsMatch![0];
+		const checkPathsBlock = checkPathsMatch!;
 
 		// Search within check_paths for the invocation pattern
 		const allowedCallIndex = checkPathsBlock.indexOf(
-			"is_allowed_repo_external_path(",
+			'is_allowed_repo_external_path "${root}" "${match}" "${abs}"',
 		);
 		const escapeErrIndex = checkPathsBlock.indexOf("path escapes repo root");
 
