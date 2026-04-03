@@ -30,7 +30,7 @@ All automated review usage in this repository must align with this policy and li
 
 - `coding-harness` uses the native GitHub `CodeRabbit` check as its primary automated review signal.
 - `.coderabbit.yaml` is the active repository-local review configuration for this repository.
-- CodeRabbit Semgrep for this repository is driven by `scripts/semgrep-pre-push.yml`; treat `ERROR` findings as merge blockers and record disposition for any remaining `WARNING` findings in the PR.
+- CodeRabbit Semgrep for this repository is driven by `scripts/semgrep-pre-push.yml`; treat `ERROR` findings as merge blockers and record the disposition of any remaining `WARNING` findings in the PR.
 - Repo-specific CodeRabbit `ast-grep` rules live under `rules/` and should stay limited to repository contracts that generic linters or vendor-essential rules do not already cover.
 
 ## Independent validation and compliance

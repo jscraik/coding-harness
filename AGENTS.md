@@ -25,7 +25,7 @@ This repository is a TypeScript control plane for agentic development and review
 ## Required Essentials
 - Package manager: `pnpm` (`packageManager: "pnpm@10.0.0"`).
 - Baseline aggregate gate: `pnpm check`.
-- Fail-closed code-style gate: `bash scripts/validate-code-style.sh`.
+- Fail-closed code-style gate: `bash scripts/validate-codestyle.sh`.
 - Compatibility posture: canonical-only.
 - Treat repo evidence (`package.json`, lockfiles, tsconfig, scripts) as authoritative over copied instructions.
 
@@ -46,7 +46,7 @@ Notes:
 - For this repo, verify `docs/agents/` and `scripts/` for path-sensitive work.
 - Prefer `./scripts/codex-enforced "<prompt>"` for repo-local Codex launches so failures are recorded into repo-scoped learn state.
 - Run `./scripts/codex-preflight.sh --stack auto --mode required` before multi-step, destructive, or path-sensitive workflows.
-- Treat the repo-root `CODESTYLE.md` path and `scripts/validate-code-style.sh` as required contract files for local verification.
+- Treat the repo-root `CODESTYLE.md` path and `scripts/validate-codestyle.sh` as required contract files for local verification.
 - Use `./scripts/verify-work.sh` as the canonical repo-local verification entrypoint; keep `scripts/codex-preflight.sh` as the lower-level bootstrap gate beneath it.
 - Ask before adding dependencies or changing system-level settings.
 
@@ -101,7 +101,7 @@ Start with [docs/agents/01-instruction-map.md](./docs/agents/01-instruction-map.
 - This repo keeps the repo-root `CODESTYLE.md` path as a symlink to `/Users/jamiecraik/.codex/instructions/CODESTYLE.md` so the authoring source stays global while local enforcement still targets the repo-root path.
 - Downstream harness-managed repositories should keep a real repo-local `CODESTYLE.md` scaffolded from that canonical source rather than a user-home symlink.
 - Use repo scripts as the command contract: `pnpm lint`, `pnpm typecheck`, `pnpm test`, `pnpm audit`, `pnpm build`, `pnpm check`, and `pnpm test:artifacts`.
-- Canonical code-style gate: `bash scripts/validate-code-style.sh` (`--fast` for focused iteration).
+- Canonical code-style gate: `bash scripts/validate-codestyle.sh` (`--fast` for focused iteration).
 - Canonical repo-local verification entrypoint: `bash scripts/verify-work.sh` (`--fast` delegates to the code-style fast lane after preflight).
 - Node `>=24.0.0` required (see `engines` in `package.json`).
 - Linter/formatter: Biome (`biome.json`). Run with `pnpm lint` / `pnpm fmt`.

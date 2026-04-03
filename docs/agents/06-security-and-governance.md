@@ -1,5 +1,18 @@
 # Security and governance
 
+- [Security posture](#security-posture)
+- [Secret handling](#secret-handling)
+- [Code and data governance](#code-and-data-governance)
+- [Risk controls](#risk-controls)
+- [Governance escalation](#governance-escalation)
+- [Operational check list](#operational-check-list)
+- [Pre-commit hooks](#pre-commit-hooks)
+- [Hooks installed](#hooks-installed)
+- [Setup](#setup)
+- [Commit message format](#commit-message-format)
+- [PR template reminder](#pr-template-reminder)
+- [Plan traceability](#plan-traceability)
+
 ## Security posture
 
 This repository follows conservative defaults:
@@ -9,7 +22,7 @@ This repository follows conservative defaults:
 - Preserve existing dependency and execution boundaries (`pnpm` + lockfile-driven installs).
 - Treat the repo-root `CODESTYLE.md` path plus `scripts/validate-codestyle.sh` as governed contract surfaces: if either drifts, readiness and closeout claims must fail closed.
 - Repo-specific exception: this repository may satisfy that `CODESTYLE.md` path with a symlink to `/Users/jamiecraik/.codex/instructions/CODESTYLE.md`, but downstream harness-managed repos should keep a real repo-local `CODESTYLE.md` copy.
-- Repo-specific preflight rule: `scripts/codex-preflight.sh` may allow that one documented `CODESTYLE.md` symlink even though it resolves outside repo root; other out-of-repo paths must still fail closed.
+- Repo-specific preflight rule: `scripts/codex-preflight.sh` may allow that one documented `CODESTYLE.md` symlink when it matches the repo-local allow-list in `.codex/preflight-allowed-external-paths.txt` (or `CODEX_PREFLIGHT_ALLOWED_EXTERNAL_PATHS`), even though it resolves outside repo root; other out-of-repo paths must still fail closed.
 - Harness-managed consumer repositories are a defined exception: `scripts/check-environment.sh` should prefer a repo-local CLI runner or wrapper, and use a global npm install of `@brainwav/coding-harness` only as the final fallback with explicit `NPM_TOKEN` auth wiring.
 - Security/policy hook configuration files must fail closed because of findings, not because the config is syntactically broken; keep Semgrep rule YAML quoted where patterns include mapping-like text such as `shell: true`.
 
