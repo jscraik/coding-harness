@@ -15,19 +15,28 @@ import {
 	symlinkSync,
 	writeFileSync,
 } from "node:fs";
-import { tmpdir } from "node:os";
+import { homedir, tmpdir } from "node:os";
 import { join } from "node:path";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 
 /** The canonical symlink target pattern accepted by the guard. */
-const ALLOWED_LINK_TARGET =
-	"/Users/jamiecraik/.codex/instructions/CODESTYLE.md";
+const ALLOWED_LINK_TARGET = join(
+	homedir(),
+	".codex",
+	"instructions",
+	"CODESTYLE.md",
+);
 /** One allowed resolved absolute path. */
-const ALLOWED_ABS_1 = "/tmp/codex-preflight-allowed/CODESTYLE.md";
+const ALLOWED_ABS_1 = join(tmpdir(), "codex-preflight-allowed", "CODESTYLE.md");
 /** Another allowed resolved absolute path. */
-const ALLOWED_ABS_2 = "/Users/jamiecraik/.codex/instructions/CODESTYLE.md";
+const ALLOWED_ABS_2 = join(
+	homedir(),
+	".codex",
+	"instructions",
+	"CODESTYLE.md",
+);
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -266,8 +275,8 @@ describe("check_paths with is_allowed_repo_external_path exemption", () => {
 
 		// Should not produce an "escapes repo root" error.
 		expect(stderr + stdout).not.toContain("path escapes repo root");
-		// Exit code should not be 2 (the "path escapes" error code).
-		expect(status).not.toBe(2);
+		// Exit code should be 0 (success).
+		expect(status).toBe(0);
 	});
 
 	it("still fails when a non-CODESTYLE.md path resolves outside repo root", () => {
@@ -348,17 +357,23 @@ describe("codex-preflight.sh template sync", () => {
 			"utf-8",
 		);
 
-		// Verify the integration by locating the positions of both strings
-		// within the full script source.
-		const allowedCallIndex = runtimeScript.indexOf(
-			"is_allowed_repo_external_path",
+		// Find the check_paths function block
+		const checkPathsMatch = runtimeScript.match(
+			/function check_paths[\s\S]*?(?=\nfunction [A-Za-z_][A-Za-z0-9_]*\(|$)/,
 		);
-		const escapeErrIndex = runtimeScript.indexOf("path escapes repo root");
+		expect(checkPathsMatch).toBeTruthy();
+
+		const checkPathsBlock = checkPathsMatch![0];
+
+		// Search within check_paths for the invocation pattern
+		const allowedCallIndex = checkPathsBlock.indexOf(
+			"is_allowed_repo_external_path(",
+		);
+		const escapeErrIndex = checkPathsBlock.indexOf("path escapes repo root");
 
 		expect(allowedCallIndex).toBeGreaterThan(-1);
 		expect(escapeErrIndex).toBeGreaterThan(-1);
-		// The allow call must be defined before the error log in the file so
-		// it is available when check_paths executes the guard.
+		// The allow call invocation must come before the error log in check_paths
 		expect(allowedCallIndex).toBeLessThan(escapeErrIndex);
 	});
 });
