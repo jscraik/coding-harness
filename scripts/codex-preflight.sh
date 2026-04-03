@@ -81,15 +81,6 @@ append_csv_values() {
 	printf '%s,%s\n' "${base_csv}" "${extra_csv}"
 }
 
-# load_preflight_overrides loads an optional environment file and populates PREFLIGHT_OVERRIDE_* variables.
-#
-# If the provided file path does not exist, the function returns success and leaves:
-# PREFLIGHT_OVERRIDE_BINS and PREFLIGHT_OVERRIDE_PATHS empty, and PREFLIGHT_OVERRIDE_ALLOWED_EXTERNAL_PATHS set from CODEX_PREFLIGHT_ALLOWED_EXTERNAL_PATHS or empty.
-#
-# If the file exists, it is sourced and the following are set from the sourced environment (falling back to empty if unset):
-# - PREFLIGHT_OVERRIDE_BINS from CODEX_PREFLIGHT_EXTRA_BINS
-# - PREFLIGHT_OVERRIDE_PATHS from CODEX_PREFLIGHT_EXTRA_PATHS
-# - PREFLIGHT_OVERRIDE_ALLOWED_EXTERNAL_PATHS from CODEX_PREFLIGHT_ALLOWED_EXTERNAL_PATHS
 load_preflight_overrides() {
 	local override_file="$1"
 
@@ -107,7 +98,6 @@ load_preflight_overrides() {
 	PREFLIGHT_OVERRIDE_ALLOWED_EXTERNAL_PATHS="${CODEX_PREFLIGHT_ALLOWED_EXTERNAL_PATHS:-}"
 }
 
-# extract_last_json_line extracts the last line that begins with `{` from the given input and echoes it to stdout.
 extract_last_json_line() {
 	local raw="${1:-}"
 	printf '%s\n' "${raw}" | awk '/^\{/{line=$0} END{if (line != "") print line}'
@@ -271,7 +261,6 @@ stack_paths_csv() {
 	esac
 }
 
-# check_bins checks each command in a comma-separated list exists in PATH; logs missing binaries and returns 2 when any are missing, otherwise logs success.
 check_bins() {
 	local bins_csv="$1"
 	local -a bins=()
@@ -293,10 +282,6 @@ check_bins() {
 	log_ok "binaries ok: ${bins_csv}"
 }
 
-# is_allowed_repo_external_path determines whether a path that would otherwise escape the repository root is permitted when the matched file is the symlink `CODESTYLE.md` and its target matches an allowed external path.
-# It consults the repository's `.codex/preflight-allowed-external-paths.txt` plus any values from `PREFLIGHT_OVERRIDE_ALLOWED_EXTERNAL_PATHS`, performs simple ${HOME} and ${REPO_ROOT} substitutions, and compares against the symlink target and the resolved absolute path.
-# Arguments: root (repository root), match (path name being checked), abs (resolved absolute path of the matched file).
-# Returns: exit code 0 when the path is allowed, 1 otherwise.
 is_allowed_repo_external_path() {
 	local root="$1"
 	local match="$2"
@@ -346,7 +331,6 @@ is_allowed_repo_external_path() {
 	return 1
 }
 
-# check_paths verifies that each comma-separated path pattern exists and resolves to a location under the given repository root, and errors if any pattern has no matches or resolves outside the root unless an allowed external path case applies.
 check_paths() {
 	local root="$1"
 	local paths_csv="$2"

@@ -1191,8 +1191,7 @@ describe("runInit", () => {
 			expect(semgrepChanged).toContain(
 				'git diff --name-only --diff-filter=ACMR -z "$base_ref"...HEAD --',
 			);
-			expect(semgrepChanged).toContain('SEMGREP_VERSION="1.153.1"');
-			expect(semgrepChanged).toContain('"$SEMGREP_BIN" scan');
+			expect(semgrepChanged).toContain("semgrep scan");
 			expect(semgrepRules).toContain("ts-no-eval");
 			expect(semgrepRules).toContain("ts-no-shell-true");
 			expect(makefile).toContain("check: ## Run all required quality gates");

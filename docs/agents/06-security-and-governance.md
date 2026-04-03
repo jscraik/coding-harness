@@ -98,7 +98,7 @@ The staged `gitleaks` lane should prefer the repo-root `.gitleaks.toml` when pre
 - Completed acceptance checklist items in referenced plans must carry evidence links or refs before merge.
 - `risk-policy-gate` enforces this in CI, and `review-gate` treats missing or invalid plan traceability as a merge blocker even when the review check itself passed.
 
-`scripts/check-semgrep-changed.sh` is intentionally narrow: it compares `HEAD` to the upstream merge-base (or the nearest main/master fallback), filters to changed implementation files under `src/**`, and runs only the local `scripts/semgrep-pre-push.yml` ruleset. That keeps the local lane useful without duplicating the full CI security scan. Keep the script pinned to the same Semgrep version used by `.github/workflows/secret-scan.yml` (`semgrep==1.153.1`) so local and CI findings stay aligned.
+`scripts/check-semgrep-changed.sh` is intentionally narrow: it compares `HEAD` to the upstream merge-base (or the nearest main/master fallback), filters to changed implementation files under `src/**`, and runs only the local `scripts/semgrep-pre-push.yml` ruleset. That keeps the local lane useful without duplicating the full CI security scan.
 
 ### Setup
 
