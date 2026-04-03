@@ -285,8 +285,16 @@ is_allowed_repo_external_path() {
 	local match="$2"
 	local abs="$3"
 	local link_target=''
+	local git_root=''
+	local canonical_harness_path='/Users/jamiecraik/dev/coding-harness'
 
-	if [[ "${root}" != "/Users/jamiecraik/dev/coding-harness" ]]; then
+	# Only allow this exception if we are in the coding-harness repo itself
+	if ! git_root="$(git rev-parse --show-toplevel 2>/dev/null)"; then
+		return 1
+	fi
+	git_root="$(cd -- "${git_root}" && pwd -P)"
+
+	if [[ "${git_root}" != "${canonical_harness_path}" ]]; then
 		return 1
 	fi
 	if [[ "${match}" != "CODESTYLE.md" ]]; then
