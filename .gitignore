@@ -5,7 +5,7 @@ node_modules/
 dist/
 
 # Internal handoff docs
-# NOTE: FORJAMIE.md and Learning.md are intentionally tracked for migration handoff continuity.
+# NOTE: FORJAMIE.md is intentionally tracked for migration handoff continuity.
 
 # Secrets (never commit)
 .env
@@ -44,6 +44,7 @@ dockercfg*
 
 # Logs
 *.log
+isolate-*-v8*.log
 logs/
 
 # Test coverage
