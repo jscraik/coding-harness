@@ -1,25 +1,22 @@
 # Coding Harness — improved concise map
 
-<<<<<<< HEAD
 ## Table of Contents
 - [Tight definition](#tight-definition)
 - [Actual architecture](#actual-architecture)
-- [1. Bootstrap and repo substrate](#1-bootstrap-and-repo-substrate)
-- [2. Policy and gate kernel](#2-policy-and-gate-kernel)
-- [3. Workflow authority layer](#3-workflow-authority-layer)
-- [4. Evidence and control-plane artifacts](#4-evidence-and-control-plane-artifacts)
-- [5. CI migration as a major subsystem](#5-ci-migration-as-a-major-subsystem)
-- [6. Pilot/autonomy governance](#6-pilotautonomy-governance)
+  - [Bootstrap and repo substrate](#1-bootstrap-and-repo-substrate)
+  - [Policy and gate kernel](#2-policy-and-gate-kernel)
+  - [Workflow authority layer](#3-workflow-authority-layer)
+  - [Evidence and control-plane artifacts](#4-evidence-and-control-plane-artifacts)
+  - [CI migration as a major subsystem](#5-ci-migration-as-a-major-subsystem)
+  - [Pilot/autonomy governance](#6-pilotautonomy-governance)
 - [Cleanest compact map](#cleanest-compact-map)
-- [A. Core harness](#a-core-harness)
-- [B. Workflow authority](#b-workflow-authority)
-- [C. Rollout control](#c-rollout-control)
-- [D. Evidence substrate](#d-evidence-substrate)
-- [E. Adapters and satellites](#e-adapters-and-satellites)
+  - [A. Core harness](#a-core-harness)
+  - [B. Workflow authority](#b-workflow-authority)
+  - [C. Rollout control](#c-rollout-control)
+  - [D. Evidence substrate](#d-evidence-substrate)
+  - [E. Adapters and satellites](#e-adapters-and-satellites)
 - [Bottom line](#bottom-line)
 
-=======
->>>>>>> 8e7a6f3 (chore: checkpoint local WIP before prune sweep)
 Source basis: uploaded `coding-harness-main.zip`, inspected locally.
 
 ## Tight definition

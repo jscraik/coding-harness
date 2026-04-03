@@ -171,8 +171,9 @@ describe("rules/require-relative-import-js-extension.yml", () => {
 		expect(RAW).toContain("kind: call_expression");
 	});
 
-	it("rule includes a positive .js suffix requirement", () => {
+	it("rule includes a negative .js suffix requirement (flags imports missing .js)", () => {
 		expect(RAW).toContain('regex: "\\\\.js$"');
+		expect(RAW).toContain("not:");
 	});
 
 	it("rule uses 'any' to match both static and dynamic imports", () => {
