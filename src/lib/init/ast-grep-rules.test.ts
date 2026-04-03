@@ -21,6 +21,9 @@ function loadRuleFile(filename: string): string {
 
 describe("rules/require-relative-import-js-extension.yml", () => {
 	const RAW = loadRuleFile("require-relative-import-js-extension.yml");
+	const JS_RAW = loadRuleFile(
+		"require-relative-import-js-extension.javascript.yml",
+	);
 
 	it("exists and is non-empty", () => {
 		expect(RAW.length).toBeGreaterThan(0);
@@ -32,28 +35,45 @@ describe("rules/require-relative-import-js-extension.yml", () => {
 		expect(RAW).toMatch(/^message:/m);
 		expect(RAW).toMatch(/^severity:/m);
 		expect(RAW).toMatch(/^rule:/m);
+		expect(JS_RAW).toMatch(/^id:/m);
+		expect(JS_RAW).toMatch(/^language:/m);
+		expect(JS_RAW).toMatch(/^message:/m);
+		expect(JS_RAW).toMatch(/^severity:/m);
+		expect(JS_RAW).toMatch(/^rule:/m);
 	});
 
 	it("id matches the filename (without .yml)", () => {
 		const idMatch = RAW.match(/^id:\s*(.+)$/m);
 		expect(idMatch).not.toBeNull();
 		expect(idMatch![1]!.trim()).toBe("require-relative-import-js-extension");
+		const jsIdMatch = JS_RAW.match(/^id:\s*(.+)$/m);
+		expect(jsIdMatch).not.toBeNull();
+		expect(jsIdMatch![1]!.trim()).toBe(
+			"require-relative-import-js-extension-javascript",
+		);
 	});
 
-	it("targets TypeScript language", () => {
+	it("uses TypeScript and JavaScript companion rules for repo-wide coverage", () => {
 		const langMatch = RAW.match(/^language:\s*(.+)$/m);
 		expect(langMatch).not.toBeNull();
 		expect(langMatch![1]!.trim()).toBe("TypeScript");
+		const jsLangMatch = JS_RAW.match(/^language:\s*(.+)$/m);
+		expect(jsLangMatch).not.toBeNull();
+		expect(jsLangMatch![1]!.trim()).toBe("JavaScript");
 	});
 
 	it("severity is warning (advisory, not blocking)", () => {
 		const severityMatch = RAW.match(/^severity:\s*(.+)$/m);
 		expect(severityMatch).not.toBeNull();
 		expect(severityMatch![1]!.trim()).toBe("warning");
+		const jsSeverityMatch = JS_RAW.match(/^severity:\s*(.+)$/m);
+		expect(jsSeverityMatch).not.toBeNull();
+		expect(jsSeverityMatch![1]!.trim()).toBe("warning");
 	});
 
 	it("message explains the requirement", () => {
 		expect(RAW).toContain(".js extension");
+		expect(JS_RAW).toContain(".js extension");
 	});
 
 	// ─── Regex pattern validation ─────────────────────────────────────────────
@@ -163,17 +183,23 @@ describe("rules/require-relative-import-js-extension.yml", () => {
 
 	it("rule checks string_fragment kind (import path node type)", () => {
 		expect(RAW).toContain("kind: string_fragment");
+		expect(JS_RAW).toContain("kind: string_fragment");
 	});
 
 	it("rule scopes to import_statement, export_statement, and call_expression", () => {
 		expect(RAW).toContain("kind: import_statement");
 		expect(RAW).toContain("kind: export_statement");
 		expect(RAW).toContain("kind: call_expression");
+		expect(JS_RAW).toContain("kind: import_statement");
+		expect(JS_RAW).toContain("kind: export_statement");
+		expect(JS_RAW).toContain("kind: call_expression");
 	});
 
 	it("rule includes a negative .js suffix requirement (flags imports missing .js)", () => {
 		expect(RAW).toContain('regex: "\\\\.js$"');
 		expect(RAW).toContain("not:");
+		expect(JS_RAW).toContain('regex: "\\\\.js$"');
+		expect(JS_RAW).toContain("not:");
 	});
 
 	it("rule uses 'any' to match both static and dynamic imports", () => {
