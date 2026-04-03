@@ -50,7 +50,7 @@ Every agent handoff should include:
 - If instructions conflict: resolve precedence before further edits.
 - Agent-created branches must use `codex/<linear-key>-<short-description>` naming when the work is tracked in Linear.
 - CodeRabbit review must be independent from code authorship (coding agent cannot act as approving review agent).
-- Legacy Greptile bridge workflows remain supported for harness-managed repositories, but they are not the primary review authority for this repository.
+- Legacy review bridge workflows may exist in downstream repositories, but they are not the primary review authority for this repository.
 - If a reproducible coding-harness bug, policy gap, workflow regression, automation task, or release follow-up is found: create or update a Linear issue with repro + evidence before handoff.
 - If PR review artifacts are missing (CodeRabbit/Codex for this repo): do not merge; complete reviews or explicitly escalate the exception.
 - If the `CodeRabbit` check is absent, pending, or failing for the current head SHA: do not merge.

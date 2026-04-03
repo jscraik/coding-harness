@@ -726,7 +726,15 @@ function checkSurfacePresence(
 }
 
 /**
- * Build execution context based on options and environment.
+ * Constructs the runtime execution context used during gate evaluation.
+ *
+ * The context encodes chosen trigger, resolved policy mode, merge-authoritative
+ * status, bootstrap wiring state, sources for changed-files, trusted refs, and
+ * output paths/identifiers used by the evaluation.
+ *
+ * @param options - Invocation options and environment hints that influence the context (e.g., trigger, trusted refs, changedFiles).
+ * @param policy - Optional loaded docs-gate policy whose presence and `mode` affect bootstrap state and the effective policy mode.
+ * @returns The assembled DocsGateExecutionContext with fields such as `trigger`, `policyMode`, `mergeAuthoritative`, `bootstrapState`, `changedFilesSource`, trusted refs, and `outputRoot`.
  */
 function buildExecutionContext(
 	options: DocsGateOptions,
@@ -766,8 +774,15 @@ function buildExecutionContext(
 }
 
 /**
- * Run the docs-gate evaluation.
- */
+ * Execute the docs-gate evaluation for the repository and produce a JSON report and an exit code.
+ *
+ * Performs contract/policy validation, classifies changed files, derives required documentation surfaces,
+ * checks presence, collects context-integrity contradictions, writes a report artifact, and appends contradiction history when applicable.
+ *
+ * @param options - Optional configuration for evaluation (mode, trigger, explicit changedFiles, repo root, trusted refs, output path, and related flags).
+ * @returns An object with `report` (the generated DocsGateReport) and `exitCode` (numeric code indicating the outcome).
+ *          Relevant exit codes: 0 for success/advisory pass, 10 for detected drift in required mode, 11 for bootstrap gap,
+ *          12 for trust mismatch, 13 for policy error, and 14 for runtime/IO errors.
 export function runDocsGate(options: DocsGateOptions = {}): DocsGateResult {
 	const mode: DocsGateMode = options.mode ?? "advisory";
 	const repoRoot = resolve(options.repoRoot ?? process.cwd());
@@ -834,7 +849,7 @@ export function runDocsGate(options: DocsGateOptions = {}): DocsGateResult {
 			findings,
 		};
 
-		// Write stub report
+		// Write deterministic fallback report
 		const outPath = options.outPath ?? DEFAULT_OUT_PATH;
 		try {
 			const resolvedOutPath = validatePath(repoRoot, outPath);
@@ -848,7 +863,7 @@ export function runDocsGate(options: DocsGateOptions = {}): DocsGateResult {
 			// Warn instead of silently swallowing: we're already in an error
 			// state but a missing artifact can cause confusing CI behaviour.
 			console.warn(
-				`[docs-gate] Warning: failed to write stub report to '${options.outPath ?? DEFAULT_OUT_PATH}': ${_error instanceof Error ? _error.message : String(_error)}`,
+				`[docs-gate] Warning: failed to write fallback report to '${options.outPath ?? DEFAULT_OUT_PATH}': ${_error instanceof Error ? _error.message : String(_error)}`,
 			);
 		}
 

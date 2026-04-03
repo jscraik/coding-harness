@@ -14,7 +14,7 @@ export type GapCaseStatus = "open" | "resolved";
 /**
  * Provider source for the gap-case (where the incident originated)
  */
-export type GapCaseProvider = "greptile" | "codex" | "manual";
+export type GapCaseProvider = "codex" | "manual";
 
 /**
  * Causality classification for automation incidents

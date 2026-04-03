@@ -41,7 +41,6 @@ export interface InitOptions {
 	explainOwnership?: boolean; // Show ownership decisions for schema-aware update paths
 	minimal?: boolean; // Opt-out of strict enterprise governance layers
 	issueTracker?: IssueTracker;
-	greptile?: boolean; // false to omit greptile configuration
 }
 
 export type CIProvider = "github-actions" | "circleci";
@@ -301,8 +300,6 @@ export interface TemplateRenderContext {
 	minimal?: boolean;
 	/** Specific issue tracker selection ('linear', 'github', 'none') */
 	issueTracker?: IssueTracker;
-	/** Whether to provision .greptile files and workflow integration */
-	useGreptile?: boolean;
 }
 
 export interface Template {

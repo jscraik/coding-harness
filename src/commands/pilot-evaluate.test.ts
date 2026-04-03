@@ -75,7 +75,7 @@ function createRemediationEvent(
 		prNumber: 1,
 		repo: "test/repo",
 		headSha: "a".repeat(40),
-		provider: "greptile",
+		provider: "coderabbit",
 		severity: "medium",
 		action: "applied",
 		...overrides,

@@ -17,12 +17,11 @@ describe("scaffold templates resolution", () => {
 		}
 	});
 
-	it("includes .greptile by default", () => {
+	it("includes .coderabbit.yaml by default", () => {
 		const templates = getTemplatesForProvider("circleci");
-		const greptileTemplates = templates.filter((t) =>
-			t.path.includes(".greptile"),
-		);
-		expect(greptileTemplates.length).toBeGreaterThan(0);
+		expect(
+			templates.some((template) => template.path === ".coderabbit.yaml"),
+		).toBe(true);
 	});
 
 	it("includes codestyle contract templates by default", () => {
@@ -38,32 +37,28 @@ describe("scaffold templates resolution", () => {
 		).toBe(true);
 	});
 
-	it("omits .greptile when greptile option is explicitly false", () => {
-		const templates = getTemplatesForProvider("circleci", {
-			dryRun: false,
-			force: false,
-			greptile: false,
-		});
-		const greptileTemplates = templates.filter((t) =>
+	it("never includes legacy .greptile templates", () => {
+		const templates = getTemplatesForProvider("circleci");
+		const legacyTemplates = templates.filter((t) =>
 			t.path.includes(".greptile"),
 		);
-		expect(greptileTemplates.length).toBe(0);
+		expect(legacyTemplates.length).toBe(0);
 	});
 
-	it("omits .greptile and non-essential templates when minimal mode is enabled", () => {
+	it("omits non-essential templates when minimal mode is enabled", () => {
 		const templates = getTemplatesForProvider("circleci", {
 			dryRun: false,
 			force: false,
 			minimal: true,
 		});
-		const greptileTemplates = templates.filter((t) =>
+		const legacyTemplates = templates.filter((t) =>
 			t.path.includes(".greptile"),
 		);
 		const codeownersTemplates = templates.filter((t) =>
 			t.path.includes("CODEOWNERS"),
 		);
 
-		expect(greptileTemplates.length).toBe(0);
+		expect(legacyTemplates.length).toBe(0);
 		expect(codeownersTemplates.length).toBe(0);
 
 		// Minimal mode keeps provider workflows but still reduces the managed set.

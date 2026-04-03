@@ -42,6 +42,7 @@ describe("ejectHarness", () => {
 		// Mock out project structures
 		mkdirSync(join(tempDir, ".harness"));
 		mkdirSync(join(tempDir, ".greptile"));
+		writeFileSync(join(tempDir, ".coderabbit.yaml"), "language: en-US\n");
 		mkdirSync(join(tempDir, ".agents/skills/coding-harness"), {
 			recursive: true,
 		});
@@ -51,6 +52,7 @@ describe("ejectHarness", () => {
 		await ejectHarness(tempDir, { force: true });
 
 		expect(existsSync(join(tempDir, ".harness"))).toBe(false);
+		expect(existsSync(join(tempDir, ".coderabbit.yaml"))).toBe(false);
 		expect(existsSync(join(tempDir, ".greptile"))).toBe(false);
 		expect(existsSync(join(tempDir, ".agents/skills/coding-harness"))).toBe(
 			false,
@@ -64,6 +66,7 @@ describe("ejectHarness", () => {
 	it("supports dry-run without deleting harness footprints", async () => {
 		mkdirSync(join(tempDir, ".harness"));
 		mkdirSync(join(tempDir, ".greptile"));
+		writeFileSync(join(tempDir, ".coderabbit.yaml"), "language: en-US\n");
 		mkdirSync(join(tempDir, ".agents/skills/coding-harness"), {
 			recursive: true,
 		});
@@ -72,6 +75,7 @@ describe("ejectHarness", () => {
 		const result = await ejectHarness(tempDir, { dryRun: true, force: true });
 
 		expect(existsSync(join(tempDir, ".harness"))).toBe(true);
+		expect(existsSync(join(tempDir, ".coderabbit.yaml"))).toBe(true);
 		expect(existsSync(join(tempDir, ".greptile"))).toBe(true);
 		expect(existsSync(join(tempDir, ".agents/skills/coding-harness"))).toBe(
 			true,
@@ -80,6 +84,7 @@ describe("ejectHarness", () => {
 		expect(result.deleted).toEqual(
 			expect.arrayContaining([
 				".harness",
+				".coderabbit.yaml",
 				".greptile",
 				".agents/skills/coding-harness",
 				"harness.contract.json",
@@ -191,6 +196,7 @@ describe("ejectHarness", () => {
 
 	it("suppresses console output in json mode while returning deleted paths and warnings", async () => {
 		writeFileSync(join(tempDir, "harness.contract.json"), "{}");
+		writeFileSync(join(tempDir, ".coderabbit.yaml"), "language: en-US\n");
 		mkdirSync(join(tempDir, ".greptile"), { recursive: true });
 		writeFileSync(join(tempDir, ".greptile/config.json"), "{}");
 		mkdirSync(join(tempDir, ".github/workflows"), { recursive: true });
@@ -212,6 +218,7 @@ describe("ejectHarness", () => {
 
 		expect(infoSpy).not.toHaveBeenCalled();
 		expect(warnSpy).not.toHaveBeenCalled();
+		expect(result.deleted).toContain(".coderabbit.yaml");
 		expect(result.deleted).toContain(".greptile");
 		expect(result.warnings).toEqual(
 			expect.arrayContaining([

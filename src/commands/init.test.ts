@@ -23,9 +23,7 @@ const EXPECTED_TEMPLATE_PATHS = [
 	".harness/ci-required-checks.json",
 	".harness/ci-provider-transition-status.json",
 	".npmrc",
-	".greptile/config.json",
-	".greptile/rules.md",
-	".greptile/files.json",
+	".coderabbit.yaml",
 	".circleci/config.yml",
 	"CONTRIBUTING.md",
 	".github/PULL_REQUEST_TEMPLATE.md",
@@ -155,9 +153,7 @@ describe("runInit", () => {
 				),
 			).toBe(true);
 			expect(existsSync(join(tempDir, ".npmrc"))).toBe(true);
-			expect(existsSync(join(tempDir, ".greptile/config.json"))).toBe(true);
-			// greptile-review.yml is only scaffolded for github-actions provider;
-			// the default provider is circleci.
+			expect(existsSync(join(tempDir, ".greptile/config.json"))).toBe(false);
 			expect(
 				existsSync(join(tempDir, ".github/workflows/greptile-review.yml")),
 			).toBe(false);
@@ -202,7 +198,7 @@ describe("runInit", () => {
 			expect(
 				existsSync(join(tempDir, ".github/workflows/pr-pipeline.yml")),
 			).toBe(false);
-			// greptile-review.yml is GHA-only; must NOT be created for circleci provider
+			// legacy review bridge workflow is not scaffolded
 			expect(
 				existsSync(join(tempDir, ".github/workflows/greptile-review.yml")),
 			).toBe(false);
@@ -360,13 +356,7 @@ describe("runInit", () => {
 				require("node:fs").readFileSync(contractPath, "utf-8"),
 			);
 			expect(content.version).toBe("1.5.0");
-			expect(content.reviewPolicy.timeoutSeconds).toBe(600);
-			expect(content.reviewPolicy.requiredChecks).toContain("security-scan");
-			expect(content.reviewPolicy.requiredChecks).not.toContain(
-				"Greptile Review",
-			);
-			expect(content.reviewPolicy.requiredChecks).not.toContain("Codex Review");
-			expect(content.reviewPolicy.enforceReviewerIndependence).toBe(true);
+			expect(content.reviewPolicy).toBeUndefined();
 			expect(content.branchProtection.requiredChecks).toContain(
 				"security-scan",
 			);
@@ -500,37 +490,13 @@ describe("runInit", () => {
 			).toEqual(["current_checkout", "recent_artifacts"]);
 		});
 
-		it("scaffolds the Greptile baseline for distributed repos", () => {
+		it("does not scaffold legacy .greptile files", () => {
 			const result = runInit(tempDir, { dryRun: false, force: false });
 
 			expect(result.ok).toBe(true);
-
-			const greptileConfig = JSON.parse(
-				require("node:fs").readFileSync(
-					join(tempDir, ".greptile/config.json"),
-					"utf-8",
-				),
-			);
-			const greptileFiles = JSON.parse(
-				require("node:fs").readFileSync(
-					join(tempDir, ".greptile/files.json"),
-					"utf-8",
-				),
-			);
-			const greptileRules = require("node:fs").readFileSync(
-				join(tempDir, ".greptile/rules.md"),
-				"utf-8",
-			);
-
-			expect(greptileConfig.strictness).toBe(2);
-			expect(greptileConfig.requireIndependentValidation).toBe(true);
-			expect(greptileConfig.confidence.minMergeScore).toBe(4);
-			expect(
-				greptileFiles.contextFiles.some(
-					(entry: { path: string }) => entry.path === "harness.contract.json",
-				),
-			).toBe(true);
-			expect(greptileRules).toContain("Independent validation is mandatory");
+			expect(existsSync(join(tempDir, ".greptile/config.json"))).toBe(false);
+			expect(existsSync(join(tempDir, ".greptile/rules.md"))).toBe(false);
+			expect(existsSync(join(tempDir, ".greptile/files.json"))).toBe(false);
 		});
 
 		it("scaffolds GHA workflow files when provider is github-actions", () => {
@@ -549,24 +515,14 @@ describe("runInit", () => {
 			expect(
 				existsSync(join(tempDir, ".github/workflows/secret-scan.yml")),
 			).toBe(true);
-			// greptile-review.yml is GHA-only — must be created for github-actions provider
+			// legacy review bridge workflow is no longer scaffolded
 			expect(
 				existsSync(join(tempDir, ".github/workflows/greptile-review.yml")),
-			).toBe(true);
-			// Verify the scaffolded workflow has all required triggers and checks:write
-			const greptileWorkflow = require("node:fs").readFileSync(
-				join(tempDir, ".github/workflows/greptile-review.yml"),
-				"utf-8",
-			);
+			).toBe(false);
 			const secretScanWorkflow = require("node:fs").readFileSync(
 				join(tempDir, ".github/workflows/secret-scan.yml"),
 				"utf-8",
 			);
-			expect(greptileWorkflow).toContain("pull_request:");
-			expect(greptileWorkflow).toContain("pull_request_review:");
-			expect(greptileWorkflow).toContain("pull_request_review_comment:");
-			expect(greptileWorkflow).toContain("issue_comment:");
-			expect(greptileWorkflow).toContain("checks: write");
 			expect(secretScanWorkflow).toContain("pull-requests: write");
 			expect(secretScanWorkflow).toContain("GITLEAKS_CONFIG: .gitleaks.toml");
 			// CircleCI file should NOT be created
@@ -817,12 +773,9 @@ describe("runInit", () => {
 				contributingPath,
 				"utf-8",
 			);
-			expect(content).toContain("## Legacy Greptile setup baseline");
-			expect(content).toContain("`harness verify-greptile`");
-			expect(content).toContain(
-				"`harness request-greptile-review --owner <owner> --repo <repo> --pr <number>`",
-			);
-			expect(content).toContain("`@greptileai`");
+			expect(content).not.toContain(".greptile/");
+			expect(content).not.toContain("greptile-review.yml");
+			expect(content).toContain("CodeRabbit");
 			expect(content).toContain("`docs-gate`");
 			expect(content).toContain("`CodeRabbit`");
 			expect(content).toContain("`consistency-drift-health`");
@@ -1562,7 +1515,7 @@ describe("runInit", () => {
 
 			const wrapper = spawnSync(
 				"bash",
-				["scripts/harness-cli.sh", "verify-greptile"],
+				["scripts/harness-cli.sh", "verify-coderabbit"],
 				{
 					cwd: tempDir,
 					encoding: "utf8",
@@ -2451,11 +2404,7 @@ describe("--update flag", () => {
 	});
 
 	it("rejects scaffold-shape flags when combined with --update", () => {
-		const cases = [
-			{ minimal: true },
-			{ issueTracker: "github" as const },
-			{ greptile: false },
-		];
+		const cases = [{ minimal: true }, { issueTracker: "github" as const }];
 
 		for (const extraOptions of cases) {
 			const result = runInit(tempDir, {
@@ -2473,7 +2422,6 @@ describe("--update flag", () => {
 				);
 				expect(result.error.message).toContain("--minimal");
 				expect(result.error.message).toContain("--issue-tracker");
-				expect(result.error.message).toContain("--no-greptile");
 			}
 		}
 	});
@@ -2837,30 +2785,12 @@ describe("--update flag", () => {
 		expect(existsSync(join(tempDir, ".linear"))).toBe(false);
 	});
 
-	it("preserves no-greptile update mode from the raw contract", () => {
-		const installResult = runInit(tempDir, {
-			dryRun: false,
-			force: false,
-			track: true,
-			greptile: false,
-		});
-		expect(installResult.ok).toBe(true);
-		expect(existsSync(join(tempDir, ".greptile/config.json"))).toBe(false);
-
-		const manifestPath = join(tempDir, ".harness/restore-manifest.json");
-		const manifest = JSON.parse(readFileSync(manifestPath, "utf-8"));
-		manifest.harnessVersion = "0.0.1";
-		manifest.greptile = undefined;
-		writeFileSync(manifestPath, JSON.stringify(manifest));
-		const clearedManifest = JSON.parse(readFileSync(manifestPath, "utf-8"));
-		expect("greptile" in clearedManifest).toBe(false);
-
+	it("never scaffolds legacy .greptile files", () => {
 		const result = runInit(tempDir, {
 			dryRun: false,
 			force: false,
-			update: true,
+			track: true,
 		});
-
 		expect(result.ok).toBe(true);
 		expect(existsSync(join(tempDir, ".greptile/config.json"))).toBe(false);
 		expect(
@@ -2870,17 +2800,15 @@ describe("--update flag", () => {
 		const contract = JSON.parse(
 			readFileSync(join(tempDir, "harness.contract.json"), "utf-8"),
 		);
-		expect(contract.reviewPolicy).toBeUndefined();
 		expect(
-			contract.remediationPolicy?.providerDefaults?.greptile,
+			contract.remediationPolicy?.providerDefaults?.coderabbit,
 		).toBeUndefined();
 	});
 
-	it("omits greptile guidance from contributor surfaces when disabled", () => {
+	it("never includes legacy review bridge guidance in contributor surfaces", () => {
 		const result = runInit(tempDir, {
 			dryRun: false,
 			force: false,
-			greptile: false,
 		});
 		expect(result.ok).toBe(true);
 
@@ -2893,11 +2821,10 @@ describe("--update flag", () => {
 			"utf-8",
 		);
 
-		expect(contributing).not.toContain("## Greptile setup baseline");
 		expect(contributing).not.toContain("@greptileai");
-		expect(contributing).not.toContain("Greptile confidence score");
-		expect(prTemplate).not.toContain("Greptile review completed");
-		expect(prTemplate).not.toContain("Greptile confidence score");
+		expect(contributing).not.toContain("greptile-review.yml");
+		expect(contributing).toContain("CodeRabbit");
+		expect(prTemplate).not.toContain("@greptileai");
 		expect(prTemplate).toContain("Codex: <link / artifact path / comment ID>");
 	});
 

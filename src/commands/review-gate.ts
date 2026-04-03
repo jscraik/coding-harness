@@ -317,6 +317,18 @@ function evaluateRequiredChecks(
 	return blockers;
 }
 
+/**
+ * Evaluates plan traceability for a pull request by running the plan gate and converting its result into a concise traceability outcome.
+ *
+ * @param prTitle - Optional PR title included when present to assist plan ID extraction.
+ * @param prBody - Optional PR body included when provided to assist plan ID extraction.
+ * @param changedFiles - Paths of files changed in the PR used to detect referenced plan IDs.
+ * @returns An object with:
+ *  - `passed`: `true` when the plan gate passed its checks, `false` otherwise.
+ *  - `status`: `"missing"` when no plan IDs were found, `"pass"` when the gate passed, or `"fail"` when traceability checks failed.
+ *  - `planIds`: the array of discovered plan identifiers (empty if none found).
+ *  - `blockers`: human-readable blocker messages derived from plan gate errors, each prefixed with `Plan traceability:`.
+ */
 function evaluatePlanTraceability({
 	prTitle,
 	prBody,
@@ -356,20 +368,15 @@ function evaluatePlanTraceability({
 	};
 }
 
+/**
+ * Constructs a set of normalized bot account logins used to identify bot authors.
+ *
+ * @param botLogin - An optional additional bot login to include; it will be normalized and omitted if empty or invalid.
+ * @returns A Set of normalized (lowercased, trimmed) bot login strings containing the configured defaults and the provided `botLogin` when valid.
+ */
 function buildBotLoginSet(botLogin?: string): Set<string> {
 	return new Set<string>(
-		[
-			botLogin,
-			"coderabbitai",
-			"coderabbitai[bot]",
-			"greptile-apps",
-			"greptile-apps[bot]",
-			"greptile[bot]",
-			"greptileai[bot]",
-			"greptile",
-			"greptileai",
-			"chatgpt-codex-connector",
-		]
+		[botLogin, "coderabbitai", "coderabbitai[bot]", "chatgpt-codex-connector"]
 			.map((login) => normalizeBotLogin(login))
 			.filter((login): login is string => login !== undefined),
 	);

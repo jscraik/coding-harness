@@ -36,7 +36,14 @@ export const DEFAULT_MUTATION_QUEUE_OPTIONS: Required<MutationQueueOptions> = {
 };
 
 /**
- * Compute delay for a given retry attempt.
+ * Calculate the delay (in milliseconds) to wait before the next retry attempt.
+ *
+ * Computes an exponential backoff from `baseDelayMs` using `backoffFactor` raised to `attempt`,
+ * caps the result to `maxDelayMs`, and optionally applies symmetric jitter proportional to `jitterRatio`.
+ *
+ * @param attempt - Zero-based retry attempt index (0 = first retry after initial failure).
+ * @param options - Configuration that may supply `baseDelayMs`, `maxDelayMs`, `maxAttempts`, `backoffFactor`, `jitterRatio`, and a `random` RNG; these are merged with defaults.
+ * @returns The computed delay in milliseconds (integer, >= 0). When `jitterRatio` is 0 the value is the truncated capped delay; otherwise a randomized value within ±`jitterRatio` of the capped delay is returned.
  */
 export function computeMutationBackoffDelay(
 	attempt: number,
@@ -56,7 +63,14 @@ export function computeMutationBackoffDelay(
 }
 
 /**
- * Heuristic to detect if an error should be retried.
+ * Determines whether a mutation attempt error should be retried.
+ *
+ * Considers an error retryable when its numeric `status` is one of
+ * 403, 408, 429, 500, 502, 503, or 504, or when the wrapped `Error`
+ * message (if present) contains the substrings "econnreset" or "timeout".
+ *
+ * @param error - The annotated mutation attempt error to evaluate
+ * @returns `true` if the error is considered retryable, `false` otherwise
  */
 function isRetryableMutationError(error: MutationAttemptError): boolean {
 	if (typeof error.status === "number") {
@@ -70,7 +84,11 @@ function isRetryableMutationError(error: MutationAttemptError): boolean {
 }
 
 /**
- * Sleep helper, extracted for easier mocking.
+ * Pauses execution for the specified number of milliseconds.
+ *
+ * If `ms` is less than or equal to 0 the function returns immediately.
+ *
+ * @param ms - Time to wait in milliseconds; values <= 0 result in no delay
  */
 async function sleep(ms: number): Promise<void> {
 	if (ms <= 0) {

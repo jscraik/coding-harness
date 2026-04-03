@@ -172,7 +172,13 @@ function parseFindings(input: string): unknown[] {
 }
 
 /**
- * Detect provider type from finding structure.
+ * Determine the source provider for a raw finding object.
+ *
+ * Recognizes CodeQL findings when the object contains a nested `location` with a `startLine`,
+ * and recognizes Codex findings when the object contains a `filePath` string and a `line` number.
+ *
+ * @param finding - Raw finding value to inspect; may be any JSON-decoded value.
+ * @returns `"codeql"` if the value appears to be a CodeQL finding, `"codex"` if it appears to be a Codex finding, or `null` if the provider cannot be determined.
  */
 function detectProvider(finding: unknown): "codeql" | "codex" | null {
 	if (typeof finding !== "object" || finding === null) {
@@ -199,7 +205,18 @@ function detectProvider(finding: unknown): "codeql" | "codex" | null {
 }
 
 /**
- * Normalize a raw finding to canonical format.
+ * Convert a raw finding input into a canonical finding representation.
+ *
+ * Detects the finding format (e.g., CodeQL or Codex shapes) and produces a
+ * normalized CanonicalFinding suitable for downstream remediation. If the input
+ * cannot be associated with a supported provider or normalization fails, an
+ * error message is returned explaining the failure.
+ *
+ * @param raw - The provider-specific finding payload to normalize.
+ * @param repoRoot - Repository root path used to resolve or normalize file paths.
+ * @returns `{ ok: true, finding }` with the normalized `CanonicalFinding`, or
+ * `{ ok: false, error }` where `error` is a human-readable reason for detection
+ * or normalization failure.
  */
 function normalizeFinding(
 	raw: unknown,
@@ -233,8 +250,9 @@ function normalizeFinding(
 }
 
 /**
- * Create a mock GitHub client for CLI usage.
- * In production, this would use the actual GitHub API.
+ * Create a GitHubClient that performs SHA operations against the local git repository.
+ *
+ * @returns A GitHubClient that obtains the repository HEAD SHA and verifies commit ancestry using the local repository (avoids external GitHub API calls).
  */
 function createGitHubClient(): GitHubClient {
 	return {

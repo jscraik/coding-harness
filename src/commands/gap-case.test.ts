@@ -285,7 +285,7 @@ describe("gap-case", () => {
 				summary: "Test summary",
 				severity: "medium",
 				owner: "test-owner",
-				provider: "greptile",
+				provider: "manual",
 				findingId: "FIND-001",
 				prNumber: 123,
 				headSha: "a".repeat(40),
@@ -295,7 +295,7 @@ describe("gap-case", () => {
 			});
 			expect(result.ok).toBe(true);
 			if (result.ok) {
-				expect(result.output.provider).toBe("greptile");
+				expect(result.output.provider).toBe("manual");
 				expect(result.output.findingId).toBe("FIND-001");
 				expect(result.output.prNumber).toBe(123);
 				expect(result.output.headSha).toBe("a".repeat(40));

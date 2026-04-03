@@ -16,7 +16,6 @@ import {
 } from "../contract/types.js";
 import {
 	BRANCH_PROTECTION_REQUIRED_CHECKS,
-	REVIEW_POLICY_REQUIRED_CHECKS,
 	formatRequiredChecksBulleted,
 } from "../policy/required-checks.js";
 import {
@@ -587,8 +586,10 @@ export function detectPackageManager(dir: string): "pnpm" | "yarn" | "npm" {
 }
 
 /**
- * Normalize and validate a CI provider string.
- * Returns the provider or an error if invalid.
+ * Normalize and validate a CI provider identifier.
+ *
+ * @param value - The provider identifier to normalize; may be `undefined` or an empty string to use the default.
+ * @returns `ok: true` with `value` set to the normalized provider (`github-actions` or `circleci`), or `ok: false` with an `INVALID_PATH` error describing unsupported values.
  */
 export function normalizeCIProvider(
 	value: string | undefined,
@@ -610,6 +611,20 @@ export function normalizeCIProvider(
 	};
 }
 
+/**
+ * Construct a TemplateRenderContext populated from repository metadata and selected init options.
+ *
+ * The returned context includes discovered values (package scripts, project name, repo URL, issue tracker URL)
+ * when available, a `securityEmail` resolved from the `HARNESS_SECURITY_EMAIL` environment variable or
+ * `"security@example.com"` as a fallback, and any explicitly provided `ciProvider` or `projectType`.
+ * If `options.issueTracker` is `"none"` or `"github"`, `linearProjectSlug` will be omitted.
+ *
+ * @param targetDir - Filesystem path of the repository to inspect for package and repository metadata
+ * @param ciProvider - Optional CI provider to include in the context
+ * @param projectType - Optional project type hint to include in the context
+ * @param options - Init options that can toggle returned flags (e.g., setting `minimal` or `issueTracker`)
+ * @returns A TemplateRenderContext containing discovered metadata and applied init options; fields that
+ * are not discoverable or explicitly suppressed are omitted.
 export function createTemplateRenderContext(
 	targetDir: string,
 	ciProvider?: CIProvider,
@@ -627,7 +642,7 @@ export function createTemplateRenderContext(
 		linearProjectSlug = undefined;
 	}
 
-	// Resolve security contact email: env var override, then safe placeholder
+	// Resolve security contact email: env var override, then safe fallback value
 	const securityEmail =
 		process.env.HARNESS_SECURITY_EMAIL ?? "security@example.com";
 	return {
@@ -642,7 +657,6 @@ export function createTemplateRenderContext(
 		securityEmail,
 		...(options?.minimal ? { minimal: true } : {}),
 		...(options?.issueTracker ? { issueTracker: options.issueTracker } : {}),
-		useGreptile: options?.greptile ?? !options?.minimal,
 	};
 }
 
@@ -811,6 +825,19 @@ export function shouldSkipDueToNewerToolingVersion(
 	return decision === "skip";
 }
 
+/**
+ * Generates the Codex "local environment" TOML used by Codex/CodeRabbit for the repository.
+ *
+ * Produces a TOML document (prefixed with the autogen header) that defines a setup script
+ * (runs `mise install` followed by the package-manager install command) and a set of action blocks:
+ * - standard Tools/Run/Debug/Test actions (Run/Debug/Test will contain a deterministic failing placeholder when the corresponding npm script is absent),
+ * - required tool actions from the harness constants,
+ * - one action per script found in `context.packageScripts`, each assigned an inferred icon.
+ *
+ * @param packageManager - Package manager identifier used to render install and script invocation commands (e.g., "npm", "yarn", "pnpm").
+ * @param context - Template render context containing `packageScripts` and metadata used to build the action blocks.
+ * @returns The complete TOML content for the Codex local environment file.
+ */
 function renderCodexEnvironmentTemplate(
 	packageManager: string,
 	context: TemplateRenderContext,
@@ -888,6 +915,17 @@ ${actionBlocks}
 `;
 }
 
+/**
+ * Build a GitHub issue template configuration YAML that provides curated contact links.
+ *
+ * The generated YAML disables blank issues and constructs `contact_links` entries:
+ * - Adds a Linear intake link unless `context.issueTracker` is `"github"` or `"none"`.
+ * - Adds a "Repository docs" link when `context.repoUrl` is present (points at the repo README).
+ * - Always adds a private security disclosure link using `context.securityEmail` (falls back to `security@example.com`).
+ *
+ * @param context - Template render context; used fields: `issueTracker`, `issueTrackingUrl`, `repoUrl`, and `securityEmail`.
+ * @returns A YAML string for `.github/ISSUE_TEMPLATE/config.yml` with `blank_issues_enabled: false` and a `contact_links` list.
+ */
 function renderIssueTemplateConfig(context: TemplateRenderContext): string {
 	const securityEmail = context.securityEmail ?? "security@example.com";
 	const repoDocsUrl = context.repoUrl
@@ -923,279 +961,31 @@ ${contactLinks.join("\n")}
 `;
 }
 
-function renderGreptileConfig(): string {
-	return `${JSON.stringify(
-		{
-			version: "1.0",
-			strictness: 2,
-			fileChangeLimit: 300,
-			commentTypes: [
-				"bug-risk",
-				"security",
-				"performance",
-				"architecture",
-				"maintainability",
-			],
-			enableCrossFileGraphQueries: true,
-			requireIndependentValidation: true,
-			confidence: {
-				minMergeScore: 4,
-				targetScore: 5,
-			},
-			rules: [
-				{
-					id: "independent-ai-validation",
-					glob: "**/*",
-					description:
-						"Coding agent must not approve its own PR; separate review signal required.",
-					severity: "high",
-				},
-				{
-					id: "governance-parity",
-					glob: "**/*",
-					description:
-						"Changes to governance, workflow, or policy surfaces must keep docs, required checks, and implementation aligned.",
-					severity: "high",
-				},
-				{
-					id: "evidence-required-for-review-policy",
-					glob: "**/*",
-					description:
-						"Policy, workflow, or review-gate changes require validation evidence before merge.",
-					severity: "medium",
-				},
-			],
-			ignorePatterns: ["dist/**", "coverage/**", "node_modules/**"],
-		},
-		null,
-		2,
-	)}\n`;
+/**
+ * Load the CodeRabbit configuration template, preferring the packaged template bundled with the tool and falling back to the repository root `.coderabbit.yaml`.
+ *
+ * @returns The UTF-8 text contents of the selected `.coderabbit.yaml` template
+ */
+function renderCodeRabbitTemplate(): string {
+	const packagedTemplatePath = fileURLToPath(
+		new URL("../../templates/coderabbit.yaml", import.meta.url),
+	);
+	if (existsSync(packagedTemplatePath)) {
+		return readFileSync(packagedTemplatePath, "utf-8");
+	}
+	const repoTemplatePath = fileURLToPath(
+		new URL("../../../.coderabbit.yaml", import.meta.url),
+	);
+	return readFileSync(repoTemplatePath, "utf-8");
 }
 
-function renderGreptileRules(): string {
-	return `# Harness-managed Greptile rules
-
-## Scope
-
-These rules define the baseline Greptile review expectations for harness-managed repositories.
-
-## Rule set
-
-### 1) Independent validation is mandatory
-
-- The coding agent must not act as approving reviewer on the same PR.
-- Every merge-ready decision requires an independent review signal.
-
-### 2) Governance surfaces must stay aligned
-
-If a PR changes governance, workflow, or policy files, reviewers must verify consistency across:
-
-- \`harness.contract.json\`
-- \`CONTRIBUTING.md\`
-- \`README.md\`
-- \`.github/PULL_REQUEST_TEMPLATE.md\`
-- \`.github/workflows/*.yml\`
-
-### 3) Policy changes require evidence
-
-- Policy, workflow, or review-gate changes must include test and validation evidence.
-- Any reduction in mandatory checks or review gates is high risk.
-
-### 4) Merge confidence threshold
-
-- Confidence below \`4/5\` is merge-blocking.
-- Confidence \`4/5\` may merge only when remaining items are low-risk polish.
-- Confidence \`5/5\` is merge-ready.
-`;
-}
-
-function renderGreptileFiles(): string {
-	return `${JSON.stringify(
-		{
-			contextFiles: [
-				{
-					path: "harness.contract.json",
-					role: "primary governance contract",
-				},
-				{
-					path: "package.json",
-					role: "project scripts and package metadata",
-				},
-				{
-					path: "README.md",
-					role: "operator-facing setup and workflow docs",
-				},
-				{
-					path: "CONTRIBUTING.md",
-					role: "contributor governance requirements",
-				},
-				{
-					path: ".github/workflows/pr-pipeline.yml",
-					role: "required checks workflow",
-				},
-			],
-			apiSpecs: [
-				"contracts/**/*.schema.json",
-				"openapi/**/*.json",
-				"openapi/**/*.yaml",
-				"src/**/*.ts",
-			],
-			schemaFiles: [
-				"contracts/**/*.schema.json",
-				"schemas/**/*.json",
-				"openapi/**/*.json",
-				"openapi/**/*.yaml",
-			],
-		},
-		null,
-		2,
-	)}\n`;
-}
-
-function renderGreptileWorkflow(): string {
-	return `name: Greptile Review
-
-on:
-  pull_request:
-    types: [opened, synchronize, reopened, review_requested]
-  merge_group:
-  pull_request_review:
-    types: [submitted, dismissed]
-  pull_request_review_comment:
-    types: [created]
-  issue_comment:
-    types: [created]
-
-# Skip if the actor is github-actions[bot] to prevent the bot being
-# registered as a Greptile developer seat (Greptile bills per GitHub
-# identity that interacts with PRs near review time). Only real users
-# and the Greptile bot itself should trigger this workflow.
-
-permissions:
-  contents: read
-  pull-requests: write
-  pull-requests: write
-  pull-requests: write
-  pull-requests: write
-  issues: write
-  checks: write
-  statuses: write
-
-jobs:
-  greptile-review:
-    name: Greptile Review
-    runs-on: ubuntu-latest
-    if: |
-      github.actor != 'github-actions[bot]' &&
-      (
-        github.event_name == 'pull_request' ||
-        github.event_name == 'merge_group' ||
-        github.event_name == 'pull_request_review' ||
-        github.event_name == 'pull_request_review_comment' ||
-        (
-          github.event_name == 'issue_comment' &&
-          github.event.issue.pull_request &&
-          (
-            github.event.comment.user.login == 'greptile[bot]' ||
-            github.event.comment.user.login == 'greptileai[bot]' ||
-            github.event.comment.user.login == 'greptile-apps[bot]' ||
-            github.event.comment.user.login == 'greptile' ||
-            github.event.comment.user.login == 'greptileai' ||
-            github.event.comment.user.login == 'greptile-apps'
-          )
-        )
-      )
-    steps:
-      - name: Merge queue passthrough
-        if: github.event_name == 'merge_group'
-        run: echo "Greptile PR-context checks are evaluated on pull_request events."
-
-      - name: Check for Greptile review
-        if: github.event_name != 'merge_group'
-        env:
-          GITHUB_TOKEN: \${{ secrets.GITHUB_TOKEN }}
-          PR_NUMBER: \${{ github.event.pull_request.number || github.event.issue.number }}
-          REPO_OWNER: \${{ github.repository_owner }}
-          REPO_NAME: \${{ github.event.repository.name }}
-          MIN_MERGE_SCORE: '4'
-          EVENT_NAME: \${{ github.event_name }}
-          HEAD_SHA: \${{ github.event.pull_request.head.sha || github.sha }}
-        uses: actions/github-script@f28e40c7f34bde8b3046d885e986cb6290c5673b # v7
-        with:
-          script: |
-            const prNumber = parseInt(process.env.PR_NUMBER, 10);
-            const minMergeScore = parseInt(process.env.MIN_MERGE_SCORE, 10);
-            const owner = process.env.REPO_OWNER;
-            const repo = process.env.REPO_NAME;
-            const eventName = process.env.EVENT_NAME;
-            const headSha = process.env.HEAD_SHA;
-            const action = context.payload.action || '';
-
-            if (eventName === 'pull_request' && action === 'synchronize') {
-              core.setFailed('Waiting for Greptile review on the current PR head commit...');
-              return;
-            }
-
-            const comments = await github.rest.issues.listComments({
-              owner, repo, issue_number: prNumber
-            });
-
-            const greptileLogins = new Set([
-              'greptile[bot]', 'greptileai[bot]', 'greptile-apps[bot]',
-              'greptile', 'greptileai', 'greptile-apps'
-            ]);
-
-            const headCommit = await github.rest.repos.getCommit({ owner, repo, ref: headSha });
-            const headCommittedAt = new Date(
-              headCommit.data.commit.committer?.date ||
-              headCommit.data.commit.author?.date || 0
-            );
-
-            const greptileComments = comments.data
-              .filter(c => {
-                if (!(c.user != null && greptileLogins.has(c.user.login))) return false;
-                const body = c.body || '';
-                const createdAt = new Date(c.created_at);
-                return body.includes(headSha) || createdAt >= headCommittedAt;
-              })
-              .sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
-
-            if (greptileComments.length === 0) {
-              core.setFailed('No Greptile review comment found for the current PR head commit. Waiting for review...');
-              return;
-            }
-
-            const commentBody = (greptileComments[0].body || '').toLowerCase();
-            const scorePatterns = [
-              /(?:confidence|score)[:\\s]*(\\d)(?:\\s*\/\\s*5)?/,
-              /(\\d)\\s*\/\\s*5.*confidence/,
-              /overall[:\\s]*(\\d)/,
-              /rating[:\\s]*(\\d)/
-            ];
-
-            let score = null;
-            for (const pattern of scorePatterns) {
-              const match = commentBody.match(pattern);
-              if (match) { score = parseInt(match[1], 10); break; }
-            }
-
-            const hasApproval = /\\b(approved?|pass(?:ed|ing)?|lgtm|looks good|ready to merge)\\b/.test(commentBody);
-            const hasBlock = /\\b(block(?:ed|ing)?|fail(?:ed|ing)?|needs? changes?|do not merge|dnm)\\b/.test(commentBody);
-
-            if (score !== null) {
-              if (score >= minMergeScore) {
-                console.log(\`Greptile review passed: score \${score}/5 >= threshold \${minMergeScore}/5\`);
-              } else {
-                core.setFailed(\`Greptile review failed: score \${score}/5 < threshold \${minMergeScore}/5\`);
-              }
-            } else if (hasBlock) {
-              core.setFailed('Greptile review indicates changes are needed.');
-            } else {
-              console.log('Greptile review completed.');
-            }
-`;
-}
-
+/**
+ * Produce a Symphony workflow configuration and accompanying human-readable workflow document tailored to the repository.
+ *
+ * @param pm - Package manager identifier (e.g., `"npm"`, `"yarn"`, `"pnpm"`) used to choose install and command wrappers embedded in the workflow.
+ * @param context - Template render context whose fields (notably `linearProjectSlug`, `projectName`, `repoUrl`, and `issueTracker`) populate tracker configuration, repository bootstrap commands, and workflow metadata.
+ * @returns The complete workflow file content as a string: a Symphony YAML configuration section followed by an extensive Markdown workflow document with states, transition table, error handling, and validation checklist.
+ */
 function renderWorkflowTemplate(
 	pm: string,
 	context: TemplateRenderContext,
@@ -1392,16 +1182,6 @@ export const TEMPLATES: Template[] = [
 						low: [],
 					},
 					docsDriftRules: {},
-					...(context.useGreptile !== false
-						? {
-								reviewPolicy: {
-									timeoutSeconds: 600,
-									timeoutAction: "fail" as const,
-									requiredChecks: [...REVIEW_POLICY_REQUIRED_CHECKS],
-									enforceReviewerIndependence: true,
-								},
-							}
-						: {}),
 					branchProtection: {
 						requiredChecks: [...getBranchProtectionRequiredChecks(context)],
 						restrictDeletions: true,
@@ -1511,14 +1291,6 @@ export const TEMPLATES: Template[] = [
 					},
 					remediationPolicy: {
 						providerDefaults: {
-							...(context.useGreptile !== false
-								? {
-										greptile: {
-											autoApplyMaxTier: "medium",
-											dryRunOnlyByDefault: false,
-										},
-									}
-								: {}),
 							codex: {
 								autoApplyMaxTier: "medium",
 								dryRunOnlyByDefault: false,
@@ -1688,24 +1460,8 @@ export const TEMPLATES: Template[] = [
 		render: () => renderDefaultNpmrc(),
 	},
 	{
-		path: ".greptile/config.json",
-		render: () => renderGreptileConfig(),
-	},
-	{
-		path: ".greptile/rules.md",
-		render: () => renderGreptileRules(),
-	},
-	{
-		path: ".greptile/files.json",
-		render: () => renderGreptileFiles(),
-	},
-	{
-		// NOTE: greptile-review.yml is only scaffolded for github-actions provider.
-		// It remains a legacy bridge for downstream Greptile-managed repositories.
-		// coding-harness itself uses the native CodeRabbit check instead of a
-		// repo-managed review bridge workflow.
-		path: ".github/workflows/greptile-review.yml",
-		render: () => renderGreptileWorkflow(),
+		path: ".coderabbit.yaml",
+		render: () => renderCodeRabbitTemplate(),
 	},
 	{
 		path: ".github/workflows/pr-pipeline.yml",
@@ -2000,8 +1756,8 @@ ${linearGateJob}
             --out artifacts/consistency-gate/consistency-drift-advisory-latest.json
       - name: Advisory guard (soft-fail)
         run: |
-          if [[ ! -s artifacts/consistency-gate/consistency-drift-advisory-latest.json ]]; then
-            echo "::warning::advisory report missing; writing fallback stub."
+	          if [[ ! -s artifacts/consistency-gate/consistency-drift-advisory-latest.json ]]; then
+	            echo "::warning::advisory report missing; writing deterministic fallback report."
             cat > artifacts/consistency-gate/consistency-drift-advisory-latest.json <<'JSON'
           {
             "schemaVersion": "1.0.0",
@@ -2021,7 +1777,7 @@ ${linearGateJob}
                 "rule_result": "error",
                 "severity": "error",
                 "baseline_state": "new",
-                "message": "Advisory report missing; generated fallback stub."
+	                "message": "Advisory report missing; generated deterministic fallback report."
               }
             ]
           }
@@ -2264,86 +2020,11 @@ jobs:
 				"@brainwav/coding-harness",
 			);
 			const localExecCommand = renderLocalHarnessExecCommand(pm);
-			const includesGreptile = context.useGreptile !== false;
 			const requiredChecksList = formatRequiredChecksBulleted(
 				getBranchProtectionRequiredChecks(context),
 				"  - ",
 			);
-			const greptileToc = includesGreptile
-				? `- [Legacy Greptile setup baseline](#legacy-greptile-setup-baseline)
-- [Greptile config hierarchy](#greptile-config-hierarchy)
-- [Greptile merge logic for multi-scope pull requests](#greptile-merge-logic-for-multi-scope-pull-requests)
-- [Greptile confidence score policy](#greptile-confidence-score-policy)
-- [Greptile strictness policy](#greptile-strictness-policy)
-- [Greptile training and feedback loop](#greptile-training-and-feedback-loop)
-`
-				: "";
-			const greptileContractLines = includesGreptile
-				? `- Greptile + Codex review artifacts are required before merge.
-- Greptile must be configured correctly using the \`check-pr\` or \`greploop\` skill with all required Greptile files present.
-`
-				: `- CodeRabbit + Codex review artifacts are required before merge.
-`;
-			const greptileSections = includesGreptile
-				? `
-	## Legacy Greptile setup baseline
-
-	- Greptile must be configured correctly before relying on Greptile review gates.
-	- \`harness init\` scaffolds the legacy Greptile bridge files and workflow into harness-managed repositories.
-- Required repo-local files:
-  - \`.greptile/config.json\`
-  - \`.greptile/rules.md\`
-  - \`.greptile/files.json\`
-- Required bridge workflow:
-  - \`.github/workflows/greptile-review.yml\`
-- Verify setup with:
-  - \`harness verify-greptile\`
-  - \`harness verify-greptile --token $GITHUB_TOKEN --owner <owner> --repo <repo>\`
-- Trigger or refresh a review with:
-  - \`harness request-greptile-review --owner <owner> --repo <repo> --pr <number>\`
-
-## Greptile config hierarchy
-
-1. Org-enforced dashboard rules.
-2. Directory-scoped \`.greptile/\` folders.
-3. Legacy \`greptile.json\` (ignored when \`.greptile/\` exists in the same directory).
-4. Dashboard defaults.
-
-## Greptile merge logic for multi-scope pull requests
-
-- strictness: most restrictive scope wins.
-- \`fileChangeLimit\`: lowest value wins.
-- comment types: union all requested types.
-- booleans: enabled if any scope enables them.
-
-## Greptile confidence score policy
-
-- \`5/5\`: merge-ready.
-- \`4/5\`: merge after minor polish.
-- \`3/5\`: fix findings and re-review.
-- \`0-2/5\`: blocked.
-
-## Greptile strictness policy
-
-- Strictness 1: security-critical or fresh-calibration scopes.
-- Strictness 2: default baseline for \`main\`/production-targeted changes.
-- Strictness 3: stable, non-critical internal infrastructure.
-
-## Greptile training and feedback loop
-
-- Use \`@greptileai\` on draft PRs or when settings/context changed and a forced re-review is needed.
-- Use targeted prompts for scoped checks (for example: \`@greptileai check for memory leaks\`).
-- React to comments with 👍 / 👎 and include a short rationale with 👎.
-- Treat three ignored comments on the same pattern as a calibration prompt.
-`
-				: "";
-			const reviewArtifactsLines = includesGreptile
-				? `- Greptile review artifact (URL, report, or comment reference).
-- Codex review artifact (URL, report, or comment reference).
-- Greptile confidence score for the PR.
-- Confirmation that reviewer agent is independent from coding agent.
-`
-				: `- CodeRabbit review artifact (URL, report, or comment reference).
+			const reviewArtifactsLines = `- CodeRabbit review artifact (URL, report, or comment reference).
 - Codex review artifact (URL, report, or comment reference).
 - Confirmation that reviewer agent is independent from coding agent.
 `;
@@ -2359,7 +2040,7 @@ jobs:
 - [Required tooling baseline](#required-tooling-baseline)
 - [Repo-local verification wrapper](#repo-local-verification-wrapper)
 - [Repo-local harness wrapper](#repo-local-harness-wrapper)
-${greptileToc}- [Recommended security scanner baseline](#recommended-security-scanner-baseline)
+- [Recommended security scanner baseline](#recommended-security-scanner-baseline)
 - [Review artifacts requirement](#review-artifacts-requirement)
 - [Credential-safe evidence snippets](#credential-safe-evidence-snippets)
 - [Branch protection recommendation](#branch-protection-recommendation)
@@ -2370,7 +2051,8 @@ ${greptileToc}- [Recommended security scanner baseline](#recommended-security-sc
 - No direct push to \`main\`.
 - Pull request required for every merge.
 - Required checks must pass before merge.
-${greptileContractLines}- The coding agent must not approve its own PR; review must be independent.
+- CodeRabbit + Codex review artifacts are required before merge.
+- The coding agent must not approve its own PR; review must be independent.
 - Merge only after all gates pass.
 - Delete branch/worktree after merge.
 
@@ -2469,7 +2151,6 @@ Recommended policy:
 - After repair, rerun:
   - \`bash scripts/harness-cli.sh <command>\`
   - \`${localExecCommand} <command>\`
-${greptileSections}
 
 ## Recommended security scanner baseline
 
@@ -2531,25 +2212,14 @@ ${requiredChecksList}
 	},
 	{
 		path: ".github/PULL_REQUEST_TEMPLATE.md",
-		render: (pm, context) => {
+		render: (pm) => {
 			const checkCommand = renderScriptCommand(pm, "check");
 			const codestyleCommand = "bash scripts/validate-codestyle.sh";
 			const memoryValidateCommand = renderMemoryValidateCommand();
-			const includesGreptile = context.useGreptile !== false;
-			const greptileChecklist = includesGreptile
-				? `- [ ] Greptile review completed and findings handled (or explicitly waived).
-- [ ] Greptile review was performed by an independent reviewer (not the coding agent).
-- [ ] Greptile confidence score is \`>= 4/5\` for merge eligibility.
-`
-				: `- [ ] CodeRabbit review completed and findings handled (or explicitly waived).
+			const codeRabbitChecklist = `- [ ] CodeRabbit review completed and findings handled (or explicitly waived).
 - [ ] CodeRabbit review was performed by an independent reviewer (not the coding agent).
 `;
-			const greptileArtifacts = includesGreptile
-				? `- Greptile: <link / artifact path / comment ID>
-- Greptile confidence score: <0-5>
-- Independent reviewer evidence: <reviewer + link>
-`
-				: `- CodeRabbit: <link / artifact path / comment ID>
+			const codeRabbitArtifacts = `- CodeRabbit: <link / artifact path / comment ID>
 - Independent reviewer evidence: <reviewer + link>
 `;
 			return `# Pull request checklist
@@ -2565,7 +2235,7 @@ ${requiredChecksList}
 - [ ] I did not push directly to \`main\`; this PR is from a dedicated branch.
 - [ ] Branch name follows policy (\`codex/*\` for agent-created branches).
 - [ ] Required local gates run: \`${codestyleCommand}\`, \`${checkCommand}\`, \`${memoryValidateCommand}\`.
-${greptileChecklist}- [ ] Codex review completed and findings handled (or explicitly waived).
+${codeRabbitChecklist}- [ ] Codex review completed and findings handled (or explicitly waived).
 - [ ] Any CodeRabbit Semgrep findings were either fixed or explicitly justified when warning-level-only.
 - [ ] Merge is blocked until all required checks pass.
 - [ ] I will delete branch/worktree after merge.
@@ -2582,7 +2252,7 @@ ${greptileChecklist}- [ ] Codex review completed and findings handled (or explic
 
 ## Review artifacts
 
-${greptileArtifacts}- Codex: <link / artifact path / comment ID>
+${codeRabbitArtifacts}- Codex: <link / artifact path / comment ID>
 - CodeRabbit Semgrep: fixed / waived with rationale / n.a.
 - Additional evidence (if any):
 
@@ -4241,6 +3911,13 @@ env-check: ## Check environment policy envelope
 	},
 ];
 
+/**
+ * Determine whether a scaffold template should be emitted for the specified CI provider.
+ *
+ * @param templatePath - Relative template path to evaluate; provider-specific paths include `.github/workflows/*` and `.circleci/config.yml`.
+ * @param ciProvider - The chosen CI provider used to decide template inclusion.
+ * @returns `true` if the template applies to the given provider, `false` otherwise.
+ */
 export function isTemplateEnabledForProvider(
 	templatePath: string,
 	ciProvider: CIProvider,
@@ -4257,6 +3934,19 @@ export function isTemplateEnabledForProvider(
 	return true;
 }
 
+/**
+ * Selects scaffold templates applicable to the specified CI provider and init options.
+ *
+ * Filters the global template list by:
+ * - excluding templates not supported by the chosen CI provider;
+ * - when `options.minimal` is true, omitting enterprise governance templates (`.github/CODEOWNERS`, `docs/PRODUCT-PLAN.md`, `.harness/ci-required-checks.json`);
+ * - skipping all `.linear/` templates when `options.minimal` is true or `options.issueTracker` is `"none"` or `"github"`;
+ * - skipping any template whose path contains `ISSUE_TEMPLATE` when `options.issueTracker` is `"none"`.
+ *
+ * @param ciProvider - The CI provider to target; used to enable/disable provider-specific templates.
+ * @param options - Init options that influence template inclusion (`minimal` and `issueTracker`).
+ * @returns An array of templates that should be rendered for the given CI provider and options.
+ */
 export function getTemplatesForProvider(
 	ciProvider: CIProvider,
 	options?: InitOptions,
@@ -4291,17 +3981,6 @@ export function getTemplatesForProvider(
 
 		if (options?.issueTracker === "none") {
 			if (template.path.includes("ISSUE_TEMPLATE")) {
-				return false;
-			}
-		}
-
-		// Greptile skips: if explicitly disabled via flag OR implied disabled via minimal mode
-		const omitGreptile = options?.greptile === false || options?.minimal;
-		if (omitGreptile) {
-			if (
-				template.path.startsWith(".greptile") ||
-				template.path.includes("greptile-review.yml")
-			) {
 				return false;
 			}
 		}
