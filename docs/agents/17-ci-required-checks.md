@@ -47,10 +47,6 @@ The harness internal checks in `ci-required-checks.json` are used by:
 
 They do **not** create individual GitHub check-run entries when using CircleCI.
 
-External GitHub App checks are the exception: if an app like `CodeRabbit` reports a
-direct check run to GitHub, branch protection should require that literal check name
-in addition to the workflow-level provider checks.
-
 ---
 
 ## ci-required-checks.json schema
@@ -83,17 +79,6 @@ Each entry in `.harness/ci-required-checks.json` supports an optional `githubChe
       "freshnessWindowDays": 7,
       "class": "required",
       "githubCheckName": "harness-gates"
-    },
-    {
-      "policyId": "required-check-15",
-      "displayName": "CodeRabbit",
-      "sourceAppSlug": "coderabbit",
-      "sourceAppId": "coderabbit",
-      "externalIdPattern": "^CodeRabbit$",
-      "requiredOnEvents": ["pull_request", "merge_group"],
-      "freshnessWindowDays": 7,
-      "class": "required",
-      "githubCheckName": "CodeRabbit"
     }
   ]
 }
@@ -146,17 +131,6 @@ harness-gates   ← harness gate workflow
 ```
 
 Run `harness branch-protect` to apply via the contract.
-
-If you also depend on direct GitHub App checks, include them literally:
-
-```
-pr-pipeline
-harness-gates
-CodeRabbit
-```
-
-`CodeRabbit` is valid here because it is not a CircleCI job name; it is a separate
-GitHub check run emitted by the CodeRabbit app.
 
 ### GitHub Actions (legacy / fallback)
 

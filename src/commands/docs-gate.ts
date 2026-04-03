@@ -12,6 +12,7 @@ import { validateContract } from "../lib/contract/validator.js";
 import { sanitizeError } from "../lib/input/sanitize.js";
 import { validatePath } from "../lib/input/validator.js";
 import { normaliseDocsGateResult } from "../lib/output/normalise.js";
+import { isNonWorkflowRequiredCheck } from "../lib/policy/required-checks.js";
 
 export type DocsGateMode = "advisory" | "required";
 export type DocsGateTrigger =
@@ -116,12 +117,6 @@ const PACKAGE_JSON_PATH = "package.json";
 const WORKFLOW_PATH = ".github/workflows/pr-pipeline.yml";
 const CONTRADICTION_HISTORY_PATH =
 	"artifacts/context-integrity/contradiction-history.jsonl";
-const NON_WORKFLOW_REQUIRED_CHECKS = new Set([
-	"CodeRabbit",
-	"Greptile Review",
-	"security-scan",
-]);
-
 interface LoadedContract {
 	contract: HarnessContract;
 }
@@ -281,6 +276,7 @@ function collectContradictionFindings(
 ): ContradictionFinding[] {
 	const findings: ContradictionFinding[] = [];
 	const contextIntegrityPolicy = contract.contextIntegrityPolicy;
+	const activeProvider = contract.ciProviderPolicy?.activeProvider;
 
 	for (const source of contextIntegrityPolicy?.truthSources ?? []) {
 		if (source.required && !existsSync(join(repoRoot, source.path))) {
@@ -356,11 +352,11 @@ function collectContradictionFindings(
 	}
 
 	const requiredChecks = contract.branchProtection?.requiredChecks ?? [];
-	if (requiredChecks.length > 0) {
+	if (requiredChecks.length > 0 && activeProvider !== "circleci") {
 		const workflowChecks = parseWorkflowCheckNames(repoRoot);
 		const missingChecks = requiredChecks.filter(
 			(check) =>
-				!NON_WORKFLOW_REQUIRED_CHECKS.has(check) && !workflowChecks.has(check),
+				!isNonWorkflowRequiredCheck(check) && !workflowChecks.has(check),
 		);
 		if (missingChecks.length > 0) {
 			const message = `Workflow is missing required checks: ${missingChecks.join(", ")}`;

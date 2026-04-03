@@ -207,11 +207,13 @@ export function runInit(
 	options: InitOptions,
 ): InitResult {
 	const dir = targetDir ?? cwd();
-	const ciProviderResult = normalizeCIProvider(options.ciProvider);
-	if (!ciProviderResult.ok) {
-		return ciProviderResult;
+	const requestedCiProviderResult = normalizeCIProvider(options.ciProvider);
+	if (!requestedCiProviderResult.ok) {
+		return requestedCiProviderResult;
 	}
-	const ciProvider = ciProviderResult.value;
+	const requestedCiProvider = requestedCiProviderResult.value;
+	let ciProvider = requestedCiProvider;
+	let existingManifest: RestoreManifest | null = null;
 
 	// P2: Validate --project-type flag if provided (SA10, SA16)
 	if (options.projectType !== undefined) {
@@ -312,9 +314,35 @@ export function runInit(
 		};
 	}
 
+	const shouldReuseTrackedProvider =
+		!options.ciProvider &&
+		(options.rollback || options.checkUpdates || options.update);
+	if (shouldReuseTrackedProvider) {
+		const manifestProbeResult = loadManifest(dir, {
+			requireMetadata: options.update === true,
+			operation: options.update
+				? "update"
+				: options.rollback
+					? "rollback"
+					: "check-updates",
+			preferredCiProvider: requestedCiProvider,
+		});
+		if (!manifestProbeResult.ok) {
+			if (options.rollback || options.update) {
+				return manifestProbeResult;
+			}
+		} else {
+			existingManifest = manifestProbeResult.value;
+			ciProvider = manifestProbeResult.value.ciProvider ?? requestedCiProvider;
+		}
+	}
+
 	// Handle --rollback: restore from manifest
 	if (options.rollback) {
-		const manifestResult = loadManifest(dir);
+		const manifestResult =
+			existingManifest !== null
+				? ({ ok: true, value: existingManifest } as const)
+				: loadManifest(dir);
 		if (!manifestResult.ok) {
 			return manifestResult;
 		}
@@ -351,7 +379,7 @@ export function runInit(
 
 	// Handle --check-updates: compare versions
 	if (options.checkUpdates) {
-		const checkResult = checkForUpdates(dir);
+		const checkResult = checkForUpdates(dir, ciProvider);
 		if (!checkResult.ok) {
 			return checkResult;
 		}
@@ -369,10 +397,14 @@ export function runInit(
 
 	// Handle --update: apply template updates
 	if (options.update) {
-		const manifestResult = loadManifest(dir, {
-			requireMetadata: true,
-			operation: "update",
-		});
+		const manifestResult =
+			existingManifest !== null
+				? ({ ok: true, value: existingManifest } as const)
+				: loadManifest(dir, {
+						requireMetadata: true,
+						operation: "update",
+						preferredCiProvider: ciProvider,
+					});
 		if (!manifestResult.ok) {
 			return manifestResult;
 		}

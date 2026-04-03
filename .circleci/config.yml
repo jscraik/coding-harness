@@ -18,11 +18,8 @@ jobs:
       - run:
           name: Ensure pnpm available
           command: |
-            if ! command -v pnpm > /dev/null 2>&1; then
-              export NPM_CONFIG_PREFIX="$HOME/.local"
-              export PATH="$NPM_CONFIG_PREFIX/bin:$PATH"
-              npm install --global pnpm@10.0.0
-            fi
+            corepack enable
+            corepack prepare pnpm@10.0.0 --activate
             pnpm --version
       - run:
           name: Install dependencies
@@ -68,11 +65,8 @@ jobs:
       - run:
           name: Ensure pnpm available
           command: |
-            if ! command -v pnpm > /dev/null 2>&1; then
-              export NPM_CONFIG_PREFIX="$HOME/.local"
-              export PATH="$NPM_CONFIG_PREFIX/bin:$PATH"
-              npm install --global pnpm@10.0.0
-            fi
+            corepack enable
+            corepack prepare pnpm@10.0.0 --activate
             pnpm --version
       - run:
           name: Install dependencies
@@ -81,6 +75,18 @@ jobs:
           name: Test (pilot-evaluate only)
           no_output_timeout: 20m
           command: pnpm exec vitest run src/commands/pilot-evaluate.test.ts
+
+  # Canonical PR status aggregator — preserves the historical CircleCI
+  # `pr-pipeline` status context that branch protection and harness metadata
+  # expect, while still letting the fast/slow jobs run independently.
+  pr-pipeline:
+    docker:
+      - image: cimg/base:stable
+    resource_class: small
+    steps:
+      - run:
+          name: Aggregate PR pipeline status
+          command: echo "pr-fast and pr-slow completed successfully"
 
   # ─────────────────────────────────────────────────────────────────────────────
   # Release pipeline — runs on main branch merges only
@@ -106,11 +112,8 @@ jobs:
       - run:
           name: Ensure pnpm available
           command: |
-            if ! command -v pnpm > /dev/null 2>&1; then
-              export NPM_CONFIG_PREFIX="$HOME/.local"
-              export PATH="$NPM_CONFIG_PREFIX/bin:$PATH"
-              npm install --global pnpm@10.0.0
-            fi
+            corepack enable
+            corepack prepare pnpm@10.0.0 --activate
             pnpm --version
       - run:
           name: Install dependencies
@@ -163,14 +166,22 @@ jobs:
 
 workflows:
   # Runs on every PR branch push (all branches except main).
-  # Keep the workflow name aligned to the canonical GitHub-required check name.
-  pr-pipeline:
+  # pr-fast and pr-slow run in parallel, then the no-op pr-pipeline aggregator
+  # publishes the canonical PR status context used by branch protection.
+  pr-workflow:
     jobs:
       - pr-fast:
           filters:
             branches:
               ignore: main
       - pr-slow:
+          filters:
+            branches:
+              ignore: main
+      - pr-pipeline:
+          requires:
+            - pr-fast
+            - pr-slow
           filters:
             branches:
               ignore: main

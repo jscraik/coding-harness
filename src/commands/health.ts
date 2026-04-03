@@ -22,7 +22,9 @@
 
 import { spawnSync } from "node:child_process";
 import { existsSync } from "node:fs";
-import { resolve } from "node:path";
+import { createRequire } from "node:module";
+import { dirname, resolve } from "node:path";
+import { fileURLToPath } from "node:url";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -224,27 +226,56 @@ const GATE_SPECS: GateSpec[] = [
 
 // ─── Runner ───────────────────────────────────────────────────────────────────
 
-/** Resolve the harness CLI binary path. */
-function findHarnessBin(): string {
-	// When running as a built CLI, use the same binary
-	const candidates = [
-		resolve(process.execPath, "..", "..", "bin", "harness"),
-		resolve(process.cwd(), "node_modules", ".bin", "harness"),
-		"harness",
+interface HarnessInvocation {
+	command: string;
+	prefixArgs: string[];
+}
+
+const require = createRequire(import.meta.url);
+
+function resolveCliRuntimeArgs(cliEntry: string): string[] {
+	if (cliEntry.endsWith(".js")) {
+		return [cliEntry];
+	}
+
+	// Preserve current node runtime flags (for example tsx loader flags) when
+	// health is invoked from source.
+	if (process.execArgv.length > 0) {
+		return [...process.execArgv, cliEntry];
+	}
+
+	// Fallback for source mode when no runtime flags are present.
+	try {
+		require.resolve("tsx");
+		return ["--import", "tsx", cliEntry];
+	} catch {
+		return [cliEntry];
+	}
+}
+
+/** Resolve a trusted harness CLI invocation from this package only. */
+function findHarnessInvocation(): HarnessInvocation {
+	const moduleDir = dirname(fileURLToPath(import.meta.url));
+	const cliCandidates = [
+		resolve(moduleDir, "..", "cli.js"),
+		resolve(moduleDir, "..", "cli.ts"),
 	];
-	for (const candidate of candidates) {
-		if (existsSync(candidate)) {
-			return candidate;
+	for (const cliEntry of cliCandidates) {
+		if (existsSync(cliEntry)) {
+			return {
+				command: process.execPath,
+				prefixArgs: resolveCliRuntimeArgs(cliEntry),
+			};
 		}
 	}
-	// Fallback: run via node with the CLI entry point
-	return "harness";
+	// Fallback to current executable only (never project-local node_modules/.bin or PATH)
+	return { command: process.execPath, prefixArgs: [] };
 }
 
 function runGate(
 	spec: GateSpec,
 	dir: string,
-	harnessCliPath: string,
+	harnessInvocation: HarnessInvocation,
 ): GateResult {
 	if (!spec.isApplicable(dir)) {
 		return {
@@ -270,8 +301,12 @@ function runGate(
 		};
 	}
 
-	const args = [spec.gate, ...spec.buildArgs(dir)];
-	const result = spawnSync(harnessCliPath, args, {
+	const args = [
+		...harnessInvocation.prefixArgs,
+		spec.gate,
+		...spec.buildArgs(dir),
+	];
+	const result = spawnSync(harnessInvocation.command, args, {
 		cwd: dir,
 		encoding: "utf-8",
 		// Capture output, don't inherit (to avoid mixing with health output)
@@ -383,7 +418,7 @@ export function runAutoFix(
 	options: HealthOptions & { dryRun: boolean },
 ): AutoFixResult {
 	const dir = resolve(options.dir ?? process.cwd());
-	const harnessCliPath = findHarnessBin();
+	const harnessInvocation = findHarnessInvocation();
 	const timestamp = new Date().toISOString();
 
 	// Determine active gate specs
@@ -400,10 +435,15 @@ export function runAutoFix(
 		if (spec.gate === "review-gate") continue; // async-excluded
 		if (!spec.isApplicable(dir)) continue;
 
-		const args = [spec.gate, ...spec.buildArgs(dir), "--json"];
+		const args = [
+			...harnessInvocation.prefixArgs,
+			spec.gate,
+			...spec.buildArgs(dir),
+			"--json",
+		];
 		let gateOut: CanonicalGateResult | null = null;
 		try {
-			const proc = spawnSync(harnessCliPath, args, {
+			const proc = spawnSync(harnessInvocation.command, args, {
 				cwd: dir,
 				encoding: "utf-8",
 				stdio: ["ignore", "pipe", "pipe"],
@@ -512,7 +552,7 @@ export function runAutoFix(
  */
 export function runHealth(options: HealthOptions = {}): HealthReport {
 	const dir = resolve(options.dir ?? process.cwd());
-	const harnessCliPath = findHarnessBin();
+	const harnessInvocation = findHarnessInvocation();
 
 	// Determine which gate specs to run
 	let activeSpecs = GATE_SPECS;
@@ -522,7 +562,7 @@ export function runHealth(options: HealthOptions = {}): HealthReport {
 	}
 
 	const gates: GateResult[] = activeSpecs.map((spec) =>
-		runGate(spec, dir, harnessCliPath),
+		runGate(spec, dir, harnessInvocation),
 	);
 
 	// Aggregate counts

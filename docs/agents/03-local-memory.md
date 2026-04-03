@@ -12,6 +12,13 @@
 Every repository that has coding-harness installed uses `.harness/memory/LEARNINGS.md`
 as a durable, append-only knowledge base for repo-specific agent learnings.
 
+Harness also reserves these local helper paths:
+
+| Purpose | Path |
+| --- | --- |
+| repo-local learned preflight failures | `.harness/memory/codex-learned/` |
+| repo-local preflight overrides written by `scripts/codex-learn apply` | `.harness/memory/codex-preflight-overrides.env` |
+
 ### Why `.harness/memory/`?
 
 coding-harness already creates a `.harness/` state directory in every project it

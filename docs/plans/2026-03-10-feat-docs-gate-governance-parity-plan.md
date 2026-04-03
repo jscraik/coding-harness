@@ -1,5 +1,5 @@
 ---
-title: feat: Docs Gate Governance Parity
+title: "feat: Docs Gate Governance Parity"
 type: feat
 status: draft
 date: 2026-03-10
@@ -376,7 +376,7 @@ Primary files:
 - [AGENTS.md](/Users/jamiecraik/dev/coding-harness/AGENTS.md)
 - [docs/agents/04-validation.md](/Users/jamiecraik/dev/coding-harness/docs/agents/04-validation.md)
 - [docs/agents/07b-agent-governance.md](/Users/jamiecraik/dev/coding-harness/docs/agents/07b-agent-governance.md)
-- [docs/agents/12-greptile-ai-governance.md](/Users/jamiecraik/dev/coding-harness/docs/agents/12-greptile-ai-governance.md)
+- [docs/agents/12-ai-review-governance.md](/Users/jamiecraik/dev/coding-harness/docs/agents/12-ai-review-governance.md)
 - [docs/agents/13-linear-production-workflow.md](/Users/jamiecraik/dev/coding-harness/docs/agents/13-linear-production-workflow.md)
 
 Tasks:

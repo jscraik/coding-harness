@@ -2,15 +2,13 @@
 
 ## Core principle
 
-Every change must be checked by the smallest gate needed for risk, then by the full aggregate gate when behavior changed.
+Every change must be checked by the smallest gate needed for risk, then by the fail-closed code-style gate, then by any deeper aggregate gate required by the behavior change.
 
 ## Required baseline gates
 
-1. `pnpm lint`
-2. `pnpm typecheck`
-3. `pnpm test`
-4. `pnpm audit`
-5. `pnpm check` (aggregated command)
+1. `bash scripts/validate-code-style.sh --fast`
+2. `bash scripts/validate-code-style.sh`
+3. `pnpm test:deep` when artifact/runtime behavior changed beyond the baseline gate
 
 ## CI gates
 
@@ -53,14 +51,14 @@ Enforces plan-traceability and acceptance-evidence requirements for pull-request
 ### Docs-only edits
 
 - If no code path changed, run at least:
-  - `pnpm lint` if docs lint depends on repo scripts.
-  - `pnpm typecheck` if imports/types were touched.
+  - `bash scripts/validate-code-style.sh --fast` if the docs change touches governed docs, generated templates, or command-contract text.
 - Still report status of unavailable commands if missing.
 
 ### Code + command behavior edits
 
-- Run full `pnpm check`.
+- Run `bash scripts/validate-code-style.sh`.
 - Add any targeted tests if behavior changed.
+- Run `pnpm test:deep` when runtime/artifact behavior changed or when deeper promotion evidence is required.
 - For pull-requested work, also ensure the PR body lists valid plan IDs and the referenced plans' completed acceptance items carry evidence refs.
 - When review-policy or PR-template behavior changes, ensure the PR body and related docs stay truthful about required CodeRabbit and Codex review artifacts.
 - For this repository, keep `## Testing` in the PR body structured with `verification_commands`, `verification_outcomes`, and `blocked_steps_reason` so CodeRabbit can evaluate validation evidence deterministically.
@@ -69,6 +67,7 @@ Enforces plan-traceability and acceptance-evidence requirements for pull-request
 
 - Run validation gates before finalizing if they alter execution behavior.
 - Explicitly verify command contract docs against `package.json`/`pnpm-lock.yaml`.
+- When the change introduces or updates a validation wrapper, prove the wrapper itself was executed from the current repo state instead of claiming equivalent underlying commands ran.
 
 ## Execution order and restart policy
 
@@ -83,6 +82,7 @@ For each gate run, include:
 - Exact command
 - Final status (`pass`/`fail`/`blocked`)
 - Blocker details when blocked (missing tool, lock mismatch, environment issue)
+- Do not collapse `validate-code-style.sh` into a hand-wavy "lint/tests passed" summary; report the wrapper command explicitly so downstream repos inherit auditable proof-of-pass language.
 
 ## Non-code verification options
 

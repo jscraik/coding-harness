@@ -1,4 +1,5 @@
 import { readFileSync } from "node:fs";
+import { isAbsolute, relative } from "node:path";
 import { PathTraversalError, validatePath } from "../input/validator.js";
 import type {
 	HarnessContract,
@@ -131,7 +132,8 @@ export function loadContract(
 	// Validate path stays within baseDir (symlink-aware)
 	let validatedPath: string;
 	try {
-		validatedPath = validatePath(baseDir, path);
+		const contractPath = isAbsolute(path) ? relative(baseDir, path) : path;
+		validatedPath = validatePath(baseDir, contractPath);
 	} catch (e) {
 		if (e instanceof PathTraversalError) {
 			throw new ContractLoadError("Path traversal detected", path, [

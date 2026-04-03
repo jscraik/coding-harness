@@ -10,7 +10,7 @@
 
 - [ ] I did not push directly to `main`; this PR is from a dedicated branch.
 - [ ] Branch name follows policy (`codex/*` for agent-created branches).
-- [ ] Required local gates run: `pnpm lint`, `pnpm typecheck`, `pnpm test`, `pnpm audit`, `pnpm check`, `test -f memory.json && jq -e '.meta.version == "1.0" and (.preamble.bootstrap | type == "boolean") and (.preamble.search | type == "boolean") and (.entries | type == "array")' memory.json >/dev/null`.
+- [ ] Required local gates run: `bash scripts/validate-codestyle.sh`, `pnpm check`, `test -f memory.json && jq -e '.meta.version == "1.0" and (.preamble.bootstrap | type == "boolean") and (.preamble.search | type == "boolean") and (.entries | type == "array")' memory.json >/dev/null`.
 - [ ] CodeRabbit review completed and findings handled (or explicitly waived).
 - [ ] Codex review completed and findings handled (or explicitly waived).
 - [ ] CodeRabbit review was performed by an independent reviewer (not the coding agent).
@@ -22,10 +22,7 @@
 - verification_commands: list exact commands run here
 - verification_outcomes: record pass/fail/blocked for each command here
 - blocked_steps_reason: none if all planned steps ran
-- Command: `pnpm lint` -> pass/fail
-- Command: `pnpm typecheck` -> pass/fail
-- Command: `pnpm test` -> pass/fail
-- Command: `pnpm audit` -> pass/fail
+- Command: `bash scripts/validate-codestyle.sh` -> pass/fail
 - Command: `pnpm check` -> pass/fail
 - Command: `test -f memory.json && jq -e '.meta.version == "1.0" and (.preamble.bootstrap | type == "boolean") and (.preamble.search | type == "boolean") and (.entries | type == "array")' memory.json >/dev/null` -> pass/fail
 - Any other command(s):

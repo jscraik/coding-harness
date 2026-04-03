@@ -13,6 +13,7 @@ CONTRACT_PATH="$REPO_ROOT/harness.contract.json"
 	MAKEFILE_PATH="$REPO_ROOT/Makefile"
 	PREK_CONFIG_PATH="$REPO_ROOT/prek.toml"
 	PACKAGE_JSON_PATH="$REPO_ROOT/package.json"
+	CODESTYLE_PATH="$REPO_ROOT/CODESTYLE.md"
 	TOOLING_DOC_PATH="${TOOLING_DOC_PATH:-$HOME/dev/config/codex/instructions/tooling.md}"
 
 if [[ ! -f "$CONTRACT_PATH" ]]; then
@@ -45,7 +46,12 @@ fi
 		exit 1
 	fi
 
-	required_support_files=("scripts/codex-preflight.sh" "scripts/verify-work.sh" "scripts/prepare-worktree.sh" "scripts/check-staged-secrets.sh" "scripts/check-doc-style.sh" "scripts/check-related-tests.sh" "scripts/check-semgrep-changed.sh" "scripts/semgrep-pre-push.yml")
+	if [[ ! -f "$CODESTYLE_PATH" ]]; then
+		echo "Error: missing CODESTYLE contract at $CODESTYLE_PATH"
+		exit 1
+	fi
+
+	required_support_files=("scripts/codex-preflight.sh" "scripts/codex-learn" "scripts/codex-enforced" "scripts/verify-work.sh" "scripts/validate-codestyle.sh" "scripts/prepare-worktree.sh" "scripts/check-staged-secrets.sh" "scripts/check-doc-style.sh" "scripts/check-related-tests.sh" "scripts/check-semgrep-changed.sh" "scripts/semgrep-pre-push.yml")
 	for support_file in "${required_support_files[@]}"; do
 		if [[ ! -f "$REPO_ROOT/${support_file}" ]]; then
 			echo "Error: missing required hook support file at $REPO_ROOT/${support_file}"
@@ -110,7 +116,7 @@ fi
 		fi
 	done
 
-	required_make_targets=("help" "install" "setup" "preflight" "worktree-ready" "hooks" "hooks-pre-commit" "hooks-pre-push" "secrets-staged" "docs-style-changed" "related-tests" "semgrep-changed" "diagrams-check" "lint" "docs-lint" "fmt" "typecheck" "test" "check" "audit" "secrets" "security" "clean" "reset" "ci" "diagrams" "env-check")
+	required_make_targets=("help" "install" "setup" "preflight" "verify-work" "codestyle" "worktree-ready" "hooks" "hooks-pre-commit" "hooks-pre-push" "secrets-staged" "docs-style-changed" "related-tests" "semgrep-changed" "diagrams-check" "lint" "docs-lint" "fmt" "typecheck" "test" "check" "audit" "secrets" "security" "clean" "reset" "ci" "diagrams" "env-check")
 	for target in "${required_make_targets[@]}"; do
 		if ! rg -q "^${target}:" "$MAKEFILE_PATH"; then
 			echo "Error: required Makefile target '$target' is missing from $MAKEFILE_PATH"
@@ -129,7 +135,7 @@ fi
 	done
 
 	if [[ -f "$PACKAGE_JSON_PATH" ]]; then
-		required_package_scripts=("secrets:staged|bash scripts/check-staged-secrets.sh" "docs:style:changed|bash scripts/check-doc-style.sh" "test:related|bash scripts/check-related-tests.sh" "semgrep:changed|bash scripts/check-semgrep-changed.sh")
+		required_package_scripts=("codestyle:validate|bash scripts/validate-codestyle.sh" "secrets:staged|bash scripts/check-staged-secrets.sh" "docs:style:changed|bash scripts/check-doc-style.sh" "test:related|bash scripts/check-related-tests.sh" "semgrep:changed|bash scripts/check-semgrep-changed.sh")
 		for script_spec in "${required_package_scripts[@]}"; do
 			script_name="${script_spec%%|*}"
 			script_command="${script_spec#*|}"
@@ -282,33 +288,50 @@ run_check_environment_with_runner() {
 	return 0
 }
 
-if ! command -v npm >/dev/null 2>&1; then
-	echo "Error: npm is required to validate global harness installation."
-	exit 1
-fi
+if [[ -f "$REPO_ROOT/src/cli.ts" ]] && command -v pnpm >/dev/null 2>&1; then
+	if ! run_check_environment_with_runner "repo source CLI (pnpm exec tsx src/cli.ts)" pnpm exec tsx "$REPO_ROOT/src/cli.ts"; then
+		echo "Error: repo source CLI failed to run check-environment successfully."
+		exit 1
+	fi
+elif [[ -f "$REPO_ROOT/dist/cli.js" ]] && command -v node >/dev/null 2>&1; then
+	if ! run_check_environment_with_runner "repo dist CLI (node dist/cli.js)" node "$REPO_ROOT/dist/cli.js"; then
+		echo "Error: repo dist CLI failed to run check-environment successfully."
+		exit 1
+	fi
+elif [[ -x "$REPO_ROOT/scripts/harness-cli.sh" ]]; then
+	if ! run_check_environment_with_runner "repo wrapper (bash scripts/harness-cli.sh)" bash "$REPO_ROOT/scripts/harness-cli.sh"; then
+		echo "Error: repo wrapper failed to run check-environment successfully."
+		exit 1
+	fi
+else
+	if ! command -v npm >/dev/null 2>&1; then
+		echo "Error: npm is required to validate the global harness fallback."
+		exit 1
+	fi
 
-if ! npm ls -g --depth=0 @brainwav/coding-harness >/dev/null 2>&1; then
-	echo "Error: @brainwav/coding-harness is not installed globally via npm."
-	echo "Install globally and retry:"
-	echo "  npm i -g @brainwav/coding-harness"
-	echo "Private registry auth is required:"
-	echo "  - Local shell: export NPM_TOKEN=<token>"
-	echo "  - CI (CircleCI): set NPM_TOKEN as a project environment variable in CircleCI project settings"
-	exit 1
-fi
+	if ! npm ls -g --depth=0 @brainwav/coding-harness >/dev/null 2>&1; then
+		echo "Error: @brainwav/coding-harness is not installed globally via npm."
+		echo "Install globally and retry:"
+		echo "  npm i -g @brainwav/coding-harness"
+		echo "Private registry auth is required:"
+		echo "  - Local shell: export NPM_TOKEN=<token>"
+		echo "  - CI (CircleCI): set NPM_TOKEN as a project environment variable in CircleCI project settings"
+		exit 1
+	fi
 
-if ! command -v harness >/dev/null 2>&1; then
-	echo "Error: global harness binary is not on PATH after npm installation."
-	echo "Fix: ensure npm global bin directory is on PATH, then retry."
-	exit 1
-fi
+	if ! command -v harness >/dev/null 2>&1; then
+		echo "Error: global harness binary is not on PATH after npm installation."
+		echo "Fix: ensure npm global bin directory is on PATH, then retry."
+		exit 1
+	fi
 
-if ! run_check_environment_with_runner "global npm harness ($(command -v harness))" harness; then
-	echo "Error: global npm harness failed to run check-environment successfully."
-	echo "Reinstall and retry:"
-	echo "  npm i -g @brainwav/coding-harness"
-	echo "If this is CI (CircleCI), confirm NPM_TOKEN is set as a project environment variable."
-	exit 1
+	if ! run_check_environment_with_runner "global npm harness ($(command -v harness))" harness; then
+		echo "Error: global npm harness failed to run check-environment successfully."
+		echo "Reinstall and retry:"
+		echo "  npm i -g @brainwav/coding-harness"
+		echo "If this is CI (CircleCI), confirm NPM_TOKEN is set as a project environment variable."
+		exit 1
+	fi
 fi
 
 jq -e '.passed == true' "$ATTESTATION_PATH" >/dev/null

@@ -119,12 +119,21 @@ Legacy repository merge rule for Greptile-bridged repositories: do not merge bel
 - Strictness 2 (default): all PRs targeting `main`/production.
 - Strictness 3 (critical-only): only stable, non-critical infrastructure.
 
-Required status checks include:
-- `pr-template`, `linear-gate`, `risk-policy-gate`
-- `dependency-review`, `actions-pinning`, `consistency-drift-health`
-- `docs-gate` (documentation parity)
-- `lint`, `typecheck`, `test`, `audit`, `check`, `memory`
-- `security-scan`, `CodeRabbit`
+For this repository, branch protection should use the canonical required-check
+contexts declared in `harness.contract.json`, `.harness/ci-required-checks.json`,
+and [17-ci-required-checks.md](./17-ci-required-checks.md).
+
+Use these names as branch-protection check contexts, not as shorthand for local
+commands:
+
+- CI-emitted required-check contexts: `pr-template`, `linear-gate`,
+  `risk-policy-gate`, `dependency-scan`, `orb-pinning`,
+  `consistency-drift-health`, `docs-gate`, `lint`, `typecheck`, `test`,
+  `audit`, `check`, `memory`, `security-scan`
+- External GitHub App required-check context: `CodeRabbit`
+
+Local commands such as `pnpm lint` or `pnpm check` are validation evidence only
+unless they correspond to one of the required check contexts above.
 
 ## Indexing vs review warning
 
@@ -166,16 +175,35 @@ The local CodeRabbit CLI is optional for `coding-harness`. It is useful for
 drafting or previewing review prompts, but it does not replace the GitHub App
 check that branch protection enforces on this repository.
 
-Recommended local flow:
+Recommended pinned local flow for this repository:
 
 ```bash
-curl -fsSL https://cli.coderabbit.ai/install.sh | sh
+CODERABBIT_VERSION="0.3.11"
+CODERABBIT_OS="darwin"
+CODERABBIT_ARCH="arm64"
+CODERABBIT_ARCHIVE_URL="https://cli.coderabbit.ai/releases/${CODERABBIT_VERSION}/coderabbit-${CODERABBIT_OS}-${CODERABBIT_ARCH}.zip"
+CODERABBIT_ARCHIVE_SHA256="1c23eda82e4283a64e35b9826372951a486bd8b81973d327f7310eb6ba112c01"
+TMP_DIR="$(mktemp -d)"
+ARCHIVE_PATH="${TMP_DIR}/coderabbit-${CODERABBIT_OS}-${CODERABBIT_ARCH}.zip"
+
+curl -fsSL "${CODERABBIT_ARCHIVE_URL}" -o "${ARCHIVE_PATH}"
+echo "${CODERABBIT_ARCHIVE_SHA256}  ${ARCHIVE_PATH}" | shasum -a 256 -c -
+install -d "${HOME}/.local/bin"
+unzip -q "${ARCHIVE_PATH}" -d "${TMP_DIR}"
+install -m 0755 "${TMP_DIR}/coderabbit" "${HOME}/.local/bin/coderabbit"
+ln -sf "${HOME}/.local/bin/coderabbit" "${HOME}/.local/bin/cr"
+
 coderabbit auth login
 coderabbit review --base main --cwd /path/to/coding-harness -c .coderabbit.yaml
 ```
 
 Notes:
 
+- The example above is pinned to CodeRabbit CLI `0.3.11` for `darwin-arm64`.
+  If you use another platform artifact, pin the matching release asset and
+  update the expected checksum before install.
+- Do not use `curl | sh` in this repository's runbooks for CodeRabbit CLI
+  installation.
 - The CLI requires interactive `coderabbit auth login` or `--api-key`.
 - Use `.coderabbit.yaml` as the repo-local instruction source.
 - Treat local CLI output as advisory; merge authority still comes from the
@@ -224,5 +252,5 @@ The verification checks:
 3. `.greptile/files.json` exists and points to graph-review context/schema sources
 4. `.github/workflows/greptile-review.yml` exists with required triggers
 5. GitHub App is installed (best verified via `--app-id` + `--app-private-key-path`)
-6. Legacy ruleset requires "Greptile Review" status check
+6. Ruleset requires "Greptile Review" status check
 7. Webhook events are properly configured

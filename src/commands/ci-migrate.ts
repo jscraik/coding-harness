@@ -387,7 +387,7 @@ interface CIProviderPolicyConfig {
 	authorityConfigPath: string;
 }
 
-type CheckOwner = CIProvider | "both" | "neither";
+type CheckOwner = CIProvider | "both" | "external" | "neither";
 
 interface RequiredCheckOwnership {
 	displayName: string;
@@ -7792,33 +7792,6 @@ function readRequiredCheckNamesFromContract(targetDir: string): string[] {
 	}
 }
 
-function readGitHubCheckNamesFromManifest(targetDir: string): string[] {
-	const manifestPath = resolve(
-		targetDir,
-		".harness",
-		"ci-required-checks.json",
-	);
-	if (!existsSync(manifestPath)) {
-		return [];
-	}
-	try {
-		const parsed = JSON.parse(readFileSync(manifestPath, "utf-8")) as {
-			requiredChecks?: Array<{ githubCheckName?: unknown }> | undefined;
-		};
-		if (!Array.isArray(parsed.requiredChecks)) {
-			return [];
-		}
-		const names = parsed.requiredChecks
-			.map((check) => check.githubCheckName)
-			.filter((value): value is string => typeof value === "string")
-			.map((value) => value.trim())
-			.filter((value) => value.length > 0);
-		return [...new Set(names)];
-	} catch {
-		return [];
-	}
-}
-
 function readRequiredCheckNamesFromSourceProviderConfig(
 	targetDir: string,
 	sourceProvider: CIProvider,
@@ -8191,23 +8164,44 @@ function normalizeCheckProviders(check: RequiredCheckIdentity): CIProvider[] {
 	return [...providers];
 }
 
+function hasExternalPublisherMetadata(check: RequiredCheckIdentity): boolean {
+	const metadata = [check.sourceAppSlug, check.sourceAppId]
+		.map((value) => value.trim())
+		.filter((value) => value.length > 0);
+	if (metadata.length === 0) {
+		return false;
+	}
+	return metadata.every(
+		(value) => value !== "github-actions" && value !== "circleci",
+	);
+}
+
 function buildOwnershipReport(
 	requiredChecks: RequiredCheckIdentity[],
 	targetProvider: CIProvider,
 ): RequiredCheckOwnershipReport {
 	const checksByDisplayName = new Map<
 		string,
-		{ providers: Set<CIProvider>; hasUnknownProviderMetadata: boolean }
+		{
+			providers: Set<CIProvider>;
+			hasExternalPublisher: boolean;
+			hasUnknownProviderMetadata: boolean;
+		}
 	>();
 
 	for (const check of requiredChecks) {
 		const existing = checksByDisplayName.get(check.displayName) ?? {
 			providers: new Set<CIProvider>(),
+			hasExternalPublisher: false,
 			hasUnknownProviderMetadata: false,
 		};
 		const providers = normalizeCheckProviders(check);
 		if (providers.length === 0) {
-			existing.hasUnknownProviderMetadata = true;
+			if (hasExternalPublisherMetadata(check)) {
+				existing.hasExternalPublisher = true;
+			} else {
+				existing.hasUnknownProviderMetadata = true;
+			}
 		}
 		for (const provider of providers) {
 			existing.providers.add(provider);
@@ -8223,6 +8217,8 @@ function buildOwnershipReport(
 				preCutoverOwner = "both";
 			} else if (state.providers.size === 1) {
 				preCutoverOwner = [...state.providers][0] as CIProvider;
+			} else if (state.hasExternalPublisher) {
+				preCutoverOwner = "external";
 			}
 
 			let violation: string | undefined;
@@ -9936,13 +9932,10 @@ export function runCIMigrateCLI(
 			}
 			if (currentChecks.length > 0 || provider) {
 				const activeGHAJobNames = getActiveGHAJobNames(dir);
-				const targetProviderChecks = readGitHubCheckNamesFromManifest(dir);
 				const syncPlan = buildBranchProtectSyncPlan({
 					currentChecks,
 					targetProvider: provider ?? "circleci",
 					activeGHAJobNames,
-					targetProviderChecks:
-						targetProviderChecks.length > 0 ? targetProviderChecks : undefined,
 				});
 				const warning = formatBranchProtectSyncWarning(syncPlan);
 				if (warning) {
@@ -10070,13 +10063,10 @@ export function runSyncBranchProtectionCLI(
 	}
 
 	const activeGHAJobNames = getActiveGHAJobNames(dir);
-	const targetProviderChecks = readGitHubCheckNamesFromManifest(dir);
 	const plan = buildBranchProtectSyncPlan({
 		currentChecks,
 		targetProvider,
 		activeGHAJobNames,
-		targetProviderChecks:
-			targetProviderChecks.length > 0 ? targetProviderChecks : undefined,
 		owner,
 		repo,
 	});

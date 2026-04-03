@@ -22,6 +22,7 @@ import {
 } from "node:fs";
 import { dirname, join, relative, resolve, sep } from "node:path";
 import { sanitizeError } from "../input/sanitize.js";
+import { atomicWrite } from "./migration.js";
 import {
 	BACKUPS_DIR,
 	type BackupResult,
@@ -47,6 +48,7 @@ export type {
 interface LoadManifestOptions {
 	requireMetadata?: boolean;
 	operation?: string;
+	preferredCiProvider?: CIProvider;
 }
 
 /**
@@ -64,6 +66,16 @@ export function calculateBackupHash(relativePath: string): string {
 type PathResult =
 	| { ok: true; value: string }
 	| { ok: false; error: { code: string; message: string; path?: string } };
+
+function isPathWithinBase(
+	baseRealPath: string,
+	candidatePath: string,
+): boolean {
+	return (
+		candidatePath === baseRealPath ||
+		candidatePath.startsWith(`${baseRealPath}${sep}`)
+	);
+}
 
 /**
  * Sanitize a path to prevent directory traversal attacks.
@@ -210,6 +222,63 @@ export function sanitizePath(base: string, relativePath: string): PathResult {
 	return { ok: true, value: resolved };
 }
 
+export function resolveSafeWorkspaceSymlink(
+	base: string,
+	relativePath: string,
+): PathResult {
+	const targetPath = resolve(base, relativePath);
+	const normalizedBase = resolve(base);
+
+	let baseRealPath: string;
+	try {
+		baseRealPath = realpathSync(normalizedBase);
+	} catch {
+		return {
+			ok: false,
+			error: {
+				code: "INVALID_PATH",
+				message: `Base directory must exist and be resolvable: ${base}`,
+			},
+		};
+	}
+
+	try {
+		if (!existsSync(targetPath) || !lstatSync(targetPath).isSymbolicLink()) {
+			return {
+				ok: false,
+				error: {
+					code: "PATH_TRAVERSAL",
+					message: `Symlink detected in path: ${relativePath}`,
+					path: relativePath,
+				},
+			};
+		}
+
+		const realTargetPath = realpathSync(targetPath);
+		if (!isPathWithinBase(baseRealPath, realTargetPath)) {
+			return {
+				ok: false,
+				error: {
+					code: "PATH_TRAVERSAL",
+					message: `Symlink detected in path: ${relativePath}`,
+					path: relativePath,
+				},
+			};
+		}
+
+		return { ok: true, value: realTargetPath };
+	} catch (e) {
+		return {
+			ok: false,
+			error: {
+				code: "INVALID_PATH",
+				message: `Failed to validate path safety: ${sanitizeError(e)}`,
+				path: relativePath,
+			},
+		};
+	}
+}
+
 /**
  * Create backup of existing file with symlink detection and hash-based naming.
  * Returns backupHash (16-char SHA256 prefix) or null for new files.
@@ -295,6 +364,96 @@ function buildIncompleteManifestError(
 	};
 }
 
+function readContractProvider(targetDir: string): CIProvider | null {
+	const contractPath = resolve(targetDir, "harness.contract.json");
+	if (!existsSync(contractPath)) {
+		return null;
+	}
+
+	try {
+		const parsed = JSON.parse(readFileSync(contractPath, "utf-8")) as {
+			ciProviderPolicy?: { activeProvider?: string | undefined } | undefined;
+		};
+		const activeProvider = parsed.ciProviderPolicy?.activeProvider;
+		if (activeProvider === "github-actions" || activeProvider === "circleci") {
+			return activeProvider;
+		}
+	} catch {
+		// Best-effort legacy detection only.
+	}
+
+	return null;
+}
+
+function inferLegacyManifestProvider(
+	targetDir: string,
+	preferredCiProvider?: CIProvider,
+): { provider: CIProvider; source: string } | null {
+	const contractProvider = readContractProvider(targetDir);
+	if (contractProvider) {
+		return {
+			provider: contractProvider,
+			source: "harness.contract.json ciProviderPolicy.activeProvider",
+		};
+	}
+
+	const hasCircleCIConfig = existsSync(
+		resolve(targetDir, ".circleci", "config.yml"),
+	);
+	const hasGitHubWorkflows = existsSync(
+		resolve(targetDir, ".github", "workflows"),
+	);
+
+	if (hasCircleCIConfig && !hasGitHubWorkflows) {
+		return { provider: "circleci", source: ".circleci/config.yml" };
+	}
+	if (hasGitHubWorkflows && !hasCircleCIConfig) {
+		return { provider: "github-actions", source: ".github/workflows" };
+	}
+	if (preferredCiProvider) {
+		return {
+			provider: preferredCiProvider,
+			source: "requested/default CI provider",
+		};
+	}
+
+	return null;
+}
+
+function maybeRepairLegacyManifestProvider(
+	targetDir: string,
+	manifestPath: string,
+	manifest: Record<string, unknown>,
+	preferredCiProvider?: CIProvider,
+): ManifestResult | null {
+	const inferred = inferLegacyManifestProvider(targetDir, preferredCiProvider);
+	if (!inferred) {
+		return null;
+	}
+
+	const repairedManifest = {
+		...manifest,
+		ciProvider: inferred.provider,
+	};
+	const writeResult = atomicWrite(
+		manifestPath,
+		JSON.stringify(repairedManifest, null, 2),
+	);
+	if (!writeResult.ok) {
+		return {
+			ok: false,
+			error: {
+				code: "WRITE_ERROR",
+				message: `Failed to repair legacy restore manifest with inferred ciProvider "${inferred.provider}" from ${inferred.source}: ${writeResult.error.message}`,
+				path: MANIFEST_FILE,
+			},
+		};
+	}
+
+	manifest.ciProvider = inferred.provider;
+	return null;
+}
+
 export function loadManifest(
 	targetDir: string,
 	options: LoadManifestOptions = {},
@@ -341,8 +500,27 @@ export function loadManifest(
 			};
 		}
 
+		const shouldRepairProvider =
+			manifest.ciProvider !== "github-actions" &&
+			manifest.ciProvider !== "circleci";
+		if (shouldRepairProvider) {
+			const repairResult = maybeRepairLegacyManifestProvider(
+				targetDir,
+				manifestPath,
+				manifest,
+				options.preferredCiProvider,
+			);
+			if (repairResult) {
+				return repairResult;
+			}
+		}
+
 		// CRITICAL: Re-validate all paths to prevent manifest tampering attacks
 		const validatedFiles: ManifestEntry[] = [];
+		const allowSafeRepoSymlinks =
+			options.operation === "check-updates" ||
+			options.operation === "update" ||
+			options.operation === "upgrade";
 		for (const entry of manifest.files) {
 			if (typeof entry !== "object" || entry === null) {
 				return {
@@ -369,7 +547,13 @@ export function loadManifest(
 
 			// Re-apply path sanitization to every entry
 			const pathResult = sanitizePath(targetDir, e.path);
-			if (!pathResult.ok) {
+			if (
+				!pathResult.ok &&
+				!(
+					allowSafeRepoSymlinks &&
+					resolveSafeWorkspaceSymlink(targetDir, e.path).ok
+				)
+			) {
 				return {
 					ok: false,
 					error: {

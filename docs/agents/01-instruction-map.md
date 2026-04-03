@@ -14,7 +14,7 @@
 This repository keeps operational guidance in layers so operators can find the most relevant instructions without scanning every file.
 
 - `AGENTS.md` gives the mandatory top-level baseline.
-- `CLAUDE.md` holds mirrored Claude-facing guidance for this repo and should stay aligned with the canonical `AGENTS.md`.
+- `CLAUDE.md` and `GEMINI.md` hold mirrored tool-facing guidance for this repo and should stay aligned with the canonical `AGENTS.md`.
 - `00-architecture-bootstrap.md` defines architecture-artifact-first intake for high-impact tasks.
 - `docs/agents/*.md` stores focused SOPs by task type.
 - `docs/plans/*` and `todos/*` capture larger initiatives and backlog context.
@@ -24,7 +24,7 @@ This repository keeps operational guidance in layers so operators can find the m
 When starting a task, follow this lookup order:
 
 1. Read `AGENTS.md` first.
-2. Inspect `CLAUDE.md` only when checking mirrored cross-tool guidance or parity work; do not treat it as an auto-discovered Codex instruction file unless fallback filenames are explicitly configured.
+2. Inspect `CLAUDE.md` or `GEMINI.md` only when checking mirrored cross-tool guidance or parity work; do not treat either as an auto-discovered Codex instruction file unless fallback filenames are explicitly configured.
 3. Run `00-architecture-bootstrap.md` for architecture, policy, or cross-command changes.
 4. Select one or more of the following based on intent:
 
@@ -32,7 +32,7 @@ When starting a task, follow this lookup order:
    - **Memory/checkpoint workflow or per-project LEARNINGS.md:** `03-local-memory.md`
    - **Validation and gate planning:** `04-validation.md` + `10-agent-testing-gates.md`
    - **Flaky tests and evidence artifacts:** `11-flaky-test-artifacts.md`
-   - **AI review policy, CodeRabbit merge authority, and legacy `.greptile/` governance:** `12-greptile-ai-governance.md`
+   - **AI review policy, CodeRabbit governance, and legacy `.greptile/` compatibility:** `12-ai-review-governance.md`
    - **Linear-first intake and production tracker workflow:** `13-linear-production-workflow.md`
    - **Linear workflow (agent-optimized):** `16-linear-production-compact.md`
    - **Docs-gate rollout and promotion:** `14-docs-gate-rollout.md`
@@ -59,6 +59,12 @@ When starting a task, follow this lookup order:
 
 - Mirrored Claude-facing reminders.
 - Canonical imports for Claude workflows.
+- Not part of Codex's default project-doc discovery unless fallback filenames are configured.
+
+### `GEMINI.md`
+
+- Mirrored Gemini-facing reminders.
+- Canonical imports for Gemini workflows.
 - Not part of Codex's default project-doc discovery unless fallback filenames are configured.
 
 ### `docs/agents/` family
@@ -90,12 +96,14 @@ These deep-dive specs live alongside their parent SOPs and are not auto-discover
 - [Docs-gate rollout ops spec](./docs-gate-rollout-operational-spec.md) — companion to `14-docs-gate-rollout.md`
 - [Linear workflow ops spec](./linear-workflow-operational-spec.md) — companion to `13-linear-production-workflow.md`
 - [Release change control ops spec](./release-change-control-operational-spec.md) — companion to `08-release-and-change-control.md`
-- [Review gate ops spec](./review-gate-operational-spec.md) — companion to `12-greptile-ai-governance.md`
-- [Review gate workflow contract](./review-gate-workflow-contract.md) — companion to `12-greptile-ai-governance.md`
+- [Review gate ops spec](./review-gate-operational-spec.md) — companion to `12-ai-review-governance.md`
+- [Review gate workflow contract](./review-gate-workflow-contract.md) — companion to `12-ai-review-governance.md`
 
 ## Canonical links
 
 - [Root AGENTS](../../AGENTS.md)
+- [Root CLAUDE](../../CLAUDE.md)
+- [Root GEMINI](../../GEMINI.md)
 - [Architecture bootstrap](./00-architecture-bootstrap.md)
 - [Tooling policy](./02-tooling-policy.md)
 - [Local-memory workflow](./03-local-memory.md)
@@ -108,7 +116,7 @@ These deep-dive specs live alongside their parent SOPs and are not auto-discover
 - [Audit trail policy](./09-audit-trail-policy.md)
 - [Agent testing gates](./10-agent-testing-gates.md)
 - [Flaky test artifact capture standard](./11-flaky-test-artifacts.md)
-- [AI review governance](./12-greptile-ai-governance.md)
+- [AI review governance](./12-ai-review-governance.md)
 - [Linear production workflow](./13-linear-production-workflow.md)
 - [Linear production compact](./16-linear-production-compact.md)
 - [Docs-gate rollout](./14-docs-gate-rollout.md)

@@ -207,7 +207,7 @@ Minimum v1 governed surfaces:
 - `AGENTS.md`
 - `docs/agents/04-validation.md`
 - `docs/agents/07b-agent-governance.md`
-- `docs/agents/12-greptile-ai-governance.md`
+- `docs/agents/12-ai-review-governance.md`
 - `docs/agents/13-linear-production-workflow.md`
 - generated workflow/setup guidance emitted by `init`
 

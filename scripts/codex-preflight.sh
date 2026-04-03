@@ -22,6 +22,7 @@ is_script_sourced() {
 SCRIPT_PATH="$(resolve_script_path)"
 SCRIPT_DIR="$(cd -- "$(dirname -- "${SCRIPT_PATH}")" && pwd -P)"
 WORKSPACE_ROOT="$(cd -- "${SCRIPT_DIR}/.." && pwd -P)"
+PREFLIGHT_OVERRIDES_FILE="${WORKSPACE_ROOT}/.harness/memory/codex-preflight-overrides.env"
 
 usage() {
 	cat <<'USAGE'
@@ -65,6 +66,36 @@ log_err() {
 	printf '❌ %s\n' "$*" >&2
 }
 
+append_csv_values() {
+	local base_csv="${1:-}"
+	local extra_csv="${2:-}"
+
+	if [[ -z "${base_csv}" ]]; then
+		printf '%s\n' "${extra_csv}"
+		return
+	fi
+	if [[ -z "${extra_csv}" ]]; then
+		printf '%s\n' "${base_csv}"
+		return
+	fi
+	printf '%s,%s\n' "${base_csv}" "${extra_csv}"
+}
+
+load_preflight_overrides() {
+	local override_file="$1"
+
+	PREFLIGHT_OVERRIDE_BINS=''
+	PREFLIGHT_OVERRIDE_PATHS=''
+	if [[ ! -f "${override_file}" ]]; then
+		return 0
+	fi
+
+	# shellcheck source=/dev/null
+	source "${override_file}"
+	PREFLIGHT_OVERRIDE_BINS="${CODEX_PREFLIGHT_EXTRA_BINS:-}"
+	PREFLIGHT_OVERRIDE_PATHS="${CODEX_PREFLIGHT_EXTRA_PATHS:-}"
+}
+
 extract_last_json_line() {
 	local raw="${1:-}"
 	printf '%s\n' "${raw}" | awk '/^\{/{line=$0} END{if (line != "") print line}'
@@ -91,6 +122,57 @@ extract_local_memory_rest_value() {
 is_local_memory_pidfile_sandbox_block() {
 	local output="${1:-}"
 	[[ "${output}" == *"failed to write PID file"* && "${output}" == *"operation not permitted"* ]]
+}
+
+wait_for_local_memory_health() {
+	local health_url="$1"
+	local max_attempts="${2:-10}"
+	local attempt=1
+	local health_json=''
+	local health_success='false'
+
+	while (( attempt <= max_attempts )); do
+		if health_json="$(curl -fsS "${health_url}" 2>/dev/null)"; then
+			health_success="$(echo "${health_json}" | jq -r '.success // false')"
+			if [[ "${health_success}" == 'true' ]]; then
+				printf '%s\n' "${health_json}"
+				return 0
+			fi
+		fi
+		sleep 1
+		attempt=$((attempt + 1))
+	done
+	return 1
+}
+
+start_local_memory_daemon_if_needed() {
+	local health_url="$1"
+	local start_output=''
+	local started=1
+
+	log_warn 'local-memory status reported stopped; attempting daemon start'
+	if ! start_output="$(local-memory start 2>&1)"; then
+		if is_local_memory_pidfile_sandbox_block "${start_output}"; then
+			log_warn 'local-memory start reported sandbox pidfile limits; continuing with REST health probe'
+		else
+			log_err 'local-memory start failed'
+			if [[ -n "${start_output}" ]]; then
+				echo "${start_output}" >&2
+			fi
+			return 1
+		fi
+	else
+		started=0
+	fi
+
+	if [[ "${started}" -eq 0 ]]; then
+		log_ok 'local-memory start command succeeded'
+	fi
+	if ! wait_for_local_memory_health "${health_url}" 12 >/dev/null; then
+		log_err "local-memory daemon failed to become healthy at ${health_url} after start attempt"
+		return 1
+	fi
+	return 0
 }
 
 
@@ -169,10 +251,10 @@ stack_bins_csv() {
 
 stack_paths_csv() {
 	case "$1" in
-		js) echo 'package.json,CONTRIBUTING.md,Makefile,scripts,scripts/codex-preflight.sh,scripts/verify-work.sh' ;;
-		py) echo 'pyproject.toml,CONTRIBUTING.md,Makefile,scripts,scripts/codex-preflight.sh,scripts/verify-work.sh' ;;
-		rust) echo 'Cargo.toml,CONTRIBUTING.md,Makefile,scripts,scripts/codex-preflight.sh,scripts/verify-work.sh' ;;
-		repo) echo 'CONTRIBUTING.md,Makefile,scripts,scripts/codex-preflight.sh,scripts/verify-work.sh' ;;
+		js) echo 'package.json,CODESTYLE.md,CONTRIBUTING.md,Makefile,scripts,scripts/codex-preflight.sh,scripts/verify-work.sh,scripts/validate-codestyle.sh' ;;
+		py) echo 'pyproject.toml,CODESTYLE.md,CONTRIBUTING.md,Makefile,scripts,scripts/codex-preflight.sh,scripts/verify-work.sh,scripts/validate-codestyle.sh' ;;
+		rust) echo 'Cargo.toml,CODESTYLE.md,CONTRIBUTING.md,Makefile,scripts,scripts/codex-preflight.sh,scripts/verify-work.sh,scripts/validate-codestyle.sh' ;;
+		repo) echo 'CODESTYLE.md,CONTRIBUTING.md,Makefile,scripts,scripts/codex-preflight.sh,scripts/verify-work.sh,scripts/validate-codestyle.sh' ;;
 		*) log_err "unknown stack: $1"; return 2 ;;
 	esac
 }
@@ -320,10 +402,13 @@ preflight_local_memory_gold() {
 		fi
 	fi
 	if [[ "${running}" != 'true' ]]; then
-		log_err 'local-memory daemon is not running'
-		return 1
+		if ! start_local_memory_daemon_if_needed "${health_url}"; then
+			return 1
+		fi
+		running='true'
+		health_json="$(wait_for_local_memory_health "${health_url}" 1 || true)"
 	fi
-	if ! health_json="$(curl -fsS "${health_url}")"; then
+	if [[ -z "${health_json:-}" ]] && ! health_json="$(curl -fsS "${health_url}")"; then
 		log_err "REST health endpoint unreachable at ${health_url}"
 		return 1
 	fi
@@ -562,7 +647,7 @@ preflight_repo() {
 		repo \
 		"${1:-}" \
 		"${2:-git,bash,sed,rg,jq,curl,python3}" \
-		"${3:-CONTRIBUTING.md,Makefile,scripts,scripts/codex-preflight.sh,scripts/verify-work.sh}" \
+		"${3:-CODESTYLE.md,CONTRIBUTING.md,Makefile,scripts,scripts/codex-preflight.sh,scripts/verify-work.sh,scripts/validate-codestyle.sh}" \
 		"${4:-required}"
 }
 
@@ -571,7 +656,7 @@ preflight_js() {
 		js \
 		"${1:-}" \
 		"${2:-git,bash,sed,rg,jq,curl,node,npm,python3}" \
-		"${3:-package.json,CONTRIBUTING.md,Makefile,scripts,scripts/codex-preflight.sh,scripts/verify-work.sh}" \
+		"${3:-package.json,CODESTYLE.md,CONTRIBUTING.md,Makefile,scripts,scripts/codex-preflight.sh,scripts/verify-work.sh,scripts/validate-codestyle.sh}" \
 		"${4:-required}"
 }
 
@@ -580,7 +665,7 @@ preflight_py() {
 		py \
 		"${1:-}" \
 		"${2:-git,bash,sed,rg,jq,curl,python3}" \
-		"${3:-pyproject.toml,CONTRIBUTING.md,Makefile,scripts,scripts/codex-preflight.sh,scripts/verify-work.sh}" \
+		"${3:-pyproject.toml,CODESTYLE.md,CONTRIBUTING.md,Makefile,scripts,scripts/codex-preflight.sh,scripts/verify-work.sh,scripts/validate-codestyle.sh}" \
 		"${4:-required}"
 }
 
@@ -589,12 +674,12 @@ preflight_rust() {
 		rust \
 		"${1:-}" \
 		"${2:-git,bash,sed,rg,jq,curl,python3,cargo}" \
-		"${3:-Cargo.toml,CONTRIBUTING.md,Makefile,scripts,scripts/codex-preflight.sh,scripts/verify-work.sh}" \
+		"${3:-Cargo.toml,CODESTYLE.md,CONTRIBUTING.md,Makefile,scripts,scripts/codex-preflight.sh,scripts/verify-work.sh,scripts/validate-codestyle.sh}" \
 		"${4:-required}"
 }
 
 preflight_repo_local_memory() {
-	preflight_repo "${1:-}" "${2:-git,bash,sed,rg,jq,curl,python3}" "${3:-CONTRIBUTING.md,Makefile,scripts,scripts/codex-preflight.sh,scripts/verify-work.sh}" required
+	preflight_repo "${1:-}" "${2:-git,bash,sed,rg,jq,curl,python3}" "${3:-CODESTYLE.md,CONTRIBUTING.md,Makefile,scripts,scripts/codex-preflight.sh,scripts/verify-work.sh,scripts/validate-codestyle.sh}" required
 }
 
 main() {
@@ -699,6 +784,9 @@ main() {
 	if [[ -z "${paths_csv}" ]]; then
 		paths_csv="$(stack_paths_csv "${stack}")"
 	fi
+	load_preflight_overrides "${PREFLIGHT_OVERRIDES_FILE}"
+	bins_csv="$(append_csv_values "${bins_csv}" "${PREFLIGHT_OVERRIDE_BINS}")"
+	paths_csv="$(append_csv_values "${paths_csv}" "${PREFLIGHT_OVERRIDE_PATHS}")"
 
 	check_bins "${bins_csv}"
 	check_paths "${WORKSPACE_ROOT}" "${paths_csv}"

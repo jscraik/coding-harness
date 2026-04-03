@@ -226,4 +226,4 @@ src/presets/
 - [Existing ecosystem profiles](../../src/lib/policy/required-checks.ts)
 - [Contract schema](../../src/lib/contract/schema.ts)
 - [AGENTS.md governance rules](../../AGENTS.md)
-- [Greptile AI governance](../agents/12-greptile-ai-governance.md)
+- [AI review governance](../agents/12-ai-review-governance.md)

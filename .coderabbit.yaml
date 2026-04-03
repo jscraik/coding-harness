@@ -6,6 +6,7 @@ reviews:
   profile: "assertive"
   request_changes_workflow: false
   review_details: true
+  sequence_diagrams: true
   commit_status: true
   fail_commit_status: false
   poem: false

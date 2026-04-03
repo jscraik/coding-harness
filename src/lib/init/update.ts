@@ -17,7 +17,11 @@ import type { HarnessContract } from "../contract/types.js";
 import { sanitizeError } from "../input/sanitize.js";
 import { getVersion } from "../version.js";
 import { CONTRACT_FILE, atomicWrite } from "./migration.js";
-import { loadManifest, sanitizePath } from "./rollback.js";
+import {
+	loadManifest,
+	resolveSafeWorkspaceSymlink,
+	sanitizePath,
+} from "./rollback.js";
 import {
 	createTemplateRenderContext,
 	detectPackageManager,
@@ -289,10 +293,14 @@ function prepareContractRefresh(
  * Check if template updates are available.
  * Compares manifest version against current CLI version.
  */
-export function checkForUpdates(targetDir: string): UpdateCheckResult {
+export function checkForUpdates(
+	targetDir: string,
+	preferredCiProvider?: CIProvider,
+): UpdateCheckResult {
 	const manifestResult = loadManifest(targetDir, {
 		requireMetadata: true,
 		operation: "check-updates",
+		...(preferredCiProvider !== undefined ? { preferredCiProvider } : {}),
 	});
 	if (!manifestResult.ok) {
 		return manifestResult;
@@ -367,7 +375,35 @@ export function executeUpdate(
 	}
 
 	const contractPath = resolve(targetDir, CONTRACT_FILE);
+	const tracksContract = manifest.files.some(
+		(entry) => entry.path === CONTRACT_FILE,
+	);
 	if (!existsSync(contractPath)) {
+		if (!tracksContract && manifest.files.length === 0) {
+			const newManifest: RestoreManifest = {
+				...manifest,
+				harnessVersion: getVersion(),
+				ciProvider,
+				...(extractedOptions.minimal ? { minimal: true } : {}),
+				...(extractedOptions.issueTracker
+					? { issueTracker: extractedOptions.issueTracker }
+					: {}),
+			};
+			const manifestPath = resolve(targetDir, HARNESS_DIR, MANIFEST_FILE);
+			const manifestResult = atomicWrite(
+				manifestPath,
+				JSON.stringify(newManifest, null, 2),
+			);
+			if (!manifestResult.ok) {
+				return manifestResult;
+			}
+
+			return {
+				ok: true,
+				value: { updated: [], skipped: [], ownershipDecisions: [] },
+			};
+		}
+
 		return {
 			ok: false,
 			error: {
@@ -436,6 +472,8 @@ export function executeUpdate(
 	const updated: string[] = [];
 	const skipped: string[] = [];
 	const ownershipDecisions: OwnershipDecision[] = [];
+	const trackedPaths = new Set(manifest.files.map((entry) => entry.path));
+	const nextManifestEntries = [...manifest.files];
 
 	for (const entry of manifest.files) {
 		// Find matching template
@@ -449,7 +487,73 @@ export function executeUpdate(
 		// Re-validate path
 		const pathResult = sanitizePath(targetDir, entry.path);
 		if (!pathResult.ok) {
-			return pathResult;
+			const symlinkPathResult = resolveSafeWorkspaceSymlink(
+				targetDir,
+				entry.path,
+			);
+			if (!symlinkPathResult.ok) {
+				return pathResult;
+			}
+			const targetPath = symlinkPathResult.value;
+
+			// SECURITY: keep rejecting escaping parent-directory hops even when the
+			// tracked path is a safe in-repo symlink such as .mise.toml -> mise/config.toml.
+			try {
+				const realTargetDir = realpathSync(targetDir);
+				const parentDir = dirname(targetPath);
+				const realParent = existsSync(parentDir)
+					? realpathSync(parentDir)
+					: parentDir;
+				if (
+					realParent !== realTargetDir &&
+					!realParent.startsWith(`${realTargetDir}${sep}`)
+				) {
+					return {
+						ok: false,
+						error: {
+							code: "WRITE_ERROR",
+							message: `Update path escaped workspace: ${entry.path}`,
+							path: entry.path,
+						},
+					};
+				}
+			} catch (e) {
+				return {
+					ok: false,
+					error: {
+						code: "WRITE_ERROR",
+						message: `Failed to validate update target: ${sanitizeError(e)}`,
+						path: entry.path,
+					},
+				};
+			}
+
+			if (!existsSync(targetPath)) {
+				skipped.push(entry.path);
+				continue;
+			}
+
+			let content = template.render(packageManager, renderContext);
+			if (entry.path === CONTRACT_FILE) {
+				const contractRefreshResult = prepareContractRefresh(
+					targetPath,
+					content,
+				);
+				if (!contractRefreshResult.ok) {
+					return contractRefreshResult;
+				}
+				content = contractRefreshResult.value.content;
+				ownershipDecisions.push(
+					...contractRefreshResult.value.ownershipDecisions,
+				);
+			}
+			const writeResult = atomicWrite(targetPath, content);
+			if (!writeResult.ok) {
+				return writeResult;
+			}
+
+			updated.push(entry.path);
+			continue;
 		}
 
 		const targetPath = pathResult.value;
@@ -525,6 +629,43 @@ export function executeUpdate(
 		updated.push(entry.path);
 	}
 
+	for (const template of templates) {
+		if (trackedPaths.has(template.path)) {
+			continue;
+		}
+
+		const pathResult = sanitizePath(targetDir, template.path);
+		if (!pathResult.ok) {
+			return pathResult;
+		}
+
+		const targetPath = pathResult.value;
+		if (existsSync(targetPath)) {
+			skipped.push(template.path);
+			continue;
+		}
+
+		let content = template.render(packageManager, renderContext);
+		if (template.path === CONTRACT_FILE) {
+			const contractRefreshResult = prepareContractRefresh(targetPath, content);
+			if (!contractRefreshResult.ok) {
+				return contractRefreshResult;
+			}
+			content = contractRefreshResult.value.content;
+			ownershipDecisions.push(
+				...contractRefreshResult.value.ownershipDecisions,
+			);
+		}
+
+		const writeResult = atomicWrite(targetPath, content);
+		if (!writeResult.ok) {
+			return writeResult;
+		}
+
+		updated.push(template.path);
+		nextManifestEntries.push({ path: template.path, action: "created" });
+	}
+
 	// Update manifest version
 	const newManifest: RestoreManifest = {
 		...manifest,
@@ -534,6 +675,7 @@ export function executeUpdate(
 		...(extractedOptions.issueTracker
 			? { issueTracker: extractedOptions.issueTracker }
 			: {}),
+		files: nextManifestEntries,
 	};
 	const manifestPath = resolve(targetDir, HARNESS_DIR, MANIFEST_FILE);
 	const manifestResult = atomicWrite(

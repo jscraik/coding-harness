@@ -53,10 +53,10 @@ preflight_bins_csv() {
 
 preflight_paths_csv() {
 	case "$1" in
-		js) echo 'package.json,CONTRIBUTING.md,Makefile,scripts,scripts/codex-preflight.sh,scripts/verify-work.sh' ;;
-		py) echo 'pyproject.toml,CONTRIBUTING.md,Makefile,scripts,scripts/codex-preflight.sh,scripts/verify-work.sh' ;;
-		rust) echo 'Cargo.toml,CONTRIBUTING.md,Makefile,scripts,scripts/codex-preflight.sh,scripts/verify-work.sh' ;;
-		repo) echo 'CONTRIBUTING.md,Makefile,scripts,scripts/codex-preflight.sh,scripts/verify-work.sh' ;;
+		js) echo 'package.json,CODESTYLE.md,CONTRIBUTING.md,Makefile,scripts,scripts/codex-preflight.sh,scripts/verify-work.sh,scripts/validate-codestyle.sh' ;;
+		py) echo 'pyproject.toml,CODESTYLE.md,CONTRIBUTING.md,Makefile,scripts,scripts/codex-preflight.sh,scripts/verify-work.sh,scripts/validate-codestyle.sh' ;;
+		rust) echo 'Cargo.toml,CODESTYLE.md,CONTRIBUTING.md,Makefile,scripts,scripts/codex-preflight.sh,scripts/verify-work.sh,scripts/validate-codestyle.sh' ;;
+		repo) echo 'CODESTYLE.md,CONTRIBUTING.md,Makefile,scripts,scripts/codex-preflight.sh,scripts/verify-work.sh,scripts/validate-codestyle.sh' ;;
 		*) echo "[verify-work] unknown stack: $1" >&2; return 2 ;;
 	esac
 }
@@ -122,36 +122,21 @@ bash "$repo_root/scripts/codex-preflight.sh" \
 
 if [[ "$fast_mode" -eq 0 ]]; then
 	echo
-	echo "==> check"
-	pnpm check
+	echo "==> validate-codestyle"
+	bash "$repo_root/scripts/validate-codestyle.sh" --repo-root "$repo_root"
 	exit 0
 fi
 
 echo
-echo "==> lint"
-pnpm lint
-
-echo
-echo "==> typecheck"
-pnpm typecheck
-
+echo "==> validate-codestyle --fast"
+validate_args=(--repo-root "$repo_root" --fast)
 if [[ "$changed_only" -eq 1 ]]; then
-	if has_package_script "test:related"; then
-		echo
-		echo "==> test:related"
-		pnpm test:related
-	else
-		if [[ "$strict_mode" -eq 1 ]]; then
-			echo "[verify-work] missing package script: test:related" >&2
-			exit 1
-		fi
-		echo "[verify-work] test:related unavailable; falling back to full test run"
-		echo
-		echo "==> test"
-		pnpm test
-	fi
+	validate_args+=(--changed-only)
 else
-	echo
-	echo "==> test"
-	pnpm test
+	validate_args+=(--all)
 fi
+if [[ "$strict_mode" -eq 1 ]]; then
+	validate_args+=(--strict)
+fi
+
+bash "$repo_root/scripts/validate-codestyle.sh" "${validate_args[@]}"

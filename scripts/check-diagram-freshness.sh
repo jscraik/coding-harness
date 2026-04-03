@@ -10,6 +10,11 @@ TRACKED_ARTIFACT_PATHS=(
 	".diagram/context/diagram-context.meta.json"
 )
 
+is_git_tracked() {
+	local path="$1"
+	git -C "$REPO_ROOT" ls-files --error-unmatch -- "$path" >/dev/null 2>&1
+}
+
 is_ignored_change() {
 	local changed_path="$1"
 
@@ -51,12 +56,15 @@ snapshot_artifacts() {
 		if [[ -d "$REPO_ROOT/$path" ]]; then
 			while IFS= read -r file; do
 				local rel_path="${file#$REPO_ROOT/}"
+				if ! is_git_tracked "$rel_path"; then
+					continue
+				fi
 				local checksum
 				checksum="$(normalized_checksum "$file" "$rel_path")"
 				printf '%s %s
 ' "$rel_path" "$checksum"
 			done < <(find "$REPO_ROOT/$path" -type f | sort)
-		elif [[ -f "$REPO_ROOT/$path" ]]; then
+		elif [[ -f "$REPO_ROOT/$path" ]] && is_git_tracked "$path"; then
 			local checksum
 			checksum="$(normalized_checksum "$REPO_ROOT/$path" "$path")"
 			printf '%s %s

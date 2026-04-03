@@ -10,7 +10,10 @@
 import { existsSync, readFileSync } from "node:fs";
 import { resolve } from "node:path";
 import { fileURLToPath } from "node:url";
-import { DEFAULT_CONTRACT } from "../contract/types.js";
+import {
+	DEFAULT_CI_PROVIDER_POLICY,
+	DEFAULT_CONTRACT,
+} from "../contract/types.js";
 import {
 	BRANCH_PROTECTION_REQUIRED_CHECKS,
 	REVIEW_POLICY_REQUIRED_CHECKS,
@@ -232,174 +235,47 @@ function renderCodexPreflightTemplate(): string {
 	return readFileSync(templatePath, "utf-8");
 }
 
-function renderVerifyWorkScript(packageManager: string): string {
-	const checkCommand = renderScriptCommand(packageManager, "check");
-	const lintCommand = renderScriptCommand(packageManager, "lint");
-	const typecheckCommand = renderScriptCommand(packageManager, "typecheck");
-	const testCommand = renderScriptCommand(packageManager, "test");
-	const relatedTestCommand = renderScriptCommand(
-		packageManager,
-		"test:related",
+function renderCodexLearnTemplate(): string {
+	const templatePath = fileURLToPath(
+		new URL("../../templates/codex-learn.sh", import.meta.url),
 	);
-
-	return `#!/usr/bin/env bash
-set -euo pipefail
-
-SCRIPT_DIR="$(cd -- "$(dirname -- "${"${"}BASH_SOURCE[0]}")" && pwd -P)"
-REPO_ROOT="$(cd -- "$SCRIPT_DIR/.." && pwd -P)"
-
-changed_only=1
-fast_mode=0
-strict_mode=0
-repo_root=""
-
-usage() {
-	cat <<'USAGE'
-Usage: scripts/verify-work.sh [options]
-
-Canonical repo-local verification runner.
-
-Options:
-  --all              Run full test coverage in --fast mode
-  --changed-only     Prefer changed-file validation in --fast mode (default)
-  --strict           Fail when fast-mode fallbacks are needed
-  --fast             Run preflight + lint + typecheck + tests instead of the full check bundle
-  --repo-root PATH   Run checks in a specific repository root
-  -h, --help         Show this help text
-USAGE
+	return readFileSync(templatePath, "utf-8");
 }
 
-detect_stack() {
-	if [[ -f package.json ]]; then
-		echo js
-		return
-	fi
-	if [[ -f pyproject.toml ]]; then
-		echo py
-		return
-	fi
-	if [[ -f Cargo.toml ]]; then
-		echo rust
-		return
-	fi
-	echo repo
+function renderCodexEnforcedTemplate(): string {
+	const templatePath = fileURLToPath(
+		new URL("../../templates/codex-enforced.sh", import.meta.url),
+	);
+	return readFileSync(templatePath, "utf-8");
 }
 
-preflight_bins_csv() {
-	case "$1" in
-		js) echo 'git,bash,sed,rg,jq,curl,node,python3,${packageManager}' ;;
-		py) echo 'git,bash,sed,rg,jq,curl,python3' ;;
-		rust) echo 'git,bash,sed,rg,jq,curl,python3,cargo' ;;
-		repo) echo 'git,bash,sed,rg,jq,curl,python3' ;;
-		*) echo "[verify-work] unknown stack: $1" >&2; return 2 ;;
-	esac
+function renderCodestyleTemplate(): string {
+	// Prefer the packaged template so published builds do not depend on a
+	// user-home symlink. Source checkouts fall back to the repo-root path.
+	const packagedTemplatePath = fileURLToPath(
+		new URL("../../templates/CODESTYLE.md", import.meta.url),
+	);
+	if (existsSync(packagedTemplatePath)) {
+		return readFileSync(packagedTemplatePath, "utf-8");
+	}
+	const repoTemplatePath = fileURLToPath(
+		new URL("../../../CODESTYLE.md", import.meta.url),
+	);
+	return readFileSync(repoTemplatePath, "utf-8");
 }
 
-preflight_paths_csv() {
-	case "$1" in
-		js) echo 'package.json,CONTRIBUTING.md,Makefile,scripts,scripts/codex-preflight.sh,scripts/verify-work.sh' ;;
-		py) echo 'pyproject.toml,CONTRIBUTING.md,Makefile,scripts,scripts/codex-preflight.sh,scripts/verify-work.sh' ;;
-		rust) echo 'Cargo.toml,CONTRIBUTING.md,Makefile,scripts,scripts/codex-preflight.sh,scripts/verify-work.sh' ;;
-		repo) echo 'CONTRIBUTING.md,Makefile,scripts,scripts/codex-preflight.sh,scripts/verify-work.sh' ;;
-		*) echo "[verify-work] unknown stack: $1" >&2; return 2 ;;
-	esac
+function renderVerifyWorkScript(_packageManager: string): string {
+	const templatePath = fileURLToPath(
+		new URL("../../../scripts/verify-work.sh", import.meta.url),
+	);
+	return readFileSync(templatePath, "utf-8");
 }
 
-has_package_script() {
-	local script_name="$1"
-	[[ -f "$repo_root/package.json" ]] || return 1
-	jq -e --arg script_name "$script_name" '(.scripts // {}) | has($script_name)' "$repo_root/package.json" >/dev/null 2>&1
-}
-
-while (( $# > 0 )); do
-	case "$1" in
-		--all|--all-skills)
-			changed_only=0
-			shift
-			;;
-		--changed-only)
-			changed_only=1
-			shift
-			;;
-		--strict)
-			strict_mode=1
-			shift
-			;;
-		--fast)
-			fast_mode=1
-			shift
-			;;
-		--repo-root)
-			repo_root="${"${"}2:-}"
-			shift 2
-			;;
-		-h|--help)
-			usage
-			exit 0
-			;;
-		*)
-			echo "[verify-work] unknown argument: $1" >&2
-			usage >&2
-			exit 2
-			;;
-	esac
-done
-
-if [[ -z "$repo_root" ]]; then
-	repo_root="$REPO_ROOT"
-fi
-
-cd "$repo_root"
-echo "[verify-work] repo root: $repo_root"
-
-stack="$(detect_stack)"
-bins_csv="$(preflight_bins_csv "$stack")"
-paths_csv="$(preflight_paths_csv "$stack")"
-
-echo
-echo "==> codex-preflight"
-bash "$repo_root/scripts/codex-preflight.sh" \\
-	--stack "$stack" \\
-	--mode required \\
-	--bins "$bins_csv" \\
-	--paths "$paths_csv"
-
-if [[ "$fast_mode" -eq 0 ]]; then
-	echo
-	echo "==> check"
-	${checkCommand}
-	exit 0
-fi
-
-echo
-echo "==> lint"
-${lintCommand}
-
-echo
-echo "==> typecheck"
-${typecheckCommand}
-
-if [[ "$changed_only" -eq 1 ]]; then
-	if has_package_script "test:related"; then
-		echo
-		echo "==> test:related"
-		${relatedTestCommand}
-	else
-		if [[ "$strict_mode" -eq 1 ]]; then
-			echo "[verify-work] missing package script: test:related" >&2
-			exit 1
-		fi
-		echo "[verify-work] test:related unavailable; falling back to full test run"
-		echo
-		echo "==> test"
-		${testCommand}
-	fi
-else
-	echo
-	echo "==> test"
-	${testCommand}
-fi
-`;
+function renderValidateCodestyleScript(): string {
+	const templatePath = fileURLToPath(
+		new URL("../../../scripts/validate-codestyle.sh", import.meta.url),
+	);
+	return readFileSync(templatePath, "utf-8");
 }
 
 function renderPrepareWorktreeScript(packageManager: string): string {
@@ -1743,7 +1619,11 @@ export const TEMPLATES: Template[] = [
 							],
 						},
 					},
-					ciProviderPolicy: DEFAULT_CONTRACT.ciProviderPolicy,
+					ciProviderPolicy: {
+						...DEFAULT_CI_PROVIDER_POLICY,
+						activeProvider:
+							context.ciProvider ?? DEFAULT_CI_PROVIDER_POLICY.activeProvider,
+					},
 					contextIntegrityPolicy: DEFAULT_CONTRACT.contextIntegrityPolicy,
 					...(context.projectType !== undefined
 						? { projectType: context.projectType }
@@ -1818,9 +1698,9 @@ export const TEMPLATES: Template[] = [
 	},
 	{
 		// NOTE: greptile-review.yml is only scaffolded for github-actions provider.
-		// It acts as the bridge that creates "Greptile Review" GitHub check runs from
-		// Greptile bot comments. Without this workflow the ruleset status-check
-		// enforcement has nothing to evaluate, so merge stays unblocked.
+		// It remains a legacy bridge for downstream Greptile-managed repositories.
+		// coding-harness itself uses the native CodeRabbit check instead of a
+		// repo-managed review bridge workflow.
 		path: ".github/workflows/greptile-review.yml",
 		render: () => renderGreptileWorkflow(),
 	},
@@ -2370,11 +2250,8 @@ jobs:
 	{
 		path: "CONTRIBUTING.md",
 		render: (pm, context) => {
-			const lintCommand = renderScriptCommand(pm, "lint");
-			const typecheckCommand = renderScriptCommand(pm, "typecheck");
-			const testCommand = renderScriptCommand(pm, "test");
-			const auditCommand = renderScriptCommand(pm, "audit");
 			const checkCommand = renderScriptCommand(pm, "check");
+			const codestyleCommand = "bash scripts/validate-codestyle.sh";
 			const memoryValidateCommand = renderMemoryValidateCommand();
 			const installCommand = renderInstallCommand(pm);
 			const addCommand = renderAddPackageCommand(
@@ -2388,7 +2265,7 @@ jobs:
 				"  - ",
 			);
 			const greptileToc = includesGreptile
-				? `- [Greptile setup baseline](#greptile-setup-baseline)
+				? `- [Legacy Greptile setup baseline](#legacy-greptile-setup-baseline)
 - [Greptile config hierarchy](#greptile-config-hierarchy)
 - [Greptile merge logic for multi-scope pull requests](#greptile-merge-logic-for-multi-scope-pull-requests)
 - [Greptile confidence score policy](#greptile-confidence-score-policy)
@@ -2400,14 +2277,14 @@ jobs:
 				? `- Greptile + Codex review artifacts are required before merge.
 - Greptile must be configured correctly using the \`check-pr\` or \`greploop\` skill with all required Greptile files present.
 `
-				: `- Codex review artifacts are required before merge.
+				: `- CodeRabbit + Codex review artifacts are required before merge.
 `;
 			const greptileSections = includesGreptile
 				? `
-## Greptile setup baseline
+	## Legacy Greptile setup baseline
 
-- Greptile must be configured correctly before relying on Greptile review gates.
-- \`harness init\` scaffolds the baseline Greptile files and bridge workflow into harness-managed repositories.
+	- Greptile must be configured correctly before relying on Greptile review gates.
+	- \`harness init\` scaffolds the legacy Greptile bridge files and workflow into harness-managed repositories.
 - Required repo-local files:
   - \`.greptile/config.json\`
   - \`.greptile/rules.md\`
@@ -2461,7 +2338,9 @@ jobs:
 - Greptile confidence score for the PR.
 - Confirmation that reviewer agent is independent from coding agent.
 `
-				: `- Codex review artifact (URL, report, or comment reference).
+				: `- CodeRabbit review artifact (URL, report, or comment reference).
+- Codex review artifact (URL, report, or comment reference).
+- Confirmation that reviewer agent is independent from coding agent.
 `;
 			return `# Contributing
 
@@ -2514,10 +2393,7 @@ This workflow keeps delivery auditable, reversible, and consistent even for solo
 
 ## Required pre-merge gates
 
-- ${lintCommand}
-- ${typecheckCommand}
-- ${testCommand}
-- ${auditCommand}
+- ${codestyleCommand}
 - ${checkCommand}
 - ${memoryValidateCommand}
 
@@ -2551,9 +2427,14 @@ Recommended policy:
 
 - Pin repo-managed tooling in \`.mise.toml\` where possible.
 - Treat \`scripts/codex-preflight.sh\` as required project bootstrap infrastructure.
+- Treat \`CODESTYLE.md\` and \`scripts/validate-codestyle.sh\` as required repo-local contract files.
+- Keep \`CODESTYLE.md\` as a real repo-local file in generated repositories even when the harness authoring source is maintained globally.
+- Scaffold \`scripts/codex-enforced\` and \`scripts/codex-learn\` together with preflight so repo-local wrappers own repo-local state.
 - Keep \`preflight_repo\` in \`required\` mode by default; only relax mode (\`optional\` or \`off\`) when the project documents why.
 - Adjust preflight binary/path lists per project scope instead of deleting the script.
+- Keep repo-scoped telemetry and learned overrides under \`.harness/memory/\`, and global telemetry under \`~/.codex/\`.
 - Treat \`scripts/verify-work.sh\` as the canonical repo-facing verification command and keep it wired to repo-local preflight defaults.
+- Treat \`scripts/validate-codestyle.sh\` as the fail-closed codestyle gate and require exact proof-of-pass in change summaries and PRs.
 - Treat \`scripts/prepare-worktree.sh\` as required first-push bootstrap for freshly created worktrees so local hooks run with dependencies and canonical hook wiring.
 - Treat \`scripts/check-environment.sh\` as the local readiness gate for required tooling.
 - Block merge or promotion work when a required CLI is missing rather than silently skipping the corresponding validation lane.
@@ -2563,8 +2444,13 @@ Recommended policy:
 
 - \`harness init\` scaffolds \`scripts/verify-work.sh\` as the canonical repo-local verification entrypoint.
 - The wrapper always runs \`scripts/codex-preflight.sh\` in \`required\` Local Memory mode with scaffold-safe path and binary expectations.
-- Use \`bash scripts/verify-work.sh\` for the full verification bundle.
-- Use \`bash scripts/verify-work.sh --fast\` for preflight + lint + typecheck + focused test coverage.
+- \`scripts/validate-codestyle.sh\` is the canonical fail-closed codestyle gate and is reused by \`verify-work\`, local hooks, and downstream repo docs.
+- Repo-local launches should prefer \`./scripts/codex-enforced\` so preflight failures are recorded into repo-scoped learn state.
+- Use \`./scripts/codex-learn analyze\` and \`./scripts/codex-learn apply\` to inspect repo-scoped failure patterns and write override files into \`.harness/memory/\`.
+- Use \`bash scripts/validate-codestyle.sh --fast\` during iteration for focused codestyle validation.
+- Use \`bash scripts/validate-codestyle.sh\` before handoff for the fail-closed codestyle bundle.
+- Use \`bash scripts/verify-work.sh\` for the broader verification bundle.
+- Use \`bash scripts/verify-work.sh --fast\` for preflight + codestyle fast lane coverage.
 - Before the first push from a fresh worktree, run \`bash scripts/prepare-worktree.sh\`.
 
 ## Repo-local harness wrapper
@@ -2641,11 +2527,8 @@ ${requiredChecksList}
 	{
 		path: ".github/PULL_REQUEST_TEMPLATE.md",
 		render: (pm, context) => {
-			const lintCommand = renderScriptCommand(pm, "lint");
-			const typecheckCommand = renderScriptCommand(pm, "typecheck");
-			const testCommand = renderScriptCommand(pm, "test");
-			const auditCommand = renderScriptCommand(pm, "audit");
 			const checkCommand = renderScriptCommand(pm, "check");
+			const codestyleCommand = "bash scripts/validate-codestyle.sh";
 			const memoryValidateCommand = renderMemoryValidateCommand();
 			const includesGreptile = context.useGreptile !== false;
 			const greptileChecklist = includesGreptile
@@ -2653,13 +2536,17 @@ ${requiredChecksList}
 - [ ] Greptile review was performed by an independent reviewer (not the coding agent).
 - [ ] Greptile confidence score is \`>= 4/5\` for merge eligibility.
 `
-				: "";
+				: `- [ ] CodeRabbit review completed and findings handled (or explicitly waived).
+- [ ] CodeRabbit review was performed by an independent reviewer (not the coding agent).
+`;
 			const greptileArtifacts = includesGreptile
 				? `- Greptile: <link / artifact path / comment ID>
 - Greptile confidence score: <0-5>
 - Independent reviewer evidence: <reviewer + link>
 `
-				: "";
+				: `- CodeRabbit: <link / artifact path / comment ID>
+- Independent reviewer evidence: <reviewer + link>
+`;
 			return `# Pull request checklist
 
 ## Summary
@@ -2672,17 +2559,17 @@ ${requiredChecksList}
 
 - [ ] I did not push directly to \`main\`; this PR is from a dedicated branch.
 - [ ] Branch name follows policy (\`codex/*\` for agent-created branches).
-- [ ] Required local gates run: \`${lintCommand}\`, \`${typecheckCommand}\`, \`${testCommand}\`, \`${auditCommand}\`, \`${checkCommand}\`, \`${memoryValidateCommand}\`.
+- [ ] Required local gates run: \`${codestyleCommand}\`, \`${checkCommand}\`, \`${memoryValidateCommand}\`.
 ${greptileChecklist}- [ ] Codex review completed and findings handled (or explicitly waived).
 - [ ] Merge is blocked until all required checks pass.
 - [ ] I will delete branch/worktree after merge.
 
 ## Testing
 
-- Command: \`${lintCommand}\` -> pass/fail
-- Command: \`${typecheckCommand}\` -> pass/fail
-- Command: \`${testCommand}\` -> pass/fail
-- Command: \`${auditCommand}\` -> pass/fail
+- verification_commands: list exact commands run here
+- verification_outcomes: record pass/fail/blocked for each command here
+- blocked_steps_reason: none if all planned steps ran
+- Command: \`${codestyleCommand}\` -> pass/fail
 - Command: \`${checkCommand}\` -> pass/fail
 - Command: \`${memoryValidateCommand}\` -> pass/fail
 - Any other command(s):
@@ -3778,12 +3665,28 @@ CLAUDE_APPROVAL_POSTURE = "require"
 `,
 	},
 	{
+		path: "CODESTYLE.md",
+		render: () => renderCodestyleTemplate(),
+	},
+	{
 		path: "scripts/codex-preflight.sh",
 		render: () => renderCodexPreflightTemplate(),
 	},
 	{
+		path: "scripts/codex-learn",
+		render: () => renderCodexLearnTemplate(),
+	},
+	{
+		path: "scripts/codex-enforced",
+		render: () => renderCodexEnforcedTemplate(),
+	},
+	{
 		path: "scripts/verify-work.sh",
 		render: (pm) => renderVerifyWorkScript(pm),
+	},
+	{
+		path: "scripts/validate-codestyle.sh",
+		render: () => renderValidateCodestyleScript(),
 	},
 	{
 		path: "scripts/prepare-worktree.sh",
@@ -3815,6 +3718,7 @@ CONTRACT_PATH="$REPO_ROOT/harness.contract.json"
 	MAKEFILE_PATH="$REPO_ROOT/Makefile"
 	PREK_CONFIG_PATH="$REPO_ROOT/prek.toml"
 	PACKAGE_JSON_PATH="$REPO_ROOT/${packagePolicy?.packageJsonPath ?? "package.json"}"
+	CODESTYLE_PATH="$REPO_ROOT/CODESTYLE.md"
 	TOOLING_DOC_PATH="\${TOOLING_DOC_PATH:-$HOME/dev/config/codex/instructions/tooling.md}"
 
 if [[ ! -f "$CONTRACT_PATH" ]]; then
@@ -3844,6 +3748,11 @@ fi
 
 	if [[ ! -f "$PREK_CONFIG_PATH" ]]; then
 		echo "Error: missing required prek config at $PREK_CONFIG_PATH"
+		exit 1
+	fi
+
+	if [[ ! -f "$CODESTYLE_PATH" ]]; then
+		echo "Error: missing CODESTYLE contract at $CODESTYLE_PATH"
 		exit 1
 	fi
 
@@ -4093,33 +4002,50 @@ run_check_environment_with_runner() {
 	return 0
 }
 
-if ! command -v npm >/dev/null 2>&1; then
-	echo "Error: npm is required to validate global harness installation."
-	exit 1
-fi
+if [[ -f "$REPO_ROOT/src/cli.ts" ]] && command -v pnpm >/dev/null 2>&1; then
+	if ! run_check_environment_with_runner "repo source CLI (pnpm exec tsx src/cli.ts)" pnpm exec tsx "$REPO_ROOT/src/cli.ts"; then
+		echo "Error: repo source CLI failed to run check-environment successfully."
+		exit 1
+	fi
+elif [[ -f "$REPO_ROOT/dist/cli.js" ]] && command -v node >/dev/null 2>&1; then
+	if ! run_check_environment_with_runner "repo dist CLI (node dist/cli.js)" node "$REPO_ROOT/dist/cli.js"; then
+		echo "Error: repo dist CLI failed to run check-environment successfully."
+		exit 1
+	fi
+elif [[ -x "$REPO_ROOT/scripts/harness-cli.sh" ]]; then
+	if ! run_check_environment_with_runner "repo wrapper (bash scripts/harness-cli.sh)" bash "$REPO_ROOT/scripts/harness-cli.sh"; then
+		echo "Error: repo wrapper failed to run check-environment successfully."
+		exit 1
+	fi
+else
+	if ! command -v npm >/dev/null 2>&1; then
+		echo "Error: npm is required to validate the global harness fallback."
+		exit 1
+	fi
 
-if ! npm ls -g --depth=0 @brainwav/coding-harness >/dev/null 2>&1; then
-	echo "Error: @brainwav/coding-harness is not installed globally via npm."
-	echo "Install globally and retry:"
-	echo "  npm i -g @brainwav/coding-harness"
-	echo "Private registry auth is required:"
-	echo "  - Local shell: export NPM_TOKEN=<token>"
-	echo "  - CI (CircleCI): set NPM_TOKEN as a project environment variable in CircleCI project settings"
-	exit 1
-fi
+	if ! npm ls -g --depth=0 @brainwav/coding-harness >/dev/null 2>&1; then
+		echo "Error: @brainwav/coding-harness is not installed globally via npm."
+		echo "Install globally and retry:"
+		echo "  npm i -g @brainwav/coding-harness"
+		echo "Private registry auth is required:"
+		echo "  - Local shell: export NPM_TOKEN=<token>"
+		echo "  - CI (CircleCI): set NPM_TOKEN as a project environment variable in CircleCI project settings"
+		exit 1
+	fi
 
-if ! command -v harness >/dev/null 2>&1; then
-	echo "Error: global harness binary is not on PATH after npm installation."
-	echo "Fix: ensure npm global bin directory is on PATH, then retry."
-	exit 1
-fi
+	if ! command -v harness >/dev/null 2>&1; then
+		echo "Error: global harness binary is not on PATH after npm installation."
+		echo "Fix: ensure npm global bin directory is on PATH, then retry."
+		exit 1
+	fi
 
-if ! run_check_environment_with_runner "global npm harness ($(command -v harness))" harness; then
-	echo "Error: global npm harness failed to run check-environment successfully."
-	echo "Reinstall and retry:"
-	echo "  npm i -g @brainwav/coding-harness"
-	echo "If this is CI (CircleCI), confirm NPM_TOKEN is set as a project environment variable."
-	exit 1
+	if ! run_check_environment_with_runner "global npm harness ($(command -v harness))" harness; then
+		echo "Error: global npm harness failed to run check-environment successfully."
+		echo "Reinstall and retry:"
+		echo "  npm i -g @brainwav/coding-harness"
+		echo "If this is CI (CircleCI), confirm NPM_TOKEN is set as a project environment variable."
+		exit 1
+	fi
 fi
 
 jq -e '.passed == true' "$ATTESTATION_PATH" >/dev/null
@@ -4144,6 +4070,7 @@ echo "Environment check passed (attestation: $ATTESTATION_PATH)"
 /AGENTS.md @jscraik
 /scripts/codex-preflight.sh @jscraik
 /scripts/verify-work.sh @jscraik
+/scripts/validate-codestyle.sh @jscraik
 /scripts/prepare-worktree.sh @jscraik
 /scripts/harness-cli.sh @jscraik
 /scripts/check-environment.sh @jscraik
@@ -4154,7 +4081,7 @@ echo "Environment check passed (attestation: $ATTESTATION_PATH)"
 		render: () => `# Harness Development Makefile
 # Run \`make help\` to see available commands
 
-.PHONY: help install setup preflight worktree-ready verify-work hooks hooks-pre-commit hooks-pre-push secrets-staged docs-style-changed related-tests semgrep-changed diagrams-check dev build lint docs-lint fmt typecheck test check audit secrets security clean reset ci diagrams env-check
+.PHONY: help install setup preflight worktree-ready verify-work codestyle hooks hooks-pre-commit hooks-pre-push secrets-staged docs-style-changed related-tests semgrep-changed diagrams-check dev build lint docs-lint fmt typecheck test check audit secrets security clean reset ci diagrams env-check
 
 # Default target
 help: ## Show this help message
@@ -4179,6 +4106,9 @@ worktree-ready: ## Bootstrap a fresh git worktree before first push
 verify-work: ## Run canonical repo-local verification wrapper
 	@bash ./scripts/verify-work.sh
 
+codestyle: ## Run fail-closed codestyle validation
+	@bash ./scripts/validate-codestyle.sh
+
 hooks: ## Setup git hooks
 	node scripts/setup-git-hooks.js
 
@@ -4196,9 +4126,8 @@ hooks-pre-push: ## Run local pre-push governance gates before pushing
 	pnpm exec tsx src/cli.ts tooling-audit --path . --json
 	@bash ./scripts/check-environment.sh
 	$(MAKE) semgrep-changed
-	pnpm test
+	$(MAKE) codestyle
 	pnpm build
-	pnpm audit
 
 secrets-staged: ## Scan staged content for secrets before committing
 	pnpm run secrets:staged

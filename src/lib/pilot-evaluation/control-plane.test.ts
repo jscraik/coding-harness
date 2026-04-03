@@ -10,9 +10,10 @@ import { dirname, join, resolve } from "node:path";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import {
 	buildControlPlaneArtifacts,
+	buildFileRef,
 	loadControlPlaneArtifactSet,
 } from "./control-plane.js";
-import type { PilotMetrics } from "./types.js";
+import type { ArtifactFileRef, PilotMetrics } from "./types.js";
 
 function createMetrics(): PilotMetrics {
 	return {
@@ -140,6 +141,34 @@ describe("control-plane artifacts", () => {
 	afterEach(() => {
 		process.chdir(originalCwd);
 		rmSync(testDir, { recursive: true, force: true });
+	});
+
+	it("buildFileRef omits hash metadata for directories and records it for files", () => {
+		const directoryPath = join(testDir, "artifact-dir");
+		mkdirSync(directoryPath, { recursive: true });
+
+		const directoryRef: ArtifactFileRef = buildFileRef(directoryPath, {
+			required: true,
+		});
+		expect(directoryRef).toEqual({
+			path: resolve(directoryPath),
+			exists: true,
+			required: true,
+		});
+		expect(directoryRef.sha256).toBeUndefined();
+		expect(directoryRef.sizeBytes).toBeUndefined();
+
+		const filePath = join(testDir, "artifact.txt");
+		writeFileSync(filePath, "hello control plane", "utf-8");
+
+		const fileRef: ArtifactFileRef = buildFileRef(filePath, {
+			required: false,
+		});
+		expect(fileRef.path).toBe(resolve(filePath));
+		expect(fileRef.exists).toBe(true);
+		expect(fileRef.required).toBe(false);
+		expect(fileRef.sha256).toMatch(/^[a-f0-9]{64}$/);
+		expect(fileRef.sizeBytes).toBe(Buffer.byteLength("hello control plane"));
 	});
 
 	it("writes companion artifacts with loadable join integrity", () => {
@@ -800,6 +829,67 @@ describe("control-plane artifacts", () => {
 			loaded.artifacts?.governanceSnapshot.requiredChecks.surfaceAlignments.find(
 				(surface) =>
 					surface.surfaceId === "contributing-branch-protect-guidance",
+			)?.status,
+		).toBe("pass");
+	});
+
+	it("excludes shared non-workflow required checks from workflow-surface drift", () => {
+		const repoDir = join(testDir, "downstream-external-check-repo");
+		const repoArtifactsDir = join(repoDir, "artifacts");
+		const requiredChecks = ["lint", "CodeRabbit", "security-scan"];
+		const { contractPath, docsGateReportPath: repoDocsGateReportPath } =
+			writeDownstreamRepoFixture(repoDir, requiredChecks);
+
+		writeFileSync(
+			join(repoDir, ".github", "workflows", "pr.yml"),
+			[
+				"on:",
+				"  pull_request:",
+				"",
+				"jobs:",
+				"  lint:",
+				"    name: lint",
+				"    runs-on: ubuntu-latest",
+				"    steps:",
+				"      - run: echo ok",
+				"",
+			].join("\n"),
+			"utf-8",
+		);
+
+		process.chdir(repoDir);
+		const { summary } = buildControlPlaneArtifacts({
+			artifactsDir: repoArtifactsDir,
+			metrics: { ...createMetrics(), sampleSize: 60 },
+			metricsErrors: [],
+			legacyOutcome: "promote",
+			legacyHoldReasons: [],
+			options: {
+				artifactsDir: repoArtifactsDir,
+				contractPath,
+				docsGateReportPath: repoDocsGateReportPath,
+				prTemplateStatus: "passed",
+				evaluationMode: "pr",
+				clientFamily: "codex",
+				providerId: "openai",
+				modelDescriptor: "gpt-5.4",
+			},
+		});
+
+		const loaded = loadControlPlaneArtifactSet(summary.artifactRoot);
+		expect(loaded.errors).toEqual([]);
+		expect(loaded.artifacts?.governanceSnapshot.requiredChecks.status).toBe(
+			"pass",
+		);
+		expect(
+			loaded.artifacts?.governanceSnapshot.requiredChecks.workflowChecks,
+		).toEqual(["lint"]);
+		expect(
+			loaded.artifacts?.governanceSnapshot.requiredChecks.missingFromWorkflow,
+		).toEqual([]);
+		expect(
+			loaded.artifacts?.governanceSnapshot.requiredChecks.surfaceAlignments.find(
+				(surface) => surface.surfaceId === "workflow",
 			)?.status,
 		).toBe("pass");
 	});

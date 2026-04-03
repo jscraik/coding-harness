@@ -304,6 +304,12 @@ export function runUpgradeCLI(
 	const dir = targetDir ?? cwd();
 	const dryRun = options.dryRun === true;
 	const force = options.force === true;
+	const preferredProviderResult = normalizeCIProvider(options.provider);
+	if (!preferredProviderResult.ok) {
+		console.error(`Error: ${preferredProviderResult.error.message}`);
+		return EXIT_CODES.INVALID_PATH;
+	}
+	const preferredCiProvider = preferredProviderResult.value;
 
 	// 1. Detect existing install
 	const installCheck = detectExistingInstall(dir);
@@ -322,7 +328,7 @@ export function runUpgradeCLI(
 	}
 
 	// 2. Detect upgrade context
-	const upgradeResult = detectUpgradeContext(dir);
+	const upgradeResult = detectUpgradeContext(dir, preferredCiProvider);
 	if (!upgradeResult.ok) {
 		console.error(`Error: ${upgradeResult.error}`);
 		return EXIT_CODES.INVALID_PATH;
@@ -357,6 +363,7 @@ export function runUpgradeCLI(
 	const manifestResult = loadManifest(dir, {
 		requireMetadata: true,
 		operation: "upgrade",
+		preferredCiProvider,
 	});
 	if (!manifestResult.ok && options.provider === undefined) {
 		console.error(`Error: ${manifestResult.error.message}`);

@@ -1,5 +1,13 @@
 # Agent governance
 
+## Table of Contents
+
+- [Operating model](#operating-model)
+- [Mandatory gates (when behavior changes)](#mandatory-gates-when-behavior-changes)
+- [Evidence and communication](#evidence-and-communication)
+- [Fail-safe rules](#fail-safe-rules)
+- [Optional quality expectations](#optional-quality-expectations)
+
 ## Operating model
 
 Agents are expected to be deterministic and auditable. Recommended execution loop:

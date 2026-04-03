@@ -75,10 +75,10 @@ If you want the highest-confidence paths today, start with `init`,
 
 ## Installation
 
-Published package usage requires npm access to `@brainwav/coding-harness`.
+Published package usage requires registry access to `@brainwav/coding-harness`.
 
 ```bash
-npm install -g @brainwav/coding-harness
+pnpm add -g @brainwav/coding-harness
 harness --help
 ```
 
@@ -140,6 +140,11 @@ harness init --check-updates
 harness upgrade --dry-run
 harness upgrade
 ```
+
+If a legacy `.harness/restore-manifest.json` is missing `ciProvider`, harness
+will repair it automatically when the active provider can be inferred from
+`harness.contract.json`, an unambiguous CI layout on disk, or the requested or
+default init/upgrade provider.
 
 If tracked baseline files are missing and you need to re-scaffold them:
 

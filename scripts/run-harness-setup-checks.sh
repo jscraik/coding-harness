@@ -4,6 +4,12 @@ set -euo pipefail
 ROOT="$(git rev-parse --show-toplevel)"
 cd "$ROOT"
 
+warn_legacy_manifest() {
+  printf '%s\n' \
+    "warning: legacy .harness/restore-manifest.json metadata blocks tracked update checks; continuing with remaining setup gates" \
+    "remediation: repair the manifest from a known-good tracked install, or remove .harness and re-run \`harness init --track\` when bootstrapping a fresh repo"
+}
+
 echo "== Harness setup checks =="
 echo "repo: $ROOT"
 
@@ -27,10 +33,26 @@ pnpm build
 
 echo
 echo "== init check-updates =="
-check_output="$(node dist/cli.js init --check-updates --json 2>&1)"
+check_output=""
+check_status=0
+if check_output="$(node dist/cli.js init --check-updates --json 2>&1)"; then
+  check_status=0
+else
+  check_status=$?
+fi
 printf '%s\n' "$check_output"
 
-if printf '%s\n' "$check_output" | rg -q 'Update available:'; then
+legacy_manifest_blocked=0
+if [[ "$check_status" -ne 0 ]]; then
+  if printf '%s\n' "$check_output" | rg -q 'Restore manifest is incomplete for check-updates'; then
+    legacy_manifest_blocked=1
+    warn_legacy_manifest
+  else
+    exit "$check_status"
+  fi
+fi
+
+if [[ "$legacy_manifest_blocked" -eq 0 ]] && printf '%s\n' "$check_output" | jq -e '.updateCheck.updateAvailable == true' >/dev/null 2>&1; then
   echo
   echo "== init update =="
   node dist/cli.js init --update --json
