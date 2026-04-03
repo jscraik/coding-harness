@@ -706,23 +706,6 @@ describe("runInit", () => {
 			expect(Array.isArray(memory.entries)).toBe(true);
 		});
 
-		it("creates valid memory.json baseline", () => {
-			const result = runInit(tempDir, { dryRun: false, force: false });
-
-			expect(result.ok).toBe(true);
-
-			const memoryPath = join(tempDir, "memory.json");
-			expect(existsSync(memoryPath)).toBe(true);
-
-			const memory = JSON.parse(
-				require("node:fs").readFileSync(memoryPath, "utf-8"),
-			);
-			expect(memory.meta.version).toBe("1.0");
-			expect(memory.preamble.bootstrap).toBe(true);
-			expect(memory.preamble.search).toBe(true);
-			expect(Array.isArray(memory.entries)).toBe(true);
-		});
-
 		it("includes package manager in workflow (github-actions)", () => {
 			// Create pnpm lockfile
 			writeFileSync(join(tempDir, "pnpm-lock.yaml"), "");
