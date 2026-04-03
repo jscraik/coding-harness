@@ -280,6 +280,30 @@ check_bins() {
 	log_ok "binaries ok: ${bins_csv}"
 }
 
+is_allowed_repo_external_path() {
+	local root="$1"
+	local match="$2"
+	local abs="$3"
+	local link_target=''
+
+	if [[ "${root}" != "/Users/jamiecraik/dev/coding-harness" ]]; then
+		return 1
+	fi
+	if [[ "${match}" != "CODESTYLE.md" ]]; then
+		return 1
+	fi
+	if [[ ! -L "${match}" ]]; then
+		return 1
+	fi
+
+	link_target="$(readlink "${match}" 2>/dev/null || true)"
+	if [[ "${link_target}" == "/Users/jamiecraik/.codex/instructions/CODESTYLE.md" ]] && [[ "${abs}" == "/Users/jamiecraik/dev/config/codex/instructions/CODESTYLE.md" || "${abs}" == "/Users/jamiecraik/.codex/instructions/CODESTYLE.md" ]]; then
+		return 0
+	fi
+
+	return 1
+}
+
 check_paths() {
 	local root="$1"
 	local paths_csv="$2"
@@ -312,6 +336,9 @@ check_paths() {
 					return 2
 				fi
 				if [[ "${abs}" != "${root}" && "${abs}" != "${root}"/* ]]; then
+					if is_allowed_repo_external_path "${root}" "${match}" "${abs}"; then
+						continue
+					fi
 					log_err "path escapes repo root: ${match} -> ${abs}"
 					return 2
 				fi
