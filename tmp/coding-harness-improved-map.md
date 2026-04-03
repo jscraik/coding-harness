@@ -1,5 +1,6 @@
 # Coding Harness — improved concise map
 
+<<<<<<< HEAD
 ## Table of Contents
 - [Tight definition](#tight-definition)
 - [Actual architecture](#actual-architecture)
@@ -17,6 +18,8 @@
 - [E. Adapters and satellites](#e-adapters-and-satellites)
 - [Bottom line](#bottom-line)
 
+=======
+>>>>>>> 8e7a6f3 (chore: checkpoint local WIP before prune sweep)
 Source basis: uploaded `coding-harness-main.zip`, inspected locally.
 
 ## Tight definition
