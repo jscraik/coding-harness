@@ -41,6 +41,7 @@ Every agent handoff should include:
 - file-level summary,
 - remaining risks and assumptions,
 - clear next step.
+- CodeRabbit Semgrep disposition when findings were raised: fixed, explicitly waived with rationale, or not applicable.
 
 ## Fail-safe rules
 
@@ -53,6 +54,7 @@ Every agent handoff should include:
 - If a reproducible coding-harness bug, policy gap, workflow regression, automation task, or release follow-up is found: create or update a Linear issue with repro + evidence before handoff.
 - If PR review artifacts are missing (CodeRabbit/Codex for this repo): do not merge; complete reviews or explicitly escalate the exception.
 - If the `CodeRabbit` check is absent, pending, or failing for the current head SHA: do not merge.
+- If CodeRabbit reports Semgrep findings: fix all `ERROR` findings before merge. `WARNING` findings may remain only when the PR records the rationale and containment.
 - After merge completion: clean up branch/worktree to keep an auditable branch lifecycle.
 
 ## Optional quality expectations

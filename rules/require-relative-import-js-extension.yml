@@ -1,0 +1,23 @@
+id: require-relative-import-js-extension
+language: TypeScript
+message: Relative ESM imports in this repository must include the .js extension.
+severity: warning
+rule:
+  all:
+    - kind: string_fragment
+    - regex: "^\\.{1,2}/"
+    - not:
+        regex: "\\.js$"
+    - any:
+        - inside:
+            stopBy: end
+            kind: import_statement
+        - inside:
+            stopBy: end
+            kind: export_statement
+        - inside:
+            stopBy: end
+            kind: call_expression
+            has:
+              field: function
+              regex: "^import$"

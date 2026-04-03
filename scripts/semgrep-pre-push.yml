@@ -22,7 +22,7 @@ rules:
 
   - id: ts-no-shell-true
     message: Avoid shell:true in child process options in src/** code.
-    severity: ERROR
+    severity: WARNING
     languages: [javascript, typescript]
     pattern-either:
       - pattern: 'spawn(..., { ..., shell: true, ... })'

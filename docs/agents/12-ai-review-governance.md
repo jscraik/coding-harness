@@ -38,6 +38,8 @@ All automated review usage in this repository must align with this policy and li
 
 - `coding-harness` uses the native GitHub `CodeRabbit` check as its primary automated review signal.
 - `.coderabbit.yaml` is the active repository-local review configuration for this repository.
+- CodeRabbit Semgrep for this repository is driven by `scripts/semgrep-pre-push.yml`; treat `ERROR` findings as merge blockers and record the disposition of any remaining `WARNING` findings in the PR.
+- Repo-specific CodeRabbit `ast-grep` rules live under `rules/` and should stay limited to repository contracts that generic linters or vendor-essential rules do not already cover.
 - Greptile-specific files and bridge workflows remain documented because `harness init` still scaffolds them for legacy or downstream repository compatibility.
 
 ## Independent validation and compliance
@@ -165,6 +167,9 @@ Manual fix workflow:
 Manual trigger standards:
 
 - use `@coderabbitai review` or `@coderabbitai full review` for `coding-harness`,
+- use `@coderabbitai autofix` to push CodeRabbit-generated fixes onto the current PR branch when unresolved CodeRabbit findings include actionable fix instructions,
+- use `@coderabbitai autofix stacked pr` when you want CodeRabbit to open a separate stacked PR for those fixes instead of pushing to the current branch,
+- on supported GitHub PR flows, the pull request review comment may also expose a beta checkbox for the same CodeRabbit-generated fix actions,
 - use `@greptileai` for draft PR reviews on legacy Greptile-bridged repositories,
 - force re-review after config changes,
 - request targeted checks when needed.

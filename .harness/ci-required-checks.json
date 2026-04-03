@@ -187,8 +187,8 @@
     {
       "policyId": "required-check-14",
       "displayName": "security-scan",
-      "sourceAppSlug": "circleci",
-      "sourceAppId": "circleci",
+      "sourceAppSlug": "github-actions",
+      "sourceAppId": "github-actions",
       "externalIdPattern": "^security-scan$",
       "requiredOnEvents": [
         "pull_request",

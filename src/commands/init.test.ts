@@ -558,11 +558,17 @@ describe("runInit", () => {
 				join(tempDir, ".github/workflows/greptile-review.yml"),
 				"utf-8",
 			);
+			const secretScanWorkflow = require("node:fs").readFileSync(
+				join(tempDir, ".github/workflows/secret-scan.yml"),
+				"utf-8",
+			);
 			expect(greptileWorkflow).toContain("pull_request:");
 			expect(greptileWorkflow).toContain("pull_request_review:");
 			expect(greptileWorkflow).toContain("pull_request_review_comment:");
 			expect(greptileWorkflow).toContain("issue_comment:");
 			expect(greptileWorkflow).toContain("checks: write");
+			expect(secretScanWorkflow).toContain("pull-requests: write");
+			expect(secretScanWorkflow).toContain("GITLEAKS_CONFIG: .gitleaks.toml");
 			// CircleCI file should NOT be created
 			expect(existsSync(join(tempDir, ".circleci/config.yml"))).toBe(false);
 		});
@@ -718,23 +724,6 @@ describe("runInit", () => {
 				"utf-8",
 			);
 			expect(content).toContain('name = "harness local environment"');
-		});
-
-		it("creates valid memory.json baseline", () => {
-			const result = runInit(tempDir, { dryRun: false, force: false });
-
-			expect(result.ok).toBe(true);
-
-			const memoryPath = join(tempDir, "memory.json");
-			expect(existsSync(memoryPath)).toBe(true);
-
-			const memory = JSON.parse(
-				require("node:fs").readFileSync(memoryPath, "utf-8"),
-			);
-			expect(memory.meta.version).toBe("1.0");
-			expect(memory.preamble.bootstrap).toBe(true);
-			expect(memory.preamble.search).toBe(true);
-			expect(Array.isArray(memory.entries)).toBe(true);
 		});
 
 		it("creates valid memory.json baseline", () => {
@@ -1249,7 +1238,8 @@ describe("runInit", () => {
 			expect(semgrepChanged).toContain(
 				'git diff --name-only --diff-filter=ACMR -z "$base_ref"...HEAD --',
 			);
-			expect(semgrepChanged).toContain("semgrep scan");
+			expect(semgrepChanged).toContain('SEMGREP_VERSION="1.153.1"');
+			expect(semgrepChanged).toContain('"$SEMGREP_BIN" scan');
 			expect(semgrepRules).toContain("ts-no-eval");
 			expect(semgrepRules).toContain("ts-no-shell-true");
 			expect(makefile).toContain("check: ## Run all required quality gates");
