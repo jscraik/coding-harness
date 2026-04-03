@@ -109,4 +109,3 @@ docs/sketches/
 
 # Local git worktrees
 .worktrees/
-artifacts/pilot-evaluate-test-*/
