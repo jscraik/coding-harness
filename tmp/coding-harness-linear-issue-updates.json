@@ -1,0 +1,172 @@
+{
+  "project": "coding-harness",
+  "team": "JSC",
+  "milestone": {
+    "name": "Gold-standard foundation (2026 H1)",
+    "description": "Standards-first hardening of Coding Harness across product clarity, AI governance, supply chain security, release integrity, and trust artifacts."
+  },
+  "labels": [
+    "architecture",
+    "standards",
+    "supply-chain",
+    "ai-governance",
+    "release",
+    "trust-artifacts",
+    "docs",
+    "security"
+  ],
+  "update_existing": [
+    {
+      "id": "JSC-103",
+      "title": "Define the Coding Harness core command spine and publish a standards-aligned product contract",
+      "labels": [
+        "architecture",
+        "standards",
+        "docs"
+      ],
+      "priority": 2,
+      "description": "## Summary\n\nDefine the smallest stable product surface for Coding Harness and publish one authoritative product contract for the repo.\n\n## Why\n\nCoding Harness is strong but still easier to respect than to explain. The command surface is broad enough that the core can get blurred by adjacent tooling. The repo needs a single, stable definition of:\n\n- what the harness is\n- what commands are core\n- what commands are integrations\n- what commands are adjacent/experimental\n- which external control families the core helps satisfy\n\n## Standards alignment\n\nThis issue should make the repo legible against:\n\n- NIST SP 800-218 (SSDF v1.1)\n- NIST SP 800-218A\n- NIST AI RMF 1.0\n- NIST AI 600-1 Generative AI Profile\n- OpenSSF OSPS Baseline\n- CISA Secure by Design\n- SLSA\n\n## Deliverables\n\n- Add a short product contract near the top of `README.md`\n- Add a `Core / Integration / Adjacent` command-family map\n- Add a standards map from command families to the external control families above\n- Add maturity levels for major command families: `stable`, `beta`, `experimental`\n- Ensure CLI help text and docs use the same taxonomy\n\n## Acceptance criteria\n\n- A new maintainer can explain Coding Harness in under 2 minutes\n- README, CLI help, and project docs tell the same architecture story\n- Each major core command family maps to at least one explicit external control family\n- Core commands are visibly separate from adjacent utilities\n"
+    },
+    {
+      "id": "JSC-104",
+      "title": "Refactor `ci-migrate` into a secure release and deployment control subsystem",
+      "labels": [
+        "architecture",
+        "release",
+        "security",
+        "supply-chain"
+      ],
+      "priority": 2,
+      "description": "## Summary\n\nBreak `ci-migrate` into explicit submodules so it reads as a secure release and deployment control subsystem rather than one oversized command file.\n\n## Why\n\n`ci-migrate` is one of the heaviest surfaces in the repo and sits at the intersection of release safety, provenance, rollback, branch protection, and deployment trust.\n\n## Suggested split\n\n- snapshot capture and restore\n- parity verification\n- proof-pack generation\n- branch-protection and merge-queue integration\n- break-glass policy and approvals\n- apply / promote / commit orchestration\n- deployment evidence capture\n\n## Standards alignment\n\nDesign notes should explain how the subsystem supports:\n\n- CISA Safe Software Deployment\n- GitHub Actions hardening\n- SLSA provenance expectations\n- rollback and release evidence\n\n## Acceptance criteria\n\n- Top-level `ci-migrate` command file becomes an orchestration shell\n- Rollback, parity, and proof-pack flows are independently testable\n- Submodules map to clear release/deployment responsibilities\n- The subsystem has a documented control story, not just command behavior\n"
+    },
+    {
+      "id": "JSC-105",
+      "title": "Slim `src/cli.ts` to a policy-neutral shell with dispatch and error normalization only",
+      "labels": [
+        "architecture"
+      ],
+      "priority": 3,
+      "description": "## Summary\n\nReduce `src/cli.ts` to a thin shell responsible only for argument parsing, dispatch, help/version output, output mode selection, and top-level error normalization.\n\n## Why\n\nThe CLI entrypoint should not be an architecture hotspot. Command behavior belongs in command modules and shared libraries.\n\n## Acceptance criteria\n\n- Command behavior lives outside `src/cli.ts`\n- New commands can be added without materially increasing CLI-shell complexity\n- Exit codes and JSON output are normalized consistently across command families\n"
+    },
+    {
+      "id": "JSC-106",
+      "title": "Split `init` scaffold generation by managed surface and generated evidence",
+      "labels": [
+        "architecture",
+        "docs"
+      ],
+      "priority": 3,
+      "description": "## Summary\n\nRefactor `init` scaffolding so generation logic is grouped by what it produces, and add golden-output fixtures for each generated surface.\n\n## Why\n\n`init` is effectively the repo substrate compiler. Its outputs should be independently understandable and testable.\n\n## Suggested split\n\n- contract artifacts\n- workflow artifacts\n- CI / automation artifacts\n- scripts and local wrappers\n- docs and examples\n- migration and update helpers\n\n## Acceptance criteria\n\n- `init` stays as orchestration, not generation monolith\n- Generated surfaces can be tested independently\n- Dry-run, track, update, migrate, and rollback remain stable\n- Example outputs become reusable documentation inputs\n"
+    },
+    {
+      "id": "JSC-107",
+      "title": "Publish verifiable trust artifacts and reference examples for the harness",
+      "labels": [
+        "trust-artifacts",
+        "docs",
+        "release",
+        "supply-chain"
+      ],
+      "priority": 3,
+      "description": "## Summary\n\nPublish small, inspectable example artifacts for the main trust surfaces so users can verify what the harness produces without running the full system.\n\n## Why\n\nThe repo makes strong claims around governance, evidence, parity, rollback, and rollout control. Those claims need inspectable reference outputs.\n\n## Publish examples for\n\n- `harness.contract.json`\n- generated `WORKFLOW.md`\n- gate-result JSON\n- run-record / evidence artifact\n- pilot decision packet\n- CI migration proof-pack\n- SBOM in SPDX 3.x or CycloneDX 1.7\n- build provenance attestation\n- npm provenance example for package releases\n\n## Acceptance criteria\n\n- A reader can inspect trust outputs directly from the repo\n- Examples are linked from README\n- Examples are current enough to serve as real references\n"
+    },
+    {
+      "id": "JSC-108",
+      "title": "Harden the workflow-contract subsystem around explicit trust, safety, and AI-governance boundaries",
+      "labels": [
+        "architecture",
+        "ai-governance",
+        "standards"
+      ],
+      "priority": 2,
+      "description": "## Summary\n\nTighten the workflow-contract subsystem so it is a clearly public architectural core with explicit safety, trust, and AI-governance boundaries.\n\n## Why\n\nThis subsystem is more than `WORKFLOW.md` support. It should align with secure development and AI risk-management guidance, not just internal parsing.\n\n## Clarify and separate\n\n- parser\n- normalization\n- semantic validation\n- artifact registry\n- scorecard generation\n- policy/gate binding\n\n## Standards alignment\n\nAdd a control map from workflow constructs to:\n\n- NIST SP 800-218A\n- NIST AI RMF 1.0\n- NIST AI 600-1 Generative AI Profile\n\n## Acceptance criteria\n\n- The workflow-contract model is a public subsystem, not hidden implementation detail\n- Safety- and trust-related checks are explicit and documented\n- Adding a workflow rule does not require coupling to unrelated command paths\n"
+    },
+    {
+      "id": "JSC-109",
+      "title": "Clarify `pilot-evaluate` as a measurable AI-governance decision engine",
+      "labels": [
+        "ai-governance",
+        "architecture",
+        "trust-artifacts"
+      ],
+      "priority": 3,
+      "description": "## Summary\n\nTighten `pilot-evaluate` so its evaluation path, thresholds, evidence, and decisions are easy to follow and machine-auditable.\n\n## Why\n\nThis subsystem answers a high-stakes question: whether autonomy can safely expand. It should read as a measure/manage control loop, not just a report generator.\n\n## Separate and document\n\n- input collection\n- threshold evaluation\n- lane-specific policies\n- decision packet generation\n- reporting/output formatting\n\n## Standards alignment\n\nAlign language and outputs with:\n\n- NIST AI RMF `Measure` and `Manage`\n- CISA Secure by Design emphasis on evidence and operational safety\n\n## Acceptance criteria\n\n- The evaluation path is traceable end to end\n- Thresholds and decisions are machine-auditable\n- Decision packets are readable by someone who did not author the code\n"
+    },
+    {
+      "id": "JSC-110",
+      "title": "Sequence the architecture backlog as a standards-first hardening program",
+      "labels": [
+        "architecture",
+        "standards"
+      ],
+      "priority": 3,
+      "description": "## Summary\n\nDefine the execution order for the current architecture, AI governance, supply-chain, and trust-artifact backlog so work lands in the right sequence.\n\n## Suggested sequence\n\n1. JSC-103 core product contract\n2. JSC-105 CLI shell\n3. JSC-106 init split\n4. JSC-104 ci-migrate split\n5. JSC-108 workflow-contract hardening\n6. JSC-109 pilot-evaluate clarification\n7. JSC-111 release provenance and trusted publishing\n8. JSC-112 OSPS / Scorecard baseline\n9. JSC-113 AI assistant security policy\n10. JSC-114 SLSA roadmap\n11. JSC-115 GitHub Actions hardening\n12. JSC-116 Secure by Design / safe deployment posture\n13. JSC-107 trust-artifact examples\n\n## Acceptance criteria\n\n- The order is explicit in project planning\n- Each later issue depends on earlier clarified architecture\n- Docs and examples are written after the underlying architecture stabilizes\n"
+    }
+  ],
+  "create_new": [
+    {
+      "title": "Implement release provenance, signed attestations, and trusted publishing for Coding Harness",
+      "labels": [
+        "release",
+        "supply-chain",
+        "security",
+        "standards"
+      ],
+      "priority": 2,
+      "description": "## Summary\n\nAdopt modern release-integrity controls so consumers can verify where and how Coding Harness releases were built and published.\n\n## Deliverables\n\n- Use GitHub artifact attestations for release outputs\n- Adopt GitHub Actions OIDC where possible instead of long-lived secrets\n- Adopt npm trusted publishing\n- Publish npm packages with provenance\n- Add verification steps to release docs and CI\n- Store example verification commands for consumers\n\n## Acceptance criteria\n\n- Release artifacts have verifiable provenance\n- npm releases use trusted publishing, not long-lived write tokens\n- Consumers can verify release provenance from docs alone\n- Release workflows follow least-privilege token permissions\n"
+    },
+    {
+      "title": "Adopt OpenSSF OSPS Baseline and Scorecard as the measurable minimum security posture",
+      "labels": [
+        "security",
+        "standards",
+        "supply-chain"
+      ],
+      "priority": 2,
+      "description": "## Summary\n\nDeclare and track a public, current baseline for the repo's security posture.\n\n## Deliverables\n\n- Select a target OSPS Baseline level for the repo\n- Create a control matrix mapping repo settings and docs to OSPS controls\n- Run OpenSSF Scorecard regularly\n- Fail or warn on regressions in key Scorecard checks\n- Add visible status references once criteria are met\n\n## Acceptance criteria\n\n- The repo declares a target OSPS level and current status\n- Scorecard runs continuously\n- Gaps are visible and tracked instead of informal\n"
+    },
+    {
+      "title": "Establish a secure AI assistant and agent instruction policy for the repo",
+      "labels": [
+        "ai-governance",
+        "security",
+        "standards",
+        "docs"
+      ],
+      "priority": 2,
+      "description": "## Summary\n\nAdd one authoritative security-focused AI assistant instruction policy for the repo and align harness-managed skills/prompts to it.\n\n## Deliverables\n\n- Add a repo-level AI assistant instruction file / policy\n- Align it with the OpenSSF Security-Focused Guide for AI Code Assistant Instructions\n- Include dependency-selection, secret-handling, test-generation, logging, provenance, and workflow-generation rules\n- Align harness-generated agent instructions / skills with the same policy\n\n## Acceptance criteria\n\n- The repo contains one authoritative security-focused instruction policy for AI assistants\n- Harness-managed prompts / skills do not drift from the policy\n- The policy explicitly addresses hallucinated dependencies, secrets, secure defaults, and security testing\n"
+    },
+    {
+      "title": "Create a SLSA v1.2 roadmap for source integrity and build integrity",
+      "labels": [
+        "standards",
+        "supply-chain",
+        "security",
+        "release"
+      ],
+      "priority": 3,
+      "description": "## Summary\n\nPublish a realistic target-state and gap analysis for Coding Harness against SLSA v1.2.\n\n## Deliverables\n\n- Document current and target SLSA levels for source and build tracks\n- Map branch protection, review rules, provenance, and build isolation to those levels\n- Identify which controls are repo responsibilities vs platform responsibilities\n- Publish a `current / next / later` roadmap\n\n## Acceptance criteria\n\n- Consumers can understand the project's current SLSA posture\n- Source and build integrity controls are not conflated\n- Two-party review, provenance, and build isolation are tracked explicitly\n"
+    },
+    {
+      "title": "Harden GitHub Actions and repository policy to a least-privilege default",
+      "labels": [
+        "security",
+        "release",
+        "supply-chain"
+      ],
+      "priority": 2,
+      "description": "## Summary\n\nMake the repo model safe automation by default, following GitHub's current guidance for Actions security.\n\n## Deliverables\n\n- Pin third-party actions to immutable SHAs\n- Set explicit minimal `permissions:` in workflows\n- Protect workflow files with CODEOWNERS / review policy\n- Review self-hosted runner usage and document trust boundaries\n- Add checks for risky workflow patterns\n\n## Acceptance criteria\n\n- All third-party actions are pinned or justified\n- Workflow token permissions are explicit and minimal\n- Changes to workflows receive stronger review than ordinary code\n- Runner trust model is documented\n"
+    },
+    {
+      "title": "Publish a Secure by Design and safe-deployment posture for Coding Harness",
+      "labels": [
+        "security",
+        "release",
+        "standards",
+        "docs"
+      ],
+      "priority": 3,
+      "description": "## Summary\n\nPublish a concise Secure by Design posture and a safe deployment / rollback playbook for the project.\n\n## Deliverables\n\n- Publish a concise Secure by Design posture statement\n- Publish a safe deployment / rollback playbook\n- Define logging / evidence expectations for deployment and rollback events\n- Define how Coding Harness reduces classes of workflow or policy failure at scale\n\n## Acceptance criteria\n\n- Security posture is publicly stated in outcome terms, not just implementation terms\n- Deployment and rollback are guided by documented playbooks\n- Logs/evidence for release and rollback are part of the standard process\n"
+    }
+  ]
+}
