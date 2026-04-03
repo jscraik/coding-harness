@@ -3,6 +3,7 @@ import {
 	existsSync,
 	lstatSync,
 	mkdirSync,
+	mkdtempSync,
 	readFileSync,
 	realpathSync,
 	rmSync,
@@ -63,9 +64,8 @@ describe("runInit", () => {
 	let tempDir: string;
 
 	beforeEach(() => {
-		// Create unique temp directory for each test
-		tempDir = join(tmpdir(), `harness-init-test-${Date.now()}`);
-		mkdirSync(tempDir, { recursive: true });
+		// Use mkdtemp so concurrent suite workers never collide on the same path.
+		tempDir = mkdtempSync(join(tmpdir(), "harness-init-test-"));
 	});
 
 	afterEach(() => {
@@ -1601,6 +1601,15 @@ echo "local-memory preflight passed"
 `,
 				"utf-8",
 			);
+			writeFileSync(
+				join(tempDir, "scripts/validate-codestyle.sh"),
+				`#!/usr/bin/env bash
+set -euo pipefail
+echo "local codestyle passed"
+pnpm run check
+`,
+				"utf-8",
+			);
 
 			const fakeBin = join(tempDir, ".fake-bin");
 			mkdirSync(fakeBin, { recursive: true });
@@ -1618,6 +1627,7 @@ exit 0
 
 			for (const toolPath of [
 				join(tempDir, "scripts/codex-preflight.sh"),
+				join(tempDir, "scripts/validate-codestyle.sh"),
 				fakePnpm,
 			]) {
 				const chmod = spawnSync("chmod", ["+x", toolPath], {
@@ -1641,7 +1651,8 @@ exit 0
 			expect(verify.stdout).toContain("[verify-work] repo root:");
 			expect(verify.stdout).toContain("==> codex-preflight");
 			expect(verify.stdout).toContain("local-memory preflight passed");
-			expect(verify.stdout).toContain("==> check");
+			expect(verify.stdout).toContain("==> validate-codestyle");
+			expect(verify.stdout).toContain("local codestyle passed");
 			expect(readFileSync(fakePnpmLog, "utf-8")).toContain("check");
 		});
 	});
