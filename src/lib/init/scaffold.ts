@@ -586,8 +586,10 @@ export function detectPackageManager(dir: string): "pnpm" | "yarn" | "npm" {
 }
 
 /**
- * Normalize and validate a CI provider string.
- * Returns the provider or an error if invalid.
+ * Normalize and validate a CI provider identifier.
+ *
+ * @param value - The provider identifier to normalize; may be `undefined` or an empty string to use the default.
+ * @returns `ok: true` with `value` set to the normalized provider (`github-actions` or `circleci`), or `ok: false` with an `INVALID_PATH` error describing unsupported values.
  */
 export function normalizeCIProvider(
 	value: string | undefined,
@@ -610,21 +612,19 @@ export function normalizeCIProvider(
 }
 
 /**
- * Build a TemplateRenderContext for scaffolding by reading repository metadata and applied init options.
+ * Construct a TemplateRenderContext populated from repository metadata and selected init options.
  *
- * Reads package.json and repository information from `targetDir` to populate context fields such as
- * `issueTrackingUrl`, `projectName`, `repoUrl`, `packageScripts`, and an extracted `linearProjectSlug`
- * (unless `options.issueTracker` is `"none"` or `"github"`). Resolves a security contact email from
- * the `HARNESS_SECURITY_EMAIL` environment variable with a safe default, and merges provided
- * `ciProvider`, `projectType`, and selected `options` flags into the returned context.
+ * The returned context includes discovered values (package scripts, project name, repo URL, issue tracker URL)
+ * when available, a `securityEmail` resolved from the `HARNESS_SECURITY_EMAIL` environment variable or
+ * `"security@example.com"` as a fallback, and any explicitly provided `ciProvider` or `projectType`.
+ * If `options.issueTracker` is `"none"` or `"github"`, `linearProjectSlug` will be omitted.
  *
- * @param targetDir - Path to the repository to inspect for package and repo metadata
- * @param ciProvider - Optional CI provider override to include in the context
+ * @param targetDir - Filesystem path of the repository to inspect for package and repository metadata
+ * @param ciProvider - Optional CI provider to include in the context
  * @param projectType - Optional project type hint to include in the context
- * @param options - Init options that can affect included fields (e.g., `minimal`, `issueTracker`)
- * @returns A TemplateRenderContext containing discovered metadata and selected init options. Fields
- * that are not discoverable or not applicable are omitted; `securityEmail` is always present.
- */
+ * @param options - Init options that can toggle returned flags (e.g., setting `minimal` or `issueTracker`)
+ * @returns A TemplateRenderContext containing discovered metadata and applied init options; fields that
+ * are not discoverable or explicitly suppressed are omitted.
 export function createTemplateRenderContext(
 	targetDir: string,
 	ciProvider?: CIProvider,
@@ -825,6 +825,19 @@ export function shouldSkipDueToNewerToolingVersion(
 	return decision === "skip";
 }
 
+/**
+ * Generates the Codex "local environment" TOML used by Codex/CodeRabbit for the repository.
+ *
+ * Produces a TOML document (prefixed with the autogen header) that defines a setup script
+ * (runs `mise install` followed by the package-manager install command) and a set of action blocks:
+ * - standard Tools/Run/Debug/Test actions (Run/Debug/Test will contain a deterministic failing placeholder when the corresponding npm script is absent),
+ * - required tool actions from the harness constants,
+ * - one action per script found in `context.packageScripts`, each assigned an inferred icon.
+ *
+ * @param packageManager - Package manager identifier used to render install and script invocation commands (e.g., "npm", "yarn", "pnpm").
+ * @param context - Template render context containing `packageScripts` and metadata used to build the action blocks.
+ * @returns The complete TOML content for the Codex local environment file.
+ */
 function renderCodexEnvironmentTemplate(
 	packageManager: string,
 	context: TemplateRenderContext,
@@ -3898,6 +3911,13 @@ env-check: ## Check environment policy envelope
 	},
 ];
 
+/**
+ * Determine whether a scaffold template should be emitted for the specified CI provider.
+ *
+ * @param templatePath - Relative template path to evaluate; provider-specific paths include `.github/workflows/*` and `.circleci/config.yml`.
+ * @param ciProvider - The chosen CI provider used to decide template inclusion.
+ * @returns `true` if the template applies to the given provider, `false` otherwise.
+ */
 export function isTemplateEnabledForProvider(
 	templatePath: string,
 	ciProvider: CIProvider,

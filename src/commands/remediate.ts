@@ -172,7 +172,13 @@ function parseFindings(input: string): unknown[] {
 }
 
 /**
- * Detect provider type from finding structure.
+ * Determine the source provider for a raw finding object.
+ *
+ * Recognizes CodeQL findings when the object contains a nested `location` with a `startLine`,
+ * and recognizes Codex findings when the object contains a `filePath` string and a `line` number.
+ *
+ * @param finding - Raw finding value to inspect; may be any JSON-decoded value.
+ * @returns `"codeql"` if the value appears to be a CodeQL finding, `"codex"` if it appears to be a Codex finding, or `null` if the provider cannot be determined.
  */
 function detectProvider(finding: unknown): "codeql" | "codex" | null {
 	if (typeof finding !== "object" || finding === null) {

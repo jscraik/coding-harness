@@ -726,7 +726,15 @@ function checkSurfacePresence(
 }
 
 /**
- * Build execution context based on options and environment.
+ * Constructs the runtime execution context used during gate evaluation.
+ *
+ * The context encodes chosen trigger, resolved policy mode, merge-authoritative
+ * status, bootstrap wiring state, sources for changed-files, trusted refs, and
+ * output paths/identifiers used by the evaluation.
+ *
+ * @param options - Invocation options and environment hints that influence the context (e.g., trigger, trusted refs, changedFiles).
+ * @param policy - Optional loaded docs-gate policy whose presence and `mode` affect bootstrap state and the effective policy mode.
+ * @returns The assembled DocsGateExecutionContext with fields such as `trigger`, `policyMode`, `mergeAuthoritative`, `bootstrapState`, `changedFilesSource`, trusted refs, and `outputRoot`.
  */
 function buildExecutionContext(
 	options: DocsGateOptions,

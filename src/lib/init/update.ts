@@ -290,8 +290,14 @@ function prepareContractRefresh(
 }
 
 /**
- * Check if template updates are available.
- * Compares manifest version against current CLI version.
+ * Determines whether newer template updates are available by comparing the manifest's harness version to the CLI version.
+ *
+ * Loads the restore manifest from `targetDir` (requiring manifest metadata) and compares the manifest's `harnessVersion` to the running CLI version.
+ * Returns an error when the manifest is missing `harnessVersion` or when either version is not valid semver.
+ *
+ * @param targetDir - Path to the workspace containing the restore manifest
+ * @param preferredCiProvider - Optional preferred CI provider used when loading the manifest
+ * @returns An object containing `currentVersion`, `installedVersion`, and `updateAvailable` (`true` if the CLI version is greater than the installed manifest version, `false` otherwise)
  */
 export function checkForUpdates(
 	targetDir: string,

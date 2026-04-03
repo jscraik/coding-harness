@@ -3494,8 +3494,12 @@ function shouldRequirePromotionEvidence(
 // ─── JSC-58: Solo / lightweight commit mode ──────────────────────────────────
 
 /**
- * Read ciProviderPolicy.commitMode from harness.contract.json.
- * Returns "solo" | "enterprise" | null if absent or unparseable.
+ * Reads the repository's CI provider commit mode from harness.contract.json.
+ *
+ * Attempts to read `ciProviderPolicy.commitMode` and returns its value when it is `"solo"` or `"enterprise"`.
+ *
+ * @param targetDir - Repository root directory containing `harness.contract.json`
+ * @returns `"solo"` or `"enterprise"` when present and valid, otherwise `null`
  */
 function readContractCommitMode(
 	targetDir: string,
@@ -3876,6 +3880,15 @@ function isSafeProofArtifactPath(
 	);
 }
 
+/**
+ * Validates that a parity proof pack's `generatedAt` timestamp is a well-formed ISO timestamp and falls within allowable age and future-skew bounds.
+ *
+ * @param generatedAt - ISO 8601 timestamp string from the proof pack's `generatedAt` field
+ * @returns `{ ok: true }` when the timestamp is valid and within allowed bounds; otherwise `{ ok: false, error: string }` describing one of:
+ * - invalid or unparsable timestamp,
+ * - timestamp too far in the future (exceeds allowed future skew),
+ * - timestamp older than the allowed maximum age.
+ */
 function validateProofPackFreshness(
 	generatedAt: string,
 ): { ok: true } | { ok: false; error: string } {
@@ -4431,17 +4444,15 @@ function canonicalizeParityProofPackForDigest(
 }
 
 /**
- * Parse and validate a parity proof pack input JSON string and return a typed representation.
+ * Validate and parse a parity proof pack input JSON into a typed CIParityProofPackInput.
  *
- * Validates that the top-level object matches the "ci-parity-proof-input/v1" schema, including:
- * - optional ISO timestamp `generatedAt`,
- * - `behavioralParity.scenarios` array with required scenario ids, provider array, positive commitCount and string diffs,
- * - `promotionGate` booleans (including `codeRabbitParity`),
- * - `downstream.repositories` entries with required repo, ecosystemProfile and three boolean flags,
- * - optional `repo` identity fields.
+ * Ensures the payload uses schemaVersion "ci-parity-proof-input/v1" and contains the required
+ * sections and shapes (when present): a valid optional ISO `generatedAt`, a `behavioralParity.scenarios`
+ * array with supported scenario ids, `promotionGate` boolean fields including `codeRabbitParity`,
+ * and a `downstream.repositories` array with required repo and ecosystemProfile strings and three booleans.
  *
- * @param content - Raw JSON string containing a parity proof pack input
- * @returns An object with `ok:true` and a validated `CIParityProofPackInput` on success, or `ok:false` and a human-readable error message on failure
+ * @param content - Raw JSON string containing the parity proof pack input
+ * @returns An object with `ok:true` and the validated `CIParityProofPackInput` on success, or `ok:false` and a human-readable error message on failure
  */
 function parseParityProofPackInput(
 	content: string,
@@ -6313,6 +6324,15 @@ function materializeProvenanceBundleFromInput(
 	return { ok: true };
 }
 
+/**
+ * Produce a deterministic JSON representation of a provenance manifest suitable for computing a content digest.
+ *
+ * The returned string includes the manifest's top-level metadata and a normalized `artifacts` array, and it
+ * intentionally clears `integrity.payloadSha256` (set to an empty string) so the result can be hashed or signed.
+ *
+ * @param manifest - The provenance manifest to canonicalize
+ * @returns A JSON string of the canonicalized manifest with `integrity.payloadSha256` set to `""`
+ */
 function canonicalizeParityProvenanceManifestForDigest(
 	manifest: CIParityProvenanceManifest,
 ): string {
@@ -6342,16 +6362,15 @@ function canonicalizeParityProvenanceManifestForDigest(
 }
 
 /**
- * Parse and validate a parity provenance manifest JSON string and return the strongly-typed manifest.
+ * Parse and validate a parity provenance manifest JSON and return the manifest when valid.
  *
- * Validates that the JSON is an object with the expected schemaVersion, a parseable ISO generatedAt timestamp,
- * correct source bundle metadata, a non-empty artifacts array, and an integrity section containing
- * `signatureAlgorithm`, `signingKeyId`, and `payloadSha256`. Also ensures the manifest's artifacts are consistent
- * with a synthesizeable provenance bundle shape.
+ * The manifest must be a JSON object containing the expected `schemaVersion`, a parseable ISO
+ * `generatedAt` timestamp, `sourceBundlePath`/`sourceBundleSha256`, a non-empty `artifacts` array,
+ * and an `integrity` section with `signatureAlgorithm`, `signingKeyId`, and `payloadSha256`.
+ * The function also ensures the artifacts are consistent with a synthesizeable provenance bundle shape.
  *
  * @param content - The raw JSON content of the parity provenance manifest
- * @returns `{ ok: true, value: CIParityProvenanceManifest }` when the manifest is valid; otherwise `{ ok: false, error: string }`
- * indicating a human-readable validation or parse error
+ * @returns `{ ok: true, value: CIParityProvenanceManifest }` when the manifest is valid; otherwise `{ ok: false, error: string }` with a human-readable validation or parse error
  */
 function parseParityProvenanceManifest(
 	content: string,
@@ -7081,6 +7100,22 @@ function resolveProofPackRepoBinding(
 	};
 }
 
+/**
+ * Auto-generates a CI parity proof pack and its sidecar signature when promotion evidence is required and not already present.
+ *
+ * This function is a best-effort orchestration: when `autoGenerate` is true and the target provider requires promotion evidence, it attempts to materialize any missing provenance/proof-pack inputs (from harvest manifests, artifact indexes, bundles, or generated inputs), collect artifacts, resolve repository/policy bindings and digests, produce a canonical parity proof pack, sign it, and write the proof pack and signature files to the repository under the configured parity paths. If a verified proof pack already exists it will be reused; if an existing proof pack fails verification the function refuses to overwrite it and returns an error.
+ *
+ * Side effects:
+ * - May write provenance inputs, artifact indexes, bundles, the proof pack JSON, and the proof pack signature into the repository under the configured harness parity paths.
+ *
+ * Failure modes:
+ * - Returns an error when prerequisites are missing or invalid, when any required materialization/validation step fails, or when an existing proof pack fails trust verification.
+ *
+ * @param targetDir - Repository root where parity/provenance files are read and written
+ * @param targetProvider - Target CI provider used to decide whether promotion evidence is required
+ * @param autoGenerate - When false, no action is taken; when true, auto-generation is attempted when required
+ * @returns An object with `ok: true` and `generated: true` if a new proof pack was written, `ok: true` and `generated: false` if no generation was needed (or an existing verified pack was reused), or `ok: false` and `error` describing the failure
+ */
 function maybeAutoGenerateParityProofPack(
 	targetDir: string,
 	targetProvider: CIProvider,
@@ -7323,18 +7358,18 @@ function maybeAutoGenerateParityProofPack(
 }
 
 /**
- * Evaluates whether required promotion (parity) evidence exists, is authentic, and meets policy constraints for the given provider.
+ * Determine whether promotion (parity) evidence is required for the target provider and, if required, validate its presence and integrity against policy and repository state.
  *
- * Performs presence, signature, integrity, provenance, repository-binding, artifact, scenario, promotion-gate, and downstream-evidence checks and collects any violations.
+ * Performs signature and payload integrity checks, freshness and ancestry validations, repository binding verification, per-artifact digest/signature checks, behavioral scenario validation, promotion-gate boolean checks, downstream evidence constraints, and provenance verification; collects human-readable violations for any failures.
  *
- * @param targetDir - Repository root used to resolve policy, artifacts, and proof-pack files
- * @param targetProvider - The target CI provider whose promotion evidence policy is being evaluated
- * @returns A report describing whether promotion evidence was required and, if so, its status:
+ * @param targetDir - Repository root used to resolve policy, repository files, and proof-pack artifacts
+ * @param targetProvider - Target CI provider whose promotion evidence policy is being evaluated
+ * @returns A report describing the requirement and validation outcome:
  * - `status: "not-required"` when evidence is not required,
  * - `status: "missing"` when required artifacts are absent,
- * - `status: "insufficient"` when artifacts are present but fail validation,
+ * - `status: "insufficient"` when required artifacts are present but fail validation,
  * - `status: "verified"` when all checks pass.
- * The report also includes the resolved proofPackPath, optional `proofPackPayloadSha256`, optional `proofPackSignature`, and an array of human-readable `violations`.
+ * The report also includes `proofPackPath`, optional `proofPackPayloadSha256`, optional `proofPackSignature`, and an array of human-readable `violations`.
  */
 function evaluatePromotionEvidence(
 	targetDir: string,

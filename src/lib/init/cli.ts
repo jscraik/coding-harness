@@ -64,6 +64,20 @@ type PathResult =
 	| { ok: true; value: string }
 	| { ok: false; error: InitErrorOutput };
 
+/**
+ * Validate and canonicalize a path resolved from a base directory while blocking traversal and symlink escapes.
+ *
+ * Performs strict checks to ensure `resolve(base, relativePath)` remains within `base`: validates inputs, requires
+ * the base directory to exist, performs a lexical containment check, rejects any existing path segment that is a
+ * symbolic link, and verifies the nearest existing ancestor's canonical realpath remains inside the base realpath.
+ *
+ * @param base - The base directory against which `relativePath` will be resolved; must be an existing, resolvable path.
+ * @param relativePath - The path (possibly relative) to resolve under `base`.
+ * @returns An object with `ok: true` and `value` equal to the resolved absolute path when safe; otherwise `ok: false`
+ * and an `error` describing the failure. Common error codes:
+ * - `INVALID_PATH`: input validation failures, inability to resolve the base, or filesystem errors encountered during checks.
+ * - `PATH_TRAVERSAL`: the resolved path lies outside the base or contains a symbolic link that would allow escape.
+ */
 function sanitizePath(base: string, relativePath: string): PathResult {
 	// Validate inputs
 	if (!base || typeof base !== "string") {

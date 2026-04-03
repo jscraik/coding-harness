@@ -36,7 +36,14 @@ export const DEFAULT_MUTATION_QUEUE_OPTIONS: Required<MutationQueueOptions> = {
 };
 
 /**
- * Compute delay for a given retry attempt.
+ * Calculate the delay (in milliseconds) to wait before the next retry attempt.
+ *
+ * Computes an exponential backoff from `baseDelayMs` using `backoffFactor` raised to `attempt`,
+ * caps the result to `maxDelayMs`, and optionally applies symmetric jitter proportional to `jitterRatio`.
+ *
+ * @param attempt - Zero-based retry attempt index (0 = first retry after initial failure).
+ * @param options - Configuration that may supply `baseDelayMs`, `maxDelayMs`, `maxAttempts`, `backoffFactor`, `jitterRatio`, and a `random` RNG; these are merged with defaults.
+ * @returns The computed delay in milliseconds (integer, >= 0). When `jitterRatio` is 0 the value is the truncated capped delay; otherwise a randomized value within ±`jitterRatio` of the capped delay is returned.
  */
 export function computeMutationBackoffDelay(
 	attempt: number,
