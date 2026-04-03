@@ -6,7 +6,8 @@ rule:
   all:
     - kind: string_fragment
     - regex: "^\\.{1,2}/"
-    - regex: "\\.js$"
+    - not:
+        regex: "\\.js$"
     - any:
         - inside:
             stopBy: end
