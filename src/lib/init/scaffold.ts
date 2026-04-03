@@ -2927,13 +2927,14 @@ set -euo pipefail
 REPO_ROOT="$(cd -- "$(dirname -- "\${BASH_SOURCE[0]}")/.." && pwd)"
 RULESET_PATH="$REPO_ROOT/scripts/semgrep-pre-push.yml"
 SEMGREP_VERSION="1.153.1"
-SEMGREP_VENV_DIR="\${REPO_ROOT}/.harness/cache/semgrep-venv"
+SEMGREP_CACHE_ROOT="\${XDG_CACHE_HOME:-\$HOME/.cache}/coding-harness"
+SEMGREP_VENV_DIR="\${SEMGREP_CACHE_ROOT}/semgrep-venv-\${SEMGREP_VERSION}"
 SEMGREP_BIN="\$SEMGREP_VENV_DIR/bin/semgrep"
 SEMGREP_PYTHON="\$SEMGREP_VENV_DIR/bin/python"
 cd "$REPO_ROOT"
 
 install_semgrep() {
-	mkdir -p "\$(dirname "\$SEMGREP_VENV_DIR")"
+	mkdir -p "\$SEMGREP_CACHE_ROOT"
 	python3 -m venv "\$SEMGREP_VENV_DIR"
 	"\$SEMGREP_PYTHON" -m pip install --quiet --upgrade pip "semgrep==\$SEMGREP_VERSION"
 }
