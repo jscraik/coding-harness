@@ -1157,6 +1157,9 @@ on:
 permissions:
   contents: read
   pull-requests: write
+  pull-requests: write
+  pull-requests: write
+  pull-requests: write
   issues: write
   checks: write
   statuses: write
@@ -2258,6 +2261,7 @@ on:
 
 permissions:
   contents: read
+  pull-requests: write
 
 jobs:
   secret-scan:
