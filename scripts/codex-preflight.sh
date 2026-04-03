@@ -82,7 +82,7 @@ append_csv_values() {
 }
 
 # load_preflight_overrides loads an optional environment file and populates PREFLIGHT_OVERRIDE_* variables.
-# 
+#
 # If the provided file path does not exist, the function returns success and leaves:
 # PREFLIGHT_OVERRIDE_BINS and PREFLIGHT_OVERRIDE_PATHS empty, and PREFLIGHT_OVERRIDE_ALLOWED_EXTERNAL_PATHS set from CODEX_PREFLIGHT_ALLOWED_EXTERNAL_PATHS or empty.
 #
