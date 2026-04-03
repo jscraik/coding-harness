@@ -1,0 +1,4 @@
+# Allowed external path targets for repo-root path checks.
+# One path per line. $HOME and $REPO_ROOT are expanded by codex-preflight.
+$HOME/.codex/instructions/CODESTYLE.md
+$REPO_ROOT/../config/codex/instructions/CODESTYLE.md

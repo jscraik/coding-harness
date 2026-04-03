@@ -12,6 +12,7 @@
 - [ ] Branch name follows policy (`codex/*` for agent-created branches).
 - [ ] Required local gates run: `bash scripts/validate-codestyle.sh`, `pnpm check`, `test -f memory.json && jq -e '.meta.version == "1.0" and (.preamble.bootstrap | type == "boolean") and (.preamble.search | type == "boolean") and (.entries | type == "array")' memory.json >/dev/null`.
 - [ ] CodeRabbit review completed and findings handled (or explicitly waived).
+- [ ] Any CodeRabbit Semgrep findings were either fixed or explicitly justified when warning-level-only.
 - [ ] Codex review completed and findings handled (or explicitly waived).
 - [ ] CodeRabbit review was performed by an independent reviewer (not the coding agent).
 - [ ] Merge is blocked until all required checks pass.
@@ -30,6 +31,7 @@
 ## Review artifacts
 
 - CodeRabbit: <link / artifact path / comment ID>
+- CodeRabbit Semgrep: fixed / waived with rationale / n.a.
 - Independent reviewer evidence: <reviewer + link>
 - Codex: <link / artifact path / comment ID>
 - Additional evidence (if any):

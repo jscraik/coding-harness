@@ -6,8 +6,8 @@ Every change must be checked by the smallest gate needed for risk, then by the f
 
 ## Required baseline gates
 
-1. `bash scripts/validate-code-style.sh --fast`
-2. `bash scripts/validate-code-style.sh`
+1. `bash scripts/validate-codestyle.sh --fast`
+2. `bash scripts/validate-codestyle.sh`
 3. `pnpm test:deep` when artifact/runtime behavior changed beyond the baseline gate
 
 ## CI gates
@@ -51,12 +51,12 @@ Enforces plan-traceability and acceptance-evidence requirements for pull-request
 ### Docs-only edits
 
 - If no code path changed, run at least:
-  - `bash scripts/validate-code-style.sh --fast` if the docs change touches governed docs, generated templates, or command-contract text.
+  - `bash scripts/validate-codestyle.sh --fast` if the docs change touches governed docs, generated templates, or command-contract text.
 - Still report status of unavailable commands if missing.
 
 ### Code + command behavior edits
 
-- Run `bash scripts/validate-code-style.sh`.
+- Run `bash scripts/validate-codestyle.sh`.
 - Add any targeted tests if behavior changed.
 - Run `pnpm test:deep` when runtime/artifact behavior changed or when deeper promotion evidence is required.
 - For pull-requested work, also ensure the PR body lists valid plan IDs and the referenced plans' completed acceptance items carry evidence refs.
@@ -82,7 +82,7 @@ For each gate run, include:
 - Exact command
 - Final status (`pass`/`fail`/`blocked`)
 - Blocker details when blocked (missing tool, lock mismatch, environment issue)
-- Do not collapse `validate-code-style.sh` into a hand-wavy "lint/tests passed" summary; report the wrapper command explicitly so downstream repos inherit auditable proof-of-pass language.
+- Do not collapse `validate-codestyle.sh` into a hand-wavy "lint/tests passed" summary; report the wrapper command explicitly so downstream repos inherit auditable proof-of-pass language.
 
 ## Non-code verification options
 

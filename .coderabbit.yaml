@@ -87,7 +87,7 @@ reviews:
     unit_tests:
       enabled: true
     simplify:
-      enabled: true
+      enabled: false
   pre_merge_checks:
     override_requested_reviewers_only: true
     title:
@@ -108,7 +108,7 @@ chat:
   auto_reply: true
   allow_non_org_members: false
   integrations:
-    linear:
+    linear: # Keep chat actions enabled so review threads can create or update Linear issues when needed.
       usage: "enabled"
 knowledge_base:
   issues:
@@ -117,11 +117,14 @@ knowledge_base:
     scope: "local"
   learnings:
     scope: "local"
-  linear:
+  linear: # Keep Linear out of review grounding so issue text is not treated as repository knowledge-base context.
     usage: "disabled"
   code_guidelines:
     enabled: true
     filePatterns:
+      - "**/AGENTS.md"
+      - "**/CLAUDE.md"
+      - "**/GEMINI.md"
       - "**/CODESTYLE.md"
       - "**/WORKFLOW.md"
       - "instructions/*.md"
