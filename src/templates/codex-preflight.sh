@@ -81,6 +81,7 @@ append_csv_values() {
 	printf '%s,%s\n' "${base_csv}" "${extra_csv}"
 }
 
+# load_preflight_overrides loads optional preflight override environment variables from the given file and sets PREFLIGHT_OVERRIDE_BINS, PREFLIGHT_OVERRIDE_PATHS, and PREFLIGHT_OVERRIDE_ALLOWED_EXTERNAL_PATHS accordingly.
 load_preflight_overrides() {
 	local override_file="$1"
 
@@ -98,6 +99,7 @@ load_preflight_overrides() {
 	PREFLIGHT_OVERRIDE_ALLOWED_EXTERNAL_PATHS="${CODEX_PREFLIGHT_ALLOWED_EXTERNAL_PATHS:-}"
 }
 
+# extract_last_json_line extracts the last line that begins with "{" from the provided input and echoes it; prints nothing if no such line exists.
 extract_last_json_line() {
 	local raw="${1:-}"
 	printf '%s\n' "${raw}" | awk '/^\{/{line=$0} END{if (line != "") print line}'
@@ -261,6 +263,8 @@ stack_paths_csv() {
 	esac
 }
 
+# check_bins checks whether each binary named in a comma-separated list is present on PATH.
+# It ignores empty entries; if any binaries are missing it logs an error listing them and returns 2, otherwise it logs success.
 check_bins() {
 	local bins_csv="$1"
 	local -a bins=()
@@ -282,6 +286,7 @@ check_bins() {
 	log_ok "binaries ok: ${bins_csv}"
 }
 
+# is_allowed_repo_external_path determines whether a path that resolves outside the repository root is allowed by the repository allowlist or overrides for the specific CODESTYLE.md symlink case.
 is_allowed_repo_external_path() {
 	local root="$1"
 	local match="$2"
@@ -331,6 +336,8 @@ is_allowed_repo_external_path() {
 	return 1
 }
 
+# check_paths verifies that each comma-separated path or glob in `paths_csv` exists and resolves to a location inside `root`; it logs an error and returns non-zero on the first failing check.
+# It treats shell globs, resolves symlinks to real paths, and permits specific allowed external symlink cases via `is_allowed_repo_external_path`; on success it logs a confirmation.
 check_paths() {
 	local root="$1"
 	local paths_csv="$2"
