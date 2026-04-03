@@ -293,8 +293,13 @@ describe("codex-preflight.sh template sync", () => {
 		script: string,
 		functionName: string,
 	): string | undefined {
+		// Escape special regex characters to prevent ReDoS
+		const escapedFunctionName = functionName.replace(
+			/[.*+?^${}()|[\]\\]/g,
+			"\\$&",
+		);
 		const functionPattern = new RegExp(
-			`${functionName}\\(\\)[\\s\\S]*?(?=\\n[A-Za-z_][A-Za-z0-9_]*\\(\\)\\s*\\{|$)`,
+			`${escapedFunctionName}\\(\\)[\\s\\S]*?(?=\\n[A-Za-z_][A-Za-z0-9_]*\\(\\)\\s*\\{|$)`,
 		);
 		return script.match(functionPattern)?.[0];
 	}
