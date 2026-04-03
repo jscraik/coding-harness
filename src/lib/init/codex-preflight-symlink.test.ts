@@ -289,6 +289,16 @@ describe("check_paths with is_allowed_repo_external_path exemption", () => {
 // ─── Template sync guard ──────────────────────────────────────────────────────
 
 describe("codex-preflight.sh template sync", () => {
+	function extractShellFunction(
+		script: string,
+		functionName: string,
+	): string | undefined {
+		const functionPattern = new RegExp(
+			`${functionName}\\(\\)[\\s\\S]*?(?=\\n[A-Za-z_][A-Za-z0-9_]*\\(\\)\\s*\\{|$)`,
+		);
+		return script.match(functionPattern)?.[0];
+	}
+
 	it("scripts/codex-preflight.sh and src/templates/codex-preflight.sh both contain is_allowed_repo_external_path", () => {
 		const runtimeScript = readFileSync(
 			join(process.cwd(), "scripts/codex-preflight.sh"),
@@ -313,10 +323,14 @@ describe("codex-preflight.sh template sync", () => {
 			"utf-8",
 		);
 
-		// Extract the function body from each script
-		const functionPattern = /is_allowed_repo_external_path\(\)[\s\S]*?\n\}/;
-		const runtimeMatch = runtimeScript.match(functionPattern)?.[0];
-		const templateMatch = templateScript.match(functionPattern)?.[0];
+		const runtimeMatch = extractShellFunction(
+			runtimeScript,
+			"is_allowed_repo_external_path",
+		);
+		const templateMatch = extractShellFunction(
+			templateScript,
+			"is_allowed_repo_external_path",
+		);
 
 		expect(runtimeMatch).toBeTruthy();
 		expect(templateMatch).toBeTruthy();
