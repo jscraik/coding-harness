@@ -34,6 +34,7 @@ if [[ -z "$binding_repo_full_name" || -z "$binding_head_sha" || -z "$binding_tru
   exit 12
 fi
 
+# validate_utc_timestamp validates the first argument is a UTC timestamp in the format %Y-%m-%dT%H:%M:%SZ; the optional second argument supplies the label used in the error message, and the function exits with status 1 on parse failure.
 validate_utc_timestamp() {
   local ts="${1:-}"
   local label="${2:-timestamp}"
@@ -50,6 +51,8 @@ except ValueError:
 PY
 }
 
+# offset_timestamp_minutes adds an integer minute offset to a UTC timestamp in the format YYYY-MM-DDTHH:MM:SSZ and echoes the resulting timestamp in the same format.
+# Expects `base_ts` as a UTC ISO-8601 timestamp matching "%Y-%m-%dT%H:%M:%SZ" and `minutes` as an integer (may be negative).
 offset_timestamp_minutes() {
   local base_ts="$1"
   local minutes="$2"
@@ -62,6 +65,7 @@ print((base + timedelta(minutes=delta_minutes)).strftime("%Y-%m-%dT%H:%M:%SZ"))
 PY
 }
 
+# require_non_negative_int validates that a value is a non-negative integer; an optional label is used in the error message, and the function exits with status 13 on failure.
 require_non_negative_int() {
   local value="${1:-}"
   local label="${2:-count}"

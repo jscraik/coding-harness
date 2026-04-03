@@ -51,6 +51,14 @@ export interface CodeRabbitCheck {
 const CODERABBIT_CHECK_NAME = "CodeRabbit";
 const CODERABBIT_CONFIG_FILE = ".coderabbit.yaml";
 
+/**
+ * Normalize a potential token string into a trimmed token or `undefined`.
+ *
+ * Trims surrounding whitespace and treats empty strings or the literals `"undefined"` and `"null"` (case-insensitive) as absent.
+ *
+ * @param value - The raw token value (e.g., from an environment variable or CLI option)
+ * @returns The trimmed token string, or `undefined` when the input is missing, empty, or equals `"undefined"`/`"null"` (case-insensitive)
+ */
 function normalizeToken(value: string | undefined): string | undefined {
 	if (typeof value !== "string") return undefined;
 	const trimmed = value.trim();
@@ -64,6 +72,22 @@ function normalizeToken(value: string | undefined): string | undefined {
 	return trimmed;
 }
 
+/**
+ * Validates the repository's .coderabbit.yaml and reports its configuration status.
+ *
+ * Checks for the file's existence and inspects its contents for a top-level `reviews:` section,
+ * the `commit_status` setting, and whether `auto_review` is disabled. The returned check's
+ * `status` will be:
+ * - `"fail"` when the config file is missing or critical settings are absent/incorrect (e.g., missing `reviews:`),
+ * - `"warn"` when non-critical but important settings are suboptimal (e.g., `auto_review` disabled or `commit_status` not enabled),
+ * - `"pass"` when required settings are present.
+ *
+ * The `details` property of the result includes the resolved file `path` and, when applicable,
+ * `issues` (human-readable problems) and `features` (detected positive settings).
+ *
+ * @param repoPath - Filesystem path to the repository root where `.coderabbit.yaml` will be read.
+ * @returns A `CodeRabbitCheck` describing the validation outcome and any relevant `details`.
+ */
 function verifyCodeRabbitConfig(repoPath: string): CodeRabbitCheck {
 	const configPath = resolve(repoPath, CODERABBIT_CONFIG_FILE);
 
@@ -129,6 +153,17 @@ function verifyCodeRabbitConfig(repoPath: string): CodeRabbitCheck {
 	}
 }
 
+/**
+ *Checks the repository's .npmrc for presence and security-relevant settings and returns a check result.
+ *
+ *Examines whether a .npmrc exists at the provided repository path, detects scoped registry entries, an embedded `_authToken`, and whether `ignore-scripts=true` is set; recommends fixes when insecure or missing settings are found.
+ *
+ * @param repoPath - Filesystem path to the repository root where `.npmrc` should be inspected
+ * @returns A `CodeRabbitCheck` describing the outcome:
+ *          - `status: "pass"` when `.npmrc` exists and no recommendations are needed (features included when present),
+ *          - `status: "warn"` when `.npmrc` is missing or contains recommendations (e.g., missing `ignore-scripts=true` or presence of `_authToken`),
+ *          - `status: "fail"` if the file cannot be read (message includes the read error)
+ */
 function verifyNpmrc(repoPath: string): CodeRabbitCheck {
 	const npmrcPath = resolve(repoPath, ".npmrc");
 
@@ -188,6 +223,17 @@ function verifyNpmrc(repoPath: string): CodeRabbitCheck {
 	}
 }
 
+/**
+ * Verify GitHub-side CodeRabbit configuration for the given repository.
+ *
+ * Performs two remote checks: whether a CodeRabbit check run exists on the repository's default branch,
+ * and whether a branch-protection ruleset named "protect" (targeting branches) requires the `CodeRabbit` status check.
+ *
+ * @param token - GitHub authentication token; when absent, the function returns two `warn` checks indicating remote verification was skipped.
+ * @param owner - Repository owner (GitHub organization or user).
+ * @param repo - Repository name.
+ * @returns An array of `CodeRabbitCheck` entries describing the outcome of each remote verification step. Each check has `name`, `status` (`pass`/`warn`/`fail`), a human-readable `message`, and optional `details`. Errors encountered while querying GitHub are surfaced as `warn` checks with a sanitized error message.
+ */
 async function verifyRemoteCodeRabbitSetup(
 	token: string | undefined,
 	owner: string,
@@ -310,6 +356,22 @@ async function verifyRemoteCodeRabbitSetup(
 	return checks;
 }
 
+/**
+ * Verify a repository's CodeRabbit setup by running local and optional GitHub checks and summarizing results.
+ *
+ * Runs local validations against the repository at `options.repoPath` (or current working directory) and,
+ * when `options.owner` and `options.repo` are provided, performs GitHub checks using a token (from `options.token`
+ * or common environment variables). If `owner`/`repo` are not supplied the function records a warning that remote
+ * checks were skipped. Tokens are normalized (trimmed and treated as missing for empty/"null"/"undefined" values).
+ *
+ * @param options - Configuration for which repository to check, credentials to use, and output preferences.
+ *   Only non-obvious behavior: `repoPath` defaults to `process.cwd()`; `token` falls back to `GITHUB_TOKEN`
+ *   or `GITHUB_PERSONAL_ACCESS_TOKEN` environment variables if not provided.
+ * @returns An object containing:
+ *   - `ok`: `true` when no checks have status `"fail"`, `false` otherwise.
+ *   - `checks`: an array of per-check results (`name`, `status`, `message`, and optional `details`).
+ *   - `summary`: counts of `passed`, `failed`, and `warnings`.
+ */
 export async function runVerifyCodeRabbit(
 	options: VerifyCodeRabbitOptions,
 ): Promise<CodeRabbitVerificationResult> {
@@ -351,6 +413,20 @@ export async function runVerifyCodeRabbit(
 	};
 }
 
+/**
+ * Run the CodeRabbit setup verification and print either a formatted console report or JSON.
+ *
+ * Prints check results to stdout; when `options.json` is true the function emits the full
+ * verification result as JSON, otherwise it prints a colored, icon-prefixed summary.
+ * When `options.verbose` is true, per-check `details` (if present) are included in the human-readable output.
+ *
+ * @param options - Controls verification and output. Relevant fields:
+ *   - `token`, `owner`, `repo`: enable remote GitHub checks when provided
+ *   - `repoPath`: local repository path to inspect
+ *   - `json`: if true, output is JSON instead of a formatted console report
+ *   - `verbose`: if true, include per-check `details` in the human-readable report
+ * @returns `EXIT_CODES.SUCCESS` when all checks passed, `EXIT_CODES.VALIDATION_ERROR` when one or more checks failed.
+ */
 export async function runVerifyCodeRabbitCLI(
 	options: VerifyCodeRabbitOptions,
 ): Promise<number> {

@@ -609,6 +609,22 @@ export function normalizeCIProvider(
 	};
 }
 
+/**
+ * Build a TemplateRenderContext for scaffolding by reading repository metadata and applied init options.
+ *
+ * Reads package.json and repository information from `targetDir` to populate context fields such as
+ * `issueTrackingUrl`, `projectName`, `repoUrl`, `packageScripts`, and an extracted `linearProjectSlug`
+ * (unless `options.issueTracker` is `"none"` or `"github"`). Resolves a security contact email from
+ * the `HARNESS_SECURITY_EMAIL` environment variable with a safe default, and merges provided
+ * `ciProvider`, `projectType`, and selected `options` flags into the returned context.
+ *
+ * @param targetDir - Path to the repository to inspect for package and repo metadata
+ * @param ciProvider - Optional CI provider override to include in the context
+ * @param projectType - Optional project type hint to include in the context
+ * @param options - Init options that can affect included fields (e.g., `minimal`, `issueTracker`)
+ * @returns A TemplateRenderContext containing discovered metadata and selected init options. Fields
+ * that are not discoverable or not applicable are omitted; `securityEmail` is always present.
+ */
 export function createTemplateRenderContext(
 	targetDir: string,
 	ciProvider?: CIProvider,
@@ -886,6 +902,17 @@ ${actionBlocks}
 `;
 }
 
+/**
+ * Build a GitHub issue template configuration YAML that provides curated contact links.
+ *
+ * The generated YAML disables blank issues and constructs `contact_links` entries:
+ * - Adds a Linear intake link unless `context.issueTracker` is `"github"` or `"none"`.
+ * - Adds a "Repository docs" link when `context.repoUrl` is present (points at the repo README).
+ * - Always adds a private security disclosure link using `context.securityEmail` (falls back to `security@example.com`).
+ *
+ * @param context - Template render context; used fields: `issueTracker`, `issueTrackingUrl`, `repoUrl`, and `securityEmail`.
+ * @returns A YAML string for `.github/ISSUE_TEMPLATE/config.yml` with `blank_issues_enabled: false` and a `contact_links` list.
+ */
 function renderIssueTemplateConfig(context: TemplateRenderContext): string {
 	const securityEmail = context.securityEmail ?? "security@example.com";
 	const repoDocsUrl = context.repoUrl
@@ -921,6 +948,11 @@ ${contactLinks.join("\n")}
 `;
 }
 
+/**
+ * Load the CodeRabbit configuration template, preferring the packaged template bundled with the tool and falling back to the repository root `.coderabbit.yaml`.
+ *
+ * @returns The UTF-8 text contents of the selected `.coderabbit.yaml` template
+ */
 function renderCodeRabbitTemplate(): string {
 	const packagedTemplatePath = fileURLToPath(
 		new URL("../../templates/coderabbit.yaml", import.meta.url),
@@ -934,6 +966,13 @@ function renderCodeRabbitTemplate(): string {
 	return readFileSync(repoTemplatePath, "utf-8");
 }
 
+/**
+ * Produce a Symphony workflow configuration and accompanying human-readable workflow document tailored to the repository.
+ *
+ * @param pm - Package manager identifier (e.g., `"npm"`, `"yarn"`, `"pnpm"`) used to choose install and command wrappers embedded in the workflow.
+ * @param context - Template render context whose fields (notably `linearProjectSlug`, `projectName`, `repoUrl`, and `issueTracker`) populate tracker configuration, repository bootstrap commands, and workflow metadata.
+ * @returns The complete workflow file content as a string: a Symphony YAML configuration section followed by an extensive Markdown workflow document with states, transition table, error handling, and validation checklist.
+ */
 function renderWorkflowTemplate(
 	pm: string,
 	context: TemplateRenderContext,
@@ -3875,6 +3914,19 @@ export function isTemplateEnabledForProvider(
 	return true;
 }
 
+/**
+ * Selects scaffold templates applicable to the specified CI provider and init options.
+ *
+ * Filters the global template list by:
+ * - excluding templates not supported by the chosen CI provider;
+ * - when `options.minimal` is true, omitting enterprise governance templates (`.github/CODEOWNERS`, `docs/PRODUCT-PLAN.md`, `.harness/ci-required-checks.json`);
+ * - skipping all `.linear/` templates when `options.minimal` is true or `options.issueTracker` is `"none"` or `"github"`;
+ * - skipping any template whose path contains `ISSUE_TEMPLATE` when `options.issueTracker` is `"none"`.
+ *
+ * @param ciProvider - The CI provider to target; used to enable/disable provider-specific templates.
+ * @param options - Init options that influence template inclusion (`minimal` and `issueTracker`).
+ * @returns An array of templates that should be rendered for the given CI provider and options.
+ */
 export function getTemplatesForProvider(
 	ciProvider: CIProvider,
 	options?: InitOptions,

@@ -89,6 +89,11 @@ process.on("uncaughtException", (error) => {
 	handleFatalError("Uncaught Exception", error);
 });
 
+/**
+ * Print the top-level CLI usage, available commands, and grouped option summaries to the console.
+ *
+ * Emits legacy and registry command rows followed by categorized option descriptions used by the CLI's help output.
+ */
 function printUsage(): void {
 	const legacyCommandRows = [
 		{ name: "init", summary: "Install harness in current directory" },
@@ -610,6 +615,16 @@ function printUsage(): void {
 }
 export { parseIntegerArg, parseCsvList };
 
+/**
+ * Entrypoint that parses CLI arguments, dispatches the selected subcommand, and exits with the command's exit code.
+ *
+ * Parses top-level flags (--version, --help), attempts registry-based dispatch, and otherwise routes known commands
+ * to their respective handlers; prints usage or an unknown-command message when appropriate. This function performs
+ * process-level side effects (console output and calling process.exit) and will call the global fatal error handler
+ * on unhandled asynchronous failures.
+ *
+ * @param args - Command-line arguments excluding the node and executable path (e.g., process.argv.slice(2)).
+ */
 export function run(args: string[]): void {
 	const version = getVersion();
 

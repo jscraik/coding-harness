@@ -3515,9 +3515,13 @@ function readContractCommitMode(
 }
 
 /**
- * Auto-detect whether a contract is a solo/lightweight setup by checking
- * whether the enterprise-required fields are absent or obviously incomplete.
- * Returns true when contract is missing trustedPolicyRef AND authorityConfigPath.
+ * Detects whether the contract appears to be a solo/lightweight setup by checking for missing enterprise fields.
+ *
+ * Treats the contract as lacking enterprise fields when both `trustedPolicyRef` and `authorityConfigPath`
+ * are absent or empty in `harness.contract.json`.
+ *
+ * @param targetDir - Repository root directory containing `harness.contract.json`
+ * @returns `true` if both `trustedPolicyRef` and `authorityConfigPath` are missing or empty, `false` otherwise. If the contract file is missing, unreadable, or unparsable, returns `false`.
  */
 function contractAppearsToLackEnterpriseFields(targetDir: string): boolean {
 	try {
@@ -3900,6 +3904,18 @@ function validateProofPackFreshness(
 	return { ok: true };
 }
 
+/**
+ * Parse and validate a CI parity proof pack from a JSON string.
+ *
+ * Attempts to parse `content` as JSON and validate it against the expected
+ * parity proof pack schema (schemaVersion `ci-parity-proof-pack/v2`) and
+ * required fields, digests, artifact/signature shapes, scenario evidence,
+ * promotion gate booleans (including `codeRabbitParity`), and downstream
+ * repository evidence.
+ *
+ * @param content - JSON string containing a parity proof pack
+ * @returns `{ ok: true, value: CIParityProofPack }` when `content` is a valid, fully validated parity proof pack; `{ ok: false, error: string }` when parsing or validation fails, where `error` is a human-readable explanation of the failure.
+ */
 function parseParityProofPack(
 	content: string,
 ): { ok: true; value: CIParityProofPack } | { ok: false; error: string } {
@@ -4345,6 +4361,15 @@ function parseParityProofPack(
 	}
 }
 
+/**
+ * Produce a deterministic JSON representation of a CI parity proof pack suitable for computing a digest.
+ *
+ * The canonicalized output includes a stable ordering of fields, normalizes nested arrays/objects, and leaves the
+ * integrity.payloadSha256 field empty (`""`) so the resulting string can be hashed or HMAC-signed for integrity checks.
+ *
+ * @param proofPack - The parity proof pack to canonicalize
+ * @returns A canonical JSON string of `proofPack` with `integrity.payloadSha256` set to an empty string
+ */
 function canonicalizeParityProofPackForDigest(
 	proofPack: CIParityProofPack,
 ): string {
@@ -4405,6 +4430,19 @@ function canonicalizeParityProofPackForDigest(
 	});
 }
 
+/**
+ * Parse and validate a parity proof pack input JSON string and return a typed representation.
+ *
+ * Validates that the top-level object matches the "ci-parity-proof-input/v1" schema, including:
+ * - optional ISO timestamp `generatedAt`,
+ * - `behavioralParity.scenarios` array with required scenario ids, provider array, positive commitCount and string diffs,
+ * - `promotionGate` booleans (including `codeRabbitParity`),
+ * - `downstream.repositories` entries with required repo, ecosystemProfile and three boolean flags,
+ * - optional `repo` identity fields.
+ *
+ * @param content - Raw JSON string containing a parity proof pack input
+ * @returns An object with `ok:true` and a validated `CIParityProofPackInput` on success, or `ok:false` and a human-readable error message on failure
+ */
 function parseParityProofPackInput(
 	content: string,
 ): { ok: true; value: CIParityProofPackInput } | { ok: false; error: string } {
@@ -6303,6 +6341,18 @@ function canonicalizeParityProvenanceManifestForDigest(
 	});
 }
 
+/**
+ * Parse and validate a parity provenance manifest JSON string and return the strongly-typed manifest.
+ *
+ * Validates that the JSON is an object with the expected schemaVersion, a parseable ISO generatedAt timestamp,
+ * correct source bundle metadata, a non-empty artifacts array, and an integrity section containing
+ * `signatureAlgorithm`, `signingKeyId`, and `payloadSha256`. Also ensures the manifest's artifacts are consistent
+ * with a synthesizeable provenance bundle shape.
+ *
+ * @param content - The raw JSON content of the parity provenance manifest
+ * @returns `{ ok: true, value: CIParityProvenanceManifest }` when the manifest is valid; otherwise `{ ok: false, error: string }`
+ * indicating a human-readable validation or parse error
+ */
 function parseParityProvenanceManifest(
 	content: string,
 ):
@@ -7272,6 +7322,20 @@ function maybeAutoGenerateParityProofPack(
 	return { ok: true, generated: true };
 }
 
+/**
+ * Evaluates whether required promotion (parity) evidence exists, is authentic, and meets policy constraints for the given provider.
+ *
+ * Performs presence, signature, integrity, provenance, repository-binding, artifact, scenario, promotion-gate, and downstream-evidence checks and collects any violations.
+ *
+ * @param targetDir - Repository root used to resolve policy, artifacts, and proof-pack files
+ * @param targetProvider - The target CI provider whose promotion evidence policy is being evaluated
+ * @returns A report describing whether promotion evidence was required and, if so, its status:
+ * - `status: "not-required"` when evidence is not required,
+ * - `status: "missing"` when required artifacts are absent,
+ * - `status: "insufficient"` when artifacts are present but fail validation,
+ * - `status: "verified"` when all checks pass.
+ * The report also includes the resolved proofPackPath, optional `proofPackPayloadSha256`, optional `proofPackSignature`, and an array of human-readable `violations`.
+ */
 function evaluatePromotionEvidence(
 	targetDir: string,
 	targetProvider: CIProvider,

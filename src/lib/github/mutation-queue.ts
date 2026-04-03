@@ -56,7 +56,14 @@ export function computeMutationBackoffDelay(
 }
 
 /**
- * Heuristic to detect if an error should be retried.
+ * Determines whether a mutation attempt error should be retried.
+ *
+ * Considers an error retryable when its numeric `status` is one of
+ * 403, 408, 429, 500, 502, 503, or 504, or when the wrapped `Error`
+ * message (if present) contains the substrings "econnreset" or "timeout".
+ *
+ * @param error - The annotated mutation attempt error to evaluate
+ * @returns `true` if the error is considered retryable, `false` otherwise
  */
 function isRetryableMutationError(error: MutationAttemptError): boolean {
 	if (typeof error.status === "number") {
@@ -70,7 +77,11 @@ function isRetryableMutationError(error: MutationAttemptError): boolean {
 }
 
 /**
- * Sleep helper, extracted for deterministic test injection.
+ * Pauses execution for the specified number of milliseconds.
+ *
+ * If `ms` is less than or equal to 0 the function returns immediately.
+ *
+ * @param ms - Time to wait in milliseconds; values <= 0 result in no delay
  */
 async function sleep(ms: number): Promise<void> {
 	if (ms <= 0) {

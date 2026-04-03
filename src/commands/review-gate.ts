@@ -356,6 +356,12 @@ function evaluatePlanTraceability({
 	};
 }
 
+/**
+ * Constructs a set of normalized bot account logins used to identify bot authors.
+ *
+ * @param botLogin - An optional additional bot login to include; it will be normalized and omitted if empty or invalid.
+ * @returns A Set of normalized (lowercased, trimmed) bot login strings containing the configured defaults and the provided `botLogin` when valid.
+ */
 function buildBotLoginSet(botLogin?: string): Set<string> {
 	return new Set<string>(
 		[botLogin, "coderabbitai", "coderabbitai[bot]", "chatgpt-codex-connector"]

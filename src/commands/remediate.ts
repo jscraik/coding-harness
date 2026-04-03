@@ -199,7 +199,18 @@ function detectProvider(finding: unknown): "codeql" | "codex" | null {
 }
 
 /**
- * Normalize a raw finding to canonical format.
+ * Convert a raw finding input into a canonical finding representation.
+ *
+ * Detects the finding format (e.g., CodeQL or Codex shapes) and produces a
+ * normalized CanonicalFinding suitable for downstream remediation. If the input
+ * cannot be associated with a supported provider or normalization fails, an
+ * error message is returned explaining the failure.
+ *
+ * @param raw - The provider-specific finding payload to normalize.
+ * @param repoRoot - Repository root path used to resolve or normalize file paths.
+ * @returns `{ ok: true, finding }` with the normalized `CanonicalFinding`, or
+ * `{ ok: false, error }` where `error` is a human-readable reason for detection
+ * or normalization failure.
  */
 function normalizeFinding(
 	raw: unknown,
@@ -233,8 +244,9 @@ function normalizeFinding(
 }
 
 /**
- * Create a local git-backed GitHubClient implementation for CLI usage.
- * This keeps SHA ancestry checks deterministic without external API calls.
+ * Create a GitHubClient that performs SHA operations against the local git repository.
+ *
+ * @returns A GitHubClient that obtains the repository HEAD SHA and verifies commit ancestry using the local repository (avoids external GitHub API calls).
  */
 function createGitHubClient(): GitHubClient {
 	return {

@@ -199,8 +199,15 @@ function sanitizePath(base: string, relativePath: string): PathResult {
 }
 
 /**
- * Run harness init and return structured result.
- * This function is usable as a library (does not output to console).
+ * Perform initialization (install, update, migrate, rollback, or interactive changes) for a repository directory and return a structured result describing created/skipped files and metadata.
+ *
+ * The behavior is controlled by `options` (provider and project-type overrides, tracking, dry-run, update/migrate/rollback/interactive modes, etc.). This function performs filesystem reads/writes and manifest handling but does not print to stdout/stderr.
+ *
+ * @param targetDir - Directory to operate on; when omitted the current working directory is used
+ * @param options - Initialization options that control mode and policy (provider/project-type overrides, tracking, dry-run, update/migrate/rollback/interactive flags, and related settings)
+ * @returns An InitResult: on success `output` contains package manager, lists of `created` and `skipped` templates and related metadata; on failure `error` contains a `code`, `message`, and optional `path`.
+ *
+ * Possible error `code` values include (but are not limited to): `INVALID_PATH`, `INVALID_OPTIONS`, `PATH_TRAVERSAL`, `WRITE_ERROR`, `INCOMPLETE_MANIFEST`.
  */
 export function runInit(
 	targetDir: string | undefined,

@@ -25,6 +25,20 @@ export class EjectCancelledError extends Error {
 	}
 }
 
+/**
+ * Remove coding-harness artifacts from a repository at the given path.
+ *
+ * Resolves the target directory, detects harness integration (contract file or manifest), optionally prompts for confirmation, and deletes known harness files and any files recorded in the harness manifest that were created by the integration. Workflow files under .github/workflows are left for manual review and reported as warnings.
+ *
+ * @param targetDir - Path to the repository or directory containing the harness integration; resolved to an absolute repository root.
+ * @param options - Optional controls for the ejection (e.g., `force`, `dryRun`, `json`, `confirmPrompt`, and `rmSyncImpl`). `rmSyncImpl` can override the deletion implementation.
+ * @returns An object with `deleted` (relative paths deleted or listed in dry-run), `warnings` (messages about left-behind or failed items), and `dryRun` indicating whether the operation was a dry run.
+ *
+ * @throws Error If no harness integration is detected in the resolved repository root.
+ * @throws EjectCancelledError If confirmation is required and not granted.
+ * @throws Error If manifest loading or path sanitization fails.
+ * @throws Error If one or more deletions failed during a non-dry run (lists failed relative paths in the message).
+ */
 export async function ejectHarness(
 	targetDir: string,
 	options: EjectOptions = {},

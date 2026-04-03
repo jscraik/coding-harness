@@ -354,8 +354,14 @@ export function checkForUpdates(
 }
 
 /**
- * Execute template updates.
- * Re-renders all tracked templates and updates manifest version.
+ * Refreshes tracked templates in a workspace, applies contract merging where applicable, and updates the restore manifest version.
+ *
+ * Reads the manifest and re-renders each tracked template for the specified CI provider, writing updates atomically. When the harness contract file is rendered, merges changes with the existing contract and emits ownership decisions describing which fields were added, preserved, or updated. Adds any untracked provider templates that do not already exist and appends them to the manifest entries. Performs workspace path safety and symlink validations to prevent writes outside the workspace and rejects symlinked update targets. After successful writes, updates the manifest's `harnessVersion`, preserved init options, and file entries.
+ *
+ * @param targetDir - Filesystem root of the workspace to update.
+ * @param manifest - The loaded restore manifest describing tracked files and preserved options.
+ * @param ciProvider - The CI provider whose templates should be applied.
+ * @returns On success, an object listing updated paths, skipped paths, and accumulated ownership decisions; on failure, an error record describing the write/validation or contract merge error (e.g., `WRITE_ERROR` conditions such as path escapes, missing contract, invalid contract merge, or atomic write failures).
  */
 export function executeUpdate(
 	targetDir: string,

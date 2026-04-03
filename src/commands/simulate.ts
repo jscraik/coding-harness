@@ -120,6 +120,20 @@ type SimulateValidationResult =
 	| { ok: true }
 	| { ok: false; error: { code: string; message: string }; exitCode: number };
 
+/**
+ * Validates CLI options for the `harness simulate` command and enforces filesystem safety.
+ *
+ * Performs presence checks for required contract paths, verifies that specified paths (contracts,
+ * artifacts, traces, output) do not escape the current working directory (symlink-aware), and
+ * confirms existence of required files/directories. Validation failures are returned as structured
+ * errors with a machine-readable `code`, human `message`, and a numeric `exitCode`.
+ *
+ * @param options - Simulation CLI options to validate (contracts, optional artifacts/traces/output paths)
+ * @returns `{ ok: true }` when all checks pass. On failure returns `{ ok: false, error: { code, message }, exitCode }`
+ * where `code` is one of the validation error codes (e.g. `E_MISSING_CONTRACT_A`, `E_PATH_TRAVERSAL`,
+ * `E_INVALID_PATH`, `E_CONTRACT_A_NOT_FOUND`, `E_ARTIFACTS_NOT_FOUND`, `E_TRACES_NOT_FOUND`) and
+ * `exitCode` is either `SIMULATE_EXIT_CODES.VALIDATION_ERROR` or `SIMULATE_EXIT_CODES.INPUT_NOT_FOUND` depending on the failure.
+ */
 function validateOptions(options: SimulateOptions): SimulateValidationResult {
 	const cwd = process.cwd();
 
