@@ -136,9 +136,6 @@ knowledge_base:
     usage: "enabled"
   web_search:
     enabled: true
-issue_enrichment:
-  auto_enrich:
-    enabled: true
 code_generation:
   docstrings:
     path_instructions:
