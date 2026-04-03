@@ -1,19 +1,5 @@
 # Coding Harness — recommended module breakdown
 
-## Table of Contents
-- [Bottom line](#bottom-line)
-- [Recommended domains](#recommended-domains)
-- [1. `core/` — contract + policy kernel](#1-core--contract--policy-kernel)
-- [2. `bootstrap/` — repo substrate](#2-bootstrap--repo-substrate)
-- [3. `workflow/` — workflow authority](#3-workflow--workflow-authority)
-- [4. `rollout/` — rollout and autonomy control](#4-rollout--rollout-and-autonomy-control)
-- [5. `integrations/` — remote system adapters](#5-integrations--remote-system-adapters)
-- [6. `adjacent/` — optional surfaces](#6-adjacent--optional-surfaces)
-- [What to peel apart first](#what-to-peel-apart-first)
-- [What not to do yet](#what-not-to-do-yet)
-- [Recommended end-state tree](#recommended-end-state-tree)
-- [The simplest practical move](#the-simplest-practical-move)
-
 ## Bottom line
 
 Do **not** turn this into many published npm packages yet.
