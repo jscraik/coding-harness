@@ -360,21 +360,30 @@ describe("codex-preflight.sh template sync", () => {
 			join(process.cwd(), "scripts/codex-preflight.sh"),
 			"utf-8",
 		);
-
-		const checkPathsMatch = extractShellFunction(runtimeScript, "check_paths");
-		expect(checkPathsMatch).toBeTruthy();
-
-		const checkPathsBlock = checkPathsMatch!;
-
-		// Search within check_paths for the invocation pattern
-		const allowedCallIndex = checkPathsBlock.indexOf(
-			'is_allowed_repo_external_path "${root}" "${match}" "${abs}"',
+		const templateScript = readFileSync(
+			join(process.cwd(), "src/templates/codex-preflight.sh"),
+			"utf-8",
 		);
-		const escapeErrIndex = checkPathsBlock.indexOf("path escapes repo root");
 
-		expect(allowedCallIndex).toBeGreaterThan(-1);
-		expect(escapeErrIndex).toBeGreaterThan(-1);
-		// The allow call invocation must come before the error log in check_paths
-		expect(allowedCallIndex).toBeLessThan(escapeErrIndex);
+		function expectCallOrder(script: string): void {
+			const checkPathsMatch = extractShellFunction(script, "check_paths");
+			expect(checkPathsMatch).toBeTruthy();
+
+			const checkPathsBlock = checkPathsMatch!;
+
+			// Search within check_paths for the invocation pattern.
+			const allowedCallIndex = checkPathsBlock.indexOf(
+				'is_allowed_repo_external_path "${root}" "${match}" "${abs}"',
+			);
+			const escapeErrIndex = checkPathsBlock.indexOf("path escapes repo root");
+
+			expect(allowedCallIndex).toBeGreaterThan(-1);
+			expect(escapeErrIndex).toBeGreaterThan(-1);
+			// The allow call invocation must come before the error log in check_paths.
+			expect(allowedCallIndex).toBeLessThan(escapeErrIndex);
+		}
+
+		expectCallOrder(runtimeScript);
+		expectCallOrder(templateScript);
 	});
 });
