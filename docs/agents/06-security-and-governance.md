@@ -9,6 +9,7 @@ This repository follows conservative defaults:
 - Preserve existing dependency and execution boundaries (`pnpm` + lockfile-driven installs).
 - Treat the repo-root `CODESTYLE.md` path plus `scripts/validate-codestyle.sh` as governed contract surfaces: if either drifts, readiness and closeout claims must fail closed.
 - Repo-specific exception: this repository may satisfy that `CODESTYLE.md` path with a symlink to `/Users/jamiecraik/.codex/instructions/CODESTYLE.md`, but downstream harness-managed repos should keep a real repo-local `CODESTYLE.md` copy.
+- Repo-specific preflight rule: `scripts/codex-preflight.sh` may allow that one documented `CODESTYLE.md` symlink even though it resolves outside repo root; other out-of-repo paths must still fail closed.
 - Harness-managed consumer repositories are a defined exception: `scripts/check-environment.sh` should prefer a repo-local CLI runner or wrapper, and use a global npm install of `@brainwav/coding-harness` only as the final fallback with explicit `NPM_TOKEN` auth wiring.
 - Security/policy hook configuration files must fail closed because of findings, not because the config is syntactically broken; keep Semgrep rule YAML quoted where patterns include mapping-like text such as `shell: true`.
 
@@ -17,6 +18,7 @@ This repository follows conservative defaults:
 - Never place tokens, keys, or PII in docs, command output, commit text, or memory notes.
 - If sensitive material appears in a file, sanitize and rotate as soon as practical.
 - Keep environment-specific credentials outside repo and out of command snippets unless placeholders are explicit.
+- Keep repo-specific Gitleaks allow lists in the repo-root `.gitleaks.toml` so staged scans and manual secret scans share the same reviewed exceptions.
 
 ## Code and data governance
 
@@ -71,6 +73,8 @@ This repository uses `simple-git-hooks` to install local hooks, and `prek.toml` 
 | `pre-commit` | Runs `make hooks-pre-commit` (`pnpm lint`, `pnpm docs:lint`, `pnpm typecheck`, staged `gitleaks`, staged-doc `vale`, related tests) |
 | `commit-msg` | Validates conventional commit format, reminds about PR template |
 | `pre-push` | Runs `make hooks-pre-push` (`docs-gate --mode required`, diagram freshness, `tooling-audit`, `check-environment`, changed-file `semgrep`, `make codestyle`, `pnpm build`) |
+
+The staged `gitleaks` lane should prefer the repo-root `.gitleaks.toml` when present so approved fixture/example exceptions are consistent across local hooks, manual scans, and downstream scaffold expectations.
 
 `docs-gate` no longer covers only branch/CI governance wording. Local hook, readiness, and tooling-runtime changes are expected to update this guide and `docs/agents/02-tooling-policy.md` in the same change so pre-push drift is caught before GitHub does.
 

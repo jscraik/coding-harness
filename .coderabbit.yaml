@@ -87,7 +87,7 @@ reviews:
     unit_tests:
       enabled: true
     simplify:
-      enabled: false
+      enabled: true
   pre_merge_checks:
     override_requested_reviewers_only: true
     title:
@@ -134,6 +134,9 @@ knowledge_base:
   mcp:
     usage: "enabled"
   web_search:
+    enabled: true
+issue_enrichment:
+  auto_enrich:
     enabled: true
 code_generation:
   docstrings:
