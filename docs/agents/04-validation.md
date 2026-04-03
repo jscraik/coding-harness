@@ -66,8 +66,10 @@ Enforces plan-traceability and acceptance-evidence requirements for pull-request
 
 ### Docs-only edits
 
-- If no code path changed, run at least:
-  - `bash scripts/validate-codestyle.sh --fast` if the docs change touches governed docs, generated templates, or command-contract text.
+- If no code path changed, still run the full required baseline gates before handoff:
+  - `bash scripts/validate-codestyle.sh --fast`
+  - `bash scripts/validate-codestyle.sh`
+- `--fast` can be used as the first iteration gate, but it does not replace the full `scripts/validate-codestyle.sh` proof-of-pass requirement.
 - Still report status of unavailable commands if missing.
 
 ### Code + command behavior edits

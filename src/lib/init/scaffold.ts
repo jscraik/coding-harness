@@ -1130,6 +1130,9 @@ on:
 permissions:
   contents: read
   pull-requests: write
+  pull-requests: write
+  pull-requests: write
+  pull-requests: write
   issues: write
   checks: write
   statuses: write
@@ -2535,6 +2538,7 @@ on:
 
 permissions:
   contents: read
+  pull-requests: write
 
 jobs:
   secret-scan:
@@ -2551,6 +2555,7 @@ jobs:
         uses: gitleaks/gitleaks-action@ff98106e4c7b2bc287b24eaf42907196329070c7 # v2
         env:
           GITHUB_TOKEN: ${"${{ secrets.GITHUB_TOKEN }}"}
+          GITLEAKS_CONFIG: .gitleaks.toml
 
       - name: Trivy Scan
         uses: aquasecurity/trivy-action@97e0b3872f55f89b95b2f65b3dbab56962816478 # 0.34.2
@@ -3168,17 +3173,37 @@ set -euo pipefail
 
 REPO_ROOT="$(cd -- "$(dirname -- "\${BASH_SOURCE[0]}")/.." && pwd)"
 RULESET_PATH="$REPO_ROOT/scripts/semgrep-pre-push.yml"
+SEMGREP_VERSION="1.153.1"
+SEMGREP_VENV_DIR="\${REPO_ROOT}/.harness/cache/semgrep-venv"
+SEMGREP_BIN="\$SEMGREP_VENV_DIR/bin/semgrep"
+SEMGREP_PYTHON="\$SEMGREP_VENV_DIR/bin/python"
 cd "$REPO_ROOT"
 
-if ! command -v semgrep >/dev/null 2>&1; then
-	echo "Error: required binary 'semgrep' is not installed or not on PATH"
-	exit 1
-fi
+install_semgrep() {
+	mkdir -p "\$(dirname "\$SEMGREP_VENV_DIR")"
+	python3 -m venv "\$SEMGREP_VENV_DIR"
+	"\$SEMGREP_PYTHON" -m pip install --quiet --upgrade pip "semgrep==\$SEMGREP_VERSION"
+}
+
+ensure_semgrep_version() {
+	if [[ ! -x "\$SEMGREP_BIN" ]]; then
+		install_semgrep
+		return
+	fi
+
+	local detected_version
+	detected_version="\$("\$SEMGREP_BIN" --version 2>/dev/null | tr -d '[:space:]')"
+	if [[ "\$detected_version" != "\$SEMGREP_VERSION" ]]; then
+		install_semgrep
+	fi
+}
 
 if [[ ! -f "$RULESET_PATH" ]]; then
 	echo "Error: missing Semgrep ruleset at $RULESET_PATH"
 	exit 1
 fi
+
+ensure_semgrep_version
 
 base_ref=""
 if git rev-parse --verify '@{upstream}' >/dev/null 2>&1; then
@@ -3216,7 +3241,7 @@ if [[ \${#changed_sources[@]} -eq 0 ]]; then
 	exit 0
 fi
 
-semgrep scan \\
+"\$SEMGREP_BIN" scan \\
 	--config "$RULESET_PATH" \\
 	--disable-version-check \\
 	--error \\
