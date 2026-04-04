@@ -4,13 +4,16 @@ set -euo pipefail
 
 # extract_last_json_line prints the last input line that begins with `{`
 # (commonly the final JSON object line) to stdout. If no such line exists it
-# extract_last_json_line echoes the last line beginning with '{' from the provided string (commonly the final JSON object line); prints nothing if no such line exists.
+# extract_last_json_line prints the last line that begins with `{` from the given raw string, or prints nothing if no such line exists.
 extract_last_json_line() {
 	local raw="${1:-}"
 	printf '%s\n' "${raw}" | awk '/^\{/{line=$0} END{if (line != "") print line}'
 }
 
-# extract_local_memory_rest_value prints the value for a given key from the top-level `rest_api` section of a YAML config file, stripping surrounding quotes, inline comments, and surrounding whitespace.
+# extract_local_memory_rest_value extracts the value for a key from the `rest_api:` section of a YAML-like config file and echoes it.
+# It searches only within the indented `rest_api:` block, stops at the next top-level line, and prints the first matching key's value.
+# The printed value has surrounding quotes removed, trailing inline comments stripped, and leading/trailing whitespace trimmed.
+# CONFIG_PATH is the path to the config file. KEY is the name of the key to look up (for example `host` or `port`).
 extract_local_memory_rest_value() {
 	local config_path="$1"
 	local key="$2"
@@ -29,13 +32,13 @@ extract_local_memory_rest_value() {
 	' "${config_path}"
 }
 
-# is_local_memory_pidfile_sandbox_block checks whether OUTPUT indicates the daemon failed to write its PID file due to a permission error ("failed to write PID file" and "operation not permitted").
+# is_local_memory_pidfile_sandbox_block returns success if the provided output contains both "failed to write PID file" and "operation not permitted".
 is_local_memory_pidfile_sandbox_block() {
 	local output="${1:-}"
 	[[ "${output}" == *"failed to write PID file"* && "${output}" == *"operation not permitted"* ]]
 }
 
-# wait_for_local_memory_health polls the health endpoint until it reports success and prints the successful JSON response.
+# wait_for_local_memory_health waits for the local-memory REST health endpoint to report `.success == true` and prints the returned health JSON when successful.
 wait_for_local_memory_health() {
 	local health_url="$1"
 	local max_attempts="${2:-10}"
@@ -57,7 +60,7 @@ wait_for_local_memory_health() {
 	return 1
 }
 
-# start_local_memory_daemon_if_needed attempts to start the local-memory daemon when stopped, probes the provided health URL until the service reports healthy, and returns 0 on success or 1 on failure.
+# start_local_memory_daemon_if_needed attempts to start the local-memory daemon when it's not running and waits until the provided health URL reports healthy, returning non-zero on failure.
 start_local_memory_daemon_if_needed() {
 	local health_url="$1"
 	local start_output=''
@@ -88,12 +91,12 @@ start_local_memory_daemon_if_needed() {
 	return 0
 }
 
-# make_tmp_file creates a temporary file and echoes its pathname using the template ${TMPDIR:-/tmp}/local-memory-preflight.XXXXXX.
+# make_tmp_file creates a temporary file in ${TMPDIR:-/tmp} with prefix 'local-memory-preflight.' and echoes the new file path.
 make_tmp_file() {
 	mktemp "${TMPDIR:-/tmp}/local-memory-preflight.XXXXXX"
 }
 
-# cleanup_tmp_files removes each non-empty path argument by calling `rm -f` on it.
+# cleanup_tmp_files removes files for each non-empty path argument using `rm -f`.
 cleanup_tmp_files() {
 	local path
 	for path in "$@"; do
@@ -102,7 +105,7 @@ cleanup_tmp_files() {
 	done
 }
 
-# set_cleanup_trap sets a RETURN trap that invokes cleanup_tmp_files with the provided paths (each shell-escaped).
+# set_cleanup_trap installs a RETURN trap that invokes `cleanup_tmp_files` with the provided file paths to remove those temporary files when the surrounding function or script returns.
 set_cleanup_trap() {
 	local trap_cmd='cleanup_tmp_files'
 	local path
@@ -112,7 +115,7 @@ set_cleanup_trap() {
 	trap "${trap_cmd}" RETURN
 }
 
-# create_tmp_file creates a temporary file with mktemp, prints the file path to stdout, and returns 1 on failure while logging an error that includes the provided label.
+# create_tmp_file creates a temporary file using mktemp, echoes its path to stdout, and returns non-zero on failure; the optional label is included in error messages.
 create_tmp_file() {
 	local label="$1"
 	local tmp_file=''
@@ -128,7 +131,7 @@ create_tmp_file() {
 	printf '%s\n' "${tmp_file}"
 }
 
-# post_json_to_file sends a JSON payload to the specified URL, writes the response body to output_path, and prints the HTTP status code to stdout.
+# post_json_to_file sends a JSON payload via HTTP POST to a URL, writes the response body to the specified file, and echoes the HTTP status code.
 post_json_to_file() {
 	local output_path="$1"
 	local url="$2"
@@ -140,7 +143,7 @@ post_json_to_file() {
 		"${url}"
 }
 
-# preflight_local_memory_shell_fallback performs a comprehensive local-memory daemon and REST preflight: validates required binaries and config policies, ensures daemon health (starting the daemon if needed), runs observe/relationship/search smoke tests (including malformed and duplicate payload checks), inspects daemon logs for migration signals, and exits non-zero on any failure.
+# preflight_local_memory_shell_fallback performs a local-memory preflight: verifies required binaries and config policy, ensures or starts the daemon until REST health is OK, exercises observe/relationship/search endpoints (including malformed and duplicate checks), inspects daemon logs for migration signals, and returns non-zero on any failure.
 preflight_local_memory_shell_fallback() {
 	log_section "Local Memory Preflight"
 
