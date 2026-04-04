@@ -1,33 +1,62 @@
 #!/usr/bin/env node
 
+import { resolve } from "node:path";
+import { fileURLToPath } from "node:url";
 import { runLocalMemoryPreflightCLI } from "../commands/local-memory-preflight.js";
+import { EXIT_CODES } from "../commands/local-memory-preflight.js";
+import { inspectFlagValue } from "../lib/cli/parse-utils.js";
 
-/**
- * Retrieve the value immediately following a specific command-line flag in an argument list.
- *
- * @param args - The argv-style array to search (e.g., process.argv.slice(2)).
- * @param flag - The exact flag to locate (matched by equality).
- * @returns The string that follows `flag` in `args`, or `undefined` if `flag` is not present or has no following element.
- */
-function getFlagValue(args: string[], flag: string): string | undefined {
-	const index = args.indexOf(flag);
-	if (index === -1) {
-		return undefined;
-	}
-	return args[index + 1];
+export interface LocalMemoryPreflightRunnerParseResult {
+	options?: Parameters<typeof runLocalMemoryPreflightCLI>[0];
+	error?: string;
 }
 
-const args = process.argv.slice(2);
-const configPath = getFlagValue(args, "--config");
-const daemonLogPath = getFlagValue(args, "--daemon-log");
+/**
+ * Parse CLI flags for the source runner without silently consuming later flags
+ * as option values.
+ */
+export function parseLocalMemoryPreflightRunnerArgs(
+	args: string[],
+): LocalMemoryPreflightRunnerParseResult {
+	const configFlag = inspectFlagValue(args, "--config");
+	if (configFlag.missingValue) {
+		return { error: "--config requires a path" };
+	}
 
-runLocalMemoryPreflightCLI({
-	...(configPath ? { configPath } : {}),
-	...(daemonLogPath ? { daemonLogPath } : {}),
-	json: args.includes("--json"),
-})
-	.then((exitCode) => process.exit(exitCode))
-	.catch((error) => {
-		console.error(error instanceof Error ? error.message : String(error));
-		process.exit(1);
-	});
+	const daemonLogFlag = inspectFlagValue(args, "--daemon-log");
+	if (daemonLogFlag.missingValue) {
+		return { error: "--daemon-log requires a path" };
+	}
+
+	return {
+		options: {
+			...(configFlag.value ? { configPath: configFlag.value } : {}),
+			...(daemonLogFlag.value ? { daemonLogPath: daemonLogFlag.value } : {}),
+			json: args.includes("--json"),
+		},
+	};
+}
+
+export async function runLocalMemoryPreflightRunner(
+	args: string[] = process.argv.slice(2),
+): Promise<number> {
+	const parsed = parseLocalMemoryPreflightRunnerArgs(args);
+	if (parsed.error) {
+		console.error(parsed.error);
+		return EXIT_CODES.USAGE_ERROR;
+	}
+
+	return runLocalMemoryPreflightCLI(parsed.options ?? {});
+}
+
+if (
+	process.argv[1] &&
+	resolve(process.argv[1]) === fileURLToPath(import.meta.url)
+) {
+	runLocalMemoryPreflightRunner()
+		.then((exitCode) => process.exit(exitCode))
+		.catch((error) => {
+			console.error(error instanceof Error ? error.message : String(error));
+			process.exit(1);
+		});
+}

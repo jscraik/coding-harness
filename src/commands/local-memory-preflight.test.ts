@@ -162,4 +162,57 @@ describe("runLocalMemoryPreflightCLI", () => {
 		);
 		expect(global.fetch).not.toHaveBeenCalled();
 	});
+
+	it("fails when the health endpoint returns 200 without success=true", async () => {
+		const configPath = join(tempDir, "config.yaml");
+		writeFileSync(
+			configPath,
+			[
+				"rest_api:",
+				"  auto_port: false",
+				"  host: 127.0.0.1",
+				"  port: 3002",
+			].join("\n"),
+			"utf-8",
+		);
+
+		const { spawnSync } = await import("node:child_process");
+		const { runLocalMemoryPreflight } = await import(
+			"../lib/preflight/local-memory.js"
+		);
+
+		vi.mocked(spawnSync).mockImplementation((command, args) => {
+			if (command === "local-memory" && args?.[0] === "--version") {
+				return {
+					status: 0,
+					stdout: "local-memory version 1.4.3\n",
+					stderr: "",
+				} as never;
+			}
+			if (command === "local-memory" && args?.[0] === "status") {
+				return {
+					status: 0,
+					stdout: '{"data":{"running":true}}\n',
+					stderr: "",
+				} as never;
+			}
+			return {
+				status: 1,
+				stdout: "",
+				stderr: "unexpected command",
+			} as never;
+		});
+
+		vi.mocked(global.fetch).mockResolvedValue({
+			ok: true,
+			status: 200,
+			text: async () => JSON.stringify({ status: "ok" }),
+		} as Response);
+
+		const result = await runLocalMemoryPreflight({ configPath });
+		expect(result.passed).toBe(false);
+		expect(result.messages).toContain(
+			"❌ REST health endpoint returned success=false",
+		);
+	});
 });

@@ -1,6 +1,7 @@
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
 import { describe, expect, it } from "vitest";
+import { EXIT_CODES as LOCAL_MEMORY_PREFLIGHT_EXIT_CODES } from "../../commands/local-memory-preflight.js";
 import {
 	MIGRATED_COMMAND_AND_ALIAS_NAMES,
 	MIGRATED_COMMAND_NAMES,
@@ -61,6 +62,24 @@ describe("command registry", () => {
 
 	it("returns undefined for unknown commands", () => {
 		expect(dispatchRegistryCommand("unknown", [])).toBeUndefined();
+	});
+
+	it("rejects local-memory-preflight when --config is missing a value", () => {
+		const result = dispatchRegistryCommand("local-memory-preflight", [
+			"local-memory-preflight",
+			"--config",
+			"--json",
+		]);
+		expect(result?.result).toBe(LOCAL_MEMORY_PREFLIGHT_EXIT_CODES.USAGE_ERROR);
+	});
+
+	it("rejects local-memory-preflight when --daemon-log is missing a value", () => {
+		const result = dispatchRegistryCommand("local-memory-preflight", [
+			"local-memory-preflight",
+			"--daemon-log",
+			"--json",
+		]);
+		expect(result?.result).toBe(LOCAL_MEMORY_PREFLIGHT_EXIT_CODES.USAGE_ERROR);
 	});
 
 	it("provides unique help rows", () => {

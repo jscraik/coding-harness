@@ -309,6 +309,18 @@ function extractRelationshipId(payload: unknown): string | undefined {
 }
 
 /**
+ * Determines whether a health payload explicitly reports success.
+ *
+ * Health checks are fail-closed: only `success === true` counts as healthy.
+ */
+function isHealthSuccessPayload(payload: unknown): boolean {
+	if (!payload || typeof payload !== "object") {
+		return false;
+	}
+	return (payload as Record<string, unknown>).success === true;
+}
+
+/**
  * Determines whether a parsed API/service payload should be considered successful.
  *
  * If the payload is an object and contains a boolean `success` property, that value is used;
@@ -344,7 +356,7 @@ async function waitForLocalMemoryHealth(
 	for (let attempt = 1; attempt <= maxAttempts; attempt += 1) {
 		try {
 			const response = await fetchJson(healthUrl);
-			if (response.ok && isSuccessPayload(response.json)) {
+			if (response.ok && isHealthSuccessPayload(response.json)) {
 				return response.json;
 			}
 		} catch {
@@ -454,7 +466,7 @@ export async function runLocalMemoryPreflight(
 	if (!running) {
 		try {
 			const healthResponse = await fetchJson(healthUrl);
-			if (healthResponse.ok && isSuccessPayload(healthResponse.json)) {
+			if (healthResponse.ok && isHealthSuccessPayload(healthResponse.json)) {
 				messages.push(
 					`⚠️ local-memory status reported stopped; REST health succeeded at ${healthUrl}`,
 				);
@@ -514,7 +526,7 @@ export async function runLocalMemoryPreflight(
 		}
 	}
 
-	if (!isSuccessPayload(healthJson)) {
+	if (!isHealthSuccessPayload(healthJson)) {
 		return fail("REST health endpoint returned success=false", {
 			healthUrl,
 			version,

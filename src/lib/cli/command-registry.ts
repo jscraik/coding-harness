@@ -8,14 +8,22 @@ import { runLinearGateCLI } from "../../commands/linear-gate.js";
 import { runLinearPrepareCLI } from "../../commands/linear-prepare.js";
 import { runLinearSyncCLI } from "../../commands/linear-sync.js";
 import { runLinearWorkflowCLI } from "../../commands/linear-workflow.js";
-import { runLocalMemoryPreflightCLI } from "../../commands/local-memory-preflight.js";
+import {
+	EXIT_CODES as LOCAL_MEMORY_PREFLIGHT_EXIT_CODES,
+	runLocalMemoryPreflightCLI,
+} from "../../commands/local-memory-preflight.js";
 import { runPolicyGateCLI } from "../../commands/policy-gate.js";
 import { runPrTemplateGateCLI } from "../../commands/pr-template-gate.js";
 import { runPreflightGateCLI } from "../../commands/preflight-gate.js";
 import { runReviewGateCLI } from "../../commands/review-gate.js";
 import { runSymphonyCheckCLI } from "../../commands/symphony-check.js";
 import { runWorkflowGenerateCLI } from "../../commands/workflow-generate.js";
-import { getFlagValue, parseCsvList, parseIntegerArg } from "./parse-utils.js";
+import {
+	getFlagValue,
+	inspectFlagValue,
+	parseCsvList,
+	parseIntegerArg,
+} from "./parse-utils.js";
 
 export interface CommandSpec {
 	name: string;
@@ -467,16 +475,24 @@ const COMMAND_SPECS: CommandSpec[] = [
 		errorLabel: "Local Memory Preflight Error",
 		execute: (args) => {
 			const jsonFlag = args.includes("--json");
-			const configIndex = args.indexOf("--config");
-			const daemonLogIndex = args.indexOf("--daemon-log");
+			const configFlag = inspectFlagValue(args, "--config");
+			const daemonLogFlag = inspectFlagValue(args, "--daemon-log");
 
 			const options: Parameters<typeof runLocalMemoryPreflightCLI>[0] = {};
 
+			if (configFlag.missingValue) {
+				console.error("Error: --config requires a path");
+				return LOCAL_MEMORY_PREFLIGHT_EXIT_CODES.USAGE_ERROR;
+			}
+			if (daemonLogFlag.missingValue) {
+				console.error("Error: --daemon-log requires a path");
+				return LOCAL_MEMORY_PREFLIGHT_EXIT_CODES.USAGE_ERROR;
+			}
 			if (jsonFlag) options.json = true;
-			const configArg = getFlagValue(args, configIndex);
-			if (configArg !== undefined) options.configPath = configArg;
-			const daemonLogArg = getFlagValue(args, daemonLogIndex);
-			if (daemonLogArg !== undefined) options.daemonLogPath = daemonLogArg;
+			if (configFlag.value !== undefined) options.configPath = configFlag.value;
+			if (daemonLogFlag.value !== undefined) {
+				options.daemonLogPath = daemonLogFlag.value;
+			}
 
 			return runLocalMemoryPreflightCLI(options);
 		},
