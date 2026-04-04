@@ -1988,7 +1988,6 @@ on:
 
 permissions:
   contents: read
-  pull-requests: write
 
 jobs:
   secret-scan:
