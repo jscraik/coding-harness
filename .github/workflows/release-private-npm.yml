@@ -1,0 +1,186 @@
+name: Release to private npm
+
+on:
+  push:
+    tags:
+      - "v[0-9]*.[0-9]*.[0-9]*"
+  workflow_dispatch:
+    inputs:
+      confirm:
+        description: Type "release" to publish the current tag on disk
+        required: true
+        default: ""
+      publish_auth:
+        description: Auth mode for publish (`token` for bootstrap, `oidc` for trusted publisher)
+        required: false
+        default: "oidc"
+        type: choice
+        options:
+          - token
+          - oidc
+
+permissions:
+  attestations: write
+  contents: write
+  id-token: write
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    if: |
+      github.event_name != 'workflow_dispatch' ||
+      github.event.inputs.confirm == 'release'
+    steps:
+      - name: Checkout
+        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup Node.js
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
+        with:
+          node-version: "24"
+          registry-url: "https://registry.npmjs.org/"
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@41ff72655975bd51cab0327fa583b6e92b6d3061 # v4
+        with:
+          run_install: false
+
+      - name: Get pnpm store directory
+        shell: bash
+        run: |
+          echo "STORE_PATH=$(pnpm store path --silent)" >> "$GITHUB_OUTPUT"
+        id: pnpm-cache
+
+      - name: Setup pnpm cache
+        uses: actions/cache@0057852bfaa89a56745cba8c7296529d2fc39830 # v4
+        with:
+          path: ${{ steps.pnpm-cache.outputs.STORE_PATH }}
+          key: ${{ runner.os }}-pnpm-store-${{ hashFiles('**/pnpm-lock.yaml') }}
+          restore-keys: |
+            ${{ runner.os }}-pnpm-store-
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Validate release candidate
+        run: pnpm check
+
+      - name: Build package
+        run: pnpm build
+
+      - name: Generate SBOM
+        # Use cyclonedx-npm with --ignore-npm-errors flag for pnpm compatibility
+        # pnpm overrides can cause npm ls to report version conflicts
+        run: |
+          npm install -g @cyclonedx/cyclonedx-npm
+          cyclonedx-npm --ignore-npm-errors --output-file artifacts/sbom.cdx.json
+        working-directory: ${{ github.workspace }}
+
+      - name: Upload SBOM artifact
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: sbom
+          path: artifacts/sbom.cdx.json
+          retention-days: 90
+
+      - name: Smoke test packed CLI artifact
+        run: |
+          set -euo pipefail
+          TARBALL="$(npm pack --silent)"
+          TMP_DIR="$(mktemp -d)"
+          npm init -y --prefix "$TMP_DIR" >/dev/null 2>&1
+          npm install --prefix "$TMP_DIR" "./$TARBALL" >/dev/null
+          VERSION_FILE="$TMP_DIR/version.txt"
+          "$TMP_DIR/node_modules/.bin/harness" --version | tee "$VERSION_FILE"
+          VERSION_FILE="$VERSION_FILE" node <<'EOF'
+          const fs = require("node:fs");
+          const version = fs.readFileSync(process.env.VERSION_FILE, "utf8").trim();
+          if (!/^harness v\d+\.\d+\.\d+(?:-[0-9A-Za-z.-]+)?$/.test(version)) {
+            console.error(`Unexpected harness --version output: ${version}`);
+            process.exit(1);
+          }
+          EOF
+          node "$TMP_DIR/node_modules/@brainwav/coding-harness/dist/cli.js" --version
+
+      - name: Create package tarball for attestation
+        run: npm pack --silent
+
+      - name: Verify tag matches package version
+        if: github.event_name == 'push'
+        run: |
+          PKG_VERSION="$(node -p "require('./package.json').version")"
+          TAG_VERSION="${GITHUB_REF_NAME#v}"
+          if [ "$PKG_VERSION" != "$TAG_VERSION" ]; then
+            echo "::error::Tag v${PKG_VERSION} does not match package.json version ${TAG_VERSION}"
+            exit 1
+          fi
+
+      - name: Verify publish auth mode
+        id: publish-auth
+        run: |
+          MODE="${{ github.event_name == 'workflow_dispatch' && github.event.inputs.publish_auth || vars.NPM_PUBLISH_AUTH || 'token' }}"
+          if [[ -z "$MODE" ]]; then
+            MODE="token"
+          fi
+          if [[ "$MODE" != "token" && "$MODE" != "oidc" ]]; then
+            echo "::error::Unsupported publish_auth mode '$MODE'. Expected token or oidc."
+            exit 1
+          fi
+          echo "mode=$MODE" >> "$GITHUB_OUTPUT"
+
+      - name: Publish private package (token)
+        if: steps.publish-auth.outputs.mode == 'token'
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+        run: pnpm publish --no-git-checks --access restricted
+
+      - name: Publish private package (OIDC trusted publisher)
+        if: steps.publish-auth.outputs.mode == 'oidc'
+        run: pnpm publish --no-git-checks --access restricted
+
+      - name: Generate build provenance attestation
+        id: attest
+        if: steps.publish-auth.outputs.mode == 'oidc'
+        continue-on-error: true
+        uses: actions/attest-build-provenance@977bb373ede98d70efdf65b84cb5f73e068dcc2a # v3
+        with:
+          subject-path: "*.tgz"
+
+      - name: Warn when attestations are unavailable
+        if: steps.publish-auth.outputs.mode == 'oidc' && steps.attest.outcome == 'failure'
+        run: |
+          echo "::warning::Build provenance attestations are unavailable for this repository type. Publish succeeded, but attestation generation was skipped."
+
+      - name: Verify attestations
+        if: steps.publish-auth.outputs.mode == 'oidc' && steps.attest.outcome == 'success'
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          VERSION="$(node -p "require('./package.json').version")"
+          TARBALL="brainwav-coding-harness-${VERSION}.tgz"
+          if [[ -f "$TARBALL" ]]; then
+            gh attestation verify "$TARBALL" --repo "${{ github.repository }}" || true
+          fi
+
+      - name: Create GitHub Release
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          set -euo pipefail
+          VERSION="$(node -p "require('./package.json').version")"
+          if git rev-parse --verify --quiet "refs/tags/v${VERSION}" >/dev/null; then
+            RELEASE_ARGS=(
+              --title "v${VERSION}"
+              --notes-file CHANGELOG.md
+            )
+
+            if [ "${GITHUB_EVENT_NAME}" = "push" ]; then
+              RELEASE_ARGS+=(--latest)
+            fi
+
+            gh release create "v${VERSION}" "${RELEASE_ARGS[@]}" || echo "Release already exists"
+          else
+            echo "::warning::Tag v${VERSION} is not present locally; skipping GitHub release creation."
+          fi
