@@ -529,7 +529,8 @@ describe("runInit", () => {
 				join(tempDir, ".github/workflows/secret-scan.yml"),
 				"utf-8",
 			);
-			expect(secretScanWorkflow).toContain("pull-requests: write");
+			expect(secretScanWorkflow).not.toContain("pull-requests:");
+			expect(secretScanWorkflow).toContain("contents: read");
 			expect(secretScanWorkflow).toContain("GITLEAKS_CONFIG: .gitleaks.toml");
 			// CircleCI file should NOT be created
 			expect(existsSync(join(tempDir, ".circleci/config.yml"))).toBe(false);

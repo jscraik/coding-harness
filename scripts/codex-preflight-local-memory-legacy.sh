@@ -47,7 +47,7 @@ wait_for_local_memory_health() {
 	local health_success='false'
 
 	while (( attempt <= max_attempts )); do
-		if health_json="$(curl -fsS "${health_url}" 2>/dev/null)"; then
+		if health_json="$(curl -fsS --connect-timeout 2 --max-time 5 "${health_url}" 2>/dev/null)"; then
 			health_success="$(echo "${health_json}" | jq -r '.success // false')"
 			if [[ "${health_success}" == 'true' ]]; then
 				printf '%s\n' "${health_json}"
@@ -185,21 +185,21 @@ preflight_local_memory_shell_fallback() {
 		return 1
 	fi
 
-	if ! rg -q '^[[:space:]]*host:[[:space:]]*"?127\.0\.0\.1"?([[:space:]]*#.*)?$' "${lm_config_path}"; then
+	local rest_host
+	rest_host="$(extract_local_memory_rest_value "${lm_config_path}" host)"
+	if [[ "${rest_host}" != '127.0.0.1' ]]; then
 		log_err 'local-memory config host policy failed: expected host: 127.0.0.1'
 		echo "   file: ${lm_config_path}" >&2
 		return 1
 	fi
-	if ! rg -q '^[[:space:]]*auto_port:[[:space:]]*false([[:space:]]*#.*)?$' "${lm_config_path}"; then
+
+	local rest_auto_port
+	rest_auto_port="$(extract_local_memory_rest_value "${lm_config_path}" auto_port)"
+	if [[ "${rest_auto_port}" != 'false' ]]; then
 		log_err 'local-memory config auto_port policy failed: expected auto_port: false'
 		echo "   file: ${lm_config_path}" >&2
 		return 1
 	fi
-	log_ok "config host/auto_port policy ok: ${lm_config_path}"
-
-	local rest_host
-	rest_host="$(extract_local_memory_rest_value "${lm_config_path}" host)"
-	rest_host="${rest_host:-127.0.0.1}"
 
 	local rest_port
 	rest_port="$(extract_local_memory_rest_value "${lm_config_path}" port)"
@@ -208,6 +208,7 @@ preflight_local_memory_shell_fallback() {
 		log_err "invalid rest_api_port from config: ${rest_port}"
 		return 1
 	fi
+	log_ok "config host/auto_port policy ok: ${lm_config_path}"
 
 	local health_url="http://${rest_host}:${rest_port}/api/v1/health"
 	local health_json

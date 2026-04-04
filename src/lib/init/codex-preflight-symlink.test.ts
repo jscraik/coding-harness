@@ -409,6 +409,67 @@ describe("codex-preflight.sh template sync", () => {
 		expect(templateFallback).toContain("preflight_local_memory_shell_fallback");
 		expect(runtimeFallback).toBe(templateFallback);
 	});
+
+	it("keeps the legacy Local Memory fallback on targeted rest_api validation and bounded health retries", () => {
+		const runtimeFallback = readFileSync(
+			join(process.cwd(), "scripts/codex-preflight-local-memory-legacy.sh"),
+			"utf-8",
+		);
+		const templateFallback = readFileSync(
+			join(
+				process.cwd(),
+				"src/templates/codex-preflight-local-memory-legacy.sh",
+			),
+			"utf-8",
+		);
+
+		function expectFallbackContracts(script: string): void {
+			expect(script).toContain(
+				'curl -fsS --connect-timeout 2 --max-time 5 "${health_url}"',
+			);
+			expect(script).toContain(
+				'rest_host="$(extract_local_memory_rest_value "${lm_config_path}" host)"',
+			);
+			expect(script).toContain(
+				'rest_auto_port="$(extract_local_memory_rest_value "${lm_config_path}" auto_port)"',
+			);
+			expect(script).not.toContain(
+				'rg -q \'^[[:space:]]*host:[[:space:]]*"?127\\.0\\.0\\.1"?',
+			);
+		}
+
+		expectFallbackContracts(runtimeFallback);
+		expectFallbackContracts(templateFallback);
+	});
+
+	it("continues to the next harness runner when a Local Memory helper returns sentinel 3", () => {
+		const runtimeScript = readFileSync(
+			join(process.cwd(), "scripts/codex-preflight.sh"),
+			"utf-8",
+		);
+		const templateScript = readFileSync(
+			join(process.cwd(), "src/templates/codex-preflight.sh"),
+			"utf-8",
+		);
+
+		function expectSentinelFallback(script: string): void {
+			const helperMatch = extractShellFunction(
+				script,
+				"run_local_memory_preflight_via_harness",
+			);
+			expect(helperMatch).toBeTruthy();
+
+			const helperBlock = helperMatch!;
+			expect(helperBlock).toContain("local status=3");
+			expect(helperBlock).not.toContain("return $?");
+			expect(
+				helperBlock.match(/if \[\[ "\$\{status\}" -ne 3 \]\]; then/g)?.length,
+			).toBe(4);
+		}
+
+		expectSentinelFallback(runtimeScript);
+		expectSentinelFallback(templateScript);
+	});
 });
 
 describe("codex-preflight sync script", () => {

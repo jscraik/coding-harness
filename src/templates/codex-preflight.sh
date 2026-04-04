@@ -303,12 +303,17 @@ run_local_memory_preflight_with_runner() {
 
 # run_local_memory_preflight_via_harness attempts to run the local-memory preflight using available harness runners in preferred order (repo source via pnpm+tsx, repo dist CLI via node, repo wrapper script, then global `harness`), returning the executed runner's exit status or `3` if no runner is available.
 run_local_memory_preflight_via_harness() {
+	local status=3
+
 	if [[ -f "${WORKSPACE_ROOT}/src/dev/run-local-memory-preflight.ts" ]] && command -v pnpm >/dev/null 2>&1; then
 		if command -v tsx >/dev/null 2>&1 || [[ -x "${WORKSPACE_ROOT}/node_modules/.bin/tsx" ]]; then
 			run_local_memory_preflight_with_runner \
 				"repo source helper (pnpm exec tsx src/dev/run-local-memory-preflight.ts)" \
 				pnpm exec tsx "${WORKSPACE_ROOT}/src/dev/run-local-memory-preflight.ts"
-			return $?
+			status=$?
+			if [[ "${status}" -ne 3 ]]; then
+				return "${status}"
+			fi
 		fi
 	fi
 
@@ -316,21 +321,30 @@ run_local_memory_preflight_via_harness() {
 		run_local_memory_preflight_with_runner \
 			"repo dist CLI (node dist/cli.js)" \
 			node "${WORKSPACE_ROOT}/dist/cli.js" local-memory-preflight
-		return $?
+		status=$?
+		if [[ "${status}" -ne 3 ]]; then
+			return "${status}"
+		fi
 	fi
 
 	if [[ -x "${WORKSPACE_ROOT}/scripts/harness-cli.sh" ]]; then
 		run_local_memory_preflight_with_runner \
 			"repo wrapper (bash scripts/harness-cli.sh)" \
 			bash "${WORKSPACE_ROOT}/scripts/harness-cli.sh" local-memory-preflight
-		return $?
+		status=$?
+		if [[ "${status}" -ne 3 ]]; then
+			return "${status}"
+		fi
 	fi
 
 	if command -v harness >/dev/null 2>&1; then
 		run_local_memory_preflight_with_runner \
 			"global npm harness ($(command -v harness))" \
 			harness local-memory-preflight
-		return $?
+		status=$?
+		if [[ "${status}" -ne 3 ]]; then
+			return "${status}"
+		fi
 	fi
 
 	return 3
