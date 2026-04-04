@@ -18,8 +18,18 @@ jobs:
       - run:
           name: Ensure pnpm available
           command: |
-            corepack enable
-            corepack prepare pnpm@10.0.0 --activate
+            required_pnpm_version="10.0.0"
+            current_pnpm_version=""
+            if command -v pnpm >/dev/null 2>&1; then
+              current_pnpm_version="$(pnpm --version || true)"
+            fi
+            if [[ "$current_pnpm_version" != "$required_pnpm_version" ]]; then
+              export NPM_CONFIG_PREFIX="$HOME/.local"
+              export PATH="$NPM_CONFIG_PREFIX/bin:$PATH"
+              echo 'export NPM_CONFIG_PREFIX="$HOME/.local"' >> "$BASH_ENV"
+              echo 'export PATH="$HOME/.local/bin:$PATH"' >> "$BASH_ENV"
+              npm install --global --prefix "$NPM_CONFIG_PREFIX" "pnpm@${required_pnpm_version}"
+            fi
             pnpm --version
       - run:
           name: Install dependencies
@@ -65,8 +75,18 @@ jobs:
       - run:
           name: Ensure pnpm available
           command: |
-            corepack enable
-            corepack prepare pnpm@10.0.0 --activate
+            required_pnpm_version="10.0.0"
+            current_pnpm_version=""
+            if command -v pnpm >/dev/null 2>&1; then
+              current_pnpm_version="$(pnpm --version || true)"
+            fi
+            if [[ "$current_pnpm_version" != "$required_pnpm_version" ]]; then
+              export NPM_CONFIG_PREFIX="$HOME/.local"
+              export PATH="$NPM_CONFIG_PREFIX/bin:$PATH"
+              echo 'export NPM_CONFIG_PREFIX="$HOME/.local"' >> "$BASH_ENV"
+              echo 'export PATH="$HOME/.local/bin:$PATH"' >> "$BASH_ENV"
+              npm install --global --prefix "$NPM_CONFIG_PREFIX" "pnpm@${required_pnpm_version}"
+            fi
             pnpm --version
       - run:
           name: Install dependencies
@@ -112,8 +132,18 @@ jobs:
       - run:
           name: Ensure pnpm available
           command: |
-            corepack enable
-            corepack prepare pnpm@10.0.0 --activate
+            required_pnpm_version="10.0.0"
+            current_pnpm_version=""
+            if command -v pnpm >/dev/null 2>&1; then
+              current_pnpm_version="$(pnpm --version || true)"
+            fi
+            if [[ "$current_pnpm_version" != "$required_pnpm_version" ]]; then
+              export NPM_CONFIG_PREFIX="$HOME/.local"
+              export PATH="$NPM_CONFIG_PREFIX/bin:$PATH"
+              echo 'export NPM_CONFIG_PREFIX="$HOME/.local"' >> "$BASH_ENV"
+              echo 'export PATH="$HOME/.local/bin:$PATH"' >> "$BASH_ENV"
+              npm install --global --prefix "$NPM_CONFIG_PREFIX" "pnpm@${required_pnpm_version}"
+            fi
             pnpm --version
       - run:
           name: Install dependencies
