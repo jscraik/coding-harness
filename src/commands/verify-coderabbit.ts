@@ -112,12 +112,13 @@ function verifyCodeRabbitConfig(repoPath: string): CodeRabbitCheck {
 			features.push("reviews section present");
 		}
 
-		// Required: commit_status should be true for branch protection to work
-		if (/commit_status:\s*false/m.test(content)) {
+		// Required: commit_status should be true for branch protection to work.
+		// Anchor the key so fail_commit_status does not trigger a false warning.
+		if (/^\s*commit_status:\s*false\b/m.test(content)) {
 			issues.push(
 				"'commit_status: false' disables the CodeRabbit check — branch protection will not work",
 			);
-		} else if (/commit_status:\s*true/m.test(content)) {
+		} else if (/^\s*commit_status:\s*true\b/m.test(content)) {
 			features.push("commit_status enabled");
 		}
 

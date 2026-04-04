@@ -192,6 +192,22 @@ describe("runVerifyCodeRabbit - .coderabbit.yaml config", () => {
 		// commit_status absent is not a failure — only explicit false is
 		expect(configCheck?.status).toBe("pass");
 	});
+
+	it("passes when fail_commit_status is false but commit_status is not disabled", async () => {
+		repoPath = createRepoFixture({
+			withCodeRabbitYaml: true,
+			codeRabbitContent:
+				"reviews:\n  commit_status: true\n  fail_commit_status: false\n",
+		});
+		const result = await runVerifyCodeRabbit({ repoPath });
+
+		const configCheck = result.checks.find(
+			(c) => c.name === ".coderabbit.yaml config",
+		);
+		expect(configCheck?.status).toBe("pass");
+		expect(configCheck?.message).toContain("Valid .coderabbit.yaml");
+		expect(configCheck?.message).not.toContain("commit_status: false");
+	});
 });
 
 // ---------------------------------------------------------------------------
