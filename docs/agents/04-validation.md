@@ -1,5 +1,21 @@
 # Validation and checks
 
+## Table of Contents
+
+- [Core principle](#core-principle)
+- [Required baseline gates](#required-baseline-gates)
+- [CI gates](#ci-gates)
+- [docs-gate](#docs-gate)
+- [plan-gate](#plan-gate)
+- [Validation by change type](#validation-by-change-type)
+- [Docs-only edits](#docs-only-edits)
+- [Code + command behavior edits](#code--command-behavior-edits)
+- [Process/agent instruction edits](#processagent-instruction-edits)
+- [Execution order and restart policy](#execution-order-and-restart-policy)
+- [Evidence reporting](#evidence-reporting)
+- [Non-code verification options](#non-code-verification-options)
+- [Failure handling](#failure-handling)
+
 ## Core principle
 
 Every change must be checked by the smallest gate needed for risk, then by the fail-closed code-style gate, then by any deeper aggregate gate required by the behavior change.
@@ -50,8 +66,10 @@ Enforces plan-traceability and acceptance-evidence requirements for pull-request
 
 ### Docs-only edits
 
-- If no code path changed, run at least:
-  - `bash scripts/validate-codestyle.sh --fast` if the docs change touches governed docs, generated templates, or command-contract text.
+- If no code path changed, still run the full required baseline gates before handoff:
+  - `bash scripts/validate-codestyle.sh --fast`
+  - `bash scripts/validate-codestyle.sh`
+- `--fast` can be used as the first iteration gate, but it does not replace the full `scripts/validate-codestyle.sh` proof-of-pass requirement.
 - Still report status of unavailable commands if missing.
 
 ### Code + command behavior edits

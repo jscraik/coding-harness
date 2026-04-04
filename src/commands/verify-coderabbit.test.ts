@@ -2,11 +2,15 @@
  * Tests for verify-coderabbit command
  */
 
-import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
+import { mkdtempSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import type { CheckRun, Ruleset, RulesetSummary } from "../lib/github/client.js";
+import type {
+	CheckRun,
+	Ruleset,
+	RulesetSummary,
+} from "../lib/github/client.js";
 import {
 	EXIT_CODES,
 	runVerifyCodeRabbit,
@@ -25,12 +29,14 @@ const mockGitHubClient = vi.mocked(GitHubClient);
 // Helpers
 // ---------------------------------------------------------------------------
 
-function createRepoFixture(opts: {
-	withCodeRabbitYaml?: boolean;
-	codeRabbitContent?: string;
-	withNpmrc?: boolean;
-	npmrcContent?: string;
-} = {}): string {
+function createRepoFixture(
+	opts: {
+		withCodeRabbitYaml?: boolean;
+		codeRabbitContent?: string;
+		withNpmrc?: boolean;
+		npmrcContent?: string;
+	} = {},
+): string {
 	const repoPath = mkdtempSync(join(tmpdir(), "verify-coderabbit-test-"));
 
 	if (opts.withCodeRabbitYaml) {
@@ -103,7 +109,9 @@ describe("runVerifyCodeRabbit - .coderabbit.yaml config", () => {
 		repoPath = createRepoFixture();
 		const result = await runVerifyCodeRabbit({ repoPath });
 
-		const configCheck = result.checks.find((c) => c.name === ".coderabbit.yaml config");
+		const configCheck = result.checks.find(
+			(c) => c.name === ".coderabbit.yaml config",
+		);
 		expect(configCheck?.status).toBe("fail");
 		expect(configCheck?.message).toContain(".coderabbit.yaml not found");
 		expect(configCheck?.message).toContain("harness init");
@@ -116,7 +124,9 @@ describe("runVerifyCodeRabbit - .coderabbit.yaml config", () => {
 		});
 		const result = await runVerifyCodeRabbit({ repoPath });
 
-		const configCheck = result.checks.find((c) => c.name === ".coderabbit.yaml config");
+		const configCheck = result.checks.find(
+			(c) => c.name === ".coderabbit.yaml config",
+		);
 		expect(configCheck?.status).toBe("pass");
 		expect(configCheck?.message).toContain("Valid .coderabbit.yaml");
 		expect(configCheck?.details?.features).toContain("reviews section present");
@@ -130,9 +140,13 @@ describe("runVerifyCodeRabbit - .coderabbit.yaml config", () => {
 		});
 		const result = await runVerifyCodeRabbit({ repoPath });
 
-		const configCheck = result.checks.find((c) => c.name === ".coderabbit.yaml config");
+		const configCheck = result.checks.find(
+			(c) => c.name === ".coderabbit.yaml config",
+		);
 		expect(configCheck?.status).toBe("fail");
-		expect(configCheck?.message).toContain("missing top-level 'reviews:' section");
+		expect(configCheck?.message).toContain(
+			"missing top-level 'reviews:' section",
+		);
 	});
 
 	it("warns when commit_status is false", async () => {
@@ -142,7 +156,9 @@ describe("runVerifyCodeRabbit - .coderabbit.yaml config", () => {
 		});
 		const result = await runVerifyCodeRabbit({ repoPath });
 
-		const configCheck = result.checks.find((c) => c.name === ".coderabbit.yaml config");
+		const configCheck = result.checks.find(
+			(c) => c.name === ".coderabbit.yaml config",
+		);
 		expect(configCheck?.status).toBe("warn");
 		expect(configCheck?.message).toContain("commit_status: false");
 		expect(configCheck?.message).toContain("branch protection will not work");
@@ -156,7 +172,9 @@ describe("runVerifyCodeRabbit - .coderabbit.yaml config", () => {
 		});
 		const result = await runVerifyCodeRabbit({ repoPath });
 
-		const configCheck = result.checks.find((c) => c.name === ".coderabbit.yaml config");
+		const configCheck = result.checks.find(
+			(c) => c.name === ".coderabbit.yaml config",
+		);
 		expect(configCheck?.status).toBe("warn");
 		expect(configCheck?.message).toContain("auto_review is disabled");
 	});
@@ -168,9 +186,27 @@ describe("runVerifyCodeRabbit - .coderabbit.yaml config", () => {
 		});
 		const result = await runVerifyCodeRabbit({ repoPath });
 
-		const configCheck = result.checks.find((c) => c.name === ".coderabbit.yaml config");
+		const configCheck = result.checks.find(
+			(c) => c.name === ".coderabbit.yaml config",
+		);
 		// commit_status absent is not a failure — only explicit false is
 		expect(configCheck?.status).toBe("pass");
+	});
+
+	it("passes when fail_commit_status is false but commit_status is not disabled", async () => {
+		repoPath = createRepoFixture({
+			withCodeRabbitYaml: true,
+			codeRabbitContent:
+				"reviews:\n  commit_status: true\n  fail_commit_status: false\n",
+		});
+		const result = await runVerifyCodeRabbit({ repoPath });
+
+		const configCheck = result.checks.find(
+			(c) => c.name === ".coderabbit.yaml config",
+		);
+		expect(configCheck?.status).toBe("pass");
+		expect(configCheck?.message).toContain("Valid .coderabbit.yaml");
+		expect(configCheck?.message).not.toContain("commit_status: false");
 	});
 });
 
@@ -196,7 +232,9 @@ describe("runVerifyCodeRabbit - .npmrc checks", () => {
 		repoPath = createRepoFixture({ withCodeRabbitYaml: true });
 		const result = await runVerifyCodeRabbit({ repoPath });
 
-		const npmrcCheck = result.checks.find((c) => c.name === ".npmrc configuration");
+		const npmrcCheck = result.checks.find(
+			(c) => c.name === ".npmrc configuration",
+		);
 		expect(npmrcCheck?.status).toBe("warn");
 		expect(npmrcCheck?.message).toContain("No .npmrc file found");
 		expect(npmrcCheck?.message).toContain("ignore-scripts=true");
@@ -210,7 +248,9 @@ describe("runVerifyCodeRabbit - .npmrc checks", () => {
 		});
 		const result = await runVerifyCodeRabbit({ repoPath });
 
-		const npmrcCheck = result.checks.find((c) => c.name === ".npmrc configuration");
+		const npmrcCheck = result.checks.find(
+			(c) => c.name === ".npmrc configuration",
+		);
 		expect(npmrcCheck?.status).toBe("pass");
 		expect(npmrcCheck?.message).toContain("Valid .npmrc");
 	});
@@ -223,7 +263,9 @@ describe("runVerifyCodeRabbit - .npmrc checks", () => {
 		});
 		const result = await runVerifyCodeRabbit({ repoPath });
 
-		const npmrcCheck = result.checks.find((c) => c.name === ".npmrc configuration");
+		const npmrcCheck = result.checks.find(
+			(c) => c.name === ".npmrc configuration",
+		);
 		expect(npmrcCheck?.status).toBe("warn");
 		expect(npmrcCheck?.message).toContain("ignore-scripts=true");
 	});
@@ -237,7 +279,9 @@ describe("runVerifyCodeRabbit - .npmrc checks", () => {
 		});
 		const result = await runVerifyCodeRabbit({ repoPath });
 
-		const npmrcCheck = result.checks.find((c) => c.name === ".npmrc configuration");
+		const npmrcCheck = result.checks.find(
+			(c) => c.name === ".npmrc configuration",
+		);
 		expect(npmrcCheck?.status).toBe("warn");
 		expect(npmrcCheck?.message).toContain("user-level ~/.npmrc");
 	});
@@ -251,10 +295,14 @@ describe("runVerifyCodeRabbit - .npmrc checks", () => {
 		});
 		const result = await runVerifyCodeRabbit({ repoPath });
 
-		const npmrcCheck = result.checks.find((c) => c.name === ".npmrc configuration");
+		const npmrcCheck = result.checks.find(
+			(c) => c.name === ".npmrc configuration",
+		);
 		expect(npmrcCheck?.status).toBe("pass");
 		expect(npmrcCheck?.details?.features).toContain("scoped registry");
-		expect(npmrcCheck?.details?.features).toContain("ignore-scripts=true (security)");
+		expect(npmrcCheck?.details?.features).toContain(
+			"ignore-scripts=true (security)",
+		);
 	});
 });
 
@@ -400,12 +448,10 @@ describe("runVerifyCodeRabbit - remote checks with token", () => {
 			() =>
 				({
 					getDefaultBranch: vi.fn(async () => "main"),
-					listCheckRunsForRef: vi.fn(async () => [
-						makeCheckRun("CodeRabbit"),
-					]),
-					listRulesets: vi.fn(async () => [
-						makeRulesetSummary("protect"),
-					] as RulesetSummary[]),
+					listCheckRunsForRef: vi.fn(async () => [makeCheckRun("CodeRabbit")]),
+					listRulesets: vi.fn(
+						async () => [makeRulesetSummary("protect")] as RulesetSummary[],
+					),
 					getRuleset: vi.fn(async () => makeRuleset(["CodeRabbit"])),
 				}) as unknown as GitHubClient,
 		);
@@ -453,7 +499,9 @@ describe("runVerifyCodeRabbit - remote checks with token", () => {
 		);
 		expect(checkRunCheck?.status).toBe("warn");
 		expect(checkRunCheck?.message).toContain('No "CodeRabbit" check run found');
-		expect(checkRunCheck?.details?.hint).toContain("Install the CodeRabbit GitHub App");
+		expect(checkRunCheck?.details?.hint).toContain(
+			"Install the CodeRabbit GitHub App",
+		);
 	});
 
 	it("passes ruleset check when protect ruleset requires CodeRabbit", async () => {
@@ -464,11 +512,11 @@ describe("runVerifyCodeRabbit - remote checks with token", () => {
 				({
 					getDefaultBranch: vi.fn(async () => "main"),
 					listCheckRunsForRef: vi.fn(async () => [makeCheckRun("CodeRabbit")]),
-					listRulesets: vi.fn(async () => [
-						makeRulesetSummary("protect"),
-					] as RulesetSummary[]),
-					getRuleset: vi.fn(
-						async () => makeRuleset(["CodeRabbit", "security-scan"]),
+					listRulesets: vi.fn(
+						async () => [makeRulesetSummary("protect")] as RulesetSummary[],
+					),
+					getRuleset: vi.fn(async () =>
+						makeRuleset(["CodeRabbit", "security-scan"]),
 					),
 				}) as unknown as GitHubClient,
 		);
@@ -484,7 +532,9 @@ describe("runVerifyCodeRabbit - remote checks with token", () => {
 			(c) => c.name === "Ruleset Configuration",
 		);
 		expect(rulesetCheck?.status).toBe("pass");
-		expect(rulesetCheck?.message).toContain('requires "CodeRabbit" status check');
+		expect(rulesetCheck?.message).toContain(
+			'requires "CodeRabbit" status check',
+		);
 	});
 
 	it("fails ruleset check when protect ruleset does not require CodeRabbit", async () => {
@@ -495,12 +545,10 @@ describe("runVerifyCodeRabbit - remote checks with token", () => {
 				({
 					getDefaultBranch: vi.fn(async () => "main"),
 					listCheckRunsForRef: vi.fn(async () => [makeCheckRun("CodeRabbit")]),
-					listRulesets: vi.fn(async () => [
-						makeRulesetSummary("protect"),
-					] as RulesetSummary[]),
-					getRuleset: vi.fn(
-						async () => makeRuleset(["lint", "security-scan"]),
+					listRulesets: vi.fn(
+						async () => [makeRulesetSummary("protect")] as RulesetSummary[],
 					),
+					getRuleset: vi.fn(async () => makeRuleset(["lint", "security-scan"])),
 				}) as unknown as GitHubClient,
 		);
 
@@ -662,15 +710,18 @@ describe("runVerifyCodeRabbit - remote checks with token", () => {
 			() =>
 				({
 					getDefaultBranch: vi.fn(async () => "develop"),
-					listCheckRunsForRef: vi.fn(async () => [
-						{
-							id: 99,
-							name: "CodeRabbit",
-							status: "completed" as const,
-							conclusion: "failure",
-							head_sha: "b".repeat(40),
-						},
-					] as CheckRun[]),
+					listCheckRunsForRef: vi.fn(
+						async () =>
+							[
+								{
+									id: 99,
+									name: "CodeRabbit",
+									status: "completed" as const,
+									conclusion: "failure",
+									head_sha: "b".repeat(40),
+								},
+							] as CheckRun[],
+					),
 					listRulesets: vi.fn(async () => [makeRulesetSummary("protect")]),
 					getRuleset: vi.fn(async () => makeRuleset(["CodeRabbit"])),
 				}) as unknown as GitHubClient,
@@ -698,15 +749,18 @@ describe("runVerifyCodeRabbit - remote checks with token", () => {
 			() =>
 				({
 					getDefaultBranch: vi.fn(async () => "main"),
-					listCheckRunsForRef: vi.fn(async () => [
-						{
-							id: 1,
-							name: "CodeRabbit",
-							status: "in_progress" as const,
-							conclusion: null,
-							head_sha: "a".repeat(40),
-						},
-					] as CheckRun[]),
+					listCheckRunsForRef: vi.fn(
+						async () =>
+							[
+								{
+									id: 1,
+									name: "CodeRabbit",
+									status: "in_progress" as const,
+									conclusion: null,
+									head_sha: "a".repeat(40),
+								},
+							] as CheckRun[],
+					),
 					listRulesets: vi.fn(async () => [] as RulesetSummary[]),
 					getRuleset: vi.fn(async () => makeRuleset([])),
 				}) as unknown as GitHubClient,
@@ -771,9 +825,9 @@ describe("runVerifyCodeRabbit - summary and ok flag", () => {
 		expect(result.summary.failed).toBe(1);
 		expect(result.summary.passed).toBe(1);
 		expect(result.summary.warnings).toBe(1);
-		expect(result.summary.passed + result.summary.failed + result.summary.warnings).toBe(
-			result.checks.length,
-		);
+		expect(
+			result.summary.passed + result.summary.failed + result.summary.warnings,
+		).toBe(result.checks.length);
 	});
 
 	it("returns all check objects in the checks array", async () => {
@@ -810,7 +864,9 @@ describe("runVerifyCodeRabbitCLI", () => {
 
 	it("returns EXIT_CODES.SUCCESS when all checks pass", async () => {
 		repoPath = createRepoFixture({ withCodeRabbitYaml: true, withNpmrc: true });
-		const consoleSpy = vi.spyOn(console, "info").mockImplementation(() => undefined);
+		const consoleSpy = vi
+			.spyOn(console, "info")
+			.mockImplementation(() => undefined);
 
 		const exitCode = await runVerifyCodeRabbitCLI({ repoPath });
 
@@ -820,7 +876,9 @@ describe("runVerifyCodeRabbitCLI", () => {
 
 	it("returns EXIT_CODES.VALIDATION_ERROR when any check fails", async () => {
 		repoPath = createRepoFixture(); // missing .coderabbit.yaml → fail
-		const consoleSpy = vi.spyOn(console, "info").mockImplementation(() => undefined);
+		const consoleSpy = vi
+			.spyOn(console, "info")
+			.mockImplementation(() => undefined);
 
 		const exitCode = await runVerifyCodeRabbitCLI({ repoPath });
 
@@ -830,13 +888,19 @@ describe("runVerifyCodeRabbitCLI", () => {
 
 	it("outputs JSON when json: true", async () => {
 		repoPath = createRepoFixture({ withCodeRabbitYaml: true, withNpmrc: true });
-		const consoleSpy = vi.spyOn(console, "info").mockImplementation(() => undefined);
+		const consoleSpy = vi
+			.spyOn(console, "info")
+			.mockImplementation(() => undefined);
 
 		await runVerifyCodeRabbitCLI({ repoPath, json: true });
 
 		expect(consoleSpy).toHaveBeenCalledTimes(1);
 		const raw = consoleSpy.mock.calls[0]?.[0] as string;
-		const parsed = JSON.parse(raw) as { ok: boolean; checks: unknown[]; summary: unknown };
+		const parsed = JSON.parse(raw) as {
+			ok: boolean;
+			checks: unknown[];
+			summary: unknown;
+		};
 		expect(parsed).toHaveProperty("ok");
 		expect(parsed).toHaveProperty("checks");
 		expect(parsed).toHaveProperty("summary");
@@ -845,7 +909,9 @@ describe("runVerifyCodeRabbitCLI", () => {
 
 	it("JSON output ok is true when all local checks pass", async () => {
 		repoPath = createRepoFixture({ withCodeRabbitYaml: true, withNpmrc: true });
-		const consoleSpy = vi.spyOn(console, "info").mockImplementation(() => undefined);
+		const consoleSpy = vi
+			.spyOn(console, "info")
+			.mockImplementation(() => undefined);
 
 		await runVerifyCodeRabbitCLI({ repoPath, json: true });
 
@@ -857,7 +923,9 @@ describe("runVerifyCodeRabbitCLI", () => {
 
 	it("does not print human-readable header when json: true", async () => {
 		repoPath = createRepoFixture({ withCodeRabbitYaml: true, withNpmrc: true });
-		const consoleSpy = vi.spyOn(console, "info").mockImplementation(() => undefined);
+		const consoleSpy = vi
+			.spyOn(console, "info")
+			.mockImplementation(() => undefined);
 
 		await runVerifyCodeRabbitCLI({ repoPath, json: true });
 
@@ -868,7 +936,9 @@ describe("runVerifyCodeRabbitCLI", () => {
 
 	it("prints human-readable output when json is not set", async () => {
 		repoPath = createRepoFixture({ withCodeRabbitYaml: true, withNpmrc: true });
-		const consoleSpy = vi.spyOn(console, "info").mockImplementation(() => undefined);
+		const consoleSpy = vi
+			.spyOn(console, "info")
+			.mockImplementation(() => undefined);
 
 		await runVerifyCodeRabbitCLI({ repoPath });
 
@@ -880,7 +950,9 @@ describe("runVerifyCodeRabbitCLI", () => {
 
 	it("prints details when verbose: true", async () => {
 		repoPath = createRepoFixture({ withCodeRabbitYaml: true, withNpmrc: true });
-		const consoleSpy = vi.spyOn(console, "info").mockImplementation(() => undefined);
+		const consoleSpy = vi
+			.spyOn(console, "info")
+			.mockImplementation(() => undefined);
 
 		await runVerifyCodeRabbitCLI({ repoPath, verbose: true });
 
@@ -892,7 +964,9 @@ describe("runVerifyCodeRabbitCLI", () => {
 
 	it("does not print details when verbose is not set", async () => {
 		repoPath = createRepoFixture({ withCodeRabbitYaml: true, withNpmrc: true });
-		const consoleSpy = vi.spyOn(console, "info").mockImplementation(() => undefined);
+		const consoleSpy = vi
+			.spyOn(console, "info")
+			.mockImplementation(() => undefined);
 
 		await runVerifyCodeRabbitCLI({ repoPath });
 
@@ -945,15 +1019,18 @@ describe("runVerifyCodeRabbit - edge cases", () => {
 					getDefaultBranch: vi.fn(async () => "main"),
 					listCheckRunsForRef: vi.fn(async () => [makeCheckRun("CodeRabbit")]),
 					listRulesets: vi.fn(async () => [makeRulesetSummary("protect")]),
-					getRuleset: vi.fn(async () => ({
-						id: 1,
-						name: "protect",
-						target: "branch",
-						enforcement: "active",
-						bypass_actors: [],
-						conditions: {},
-						rules: [{ type: "deletion" }], // no required_status_checks rule
-					}) as Ruleset),
+					getRuleset: vi.fn(
+						async () =>
+							({
+								id: 1,
+								name: "protect",
+								target: "branch",
+								enforcement: "active",
+								bypass_actors: [],
+								conditions: {},
+								rules: [{ type: "deletion" }], // no required_status_checks rule
+							}) as Ruleset,
+					),
 				}) as unknown as GitHubClient,
 		);
 
@@ -1008,9 +1085,10 @@ describe("runVerifyCodeRabbit - edge cases", () => {
 				({
 					getDefaultBranch: vi.fn(async () => "main"),
 					listCheckRunsForRef: vi.fn(async () => [makeCheckRun("CodeRabbit")]),
-					listRulesets: vi.fn(async () => [
-						makeRulesetSummary("other-ruleset", 2),
-					] as RulesetSummary[]),
+					listRulesets: vi.fn(
+						async () =>
+							[makeRulesetSummary("other-ruleset", 2)] as RulesetSummary[],
+					),
 					getRuleset: vi.fn(async () => makeRuleset(["CodeRabbit"])),
 				}) as unknown as GitHubClient,
 		);

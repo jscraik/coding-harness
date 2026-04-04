@@ -1,11 +1,12 @@
-# CodeRabbit pilot configuration for coding-harness.
-# This is intentionally advisory-first: existing Greptile/Codex merge policy
-# remains unchanged until the repo's governance contract is updated.
+# CodeRabbit configuration for coding-harness.
+# CodeRabbit remains an independent reviewer from the coding agent, but the
+# repository now allows the request-changes workflow to auto-approve clean or
+# fully resolved reviews.
 # yaml-language-server: $schema=https://coderabbit.ai/integrations/schema.v2.json
 
 reviews:
   profile: "assertive"
-  request_changes_workflow: false
+  request_changes_workflow: true
   high_level_summary_in_walkthrough: true
   review_details: true
   sequence_diagrams: true

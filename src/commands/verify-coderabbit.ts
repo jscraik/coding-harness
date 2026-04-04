@@ -73,20 +73,15 @@ function normalizeToken(value: string | undefined): string | undefined {
 }
 
 /**
- * Validates the repository's .coderabbit.yaml and reports its configuration status.
+ * Validate the repository's .coderabbit.yaml and report any missing or misconfigured settings.
  *
- * Checks for the file's existence and inspects its contents for a top-level `reviews:` section,
- * the `commit_status` setting, and whether `auto_review` is disabled. The returned check's
- * `status` will be:
- * - `"fail"` when the config file is missing or critical settings are absent/incorrect (e.g., missing `reviews:`),
- * - `"warn"` when non-critical but important settings are suboptimal (e.g., `auto_review` disabled or `commit_status` not enabled),
- * - `"pass"` when required settings are present.
+ * Inspects the resolved .coderabbit.yaml for a top-level `reviews:` section, the `commit_status` boolean,
+ * and whether `auto_review` is disabled. The returned check indicates whether the configuration is valid,
+ * contains warnings, or is missing critical elements.
  *
- * The `details` property of the result includes the resolved file `path` and, when applicable,
- * `issues` (human-readable problems) and `features` (detected positive settings).
- *
- * @param repoPath - Filesystem path to the repository root where `.coderabbit.yaml` will be read.
- * @returns A `CodeRabbitCheck` describing the validation outcome and any relevant `details`.
+ * @param repoPath - Path to the repository root where `.coderabbit.yaml` will be read.
+ * @returns A `CodeRabbitCheck` describing the outcome. `details.path` is always included; when applicable,
+ * `details.issues` lists human-readable problems and `details.features` lists detected positive settings.
  */
 function verifyCodeRabbitConfig(repoPath: string): CodeRabbitCheck {
 	const configPath = resolve(repoPath, CODERABBIT_CONFIG_FILE);
@@ -112,12 +107,13 @@ function verifyCodeRabbitConfig(repoPath: string): CodeRabbitCheck {
 			features.push("reviews section present");
 		}
 
-		// Required: commit_status should be true for branch protection to work
-		if (/commit_status:\s*false/m.test(content)) {
+		// Required: commit_status should be true for branch protection to work.
+		// Anchor the key so fail_commit_status does not trigger a false warning.
+		if (/^\s*commit_status:\s*false\b/m.test(content)) {
 			issues.push(
 				"'commit_status: false' disables the CodeRabbit check — branch protection will not work",
 			);
-		} else if (/commit_status:\s*true/m.test(content)) {
+		} else if (/^\s*commit_status:\s*true\b/m.test(content)) {
 			features.push("commit_status enabled");
 		}
 

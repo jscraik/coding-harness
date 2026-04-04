@@ -783,6 +783,7 @@ function buildExecutionContext(
  * @returns An object with `report` (the generated DocsGateReport) and `exitCode` (numeric code indicating the outcome).
  *          Relevant exit codes: 0 for success/advisory pass, 10 for detected drift in required mode, 11 for bootstrap gap,
  *          12 for trust mismatch, 13 for policy error, and 14 for runtime/IO errors.
+ */
 export function runDocsGate(options: DocsGateOptions = {}): DocsGateResult {
 	const mode: DocsGateMode = options.mode ?? "advisory";
 	const repoRoot = resolve(options.repoRoot ?? process.cwd());

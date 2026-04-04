@@ -42,3 +42,36 @@ export function getFlagValue(
 	}
 	return value;
 }
+
+export interface FlagValueInspection {
+	present: boolean;
+	value?: string;
+	missingValue: boolean;
+}
+
+export function inspectFlagValue(
+	args: string[],
+	flag: string,
+): FlagValueInspection {
+	const index = args.indexOf(flag);
+	if (index === -1) {
+		return {
+			present: false,
+			missingValue: false,
+		};
+	}
+
+	const value = args[index + 1];
+	if (value === undefined || value.startsWith("-")) {
+		return {
+			present: true,
+			missingValue: true,
+		};
+	}
+
+	return {
+		present: true,
+		value,
+		missingValue: false,
+	};
+}

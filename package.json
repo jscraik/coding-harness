@@ -4,6 +4,7 @@
 	"files": [
 		"dist",
 		"scripts/codex-preflight.sh",
+		"scripts/codex-preflight-local-memory-legacy.sh",
 		"scripts/verify-work.sh",
 		"scripts/validate-codestyle.sh",
 		"README.md",
@@ -30,7 +31,7 @@
 	"scripts": {
 		"check": "pnpm lint && pnpm docs:lint && pnpm skill:validate && pnpm workflow:validate && pnpm typecheck && pnpm test && pnpm audit",
 		"publish:release": "pnpm check && pnpm build && npm publish --access restricted --ignore-scripts=false",
-		"lint": "biome check .",
+		"lint": "pnpm codex-preflight:check && biome check .",
 		"lint:fix": "biome check . --write",
 		"fmt": "biome format . --write",
 		"typecheck": "tsc --noEmit",
@@ -65,7 +66,9 @@
 		"e2e:ci": "tsx e2e/run-e2e.ts --reporter json --parallel 2",
 		"harness:ui:capture-browser-evidence": "pnpm exec tsx src/cli.ts ui:explore --mode execute --interactions --output artifacts/ui-evidence --json",
 		"postinstall": "command -v simple-git-hooks >/dev/null 2>&1 && simple-git-hooks || true",
-		"vale": "vale --config .vale.ini AGENTS.md CLAUDE.md docs"
+		"vale": "vale --config .vale.ini AGENTS.md CLAUDE.md docs",
+		"codex-preflight:check": "node scripts/sync-codex-preflight.cjs --check",
+		"codex-preflight:sync": "node scripts/sync-codex-preflight.cjs --write"
 	},
 	"devDependencies": {
 		"@biomejs/biome": "^1.9.4",

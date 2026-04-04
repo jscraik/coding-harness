@@ -243,7 +243,7 @@ flags, use `harness --help`.
 | Command | Purpose |
 | --- | --- |
 | `init` | Scaffold or update harness-managed repo surfaces (`--project-type`, `--json`, `--dry-run`, `--force`, `--track`, `--update`, `--migrate`, `--minimal`, `--issue-tracker`) |
-| `eject` | Safely remove harness-managed files and templates while preserving custom CI workflows (`--dry-run`, `--force`) |
+| `eject` | Safely remove harness-managed files and templates, including legacy Greptile artifacts, while preserving custom non-Greptile CI workflows (`--dry-run`, `--force`) |
 | `doctor` | Check all gate prerequisites (tools, files, config, CI) |
 | `health` | Unified gate status scorecard across all gates |
 | `contract` | Validate `harness.contract.json` or print the JSON Schema (`validate`, `schema`) |
@@ -269,6 +269,7 @@ flags, use `harness --help`.
 | `license-gate` | Validate open-source license expectations |
 | `check-authz` | Validate authorization policy for mutative operations |
 | `check-environment` | Validate pilot environment governance checks |
+| `local-memory-preflight` | Run the structured Local Memory preflight smoke checks |
 | `blast-radius` | Determine required checks from changed files |
 | `risk-tier` | Classify changed files by risk tier |
 | `diff-budget` | Enforce diff budget constraints |

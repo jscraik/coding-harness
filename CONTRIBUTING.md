@@ -115,6 +115,7 @@ Recommended policy:
 ## CodeRabbit setup baseline
 
 - `coding-harness` uses `CodeRabbit` as the primary automated review check.
+- `.coderabbit.yaml` enables `reviews.request_changes_workflow`, so CodeRabbit may request changes for blocking findings and auto-approve once its comment state is clean again.
 - `harness init` scaffolds `.coderabbit.yaml` into harness-managed repositories.
 - Verify setup with:
   - `harness verify-coderabbit`
@@ -122,6 +123,7 @@ Recommended policy:
 - Trigger or refresh a review with:
   - `@coderabbitai review`
   - `@coderabbitai full review`
+  - `@coderabbitai resolve`
   - `@coderabbitai autofix`
 
 ## CodeRabbit configuration hierarchy
@@ -134,6 +136,7 @@ Recommended policy:
 
 - repository policy remains fail-closed: merge only after required checks pass.
 - unresolved CodeRabbit findings are blockers unless explicitly waived with rationale.
+- CodeRabbit may approve a clean PR automatically after its findings are resolved, but the coding agent must still not self-approve and the PR must still carry independent review evidence.
 - review artifacts should be recorded in the PR body for traceability.
 
 ## CodeRabbit score interpretation policy

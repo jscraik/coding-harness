@@ -90,9 +90,10 @@ process.on("uncaughtException", (error) => {
 });
 
 /**
- * Print the top-level CLI usage, available commands, and grouped option summaries to the console.
+ * Display the CLI usage, available commands, and grouped option summaries.
  *
- * Emits legacy and registry command rows followed by categorized option descriptions used by the CLI's help output.
+ * Writes a help listing to the console that includes legacy commands, registry-provided commands,
+ * and categorized option descriptions for the CLI's various commands and gates.
  */
 function printUsage(): void {
 	const legacyCommandRows = [
@@ -258,6 +259,11 @@ function printUsage(): void {
 	console.info("  --check-secrets  Check for secrets in environment variables");
 	console.info("  --attestation    Path to write attestation artifact");
 	console.info("  --json           Output as JSON");
+	console.info("");
+	console.info("Local Memory Preflight Options:");
+	console.info("  --config        Path to local-memory config.yaml");
+	console.info("  --daemon-log    Path to local-memory daemon.log");
+	console.info("  --json          Output as JSON");
 	console.info("");
 	console.info("Pilot Evaluate Options:");
 	console.info("  --artifacts      Artifacts directory (required)");

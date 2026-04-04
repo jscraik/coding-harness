@@ -26,18 +26,37 @@ export class EjectCancelledError extends Error {
 }
 
 /**
- * Remove coding-harness artifacts from a repository at the given path.
+ * Determines whether a repository-relative path refers to a legacy Greptile artifact.
  *
- * Resolves the target directory, detects harness integration (contract file or manifest), optionally prompts for confirmation, and deletes known harness files and any files recorded in the harness manifest that were created by the integration. Workflow files under .github/workflows are left for manual review and reported as warnings.
+ * @param path - The repository-relative path to check (e.g., `.greptile`, `.github/workflows/foo.yml`).
+ * @returns `true` if `path` is `.greptile`, is inside the `.greptile/` directory, or is `.github/workflows/greptile-review.yml`; `false` otherwise.
+ */
+function isLegacyGreptilePath(path: string): boolean {
+	return (
+		path === ".greptile" ||
+		path.startsWith(".greptile/") ||
+		path === ".github/workflows/greptile-review.yml"
+	);
+}
+
+/**
+ * Ejects coding-harness integration artifacts from the repository at the given path.
+ *
+ * Detects a harness integration (contract file or manifest), optionally prompts for confirmation, and removes known harness files and any manifest-recorded files created by the integration. Workflow files under `.github/workflows` are left for manual review (except recognized legacy Greptile workflow paths) and reported in `warnings`.
  *
  * @param targetDir - Path to the repository or directory containing the harness integration; resolved to an absolute repository root.
- * @param options - Optional controls for the ejection (e.g., `force`, `dryRun`, `json`, `confirmPrompt`, and `rmSyncImpl`). `rmSyncImpl` can override the deletion implementation.
- * @returns An object with `deleted` (relative paths deleted or listed in dry-run), `warnings` (messages about left-behind or failed items), and `dryRun` indicating whether the operation was a dry run.
+ * @param options - Optional controls:
+ *   - `force` — skip interactive confirmation when deletion would occur;
+ *   - `dryRun` — do not delete files, only report what would be deleted;
+ *   - `json` — suppress console logging while still collecting `warnings`/`deleted`;
+ *   - `confirmPrompt` — optional async custom confirmation provider;
+ *   - `rmSyncImpl` — optional override for the filesystem deletion implementation.
+ * @returns An object containing `deleted` (relative paths deleted or listed in a dry run), `warnings` (messages about left-behind or failed items), and `dryRun` indicating whether the operation was a dry run.
  *
  * @throws Error If no harness integration is detected in the resolved repository root.
- * @throws EjectCancelledError If confirmation is required and not granted.
+ * @throws EjectCancelledError If interactive confirmation is required and not granted.
  * @throws Error If manifest loading or path sanitization fails.
- * @throws Error If one or more deletions failed during a non-dry run (lists failed relative paths in the message).
+ * @throws Error If one or more deletions failed during a non-dry run (the thrown message lists the failed relative paths).
  */
 export async function ejectHarness(
 	targetDir: string,
@@ -81,17 +100,22 @@ export async function ejectHarness(
 		}
 	}
 
-	const workflowPaths = new Set<string>();
-	const pathsToRemove = new Map<string, string>([
-		[".harness", join(repoRoot, ".harness")],
-		[".coderabbit.yaml", join(repoRoot, ".coderabbit.yaml")],
-		[".greptile", join(repoRoot, ".greptile")],
-		[
-			".agents/skills/coding-harness",
-			join(repoRoot, ".agents/skills/coding-harness"),
-		],
-		["harness.contract.json", join(repoRoot, "harness.contract.json")],
-	]);
+	const workflowPaths = new Map<string, string>();
+	const pathsToRemove = new Map<string, string>();
+	for (const relativePath of [
+		".harness",
+		".coderabbit.yaml",
+		".greptile",
+		".github/workflows/greptile-review.yml",
+		".agents/skills/coding-harness",
+		"harness.contract.json",
+	]) {
+		const pathResult = sanitizePath(repoRoot, relativePath);
+		if (!pathResult.ok) {
+			throw new Error(pathResult.error.message);
+		}
+		pathsToRemove.set(relativePath, pathResult.value);
+	}
 
 	if (hasManifest) {
 		const manifest = loadManifest(repoRoot, { operation: "eject" });
@@ -104,14 +128,17 @@ export async function ejectHarness(
 				continue;
 			}
 
-			if (entry.path.startsWith(".github/workflows/")) {
-				workflowPaths.add(entry.path);
-				continue;
-			}
-
 			const pathResult = sanitizePath(repoRoot, entry.path);
 			if (!pathResult.ok) {
 				throw new Error(pathResult.error.message);
+			}
+
+			if (
+				entry.path.startsWith(".github/workflows/") &&
+				!isLegacyGreptilePath(entry.path)
+			) {
+				workflowPaths.set(entry.path, pathResult.value);
+				continue;
 			}
 
 			pathsToRemove.set(entry.path, pathResult.value);
@@ -119,8 +146,8 @@ export async function ejectHarness(
 	}
 	const deletionFailedPaths: string[] = [];
 
-	for (const workflowPath of workflowPaths) {
-		if (fs.existsSync(join(repoRoot, workflowPath))) {
+	for (const [workflowPath, validatedPath] of workflowPaths) {
+		if (fs.existsSync(validatedPath)) {
 			warn(
 				`Left workflow for manual review: ${workflowPath}. Harness eject does not delete CI workflows automatically.`,
 			);

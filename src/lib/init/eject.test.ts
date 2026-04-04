@@ -42,6 +42,11 @@ describe("ejectHarness", () => {
 		// Mock out project structures
 		mkdirSync(join(tempDir, ".harness"));
 		mkdirSync(join(tempDir, ".greptile"));
+		mkdirSync(join(tempDir, ".github/workflows"), { recursive: true });
+		writeFileSync(
+			join(tempDir, ".github/workflows/greptile-review.yml"),
+			"name: Greptile\n",
+		);
 		writeFileSync(join(tempDir, ".coderabbit.yaml"), "language: en-US\n");
 		mkdirSync(join(tempDir, ".agents/skills/coding-harness"), {
 			recursive: true,
@@ -54,6 +59,9 @@ describe("ejectHarness", () => {
 		expect(existsSync(join(tempDir, ".harness"))).toBe(false);
 		expect(existsSync(join(tempDir, ".coderabbit.yaml"))).toBe(false);
 		expect(existsSync(join(tempDir, ".greptile"))).toBe(false);
+		expect(
+			existsSync(join(tempDir, ".github/workflows/greptile-review.yml")),
+		).toBe(false);
 		expect(existsSync(join(tempDir, ".agents/skills/coding-harness"))).toBe(
 			false,
 		);
@@ -66,6 +74,11 @@ describe("ejectHarness", () => {
 	it("supports dry-run without deleting harness footprints", async () => {
 		mkdirSync(join(tempDir, ".harness"));
 		mkdirSync(join(tempDir, ".greptile"));
+		mkdirSync(join(tempDir, ".github/workflows"), { recursive: true });
+		writeFileSync(
+			join(tempDir, ".github/workflows/greptile-review.yml"),
+			"name: Greptile\n",
+		);
 		writeFileSync(join(tempDir, ".coderabbit.yaml"), "language: en-US\n");
 		mkdirSync(join(tempDir, ".agents/skills/coding-harness"), {
 			recursive: true,
@@ -86,6 +99,7 @@ describe("ejectHarness", () => {
 				".harness",
 				".coderabbit.yaml",
 				".greptile",
+				".github/workflows/greptile-review.yml",
 				".agents/skills/coding-harness",
 				"harness.contract.json",
 			]),
@@ -115,13 +129,17 @@ describe("ejectHarness", () => {
 		);
 	});
 
-	it("deletes only manifest-owned created files and leaves user files intact", async () => {
+	it("removes legacy greptile files during eject while preserving non-greptile workflows", async () => {
 		writeFileSync(join(tempDir, "harness.contract.json"), "{}");
 		writeFileSync(join(tempDir, "CONTRIBUTING.md"), "user-owned");
 		mkdirSync(join(tempDir, ".github/workflows"), { recursive: true });
 		writeFileSync(
 			join(tempDir, ".github/workflows/pr-pipeline.yml"),
 			"name: keep for manual review\n",
+		);
+		writeFileSync(
+			join(tempDir, ".github/workflows/greptile-review.yml"),
+			"name: Greptile\n",
 		);
 		writeRestoreManifest(tempDir, [
 			{
@@ -130,6 +148,7 @@ describe("ejectHarness", () => {
 				backupHash: "eca12c0a30e25b4b",
 			},
 			{ path: ".github/workflows/pr-pipeline.yml", action: "created" },
+			{ path: ".github/workflows/greptile-review.yml", action: "created" },
 			{ path: ".greptile/config.json", action: "created" },
 		]);
 		mkdirSync(join(tempDir, ".greptile"), { recursive: true });
@@ -138,6 +157,7 @@ describe("ejectHarness", () => {
 		const result = await ejectHarness(tempDir, { force: true });
 
 		expect(result.deleted).toContain(".greptile");
+		expect(result.deleted).toContain(".github/workflows/greptile-review.yml");
 		expect(result.warnings).toEqual(
 			expect.arrayContaining([
 				expect.stringContaining(
@@ -149,7 +169,11 @@ describe("ejectHarness", () => {
 		expect(existsSync(join(tempDir, ".github/workflows/pr-pipeline.yml"))).toBe(
 			true,
 		);
+		expect(
+			existsSync(join(tempDir, ".github/workflows/greptile-review.yml")),
+		).toBe(false);
 		expect(existsSync(join(tempDir, ".greptile"))).toBe(false);
+		expect(existsSync(join(tempDir, ".greptile/config.json"))).toBe(false);
 	});
 
 	it("rejects manifest path traversal entries without deleting outside files", async () => {
@@ -162,6 +186,34 @@ describe("ejectHarness", () => {
 		]);
 
 		const sanitizeResult = sanitizePath(tempDir, "../outside-repo/file");
+		expect(sanitizeResult.ok).toBe(false);
+
+		await expect(ejectHarness(tempDir, { force: true })).rejects.toThrow(
+			"Path traversal blocked in manifest",
+		);
+		expect(existsSync(outsideFile)).toBe(true);
+
+		rmSync(outsideDir, { recursive: true, force: true });
+	});
+
+	it("rejects workflow manifest path traversal entries before manual-review checks", async () => {
+		writeFileSync(join(tempDir, "harness.contract.json"), "{}");
+		const outsideDir = mkdtempSync(
+			join(tmpdir(), "harness-eject-workflow-outside-"),
+		);
+		const outsideFile = join(outsideDir, "passwd");
+		writeFileSync(outsideFile, "preserve me");
+		writeRestoreManifest(tempDir, [
+			{
+				path: ".github/workflows/../../../outside/passwd",
+				action: "created",
+			},
+		]);
+
+		const sanitizeResult = sanitizePath(
+			tempDir,
+			".github/workflows/../../../outside/passwd",
+		);
 		expect(sanitizeResult.ok).toBe(false);
 
 		await expect(ejectHarness(tempDir, { force: true })).rejects.toThrow(
@@ -204,8 +256,13 @@ describe("ejectHarness", () => {
 			join(tempDir, ".github/workflows/pr-pipeline.yml"),
 			"name: keep for manual review\n",
 		);
+		writeFileSync(
+			join(tempDir, ".github/workflows/greptile-review.yml"),
+			"name: Greptile\n",
+		);
 		writeRestoreManifest(tempDir, [
 			{ path: ".github/workflows/pr-pipeline.yml", action: "created" },
+			{ path: ".github/workflows/greptile-review.yml", action: "created" },
 			{ path: ".greptile/config.json", action: "created" },
 		]);
 		const infoSpy = vi.spyOn(console, "info").mockImplementation(() => {});
@@ -220,6 +277,7 @@ describe("ejectHarness", () => {
 		expect(warnSpy).not.toHaveBeenCalled();
 		expect(result.deleted).toContain(".coderabbit.yaml");
 		expect(result.deleted).toContain(".greptile");
+		expect(result.deleted).toContain(".github/workflows/greptile-review.yml");
 		expect(result.warnings).toEqual(
 			expect.arrayContaining([
 				expect.stringContaining(

@@ -189,9 +189,9 @@ Internally, the system should be rebuilt from scratch around deterministic boots
 
 ### Deferred to Planning
 
-- [Affects R6][Technical] Should Infisical authentication be host-level or service-level for the Drone server and runner in v1?
-- [Affects R3][Technical] What should the exact bootstrap artifact set be: shell scripts only, shell plus cloud-init, or shell plus cloud-init plus Compose templates?
-- [Affects R14][Needs research] What is the smallest useful operator verification command set that proves the full platform is healthy after bootstrap or rebuild?
+- Affects R6. Technical question: Should Infisical authentication be host-level or service-level for the Drone server and runner in v1?
+- Affects R3. Technical question: What should the exact bootstrap artifact set be: shell scripts only, shell plus cloud-init, or shell plus cloud-init plus Compose templates?
+- Affects R14. Needs research: What is the smallest useful operator verification command set that proves the full platform is healthy after bootstrap or rebuild?
 
 ## Next Steps
 
