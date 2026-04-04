@@ -391,7 +391,6 @@ describe("codex-preflight.sh template sync", () => {
 		expectCallOrder(runtimeScript);
 		expectCallOrder(templateScript);
 	});
-
 	it("scaffolds the legacy Local Memory fallback script in both runtime and template locations", () => {
 		const runtimeFallback = readFileSync(
 			join(process.cwd(), "scripts/codex-preflight-local-memory-legacy.sh"),

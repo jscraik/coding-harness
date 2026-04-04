@@ -23,5 +23,6 @@ ignores:
   - dist
   - .git
   - CODESTYLE.md  # Global canonical codestyle doc is enforced separately
+  - src/templates/CODESTYLE.md  # Vendored canonical codestyle template copy
   - CHANGELOG.md   # Auto-generated, skip linting
   - artifacts      # Auto-generated test artefacts, not source docs

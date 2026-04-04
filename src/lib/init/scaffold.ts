@@ -195,10 +195,17 @@ jobs:
       - run:
           name: Ensure pnpm available
           command: |
-            if ! command -v pnpm >/dev/null 2>&1; then
+            required_pnpm_version="10.0.0"
+            current_pnpm_version=""
+            if command -v pnpm >/dev/null 2>&1; then
+              current_pnpm_version="$(pnpm --version || true)"
+            fi
+            if [[ "$current_pnpm_version" != "$required_pnpm_version" ]]; then
               export NPM_CONFIG_PREFIX="$HOME/.local"
               export PATH="$NPM_CONFIG_PREFIX/bin:$PATH"
-              npm install --global pnpm@10.0.0
+              echo 'export NPM_CONFIG_PREFIX="$HOME/.local"' >> "$BASH_ENV"
+              echo 'export PATH="$HOME/.local/bin:$PATH"' >> "$BASH_ENV"
+              npm install --global --prefix "$NPM_CONFIG_PREFIX" "pnpm@${"${required_pnpm_version}"}"
             fi
             pnpm --version
       - run:
@@ -225,6 +232,24 @@ workflows:
     jobs:
       - pr-pipeline
 `;
+}
+
+function renderGitHubActionsPnpmSetupStep(): string {
+	return `      - name: Ensure pnpm available
+        run: |
+          required_pnpm_version="10.0.0"
+          current_pnpm_version=""
+          if command -v pnpm >/dev/null 2>&1; then
+            current_pnpm_version="$(pnpm --version || true)"
+          fi
+          if [[ "$current_pnpm_version" != "$required_pnpm_version" ]]; then
+            export NPM_CONFIG_PREFIX="$HOME/.local"
+            mkdir -p "$NPM_CONFIG_PREFIX"
+            npm install --global --prefix "$NPM_CONFIG_PREFIX" "pnpm@${"${required_pnpm_version}"}"
+            echo "$NPM_CONFIG_PREFIX/bin" >> "$GITHUB_PATH"
+            export PATH="$NPM_CONFIG_PREFIX/bin:$PATH"
+          fi
+          pnpm --version`;
 }
 
 /**
@@ -1520,8 +1545,7 @@ export const TEMPLATES: Template[] = [
       - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
         with:
           node-version: "24"
-      - name: Enable corepack
-        run: corepack enable
+${renderGitHubActionsPnpmSetupStep()}
       - name: Install dependencies
         run: ${installCommand}
       - name: Enforce Linear-first issue tracking policy
@@ -1658,8 +1682,7 @@ ${linearGateJob}
       - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
         with:
           node-version: "24"
-      - name: Enable corepack
-        run: corepack enable
+${renderGitHubActionsPnpmSetupStep()}
       - name: Install dependencies
         run: ${installCommand}
       - name: Run fast preflight policy gate
@@ -1760,8 +1783,7 @@ ${linearGateJob}
       - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
         with:
           node-version: "24"
-      - name: Enable corepack
-        run: corepack enable
+${renderGitHubActionsPnpmSetupStep()}
       - name: Install dependencies
         run: ${installCommand}
       - name: Prepare baseline seed fallback
@@ -1830,8 +1852,7 @@ ${linearGateJob}
       - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
         with:
           node-version: "24"
-      - name: Enable corepack
-        run: corepack enable
+${renderGitHubActionsPnpmSetupStep()}
       - name: Install dependencies
         run: ${installCommand}
       - name: Detect baseline seed
@@ -1894,8 +1915,7 @@ ${linearGateJob}
       - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
         with:
           node-version: "24"
-      - name: Enable corepack
-        run: corepack enable
+${renderGitHubActionsPnpmSetupStep()}
       - name: Install dependencies
         run: ${installCommand}
       - name: Run lint
@@ -1910,8 +1930,7 @@ ${linearGateJob}
       - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
         with:
           node-version: "24"
-      - name: Enable corepack
-        run: corepack enable
+${renderGitHubActionsPnpmSetupStep()}
       - name: Install dependencies
         run: ${installCommand}
       - name: Run typecheck
@@ -1926,8 +1945,7 @@ ${linearGateJob}
       - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
         with:
           node-version: "24"
-      - name: Enable corepack
-        run: corepack enable
+${renderGitHubActionsPnpmSetupStep()}
       - name: Install dependencies
         run: ${installCommand}
       - name: Run tests
@@ -1942,8 +1960,7 @@ ${linearGateJob}
       - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
         with:
           node-version: "24"
-      - name: Enable corepack
-        run: corepack enable
+${renderGitHubActionsPnpmSetupStep()}
       - name: Install dependencies
         run: ${installCommand}
       - name: Run audit
@@ -1958,8 +1975,7 @@ ${linearGateJob}
       - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
         with:
           node-version: "24"
-      - name: Enable corepack
-        run: corepack enable
+${renderGitHubActionsPnpmSetupStep()}
       - name: Install dependencies
         run: ${installCommand}
       - name: Run full check

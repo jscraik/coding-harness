@@ -39,7 +39,7 @@
 		"test:ci": "bash scripts/test-ci.sh",
 		"test:watch": "vitest",
 		"test:deep": "pnpm check && pnpm test:artifacts",
-		"build": "tsc && cp -r src/presets dist/presets && cp -r src/templates dist/templates && cp CODESTYLE.md dist/templates/CODESTYLE.md && chmod +x dist/cli.js",
+		"build": "tsc && cp -r src/presets dist/presets && cp -r src/templates dist/templates && chmod +x dist/cli.js",
 		"prepublishOnly": "pnpm check && pnpm build",
 		"changelog": "standard-version --skip.bump --skip.tag --skip.commit",
 		"release": "standard-version",

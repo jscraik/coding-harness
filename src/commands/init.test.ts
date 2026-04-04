@@ -227,7 +227,9 @@ describe("runInit", () => {
 			);
 			expect(circleConfig).toContain("name: Ensure pnpm available");
 			expect(circleConfig).toContain('export NPM_CONFIG_PREFIX="$HOME/.local"');
-			expect(circleConfig).toContain("npm install --global pnpm@10.0.0");
+			expect(circleConfig).toContain(
+				'npm install --global --prefix "$NPM_CONFIG_PREFIX" "pnpm@${required_pnpm_version}"',
+			);
 			expect(circleConfig).not.toContain("name: Enable corepack");
 
 			const transitionStatus = JSON.parse(
@@ -725,6 +727,11 @@ describe("runInit", () => {
 			expect(content).toContain("pnpm test");
 			expect(content).toContain("pnpm lint");
 			expect(content).toContain("pnpm check");
+			expect(content).toContain("name: Ensure pnpm available");
+			expect(content).toContain(
+				'echo "$NPM_CONFIG_PREFIX/bin" >> "$GITHUB_PATH"',
+			);
+			expect(content).not.toContain("name: Enable corepack");
 			expect(content).toContain("name: pr-template");
 			expect(content).toContain("Validate memory.json");
 			expect(content).toContain("test -f memory.json");
