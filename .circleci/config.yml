@@ -18,7 +18,7 @@ jobs:
       - run:
           name: Ensure pnpm available
           command: |
-            corepack enable
+            sudo corepack enable
             corepack prepare pnpm@10.0.0 --activate
             pnpm --version
       - run:
@@ -65,7 +65,7 @@ jobs:
       - run:
           name: Ensure pnpm available
           command: |
-            corepack enable
+            sudo corepack enable
             corepack prepare pnpm@10.0.0 --activate
             pnpm --version
       - run:
@@ -112,7 +112,7 @@ jobs:
       - run:
           name: Ensure pnpm available
           command: |
-            corepack enable
+            sudo corepack enable
             corepack prepare pnpm@10.0.0 --activate
             pnpm --version
       - run:
