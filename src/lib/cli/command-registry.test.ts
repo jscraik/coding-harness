@@ -25,6 +25,7 @@ describe("command registry", () => {
 			"branch-protect",
 			"check-authz",
 			"check-environment",
+			"local-memory-preflight",
 			"docs-gate",
 			"license-gate",
 			"symphony-check",

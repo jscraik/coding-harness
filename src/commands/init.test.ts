@@ -44,6 +44,7 @@ const EXPECTED_TEMPLATE_PATHS = [
 	"prek.toml",
 	"CODESTYLE.md",
 	"scripts/codex-preflight.sh",
+	"scripts/codex-preflight-local-memory-legacy.sh",
 	"scripts/codex-learn",
 	"scripts/codex-enforced",
 	"scripts/verify-work.sh",
@@ -164,6 +165,11 @@ describe("runInit", () => {
 			expect(existsSync(join(tempDir, "memory.json"))).toBe(true);
 			expect(existsSync(join(tempDir, "scripts/codex-learn"))).toBe(true);
 			expect(existsSync(join(tempDir, "scripts/codex-enforced"))).toBe(true);
+			expect(
+				existsSync(
+					join(tempDir, "scripts/codex-preflight-local-memory-legacy.sh"),
+				),
+			).toBe(true);
 			expect(existsSync(join(tempDir, "scripts/verify-work.sh"))).toBe(true);
 			expect(existsSync(join(tempDir, "CODESTYLE.md"))).toBe(true);
 			expect(existsSync(join(tempDir, "scripts/validate-codestyle.sh"))).toBe(
@@ -1352,6 +1358,9 @@ describe("runInit", () => {
 			expect(environmentCheck).toContain('MAKEFILE_PATH="$REPO_ROOT/Makefile"');
 			expect(environmentCheck).toContain("required_support_files=(");
 			expect(environmentCheck).toContain('"scripts/verify-work.sh"');
+			expect(environmentCheck).toContain(
+				'"scripts/codex-preflight-local-memory-legacy.sh"',
+			);
 			expect(environmentCheck).toContain('"scripts/codex-learn"');
 			expect(environmentCheck).toContain('"scripts/codex-enforced"');
 			expect(environmentCheck).toContain('"scripts/prepare-worktree.sh"');
@@ -1413,6 +1422,9 @@ describe("runInit", () => {
 			expect(environmentCheck).toContain("NPM_TOKEN");
 			expect(environmentCheck).toContain("required_support_files=(");
 			expect(environmentCheck).toContain('"scripts/codex-preflight.sh"');
+			expect(environmentCheck).toContain(
+				'"scripts/codex-preflight-local-memory-legacy.sh"',
+			);
 			expect(environmentCheck).toContain("required_make_targets=(");
 			expect(environmentCheck).toContain('"preflight"');
 			expect(environmentCheck).toContain('"worktree-ready"');
@@ -1425,13 +1437,15 @@ describe("runInit", () => {
 			expect(codexPreflight).toContain("Legacy compatibility:");
 			expect(codexPreflight).toContain("local local_memory_mode='required'");
 			expect(codexPreflight).toContain("preflight_local_memory_gold()");
+			expect(codexPreflight).toContain(
+				'LOCAL_MEMORY_FALLBACK_SCRIPT="${SCRIPT_DIR}/codex-preflight-local-memory-legacy.sh"',
+			);
+			expect(codexPreflight).toContain(
+				"run_local_memory_preflight_via_harness()",
+			);
+			expect(codexPreflight).toContain("local-memory-preflight");
 			expect(codexPreflight).toContain("scripts/verify-work.sh");
-			expect(codexPreflight).toContain(
-				'local lm_config_path="${LOCAL_MEMORY_CONFIG_PATH:-${HOME}/.local-memory/config.yaml}"',
-			);
-			expect(codexPreflight).toContain(
-				"log_ok 'local-memory preflight passed'",
-			);
+			expect(codexPreflight).toContain("preflight_local_memory_shell_fallback");
 			expect(codexPreflight).toContain("preflight_repo() {");
 			expect(codexPreflight).toContain("resolve_script_path()");
 			expect(codexPreflight).toContain("is_script_sourced()");

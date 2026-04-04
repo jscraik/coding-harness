@@ -287,6 +287,7 @@ export const REQUIRED_MAKEFILE_TARGETS = [
 
 export const REQUIRED_HOOK_SUPPORT_FILES = [
 	"scripts/codex-preflight.sh",
+	"scripts/codex-preflight-local-memory-legacy.sh",
 	"scripts/codex-learn",
 	"scripts/codex-enforced",
 	"scripts/verify-work.sh",

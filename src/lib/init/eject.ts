@@ -25,6 +25,14 @@ export class EjectCancelledError extends Error {
 	}
 }
 
+function isLegacyGreptilePath(path: string): boolean {
+	return (
+		path === ".greptile" ||
+		path.startsWith(".greptile/") ||
+		path === ".github/workflows/greptile-review.yml"
+	);
+}
+
 /**
  * Remove coding-harness artifacts from a repository at the given path.
  *
@@ -87,6 +95,10 @@ export async function ejectHarness(
 		[".coderabbit.yaml", join(repoRoot, ".coderabbit.yaml")],
 		[".greptile", join(repoRoot, ".greptile")],
 		[
+			".github/workflows/greptile-review.yml",
+			join(repoRoot, ".github/workflows/greptile-review.yml"),
+		],
+		[
 			".agents/skills/coding-harness",
 			join(repoRoot, ".agents/skills/coding-harness"),
 		],
@@ -104,7 +116,10 @@ export async function ejectHarness(
 				continue;
 			}
 
-			if (entry.path.startsWith(".github/workflows/")) {
+			if (
+				entry.path.startsWith(".github/workflows/") &&
+				!isLegacyGreptilePath(entry.path)
+			) {
 				workflowPaths.add(entry.path);
 				continue;
 			}

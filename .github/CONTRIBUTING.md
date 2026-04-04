@@ -16,7 +16,7 @@ If you only need the shortest reliable contribution flow:
 2. Make the smallest focused change that solves the task.
 3. Run the smallest relevant validation first, then `pnpm check` when behavior changes.
 4. Open a pull request with the repository template.
-5. Keep Greptile review independent from the coding agent.
+5. Keep CodeRabbit review independent from the coding agent.
 
 ## Canonical guide
 
@@ -27,7 +27,7 @@ Use that document for:
 
 - branch naming and worktree rules
 - required local gates
-- Greptile setup and review policy
+- CodeRabbit setup and review policy
 - branch protection expectations
 - credential-safe evidence handling
 
@@ -47,8 +47,8 @@ workflow:
 - no direct pushes to `main`
 - pull request required for every merge
 - required checks must pass
-- Greptile and Codex review artifacts must be present unless explicitly waived
-- Greptile review must be performed by an independent reviewer
+- CodeRabbit and Codex review artifacts must be present unless explicitly waived
+- CodeRabbit review must be performed by an independent reviewer
 
 ## Security reporting
 

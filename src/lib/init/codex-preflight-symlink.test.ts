@@ -12,6 +12,7 @@ import {
 	mkdtempSync,
 	readFileSync,
 	rmSync,
+	statSync,
 	symlinkSync,
 	writeFileSync,
 } from "node:fs";
@@ -36,6 +37,10 @@ const ALLOWED_ABS_2 = join(homedir(), ".codex", "instructions", "CODESTYLE.md");
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
 const PREFLIGHT_PATH = join(process.cwd(), "scripts/codex-preflight.sh");
+const SYNC_SCRIPT_PATH = join(
+	process.cwd(),
+	"scripts/sync-codex-preflight.cjs",
+);
 
 function writeAllowList(root: string, entries: string[]): void {
 	mkdirSync(join(root, ".codex"), { recursive: true });
@@ -385,5 +390,101 @@ describe("codex-preflight.sh template sync", () => {
 
 		expectCallOrder(runtimeScript);
 		expectCallOrder(templateScript);
+	});
+
+	it("scaffolds the legacy Local Memory fallback script in both runtime and template locations", () => {
+		const runtimeFallback = readFileSync(
+			join(process.cwd(), "scripts/codex-preflight-local-memory-legacy.sh"),
+			"utf-8",
+		);
+		const templateFallback = readFileSync(
+			join(
+				process.cwd(),
+				"src/templates/codex-preflight-local-memory-legacy.sh",
+			),
+			"utf-8",
+		);
+
+		expect(runtimeFallback).toContain("preflight_local_memory_shell_fallback");
+		expect(templateFallback).toContain("preflight_local_memory_shell_fallback");
+		expect(runtimeFallback).toBe(templateFallback);
+	});
+});
+
+describe("codex-preflight sync script", () => {
+	let tempDir: string;
+
+	beforeEach(() => {
+		tempDir = mkdtempSync(join(tmpdir(), "harness-preflight-sync-test-"));
+	});
+
+	afterEach(() => {
+		rmSync(tempDir, { recursive: true, force: true });
+	});
+
+	function runSyncScript(args: string[]): {
+		stdout: string;
+		stderr: string;
+		status: number;
+	} {
+		const result = spawnSync("node", [SYNC_SCRIPT_PATH, ...args], {
+			cwd: process.cwd(),
+			encoding: "utf8",
+		});
+
+		return {
+			stdout: result.stdout ?? "",
+			stderr: result.stderr ?? "",
+			status: result.status ?? 127,
+		};
+	}
+
+	it("fails in check mode when the runtime copy drifts from the canonical template", () => {
+		const sourcePath = join(tempDir, "canonical.sh");
+		const targetPath = join(tempDir, "runtime.sh");
+
+		writeFileSync(sourcePath, "#!/usr/bin/env bash\necho canonical\n", "utf-8");
+		writeFileSync(targetPath, "#!/usr/bin/env bash\necho drifted\n", "utf-8");
+
+		const result = runSyncScript([
+			"--check",
+			"--source",
+			sourcePath,
+			"--target",
+			targetPath,
+		]);
+
+		expect(result.status).toBe(1);
+		expect(result.stderr).toContain("target drift detected");
+	});
+
+	it("writes the runtime copy from the canonical template and sets executable mode", () => {
+		const sourcePath = join(tempDir, "canonical.sh");
+		const targetPath = join(tempDir, "runtime.sh");
+
+		writeFileSync(sourcePath, "#!/usr/bin/env bash\necho canonical\n", "utf-8");
+		writeFileSync(targetPath, "#!/usr/bin/env bash\necho drifted\n", "utf-8");
+
+		const writeResult = runSyncScript([
+			"--write",
+			"--source",
+			sourcePath,
+			"--target",
+			targetPath,
+		]);
+		expect(writeResult.status).toBe(0);
+
+		const checkResult = runSyncScript([
+			"--check",
+			"--source",
+			sourcePath,
+			"--target",
+			targetPath,
+		]);
+		expect(checkResult.status).toBe(0);
+		expect(readFileSync(targetPath, "utf-8")).toBe(
+			readFileSync(sourcePath, "utf-8"),
+		);
+		expect(statSync(targetPath).mode & 0o111).toBeTruthy();
 	});
 });

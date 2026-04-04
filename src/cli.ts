@@ -259,6 +259,11 @@ function printUsage(): void {
 	console.info("  --attestation    Path to write attestation artifact");
 	console.info("  --json           Output as JSON");
 	console.info("");
+	console.info("Local Memory Preflight Options:");
+	console.info("  --config        Path to local-memory config.yaml");
+	console.info("  --daemon-log    Path to local-memory daemon.log");
+	console.info("  --json          Output as JSON");
+	console.info("");
 	console.info("Pilot Evaluate Options:");
 	console.info("  --artifacts      Artifacts directory (required)");
 	console.info("  --contract       Path to harness.contract.json");

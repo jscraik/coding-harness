@@ -8,6 +8,7 @@ import { runLinearGateCLI } from "../../commands/linear-gate.js";
 import { runLinearPrepareCLI } from "../../commands/linear-prepare.js";
 import { runLinearSyncCLI } from "../../commands/linear-sync.js";
 import { runLinearWorkflowCLI } from "../../commands/linear-workflow.js";
+import { runLocalMemoryPreflightCLI } from "../../commands/local-memory-preflight.js";
 import { runPolicyGateCLI } from "../../commands/policy-gate.js";
 import { runPrTemplateGateCLI } from "../../commands/pr-template-gate.js";
 import { runPreflightGateCLI } from "../../commands/preflight-gate.js";
@@ -458,6 +459,26 @@ const COMMAND_SPECS: CommandSpec[] = [
 			}
 
 			return runCheckEnvironmentCLI(options);
+		},
+	},
+	{
+		name: "local-memory-preflight",
+		summary: "Run the structured Local Memory preflight smoke checks",
+		errorLabel: "Local Memory Preflight Error",
+		execute: (args) => {
+			const jsonFlag = args.includes("--json");
+			const configIndex = args.indexOf("--config");
+			const daemonLogIndex = args.indexOf("--daemon-log");
+
+			const options: Parameters<typeof runLocalMemoryPreflightCLI>[0] = {};
+
+			if (jsonFlag) options.json = true;
+			const configArg = getFlagValue(args, configIndex);
+			if (configArg !== undefined) options.configPath = configArg;
+			const daemonLogArg = getFlagValue(args, daemonLogIndex);
+			if (daemonLogArg !== undefined) options.daemonLogPath = daemonLogArg;
+
+			return runLocalMemoryPreflightCLI(options);
 		},
 	},
 	{
