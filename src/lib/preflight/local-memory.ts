@@ -23,10 +23,22 @@ interface ParsedLocalMemoryConfig {
 const DEFAULT_CONFIG_PATH = `${process.env.HOME}/.local-memory/config.yaml`;
 const DEFAULT_DAEMON_LOG_PATH = `${process.env.HOME}/.local-memory/daemon.log`;
 
+/**
+ * Pause execution for a specified duration.
+ *
+ * @param ms - Duration to wait in milliseconds
+ * @returns Resolves with no value after the specified duration
+ */
 function sleep(ms: number): Promise<void> {
 	return new Promise((resolve) => setTimeout(resolve, ms));
 }
 
+/**
+ * Extracts the last line that begins with `{` from a newline-delimited string.
+ *
+ * @param raw - The raw multi-line text to scan (for example, combined stdout/stderr).
+ * @returns The last line starting with `{`, or an empty string if no such line exists.
+ */
 function extractLastJsonLine(raw: string): string {
 	let lastJsonLine = "";
 	for (const line of raw.split(/\r?\n/)) {
@@ -37,6 +49,12 @@ function extractLastJsonLine(raw: string): string {
 	return lastJsonLine;
 }
 
+/**
+ * Parses a JSON string into a typed value.
+ *
+ * @param raw - The JSON text to parse.
+ * @returns The parsed value if `raw` is valid JSON, `undefined` otherwise.
+ */
 function parseJson<T>(raw: string): T | undefined {
 	try {
 		return JSON.parse(raw) as T;
@@ -45,6 +63,13 @@ function parseJson<T>(raw: string): T | undefined {
 	}
 }
 
+/**
+ * Executes a system command synchronously and returns its combined stdout/stderr and success status.
+ *
+ * @param command - The executable or command to run
+ * @param args - Array of command-line arguments to pass to the command
+ * @returns An object with `ok` set to `true` when the process exited with status `0` and no spawn error, and `output` containing the concatenated stdout and stderr (trimmed)
+ */
 function commandOutput(
 	command: string,
 	args: string[],
@@ -62,6 +87,12 @@ function commandOutput(
 	};
 }
 
+/**
+ * Detects whether daemon output contains the PID-file sandbox permission failure pattern.
+ *
+ * @param output - Combined stdout/stderr text from a `local-memory` command
+ * @returns `true` if `output` contains both `"failed to write PID file"` and `"operation not permitted"`, `false` otherwise
+ */
 function isLocalMemoryPidfileSandboxBlock(output: string): boolean {
 	return (
 		output.includes("failed to write PID file") &&
@@ -69,6 +100,20 @@ function isLocalMemoryPidfileSandboxBlock(output: string): boolean {
 	);
 }
 
+/**
+ * Reads a local-memory YAML config file and extracts REST API settings and policy checks.
+ *
+ * Parses only the indented `rest_api:` block from the given file (by scanning lines), extracts
+ * `host`, `port`, and the presence of `auto_port: false`, and returns the resolved REST host/port
+ * along with two policy booleans:
+ * - `hostPolicyOk` is `true` when `rest_api.host` equals `127.0.0.1`.
+ * - `autoPortPolicyOk` is `true` when `rest_api.auto_port` is explicitly set to `false`.
+ *
+ * If `host` or `port` are not found, defaults are used: `restHost = "127.0.0.1"` and `restPort = 3002`.
+ *
+ * @param configPath - Path to the YAML config file to read and parse.
+ * @returns An object with `hostPolicyOk`, `autoPortPolicyOk`, `restHost`, and `restPort`.
+ */
 function parseConfig(configPath: string): ParsedLocalMemoryConfig {
 	const raw = readFileSync(configPath, "utf-8");
 	const lines = raw.split(/\r?\n/);
@@ -116,6 +161,15 @@ function parseConfig(configPath: string): ParsedLocalMemoryConfig {
 	};
 }
 
+/**
+ * Fetches a URL and returns the response status and body text, enforcing a 5-second timeout.
+ *
+ * The provided `init` options are passed to `fetch` but the `signal` is overridden to abort after 5000 ms.
+ *
+ * @param url - The request URL
+ * @param init - Optional `fetch` init options to apply to the request; `signal` will be replaced with a 5s timeout signal
+ * @returns An object with `ok` indicating HTTP success, the numeric `status`, and the response `text`
+ */
 async function fetchText(
 	url: string,
 	init?: RequestInit,
@@ -131,6 +185,13 @@ async function fetchText(
 	};
 }
 
+/**
+ * Fetches the given URL and parses the response body as JSON.
+ *
+ * @param url - The request URL
+ * @param init - Optional fetch init options (method, headers, body, etc.)
+ * @returns An object with the HTTP `status`, an `ok` flag, and `json` which is the parsed response body or `undefined` if parsing failed
+ */
 async function fetchJson(
 	url: string,
 	init?: RequestInit,
@@ -143,6 +204,19 @@ async function fetchJson(
 	};
 }
 
+/**
+ * Determine the count of search hits represented by common response payload shapes.
+ *
+ * Accepts multiple possible payload shapes returned by the local-memory API or search endpoints and infers a hit count.
+ *
+ * @param payload - The response payload to inspect. Supported shapes:
+ *   - An array (returns its length)
+ *   - An object with `search_info.total_results` (numeric)
+ *   - An object with a `results` array
+ *   - An object with a `data.results` array
+ *   - An object where `data` is an array
+ * @returns The inferred hit count, or `0` if no recognizable count is found.
+ */
 function getSearchHitCount(payload: unknown): number {
 	if (Array.isArray(payload)) {
 		return payload.length;
@@ -173,6 +247,15 @@ function getSearchHitCount(payload: unknown): number {
 	return 0;
 }
 
+/**
+ * Extracts a memory identifier from a JSON-like payload.
+ *
+ * Checks the top-level `id` and `memory_id` fields, then looks for `id` or `memory_id`
+ * inside a nested `data` object.
+ *
+ * @param payload - The value to search for a memory identifier; typically an object parsed from JSON.
+ * @returns The memory ID string if found, `undefined` otherwise.
+ */
 function extractMemoryId(payload: unknown): string | undefined {
 	if (!payload || typeof payload !== "object") {
 		return undefined;
@@ -196,6 +279,12 @@ function extractMemoryId(payload: unknown): string | undefined {
 	return undefined;
 }
 
+/**
+ * Extracts a relationship identifier from common payload shapes.
+ *
+ * @param payload - An object that may contain `id` or `relationship_id` at the top level or inside a `data` object.
+ * @returns The extracted relationship id as a string if present, `undefined` otherwise.
+ */
 function extractRelationshipId(payload: unknown): string | undefined {
 	if (!payload || typeof payload !== "object") {
 		return undefined;
@@ -219,6 +308,15 @@ function extractRelationshipId(payload: unknown): string | undefined {
 	return undefined;
 }
 
+/**
+ * Determines whether a parsed API/service payload should be considered successful.
+ *
+ * If the payload is an object and contains a boolean `success` property, that value is used;
+ * otherwise any object payload is treated as successful. Non-object or falsy payloads are treated as failures.
+ *
+ * @param payload - The value to inspect for an explicit `success` boolean or implicit success.
+ * @returns `true` if the payload represents success, `false` otherwise.
+ */
 function isSuccessPayload(payload: unknown): boolean {
 	if (!payload || typeof payload !== "object") {
 		return false;
@@ -230,6 +328,15 @@ function isSuccessPayload(payload: unknown): boolean {
 	return true;
 }
 
+/**
+ * Polls the local-memory health endpoint until it reports success or the attempt limit is reached.
+ *
+ * Repeatedly requests `healthUrl`, ignoring transient errors, and waits 1 second between attempts.
+ *
+ * @param healthUrl - The full URL of the local-memory health endpoint to poll (e.g. `http://127.0.0.1:3002/api/v1/health`).
+ * @param maxAttempts - Maximum number of attempts before giving up.
+ * @returns The parsed health JSON when the endpoint indicates success, `undefined` if health was not achieved within `maxAttempts`.
+ */
 async function waitForLocalMemoryHealth(
 	healthUrl: string,
 	maxAttempts: number,
@@ -248,6 +355,14 @@ async function waitForLocalMemoryHealth(
 	return undefined;
 }
 
+/**
+ * Verifies a local "local-memory" installation and runs a full smoke test.
+ *
+ * Performs these high-level checks and actions: confirms the `local-memory` binary and reports its version; validates REST-related config policy (`rest_api.host` must be `127.0.0.1` and `auto_port: false`); probes daemon status (may attempt to start the daemon and wait for health); ensures the REST `/api/v1/health` endpoint reports success; exercises a smoke cycle (POST two observations, create a relationship, and verify search returns the probe); validates rejection of a malformed observe payload and records duplicate-observe behavior; and optionally scans the daemon log tail for migration/version markers. On any fatal check the function returns early with a failing result and an ordered list of human-readable messages.
+ *
+ * @param options - Optional overrides: `configPath` to use a non-default local-memory YAML config, and `daemonLogPath` to inspect a non-default daemon log file.
+ * @returns A result object containing `passed` (true only if all checks and the smoke cycle succeeded), an ordered `messages` array describing each step and any errors, and optionally `healthUrl` and `version` when available.
+ */
 export async function runLocalMemoryPreflight(
 	options: LocalMemoryPreflightOptions = {},
 ): Promise<LocalMemoryPreflightOutput> {

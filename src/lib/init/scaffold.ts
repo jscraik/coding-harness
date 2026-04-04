@@ -227,6 +227,11 @@ workflows:
 `;
 }
 
+/**
+ * Load the packaged Codex preflight shell template resolved relative to this module.
+ *
+ * @returns The UTF-8 contents of the templates/codex-preflight.sh file
+ */
 function renderCodexPreflightTemplate(): string {
 	const templatePath = fileURLToPath(
 		new URL("../../templates/codex-preflight.sh", import.meta.url),
@@ -234,6 +239,11 @@ function renderCodexPreflightTemplate(): string {
 	return readFileSync(templatePath, "utf-8");
 }
 
+/**
+ * Load the legacy Codex preflight shell template used for local memory workflows.
+ *
+ * @returns The UTF-8 contents of the packaged template file `templates/codex-preflight-local-memory-legacy.sh`.
+ */
 function renderCodexPreflightLegacyLocalMemoryTemplate(): string {
 	const templatePath = fileURLToPath(
 		new URL(
@@ -244,6 +254,11 @@ function renderCodexPreflightLegacyLocalMemoryTemplate(): string {
 	return readFileSync(templatePath, "utf-8");
 }
 
+/**
+ * Load the packaged Codex "learn" shell template used by the scaffold.
+ *
+ * @returns The UTF-8 contents of the `templates/codex-learn.sh` template file
+ */
 function renderCodexLearnTemplate(): string {
 	const templatePath = fileURLToPath(
 		new URL("../../templates/codex-learn.sh", import.meta.url),
@@ -975,7 +990,8 @@ ${contactLinks.join("\n")}
 /**
  * Load the CodeRabbit configuration template, preferring the packaged template bundled with the tool and falling back to the repository root `.coderabbit.yaml`.
  *
- * @returns The UTF-8 text contents of the selected `.coderabbit.yaml` template
+ * @returns The UTF-8 text contents of the selected `.coderabbit.yaml` template.
+ * @throws If neither the packaged template nor the repository `.coderabbit.yaml` can be read (file missing or read failure).
  */
 function renderCodeRabbitTemplate(): string {
 	const packagedTemplatePath = fileURLToPath(

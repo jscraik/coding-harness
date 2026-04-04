@@ -25,6 +25,7 @@ WORKSPACE_ROOT="$(cd -- "${SCRIPT_DIR}/.." && pwd -P)"
 PREFLIGHT_OVERRIDES_FILE="${WORKSPACE_ROOT}/.harness/memory/codex-preflight-overrides.env"
 LOCAL_MEMORY_FALLBACK_SCRIPT="${SCRIPT_DIR}/codex-preflight-local-memory-legacy.sh"
 
+# usage prints the CLI usage text, available options, examples, and the legacy positional-interface note for the codex preflight script.
 usage() {
 	cat <<'USAGE'
 Usage:
@@ -83,7 +84,8 @@ append_csv_values() {
 	printf '%s,%s\n' "${base_csv}" "${extra_csv}"
 }
 
-# load_preflight_overrides loads preflight override variables from a file into PREFLIGHT_OVERRIDE_BINS, PREFLIGHT_OVERRIDE_PATHS, and PREFLIGHT_OVERRIDE_ALLOWED_EXTERNAL_PATHS; if the file does not exist the variables are set to empty and the function returns success.
+# load_preflight_overrides loads preflight override variables from a file into PREFLIGHT_OVERRIDE_BINS, PREFLIGHT_OVERRIDE_PATHS, and PREFLIGHT_OVERRIDE_ALLOWED_EXTERNAL_PATHS.
+# override_file is the path to an optional overrides file; if the file does not exist the variables are set to empty and the function returns success (0).
 load_preflight_overrides() {
 	local override_file="$1"
 
@@ -101,6 +103,7 @@ load_preflight_overrides() {
 	PREFLIGHT_OVERRIDE_ALLOWED_EXTERNAL_PATHS="${CODEX_PREFLIGHT_ALLOWED_EXTERNAL_PATHS:-}"
 }
 
+# detect_stack determines the project stack by checking for standard manifest files and echoes one of: `js`, `py`, `rust`, or `repo`.
 detect_stack() {
 	if [[ -f package.json ]]; then
 		echo js
@@ -128,7 +131,7 @@ stack_bins_csv() {
 }
 
 # stack_paths_csv returns a comma-separated list of repository paths required for the specified stack (`js`, `py`, `rust`, or `repo`).
-# On unknown stack values it logs an error and returns exit code 2.
+# stack_paths_csv returns a comma-separated list of repository paths required for the given stack (js, py, rust, repo); on unknown stack it logs an error and returns exit code 2.
 stack_paths_csv() {
 	case "$1" in
 		js) echo 'package.json,CODESTYLE.md,CONTRIBUTING.md,Makefile,scripts,scripts/codex-preflight.sh,scripts/codex-preflight-local-memory-legacy.sh,scripts/verify-work.sh,scripts/validate-codestyle.sh' ;;
@@ -215,7 +218,7 @@ is_allowed_repo_external_path() {
 # check_paths validates that each path (comma-separated, supports globs) exists and is located inside the repository root.
 # It treats unmatched globs as literal entries, resolves symlinks/real paths, and returns nonzero if any required path is missing or resolves outside `root` (except for allowed external exceptions).
 # @param root repository root absolute path used as the containment boundary
-# @param paths_csv comma-separated list of required paths or globs to validate
+# check_paths validates each comma-separated path or glob exists and resolves to a real path inside the given repository root, allowing explicitly approved external symlink targets; it logs a descriptive error and returns exit code 2 on missing paths, on paths that escape the repo root (and are not allowed), or on realpath resolution failures.
 check_paths() {
 	local root="$1"
 	local paths_csv="$2"
@@ -265,6 +268,7 @@ check_paths() {
 	log_ok "paths ok: ${paths_csv}"
 }
 
+# run_local_memory_preflight_with_runner runs the given Local Memory helper command, appends a `--config` argument when a config path is available, prints the helper's output on success, writes the helper's output to stderr on failure, returns `0` on success, returns `3` when the output indicates a module-resolution/unknown-command error, and otherwise returns the helper's exit status.
 run_local_memory_preflight_with_runner() {
 	local runner_label="$1"
 	shift
@@ -297,6 +301,7 @@ run_local_memory_preflight_with_runner() {
 	return "${status}"
 }
 
+# run_local_memory_preflight_via_harness attempts to run the local-memory preflight using available harness runners in preferred order (repo source via pnpm+tsx, repo dist CLI via node, repo wrapper script, then global `harness`), returning the executed runner's exit status or `3` if no runner is available.
 run_local_memory_preflight_via_harness() {
 	if [[ -f "${WORKSPACE_ROOT}/src/dev/run-local-memory-preflight.ts" ]] && command -v pnpm >/dev/null 2>&1; then
 		if command -v tsx >/dev/null 2>&1 || [[ -x "${WORKSPACE_ROOT}/node_modules/.bin/tsx" ]]; then
@@ -331,6 +336,7 @@ run_local_memory_preflight_via_harness() {
 	return 3
 }
 
+# preflight_local_memory_gold attempts to run a Local Memory preflight using available harness runners; if none are usable it falls back to the legacy shell preflight and returns the resulting exit status.
 preflight_local_memory_gold() {
 	local helper_status=0
 
@@ -353,6 +359,7 @@ preflight_local_memory_gold() {
 	preflight_local_memory_shell_fallback
 }
 
+# run_preflight_profile constructs argument flags for the given stack, optional expected repo fragment, bins CSV, paths CSV, and local memory mode (defaults to "required"), then invokes main with those flags.
 run_preflight_profile() {
 	local stack="$1"
 	local expected_repo="${2:-}"
@@ -377,6 +384,12 @@ run_preflight_profile() {
 	main "${args[@]}"
 }
 
+# preflight_repo runs the Codex preflight profile for a generic repository stack using sensible defaults.
+# preflight_repo [expected_repo_fragment] [bins_csv] [paths_csv] [local_memory_mode]
+# - expected_repo_fragment: optional substring to validate against the repository root (default: none).
+# - bins_csv: comma-separated required executables (default: git,bash,sed,rg,jq,curl,python3).
+# - paths_csv: comma-separated required repository files/paths (default includes CODESTYLE.md, CONTRIBUTING.md, Makefile, scripts, and preflight scripts).
+# - local_memory_mode: one of off|optional|required (default: required).
 preflight_repo() {
 	run_preflight_profile \
 		repo \
@@ -386,6 +399,7 @@ preflight_repo() {
 		"${4:-required}"
 }
 
+# preflight_js runs the preflight profile for the JavaScript (js) stack using defaults for expected repo fragment, required binaries, required repository paths, and local memory mode; positional arguments (expected_repo, bins_csv, paths_csv, local_memory_mode) override those defaults.
 preflight_js() {
 	run_preflight_profile \
 		js \
@@ -395,6 +409,7 @@ preflight_js() {
 		"${4:-required}"
 }
 
+# preflight_py runs the Codex preflight using the Python stack defaults; accepts optional arguments to override (1) expected repository fragment, (2) comma-separated binaries (default "git,bash,sed,rg,jq,curl,python3"), (3) comma-separated repository paths (default "pyproject.toml,CODESTYLE.md,CONTRIBUTING.md,Makefile,scripts,scripts/codex-preflight.sh,scripts/codex-preflight-local-memory-legacy.sh,scripts/verify-work.sh,scripts/validate-codestyle.sh"), and (4) local memory mode (`off`|`optional`|`required`, default `required`).
 preflight_py() {
 	run_preflight_profile \
 		py \
@@ -404,6 +419,13 @@ preflight_py() {
 		"${4:-required}"
 }
 
+# preflight_rust runs the preflight profile for the Rust stack using sensible defaults for binaries, paths, and local-memory mode.
+# 
+# Arguments:
+#   $1 - optional repository fragment to validate the workspace root contains (default: none).
+#   $2 - optional comma-separated list of required binaries (default: "git,bash,sed,rg,jq,curl,python3,cargo").
+#   $3 - optional comma-separated list of required repository paths/globs (default: "Cargo.toml,CODESTYLE.md,CONTRIBUTING.md,Makefile,scripts,scripts/codex-preflight.sh,scripts/codex-preflight-local-memory-legacy.sh,scripts/verify-work.sh,scripts/validate-codestyle.sh").
+#   $4 - local memory mode: one of "off", "optional", or "required" (default: "required").
 preflight_rust() {
 	run_preflight_profile \
 		rust \
@@ -413,10 +435,12 @@ preflight_rust() {
 		"${4:-required}"
 }
 
+# preflight_repo_local_memory runs a repository preflight configured for the `repo` stack with Local Memory set to required, using sensible default binaries and path lists; optional positional arguments override `expected_repo`, `bins_csv`, and `paths_csv`.
 preflight_repo_local_memory() {
 	preflight_repo "${1:-}" "${2:-git,bash,sed,rg,jq,curl,python3}" "${3:-CODESTYLE.md,CONTRIBUTING.md,Makefile,scripts,scripts/codex-preflight.sh,scripts/codex-preflight-local-memory-legacy.sh,scripts/verify-work.sh,scripts/validate-codestyle.sh}" required
 }
 
+# main orchestrates the Codex preflight checks: it parses CLI arguments (legacy positional or flags), determines the repo stack and required binaries/paths (including overrides), verifies git and workspace expectations, runs binary and path validations, invokes the Local Memory preflight according to --mode (off|optional|required), and exits non‑zero on validation failures.
 main() {
 	local stack='auto'
 	local local_memory_mode='required'

@@ -12,6 +12,17 @@ export interface LocalMemoryPreflightCliOptions {
 	json?: boolean;
 }
 
+/**
+ * Run the local-memory preflight check and print its result to the console.
+ *
+ * The function invokes the preflight routine and emits either a pretty-printed
+ * JSON object (when `options.json` is true) or line-oriented messages to
+ * stdout/stderr depending on the overall pass state. Errors thrown by the
+ * preflight routine or by console operations are propagated to the caller.
+ *
+ * @param options - CLI options; when `options.json` is true output is JSON, otherwise messages are printed line-by-line. `configPath` and `daemonLogPath` (if provided) are forwarded to the preflight routine.
+ * @returns The process exit code: `EXIT_CODES.SUCCESS` when the preflight passed, `EXIT_CODES.PREFLIGHT_FAILED` when it did not.
+ */
 export async function runLocalMemoryPreflightCLI(
 	options: LocalMemoryPreflightCliOptions,
 ): Promise<number> {

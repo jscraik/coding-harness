@@ -51,6 +51,7 @@ preflight_bins_csv() {
 	esac
 }
 
+# preflight_paths_csv returns a comma-separated list of repository paths required for preflight verification for the given project stack.
 preflight_paths_csv() {
 	case "$1" in
 		js) echo 'package.json,CODESTYLE.md,CONTRIBUTING.md,Makefile,scripts,scripts/codex-preflight.sh,scripts/codex-preflight-local-memory-legacy.sh,scripts/verify-work.sh,scripts/validate-codestyle.sh' ;;

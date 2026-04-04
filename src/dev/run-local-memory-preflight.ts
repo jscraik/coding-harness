@@ -2,6 +2,13 @@
 
 import { runLocalMemoryPreflightCLI } from "../commands/local-memory-preflight.js";
 
+/**
+ * Retrieve the value immediately following a specific command-line flag in an argument list.
+ *
+ * @param args - The argv-style array to search (e.g., process.argv.slice(2)).
+ * @param flag - The exact flag to locate (matched by equality).
+ * @returns The string that follows `flag` in `args`, or `undefined` if `flag` is not present or has no following element.
+ */
 function getFlagValue(args: string[], flag: string): string | undefined {
 	const index = args.indexOf(flag);
 	if (index === -1) {
