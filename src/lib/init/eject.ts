@@ -101,20 +101,21 @@ export async function ejectHarness(
 	}
 
 	const workflowPaths = new Map<string, string>();
-	const pathsToRemove = new Map<string, string>([
-		[".harness", join(repoRoot, ".harness")],
-		[".coderabbit.yaml", join(repoRoot, ".coderabbit.yaml")],
-		[".greptile", join(repoRoot, ".greptile")],
-		[
-			".github/workflows/greptile-review.yml",
-			join(repoRoot, ".github/workflows/greptile-review.yml"),
-		],
-		[
-			".agents/skills/coding-harness",
-			join(repoRoot, ".agents/skills/coding-harness"),
-		],
-		["harness.contract.json", join(repoRoot, "harness.contract.json")],
-	]);
+	const pathsToRemove = new Map<string, string>();
+	for (const relativePath of [
+		".harness",
+		".coderabbit.yaml",
+		".greptile",
+		".github/workflows/greptile-review.yml",
+		".agents/skills/coding-harness",
+		"harness.contract.json",
+	]) {
+		const pathResult = sanitizePath(repoRoot, relativePath);
+		if (!pathResult.ok) {
+			throw new Error(pathResult.error.message);
+		}
+		pathsToRemove.set(relativePath, pathResult.value);
+	}
 
 	if (hasManifest) {
 		const manifest = loadManifest(repoRoot, { operation: "eject" });
