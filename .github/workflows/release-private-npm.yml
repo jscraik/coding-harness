@@ -64,6 +64,13 @@ jobs:
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
+      - name: Materialize CODESTYLE.md for CI
+        run: |
+          if [[ -L CODESTYLE.md && ! -e CODESTYLE.md ]]; then
+            rm CODESTYLE.md
+            cp src/templates/CODESTYLE.md CODESTYLE.md
+          fi
+
       - name: Validate release candidate
         run: pnpm check
 
