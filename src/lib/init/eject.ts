@@ -100,7 +100,7 @@ export async function ejectHarness(
 		}
 	}
 
-	const workflowPaths = new Set<string>();
+	const workflowPaths = new Map<string, string>();
 	const pathsToRemove = new Map<string, string>([
 		[".harness", join(repoRoot, ".harness")],
 		[".coderabbit.yaml", join(repoRoot, ".coderabbit.yaml")],
@@ -127,17 +127,17 @@ export async function ejectHarness(
 				continue;
 			}
 
+			const pathResult = sanitizePath(repoRoot, entry.path);
+			if (!pathResult.ok) {
+				throw new Error(pathResult.error.message);
+			}
+
 			if (
 				entry.path.startsWith(".github/workflows/") &&
 				!isLegacyGreptilePath(entry.path)
 			) {
-				workflowPaths.add(entry.path);
+				workflowPaths.set(entry.path, pathResult.value);
 				continue;
-			}
-
-			const pathResult = sanitizePath(repoRoot, entry.path);
-			if (!pathResult.ok) {
-				throw new Error(pathResult.error.message);
 			}
 
 			pathsToRemove.set(entry.path, pathResult.value);
@@ -145,8 +145,8 @@ export async function ejectHarness(
 	}
 	const deletionFailedPaths: string[] = [];
 
-	for (const workflowPath of workflowPaths) {
-		if (fs.existsSync(join(repoRoot, workflowPath))) {
+	for (const [workflowPath, validatedPath] of workflowPaths) {
+		if (fs.existsSync(validatedPath)) {
 			warn(
 				`Left workflow for manual review: ${workflowPath}. Harness eject does not delete CI workflows automatically.`,
 			);

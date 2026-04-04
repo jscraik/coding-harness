@@ -196,6 +196,34 @@ describe("ejectHarness", () => {
 		rmSync(outsideDir, { recursive: true, force: true });
 	});
 
+	it("rejects workflow manifest path traversal entries before manual-review checks", async () => {
+		writeFileSync(join(tempDir, "harness.contract.json"), "{}");
+		const outsideDir = mkdtempSync(
+			join(tmpdir(), "harness-eject-workflow-outside-"),
+		);
+		const outsideFile = join(outsideDir, "passwd");
+		writeFileSync(outsideFile, "preserve me");
+		writeRestoreManifest(tempDir, [
+			{
+				path: ".github/workflows/../../../outside/passwd",
+				action: "created",
+			},
+		]);
+
+		const sanitizeResult = sanitizePath(
+			tempDir,
+			".github/workflows/../../../outside/passwd",
+		);
+		expect(sanitizeResult.ok).toBe(false);
+
+		await expect(ejectHarness(tempDir, { force: true })).rejects.toThrow(
+			"Path traversal blocked in manifest",
+		);
+		expect(existsSync(outsideFile)).toBe(true);
+
+		rmSync(outsideDir, { recursive: true, force: true });
+	});
+
 	it("surfaces deletionFailed warnings and the failing path when deletion throws", async () => {
 		writeFileSync(join(tempDir, "harness.contract.json"), "{}");
 		const contractPath = join(tempDir, "harness.contract.json");
