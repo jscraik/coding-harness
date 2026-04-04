@@ -980,6 +980,310 @@ function renderCodeRabbitTemplate(): string {
 }
 
 /**
+ * Produces the repository Greptile configuration as a pretty-printed JSON string.
+ *
+ * The configuration enables cross-file queries and independent validation, sets strictness
+ * and confidence thresholds, defines comment categories and ignore patterns, and includes
+ * rules enforcing independent AI validation and governance parity.
+ *
+ * @returns A formatted JSON string (2-space indentation) containing the Greptile configuration, terminated with a newline.
+ */
+function renderGreptileConfig(): string {
+	return `${JSON.stringify(
+		{
+			version: "1.0",
+			strictness: 2,
+			fileChangeLimit: 300,
+			commentTypes: [
+				"bug-risk",
+				"security",
+				"performance",
+				"architecture",
+				"maintainability",
+			],
+			enableCrossFileGraphQueries: true,
+			requireIndependentValidation: true,
+			confidence: {
+				minMergeScore: 4,
+				targetScore: 5,
+			},
+			rules: [
+				{
+					id: "independent-ai-validation",
+					glob: "**/*",
+					description:
+						"Coding agent must not approve its own PR; separate review signal required.",
+					severity: "high",
+				},
+				{
+					id: "governance-parity",
+					glob: "**/*",
+					description:
+						"Changes to governance, workflow, or policy surfaces must keep docs, required checks, and implementation aligned.",
+					severity: "high",
+				},
+				{
+					id: "evidence-required-for-review-policy",
+					glob: "**/*",
+					description:
+						"Policy, workflow, or review-gate changes require validation evidence before merge.",
+					severity: "medium",
+				},
+			],
+			ignorePatterns: ["dist/**", "coverage/**", "node_modules/**"],
+		},
+		null,
+		2,
+	)}\n`;
+}
+
+/**
+ * Produces the repository's Harness-managed Greptile rules document in Markdown.
+ *
+ * The returned content defines baseline review expectations, required reviewer independence,
+ * governance alignment checks, evidence requirements for policy changes, and merge confidence thresholds.
+ *
+ * @returns A Markdown string containing the Greptile rules for repository review and gating.
+ */
+function renderGreptileRules(): string {
+	return `# Harness-managed Greptile rules
+
+## Scope
+
+These rules define the baseline Greptile review expectations for harness-managed repositories.
+
+## Rule set
+
+### 1) Independent validation is mandatory
+
+- The coding agent must not act as approving reviewer on the same PR.
+- Every merge-ready decision requires an independent review signal.
+
+### 2) Governance surfaces must stay aligned
+
+If a PR changes governance, workflow, or policy files, reviewers must verify consistency across:
+
+- \`harness.contract.json\`
+- \`CONTRIBUTING.md\`
+- \`README.md\`
+- \`.github/PULL_REQUEST_TEMPLATE.md\`
+- \`.github/workflows/*.yml\`
+
+### 3) Policy changes require evidence
+
+- Policy, workflow, or review-gate changes must include test and validation evidence.
+- Any reduction in mandatory checks or review gates is high risk.
+
+### 4) Merge confidence threshold
+
+- Confidence below \`4/5\` is merge-blocking.
+- Confidence \`4/5\` may merge only when remaining items are low-risk polish.
+- Confidence \`5/5\` is merge-ready.
+`;
+}
+
+/**
+ * Produces the Greptile files descriptor used by the Greptile workflow.
+ *
+ * The output is a pretty-printed JSON object describing `contextFiles`, `apiSpecs`, and `schemaFiles`
+ * that Greptile should consider when scanning or enforcing rules. The string ends with a trailing newline.
+ *
+ * @returns A JSON-formatted string (indented with two spaces) containing `contextFiles`, `apiSpecs`, and `schemaFiles`
+ */
+function renderGreptileFiles(): string {
+	return `${JSON.stringify(
+		{
+			contextFiles: [
+				{
+					path: "harness.contract.json",
+					role: "primary governance contract",
+				},
+				{
+					path: "package.json",
+					role: "project scripts and package metadata",
+				},
+				{
+					path: "README.md",
+					role: "operator-facing setup and workflow docs",
+				},
+				{
+					path: "CONTRIBUTING.md",
+					role: "contributor governance requirements",
+				},
+				{
+					path: ".github/workflows/pr-pipeline.yml",
+					role: "required checks workflow",
+				},
+			],
+			apiSpecs: [
+				"contracts/**/*.schema.json",
+				"openapi/**/*.json",
+				"openapi/**/*.yaml",
+				"src/**/*.ts",
+			],
+			schemaFiles: [
+				"contracts/**/*.schema.json",
+				"schemas/**/*.json",
+				"openapi/**/*.json",
+				"openapi/**/*.yaml",
+			],
+		},
+		null,
+		2,
+	)}\n`;
+}
+
+/**
+ * Generate a GitHub Actions workflow YAML that enforces Greptile automated review comments on pull requests.
+ *
+ * The workflow triggers on PR-related events and ignores runs initiated by the GitHub Actions bot. It locates
+ * Greptile-authored comments for the current PR head commit, parses scores and approval/block indicators, and
+ * fails the job when no valid Greptile review is found or when an extracted score is below the configured threshold.
+ *
+ * @returns The workflow YAML content as a string
+ */
+function renderGreptileWorkflow(): string {
+	return `name: Greptile Review
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened, review_requested]
+  merge_group:
+  pull_request_review:
+    types: [submitted, dismissed]
+  pull_request_review_comment:
+    types: [created]
+  issue_comment:
+    types: [created]
+
+# Skip if the actor is github-actions[bot] to prevent the bot being
+# registered as a Greptile developer seat (Greptile bills per GitHub
+# identity that interacts with PRs near review time). Only real users
+# and the Greptile bot itself should trigger this workflow.
+
+permissions:
+  contents: read
+  pull-requests: write
+  issues: write
+  checks: write
+  statuses: write
+
+jobs:
+  greptile-review:
+    name: Greptile Review
+    runs-on: ubuntu-latest
+    if: |
+      github.actor != 'github-actions[bot]' &&
+      (
+        github.event_name == 'pull_request' ||
+        github.event_name == 'merge_group' ||
+        github.event_name == 'pull_request_review' ||
+        github.event_name == 'pull_request_review_comment' ||
+        (
+          github.event_name == 'issue_comment' &&
+          github.event.issue.pull_request &&
+          (
+            github.event.comment.user.login == 'greptile[bot]' ||
+            github.event.comment.user.login == 'greptileai[bot]' ||
+            github.event.comment.user.login == 'greptile-apps[bot]' ||
+            github.event.comment.user.login == 'greptile' ||
+            github.event.comment.user.login == 'greptileai' ||
+            github.event.comment.user.login == 'greptile-apps'
+          )
+        )
+      )
+    steps:
+      - name: Merge queue passthrough
+        if: github.event_name == 'merge_group'
+        run: echo "Greptile PR-context checks are evaluated on pull_request events."
+
+      - name: Check for Greptile review
+        if: github.event_name != 'merge_group'
+        env:
+          GITHUB_TOKEN: \${{ secrets.GITHUB_TOKEN }}
+          PR_NUMBER: \${{ github.event.pull_request.number || github.event.issue.number }}
+          REPO_OWNER: \${{ github.repository_owner }}
+          REPO_NAME: \${{ github.event.repository.name }}
+          MIN_MERGE_SCORE: '4'
+          EVENT_NAME: \${{ github.event_name }}
+          HEAD_SHA: \${{ github.event.pull_request.head.sha || github.sha }}
+        uses: actions/github-script@f28e40c7f34bde8b3046d885e986cb6290c5673b # v7
+        with:
+          script: |
+            const prNumber = parseInt(process.env.PR_NUMBER, 10);
+            const minMergeScore = parseInt(process.env.MIN_MERGE_SCORE, 10);
+            const owner = process.env.REPO_OWNER;
+            const repo = process.env.REPO_NAME;
+            const eventName = process.env.EVENT_NAME;
+            const headSha = process.env.HEAD_SHA;
+            const action = context.payload.action || '';
+
+            if (eventName === 'pull_request' && action === 'synchronize') {
+              core.setFailed('Waiting for Greptile review on the current PR head commit...');
+              return;
+            }
+
+            const comments = await github.rest.issues.listComments({
+              owner, repo, issue_number: prNumber
+            });
+
+            const greptileLogins = new Set([
+              'greptile[bot]', 'greptileai[bot]', 'greptile-apps[bot]',
+              'greptile', 'greptileai', 'greptile-apps'
+            ]);
+
+            const headCommit = await github.rest.repos.getCommit({ owner, repo, ref: headSha });
+            const headCommittedAt = new Date(
+              headCommit.data.commit.committer?.date ||
+              headCommit.data.commit.author?.date || 0
+            );
+
+            const greptileComments = comments.data
+              .filter(c => {
+                if (!(c.user != null && greptileLogins.has(c.user.login))) return false;
+                const body = c.body || '';
+                const createdAt = new Date(c.created_at);
+                return body.includes(headSha) || createdAt >= headCommittedAt;
+              })
+              .sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
+
+            if (greptileComments.length === 0) {
+              core.setFailed('No Greptile review comment found for the current PR head commit. Waiting for review...');
+              return;
+            }
+
+            const commentBody = (greptileComments[0].body || '').toLowerCase();
+            const scorePatterns = [
+              /(?:confidence|score)[:\\s]*(\\d)(?:\\s*\/\\s*5)?/,
+              /(\\d)\\s*\/\\s*5.*confidence/,
+              /overall[:\\s]*(\\d)/,
+              /rating[:\\s]*(\\d)/
+            ];
+
+            let score = null;
+            for (const pattern of scorePatterns) {
+              const match = commentBody.match(pattern);
+              if (match) { score = parseInt(match[1], 10); break; }
+            }
+
+            const hasApproval = /\\b(approved?|pass(?:ed|ing)?|lgtm|looks good|ready to merge)\\b/.test(commentBody);
+            const hasBlock = /\\b(block(?:ed|ing)?|fail(?:ed|ing)?|needs? changes?|do not merge|dnm)\\b/.test(commentBody);
+
+            if (score !== null) {
+              if (score >= minMergeScore) {
+                console.log(\`Greptile review passed: score \${score}/5 >= threshold \${minMergeScore}/5\`);
+              } else {
+                core.setFailed(\`Greptile review failed: score \${score}/5 < threshold \${minMergeScore}/5\`);
+              }
+            } else if (hasBlock) {
+              core.setFailed('Greptile review indicates changes are needed.');
+            } else {
+              console.log('Greptile review completed.');
+            }
+`;
+}
+
+/**
  * Produce a Symphony workflow configuration and accompanying human-readable workflow document tailored to the repository.
  *
  * @param pm - Package manager identifier (e.g., `"npm"`, `"yarn"`, `"pnpm"`) used to choose install and command wrappers embedded in the workflow.
@@ -1961,7 +2265,6 @@ on:
 
 permissions:
   contents: read
-  pull-requests: write
 
 jobs:
   secret-scan:
@@ -1978,7 +2281,6 @@ jobs:
         uses: gitleaks/gitleaks-action@ff98106e4c7b2bc287b24eaf42907196329070c7 # v2
         env:
           GITHUB_TOKEN: ${"${{ secrets.GITHUB_TOKEN }}"}
-          GITLEAKS_CONFIG: .gitleaks.toml
 
       - name: Trivy Scan
         uses: aquasecurity/trivy-action@97e0b3872f55f89b95b2f65b3dbab56962816478 # 0.34.2
@@ -2596,38 +2898,17 @@ set -euo pipefail
 
 REPO_ROOT="$(cd -- "$(dirname -- "\${BASH_SOURCE[0]}")/.." && pwd)"
 RULESET_PATH="$REPO_ROOT/scripts/semgrep-pre-push.yml"
-SEMGREP_VERSION="1.153.1"
-SEMGREP_CACHE_ROOT="\${XDG_CACHE_HOME:-\$HOME/.cache}/coding-harness"
-SEMGREP_VENV_DIR="\${SEMGREP_CACHE_ROOT}/semgrep-venv-\${SEMGREP_VERSION}"
-SEMGREP_BIN="\$SEMGREP_VENV_DIR/bin/semgrep"
-SEMGREP_PYTHON="\$SEMGREP_VENV_DIR/bin/python"
 cd "$REPO_ROOT"
 
-install_semgrep() {
-	mkdir -p "\$SEMGREP_CACHE_ROOT"
-	python3 -m venv "\$SEMGREP_VENV_DIR"
-	"\$SEMGREP_PYTHON" -m pip install --quiet --upgrade pip "semgrep==\$SEMGREP_VERSION"
-}
-
-ensure_semgrep_version() {
-	if [[ ! -x "\$SEMGREP_BIN" ]]; then
-		install_semgrep
-		return
-	fi
-
-	local detected_version
-	detected_version="\$("\$SEMGREP_BIN" --version 2>/dev/null | tr -d '[:space:]')"
-	if [[ "\$detected_version" != "\$SEMGREP_VERSION" ]]; then
-		install_semgrep
-	fi
-}
+if ! command -v semgrep >/dev/null 2>&1; then
+	echo "Error: required binary 'semgrep' is not installed or not on PATH"
+	exit 1
+fi
 
 if [[ ! -f "$RULESET_PATH" ]]; then
 	echo "Error: missing Semgrep ruleset at $RULESET_PATH"
 	exit 1
 fi
-
-ensure_semgrep_version
 
 base_ref=""
 if git rev-parse --verify '@{upstream}' >/dev/null 2>&1; then
@@ -2665,7 +2946,7 @@ if [[ \${#changed_sources[@]} -eq 0 ]]; then
 	exit 0
 fi
 
-"\$SEMGREP_BIN" scan \\
+semgrep scan \\
 	--config "$RULESET_PATH" \\
 	--disable-version-check \\
 	--error \\
