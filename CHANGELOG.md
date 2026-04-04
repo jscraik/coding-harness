@@ -2,6 +2,40 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+# [0.12.0](https://github.com/jscraik/coding-harness/compare/v0.11.12...v0.12.0) (2026-04-04)
+
+
+### Bug Fixes
+
+* align CircleCI workflow name with branch protection ([75a8bde](https://github.com/jscraik/coding-harness/commit/75a8bdef3f5a887f45d74cd019cac4f73d934968))
+* align JSC-95 rollout with code-style gates ([5a9427c](https://github.com/jscraik/coding-harness/commit/5a9427c623a5c0c5e009731c27bd58810cbf38b5))
+* align security and scaffold contract checks ([55b43b8](https://github.com/jscraik/coding-harness/commit/55b43b8181a99300bdd8939d5117bee340b9812b))
+* allow gitleaks PR comments ([3a477fc](https://github.com/jscraik/coding-harness/commit/3a477fcf5094b19c8923729c777d0cf3e907e8b1))
+* apply CodeRabbit auto-fixes ([095a5f6](https://github.com/jscraik/coding-harness/commit/095a5f675b4df50e015ce0e0cffc099e6917fb18))
+* apply CodeRabbit auto-fixes ([f760f29](https://github.com/jscraik/coding-harness/commit/f760f29a30579cdec2875a02ad59b8fa44d09bb5))
+* apply CodeRabbit auto-fixes ([05b0294](https://github.com/jscraik/coding-harness/commit/05b0294f5412ff8b87c5e808d6310e96745c5532))
+* apply CodeRabbit auto-fixes ([7579d87](https://github.com/jscraik/coding-harness/commit/7579d87796909c43a0f1c8a6047be6faaa55384a))
+* bootstrap pnpm via corepack in CircleCI ([2642ab5](https://github.com/jscraik/coding-harness/commit/2642ab5129f39bb5c845cb27d92be4eb010c9931))
+* **lint:** resolve all Biome lint errors to restore CI signal ([#118](https://github.com/jscraik/coding-harness/issues/118)) ([bd1c5b1](https://github.com/jscraik/coding-harness/commit/bd1c5b1d55a8665184ca69f7fa6b29dc7b76420d))
+* persist pnpm path across CircleCI steps ([69c1e4c](https://github.com/jscraik/coding-harness/commit/69c1e4c8040bcf36e045deb5bb63e24beb07ca3a))
+* prefer repo-local harness for environment checks ([9c0f0ae](https://github.com/jscraik/coding-harness/commit/9c0f0ae009fc6557e272136ebf0e2761cde949a9))
+* remove legacy Greptile scaffolding and align skill docs ([a595462](https://github.com/jscraik/coding-harness/commit/a5954622c90ce9ff54a878905b9e5938b8a307d0))
+* restore CircleCI pr-pipeline status ([6e1ded0](https://github.com/jscraik/coding-harness/commit/6e1ded0b03dfcb601107433cefa105a75e5d2007))
+* restore codestyle contract and CI portability ([1a1146a](https://github.com/jscraik/coding-harness/commit/1a1146a49978890a2f2176df9a9293de0fec70d1))
+* unblock PR security checks ([cc4a663](https://github.com/jscraik/coding-harness/commit/cc4a663df910cd9ae089aeb5d21c5c086fbfbbaa))
+* unblock push by repairing docs-gate checks ([61ad340](https://github.com/jscraik/coding-harness/commit/61ad3407c7095721b429a00c7db05f18852e9cbe))
+* use object scope for CodeRabbit knowledge base ([8e2f359](https://github.com/jscraik/coding-harness/commit/8e2f359814114c81cf444fa0160a42a78010cbd0))
+
+
+### Features
+
+* bootstrap worktree hook setup helper ([#134](https://github.com/jscraik/coding-harness/issues/134)) ([e4906fc](https://github.com/jscraik/coding-harness/commit/e4906fc3da294eea9e076e98a996aa029c200a31))
+* roll up harness governance and scaffold updates ([094521e](https://github.com/jscraik/coding-harness/commit/094521ef988fb6761903bf7080fa0c575e83df2e))
+* **scaffold:** harden init flags and wire eject command ([#130](https://github.com/jscraik/coding-harness/issues/130)) ([deb3683](https://github.com/jscraik/coding-harness/commit/deb36839aba139e3d332d269a22e9ec5a11708a6))
+* switch required-check contract to CodeRabbit ([336b6ad](https://github.com/jscraik/coding-harness/commit/336b6adac0b546b7397b55bb3f850c43db8fc6d5))
+
+
+
 ## [0.11.12](https://github.com/jscraik/coding-harness/compare/v0.11.11...v0.11.12) (2026-03-25)
 
 
