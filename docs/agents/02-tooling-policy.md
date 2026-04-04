@@ -155,6 +155,7 @@ The legacy shell fallback at `scripts/codex-preflight-local-memory-legacy.sh` mu
 Local Memory REST health retries in the legacy shell fallback should use a bounded curl budget, and `run_local_memory_preflight_via_harness` should continue to the next harness candidate when a helper exits with sentinel code `3` (`unavailable`) instead of failing closed early.
 `scripts/verify-work.sh` is the canonical repo-local verification entrypoint for harness-managed repos. Keep it repo-local, default it to `required` Local Memory mode, and scope its preflight path/binary expectations to scaffolded repo artifacts rather than codex-maintenance-only paths.
 `scripts/validate-codestyle.sh` is the canonical fail-closed code-style gate for harness-managed repos. Keep it wired to repo-defined scripts, make it fail when required scripts are absent, and reuse it from `verify-work`, hooks, and downstream repo docs rather than re-describing divergent command bundles in each place.
+Active AI-review scaffolding in this repository is CodeRabbit-first. Any remaining Greptile references in active tooling or scaffold paths should exist only for legacy cleanup and migration safety, not for new repo scaffolding or current review enforcement.
 `scripts/check-diagram-freshness.sh` should compare only git-tracked diagram artifacts before and after refresh. gitignored `.diagram/` refresh output outside tracked files must not fail `pre-push` with an empty "Changed tracked files" list.
 
 ## Tooling verification checklist

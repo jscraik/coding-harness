@@ -51,7 +51,6 @@ fi
 		exit 1
 	fi
 
-<<<<<<< HEAD
 	required_support_files=("scripts/codex-preflight.sh" "scripts/codex-preflight-local-memory-legacy.sh" "scripts/codex-learn" "scripts/codex-enforced" "scripts/verify-work.sh" "scripts/validate-codestyle.sh" "scripts/prepare-worktree.sh" "scripts/check-staged-secrets.sh" "scripts/check-doc-style.sh" "scripts/check-related-tests.sh" "scripts/check-semgrep-changed.sh" "scripts/semgrep-pre-push.yml")
 	for support_file in "${required_support_files[@]}"; do
 		if [[ ! -f "$REPO_ROOT/${support_file}" ]]; then
