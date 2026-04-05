@@ -1,7 +1,11 @@
 import { mkdirSync, rmSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { afterEach, describe, expect, it } from "vitest";
-import { clearContractCache, loadContract } from "./loader.js";
+import {
+	ContractLoadError,
+	clearContractCache,
+	loadContract,
+} from "./loader.js";
 
 describe("loadContract", () => {
 	const createdFiles: string[] = [];
@@ -223,6 +227,47 @@ describe("loadContract", () => {
 		expect(() =>
 			loadContract(path, process.cwd(), { allowExtends: false }),
 		).toThrow(/extends/i);
+	});
+
+	it("rejects uiLoopPolicy commands with leading env assignments", () => {
+		const dir = join(process.cwd(), "artifacts");
+		mkdirSync(dir, { recursive: true });
+		const path = join(dir, "contract-loader-ui-loop-env-prefix.json");
+		createdFiles.push(path);
+
+		writeFileSync(
+			path,
+			JSON.stringify({
+				version: "1.0",
+				riskTierRules: { "src/**": "medium" },
+				uiLoopPolicy: {
+					fastCommand: "npm run ui:fast",
+					verifyCommand: "NODE_ENV=test npm run ui:verify",
+					exploreCommand: "npm run ui:explore",
+					sloTargets: {
+						fastLoopSeconds: 30,
+						verifyLoopSeconds: 120,
+					},
+				},
+			}),
+			"utf-8",
+		);
+
+		let thrown: unknown;
+		try {
+			loadContract(path);
+		} catch (error) {
+			thrown = error;
+		}
+
+		expect(thrown).toBeInstanceOf(ContractLoadError);
+		if (!(thrown instanceof ContractLoadError)) {
+			return;
+		}
+		expect(thrown.message).toContain("validation failed");
+		expect(thrown.errors.some((entry) => entry.path === "uiLoopPolicy")).toBe(
+			true,
+		);
 	});
 
 	// Security regression: finding d88697dd20288191b8b2f7e253908500.

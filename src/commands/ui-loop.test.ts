@@ -283,6 +283,24 @@ describe("ui-loop commands", () => {
 			expect(result.exitCode).toBe(EXIT_CODES.VALIDATION_ERROR);
 			expect(result.message).toContain("quoted or escaped");
 		});
+
+		it("rejects verify policy commands with leading env assignments", () => {
+			vi.mocked(loadContract).mockReturnValue({
+				...MOCK_POLICY,
+				uiLoopPolicy: {
+					...MOCK_POLICY.uiLoopPolicy,
+					verifyCommand: "NODE_ENV=test npm run ui:verify",
+				},
+			} as unknown as ReturnType<typeof loadContract>);
+
+			const result = runUIVerify({ mode: "prepare" });
+
+			expect(result.exitCode).toBe(EXIT_CODES.VALIDATION_ERROR);
+			expect(result.message).toContain(
+				"leading environment variable assignments",
+			);
+			expect(spawnSync).not.toHaveBeenCalled();
+		});
 	});
 
 	describe("runUIExplore", () => {
