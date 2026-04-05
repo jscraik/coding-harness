@@ -5,6 +5,7 @@
 - [Scope](#scope)
 - [Required pre-release checklist](#required-pre-release-checklist)
 - [Benchmark cadence requirements](#benchmark-cadence-requirements)
+- [Tag-Driven Release Path](#tag-driven-release-path)
 - [Change-control flow](#change-control-flow)
 - [Rollback policy](#rollback-policy)
 - [Post-change validation](#post-change-validation)
@@ -30,6 +31,18 @@ Use this document before milestones, release-tagged branches, or behavior-changi
   - One fresh SWE track run before release tagging.
 - Store each run record in JSON that validates against
   `docs/benchmarks/schema/benchmark-run.schema.json`.
+
+## Tag-Driven Release Path
+
+1. Validate release candidate on branch/PR (`pnpm check`, scoped tests, docs parity).
+2. Merge to `main` only after required checks and independent review pass.
+3. Create and push a semantic-version tag (`vX.Y.Z`) that matches `package.json`.
+4. GitHub Actions workflow `.github/workflows/release-private-npm.yml` performs:
+   - tag/version consistency check,
+   - publish (`oidc` by default; `token` fallback only when explicitly requested),
+   - attestation generation and verification (when available),
+   - GitHub Release creation.
+5. CircleCI `release` lane remains verification-only; it must not publish packages.
 
 ## Change-control flow
 

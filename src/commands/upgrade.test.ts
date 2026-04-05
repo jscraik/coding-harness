@@ -498,7 +498,10 @@ describe("runUpgradeCLI", () => {
 	});
 
 	it("backfills missing docsGatePolicy even when version is already current", () => {
-		writeRestoreManifest(dir, "0.11.12");
+		const { version: currentVersion } = JSON.parse(
+			readFileSync(join(process.cwd(), "package.json"), "utf-8"),
+		) as { version: string };
+		writeRestoreManifest(dir, currentVersion);
 		writeFileSync(
 			join(dir, "harness.contract.json"),
 			JSON.stringify({

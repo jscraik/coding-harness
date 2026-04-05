@@ -29,6 +29,7 @@ import type {
 	scanOpenPullRequestSatisfiability as scanOpenPullRequestSatisfiabilityType,
 } from "../lib/ci/satisfiability.js";
 import { EXIT_CODES } from "../lib/init/types.js";
+import { sanitizeGitEnv } from "../lib/workflow-contract/test-harness.js";
 import type { runInitCLI as runInitCLIType } from "./init.js";
 
 type RunInitCLIImpl = typeof runInitCLIType;
@@ -127,6 +128,7 @@ function runTestGitCommand(
 	const result = spawnSync("git", args, {
 		cwd: targetDir,
 		encoding: "utf-8",
+		env: sanitizeGitEnv(),
 	});
 	if (result.error) {
 		return {
@@ -2038,6 +2040,7 @@ function writeParityProofHarvestManifest(targetDir: string): void {
 
 describe("runCIMigrateCLI", () => {
 	let tempDir: string;
+	let externalFixtureDir: string;
 	let previousSnapshotSigningKey: string | undefined;
 	let consoleErrorSpy: ReturnType<typeof vi.spyOn> | undefined;
 	let consoleWarnSpy: ReturnType<typeof vi.spyOn> | undefined;
@@ -2054,7 +2057,11 @@ describe("runCIMigrateCLI", () => {
 		// Bootstrap a two-commit history so ensureProofPackFixtureHistory
 		// finds distinct baseSha / headSha without doing any git work.
 		const git = (args: string[]) =>
-			spawnSync("git", args, { cwd: gitTemplateDir, encoding: "utf-8" });
+			spawnSync("git", args, {
+				cwd: gitTemplateDir,
+				encoding: "utf-8",
+				env: sanitizeGitEnv(),
+			});
 		git(["init", "-q"]);
 		git(["config", "user.name", "Harness Test"]);
 		git(["config", "user.email", "harness@test.local"]);
@@ -2079,6 +2086,9 @@ describe("runCIMigrateCLI", () => {
 
 	beforeEach(() => {
 		tempDir = mkdtempSync(join(tmpdir(), "harness-ci-migrate-"));
+		externalFixtureDir = mkdtempSync(
+			join(tmpdir(), "harness-ci-migrate-external-"),
+		);
 		// Copy the pre-seeded git history into the fresh tempDir so that
 		// any test calling ensureProofPackFixtureHistory skips git init/commit.
 		const gitDir = join(gitTemplateDir, ".git");
@@ -2086,14 +2096,20 @@ describe("runCIMigrateCLI", () => {
 		cpSync(gitDir, join(tempDir, ".git"), { recursive: true });
 		cpSync(harnessDir, join(tempDir, ".harness"), { recursive: true });
 		// Update the working tree to match HEAD so git status is clean.
-		spawnSync("git", ["checkout", "."], { cwd: tempDir, encoding: "utf-8" });
+		spawnSync("git", ["checkout", "."], {
+			cwd: tempDir,
+			encoding: "utf-8",
+			env: sanitizeGitEnv(),
+		});
 		spawnSync("git", ["config", "user.name", "Harness Test"], {
 			cwd: tempDir,
 			encoding: "utf-8",
+			env: sanitizeGitEnv(),
 		});
 		spawnSync("git", ["config", "user.email", "harness@test.local"], {
 			cwd: tempDir,
 			encoding: "utf-8",
+			env: sanitizeGitEnv(),
 		});
 		previousSnapshotSigningKey = process.env[SNAPSHOT_SIGNING_KEY_ENV];
 		process.env[SNAPSHOT_SIGNING_KEY_ENV] = TEST_SNAPSHOT_SIGNING_KEY;
@@ -2138,6 +2154,7 @@ describe("runCIMigrateCLI", () => {
 			process.env[SNAPSHOT_SIGNING_KEY_ENV] = previousSnapshotSigningKey;
 		}
 		setCIMigrateTestOverrides();
+		rmSync(externalFixtureDir, { recursive: true, force: true });
 		rmSync(tempDir, { recursive: true, force: true });
 	});
 
@@ -2552,6 +2569,103 @@ describe("runCIMigrateCLI", () => {
 			action: "commit",
 			snapshot: snapshotId,
 			mergeQueueOrchestratorPath: MERGE_QUEUE_ORCHESTRATOR_PATH,
+		});
+
+		expect(commitExitCode).toBe(EXIT_CODES.INVALID_PATH);
+		expect(runInitCLIMock).not.toHaveBeenCalled();
+	});
+
+	it("rejects merge-queue orchestrator paths that escape repository root", () => {
+		seedMigratableFixture(tempDir);
+		writeCIProviderPolicyContract(tempDir, "required");
+		writeParityProofPack(tempDir);
+		const outsideOrchestratorPath = join(
+			externalFixtureDir,
+			"outside-orchestrator.sh",
+		);
+		writeFileSync(
+			outsideOrchestratorPath,
+			"#!/usr/bin/env bash\necho outside\n",
+		);
+		chmodSync(outsideOrchestratorPath, 0o755);
+		const snapshotId = "cutover-required-commit-orchestrator-escape";
+		scanOpenPullRequestSatisfiabilityMock.mockReturnValue({
+			status: "satisfied",
+			scannedOpenPrs: 2,
+			failingPrs: [],
+		});
+
+		const prepareExitCode = runCIMigrateCLI(tempDir, {
+			provider: "circleci",
+			action: "prepare",
+			snapshot: snapshotId,
+		});
+		expect(prepareExitCode).toBe(EXIT_CODES.SUCCESS);
+
+		vi.clearAllMocks();
+		scanOpenPullRequestSatisfiabilityMock.mockReturnValue({
+			status: "satisfied",
+			scannedOpenPrs: 2,
+			failingPrs: [],
+		});
+
+		const commitExitCode = runCIMigrateCLI(tempDir, {
+			provider: "circleci",
+			action: "commit",
+			snapshot: snapshotId,
+			mergeQueueOrchestratorPath: "../outside-orchestrator.sh",
+		});
+
+		expect(commitExitCode).toBe(EXIT_CODES.INVALID_PATH);
+		expect(runInitCLIMock).not.toHaveBeenCalled();
+	});
+
+	it("rejects merge-queue orchestrator symlinks", () => {
+		seedMigratableFixture(tempDir);
+		writeCIProviderPolicyContract(tempDir, "required");
+		writeParityProofPack(tempDir);
+		const outsideOrchestratorPath = join(
+			externalFixtureDir,
+			"outside-orchestrator-symlink.sh",
+		);
+		writeFileSync(
+			outsideOrchestratorPath,
+			"#!/usr/bin/env bash\necho outside\n",
+		);
+		chmodSync(outsideOrchestratorPath, 0o755);
+
+		const orchestratorLinkPath = join(
+			tempDir,
+			".harness/control-plane/orchestrator-link.sh",
+		);
+		mkdirSync(dirname(orchestratorLinkPath), { recursive: true });
+		symlinkSync(outsideOrchestratorPath, orchestratorLinkPath);
+		const snapshotId = "cutover-required-commit-orchestrator-symlink";
+		scanOpenPullRequestSatisfiabilityMock.mockReturnValue({
+			status: "satisfied",
+			scannedOpenPrs: 2,
+			failingPrs: [],
+		});
+
+		const prepareExitCode = runCIMigrateCLI(tempDir, {
+			provider: "circleci",
+			action: "prepare",
+			snapshot: snapshotId,
+		});
+		expect(prepareExitCode).toBe(EXIT_CODES.SUCCESS);
+
+		vi.clearAllMocks();
+		scanOpenPullRequestSatisfiabilityMock.mockReturnValue({
+			status: "satisfied",
+			scannedOpenPrs: 2,
+			failingPrs: [],
+		});
+
+		const commitExitCode = runCIMigrateCLI(tempDir, {
+			provider: "circleci",
+			action: "commit",
+			snapshot: snapshotId,
+			mergeQueueOrchestratorPath: ".harness/control-plane/orchestrator-link.sh",
 		});
 
 		expect(commitExitCode).toBe(EXIT_CODES.INVALID_PATH);

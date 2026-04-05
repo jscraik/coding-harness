@@ -147,6 +147,7 @@ export type {
 
 export {
 	createGitFixture,
+	sanitizeGitEnv,
 	assertGatePasses,
 	assertGateFails,
 	runGateAssertions,

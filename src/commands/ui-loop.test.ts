@@ -72,7 +72,7 @@ describe("ui-loop commands", () => {
 			const payload = JSON.parse(result.message);
 			expect(payload.mode).toBe("prepare");
 			expect(payload.executed).toBe(false);
-			expect(payload.command).toContain("npm run ui:fast --ci");
+			expect(payload.command).toContain("npm run ui:fast -- --ci");
 			expect(payload.head_sha).toEqual(expect.any(String));
 			expect(payload.contract_version).toBe("1.1.0");
 			expect(payload.artifact_uri).toContain("artifacts/ui-loop");
@@ -128,6 +128,21 @@ describe("ui-loop commands", () => {
 			expect(payload.executed).toBe(false);
 			expect(payload.error.code).toBe("execution_disabled");
 			expect(payload.error.message).toContain("kill switch");
+		});
+
+		it("rejects quoted fast policy commands that require shell parsing", () => {
+			vi.mocked(loadContract).mockReturnValue({
+				...MOCK_POLICY,
+				uiLoopPolicy: {
+					...MOCK_POLICY.uiLoopPolicy,
+					fastCommand: 'npm run "ui:fast"',
+				},
+			} as unknown as ReturnType<typeof loadContract>);
+
+			const result = runUIFast({ mode: "prepare" });
+
+			expect(result.exitCode).toBe(EXIT_CODES.VALIDATION_ERROR);
+			expect(result.message).toContain("quoted or escaped");
 		});
 	});
 
@@ -211,6 +226,81 @@ describe("ui-loop commands", () => {
 			expect(payload.artifact_uri).toContain("artifacts/ui-loop");
 			expect(payload.artifact_checksum).toHaveLength(64);
 		});
+
+		it("passes user-controlled verify args as literal argv without shell parsing", () => {
+			const outputDir = "./test-results;touch_/tmp/not-executed";
+			const result = runUIVerify({
+				mode: "execute",
+				shard: "1/3",
+				outputDir,
+			});
+
+			expect(result.exitCode).toBe(EXIT_CODES.SUCCESS);
+			expect(spawnSync).toHaveBeenCalledWith(
+				"pnpm",
+				["playwright", "test", "--shard=1/3", `--output=${outputDir}`],
+				expect.objectContaining({ shell: false }),
+			);
+		});
+
+		it("forwards verify policy args through npm run separator", () => {
+			vi.mocked(loadContract).mockReturnValue(
+				MOCK_POLICY as unknown as ReturnType<typeof loadContract>,
+			);
+
+			const result = runUIVerify({
+				mode: "execute",
+				shard: "1/3",
+				outputDir: "./test-results",
+			});
+
+			expect(result.exitCode).toBe(EXIT_CODES.SUCCESS);
+			expect(spawnSync).toHaveBeenCalledWith(
+				"npm",
+				[
+					"run",
+					"ui:verify",
+					"--",
+					"test",
+					"--shard=1/3",
+					"--output=./test-results",
+				],
+				expect.objectContaining({ shell: false }),
+			);
+		});
+
+		it("rejects quoted verify policy commands that require shell parsing", () => {
+			vi.mocked(loadContract).mockReturnValue({
+				...MOCK_POLICY,
+				uiLoopPolicy: {
+					...MOCK_POLICY.uiLoopPolicy,
+					verifyCommand: 'npm run "ui:verify"',
+				},
+			} as unknown as ReturnType<typeof loadContract>);
+
+			const result = runUIVerify({ mode: "prepare" });
+
+			expect(result.exitCode).toBe(EXIT_CODES.VALIDATION_ERROR);
+			expect(result.message).toContain("quoted or escaped");
+		});
+
+		it("rejects verify policy commands with leading env assignments", () => {
+			vi.mocked(loadContract).mockReturnValue({
+				...MOCK_POLICY,
+				uiLoopPolicy: {
+					...MOCK_POLICY.uiLoopPolicy,
+					verifyCommand: "NODE_ENV=test npm run ui:verify",
+				},
+			} as unknown as ReturnType<typeof loadContract>);
+
+			const result = runUIVerify({ mode: "prepare" });
+
+			expect(result.exitCode).toBe(EXIT_CODES.VALIDATION_ERROR);
+			expect(result.message).toContain(
+				"leading environment variable assignments",
+			);
+			expect(spawnSync).not.toHaveBeenCalled();
+		});
 	});
 
 	describe("runUIExplore", () => {
@@ -290,6 +380,47 @@ describe("ui-loop commands", () => {
 				expect(payload.artifact_uri).toContain("artifacts/ui-loop");
 				expect(payload.artifact_checksum).toHaveLength(64);
 			}
+		});
+
+		it("passes explore URL/output as literal argv without shell parsing", () => {
+			const url = "http://localhost:3000/?q=$(whoami)&n=1";
+			const outputDir = "./ui-output;touch_/tmp/not-executed";
+
+			const result = runUIExplore({
+				mode: "execute",
+				url,
+				outputDir,
+				interactions: true,
+			});
+
+			expect(result.exitCode).toBe(EXIT_CODES.SUCCESS);
+			expect(spawnSync).toHaveBeenCalledWith(
+				"npx",
+				[
+					"@agent-browser/cli",
+					"explore",
+					url,
+					"--output",
+					outputDir,
+					"--interactions",
+				],
+				expect.objectContaining({ shell: false }),
+			);
+		});
+
+		it("rejects quoted explore policy commands that require shell parsing", () => {
+			vi.mocked(loadContract).mockReturnValue({
+				...MOCK_POLICY,
+				uiLoopPolicy: {
+					...MOCK_POLICY.uiLoopPolicy,
+					exploreCommand: 'npm run "ui:explore"',
+				},
+			} as unknown as ReturnType<typeof loadContract>);
+
+			const result = runUIExplore({ mode: "prepare" });
+
+			expect(result.exitCode).toBe(EXIT_CODES.VALIDATION_ERROR);
+			expect(result.message).toContain("quoted or escaped");
 		});
 
 		it("enforces kill-switch mode matrix across adapters", () => {

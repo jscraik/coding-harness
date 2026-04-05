@@ -1,0 +1,19 @@
+{
+	"run_id": "swe-20260404-190420",
+	"track": "swe",
+	"command": "pnpm check",
+	"status": "pass",
+	"started_at": "2026-04-04T19:04:20Z",
+	"finished_at": "2026-04-04T19:04:53Z",
+	"duration_seconds": 33,
+	"notes": "Baseline weekly SWE run captured on main; retained for cadence evidence and not treated as PR-head validation output.",
+	"artifacts": [],
+	"git": {
+		"commit": "55b43b8181a99300bdd8939d5117bee340b9812b",
+		"branch": "main",
+		"repository": "https://github.com/jscraik/coding-harness.git"
+	},
+	"metrics": {
+		"exit_code": 0
+	}
+}

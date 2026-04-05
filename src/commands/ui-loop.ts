@@ -6,6 +6,10 @@ import { join, resolve } from "node:path";
 import { pathToFileURL } from "node:url";
 import { loadContract } from "../lib/contract/loader.js";
 import type { UILoopPolicy } from "../lib/contract/types.js";
+import {
+	type UILoopCommandSpec,
+	parseUILoopCommandSpec,
+} from "../lib/contract/ui-loop-command.js";
 
 // Exit codes for programmatic consumption
 export const EXIT_CODES = {
@@ -76,6 +80,8 @@ interface CommandExecutionResult {
 	stderr?: string;
 }
 
+type CommandSpec = UILoopCommandSpec;
+
 interface UILoopContractContext {
 	policy: UILoopPolicy | undefined;
 	contractVersion: string;
@@ -131,15 +137,55 @@ function buildPrepareResult(): CommandExecutionResult {
 	};
 }
 
-function executeCommand(
+function parseCommandSpec(
 	command: string,
+): { ok: true; value: CommandSpec } | { ok: false; error: string } {
+	return parseUILoopCommandSpec(command);
+}
+
+function appendForwardedArgsToPolicyCommand(
+	spec: CommandSpec,
+	forwardedArgs: string[],
+): CommandSpec {
+	if (forwardedArgs.length === 0) {
+		return {
+			command: spec.command,
+			args: [...spec.args],
+		};
+	}
+	const isNpmRunCommand = spec.command === "npm" && spec.args[0] === "run";
+	if (!isNpmRunCommand) {
+		return {
+			command: spec.command,
+			args: [...spec.args, ...forwardedArgs],
+		};
+	}
+	const hasSeparator = spec.args.includes("--");
+	return {
+		command: spec.command,
+		args: hasSeparator
+			? [...spec.args, ...forwardedArgs]
+			: [...spec.args, "--", ...forwardedArgs],
+	};
+}
+
+function formatCommandArg(arg: string): string {
+	return /^[A-Za-z0-9_./:@%+=,-]+$/.test(arg) ? arg : JSON.stringify(arg);
+}
+
+function formatCommandDisplay(spec: CommandSpec): string {
+	return [spec.command, ...spec.args.map(formatCommandArg)].join(" ");
+}
+
+function executeCommand(
+	spec: CommandSpec,
 	timeoutMs: number,
 	treatTimeoutAsSuccess = false,
 ): CommandExecutionResult {
 	const startedAt = Date.now();
-	const result = spawnSync(command, {
+	const result = spawnSync(spec.command, spec.args, {
 		encoding: "utf-8",
-		shell: true,
+		shell: false,
 		stdio: ["ignore", "pipe", "pipe"],
 		timeout: timeoutMs,
 	});
@@ -254,32 +300,38 @@ function createEvidence(
  */
 function detectPackageManager(cwd = process.cwd()): {
 	name: string;
-	runCmd: string;
+	command: string;
 } {
 	if (existsSync(join(cwd, "pnpm-lock.yaml"))) {
-		return { name: "pnpm", runCmd: "pnpm" };
+		return { name: "pnpm", command: "pnpm" };
 	}
 	if (existsSync(join(cwd, "bun.lockb")) || existsSync(join(cwd, "bun.lock"))) {
-		return { name: "bun", runCmd: "bun" };
+		return { name: "bun", command: "bun" };
 	}
 	if (existsSync(join(cwd, "yarn.lock"))) {
-		return { name: "yarn", runCmd: "yarn" };
+		return { name: "yarn", command: "yarn" };
 	}
-	return { name: "npm", runCmd: "npm run" };
+	return { name: "npm", command: "npm" };
 }
 
 /**
  * Build package-manager command for script execution.
  */
 function buildScriptCommand(
-	pm: { name: string; runCmd: string },
+	pm: { name: string; command: string },
 	script: string,
 	args: string[] = [],
-): string {
+): CommandSpec {
 	if (pm.name === "npm") {
-		return `${pm.runCmd} ${script}${args.length > 0 ? ` -- ${args.join(" ")}` : ""}`;
+		return {
+			command: pm.command,
+			args: ["run", script, ...(args.length > 0 ? ["--", ...args] : [])],
+		};
 	}
-	return `${pm.runCmd} ${script}${args.length > 0 ? ` ${args.join(" ")}` : ""}`;
+	return {
+		command: pm.command,
+		args: [script, ...args],
+	};
 }
 
 /**
@@ -372,6 +424,7 @@ export function runUIFast(options: UIFastOptions = {}): {
 
 	let fullCmd: string;
 	let packageManager: string;
+	let commandSpec: CommandSpec;
 
 	if (policy?.fastCommand) {
 		if (hasUnsafeShellChars(policy.fastCommand)) {
@@ -385,10 +438,22 @@ export function runUIFast(options: UIFastOptions = {}): {
 			}
 			return { exitCode: EXIT_CODES.VALIDATION_ERROR, message };
 		}
-		fullCmd = policy.fastCommand;
-		if (options.ci) {
-			fullCmd = `${fullCmd} --ci`;
+		const parsedPolicyCommand = parseCommandSpec(policy.fastCommand);
+		if (!parsedPolicyCommand.ok) {
+			const message = `Invalid uiLoopPolicy.fastCommand: ${parsedPolicyCommand.error}`;
+			if (json) {
+				return {
+					exitCode: EXIT_CODES.VALIDATION_ERROR,
+					message: JSON.stringify({ error: message, code: "VALIDATION_ERROR" }),
+				};
+			}
+			return { exitCode: EXIT_CODES.VALIDATION_ERROR, message };
 		}
+		commandSpec = appendForwardedArgsToPolicyCommand(
+			parsedPolicyCommand.value,
+			[...(options.ci ? ["--ci"] : [])],
+		);
+		fullCmd = formatCommandDisplay(commandSpec);
 		packageManager = "contract";
 	} else {
 		if (!hasStorybook()) {
@@ -405,14 +470,15 @@ export function runUIFast(options: UIFastOptions = {}): {
 		const pm = detectPackageManager();
 		packageManager = pm.name;
 		const storybookArgs = options.ci ? ["--ci"] : [];
-		fullCmd = buildScriptCommand(pm, "storybook", storybookArgs);
+		commandSpec = buildScriptCommand(pm, "storybook", storybookArgs);
+		fullCmd = formatCommandDisplay(commandSpec);
 	}
 
 	const execution =
 		mode === "execute"
 			? isExecutionDisabled()
 				? buildExecutionDisabledResult()
-				: executeCommand(fullCmd, 8000, true)
+				: executeCommand(commandSpec, 8000, true)
 			: buildPrepareResult();
 	const artifact = createEvidence(
 		"ui:fast",
@@ -495,6 +561,7 @@ export function runUIVerify(options: UIVerifyOptions = {}): {
 
 	let fullCmd: string;
 	let packageManager: string;
+	let commandSpec: CommandSpec;
 	if (policy?.verifyCommand) {
 		if (hasUnsafeShellChars(policy.verifyCommand)) {
 			const message =
@@ -507,9 +574,22 @@ export function runUIVerify(options: UIVerifyOptions = {}): {
 			}
 			return { exitCode: EXIT_CODES.VALIDATION_ERROR, message };
 		}
-		fullCmd = `${policy.verifyCommand}${
-			args.length > 0 ? ` ${args.join(" ")}` : ""
-		}`;
+		const parsedPolicyCommand = parseCommandSpec(policy.verifyCommand);
+		if (!parsedPolicyCommand.ok) {
+			const message = `Invalid uiLoopPolicy.verifyCommand: ${parsedPolicyCommand.error}`;
+			if (json) {
+				return {
+					exitCode: EXIT_CODES.VALIDATION_ERROR,
+					message: JSON.stringify({ error: message, code: "VALIDATION_ERROR" }),
+				};
+			}
+			return { exitCode: EXIT_CODES.VALIDATION_ERROR, message };
+		}
+		commandSpec = appendForwardedArgsToPolicyCommand(
+			parsedPolicyCommand.value,
+			args,
+		);
+		fullCmd = formatCommandDisplay(commandSpec);
 		packageManager = "contract";
 	} else {
 		if (!hasPlaywright()) {
@@ -525,14 +605,15 @@ export function runUIVerify(options: UIVerifyOptions = {}): {
 		}
 		const pm = detectPackageManager();
 		packageManager = pm.name;
-		fullCmd = buildScriptCommand(pm, "playwright", args);
+		commandSpec = buildScriptCommand(pm, "playwright", args);
+		fullCmd = formatCommandDisplay(commandSpec);
 	}
 
 	const execution =
 		mode === "execute"
 			? isExecutionDisabled()
 				? buildExecutionDisabledResult()
-				: executeCommand(fullCmd, 10 * 60 * 1000)
+				: executeCommand(commandSpec, 10 * 60 * 1000)
 			: buildPrepareResult();
 	const evidence = createEvidence(
 		"ui:verify",
@@ -613,6 +694,7 @@ export function runUIExplore(options: UIExploreOptions = {}): {
 	const interactionArgs = options.interactions ? ["--interactions"] : [];
 
 	let fullCmd: string;
+	let commandSpec: CommandSpec;
 	if (policy?.exploreCommand) {
 		if (hasUnsafeShellChars(policy.exploreCommand)) {
 			const message =
@@ -625,18 +707,42 @@ export function runUIExplore(options: UIExploreOptions = {}): {
 			}
 			return { exitCode: EXIT_CODES.VALIDATION_ERROR, message };
 		}
-		fullCmd =
-			`${policy.exploreCommand} ${[url, outputDir, ...interactionArgs].join(" ")}`.trim();
+		const parsedPolicyCommand = parseCommandSpec(policy.exploreCommand);
+		if (!parsedPolicyCommand.ok) {
+			const message = `Invalid uiLoopPolicy.exploreCommand: ${parsedPolicyCommand.error}`;
+			if (json) {
+				return {
+					exitCode: EXIT_CODES.VALIDATION_ERROR,
+					message: JSON.stringify({ error: message, code: "VALIDATION_ERROR" }),
+				};
+			}
+			return { exitCode: EXIT_CODES.VALIDATION_ERROR, message };
+		}
+		commandSpec = appendForwardedArgsToPolicyCommand(
+			parsedPolicyCommand.value,
+			[url, outputDir, ...interactionArgs],
+		);
+		fullCmd = formatCommandDisplay(commandSpec);
 	} else {
-		const baseCommand = `npx @agent-browser/cli explore ${url} --output ${outputDir}`;
-		fullCmd = `${baseCommand}${options.interactions ? " --interactions" : ""}`;
+		commandSpec = {
+			command: "npx",
+			args: [
+				"@agent-browser/cli",
+				"explore",
+				url,
+				"--output",
+				outputDir,
+				...interactionArgs,
+			],
+		};
+		fullCmd = formatCommandDisplay(commandSpec);
 	}
 
 	const execution =
 		mode === "execute"
 			? isExecutionDisabled()
 				? buildExecutionDisabledResult()
-				: executeCommand(fullCmd, 5 * 60 * 1000)
+				: executeCommand(commandSpec, 5 * 60 * 1000)
 			: buildPrepareResult();
 	const evidence = createEvidence(
 		"ui:explore",

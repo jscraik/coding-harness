@@ -62,6 +62,7 @@ import type {
 	UILoopPolicy,
 	UILoopSLO,
 } from "./types.js";
+import { isValidUILoopCommandSpec } from "./ui-loop-command.js";
 
 const VALID_RISK_TIERS: RiskTier[] = ["high", "medium", "low"];
 const VALID_TIMEOUT_ACTIONS: TimeoutAction[] = ["fail", "warn"];
@@ -1124,22 +1125,13 @@ function isValidUILoopPolicy(value: unknown): value is UILoopPolicy {
 	) {
 		return false;
 	}
-	if (
-		typeof policy.fastCommand !== "string" ||
-		policy.fastCommand.length === 0
-	) {
+	if (!isValidUILoopCommandSpec(policy.fastCommand)) {
 		return false;
 	}
-	if (
-		typeof policy.verifyCommand !== "string" ||
-		policy.verifyCommand.length === 0
-	) {
+	if (!isValidUILoopCommandSpec(policy.verifyCommand)) {
 		return false;
 	}
-	if (
-		typeof policy.exploreCommand !== "string" ||
-		policy.exploreCommand.length === 0
-	) {
+	if (!isValidUILoopCommandSpec(policy.exploreCommand)) {
 		return false;
 	}
 

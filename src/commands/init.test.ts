@@ -22,6 +22,24 @@ const EXPECTED_TEMPLATE_PATHS = [
 	"memory.json",
 	".harness/ci-required-checks.json",
 	".harness/ci-provider-transition-status.json",
+	".harness/memory/LEARNINGS.md",
+	".harness/knowledge/INDEX.md",
+	".harness/knowledge/cli/knowledge.md",
+	".harness/knowledge/cli/hypotheses.md",
+	".harness/knowledge/cli/rules.md",
+	".harness/knowledge/ci/knowledge.md",
+	".harness/knowledge/ci/hypotheses.md",
+	".harness/knowledge/ci/rules.md",
+	".harness/knowledge/governance/knowledge.md",
+	".harness/knowledge/governance/hypotheses.md",
+	".harness/knowledge/governance/rules.md",
+	".harness/knowledge/tooling/knowledge.md",
+	".harness/knowledge/tooling/hypotheses.md",
+	".harness/knowledge/tooling/rules.md",
+	".harness/knowledge/tooling/codex-learn-summary.md",
+	".harness/decisions/.gitkeep",
+	".harness/quality/criteria.md",
+	".harness/review-log.md",
 	".npmrc",
 	".coderabbit.yaml",
 	".circleci/config.yml",
@@ -151,6 +169,17 @@ describe("runInit", () => {
 			expect(
 				existsSync(
 					join(tempDir, ".harness/ci-provider-transition-status.json"),
+				),
+			).toBe(true);
+			expect(existsSync(join(tempDir, ".harness/memory/LEARNINGS.md"))).toBe(
+				true,
+			);
+			expect(existsSync(join(tempDir, ".harness/knowledge/INDEX.md"))).toBe(
+				true,
+			);
+			expect(
+				existsSync(
+					join(tempDir, ".harness/knowledge/tooling/codex-learn-summary.md"),
 				),
 			).toBe(true);
 			expect(existsSync(join(tempDir, ".npmrc"))).toBe(true);
@@ -303,27 +332,36 @@ describe("runInit", () => {
 	});
 
 	describe("path traversal protection", () => {
-		it("blocks path traversal with ..", () => {
-			// Try to write outside target directory
-			const result = runInit(tempDir, { dryRun: false, force: false });
+		it("rejects symlinked .harness before any tracked writes", () => {
+			const outsideDir = join(tmpdir(), `harness-outside-${Date.now()}`);
+			mkdirSync(outsideDir, { recursive: true });
+			symlinkSync(outsideDir, join(tempDir, ".harness"), "dir");
+			writeFileSync(
+				join(tempDir, "harness.contract.json"),
+				'{"sentinel":true}\n',
+			);
 
-			// This should succeed because template paths are hardcoded and safe
-			// The test verifies the sanitizePath function is being called
-			expect(result.ok).toBe(true);
-		});
+			const beforeContract = readFileSync(
+				join(tempDir, "harness.contract.json"),
+				"utf-8",
+			);
+			const result = runInit(tempDir, {
+				dryRun: false,
+				force: true,
+				track: true,
+			});
 
-		it("blocks traversal to sibling directory", () => {
-			// Create a sibling directory
-			const siblingDir = join(tmpdir(), `harness-sibling-${Date.now()}`);
-			mkdirSync(siblingDir, { recursive: true });
-
-			// The template paths are hardcoded, so we can't directly test traversal
-			// But we verify the function works correctly
-			const result = runInit(tempDir, { dryRun: false, force: false });
-			expect(result.ok).toBe(true);
-
-			// Cleanup
-			rmSync(siblingDir, { recursive: true, force: true });
+			expect(result.ok).toBe(false);
+			if (!result.ok) {
+				expect(result.error.code).toBe("PATH_TRAVERSAL");
+			}
+			expect(existsSync(join(outsideDir, "backups"))).toBe(false);
+			expect(existsSync(join(outsideDir, "restore-manifest.json"))).toBe(false);
+			expect(
+				readFileSync(join(tempDir, "harness.contract.json"), "utf-8"),
+			).toBe(beforeContract);
+			expect(existsSync(join(tempDir, "memory.json"))).toBe(false);
+			rmSync(outsideDir, { recursive: true, force: true });
 		});
 	});
 
@@ -531,7 +569,7 @@ describe("runInit", () => {
 				join(tempDir, ".github/workflows/secret-scan.yml"),
 				"utf-8",
 			);
-			expect(secretScanWorkflow).not.toContain("pull-requests:");
+			expect(secretScanWorkflow).toContain("pull-requests: write");
 			expect(secretScanWorkflow).toContain("contents: read");
 			expect(secretScanWorkflow).toContain("GITLEAKS_CONFIG: .gitleaks.toml");
 			// CircleCI file should NOT be created
@@ -1300,8 +1338,12 @@ describe("runInit", () => {
 				".harness/memory/codex-preflight-overrides.env",
 			);
 			expect(codexLearn).toContain(
+				".harness/knowledge/tooling/codex-learn-summary.md",
+			);
+			expect(codexLearn).toContain(
 				"Manual review still required for path hints",
 			);
+			expect(codexLearn).toContain("Project Brain summary updated:");
 			expect(codexEnforced).toContain(
 				"Runs repo-local preflight before executing codex.",
 			);
@@ -1452,6 +1494,10 @@ describe("runInit", () => {
 				"run_local_memory_preflight_via_harness()",
 			);
 			expect(codexPreflight).toContain("local-memory-preflight");
+			expect(codexPreflight).toContain("PROJECT_BRAIN_REQUIRED_PATHS");
+			expect(codexPreflight).toContain(
+				".harness/knowledge/tooling/codex-learn-summary.md",
+			);
 			expect(codexPreflight).toContain("scripts/verify-work.sh");
 			expect(codexPreflight).toContain("preflight_local_memory_shell_fallback");
 			expect(codexPreflight).toContain("preflight_repo() {");
@@ -2846,6 +2892,10 @@ describe("--update flag", () => {
 		expect(contributing).not.toContain("@greptileai");
 		expect(contributing).not.toContain("greptile-review.yml");
 		expect(contributing).toContain("CodeRabbit");
+		expect(contributing).toContain("## Project Brain workflow");
+		expect(contributing).toContain(
+			".harness/knowledge/tooling/codex-learn-summary.md",
+		);
 		expect(prTemplate).not.toContain("@greptileai");
 		expect(prTemplate).toContain("Codex: <link / artifact path / comment ID>");
 	});
