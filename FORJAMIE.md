@@ -1,5 +1,11 @@
 # FORJAMIE
 
+## Table of Contents
+- [2026-04-05 - Commit Trailer Parser Quirk (Recurring)](#2026-04-05---commit-trailer-parser-quirk-recurring)
+  - [What happened](#what-happened)
+  - [Reliable workaround](#reliable-workaround)
+  - [Why this is now standard](#why-this-is-now-standard)
+
 ## 2026-04-05 - Commit Trailer Parser Quirk (Recurring)
 
 ### What happened
