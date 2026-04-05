@@ -1,7 +1,9 @@
 name: pr-pipeline-bridge
 
-# Disabled: CircleCI is the primary PR gate (see docs/ci-responsibility-matrix.md).
-# This workflow is available for manual dispatch only via workflow_dispatch.
+# Emergency fallback CI. CircleCI is the primary PR gate (see docs/ci-responsibility-matrix.md).
+# This workflow is intentionally restricted to workflow_dispatch only.
+# Re-enable automatic triggers ONLY if CircleCI runner capacity becomes unavailable.
+# To re-enable: restore pull_request, push (not main), and merge_group triggers.
 on:
   workflow_dispatch: {}
 

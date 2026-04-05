@@ -5,14 +5,14 @@ jobs:
   # PR pipeline (fast) — lint, typecheck, audit, and the full test suite
   # excluding the slow pilot-evaluate suite.
   #
-  # resource_class: large (4 vCPU / 8 GB) — required because ci-migrate.test.ts
-  # runs 97 RSA-signing tests (~233s). On medium (2 vCPU) the vitest birpc IPC
-  # onTaskUpdate call stalls past the 60s timeout under CPU contention.
+  # resource_class: medium (2 vCPU / 4 GB) — CircleCI free tier only supports
+  # medium for Docker executors. ci-migrate.test.ts RSA tests may take longer
+  # under CPU contention; mitigated by running with --maxWorkers=1.
   # ─────────────────────────────────────────────────────────────────────────────
   pr-fast:
     docker:
       - image: cimg/node:24.13
-    resource_class: large
+    resource_class: medium
     steps:
       - checkout
       - run:
@@ -63,13 +63,12 @@ jobs:
   # PR pipeline (slow) — isolated pilot-evaluate suite.
   #
   # pilot-evaluate.test.ts runs long-running evaluation windows and RSA signing
-  # loops. On large (4 vCPU) the vitest worker IPC can time out when run
-  # alongside other heavy suites. Isolated here on xlarge with its own timeout.
+  # loops. Isolated with its own timeout to avoid stalling the fast lane.
   # ─────────────────────────────────────────────────────────────────────────────
   pr-slow:
     docker:
       - image: cimg/node:24.13
-    resource_class: large
+    resource_class: medium
     steps:
       - checkout
       - run:
@@ -102,7 +101,7 @@ jobs:
   pr-pipeline:
     docker:
       - image: cimg/base:stable
-    resource_class: small
+    resource_class: medium
     steps:
       - run:
           name: Aggregate PR pipeline status
@@ -123,7 +122,7 @@ jobs:
   release:
     docker:
       - image: cimg/node:24.13
-    resource_class: large
+    resource_class: medium
     steps:
       - checkout
       - run:

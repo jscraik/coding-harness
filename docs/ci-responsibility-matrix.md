@@ -42,11 +42,11 @@ CircleCI does **not** publish. It stops at build verification.
 
 ### GitHub Actions Owns
 
-| Responsibility | Workflow | Job | Trigger |
-|---|---|---|---|
-| Security scanning (BetterLeaks + Trivy + Semgrep) | `security-scan` | `secret-scan` | Push to main, PR, `merge_group` |
-| npm publish + SBOM + provenance attestation + GitHub Release | `release-private-npm` | `publish` | `Semver` tag push |
-| **PR fallback CI** (full `pnpm check`) | `pr-pipeline-bridge` | `pr-pipeline` | PR to main, branch push (not main), `merge_group` |
+| Responsibility | Workflow | Job | Trigger | Workflow File |
+|---|---|---|---|---|
+| Security scanning (BetterLeaks + Trivy + Semgrep) | `security-scan` | `secret-scan` | Push to main, PR, `merge_group` | `.github/workflows/secret-scan.yml` |
+| npm publish + SBOM + provenance attestation + GitHub Release | `release-private-npm` | `publish` | `Semver` tag push | `.github/workflows/release-private-npm.yml` |
+| **PR fallback CI** (emergency dispatch only) | `pr-pipeline-bridge` | `pr-pipeline` | `workflow_dispatch` only (disabled as automatic gate) | `.github/workflows/pr-pipeline-bridge.yml` |
 
 ### Not Owned by Either CI System
 
@@ -99,35 +99,41 @@ Developer pushes tag v1.2.3
 
 The repository is in a **bridge-primary state**:
 
-- **`harness.contract.json`** declares `ciProviderPolicy.migrationStage: "circleci-only"` but this does not match reality
-- **CircleCI free-tier** accepts pipelines but never dispatches them to runners (all pipelines stuck in `created` state since March 25). Every pipeline in the project history remains in `created` — none have ever executed.
-- **The `pr-pipeline-bridge` GitHub Actions workflow** is the **only functioning PR gate**
-- **No actual duplicate execution occurs** because CircleCI never runs — but the config duplication creates a maintenance burden and a false sense of coverage
-- **Release validation**: CircleCI `release` job will not run on tag pushes; only GitHub Actions `publish` will execute
+- **CircleCI free-tier** accepts pipelines but never dispatches them to runners. All pipelines remain in `state: "created"` with `build_num: null` — the workflow-level `status` fields reflect config validation only, not actual execution. No job in the project's history has ever run on a CircleCI runner.
+- **`harness.contract.json`** declares `ciProviderPolicy.migrationStage: "circleci-only"` — this does not match operational reality since CircleCI never executes.
+- **The `pr-pipeline-bridge` GitHub Actions workflow** was previously the **only functioning PR gate**, but has now been disabled to `workflow_dispatch: {}` only.
+- **No CI system is currently gating PRs automatically.** CircleCI never runs; the bridge is dispatch-only. Re-enabling the bridge as an automatic gate is the fastest path to restoring PR CI.
+- **Release validation**: GitHub Actions `publish` handles tag-driven release (build, publish, attestation, GitHub Release). CircleCI `release` job will not execute on tag pushes.
 
-**Action required:** Either upgrade the CircleCI plan to get runner capacity, or officially transition to GitHub Actions as the primary CI and remove CircleCI config to eliminate the maintenance overhead.
+**Action required:** Either upgrade the CircleCI plan to get runner capacity, or re-enable the `pr-pipeline-bridge` as an automatic gate to restore PR CI coverage.
 
 ### Known Overlaps (Transitional)
 
+These overlaps exist because both CI systems define the same gates. CircleCI never executes (no runner capacity), so only the GitHub Actions bridge was ever functional. The bridge is now dispatch-only, so no active overlap in practice — but the config duplication remains.
+
 | Gate | CircleCI Job | GitHub Actions Job | Status |
 |---|---|---|---|
-| Lint | `pr-fast` | `pr-pipeline` (bridge) | Duplicate -- transitional |
-| Typecheck | `pr-fast` | `pr-pipeline` (bridge) | Duplicate -- transitional |
-| Tests | `pr-fast` + `pr-slow` | `pr-pipeline` (bridge) | Duplicate -- transitional |
-| Audit | `pr-fast` | `pr-pipeline` (bridge) | Duplicate -- transitional |
-| Docs lint | `pr-fast` | `pr-pipeline` (bridge) | Duplicate -- transitional |
-| Skill/workflow validation | `pr-fast` | `pr-pipeline` (bridge) | Duplicate -- transitional |
-| Tag validation + build | `release` | `publish` | Duplicate -- transitional |
+| Lint | `pr-fast` | `pr-pipeline` (bridge) | Duplicate — bridge now dispatch-only |
+| Typecheck | `pr-fast` | `pr-pipeline` (bridge) | Duplicate — bridge now dispatch-only |
+| Tests | `pr-fast` + `pr-slow` | `pr-pipeline` (bridge) | Duplicate — bridge now dispatch-only |
+| Audit | `pr-fast` | `pr-pipeline` (bridge) | Duplicate — bridge now dispatch-only |
+| Docs lint | `pr-fast` | `pr-pipeline` (bridge) | Duplicate — bridge now dispatch-only |
+| Skill/workflow validation | `pr-fast` | `pr-pipeline` (bridge) | Duplicate — bridge now dispatch-only |
+| Tag validation + build | `release` | `publish` | Intentional — both validate independently; only GHA publishes |
 
 ## Target State
 
-When CircleCI is upgraded or replaced:
+**Prerequisite:** Either upgrade CircleCI to a plan with runner capacity, or transition fully to GitHub Actions.
 
-1. **CircleCI becomes primary PR gate** with the `pr-pipeline` status context
-2. **`pr-pipeline-bridge.yml` is removed** or converted to a lightweight status-reporting job
+When the prerequisite is met:
+
+1. **Primary PR gate runs in one system** with the `pr-pipeline` status context
+2. **`pr-pipeline-bridge.yml`** is either removed (if CircleCI gets runners) or becomes the primary gate (if transitioning to GitHub Actions)
 3. **GitHub Actions retains exclusive ownership** of security scanning and release/publish
-4. **No duplicate gates** -- each responsibility runs in exactly one system
-5. **Branch protection** references `pr-pipeline` (CircleCI) + `security-scan` (GitHub Actions) + `CodeRabbit`
+4. **No duplicate gates** — each responsibility runs in exactly one system
+5. **Branch protection** references `pr-pipeline` (owning system) + `security-scan` (GitHub Actions) + `CodeRabbit`
+
+Until the prerequisite is met, the bridge workflow should be re-enabled as an automatic gate to restore PR CI coverage.
 
 ## Migration Rules
 
@@ -173,4 +179,4 @@ Run `pnpm workflow:validate` to detect CI ownership conflicts. The validator che
 | Install command | `pnpm install --frozen-lockfile` (PR) / `pnpm install` (release) | `pnpm install --frozen-lockfile` |
 | npm publish token | N/A (does not publish) | `NPM_TOKEN` secret or OIDC (`id-token: write`) |
 | Attestation signing | N/A | OIDC (`actions/attest-build-provenance`) |
-| Resource class | `large` (4 vCPU / 8 GB) | `ubuntu-latest` (2 vCPU / 7 GB) |
+| Resource class | `medium` (2 vCPU / 4 GB) — free-tier max | `ubuntu-latest` (2 vCPU / 7 GB) |
