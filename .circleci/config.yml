@@ -109,16 +109,16 @@ jobs:
           command: echo "pr-fast and pr-slow completed successfully"
 
   # ─────────────────────────────────────────────────────────────────────────────
-  # Release pipeline — tag-driven publish only (no CI-side pushes to main)
+  # Release verification pipeline — tag-driven validation only
   #
-  # Required CircleCI environment variables (set in Project Settings → Env Vars):
-  #   NPM_TOKEN                    — npm access token with publish rights to @brainwav scope
+  # Canonical publish path:
+  #   .github/workflows/release-private-npm.yml (tag-driven GitHub Actions flow)
   #
   # Flow:
-  #   1. Validate release context + secrets
+  #   1. Validate release context
   #   2. Run full pnpm check suite
   #   3. Verify tag matches package.json version
-  #   4. Build and publish to npm
+  #   4. Build package (publish occurs in GitHub Actions)
   # ─────────────────────────────────────────────────────────────────────────────
   release:
     docker:
@@ -146,21 +146,13 @@ jobs:
           name: Install dependencies
           command: pnpm install
       - run:
-          name: Validate release secrets
+          name: Validate release context
           command: |
-            missing=()
-            [ -z "$NPM_TOKEN" ]                    && missing+=("NPM_TOKEN")
-            if [ ${#missing[@]} -gt 0 ]; then
-              echo "ERROR: Missing required environment variables: ${missing[*]}"
-              echo "Configure them in CircleCI Project Settings -> Environment Variables."
-              echo "  NPM_TOKEN                    - npm token with publish rights to @brainwav scope"
-              exit 1
-            fi
             if [ -z "${CIRCLE_TAG:-}" ]; then
               echo "ERROR: release workflow must run on a git tag (CIRCLE_TAG is empty)."
               exit 1
             fi
-            echo "Release secrets validated"
+            echo "Release context validated"
       - run:
           name: Full check suite
           no_output_timeout: 15m
@@ -187,13 +179,6 @@ jobs:
       - run:
           name: Build package
           command: pnpm build
-      - run:
-          name: Publish to npm
-          command: |
-            VERSION="$(jq -r '.version' package.json)"
-            export NODE_AUTH_TOKEN="$NPM_TOKEN"
-            pnpm publish --access restricted --ignore-scripts
-            echo "Published @brainwav/coding-harness@${VERSION}"
 
 workflows:
   # Runs on every PR branch push (all branches except main).

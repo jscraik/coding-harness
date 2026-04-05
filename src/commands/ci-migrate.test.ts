@@ -2038,6 +2038,7 @@ function writeParityProofHarvestManifest(targetDir: string): void {
 
 describe("runCIMigrateCLI", () => {
 	let tempDir: string;
+	let externalFixtureDir: string;
 	let previousSnapshotSigningKey: string | undefined;
 	let consoleErrorSpy: ReturnType<typeof vi.spyOn> | undefined;
 	let consoleWarnSpy: ReturnType<typeof vi.spyOn> | undefined;
@@ -2079,6 +2080,9 @@ describe("runCIMigrateCLI", () => {
 
 	beforeEach(() => {
 		tempDir = mkdtempSync(join(tmpdir(), "harness-ci-migrate-"));
+		externalFixtureDir = mkdtempSync(
+			join(tmpdir(), "harness-ci-migrate-external-"),
+		);
 		// Copy the pre-seeded git history into the fresh tempDir so that
 		// any test calling ensureProofPackFixtureHistory skips git init/commit.
 		const gitDir = join(gitTemplateDir, ".git");
@@ -2138,6 +2142,7 @@ describe("runCIMigrateCLI", () => {
 			process.env[SNAPSHOT_SIGNING_KEY_ENV] = previousSnapshotSigningKey;
 		}
 		setCIMigrateTestOverrides();
+		rmSync(externalFixtureDir, { recursive: true, force: true });
 		rmSync(tempDir, { recursive: true, force: true });
 	});
 
@@ -2563,8 +2568,7 @@ describe("runCIMigrateCLI", () => {
 		writeCIProviderPolicyContract(tempDir, "required");
 		writeParityProofPack(tempDir);
 		const outsideOrchestratorPath = join(
-			tempDir,
-			"..",
+			externalFixtureDir,
 			"outside-orchestrator.sh",
 		);
 		writeFileSync(
@@ -2609,8 +2613,7 @@ describe("runCIMigrateCLI", () => {
 		writeCIProviderPolicyContract(tempDir, "required");
 		writeParityProofPack(tempDir);
 		const outsideOrchestratorPath = join(
-			tempDir,
-			"..",
+			externalFixtureDir,
 			"outside-orchestrator-symlink.sh",
 		);
 		writeFileSync(

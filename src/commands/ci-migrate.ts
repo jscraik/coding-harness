@@ -2124,6 +2124,7 @@ function runMergeQueueOrchestrator(
 		orchestratorPath,
 		"Merge-queue orchestrator executable",
 		true,
+		"file",
 	);
 	if (!resolvedOrchestratorPathResult.ok) {
 		return { ok: false, error: resolvedOrchestratorPathResult.error };
@@ -2133,6 +2134,7 @@ function runMergeQueueOrchestrator(
 		evidencePath,
 		"Merge-queue evidence file",
 		false,
+		"file",
 	);
 	if (!resolvedEvidencePathResult.ok) {
 		return { ok: false, error: resolvedEvidencePathResult.error };
@@ -2593,11 +2595,23 @@ function runMergeQueueProviderAPIOrchestrator(
 		configPath,
 		"Merge-queue provider API config file",
 		true,
+		"file",
 	);
 	if (!resolvedConfigPathResult.ok) {
 		return { ok: false, error: resolvedConfigPathResult.error };
 	}
+	const resolvedEvidencePathResult = resolveRepoBoundPath(
+		targetDir,
+		evidencePath,
+		"Merge-queue evidence file",
+		false,
+		"file",
+	);
+	if (!resolvedEvidencePathResult.ok) {
+		return { ok: false, error: resolvedEvidencePathResult.error };
+	}
 	const resolvedConfigPath = resolvedConfigPathResult.absolutePath;
+	const resolvedEvidencePath = resolvedEvidencePathResult.absolutePath;
 	const configResult = parseMergeQueueProviderAPIConfig(
 		readFileSync(resolvedConfigPath, "utf-8"),
 	);
@@ -2738,16 +2752,6 @@ function runMergeQueueProviderAPIOrchestrator(
 		},
 	};
 	const evidenceContent = JSON.stringify(evidence, null, 2);
-	const resolvedEvidencePathResult = resolveRepoBoundPath(
-		targetDir,
-		evidencePath,
-		"Merge-queue evidence file",
-		false,
-	);
-	if (!resolvedEvidencePathResult.ok) {
-		return { ok: false, error: resolvedEvidencePathResult.error };
-	}
-	const resolvedEvidencePath = resolvedEvidencePathResult.absolutePath;
 	mkdirSync(dirname(resolvedEvidencePath), { recursive: true });
 	writeFileSync(resolvedEvidencePath, evidenceContent);
 	writeFileSync(
@@ -2762,6 +2766,7 @@ function resolveRepoBoundPath(
 	configuredPath: string,
 	label: string,
 	mustExist: boolean,
+	expectedKind: "file" | "directory" = "file",
 ): { ok: true; absolutePath: string } | { ok: false; error: string } {
 	const candidatePath = configuredPath.trim();
 	if (candidatePath.length === 0) {
@@ -2781,6 +2786,18 @@ function resolveRepoBoundPath(
 			return {
 				ok: false,
 				error: `${label} path cannot be a symbolic link: ${configuredPath}`,
+			};
+		}
+		if (expectedKind === "file" && !stat.isFile()) {
+			return {
+				ok: false,
+				error: `${label} must be a file: ${configuredPath}`,
+			};
+		}
+		if (expectedKind === "directory" && !stat.isDirectory()) {
+			return {
+				ok: false,
+				error: `${label} must be a directory: ${configuredPath}`,
 			};
 		}
 		if (!isWithinRoot(realpathSync(absolutePath))) {

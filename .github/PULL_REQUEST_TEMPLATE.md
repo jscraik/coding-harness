@@ -16,6 +16,7 @@
 - [ ] Codex review completed and findings handled (or explicitly waived).
 - [ ] CodeRabbit review was performed by an independent reviewer (not the coding agent).
 - [ ] Merge is blocked until all required checks pass.
+- [ ] If this change affects release flow, tag-driven publish behavior is documented (`.github/workflows/release-private-npm.yml`, semver tag trigger, auth mode).
 - [ ] I will delete branch/worktree after merge.
 
 ## Testing

@@ -129,7 +129,8 @@ B0 PREFLIGHT -> B1 DEPS -> B2 INIT_PREVIEW -> B3 INIT_APPLY -> B4 VALIDATE -> B5
 
 Expected scaffold lane in `B3`:
 - `.coderabbit.yaml`
-- `.github/workflows/pr-pipeline.yml`
+- `.circleci/config.yml` (default provider)
+- `.github/workflows/pr-pipeline.yml` when `ciProvider=github-actions`
 
 ## Update workflow for existing repos
 

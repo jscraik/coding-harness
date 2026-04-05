@@ -28,7 +28,7 @@ Codex skill for reliable setup and operation of `@brainwav/coding-harness` in re
 - Keep `SKILL.md` as a map; put deeper command references in `references/`.
 - Write run artifacts to `./artifacts/` (local) or `/mnt/data/` (hosted).
 - Treat `harness --help` as the runtime command truth and use docs as supporting context.
-- When maintaining `/Users/jamiecraik/dev/coding-harness` itself, prefer `pnpm exec tsx src/cli.ts --help` over a globally installed `harness` binary so command guidance matches the current source tree.
+- When maintaining the `coding-harness` source repository itself, prefer `pnpm exec tsx src/cli.ts --help` over a globally installed `harness` binary so command guidance matches the current source tree.
 
 ## When to use
 - Install `@brainwav/coding-harness` globally for repository preflight and environment checks.

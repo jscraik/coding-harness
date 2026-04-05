@@ -6,6 +6,10 @@ import { join, resolve } from "node:path";
 import { pathToFileURL } from "node:url";
 import { loadContract } from "../lib/contract/loader.js";
 import type { UILoopPolicy } from "../lib/contract/types.js";
+import {
+	type UILoopCommandSpec,
+	parseUILoopCommandSpec,
+} from "../lib/contract/ui-loop-command.js";
 
 // Exit codes for programmatic consumption
 export const EXIT_CODES = {
@@ -76,10 +80,7 @@ interface CommandExecutionResult {
 	stderr?: string;
 }
 
-interface CommandSpec {
-	command: string;
-	args: string[];
-}
+type CommandSpec = UILoopCommandSpec;
 
 interface UILoopContractContext {
 	policy: UILoopPolicy | undefined;
@@ -139,33 +140,32 @@ function buildPrepareResult(): CommandExecutionResult {
 function parseCommandSpec(
 	command: string,
 ): { ok: true; value: CommandSpec } | { ok: false; error: string } {
-	const trimmed = command.trim();
-	if (trimmed.length === 0) {
-		return { ok: false, error: "command must not be empty" };
-	}
-	if (/[\n\r\0]/.test(trimmed)) {
+	return parseUILoopCommandSpec(command);
+}
+
+function appendForwardedArgsToPolicyCommand(
+	spec: CommandSpec,
+	forwardedArgs: string[],
+): CommandSpec {
+	if (forwardedArgs.length === 0) {
 		return {
-			ok: false,
-			error: "command contains unsupported control characters",
+			command: spec.command,
+			args: [...spec.args],
 		};
 	}
-	if (/["'\\]/.test(trimmed)) {
+	const isNpmRunCommand = spec.command === "npm" && spec.args[0] === "run";
+	if (!isNpmRunCommand) {
 		return {
-			ok: false,
-			error:
-				"quoted or escaped command tokens are not supported; use simple argv-safe tokens",
+			command: spec.command,
+			args: [...spec.args, ...forwardedArgs],
 		};
 	}
-	const tokens = trimmed.split(/\s+/).filter((token) => token.length > 0);
-	if (tokens.length === 0) {
-		return { ok: false, error: "command must include an executable" };
-	}
+	const hasSeparator = spec.args.includes("--");
 	return {
-		ok: true,
-		value: {
-			command: tokens[0] ?? "",
-			args: tokens.slice(1),
-		},
+		command: spec.command,
+		args: hasSeparator
+			? [...spec.args, ...forwardedArgs]
+			: [...spec.args, "--", ...forwardedArgs],
 	};
 }
 
@@ -449,13 +449,10 @@ export function runUIFast(options: UIFastOptions = {}): {
 			}
 			return { exitCode: EXIT_CODES.VALIDATION_ERROR, message };
 		}
-		commandSpec = {
-			command: parsedPolicyCommand.value.command,
-			args: [
-				...parsedPolicyCommand.value.args,
-				...(options.ci ? ["--ci"] : []),
-			],
-		};
+		commandSpec = appendForwardedArgsToPolicyCommand(
+			parsedPolicyCommand.value,
+			[...(options.ci ? ["--ci"] : [])],
+		);
 		fullCmd = formatCommandDisplay(commandSpec);
 		packageManager = "contract";
 	} else {
@@ -588,10 +585,10 @@ export function runUIVerify(options: UIVerifyOptions = {}): {
 			}
 			return { exitCode: EXIT_CODES.VALIDATION_ERROR, message };
 		}
-		commandSpec = {
-			command: parsedPolicyCommand.value.command,
-			args: [...parsedPolicyCommand.value.args, ...args],
-		};
+		commandSpec = appendForwardedArgsToPolicyCommand(
+			parsedPolicyCommand.value,
+			args,
+		);
 		fullCmd = formatCommandDisplay(commandSpec);
 		packageManager = "contract";
 	} else {
@@ -721,15 +718,10 @@ export function runUIExplore(options: UIExploreOptions = {}): {
 			}
 			return { exitCode: EXIT_CODES.VALIDATION_ERROR, message };
 		}
-		commandSpec = {
-			command: parsedPolicyCommand.value.command,
-			args: [
-				...parsedPolicyCommand.value.args,
-				url,
-				outputDir,
-				...interactionArgs,
-			],
-		};
+		commandSpec = appendForwardedArgsToPolicyCommand(
+			parsedPolicyCommand.value,
+			[url, outputDir, ...interactionArgs],
+		);
 		fullCmd = formatCommandDisplay(commandSpec);
 	} else {
 		commandSpec = {

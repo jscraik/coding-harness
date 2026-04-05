@@ -160,6 +160,16 @@ Local Memory REST health retries in the legacy shell fallback should use a bound
 Active AI-review scaffolding in this repository is CodeRabbit-first. Any remaining Greptile references in active tooling or scaffold paths should exist only for legacy cleanup and migration safety, not for new repo scaffolding or current review enforcement.
 `scripts/check-diagram-freshness.sh` should compare only git-tracked diagram artifacts before and after refresh. gitignored `.diagram/` refresh output outside tracked files must not fail `pre-push` with an empty "Changed tracked files" list.
 
+## Tag-driven private npm release workflow
+
+- Canonical publish workflow: `.github/workflows/release-private-npm.yml`
+- Trigger: semantic-version tag pushes matching `vX.Y.Z` (for example `v0.12.0`) and guarded manual dispatch.
+- Publish authority: GitHub Actions OIDC trusted publishing (default) with optional token fallback (`publish_auth=token`) for bootstrap recovery.
+- CircleCI `release` is verification-only in this repository; do not add `pnpm publish` or token-based publish steps there.
+- Keep release docs and scaffolds aligned with this split:
+  - CircleCI: lint/test/security + release verification.
+  - GitHub Actions: private npm publish + attestation + GitHub release creation.
+
 ## Tooling verification checklist
 
 Before claiming a change is verified, confirm:

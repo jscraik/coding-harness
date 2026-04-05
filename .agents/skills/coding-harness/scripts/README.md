@@ -1,8 +1,18 @@
 # Scripts
 
+## Table of Contents
+
+- [Overview](#overview)
+- [Available helper scripts](#available-helper-scripts)
+- [Run](#run)
+
+## Overview
+
 Read when: you are looking for deterministic helper scripts for the canonical `coding-harness` skill.
 
 This local copy primarily relies on the upstream `harness` CLI and the reference docs in `references/`.
+
+## Available helper scripts
 
 Available helper scripts:
 
@@ -17,7 +27,7 @@ Available helper scripts:
     - `verify-coderabbit`
     - `bash scripts/codex-preflight.sh --stack auto --mode required`
 
-Run:
+## Run
 
 ```bash
 python3 scripts/validate_reference_contracts.py

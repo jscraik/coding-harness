@@ -21,6 +21,7 @@ All notable changes to this project will be documented in this file. See [standa
 * prefer repo-local harness for environment checks ([9c0f0ae](https://github.com/jscraik/coding-harness/commit/9c0f0ae009fc6557e272136ebf0e2761cde949a9))
 * remove legacy Greptile scaffolding and align skill docs ([a595462](https://github.com/jscraik/coding-harness/commit/a5954622c90ce9ff54a878905b9e5938b8a307d0))
 * restore CircleCI pr-pipeline status ([6e1ded0](https://github.com/jscraik/coding-harness/commit/6e1ded0b03dfcb601107433cefa105a75e5d2007))
+* restore tag-driven GitHub Actions OIDC private npm publish flow ([#144](https://github.com/jscraik/coding-harness/pull/144))
 * restore codestyle contract and CI portability ([1a1146a](https://github.com/jscraik/coding-harness/commit/1a1146a49978890a2f2176df9a9293de0fec70d1))
 * unblock PR security checks ([cc4a663](https://github.com/jscraik/coding-harness/commit/cc4a663df910cd9ae089aeb5d21c5c086fbfbbaa))
 * unblock push by repairing docs-gate checks ([61ad340](https://github.com/jscraik/coding-harness/commit/61ad3407c7095721b429a00c7db05f18852e9cbe))

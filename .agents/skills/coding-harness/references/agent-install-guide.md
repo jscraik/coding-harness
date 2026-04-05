@@ -166,7 +166,8 @@ harness ci-migrate abort --snapshot <snapshot-id>
 harness.contract.json               — governance contract (source of truth)
 .harness/ci-required-checks.json    — required CI check list
 .coderabbit.yaml                    — CodeRabbit review config (repo-scoped)
-.circleci/config.yml                — All CI jobs (lint, test, security, release)
+.circleci/config.yml                — Main CI jobs (lint, test, security)
+.github/workflows/release-private-npm.yml — Tag-driven private npm release (GitHub Actions OIDC)
 .github/PULL_REQUEST_TEMPLATE.md    — PR checklist
 scripts/codex-preflight.sh          — agent preflight script (source at session start)
 scripts/check-environment.sh        — harness env readiness script
@@ -240,8 +241,7 @@ curl -s --request GET \
   --header "Circle-Token: $CIRCLE_TOKEN" | jq '[.items[].name]'
 ```
 
-> **No GitHub Actions secrets are required.** CI runs through CircleCI, and
-> CodeRabbit enforcement is provided by the GitHub App check context (`CodeRabbit`).
+> **No GitHub Actions secrets are required for OIDC release mode.** Main CI runs through CircleCI, tag-driven private npm publishing runs through GitHub Actions OIDC, and CodeRabbit enforcement is provided by the GitHub App check context (`CodeRabbit`).
 
 ---
 

@@ -95,13 +95,16 @@ append_project_brain_paths() {
 }
 
 project_brain_required_enabled() {
+	local knowledge_index="${WORKSPACE_ROOT}/.harness/knowledge/INDEX.md"
+	local decisions_dir="${WORKSPACE_ROOT}/.harness/decisions"
+	local review_log="${WORKSPACE_ROOT}/.harness/review-log.md"
 	case "${CODEX_PREFLIGHT_REQUIRE_PROJECT_BRAIN:-auto}" in
 		always|1|true|yes) return 0 ;;
 		never|0|false|no) return 1 ;;
 	esac
 	# Auto-enable only when the core scaffold appears complete, not just when a
 	# single legacy memory marker exists.
-	[[ -f ".harness/knowledge/INDEX.md" && -d ".harness/decisions" && -f ".harness/review-log.md" ]]
+	[[ -f "${knowledge_index}" && -d "${decisions_dir}" && -f "${review_log}" ]]
 }
 
 trim_ascii_whitespace() {

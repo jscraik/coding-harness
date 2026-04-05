@@ -6,7 +6,7 @@
 	"started_at": "2026-04-04T19:04:20Z",
 	"finished_at": "2026-04-04T19:04:53Z",
 	"duration_seconds": 33,
-	"notes": "",
+	"notes": "Baseline weekly SWE run captured on main; retained for cadence evidence and not treated as PR-head validation output.",
 	"artifacts": [],
 	"git": {
 		"commit": "55b43b8181a99300bdd8939d5117bee340b9812b",
