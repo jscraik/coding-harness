@@ -51,7 +51,7 @@ jobs:
             pnpm exec vitest run --maxWorkers=1 --dangerouslyIgnoreUnhandledErrors src/commands/ci-migrate.test.ts
       - run:
           name: Audit
-          command: pnpm audit
+          command: pnpm run audit
       - run:
           name: Docs lint
           command: pnpm docs:lint
