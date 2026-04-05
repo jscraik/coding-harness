@@ -322,12 +322,14 @@ export function createBackup(
 	}
 
 	const backupHash = calculateBackupHash(relativePath);
-	const backupPath = resolve(
+	const backupPathResult = sanitizePath(
 		targetDir,
-		HARNESS_DIR,
-		BACKUPS_DIR,
-		`${backupHash}.bak`,
+		`${HARNESS_DIR}/${BACKUPS_DIR}/${backupHash}.bak`,
 	);
+	if (!backupPathResult.ok) {
+		return backupPathResult;
+	}
+	const backupPath = backupPathResult.value;
 
 	try {
 		mkdirSync(dirname(backupPath), { recursive: true });

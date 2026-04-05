@@ -2558,6 +2558,105 @@ describe("runCIMigrateCLI", () => {
 		expect(runInitCLIMock).not.toHaveBeenCalled();
 	});
 
+	it("rejects merge-queue orchestrator paths that escape repository root", () => {
+		seedMigratableFixture(tempDir);
+		writeCIProviderPolicyContract(tempDir, "required");
+		writeParityProofPack(tempDir);
+		const outsideOrchestratorPath = join(
+			tempDir,
+			"..",
+			"outside-orchestrator.sh",
+		);
+		writeFileSync(
+			outsideOrchestratorPath,
+			"#!/usr/bin/env bash\necho outside\n",
+		);
+		chmodSync(outsideOrchestratorPath, 0o755);
+		const snapshotId = "cutover-required-commit-orchestrator-escape";
+		scanOpenPullRequestSatisfiabilityMock.mockReturnValue({
+			status: "satisfied",
+			scannedOpenPrs: 2,
+			failingPrs: [],
+		});
+
+		const prepareExitCode = runCIMigrateCLI(tempDir, {
+			provider: "circleci",
+			action: "prepare",
+			snapshot: snapshotId,
+		});
+		expect(prepareExitCode).toBe(EXIT_CODES.SUCCESS);
+
+		vi.clearAllMocks();
+		scanOpenPullRequestSatisfiabilityMock.mockReturnValue({
+			status: "satisfied",
+			scannedOpenPrs: 2,
+			failingPrs: [],
+		});
+
+		const commitExitCode = runCIMigrateCLI(tempDir, {
+			provider: "circleci",
+			action: "commit",
+			snapshot: snapshotId,
+			mergeQueueOrchestratorPath: "../outside-orchestrator.sh",
+		});
+
+		expect(commitExitCode).toBe(EXIT_CODES.INVALID_PATH);
+		expect(runInitCLIMock).not.toHaveBeenCalled();
+	});
+
+	it("rejects merge-queue orchestrator symlinks", () => {
+		seedMigratableFixture(tempDir);
+		writeCIProviderPolicyContract(tempDir, "required");
+		writeParityProofPack(tempDir);
+		const outsideOrchestratorPath = join(
+			tempDir,
+			"..",
+			"outside-orchestrator-symlink.sh",
+		);
+		writeFileSync(
+			outsideOrchestratorPath,
+			"#!/usr/bin/env bash\necho outside\n",
+		);
+		chmodSync(outsideOrchestratorPath, 0o755);
+
+		const orchestratorLinkPath = join(
+			tempDir,
+			".harness/control-plane/orchestrator-link.sh",
+		);
+		mkdirSync(dirname(orchestratorLinkPath), { recursive: true });
+		symlinkSync(outsideOrchestratorPath, orchestratorLinkPath);
+		const snapshotId = "cutover-required-commit-orchestrator-symlink";
+		scanOpenPullRequestSatisfiabilityMock.mockReturnValue({
+			status: "satisfied",
+			scannedOpenPrs: 2,
+			failingPrs: [],
+		});
+
+		const prepareExitCode = runCIMigrateCLI(tempDir, {
+			provider: "circleci",
+			action: "prepare",
+			snapshot: snapshotId,
+		});
+		expect(prepareExitCode).toBe(EXIT_CODES.SUCCESS);
+
+		vi.clearAllMocks();
+		scanOpenPullRequestSatisfiabilityMock.mockReturnValue({
+			status: "satisfied",
+			scannedOpenPrs: 2,
+			failingPrs: [],
+		});
+
+		const commitExitCode = runCIMigrateCLI(tempDir, {
+			provider: "circleci",
+			action: "commit",
+			snapshot: snapshotId,
+			mergeQueueOrchestratorPath: ".harness/control-plane/orchestrator-link.sh",
+		});
+
+		expect(commitExitCode).toBe(EXIT_CODES.INVALID_PATH);
+		expect(runInitCLIMock).not.toHaveBeenCalled();
+	});
+
 	it("runs merge-queue provider API orchestrator and records signed evidence", () => {
 		seedMigratableFixture(tempDir);
 		writeCIProviderPolicyContract(tempDir, "required");

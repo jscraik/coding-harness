@@ -23,7 +23,7 @@ jobs:
             pnpm --version
       - run:
           name: Install dependencies
-          command: pnpm install
+          command: pnpm install --frozen-lockfile
       - run:
           name: Lint
           command: pnpm lint
@@ -89,19 +89,16 @@ jobs:
           command: echo "pr-fast and pr-slow completed successfully"
 
   # ─────────────────────────────────────────────────────────────────────────────
-  # Release pipeline — runs on main branch merges only
+  # Release pipeline — tag-driven publish only (no CI-side pushes to main)
   #
   # Required CircleCI environment variables (set in Project Settings → Env Vars):
   #   NPM_TOKEN                    — npm access token with publish rights to @brainwav scope
-  #   GITHUB_PERSONAL_ACCESS_TOKEN — GitHub PAT with contents:write + workflow scopes
-  #                                  (used to push the version commit + tag back to main)
   #
   # Flow:
-  #   1. Validate secrets present
+  #   1. Validate release context + secrets
   #   2. Run full pnpm check suite
-  #   3. standard-version bumps package.json + CHANGELOG.md, commits, tags
-  #   4. Push the commit + tag to main via authenticated remote
-  #   5. Build and publish to npm
+  #   3. Verify tag matches package.json version
+  #   4. Build and publish to npm
   # ─────────────────────────────────────────────────────────────────────────────
   release:
     docker:
@@ -123,12 +120,14 @@ jobs:
           command: |
             missing=()
             [ -z "$NPM_TOKEN" ]                    && missing+=("NPM_TOKEN")
-            [ -z "$GITHUB_PERSONAL_ACCESS_TOKEN" ] && missing+=("GITHUB_PERSONAL_ACCESS_TOKEN")
             if [ ${#missing[@]} -gt 0 ]; then
               echo "ERROR: Missing required environment variables: ${missing[*]}"
               echo "Configure them in CircleCI Project Settings -> Environment Variables."
               echo "  NPM_TOKEN                    - npm token with publish rights to @brainwav scope"
-              echo "  GITHUB_PERSONAL_ACCESS_TOKEN - GitHub PAT with contents:write + workflow scopes"
+              exit 1
+            fi
+            if [ -z "${CIRCLE_TAG:-}" ]; then
+              echo "ERROR: release workflow must run on a git tag (CIRCLE_TAG is empty)."
               exit 1
             fi
             echo "Release secrets validated"
@@ -137,22 +136,24 @@ jobs:
           no_output_timeout: 15m
           command: pnpm check
       - run:
-          name: Configure git for release commit
+          name: Verify tag matches package version
           command: |
-            git config user.name "CircleCI Release Bot"
-            git config user.email "ci@brainwav.io"
-            git remote set-url origin "https://${GITHUB_PERSONAL_ACCESS_TOKEN}@github.com/jscraik/coding-harness.git"
+            PKG_VERSION="$(jq -r '.version' package.json)"
+            TAG_VERSION="${CIRCLE_TAG#v}"
+            if [ "$PKG_VERSION" != "$TAG_VERSION" ]; then
+              echo "ERROR: Tag ${CIRCLE_TAG} does not match package.json version ${PKG_VERSION}"
+              exit 1
+            fi
+            echo "Tag/version match confirmed: ${CIRCLE_TAG}"
       - run:
-          name: Bump version and generate changelog
+          name: Verify tagged commit is reachable from origin/main
           command: |
-            pnpm release --no-verify
-            echo "Bumped to $(jq -r '.version' package.json)"
-      - run:
-          name: Push release commit and tag to main
-          command: |
-            VERSION="v$(jq -r '.version' package.json)"
-            git push origin main --follow-tags
-            echo "Pushed ${VERSION} to main"
+            git fetch --no-tags origin main:refs/remotes/origin/main
+            if ! git merge-base --is-ancestor "$CIRCLE_SHA1" "refs/remotes/origin/main"; then
+              echo "ERROR: Tagged commit ${CIRCLE_SHA1} is not reachable from origin/main"
+              exit 1
+            fi
+            echo "Tag commit ancestry check passed against origin/main"
       - run:
           name: Build package
           command: pnpm build
@@ -160,8 +161,8 @@ jobs:
           name: Publish to npm
           command: |
             VERSION="$(jq -r '.version' package.json)"
-            echo "//registry.npmjs.org/:_authToken=${NPM_TOKEN}" > ~/.npmrc
-            npm publish --access restricted --ignore-scripts=false
+            export NODE_AUTH_TOKEN="$NPM_TOKEN"
+            pnpm publish --access restricted --ignore-scripts
             echo "Published @brainwav/coding-harness@${VERSION}"
 
 workflows:
@@ -186,10 +187,12 @@ workflows:
             branches:
               ignore: main
 
-  # Runs only on main after PR merges
+  # Runs only for semver tags (vX.Y.Z...), never on branch pushes.
   release-workflow:
     jobs:
       - release:
           filters:
             branches:
-              only: main
+              ignore: /.*/
+            tags:
+              only: /^v[0-9]+\.[0-9]+\.[0-9]+(?:[-+][0-9A-Za-z.-]+)?$/

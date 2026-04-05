@@ -496,21 +496,61 @@ export function runInit(
 	const created: string[] = [];
 	const skipped: string[] = [];
 	const manifestEntries: ManifestEntry[] = [];
+	const sanitizedTemplatePaths = new Map<string, string>();
+	let sanitizedHarnessDir: string | null = null;
+	let sanitizedBackupsDir: string | null = null;
+	let sanitizedManifestPath: string | null = null;
 
-	// Ensure .harness dir exists if tracking
-	if (options.track && !options.dryRun) {
-		mkdirSync(resolve(dir, HARNESS_DIR), { recursive: true });
-		mkdirSync(resolve(dir, HARNESS_DIR, BACKUPS_DIR), { recursive: true });
-	}
-
+	// Validate all target paths before creating directories or writing files.
 	for (const template of templates) {
-		// Sanitize the template path
 		const pathResult = sanitizePath(dir, template.path);
 		if (!pathResult.ok) {
 			return pathResult;
 		}
+		sanitizedTemplatePaths.set(template.path, pathResult.value);
+	}
 
-		const targetPath = pathResult.value;
+	if (options.track && !options.dryRun) {
+		const harnessDirResult = sanitizePath(dir, HARNESS_DIR);
+		if (!harnessDirResult.ok) {
+			return harnessDirResult;
+		}
+		sanitizedHarnessDir = harnessDirResult.value;
+
+		const backupsDirResult = sanitizePath(dir, `${HARNESS_DIR}/${BACKUPS_DIR}`);
+		if (!backupsDirResult.ok) {
+			return backupsDirResult;
+		}
+		sanitizedBackupsDir = backupsDirResult.value;
+
+		const manifestPathResult = sanitizePath(
+			dir,
+			`${HARNESS_DIR}/${MANIFEST_FILE}`,
+		);
+		if (!manifestPathResult.ok) {
+			return manifestPathResult;
+		}
+		sanitizedManifestPath = manifestPathResult.value;
+	}
+
+	// Ensure .harness dir exists if tracking
+	if (options.track && !options.dryRun) {
+		mkdirSync(sanitizedHarnessDir as string, { recursive: true });
+		mkdirSync(sanitizedBackupsDir as string, { recursive: true });
+	}
+
+	for (const template of templates) {
+		const targetPath = sanitizedTemplatePaths.get(template.path);
+		if (!targetPath) {
+			return {
+				ok: false,
+				error: {
+					code: "INVALID_PATH",
+					message: `missing validated template path for ${template.path}`,
+					path: template.path,
+				},
+			};
+		}
 		const exists = existsSync(targetPath);
 		const autoUpdate =
 			exists && shouldAutoUpdateTemplate(template.path, targetPath);
@@ -649,9 +689,8 @@ export function runInit(
 					: {}),
 			files: manifestEntries,
 		};
-		const manifestPath = resolve(dir, HARNESS_DIR, MANIFEST_FILE);
 		const manifestResult = atomicWrite(
-			manifestPath,
+			sanitizedManifestPath as string,
 			JSON.stringify(manifest, null, 2),
 		);
 		if (!manifestResult.ok) {

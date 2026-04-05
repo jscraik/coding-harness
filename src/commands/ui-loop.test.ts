@@ -211,6 +211,37 @@ describe("ui-loop commands", () => {
 			expect(payload.artifact_uri).toContain("artifacts/ui-loop");
 			expect(payload.artifact_checksum).toHaveLength(64);
 		});
+
+		it("passes user-controlled verify args as literal argv without shell parsing", () => {
+			const outputDir = "./test-results;touch_/tmp/not-executed";
+			const result = runUIVerify({
+				mode: "execute",
+				shard: "1/3",
+				outputDir,
+			});
+
+			expect(result.exitCode).toBe(EXIT_CODES.SUCCESS);
+			expect(spawnSync).toHaveBeenCalledWith(
+				"pnpm",
+				["playwright", "test", "--shard=1/3", `--output=${outputDir}`],
+				expect.objectContaining({ shell: false }),
+			);
+		});
+
+		it("rejects quoted verify policy commands that require shell parsing", () => {
+			vi.mocked(loadContract).mockReturnValue({
+				...MOCK_POLICY,
+				uiLoopPolicy: {
+					...MOCK_POLICY.uiLoopPolicy,
+					verifyCommand: 'npm run "ui:verify"',
+				},
+			} as unknown as ReturnType<typeof loadContract>);
+
+			const result = runUIVerify({ mode: "prepare" });
+
+			expect(result.exitCode).toBe(EXIT_CODES.VALIDATION_ERROR);
+			expect(result.message).toContain("quoted or escaped");
+		});
 	});
 
 	describe("runUIExplore", () => {
@@ -290,6 +321,32 @@ describe("ui-loop commands", () => {
 				expect(payload.artifact_uri).toContain("artifacts/ui-loop");
 				expect(payload.artifact_checksum).toHaveLength(64);
 			}
+		});
+
+		it("passes explore URL/output as literal argv without shell parsing", () => {
+			const url = "http://localhost:3000/?q=$(whoami)&n=1";
+			const outputDir = "./ui-output;touch_/tmp/not-executed";
+
+			const result = runUIExplore({
+				mode: "execute",
+				url,
+				outputDir,
+				interactions: true,
+			});
+
+			expect(result.exitCode).toBe(EXIT_CODES.SUCCESS);
+			expect(spawnSync).toHaveBeenCalledWith(
+				"npx",
+				[
+					"@agent-browser/cli",
+					"explore",
+					url,
+					"--output",
+					outputDir,
+					"--interactions",
+				],
+				expect.objectContaining({ shell: false }),
+			);
 		});
 
 		it("enforces kill-switch mode matrix across adapters", () => {

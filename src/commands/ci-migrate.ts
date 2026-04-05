@@ -2119,14 +2119,26 @@ function runMergeQueueOrchestrator(
 	binding: MergeQueueEvidenceBinding,
 	signingKey: string,
 ): { ok: true } | { ok: false; error: string } {
-	const resolvedOrchestratorPath = resolve(targetDir, orchestratorPath);
-	if (!existsSync(resolvedOrchestratorPath)) {
-		return {
-			ok: false,
-			error: `Merge-queue orchestrator executable not found: ${orchestratorPath}`,
-		};
+	const resolvedOrchestratorPathResult = resolveRepoBoundPath(
+		targetDir,
+		orchestratorPath,
+		"Merge-queue orchestrator executable",
+		true,
+	);
+	if (!resolvedOrchestratorPathResult.ok) {
+		return { ok: false, error: resolvedOrchestratorPathResult.error };
 	}
-	const resolvedEvidencePath = resolve(targetDir, evidencePath);
+	const resolvedEvidencePathResult = resolveRepoBoundPath(
+		targetDir,
+		evidencePath,
+		"Merge-queue evidence file",
+		false,
+	);
+	if (!resolvedEvidencePathResult.ok) {
+		return { ok: false, error: resolvedEvidencePathResult.error };
+	}
+	const resolvedOrchestratorPath = resolvedOrchestratorPathResult.absolutePath;
+	const resolvedEvidencePath = resolvedEvidencePathResult.absolutePath;
 	const args = [
 		"--snapshot",
 		snapshotId,
@@ -2576,13 +2588,16 @@ function runMergeQueueProviderAPIOrchestrator(
 	binding: MergeQueueEvidenceBinding,
 	signingKey: string,
 ): { ok: true } | { ok: false; error: string } {
-	const resolvedConfigPath = resolve(targetDir, configPath);
-	if (!existsSync(resolvedConfigPath)) {
-		return {
-			ok: false,
-			error: `Merge-queue provider API config file not found: ${configPath}`,
-		};
+	const resolvedConfigPathResult = resolveRepoBoundPath(
+		targetDir,
+		configPath,
+		"Merge-queue provider API config file",
+		true,
+	);
+	if (!resolvedConfigPathResult.ok) {
+		return { ok: false, error: resolvedConfigPathResult.error };
 	}
+	const resolvedConfigPath = resolvedConfigPathResult.absolutePath;
 	const configResult = parseMergeQueueProviderAPIConfig(
 		readFileSync(resolvedConfigPath, "utf-8"),
 	);
@@ -2723,7 +2738,16 @@ function runMergeQueueProviderAPIOrchestrator(
 		},
 	};
 	const evidenceContent = JSON.stringify(evidence, null, 2);
-	const resolvedEvidencePath = resolve(targetDir, evidencePath);
+	const resolvedEvidencePathResult = resolveRepoBoundPath(
+		targetDir,
+		evidencePath,
+		"Merge-queue evidence file",
+		false,
+	);
+	if (!resolvedEvidencePathResult.ok) {
+		return { ok: false, error: resolvedEvidencePathResult.error };
+	}
+	const resolvedEvidencePath = resolvedEvidencePathResult.absolutePath;
 	mkdirSync(dirname(resolvedEvidencePath), { recursive: true });
 	writeFileSync(resolvedEvidencePath, evidenceContent);
 	writeFileSync(
@@ -2731,6 +2755,75 @@ function runMergeQueueProviderAPIOrchestrator(
 		`${signContent(evidenceContent, signingKey)}\n`,
 	);
 	return { ok: true };
+}
+
+function resolveRepoBoundPath(
+	targetDir: string,
+	configuredPath: string,
+	label: string,
+	mustExist: boolean,
+): { ok: true; absolutePath: string } | { ok: false; error: string } {
+	const candidatePath = configuredPath.trim();
+	if (candidatePath.length === 0) {
+		return {
+			ok: false,
+			error: `${label} path cannot be empty.`,
+		};
+	}
+	const rootPath = realpathSync(targetDir);
+	const absolutePath = resolve(targetDir, candidatePath);
+	const isWithinRoot = (path: string): boolean =>
+		path === rootPath || path.startsWith(`${rootPath}${sep}`);
+
+	if (existsSync(absolutePath)) {
+		const stat = lstatSync(absolutePath);
+		if (stat.isSymbolicLink()) {
+			return {
+				ok: false,
+				error: `${label} path cannot be a symbolic link: ${configuredPath}`,
+			};
+		}
+		if (!isWithinRoot(realpathSync(absolutePath))) {
+			return {
+				ok: false,
+				error: `${label} path escapes repository root: ${configuredPath}`,
+			};
+		}
+		return { ok: true, absolutePath };
+	}
+
+	if (mustExist) {
+		return {
+			ok: false,
+			error: `${label} not found: ${configuredPath}`,
+		};
+	}
+
+	let ancestor = dirname(absolutePath);
+	while (!existsSync(ancestor)) {
+		const parent = dirname(ancestor);
+		if (parent === ancestor) {
+			return {
+				ok: false,
+				error: `${label} path escapes repository root: ${configuredPath}`,
+			};
+		}
+		ancestor = parent;
+	}
+	const ancestorStat = lstatSync(ancestor);
+	if (!ancestorStat.isDirectory() || ancestorStat.isSymbolicLink()) {
+		return {
+			ok: false,
+			error: `${label} path parent is not a safe directory: ${configuredPath}`,
+		};
+	}
+	if (!isWithinRoot(realpathSync(ancestor))) {
+		return {
+			ok: false,
+			error: `${label} path escapes repository root: ${configuredPath}`,
+		};
+	}
+	return { ok: true, absolutePath };
 }
 
 function isSafeRestorePath(targetDir: string, relativePath: string): boolean {

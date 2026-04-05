@@ -24,6 +24,7 @@ SCRIPT_DIR="$(cd -- "$(dirname -- "${SCRIPT_PATH}")" && pwd -P)"
 WORKSPACE_ROOT="$(cd -- "${SCRIPT_DIR}/.." && pwd -P)"
 PREFLIGHT_OVERRIDES_FILE="${WORKSPACE_ROOT}/.harness/memory/codex-preflight-overrides.env"
 LOCAL_MEMORY_FALLBACK_SCRIPT="${SCRIPT_DIR}/codex-preflight-local-memory-legacy.sh"
+PROJECT_BRAIN_REQUIRED_PATHS='.harness/memory/LEARNINGS.md,.harness/knowledge/INDEX.md,.harness/knowledge/cli/knowledge.md,.harness/knowledge/cli/hypotheses.md,.harness/knowledge/cli/rules.md,.harness/knowledge/ci/knowledge.md,.harness/knowledge/ci/hypotheses.md,.harness/knowledge/ci/rules.md,.harness/knowledge/governance/knowledge.md,.harness/knowledge/governance/hypotheses.md,.harness/knowledge/governance/rules.md,.harness/knowledge/tooling/knowledge.md,.harness/knowledge/tooling/hypotheses.md,.harness/knowledge/tooling/rules.md,.harness/knowledge/tooling/codex-learn-summary.md,.harness/decisions,.harness/quality/criteria.md,.harness/review-log.md'
 
 # usage prints the CLI usage text, available options, examples, and the legacy positional-interface note for the codex preflight script.
 usage() {
@@ -84,10 +85,59 @@ append_csv_values() {
 	printf '%s,%s\n' "${base_csv}" "${extra_csv}"
 }
 
+append_project_brain_paths() {
+	local base_paths="$1"
+	if project_brain_required_enabled; then
+		append_csv_values "${base_paths}" "${PROJECT_BRAIN_REQUIRED_PATHS}"
+		return
+	fi
+	printf '%s\n' "${base_paths}"
+}
+
+project_brain_required_enabled() {
+	case "${CODEX_PREFLIGHT_REQUIRE_PROJECT_BRAIN:-auto}" in
+		always|1|true|yes) return 0 ;;
+		never|0|false|no) return 1 ;;
+	esac
+	# Auto-enable only when the core scaffold appears complete, not just when a
+	# single legacy memory marker exists.
+	[[ -f ".harness/knowledge/INDEX.md" && -d ".harness/decisions" && -f ".harness/review-log.md" ]]
+}
+
+trim_ascii_whitespace() {
+	local value="${1:-}"
+	value="${value#"${value%%[![:space:]]*}"}"
+	value="${value%"${value##*[![:space:]]}"}"
+	printf '%s\n' "${value}"
+}
+
+decode_preflight_override_value() {
+	local raw_value="${1:-}"
+	local value=''
+	local safe_value_re='^[A-Za-z0-9_./,:@+*?${}~ -]*$'
+
+	value="$(trim_ascii_whitespace "${raw_value}")"
+	if [[ "${value}" == \"*\" && "${value}" == *\" ]]; then
+		value="${value:1:${#value}-2}"
+	elif [[ "${value}" == \'*\' && "${value}" == *\' ]]; then
+		value="${value:1:${#value}-2}"
+	fi
+
+	if [[ -n "${value}" && ! "${value}" =~ ${safe_value_re} ]]; then
+		return 1
+	fi
+	printf '%s\n' "${value}"
+}
+
 # load_preflight_overrides loads preflight override variables from a file into PREFLIGHT_OVERRIDE_BINS, PREFLIGHT_OVERRIDE_PATHS, and PREFLIGHT_OVERRIDE_ALLOWED_EXTERNAL_PATHS.
 # override_file is the path to an optional overrides file; if the file does not exist the variables are set to empty and the function returns success (0).
 load_preflight_overrides() {
 	local override_file="$1"
+	local line=''
+	local cleaned_line=''
+	local key=''
+	local raw_value=''
+	local parsed_value=''
 
 	PREFLIGHT_OVERRIDE_BINS=''
 	PREFLIGHT_OVERRIDE_PATHS=''
@@ -96,11 +146,33 @@ load_preflight_overrides() {
 		return 0
 	fi
 
-	# shellcheck source=/dev/null
-	source "${override_file}"
-	PREFLIGHT_OVERRIDE_BINS="${CODEX_PREFLIGHT_EXTRA_BINS:-}"
-	PREFLIGHT_OVERRIDE_PATHS="${CODEX_PREFLIGHT_EXTRA_PATHS:-}"
-	PREFLIGHT_OVERRIDE_ALLOWED_EXTERNAL_PATHS="${CODEX_PREFLIGHT_ALLOWED_EXTERNAL_PATHS:-}"
+	while IFS= read -r line || [[ -n "${line}" ]]; do
+		cleaned_line="$(trim_ascii_whitespace "${line%%#*}")"
+		[[ -z "${cleaned_line}" ]] && continue
+		cleaned_line="${cleaned_line#export }"
+		if [[ "${cleaned_line}" != *=* ]]; then
+			log_warn "ignoring malformed override line in ${override_file}"
+			continue
+		fi
+
+		key="$(trim_ascii_whitespace "${cleaned_line%%=*}")"
+		raw_value="${cleaned_line#*=}"
+		if ! parsed_value="$(decode_preflight_override_value "${raw_value}")"; then
+			log_warn "ignoring unsafe override value for ${key} in ${override_file}"
+			continue
+		fi
+
+		case "${key}" in
+			CODEX_PREFLIGHT_EXTRA_BINS) PREFLIGHT_OVERRIDE_BINS="${parsed_value}" ;;
+			CODEX_PREFLIGHT_EXTRA_PATHS) PREFLIGHT_OVERRIDE_PATHS="${parsed_value}" ;;
+			CODEX_PREFLIGHT_ALLOWED_EXTERNAL_PATHS)
+				PREFLIGHT_OVERRIDE_ALLOWED_EXTERNAL_PATHS="${parsed_value}"
+				;;
+			*)
+				log_warn "ignoring unsupported override key in ${override_file}: ${key}"
+				;;
+		esac
+	done < "${override_file}"
 }
 
 # detect_stack determines the project stack by checking for standard manifest files and echoes one of: `js`, `py`, `rust`, or `repo`.
@@ -134,10 +206,10 @@ stack_bins_csv() {
 # stack_paths_csv returns a comma-separated list of repository paths required for the given stack (js, py, rust, repo); on unknown stack it logs an error and returns exit code 2.
 stack_paths_csv() {
 	case "$1" in
-		js) echo 'package.json,CODESTYLE.md,CONTRIBUTING.md,Makefile,scripts,scripts/codex-preflight.sh,scripts/codex-preflight-local-memory-legacy.sh,scripts/verify-work.sh,scripts/validate-codestyle.sh' ;;
-		py) echo 'pyproject.toml,CODESTYLE.md,CONTRIBUTING.md,Makefile,scripts,scripts/codex-preflight.sh,scripts/codex-preflight-local-memory-legacy.sh,scripts/verify-work.sh,scripts/validate-codestyle.sh' ;;
-		rust) echo 'Cargo.toml,CODESTYLE.md,CONTRIBUTING.md,Makefile,scripts,scripts/codex-preflight.sh,scripts/codex-preflight-local-memory-legacy.sh,scripts/verify-work.sh,scripts/validate-codestyle.sh' ;;
-		repo) echo 'CODESTYLE.md,CONTRIBUTING.md,Makefile,scripts,scripts/codex-preflight.sh,scripts/codex-preflight-local-memory-legacy.sh,scripts/verify-work.sh,scripts/validate-codestyle.sh' ;;
+		js) append_project_brain_paths 'package.json,CODESTYLE.md,CONTRIBUTING.md,Makefile,scripts,scripts/codex-preflight.sh,scripts/codex-preflight-local-memory-legacy.sh,scripts/verify-work.sh,scripts/validate-codestyle.sh' ;;
+		py) append_project_brain_paths 'pyproject.toml,CODESTYLE.md,CONTRIBUTING.md,Makefile,scripts,scripts/codex-preflight.sh,scripts/codex-preflight-local-memory-legacy.sh,scripts/verify-work.sh,scripts/validate-codestyle.sh' ;;
+		rust) append_project_brain_paths 'Cargo.toml,CODESTYLE.md,CONTRIBUTING.md,Makefile,scripts,scripts/codex-preflight.sh,scripts/codex-preflight-local-memory-legacy.sh,scripts/verify-work.sh,scripts/validate-codestyle.sh' ;;
+		repo) append_project_brain_paths 'CODESTYLE.md,CONTRIBUTING.md,Makefile,scripts,scripts/codex-preflight.sh,scripts/codex-preflight-local-memory-legacy.sh,scripts/verify-work.sh,scripts/validate-codestyle.sh' ;;
 		*) log_err "unknown stack: $1"; return 2 ;;
 	esac
 }
@@ -402,14 +474,14 @@ run_preflight_profile() {
 # preflight_repo [expected_repo_fragment] [bins_csv] [paths_csv] [local_memory_mode]
 # - expected_repo_fragment: optional substring to validate against the repository root (default: none).
 # - bins_csv: comma-separated required executables (default: git,bash,sed,rg,jq,curl,python3).
-# - paths_csv: comma-separated required repository files/paths (default includes CODESTYLE.md, CONTRIBUTING.md, Makefile, scripts, and preflight scripts).
+# - paths_csv: comma-separated required repository files/paths (default: stack-specific baseline plus Project Brain scaffold paths).
 # - local_memory_mode: one of off|optional|required (default: required).
 preflight_repo() {
 	run_preflight_profile \
 		repo \
 		"${1:-}" \
 		"${2:-git,bash,sed,rg,jq,curl,python3}" \
-		"${3:-CODESTYLE.md,CONTRIBUTING.md,Makefile,scripts,scripts/codex-preflight.sh,scripts/codex-preflight-local-memory-legacy.sh,scripts/verify-work.sh,scripts/validate-codestyle.sh}" \
+		"${3:-$(stack_paths_csv repo)}" \
 		"${4:-required}"
 }
 
@@ -419,17 +491,17 @@ preflight_js() {
 		js \
 		"${1:-}" \
 		"${2:-git,bash,sed,rg,jq,curl,node,npm,python3}" \
-		"${3:-package.json,CODESTYLE.md,CONTRIBUTING.md,Makefile,scripts,scripts/codex-preflight.sh,scripts/codex-preflight-local-memory-legacy.sh,scripts/verify-work.sh,scripts/validate-codestyle.sh}" \
+		"${3:-$(stack_paths_csv js)}" \
 		"${4:-required}"
 }
 
-# preflight_py runs the Codex preflight using the Python stack defaults; accepts optional arguments to override (1) expected repository fragment, (2) comma-separated binaries (default "git,bash,sed,rg,jq,curl,python3"), (3) comma-separated repository paths (default "pyproject.toml,CODESTYLE.md,CONTRIBUTING.md,Makefile,scripts,scripts/codex-preflight.sh,scripts/codex-preflight-local-memory-legacy.sh,scripts/verify-work.sh,scripts/validate-codestyle.sh"), and (4) local memory mode (`off`|`optional`|`required`, default `required`).
+# preflight_py runs the Codex preflight using the Python stack defaults; accepts optional arguments to override (1) expected repository fragment, (2) comma-separated binaries (default "git,bash,sed,rg,jq,curl,python3"), (3) comma-separated repository paths (default: stack-specific baseline plus Project Brain scaffold paths), and (4) local memory mode (`off`|`optional`|`required`, default `required`).
 preflight_py() {
 	run_preflight_profile \
 		py \
 		"${1:-}" \
 		"${2:-git,bash,sed,rg,jq,curl,python3}" \
-		"${3:-pyproject.toml,CODESTYLE.md,CONTRIBUTING.md,Makefile,scripts,scripts/codex-preflight.sh,scripts/codex-preflight-local-memory-legacy.sh,scripts/verify-work.sh,scripts/validate-codestyle.sh}" \
+		"${3:-$(stack_paths_csv py)}" \
 		"${4:-required}"
 }
 
@@ -438,20 +510,20 @@ preflight_py() {
 # Arguments:
 #   $1 - optional repository fragment to validate the workspace root contains (default: none).
 #   $2 - optional comma-separated list of required binaries (default: "git,bash,sed,rg,jq,curl,python3,cargo").
-#   $3 - optional comma-separated list of required repository paths/globs (default: "Cargo.toml,CODESTYLE.md,CONTRIBUTING.md,Makefile,scripts,scripts/codex-preflight.sh,scripts/codex-preflight-local-memory-legacy.sh,scripts/verify-work.sh,scripts/validate-codestyle.sh").
+#   $3 - optional comma-separated list of required repository paths/globs (default: stack-specific baseline plus Project Brain scaffold paths).
 #   $4 - local memory mode: one of "off", "optional", or "required" (default: "required").
 preflight_rust() {
 	run_preflight_profile \
 		rust \
 		"${1:-}" \
 		"${2:-git,bash,sed,rg,jq,curl,python3,cargo}" \
-		"${3:-Cargo.toml,CODESTYLE.md,CONTRIBUTING.md,Makefile,scripts,scripts/codex-preflight.sh,scripts/codex-preflight-local-memory-legacy.sh,scripts/verify-work.sh,scripts/validate-codestyle.sh}" \
+		"${3:-$(stack_paths_csv rust)}" \
 		"${4:-required}"
 }
 
 # preflight_repo_local_memory runs a repository preflight configured for the `repo` stack with Local Memory set to required, using sensible default binaries and path lists; optional positional arguments override `expected_repo`, `bins_csv`, and `paths_csv`.
 preflight_repo_local_memory() {
-	preflight_repo "${1:-}" "${2:-git,bash,sed,rg,jq,curl,python3}" "${3:-CODESTYLE.md,CONTRIBUTING.md,Makefile,scripts,scripts/codex-preflight.sh,scripts/codex-preflight-local-memory-legacy.sh,scripts/verify-work.sh,scripts/validate-codestyle.sh}" required
+	preflight_repo "${1:-}" "${2:-git,bash,sed,rg,jq,curl,python3}" "${3:-$(stack_paths_csv repo)}" required
 }
 
 # main orchestrates the Codex preflight checks: it parses CLI arguments (legacy positional or flags), determines the repo stack and required binaries/paths (including overrides), verifies git and workspace expectations, runs binary and path validations, invokes the Local Memory preflight according to --mode (off|optional|required), and exits non‑zero on validation failures.
