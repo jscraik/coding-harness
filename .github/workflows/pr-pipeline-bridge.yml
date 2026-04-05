@@ -1,13 +1,9 @@
 name: pr-pipeline-bridge
 
+# Disabled: CircleCI is the primary PR gate (see docs/ci-responsibility-matrix.md).
+# This workflow is available for manual dispatch only via workflow_dispatch.
 on:
-  pull_request:
-    branches:
-      - main
-  push:
-    branches-ignore:
-      - main
-  merge_group:
+  workflow_dispatch: {}
 
 permissions:
   contents: read
