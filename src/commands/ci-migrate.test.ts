@@ -29,6 +29,7 @@ import type {
 	scanOpenPullRequestSatisfiability as scanOpenPullRequestSatisfiabilityType,
 } from "../lib/ci/satisfiability.js";
 import { EXIT_CODES } from "../lib/init/types.js";
+import { sanitizeGitEnv } from "../lib/workflow-contract/test-harness.js";
 import type { runInitCLI as runInitCLIType } from "./init.js";
 
 type RunInitCLIImpl = typeof runInitCLIType;
@@ -127,6 +128,7 @@ function runTestGitCommand(
 	const result = spawnSync("git", args, {
 		cwd: targetDir,
 		encoding: "utf-8",
+		env: sanitizeGitEnv(),
 	});
 	if (result.error) {
 		return {
@@ -2055,7 +2057,11 @@ describe("runCIMigrateCLI", () => {
 		// Bootstrap a two-commit history so ensureProofPackFixtureHistory
 		// finds distinct baseSha / headSha without doing any git work.
 		const git = (args: string[]) =>
-			spawnSync("git", args, { cwd: gitTemplateDir, encoding: "utf-8" });
+			spawnSync("git", args, {
+				cwd: gitTemplateDir,
+				encoding: "utf-8",
+				env: sanitizeGitEnv(),
+			});
 		git(["init", "-q"]);
 		git(["config", "user.name", "Harness Test"]);
 		git(["config", "user.email", "harness@test.local"]);
@@ -2090,14 +2096,20 @@ describe("runCIMigrateCLI", () => {
 		cpSync(gitDir, join(tempDir, ".git"), { recursive: true });
 		cpSync(harnessDir, join(tempDir, ".harness"), { recursive: true });
 		// Update the working tree to match HEAD so git status is clean.
-		spawnSync("git", ["checkout", "."], { cwd: tempDir, encoding: "utf-8" });
+		spawnSync("git", ["checkout", "."], {
+			cwd: tempDir,
+			encoding: "utf-8",
+			env: sanitizeGitEnv(),
+		});
 		spawnSync("git", ["config", "user.name", "Harness Test"], {
 			cwd: tempDir,
 			encoding: "utf-8",
+			env: sanitizeGitEnv(),
 		});
 		spawnSync("git", ["config", "user.email", "harness@test.local"], {
 			cwd: tempDir,
 			encoding: "utf-8",
+			env: sanitizeGitEnv(),
 		});
 		previousSnapshotSigningKey = process.env[SNAPSHOT_SIGNING_KEY_ENV];
 		process.env[SNAPSHOT_SIGNING_KEY_ENV] = TEST_SNAPSHOT_SIGNING_KEY;
