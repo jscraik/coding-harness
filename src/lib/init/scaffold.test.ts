@@ -1,6 +1,7 @@
-import { mkdtempSync, rmSync, writeFileSync } from "node:fs";
+import { existsSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
+import { fileURLToPath } from "node:url";
 import { afterEach, describe, expect, it } from "vitest";
 import {
 	TEMPLATES,
@@ -35,6 +36,14 @@ describe("scaffold templates resolution", () => {
 				(template) => template.path === "scripts/validate-codestyle.sh",
 			),
 		).toBe(true);
+	});
+
+	it("ships a checked-in CODESTYLE template for source checkouts", () => {
+		const packagedTemplatePath = fileURLToPath(
+			new URL("../../templates/CODESTYLE.md", import.meta.url),
+		);
+
+		expect(existsSync(packagedTemplatePath)).toBe(true);
 	});
 
 	it("never includes legacy .greptile templates", () => {

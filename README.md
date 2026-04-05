@@ -8,18 +8,24 @@ Coding Harness is a CLI control plane for repositories that use AI coding agents
 It turns repo policy, workflow docs, review gates, and rollout criteria into
 things you can scaffold, validate, and enforce.
 
+It is best thought of as the layer around the agents, not the agent runtime
+itself. It helps you make a repo safer to automate by giving it a contract,
+repo-local verification scripts, review policy, CI migration tooling, and
+artifact-backed rollout checks.
+
 The shortest honest description of the project today is:
 
-- it bootstraps governed agent-ready repos
-- it gates risky changes with repo-local policy
-- it helps migrate CI and preserve proof of parity
-- it validates workflow contracts for Symphony-style automation
+- it bootstraps governed, agent-ready repositories
+- it gives downstream repos repo-local verification and preflight scripts
+- it validates review, docs, plan, and authorization policy before merge
+- it supports staged CI migration with rollback and parity evidence
 - it evaluates pilot safety before you expand autonomy
 
 ## Table of Contents
 
+- [Start Here](#start-here)
 - [Why Teams Use It](#why-teams-use-it)
-- [Current Strengths](#current-strengths)
+- [What It Is Best At Today](#what-it-is-best-at-today)
 - [Installation](#installation)
 - [Repo-local Wrapper](#repo-local-wrapper)
 - [Repo-local Verification](#repo-local-verification)
@@ -30,48 +36,91 @@ The shortest honest description of the project today is:
 - [Packaged Codex Skill](#packaged-codex-skill)
 - [Issue Reporting](#issue-reporting)
 
+## Start Here
+
+If you want the fastest path to value, start with one of these:
+
+- **Bootstrap a repo with tracked governance surfaces.**
+
+  ```bash
+  harness init --dry-run
+  harness init --track
+  ```
+
+- **Upgrade an existing harness-managed repo without guessing what drifted.**
+
+  ```bash
+  harness upgrade --dry-run
+  harness upgrade
+  ```
+
+- **Verify a repo locally before pushing or handing work to another agent.**
+
+  ```bash
+  bash scripts/verify-work.sh --fast
+  bash scripts/verify-work.sh
+  ```
+
+- **Gate a change before review.**
+
+  ```bash
+  harness docs-gate --mode advisory --json
+  harness review-gate --token "$GITHUB_TOKEN" --owner <owner> --repo <repo> --pr <number> --sha <head-sha>
+  ```
+
+- **Check whether a pilot lane is safe to expand.**
+
+  ```bash
+  harness pilot-evaluate --artifacts artifacts/pilot --lane health --output artifacts/pilot/result.json
+  ```
+
 ## Why Teams Use It
 
 Teams usually adopt Coding Harness for one of four jobs:
 
 - **Bootstrap a repo once, then keep it aligned.** `harness init` can scaffold
-  contracts, workflow docs, CI policy surfaces, CodeRabbit defaults, Linear-aware
-  templates, and rollback metadata instead of relying on tribal knowledge.
-- **Gate agent work with the same rules every time.** Commands like
-  `policy-gate`, `docs-gate`, `plan-gate`, `review-gate`, and `linear-gate`
-  move repo expectations out of “please remember” territory.
-- **Change CI or governance without losing trust.** `ci-migrate` is built for
-  staged migration, snapshots, rollback, and parity evidence rather than
-  one-shot YAML replacement.
-- **Roll out autonomy deliberately.** The pilot and workflow-contract tooling
-  exists to answer “is this safe to expand?” with artifacts, thresholds, and
-  explicit hold/freeze/demote behavior.
+  `harness.contract.json`, `WORKFLOW.md`, PR templates, CodeRabbit defaults,
+  repo-local verification scripts, and rollback metadata instead of leaving
+  each repo to invent its own setup.
+- **Put policy in code instead of chat reminders.** Commands like
+  `docs-gate`, `plan-gate`, `review-gate`, `linear-gate`, `check-authz`, and
+  `local-memory-preflight` make governance expectations runnable.
+- **Change CI and review workflow without losing trust.** `ci-migrate`,
+  `branch-protect`, `verify-coderabbit`, and parity-proof tooling exist for
+  controlled migration rather than "edit YAML and hope".
+- **Expand autonomy gradually.** Pilot evaluation, rollback, workflow-contract
+  validation, remediation, and evidence verification give teams a way to ask
+  "should this be automated further?" with artifacts instead of instinct.
 
-## Current Strengths
+## What It Is Best At Today
 
-The code, tests, and recent history show a few strengths more clearly than the
-old README did.
+The code, tests, and recent history point to a few especially strong surfaces.
 
-- **Repository bootstrap and update flows are a core surface.** The largest
-  command test file in the repo is `src/commands/init.test.ts`, and `init`
-  supports dry runs, tracked updates, rollback, migration, interactive review,
-  and generated `WORKFLOW.md` scaffolding.
-- **CI migration is more than a helper script.** `ci-migrate` has deep support
-  for snapshots, parity proof packs, merge-queue cutover evidence, break-glass
-  policy, and rollback. The corresponding test surface is also one of the
-  largest in the repo.
-- **Workflow contracts are now a real subsystem.** Recent slices added a
-  markdown parser, checker, artifact registry, state normalization, gate
-  bundles, operator scorecards, pilot tracking, and reusable test-harness
-  utilities. This repo is no longer just “a set of gates”; it also includes
-  machinery for defining and validating agent workflows.
-- **Pilot rollout control has become first-class.** `pilot-evaluate`,
-  `pilot-rollback`, scorecards, control-plane artifacts, decision packets, and
-  scale-out pilot tracking are all active surfaces, not future ideas.
+- **Governed bootstrap and upgrade.** `init`, `upgrade`, and `eject` are
+  mature command families. They support dry runs, tracked updates, rollback,
+  interactive review, minimal mode, and repo-specific scaffolding decisions.
+- **CI migration with proof and rollback.** `ci-migrate` is one of the deepest
+  tested surfaces in the repo. It supports prepare, verify, commit, abort,
+  branch-protection sync, proof packs, and merge-queue cutover evidence.
+- **Review and governance gates.** `review-gate`, `docs-gate`,
+  `verify-coderabbit`, `linear-gate`, `check-authz`, and `doctor` are current,
+  active surfaces. This repo now assumes CodeRabbit, not Greptile, as the
+  primary AI review path.
+- **Pilot control-plane evaluation.** `pilot-evaluate`, `pilot-rollback`,
+  remediation, gap-case management, and workflow-contract scorecards are real
+  product surfaces with substantial test coverage.
+- **Repo-local verification and preflight.** Harness scaffolds
+  `scripts/codex-preflight.sh`, `scripts/verify-work.sh`, and
+  `scripts/validate-codestyle.sh` so a downstream repo has a local verification
+  contract instead of a loosely documented checklist.
+- **Context, search, and multi-repo audit.** `search`, `context`,
+  `index-context`, `context-health`, `tooling-audit`, and `org-audit` make the
+  project broader than "just repo init". It also helps teams inspect governed
+  context and drift across repositories.
 
-If you want the highest-confidence paths today, start with `init`,
-`ci-migrate`, workflow-contract checks, `docs-gate`/`review-gate`, and
-`pilot-evaluate`.
+If you want the highest-confidence paths today, start with `init`, `upgrade`,
+`ci-migrate`, `docs-gate` or `review-gate`, `verify-coderabbit`,
+`local-memory-preflight`, and `pilot-evaluate`.
 
 ## Installation
 
@@ -87,6 +136,11 @@ If your team uses `mise`, this also works:
 ```bash
 mise install -g npm:@brainwav/coding-harness
 ```
+
+The package is best suited to repositories that want a governed local CLI
+surface. After installation, the usual next step is not "read every command",
+it is to run `harness init --dry-run` in the target repository and inspect the
+scaffold plan.
 
 ## Repo-local Wrapper
 
@@ -109,6 +163,9 @@ pnpm add -D @brainwav/coding-harness
 pnpm exec harness <command>
 ```
 
+This matters because downstream repos can standardize on one local command
+surface even if contributors use different shells or global setups.
+
 ## Repo-local Verification
 
 Use `bash scripts/verify-work.sh` as the canonical repo-local verification
@@ -121,6 +178,9 @@ For a quicker local loop, use:
 bash scripts/verify-work.sh --fast
 ```
 
+For downstream repos, this is one of the most practical parts of harness. It
+turns "what do I need to run before handoff?" into a single local command.
+
 ## Common Workflows
 
 ### 1. Bootstrap a repository
@@ -132,6 +192,11 @@ harness init --dry-run
 harness init --track
 harness symphony-check
 ```
+
+This is the best path when you want a governed starting point quickly. In the
+common case, `init --track` gives you the contract, workflow scaffolding,
+review policy surfaces, repo-local verification scripts, and enough metadata to
+upgrade or roll back cleanly later.
 
 Use these follow-ups when the repo already has harness material:
 
@@ -188,6 +253,15 @@ When you need remote merge-readiness checks:
 harness review-gate --token "$GITHUB_TOKEN" --owner <owner> --repo <repo> --pr <number> --sha <head-sha>
 ```
 
+For repos using CodeRabbit, pair this with:
+
+```bash
+harness verify-coderabbit --json
+```
+
+That gives you a concrete local answer for "is the repo-side review wiring
+correct?" before you debug GitHub-side behavior.
+
 ### 3. Migrate CI with rollback and proof
 
 ```bash
@@ -222,6 +296,10 @@ To keep Linear metadata and findings aligned from the same CLI surface:
 harness linear prepare --issue JSC-123
 harness linear sync --findings findings.json --team JSC
 ```
+
+This is one of the more understated parts of the project today: it is not only
+scaffolding repo files, it also includes machinery for defining, checking, and
+operating workflow contracts.
 
 ### 5. Evaluate a pilot before expanding autonomy
 
@@ -324,13 +402,17 @@ flags, use `harness --help`.
   state, including `branch-protect`, `review-gate`, and remote CodeRabbit checks
 - **Linear auth:** required for `linear*` flows and for a clean
   `symphony-check` result
+- **Local Memory:** required for repo-local `required` preflight mode and for
+  the default `scripts/verify-work.sh` flow scaffolded into downstream repos
 - **Ollama/local embeddings:** required for the semantic side of
   `search`, `context`, and `index-context`
 - **Browser automation tooling:** required for `ui:verify` and `ui:explore`
   workflows
 
 Coding Harness does **not** create secrets for you and does **not** bypass
-branch protection or review policy.
+branch protection or review policy. It also does **not** run your CI provider
+or agent runtime for you. Its job is to scaffold, validate, and enforce the
+control-plane layer around those systems.
 
 ## Local Development
 
