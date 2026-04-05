@@ -97,43 +97,41 @@ Developer pushes tag v1.2.3
 
 ## Current State
 
-The repository is in a **bridge-primary state**:
+The repository is in a **CircleCI-primary state** with full GitHub webhook integration:
 
-- **CircleCI free-tier** accepts pipelines but never dispatches them to runners. All pipelines remain in `state: "created"` with `build_num: null` — the workflow-level `status` fields reflect config validation only, not actual execution. No job in the project's history has ever run on a CircleCI runner.
-- **`harness.contract.json`** declares `ciProviderPolicy.migrationStage: "circleci-only"` — this does not match operational reality since CircleCI never executes.
-- **The `pr-pipeline-bridge` GitHub Actions workflow** was previously the **only functioning PR gate**, but has now been disabled to `workflow_dispatch: {}` only.
-- **No CI system is currently gating PRs automatically.** CircleCI never runs; the bridge is dispatch-only. Re-enabling the bridge as an automatic gate is the fastest path to restoring PR CI.
-- **Release validation**: GitHub Actions `publish` handles tag-driven release (build, publish, attestation, GitHub Release). CircleCI `release` job will not execute on tag pushes.
-
-**Action required:** Either upgrade the CircleCI plan to get runner capacity, or re-enable the `pr-pipeline-bridge` as an automatic gate to restore PR CI coverage.
+- **CircleCI** is the primary PR gate. Pipeline #262 (2026-04-05) was the first webhook-triggered pipeline, confirming end-to-end GitHub → CircleCI auto-triggering. All three jobs (`pr-fast`, `pr-slow`, `pr-pipeline`) execute successfully on `resource_class: medium` (free-tier max).
+- **GitHub webhook** (`https://circleci.com/hooks/github`) is configured on the repo with `push`, `pull_request`, `fork`, `public`, and `repository` events. Webhook ID: `604650758`. CircleCI created this webhook automatically when the project was followed via the v1.1 API.
+- **`pr-pipeline-bridge.yml`** remains `workflow_dispatch: {}` only — emergency fallback if CircleCI becomes unavailable.
+- **Release validation**: GitHub Actions `publish` handles tag-driven release (build, publish, attestation, GitHub Release). CircleCI `release` job validates tag pushes but does not publish.
+- **`harness.contract.json`** declares `ciProviderPolicy.migrationStage: "circleci-only"` — this now matches operational reality.
 
 ### Known Overlaps (Transitional)
 
-These overlaps exist because both CI systems define the same gates. CircleCI never executes (no runner capacity), so only the GitHub Actions bridge was ever functional. The bridge is now dispatch-only, so no active overlap in practice — but the config duplication remains.
+CircleCI is the active primary PR gate. The bridge workflow (`pr-pipeline-bridge.yml`) is dispatch-only — config duplication exists but no active overlap in execution.
 
 | Gate | CircleCI Job | GitHub Actions Job | Status |
 |---|---|---|---|
-| Lint | `pr-fast` | `pr-pipeline` (bridge) | Duplicate — bridge now dispatch-only |
-| Typecheck | `pr-fast` | `pr-pipeline` (bridge) | Duplicate — bridge now dispatch-only |
-| Tests | `pr-fast` + `pr-slow` | `pr-pipeline` (bridge) | Duplicate — bridge now dispatch-only |
-| Audit | `pr-fast` | `pr-pipeline` (bridge) | Duplicate — bridge now dispatch-only |
-| Docs lint | `pr-fast` | `pr-pipeline` (bridge) | Duplicate — bridge now dispatch-only |
-| Skill/workflow validation | `pr-fast` | `pr-pipeline` (bridge) | Duplicate — bridge now dispatch-only |
+| Lint | `pr-fast` | `pr-pipeline` (bridge) | Config duplication — bridge dispatch-only |
+| Typecheck | `pr-fast` | `pr-pipeline` (bridge) | Config duplication — bridge dispatch-only |
+| Tests | `pr-fast` + `pr-slow` | `pr-pipeline` (bridge) | Config duplication — bridge dispatch-only |
+| Audit | `pr-fast` | `pr-pipeline` (bridge) | Config duplication — bridge dispatch-only |
+| Docs lint | `pr-fast` | `pr-pipeline` (bridge) | Config duplication — bridge dispatch-only |
+| Skill/workflow validation | `pr-fast` | `pr-pipeline` (bridge) | Config duplication — bridge dispatch-only |
 | Tag validation + build | `release` | `publish` | Intentional — both validate independently; only GHA publishes |
 
 ## Target State
 
-**Prerequisite:** Either upgrade CircleCI to a plan with runner capacity, or transition fully to GitHub Actions.
+**Prerequisite met:** CircleCI executes pipelines successfully on free-tier `resource_class: medium`.
 
-When the prerequisite is met:
+Current target:
 
-1. **Primary PR gate runs in one system** with the `pr-pipeline` status context
-2. **`pr-pipeline-bridge.yml`** is either removed (if CircleCI gets runners) or becomes the primary gate (if transitioning to GitHub Actions)
+1. **CircleCI is the primary PR gate** with the `pr-pipeline` status context — active and auto-triggered via GitHub webhook
+2. **`pr-pipeline-bridge.yml`** remains dispatch-only as emergency fallback
 3. **GitHub Actions retains exclusive ownership** of security scanning and release/publish
-4. **No duplicate gates** — each responsibility runs in exactly one system
-5. **Branch protection** references `pr-pipeline` (owning system) + `security-scan` (GitHub Actions) + `CodeRabbit`
+4. **No active duplicate gates** — config duplication exists but only CircleCI executes the PR gate
+5. **Branch protection** references `pr-pipeline` (CircleCI) + `security-scan` (GitHub Actions) + `CodeRabbit`
 
-Until the prerequisite is met, the bridge workflow should be re-enabled as an automatic gate to restore PR CI coverage.
+Future option: If transitioning fully to GitHub Actions, promote the bridge workflow to the primary gate and remove CircleCI config.
 
 ## Migration Rules
 
