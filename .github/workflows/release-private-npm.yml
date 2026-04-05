@@ -191,7 +191,20 @@ jobs:
               RELEASE_ARGS+=(--latest)
             fi
 
-            gh release create "v${VERSION}" "${RELEASE_ARGS[@]}" || echo "Release already exists"
+            if gh release view "v${VERSION}" >/dev/null 2>&1; then
+              echo "Release v${VERSION} already exists; skipping creation."
+            else
+              # Fail closed on create errors, but tolerate the duplicate race where
+              # another actor creates the release between view and create.
+              if ! gh release create "v${VERSION}" "${RELEASE_ARGS[@]}"; then
+                if gh release view "v${VERSION}" >/dev/null 2>&1; then
+                  echo "Release v${VERSION} appeared during create attempt; continuing."
+                else
+                  echo "::error::Failed to create GitHub release v${VERSION}."
+                  exit 1
+                fi
+              fi
+            fi
           else
             echo "::warning::Tag v${VERSION} is not present locally; skipping GitHub release creation."
           fi
