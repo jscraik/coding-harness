@@ -1,5 +1,24 @@
 # FORJAMIE
 
+## 2026-04-05 - Commit Trailer Parser Quirk (Recurring)
+
+### What happened
+
+- Commit creation failed again even though the required trailer text was present.
+- The failure mode is in trailer parsing of inline shell-assembled commit messages, not in code validation.
+
+### Reliable workaround
+
+1. Write the full commit message to a temp file.
+2. Use `git commit -F /tmp/<message-file>.txt`.
+3. Keep exactly one trailer line at the end:
+   - `Co-authored-by: Codex <noreply@openai.com>`
+
+### Why this is now standard
+
+- File-based commit messages avoid shell quoting/newline edge cases that can confuse trailer checks.
+- This has been repeatable across multiple commit attempts, so defaulting to `-F` is the lowest-risk path.
+
 ## 2026-04-03 - Command Failure Taxonomy (Why It Felt So Noisy)
 
 ### Why so many "failures" showed up
