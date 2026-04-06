@@ -46,7 +46,7 @@ CircleCI does **not** publish. It stops at build verification.
 |---|---|---|---|---|
 | Security scanning (BetterLeaks + Trivy + Semgrep) | `security-scan` | `secret-scan` | Push to main, PR, `merge_group` | `.github/workflows/secret-scan.yml` |
 | npm publish + SBOM + provenance attestation + GitHub Release | `release-private-npm` | `publish` | `Semver` tag push | `.github/workflows/release-private-npm.yml` |
-| **PR fallback CI** (emergency dispatch only) | `pr-pipeline-bridge` | `pr-pipeline` | `workflow_dispatch` only (disabled as automatic gate) | `.github/workflows/pr-pipeline-bridge.yml` |
+| **PR fallback CI** (emergency dispatch only) | `ci-fallback` | `pr-pipeline` | `workflow_dispatch` only (disabled as automatic gate) | `.github/workflows/ci-fallback.yml` |
 
 ### Not Owned by Either CI System
 
@@ -63,7 +63,7 @@ These are the check names that GitHub branch protection must reference:
 
 | Canonical Check Name | Owning System | Workflow File |
 |---|---|---|
-| `pr-pipeline` | CircleCI (primary) / GitHub Actions (fallback) | `.circleci/config.yml` / `.github/workflows/pr-pipeline-bridge.yml` |
+| `pr-pipeline` | CircleCI (primary) / GitHub Actions (fallback) | `.circleci/config.yml` / `.github/workflows/ci-fallback.yml` |
 | `security-scan` | GitHub Actions | `.github/workflows/secret-scan.yml` |
 | `CodeRabbit` | CodeRabbit App | (external) |
 
@@ -101,13 +101,13 @@ Developer pushes tag v1.2.3
 The repository is in a **CircleCI-primary state** with full GitHub webhook integration:
 
 - **CircleCI** is the primary PR gate. Webhook auto-triggering is confirmed operational — push and pull_request events create pipelines that run all three jobs (`pr-fast`, `pr-slow`, `pr-pipeline`) on `resource_class: medium` (free-tier max). Verify webhook health: `gh api repos/jscraik/coding-harness/hooks --jq '.[] | select(.active == true and .config.url == "https://circleci.com/hooks/github")'`.
-- **`pr-pipeline-bridge.yml`** remains `workflow_dispatch: {}` only — emergency fallback if CircleCI becomes unavailable.
+- **`ci-fallback.yml`** remains `workflow_dispatch: {}` only — emergency fallback if CircleCI becomes unavailable.
 - **Release validation**: GitHub Actions `publish` handles tag-driven release (build, publish, attestation, GitHub Release). CircleCI `release` job validates tag pushes but does not publish.
 - **`harness.contract.json`** declares `ciProviderPolicy.migrationStage: "circleci-only"` — this now matches operational reality.
 
 ### Known Overlaps (Transitional)
 
-CircleCI is the active primary PR gate. The bridge workflow (`pr-pipeline-bridge.yml`) is dispatch-only — config duplication exists but no active overlap in execution.
+CircleCI is the active primary PR gate. The bridge workflow (`ci-fallback.yml`) is dispatch-only — config duplication exists but no active overlap in execution.
 
 | Gate | CircleCI Job | GitHub Actions Job | Status |
 |---|---|---|---|
@@ -126,7 +126,7 @@ CircleCI is the active primary PR gate. The bridge workflow (`pr-pipeline-bridge
 Current target:
 
 1. **CircleCI is the primary PR gate** with the `pr-pipeline` status context — active and auto-triggered via GitHub webhook
-2. **`pr-pipeline-bridge.yml`** remains dispatch-only as emergency fallback
+2. **`ci-fallback.yml`** remains dispatch-only as emergency fallback
 3. **GitHub Actions retains exclusive ownership** of security scanning and release/publish
 4. **No active duplicate gates** — config duplication exists but only CircleCI executes the PR gate
 5. **Branch protection** references `pr-pipeline` (CircleCI) + `security-scan` (GitHub Actions) + `CodeRabbit`
