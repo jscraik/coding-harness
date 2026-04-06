@@ -10,13 +10,15 @@
 
 - **2026-04-05 [Claude]:** All 260 historical CircleCI pipelines had `trigger_type: null` because no GitHub → CircleCI webhook existed. Pipelines were only ever triggered manually or by CircleCI project follows.
   - **Why:** The webhook at `https://circleci.com/hooks/github` was never added to the GitHub repo settings.
-  - **How to apply:** If pipelines stop auto-triggering, verify the webhook exists: `gh api repos/jscraik/coding-harness/hooks --jq '.[] | select(.config.url | contains("circleci"))'`. Recreate if missing.
+  - **How to apply:** If pipelines stop auto-triggering, verify an active CircleCI webhook is present with expected events:
+    `gh api repos/jscraik/coding-harness/hooks --jq '.[] | select(.active == true and (.config.url == "https://circleci.com/hooks/github") and ((.events | index("push")) != null) and ((.events | index("pull_request")) != null))'`.
+    Recreate if missing.
 
 ## CI responsibility matrix is the source of truth
 
-- **2026-04-05 [Claude]:** `docs/ci-responsibility-matrix.md` is the authoritative document for CI ownership. When `harness.contract.json`, `.harness/ci-required-checks.json`, or workflow files disagree, the matrix wins.
-  - **Why:** Prevents duplicate gates, conflicting release paths, and ambiguous merge requirements.
-  - **How to apply:** After any CI config change, verify the matrix reflects the change. Run `pnpm workflow:validate` to detect ownership conflicts.
+- **2026-04-05 [Claude]:** `docs/ci-responsibility-matrix.md` is the operational source of truth for CI ownership intent. `harness.contract.json`, `.harness/ci-required-checks.json`, and workflow files are executable enforcement artifacts that must be updated in lockstep.
+  - **Why:** Prevents duplicate gates, conflicting release paths, and ambiguous merge requirements. Precedence inversion between docs and automation creates silent governance drift.
+  - **How to apply:** After any CI config change, update both the matrix and CI contract artifacts together, then run `pnpm workflow:validate` to detect documentation contract issues.
 
 ## Current CI state
 

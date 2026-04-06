@@ -38,7 +38,7 @@ When contributing to this project:
 
 This repository uses:
 
-- **Gitleaks**: Secret detection in commits
+- **BetterLeaks** (CI) / **Gitleaks** (local): Secret detection in commits
 - **Semgrep**: Static analysis for security vulnerabilities
 - **Trivy**: Dependency and container vulnerability scanning
 - **pnpm audit**: Dependency vulnerability scanning

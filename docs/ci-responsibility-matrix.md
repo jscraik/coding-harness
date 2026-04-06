@@ -17,7 +17,7 @@
 
 Define a non-overlapping ownership model between CircleCI and GitHub Actions so the repository avoids duplicate gates, conflicting release paths, and ambiguous merge requirements.
 
-This document is the authoritative source for CI ownership. When `harness.contract.json`, `.harness/ci-required-checks.json`, or workflow files disagree, this matrix wins.
+This document is the operational source of truth for CI ownership intent. `harness.contract.json`, `.harness/ci-required-checks.json`, and workflow files are executable enforcement artifacts and must be kept in lockstep with this matrix. When making CI changes, update all four surfaces together.
 
 ## Ownership Principles
 
@@ -161,7 +161,9 @@ Future option: If transitioning fully to GitHub Actions, promote the bridge work
 
 ## Overlap Detection
 
-Run `pnpm workflow:validate` to detect CI ownership conflicts. The validator checks:
+Run `pnpm workflow:validate` to verify workflow markdown contract compliance (section structure, transition tables, error codes, observability fields). This validates the documentation contract shape, not CI ownership.
+
+For CI ownership overlap detection, manually verify:
 
 1. No gate runs in both CircleCI and GitHub Actions without a documented transitional entry
 2. Branch protection required checks match actual GitHub check names
