@@ -66,6 +66,7 @@ onboarding
 operationalized
 pnpm
 provisionable
+pull_request
 pseudocode
 pytest
 realpath

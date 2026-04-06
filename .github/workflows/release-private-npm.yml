@@ -131,9 +131,9 @@ jobs:
       - name: Verify publish auth mode
         id: publish-auth
         run: |
-          MODE="${{ github.event_name == 'workflow_dispatch' && github.event.inputs.publish_auth || vars.NPM_PUBLISH_AUTH || 'token' }}"
+          MODE="${{ github.event_name == 'workflow_dispatch' && github.event.inputs.publish_auth || vars.NPM_PUBLISH_AUTH || 'oidc' }}"
           if [[ -z "$MODE" ]]; then
-            MODE="token"
+            MODE="oidc"
           fi
           if [[ "$MODE" != "token" && "$MODE" != "oidc" ]]; then
             echo "::error::Unsupported publish_auth mode '$MODE'. Expected token or oidc."
