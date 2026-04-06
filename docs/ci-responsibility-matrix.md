@@ -90,7 +90,8 @@ Developer pushes tag v1.2.3
                  5. Verifies tag == package.json version
                  6. Publishes to npm (token or OIDC)
                  7. Generates build provenance attestation (OIDC)
-                 8. Creates GitHub Release with CHANGELOG.md notes
+                 8. Verifies attestation (actions/attest-build-provenance verification)
+                 9. Creates GitHub Release with CHANGELOG.md notes
 ```
 
 **Publish authority: GitHub Actions only.** The CircleCI `release` job validates and builds but explicitly does not publish. The comment in `.circleci/config.yml` states: "Canonical publish path: .github/workflows/release-private-npm.yml."
@@ -99,8 +100,7 @@ Developer pushes tag v1.2.3
 
 The repository is in a **CircleCI-primary state** with full GitHub webhook integration:
 
-- **CircleCI** is the primary PR gate. Pipeline #262 (2026-04-05) was the first webhook-triggered pipeline, confirming end-to-end GitHub → CircleCI auto-triggering. All three jobs (`pr-fast`, `pr-slow`, `pr-pipeline`) execute successfully on `resource_class: medium` (free-tier max).
-- **GitHub webhook** (`https://circleci.com/hooks/github`) is configured on the repo with `push`, `pull_request`, `fork`, `public`, and `repository` events. Webhook ID: `604650758`. CircleCI created this webhook automatically when the project was followed via the v1.1 API.
+- **CircleCI** is the primary PR gate. Webhook auto-triggering is confirmed operational — push and pull_request events create pipelines that run all three jobs (`pr-fast`, `pr-slow`, `pr-pipeline`) on `resource_class: medium` (free-tier max). Verify webhook health: `gh api repos/jscraik/coding-harness/hooks --jq '.[] | select(.active == true and .config.url == "https://circleci.com/hooks/github")'`.
 - **`pr-pipeline-bridge.yml`** remains `workflow_dispatch: {}` only — emergency fallback if CircleCI becomes unavailable.
 - **Release validation**: GitHub Actions `publish` handles tag-driven release (build, publish, attestation, GitHub Release). CircleCI `release` job validates tag pushes but does not publish.
 - **`harness.contract.json`** declares `ciProviderPolicy.migrationStage: "circleci-only"` — this now matches operational reality.

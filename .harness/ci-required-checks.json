@@ -196,7 +196,7 @@
       ],
       "freshnessWindowDays": 7,
       "class": "required",
-      "githubCheckName": "pr-pipeline"
+      "githubCheckName": "security-scan"
     },
     {
       "policyId": "required-check-15",

@@ -9,6 +9,7 @@ set -euo pipefail
 echo "[codex] setup: $(pwd)"
 
 command -v pnpm >/dev/null 2>&1 || npm install --global pnpm@10.0.0
+mise trust && mise install
 pnpm install --frozen-lockfile
 '''
 
@@ -16,14 +17,15 @@ pnpm install --frozen-lockfile
 name = "Tools"
 icon = "tool"
 command = '''
-echo "Available tools: rg, fd, jq, git, node, pnpm"
+echo "Available tools: rg, fd, jq, git, node, pnpm, mise"
+mise ls
 '''
 
 [[actions]]
 name = "Run"
 icon = "run"
 command = '''
-pnpm dev
+pnpm check "$@"
 '''
 
 [[actions]]
@@ -41,7 +43,7 @@ pnpm test "$@"
 '''
 
 [[actions]]
-name = "Prek"
+name = "Preflight"
 icon = "test"
 command = '''
 bash scripts/codex-preflight.sh --stack auto --mode required
@@ -121,21 +123,21 @@ pnpm lint
 name = "Agent Browser"
 icon = "tool"
 command = '''
-pnpm exec playwright test "$@"
+agent-browser "$@"
 '''
 
 [[actions]]
 name = "Agentation"
 icon = "tool"
 command = '''
-pnpm agentation "$@"
+agentation "$@"
 '''
 
 [[actions]]
-name = "Mermaid CLI"
+name = "Beautiful Mermaid"
 icon = "tool"
 command = '''
-npx --yes @mermaid-js/mermaid-cli "$@"
+beautiful-mermaid "$@"
 '''
 
 [[actions]]
@@ -160,10 +162,10 @@ op run -- "$@"
 '''
 
 [[actions]]
-name = "Beautiful Mermaid"
+name = "Mermaid CLI"
 icon = "tool"
 command = '''
-npx --yes @brainwav/diagram all . --output-dir .diagram
+npx --yes @mermaid-js/mermaid-cli "$@"
 '''
 
 [[actions]]
@@ -192,6 +194,14 @@ name = "Trivy"
 icon = "debug"
 command = '''
 trivy fs .
+'''
+
+[[actions]]
+name = "Prek"
+icon = "test"
+command = '''
+command -v prek >/dev/null 2>&1
+prek --version
 '''
 
 [[actions]]
