@@ -9,6 +9,7 @@
 - [Change-control flow](#change-control-flow)
 - [Rollback policy](#rollback-policy)
 - [Post-change validation](#post-change-validation)
+- [Release integrity and verification](#release-integrity-and-verification)
 - [Release blockers](#release-blockers)
 
 ## Scope
@@ -62,6 +63,58 @@ Use this document before milestones, release-tagged branches, or behavior-changi
 
 - Confirm docs and plans still reference executable, current commands.
 - Verify audit trail entries include command outcomes.
+
+## Release integrity and verification
+
+Every release published from `.github/workflows/release-private-npm.yml` carries three trust layers that consumers can verify independently.
+
+### 1. npm provenance
+
+Releases published via OIDC trusted publishing include a signed provenance statement on the npm registry, linking the package to the exact source commit and build environment.
+
+Verify from any machine:
+
+```bash
+npm view @brainwav/coding-harness --json | jq '.attestations'
+npm audit signatures
+```
+
+The `--provenance` flag on publish ensures the npm registry stores a verifiable link between the published artifact and the GitHub Actions run that produced it.
+
+### 2. GitHub artifact attestations
+
+Each release generates a SLSA-format build provenance attestation signed by GitHub's Sigstore instance.
+
+Verify a specific release artifact:
+
+```bash
+gh attestation verify brainwav-coding-harness-*.tgz \
+  --repo jscraik/coding-harness \
+  --predicate-type https://slsa.dev/provenance/v1
+```
+
+### 3. SBOM
+
+A CycloneDX SBOM is generated during release and uploaded as a GitHub Actions artifact (90-day retention).
+
+Download and inspect:
+
+```bash
+gh run download --name sbom
+jq '.components | length' artifacts/sbom.cdx.json
+```
+
+### Permission model
+
+The release workflow uses these top-level permissions (least-privilege):
+
+| Permission | Justification |
+|---|---|
+| `id-token: write` | OIDC token for npm trusted publishing and attestation signing |
+| `attestations: write` | `actions/attest-build-provenance` for build provenance |
+| `contents: write` | GitHub Release creation |
+
+No additional secrets are required for OIDC-mode publishes. Token-mode (`NPM_TOKEN`) is retained as a bootstrap fallback only.
 
 ## Release blockers
 

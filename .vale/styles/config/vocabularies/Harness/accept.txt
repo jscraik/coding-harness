@@ -103,3 +103,4 @@ jq
 npx
 nvm
 arXiv
+Sigstore

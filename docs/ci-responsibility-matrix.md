@@ -107,16 +107,16 @@ The repository is in a **CircleCI-primary state** with full GitHub webhook integ
 
 ### Known Overlaps (Transitional)
 
-CircleCI is the active primary PR gate. The bridge workflow (`ci-fallback.yml`) is dispatch-only — config duplication exists but no active overlap in execution.
+CircleCI is the active primary PR gate. The fallback workflow (`ci-fallback.yml`) is dispatch-only — config duplication exists but no active overlap in execution.
 
 | Gate | CircleCI Job | GitHub Actions Job | Status |
 |---|---|---|---|
-| Lint | `pr-fast` | `pr-pipeline` (bridge) | Config duplication — bridge dispatch-only |
-| Typecheck | `pr-fast` | `pr-pipeline` (bridge) | Config duplication — bridge dispatch-only |
-| Tests | `pr-fast` + `pr-slow` | `pr-pipeline` (bridge) | Config duplication — bridge dispatch-only |
-| Audit | `pr-fast` | `pr-pipeline` (bridge) | Config duplication — bridge dispatch-only |
-| Docs lint | `pr-fast` | `pr-pipeline` (bridge) | Config duplication — bridge dispatch-only |
-| Skill/workflow validation | `pr-fast` | `pr-pipeline` (bridge) | Config duplication — bridge dispatch-only |
+| Lint | `pr-fast` | `pr-pipeline` (fallback) | Config duplication — fallback dispatch-only |
+| Typecheck | `pr-fast` | `pr-pipeline` (fallback) | Config duplication — fallback dispatch-only |
+| Tests | `pr-fast` + `pr-slow` | `pr-pipeline` (fallback) | Config duplication — fallback dispatch-only |
+| Audit | `pr-fast` | `pr-pipeline` (fallback) | Config duplication — fallback dispatch-only |
+| Docs lint | `pr-fast` | `pr-pipeline` (fallback) | Config duplication — fallback dispatch-only |
+| Skill/workflow validation | `pr-fast` | `pr-pipeline` (fallback) | Config duplication — fallback dispatch-only |
 | Tag validation + build | `release` | `publish` | Intentional — both validate independently; only GHA publishes |
 
 ## Target State
@@ -131,7 +131,7 @@ Current target:
 4. **No active duplicate gates** — config duplication exists but only CircleCI executes the PR gate
 5. **Branch protection** references `pr-pipeline` (CircleCI) + `security-scan` (GitHub Actions) + `CodeRabbit`
 
-Future option: If transitioning fully to GitHub Actions, promote the bridge workflow to the primary gate and remove CircleCI config.
+Future option: If transitioning fully to GitHub Actions, promote the fallback workflow to the primary gate and remove CircleCI config.
 
 ## Migration Rules
 
