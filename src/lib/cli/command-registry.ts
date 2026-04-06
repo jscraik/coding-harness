@@ -1,8 +1,21 @@
+import { runAutomationRunCLI } from "../../commands/automation-run.js";
+import {
+	type BlastRadiusOptions,
+	runBlastRadiusCLI,
+} from "../../commands/blast-radius.js";
+import { runBrainstormGateCLI } from "../../commands/brainstorm-gate.js";
 import { runBranchProtectCLI } from "../../commands/branch-protect.js";
 import { runCheckAuthzCLI } from "../../commands/check-authz.js";
 import { runCheckEnvironmentCLI } from "../../commands/check-environment.js";
+import { runContractCLI } from "../../commands/contract.js";
 import { runDocsGateCLI } from "../../commands/docs-gate.js";
+import { runDoctorCLI } from "../../commands/doctor.js";
+import { runDriftGateCLI } from "../../commands/drift-gate.js";
+import { runEjectCLI } from "../../commands/eject.js";
 import { runEvidenceVerifyCLI } from "../../commands/evidence-verify.js";
+import { runGapCaseCLI } from "../../commands/gap-case.js";
+import { runGardenerCLI } from "../../commands/gardener.js";
+import { runHealthCLI } from "../../commands/health.js";
 import { runLicenseGateCLI } from "../../commands/license-gate.js";
 import { runLinearGateCLI } from "../../commands/linear-gate.js";
 import { runLinearPrepareCLI } from "../../commands/linear-prepare.js";
@@ -12,12 +25,29 @@ import {
 	EXIT_CODES as LOCAL_MEMORY_PREFLIGHT_EXIT_CODES,
 	runLocalMemoryPreflightCLI,
 } from "../../commands/local-memory-preflight.js";
+import { runMemoryGateCLI } from "../../commands/memory-gate.js";
+import { runObservabilityGateCLI } from "../../commands/observability-gate.js";
+import { runOrgAuditCLI } from "../../commands/org-audit.js";
+import { runPlanGateCLI } from "../../commands/plan-gate.js";
 import { runPolicyGateCLI } from "../../commands/policy-gate.js";
 import { runPrTemplateGateCLI } from "../../commands/pr-template-gate.js";
 import { runPreflightGateCLI } from "../../commands/preflight-gate.js";
+import { runPresetCLI } from "../../commands/preset.js";
+import { runPromptGateCLI } from "../../commands/prompt-gate.js";
+import {
+	type RemediateOptions,
+	runRemediateCLI,
+} from "../../commands/remediate.js";
+import { runReplayCLI } from "../../commands/replay.js";
 import { runReviewGateCLI } from "../../commands/review-gate.js";
+import { runRiskTierCLI } from "../../commands/risk-tier.js";
+import { runSilentErrorDetectorCLI } from "../../commands/silent-error.js";
 import { runSymphonyCheckCLI } from "../../commands/symphony-check.js";
+import { runToolingAuditCLI } from "../../commands/tooling-audit.js";
+import { runUIFastCLI } from "../../commands/ui-loop.js";
+import { runVerifyCodeRabbitCLI } from "../../commands/verify-coderabbit.js";
 import { runWorkflowGenerateCLI } from "../../commands/workflow-generate.js";
+import { getVersion } from "../version.js";
 import {
 	getFlagValue,
 	inspectFlagValue,
@@ -640,6 +670,700 @@ const COMMAND_SPECS: CommandSpec[] = [
 				options.format = formatArg;
 
 			return runWorkflowGenerateCLI(options);
+		},
+	},
+	{
+		name: "org-audit",
+		summary: "Audit GitHub org settings and member permissions",
+		errorLabel: "Org Audit Error",
+		execute: async (args) => {
+			const { exitCode } = await runOrgAuditCLI(args);
+			return exitCode;
+		},
+	},
+	{
+		name: "tooling-audit",
+		summary: "Audit installed tooling versions and configuration health",
+		errorLabel: "Tooling Audit Error",
+		execute: async (args) => {
+			const { exitCode } = await runToolingAuditCLI(args);
+			return exitCode;
+		},
+	},
+	{
+		name: "preset",
+		summary: "List and show bundled harness presets",
+		errorLabel: "Preset Error",
+		execute: async (args) => {
+			const { exitCode } = await runPresetCLI(args);
+			return exitCode;
+		},
+	},
+	{
+		name: "doctor",
+		summary: "Diagnose harness installation and environment issues",
+		errorLabel: "Doctor Error",
+		execute: (args) => {
+			return runDoctorCLI(args, getVersion);
+		},
+	},
+	{
+		name: "health",
+		summary: "Quick health check for harness services and configuration",
+		errorLabel: "Health Error",
+		execute: (args) => {
+			return runHealthCLI(args, getVersion);
+		},
+	},
+	{
+		name: "eject",
+		summary: "Eject harness files from the target repository",
+		errorLabel: "Eject Error",
+		execute: async (args) => {
+			const forceFlag = args.includes("--force");
+			const dryRunFlag = args.includes("--dry-run");
+			const jsonFlag = args.includes("--json");
+			const targetDir = args.find((a) => !a.startsWith("-"));
+
+			const options: Parameters<typeof runEjectCLI>[1] = {};
+			if (forceFlag) options.force = true;
+			if (dryRunFlag) options.dryRun = true;
+			if (jsonFlag) options.json = true;
+
+			return runEjectCLI(targetDir, options);
+		},
+	},
+	{
+		name: "verify-coderabbit",
+		summary: "Verify CodeRabbit configuration and review settings",
+		errorLabel: "Verify CodeRabbit Error",
+		execute: async (args) => {
+			const jsonFlag = args.includes("--json");
+			const verboseFlag = args.includes("--verbose");
+			const ownerIndex = args.indexOf("--owner");
+			const repoIndex = args.indexOf("--repo");
+			const repoPathIndex = args.indexOf("--repo-path");
+			const tokenIndex = args.indexOf("--token");
+
+			const options: Parameters<typeof runVerifyCodeRabbitCLI>[0] = {};
+			if (jsonFlag) options.json = true;
+			if (verboseFlag) options.verbose = true;
+			const ownerArg = getFlagValue(args, ownerIndex);
+			if (ownerArg) options.owner = ownerArg;
+			const repoArg = getFlagValue(args, repoIndex);
+			if (repoArg) options.repo = repoArg;
+			const repoPathArg = getFlagValue(args, repoPathIndex);
+			if (repoPathArg) options.repoPath = repoPathArg;
+			const tokenArg = getFlagValue(args, tokenIndex);
+			if (tokenArg) options.token = tokenArg;
+
+			return runVerifyCodeRabbitCLI(options);
+		},
+	},
+	{
+		name: "contract",
+		summary: "Validate or print the harness contract schema",
+		errorLabel: "Contract Error",
+		execute: (args) => {
+			const jsonFlag = args.includes("--json");
+			const subArgs = args.filter((a) => !a.startsWith("-"));
+			return runContractCLI(subArgs, { json: jsonFlag || undefined });
+		},
+	},
+	{
+		name: "risk-tier",
+		summary: "Classify files by risk tier",
+		errorLabel: "Risk Tier Error",
+		execute: (args) => {
+			const jsonFlag = args.includes("--json");
+			const filesIndex = args.indexOf("--files");
+			const contractIndex = args.indexOf("--contract");
+
+			const filesArg = getFlagValue(args, filesIndex);
+			const files = parseCsvList(filesArg);
+			const contractArg = getFlagValue(args, contractIndex);
+			const contractPath = contractArg ?? "harness.contract.json";
+
+			return runRiskTierCLI({ contractPath, files, json: jsonFlag });
+		},
+	},
+	{
+		name: "replay",
+		summary: "Replay or list captured agent automation traces",
+		errorLabel: "Replay Error",
+		execute: (args) => {
+			const options: {
+				traceId?: string;
+				list?: boolean;
+				dryRun?: boolean;
+				json?: boolean;
+				traceDir?: string;
+			} = {
+				json: args.includes("--json"),
+				dryRun: args.includes("--dry-run"),
+				list: args.includes("--list"),
+			};
+
+			const traceIdValue = getFlagValue(args, args.indexOf("--trace-id"));
+			if (traceIdValue) options.traceId = traceIdValue;
+
+			const traceDirValue = getFlagValue(args, args.indexOf("--trace-dir"));
+			if (traceDirValue) options.traceDir = traceDirValue;
+
+			// Positional trace ID: first non-flag arg when --trace-id is absent
+			if (!options.traceId && args[1] && !args[1].startsWith("-")) {
+				options.traceId = args[1];
+			}
+
+			return runReplayCLI(options);
+		},
+	},
+	{
+		name: "gardener",
+		summary: "Detect stale docs and broken links",
+		errorLabel: "Gardener Error",
+		execute: (args) => {
+			const options: {
+				docsPath?: string;
+				dryRun?: boolean;
+				json?: boolean;
+				staleDays?: number;
+			} = {};
+
+			if (args.includes("--dry-run")) options.dryRun = true;
+			if (args.includes("--json")) options.json = true;
+			const docsArg = getFlagValue(args, args.indexOf("--docs"));
+			if (docsArg) options.docsPath = docsArg;
+			const staleDaysArg = getFlagValue(args, args.indexOf("--stale-days"));
+			if (staleDaysArg) {
+				const staleDays = parseIntegerArg(staleDaysArg, 0);
+				if (staleDays !== undefined) options.staleDays = staleDays;
+			}
+
+			return runGardenerCLI(options);
+		},
+	},
+	{
+		name: "memory-gate",
+		summary: "Validate local-memory workflow compliance",
+		errorLabel: "Memory Gate Error",
+		execute: (args) => {
+			const options: {
+				memoryPath?: string;
+				forjamiePath?: string;
+				json?: boolean;
+				metricsPath?: string;
+			} = {};
+
+			if (args.includes("--json")) options.json = true;
+			const memoryArg = getFlagValue(args, args.indexOf("--memory"));
+			if (memoryArg) options.memoryPath = memoryArg;
+			const forjamieArg = getFlagValue(args, args.indexOf("--forjamie"));
+			if (forjamieArg) options.forjamiePath = forjamieArg;
+			const metricsArg = getFlagValue(args, args.indexOf("--metrics"));
+			if (metricsArg) options.metricsPath = metricsArg;
+
+			return runMemoryGateCLI(options);
+		},
+	},
+	{
+		name: "silent-error",
+		summary: "Detect silent error handling anti-patterns",
+		errorLabel: "Silent Error Detector Error",
+		execute: (args) => {
+			const options: {
+				files?: string[];
+				dirs?: string[];
+				json?: boolean;
+				strict?: boolean;
+				suggestions?: boolean;
+			} = {};
+
+			if (args.includes("--json")) options.json = true;
+			if (args.includes("--strict")) options.strict = true;
+			if (args.includes("--suggestions")) options.suggestions = true;
+			const filesArg = getFlagValue(args, args.indexOf("--files"));
+			if (filesArg !== undefined) options.files = parseCsvList(filesArg);
+			const dirsArg = getFlagValue(args, args.indexOf("--dirs"));
+			if (dirsArg !== undefined) options.dirs = parseCsvList(dirsArg);
+
+			return runSilentErrorDetectorCLI(options);
+		},
+	},
+	{
+		name: "brainstorm-gate",
+		summary: "Validate brainstorm artifacts",
+		errorLabel: "Brainstorm Gate Error",
+		execute: (args) => {
+			const options: {
+				brainstormsPath?: string;
+				topic?: string;
+				maxAgeDays?: number;
+				strict?: boolean;
+				json?: boolean;
+			} = {};
+
+			if (args.includes("--json")) options.json = true;
+			if (args.includes("--strict")) options.strict = true;
+			const brainstormsArg = getFlagValue(args, args.indexOf("--brainstorms"));
+			if (brainstormsArg) options.brainstormsPath = brainstormsArg;
+			const topicArg = getFlagValue(args, args.indexOf("--topic"));
+			if (topicArg) options.topic = topicArg;
+			const maxAgeArg = getFlagValue(args, args.indexOf("--max-age"));
+			if (maxAgeArg) {
+				const parsed = parseIntegerArg(maxAgeArg, 0);
+				if (parsed !== undefined) options.maxAgeDays = parsed;
+			}
+
+			return runBrainstormGateCLI(options);
+		},
+	},
+	{
+		name: "plan-gate",
+		summary: "Validate plan artifacts",
+		errorLabel: "Plan Gate Error",
+		execute: (args) => {
+			const options: {
+				plansPath?: string;
+				type?: string;
+				maxAge?: number;
+				requireOrigin?: boolean;
+				requirePlanId?: boolean;
+				requireAcceptanceEvidence?: boolean;
+				requireTraceability?: boolean;
+				planIds?: string[];
+				prTitle?: string;
+				prBody?: string;
+				changedFiles?: string[];
+				strict?: boolean;
+				json?: boolean;
+			} = {};
+
+			if (args.includes("--json")) options.json = true;
+			if (args.includes("--strict")) options.strict = true;
+			if (args.includes("--require-origin")) options.requireOrigin = true;
+			if (args.includes("--require-plan-id")) options.requirePlanId = true;
+			if (args.includes("--require-acceptance-evidence"))
+				options.requireAcceptanceEvidence = true;
+			if (args.includes("--require-traceability"))
+				options.requireTraceability = true;
+			const plansArg = getFlagValue(args, args.indexOf("--plans"));
+			if (plansArg) options.plansPath = plansArg;
+			const typeArg = getFlagValue(args, args.indexOf("--type"));
+			if (typeArg) options.type = typeArg;
+			const maxAgeArg = getFlagValue(args, args.indexOf("--max-age"));
+			if (maxAgeArg) {
+				const parsed = parseIntegerArg(maxAgeArg, 0);
+				if (parsed !== undefined) options.maxAge = parsed;
+			}
+			const planIdsArg = getFlagValue(args, args.indexOf("--plan-ids"));
+			if (planIdsArg) options.planIds = parseCsvList(planIdsArg);
+			const prTitleArg = getFlagValue(args, args.indexOf("--pr-title"));
+			if (prTitleArg) options.prTitle = prTitleArg;
+			const prBodyArg = getFlagValue(args, args.indexOf("--pr-body"));
+			if (prBodyArg) options.prBody = prBodyArg;
+			const changedFilesArg = getFlagValue(
+				args,
+				args.indexOf("--changed-files"),
+			);
+			if (changedFilesArg) options.changedFiles = parseCsvList(changedFilesArg);
+
+			return runPlanGateCLI(options);
+		},
+	},
+	{
+		name: "prompt-gate",
+		summary: "Validate prompt template usage",
+		errorLabel: "Prompt Gate Error",
+		execute: (args) => {
+			const jsonFlag = args.includes("--json");
+			const typeArg = getFlagValue(args, args.indexOf("--type"));
+			const fileArg = getFlagValue(args, args.indexOf("--file"));
+
+			if (!typeArg) {
+				console.error(
+					"Error: --type is required (feature|bugfix|refactor|release)",
+				);
+				return 1;
+			}
+			if (!fileArg) {
+				console.error("Error: --file is required");
+				return 1;
+			}
+
+			const validTypes = ["feature", "bugfix", "refactor", "release"] as const;
+			if (!validTypes.includes(typeArg as (typeof validTypes)[number])) {
+				console.error(
+					`Error: Invalid type "${typeArg}". Must be one of: ${validTypes.join(", ")}`,
+				);
+				return 1;
+			}
+
+			return runPromptGateCLI({
+				type: typeArg as (typeof validTypes)[number],
+				file: fileArg,
+				json: jsonFlag,
+			});
+		},
+	},
+	{
+		name: "drift-gate",
+		summary: "Evaluate consistency drift across governance surfaces",
+		errorLabel: "Drift Gate Error",
+		execute: (args) => {
+			const jsonFlag = args.includes("--json");
+			const seedBaselineFlag = args.includes("--seed-baseline");
+			const noSeedFlag = args.includes("--no-seed");
+			const modeIndex = args.indexOf("--mode");
+			const outIndex = args.indexOf("--out");
+			const baselineIndex = args.indexOf("--baseline");
+			const suppressIndex = args.indexOf("--suppress");
+
+			const options: {
+				mode?: "advisory" | "health";
+				json?: boolean;
+				outPath?: string;
+				baselinePath?: string;
+				seedBaseline?: boolean;
+				suppressions?: string[];
+			} = {};
+
+			if (jsonFlag) options.json = true;
+			if (seedBaselineFlag) options.seedBaseline = true;
+			if (noSeedFlag) options.seedBaseline = false;
+			const modeArg = getFlagValue(args, modeIndex);
+			if (modeArg) {
+				if (modeArg !== "advisory" && modeArg !== "health") {
+					console.error("Error: --mode must be advisory or health");
+					return 2;
+				}
+				options.mode = modeArg;
+			}
+			const outArg = getFlagValue(args, outIndex);
+			if (outArg) options.outPath = outArg;
+			const baselineArg = getFlagValue(args, baselineIndex);
+			if (baselineArg) options.baselinePath = baselineArg;
+			const suppressArg = getFlagValue(args, suppressIndex);
+			if (suppressArg) options.suppressions = parseCsvList(suppressArg);
+
+			return runDriftGateCLI(options);
+		},
+	},
+	{
+		name: "ui:fast",
+		aliases: ["ui-fast"],
+		summary: "Storybook-first local development loop",
+		errorLabel: "UI Fast Error",
+		execute: (args) => {
+			const jsonFlag = args.includes("--json");
+			const ciFlag = args.includes("--ci");
+			const dryRunFlag = args.includes("--dry-run");
+			const portIndex = args.indexOf("--port");
+			const contractIndex = args.indexOf("--contract");
+			const modeIndex = args.indexOf("--mode");
+
+			const options: {
+				port?: number;
+				ci?: boolean;
+				json?: boolean;
+				contractPath?: string;
+				dryRun?: boolean;
+				mode?: "execute" | "prepare";
+			} = {};
+
+			if (jsonFlag) options.json = true;
+			if (ciFlag) options.ci = true;
+			if (dryRunFlag) options.dryRun = true;
+			const portArg = getFlagValue(args, portIndex);
+			if (portArg) {
+				const parsedPort = parseIntegerArg(portArg, 1);
+				if (parsedPort !== undefined) options.port = parsedPort;
+			}
+			const modeArg = getFlagValue(args, modeIndex);
+			if (modeArg === "execute" || modeArg === "prepare") {
+				options.mode = modeArg;
+			}
+			if (dryRunFlag) {
+				options.mode = "prepare";
+			}
+			const contractArg = getFlagValue(args, contractIndex);
+			if (contractArg) options.contractPath = contractArg;
+
+			return runUIFastCLI(options);
+		},
+	},
+	{
+		name: "blast-radius",
+		summary: "Determine required checks from changed files",
+		errorLabel: "Blast Radius Error",
+		execute: (args) => {
+			const jsonFlag = args.includes("--json");
+			const verboseFlag = args.includes("--verbose");
+			const filesIndex = args.indexOf("--files");
+			const contractIndex = args.indexOf("--contract");
+
+			const filesArg = getFlagValue(args, filesIndex);
+			if (!filesArg) {
+				console.error("Error: --files is required (comma-separated paths)");
+				return 1;
+			}
+
+			const files = filesArg
+				.split(",")
+				.map((f) => f.trim())
+				.filter(Boolean);
+
+			const contractArg = getFlagValue(args, contractIndex);
+			const blastRadiusOptions: BlastRadiusOptions = {
+				files,
+				json: jsonFlag,
+				verbose: verboseFlag,
+			};
+			if (contractArg) blastRadiusOptions.contractPath = contractArg;
+
+			return runBlastRadiusCLI(blastRadiusOptions);
+		},
+	},
+	{
+		name: "automation-run",
+		summary: "Execute Pulse/Upskill/Green PRs/Drift Check idempotently",
+		errorLabel: "Automation Run Error",
+		execute: (args) => {
+			const nameIndex = args.indexOf("--name");
+			const repoIndex = args.indexOf("--repo");
+			const headShaIndex = args.indexOf("--head-sha");
+			const contractVersionIndex = args.indexOf("--contract-version");
+			const inputFingerprintIndex = args.indexOf("--input-fingerprint");
+			const artifactsDirIndex = args.indexOf("--artifacts-dir");
+			const statePathIndex = args.indexOf("--state-path");
+			const jsonFlag = args.includes("--json");
+			const forceFlag = args.includes("--force");
+			const simulateFailureFlag = args.includes("--simulate-failure");
+
+			const name = getFlagValue(args, nameIndex) ?? "";
+			const repo = getFlagValue(args, repoIndex) ?? "";
+			const headSha = getFlagValue(args, headShaIndex) ?? "";
+			const contractVersion = getFlagValue(args, contractVersionIndex) ?? "";
+			const inputFingerprint = getFlagValue(args, inputFingerprintIndex) ?? "";
+			const artifactsDir = getFlagValue(args, artifactsDirIndex);
+			const statePath = getFlagValue(args, statePathIndex);
+
+			return runAutomationRunCLI({
+				name,
+				repo,
+				headSha,
+				contractVersion,
+				inputFingerprint,
+				...(artifactsDir ? { artifactsDir } : {}),
+				...(statePath ? { statePath } : {}),
+				force: forceFlag,
+				simulateFailure: simulateFailureFlag,
+				json: jsonFlag,
+			});
+		},
+	},
+	{
+		name: "remediate",
+		summary: "Auto-plan and execute deterministic remediation",
+		errorLabel: "Remediate Error",
+		execute: (args) => {
+			// args[0] is the subcommand (command name already stripped by dispatcher)
+			const mode = args[0];
+			if (mode !== "run" && mode !== "apply") {
+				console.error(
+					"Error: remediate command requires subcommand `run` or `apply`",
+				);
+				return 2;
+			}
+
+			const ownerIndex = args.indexOf("--owner");
+			const repoIndex = args.indexOf("--repo");
+			const prIndex = args.indexOf("--pr");
+			const shaIndex = args.indexOf("--sha");
+			const providerIndex = args.indexOf("--provider");
+			const dryRunFlag = args.includes("--dry-run");
+			const noInputFlag = args.includes("--no-input");
+			const forceFlag = args.includes("--force");
+			const jsonFlag = args.includes("--json");
+			const maxAutoTierIndex = args.indexOf("--max-auto-tier");
+			const modeArgIndex = args.indexOf("--mode");
+			const markerIndex = args.indexOf("--completion-marker");
+			const contractIndex = args.indexOf("--contract");
+			const findingsIndex = args.indexOf("--findings");
+			const headShaIndex = args.indexOf("--head-sha");
+
+			const prValue = getFlagValue(args, prIndex);
+			const maxAutoTierValue = getFlagValue(args, maxAutoTierIndex);
+
+			const remediateOptions: RemediateOptions = {
+				mode,
+				owner: getFlagValue(args, ownerIndex) ?? "",
+				repo: getFlagValue(args, repoIndex) ?? "",
+				prNumber: parseIntegerArg(prValue, 1) ?? 0,
+				headSha: getFlagValue(args, shaIndex) ?? "",
+				provider:
+					(getFlagValue(args, providerIndex) as
+						| "codeql"
+						| "codex"
+						| undefined) ?? "codeql",
+				dryRun: dryRunFlag,
+				noInput: noInputFlag,
+				force: forceFlag,
+				json: jsonFlag,
+			};
+			const contractArg = getFlagValue(args, contractIndex);
+			if (contractArg) remediateOptions.contractPath = contractArg;
+			const findingsArg = getFlagValue(args, findingsIndex);
+			if (findingsArg) remediateOptions.findings = findingsArg;
+			const headShaArg = getFlagValue(args, headShaIndex);
+			if (headShaArg) remediateOptions.headSha = headShaArg;
+			const modeValue = getFlagValue(args, modeArgIndex);
+			if (modeValue === "manual" || modeValue === "autonomous") {
+				remediateOptions.mode = modeValue;
+			}
+			const markerArg = getFlagValue(args, markerIndex);
+			if (markerArg) remediateOptions.completionMarkerPath = markerArg;
+			if (
+				maxAutoTierValue === "low" ||
+				maxAutoTierValue === "medium" ||
+				maxAutoTierValue === "high"
+			) {
+				remediateOptions.maxAutoTier = maxAutoTierValue;
+			}
+
+			return runRemediateCLI(remediateOptions);
+		},
+	},
+	{
+		name: "observability-gate",
+		summary: "Check cardinality limits in metrics",
+		errorLabel: "Observability Gate Error",
+		execute: (args) => {
+			const jsonFlag = args.includes("--json");
+			const labelsIndex = args.indexOf("--labels");
+			const maxCardIndex = args.indexOf("--max-cardinality");
+			const maxLenIndex = args.indexOf("--max-length");
+
+			const options: {
+				labels?: string;
+				json?: boolean;
+				maxCardinality?: number;
+				maxLength?: number;
+			} = {};
+
+			if (jsonFlag) options.json = true;
+			const labelsValue = getFlagValue(args, labelsIndex);
+			if (labelsValue) options.labels = labelsValue;
+			const cardValue = getFlagValue(args, maxCardIndex);
+			if (cardValue) {
+				const val = parseIntegerArg(cardValue, 0);
+				if (val !== undefined) options.maxCardinality = val;
+			}
+			const lenValue = getFlagValue(args, maxLenIndex);
+			if (lenValue) {
+				const val = parseIntegerArg(lenValue, 0);
+				if (val !== undefined) options.maxLength = val;
+			}
+
+			return runObservabilityGateCLI(options);
+		},
+	},
+	{
+		name: "gap-case",
+		summary: "Manage production gap cases (create/list/resolve)",
+		errorLabel: "Gap Case Error",
+		execute: (args) => {
+			const jsonFlag = args.includes("--json");
+			const contractIndex = args.indexOf("--contract");
+			const storeIndex = args.indexOf("--store");
+
+			// args[0] is the action (command name already stripped by dispatcher)
+			const action = args[0] as "open" | "resolve" | undefined;
+			if (action !== "open" && action !== "resolve") {
+				console.error("Error: action must be 'open' or 'resolve'");
+				return 1;
+			}
+
+			const incidentIdIndex = args.indexOf("--incident-id");
+			const summaryIndex = args.indexOf("--summary");
+			const severityIndex = args.indexOf("--severity");
+			const ownerIndex = args.indexOf("--owner");
+			const providerIndex = args.indexOf("--provider");
+			const findingIdIndex = args.indexOf("--finding-id");
+			const prNumberIndex = args.indexOf("--pr-number");
+			const headShaIndex = args.indexOf("--head-sha");
+			const slaHoursIndex = args.indexOf("--sla-hours");
+			const caseIdIndex = args.indexOf("--case-id");
+			const evidenceUrlIndex = args.indexOf("--evidence-url");
+			const fixPrIndex = args.indexOf("--fix-pr");
+			const noteIndex = args.indexOf("--note");
+			const resolvedByIndex = args.indexOf("--resolved-by");
+
+			const options: {
+				action: "open" | "resolve";
+				json?: boolean;
+				contractPath?: string;
+				storePath?: string;
+				incidentId?: string;
+				summary?: string;
+				severity?: string;
+				owner?: string;
+				provider?: string;
+				findingId?: string;
+				prNumber?: number;
+				headSha?: string;
+				slaHours?: number;
+				caseId?: string;
+				evidenceUrl?: string;
+				fixPr?: number;
+				note?: string;
+				resolvedBy?: string;
+			} = { action };
+
+			if (jsonFlag) options.json = true;
+			const contractArg = getFlagValue(args, contractIndex);
+			if (contractArg) options.contractPath = contractArg;
+			const storeArg = getFlagValue(args, storeIndex);
+			if (storeArg) options.storePath = storeArg;
+			const incidentIdArg = getFlagValue(args, incidentIdIndex);
+			if (incidentIdArg) options.incidentId = incidentIdArg;
+			const summaryArg = getFlagValue(args, summaryIndex);
+			if (summaryArg) options.summary = summaryArg;
+			const severityArg = getFlagValue(args, severityIndex);
+			if (severityArg) options.severity = severityArg;
+			const ownerArg = getFlagValue(args, ownerIndex);
+			if (ownerArg) options.owner = ownerArg;
+			const providerArg = getFlagValue(args, providerIndex);
+			if (providerArg) options.provider = providerArg;
+			const findingIdArg = getFlagValue(args, findingIdIndex);
+			if (findingIdArg) options.findingId = findingIdArg;
+			const prNumberArg = getFlagValue(args, prNumberIndex);
+			if (prNumberArg) {
+				const parsed = parseIntegerArg(prNumberArg, 1);
+				if (parsed !== undefined) options.prNumber = parsed;
+			}
+			const headShaArg = getFlagValue(args, headShaIndex);
+			if (headShaArg) options.headSha = headShaArg;
+			const slaHoursArg = getFlagValue(args, slaHoursIndex);
+			if (slaHoursArg) {
+				const parsed = parseIntegerArg(slaHoursArg, 1);
+				if (parsed !== undefined) options.slaHours = parsed;
+			}
+			const caseIdArg = getFlagValue(args, caseIdIndex);
+			if (caseIdArg) options.caseId = caseIdArg;
+			const evidenceUrlArg = getFlagValue(args, evidenceUrlIndex);
+			if (evidenceUrlArg) options.evidenceUrl = evidenceUrlArg;
+			const fixPrArg = getFlagValue(args, fixPrIndex);
+			if (fixPrArg) {
+				const parsed = parseIntegerArg(fixPrArg, 1);
+				if (parsed !== undefined) options.fixPr = parsed;
+			}
+			const noteArg = getFlagValue(args, noteIndex);
+			if (noteArg) options.note = noteArg;
+			const resolvedByArg = getFlagValue(args, resolvedByIndex);
+			if (resolvedByArg) options.resolvedBy = resolvedByArg;
+
+			return runGapCaseCLI(options);
 		},
 	},
 ];
