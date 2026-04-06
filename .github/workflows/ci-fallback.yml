@@ -1,9 +1,13 @@
-name: pr-pipeline-bridge
+name: ci-fallback
 
 # Emergency fallback CI. CircleCI is the primary PR gate (see docs/ci-responsibility-matrix.md).
 # This workflow is intentionally restricted to workflow_dispatch only.
 # Re-enable automatic triggers ONLY if CircleCI runner capacity becomes unavailable.
 # To re-enable: restore pull_request, push (not main), and merge_group triggers.
+#
+# NOTE: Renamed from pr-pipeline-bridge.yml to ci-fallback.yml to break GitHub's
+# cached workflow trigger registration (JSC-101). The old filename was still firing
+# on push events despite being workflow_dispatch-only in the YAML.
 on:
   workflow_dispatch: {}
 
@@ -11,7 +15,7 @@ permissions:
   contents: read
 
 concurrency:
-  group: pr-pipeline-bridge-${{ github.event_name }}-${{ github.ref }}
+  group: ci-fallback-${{ github.event_name }}-${{ github.ref }}
   cancel-in-progress: true
 
 jobs:
