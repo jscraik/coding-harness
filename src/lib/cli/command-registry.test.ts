@@ -54,6 +54,13 @@ describe("command registry", () => {
 			"remediate",
 			"observability-gate",
 			"gap-case",
+			"ui:verify",
+			"ui:explore",
+			"simulate",
+			"context",
+			"search",
+			"index-context",
+			"context-health",
 		]);
 	});
 

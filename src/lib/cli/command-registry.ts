@@ -7,6 +7,8 @@ import { runBrainstormGateCLI } from "../../commands/brainstorm-gate.js";
 import { runBranchProtectCLI } from "../../commands/branch-protect.js";
 import { runCheckAuthzCLI } from "../../commands/check-authz.js";
 import { runCheckEnvironmentCLI } from "../../commands/check-environment.js";
+import { runContextHealthCLI } from "../../commands/context-health.js";
+import { runContextCLI } from "../../commands/context.js";
 import { runContractCLI } from "../../commands/contract.js";
 import { runDocsGateCLI } from "../../commands/docs-gate.js";
 import { runDoctorCLI } from "../../commands/doctor.js";
@@ -16,6 +18,7 @@ import { runEvidenceVerifyCLI } from "../../commands/evidence-verify.js";
 import { runGapCaseCLI } from "../../commands/gap-case.js";
 import { runGardenerCLI } from "../../commands/gardener.js";
 import { runHealthCLI } from "../../commands/health.js";
+import { runIndexContextCLI } from "../../commands/index-context.js";
 import { runLicenseGateCLI } from "../../commands/license-gate.js";
 import { runLinearGateCLI } from "../../commands/linear-gate.js";
 import { runLinearPrepareCLI } from "../../commands/linear-prepare.js";
@@ -41,10 +44,16 @@ import {
 import { runReplayCLI } from "../../commands/replay.js";
 import { runReviewGateCLI } from "../../commands/review-gate.js";
 import { runRiskTierCLI } from "../../commands/risk-tier.js";
+import { runSearchCLI } from "../../commands/search.js";
 import { runSilentErrorDetectorCLI } from "../../commands/silent-error.js";
+import { printSimulateUsage, runSimulateCLI } from "../../commands/simulate.js";
 import { runSymphonyCheckCLI } from "../../commands/symphony-check.js";
 import { runToolingAuditCLI } from "../../commands/tooling-audit.js";
-import { runUIFastCLI } from "../../commands/ui-loop.js";
+import {
+	runUIExploreCLI,
+	runUIFastCLI,
+	runUIVerifyCLI,
+} from "../../commands/ui-loop.js";
 import { runVerifyCodeRabbitCLI } from "../../commands/verify-coderabbit.js";
 import { runWorkflowGenerateCLI } from "../../commands/workflow-generate.js";
 import { getVersion } from "../version.js";
@@ -1364,6 +1373,188 @@ const COMMAND_SPECS: CommandSpec[] = [
 			if (resolvedByArg) options.resolvedBy = resolvedByArg;
 
 			return runGapCaseCLI(options);
+		},
+	},
+	{
+		name: "ui:verify",
+		aliases: ["ui-verify"],
+		summary: "Playwright smoke suite with evidence",
+		errorLabel: "UI Verify Error",
+		execute: (args) => {
+			const jsonFlag = args.includes("--json");
+			const dryRunFlag = args.includes("--dry-run");
+			const outputIndex = args.indexOf("--output");
+			const timeoutIndex = args.indexOf("--timeout");
+			const shardIndex = args.indexOf("--shard");
+			const contractIndex = args.indexOf("--contract");
+			const modeIndex = args.indexOf("--mode");
+
+			const options: {
+				outputDir?: string;
+				json?: boolean;
+				timeout?: number;
+				shard?: string;
+				contractPath?: string;
+				dryRun?: boolean;
+				mode?: "execute" | "prepare";
+			} = {};
+
+			if (jsonFlag) options.json = true;
+			if (dryRunFlag) options.dryRun = true;
+			const outputArg = getFlagValue(args, outputIndex);
+			if (outputArg) options.outputDir = outputArg;
+			const timeoutArg = getFlagValue(args, timeoutIndex);
+			if (timeoutArg) {
+				const parsedTimeout = parseIntegerArg(timeoutArg, 1);
+				if (parsedTimeout !== undefined) options.timeout = parsedTimeout;
+			}
+			const shardArg = getFlagValue(args, shardIndex);
+			if (shardArg) options.shard = shardArg;
+			const modeArg = getFlagValue(args, modeIndex);
+			if (modeArg === "execute" || modeArg === "prepare") {
+				options.mode = modeArg;
+			}
+			if (dryRunFlag) {
+				options.mode = "prepare";
+			}
+			const contractArg = getFlagValue(args, contractIndex);
+			if (contractArg) options.contractPath = contractArg;
+
+			return runUIVerifyCLI(options);
+		},
+	},
+	{
+		name: "ui:explore",
+		aliases: ["ui-explore"],
+		summary: "Agent browser exploratory testing",
+		errorLabel: "UI Explore Error",
+		execute: (args) => {
+			const jsonFlag = args.includes("--json");
+			const interactionsFlag = args.includes("--interactions");
+			const dryRunFlag = args.includes("--dry-run");
+			const urlIndex = args.indexOf("--url");
+			const outputIndex = args.indexOf("--output");
+			const contractIndex = args.indexOf("--contract");
+			const modeIndex = args.indexOf("--mode");
+
+			const options: {
+				url?: string;
+				outputDir?: string;
+				json?: boolean;
+				interactions?: boolean;
+				contractPath?: string;
+				dryRun?: boolean;
+				mode?: "execute" | "prepare";
+			} = {};
+
+			if (jsonFlag) options.json = true;
+			if (interactionsFlag) options.interactions = true;
+			if (dryRunFlag) options.dryRun = true;
+			const urlArg = getFlagValue(args, urlIndex);
+			if (urlArg) options.url = urlArg;
+			const outputArg = getFlagValue(args, outputIndex);
+			if (outputArg) options.outputDir = outputArg;
+			const modeArg = getFlagValue(args, modeIndex);
+			if (modeArg === "execute" || modeArg === "prepare") {
+				options.mode = modeArg;
+			}
+			if (dryRunFlag) {
+				options.mode = "prepare";
+			}
+			const contractArg = getFlagValue(args, contractIndex);
+			if (contractArg) options.contractPath = contractArg;
+
+			return runUIExploreCLI(options);
+		},
+	},
+	{
+		name: "simulate",
+		summary: "Simulate contract transitions between versions",
+		errorLabel: "Simulate Error",
+		execute: (args) => {
+			if (args.includes("--help") || args.includes("-h")) {
+				printSimulateUsage();
+				return 0;
+			}
+
+			const jsonFlag = args.includes("--json");
+			const ciSoftFlag = args.includes("--ci-soft");
+			const verboseFlag = args.includes("--verbose");
+
+			const contractAIndex = args.indexOf("--contract-a");
+			const contractBIndex = args.indexOf("--contract-b");
+			const artifactsIndex = args.indexOf("--artifacts");
+			const tracesIndex = args.indexOf("--traces");
+			const outputIndex = args.indexOf("--output");
+
+			const contractA = getFlagValue(args, contractAIndex);
+			const contractB = getFlagValue(args, contractBIndex);
+
+			if (!contractA) {
+				console.error("Error: --contract-a is required");
+				return 1;
+			}
+			if (!contractB) {
+				console.error("Error: --contract-b is required");
+				return 1;
+			}
+
+			const options: {
+				contractA: string;
+				contractB: string;
+				artifactsDir?: string;
+				tracesDir?: string;
+				outputPath?: string;
+				json?: boolean;
+				ciSoft?: boolean;
+				verbose?: boolean;
+			} = { contractA, contractB };
+
+			if (jsonFlag) options.json = true;
+			if (ciSoftFlag) options.ciSoft = true;
+			if (verboseFlag) options.verbose = true;
+
+			const artifactsArg = getFlagValue(args, artifactsIndex);
+			if (artifactsArg) options.artifactsDir = artifactsArg;
+			const tracesArg = getFlagValue(args, tracesIndex);
+			if (tracesArg) options.tracesDir = tracesArg;
+			const outputArg = getFlagValue(args, outputIndex);
+			if (outputArg) options.outputPath = outputArg;
+
+			return runSimulateCLI(options);
+		},
+	},
+	{
+		name: "context",
+		summary: "Semantic search for relevant prior work",
+		errorLabel: "Context Error",
+		execute: (args) => {
+			// args is already without command name (stripped by dispatcher)
+			return runContextCLI(args);
+		},
+	},
+	{
+		name: "search",
+		summary: "Agent-first hybrid lexical + semantic search",
+		errorLabel: "Search Error",
+		execute: (args) => {
+			return runSearchCLI(args);
+		},
+	},
+	{
+		name: "index-context",
+		summary: "Bulk index governed and supporting context for search",
+		errorLabel: "Index Context Error",
+		execute: (args) => {
+			return runIndexContextCLI(args);
+		},
+	},
+	{
+		name: "context-health",
+		summary: "Generate advisory context-integrity scorecards",
+		errorLabel: "Context Health Error",
+		execute: (args) => {
+			return runContextHealthCLI(args);
 		},
 	},
 ];

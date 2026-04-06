@@ -7,22 +7,13 @@ import {
 	runPromoteModeCLI,
 	runSyncBranchProtectionCLI,
 } from "./commands/ci-migrate.js";
-import { runContextHealthCLI } from "./commands/context-health.js";
-import { runContextCLI } from "./commands/context.js";
-
 import { runDiffBudgetCLI } from "./commands/diff-budget.js";
-import { runIndexContextCLI } from "./commands/index-context.js";
 import { runInitCLI, runInteractiveInitCLI } from "./commands/init.js";
 import { runPilotEvaluateCLI } from "./commands/pilot-evaluate.js";
 import {
 	type PilotRollbackOptions,
 	runPilotRollbackCLI,
 } from "./commands/pilot-rollback.js";
-
-import { runSearchCLI } from "./commands/search.js";
-import { printSimulateUsage, runSimulateCLI } from "./commands/simulate.js";
-
-import { runUIExploreCLI, runUIVerifyCLI } from "./commands/ui-loop.js";
 import {
 	type HarnessUpgradeOptions,
 	runUpgradeCLI,
@@ -897,127 +888,6 @@ export function run(args: string[]): void {
 		return;
 	}
 
-	if (command === "ui:verify") {
-		// Parse ui:verify options
-		const jsonFlag = args.includes("--json");
-		const dryRunFlag = args.includes("--dry-run");
-		const outputIndex = args.indexOf("--output");
-		const timeoutIndex = args.indexOf("--timeout");
-		const shardIndex = args.indexOf("--shard");
-		const contractIndex = args.indexOf("--contract");
-		const modeIndex = args.indexOf("--mode");
-
-		const options: {
-			outputDir?: string;
-			json?: boolean;
-			timeout?: number;
-			shard?: string;
-			contractPath?: string;
-			dryRun?: boolean;
-			mode?: "execute" | "prepare";
-		} = {};
-
-		if (jsonFlag) options.json = true;
-		if (dryRunFlag) options.dryRun = true;
-		const outputArg = getFlagValue(args, outputIndex);
-		if (outputArg) options.outputDir = outputArg;
-		const timeoutArg = getFlagValue(args, timeoutIndex);
-		if (timeoutArg) {
-			const parsedTimeout = parseIntegerArg(timeoutArg, 1);
-			if (parsedTimeout !== undefined) options.timeout = parsedTimeout;
-		}
-		const shardArg = getFlagValue(args, shardIndex);
-		if (shardArg) options.shard = shardArg;
-		const modeArg = getFlagValue(args, modeIndex);
-		if (modeArg === "execute" || modeArg === "prepare") {
-			options.mode = modeArg;
-		}
-		if (dryRunFlag) {
-			options.mode = "prepare";
-		}
-		const contractArg = getFlagValue(args, contractIndex);
-		if (contractArg) options.contractPath = contractArg;
-
-		const exitCode = runUIVerifyCLI(options);
-		process.exit(exitCode);
-		return;
-	}
-
-	if (command === "ui:explore") {
-		// Parse ui:explore options
-		const jsonFlag = args.includes("--json");
-		const interactionsFlag = args.includes("--interactions");
-		const dryRunFlag = args.includes("--dry-run");
-		const urlIndex = args.indexOf("--url");
-		const outputIndex = args.indexOf("--output");
-		const contractIndex = args.indexOf("--contract");
-		const modeIndex = args.indexOf("--mode");
-
-		const options: {
-			url?: string;
-			outputDir?: string;
-			json?: boolean;
-			interactions?: boolean;
-			contractPath?: string;
-			dryRun?: boolean;
-			mode?: "execute" | "prepare";
-		} = {};
-
-		if (jsonFlag) options.json = true;
-		if (interactionsFlag) options.interactions = true;
-		if (dryRunFlag) options.dryRun = true;
-		const urlArg = getFlagValue(args, urlIndex);
-		if (urlArg) options.url = urlArg;
-		const outputArg = getFlagValue(args, outputIndex);
-		if (outputArg) options.outputDir = outputArg;
-		const modeArg = getFlagValue(args, modeIndex);
-		if (modeArg === "execute" || modeArg === "prepare") {
-			options.mode = modeArg;
-		}
-		if (dryRunFlag) {
-			options.mode = "prepare";
-		}
-		const contractArg = getFlagValue(args, contractIndex);
-		if (contractArg) options.contractPath = contractArg;
-
-		const exitCode = runUIExploreCLI(options);
-		process.exit(exitCode);
-		return;
-	}
-
-	if (command === "context") {
-		// Parse context options
-		const argsAfterCommand = args.slice(1);
-		runContextCLI(argsAfterCommand)
-			.then((exitCode) => process.exit(exitCode))
-			.catch((error) => handleFatalError("Context Error", error));
-		return;
-	}
-
-	if (command === "search") {
-		// Parse search options
-		const argsAfterCommand = args.slice(1);
-		runSearchCLI(argsAfterCommand)
-			.then((exitCode) => process.exit(exitCode))
-			.catch((error) => handleFatalError("Search Error", error));
-		return;
-	}
-
-	if (command === "index-context") {
-		// Parse index-context options
-		const argsAfterCommand = args.slice(1);
-		runIndexContextCLI(argsAfterCommand)
-			.then((exitCode) => process.exit(exitCode))
-			.catch((error) => handleFatalError("Index Context Error", error));
-		return;
-	}
-
-	if (command === "context-health") {
-		const argsAfterCommand = args.slice(1);
-		process.exit(runContextHealthCLI(argsAfterCommand));
-		return;
-	}
-
 	if (command === "pilot-rollback") {
 		// Parse pilot-rollback options
 		const jsonFlag = args.includes("--json");
@@ -1220,71 +1090,6 @@ export function run(args: string[]): void {
 
 	// No command recognized
 
-	if (command === "simulate") {
-		// Handle help
-		if (args.includes("--help") || args.includes("-h")) {
-			printSimulateUsage();
-			process.exit(0);
-			return;
-		}
-
-		// Parse simulate options
-		const jsonFlag = args.includes("--json");
-		const ciSoftFlag = args.includes("--ci-soft");
-		const verboseFlag = args.includes("--verbose");
-
-		const contractAIndex = args.indexOf("--contract-a");
-		const contractBIndex = args.indexOf("--contract-b");
-		const artifactsIndex = args.indexOf("--artifacts");
-		const tracesIndex = args.indexOf("--traces");
-		const outputIndex = args.indexOf("--output");
-
-		const contractA = getFlagValue(args, contractAIndex);
-		const contractB = getFlagValue(args, contractBIndex);
-
-		if (!contractA) {
-			console.error("Error: --contract-a is required");
-			process.exit(1);
-			return;
-		}
-
-		if (!contractB) {
-			console.error("Error: --contract-b is required");
-			process.exit(1);
-			return;
-		}
-
-		const options: {
-			contractA: string;
-			contractB: string;
-			artifactsDir?: string;
-			tracesDir?: string;
-			outputPath?: string;
-			json?: boolean;
-			ciSoft?: boolean;
-			verbose?: boolean;
-		} = {
-			contractA,
-			contractB,
-		};
-
-		if (jsonFlag) options.json = true;
-		if (ciSoftFlag) options.ciSoft = true;
-		if (verboseFlag) options.verbose = true;
-
-		const artifactsArg = getFlagValue(args, artifactsIndex);
-		if (artifactsArg) options.artifactsDir = artifactsArg;
-
-		const tracesArg = getFlagValue(args, tracesIndex);
-		if (tracesArg) options.tracesDir = tracesArg;
-
-		const outputArg = getFlagValue(args, outputIndex);
-		if (outputArg) options.outputPath = outputArg;
-
-		const exitCode = runSimulateCLI(options);
-		process.exit(exitCode);
-		return;
-	}
 	// No command recognized
 	console.info(`harness v${version}`);
 	if (args.length === 0) {
