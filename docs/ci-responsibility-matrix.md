@@ -107,7 +107,7 @@ The repository is in a **CircleCI-primary state** with full GitHub webhook integ
 
 ### Known Overlaps (Transitional)
 
-CircleCI is the active primary PR gate. The fallback workflow (`ci-fallback.yml`) is dispatch-only — config duplication exists but no active overlap in execution.
+CircleCI is the active primary PR gate. The bridge workflow (`ci-fallback.yml`) is dispatch-only — config duplication exists but no active overlap in execution.
 
 | Gate | CircleCI Job | GitHub Actions Job | Status |
 |---|---|---|---|
