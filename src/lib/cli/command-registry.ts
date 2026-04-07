@@ -851,8 +851,9 @@ const COMMAND_SPECS: CommandSpec[] = [
 			if (traceDirValue) options.traceDir = traceDirValue;
 
 			// Positional trace ID: first non-flag arg when --trace-id is absent
-			if (!options.traceId && args[1] && !args[1].startsWith("-")) {
-				options.traceId = args[1];
+			// Command name already stripped by dispatcher, so positional is at args[0]
+			if (!options.traceId && args[0] && !args[0].startsWith("-")) {
+				options.traceId = args[0];
 			}
 
 			return runReplayCLI(options);
