@@ -788,7 +788,7 @@ describe("cli command dispatch", () => {
 		await new Promise((resolve) => setTimeout(resolve, 0));
 
 		expect(vi.mocked(runRemediateCLI)).toHaveBeenCalledWith({
-			mode: "run",
+			subcommand: "run",
 			findings: "findings.json",
 			dryRun: true,
 			json: true,
@@ -820,7 +820,7 @@ describe("cli command dispatch", () => {
 		await new Promise((resolve) => setTimeout(resolve, 0));
 
 		expect(vi.mocked(runRemediateCLI)).toHaveBeenCalledWith({
-			mode: "run",
+			subcommand: "run",
 			dryRun: true,
 			json: true,
 			headSha: "a".repeat(40),

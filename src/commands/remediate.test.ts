@@ -305,7 +305,7 @@ describe("remediate command", () => {
 			mockReadFileSync.mockReturnValue(JSON.stringify([finding]));
 
 			const result = await runRemediate({
-				mode: "apply",
+				subcommand: "apply",
 				findings: "findings.json",
 			});
 
@@ -366,7 +366,7 @@ describe("remediate command", () => {
 			);
 
 			const result = await runRemediate({
-				mode: "apply",
+				subcommand: "apply",
 				findings: "findings.json",
 			});
 
@@ -405,7 +405,7 @@ describe("remediate command", () => {
 			);
 
 			const result = await runRemediate({
-				mode: "apply",
+				subcommand: "apply",
 				findings: "findings.json",
 			});
 
@@ -445,7 +445,7 @@ describe("remediate command", () => {
 			});
 
 			const result = await runRemediate({
-				mode: "apply",
+				subcommand: "apply",
 				findings: "findings.json",
 			});
 
@@ -508,7 +508,7 @@ describe("remediate command", () => {
 			);
 
 			const result = await runRemediate({
-				mode: "apply",
+				subcommand: "apply",
 				findings: "findings.json",
 			});
 

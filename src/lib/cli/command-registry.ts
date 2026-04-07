@@ -1239,7 +1239,7 @@ const COMMAND_SPECS: CommandSpec[] = [
 			const maxAutoTierValue = getFlagValue(args, maxAutoTierIndex);
 
 			const remediateOptions: RemediateOptions = {
-				mode: subcommand,
+				subcommand,
 				owner: getFlagValue(args, ownerIndex) ?? "",
 				repo: getFlagValue(args, repoIndex) ?? "",
 				prNumber: parseIntegerArg(prValue, 1) ?? 0,

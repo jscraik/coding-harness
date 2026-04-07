@@ -51,8 +51,10 @@ export const EXIT_CODES = {
 } as const;
 
 export interface RemediateOptions {
-	/** Remediation mode: "run" (plan only) or "apply" (execute) */
-	mode?: "run" | "apply" | "manual" | "autonomous";
+	/** Execution subcommand: "run" (plan only) or "apply" (execute) */
+	subcommand?: "run" | "apply";
+	/** Behavioral mode: "manual" (default) or "autonomous" */
+	mode?: "manual" | "autonomous";
 	/** Repository owner */
 	owner?: string;
 	/** Repository name */
@@ -653,13 +655,13 @@ export async function runRemediate(
 					path: options.contractPath ?? "harness.contract.json",
 				},
 				policyContext: {
-					mode: options.mode ?? "run",
+					mode: options.subcommand ?? "run",
 					safetyPosture: "strict",
 					effectivePolicySource: "remediation-policy",
 					hash: hashRunRecordValue({
 						policy: "remediation-policy",
 						defaultRemediationPolicy: DEFAULT_REMEDIATION_POLICY,
-						mode: options.mode ?? "run",
+						mode: options.subcommand ?? "run",
 						dryRun: options.dryRun ?? false,
 						force: options.force ?? false,
 					}),
@@ -833,8 +835,8 @@ export async function runRemediate(
 		}
 	}
 
-	// 2c. v1.1 safety contract: apply mode only runs in clean disposable workspaces.
-	if (effectiveMode === "apply") {
+	// 2c. v1.1 safety contract: apply subcommand only runs in clean disposable workspaces.
+	if (options.subcommand === "apply") {
 		const cwd = process.cwd();
 		if (!isDisposableWorkspace()) {
 			return finalize(
@@ -1022,8 +1024,8 @@ export async function runRemediate(
 		);
 	}
 
-	// 6b. v1.1 apply mode: execute low-risk commit actions as single-finding transactions.
-	if (outcome.ok && effectiveMode === "apply") {
+	// 6b. v1.1 apply subcommand: execute low-risk commit actions as single-finding transactions.
+	if (outcome.ok && options.subcommand === "apply") {
 		const findingById = new Map(
 			findings.map((finding) => [finding.id, finding]),
 		);
