@@ -15,7 +15,13 @@
  * - runContractCLI dispatch (validate / schema / unknown subcommand)
  */
 
-import { existsSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
+import {
+	existsSync,
+	mkdtempSync,
+	readFileSync,
+	rmSync,
+	writeFileSync,
+} from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
@@ -28,10 +34,17 @@ import {
 	buildContractJsonSchema,
 } from "../lib/contract/json-schema.js";
 
+import {
+	CONTRACT_PRESETS,
+	PRESET_DESCRIPTIONS,
+	buildContractPreset,
+} from "../lib/contract/contract-presets.js";
+
 import { validateContract } from "../lib/contract/validator.js";
 
 import {
 	runContractCLI,
+	runContractInitCLI,
 	runContractSchemaCLI,
 	runContractValidateCLI,
 } from "./contract.js";
@@ -446,5 +459,151 @@ describe("runContractCLI dispatch", () => {
 		expect(consoleErrSpy).toHaveBeenCalledWith(
 			expect.stringContaining("Unknown subcommand"),
 		);
+	});
+});
+
+// ─── buildContractPreset ──────────────────────────────────────────────────────
+
+describe("buildContractPreset", () => {
+	it("minimal preset has exactly the 4 essential sections", () => {
+		const contract = buildContractPreset("minimal");
+		expect(Object.keys(contract).sort()).toEqual(
+			["version", "riskTierRules", "mergePolicy", "branchProtection"].sort(),
+		);
+	});
+
+	it("standard preset has 7 sections", () => {
+		const contract = buildContractPreset("standard");
+		expect(Object.keys(contract)).toHaveLength(7);
+		expect(contract).toHaveProperty("diffBudget");
+		expect(contract).toHaveProperty("docsDriftRules");
+		expect(contract).toHaveProperty("evidencePolicy");
+	});
+
+	it("full preset includes toolingPolicy and governance sections", () => {
+		const contract = buildContractPreset("full");
+		expect(contract).toHaveProperty("toolingPolicy");
+		expect(contract).toHaveProperty("reviewPolicy");
+		expect(contract).toHaveProperty("docsGatePolicy");
+		expect(Object.keys(contract).length).toBeGreaterThan(7);
+	});
+
+	it("all presets have correct version", () => {
+		for (const preset of CONTRACT_PRESETS) {
+			expect(buildContractPreset(preset)).toHaveProperty(
+				"version",
+				SCHEMA_VERSION,
+			);
+		}
+	});
+
+	it("all presets produce valid JSON", () => {
+		for (const preset of CONTRACT_PRESETS) {
+			expect(() => JSON.stringify(buildContractPreset(preset))).not.toThrow();
+		}
+	});
+
+	it("minimal preset mergePolicy has high/medium/low keys", () => {
+		const { mergePolicy } = buildContractPreset("minimal") as {
+			mergePolicy: Record<string, unknown>;
+		};
+		expect(mergePolicy).toHaveProperty("high");
+		expect(mergePolicy).toHaveProperty("medium");
+		expect(mergePolicy).toHaveProperty("low");
+	});
+
+	it("PRESET_DESCRIPTIONS covers all presets", () => {
+		for (const preset of CONTRACT_PRESETS) {
+			expect(PRESET_DESCRIPTIONS[preset]).toBeTruthy();
+		}
+	});
+});
+
+// ─── runContractInitCLI ───────────────────────────────────────────────────────
+
+describe("runContractInitCLI", () => {
+	let dir: string;
+	let consoleSpy: ReturnType<typeof vi.spyOn>;
+	let consoleErrSpy: ReturnType<typeof vi.spyOn>;
+
+	beforeEach(() => {
+		dir = mkdtempSync(join(tmpdir(), "jsc123-"));
+		consoleSpy = vi.spyOn(console, "info").mockImplementation(() => {});
+		consoleErrSpy = vi.spyOn(console, "error").mockImplementation(() => {});
+	});
+
+	afterEach(() => {
+		rmSync(dir, { recursive: true, force: true });
+		vi.restoreAllMocks();
+	});
+
+	it("creates standard contract by default", () => {
+		const output = join(dir, "harness.contract.json");
+		const code = runContractInitCLI({ output });
+		expect(code).toBe(0);
+		expect(existsSync(output)).toBe(true);
+		const parsed = JSON.parse(readFileSync(output, "utf-8"));
+		expect(parsed).toHaveProperty("version", SCHEMA_VERSION);
+		expect(parsed).toHaveProperty("diffBudget");
+	});
+
+	it("creates minimal contract", () => {
+		const output = join(dir, "harness.contract.json");
+		const code = runContractInitCLI({ preset: "minimal", output });
+		expect(code).toBe(0);
+		const parsed = JSON.parse(readFileSync(output, "utf-8"));
+		expect(Object.keys(parsed)).toHaveLength(4);
+	});
+
+	it("creates full contract", () => {
+		const output = join(dir, "harness.contract.json");
+		const code = runContractInitCLI({ preset: "full", output });
+		expect(code).toBe(0);
+		const parsed = JSON.parse(readFileSync(output, "utf-8"));
+		expect(parsed).toHaveProperty("toolingPolicy");
+	});
+
+	it("errors if output file already exists without --force", () => {
+		const output = join(dir, "harness.contract.json");
+		writeFileSync(output, "{}", "utf-8");
+		const code = runContractInitCLI({ output });
+		expect(code).toBe(1);
+		expect(consoleErrSpy).toHaveBeenCalledWith(
+			expect.stringContaining("already exists"),
+		);
+	});
+
+	it("overwrites existing file with --force", () => {
+		const output = join(dir, "harness.contract.json");
+		writeFileSync(output, "{}", "utf-8");
+		const code = runContractInitCLI({ output, force: true });
+		expect(code).toBe(0);
+		const parsed = JSON.parse(readFileSync(output, "utf-8"));
+		expect(parsed).toHaveProperty("version");
+	});
+
+	it("returns 1 for unknown preset", () => {
+		const output = join(dir, "harness.contract.json");
+		const code = runContractInitCLI({ preset: "unknown" as never, output });
+		expect(code).toBe(1);
+	});
+
+	it("emits JSON output when --json flag is set", () => {
+		const output = join(dir, "harness.contract.json");
+		const code = runContractInitCLI({ output, json: true });
+		expect(code).toBe(0);
+		const call = consoleSpy.mock.calls[0]?.[0];
+		const result = JSON.parse(call as string);
+		expect(result).toMatchObject({ status: "created", preset: "standard" });
+	});
+
+	it("runContractCLI dispatches init subcommand", () => {
+		const output = join(dir, "harness.contract.json");
+		const code = runContractCLI(
+			["init", "--preset", "minimal", "--output", output],
+			{},
+		);
+		expect(code).toBe(0);
+		expect(existsSync(output)).toBe(true);
 	});
 });
