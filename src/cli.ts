@@ -76,9 +76,9 @@ export function run(args: string[]): void {
 		return;
 	}
 
-	// Only handle --help at top level
+	// Only handle --help/-h at top level
 	// Commands that accept -h (like index-context) should handle it themselves
-	if (args.includes("--help")) {
+	if (args[0] === "--help" || args[0] === "-h") {
 		console.info(`harness v${version}`);
 		printUsage();
 		return;

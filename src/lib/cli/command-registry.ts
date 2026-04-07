@@ -1313,7 +1313,7 @@ const COMMAND_SPECS: CommandSpec[] = [
 	},
 	{
 		name: "gap-case",
-		summary: "Manage production gap cases (create/list/resolve)",
+		summary: "Manage production gap cases (open/resolve)",
 		errorLabel: "Gap Case Error",
 		execute: (args) => {
 			const jsonFlag = args.includes("--json");
@@ -1678,7 +1678,13 @@ const COMMAND_SPECS: CommandSpec[] = [
 			const skipContractFlag = args.includes("--skip-contract-migration");
 			const providerIndex = args.indexOf("--provider");
 			const provider = getFlagValue(args, providerIndex);
-			const targetDir = args.find((arg) => !arg.startsWith("-"));
+			// Skip --provider value when finding targetDir
+			const rest = args;
+			const targetDir = rest.filter((arg, i) => {
+				if (arg.startsWith("-")) return false;
+				if (i > 0 && rest[i - 1] === "--provider") return false;
+				return true;
+			})[0];
 			const upgradeOptions: HarnessUpgradeOptions = {
 				dryRun: dryRunFlag,
 				force: forceFlag,
