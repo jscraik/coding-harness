@@ -34,6 +34,7 @@ frontmatter
 gitignored
 Gitleaks
 Greptile
+hardcode
 hardcoded
 Harness
 hoc
@@ -97,6 +98,7 @@ Trivy
 tsconfig
 typecheck
 Typecheck
+typosquatted
 unjs
 untrusted
 uv
