@@ -254,7 +254,7 @@ Gate the change locally before pushing, then confirm review wiring is correct.
 ```bash
 harness docs-gate --mode advisory --json
 harness plan-gate --require-plan-id --require-traceability --json
-harness review-gate --token “$GITHUB_TOKEN” --owner <owner> --repo <repo> --pr <number> --sha <head-sha>
+harness review-gate --token "$GITHUB_TOKEN" --owner <owner> --repo <repo> --pr <number> --sha <head-sha>
 harness linear sync --findings findings.json --team <TEAM>
 ```
 
@@ -264,8 +264,8 @@ For repos using CodeRabbit, pair the review-gate with:
 harness verify-coderabbit --json
 ```
 
-That gives you a concrete local answer for “is the repo-side review wiring
-correct?” before you debug GitHub-side behavior.
+That gives you a concrete local answer for "is the repo-side review wiring
+correct?" before you debug GitHub-side behavior.
 
 ### Advanced: Migrate CI with rollback and proof
 
