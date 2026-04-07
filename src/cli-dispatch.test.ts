@@ -129,12 +129,17 @@ describe("cli command dispatch", () => {
 
 		run(["--help"]);
 
-		const output = infoSpy.mock.calls.map(([line]) => String(line)).join("\n");
+		const lines = infoSpy.mock.calls.map(([line]) => String(line));
 		for (const name of MIGRATED_COMMAND_NAMES) {
-			expect(output).toContain(name);
+			const found = lines.some(
+				(line) =>
+					line.trimStart().startsWith(`${name} `) ||
+					line.trimStart().startsWith(`${name}\t`),
+			);
+			expect(found).toBe(true);
 		}
-		expect(output).toContain("Usage: harness <command> [options]");
-		expect(output).toContain("--help, -h");
+		expect(lines.join("\n")).toContain("Usage: harness <command> [options]");
+		expect(lines.join("\n")).toContain("--help, -h");
 	});
 
 	it("dispatches risk-tier command and ignores missing contract value", async () => {
@@ -1760,10 +1765,10 @@ describe("cli command dispatch", () => {
 
 		expect(() =>
 			run(["prompt-gate", "--type", "feature", "--file", "--json"]),
-		).toThrowError("EXIT_1");
+		).toThrowError("EXIT_2");
 
 		expect(vi.mocked(runPromptGateCLI)).not.toHaveBeenCalled();
-		expect(exitSpy).toHaveBeenCalledWith(1);
+		expect(exitSpy).toHaveBeenCalledWith(2);
 	});
 
 	it("rejects blast-radius when --files value is missing", async () => {

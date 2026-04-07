@@ -122,7 +122,7 @@ Commands are grouped by domain. `[R]` = in registry (`command-registry.ts`). `[I
 ```
 harness linear <claim|handoff|close|prepare|sync> [flags]
 harness ci-migrate <prepare|commit|abort|verify> [targetDir] [flags]
-harness gap-case <create|list|resolve> [flags]
+harness gap-case <open|resolve> [flags]
 ```
 
 ---

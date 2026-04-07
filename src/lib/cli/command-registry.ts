@@ -759,7 +759,7 @@ const COMMAND_SPECS: CommandSpec[] = [
 		summary: "Eject harness files from the target repository",
 		errorLabel: "Eject Error",
 		execute: async (args) => {
-			const forceFlag = args.includes("--force");
+			const forceFlag = args.includes("--force") || args.includes("-f");
 			const dryRunFlag = args.includes("--dry-run");
 			const jsonFlag = args.includes("--json");
 			const targetDir = args.find((a) => !a.startsWith("-"));
@@ -1025,11 +1025,11 @@ const COMMAND_SPECS: CommandSpec[] = [
 				console.error(
 					"Error: --type is required (feature|bugfix|refactor|release)",
 				);
-				return 1;
+				return 2;
 			}
 			if (!fileArg) {
 				console.error("Error: --file is required");
-				return 1;
+				return 2;
 			}
 
 			const validTypes = ["feature", "bugfix", "refactor", "release"] as const;
@@ -1037,7 +1037,7 @@ const COMMAND_SPECS: CommandSpec[] = [
 				console.error(
 					`Error: Invalid type "${typeArg}". Must be one of: ${validTypes.join(", ")}`,
 				);
-				return 1;
+				return 2;
 			}
 
 			return runPromptGateCLI({
@@ -1211,8 +1211,8 @@ const COMMAND_SPECS: CommandSpec[] = [
 		errorLabel: "Remediate Error",
 		execute: (args) => {
 			// args[0] is the subcommand (command name already stripped by dispatcher)
-			const mode = args[0];
-			if (mode !== "run" && mode !== "apply") {
+			const subcommand = args[0];
+			if (subcommand !== "run" && subcommand !== "apply") {
 				console.error(
 					"Error: remediate command requires subcommand `run` or `apply`",
 				);
@@ -1239,7 +1239,7 @@ const COMMAND_SPECS: CommandSpec[] = [
 			const maxAutoTierValue = getFlagValue(args, maxAutoTierIndex);
 
 			const remediateOptions: RemediateOptions = {
-				mode,
+				mode: subcommand,
 				owner: getFlagValue(args, ownerIndex) ?? "",
 				repo: getFlagValue(args, repoIndex) ?? "",
 				prNumber: parseIntegerArg(prValue, 1) ?? 0,
@@ -1769,11 +1769,22 @@ const COMMAND_SPECS: CommandSpec[] = [
 			}
 			const targetDir = positionalArgs[0];
 
+			// Build clean args for delegated helpers: exclude --action flag/value
+			const delegatedArgs = (() => {
+				if (actionArg && actionIndex >= 0) {
+					const filtered = [...args];
+					filtered.splice(actionIndex, 2); // remove --action and its value
+					return filtered;
+				}
+				// Positional action: skip the action token at args[0]
+				return args.slice(1);
+			})();
+
 			if (parsedAction === "sync-branch-protection") {
-				return runSyncBranchProtectionCLI(targetDir, args.slice(1));
+				return runSyncBranchProtectionCLI(targetDir, delegatedArgs);
 			}
 			if (parsedAction === "promote-mode") {
-				return runPromoteModeCLI(targetDir, args.slice(1));
+				return runPromoteModeCLI(targetDir, delegatedArgs);
 			}
 
 			const provider = getFlagValue(args, providerIndex);
