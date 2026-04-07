@@ -120,26 +120,21 @@ describe("cli command dispatch", () => {
 		vi.restoreAllMocks();
 	});
 
-	it("groups init and eject JSON help under distinct sections", async () => {
+	it("lists all migrated commands in --help output", async () => {
 		const { run } = await import("./cli.js");
+		const { MIGRATED_COMMAND_NAMES } = await import(
+			"./lib/cli/command-registry.js"
+		);
 		const infoSpy = vi.spyOn(console, "info").mockImplementation(() => {});
 
 		run(["--help"]);
 
-		const output = infoSpy.mock.calls.map(([line]) => String(line));
-		const initHeader = output.indexOf("Init Options:");
-		const initJson = output.indexOf(
-			"  --json           Output as structured JSON",
-		);
-		const ejectHeader = output.indexOf("Eject Options:");
-		const secondJson = output.lastIndexOf(
-			"  --json           Output as structured JSON",
-		);
-
-		expect(initHeader).toBeGreaterThan(-1);
-		expect(initJson).toBeGreaterThan(initHeader);
-		expect(initJson).toBeLessThan(ejectHeader);
-		expect(secondJson).toBeGreaterThan(ejectHeader);
+		const output = infoSpy.mock.calls.map(([line]) => String(line)).join("\n");
+		for (const name of MIGRATED_COMMAND_NAMES) {
+			expect(output).toContain(name);
+		}
+		expect(output).toContain("Usage: harness <command> [options]");
+		expect(output).toContain("--help, -h");
 	});
 
 	it("dispatches risk-tier command and ignores missing contract value", async () => {
