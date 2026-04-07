@@ -34,6 +34,7 @@ frontmatter
 gitignored
 Gitleaks
 Greptile
+hardcode
 hardcoded
 Harness
 hoc
@@ -72,6 +73,7 @@ Repo
 repo's
 repos
 Repos
+requiredChecks
 requiredness
 rollout
 Rollout
@@ -97,6 +99,7 @@ Trivy
 tsconfig
 typecheck
 Typecheck
+typosquatted
 unjs
 untrusted
 uv

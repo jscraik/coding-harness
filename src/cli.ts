@@ -33,6 +33,22 @@ process.on("uncaughtException", (error) => {
 function printUsage(): void {
 	console.info("Usage: harness <command> [options]");
 	console.info("");
+	console.info("Start here (minimum viable path):");
+	console.info("  1. pnpm add -g @brainwav/coding-harness");
+	console.info("  2. harness init --dry-run");
+	console.info("  3. harness init --track");
+	console.info("  4. harness contract validate");
+	console.info("  5. harness health --json");
+	console.info("");
+	console.info("Hero workflows:");
+	console.info(
+		"  Bootstrap repo:    harness init --dry-run && harness init --track",
+	);
+	console.info("  Start on issue:    harness linear prepare --issue <KEY>");
+	console.info(
+		"  Submit for review: harness docs-gate --json && harness review-gate ...",
+	);
+	console.info("");
 	console.info("Commands:");
 	for (const line of renderCommandHelpRows(getRegistryCommandHelpRows())) {
 		console.info(line);

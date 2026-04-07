@@ -30,6 +30,12 @@ The shortest honest description of the project today is:
 - [Repo-local Wrapper](#repo-local-wrapper)
 - [Repo-local Verification](#repo-local-verification)
 - [Common Workflows](#common-workflows)
+  - [Hero Workflow 1: Bootstrap a repository](#hero-workflow-1-bootstrap-a-repository)
+  - [Hero Workflow 2: Start work on an issue](#hero-workflow-2-start-work-on-an-issue)
+  - [Hero Workflow 3: Submit a change for review](#hero-workflow-3-submit-a-change-for-review)
+  - [Advanced: Migrate CI with rollback and proof](#advanced-migrate-ci-with-rollback-and-proof)
+  - [Advanced: Validate a Symphony workflow contract](#advanced-validate-a-symphony-workflow-contract)
+  - [Advanced: Evaluate a pilot before expanding autonomy](#advanced-evaluate-a-pilot-before-expanding-autonomy)
 - [Command Index](#command-index)
 - [Requirements](#requirements)
 - [Local Development](#local-development)
@@ -38,41 +44,32 @@ The shortest honest description of the project today is:
 
 ## Start Here
 
-If you want the fastest path to value, start with one of these:
+Get from zero to a governed, agent-ready repository in five steps:
 
-- **Bootstrap a repo with tracked governance surfaces.**
+```bash
+# 1. Install
+pnpm add -g @brainwav/coding-harness
 
-  ```bash
-  harness init --dry-run
-  harness init --track
-  ```
+# 2. Preview what harness will scaffold (no writes)
+harness init --dry-run
 
-- **Upgrade an existing harness-managed repo without guessing what drifted.**
+# 3. Apply and track the scaffold
+harness init --track
 
-  ```bash
-  harness upgrade --dry-run
-  harness upgrade
-  ```
+# 4. Validate the contract file
+harness contract validate
 
-- **Verify a repo locally before pushing or handing work to another agent.**
+# 5. Check overall repo health
+harness health --json
+```
 
-  ```bash
-  bash scripts/verify-work.sh --fast
-  bash scripts/verify-work.sh
-  ```
+That is the minimum viable path. The three most common workflows beyond this are:
 
-- **Gate a change before review.**
+- **[Bootstrap a repository](#hero-workflow-1-bootstrap-a-repository)** — dry-run, init, contract validate, health, upgrade
+- **[Start work on an issue](#hero-workflow-2-start-work-on-an-issue)** — linear prepare, preflight, policy gates
+- **[Submit a change for review](#hero-workflow-3-submit-a-change-for-review)** — docs-gate, review-gate, linear sync
 
-  ```bash
-  harness docs-gate --mode advisory --json
-  harness review-gate --token "$GITHUB_TOKEN" --owner <owner> --repo <repo> --pr <number> --sha <head-sha>
-  ```
-
-- **Check whether a pilot lane is safe to expand.**
-
-  ```bash
-  harness pilot-evaluate --artifacts artifacts/pilot --lane health --output artifacts/pilot/result.json
-  ```
+For CI migration, pilot evaluation, or workflow contracts, see the [advanced workflows](#advanced-migrate-ci-with-rollback-and-proof) below.
 
 ## Why Teams Use It
 
@@ -183,14 +180,15 @@ turns "what do I need to run before handoff?" into a single local command.
 
 ## Common Workflows
 
-### 1. Bootstrap a repository
+### Hero Workflow 1: Bootstrap a repository
 
 Start with a preview, then write tracked changes once the diff looks right.
 
 ```bash
 harness init --dry-run
 harness init --track
-harness symphony-check
+harness contract validate
+harness health --json
 ```
 
 This is the best path when you want a governed starting point quickly. In the
@@ -225,10 +223,8 @@ harness init --project-type web       # explicit: cli | desktop | library | web
 harness init --project-type cli --json  # machine-readable structured output
 ```
 
-### 1b. Validate or export the contract
-
-Use the built-in contract surface when you want confidence that the repo policy
-file is still valid or you need a schema for editor and automation tooling.
+Use the contract surface when you want confidence that the repo policy file is
+still valid or you need a schema for editor and automation tooling:
 
 ```bash
 harness contract validate
@@ -236,24 +232,33 @@ harness contract validate --json
 harness contract schema > harness.contract.schema.json
 ```
 
-### 2. Gate a change before review
+### Hero Workflow 2: Start work on an issue
 
-This is the practical loop for “did we update the right things?”
+Prepare branch context from a Linear issue, run preflight checks, then gate
+each file as you work.
 
 ```bash
-harness preflight-gate --contract harness.contract.json --files src/cli.ts,README.md
-harness policy-gate --contract harness.contract.json --files src/cli.ts,README.md
+harness linear prepare --issue <KEY>         # pre-fill branch, PR title, closing line
+harness preflight-gate --contract harness.contract.json --files <changed-files>
+harness policy-gate --contract harness.contract.json --files <changed-files>
+harness blast-radius --files <changed-files> --json   # see which gates apply
+```
+
+The `linear prepare` command outputs a branch name, PR title, and body fragment
+so you never need to construct these by hand or from memory.
+
+### Hero Workflow 3: Submit a change for review
+
+Gate the change locally before pushing, then confirm review wiring is correct.
+
+```bash
 harness docs-gate --mode advisory --json
 harness plan-gate --require-plan-id --require-traceability --json
-```
-
-When you need remote merge-readiness checks:
-
-```bash
 harness review-gate --token "$GITHUB_TOKEN" --owner <owner> --repo <repo> --pr <number> --sha <head-sha>
+harness linear sync --findings findings.json --team <TEAM>
 ```
 
-For repos using CodeRabbit, pair this with:
+For repos using CodeRabbit, pair the review-gate with:
 
 ```bash
 harness verify-coderabbit --json
@@ -262,7 +267,7 @@ harness verify-coderabbit --json
 That gives you a concrete local answer for "is the repo-side review wiring
 correct?" before you debug GitHub-side behavior.
 
-### 3. Migrate CI with rollback and proof
+### Advanced: Migrate CI with rollback and proof
 
 ```bash
 harness ci-migrate prepare --provider circleci --dry-run
@@ -279,7 +284,7 @@ harness ci-migrate sync-branch-protection
 harness ci-migrate promote-mode
 ```
 
-### 4. Validate a Symphony workflow contract
+### Advanced: Validate a Symphony workflow contract
 
 Coding Harness can scaffold a `WORKFLOW.md`, generate compact workflow specs,
 and validate readiness for Symphony-style execution.
@@ -301,7 +306,7 @@ This is one of the more understated parts of the project today: it is not only
 scaffolding repo files, it also includes machinery for defining, checking, and
 operating workflow contracts.
 
-### 5. Evaluate a pilot before expanding autonomy
+### Advanced: Evaluate a pilot before expanding autonomy
 
 ```bash
 harness pilot-evaluate --artifacts artifacts/pilot --lane health --output artifacts/pilot/result.json
