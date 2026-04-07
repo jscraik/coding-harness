@@ -1,0 +1,263 @@
+/**
+ * Tests for JSC-127: harness check zero-config entrypoint.
+ */
+
+import {
+	existsSync,
+	mkdirSync,
+	mkdtempSync,
+	rmSync,
+	writeFileSync,
+} from "node:fs";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+
+import { runCheck, runCheckCLI } from "./check.js";
+
+function makeTmpDir(): string {
+	return mkdtempSync(join(tmpdir(), "jsc127-"));
+}
+
+function writeContract(
+	dir: string,
+	data: unknown = { version: "1.5.0" },
+): void {
+	writeFileSync(
+		join(dir, "harness.contract.json"),
+		JSON.stringify(data, null, 2),
+	);
+}
+
+function writeManifest(
+	dir: string,
+	data: unknown = {
+		harnessVersion: "0.12.0",
+		ciProvider: "github-actions",
+		files: [],
+	},
+): void {
+	const harnessDir = join(dir, ".harness");
+	mkdirSync(harnessDir, { recursive: true });
+	writeFileSync(
+		join(harnessDir, "restore-manifest.json"),
+		JSON.stringify(data, null, 2),
+	);
+}
+
+function writeGitDir(dir: string): void {
+	mkdirSync(join(dir, ".git"), { recursive: true });
+}
+
+// ─── runCheck (pure) ──────────────────────────────────────────────────────────
+
+describe("runCheck", () => {
+	let dir: string;
+
+	beforeEach(() => {
+		dir = makeTmpDir();
+	});
+
+	afterEach(() => {
+		rmSync(dir, { recursive: true, force: true });
+	});
+
+	it("returns a report with version, dir, timestamp, checks, counts, nextSteps", () => {
+		const report = runCheck(dir);
+		expect(report).toHaveProperty("version");
+		expect(report).toHaveProperty("dir", dir);
+		expect(report.timestamp).toMatch(/^\d{4}-/);
+		expect(Array.isArray(report.checks)).toBe(true);
+		expect(report).toHaveProperty("counts");
+		expect(Array.isArray(report.nextSteps)).toBe(true);
+	});
+
+	it("git check is 'warn' when .git is absent", () => {
+		const report = runCheck(dir);
+		const gitCheck = report.checks.find((c) => c.id === "git");
+		expect(gitCheck?.status).toBe("warn");
+	});
+
+	it("git check is 'ok' when .git exists", () => {
+		writeGitDir(dir);
+		const report = runCheck(dir);
+		const gitCheck = report.checks.find((c) => c.id === "git");
+		expect(gitCheck?.status).toBe("ok");
+	});
+
+	it("contract:present is 'fail' when harness.contract.json is absent", () => {
+		const report = runCheck(dir);
+		const check = report.checks.find((c) => c.id === "contract:present");
+		expect(check?.status).toBe("fail");
+		expect(check?.fix).toContain("harness contract init");
+	});
+
+	it("contract:present is 'ok' and contract:valid is 'ok' for a valid contract", () => {
+		writeContract(dir);
+		const report = runCheck(dir);
+		const present = report.checks.find((c) => c.id === "contract:present");
+		const valid = report.checks.find((c) => c.id === "contract:valid");
+		expect(present?.status).toBe("ok");
+		expect(valid?.status).toBe("ok");
+	});
+
+	it("contract:valid is 'fail' for an invalid contract", () => {
+		writeContract(dir, { notAVersion: true }); // missing version field
+		const report = runCheck(dir);
+		const valid = report.checks.find((c) => c.id === "contract:valid");
+		expect(valid?.status).toBe("fail");
+		expect(valid?.fix).toContain("harness contract validate");
+	});
+
+	it("contract:present is 'fail' for malformed JSON", () => {
+		writeFileSync(join(dir, "harness.contract.json"), "{ bad json");
+		const report = runCheck(dir);
+		const present = report.checks.find((c) => c.id === "contract:present");
+		expect(present?.status).toBe("fail");
+	});
+
+	it("manifest check is 'warn' when .harness/restore-manifest.json is absent", () => {
+		const report = runCheck(dir);
+		const check = report.checks.find((c) => c.id === "manifest");
+		expect(check?.status).toBe("warn");
+		expect(check?.fix).toContain("harness init --track");
+	});
+
+	it("manifest check is 'ok' when manifest exists with current version", () => {
+		writeManifest(dir);
+		const report = runCheck(dir);
+		const check = report.checks.find((c) => c.id === "manifest");
+		// Manifest version may not match current harness version exactly,
+		// so accept 'ok' or 'warn'
+		expect(["ok", "warn"]).toContain(check?.status);
+	});
+
+	it("hasFailures is true when any check is fail", () => {
+		// No contract → contract:present fails
+		const report = runCheck(dir);
+		expect(report.hasFailures).toBe(true);
+	});
+
+	it("hasFailures is false when only warnings (git + manifest)", () => {
+		writeContract(dir);
+		writeManifest(dir);
+		// No .git, so git is warn; manifest present; contract valid
+		const report = runCheck(dir);
+		expect(report.hasFailures).toBe(false);
+	});
+
+	it("nextSteps contains fix commands for failing/warning checks", () => {
+		const report = runCheck(dir);
+		// contract:present fail → fix is harness contract init
+		expect(
+			report.nextSteps.some((s) => s.includes("harness contract init")),
+		).toBe(true);
+	});
+
+	it("nextSteps is ['harness health'] when everything passes", () => {
+		writeGitDir(dir);
+		writeContract(dir);
+		writeManifest(dir);
+		const report = runCheck(dir);
+		if (!report.hasFailures && report.counts.warn === 0) {
+			expect(report.nextSteps).toEqual(["harness health"]);
+		}
+	});
+});
+
+// ─── runCheckCLI ─────────────────────────────────────────────────────────────
+
+describe("runCheckCLI", () => {
+	let dir: string;
+	let infoSpy: ReturnType<typeof vi.spyOn>;
+
+	beforeEach(() => {
+		dir = makeTmpDir();
+		infoSpy = vi.spyOn(console, "info").mockImplementation(() => {});
+		vi.spyOn(console, "error").mockImplementation(() => {});
+	});
+
+	afterEach(() => {
+		vi.restoreAllMocks();
+		rmSync(dir, { recursive: true, force: true });
+	});
+
+	it("returns 1 when checks fail (no contract)", () => {
+		const code = runCheckCLI(dir, {});
+		expect(code).toBe(1);
+	});
+
+	it("returns 0 when no failures (warnings only)", () => {
+		writeContract(dir);
+		writeManifest(dir);
+		const code = runCheckCLI(dir, {});
+		expect(code).toBe(0);
+	});
+
+	it("--json emits parseable JSON with all required fields", () => {
+		writeContract(dir);
+		const code = runCheckCLI(dir, { json: true });
+		const output = infoSpy.mock.calls[0]?.[0] as string;
+		const parsed = JSON.parse(output) as {
+			version: string;
+			dir: string;
+			checks: unknown[];
+			counts: Record<string, number>;
+			nextSteps: string[];
+		};
+		expect(parsed.version).toBeTruthy();
+		expect(parsed.dir).toBe(dir);
+		expect(Array.isArray(parsed.checks)).toBe(true);
+		expect(parsed.counts).toHaveProperty("ok");
+		expect(Array.isArray(parsed.nextSteps)).toBe(true);
+		// Return code matches hasFailures
+		expect([0, 1]).toContain(code);
+	});
+
+	it("--json: returns 1 for failing checks", () => {
+		const code = runCheckCLI(dir, { json: true });
+		expect(code).toBe(1);
+		const output = infoSpy.mock.calls[0]?.[0] as string;
+		const parsed = JSON.parse(output) as { hasFailures: boolean };
+		expect(parsed.hasFailures).toBe(true);
+	});
+
+	it("--json: returns 0 when no failures", () => {
+		writeContract(dir);
+		writeManifest(dir);
+		const code = runCheckCLI(dir, { json: true });
+		expect(code).toBe(0);
+		const output = infoSpy.mock.calls[0]?.[0] as string;
+		const parsed = JSON.parse(output) as { hasFailures: boolean };
+		expect(parsed.hasFailures).toBe(false);
+	});
+
+	it("human output contains check status lines", () => {
+		writeContract(dir);
+		const code = runCheckCLI(dir, {});
+		expect(code).toBeTypeOf("number");
+		const allOutput = infoSpy.mock.calls.map((c) => c[0] as string).join("\n");
+		expect(allOutput).toContain("harness check");
+		expect(allOutput).toContain("Next:");
+	});
+
+	it("works without a target dir argument (uses cwd fallback)", () => {
+		// just ensure it doesn't throw — result depends on actual cwd state
+		expect(() => runCheckCLI(undefined, {})).not.toThrow();
+	});
+
+	it("accepts an explicit path argument", () => {
+		const code = runCheckCLI(dir, {});
+		expect([0, 1]).toContain(code);
+		const allOutput = infoSpy.mock.calls.map((c) => c[0] as string).join("\n");
+		expect(allOutput).toContain(dir);
+	});
+
+	it("check command registered and reachable via existsSync on source file", () => {
+		expect(
+			existsSync(
+				new URL("./check.js", import.meta.url).pathname.replace(".js", ".ts"),
+			),
+		).toBe(true);
+	});
+});

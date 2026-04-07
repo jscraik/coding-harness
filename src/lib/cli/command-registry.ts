@@ -7,6 +7,7 @@ import { runBrainstormGateCLI } from "../../commands/brainstorm-gate.js";
 import { runBranchProtectCLI } from "../../commands/branch-protect.js";
 import { runCheckAuthzCLI } from "../../commands/check-authz.js";
 import { runCheckEnvironmentCLI } from "../../commands/check-environment.js";
+import { runCheckCLI } from "../../commands/check.js";
 import {
 	runCIMigrateCLI,
 	runPromoteModeCLI,
@@ -734,6 +735,17 @@ const COMMAND_SPECS: CommandSpec[] = [
 		execute: async (args) => {
 			const { exitCode } = await runPresetCLI(args);
 			return exitCode;
+		},
+	},
+	{
+		name: "check",
+		summary: "Zero-config repo health snapshot — works before full setup",
+		example: "check [path] [--json]",
+		errorLabel: "Check Error",
+		execute: (args) => {
+			const jsonFlag = args.includes("--json");
+			const targetDir = args.find((a) => !a.startsWith("-"));
+			return runCheckCLI(targetDir, { json: jsonFlag });
 		},
 	},
 	{
