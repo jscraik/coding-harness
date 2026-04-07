@@ -987,11 +987,15 @@ export function runInitCLI(
 	}
 
 	// Error output
-	console.error(`Error: ${result.error.message}`);
-	if (result.error.path) {
-		console.error(`  Path: ${result.error.path}`);
+	if (options.json) {
+		console.info(JSON.stringify({ error: result.error }, null, 2));
+	} else {
+		console.error(`Error: ${result.error.message}`);
+		if (result.error.path) {
+			console.error(`  Path: ${result.error.path}`);
+		}
+		console.error("\n  Try: harness init --dry-run to preview changes");
 	}
-	console.error("\n  Try: harness init --dry-run to preview changes");
 
 	if (result.error.code === "PATH_TRAVERSAL") {
 		return EXIT_CODES.PATH_TRAVERSAL;

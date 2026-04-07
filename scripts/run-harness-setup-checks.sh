@@ -44,7 +44,7 @@ printf '%s\n' "$check_output"
 
 legacy_manifest_blocked=0
 if [[ "$check_status" -ne 0 ]]; then
-  if printf '%s\n' "$check_output" | rg -q 'Restore manifest is incomplete for check-updates'; then
+  if printf '%s\n' "$check_output" | jq -e '.error.code == "INCOMPLETE_MANIFEST"' >/dev/null 2>&1; then
     legacy_manifest_blocked=1
     warn_legacy_manifest
   else
