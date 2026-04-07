@@ -10,6 +10,7 @@ import {
 import { tmpdir } from "node:os";
 import { dirname, join } from "node:path";
 import { afterEach, describe, expect, it } from "vitest";
+import { sanitizeGitEnv } from "../lib/workflow-contract/test-harness.js";
 
 const CHECK_SCRIPT_SOURCE = join(
 	process.cwd(),
@@ -21,6 +22,7 @@ function run(root: string, command: string, args: string[]) {
 	return spawnSync(command, args, {
 		cwd: root,
 		encoding: "utf-8",
+		env: sanitizeGitEnv(),
 	});
 }
 
