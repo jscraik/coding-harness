@@ -117,7 +117,7 @@ const COMMAND_SPECS: CommandSpec[] = [
 				console.error(
 					"linear expects an action of claim, handoff, close, prepare, or sync.",
 				);
-				return 1;
+				return 2;
 			}
 
 			const jsonFlag = args.includes("--json");
@@ -476,7 +476,7 @@ const COMMAND_SPECS: CommandSpec[] = [
 				const parsedApprovals = parseIntegerArg(approvalsArg, 0);
 				if (parsedApprovals === undefined) {
 					console.error("--required-approvals expects a non-negative integer.");
-					return 1;
+					return 2;
 				}
 				options.requiredApprovingReviewCount = parsedApprovals;
 			}
@@ -1148,7 +1148,7 @@ const COMMAND_SPECS: CommandSpec[] = [
 			const filesArg = getFlagValue(args, filesIndex);
 			if (!filesArg) {
 				console.error("Error: --files is required (comma-separated paths)");
-				return 1;
+				return 2;
 			}
 
 			const files = filesArg
@@ -1324,7 +1324,7 @@ const COMMAND_SPECS: CommandSpec[] = [
 			const action = args[0] as "open" | "resolve" | undefined;
 			if (action !== "open" && action !== "resolve") {
 				console.error("Error: action must be 'open' or 'resolve'");
-				return 1;
+				return 2;
 			}
 
 			const incidentIdIndex = args.indexOf("--incident-id");
@@ -1526,11 +1526,11 @@ const COMMAND_SPECS: CommandSpec[] = [
 
 			if (!contractA) {
 				console.error("Error: --contract-a is required");
-				return 1;
+				return 2;
 			}
 			if (!contractB) {
 				console.error("Error: --contract-b is required");
-				return 1;
+				return 2;
 			}
 
 			const options: {

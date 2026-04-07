@@ -353,7 +353,7 @@ Units 1–5 are sequential to avoid merge conflicts in `cli.ts`. Unit 6 depends 
 | `printUsage()` regression | Low | Medium | Pre-migration snapshot comparison of help output |
 | Async command handling | Low | High | Registry already handles `Promise<number>` returns |
 | Import cycle from registry | Low | Medium | Registry imports command modules (existing pattern); `cli.ts` imports registry only |
-| `replay` positional arg regression | Low | High | Explicitly preserve `args[1]` fallback in spec |
+| `replay` positional arg regression | Low | High | Explicitly preserve `args[0]` fallback in spec |
 
 ---
 

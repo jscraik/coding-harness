@@ -1205,13 +1205,13 @@ describe("cli command dispatch", () => {
 				"--required-approvals",
 				"-1",
 			]),
-		).toThrowError("EXIT_1");
+		).toThrowError("EXIT_2");
 
 		expect(errorSpy).toHaveBeenCalledWith(
 			"--required-approvals expects a non-negative integer.",
 		);
 		expect(vi.mocked(runBranchProtectCLI)).not.toHaveBeenCalled();
-		expect(exitSpy).toHaveBeenCalledWith(1);
+		expect(exitSpy).toHaveBeenCalledWith(2);
 	});
 
 	it("rejects branch-protect --required-approvals when value is non-numeric", async () => {
@@ -1239,13 +1239,13 @@ describe("cli command dispatch", () => {
 				"--required-approvals",
 				"two",
 			]),
-		).toThrowError("EXIT_1");
+		).toThrowError("EXIT_2");
 
 		expect(errorSpy).toHaveBeenCalledWith(
 			"--required-approvals expects a non-negative integer.",
 		);
 		expect(vi.mocked(runBranchProtectCLI)).not.toHaveBeenCalled();
-		expect(exitSpy).toHaveBeenCalledWith(1);
+		expect(exitSpy).toHaveBeenCalledWith(2);
 	});
 
 	it("dispatches tooling-audit command", async () => {
@@ -1782,11 +1782,11 @@ describe("cli command dispatch", () => {
 		}) as never);
 
 		expect(() => run(["blast-radius", "--files", "--json"])).toThrowError(
-			"EXIT_1",
+			"EXIT_2",
 		);
 
 		expect(vi.mocked(runBlastRadiusCLI)).not.toHaveBeenCalled();
-		expect(exitSpy).toHaveBeenCalledWith(1);
+		expect(exitSpy).toHaveBeenCalledWith(2);
 	});
 
 	// Note: -h is intercepted by the top-level help check, so it's not passed to the command
