@@ -801,12 +801,13 @@ const COMMAND_SPECS: CommandSpec[] = [
 	},
 	{
 		name: "contract",
-		summary: "Validate or print the harness contract schema",
+		summary: "Init, validate, or print the harness contract schema",
+		example: "contract init --preset standard",
 		errorLabel: "Contract Error",
 		execute: (args) => {
 			const jsonFlag = args.includes("--json");
-			const subArgs = args.filter((a) => !a.startsWith("-"));
-			return runContractCLI(subArgs, { json: jsonFlag || undefined });
+			// Preserve flag args so init/validate subcommands can parse --preset, --output, etc.
+			return runContractCLI(args, { json: jsonFlag || undefined });
 		},
 	},
 	{

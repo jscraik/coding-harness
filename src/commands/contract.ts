@@ -1,7 +1,12 @@
 /**
- * JSC-69: `harness contract` subcommands.
+ * JSC-69 / JSC-123: `harness contract` subcommands.
  *
  * Subcommands:
+ * - `harness contract init [--preset minimal|standard|full] [--output path] [--force]`
+ *   → Generates a harness.contract.json starter file for the given preset.
+ *   → Defaults to `standard` preset and `./harness.contract.json`.
+ *   → Errors if the output file already exists unless --force is passed.
+ *
  * - `harness contract validate [contractPath]`
  *   → Validates the contract file against the schema and cross-field checks.
  *   → Exits non-zero with annotated error list if invalid.
@@ -12,6 +17,9 @@
  *   → Redirect to a file for $schema-driven editor autocomplete.
  *
  * Usage:
+ *   harness contract init
+ *   harness contract init --preset minimal
+ *   harness contract init --preset full --output ./config/harness.contract.json
  *   harness contract validate
  *   harness contract validate ./path/to/harness.contract.json
  *   harness contract validate --json
@@ -19,9 +27,15 @@
  *   harness contract schema > harness.contract.schema.json
  */
 
-import { existsSync, readFileSync } from "node:fs";
+import { existsSync, readFileSync, writeFileSync } from "node:fs";
 import { resolve } from "node:path";
 import { cwd } from "node:process";
+import {
+	CONTRACT_PRESETS,
+	type ContractPreset,
+	PRESET_DESCRIPTIONS,
+	buildContractPreset,
+} from "../lib/contract/contract-presets.js";
 import {
 	SCHEMA_VERSION,
 	buildContractJsonSchema,
@@ -34,6 +48,8 @@ import { sanitizeError } from "../lib/input/sanitize.js";
 
 /** Default contract filename relative to targetDir. */
 const DEFAULT_CONTRACT_FILE = "harness.contract.json";
+
+const DEFAULT_PRESET: ContractPreset = "standard";
 
 export interface ContractValidateOptions {
 	/** Output in JSON format (machine-readable). */
@@ -55,6 +71,110 @@ function formatError(err: ValidationError, index: number): string {
 function severityIcon(code: string): string {
 	if (code.includes("MISSING") || code.includes("FORBIDDEN")) return "✗";
 	return "⚠️ ";
+}
+
+// ─── contract init ────────────────────────────────────────────────────────────
+
+export interface ContractInitOptions {
+	/** Complexity preset. Defaults to "standard". */
+	preset?: ContractPreset | undefined;
+	/** Output file path. Defaults to ./harness.contract.json. */
+	output?: string | undefined;
+	/** Overwrite an existing file without prompting. */
+	force?: boolean | undefined;
+	/** Output in JSON format (machine-readable). */
+	json?: boolean | undefined;
+}
+
+/**
+ * `harness contract init` entrypoint.
+ *
+ * Generates a starter harness.contract.json for the given preset tier.
+ * Returns exit code 0 on success, 1 on error.
+ */
+export function runContractInitCLI(options: ContractInitOptions): number {
+	const preset = options.preset ?? DEFAULT_PRESET;
+	const outputPath = resolve(options.output ?? DEFAULT_CONTRACT_FILE);
+
+	if (!CONTRACT_PRESETS.includes(preset)) {
+		const msg = `Unknown preset: "${preset}". Valid presets: ${CONTRACT_PRESETS.join(", ")}`;
+		if (options.json) {
+			console.info(JSON.stringify({ status: "error", error: msg }));
+		} else {
+			console.error(`✗ ${msg}`);
+		}
+		return 2;
+	}
+
+	if (existsSync(outputPath) && !options.force) {
+		const msg = `${outputPath} already exists. Use --force to overwrite.`;
+		if (options.json) {
+			console.info(JSON.stringify({ status: "error", error: msg, outputPath }));
+		} else {
+			console.error(
+				[
+					`✗ ${msg}`,
+					"",
+					"  To overwrite:",
+					`    harness contract init --preset ${preset} --force`,
+					"",
+					"  To validate the existing contract:",
+					"    harness contract validate",
+				].join("\n"),
+			);
+		}
+		return 1;
+	}
+
+	const contract = buildContractPreset(preset);
+	const content = `${JSON.stringify(contract, null, 2)}\n`;
+
+	try {
+		writeFileSync(outputPath, content, "utf-8");
+	} catch (err) {
+		const msg = `Could not write contract file: ${sanitizeError(err)}`;
+		if (options.json) {
+			console.info(JSON.stringify({ status: "error", error: msg, outputPath }));
+		} else {
+			console.error(`✗ ${msg}`);
+		}
+		return 1;
+	}
+
+	if (options.json) {
+		console.info(
+			JSON.stringify({
+				status: "created",
+				preset,
+				outputPath,
+				sections: Object.keys(contract).length,
+				bytes: content.length,
+			}),
+		);
+	} else {
+		console.info(
+			[
+				"",
+				`✅ Created ${outputPath}`,
+				`   Preset:   ${preset} — ${PRESET_DESCRIPTIONS[preset]}`,
+				`   Sections: ${Object.keys(contract).length}`,
+				`   Size:     ${content.length} bytes`,
+				"",
+				"Next steps:",
+				"  1. Edit the riskTierRules paths to match your repo layout.",
+				"  2. Add your CI checks to branchProtection.requiredChecks.",
+				"  3. Run: harness contract validate",
+				"",
+				preset === "minimal"
+					? "  Upgrade when ready: harness contract init --preset standard --force"
+					: "",
+			]
+				.filter((l) => l !== "")
+				.join("\n"),
+		);
+	}
+
+	return 0;
 }
 
 // ─── contract validate ────────────────────────────────────────────────────────
@@ -181,7 +301,7 @@ export function runContractSchemaCLI(): number {
 // ─── Top-level dispatch ───────────────────────────────────────────────────────
 
 export interface ContractCLIOptions extends ContractValidateOptions {
-	subcommand: "validate" | "schema";
+	subcommand: "init" | "validate" | "schema";
 }
 
 /**
@@ -191,10 +311,24 @@ export function runContractCLI(
 	subArgs: string[],
 	options: { json?: boolean | undefined },
 ): number {
-	const subcommand = subArgs[0];
+	// Subcommand is the first positional token (not a flag).
+	const subcommand = subArgs.find((a) => !a.startsWith("-"));
 
 	if (subcommand === "schema") {
 		return runContractSchemaCLI();
+	}
+
+	if (subcommand === "init") {
+		const rest = subArgs.slice(1);
+		const presetIdx = rest.findIndex((a) => a === "--preset" || a === "-p");
+		const preset =
+			presetIdx !== -1
+				? (rest[presetIdx + 1] as ContractPreset | undefined)
+				: undefined;
+		const outputIdx = rest.findIndex((a) => a === "--output" || a === "-o");
+		const output = outputIdx !== -1 ? rest[outputIdx + 1] : undefined;
+		const force = rest.includes("--force");
+		return runContractInitCLI({ preset, output, force, json: options.json });
 	}
 
 	if (subcommand === "validate" || subcommand === undefined) {
@@ -215,6 +349,7 @@ export function runContractCLI(
 			`Unknown subcommand: harness contract ${subcommand}`,
 			"",
 			"Available subcommands:",
+			"  harness contract init [--preset minimal|standard|full] [--output path] [--force]",
 			"  harness contract validate [path] [--json]",
 			"  harness contract schema",
 		].join("\n"),

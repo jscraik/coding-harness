@@ -13,9 +13,9 @@ import {
 } from "node:fs";
 import { tmpdir } from "node:os";
 import { dirname, join } from "node:path";
-import { afterEach, beforeEach, describe, expect, it } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { CURRENT_SCHEMA_VERSION } from "../lib/init/types.js";
-import { EXIT_CODES, runInit } from "./init.js";
+import { EXIT_CODES, runInit, runInitCLI } from "./init.js";
 
 const EXPECTED_TEMPLATE_PATHS = [
 	"harness.contract.json",
@@ -3825,5 +3825,96 @@ describe("project-type detection integration", () => {
 			readFileSync(join(tempDir, "harness.contract.json"), "utf-8"),
 		);
 		expect(contract.projectType).toBe("web");
+	});
+});
+
+// ─── runInitCLI --json error output (JSC-96) ─────────────────────────────────
+
+describe("runInitCLI --json error output", () => {
+	let tempDir: string;
+	let infoSpy: ReturnType<typeof vi.spyOn>;
+	let errorSpy: ReturnType<typeof vi.spyOn>;
+
+	beforeEach(() => {
+		tempDir = mkdtempSync(join(tmpdir(), "jsc96-"));
+		infoSpy = vi.spyOn(console, "info").mockImplementation(() => {});
+		errorSpy = vi.spyOn(console, "error").mockImplementation(() => {});
+	});
+
+	afterEach(() => {
+		vi.restoreAllMocks();
+		rmSync(tempDir, { recursive: true, force: true });
+	});
+
+	it("emits structured JSON error for INCOMPLETE_MANIFEST when --json is set", () => {
+		// Install, then corrupt the manifest to remove harnessVersion
+		runInit(tempDir, { dryRun: false, force: false, track: true });
+		const manifestPath = join(tempDir, ".harness/restore-manifest.json");
+		const { harnessVersion: _, ...manifest } = JSON.parse(
+			readFileSync(manifestPath, "utf-8"),
+		) as Record<string, unknown>;
+		writeFileSync(manifestPath, JSON.stringify(manifest));
+
+		const code = runInitCLI(tempDir, {
+			dryRun: false,
+			force: false,
+			checkUpdates: true,
+			json: true,
+		});
+
+		expect(code).not.toBe(0);
+		expect(infoSpy).toHaveBeenCalledOnce();
+		const emitted = JSON.parse(infoSpy.mock.calls[0]![0] as string) as {
+			error: { code: string; message: string };
+		};
+		expect(emitted.error.code).toBe("INCOMPLETE_MANIFEST");
+		expect(emitted.error.message).toContain("harnessVersion");
+		// Prose must NOT be emitted when --json is active
+		expect(errorSpy).not.toHaveBeenCalled();
+	});
+
+	it("emits prose error to stderr when --json is NOT set", () => {
+		// Install, then corrupt the manifest
+		runInit(tempDir, { dryRun: false, force: false, track: true });
+		const manifestPath = join(tempDir, ".harness/restore-manifest.json");
+		const { harnessVersion: _, ...manifest } = JSON.parse(
+			readFileSync(manifestPath, "utf-8"),
+		) as Record<string, unknown>;
+		writeFileSync(manifestPath, JSON.stringify(manifest));
+
+		const code = runInitCLI(tempDir, {
+			dryRun: false,
+			force: false,
+			checkUpdates: true,
+			json: false,
+		});
+
+		expect(code).not.toBe(0);
+		expect(errorSpy).toHaveBeenCalled();
+		expect(errorSpy.mock.calls[0]![0]).toContain(
+			"Restore manifest is incomplete",
+		);
+		// No JSON to stdout
+		expect(infoSpy).not.toHaveBeenCalled();
+	});
+
+	it("--json success still emits structured output, not error envelope", () => {
+		runInit(tempDir, { dryRun: false, force: false, track: true });
+
+		const code = runInitCLI(tempDir, {
+			dryRun: false,
+			force: false,
+			checkUpdates: true,
+			json: true,
+		});
+
+		expect(code).toBe(0);
+		expect(infoSpy).toHaveBeenCalledOnce();
+		const emitted = JSON.parse(infoSpy.mock.calls[0]![0] as string) as {
+			updateCheck?: unknown;
+			error?: unknown;
+		};
+		expect(emitted).not.toHaveProperty("error");
+		expect(emitted).toHaveProperty("updateCheck");
 	});
 });

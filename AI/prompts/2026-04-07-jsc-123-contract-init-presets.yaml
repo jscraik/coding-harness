@@ -1,0 +1,16 @@
+schema_version: 1
+date: 2026-04-07
+slug: jsc-123-contract-init-presets
+linear_issue: JSC-123
+branch: jscraik/jsc-123-improve-contract-configuration-ergonomics-for-human
+model: claude-sonnet-4-6
+summary: >
+  Implement `harness contract init --preset minimal|standard|full` command.
+  Three-tier preset system for harness.contract.json generation with machine-
+  readable JSON output, force-overwrite guard, and 16 new tests.
+prompt: |
+  JSC-123: Implement harness contract init with preset tiers.
+  Three complexity levels:
+  - minimal: 4 sections, solo-dev / first-time setup
+  - standard: 7 sections, recommended default (diff budget, docs-drift, evidence)
+  - full: all governance sections, enterprise / advanced
