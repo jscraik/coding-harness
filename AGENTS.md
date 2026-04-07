@@ -8,6 +8,7 @@ schema_version: 1
 - [Project Description](#project-description)
 - [Mandatory Workflow Snippet](#mandatory-workflow-snippet)
 - [Required Essentials](#required-essentials)
+- [Harness CLI for Agents](#harness-cli-for-agents)
 - [Codex Discovery Order](#codex-discovery-order)
 - [Startup Workflow](#startup-workflow)
 - [Command Preflight](#command-preflight)
@@ -37,6 +38,73 @@ This repository is a TypeScript control plane for agentic development and review
 - Canonical repo verification entrypoint: `bash scripts/verify-work.sh`.
 - Compatibility posture: canonical-only.
 - Treat repo evidence (`package.json`, lockfiles, tsconfig, scripts) as authoritative over copied instructions.
+
+## Harness CLI for Agents
+
+The `harness` binary is designed to be called directly by AI agents in CI and local workflows. All commands share a consistent interface.
+
+### Command structure
+
+```
+harness <command> [flags]
+```
+
+Always use the canonical kebab-case command name (e.g., `blast-radius`, not `blastRadius` or `blast_radius`). The CLI auto-corrects minor variants with a note on stderr, but using the canonical name avoids that overhead.
+
+### Machine-readable output
+
+Add `--json` to any command to receive structured JSON on stdout:
+
+```bash
+harness blast-radius --files src/auth.ts,src/api.ts --json
+harness policy-gate --contract harness.contract.json --json
+harness preflight-gate --files src/foo.ts --json
+harness doctor --json
+```
+
+The JSON envelope shape varies per command but always includes `status` and relevant findings. Parse stdout only; the CLI may emit correction notes or warnings on stderr.
+
+### Exit codes
+
+| Code | Meaning |
+|------|---------|
+| `0` | Pass / success |
+| `1` | Fail / gate blocked / unknown command |
+| `2` | Usage error (missing required flag value) |
+
+### Auto-correction
+
+The CLI is forgiving for common mistakes:
+
+- `blast_radius` and `blastRadius` both resolve to `blast-radius` (with a stderr note).
+- Single-character typos like `blas-radius` resolve to the nearest match (with a stderr note).
+- On a genuinely unknown command, you receive a JSON or plain-text message listing the top-3 closest commands with summaries and example invocations.
+
+### Common agent workflows
+
+```bash
+# Check what gates apply to changed files
+harness blast-radius --files src/auth.ts --json
+
+# Run the full policy gate before opening a PR
+harness policy-gate --contract harness.contract.json --json
+
+# Classify file risk before making changes
+harness risk-tier --files src/payments.ts --json
+
+# Verify harness health in a new environment
+harness doctor --json
+
+# Run a full gate scorecard
+harness health --json
+```
+
+### Discovering commands
+
+```bash
+harness --help          # list all commands with summaries
+harness --version       # print the installed version
+```
 
 ## Codex Discovery Order
 1. `/Users/jamiecraik/.codex/AGENTS.md`

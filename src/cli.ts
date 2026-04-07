@@ -4,7 +4,9 @@ import { resolve } from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
 import {
 	dispatchRegistryCommand,
+	fuzzyFindCommand,
 	getRegistryCommandHelpRows,
+	suggestCommands,
 } from "./lib/cli/command-registry.js";
 import { renderCommandHelpRows } from "./lib/cli/help-renderer.js";
 import { parseCsvList, parseIntegerArg } from "./lib/cli/parse-utils.js";
@@ -39,6 +41,18 @@ function printUsage(): void {
 	console.info("Options:");
 	console.info("  --version, -v  Print version");
 	console.info("  --help, -h     Print this help");
+	console.info("");
+	console.info("Agent / Robot Mode:");
+	console.info("  Add --json to any command for structured JSON output.");
+	console.info(
+		"  Exit codes: 0 = pass/success, 1 = fail/unknown command, 2 = usage error.",
+	);
+	console.info(
+		"  Typos and camelCase/snake_case variants are auto-corrected with a note on stderr.",
+	);
+	console.info(
+		"  On unknown commands, harness prints suggestions with examples to stdout.",
+	);
 }
 export { parseIntegerArg, parseCsvList };
 
@@ -72,7 +86,9 @@ export function run(args: string[]): void {
 
 	// Parse command
 	const command = args[0];
+	const jsonFlag = args.includes("--json");
 
+	// Exact registry dispatch
 	const registryDispatch = dispatchRegistryCommand(command, args);
 	if (registryDispatch) {
 		if (registryDispatch.result instanceof Promise) {
@@ -87,15 +103,79 @@ export function run(args: string[]): void {
 		return;
 	}
 
-	// No command recognized
-	console.info(`harness v${version}`);
-	if (args.length === 0) {
-		printUsage();
-	} else {
-		console.info(`Unknown command: ${command}`);
+	// No exact match — try fuzzy resolution
+	if (command) {
+		const fuzzy = fuzzyFindCommand(command);
+		if (fuzzy) {
+			// Emit a correction note on stderr (keeps stdout JSON pristine for agents)
+			const note = `harness: "${command}" interpreted as "${fuzzy.spec.name}" — use the canonical name in future calls.`;
+			if (jsonFlag) {
+				process.stderr.write(
+					`${JSON.stringify({
+						_agent_correction: true,
+						received: command,
+						interpreted_as: fuzzy.spec.name,
+						note: `Use "${fuzzy.spec.name}" in future calls.`,
+					})}\n`,
+				);
+			} else {
+				process.stderr.write(`${note}\n`);
+			}
+			// Re-dispatch with the canonical name
+			const correctedArgs = [fuzzy.spec.name, ...args.slice(1)];
+			const correctedDispatch = dispatchRegistryCommand(
+				fuzzy.spec.name,
+				correctedArgs,
+			);
+			if (correctedDispatch) {
+				if (correctedDispatch.result instanceof Promise) {
+					correctedDispatch.result
+						.then((exitCode) => process.exit(exitCode))
+						.catch((error) =>
+							handleFatalError(correctedDispatch.spec.errorLabel, error),
+						);
+					return;
+				}
+				process.exit(correctedDispatch.result);
+				return;
+			}
+		}
+
+		// No match at all — rich error message with suggestions
+		const suggestions = suggestCommands(command);
+		if (jsonFlag) {
+			console.info(
+				JSON.stringify({
+					error: "unknown_command",
+					received: command,
+					suggestions: suggestions.map(({ spec }) => ({
+						name: spec.name,
+						summary: spec.summary,
+						...(spec.example ? { example: `harness ${spec.example}` } : {}),
+					})),
+					hint: 'Run "harness --help" for the full command list.',
+				}),
+			);
+		} else {
+			console.info(`Unknown command: "${command}"`);
+			console.info("");
+			console.info("Did you mean one of these?");
+			for (const { spec } of suggestions) {
+				console.info(`  ${spec.name.padEnd(24)} ${spec.summary}`);
+				if (spec.example) {
+					console.info(`  ${"".padEnd(24)} Example: harness ${spec.example}`);
+				}
+			}
+			console.info("");
+			console.info('Run "harness --help" for the full command list.');
+		}
 		process.exit(1);
 		return;
 	}
+
+	// No command at all — show help
+	console.info(`harness v${version}`);
+	printUsage();
 }
 
 function canonicalizeExecutablePath(filePath: string): string {

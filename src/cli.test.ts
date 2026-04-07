@@ -110,7 +110,7 @@ describe("run", () => {
 		expect(() => run(["totally-unknown-command"])).toThrowError("EXIT_1");
 		expect(exitSpy).toHaveBeenCalledWith(1);
 		expect(infoSpy).toHaveBeenCalledWith(
-			"Unknown command: totally-unknown-command",
+			'Unknown command: "totally-unknown-command"',
 		);
 	});
 

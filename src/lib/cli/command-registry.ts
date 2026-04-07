@@ -88,6 +88,8 @@ export interface CommandSpec {
 	aliases?: string[];
 	summary: string;
 	errorLabel: string;
+	/** Canonical example invocation shown in error suggestions (omit "harness " prefix). */
+	example?: string;
 	execute: (args: string[]) => number | Promise<number>;
 }
 
@@ -101,6 +103,7 @@ const COMMAND_SPECS: CommandSpec[] = [
 		name: "linear",
 		summary:
 			"Prepare Linear branch/PR metadata, manage workflow transitions, and sync findings",
+		example: "linear claim --issue JSC-123 --json",
 		errorLabel: "Linear Workflow Error",
 		execute: (args) => {
 			const action = args[0];
@@ -212,6 +215,7 @@ const COMMAND_SPECS: CommandSpec[] = [
 	{
 		name: "linear-gate",
 		summary: "Enforce Linear-first intake, branch, and PR linkage policy",
+		example: "linear-gate --branch feat/JSC-99-my-work --json",
 		errorLabel: "Linear Gate Error",
 		execute: (args) => {
 			const jsonFlag = args.includes("--json");
@@ -269,6 +273,8 @@ const COMMAND_SPECS: CommandSpec[] = [
 		aliases: ["risk-policy-gate"],
 		summary:
 			"Validate policy expectations from changed files (alias: risk-policy-gate)",
+		example:
+			"policy-gate --files src/auth.ts --contract harness.contract.json --json",
 		errorLabel: "Policy Gate Error",
 		execute: (args) => {
 			const jsonFlag = args.includes("--json");
@@ -331,6 +337,7 @@ const COMMAND_SPECS: CommandSpec[] = [
 	{
 		name: "preflight-gate",
 		summary: "Fast policy checks before expensive operations",
+		example: "preflight-gate --files src/auth.ts --json",
 		errorLabel: "Preflight Gate Error",
 		execute: (args) => {
 			const jsonFlag = args.includes("--json");
@@ -376,6 +383,8 @@ const COMMAND_SPECS: CommandSpec[] = [
 	{
 		name: "review-gate",
 		summary: "Review gate with SHA enforcement",
+		example:
+			"review-gate --token $GH_TOKEN --owner org --repo repo --pr 42 --sha abc123 --json",
 		errorLabel: "Review Gate Error",
 		execute: (args) => {
 			const jsonFlag = args.includes("--json");
@@ -730,6 +739,7 @@ const COMMAND_SPECS: CommandSpec[] = [
 	{
 		name: "doctor",
 		summary: "Diagnose harness installation and environment issues",
+		example: "doctor --json",
 		errorLabel: "Doctor Error",
 		execute: (args) => {
 			return runDoctorCLI(args, getVersion);
@@ -738,6 +748,7 @@ const COMMAND_SPECS: CommandSpec[] = [
 	{
 		name: "health",
 		summary: "Quick health check for harness services and configuration",
+		example: "health --json",
 		errorLabel: "Health Error",
 		execute: (args) => {
 			return runHealthCLI(args, getVersion);
@@ -801,6 +812,7 @@ const COMMAND_SPECS: CommandSpec[] = [
 	{
 		name: "risk-tier",
 		summary: "Classify files by risk tier",
+		example: "risk-tier --files src/auth.ts,src/api.ts --json",
 		errorLabel: "Risk Tier Error",
 		execute: (args) => {
 			const jsonFlag = args.includes("--json");
@@ -1037,6 +1049,7 @@ const COMMAND_SPECS: CommandSpec[] = [
 	{
 		name: "drift-gate",
 		summary: "Evaluate consistency drift across governance surfaces",
+		example: "drift-gate --mode advisory --json",
 		errorLabel: "Drift Gate Error",
 		execute: (args) => {
 			const jsonFlag = args.includes("--json");
@@ -1123,6 +1136,7 @@ const COMMAND_SPECS: CommandSpec[] = [
 	{
 		name: "blast-radius",
 		summary: "Determine required checks from changed files",
+		example: "blast-radius --files src/auth.ts,src/api.ts --json",
 		errorLabel: "Blast Radius Error",
 		execute: (args) => {
 			const jsonFlag = args.includes("--json");
@@ -1579,6 +1593,7 @@ const COMMAND_SPECS: CommandSpec[] = [
 	{
 		name: "init",
 		summary: "Install harness in current directory",
+		example: "init [target-dir] [--dry-run] [--json]",
 		errorLabel: "Init Error",
 		execute: (args) => {
 			const dryRunFlag = args.includes("--dry-run");
@@ -1675,6 +1690,7 @@ const COMMAND_SPECS: CommandSpec[] = [
 	{
 		name: "ci-migrate",
 		summary: "Migrate CI/CD pipelines to harness governance",
+		example: "ci-migrate prepare [target-dir] --dry-run --json",
 		errorLabel: "CI Migrate Error",
 		execute: (args) => {
 			const providerIndex = args.indexOf("--provider");
@@ -1792,6 +1808,7 @@ const COMMAND_SPECS: CommandSpec[] = [
 	{
 		name: "diff-budget",
 		summary: "Enforce diff budget constraints",
+		example: "diff-budget --base main --head HEAD --json",
 		errorLabel: "Diff Budget Error",
 		execute: (args) => {
 			const jsonFlag = args.includes("--json");
@@ -1824,6 +1841,7 @@ const COMMAND_SPECS: CommandSpec[] = [
 	{
 		name: "pilot-rollback",
 		summary: "Roll back pilot to a safe baseline",
+		example: "pilot-rollback --mode manual --incident-id INC-42 --json",
 		errorLabel: "Pilot Rollback Error",
 		execute: (args) => {
 			const jsonFlag = args.includes("--json");
@@ -1866,6 +1884,7 @@ const COMMAND_SPECS: CommandSpec[] = [
 	{
 		name: "pilot-evaluate",
 		summary: "Evaluate pilot gate safety criteria",
+		example: "pilot-evaluate --artifacts artifacts/ --json",
 		errorLabel: "Pilot Evaluate Error",
 		execute: (args) => {
 			const jsonFlag = args.includes("--json");
@@ -2051,4 +2070,113 @@ export function dispatchRegistryCommand(
 		spec,
 		result: spec.execute(args.slice(1)),
 	};
+}
+
+// ---------------------------------------------------------------------------
+// Fuzzy command resolution — for agent-friendly error recovery
+// ---------------------------------------------------------------------------
+
+/**
+ * Compute the Levenshtein edit distance between two strings.
+ * Uses a single-row DP approach for O(n) space.
+ */
+function levenshtein(a: string, b: string): number {
+	const m = a.length;
+	const n = b.length;
+	// row[j] = edit distance between a[0..i] and b[0..j] for current i
+	const row: number[] = Array.from({ length: n + 1 }, (_, i) => i);
+	for (let i = 1; i <= m; i++) {
+		let prev = i;
+		for (let j = 1; j <= n; j++) {
+			const val =
+				a[i - 1] === b[j - 1]
+					? (row[j - 1] ?? 0)
+					: 1 + Math.min(prev, row[j] ?? 0, row[j - 1] ?? 0);
+			row[j - 1] = prev;
+			prev = val;
+		}
+		row[n] = prev;
+	}
+	return row[n] ?? 0;
+}
+
+/**
+ * Normalize a command name to kebab-case.
+ * Handles camelCase (blastRadius → blast-radius) and snake_case (blast_radius → blast-radius).
+ */
+export function normalizeCommandName(name: string): string {
+	return name
+		.replace(/([a-z])([A-Z])/g, "$1-$2")
+		.toLowerCase()
+		.replace(/_/g, "-");
+}
+
+function fuzzyThreshold(len: number): number {
+	if (len <= 5) return 1;
+	return 2;
+}
+
+export type FuzzyMatchConfidence = "normalized" | "near";
+
+export interface FuzzyCommandMatch {
+	spec: CommandSpec;
+	confidence: FuzzyMatchConfidence;
+	/** Edit distance (0 for normalized matches). */
+	distance: number;
+}
+
+/**
+ * Try to find a registry command that matches a potentially malformed name.
+ *
+ * Resolution order:
+ * 1. Normalization (camelCase/snake_case → kebab-case): free correction, high confidence.
+ * 2. Levenshtein near-match against canonical names and aliases.
+ *
+ * Returns `undefined` when no confident match exists.
+ */
+export function fuzzyFindCommand(name: string): FuzzyCommandMatch | undefined {
+	// 1. Normalization pass
+	const normalized = normalizeCommandName(name);
+	if (normalized !== name) {
+		const spec = COMMAND_INDEX.get(normalized);
+		if (spec) {
+			return { spec, confidence: "normalized", distance: 0 };
+		}
+	}
+
+	// 2. Levenshtein near-match (compare normalized input against all entries)
+	const threshold = fuzzyThreshold(Math.max(name.length, normalized.length));
+	let best: FuzzyCommandMatch | undefined;
+
+	for (const spec of COMMAND_SPECS) {
+		const candidates = [spec.name, ...(spec.aliases ?? [])];
+		for (const candidate of candidates) {
+			const d = levenshtein(normalized, candidate);
+			if (d > 0 && d <= threshold && (!best || d < best.distance)) {
+				best = { spec, confidence: "near", distance: d };
+			}
+		}
+	}
+
+	return best;
+}
+
+/**
+ * Return the top-N registry commands ranked by edit distance from `name`.
+ * Used to populate suggestions in "unknown command" error messages.
+ */
+export function suggestCommands(
+	name: string,
+	limit = 3,
+): Array<{ spec: CommandSpec; distance: number }> {
+	const normalized = normalizeCommandName(name);
+	const scored = COMMAND_SPECS.map((spec) => {
+		const candidates = [spec.name, ...(spec.aliases ?? [])];
+		const distance = Math.min(
+			...candidates.map((c) => levenshtein(normalized, c)),
+		);
+		return { spec, distance };
+	});
+	scored.sort((a, b) => a.distance - b.distance);
+	return scored.slice(0, limit);
 }
