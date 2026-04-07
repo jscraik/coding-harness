@@ -6,7 +6,10 @@ import {
 	MIGRATED_COMMAND_AND_ALIAS_NAMES,
 	MIGRATED_COMMAND_NAMES,
 	dispatchRegistryCommand,
+	fuzzyFindCommand,
 	getRegistryCommandHelpRows,
+	normalizeCommandName,
+	suggestCommands,
 } from "./command-registry.js";
 import {
 	compareRegistryToReadme,
@@ -31,6 +34,42 @@ describe("command registry", () => {
 			"license-gate",
 			"symphony-check",
 			"workflow:generate",
+			"org-audit",
+			"tooling-audit",
+			"preset",
+			"doctor",
+			"health",
+			"eject",
+			"verify-coderabbit",
+			"contract",
+			"risk-tier",
+			"replay",
+			"gardener",
+			"memory-gate",
+			"silent-error",
+			"brainstorm-gate",
+			"plan-gate",
+			"prompt-gate",
+			"drift-gate",
+			"ui:fast",
+			"blast-radius",
+			"automation-run",
+			"remediate",
+			"observability-gate",
+			"gap-case",
+			"ui:verify",
+			"ui:explore",
+			"simulate",
+			"context",
+			"search",
+			"index-context",
+			"context-health",
+			"init",
+			"upgrade",
+			"ci-migrate",
+			"diff-budget",
+			"pilot-rollback",
+			"pilot-evaluate",
 		]);
 	});
 
@@ -97,5 +136,77 @@ describe("command registry", () => {
 		);
 
 		expect(result.missingInReadme).toEqual([]);
+	});
+});
+
+describe("normalizeCommandName", () => {
+	it("converts camelCase to kebab-case", () => {
+		expect(normalizeCommandName("blastRadius")).toBe("blast-radius");
+		expect(normalizeCommandName("riskTier")).toBe("risk-tier");
+	});
+
+	it("converts snake_case to kebab-case", () => {
+		expect(normalizeCommandName("blast_radius")).toBe("blast-radius");
+	});
+
+	it("lowercases uppercase", () => {
+		expect(normalizeCommandName("DOCTOR")).toBe("doctor");
+	});
+
+	it("leaves valid kebab-case unchanged", () => {
+		expect(normalizeCommandName("blast-radius")).toBe("blast-radius");
+		expect(normalizeCommandName("workflow:generate")).toBe("workflow:generate");
+	});
+});
+
+describe("fuzzyFindCommand", () => {
+	it("returns undefined for exact canonical names", () => {
+		expect(fuzzyFindCommand("blast-radius")).toBeUndefined();
+	});
+
+	it("resolves camelCase variant with normalized confidence", () => {
+		const result = fuzzyFindCommand("blastRadius");
+		expect(result?.spec.name).toBe("blast-radius");
+		expect(result?.confidence).toBe("normalized");
+	});
+
+	it("resolves snake_case variant with normalized confidence", () => {
+		const result = fuzzyFindCommand("blast_radius");
+		expect(result?.spec.name).toBe("blast-radius");
+		expect(result?.confidence).toBe("normalized");
+	});
+
+	it("resolves single-character typo with near confidence", () => {
+		const result = fuzzyFindCommand("dotor");
+		expect(result?.spec.name).toBe("doctor");
+		expect(result?.confidence).toBe("near");
+	});
+
+	it("resolves single-character typo in long command name", () => {
+		expect(fuzzyFindCommand("blast-raduis")?.spec.name).toBe("blast-radius");
+	});
+
+	it("returns undefined for completely unrelated input", () => {
+		expect(
+			fuzzyFindCommand("xyzzy-nonexistent-totally-random"),
+		).toBeUndefined();
+	});
+});
+
+describe("suggestCommands", () => {
+	it("returns top-3 closest commands by default", () => {
+		const suggestions = suggestCommands("doktor");
+		expect(suggestions).toHaveLength(3);
+		expect(suggestions[0]?.spec.name).toBe("doctor");
+	});
+
+	it("respects the limit parameter", () => {
+		expect(suggestCommands("blast-raduis", 2)).toHaveLength(2);
+	});
+
+	it("returns results sorted by ascending edit distance", () => {
+		const suggestions = suggestCommands("blast-radius-x");
+		const distances = suggestions.map((s) => s.distance);
+		expect(distances).toEqual([...distances].sort((a, b) => a - b));
 	});
 });

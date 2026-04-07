@@ -149,7 +149,7 @@ jobs:
 
       - name: Publish private package (OIDC trusted publisher)
         if: steps.publish-auth.outputs.mode == 'oidc'
-        run: pnpm publish --no-git-checks --access restricted
+        run: pnpm publish --no-git-checks --access restricted --provenance
 
       - name: Generate build provenance attestation
         id: attest

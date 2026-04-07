@@ -120,26 +120,26 @@ describe("cli command dispatch", () => {
 		vi.restoreAllMocks();
 	});
 
-	it("groups init and eject JSON help under distinct sections", async () => {
+	it("lists all migrated commands in --help output", async () => {
 		const { run } = await import("./cli.js");
+		const { MIGRATED_COMMAND_NAMES } = await import(
+			"./lib/cli/command-registry.js"
+		);
 		const infoSpy = vi.spyOn(console, "info").mockImplementation(() => {});
 
 		run(["--help"]);
 
-		const output = infoSpy.mock.calls.map(([line]) => String(line));
-		const initHeader = output.indexOf("Init Options:");
-		const initJson = output.indexOf(
-			"  --json           Output as structured JSON",
-		);
-		const ejectHeader = output.indexOf("Eject Options:");
-		const secondJson = output.lastIndexOf(
-			"  --json           Output as structured JSON",
-		);
-
-		expect(initHeader).toBeGreaterThan(-1);
-		expect(initJson).toBeGreaterThan(initHeader);
-		expect(initJson).toBeLessThan(ejectHeader);
-		expect(secondJson).toBeGreaterThan(ejectHeader);
+		const lines = infoSpy.mock.calls.map(([line]) => String(line));
+		for (const name of MIGRATED_COMMAND_NAMES) {
+			const found = lines.some(
+				(line) =>
+					line.trimStart().startsWith(`${name} `) ||
+					line.trimStart().startsWith(`${name}\t`),
+			);
+			expect(found).toBe(true);
+		}
+		expect(lines.join("\n")).toContain("Usage: harness <command> [options]");
+		expect(lines.join("\n")).toContain("--help, -h");
 	});
 
 	it("dispatches risk-tier command and ignores missing contract value", async () => {
@@ -788,7 +788,7 @@ describe("cli command dispatch", () => {
 		await new Promise((resolve) => setTimeout(resolve, 0));
 
 		expect(vi.mocked(runRemediateCLI)).toHaveBeenCalledWith({
-			mode: "run",
+			subcommand: "run",
 			findings: "findings.json",
 			dryRun: true,
 			json: true,
@@ -820,7 +820,7 @@ describe("cli command dispatch", () => {
 		await new Promise((resolve) => setTimeout(resolve, 0));
 
 		expect(vi.mocked(runRemediateCLI)).toHaveBeenCalledWith({
-			mode: "run",
+			subcommand: "run",
 			dryRun: true,
 			json: true,
 			headSha: "a".repeat(40),
@@ -1205,13 +1205,13 @@ describe("cli command dispatch", () => {
 				"--required-approvals",
 				"-1",
 			]),
-		).toThrowError("EXIT_1");
+		).toThrowError("EXIT_2");
 
 		expect(errorSpy).toHaveBeenCalledWith(
 			"--required-approvals expects a non-negative integer.",
 		);
 		expect(vi.mocked(runBranchProtectCLI)).not.toHaveBeenCalled();
-		expect(exitSpy).toHaveBeenCalledWith(1);
+		expect(exitSpy).toHaveBeenCalledWith(2);
 	});
 
 	it("rejects branch-protect --required-approvals when value is non-numeric", async () => {
@@ -1239,13 +1239,13 @@ describe("cli command dispatch", () => {
 				"--required-approvals",
 				"two",
 			]),
-		).toThrowError("EXIT_1");
+		).toThrowError("EXIT_2");
 
 		expect(errorSpy).toHaveBeenCalledWith(
 			"--required-approvals expects a non-negative integer.",
 		);
 		expect(vi.mocked(runBranchProtectCLI)).not.toHaveBeenCalled();
-		expect(exitSpy).toHaveBeenCalledWith(1);
+		expect(exitSpy).toHaveBeenCalledWith(2);
 	});
 
 	it("dispatches tooling-audit command", async () => {
@@ -1765,10 +1765,10 @@ describe("cli command dispatch", () => {
 
 		expect(() =>
 			run(["prompt-gate", "--type", "feature", "--file", "--json"]),
-		).toThrowError("EXIT_1");
+		).toThrowError("EXIT_2");
 
 		expect(vi.mocked(runPromptGateCLI)).not.toHaveBeenCalled();
-		expect(exitSpy).toHaveBeenCalledWith(1);
+		expect(exitSpy).toHaveBeenCalledWith(2);
 	});
 
 	it("rejects blast-radius when --files value is missing", async () => {
@@ -1782,11 +1782,11 @@ describe("cli command dispatch", () => {
 		}) as never);
 
 		expect(() => run(["blast-radius", "--files", "--json"])).toThrowError(
-			"EXIT_1",
+			"EXIT_2",
 		);
 
 		expect(vi.mocked(runBlastRadiusCLI)).not.toHaveBeenCalled();
-		expect(exitSpy).toHaveBeenCalledWith(1);
+		expect(exitSpy).toHaveBeenCalledWith(2);
 	});
 
 	// Note: -h is intercepted by the top-level help check, so it's not passed to the command

@@ -110,7 +110,7 @@ describe("run", () => {
 		expect(() => run(["totally-unknown-command"])).toThrowError("EXIT_1");
 		expect(exitSpy).toHaveBeenCalledWith(1);
 		expect(infoSpy).toHaveBeenCalledWith(
-			"Unknown command: totally-unknown-command",
+			'Unknown command: "totally-unknown-command"',
 		);
 	});
 
@@ -230,6 +230,21 @@ describe("run", () => {
 		run(["--help"]);
 		run(["--version"]);
 
+		expect(exitSpy).not.toHaveBeenCalled();
+	});
+
+	it("short-circuits mutating commands when --help follows command name", async () => {
+		const exitSpy = vi.spyOn(process, "exit").mockImplementation(((
+			code?: number,
+		) => {
+			throw new Error(`EXIT_${String(code)}`);
+		}) as never);
+		const infoSpy = vi.spyOn(console, "info").mockImplementation(() => {});
+
+		expect(() => run(["init", "--help"])).not.toThrow();
+		expect(infoSpy).toHaveBeenCalledWith(
+			expect.stringContaining("Usage: harness"),
+		);
 		expect(exitSpy).not.toHaveBeenCalled();
 	});
 });
