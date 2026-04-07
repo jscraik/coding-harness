@@ -135,7 +135,7 @@ system internals. Insufficient logging makes incident response harder.
 
 **Controls:**
 
-- Log messages **must not** include raw request bodies, full stack traces
+- Log messages **must not** include raw request bodies, full-stack traces
   containing user data, session tokens, or personally identifiable information
   (PII).
 - Use structured logging (JSON) wherever the runtime supports it. Avoid
