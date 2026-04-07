@@ -61,6 +61,12 @@ describe("command registry", () => {
 			"search",
 			"index-context",
 			"context-health",
+			"init",
+			"upgrade",
+			"ci-migrate",
+			"diff-budget",
+			"pilot-rollback",
+			"pilot-evaluate",
 		]);
 	});
 

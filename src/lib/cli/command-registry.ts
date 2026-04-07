@@ -7,9 +7,15 @@ import { runBrainstormGateCLI } from "../../commands/brainstorm-gate.js";
 import { runBranchProtectCLI } from "../../commands/branch-protect.js";
 import { runCheckAuthzCLI } from "../../commands/check-authz.js";
 import { runCheckEnvironmentCLI } from "../../commands/check-environment.js";
+import {
+	runCIMigrateCLI,
+	runPromoteModeCLI,
+	runSyncBranchProtectionCLI,
+} from "../../commands/ci-migrate.js";
 import { runContextHealthCLI } from "../../commands/context-health.js";
 import { runContextCLI } from "../../commands/context.js";
 import { runContractCLI } from "../../commands/contract.js";
+import { runDiffBudgetCLI } from "../../commands/diff-budget.js";
 import { runDocsGateCLI } from "../../commands/docs-gate.js";
 import { runDoctorCLI } from "../../commands/doctor.js";
 import { runDriftGateCLI } from "../../commands/drift-gate.js";
@@ -19,6 +25,7 @@ import { runGapCaseCLI } from "../../commands/gap-case.js";
 import { runGardenerCLI } from "../../commands/gardener.js";
 import { runHealthCLI } from "../../commands/health.js";
 import { runIndexContextCLI } from "../../commands/index-context.js";
+import { runInitCLI, runInteractiveInitCLI } from "../../commands/init.js";
 import { runLicenseGateCLI } from "../../commands/license-gate.js";
 import { runLinearGateCLI } from "../../commands/linear-gate.js";
 import { runLinearPrepareCLI } from "../../commands/linear-prepare.js";
@@ -31,6 +38,11 @@ import {
 import { runMemoryGateCLI } from "../../commands/memory-gate.js";
 import { runObservabilityGateCLI } from "../../commands/observability-gate.js";
 import { runOrgAuditCLI } from "../../commands/org-audit.js";
+import { runPilotEvaluateCLI } from "../../commands/pilot-evaluate.js";
+import {
+	type PilotRollbackOptions,
+	runPilotRollbackCLI,
+} from "../../commands/pilot-rollback.js";
 import { runPlanGateCLI } from "../../commands/plan-gate.js";
 import { runPolicyGateCLI } from "../../commands/policy-gate.js";
 import { runPrTemplateGateCLI } from "../../commands/pr-template-gate.js";
@@ -54,8 +66,15 @@ import {
 	runUIFastCLI,
 	runUIVerifyCLI,
 } from "../../commands/ui-loop.js";
+import {
+	type HarnessUpgradeOptions,
+	runUpgradeCLI,
+} from "../../commands/upgrade.js";
 import { runVerifyCodeRabbitCLI } from "../../commands/verify-coderabbit.js";
 import { runWorkflowGenerateCLI } from "../../commands/workflow-generate.js";
+import type { IssueTracker } from "../init/types.js";
+import type { PilotEvaluateOptions } from "../pilot-evaluation/types.js";
+import type { ProjectType } from "../project-type/types.js";
 import { getVersion } from "../version.js";
 import {
 	getFlagValue,
@@ -1555,6 +1574,441 @@ const COMMAND_SPECS: CommandSpec[] = [
 		errorLabel: "Context Health Error",
 		execute: (args) => {
 			return runContextHealthCLI(args);
+		},
+	},
+	{
+		name: "init",
+		summary: "Install harness in current directory",
+		errorLabel: "Init Error",
+		execute: (args) => {
+			const dryRunFlag = args.includes("--dry-run");
+			const forceFlag = args.includes("--force");
+			const trackFlag = args.includes("--track");
+			const rollbackFlag = args.includes("--rollback");
+			const checkUpdatesFlag = args.includes("--check-updates");
+			const updateFlag = args.includes("--update");
+			const explainOwnershipFlag = args.includes("--explain-ownership");
+			const interactiveFlag = args.includes("--interactive");
+			const migrateFlag = args.includes("--migrate");
+			const jsonFlag = args.includes("--json");
+			const minimalFlag = args.includes("--minimal");
+
+			const projectTypeIndex = args.indexOf("--project-type");
+			const projectTypeArg =
+				projectTypeIndex !== -1 ? args[projectTypeIndex + 1] : undefined;
+			const issueTrackerIndex = args.indexOf("--issue-tracker");
+			const issueTrackerArg =
+				issueTrackerIndex !== -1 ? args[issueTrackerIndex + 1] : undefined;
+
+			if (minimalFlag) {
+				if (issueTrackerArg !== undefined) {
+					console.error(
+						"Error: --issue-tracker cannot be used with --minimal. Granular options conflict with minimal mode.",
+					);
+					return 2;
+				}
+			}
+			if (
+				issueTrackerArg !== undefined &&
+				!["linear", "github", "none"].includes(issueTrackerArg)
+			) {
+				console.error(
+					`Error: Invalid --issue-tracker value: "${issueTrackerArg}". Valid values: linear | github | none.`,
+				);
+				return 2;
+			}
+			const issueTracker = issueTrackerArg as IssueTracker | undefined;
+
+			// Find target dir: first non-flag arg, not a value for a named flag
+			const targetDir = args.find((arg, i, arr) => {
+				if (arg.startsWith("-")) return false;
+				const prev = arr[i - 1];
+				if (prev === "--project-type" || prev === "--issue-tracker")
+					return false;
+				return true;
+			});
+
+			const options = {
+				dryRun: dryRunFlag,
+				force: forceFlag,
+				track: trackFlag,
+				rollback: rollbackFlag,
+				checkUpdates: checkUpdatesFlag,
+				update: updateFlag,
+				explainOwnership: explainOwnershipFlag,
+				interactive: interactiveFlag,
+				migrate: migrateFlag,
+				json: jsonFlag,
+				...(minimalFlag ? { minimal: true } : {}),
+				...(issueTracker ? { issueTracker } : {}),
+				...(projectTypeArg
+					? { projectType: projectTypeArg as ProjectType }
+					: {}),
+			};
+
+			if (interactiveFlag) {
+				return runInteractiveInitCLI(targetDir, options);
+			}
+			return runInitCLI(targetDir, options);
+		},
+	},
+	{
+		name: "upgrade",
+		summary: "Upgrade harness to the latest version",
+		errorLabel: "Upgrade Error",
+		execute: (args) => {
+			const dryRunFlag = args.includes("--dry-run");
+			const forceFlag = args.includes("--force");
+			const skipContractFlag = args.includes("--skip-contract-migration");
+			const providerIndex = args.indexOf("--provider");
+			const provider = getFlagValue(args, providerIndex);
+			const targetDir = args.find((arg) => !arg.startsWith("-"));
+			const upgradeOptions: HarnessUpgradeOptions = {
+				dryRun: dryRunFlag,
+				force: forceFlag,
+				provider: provider ?? undefined,
+				skipContractMigration: skipContractFlag,
+			};
+			return runUpgradeCLI(targetDir, upgradeOptions);
+		},
+	},
+	{
+		name: "ci-migrate",
+		summary: "Migrate CI/CD pipelines to harness governance",
+		errorLabel: "CI Migrate Error",
+		execute: (args) => {
+			const providerIndex = args.indexOf("--provider");
+			const snapshotIndex = args.indexOf("--snapshot");
+			const actionIndex = args.indexOf("--action");
+			const breakGlassApprovalIndex = args.indexOf("--break-glass-approval");
+			const mergeQueueEvidenceIndex = args.indexOf("--merge-queue-evidence");
+			const mergeQueueOrchestratorIndex = args.indexOf(
+				"--merge-queue-orchestrator",
+			);
+			const commitModeIndex = args.indexOf("--commit-mode");
+			const dryRunFlag = args.includes("--dry-run");
+			const applyFlag = args.includes("--apply");
+			const rollbackFlag = args.includes("--rollback");
+			const autoGenerateProofPackFlag = args.includes(
+				"--auto-generate-proof-pack",
+			);
+			const forceFlag = args.includes("--force");
+			const valueFlags = new Set([
+				"--provider",
+				"--snapshot",
+				"--action",
+				"--break-glass-approval",
+				"--merge-queue-evidence",
+				"--merge-queue-orchestrator",
+				"--commit-mode",
+			]);
+			const positionalArgs: string[] = [];
+			// args[0] is already the first arg after command name (stripped by dispatcher)
+			for (let index = 0; index < args.length; index++) {
+				const token = args[index];
+				if (!token) continue;
+				if (token.startsWith("--")) {
+					if (valueFlags.has(token)) {
+						const nextToken = args[index + 1];
+						if (nextToken && !nextToken.startsWith("-")) {
+							index += 1;
+						}
+					}
+					continue;
+				}
+				if (token.startsWith("-")) continue;
+				positionalArgs.push(token);
+			}
+
+			const validActions = new Set([
+				"prepare",
+				"commit",
+				"abort",
+				"verify",
+				"bootstrap",
+				"sync-branch-protection",
+				"promote-mode",
+			]);
+			const actionArg = getFlagValue(args, actionIndex);
+			let parsedAction = actionArg;
+			if (
+				!parsedAction &&
+				positionalArgs[0] &&
+				validActions.has(positionalArgs[0])
+			) {
+				parsedAction = positionalArgs.shift();
+			}
+			if (positionalArgs.length > 1) {
+				console.error(
+					"Error: ci-migrate accepts at most one target directory positional argument.",
+				);
+				return 2;
+			}
+			const targetDir = positionalArgs[0];
+
+			if (parsedAction === "sync-branch-protection") {
+				return runSyncBranchProtectionCLI(targetDir, args.slice(1));
+			}
+			if (parsedAction === "promote-mode") {
+				return runPromoteModeCLI(targetDir, args.slice(1));
+			}
+
+			const provider = getFlagValue(args, providerIndex);
+			const snapshot = getFlagValue(args, snapshotIndex);
+			const breakGlassApprovalPath = getFlagValue(
+				args,
+				breakGlassApprovalIndex,
+			);
+			const mergeQueueEvidencePath = getFlagValue(
+				args,
+				mergeQueueEvidenceIndex,
+			);
+			const mergeQueueOrchestratorPath = getFlagValue(
+				args,
+				mergeQueueOrchestratorIndex,
+			);
+			const commitModeRaw = getFlagValue(args, commitModeIndex);
+			const commitMode =
+				commitModeRaw === "solo" || commitModeRaw === "enterprise"
+					? commitModeRaw
+					: undefined;
+
+			return runCIMigrateCLI(targetDir, {
+				provider,
+				dryRun: dryRunFlag,
+				apply: applyFlag,
+				rollback: rollbackFlag,
+				snapshot,
+				action: parsedAction,
+				breakGlassApprovalPath,
+				mergeQueueEvidencePath,
+				mergeQueueOrchestratorPath,
+				autoGenerateProofPack: autoGenerateProofPackFlag,
+				commitMode,
+				force: forceFlag,
+			});
+		},
+	},
+	{
+		name: "diff-budget",
+		summary: "Enforce diff budget constraints",
+		errorLabel: "Diff Budget Error",
+		execute: (args) => {
+			const jsonFlag = args.includes("--json");
+			const baseIndex = args.indexOf("--base");
+			const headIndex = args.indexOf("--head");
+			const contractIndex = args.indexOf("--contract");
+			const overrideIndex = args.indexOf("--override");
+
+			const options: {
+				base?: string;
+				head?: string;
+				contractPath?: string;
+				overridePath?: string;
+				json?: boolean;
+			} = {};
+
+			if (jsonFlag) options.json = true;
+			const baseArg = getFlagValue(args, baseIndex);
+			if (baseArg) options.base = baseArg;
+			const headArg = getFlagValue(args, headIndex);
+			if (headArg) options.head = headArg;
+			const contractArg = getFlagValue(args, contractIndex);
+			if (contractArg) options.contractPath = contractArg;
+			const overrideArg = getFlagValue(args, overrideIndex);
+			if (overrideArg) options.overridePath = overrideArg;
+
+			return runDiffBudgetCLI(options);
+		},
+	},
+	{
+		name: "pilot-rollback",
+		summary: "Roll back pilot to a safe baseline",
+		errorLabel: "Pilot Rollback Error",
+		execute: (args) => {
+			const jsonFlag = args.includes("--json");
+			const incidentIndex = args.indexOf("--incident-id");
+			const modeIndex = args.indexOf("--mode");
+			const contractIndex = args.indexOf("--contract");
+			const artifactsIndex = args.indexOf("--artifacts");
+			const outputIndex = args.indexOf("--output");
+			const markerIndex = args.indexOf("--completion-marker");
+			const reasonIndex = args.indexOf("--reason");
+
+			const modeArg = getFlagValue(args, modeIndex);
+			if (modeArg !== "autonomous" && modeArg !== "manual") {
+				console.error(
+					"Error: --mode is required and must be 'autonomous' or 'manual'",
+				);
+				return 2;
+			}
+
+			const options: PilotRollbackOptions = {
+				incidentId: getFlagValue(args, incidentIndex) ?? "",
+				mode: modeArg,
+				json: jsonFlag,
+			};
+
+			const contractArg = getFlagValue(args, contractIndex);
+			if (contractArg) options.contractPath = contractArg;
+			const artifactsArg = getFlagValue(args, artifactsIndex);
+			if (artifactsArg) options.artifactsDir = artifactsArg;
+			const outputArg = getFlagValue(args, outputIndex);
+			if (outputArg) options.outputPath = outputArg;
+			const markerArg = getFlagValue(args, markerIndex);
+			if (markerArg) options.completionMarkerPath = markerArg;
+			const reasonArg = getFlagValue(args, reasonIndex);
+			if (reasonArg) options.reason = reasonArg;
+
+			return runPilotRollbackCLI(options);
+		},
+	},
+	{
+		name: "pilot-evaluate",
+		summary: "Evaluate pilot gate safety criteria",
+		errorLabel: "Pilot Evaluate Error",
+		execute: (args) => {
+			const jsonFlag = args.includes("--json");
+			const killSwitchFlag = args.includes("--kill-switch");
+			const contractIndex = args.indexOf("--contract");
+			const artifactsIndex = args.indexOf("--artifacts");
+			const outputIndex = args.indexOf("--output");
+			const laneIndex = args.indexOf("--lane");
+			const adapterRegistryIndex = args.indexOf("--adapter-registry");
+			const metricRegistryIndex = args.indexOf("--metric-registry");
+			const docsGateReportIndex = args.indexOf("--docs-gate-report");
+			const evaluationModeIndex = args.indexOf("--evaluation-mode");
+			const rolloutStageIndex = args.indexOf("--rollout-stage");
+			const prTemplateStatusIndex = args.indexOf("--pr-template-status");
+			const prTemplateRefIndex = args.indexOf("--pr-template-ref");
+			const actorIdIndex = args.indexOf("--actor-id");
+			const clientFamilyIndex = args.indexOf("--client-family");
+			const providerIdIndex = args.indexOf("--provider-id");
+			const modelDescriptorIndex = args.indexOf("--model-descriptor");
+			const executionModeIndex = args.indexOf("--execution-mode");
+			const operatorTypeIndex = args.indexOf("--operator-type");
+			const overrideAuthorizedPrincipalIndex = args.indexOf(
+				"--override-authorized-principal",
+			);
+			const overrideScopeIndex = args.indexOf("--override-scope");
+			const overrideReasonIndex = args.indexOf("--override-reason");
+			const overrideTicketIndex = args.indexOf("--override-ticket");
+			const overrideApprovedByIndex = args.indexOf("--override-approved-by");
+			const overrideCreatedAtIndex = args.indexOf("--override-created-at");
+			const overrideExpiresAtIndex = args.indexOf("--override-expires-at");
+
+			const artifactsArg = getFlagValue(args, artifactsIndex);
+			if (!artifactsArg) {
+				console.error("Error: --artifacts is required");
+				return 2;
+			}
+
+			const options: PilotEvaluateOptions = { artifactsDir: artifactsArg };
+
+			if (jsonFlag) options.json = true;
+			if (killSwitchFlag) options.killSwitch = true;
+			const contractArg = getFlagValue(args, contractIndex);
+			if (contractArg) options.contractPath = contractArg;
+			const outputArg = getFlagValue(args, outputIndex);
+			if (outputArg) options.outputPath = outputArg;
+			const laneArg = getFlagValue(args, laneIndex);
+			if (laneArg === "advisory" || laneArg === "health")
+				options.lane = laneArg;
+			const adapterRegistryArg = getFlagValue(args, adapterRegistryIndex);
+			if (adapterRegistryArg) options.adapterRegistryPath = adapterRegistryArg;
+			const metricRegistryArg = getFlagValue(args, metricRegistryIndex);
+			if (metricRegistryArg) options.metricRegistryPath = metricRegistryArg;
+			const docsGateReportArg = getFlagValue(args, docsGateReportIndex);
+			if (docsGateReportArg) options.docsGateReportPath = docsGateReportArg;
+			const evaluationModeArg = getFlagValue(args, evaluationModeIndex);
+			if (
+				evaluationModeArg === "local" ||
+				evaluationModeArg === "pr" ||
+				evaluationModeArg === "merge_group"
+			) {
+				options.evaluationMode = evaluationModeArg;
+			}
+			const rolloutStageArg = getFlagValue(args, rolloutStageIndex);
+			if (
+				rolloutStageArg === "shadow" ||
+				rolloutStageArg === "advisory" ||
+				rolloutStageArg === "enforced"
+			) {
+				options.rolloutStage = rolloutStageArg;
+			}
+			const prTemplateStatusArg = getFlagValue(args, prTemplateStatusIndex);
+			if (
+				prTemplateStatusArg === "passed" ||
+				prTemplateStatusArg === "failed" ||
+				prTemplateStatusArg === "missing"
+			) {
+				options.prTemplateStatus = prTemplateStatusArg;
+			}
+			const prTemplateRefArg = getFlagValue(args, prTemplateRefIndex);
+			if (prTemplateRefArg) options.prTemplateRef = prTemplateRefArg;
+			const actorIdArg = getFlagValue(args, actorIdIndex);
+			if (actorIdArg) options.actorId = actorIdArg;
+			const clientFamilyArg = getFlagValue(args, clientFamilyIndex);
+			if (
+				clientFamilyArg === "codex" ||
+				clientFamilyArg === "claude_family" ||
+				clientFamilyArg === "gemini_family" ||
+				clientFamilyArg === "kimi_family" ||
+				clientFamilyArg === "custom"
+			) {
+				options.clientFamily = clientFamilyArg;
+			}
+			const providerIdArg = getFlagValue(args, providerIdIndex);
+			if (providerIdArg) options.providerId = providerIdArg;
+			const modelDescriptorArg = getFlagValue(args, modelDescriptorIndex);
+			if (modelDescriptorArg) options.modelDescriptor = modelDescriptorArg;
+			const executionModeArg = getFlagValue(args, executionModeIndex);
+			if (
+				executionModeArg === "interactive" ||
+				executionModeArg === "automation" ||
+				executionModeArg === "ci"
+			) {
+				options.executionMode = executionModeArg;
+			}
+			const operatorTypeArg = getFlagValue(args, operatorTypeIndex);
+			if (
+				operatorTypeArg === "human_directed" ||
+				operatorTypeArg === "automation" ||
+				operatorTypeArg === "autonomous"
+			) {
+				options.operatorType = operatorTypeArg;
+			}
+			const overrideAuthorizedPrincipalArg = getFlagValue(
+				args,
+				overrideAuthorizedPrincipalIndex,
+			);
+			if (overrideAuthorizedPrincipalArg) {
+				options.overrideAuthorizedPrincipal = overrideAuthorizedPrincipalArg;
+			}
+			const overrideScopeArg = getFlagValue(args, overrideScopeIndex);
+			if (
+				overrideScopeArg === "advisory_hold" ||
+				overrideScopeArg === "temporary_unblock" ||
+				overrideScopeArg === "temporary_promote"
+			) {
+				options.overrideScope = overrideScopeArg;
+			}
+			const overrideReasonArg = getFlagValue(args, overrideReasonIndex);
+			if (overrideReasonArg) options.overrideReason = overrideReasonArg;
+			const overrideTicketArg = getFlagValue(args, overrideTicketIndex);
+			if (overrideTicketArg) options.overrideTicketRef = overrideTicketArg;
+			const overrideApprovedByArg = getFlagValue(args, overrideApprovedByIndex);
+			if (overrideApprovedByArg !== undefined) {
+				options.overrideApprovedBy = parseCsvList(overrideApprovedByArg);
+			}
+			const overrideCreatedAtArg = getFlagValue(args, overrideCreatedAtIndex);
+			if (overrideCreatedAtArg)
+				options.overrideCreatedAt = overrideCreatedAtArg;
+			const overrideExpiresAtArg = getFlagValue(args, overrideExpiresAtIndex);
+			if (overrideExpiresAtArg)
+				options.overrideExpiresAt = overrideExpiresAtArg;
+
+			return runPilotEvaluateCLI(options);
 		},
 	},
 ];
