@@ -127,10 +127,7 @@ function buildFullPreset(): Record<string, unknown> {
 			medium: ["review-gate"],
 			low: [],
 		},
-		branchProtection: {
-			...DEFAULT_CONTRACT.branchProtection,
-			requiredChecks: [],
-		},
+		branchProtection: DEFAULT_CONTRACT.branchProtection,
 		docsDriftRules: {},
 		diffBudget: {
 			maxFiles: 20,
@@ -171,6 +168,8 @@ export function buildContractPreset(
 			return buildStandardPreset();
 		case "full":
 			return buildFullPreset();
+		default:
+			throw new Error(`Unknown contract preset: ${preset as string}`);
 	}
 }
 

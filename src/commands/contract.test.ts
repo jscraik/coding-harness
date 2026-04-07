@@ -582,10 +582,10 @@ describe("runContractInitCLI", () => {
 		expect(parsed).toHaveProperty("version");
 	});
 
-	it("returns 1 for unknown preset", () => {
+	it("returns 2 for unknown preset", () => {
 		const output = join(dir, "harness.contract.json");
 		const code = runContractInitCLI({ preset: "unknown" as never, output });
-		expect(code).toBe(1);
+		expect(code).toBe(2);
 	});
 
 	it("emits JSON output when --json flag is set", () => {

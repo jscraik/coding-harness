@@ -103,7 +103,7 @@ export function runContractInitCLI(options: ContractInitOptions): number {
 		} else {
 			console.error(`✗ ${msg}`);
 		}
-		return 1;
+		return 2;
 	}
 
 	if (existsSync(outputPath) && !options.force) {
