@@ -136,8 +136,9 @@ interface CommandSpec {
   name: string;                                          // canonical command name
   aliases?: string[];                                    // resolved to same spec
   summary: string;                                       // one-line for help output
+  example?: string;                                      // usage example for suggestion output
   errorLabel: string;                                    // prefix for fatal error messages
-  execute: (args: string[]) => number | Promise<number>; // args[0] is the command name
+  execute: (args: string[]) => number | Promise<number>; // args[0] is the first sub-action/flag (command name stripped by dispatcher)
 }
 ```
 

@@ -66,13 +66,13 @@ Use this document before milestones, release-tagged branches, or behavior-changi
 
 ## Release integrity and verification
 
-Every release published from `.github/workflows/release-private-npm.yml` carries three trust layers that consumers can verify independently.
+Releases published via OIDC trusted publishing from `.github/workflows/release-private-npm.yml` carry three trust layers that consumers can verify independently.
 
 ### 1. npm provenance
 
 Releases published via OIDC trusted publishing include a signed provenance statement on the npm registry, linking the package to the exact source commit and build environment.
 
-Verify from any machine:
+Verify OIDC-published packages from any machine:
 
 ```bash
 npm view @brainwav/coding-harness --json | jq '.attestations'
@@ -114,7 +114,7 @@ The release workflow uses these top-level permissions (least-privilege):
 | `attestations: write` | `actions/attest-build-provenance` for build provenance |
 | `contents: write` | GitHub Release creation |
 
-No additional secrets are required for OIDC-mode publishes. Token-mode (`NPM_TOKEN`) is retained as a bootstrap fallback only.
+No additional secrets are required for OIDC-mode publishes. Token-mode (`publish_auth=token`) is retained for bootstrap recovery only and may not produce full provenance attestations or SBOM artifacts.
 
 ## Release blockers
 

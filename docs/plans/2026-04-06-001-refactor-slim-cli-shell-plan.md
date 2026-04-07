@@ -199,7 +199,7 @@ No commands require interactive confirmation by default. `eject` prints a warnin
 
 **Approach:** Same as Unit 1 — each `CommandSpec.execute()` contains the flag parsing logic currently inline in `cli.ts`. The `run*CLI()` function call remains unchanged. Remove the corresponding `if` branch from `cli.ts`.
 
-> **Note:** `replay` has a positional trace-ID fallback: `args[1]` is used as `traceId` if no `--trace-id` flag is present and the value does not start with `-`. Preserve this exactly.
+> **Note:** `replay` has a positional trace-ID fallback: `args[0]` is used as `traceId` if no `--trace-id` flag is present and the value does not start with `-` (the command name is stripped by `dispatchRegistryCommand` before `execute()` runs). Preserve this exactly.
 
 **Files:**
 - `src/lib/cli/command-registry.ts` — add 8 specs

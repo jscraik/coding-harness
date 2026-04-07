@@ -146,6 +146,7 @@ export function run(args: string[]): void {
 		if (jsonFlag) {
 			console.info(
 				JSON.stringify({
+					status: "error",
 					error: "unknown_command",
 					received: command,
 					suggestions: suggestions.map(({ spec }) => ({

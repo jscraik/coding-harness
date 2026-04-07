@@ -49,7 +49,7 @@ The `harness` binary is designed to be called directly by AI agents in CI and lo
 harness <command> [flags]
 ```
 
-Always use the canonical kebab-case command name (e.g., `blast-radius`, not `blastRadius` or `blast_radius`). The CLI auto-corrects minor variants with a note on stderr, but using the canonical name avoids that overhead.
+Always use the canonical command name — most are kebab-case (e.g., `blast-radius`, not `blastRadius` or `blast_radius`), but some use colon separators (e.g., `ui:verify`, `workflow:generate`). The CLI auto-corrects minor variants with a note on stderr, but using the canonical name avoids that overhead.
 
 ### Machine-readable output
 
@@ -62,7 +62,7 @@ harness preflight-gate --files src/foo.ts --json
 harness doctor --json
 ```
 
-The JSON envelope shape varies per command but always includes `status` and relevant findings. Parse stdout only; the CLI may emit correction notes or warnings on stderr.
+The JSON envelope shape varies per command but always includes `status` and relevant findings. Error responses use `status: "error"` with an `error` field. Parse stdout only; the CLI may emit correction notes or warnings on stderr.
 
 ### Exit codes
 
