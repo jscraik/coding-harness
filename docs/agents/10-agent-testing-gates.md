@@ -1,5 +1,15 @@
 # Agent testing gates
 
+## Table of Contents
+
+- [Primary required gates](#primary-required-gates)
+- [Optional gates](#optional-gates)
+- [Verify-work orchestration and resume](#verify-work-orchestration-and-resume)
+- [Gate-by-gate intent](#gate-by-gate-intent)
+- [Failure policy](#failure-policy)
+- [Reporting format](#reporting-format)
+- [Human escalation](#human-escalation)
+
 ## Primary required gates
 
 For any behavior-affecting change:
@@ -14,6 +24,16 @@ For any behavior-affecting change:
 
 - `pnpm build` when CLI output, entrypoints, or distribution artifacts change.
 - Manual smoke checks for command-flow changes.
+
+## Verify-work orchestration and resume
+
+`bash scripts/verify-work.sh` is the canonical orchestrated gate runner for repo-local validation. Run-state is written to `.harness/runs/<run-id>/` as:
+
+- `run.json` (run metadata and resume compatibility keys),
+- `gates/<gate-id>.json` (per-gate results),
+- `summary.json` (terminal status).
+
+Fast-mode orchestration uses `read_only_parallel` for safe parallel checks and `serial_guarded` for fail-closed gates. Resume with `bash scripts/verify-work.sh --resume-from <gate-id>` only when the latest compatible run matches `repoRoot`, `providerClass`, `schemaVersion`, and `contractVersion`, and reused gates are already `passed`.
 
 ## Gate-by-gate intent
 

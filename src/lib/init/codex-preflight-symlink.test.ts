@@ -258,8 +258,8 @@ describe("check_paths with is_allowed_repo_external_path exemption", () => {
 			encoding: "utf8",
 			env: {
 				...process.env,
-				CODEX_PREFLIGHT_ALLOW_SOURCE: "1",
 				...env,
+				CODEX_PREFLIGHT_ALLOW_SOURCE: "1",
 			},
 		});
 

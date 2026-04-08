@@ -106,7 +106,7 @@ Fast-mode orchestration uses two classes:
 Resume behavior:
 
 - Use `bash scripts/verify-work.sh --resume-from <gate-id>` to restart from a failed gate boundary.
-- Resume is admitted only when the latest compatible run matches repo root, provider class, and `contractVersion`.
+- Resume is admitted only when the latest compatible run matches repo root, provider class, `schemaVersion`, and `contractVersion`.
 - Reused prior gates must already be `passed`; otherwise resume is rejected and a fresh run is required.
 
 ## Execution order and restart policy
@@ -114,7 +114,7 @@ Resume behavior:
 - On first failure, stop.
 - Fix root cause.
 - Rerun from the first failed gate forward using `--resume-from <gate-id>` when compatibility checks pass.
-- If resume is rejected due contract drift, run a fresh verification lane from the start.
+- If resume is rejected due to contract drift, run a fresh verification lane from the start.
 
 ## Evidence reporting
 

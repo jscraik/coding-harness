@@ -125,6 +125,12 @@ Contract compatibility rules:
 - Non-identity field changes (`displayName`, `order`, `enabled`) do not force resume incompatibility when `gateId` is held constant.
 - Identity field changes do invalidate resume compatibility for affected gates.
 
+Rollback/remediation when identity tuple changes break resume compatibility:
+
+1. Revert `.harness/ci-required-checks.json` to the prior identity tuple and bump `version` (or set explicit `contractVersion`) to restore the previous compatibility boundary.
+2. If full rollback is not desired, publish a transitional manifest that restores the prior `gateId` + provider + `externalIdPattern` + `githubCheckName` identity tuple while keeping non-identity changes.
+3. Re-run `bash scripts/verify-work.sh` and `harness doctor` after normalization updates before reapplying identity-tuple changes.
+
 ---
 
 ## How CI providers report checks to GitHub

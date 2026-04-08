@@ -113,9 +113,12 @@ prepare_normalized_required_checks_manifest() {
 
 	local -a normalize_runner=()
 	local pnpm_bin=""
+	local mise_harness_bin=""
 	local harness_bin=""
 	if [[ -f "$repo_root/src/cli.ts" ]] && pnpm_bin="$(command -v pnpm 2>/dev/null)"; then
 		normalize_runner=("$pnpm_bin" exec tsx "$repo_root/src/cli.ts")
+	elif mise_harness_bin="$(mise which harness 2>/dev/null || true)" && [[ -n "$mise_harness_bin" && -x "$mise_harness_bin" ]]; then
+		normalize_runner=("$mise_harness_bin")
 	elif harness_bin="$(command -v harness 2>/dev/null)"; then
 		normalize_runner=("$harness_bin")
 	else
@@ -255,47 +258,30 @@ run_ci_check_alignment_gate() {
 	return 0
 }
 
-compute_contract_version() {
-	local manifest_path="$repo_root/.harness/ci-required-checks.json"
+read_normalized_manifest_value_or_default() {
+	local fallback="$1"
+	local jq_expression="$2"
 	if [[ -n "$normalized_manifest_path" && -f "$normalized_manifest_path" ]]; then
-		jq -r '.contractVersion // "1"' "$normalized_manifest_path" 2>/dev/null || echo "1"
-		return 0
+		local manifest_value
+		manifest_value="$(jq -r "$jq_expression" "$normalized_manifest_path" 2>/dev/null || true)"
+		if [[ -n "$manifest_value" ]]; then
+			echo "$manifest_value"
+			return 0
+		fi
 	fi
+	echo "$fallback"
+}
 
-	if [[ ! -f "$manifest_path" ]]; then
-		echo "1"
-		return 0
-	fi
-
-	echo "1"
+compute_contract_version() {
+	read_normalized_manifest_value_or_default "1" '.contractVersion // "1"'
 }
 
 compute_provider_class() {
-	local manifest_path="$repo_root/.harness/ci-required-checks.json"
-	if [[ -n "$normalized_manifest_path" && -f "$normalized_manifest_path" ]]; then
-		jq -r '.activeProvider // "unknown"' "$normalized_manifest_path" 2>/dev/null || echo "unknown"
-		return 0
-	fi
-
-	if [[ ! -f "$manifest_path" ]]; then
-		echo "unknown"
-		return 0
-	fi
-	echo "unknown"
+	read_normalized_manifest_value_or_default "unknown" '.activeProvider // "unknown"'
 }
 
 compute_schema_version() {
-	local manifest_path="$repo_root/.harness/ci-required-checks.json"
-	if [[ -n "$normalized_manifest_path" && -f "$normalized_manifest_path" ]]; then
-		jq -r '.schemaVersion // 1' "$normalized_manifest_path" 2>/dev/null || echo "1"
-		return 0
-	fi
-
-	if [[ ! -f "$manifest_path" ]]; then
-		echo "1"
-		return 0
-	fi
-	echo "1"
+	read_normalized_manifest_value_or_default "1" ".schemaVersion // 1"
 }
 
 declare -a gate_ids=()
@@ -611,7 +597,8 @@ finalize_run() {
 
 	jq \
 		--arg status "$overall_status" \
-		'.status = $status | .finishedAt = "'$(iso_now)'"' \
+		--arg finishedAt "$(iso_now)" \
+		'.status = $status | .finishedAt = $finishedAt' \
 		"$run_dir/run.json" > "$run_dir/run.json.tmp"
 	mv "$run_dir/run.json.tmp" "$run_dir/run.json"
 

@@ -1796,6 +1796,25 @@ exit 1
 				`Using harness runner: global npm harness (${fakeNpmHarness})`,
 			);
 
+			const npmPrefixFailureRun = spawnSync(
+				"bash",
+				["scripts/check-environment.sh"],
+				{
+					cwd: tempDir,
+					encoding: "utf8",
+					env: {
+						...baseEnv,
+						FAKE_MISE_WHICH_MODE: "missing",
+						FAKE_NPM_PREFIX: join(tempDir, "missing-npm-prefix"),
+					},
+				},
+			);
+			expect(npmPrefixFailureRun.status).toBe(1);
+			const npmPrefixFailureOutput = `${npmPrefixFailureRun.stdout}${npmPrefixFailureRun.stderr}`;
+			expect(npmPrefixFailureOutput).toContain(
+				"Error: unable to resolve npm-global harness binary.",
+			);
+
 			const loggedRuns = readFileSync(runnerLog, "utf-8").trim().split("\n");
 			expect(loggedRuns[0]).toContain("mise-harness check-environment");
 			expect(loggedRuns[1]).toContain("npm-harness check-environment");
