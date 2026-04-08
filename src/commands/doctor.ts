@@ -18,6 +18,10 @@
 import { spawnSync } from "node:child_process";
 import { existsSync, readFileSync, statSync } from "node:fs";
 import { resolve } from "node:path";
+import {
+	findCircleCIJobNamedCheckNames,
+	normalizeRequiredChecksManifest,
+} from "../lib/policy/required-checks.js";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -548,12 +552,48 @@ const CHECKS: CheckFn[] = [
 		}
 
 		const manifest = readJsonFile(manifestPath);
-		if (
-			manifest === null ||
-			typeof manifest !== "object" ||
-			!hasJsonKey(manifest, "activeProvider") ||
-			!hasJsonKey(manifest, "requiredChecks")
+		const normalized = normalizeRequiredChecksManifest(manifest);
+		let provider = "";
+		let gatesForAlignment: Array<{
+			provider: string;
+			githubCheckName: string | null;
+		}> = [];
+
+		if (normalized.ok) {
+			provider = normalized.value.activeProvider;
+			gatesForAlignment = normalized.value.gates.map((gate) => ({
+				provider: gate.provider,
+				githubCheckName: gate.githubCheckName,
+			}));
+		} else if (
+			manifest &&
+			typeof manifest === "object" &&
+			hasJsonKey(manifest, "activeProvider") &&
+			hasJsonKey(manifest, "requiredChecks")
 		) {
+			const fallback = manifest as {
+				activeProvider?: unknown;
+				requiredChecks?: Array<{ githubCheckName?: unknown }> | unknown;
+			};
+			if (
+				typeof fallback.activeProvider === "string" &&
+				Array.isArray(fallback.requiredChecks)
+			) {
+				provider = fallback.activeProvider;
+				gatesForAlignment = fallback.requiredChecks.map((entry) => ({
+					provider,
+					githubCheckName:
+						typeof entry?.githubCheckName === "string"
+							? entry.githubCheckName
+							: null,
+				}));
+			}
+		}
+
+		if (!provider || gatesForAlignment.length === 0) {
+			const normalizedError = normalized.ok
+				? "unable to parse required checks manifest"
+				: normalized.error;
 			return {
 				id: "ci:check-alignment",
 				category: "ci",
@@ -561,21 +601,16 @@ const CHECKS: CheckFn[] = [
 				status: "warn",
 				message:
 					".harness/ci-required-checks.json exists but is not valid — cannot check alignment",
-				fix: "Run: harness ci-migrate bootstrap to regenerate the manifest",
+				fix: `Run: harness ci-migrate bootstrap to regenerate the manifest (${normalizedError})`,
 			};
 		}
 
-		const typed = manifest as {
-			activeProvider: string;
-			requiredChecks: Array<{ displayName?: string; githubCheckName?: string }>;
-		};
-		const provider = typed.activeProvider;
-		const checks = typed.requiredChecks;
-
 		// Collect all non-empty githubCheckName values
-		const githubCheckNames = checks
-			.map((c) => c.githubCheckName)
-			.filter((n): n is string => typeof n === "string" && n.length > 0);
+		const githubCheckNames = gatesForAlignment
+			.map((gate) => gate.githubCheckName)
+			.filter(
+				(name): name is string => typeof name === "string" && name.length > 0,
+			);
 
 		if (githubCheckNames.length === 0) {
 			// Advisory: file exists but no githubCheckName fields set
@@ -593,33 +628,16 @@ const CHECKS: CheckFn[] = [
 			};
 		}
 
-		// For CircleCI, individual job names (lint, test, …) should never appear
-		// as githubCheckName because CircleCI doesn't create per-job GitHub check runs.
-		const JOB_NAMES_FOR_CIRCLECI = new Set([
-			"lint",
-			"typecheck",
-			"test",
-			"audit",
-			"check",
-			"build",
-			"memory",
-			"security-scan",
-			"dependency-scan",
-			"orb-pinning",
-			"docs-gate",
-			"linear-gate",
-			"risk-policy-gate",
-			"consistency-drift-health",
-			"pr-template",
-		]);
-
-		const suspicious: string[] = [];
 		if (provider === "circleci") {
-			for (const name of githubCheckNames) {
-				if (JOB_NAMES_FOR_CIRCLECI.has(name)) {
-					suspicious.push(name);
-				}
-			}
+			const suspicious = findCircleCIJobNamedCheckNames(
+				gatesForAlignment
+					.filter((gate) => gate.provider === "circleci")
+					.map((gate) => gate.githubCheckName)
+					.filter(
+						(checkName): checkName is string =>
+							typeof checkName === "string" && checkName.length > 0,
+					),
+			);
 			if (suspicious.length > 0) {
 				return {
 					id: "ci:check-alignment",

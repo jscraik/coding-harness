@@ -5,6 +5,7 @@
 - [Two separate systems](#two-separate-systems)
 - [How they interact](#how-they-interact)
 - [ci-required-checks.json schema](#ci-required-checksjson-schema)
+- [Orchestration metadata](#orchestration-metadata)
 - [How CI providers report checks to GitHub](#how-ci-providers-report-checks-to-github)
 - [What to put in GitHub branch protection](#what-to-put-in-github-branch-protection)
 - [Using harness ci-migrate](#using-harness-ci-migrate)
@@ -51,7 +52,7 @@ They do **not** create individual GitHub check-run entries when using CircleCI.
 
 ## ci-required-checks.json schema
 
-Each entry in `.harness/ci-required-checks.json` supports an optional `githubCheckName` field to explicitly declare which GitHub branch-protection check name this entry rolls up into:
+Each entry in `.harness/ci-required-checks.json` supports optional canonical orchestration fields. The existing branch-protection mapping field remains `githubCheckName`.
 
 ```json
 {
@@ -67,7 +68,12 @@ Each entry in `.harness/ci-required-checks.json` supports an optional `githubChe
       "requiredOnEvents": ["pull_request", "merge_group"],
       "freshnessWindowDays": 7,
       "class": "required",
-      "githubCheckName": "pr-pipeline"
+      "githubCheckName": "pr-pipeline",
+      "gateId": "lint",
+      "executionClass": "read_only_parallel",
+      "failureClassDefault": "transient_infra",
+      "order": 20,
+      "enabled": true
     },
     {
       "policyId": "required-check-7",
@@ -78,15 +84,44 @@ Each entry in `.harness/ci-required-checks.json` supports an optional `githubChe
       "requiredOnEvents": ["pull_request", "merge_group"],
       "freshnessWindowDays": 7,
       "class": "required",
-      "githubCheckName": "harness-gates"
+      "githubCheckName": "harness-gates",
+      "gateId": "docs-gate",
+      "executionClass": "serial_guarded",
+      "failureClassDefault": "contract_policy",
+      "order": 40,
+      "enabled": true
     }
   ]
 }
 ```
 
 **`githubCheckName`** (optional string): The GitHub check-run name that this internal check is surfaced through in branch protection. If omitted, the check is assumed to be harness-internal only and not directly enforced by GitHub.
+**`gateId`** (optional string): Stable gate identity used for resume compatibility; defaults to `displayName`.
+**`executionClass`** (optional): `read_only_parallel` or `serial_guarded`; defaults to `serial_guarded`.
+**`failureClassDefault`** (optional): `transient_infra`, `contract_policy`, or `internal_unknown`.
+**`order`** (optional positive integer): deterministic execution ordering fallback when orchestration mode is active.
+**`enabled`** (optional boolean): explicit gate activation switch.
 
 Use `harness doctor` to verify that all `githubCheckName` values match what the active CI provider actually reports.
+
+---
+
+## Orchestration metadata
+
+`verify-work` and `doctor` now consume one normalized projection of `.harness/ci-required-checks.json` for gate identity and check-alignment terms.
+
+The normalized identity tuple is:
+
+```
+gateId + provider(sourceAppSlug) + externalIdPattern + githubCheckName
+```
+
+Contract compatibility rules:
+
+- `version` remains the manifest schema version.
+- `contractVersion` is derived from the identity tuple when not explicitly set.
+- Non-identity field changes (`displayName`, `order`, `enabled`) do not force resume incompatibility.
+- Identity field changes do invalidate resume compatibility for affected gates.
 
 ---
 
@@ -167,7 +202,9 @@ harness ci-migrate status --provider circleci
 `harness doctor` runs a `ci:check-alignment` advisory check that warns if:
 
 - `.harness/ci-required-checks.json` is present
-- any entries have a `githubCheckName` that does not match the active provider's expected workflow name pattern
+- any CircleCI-backed entries (`sourceAppSlug: "circleci"`) have a `githubCheckName` that looks like a CircleCI job name instead of a workflow name
+
+Entries for non-CircleCI providers (for example `github-actions` check contexts like `security-scan`) are excluded from the CircleCI job-name warning.
 
 **Example warning:**
 
