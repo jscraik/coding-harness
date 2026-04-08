@@ -30,6 +30,7 @@ import { runLicenseGateCLI } from "../../commands/license-gate.js";
 import { runLinearGateCLI } from "../../commands/linear-gate.js";
 import { runLinearPrepareCLI } from "../../commands/linear-prepare.js";
 import { runLinearSyncCLI } from "../../commands/linear-sync.js";
+import { runLinearTriageCLI } from "../../commands/linear-triage.js";
 import { runLinearWorkflowCLI } from "../../commands/linear-workflow.js";
 import {
 	EXIT_CODES as LOCAL_MEMORY_PREFLIGHT_EXIT_CODES,
@@ -112,10 +113,11 @@ const COMMAND_SPECS: CommandSpec[] = [
 				action !== "handoff" &&
 				action !== "close" &&
 				action !== "prepare" &&
-				action !== "sync"
+				action !== "sync" &&
+				action !== "triage"
 			) {
 				console.error(
-					"linear expects an action of claim, handoff, close, prepare, or sync.",
+					"linear expects an action of claim, handoff, close, prepare, sync, or triage.",
 				);
 				return 2;
 			}
@@ -124,6 +126,7 @@ const COMMAND_SPECS: CommandSpec[] = [
 			const noAssignFlag = args.includes("--no-assign");
 			const dryRunFlag = args.includes("--dry-run");
 			const issueIndex = args.indexOf("--issue");
+			const projectIndex = args.indexOf("--project");
 			const tokenIndex = args.indexOf("--token");
 			const teamIndex = args.indexOf("--team");
 			const findingsIndex = args.indexOf("--findings");
@@ -137,6 +140,12 @@ const COMMAND_SPECS: CommandSpec[] = [
 			const linksIndex = args.indexOf("--links");
 			const branchPrefixIndex = args.indexOf("--branch-prefix");
 			const fieldIndex = args.indexOf("--field");
+			const limitIndex = args.indexOf("--limit");
+			const metadataThresholdIndex = args.indexOf("--metadata-threshold");
+			const inProgressCapIndex = args.indexOf("--in-progress-cap");
+			const maxPromoteIndex = args.indexOf("--max-promote");
+			const confirmFlag = args.includes("--confirm");
+			const syncTypeLabelsFlag = !args.includes("--no-type-label-sync");
 
 			if (action === "sync") {
 				const syncOptions: Parameters<typeof runLinearSyncCLI>[0] = {};
@@ -174,6 +183,49 @@ const COMMAND_SPECS: CommandSpec[] = [
 					options.field = fieldArg;
 				}
 				return runLinearPrepareCLI(options);
+			}
+
+			if (action === "triage") {
+				const options: Parameters<typeof runLinearTriageCLI>[0] = {};
+				if (jsonFlag) options.json = true;
+				if (dryRunFlag) options.dryRun = true;
+				if (args.includes("--apply")) options.apply = true;
+				if (confirmFlag) options.confirm = true;
+				if (!syncTypeLabelsFlag) options.syncTypeLabels = false;
+
+				const tokenArg = getFlagValue(args, tokenIndex);
+				if (tokenArg) options.token = tokenArg;
+				const teamArg = getFlagValue(args, teamIndex);
+				if (teamArg) options.team = teamArg;
+				const projectArg = getFlagValue(args, projectIndex);
+				if (projectArg) options.project = projectArg;
+				const issueArg = getFlagValue(args, issueIndex);
+				if (issueArg) options.issue = issueArg;
+
+				const limitArg = parseIntegerArg(getFlagValue(args, limitIndex), 1);
+				if (limitArg !== undefined) options.limit = limitArg;
+				const inProgressCapArg = parseIntegerArg(
+					getFlagValue(args, inProgressCapIndex),
+					1,
+				);
+				if (inProgressCapArg !== undefined) {
+					options.inProgressCap = inProgressCapArg;
+				}
+				const maxPromoteArg = parseIntegerArg(
+					getFlagValue(args, maxPromoteIndex),
+					0,
+				);
+				if (maxPromoteArg !== undefined) options.maxPromote = maxPromoteArg;
+
+				const metadataThresholdArg = getFlagValue(args, metadataThresholdIndex);
+				if (metadataThresholdArg !== undefined) {
+					const parsed = Number.parseFloat(metadataThresholdArg);
+					if (Number.isFinite(parsed)) {
+						options.metadataThreshold = parsed;
+					}
+				}
+
+				return runLinearTriageCLI(options);
 			}
 
 			const options: Parameters<typeof runLinearWorkflowCLI>[0] = {

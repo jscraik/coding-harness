@@ -34,6 +34,34 @@ export interface LinearIssueSummary {
 	};
 }
 
+export interface LinearIssueLabelSummary {
+	id: string;
+	name: string;
+}
+
+export interface LinearCycleSummary {
+	id: string;
+	name?: string | null;
+	number?: number | null;
+	startsAt?: string | null;
+	endsAt?: string | null;
+}
+
+export interface LinearProjectSummary {
+	id: string;
+	name: string;
+	slugId?: string | null;
+}
+
+export interface LinearTeamIssue extends LinearIssueSummary {
+	description?: string | null;
+	priority?: number | null;
+	estimate?: number | null;
+	labels: LinearIssueLabelSummary[];
+	cycle?: LinearCycleSummary | null;
+	project?: LinearProjectSummary | null;
+}
+
 export interface LinearCreateIssueInput {
 	teamId: string;
 	title: string;
@@ -53,6 +81,13 @@ export interface LinearLabelSummary {
 	id: string;
 	name: string;
 	team?: LinearTeamSummary | null;
+}
+
+export interface LinearCreateLabelInput {
+	name: string;
+	teamId?: string;
+	color?: string;
+	description?: string;
 }
 
 export interface LinearWorkflowState {
@@ -176,6 +211,116 @@ export class LinearClient {
 		return data.searchIssues.nodes;
 	}
 
+	async listTeamIssues(
+		teamId: string,
+		options: { first?: number } = {},
+	): Promise<LinearTeamIssue[]> {
+		const first = options.first ?? 250;
+		const nodes: Array<
+			Omit<LinearTeamIssue, "labels"> & {
+				labels: { nodes: LinearIssueLabelSummary[] };
+			}
+		> = [];
+		let cursor: string | undefined;
+
+		for (;;) {
+			const data = await this.graphql<{
+				team: {
+					issues: {
+						nodes: Array<
+							Omit<LinearTeamIssue, "labels"> & {
+								labels: { nodes: LinearIssueLabelSummary[] };
+							}
+						>;
+						pageInfo: {
+							hasNextPage: boolean;
+							endCursor?: string | null;
+						};
+					};
+				} | null;
+			}>(
+				`
+				query TeamIssues($teamId: String!, $first: Int!, $after: String) {
+					team(id: $teamId) {
+						issues(first: $first, after: $after) {
+							nodes {
+								id
+								identifier
+								title
+								url
+								branchName
+								description
+								priority
+								estimate
+								team {
+									id
+									key
+									name
+								}
+								state {
+									id
+									name
+									type
+								}
+								cycle {
+									id
+									name
+									number
+									startsAt
+									endsAt
+								}
+								project {
+									id
+									name
+									slugId
+								}
+								labels {
+									nodes {
+										id
+										name
+									}
+								}
+							}
+							pageInfo {
+								hasNextPage
+								endCursor
+							}
+						}
+					}
+				}
+			`,
+				{ teamId, first, after: cursor },
+			);
+
+			if (!data.team) {
+				throw new LinearAPIError(
+					"NOT_FOUND",
+					`Linear team ${teamId} was not found.`,
+				);
+			}
+
+			nodes.push(...data.team.issues.nodes);
+			const pageInfo = data.team.issues.pageInfo;
+			if (!pageInfo?.hasNextPage) {
+				break;
+			}
+
+			const nextCursor = pageInfo.endCursor ?? undefined;
+			if (!nextCursor) {
+				throw new LinearAPIError(
+					"LINEAR_API_ERROR",
+					"Linear API did not return a pagination cursor for team issues.",
+				);
+			}
+			cursor = nextCursor;
+		}
+
+		return nodes.map((issue) => ({
+			...issue,
+			labels: issue.labels.nodes,
+		}));
+	}
+
 	async listWorkflowStates(): Promise<LinearWorkflowState[]> {
 		const data = await this.graphql<{
 			workflowStates: { nodes: LinearWorkflowState[] };
@@ -282,6 +427,40 @@ export class LinearClient {
 		`);
 		const all = data.issueLabels.nodes;
 		return teamId ? all.filter((l) => !l.team || l.team.id === teamId) : all;
+	}
+
+	async createLabel(
+		input: LinearCreateLabelInput,
+	): Promise<LinearLabelSummary> {
+		const data = await this.graphql<{
+			issueLabelCreate: { issueLabel: LinearLabelSummary | null };
+		}>(
+			`
+			mutation IssueLabelCreate($input: IssueLabelCreateInput!) {
+				issueLabelCreate(input: $input) {
+					issueLabel {
+						id
+						name
+						team {
+							id
+							key
+							name
+						}
+					}
+				}
+			}
+		`,
+			{ input },
+		);
+
+		if (!data.issueLabelCreate.issueLabel) {
+			throw new LinearAPIError(
+				"LINEAR_API_ERROR",
+				"Linear API did not return the created label.",
+			);
+		}
+
+		return data.issueLabelCreate.issueLabel;
 	}
 
 	async createIssue(

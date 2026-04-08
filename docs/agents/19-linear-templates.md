@@ -49,11 +49,17 @@ Linear → Settings → Team: Jscraik → Templates.
 
 | Template | File | Key sections |
 |---|---|---|
-| Bug | `src/templates/linear/bug.md` | Goal, Reproduction, Expected, Actual, Evidence, Risk, Done when |
-| Feature | `src/templates/linear/feature.md` | Goal, User value, Scope, Constraints, Evidence, Done when |
-| Research | `src/templates/linear/research.md` | Question, Why now, Inputs, Output, Recommendation format, Done when |
-| Automation | `src/templates/linear/automation.md` | Goal, Trigger/cadence, Systems, Safety, Evidence/logs, Done when |
+| Bug | `src/templates/linear/bug.md` | Goal, Label type, Reproduction, Expected, Actual, Triage inputs, Dependencies, Pull condition, Evidence, Risk, Done when |
+| Feature | `src/templates/linear/feature.md` | Goal, Label type, User value, Scope, Constraints, Triage inputs, Dependencies, Pull condition, Evidence, Done when |
+| Research | `src/templates/linear/research.md` | Question, Label type, Why now, Inputs, Triage inputs, Dependencies, Pull condition, Output, Recommendation format, Done when |
+| Automation | `src/templates/linear/automation.md` | Goal, Label type, Trigger/cadence, Systems, Safety, Triage inputs, Dependencies, Pull condition, Evidence/logs, Done when |
 | Release | `src/templates/linear/release.md` | Goal, Scope, Risks, Validation plan, Rollback plan, Done when |
+
+Type-label baseline for this project:
+
+- issue type labels should come from `Bug`, `Feature`, `Improvement`, `Policy`, `Security`
+- each issue should carry exactly one primary type label
+- `harness linear triage --apply` will add missing primary type labels and normalize multiple primary labels down to one inferred label
 
 ## Saved views
 
@@ -125,6 +131,7 @@ These cannot be configured via API — do them once in Linear.
 - [ ] Template content matches `src/templates/linear/*.md` (single source of truth)
 - [ ] Six saved views created and named consistently
 - [ ] `Blocked` label exists in team label set
+- [ ] Primary type labels exist in team label set: `Bug`, `Feature`, `Improvement`, `Policy`, `Security`
 - [ ] Blocked-routing protocol documented in onboarding notes
 
 ## See also

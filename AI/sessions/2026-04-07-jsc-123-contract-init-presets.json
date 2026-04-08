@@ -1,17 +1,17 @@
 {
-  "schema_version": 1,
-  "date": "2026-04-07",
-  "slug": "jsc-123-contract-init-presets",
-  "linear_issue": "JSC-123",
-  "model": "claude-sonnet-4-6",
-  "branch": "jscraik/jsc-123-improve-contract-configuration-ergonomics-for-human",
-  "commit": "09a64d7",
-  "files_changed": [
-    "src/lib/contract/contract-presets.ts",
-    "src/commands/contract.ts",
-    "src/commands/contract.test.ts",
-    "src/lib/cli/command-registry.ts"
-  ],
-  "tests": "2151 pass, 0 fail",
-  "summary": "Implemented harness contract init with three preset tiers (minimal/standard/full). New contract-presets.ts module, updated contract.ts with runContractInitCLI(), 16 new tests covering preset shape, init lifecycle, and dispatch."
+	"schema_version": 1,
+	"date": "2026-04-07",
+	"slug": "jsc-123-contract-init-presets",
+	"linear_issue": "JSC-123",
+	"model": "claude-sonnet-4-6",
+	"branch": "jscraik/jsc-123-improve-contract-configuration-ergonomics-for-human",
+	"commit": "09a64d7",
+	"files_changed": [
+		"src/lib/contract/contract-presets.ts",
+		"src/commands/contract.ts",
+		"src/commands/contract.test.ts",
+		"src/lib/cli/command-registry.ts"
+	],
+	"tests": "2151 pass, 0 fail",
+	"summary": "Implemented harness contract init with three preset tiers (minimal/standard/full). New contract-presets.ts module, updated contract.ts with runContractInitCLI(), 16 new tests covering preset shape, init lifecycle, and dispatch."
 }
