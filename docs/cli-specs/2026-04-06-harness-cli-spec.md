@@ -120,7 +120,7 @@ Commands are grouped by domain. `[R]` = in registry (`command-registry.ts`). `[I
 ### Sub-action commands (positional dispatch)
 
 ```
-harness linear <claim|handoff|close|prepare|sync> [flags]
+harness linear <claim|handoff|close|prepare|sync|triage> [flags]
 harness ci-migrate <prepare|commit|abort|verify> [targetDir] [flags]
 harness gap-case <open|resolve> [flags]
 ```
@@ -156,9 +156,10 @@ interface CommandSpec {
 ```typescript
 harness linear <action> [options]
 
-// action: "claim" | "handoff" | "close" | "prepare" | "sync"
+// action: "claim" | "handoff" | "close" | "prepare" | "sync" | "triage"
 // --issue <id-or-url>       Linear issue ID or URL
 // --team <key>              Linear team key/name
+// --project <name|id|slug>  (triage only) scope to one project
 // --state <name>            Override target workflow state
 // --assignee <uuid-or-me>   Claim assignee
 // --no-assign               Skip assignee update
@@ -171,6 +172,13 @@ harness linear <action> [options]
 // --branch-prefix <str>     Override generated branch prefix (default: codex)
 // --field <name>            branch|pr-title|pr-body|link-line|closing-line|issue-url
 // --findings <path|->       (sync only) findings JSON file
+// --limit <n>               (triage only) top candidates to evaluate (default: 10)
+// --metadata-threshold <f>  (triage only) metadata completeness floor 0..1 (default: 0.8)
+// --in-progress-cap <n>     (triage only) global in-progress cap (default: 3)
+// --max-promote <n>         (triage only) max promotions per run (default: 2)
+// --apply                   (triage only) apply promotions and type-label sync
+// --confirm                 (triage only) required for multi-issue apply mutations
+// --no-type-label-sync      (triage only) disable automatic primary type-label normalization
 // --token <key>             Override LINEAR_API_KEY
 // --json
 ```

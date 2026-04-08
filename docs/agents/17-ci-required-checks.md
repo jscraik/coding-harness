@@ -41,6 +41,8 @@ CI run (CircleCI / GHA)
 GitHub check run: "pr-pipeline"  ← only this name matters for branch protection
 ```
 
+When CI jobs or local validation steps invoke `harness linear*` commands, the runner must expose `LINEAR_API_KEY` (or pass `--token` explicitly). If secrets are stored in `~/.codex/.env`, load that file into the active shell/session first, and run `harness symphony-check` when validating secret discovery behavior.
+
 The harness internal checks in `ci-required-checks.json` are used by:
 - `harness drift-gate` — to verify all expected checks completed
 - `harness doctor` — to validate the manifest is present and aligned

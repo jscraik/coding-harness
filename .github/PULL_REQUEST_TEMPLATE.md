@@ -16,6 +16,7 @@
 - [ ] Codex review completed and findings handled (or explicitly waived).
 - [ ] CodeRabbit review was performed by an independent reviewer (not the coding agent).
 - [ ] Merge is blocked until all required checks pass.
+- [ ] If `harness linear*` commands were run, `LINEAR_API_KEY` was set in runtime (or `--token` was used), `~/.codex/.env` was loaded when applicable, and `harness symphony-check` evidence is recorded when secret discovery behavior changed.
 - [ ] If this change affects release flow, tag-driven publish behavior is documented (`.github/workflows/release-private-npm.yml`, semver tag trigger, auth mode).
 - [ ] I will delete branch/worktree after merge.
 
@@ -27,6 +28,7 @@
 - Command: `bash scripts/validate-codestyle.sh` -> pass/fail
 - Command: `pnpm check` -> pass/fail
 - Command: `test -f memory.json && jq -e '.meta.version == "1.0" and (.preamble.bootstrap | type == "boolean") and (.preamble.search | type == "boolean") and (.entries | type == "array")' memory.json >/dev/null` -> pass/fail
+- Command: `harness symphony-check` (required when `harness linear*` secret discovery behavior changed) -> pass/fail/n.a.
 - Any other command(s):
 
 ## Review artifacts

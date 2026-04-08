@@ -55,6 +55,8 @@ Every agent handoff should include:
 - If PR review artifacts are missing (CodeRabbit/Codex for this repo): do not merge; complete reviews or explicitly escalate the exception.
 - If the `CodeRabbit` check is absent, pending, or failing for the current head SHA: do not merge.
 - If CodeRabbit reports Semgrep findings: fix all `ERROR` findings before merge. `WARNING` findings may remain only when the PR records the rationale and containment.
+- Any run of `harness linear*` commands must have `LINEAR_API_KEY` available in the runtime environment (or supplied with `--token`); if secrets are kept in `~/.codex/.env`, load it into the active shell/session first.
+- When Linear secret discovery behavior changes, include `harness symphony-check` evidence so the runtime secret-loading path is auditable.
 - After merge completion: clean up branch/worktree to keep an auditable branch lifecycle.
 
 ## Optional quality expectations

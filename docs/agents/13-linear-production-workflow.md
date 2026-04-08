@@ -88,8 +88,8 @@ S5 BLOCKED (non-terminal)
 
 ## Idempotency
 - Key: `<LK>|<state>|<event>|<pr_url?>`.
-- Replayed `progress_tick` and `pr_opened` events upsert existing LI artifacts.
-- `handoff_ready` replay must not duplicate evidence links/comments.
+- Replayed `progress_tick` and `pr_opened` events append new LI comments/attachments; they do not currently deduplicate existing artifacts.
+- Replayed `handoff_ready` events also append additional evidence links/comments; avoid replaying `handoff_ready` after a successful transition unless duplicate artifacts are acceptable.
 
 ## Execution Modes
 - `STRICT`: fail on validation/policy errors and block transition.
@@ -204,7 +204,9 @@ Operational notes:
   - label hygiene: missing type labels are added by default in apply mode (use `--no-type-label-sync` to opt out)
 - `handoff` moves the issue to `In Review`, posts a workflow comment, and can attach PR/evidence/reference URLs.
 - `close` moves the issue to `Done`, posts a closure comment, and can attach the merge PR/evidence URLs.
-- Set `LINEAR_API_KEY` in the runtime environment or pass `--token` explicitly.
+- Set `LINEAR_API_KEY` in the runtime environment (for example, `export LINEAR_API_KEY=...`) or pass `--token` explicitly.
+- If you keep secrets in `~/.codex/.env`, load that file into the active shell/session before running `harness linear*` commands.
+- When Linear secret discovery behavior changes, run `harness symphony-check` and include its output in validation evidence.
 - Use `--state` when a team/project uses a non-standard state name.
 - When you want GitHub merge activity to close the Linear issue automatically, put `Fixes <LINEAR-KEY>` in the PR body or title.
 - When you only want linking without merge-time closeout, use `Refs <LINEAR-KEY>` instead.
