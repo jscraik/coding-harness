@@ -14,6 +14,9 @@
  * - Each $defs block mirrors the isValid* guard functions in validator.ts
  */
 
+import { PREFLIGHT_POST_HOOK_IDS, PREFLIGHT_PRE_HOOK_IDS } from "./types.js";
+export { PREFLIGHT_POST_HOOK_IDS, PREFLIGHT_PRE_HOOK_IDS } from "./types.js";
+
 // ─── Schema version ───────────────────────────────────────────────────────────
 
 export const SCHEMA_VERSION = "1.5.0" as const;
@@ -47,6 +50,19 @@ export const CONTEXT_INTEGRITY_MODES = [
 	"shadow",
 	"advisory",
 	"required",
+] as const;
+
+/** Valid values for contextCompact.strategy */
+export const CONTEXT_COMPACT_STRATEGIES = [
+	"balanced",
+	"aggressive",
+	"micro",
+] as const;
+
+/** Valid values for preflight gate extension hook IDs */
+export const GATE_EXTENSION_HOOK_IDS = [
+	...PREFLIGHT_PRE_HOOK_IDS,
+	...PREFLIGHT_POST_HOOK_IDS,
 ] as const;
 
 /** Valid risk tiers */
@@ -225,6 +241,56 @@ export function buildContractJsonSchema(): Record<string, unknown> {
 				},
 			},
 
+			// ── Gate Extensions ────────────────────────────────────────────────
+			gateExtensions: {
+				type: "object",
+				description:
+					"Optional pre/post gate hook configuration for supported gates.",
+				additionalProperties: false,
+				properties: {
+					preflightGate: {
+						type: "object",
+						additionalProperties: false,
+						properties: {
+							pre: {
+								type: "array",
+								description:
+									"Preflight pre-hooks that can short-circuit or override execution.",
+								items: {
+									type: "object",
+									additionalProperties: false,
+									required: ["id"],
+									properties: {
+										id: {
+											type: "string",
+											enum: [...PREFLIGHT_PRE_HOOK_IDS],
+										},
+										enabled: { type: "boolean" },
+									},
+								},
+							},
+							post: {
+								type: "array",
+								description:
+									"Preflight post-hooks that can adjust or block final results.",
+								items: {
+									type: "object",
+									additionalProperties: false,
+									required: ["id"],
+									properties: {
+										id: {
+											type: "string",
+											enum: [...PREFLIGHT_POST_HOOK_IDS],
+										},
+										enabled: { type: "boolean" },
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+
 			// ── Review Policy ──────────────────────────────────────────────────
 			reviewPolicy: {
 				type: "object",
@@ -276,6 +342,40 @@ export function buildContractJsonSchema(): Record<string, unknown> {
 					forbiddenContentPatterns: {
 						type: "array",
 						items: { type: "string" },
+					},
+				},
+			},
+
+			// ── Context Integrity Policy ───────────────────────────────────────
+			contextCompact: {
+				type: "object",
+				description:
+					"Threshold-driven context compaction policy for context retrieval commands.",
+				required: [
+					"thresholdPercent",
+					"microCompactThresholdTokens",
+					"strategy",
+				],
+				additionalProperties: false,
+				properties: {
+					thresholdPercent: {
+						type: "number",
+						exclusiveMinimum: 0,
+						maximum: 100,
+						description:
+							"Percent threshold used to derive retrieval compaction defaults.",
+					},
+					microCompactThresholdTokens: {
+						type: "integer",
+						minimum: 1,
+						description:
+							"Token threshold where micro strategy becomes eligible for context retrieval.",
+					},
+					strategy: {
+						type: "string",
+						enum: [...CONTEXT_COMPACT_STRATEGIES],
+						description:
+							'Compaction profile. "balanced" for default behavior, "aggressive" for stronger compaction, "micro" for tighter retrieval.',
 					},
 				},
 			},

@@ -24,8 +24,7 @@ fi
 
 echo
 echo "== preflight =="
-source scripts/codex-preflight.sh
-preflight_repo
+bash scripts/codex-preflight.sh --stack auto --mode required
 
 echo
 echo "== build cli =="

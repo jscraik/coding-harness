@@ -30,6 +30,7 @@ import {
 	CI_MIGRATION_STAGES,
 	CI_PROVIDERS,
 	CI_PROVIDER_MODES,
+	CONTEXT_COMPACT_STRATEGIES,
 	SCHEMA_VERSION,
 	buildContractJsonSchema,
 } from "../lib/contract/json-schema.js";
@@ -143,6 +144,22 @@ describe("buildContractJsonSchema", () => {
 	it("is serializable to JSON", () => {
 		const schema = buildContractJsonSchema();
 		expect(() => JSON.parse(JSON.stringify(schema))).not.toThrow();
+	});
+
+	it("contextCompact.strategy enum contains supported strategies", () => {
+		const schema = buildContractJsonSchema() as {
+			properties: {
+				contextCompact: {
+					properties: { strategy: { enum: string[] } };
+				};
+			};
+		};
+
+		for (const strategy of CONTEXT_COMPACT_STRATEGIES) {
+			expect(
+				schema.properties.contextCompact.properties.strategy.enum,
+			).toContain(strategy);
+		}
 	});
 });
 
@@ -451,6 +468,46 @@ describe("runContractCLI dispatch", () => {
 		const code = runContractCLI([], { json: false });
 		// Either 0 (repo contract found + valid) or 1 (not found) — just check it doesn't throw
 		expect([0, 1]).toContain(code);
+	});
+
+	it("dispatches normalize-required-checks and prints normalized manifest JSON", () => {
+		const manifestPath = join(dir, "ci-required-checks.json");
+		writeFileSync(
+			manifestPath,
+			JSON.stringify({
+				version: 1,
+				activeProvider: "circleci",
+				requiredChecks: [
+					{
+						policyId: "lint-policy",
+						gateId: "lint",
+						displayName: "lint",
+						sourceAppSlug: "circleci",
+						sourceAppId: "circleci",
+						externalIdPattern: "^lint$",
+						githubCheckName: "pr-pipeline",
+						class: "required",
+					},
+				],
+			}),
+			"utf-8",
+		);
+
+		const code = runContractCLI(
+			["normalize-required-checks", "--manifest", manifestPath],
+			{},
+		);
+		expect(code).toBe(0);
+
+		const output = consoleSpy.mock.calls.at(-1)?.[0];
+		expect(typeof output).toBe("string");
+		const parsed = JSON.parse(String(output)) as {
+			activeProvider: string;
+			gates: Array<{ policyId: string; gateId: string }>;
+		};
+		expect(parsed.activeProvider).toBe("circleci");
+		expect(parsed.gates[0]?.policyId).toBe("lint-policy");
+		expect(parsed.gates[0]?.gateId).toBe("lint");
 	});
 
 	it("returns 1 for unknown subcommand", () => {

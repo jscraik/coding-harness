@@ -198,10 +198,17 @@ export function loadContract(
 		);
 	}
 
-	// Merge with defaults and normalize merge policy to canonical form
+	// Merge with defaults and normalize merge policy to canonical form.
+	// Validation returns a fully-typed data object where optional keys may be
+	// present with `undefined`; drop those keys before merging so DEFAULT_CONTRACT
+	// values are preserved when callers omit optional sections.
+	const validatedData = result.data ?? {};
+	const normalizedData = Object.fromEntries(
+		Object.entries(validatedData).filter(([, value]) => value !== undefined),
+	) as Partial<HarnessContract>;
 	const contract: HarnessContract = {
 		...DEFAULT_CONTRACT,
-		...result.data,
+		...normalizedData,
 	};
 
 	// Normalize merge policy if present

@@ -1,3 +1,4 @@
+import { CONTEXT_COMPACT_STRATEGIES } from "./json-schema.js";
 import type {
 	BlastRadiusRule,
 	BlastRadiusRulesMode,
@@ -11,6 +12,8 @@ import type {
 	CodeQualitySeverity,
 	CodeScanningAlertsThreshold,
 	CodeScanningSecurityAlertsThreshold,
+	ContextCompactPolicy,
+	ContextCompactStrategy,
 	ContextIntegrityMode,
 	ContextIntegrityPolicy,
 	ContextIntegrityTruthSource,
@@ -26,6 +29,9 @@ import type {
 	DocsSurface,
 	EvidencePolicy,
 	GapCasePolicy,
+	GateExtensionHook,
+	GateExtensionHookId,
+	GateExtensionsPolicy,
 	HarnessContract,
 	ImageFormat,
 	IssueTrackingPolicy,
@@ -45,6 +51,7 @@ import type {
 	PilotGapCasePolicy,
 	PilotRollbackPolicy,
 	PrReferenceMode,
+	PreflightGateExtensionsPolicy,
 	RemediationPolicy,
 	RemediationProviderPolicy,
 	ReviewPolicy,
@@ -62,6 +69,7 @@ import type {
 	UILoopPolicy,
 	UILoopSLO,
 } from "./types.js";
+import { PREFLIGHT_POST_HOOK_IDS, PREFLIGHT_PRE_HOOK_IDS } from "./types.js";
 import { isValidUILoopCommandSpec } from "./ui-loop-command.js";
 
 const VALID_RISK_TIERS: RiskTier[] = ["high", "medium", "low"];
@@ -71,10 +79,12 @@ const VALID_ROLLBACK_MODES = ["manual", "autonomous"] as const;
 const VALID_BLAST_RADIUS_RULES_MODES = ["merge", "replace"] as const;
 const FORBIDDEN_KEYS = ["__proto__", "constructor", "prototype"] as const;
 const VALID_TOP_LEVEL_KEYS = [
+	"$schema",
 	"version",
 	"riskTierRules",
 	"blastRadiusRules",
 	"blastRadiusRulesMode",
+	"gateExtensions",
 	"reviewPolicy",
 	"evidencePolicy",
 	"mergePolicy",
@@ -96,6 +106,7 @@ const VALID_TOP_LEVEL_KEYS = [
 	"branchProtection",
 	"issueTrackingPolicy",
 	"docsGatePolicy",
+	"contextCompact",
 	"contextIntegrityPolicy",
 	"controlPlanePolicy",
 	"toolingPolicy",
@@ -245,6 +256,11 @@ const VALID_CI_PROVIDER_MIGRATION_STAGES: CIProviderMigrationStage[] = [
 	"cutover-complete",
 ];
 const VALID_CI_PROVIDERS = ["github-actions", "circleci"] as const;
+const VALID_GATE_EXTENSIONS_POLICY_KEYS = ["preflightGate"] as const;
+const VALID_PREFLIGHT_GATE_EXTENSIONS_POLICY_KEYS = ["pre", "post"] as const;
+const VALID_GATE_EXTENSION_HOOK_KEYS = ["id", "enabled"] as const;
+const VALID_PREFLIGHT_PRE_HOOK_IDS = PREFLIGHT_PRE_HOOK_IDS;
+const VALID_PREFLIGHT_POST_HOOK_IDS = PREFLIGHT_POST_HOOK_IDS;
 
 // Machine-readable error codes for programmatic handling
 export enum ValidationErrorCode {
@@ -1388,6 +1404,108 @@ function isValidGapCasePolicy(value: unknown): value is GapCasePolicy {
 	return true;
 }
 
+function isValidGateExtensionHook<HookId extends GateExtensionHookId>(
+	value: unknown,
+	allowedHookIds: readonly HookId[],
+): value is GateExtensionHook<HookId> {
+	if (!isPlainObject(value)) {
+		return false;
+	}
+	const hook = value as Record<string, unknown>;
+	const invalidKeys = Object.keys(hook).filter(
+		(key) =>
+			!VALID_GATE_EXTENSION_HOOK_KEYS.includes(
+				key as (typeof VALID_GATE_EXTENSION_HOOK_KEYS)[number],
+			),
+	);
+	if (invalidKeys.length > 0) {
+		return false;
+	}
+
+	if (typeof hook.id !== "string" || hook.id.length === 0) {
+		return false;
+	}
+
+	if (!allowedHookIds.includes(hook.id as HookId)) {
+		return false;
+	}
+
+	if (hook.enabled !== undefined && typeof hook.enabled !== "boolean") {
+		return false;
+	}
+
+	return true;
+}
+
+function isValidPreflightGateExtensionsPolicy(
+	value: unknown,
+): value is PreflightGateExtensionsPolicy {
+	if (!isPlainObject(value)) {
+		return false;
+	}
+	const policy = value as Record<string, unknown>;
+	const invalidKeys = Object.keys(policy).filter(
+		(key) =>
+			!VALID_PREFLIGHT_GATE_EXTENSIONS_POLICY_KEYS.includes(
+				key as (typeof VALID_PREFLIGHT_GATE_EXTENSIONS_POLICY_KEYS)[number],
+			),
+	);
+	if (invalidKeys.length > 0) {
+		return false;
+	}
+
+	if (policy.pre !== undefined) {
+		if (!Array.isArray(policy.pre)) {
+			return false;
+		}
+		for (const hook of policy.pre) {
+			if (!isValidGateExtensionHook(hook, VALID_PREFLIGHT_PRE_HOOK_IDS)) {
+				return false;
+			}
+		}
+	}
+
+	if (policy.post !== undefined) {
+		if (!Array.isArray(policy.post)) {
+			return false;
+		}
+		for (const hook of policy.post) {
+			if (!isValidGateExtensionHook(hook, VALID_PREFLIGHT_POST_HOOK_IDS)) {
+				return false;
+			}
+		}
+	}
+
+	return true;
+}
+
+function isValidGateExtensionsPolicy(
+	value: unknown,
+): value is GateExtensionsPolicy {
+	if (!isPlainObject(value)) {
+		return false;
+	}
+	const policy = value as Record<string, unknown>;
+	const invalidKeys = Object.keys(policy).filter(
+		(key) =>
+			!VALID_GATE_EXTENSIONS_POLICY_KEYS.includes(
+				key as (typeof VALID_GATE_EXTENSIONS_POLICY_KEYS)[number],
+			),
+	);
+	if (invalidKeys.length > 0) {
+		return false;
+	}
+
+	if (
+		policy.preflightGate !== undefined &&
+		!isValidPreflightGateExtensionsPolicy(policy.preflightGate)
+	) {
+		return false;
+	}
+
+	return true;
+}
+
 /**
  * Check if a value is a valid legacy array-style merge policy value.
  */
@@ -1610,6 +1728,13 @@ const VALID_CONTEXT_HEALTH_TRIGGER_TYPES = [
 	"recent_artifacts",
 ] as const;
 const VALID_CONTEXT_HEALTH_DEDUPE_SCOPES = ["query", "run"] as const;
+const VALID_CONTEXT_COMPACT_POLICY_KEYS = [
+	"thresholdPercent",
+	"microCompactThresholdTokens",
+	"strategy",
+] as const;
+const VALID_CONTEXT_COMPACT_STRATEGIES: readonly ContextCompactStrategy[] =
+	CONTEXT_COMPACT_STRATEGIES;
 
 function isValidDocsImpactCategory(
 	value: unknown,
@@ -1918,6 +2043,49 @@ function isValidContextIntegrityPolicy(
 		typeof healthSampling.dedupeScope === "string" &&
 		VALID_CONTEXT_HEALTH_DEDUPE_SCOPES.includes(
 			healthSampling.dedupeScope as (typeof VALID_CONTEXT_HEALTH_DEDUPE_SCOPES)[number],
+		)
+	);
+}
+
+function isValidContextCompactPolicy(
+	value: unknown,
+): value is ContextCompactPolicy {
+	if (!isPlainObject(value)) {
+		return false;
+	}
+
+	const policy = value as Record<string, unknown>;
+	const invalidKeys = Object.keys(policy).filter(
+		(key) =>
+			!VALID_CONTEXT_COMPACT_POLICY_KEYS.includes(
+				key as (typeof VALID_CONTEXT_COMPACT_POLICY_KEYS)[number],
+			),
+	);
+	if (invalidKeys.length > 0) {
+		return false;
+	}
+
+	if (
+		typeof policy.thresholdPercent !== "number" ||
+		!Number.isFinite(policy.thresholdPercent) ||
+		policy.thresholdPercent <= 0 ||
+		policy.thresholdPercent > 100
+	) {
+		return false;
+	}
+
+	if (
+		typeof policy.microCompactThresholdTokens !== "number" ||
+		!Number.isInteger(policy.microCompactThresholdTokens) ||
+		policy.microCompactThresholdTokens <= 0
+	) {
+		return false;
+	}
+
+	return (
+		typeof policy.strategy === "string" &&
+		VALID_CONTEXT_COMPACT_STRATEGIES.includes(
+			policy.strategy as ContextCompactStrategy,
 		)
 	);
 }
@@ -2746,6 +2914,25 @@ export function validateContract(
 		}
 	}
 
+	// Validate contextCompact (optional)
+	let contextCompact: ContextCompactPolicy | undefined;
+	if ("contextCompact" in obj && obj.contextCompact !== undefined) {
+		if (!isValidContextCompactPolicy(obj.contextCompact)) {
+			errors.push({
+				code: ValidationErrorCode.INVALID_VALUE,
+				path: "contextCompact",
+				message:
+					"contextCompact must declare thresholdPercent, microCompactThresholdTokens, and strategy",
+				expected:
+					"{ thresholdPercent: number (1-100), microCompactThresholdTokens: integer (>0), strategy: 'balanced' | 'aggressive' | 'micro' }",
+				received: JSON.stringify(obj.contextCompact),
+				fix: "Use supported numeric thresholds and one of the supported contextCompact strategies",
+			});
+		} else {
+			contextCompact = obj.contextCompact as ContextCompactPolicy;
+		}
+	}
+
 	// Validate toolingPolicy (optional)
 	let toolingPolicy: ToolingPolicy | undefined;
 	if ("toolingPolicy" in obj && obj.toolingPolicy !== undefined) {
@@ -2817,6 +3004,24 @@ export function validateContract(
 			});
 		} else {
 			blastRadiusRulesMode = obj.blastRadiusRulesMode;
+		}
+	}
+
+	// Validate gateExtensions (optional)
+	let gateExtensions: GateExtensionsPolicy | undefined;
+	if ("gateExtensions" in obj && obj.gateExtensions !== undefined) {
+		if (!isValidGateExtensionsPolicy(obj.gateExtensions)) {
+			errors.push({
+				code: ValidationErrorCode.INVALID_VALUE,
+				path: "gateExtensions",
+				message: "gateExtensions must use supported gate keys and hook ids",
+				expected:
+					"{ preflightGate?: { pre?: [{ id: 'skip-all-checks' | 'force-fail', enabled?: boolean }], post?: [{ id: 'fail-on-warnings', enabled?: boolean }] } }",
+				received: JSON.stringify(obj.gateExtensions),
+				fix: "Use only supported gate extension hooks and boolean enabled flags",
+			});
+		} else {
+			gateExtensions = obj.gateExtensions as GateExtensionsPolicy;
 		}
 	}
 
@@ -2948,6 +3153,7 @@ export function validateContract(
 			pilotRollbackPolicy,
 			pilotAuthzPolicy,
 			docsGatePolicy,
+			contextCompact,
 			contextIntegrityPolicy,
 			controlPlanePolicy,
 			toolingPolicy,
@@ -2956,6 +3162,7 @@ export function validateContract(
 			issueTrackingPolicy,
 			blastRadiusRules,
 			blastRadiusRulesMode,
+			gateExtensions,
 		},
 		errors: [],
 	};

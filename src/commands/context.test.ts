@@ -166,6 +166,178 @@ describe("runContextCLI", () => {
 		);
 	});
 
+	it("uses contextCompact contract defaults when limit/threshold flags are omitted", async () => {
+		const { runContext, EXIT_CODES } = await import("./context.js");
+		const root = mkdtempSync(join(tmpdir(), "harness-context-contract-"));
+		tempDirs.push(root);
+		writeFileSync(
+			join(root, "harness.contract.json"),
+			JSON.stringify(
+				{
+					version: "1.5.0",
+					contextCompact: {
+						thresholdPercent: 62,
+						microCompactThresholdTokens: 1400,
+						strategy: "micro",
+					},
+				},
+				null,
+				2,
+			),
+			"utf-8",
+		);
+
+		const exitCode = await runContext({
+			query: "oauth query",
+			baseDir: root,
+		});
+
+		expect(exitCode).toBe(EXIT_CODES.NO_RESULTS);
+		expect(searchMock).toHaveBeenCalledTimes(1);
+		expect(searchMock.mock.calls[0]?.[1]).toEqual({
+			threshold: 0.62,
+			limit: 5,
+			includeMetadata: true,
+		});
+	});
+
+	it("caps contextCompact threshold by autocompact safety buffer", async () => {
+		const { runContext, EXIT_CODES } = await import("./context.js");
+		const root = mkdtempSync(join(tmpdir(), "harness-context-threshold-cap-"));
+		tempDirs.push(root);
+		writeFileSync(
+			join(root, "harness.contract.json"),
+			JSON.stringify(
+				{
+					version: "1.5.0",
+					contextCompact: {
+						thresholdPercent: 99,
+						microCompactThresholdTokens: 999_999,
+						strategy: "balanced",
+					},
+				},
+				null,
+				2,
+			),
+			"utf-8",
+		);
+
+		const exitCode = await runContext({
+			query: "oauth query",
+			baseDir: root,
+		});
+
+		expect(exitCode).toBe(EXIT_CODES.NO_RESULTS);
+		expect(searchMock).toHaveBeenCalledTimes(1);
+		expect(searchMock.mock.calls[0]?.[1]).toEqual({
+			threshold: 0.935,
+			limit: 10,
+			includeMetadata: true,
+		});
+	});
+
+	it("uses micro limit only after estimated input crosses token threshold", async () => {
+		const { runContext, EXIT_CODES } = await import("./context.js");
+		const root = mkdtempSync(
+			join(tmpdir(), "harness-context-micro-threshold-"),
+		);
+		tempDirs.push(root);
+		writeFileSync(
+			join(root, "harness.contract.json"),
+			JSON.stringify(
+				{
+					version: "1.5.0",
+					contextCompact: {
+						thresholdPercent: 50,
+						microCompactThresholdTokens: 5,
+						strategy: "balanced",
+					},
+				},
+				null,
+				2,
+			),
+			"utf-8",
+		);
+
+		const exitCode = await runContext({
+			query: "oauth query with enough length to cross threshold",
+			baseDir: root,
+		});
+
+		expect(exitCode).toBe(EXIT_CODES.NO_RESULTS);
+		expect(searchMock).toHaveBeenCalledTimes(1);
+		expect(searchMock.mock.calls[0]?.[1]).toEqual({
+			threshold: 0.5,
+			limit: 5,
+			includeMetadata: true,
+		});
+	});
+
+	it("keeps explicit threshold and limit flags over contextCompact defaults", async () => {
+		const { runContext, EXIT_CODES } = await import("./context.js");
+		const root = mkdtempSync(join(tmpdir(), "harness-context-explicit-"));
+		tempDirs.push(root);
+		writeFileSync(
+			join(root, "harness.contract.json"),
+			JSON.stringify(
+				{
+					version: "1.5.0",
+					contextCompact: {
+						thresholdPercent: 95,
+						microCompactThresholdTokens: 900,
+						strategy: "aggressive",
+					},
+				},
+				null,
+				2,
+			),
+			"utf-8",
+		);
+
+		const exitCode = await runContext({
+			query: "oauth query",
+			baseDir: root,
+			limit: 9,
+			threshold: 0.4,
+		});
+
+		expect(exitCode).toBe(EXIT_CODES.NO_RESULTS);
+		expect(searchMock).toHaveBeenCalledTimes(1);
+		expect(searchMock.mock.calls[0]?.[1]).toEqual({
+			threshold: 0.4,
+			limit: 9,
+			includeMetadata: true,
+		});
+	});
+
+	it("fails closed when contextCompact policy cannot be loaded", async () => {
+		const { runContext, EXIT_CODES } = await import("./context.js");
+		const root = mkdtempSync(
+			join(tmpdir(), "harness-context-invalid-contract-"),
+		);
+		tempDirs.push(root);
+		writeFileSync(
+			join(root, "harness.contract.json"),
+			"{invalid-json",
+			"utf-8",
+		);
+		const errorSpy = vi
+			.spyOn(console, "error")
+			.mockImplementation(() => undefined);
+
+		const exitCode = await runContext({
+			query: "oauth query",
+			baseDir: root,
+		});
+
+		expect(exitCode).toBe(EXIT_CODES.ERROR);
+		expect(searchMock).not.toHaveBeenCalled();
+		expect(errorSpy).toHaveBeenCalledWith(
+			expect.stringContaining("Failed to load contextCompact policy"),
+		);
+		errorSpy.mockRestore();
+	});
+
 	it("returns actionable ABI mismatch error when better-sqlite3 is incompatible", async () => {
 		const { runContext, EXIT_CODES } = await import("./context.js");
 		const consoleInfoSpy = vi

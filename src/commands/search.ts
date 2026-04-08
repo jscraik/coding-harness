@@ -13,6 +13,10 @@ import {
 	DEFAULT_SEARCH_LIMIT,
 	DEFAULT_SIMILARITY_THRESHOLD,
 } from "../lib/context-compound/constants.js";
+import {
+	loadContextCompactPolicy,
+	resolveContextCompactDefaults,
+} from "../lib/context-compound/context-compact-policy.js";
 import { normalizeStoreInitError } from "../lib/context-compound/init-error.js";
 import { OllamaClient } from "../lib/context-compound/ollama.js";
 import { VectorStore } from "../lib/context-compound/store.js";
@@ -469,8 +473,41 @@ export async function runSearch(options: SearchOptions): Promise<number> {
 		return EXIT_CODES.ERROR;
 	}
 
+	const baseDir = options.baseDir ?? process.cwd();
 	const outputJson = options.json ?? !options.text;
-	const limit = options.limit ?? DEFAULT_SEARCH_LIMIT;
+	let compactDefaults: { limit: number; threshold: number } | undefined;
+	if (options.limit === undefined || options.threshold === undefined) {
+		try {
+			const compactPolicy = loadContextCompactPolicy(baseDir);
+			compactDefaults = resolveContextCompactDefaults(
+				options.query,
+				compactPolicy,
+				DEFAULT_SEARCH_LIMIT,
+				DEFAULT_SIMILARITY_THRESHOLD,
+			);
+		} catch (error) {
+			const message =
+				error instanceof Error
+					? error.message
+					: "Failed to load context policy";
+			if (outputJson) {
+				console.info(
+					JSON.stringify({
+						success: false,
+						query: options.query,
+						mode,
+						count: 0,
+						results: [],
+						error: message,
+					}),
+				);
+			} else {
+				console.error(`✗ ${message}`);
+			}
+			return EXIT_CODES.ERROR;
+		}
+	}
+	const limit = options.limit ?? compactDefaults?.limit ?? DEFAULT_SEARCH_LIMIT;
 	if (!Number.isFinite(limit) || limit < 1) {
 		const error = "--limit must be a positive number";
 		if (outputJson) {
@@ -490,8 +527,10 @@ export async function runSearch(options: SearchOptions): Promise<number> {
 		return EXIT_CODES.ERROR;
 	}
 
-	const threshold = options.threshold ?? DEFAULT_SIMILARITY_THRESHOLD;
-	const baseDir = options.baseDir ?? process.cwd();
+	const threshold =
+		options.threshold ??
+		compactDefaults?.threshold ??
+		DEFAULT_SIMILARITY_THRESHOLD;
 	const harnessDir = options.harnessDir ?? DEFAULT_HARNESS_DIR;
 	const includePaths = options.includePaths ?? [];
 	const excludePaths = options.excludePaths ?? [];
@@ -720,9 +759,11 @@ export async function runSearchCLI(args: string[]): Promise<number> {
 			console.info("");
 			console.info("Options:");
 			console.info("  --mode, -m        Search mode: lexical|semantic|hybrid");
-			console.info("  --limit, -l       Maximum results (default: 10)");
 			console.info(
-				"  --threshold, -t   Semantic similarity threshold 0-1 (default: 0.7)",
+				"  --limit, -l       Maximum results (if omitted: contextCompact policy, then DEFAULT_SEARCH_LIMIT)",
+			);
+			console.info(
+				"  --threshold, -t   Semantic similarity threshold 0-1 (if omitted: contextCompact policy, then DEFAULT_SIMILARITY_THRESHOLD)",
 			);
 			console.info(
 				"  --harness-dir     Directory for semantic index (default: .harness)",

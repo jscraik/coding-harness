@@ -91,7 +91,7 @@ export const PROJECT_MISE_REQUIRED_TOOLS = [
 	["node", "24.13.1"],
 	["pnpm", "10.0.0"],
 	["python", "3.12"],
-	["uv", "0.10.9"],
+	["uv", "0.11.3"],
 	["cargo:prek", "0.3.4"],
 	["npm:@brainwav/diagram", "1.0.8"],
 	["npm:@argos-ci/cli", "4.1.1"],

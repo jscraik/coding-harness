@@ -11,6 +11,7 @@
 - [Docs-only edits](#docs-only-edits)
 - [Code + command behavior edits](#code--command-behavior-edits)
 - [Process/agent instruction edits](#processagent-instruction-edits)
+- [Verify-work lifecycle](#verify-work-lifecycle)
 - [Execution order and restart policy](#execution-order-and-restart-policy)
 - [Evidence reporting](#evidence-reporting)
 - [Non-code verification options](#non-code-verification-options)
@@ -89,11 +90,31 @@ Enforces plan-traceability and acceptance-evidence requirements for pull-request
 - Explicitly verify command contract docs against `package.json`/`pnpm-lock.yaml`.
 - When the change introduces or updates a validation wrapper, prove the wrapper itself was executed from the current repo state instead of claiming equivalent underlying commands ran.
 
+## Verify-work lifecycle
+
+`bash scripts/verify-work.sh` now records run-state under `.harness/runs/<run-id>/`:
+
+- `run.json` for run metadata (`mode`, `schemaVersion`, `contractVersion`, provider class)
+- `gates/<gate-id>.json` for per-gate outcomes
+- `summary.json` for terminal status and failed gate identity
+
+Fast-mode orchestration uses two classes:
+
+- `read_only_parallel`: safe, bounded parallel gates (for example code-style fast lane and manifest alignment checks)
+- `serial_guarded`: fail-closed guarded gates (for example preflight and full code-style lane)
+
+Resume behavior:
+
+- Use `bash scripts/verify-work.sh --resume-from <gate-id>` to restart from a failed gate boundary.
+- Resume is admitted only when the latest compatible run matches repo root, provider class, `schemaVersion`, and `contractVersion`.
+- Reused prior gates must already be `passed`; otherwise resume is rejected and a fresh run is required.
+
 ## Execution order and restart policy
 
 - On first failure, stop.
 - Fix root cause.
-- Rerun from the first failed gate forward.
+- Rerun from the first failed gate forward using `--resume-from <gate-id>` when compatibility checks pass.
+- If resume is rejected due to contract drift, run a fresh verification lane from the start.
 
 ## Evidence reporting
 

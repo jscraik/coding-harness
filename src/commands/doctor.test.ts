@@ -388,7 +388,15 @@ describe("runDoctor — ci:check-alignment check", () => {
 				version: 1,
 				activeProvider: "circleci",
 				requiredChecks: [
-					{ policyId: "c1", displayName: "lint", class: "required" },
+					{
+						policyId: "c1",
+						gateId: "lint",
+						displayName: "lint",
+						sourceAppSlug: "circleci",
+						sourceAppId: "circleci",
+						externalIdPattern: "^lint$",
+						class: "required",
+					},
 				],
 			}),
 		);
@@ -409,7 +417,11 @@ describe("runDoctor — ci:check-alignment check", () => {
 				requiredChecks: [
 					{
 						policyId: "c1",
+						gateId: "lint",
 						displayName: "lint",
+						sourceAppSlug: "circleci",
+						sourceAppId: "circleci",
+						externalIdPattern: "^lint$",
 						githubCheckName: "lint",
 						class: "required",
 					},
@@ -434,13 +446,21 @@ describe("runDoctor — ci:check-alignment check", () => {
 				requiredChecks: [
 					{
 						policyId: "c1",
+						gateId: "lint",
 						displayName: "lint",
+						sourceAppSlug: "circleci",
+						sourceAppId: "circleci",
+						externalIdPattern: "^lint$",
 						githubCheckName: "pr-pipeline",
 						class: "required",
 					},
 					{
 						policyId: "c2",
+						gateId: "docs-gate",
 						displayName: "docs-gate",
+						sourceAppSlug: "circleci",
+						sourceAppId: "circleci",
+						externalIdPattern: "^docs-gate$",
 						githubCheckName: "harness-gates",
 						class: "required",
 					},
@@ -451,5 +471,80 @@ describe("runDoctor — ci:check-alignment check", () => {
 		const check = report.checks.find((c) => c.id === "ci:check-alignment");
 		expect(check?.status).toBe("ok");
 		expect(check?.message).toContain("circleci");
+	});
+
+	it("ignores non-CircleCI entries when checking CircleCI job-name bindings", () => {
+		mkdirSync(`${dir}/.harness`, { recursive: true });
+		writeFileSync(
+			`${dir}/.harness/ci-required-checks.json`,
+			JSON.stringify({
+				version: 1,
+				activeProvider: "circleci",
+				requiredChecks: [
+					{
+						policyId: "c1",
+						gateId: "lint",
+						displayName: "lint",
+						sourceAppSlug: "circleci",
+						sourceAppId: "circleci",
+						externalIdPattern: "^lint$",
+						githubCheckName: "pr-pipeline",
+						class: "required",
+					},
+					{
+						policyId: "c2",
+						gateId: "security-scan",
+						displayName: "security-scan",
+						sourceAppSlug: "github-actions",
+						sourceAppId: "github-actions",
+						externalIdPattern: "^security-scan$",
+						githubCheckName: "security-scan",
+						class: "required",
+					},
+				],
+			}),
+		);
+
+		const report = runDoctor({ dir });
+		const check = report.checks.find((c) => c.id === "ci:check-alignment");
+		expect(check?.status).toBe("ok");
+	});
+
+	it("uses only active-provider entries when evaluating githubCheckName presence", () => {
+		mkdirSync(`${dir}/.harness`, { recursive: true });
+		writeFileSync(
+			`${dir}/.harness/ci-required-checks.json`,
+			JSON.stringify({
+				version: 1,
+				activeProvider: "github-actions",
+				requiredChecks: [
+					{
+						policyId: "gha-1",
+						gateId: "security-scan",
+						displayName: "security-scan",
+						sourceAppSlug: "github-actions",
+						sourceAppId: "github-actions",
+						externalIdPattern: "^security-scan$",
+						githubCheckName: "security-scan",
+						class: "required",
+					},
+					{
+						policyId: "c1",
+						gateId: "lint",
+						displayName: "lint",
+						sourceAppSlug: "circleci",
+						sourceAppId: "circleci",
+						externalIdPattern: "^lint$",
+						githubCheckName: "lint",
+						class: "required",
+					},
+				],
+			}),
+		);
+
+		const report = runDoctor({ dir });
+		const check = report.checks.find((c) => c.id === "ci:check-alignment");
+		expect(check?.status).toBe("ok");
+		expect(check?.message).toContain("github-actions");
 	});
 });

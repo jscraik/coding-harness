@@ -142,6 +142,7 @@ function buildFullPreset(): Record<string, unknown> {
 		toolingPolicy: DEFAULT_TOOLING_POLICY,
 		reviewPolicy: DEFAULT_CONTRACT.reviewPolicy,
 		remediationPolicy: DEFAULT_CONTRACT.remediationPolicy,
+		contextCompact: DEFAULT_CONTRACT.contextCompact,
 		contextIntegrityPolicy: DEFAULT_CONTRACT.contextIntegrityPolicy,
 		controlPlanePolicy: DEFAULT_CONTRACT.controlPlanePolicy,
 		loopStageContracts: DEFAULT_CONTRACT.loopStageContracts,

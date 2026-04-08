@@ -7,6 +7,7 @@
 - [Benchmark cadence requirements](#benchmark-cadence-requirements)
 - [Tag-Driven Release Path](#tag-driven-release-path)
 - [Change-control flow](#change-control-flow)
+- [Verify-Work Run State And Resume Compatibility](#verify-work-run-state-and-resume-compatibility)
 - [Rollback policy](#rollback-policy)
 - [Post-change validation](#post-change-validation)
 - [Release integrity and verification](#release-integrity-and-verification)
@@ -52,6 +53,16 @@ Use this document before milestones, release-tagged branches, or behavior-changi
 3. Validate against required gates.
 4. Update process artifacts if workflow changed.
 5. Confirm rollback behavior (or document as not applicable).
+
+## Verify-Work Run State And Resume Compatibility
+
+`bash scripts/verify-work.sh` stores run-state under `.harness/runs/<run-id>/`:
+
+- `run.json` contains lane metadata and compatibility keys (`repoRoot`, `providerClass`, `schemaVersion`, `contractVersion`).
+- `gates/<gate-id>.json` stores each gate outcome.
+- `summary.json` stores terminal status and failed gate identity.
+
+When resuming with `bash scripts/verify-work.sh --resume-from <gate-id>`, prior gates are reused only if the compatibility tuple still matches and reused gates are already `passed`.
 
 ## Rollback policy
 

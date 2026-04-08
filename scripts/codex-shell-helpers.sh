@@ -113,7 +113,7 @@ codex_d() {
   root="$(_codex_git_root)" || return 1
 
   local default_prompt
-  default_prompt='Read AGENTS.md, run ./scripts/codex-preflight.sh --stack auto --mode required, then summarize the repo structure and any blockers before making changes.'
+  default_prompt='Read AGENTS.md, run bash scripts/codex-preflight.sh --stack auto --mode required, then summarize the repo structure and any blockers before making changes.'
 
   local prompt="$default_prompt"
   if [[ $# -gt 0 ]]; then

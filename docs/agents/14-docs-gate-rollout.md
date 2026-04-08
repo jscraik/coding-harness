@@ -3,6 +3,7 @@
 ## Table of Contents
 
 - [Overview](#overview)
+- [Verify-Work Lifecycle Alignment](#verify-work-lifecycle-alignment)
 - [Rollout Phases](#rollout-phases)
 - [Promotion Thresholds](#promotion-thresholds)
 - [Demotion and Rollback Triggers](#demotion-and-rollback-triggers)
@@ -23,6 +24,18 @@ Current posture in this repository:
 - **Mode**: `advisory` (monitoring, non-blocking)
 - **Target**: `required` (blocking on drift)
 - **Phase**: Evidence collection
+
+## Verify-Work Lifecycle Alignment
+
+Docs-gate rollout decisions should stay aligned with the current `verify-work` lifecycle:
+
+- Run-state path: `.harness/runs/<run-id>/`.
+- Required artifacts: `run.json`, `gates/<gate-id>.json`, and `summary.json`.
+- Fast-mode classes: `read_only_parallel` and `serial_guarded`.
+- Resume command: `bash scripts/verify-work.sh --resume-from <gate-id>`.
+- Resume compatibility tuple: `repoRoot`, `providerClass`, `schemaVersion`, `contractVersion` with reused gates already `passed`.
+
+If rollout changes alter gate identity or compatibility fields, rerun `verify-work` and `harness doctor` before promoting docs-gate posture.
 
 ## Rollout Phases
 
@@ -53,7 +66,7 @@ Promotion criteria:
 
 | Phase Transition | PR Count | Window | False-Positive Rate | Additional Conditions |
 |------------------|----------|--------|---------------------|----------------------|
-| 1 → 2 | 30 | 7 days | < 5% | No unresolved trust_mismatch, maintainer sign-off |
+| 1 → 2 | 30 | 7 days | < 5% | No unresolved trust-mismatch, maintainer sign-off |
 | 2 → 3 | 50 | 14 days | < 3% | Bootstrap-gap < 10%, downgrade path verified |
 
 ### Required Evidence for Promotion

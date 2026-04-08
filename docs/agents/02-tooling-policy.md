@@ -116,6 +116,7 @@ Use repo scripts as the source of truth and do not assume global shortcuts. If a
 
 Exception for harness readiness:
 - Generated `scripts/check-environment.sh` in harness-managed repositories should prefer a repo-local CLI path first (`pnpm exec tsx src/cli.ts`, `node dist/cli.js`, or `bash scripts/harness-cli.sh`) and use the global `harness` binary only as a fallback when no repo-local runner exists.
+- When no repo-local runner exists, resolve `harness` from `mise` first (`mise which harness`) before using whatever `harness` happens to be first on `PATH`; this avoids stale Homebrew/global binaries shadowing the pinned runtime toolchain.
 - The global fallback install path is `npm i -g @brainwav/coding-harness`.
 - Private package auth must be wired where the global fallback is used:
   - Local shell: `export NPM_TOKEN=<token>`
@@ -146,11 +147,11 @@ For fresh git worktrees before first push, run:
 1. `bash scripts/prepare-worktree.sh`
 2. `make worktree-ready` is an equivalent wrapper target
 
-The helper codifies the required sequence: `preflight_repo`, `pnpm build`, `harness init --check-updates` (and `--update` when needed), `check-environment` with pinned `uv` (`mise which uv`), and `pnpm check`.
+The helper codifies the required sequence: `bash scripts/codex-preflight.sh --stack auto --mode required`, `pnpm build`, `harness init --check-updates` (and `--update` when needed), `bash scripts/check-environment.sh` (which resolves and validates pinned `uv`), and `pnpm check`.
 `scripts/prepare-worktree.sh` is the lightweight bootstrap lane for new worktrees; it ensures dependencies are installed in the active worktree so pre-push hooks that execute `pnpm` gates do not fail from missing `node_modules/`.
 `harness init --check-updates`, `harness init --update`, and `harness upgrade` now auto-repair legacy `.harness/restore-manifest.json` files when `ciProvider` can be inferred from `harness.contract.json`, an unambiguous CI layout on disk, or the current requested/default provider.
 If provider inference is still ambiguous, treat the incomplete manifest as a repo-drift warning for the update lane, print the remediation, and continue the remaining setup gates instead of aborting the whole audit.
-`scripts/codex-preflight.sh` must remain both executable and sourceable so `source scripts/codex-preflight.sh && preflight_repo` continues to work for bash-based setup flows.
+`scripts/codex-preflight.sh` is a CLI script and should be executed, not sourced. Use `bash scripts/codex-preflight.sh --stack auto --mode required` for standard checks (or `--mode optional` for softer checks).
 Scaffolded CI bootstrap should install pinned `pnpm` versions through a user-writable prefix (`$HOME/.local`) and persist that bin path through `$BASH_ENV` or `$GITHUB_PATH`; do not rely on `corepack enable` mutating privileged system shims such as `/usr/local/bin/pnpm`.
 When Local Memory is enabled in required mode, `scripts/codex-preflight.sh` should validate the pinned REST host/port from `~/.local-memory/config.yaml` before trusting `local-memory status --json`, so healthy daemons on `127.0.0.1` do not trigger duplicate restart behavior from stale CLI status output.
 The legacy shell fallback at `scripts/codex-preflight-local-memory-legacy.sh` must validate `rest_api.host`, `rest_api.port`, and `rest_api.auto_port` from that same config block directly, not by matching unrelated keys elsewhere in the file.

@@ -23,7 +23,7 @@
 - Use `bash scripts/verify-work.sh` or `pnpm check` when broader repo verification is needed, and run `pnpm test:deep` when runtime or artifact behavior changed.
 
 ## Command preflight helper
-- Run `./scripts/codex-preflight.sh --stack auto --mode required` before command-heavy, destructive, or path-sensitive work.
+- Run `bash scripts/codex-preflight.sh --stack auto --mode required` before command-heavy, destructive, or path-sensitive work.
 
 ## Fresh worktree helper
 - Before first push from a newly created worktree, run `bash scripts/prepare-worktree.sh` (or `make worktree-ready`).

@@ -32,7 +32,7 @@
 - If validation or audit findings represent durable repo work, create or update the matching Linear issue before handoff.
 
 ## Command preflight helper
-- Run `./scripts/codex-preflight.sh --stack auto --mode required` before command-heavy, destructive, or path-sensitive work.
+- Run `bash scripts/codex-preflight.sh --stack auto --mode required` before command-heavy, destructive, or path-sensitive work.
 - Validate required bins and target paths first so mistakes are prevented before edits.
 
 ## Fresh worktree helper
