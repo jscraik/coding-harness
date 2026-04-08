@@ -69,8 +69,12 @@ function printContextUsage(write: (message: string) => void): void {
 	write("Usage: harness context <query> [options]");
 	write("");
 	write("Options:");
-	write("  --limit, -l       Maximum results (default: 10)");
-	write("  --threshold, -t   Similarity threshold 0-1 (default: 0.7)");
+	write(
+		"  --limit, -l       Maximum results (if omitted: contextCompact policy, then DEFAULT_SEARCH_LIMIT)",
+	);
+	write(
+		"  --threshold, -t   Similarity threshold 0-1 (if omitted: contextCompact policy, then DEFAULT_SIMILARITY_THRESHOLD)",
+	);
 	write("  --json, -j        Output as JSON");
 	write(
 		"  --harness-dir     Directory for context database (default: .harness)",

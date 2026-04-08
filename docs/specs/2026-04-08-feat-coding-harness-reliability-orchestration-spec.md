@@ -108,6 +108,13 @@ The system needs deterministic, fail-closed orchestration that preserves governa
 | `RetryPolicy` | Retry rules per failure class and environment | `failureClass`, `maxRetries`, `baseDelayMs`, `maxDelayMs`, `jitter` |
 | `RunSummary` | Durable terminal record for reporting and audit | `runId`, `overallStatus`, `failedPolicyId`, `freshVsResumed`, `durationMs` |
 
+Future-state note: `VerificationRun.resumeFromPolicyId`, `GateRunResult.policyId`,
+`RunSummary.failedPolicyId`, and the typed `GateRunResult`/`RetryPolicy` payload
+shapes are design targets for a future orchestration schema revision. Current
+`scripts/verify-work.sh` emission still uses gate-id keyed artifacts
+(`resumeFromGateId`, `gates/<gate-id>.json`, `failedGateId`) and does not yet
+emit the full spec-shaped JSON summary model.
+
 ### Enumerations
 
 | Enumeration | Values |
@@ -179,7 +186,7 @@ S_FAIL (terminal)
 Run artifacts are stored under `.harness/runs/<run-id>/`:
 
 - `run.json` (run header + mode)
-- `gates/<policy-id>.json` (per-gate attempts and outcome)
+- `gates/<policy-id>.json` (per-gate attempts and outcome; future-state naming, current emission uses `gates/<gate-id>.json`)
 - `summary.json` (final status and timings)
 
 `run.json` must include at minimum:
@@ -203,7 +210,7 @@ Resume is allowed only when all checks pass:
 
 1. `resumeFromPolicyId` exists in current canonical contract.
 2. Stored run `contractVersion` matches current canonical contract version.
-3. Stored run was produced by the same repository root and provider class.
+3. Stored run was produced by the same repository root, schema version, and provider class.
 4. All reused gate results are `passed` and were emitted by the same gate identity tuple (`policyId`, `activeProvider`, `externalIdPattern`, `githubCheckName`).
 
 If any admissibility check fails, resume is rejected as a contract-safety failure and requires a fresh run.
@@ -228,7 +235,7 @@ If any admissibility check fails, resume is rejected as a contract-safety failur
 ### Output Interfaces
 
 - Human mode: ordered gate output including policy id, status, failure class, and action hint.
-- JSON mode: deterministic schema with run metadata, gate outcomes, and resume eligibility.
+- JSON mode: deterministic schema with run metadata, gate outcomes, and resume eligibility (future-state; current `--json` prints `summary.json` only).
 
 ### Backward Compatibility
 
@@ -286,6 +293,10 @@ Rules:
 | `internal_unknown` | unclassified script error, malformed gate response | no automatic retry | fail with explicit diagnostic |
 
 ### Retry Policy
+
+Future-state note: the retry profile below is the target contract model. Current
+`verify-work.sh` applies equivalent retry intent for transient failures but does
+not yet emit a dedicated `RetryPolicy` object in `--json` output.
 
 Default transient retry profile:
 

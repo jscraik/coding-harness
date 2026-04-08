@@ -79,6 +79,7 @@ const VALID_ROLLBACK_MODES = ["manual", "autonomous"] as const;
 const VALID_BLAST_RADIUS_RULES_MODES = ["merge", "replace"] as const;
 const FORBIDDEN_KEYS = ["__proto__", "constructor", "prototype"] as const;
 const VALID_TOP_LEVEL_KEYS = [
+	"$schema",
 	"version",
 	"riskTierRules",
 	"blastRadiusRules",

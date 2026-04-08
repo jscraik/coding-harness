@@ -1,4 +1,27 @@
 #!/usr/bin/env bash
+
+print_do_not_source_message() {
+	printf '%s\n' \
+		'Do not source scripts/codex-preflight.sh.' \
+		'Run: bash scripts/codex-preflight.sh --stack auto --mode required' \
+		'Optional mode: bash scripts/codex-preflight.sh --mode optional' >&2
+}
+
+is_sourced_invocation=0
+if [[ -n "${ZSH_VERSION:-}" ]]; then
+	_script_source_path="$(eval 'printf "%s\n" "${(%):-%N}"')"
+	if [[ "${_script_source_path}" != "$0" ]]; then
+		is_sourced_invocation=1
+	fi
+elif [[ "${BASH_SOURCE[0]:-$0}" != "$0" ]]; then
+	is_sourced_invocation=1
+fi
+
+if (( is_sourced_invocation )) && [[ "${CODEX_PREFLIGHT_ALLOW_SOURCE:-0}" != "1" ]]; then
+	print_do_not_source_message
+	return 1 2>/dev/null || exit 1
+fi
+
 set -euo pipefail
 
 resolve_script_path() {
@@ -676,6 +699,8 @@ main() {
 	log_ok 'preflight passed'
 }
 
-if ! is_script_sourced; then
-	main "$@"
+if is_script_sourced; then
+	return 0 2>/dev/null || exit 0
 fi
+
+main "$@"

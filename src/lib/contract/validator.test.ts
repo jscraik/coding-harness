@@ -8,6 +8,14 @@ describe("validateContract", () => {
 		expect(result.data?.version).toBe("1.0");
 	});
 
+	it("accepts top-level $schema for editor autocomplete metadata", () => {
+		const result = validateContract({
+			$schema: "https://schemas.brainwav.io/harness.contract.schema.json",
+			version: "1.0",
+		});
+		expect(result.success).toBe(true);
+	});
+
 	it("applies defaults for optional fields", () => {
 		const result = validateContract({ version: "1.0" });
 		expect(result.success).toBe(true);

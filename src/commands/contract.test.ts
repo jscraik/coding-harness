@@ -470,6 +470,46 @@ describe("runContractCLI dispatch", () => {
 		expect([0, 1]).toContain(code);
 	});
 
+	it("dispatches normalize-required-checks and prints normalized manifest JSON", () => {
+		const manifestPath = join(dir, "ci-required-checks.json");
+		writeFileSync(
+			manifestPath,
+			JSON.stringify({
+				version: 1,
+				activeProvider: "circleci",
+				requiredChecks: [
+					{
+						policyId: "lint-policy",
+						gateId: "lint",
+						displayName: "lint",
+						sourceAppSlug: "circleci",
+						sourceAppId: "circleci",
+						externalIdPattern: "^lint$",
+						githubCheckName: "pr-pipeline",
+						class: "required",
+					},
+				],
+			}),
+			"utf-8",
+		);
+
+		const code = runContractCLI(
+			["normalize-required-checks", "--manifest", manifestPath],
+			{},
+		);
+		expect(code).toBe(0);
+
+		const output = consoleSpy.mock.calls.at(-1)?.[0];
+		expect(typeof output).toBe("string");
+		const parsed = JSON.parse(String(output)) as {
+			activeProvider: string;
+			gates: Array<{ policyId: string; gateId: string }>;
+		};
+		expect(parsed.activeProvider).toBe("circleci");
+		expect(parsed.gates[0]?.policyId).toBe("lint-policy");
+		expect(parsed.gates[0]?.gateId).toBe("lint");
+	});
+
 	it("returns 1 for unknown subcommand", () => {
 		const code = runContractCLI(["unknown-cmd"], {});
 		expect(code).toBe(1);

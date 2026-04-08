@@ -1509,7 +1509,10 @@ describe("runInit", () => {
 			expect(codexPreflight).toContain("preflight_repo() {");
 			expect(codexPreflight).toContain("resolve_script_path()");
 			expect(codexPreflight).toContain("is_script_sourced()");
-			expect(codexPreflight).toContain("if ! is_script_sourced; then");
+			expect(codexPreflight).toContain(
+				"Do not source scripts/codex-preflight.sh.",
+			);
+			expect(codexPreflight).toContain('main "$@"');
 			expect(refreshDiagrams).toContain(
 				"diagram manifest generation requires ROOT_DIR, TMP_DIR, and MANIFEST_PATH",
 			);
@@ -1546,7 +1549,7 @@ describe("runInit", () => {
 			);
 		});
 
-		it("scaffolds a zsh-sourceable codex preflight helper", () => {
+		it("fails fast when codex preflight is sourced in zsh", () => {
 			const result = runInit(tempDir, { dryRun: false, force: false });
 			expect(result.ok).toBe(true);
 
@@ -1568,8 +1571,10 @@ describe("runInit", () => {
 				},
 			);
 
-			expect(sourced.status).toBe(0);
-			expect(sourced.stderr).toBe("");
+			expect(sourced.status).toBe(1);
+			expect(sourced.stderr).toContain(
+				"Do not source scripts/codex-preflight.sh.",
+			);
 		});
 
 		it("makes missing local harness installs actionable in the scaffolded wrapper", () => {
@@ -1607,6 +1612,193 @@ describe("runInit", () => {
 			expect(wrapper.stderr).toContain("pnpm add -D @brainwav/coding-harness");
 			expect(wrapper.stderr).toContain("pnpm exec harness <command>");
 			expect(wrapper.stdout).toBe("");
+		});
+
+		it("executes scaffolded check-environment with mise-first then npm fallback runner selection", () => {
+			const result = runInit(tempDir, { dryRun: false, force: false });
+			expect(result.ok).toBe(true);
+
+			// Force check-environment runner selection into the global fallback branch.
+			rmSync(join(tempDir, "scripts/harness-cli.sh"), { force: true });
+
+			const fakeBin = join(tempDir, ".fake-bin");
+			const fakeNpmPrefix = join(tempDir, ".fake-npm-prefix");
+			const fakeNpmBin = join(fakeNpmPrefix, "bin");
+			const fakeMiseHarness = join(fakeBin, "mise-harness");
+			const fakeNpmHarness = join(fakeNpmBin, "harness");
+			const runnerLog = join(tempDir, ".runner-log");
+			mkdirSync(fakeBin, { recursive: true });
+			mkdirSync(fakeNpmBin, { recursive: true });
+
+			const passthroughTools = [
+				"pnpm",
+				"node",
+				"jq",
+				"make",
+				"rg",
+				"fd",
+				"prek",
+				"diagram",
+				"vale",
+				"argos",
+				"cosign",
+				"cloudflared",
+				"vitest",
+				"ruff",
+				"eslint",
+				"agent-browser",
+				"agentation-mcp",
+				"mmdc",
+				"markdownlint-cli2",
+				"wrangler",
+				"beautiful-mermaid",
+				"semgrep",
+				"semver",
+				"trivy",
+				"rsearch",
+				"wsearch",
+			];
+
+			const passthroughStub = `#!/usr/bin/env bash
+set -euo pipefail
+exit 0
+`;
+			for (const tool of passthroughTools) {
+				const stubPath = join(fakeBin, tool);
+				writeFileSync(stubPath, passthroughStub, "utf-8");
+			}
+
+			writeFileSync(
+				fakeMiseHarness,
+				`#!/usr/bin/env bash
+set -euo pipefail
+attestation=""
+prev=""
+for arg in "$@"; do
+	if [[ "$prev" == "--attestation" ]]; then
+		attestation="$arg"
+	fi
+	prev="$arg"
+done
+if [[ -n "$attestation" ]]; then
+	printf '%s\\n' '{"passed":true}' > "$attestation"
+fi
+printf '%s\\n' "mise-harness $*" >> "\${FAKE_RUNNER_LOG:?}"
+printf '%s\\n' '{"passed":true}'
+`,
+				"utf-8",
+			);
+
+			writeFileSync(
+				fakeNpmHarness,
+				`#!/usr/bin/env bash
+set -euo pipefail
+attestation=""
+prev=""
+for arg in "$@"; do
+	if [[ "$prev" == "--attestation" ]]; then
+		attestation="$arg"
+	fi
+	prev="$arg"
+done
+if [[ -n "$attestation" ]]; then
+	printf '%s\\n' '{"passed":true}' > "$attestation"
+fi
+printf '%s\\n' "npm-harness $*" >> "\${FAKE_RUNNER_LOG:?}"
+printf '%s\\n' '{"passed":true}'
+`,
+				"utf-8",
+			);
+
+			writeFileSync(
+				join(fakeBin, "mise"),
+				`#!/usr/bin/env bash
+set -euo pipefail
+if [[ "$1" == "activate" ]]; then
+	echo 'true'
+	exit 0
+fi
+if [[ "$1" == "which" && "$2" == "harness" ]]; then
+	if [[ "\${FAKE_MISE_WHICH_MODE:-present}" == "present" ]]; then
+		echo "\${FAKE_MISE_HARNESS:?}"
+	fi
+	exit 0
+fi
+exit 1
+`,
+				"utf-8",
+			);
+
+			writeFileSync(
+				join(fakeBin, "npm"),
+				`#!/usr/bin/env bash
+set -euo pipefail
+if [[ "$1" == "ls" ]]; then
+	exit 0
+fi
+if [[ "$1" == "prefix" && "$2" == "-g" ]]; then
+	echo "\${FAKE_NPM_PREFIX:?}"
+	exit 0
+fi
+exit 1
+`,
+				"utf-8",
+			);
+
+			for (const toolPath of [
+				...passthroughTools.map((tool) => join(fakeBin, tool)),
+				join(fakeBin, "mise"),
+				join(fakeBin, "npm"),
+				fakeMiseHarness,
+				fakeNpmHarness,
+			]) {
+				const chmod = spawnSync("chmod", ["+x", toolPath], {
+					encoding: "utf8",
+				});
+				expect(chmod.status).toBe(0);
+			}
+
+			const baseEnv = {
+				...process.env,
+				PATH: `${fakeBin}:${process.env.PATH ?? ""}`,
+				FAKE_RUNNER_LOG: runnerLog,
+				FAKE_MISE_HARNESS: fakeMiseHarness,
+				FAKE_NPM_PREFIX: fakeNpmPrefix,
+			};
+
+			const miseRun = spawnSync("bash", ["scripts/check-environment.sh"], {
+				cwd: tempDir,
+				encoding: "utf8",
+				env: {
+					...baseEnv,
+					FAKE_MISE_WHICH_MODE: "present",
+				},
+			});
+			expect(miseRun.status).toBe(0);
+			expect(miseRun.stdout).toContain(
+				`Using harness runner: mise harness (${fakeMiseHarness})`,
+			);
+
+			const npmFallbackRun = spawnSync(
+				"bash",
+				["scripts/check-environment.sh"],
+				{
+					cwd: tempDir,
+					encoding: "utf8",
+					env: {
+						...baseEnv,
+						FAKE_MISE_WHICH_MODE: "missing",
+					},
+				},
+			);
+			expect(npmFallbackRun.status).toBe(0);
+			expect(npmFallbackRun.stdout).toContain(
+				`Using harness runner: global npm harness (${fakeNpmHarness})`,
+			);
+
+			const loggedRuns = readFileSync(runnerLog, "utf-8").trim().split("\n");
+			expect(loggedRuns[0]).toContain("mise-harness check-environment");
+			expect(loggedRuns[1]).toContain("npm-harness check-environment");
 		});
 
 		it("passes the scaffolded repo-local verify-work wrapper outside /codex", () => {
@@ -1682,11 +1874,25 @@ exit 0
 `,
 				"utf-8",
 			);
+			const fakeHarness = join(fakeBin, "harness");
+			writeFileSync(
+				fakeHarness,
+				`#!/usr/bin/env bash
+set -euo pipefail
+if [[ "$1" == "contract" && "$2" == "normalize-required-checks" ]]; then
+	printf '%s\\n' '{"schemaVersion":1,"contractVersion":"1","activeProvider":"circleci","gates":[{"provider":"circleci","githubCheckName":"pr-pipeline"}]}'
+	exit 0
+fi
+exit 1
+`,
+				"utf-8",
+			);
 
 			for (const toolPath of [
 				join(tempDir, "scripts/codex-preflight.sh"),
 				join(tempDir, "scripts/validate-codestyle.sh"),
 				fakePnpm,
+				fakeHarness,
 			]) {
 				const chmod = spawnSync("chmod", ["+x", toolPath], {
 					encoding: "utf8",

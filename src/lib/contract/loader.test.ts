@@ -6,6 +6,7 @@ import {
 	clearContractCache,
 	loadContract,
 } from "./loader.js";
+import { DEFAULT_CONTEXT_COMPACT_POLICY } from "./types.js";
 
 describe("loadContract", () => {
 	const createdFiles: string[] = [];
@@ -36,6 +37,25 @@ describe("loadContract", () => {
 		const contract = loadContract(path);
 		expect(contract.version).toBe("1.0");
 		expect(contract.riskTierRules["src/**"]).toBe("medium");
+	});
+
+	it("inherits default contextCompact policy when omitted in contract", () => {
+		const dir = join(process.cwd(), "artifacts");
+		mkdirSync(dir, { recursive: true });
+		const path = join(dir, "contract-loader-default-context-compact.json");
+		createdFiles.push(path);
+
+		writeFileSync(
+			path,
+			JSON.stringify({
+				version: "1.0",
+				riskTierRules: { "src/**": "low" },
+			}),
+			"utf-8",
+		);
+
+		const contract = loadContract(path);
+		expect(contract.contextCompact).toEqual(DEFAULT_CONTEXT_COMPACT_POLICY);
 	});
 
 	it("loads valid loopStageContracts semantic parity data", () => {

@@ -70,6 +70,7 @@ function runIsAllowedRepoExternalPath(
 	const result = spawnSync("bash", ["-c", script], {
 		cwd,
 		encoding: "utf8",
+		env: { ...process.env, CODEX_PREFLIGHT_ALLOW_SOURCE: "1" },
 	});
 
 	return result.status ?? 127;
@@ -255,7 +256,11 @@ describe("check_paths with is_allowed_repo_external_path exemption", () => {
 		const result = spawnSync("bash", ["-c", script], {
 			cwd,
 			encoding: "utf8",
-			env: { ...process.env, ...env },
+			env: {
+				...process.env,
+				CODEX_PREFLIGHT_ALLOW_SOURCE: "1",
+				...env,
+			},
 		});
 
 		return {

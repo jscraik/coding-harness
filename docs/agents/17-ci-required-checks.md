@@ -204,14 +204,13 @@ harness ci-migrate status --provider circleci
 `harness doctor` runs a `ci:check-alignment` advisory check that warns if:
 
 - `.harness/ci-required-checks.json` is present
-- any CircleCI-backed entries (`sourceAppSlug: "circleci"`) have a `githubCheckName` that looks like a CircleCI job name instead of a workflow name
+- any active-provider CircleCI entries (`sourceAppSlug: "circleci"`) have a `githubCheckName` that looks like a CircleCI job name instead of a workflow name
 
 Entries for non-CircleCI providers (for example `github-actions` check contexts like `security-scan`) are excluded from the CircleCI job-name warning.
 
 **Example warning:**
 
 ```
-⚠️  ci:check-alignment  ci-required-checks.json has entries with githubCheckName "quality-gates"
-                         but active provider is circleci — expected "pr-pipeline" or "harness-gates"
-    Fix: Update githubCheckName fields or run: harness ci-migrate sync-branch-protection
+⚠️  ci:check-alignment  ci-required-checks.json has githubCheckName values that look like CircleCI job names, not workflow names: lint. CircleCI reports ONE check run per workflow (e.g. "pr-pipeline"), not per job.
+    Fix: Update githubCheckName fields to workflow names (pr-pipeline / harness-gates). See docs/agents/17-ci-required-checks.md
 ```

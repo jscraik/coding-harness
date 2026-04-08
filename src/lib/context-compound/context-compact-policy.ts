@@ -1,18 +1,10 @@
+import { isMissingContractError } from "../contract/errors.js";
 import { loadContract } from "../contract/loader.js";
 import type { ContextCompactPolicy } from "../contract/types.js";
 
 const ESTIMATED_CONTEXT_WINDOW_TOKENS = 200_000;
 const AUTOCOMPACT_BUFFER_TOKENS = 13_000;
 const ESTIMATED_TOKENS_PER_RESULT = 300;
-
-function isMissingContractError(error: unknown): boolean {
-	return (
-		typeof error === "object" &&
-		error !== null &&
-		"code" in error &&
-		(error as { code?: unknown }).code === "ENOENT"
-	);
-}
 
 function estimateRetrievalBudgetTokens(limit: number): number {
 	// Rough planning heuristic: each retrieved item is budgeted at ~300 tokens.

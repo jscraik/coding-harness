@@ -509,4 +509,42 @@ describe("runDoctor — ci:check-alignment check", () => {
 		const check = report.checks.find((c) => c.id === "ci:check-alignment");
 		expect(check?.status).toBe("ok");
 	});
+
+	it("uses only active-provider entries when evaluating githubCheckName presence", () => {
+		mkdirSync(`${dir}/.harness`, { recursive: true });
+		writeFileSync(
+			`${dir}/.harness/ci-required-checks.json`,
+			JSON.stringify({
+				version: 1,
+				activeProvider: "github-actions",
+				requiredChecks: [
+					{
+						policyId: "gha-1",
+						gateId: "security-scan",
+						displayName: "security-scan",
+						sourceAppSlug: "github-actions",
+						sourceAppId: "github-actions",
+						externalIdPattern: "^security-scan$",
+						githubCheckName: "security-scan",
+						class: "required",
+					},
+					{
+						policyId: "c1",
+						gateId: "lint",
+						displayName: "lint",
+						sourceAppSlug: "circleci",
+						sourceAppId: "circleci",
+						externalIdPattern: "^lint$",
+						githubCheckName: "lint",
+						class: "required",
+					},
+				],
+			}),
+		);
+
+		const report = runDoctor({ dir });
+		const check = report.checks.find((c) => c.id === "ci:check-alignment");
+		expect(check?.status).toBe("ok");
+		expect(check?.message).toContain("github-actions");
+	});
 });

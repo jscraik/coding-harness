@@ -45,17 +45,23 @@ import {
 	validateContract,
 } from "../lib/contract/validator.js";
 import { sanitizeError } from "../lib/input/sanitize.js";
+import { normalizeRequiredChecksManifest } from "../lib/policy/required-checks.js";
 
 /** Default contract filename relative to targetDir. */
 const DEFAULT_CONTRACT_FILE = "harness.contract.json";
 
 const DEFAULT_PRESET: ContractPreset = "standard";
+const DEFAULT_REQUIRED_CHECKS_MANIFEST = ".harness/ci-required-checks.json";
 
 export interface ContractValidateOptions {
 	/** Output in JSON format (machine-readable). */
 	json?: boolean | undefined;
 	/** Override contract file path. */
 	contractPath?: string | undefined;
+}
+
+export interface ContractNormalizeRequiredChecksOptions {
+	manifestPath?: string | undefined;
 }
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
@@ -298,10 +304,44 @@ export function runContractSchemaCLI(): number {
 	return 0;
 }
 
+export function runContractNormalizeRequiredChecksCLI(
+	targetDir: string | undefined,
+	options: ContractNormalizeRequiredChecksOptions = {},
+): number {
+	const dir = targetDir ?? cwd();
+	const manifestPath = options.manifestPath
+		? resolve(options.manifestPath)
+		: resolve(dir, DEFAULT_REQUIRED_CHECKS_MANIFEST);
+
+	if (!existsSync(manifestPath)) {
+		console.error(`Required checks manifest not found: ${manifestPath}`);
+		return 1;
+	}
+
+	let rawManifest: unknown;
+	try {
+		rawManifest = JSON.parse(readFileSync(manifestPath, "utf-8"));
+	} catch (error) {
+		console.error(
+			`Failed to parse required checks manifest: ${sanitizeError(error)}`,
+		);
+		return 1;
+	}
+
+	const normalized = normalizeRequiredChecksManifest(rawManifest);
+	if (!normalized.ok) {
+		console.error(`Required checks manifest is invalid: ${normalized.error}`);
+		return 1;
+	}
+
+	console.info(JSON.stringify(normalized.value));
+	return 0;
+}
+
 // ─── Top-level dispatch ───────────────────────────────────────────────────────
 
 export interface ContractCLIOptions extends ContractValidateOptions {
-	subcommand: "init" | "validate" | "schema";
+	subcommand: "init" | "validate" | "schema" | "normalize-required-checks";
 }
 
 /**
@@ -316,6 +356,13 @@ export function runContractCLI(
 
 	if (subcommand === "schema") {
 		return runContractSchemaCLI();
+	}
+
+	if (subcommand === "normalize-required-checks") {
+		const rest = subArgs.slice(1);
+		const manifestIdx = rest.findIndex((a) => a === "--manifest" || a === "-m");
+		const manifestPath = manifestIdx !== -1 ? rest[manifestIdx + 1] : undefined;
+		return runContractNormalizeRequiredChecksCLI(undefined, { manifestPath });
 	}
 
 	if (subcommand === "init") {
@@ -352,6 +399,7 @@ export function runContractCLI(
 			"  harness contract init [--preset minimal|standard|full] [--output path] [--force]",
 			"  harness contract validate [path] [--json]",
 			"  harness contract schema",
+			"  harness contract normalize-required-checks [--manifest path]",
 		].join("\n"),
 	);
 	return 1;

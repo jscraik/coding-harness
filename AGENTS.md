@@ -118,7 +118,7 @@ Notes:
 
 ## Startup Workflow
 1. Read this file, then [docs/agents/01-instruction-map.md](./docs/agents/01-instruction-map.md), and only the task-relevant linked docs.
-2. Run `./scripts/codex-preflight.sh --stack auto --mode required` before multi-step, destructive, or path-sensitive work.
+2. Run `bash scripts/codex-preflight.sh --stack auto --mode required` before multi-step, destructive, or path-sensitive work.
 3. Summarize repo structure, active constraints, and blockers before edits.
 4. Make the smallest change that satisfies the task.
 5. Run the narrowest validation that proves the change works; widen only as risk increases.

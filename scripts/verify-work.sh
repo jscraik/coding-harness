@@ -111,33 +111,21 @@ prepare_normalized_required_checks_manifest() {
 		return 0
 	fi
 
-	if ! command -v pnpm >/dev/null 2>&1; then
-		echo "[verify-work] required checks manifest exists but pnpm is unavailable for normalization" >&2
+	local -a normalize_runner=()
+	local pnpm_bin=""
+	local harness_bin=""
+	if [[ -f "$repo_root/src/cli.ts" ]] && pnpm_bin="$(command -v pnpm 2>/dev/null)"; then
+		normalize_runner=("$pnpm_bin" exec tsx "$repo_root/src/cli.ts")
+	elif harness_bin="$(command -v harness 2>/dev/null)"; then
+		normalize_runner=("$harness_bin")
+	else
+		echo "[verify-work] required checks manifest exists but no harness normalization runner is available" >&2
 		return 1
 	fi
 
 	local normalized_tmp
 	normalized_tmp="$(mktemp)"
-	if ! pnpm exec tsx - "$manifest_path" "$normalized_tmp" <<'TS'
-import { readFileSync, writeFileSync } from "node:fs";
-import { normalizeRequiredChecksManifest } from "./src/lib/policy/required-checks.ts";
-
-const [manifestPath, outputPath] = process.argv.slice(2);
-if (!manifestPath || !outputPath) {
-	console.error("missing manifest/output path arguments");
-	process.exit(2);
-}
-
-const raw = JSON.parse(readFileSync(manifestPath, "utf8"));
-const normalized = normalizeRequiredChecksManifest(raw);
-if (!normalized.ok) {
-	console.error(normalized.error);
-	process.exit(1);
-}
-
-writeFileSync(outputPath, `${JSON.stringify(normalized.value)}\n`, "utf8");
-TS
-	then
+	if ! "${normalize_runner[@]}" contract normalize-required-checks --manifest "$manifest_path" > "$normalized_tmp"; then
 		rm -f "$normalized_tmp"
 		echo "[verify-work] required checks normalization failed for $manifest_path" >&2
 		return 1
@@ -594,8 +582,9 @@ find_resume_source_run_dir() {
 		[[ -n "$candidate" ]] || continue
 		[[ -f "$candidate/run.json" && -f "$candidate/summary.json" ]] || continue
 		[[ "$candidate" == "$run_dir" ]] && continue
-		local same_root same_contract same_provider same_lane
+		local same_root same_schema same_contract same_provider same_lane
 		same_root="$(jq -r --arg repoRoot "$repo_root" '.repoRoot == $repoRoot' "$candidate/run.json" 2>/dev/null || echo false)"
+		same_schema="$(jq -r --arg schemaVersion "$schema_version" '.schemaVersion == $schemaVersion' "$candidate/run.json" 2>/dev/null || echo false)"
 		same_contract="$(jq -r --arg contractVersion "$contract_version" '.contractVersion == $contractVersion' "$candidate/run.json" 2>/dev/null || echo false)"
 		same_provider="$(jq -r --arg providerClass "$provider_class" '.providerClass == $providerClass' "$candidate/run.json" 2>/dev/null || echo false)"
 		same_lane="$(
@@ -606,7 +595,7 @@ find_resume_source_run_dir() {
 				'((.lane.fastMode // false) == $laneFastMode) and ((.lane.changedOnly // true) == $laneChangedOnly) and ((.lane.strictMode // false) == $laneStrictMode)' \
 				"$candidate/run.json" 2>/dev/null || echo false
 		)"
-		if [[ "$same_root" == "true" && "$same_contract" == "true" && "$same_provider" == "true" && "$same_lane" == "true" ]]; then
+		if [[ "$same_root" == "true" && "$same_schema" == "true" && "$same_contract" == "true" && "$same_provider" == "true" && "$same_lane" == "true" ]]; then
 			echo "$candidate"
 			return 0
 		fi

@@ -759,9 +759,11 @@ export async function runSearchCLI(args: string[]): Promise<number> {
 			console.info("");
 			console.info("Options:");
 			console.info("  --mode, -m        Search mode: lexical|semantic|hybrid");
-			console.info("  --limit, -l       Maximum results (default: 10)");
 			console.info(
-				"  --threshold, -t   Semantic similarity threshold 0-1 (default: 0.7)",
+				"  --limit, -l       Maximum results (if omitted: contextCompact policy, then DEFAULT_SEARCH_LIMIT)",
+			);
+			console.info(
+				"  --threshold, -t   Semantic similarity threshold 0-1 (if omitted: contextCompact policy, then DEFAULT_SIMILARITY_THRESHOLD)",
 			);
 			console.info(
 				"  --harness-dir     Directory for semantic index (default: .harness)",

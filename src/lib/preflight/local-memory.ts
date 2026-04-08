@@ -468,7 +468,7 @@ export async function runLocalMemoryPreflight(
 			const healthResponse = await fetchJson(healthUrl);
 			if (healthResponse.ok && isHealthSuccessPayload(healthResponse.json)) {
 				messages.push(
-					`⚠️ local-memory status reported stopped; REST health succeeded at ${healthUrl}`,
+					`ℹ️ local-memory status drift detected; using REST health at ${healthUrl} as source of truth`,
 				);
 				running = true;
 				healthJson = healthResponse.json;
@@ -700,11 +700,11 @@ export async function runLocalMemoryPreflight(
 			messages.push("ℹ️ migration status signal found in daemon log");
 		} else {
 			messages.push(
-				"⚠️ no migration status signal found in recent daemon log tail",
+				"ℹ️ no migration status signal found in recent daemon log tail",
 			);
 		}
 	} else {
-		messages.push(`⚠️ daemon log not found at ${daemonLogPath}`);
+		messages.push(`ℹ️ daemon log not found at ${daemonLogPath}`);
 	}
 
 	messages.push("✅ local-memory preflight passed");

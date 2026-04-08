@@ -91,7 +91,7 @@ Recommended policy:
 - Treat `scripts/codex-preflight.sh` as required project bootstrap infrastructure.
 - Treat `CODESTYLE.md` and `scripts/validate-code-style.sh` as required repo-local contract files.
 - Scaffold `scripts/codex-enforced` and `scripts/codex-learn` together with preflight so repo-local wrappers own repo-local state.
-- Keep `preflight_repo` in `required` mode by default; only relax mode (`optional` or `off`) when the project documents why.
+- Keep `bash scripts/codex-preflight.sh --stack auto --mode required` as the default preflight command; only relax mode (`optional` or `off`) when the project documents why.
 - Adjust preflight binary/path lists per project scope instead of deleting the script.
 - Keep repo-scoped telemetry and learned overrides under `.harness/memory/`, and global telemetry under `~/.codex/`.
 - Treat `scripts/verify-work.sh` as the canonical repo-local verification command and keep it wired to repo-local preflight defaults.

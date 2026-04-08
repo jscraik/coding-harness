@@ -7,6 +7,7 @@
 
 import { existsSync, readFileSync } from "node:fs";
 import { resolve } from "node:path";
+import { isMissingContractError } from "../contract/errors.js";
 import { loadContract } from "../contract/loader.js";
 import type {
 	HarnessContract,
@@ -304,15 +305,6 @@ export async function runPreflightGate(
 	const passed = evaluatePass(checks, options.strict === true);
 
 	return buildPreflightResult(passed, checks, start, riskTier, hookDecisions);
-}
-
-function isMissingContractError(error: unknown): boolean {
-	return (
-		typeof error === "object" &&
-		error !== null &&
-		"code" in error &&
-		(error as { code?: unknown }).code === "ENOENT"
-	);
 }
 
 function loadPreflightContract(contractPath: string): {

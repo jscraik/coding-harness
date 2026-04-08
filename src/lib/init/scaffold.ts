@@ -2394,7 +2394,7 @@ Recommended policy:
 - Treat \`CODESTYLE.md\` and \`scripts/validate-codestyle.sh\` as required repo-local contract files.
 - Keep \`CODESTYLE.md\` as a real repo-local file in generated repositories even when the harness authoring source is maintained globally.
 - Scaffold \`scripts/codex-enforced\` and \`scripts/codex-learn\` together with preflight so repo-local wrappers own repo-local state.
-- Keep \`preflight_repo\` in \`required\` mode by default; only relax mode (\`optional\` or \`off\`) when the project documents why.
+- Keep \`bash scripts/codex-preflight.sh --stack auto --mode required\` as the default preflight command; only relax mode (\`optional\` or \`off\`) when the project documents why.
 - Adjust preflight binary/path lists per project scope instead of deleting the script.
 - Keep repo-scoped telemetry and learned overrides under \`.harness/memory/\`, and global telemetry under \`~/.codex/\`.
 - Treat \`scripts/verify-work.sh\` as the canonical repo-facing verification command and keep it wired to repo-local preflight defaults.
@@ -4000,7 +4000,7 @@ elif [[ -f "$REPO_ROOT/dist/cli.js" ]] && command -v node >/dev/null 2>&1; then
 		echo "Error: repo dist CLI failed to run check-environment successfully."
 		exit 1
 	fi
-elif [[ -x "$REPO_ROOT/scripts/harness-cli.sh" ]]; then
+elif [[ -r "$REPO_ROOT/scripts/harness-cli.sh" ]]; then
 	if ! run_check_environment_with_runner "repo wrapper (bash scripts/harness-cli.sh)" bash "$REPO_ROOT/scripts/harness-cli.sh"; then
 		echo "Error: repo wrapper failed to run check-environment successfully."
 		exit 1
@@ -4031,12 +4031,10 @@ else
 			exit 1
 		fi
 
-			npm_global_bin="$(npm bin -g 2>/dev/null || true)"
-			if [[ -z "$npm_global_bin" ]]; then
-				npm_global_root="$(npm root -g 2>/dev/null || true)"
-				if [[ -n "$npm_global_root" ]]; then
-					npm_global_bin="$npm_global_root/.bin"
-				fi
+			npm_global_bin=""
+			npm_global_prefix="$(npm prefix -g 2>/dev/null || true)"
+			if [[ -n "$npm_global_prefix" ]]; then
+				npm_global_bin="$npm_global_prefix/bin"
 			fi
 			npm_harness_bin="$npm_global_bin/harness"
 

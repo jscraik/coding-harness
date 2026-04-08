@@ -570,6 +570,9 @@ const CHECKS: CheckFn[] = [
 			provider: gate.provider,
 			githubCheckName: gate.githubCheckName,
 		}));
+		const gatesForActiveProvider = gatesForAlignment.filter(
+			(gate) => gate.provider === provider,
+		);
 
 		if (!provider || gatesForAlignment.length === 0) {
 			return {
@@ -584,7 +587,7 @@ const CHECKS: CheckFn[] = [
 		}
 
 		// Collect all non-empty githubCheckName values
-		const githubCheckNames = gatesForAlignment
+		const githubCheckNames = gatesForActiveProvider
 			.map((gate) => gate.githubCheckName)
 			.filter(
 				(name): name is string => typeof name === "string" && name.length > 0,
@@ -608,8 +611,7 @@ const CHECKS: CheckFn[] = [
 
 		if (provider === "circleci") {
 			const suspicious = findCircleCIJobNamedCheckNames(
-				gatesForAlignment
-					.filter((gate) => gate.provider === "circleci")
+				gatesForActiveProvider
 					.map((gate) => gate.githubCheckName)
 					.filter(
 						(checkName): checkName is string =>
