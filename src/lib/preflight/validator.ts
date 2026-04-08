@@ -250,10 +250,9 @@ export async function runPreflightGate(
 	const checks: PreflightCheck[] = [];
 	const hookDecisions: PreflightHookDecision[] = [];
 	const contractPath = resolve(options.contractPath ?? "harness.contract.json");
-	const contract =
-		existsSync(contractPath) && options.files?.length
-			? tryLoadContract(contractPath)
-			: undefined;
+	const contract = existsSync(contractPath)
+		? tryLoadContract(contractPath)
+		: undefined;
 	const extensions = contract?.gateExtensions?.preflightGate;
 	const riskTier = resolveRiskTier(options, contract);
 

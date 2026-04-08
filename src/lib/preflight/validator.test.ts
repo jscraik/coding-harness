@@ -119,6 +119,29 @@ describe("runPreflightGate", () => {
 		expect(result.hookDecisions?.[0]?.action).toBe("short-circuit");
 	});
 
+	it("applies pre hooks when files option is omitted", async () => {
+		writeFileSync(
+			"harness.contract.json",
+			JSON.stringify({
+				version: "1.0",
+				gateExtensions: {
+					preflightGate: {
+						pre: [{ id: "force-fail" }],
+					},
+				},
+			}),
+		);
+
+		const result = await runPreflightGate({});
+		const hookCheck = result.checks.find(
+			(check) => check.id === "hook:pre:force-fail",
+		);
+
+		expect(result.passed).toBe(false);
+		expect(hookCheck?.passed).toBe(false);
+		expect(result.hookDecisions?.[0]?.action).toBe("override");
+	});
+
 	it("blocks successful runs when post hook fail-on-warnings sees warning findings", async () => {
 		writeFileSync(
 			"harness.contract.json",
