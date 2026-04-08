@@ -40,6 +40,8 @@ All automated review usage in this repository must align with this policy and li
 - The coding agent must not self-approve.
 - Every PR requires an independent review signal before merge.
 - For this repository, that signal is expected to come from CodeRabbit plus the existing Codex review process unless an explicit waiver is recorded.
+- Any review workflow that runs `harness linear*` commands must provide `LINEAR_API_KEY` in the runtime environment (or pass `--token` explicitly).
+- If Linear secrets are stored in `~/.codex/.env`, load them into the active shell/session before running `harness linear*` commands, and use `harness symphony-check` when validating discovery behavior.
 
 ## Configuration standards and governance
 

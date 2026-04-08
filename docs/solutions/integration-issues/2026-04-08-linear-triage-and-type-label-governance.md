@@ -1,4 +1,9 @@
 ---
+schema_version: 1
+status: draft
+applies_to:
+  - coding-harness
+  - linear-triage-control-plane
 module: linear-triage-control-plane
 date: 2026-04-08
 problem_type: workflow
@@ -84,7 +89,7 @@ This separates policy logic from command wiring and keeps behavior deterministic
   - `docs/agents/19-linear-templates.md`
 - Captured operational plan and source strategy:
   - `docs/plans/2026-04-08-feat-linear-triage-system-operationalization-plan.md`
-  - `tmp/LINEAR_TRIAGE.md`
+  - this solution artifact (`Operational Runbook` + `Prevention`) as the durable strategy snapshot
 
 ### 4. Added regression coverage for command and policy behavior
 
@@ -126,6 +131,6 @@ Use this flow for each triage cycle:
 ## Related Artifacts
 
 - Plan: `docs/plans/2026-04-08-feat-linear-triage-system-operationalization-plan.md`
-- Strategy source: `tmp/LINEAR_TRIAGE.md`
+- Strategy source: this solution artifact (`Operational Runbook` + `Prevention`)
 - Commit: `684c514` (`feat(linear): add triage workflow and label governance`)
 - Related issue lane examples: `JSC-126`, `JSC-131`, `JSC-115`

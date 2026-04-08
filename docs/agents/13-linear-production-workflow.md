@@ -88,7 +88,7 @@ S5 BLOCKED (non-terminal)
 
 ## Idempotency
 - Key: `<LK>|<state>|<event>|<pr_url?>`.
-- Replayed `progress_tick` and `pr_opened` events update or insert existing LI artifacts.
+- Replayed `progress_tick` and `pr_opened` events update existing LI artifacts or insert missing LI artifacts.
 - `handoff_ready` replay must not duplicate evidence links/comments.
 
 ## Execution Modes
