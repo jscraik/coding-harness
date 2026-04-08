@@ -327,6 +327,7 @@ flags, use `harness --help`.
 | --- | --- |
 | `init` | Scaffold or update harness-managed repo surfaces (`--project-type`, `--json`, `--dry-run`, `--force`, `--track`, `--update`, `--migrate`, `--minimal`, `--issue-tracker`) |
 | `eject` | Safely remove harness-managed files and templates, including legacy Greptile artifacts, while preserving custom non-Greptile CI workflows (`--dry-run`, `--force`) |
+| `check` | Zero-config repo health snapshot — works before full setup |
 | `doctor` | Check all gate prerequisites (tools, files, config, CI) |
 | `health` | Unified gate status scorecard across all gates |
 | `contract` | Validate `harness.contract.json` or print the JSON Schema (`validate`, `schema`) |
