@@ -205,7 +205,8 @@ Operational notes:
 - `handoff` moves the issue to `In Review`, posts a workflow comment, and can attach PR/evidence/reference URLs.
 - `close` moves the issue to `Done`, posts a closure comment, and can attach the merge PR/evidence URLs.
 - Set `LINEAR_API_KEY` in the runtime environment (for example, `export LINEAR_API_KEY=...`) or pass `--token` explicitly.
-- If you keep secrets in `~/.codex/.env`, load that file into the active shell/session before running `harness linear*` commands; `harness symphony-check` can validate discovery there.
+- If you keep secrets in `~/.codex/.env`, load that file into the active shell/session before running `harness linear*` commands.
+- When Linear secret discovery behavior changes, run `harness symphony-check` and include its output in validation evidence.
 - Use `--state` when a team/project uses a non-standard state name.
 - When you want GitHub merge activity to close the Linear issue automatically, put `Fixes <LINEAR-KEY>` in the PR body or title.
 - When you only want linking without merge-time closeout, use `Refs <LINEAR-KEY>` instead.
