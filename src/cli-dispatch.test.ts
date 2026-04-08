@@ -99,6 +99,10 @@ vi.mock("./commands/linear-prepare.js", () => ({
 	runLinearPrepareCLI: vi.fn(async () => 66),
 }));
 
+vi.mock("./commands/linear-triage.js", () => ({
+	runLinearTriageCLI: vi.fn(async () => 70),
+}));
+
 vi.mock("./commands/linear-gate.js", () => ({
 	runLinearGateCLI: vi.fn(async () => 67),
 }));
@@ -368,6 +372,57 @@ describe("cli command dispatch", () => {
 			json: true,
 		});
 		expect(exitSpy).toHaveBeenCalledWith(67);
+	});
+
+	it("dispatches linear triage command", async () => {
+		const { run } = await import("./cli.js");
+		const { runLinearTriageCLI } = await import("./commands/linear-triage.js");
+
+		const exitSpy = vi
+			.spyOn(process, "exit")
+			.mockImplementation(((_code?: number) => undefined) as never);
+
+		run([
+			"linear",
+			"triage",
+			"--team",
+			"JSC",
+			"--project",
+			"coding-harness",
+			"--issue",
+			"JSC-123",
+			"--limit",
+			"8",
+			"--metadata-threshold",
+			"0.9",
+			"--in-progress-cap",
+			"3",
+			"--max-promote",
+			"2",
+			"--apply",
+			"--confirm",
+			"--dry-run",
+			"--no-type-label-sync",
+			"--json",
+		]);
+
+		await new Promise((resolve) => setTimeout(resolve, 0));
+
+		expect(vi.mocked(runLinearTriageCLI)).toHaveBeenCalledWith({
+			team: "JSC",
+			project: "coding-harness",
+			issue: "JSC-123",
+			limit: 8,
+			metadataThreshold: 0.9,
+			inProgressCap: 3,
+			maxPromote: 2,
+			apply: true,
+			confirm: true,
+			dryRun: true,
+			syncTypeLabels: false,
+			json: true,
+		});
+		expect(exitSpy).toHaveBeenCalledWith(70);
 	});
 
 	it("dispatches brainstorm-gate and ignores missing --topic value", async () => {

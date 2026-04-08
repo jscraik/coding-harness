@@ -971,9 +971,31 @@ export function runInitCLI(
 			console.info("  Run without --dry-run to apply changes.");
 		} else {
 			console.info("\n✓ Harness installed!");
-			console.info(`  Created: ${created.length}, Skipped: ${skipped.length}`);
 
-			// Show rollback tip if tracking enabled
+			// Detection context line
+			const detectedType = projectTypeDetection?.projectType ?? "unknown";
+			const typeLabel =
+				detectedType === "unknown"
+					? "unknown (use --project-type to set)"
+					: projectTypeDetection?.confidence === "low"
+						? `${detectedType} (low confidence)`
+						: detectedType;
+			console.info(`  Type: ${typeLabel} • Manager: ${packageManager}`);
+			console.info(
+				`  Created: ${created.length} file${created.length === 1 ? "" : "s"}, Skipped: ${skipped.length}`,
+			);
+
+			// Next steps
+			console.info("\nNext steps:");
+			if (created.includes(CONTRACT_FILE)) {
+				console.info(
+					"  harness contract validate   — validate the scaffolded contract",
+				);
+			}
+			console.info("  harness check               — quick health snapshot");
+			console.info("  harness health --json       — full gate scorecard");
+
+			// Rollback tip
 			if (options.track) {
 				console.info("\n  Rollback: harness init --rollback");
 			} else if (created.length > 0) {
