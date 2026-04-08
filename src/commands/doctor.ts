@@ -67,8 +67,8 @@ export interface DoctorOptions {
 // ─── Tool checks ─────────────────────────────────────────────────────────────
 
 function commandExists(cmd: string): boolean {
-	const result = spawnSync("command", ["-v", cmd], {
-		shell: true,
+	const lookupCommand = process.platform === "win32" ? "where" : "which";
+	const result = spawnSync(lookupCommand, [cmd], {
 		stdio: "pipe",
 		encoding: "utf-8",
 	});
