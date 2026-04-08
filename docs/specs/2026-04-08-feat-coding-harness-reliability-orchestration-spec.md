@@ -1,7 +1,12 @@
 ---
+schema_version: 1
 title: Coding Harness Reliability Orchestration
 type: feat
 status: active
+applies_to:
+  - scripts/verify-work.sh
+  - src/commands/doctor.ts
+  - src/commands/linear-gate.ts
 date: 2026-04-08
 deepened: 2026-04-08
 origin: docs/brainstorms/2026-04-08-coding-harness-reliability-orchestration-requirements.md
