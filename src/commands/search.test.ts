@@ -397,14 +397,19 @@ describe("search command", () => {
 	});
 
 	it("skips contextCompact contract load when explicit limit and threshold are set", async () => {
-		mockSpawnSync.mockReturnValue(createSpawnResult(""));
+		mockOllama.isAvailable.mockResolvedValue(true);
+		mockOllama.embed.mockResolvedValue({ ok: true, value: [0.1, 0.2, 0.3] });
+		mockStore.search.mockReturnValue({
+			ok: true,
+			value: [],
+		});
 		const consoleSpy = vi.spyOn(console, "info").mockImplementation(() => {
 			// noop
 		});
 
 		const code = await runSearch({
 			query: "oauth query",
-			mode: "lexical",
+			mode: "semantic",
 			json: true,
 			limit: 9,
 			threshold: 0.4,

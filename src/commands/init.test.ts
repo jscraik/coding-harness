@@ -1472,7 +1472,7 @@ describe("runInit", () => {
 				'run_check_environment_with_runner "mise harness ($mise_harness_bin)" "$mise_harness_bin"',
 			);
 			expect(environmentCheck).toContain(
-				'run_check_environment_with_runner "global npm harness ($(command -v harness))" harness',
+				'run_check_environment_with_runner "global npm harness ($npm_harness_bin)" "$npm_harness_bin"',
 			);
 			expect(environmentCheck).toContain("npm i -g @brainwav/coding-harness");
 			expect(environmentCheck).toContain("NPM_TOKEN");

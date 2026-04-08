@@ -4031,20 +4031,28 @@ else
 			exit 1
 		fi
 
-		if ! command -v harness >/dev/null 2>&1; then
-			echo "Error: global harness binary is not on PATH after npm installation."
-			echo "Fix: ensure npm global bin directory is on PATH, then retry."
-			exit 1
-		fi
+			npm_global_bin="$(npm bin -g 2>/dev/null || true)"
+			if [[ -z "$npm_global_bin" ]]; then
+				echo "Error: unable to resolve npm global bin path."
+				exit 1
+			fi
 
-		if ! run_check_environment_with_runner "global npm harness ($(command -v harness))" harness; then
-			echo "Error: global npm harness failed to run check-environment successfully."
-			echo "Reinstall and retry:"
-			echo "  npm i -g @brainwav/coding-harness"
-			echo "If this is CI (CircleCI), confirm NPM_TOKEN is set as a project environment variable."
-			exit 1
+			npm_harness_bin="$npm_global_bin/harness"
+			if [[ ! -x "$npm_harness_bin" ]]; then
+				echo "Error: npm global harness binary was not found at $npm_harness_bin."
+				echo "Fix: reinstall @brainwav/coding-harness globally and retry."
+				echo "  npm i -g @brainwav/coding-harness"
+				exit 1
+			fi
+
+			if ! run_check_environment_with_runner "global npm harness ($npm_harness_bin)" "$npm_harness_bin"; then
+				echo "Error: global npm harness failed to run check-environment successfully."
+				echo "Reinstall and retry:"
+				echo "  npm i -g @brainwav/coding-harness"
+				echo "If this is CI (CircleCI), confirm NPM_TOKEN is set as a project environment variable."
+				exit 1
+			fi
 		fi
-	fi
 fi
 
 jq -e '.passed == true' "$ATTESTATION_PATH" >/dev/null

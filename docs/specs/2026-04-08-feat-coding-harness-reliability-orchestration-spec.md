@@ -101,10 +101,10 @@ The system needs deterministic, fail-closed orchestration that preserves governa
 
 | Entity | Purpose | Required fields |
 | --- | --- | --- |
-| `GateDefinition` | Canonical per-gate contract | `gateId`, `displayName`, `executionClass`, `failureClassDefault`, `enabled`, `order` |
-| `CheckBinding` | Maps internal gates to GitHub check contexts | `provider`, `githubCheckName`, `displayName`, `externalIdPattern` |
-| `VerificationRun` | One verify execution instance | `runId`, `mode`, `startedAt`, `trigger`, `resumeFromGateId`, `status`, `schemaVersion`, `contractVersion`, `repoRoot`, `providerClass` |
-| `GateRunResult` | Per-gate recorded outcome | `gateId`, `attempt`, `status`, `failureClass`, `startedAt`, `finishedAt`, `nextAction` |
+| `GateDefinition` | Canonical per-gate contract | `policyId`, `displayName`, `executionClass`, `failureClassDefault`, `enabled`, `order` |
+| `CheckBinding` | Maps internal gates to GitHub check contexts | `policyId`, `activeProvider`, `githubCheckName`, `displayName`, `externalIdPattern` |
+| `VerificationRun` | One verify execution instance | `runId`, `mode`, `startedAt`, `trigger`, `resumeFromPolicyId`, `status`, `schemaVersion`, `contractVersion`, `repoRoot`, `providerClass` |
+| `GateRunResult` | Per-gate recorded outcome | `policyId`, `attempt`, `status`, `failureClass`, `startedAt`, `finishedAt`, `nextAction` |
 | `RetryPolicy` | Retry rules per failure class and environment | `failureClass`, `maxRetries`, `baseDelayMs`, `maxDelayMs`, `jitter` |
 | `RunSummary` | Durable terminal record for reporting and audit | `runId`, `overallStatus`, `failedGateId`, `freshVsResumed`, `durationMs` |
 
@@ -134,7 +134,7 @@ The system needs deterministic, fail-closed orchestration that preserves governa
 
 ### 2. Resume Lifecycle
 
-1. Resolve resume target from `--resume-from <gate-id>` and latest compatible `VerificationRun` snapshot.
+1. Resolve resume target from `--resume-from <policy-id>` and latest compatible `VerificationRun` snapshot.
 2. Verify contract compatibility between stored run and current contract version.
 3. Rehydrate prior passed results for unaffected gates.
 4. Re-enter lifecycle at the selected gate boundary.
@@ -179,7 +179,7 @@ S_FAIL (terminal)
 Run artifacts are stored under `.harness/runs/<run-id>/`:
 
 - `run.json` (run header + mode)
-- `gates/<gate-id>.json` (per-gate attempts and outcome)
+- `gates/<policy-id>.json` (per-gate attempts and outcome)
 - `summary.json` (final status and timings)
 
 `run.json` must include at minimum:
@@ -201,10 +201,10 @@ Retention policy:
 
 Resume is allowed only when all checks pass:
 
-1. `resumeFromGateId` exists in current canonical contract.
+1. `resumeFromPolicyId` exists in current canonical contract.
 2. Stored run `contractVersion` matches current canonical contract version.
 3. Stored run was produced by the same repository root and provider class.
-4. All reused gate results are `passed` and were emitted by the same gate identity tuple (`gateId`, `provider`, `externalIdPattern`, `githubCheckName`).
+4. All reused gate results are `passed` and were emitted by the same gate identity tuple (`policyId`, `activeProvider`, `externalIdPattern`, `githubCheckName`).
 
 If any admissibility check fails, resume is rejected as a contract-safety failure and requires a fresh run.
 
@@ -227,7 +227,7 @@ If any admissibility check fails, resume is rejected as a contract-safety failur
 
 ### Output Interfaces
 
-- Human mode: ordered gate output including gate id, status, failure class, and action hint.
+- Human mode: ordered gate output including policy id, status, failure class, and action hint.
 - JSON mode: deterministic schema with run metadata, gate outcomes, and resume eligibility.
 
 ### Backward Compatibility
@@ -249,8 +249,8 @@ Canonical source remains `.harness/ci-required-checks.json` and extends as follo
 
 1. Existing top-level `version` is treated as `schemaVersion` for backward compatibility.
 2. `contractVersion` is a deterministic semantic version derived from the canonical gate identity tuple:
-   - `gateId`
-   - `provider`
+   - `policyId`
+   - `activeProvider`
    - `externalIdPattern`
    - `githubCheckName`
 3. Both values are materialized into run-state (`run.json`) at run start and used for resume admissibility checks.
@@ -261,7 +261,7 @@ Rules:
 1. `schemaVersion` mismatch is a hard failure.
 2. `contractVersion` mismatch blocks resume but permits fresh runs.
 3. Non-identity metadata updates (for example `displayName` text or freshness window tuning) must not invalidate previously persisted pass records.
-4. Identity updates (for example `gateId`, `provider`, `githubCheckName`, `externalIdPattern`, or required policy class) invalidate prior reused results for affected gates.
+4. Identity updates (for example `policyId`, `activeProvider`, `githubCheckName`, `externalIdPattern`, or required policy class) invalidate prior reused results for affected gates.
 
 ## Invariants / Safety Requirements
 
@@ -272,7 +272,7 @@ Rules:
 5. Auditability: every run must record whether it was fresh or resumed and which gate started execution.
 6. Deterministic ordering: serial gates always execute in canonical `order`.
 7. Safe parallelism: only `read_only_parallel` gates may run concurrently.
-8. Idempotent persistence: writing `GateRunResult` for the same (`runId`, `gateId`, `attempt`) key must be idempotent.
+8. Idempotent persistence: writing `GateRunResult` for the same (`runId`, `policyId`, `attempt`) key must be idempotent.
 9. Blocked-state integrity: `S4 BLOCKED` cannot transition directly to `S5 DONE`.
 
 ## Failure Model and Recovery
@@ -324,7 +324,7 @@ Guarded gate retries are out of scope for this phase and remain disabled by poli
 ### Required Fields per Gate Event
 
 - `runId`
-- `gateId`
+- `policyId`
 - `executionClass`
 - `attempt`
 - `status`
@@ -335,8 +335,8 @@ Guarded gate retries are out of scope for this phase and remain disabled by poli
 
 ### Operator Output Requirements
 
-- Each failed gate line must include: gate id, failure class, and one deterministic next step.
-- Resume-capable failures must include explicit resume command using gate id.
+- Each failed gate line must include: policy id, failure class, and one deterministic next step.
+- Resume-capable failures must include explicit resume command using policy id.
 - `doctor` alignment messages and verify-work failure messages must use consistent check identity terms.
 
 ## Acceptance and Test Matrix
@@ -363,7 +363,7 @@ Guarded gate retries are out of scope for this phase and remain disabled by poli
 ### Resolved for `ce-plan` (2026-04-08)
 
 1. Pruning policy authority: retention remains fixed in this phase (`keep last 50 runs OR 30 days`, always preserve latest failed run), with contract-level control deferred.
-2. Resume trigger policy: omitted `--resume-from` is invalid in this phase; explicit `--resume-from <gate-id>` is required.
+2. Resume trigger policy: when resume mode is requested, omitted `--resume-from` is invalid in this phase; explicit `--resume-from <policy-id>` is required. If resume mode is not requested, execution defaults to a fresh run.
 
 ### Deferred (non-blocking for current planning)
 

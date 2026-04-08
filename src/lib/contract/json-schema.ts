@@ -56,6 +56,17 @@ export const CONTEXT_COMPACT_STRATEGIES = [
 	"micro",
 ] as const;
 
+/** Valid values for preflight gate extension hook IDs */
+export const PREFLIGHT_PRE_HOOK_IDS = [
+	"skip-all-checks",
+	"force-fail",
+] as const;
+export const PREFLIGHT_POST_HOOK_IDS = ["fail-on-warnings"] as const;
+export const GATE_EXTENSION_HOOK_IDS = [
+	...PREFLIGHT_PRE_HOOK_IDS,
+	...PREFLIGHT_POST_HOOK_IDS,
+] as const;
+
 /** Valid risk tiers */
 export const RISK_TIERS = ["high", "medium", "low"] as const;
 
@@ -254,7 +265,7 @@ export function buildContractJsonSchema(): Record<string, unknown> {
 									properties: {
 										id: {
 											type: "string",
-											enum: ["skip-all-checks", "force-fail"],
+											enum: [...PREFLIGHT_PRE_HOOK_IDS],
 										},
 										enabled: { type: "boolean" },
 									},
@@ -271,7 +282,7 @@ export function buildContractJsonSchema(): Record<string, unknown> {
 									properties: {
 										id: {
 											type: "string",
-											enum: ["fail-on-warnings"],
+											enum: [...PREFLIGHT_POST_HOOK_IDS],
 										},
 										enabled: { type: "boolean" },
 									},

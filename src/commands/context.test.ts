@@ -249,7 +249,7 @@ describe("runContextCLI", () => {
 					version: "1.5.0",
 					contextCompact: {
 						thresholdPercent: 50,
-						microCompactThresholdTokens: 1_500,
+						microCompactThresholdTokens: 5,
 						strategy: "balanced",
 					},
 				},
@@ -260,7 +260,7 @@ describe("runContextCLI", () => {
 		);
 
 		const exitCode = await runContext({
-			query: "oauth query",
+			query: "oauth query with enough length to cross threshold",
 			baseDir: root,
 		});
 

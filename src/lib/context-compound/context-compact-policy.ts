@@ -31,8 +31,20 @@ export function loadContextCompactPolicy(
 		return loadContract("harness.contract.json", baseDir, {
 			allowExtends: false,
 		}).contextCompact;
-	} catch {
-		return undefined;
+	} catch (error) {
+		if (
+			error instanceof Error &&
+			((error as NodeJS.ErrnoException).code === "ENOENT" ||
+				error.message.includes("Contract not found") ||
+				error.message.includes("no such file or directory"))
+		) {
+			return undefined;
+		}
+		const message =
+			error instanceof Error ? error.message : "Unknown contract load error";
+		throw new Error(
+			`Failed to load contextCompact policy from harness.contract.json in ${baseDir}: ${message}`,
+		);
 	}
 }
 

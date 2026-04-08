@@ -250,9 +250,33 @@ export async function runPreflightGate(
 	const checks: PreflightCheck[] = [];
 	const hookDecisions: PreflightHookDecision[] = [];
 	const contractPath = resolve(options.contractPath ?? "harness.contract.json");
-	const contract = existsSync(contractPath)
-		? tryLoadContract(contractPath)
-		: undefined;
+	const contractLoadStart = Date.now();
+	let contract: HarnessContract | undefined;
+
+	if (existsSync(contractPath)) {
+		try {
+			contract = loadContract(contractPath);
+		} catch (error) {
+			const message =
+				error instanceof Error ? error.message : "Unknown contract load error";
+			checks.push({
+				id: "contract-valid",
+				description: "Validate harness contract",
+				severity: "error",
+				passed: false,
+				message: `Invalid contract at ${contractPath}: ${message}`,
+				durationMs: Date.now() - contractLoadStart,
+			});
+			return buildPreflightResult(
+				false,
+				checks,
+				start,
+				undefined,
+				hookDecisions,
+			);
+		}
+	}
+
 	const extensions = contract?.gateExtensions?.preflightGate;
 	const riskTier = resolveRiskTier(options, contract);
 
@@ -294,14 +318,6 @@ export async function runPreflightGate(
 	const passed = evaluatePass(checks, options.strict === true);
 
 	return buildPreflightResult(passed, checks, start, riskTier, hookDecisions);
-}
-
-function tryLoadContract(contractPath: string): HarnessContract | undefined {
-	try {
-		return loadContract(contractPath);
-	} catch {
-		return undefined;
-	}
 }
 
 function resolveRiskTier(

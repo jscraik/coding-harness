@@ -92,6 +92,19 @@ describe("runPreflightGate", () => {
 		expect(result.riskTier).toBeUndefined();
 	});
 
+	it("fails closed when contract exists but is invalid", async () => {
+		writeFileSync("harness.contract.json", "{not-valid-json}");
+
+		const result = await runPreflightGate({});
+		const contractCheck = result.checks.find(
+			(check) => check.id === "contract-valid",
+		);
+
+		expect(result.passed).toBe(false);
+		expect(contractCheck?.passed).toBe(false);
+		expect(contractCheck?.message).toContain("Invalid contract");
+	});
+
 	it("short-circuits native checks when pre hook skip-all-checks is enabled", async () => {
 		writeFileSync(
 			"harness.contract.json",

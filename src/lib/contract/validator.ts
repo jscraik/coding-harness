@@ -1,3 +1,8 @@
+import {
+	CONTEXT_COMPACT_STRATEGIES,
+	PREFLIGHT_POST_HOOK_IDS,
+	PREFLIGHT_PRE_HOOK_IDS,
+} from "./json-schema.js";
 import type {
 	BlastRadiusRule,
 	BlastRadiusRulesMode,
@@ -29,6 +34,7 @@ import type {
 	EvidencePolicy,
 	GapCasePolicy,
 	GateExtensionHook,
+	GateExtensionHookId,
 	GateExtensionsPolicy,
 	HarnessContract,
 	ImageFormat,
@@ -255,8 +261,8 @@ const VALID_CI_PROVIDERS = ["github-actions", "circleci"] as const;
 const VALID_GATE_EXTENSIONS_POLICY_KEYS = ["preflightGate"] as const;
 const VALID_PREFLIGHT_GATE_EXTENSIONS_POLICY_KEYS = ["pre", "post"] as const;
 const VALID_GATE_EXTENSION_HOOK_KEYS = ["id", "enabled"] as const;
-const VALID_PREFLIGHT_PRE_HOOK_IDS = ["skip-all-checks", "force-fail"] as const;
-const VALID_PREFLIGHT_POST_HOOK_IDS = ["fail-on-warnings"] as const;
+const VALID_PREFLIGHT_PRE_HOOK_IDS = PREFLIGHT_PRE_HOOK_IDS;
+const VALID_PREFLIGHT_POST_HOOK_IDS = PREFLIGHT_POST_HOOK_IDS;
 
 // Machine-readable error codes for programmatic handling
 export enum ValidationErrorCode {
@@ -1400,10 +1406,10 @@ function isValidGapCasePolicy(value: unknown): value is GapCasePolicy {
 	return true;
 }
 
-function isValidGateExtensionHook(
+function isValidGateExtensionHook<HookId extends GateExtensionHookId>(
 	value: unknown,
-	allowedHookIds: readonly string[],
-): value is GateExtensionHook {
+	allowedHookIds: readonly HookId[],
+): value is GateExtensionHook<HookId> {
 	if (!isPlainObject(value)) {
 		return false;
 	}
@@ -1418,11 +1424,11 @@ function isValidGateExtensionHook(
 		return false;
 	}
 
-	if (
-		typeof hook.id !== "string" ||
-		!allowedHookIds.includes(hook.id) ||
-		hook.id.length === 0
-	) {
+	if (typeof hook.id !== "string" || hook.id.length === 0) {
+		return false;
+	}
+
+	if (!allowedHookIds.includes(hook.id as HookId)) {
 		return false;
 	}
 
@@ -1729,11 +1735,8 @@ const VALID_CONTEXT_COMPACT_POLICY_KEYS = [
 	"microCompactThresholdTokens",
 	"strategy",
 ] as const;
-const VALID_CONTEXT_COMPACT_STRATEGIES: ContextCompactStrategy[] = [
-	"balanced",
-	"aggressive",
-	"micro",
-];
+const VALID_CONTEXT_COMPACT_STRATEGIES: readonly ContextCompactStrategy[] =
+	CONTEXT_COMPACT_STRATEGIES;
 
 function isValidDocsImpactCategory(
 	value: unknown,
