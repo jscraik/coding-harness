@@ -1466,6 +1466,12 @@ describe("runInit", () => {
 				"@brainwav/coding-harness is not installed globally via npm",
 			);
 			expect(environmentCheck).toContain(
+				'mise_harness_bin="$(mise which harness 2>/dev/null || true)"',
+			);
+			expect(environmentCheck).toContain(
+				'run_check_environment_with_runner "mise harness ($mise_harness_bin)" "$mise_harness_bin"',
+			);
+			expect(environmentCheck).toContain(
 				'run_check_environment_with_runner "global npm harness ($(command -v harness))" harness',
 			);
 			expect(environmentCheck).toContain("npm i -g @brainwav/coding-harness");

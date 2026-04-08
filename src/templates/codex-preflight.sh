@@ -412,13 +412,32 @@ run_local_memory_preflight_via_harness() {
 		fi
 	fi
 
-	if command -v harness >/dev/null 2>&1; then
+	local mise_harness=""
+	if command -v mise >/dev/null 2>&1; then
+		mise_harness="$(mise which harness 2>/dev/null || true)"
+	fi
+
+	if [[ -n "${mise_harness}" && -x "${mise_harness}" ]]; then
 		run_local_memory_preflight_with_runner \
-			"global npm harness ($(command -v harness))" \
-			harness local-memory-preflight
+			"mise harness (${mise_harness})" \
+			"${mise_harness}" local-memory-preflight
 		status=$?
 		if [[ "${status}" -ne 3 ]]; then
 			return "${status}"
+		fi
+	fi
+
+	if command -v harness >/dev/null 2>&1; then
+		local global_harness
+		global_harness="$(command -v harness)"
+		if [[ -z "${mise_harness}" || "${global_harness}" != "${mise_harness}" ]]; then
+			run_local_memory_preflight_with_runner \
+				"global npm harness (${global_harness})" \
+				harness local-memory-preflight
+			status=$?
+			if [[ "${status}" -ne 3 ]]; then
+				return "${status}"
+			fi
 		fi
 	fi
 

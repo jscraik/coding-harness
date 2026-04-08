@@ -116,6 +116,7 @@ Use repo scripts as the source of truth and do not assume global shortcuts. If a
 
 Exception for harness readiness:
 - Generated `scripts/check-environment.sh` in harness-managed repositories should prefer a repo-local CLI path first (`pnpm exec tsx src/cli.ts`, `node dist/cli.js`, or `bash scripts/harness-cli.sh`) and use the global `harness` binary only as a fallback when no repo-local runner exists.
+- When no repo-local runner exists, resolve `harness` from `mise` first (`mise which harness`) before using whatever `harness` happens to be first on `PATH`; this avoids stale Homebrew/global binaries shadowing the pinned runtime toolchain.
 - The global fallback install path is `npm i -g @brainwav/coding-harness`.
 - Private package auth must be wired where the global fallback is used:
   - Local shell: `export NPM_TOKEN=<token>`

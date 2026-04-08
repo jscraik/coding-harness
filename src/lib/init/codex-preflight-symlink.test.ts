@@ -463,7 +463,7 @@ describe("codex-preflight.sh template sync", () => {
 			expect(helperBlock).not.toContain("return $?");
 			expect(
 				helperBlock.match(/if \[\[ "\$\{status\}" -ne 3 \]\]; then/g)?.length,
-			).toBe(4);
+			).toBe(5);
 		}
 
 		expectSentinelFallback(runtimeScript);
