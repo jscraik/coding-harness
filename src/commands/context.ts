@@ -11,6 +11,10 @@ import {
 	DEFAULT_SEARCH_LIMIT,
 	DEFAULT_SIMILARITY_THRESHOLD,
 } from "../lib/context-compound/constants.js";
+import {
+	loadContextCompactPolicy,
+	resolveContextCompactDefaults,
+} from "../lib/context-compound/context-compact-policy.js";
 import { normalizeStoreInitError } from "../lib/context-compound/init-error.js";
 import { searchLexicalFallback } from "../lib/context-compound/lexical-fallback.js";
 import { OllamaClient } from "../lib/context-compound/ollama.js";
@@ -125,6 +129,21 @@ function parseThreshold(value: string | undefined): number | undefined {
 export async function runContext(options: ContextOptions): Promise<number> {
 	const baseDir = options.baseDir ?? process.cwd();
 	const harnessDir = options.harnessDir ?? DEFAULT_HARNESS_DIR;
+	let compactDefaults: { limit: number; threshold: number } | undefined;
+	if (options.limit === undefined || options.threshold === undefined) {
+		const compactPolicy = loadContextCompactPolicy(baseDir);
+		compactDefaults = resolveContextCompactDefaults(
+			options.query,
+			compactPolicy,
+			DEFAULT_SEARCH_LIMIT,
+			DEFAULT_SIMILARITY_THRESHOLD,
+		);
+	}
+	const limit = options.limit ?? compactDefaults?.limit ?? DEFAULT_SEARCH_LIMIT;
+	const threshold =
+		options.threshold ??
+		compactDefaults?.threshold ??
+		DEFAULT_SIMILARITY_THRESHOLD;
 	const dbPath = join(baseDir, harnessDir, DEFAULT_DB_FILENAME);
 	const lexicalFallbackEnabled = isCp4bLexicalFallbackEnabled(
 		options.lexicalFallback,
@@ -134,7 +153,6 @@ export async function runContext(options: ContextOptions): Promise<number> {
 		const ollama = new OllamaClient();
 		const isAvailable = await ollama.isAvailable();
 		if (!isAvailable) {
-			const limit = options.limit ?? DEFAULT_SEARCH_LIMIT;
 			const results = searchLexicalFallback(baseDir, options.query, {
 				harnessDir,
 				limit,
@@ -242,10 +260,6 @@ export async function runContext(options: ContextOptions): Promise<number> {
 		store.close();
 		return EXIT_CODES.ERROR;
 	}
-
-	// Search
-	const threshold = options.threshold ?? DEFAULT_SIMILARITY_THRESHOLD;
-	const limit = options.limit ?? DEFAULT_SEARCH_LIMIT;
 
 	const searchResult = store.search(embedResult.value, {
 		threshold,

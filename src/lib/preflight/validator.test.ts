@@ -91,4 +91,60 @@ describe("runPreflightGate", () => {
 		);
 		expect(result.riskTier).toBeUndefined();
 	});
+
+	it("short-circuits native checks when pre hook skip-all-checks is enabled", async () => {
+		writeFileSync(
+			"harness.contract.json",
+			JSON.stringify({
+				version: "1.0",
+				gateExtensions: {
+					preflightGate: {
+						pre: [{ id: "skip-all-checks" }],
+					},
+				},
+			}),
+		);
+		mkdirSync("src/auth", { recursive: true });
+		writeFileSync("src/auth/login.ts", "export const login = true;\n");
+
+		const result = await runPreflightGate({
+			files: ["src/auth/login.ts"],
+		});
+
+		expect(result.passed).toBe(true);
+		expect(result.checks.some((check) => check.id === "risk-tier")).toBe(false);
+		expect(
+			result.checks.some((check) => check.id === "hook:pre:skip-all-checks"),
+		).toBe(true);
+		expect(result.hookDecisions?.[0]?.action).toBe("short-circuit");
+	});
+
+	it("blocks successful runs when post hook fail-on-warnings sees warning findings", async () => {
+		writeFileSync(
+			"harness.contract.json",
+			JSON.stringify({
+				version: "1.0",
+				gateExtensions: {
+					preflightGate: {
+						post: [{ id: "fail-on-warnings" }],
+					},
+				},
+			}),
+		);
+		mkdirSync("src", { recursive: true });
+		writeFileSync("src/debug.ts", "console.log('debug');\n");
+
+		const result = await runPreflightGate({
+			files: ["src/debug.ts"],
+		});
+		const hookCheck = result.checks.find(
+			(check) => check.id === "hook:post:fail-on-warnings",
+		);
+
+		expect(result.passed).toBe(false);
+		expect(hookCheck?.passed).toBe(false);
+		expect(
+			result.hookDecisions?.some((decision) => decision.action === "block"),
+		).toBe(true);
+	});
 });

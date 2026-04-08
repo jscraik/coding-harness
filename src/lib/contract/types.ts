@@ -184,6 +184,25 @@ export interface PackageManagerPolicy {
 	requiredManager: string | null;
 }
 
+export type GateExtensionHookId =
+	| "skip-all-checks"
+	| "force-fail"
+	| "fail-on-warnings";
+
+export interface GateExtensionHook {
+	id: GateExtensionHookId;
+	enabled?: boolean | undefined;
+}
+
+export interface PreflightGateExtensionsPolicy {
+	pre?: GateExtensionHook[] | undefined;
+	post?: GateExtensionHook[] | undefined;
+}
+
+export interface GateExtensionsPolicy {
+	preflightGate?: PreflightGateExtensionsPolicy | undefined;
+}
+
 export interface BlastRadiusRule {
 	/** Glob pattern for matching file paths */
 	pattern: string;
@@ -524,6 +543,17 @@ export interface CIProviderPolicy {
 
 export type ContextIntegrityMode = "shadow" | "advisory" | "required";
 
+export type ContextCompactStrategy = "balanced" | "aggressive" | "micro";
+
+export interface ContextCompactPolicy {
+	/** Percent of context budget used before compaction tuning is applied (1-100). */
+	thresholdPercent: number;
+	/** Token cutoff where the policy prefers micro compaction behavior. */
+	microCompactThresholdTokens: number;
+	/** Strategy profile used by context-related retrieval commands. */
+	strategy: ContextCompactStrategy;
+}
+
 export type ContextIntegritySourceKind = "file" | "directory";
 
 export type ContextIntegrityTruthSourceAuthority = "canonical" | "governed";
@@ -741,6 +771,12 @@ export const DEFAULT_CONTEXT_INTEGRITY_POLICY: ContextIntegrityPolicy = {
 		samplingCadence: "per_run",
 		dedupeScope: "query",
 	},
+};
+
+export const DEFAULT_CONTEXT_COMPACT_POLICY: ContextCompactPolicy = {
+	thresholdPercent: 85,
+	microCompactThresholdTokens: 1200,
+	strategy: "balanced",
 };
 
 export const DEFAULT_REMEDIATION_POLICY: RemediationPolicy = {
@@ -1127,6 +1163,8 @@ export interface HarnessContract {
 	blastRadiusRules?: BlastRadiusRule[] | undefined;
 	/** Blast-radius merge behavior */
 	blastRadiusRulesMode?: BlastRadiusRulesMode | undefined;
+	/** Optional gate extension hook configuration */
+	gateExtensions?: GateExtensionsPolicy | undefined;
 	/** Branch protection configuration */
 	branchProtection?: BranchProtectionPolicy | undefined;
 	/** Issue tracking enforcement policy */
@@ -1137,6 +1175,8 @@ export interface HarnessContract {
 	loopStageContracts?: LoopStageContracts | undefined;
 	/** Docs gate policy for governance documentation parity enforcement */
 	docsGatePolicy?: DocsGatePolicy | undefined;
+	/** Context compaction policy for threshold-driven retrieval tuning */
+	contextCompact?: ContextCompactPolicy | undefined;
 	/** Context-integrity policy for authoritative retrieval, contradiction checks, and scorecard sampling */
 	contextIntegrityPolicy?: ContextIntegrityPolicy | undefined;
 	/** Control-plane override authority and non-overridable guardrails */
@@ -1162,6 +1202,7 @@ export const DEFAULT_CONTRACT: HarnessContract = {
 	remediationPolicy: DEFAULT_REMEDIATION_POLICY,
 	loopStageContracts: DEFAULT_LOOP_STAGE_CONTRACTS,
 	docsGatePolicy: DEFAULT_DOCS_GATE_POLICY,
+	contextCompact: DEFAULT_CONTEXT_COMPACT_POLICY,
 	contextIntegrityPolicy: DEFAULT_CONTEXT_INTEGRITY_POLICY,
 	controlPlanePolicy: DEFAULT_CONTROL_PLANE_POLICY,
 	toolingPolicy: DEFAULT_TOOLING_POLICY,

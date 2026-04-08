@@ -4,7 +4,7 @@
  * Fast, lightweight checks designed to run before expensive operations.
  */
 
-import type { RiskTier } from "../contract/types.js";
+import type { GateExtensionHookId, RiskTier } from "../contract/types.js";
 
 /**
  * Semantic exit codes for preflight gate
@@ -85,6 +85,23 @@ export interface PreflightGateResult {
 	};
 	/** Risk tier if determined */
 	riskTier?: RiskTier | undefined;
+	/** Decisions emitted by pre/post gate extension hooks */
+	hookDecisions?: PreflightHookDecision[] | undefined;
+}
+
+export type PreflightHookPhase = "pre" | "post";
+
+export type PreflightHookAction =
+	| "continue"
+	| "short-circuit"
+	| "override"
+	| "block";
+
+export interface PreflightHookDecision {
+	phase: PreflightHookPhase;
+	hookId: GateExtensionHookId;
+	action: PreflightHookAction;
+	message: string;
 }
 
 /**

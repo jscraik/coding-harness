@@ -60,6 +60,37 @@ describe("validateContract", () => {
 		expect(result.errors[0]?.code).toBe(ValidationErrorCode.INVALID_VALUE);
 	});
 
+	describe("gateExtensions", () => {
+		it("accepts valid preflight pre/post hook configuration", () => {
+			const result = validateContract({
+				version: "1.0",
+				gateExtensions: {
+					preflightGate: {
+						pre: [{ id: "skip-all-checks" }, { id: "force-fail" }],
+						post: [{ id: "fail-on-warnings", enabled: true }],
+					},
+				},
+			});
+
+			expect(result.success).toBe(true);
+		});
+
+		it("rejects unsupported preflight pre hook ids", () => {
+			const result = validateContract({
+				version: "1.0",
+				gateExtensions: {
+					preflightGate: {
+						pre: [{ id: "fail-on-warnings" }],
+					},
+				},
+			});
+
+			expect(result.success).toBe(false);
+			expect(result.errors[0]?.path).toBe("gateExtensions");
+			expect(result.errors[0]?.code).toBe(ValidationErrorCode.INVALID_VALUE);
+		});
+	});
+
 	it("rejects invalid risk tier", () => {
 		const result = validateContract({
 			version: "1.0",
@@ -1398,6 +1429,36 @@ describe("validateContract", () => {
 
 			expect(result.success).toBe(false);
 			expect(result.errors[0]?.path).toBe("contextIntegrityPolicy");
+		});
+	});
+
+	describe("contextCompact", () => {
+		it("accepts valid contextCompact policy", () => {
+			const result = validateContract({
+				version: "1.5.0",
+				contextCompact: {
+					thresholdPercent: 85,
+					microCompactThresholdTokens: 1200,
+					strategy: "balanced",
+				},
+			});
+
+			expect(result.success).toBe(true);
+			expect(result.data?.contextCompact?.strategy).toBe("balanced");
+		});
+
+		it("rejects invalid contextCompact strategy", () => {
+			const result = validateContract({
+				version: "1.5.0",
+				contextCompact: {
+					thresholdPercent: 85,
+					microCompactThresholdTokens: 1200,
+					strategy: "unknown",
+				},
+			});
+
+			expect(result.success).toBe(false);
+			expect(result.errors[0]?.path).toBe("contextCompact");
 		});
 	});
 });

@@ -13,6 +13,10 @@ import {
 	DEFAULT_SEARCH_LIMIT,
 	DEFAULT_SIMILARITY_THRESHOLD,
 } from "../lib/context-compound/constants.js";
+import {
+	loadContextCompactPolicy,
+	resolveContextCompactDefaults,
+} from "../lib/context-compound/context-compact-policy.js";
 import { normalizeStoreInitError } from "../lib/context-compound/init-error.js";
 import { OllamaClient } from "../lib/context-compound/ollama.js";
 import { VectorStore } from "../lib/context-compound/store.js";
@@ -469,8 +473,20 @@ export async function runSearch(options: SearchOptions): Promise<number> {
 		return EXIT_CODES.ERROR;
 	}
 
+	const baseDir = options.baseDir ?? process.cwd();
+	let compactDefaults: { limit: number; threshold: number } | undefined;
+	if (options.limit === undefined || options.threshold === undefined) {
+		const compactPolicy = loadContextCompactPolicy(baseDir);
+		compactDefaults = resolveContextCompactDefaults(
+			options.query,
+			compactPolicy,
+			DEFAULT_SEARCH_LIMIT,
+			DEFAULT_SIMILARITY_THRESHOLD,
+		);
+	}
+
 	const outputJson = options.json ?? !options.text;
-	const limit = options.limit ?? DEFAULT_SEARCH_LIMIT;
+	const limit = options.limit ?? compactDefaults?.limit ?? DEFAULT_SEARCH_LIMIT;
 	if (!Number.isFinite(limit) || limit < 1) {
 		const error = "--limit must be a positive number";
 		if (outputJson) {
@@ -490,8 +506,10 @@ export async function runSearch(options: SearchOptions): Promise<number> {
 		return EXIT_CODES.ERROR;
 	}
 
-	const threshold = options.threshold ?? DEFAULT_SIMILARITY_THRESHOLD;
-	const baseDir = options.baseDir ?? process.cwd();
+	const threshold =
+		options.threshold ??
+		compactDefaults?.threshold ??
+		DEFAULT_SIMILARITY_THRESHOLD;
 	const harnessDir = options.harnessDir ?? DEFAULT_HARNESS_DIR;
 	const includePaths = options.includePaths ?? [];
 	const excludePaths = options.excludePaths ?? [];

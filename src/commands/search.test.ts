@@ -41,9 +41,20 @@ vi.mock("../lib/context-compound/store.js", () => {
 	};
 });
 
+vi.mock("../lib/contract/loader.js", () => {
+	const loadContract = vi.fn();
+	return {
+		loadContract,
+		__mockContractLoader: {
+			loadContract,
+		},
+	};
+});
+
 import { spawnSync } from "node:child_process";
 import * as ollamaModule from "../lib/context-compound/ollama.js";
 import * as storeModule from "../lib/context-compound/store.js";
+import * as contractLoaderModule from "../lib/contract/loader.js";
 
 function createSpawnResult(
 	stdout: string,
@@ -73,6 +84,11 @@ describe("search command", () => {
 		search: ReturnType<typeof vi.fn>;
 		close: ReturnType<typeof vi.fn>;
 	};
+	const mockContractLoader = (
+		contractLoaderModule as unknown as { __mockContractLoader: unknown }
+	).__mockContractLoader as {
+		loadContract: ReturnType<typeof vi.fn>;
+	};
 
 	beforeEach(() => {
 		vi.clearAllMocks();
@@ -84,6 +100,9 @@ describe("search command", () => {
 		mockStore.search.mockReturnValue({
 			ok: true,
 			value: [],
+		});
+		mockContractLoader.loadContract.mockImplementation(() => {
+			throw new Error("Contract not found");
 		});
 	});
 
@@ -273,6 +292,126 @@ describe("search command", () => {
 		expect(payload.warnings[0]).toContain("Node.js ABI mismatch");
 		expect(payload.warnings[0]).toContain("pnpm rebuild better-sqlite3");
 		expect(payload.warnings[0]).not.toContain("/tmp/better_sqlite3.node");
+		consoleSpy.mockRestore();
+	});
+
+	it("uses contextCompact defaults for semantic search when flags are omitted", async () => {
+		mockContractLoader.loadContract.mockReturnValue({
+			contextCompact: {
+				thresholdPercent: 50,
+				microCompactThresholdTokens: 1500,
+				strategy: "balanced",
+			},
+		});
+		mockOllama.isAvailable.mockResolvedValue(true);
+		mockOllama.embed.mockResolvedValue({ ok: true, value: [0.1, 0.2, 0.3] });
+		mockStore.search.mockReturnValue({
+			ok: true,
+			value: [],
+		});
+		const consoleSpy = vi.spyOn(console, "info").mockImplementation(() => {
+			// noop
+		});
+
+		const code = await runSearch({
+			query: "oauth query",
+			mode: "semantic",
+			json: true,
+		});
+
+		expect(code).toBe(EXIT_CODES.NO_RESULTS);
+		expect(mockStore.search).toHaveBeenCalledWith(expect.any(Array), {
+			threshold: 0.5,
+			limit: 5,
+			includeMetadata: true,
+		});
+		consoleSpy.mockRestore();
+	});
+
+	it("caps contextCompact threshold by autocompact safety buffer in search", async () => {
+		mockContractLoader.loadContract.mockReturnValue({
+			contextCompact: {
+				thresholdPercent: 99,
+				microCompactThresholdTokens: 999_999,
+				strategy: "balanced",
+			},
+		});
+		mockOllama.isAvailable.mockResolvedValue(true);
+		mockOllama.embed.mockResolvedValue({ ok: true, value: [0.1, 0.2, 0.3] });
+		mockStore.search.mockReturnValue({
+			ok: true,
+			value: [],
+		});
+		const consoleSpy = vi.spyOn(console, "info").mockImplementation(() => {
+			// noop
+		});
+
+		const code = await runSearch({
+			query: "oauth query",
+			mode: "semantic",
+			json: true,
+		});
+
+		expect(code).toBe(EXIT_CODES.NO_RESULTS);
+		expect(mockStore.search).toHaveBeenCalledWith(expect.any(Array), {
+			threshold: 0.935,
+			limit: 10,
+			includeMetadata: true,
+		});
+		consoleSpy.mockRestore();
+	});
+
+	it("keeps explicit search limit and threshold over contextCompact defaults", async () => {
+		mockContractLoader.loadContract.mockReturnValue({
+			contextCompact: {
+				thresholdPercent: 95,
+				microCompactThresholdTokens: 900,
+				strategy: "aggressive",
+			},
+		});
+		mockOllama.isAvailable.mockResolvedValue(true);
+		mockOllama.embed.mockResolvedValue({ ok: true, value: [0.1, 0.2, 0.3] });
+		mockStore.search.mockReturnValue({
+			ok: true,
+			value: [],
+		});
+		const consoleSpy = vi.spyOn(console, "info").mockImplementation(() => {
+			// noop
+		});
+
+		const code = await runSearch({
+			query: "oauth query",
+			mode: "semantic",
+			json: true,
+			limit: 9,
+			threshold: 0.4,
+		});
+
+		expect(code).toBe(EXIT_CODES.NO_RESULTS);
+		expect(mockStore.search).toHaveBeenCalledWith(expect.any(Array), {
+			threshold: 0.4,
+			limit: 9,
+			includeMetadata: true,
+		});
+		consoleSpy.mockRestore();
+	});
+
+	it("skips contextCompact contract load when explicit limit and threshold are set", async () => {
+		mockSpawnSync.mockReturnValue(createSpawnResult(""));
+		const consoleSpy = vi.spyOn(console, "info").mockImplementation(() => {
+			// noop
+		});
+
+		const code = await runSearch({
+			query: "oauth query",
+			mode: "lexical",
+			json: true,
+			limit: 9,
+			threshold: 0.4,
+		});
+
+		expect(code).toBe(EXIT_CODES.NO_RESULTS);
+		expect(mockContractLoader.loadContract).not.toHaveBeenCalled();
 		consoleSpy.mockRestore();
 	});
 

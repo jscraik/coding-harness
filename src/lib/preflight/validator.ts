@@ -8,7 +8,11 @@
 import { existsSync, readFileSync } from "node:fs";
 import { resolve } from "node:path";
 import { loadContract } from "../contract/loader.js";
-import type { RiskTier } from "../contract/types.js";
+import type {
+	HarnessContract,
+	PreflightGateExtensionsPolicy,
+	RiskTier,
+} from "../contract/types.js";
 import { resolveOverallTier } from "../policy/risk-tier.js";
 import {
 	EXIT_CODES,
@@ -17,6 +21,7 @@ import {
 	type PreflightCheckRegistry,
 	type PreflightGateOptions,
 	type PreflightGateResult,
+	type PreflightHookDecision,
 } from "./types.js";
 
 export type { PreflightGateOptions };
@@ -243,6 +248,26 @@ export async function runPreflightGate(
 ): Promise<PreflightGateResult> {
 	const start = Date.now();
 	const checks: PreflightCheck[] = [];
+	const hookDecisions: PreflightHookDecision[] = [];
+	const contractPath = resolve(options.contractPath ?? "harness.contract.json");
+	const contract =
+		existsSync(contractPath) && options.files?.length
+			? tryLoadContract(contractPath)
+			: undefined;
+	const extensions = contract?.gateExtensions?.preflightGate;
+	const riskTier = resolveRiskTier(options, contract);
+
+	// Run pre-gate extension hooks before native checks.
+	const shortCircuit = runPreHooks(extensions, checks, hookDecisions);
+	if (shortCircuit !== undefined) {
+		return buildPreflightResult(
+			shortCircuit,
+			checks,
+			start,
+			riskTier,
+			hookDecisions,
+		);
+	}
 
 	// Determine which checks to run
 	const checkIds = Object.keys(PREFLIGHT_CHECKS).filter(
@@ -264,40 +289,190 @@ export async function runPreflightGate(
 		}
 	}
 
-	// Determine overall pass/fail
-	const failedChecks = checks.filter((c) => !c.passed);
-	const errorChecks = failedChecks.filter((c) => c.severity === "error");
-	const warningChecks = failedChecks.filter((c) => c.severity === "warning");
+	// Run post-gate extension hooks after native checks.
+	runPostHooks(extensions, checks, hookDecisions);
 
-	// In strict mode, warnings count as failures
-	const passed =
-		errorChecks.length === 0 &&
-		(options.strict ? warningChecks.length === 0 : true);
+	const passed = evaluatePass(checks, options.strict === true);
 
-	// Determine overall risk tier if we have files
-	let riskTier: RiskTier | undefined;
-	const contractPath = resolve(options.contractPath ?? "harness.contract.json");
-	if (existsSync(contractPath) && options.files?.length) {
-		try {
-			const contract = loadContract(contractPath);
-			riskTier = resolveOverallTier(options.files, contract);
-		} catch {
-			// Ignore errors here
-		}
+	return buildPreflightResult(passed, checks, start, riskTier, hookDecisions);
+}
+
+function tryLoadContract(contractPath: string): HarnessContract | undefined {
+	try {
+		return loadContract(contractPath);
+	} catch {
+		return undefined;
 	}
+}
+
+function resolveRiskTier(
+	options: PreflightGateOptions,
+	contract: HarnessContract | undefined,
+): RiskTier | undefined {
+	if (!contract || !options.files?.length) {
+		return undefined;
+	}
+	try {
+		return resolveOverallTier(options.files, contract);
+	} catch {
+		return undefined;
+	}
+}
+
+function evaluatePass(checks: PreflightCheck[], strict: boolean): boolean {
+	const failedChecks = checks.filter((check) => !check.passed);
+	const hasError = failedChecks.some((check) => check.severity === "error");
+	const hasWarning = failedChecks.some((check) => check.severity === "warning");
+	return !hasError && (!strict || !hasWarning);
+}
+
+function buildPreflightResult(
+	passed: boolean,
+	checks: PreflightCheck[],
+	start: number,
+	riskTier: RiskTier | undefined,
+	hookDecisions: PreflightHookDecision[],
+): PreflightGateResult {
+	const failedChecks = checks.filter((check) => !check.passed);
+	const warningChecks = failedChecks.filter(
+		(check) => check.severity === "warning",
+	);
 
 	return {
 		passed,
 		checks,
 		summary: {
 			total: checks.length,
-			passed: checks.filter((c) => c.passed).length,
+			passed: checks.filter((check) => check.passed).length,
 			failed: failedChecks.length,
 			warnings: warningChecks.length,
 			durationMs: Date.now() - start,
 		},
 		riskTier,
+		hookDecisions: hookDecisions.length > 0 ? hookDecisions : undefined,
 	};
+}
+
+function runPreHooks(
+	extensions: PreflightGateExtensionsPolicy | undefined,
+	checks: PreflightCheck[],
+	hookDecisions: PreflightHookDecision[],
+): boolean | undefined {
+	for (const hook of extensions?.pre ?? []) {
+		if (hook.enabled === false) {
+			continue;
+		}
+		const startedAt = Date.now();
+		if (hook.id === "skip-all-checks") {
+			const message =
+				"Pre-hook short-circuited preflight gate and skipped native checks";
+			checks.push({
+				id: "hook:pre:skip-all-checks",
+				description: "Apply pre-hook skip-all-checks",
+				severity: "info",
+				passed: true,
+				message,
+				durationMs: Date.now() - startedAt,
+			});
+			hookDecisions.push({
+				phase: "pre",
+				hookId: hook.id,
+				action: "short-circuit",
+				message,
+			});
+			return true;
+		}
+		if (hook.id === "force-fail") {
+			const message =
+				"Pre-hook force-fail overrode execution and failed preflight gate";
+			checks.push({
+				id: "hook:pre:force-fail",
+				description: "Apply pre-hook force-fail",
+				severity: "error",
+				passed: false,
+				message,
+				durationMs: Date.now() - startedAt,
+			});
+			hookDecisions.push({
+				phase: "pre",
+				hookId: hook.id,
+				action: "override",
+				message,
+			});
+			return false;
+		}
+
+		const message = `Unsupported pre-hook id '${hook.id}'`;
+		checks.push({
+			id: `hook:pre:${hook.id}`,
+			description: "Apply pre-hook",
+			severity: "error",
+			passed: false,
+			message,
+			durationMs: Date.now() - startedAt,
+		});
+		hookDecisions.push({
+			phase: "pre",
+			hookId: hook.id,
+			action: "block",
+			message,
+		});
+		return false;
+	}
+	return undefined;
+}
+
+function runPostHooks(
+	extensions: PreflightGateExtensionsPolicy | undefined,
+	checks: PreflightCheck[],
+	hookDecisions: PreflightHookDecision[],
+): void {
+	for (const hook of extensions?.post ?? []) {
+		if (hook.enabled === false) {
+			continue;
+		}
+		const startedAt = Date.now();
+		if (hook.id === "fail-on-warnings") {
+			const warningCount = checks.filter(
+				(check) => !check.passed && check.severity === "warning",
+			).length;
+			const passed = warningCount === 0;
+			const message = passed
+				? "No warning findings detected"
+				: `Post-hook blocked gate because ${warningCount} warning finding(s) were emitted`;
+			checks.push({
+				id: "hook:post:fail-on-warnings",
+				description: "Apply post-hook fail-on-warnings",
+				severity: "error",
+				passed,
+				message,
+				durationMs: Date.now() - startedAt,
+			});
+			hookDecisions.push({
+				phase: "post",
+				hookId: hook.id,
+				action: passed ? "continue" : "block",
+				message,
+			});
+			continue;
+		}
+
+		const message = `Unsupported post-hook id '${hook.id}'`;
+		checks.push({
+			id: `hook:post:${hook.id}`,
+			description: "Apply post-hook",
+			severity: "error",
+			passed: false,
+			message,
+			durationMs: Date.now() - startedAt,
+		});
+		hookDecisions.push({
+			phase: "post",
+			hookId: hook.id,
+			action: "block",
+			message,
+		});
+	}
 }
 
 export { EXIT_CODES };

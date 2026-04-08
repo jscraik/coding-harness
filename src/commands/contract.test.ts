@@ -30,6 +30,7 @@ import {
 	CI_MIGRATION_STAGES,
 	CI_PROVIDERS,
 	CI_PROVIDER_MODES,
+	CONTEXT_COMPACT_STRATEGIES,
 	SCHEMA_VERSION,
 	buildContractJsonSchema,
 } from "../lib/contract/json-schema.js";
@@ -143,6 +144,22 @@ describe("buildContractJsonSchema", () => {
 	it("is serializable to JSON", () => {
 		const schema = buildContractJsonSchema();
 		expect(() => JSON.parse(JSON.stringify(schema))).not.toThrow();
+	});
+
+	it("contextCompact.strategy enum contains supported strategies", () => {
+		const schema = buildContractJsonSchema() as {
+			properties: {
+				contextCompact: {
+					properties: { strategy: { enum: string[] } };
+				};
+			};
+		};
+
+		for (const strategy of CONTEXT_COMPACT_STRATEGIES) {
+			expect(
+				schema.properties.contextCompact.properties.strategy.enum,
+			).toContain(strategy);
+		}
 	});
 });
 
