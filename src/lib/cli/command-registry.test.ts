@@ -37,6 +37,7 @@ describe("command registry", () => {
 			"org-audit",
 			"tooling-audit",
 			"preset",
+			"check",
 			"doctor",
 			"health",
 			"eject",
