@@ -131,13 +131,33 @@ export async function runContext(options: ContextOptions): Promise<number> {
 	const harnessDir = options.harnessDir ?? DEFAULT_HARNESS_DIR;
 	let compactDefaults: { limit: number; threshold: number } | undefined;
 	if (options.limit === undefined || options.threshold === undefined) {
-		const compactPolicy = loadContextCompactPolicy(baseDir);
-		compactDefaults = resolveContextCompactDefaults(
-			options.query,
-			compactPolicy,
-			DEFAULT_SEARCH_LIMIT,
-			DEFAULT_SIMILARITY_THRESHOLD,
-		);
+		try {
+			const compactPolicy = loadContextCompactPolicy(baseDir);
+			compactDefaults = resolveContextCompactDefaults(
+				options.query,
+				compactPolicy,
+				DEFAULT_SEARCH_LIMIT,
+				DEFAULT_SIMILARITY_THRESHOLD,
+			);
+		} catch (error) {
+			const message =
+				error instanceof Error
+					? error.message
+					: "Failed to load context policy";
+			if (options.json) {
+				const output: ContextOutput = {
+					success: false,
+					query: options.query,
+					count: 0,
+					results: [],
+					error: message,
+				};
+				console.info(JSON.stringify(output, null, 2));
+			} else {
+				console.error(`Error: ${message}`);
+			}
+			return EXIT_CODES.ERROR;
+		}
 	}
 	const limit = options.limit ?? compactDefaults?.limit ?? DEFAULT_SEARCH_LIMIT;
 	const threshold =

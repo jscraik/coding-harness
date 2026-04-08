@@ -1,8 +1,4 @@
-import {
-	CONTEXT_COMPACT_STRATEGIES,
-	PREFLIGHT_POST_HOOK_IDS,
-	PREFLIGHT_PRE_HOOK_IDS,
-} from "./json-schema.js";
+import { CONTEXT_COMPACT_STRATEGIES } from "./json-schema.js";
 import type {
 	BlastRadiusRule,
 	BlastRadiusRulesMode,
@@ -73,6 +69,7 @@ import type {
 	UILoopPolicy,
 	UILoopSLO,
 } from "./types.js";
+import { PREFLIGHT_POST_HOOK_IDS, PREFLIGHT_PRE_HOOK_IDS } from "./types.js";
 import { isValidUILoopCommandSpec } from "./ui-loop-command.js";
 
 const VALID_RISK_TIERS: RiskTier[] = ["high", "medium", "low"];

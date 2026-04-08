@@ -392,8 +392,8 @@ flags, use `harness --help`.
 | `tooling-audit` | Audit managed repo tooling baselines |
 | `gardener` | Detect stale docs and broken links |
 | `context-health` | Generate advisory context-integrity scorecards |
-| `search` | Run hybrid lexical and semantic search; if `--limit` or `--threshold` is omitted and `contextCompact` is missing, static `DEFAULT_SEARCH_LIMIT` and `DEFAULT_SIMILARITY_THRESHOLD` fallbacks apply |
-| `context` | Search indexed plans, specs, and brainstorms; if `--limit` or `--threshold` is omitted and `contextCompact` is missing, static `DEFAULT_SEARCH_LIMIT` and `DEFAULT_SIMILARITY_THRESHOLD` fallbacks apply |
+| `search` | Run hybrid lexical and semantic search; if `--limit` or `--threshold` is omitted, `contextCompact` policy applies when present, otherwise static defaults (`DEFAULT_SEARCH_LIMIT`, `DEFAULT_SIMILARITY_THRESHOLD`) are used |
+| `context` | Search indexed plans, specs, and brainstorms; if `--limit` or `--threshold` is omitted, `contextCompact` policy applies when present, otherwise static defaults (`DEFAULT_SEARCH_LIMIT`, `DEFAULT_SIMILARITY_THRESHOLD`) are used |
 | `index-context` | Build the local semantic-search index |
 | `evidence-verify` | Validate screenshot and evidence artifacts |
 | `ui:fast` | Run a Storybook-first local UI loop |

@@ -4033,15 +4033,16 @@ else
 
 			npm_global_bin="$(npm bin -g 2>/dev/null || true)"
 			if [[ -z "$npm_global_bin" ]]; then
-				echo "Error: unable to resolve npm global bin path."
-				exit 1
+				npm_global_root="$(npm root -g 2>/dev/null || true)"
+				if [[ -n "$npm_global_root" ]]; then
+					npm_global_bin="$npm_global_root/.bin"
+				fi
 			fi
-
 			npm_harness_bin="$npm_global_bin/harness"
-			if [[ ! -x "$npm_harness_bin" ]]; then
-				echo "Error: npm global harness binary was not found at $npm_harness_bin."
-				echo "Fix: reinstall @brainwav/coding-harness globally and retry."
-				echo "  npm i -g @brainwav/coding-harness"
+
+			if [[ -z "$npm_global_bin" || ! -x "$npm_harness_bin" ]]; then
+				echo "Error: unable to resolve npm-global harness binary."
+				echo "Fix: ensure npm global bin directory is available and contains harness."
 				exit 1
 			fi
 
@@ -4053,7 +4054,7 @@ else
 				exit 1
 			fi
 		fi
-fi
+	fi
 
 jq -e '.passed == true' "$ATTESTATION_PATH" >/dev/null
 echo "Environment check passed (attestation: $ATTESTATION_PATH)"

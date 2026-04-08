@@ -184,8 +184,14 @@ export interface PackageManagerPolicy {
 	requiredManager: string | null;
 }
 
-export type PreflightPreHookId = "skip-all-checks" | "force-fail";
-export type PreflightPostHookId = "fail-on-warnings";
+export const PREFLIGHT_PRE_HOOK_IDS = [
+	"skip-all-checks",
+	"force-fail",
+] as const;
+export const PREFLIGHT_POST_HOOK_IDS = ["fail-on-warnings"] as const;
+
+export type PreflightPreHookId = (typeof PREFLIGHT_PRE_HOOK_IDS)[number];
+export type PreflightPostHookId = (typeof PREFLIGHT_POST_HOOK_IDS)[number];
 export type GateExtensionHookId = PreflightPreHookId | PreflightPostHookId;
 
 export interface GateExtensionHook<HookId extends GateExtensionHookId> {

@@ -310,6 +310,34 @@ describe("runContextCLI", () => {
 		});
 	});
 
+	it("fails closed when contextCompact policy cannot be loaded", async () => {
+		const { runContext, EXIT_CODES } = await import("./context.js");
+		const root = mkdtempSync(
+			join(tmpdir(), "harness-context-invalid-contract-"),
+		);
+		tempDirs.push(root);
+		writeFileSync(
+			join(root, "harness.contract.json"),
+			"{invalid-json",
+			"utf-8",
+		);
+		const errorSpy = vi
+			.spyOn(console, "error")
+			.mockImplementation(() => undefined);
+
+		const exitCode = await runContext({
+			query: "oauth query",
+			baseDir: root,
+		});
+
+		expect(exitCode).toBe(EXIT_CODES.ERROR);
+		expect(searchMock).not.toHaveBeenCalled();
+		expect(errorSpy).toHaveBeenCalledWith(
+			expect.stringContaining("Failed to load contextCompact policy"),
+		);
+		errorSpy.mockRestore();
+	});
+
 	it("returns actionable ABI mismatch error when better-sqlite3 is incompatible", async () => {
 		const { runContext, EXIT_CODES } = await import("./context.js");
 		const consoleInfoSpy = vi

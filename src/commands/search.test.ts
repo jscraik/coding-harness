@@ -71,6 +71,12 @@ function createSpawnResult(
 	} as SpawnSyncReturns<string>;
 }
 
+function createMissingContractError(): Error & { code: string } {
+	const error = new Error("Contract not found") as Error & { code: string };
+	error.code = "ENOENT";
+	return error;
+}
+
 describe("search command", () => {
 	const mockSpawnSync = vi.mocked(spawnSync);
 	const mockOllama = (ollamaModule as unknown as { __mockOllama: unknown })
@@ -102,7 +108,7 @@ describe("search command", () => {
 			value: [],
 		});
 		mockContractLoader.loadContract.mockImplementation(() => {
-			throw new Error("Contract not found");
+			throw createMissingContractError();
 		});
 	});
 
@@ -403,6 +409,7 @@ describe("search command", () => {
 			ok: true,
 			value: [],
 		});
+		mockSpawnSync.mockReturnValue(createSpawnResult(""));
 		const consoleSpy = vi.spyOn(console, "info").mockImplementation(() => {
 			// noop
 		});
@@ -417,6 +424,29 @@ describe("search command", () => {
 
 		expect(code).toBe(EXIT_CODES.NO_RESULTS);
 		expect(mockContractLoader.loadContract).not.toHaveBeenCalled();
+		consoleSpy.mockRestore();
+	});
+
+	it("fails closed when contextCompact contract cannot be parsed", async () => {
+		mockOllama.isAvailable.mockResolvedValue(true);
+		mockOllama.embed.mockResolvedValue({ ok: true, value: [0.1, 0.2, 0.3] });
+		mockContractLoader.loadContract.mockImplementation(() => {
+			throw new Error("Contract validation failed with 1 error(s)");
+		});
+		const consoleSpy = vi.spyOn(console, "info").mockImplementation(() => {
+			// noop
+		});
+
+		const code = await runSearch({
+			query: "oauth query",
+			mode: "semantic",
+			json: true,
+		});
+
+		expect(code).toBe(EXIT_CODES.ERROR);
+		const payload = JSON.parse(String(consoleSpy.mock.calls[0]?.[0]));
+		expect(payload.error).toContain("Failed to load contextCompact policy");
+		expect(mockStore.search).not.toHaveBeenCalled();
 		consoleSpy.mockRestore();
 	});
 

@@ -67,6 +67,24 @@ describe("runPreflightGate", () => {
 		expect(result.riskTier).toBeUndefined();
 	});
 
+	it("fails closed when contract exists but is invalid", async () => {
+		writeFileSync("harness.contract.json", "{invalid-json");
+		mkdirSync("src/auth", { recursive: true });
+		writeFileSync("src/auth/login.ts", "export const login = true;\n");
+
+		const result = await runPreflightGate({
+			files: ["src/auth/login.ts"],
+		});
+		const contractLoadCheck = result.checks.find(
+			(check) => check.id === "contract-load",
+		);
+
+		expect(result.passed).toBe(false);
+		expect(contractLoadCheck?.passed).toBe(false);
+		expect(contractLoadCheck?.message).toContain("Invalid contract:");
+		expect(result.riskTier).toBeUndefined();
+	});
+
 	it("skips risk-tier when files option is omitted", async () => {
 		writeFileSync(
 			"harness.contract.json",
@@ -90,19 +108,6 @@ describe("runPreflightGate", () => {
 			"Skipped: no contract or files provided",
 		);
 		expect(result.riskTier).toBeUndefined();
-	});
-
-	it("fails closed when contract exists but is invalid", async () => {
-		writeFileSync("harness.contract.json", "{not-valid-json}");
-
-		const result = await runPreflightGate({});
-		const contractCheck = result.checks.find(
-			(check) => check.id === "contract-valid",
-		);
-
-		expect(result.passed).toBe(false);
-		expect(contractCheck?.passed).toBe(false);
-		expect(contractCheck?.message).toContain("Invalid contract");
 	});
 
 	it("short-circuits native checks when pre hook skip-all-checks is enabled", async () => {

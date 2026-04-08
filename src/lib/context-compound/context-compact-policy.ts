@@ -5,6 +5,15 @@ const ESTIMATED_CONTEXT_WINDOW_TOKENS = 200_000;
 const AUTOCOMPACT_BUFFER_TOKENS = 13_000;
 const ESTIMATED_TOKENS_PER_RESULT = 300;
 
+function isMissingContractError(error: unknown): boolean {
+	return (
+		typeof error === "object" &&
+		error !== null &&
+		"code" in error &&
+		(error as { code?: unknown }).code === "ENOENT"
+	);
+}
+
 function estimateRetrievalBudgetTokens(limit: number): number {
 	// Rough planning heuristic: each retrieved item is budgeted at ~300 tokens.
 	return Math.max(1, limit) * ESTIMATED_TOKENS_PER_RESULT;
@@ -32,18 +41,13 @@ export function loadContextCompactPolicy(
 			allowExtends: false,
 		}).contextCompact;
 	} catch (error) {
-		if (
-			error instanceof Error &&
-			((error as NodeJS.ErrnoException).code === "ENOENT" ||
-				error.message.includes("Contract not found") ||
-				error.message.includes("no such file or directory"))
-		) {
+		if (isMissingContractError(error)) {
 			return undefined;
 		}
-		const message =
-			error instanceof Error ? error.message : "Unknown contract load error";
+		const message = error instanceof Error ? error.message : String(error);
 		throw new Error(
 			`Failed to load contextCompact policy from harness.contract.json in ${baseDir}: ${message}`,
+			{ cause: error },
 		);
 	}
 }

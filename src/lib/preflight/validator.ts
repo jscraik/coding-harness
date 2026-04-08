@@ -250,33 +250,19 @@ export async function runPreflightGate(
 	const checks: PreflightCheck[] = [];
 	const hookDecisions: PreflightHookDecision[] = [];
 	const contractPath = resolve(options.contractPath ?? "harness.contract.json");
-	const contractLoadStart = Date.now();
-	let contract: HarnessContract | undefined;
-
-	if (existsSync(contractPath)) {
-		try {
-			contract = loadContract(contractPath);
-		} catch (error) {
-			const message =
-				error instanceof Error ? error.message : "Unknown contract load error";
-			checks.push({
-				id: "contract-valid",
-				description: "Validate harness contract",
-				severity: "error",
-				passed: false,
-				message: `Invalid contract at ${contractPath}: ${message}`,
-				durationMs: Date.now() - contractLoadStart,
-			});
-			return buildPreflightResult(
-				false,
-				checks,
-				start,
-				undefined,
-				hookDecisions,
-			);
-		}
+	const contractLoad = loadPreflightContract(contractPath);
+	if (contractLoad.errorMessage) {
+		checks.push({
+			id: "contract-load",
+			description: "Load and validate harness contract",
+			severity: "error",
+			passed: false,
+			message: contractLoad.errorMessage,
+			durationMs: contractLoad.durationMs,
+		});
+		return buildPreflightResult(false, checks, start, undefined, hookDecisions);
 	}
-
+	const contract = contractLoad.contract;
 	const extensions = contract?.gateExtensions?.preflightGate;
 	const riskTier = resolveRiskTier(options, contract);
 
@@ -320,6 +306,51 @@ export async function runPreflightGate(
 	return buildPreflightResult(passed, checks, start, riskTier, hookDecisions);
 }
 
+function isMissingContractError(error: unknown): boolean {
+	return (
+		typeof error === "object" &&
+		error !== null &&
+		"code" in error &&
+		(error as { code?: unknown }).code === "ENOENT"
+	);
+}
+
+function loadPreflightContract(contractPath: string): {
+	contract: HarnessContract | undefined;
+	errorMessage: string | undefined;
+	durationMs: number;
+} {
+	const start = Date.now();
+	if (!existsSync(contractPath)) {
+		return {
+			contract: undefined,
+			errorMessage: undefined,
+			durationMs: Date.now() - start,
+		};
+	}
+
+	try {
+		return {
+			contract: loadContract(contractPath),
+			errorMessage: undefined,
+			durationMs: Date.now() - start,
+		};
+	} catch (error) {
+		if (isMissingContractError(error)) {
+			return {
+				contract: undefined,
+				errorMessage: undefined,
+				durationMs: Date.now() - start,
+			};
+		}
+		const message = error instanceof Error ? error.message : String(error);
+		return {
+			contract: undefined,
+			errorMessage: `Invalid contract: ${message}`,
+			durationMs: Date.now() - start,
+		};
+	}
+}
 function resolveRiskTier(
 	options: PreflightGateOptions,
 	contract: HarnessContract | undefined,

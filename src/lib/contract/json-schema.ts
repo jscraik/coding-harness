@@ -14,6 +14,9 @@
  * - Each $defs block mirrors the isValid* guard functions in validator.ts
  */
 
+import { PREFLIGHT_POST_HOOK_IDS, PREFLIGHT_PRE_HOOK_IDS } from "./types.js";
+export { PREFLIGHT_POST_HOOK_IDS, PREFLIGHT_PRE_HOOK_IDS } from "./types.js";
+
 // ─── Schema version ───────────────────────────────────────────────────────────
 
 export const SCHEMA_VERSION = "1.5.0" as const;
@@ -57,11 +60,6 @@ export const CONTEXT_COMPACT_STRATEGIES = [
 ] as const;
 
 /** Valid values for preflight gate extension hook IDs */
-export const PREFLIGHT_PRE_HOOK_IDS = [
-	"skip-all-checks",
-	"force-fail",
-] as const;
-export const PREFLIGHT_POST_HOOK_IDS = ["fail-on-warnings"] as const;
 export const GATE_EXTENSION_HOOK_IDS = [
 	...PREFLIGHT_PRE_HOOK_IDS,
 	...PREFLIGHT_POST_HOOK_IDS,

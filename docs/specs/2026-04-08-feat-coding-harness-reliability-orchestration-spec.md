@@ -106,7 +106,7 @@ The system needs deterministic, fail-closed orchestration that preserves governa
 | `VerificationRun` | One verify execution instance | `runId`, `mode`, `startedAt`, `trigger`, `resumeFromPolicyId`, `status`, `schemaVersion`, `contractVersion`, `repoRoot`, `providerClass` |
 | `GateRunResult` | Per-gate recorded outcome | `policyId`, `attempt`, `status`, `failureClass`, `startedAt`, `finishedAt`, `nextAction` |
 | `RetryPolicy` | Retry rules per failure class and environment | `failureClass`, `maxRetries`, `baseDelayMs`, `maxDelayMs`, `jitter` |
-| `RunSummary` | Durable terminal record for reporting and audit | `runId`, `overallStatus`, `failedGateId`, `freshVsResumed`, `durationMs` |
+| `RunSummary` | Durable terminal record for reporting and audit | `runId`, `overallStatus`, `failedPolicyId`, `freshVsResumed`, `durationMs` |
 
 ### Enumerations
 

@@ -474,18 +474,39 @@ export async function runSearch(options: SearchOptions): Promise<number> {
 	}
 
 	const baseDir = options.baseDir ?? process.cwd();
+	const outputJson = options.json ?? !options.text;
 	let compactDefaults: { limit: number; threshold: number } | undefined;
 	if (options.limit === undefined || options.threshold === undefined) {
-		const compactPolicy = loadContextCompactPolicy(baseDir);
-		compactDefaults = resolveContextCompactDefaults(
-			options.query,
-			compactPolicy,
-			DEFAULT_SEARCH_LIMIT,
-			DEFAULT_SIMILARITY_THRESHOLD,
-		);
+		try {
+			const compactPolicy = loadContextCompactPolicy(baseDir);
+			compactDefaults = resolveContextCompactDefaults(
+				options.query,
+				compactPolicy,
+				DEFAULT_SEARCH_LIMIT,
+				DEFAULT_SIMILARITY_THRESHOLD,
+			);
+		} catch (error) {
+			const message =
+				error instanceof Error
+					? error.message
+					: "Failed to load context policy";
+			if (outputJson) {
+				console.info(
+					JSON.stringify({
+						success: false,
+						query: options.query,
+						mode,
+						count: 0,
+						results: [],
+						error: message,
+					}),
+				);
+			} else {
+				console.error(`✗ ${message}`);
+			}
+			return EXIT_CODES.ERROR;
+		}
 	}
-
-	const outputJson = options.json ?? !options.text;
 	const limit = options.limit ?? compactDefaults?.limit ?? DEFAULT_SEARCH_LIMIT;
 	if (!Number.isFinite(limit) || limit < 1) {
 		const error = "--limit must be a positive number";
