@@ -10,6 +10,10 @@ strict_mode=0
 json_mode=0
 repo_root=""
 resume_from=""
+normalized_manifest_path=""
+lane_fast_mode_json="false"
+lane_changed_only_json="true"
+lane_strict_mode_json="false"
 
 usage() {
 	cat <<'USAGE'
@@ -27,6 +31,34 @@ Options:
   --repo-root PATH   Run checks in a specific repository root
   -h, --help         Show this help text
 USAGE
+}
+
+log_info() {
+	if [[ "$json_mode" -eq 1 ]]; then
+		echo "$@" >&2
+	else
+		echo "$@"
+	fi
+}
+
+refresh_lane_metadata() {
+	if [[ "$fast_mode" -eq 1 ]]; then
+		lane_fast_mode_json="true"
+	else
+		lane_fast_mode_json="false"
+	fi
+
+	if [[ "$changed_only" -eq 1 ]]; then
+		lane_changed_only_json="true"
+	else
+		lane_changed_only_json="false"
+	fi
+
+	if [[ "$strict_mode" -eq 1 ]]; then
+		lane_strict_mode_json="true"
+	else
+		lane_strict_mode_json="false"
+	fi
 }
 
 detect_stack() {
@@ -71,6 +103,81 @@ has_package_script() {
 	[[ -f "$repo_root/package.json" ]] || return 1
 	jq -e --arg script_name "$script_name" '(.scripts // {}) | has($script_name)' "$repo_root/package.json" >/dev/null 2>&1
 }
+
+prepare_normalized_required_checks_manifest() {
+	local manifest_path="$repo_root/.harness/ci-required-checks.json"
+	normalized_manifest_path=""
+	if [[ ! -f "$manifest_path" ]]; then
+		return 0
+	fi
+
+	if ! command -v pnpm >/dev/null 2>&1; then
+		echo "[verify-work] required checks manifest exists but pnpm is unavailable for normalization" >&2
+		return 1
+	fi
+
+	local normalized_tmp
+	normalized_tmp="$(mktemp)"
+	if ! pnpm exec tsx - "$manifest_path" "$normalized_tmp" <<'TS'
+import { readFileSync, writeFileSync } from "node:fs";
+import { normalizeRequiredChecksManifest } from "./src/lib/policy/required-checks.ts";
+
+const [manifestPath, outputPath] = process.argv.slice(2);
+if (!manifestPath || !outputPath) {
+	console.error("missing manifest/output path arguments");
+	process.exit(2);
+}
+
+const raw = JSON.parse(readFileSync(manifestPath, "utf8"));
+const normalized = normalizeRequiredChecksManifest(raw);
+if (!normalized.ok) {
+	console.error(normalized.error);
+	process.exit(1);
+}
+
+writeFileSync(outputPath, `${JSON.stringify(normalized.value)}\n`, "utf8");
+TS
+	then
+		rm -f "$normalized_tmp"
+		echo "[verify-work] required checks normalization failed for $manifest_path" >&2
+		return 1
+	fi
+
+	normalized_manifest_path="$normalized_tmp"
+	return 0
+}
+
+build_resume_hint_from_run_json() {
+	local run_json_path="$1"
+	local hint=""
+	local lane_fast lane_changed lane_strict
+
+	lane_fast="$(jq -r '.lane.fastMode // false' "$run_json_path" 2>/dev/null || echo false)"
+	lane_changed="$(jq -r '.lane.changedOnly // true' "$run_json_path" 2>/dev/null || echo true)"
+	lane_strict="$(jq -r '.lane.strictMode // false' "$run_json_path" 2>/dev/null || echo false)"
+
+	if [[ "$lane_fast" == "true" ]]; then
+		hint+=" --fast"
+	fi
+	if [[ "$lane_changed" == "true" ]]; then
+		hint+=" --changed-only"
+	else
+		hint+=" --all"
+	fi
+	if [[ "$lane_strict" == "true" ]]; then
+		hint+=" --strict"
+	fi
+
+	echo "$hint"
+}
+
+cleanup_verify_work_temp_files() {
+	if [[ -n "$normalized_manifest_path" && -f "$normalized_manifest_path" ]]; then
+		rm -f "$normalized_manifest_path"
+	fi
+}
+
+trap cleanup_verify_work_temp_files EXIT
 
 iso_now() {
 	date -u +"%Y-%m-%dT%H:%M:%SZ"
@@ -118,15 +225,15 @@ run_ci_check_alignment_gate() {
 		return 0
 	fi
 
-	if ! jq -e '.activeProvider and (.requiredChecks | type == "array")' "$manifest_path" >/dev/null 2>&1; then
+	if [[ -z "$normalized_manifest_path" || ! -f "$normalized_manifest_path" ]]; then
 		echo "[verify-work] ci-check-alignment: invalid manifest structure"
 		return 1
 	fi
 
 	local provider
-	provider="$(jq -r '.activeProvider' "$manifest_path")"
+	provider="$(jq -r '.activeProvider // ""' "$normalized_manifest_path")"
 	local github_check_names
-	github_check_names="$(jq -r '.requiredChecks[]?.githubCheckName // empty' "$manifest_path")"
+	github_check_names="$(jq -r '.gates[]?.githubCheckName // empty' "$normalized_manifest_path")"
 
 	if [[ -z "$github_check_names" ]]; then
 		echo "[verify-work] ci-check-alignment: no githubCheckName values found"
@@ -139,7 +246,7 @@ run_ci_check_alignment_gate() {
 	if [[ "$provider" == "circleci" ]]; then
 		local suspicious=()
 		local circleci_check_names
-		circleci_check_names="$(jq -r '.requiredChecks[]? | select((.sourceAppSlug // "") == "circleci") | .githubCheckName // empty' "$manifest_path")"
+		circleci_check_names="$(jq -r '.gates[]? | select((.provider // "") == "circleci") | .githubCheckName // empty' "$normalized_manifest_path")"
 		while IFS= read -r name; do
 			case "$name" in
 				lint|typecheck|test|audit|check|build|memory|security-scan|dependency-scan|orb-pinning|docs-gate|linear-gate|risk-policy-gate|consistency-drift-health|pr-template)
@@ -162,62 +269,45 @@ run_ci_check_alignment_gate() {
 
 compute_contract_version() {
 	local manifest_path="$repo_root/.harness/ci-required-checks.json"
+	if [[ -n "$normalized_manifest_path" && -f "$normalized_manifest_path" ]]; then
+		jq -r '.contractVersion // "1"' "$normalized_manifest_path" 2>/dev/null || echo "1"
+		return 0
+	fi
+
 	if [[ ! -f "$manifest_path" ]]; then
 		echo "1"
 		return 0
 	fi
 
-	if ! command -v node >/dev/null 2>&1; then
-		echo "1"
-		return 0
-	fi
-
-	node - "$manifest_path" <<'NODE'
-const fs = require("node:fs");
-const crypto = require("node:crypto");
-const path = process.argv[2];
-try {
-  const raw = JSON.parse(fs.readFileSync(path, "utf8"));
-  if (typeof raw.contractVersion === "string" && raw.contractVersion.trim().length > 0) {
-    console.log(raw.contractVersion.trim());
-    process.exit(0);
-  }
-  const checks = Array.isArray(raw.requiredChecks) ? raw.requiredChecks : [];
-  const tuples = checks.map((entry, index) => ({
-    gateId: typeof entry.gateId === "string" && entry.gateId.trim().length > 0 ? entry.gateId : (typeof entry.displayName === "string" ? entry.displayName : `required-check-${index + 1}`),
-    provider: typeof entry.sourceAppSlug === "string" ? entry.sourceAppSlug : "",
-    externalIdPattern: typeof entry.externalIdPattern === "string" ? entry.externalIdPattern : "",
-    githubCheckName: typeof entry.githubCheckName === "string" ? entry.githubCheckName : "",
-  }));
-  tuples.sort((a, b) => {
-    const ak = `${a.gateId}::${a.provider}::${a.externalIdPattern}::${a.githubCheckName}`;
-    const bk = `${b.gateId}::${b.provider}::${b.externalIdPattern}::${b.githubCheckName}`;
-    return ak.localeCompare(bk);
-  });
-  const digest = crypto.createHash("sha256").update(JSON.stringify(tuples)).digest("hex").slice(0, 16);
-  console.log(digest || "1");
-} catch {
-  console.log("1");
-}
-NODE
+	echo "1"
 }
 
 compute_provider_class() {
 	local manifest_path="$repo_root/.harness/ci-required-checks.json"
+	if [[ -n "$normalized_manifest_path" && -f "$normalized_manifest_path" ]]; then
+		jq -r '.activeProvider // "unknown"' "$normalized_manifest_path" 2>/dev/null || echo "unknown"
+		return 0
+	fi
+
 	if [[ ! -f "$manifest_path" ]]; then
 		echo "unknown"
 		return 0
 	fi
-	jq -r '.activeProvider // "unknown"' "$manifest_path" 2>/dev/null || echo "unknown"
+	echo "unknown"
 }
 
 compute_schema_version() {
 	local manifest_path="$repo_root/.harness/ci-required-checks.json"
+	if [[ -n "$normalized_manifest_path" && -f "$normalized_manifest_path" ]]; then
+		jq -r '.schemaVersion // 1' "$normalized_manifest_path" 2>/dev/null || echo "1"
+		return 0
+	fi
+
 	if [[ ! -f "$manifest_path" ]]; then
 		echo "1"
 		return 0
 	fi
-	jq -r '.version // 1' "$manifest_path" 2>/dev/null || echo "1"
+	echo "1"
 }
 
 declare -a gate_ids=()
@@ -310,6 +400,9 @@ write_run_header() {
 		--arg providerClass "$provider_class" \
 		--arg schemaVersion "$schema_version" \
 		--arg contractVersion "$contract_version" \
+		--argjson laneFastMode "$lane_fast_mode_json" \
+		--argjson laneChangedOnly "$lane_changed_only_json" \
+		--argjson laneStrictMode "$lane_strict_mode_json" \
 		'{
 			runId: $runId,
 			mode: $mode,
@@ -320,7 +413,12 @@ write_run_header() {
 			repoRoot: $repoRoot,
 			providerClass: $providerClass,
 			schemaVersion: $schemaVersion,
-			contractVersion: $contractVersion
+			contractVersion: $contractVersion,
+			lane: {
+				fastMode: $laneFastMode,
+				changedOnly: $laneChangedOnly,
+				strictMode: $laneStrictMode
+			}
 		}' > "$run_dir/run.json"
 }
 
@@ -393,7 +491,11 @@ run_gate_with_retry() {
 			exit_code=$?
 		fi
 
-		cat "$output_file"
+		if [[ "$json_mode" -eq 1 ]]; then
+			cat "$output_file" >&2
+		else
+			cat "$output_file"
+		fi
 
 		if [[ "$exit_code" -eq 0 ]]; then
 			record_gate_result \
@@ -418,7 +520,7 @@ run_gate_with_retry() {
 		if [[ "$failure_class" == "transient_infra" && "$attempt" -le "$max_retries" ]]; then
 			local delay_seconds
 			delay_seconds="$(retry_delay_seconds "$attempt")"
-			echo "[verify-work] gate '$gate_id' transient failure on attempt $attempt/$((max_retries + 1)); retrying in ${delay_seconds}s"
+			log_info "[verify-work] gate '$gate_id' transient failure on attempt $attempt/$((max_retries + 1)); retrying in ${delay_seconds}s"
 			next_action="retry"
 			record_gate_result \
 				"$gate_id" \
@@ -490,13 +592,21 @@ find_resume_source_run_dir() {
 
 	while IFS= read -r candidate; do
 		[[ -n "$candidate" ]] || continue
-		[[ -f "$candidate/run.json" ]] || continue
+		[[ -f "$candidate/run.json" && -f "$candidate/summary.json" ]] || continue
 		[[ "$candidate" == "$run_dir" ]] && continue
-		local same_root same_contract same_provider
+		local same_root same_contract same_provider same_lane
 		same_root="$(jq -r --arg repoRoot "$repo_root" '.repoRoot == $repoRoot' "$candidate/run.json" 2>/dev/null || echo false)"
 		same_contract="$(jq -r --arg contractVersion "$contract_version" '.contractVersion == $contractVersion' "$candidate/run.json" 2>/dev/null || echo false)"
 		same_provider="$(jq -r --arg providerClass "$provider_class" '.providerClass == $providerClass' "$candidate/run.json" 2>/dev/null || echo false)"
-		if [[ "$same_root" == "true" && "$same_contract" == "true" && "$same_provider" == "true" ]]; then
+		same_lane="$(
+			jq -r \
+				--argjson laneFastMode "$lane_fast_mode_json" \
+				--argjson laneChangedOnly "$lane_changed_only_json" \
+				--argjson laneStrictMode "$lane_strict_mode_json" \
+				'((.lane.fastMode // false) == $laneFastMode) and ((.lane.changedOnly // true) == $laneChangedOnly) and ((.lane.strictMode // false) == $laneStrictMode)' \
+				"$candidate/run.json" 2>/dev/null || echo false
+		)"
+		if [[ "$same_root" == "true" && "$same_contract" == "true" && "$same_provider" == "true" && "$same_lane" == "true" ]]; then
 			echo "$candidate"
 			return 0
 		fi
@@ -621,7 +731,11 @@ if [[ -z "$repo_root" ]]; then
 fi
 
 cd "$repo_root"
-echo "[verify-work] repo root: $repo_root"
+log_info "[verify-work] repo root: $repo_root"
+
+if ! prepare_normalized_required_checks_manifest; then
+	exit 1
+fi
 
 stack="$(detect_stack)"
 bins_csv="$(preflight_bins_csv "$stack")"
@@ -631,6 +745,8 @@ schema_version="$(compute_schema_version)"
 contract_version="$(compute_contract_version)"
 
 build_gate_plan
+
+refresh_lane_metadata
 
 start_index=0
 if [[ -n "$resume_from" ]]; then
@@ -662,11 +778,13 @@ if [[ "$run_mode" == "resume" ]]; then
 	source_run_dir="$(find_resume_source_run_dir || true)"
 	if [[ -z "${source_run_dir:-}" ]]; then
 		echo "[verify-work] no compatible prior run found for resume (contract/provider/root must match)" >&2
+		rm -rf "$run_dir"
 		exit 1
 	fi
 	run_source_id="$(basename "$source_run_dir")"
 	write_run_header
 	if ! hydrate_prior_passes "$source_run_dir" "$start_index"; then
+		rm -rf "$run_dir"
 		exit 1
 	fi
 fi
@@ -754,10 +872,7 @@ if [[ "$json_mode" -eq 1 ]]; then
 		if [[ "$overall_status" == "passed" ]]; then
 			echo "[verify-work] status: pass"
 		else
-			resume_hint=""
-			if [[ "$fast_mode" -eq 1 ]]; then
-				resume_hint=" --fast"
-			fi
+			resume_hint="$(build_resume_hint_from_run_json "$run_dir/run.json")"
 			echo "[verify-work] status: fail (gate: $failed_gate_id)"
 			echo "[verify-work] to resume: bash scripts/verify-work.sh --resume-from $failed_gate_id$resume_hint"
 		fi

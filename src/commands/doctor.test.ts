@@ -388,7 +388,15 @@ describe("runDoctor — ci:check-alignment check", () => {
 				version: 1,
 				activeProvider: "circleci",
 				requiredChecks: [
-					{ policyId: "c1", displayName: "lint", class: "required" },
+					{
+						policyId: "c1",
+						gateId: "lint",
+						displayName: "lint",
+						sourceAppSlug: "circleci",
+						sourceAppId: "circleci",
+						externalIdPattern: "^lint$",
+						class: "required",
+					},
 				],
 			}),
 		);
@@ -409,7 +417,11 @@ describe("runDoctor — ci:check-alignment check", () => {
 				requiredChecks: [
 					{
 						policyId: "c1",
+						gateId: "lint",
 						displayName: "lint",
+						sourceAppSlug: "circleci",
+						sourceAppId: "circleci",
+						externalIdPattern: "^lint$",
 						githubCheckName: "lint",
 						class: "required",
 					},
@@ -434,13 +446,21 @@ describe("runDoctor — ci:check-alignment check", () => {
 				requiredChecks: [
 					{
 						policyId: "c1",
+						gateId: "lint",
 						displayName: "lint",
+						sourceAppSlug: "circleci",
+						sourceAppId: "circleci",
+						externalIdPattern: "^lint$",
 						githubCheckName: "pr-pipeline",
 						class: "required",
 					},
 					{
 						policyId: "c2",
+						gateId: "docs-gate",
 						displayName: "docs-gate",
+						sourceAppSlug: "circleci",
+						sourceAppId: "circleci",
+						externalIdPattern: "^docs-gate$",
 						githubCheckName: "harness-gates",
 						class: "required",
 					},

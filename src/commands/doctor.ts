@@ -553,47 +553,7 @@ const CHECKS: CheckFn[] = [
 
 		const manifest = readJsonFile(manifestPath);
 		const normalized = normalizeRequiredChecksManifest(manifest);
-		let provider = "";
-		let gatesForAlignment: Array<{
-			provider: string;
-			githubCheckName: string | null;
-		}> = [];
-
-		if (normalized.ok) {
-			provider = normalized.value.activeProvider;
-			gatesForAlignment = normalized.value.gates.map((gate) => ({
-				provider: gate.provider,
-				githubCheckName: gate.githubCheckName,
-			}));
-		} else if (
-			manifest &&
-			typeof manifest === "object" &&
-			hasJsonKey(manifest, "activeProvider") &&
-			hasJsonKey(manifest, "requiredChecks")
-		) {
-			const fallback = manifest as {
-				activeProvider?: unknown;
-				requiredChecks?: Array<{ githubCheckName?: unknown }> | unknown;
-			};
-			if (
-				typeof fallback.activeProvider === "string" &&
-				Array.isArray(fallback.requiredChecks)
-			) {
-				provider = fallback.activeProvider;
-				gatesForAlignment = fallback.requiredChecks.map((entry) => ({
-					provider,
-					githubCheckName:
-						typeof entry?.githubCheckName === "string"
-							? entry.githubCheckName
-							: null,
-				}));
-			}
-		}
-
-		if (!provider || gatesForAlignment.length === 0) {
-			const normalizedError = normalized.ok
-				? "unable to parse required checks manifest"
-				: normalized.error;
+		if (!normalized.ok) {
 			return {
 				id: "ci:check-alignment",
 				category: "ci",
@@ -601,7 +561,25 @@ const CHECKS: CheckFn[] = [
 				status: "warn",
 				message:
 					".harness/ci-required-checks.json exists but is not valid — cannot check alignment",
-				fix: `Run: harness ci-migrate bootstrap to regenerate the manifest (${normalizedError})`,
+				fix: `Run: harness ci-migrate bootstrap to regenerate the manifest (${normalized.error})`,
+			};
+		}
+
+		const provider = normalized.value.activeProvider;
+		const gatesForAlignment = normalized.value.gates.map((gate) => ({
+			provider: gate.provider,
+			githubCheckName: gate.githubCheckName,
+		}));
+
+		if (!provider || gatesForAlignment.length === 0) {
+			return {
+				id: "ci:check-alignment",
+				category: "ci",
+				label: "CI check alignment",
+				status: "warn",
+				message:
+					".harness/ci-required-checks.json exists but is not valid — cannot check alignment",
+				fix: "Run: harness ci-migrate bootstrap to regenerate the manifest (required checks list is empty)",
 			};
 		}
 

@@ -96,7 +96,7 @@ Each entry in `.harness/ci-required-checks.json` supports optional canonical orc
 ```
 
 **`githubCheckName`** (optional string): The GitHub check-run name that this internal check is surfaced through in branch protection. If omitted, the check is assumed to be harness-internal only and not directly enforced by GitHub.
-**`gateId`** (optional string): Stable gate identity used for resume compatibility; defaults to `displayName`.
+**`gateId`** (optional string): Stable gate identity used for resume compatibility. If omitted, `displayName` becomes the default gate identity, so renaming `displayName` also changes the identity tuple and therefore `contractVersion`.
 **`executionClass`** (optional): `read_only_parallel` or `serial_guarded`; defaults to `serial_guarded`.
 **`failureClassDefault`** (optional): `transient_infra`, `contract_policy`, or `internal_unknown`.
 **`order`** (optional positive integer): deterministic execution ordering fallback when orchestration mode is active.
@@ -120,7 +120,7 @@ Contract compatibility rules:
 
 - `version` remains the manifest schema version.
 - `contractVersion` is derived from the identity tuple when not explicitly set.
-- Non-identity field changes (`displayName`, `order`, `enabled`) do not force resume incompatibility.
+- Non-identity field changes (`displayName`, `order`, `enabled`) do not force resume incompatibility when `gateId` is held constant.
 - Identity field changes do invalidate resume compatibility for affected gates.
 
 ---
