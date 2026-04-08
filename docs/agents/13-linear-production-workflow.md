@@ -145,6 +145,12 @@ Use the existing core labels:
 - `Chore`
 - `Security`
 
+Type-label contract:
+
+- every issue should carry exactly one primary type label from the core label set.
+- if a triage candidate has no primary type label, `harness linear triage` infers one and reports it.
+- in apply mode, `harness linear triage --apply` adds missing primary type labels to triage candidates before/while promotion updates.
+
 Use the workflow labels for orchestration/reporting when relevant:
 
 - `Blocked`
@@ -170,6 +176,7 @@ The repository now includes a Linear-first CLI surface for the common workflow t
 
 ```bash
 harness linear prepare --issue JSC-37 --field branch
+harness linear triage --team JSC --limit 10 --json
 harness linear-gate --branch codex/jsc-37-enable-github-to-linear-branch-and-pr-automation-for-the --pr-title "JSC-37: Enable GitHub to Linear branch and PR automation" --pr-body "Refs JSC-37"
 harness linear claim --issue JSC-36 --branch codex/jsc-36-linear-claim --workspace /path/to/worktree
 harness linear handoff --issue JSC-36 --pr-url https://github.com/org/repo/pull/123 --evidence-url https://example.com/evidence.json
@@ -189,6 +196,12 @@ Operational notes:
   - branch names must keep the configured prefix and include the Linear issue key
   - PR titles/bodies must include the Linear key plus the required `Refs`/`Fixes` reference line
 - `claim` defaults to assigning the issue to the current Linear API user unless `--no-assign` is set.
+- `triage` provides deterministic ranking and apply guards from the codified triage strategy:
+  - score formula: `(3*impact) + (3*unblock_value) + (2*urgency) + confidence - (2*effort)`
+  - promotion bands: `pull_now` (`>=13`) and `next_pull` (`10-12`)
+  - default guards: metadata threshold `0.8`, global in-progress cap `3`, max promotions per run `2`
+  - safety: apply mode requires `--confirm` when mutating more than one issue
+  - label hygiene: missing type labels are added by default in apply mode (use `--no-type-label-sync` to opt out)
 - `handoff` moves the issue to `In Review`, posts a workflow comment, and can attach PR/evidence/reference URLs.
 - `close` moves the issue to `Done`, posts a closure comment, and can attach the merge PR/evidence URLs.
 - Set `LINEAR_API_KEY` in the runtime environment or pass `--token` explicitly.

@@ -32,6 +32,7 @@
 ## Invariants
 - Exactly one running LI progress thread per issue.
 - Branch format is `codex/<lk>-<slug>`.
+- Every issue keeps exactly one primary type label (`Bug|Feature|Improvement|Policy|Security`).
 - `S2 IN_PROGRESS -> S3 IN_REVIEW` requires DoD pre-review checks.
 - `pr_closed_unmerged` always routes back to active work.
 - `In Review` handoff is blocked when CI provider posture is unsatisfied for the current migration stage.
@@ -114,3 +115,5 @@ stateDiagram-v2
 - events resolve deterministically
 - failures route to fail/blocked states
 - terminal states have no outbound transitions
+- triage/apply runs enforce metadata threshold + WIP caps before promotion writes
+- triage/apply runs add missing primary type labels unless `--no-type-label-sync` is set
