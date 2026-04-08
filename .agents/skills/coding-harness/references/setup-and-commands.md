@@ -303,9 +303,14 @@ Important constraints:
 
 ### Intake and workflow governance
 
-- `harness linear`
+- `harness linear` (`claim|handoff|close|prepare|sync|triage`)
 - `harness linear-gate`
 - `harness workflow-generate`
+
+Linear auth/runtime notes:
+
+- `harness linear*` commands require `LINEAR_API_KEY` in runtime environment unless `--token` is passed.
+- For Codex-heavy workflows, keep `LINEAR_API_KEY` in `~/.codex/.env` and ensure the session/shell loads it before running commands.
 
 ## Capability boundaries
 

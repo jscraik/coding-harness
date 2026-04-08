@@ -232,6 +232,8 @@ Harness cannot create them — surface this to the user if any are missing.
 | `GITHUB_PERSONAL_ACCESS_TOKEN` | `gh` CLI auth for review-gate, PR creation, branch ops | GitHub PAT |
 | `LINEAR_API_KEY` | Linear issue sync job | Linear settings |
 
+For local/operator runs (`harness linear`, including `triage`), the same `LINEAR_API_KEY` must be available in the active process environment. In Codex sessions, teams commonly store this in `~/.codex/.env`; ensure that file is loaded into the current shell/session before running commands.
+
 Check via CircleCI API:
 
 ```bash
