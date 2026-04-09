@@ -28,11 +28,22 @@ export interface LinearGateFailureClassification {
 	nextAction: string;
 }
 
+const LINEAR_GATE_CONTRACT_POLICY_NEXT_ACTION =
+	"Fix contract/policy mismatch, then rerun linear-gate.";
+const LINEAR_GATE_INTERNAL_UNKNOWN_NEXT_ACTION =
+	"Inspect gate output, fix root cause, and rerun linear-gate.";
+
 function classifyLinearGateErrorCode(errorCode: string): GateFailureClass {
 	if (errorCode === "CONTRACT_ERROR" || errorCode === "VALIDATION_ERROR") {
 		return "contract_policy";
 	}
 	return "internal_unknown";
+}
+
+function resolveLinearGateNextAction(failureClass: GateFailureClass): string {
+	return failureClass === "contract_policy"
+		? LINEAR_GATE_CONTRACT_POLICY_NEXT_ACTION
+		: LINEAR_GATE_INTERNAL_UNKNOWN_NEXT_ACTION;
 }
 
 export function classifyLinearGateFailure(
@@ -44,20 +55,14 @@ export function classifyLinearGateFailure(
 		}
 		return {
 			failureClass: "contract_policy",
-			nextAction: "Fix contract/policy mismatch, then rerun linear-gate.",
+			nextAction: resolveLinearGateNextAction("contract_policy"),
 		};
 	}
 
 	const failureClass = classifyLinearGateErrorCode(result.error.code);
-	if (failureClass === "contract_policy") {
-		return {
-			failureClass,
-			nextAction: "Fix contract/policy mismatch, then rerun linear-gate.",
-		};
-	}
 	return {
-		failureClass: "internal_unknown",
-		nextAction: "Inspect gate output, fix root cause, and rerun linear-gate.",
+		failureClass,
+		nextAction: resolveLinearGateNextAction(failureClass),
 	};
 }
 

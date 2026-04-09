@@ -515,45 +515,48 @@ export async function runLinearGateCLI(
 ): Promise<number> {
 	const result = runLinearGate(options);
 	const failure = classifyLinearGateFailure(result);
+	if (options.json) {
+		const gateResult = normaliseLinearGateResult(result);
+		process.stdout.write(`${JSON.stringify(gateResult, null, 2)}\n`);
+		if (!result.ok) {
+			return result.error.code === "CONTRACT_ERROR"
+				? EXIT_CODES.CONTRACT_ERROR
+				: EXIT_CODES.VALIDATION_ERROR;
+		}
+		return result.output.passed
+			? EXIT_CODES.SUCCESS
+			: EXIT_CODES.POLICY_VIOLATION;
+	}
+
 	if (!result.ok) {
-		if (options.json) {
-			const gateResult = normaliseLinearGateResult(result);
-			process.stdout.write(`${JSON.stringify(gateResult, null, 2)}\n`);
-		} else {
-			console.error(result.error.message);
-			if (failure) {
-				console.error(`Failure class: ${failure.failureClass}`);
-				console.error(`Next action: ${failure.nextAction}`);
-			}
+		console.error(result.error.message);
+		if (failure) {
+			console.error(`Failure class: ${failure.failureClass}`);
+			console.error(`Next action: ${failure.nextAction}`);
 		}
 		return result.error.code === "CONTRACT_ERROR"
 			? EXIT_CODES.CONTRACT_ERROR
 			: EXIT_CODES.VALIDATION_ERROR;
 	}
 
-	if (options.json) {
-		const gateResult = normaliseLinearGateResult(result);
-		process.stdout.write(`${JSON.stringify(gateResult, null, 2)}\n`);
-	} else {
-		const statusIcon = result.output.passed ? "✓" : "✗";
-		const statusText = result.output.passed ? "PASSED" : "FAILED";
-		console.info(`${statusIcon} Linear gate ${statusText}`);
+	const statusIcon = result.output.passed ? "✓" : "✗";
+	const statusText = result.output.passed ? "PASSED" : "FAILED";
+	console.info(`${statusIcon} Linear gate ${statusText}`);
+	console.info();
+	for (const check of result.output.checks) {
+		const icon = check.passed ? "✓" : "✗";
+		console.info(`${icon} ${check.message}`);
+		if (!check.passed && check.expected) {
+			console.info(`  Expected: ${check.expected}`);
+		}
+		if (!check.passed && check.actual) {
+			console.info(`  Actual: ${check.actual}`);
+		}
+	}
+	if (failure) {
 		console.info();
-		for (const check of result.output.checks) {
-			const icon = check.passed ? "✓" : "✗";
-			console.info(`${icon} ${check.message}`);
-			if (!check.passed && check.expected) {
-				console.info(`  Expected: ${check.expected}`);
-			}
-			if (!check.passed && check.actual) {
-				console.info(`  Actual: ${check.actual}`);
-			}
-		}
-		if (failure) {
-			console.info();
-			console.info(`Failure class: ${failure.failureClass}`);
-			console.info(`Next action: ${failure.nextAction}`);
-		}
+		console.info(`Failure class: ${failure.failureClass}`);
+		console.info(`Next action: ${failure.nextAction}`);
 	}
 
 	return result.output.passed
