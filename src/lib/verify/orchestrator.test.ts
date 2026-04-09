@@ -263,7 +263,9 @@ describe("verify orchestrator", () => {
 		expect(result.finalState).toBe("S_FAIL");
 		expect(result.overallStatus).toBe("failed");
 		expect(result.resumeFromGateId).toBe("linear-gate");
-		expect(result.transitions.map((t) => t.event)).toContain("SERIAL_GATE_FAILED");
+		expect(result.transitions.map((t) => t.event)).toContain(
+			"SERIAL_GATE_FAILED",
+		);
 	});
 
 	it("returns blocked with resumeFromGateId when a serial gate is blocked", async () => {
@@ -277,20 +279,28 @@ describe("verify orchestrator", () => {
 			],
 			runner: createRunner({
 				"policy-gate": [
-					{ status: "blocked", exitCode: 1, nextAction: "waiting for approval" },
+					{
+						status: "blocked",
+						exitCode: 1,
+						nextAction: "waiting for approval",
+					},
 				],
 			}),
 		});
 		expect(result.finalState).toBe("S4_BLOCKED");
 		expect(result.overallStatus).toBe("blocked");
 		expect(result.resumeFromGateId).toBe("policy-gate");
-		expect(result.transitions.map((t) => t.event)).toContain("SERIAL_GATE_BLOCKED");
+		expect(result.transitions.map((t) => t.event)).toContain(
+			"SERIAL_GATE_BLOCKED",
+		);
 	});
 
 	it("throws when maxParallelism is zero", async () => {
 		await expect(
 			orchestrateVerifyLifecycle({
-				gates: [gateFixture({ gateId: "lint", executionClass: "serial_guarded" })],
+				gates: [
+					gateFixture({ gateId: "lint", executionClass: "serial_guarded" }),
+				],
 				runner: createRunner({}),
 				maxParallelism: 0,
 			}),
@@ -300,7 +310,9 @@ describe("verify orchestrator", () => {
 	it("throws when maxAttempts is zero", async () => {
 		await expect(
 			orchestrateVerifyLifecycle({
-				gates: [gateFixture({ gateId: "lint", executionClass: "serial_guarded" })],
+				gates: [
+					gateFixture({ gateId: "lint", executionClass: "serial_guarded" }),
+				],
 				runner: createRunner({}),
 				maxAttempts: 0,
 			}),
@@ -340,8 +352,18 @@ describe("verify orchestrator", () => {
 		};
 		const result = await orchestrateVerifyLifecycle({
 			gates: [
-				gateFixture({ gateId: "lint", enabled: false, executionClass: "read_only_parallel", order: 1 }),
-				gateFixture({ gateId: "policy-gate", enabled: true, executionClass: "serial_guarded", order: 2 }),
+				gateFixture({
+					gateId: "lint",
+					enabled: false,
+					executionClass: "read_only_parallel",
+					order: 1,
+				}),
+				gateFixture({
+					gateId: "policy-gate",
+					enabled: true,
+					executionClass: "serial_guarded",
+					order: 2,
+				}),
 			],
 			runner: trackingRunner,
 		});
@@ -359,9 +381,21 @@ describe("verify orchestrator", () => {
 		};
 		await orchestrateVerifyLifecycle({
 			gates: [
-				gateFixture({ gateId: "z-gate", executionClass: "serial_guarded", order: 2 }),
-				gateFixture({ gateId: "a-gate", executionClass: "serial_guarded", order: 1 }),
-				gateFixture({ gateId: "b-gate", executionClass: "serial_guarded", order: 2 }),
+				gateFixture({
+					gateId: "z-gate",
+					executionClass: "serial_guarded",
+					order: 2,
+				}),
+				gateFixture({
+					gateId: "a-gate",
+					executionClass: "serial_guarded",
+					order: 1,
+				}),
+				gateFixture({
+					gateId: "b-gate",
+					executionClass: "serial_guarded",
+					order: 2,
+				}),
 			],
 			runner: trackingRunner,
 		});
@@ -373,10 +407,16 @@ describe("verify orchestrator", () => {
 	it("records resumeFromGateId as null when all gates pass", async () => {
 		const result = await orchestrateVerifyLifecycle({
 			gates: [
-				gateFixture({ gateId: "policy-gate", executionClass: "serial_guarded", order: 1 }),
+				gateFixture({
+					gateId: "policy-gate",
+					executionClass: "serial_guarded",
+					order: 1,
+				}),
 			],
 			runner: createRunner({
-				"policy-gate": [{ status: "passed", exitCode: 0, nextAction: "continue" }],
+				"policy-gate": [
+					{ status: "passed", exitCode: 0, nextAction: "continue" },
+				],
 			}),
 		});
 		expect(result.resumeFromGateId).toBeNull();
@@ -436,9 +476,9 @@ describe("verify orchestrator", () => {
 
 describe("transitionLifecycle state machine", () => {
 	it("throws on invalid transition from S0_INIT with wrong event", () => {
-		expect(() =>
-			transitionLifecycle("S0_INIT", "SERIAL_GATE_PASSED"),
-		).toThrow("Invalid lifecycle transition");
+		expect(() => transitionLifecycle("S0_INIT", "SERIAL_GATE_PASSED")).toThrow(
+			"Invalid lifecycle transition",
+		);
 	});
 
 	it("throws on invalid transition from S1_CONTRACT_VALIDATED with wrong event", () => {
@@ -472,15 +512,15 @@ describe("transitionLifecycle state machine", () => {
 	});
 
 	it("throws on any event from terminal state S5_DONE", () => {
-		expect(() =>
-			transitionLifecycle("S5_DONE", "CONTRACT_OK"),
-		).toThrow("Invalid lifecycle transition");
+		expect(() => transitionLifecycle("S5_DONE", "CONTRACT_OK")).toThrow(
+			"Invalid lifecycle transition",
+		);
 	});
 
 	it("throws on any event from terminal state S_FAIL", () => {
-		expect(() =>
-			transitionLifecycle("S_FAIL", "CONTRACT_OK"),
-		).toThrow("Invalid lifecycle transition");
+		expect(() => transitionLifecycle("S_FAIL", "CONTRACT_OK")).toThrow(
+			"Invalid lifecycle transition",
+		);
 	});
 
 	it("maps S0_INIT + CONTRACT_OK to S1_CONTRACT_VALIDATED", () => {
@@ -512,9 +552,9 @@ describe("transitionLifecycle state machine", () => {
 	});
 
 	it("maps S3_SERIAL_GUARDED + SERIAL_GATE_PASSED stays in S3_SERIAL_GUARDED", () => {
-		expect(
-			transitionLifecycle("S3_SERIAL_GUARDED", "SERIAL_GATE_PASSED"),
-		).toBe("S3_SERIAL_GUARDED");
+		expect(transitionLifecycle("S3_SERIAL_GUARDED", "SERIAL_GATE_PASSED")).toBe(
+			"S3_SERIAL_GUARDED",
+		);
 	});
 
 	it("maps S3_SERIAL_GUARDED + SERIAL_FINAL_GATE_PASSED to S5_DONE", () => {

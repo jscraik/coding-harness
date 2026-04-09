@@ -1,4 +1,4 @@
-import { existsSync, mkdtempSync, rmSync } from "node:fs";
+import { existsSync, mkdtempSync, rmSync, utimesSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
@@ -234,13 +234,17 @@ describe("verify run-state — load functions", () => {
 		expect(loaded.status).toBe("failed");
 		expect(loaded.providerClass).toBe("circleci");
 		expect(loaded.contractVersion).toBe("contract-v1");
-		expect(loaded.lane).toEqual({ fastMode: false, changedOnly: false, strictMode: true });
+		expect(loaded.lane).toEqual({
+			fastMode: false,
+			changedOnly: false,
+			strictMode: true,
+		});
 	});
 
 	it("throws RunStateError E_IO when run.json does not exist", () => {
-		expect(() =>
-			loadVerifyRunMetadata(repoRoot, "run-does-not-exist"),
-		).toThrow(RunStateError);
+		expect(() => loadVerifyRunMetadata(repoRoot, "run-does-not-exist")).toThrow(
+			RunStateError,
+		);
 	});
 
 	it("writes and loads run summary round-trip", () => {
@@ -262,9 +266,9 @@ describe("verify run-state — load functions", () => {
 	});
 
 	it("throws RunStateError E_IO when summary.json does not exist", () => {
-		expect(() =>
-			loadVerifyRunSummary(repoRoot, "run-does-not-exist"),
-		).toThrow(RunStateError);
+		expect(() => loadVerifyRunSummary(repoRoot, "run-does-not-exist")).toThrow(
+			RunStateError,
+		);
 	});
 
 	it("writes and loads gate result round-trip", () => {
@@ -306,9 +310,16 @@ describe("verify run-state — load functions", () => {
 				freshVsResumed: "fresh",
 				durationMs: 100,
 			});
-			const { runDir } = resolveVerifyRunPaths(repoRoot, id);
+			const { runDir, runPath, summaryPath } = resolveVerifyRunPaths(
+				repoRoot,
+				id,
+			);
 			const mtime = new Date(now - index * 1000);
 			utimesSync(runDir, mtime, mtime);
+			if (existsSync(runPath)) {
+				utimesSync(runPath, mtime, mtime);
+			}
+			utimesSync(summaryPath, mtime, mtime);
 		}
 
 		const result = listVerifyRunIds(repoRoot);
@@ -357,9 +368,9 @@ describe("verify run-state — pruning edge cases", () => {
 	});
 
 	it("throws RunStateError for keepCount of zero", () => {
-		expect(() =>
-			pruneVerifyRuns({ repoRoot, keepCount: 0 }),
-		).toThrow(RunStateError);
+		expect(() => pruneVerifyRuns({ repoRoot, keepCount: 0 })).toThrow(
+			RunStateError,
+		);
 	});
 
 	it("respects protectLatestFailed=false by not preserving extra failed run", () => {

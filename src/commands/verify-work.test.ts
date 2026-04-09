@@ -117,7 +117,7 @@ kill -KILL $$
 		expect(exitCode).toBe(137);
 	});
 
-	it("passes --all flag instead of --changed-only when both are set", () => {
+	it("returns USAGE_ERROR and does not execute wrapper when both --all and --changed-only are set", () => {
 		const scriptsDir = join(repoRoot, "scripts");
 		mkdirSync(scriptsDir, { recursive: true });
 
@@ -134,12 +134,14 @@ printf '%s\\n' "$@" > "${argsLogPath}"
 		);
 		chmodSync(wrapperPath, 0o755);
 
-		// When both all and changedOnly are set, --all takes precedence
-		runVerifyWorkCLI({ repoRoot, all: true, changedOnly: true });
+		const exitCode = runVerifyWorkCLI({
+			repoRoot,
+			all: true,
+			changedOnly: true,
+		});
 
-		const argsLog = readFileSync(argsLogPath, "utf-8");
-		expect(argsLog).toContain("--all");
-		expect(argsLog).not.toContain("--changed-only");
+		expect(exitCode).toBe(EXIT_CODES.USAGE_ERROR);
+		expect(() => readFileSync(argsLogPath, "utf-8")).toThrow();
 	});
 
 	it("does not pass --json when json option is false", () => {

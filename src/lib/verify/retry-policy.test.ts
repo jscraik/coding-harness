@@ -125,7 +125,9 @@ describe("verify retry-policy", () => {
 	});
 
 	it("is not retry eligible for internal_unknown on read_only_parallel", () => {
-		expect(isRetryEligible("read_only_parallel", "internal_unknown")).toBe(false);
+		expect(isRetryEligible("read_only_parallel", "internal_unknown")).toBe(
+			false,
+		);
 	});
 
 	it("is not retry eligible for contract_policy on serial_guarded", () => {
