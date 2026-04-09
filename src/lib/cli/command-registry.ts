@@ -109,6 +109,12 @@ interface GroupedActionSpec {
 	summary: string;
 }
 
+function groupedActionCommands(
+	actions: Record<string, GroupedActionSpec>,
+): string[] {
+	return Object.values(actions).map((spec) => spec.command);
+}
+
 function dispatchRoutedCommand(
 	command: string,
 	args: string[],
@@ -316,44 +322,11 @@ const PILOT_ACTIONS: Record<string, GroupedActionSpec> = {
 };
 
 const DEFAULT_HELP_HIDDEN_COMMANDS = new Set<string>([
-	"check",
-	"doctor",
-	"health",
-	"init",
-	"upgrade",
-	"contract",
-	"verify-work",
-	"eject",
-	"policy-gate",
-	"preflight-gate",
-	"review-gate",
-	"docs-gate",
-	"linear-gate",
-	"pr-template-gate",
-	"license-gate",
-	"plan-gate",
-	"prompt-gate",
-	"brainstorm-gate",
-	"drift-gate",
-	"memory-gate",
-	"observability-gate",
-	"check-authz",
-	"check-environment",
-	"local-memory-preflight",
-	"risk-tier",
-	"blast-radius",
-	"simulate",
-	"replay",
-	"remediate",
-	"automation-run",
-	"diff-budget",
-	"gap-case",
-	"gardener",
-	"ui:fast",
-	"ui:verify",
-	"ui:explore",
-	"pilot-evaluate",
-	"pilot-rollback",
+	...groupedActionCommands(REPO_ACTIONS),
+	...groupedActionCommands(GATE_ACTIONS),
+	...groupedActionCommands(WORK_ACTIONS),
+	...groupedActionCommands(UI_ACTIONS),
+	...groupedActionCommands(PILOT_ACTIONS),
 ]);
 
 const COMMAND_SPECS: CommandSpec[] = [
