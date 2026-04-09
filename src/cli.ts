@@ -30,6 +30,17 @@ process.on("uncaughtException", (error) => {
 	handleFatalError("Uncaught Exception", error);
 });
 
+/**
+ * Prints the CLI usage and help text for the `harness` command.
+ *
+ * The output includes a "Start here (standard path)" quickstart, a "Lite mode"
+ * workflow, "Hero workflows" examples, a dynamically generated "Commands"
+ * section from the command registry, an "Options" section, and notes for
+ * Agent/Robot Mode (including `--json` usage, exit-code meanings, and typo/
+ * case-correction and suggestion behavior).
+ *
+ * Side effects: writes the help text to stdout.
+ */
 function printUsage(): void {
 	console.info("Usage: harness <command> [options]");
 	console.info("");

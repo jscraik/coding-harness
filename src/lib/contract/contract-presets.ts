@@ -42,6 +42,12 @@ const PRESET_NORMALIZATION_MAP = {
 	full: "full",
 } as const satisfies Record<ContractPresetInput, ContractPreset>;
 
+/**
+ * Map a user-supplied preset identifier (including aliases) to a canonical contract preset.
+ *
+ * @param preset - Input preset name or alias (for example `"lite"`, `"minimal"`, `"standard"`, `"full"`).
+ * @returns The canonical `ContractPreset` for recognized inputs, or `undefined` if the input is not a supported preset.
+ */
 export function normalizeContractPreset(
 	preset: string,
 ): ContractPreset | undefined {

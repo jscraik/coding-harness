@@ -184,6 +184,7 @@ PY
 			exit 1
 		fi
 
+		# has_package_marker checks whether the given package name (marker) is present in package.json's `dependencies` or `devDependencies` and returns success if found.
 		has_package_marker() {
 			local marker="$1"
 			jq -e --arg marker "$marker" '

@@ -528,6 +528,14 @@ function auditPackagePolicy(
 	}
 }
 
+/**
+ * Verifies repository local hook support and records any missing, outdated, or legacy hook-related issues.
+ *
+ * Inspects required hook support files, validates the prek configuration for required hooks (with a stricter check for the `pre-push` hook that requires a `stages = ["pre-push"]` line), parses and validates required package.json scripts, and flags the presence of a legacy `simple-git-hooks` key. Appends findings to the provided `findings` array for each detected problem. If package.json fails to parse, records a critical finding and aborts further package.json checks.
+ *
+ * @param findings - Mutable array to which this function will append `ToolingAuditFinding` entries describing detected issues.
+ * @param repoPath - Filesystem path to the repository root to inspect.
+ */
 function auditLocalHooks(
 	findings: ToolingAuditFinding[],
 	repoPath: string,

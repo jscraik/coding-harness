@@ -78,11 +78,23 @@ function formatError(err: ValidationError, index: number): string {
 	return lines.join("\n");
 }
 
+/**
+ * Choose a concise severity glyph for a validation error code.
+ *
+ * @param code - Validation error code; codes containing "MISSING" or "FORBIDDEN" are considered error-level.
+ * @returns `"✗"` for error-level codes, `"⚠️ "` for all other codes.
+ */
 function severityIcon(code: string): string {
 	if (code.includes("MISSING") || code.includes("FORBIDDEN")) return "✗";
 	return "⚠️ ";
 }
 
+/**
+ * Returns a human-readable label for a contract preset, annotating the `lite` input as an alias of `minimal`.
+ *
+ * @param preset - The requested contract preset input (for example: `lite`, `minimal`, `standard`, `full`)
+ * @returns The preset label; for `lite` returns `"lite (alias of minimal)"`, otherwise returns the original preset string
+ */
 function formatPresetLabel(preset: ContractPresetInput): string {
 	return preset === "lite" ? `${preset} (alias of minimal)` : preset;
 }
@@ -101,10 +113,15 @@ export interface ContractInitOptions {
 }
 
 /**
- * `harness contract init` entrypoint.
+ * Create a starter harness.contract.json file for a requested preset.
  *
- * Generates a starter harness.contract.json for the given preset tier.
- * Returns exit code 0 on success, 1 on error.
+ * Resolves the requested preset (accepts preset input aliases), determines the output path,
+ * and writes a pretty-printed contract file. If a file already exists and `options.force` is not set,
+ * the command will not overwrite it. Output is emitted either as structured JSON (`options.json`)
+ * or as human-readable text.
+ *
+ * @param options - CLI options: `preset` (preset input, e.g., `lite|minimal|standard|full`), `output` (destination path), `force` (overwrite existing file), and `json` (emit machine-readable JSON).
+ * @returns 0 on success; 1 if the output file exists without `--force` or if writing the file fails; 2 if the requested preset is invalid.
  */
 export function runContractInitCLI(options: ContractInitOptions): number {
 	const requestedPreset = options.preset ?? DEFAULT_PRESET;
@@ -355,7 +372,19 @@ export interface ContractCLIOptions extends ContractValidateOptions {
 }
 
 /**
- * Main entry for `harness contract <subcommand>`.
+ * Dispatches a `harness contract` subcommand to the appropriate handler.
+ *
+ * Parses the provided CLI tokens to identify the subcommand and any relevant
+ * flags/arguments, then invokes the matching command implementation:
+ * - `schema` → prints the contract JSON schema.
+ * - `normalize-required-checks` → accepts `--manifest`/`-m <path>`.
+ * - `init` → accepts `--preset`/`-p <preset>`, `--output`/`-o <path>`, and `--force`.
+ * - `validate` (or no subcommand) → accepts an optional positional path (flags are ignored).
+ * If the subcommand is unrecognized, prints usage help and returns exit code `1`.
+ *
+ * @param subArgs - CLI tokens following `harness contract` (positional tokens and flags).
+ * @param options.json - When true, passes JSON-output preference through to subcommands.
+ * @returns The exit code produced by the delegated subcommand handler; returns `1` for an unknown subcommand.
  */
 export function runContractCLI(
 	subArgs: string[],

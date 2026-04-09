@@ -22,6 +22,12 @@ const COMMIT_MSG_VALIDATOR_PATH = resolve(
 	"scripts/validate-commit-msg.js",
 );
 
+/**
+ * Remove any repository-local Git core.hooksPath configuration so prek can install its hooks.
+ *
+ * If a local `core.hooksPath` is configured, logs the configured path and unsets the local setting.
+ * Any errors (including absence of the setting) are silently ignored.
+ */
 function clearLegacyLocalHooksPath() {
 	try {
 		const configuredHooksPath = execFileSync(
@@ -47,6 +53,11 @@ function clearLegacyLocalHooksPath() {
 	}
 }
 
+/**
+ * Validate prerequisites, remove any legacy local Git hooksPath override, run `prek install`, and print installation results and recommended wrapper targets.
+ *
+ * Verifies that `prek.toml` and `scripts/validate-commit-msg.js` exist in the repository root; if either is missing, prints an error and exits with code 1. Clears any legacy local `core.hooksPath` override before invoking `prek install`. On success, prints the installed hook entrypoints and available governance wrapper targets. On failure, prints a failure message (including the underlying error message when available) and exits with code 1.
+ */
 function main() {
 	if (!existsSync(PREK_CONFIG_PATH)) {
 		console.error("Error: prek.toml not found in current directory");

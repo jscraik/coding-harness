@@ -521,6 +521,19 @@ function renderValidateCodestyleScript(): string {
 	return readFileSync(templatePath, "utf-8");
 }
 
+/**
+ * Produces a bash script that prepares a newly created git worktree for local hooks and pre-push checks.
+ *
+ * The generated script validates it's inside a git worktree, requires a package.json, verifies the requested
+ * package manager and Node are on PATH, optionally installs dependencies, and runs the repository's
+ * hook-setup script (`node scripts/setup-git-hooks.js`).
+ *
+ * @param packageManager - The package manager executable name used to construct the install command (e.g., "npm", "pnpm", "yarn").
+ * @returns A complete POSIX-compatible bash script as a string. When executed, the script exits with:
+ *          - `0` on success,
+ *          - `1` if not in a git worktree, package.json is missing, or the package manager/Node is not available,
+ *          - `2` for unrecognized command-line arguments.
+ */
 function renderPrepareWorktreeScript(packageManager: string): string {
 	const installCommand = renderInstallCommand(packageManager);
 	return `#!/usr/bin/env bash
