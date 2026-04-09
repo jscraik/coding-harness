@@ -19,6 +19,11 @@ import {
 describe("command registry", () => {
 	it("exposes migrated command names", () => {
 		expect(MIGRATED_COMMAND_NAMES).toEqual([
+			"repo",
+			"gate",
+			"work",
+			"ui",
+			"pilot",
 			"linear",
 			"linear-gate",
 			"pr-template-gate",
@@ -73,6 +78,25 @@ describe("command registry", () => {
 			"pilot-rollback",
 			"pilot-evaluate",
 		]);
+	});
+
+	it("routes grouped gate action to legacy gate implementation", () => {
+		const result = dispatchRegistryCommand("gate", [
+			"gate",
+			"policy",
+			"--json",
+		]);
+		expect(result?.spec.name).toBe("gate");
+	});
+
+	it("routes grouped repo action to legacy repo implementation", () => {
+		const result = dispatchRegistryCommand("repo", [
+			"repo",
+			"contract",
+			"validate",
+			"--json",
+		]);
+		expect(result?.spec.name).toBe("repo");
 	});
 
 	it("resolves alias to policy-gate spec", () => {
@@ -144,6 +168,24 @@ describe("command registry", () => {
 	it("provides unique help rows", () => {
 		const names = getRegistryCommandHelpRows().map((row) => row.name);
 		expect(new Set(names).size).toBe(names.length);
+	});
+
+	it("shows focused help rows by default and legacy rows on demand", () => {
+		const focusedNames = new Set(
+			getRegistryCommandHelpRows().map((row) => row.name),
+		);
+		expect(focusedNames.has("repo")).toBe(true);
+		expect(focusedNames.has("gate")).toBe(true);
+		expect(focusedNames.has("check")).toBe(false);
+		expect(focusedNames.has("policy-gate")).toBe(false);
+
+		const fullNames = new Set(
+			getRegistryCommandHelpRows({ includeLegacy: true }).map(
+				(row) => row.name,
+			),
+		);
+		expect(fullNames.has("check")).toBe(true);
+		expect(fullNames.has("policy-gate")).toBe(true);
 	});
 
 	it("ensures migrated commands exist in README command index", () => {

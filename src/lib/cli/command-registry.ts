@@ -104,7 +104,297 @@ export interface RegistryDispatchResult {
 	result: number | Promise<number>;
 }
 
+interface GroupedActionSpec {
+	command: string;
+	summary: string;
+}
+
+function dispatchRoutedCommand(
+	command: string,
+	args: string[],
+): number | Promise<number> {
+	const routed = dispatchRegistryCommand(command, [command, ...args]);
+	if (!routed) {
+		console.error(
+			`Internal routing error: command "${command}" is not registered.`,
+		);
+		return 1;
+	}
+	return routed.result;
+}
+
+function runGroupedCommand(
+	groupName: string,
+	args: string[],
+	actions: Record<string, GroupedActionSpec>,
+): number | Promise<number> {
+	const action = args[0];
+	if (!action || action.startsWith("-")) {
+		console.error(
+			`${groupName} expects an action: ${Object.keys(actions).join(", ")}.`,
+		);
+		return 2;
+	}
+
+	const normalizedAction = action.toLowerCase();
+	const mapped = actions[normalizedAction];
+	if (!mapped) {
+		console.error(
+			`Unknown ${groupName} action "${action}". Expected: ${Object.keys(actions).join(", ")}.`,
+		);
+		return 2;
+	}
+
+	return dispatchRoutedCommand(mapped.command, args.slice(1));
+}
+
+const REPO_ACTIONS: Record<string, GroupedActionSpec> = {
+	check: {
+		command: "check",
+		summary: "Zero-config repo health snapshot",
+	},
+	doctor: {
+		command: "doctor",
+		summary: "Diagnose installation and environment issues",
+	},
+	health: {
+		command: "health",
+		summary: "Quick service/configuration health check",
+	},
+	init: {
+		command: "init",
+		summary: "Install harness in current repository",
+	},
+	upgrade: {
+		command: "upgrade",
+		summary: "Upgrade harness to latest version",
+	},
+	contract: {
+		command: "contract",
+		summary: "Init/validate/inspect contract",
+	},
+	verify: {
+		command: "verify-work",
+		summary: "Run canonical verification workflow",
+	},
+	eject: {
+		command: "eject",
+		summary: "Remove harness-managed files safely",
+	},
+};
+
+const GATE_ACTIONS: Record<string, GroupedActionSpec> = {
+	policy: {
+		command: "policy-gate",
+		summary: "Policy expectations from changed files",
+	},
+	preflight: {
+		command: "preflight-gate",
+		summary: "Fast checks before expensive operations",
+	},
+	review: {
+		command: "review-gate",
+		summary: "PR review readiness with SHA enforcement",
+	},
+	docs: {
+		command: "docs-gate",
+		summary: "Documentation parity enforcement",
+	},
+	linear: {
+		command: "linear-gate",
+		summary: "Linear-first intake and linking policy",
+	},
+	"pr-template": {
+		command: "pr-template-gate",
+		summary: "PR template completeness and placeholder checks",
+	},
+	license: {
+		command: "license-gate",
+		summary: "Open-source license policy checks",
+	},
+	plan: {
+		command: "plan-gate",
+		summary: "Plan artifact quality checks",
+	},
+	prompt: {
+		command: "prompt-gate",
+		summary: "Prompt template policy checks",
+	},
+	brainstorm: {
+		command: "brainstorm-gate",
+		summary: "Brainstorm artifact checks",
+	},
+	drift: {
+		command: "drift-gate",
+		summary: "Governance drift detection",
+	},
+	memory: {
+		command: "memory-gate",
+		summary: "Local memory workflow compliance checks",
+	},
+	observability: {
+		command: "observability-gate",
+		summary: "Metrics cardinality guardrails",
+	},
+	authz: {
+		command: "check-authz",
+		summary: "Authorization policy checks",
+	},
+	environment: {
+		command: "check-environment",
+		summary: "Pilot environment policy checks",
+	},
+	"local-memory": {
+		command: "local-memory-preflight",
+		summary: "Structured Local Memory smoke checks",
+	},
+};
+
+const WORK_ACTIONS: Record<string, GroupedActionSpec> = {
+	risk: {
+		command: "risk-tier",
+		summary: "Classify changed files by risk tier",
+	},
+	blast: {
+		command: "blast-radius",
+		summary: "Determine checks required by changed files",
+	},
+	simulate: {
+		command: "simulate",
+		summary: "Simulate contract transitions",
+	},
+	replay: {
+		command: "replay",
+		summary: "Replay automation traces",
+	},
+	remediate: {
+		command: "remediate",
+		summary: "Plan/execute deterministic remediation",
+	},
+	automation: {
+		command: "automation-run",
+		summary: "Execute packaged automation runs",
+	},
+	diff: {
+		command: "diff-budget",
+		summary: "Enforce diff budget constraints",
+	},
+	gap: {
+		command: "gap-case",
+		summary: "Open/resolve production gap cases",
+	},
+	gardener: {
+		command: "gardener",
+		summary: "Detect stale docs and broken links",
+	},
+};
+
+const UI_ACTIONS: Record<string, GroupedActionSpec> = {
+	fast: {
+		command: "ui:fast",
+		summary: "Storybook-first local UI loop",
+	},
+	verify: {
+		command: "ui:verify",
+		summary: "Playwright smoke verification with evidence",
+	},
+	explore: {
+		command: "ui:explore",
+		summary: "Agent-browser exploratory testing",
+	},
+};
+
+const PILOT_ACTIONS: Record<string, GroupedActionSpec> = {
+	evaluate: {
+		command: "pilot-evaluate",
+		summary: "Evaluate pilot safety criteria",
+	},
+	rollback: {
+		command: "pilot-rollback",
+		summary: "Roll back pilot to a safe baseline",
+	},
+};
+
+const DEFAULT_HELP_HIDDEN_COMMANDS = new Set<string>([
+	"check",
+	"doctor",
+	"health",
+	"init",
+	"upgrade",
+	"contract",
+	"verify-work",
+	"eject",
+	"policy-gate",
+	"preflight-gate",
+	"review-gate",
+	"docs-gate",
+	"linear-gate",
+	"pr-template-gate",
+	"license-gate",
+	"plan-gate",
+	"prompt-gate",
+	"brainstorm-gate",
+	"drift-gate",
+	"memory-gate",
+	"observability-gate",
+	"check-authz",
+	"check-environment",
+	"local-memory-preflight",
+	"risk-tier",
+	"blast-radius",
+	"simulate",
+	"replay",
+	"remediate",
+	"automation-run",
+	"diff-budget",
+	"gap-case",
+	"gardener",
+	"ui:fast",
+	"ui:verify",
+	"ui:explore",
+	"pilot-evaluate",
+	"pilot-rollback",
+]);
+
 const COMMAND_SPECS: CommandSpec[] = [
+	{
+		name: "repo",
+		summary:
+			"Grouped repo lifecycle commands (check, init, verify, upgrade, contract, eject)",
+		example: "repo check --json",
+		errorLabel: "Repo Command Error",
+		execute: (args) => runGroupedCommand("repo", args, REPO_ACTIONS),
+	},
+	{
+		name: "gate",
+		summary:
+			"Grouped governance/policy gates (policy, preflight, docs, review, drift, etc.)",
+		example: "gate policy --files src/auth.ts --json",
+		errorLabel: "Gate Command Error",
+		execute: (args) => runGroupedCommand("gate", args, GATE_ACTIONS),
+	},
+	{
+		name: "work",
+		summary:
+			"Grouped change-analysis and remediation flows (risk, blast, simulate, replay, remediate)",
+		example: "work blast --files src/auth.ts --json",
+		errorLabel: "Work Command Error",
+		execute: (args) => runGroupedCommand("work", args, WORK_ACTIONS),
+	},
+	{
+		name: "ui",
+		summary: "Grouped UI loops (fast, verify, explore)",
+		example: "ui verify --json",
+		errorLabel: "UI Command Error",
+		execute: (args) => runGroupedCommand("ui", args, UI_ACTIONS),
+	},
+	{
+		name: "pilot",
+		summary: "Grouped pilot lifecycle commands (evaluate, rollback)",
+		example: "pilot evaluate --json",
+		errorLabel: "Pilot Command Error",
+		execute: (args) => runGroupedCommand("pilot", args, PILOT_ACTIONS),
+	},
 	{
 		name: "linear",
 		summary:
@@ -2161,11 +2451,20 @@ export const MIGRATED_COMMAND_AND_ALIAS_NAMES = COMMAND_SPECS.flatMap(
 	(spec) => [spec.name, ...(spec.aliases ?? [])],
 );
 
-export function getRegistryCommandHelpRows(): Array<{
+export interface RegistryCommandHelpOptions {
+	includeLegacy?: boolean;
+}
+
+export function getRegistryCommandHelpRows(
+	options: RegistryCommandHelpOptions = {},
+): Array<{
 	name: string;
 	summary: string;
 }> {
-	return COMMAND_SPECS.map((spec) => ({
+	const includeLegacy = options.includeLegacy ?? false;
+	return COMMAND_SPECS.filter(
+		(spec) => includeLegacy || !DEFAULT_HELP_HIDDEN_COMMANDS.has(spec.name),
+	).map((spec) => ({
 		name: spec.name,
 		summary: spec.summary,
 	}));

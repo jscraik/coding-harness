@@ -30,7 +30,9 @@ process.on("uncaughtException", (error) => {
 	handleFatalError("Uncaught Exception", error);
 });
 
-function printUsage(): void {
+function printUsage(options: { includeLegacyCommands?: boolean } = {}): void {
+	const includeLegacyCommands = options.includeLegacyCommands ?? false;
+
 	console.info("Usage: harness <command> [options]");
 	console.info("");
 	console.info("Start here (minimum viable path):");
@@ -49,14 +51,25 @@ function printUsage(): void {
 		"  Submit for review: harness docs-gate --json && harness review-gate ...",
 	);
 	console.info("");
-	console.info("Commands:");
-	for (const line of renderCommandHelpRows(getRegistryCommandHelpRows())) {
+	console.info(
+		includeLegacyCommands ? "Commands (full):" : "Commands (focused):",
+	);
+	for (const line of renderCommandHelpRows(
+		getRegistryCommandHelpRows({ includeLegacy: includeLegacyCommands }),
+	)) {
 		console.info(line);
+	}
+	if (!includeLegacyCommands) {
+		console.info("");
+		console.info(
+			'  Run "harness --help --all-commands" to view the full legacy command list.',
+		);
 	}
 	console.info("");
 	console.info("Options:");
 	console.info("  --version, -v  Print version");
 	console.info("  --help, -h     Print this help");
+	console.info("  --all-commands Include legacy command list in help output");
 	console.info("");
 	console.info("Agent / Robot Mode:");
 	console.info("  Add --json to any command for structured JSON output.");
@@ -84,6 +97,8 @@ export { parseIntegerArg, parseCsvList };
  */
 export function run(args: string[]): void {
 	const version = getVersion();
+	const includeLegacyCommandsInHelp =
+		args.includes("--all-commands") || args.includes("--all");
 
 	// Handle top-level --version and --help before parsing command
 	// These work even without a command
@@ -97,7 +112,7 @@ export function run(args: string[]): void {
 	// from executing side effects when the user just wants usage text.
 	if (args.includes("--help") || args.includes("-h")) {
 		console.info(`harness v${version}`);
-		printUsage();
+		printUsage({ includeLegacyCommands: includeLegacyCommandsInHelp });
 		return;
 	}
 
