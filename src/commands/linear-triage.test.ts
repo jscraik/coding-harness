@@ -412,6 +412,74 @@ describe("runLinearTriage", () => {
 		expect(client.updateIssue).not.toHaveBeenCalled();
 	});
 
+	it("limits recommendations when projected promotions exceed cycle throughput", async () => {
+		vi.stubEnv("LINEAR_API_KEY", "linear-token");
+		vi.useFakeTimers();
+		vi.setSystemTime(new Date("2026-04-09T09:00:00Z"));
+		client.listTeamIssues.mockResolvedValueOnce([
+			{
+				id: "issue-1",
+				identifier: "JSC-601",
+				title: "Cycle scoped promotion one",
+				url: "https://linear.app/jscraik/issue/JSC-601/example",
+				description:
+					"- impact: 5\n- unblock_value: 5\n- urgency: 4\n- confidence: 3\n- effort: 2",
+				priority: 1,
+				estimate: 2,
+				labels: [{ id: "lane-b", name: "Lane B - Adoption Path" }],
+				cycle: {
+					id: "cycle-1",
+					name: "Cycle 1",
+					number: 1,
+					startsAt: "2026-04-09",
+					endsAt: "2026-04-09",
+				},
+				team: baseTeam,
+				state: { id: "state-triage", name: "Triage", type: "unstarted" },
+			},
+			{
+				id: "issue-2",
+				identifier: "JSC-602",
+				title: "Cycle scoped promotion two",
+				url: "https://linear.app/jscraik/issue/JSC-602/example",
+				description:
+					"- impact: 5\n- unblock_value: 5\n- urgency: 4\n- confidence: 3\n- effort: 2",
+				priority: 1,
+				estimate: 2,
+				labels: [{ id: "lane-b", name: "Lane B - Adoption Path" }],
+				cycle: {
+					id: "cycle-1",
+					name: "Cycle 1",
+					number: 1,
+					startsAt: "2026-04-09",
+					endsAt: "2026-04-09",
+				},
+				team: baseTeam,
+				state: { id: "state-triage", name: "Triage", type: "unstarted" },
+			},
+		]);
+
+		try {
+			const result = await runLinearTriage({
+				team: "JSC",
+				maxPromote: 2,
+			});
+
+			expect(result.ok).toBe(true);
+			if (!result.ok) return;
+			expect(result.output.summary.recommendedPromotions).toBe(1);
+			const secondRecommendation = result.output.recommendations.find(
+				(item) => item.issue.identifier === "JSC-602",
+			);
+			expect(secondRecommendation?.promotable).toBe(false);
+			expect(secondRecommendation?.reasons.join("\n")).toContain(
+				"feasible cycle throughput",
+			);
+		} finally {
+			vi.useRealTimers();
+		}
+	});
+
 	it("resolves dependency guard against full team scope when project filter is set", async () => {
 		vi.stubEnv("LINEAR_API_KEY", "linear-token");
 		client.listTeamIssues.mockResolvedValueOnce([
