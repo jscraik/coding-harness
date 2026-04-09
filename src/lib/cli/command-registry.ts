@@ -109,12 +109,29 @@ interface GroupedActionSpec {
 	summary: string;
 }
 
+/**
+ * Extracts the target registry command names from a record of grouped actions.
+ *
+ * @param actions - A mapping of action keys to their GroupedActionSpec; each spec must include a `command` field identifying the registry command to dispatch to
+ * @returns An array of the `command` values from each provided `GroupedActionSpec`
+ */
 function groupedActionCommands(
 	actions: Record<string, GroupedActionSpec>,
 ): string[] {
 	return Object.values(actions).map((spec) => spec.command);
 }
 
+/**
+ * Route a top-level command name plus args into the registry and return its exit code.
+ *
+ * If the command is not registered, logs an internal routing error to stderr and
+ * returns exit code `1`. Otherwise forwards to the matched command spec and
+ * returns that command's result.
+ *
+ * @param command - The top-level command name to route
+ * @param args - Arguments to pass to the routed command (will be appended after the routed name)
+ * @returns The routed command's exit code, or `1` if the command was not registered
+ */
 function dispatchRoutedCommand(
 	command: string,
 	args: string[],
@@ -129,6 +146,19 @@ function dispatchRoutedCommand(
 	return routed.result;
 }
 
+/**
+ * Dispatches a grouped CLI action to its mapped registry command.
+ *
+ * Validates that the first positional token in `args` exists and is not a flag-like value.
+ * If the action is missing or starts with `-`, logs an error listing valid actions and returns `2`.
+ * If the normalized action name is not present in `actions`, logs an error listing valid actions and returns `2`.
+ * Otherwise forwards execution to the mapped command and returns that command's exit code.
+ *
+ * @param groupName - Name of the group (used in error messages)
+ * @param args - Full argument vector for the grouped command; the first element is treated as the action
+ * @param actions - Mapping of action names (lowercased) to their target command specs
+ * @returns The exit code returned by the dispatched command, or `2` for missing/unknown actions
+ */
 function runGroupedCommand(
 	groupName: string,
 	args: string[],
@@ -2428,6 +2458,13 @@ export interface RegistryCommandHelpOptions {
 	includeLegacy?: boolean;
 }
 
+/**
+ * Builds the list of registry command rows used for help output, optionally including legacy/internal delegated commands.
+ *
+ * @param options - Help generation options.
+ * @param options.includeLegacy - When `true`, include commands whose names are internal delegated targets; when `false` (default), omit those commands from the returned rows.
+ * @returns An array of rows with `name` and `summary` for each command that should appear in help output.
+ */
 export function getRegistryCommandHelpRows(
 	options: RegistryCommandHelpOptions = {},
 ): Array<{

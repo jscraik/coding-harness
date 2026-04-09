@@ -53,7 +53,12 @@ export interface CheckOptions {
 	json?: boolean;
 }
 
-// ─── Individual checks ────────────────────────────────────────────────────────
+/**
+ * Determine whether the given directory contains a Git repository.
+ *
+ * @param dir - Path to the directory to inspect
+ * @returns A `CheckItem` with `id: "git"` and `label: "Git repository"`. When a `.git` directory is present the item has `status: "ok"` and detail `"Found .git — version control active"`. When missing the item has `status: "warn"`, detail `".git not found — some harness features require version control"`, and a suggested `fix: "git init"`.
+ */
 
 function checkGitRepo(dir: string): CheckItem {
 	const hasGit = existsSync(resolve(dir, ".git"));
@@ -74,6 +79,19 @@ function checkGitRepo(dir: string): CheckItem {
 	};
 }
 
+/**
+ * Produces a `CheckItem` describing whether the harness versions in `dir` are coherent.
+ *
+ * Maps the result of `detectHarnessVersionCoherence(dir)` to a check with id `"harness:version-coherence"` and label `"Harness version coherence"`.
+ *
+ * - If coherence status is `"drift"`, the check status is `fail`.
+ * - If coherence status is `"error"`, the check status is `warn`.
+ * - Otherwise the check status is `ok`.
+ * When `detectHarnessVersionCoherence` provides a remediation string, it is included as the check's `fix`.
+ *
+ * @param dir - Path to the repository or project directory to inspect.
+ * @returns A `CheckItem` whose `detail` contains the coherence message and whose `status` reflects the detected coherence state; includes `fix` when a remediation is available.
+ */
 function checkHarnessVersionCoherence(dir: string): CheckItem {
 	const coherence = detectHarnessVersionCoherence(dir);
 	if (coherence.status === "drift") {
@@ -104,6 +122,15 @@ function checkHarnessVersionCoherence(dir: string): CheckItem {
 	};
 }
 
+/**
+ * Produce findings about the presence and schema validity of `harness.contract.json` in the given directory.
+ *
+ * @param dir - Directory to inspect for `harness.contract.json`
+ * @returns An array of `CheckItem` findings:
+ *  - When the contract file is missing: a single `fail` finding recommending `harness contract init`.
+ *  - When the file cannot be parsed as JSON: a single `fail` finding recommending `harness contract validate --json`.
+ *  - When the file is present: an `ok` finding reporting the detected section count and schema version, plus a second finding that is `ok` if validation passes or `fail` (with a recommendation `harness contract validate`) if validation reports errors.
+ */
 function checkContract(dir: string): CheckItem[] {
 	const contractPath = resolve(dir, "harness.contract.json");
 	if (!existsSync(contractPath)) {
@@ -245,7 +272,14 @@ function deriveNextSteps(checks: CheckItem[]): string[] {
 	return steps;
 }
 
-// ─── Core logic ───────────────────────────────────────────────────────────────
+/**
+ * Produce a snapshot report of repository health by running the module's set of checks against a directory.
+ *
+ * Runs the configured checks in a stable order (git repo, harness version coherence, contract, manifest), aggregates their results into counts, determines whether any check failed, and derives recommended next-step commands.
+ *
+ * @param dir - Filesystem path of the target directory to inspect; resolved paths inside checks are relative to this directory.
+ * @returns A CheckReport containing the tool version, inspected directory, ISO timestamp, the array of CheckItem results, aggregated counts, a `hasFailures` flag, and an ordered list of recommended next steps.
+ */
 
 export function runCheck(dir: string): CheckReport {
 	const checks: CheckItem[] = [

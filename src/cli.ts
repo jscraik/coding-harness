@@ -30,6 +30,18 @@ process.on("uncaughtException", (error) => {
 	handleFatalError("Uncaught Exception", error);
 });
 
+/**
+ * Print the CLI usage, examples, and command list to stdout.
+ *
+ * When `options.includeLegacyCommands` is true the full command list (including legacy
+ * commands) is shown; otherwise a focused command list is displayed and a hint is printed
+ * instructing how to view legacy commands.
+ *
+ * This function writes help text and options to stdout/stderr and does not return a value.
+ *
+ * @param options - Optional settings for rendering the help output.
+ * @param options.includeLegacyCommands - If true, include legacy commands in the displayed command list.
+ */
 function printUsage(options: { includeLegacyCommands?: boolean } = {}): void {
 	const includeLegacyCommands = options.includeLegacyCommands ?? false;
 

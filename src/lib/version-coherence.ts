@@ -28,11 +28,29 @@ export interface HarnessVersionCoherenceResult {
 	globalBinaryPath?: string;
 }
 
+/**
+ * Extracts the first semantic version-like string from given text.
+ *
+ * @param output - Text to search (for example, a command's version output)
+ * @returns The matched `major.minor.patch` version (prerelease/build suffixes allowed) without a leading `v` (e.g. `1.2.3` or `1.2.3-alpha.1+meta`), or `undefined` if no version is found
+ */
 function parseHarnessVersion(output: string): string | undefined {
 	const match = output.match(/\bv?(\d+\.\d+\.\d+(?:[-+][A-Za-z0-9.-]+)?)\b/);
 	return match?.[1];
 }
 
+/**
+ * Executes a program with the given arguments and captures its stdout and stderr.
+ *
+ * Runs the specified command and returns a ProbeOutput describing whether the
+ * invocation succeeded. On success `ok` is `true` and `output` contains the
+ * combined stdout and stderr (trimmed). On failure `ok` is `false` and
+ * `errorMessage` contains the spawn error message or the numeric exit status.
+ *
+ * @param command - The executable name or path to run
+ * @param args - Arguments to pass to the command
+ * @returns A ProbeOutput indicating success with `output`, or failure with `errorMessage`
+ */
 function probeCommand(command: string, args: string[]): ProbeOutput {
 	const result = spawnSync(command, args, {
 		encoding: "utf-8",
@@ -51,6 +69,12 @@ function probeCommand(command: string, args: string[]): ProbeOutput {
 	};
 }
 
+/**
+ * Determines whether an executable with the given name can be found on the system PATH.
+ *
+ * @param command - The program name to look up (e.g., `"node"`, `"harness"`).
+ * @returns `true` if the command is discoverable on PATH, `false` otherwise.
+ */
 function commandExists(command: string): boolean {
 	const probe = probeCommand(process.platform === "win32" ? "where" : "which", [
 		command,
@@ -58,6 +82,12 @@ function commandExists(command: string): boolean {
 	return probe.ok;
 }
 
+/**
+ * Locate an executable on PATH and return its first discovered filesystem path.
+ *
+ * @param command - The command name to locate (e.g., "node" or "harness")
+ * @returns The first filesystem path to `command` as reported by the platform locator, or `undefined` if the command cannot be found or probing fails
+ */
 function resolveCommandPath(command: string): string | undefined {
 	const probe = probeCommand(process.platform === "win32" ? "where" : "which", [
 		command,
@@ -69,6 +99,14 @@ function resolveCommandPath(command: string): string | undefined {
 	return firstLine && firstLine.length > 0 ? firstLine : undefined;
 }
 
+/**
+ * Detects a repository-local harness runner and returns the probe info needed to invoke it.
+ *
+ * Checks common repo-local runner locations (in order: src/cli.ts via `pnpm exec tsx`, dist/cli.js via `node`, and scripts/harness-cli.sh via `bash`) and returns a LocalRunnerProbe describing the discovered runner and a suggested remediation command.
+ *
+ * @param cwd - Filesystem directory to inspect for a repo-local runner
+ * @returns A LocalRunnerProbe for the first discovered repo-local runner, or `undefined` if no candidate is found
+ */
 function detectRepoLocalRunner(cwd: string): LocalRunnerProbe | undefined {
 	const sourceCliPath = resolve(cwd, "src/cli.ts");
 	if (existsSync(sourceCliPath) && commandExists("pnpm")) {
@@ -106,6 +144,18 @@ function detectRepoLocalRunner(cwd: string): LocalRunnerProbe | undefined {
 	return undefined;
 }
 
+/**
+ * Detects whether a repository-local "harness" runner is present and, if so, compares its version to a global `harness` binary on PATH.
+ *
+ * Probes for a repo-local runner (e.g., source, dist, or wrapper script), reads and parses its version, optionally locates and probes a global `harness` executable, and returns a structured result describing coherence or problems. Possible `status` values:
+ * - `"skip"`: no repo-local runner was found in `cwd`.
+ * - `"ok"`: either repo-local and global versions match, or a repo-local version exists and no global binary was found.
+ * - `"drift"`: repo-local and global versions were both determined but differ.
+ * - `"error"`: a probe or version parse failed and the module could not determine a required version.
+ *
+ * @param cwd - Filesystem directory to inspect for a repo-local harness runner. Defaults to the current working directory.
+ * @returns A `HarnessVersionCoherenceResult` describing the outcome, including human-readable `message`, optional `remediation`, and available version/path fields (`repoLocalVersion`, `repoLocalOriginPath`, `globalVersion`, `globalBinaryPath`).
+ */
 export function detectHarnessVersionCoherence(
 	cwd = process.cwd(),
 ): HarnessVersionCoherenceResult {
