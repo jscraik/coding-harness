@@ -86,7 +86,7 @@ Each entry in `.harness/ci-required-checks.json` supports optional canonical orc
       "requiredOnEvents": ["pull_request", "merge_group"],
       "freshnessWindowDays": 7,
       "class": "required",
-      "githubCheckName": "harness-gates",
+      "githubCheckName": "pr-pipeline",
       "gateId": "docs-gate",
       "executionClass": "serial_guarded",
       "failureClassDefault": "contract_policy",
@@ -111,6 +111,8 @@ Use `harness doctor` to verify that all `githubCheckName` values match what the 
 ## Orchestration metadata
 
 `verify-work` and `doctor` now consume one normalized projection of `.harness/ci-required-checks.json` for gate identity and check-alignment terms.
+
+For this repository, keep `githubCheckName: "pr-pipeline"` for CircleCI workflow-backed harness checks to preserve required-check naming continuity.
 
 The normalized identity tuple is:
 
@@ -166,11 +168,12 @@ GHA reports **one check run per job** under the workflow:
 
 ### CircleCI (default setup)
 
-Add only these to GitHub branch protection rulesets:
+Add these to GitHub branch protection rulesets:
 
 ```
-pr-pipeline     ← main CI workflow
-harness-gates   ← harness gate workflow
+pr-pipeline     ← CircleCI workflow-level check context for harness checks
+security-scan   ← GitHub Actions security check context
+CodeRabbit      ← CodeRabbit review check context
 ```
 
 Run `harness branch-protect` to apply via the contract.
@@ -198,7 +201,8 @@ Or workflow-level fan-in names if you use a status aggregation job.
 harness ci-migrate status --provider circleci
 # Output includes:
 #   GitHub branch protection check: pr-pipeline
-#   GitHub branch protection check: harness-gates
+#   GitHub branch protection check: security-scan
+#   GitHub branch protection check: CodeRabbit
 ```
 
 `harness ci-migrate bootstrap` seeds `.harness/ci-required-checks.json` and adds `githubCheckName` metadata automatically for the target provider.
