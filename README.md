@@ -25,6 +25,7 @@ The shortest honest description of the project today is:
 ## Table of Contents
 
 - [Start Here](#start-here)
+- [Lite Mode (Solo And Small Team)](#lite-mode-solo-and-small-team)
 - [Why Teams Use It](#why-teams-use-it)
 - [What It Is Best At Today](#what-it-is-best-at-today)
 - [Security Posture Baseline](#security-posture-baseline)
@@ -46,7 +47,7 @@ The shortest honest description of the project today is:
 
 ## Start Here
 
-Get from zero to a governed, agent-ready repository in five steps:
+Get from zero to a governed, agent-ready repository in five steps (standard path):
 
 ```bash
 # 1. Install
@@ -72,6 +73,36 @@ That is the minimum viable path. The three most common workflows beyond this are
 - **[Submit a change for review](#hero-workflow-3-submit-a-change-for-review)** — docs-gate, review-gate, linear sync
 
 For CI migration, pilot evaluation, or workflow contracts, see the [advanced workflows](#advanced-migrate-ci-with-rollback-and-proof) below.
+
+## Lite Mode (Solo And Small Team)
+
+Use lite mode when you want a low-friction setup first and governance depth later.
+
+```bash
+# 1. Minimal scaffold for solo/small-team adoption
+harness init --minimal --track
+
+# 2. Minimal policy contract (alias of minimal)
+harness contract init --preset lite --force
+
+# 3. Validate and inspect quickly
+harness contract validate
+harness check --json
+```
+
+Lite mode intentionally omits heavier surfaces such as docs-drift policy, diff
+budget policy, evidence policy defaults, and full governance policy sections.
+It keeps the contract focused on gate dispatch essentials.
+
+Upgrade path from lite to standard:
+
+```bash
+harness contract init --preset standard --force
+harness contract validate
+```
+
+That upgrade preserves your lightweight adoption start while adding the
+recommended default policy layers for team-scale operation.
 
 ## Why Teams Use It
 

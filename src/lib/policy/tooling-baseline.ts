@@ -6,12 +6,6 @@ export const TOOLING_MAKEFILE_PATH = "Makefile" as const;
 export const TOOLING_PACKAGE_JSON_PATH = "package.json" as const;
 export const TOOLING_PREK_CONFIG_PATH = "prek.toml" as const;
 
-export const REQUIRED_SIMPLE_GIT_HOOKS = {
-	"pre-commit": "make hooks-pre-commit",
-	"commit-msg": "node scripts/validate-commit-msg.js $1",
-	"pre-push": "make hooks-pre-push",
-} as const;
-
 export const REQUIRED_PREK_HOOKS = {
 	"pre-commit": ["make hooks-pre-commit"],
 	"pre-push": ["make hooks-pre-push"],
@@ -264,6 +258,7 @@ export const REQUIRED_MAKEFILE_TARGETS = [
 	"hooks",
 	"hooks-pre-commit",
 	"hooks-pre-push",
+	"hooks-commit-msg",
 	"secrets-staged",
 	"docs-style-changed",
 	"related-tests",
@@ -293,6 +288,7 @@ export const REQUIRED_HOOK_SUPPORT_FILES = [
 	"scripts/verify-work.sh",
 	"scripts/validate-codestyle.sh",
 	"scripts/prepare-worktree.sh",
+	"scripts/validate-commit-msg.js",
 	"scripts/check-staged-secrets.sh",
 	"scripts/check-doc-style.sh",
 	"scripts/check-related-tests.sh",

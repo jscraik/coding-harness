@@ -77,9 +77,11 @@ For repositories with UI or ChatGPT Apps SDK dependency signals, `toolingPolicy.
 
 The local hook contract is intentionally split by drag profile:
 
+- `prek install` is the only supported hook installer path. Repositories should not keep legacy `simple-git-hooks` package metadata or post-install bootstraps once they migrate.
 - `pre-commit` stays fast and now adds staged `gitleaks`, staged-doc `vale`, and `vitest related` alongside `lint`, `docs:lint`, and `typecheck`.
 - The staged secret scan should use the repo-root `.gitleaks.toml` when present so fixture/example allow lists live in version control instead of hidden local defaults.
 - `pre-push` keeps the heavier governance lane and now adds a narrow changed-files `semgrep` scan for `src/**` plus `pnpm build` before `audit`.
+- `hooks-commit-msg` is the canonical wrapper target for commit-message policy checks. Keep it available even though `prek.toml` installs only `pre-commit` and `pre-push`.
 - The Semgrep lane is path-filtered to changed implementation files under `src/**` and uses the local ruleset at `scripts/semgrep-pre-push.yml` to avoid turning pre-push into a full repo scan.
 - `scripts/check-semgrep-changed.sh` should pin and execute the same Semgrep version used by `.github/workflows/secret-scan.yml` (`semgrep==1.153.1`) so local and CI security findings do not drift.
 - OpenSSF scorecard posture drift is tracked by `.github/workflows/openssf-scorecard.yml` and evaluated against `security/openssf-scorecard-policy.json` via `scripts/check-scorecard-regressions.mjs`; keep these three surfaces aligned when scorecard policy changes.

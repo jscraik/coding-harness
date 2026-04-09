@@ -1222,14 +1222,15 @@ describe("runInit", () => {
 			expect(validateCommitMsg).toContain(
 				"Co-authored-by: Codex <noreply@openai.com>",
 			);
+			expect(setupHooks).toContain("Installing prek git hooks");
+			expect(setupHooks).toContain('execFileSync("prek", ["install"]');
+			expect(setupHooks).toContain(
+				'"Error: scripts/validate-commit-msg.js is required for commit message validation."',
+			);
 			expect(setupHooks).toContain("make hooks-pre-commit");
 			expect(setupHooks).toContain("make hooks-pre-push");
-			expect(setupHooks).toContain(
-				'"secrets:staged": "bash scripts/check-staged-secrets.sh"',
-			);
-			expect(setupHooks).toContain(
-				'"semgrep:changed": "bash scripts/check-semgrep-changed.sh"',
-			);
+			expect(setupHooks).toContain("make hooks-commit-msg");
+			expect(setupHooks).not.toContain("simple-git-hooks");
 			expect(stagedSecrets).toContain("gitleaks git");
 			expect(stagedSecrets).toContain("--staged");
 			expect(docStyle).toContain("vale --config .vale.ini");
@@ -1263,6 +1264,9 @@ describe("runInit", () => {
 			expect(makefile).toContain(
 				"hooks-pre-push: ## Run local pre-push governance gates before pushing",
 			);
+			expect(makefile).toContain(
+				"hooks-commit-msg: ## Validate commit message policy (use HOOK_COMMIT_MSG or MSG_FILE=/path)",
+			);
 			expect(makefile).toContain("\t$(MAKE) secrets-staged");
 			expect(makefile).toContain("\t$(MAKE) docs-style-changed");
 			expect(makefile).toContain("\t$(MAKE) related-tests");
@@ -1281,10 +1285,15 @@ describe("runInit", () => {
 			expect(makefile).toContain(
 				"diagrams-check: ## Refresh architecture diagrams when sensitive paths change and fail on drift",
 			);
-			expect(prek).toContain("pre-commit = [");
+			expect(prek).toContain(
+				'default_install_hook_types = ["pre-commit", "pre-push"]',
+			);
+			expect(prek).toContain("[[repos.hooks]]");
+			expect(prek).toContain('id = "pre-commit"');
 			expect(prek).toContain("make hooks-pre-commit");
-			expect(prek).toContain("pre-push = [");
+			expect(prek).toContain('id = "pre-push"');
 			expect(prek).toContain("make hooks-pre-push");
+			expect(prek).toContain('stages = ["pre-push"]');
 			expect(miseToml).toContain('"cargo:prek" = "0.3.4"');
 			expect(miseToml).toContain('"npm:@brainwav/diagram" = "1.0.8"');
 			expect(miseToml).toContain('"npm:@argos-ci/cli" = "4.1.1"');
@@ -1327,9 +1336,9 @@ describe("runInit", () => {
 			expect(prepareWorktree).toContain(
 				"Prepare a freshly created git worktree for local hooks and pre-push checks.",
 			);
-			expect(prepareWorktree).toContain("git rev-parse --git-common-dir");
+			expect(prepareWorktree).not.toContain("core.hooksPath");
 			expect(prepareWorktree).toContain("node scripts/setup-git-hooks.js");
-			expect(prepareWorktree).toContain("simple-git-hooks binary not found");
+			expect(prepareWorktree).not.toContain("simple-git-hooks");
 			expect(codexLearn).toContain(
 				"Usage: codex-learn [--scope auto|global|repo] <command>",
 			);
@@ -1358,6 +1367,10 @@ describe("runInit", () => {
 			expect(environmentCheck).toContain('"agentation"');
 			expect(environmentCheck).toContain('"mermaid-cli"');
 			expect(environmentCheck).toContain('"rsearch"');
+			expect(environmentCheck).toContain('"hooks-commit-msg"');
+			expect(environmentCheck).toContain(
+				"legacy simple-git-hooks config must be removed",
+			);
 			expect(environmentCheck).toContain('"wsearch"');
 			expect(environmentCheck).toContain('"wrangler"');
 			expect(environmentCheck).not.toMatch(
@@ -1425,7 +1438,10 @@ describe("runInit", () => {
 			expect(environmentCheck).toContain(
 				'"semgrep:changed|bash scripts/check-semgrep-changed.sh"',
 			);
-			expect(environmentCheck).toContain("required_simple_git_hooks=(");
+			expect(environmentCheck).not.toContain("required_simple_git_hooks=(");
+			expect(environmentCheck).toContain(
+				`if jq -e 'has("simple-git-hooks")' "$PACKAGE_JSON_PATH" >/dev/null; then`,
+			);
 			expect(environmentCheck).toContain('"check"');
 			expect(environmentCheck).toContain('"env-check"');
 			expect(environmentCheck).toContain('"hooks-pre-commit"');
