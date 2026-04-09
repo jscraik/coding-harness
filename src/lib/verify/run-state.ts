@@ -554,6 +554,13 @@ export function loadVerifyRunMetadata(
 		throw new RunStateError(`Missing run.json for ${runId}`, "E_IO");
 	}
 	const parsed = readJsonObject(paths.runPath);
+	const parsedRunId = asString(parsed.runId, "runId");
+	if (parsedRunId !== runId) {
+		throw new RunStateError(
+			`Mismatched runId: ${parsedRunId} != ${runId}`,
+			"E_VALIDATION",
+		);
+	}
 	const lane = toObject(parsed.lane);
 	const finishedAt = asOptionalString(parsed.finishedAt);
 	const identityTupleHash = asOptionalString(parsed.identityTupleHash);
@@ -562,7 +569,7 @@ export function loadVerifyRunMetadata(
 		identityTupleHash !== undefined ? { identityTupleHash } : {};
 
 	return {
-		runId: asString(parsed.runId, "runId"),
+		runId: parsedRunId,
 		mode: (() => {
 			const mode = asString(parsed.mode, "mode");
 			if (mode === "fresh" || mode === "resume") {
@@ -628,6 +635,13 @@ export function loadVerifyRunSummary(
 		throw new RunStateError(`Missing summary.json for ${runId}`, "E_IO");
 	}
 	const parsed = readJsonObject(paths.summaryPath);
+	const parsedRunId = asString(parsed.runId, "runId");
+	if (parsedRunId !== runId) {
+		throw new RunStateError(
+			`Mismatched runId: ${parsedRunId} != ${runId}`,
+			"E_VALIDATION",
+		);
+	}
 	const overallStatus = asString(parsed.overallStatus, "overallStatus");
 	if (
 		overallStatus !== "passed" &&
@@ -649,7 +663,7 @@ export function loadVerifyRunSummary(
 	}
 
 	return {
-		runId: asString(parsed.runId, "runId"),
+		runId: parsedRunId,
 		overallStatus,
 		failedGateId:
 			parsed.failedGateId === null
@@ -689,7 +703,20 @@ export function loadVerifyGateResult(
 			"E_IO",
 		);
 	}
-	return parseLoadedGateResult(gatePath);
+	const loaded = parseLoadedGateResult(gatePath);
+	if (loaded.runId !== runId) {
+		throw new RunStateError(
+			`Mismatched runId: ${loaded.runId ?? "<missing>"} != ${runId}`,
+			"E_VALIDATION",
+		);
+	}
+	if (loaded.gateId !== gateId) {
+		throw new RunStateError(
+			`Mismatched gateId: ${loaded.gateId} != ${gateId}`,
+			"E_VALIDATION",
+		);
+	}
+	return loaded;
 }
 
 /**

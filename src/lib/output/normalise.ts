@@ -513,6 +513,37 @@ export function normaliseLinearGateResult(
 	}
 
 	const failingChecks = result.output.checks.filter((c) => !c.passed);
+	if (!result.output.passed && failingChecks.length === 0) {
+		const finding: GateFinding = {
+			id: "linear-gate.result.internal",
+			severity: "error",
+			gate,
+			message:
+				"Linear gate reported passed=false but provided no failing checks; treating payload as a contract violation.",
+			baseline: false,
+			fix: {
+				...(failure ? { manual: failure.nextAction } : {}),
+				suppressible: false,
+			},
+		};
+		return {
+			gate,
+			version,
+			timestamp,
+			status: "fail",
+			findings: [finding],
+			summary: { errors: 1, warnings: 0, info: 0, total: 1 },
+			...(failure
+				? {
+						meta: {
+							failureClass: failure.failureClass,
+							nextAction: failure.nextAction,
+						},
+					}
+				: {}),
+		};
+	}
+
 	const findings: GateFinding[] = failingChecks.map((c) => ({
 		id: `linear-gate.check.${c.code}`,
 		severity: "error" as const,

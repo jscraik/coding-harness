@@ -1,4 +1,11 @@
-import { existsSync, mkdtempSync, rmSync, utimesSync } from "node:fs";
+import {
+	existsSync,
+	mkdtempSync,
+	readFileSync,
+	rmSync,
+	utimesSync,
+	writeFileSync,
+} from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
@@ -305,6 +312,29 @@ describe("verify run-state — load functions", () => {
 		});
 	});
 
+	it("throws RunStateError E_VALIDATION when run.json runId does not match requested runId", () => {
+		const metadata = { ...baseMetadata, repoRoot };
+		writeVerifyRunMetadata(repoRoot, metadata);
+		const { runPath } = resolveVerifyRunPaths(repoRoot, metadata.runId);
+		const raw = JSON.parse(readFileSync(runPath, "utf-8")) as Record<
+			string,
+			unknown
+		>;
+		writeFileSync(
+			runPath,
+			`${JSON.stringify({ ...raw, runId: "run-load-mismatch" }, null, 2)}\n`,
+			"utf-8",
+		);
+
+		try {
+			loadVerifyRunMetadata(repoRoot, metadata.runId);
+			throw new Error("Expected error");
+		} catch (err) {
+			expect(err).toBeInstanceOf(RunStateError);
+			expect((err as RunStateError).code).toBe("E_VALIDATION");
+		}
+	});
+
 	it("throws RunStateError E_IO when run.json does not exist", () => {
 		try {
 			loadVerifyRunMetadata(repoRoot, "run-does-not-exist");
@@ -331,6 +361,36 @@ describe("verify run-state — load functions", () => {
 		expect(loaded.overallStatus).toBe("failed");
 		expect(loaded.failedGateId).toBe("lint");
 		expect(loaded.durationMs).toBe(5000);
+	});
+
+	it("throws RunStateError E_VALIDATION when summary.json runId does not match requested runId", () => {
+		const runId = "run-load-002";
+		const summary = {
+			runId,
+			overallStatus: "failed" as const,
+			failedGateId: "lint",
+			freshVsResumed: "fresh" as const,
+			durationMs: 5000,
+		};
+		writeVerifyRunSummary(repoRoot, runId, summary);
+		const { summaryPath } = resolveVerifyRunPaths(repoRoot, runId);
+		const raw = JSON.parse(readFileSync(summaryPath, "utf-8")) as Record<
+			string,
+			unknown
+		>;
+		writeFileSync(
+			summaryPath,
+			`${JSON.stringify({ ...raw, runId: "run-load-other" }, null, 2)}\n`,
+			"utf-8",
+		);
+
+		try {
+			loadVerifyRunSummary(repoRoot, runId);
+			throw new Error("Expected error");
+		} catch (err) {
+			expect(err).toBeInstanceOf(RunStateError);
+			expect((err as RunStateError).code).toBe("E_VALIDATION");
+		}
 	});
 
 	it("throws RunStateError E_IO when summary.json does not exist", () => {
@@ -363,6 +423,78 @@ describe("verify run-state — load functions", () => {
 		expect(loaded.gateId).toBe("lint");
 		expect(loaded.status).toBe("passed");
 		expect(loaded.attempt).toBe(1);
+	});
+
+	it("throws RunStateError E_VALIDATION when gate result runId does not match requested runId", () => {
+		const runId = "run-load-003";
+		const gateResult = {
+			runId,
+			gateId: "lint",
+			executionClass: "read_only_parallel" as const,
+			attempt: 1,
+			status: "passed" as const,
+			failureClass: "transient_infra" as const,
+			startedAt: "2026-04-09T09:00:01.000Z",
+			finishedAt: "2026-04-09T09:00:05.000Z",
+			nextAction: "continue",
+			exitCode: 0,
+		};
+		writeVerifyGateResult(repoRoot, runId, gateResult);
+		const { gatesDir } = resolveVerifyRunPaths(repoRoot, runId);
+		const gatePath = join(gatesDir, "lint.json");
+		const raw = JSON.parse(readFileSync(gatePath, "utf-8")) as Record<
+			string,
+			unknown
+		>;
+		writeFileSync(
+			gatePath,
+			`${JSON.stringify({ ...raw, runId: "run-load-other" }, null, 2)}\n`,
+			"utf-8",
+		);
+
+		try {
+			loadVerifyGateResult(repoRoot, runId, "lint");
+			throw new Error("Expected error");
+		} catch (err) {
+			expect(err).toBeInstanceOf(RunStateError);
+			expect((err as RunStateError).code).toBe("E_VALIDATION");
+		}
+	});
+
+	it("throws RunStateError E_VALIDATION when gate result gateId does not match requested gateId", () => {
+		const runId = "run-load-003";
+		const gateResult = {
+			runId,
+			gateId: "lint",
+			executionClass: "read_only_parallel" as const,
+			attempt: 1,
+			status: "passed" as const,
+			failureClass: "transient_infra" as const,
+			startedAt: "2026-04-09T09:00:01.000Z",
+			finishedAt: "2026-04-09T09:00:05.000Z",
+			nextAction: "continue",
+			exitCode: 0,
+		};
+		writeVerifyGateResult(repoRoot, runId, gateResult);
+		const { gatesDir } = resolveVerifyRunPaths(repoRoot, runId);
+		const gatePath = join(gatesDir, "lint.json");
+		const raw = JSON.parse(readFileSync(gatePath, "utf-8")) as Record<
+			string,
+			unknown
+		>;
+		writeFileSync(
+			gatePath,
+			`${JSON.stringify({ ...raw, gateId: "typecheck" }, null, 2)}\n`,
+			"utf-8",
+		);
+
+		try {
+			loadVerifyGateResult(repoRoot, runId, "lint");
+			throw new Error("Expected error");
+		} catch (err) {
+			expect(err).toBeInstanceOf(RunStateError);
+			expect((err as RunStateError).code).toBe("E_VALIDATION");
+		}
 	});
 
 	it("throws RunStateError E_IO when gate result does not exist", () => {

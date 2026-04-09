@@ -528,6 +528,26 @@ describe("normaliseLinearGateResult (P4 governance failure classification)", () 
 		expect(result.summary.total).toBe(2);
 	});
 
+	it("fails closed when payload says passed=false but provides no failing checks", () => {
+		const result = normaliseLinearGateResult(
+			makeLinearGateResult({
+				output: {
+					passed: false,
+					checks: [],
+				},
+			}),
+		);
+
+		expect(result.status).toBe("fail");
+		expect(result.meta).toMatchObject({
+			failureClass: "contract_policy",
+			nextAction: "Fix contract/policy mismatch, then rerun linear-gate.",
+		});
+		expect(result.findings.length).toBeGreaterThan(0);
+		expect(result.findings[0]?.id).toBe("linear-gate.result.internal");
+		expect(result.summary.errors).toBeGreaterThan(0);
+	});
+
 	it("sets errorCode in meta for ok:false result", () => {
 		const result = normaliseLinearGateResult(
 			makeLinearGateResult({
