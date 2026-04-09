@@ -6,6 +6,7 @@ import {
 	orchestrateVerifyLifecycle,
 	transitionLifecycle,
 } from "./orchestrator.js";
+import type { VerifyGateFailureClass } from "./run-state.js";
 
 function gateFixture(
 	overrides: Partial<NormalizedGateDefinition>,
@@ -150,6 +151,237 @@ describe("verify orchestrator", () => {
 		);
 	});
 
+	it("fails when there are no enabled gates", async () => {
+		const result = await orchestrateVerifyLifecycle({
+			gates: [],
+			runner: createRunner({}),
+		});
+		expect(result.finalState).toBe("S_FAIL");
+		expect(result.overallStatus).toBe("failed");
+		expect(result.resumeFromGateId).toBeNull();
+		expect(result.transitions[0]?.event).toBe("CONTRACT_FAIL");
+		expect(result.transitions[0]?.reason).toBe("no_enabled_gates");
+	});
+
+	it("fails when all gates are disabled", async () => {
+		const result = await orchestrateVerifyLifecycle({
+			gates: [
+				gateFixture({ gateId: "lint", enabled: false }),
+				gateFixture({ gateId: "typecheck", enabled: false }),
+			],
+			runner: createRunner({}),
+		});
+		expect(result.finalState).toBe("S_FAIL");
+		expect(result.overallStatus).toBe("failed");
+	});
+
+	it("fails when all enabled gates are read-only (no serial-guarded gates)", async () => {
+		const result = await orchestrateVerifyLifecycle({
+			gates: [
+				gateFixture({
+					gateId: "lint",
+					executionClass: "read_only_parallel",
+					order: 1,
+				}),
+			],
+			runner: createRunner({
+				lint: [{ status: "passed", exitCode: 0, nextAction: "continue" }],
+			}),
+		});
+		expect(result.finalState).toBe("S_FAIL");
+		expect(result.overallStatus).toBe("failed");
+		const contractFail = result.transitions.find(
+			(t) => t.event === "CONTRACT_FAIL",
+		);
+		expect(contractFail?.reason).toBe("no_serial_guarded_gates");
+	});
+
+	it("returns failed with resumeFromGateId when a read-only gate fails", async () => {
+		const result = await orchestrateVerifyLifecycle({
+			gates: [
+				gateFixture({
+					gateId: "lint",
+					executionClass: "read_only_parallel",
+					failureClassDefault: "contract_policy",
+					order: 1,
+				}),
+				gateFixture({
+					gateId: "policy-gate",
+					executionClass: "serial_guarded",
+					order: 2,
+				}),
+			],
+			runner: createRunner({
+				lint: [
+					{
+						status: "failed",
+						exitCode: 1,
+						nextAction: "fix lint",
+						failureClass: "contract_policy" as VerifyGateFailureClass,
+					},
+				],
+			}),
+		});
+		expect(result.finalState).toBe("S_FAIL");
+		expect(result.overallStatus).toBe("failed");
+		expect(result.resumeFromGateId).toBe("lint");
+		expect(result.transitions.map((t) => t.event)).toContain(
+			"READ_ONLY_BATCH_FAILED",
+		);
+	});
+
+	it("returns failed with resumeFromGateId when a serial gate fails", async () => {
+		const result = await orchestrateVerifyLifecycle({
+			gates: [
+				gateFixture({
+					gateId: "policy-gate",
+					executionClass: "serial_guarded",
+					failureClassDefault: "contract_policy",
+					order: 1,
+				}),
+				gateFixture({
+					gateId: "linear-gate",
+					executionClass: "serial_guarded",
+					failureClassDefault: "contract_policy",
+					order: 2,
+				}),
+			],
+			runner: createRunner({
+				"policy-gate": [
+					{ status: "passed", exitCode: 0, nextAction: "continue" },
+				],
+				"linear-gate": [
+					{
+						status: "failed",
+						exitCode: 1,
+						nextAction: "fix linear policy",
+						failureClass: "contract_policy" as VerifyGateFailureClass,
+					},
+				],
+			}),
+		});
+		expect(result.finalState).toBe("S_FAIL");
+		expect(result.overallStatus).toBe("failed");
+		expect(result.resumeFromGateId).toBe("linear-gate");
+		expect(result.transitions.map((t) => t.event)).toContain("SERIAL_GATE_FAILED");
+	});
+
+	it("returns blocked with resumeFromGateId when a serial gate is blocked", async () => {
+		const result = await orchestrateVerifyLifecycle({
+			gates: [
+				gateFixture({
+					gateId: "policy-gate",
+					executionClass: "serial_guarded",
+					order: 1,
+				}),
+			],
+			runner: createRunner({
+				"policy-gate": [
+					{ status: "blocked", exitCode: 1, nextAction: "waiting for approval" },
+				],
+			}),
+		});
+		expect(result.finalState).toBe("S4_BLOCKED");
+		expect(result.overallStatus).toBe("blocked");
+		expect(result.resumeFromGateId).toBe("policy-gate");
+		expect(result.transitions.map((t) => t.event)).toContain("SERIAL_GATE_BLOCKED");
+	});
+
+	it("throws when maxParallelism is zero", async () => {
+		await expect(
+			orchestrateVerifyLifecycle({
+				gates: [gateFixture({ gateId: "lint", executionClass: "serial_guarded" })],
+				runner: createRunner({}),
+				maxParallelism: 0,
+			}),
+		).rejects.toThrow("maxParallelism must be a positive integer");
+	});
+
+	it("throws when maxAttempts is zero", async () => {
+		await expect(
+			orchestrateVerifyLifecycle({
+				gates: [gateFixture({ gateId: "lint", executionClass: "serial_guarded" })],
+				runner: createRunner({}),
+				maxAttempts: 0,
+			}),
+		).rejects.toThrow("maxAttempts must be a positive integer");
+	});
+
+	it("handles runner throwing an error and returns failed with internal_unknown", async () => {
+		let calls = 0;
+		const throwingRunner: VerifyGateRunner = async () => {
+			calls++;
+			throw new Error("Runner crashed unexpectedly");
+		};
+		const result = await orchestrateVerifyLifecycle({
+			gates: [
+				gateFixture({
+					gateId: "policy-gate",
+					executionClass: "serial_guarded",
+					failureClassDefault: "contract_policy",
+					order: 1,
+				}),
+			],
+			runner: throwingRunner,
+			maxAttempts: 1,
+		});
+		expect(result.finalState).toBe("S_FAIL");
+		expect(result.overallStatus).toBe("failed");
+		expect(result.gateResults[0]?.failureClass).toBe("internal_unknown");
+		expect(result.gateResults[0]?.status).toBe("failed");
+		expect(calls).toBeGreaterThanOrEqual(1);
+	});
+
+	it("filters disabled gates and only runs enabled gates", async () => {
+		let lintRan = false;
+		const trackingRunner: VerifyGateRunner = async ({ gate }) => {
+			if (gate.gateId === "lint") lintRan = true;
+			return { status: "passed", exitCode: 0, nextAction: "continue" };
+		};
+		const result = await orchestrateVerifyLifecycle({
+			gates: [
+				gateFixture({ gateId: "lint", enabled: false, executionClass: "read_only_parallel", order: 1 }),
+				gateFixture({ gateId: "policy-gate", enabled: true, executionClass: "serial_guarded", order: 2 }),
+			],
+			runner: trackingRunner,
+		});
+		expect(lintRan).toBe(false);
+		expect(result.finalState).toBe("S5_DONE");
+		expect(result.gateResults).toHaveLength(1);
+		expect(result.gateResults[0]?.gateId).toBe("policy-gate");
+	});
+
+	it("sorts gates by order and then by gateId when order ties", async () => {
+		const runOrder: string[] = [];
+		const trackingRunner: VerifyGateRunner = async ({ gate }) => {
+			runOrder.push(gate.gateId);
+			return { status: "passed", exitCode: 0, nextAction: "continue" };
+		};
+		await orchestrateVerifyLifecycle({
+			gates: [
+				gateFixture({ gateId: "z-gate", executionClass: "serial_guarded", order: 2 }),
+				gateFixture({ gateId: "a-gate", executionClass: "serial_guarded", order: 1 }),
+				gateFixture({ gateId: "b-gate", executionClass: "serial_guarded", order: 2 }),
+			],
+			runner: trackingRunner,
+		});
+		expect(runOrder[0]).toBe("a-gate");
+		expect(runOrder[1]).toBe("b-gate");
+		expect(runOrder[2]).toBe("z-gate");
+	});
+
+	it("records resumeFromGateId as null when all gates pass", async () => {
+		const result = await orchestrateVerifyLifecycle({
+			gates: [
+				gateFixture({ gateId: "policy-gate", executionClass: "serial_guarded", order: 1 }),
+			],
+			runner: createRunner({
+				"policy-gate": [{ status: "passed", exitCode: 0, nextAction: "continue" }],
+			}),
+		});
+		expect(result.resumeFromGateId).toBeNull();
+	});
+
 	it("is deterministic across repeated fresh-mode executions", async () => {
 		const gates: NormalizedGateDefinition[] = [
 			gateFixture({
@@ -199,5 +431,95 @@ describe("verify orchestrator", () => {
 			first.gateResults.find((gate) => gate.gateId === "lint")?.attempts,
 		).toBe(2);
 		expect(first.finalState).toBe("S5_DONE");
+	});
+});
+
+describe("transitionLifecycle state machine", () => {
+	it("throws on invalid transition from S0_INIT with wrong event", () => {
+		expect(() =>
+			transitionLifecycle("S0_INIT", "SERIAL_GATE_PASSED"),
+		).toThrow("Invalid lifecycle transition");
+	});
+
+	it("throws on invalid transition from S1_CONTRACT_VALIDATED with wrong event", () => {
+		expect(() =>
+			transitionLifecycle("S1_CONTRACT_VALIDATED", "READ_ONLY_BATCH_FAILED"),
+		).toThrow("Invalid lifecycle transition");
+	});
+
+	it("throws on invalid transition from S2_READ_ONLY_BATCH with wrong event", () => {
+		expect(() =>
+			transitionLifecycle("S2_READ_ONLY_BATCH", "CONTRACT_OK"),
+		).toThrow("Invalid lifecycle transition");
+	});
+
+	it("throws on invalid transition from S3_SERIAL_GUARDED with wrong event", () => {
+		expect(() =>
+			transitionLifecycle("S3_SERIAL_GUARDED", "READ_ONLY_BATCH_PASSED"),
+		).toThrow("Invalid lifecycle transition");
+	});
+
+	it("throws on invalid transition from S4_BLOCKED with wrong event", () => {
+		expect(() =>
+			transitionLifecycle("S4_BLOCKED", "SERIAL_GATE_PASSED"),
+		).toThrow("Invalid lifecycle transition");
+	});
+
+	it("throws on invalid transition from S4_BLOCKED with CONTRACT_CHANGED to S_FAIL", () => {
+		expect(transitionLifecycle("S4_BLOCKED", "CONTRACT_CHANGED")).toBe(
+			"S_FAIL",
+		);
+	});
+
+	it("throws on any event from terminal state S5_DONE", () => {
+		expect(() =>
+			transitionLifecycle("S5_DONE", "CONTRACT_OK"),
+		).toThrow("Invalid lifecycle transition");
+	});
+
+	it("throws on any event from terminal state S_FAIL", () => {
+		expect(() =>
+			transitionLifecycle("S_FAIL", "CONTRACT_OK"),
+		).toThrow("Invalid lifecycle transition");
+	});
+
+	it("maps S0_INIT + CONTRACT_OK to S1_CONTRACT_VALIDATED", () => {
+		expect(transitionLifecycle("S0_INIT", "CONTRACT_OK")).toBe(
+			"S1_CONTRACT_VALIDATED",
+		);
+	});
+
+	it("maps S0_INIT + CONTRACT_FAIL to S_FAIL", () => {
+		expect(transitionLifecycle("S0_INIT", "CONTRACT_FAIL")).toBe("S_FAIL");
+	});
+
+	it("maps S1_CONTRACT_VALIDATED + ENTER_READ_ONLY_BATCH to S2_READ_ONLY_BATCH", () => {
+		expect(
+			transitionLifecycle("S1_CONTRACT_VALIDATED", "ENTER_READ_ONLY_BATCH"),
+		).toBe("S2_READ_ONLY_BATCH");
+	});
+
+	it("maps S1_CONTRACT_VALIDATED + ENTER_SERIAL_GUARDED to S3_SERIAL_GUARDED", () => {
+		expect(
+			transitionLifecycle("S1_CONTRACT_VALIDATED", "ENTER_SERIAL_GUARDED"),
+		).toBe("S3_SERIAL_GUARDED");
+	});
+
+	it("maps S2_READ_ONLY_BATCH + READ_ONLY_BATCH_FAILED to S_FAIL", () => {
+		expect(
+			transitionLifecycle("S2_READ_ONLY_BATCH", "READ_ONLY_BATCH_FAILED"),
+		).toBe("S_FAIL");
+	});
+
+	it("maps S3_SERIAL_GUARDED + SERIAL_GATE_PASSED stays in S3_SERIAL_GUARDED", () => {
+		expect(
+			transitionLifecycle("S3_SERIAL_GUARDED", "SERIAL_GATE_PASSED"),
+		).toBe("S3_SERIAL_GUARDED");
+	});
+
+	it("maps S3_SERIAL_GUARDED + SERIAL_FINAL_GATE_PASSED to S5_DONE", () => {
+		expect(
+			transitionLifecycle("S3_SERIAL_GUARDED", "SERIAL_FINAL_GATE_PASSED"),
+		).toBe("S5_DONE");
 	});
 });

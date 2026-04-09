@@ -405,4 +405,109 @@ describe("normaliseLinearGateResult (P4 governance failure classification)", () 
 			});
 		}
 	});
+
+	it("returns null for classifyLinearGateFailure when gate passed", () => {
+		const classification = classifyLinearGateFailure({
+			ok: true,
+			output: {
+				passed: true,
+				checks: [],
+			},
+		} as unknown as LinearGateResult);
+
+		expect(classification).toBeNull();
+	});
+
+	it("produces status=pass when ok:true and all checks pass", () => {
+		const result = normaliseLinearGateResult({
+			ok: true,
+			output: {
+				passed: true,
+				checks: [
+					{
+						code: "branch-linkage",
+						passed: true,
+						message: "Branch references a valid Linear issue key.",
+					},
+				],
+			},
+		} as unknown as LinearGateResult);
+
+		expect(result.status).toBe("pass");
+		expect(result.findings).toHaveLength(0);
+		expect(result.summary.errors).toBe(0);
+		expect(result.meta).toBeUndefined();
+	});
+
+	it("maps each failing check to a separate finding with gate id format", () => {
+		const result = normaliseLinearGateResult({
+			ok: true,
+			output: {
+				passed: false,
+				checks: [
+					{
+						code: "branch-linkage",
+						passed: false,
+						message: "Branch does not reference a valid Linear issue key.",
+					},
+					{
+						code: "pr-title-format",
+						passed: false,
+						message: "PR title does not match the required format.",
+					},
+					{
+						code: "issue-state",
+						passed: true,
+						message: "Issue is in the correct state.",
+					},
+				],
+			},
+		} as unknown as LinearGateResult);
+
+		expect(result.status).toBe("fail");
+		expect(result.findings).toHaveLength(2);
+		expect(result.findings[0]?.id).toBe("linear-gate.check.branch-linkage");
+		expect(result.findings[1]?.id).toBe("linear-gate.check.pr-title-format");
+		expect(result.summary.errors).toBe(2);
+		expect(result.summary.total).toBe(2);
+	});
+
+	it("sets errorCode in meta for ok:false result", () => {
+		const result = normaliseLinearGateResult({
+			ok: false,
+			error: {
+				code: "CONTRACT_ERROR",
+				message: "Could not load contract",
+			},
+		});
+
+		expect(result.status).toBe("fail");
+		expect(result.meta?.errorCode).toBe("CONTRACT_ERROR");
+		expect(result.meta?.failureClass).toBe("contract_policy");
+		expect(result.findings).toHaveLength(1);
+		expect(result.findings[0]?.id).toBe("linear-gate.result.internal");
+		expect(result.findings[0]?.fix.manual).toContain("Fix contract");
+	});
+
+	it("includes gate and version fields in result", () => {
+		const result = normaliseLinearGateResult({
+			ok: true,
+			output: { passed: true, checks: [] },
+		} as unknown as LinearGateResult);
+
+		expect(result.gate).toBe("linear-gate");
+		expect(typeof result.version).toBe("string");
+		expect(typeof result.timestamp).toBe("string");
+	});
+
+	it("classifyLinearGateFailure maps any non-policy error code to internal_unknown", () => {
+		const classification = classifyLinearGateFailure({
+			ok: false,
+			error: { code: "UNEXPECTED_RUNTIME_ERROR", message: "boom" },
+		});
+		expect(classification).toEqual({
+			failureClass: "internal_unknown",
+			nextAction: "Inspect gate output, fix root cause, and rerun linear-gate.",
+		});
+	});
 });
