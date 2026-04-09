@@ -164,20 +164,39 @@ function runGroupedCommand(
 	args: string[],
 	actions: Record<string, GroupedActionSpec>,
 ): number | Promise<number> {
+	const jsonFlag = args.includes("--json");
 	const action = args[0];
 	if (!action || action.startsWith("-")) {
-		console.error(
-			`${groupName} expects an action: ${Object.keys(actions).join(", ")}.`,
-		);
+		if (jsonFlag) {
+			console.log(
+				JSON.stringify({
+					error: `${groupName} expects an action`,
+					availableActions: Object.keys(actions),
+				}),
+			);
+		} else {
+			console.error(
+				`${groupName} expects an action: ${Object.keys(actions).join(", ")}.`,
+			);
+		}
 		return 2;
 	}
 
 	const normalizedAction = action.toLowerCase();
 	const mapped = actions[normalizedAction];
 	if (!mapped) {
-		console.error(
-			`Unknown ${groupName} action "${action}". Expected: ${Object.keys(actions).join(", ")}.`,
-		);
+		if (jsonFlag) {
+			console.log(
+				JSON.stringify({
+					error: `Unknown ${groupName} action "${action}"`,
+					availableActions: Object.keys(actions),
+				}),
+			);
+		} else {
+			console.error(
+				`Unknown ${groupName} action "${action}". Expected: ${Object.keys(actions).join(", ")}.`,
+			);
+		}
 		return 2;
 	}
 

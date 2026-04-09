@@ -61,6 +61,8 @@ describe("detectHarnessVersionCoherence", () => {
 		expect(result.globalVersion).toBe("0.6.0");
 		expect(result.message).toContain("Version drift detected");
 		expect(result.remediation).toContain("scripts/harness-cli.sh");
+		expect(result.repoLocalOriginPath).toContain("scripts/harness-cli.sh");
+		expect(result.globalBinaryPath).toContain("harness");
 	});
 
 	it("reports ok when repo-local and global harness versions match", () => {
@@ -75,6 +77,8 @@ describe("detectHarnessVersionCoherence", () => {
 		expect(result.status).toBe("ok");
 		expect(result.repoLocalVersion).toBe("0.12.0");
 		expect(result.globalVersion).toBe("0.12.0");
+		expect(result.repoLocalOriginPath).toContain("scripts/harness-cli.sh");
+		expect(result.globalBinaryPath).toContain("harness");
 	});
 
 	it("reports skip when no repo-local runner exists", () => {

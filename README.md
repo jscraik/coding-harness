@@ -381,7 +381,7 @@ flags, use `harness --help`.
 | `doctor` | Check all gate prerequisites (tools, files, config, CI) |
 | `health` | Unified gate status scorecard across all gates |
 | `repo` | Grouped repo lifecycle entrypoint (`check`, `doctor`, `health`, `init`, `contract`, `verify`, `upgrade`, `eject`) |
-| `contract` | Validate `harness.contract.json` or print the JSON Schema (`validate`, `schema`) |
+| `contract` | Validate `harness.contract.json` or print the JSON Schema (`init`, `validate`, `schema`) |
 | `upgrade` | Safely upgrade harness in an existing repo (`--dry-run` supported) |
 | `ci-migrate` | Stage, verify, commit, abort, sync branch protection, or promote CI mode |
 | `branch-protect` | Configure GitHub branch protection rulesets |
@@ -395,7 +395,7 @@ flags, use `harness --help`.
 | Command | Purpose |
 | --- | --- |
 | `policy-gate` | Validate policy expectations from changed files |
-| `gate` | Grouped gate entrypoint (`policy`, `preflight`, `review`, `docs`, `license`, `linear`, `plan`, `prompt`, `drift`, `memory`, `observability`, `authz`, `environment`, `local-memory`) |
+| `gate` | Grouped gate entrypoint (`policy`, `preflight`, `review`, `docs`, `license`, `linear`, `plan`, `prompt`, `pr-template`, `brainstorm`, `drift`, `memory`, `observability`, `authz`, `environment`, `local-memory`) |
 | `preflight-gate` | Run fast policy checks before expensive work |
 | `review-gate` | Enforce merge-readiness and SHA-linked review checks |
 | `docs-gate` | Enforce documentation parity for governed changes |
