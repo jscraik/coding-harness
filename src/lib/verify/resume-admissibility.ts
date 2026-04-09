@@ -74,10 +74,12 @@ function laneMatches(
 }
 
 /**
- * Determines whether resuming verification from a specific gate in a prior run is allowed given expectations and gate ordering.
+ * Determine whether a prior verification run may be resumed from a specific gate given expected run properties and gate ordering.
  *
- * @param input - Inputs specifying the target `runId`, the `resumeFromGateId`, the ordered list of gate IDs to validate, and an `expectation` describing required run properties (repo root, provider class, versions, lane config, optional identity tuple hash).
- * @returns An object describing admissibility. If `admissible` is `true`, the result has `runId` and `reusableGateIds` (prior gates confirmed reusable). If `admissible` is `false`, `code` and `reason` identify the failure (missing files, I/O or parse errors, run state issues, expectation mismatches, or prior gate failures).
+ * Performs existence checks for required run artifacts, loads run metadata and summary (mapping I/O and parse errors to distinct codes), verifies run state and expectation fields (repo root, provider class, schema/contract versions, lane config, optional identity tuple hash), and confirms that all prior gates up to the resume gate exist and have `passed` status.
+ *
+ * @param input - Inputs specifying the target `runId`, the `resumeFromGateId`, the ordered list of gate IDs to validate, and an `expectation` describing required run properties (repo root, provider class, schema/contract versions, lane config, and optional `identityTupleHash`).
+ * @returns An object describing admissibility. If `admissible` is `true`, the result includes `runId` and `reusableGateIds` (all prior gates confirmed reusable). If `admissible` is `false`, `code` and `reason` indicate the failure category: missing artifacts, I/O or parse errors, run state issues (running/already passed), expectation mismatches, or prior-gate failures.
  */
 export function evaluateResumeAdmissibility(
 	input: ResumeAdmissibilityInput,

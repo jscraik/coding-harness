@@ -193,6 +193,28 @@ function addCheck(
 	});
 }
 
+/**
+ * Validate repository and PR metadata against the contract's issueTrackingPolicy and produce a verification report.
+ *
+ * This function loads the specified contract (defaulting to harness.contract.json in the repository root),
+ * resolves the effective issue tracking policy, extracts metadata (branch name, PR title/body, package.json bugs URL,
+ * and issue template config), runs a sequence of policy checks (package bugs URL, retiring GitHub issues,
+ * branch linkage, PR linkage, PR reference mode, and cross-consistency), and returns a structured result summarizing
+ * the checks and any detected policy violations.
+ *
+ * Side effects:
+ * - Temporarily changes the process working directory to the resolved repoRoot to load the contract, then restores it.
+ * - Reads files under the repoRoot and inspects environment variables and git to infer metadata.
+ *
+ * @param options - Configuration that controls contract location, repo root, overrides for branch/PR metadata,
+ *                  tolerance flags for missing metadata (`allowMissingBranch`, `allowMissingPrMetadata`), and
+ *                  an optional `contractPath` relative to `repoRoot`.
+ * @returns A LinearGateResult:
+ *          - On success (`ok: true`): `output` contains `passed`, the applied `policy`, `repoRoot`, optional
+ *            `branch`/`prTitle`/`bugsUrl`, the full array of `checks`, and extracted `issueKeys` (branch, pr, refs, fixes).
+ *          - On failure (`ok: false`): `error` contains a machine-friendly `code` (`CONTRACT_ERROR` or `VALIDATION_ERROR`)
+ *            and a human message describing the load/validation failure.
+ */
 export function runLinearGate(options: LinearGateOptions): LinearGateResult {
 	const repoRoot = resolve(options.repoRoot ?? process.cwd());
 	const contractPath = options.contractPath
@@ -511,16 +533,12 @@ export function runLinearGate(options: LinearGateOptions): LinearGateResult {
 }
 
 /**
- * Run the Linear gate and emit human-readable or JSON output to stdout/stderr, returning the process exit code that callers should use.
+ * Execute the Linear gate, write a normalized JSON result or a concise human-readable report to stdout/stderr, and return the corresponding process exit code.
  *
- * Runs validation via `runLinearGate`, prints a normalized JSON payload to stdout when `options.json` is true, otherwise prints a concise human-readable report of the gate status and per-check details to stdout/stderr. When a failure classification is available it is also printed (in non-JSON mode it is written to stdout for successful runs and stderr for error results).
+ * When `options.json` is true the command writes a normalized JSON payload to stdout. Otherwise it writes a one-line PASS/FAIL header and per-check lines to stdout, and writes error messages to stderr on failures. If a failure classification is available it is printed (to stderr for error results, to stdout for successful runs).
  *
- * @param options - Options controlling contract location, repository/PR metadata overrides, tolerance flags (e.g. `allowMissingBranch`, `allowMissingPrMetadata`) and `json` output mode.
- * @returns One of the EXIT_CODES:
- * - `EXIT_CODES.SUCCESS` when the gate passed,
- * - `EXIT_CODES.POLICY_VIOLATION` when the gate ran successfully but policy checks failed,
- * - `EXIT_CODES.VALIDATION_ERROR` when validation or input-related problems occurred,
- * - `EXIT_CODES.CONTRACT_ERROR` when the contract could not be loaded or parsed.
+ * @param options - Configuration for locating the contract, overriding repository/PR metadata, controlling tolerance flags (e.g. `allowMissingBranch`, `allowMissingPrMetadata`), and selecting JSON output via `json`.
+ * @returns One of the EXIT_CODES: `EXIT_CODES.SUCCESS` when the gate passed; `EXIT_CODES.POLICY_VIOLATION` when policy checks failed; `EXIT_CODES.VALIDATION_ERROR` for validation/input errors; or `EXIT_CODES.CONTRACT_ERROR` when the contract could not be loaded or parsed.
  */
 export async function runLinearGateCLI(
 	options: LinearGateOptions,

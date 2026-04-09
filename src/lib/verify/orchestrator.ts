@@ -233,14 +233,14 @@ export function transitionLifecycle(
 }
 
 /**
- * Executes a single gate using the provided runner and applies retry policy until the gate reaches a terminal status.
+ * Execute a single normalized gate with the provided runner and apply retry policy until the gate reaches a terminal status.
  *
- * Executes the gate via `runner` and returns a normalized execution record when the gate either passes, becomes blocked, or fails irrecoverably after applying retry decisions up to `maxAttempts`. Runner-thrown errors are caught and mapped to an internal failure class and are subject to the same retry logic.
+ * Attempts the gate repeatedly (respecting retry decisions up to `maxAttempts`) and produces a normalized execution record when the gate either passes, becomes blocked, or fails irrecoverably. Runner-thrown errors are mapped to an internal failure class and are subject to the same retry logic.
  *
- * @param gate - Normalized gate definition to execute
- * @param runner - Function that runs the gate for a given attempt and returns its status and metadata
- * @param maxAttempts - Maximum number of attempts allowed by the retry policy (must be a positive integer)
- * @returns A VerifyGateExecutionRecord describing the gateId, execution class, terminal status (`passed`, `blocked`, or `failed`), number of attempts performed, exitCode, resolved failureClass, and a nextAction string
+ * @param gate - The normalized gate definition to execute (identifies gateId, executionClass, and defaults)
+ * @param runner - Runner invoked for each attempt; receives `{ gate, attempt }` and returns the gate status and optional metadata
+ * @param maxAttempts - Maximum attempts allowed by the retry policy; must be a positive integer
+ * @returns A VerifyGateExecutionRecord with the terminal `status` (`passed`, `blocked`, or `failed`), `attempts` performed, `exitCode`, resolved `failureClass`, `nextAction`, `gateId`, and `executionClass`
  */
 async function executeGateWithRetry(
 	gate: NormalizedGateDefinition,
@@ -348,17 +348,18 @@ async function executeGateWithRetry(
 }
 
 /**
- * Executes read-only gates in bounded parallel batches and collects their execution records.
+ * Run read-only gates in bounded-size concurrent batches and collect their execution records.
  *
- * Executes the provided `gates` in slices of up to `maxParallelism`, running each slice concurrently
- * and awaiting all results before proceeding to the next slice. Each gate is executed with retry
- * behavior using the supplied `runner` and `maxAttempts`.
+ * Gates are processed in input order in consecutive slices of up to `maxParallelism`. Each slice
+ * is executed concurrently (all attempts for those gates run via `runner` with retry up to
+ * `maxAttempts`) and the orchestrator waits for the entire slice to finish before starting the
+ * next slice.
  *
- * @param gates - The read-only gate definitions to execute, processed in input order.
- * @param runner - The gate runner invoked for each gate execution attempt.
- * @param maxParallelism - Maximum number of gates to run concurrently per batch (must be > 0).
- * @param maxAttempts - Maximum attempts allowed per gate execution (must be > 0).
- * @returns An array of per-gate execution records in the same relative order as `gates`.
+ * @param gates - Read-only gate definitions to execute, processed in the given order.
+ * @param runner - Gate runner invoked for each execution attempt.
+ * @param maxParallelism - Maximum concurrent gates per batch (must be greater than 0).
+ * @param maxAttempts - Maximum attempts per gate (must be greater than 0).
+ * @returns Per-gate execution records in the same relative order as `gates`.
  */
 async function executeReadOnlyBatches(
 	gates: NormalizedGateDefinition[],

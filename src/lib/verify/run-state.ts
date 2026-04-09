@@ -123,11 +123,11 @@ function toObject(value: unknown): Record<string, unknown> {
 }
 
 /**
- * Validates that a value is a non-empty string.
+ * Ensure the given value is a non-empty string and return it.
  *
- * @param value - The value to validate.
- * @param field - Field name used in the error message when validation fails.
- * @returns The validated string.
+ * @param value - The value to check.
+ * @param field - Name of the field used in the error message on failure.
+ * @returns The validated non-empty string.
  * @throws RunStateError with code `E_PARSE` if `value` is not a non-empty string.
  */
 function asString(value: unknown, field: string): string {
@@ -151,10 +151,10 @@ function asOptionalString(value: unknown): string | undefined {
 }
 
 /**
- * Validates that a value is a boolean and returns it.
+ * Ensure a value is a boolean.
  *
- * @param value - The value to validate as a boolean.
- * @param field - Name of the field used in the error message when validation fails.
+ * @param value - The value to validate.
+ * @param field - Field name used in the error message when validation fails.
  * @returns The validated boolean value.
  * @throws RunStateError with code `E_PARSE` if `value` is not a boolean.
  */
@@ -166,11 +166,11 @@ function asBoolean(value: unknown, field: string): boolean {
 }
 
 /**
- * Validate that the provided value is an integer and return it.
+ * Ensures the given value is an integer.
  *
- * @param value - The value to validate as an integer.
- * @param field - The name of the field (used in the error message on failure).
- * @returns The validated integer value.
+ * @param value - Value to validate as an integer.
+ * @param field - Field name used in the error message when validation fails.
+ * @returns The validated integer.
  * @throws RunStateError with code `E_PARSE` if `value` is not an integer.
  */
 function asInteger(value: unknown, field: string): number {
@@ -241,10 +241,10 @@ function canonicalize(value: unknown): unknown {
 }
 
 /**
- * Produces a deterministic JSON string representation of `value` by canonicalizing object key order.
+ * Generates a deterministic JSON string for a value by canonicalizing object key order.
  *
- * @param value - Any value to be serialized (typically JSON-serializable). Object keys will be sorted deterministically.
- * @returns A JSON string where equivalent input values yield the same string due to stable key ordering.
+ * @param value - Value to serialize; object keys are sorted to ensure stable output.
+ * @returns The JSON string representation of `value` with deterministic key ordering.
  */
 function stableJson(value: unknown): string {
 	return JSON.stringify(canonicalize(value));
@@ -350,11 +350,11 @@ export function deriveIdentityTupleHash(
 }
 
 /**
- * Compute canonical filesystem paths for a verify run's persisted artifacts under the repository root.
+ * Computes validated filesystem paths for a verify run's persisted artifacts under the repository root.
  *
  * @param repoRoot - Filesystem path of the repository root used to resolve and validate run artifact locations.
  * @param runId - Run identifier; must match /^[A-Za-z0-9][A-Za-z0-9._-]{2,127}$/. Invalid values cause a validation error.
- * @returns An object with validated paths:
+ * @returns An object containing validated paths:
  *  - `runsDir`: directory containing all runs (".harness/runs")
  *  - `runDir`: directory for this run (".harness/runs/<runId>")
  *  - `runPath`: path to the run metadata file (".harness/runs/<runId>/run.json")
@@ -401,16 +401,15 @@ export function writeVerifyRunMetadata(
 }
 
 /**
- * Persist the provided verify run summary to the run's summary.json file.
+ * Persist the verify run summary to the run's summary.json file.
  *
- * Writes `summary` atomically under `.harness/runs/<runId>/summary.json` and returns the written path.
+ * Writes `summary` atomically to `.harness/runs/<runId>/summary.json`.
  *
  * @param repoRoot - Repository root used to resolve run artifact paths.
- * @param runId - Target run identifier (validated by path rules).
+ * @param runId - Target run identifier; must conform to run-id path rules.
  * @param summary - Summary object to persist.
  * @returns The full filesystem path to the written `summary.json`.
- *
- * @throws RunStateError with code `E_VALIDATION` if `runId` is invalid; `E_PATH` if the resolved path is unsafe; `E_IO` on write or rename failures.
+ * @throws RunStateError with code `E_VALIDATION` if `runId` is invalid; `E_PATH` if the resolved path is outside `repoRoot`; `E_IO` on write or rename failures.
  */
 export function writeVerifyRunSummary(
 	repoRoot: string,

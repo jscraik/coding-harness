@@ -22,17 +22,13 @@ export interface VerifyWorkCliOptions {
 }
 
 /**
- * Builds command-line arguments for the verify-work wrapper based on provided options.
+ * Create the argument list for the verify-work wrapper according to the provided options.
  *
- * The resulting array contains the appropriate flags for the wrapper script:
- * - `--all` or `--changed-only` (mutually exclusive; `--all` takes precedence)
- * - `--strict`, `--fast`
- * - `--resume-from <value>`
- * - `--json`
- * - `--repo-root <resolved path>`
+ * The `--all` and `--changed-only` flags are mutually exclusive (when `all` is true, `changedOnly` is ignored).
+ * If `repoRoot` is provided its value is resolved and passed via `--repo-root <resolved path>`.
  *
- * @param options - Options that control which flags are included
- * @returns Array of command-line arguments ready to be passed to the verify-work script
+ * @param options - CLI options that control which flags are included
+ * @returns An array of command-line arguments for the verify-work script
  */
 function buildVerifyWorkArgs(options: VerifyWorkCliOptions): string[] {
 	const args: string[] = [];
@@ -60,10 +56,12 @@ function buildVerifyWorkArgs(options: VerifyWorkCliOptions): string[] {
 }
 
 /**
- * Run the repository's verify-work wrapper script using the provided CLI options.
+ * Execute the repository's verify-work wrapper script with the given CLI options.
  *
- * @param options - Options that control which flags are passed to the wrapper and optionally where to find the repository root.
- * @returns The process exit code: `EXIT_CODES.SUCCESS` on success, `EXIT_CODES.PRECONDITION_FAILED` if the wrapper is missing, `EXIT_CODES.FAILED` on execution error, `EXIT_CODES.SIGNAL_TERMINATED + N` when terminated by a signal, or the child process' status code when available.
+ * Spawns `bash <repoRoot>/scripts/verify-work.sh` with flags derived from `options`, using `repoRoot` from `options.repoRoot` or the current working directory. The child process runs with inherited stdio, `cwd` set to the repository root, and the environment extended with `HARNESS_VERIFY_WORK_NO_DELEGATE=1`.
+ *
+ * @param options - Flags that control which CLI arguments are passed to the wrapper and an optional `repoRoot` path to locate the script.
+ * @returns The chosen exit code: `EXIT_CODES.SUCCESS` for successful execution; `EXIT_CODES.PRECONDITION_FAILED` if the wrapper script is not found; `EXIT_CODES.FAILED` on execution error; `EXIT_CODES.SIGNAL_TERMINATED + N` when the child was terminated by a signal (`N` is 0 for string signals or the numeric signal value); or the child process' numeric exit status when available.
  */
 export function runVerifyWorkCLI(options: VerifyWorkCliOptions): number {
 	const repoRoot = resolve(options.repoRoot ?? process.cwd());

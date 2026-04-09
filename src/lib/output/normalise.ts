@@ -34,10 +34,10 @@ const LINEAR_GATE_INTERNAL_UNKNOWN_NEXT_ACTION =
 	"Inspect gate output, fix root cause, and rerun linear-gate.";
 
 /**
- * Map a linear-gate error code to the corresponding failure classification.
+ * Map a linear-gate error code to its corresponding failure class.
  *
  * @param errorCode - The error code reported by a linear gate
- * @returns The `GateFailureClass` for the provided `errorCode`: `"contract_policy"` for contract or validation errors, `"internal_unknown"` for any other code
+ * @returns `contract_policy` for `CONTRACT_ERROR` or `VALIDATION_ERROR`, `internal_unknown` otherwise
  */
 function classifyLinearGateErrorCode(errorCode: string): GateFailureClass {
 	if (errorCode === "CONTRACT_ERROR" || errorCode === "VALIDATION_ERROR") {
@@ -59,13 +59,10 @@ function resolveLinearGateNextAction(failureClass: GateFailureClass): string {
 }
 
 /**
- * Determine the failure classification and recommended next action for a LinearGateResult.
+ * Classify a linear-gate result into a failure category and a user-facing next action.
  *
- * Examines `result.ok` and either `result.output.passed` or `result.error.code` to derive a
- * `failureClass` and a human-facing `nextAction` string.
- *
- * @param result - The linear gate result to classify; uses `ok`, `output.passed`, and `error.code`.
- * @returns A `LinearGateFailureClassification` object when the result represents a failure, `null` when the result indicates success.
+ * @param result - The linear gate result to evaluate; used to determine whether the run passed or failed and, if failed, which error code to classify.
+ * @returns A `LinearGateFailureClassification` describing the failure class and recommended next action when the result represents a failure, or `null` when the result indicates success.
  */
 export function classifyLinearGateFailure(
 	result: LinearGateResult,
@@ -466,12 +463,12 @@ export function normalisePlanGateResult(
 // ─── P3: linear-gate adapter (check-list) ────────────────────────────────────
 
 /**
- * Convert a LinearGateResult into the canonical GateResult used by the system.
+ * Normalize a LinearGateResult into the canonical GateResult used by the system.
  *
- * Produces a single internal error finding and `status: "fail"` when `result.ok` is false; when `result.ok` is true produces one error finding per failing check and sets `status` to `"fail"` if any failing checks exist, otherwise `"pass"`. If a failure classification is available it is added to `meta` and its `nextAction` is applied to each finding's `fix.manual`; when `result.ok` is false `meta.errorCode` is set to the gate error code.
+ * When the gate call failed (`result.ok === false`) the returned result contains a single internal error finding and a `meta.errorCode`; when the gate call succeeded the returned result contains one error finding per failing check. If a failure classification is available, its `nextAction` is attached to findings' `fix.manual` and `failureClass`/`nextAction` are included in `meta`.
  *
- * @param result - The LinearGateResult to normalise into a GateResult.
- * @returns A GateResult containing normalized findings, summary counts, status, and optional meta fields (`failureClass`, `nextAction`, `errorCode`).
+ * @param result - The LinearGateResult to normalize into a GateResult.
+ * @returns A GateResult containing normalized findings, summary counts, status, and optional `meta` fields (`failureClass`, `nextAction`, `errorCode`).
  */
 export function normaliseLinearGateResult(
 	result: LinearGateResult,
