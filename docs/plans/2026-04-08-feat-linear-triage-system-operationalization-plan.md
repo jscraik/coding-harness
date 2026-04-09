@@ -473,9 +473,9 @@ Dependencies:
 
 Snapshot captured on `2026-04-09` from Linear (`project: coding-harness`, non-terminal states only):
 
-- `In Progress` (5): `JSC-131`, `JSC-96`, `JSC-135`, `JSC-127`, `JSC-134`
+- `In Progress` (6): `JSC-112`, `JSC-131`, `JSC-96`, `JSC-135`, `JSC-127`, `JSC-134`
 - `In Review` (2): `JSC-115`, `JSC-130`
-- `Todo` (1): `JSC-112`
+- `Todo` (0): none
 - `Triage` (17): `JSC-128`, `JSC-122`, `JSC-129`, `JSC-125`, `JSC-132`, `JSC-126`, `JSC-124`, `JSC-121`, `JSC-120`, `JSC-109`, `JSC-108`, `JSC-107`, `JSC-106`, `JSC-116`, `JSC-114`, `JSC-104`, `JSC-87`
 - `Backlog` (4): `JSC-159`, `JSC-158`, `JSC-157`, `JSC-156`
 
