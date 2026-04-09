@@ -181,6 +181,7 @@ Before claiming a change is verified, confirm:
 - The command invoked exists in repo docs or scripts.
 - The command version/source is not in conflict with lockfile or repo settings.
 - Output is captured in closeout notes.
+- The repo-local tooling inventory at `docs/agents/tooling.md` stays aligned with `scripts/check-environment.sh` and `.mise.toml`.
 
 ## Discovery constraints
 

@@ -5,7 +5,7 @@ node_modules/
 dist/
 
 # Internal handoff docs
-# NOTE: FORJAMIE.md is intentionally tracked for migration handoff continuity.
+FORJAMIE.md
 
 # Secrets (never commit)
 .env
