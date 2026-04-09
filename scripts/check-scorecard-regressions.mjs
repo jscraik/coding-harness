@@ -9,6 +9,14 @@ function usage() {
 	);
 }
 
+function readFlagValue(argv, index, flag) {
+	const value = argv[index + 1];
+	if (value === undefined || value.startsWith("--")) {
+		throw new Error(`Missing value for ${flag}`);
+	}
+	return value;
+}
+
 function parseArgs(argv) {
 	const parsed = {
 		resultsPath: null,
@@ -18,19 +26,18 @@ function parseArgs(argv) {
 
 	for (let i = 2; i < argv.length; i += 1) {
 		const arg = argv[i];
-		const value = argv[i + 1];
 		if (arg === "--results") {
-			parsed.resultsPath = value ?? null;
+			parsed.resultsPath = readFlagValue(argv, i, "--results");
 			i += 1;
 			continue;
 		}
 		if (arg === "--policy") {
-			parsed.policyPath = value ?? null;
+			parsed.policyPath = readFlagValue(argv, i, "--policy");
 			i += 1;
 			continue;
 		}
 		if (arg === "--mode") {
-			parsed.mode = value ?? "fail";
+			parsed.mode = readFlagValue(argv, i, "--mode");
 			i += 1;
 		}
 	}
@@ -182,7 +189,16 @@ function evaluate(policy, results) {
 }
 
 function main() {
-	const args = parseArgs(process.argv);
+	let args;
+	try {
+		args = parseArgs(process.argv);
+	} catch (error) {
+		const details = error instanceof Error ? error.message : String(error);
+		console.error(details);
+		usage();
+		process.exit(2);
+	}
+
 	if (!args.resultsPath || !args.policyPath) {
 		usage();
 		process.exit(2);
