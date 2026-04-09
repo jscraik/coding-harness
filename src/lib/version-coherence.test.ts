@@ -24,7 +24,7 @@ function createLocalHarnessWrapper(repoDir: string, version: string): void {
 	mkdirSync(scriptsDir, { recursive: true });
 	writeExecutable(
 		join(scriptsDir, "harness-cli.sh"),
-		`#!/usr/bin/env bash\necho "harness v${version}"\n`,
+		`#!/usr/bin/env bash\n[[ "$1" == "--version" ]] && echo "harness v${version}" && exit 0\necho "harness v${version}"\n`,
 	);
 }
 
@@ -32,7 +32,7 @@ function createGlobalHarnessBinary(binDir: string, version: string): void {
 	mkdirSync(binDir, { recursive: true });
 	writeExecutable(
 		join(binDir, "harness"),
-		`#!/usr/bin/env bash\necho "harness v${version}"\n`,
+		`#!/usr/bin/env bash\n[[ "$1" == "--version" ]] && echo "harness v${version}" && exit 0\necho "harness v${version}"\n`,
 	);
 }
 
@@ -75,5 +75,36 @@ describe("detectHarnessVersionCoherence", () => {
 		expect(result.status).toBe("ok");
 		expect(result.repoLocalVersion).toBe("0.12.0");
 		expect(result.globalVersion).toBe("0.12.0");
+	});
+
+	it("reports skip when no repo-local runner exists", () => {
+		const repoDir = makeTmpDir("coherence-repo-");
+		const binDir = makeTmpDir("coherence-bin-");
+		cleanupPaths.push(repoDir, binDir);
+		createGlobalHarnessBinary(binDir, "0.12.0");
+		process.env.PATH = `${binDir}${delimiter}${originalPath}`;
+
+		const result = detectHarnessVersionCoherence(repoDir);
+		expect(result.status).toBe("skip");
+		expect(result.message).toContain("no repo-local harness runner");
+	});
+
+	it("reports error when repo-local runner fails or emits unparseable version", () => {
+		const repoDir = makeTmpDir("coherence-repo-");
+		const binDir = makeTmpDir("coherence-bin-");
+		cleanupPaths.push(repoDir, binDir);
+		const scriptsDir = join(repoDir, "scripts");
+		mkdirSync(scriptsDir, { recursive: true });
+		writeExecutable(
+			join(scriptsDir, "harness-cli.sh"),
+			"#!/usr/bin/env bash\nexit 1\n",
+		);
+		createGlobalHarnessBinary(binDir, "0.12.0");
+		process.env.PATH = `${binDir}${delimiter}${originalPath}`;
+
+		const result = detectHarnessVersionCoherence(repoDir);
+		expect(result.status).toBe("error");
+		expect(result.message).toContain("Could not read repo-local harness version");
+		expect(result.globalVersion).toBeUndefined();
 	});
 });

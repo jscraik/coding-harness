@@ -88,9 +88,9 @@ function printUsage(options: { includeLegacyCommands?: boolean } = {}): void {
 	}
 	console.info("");
 	console.info("Options:");
-	console.info("  --version, -v  Print version");
-	console.info("  --help, -h     Print this help");
-	console.info("  --all-commands Include legacy command list in help output");
+	console.info("  --version, -v          Print version");
+	console.info("  --help, -h             Print this help");
+	console.info("  --all, --all-commands  Include legacy command list in help output");
 	console.info("");
 	console.info("Agent / Robot Mode:");
 	console.info("  Add --json to any command for structured JSON output.");
