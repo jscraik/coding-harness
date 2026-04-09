@@ -340,6 +340,32 @@ describe("runDoctor — config checks", () => {
 		);
 		expect(check?.status).toBe("ok");
 	});
+
+	it("warns when contextIntegrityPolicy exists only on prototype", () => {
+		writeFileSync(join(dir, "harness.contract.json"), JSON.stringify({}));
+		mockAllToolsOk();
+		vi.spyOn(JSON, "parse").mockImplementation(() =>
+			Object.create({ contextIntegrityPolicy: { minCoverage: 0.9 } }),
+		);
+
+		const report = runDoctor({ dir });
+		const check = report.checks.find(
+			(c) => c.id === "config:contextIntegrityPolicy",
+		);
+		expect(check?.status).toBe("warn");
+	});
+
+	it("warns when ciProviderPolicy exists only on prototype", () => {
+		writeFileSync(join(dir, "harness.contract.json"), JSON.stringify({}));
+		mockAllToolsOk();
+		vi.spyOn(JSON, "parse").mockImplementation(() =>
+			Object.create({ ciProviderPolicy: { mode: "required" } }),
+		);
+
+		const report = runDoctor({ dir });
+		const check = report.checks.find((c) => c.id === "config:ciProviderPolicy");
+		expect(check?.status).toBe("warn");
+	});
 });
 
 describe("runDoctor — report structure", () => {
