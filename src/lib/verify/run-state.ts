@@ -687,17 +687,57 @@ export function loadVerifyGateResult(
 }
 
 /**
- * Produce a list of absolute paths for subdirectories of `runsDir`, ordered by most-recent directory modification time first.
+ * Compute run recency by scanning a run directory recursively and returning
+ * the maximum mtime across the run folder and all nested artifacts.
+ */
+function computeRunRecencyMs(runDir: string): number {
+	let newestMtimeMs = 0;
+	const pendingPaths: string[] = [runDir];
+
+	while (pendingPaths.length > 0) {
+		const currentPath = pendingPaths.pop();
+		if (!currentPath) {
+			continue;
+		}
+		try {
+			const stats = statSync(currentPath);
+			newestMtimeMs = Math.max(newestMtimeMs, stats.mtimeMs);
+			if (!stats.isDirectory()) {
+				continue;
+			}
+			const entries = readdirSync(currentPath);
+			for (const entry of entries) {
+				pendingPaths.push(join(currentPath, entry));
+			}
+		} catch {
+			// Ignore files disappearing mid-scan and continue ranking.
+		}
+	}
+
+	return newestMtimeMs;
+}
+
+/**
+ * Produce a list of absolute paths for subdirectories of `runsDir`, ordered by
+ * most-recent run activity first.
  *
- * Ignores entries that are not directories or that cannot be stat'ed. If `runsDir` does not exist, returns an empty array.
- *
- * @param runsDir - Filesystem path to the parent runs directory
- * @returns An array of subdirectory paths sorted by descending `mtimeMs` (most recently modified first)
+ * Ignores entries that are not directories or that cannot be stat'ed. If
+ * `runsDir` does not exist, returns an empty array.
  */
 function listRunDirsByMtime(runsDir: string): string[] {
 	if (!existsSync(runsDir)) {
 		return [];
 	}
+	const recencyCache = new Map<string, number>();
+	const runRecency = (runDir: string): number => {
+		const cached = recencyCache.get(runDir);
+		if (cached !== undefined) {
+			return cached;
+		}
+		const recency = computeRunRecencyMs(runDir);
+		recencyCache.set(runDir, recency);
+		return recency;
+	};
 	return readdirSync(runsDir)
 		.map((entry) => join(runsDir, entry))
 		.filter((entryPath) => {
@@ -708,9 +748,8 @@ function listRunDirsByMtime(runsDir: string): string[] {
 			}
 		})
 		.sort((left, right) => {
-			const leftStat = statSync(left);
-			const rightStat = statSync(right);
-			return rightStat.mtimeMs - leftStat.mtimeMs;
+			const delta = runRecency(right) - runRecency(left);
+			return delta !== 0 ? delta : right.localeCompare(left);
 		});
 }
 

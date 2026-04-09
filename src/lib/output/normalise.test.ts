@@ -13,7 +13,10 @@ import type {
 	DriftFinding,
 	DriftGateResult,
 } from "../../commands/drift-gate.js";
-import type { LinearGateResult } from "../../commands/linear-gate.js";
+import type {
+	LinearGateOutput,
+	LinearGateResult,
+} from "../../commands/linear-gate.js";
 import {
 	classifyLinearGateFailure,
 	normaliseDocsGateResult,
@@ -135,6 +138,37 @@ function makeDocsResult(
 			findings,
 		},
 		exitCode: 0,
+	};
+}
+
+function makeLinearGateResult(
+	overrides: Partial<Omit<LinearGateOutput, "issueKeys">> & {
+		issueKeys?: Partial<LinearGateOutput["issueKeys"]>;
+	} = {},
+): LinearGateResult {
+	const { issueKeys, ...restOverrides } = overrides;
+	const baseIssueKeys: LinearGateOutput["issueKeys"] = {
+		branch: [],
+		pr: [],
+		refs: [],
+		fixes: [],
+	};
+
+	return {
+		ok: true,
+		output: {
+			passed: true,
+			policyApplied: {
+				provider: "linear",
+				requireBranchIssueKey: true,
+				requirePrIssueKey: true,
+				prReferenceMode: "refs",
+			},
+			repoRoot: "/tmp/test-repo",
+			checks: [],
+			...restOverrides,
+			issueKeys: { ...baseIssueKeys, ...(issueKeys ?? {}) },
+		},
 	};
 }
 
@@ -351,9 +385,8 @@ describe("normaliseDocsGateResult (SA3, SA10, SA11)", () => {
 
 describe("normaliseLinearGateResult (P4 governance failure classification)", () => {
 	it("classifies checklist policy failures as contract_policy with deterministic next action", () => {
-		const result = normaliseLinearGateResult({
-			ok: true,
-			output: {
+		const result = normaliseLinearGateResult(
+			makeLinearGateResult({
 				passed: false,
 				checks: [
 					{
@@ -363,8 +396,8 @@ describe("normaliseLinearGateResult (P4 governance failure classification)", () 
 							"Branch and PR metadata must reference the same Linear issue key.",
 					},
 				],
-			},
-		} as unknown as LinearGateResult);
+			}),
+		);
 
 		expect(result.status).toBe("fail");
 		expect(result.meta).toMatchObject({

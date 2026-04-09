@@ -375,6 +375,9 @@ async function executeReadOnlyBatches(
 			batch.map((gate) => executeGateWithRetry(gate, runner, maxAttempts)),
 		);
 		results.push(...batchResults);
+		if (batchResults.some((result) => result.status !== "passed")) {
+			break;
+		}
 	}
 
 	return results;

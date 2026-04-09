@@ -128,6 +128,32 @@ describe("resume admissibility", () => {
 		expect(result.reusableGateIds).toEqual(["preflight", "lint"]);
 	});
 
+	it("rejects resume when the requested gate is not the failed or blocked anchor", () => {
+		seedRun("run-resume-001b", "contract-v1", 2_000);
+
+		const result = evaluateResumeAdmissibility({
+			runId: "run-resume-001b",
+			resumeFromGateId: "lint",
+			orderedGateIds: ORDERED_GATES,
+			expectation: {
+				repoRoot,
+				providerClass: "circleci",
+				schemaVersion: "required-checks/v2",
+				contractVersion: "contract-v1",
+				lane: {
+					fastMode: false,
+					changedOnly: false,
+					strictMode: true,
+				},
+				identityTupleHash: "tuple-abc",
+			},
+		});
+
+		expect(result.admissible).toBe(false);
+		expect(result.code).toBe("RESUME_GATE_RESULT_INVALID");
+		expect(result.reason).toContain("cannot resume from passed gate lint");
+	});
+
 	it("blocks resume when contract versions differ", () => {
 		seedRun("run-resume-002", "contract-v1", 2_000);
 

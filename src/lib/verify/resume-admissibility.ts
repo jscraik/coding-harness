@@ -26,6 +26,7 @@ export type ResumeAdmissibilityCode =
 	| "IDENTITY_TUPLE_MISMATCH"
 	| "RESUME_GATE_UNKNOWN"
 	| "RESUME_GATE_RESULT_MISSING"
+	| "RESUME_GATE_RESULT_INVALID"
 	| "PRIOR_GATE_RESULT_MISSING"
 	| "PRIOR_GATE_NOT_PASSED"
 	| "PARSE_ERROR"
@@ -116,12 +117,23 @@ export function evaluateResumeAdmissibility(
 			reason: `Missing summary.json for ${input.runId}`,
 		};
 	}
-	if (!existsSync(join(runPaths.gatesDir, `${input.resumeFromGateId}.json`))) {
-		return {
-			admissible: false,
-			code: "RESUME_GATE_RESULT_MISSING",
-			reason: `Missing gate result for resume gate ${input.resumeFromGateId}`,
-		};
+	let resumeGateStatus: "passed" | "failed" | "blocked";
+	try {
+		resumeGateStatus = loadVerifyGateResult(
+			input.expectation.repoRoot,
+			input.runId,
+			input.resumeFromGateId,
+		).status;
+	} catch (error) {
+		if (error instanceof RunStateError) {
+			return {
+				admissible: false,
+				code:
+					error.code === "E_IO" ? "RESUME_GATE_RESULT_MISSING" : "PARSE_ERROR",
+				reason: error.message,
+			};
+		}
+		throw error;
 	}
 
 	let metadata: VerifyRunMetadata;
@@ -164,6 +176,23 @@ export function evaluateResumeAdmissibility(
 			admissible: false,
 			code: "RUN_INCOMPLETE",
 			reason: `Run ${input.runId} already passed; no resume anchor`,
+		};
+	}
+	if (resumeGateStatus === "passed") {
+		return {
+			admissible: false,
+			code: "RESUME_GATE_RESULT_INVALID",
+			reason: `Run ${input.runId} cannot resume from passed gate ${input.resumeFromGateId}`,
+		};
+	}
+	if (
+		summary.failedGateId !== null &&
+		summary.failedGateId !== input.resumeFromGateId
+	) {
+		return {
+			admissible: false,
+			code: "RESUME_GATE_RESULT_INVALID",
+			reason: `Run ${input.runId} failed at ${summary.failedGateId}, not ${input.resumeFromGateId}`,
 		};
 	}
 

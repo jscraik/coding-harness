@@ -59,14 +59,62 @@ printf '%s\\n' "$HARNESS_VERIFY_WORK_NO_DELEGATE" > "${envLogPath}"
 
 		expect(exitCode).toBe(EXIT_CODES.SUCCESS);
 		expect(readFileSync(envLogPath, "utf-8").trim()).toBe("1");
-		expect(readFileSync(argsLogPath, "utf-8")).toContain("--changed-only");
-		expect(readFileSync(argsLogPath, "utf-8")).toContain("--fast");
-		expect(readFileSync(argsLogPath, "utf-8")).toContain("--strict");
-		expect(readFileSync(argsLogPath, "utf-8")).toContain(
-			"--resume-from\nvalidate-codestyle-fast",
+		const args = readFileSync(argsLogPath, "utf-8").trim().split("\n");
+		expect(args).toContain("--changed-only");
+		expect(args).toContain("--fast");
+		expect(args).toContain("--strict");
+		expect(args).toContain("--json");
+		const resumeFromFlagIndex = args.indexOf("--resume-from");
+		expect(resumeFromFlagIndex).toBeGreaterThanOrEqual(0);
+		expect(args[resumeFromFlagIndex + 1]).toBe("validate-codestyle-fast");
+		const repoRootFlagIndex = args.indexOf("--repo-root");
+		expect(repoRootFlagIndex).toBeGreaterThanOrEqual(0);
+		expect(args[repoRootFlagIndex + 1]).toBe(repoRoot);
+	});
+
+	it("returns USAGE_ERROR when --all and --changed-only are both set", () => {
+		const exitCode = runVerifyWorkCLI({
+			repoRoot,
+			all: true,
+			changedOnly: true,
+		});
+		expect(exitCode).toBe(EXIT_CODES.USAGE_ERROR);
+	});
+
+	it("maps SIGTERM termination to the conventional signal exit code", () => {
+		const scriptsDir = join(repoRoot, "scripts");
+		mkdirSync(scriptsDir, { recursive: true });
+		const wrapperPath = join(scriptsDir, "verify-work.sh");
+
+		writeFileSync(
+			wrapperPath,
+			`#!/usr/bin/env bash
+kill -TERM $$
+`,
+			"utf-8",
 		);
-		expect(readFileSync(argsLogPath, "utf-8")).toContain("--json");
-		expect(readFileSync(argsLogPath, "utf-8")).toContain("--repo-root");
+		chmodSync(wrapperPath, 0o755);
+
+		const exitCode = runVerifyWorkCLI({ repoRoot });
+		expect(exitCode).toBe(143);
+	});
+
+	it("maps SIGKILL termination to the conventional signal exit code", () => {
+		const scriptsDir = join(repoRoot, "scripts");
+		mkdirSync(scriptsDir, { recursive: true });
+		const wrapperPath = join(scriptsDir, "verify-work.sh");
+
+		writeFileSync(
+			wrapperPath,
+			`#!/usr/bin/env bash
+kill -KILL $$
+`,
+			"utf-8",
+		);
+		chmodSync(wrapperPath, 0o755);
+
+		const exitCode = runVerifyWorkCLI({ repoRoot });
+		expect(exitCode).toBe(137);
 	});
 
 	it("passes --all flag instead of --changed-only when both are set", () => {

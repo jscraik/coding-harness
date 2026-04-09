@@ -1,4 +1,4 @@
-import { existsSync, mkdtempSync, rmSync, utimesSync } from "node:fs";
+import { existsSync, mkdtempSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
@@ -15,6 +15,12 @@ import {
 	writeVerifyRunMetadata,
 	writeVerifyRunSummary,
 } from "./run-state.js";
+
+function delay(ms: number): Promise<void> {
+	return new Promise((resolve) => {
+		setTimeout(resolve, ms);
+	});
+}
 
 describe("verify run-state", () => {
 	let repoRoot = "";
@@ -62,17 +68,15 @@ describe("verify run-state", () => {
 		).toThrowError(RunStateError);
 	});
 
-	it("prunes old runs while preserving the latest failed run", () => {
-		const now = Date.now();
+	it("prunes old runs while preserving the latest failed run", async () => {
 		const runStates: Array<{
 			runId: string;
 			status: "passed" | "failed" | "blocked";
-			mtime: number;
 		}> = [
-			{ runId: "run-001", status: "passed", mtime: now - 1_000 },
-			{ runId: "run-002", status: "passed", mtime: now - 2_000 },
-			{ runId: "run-003", status: "failed", mtime: now - 3_000 },
-			{ runId: "run-004", status: "failed", mtime: now - 4_000 },
+			{ runId: "run-001", status: "passed" },
+			{ runId: "run-002", status: "passed" },
+			{ runId: "run-003", status: "failed" },
+			{ runId: "run-004", status: "failed" },
 		];
 
 		for (const run of runStates) {
@@ -83,10 +87,16 @@ describe("verify run-state", () => {
 				freshVsResumed: "fresh",
 				durationMs: 100,
 			});
-			const { runDir } = resolveVerifyRunPaths(repoRoot, run.runId);
-			const timestamp = new Date(run.mtime);
-			utimesSync(runDir, timestamp, timestamp);
+			await delay(5);
 		}
+		// Rewrite an older run's summary to verify ordering follows child-file mtime.
+		writeVerifyRunSummary(repoRoot, "run-001", {
+			runId: "run-001",
+			overallStatus: "passed",
+			failedGateId: null,
+			freshVsResumed: "fresh",
+			durationMs: 100,
+		});
 
 		const pruned = pruneVerifyRuns({
 			repoRoot,
@@ -94,13 +104,13 @@ describe("verify run-state", () => {
 			protectLatestFailed: true,
 		});
 
-		expect(pruned.latestFailedRunId).toBe("run-003");
-		expect(pruned.keptRunIds).toEqual(["run-001", "run-003"]);
-		expect(pruned.deletedRunIds).toEqual(["run-002", "run-004"]);
-		expect(existsSync(resolveVerifyRunPaths(repoRoot, "run-003").runDir)).toBe(
+		expect(pruned.latestFailedRunId).toBe("run-004");
+		expect([...pruned.keptRunIds].sort()).toEqual(["run-001", "run-004"]);
+		expect([...pruned.deletedRunIds].sort()).toEqual(["run-002", "run-003"]);
+		expect(existsSync(resolveVerifyRunPaths(repoRoot, "run-004").runDir)).toBe(
 			true,
 		);
-		expect(existsSync(resolveVerifyRunPaths(repoRoot, "run-002").runDir)).toBe(
+		expect(existsSync(resolveVerifyRunPaths(repoRoot, "run-003").runDir)).toBe(
 			false,
 		);
 	});

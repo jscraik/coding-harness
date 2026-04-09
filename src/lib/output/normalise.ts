@@ -30,6 +30,8 @@ export interface LinearGateFailureClassification {
 
 const LINEAR_GATE_CONTRACT_POLICY_NEXT_ACTION =
 	"Fix contract/policy mismatch, then rerun linear-gate.";
+const LINEAR_GATE_TRANSIENT_INFRA_NEXT_ACTION =
+	"Retry once after infrastructure recovers, then rerun linear-gate.";
 const LINEAR_GATE_INTERNAL_UNKNOWN_NEXT_ACTION =
 	"Inspect gate output, fix root cause, and rerun linear-gate.";
 
@@ -53,9 +55,14 @@ function classifyLinearGateErrorCode(errorCode: string): GateFailureClass {
  * @returns The next-action string corresponding to `failureClass`: the contract-policy guidance when `failureClass` is `"contract_policy"`, otherwise the internal-unknown guidance.
  */
 function resolveLinearGateNextAction(failureClass: GateFailureClass): string {
-	return failureClass === "contract_policy"
-		? LINEAR_GATE_CONTRACT_POLICY_NEXT_ACTION
-		: LINEAR_GATE_INTERNAL_UNKNOWN_NEXT_ACTION;
+	switch (failureClass) {
+		case "contract_policy":
+			return LINEAR_GATE_CONTRACT_POLICY_NEXT_ACTION;
+		case "transient_infra":
+			return LINEAR_GATE_TRANSIENT_INFRA_NEXT_ACTION;
+		case "internal_unknown":
+			return LINEAR_GATE_INTERNAL_UNKNOWN_NEXT_ACTION;
+	}
 }
 
 /**

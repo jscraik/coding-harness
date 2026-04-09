@@ -4,9 +4,6 @@ node_modules/
 # Build output
 dist/
 
-# Internal handoff docs
-FORJAMIE.md
-
 # Secrets (never commit)
 .env
 .env.*

@@ -131,15 +131,7 @@ export function adaptFailureClass(
 		}
 	}
 
-	if (defaultFailureClass === "contract_policy") {
-		return "contract_policy";
-	}
-
-	if (defaultFailureClass === "transient_infra") {
-		return "transient_infra";
-	}
-
-	return "internal_unknown";
+	return defaultFailureClass;
 }
 
 /**

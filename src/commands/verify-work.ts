@@ -1,5 +1,6 @@
 import { spawnSync } from "node:child_process";
 import { existsSync } from "node:fs";
+import { constants as osConstants } from "node:os";
 import { join, resolve } from "node:path";
 import { sanitizeError } from "../lib/input/sanitize.js";
 
@@ -64,6 +65,11 @@ function buildVerifyWorkArgs(options: VerifyWorkCliOptions): string[] {
  * @returns The chosen exit code: `EXIT_CODES.SUCCESS` for successful execution; `EXIT_CODES.PRECONDITION_FAILED` if the wrapper script is not found; `EXIT_CODES.FAILED` on execution error; `EXIT_CODES.SIGNAL_TERMINATED + N` when the child was terminated by a signal (`N` is 0 for string signals or the numeric signal value); or the child process' numeric exit status when available.
  */
 export function runVerifyWorkCLI(options: VerifyWorkCliOptions): number {
+	if (options.all && options.changedOnly) {
+		console.error("Error: --all and --changed-only are mutually exclusive");
+		return EXIT_CODES.USAGE_ERROR;
+	}
+
 	const repoRoot = resolve(options.repoRoot ?? process.cwd());
 	const scriptPath = join(repoRoot, "scripts/verify-work.sh");
 	if (!existsSync(scriptPath)) {
@@ -92,13 +98,13 @@ export function runVerifyWorkCLI(options: VerifyWorkCliOptions): number {
 
 	if (result.signal) {
 		console.error(`verify-work terminated by signal: ${result.signal}`);
-		// Map signal to exit code (128 + signal number convention)
-		// For string signals, use base SIGNAL_TERMINATED constant
-		const signalNum =
-			typeof result.signal === "string"
-				? 0
-				: (result.signal as unknown as number);
-		return EXIT_CODES.SIGNAL_TERMINATED + signalNum;
+		const signalNumber =
+			osConstants.signals[result.signal as keyof typeof osConstants.signals];
+		if (typeof signalNumber === "number") {
+			return EXIT_CODES.SIGNAL_TERMINATED + signalNumber;
+		}
+		console.error(`Error: failed to map signal exit code for ${result.signal}`);
+		return EXIT_CODES.SIGNAL_TERMINATED;
 	}
 
 	return result.status ?? EXIT_CODES.FAILED;
