@@ -198,7 +198,7 @@ Start with [docs/agents/01-instruction-map.md](./docs/agents/01-instruction-map.
 - Downstream harness-managed repositories should keep a real repo-local `CODESTYLE.md` scaffolded from that canonical source rather than a user-home symlink.
 - Use repo scripts as the command contract: `pnpm lint`, `pnpm typecheck`, `pnpm test`, `pnpm audit`, `pnpm build`, `pnpm check`, and `pnpm test:artifacts`.
 - Linter/formatter: Biome (`biome.json`). Run with `pnpm lint` and `pnpm fmt`.
-- Git hooks: `simple-git-hooks` wired through `Makefile` targets (`hooks-pre-commit`, `hooks-pre-push`).
+- Git hooks: `prek` installs the repo-local `pre-commit` and `pre-push` entries from `prek.toml`; `Makefile` also exposes `hooks-commit-msg` as the canonical commit-policy wrapper.
 - Toolchain: pinned in `.mise.toml`. Run `mise trust` before first use.
 - First-time setup: `make setup` (installs deps plus configures git hooks).
 

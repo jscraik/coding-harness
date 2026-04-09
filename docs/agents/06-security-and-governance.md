@@ -87,7 +87,7 @@ This repository follows conservative defaults:
 
 ## Pre-commit hooks
 
-This repository uses `simple-git-hooks` to install local hooks, and `prek.toml` mirrors the same commands so hook policy drift is visible in-repo:
+This repository uses `prek` as the canonical local hook installer, and `prek.toml` remains the source of truth for installed `pre-commit` and `pre-push` commands:
 
 ### Hooks installed
 
@@ -98,6 +98,7 @@ This repository uses `simple-git-hooks` to install local hooks, and `prek.toml` 
 | `pre-push` | Runs `make hooks-pre-push` (`docs-gate --mode required`, diagram freshness, `tooling-audit`, `check-environment`, changed-file `semgrep`, `make codestyle`, `pnpm build`) |
 
 The staged `gitleaks` lane should prefer the repo-root `.gitleaks.toml` when present so approved fixture/example exceptions are consistent across local hooks, manual scans, and downstream scaffold expectations.
+`hooks-commit-msg` remains a required Makefile wrapper even though `prek.toml` only installs `pre-commit` and `pre-push`; use that wrapper for deterministic commit-policy verification and cross-repo governance checks.
 
 `docs-gate` no longer covers only branch/CI governance wording. Local hook, readiness, and tooling-runtime changes are expected to update this guide and `docs/agents/02-tooling-policy.md` in the same change so pre-push drift is caught before GitHub does.
 Port-free usage should remain scoped to app-style run actions that map to `dev`/`start` scripts. CLI-only repositories can omit port-free run actions without violating governance.
@@ -113,12 +114,17 @@ Port-free usage should remain scoped to app-style run actions that map to `dev`/
 
 ### Setup
 
-Hooks are automatically installed after `pnpm install` via `postinstall` script.
-
-To manually reinstall hooks:
+Hooks are installed via the canonical repo wrapper:
 
 ```bash
 node scripts/setup-git-hooks.js
+```
+
+Equivalent wrappers:
+
+```bash
+make hooks
+make setup
 ```
 
 ### Commit message format

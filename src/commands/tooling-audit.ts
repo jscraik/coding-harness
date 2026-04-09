@@ -11,7 +11,6 @@ import {
 	REQUIRED_HOOK_SUPPORT_FILES,
 	REQUIRED_PACKAGE_SCRIPTS,
 	REQUIRED_PREK_HOOKS,
-	REQUIRED_SIMPLE_GIT_HOOKS,
 	TOOLING_PACKAGE_JSON_PATH,
 	TOOLING_PREK_CONFIG_PATH,
 } from "../lib/policy/tooling-baseline.js";
@@ -529,6 +528,14 @@ function auditPackagePolicy(
 	}
 }
 
+/**
+ * Verifies repository local hook support and records any missing, outdated, or legacy hook-related issues.
+ *
+ * Inspects required hook support files, validates the prek configuration for required hooks (with a stricter check for the `pre-push` hook that requires a `stages = ["pre-push"]` line), parses and validates required package.json scripts, and flags the presence of a legacy `simple-git-hooks` key. Appends findings to the provided `findings` array for each detected problem. If package.json fails to parse, records a critical finding and aborts further package.json checks.
+ *
+ * @param findings - Mutable array to which this function will append `ToolingAuditFinding` entries describing detected issues.
+ * @param repoPath - Filesystem path to the repository root to inspect.
+ */
 function auditLocalHooks(
 	findings: ToolingAuditFinding[],
 	repoPath: string,
@@ -545,8 +552,18 @@ function auditLocalHooks(
 		addMissingFileFinding(findings, TOOLING_PREK_CONFIG_PATH, "prek config");
 	} else {
 		for (const [hookName, commands] of Object.entries(REQUIRED_PREK_HOOKS)) {
-			const expected = `${hookName} = ["${commands.join(" && ")}"]`;
-			if (!prekContent.includes(expected)) {
+			const hookPattern = new RegExp(
+				String.raw`\[\[repos\.hooks\]\][\s\S]*?id = "${hookName}"[\s\S]*?entry = "${commands.join(" && ")}"${
+					hookName === "pre-push"
+						? String.raw`[\s\S]*?stages = \["pre-push"\]`
+						: ""
+				}`,
+			);
+			const expected =
+				hookName === "pre-push"
+					? `[[repos.hooks]] id = "${hookName}" entry = "${commands.join(" && ")}" stages = ["pre-push"]`
+					: `[[repos.hooks]] id = "${hookName}" entry = "${commands.join(" && ")}"`;
+			if (!hookPattern.test(prekContent)) {
 				findings.push({
 					path: TOOLING_PREK_CONFIG_PATH,
 					severity: "critical",
@@ -594,23 +611,15 @@ function auditLocalHooks(
 		}
 	}
 
-	const hooks = packageJson["simple-git-hooks"];
-	const hookObject =
-		hooks && typeof hooks === "object" && !Array.isArray(hooks)
-			? (hooks as Record<string, unknown>)
-			: null;
-	for (const [hookName, expectedCommand] of Object.entries(
-		REQUIRED_SIMPLE_GIT_HOOKS,
-	)) {
-		if (!hookObject || hookObject[hookName] !== expectedCommand) {
-			findings.push({
-				path: TOOLING_PACKAGE_JSON_PATH,
-				severity: "critical",
-				description: `simple-git-hooks entry '${hookName}' is missing or out of date`,
-				expected: expectedCommand,
-				actual: hookObject?.[hookName],
-			});
-		}
+	if (Object.prototype.hasOwnProperty.call(packageJson, "simple-git-hooks")) {
+		findings.push({
+			path: TOOLING_PACKAGE_JSON_PATH,
+			severity: "critical",
+			description:
+				"Legacy simple-git-hooks config should be removed after migrating to prek",
+			expected: "No simple-git-hooks key",
+			actual: packageJson["simple-git-hooks"],
+		});
 	}
 }
 

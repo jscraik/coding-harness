@@ -899,7 +899,7 @@ const COMMAND_SPECS: CommandSpec[] = [
 	{
 		name: "contract",
 		summary: "Init, validate, or print the harness contract schema",
-		example: "contract init --preset standard",
+		example: "contract init --preset lite",
 		errorLabel: "Contract Error",
 		execute: (args) => {
 			const jsonFlag = args.includes("--json");
