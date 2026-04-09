@@ -2,9 +2,10 @@
  * JSC-69 / JSC-123: `harness contract` subcommands.
  *
  * Subcommands:
- * - `harness contract init [--preset minimal|standard|full] [--output path] [--force]`
+ * - `harness contract init [--preset lite|minimal|standard|full] [--output path] [--force]`
  *   → Generates a harness.contract.json starter file for the given preset.
  *   → Defaults to `standard` preset and `./harness.contract.json`.
+ *   → `lite` is an alias of `minimal` for small-team / solo-dev onboarding.
  *   → Errors if the output file already exists unless --force is passed.
  *
  * - `harness contract validate [contractPath]`
@@ -18,6 +19,7 @@
  *
  * Usage:
  *   harness contract init
+ *   harness contract init --preset lite
  *   harness contract init --preset minimal
  *   harness contract init --preset full --output ./config/harness.contract.json
  *   harness contract validate
@@ -31,10 +33,12 @@ import { existsSync, readFileSync, writeFileSync } from "node:fs";
 import { resolve } from "node:path";
 import { cwd } from "node:process";
 import {
-	CONTRACT_PRESETS,
+	CONTRACT_PRESET_INPUTS,
 	type ContractPreset,
+	type ContractPresetInput,
 	PRESET_DESCRIPTIONS,
 	buildContractPreset,
+	normalizeContractPreset,
 } from "../lib/contract/contract-presets.js";
 import {
 	SCHEMA_VERSION,
@@ -83,7 +87,7 @@ function severityIcon(code: string): string {
 
 export interface ContractInitOptions {
 	/** Complexity preset. Defaults to "standard". */
-	preset?: ContractPreset | undefined;
+	preset?: ContractPresetInput | undefined;
 	/** Output file path. Defaults to ./harness.contract.json. */
 	output?: string | undefined;
 	/** Overwrite an existing file without prompting. */
@@ -99,11 +103,12 @@ export interface ContractInitOptions {
  * Returns exit code 0 on success, 1 on error.
  */
 export function runContractInitCLI(options: ContractInitOptions): number {
-	const preset = options.preset ?? DEFAULT_PRESET;
+	const requestedPreset = options.preset ?? DEFAULT_PRESET;
+	const preset = normalizeContractPreset(requestedPreset);
 	const outputPath = resolve(options.output ?? DEFAULT_CONTRACT_FILE);
 
-	if (!CONTRACT_PRESETS.includes(preset)) {
-		const msg = `Unknown preset: "${preset}". Valid presets: ${CONTRACT_PRESETS.join(", ")}`;
+	if (!preset) {
+		const msg = `Unknown preset: "${requestedPreset}". Valid presets: ${CONTRACT_PRESET_INPUTS.join(", ")}`;
 		if (options.json) {
 			console.info(JSON.stringify({ status: "error", error: msg }));
 		} else {
@@ -151,18 +156,23 @@ export function runContractInitCLI(options: ContractInitOptions): number {
 		console.info(
 			JSON.stringify({
 				status: "created",
-				preset,
+				preset: requestedPreset,
+				canonicalPreset: preset,
 				outputPath,
 				sections: Object.keys(contract).length,
 				bytes: content.length,
 			}),
 		);
 	} else {
+		const presetLabel =
+			requestedPreset === "lite"
+				? `${requestedPreset} (alias of minimal)`
+				: requestedPreset;
 		console.info(
 			[
 				"",
 				`✅ Created ${outputPath}`,
-				`   Preset:   ${preset} — ${PRESET_DESCRIPTIONS[preset]}`,
+				`   Preset:   ${presetLabel} — ${PRESET_DESCRIPTIONS[preset]}`,
 				`   Sections: ${Object.keys(contract).length}`,
 				`   Size:     ${content.length} bytes`,
 				"",
@@ -370,7 +380,7 @@ export function runContractCLI(
 		const presetIdx = rest.findIndex((a) => a === "--preset" || a === "-p");
 		const preset =
 			presetIdx !== -1
-				? (rest[presetIdx + 1] as ContractPreset | undefined)
+				? (rest[presetIdx + 1] as ContractPresetInput | undefined)
 				: undefined;
 		const outputIdx = rest.findIndex((a) => a === "--output" || a === "-o");
 		const output = outputIdx !== -1 ? rest[outputIdx + 1] : undefined;
@@ -396,7 +406,7 @@ export function runContractCLI(
 			`Unknown subcommand: harness contract ${subcommand}`,
 			"",
 			"Available subcommands:",
-			"  harness contract init [--preset minimal|standard|full] [--output path] [--force]",
+			"  harness contract init [--preset lite|minimal|standard|full] [--output path] [--force]",
 			"  harness contract validate [path] [--json]",
 			"  harness contract schema",
 			"  harness contract normalize-required-checks [--manifest path]",

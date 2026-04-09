@@ -37,8 +37,10 @@ import {
 
 import {
 	CONTRACT_PRESETS,
+	CONTRACT_PRESET_INPUTS,
 	PRESET_DESCRIPTIONS,
 	buildContractPreset,
+	normalizeContractPreset,
 } from "../lib/contract/contract-presets.js";
 
 import { validateContract } from "../lib/contract/validator.js";
@@ -574,6 +576,18 @@ describe("buildContractPreset", () => {
 			expect(PRESET_DESCRIPTIONS[preset]).toBeTruthy();
 		}
 	});
+
+	it("normalizes lite preset to minimal", () => {
+		expect(normalizeContractPreset("lite")).toBe("minimal");
+	});
+
+	it("rejects unknown preset aliases", () => {
+		expect(normalizeContractPreset("unknown")).toBeUndefined();
+	});
+
+	it("CONTRACT_PRESET_INPUTS includes lite alias", () => {
+		expect(CONTRACT_PRESET_INPUTS).toContain("lite");
+	});
 });
 
 // ─── runContractInitCLI ───────────────────────────────────────────────────────
@@ -607,6 +621,14 @@ describe("runContractInitCLI", () => {
 	it("creates minimal contract", () => {
 		const output = join(dir, "harness.contract.json");
 		const code = runContractInitCLI({ preset: "minimal", output });
+		expect(code).toBe(0);
+		const parsed = JSON.parse(readFileSync(output, "utf-8"));
+		expect(Object.keys(parsed)).toHaveLength(4);
+	});
+
+	it("creates lite contract aliasing minimal", () => {
+		const output = join(dir, "harness.contract.json");
+		const code = runContractInitCLI({ preset: "lite", output });
 		expect(code).toBe(0);
 		const parsed = JSON.parse(readFileSync(output, "utf-8"));
 		expect(Object.keys(parsed)).toHaveLength(4);

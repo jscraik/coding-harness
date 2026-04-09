@@ -22,12 +22,29 @@ import { DEFAULT_CONTRACT, DEFAULT_TOOLING_POLICY } from "./types.js";
 // ─── Preset type ─────────────────────────────────────────────────────────────
 
 export type ContractPreset = "minimal" | "standard" | "full";
+export type ContractPresetInput = ContractPreset | "lite";
 
 export const CONTRACT_PRESETS: ContractPreset[] = [
 	"minimal",
 	"standard",
 	"full",
 ];
+
+export const CONTRACT_PRESET_INPUTS: ContractPresetInput[] = [
+	...CONTRACT_PRESETS,
+	"lite",
+];
+
+export function normalizeContractPreset(
+	preset: ContractPresetInput | string,
+): ContractPreset | undefined {
+	if (preset === "lite") {
+		return "minimal";
+	}
+	return CONTRACT_PRESETS.includes(preset as ContractPreset)
+		? (preset as ContractPreset)
+		: undefined;
+}
 
 // ─── Shared building blocks ───────────────────────────────────────────────────
 
