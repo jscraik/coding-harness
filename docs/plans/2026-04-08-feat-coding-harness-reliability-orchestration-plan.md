@@ -1,7 +1,7 @@
 ---
 title: Coding Harness Reliability Orchestration Plan
 type: feat
-status: active
+status: completed
 date: 2026-04-08
 origin: docs/brainstorms/2026-04-08-coding-harness-reliability-orchestration-requirements.md
 spec: docs/specs/2026-04-08-feat-coding-harness-reliability-orchestration-spec.md
@@ -309,7 +309,7 @@ Design constraints:
 **Acceptance items:**
 - **AC3:** Resume reuses only compatible prior passes and rejects unsafe reuse conditions with explicit diagnostics (R3).
 
-- [ ] **P2 / Unit 3: Orchestration lifecycle engine with execution-class lanes**
+- [x] **P2 / Unit 3: Orchestration lifecycle engine with execution-class lanes**
 
 **Goal:** execute gates through explicit lifecycle states with bounded parallel read-only phase and serial guarded phase.
 
@@ -349,7 +349,7 @@ Design constraints:
 **Acceptance items:**
 - **AC4:** Verify lifecycle enforces deterministic phase transitions and terminal conditions (R2, R3).
 
-- [ ] **P3 / Unit 4: CLI and script integration for fresh/resume execution**
+- [x] **P3 / Unit 4: CLI and script integration for fresh/resume execution**
 
 **Goal:** expose resumable orchestration through the canonical `verify-work` entrypoint while preserving existing invocation patterns.
 
@@ -520,9 +520,13 @@ Dependencies:
 
 Snapshot captured on `2026-04-09` from Linear (`project: coding-harness`, non-terminal states only):
 
-- Lane counts: `In Progress=4`, `In Review=2`, `Todo=2`, `Triage=17`, `Backlog=4` (`29` total outstanding).
-- Reliability-adjacent active items touching verify/policy/CI surfaces: `JSC-96` (`In Progress`), `JSC-115` (`In Review`), `JSC-130` (`In Review`), `JSC-87` (`Triage`).
-- Planning implication: `P0` is complete; keep follow-on phases gated and evidence-driven because adjacent queue pressure indicates continued verification-governance drift risk.
+- `In Progress` (6): `JSC-112`, `JSC-131`, `JSC-96`, `JSC-135`, `JSC-127`, `JSC-134`
+- `In Review` (2): `JSC-115`, `JSC-130`
+- `Todo` (0): none
+- `Triage` (17): `JSC-128`, `JSC-122`, `JSC-129`, `JSC-125`, `JSC-132`, `JSC-126`, `JSC-124`, `JSC-121`, `JSC-120`, `JSC-109`, `JSC-108`, `JSC-107`, `JSC-106`, `JSC-116`, `JSC-114`, `JSC-104`, `JSC-87`
+- `Backlog` (4): `JSC-159`, `JSC-158`, `JSC-157`, `JSC-156`
+
+Total outstanding issues tracked in this snapshot: `29`.
 
 ## Execution Ledger (Planning Mode)
 
