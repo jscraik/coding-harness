@@ -21,7 +21,7 @@ function parseArgs(argv) {
 	const parsed = {
 		resultsPath: null,
 		policyPath: null,
-		mode: "fail",
+		mode: null,
 	};
 
 	for (let i = 2; i < argv.length; i += 1) {
@@ -199,7 +199,10 @@ function main() {
 		process.exit(2);
 	}
 
-	if (!args.resultsPath || !args.policyPath) {
+	if (!args.resultsPath || !args.policyPath || !args.mode) {
+		if (!args.mode) {
+			console.error("Missing required --mode <warn|fail>.");
+		}
 		usage();
 		process.exit(2);
 	}
