@@ -22,6 +22,31 @@ const COMMIT_MSG_VALIDATOR_PATH = resolve(
 	"scripts/validate-commit-msg.js",
 );
 
+function clearLegacyLocalHooksPath() {
+	try {
+		const configuredHooksPath = execFileSync(
+			"git",
+			["config", "--local", "--get", "core.hooksPath"],
+			{
+				encoding: "utf-8",
+				stdio: ["pipe", "pipe", "ignore"],
+			},
+		).trim();
+		if (!configuredHooksPath) {
+			return;
+		}
+
+		console.info(
+			`Removing legacy local core.hooksPath ('${configuredHooksPath}') so prek can install canonical hooks...`,
+		);
+		execFileSync("git", ["config", "--unset-all", "--local", "core.hooksPath"], {
+			stdio: "inherit",
+		});
+	} catch {
+		// No local core.hooksPath override is present.
+	}
+}
+
 function main() {
 	if (!existsSync(PREK_CONFIG_PATH)) {
 		console.error("Error: prek.toml not found in current directory");
@@ -37,6 +62,7 @@ function main() {
 	}
 
 	try {
+		clearLegacyLocalHooksPath();
 		console.info("Installing prek git hooks...");
 		execFileSync("prek", ["install"], { stdio: "inherit" });
 		console.info("\n✓ Git hooks installed and active!");

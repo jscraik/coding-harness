@@ -51,7 +51,7 @@ fi
 		exit 1
 	fi
 
-	required_support_files=("scripts/codex-preflight.sh" "scripts/codex-preflight-local-memory-legacy.sh" "scripts/codex-learn" "scripts/codex-enforced" "scripts/verify-work.sh" "scripts/validate-codestyle.sh" "scripts/prepare-worktree.sh" "scripts/check-staged-secrets.sh" "scripts/check-doc-style.sh" "scripts/check-related-tests.sh" "scripts/check-semgrep-changed.sh" "scripts/semgrep-pre-push.yml")
+	required_support_files=("scripts/codex-preflight.sh" "scripts/codex-preflight-local-memory-legacy.sh" "scripts/codex-learn" "scripts/codex-enforced" "scripts/verify-work.sh" "scripts/validate-codestyle.sh" "scripts/prepare-worktree.sh" "scripts/validate-commit-msg.js" "scripts/check-staged-secrets.sh" "scripts/check-doc-style.sh" "scripts/check-related-tests.sh" "scripts/check-semgrep-changed.sh" "scripts/semgrep-pre-push.yml")
 	for support_file in "${required_support_files[@]}"; do
 		if [[ ! -f "$REPO_ROOT/${support_file}" ]]; then
 			echo "Error: missing required hook support file at $REPO_ROOT/${support_file}"
@@ -116,7 +116,7 @@ fi
 		fi
 	done
 
-	required_make_targets=("help" "install" "setup" "preflight" "verify-work" "codestyle" "worktree-ready" "hooks" "hooks-pre-commit" "hooks-pre-push" "secrets-staged" "docs-style-changed" "related-tests" "semgrep-changed" "diagrams-check" "lint" "docs-lint" "fmt" "typecheck" "test" "check" "audit" "secrets" "security" "clean" "reset" "ci" "diagrams" "env-check")
+	required_make_targets=("help" "install" "setup" "preflight" "verify-work" "codestyle" "worktree-ready" "hooks" "hooks-pre-commit" "hooks-pre-push" "hooks-commit-msg" "secrets-staged" "docs-style-changed" "related-tests" "semgrep-changed" "diagrams-check" "lint" "docs-lint" "fmt" "typecheck" "test" "check" "audit" "secrets" "security" "clean" "reset" "ci" "diagrams" "env-check")
 	for target in "${required_make_targets[@]}"; do
 		if ! rg -q "^${target}:" "$MAKEFILE_PATH"; then
 			echo "Error: required Makefile target '$target' is missing from $MAKEFILE_PATH"
@@ -124,15 +124,45 @@ fi
 		fi
 	done
 
-	required_prek_hooks=("pre-commit|make hooks-pre-commit" "pre-push|make hooks-pre-push")
-	for hook_spec in "${required_prek_hooks[@]}"; do
-		hook_name="${hook_spec%%|*}"
-		hook_command="${hook_spec#*|}"
-		if ! rg -q "^[[:space:]]*${hook_name}[[:space:]]*=[[:space:]]*\\[[[:space:]]*\"${hook_command}\"[[:space:]]*\\][[:space:]]*$" "$PREK_CONFIG_PATH"; then
-			echo "Error: required prek hook '$hook_name' is missing or out of date in $PREK_CONFIG_PATH"
-			exit 1
-		fi
-	done
+	if ! python3 - "$PREK_CONFIG_PATH" <<'PY'
+import sys
+import tomllib
+
+config_path = sys.argv[1]
+with open(config_path, "rb") as handle:
+    data = tomllib.load(handle)
+
+required = {
+    "pre-commit": ("make hooks-pre-commit", None),
+    "pre-push": ("make hooks-pre-push", "pre-push"),
+}
+
+hooks = []
+for repo in data.get("repos", []):
+    if repo.get("repo") == "local":
+        hooks.extend(repo.get("hooks", []))
+
+for hook_id, (entry, required_stage) in required.items():
+    matched = False
+    for hook in hooks:
+        if hook.get("id") != hook_id:
+            continue
+        if hook.get("entry") != entry:
+            continue
+        if required_stage is not None and required_stage not in hook.get("stages", []):
+            continue
+        matched = True
+        break
+    if not matched:
+        print(
+            f"Error: required prek hook '{hook_id}' is missing or out of date in {config_path}",
+            file=sys.stderr,
+        )
+        sys.exit(1)
+PY
+	then
+		exit 1
+	fi
 
 	if [[ -f "$PACKAGE_JSON_PATH" ]]; then
 		required_package_scripts=("codestyle:validate|bash scripts/validate-codestyle.sh" "secrets:staged|bash scripts/check-staged-secrets.sh" "docs:style:changed|bash scripts/check-doc-style.sh" "test:related|bash scripts/check-related-tests.sh" "semgrep:changed|bash scripts/check-semgrep-changed.sh")
@@ -148,18 +178,11 @@ fi
 			fi
 		done
 
-		required_simple_git_hooks=("pre-commit|make hooks-pre-commit" "commit-msg|node scripts/validate-commit-msg.js \$1" "pre-push|make hooks-pre-push")
-		for hook_spec in "${required_simple_git_hooks[@]}"; do
-			hook_name="${hook_spec%%|*}"
-			hook_command="${hook_spec#*|}"
-			if ! jq -e --arg hook_name "$hook_name" --arg hook_command "$hook_command" '
-				.["simple-git-hooks"][$hook_name] == $hook_command
-			' "$PACKAGE_JSON_PATH" >/dev/null; then
-				echo "Error: simple-git-hooks entry '$hook_name' is missing or out of date in $PACKAGE_JSON_PATH"
-				echo "Fix: run node scripts/setup-git-hooks.js"
-				exit 1
-			fi
-		done
+		if jq -e 'has("simple-git-hooks")' "$PACKAGE_JSON_PATH" >/dev/null; then
+			echo "Error: legacy simple-git-hooks config must be removed from $PACKAGE_JSON_PATH"
+			echo "Fix: delete the simple-git-hooks package/config and use node scripts/setup-git-hooks.js to install prek hooks."
+			exit 1
+		fi
 
 		has_package_marker() {
 			local marker="$1"
