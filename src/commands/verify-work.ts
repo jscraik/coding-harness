@@ -21,6 +21,19 @@ export interface VerifyWorkCliOptions {
 	repoRoot?: string;
 }
 
+/**
+ * Builds command-line arguments for the verify-work wrapper based on provided options.
+ *
+ * The resulting array contains the appropriate flags for the wrapper script:
+ * - `--all` or `--changed-only` (mutually exclusive; `--all` takes precedence)
+ * - `--strict`, `--fast`
+ * - `--resume-from <value>`
+ * - `--json`
+ * - `--repo-root <resolved path>`
+ *
+ * @param options - Options that control which flags are included
+ * @returns Array of command-line arguments ready to be passed to the verify-work script
+ */
 function buildVerifyWorkArgs(options: VerifyWorkCliOptions): string[] {
 	const args: string[] = [];
 	if (options.all) {
@@ -46,6 +59,12 @@ function buildVerifyWorkArgs(options: VerifyWorkCliOptions): string[] {
 	return args;
 }
 
+/**
+ * Run the repository's verify-work wrapper script using the provided CLI options.
+ *
+ * @param options - Options that control which flags are passed to the wrapper and optionally where to find the repository root.
+ * @returns The process exit code: `EXIT_CODES.SUCCESS` on success, `EXIT_CODES.PRECONDITION_FAILED` if the wrapper is missing, `EXIT_CODES.FAILED` on execution error, `EXIT_CODES.SIGNAL_TERMINATED + N` when terminated by a signal, or the child process' status code when available.
+ */
 export function runVerifyWorkCLI(options: VerifyWorkCliOptions): number {
 	const repoRoot = resolve(options.repoRoot ?? process.cwd());
 	const scriptPath = join(repoRoot, "scripts/verify-work.sh");

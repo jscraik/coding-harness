@@ -510,6 +510,18 @@ export function runLinearGate(options: LinearGateOptions): LinearGateResult {
 	};
 }
 
+/**
+ * Run the Linear gate and emit human-readable or JSON output to stdout/stderr, returning the process exit code that callers should use.
+ *
+ * Runs validation via `runLinearGate`, prints a normalized JSON payload to stdout when `options.json` is true, otherwise prints a concise human-readable report of the gate status and per-check details to stdout/stderr. When a failure classification is available it is also printed (in non-JSON mode it is written to stdout for successful runs and stderr for error results).
+ *
+ * @param options - Options controlling contract location, repository/PR metadata overrides, tolerance flags (e.g. `allowMissingBranch`, `allowMissingPrMetadata`) and `json` output mode.
+ * @returns One of the EXIT_CODES:
+ * - `EXIT_CODES.SUCCESS` when the gate passed,
+ * - `EXIT_CODES.POLICY_VIOLATION` when the gate ran successfully but policy checks failed,
+ * - `EXIT_CODES.VALIDATION_ERROR` when validation or input-related problems occurred,
+ * - `EXIT_CODES.CONTRACT_ERROR` when the contract could not be loaded or parsed.
+ */
 export async function runLinearGateCLI(
 	options: LinearGateOptions,
 ): Promise<number> {

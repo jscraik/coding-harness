@@ -26,6 +26,13 @@ export interface VerifyRetryContext {
 
 export const DEFAULT_MAX_ATTEMPTS = 2;
 
+/**
+ * Validate and resolve the maximum number of attempts, defaulting to DEFAULT_MAX_ATTEMPTS when unspecified.
+ *
+ * @param maxAttempts - Optional user-specified maximum attempts; if `undefined`, `DEFAULT_MAX_ATTEMPTS` is used.
+ * @returns The validated maximum attempts (an integer greater than or equal to 1).
+ * @throws Error if `maxAttempts` is not an integer or is less than 1 (message: "maxAttempts must be a positive integer").
+ */
 function normaliseMaxAttempts(maxAttempts: number | undefined): number {
 	const value = maxAttempts ?? DEFAULT_MAX_ATTEMPTS;
 	if (!Number.isInteger(value) || value < 1) {
@@ -34,6 +41,13 @@ function normaliseMaxAttempts(maxAttempts: number | undefined): number {
 	return value;
 }
 
+/**
+ * Determines whether retries are permitted for a verification gate run based on its execution mode and failure category.
+ *
+ * @param executionClass - The execution classification of the gate (for example, read-only parallel execution).
+ * @param failureClass - The failure classification observed for the run (for example, transient infrastructure failures).
+ * @returns `true` if the given combination of `executionClass` and `failureClass` is eligible for retry, `false` otherwise.
+ */
 export function isRetryEligible(
 	executionClass: VerifyGateExecutionClass,
 	failureClass: VerifyGateFailureClass,
@@ -44,11 +58,25 @@ export function isRetryEligible(
 	);
 }
 
+/**
+ * Determines whether the given string contains any of the provided substrings using case-insensitive matching.
+ *
+ * @param haystack - The string to search within.
+ * @param needles - Substrings to look for inside `haystack`.
+ * @returns `true` if any `needle` is found in `haystack` (case-insensitive), `false` otherwise.
+ */
 function containsAny(haystack: string, needles: string[]): boolean {
 	const lower = haystack.toLowerCase();
 	return needles.some((needle) => lower.includes(needle.toLowerCase()));
 }
 
+/**
+ * Resolve the failure class for a verification gate using an optional failure signal and a provided default.
+ *
+ * @param defaultFailureClass - Fallback classification to use when the signal does not provide a decisive classification.
+ * @param signal - Optional failure signal that may include an explicit `classification`, `timedOut` / `exitCode`, `errorCode`, and `stderr` hints.
+ * @returns The chosen VerifyGateFailureClass: `contract_policy`, `transient_infra`, or `internal_unknown`.
+ */
 export function adaptFailureClass(
 	defaultFailureClass: VerifyGateFailureClass,
 	signal?: VerifyFailureSignal,
@@ -109,6 +137,16 @@ export function adaptFailureClass(
 	return "internal_unknown";
 }
 
+/**
+ * Decides whether a verification attempt should be retried based on execution/failure classification and configured attempt limits.
+ *
+ * @param context - Inputs for the decision: `executionClass` and `failureClass` determine eligibility, `attempt` is the current attempt index (1-based), and optional `maxAttempts` overrides the default limit.
+ * @returns The retry decision:
+ *  - `shouldRetry`: `true` when the execution/failure combination is eligible and the current attempt is less than the resolved max attempts; `false` otherwise.
+ *  - `nextAttempt`: the next attempt number when retrying, or `null` when not retrying.
+ *  - `reason`: one of `"retry_not_eligible"`, `"retry_exhausted"`, or `"retry_transient_read_only_failure"` describing why the decision was made.
+ * @throws Error if `context.attempt` is not an integer >= 1.
+ */
 export function decideRetry(context: VerifyRetryContext): VerifyRetryDecision {
 	const maxAttempts = normaliseMaxAttempts(context.maxAttempts);
 	if (!Number.isInteger(context.attempt) || context.attempt < 1) {

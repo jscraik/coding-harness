@@ -88,6 +88,12 @@ export interface VerifyOrchestrationResult {
 
 const INITIAL_STATE: VerifyLifecycleState = "S0_INIT";
 
+/**
+ * Produce a new array containing only enabled gates, ordered deterministically.
+ *
+ * @param gates - The list of gate definitions to filter and sort
+ * @returns An array of gates with `enabled === true`, sorted ascending by numeric `order` and then by `gateId` (lexicographically)
+ */
 function sortEnabledGates(
 	gates: NormalizedGateDefinition[],
 ): NormalizedGateDefinition[] {
@@ -101,6 +107,12 @@ function sortEnabledGates(
 		});
 }
 
+/**
+ * Map a gate's declared execution class string to the orchestrator's execution class.
+ *
+ * @param value - The gate's `executionClass` string (e.g., `"read_only_parallel"`). Unrecognized or other values are treated as serial guarded.
+ * @returns `read_only_parallel` if `value` is `"read_only_parallel"`, `serial_guarded` otherwise.
+ */
 function toExecutionClass(value: string): VerifyGateExecutionClass {
 	if (value === "read_only_parallel") {
 		return "read_only_parallel";
@@ -108,6 +120,12 @@ function toExecutionClass(value: string): VerifyGateExecutionClass {
 	return "serial_guarded";
 }
 
+/**
+ * Normalize a gate-provided failure-class string into a canonical failure class.
+ *
+ * @param value - The raw failure-class string from a gate definition
+ * @returns `"transient_infra"` if `value` equals `"transient_infra"`, `"contract_policy"` if `value` equals `"contract_policy"`, otherwise `"internal_unknown"`
+ */
 function toFailureClass(value: string): VerifyGateFailureClass {
 	if (value === "transient_infra") {
 		return "transient_infra";
@@ -118,12 +136,27 @@ function toFailureClass(value: string): VerifyGateFailureClass {
 	return "internal_unknown";
 }
 
+/**
+ * Validate that a numeric value is a positive integer.
+ *
+ * @param name - Label used in the thrown error message when validation fails
+ * @param value - The number to validate; must be an integer greater than or equal to 1
+ * @throws Error when `value` is not an integer or is less than 1 (message: `${name} must be a positive integer`)
+ */
 function ensurePositiveInteger(name: string, value: number): void {
 	if (!Number.isInteger(value) || value < 1) {
 		throw new Error(`${name} must be a positive integer`);
 	}
 }
 
+/**
+ * Compute the next verify lifecycle state for a given current state and lifecycle event.
+ *
+ * @param state - The current lifecycle state from which the transition is applied.
+ * @param event - The lifecycle event to apply to the current state.
+ * @returns The resulting lifecycle state after applying `event` to `state`.
+ * @throws Error if `state` is not a handled lifecycle state or if the `(state, event)` pair does not represent a valid transition.
+ */
 export function transitionLifecycle(
 	state: VerifyLifecycleState,
 	event: VerifyLifecycleEvent,
@@ -199,6 +232,16 @@ export function transitionLifecycle(
 	throw new Error(`Invalid lifecycle transition: ${state} -> ${event}`);
 }
 
+/**
+ * Executes a single gate using the provided runner and applies retry policy until the gate reaches a terminal status.
+ *
+ * Executes the gate via `runner` and returns a normalized execution record when the gate either passes, becomes blocked, or fails irrecoverably after applying retry decisions up to `maxAttempts`. Runner-thrown errors are caught and mapped to an internal failure class and are subject to the same retry logic.
+ *
+ * @param gate - Normalized gate definition to execute
+ * @param runner - Function that runs the gate for a given attempt and returns its status and metadata
+ * @param maxAttempts - Maximum number of attempts allowed by the retry policy (must be a positive integer)
+ * @returns A VerifyGateExecutionRecord describing the gateId, execution class, terminal status (`passed`, `blocked`, or `failed`), number of attempts performed, exitCode, resolved failureClass, and a nextAction string
+ */
 async function executeGateWithRetry(
 	gate: NormalizedGateDefinition,
 	runner: VerifyGateRunner,
@@ -304,6 +347,19 @@ async function executeGateWithRetry(
 	}
 }
 
+/**
+ * Executes read-only gates in bounded parallel batches and collects their execution records.
+ *
+ * Executes the provided `gates` in slices of up to `maxParallelism`, running each slice concurrently
+ * and awaiting all results before proceeding to the next slice. Each gate is executed with retry
+ * behavior using the supplied `runner` and `maxAttempts`.
+ *
+ * @param gates - The read-only gate definitions to execute, processed in input order.
+ * @param runner - The gate runner invoked for each gate execution attempt.
+ * @param maxParallelism - Maximum number of gates to run concurrently per batch (must be > 0).
+ * @param maxAttempts - Maximum attempts allowed per gate execution (must be > 0).
+ * @returns An array of per-gate execution records in the same relative order as `gates`.
+ */
 async function executeReadOnlyBatches(
 	gates: NormalizedGateDefinition[],
 	runner: VerifyGateRunner,
@@ -323,6 +379,21 @@ async function executeReadOnlyBatches(
 	return results;
 }
 
+/**
+ * Orchestrates verification gates through a deterministic lifecycle and returns the final orchestration outcome.
+ *
+ * Validates and normalizes inputs, deterministically orders enabled gates, executes read-only gates in bounded
+ * parallel batches, then executes serial guarded gates sequentially. Records lifecycle transitions and per-gate
+ * execution records. The orchestration terminates early if any gate becomes blocked or fails; in that case
+ * `overallStatus` will be `"blocked"` or `"failed"` and `resumeFromGateId` will point to the gate that caused
+ * termination. When execution completes the lifecycle reaches `S5_DONE` and `overallStatus` is `"passed"`.
+ *
+ * @param options - Orchestration options including the set of normalized gates, a gate runner, and optional
+ *                  `maxParallelism` and `maxAttempts` limits.
+ * @returns The orchestration result containing `finalState`, `overallStatus` (`"passed"`, `"failed"`, or `"blocked"`),
+ *          an optional `resumeFromGateId` for early termination, the list of lifecycle `transitions`, and `gateResults`.
+ * @throws If `maxParallelism` or `maxAttempts` is not a positive integer.
+ */
 export async function orchestrateVerifyLifecycle(
 	options: VerifyOrchestratorOptions,
 ): Promise<VerifyOrchestrationResult> {

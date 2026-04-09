@@ -108,6 +108,13 @@ export interface LoadedGateResult {
 	raw: Record<string, unknown>;
 }
 
+/**
+ * Validate that a value is a non-null, non-array object and narrow its type.
+ *
+ * @param value - The value to validate
+ * @returns The same value narrowed to a plain object (`Record<string, unknown>`)
+ * @throws RunStateError with code `E_PARSE` if `value` is null, not an object, or an array
+ */
 function toObject(value: unknown): Record<string, unknown> {
 	if (typeof value !== "object" || value === null || Array.isArray(value)) {
 		throw new RunStateError("Expected object value", "E_PARSE");
@@ -115,6 +122,14 @@ function toObject(value: unknown): Record<string, unknown> {
 	return value as Record<string, unknown>;
 }
 
+/**
+ * Validates that a value is a non-empty string.
+ *
+ * @param value - The value to validate.
+ * @param field - Field name used in the error message when validation fails.
+ * @returns The validated string.
+ * @throws RunStateError with code `E_PARSE` if `value` is not a non-empty string.
+ */
 function asString(value: unknown, field: string): string {
 	if (typeof value !== "string" || value.length === 0) {
 		throw new RunStateError(
@@ -125,10 +140,24 @@ function asString(value: unknown, field: string): string {
 	return value;
 }
 
+/**
+ * Get the input as a non-empty string if it is one.
+ *
+ * @param value - The value to check
+ * @returns The string if `value` is a non-empty string, `undefined` otherwise.
+ */
 function asOptionalString(value: unknown): string | undefined {
 	return typeof value === "string" && value.length > 0 ? value : undefined;
 }
 
+/**
+ * Validates that a value is a boolean and returns it.
+ *
+ * @param value - The value to validate as a boolean.
+ * @param field - Name of the field used in the error message when validation fails.
+ * @returns The validated boolean value.
+ * @throws RunStateError with code `E_PARSE` if `value` is not a boolean.
+ */
 function asBoolean(value: unknown, field: string): boolean {
 	if (typeof value !== "boolean") {
 		throw new RunStateError(`Expected boolean for ${field}`, "E_PARSE");
@@ -136,6 +165,14 @@ function asBoolean(value: unknown, field: string): boolean {
 	return value;
 }
 
+/**
+ * Validate that the provided value is an integer and return it.
+ *
+ * @param value - The value to validate as an integer.
+ * @param field - The name of the field (used in the error message on failure).
+ * @returns The validated integer value.
+ * @throws RunStateError with code `E_PARSE` if `value` is not an integer.
+ */
 function asInteger(value: unknown, field: string): number {
 	if (typeof value !== "number" || !Number.isInteger(value)) {
 		throw new RunStateError(`Expected integer for ${field}`, "E_PARSE");
@@ -143,6 +180,14 @@ function asInteger(value: unknown, field: string): number {
 	return value;
 }
 
+/**
+ * Validate that a value is a verify gate status and return it.
+ *
+ * @param value - The value to validate.
+ * @param field - The name of the source field (included in error messages).
+ * @returns The validated gate status: `'passed'`, `'failed'`, or `'blocked'`.
+ * @throws RunStateError with code `E_PARSE` if `value` is not one of the allowed statuses.
+ */
 function asGateStatus(value: unknown, field: string): VerifyGateStatus {
 	if (value === "passed" || value === "failed" || value === "blocked") {
 		return value;
@@ -150,6 +195,15 @@ function asGateStatus(value: unknown, field: string): VerifyGateStatus {
 	throw new RunStateError(`Invalid gate status for ${field}`, "E_PARSE");
 }
 
+/**
+ * Resolve a repository-relative path into an absolute, validated filesystem path.
+ *
+ * @param repoRoot - Absolute repository root directory against which `relativePath` is resolved.
+ * @param relativePath - Path relative to `repoRoot`; must not escape the repository root.
+ * @returns The resolved absolute path confined within `repoRoot`.
+ * @throws RunStateError with code `"E_PATH"` if `relativePath` would traverse outside `repoRoot`.
+ * @throws Any error thrown by `validatePath` (other errors are rethrown unchanged).
+ */
 function safePath(repoRoot: string, relativePath: string): string {
 	try {
 		return validatePath(repoRoot, relativePath);
@@ -164,6 +218,12 @@ function safePath(repoRoot: string, relativePath: string): string {
 	}
 }
 
+/**
+ * Produce a deterministically ordered equivalent of a JSON-like value by recursively sorting object keys.
+ *
+ * @param value - Any JSON-serializable value (objects, arrays, primitives)
+ * @returns A value equivalent to `value` with all object keys sorted lexicographically; arrays and primitive values are preserved
+ */
 function canonicalize(value: unknown): unknown {
 	if (Array.isArray(value)) {
 		return value.map((entry) => canonicalize(entry));
@@ -180,14 +240,34 @@ function canonicalize(value: unknown): unknown {
 	return value;
 }
 
+/**
+ * Produces a deterministic JSON string representation of `value` by canonicalizing object key order.
+ *
+ * @param value - Any value to be serialized (typically JSON-serializable). Object keys will be sorted deterministically.
+ * @returns A JSON string where equivalent input values yield the same string due to stable key ordering.
+ */
 function stableJson(value: unknown): string {
 	return JSON.stringify(canonicalize(value));
 }
 
+/**
+ * Compute the SHA-256 hex digest for the given text.
+ *
+ * @param text - The input string to hash.
+ * @returns The SHA-256 digest of `text` encoded as a lowercase hexadecimal string.
+ */
 function sha256(text: string): string {
 	return createHash("sha256").update(text).digest("hex");
 }
 
+/**
+ * Atomically writes `data` as pretty-printed JSON to `path`, creating parent directories if needed.
+ *
+ * Attempts to write to a temporary file and rename it into place to ensure atomic replacement. On failure it best-effort removes the temp file and throws a `RunStateError` with code `E_IO`.
+ *
+ * @param path - Destination filesystem path for the JSON file
+ * @param data - Value to serialize to JSON (will be written with two-space indentation and a trailing newline)
+ */
 function atomicWriteJson(path: string, data: unknown): void {
 	const content = `${JSON.stringify(data, null, 2)}\n`;
 	const tempPath = `${path}.${process.pid}.${randomUUID()}.tmp`;
@@ -208,6 +288,13 @@ function atomicWriteJson(path: string, data: unknown): void {
 	}
 }
 
+/**
+ * Load a UTF-8 file and validate its contents as a plain JSON object.
+ *
+ * @param path - Filesystem path to the JSON file to read
+ * @returns A non-null object containing the parsed JSON (arrays are rejected)
+ * @throws RunStateError with code `E_PARSE` if the file cannot be read, parsed, or does not contain a plain object; rethrows an existing `RunStateError` unchanged
+ */
 function readJsonObject(path: string): Record<string, unknown> {
 	try {
 		return toObject(JSON.parse(readFileSync(path, "utf-8")) as unknown);
@@ -222,6 +309,13 @@ function readJsonObject(path: string): Record<string, unknown> {
 	}
 }
 
+/**
+ * Produces a filesystem-safe filename for a gate result by appending `.json` to a validated gate id.
+ *
+ * @param gateId - Gate identifier; must match `/^[A-Za-z0-9][A-Za-z0-9._-]{0,127}$/`.
+ * @returns The gate result filename, e.g. `"<gateId>.json"`.
+ * @throws RunStateError with code `E_VALIDATION` if `gateId` does not match the allowed pattern.
+ */
 function gateFileName(gateId: string): string {
 	if (!/^[A-Za-z0-9][A-Za-z0-9._-]{0,127}$/.test(gateId)) {
 		throw new RunStateError(`Invalid gate id: ${gateId}`, "E_VALIDATION");
@@ -229,6 +323,14 @@ function gateFileName(gateId: string): string {
 	return `${gateId}.json`;
 }
 
+/**
+ * Produces a stable 16-character hex fingerprint for a set of identity-tuple entries.
+ *
+ * The fingerprint is computed deterministically from the provided entries and is independent of the input order. Missing `githubCheckName` values are treated as an empty string.
+ *
+ * @param entries - The identity-tuple entries to include in the fingerprint
+ * @returns A 16-character hexadecimal string representing the normalized entries
+ */
 export function deriveIdentityTupleHash(
 	entries: VerifyIdentityTupleEntry[],
 ): string {
@@ -247,6 +349,20 @@ export function deriveIdentityTupleHash(
 	return sha256(JSON.stringify(normalized)).slice(0, 16);
 }
 
+/**
+ * Compute canonical filesystem paths for a verify run's persisted artifacts under the repository root.
+ *
+ * @param repoRoot - Filesystem path of the repository root used to resolve and validate run artifact locations.
+ * @param runId - Run identifier; must match /^[A-Za-z0-9][A-Za-z0-9._-]{2,127}$/. Invalid values cause a validation error.
+ * @returns An object with validated paths:
+ *  - `runsDir`: directory containing all runs (".harness/runs")
+ *  - `runDir`: directory for this run (".harness/runs/<runId>")
+ *  - `runPath`: path to the run metadata file (".harness/runs/<runId>/run.json")
+ *  - `summaryPath`: path to the run summary file (".harness/runs/<runId>/summary.json")
+ *  - `gatesDir`: directory for per-gate result files (".harness/runs/<runId>/gates")
+ * @throws {RunStateError} With code `E_VALIDATION` if `runId` does not meet the required pattern.
+ * @throws {RunStateError} With code `E_PATH` if resolving any path would escape the provided `repoRoot`.
+ */
 export function resolveVerifyRunPaths(
 	repoRoot: string,
 	runId: string,
@@ -265,6 +381,16 @@ export function resolveVerifyRunPaths(
 	return { runsDir, runDir, runPath, summaryPath, gatesDir };
 }
 
+/**
+ * Persist verify run metadata to the run's run.json file under the repository.
+ *
+ * Writes `metadata` to the resolved path for `metadata.runId` (under `.harness/runs/<runId>/run.json`) using an atomic write.
+ *
+ * @param repoRoot - Filesystem root of the repository used to resolve safe storage paths.
+ * @param metadata - Verify run metadata; `metadata.runId` is used to determine the target path.
+ * @returns The filesystem path to the written `run.json`.
+ * @throws RunStateError with code `E_VALIDATION` if `metadata.runId` is invalid, `E_PATH` for path traversal issues, or `E_IO` for filesystem write/rename failures.
+ */
 export function writeVerifyRunMetadata(
 	repoRoot: string,
 	metadata: VerifyRunMetadata,
@@ -274,6 +400,18 @@ export function writeVerifyRunMetadata(
 	return paths.runPath;
 }
 
+/**
+ * Persist the provided verify run summary to the run's summary.json file.
+ *
+ * Writes `summary` atomically under `.harness/runs/<runId>/summary.json` and returns the written path.
+ *
+ * @param repoRoot - Repository root used to resolve run artifact paths.
+ * @param runId - Target run identifier (validated by path rules).
+ * @param summary - Summary object to persist.
+ * @returns The full filesystem path to the written `summary.json`.
+ *
+ * @throws RunStateError with code `E_VALIDATION` if `runId` is invalid; `E_PATH` if the resolved path is unsafe; `E_IO` on write or rename failures.
+ */
 export function writeVerifyRunSummary(
 	repoRoot: string,
 	runId: string,
@@ -284,6 +422,14 @@ export function writeVerifyRunSummary(
 	return paths.summaryPath;
 }
 
+/**
+ * Load and validate a persisted gate result JSON from disk, returning a typed representation.
+ *
+ * @param path - Filesystem path to the gate result JSON file
+ * @returns A `LoadedGateResult` containing validated fields (`gateId`, `status`, `attempt`), optional `runId` and `idempotencyKey` when present, and the original parsed `raw` object
+ * @throws RunStateError with code `E_IO` if the file cannot be read
+ * @throws RunStateError with code `E_PARSE` if the file is not valid JSON or required fields fail validation (including non-positive `attempt`)
+ */
 function parseLoadedGateResult(path: string): LoadedGateResult {
 	const parsed = readJsonObject(path);
 	const gateId = asString(parsed.gateId, "gateId");
@@ -304,10 +450,38 @@ function parseLoadedGateResult(path: string): LoadedGateResult {
 	};
 }
 
+/**
+ * Build the canonical idempotency key used to identify a specific gate write.
+ *
+ * @param runId - The verify run identifier
+ * @param gateId - The gate identifier
+ * @param attempt - The gate attempt number (must be > 0)
+ * @returns The idempotency key in the format `runId:gateId:attempt`
+ */
 function gateWriteKey(runId: string, gateId: string, attempt: number): string {
 	return `${runId}:${gateId}:${attempt}`;
 }
 
+/**
+ * Persist a single gate result file for a verify run, enforcing idempotency rules.
+ *
+ * Writes a JSON file at `.harness/runs/<runId>/gates/<gateId>.json` (atomic rename). If a file already exists it compares an idempotency key computed from `runId:gateId:attempt`:
+ * - If the existing record has the same idempotency key and identical canonical JSON, no write is performed and the operation is reported as idempotent.
+ * - If the existing record has the same idempotency key but different content, an idempotency conflict error is raised.
+ * - Otherwise the provided result (augmented with an `idempotencyKey`) is written atomically.
+ *
+ * @param repoRoot - Repository root used to resolve `.harness/runs` paths.
+ * @param runId - Target verify run identifier; `result.runId` must equal this value.
+ * @param result - Gate result to persist; `attempt` must be > 0.
+ * @returns An object with:
+ *   - `path`: filesystem path written (or where an identical record was found),
+ *   - `written`: `true` when a new file was created, `false` when an identical record already existed,
+ *   - `idempotent`: `true` when the existing file matched the idempotency key and content, `false` otherwise.
+ *
+ * @throws RunStateError with code `E_VALIDATION` if `result.runId !== runId` or `result.attempt <= 0`.
+ * @throws RunStateError with code `E_IDEMPOTENCY_CONFLICT` if an existing file shares the idempotency key but differs in content.
+ * @throws RunStateError with codes such as `E_PATH` or `E_IO` when path validation or filesystem operations fail.
+ */
 export function writeVerifyGateResult(
 	repoRoot: string,
 	runId: string,
@@ -355,6 +529,14 @@ export function writeVerifyGateResult(
 	return { path: gatePath, written: true, idempotent: false };
 }
 
+/**
+ * Load and validate a run's persisted metadata from the repository's .harness/runs/<runId>/run.json.
+ *
+ * @param repoRoot - Filesystem path to the repository root used to resolve run storage under `.harness/runs`.
+ * @param runId - Run identifier whose metadata will be loaded; must refer to an existing run directory and `run.json`.
+ * @returns The parsed and validated VerifyRunMetadata for the given run.
+ * @throws RunStateError with code "E_IO" if the run.json file is missing or cannot be read; with code "E_PARSE" if JSON is malformed or fields have invalid types; with code "E_VALIDATION" for semantic validation failures.
+ */
 export function loadVerifyRunMetadata(
 	repoRoot: string,
 	runId: string,
@@ -415,6 +597,20 @@ export function loadVerifyRunMetadata(
 	};
 }
 
+/**
+ * Load and validate the run's summary.json from the repository and return its parsed summary.
+ *
+ * Parses summary.json under `.harness/runs/<runId>/summary.json`, enforces allowed values for
+ * `overallStatus` (`"passed" | "failed" | "blocked"`) and `freshVsResumed` (`"fresh" | "resume"`),
+ * coerces `failedGateId` to `string | null`, and validates `durationMs` as an integer.
+ *
+ * @param repoRoot - Filesystem path of the repository root used to resolve `.harness/runs`.
+ * @param runId - The run identifier; validated when resolving run paths.
+ * @returns A VerifyRunSummary with properties: `runId`, `overallStatus`, `failedGateId` (`string | null`), `freshVsResumed`, and `durationMs`.
+ * @throws RunStateError with code `E_IO` if the summary file is missing or not readable.
+ * @throws RunStateError with code `E_PARSE` if the summary JSON is malformed or contains invalid/unsupported values.
+ * @throws RunStateError from path resolution (e.g., `E_VALIDATION` or `E_PATH`) if `runId` or resolved paths are invalid.
+ */
 export function loadVerifyRunSummary(
 	repoRoot: string,
 	runId: string,
@@ -456,6 +652,16 @@ export function loadVerifyRunSummary(
 	};
 }
 
+/**
+ * Load, validate, and return the persisted gate result for a specific run and gate.
+ *
+ * @param repoRoot - Repository root used to resolve the `.harness/runs` storage location
+ * @param runId - The run identifier whose gate result should be loaded
+ * @param gateId - The gate identifier corresponding to the result file
+ * @returns The parsed and validated `LoadedGateResult` for the specified gate
+ *
+ * @throws {RunStateError} with code `E_IO` if the gate result file does not exist
+ */
 export function loadVerifyGateResult(
 	repoRoot: string,
 	runId: string,
@@ -475,6 +681,14 @@ export function loadVerifyGateResult(
 	return parseLoadedGateResult(gatePath);
 }
 
+/**
+ * Produce a list of absolute paths for subdirectories of `runsDir`, ordered by most-recent directory modification time first.
+ *
+ * Ignores entries that are not directories or that cannot be stat'ed. If `runsDir` does not exist, returns an empty array.
+ *
+ * @param runsDir - Filesystem path to the parent runs directory
+ * @returns An array of subdirectory paths sorted by descending `mtimeMs` (most recently modified first)
+ */
 function listRunDirsByMtime(runsDir: string): string[] {
 	if (!existsSync(runsDir)) {
 		return [];
@@ -495,6 +709,15 @@ function listRunDirsByMtime(runsDir: string): string[] {
 		});
 }
 
+/**
+ * List verify run IDs found under the repository's `.harness/runs` directory,
+ * ordered from most-recently modified to oldest.
+ *
+ * @param repoRoot - Repository root path used to resolve `.harness/runs`
+ * @returns An array of run ID strings sorted by descending directory modification time; returns an empty array if the runs directory does not exist
+ *
+ * @throws RunStateError with code `E_PATH` if `repoRoot` or the resolved runs path is invalid or would escape the repository root
+ */
 export function listVerifyRunIds(repoRoot: string): string[] {
 	const runsDir = safePath(repoRoot, ".harness/runs");
 	return listRunDirsByMtime(runsDir).map((runDir) => basename(runDir));
@@ -512,6 +735,24 @@ export interface PruneVerifyRunsResult {
 	latestFailedRunId: string | null;
 }
 
+/**
+ * Remove old verify-run directories under `.harness/runs/` while retaining a configured number and optionally protecting the latest failed/blocked run.
+ *
+ * Validates `options.keepCount` as a positive integer. Scans `.harness/runs/` sorted by directory modification time (newest first), preserves the newest `keepCount` runs and, if `options.protectLatestFailed` is `true` (default), also preserves the most-recent run whose `summary.json` has `overallStatus` of `"failed"` or `"blocked"`. All other run directories are deleted from disk.
+ *
+ * @param options - Pruning options:
+ *   - `repoRoot`: repository root used to locate `.harness/runs/`.
+ *   - `keepCount` (optional): number of most-recent runs to keep; defaults to `50`.
+ *   - `protectLatestFailed` (optional): when `true` (default), also keep the latest failed/blocked run even if it falls outside `keepCount`.
+ *
+ * @returns An object with:
+ *   - `deletedRunIds`: basenames of run directories that were removed.
+ *   - `keptRunIds`: basenames of run directories that remain.
+ *   - `latestFailedRunId`: basename of the protected failed/blocked run if one was found, otherwise `null`.
+ *
+ * @throws RunStateError with code `E_VALIDATION` if `keepCount` is not a positive integer.
+ * @throws RunStateError with code `E_PATH` if `repoRoot` resolves to an unsafe path.
+ */
 export function pruneVerifyRuns(
 	options: PruneVerifyRunsOptions,
 ): PruneVerifyRunsResult {

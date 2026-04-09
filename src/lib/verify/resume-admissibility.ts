@@ -55,6 +55,13 @@ export interface ResumeAdmissibilityResult {
 	reusableGateIds?: string[];
 }
 
+/**
+ * Checks whether two lane configurations have identical `fastMode`, `changedOnly`, and `strictMode` settings.
+ *
+ * @param expected - The expected lane configuration to compare against
+ * @param actual - The actual lane configuration being validated
+ * @returns `true` if all three settings match, `false` otherwise
+ */
 function laneMatches(
 	expected: VerifyLaneConfig,
 	actual: VerifyLaneConfig,
@@ -66,6 +73,12 @@ function laneMatches(
 	);
 }
 
+/**
+ * Determines whether resuming verification from a specific gate in a prior run is allowed given expectations and gate ordering.
+ *
+ * @param input - Inputs specifying the target `runId`, the `resumeFromGateId`, the ordered list of gate IDs to validate, and an `expectation` describing required run properties (repo root, provider class, versions, lane config, optional identity tuple hash).
+ * @returns An object describing admissibility. If `admissible` is `true`, the result has `runId` and `reusableGateIds` (prior gates confirmed reusable). If `admissible` is `false`, `code` and `reason` identify the failure (missing files, I/O or parse errors, run state issues, expectation mismatches, or prior gate failures).
+ */
 export function evaluateResumeAdmissibility(
 	input: ResumeAdmissibilityInput,
 ): ResumeAdmissibilityResult {
@@ -265,6 +278,12 @@ export interface FindLatestAdmissibleRunResult {
 	reusableGateIds?: string[];
 }
 
+/**
+ * Selects the first verification run in the repository that is admissible to resume from the specified gate.
+ *
+ * @param input - Parameters for the search: `repoRoot` to list candidate runs, `resumeFromGateId` and `orderedGateIds` that define the resume anchor and gate ordering, and an `expectation` describing the required run identity.
+ * @returns A `FindLatestAdmissibleRunResult` describing the search outcome. If a compatible run is found, the result has `admissible: true`, `code: "OK"`, includes the matching `runId` and `reusableGateIds`. If no candidates exist, the result has `admissible: false`, `code: "RUN_NOT_FOUND"`, and `reason` explains that no run-state directory was found. If candidates were checked but none match, the result has `admissible: false`, `code: "RUN_NOT_FOUND"`, and `reason` indicates no compatible prior run was found.
+ */
 export function findLatestAdmissibleRun(
 	input: FindLatestAdmissibleRunInput,
 ): FindLatestAdmissibleRunResult {
