@@ -581,6 +581,30 @@ describe("resume admissibility", () => {
 		expect(result.code).toBe("RUN_NOT_FOUND");
 	});
 
+	it("skips malformed run directory names while scanning for admissible runs", () => {
+		seedRun("run-resume-015a", "contract-v1", 8_000);
+		mkdirSync(join(repoRoot, ".harness/runs", "run invalid id"), {
+			recursive: true,
+		});
+
+		const result = findLatestAdmissibleRun({
+			repoRoot,
+			resumeFromGateId: "policy",
+			orderedGateIds: ORDERED_GATES,
+			expectation: {
+				providerClass: "circleci",
+				schemaVersion: "required-checks/v2",
+				contractVersion: "contract-v1",
+				lane: { fastMode: false, changedOnly: false, strictMode: true },
+				identityTupleHash: "tuple-abc",
+			},
+		});
+
+		expect(result.admissible).toBe(true);
+		expect(result.code).toBe("OK");
+		expect(result.runId).toBe("run-resume-015a");
+	});
+
 	it("returns RUN_NOT_FOUND when no compatible run matches in findLatestAdmissibleRun", () => {
 		// Seed with wrong contract version
 		seedRun("run-resume-015", "contract-v0", 2_000);

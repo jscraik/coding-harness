@@ -114,6 +114,18 @@ describe("verify run-state", () => {
 			false,
 		);
 	});
+
+	it("rejects writing summary when summary.runId does not match target runId", () => {
+		expect(() =>
+			writeVerifyRunSummary(repoRoot, "run-expected", {
+				runId: "run-other",
+				overallStatus: "failed",
+				failedGateId: "policy-gate",
+				freshVsResumed: "fresh",
+				durationMs: 10,
+			}),
+		).toThrow(RunStateError);
+	});
 });
 
 describe("verify run-state — path resolution", () => {

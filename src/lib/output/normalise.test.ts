@@ -141,12 +141,30 @@ function makeDocsResult(
 	};
 }
 
+type LinearGateResultFixture =
+	| {
+			ok?: true;
+			output?: Partial<Omit<LinearGateOutput, "issueKeys">> & {
+				issueKeys?: Partial<LinearGateOutput["issueKeys"]>;
+			};
+	  }
+	| {
+			ok: false;
+			error: { code: string; message: string };
+	  };
+
 function makeLinearGateResult(
-	overrides: Partial<Omit<LinearGateOutput, "issueKeys">> & {
-		issueKeys?: Partial<LinearGateOutput["issueKeys"]>;
-	} = {},
+	overrides: LinearGateResultFixture = {},
 ): LinearGateResult {
-	const { issueKeys, ...restOverrides } = overrides;
+	if (overrides.ok === false) {
+		return {
+			ok: false,
+			error: overrides.error,
+		};
+	}
+
+	const outputOverrides = overrides.output ?? {};
+	const { issueKeys, ...restOverrides } = outputOverrides;
 	const baseIssueKeys: LinearGateOutput["issueKeys"] = {
 		branch: [],
 		pr: [],
@@ -387,15 +405,17 @@ describe("normaliseLinearGateResult (P4 governance failure classification)", () 
 	it("classifies checklist policy failures as contract_policy with deterministic next action", () => {
 		const result = normaliseLinearGateResult(
 			makeLinearGateResult({
-				passed: false,
-				checks: [
-					{
-						code: "issue-key-consistency",
-						passed: false,
-						message:
-							"Branch and PR metadata must reference the same Linear issue key.",
-					},
-				],
+				output: {
+					passed: false,
+					checks: [
+						{
+							code: "issue-key-consistency",
+							passed: false,
+							message:
+								"Branch and PR metadata must reference the same Linear issue key.",
+						},
+					],
+				},
 			}),
 		);
 
@@ -440,31 +460,33 @@ describe("normaliseLinearGateResult (P4 governance failure classification)", () 
 	});
 
 	it("returns null for classifyLinearGateFailure when gate passed", () => {
-		const classification = classifyLinearGateFailure({
-			ok: true,
-			output: {
-				passed: true,
-				checks: [],
-			},
-		} as unknown as LinearGateResult);
+		const classification = classifyLinearGateFailure(
+			makeLinearGateResult({
+				output: {
+					passed: true,
+					checks: [],
+				},
+			}),
+		);
 
 		expect(classification).toBeNull();
 	});
 
 	it("produces status=pass when ok:true and all checks pass", () => {
-		const result = normaliseLinearGateResult({
-			ok: true,
-			output: {
-				passed: true,
-				checks: [
-					{
-						code: "branch-linkage",
-						passed: true,
-						message: "Branch references a valid Linear issue key.",
-					},
-				],
-			},
-		} as unknown as LinearGateResult);
+		const result = normaliseLinearGateResult(
+			makeLinearGateResult({
+				output: {
+					passed: true,
+					checks: [
+						{
+							code: "branch-linkage",
+							passed: true,
+							message: "Branch references a valid Linear issue key.",
+						},
+					],
+				},
+			}),
+		);
 
 		expect(result.status).toBe("pass");
 		expect(result.findings).toHaveLength(0);
@@ -473,29 +495,30 @@ describe("normaliseLinearGateResult (P4 governance failure classification)", () 
 	});
 
 	it("maps each failing check to a separate finding with gate id format", () => {
-		const result = normaliseLinearGateResult({
-			ok: true,
-			output: {
-				passed: false,
-				checks: [
-					{
-						code: "branch-linkage",
-						passed: false,
-						message: "Branch does not reference a valid Linear issue key.",
-					},
-					{
-						code: "pr-title-format",
-						passed: false,
-						message: "PR title does not match the required format.",
-					},
-					{
-						code: "issue-state",
-						passed: true,
-						message: "Issue is in the correct state.",
-					},
-				],
-			},
-		} as unknown as LinearGateResult);
+		const result = normaliseLinearGateResult(
+			makeLinearGateResult({
+				output: {
+					passed: false,
+					checks: [
+						{
+							code: "branch-linkage",
+							passed: false,
+							message: "Branch does not reference a valid Linear issue key.",
+						},
+						{
+							code: "pr-title-format",
+							passed: false,
+							message: "PR title does not match the required format.",
+						},
+						{
+							code: "issue-state",
+							passed: true,
+							message: "Issue is in the correct state.",
+						},
+					],
+				},
+			}),
+		);
 
 		expect(result.status).toBe("fail");
 		expect(result.findings).toHaveLength(2);
@@ -506,13 +529,15 @@ describe("normaliseLinearGateResult (P4 governance failure classification)", () 
 	});
 
 	it("sets errorCode in meta for ok:false result", () => {
-		const result = normaliseLinearGateResult({
-			ok: false,
-			error: {
-				code: "CONTRACT_ERROR",
-				message: "Could not load contract",
-			},
-		});
+		const result = normaliseLinearGateResult(
+			makeLinearGateResult({
+				ok: false,
+				error: {
+					code: "CONTRACT_ERROR",
+					message: "Could not load contract",
+				},
+			}),
+		);
 
 		expect(result.status).toBe("fail");
 		expect(result.meta?.errorCode).toBe("CONTRACT_ERROR");
@@ -523,10 +548,11 @@ describe("normaliseLinearGateResult (P4 governance failure classification)", () 
 	});
 
 	it("includes gate and version fields in result", () => {
-		const result = normaliseLinearGateResult({
-			ok: true,
-			output: { passed: true, checks: [] },
-		} as unknown as LinearGateResult);
+		const result = normaliseLinearGateResult(
+			makeLinearGateResult({
+				output: { passed: true, checks: [] },
+			}),
+		);
 
 		expect(result.gate).toBe("linear-gate");
 		expect(typeof result.version).toBe("string");

@@ -92,10 +92,19 @@ export function evaluateResumeAdmissibility(
 		};
 	}
 
-	const runPaths = resolveVerifyRunPaths(
-		input.expectation.repoRoot,
-		input.runId,
-	);
+	let runPaths: ReturnType<typeof resolveVerifyRunPaths>;
+	try {
+		runPaths = resolveVerifyRunPaths(input.expectation.repoRoot, input.runId);
+	} catch (error) {
+		if (error instanceof RunStateError) {
+			return {
+				admissible: false,
+				code: "RUN_NOT_FOUND",
+				reason: `Run directory not found: ${input.runId}`,
+			};
+		}
+		throw error;
+	}
 	if (!existsSync(runPaths.runDir)) {
 		return {
 			admissible: false,

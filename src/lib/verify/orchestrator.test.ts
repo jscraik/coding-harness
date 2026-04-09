@@ -175,7 +175,7 @@ describe("verify orchestrator", () => {
 		expect(result.overallStatus).toBe("failed");
 	});
 
-	it("fails when all enabled gates are read-only (no serial-guarded gates)", async () => {
+	it("passes when all enabled gates are read-only", async () => {
 		const result = await orchestrateVerifyLifecycle({
 			gates: [
 				gateFixture({
@@ -188,12 +188,13 @@ describe("verify orchestrator", () => {
 				lint: [{ status: "passed", exitCode: 0, nextAction: "continue" }],
 			}),
 		});
-		expect(result.finalState).toBe("S_FAIL");
-		expect(result.overallStatus).toBe("failed");
-		const contractFail = result.transitions.find(
-			(t) => t.event === "CONTRACT_FAIL",
-		);
-		expect(contractFail?.reason).toBe("no_serial_guarded_gates");
+		expect(result.finalState).toBe("S5_DONE");
+		expect(result.overallStatus).toBe("passed");
+		expect(result.transitions.map((transition) => transition.event)).toEqual([
+			"CONTRACT_OK",
+			"ENTER_READ_ONLY_BATCH",
+			"SERIAL_FINAL_GATE_PASSED",
+		]);
 	});
 
 	it("returns failed with resumeFromGateId when a read-only gate fails", async () => {

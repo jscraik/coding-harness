@@ -410,15 +410,21 @@ export function writeVerifyRunMetadata(
  *
  * @param repoRoot - Repository root used to resolve run artifact paths.
  * @param runId - Target run identifier; must conform to run-id path rules.
- * @param summary - Summary object to persist.
+ * @param summary - Summary object to persist. `summary.runId` must match `runId`.
  * @returns The full filesystem path to the written `summary.json`.
- * @throws RunStateError with code `E_VALIDATION` if `runId` is invalid; `E_PATH` if the resolved path is outside `repoRoot`; `E_IO` on write or rename failures.
+ * @throws RunStateError with code `E_VALIDATION` if `runId` is invalid or `summary.runId` does not match `runId`; `E_PATH` if the resolved path is outside `repoRoot`; `E_IO` on write or rename failures.
  */
 export function writeVerifyRunSummary(
 	repoRoot: string,
 	runId: string,
 	summary: VerifyRunSummary,
 ): string {
+	if (summary.runId !== runId) {
+		throw new RunStateError(
+			`Summary runId mismatch: expected ${runId}, received ${summary.runId}`,
+			"E_VALIDATION",
+		);
+	}
 	const paths = resolveVerifyRunPaths(repoRoot, runId);
 	atomicWriteJson(paths.summaryPath, summary);
 	return paths.summaryPath;

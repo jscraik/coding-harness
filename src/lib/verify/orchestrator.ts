@@ -448,7 +448,7 @@ export async function orchestrateVerifyLifecycle(
 		(gate) => gate.executionClass === "serial_guarded",
 	);
 
-	if (serialGates.length === 0) {
+	if (serialGates.length === 0 && readOnlyGates.length === 0) {
 		pushTransition("CONTRACT_FAIL", { reason: "no_serial_guarded_gates" });
 		return {
 			finalState: state,

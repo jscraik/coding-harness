@@ -25,10 +25,19 @@ export interface VerifyWorkCliOptions {
 /**
  * Create the argument list for the verify-work wrapper according to the provided options.
  *
- * The `--all` and `--changed-only` flags are mutually exclusive (when `all` is true, `changedOnly` is ignored).
- * If `repoRoot` is provided its value is resolved and passed via `--repo-root <resolved path>`.
+ * This helper only maps option values to wrapper flags. Mutual-exclusion validation for
+ * `--all` and `--changed-only` is enforced by `runVerifyWorkCLI` before this helper is used.
+ * If `repoRoot` is provided, it is resolved and forwarded as
+ * `--repo-root <resolved absolute path>`.
  *
- * @param options - CLI options that control which flags are included
+ * @param options - CLI options used to build wrapper arguments:
+ *  - `all`: include `--all`
+ *  - `changedOnly`: include `--changed-only`
+ *  - `strict`: include `--strict`
+ *  - `fast`: include `--fast`
+ *  - `resumeFrom`: include `--resume-from <gateId>`
+ *  - `json`: include `--json`
+ *  - `repoRoot`: include `--repo-root <resolved path>`
  * @returns An array of command-line arguments for the verify-work script
  */
 function buildVerifyWorkArgs(options: VerifyWorkCliOptions): string[] {
@@ -61,8 +70,8 @@ function buildVerifyWorkArgs(options: VerifyWorkCliOptions): string[] {
  *
  * Spawns `bash <repoRoot>/scripts/verify-work.sh` with flags derived from `options`, using `repoRoot` from `options.repoRoot` or the current working directory. The child process runs with inherited stdio, `cwd` set to the repository root, and the environment extended with `HARNESS_VERIFY_WORK_NO_DELEGATE=1`.
  *
- * @param options - Flags that control which CLI arguments are passed to the wrapper and an optional `repoRoot` path to locate the script.
- * @returns The chosen exit code: `EXIT_CODES.SUCCESS` for successful execution; `EXIT_CODES.PRECONDITION_FAILED` if the wrapper script is not found; `EXIT_CODES.FAILED` on execution error; `EXIT_CODES.SIGNAL_TERMINATED + N` when the child was terminated by a signal (`N` is 0 for string signals or the numeric signal value); or the child process' numeric exit status when available.
+ * @param options - Wrapper/CLI options. `all` and `changedOnly` are mutually exclusive (the command returns `USAGE_ERROR` when both are set). `repoRoot`, when provided, is resolved and forwarded as `--repo-root <resolved path>`.
+ * @returns The chosen exit code: `EXIT_CODES.SUCCESS` for successful execution; `EXIT_CODES.PRECONDITION_FAILED` if the wrapper script is not found; `EXIT_CODES.FAILED` on execution error; `EXIT_CODES.SIGNAL_TERMINATED + N` when the child was terminated by a named signal that maps through `os.constants.signals`; `EXIT_CODES.SIGNAL_TERMINATED` when the signal cannot be mapped; or the child process' numeric exit status when available.
  */
 export function runVerifyWorkCLI(options: VerifyWorkCliOptions): number {
 	if (options.all && options.changedOnly) {

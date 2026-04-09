@@ -8,7 +8,7 @@ import {
 } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { afterEach, beforeEach, describe, expect, it } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { EXIT_CODES, runVerifyWorkCLI } from "./verify-work.js";
 
 describe("verify-work command", () => {
@@ -118,30 +118,23 @@ kill -KILL $$
 	});
 
 	it("returns USAGE_ERROR and does not execute wrapper when both --all and --changed-only are set", () => {
-		const scriptsDir = join(repoRoot, "scripts");
-		mkdirSync(scriptsDir, { recursive: true });
+		const consoleErrorSpy = vi
+			.spyOn(console, "error")
+			.mockImplementation(() => undefined);
+		try {
+			const exitCode = runVerifyWorkCLI({
+				repoRoot,
+				all: true,
+				changedOnly: true,
+			});
 
-		const wrapperPath = join(scriptsDir, "verify-work.sh");
-		const argsLogPath = join(repoRoot, "args-all.log");
-
-		writeFileSync(
-			wrapperPath,
-			`#!/usr/bin/env bash
-set -euo pipefail
-printf '%s\\n' "$@" > "${argsLogPath}"
-`,
-			"utf-8",
-		);
-		chmodSync(wrapperPath, 0o755);
-
-		const exitCode = runVerifyWorkCLI({
-			repoRoot,
-			all: true,
-			changedOnly: true,
-		});
-
-		expect(exitCode).toBe(EXIT_CODES.USAGE_ERROR);
-		expect(() => readFileSync(argsLogPath, "utf-8")).toThrow();
+			expect(exitCode).toBe(EXIT_CODES.USAGE_ERROR);
+			expect(consoleErrorSpy).toHaveBeenCalledWith(
+				"Error: --all and --changed-only are mutually exclusive",
+			);
+		} finally {
+			consoleErrorSpy.mockRestore();
+		}
 	});
 
 	it("does not pass --json when json option is false", () => {
