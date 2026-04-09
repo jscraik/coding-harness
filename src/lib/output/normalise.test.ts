@@ -13,9 +13,12 @@ import type {
 	DriftFinding,
 	DriftGateResult,
 } from "../../commands/drift-gate.js";
+import type { LinearGateResult } from "../../commands/linear-gate.js";
 import {
+	classifyLinearGateFailure,
 	normaliseDocsGateResult,
 	normaliseDriftGateResult,
+	normaliseLinearGateResult,
 } from "./normalise.js";
 
 // ─── Fixtures ─────────────────────────────────────────────────────────────────
@@ -343,5 +346,63 @@ describe("normaliseDocsGateResult (SA3, SA10, SA11)", () => {
 	it("SA3-f: timestamp preserved from report.generated_at", () => {
 		const result = normaliseDocsGateResult(makeDocsResult([]));
 		expect(result.timestamp).toBe("2026-03-24T00:00:00.000Z");
+	});
+});
+
+describe("normaliseLinearGateResult (P4 governance failure classification)", () => {
+	it("classifies checklist policy failures as contract_policy with deterministic next action", () => {
+		const result = normaliseLinearGateResult({
+			ok: true,
+			output: {
+				passed: false,
+				checks: [
+					{
+						code: "issue-key-consistency",
+						passed: false,
+						message:
+							"Branch and PR metadata must reference the same Linear issue key.",
+					},
+				],
+			},
+		} as unknown as LinearGateResult);
+
+		expect(result.status).toBe("fail");
+		expect(result.meta).toMatchObject({
+			failureClass: "contract_policy",
+			nextAction: "Fix contract/policy mismatch, then rerun linear-gate.",
+		});
+		expect(result.findings[0]?.fix.manual).toBe(
+			"Fix contract/policy mismatch, then rerun linear-gate.",
+		);
+	});
+
+	it("classifies unknown internal errors as internal_unknown", () => {
+		const result = normaliseLinearGateResult({
+			ok: false,
+			error: {
+				code: "UNHANDLED_EXCEPTION",
+				message: "Unexpected crash in gate runtime",
+			},
+		});
+
+		expect(result.status).toBe("fail");
+		expect(result.meta).toMatchObject({
+			failureClass: "internal_unknown",
+			errorCode: "UNHANDLED_EXCEPTION",
+			nextAction: "Inspect gate output, fix root cause, and rerun linear-gate.",
+		});
+	});
+
+	it("maps contract and validation errors to contract_policy", () => {
+		for (const code of ["CONTRACT_ERROR", "VALIDATION_ERROR"]) {
+			const classification = classifyLinearGateFailure({
+				ok: false,
+				error: { code, message: "contract error" },
+			});
+			expect(classification).toEqual({
+				failureClass: "contract_policy",
+				nextAction: "Fix contract/policy mismatch, then rerun linear-gate.",
+			});
+		}
 	});
 });

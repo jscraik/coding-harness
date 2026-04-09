@@ -9,7 +9,10 @@ import type {
 } from "../lib/contract/types.js";
 import { DEFAULT_ISSUE_TRACKING_POLICY } from "../lib/contract/types.js";
 import { sanitizeError } from "../lib/input/sanitize.js";
-import { normaliseLinearGateResult } from "../lib/output/normalise.js";
+import {
+	classifyLinearGateFailure,
+	normaliseLinearGateResult,
+} from "../lib/output/normalise.js";
 
 export const EXIT_CODES = {
 	SUCCESS: 0,
@@ -511,12 +514,17 @@ export async function runLinearGateCLI(
 	options: LinearGateOptions,
 ): Promise<number> {
 	const result = runLinearGate(options);
+	const failure = classifyLinearGateFailure(result);
 	if (!result.ok) {
 		if (options.json) {
 			const gateResult = normaliseLinearGateResult(result);
 			process.stdout.write(`${JSON.stringify(gateResult, null, 2)}\n`);
 		} else {
 			console.error(result.error.message);
+			if (failure) {
+				console.error(`Failure class: ${failure.failureClass}`);
+				console.error(`Next action: ${failure.nextAction}`);
+			}
 		}
 		return result.error.code === "CONTRACT_ERROR"
 			? EXIT_CODES.CONTRACT_ERROR
@@ -540,6 +548,11 @@ export async function runLinearGateCLI(
 			if (!check.passed && check.actual) {
 				console.info(`  Actual: ${check.actual}`);
 			}
+		}
+		if (failure) {
+			console.info();
+			console.info(`Failure class: ${failure.failureClass}`);
+			console.info(`Next action: ${failure.nextAction}`);
 		}
 	}
 

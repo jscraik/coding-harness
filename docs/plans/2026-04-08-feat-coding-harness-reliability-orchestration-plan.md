@@ -393,7 +393,7 @@ Design constraints:
 - **AC5:** `verify-work` and `doctor` terminology stays contract-consistent for check identity and alignment diagnostics (R5).
 - **AC6:** Retry behavior is gated to transient read-only failures and never applied to contract-policy failures (R2, R4).
 
-- [ ] **P4 / Unit 5: Governance-failure classification and doctor parity hardening**
+- [x] **P4 / Unit 5: Governance-failure classification and doctor parity hardening**
 
 **Goal:** align governance-critical gate classification across `linear-gate`, check-alignment diagnostics, and verify orchestration decisions.
 
@@ -433,7 +433,7 @@ Design constraints:
 - **AC7:** Run events and operator diagnostics remain audit-grade and identity-consistent across verify and doctor surfaces (R5).
 - **AC8:** Governance and contract failures stay fail-closed and resume-safe under all mismatch/error classes (R2, R3, R4).
 
-- [ ] **P5 / Unit 6: Documentation and operational rollout controls**
+- [x] **P5 / Unit 6: Documentation and operational rollout controls**
 
 **Goal:** publish clear operator guidance for new lifecycle semantics, resume usage, and failure recovery expectations.
 
@@ -532,8 +532,8 @@ P0 | completed | codex | Canonical contract metadata landed in `.harness/ci-requ
 P1 | completed | codex | Added deterministic run-state/resume modules and tests in `src/lib/verify/{run-state,resume-admissibility}.{ts,test.ts}` covering admissible resume path, contract-version mismatch rejection, idempotent gate writes, and retention pruning with latest-failed preservation. Validation: `pnpm exec vitest run src/lib/verify/run-state.test.ts src/lib/verify/resume-admissibility.test.ts` (pass), `bash scripts/validate-codestyle.sh --fast` (pass), `bash scripts/validate-codestyle.sh` (pass), `bash scripts/verify-work.sh --fast` (pass).
 P2 | completed | codex | Added lifecycle engine + retry policy modules in `src/lib/verify/{orchestrator,retry-policy}.ts` with acceptance-focused coverage in `src/lib/verify/{orchestrator,retry-policy}.test.ts` (read-only->serial transition, guarded final-gate completion, blocked/unblock transition behavior, deterministic repeated fresh runs, transient retry eligibility/exhaustion, failure-class adaptation). Validation: `pnpm exec vitest run src/lib/verify/orchestrator.test.ts src/lib/verify/retry-policy.test.ts` (pass), `bash scripts/validate-codestyle.sh --fast` (pass), `bash scripts/verify-work.sh --fast` (pass), `bash scripts/validate-codestyle.sh` (pass).
 P3 | completed | codex | Added canonical `verify-work` command in `src/commands/verify-work.ts` (+ tests), registered `verify-work` in `src/lib/cli/command-registry.ts` with missing-value guards, and converted `scripts/verify-work.sh` into a compatibility wrapper that delegates to `harness verify-work` while preserving legacy fallback semantics. Validation: `pnpm exec vitest run src/lib/verify/orchestrator.test.ts src/lib/verify/retry-policy.test.ts src/commands/verify-work.test.ts src/lib/cli/command-registry.test.ts` (pass), `pnpm exec vitest run src/commands/init.test.ts -t "verify-work wrapper|repo-local verify-work wrapper aligned"` (pass), `bash scripts/validate-codestyle.sh --fast` (pass), `bash scripts/validate-codestyle.sh` (pass), `pnpm test:deep` (pass), `bash scripts/verify-work.sh --fast` (pass).
-P4 | pending | codex | Doctor/linear-gate parity and failure-class outputs aligned.
-P5 | pending | codex | Validation/docs updates complete and contradiction-free.
+P4 | completed | codex | Added shared linear-gate failure classification + deterministic next-action output in `src/lib/output/normalise.ts`, wired CLI parity messaging in `src/commands/linear-gate.ts`, tightened canonical check-identity wording in `src/commands/doctor.ts`, and expanded tests in `src/commands/{linear-gate,doctor}.test.ts` + `src/lib/output/normalise.test.ts` for `contract_policy`/`internal_unknown` behavior. Validation: `pnpm test -- src/commands/doctor.test.ts src/commands/linear-gate.test.ts src/lib/output/normalise.test.ts` (pass), `bash scripts/validate-codestyle.sh --fast` (pass), `bash scripts/validate-codestyle.sh` (pass), `bash scripts/verify-work.sh` (pass).
+P5 | completed | codex | Updated validation/operator guidance in `docs/agents/04-validation.md` with failure-class + retry-recovery playbook semantics, aligned check-identity wording in `docs/agents/17-ci-required-checks.md` (`ci:check-alignment` check id + `ci-check-alignment` operator prefix), and synchronized resume/output terminology in `docs/specs/2026-04-08-feat-coding-harness-reliability-orchestration-spec.md` to the implemented `--resume-from <gate-id>` contract. Validation: `pnpm check` (blocked: repo-wide existing red tests, including `src/lib/contract/run-records.test.ts`, `src/commands/pilot-rollback.test.ts`, `src/lib/pilot-evaluation/control-plane.test.ts`, and `src/lib/ci/branch-protect-sync.test.ts`), `bash scripts/validate-codestyle.sh` (blocked: same pre-existing red suite under `pnpm test`).
 
 ## Sources and References
 

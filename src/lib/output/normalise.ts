@@ -16,11 +16,50 @@ import type { LinearGateResult } from "../../commands/linear-gate.js";
 import type { PolicyGateResult } from "../../commands/policy-gate.js";
 import type { PrTemplateGateResult } from "../../commands/pr-template-gate.js";
 import type { PlanGateResult } from "../plan-gate/types.js";
+import type { GateFailureClass } from "../policy/required-checks.js";
 import { getVersion } from "../version.js";
 import type { GateFinding, GateResult } from "./types.js";
 
 // ─── Re-export canonical types for convenience ────────────────────────────────
 export type { GateFinding, GateResult, AutoFixResult } from "./types.js";
+
+export interface LinearGateFailureClassification {
+	failureClass: GateFailureClass;
+	nextAction: string;
+}
+
+function classifyLinearGateErrorCode(errorCode: string): GateFailureClass {
+	if (errorCode === "CONTRACT_ERROR" || errorCode === "VALIDATION_ERROR") {
+		return "contract_policy";
+	}
+	return "internal_unknown";
+}
+
+export function classifyLinearGateFailure(
+	result: LinearGateResult,
+): LinearGateFailureClassification | null {
+	if (result.ok) {
+		if (result.output.passed) {
+			return null;
+		}
+		return {
+			failureClass: "contract_policy",
+			nextAction: "Fix contract/policy mismatch, then rerun linear-gate.",
+		};
+	}
+
+	const failureClass = classifyLinearGateErrorCode(result.error.code);
+	if (failureClass === "contract_policy") {
+		return {
+			failureClass,
+			nextAction: "Fix contract/policy mismatch, then rerun linear-gate.",
+		};
+	}
+	return {
+		failureClass: "internal_unknown",
+		nextAction: "Inspect gate output, fix root cause, and rerun linear-gate.",
+	};
+}
 
 // ─── P1: drift-gate adapter ───────────────────────────────────────────────────
 
@@ -413,6 +452,7 @@ export function normaliseLinearGateResult(
 	const gate = "linear-gate";
 	const version = getVersion();
 	const timestamp = new Date().toISOString();
+	const failure = classifyLinearGateFailure(result);
 
 	if (!result.ok) {
 		const finding: GateFinding = {
@@ -421,7 +461,10 @@ export function normaliseLinearGateResult(
 			gate,
 			message: result.error.message,
 			baseline: false,
-			fix: { suppressible: false },
+			fix: {
+				...(failure ? { manual: failure.nextAction } : {}),
+				suppressible: false,
+			},
 		};
 		return {
 			gate,
@@ -430,6 +473,11 @@ export function normaliseLinearGateResult(
 			status: "fail",
 			findings: [finding],
 			summary: { errors: 1, warnings: 0, info: 0, total: 1 },
+			meta: {
+				...(failure ? { failureClass: failure.failureClass } : {}),
+				...(failure ? { nextAction: failure.nextAction } : {}),
+				errorCode: result.error.code,
+			},
 		};
 	}
 
@@ -440,7 +488,10 @@ export function normaliseLinearGateResult(
 		gate,
 		message: c.message,
 		baseline: false,
-		fix: { suppressible: false },
+		fix: {
+			...(failure ? { manual: failure.nextAction } : {}),
+			suppressible: false,
+		},
 	}));
 
 	const status = findings.length > 0 ? "fail" : "pass";
@@ -456,5 +507,13 @@ export function normaliseLinearGateResult(
 			info: 0,
 			total: findings.length,
 		},
+		...(failure
+			? {
+					meta: {
+						failureClass: failure.failureClass,
+						nextAction: failure.nextAction,
+					},
+				}
+			: {}),
 	};
 }
