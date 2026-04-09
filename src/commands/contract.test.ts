@@ -676,6 +676,29 @@ describe("runContractInitCLI", () => {
 		expect(result).toMatchObject({ status: "created", preset: "standard" });
 	});
 
+	it("emits canonical preset alongside lite alias in JSON output", () => {
+		const output = join(dir, "harness.contract.json");
+		const code = runContractInitCLI({ preset: "lite", output, json: true });
+		expect(code).toBe(0);
+		const call = consoleSpy.mock.calls[0]?.[0];
+		const result = JSON.parse(call as string);
+		expect(result).toMatchObject({
+			status: "created",
+			preset: "lite",
+			canonicalPreset: "minimal",
+		});
+	});
+
+	it("preserves requested lite alias in overwrite hint", () => {
+		const output = join(dir, "harness.contract.json");
+		writeFileSync(output, "{}", "utf-8");
+		const code = runContractInitCLI({ preset: "lite", output });
+		expect(code).toBe(1);
+		expect(consoleErrSpy).toHaveBeenCalledWith(
+			expect.stringContaining("harness contract init --preset lite --force"),
+		);
+	});
+
 	it("runContractCLI dispatches init subcommand", () => {
 		const output = join(dir, "harness.contract.json");
 		const code = runContractCLI(

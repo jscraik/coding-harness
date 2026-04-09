@@ -35,15 +35,20 @@ export const CONTRACT_PRESET_INPUTS: ContractPresetInput[] = [
 	"lite",
 ];
 
+const PRESET_NORMALIZATION_MAP = {
+	lite: "minimal",
+	minimal: "minimal",
+	standard: "standard",
+	full: "full",
+} as const satisfies Record<ContractPresetInput, ContractPreset>;
+
 export function normalizeContractPreset(
-	preset: ContractPresetInput | string,
+	preset: string,
 ): ContractPreset | undefined {
-	if (preset === "lite") {
-		return "minimal";
+	if (!(preset in PRESET_NORMALIZATION_MAP)) {
+		return undefined;
 	}
-	return CONTRACT_PRESETS.includes(preset as ContractPreset)
-		? (preset as ContractPreset)
-		: undefined;
+	return PRESET_NORMALIZATION_MAP[preset as ContractPresetInput];
 }
 
 // ─── Shared building blocks ───────────────────────────────────────────────────

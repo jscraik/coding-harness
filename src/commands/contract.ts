@@ -83,6 +83,10 @@ function severityIcon(code: string): string {
 	return "⚠️ ";
 }
 
+function formatPresetLabel(preset: ContractPresetInput): string {
+	return preset === "lite" ? `${preset} (alias of minimal)` : preset;
+}
+
 // ─── contract init ────────────────────────────────────────────────────────────
 
 export interface ContractInitOptions {
@@ -127,7 +131,7 @@ export function runContractInitCLI(options: ContractInitOptions): number {
 					`✗ ${msg}`,
 					"",
 					"  To overwrite:",
-					`    harness contract init --preset ${preset} --force`,
+					`    harness contract init --preset ${requestedPreset} --force`,
 					"",
 					"  To validate the existing contract:",
 					"    harness contract validate",
@@ -164,15 +168,11 @@ export function runContractInitCLI(options: ContractInitOptions): number {
 			}),
 		);
 	} else {
-		const presetLabel =
-			requestedPreset === "lite"
-				? `${requestedPreset} (alias of minimal)`
-				: requestedPreset;
 		console.info(
 			[
 				"",
 				`✅ Created ${outputPath}`,
-				`   Preset:   ${presetLabel} — ${PRESET_DESCRIPTIONS[preset]}`,
+				`   Preset:   ${formatPresetLabel(requestedPreset)} — ${PRESET_DESCRIPTIONS[preset]}`,
 				`   Sections: ${Object.keys(contract).length}`,
 				`   Size:     ${content.length} bytes`,
 				"",
