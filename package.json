@@ -65,7 +65,6 @@
 		"e2e:pipeline": "tsx e2e/run-e2e.ts command-pipeline",
 		"e2e:ci": "tsx e2e/run-e2e.ts --reporter json --parallel 2",
 		"harness:ui:capture-browser-evidence": "pnpm exec tsx src/cli.ts ui:explore --mode execute --interactions --output artifacts/ui-evidence --json",
-		"postinstall": "command -v simple-git-hooks >/dev/null 2>&1 && simple-git-hooks || true",
 		"vale": "vale --config .vale.ini AGENTS.md CLAUDE.md docs",
 		"codex-preflight:check": "node scripts/sync-codex-preflight.cjs --check",
 		"codex-preflight:sync": "node scripts/sync-codex-preflight.cjs --write"
@@ -81,7 +80,6 @@
 		"@vitest/coverage-v8": "^3.2.4",
 		"@vvago/vale": "^3.12.0",
 		"markdownlint-cli2": "^0.21.0",
-		"simple-git-hooks": "^2.13.1",
 		"standard-version": "^9.5.0",
 		"tsx": "^4.21.0",
 		"typescript": "^5.9.3",
@@ -125,11 +123,6 @@
 			"picomatch@>=4.0.0 <4.0.4": ">=4.0.4",
 			"yaml@>=2.0.0 <2.8.3": ">=2.8.3"
 		}
-	},
-	"simple-git-hooks": {
-		"pre-commit": "make hooks-pre-commit",
-		"commit-msg": "node scripts/validate-commit-msg.js $1",
-		"pre-push": "make hooks-pre-push"
 	},
 	"license": "Apache-2.0",
 	"homepage": "https://github.com/jscraik/coding-harness#readme"
