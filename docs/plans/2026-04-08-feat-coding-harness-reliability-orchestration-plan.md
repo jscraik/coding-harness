@@ -269,7 +269,7 @@ Design constraints:
 - **AC1:** Canonical contract projection is deterministic, backward compatible, and defaults safely when fields are absent (R1).
 - **AC2:** Legacy fresh-run semantics remain behaviorally equivalent when resume features are not used (R5).
 
-- [ ] **P1 / Unit 2: Verification run-state store and resume admissibility checks**
+- [x] **P1 / Unit 2: Verification run-state store and resume admissibility checks**
 
 **Goal:** persist auditable run-state and enforce strict resume compatibility before reuse.
 
@@ -529,9 +529,9 @@ Snapshot captured on `2026-04-09` from Linear (`project: coding-harness`, non-te
 STEP_ID | status (pending|in progress|completed) | owner | evidence
 P-1 | completed | codex | Governing spec pre-plan questions resolved; canonical identity tuple and non-identity display-name semantics aligned.
 P0 | completed | codex | Canonical contract metadata landed in `.harness/ci-required-checks.json`, normalization ordering/default behavior updated in `src/lib/policy/required-checks.ts`, tests expanded in `src/lib/policy/required-checks.test.ts`, and contract guidance aligned in `docs/agents/17-ci-required-checks.md`.
-P1 | pending | codex | Run-state persistence and admissibility tests added.
-P2 | pending | codex | Lifecycle engine + retry classifier implemented and validated.
-P3 | pending | codex | `verify-work` command + wrapper compatibility path validated.
+P1 | completed | codex | Added deterministic run-state/resume modules and tests in `src/lib/verify/{run-state,resume-admissibility}.{ts,test.ts}` covering admissible resume path, contract-version mismatch rejection, idempotent gate writes, and retention pruning with latest-failed preservation. Validation: `pnpm exec vitest run src/lib/verify/run-state.test.ts src/lib/verify/resume-admissibility.test.ts` (pass), `bash scripts/validate-codestyle.sh --fast` (pass), `bash scripts/validate-codestyle.sh` (pass), `bash scripts/verify-work.sh --fast` (pass).
+P2 | completed | codex | Added lifecycle engine + retry policy modules in `src/lib/verify/{orchestrator,retry-policy}.ts` with acceptance-focused coverage in `src/lib/verify/{orchestrator,retry-policy}.test.ts` (read-only->serial transition, guarded final-gate completion, blocked/unblock transition behavior, deterministic repeated fresh runs, transient retry eligibility/exhaustion, failure-class adaptation). Validation: `pnpm exec vitest run src/lib/verify/orchestrator.test.ts src/lib/verify/retry-policy.test.ts` (pass), `bash scripts/validate-codestyle.sh --fast` (pass), `bash scripts/verify-work.sh --fast` (pass), `bash scripts/validate-codestyle.sh` (pass).
+P3 | completed | codex | Added canonical `verify-work` command in `src/commands/verify-work.ts` (+ tests), registered `verify-work` in `src/lib/cli/command-registry.ts` with missing-value guards, and converted `scripts/verify-work.sh` into a compatibility wrapper that delegates to `harness verify-work` while preserving legacy fallback semantics. Validation: `pnpm exec vitest run src/lib/verify/orchestrator.test.ts src/lib/verify/retry-policy.test.ts src/commands/verify-work.test.ts src/lib/cli/command-registry.test.ts` (pass), `pnpm exec vitest run src/commands/init.test.ts -t "verify-work wrapper|repo-local verify-work wrapper aligned"` (pass), `bash scripts/validate-codestyle.sh --fast` (pass), `bash scripts/validate-codestyle.sh` (pass), `pnpm test:deep` (pass), `bash scripts/verify-work.sh --fast` (pass).
 P4 | pending | codex | Doctor/linear-gate parity and failure-class outputs aligned.
 P5 | pending | codex | Validation/docs updates complete and contradiction-free.
 

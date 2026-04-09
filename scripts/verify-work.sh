@@ -4,6 +4,15 @@ set -euo pipefail
 SCRIPT_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd -P)"
 REPO_ROOT="$(cd -- "$SCRIPT_DIR/.." && pwd -P)"
 
+if [[ "${HARNESS_VERIFY_WORK_NO_DELEGATE:-0}" != "1" ]]; then
+	if command -v harness >/dev/null 2>&1; then
+		harness_help="$(harness --help 2>/dev/null || true)"
+		if [[ "$harness_help" =~ (^|[[:space:]])verify-work([[:space:]]|$) ]]; then
+			exec harness verify-work "$@"
+		fi
+	fi
+fi
+
 changed_only=1
 fast_mode=0
 strict_mode=0

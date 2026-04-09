@@ -41,6 +41,7 @@ describe("command registry", () => {
 			"doctor",
 			"health",
 			"eject",
+			"verify-work",
 			"verify-coderabbit",
 			"contract",
 			"risk-tier",
@@ -120,6 +121,24 @@ describe("command registry", () => {
 			"--json",
 		]);
 		expect(result?.result).toBe(LOCAL_MEMORY_PREFLIGHT_EXIT_CODES.USAGE_ERROR);
+	});
+
+	it("rejects verify-work when --resume-from is missing a value", () => {
+		const result = dispatchRegistryCommand("verify-work", [
+			"verify-work",
+			"--resume-from",
+			"--fast",
+		]);
+		expect(result?.result).toBe(2);
+	});
+
+	it("rejects verify-work when --repo-root is missing a value", () => {
+		const result = dispatchRegistryCommand("verify-work", [
+			"verify-work",
+			"--repo-root",
+			"--fast",
+		]);
+		expect(result?.result).toBe(2);
 	});
 
 	it("provides unique help rows", () => {
