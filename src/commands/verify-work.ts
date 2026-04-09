@@ -8,6 +8,7 @@ export const EXIT_CODES = {
 	FAILED: 1,
 	USAGE_ERROR: 2,
 	PRECONDITION_FAILED: 3,
+	SIGNAL_TERMINATED: 128,
 } as const;
 
 export interface VerifyWorkCliOptions {
@@ -70,6 +71,17 @@ export function runVerifyWorkCLI(options: VerifyWorkCliOptions): number {
 			`Error: failed to run verify-work wrapper: ${sanitizeError(result.error)}`,
 		);
 		return EXIT_CODES.FAILED;
+	}
+
+	if (result.signal) {
+		console.error(`verify-work terminated by signal: ${result.signal}`);
+		// Map signal to exit code (128 + signal number convention)
+		// For string signals, use base SIGNAL_TERMINATED constant
+		const signalNum =
+			typeof result.signal === "string"
+				? 0
+				: (result.signal as unknown as number);
+		return EXIT_CODES.SIGNAL_TERMINATED + signalNum;
 	}
 
 	return result.status ?? EXIT_CODES.FAILED;

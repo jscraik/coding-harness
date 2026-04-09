@@ -152,6 +152,9 @@ export function transitionLifecycle(
 			if (event === "READ_ONLY_BATCH_PASSED") {
 				return "S3_SERIAL_GUARDED";
 			}
+			if (event === "SERIAL_FINAL_GATE_PASSED") {
+				return "S5_DONE";
+			}
 			if (event === "READ_ONLY_BATCH_BLOCKED") {
 				return "S4_BLOCKED";
 			}
@@ -272,7 +275,9 @@ async function executeGateWithRetry(
 			};
 		} catch (error) {
 			const message = error instanceof Error ? error.message : String(error);
-			const failureClass = adaptFailureClass(defaultFailureClass, {
+			// Use internal failure class for thrown errors, not the gate's default
+			const internalFailureClass: VerifyGateFailureClass = "internal_unknown";
+			const failureClass = adaptFailureClass(internalFailureClass, {
 				errorCode: "E_RUNNER_THROW",
 				stderr: message,
 			});
@@ -422,7 +427,12 @@ export async function orchestrateVerifyLifecycle(
 			};
 		}
 
-		pushTransition("READ_ONLY_BATCH_PASSED");
+		// If no serial gates remain, we're done; otherwise transition to serial execution
+		if (serialGates.length === 0) {
+			pushTransition("SERIAL_FINAL_GATE_PASSED");
+		} else {
+			pushTransition("READ_ONLY_BATCH_PASSED");
+		}
 	} else {
 		pushTransition("ENTER_SERIAL_GUARDED");
 	}
