@@ -63,12 +63,20 @@ S1 READY (non-terminal)
 S2 IN_PROGRESS (non-terminal)
 S3 IN_REVIEW (non-terminal)
 S4 DONE (terminal)
+S5 FAIL (terminal)
 ```
 
 ### Blocked overlay (label-based)
 
 - `Blocked` can be applied to `S1 READY`, `S2 IN_PROGRESS`, or `S3 IN_REVIEW`.
 - Blocked/unblocked events update labels and unblock guidance, but keep the canonical status lane unchanged.
+
+### FAIL lane (canonical state)
+
+- `S5 FAIL` is a canonical terminal state for unrecoverable `VALIDATION_ERROR`,
+  `POLICY_FAIL`, or unrecoverable `SYSTEM_ERROR`.
+- Entering `S5 FAIL` records a failure packet with remediation guidance and
+  requires explicit operator re-entry via triage or ready flow after remediation.
 
 ## Transition Table (Canonical)
 
@@ -89,6 +97,9 @@ S4 DONE (terminal)
 | `S1 READY` | `unblocked` | dependency resolved | remove blocker marker and resume execution | `S1 READY` |
 | `S2 IN_PROGRESS` | `unblocked` | dependency resolved | remove blocker marker and resume execution | `S2 IN_PROGRESS` |
 | `S3 IN_REVIEW` | `unblocked` | dependency resolved | remove blocker marker and resume execution | `S3 IN_REVIEW` |
+| `S1 READY` | `fail` | unrecoverable `VALIDATION_ERROR`, `POLICY_FAIL`, or `SYSTEM_ERROR` | record failure packet + remediation path; halt transition automation | `S5 FAIL` |
+| `S2 IN_PROGRESS` | `fail` | unrecoverable `VALIDATION_ERROR`, `POLICY_FAIL`, or `SYSTEM_ERROR` | record failure packet + remediation path; halt transition automation | `S5 FAIL` |
+| `S3 IN_REVIEW` | `fail` | unrecoverable `VALIDATION_ERROR`, `POLICY_FAIL`, or `SYSTEM_ERROR` | record failure packet + remediation path; halt transition automation | `S5 FAIL` |
 
 ## Error Handling
 - `VALIDATION_ERROR`: missing/invalid LK or malformed branch/PR metadata.
@@ -98,8 +109,8 @@ S4 DONE (terminal)
 
 ## Idempotency
 - Key: `<LK>|<state>|<event>|<pr_url?>`.
-- Replayed `progress_tick` and `pr_opened` events append new LI comments/attachments; they do not currently remove duplicate existing artifacts.
-- Replayed `handoff_ready` events also append additional evidence links/comments; avoid replaying `handoff_ready` after a successful transition unless duplicate artifacts are acceptable.
+- Replayed `progress_tick` and `pr_opened` events must update existing LI progress comment/attachment artifacts by idempotency key; duplicate artifacts must not be created.
+- Replayed `handoff_ready` events must be guarded by a successful transition marker and should update existing evidence artifacts by idempotency key; do not replay `handoff_ready` after success unless duplicates are explicitly acceptable for that workflow.
 
 ## Execution Modes
 - `STRICT`: fail on validation/policy errors and block transition.
@@ -125,7 +136,7 @@ S4 DONE (terminal)
 ## Validation Checklist
 - non-terminal states have >=1 outbound transition
 - deterministic event resolution per `(S,E)`
-- failure events route to blocked overlay or fail lane
+- failure events route deterministically to blocked overlay (`blocked`/`unblocked`) or canonical `S5 FAIL` lane
 - terminal states have no outbound transitions
 - DoD gate enforced before review transition
 
