@@ -638,7 +638,7 @@ describe("runContractInitCLI", () => {
 		const code = runContractInitCLI({ preset: "lite", output });
 		expect(code).toBe(0);
 		const parsed = JSON.parse(readFileSync(output, "utf-8"));
-		expect(Object.keys(parsed)).toHaveLength(4);
+		expect(parsed).toEqual(buildContractPreset("minimal"));
 	});
 
 	it("creates full contract", () => {
