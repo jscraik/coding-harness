@@ -71,6 +71,45 @@ run_pnpm() {
   return 127
 }
 
+TOOL_VERSION_REPORT_SCRIPT="${TMPDIR:-/tmp}/codex-tool-version-report.sh"
+cat >"$TOOL_VERSION_REPORT_SCRIPT" <<'SCRIPT'
+#!/usr/bin/env bash
+set -euo pipefail
+
+export PATH="/opt/homebrew/bin:/usr/local/bin:$HOME/.local/share/mise/shims:$HOME/.local/bin:$PATH"
+
+if command -v mise >/dev/null 2>&1; then
+  eval "$(mise activate bash)" >/dev/null 2>&1 || true
+fi
+
+echo "git: $(git --version 2>/dev/null || echo missing)"
+echo "rg: $(rg --version 2>/dev/null | head -n 1 || echo missing)"
+echo "jq: $(jq --version 2>/dev/null || echo missing)"
+if command -v fd >/dev/null 2>&1; then
+  echo "fd: $(fd --version 2>/dev/null | head -n 1)"
+elif command -v fdfind >/dev/null 2>&1; then
+  echo "fd: $(fdfind --version 2>/dev/null | head -n 1) (via fdfind)"
+else
+  echo "fd: missing"
+fi
+echo "node: $(node --version 2>/dev/null || echo missing)"
+if command -v pnpm >/dev/null 2>&1; then
+  echo "pnpm: $(pnpm --version 2>/dev/null)"
+elif [ -x /opt/homebrew/bin/pnpm ]; then
+  echo "pnpm: $(/opt/homebrew/bin/pnpm --version 2>/dev/null) (via /opt/homebrew/bin/pnpm)"
+elif command -v corepack >/dev/null 2>&1; then
+  echo "pnpm: available via corepack"
+else
+  echo "pnpm: missing"
+fi
+echo "python3: $(python3 --version 2>/dev/null || echo missing)"
+echo "uv: $(uv --version 2>/dev/null || echo missing)"
+echo "rustup: $(rustup --version 2>/dev/null | head -n 1 || echo missing)"
+echo "rustc: $(rustc --version 2>/dev/null || echo missing)"
+echo "cargo: $(cargo --version 2>/dev/null || echo missing)"
+SCRIPT
+chmod +x "$TOOL_VERSION_REPORT_SCRIPT"
+
 run_pnpm install --frozen-lockfile || run_pnpm install
 '''
 
@@ -78,37 +117,8 @@ run_pnpm install --frozen-lockfile || run_pnpm install
 name = "Tools"
 icon = "tool"
 command = '''
-export PATH="/opt/homebrew/bin:/usr/local/bin:$HOME/.local/share/mise/shims:$HOME/.local/bin:$PATH"
-
-if command -v mise >/dev/null 2>&1; then
-  eval "$(mise activate bash)" >/dev/null 2>&1 || true
-fi
-
-echo "git: $(git --version 2>/dev/null || echo missing)"
-echo "rg: $(rg --version 2>/dev/null | head -n 1 || echo missing)"
-echo "jq: $(jq --version 2>/dev/null || echo missing)"
-if command -v fd >/dev/null 2>&1; then
-  echo "fd: $(fd --version 2>/dev/null | head -n 1)"
-elif command -v fdfind >/dev/null 2>&1; then
-  echo "fd: $(fdfind --version 2>/dev/null | head -n 1) (via fdfind)"
-else
-  echo "fd: missing"
-fi
-echo "node: $(node --version 2>/dev/null || echo missing)"
-if command -v pnpm >/dev/null 2>&1; then
-  echo "pnpm: $(pnpm --version 2>/dev/null)"
-elif [ -x /opt/homebrew/bin/pnpm ]; then
-  echo "pnpm: $(/opt/homebrew/bin/pnpm --version 2>/dev/null) (via /opt/homebrew/bin/pnpm)"
-elif command -v corepack >/dev/null 2>&1; then
-  echo "pnpm: available via corepack"
-else
-  echo "pnpm: missing"
-fi
-echo "python3: $(python3 --version 2>/dev/null || echo missing)"
-echo "uv: $(uv --version 2>/dev/null || echo missing)"
-echo "rustup: $(rustup --version 2>/dev/null | head -n 1 || echo missing)"
-echo "rustc: $(rustc --version 2>/dev/null || echo missing)"
-echo "cargo: $(cargo --version 2>/dev/null || echo missing)"
+TOOL_VERSION_REPORT_SCRIPT="${TMPDIR:-/tmp}/codex-tool-version-report.sh"
+bash "$TOOL_VERSION_REPORT_SCRIPT"
 mise ls
 '''
 
@@ -116,37 +126,8 @@ mise ls
 name = "Tooling"
 icon = "tool"
 command = '''
-export PATH="/opt/homebrew/bin:/usr/local/bin:$HOME/.local/share/mise/shims:$HOME/.local/bin:$PATH"
-
-if command -v mise >/dev/null 2>&1; then
-  eval "$(mise activate bash)" >/dev/null 2>&1 || true
-fi
-
-echo "git: $(git --version 2>/dev/null || echo missing)"
-echo "rg: $(rg --version 2>/dev/null | head -n 1 || echo missing)"
-echo "jq: $(jq --version 2>/dev/null || echo missing)"
-if command -v fd >/dev/null 2>&1; then
-  echo "fd: $(fd --version 2>/dev/null | head -n 1)"
-elif command -v fdfind >/dev/null 2>&1; then
-  echo "fd: $(fdfind --version 2>/dev/null | head -n 1) (via fdfind)"
-else
-  echo "fd: missing"
-fi
-echo "node: $(node --version 2>/dev/null || echo missing)"
-if command -v pnpm >/dev/null 2>&1; then
-  echo "pnpm: $(pnpm --version 2>/dev/null)"
-elif [ -x /opt/homebrew/bin/pnpm ]; then
-  echo "pnpm: $(/opt/homebrew/bin/pnpm --version 2>/dev/null) (via /opt/homebrew/bin/pnpm)"
-elif command -v corepack >/dev/null 2>&1; then
-  echo "pnpm: available via corepack"
-else
-  echo "pnpm: missing"
-fi
-echo "python3: $(python3 --version 2>/dev/null || echo missing)"
-echo "uv: $(uv --version 2>/dev/null || echo missing)"
-echo "rustup: $(rustup --version 2>/dev/null | head -n 1 || echo missing)"
-echo "rustc: $(rustc --version 2>/dev/null || echo missing)"
-echo "cargo: $(cargo --version 2>/dev/null || echo missing)"
+TOOL_VERSION_REPORT_SCRIPT="${TMPDIR:-/tmp}/codex-tool-version-report.sh"
+bash "$TOOL_VERSION_REPORT_SCRIPT"
 '''
 
 [[actions]]
