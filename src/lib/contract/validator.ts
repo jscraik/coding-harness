@@ -32,6 +32,7 @@ import type {
 	GateExtensionHook,
 	GateExtensionHookId,
 	GateExtensionsPolicy,
+	GateVerdict,
 	HarnessContract,
 	ImageFormat,
 	IssueTrackingPolicy,
@@ -50,6 +51,8 @@ import type {
 	PilotAuthzPolicy,
 	PilotGapCasePolicy,
 	PilotRollbackPolicy,
+	PolicyAction,
+	PolicyChainPolicy,
 	PrReferenceMode,
 	PreflightGateExtensionsPolicy,
 	RemediationPolicy,
@@ -74,6 +77,8 @@ import { isValidUILoopCommandSpec } from "./ui-loop-command.js";
 
 const VALID_RISK_TIERS: RiskTier[] = ["high", "medium", "low"];
 const VALID_TIMEOUT_ACTIONS: TimeoutAction[] = ["fail", "warn"];
+const VALID_POLICY_ACTIONS: PolicyAction[] = ["allow", "block", "warn"];
+const VALID_GATE_VERDICTS: GateVerdict[] = ["pass", "fail"];
 const VALID_IMAGE_FORMATS: ImageFormat[] = ["png", "jpeg"];
 const VALID_ROLLBACK_MODES = ["manual", "autonomous"] as const;
 const VALID_BLAST_RADIUS_RULES_MODES = ["merge", "replace"] as const;
@@ -82,6 +87,7 @@ const VALID_TOP_LEVEL_KEYS = [
 	"$schema",
 	"version",
 	"riskTierRules",
+	"policyChain",
 	"blastRadiusRules",
 	"blastRadiusRulesMode",
 	"gateExtensions",
@@ -310,6 +316,70 @@ function isValidRiskTierRules(
 		}
 		if (typeof pattern !== "string" || !isValidRiskTier(tier)) return false;
 	}
+	return true;
+}
+
+function isValidPolicyAction(value: unknown): value is PolicyAction {
+	return (
+		typeof value === "string" &&
+		VALID_POLICY_ACTIONS.includes(value as PolicyAction)
+	);
+}
+
+function isValidGateVerdict(value: unknown): value is GateVerdict {
+	return (
+		typeof value === "string" &&
+		VALID_GATE_VERDICTS.includes(value as GateVerdict)
+	);
+}
+
+function isValidPolicyChainPolicy(value: unknown): value is PolicyChainPolicy {
+	if (!isPlainObject(value)) {
+		return false;
+	}
+	const policy = value as Record<string, unknown>;
+	const validKeys = ["tierToAction", "actionToVerdict"] as const;
+	const invalidKeys = Object.keys(policy).filter(
+		(key) => !validKeys.includes(key as (typeof validKeys)[number]),
+	);
+	if (invalidKeys.length > 0) {
+		return false;
+	}
+
+	if (!isPlainObject(policy.tierToAction)) {
+		return false;
+	}
+	const tierToAction = policy.tierToAction as Record<string, unknown>;
+	const tierKeys = ["high", "medium", "low"] as const;
+	const invalidTierKeys = Object.keys(tierToAction).filter(
+		(key) => !tierKeys.includes(key as (typeof tierKeys)[number]),
+	);
+	if (invalidTierKeys.length > 0) {
+		return false;
+	}
+	for (const key of tierKeys) {
+		if (!isValidPolicyAction(tierToAction[key])) {
+			return false;
+		}
+	}
+
+	if (!isPlainObject(policy.actionToVerdict)) {
+		return false;
+	}
+	const actionToVerdict = policy.actionToVerdict as Record<string, unknown>;
+	const actionKeys = ["allow", "block", "warn"] as const;
+	const invalidActionKeys = Object.keys(actionToVerdict).filter(
+		(key) => !actionKeys.includes(key as (typeof actionKeys)[number]),
+	);
+	if (invalidActionKeys.length > 0) {
+		return false;
+	}
+	for (const key of actionKeys) {
+		if (!isValidGateVerdict(actionToVerdict[key])) {
+			return false;
+		}
+	}
+
 	return true;
 }
 
@@ -2478,6 +2548,25 @@ export function validateContract(
 	}
 
 	// Validate mergePolicy
+	let policyChain: PolicyChainPolicy | undefined;
+	if ("policyChain" in obj && obj.policyChain !== undefined) {
+		if (!isValidPolicyChainPolicy(obj.policyChain)) {
+			errors.push({
+				code: ValidationErrorCode.INVALID_VALUE,
+				path: "policyChain",
+				message:
+					"policyChain must define tierToAction and actionToVerdict mappings with supported enum values",
+				expected:
+					"{ tierToAction: { high|medium|low: 'allow'|'block'|'warn' }, actionToVerdict: { allow|block|warn: 'pass'|'fail' } }",
+				received: JSON.stringify(obj.policyChain),
+				fix: "Use explicit mapping objects for all tiers and actions",
+			});
+		} else {
+			policyChain = obj.policyChain as PolicyChainPolicy;
+		}
+	}
+
+	// Validate mergePolicy
 	let mergePolicy: MergePolicy | undefined;
 	if ("mergePolicy" in obj && obj.mergePolicy !== undefined) {
 		if (!isValidMergePolicy(obj.mergePolicy)) {
@@ -3134,6 +3223,7 @@ export function validateContract(
 		data: {
 			version: obj.version as string,
 			riskTierRules: (obj.riskTierRules as Record<string, RiskTier>) ?? {},
+			policyChain,
 			mergePolicy,
 			docsDriftRules,
 			diffBudget,

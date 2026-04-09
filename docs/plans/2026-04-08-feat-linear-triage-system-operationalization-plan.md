@@ -216,7 +216,7 @@ Design constraints:
 - **AC1:** Status model is deterministic and aligned to canonical lifecycle (R1).
 - **AC2:** Blocked handling remains label-based with explicit unblock action (R1, R6).
 
-- [ ] **P1 / Unit 2: Implement deterministic triage scoring engine**
+- [x] **P1 / Unit 2: Implement deterministic triage scoring engine**
 
 **Goal:** encode the weighted scoring model into pure library logic with deterministic output.
 
@@ -255,7 +255,7 @@ Design constraints:
 - **AC3:** Weighted scoring formula is implemented exactly once and centrally reusable (R3).
 - **AC4:** Score band output supports deterministic pull-order decisions (R2, R4).
 
-- [ ] **P2 / Unit 3: Add `harness linear triage` command surface (report-first)**
+- [x] **P2 / Unit 3: Add `harness linear triage` command surface (report-first)**
 
 **Goal:** expose triage analysis as machine-readable and human-readable CLI output.
 
@@ -297,7 +297,7 @@ Design constraints:
 - **AC5:** Machine-readable triage report is available for automation and agent workflows (R8).
 - **AC6:** Report output includes lane/WIP/dependency signals to support dependency-first sequencing (R2, R4, R6).
 
-- [ ] **P3 / Unit 4: Add guarded apply workflow for status promotion recommendations**
+- [x] **P3 / Unit 4: Add guarded apply workflow for status promotion recommendations**
 
 **Goal:** allow controlled triage-to-active promotion with safety guards and explicit limits.
 
@@ -343,7 +343,7 @@ Design constraints:
 - **AC7:** Promotion into active work is limited by explicit lane and cycle guards (R2, R6).
 - **AC8:** Checklist gating is enforced before status mutation (R7).
 
-- [ ] **P4 / Unit 5: Strengthen templates and operational docs for triage quality**
+- [x] **P4 / Unit 5: Strengthen templates and operational docs for triage quality**
 
 **Goal:** make issue creation and triage updates consistently capture scoring and dependency metadata.
 
@@ -381,7 +381,7 @@ Design constraints:
 - **AC9:** Issue templates capture enough metadata for deterministic scoring and prioritization (R3, R7).
 - **AC10:** Traceability requirements remain explicit in templates and docs (R5).
 
-- [ ] **P5 / Unit 6: Rollout, observability, and governance hardening**
+- [x] **P5 / Unit 6: Rollout, observability, and governance hardening**
 
 **Goal:** make triage operations auditable and safe to run repeatedly.
 
@@ -485,11 +485,11 @@ Total outstanding issues tracked in this snapshot: `29`.
 
 STEP_ID | status (pending|in_progress|completed) | owner | evidence
 P0 | completed | codex | Canonical state/blocked/cycle semantics reconciled across `docs/agents/13-linear-production-workflow.md`, `docs/agents/16-linear-production-compact.md`, and `docs/agents/19-linear-templates.md`; outstanding issue snapshot refreshed on `2026-04-09` (`29` non-terminal issues).
-P1 | pending | codex | `src/lib/linear/triage-scoring.ts` + unit tests added.
-P2 | pending | codex | `harness linear triage --json` report path implemented and tested.
-P3 | pending | codex | Guarded apply mode with lane/cycle constraints implemented.
-P4 | pending | codex | Linear templates and docs updated with triage metadata.
-P5 | pending | codex | Validation/runbook/observability updates finalized.
+P1 | completed | codex | Deterministic scoring module and tests landed in `src/lib/linear/triage-scoring.ts` and `src/lib/linear/triage-scoring.test.ts`.
+P2 | completed | codex | `harness linear triage` command/report path and dispatch coverage landed in `src/commands/linear-triage.ts`, `src/commands/linear-triage.test.ts`, and `src/cli-dispatch.test.ts`.
+P3 | completed | codex | Guarded apply path now enforces metadata/dependency/WIP gates plus cycle-throughput guard rails in `src/commands/linear-triage.ts` and `src/lib/linear/triage-lanes.ts` with coverage in `src/lib/linear/triage-lanes.test.ts`.
+P4 | completed | codex | Triage metadata expectations and label hygiene are encoded in `src/templates/linear/*.md` and reflected in `docs/agents/19-linear-templates.md`.
+P5 | completed | codex | Validation/runbook and operational semantics are aligned in `docs/agents/04-validation.md`, `docs/agents/13-linear-production-workflow.md`, and `docs/agents/16-linear-production-compact.md`.
 
 ## Sources and References
 

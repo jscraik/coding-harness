@@ -4,6 +4,7 @@
  * Defines interfaces, exit codes, and constants for deterministic
  * baseline-vs-candidate policy simulation against historical telemetry.
  */
+import type { GateVerdict, PolicyAction } from "../contract/types.js";
 
 // ============================================================================
 // EXIT CODES
@@ -150,16 +151,13 @@ export interface SimulationMetrics {
 // ============================================================================
 
 /**
- * Policy decision action.
- */
-export type PolicyAction = "allow" | "block" | "warn";
-
-/**
  * Policy decision for a single event.
  */
 export interface PolicyDecision {
 	/** Decision action */
 	action: PolicyAction;
+	/** Resolved gate verdict for the decision action */
+	verdict?: GateVerdict | undefined;
 	/** Human-readable reason */
 	reason: string;
 	/** Confidence in this decision (0-1) */
@@ -405,6 +403,7 @@ const VALID_CONFIDENCE_LEVELS: ConfidenceLevel[] = [
 ];
 
 const VALID_POLICY_ACTIONS: PolicyAction[] = ["allow", "block", "warn"];
+const VALID_GATE_VERDICTS: GateVerdict[] = ["pass", "fail"];
 
 const VALID_DELTA_TYPES: DeltaType[] = [
 	"blocked_to_allowed",
@@ -454,6 +453,13 @@ export function isPolicyAction(value: unknown): value is PolicyAction {
 	return (
 		typeof value === "string" &&
 		VALID_POLICY_ACTIONS.includes(value as PolicyAction)
+	);
+}
+
+export function isGateVerdict(value: unknown): value is GateVerdict {
+	return (
+		typeof value === "string" &&
+		VALID_GATE_VERDICTS.includes(value as GateVerdict)
 	);
 }
 
@@ -521,6 +527,7 @@ export function isPolicyDecision(value: unknown): value is PolicyDecision {
 	const v = value as Record<string, unknown>;
 	return (
 		isPolicyAction(v.action) &&
+		(v.verdict === undefined || isGateVerdict(v.verdict)) &&
 		typeof v.reason === "string" &&
 		typeof v.confidence === "number" &&
 		typeof v.traceEventIndex === "number"

@@ -10,6 +10,7 @@ import {
 	DEFAULT_TRIAGE_LANE_CAPACITY,
 	type TriageLane,
 	buildIssueLookup,
+	evaluateCycleThroughputGuard,
 	evaluatePromotionGuards,
 	parseDependencyKeys,
 	resolveIssueLane,
@@ -465,6 +466,13 @@ export async function runLinearTriage(
 					metadataCompleteness: score.metadata.completeness,
 					metadataThreshold,
 				});
+				const cycleGuard = evaluateCycleThroughputGuard({
+					cycle: issue.cycle ?? null,
+					projectedPromotionCount: 1,
+				});
+				if (!cycleGuard.promotable) {
+					guards.reasons.push(...cycleGuard.reasons);
+				}
 
 				const typeLabelPlan = resolveTypeLabelPlan({
 					title: issue.title,
@@ -474,7 +482,9 @@ export async function runLinearTriage(
 				});
 
 				const promotable =
-					guards.promotable && PROMOTABLE_BANDS.has(score.band);
+					guards.promotable &&
+					cycleGuard.promotable &&
+					PROMOTABLE_BANDS.has(score.band);
 				if (!PROMOTABLE_BANDS.has(score.band)) {
 					guards.reasons.push(
 						`score band ${score.band} is below promotion threshold`,
@@ -509,6 +519,7 @@ export async function runLinearTriage(
 		const topEvaluated = evaluated.slice(0, limit);
 		const projectedLaneCounts = new Map(laneInProgressCounts);
 		let projectedInProgress = globalInProgressCount;
+		const projectedCyclePromotions = new Map<string, number>();
 		const promotions: Array<{
 			issueIdentifier: string;
 			reason: string;
@@ -550,12 +561,30 @@ export async function runLinearTriage(
 				candidate.promotable = false;
 				continue;
 			}
+			const nextCyclePromotionCount = candidate.issue.cycle?.id
+				? (projectedCyclePromotions.get(candidate.issue.cycle.id) ?? 0) + 1
+				: 1;
+			const cycleGuard = evaluateCycleThroughputGuard({
+				cycle: candidate.issue.cycle ?? null,
+				projectedPromotionCount: nextCyclePromotionCount,
+			});
+			if (!cycleGuard.promotable) {
+				candidate.guards.reasons.push(...cycleGuard.reasons);
+				candidate.promotable = false;
+				continue;
+			}
 
 			projectedInProgress += 1;
 			projectedLaneCounts.set(
 				candidate.lane,
 				(projectedLaneCounts.get(candidate.lane) ?? 0) + 1,
 			);
+			if (candidate.issue.cycle?.id) {
+				projectedCyclePromotions.set(
+					candidate.issue.cycle.id,
+					nextCyclePromotionCount,
+				);
+			}
 			promotions.push({
 				issueIdentifier: candidate.issue.identifier,
 				reason: `score ${candidate.score.score} (${candidate.score.band})`,

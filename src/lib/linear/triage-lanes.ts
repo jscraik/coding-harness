@@ -1,4 +1,4 @@
-import type { LinearIssueSummary } from "./client.js";
+import type { LinearCycleSummary, LinearIssueSummary } from "./client.js";
 
 export type TriageLane =
 	| "lane_a_active_stabilization"
@@ -30,6 +30,7 @@ export const DEFAULT_TRIAGE_LANE_CAPACITY: TriageLaneCapacityConfig = {
 
 const TERMINAL_STATE_TYPES = new Set(["completed", "canceled"]);
 const TERMINAL_STATE_NAMES = new Set(["done", "canceled", "duplicate"]);
+const MS_PER_DAY = 86_400_000;
 
 const LANE_MATCHERS: Array<{
 	lane: Exclude<TriageLane, "unassigned">;
@@ -75,8 +76,37 @@ export interface PromotionGuardResult {
 	unresolvedDependencies: string[];
 }
 
+export interface CycleThroughputGuardResult {
+	promotable: boolean;
+	reasons: string[];
+}
+
+export interface CycleThroughputGuardOptions {
+	cycle?: Pick<LinearCycleSummary, "id" | "startsAt" | "endsAt"> | null;
+	projectedPromotionCount: number;
+	now?: Date;
+	dailyPromotionCapacity?: number;
+}
+
 function normalizeText(value: string | undefined): string {
 	return value?.toLowerCase() ?? "";
+}
+
+function parseISODate(value: string | null | undefined): Date | undefined {
+	if (!value) {
+		return undefined;
+	}
+	const parsed = new Date(value);
+	if (Number.isNaN(parsed.getTime())) {
+		return undefined;
+	}
+	return parsed;
+}
+
+function toUtcEndOfDay(value: Date): Date {
+	const end = new Date(value);
+	end.setUTCHours(23, 59, 59, 999);
+	return end;
 }
 
 export function resolveIssueLane(options: {
@@ -142,6 +172,50 @@ export function buildIssueLookup(
 		});
 	}
 	return lookup;
+}
+
+export function evaluateCycleThroughputGuard(
+	options: CycleThroughputGuardOptions,
+): CycleThroughputGuardResult {
+	const cycle = options.cycle;
+	if (!cycle?.id) {
+		return { promotable: true, reasons: [] };
+	}
+
+	const reasons: string[] = [];
+	const now = options.now ?? new Date();
+	const startsAt = parseISODate(cycle.startsAt);
+	if (startsAt && now < startsAt) {
+		reasons.push(
+			`cycle guard: cycle ${cycle.id} has not started (${cycle.startsAt}).`,
+		);
+	}
+
+	const endsAt = parseISODate(cycle.endsAt);
+	if (endsAt) {
+		const cycleEnd = toUtcEndOfDay(endsAt);
+		if (now > cycleEnd) {
+			reasons.push(`cycle guard: cycle ${cycle.id} ended (${cycle.endsAt}).`);
+		} else {
+			const dailyCapacity = Math.max(1, options.dailyPromotionCapacity ?? 1);
+			const daysRemaining =
+				Math.floor((cycleEnd.getTime() - now.getTime()) / MS_PER_DAY) + 1;
+			const feasiblePromotionBudget = Math.max(
+				1,
+				daysRemaining * dailyCapacity,
+			);
+			if (options.projectedPromotionCount > feasiblePromotionBudget) {
+				reasons.push(
+					`cycle guard: projected promotions ${options.projectedPromotionCount} exceed feasible cycle throughput ${feasiblePromotionBudget} for cycle ${cycle.id}.`,
+				);
+			}
+		}
+	}
+
+	return {
+		promotable: reasons.length === 0,
+		reasons,
+	};
 }
 
 export function evaluatePromotionGuards(options: {

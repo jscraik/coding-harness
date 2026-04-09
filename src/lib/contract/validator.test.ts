@@ -99,6 +99,71 @@ describe("validateContract", () => {
 		});
 	});
 
+	describe("policyChain", () => {
+		it("accepts a complete policy chain mapping", () => {
+			const result = validateContract({
+				version: "1.0",
+				policyChain: {
+					tierToAction: {
+						high: "block",
+						medium: "warn",
+						low: "allow",
+					},
+					actionToVerdict: {
+						allow: "pass",
+						block: "fail",
+						warn: "pass",
+					},
+				},
+			});
+
+			expect(result.success).toBe(true);
+		});
+
+		it("rejects policy chain when a tier mapping is missing", () => {
+			const result = validateContract({
+				version: "1.0",
+				policyChain: {
+					tierToAction: {
+						high: "block",
+						medium: "warn",
+					},
+					actionToVerdict: {
+						allow: "pass",
+						block: "fail",
+						warn: "pass",
+					},
+				},
+			});
+
+			expect(result.success).toBe(false);
+			expect(result.errors[0]?.path).toBe("policyChain");
+			expect(result.errors[0]?.code).toBe(ValidationErrorCode.INVALID_VALUE);
+		});
+
+		it("rejects policy chain with unsupported action values", () => {
+			const result = validateContract({
+				version: "1.0",
+				policyChain: {
+					tierToAction: {
+						high: "block",
+						medium: "escalate",
+						low: "allow",
+					},
+					actionToVerdict: {
+						allow: "pass",
+						block: "fail",
+						warn: "pass",
+					},
+				},
+			});
+
+			expect(result.success).toBe(false);
+			expect(result.errors[0]?.path).toBe("policyChain");
+			expect(result.errors[0]?.code).toBe(ValidationErrorCode.INVALID_VALUE);
+		});
+	});
+
 	it("rejects invalid risk tier", () => {
 		const result = validateContract({
 			version: "1.0",

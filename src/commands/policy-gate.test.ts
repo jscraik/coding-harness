@@ -16,6 +16,8 @@ describe("runPolicyGate", () => {
 			if (result.ok) {
 				expect(result.output.passed).toBe(true);
 				expect(result.output.tier).toBe("medium");
+				expect(result.output.action).toBe("warn");
+				expect(result.output.verdict).toBe("pass");
 			}
 		});
 
@@ -29,6 +31,8 @@ describe("runPolicyGate", () => {
 			if (result.ok) {
 				expect(result.output.passed).toBe(true);
 				expect(result.output.tier).toBe("low");
+				expect(result.output.action).toBe("allow");
+				expect(result.output.verdict).toBe("pass");
 			}
 		});
 
@@ -42,6 +46,8 @@ describe("runPolicyGate", () => {
 			if (result.ok) {
 				expect(result.output.passed).toBe(false);
 				expect(result.output.tier).toBe("high");
+				expect(result.output.action).toBe("block");
+				expect(result.output.verdict).toBe("fail");
 				expect(result.output.maxAllowed).toBe("medium");
 				expect(result.output.violatingFiles).toContain("src/auth/login.ts");
 			}
@@ -56,6 +62,8 @@ describe("runPolicyGate", () => {
 			expect(result.ok).toBe(true);
 			if (result.ok) {
 				expect(result.output.passed).toBe(true);
+				expect(result.output.action).toBe("warn");
+				expect(result.output.verdict).toBe("pass");
 			}
 		});
 	});
@@ -70,6 +78,8 @@ describe("runPolicyGate", () => {
 			if (result.ok) {
 				expect(result.output.passed).toBe(true);
 				expect(result.output.tier).toBe("high");
+				expect(result.output.action).toBe("warn");
+				expect(result.output.verdict).toBe("pass");
 			}
 		});
 	});
@@ -86,6 +96,8 @@ describe("runPolicyGate", () => {
 			if (result.ok) {
 				expect(result.output.passed).toBe(true);
 				expect(result.output.tier).toBe("low");
+				expect(result.output.action).toBe("allow");
+				expect(result.output.verdict).toBe("pass");
 				expect(result.output.violatingFiles).toEqual([]);
 			}
 		});

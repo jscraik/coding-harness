@@ -3,6 +3,7 @@ import {
 	DEFAULT_TRIAGE_LANE_CAPACITY,
 	type TriageLane,
 	buildIssueLookup,
+	evaluateCycleThroughputGuard,
 	evaluatePromotionGuards,
 	parseDependencyKeys,
 	resolveIssueLane,
@@ -117,5 +118,50 @@ describe("evaluatePromotionGuards", () => {
 
 		expect(result.promotable).toBe(true);
 		expect(result.reasons).toEqual([]);
+	});
+});
+
+describe("evaluateCycleThroughputGuard", () => {
+	it("allows promotion when no cycle is assigned", () => {
+		const result = evaluateCycleThroughputGuard({
+			cycle: null,
+			projectedPromotionCount: 4,
+		});
+
+		expect(result.promotable).toBe(true);
+		expect(result.reasons).toEqual([]);
+	});
+
+	it("blocks promotion when cycle has already ended", () => {
+		const result = evaluateCycleThroughputGuard({
+			cycle: {
+				id: "cycle-1",
+				startsAt: "2026-04-01",
+				endsAt: "2026-04-08",
+			},
+			projectedPromotionCount: 1,
+			now: new Date("2026-04-09T09:00:00Z"),
+		});
+
+		expect(result.promotable).toBe(false);
+		expect(result.reasons.join("\n")).toContain("cycle guard");
+		expect(result.reasons.join("\n")).toContain("ended");
+	});
+
+	it("blocks promotions that exceed feasible cycle throughput", () => {
+		const result = evaluateCycleThroughputGuard({
+			cycle: {
+				id: "cycle-2",
+				startsAt: "2026-04-08",
+				endsAt: "2026-04-09",
+			},
+			projectedPromotionCount: 3,
+			now: new Date("2026-04-08T09:00:00Z"),
+		});
+
+		expect(result.promotable).toBe(false);
+		expect(result.reasons.join("\n")).toContain(
+			"exceed feasible cycle throughput",
+		);
 	});
 });
