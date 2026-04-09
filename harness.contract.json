@@ -6,6 +6,18 @@
 		"src/lib/**": "medium",
 		"**/*.test.ts": "low"
 	},
+	"policyChain": {
+		"tierToAction": {
+			"high": "warn",
+			"medium": "warn",
+			"low": "allow"
+		},
+		"actionToVerdict": {
+			"allow": "pass",
+			"block": "fail",
+			"warn": "pass"
+		}
+	},
 	"reviewPolicy": {
 		"timeoutSeconds": 600,
 		"timeoutAction": "fail",

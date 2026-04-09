@@ -22,8 +22,12 @@ import {
 import { dirname, join, resolve } from "node:path";
 
 import { loadContract } from "../lib/contract/loader.js";
-import type { HarnessContract } from "../lib/contract/types.js";
+import type { HarnessContract, PolicyAction } from "../lib/contract/types.js";
 import { PathTraversalError, validatePath } from "../lib/input/validator.js";
+import {
+	resolveGateVerdict,
+	resolvePolicyChain,
+} from "../lib/policy/policy-chain.js";
 import {
 	CONFIDENCE_SCORES,
 	type ConfidenceAssessment,
@@ -33,7 +37,6 @@ import {
 	type DeltaSummary,
 	type DeltaType,
 	type MetricDelta,
-	type PolicyAction,
 	SIMULATE_EXIT_CODES,
 	SIMULATION_LIMITS,
 	SIMULATION_SCHEMA_VERSION,
@@ -721,7 +724,7 @@ function computeOutcomeStats(manifests: AgentRunManifest[]): OutcomeStats {
  */
 function computeDeltas(
 	contractA: HarnessContract,
-	_contractB: HarnessContract,
+	contractB: HarnessContract,
 ): { summary: DeltaSummary; topDeltas: DecisionDelta[] } {
 	const artifactsDir = resolve("./artifacts/agent-runs");
 	const { manifests } = readArtifactManifests(artifactsDir);
@@ -759,6 +762,8 @@ function computeDeltas(
 	let confidenceChanges = 0;
 	let unchanged = 0;
 	let eventIndex = 0;
+	const baselinePolicyChain = resolvePolicyChain(contractA);
+	const candidatePolicyChain = resolvePolicyChain(contractB);
 
 	for (const manifest of usingBaseline) {
 		const baselineEvents = readRunEvents(
@@ -774,15 +779,27 @@ function computeDeltas(
 		for (const evt of baselineEvents) {
 			if (evt.eventType !== "decision") continue;
 			const baselineAction = mapOutcomeToAction(evt.payload?.outcome);
+			const baselineVerdict = resolveGateVerdict(
+				baselineAction,
+				baselinePolicyChain,
+			);
 			const baselineConfidence = mapStatusToConfidence(evt.status);
 
 			// Candidate decision: use matching run or infer from contract change
 			let candidateAction: PolicyAction = baselineAction;
+			let candidateVerdict = resolveGateVerdict(
+				candidateAction,
+				candidatePolicyChain,
+			);
 			let candidateConfidence = baselineConfidence;
 
 			if (matchingCandidate) {
 				// Use the candidate run's overall outcome as a signal
 				candidateAction = mapOutcomeToAction(matchingCandidate.outcome);
+				candidateVerdict = resolveGateVerdict(
+					candidateAction,
+					candidatePolicyChain,
+				);
 				candidateConfidence =
 					matchingCandidate.outcome === "success" ? 0.9 : 0.5;
 			}
@@ -809,12 +826,14 @@ function computeDeltas(
 				eventIndex,
 				baseline: {
 					action: baselineAction,
+					verdict: baselineVerdict,
 					reason: `baseline outcome: ${evt.payload?.outcome ?? evt.status}`,
 					confidence: baselineConfidence,
 					traceEventIndex: eventIndex,
 				},
 				candidate: {
 					action: candidateAction,
+					verdict: candidateVerdict,
 					reason: matchingCandidate
 						? `candidate outcome: ${matchingCandidate.outcome}`
 						: "no matching candidate run",

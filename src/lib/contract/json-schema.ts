@@ -67,6 +67,8 @@ export const GATE_EXTENSION_HOOK_IDS = [
 
 /** Valid risk tiers */
 export const RISK_TIERS = ["high", "medium", "low"] as const;
+export const POLICY_ACTIONS = ["allow", "block", "warn"] as const;
+export const GATE_VERDICTS = ["pass", "fail"] as const;
 
 // ─── JSON Schema factory ──────────────────────────────────────────────────────
 
@@ -226,6 +228,39 @@ export function buildContractJsonSchema(): Record<string, unknown> {
 				additionalProperties: {
 					type: "string",
 					enum: [...RISK_TIERS],
+				},
+			},
+
+			// ── Policy Chain ───────────────────────────────────────────────────
+			policyChain: {
+				type: "object",
+				description:
+					"Explicit mapping from RiskTier -> PolicyAction -> GateVerdict.",
+				required: ["tierToAction", "actionToVerdict"],
+				additionalProperties: false,
+				properties: {
+					tierToAction: {
+						type: "object",
+						description: "Maps each risk tier to a policy action.",
+						required: ["high", "medium", "low"],
+						additionalProperties: false,
+						properties: {
+							high: { type: "string", enum: [...POLICY_ACTIONS] },
+							medium: { type: "string", enum: [...POLICY_ACTIONS] },
+							low: { type: "string", enum: [...POLICY_ACTIONS] },
+						},
+					},
+					actionToVerdict: {
+						type: "object",
+						description: "Maps policy actions to gate verdicts.",
+						required: ["allow", "block", "warn"],
+						additionalProperties: false,
+						properties: {
+							allow: { type: "string", enum: [...GATE_VERDICTS] },
+							block: { type: "string", enum: [...GATE_VERDICTS] },
+							warn: { type: "string", enum: [...GATE_VERDICTS] },
+						},
+					},
 				},
 			},
 

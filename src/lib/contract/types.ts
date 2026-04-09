@@ -19,6 +19,27 @@ import {
 
 export type RiskTier = "high" | "medium" | "low";
 
+export type PolicyAction = "allow" | "block" | "warn";
+
+export type GateVerdict = "pass" | "fail";
+
+export interface PolicyChainTierToAction {
+	high: PolicyAction;
+	medium: PolicyAction;
+	low: PolicyAction;
+}
+
+export interface PolicyChainActionToVerdict {
+	allow: GateVerdict;
+	block: GateVerdict;
+	warn: GateVerdict;
+}
+
+export interface PolicyChainPolicy {
+	tierToAction: PolicyChainTierToAction;
+	actionToVerdict: PolicyChainActionToVerdict;
+}
+
 export type TimeoutAction = "fail" | "warn";
 
 export type ImageFormat = "png" | "jpeg";
@@ -1142,11 +1163,25 @@ export const DEFAULT_TOOLING_POLICY: ToolingPolicy = {
 	},
 };
 
+export const DEFAULT_POLICY_CHAIN: PolicyChainPolicy = {
+	tierToAction: {
+		high: "warn",
+		medium: "warn",
+		low: "allow",
+	},
+	actionToVerdict: {
+		allow: "pass",
+		block: "fail",
+		warn: "pass",
+	},
+};
+
 // === Contract Interface ===
 
 export interface HarnessContract {
 	version: string;
 	riskTierRules: Record<string, RiskTier>;
+	policyChain?: PolicyChainPolicy | undefined;
 	mergePolicy?: MergePolicy | undefined;
 	docsDriftRules?: DocsDriftRules | undefined;
 	diffBudget?: DiffBudget | undefined;
@@ -1200,6 +1235,7 @@ export interface HarnessContract {
 export const DEFAULT_CONTRACT: HarnessContract = {
 	version: "1.5.0",
 	riskTierRules: {},
+	policyChain: DEFAULT_POLICY_CHAIN,
 	reviewPolicy: DEFAULT_REVIEW_POLICY,
 	evidencePolicy: DEFAULT_EVIDENCE_POLICY,
 	pilotGapCasePolicy: DEFAULT_PILOT_GAP_CASE_POLICY,
