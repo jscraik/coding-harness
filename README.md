@@ -3,6 +3,7 @@
 [![CircleCI](https://dl.circleci.com/status-badge/img/gh/jscraik/coding-harness/tree/main.svg?style=shield)](https://dl.circleci.com/status-badge/redirect/gh/jscraik/coding-harness/tree/main)
 [![npm](https://img.shields.io/npm/v/@brainwav/coding-harness?label=npm)](https://www.npmjs.com/package/@brainwav/coding-harness)
 [![License](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](LICENSE)
+[![OpenSSF Scorecard](https://api.scorecard.dev/projects/github.com/jscraik/coding-harness/badge)](https://scorecard.dev/viewer/?uri=github.com/jscraik/coding-harness)
 
 Coding Harness is a CLI control plane for repositories that use AI coding agents.
 It turns repo policy, workflow docs, review gates, and rollout criteria into
@@ -26,6 +27,7 @@ The shortest honest description of the project today is:
 - [Start Here](#start-here)
 - [Why Teams Use It](#why-teams-use-it)
 - [What It Is Best At Today](#what-it-is-best-at-today)
+- [Security Posture Baseline](#security-posture-baseline)
 - [Installation](#installation)
 - [Repo-local Wrapper](#repo-local-wrapper)
 - [Repo-local Verification](#repo-local-verification)
@@ -118,6 +120,23 @@ The code, tests, and recent history point to a few especially strong surfaces.
 If you want the highest-confidence paths today, start with `init`, `upgrade`,
 `ci-migrate`, `docs-gate` or `review-gate`, `verify-coderabbit`,
 `local-memory-preflight`, and `pilot-evaluate`.
+
+## Security Posture Baseline
+
+This repository tracks baseline security posture with OpenSSF OSPS + Scorecard
+artifacts that are versioned alongside code.
+
+- Baseline status and control matrix:
+  `docs/security/2026-04-09-openssf-osps-baseline-status.md`
+- Scorecard floor policy:
+  `security/openssf-scorecard-policy.json`
+- Regression evaluator:
+  `scripts/check-scorecard-regressions.mjs`
+- Continuous scorecard workflow:
+  `.github/workflows/openssf-scorecard.yml`
+
+Scorecard checks run on pull requests (`warn` mode), pushes to `main` (`fail`
+mode), and a weekly scheduled run (`fail` mode).
 
 ## Installation
 
