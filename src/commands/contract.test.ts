@@ -585,6 +585,13 @@ describe("buildContractPreset", () => {
 		expect(normalizeContractPreset("unknown")).toBeUndefined();
 	});
 
+	it.each(["toString", "constructor", "__proto__"] as const)(
+		"rejects inherited object keys as preset aliases: %s",
+		(alias) => {
+			expect(normalizeContractPreset(alias)).toBeUndefined();
+		},
+	);
+
 	it("CONTRACT_PRESET_INPUTS includes lite alias", () => {
 		expect(CONTRACT_PRESET_INPUTS).toContain("lite");
 	});
@@ -666,6 +673,18 @@ describe("runContractInitCLI", () => {
 		const code = runContractInitCLI({ preset: "unknown" as never, output });
 		expect(code).toBe(2);
 	});
+
+	it.each(["toString", "constructor", "__proto__"] as const)(
+		"returns 2 for inherited-key preset alias: %s",
+		(alias) => {
+			const output = join(dir, "harness.contract.json");
+			let code = -1;
+			expect(() => {
+				code = runContractInitCLI({ preset: alias as never, output });
+			}).not.toThrow();
+			expect(code).toBe(2);
+		},
+	);
 
 	it("emits JSON output when --json flag is set", () => {
 		const output = join(dir, "harness.contract.json");

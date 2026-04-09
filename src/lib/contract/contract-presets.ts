@@ -45,7 +45,7 @@ const PRESET_NORMALIZATION_MAP = {
 export function normalizeContractPreset(
 	preset: string,
 ): ContractPreset | undefined {
-	if (!(preset in PRESET_NORMALIZATION_MAP)) {
+	if (!Object.hasOwn(PRESET_NORMALIZATION_MAP, preset)) {
 		return undefined;
 	}
 	return PRESET_NORMALIZATION_MAP[preset as ContractPresetInput];
