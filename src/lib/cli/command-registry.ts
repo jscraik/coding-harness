@@ -183,8 +183,7 @@ function runGroupedCommand(
 	}
 
 	const normalizedAction = action.toLowerCase();
-	const mapped = actions[normalizedAction];
-	if (!mapped) {
+	if (!Object.hasOwn(actions, normalizedAction)) {
 		if (jsonFlag) {
 			console.log(
 				JSON.stringify({
@@ -198,6 +197,13 @@ function runGroupedCommand(
 			);
 		}
 		return 2;
+	}
+	const mapped = actions[normalizedAction];
+	if (!mapped) {
+		console.error(
+			`Internal routing error: ${groupName} action "${action}" has no mapping.`,
+		);
+		return 1;
 	}
 
 	return dispatchRoutedCommand(mapped.command, args.slice(1));

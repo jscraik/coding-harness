@@ -108,7 +108,9 @@ describe("detectHarnessVersionCoherence", () => {
 
 		const result = detectHarnessVersionCoherence(repoDir);
 		expect(result.status).toBe("error");
-		expect(result.message).toContain("Could not read repo-local harness version");
+		expect(result.message).toContain(
+			"Could not read repo-local harness version",
+		);
 		expect(result.globalVersion).toBeUndefined();
 	});
 });

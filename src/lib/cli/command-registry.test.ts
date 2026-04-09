@@ -99,6 +99,12 @@ describe("command registry", () => {
 		expect(result?.spec.name).toBe("repo");
 	});
 
+	it("rejects inherited-key grouped actions without crashing", () => {
+		const invoke = () => dispatchRegistryCommand("repo", ["repo", "toString"]);
+		expect(invoke).not.toThrow();
+		expect(invoke()?.result).toBe(2);
+	});
+
 	it("resolves alias to policy-gate spec", () => {
 		const result = dispatchRegistryCommand("risk-policy-gate", []);
 		expect(result?.spec.name).toBe("policy-gate");
