@@ -13,6 +13,8 @@
 - [Process/agent instruction edits](#processagent-instruction-edits)
 - [Verify-work lifecycle](#verify-work-lifecycle)
 - [Execution order and restart policy](#execution-order-and-restart-policy)
+- [Governance failure classes](#governance-failure-classes)
+- [Blocked and retry recovery playbook](#blocked-and-retry-recovery-playbook)
 - [Evidence reporting](#evidence-reporting)
 - [Non-code verification options](#non-code-verification-options)
 - [Failure handling](#failure-handling)
@@ -96,7 +98,7 @@ Enforces plan-traceability and acceptance-evidence requirements for pull-request
 
 - `run.json` for run metadata (`mode`, `schemaVersion`, `contractVersion`, provider class)
 - `gates/<gate-id>.json` for per-gate outcomes
-- `summary.json` for terminal status and failed gate identity
+- `summary.json` for terminal status, failed gate identity (`failedGateId`), and execution mode (`freshVsResumed`)
 
 Fast-mode orchestration uses two classes:
 
@@ -115,6 +117,28 @@ Resume behavior:
 - Fix root cause.
 - Rerun from the first failed gate forward using `--resume-from <gate-id>` when compatibility checks pass.
 - If resume is rejected due to contract drift, run a fresh verification lane from the start.
+
+## Governance failure classes
+
+- `contract_policy`: fail-closed, no auto-retry. Typical causes are Linear policy mismatch or required-check identity drift. Deterministic next step: fix contract/policy mismatch, then rerun from the failed gate.
+- `internal_unknown`: fail-closed, no auto-retry. Deterministic next step: inspect gate output, fix root cause, then rerun.
+- `transient_infra`: bounded retry is allowed only for `read_only_parallel` gates. After retry exhaustion, treat the gate as failed and resume from that gate once the dependency issue is fixed.
+
+`linear-gate` human output must include both `Failure class:` and `Next action:` lines for failed outcomes, and JSON output must include `meta.failureClass` and `meta.nextAction` when failure data is present.
+
+For check-identity diagnostics, keep terminology aligned across surfaces:
+
+- verify-work gate id: `ci-check-alignment`
+- doctor advisory check id: `ci:check-alignment`
+- doctor message prefix: `ci-check-alignment:`
+- CircleCI workflow-level `githubCheckName` continuity: `pr-pipeline`
+
+## Blocked and retry recovery playbook
+
+1. Read the latest gate artifact at `.harness/runs/<run-id>/gates/<gate-id>.json` and capture `failureClass` + `nextAction`.
+2. Fix the blocker identified by the failed gate output (contract/policy mismatch, infra dependency, or internal script error).
+3. Resume with `bash scripts/verify-work.sh --resume-from <gate-id>` when compatibility checks pass.
+4. If resume is rejected (`contract/provider/root must match`), run a fresh lane from the start.
 
 ## Evidence reporting
 

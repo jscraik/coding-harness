@@ -404,6 +404,8 @@ describe("runDoctor — ci:check-alignment check", () => {
 		const check = report.checks.find((c) => c.id === "ci:check-alignment");
 		expect(check?.status).toBe("warn");
 		expect(check?.message).toContain("no githubCheckName");
+		expect(check?.message).toContain("ci-check-alignment");
+		expect(check?.message).toContain("pr-pipeline");
 		expect(check?.fix).toContain("docs/agents/17-ci-required-checks.md");
 	});
 
@@ -431,6 +433,7 @@ describe("runDoctor — ci:check-alignment check", () => {
 		const report = runDoctor({ dir });
 		const check = report.checks.find((c) => c.id === "ci:check-alignment");
 		expect(check?.status).toBe("warn");
+		expect(check?.message).toContain("ci-check-alignment");
 		expect(check?.message).toContain("lint");
 		expect(check?.message).toContain("pr-pipeline");
 		expect(check?.fix).toContain("docs/agents/17-ci-required-checks.md");

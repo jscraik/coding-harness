@@ -1,7 +1,7 @@
 ---
 title: Coding Harness Reliability Orchestration Plan
 type: feat
-status: active
+status: completed
 date: 2026-04-08
 origin: docs/brainstorms/2026-04-08-coding-harness-reliability-orchestration-requirements.md
 spec: docs/specs/2026-04-08-feat-coding-harness-reliability-orchestration-spec.md
@@ -269,7 +269,7 @@ Design constraints:
 - **AC1:** Canonical contract projection is deterministic, backward compatible, and defaults safely when fields are absent (R1).
 - **AC2:** Legacy fresh-run semantics remain behaviorally equivalent when resume features are not used (R5).
 
-- [ ] **P1 / Unit 2: Verification run-state store and resume admissibility checks**
+- [x] **P1 / Unit 2: Verification run-state store and resume admissibility checks**
 
 **Goal:** persist auditable run-state and enforce strict resume compatibility before reuse.
 
@@ -309,7 +309,7 @@ Design constraints:
 **Acceptance items:**
 - **AC3:** Resume reuses only compatible prior passes and rejects unsafe reuse conditions with explicit diagnostics (R3).
 
-- [ ] **P2 / Unit 3: Orchestration lifecycle engine with execution-class lanes**
+- [x] **P2 / Unit 3: Orchestration lifecycle engine with execution-class lanes**
 
 **Goal:** execute gates through explicit lifecycle states with bounded parallel read-only phase and serial guarded phase.
 
@@ -349,7 +349,7 @@ Design constraints:
 **Acceptance items:**
 - **AC4:** Verify lifecycle enforces deterministic phase transitions and terminal conditions (R2, R3).
 
-- [ ] **P3 / Unit 4: CLI and script integration for fresh/resume execution**
+- [x] **P3 / Unit 4: CLI and script integration for fresh/resume execution**
 
 **Goal:** expose resumable orchestration through the canonical `verify-work` entrypoint while preserving existing invocation patterns.
 
@@ -393,7 +393,7 @@ Design constraints:
 - **AC5:** `verify-work` and `doctor` terminology stays contract-consistent for check identity and alignment diagnostics (R5).
 - **AC6:** Retry behavior is gated to transient read-only failures and never applied to contract-policy failures (R2, R4).
 
-- [ ] **P4 / Unit 5: Governance-failure classification and doctor parity hardening**
+- [x] **P4 / Unit 5: Governance-failure classification and doctor parity hardening**
 
 **Goal:** align governance-critical gate classification across `linear-gate`, check-alignment diagnostics, and verify orchestration decisions.
 
@@ -433,7 +433,7 @@ Design constraints:
 - **AC7:** Run events and operator diagnostics remain audit-grade and identity-consistent across verify and doctor surfaces (R5).
 - **AC8:** Governance and contract failures stay fail-closed and resume-safe under all mismatch/error classes (R2, R3, R4).
 
-- [ ] **P5 / Unit 6: Documentation and operational rollout controls**
+- [x] **P5 / Unit 6: Documentation and operational rollout controls**
 
 **Goal:** publish clear operator guidance for new lifecycle semantics, resume usage, and failure recovery expectations.
 
@@ -520,20 +520,24 @@ Dependencies:
 
 Snapshot captured on `2026-04-09` from Linear (`project: coding-harness`, non-terminal states only):
 
-- Lane counts: `In Progress=4`, `In Review=2`, `Todo=2`, `Triage=17`, `Backlog=4` (`29` total outstanding).
-- Reliability-adjacent active items touching verify/policy/CI surfaces: `JSC-96` (`In Progress`), `JSC-115` (`In Review`), `JSC-130` (`In Review`), `JSC-87` (`Triage`).
-- Planning implication: `P0` is complete; keep follow-on phases gated and evidence-driven because adjacent queue pressure indicates continued verification-governance drift risk.
+- `In Progress` (6): `JSC-112`, `JSC-131`, `JSC-96`, `JSC-135`, `JSC-127`, `JSC-134`
+- `In Review` (2): `JSC-115`, `JSC-130`
+- `Todo` (0): none
+- `Triage` (17): `JSC-128`, `JSC-122`, `JSC-129`, `JSC-125`, `JSC-132`, `JSC-126`, `JSC-124`, `JSC-121`, `JSC-120`, `JSC-109`, `JSC-108`, `JSC-107`, `JSC-106`, `JSC-116`, `JSC-114`, `JSC-104`, `JSC-87`
+- `Backlog` (4): `JSC-159`, `JSC-158`, `JSC-157`, `JSC-156`
+
+Total outstanding issues tracked in this snapshot: `29`.
 
 ## Execution Ledger (Planning Mode)
 
 STEP_ID | status (pending|in progress|completed) | owner | evidence
 P-1 | completed | codex | Governing spec pre-plan questions resolved; canonical identity tuple and non-identity display-name semantics aligned.
 P0 | completed | codex | Canonical contract metadata landed in `.harness/ci-required-checks.json`, normalization ordering/default behavior updated in `src/lib/policy/required-checks.ts`, tests expanded in `src/lib/policy/required-checks.test.ts`, and contract guidance aligned in `docs/agents/17-ci-required-checks.md`.
-P1 | pending | codex | Run-state persistence and admissibility tests added.
-P2 | pending | codex | Lifecycle engine + retry classifier implemented and validated.
-P3 | pending | codex | `verify-work` command + wrapper compatibility path validated.
-P4 | pending | codex | Doctor/linear-gate parity and failure-class outputs aligned.
-P5 | pending | codex | Validation/docs updates complete and contradiction-free.
+P1 | completed | codex | Added deterministic run-state/resume modules and tests in `src/lib/verify/{run-state,resume-admissibility}.{ts,test.ts}` covering admissible resume path, contract-version mismatch rejection, idempotent gate writes, and retention pruning with latest-failed preservation. Validation: `pnpm exec vitest run src/lib/verify/run-state.test.ts src/lib/verify/resume-admissibility.test.ts` (pass), `bash scripts/validate-codestyle.sh --fast` (pass), `bash scripts/validate-codestyle.sh` (pass), `bash scripts/verify-work.sh --fast` (pass).
+P2 | completed | codex | Added lifecycle engine + retry policy modules in `src/lib/verify/{orchestrator,retry-policy}.ts` with acceptance-focused coverage in `src/lib/verify/{orchestrator,retry-policy}.test.ts` (read-only->serial transition, guarded final-gate completion, blocked/unblock transition behavior, deterministic repeated fresh runs, transient retry eligibility/exhaustion, failure-class adaptation). Validation: `pnpm exec vitest run src/lib/verify/orchestrator.test.ts src/lib/verify/retry-policy.test.ts` (pass), `bash scripts/validate-codestyle.sh --fast` (pass), `bash scripts/verify-work.sh --fast` (pass), `bash scripts/validate-codestyle.sh` (pass).
+P3 | completed | codex | Added canonical `verify-work` command in `src/commands/verify-work.ts` (+ tests), registered `verify-work` in `src/lib/cli/command-registry.ts` with missing-value guards, and converted `scripts/verify-work.sh` into a compatibility wrapper that delegates to `harness verify-work` while preserving legacy fallback semantics. Validation: `pnpm exec vitest run src/lib/verify/orchestrator.test.ts src/lib/verify/retry-policy.test.ts src/commands/verify-work.test.ts src/lib/cli/command-registry.test.ts` (pass), `pnpm exec vitest run src/commands/init.test.ts -t "verify-work wrapper|repo-local verify-work wrapper aligned"` (pass), `bash scripts/validate-codestyle.sh --fast` (pass), `bash scripts/validate-codestyle.sh` (pass), `pnpm test:deep` (pass), `bash scripts/verify-work.sh --fast` (pass).
+P4 | completed | codex | Added shared linear-gate failure classification + deterministic next-action output in `src/lib/output/normalise.ts`, wired CLI parity messaging in `src/commands/linear-gate.ts`, tightened canonical check-identity wording in `src/commands/doctor.ts`, and expanded tests in `src/commands/{linear-gate,doctor}.test.ts` + `src/lib/output/normalise.test.ts` for `contract_policy`/`internal_unknown` behavior. Validation: `pnpm test -- src/commands/doctor.test.ts src/commands/linear-gate.test.ts src/lib/output/normalise.test.ts` (pass), `bash scripts/validate-codestyle.sh --fast` (pass), `bash scripts/validate-codestyle.sh` (pass), `bash scripts/verify-work.sh` (pass).
+P5 | completed | codex | Updated validation/operator guidance in `docs/agents/04-validation.md` with failure-class + retry-recovery playbook semantics, aligned check-identity wording in `docs/agents/17-ci-required-checks.md` (`ci:check-alignment` check id + `ci-check-alignment` operator prefix), and synchronized resume/output terminology in `docs/specs/2026-04-08-feat-coding-harness-reliability-orchestration-spec.md` to the implemented `--resume-from <gate-id>` contract. Validation: `pnpm check` (pass), `bash scripts/validate-codestyle.sh` (pass), `pnpm exec vitest run src/commands/doctor.test.ts src/commands/linear-gate.test.ts src/lib/output/normalise.test.ts` (pass).
 
 ## Sources and References
 

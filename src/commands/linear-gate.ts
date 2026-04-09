@@ -9,7 +9,10 @@ import type {
 } from "../lib/contract/types.js";
 import { DEFAULT_ISSUE_TRACKING_POLICY } from "../lib/contract/types.js";
 import { sanitizeError } from "../lib/input/sanitize.js";
-import { normaliseLinearGateResult } from "../lib/output/normalise.js";
+import {
+	classifyLinearGateFailure,
+	normaliseLinearGateResult,
+} from "../lib/output/normalise.js";
 
 export const EXIT_CODES = {
 	SUCCESS: 0,
@@ -175,6 +178,20 @@ function resolveReferenceKeys(
 	};
 }
 
+/**
+ * Appends a policy check record to the provided checks array.
+ *
+ * The function mutates `checks` by pushing a new LinearGateCheck containing
+ * `code`, `passed`, `message`, and any optional `expected`/`actual` fields.
+ *
+ * @param checks - The array to which the new check will be appended (mutated).
+ * @param code - Short machine-readable identifier for the check.
+ * @param passed - `true` when the check succeeded, `false` when it failed.
+ * @param message - Human-readable summary of the check result.
+ * @param options - Optional additional fields:
+ *   - `expected`: description of the expected value or condition
+ *   - `actual`: observed value when the check failed
+ */
 function addCheck(
 	checks: LinearGateCheck[],
 	code: string,
@@ -190,6 +207,24 @@ function addCheck(
 	});
 }
 
+/**
+ * Validate repository and PR metadata against the contract's issueTrackingPolicy and produce a structured verification report.
+ *
+ * Reads the contract (defaults to harness.contract.json in the repo root), resolves the effective issue tracking policy,
+ * gathers metadata (branch name, PR title/body, package.json bugs URL, and .github/ISSUE_TEMPLATE/config.yml), runs the
+ * policy checks (package bugs URL, retiring GitHub issues, branch linkage, PR linkage, PR reference mode, and branch/PR consistency),
+ * and returns a summarized result with individual check outcomes and extracted issue keys.
+ *
+ * Side effects: temporarily changes the process working directory to the resolved repoRoot to load the contract (restored on return),
+ * reads files under repoRoot, inspects environment variables, and may invoke git to detect the current branch.
+ *
+ * @param options - Overrides and flags controlling repo root and contract location, optional branch/PR metadata overrides,
+ *                  tolerance for missing metadata (`allowMissingBranch`, `allowMissingPrMetadata`), and JSON output mode.
+ * @returns On success (`ok: true`): `output` contains whether the policy passed, the applied policy, `repoRoot`, optional
+ *          `branch`/`prTitle`/`bugsUrl`, the full `checks` array, and extracted `issueKeys` grouped by `branch`, `pr`, `refs`, and `fixes`.
+ *          On failure (`ok: false`): `error` contains a machine-friendly `code` (`CONTRACT_ERROR` or `VALIDATION_ERROR`)
+ *          and a human-readable message describing the load or validation failure.
+ */
 export function runLinearGate(options: LinearGateOptions): LinearGateResult {
 	const repoRoot = resolve(options.repoRoot ?? process.cwd());
 	const contractPath = options.contractPath
@@ -507,40 +542,61 @@ export function runLinearGate(options: LinearGateOptions): LinearGateResult {
 	};
 }
 
+/**
+ * Execute the Linear gate, write a normalized JSON result or a concise human-readable report to stdout/stderr, and return the corresponding process exit code.
+ *
+ * When `options.json` is true the command writes a normalized JSON payload to stdout. Otherwise it writes a one-line PASS/FAIL header and per-check lines to stdout, and writes error messages to stderr on failures. If a failure classification is available it is printed (to stderr for error results, to stdout for successful runs).
+ *
+ * @param options - Configuration for locating the contract, overriding repository/PR metadata, controlling tolerance flags (e.g. `allowMissingBranch`, `allowMissingPrMetadata`), and selecting JSON output via `json`.
+ * @returns One of the EXIT_CODES: `EXIT_CODES.SUCCESS` when the gate passed; `EXIT_CODES.POLICY_VIOLATION` when policy checks failed; `EXIT_CODES.VALIDATION_ERROR` for validation/input errors; or `EXIT_CODES.CONTRACT_ERROR` when the contract could not be loaded or parsed.
+ */
 export async function runLinearGateCLI(
 	options: LinearGateOptions,
 ): Promise<number> {
 	const result = runLinearGate(options);
+	const failure = classifyLinearGateFailure(result);
+	if (options.json) {
+		const gateResult = normaliseLinearGateResult(result);
+		process.stdout.write(`${JSON.stringify(gateResult, null, 2)}\n`);
+		if (!result.ok) {
+			return result.error.code === "CONTRACT_ERROR"
+				? EXIT_CODES.CONTRACT_ERROR
+				: EXIT_CODES.VALIDATION_ERROR;
+		}
+		return result.output.passed
+			? EXIT_CODES.SUCCESS
+			: EXIT_CODES.POLICY_VIOLATION;
+	}
+
 	if (!result.ok) {
-		if (options.json) {
-			const gateResult = normaliseLinearGateResult(result);
-			process.stdout.write(`${JSON.stringify(gateResult, null, 2)}\n`);
-		} else {
-			console.error(result.error.message);
+		console.error(result.error.message);
+		if (failure) {
+			console.error(`Failure class: ${failure.failureClass}`);
+			console.error(`Next action: ${failure.nextAction}`);
 		}
 		return result.error.code === "CONTRACT_ERROR"
 			? EXIT_CODES.CONTRACT_ERROR
 			: EXIT_CODES.VALIDATION_ERROR;
 	}
 
-	if (options.json) {
-		const gateResult = normaliseLinearGateResult(result);
-		process.stdout.write(`${JSON.stringify(gateResult, null, 2)}\n`);
-	} else {
-		const statusIcon = result.output.passed ? "✓" : "✗";
-		const statusText = result.output.passed ? "PASSED" : "FAILED";
-		console.info(`${statusIcon} Linear gate ${statusText}`);
-		console.info();
-		for (const check of result.output.checks) {
-			const icon = check.passed ? "✓" : "✗";
-			console.info(`${icon} ${check.message}`);
-			if (!check.passed && check.expected) {
-				console.info(`  Expected: ${check.expected}`);
-			}
-			if (!check.passed && check.actual) {
-				console.info(`  Actual: ${check.actual}`);
-			}
+	const statusIcon = result.output.passed ? "✓" : "✗";
+	const statusText = result.output.passed ? "PASSED" : "FAILED";
+	console.info(`${statusIcon} Linear gate ${statusText}`);
+	console.info();
+	for (const check of result.output.checks) {
+		const icon = check.passed ? "✓" : "✗";
+		console.info(`${icon} ${check.message}`);
+		if (!check.passed && check.expected) {
+			console.info(`  Expected: ${check.expected}`);
 		}
+		if (!check.passed && check.actual) {
+			console.info(`  Actual: ${check.actual}`);
+		}
+	}
+	if (failure) {
+		console.info();
+		console.info(`Failure class: ${failure.failureClass}`);
+		console.info(`Next action: ${failure.nextAction}`);
 	}
 
 	return result.output.passed

@@ -2,6 +2,7 @@ import { mkdirSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
+import { normaliseLinearGateResult } from "../lib/output/normalise.js";
 import { runLinearGate } from "./linear-gate.js";
 
 function restoreEnvVar(
@@ -137,6 +138,62 @@ contact_links:
 			result.output.checks.find((check) => check.code === "branch-linkage")
 				?.passed,
 		).toBe(false);
+	});
+
+	it("classifies branch/PR key mismatch as non-retryable contract_policy", () => {
+		writeFileSync(
+			join(tempDir, "package.json"),
+			JSON.stringify(
+				{
+					name: "fixture",
+					bugs: "https://linear.app/acme/project/platform-123",
+				},
+				null,
+				2,
+			),
+			"utf-8",
+		);
+		writeFileSync(
+			join(tempDir, ".github/ISSUE_TEMPLATE/config.yml"),
+			`blank_issues_enabled: false
+contact_links:
+  - name: Linear work intake
+    url: https://linear.app/acme/project/platform-123
+    about: Track all work in Linear.
+`,
+			"utf-8",
+		);
+
+		const gateResult = runLinearGate({
+			repoRoot: tempDir,
+			branch: "codex/JSC-42-enforce-linear-policy",
+			prTitle: "JSC-99: Enforce Linear policy",
+			prBody: "Refs JSC-99",
+		});
+		const normalised = normaliseLinearGateResult(gateResult);
+
+		expect(gateResult.ok).toBe(true);
+		expect(normalised.status).toBe("fail");
+		expect(normalised.meta).toMatchObject({
+			failureClass: "contract_policy",
+			nextAction: "Fix contract/policy mismatch, then rerun linear-gate.",
+		});
+	});
+
+	it("classifies unrecognized internal errors as internal_unknown", () => {
+		const normalised = normaliseLinearGateResult({
+			ok: false,
+			error: {
+				code: "UNHANDLED_EXCEPTION",
+				message: "Unexpected gate failure",
+			},
+		});
+
+		expect(normalised.status).toBe("fail");
+		expect(normalised.meta).toMatchObject({
+			failureClass: "internal_unknown",
+			nextAction: "Inspect gate output, fix root cause, and rerun linear-gate.",
+		});
 	});
 
 	it("allows merge-queue style runs when PR and branch metadata are unavailable", () => {

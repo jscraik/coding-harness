@@ -73,6 +73,10 @@ import {
 	runUpgradeCLI,
 } from "../../commands/upgrade.js";
 import { runVerifyCodeRabbitCLI } from "../../commands/verify-coderabbit.js";
+import {
+	EXIT_CODES as VERIFY_WORK_EXIT_CODES,
+	runVerifyWorkCLI,
+} from "../../commands/verify-work.js";
 import { runWorkflowGenerateCLI } from "../../commands/workflow-generate.js";
 import type { IssueTracker } from "../init/types.js";
 import type { PilotEvaluateOptions } from "../pilot-evaluation/types.js";
@@ -834,6 +838,35 @@ const COMMAND_SPECS: CommandSpec[] = [
 			if (jsonFlag) options.json = true;
 
 			return runEjectCLI(targetDir, options);
+		},
+	},
+	{
+		name: "verify-work",
+		summary:
+			"Run canonical verification with fresh/resume modes via harness command",
+		example: "verify-work --fast --resume-from validate-codestyle-fast",
+		errorLabel: "Verify Work Error",
+		execute: (args) => {
+			const resumeFromFlag = inspectFlagValue(args, "--resume-from");
+			const repoRootFlag = inspectFlagValue(args, "--repo-root");
+			if (resumeFromFlag.missingValue) {
+				console.error("Error: --resume-from requires a gate id");
+				return VERIFY_WORK_EXIT_CODES.USAGE_ERROR;
+			}
+			if (repoRootFlag.missingValue) {
+				console.error("Error: --repo-root requires a path");
+				return VERIFY_WORK_EXIT_CODES.USAGE_ERROR;
+			}
+
+			return runVerifyWorkCLI({
+				all: args.includes("--all"),
+				changedOnly: args.includes("--changed-only"),
+				strict: args.includes("--strict"),
+				fast: args.includes("--fast"),
+				json: args.includes("--json"),
+				...(resumeFromFlag.value ? { resumeFrom: resumeFromFlag.value } : {}),
+				...(repoRootFlag.value ? { repoRoot: repoRootFlag.value } : {}),
+			});
 		},
 	},
 	{

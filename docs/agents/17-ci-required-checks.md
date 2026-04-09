@@ -218,9 +218,17 @@ harness ci-migrate status --provider circleci
 
 Entries for non-CircleCI providers (for example `github-actions` check contexts like `security-scan`) are excluded from the CircleCI job-name warning.
 
+Operator wording alignment:
+
+- Doctor check id remains `ci:check-alignment`.
+- Doctor warning message prefix is `ci-check-alignment:`.
+- verify-work gate identity uses `ci-check-alignment`.
+
+This split is intentional: the doctor check id remains namespace-scoped for report grouping, while operator-facing failure text aligns with verify-work gate identity.
+
 **Example warning:**
 
 ```
-⚠️  ci:check-alignment  ci-required-checks.json has githubCheckName values that look like CircleCI job names, not workflow names: lint. CircleCI reports ONE check run per workflow (e.g. "pr-pipeline"), not per job.
-    Fix: Update githubCheckName fields to workflow names (pr-pipeline / harness-gates). See docs/agents/17-ci-required-checks.md
+ci-check-alignment: CircleCI job-like githubCheckName values detected: lint. Canonical check identity requires workflow-level githubCheckName values (for example "pr-pipeline"), not job names.
+Fix: Update githubCheckName fields to workflow-level check names (pr-pipeline / harness-gates). See docs/agents/17-ci-required-checks.md
 ```

@@ -353,6 +353,7 @@ flags, use `harness --help`.
 | `upgrade` | Safely upgrade harness in an existing repo (`--dry-run` supported) |
 | `ci-migrate` | Stage, verify, commit, abort, sync branch protection, or promote CI mode |
 | `branch-protect` | Configure GitHub branch protection rulesets |
+| `verify-work` | Run canonical repo-local verification (fresh or resume mode) |
 | `verify-coderabbit` | Verify CodeRabbit configuration and remote wiring |
 | `preset` | List and inspect bundled presets |
 | `symphony-check` | Validate `WORKFLOW.md`, Linear config, and transition-table readiness |

@@ -534,10 +534,10 @@ const CHECKS: CheckFn[] = [
 	},
 
 	// ── CI: check alignment (JSC-70) — advisory ─────────────────────────────
-	// Warns when githubCheckName entries in ci-required-checks.json don't match
-	// the expected workflow-level check name for the active CI provider.
+	// Warns when githubCheckName entries in ci-required-checks.json do not
+	// satisfy canonical check identity for the active CI provider.
 	// CircleCI: one check run per workflow (not per job) — branch protection
-	// must use the workflow name (e.g. "pr-pipeline"), never job names.
+	// must use workflow-level githubCheckName values (for example "pr-pipeline").
 	(dir) => {
 		const manifestPath = resolve(dir, ".harness/ci-required-checks.json");
 		if (!existsSync(manifestPath)) {
@@ -600,11 +600,9 @@ const CHECKS: CheckFn[] = [
 				category: "ci",
 				label: "CI check alignment",
 				status: "warn",
-				message:
-					"ci-required-checks.json has no githubCheckName fields — branch protection" +
-					" check names are undocumented",
+				message: `ci-check-alignment: no githubCheckName values found for active provider "${provider}" — canonical check identity requires workflow-level check contexts (for example "pr-pipeline")`,
 				fix:
-					"Add githubCheckName to each entry in .harness/ci-required-checks.json." +
+					"Add workflow-level githubCheckName values to active-provider entries in .harness/ci-required-checks.json." +
 					" See docs/agents/17-ci-required-checks.md",
 			};
 		}
@@ -624,9 +622,9 @@ const CHECKS: CheckFn[] = [
 					category: "ci",
 					label: "CI check alignment",
 					status: "warn",
-					message: `ci-required-checks.json has githubCheckName values that look like CircleCI job names, not workflow names: ${suspicious.join(", ")}. CircleCI reports ONE check run per workflow (e.g. "pr-pipeline"), not per job.`,
+					message: `ci-check-alignment: CircleCI job-like githubCheckName values detected: ${suspicious.join(", ")}. Canonical check identity requires workflow-level githubCheckName values (for example "pr-pipeline"), not job names.`,
 					fix:
-						"Update githubCheckName fields to workflow names (pr-pipeline / harness-gates)." +
+						"Update githubCheckName fields to workflow-level check names (pr-pipeline / harness-gates)." +
 						" See docs/agents/17-ci-required-checks.md",
 				};
 			}
@@ -637,7 +635,7 @@ const CHECKS: CheckFn[] = [
 			category: "ci",
 			label: "CI check alignment",
 			status: "ok",
-			message: `githubCheckName fields look correct for provider "${provider}"`,
+			message: `Canonical githubCheckName check identity looks correct for provider "${provider}"`,
 		};
 	},
 ];

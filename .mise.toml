@@ -24,6 +24,3 @@
 "semgrep" = "1.153.1"
 "trivy" = "0.69.3"
 "vale" = "3.13.1"
-
-[env]
-CLAUDE_APPROVAL_POSTURE = "require"

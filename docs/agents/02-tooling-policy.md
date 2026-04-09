@@ -65,6 +65,7 @@ Repo-managed pins should live in `.mise.toml` where the tool can be managed ther
 The root `Makefile` is also part of the enforced baseline and must retain the harness contract targets required by `scripts/check-environment.sh`.
 `CODESTYLE.md` and `scripts/validate-codestyle.sh` are part of the same baseline. A harness-managed repo should fail readiness if either file is missing or if the validator no longer maps cleanly to repo-defined scripts.
 For this repository only, the repo-root `CODESTYLE.md` path may be a symlink to `/Users/jamiecraik/.codex/instructions/CODESTYLE.md` so the authoring source stays global while repo-local enforcement still targets the root path.
+For this repository only, `biome check` should ignore the repo-root `CODESTYLE.md` path so CI linting stays deterministic even when that developer-home symlink target is absent on hosted runners.
 For this repository only, `scripts/codex-preflight.sh` should honor that documented `CODESTYLE.md` symlink exception via `.codex/preflight-allowed-external-paths.txt` or `CODEX_PREFLIGHT_ALLOWED_EXTERNAL_PATHS` instead of failing the repo-root path check.
 For this repository only, scaffold rendering and published builds must package a real checked-in `src/templates/CODESTYLE.md` copy so CI and downstream installs do not depend on a developer-home symlink resolving at runtime.
 For this repository only, `src/templates/codex-preflight.sh` is the canonical authored source for the downstream scaffold. Keep the repo runtime mirror at `scripts/codex-preflight.sh` byte-identical by running `node scripts/sync-codex-preflight.cjs --write`; `pnpm lint` enforces `--check` so drift fails fast.
@@ -181,6 +182,7 @@ Before claiming a change is verified, confirm:
 - The command invoked exists in repo docs or scripts.
 - The command version/source is not in conflict with lockfile or repo settings.
 - Output is captured in closeout notes.
+- The repo-local tooling inventory at `docs/agents/tooling.md` stays aligned with `scripts/check-environment.sh` and `.mise.toml`.
 
 ## Discovery constraints
 
