@@ -1,0 +1,30 @@
+{
+	"version": "2026-04-09",
+	"minimumAggregateScore": 7.0,
+	"keyChecks": [
+		{
+			"name": "Branch-Protection",
+			"minimumScore": 7.0
+		},
+		{
+			"name": "Code-Review",
+			"minimumScore": 7.0
+		},
+		{
+			"name": "Pinned-Dependencies",
+			"minimumScore": 7.0
+		},
+		{
+			"name": "Token-Permissions",
+			"minimumScore": 8.0
+		},
+		{
+			"name": "Vulnerabilities",
+			"minimumScore": 9.0
+		},
+		{
+			"name": "Security-Policy",
+			"minimumScore": 8.0
+		}
+	]
+}
