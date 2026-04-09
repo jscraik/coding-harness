@@ -178,6 +178,20 @@ function resolveReferenceKeys(
 	};
 }
 
+/**
+ * Appends a policy check record to the provided checks array.
+ *
+ * The function mutates `checks` by pushing a new LinearGateCheck containing
+ * `code`, `passed`, `message`, and any optional `expected`/`actual` fields.
+ *
+ * @param checks - The array to which the new check will be appended (mutated).
+ * @param code - Short machine-readable identifier for the check.
+ * @param passed - `true` when the check succeeded, `false` when it failed.
+ * @param message - Human-readable summary of the check result.
+ * @param options - Optional additional fields:
+ *   - `expected`: description of the expected value or condition
+ *   - `actual`: observed value when the check failed
+ */
 function addCheck(
 	checks: LinearGateCheck[],
 	code: string,
@@ -194,26 +208,22 @@ function addCheck(
 }
 
 /**
- * Validate repository and PR metadata against the contract's issueTrackingPolicy and produce a verification report.
+ * Validate repository and PR metadata against the contract's issueTrackingPolicy and produce a structured verification report.
  *
- * This function loads the specified contract (defaulting to harness.contract.json in the repository root),
- * resolves the effective issue tracking policy, extracts metadata (branch name, PR title/body, package.json bugs URL,
- * and issue template config), runs a sequence of policy checks (package bugs URL, retiring GitHub issues,
- * branch linkage, PR linkage, PR reference mode, and cross-consistency), and returns a structured result summarizing
- * the checks and any detected policy violations.
+ * Reads the contract (defaults to harness.contract.json in the repo root), resolves the effective issue tracking policy,
+ * gathers metadata (branch name, PR title/body, package.json bugs URL, and .github/ISSUE_TEMPLATE/config.yml), runs the
+ * policy checks (package bugs URL, retiring GitHub issues, branch linkage, PR linkage, PR reference mode, and branch/PR consistency),
+ * and returns a summarized result with individual check outcomes and extracted issue keys.
  *
- * Side effects:
- * - Temporarily changes the process working directory to the resolved repoRoot to load the contract, then restores it.
- * - Reads files under the repoRoot and inspects environment variables and git to infer metadata.
+ * Side effects: temporarily changes the process working directory to the resolved repoRoot to load the contract (restored on return),
+ * reads files under repoRoot, inspects environment variables, and may invoke git to detect the current branch.
  *
- * @param options - Configuration that controls contract location, repo root, overrides for branch/PR metadata,
- *                  tolerance flags for missing metadata (`allowMissingBranch`, `allowMissingPrMetadata`), and
- *                  an optional `contractPath` relative to `repoRoot`.
- * @returns A LinearGateResult:
- *          - On success (`ok: true`): `output` contains `passed`, the applied `policy`, `repoRoot`, optional
- *            `branch`/`prTitle`/`bugsUrl`, the full array of `checks`, and extracted `issueKeys` (branch, pr, refs, fixes).
- *          - On failure (`ok: false`): `error` contains a machine-friendly `code` (`CONTRACT_ERROR` or `VALIDATION_ERROR`)
- *            and a human message describing the load/validation failure.
+ * @param options - Overrides and flags controlling repo root and contract location, optional branch/PR metadata overrides,
+ *                  tolerance for missing metadata (`allowMissingBranch`, `allowMissingPrMetadata`), and JSON output mode.
+ * @returns On success (`ok: true`): `output` contains whether the policy passed, the applied policy, `repoRoot`, optional
+ *          `branch`/`prTitle`/`bugsUrl`, the full `checks` array, and extracted `issueKeys` grouped by `branch`, `pr`, `refs`, and `fixes`.
+ *          On failure (`ok: false`): `error` contains a machine-friendly `code` (`CONTRACT_ERROR` or `VALIDATION_ERROR`)
+ *          and a human-readable message describing the load or validation failure.
  */
 export function runLinearGate(options: LinearGateOptions): LinearGateResult {
 	const repoRoot = resolve(options.repoRoot ?? process.cwd());

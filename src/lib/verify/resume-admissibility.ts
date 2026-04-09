@@ -74,12 +74,10 @@ function laneMatches(
 }
 
 /**
- * Determine whether a prior verification run may be resumed from a specific gate given expected run properties and gate ordering.
+ * Determine whether a prior verification run is admissible to resume from a specified gate.
  *
- * Performs existence checks for required run artifacts, loads run metadata and summary (mapping I/O and parse errors to distinct codes), verifies run state and expectation fields (repo root, provider class, schema/contract versions, lane config, optional identity tuple hash), and confirms that all prior gates up to the resume gate exist and have `passed` status.
- *
- * @param input - Inputs specifying the target `runId`, the `resumeFromGateId`, the ordered list of gate IDs to validate, and an `expectation` describing required run properties (repo root, provider class, schema/contract versions, lane config, and optional `identityTupleHash`).
- * @returns An object describing admissibility. If `admissible` is `true`, the result includes `runId` and `reusableGateIds` (all prior gates confirmed reusable). If `admissible` is `false`, `code` and `reason` indicate the failure category: missing artifacts, I/O or parse errors, run state issues (running/already passed), expectation mismatches, or prior-gate failures.
+ * @param input - Parameters including `runId`, `resumeFromGateId`, `orderedGateIds`, and an `expectation` that specifies required run properties (repo root, provider class, schema/contract versions, lane configuration, and optional `identityTupleHash`).
+ * @returns An object describing admissibility. If `admissible` is `true`, the result includes `runId` and `reusableGateIds` (all prior gates confirmed reusable). If `admissible` is `false`, `code` and `reason` explain the failure, which may indicate: unknown resume gate (`RESUME_GATE_UNKNOWN`), missing run artifacts (`RUN_NOT_FOUND`, `RUN_JSON_MISSING`, `SUMMARY_MISSING`, `RESUME_GATE_RESULT_MISSING`, `PRIOR_GATE_RESULT_MISSING`), I/O or parse errors (`IO_ERROR`, `PARSE_ERROR`), run state issues (`RUN_INCOMPLETE`), expectation mismatches (`REPO_ROOT_MISMATCH`, `PROVIDER_CLASS_MISMATCH`, `SCHEMA_VERSION_MISMATCH`, `CONTRACT_VERSION_MISMATCH`, `LANE_MISMATCH`, `IDENTITY_TUPLE_MISMATCH`), or prior gate failures (`PRIOR_GATE_NOT_PASSED`).
  */
 export function evaluateResumeAdmissibility(
 	input: ResumeAdmissibilityInput,

@@ -71,10 +71,15 @@ function containsAny(haystack: string, needles: string[]): boolean {
 }
 
 /**
- * Resolve the failure class for a verification gate using an optional failure signal and a provided default.
+ * Determine the failure classification for a verification gate using an optional failure signal and a default.
+ *
+ * Inspects the provided `signal` for an explicit `classification`, timeout/exit-code indicators, and textual hints
+ * in `errorCode` and `stderr` to choose between `contract_policy` and `transient_infra`. If the signal is absent
+ * or contains no decisive indicators, the `defaultFailureClass` is used when it is one of those two; otherwise
+ * `internal_unknown` is returned.
  *
  * @param defaultFailureClass - Fallback classification to use when the signal does not provide a decisive classification.
- * @param signal - Optional failure signal that may include an explicit `classification`, `timedOut` / `exitCode`, `errorCode`, and `stderr` hints.
+ * @param signal - Optional failure signal that may include an explicit `classification`, `timedOut`/`exitCode`, `errorCode`, and `stderr` hints.
  * @returns The chosen VerifyGateFailureClass: `contract_policy`, `transient_infra`, or `internal_unknown`.
  */
 export function adaptFailureClass(
@@ -138,14 +143,14 @@ export function adaptFailureClass(
 }
 
 /**
- * Decides whether a verification attempt should be retried based on execution/failure classification and configured attempt limits.
+ * Determine whether a verification attempt should be retried given execution/failure classification and attempt limits.
  *
- * @param context - Inputs for the decision: `executionClass` and `failureClass` determine eligibility, `attempt` is the current attempt index (1-based), and optional `maxAttempts` overrides the default limit.
- * @returns The retry decision:
- *  - `shouldRetry`: `true` when the execution/failure combination is eligible and the current attempt is less than the resolved max attempts; `false` otherwise.
- *  - `nextAttempt`: the next attempt number when retrying, or `null` when not retrying.
- *  - `reason`: one of `"retry_not_eligible"`, `"retry_exhausted"`, or `"retry_transient_read_only_failure"` describing why the decision was made.
- * @throws Error if `context.attempt` is not an integer >= 1.
+ * @param context - Decision inputs: `executionClass` and `failureClass` determine eligibility; `attempt` is the current 1-based attempt index; optional `maxAttempts` overrides the default limit.
+ * @returns An object describing the decision:
+ *  - `shouldRetry`: `true` if the combination is eligible for retry and `attempt` is less than the resolved max attempts, `false` otherwise.
+ *  - `nextAttempt`: the next attempt number when `shouldRetry` is `true`, or `null` when not retrying.
+ *  - `reason`: one of `"retry_not_eligible"`, `"retry_exhausted"`, or `"retry_transient_read_only_failure"` explaining the decision.
+ * @throws Error if `context.attempt` is not an integer greater than or equal to 1.
  */
 export function decideRetry(context: VerifyRetryContext): VerifyRetryDecision {
 	const maxAttempts = normaliseMaxAttempts(context.maxAttempts);

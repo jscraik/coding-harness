@@ -381,19 +381,20 @@ async function executeReadOnlyBatches(
 }
 
 /**
- * Orchestrates verification gates through a deterministic lifecycle and returns the final orchestration outcome.
+ * Orchestrates verification gates through a deterministic lifecycle.
  *
- * Validates and normalizes inputs, deterministically orders enabled gates, executes read-only gates in bounded
- * parallel batches, then executes serial guarded gates sequentially. Records lifecycle transitions and per-gate
- * execution records. The orchestration terminates early if any gate becomes blocked or fails; in that case
- * `overallStatus` will be `"blocked"` or `"failed"` and `resumeFromGateId` will point to the gate that caused
- * termination. When execution completes the lifecycle reaches `S5_DONE` and `overallStatus` is `"passed"`.
+ * Executes enabled gates in two phases—read-only gates in bounded parallel batches, then serial guarded gates
+ * sequentially—recording lifecycle transitions and per-gate execution records. The orchestration ends immediately
+ * if any gate becomes blocked or fails; in that case `overallStatus` will be `"blocked"` or `"failed"` and
+ * `resumeFromGateId` will identify the gate that caused termination. If the lifecycle reaches `S5_DONE`, the
+ * `overallStatus` will be `"passed"`.
  *
- * @param options - Orchestration options including the set of normalized gates, a gate runner, and optional
- *                  `maxParallelism` and `maxAttempts` limits.
- * @returns The orchestration result containing `finalState`, `overallStatus` (`"passed"`, `"failed"`, or `"blocked"`),
- *          an optional `resumeFromGateId` for early termination, the list of lifecycle `transitions`, and `gateResults`.
- * @throws If `maxParallelism` or `maxAttempts` is not a positive integer.
+ * @param options - Orchestration options containing normalized gates, a gate runner, and optional `maxParallelism`
+ *                  and `maxAttempts` limits.
+ * @returns The final orchestration result including `finalState`, `overallStatus` (`"passed" | "failed" | "blocked"`),
+ *          `resumeFromGateId` when terminated early, the ordered list of lifecycle `transitions`, and per-gate
+ *          `gateResults`.
+ * @throws Error if `maxParallelism` or `maxAttempts` is not a positive integer.
  */
 export async function orchestrateVerifyLifecycle(
 	options: VerifyOrchestratorOptions,

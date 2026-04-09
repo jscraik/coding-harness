@@ -34,10 +34,10 @@ const LINEAR_GATE_INTERNAL_UNKNOWN_NEXT_ACTION =
 	"Inspect gate output, fix root cause, and rerun linear-gate.";
 
 /**
- * Map a linear-gate error code to its corresponding failure class.
+ * Maps a linear-gate error code to a failure classification used for next-action guidance.
  *
- * @param errorCode - The error code reported by a linear gate
- * @returns `contract_policy` for `CONTRACT_ERROR` or `VALIDATION_ERROR`, `internal_unknown` otherwise
+ * @param errorCode - Error code reported by the linear gate
+ * @returns `contract_policy` when `errorCode` is `"CONTRACT_ERROR"` or `"VALIDATION_ERROR"`, `internal_unknown` otherwise
  */
 function classifyLinearGateErrorCode(errorCode: string): GateFailureClass {
 	if (errorCode === "CONTRACT_ERROR" || errorCode === "VALIDATION_ERROR") {
@@ -463,12 +463,12 @@ export function normalisePlanGateResult(
 // ─── P3: linear-gate adapter (check-list) ────────────────────────────────────
 
 /**
- * Normalize a LinearGateResult into the canonical GateResult used by the system.
+ * Convert a raw LinearGateResult into the canonical GateResult with standardized findings, summary counts, status, and optional meta information.
  *
- * When the gate call failed (`result.ok === false`) the returned result contains a single internal error finding and a `meta.errorCode`; when the gate call succeeded the returned result contains one error finding per failing check. If a failure classification is available, its `nextAction` is attached to findings' `fix.manual` and `failureClass`/`nextAction` are included in `meta`.
+ * When the gate call failed (result.ok === false) the returned GateResult contains a single internal error finding and `meta.errorCode`. When the gate call succeeded, the returned GateResult contains one error finding for each failing check. If a failure classification is available, its `nextAction` is attached to each finding's `fix.manual` and `meta.failureClass` / `meta.nextAction` are included.
  *
- * @param result - The LinearGateResult to normalize into a GateResult.
- * @returns A GateResult containing normalized findings, summary counts, status, and optional `meta` fields (`failureClass`, `nextAction`, `errorCode`).
+ * @param result - The raw linear-gate response to normalize.
+ * @returns A canonical GateResult with normalized `findings`, `summary` (errors/warnings/info/total), `status` ("pass" or "fail"), and optional `meta` fields (`failureClass`, `nextAction`, `errorCode`).
  */
 export function normaliseLinearGateResult(
 	result: LinearGateResult,

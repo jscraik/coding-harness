@@ -123,10 +123,10 @@ function toObject(value: unknown): Record<string, unknown> {
 }
 
 /**
- * Ensure the given value is a non-empty string and return it.
+ * Validate that a value is a non-empty string.
  *
- * @param value - The value to check.
- * @param field - Name of the field used in the error message on failure.
+ * @param value - The value to validate.
+ * @param field - Field name used in the error message if validation fails.
  * @returns The validated non-empty string.
  * @throws RunStateError with code `E_PARSE` if `value` is not a non-empty string.
  */
@@ -166,10 +166,10 @@ function asBoolean(value: unknown, field: string): boolean {
 }
 
 /**
- * Ensures the given value is an integer.
+ * Validate that a value is an integer.
  *
- * @param value - Value to validate as an integer.
- * @param field - Field name used in the error message when validation fails.
+ * @param value - The value to validate.
+ * @param field - Field name included in the error message when validation fails.
  * @returns The validated integer.
  * @throws RunStateError with code `E_PARSE` if `value` is not an integer.
  */
@@ -196,13 +196,13 @@ function asGateStatus(value: unknown, field: string): VerifyGateStatus {
 }
 
 /**
- * Resolve a repository-relative path into an absolute, validated filesystem path.
+ * Resolve a repository-relative path to an absolute filesystem path constrained within the repository root.
  *
  * @param repoRoot - Absolute repository root directory against which `relativePath` is resolved.
  * @param relativePath - Path relative to `repoRoot`; must not escape the repository root.
- * @returns The resolved absolute path confined within `repoRoot`.
+ * @returns The resolved absolute path located inside `repoRoot`.
  * @throws RunStateError with code `"E_PATH"` if `relativePath` would traverse outside `repoRoot`.
- * @throws Any error thrown by `validatePath` (other errors are rethrown unchanged).
+ * @throws Any other error encountered during path resolution is rethrown unchanged.
  */
 function safePath(repoRoot: string, relativePath: string): string {
 	try {
@@ -241,10 +241,13 @@ function canonicalize(value: unknown): unknown {
 }
 
 /**
- * Generates a deterministic JSON string for a value by canonicalizing object key order.
+ * Produce a deterministically ordered JSON string for a value.
  *
- * @param value - Value to serialize; object keys are sorted to ensure stable output.
- * @returns The JSON string representation of `value` with deterministic key ordering.
+ * Serializes the input so that object keys are emitted in a stable, lexicographic order,
+ * yielding identical text for semantically equivalent values regardless of original key order.
+ *
+ * @param value - Any JSON-like value to serialize
+ * @returns JSON text of `value` with object keys ordered deterministically, suitable for stable hashing and comparisons
  */
 function stableJson(value: unknown): string {
 	return JSON.stringify(canonicalize(value));
@@ -652,14 +655,17 @@ export function loadVerifyRunSummary(
 }
 
 /**
- * Load, validate, and return the persisted gate result for a specific run and gate.
+ * Load and validate the persisted gate result for a given run and gate.
  *
- * @param repoRoot - Repository root used to resolve the `.harness/runs` storage location
- * @param runId - The run identifier whose gate result should be loaded
- * @param gateId - The gate identifier corresponding to the result file
- * @returns The parsed and validated `LoadedGateResult` for the specified gate
+ * Resolves and validates storage paths under the repository root, verifies the gate result file exists, and parses it into a `LoadedGateResult`.
  *
- * @throws {RunStateError} with code `E_IO` if the gate result file does not exist
+ * @param repoRoot - Repository root used to resolve `.harness/runs`
+ * @param runId - Run identifier whose gate result should be loaded
+ * @param gateId - Gate identifier corresponding to the result file
+ * @returns The `LoadedGateResult` parsed from the gate result file
+ * @throws {RunStateError} with code `E_VALIDATION` if `runId` is invalid
+ * @throws {RunStateError} with code `E_PATH` if any resolved path would escape `repoRoot`
+ * @throws {RunStateError} with code `E_IO` if the gate result file does not exist or cannot be read
  */
 export function loadVerifyGateResult(
 	repoRoot: string,
