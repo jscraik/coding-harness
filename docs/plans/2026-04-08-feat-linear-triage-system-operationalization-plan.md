@@ -1,5 +1,5 @@
 ---
-title: Linear Triage System Operationalization Plan
+title: Linear Triage System Rollout Plan
 type: feat
 status: active
 date: 2026-04-08
@@ -7,7 +7,7 @@ origin: tmp/LINEAR_TRIAGE.md
 deepened: 2026-04-08
 ---
 
-# Linear Triage System Operationalization Plan
+# Linear Triage System Rollout Plan
 
 ## Enhancement Summary
 
@@ -38,12 +38,13 @@ deepened: 2026-04-08
 - [System-Wide Impact](#system-wide-impact)
 - [Risks and Dependencies](#risks-and-dependencies)
 - [Documentation and Operational Notes](#documentation-and-operational-notes)
+- [Outstanding Issue Snapshot](#outstanding-issue-snapshot)
 - [Execution Ledger (Planning Mode)](#execution-ledger-planning-mode)
 - [Sources and References](#sources-and-references)
 
 ## Overview
 
-Operationalize the `tmp/LINEAR_TRIAGE.md` strategy into a repeatable, auditable triage system inside the harness workflow so issue pull-order, WIP limits, and dependency-aware sequencing are enforced consistently instead of handled ad hoc.
+Implement the `tmp/LINEAR_TRIAGE.md` strategy as a repeatable, auditable triage system inside the harness workflow so issue pull-order, WIP limits, and dependency-aware sequencing are enforced consistently instead of handled ad hoc.
 
 ## Problem Frame
 
@@ -89,7 +90,7 @@ The `coding-harness` project currently has a high number of open issues concentr
 ## Scope Boundaries
 
 - In scope:
-  - Translate triage policy into a commandable, testable harness flow.
+  - Translate triage policy into a command-driven, testable harness flow.
   - Add deterministic scoring and lane-cap validation logic.
   - Add triage reporting output suitable for human and agent use.
   - Align Linear workflow docs/templates with the new triage operating model.
@@ -131,7 +132,7 @@ The `coding-harness` project currently has a high number of open issues concentr
   - Rationale: makes policy behavior testable and reusable across CLI, docs checks, and future automation.
 - **D4: Treat `Blocked` as label-only, not a status.**
   - Rationale: consistent with existing team convention and compact workflow spec.
-- **D5: Keep phase exits bound to verification gates (`pnpm test`, `pnpm check`, codestyle validation).**
+- **D5: Keep phase exits bound to verification gates (`pnpm test`, `pnpm check`, code-style validation).**
   - Rationale: ensures governance and command-contract safety while modifying operational control-plane behavior.
 - **D6: Require explicit confirmation when apply mode mutates more than one issue.**
   - Rationale: reduces accidental bulk mutation risk while preserving deterministic operator control.
@@ -177,7 +178,7 @@ Design constraints:
 
 ## Implementation Units
 
-- [ ] **P0 / Unit 1: Canonicalize triage-state contract and policy mapping**
+- [x] **P0 / Unit 1: Align canonical triage-state contract and policy mapping**
 
 **Goal:** unify triage strategy terms with the canonical Linear workflow docs and command invariants.
 
@@ -468,10 +469,22 @@ Dependencies:
 - If apply-mode mutation is enabled, require explicit operator intent in command flags and run logs.
 - Capture rollout decision in `docs/agents/13-linear-production-workflow.md` before making triage apply path default.
 
+## Outstanding Issue Snapshot
+
+Snapshot captured on `2026-04-09` from Linear (`project: coding-harness`, non-terminal states only):
+
+- `In Progress` (4): `JSC-135`, `JSC-127`, `JSC-134`, `JSC-96`
+- `In Review` (2): `JSC-115`, `JSC-130`
+- `Todo` (2): `JSC-131`, `JSC-112`
+- `Triage` (17): `JSC-128`, `JSC-122`, `JSC-129`, `JSC-125`, `JSC-132`, `JSC-126`, `JSC-124`, `JSC-121`, `JSC-120`, `JSC-109`, `JSC-108`, `JSC-107`, `JSC-106`, `JSC-116`, `JSC-114`, `JSC-104`, `JSC-87`
+- `Backlog` (4): `JSC-159`, `JSC-158`, `JSC-157`, `JSC-156`
+
+Total outstanding issues tracked in this snapshot: `29`.
+
 ## Execution Ledger (Planning Mode)
 
 STEP_ID | status (pending|in_progress|completed) | owner | evidence
-P0 | in_progress | codex | Plan baseline established from `tmp/LINEAR_TRIAGE.md` and Linear workflow docs.
+P0 | completed | codex | Canonical state/blocked/cycle semantics reconciled across `docs/agents/13-linear-production-workflow.md`, `docs/agents/16-linear-production-compact.md`, and `docs/agents/19-linear-templates.md`; outstanding issue snapshot refreshed on `2026-04-09` (`29` non-terminal issues).
 P1 | pending | codex | `src/lib/linear/triage-scoring.ts` + unit tests added.
 P2 | pending | codex | `harness linear triage --json` report path implemented and tested.
 P3 | pending | codex | Guarded apply mode with lane/cycle constraints implemented.

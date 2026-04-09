@@ -14,7 +14,12 @@
       ],
       "freshnessWindowDays": 7,
       "class": "required",
-      "githubCheckName": "pr-pipeline"
+      "githubCheckName": "pr-pipeline",
+      "gateId": "pr-template",
+      "executionClass": "serial_guarded",
+      "failureClassDefault": "contract_policy",
+      "order": 10,
+      "enabled": true
     },
     {
       "policyId": "required-check-2",
@@ -28,7 +33,12 @@
       ],
       "freshnessWindowDays": 7,
       "class": "required",
-      "githubCheckName": "pr-pipeline"
+      "githubCheckName": "pr-pipeline",
+      "gateId": "linear-gate",
+      "executionClass": "serial_guarded",
+      "failureClassDefault": "contract_policy",
+      "order": 20,
+      "enabled": true
     },
     {
       "policyId": "required-check-3",
@@ -42,7 +52,12 @@
       ],
       "freshnessWindowDays": 7,
       "class": "required",
-      "githubCheckName": "pr-pipeline"
+      "githubCheckName": "pr-pipeline",
+      "gateId": "risk-policy-gate",
+      "executionClass": "serial_guarded",
+      "failureClassDefault": "contract_policy",
+      "order": 30,
+      "enabled": true
     },
     {
       "policyId": "required-check-4",
@@ -56,7 +71,12 @@
       ],
       "freshnessWindowDays": 7,
       "class": "required",
-      "githubCheckName": "pr-pipeline"
+      "githubCheckName": "pr-pipeline",
+      "gateId": "dependency-scan",
+      "executionClass": "read_only_parallel",
+      "failureClassDefault": "transient_infra",
+      "order": 40,
+      "enabled": true
     },
     {
       "policyId": "required-check-5",
@@ -70,7 +90,12 @@
       ],
       "freshnessWindowDays": 7,
       "class": "required",
-      "githubCheckName": "pr-pipeline"
+      "githubCheckName": "pr-pipeline",
+      "gateId": "orb-pinning",
+      "executionClass": "read_only_parallel",
+      "failureClassDefault": "transient_infra",
+      "order": 50,
+      "enabled": true
     },
     {
       "policyId": "required-check-6",
@@ -84,7 +109,12 @@
       ],
       "freshnessWindowDays": 7,
       "class": "required",
-      "githubCheckName": "pr-pipeline"
+      "githubCheckName": "pr-pipeline",
+      "gateId": "consistency-drift-health",
+      "executionClass": "serial_guarded",
+      "failureClassDefault": "contract_policy",
+      "order": 60,
+      "enabled": true
     },
     {
       "policyId": "required-check-7",
@@ -98,7 +128,12 @@
       ],
       "freshnessWindowDays": 7,
       "class": "required",
-      "githubCheckName": "pr-pipeline"
+      "githubCheckName": "pr-pipeline",
+      "gateId": "docs-gate",
+      "executionClass": "serial_guarded",
+      "failureClassDefault": "contract_policy",
+      "order": 70,
+      "enabled": true
     },
     {
       "policyId": "required-check-8",
@@ -112,7 +147,12 @@
       ],
       "freshnessWindowDays": 7,
       "class": "required",
-      "githubCheckName": "pr-pipeline"
+      "githubCheckName": "pr-pipeline",
+      "gateId": "lint",
+      "executionClass": "read_only_parallel",
+      "failureClassDefault": "transient_infra",
+      "order": 80,
+      "enabled": true
     },
     {
       "policyId": "required-check-9",
@@ -126,7 +166,12 @@
       ],
       "freshnessWindowDays": 7,
       "class": "required",
-      "githubCheckName": "pr-pipeline"
+      "githubCheckName": "pr-pipeline",
+      "gateId": "typecheck",
+      "executionClass": "read_only_parallel",
+      "failureClassDefault": "transient_infra",
+      "order": 90,
+      "enabled": true
     },
     {
       "policyId": "required-check-10",
@@ -140,7 +185,12 @@
       ],
       "freshnessWindowDays": 7,
       "class": "required",
-      "githubCheckName": "pr-pipeline"
+      "githubCheckName": "pr-pipeline",
+      "gateId": "test",
+      "executionClass": "read_only_parallel",
+      "failureClassDefault": "transient_infra",
+      "order": 100,
+      "enabled": true
     },
     {
       "policyId": "required-check-11",
@@ -154,7 +204,12 @@
       ],
       "freshnessWindowDays": 7,
       "class": "required",
-      "githubCheckName": "pr-pipeline"
+      "githubCheckName": "pr-pipeline",
+      "gateId": "audit",
+      "executionClass": "read_only_parallel",
+      "failureClassDefault": "transient_infra",
+      "order": 110,
+      "enabled": true
     },
     {
       "policyId": "required-check-12",
@@ -168,7 +223,12 @@
       ],
       "freshnessWindowDays": 7,
       "class": "required",
-      "githubCheckName": "pr-pipeline"
+      "githubCheckName": "pr-pipeline",
+      "gateId": "check",
+      "executionClass": "read_only_parallel",
+      "failureClassDefault": "transient_infra",
+      "order": 120,
+      "enabled": true
     },
     {
       "policyId": "required-check-13",
@@ -182,7 +242,12 @@
       ],
       "freshnessWindowDays": 7,
       "class": "required",
-      "githubCheckName": "pr-pipeline"
+      "githubCheckName": "pr-pipeline",
+      "gateId": "memory",
+      "executionClass": "read_only_parallel",
+      "failureClassDefault": "transient_infra",
+      "order": 130,
+      "enabled": true
     },
     {
       "policyId": "required-check-14",
@@ -196,7 +261,12 @@
       ],
       "freshnessWindowDays": 7,
       "class": "required",
-      "githubCheckName": "security-scan"
+      "githubCheckName": "security-scan",
+      "gateId": "security-scan",
+      "executionClass": "read_only_parallel",
+      "failureClassDefault": "transient_infra",
+      "order": 140,
+      "enabled": true
     },
     {
       "policyId": "required-check-15",
@@ -210,7 +280,12 @@
       ],
       "freshnessWindowDays": 7,
       "class": "required",
-      "githubCheckName": "CodeRabbit"
+      "githubCheckName": "CodeRabbit",
+      "gateId": "CodeRabbit",
+      "executionClass": "read_only_parallel",
+      "failureClassDefault": "transient_infra",
+      "order": 150,
+      "enabled": true
     }
   ]
 }

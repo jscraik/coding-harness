@@ -36,6 +36,8 @@
 - `S2 IN_PROGRESS -> S3 IN_REVIEW` requires DoD pre-review checks.
 - `pr_closed_unmerged` always routes back to active work.
 - `In Review` handoff is blocked when CI provider posture is unsatisfied for the current migration stage.
+- `Blocked` is a label overlay on active workflow states; it is not a canonical workflow state.
+- Triage promotion is bounded by metadata, WIP, and cycle-feasibility guards.
 
 ## States
 ```txt
@@ -44,8 +46,12 @@ S1 READY (non-terminal)
 S2 IN_PROGRESS (non-terminal)
 S3 IN_REVIEW (non-terminal)
 S4 DONE (terminal)
-S5 BLOCKED (non-terminal)
 ```
+
+### Blocked Overlay (Label-Based)
+
+- `Blocked` can be applied to `S1 READY`, `S2 IN_PROGRESS`, or `S3 IN_REVIEW`.
+- Blocked/unblocked events keep the issue in the same canonical state and only change label/guidance metadata.
 
 ## Transition Table (Canonical)
 `S | E | G | A | N`
@@ -59,8 +65,12 @@ S5 BLOCKED (non-terminal)
 | `S2 IN_PROGRESS` | `handoff_ready` | DoD pre-review checks pass | `harness linear handoff --issue <LK> --pr-url <url> --evidence-url <url[,url]>` | `S3 IN_REVIEW` |
 | `S3 IN_REVIEW` | `merged` | required checks pass | `harness linear close --issue <LK> --pr-url <url>` | `S4 DONE` |
 | `S3 IN_REVIEW` | `pr_closed_unmerged` | PR closed without merge | `harness linear claim --issue <LK> --state \"In Progress\" --no-assign` and add rationale note | `S2 IN_PROGRESS` |
-| `S2 IN_PROGRESS` | `blocked` | missing auth, permission, or human input | add `Blocked` marker and unblock action | `S5 BLOCKED` |
-| `S5 BLOCKED` | `unblocked` | dependency resolved | remove blocker marker and resume execution | `S2 IN_PROGRESS` |
+| `S1 READY` | `blocked` | missing auth, permission, or human input | add `Blocked` marker and unblock action | `S1 READY` |
+| `S2 IN_PROGRESS` | `blocked` | missing auth, permission, or human input | add `Blocked` marker and unblock action | `S2 IN_PROGRESS` |
+| `S3 IN_REVIEW` | `blocked` | missing auth, permission, or human input | add `Blocked` marker and unblock action | `S3 IN_REVIEW` |
+| `S1 READY` | `unblocked` | dependency resolved | remove blocker marker and resume execution | `S1 READY` |
+| `S2 IN_PROGRESS` | `unblocked` | dependency resolved | remove blocker marker and resume execution | `S2 IN_PROGRESS` |
+| `S3 IN_REVIEW` | `unblocked` | dependency resolved | remove blocker marker and resume execution | `S3 IN_REVIEW` |
 
 Transition table is the source of truth.
 
@@ -74,8 +84,9 @@ stateDiagram-v2
     S2_IN_PROGRESS --> S3_IN_REVIEW: handoff_ready
     S3_IN_REVIEW --> S4_DONE: merged
     S3_IN_REVIEW --> S2_IN_PROGRESS: pr_closed_unmerged
-    S2_IN_PROGRESS --> S5_BLOCKED: blocked
-    S5_BLOCKED --> S2_IN_PROGRESS: unblocked
+    S1_READY --> S1_READY: blocked / unblocked
+    S2_IN_PROGRESS --> S2_IN_PROGRESS: blocked / unblocked
+    S3_IN_REVIEW --> S3_IN_REVIEW: blocked / unblocked
 ```
 
 ## Error Handling
@@ -86,7 +97,7 @@ stateDiagram-v2
 
 ## Idempotency
 - Key: `<LK>|<state>|<event>|<pr_url?>`.
-- Replayed `progress_tick` and `pr_opened` events upsert existing LI artifacts.
+- Replayed `progress_tick` and `pr_opened` events update existing LI artifacts or insert missing ones.
 - Replayed `handoff_ready` must not duplicate evidence links/comments.
 
 ## Execution Modes
@@ -113,7 +124,8 @@ stateDiagram-v2
 ## Validation Checklist
 - non-terminal states require at least one transition
 - events resolve deterministically
-- failures route to fail/blocked states
+- failures route to fail lane or blocked label overlay
 - terminal states have no outbound transitions
 - triage/apply runs enforce metadata threshold + WIP caps before promotion writes
+- triage/apply runs enforce cycle-feasibility checks before promotion writes
 - triage/apply runs add missing primary type labels unless `--no-type-label-sync` is set

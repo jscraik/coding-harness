@@ -4,24 +4,37 @@ import {
 	normalizeRequiredChecksManifest,
 } from "./required-checks.js";
 
+function createRequiredCheck(
+	overrides: Record<string, unknown> = {},
+): Record<string, unknown> {
+	return {
+		policyId: "check-1",
+		gateId: "lint",
+		displayName: "Lint",
+		sourceAppSlug: "circleci",
+		sourceAppId: "circleci",
+		externalIdPattern: "^lint$",
+		class: "required",
+		githubCheckName: "pr-pipeline",
+		...overrides,
+	};
+}
+
+function normalizeManifest(
+	requiredChecks: Record<string, unknown>[],
+	overrides: Record<string, unknown> = {},
+) {
+	return normalizeRequiredChecksManifest({
+		version: 1,
+		activeProvider: "circleci",
+		requiredChecks,
+		...overrides,
+	});
+}
+
 describe("normalizeRequiredChecksManifest", () => {
 	it("defaults executionClass to serial_guarded when omitted", () => {
-		const result = normalizeRequiredChecksManifest({
-			version: 1,
-			activeProvider: "circleci",
-			requiredChecks: [
-				{
-					policyId: "check-1",
-					gateId: "lint",
-					displayName: "Lint",
-					sourceAppSlug: "circleci",
-					sourceAppId: "circleci",
-					externalIdPattern: "^lint$",
-					class: "required",
-					githubCheckName: "pr-pipeline",
-				},
-			],
-		});
+		const result = normalizeManifest([createRequiredCheck()]);
 
 		expect(result.ok).toBe(true);
 		if (!result.ok) {
@@ -30,23 +43,71 @@ describe("normalizeRequiredChecksManifest", () => {
 		expect(result.value.gates[0]?.executionClass).toBe("serial_guarded");
 	});
 
+	it("defaults failure class by governance gate identity", () => {
+		const result = normalizeManifest([
+			createRequiredCheck({
+				gateId: "docs-gate",
+				displayName: "Docs Gate",
+				externalIdPattern: "^docs-gate$",
+			}),
+			createRequiredCheck({ policyId: "check-2" }),
+		]);
+
+		expect(result.ok).toBe(true);
+		if (!result.ok) {
+			return;
+		}
+		const docsGate = result.value.gates.find(
+			(gate) => gate.gateId === "docs-gate",
+		);
+		const lint = result.value.gates.find((gate) => gate.gateId === "lint");
+		expect(docsGate?.failureClassDefault).toBe("contract_policy");
+		expect(lint?.failureClassDefault).toBe("transient_infra");
+	});
+
+	it("sorts normalized gates by order then gate id", () => {
+		const result = normalizeManifest([
+			createRequiredCheck({
+				policyId: "check-2",
+				gateId: "zeta",
+				displayName: "Zeta",
+				externalIdPattern: "^zeta$",
+				order: 20,
+			}),
+			createRequiredCheck({
+				gateId: "alpha",
+				displayName: "Alpha",
+				externalIdPattern: "^alpha$",
+				order: 10,
+			}),
+			createRequiredCheck({
+				policyId: "check-3",
+				gateId: "beta",
+				displayName: "Beta",
+				externalIdPattern: "^beta$",
+				order: 20,
+			}),
+		]);
+
+		expect(result.ok).toBe(true);
+		if (!result.ok) {
+			return;
+		}
+		expect(result.value.gates.map((gate) => gate.gateId)).toEqual([
+			"alpha",
+			"beta",
+			"zeta",
+		]);
+	});
+
 	it("preserves CircleCI pr-pipeline mapping", () => {
-		const result = normalizeRequiredChecksManifest({
-			version: 1,
-			activeProvider: "circleci",
-			requiredChecks: [
-				{
-					policyId: "check-1",
-					gateId: "docs-gate",
-					displayName: "Docs Gate",
-					sourceAppSlug: "circleci",
-					sourceAppId: "circleci",
-					externalIdPattern: "^docs-gate$",
-					class: "required",
-					githubCheckName: "pr-pipeline",
-				},
-			],
-		});
+		const result = normalizeManifest([
+			createRequiredCheck({
+				gateId: "docs-gate",
+				displayName: "Docs Gate",
+				externalIdPattern: "^docs-gate$",
+			}),
+		]);
 
 		expect(result.ok).toBe(true);
 		if (!result.ok) {
@@ -56,42 +117,20 @@ describe("normalizeRequiredChecksManifest", () => {
 	});
 
 	it("keeps contractVersion stable when only non-identity metadata changes", () => {
-		const base = normalizeRequiredChecksManifest({
-			version: 1,
-			activeProvider: "circleci",
-			requiredChecks: [
-				{
-					policyId: "check-1",
-					gateId: "lint",
-					displayName: "Lint",
-					sourceAppSlug: "circleci",
-					sourceAppId: "circleci",
-					externalIdPattern: "^lint$",
-					class: "required",
-					githubCheckName: "pr-pipeline",
-					executionClass: "serial_guarded",
-					order: 10,
-				},
-			],
-		});
-		const changed = normalizeRequiredChecksManifest({
-			version: 1,
-			activeProvider: "circleci",
-			requiredChecks: [
-				{
-					policyId: "different-policy-id",
-					gateId: "lint",
-					displayName: "Lint and Style",
-					sourceAppSlug: "circleci",
-					sourceAppId: "circleci",
-					externalIdPattern: "^lint$",
-					class: "required",
-					githubCheckName: "pr-pipeline",
-					executionClass: "read_only_parallel",
-					order: 1,
-				},
-			],
-		});
+		const base = normalizeManifest([
+			createRequiredCheck({
+				executionClass: "serial_guarded",
+				order: 10,
+			}),
+		]);
+		const changed = normalizeManifest([
+			createRequiredCheck({
+				policyId: "different-policy-id",
+				displayName: "Lint and Style",
+				executionClass: "read_only_parallel",
+				order: 1,
+			}),
+		]);
 
 		expect(base.ok).toBe(true);
 		expect(changed.ok).toBe(true);
@@ -102,38 +141,10 @@ describe("normalizeRequiredChecksManifest", () => {
 	});
 
 	it("changes contractVersion when an identity field changes", () => {
-		const base = normalizeRequiredChecksManifest({
-			version: 1,
-			activeProvider: "circleci",
-			requiredChecks: [
-				{
-					policyId: "check-1",
-					gateId: "lint",
-					displayName: "Lint",
-					sourceAppSlug: "circleci",
-					sourceAppId: "circleci",
-					externalIdPattern: "^lint$",
-					class: "required",
-					githubCheckName: "pr-pipeline",
-				},
-			],
-		});
-		const changed = normalizeRequiredChecksManifest({
-			version: 1,
-			activeProvider: "circleci",
-			requiredChecks: [
-				{
-					policyId: "check-1",
-					gateId: "lint",
-					displayName: "Lint",
-					sourceAppSlug: "circleci",
-					sourceAppId: "circleci",
-					externalIdPattern: "^lint$",
-					class: "required",
-					githubCheckName: "harness-gates",
-				},
-			],
-		});
+		const base = normalizeManifest([createRequiredCheck()]);
+		const changed = normalizeManifest([
+			createRequiredCheck({ githubCheckName: "harness-gates" }),
+		]);
 
 		expect(base.ok).toBe(true);
 		expect(changed.ok).toBe(true);
@@ -144,22 +155,8 @@ describe("normalizeRequiredChecksManifest", () => {
 	});
 
 	it("uses explicit contractVersion when present", () => {
-		const result = normalizeRequiredChecksManifest({
-			version: 1,
-			activeProvider: "circleci",
+		const result = normalizeManifest([createRequiredCheck()], {
 			contractVersion: "manual-v1",
-			requiredChecks: [
-				{
-					policyId: "check-1",
-					gateId: "lint",
-					displayName: "Lint",
-					sourceAppSlug: "circleci",
-					sourceAppId: "circleci",
-					externalIdPattern: "^lint$",
-					class: "required",
-					githubCheckName: "pr-pipeline",
-				},
-			],
 		});
 
 		expect(result.ok).toBe(true);
@@ -172,32 +169,15 @@ describe("normalizeRequiredChecksManifest", () => {
 
 describe("findCircleCIJobNamedCheckBindings", () => {
 	it("flags suspicious CircleCI job-name check contexts", () => {
-		const normalized = normalizeRequiredChecksManifest({
-			version: 1,
-			activeProvider: "circleci",
-			requiredChecks: [
-				{
-					policyId: "check-1",
-					gateId: "lint",
-					displayName: "Lint",
-					sourceAppSlug: "circleci",
-					sourceAppId: "circleci",
-					externalIdPattern: "^lint$",
-					class: "required",
-					githubCheckName: "lint",
-				},
-				{
-					policyId: "check-2",
-					gateId: "docs-gate",
-					displayName: "Docs Gate",
-					sourceAppSlug: "circleci",
-					sourceAppId: "circleci",
-					externalIdPattern: "^docs-gate$",
-					class: "required",
-					githubCheckName: "pr-pipeline",
-				},
-			],
-		});
+		const normalized = normalizeManifest([
+			createRequiredCheck({ githubCheckName: "lint" }),
+			createRequiredCheck({
+				policyId: "check-2",
+				gateId: "docs-gate",
+				displayName: "Docs Gate",
+				externalIdPattern: "^docs-gate$",
+			}),
+		]);
 
 		expect(normalized.ok).toBe(true);
 		if (!normalized.ok) {
@@ -211,22 +191,16 @@ describe("findCircleCIJobNamedCheckBindings", () => {
 	});
 
 	it("ignores non-CircleCI gates when checking suspicious names", () => {
-		const normalized = normalizeRequiredChecksManifest({
-			version: 1,
-			activeProvider: "circleci",
-			requiredChecks: [
-				{
-					policyId: "check-1",
-					gateId: "security-scan",
-					displayName: "Security Scan",
-					sourceAppSlug: "github-actions",
-					sourceAppId: "github-actions",
-					externalIdPattern: "^security-scan$",
-					class: "required",
-					githubCheckName: "security-scan",
-				},
-			],
-		});
+		const normalized = normalizeManifest([
+			createRequiredCheck({
+				gateId: "security-scan",
+				displayName: "Security Scan",
+				sourceAppSlug: "github-actions",
+				sourceAppId: "github-actions",
+				externalIdPattern: "^security-scan$",
+				githubCheckName: "security-scan",
+			}),
+		]);
 
 		expect(normalized.ok).toBe(true);
 		if (!normalized.ok) {

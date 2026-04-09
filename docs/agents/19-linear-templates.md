@@ -3,6 +3,7 @@
 ## Table of Contents
 
 - [Purpose](#purpose)
+- [Canonical lane model](#canonical-lane-model)
 - [Blocked-routing convention](#blocked-routing-convention)
 - [Issue templates](#issue-templates)
 - [Saved views](#saved-views)
@@ -18,6 +19,26 @@ consistent and agent-readable.
 Template source files live in `src/templates/linear/` and are the authoritative
 copy — always edit there first, then paste into Linear UI.
 
+## Canonical lane model
+
+Primary workflow states:
+
+- `Triage`
+- `Ready`
+- `In Progress`
+- `In Review`
+- `Done`
+
+`Blocked` is an overlay label and must not be modeled as a separate workflow
+status. A blocked issue stays in its primary lane and carries explicit unblock
+guidance.
+
+Promotion from intake lanes into active work should stay bounded by:
+
+- metadata completeness threshold,
+- in-progress WIP cap,
+- cycle-feasibility checks.
+
 ## Blocked-routing convention
 
 **Decision:** `Blocked` stays a **label**, not a workflow status.
@@ -26,7 +47,7 @@ copy — always edit there first, then paste into Linear UI.
 
 - A blocked issue still has a real primary state (`Todo`, `In Progress`, `In Review`).
 - A separate status would overload the workflow with a special case.
-- Linear's native `blockedBy` / `blocks` relations carry the dependency graph.
+- Linear native `blockedBy` / `blocks` relations carry the dependency graph.
 - The `Blocked` label provides visibility and a consistent saved-view filter.
 
 ### Protocol
@@ -45,7 +66,7 @@ When work cannot proceed:
 ## Issue templates
 
 Template files are in `src/templates/linear/`. Each is copy-paste-ready for
-Linear → Settings → Team: Jscraik → Templates.
+Linear → Settings → Team → Templates.
 
 | Template | File | Key sections |
 |---|---|---|
@@ -110,14 +131,14 @@ These cannot be configured via API — do them once in Linear.
 
 ### Issue templates
 
-1. Go to **Linear → Settings → Team: Jscraik → Templates**
+1. Go to **Linear → Settings → Team → Templates**
 2. Click **New template** for each entry in the table above
 3. Set the name exactly as shown (Bug / Feature / Research / Automation / Release)
 4. Paste the content from the matching `src/templates/linear/<name>.md` file
 
 ### Saved views
 
-1. Go to **Linear → My Views** (or **Team Views → Jscraik**)
+1. Go to **Linear → My Views** (or your **Team Views**)
 2. Create each view with the filters listed above
 3. Name them exactly: Triage / Ready / In Progress / In Review / Blocked / Delegated
 

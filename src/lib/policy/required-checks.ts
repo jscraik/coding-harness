@@ -209,6 +209,17 @@ function normalizeGate(
 	};
 }
 
+function sortNormalizedGates(
+	gates: NormalizedGateDefinition[],
+): NormalizedGateDefinition[] {
+	return [...gates].sort((left, right) => {
+		if (left.order !== right.order) {
+			return left.order - right.order;
+		}
+		return left.gateId.localeCompare(right.gateId);
+	});
+}
+
 function identityPayload(gates: NormalizedGateDefinition[]): string {
 	const tuples = gates.map((gate) => ({
 		gateId: gate.gateId,
@@ -275,8 +286,9 @@ export function normalizeRequiredChecksManifest(
 	}
 
 	const explicitContractVersion = asNonEmptyString(typed.contractVersion);
+	const sortedGates = sortNormalizedGates(gates);
 	const contractVersion =
-		explicitContractVersion ?? deriveContractVersionFromGates(gates);
+		explicitContractVersion ?? deriveContractVersionFromGates(sortedGates);
 	const schemaVersion = asPositiveInteger(typed.version) ?? 1;
 
 	return {
@@ -285,7 +297,7 @@ export function normalizeRequiredChecksManifest(
 			schemaVersion,
 			contractVersion,
 			activeProvider,
-			gates,
+			gates: sortedGates,
 		},
 	};
 }

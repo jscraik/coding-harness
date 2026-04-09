@@ -38,6 +38,7 @@ deepened: 2026-04-08
 - [System-Wide Impact](#system-wide-impact)
 - [Risks and Dependencies](#risks-and-dependencies)
 - [Documentation and Operational Notes](#documentation-and-operational-notes)
+- [Outstanding Issue Snapshot](#outstanding-issue-snapshot)
 - [Execution Ledger (Planning Mode)](#execution-ledger-planning-mode)
 - [Sources and References](#sources-and-references)
 
@@ -230,7 +231,7 @@ Design constraints:
 **Exit criteria:**
 - Plan/spec no longer contain contradictory pre-plan decision state.
 
-- [ ] **P0 / Unit 1: Canonical contract extension and normalization layer**
+- [x] **P0 / Unit 1: Canonical contract extension and normalization layer**
 
 **Goal:** add orchestration metadata to the required-check contract while preserving current consumer compatibility.
 
@@ -515,11 +516,19 @@ Dependencies:
 - Use deterministic command suggestions in failure output (`verify-work --resume-from <gate-id>`) only when admissible.
 - Capture phase-complete evidence in plan/PR artifacts to satisfy plan-gate traceability.
 
+## Outstanding Issue Snapshot
+
+Snapshot captured on `2026-04-09` from Linear (`project: coding-harness`, non-terminal states only):
+
+- Lane counts: `In Progress=4`, `In Review=2`, `Todo=2`, `Triage=17`, `Backlog=4` (`29` total outstanding).
+- Reliability-adjacent active items touching verify/policy/CI surfaces: `JSC-96` (`In Progress`), `JSC-115` (`In Review`), `JSC-130` (`In Review`), `JSC-87` (`Triage`).
+- Planning implication: `P0` is complete; keep follow-on phases gated and evidence-driven because adjacent queue pressure indicates continued verification-governance drift risk.
+
 ## Execution Ledger (Planning Mode)
 
 STEP_ID | status (pending|in progress|completed) | owner | evidence
 P-1 | completed | codex | Governing spec pre-plan questions resolved; canonical identity tuple and non-identity display-name semantics aligned.
-P0 | in progress | codex | Planning artifact authored with canonical contract extension + traceability baseline.
+P0 | completed | codex | Canonical contract metadata landed in `.harness/ci-required-checks.json`, normalization ordering/default behavior updated in `src/lib/policy/required-checks.ts`, tests expanded in `src/lib/policy/required-checks.test.ts`, and contract guidance aligned in `docs/agents/17-ci-required-checks.md`.
 P1 | pending | codex | Run-state persistence and admissibility tests added.
 P2 | pending | codex | Lifecycle engine + retry classifier implemented and validated.
 P3 | pending | codex | `verify-work` command + wrapper compatibility path validated.

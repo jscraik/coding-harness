@@ -53,6 +53,8 @@ This document defines the production workflow for coding-harness work tracked in
 - Branch format is `codex/<lk>-<slug>`.
 - `S2 IN_PROGRESS -> S3 IN_REVIEW` requires DoD pre-review checks.
 - `pr_closed_unmerged` always routes back to active work.
+- `Blocked` is a label overlay on active workflow states; it is not a canonical workflow state.
+- Triage promotion is bounded by lane and cycle feasibility guards before mutation.
 
 ## States
 ```txt
@@ -61,8 +63,12 @@ S1 READY (non-terminal)
 S2 IN_PROGRESS (non-terminal)
 S3 IN_REVIEW (non-terminal)
 S4 DONE (terminal)
-S5 BLOCKED (non-terminal)
 ```
+
+### Blocked overlay (label-based)
+
+- `Blocked` can be applied to `S1 READY`, `S2 IN_PROGRESS`, or `S3 IN_REVIEW`.
+- Blocked/unblocked events update labels and unblock guidance, but keep the canonical status lane unchanged.
 
 ## Transition Table (Canonical)
 
@@ -77,8 +83,12 @@ S5 BLOCKED (non-terminal)
 | `S2 IN_PROGRESS` | `handoff_ready` | DoD pre-review checks pass | `harness linear handoff --issue <LK> --pr-url <url> --evidence-url <url[,url]>` | `S3 IN_REVIEW` |
 | `S3 IN_REVIEW` | `merged` | required checks pass | `harness linear close --issue <LK> --pr-url <url>` | `S4 DONE` |
 | `S3 IN_REVIEW` | `pr_closed_unmerged` | PR closed without merge | `harness linear claim --issue <LK> --state "In Progress" --no-assign` and add rationale note | `S2 IN_PROGRESS` |
-| `S2 IN_PROGRESS` | `blocked` | missing auth, permission, or human input | add `Blocked` marker and unblock action | `S5 BLOCKED` |
-| `S5 BLOCKED` | `unblocked` | dependency resolved | remove blocker marker and resume execution | `S2 IN_PROGRESS` |
+| `S1 READY` | `blocked` | missing auth, permission, or human input | add `Blocked` marker and unblock action | `S1 READY` |
+| `S2 IN_PROGRESS` | `blocked` | missing auth, permission, or human input | add `Blocked` marker and unblock action | `S2 IN_PROGRESS` |
+| `S3 IN_REVIEW` | `blocked` | missing auth, permission, or human input | add `Blocked` marker and unblock action | `S3 IN_REVIEW` |
+| `S1 READY` | `unblocked` | dependency resolved | remove blocker marker and resume execution | `S1 READY` |
+| `S2 IN_PROGRESS` | `unblocked` | dependency resolved | remove blocker marker and resume execution | `S2 IN_PROGRESS` |
+| `S3 IN_REVIEW` | `unblocked` | dependency resolved | remove blocker marker and resume execution | `S3 IN_REVIEW` |
 
 ## Error Handling
 - `VALIDATION_ERROR`: missing/invalid LK or malformed branch/PR metadata.
@@ -88,7 +98,7 @@ S5 BLOCKED (non-terminal)
 
 ## Idempotency
 - Key: `<LK>|<state>|<event>|<pr_url?>`.
-- Replayed `progress_tick` and `pr_opened` events append new LI comments/attachments; they do not currently deduplicate existing artifacts.
+- Replayed `progress_tick` and `pr_opened` events append new LI comments/attachments; they do not currently remove duplicate existing artifacts.
 - Replayed `handoff_ready` events also append additional evidence links/comments; avoid replaying `handoff_ready` after a successful transition unless duplicate artifacts are acceptable.
 
 ## Execution Modes
@@ -115,7 +125,7 @@ S5 BLOCKED (non-terminal)
 ## Validation Checklist
 - non-terminal states have >=1 outbound transition
 - deterministic event resolution per `(S,E)`
-- failure events route to blocked/fail lane
+- failure events route to blocked overlay or fail lane
 - terminal states have no outbound transitions
 - DoD gate enforced before review transition
 
@@ -200,6 +210,7 @@ Operational notes:
   - score formula: `(3*impact) + (3*unblock_value) + (2*urgency) + confidence - (2*effort)`
   - promotion bands: `pull_now` (`>=13`) and `next_pull` (`10-12`)
   - default guards: metadata threshold `0.8`, global in-progress cap `3`, max promotions per run `2`
+  - cycle guard: promotion writes are blocked when proposed moves exceed feasible cycle throughput
   - safety: apply mode requires `--confirm` when mutating more than one issue
   - label hygiene: missing type labels are added by default in apply mode (use `--no-type-label-sync` to opt out)
 - `handoff` moves the issue to `In Review`, posts a workflow comment, and can attach PR/evidence/reference URLs.
@@ -242,4 +253,4 @@ These items should be configured in the Linear UI as workspace/team administrati
 - saved views for Triage, Ready, In Progress, In Review, Blocked, and Delegated,
 - git automation to assign/move issues when branch names are copied,
 - GitHub integration connected to the matching Linear user so branch and PR events resolve back to the correct workspace identity,
-- optional `Blocked` workflow status if status-level reporting is preferred over labels.
+- keep `Blocked` as a label convention; do not add a separate blocked workflow status.
