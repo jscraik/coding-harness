@@ -15,6 +15,7 @@ import type {
 	RiskTier,
 } from "../contract/types.js";
 import { resolveOverallTier } from "../policy/risk-tier.js";
+import { detectHarnessVersionCoherence } from "../version-coherence.js";
 import {
 	EXIT_CODES,
 	type PreflightCheck,
@@ -205,6 +206,49 @@ const gitRepositoryCheck: PreflightCheckFn = () => {
 };
 
 /**
+ * Global vs repo-local harness version coherence check
+ */
+const harnessVersionCoherenceCheck: PreflightCheckFn = () => {
+	const start = Date.now();
+	const coherence = detectHarnessVersionCoherence(process.cwd());
+
+	if (coherence.status === "drift") {
+		return {
+			id: "harness-version-coherence",
+			description: "Verify harness version coherence",
+			severity: "error",
+			passed: false,
+			message: coherence.remediation
+				? `${coherence.message}. ${coherence.remediation}`
+				: coherence.message,
+			durationMs: Date.now() - start,
+		};
+	}
+
+	if (coherence.status === "error") {
+		return {
+			id: "harness-version-coherence",
+			description: "Verify harness version coherence",
+			severity: "warning",
+			passed: false,
+			message: coherence.remediation
+				? `${coherence.message}. ${coherence.remediation}`
+				: coherence.message,
+			durationMs: Date.now() - start,
+		};
+	}
+
+	return {
+		id: "harness-version-coherence",
+		description: "Verify harness version coherence",
+		severity: "error",
+		passed: true,
+		message: coherence.message,
+		durationMs: Date.now() - start,
+	};
+};
+
+/**
  * Registry of all available preflight checks
  */
 export const PREFLIGHT_CHECKS: PreflightCheckRegistry = {
@@ -213,6 +257,12 @@ export const PREFLIGHT_CHECKS: PreflightCheckRegistry = {
 		description: "Verify this is a git repository",
 		severity: "error",
 		fn: gitRepositoryCheck,
+	},
+	"harness-version-coherence": {
+		name: "Harness Version Coherence",
+		description: "Detect global vs repo-local harness version drift",
+		severity: "error",
+		fn: harnessVersionCoherenceCheck,
 	},
 	"contract-exists": {
 		name: "Contract Exists",

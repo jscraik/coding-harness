@@ -21,6 +21,7 @@ import { cwd } from "node:process";
 import { SCHEMA_VERSION } from "../lib/contract/json-schema.js";
 import { validateContract } from "../lib/contract/validator.js";
 import { HARNESS_DIR, MANIFEST_FILE } from "../lib/init/types.js";
+import { detectHarnessVersionCoherence } from "../lib/version-coherence.js";
 import { getVersion } from "../lib/version.js";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
@@ -70,6 +71,36 @@ function checkGitRepo(dir: string): CheckItem {
 		status: "warn",
 		detail: ".git not found — some harness features require version control",
 		fix: "git init",
+	};
+}
+
+function checkHarnessVersionCoherence(dir: string): CheckItem {
+	const coherence = detectHarnessVersionCoherence(dir);
+	if (coherence.status === "drift") {
+		return {
+			id: "harness:version-coherence",
+			label: "Harness version coherence",
+			status: "fail",
+			detail: coherence.message,
+			...(coherence.remediation ? { fix: coherence.remediation } : {}),
+		};
+	}
+
+	if (coherence.status === "error") {
+		return {
+			id: "harness:version-coherence",
+			label: "Harness version coherence",
+			status: "warn",
+			detail: coherence.message,
+			...(coherence.remediation ? { fix: coherence.remediation } : {}),
+		};
+	}
+
+	return {
+		id: "harness:version-coherence",
+		label: "Harness version coherence",
+		status: "ok",
+		detail: coherence.message,
 	};
 }
 
@@ -219,6 +250,7 @@ function deriveNextSteps(checks: CheckItem[]): string[] {
 export function runCheck(dir: string): CheckReport {
 	const checks: CheckItem[] = [
 		checkGitRepo(dir),
+		checkHarnessVersionCoherence(dir),
 		...checkContract(dir),
 		checkManifest(dir),
 	];
