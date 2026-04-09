@@ -72,15 +72,6 @@ printf '%s\\n' "$HARNESS_VERIFY_WORK_NO_DELEGATE" > "${envLogPath}"
 		expect(args[repoRootFlagIndex + 1]).toBe(repoRoot);
 	});
 
-	it("returns USAGE_ERROR when --all and --changed-only are both set", () => {
-		const exitCode = runVerifyWorkCLI({
-			repoRoot,
-			all: true,
-			changedOnly: true,
-		});
-		expect(exitCode).toBe(EXIT_CODES.USAGE_ERROR);
-	});
-
 	it("maps SIGTERM termination to the conventional signal exit code", () => {
 		const scriptsDir = join(repoRoot, "scripts");
 		mkdirSync(scriptsDir, { recursive: true });

@@ -104,7 +104,8 @@ describe("resume admissibility", () => {
 		});
 
 		const runDir = resolveVerifyRunPaths(repoRoot, runId).runDir;
-		const timestamp = new Date(Date.now() - mtimeOffsetMs);
+		const baseTime = new Date("2020-01-01T00:00:00Z");
+		const timestamp = new Date(baseTime.getTime() - mtimeOffsetMs);
 		utimesSync(runDir, timestamp, timestamp);
 	}
 
@@ -189,6 +190,7 @@ describe("resume admissibility", () => {
 	it("selects the newest compatible run when scanning history", () => {
 		seedRun("run-resume-010", "contract-v0", 1_000);
 		seedRun("run-resume-009", "contract-v1", 3_000);
+		seedRun("run-resume-011", "contract-v1", 500);
 
 		const result = findLatestAdmissibleRun({
 			repoRoot,
@@ -208,7 +210,7 @@ describe("resume admissibility", () => {
 		});
 
 		expect(result.admissible).toBe(true);
-		expect(result.runId).toBe("run-resume-009");
+		expect(result.runId).toBe("run-resume-011");
 		expect(result.reusableGateIds).toEqual(["preflight", "lint"]);
 	});
 

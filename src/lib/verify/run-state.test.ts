@@ -16,12 +16,6 @@ import {
 	writeVerifyRunSummary,
 } from "./run-state.js";
 
-function delay(ms: number): Promise<void> {
-	return new Promise((resolve) => {
-		setTimeout(resolve, ms);
-	});
-}
-
 describe("verify run-state", () => {
 	let repoRoot = "";
 
@@ -68,7 +62,7 @@ describe("verify run-state", () => {
 		).toThrowError(RunStateError);
 	});
 
-	it("prunes old runs while preserving the latest failed run", async () => {
+	it("prunes old runs while preserving the latest failed run", () => {
 		const runStates: Array<{
 			runId: string;
 			status: "passed" | "failed" | "blocked";
@@ -79,7 +73,8 @@ describe("verify run-state", () => {
 			{ runId: "run-004", status: "failed" },
 		];
 
-		for (const run of runStates) {
+		const baseTime = new Date("2020-01-01T00:00:00Z");
+		for (const [index, run] of runStates.entries()) {
 			writeVerifyRunSummary(repoRoot, run.runId, {
 				runId: run.runId,
 				overallStatus: run.status,
@@ -87,7 +82,13 @@ describe("verify run-state", () => {
 				freshVsResumed: "fresh",
 				durationMs: 100,
 			});
-			await delay(5);
+			const { runDir, summaryPath } = resolveVerifyRunPaths(
+				repoRoot,
+				run.runId,
+			);
+			const mtime = new Date(baseTime.getTime() + index * 1000);
+			utimesSync(runDir, mtime, mtime);
+			utimesSync(summaryPath, mtime, mtime);
 		}
 		// Rewrite an older run's summary to verify ordering follows child-file mtime.
 		writeVerifyRunSummary(repoRoot, "run-001", {
@@ -97,6 +98,11 @@ describe("verify run-state", () => {
 			freshVsResumed: "fresh",
 			durationMs: 100,
 		});
+		const { runDir: runDir001, summaryPath: summaryPath001 } =
+			resolveVerifyRunPaths(repoRoot, "run-001");
+		const latestMtime = new Date(baseTime.getTime() + runStates.length * 1000);
+		utimesSync(runDir001, latestMtime, latestMtime);
+		utimesSync(summaryPath001, latestMtime, latestMtime);
 
 		const pruned = pruneVerifyRuns({
 			repoRoot,
@@ -116,15 +122,19 @@ describe("verify run-state", () => {
 	});
 
 	it("rejects writing summary when summary.runId does not match target runId", () => {
-		expect(() =>
+		try {
 			writeVerifyRunSummary(repoRoot, "run-expected", {
 				runId: "run-other",
 				overallStatus: "failed",
 				failedGateId: "policy-gate",
 				freshVsResumed: "fresh",
 				durationMs: 10,
-			}),
-		).toThrow(RunStateError);
+			});
+			throw new Error("Expected error");
+		} catch (err) {
+			expect(err).toBeInstanceOf(RunStateError);
+			expect((err as RunStateError).code).toBe("E_VALIDATION");
+		}
 	});
 });
 
@@ -151,13 +161,25 @@ describe("verify run-state — path resolution", () => {
 	});
 
 	it("throws RunStateError with E_VALIDATION for invalid run id", () => {
-		expect(() => resolveVerifyRunPaths(repoRoot, "ab")).toThrow(RunStateError);
-		expect(() => resolveVerifyRunPaths(repoRoot, "")).toThrow(RunStateError);
+		try {
+			resolveVerifyRunPaths(repoRoot, "ab");
+			throw new Error("Expected error");
+		} catch (err) {
+			expect(err).toBeInstanceOf(RunStateError);
+			expect((err as RunStateError).code).toBe("E_VALIDATION");
+		}
+		try {
+			resolveVerifyRunPaths(repoRoot, "");
+			throw new Error("Expected error");
+		} catch (err) {
+			expect(err).toBeInstanceOf(RunStateError);
+			expect((err as RunStateError).code).toBe("E_VALIDATION");
+		}
 		expect(() => resolveVerifyRunPaths(repoRoot, "run/../../bad")).toThrow();
 	});
 
 	it("throws RunStateError with E_VALIDATION for gate id that starts with non-alphanumeric", () => {
-		expect(() =>
+		try {
 			writeVerifyGateResult(repoRoot, "run-gate-bad", {
 				runId: "run-gate-bad",
 				gateId: "-bad-gate",
@@ -169,12 +191,16 @@ describe("verify run-state — path resolution", () => {
 				finishedAt: "2026-04-09T12:00:01.000Z",
 				nextAction: "continue",
 				exitCode: 0,
-			}),
-		).toThrow(RunStateError);
+			});
+			throw new Error("Expected error");
+		} catch (err) {
+			expect(err).toBeInstanceOf(RunStateError);
+			expect((err as RunStateError).code).toBe("E_VALIDATION");
+		}
 	});
 
 	it("throws RunStateError when gate attempt is zero or negative", () => {
-		expect(() =>
+		try {
 			writeVerifyGateResult(repoRoot, "run-gate-inv", {
 				runId: "run-gate-inv",
 				gateId: "lint",
@@ -186,12 +212,34 @@ describe("verify run-state — path resolution", () => {
 				finishedAt: "2026-04-09T12:00:01.000Z",
 				nextAction: "continue",
 				exitCode: 0,
-			}),
-		).toThrow(RunStateError);
+			});
+			throw new Error("Expected error");
+		} catch (err) {
+			expect(err).toBeInstanceOf(RunStateError);
+			expect((err as RunStateError).code).toBe("E_VALIDATION");
+		}
+		try {
+			writeVerifyGateResult(repoRoot, "run-gate-inv", {
+				runId: "run-gate-inv",
+				gateId: "lint",
+				executionClass: "serial_guarded",
+				attempt: -1,
+				status: "passed",
+				failureClass: "contract_policy",
+				startedAt: "2026-04-09T12:00:00.000Z",
+				finishedAt: "2026-04-09T12:00:01.000Z",
+				nextAction: "continue",
+				exitCode: 0,
+			});
+			throw new Error("Expected error");
+		} catch (err) {
+			expect(err).toBeInstanceOf(RunStateError);
+			expect((err as RunStateError).code).toBe("E_VALIDATION");
+		}
 	});
 
 	it("throws RunStateError when gate runId does not match target runId", () => {
-		expect(() =>
+		try {
 			writeVerifyGateResult(repoRoot, "run-gate-mismatch", {
 				runId: "different-run-id",
 				gateId: "lint",
@@ -203,8 +251,12 @@ describe("verify run-state — path resolution", () => {
 				finishedAt: "2026-04-09T12:00:01.000Z",
 				nextAction: "continue",
 				exitCode: 0,
-			}),
-		).toThrow(RunStateError);
+			});
+			throw new Error("Expected error");
+		} catch (err) {
+			expect(err).toBeInstanceOf(RunStateError);
+			expect((err as RunStateError).code).toBe("E_VALIDATION");
+		}
 	});
 });
 
@@ -254,9 +306,13 @@ describe("verify run-state — load functions", () => {
 	});
 
 	it("throws RunStateError E_IO when run.json does not exist", () => {
-		expect(() => loadVerifyRunMetadata(repoRoot, "run-does-not-exist")).toThrow(
-			RunStateError,
-		);
+		try {
+			loadVerifyRunMetadata(repoRoot, "run-does-not-exist");
+			throw new Error("Expected error");
+		} catch (err) {
+			expect(err).toBeInstanceOf(RunStateError);
+			expect((err as RunStateError).code).toBe("E_IO");
+		}
 	});
 
 	it("writes and loads run summary round-trip", () => {
@@ -278,9 +334,13 @@ describe("verify run-state — load functions", () => {
 	});
 
 	it("throws RunStateError E_IO when summary.json does not exist", () => {
-		expect(() => loadVerifyRunSummary(repoRoot, "run-does-not-exist")).toThrow(
-			RunStateError,
-		);
+		try {
+			loadVerifyRunSummary(repoRoot, "run-does-not-exist");
+			throw new Error("Expected error");
+		} catch (err) {
+			expect(err).toBeInstanceOf(RunStateError);
+			expect((err as RunStateError).code).toBe("E_IO");
+		}
 	});
 
 	it("writes and loads gate result round-trip", () => {
@@ -306,9 +366,13 @@ describe("verify run-state — load functions", () => {
 	});
 
 	it("throws RunStateError E_IO when gate result does not exist", () => {
-		expect(() =>
-			loadVerifyGateResult(repoRoot, "run-does-not-exist", "lint"),
-		).toThrow(RunStateError);
+		try {
+			loadVerifyGateResult(repoRoot, "run-does-not-exist", "lint");
+			throw new Error("Expected error");
+		} catch (err) {
+			expect(err).toBeInstanceOf(RunStateError);
+			expect((err as RunStateError).code).toBe("E_IO");
+		}
 	});
 
 	it("listVerifyRunIds returns ids sorted by newest first", () => {
@@ -380,9 +444,13 @@ describe("verify run-state — pruning edge cases", () => {
 	});
 
 	it("throws RunStateError for keepCount of zero", () => {
-		expect(() => pruneVerifyRuns({ repoRoot, keepCount: 0 })).toThrow(
-			RunStateError,
-		);
+		try {
+			pruneVerifyRuns({ repoRoot, keepCount: 0 });
+			throw new Error("Expected error");
+		} catch (err) {
+			expect(err).toBeInstanceOf(RunStateError);
+			expect((err as RunStateError).code).toBe("E_VALIDATION");
+		}
 	});
 
 	it("respects protectLatestFailed=false by not preserving extra failed run", () => {

@@ -342,7 +342,7 @@ describe("verify orchestrator", () => {
 		expect(result.overallStatus).toBe("failed");
 		expect(result.gateResults[0]?.failureClass).toBe("internal_unknown");
 		expect(result.gateResults[0]?.status).toBe("failed");
-		expect(calls).toBeGreaterThanOrEqual(1);
+		expect(calls).toBe(1);
 	});
 
 	it("filters disabled gates and only runs enabled gates", async () => {
@@ -506,7 +506,7 @@ describe("transitionLifecycle state machine", () => {
 		).toThrow("Invalid lifecycle transition");
 	});
 
-	it("throws on invalid transition from S4_BLOCKED with CONTRACT_CHANGED to S_FAIL", () => {
+	it("returns S_FAIL on invalid transition from S4_BLOCKED with CONTRACT_CHANGED", () => {
 		expect(transitionLifecycle("S4_BLOCKED", "CONTRACT_CHANGED")).toBe(
 			"S_FAIL",
 		);
