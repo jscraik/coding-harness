@@ -476,8 +476,8 @@ describe("command-specs.ts architecture boundaries", () => {
 			"src/lib/cli/registry/command-specs.ts",
 		);
 		const content = readFileSync(filePath, "utf-8");
-		// Verify imports exist - exact path format may vary
-		expect(content).toContain("import");
+		// Verify imports come from ../../../commands/ path
+		expect(content).toMatch(/from\s+["']\.\.\/\.\.\/\.\.\/commands\//);
 	});
 
 	it("does not import from ../../commands/ (wrong relative path)", () => {
@@ -507,8 +507,8 @@ describe("command-specs.ts architecture boundaries", () => {
 			"src/lib/cli/registry/command-specs.ts",
 		);
 		const content = readFileSync(filePath, "utf-8");
-		// Verify parse-utils is referenced - exact import path may vary
-		expect(content).toMatch(/parse-utils/);
+		// Verify parse-utils is imported from ../parse-utils with optional .js extension
+		expect(content).toMatch(/(?:import|require)\s+.*from\s+["']\.\.\/parse-utils(?:\.js)?["']/);
 	});
 });
 
