@@ -74,6 +74,7 @@ describe("GitHubApiError", () => {
 
 	it("classifies 403 with x-ratelimit-remaining=0 and reset header with ISO timestamp in message", () => {
 		const resetEpoch = "1700000000";
+		const expectedIso = new Date(Number(resetEpoch) * 1000).toISOString();
 		const error = GitHubApiError.fromError(
 			createRequestError(403, "Rate limit exceeded", {
 				"x-ratelimit-remaining": "0",
@@ -82,7 +83,7 @@ describe("GitHubApiError", () => {
 		);
 
 		expect(error.code).toBe("RATE_LIMITED");
-		expect(error.message).toContain("Rate limit exceeded. Resets at");
+		expect(error.message).toBe(`Rate limit exceeded. Resets at ${expectedIso}`);
 	});
 
 	it("classifies 422 as VALIDATION_FAILED", () => {
