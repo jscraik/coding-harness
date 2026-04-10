@@ -159,6 +159,10 @@ if (diagramFiles.includes("architecture.mmd")) {
 		const dependencyContent = readFileSync(dependencyPath, "utf8");
 		writeFileSync(dependencyPath, buildDependency(dependencyContent, nodeMap));
 	}
+} else if (diagramFiles.includes("dependency.mmd")) {
+	console.info(
+		`dependency.mmd exists at ${dependencyPath} but architecture.mmd is missing; applying only whitespace normalization because no nodeMap is available`,
+	);
 }
 
 for (const file of diagramFiles) {

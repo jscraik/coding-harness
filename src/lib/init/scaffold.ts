@@ -635,19 +635,25 @@ REPO_ROOT="$(cd -- "$SCRIPT_DIR/.." && pwd)"
 
 	CLI_PATH="$REPO_ROOT/node_modules/@brainwav/coding-harness/dist/cli.js"
 
-	if [[ ! -f "$CLI_PATH" ]]; then
-		echo "Error: local @brainwav/coding-harness could not be resolved from this repo." >&2
-		echo "This is a local install/bootstrap problem, not a harness command failure." >&2
-		echo "Repair from the repo root with one of:" >&2
-		echo "  ${installCommand}" >&2
-		echo "  ${addCommand}" >&2
-	echo "After the package is installed, rerun:" >&2
-	echo "  bash scripts/harness-cli.sh <command>" >&2
-		echo "  ${execCommand} <command>" >&2
-		exit 1
+	if [[ -f "$CLI_PATH" ]]; then
+		exec node "$CLI_PATH" "$@"
 	fi
 
-	exec node "$CLI_PATH" "$@"
+	# CLI_PATH not found; attempt fallback for Yarn PnP or other non-standard layouts
+	if ${execCommand} --version >/dev/null 2>&1; then
+		exec ${execCommand} "$@"
+	fi
+
+	# Both node_modules path and execCommand fallback failed
+	echo "Error: local @brainwav/coding-harness could not be resolved from this repo." >&2
+	echo "This is a local install/bootstrap problem, not a harness command failure." >&2
+	echo "Repair from the repo root with one of:" >&2
+	echo "  ${installCommand}" >&2
+	echo "  ${addCommand}" >&2
+	echo "After the package is installed, rerun:" >&2
+	echo "  bash scripts/harness-cli.sh <command>" >&2
+	echo "  ${execCommand} <command>" >&2
+	exit 1
 	`;
 }
 
