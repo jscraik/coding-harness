@@ -823,7 +823,6 @@ describe("normalisePolicyGateResult (decision fields from PR)", () => {
 				...overrides.output,
 			},
 		};
-		return { ok: true, output };
 	}
 
 	it("ok:true passed → reason names the tier", () => {
