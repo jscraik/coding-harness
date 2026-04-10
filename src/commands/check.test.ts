@@ -205,18 +205,19 @@ describe("runCheck", () => {
 		expect(report.hasFailures).toBe(true);
 	});
 
-	it("harness:version-coherence is 'ok' when no repo-local runner exists (skip)", () => {
+	it("harness:version-coherence is 'warn' when no repo-local runner exists (skip)", () => {
 		// No scripts/harness-cli.sh — detectHarnessVersionCoherence returns skip
 		const report = runCheck(dir);
 		const coherenceCheck = report.checks.find(
 			(check) => check.id === "harness:version-coherence",
 		);
-		expect(coherenceCheck?.status).toBe("ok");
+		expect(coherenceCheck?.status).toBe("warn");
 		expect(coherenceCheck?.detail).toContain("no repo-local harness runner");
 	});
 
 	it("harness:version-coherence is 'warn' with no fix when no repo-local runner exists (skip)", () => {
 		// No scripts/harness-cli.sh — detectHarnessVersionCoherence returns skip
+		writeContract(dir);
 		const report = runCheck(dir);
 		const coherenceCheck = report.checks.find(
 			(check) => check.id === "harness:version-coherence",

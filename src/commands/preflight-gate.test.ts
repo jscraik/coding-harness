@@ -5,6 +5,7 @@
  */
 
 import {
+	type MockInstance,
 	afterEach,
 	beforeEach,
 	describe,
@@ -77,7 +78,7 @@ function makeFailingResult(
 
 describe("runPreflightGateCLI", () => {
 	let consoleInfoSpy: ReturnType<typeof vi.spyOn>;
-	let stdoutSpy: ReturnType<typeof vi.spyOn<typeof process.stdout, "write">>;
+	let stdoutSpy: MockInstance<typeof process.stdout.write>;
 
 	beforeEach(() => {
 		vi.clearAllMocks();
@@ -165,7 +166,12 @@ describe("runPreflightGateCLI", () => {
 
 			const written = stdoutSpy.mock.calls[0]?.[0] as string;
 			const parsed = JSON.parse(written) as {
-				summary: { errors: number; warnings: number; info: number; total: number };
+				summary: {
+					errors: number;
+					warnings: number;
+					info: number;
+					total: number;
+				};
 			};
 
 			expect(typeof parsed.summary.errors).toBe("number");

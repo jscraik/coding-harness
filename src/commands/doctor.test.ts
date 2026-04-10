@@ -406,7 +406,11 @@ describe("runDoctor — config checks", () => {
 		expect(check?.fix).toBeTruthy();
 	});
 
-	it("warns when contextIntegrityPolicy exists only on prototype", () => {
+	it("warns when contextIntegrityPolicy exists only on Object.prototype", () => {
+		const priorDescriptor = Object.getOwnPropertyDescriptor(
+			Object.prototype,
+			"contextIntegrityPolicy",
+		);
 		Object.defineProperty(Object.prototype, "contextIntegrityPolicy", {
 			value: { minCoverage: 0.9 },
 			configurable: true,
@@ -425,9 +429,15 @@ describe("runDoctor — config checks", () => {
 			);
 			expect(check?.status).toBe("warn");
 		} finally {
-			(
-				Object.prototype as { contextIntegrityPolicy?: unknown }
-			).contextIntegrityPolicy = undefined;
+			if (priorDescriptor) {
+				Object.defineProperty(
+					Object.prototype,
+					"contextIntegrityPolicy",
+					priorDescriptor,
+				);
+			} else {
+				Reflect.deleteProperty(Object.prototype, "contextIntegrityPolicy");
+			}
 		}
 	});
 
@@ -445,7 +455,7 @@ describe("runDoctor — config checks", () => {
 		expect(check?.status).toBe("ok");
 	});
 
-	it("warns when contextIntegrityPolicy exists only on prototype", () => {
+	it("warns when contextIntegrityPolicy exists only on parsed object prototype", () => {
 		writeFileSync(join(dir, "harness.contract.json"), JSON.stringify({}));
 		mockAllToolsOk();
 		vi.spyOn(JSON, "parse").mockImplementation(() =>
@@ -487,7 +497,9 @@ describe("runDoctor — config checks", () => {
 		const ctxCheck = report.checks.find(
 			(c) => c.id === "config:contextIntegrityPolicy",
 		);
-		const ciCheck = report.checks.find((c) => c.id === "config:ciProviderPolicy");
+		const ciCheck = report.checks.find(
+			(c) => c.id === "config:ciProviderPolicy",
+		);
 
 		// Both should warn because Object.hasOwn returns false for prototype keys
 		expect(ctxCheck?.status).toBe("warn");
