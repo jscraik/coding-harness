@@ -230,3 +230,25 @@ describe("suggestCommands", () => {
 		expect(distances).toEqual([...distances].sort((a, b) => a - b));
 	});
 });
+
+describe("command registry architecture boundaries", () => {
+	it("keeps command-registry loader small and free of direct command imports", () => {
+		const registryPath = join(process.cwd(), "src/lib/cli/command-registry.ts");
+		const content = readFileSync(registryPath, "utf-8");
+		const lineCount = content.split("\n").length;
+		expect(lineCount).toBeLessThanOrEqual(300);
+		expect(content).not.toContain("../../commands/");
+	});
+
+	it("keeps command manifests in the dedicated registry module", () => {
+		const specsPath = join(
+			process.cwd(),
+			"src/lib/cli/registry/command-specs.ts",
+		);
+		const content = readFileSync(specsPath, "utf-8");
+		expect(content).toContain("export const COMMAND_SPECS");
+		expect(content).toContain("../../../commands/");
+		expect(content).not.toContain("fuzzyFindCommand");
+		expect(content).not.toContain("dispatchRegistryCommand");
+	});
+});
