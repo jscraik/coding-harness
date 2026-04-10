@@ -127,41 +127,30 @@ printf '%s\n' "$*" > .refresh-invoked
 	it("passes when refresh only updates volatile timestamp metadata", () => {
 		const root = createRepo(`#!/usr/bin/env bash
 set -euo pipefail
-python3 <<'PY'
-from pathlib import Path
-import json
+fence="$(printf '\\x60\\x60\\x60')"
+printf '%s\\n' \
+	"# Diagram Context Pack" \
+	"" \
+	"Generated: 2026-03-12T10:00:00Z" \
+	"" \
+	"## system" \
+	"" \
+	"\${fence}mermaid" \
+	"graph TD" \
+	"  A[Start] --> B[Finish]" \
+	"\${fence}" \
+	> .diagram/context/diagram-context.md
 
-fence = chr(96) * 3
-context = Path(".diagram/context/diagram-context.md")
-context.write_text(
-    (
-        "# Diagram Context Pack\\n\\nGenerated: 2026-03-12T10:00:00Z\\n\\n## system\\n\\n"
-        + fence
-        + "mermaid\\n"
-        + "graph TD\\n  A[Start] --> B[Finish]\\n"
-        + fence
-        + "\\n"
-    ),
-    encoding="utf-8",
-)
-
-meta = Path(".diagram/context/diagram-context.meta.json")
-meta.write_text(
-    json.dumps(
-        {
-            "schema_version": 1,
-            "generated_at": "2026-03-12T10:00:00Z",
-            "last_generated_epoch": 2,
-            "min_interval_seconds": 60,
-            "changed": True,
-            "context_sha256": "updated",
-        },
-        indent=2,
-    )
-    + "\\n",
-    encoding="utf-8",
-)
-PY
+jq -n --tab \
+	--arg generated_at "2026-03-12T10:00:00Z" \
+	'{
+		schema_version: 1,
+		generated_at: $generated_at,
+		last_generated_epoch: 2,
+		min_interval_seconds: 60,
+		changed: true,
+		context_sha256: "updated"
+	}' > .diagram/context/diagram-context.meta.json
 `);
 		roots.push(root);
 

@@ -685,7 +685,9 @@ describe("command-specs.ts architecture boundaries", () => {
 		);
 		const content = readFileSync(filePath, "utf-8");
 		// Verify CommandSpec is imported as type-only from ./types
-		expect(content).toMatch(/import\s+type\s+\{[^}]*CommandSpec[^}]*\}\s+from\s+["']\.\/types\.js["']/);
+		expect(content).toMatch(
+			/import\s+type\s+\{[^}]*CommandSpec[^}]*\}\s+from\s+["']\.\/types\.js["']/,
+		);
 		expect(content).not.toContain('from "../command-registry');
 	});
 
