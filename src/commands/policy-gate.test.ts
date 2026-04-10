@@ -222,7 +222,7 @@ describe("runPolicyGateCLI (non-JSON output format from PR)", () => {
 	const contractPath = "test-fixtures/contract.json";
 	let consoleInfoSpy: ReturnType<typeof vi.spyOn>;
 	let consoleErrorSpy: ReturnType<typeof vi.spyOn>;
-	let stdoutSpy: ReturnType<typeof vi.spyOn>;
+	let stdoutSpy: ReturnType<typeof vi.spyOn<typeof process.stdout, "write">>;
 
 	beforeEach(() => {
 		consoleInfoSpy = vi

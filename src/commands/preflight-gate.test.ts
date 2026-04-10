@@ -77,7 +77,7 @@ function makeFailingResult(
 
 describe("runPreflightGateCLI", () => {
 	let consoleInfoSpy: ReturnType<typeof vi.spyOn>;
-	let stdoutSpy: ReturnType<typeof vi.spyOn>;
+	let stdoutSpy: ReturnType<typeof vi.spyOn<typeof process.stdout, "write">>;
 
 	beforeEach(() => {
 		vi.clearAllMocks();

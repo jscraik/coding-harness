@@ -809,17 +809,27 @@ describe("normalisePolicyGateResult (decision fields from PR)", () => {
 		if (overrides.ok === false) {
 			return { ok: false, error: overrides.error };
 		}
+		const baseOutput = {
+			passed: true,
+			tier: "medium" as const,
+			action: "warn" as const,
+			verdict: "pass" as const,
+			violatingFiles: [],
+			...overrides.output,
+		};
+		// Only add maxAllowed if it's explicitly provided in overrides
+		if ("maxAllowed" in overrides.output && overrides.output.maxAllowed !== undefined) {
+			return {
+				ok: true,
+				output: {
+					...baseOutput,
+					maxAllowed: overrides.output.maxAllowed,
+				},
+			};
+		}
 		return {
 			ok: true,
-			output: {
-				passed: true,
-				tier: "medium",
-				action: "warn",
-				verdict: "pass",
-				maxAllowed: undefined,
-				violatingFiles: [],
-				...overrides.output,
-			},
+			output: baseOutput,
 		};
 	}
 
