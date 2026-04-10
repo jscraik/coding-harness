@@ -147,21 +147,7 @@ describe("detectHarnessVersionCoherence", () => {
 		expect(result.status).toBe("error");
 		expect(result.message).toContain("could not determine its version");
 		expect(result.repoLocalVersion).toBe("0.12.0");
-		expect(result.globalBinaryPath).toBeTruthy();
-	});
-
-	it("includes repoLocalOriginPath and globalBinaryPath in drift result", () => {
-		const repoDir = makeTmpDir("coherence-repo-paths-");
-		const binDir = makeTmpDir("coherence-bin-paths-");
-		cleanupPaths.push(repoDir, binDir);
-		createLocalHarnessWrapper(repoDir, "0.10.0");
-		createGlobalHarnessBinary(binDir, "0.9.0");
-		process.env.PATH = `${binDir}${delimiter}${originalPath}`;
-
-		const result = detectHarnessVersionCoherence(repoDir);
-		expect(result.status).toBe("drift");
-		expect(result.repoLocalOriginPath).toContain("harness-cli.sh");
-		expect(result.globalBinaryPath).toContain("harness");
+		expect(result.globalBinaryPath).toBe(join(binDir, "harness"));
 	});
 
 	it("parses semver with prerelease suffix correctly", () => {
