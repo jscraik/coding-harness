@@ -1,125 +1,98 @@
 #!/usr/bin/env node
 /**
- * Setup script for simple-git-hooks
+ * Install prek-managed git hooks for this repository.
  *
- * Run this script after 'harness init' to wire pre-commit hooks into package.json:
+ * Run from the repo root:
  *   node scripts/setup-git-hooks.js
  *
  * This script:
- *   1. Adds simple-git-hooks to devDependencies (if not present)
- *   2. Adds postinstall script to run simple-git-hooks
- *   3. Enforces required simple-git-hooks configuration
- *   4. Runs package-manager install to activate hooks
+ *   1. Verifies prek.toml exists
+ *   2. Verifies scripts/validate-commit-msg.js exists
+ *   3. Runs `prek install`
+ *   4. Prints the canonical wrapper targets used by local governance
  */
 
-import { existsSync, readFileSync, writeFileSync } from "node:fs";
-import { resolve } from "node:path";
 import { execFileSync } from "node:child_process";
+import { existsSync } from "node:fs";
+import { resolve } from "node:path";
 
-const PACKAGE_JSON_PATH = resolve(process.cwd(), "package.json");
-const REQUIRED_HOOKS = {
-	"pre-commit": "make hooks-pre-commit",
-	"commit-msg": "node scripts/validate-commit-msg.js $1",
-	"pre-push": "make hooks-pre-push",
-};
-const REQUIRED_SCRIPTS = {
-	"codestyle:validate": "bash scripts/validate-codestyle.sh",
-	"secrets:staged": "bash scripts/check-staged-secrets.sh",
-	"docs:style:changed": "bash scripts/check-doc-style.sh",
-	"test:related": "bash scripts/check-related-tests.sh",
-	"semgrep:changed": "bash scripts/check-semgrep-changed.sh",
-};
-const POSTINSTALL_BOOTSTRAP =
-	"command -v simple-git-hooks >/dev/null 2>&1 && simple-git-hooks || true";
+const PREK_CONFIG_PATH = resolve(process.cwd(), "prek.toml");
+const COMMIT_MSG_VALIDATOR_PATH = resolve(
+	process.cwd(),
+	"scripts/validate-commit-msg.js",
+);
 
+/**
+ * Remove any repository-local Git core.hooksPath configuration so prek can install its hooks.
+ *
+ * If a local `core.hooksPath` is configured, logs the configured path and unsets the local setting.
+ * Any errors (including absence of the setting) are silently ignored.
+ */
+function clearLegacyLocalHooksPath() {
+	try {
+		const configuredHooksPath = execFileSync(
+			"git",
+			["config", "--local", "--get", "core.hooksPath"],
+			{
+				encoding: "utf-8",
+				stdio: ["pipe", "pipe", "ignore"],
+			},
+		).trim();
+		if (!configuredHooksPath) {
+			return;
+		}
+
+		console.info(
+			`Removing legacy local core.hooksPath ('${configuredHooksPath}') so prek can install canonical hooks...`,
+		);
+		execFileSync("git", ["config", "--unset-all", "--local", "core.hooksPath"], {
+			stdio: "inherit",
+		});
+	} catch {
+		// No local core.hooksPath override is present.
+	}
+}
+
+/**
+ * Validate prerequisites, remove any legacy local Git hooksPath override, run `prek install`, and print installation results and recommended wrapper targets.
+ *
+ * Verifies that `prek.toml` and `scripts/validate-commit-msg.js` exist in the repository root; if either is missing, prints an error and exits with code 1. Clears any legacy local `core.hooksPath` override before invoking `prek install`. On success, prints the installed hook entrypoints and available governance wrapper targets. On failure, prints a failure message (including the underlying error message when available) and exits with code 1.
+ */
 function main() {
-	if (!existsSync(PACKAGE_JSON_PATH)) {
-		console.error("Error: package.json not found in current directory");
+	if (!existsSync(PREK_CONFIG_PATH)) {
+		console.error("Error: prek.toml not found in current directory");
 		console.error("  Run this script from your project root.");
 		process.exit(1);
 	}
 
-	let packageJson;
-	try {
-		packageJson = JSON.parse(readFileSync(PACKAGE_JSON_PATH, "utf-8"));
-	} catch {
-		console.error("Error: Failed to parse package.json");
+	if (!existsSync(COMMIT_MSG_VALIDATOR_PATH)) {
+		console.error(
+			"Error: scripts/validate-commit-msg.js is required for commit message validation.",
+		);
 		process.exit(1);
 	}
 
-	let modified = false;
-
-	// Ensure devDependencies exists
-	if (!packageJson.devDependencies) {
-		packageJson.devDependencies = {};
-	}
-
-	// Add simple-git-hooks if not present
-	const deps = packageJson.devDependencies;
-	if (!deps["simple-git-hooks"]) {
-		deps["simple-git-hooks"] = "^2.13.1";
-		console.info("✓ Added simple-git-hooks to devDependencies");
-		modified = true;
-	} else {
-		console.info("✓ simple-git-hooks already in devDependencies");
-	}
-
-	// Ensure scripts exists
-	if (!packageJson.scripts) {
-		packageJson.scripts = {};
-	}
-
-	// Add postinstall script if not present
-	const scripts = packageJson.scripts;
-	if (!scripts.postinstall) {
-		scripts.postinstall = POSTINSTALL_BOOTSTRAP;
-		console.info("✓ Added postinstall script");
-		modified = true;
-	} else if (!scripts.postinstall.includes("simple-git-hooks")) {
-		// Prepend simple-git-hooks to existing postinstall
-		scripts.postinstall = `${POSTINSTALL_BOOTSTRAP} && ${scripts.postinstall}`;
-		console.info("✓ Prepended simple-git-hooks to postinstall");
-		modified = true;
-	}
-
-	// Enforce required helper scripts used by the hook targets
-	const mergedScripts = { ...scripts, ...REQUIRED_SCRIPTS };
-	if (JSON.stringify(scripts) !== JSON.stringify(mergedScripts)) {
-		packageJson.scripts = mergedScripts;
-		console.info("✓ Enforced required hook helper scripts");
-		modified = true;
-	} else {
-		console.info("✓ Required hook helper scripts already present");
-	}
-
-	// Enforce required simple-git-hooks configuration
-	const existingHooks = packageJson["simple-git-hooks"] ?? {};
-	const mergedHooks = { ...existingHooks, ...REQUIRED_HOOKS };
-	if (JSON.stringify(existingHooks) !== JSON.stringify(mergedHooks)) {
-		packageJson["simple-git-hooks"] = mergedHooks;
-		console.info("✓ Enforced required simple-git-hooks configuration");
-		modified = true;
-	} else {
-		console.info("✓ Required simple-git-hooks configuration already present");
-	}
-
-	// Write changes if modified
-	if (modified) {
-		writeFileSync(PACKAGE_JSON_PATH, JSON.stringify(packageJson, null, 2) + "\n");
-		console.info("\n✓ package.json updated");
-	}
-
-	// Run install to activate hooks (using execFileSync for safety)
-	console.info("\nInstalling dependencies to activate hooks...");
 	try {
-		execFileSync("pnpm", ["install"], { stdio: "inherit" });
+		clearLegacyLocalHooksPath();
+		console.info("Installing prek git hooks...");
+		execFileSync("prek", ["install"], { stdio: "inherit" });
 		console.info("\n✓ Git hooks installed and active!");
-		console.info("\nHooks enabled:");
+		console.info("\nInstalled git-hook entrypoints:");
 		console.info("  • pre-commit: make hooks-pre-commit");
-		console.info("  • commit-msg: validates conventional commit format");
 		console.info("  • pre-push: make hooks-pre-push");
-	} catch {
-		console.error("\n⚠️  Failed to run pnpm install. Run it manually to activate hooks.");
+		console.info("\nAvailable governance wrapper targets:");
+		console.info("  • make hooks-pre-commit");
+		console.info('  • make hooks-commit-msg HOOK_COMMIT_MSG="feat: example"');
+		console.info("  • make hooks-pre-push");
+	} catch (error) {
+		console.error("\n⚠️  Failed to run `prek install`.");
+		if (error instanceof Error && "message" in error && error.message) {
+			console.error(`   ${error.message}`);
+		}
+		console.error(
+			"   Ensure `prek` is installed and available on PATH, then rerun the script.",
+		);
+		process.exit(1);
 	}
 }
 

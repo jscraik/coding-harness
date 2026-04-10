@@ -7,7 +7,6 @@ import {
 	REQUIRED_HOOK_SUPPORT_FILES,
 	REQUIRED_PACKAGE_SCRIPTS,
 	REQUIRED_PREK_HOOKS,
-	REQUIRED_SIMPLE_GIT_HOOKS,
 } from "../lib/policy/tooling-baseline.js";
 import {
 	EXIT_CODES,
@@ -88,15 +87,30 @@ required_package_specs=(${toolingPolicy.packagePolicy.requiredPackages.map((requ
 		name: "fixture-repo",
 		version: "1.0.0",
 		scripts: REQUIRED_PACKAGE_SCRIPTS,
-		"simple-git-hooks": REQUIRED_SIMPLE_GIT_HOOKS,
 	};
 	writeRepoFile(root, "package.json", JSON.stringify(packageJson, null, 2));
 	writeRepoFile(
 		root,
 		"prek.toml",
-		`[hooks]
-pre-commit = ${JSON.stringify(REQUIRED_PREK_HOOKS["pre-commit"])}
-pre-push = ${JSON.stringify(REQUIRED_PREK_HOOKS["pre-push"])}
+		`default_install_hook_types = ["pre-commit", "pre-push"]
+
+[[repos]]
+repo = "local"
+
+[[repos.hooks]]
+id = "pre-commit"
+name = "Pre-commit"
+entry = "${REQUIRED_PREK_HOOKS["pre-commit"].join(" && ")}"
+language = "system"
+pass_filenames = false
+
+[[repos.hooks]]
+id = "pre-push"
+name = "Pre-push"
+entry = "${REQUIRED_PREK_HOOKS["pre-push"].join(" && ")}"
+language = "system"
+pass_filenames = false
+stages = ["pre-push"]
 `,
 	);
 }
@@ -109,7 +123,6 @@ function writeUiPackageJson(
 		name: "fixture-ui-repo",
 		version: "1.0.0",
 		scripts: REQUIRED_PACKAGE_SCRIPTS,
-		"simple-git-hooks": REQUIRED_SIMPLE_GIT_HOOKS,
 		dependencies: {
 			react: "^19.0.0",
 			...(includeDesignSystemGuidance
@@ -227,7 +240,6 @@ describe("tooling-audit command", () => {
 					scripts: {
 						"secrets:staged": REQUIRED_PACKAGE_SCRIPTS["secrets:staged"],
 					},
-					"simple-git-hooks": REQUIRED_SIMPLE_GIT_HOOKS,
 				},
 				null,
 				2,
@@ -334,7 +346,6 @@ describe("tooling-audit command", () => {
 					name: "fixture-explicit-ui-repo",
 					version: "1.0.0",
 					scripts: REQUIRED_PACKAGE_SCRIPTS,
-					"simple-git-hooks": REQUIRED_SIMPLE_GIT_HOOKS,
 				},
 				null,
 				2,
@@ -385,7 +396,7 @@ describe("tooling-audit command", () => {
 		}
 	});
 
-	it("flags stale local hook policy drift", async () => {
+	it("flags legacy simple-git-hooks metadata", async () => {
 		const tempRoot = mkdtempSync(join(tmpdir(), "tooling-audit-hooks-drift-"));
 		const repoDir = join(tempRoot, "repo");
 		mkdirSync(repoDir, { recursive: true });
@@ -397,9 +408,9 @@ describe("tooling-audit command", () => {
 				{
 					name: "fixture-repo",
 					version: "1.0.0",
+					scripts: REQUIRED_PACKAGE_SCRIPTS,
 					"simple-git-hooks": {
-						...REQUIRED_SIMPLE_GIT_HOOKS,
-						"pre-push": "pnpm test",
+						"pre-commit": "make hooks-pre-commit",
 					},
 				},
 				null,
@@ -418,7 +429,9 @@ describe("tooling-audit command", () => {
 				expect(result.value.exitCode).toBe(EXIT_CODES.DRIFT_DETECTED);
 				expect(
 					result.value.result.results[0]?.findings.some((finding) =>
-						finding.description.includes("simple-git-hooks entry 'pre-push'"),
+						finding.description.includes(
+							"Legacy simple-git-hooks config should be removed",
+						),
 					),
 				).toBe(true);
 			}

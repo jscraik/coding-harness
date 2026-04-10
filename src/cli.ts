@@ -30,15 +30,35 @@ process.on("uncaughtException", (error) => {
 	handleFatalError("Uncaught Exception", error);
 });
 
+/**
+ * Prints the CLI usage and help text for the `harness` command.
+ *
+ * The output includes a "Start here (standard path)" quickstart, a "Lite mode"
+ * workflow, "Hero workflows" examples, a dynamically generated "Commands"
+ * section from the command registry, an "Options" section, and notes for
+ * Agent/Robot Mode (including `--json` usage, exit-code meanings, and typo/
+ * case-correction and suggestion behavior).
+ *
+ * Side effects: writes the help text to stdout.
+ */
 function printUsage(): void {
 	console.info("Usage: harness <command> [options]");
 	console.info("");
-	console.info("Start here (minimum viable path):");
+	console.info("Start here (standard path):");
 	console.info("  1. pnpm add -g @brainwav/coding-harness");
 	console.info("  2. harness init --dry-run");
 	console.info("  3. harness init --track");
 	console.info("  4. harness contract validate");
 	console.info("  5. harness health --json");
+	console.info("");
+	console.info("Lite mode (solo-dev / small team, under 10 minutes):");
+	console.info("  1. harness init --minimal --track");
+	console.info("  2. harness contract init --preset lite --force");
+	console.info("  3. harness contract validate");
+	console.info("  4. harness check --json");
+	console.info(
+		"  5. Upgrade later: harness contract init --preset standard --force",
+	);
 	console.info("");
 	console.info("Hero workflows:");
 	console.info(

@@ -22,12 +22,40 @@ import { DEFAULT_CONTRACT, DEFAULT_TOOLING_POLICY } from "./types.js";
 // ─── Preset type ─────────────────────────────────────────────────────────────
 
 export type ContractPreset = "minimal" | "standard" | "full";
+export type ContractPresetInput = ContractPreset | "lite";
 
 export const CONTRACT_PRESETS: ContractPreset[] = [
 	"minimal",
 	"standard",
 	"full",
 ];
+
+export const CONTRACT_PRESET_INPUTS: ContractPresetInput[] = [
+	...CONTRACT_PRESETS,
+	"lite",
+];
+
+const PRESET_NORMALIZATION_MAP = {
+	lite: "minimal",
+	minimal: "minimal",
+	standard: "standard",
+	full: "full",
+} as const satisfies Record<ContractPresetInput, ContractPreset>;
+
+/**
+ * Map a user-supplied preset identifier (including aliases) to a canonical contract preset.
+ *
+ * @param preset - Input preset name or alias (for example `"lite"`, `"minimal"`, `"standard"`, `"full"`).
+ * @returns The canonical `ContractPreset` for recognized inputs, or `undefined` if the input is not a supported preset.
+ */
+export function normalizeContractPreset(
+	preset: string,
+): ContractPreset | undefined {
+	if (!Object.hasOwn(PRESET_NORMALIZATION_MAP, preset)) {
+		return undefined;
+	}
+	return PRESET_NORMALIZATION_MAP[preset as ContractPresetInput];
+}
 
 // ─── Shared building blocks ───────────────────────────────────────────────────
 
