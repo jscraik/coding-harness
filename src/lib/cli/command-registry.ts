@@ -2331,14 +2331,35 @@ const SAFE_FIRST_ALTERNATIVES_BY_NAME: Partial<Record<string, string[]>> = {
 	"automation-run": ["check --json"],
 };
 
+/**
+ * Determine the command category for a given command name or alias, falling back to a default when the name is not recognized.
+ *
+ * @param name - The canonical command name or alias to classify
+ * @returns The command's category; returns `"drift-search-evidence"` when the name is not present in the category mapping
+ */
 function getCommandCategory(name: string): CommandCategory {
 	return COMMAND_CATEGORY_BY_NAME[name] ?? "drift-search-evidence";
 }
 
+/**
+ * Determine whether a command name is considered mutating or read-only.
+ *
+ * @param name - The command name or alias to classify
+ * @returns `write` if the command performs mutating actions, `read` otherwise
+ */
 function getCommandMutability(name: string): CommandMutability {
 	return WRITE_COMMANDS.has(name) ? "write" : "read";
 }
 
+/**
+ * Determines the retryability policy for a command.
+ *
+ * Looks up an explicit per-command override and, if none exists, returns `"safe"` for read commands and `"conditional"` for write commands.
+ *
+ * @param name - The canonical command name
+ * @param mutability - The command's mutability (`"read"` or `"write"`)
+ * @returns `"safe"`, `"conditional"`, or `"manual"` indicating how the command should be retried; explicit per-command overrides take precedence
+ */
 function getCommandRetryability(
 	name: string,
 	mutability: CommandMutability,
@@ -2348,6 +2369,13 @@ function getCommandRetryability(
 	return mutability === "read" ? "safe" : "conditional";
 }
 
+/**
+ * Produce a machine-readable CommandCapability from a CommandSpec by attaching
+ * registry-derived metadata (category, mutability, retryability and metadata lists).
+ *
+ * @param spec - The command specification to convert; the command `name` is used to derive category, mutability, retryability, and any per-command metadata configured in the registry.
+ * @returns A CommandCapability object containing the command's name, aliases, summary, optional example, category, mutability, required flags, expected artifacts, retryability, and any "safe first" alternative commands.
+ */
 function toCommandCapability(spec: CommandSpec): CommandCapability {
 	const mutability = getCommandMutability(spec.name);
 	return {
@@ -2366,6 +2394,12 @@ function toCommandCapability(spec: CommandSpec): CommandCapability {
 	};
 }
 
+/**
+ * Builds a machine-readable catalog document describing the provided command capabilities.
+ *
+ * @param commands - Array of command capability objects to include in the catalog
+ * @returns A catalog document containing the schema version, an ISO 8601 `generatedAt` timestamp, the total `commandCount`, and the supplied `commands` list
+ */
 function buildCommandCapabilityCatalogDocument(
 	commands: CommandCapability[],
 ): CommandCapabilityCatalogDocument {
@@ -2377,6 +2411,11 @@ function buildCommandCapabilityCatalogDocument(
 	};
 }
 
+/**
+ * Produces the machine-readable capability metadata for every command in the registry.
+ *
+ * @returns An array of `CommandCapability` objects describing each registered command, including category, mutability, retryability, required flags, expected artifacts, and other command metadata.
+ */
 export function getRegistryCommandCapabilities(): CommandCapability[] {
 	return COMMAND_SPECS.map((spec) => toCommandCapability(spec));
 }
@@ -2394,6 +2433,11 @@ export const MIGRATED_COMMAND_AND_ALIAS_NAMES = COMMAND_SPECS.flatMap(
 	(spec) => [spec.name, ...(spec.aliases ?? [])],
 );
 
+/**
+ * Produce a list of registry command help rows containing each command's name and summary.
+ *
+ * @returns An array of objects each with `name` and `summary` for every registered command.
+ */
 export function getRegistryCommandHelpRows(): Array<{
 	name: string;
 	summary: string;
