@@ -24,7 +24,6 @@ function createLocalHarnessWrapper(repoDir: string, version: string): void {
 	mkdirSync(scriptsDir, { recursive: true });
 	writeExecutable(
 		join(scriptsDir, "harness-cli.sh"),
-		`#!/usr/bin/env bash\necho "harness v${version}"\n`,
 		`#!/usr/bin/env bash\n[[ "$1" == "--version" ]] && echo "harness v${version}" && exit 0\necho "harness v${version}"\n`,
 	);
 }
@@ -33,7 +32,6 @@ function createGlobalHarnessBinary(binDir: string, version: string): void {
 	mkdirSync(binDir, { recursive: true });
 	writeExecutable(
 		join(binDir, "harness"),
-		`#!/usr/bin/env bash\necho "harness v${version}"\n`,
 		`#!/usr/bin/env bash\n[[ "$1" == "--version" ]] && echo "harness v${version}" && exit 0\necho "harness v${version}"\n`,
 	);
 }
@@ -100,7 +98,7 @@ describe("detectHarnessVersionCoherence", () => {
 		// Use a PATH that has no harness binary (empty bin dir)
 		const emptyBinDir = makeTmpDir("coherence-emptybin-");
 		cleanupPaths.push(emptyBinDir);
-		process.env.PATH = `${emptyBinDir}${delimiter}${originalPath}`;
+		process.env.PATH = emptyBinDir;
 
 		const result = detectHarnessVersionCoherence(repoDir);
 		expect(result.status).toBe("ok");
