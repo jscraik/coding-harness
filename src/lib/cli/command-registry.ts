@@ -2475,13 +2475,12 @@ export interface FuzzyCommandMatch {
 }
 
 /**
- * Try to find a registry command that matches a potentially malformed name.
+ * Resolve a possibly malformed command name to a registered command.
  *
- * Resolution order:
- * 1. Normalization (camelCase/snake_case → kebab-case): free correction, high confidence.
- * 2. Levenshtein near-match against canonical names and aliases.
+ * Attempts a deterministic normalization (camelCase/snake_case → kebab-case) first; if that fails, performs a Levenshtein near-match against command names and aliases. Returns a match only when normalization succeeds or the edit distance is within the fuzzy threshold.
  *
- * Returns `undefined` when no confident match exists.
+ * @param name - The input command name to resolve (may be malformed or use different casing/formatting)
+ * @returns A `FuzzyCommandMatch` describing the matched spec, confidence (`"normalized"` or `"near"`), and edit distance; `undefined` if no confident match is found.
  */
 export function fuzzyFindCommand(name: string): FuzzyCommandMatch | undefined {
 	// 1. Normalization pass
