@@ -462,7 +462,9 @@ describe("runDoctor — config checks", () => {
 		const ctxCheck = report.checks.find(
 			(c) => c.id === "config:contextIntegrityPolicy",
 		);
-		const ciCheck = report.checks.find((c) => c.id === "config:ciProviderPolicy");
+		const ciCheck = report.checks.find(
+			(c) => c.id === "config:ciProviderPolicy",
+		);
 
 		// Both should warn because Object.hasOwn returns false for prototype keys
 		expect(ctxCheck?.status).toBe("warn");

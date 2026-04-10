@@ -17,7 +17,10 @@ import type {
 	LinearGateOutput,
 	LinearGateResult,
 } from "../../commands/linear-gate.js";
-import type { PolicyGateResult } from "../../commands/policy-gate.js";
+import type {
+	PolicyGateOutput,
+	PolicyGateResult,
+} from "../../commands/policy-gate.js";
 import type { PreflightGateResult } from "../preflight/types.js";
 import type { ReviewGateResult } from "../review-gate/types.js";
 import {
@@ -803,7 +806,7 @@ describe("normaliseDocsGateResult (meta fields from PR)", () => {
 describe("normalisePolicyGateResult (decision fields from PR)", () => {
 	function makePolicyResult(
 		overrides:
-			| { ok: true; output: Partial<PolicyGateResult & { ok: true }>["output"] }
+			| { ok: true; output: Partial<PolicyGateOutput> }
 			| { ok: false; error: { code: string; message: string } },
 	): PolicyGateResult {
 		if (overrides.ok === false) {
@@ -816,7 +819,6 @@ describe("normalisePolicyGateResult (decision fields from PR)", () => {
 				tier: "medium",
 				action: "warn",
 				verdict: "pass",
-				maxAllowed: undefined,
 				violatingFiles: [],
 				...overrides.output,
 			},
