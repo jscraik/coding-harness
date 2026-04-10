@@ -151,31 +151,35 @@ describe("command registry", () => {
 
 	it("exposes a stable machine-readable command capability catalog", () => {
 		const infoSpy = vi.spyOn(console, "info").mockImplementation(() => {});
-		const dispatch = dispatchRegistryCommand("commands", [
-			"commands",
-			"--json",
-		]);
-		expect(dispatch?.result).toBe(0);
+		try {
+			const dispatch = dispatchRegistryCommand("commands", [
+				"commands",
+				"--json",
+			]);
+			expect(dispatch?.result).toBe(0);
 
-		const output = infoSpy.mock.calls.at(-1)?.[0];
-		expect(typeof output).toBe("string");
-		const parsed = JSON.parse(String(output));
-		expect(parsed.schemaVersion).toBe(COMMAND_CATALOG_SCHEMA_VERSION);
-		expect(parsed.commandCount).toBe(MIGRATED_COMMAND_NAMES.length);
-		expect(Array.isArray(parsed.commands)).toBe(true);
+			const output = infoSpy.mock.calls.at(-1)?.[0];
+			expect(typeof output).toBe("string");
+			const parsed = JSON.parse(String(output));
+			expect(parsed.schemaVersion).toBe(COMMAND_CATALOG_SCHEMA_VERSION);
+			expect(parsed.commandCount).toBe(MIGRATED_COMMAND_NAMES.length);
+			expect(Array.isArray(parsed.commands)).toBe(true);
 
-		const policyGate = parsed.commands.find(
-			(item: { name: string }) => item.name === "policy-gate",
-		);
-		expect(policyGate).toBeDefined();
-		expect(policyGate).toMatchObject({
-			category: "review-policy",
-			mutability: "read",
-			requiredFlags: ["--files"],
-		});
-		expect(Array.isArray(policyGate.expectedArtifacts)).toBe(true);
-		expect(typeof policyGate.retryability).toBe("string");
-		expect(Array.isArray(policyGate.safeFirstAlternatives)).toBe(true);
+			const policyGate = parsed.commands.find(
+				(item: { name: string }) => item.name === "policy-gate",
+			);
+			expect(policyGate).toBeDefined();
+			expect(policyGate).toMatchObject({
+				category: "review-policy",
+				mutability: "read",
+				requiredFlags: ["--files"],
+			});
+			expect(Array.isArray(policyGate.expectedArtifacts)).toBe(true);
+			expect(typeof policyGate.retryability).toBe("string");
+			expect(Array.isArray(policyGate.safeFirstAlternatives)).toBe(true);
+		} finally {
+			infoSpy.mockRestore();
+		}
 	});
 
 	it("derives help rows from the capability catalog", () => {

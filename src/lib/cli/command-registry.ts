@@ -2279,7 +2279,6 @@ const WRITE_COMMANDS = new Set<string>([
 	"branch-protect",
 	"linear",
 	"linear-gate",
-	"linear-sync",
 	"automation-run",
 	"gap-case",
 	"remediate",
