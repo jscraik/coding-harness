@@ -2,324 +2,69 @@ import type { CommandSpec, RegistryDispatchResult } from "./registry/types.js";
 
 export type { CommandSpec, RegistryDispatchResult };
 
-interface GroupedActionSpec {
-	command: string;
+export const COMMAND_CATALOG_SCHEMA_VERSION = "harness-command-catalog/v1";
+
+export type CommandCategory =
+	| "discovery"
+	| "bootstrap-governance"
+	| "review-policy"
+	| "workflow-linear"
+	| "pilot-remediation"
+	| "drift-search-evidence"
+	| "uncategorized";
+
+export type CommandMutability = "read" | "write";
+export type CommandRetryability = "safe" | "conditional" | "manual";
+
+export interface CommandCapability {
+	name: string;
+	aliases: string[];
 	summary: string;
+	example?: string;
+	category: CommandCategory;
+	mutability: CommandMutability;
+	requiredFlags: string[];
+	expectedArtifacts: string[];
+	retryability: CommandRetryability;
+	safeFirstAlternatives: string[];
 }
 
-/**
- * Extracts the target registry command names from a record of grouped actions.
- *
- * @param actions - A mapping of action keys to their GroupedActionSpec; each spec must include a `command` field identifying the registry command to dispatch to
- * @returns An array of the `command` values from each provided `GroupedActionSpec`
- */
-function groupedActionCommands(
-	actions: Record<string, GroupedActionSpec>,
-): string[] {
-	return Object.values(actions).map((spec) => spec.command);
+interface CommandCapabilityCatalogDocument {
+	schemaVersion: typeof COMMAND_CATALOG_SCHEMA_VERSION;
+	generatedAt: string;
+	commandCount: number;
+	commands: CommandCapability[];
 }
-
-/**
- * Route a top-level command name plus args into the registry and return its exit code.
- *
- * If the command is not registered, logs an internal routing error to stderr and
- * returns exit code `1`. Otherwise forwards to the matched command spec and
- * returns that command's result.
- *
- * @param command - The top-level command name to route
- * @param args - Arguments to pass to the routed command (will be appended after the routed name)
- * @returns The routed command's exit code, or `1` if the command was not registered
- */
-function dispatchRoutedCommand(
-	command: string,
-	args: string[],
-): number | Promise<number> {
-	const routed = dispatchRegistryCommand(command, [command, ...args]);
-	if (!routed) {
-		console.error(
-			`Internal routing error: command "${command}" is not registered.`,
-		);
-		return 1;
-	}
-	return routed.result;
-}
-
-/**
- * Dispatches a grouped CLI action to its mapped registry command.
- *
- * Validates that the first positional token in `args` exists and is not a flag-like value.
- * If the action is missing or starts with `-`, logs an error listing valid actions and returns `2`.
- * If the normalized action name is not present in `actions`, logs an error listing valid actions and returns `2`.
- * Otherwise forwards execution to the mapped command and returns that command's exit code.
- *
- * @param groupName - Name of the group (used in error messages)
- * @param args - Full argument vector for the grouped command; the first element is treated as the action
- * @param actions - Mapping of action names (lowercased) to their target command specs
- * @returns The exit code returned by the dispatched command, or `2` for missing/unknown actions
- */
-function runGroupedCommand(
-	groupName: string,
-	args: string[],
-	actions: Record<string, GroupedActionSpec>,
-): number | Promise<number> {
-	const jsonFlag = args.includes("--json");
-	const action = args[0];
-	if (!action || action.startsWith("-")) {
-		if (jsonFlag) {
-			console.info(
-				JSON.stringify({
-					error: `${groupName} expects an action`,
-					availableActions: Object.keys(actions),
-				}),
-			);
-		} else {
-			console.error(
-				`${groupName} expects an action: ${Object.keys(actions).join(", ")}.`,
-			);
-		}
-		return 2;
-	}
-
-	const normalizedAction = action.toLowerCase();
-	if (!Object.hasOwn(actions, normalizedAction)) {
-		if (jsonFlag) {
-			console.info(
-				JSON.stringify({
-					error: `Unknown ${groupName} action "${action}"`,
-					availableActions: Object.keys(actions),
-				}),
-			);
-		} else {
-			console.error(
-				`Unknown ${groupName} action "${action}". Expected: ${Object.keys(actions).join(", ")}.`,
-			);
-		}
-		return 2;
-	}
-	const mapped = actions[normalizedAction];
-	if (!mapped) {
-		console.error(
-			`Internal routing error: ${groupName} action "${action}" has no mapping.`,
-		);
-		return 1;
-	}
-
-	return dispatchRoutedCommand(mapped.command, args.slice(1));
-}
-
-const REPO_ACTIONS: Record<string, GroupedActionSpec> = {
-	check: {
-		command: "check",
-		summary: "Zero-config repo health snapshot",
-	},
-	doctor: {
-		command: "doctor",
-		summary: "Diagnose installation and environment issues",
-	},
-	health: {
-		command: "health",
-		summary: "Quick service/configuration health check",
-	},
-	init: {
-		command: "init",
-		summary: "Install harness in current repository",
-	},
-	upgrade: {
-		command: "upgrade",
-		summary: "Upgrade harness to latest version",
-	},
-	contract: {
-		command: "contract",
-		summary: "Init/validate/inspect contract",
-	},
-	verify: {
-		command: "verify-work",
-		summary: "Run canonical verification workflow",
-	},
-	eject: {
-		command: "eject",
-		summary: "Remove harness-managed files safely",
-	},
-};
-
-const GATE_ACTIONS: Record<string, GroupedActionSpec> = {
-	policy: {
-		command: "policy-gate",
-		summary: "Policy expectations from changed files",
-	},
-	preflight: {
-		command: "preflight-gate",
-		summary: "Fast checks before expensive operations",
-	},
-	review: {
-		command: "review-gate",
-		summary: "PR review readiness with SHA enforcement",
-	},
-	docs: {
-		command: "docs-gate",
-		summary: "Documentation parity enforcement",
-	},
-	linear: {
-		command: "linear-gate",
-		summary: "Linear-first intake and linking policy",
-	},
-	"pr-template": {
-		command: "pr-template-gate",
-		summary: "PR template completeness and placeholder checks",
-	},
-	license: {
-		command: "license-gate",
-		summary: "Open-source license policy checks",
-	},
-	plan: {
-		command: "plan-gate",
-		summary: "Plan artifact quality checks",
-	},
-	prompt: {
-		command: "prompt-gate",
-		summary: "Prompt template policy checks",
-	},
-	brainstorm: {
-		command: "brainstorm-gate",
-		summary: "Brainstorm artifact checks",
-	},
-	drift: {
-		command: "drift-gate",
-		summary: "Governance drift detection",
-	},
-	memory: {
-		command: "memory-gate",
-		summary: "Local memory workflow compliance checks",
-	},
-	observability: {
-		command: "observability-gate",
-		summary: "Metrics cardinality guardrails",
-	},
-	authz: {
-		command: "check-authz",
-		summary: "Authorization policy checks",
-	},
-	environment: {
-		command: "check-environment",
-		summary: "Pilot environment policy checks",
-	},
-	"local-memory": {
-		command: "local-memory-preflight",
-		summary: "Structured Local Memory smoke checks",
-	},
-};
-
-const WORK_ACTIONS: Record<string, GroupedActionSpec> = {
-	risk: {
-		command: "risk-tier",
-		summary: "Classify changed files by risk tier",
-	},
-	blast: {
-		command: "blast-radius",
-		summary: "Determine checks required by changed files",
-	},
-	simulate: {
-		command: "simulate",
-		summary: "Simulate contract transitions",
-	},
-	replay: {
-		command: "replay",
-		summary: "Replay automation traces",
-	},
-	remediate: {
-		command: "remediate",
-		summary: "Plan/execute deterministic remediation",
-	},
-	automation: {
-		command: "automation-run",
-		summary: "Execute packaged automation runs",
-	},
-	diff: {
-		command: "diff-budget",
-		summary: "Enforce diff budget constraints",
-	},
-	gap: {
-		command: "gap-case",
-		summary: "Open/resolve production gap cases",
-	},
-	gardener: {
-		command: "gardener",
-		summary: "Detect stale docs and broken links",
-	},
-};
-
-const UI_ACTIONS: Record<string, GroupedActionSpec> = {
-	fast: {
-		command: "ui:fast",
-		summary: "Storybook-first local UI loop",
-	},
-	verify: {
-		command: "ui:verify",
-		summary: "Playwright smoke verification with evidence",
-	},
-	explore: {
-		command: "ui:explore",
-		summary: "Agent-browser exploratory testing",
-	},
-};
-
-const PILOT_ACTIONS: Record<string, GroupedActionSpec> = {
-	evaluate: {
-		command: "pilot-evaluate",
-		summary: "Evaluate pilot safety criteria",
-	},
-	rollback: {
-		command: "pilot-rollback",
-		summary: "Roll back pilot to a safe baseline",
-	},
-};
-
-const DEFAULT_HELP_HIDDEN_COMMANDS = new Set<string>([
-	...groupedActionCommands(REPO_ACTIONS),
-	...groupedActionCommands(GATE_ACTIONS),
-	...groupedActionCommands(WORK_ACTIONS),
-	...groupedActionCommands(UI_ACTIONS),
-	...groupedActionCommands(PILOT_ACTIONS),
-]);
 
 const COMMAND_SPECS: CommandSpec[] = [
 	{
-		name: "repo",
+		name: "commands",
 		summary:
-			"Grouped repo lifecycle commands (check, init, verify, upgrade, contract, eject)",
-		example: "repo check --json",
-		errorLabel: "Repo Command Error",
-		execute: (args) => runGroupedCommand("repo", args, REPO_ACTIONS),
-	},
-	{
-		name: "gate",
-		summary:
-			"Grouped governance/policy gates (policy, preflight, docs, review, drift, etc.)",
-		example: "gate policy --files src/auth.ts --json",
-		errorLabel: "Gate Command Error",
-		execute: (args) => runGroupedCommand("gate", args, GATE_ACTIONS),
-	},
-	{
-		name: "work",
-		summary:
-			"Grouped change-analysis and remediation flows (risk, blast, simulate, replay, remediate)",
-		example: "work blast --files src/auth.ts --json",
-		errorLabel: "Work Command Error",
-		execute: (args) => runGroupedCommand("work", args, WORK_ACTIONS),
-	},
-	{
-		name: "ui",
-		summary: "Grouped UI loops (fast, verify, explore)",
-		example: "ui verify --json",
-		errorLabel: "UI Command Error",
-		execute: (args) => runGroupedCommand("ui", args, UI_ACTIONS),
-	},
-	{
-		name: "pilot",
-		summary: "Grouped pilot lifecycle commands (evaluate, rollback)",
-		example: "pilot evaluate --json",
-		errorLabel: "Pilot Command Error",
-		execute: (args) => runGroupedCommand("pilot", args, PILOT_ACTIONS),
+			"List machine-readable command capability metadata for humans and agents",
+		example: "commands --json",
+		errorLabel: "Commands Catalog Error",
+		execute: (args) => {
+			const jsonFlag = args.includes("--json");
+			const capabilities = getRegistryCommandCapabilities();
+			if (jsonFlag) {
+				const payload = buildCommandCapabilityCatalogDocument(capabilities);
+				console.info(JSON.stringify(payload));
+				return 0;
+			}
+
+			console.info("Command capability catalog:");
+			for (const capability of capabilities) {
+				const category = capability.category.padEnd(22, " ");
+				console.info(
+					`  ${capability.name.padEnd(24, " ")} ${category} ${capability.mutability}`,
+				);
+			}
+			console.info("");
+			console.info(
+				'Run "harness commands --json" for stable machine-readable metadata.',
+			);
+			return 0;
+		},
 	},
 	{
 		name: "linear",
@@ -2364,6 +2109,224 @@ const COMMAND_SPECS: CommandSpec[] = [
 	},
 ];
 
+const COMMAND_CATEGORY_BY_NAME: Partial<Record<string, CommandCategory>> = {
+	commands: "discovery",
+	init: "bootstrap-governance",
+	eject: "bootstrap-governance",
+	check: "bootstrap-governance",
+	doctor: "bootstrap-governance",
+	health: "bootstrap-governance",
+	contract: "bootstrap-governance",
+	upgrade: "bootstrap-governance",
+	"ci-migrate": "bootstrap-governance",
+	"branch-protect": "bootstrap-governance",
+	"verify-work": "bootstrap-governance",
+	"verify-coderabbit": "bootstrap-governance",
+	preset: "bootstrap-governance",
+	"symphony-check": "bootstrap-governance",
+
+	"policy-gate": "review-policy",
+	"preflight-gate": "review-policy",
+	"review-gate": "review-policy",
+	"docs-gate": "review-policy",
+	"plan-gate": "review-policy",
+	"brainstorm-gate": "review-policy",
+	"prompt-gate": "review-policy",
+	"pr-template-gate": "review-policy",
+	"license-gate": "review-policy",
+	"check-authz": "review-policy",
+	"check-environment": "review-policy",
+	"local-memory-preflight": "review-policy",
+	"blast-radius": "review-policy",
+	"risk-tier": "review-policy",
+	"diff-budget": "review-policy",
+	"observability-gate": "review-policy",
+	"silent-error": "review-policy",
+	"memory-gate": "review-policy",
+
+	linear: "workflow-linear",
+	"linear-gate": "workflow-linear",
+	"workflow:generate": "workflow-linear",
+
+	"pilot-evaluate": "pilot-remediation",
+	"pilot-rollback": "pilot-remediation",
+	simulate: "pilot-remediation",
+	"automation-run": "pilot-remediation",
+	"gap-case": "pilot-remediation",
+	remediate: "pilot-remediation",
+	replay: "pilot-remediation",
+
+	"drift-gate": "drift-search-evidence",
+	"org-audit": "drift-search-evidence",
+	"tooling-audit": "drift-search-evidence",
+	gardener: "drift-search-evidence",
+	"context-health": "drift-search-evidence",
+	search: "drift-search-evidence",
+	context: "drift-search-evidence",
+	"index-context": "drift-search-evidence",
+	"evidence-verify": "drift-search-evidence",
+	"ui:fast": "drift-search-evidence",
+	"ui:verify": "drift-search-evidence",
+	"ui:explore": "drift-search-evidence",
+};
+
+const WRITE_COMMANDS = new Set<string>([
+	"init",
+	"eject",
+	"upgrade",
+	"ci-migrate",
+	"branch-protect",
+	"linear",
+	"linear-gate",
+	"automation-run",
+	"gap-case",
+	"remediate",
+	"pilot-rollback",
+]);
+
+const REQUIRED_FLAGS_BY_NAME: Partial<Record<string, string[]>> = {
+	"policy-gate": ["--files"],
+	"preflight-gate": ["--files"],
+	"risk-tier": ["--files"],
+	"blast-radius": ["--files"],
+	"review-gate": ["--token", "--owner", "--repo", "--pr", "--sha"],
+	"workflow:generate": ["--source"],
+	"linear-gate": ["--branch", "--pr-title", "--pr-body"],
+};
+
+const EXPECTED_ARTIFACTS_BY_NAME: Partial<Record<string, string[]>> = {
+	"check-environment": ["artifacts/policy/environment-attestation.json"],
+	"context-health": ["artifacts/context-integrity/index-source-inventory.json"],
+	"ci-migrate": [".harness/ci-provider-transition-status.json"],
+};
+
+const RETRYABILITY_BY_NAME: Partial<Record<string, CommandRetryability>> = {
+	commands: "safe",
+	check: "safe",
+	doctor: "safe",
+	health: "safe",
+	contract: "safe",
+	"check-environment": "safe",
+	"check-authz": "safe",
+	"local-memory-preflight": "safe",
+	search: "safe",
+	context: "safe",
+	"index-context": "conditional",
+	"automation-run": "manual",
+	"pilot-rollback": "manual",
+	"branch-protect": "manual",
+};
+
+const SAFE_FIRST_ALTERNATIVES_BY_NAME: Partial<Record<string, string[]>> = {
+	init: ["init --dry-run", "check --json"],
+	upgrade: ["upgrade --dry-run", "contract validate --json"],
+	"ci-migrate": ["ci-migrate prepare --dry-run --json"],
+	remediate: ["remediate run --json"],
+	linear: ["linear prepare --issue <KEY>", "linear triage --dry-run --json"],
+	"linear-gate": ["linear prepare --issue <KEY>"],
+	"branch-protect": ["check-authz --json"],
+	"pilot-rollback": ["pilot-evaluate --artifacts <PATH> --json"],
+	"automation-run": ["check --json"],
+};
+
+/**
+ * Determine the command category for a given command name or alias, falling back to a default when the name is not recognized.
+ *
+ * @param name - The canonical command name or alias to classify
+ * @returns The command's category; returns `"uncategorized"` when the name is not present in the category mapping
+ */
+function getCommandCategory(name: string): CommandCategory {
+	const category = COMMAND_CATEGORY_BY_NAME[name];
+	if (!category) {
+		if (process.env.NODE_ENV !== "production") {
+			throw new Error(
+				`Command "${name}" is not categorized in COMMAND_CATEGORY_BY_NAME. Add an entry to prevent silent mislabeling.`,
+			);
+		}
+		return "uncategorized";
+	}
+	return category;
+}
+
+/**
+ * Determine whether a command name is considered mutating or read-only.
+ *
+ * @param name - The command name or alias to classify
+ * @returns `write` if the command performs mutating actions, `read` otherwise
+ */
+function getCommandMutability(name: string): CommandMutability {
+	return WRITE_COMMANDS.has(name) ? "write" : "read";
+}
+
+/**
+ * Determines the retryability policy for a command.
+ *
+ * Looks up an explicit per-command override and, if none exists, returns `"safe"` for read commands and `"conditional"` for write commands.
+ *
+ * @param name - The canonical command name
+ * @param mutability - The command's mutability (`"read"` or `"write"`)
+ * @returns `"safe"`, `"conditional"`, or `"manual"` indicating how the command should be retried; explicit per-command overrides take precedence
+ */
+function getCommandRetryability(
+	name: string,
+	mutability: CommandMutability,
+): CommandRetryability {
+	const explicit = RETRYABILITY_BY_NAME[name];
+	if (explicit) return explicit;
+	return mutability === "read" ? "safe" : "conditional";
+}
+
+/**
+ * Produce a machine-readable CommandCapability from a CommandSpec by attaching
+ * registry-derived metadata (category, mutability, retryability and metadata lists).
+ *
+ * @param spec - The command specification to convert; the command `name` is used to derive category, mutability, retryability, and any per-command metadata configured in the registry.
+ * @returns A CommandCapability object containing the command's name, aliases, summary, optional example, category, mutability, required flags, expected artifacts, retryability, and any "safe first" alternative commands.
+ */
+function toCommandCapability(spec: CommandSpec): CommandCapability {
+	const mutability = getCommandMutability(spec.name);
+	return {
+		name: spec.name,
+		aliases: [...(spec.aliases ?? [])],
+		summary: spec.summary,
+		...(spec.example ? { example: spec.example } : {}),
+		category: getCommandCategory(spec.name),
+		mutability,
+		requiredFlags: [...(REQUIRED_FLAGS_BY_NAME[spec.name] ?? [])],
+		expectedArtifacts: [...(EXPECTED_ARTIFACTS_BY_NAME[spec.name] ?? [])],
+		retryability: getCommandRetryability(spec.name, mutability),
+		safeFirstAlternatives: [
+			...(SAFE_FIRST_ALTERNATIVES_BY_NAME[spec.name] ?? []),
+		],
+	};
+}
+
+/**
+ * Builds a machine-readable catalog document describing the provided command capabilities.
+ *
+ * @param commands - Array of command capability objects to include in the catalog
+ * @returns A catalog document containing the schema version, an ISO 8601 `generatedAt` timestamp, the total `commandCount`, and the supplied `commands` list
+ */
+function buildCommandCapabilityCatalogDocument(
+	commands: CommandCapability[],
+): CommandCapabilityCatalogDocument {
+	return {
+		schemaVersion: COMMAND_CATALOG_SCHEMA_VERSION,
+		generatedAt: new Date().toISOString(),
+		commandCount: commands.length,
+		commands,
+	};
+}
+
+/**
+ * Produces the machine-readable capability metadata for every command in the registry.
+ *
+ * @returns An array of `CommandCapability` objects describing each registered command, including category, mutability, retryability, required flags, expected artifacts, and other command metadata.
+ */
+export function getRegistryCommandCapabilities(): CommandCapability[] {
+	return COMMAND_SPECS.map((spec) => toCommandCapability(spec));
+}
+
 const COMMAND_INDEX = new Map<string, CommandSpec>();
 for (const spec of COMMAND_SPECS) {
 	COMMAND_INDEX.set(spec.name, spec);
@@ -2377,29 +2340,20 @@ export const MIGRATED_COMMAND_AND_ALIAS_NAMES = COMMAND_SPECS.flatMap(
 	(spec) => [spec.name, ...(spec.aliases ?? [])],
 );
 
-export interface RegistryCommandHelpOptions {
-	includeLegacy?: boolean;
-}
-
 /**
- * Builds the list of registry command rows used for help output, optionally including legacy/internal delegated commands.
+ * Produce a list of registry command help rows containing each command's name and summary.
  *
- * @param options - Help generation options.
- * @param options.includeLegacy - When `true`, include commands whose names are internal delegated targets; when `false` (default), omit those commands from the returned rows.
- * @returns An array of rows with `name` and `summary` for each command that should appear in help output.
+ * @returns An array of objects each with `name` and `summary` for every registered command.
  */
-export function getRegistryCommandHelpRows(
-	options: RegistryCommandHelpOptions = {},
-): Array<{
+export function getRegistryCommandHelpRows(_options?: {
+	includeLegacy?: boolean;
+}): Array<{
 	name: string;
 	summary: string;
 }> {
-	const includeLegacy = options.includeLegacy ?? false;
-	return COMMAND_SPECS.filter(
-		(spec) => includeLegacy || !DEFAULT_HELP_HIDDEN_COMMANDS.has(spec.name),
-	).map((spec) => ({
-		name: spec.name,
-		summary: spec.summary,
+	return getRegistryCommandCapabilities().map((capability) => ({
+		name: capability.name,
+		summary: capability.summary,
 	}));
 }
 

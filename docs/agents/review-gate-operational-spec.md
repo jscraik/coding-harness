@@ -72,6 +72,7 @@ S24 FAILED_SYSTEM_ERROR (terminal)
 
 ## 5. Transition Table (Canonical) — S | E | G | A | N
 
+<!-- vale off -->
 | S | E | G | A | N |
 |---|---|---|---|---|
 | `S0 IDLE` | `cmd.review-gate` | ¬G_validSha | A_logValidationError | `S18 FAILED_VALIDATION` |
@@ -105,6 +106,7 @@ S24 FAILED_SYSTEM_ERROR (terminal)
 | `S? *` | `error.uncaught` | G_notFoundError | A_logNotFound | `S22 FAILED_NOT_FOUND` |
 | `S? *` | `error.uncaught` | G_permissionError | A_logPermissionDenied | `S23 FAILED_PERMISSION_DENIED` |
 | `S? *` | `error.uncaught` | G_systemError | A_logSystemError | `S24 FAILED_SYSTEM_ERROR` |
+<!-- vale on -->
 
 ## 6. Invariants
 
@@ -124,7 +126,7 @@ S24 FAILED_SYSTEM_ERROR (terminal)
 - PR data fetched once at start (cached in `pullRequest` variable)
 - Check polling fetches fresh data per iteration (no caching)
 - Bot-only thread auto-resolution is idempotent (resolving already-resolved is no-op)
-- Rerun comment deduplication by SHA (`hasRerunCommentForSha`)
+- Rerun comment de-duplication by SHA (`hasRerunCommentForSha`)
 - Confidence rubric is deterministic (same inputs → same score/rationale)
 
 ## 8. Mermaid State Diagram (Derived Strictly from Table)
