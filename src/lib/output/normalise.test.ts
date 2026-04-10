@@ -812,13 +812,16 @@ describe("normalisePolicyGateResult (decision fields from PR)", () => {
 		if (overrides.ok === false) {
 			return { ok: false, error: overrides.error };
 		}
-		const output: PolicyGateOutput = {
-			passed: true,
-			tier: "medium" as const,
-			action: "warn" as const,
-			verdict: "pass" as const,
-			violatingFiles: [],
-			...overrides.output,
+		return {
+			ok: true,
+			output: {
+				passed: true,
+				tier: "medium",
+				action: "warn",
+				verdict: "pass",
+				violatingFiles: [],
+				...overrides.output,
+			},
 		};
 		return { ok: true, output };
 	}
