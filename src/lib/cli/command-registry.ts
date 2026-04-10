@@ -1,3 +1,93 @@
+import { runAutomationRunCLI } from "../../commands/automation-run.js";
+import {
+	type BlastRadiusOptions,
+	runBlastRadiusCLI,
+} from "../../commands/blast-radius.js";
+import { runBrainstormGateCLI } from "../../commands/brainstorm-gate.js";
+import { runBranchProtectCLI } from "../../commands/branch-protect.js";
+import { runCheckAuthzCLI } from "../../commands/check-authz.js";
+import { runCheckEnvironmentCLI } from "../../commands/check-environment.js";
+import { runCheckCLI } from "../../commands/check.js";
+import {
+	runCIMigrateCLI,
+	runPromoteModeCLI,
+	runSyncBranchProtectionCLI,
+} from "../../commands/ci-migrate.js";
+import { runContextHealthCLI } from "../../commands/context-health.js";
+import { runContextCLI } from "../../commands/context.js";
+import { runContractCLI } from "../../commands/contract.js";
+import { runDiffBudgetCLI } from "../../commands/diff-budget.js";
+import { runDocsGateCLI } from "../../commands/docs-gate.js";
+import { runDoctorCLI } from "../../commands/doctor.js";
+import { runDriftGateCLI } from "../../commands/drift-gate.js";
+import { runEjectCLI } from "../../commands/eject.js";
+import { runEvidenceVerifyCLI } from "../../commands/evidence-verify.js";
+import { runGapCaseCLI } from "../../commands/gap-case.js";
+import { runGardenerCLI } from "../../commands/gardener.js";
+import { runHealthCLI } from "../../commands/health.js";
+import { runIndexContextCLI } from "../../commands/index-context.js";
+import { runInitCLI, runInteractiveInitCLI } from "../../commands/init.js";
+import { runLicenseGateCLI } from "../../commands/license-gate.js";
+import { runLinearGateCLI } from "../../commands/linear-gate.js";
+import { runLinearPrepareCLI } from "../../commands/linear-prepare.js";
+import { runLinearSyncCLI } from "../../commands/linear-sync.js";
+import { runLinearTriageCLI } from "../../commands/linear-triage.js";
+import { runLinearWorkflowCLI } from "../../commands/linear-workflow.js";
+import {
+	EXIT_CODES as LOCAL_MEMORY_PREFLIGHT_EXIT_CODES,
+	runLocalMemoryPreflightCLI,
+} from "../../commands/local-memory-preflight.js";
+import { runMemoryGateCLI } from "../../commands/memory-gate.js";
+import { runObservabilityGateCLI } from "../../commands/observability-gate.js";
+import { runOrgAuditCLI } from "../../commands/org-audit.js";
+import { runPilotEvaluateCLI } from "../../commands/pilot-evaluate.js";
+import {
+	type PilotRollbackOptions,
+	runPilotRollbackCLI,
+} from "../../commands/pilot-rollback.js";
+import { runPlanGateCLI } from "../../commands/plan-gate.js";
+import { runPolicyGateCLI } from "../../commands/policy-gate.js";
+import { runPrTemplateGateCLI } from "../../commands/pr-template-gate.js";
+import { runPreflightGateCLI } from "../../commands/preflight-gate.js";
+import { runPresetCLI } from "../../commands/preset.js";
+import { runPromptGateCLI } from "../../commands/prompt-gate.js";
+import {
+	type RemediateOptions,
+	runRemediateCLI,
+} from "../../commands/remediate.js";
+import { runReplayCLI } from "../../commands/replay.js";
+import { runReviewGateCLI } from "../../commands/review-gate.js";
+import { runRiskTierCLI } from "../../commands/risk-tier.js";
+import { runSearchCLI } from "../../commands/search.js";
+import { runSilentErrorDetectorCLI } from "../../commands/silent-error.js";
+import { printSimulateUsage, runSimulateCLI } from "../../commands/simulate.js";
+import { runSymphonyCheckCLI } from "../../commands/symphony-check.js";
+import { runToolingAuditCLI } from "../../commands/tooling-audit.js";
+import {
+	runUIExploreCLI,
+	runUIFastCLI,
+	runUIVerifyCLI,
+} from "../../commands/ui-loop.js";
+import {
+	type HarnessUpgradeOptions,
+	runUpgradeCLI,
+} from "../../commands/upgrade.js";
+import { runVerifyCodeRabbitCLI } from "../../commands/verify-coderabbit.js";
+import {
+	EXIT_CODES as VERIFY_WORK_EXIT_CODES,
+	runVerifyWorkCLI,
+} from "../../commands/verify-work.js";
+import { runWorkflowGenerateCLI } from "../../commands/workflow-generate.js";
+import type { IssueTracker } from "../init/types.js";
+import type { PilotEvaluateOptions } from "../pilot-evaluation/types.js";
+import type { ProjectType } from "../project-type/types.js";
+import { getVersion } from "../version.js";
+import {
+	getFlagValue,
+	inspectFlagValue,
+	parseCsvList,
+	parseIntegerArg,
+} from "./parse-utils.js";
 import type { CommandSpec, RegistryDispatchResult } from "./registry/types.js";
 
 export type { CommandSpec, RegistryDispatchResult };

@@ -1,5 +1,4 @@
 import { readFileSync } from "node:fs";
-import { join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { describe, expect, it } from "vitest";
 import { COMMAND_SPECS } from "./command-specs.js";
@@ -179,7 +178,14 @@ describe("linear execute validation", () => {
 	});
 
 	it("accepts valid actions and passes validation (does not return 2)", async () => {
-		const validActions = ["claim", "handoff", "close", "prepare", "sync", "triage"];
+		const validActions = [
+			"claim",
+			"handoff",
+			"close",
+			"prepare",
+			"sync",
+			"triage",
+		];
 		for (const action of validActions) {
 			// Valid actions pass the synchronous validation gate and delegate to the
 			// real CLI (returning a Promise). Await and assert the resolved value.
@@ -205,7 +211,9 @@ describe("prompt-gate execute validation", () => {
 	});
 
 	it("returns 2 when --type is an invalid value", () => {
-		expect(spec.execute(["--type", "invalid-type", "--file", "foo.md"])).toBe(2);
+		expect(spec.execute(["--type", "invalid-type", "--file", "foo.md"])).toBe(
+			2,
+		);
 	});
 
 	it("accepts all valid --type values without returning 2 from validation", async () => {
@@ -256,7 +264,12 @@ describe("simulate execute validation", () => {
 	});
 
 	it("does not return 2 when both contract flags are provided", async () => {
-		const result = await spec.execute(["--contract-a", "a.json", "--contract-b", "b.json"]);
+		const result = await spec.execute([
+			"--contract-a",
+			"a.json",
+			"--contract-b",
+			"b.json",
+		]);
 		expect(result).not.toBe(2);
 	});
 });
@@ -296,12 +309,22 @@ describe("pilot-rollback execute validation", () => {
 	});
 
 	it("does not return 2 for --mode autonomous", async () => {
-		const result = await spec.execute(["--mode", "autonomous", "--incident-id", "INC-1"]);
+		const result = await spec.execute([
+			"--mode",
+			"autonomous",
+			"--incident-id",
+			"INC-1",
+		]);
 		expect(result).not.toBe(2);
 	});
 
 	it("does not return 2 for --mode manual", async () => {
-		const result = await spec.execute(["--mode", "manual", "--incident-id", "INC-1"]);
+		const result = await spec.execute([
+			"--mode",
+			"manual",
+			"--incident-id",
+			"INC-1",
+		]);
 		expect(result).not.toBe(2);
 	});
 });
@@ -354,9 +377,7 @@ describe("branch-protect execute validation", () => {
 	const spec = findSpec("branch-protect");
 
 	it("returns 2 when --required-approvals is not a number", () => {
-		expect(
-			spec.execute(["--required-approvals", "not-a-number"]),
-		).toBe(2);
+		expect(spec.execute(["--required-approvals", "not-a-number"])).toBe(2);
 	});
 
 	it("accepts --required-approvals of 0 without error", async () => {
@@ -505,7 +526,9 @@ describe("command-specs.ts architecture boundaries", () => {
 		);
 		const content = readFileSync(filePath, "utf-8");
 		// Verify parse-utils is imported from ../parse-utils with optional .js extension
-		expect(content).toMatch(/(?:import|require)\s+.*from\s+["']\.\.\/parse-utils(?:\.js)?["']/);
+		expect(content).toMatch(
+			/(?:import|require)\s+.*from\s+["']\.\.\/parse-utils(?:\.js)?["']/,
+		);
 	});
 });
 
@@ -515,34 +538,26 @@ describe("command-specs.ts architecture boundaries", () => {
 
 describe("types.ts architecture boundaries", () => {
 	it("has no imports (pure interface declarations)", () => {
-		const filePath = fileURLToPath(
-			new URL("./types.ts", import.meta.url),
-		);
+		const filePath = fileURLToPath(new URL("./types.ts", import.meta.url));
 		const content = readFileSync(filePath, "utf-8");
 		// Should have no import statements
 		expect(content).not.toMatch(/^import /m);
 	});
 
 	it("exports CommandSpec interface", () => {
-		const filePath = fileURLToPath(
-			new URL("./types.ts", import.meta.url),
-		);
+		const filePath = fileURLToPath(new URL("./types.ts", import.meta.url));
 		const content = readFileSync(filePath, "utf-8");
 		expect(content).toContain("export interface CommandSpec");
 	});
 
 	it("exports RegistryDispatchResult interface", () => {
-		const filePath = fileURLToPath(
-			new URL("./types.ts", import.meta.url),
-		);
+		const filePath = fileURLToPath(new URL("./types.ts", import.meta.url));
 		const content = readFileSync(filePath, "utf-8");
 		expect(content).toContain("export interface RegistryDispatchResult");
 	});
 
 	it("RegistryDispatchResult references CommandSpec and result type", () => {
-		const filePath = fileURLToPath(
-			new URL("./types.ts", import.meta.url),
-		);
+		const filePath = fileURLToPath(new URL("./types.ts", import.meta.url));
 		const content = readFileSync(filePath, "utf-8");
 		// Verify the interface exists and mentions CommandSpec
 		expect(content).toContain("export interface RegistryDispatchResult");
