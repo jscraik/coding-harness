@@ -103,7 +103,11 @@ function readJsonFile(path: string): unknown | null {
 function hasJsonKey(obj: unknown, ...keys: string[]): boolean {
 	let cursor: unknown = obj;
 	for (const key of keys) {
-		if (typeof cursor !== "object" || cursor === null || !(key in cursor)) {
+		if (
+			typeof cursor !== "object" ||
+			cursor === null ||
+			!Object.hasOwn(cursor, key)
+		) {
 			return false;
 		}
 		cursor = (cursor as Record<string, unknown>)[key];

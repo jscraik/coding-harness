@@ -327,6 +327,31 @@ describe("runDoctor — config checks", () => {
 		expect(check?.fix).toBeTruthy();
 	});
 
+	it("warns when contextIntegrityPolicy exists only on prototype", () => {
+		Object.defineProperty(Object.prototype, "contextIntegrityPolicy", {
+			value: { minCoverage: 0.9 },
+			configurable: true,
+			writable: true,
+		});
+		try {
+			writeFileSync(
+				join(dir, "harness.contract.json"),
+				JSON.stringify({ version: "1.0.0" }),
+			);
+			mockAllToolsOk();
+
+			const report = runDoctor({ dir });
+			const check = report.checks.find(
+				(c) => c.id === "config:contextIntegrityPolicy",
+			);
+			expect(check?.status).toBe("warn");
+		} finally {
+			(
+				Object.prototype as { contextIntegrityPolicy?: unknown }
+			).contextIntegrityPolicy = undefined;
+		}
+	});
+
 	it("ok when contextIntegrityPolicy present in contract", () => {
 		writeFileSync(
 			join(dir, "harness.contract.json"),
