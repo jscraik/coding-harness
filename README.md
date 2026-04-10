@@ -380,7 +380,8 @@ flags, use `harness --help`.
 | `check` | Zero-config repo health snapshot — works before full setup |
 | `doctor` | Check all gate prerequisites (tools, files, config, CI) |
 | `health` | Unified gate status scorecard across all gates |
-| `contract` | Create, validate, or inspect `harness.contract.json` (`init`, `validate`, `schema`; `lite` preset alias supported) |
+| `repo` | Grouped repo lifecycle entrypoint (`check`, `doctor`, `health`, `init`, `contract`, `verify`, `upgrade`, `eject`) |
+| `contract` | Validate `harness.contract.json` or print the JSON Schema (`init`, `validate`, `schema`) |
 | `upgrade` | Safely upgrade harness in an existing repo (`--dry-run` supported) |
 | `ci-migrate` | Stage, verify, commit, abort, sync branch protection, or promote CI mode |
 | `branch-protect` | Configure GitHub branch protection rulesets |
@@ -394,6 +395,7 @@ flags, use `harness --help`.
 | Command | Purpose |
 | --- | --- |
 | `policy-gate` | Validate policy expectations from changed files |
+| `gate` | Grouped gate entrypoint (`policy`, `preflight`, `review`, `docs`, `license`, `linear`, `plan`, `prompt`, `pr-template`, `brainstorm`, `drift`, `memory`, `observability`, `authz`, `environment`, `local-memory`) |
 | `preflight-gate` | Run fast policy checks before expensive work |
 | `review-gate` | Enforce merge-readiness and SHA-linked review checks |
 | `docs-gate` | Enforce documentation parity for governed changes |
@@ -428,6 +430,8 @@ flags, use `harness --help`.
 | --- | --- |
 | `pilot-evaluate` | Evaluate pilot metrics and determine promotion readiness |
 | `pilot-rollback` | Move pilot mode between autonomous and manual states |
+| `pilot` | Grouped pilot entrypoint (`evaluate`, `rollback`) |
+| `work` | Grouped change-analysis/remediation entrypoint (`risk`, `blast`, `simulate`, `replay`, `remediate`, `automation`, `diff`, `gap`, `gardener`) |
 | `simulate` | Run counterfactual policy simulation |
 | `automation-run` | Execute idempotent automation playbooks |
 | `gap-case` | Manage production gap cases |
@@ -447,6 +451,7 @@ flags, use `harness --help`.
 | `context` | Search indexed plans, specs, and brainstorms; if `--limit` or `--threshold` is omitted, `contextCompact` policy applies when present, otherwise static defaults (`DEFAULT_SEARCH_LIMIT`, `DEFAULT_SIMILARITY_THRESHOLD`) are used |
 | `index-context` | Build the local semantic-search index |
 | `evidence-verify` | Validate screenshot and evidence artifacts |
+| `ui` | Grouped UI entrypoint (`fast`, `verify`, `explore`) |
 | `ui:fast` | Run a Storybook-first local UI loop |
 | `ui:verify` | Run Playwright smoke verification with evidence capture |
 | `ui:explore` | Run agent-browser exploratory testing |

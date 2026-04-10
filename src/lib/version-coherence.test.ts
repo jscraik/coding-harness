@@ -25,6 +25,7 @@ function createLocalHarnessWrapper(repoDir: string, version: string): void {
 	writeExecutable(
 		join(scriptsDir, "harness-cli.sh"),
 		`#!/usr/bin/env bash\necho "harness v${version}"\n`,
+		`#!/usr/bin/env bash\n[[ "$1" == "--version" ]] && echo "harness v${version}" && exit 0\necho "harness v${version}"\n`,
 	);
 }
 
@@ -33,6 +34,7 @@ function createGlobalHarnessBinary(binDir: string, version: string): void {
 	writeExecutable(
 		join(binDir, "harness"),
 		`#!/usr/bin/env bash\necho "harness v${version}"\n`,
+		`#!/usr/bin/env bash\n[[ "$1" == "--version" ]] && echo "harness v${version}" && exit 0\necho "harness v${version}"\n`,
 	);
 }
 
@@ -61,6 +63,8 @@ describe("detectHarnessVersionCoherence", () => {
 		expect(result.globalVersion).toBe("0.6.0");
 		expect(result.message).toContain("Version drift detected");
 		expect(result.remediation).toContain("scripts/harness-cli.sh");
+		expect(result.repoLocalOriginPath).toContain("scripts/harness-cli.sh");
+		expect(result.globalBinaryPath).toContain("harness");
 	});
 
 	it("reports ok when repo-local and global harness versions match", () => {

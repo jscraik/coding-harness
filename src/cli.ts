@@ -31,17 +31,20 @@ process.on("uncaughtException", (error) => {
 });
 
 /**
- * Prints the CLI usage and help text for the `harness` command.
+ * Print the CLI usage, examples, and command list to stdout.
  *
- * The output includes a "Start here (standard path)" quickstart, a "Lite mode"
- * workflow, "Hero workflows" examples, a dynamically generated "Commands"
- * section from the command registry, an "Options" section, and notes for
- * Agent/Robot Mode (including `--json` usage, exit-code meanings, and typo/
- * case-correction and suggestion behavior).
+ * When `options.includeLegacyCommands` is true the full command list (including legacy
+ * commands) is shown; otherwise a focused command list is displayed and a hint is printed
+ * instructing how to view legacy commands.
  *
- * Side effects: writes the help text to stdout.
+ * This function writes help text and options to stdout/stderr and does not return a value.
+ *
+ * @param options - Optional settings for rendering the help output.
+ * @param options.includeLegacyCommands - If true, include legacy commands in the displayed command list.
  */
-function printUsage(): void {
+function printUsage(options: { includeLegacyCommands?: boolean } = {}): void {
+	const includeLegacyCommands = options.includeLegacyCommands ?? false;
+
 	console.info("Usage: harness <command> [options]");
 	console.info("");
 	console.info("Start here (standard path):");
@@ -69,14 +72,27 @@ function printUsage(): void {
 		"  Submit for review: harness docs-gate --json && harness review-gate ...",
 	);
 	console.info("");
-	console.info("Commands:");
-	for (const line of renderCommandHelpRows(getRegistryCommandHelpRows())) {
+	console.info(
+		includeLegacyCommands ? "Commands (full):" : "Commands (focused):",
+	);
+	for (const line of renderCommandHelpRows(
+		getRegistryCommandHelpRows({ includeLegacy: includeLegacyCommands }),
+	)) {
 		console.info(line);
+	}
+	if (!includeLegacyCommands) {
+		console.info("");
+		console.info(
+			'  Run "harness --help --all-commands" to view the full legacy command list.',
+		);
 	}
 	console.info("");
 	console.info("Options:");
-	console.info("  --version, -v  Print version");
-	console.info("  --help, -h     Print this help");
+	console.info("  --version, -v          Print version");
+	console.info("  --help, -h             Print this help");
+	console.info(
+		"  --all, --all-commands  Include legacy command list in help output",
+	);
 	console.info("");
 	console.info("Agent / Robot Mode:");
 	console.info("  Add --json to any command for structured JSON output.");
@@ -104,6 +120,8 @@ export { parseIntegerArg, parseCsvList };
  */
 export function run(args: string[]): void {
 	const version = getVersion();
+	const includeLegacyCommandsInHelp =
+		args.includes("--all-commands") || args.includes("--all");
 
 	// Handle top-level --version and --help before parsing command
 	// These work even without a command
@@ -117,7 +135,7 @@ export function run(args: string[]): void {
 	// from executing side effects when the user just wants usage text.
 	if (args.includes("--help") || args.includes("-h")) {
 		console.info(`harness v${version}`);
-		printUsage();
+		printUsage({ includeLegacyCommands: includeLegacyCommandsInHelp });
 		return;
 	}
 

@@ -6,9 +6,25 @@ export const TOOLING_MAKEFILE_PATH = "Makefile" as const;
 export const TOOLING_PACKAGE_JSON_PATH = "package.json" as const;
 export const TOOLING_PREK_CONFIG_PATH = "prek.toml" as const;
 
+export const REQUIRED_PREK_INSTALL_HOOK_TYPES = [
+	"pre-commit",
+	"pre-push",
+] as const;
+
 export const REQUIRED_PREK_HOOKS = {
-	"pre-commit": ["make hooks-pre-commit"],
-	"pre-push": ["make hooks-pre-push"],
+	"pre-commit": {
+		name: "Pre-commit",
+		entry: "make hooks-pre-commit",
+		language: "system",
+		pass_filenames: false,
+	},
+	"pre-push": {
+		name: "Pre-push",
+		entry: "make hooks-pre-push",
+		language: "system",
+		pass_filenames: false,
+		stages: ["pre-push"],
+	},
 } as const;
 
 export const REQUIRED_PACKAGE_SCRIPTS = {
