@@ -5,7 +5,10 @@ import type {
 	RiskTier,
 } from "../lib/contract/types.js";
 import { sanitizeError } from "../lib/input/sanitize.js";
-import { normalisePolicyGateResult } from "../lib/output/normalise.js";
+import {
+	normalisePolicyGateResult,
+	renderGateDecision,
+} from "../lib/output/normalise.js";
 import {
 	evaluatePolicyChainDecision,
 	resolveGateVerdict,
@@ -167,17 +170,13 @@ export function runPolicyGate(options: PolicyGateOptions): PolicyGateResult {
  */
 export function runPolicyGateCLI(options: PolicyGateOptions): number {
 	const result = runPolicyGate(options);
+	const gateResult = normalisePolicyGateResult(result);
 
 	if (result.ok) {
 		if (options.json) {
-			const gateResult = normalisePolicyGateResult(result);
 			process.stdout.write(`${JSON.stringify(gateResult, null, 2)}\n`);
-		} else if (result.output.passed) {
-			console.info(`✓ Policy gate passed (tier: ${result.output.tier})`);
 		} else {
-			console.error(
-				`✗ Policy gate failed: tier ${result.output.tier} exceeds max ${result.output.maxAllowed}`,
-			);
+			renderGateDecision(gateResult);
 		}
 		return result.output.passed
 			? EXIT_CODES.SUCCESS
@@ -187,8 +186,15 @@ export function runPolicyGateCLI(options: PolicyGateOptions): number {
 	// Error output always to stderr
 	console.error(result.error.message);
 	if (options.json) {
-		const gateResult = normalisePolicyGateResult(result);
 		process.stdout.write(`${JSON.stringify(gateResult, null, 2)}\n`);
+	} else {
+		console.error(`Reason: ${gateResult.reason}`);
+		if (gateResult.action_now.length > 0) {
+			console.error("Action now:");
+			for (const step of gateResult.action_now) {
+				console.error(`- ${step}`);
+			}
+		}
 	}
 
 	// Map error codes to exit codes
