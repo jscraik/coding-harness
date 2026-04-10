@@ -92,7 +92,10 @@ export class GitHubApiError extends Error {
 		return new GitHubApiError({
 			code,
 			status,
-			message: error.message || message,
+			message:
+				code === "RATE_LIMITED" && message.includes("Resets at")
+					? message
+					: error.message || message,
 			requestId,
 		});
 	}
