@@ -177,12 +177,12 @@ describe("linear execute validation", () => {
 		expect(spec.execute(["--json"])).toBe(2);
 	});
 
-	it("accepts valid actions and passes validation (does not return 2)", () => {
+	it("accepts valid actions and passes validation (does not return 2)", async () => {
 		const validActions = ["claim", "handoff", "close", "prepare", "sync", "triage"];
 		for (const action of validActions) {
 			// Valid actions pass the synchronous validation gate and delegate to the
-			// real CLI (returning a Promise). A Promise is not 2.
-			const result = spec.execute([action]);
+			// real CLI (returning a Promise). Await and assert the resolved value.
+			const result = await spec.execute([action]);
 			expect(result).not.toBe(2);
 		}
 	});
@@ -207,10 +207,10 @@ describe("prompt-gate execute validation", () => {
 		expect(spec.execute(["--type", "invalid-type", "--file", "foo.md"])).toBe(2);
 	});
 
-	it("accepts all valid --type values without returning 2 from validation", () => {
+	it("accepts all valid --type values without returning 2 from validation", async () => {
 		const validTypes = ["feature", "bugfix", "refactor", "release"];
 		for (const type of validTypes) {
-			const result = spec.execute(["--type", type, "--file", "foo.md"]);
+			const result = await spec.execute(["--type", type, "--file", "foo.md"]);
 			expect(result).not.toBe(2);
 		}
 	});
@@ -223,8 +223,8 @@ describe("blast-radius execute validation", () => {
 		expect(spec.execute(["--json"])).toBe(2);
 	});
 
-	it("does not return 2 when --files is provided", () => {
-		const result = spec.execute(["--files", "src/auth.ts"]);
+	it("does not return 2 when --files is provided", async () => {
+		const result = await spec.execute(["--files", "src/auth.ts"]);
 		expect(result).not.toBe(2);
 	});
 });
@@ -254,8 +254,8 @@ describe("simulate execute validation", () => {
 		expect(result).toBe(0);
 	});
 
-	it("does not return 2 when both contract flags are provided", () => {
-		const result = spec.execute(["--contract-a", "a.json", "--contract-b", "b.json"]);
+	it("does not return 2 when both contract flags are provided", async () => {
+		const result = await spec.execute(["--contract-a", "a.json", "--contract-b", "b.json"]);
 		expect(result).not.toBe(2);
 	});
 });
@@ -267,18 +267,18 @@ describe("drift-gate execute validation", () => {
 		expect(spec.execute(["--mode", "strict"])).toBe(2);
 	});
 
-	it("does not return 2 for --mode advisory", () => {
-		const result = spec.execute(["--mode", "advisory"]);
+	it("does not return 2 for --mode advisory", async () => {
+		const result = await spec.execute(["--mode", "advisory"]);
 		expect(result).not.toBe(2);
 	});
 
-	it("does not return 2 for --mode health", () => {
-		const result = spec.execute(["--mode", "health"]);
+	it("does not return 2 for --mode health", async () => {
+		const result = await spec.execute(["--mode", "health"]);
 		expect(result).not.toBe(2);
 	});
 
-	it("does not return 2 when --mode is absent", () => {
-		const result = spec.execute([]);
+	it("does not return 2 when --mode is absent", async () => {
+		const result = await spec.execute([]);
 		expect(result).not.toBe(2);
 	});
 });
@@ -294,13 +294,13 @@ describe("pilot-rollback execute validation", () => {
 		expect(spec.execute(["--mode", "fast", "--incident-id", "INC-1"])).toBe(2);
 	});
 
-	it("does not return 2 for --mode autonomous", () => {
-		const result = spec.execute(["--mode", "autonomous", "--incident-id", "INC-1"]);
+	it("does not return 2 for --mode autonomous", async () => {
+		const result = await spec.execute(["--mode", "autonomous", "--incident-id", "INC-1"]);
 		expect(result).not.toBe(2);
 	});
 
-	it("does not return 2 for --mode manual", () => {
-		const result = spec.execute(["--mode", "manual", "--incident-id", "INC-1"]);
+	it("does not return 2 for --mode manual", async () => {
+		const result = await spec.execute(["--mode", "manual", "--incident-id", "INC-1"]);
 		expect(result).not.toBe(2);
 	});
 });
@@ -316,13 +316,13 @@ describe("remediate execute validation", () => {
 		expect(spec.execute(["start"])).toBe(2);
 	});
 
-	it("does not return 2 for subcommand run", () => {
-		const result = spec.execute(["run"]);
+	it("does not return 2 for subcommand run", async () => {
+		const result = await spec.execute(["run"]);
 		expect(result).not.toBe(2);
 	});
 
-	it("does not return 2 for subcommand apply", () => {
-		const result = spec.execute(["apply"]);
+	it("does not return 2 for subcommand apply", async () => {
+		const result = await spec.execute(["apply"]);
 		expect(result).not.toBe(2);
 	});
 });
@@ -338,13 +338,13 @@ describe("gap-case execute validation", () => {
 		expect(spec.execute(["update"])).toBe(2);
 	});
 
-	it("does not return 2 for action open", () => {
-		const result = spec.execute(["open"]);
+	it("does not return 2 for action open", async () => {
+		const result = await spec.execute(["open"]);
 		expect(result).not.toBe(2);
 	});
 
-	it("does not return 2 for action resolve", () => {
-		const result = spec.execute(["resolve"]);
+	it("does not return 2 for action resolve", async () => {
+		const result = await spec.execute(["resolve"]);
 		expect(result).not.toBe(2);
 	});
 });
@@ -358,13 +358,13 @@ describe("branch-protect execute validation", () => {
 		).toBe(2);
 	});
 
-	it("accepts --required-approvals of 0 without error", () => {
-		const result = spec.execute(["--required-approvals", "0"]);
+	it("accepts --required-approvals of 0 without error", async () => {
+		const result = await spec.execute(["--required-approvals", "0"]);
 		expect(result).not.toBe(2);
 	});
 
-	it("accepts --required-approvals of a positive integer", () => {
-		const result = spec.execute(["--required-approvals", "2"]);
+	it("accepts --required-approvals of a positive integer", async () => {
+		const result = await spec.execute(["--required-approvals", "2"]);
 		expect(result).not.toBe(2);
 	});
 });
@@ -372,14 +372,14 @@ describe("branch-protect execute validation", () => {
 describe("policy-gate execute validation", () => {
 	const spec = findSpec("policy-gate");
 
-	it("does not return 2 with no arguments (uses defaults)", () => {
-		const result = spec.execute([]);
+	it("does not return 2 with no arguments (uses defaults)", async () => {
+		const result = await spec.execute([]);
 		expect(result).not.toBe(2);
 	});
 
-	it("accepts valid --max-tier values", () => {
+	it("accepts valid --max-tier values", async () => {
 		for (const tier of ["high", "medium", "low"]) {
-			const result = spec.execute(["--max-tier", tier]);
+			const result = await spec.execute(["--max-tier", tier]);
 			expect(result).not.toBe(2);
 		}
 	});
@@ -402,8 +402,8 @@ describe("pilot-evaluate execute validation", () => {
 		expect(spec.execute(["--json"])).toBe(2);
 	});
 
-	it("does not return 2 when --artifacts is provided", () => {
-		const result = spec.execute(["--artifacts", "artifacts/"]);
+	it("does not return 2 when --artifacts is provided", async () => {
+		const result = await spec.execute(["--artifacts", "artifacts/"]);
 		expect(result).not.toBe(2);
 	});
 });
