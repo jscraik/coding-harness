@@ -1,5 +1,6 @@
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
+import { fileURLToPath } from "node:url";
 import { describe, expect, it } from "vitest";
 import { COMMAND_SPECS } from "./command-specs.js";
 import type { CommandSpec } from "./types.js";
@@ -471,9 +472,8 @@ describe("CommandSpec type contract", () => {
 
 describe("command-specs.ts architecture boundaries", () => {
 	it("imports from ../../../commands/ (three levels up, commands folder)", () => {
-		const filePath = join(
-			process.cwd(),
-			"src/lib/cli/registry/command-specs.ts",
+		const filePath = fileURLToPath(
+			new URL("./command-specs.ts", import.meta.url),
 		);
 		const content = readFileSync(filePath, "utf-8");
 		// Verify imports come from ../../../commands/ path
@@ -481,9 +481,8 @@ describe("command-specs.ts architecture boundaries", () => {
 	});
 
 	it("does not import from ../../commands/ (wrong relative path)", () => {
-		const filePath = join(
-			process.cwd(),
-			"src/lib/cli/registry/command-specs.ts",
+		const filePath = fileURLToPath(
+			new URL("./command-specs.ts", import.meta.url),
 		);
 		const content = readFileSync(filePath, "utf-8");
 		// Two-levels-up imports would be wrong from the registry/ subfolder
@@ -491,9 +490,8 @@ describe("command-specs.ts architecture boundaries", () => {
 	});
 
 	it("only imports CommandSpec type from ./types.js (not from command-registry)", () => {
-		const filePath = join(
-			process.cwd(),
-			"src/lib/cli/registry/command-specs.ts",
+		const filePath = fileURLToPath(
+			new URL("./command-specs.ts", import.meta.url),
 		);
 		const content = readFileSync(filePath, "utf-8");
 		// Verify CommandSpec is imported and not from command-registry
@@ -502,9 +500,8 @@ describe("command-specs.ts architecture boundaries", () => {
 	});
 
 	it("imports parse-utils from ../parse-utils.js (correct relative path)", () => {
-		const filePath = join(
-			process.cwd(),
-			"src/lib/cli/registry/command-specs.ts",
+		const filePath = fileURLToPath(
+			new URL("./command-specs.ts", import.meta.url),
 		);
 		const content = readFileSync(filePath, "utf-8");
 		// Verify parse-utils is imported from ../parse-utils with optional .js extension
@@ -518,9 +515,8 @@ describe("command-specs.ts architecture boundaries", () => {
 
 describe("types.ts architecture boundaries", () => {
 	it("has no imports (pure interface declarations)", () => {
-		const filePath = join(
-			process.cwd(),
-			"src/lib/cli/registry/types.ts",
+		const filePath = fileURLToPath(
+			new URL("./types.ts", import.meta.url),
 		);
 		const content = readFileSync(filePath, "utf-8");
 		// Should have no import statements
@@ -528,27 +524,24 @@ describe("types.ts architecture boundaries", () => {
 	});
 
 	it("exports CommandSpec interface", () => {
-		const filePath = join(
-			process.cwd(),
-			"src/lib/cli/registry/types.ts",
+		const filePath = fileURLToPath(
+			new URL("./types.ts", import.meta.url),
 		);
 		const content = readFileSync(filePath, "utf-8");
 		expect(content).toContain("export interface CommandSpec");
 	});
 
 	it("exports RegistryDispatchResult interface", () => {
-		const filePath = join(
-			process.cwd(),
-			"src/lib/cli/registry/types.ts",
+		const filePath = fileURLToPath(
+			new URL("./types.ts", import.meta.url),
 		);
 		const content = readFileSync(filePath, "utf-8");
 		expect(content).toContain("export interface RegistryDispatchResult");
 	});
 
 	it("RegistryDispatchResult references CommandSpec and result type", () => {
-		const filePath = join(
-			process.cwd(),
-			"src/lib/cli/registry/types.ts",
+		const filePath = fileURLToPath(
+			new URL("./types.ts", import.meta.url),
 		);
 		const content = readFileSync(filePath, "utf-8");
 		// Verify the interface exists and mentions CommandSpec
