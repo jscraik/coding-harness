@@ -2,23 +2,30 @@ import { RequestError } from "@octokit/request-error";
 import { describe, expect, it } from "vitest";
 import { GitHubApiError, classifyError } from "./errors.js";
 
+type RequestErrorOptions = NonNullable<
+	ConstructorParameters<typeof RequestError>[2]
+>;
+type RequestErrorResponse = NonNullable<RequestErrorOptions["response"]>;
+
 function createRequestError(
 	status: number,
 	message: string,
 	headers: Record<string, string> = {},
 ): RequestError {
+	const response = {
+		status,
+		url: "https://api.github.com/repos/acme/example",
+		headers,
+		data: {},
+	};
+
 	return new RequestError(message, status, {
 		request: {
 			method: "GET",
 			url: "https://api.github.com/repos/acme/example",
 			headers: {},
 		},
-		response: {
-			status,
-			url: "https://api.github.com/repos/acme/example",
-			headers,
-			data: {},
-		},
+		response: response as RequestErrorResponse,
 	});
 }
 
