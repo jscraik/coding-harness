@@ -1,4 +1,4 @@
-import { describe, expect, it } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { EXIT_CODES, runPolicyGate, runPolicyGateCLI } from "./policy-gate.js";
 
 describe("runPolicyGate", () => {
@@ -215,5 +215,127 @@ describe("runPolicyGateCLI", () => {
 			json: true,
 		});
 		expect(exitCode).toBe(EXIT_CODES.VALIDATION_ERROR);
+	});
+});
+
+describe("runPolicyGateCLI (non-JSON output format from PR)", () => {
+	const contractPath = "test-fixtures/contract.json";
+	let consoleInfoSpy: ReturnType<typeof vi.spyOn>;
+	let consoleErrorSpy: ReturnType<typeof vi.spyOn>;
+	let stdoutSpy: ReturnType<typeof vi.spyOn>;
+
+	beforeEach(() => {
+		consoleInfoSpy = vi
+			.spyOn(console, "info")
+			.mockImplementation(() => undefined);
+		consoleErrorSpy = vi
+			.spyOn(console, "error")
+			.mockImplementation(() => undefined);
+		stdoutSpy = vi
+			.spyOn(process.stdout, "write")
+			.mockImplementation(() => true);
+	});
+
+	afterEach(() => {
+		vi.restoreAllMocks();
+	});
+
+	it("human-readable pass output contains ✓ icon and status=pass", () => {
+		runPolicyGateCLI({
+			contractPath,
+			files: ["src/lib/utils.ts"],
+			maxTier: "medium",
+			json: false,
+		});
+
+		const allCalls = consoleInfoSpy.mock.calls.map((c) => String(c[0]));
+		expect(allCalls.some((line) => line.includes("✓"))).toBe(true);
+		expect(allCalls.some((line) => line.includes("pass"))).toBe(true);
+	});
+
+	it("human-readable pass output prints Reason line", () => {
+		runPolicyGateCLI({
+			contractPath,
+			files: ["src/lib/utils.ts"],
+			maxTier: "medium",
+			json: false,
+		});
+
+		const allCalls = consoleInfoSpy.mock.calls.map((c) => String(c[0]));
+		expect(allCalls.some((line) => line.startsWith("Reason:"))).toBe(true);
+	});
+
+	it("human-readable fail output contains ✗ icon and status=fail", () => {
+		runPolicyGateCLI({
+			contractPath,
+			files: ["src/auth/login.ts"],
+			maxTier: "medium",
+			json: false,
+		});
+
+		const allCalls = consoleInfoSpy.mock.calls.map((c) => String(c[0]));
+		expect(allCalls.some((line) => line.includes("✗"))).toBe(true);
+		expect(allCalls.some((line) => line.includes("fail"))).toBe(true);
+	});
+
+	it("human-readable fail output prints Action now section when there are actions", () => {
+		runPolicyGateCLI({
+			contractPath,
+			files: ["src/auth/login.ts"],
+			maxTier: "medium",
+			json: false,
+		});
+
+		const allCalls = consoleInfoSpy.mock.calls.map((c) => String(c[0]));
+		// Action now section appears because there are blocking findings
+		expect(allCalls.some((line) => line.includes("Action"))).toBe(true);
+	});
+
+	it("json=true outputs valid JSON to stdout, not console.info", () => {
+		runPolicyGateCLI({
+			contractPath,
+			files: ["src/lib/utils.ts"],
+			maxTier: "medium",
+			json: true,
+		});
+
+		expect(stdoutSpy).toHaveBeenCalled();
+		const written = stdoutSpy.mock.calls[0]?.[0] as string;
+		const parsed = JSON.parse(written) as Record<string, unknown>;
+		expect(parsed.gate).toBe("policy-gate");
+		expect(parsed.status).toBe("pass");
+		expect(parsed).toHaveProperty("reason");
+		expect(parsed).toHaveProperty("action_now");
+		expect(parsed).toHaveProperty("action_later");
+		expect(parsed).toHaveProperty("evidence_ref");
+	});
+
+	it("json=true fail output has findings with evidence_ref", () => {
+		runPolicyGateCLI({
+			contractPath,
+			files: ["src/auth/login.ts"],
+			maxTier: "medium",
+			json: true,
+		});
+
+		const written = stdoutSpy.mock.calls[0]?.[0] as string;
+		const parsed = JSON.parse(written) as Record<string, unknown>;
+		expect(parsed.status).toBe("fail");
+		expect(Array.isArray(parsed.findings)).toBe(true);
+		expect((parsed.findings as unknown[]).length).toBeGreaterThan(0);
+		expect(Array.isArray(parsed.evidence_ref)).toBe(true);
+	});
+
+	it("ok:false error path outputs reason to stderr in non-JSON mode", () => {
+		runPolicyGateCLI({
+			contractPath,
+			files: ["src/lib/utils.ts"],
+			maxTier: "invalid" as "high",
+			json: false,
+		});
+
+		const errorCalls = consoleErrorSpy.mock.calls.map((c) => String(c[0]));
+		// Error message goes to stderr, then Reason line also goes to stderr
+		expect(errorCalls.some((line) => line.startsWith("Reason:"))).toBe(true);
 	});
 });

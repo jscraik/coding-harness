@@ -215,7 +215,7 @@ describe("AutoFixResult interface (SA1)", () => {
 });
 
 describe("normalise.ts stub exports (SA1)", () => {
-	it("P0-T3a: all six adapter functions are exported", async () => {
+	it("P0-T3a: all six original adapter functions are exported", async () => {
 		const normalise = await import("./normalise.js");
 		const exports = [
 			"normaliseDriftGateResult",
@@ -229,5 +229,11 @@ describe("normalise.ts stub exports (SA1)", () => {
 		for (const name of exports) {
 			expect(typeof normalise[name]).toBe("function");
 		}
+	});
+
+	it("P0-T3b: new PR adapter functions normalisePreflightGateResult and normaliseReviewGateResult are exported", async () => {
+		const normalise = await import("./normalise.js");
+		expect(typeof normalise.normalisePreflightGateResult).toBe("function");
+		expect(typeof normalise.normaliseReviewGateResult).toBe("function");
 	});
 });
