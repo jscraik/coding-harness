@@ -684,8 +684,8 @@ describe("command-specs.ts architecture boundaries", () => {
 			new URL("./command-specs.ts", import.meta.url),
 		);
 		const content = readFileSync(filePath, "utf-8");
-		// Verify CommandSpec is imported and not from command-registry
-		expect(content).toContain("CommandSpec");
+		// Verify CommandSpec is imported as type-only from ./types
+		expect(content).toMatch(/import\s+type\s+\{[^}]*CommandSpec[^}]*\}\s+from\s+["']\.\/types\.js["']/);
 		expect(content).not.toContain('from "../command-registry');
 	});
 
@@ -694,9 +694,9 @@ describe("command-specs.ts architecture boundaries", () => {
 			new URL("./command-specs.ts", import.meta.url),
 		);
 		const content = readFileSync(filePath, "utf-8");
-		// Verify parse-utils is imported from ../parse-utils with optional .js extension
+		// Verify parse-utils is imported from ../parse-utils.js with required .js extension
 		expect(content).toMatch(
-			/(?:import|require)[\s\S]*from\s+["']\.\.\/parse-utils(?:\.js)?["']/,
+			/(?:import|require)[\s\S]*from\s+["']\.\.\/parse-utils\.js["']/,
 		);
 	});
 });
