@@ -1,4 +1,12 @@
-import { readFileSync } from "node:fs";
+import {
+	mkdirSync,
+	mkdtempSync,
+	readFileSync,
+	rmSync,
+	writeFileSync,
+} from "node:fs";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { describe, expect, it } from "vitest";
 import { COMMAND_SPECS } from "./command-specs.js";
@@ -157,6 +165,27 @@ function findSpec(name: string): CommandSpec {
 	return spec;
 }
 
+async function withTempWorkspace<T>(
+	run: (workspacePath: string) => Promise<T>,
+): Promise<T> {
+	const workspacePath = mkdtempSync(join(tmpdir(), "command-specs-"));
+	try {
+		return await run(workspacePath);
+	} finally {
+		rmSync(workspacePath, { recursive: true, force: true });
+	}
+}
+
+async function withCwd<T>(cwd: string, run: () => Promise<T>): Promise<T> {
+	const previousCwd = process.cwd();
+	process.chdir(cwd);
+	try {
+		return await run();
+	} finally {
+		process.chdir(previousCwd);
+	}
+}
+
 // ---------------------------------------------------------------------------
 // execute() validation tests — only for handlers that do synchronous
 // argument validation and return a number without invoking external CLIs.
@@ -264,13 +293,35 @@ describe("simulate execute validation", () => {
 	});
 
 	it("does not return 2 when both contract flags are provided", async () => {
-		const result = await spec.execute([
-			"--contract-a",
-			"a.json",
-			"--contract-b",
-			"b.json",
-		]);
-		expect(result).not.toBe(2);
+		await withTempWorkspace(async (workspacePath) => {
+			const contractFixture = readFileSync(
+				fileURLToPath(
+					new URL("../../../../harness.contract.json", import.meta.url),
+				),
+				"utf-8",
+			);
+			writeFileSync(join(workspacePath, "a.json"), contractFixture);
+			writeFileSync(join(workspacePath, "b.json"), contractFixture);
+			mkdirSync(join(workspacePath, "artifacts"), { recursive: true });
+			mkdirSync(join(workspacePath, "traces"), { recursive: true });
+
+			const result = await withCwd(workspacePath, () =>
+				Promise.resolve(
+					spec.execute([
+						"--contract-a",
+						"a.json",
+						"--contract-b",
+						"b.json",
+						"--artifacts",
+						"artifacts",
+						"--traces",
+						"traces",
+						"--json",
+					]),
+				),
+			);
+			expect(result).not.toBe(2);
+		});
 	});
 });
 
@@ -341,13 +392,53 @@ describe("remediate execute validation", () => {
 	});
 
 	it("does not return 2 for subcommand run", async () => {
-		const result = await spec.execute(["run"]);
-		expect(result).not.toBe(2);
+		await withTempWorkspace(async (workspacePath) => {
+			mkdirSync(join(workspacePath, "src"), { recursive: true });
+			writeFileSync(join(workspacePath, "src/cli.ts"), "export {};\n");
+			writeFileSync(
+				join(workspacePath, "findings.json"),
+				JSON.stringify([
+					{
+						id: "codex-1",
+						filePath: "src/cli.ts",
+						line: 1,
+						commitSha: "0123456789abcdef0123456789abcdef01234567",
+					},
+				]),
+			);
+
+			const result = await withCwd(workspacePath, () =>
+				Promise.resolve(
+					spec.execute(["run", "--findings", "findings.json", "--json"]),
+				),
+			);
+			expect(result).not.toBe(2);
+		});
 	});
 
 	it("does not return 2 for subcommand apply", async () => {
-		const result = await spec.execute(["apply"]);
-		expect(result).not.toBe(2);
+		await withTempWorkspace(async (workspacePath) => {
+			mkdirSync(join(workspacePath, "src"), { recursive: true });
+			writeFileSync(join(workspacePath, "src/cli.ts"), "export {};\n");
+			writeFileSync(
+				join(workspacePath, "findings.json"),
+				JSON.stringify([
+					{
+						id: "codex-2",
+						filePath: "src/cli.ts",
+						line: 1,
+						commitSha: "fedcba9876543210fedcba9876543210fedcba98",
+					},
+				]),
+			);
+
+			const result = await withCwd(workspacePath, () =>
+				Promise.resolve(
+					spec.execute(["apply", "--findings", "findings.json", "--json"]),
+				),
+			);
+			expect(result).not.toBe(2);
+		});
 	});
 });
 
@@ -425,8 +516,86 @@ describe("pilot-evaluate execute validation", () => {
 	});
 
 	it("does not return 2 when --artifacts is provided", async () => {
-		const result = await spec.execute(["--artifacts", "artifacts/"]);
-		expect(result).not.toBe(2);
+		await withTempWorkspace(async (workspacePath) => {
+			const artifactsPath = join(workspacePath, "artifacts");
+			const contractsPath = join(workspacePath, "contracts");
+			const contractFixture = readFileSync(
+				fileURLToPath(
+					new URL("../../../../harness.contract.json", import.meta.url),
+				),
+				"utf-8",
+			);
+			mkdirSync(artifactsPath, { recursive: true });
+			mkdirSync(contractsPath, { recursive: true });
+			writeFileSync(
+				join(workspacePath, "harness.contract.json"),
+				contractFixture,
+			);
+			writeFileSync(
+				join(contractsPath, "agent-adapter-registry.json"),
+				readFileSync(
+					fileURLToPath(
+						new URL(
+							"../../../../contracts/agent-adapter-registry.json",
+							import.meta.url,
+						),
+					),
+					"utf-8",
+				),
+			);
+			writeFileSync(
+				join(contractsPath, "agent-metric-registry.json"),
+				readFileSync(
+					fileURLToPath(
+						new URL(
+							"../../../../contracts/agent-metric-registry.json",
+							import.meta.url,
+						),
+					),
+					"utf-8",
+				),
+			);
+			writeFileSync(
+				join(artifactsPath, "pr-lead-time.json"),
+				JSON.stringify({
+					schemaVersion: "pr-lead-time/v1",
+					entries: [
+						{
+							schemaVersion: "pr-lead-time-entry/v1",
+							generatedAt: "2026-04-10T00:00:00.000Z",
+							prNumber: 1,
+							repo: "test/repo",
+							createdAt: "2026-04-10T00:00:00.000Z",
+							mergedAt: "2026-04-10T01:00:00.000Z",
+							draft: false,
+							headSha: "0123456789abcdef0123456789abcdef01234567",
+							leadTimeHours: 1,
+							pilotEligible: true,
+						},
+					],
+				}),
+			);
+			writeFileSync(join(artifactsPath, "remediation-events.jsonl"), "");
+			writeFileSync(join(artifactsPath, "rollback-events.jsonl"), "");
+			writeFileSync(join(artifactsPath, "incidents.jsonl"), "");
+
+			const result = await withCwd(workspacePath, () =>
+				Promise.resolve(
+					spec.execute([
+						"--artifacts",
+						"artifacts",
+						"--contract",
+						"harness.contract.json",
+						"--adapter-registry",
+						"contracts/agent-adapter-registry.json",
+						"--metric-registry",
+						"contracts/agent-metric-registry.json",
+						"--json",
+					]),
+				),
+			);
+			expect(result).not.toBe(2);
+		});
 	});
 });
 
@@ -527,7 +696,7 @@ describe("command-specs.ts architecture boundaries", () => {
 		const content = readFileSync(filePath, "utf-8");
 		// Verify parse-utils is imported from ../parse-utils with optional .js extension
 		expect(content).toMatch(
-			/(?:import|require)\s+.*from\s+["']\.\.\/parse-utils(?:\.js)?["']/,
+			/(?:import|require)[\s\S]*from\s+["']\.\.\/parse-utils(?:\.js)?["']/,
 		);
 	});
 });
