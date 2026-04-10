@@ -16,7 +16,20 @@ origin: docs/agents/review-gate-workflow-contract.md
 | `max_duration` | `600s (10 minutes)` |
 | `escalation` | `File issue with Review + CI labels` |
 
-## 2. Errors
+## 2. JSON Output Envelope
+
+`review-gate --json` now emits a normalized `GateResult` envelope (via `normaliseReviewGateResult`). Fields include:
+- `gate`: `"review-gate"`
+- `status`: `"pass"` | `"warn"` | `"fail"`
+- `reason`: short diagnosis
+- `action_now`, `action_later`: action guidance arrays
+- `evidence_ref`: artifact references
+- `findings`: normalized findings array (blockers mapped to `GateFinding` objects)
+- `meta`: contains `exitCode`, `headSha`, `checkStatus`, `checkConclusion`, `needsRerun`, `timedOut`, `policyGateStatus`, `planTraceabilityStatus`, `planIds`, `actionableCount`, `informationalCount`, `confidenceRubric`
+
+See `src/lib/output/normalise.ts` (`normaliseReviewGateResult`) and `src/lib/output/types.ts` (`GateResult`) for the canonical contract.
+
+## 3. Errors
 
 | Error | Condition | Routing |
 |-------|-----------|---------|
@@ -27,7 +40,7 @@ origin: docs/agents/review-gate-workflow-contract.md
 | `REVIEW_NOT_VERIFIED` | Gate completed but verification failed | Terminal fail (exit 5) |
 | `SYSTEM_ERROR` | Unexpected exception, network failure | Terminal fail (exit 10) |
 
-## 3. States
+## 4. States
 
 ```
 S0 IDLE (initial)
@@ -57,7 +70,7 @@ S23 FAILED_PERMISSION_DENIED (terminal)
 S24 FAILED_SYSTEM_ERROR (terminal)
 ```
 
-## 4. Transition Table (Canonical) — S | E | G | A | N
+## 5. Transition Table (Canonical) — S | E | G | A | N
 
 | S | E | G | A | N |
 |---|---|---|---|---|
@@ -93,7 +106,7 @@ S24 FAILED_SYSTEM_ERROR (terminal)
 | `S? *` | `error.uncaught` | G_permissionError | A_logPermissionDenied | `S23 FAILED_PERMISSION_DENIED` |
 | `S? *` | `error.uncaught` | G_systemError | A_logSystemError | `S24 FAILED_SYSTEM_ERROR` |
 
-## 5. Invariants
+## 6. Invariants
 
 - SHA must be validated before use (`validateSha()` at entry)
 - Provided SHA must match PR HEAD (explicit comparison before polling)
@@ -105,7 +118,7 @@ S24 FAILED_SYSTEM_ERROR (terminal)
 - Confidence score 5 requires all gates passing
 - Timeout action determines terminal state (`fail` → error; `warn` → `needsRerun: true`)
 
-## 6. Idempotency
+## 7. Idempotency
 
 - Key: `{{ workflow_id }}|{{ pr_number }}|{{ head_sha }}`
 - PR data fetched once at start (cached in `pullRequest` variable)
@@ -114,7 +127,7 @@ S24 FAILED_SYSTEM_ERROR (terminal)
 - Rerun comment deduplication by SHA (`hasRerunCommentForSha`)
 - Confidence rubric is deterministic (same inputs → same score/rationale)
 
-## 7. Mermaid State Diagram (Derived Strictly from Table)
+## 8. Mermaid State Diagram (Derived Strictly from Table)
 
 ```mermaid
 stateDiagram-v2
@@ -174,7 +187,7 @@ stateDiagram-v2
     S14_TIMEOUT_REACHED --> S17_COMPLETE_TIMEOUT_WARNING : timeout.handle (G_timeoutActionWarn)
 ```
 
-## 8. Pseudocode (Executor)
+## 9. Pseudocode (Executor)
 
 ```ts
 function execute(gate: ReviewGate, event: E): Transition {
@@ -305,7 +318,7 @@ function execute(gate: ReviewGate, event: E): Transition {
 }
 ```
 
-## 9. Log Schema
+## 10. Log Schema
 
 ```json
 {
@@ -346,14 +359,14 @@ function execute(gate: ReviewGate, event: E): Transition {
 }
 ```
 
-## 10. Modes: STRICT | ADVISORY
+## 11. Modes: STRICT | ADVISORY
 
 | Mode | Behavior |
 |------|----------|
 | `STRICT` | SHA mismatch is fatal (no bypass); all required checks must pass; all human review threads must be resolved; reviewer independence strictly enforced; timeout action `fail` halts workflow |
 | `ADVISORY` | Warnings for non-critical check failures; best-effort thread resolution; relaxed reviewer independence (configurable); timeout action `warn` returns `needsRerun: true`; allows partial verification with blockers listed |
 
-## 11. Dry-Run Simulation
+## 12. Dry-Run Simulation
 
 | State | Dry-Run Behavior |
 |-------|------------------|

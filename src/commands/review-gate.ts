@@ -16,12 +16,11 @@ import {
 } from "../lib/github/comments.js";
 import { validateSha } from "../lib/github/sha.js";
 import { sanitizeError } from "../lib/input/sanitize.js";
-import { runPlanGate } from "../lib/plan-gate/detector.js";
 import {
-	type CliErrorCode,
-	createJsonErrorOutput,
-	createJsonOutput,
-} from "../lib/result/types.js";
+	normaliseReviewGateResult,
+	renderGateDecision,
+} from "../lib/output/normalise.js";
+import { runPlanGate } from "../lib/plan-gate/detector.js";
 // Use the lib-layer bridge instead of importing directly from another command.
 import { runCheckAuthz } from "../lib/review-gate/authz.js";
 import { emitReviewGateDecisionArtifacts } from "../lib/review-gate/decision-packet.js";
@@ -900,24 +899,19 @@ export async function runReviewGateCLI(
 		const exitCode = result.output.verified
 			? EXIT_CODES.SUCCESS
 			: EXIT_CODES.REVIEW_NOT_VERIFIED;
+		const gateResult = normaliseReviewGateResult(result);
 
 		if (options.json) {
-			const jsonOutput = createJsonOutput(
-				"review-gate",
-				result.output,
-				exitCode,
-			);
-			console.info(JSON.stringify(jsonOutput, null, 2));
-		} else if (result.output.verified) {
-			console.info(`✓ Review verified for SHA ${result.output.headSha}`);
-			logConfidenceExport(result.output);
-		} else if (result.output.timedOut) {
-			console.warn(`⚠ Review check timed out for SHA ${result.output.headSha}`);
-			logConfidenceExport(result.output);
+			const jsonOutput = {
+				...gateResult,
+				meta: {
+					...(gateResult.meta ?? {}),
+					exitCode,
+				},
+			};
+			process.stdout.write(`${JSON.stringify(jsonOutput, null, 2)}\n`);
 		} else {
-			console.error(
-				`✗ Review not verified: check ${result.output.checkStatus}`,
-			);
+			renderGateDecision(gateResult);
 			logConfidenceExport(result.output);
 		}
 
@@ -938,7 +932,6 @@ export async function runReviewGateCLI(
 		return exitCode;
 	}
 
-	const errorCode = result.error.code as CliErrorCode;
 	const recoveryHint = getRecoveryHint(result.error.code);
 	const exitCode = (() => {
 		switch (result.error.code) {
@@ -954,22 +947,26 @@ export async function runReviewGateCLI(
 				return EXIT_CODES.SYSTEM_ERROR;
 		}
 	})();
+	const gateResult = normaliseReviewGateResult(result, recoveryHint);
 
 	if (options.json) {
-		const jsonOutput = createJsonErrorOutput(
-			"review-gate",
-			{
-				code: errorCode,
-				message: result.error.message,
-				...(recoveryHint ? { recovery: recoveryHint } : {}),
+		const jsonOutput = {
+			...gateResult,
+			meta: {
+				...(gateResult.meta ?? {}),
+				exitCode,
 			},
-			exitCode,
-		);
-		console.error(JSON.stringify(jsonOutput, null, 2));
+		};
+		process.stdout.write(`${JSON.stringify(jsonOutput, null, 2)}\n`);
 	} else {
-		console.error(`Error: ${result.error.message}`);
-		if (recoveryHint) {
-			console.error(`Recovery: ${recoveryHint}`);
+		// Error path uses stderr instead of stdout
+		console.error(`✗ ${gateResult.gate} ${gateResult.status}`);
+		console.error(`Reason: ${gateResult.reason}`);
+		if (gateResult.action_now.length > 0) {
+			console.error("Action now:");
+			for (const step of gateResult.action_now) {
+				console.error(`- ${step}`);
+			}
 		}
 	}
 
