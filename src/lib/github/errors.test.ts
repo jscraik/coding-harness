@@ -117,7 +117,9 @@ describe("GitHubApiError", () => {
 	});
 
 	it("has undefined requestId when header is absent", () => {
-		const error = GitHubApiError.fromError(createRequestError(404, "Not Found"));
+		const error = GitHubApiError.fromError(
+			createRequestError(404, "Not Found"),
+		);
 
 		expect(error.requestId).toBeUndefined();
 	});
@@ -158,7 +160,9 @@ describe("classifyError", () => {
 	});
 
 	it("returns the code from GitHubApiError instances", () => {
-		const error = GitHubApiError.fromError(createRequestError(422, "Unprocessable"));
+		const error = GitHubApiError.fromError(
+			createRequestError(422, "Unprocessable"),
+		);
 		expect(classifyError(error)).toBe("VALIDATION_FAILED");
 	});
 });

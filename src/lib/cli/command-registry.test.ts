@@ -783,9 +783,7 @@ describe("'commands' command execution", () => {
 			dispatchRegistryCommand("commands", ["commands", "--json"]);
 			const output = infoSpy.mock.calls.at(-1)?.[0];
 			const parsed = JSON.parse(String(output));
-			expect(parsed.commandCount).toBe(
-				(parsed.commands as unknown[]).length,
-			);
+			expect(parsed.commandCount).toBe((parsed.commands as unknown[]).length);
 		} finally {
 			infoSpy.mockRestore();
 		}
@@ -826,9 +824,7 @@ describe("getRegistryCommandHelpRows (updated)", () => {
 		expect(withLegacy.map((r) => r.name)).toEqual(
 			withoutLegacy.map((r) => r.name),
 		);
-		expect(withLegacy.map((r) => r.name)).toEqual(
-			defaults.map((r) => r.name),
-		);
+		expect(withLegacy.map((r) => r.name)).toEqual(defaults.map((r) => r.name));
 	});
 
 	it("does not include legacy grouped commands like 'repo' or 'gate'", () => {

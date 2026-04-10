@@ -112,7 +112,8 @@ export type CommandCategory =
 	| "review-policy"
 	| "workflow-linear"
 	| "pilot-remediation"
-	| "drift-search-evidence";
+	| "drift-search-evidence"
+	| "uncategorized";
 
 export type CommandMutability = "read" | "write";
 export type CommandRetryability = "safe" | "conditional" | "manual";
@@ -2334,10 +2335,19 @@ const SAFE_FIRST_ALTERNATIVES_BY_NAME: Partial<Record<string, string[]>> = {
  * Determine the command category for a given command name or alias, falling back to a default when the name is not recognized.
  *
  * @param name - The canonical command name or alias to classify
- * @returns The command's category; returns `"drift-search-evidence"` when the name is not present in the category mapping
+ * @returns The command's category; returns `"uncategorized"` when the name is not present in the category mapping
  */
 function getCommandCategory(name: string): CommandCategory {
-	return COMMAND_CATEGORY_BY_NAME[name] ?? "drift-search-evidence";
+	const category = COMMAND_CATEGORY_BY_NAME[name];
+	if (!category) {
+		if (process.env.NODE_ENV !== "production") {
+			throw new Error(
+				`Command "${name}" is not categorized in COMMAND_CATEGORY_BY_NAME. Add an entry to prevent silent mislabeling.`,
+			);
+		}
+		return "uncategorized";
+	}
+	return category;
 }
 
 /**
