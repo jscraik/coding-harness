@@ -1,20 +1,7 @@
-import { COMMAND_SPECS } from "./registry/command-specs.js";
+import { COMMAND_SPECS } from "./registry/index.js";
 import type { CommandSpec, RegistryDispatchResult } from "./registry/types.js";
 
-export interface CommandSpec {
-	name: string;
-	aliases?: string[];
-	summary: string;
-	errorLabel: string;
-	/** Canonical example invocation shown in error suggestions (omit "harness " prefix). */
-	example?: string;
-	execute: (args: string[]) => number | Promise<number>;
-}
-
-export interface RegistryDispatchResult {
-	spec: CommandSpec;
-	result: number | Promise<number>;
-}
+export type { CommandSpec, RegistryDispatchResult };
 
 interface GroupedActionSpec {
 	command: string;

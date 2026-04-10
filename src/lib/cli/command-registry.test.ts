@@ -288,15 +288,18 @@ describe("command registry architecture boundaries", () => {
 		expect(content).not.toContain("../../commands/");
 	});
 
-	it("keeps command manifests in the dedicated registry module", () => {
-		const specsPath = join(
+	it("ensures command-registry imports only from registry folder", () => {
+		const registryPath = join(
 			process.cwd(),
-			"src/lib/cli/registry/command-specs.ts",
+			"src/lib/cli/command-registry.ts",
 		);
-		const content = readFileSync(specsPath, "utf-8");
-		expect(content).toContain("export const COMMAND_SPECS");
-		expect(content).toContain("../../../commands/");
-		expect(content).not.toContain("fuzzyFindCommand");
-		expect(content).not.toContain("dispatchRegistryCommand");
+		const content = readFileSync(registryPath, "utf-8");
+		// Verify registry imports come from registry/ folder
+		expect(content).toMatch(/import.*from\s+["']\.\/registry\//);
+		// Verify no direct imports from commands folder
+		expect(content).not.toContain("../../commands/");
+		// Verify no runtime helpers like fuzzyFindCommand or dispatchRegistryCommand in imports
+		expect(content).not.toContain('from "./fuzzy-find-command');
+		expect(content).not.toContain('from "./dispatch-registry-command');
 	});
 });
