@@ -168,7 +168,7 @@ function runGroupedCommand(
 	const action = args[0];
 	if (!action || action.startsWith("-")) {
 		if (jsonFlag) {
-			console.log(
+			console.info(
 				JSON.stringify({
 					error: `${groupName} expects an action`,
 					availableActions: Object.keys(actions),
@@ -185,7 +185,7 @@ function runGroupedCommand(
 	const normalizedAction = action.toLowerCase();
 	if (!Object.hasOwn(actions, normalizedAction)) {
 		if (jsonFlag) {
-			console.log(
+			console.info(
 				JSON.stringify({
 					error: `Unknown ${groupName} action "${action}"`,
 					availableActions: Object.keys(actions),
