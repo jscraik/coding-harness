@@ -1,12 +1,14 @@
-import { mkdirSync, rmSync, writeFileSync } from "node:fs";
+import { chmodSync, mkdirSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
-import { join } from "node:path";
+import { delimiter, join } from "node:path";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import { runPreflightGate } from "./validator.js";
 
 describe("runPreflightGate", () => {
 	let tempDir: string;
 	let originalCwd: string;
+	const originalPath = process.env.PATH ?? "";
+	const cleanupPaths: string[] = [];
 
 	beforeEach(() => {
 		originalCwd = process.cwd();
@@ -22,7 +24,16 @@ describe("runPreflightGate", () => {
 	afterEach(() => {
 		process.chdir(originalCwd);
 		rmSync(tempDir, { recursive: true, force: true });
+		for (const path of cleanupPaths.splice(0, cleanupPaths.length)) {
+			rmSync(path, { recursive: true, force: true });
+		}
+		process.env.PATH = originalPath;
 	});
+
+	function writeExecutable(path: string, content: string): void {
+		writeFileSync(path, content, { encoding: "utf-8" });
+		chmodSync(path, 0o755);
+	}
 
 	it("uses default harness.contract.json when contractPath is omitted", async () => {
 		writeFileSync(
@@ -187,5 +198,48 @@ describe("runPreflightGate", () => {
 		expect(
 			result.hookDecisions?.some((decision) => decision.action === "block"),
 		).toBe(true);
+	});
+
+	it("fails when global and repo-local harness versions drift", async () => {
+		writeFileSync(
+			"harness.contract.json",
+			JSON.stringify({
+				version: "1.0",
+				riskTierRules: {
+					"src/auth/**": "high",
+				},
+			}),
+		);
+		mkdirSync("src/auth", { recursive: true });
+		writeFileSync("src/auth/login.ts", "export const login = true;\n");
+		mkdirSync("scripts", { recursive: true });
+		writeExecutable(
+			"scripts/harness-cli.sh",
+			"#!/usr/bin/env bash\necho 'harness v0.12.0'\n",
+		);
+
+		const fakeBinDir = join(
+			tmpdir(),
+			`harness-preflight-bin-${Date.now()}-${Math.floor(Math.random() * 1000)}`,
+		);
+		mkdirSync(fakeBinDir, { recursive: true });
+		cleanupPaths.push(fakeBinDir);
+		writeExecutable(
+			join(fakeBinDir, "harness"),
+			"#!/usr/bin/env bash\necho 'harness v0.6.0'\n",
+		);
+		process.env.PATH = `${fakeBinDir}${delimiter}${originalPath}`;
+
+		const result = await runPreflightGate({
+			files: ["src/auth/login.ts"],
+		});
+		const coherenceCheck = result.checks.find(
+			(check) => check.id === "harness-version-coherence",
+		);
+
+		expect(coherenceCheck?.passed).toBe(false);
+		expect(coherenceCheck?.severity).toBe("error");
+		expect(coherenceCheck?.message).toContain("Version drift detected");
+		expect(result.passed).toBe(false);
 	});
 });

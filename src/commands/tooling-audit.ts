@@ -551,24 +551,29 @@ function auditLocalHooks(
 	if (prekContent === null) {
 		addMissingFileFinding(findings, TOOLING_PREK_CONFIG_PATH, "prek config");
 	} else {
-		for (const [hookName, commands] of Object.entries(REQUIRED_PREK_HOOKS)) {
+		for (const [hookName, hookConfig] of Object.entries(REQUIRED_PREK_HOOKS)) {
+			const hookStages =
+				"stages" in hookConfig ? (hookConfig.stages ?? []) : [];
 			const hookPattern = new RegExp(
-				String.raw`\[\[repos\.hooks\]\][\s\S]*?id = "${hookName}"[\s\S]*?entry = "${commands.join(" && ")}"${
-					hookName === "pre-push"
-						? String.raw`[\s\S]*?stages = \["pre-push"\]`
+				String.raw`\[\[repos\.hooks\]\][\s\S]*?id = "${hookName}"[\s\S]*?name = "${hookConfig.name}"[\s\S]*?entry = "${hookConfig.entry}"[\s\S]*?language = "${hookConfig.language}"[\s\S]*?pass_filenames = ${String(hookConfig.pass_filenames)}${
+					hookStages.length
+						? String.raw`[\s\S]*?stages = \["${hookStages.join(String.raw`", "`)}"\]`
 						: ""
 				}`,
 			);
-			const expected =
-				hookName === "pre-push"
-					? `[[repos.hooks]] id = "${hookName}" entry = "${commands.join(" && ")}" stages = ["pre-push"]`
-					: `[[repos.hooks]] id = "${hookName}" entry = "${commands.join(" && ")}"`;
 			if (!hookPattern.test(prekContent)) {
 				findings.push({
 					path: TOOLING_PREK_CONFIG_PATH,
 					severity: "critical",
 					description: `Prek hook '${hookName}' is missing or out of date`,
-					expected,
+					expected: {
+						id: hookName,
+						name: hookConfig.name,
+						entry: hookConfig.entry,
+						language: hookConfig.language,
+						pass_filenames: hookConfig.pass_filenames,
+						stages: hookStages,
+					},
 				});
 			}
 		}

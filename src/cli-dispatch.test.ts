@@ -124,14 +124,14 @@ describe("cli command dispatch", () => {
 		vi.restoreAllMocks();
 	});
 
-	it("lists all migrated commands in --help output", async () => {
+	it("lists all migrated commands in --help --all-commands output", async () => {
 		const { run } = await import("./cli.js");
 		const { MIGRATED_COMMAND_NAMES } = await import(
 			"./lib/cli/command-registry.js"
 		);
 		const infoSpy = vi.spyOn(console, "info").mockImplementation(() => {});
 
-		run(["--help"]);
+		run(["--help", "--all-commands"]);
 
 		const lines = infoSpy.mock.calls.map(([line]) => String(line));
 		for (const name of MIGRATED_COMMAND_NAMES) {
