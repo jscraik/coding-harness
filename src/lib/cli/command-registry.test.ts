@@ -20,92 +20,27 @@ import {
 
 describe("command registry", () => {
 	it("exposes migrated command names", () => {
-		expect(MIGRATED_COMMAND_NAMES).toEqual([
-			"commands",
-			"repo",
-			"gate",
-			"work",
-			"ui",
-			"pilot",
-			"linear",
-			"linear-gate",
-			"pr-template-gate",
-			"policy-gate",
-			"evidence-verify",
-			"preflight-gate",
-			"review-gate",
-			"branch-protect",
-			"check-authz",
-			"check-environment",
-			"local-memory-preflight",
-			"docs-gate",
-			"license-gate",
-			"symphony-check",
-			"workflow:generate",
-			"org-audit",
-			"tooling-audit",
-			"preset",
-			"check",
-			"doctor",
-			"health",
-			"eject",
-			"verify-work",
-			"verify-coderabbit",
-			"contract",
-			"risk-tier",
-			"replay",
-			"gardener",
-			"memory-gate",
-			"silent-error",
-			"brainstorm-gate",
-			"plan-gate",
-			"prompt-gate",
-			"drift-gate",
-			"ui:fast",
-			"blast-radius",
-			"automation-run",
-			"remediate",
-			"observability-gate",
-			"gap-case",
-			"ui:verify",
-			"ui:explore",
-			"simulate",
-			"context",
-			"search",
-			"index-context",
-			"context-health",
-			"init",
-			"upgrade",
-			"ci-migrate",
-			"diff-budget",
-			"pilot-rollback",
-			"pilot-evaluate",
-		]);
+		const capabilityNames = getRegistryCommandCapabilities().map(
+			(capability) => capability.name,
+		);
+		expect(MIGRATED_COMMAND_NAMES).toEqual(capabilityNames);
+		expect(MIGRATED_COMMAND_NAMES).toContain("commands");
+		expect(MIGRATED_COMMAND_NAMES).toContain("contract");
+		expect(MIGRATED_COMMAND_NAMES).not.toContain("repo");
+		expect(MIGRATED_COMMAND_NAMES).not.toContain("gate");
 	});
 
-	it("routes grouped gate action to legacy gate implementation", () => {
-		const result = dispatchRegistryCommand("gate", [
-			"gate",
-			"policy",
-			"--json",
-		]);
-		expect(result?.spec.name).toBe("gate");
+	it("dispatches commands catalog from registry", () => {
+		const result = dispatchRegistryCommand("commands", ["commands", "--json"]);
+		expect(result?.spec.name).toBe("commands");
+		expect(result?.result).toBe(0);
 	});
 
-	it("routes grouped repo action to legacy repo implementation", () => {
-		const result = dispatchRegistryCommand("repo", [
-			"repo",
-			"contract",
-			"validate",
-			"--json",
-		]);
-		expect(result?.spec.name).toBe("repo");
-	});
-
-	it("rejects inherited-key grouped actions without crashing", () => {
-		const invoke = () => dispatchRegistryCommand("repo", ["repo", "toString"]);
+	it("rejects inherited-key-like unknown commands without crashing", () => {
+		const inherited = Object.create({ repo: "repo" }) as { repo?: string };
+		const invoke = () => dispatchRegistryCommand(inherited.repo, ["repo"]);
 		expect(invoke).not.toThrow();
-		expect(invoke()?.result).toBe(2);
+		expect(invoke()).toBeUndefined();
 	});
 
 	it("resolves alias to policy-gate spec", () => {

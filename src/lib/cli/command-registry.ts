@@ -2437,7 +2437,9 @@ export const MIGRATED_COMMAND_AND_ALIAS_NAMES = COMMAND_SPECS.flatMap(
  *
  * @returns An array of objects each with `name` and `summary` for every registered command.
  */
-export function getRegistryCommandHelpRows(): Array<{
+export function getRegistryCommandHelpRows(_options?: {
+	includeLegacy?: boolean;
+}): Array<{
 	name: string;
 	summary: string;
 }> {
