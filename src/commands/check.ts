@@ -86,6 +86,7 @@ function checkGitRepo(dir: string): CheckItem {
  *
  * - If coherence status is `"drift"`, the check status is `fail`.
  * - If coherence status is `"error"`, the check status is `warn`.
+ * - If coherence status is `"skip"`, the check status is `warn`.
  * - Otherwise the check status is `ok`.
  * When `detectHarnessVersionCoherence` provides a remediation string, it is included as the check's `fix`.
  *
@@ -105,6 +106,16 @@ function checkHarnessVersionCoherence(dir: string): CheckItem {
 	}
 
 	if (coherence.status === "error") {
+		return {
+			id: "harness:version-coherence",
+			label: "Harness version coherence",
+			status: "warn",
+			detail: coherence.message,
+			...(coherence.remediation ? { fix: coherence.remediation } : {}),
+		};
+	}
+
+	if (coherence.status === "skip") {
 		return {
 			id: "harness:version-coherence",
 			label: "Harness version coherence",
