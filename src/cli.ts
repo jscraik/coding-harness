@@ -109,14 +109,14 @@ function printUsage(options: { includeLegacyCommands?: boolean } = {}): void {
 export { parseIntegerArg, parseCsvList };
 
 /**
- * Entrypoint that parses CLI arguments, dispatches the selected subcommand, and exits with the command's exit code.
+ * Dispatches a CLI command from the provided argv slice and exits with the command's exit code.
  *
- * Parses top-level flags (--version, --help), attempts registry-based dispatch, and otherwise routes known commands
- * to their respective handlers; prints usage or an unknown-command message when appropriate. This function performs
- * process-level side effects (console output and calling process.exit) and will call the global fatal error handler
- * on unhandled asynchronous failures.
+ * Handles top-level flags (`--version`, `--help`), performs exact and fuzzy registry dispatch, prints usage
+ * or an unknown-command report with suggestions, and emits correction notes to stderr when a fuzzy match is used.
+ * This function performs process-level side effects (console output and calling `process.exit`) and routes
+ * asynchronous failures to the global fatal error handler.
  *
- * @param args - Command-line arguments excluding the node and executable path (e.g., process.argv.slice(2)).
+ * @param args - Command-line arguments excluding the node and executable path (e.g., `process.argv.slice(2)`)
  */
 export function run(args: string[]): void {
 	const version = getVersion();
