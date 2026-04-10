@@ -133,8 +133,20 @@ with open(config_path, "rb") as handle:
     data = tomllib.load(handle)
 
 required = {
-    "pre-commit": ("make hooks-pre-commit", None),
-    "pre-push": ("make hooks-pre-push", "pre-push"),
+    "pre-commit": {
+        "name": "Pre-commit",
+        "entry": "make hooks-pre-commit",
+        "language": "system",
+        "pass_filenames": False,
+        "stages": [],
+    },
+    "pre-push": {
+        "name": "Pre-push",
+        "entry": "make hooks-pre-push",
+        "language": "system",
+        "pass_filenames": False,
+        "stages": ["pre-push"],
+    },
 }
 
 hooks = []
@@ -142,14 +154,22 @@ for repo in data.get("repos", []):
     if repo.get("repo") == "local":
         hooks.extend(repo.get("hooks", []))
 
-for hook_id, (entry, required_stage) in required.items():
+for hook_id, expected in required.items():
     matched = False
     for hook in hooks:
         if hook.get("id") != hook_id:
             continue
-        if hook.get("entry") != entry:
+        if hook.get("name") != expected["name"]:
             continue
-        if required_stage is not None and required_stage not in hook.get("stages", []):
+        if hook.get("entry") != expected["entry"]:
+            continue
+        if hook.get("language") != expected["language"]:
+            continue
+        if bool(hook.get("pass_filenames")) != expected["pass_filenames"]:
+            continue
+        expected_stages = expected["stages"]
+        actual_stages = hook.get("stages", [])
+        if expected_stages and actual_stages != expected_stages:
             continue
         matched = True
         break

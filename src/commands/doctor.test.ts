@@ -116,6 +116,43 @@ describe("runDoctor — tool checks", () => {
 		expect(ghCheck?.status).toBe("warn");
 		expect(ghCheck?.fix).toBe("gh auth login");
 	});
+
+	it("fails when harness version drift is detected", () => {
+		mkdirSync(join(dir, "scripts"), { recursive: true });
+		writeFileSync(
+			join(dir, "scripts/harness-cli.sh"),
+			"#!/usr/bin/env bash\necho 'harness v0.12.0'\n",
+		);
+		mockSpawnSync.mockImplementation((cmd, args) => {
+			const cmdStr = String(cmd);
+			const argsArr = Array.isArray(args) ? args.map(String) : [];
+
+			if (cmdStr === "node") return makeSpawnResult(0, "v24.0.0");
+			if (cmdStr === "pnpm") return makeSpawnResult(0, "10.0.0");
+			if (cmdStr === "git") return makeSpawnResult(0, "git version 2.44.0");
+			if (cmdStr === "gh" && argsArr.includes("status")) {
+				return makeSpawnResult(0, "ok");
+			}
+			if (cmdStr === "gh") return makeSpawnResult(0, "gh version 2.0.0");
+			if (cmdStr === "bash") return makeSpawnResult(0, "harness v0.12.0");
+			if (cmdStr === "which" && argsArr[0] === "harness") {
+				return makeSpawnResult(0, "/opt/homebrew/bin/harness");
+			}
+			if (cmdStr === "/opt/homebrew/bin/harness") {
+				return makeSpawnResult(0, "harness v0.6.0");
+			}
+			if (cmdStr === "which") return makeSpawnResult(0, "found");
+			return makeSpawnResult(0, "");
+		});
+
+		const report = runDoctor({ dir });
+		const coherenceCheck = report.checks.find(
+			(c) => c.id === "tool:harness-version-coherence",
+		);
+		expect(coherenceCheck?.status).toBe("fail");
+		expect(coherenceCheck?.message).toContain("Version drift detected");
+		expect(coherenceCheck?.fix).toContain("scripts/harness-cli.sh");
+	});
 });
 
 describe("runDoctor — file checks", () => {
