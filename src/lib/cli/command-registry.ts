@@ -2322,11 +2322,11 @@ const SAFE_FIRST_ALTERNATIVES_BY_NAME: Partial<Record<string, string[]>> = {
 	init: ["init --dry-run", "check --json"],
 	upgrade: ["upgrade --dry-run", "contract validate --json"],
 	"ci-migrate": ["ci-migrate prepare --dry-run --json"],
-	remediate: ["remediate plan --json"],
+	remediate: ["remediate run --json"],
 	linear: ["linear prepare --issue <KEY>", "linear triage --dry-run --json"],
 	"linear-gate": ["linear prepare --issue <KEY>"],
 	"branch-protect": ["check-authz --json"],
-	"pilot-rollback": ["pilot-evaluate --json"],
+	"pilot-rollback": ["pilot-evaluate --artifacts <PATH> --json"],
 	"automation-run": ["check --json"],
 };
 
