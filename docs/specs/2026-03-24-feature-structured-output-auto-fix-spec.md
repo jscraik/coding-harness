@@ -23,6 +23,7 @@ ui_required: false
 - [Non-Goals](#non-goals)
 - [System Boundary](#system-boundary)
 - [Core Domain Model](#core-domain-model)
+- [Migration Notes and Compatibility Strategy](#migration-notes-and-compatibility-strategy)
 - [Main Flow and Lifecycle](#main-flow-and-lifecycle)
 - [Interfaces and Dependencies](#interfaces-and-dependencies)
 - [Invariants and Safety Requirements](#invariants-and-safety-requirements)
@@ -58,7 +59,7 @@ Coding agents consume `harness` CLI output by shelling out and parsing text. Two
 
 - MCP server (`harness mcp-serve`) — deferred to JSC-71 v2.
 - Full `--json` normalisation for all 50+ commands — v1 covers the gate commands surfaced by `harness health` and `harness doctor`.
-- Per-project check suppressions ([JSC-70](https://linear.app/jscraik/issue/JSC-70)).
+- Per-project check exemptions ([JSC-70](https://linear.app/jscraik/issue/JSC-70)).
 - Publishing a JSON Schema to `schema.brainwav.io` — deferred.
 - Structured logging to `artifacts/harness/logs/` — deferred.
 - `harness insights` local telemetry — deferred.
@@ -155,7 +156,36 @@ export interface GateFinding {
 }
 ```
 
-#### Binary-result adapter synthesis rules
+## Migration Notes and Compatibility Strategy
+
+JSC-180 extends the canonical gate envelope with mandatory remediation fields:
+
+- `status`
+- `reason`
+- `action_now`
+- `action_later`
+- `evidence_ref`
+
+Compatibility strategy:
+
+1. Preserve existing canonical fields (`gate`, `version`, `timestamp`, `findings`, `summary`, `meta`) so existing parsers keep working.
+2. Add the new decision fields as additive, top-level fields in `GateResult`.
+3. Roll out command behavior progressively to remediation-heavy gates first:
+- `policy-gate`
+- `docs-gate`
+- `preflight-gate`
+- `review-gate`
+4. Keep JSON output deterministic and machine-parseable; no command-specific wrapper envelopes for these gates.
+5. Align non-JSON output to the same decision model so human and agent consumers receive equivalent guidance.
+
+Consumer migration guidance:
+
+1. Continue reading existing fields during transition.
+2. Prefer `reason` for short diagnosis.
+3. Execute `action_now` first, then `action_later`.
+4. Use `evidence_ref` for artifact linking, issue comments, and audit breadcrumbs.
+
+### Binary-result Adapter Synthesis Rules
 
 For `policy-gate`, `plan-gate`, `pr-template-gate`:
 
@@ -381,11 +411,11 @@ No new runtime dependencies. Adapters are pure functions: `(GateSpecificResult) 
 | SA6 | `harness health --auto-fix --dry-run` prints fix plan and exits 0 without mutating files | Unit test: spy on `spawnSync`, assert not called |
 | SA7 | `harness health --auto-fix` applies findings with `fix.command` and records outcomes in `AutoFixResult` | Unit test: stub gate output with 2 fixable findings, verify `spawnSync` called for each |
 | SA8 | `harness health --auto-fix` skips findings whose `fix.command` matches the exclusion list | Unit test: assert `spawnSync` not called for excluded commands |
-| SA9 | `harness health --auto-fix --json` outputs a valid `AutoFixResult` | Unit test: assert stdout is parseable and matches schema |
+| SA9 | `harness health --auto-fix --json` outputs a valid `AutoFixResult` | Unit test: assert stdout can be parsed and matches schema |
 | SA10 | All 6 in-scope gate adapters produce `GateFinding.severity` from `"error"\|"warning"\|"info"` | Unit test: adapter round-trip for each gate |
 | SA11 | `GateFinding.id` is stable across two runs with identical input | Unit test: same input → same id |
 | SA12 | Exit codes for normalised gate commands are unchanged | Integration test: compare exit codes before/after normalisation |
-| SA13 | Skill SKILL.md documents `GateFinding` and `GateResult` schema with a concrete `jq` example | Manual review |
+| SA13 | The coding-harness skill doc documents `GateFinding` and `GateResult` schema with a concrete `jq` example | Manual review |
 | SA14 | `policy-gate --json` with a failing result produces ≥1 `GateFinding` (no empty findings when `passed: false`) | Unit test: binary-result adapter with `passed: false, errors: ["msg"]` → `findings.length === 1` |
 | SA15 | `policy-gate --json` with `passed: true` produces `findings: []` and `status: "pass"` | Unit test: binary-result adapter with `passed: true` → `findings.length === 0` |
 | SA16 | `policy-gate --json` with empty `errors` array and `passed: false` produces one synthetic `"result.error.unknown"` finding | Unit test: adapter synthesis edge-case |
@@ -399,7 +429,7 @@ No new runtime dependencies. Adapters are pure functions: `(GateSpecificResult) 
 
 ## Open Questions
 
-1. **Zod vs manual runtime validation**: Should `GateResult` be validated at runtime with Zod when deserialized by agents, or is TypeScript compile-time typing sufficient for v1? (Recommendation: TypeScript-only for v1, Zod deferred to when the schema is published externally.)
+1. **Runtime-schema validation vs manual validation**: Should `GateResult` be validated at runtime with a schema library when read by agents, or is TypeScript compile-time typing sufficient for v1? (Recommendation: TypeScript-only for v1, runtime schema validation deferred until the schema is published externally.)
 2. ~~**Thin gates audit**: Which commands produce per-finding arrays vs binary results?~~ **Resolved 2026-03-24**: Full command audit complete. Three adapter shape classes identified — see Core Domain Model. `review-gate` excluded from v1 (async).
 3. **Skill update scope**: The SKILL.md update should include at minimum one concrete `jq` query example (`harness drift-gate --json | jq '.findings[] | select(.severity=="error")'`) to be useful to agents directly. Confirmed in SA13.
 

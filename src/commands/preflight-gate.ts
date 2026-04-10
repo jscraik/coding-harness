@@ -4,6 +4,7 @@
  * Fast checks to run before expensive operations (tests, builds).
  */
 
+import { normalisePreflightGateResult } from "../lib/output/normalise.js";
 import {
 	EXIT_CODES,
 	type PreflightGateOptions,
@@ -20,40 +21,36 @@ export async function runPreflightGateCLI(
 	options: PreflightGateOptions,
 ): Promise<number> {
 	const result = await runPreflightGate(options);
+	const gateResult = normalisePreflightGateResult(result);
 
 	if (options.json) {
-		// biome-ignore lint/suspicious/noConsoleLog: CLI output
-		console.log(JSON.stringify(result, null, 2));
+		process.stdout.write(`${JSON.stringify(gateResult, null, 2)}\n`);
 	} else {
-		// Print summary header
-		const statusIcon = result.passed ? "✓" : "✗";
-		const statusText = result.passed ? "PASSED" : "FAILED";
-		// biome-ignore lint/suspicious/noConsoleLog: CLI output
-		console.log(`${statusIcon} Preflight gate ${statusText}`);
-		// biome-ignore lint/suspicious/noConsoleLog: CLI output
-		console.log();
-
-		// Print individual checks
-		for (const check of result.checks) {
-			const icon = check.passed ? "✓" : check.severity === "error" ? "✗" : "⚠";
-			// biome-ignore lint/suspicious/noConsoleLog: CLI output
-			console.log(`${icon} ${check.description} (${check.durationMs}ms)`);
-			if (!check.passed && check.message) {
-				// biome-ignore lint/suspicious/noConsoleLog: CLI output
-				console.log(`  ${check.message}`);
+		const icon =
+			gateResult.status === "pass"
+				? "✓"
+				: gateResult.status === "warn"
+					? "⚠"
+					: "✗";
+		console.info(`${icon} preflight-gate ${gateResult.status}`);
+		console.info(`Reason: ${gateResult.reason}`);
+		if (gateResult.action_now.length > 0) {
+			console.info("Action now:");
+			for (const step of gateResult.action_now) {
+				console.info(`- ${step}`);
 			}
 		}
-
-		// biome-ignore lint/suspicious/noConsoleLog: CLI output
-		console.log();
-		// biome-ignore lint/suspicious/noConsoleLog: CLI output
-		console.log(
+		if (gateResult.action_later.length > 0) {
+			console.info("Action later:");
+			for (const step of gateResult.action_later) {
+				console.info(`- ${step}`);
+			}
+		}
+		console.info(
 			`Summary: ${result.summary.passed}/${result.summary.total} checks passed (${result.summary.durationMs}ms)`,
 		);
-
 		if (result.riskTier) {
-			// biome-ignore lint/suspicious/noConsoleLog: CLI output
-			console.log(`Risk tier: ${result.riskTier}`);
+			console.info(`Risk tier: ${result.riskTier}`);
 		}
 	}
 

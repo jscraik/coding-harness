@@ -1059,38 +1059,29 @@ export function runDocsGate(options: DocsGateOptions = {}): DocsGateResult {
  */
 export function runDocsGateCLI(options: DocsGateOptions = {}): number {
 	const result = runDocsGate(options);
+	const gateResult = normaliseDocsGateResult(result);
 
 	if (options.json) {
-		const gateResult = normaliseDocsGateResult(result);
 		process.stdout.write(`${JSON.stringify(gateResult, null, 2)}\n`);
 	} else {
 		const icon =
-			result.report.status === "success"
+			gateResult.status === "pass"
 				? "✓"
-				: result.report.status === "partial"
+				: gateResult.status === "warn"
 					? "⚠"
 					: "✗";
-		console.info(
-			`${icon} docs-gate (${result.report.mode}) ${result.report.status} - ${result.report.outcome}`,
-		);
-		console.info(`Findings: ${result.report.summary.finding_count}`);
-		console.info(
-			`Surfaces: ${result.report.summary.required_surface_count} required, ${result.report.summary.missing_surface_count} missing`,
-		);
-
-		if (result.report.findings.length > 0) {
-			console.info("");
-			for (const finding of result.report.findings) {
-				const level =
-					finding.severity === "error"
-						? "ERROR"
-						: finding.severity === "warning"
-							? "WARN"
-							: "INFO";
-				const suffix = finding.path ? ` (${finding.path})` : "";
-				console.info(
-					`- [${level}] ${finding.rule_id}: ${finding.message}${suffix}`,
-				);
+		console.info(`${icon} docs-gate ${gateResult.status}`);
+		console.info(`Reason: ${gateResult.reason}`);
+		if (gateResult.action_now.length > 0) {
+			console.info("Action now:");
+			for (const step of gateResult.action_now) {
+				console.info(`- ${step}`);
+			}
+		}
+		if (gateResult.action_later.length > 0) {
+			console.info("Action later:");
+			for (const step of gateResult.action_later) {
+				console.info(`- ${step}`);
 			}
 		}
 	}

@@ -17,11 +17,15 @@ import type {
 	LinearGateOutput,
 	LinearGateResult,
 } from "../../commands/linear-gate.js";
+import type { PreflightGateResult } from "../preflight/types.js";
+import type { ReviewGateResult } from "../review-gate/types.js";
 import {
 	classifyLinearGateFailure,
 	normaliseDocsGateResult,
 	normaliseDriftGateResult,
 	normaliseLinearGateResult,
+	normalisePreflightGateResult,
+	normaliseReviewGateResult,
 } from "./normalise.js";
 
 // ─── Fixtures ─────────────────────────────────────────────────────────────────
@@ -188,6 +192,54 @@ function makeLinearGateResult(
 			issueKeys: { ...baseIssueKeys, ...(issueKeys ?? {}) },
 		},
 	};
+}
+
+function makePreflightResult(
+	overrides: Partial<PreflightGateResult> = {},
+): PreflightGateResult {
+	return {
+		passed: true,
+		checks: [],
+		summary: {
+			total: 0,
+			passed: 0,
+			failed: 0,
+			warnings: 0,
+			durationMs: 10,
+		},
+		...overrides,
+	};
+}
+
+function makeReviewResult(
+	overrides: Partial<ReviewGateResult> = {},
+): ReviewGateResult {
+	const base: ReviewGateResult = {
+		ok: true,
+		output: {
+			verified: true,
+			headSha: "0123456789abcdef0123456789abcdef01234567",
+			checkStatus: "completed",
+			checkConclusion: "success",
+			needsRerun: false,
+			policy_gate_status: "pass",
+			plan_traceability_status: "pass",
+			plan_ids: ["feat-review-gate-traceability"],
+			blockers: [],
+			actionable_count: 0,
+			informational_count: 1,
+			confidence_rubric: {
+				score: 5,
+				level: "high",
+				rationale: ["ready to merge"],
+			},
+		},
+	};
+
+	return {
+		...base,
+		...overrides,
+	} as ReviewGateResult;
 }
 
 // ─── drift-gate adapter tests (SA2, SA10, SA11) ──────────────────────────────
@@ -588,5 +640,117 @@ describe("normaliseLinearGateResult (P4 governance failure classification)", () 
 			failureClass: "internal_unknown",
 			nextAction: "Inspect gate output, fix root cause, and rerun linear-gate.",
 		});
+	});
+});
+
+describe("normalisePreflightGateResult", () => {
+	it("maps passing result to pass with decision fields", () => {
+		const result = normalisePreflightGateResult(
+			makePreflightResult({
+				passed: true,
+				checks: [
+					{
+						id: "git-repository",
+						description: "git repo",
+						severity: "error",
+						passed: true,
+						durationMs: 5,
+					},
+				],
+				summary: { total: 1, passed: 1, failed: 0, warnings: 0, durationMs: 5 },
+			}),
+		);
+
+		expect(result.status).toBe("pass");
+		expect(result.reason).toContain("Preflight checks passed");
+		expect(result.action_now).toEqual([]);
+		expect(result.evidence_ref).toContain("gate:preflight-gate");
+	});
+
+	it("maps failing checks to findings and fail status", () => {
+		const result = normalisePreflightGateResult(
+			makePreflightResult({
+				passed: false,
+				checks: [
+					{
+						id: "risk-tier",
+						description: "risk tier",
+						severity: "error",
+						passed: false,
+						message: "Risk tier high exceeds max medium",
+						files: ["src/commands/review-gate.ts"],
+						durationMs: 8,
+					},
+				],
+				summary: { total: 1, passed: 0, failed: 1, warnings: 0, durationMs: 8 },
+			}),
+		);
+
+		expect(result.status).toBe("fail");
+		expect(result.findings[0]?.id).toBe("preflight-gate.check.risk-tier");
+		expect(result.findings[0]?.path).toBe("src/commands/review-gate.ts");
+		expect(result.action_now.length).toBeGreaterThan(0);
+		expect(result.evidence_ref).toContain("path:src/commands/review-gate.ts");
+	});
+});
+
+describe("normaliseReviewGateResult", () => {
+	it("maps verified output to pass", () => {
+		const result = normaliseReviewGateResult(makeReviewResult());
+		expect(result.status).toBe("pass");
+		expect(result.reason).toContain("Review verified");
+		expect(result.findings).toHaveLength(0);
+		expect(result.evidence_ref).toContain(
+			"sha:0123456789abcdef0123456789abcdef01234567",
+		);
+	});
+
+	it("maps unverified blocked output to fail findings", () => {
+		const result = normaliseReviewGateResult(
+			makeReviewResult({
+				ok: true,
+				output: {
+					verified: false,
+					headSha: "0123456789abcdef0123456789abcdef01234567",
+					checkStatus: "completed",
+					checkConclusion: "failure",
+					needsRerun: true,
+					policy_gate_status: "fail",
+					plan_traceability_status: "fail",
+					plan_ids: [],
+					blockers: ["Required check 'CodeRabbit' did not pass"],
+					actionable_count: 1,
+					informational_count: 0,
+					confidence_rubric: {
+						score: 1,
+						level: "low",
+						rationale: ["blocked"],
+					},
+				},
+			}),
+		);
+
+		expect(result.status).toBe("fail");
+		expect(result.findings).toHaveLength(1);
+		expect(result.findings[0]?.id).toBe("review-gate.blocker.0");
+		expect(result.action_now[0]).toContain("Required check");
+	});
+
+	it("maps error output to internal finding and recovery action", () => {
+		const result = normaliseReviewGateResult(
+			{
+				ok: false,
+				error: {
+					code: "PERMISSION_DENIED",
+					message: "token missing repo scope",
+				},
+			},
+			"Ensure token has repo scope.",
+		);
+
+		expect(result.status).toBe("fail");
+		expect(result.findings[0]?.id).toBe("review-gate.result.internal");
+		expect(result.action_now).toEqual(["Ensure token has repo scope."]);
+		expect(result.meta?.errorCode).toBe("PERMISSION_DENIED");
 	});
 });

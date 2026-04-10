@@ -167,17 +167,32 @@ export function runPolicyGate(options: PolicyGateOptions): PolicyGateResult {
  */
 export function runPolicyGateCLI(options: PolicyGateOptions): number {
 	const result = runPolicyGate(options);
+	const gateResult = normalisePolicyGateResult(result);
 
 	if (result.ok) {
 		if (options.json) {
-			const gateResult = normalisePolicyGateResult(result);
 			process.stdout.write(`${JSON.stringify(gateResult, null, 2)}\n`);
-		} else if (result.output.passed) {
-			console.info(`✓ Policy gate passed (tier: ${result.output.tier})`);
 		} else {
-			console.error(
-				`✗ Policy gate failed: tier ${result.output.tier} exceeds max ${result.output.maxAllowed}`,
-			);
+			const icon =
+				gateResult.status === "pass"
+					? "✓"
+					: gateResult.status === "warn"
+						? "⚠"
+						: "✗";
+			console.info(`${icon} policy-gate ${gateResult.status}`);
+			console.info(`Reason: ${gateResult.reason}`);
+			if (gateResult.action_now.length > 0) {
+				console.info("Action now:");
+				for (const step of gateResult.action_now) {
+					console.info(`- ${step}`);
+				}
+			}
+			if (gateResult.action_later.length > 0) {
+				console.info("Action later:");
+				for (const step of gateResult.action_later) {
+					console.info(`- ${step}`);
+				}
+			}
 		}
 		return result.output.passed
 			? EXIT_CODES.SUCCESS
@@ -187,8 +202,15 @@ export function runPolicyGateCLI(options: PolicyGateOptions): number {
 	// Error output always to stderr
 	console.error(result.error.message);
 	if (options.json) {
-		const gateResult = normalisePolicyGateResult(result);
 		process.stdout.write(`${JSON.stringify(gateResult, null, 2)}\n`);
+	} else {
+		console.error(`Reason: ${gateResult.reason}`);
+		if (gateResult.action_now.length > 0) {
+			console.error("Action now:");
+			for (const step of gateResult.action_now) {
+				console.error(`- ${step}`);
+			}
+		}
 	}
 
 	// Map error codes to exit codes

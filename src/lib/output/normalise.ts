@@ -17,6 +17,11 @@ import type { PolicyGateResult } from "../../commands/policy-gate.js";
 import type { PrTemplateGateResult } from "../../commands/pr-template-gate.js";
 import type { PlanGateResult } from "../plan-gate/types.js";
 import type { GateFailureClass } from "../policy/required-checks.js";
+import type { PreflightGateResult } from "../preflight/types.js";
+import type {
+	ReviewGateOutput,
+	ReviewGateResult,
+} from "../review-gate/types.js";
 import { getVersion } from "../version.js";
 import type { GateFinding, GateResult } from "./types.js";
 
@@ -34,6 +39,132 @@ const LINEAR_GATE_TRANSIENT_INFRA_NEXT_ACTION =
 	"Retry once after infrastructure recovers, then rerun linear-gate.";
 const LINEAR_GATE_INTERNAL_UNKNOWN_NEXT_ACTION =
 	"Inspect gate output, fix root cause, and rerun linear-gate.";
+
+interface GateDecisionOverrides {
+	reason?: string;
+	actionNow?: string[];
+	actionLater?: string[];
+	evidenceRef?: string[];
+}
+
+interface BuildGateResultParams {
+	gate: string;
+	status: GateResult["status"];
+	findings: GateFinding[];
+	timestamp?: string;
+	meta?: Record<string, unknown>;
+	decision?: GateDecisionOverrides;
+}
+
+function uniqueStrings(values: Array<string | undefined>): string[] {
+	const out: string[] = [];
+	for (const value of values) {
+		if (!value) continue;
+		const trimmed = value.trim();
+		if (!trimmed || out.includes(trimmed)) continue;
+		out.push(trimmed);
+	}
+	return out;
+}
+
+function defaultReason(
+	gate: string,
+	status: GateResult["status"],
+	findings: GateFinding[],
+): string {
+	if (status === "pass") {
+		return `${gate} passed with no blocking findings.`;
+	}
+	if (status === "warn") {
+		const warningCount = findings.filter(
+			(f) => f.severity === "warning",
+		).length;
+		return `${gate} reported non-blocking warnings (${warningCount}).`;
+	}
+	if (status === "skipped") {
+		return `${gate} was skipped.`;
+	}
+	const errorCount = findings.filter((f) => f.severity === "error").length;
+	return `${gate} reported blocking findings (${errorCount}).`;
+}
+
+function defaultActionNow(
+	gate: string,
+	status: GateResult["status"],
+	findings: GateFinding[],
+): string[] {
+	if (status === "pass") {
+		return [];
+	}
+	const fixes = uniqueStrings(
+		findings.flatMap((finding) => [finding.fix.command, finding.fix.manual]),
+	);
+	if (fixes.length > 0) {
+		return fixes;
+	}
+	if (status === "warn") {
+		return [`Review warnings and rerun harness ${gate}.`];
+	}
+	if (status === "skipped") {
+		return [`Run harness ${gate} once prerequisites are available.`];
+	}
+	return [`Resolve blocking findings and rerun harness ${gate}.`];
+}
+
+function defaultActionLater(
+	gate: string,
+	status: GateResult["status"],
+): string[] {
+	if (status === "pass") {
+		return [`Re-run harness ${gate} after the next relevant change.`];
+	}
+	if (status === "warn") {
+		return [`Automate repeated warning remediation for ${gate}.`];
+	}
+	if (status === "skipped") {
+		return [`Add ${gate} to the regular validation flow.`];
+	}
+	return [`Add regression coverage to prevent future ${gate} failures.`];
+}
+
+function defaultEvidenceRef(gate: string, findings: GateFinding[]): string[] {
+	const refs = uniqueStrings(
+		findings.flatMap((finding) => [
+			finding.path ? `path:${finding.path}` : undefined,
+			`finding:${finding.id}`,
+		]),
+	);
+	return refs.length > 0 ? refs : [`gate:${gate}`];
+}
+
+function buildGateResult(params: BuildGateResultParams): GateResult {
+	const { gate, status, findings, timestamp, meta, decision } = params;
+	const errors = findings.filter((f) => f.severity === "error").length;
+	const warnings = findings.filter((f) => f.severity === "warning").length;
+	const info = findings.filter((f) => f.severity === "info").length;
+
+	const reason = decision?.reason ?? defaultReason(gate, status, findings);
+	const action_now =
+		decision?.actionNow ?? defaultActionNow(gate, status, findings);
+	const action_later =
+		decision?.actionLater ?? defaultActionLater(gate, status);
+	const evidence_ref =
+		decision?.evidenceRef ?? defaultEvidenceRef(gate, findings);
+
+	return {
+		gate,
+		version: getVersion(),
+		timestamp: timestamp ?? new Date().toISOString(),
+		status,
+		findings,
+		summary: { errors, warnings, info, total: errors + warnings + info },
+		reason,
+		action_now,
+		action_later,
+		evidence_ref,
+		...(meta ? { meta } : {}),
+	};
+}
 
 /**
  * Maps a linear-gate error code to a failure classification used for next-action guidance.
@@ -125,20 +256,9 @@ function adaptDriftFinding(f: DriftFinding): GateFinding {
  */
 export function normaliseDriftGateResult(result: DriftGateResult): GateResult {
 	const gate = "drift-gate";
-	const version = getVersion();
 	const timestamp = result.report.generated_at ?? new Date().toISOString();
 
 	const findings = result.report.findings.map(adaptDriftFinding);
-
-	const errors = findings.filter(
-		(f: GateFinding) => f.severity === "error",
-	).length;
-	const warnings = findings.filter(
-		(f: GateFinding) => f.severity === "warning",
-	).length;
-	const info = findings.filter(
-		(f: GateFinding) => f.severity === "info",
-	).length;
 
 	let status: GateResult["status"];
 	if (result.report.outcome === "error") {
@@ -149,14 +269,12 @@ export function normaliseDriftGateResult(result: DriftGateResult): GateResult {
 		status = "pass";
 	}
 
-	return {
+	return buildGateResult({
 		gate,
-		version,
 		timestamp,
 		status,
 		findings,
-		summary: { errors, warnings, info, total: errors + warnings + info },
-	};
+	});
 }
 
 // ─── P1: docs-gate adapter ────────────────────────────────────────────────────
@@ -190,20 +308,9 @@ function adaptDocsFinding(f: DocsFinding): GateFinding {
  */
 export function normaliseDocsGateResult(result: DocsGateResult): GateResult {
 	const gate = "docs-gate";
-	const version = getVersion();
 	const timestamp = result.report.generated_at ?? new Date().toISOString();
 
 	const findings = result.report.findings.map(adaptDocsFinding);
-
-	const errors = findings.filter(
-		(f: GateFinding) => f.severity === "error",
-	).length;
-	const warnings = findings.filter(
-		(f: GateFinding) => f.severity === "warning",
-	).length;
-	const info = findings.filter(
-		(f: GateFinding) => f.severity === "info",
-	).length;
 
 	let status: GateResult["status"];
 	if (result.report.outcome === "ok") {
@@ -214,14 +321,17 @@ export function normaliseDocsGateResult(result: DocsGateResult): GateResult {
 		status = "fail";
 	}
 
-	return {
+	return buildGateResult({
 		gate,
-		version,
 		timestamp,
 		status,
 		findings,
-		summary: { errors, warnings, info, total: errors + warnings + info },
-	};
+		meta: {
+			mode: result.report.mode,
+			outcome: result.report.outcome,
+			reportStatus: result.report.status,
+		},
+	});
 }
 
 // ─── P2: policy-gate adapter (binary-result) ─────────────────────────────────
@@ -239,7 +349,6 @@ export function normalisePolicyGateResult(
 	result: PolicyGateResult,
 ): GateResult {
 	const gate = "policy-gate";
-	const version = getVersion();
 	const timestamp = new Date().toISOString();
 
 	// ok:false — internal error before gate logic ran
@@ -252,26 +361,36 @@ export function normalisePolicyGateResult(
 			baseline: false,
 			fix: { suppressible: false },
 		};
-		return {
+		return buildGateResult({
 			gate,
-			version,
 			timestamp,
 			status: "fail",
 			findings: [finding],
-			summary: { errors: 1, warnings: 0, info: 0, total: 1 },
-		};
+			decision: {
+				reason: result.error.message,
+				actionNow: ["Investigate policy-gate internal error and rerun."],
+				evidenceRef: ["error:policy-gate.result.internal"],
+			},
+		});
 	}
 
 	// ok:true, passed — clean run
 	if (result.output.passed) {
-		return {
+		return buildGateResult({
 			gate,
-			version,
 			timestamp,
 			status: "pass",
 			findings: [],
-			summary: { errors: 0, warnings: 0, info: 0, total: 0 },
-		};
+			meta: {
+				tier: result.output.tier,
+				verdict: result.output.verdict,
+				action: result.output.action,
+			},
+			decision: {
+				reason: `Policy gate passed for tier '${result.output.tier}'.`,
+				evidenceRef: [`tier:${result.output.tier}`],
+			},
+		});
 	}
 
 	// ok:true, !passed — synthesise one finding per violating file
@@ -301,19 +420,24 @@ export function normalisePolicyGateResult(
 					},
 				];
 
-	return {
+	return buildGateResult({
 		gate,
-		version,
 		timestamp,
 		status: "fail",
 		findings,
-		summary: {
-			errors: findings.length,
-			warnings: 0,
-			info: 0,
-			total: findings.length,
+		meta: {
+			tier: result.output.tier,
+			maxAllowed: result.output.maxAllowed,
+			verdict: result.output.verdict,
+			action: result.output.action,
 		},
-	};
+		decision: {
+			reason: `Tier '${result.output.tier}' exceeds allowed '${result.output.maxAllowed ?? "unset"}'.`,
+			evidenceRef: uniqueStrings(
+				(result.output.violatingFiles ?? []).map((file) => `path:${file}`),
+			),
+		},
+	});
 }
 
 // ─── P2: pr-template-gate adapter (binary-result) ────────────────────────────
@@ -331,7 +455,6 @@ export function normalisePrTemplateGateResult(
 	result: PrTemplateGateResult,
 ): GateResult {
 	const gate = "pr-template-gate";
-	const version = getVersion();
 	const timestamp = new Date().toISOString();
 
 	// ok:false — internal error
@@ -344,26 +467,27 @@ export function normalisePrTemplateGateResult(
 			baseline: false,
 			fix: { suppressible: false },
 		};
-		return {
+		return buildGateResult({
 			gate,
-			version,
 			timestamp,
 			status: "fail",
 			findings: [finding],
-			summary: { errors: 1, warnings: 0, info: 0, total: 1 },
-		};
+			decision: {
+				reason: result.error.message,
+				actionNow: ["Fix the internal pr-template-gate error and rerun."],
+				evidenceRef: ["error:pr-template-gate.result.internal"],
+			},
+		});
 	}
 
 	// ok:true, passed — clean run
 	if (result.output.passed) {
-		return {
+		return buildGateResult({
 			gate,
-			version,
 			timestamp,
 			status: "pass",
 			findings: [],
-			summary: { errors: 0, warnings: 0, info: 0, total: 0 },
-		};
+		});
 	}
 
 	// ok:true, !passed — synthesise one finding per error string
@@ -392,19 +516,12 @@ export function normalisePrTemplateGateResult(
 					},
 				];
 
-	return {
+	return buildGateResult({
 		gate,
-		version,
 		timestamp,
 		status: "fail",
 		findings,
-		summary: {
-			errors: findings.length,
-			warnings: 0,
-			info: 0,
-			total: findings.length,
-		},
-	};
+	});
 }
 
 // ─── P2b: plan-gate adapter (coded-error) ────────────────────────────────────
@@ -422,18 +539,15 @@ export function normalisePlanGateResult(
 	recoveryHints: Record<string, string | undefined> = {},
 ): GateResult {
 	const gate = "plan-gate";
-	const version = getVersion();
 	const timestamp = new Date().toISOString();
 
 	if (result.passed) {
-		return {
+		return buildGateResult({
 			gate,
-			version,
 			timestamp,
 			status: "pass",
 			findings: [],
-			summary: { errors: 0, warnings: 0, info: 0, total: 0 },
-		};
+		});
 	}
 
 	const findings: GateFinding[] = result.errors.map((e) => {
@@ -452,19 +566,12 @@ export function normalisePlanGateResult(
 		};
 	});
 
-	return {
+	return buildGateResult({
 		gate,
-		version,
 		timestamp,
 		status: "fail",
 		findings,
-		summary: {
-			errors: findings.length,
-			warnings: 0,
-			info: 0,
-			total: findings.length,
-		},
-	};
+	});
 }
 
 // ─── P3: linear-gate adapter (check-list) ────────────────────────────────────
@@ -481,7 +588,6 @@ export function normaliseLinearGateResult(
 	result: LinearGateResult,
 ): GateResult {
 	const gate = "linear-gate";
-	const version = getVersion();
 	const timestamp = new Date().toISOString();
 	const failure = classifyLinearGateFailure(result);
 
@@ -497,19 +603,24 @@ export function normaliseLinearGateResult(
 				suppressible: false,
 			},
 		};
-		return {
+		return buildGateResult({
 			gate,
-			version,
 			timestamp,
 			status: "fail",
 			findings: [finding],
-			summary: { errors: 1, warnings: 0, info: 0, total: 1 },
 			meta: {
 				...(failure ? { failureClass: failure.failureClass } : {}),
 				...(failure ? { nextAction: failure.nextAction } : {}),
 				errorCode: result.error.code,
 			},
-		};
+			decision: {
+				reason: result.error.message,
+				actionNow: failure
+					? [failure.nextAction]
+					: ["Inspect linear-gate internal error and rerun."],
+				evidenceRef: ["error:linear-gate.result.internal"],
+			},
+		});
 	}
 
 	const failingChecks = result.output.checks.filter((c) => !c.passed);
@@ -526,13 +637,11 @@ export function normaliseLinearGateResult(
 				suppressible: false,
 			},
 		};
-		return {
+		return buildGateResult({
 			gate,
-			version,
 			timestamp,
 			status: "fail",
 			findings: [finding],
-			summary: { errors: 1, warnings: 0, info: 0, total: 1 },
 			...(failure
 				? {
 						meta: {
@@ -541,7 +650,14 @@ export function normaliseLinearGateResult(
 						},
 					}
 				: {}),
-		};
+			decision: {
+				reason: "linear-gate returned passed=false with no failing checks.",
+				actionNow: failure
+					? [failure.nextAction]
+					: ["Inspect linear-gate payload contract and rerun."],
+				evidenceRef: ["error:linear-gate.result.internal"],
+			},
+		});
 	}
 
 	const findings: GateFinding[] = failingChecks.map((c) => ({
@@ -557,18 +673,11 @@ export function normaliseLinearGateResult(
 	}));
 
 	const status = findings.length > 0 ? "fail" : "pass";
-	return {
+	return buildGateResult({
 		gate,
-		version,
 		timestamp,
 		status,
 		findings,
-		summary: {
-			errors: findings.length,
-			warnings: 0,
-			info: 0,
-			total: findings.length,
-		},
 		...(failure
 			? {
 					meta: {
@@ -577,5 +686,179 @@ export function normaliseLinearGateResult(
 					},
 				}
 			: {}),
-	};
+	});
+}
+
+function reviewStatusFromOutput(
+	output: ReviewGateOutput,
+): GateResult["status"] {
+	if (output.verified) {
+		return "pass";
+	}
+	if (
+		output.timedOut ||
+		output.checkStatus === "in_progress" ||
+		output.checkStatus === "queued" ||
+		output.checkStatus === "pending"
+	) {
+		return "warn";
+	}
+	return "fail";
+}
+
+/**
+ * Normalise preflight-gate output to canonical GateResult.
+ */
+export function normalisePreflightGateResult(
+	result: PreflightGateResult,
+): GateResult {
+	const gate = "preflight-gate";
+	const findings = result.checks
+		.filter((check) => !check.passed)
+		.map(
+			(check): GateFinding => ({
+				id: `preflight-gate.check.${check.id}`,
+				severity: check.severity,
+				gate,
+				message: check.message ?? check.description,
+				...(check.files?.[0] ? { path: check.files[0] } : {}),
+				baseline: false,
+				fix: {
+					manual: `Resolve '${check.id}' and rerun harness preflight-gate.`,
+					suppressible: false,
+				},
+			}),
+		);
+
+	const status: GateResult["status"] = result.passed
+		? findings.some((finding) => finding.severity === "warning")
+			? "warn"
+			: "pass"
+		: "fail";
+
+	return buildGateResult({
+		gate,
+		status,
+		findings,
+		meta: {
+			passed: result.passed,
+			totalChecks: result.summary.total,
+			passedChecks: result.summary.passed,
+			failedChecks: result.summary.failed,
+			warningChecks: result.summary.warnings,
+			durationMs: result.summary.durationMs,
+			...(result.riskTier ? { riskTier: result.riskTier } : {}),
+		},
+		decision: {
+			reason: result.passed
+				? findings.length > 0
+					? "Preflight passed with warning findings."
+					: "Preflight checks passed."
+				: "Preflight checks found blocking issues.",
+			evidenceRef: (() => {
+				const refs = uniqueStrings([
+					...(result.riskTier ? [`risk-tier:${result.riskTier}`] : []),
+					...findings.flatMap((finding) => [
+						...(finding.path ? [`path:${finding.path}`] : []),
+						`finding:${finding.id}`,
+					]),
+				]);
+				return refs.length > 0 ? refs : ["gate:preflight-gate"];
+			})(),
+		},
+	});
+}
+
+/**
+ * Normalise review-gate output to canonical GateResult.
+ */
+export function normaliseReviewGateResult(
+	result: ReviewGateResult,
+	recoveryHint?: string,
+): GateResult {
+	const gate = "review-gate";
+
+	if (!result.ok) {
+		const finding: GateFinding = {
+			id: "review-gate.result.internal",
+			severity: "error",
+			gate,
+			message: result.error.message,
+			baseline: false,
+			fix: {
+				...(recoveryHint ? { manual: recoveryHint } : {}),
+				suppressible: false,
+			},
+		};
+		return buildGateResult({
+			gate,
+			status: "fail",
+			findings: [finding],
+			meta: { errorCode: result.error.code },
+			decision: {
+				reason: result.error.message,
+				actionNow: recoveryHint
+					? [recoveryHint]
+					: ["Resolve review-gate error and rerun harness review-gate."],
+				evidenceRef: ["error:review-gate.result.internal"],
+			},
+		});
+	}
+
+	const status = reviewStatusFromOutput(result.output);
+	const findingSeverity: GateFinding["severity"] =
+		status === "warn" ? "warning" : "error";
+	const findings: GateFinding[] = result.output.blockers.map(
+		(blocker, index): GateFinding => ({
+			id: `review-gate.blocker.${index}`,
+			severity: findingSeverity,
+			gate,
+			message: blocker,
+			baseline: false,
+			fix: {
+				manual: "Address blocker and rerun harness review-gate.",
+				suppressible: false,
+			},
+		}),
+	);
+
+	return buildGateResult({
+		gate,
+		status,
+		findings,
+		meta: {
+			headSha: result.output.headSha,
+			checkStatus: result.output.checkStatus,
+			checkConclusion: result.output.checkConclusion,
+			needsRerun: result.output.needsRerun,
+			timedOut: result.output.timedOut ?? false,
+			policyGateStatus: result.output.policy_gate_status,
+			planTraceabilityStatus: result.output.plan_traceability_status,
+			planIds: result.output.plan_ids,
+			actionableCount: result.output.actionable_count,
+			informationalCount: result.output.informational_count,
+			confidenceRubric: result.output.confidence_rubric,
+		},
+		decision: {
+			reason: result.output.verified
+				? `Review verified for SHA ${result.output.headSha}.`
+				: result.output.blockers.length > 0
+					? `Review is not merge-ready: ${result.output.blockers[0]}.`
+					: `Review is not merge-ready (status: ${result.output.checkStatus}).`,
+			...(result.output.blockers.length
+				? { actionNow: result.output.blockers }
+				: result.output.needsRerun
+					? { actionNow: ["Rerun review checks and retry review-gate."] }
+					: {}),
+			actionLater: [
+				"Re-run harness review-gate after blockers are resolved.",
+				"Capture decision artifacts for merge readiness audits.",
+			],
+			evidenceRef: uniqueStrings([
+				`sha:${result.output.headSha}`,
+				...result.output.plan_ids.map((planId) => `plan:${planId}`),
+				...findings.map((finding) => `finding:${finding.id}`),
+			]),
+		},
+	});
 }
