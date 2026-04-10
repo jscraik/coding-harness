@@ -1,4 +1,12 @@
-import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import {
+	type MockInstance,
+	afterEach,
+	beforeEach,
+	describe,
+	expect,
+	it,
+	vi,
+} from "vitest";
 import { EXIT_CODES, runPolicyGate, runPolicyGateCLI } from "./policy-gate.js";
 
 describe("runPolicyGate", () => {
@@ -222,7 +230,7 @@ describe("runPolicyGateCLI (non-JSON output format from PR)", () => {
 	const contractPath = "test-fixtures/contract.json";
 	let consoleInfoSpy: ReturnType<typeof vi.spyOn>;
 	let consoleErrorSpy: ReturnType<typeof vi.spyOn>;
-	let stdoutSpy: ReturnType<typeof vi.spyOn>;
+	let stdoutSpy: MockInstance<typeof process.stdout.write>;
 
 	beforeEach(() => {
 		consoleInfoSpy = vi
