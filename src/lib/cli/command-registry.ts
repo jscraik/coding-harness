@@ -1,4 +1,3 @@
-import { COMMAND_SPECS } from "./registry/index.js";
 import type { CommandSpec, RegistryDispatchResult } from "./registry/types.js";
 
 export type { CommandSpec, RegistryDispatchResult };
