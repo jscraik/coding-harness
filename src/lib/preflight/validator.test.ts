@@ -245,10 +245,7 @@ describe("runPreflightGate", () => {
 
 	it("passes harness-version-coherence when no repo-local runner found (skip)", async () => {
 		// No scripts/harness-cli.sh in cwd — coherence returns skip → passed=true
-		writeFileSync(
-			"harness.contract.json",
-			JSON.stringify({ version: "1.0" }),
-		);
+		writeFileSync("harness.contract.json", JSON.stringify({ version: "1.0" }));
 
 		const result = await runPreflightGate({ files: [] });
 		const coherenceCheck = result.checks.find(
@@ -260,10 +257,7 @@ describe("runPreflightGate", () => {
 	});
 
 	it("fails with warning severity when repo-local runner outputs unparseable version", async () => {
-		writeFileSync(
-			"harness.contract.json",
-			JSON.stringify({ version: "1.0" }),
-		);
+		writeFileSync("harness.contract.json", JSON.stringify({ version: "1.0" }));
 		mkdirSync("scripts", { recursive: true });
 		writeExecutable(
 			"scripts/harness-cli.sh",
@@ -290,10 +284,7 @@ describe("runPreflightGate", () => {
 	});
 
 	it("harness-version-coherence check can be skipped via options.skip", async () => {
-		writeFileSync(
-			"harness.contract.json",
-			JSON.stringify({ version: "1.0" }),
-		);
+		writeFileSync("harness.contract.json", JSON.stringify({ version: "1.0" }));
 		mkdirSync("scripts", { recursive: true });
 		writeExecutable(
 			"scripts/harness-cli.sh",

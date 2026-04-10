@@ -95,10 +95,11 @@ describe("detectHarnessVersionCoherence", () => {
 		const repoDir = makeTmpDir("coherence-repo-no-global-");
 		cleanupPaths.push(repoDir);
 		createLocalHarnessWrapper(repoDir, "0.12.0");
-		// Use a PATH that has no harness binary (empty bin dir)
+		// Keep core system binaries available for wrapper execution while ensuring
+		// no global harness binary is discoverable on PATH.
 		const emptyBinDir = makeTmpDir("coherence-emptybin-");
 		cleanupPaths.push(emptyBinDir);
-		process.env.PATH = emptyBinDir;
+		process.env.PATH = `${emptyBinDir}${delimiter}/usr/bin:/bin`;
 
 		const result = detectHarnessVersionCoherence(repoDir);
 		expect(result.status).toBe("ok");
@@ -124,7 +125,9 @@ describe("detectHarnessVersionCoherence", () => {
 
 		const result = detectHarnessVersionCoherence(repoDir);
 		expect(result.status).toBe("error");
-		expect(result.message).toContain("Could not parse repo-local harness version");
+		expect(result.message).toContain(
+			"Could not parse repo-local harness version",
+		);
 		expect(result.remediation).toContain("scripts/harness-cli.sh");
 		expect(result.repoLocalVersion).toBeUndefined();
 	});
