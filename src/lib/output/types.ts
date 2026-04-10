@@ -67,6 +67,14 @@ export interface GateResult {
 		/** errors + warnings + info — all findings including info-level */
 		total: number;
 	};
+	/** Why this status was assigned */
+	reason: string;
+	/** Actionable next steps to take immediately */
+	action_now: string[];
+	/** Follow-up actions that can be deferred */
+	action_later: string[];
+	/** Concrete evidence pointers (file paths, finding ids, gate refs) */
+	evidence_ref: string[];
 	/** Gate-specific metadata (pass-through, not standardised) */
 	meta?: Record<string, unknown>;
 }

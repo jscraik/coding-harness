@@ -5,6 +5,10 @@
  */
 
 import {
+	normalisePreflightGateResult,
+	renderGateDecision,
+} from "../lib/output/normalise.js";
+import {
 	EXIT_CODES,
 	type PreflightGateOptions,
 	runPreflightGate,
@@ -20,41 +24,12 @@ export async function runPreflightGateCLI(
 	options: PreflightGateOptions,
 ): Promise<number> {
 	const result = await runPreflightGate(options);
+	const gateResult = normalisePreflightGateResult(result);
 
 	if (options.json) {
-		// biome-ignore lint/suspicious/noConsoleLog: CLI output
-		console.log(JSON.stringify(result, null, 2));
+		process.stdout.write(`${JSON.stringify(gateResult, null, 2)}\n`);
 	} else {
-		// Print summary header
-		const statusIcon = result.passed ? "✓" : "✗";
-		const statusText = result.passed ? "PASSED" : "FAILED";
-		// biome-ignore lint/suspicious/noConsoleLog: CLI output
-		console.log(`${statusIcon} Preflight gate ${statusText}`);
-		// biome-ignore lint/suspicious/noConsoleLog: CLI output
-		console.log();
-
-		// Print individual checks
-		for (const check of result.checks) {
-			const icon = check.passed ? "✓" : check.severity === "error" ? "✗" : "⚠";
-			// biome-ignore lint/suspicious/noConsoleLog: CLI output
-			console.log(`${icon} ${check.description} (${check.durationMs}ms)`);
-			if (!check.passed && check.message) {
-				// biome-ignore lint/suspicious/noConsoleLog: CLI output
-				console.log(`  ${check.message}`);
-			}
-		}
-
-		// biome-ignore lint/suspicious/noConsoleLog: CLI output
-		console.log();
-		// biome-ignore lint/suspicious/noConsoleLog: CLI output
-		console.log(
-			`Summary: ${result.summary.passed}/${result.summary.total} checks passed (${result.summary.durationMs}ms)`,
-		);
-
-		if (result.riskTier) {
-			// biome-ignore lint/suspicious/noConsoleLog: CLI output
-			console.log(`Risk tier: ${result.riskTier}`);
-		}
+		renderGateDecision(gateResult, result.summary, result.riskTier);
 	}
 
 	return result.passed ? EXIT_CODES.SUCCESS : EXIT_CODES.POLICY_VIOLATION;
