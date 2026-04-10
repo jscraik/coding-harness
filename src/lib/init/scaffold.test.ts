@@ -250,7 +250,7 @@ describe("scaffold templates resolution", () => {
 		expect(rendered).toContain('exec node "$CLI_PATH" "$@"');
 
 		// Then attempt the execCommand fallback (for Yarn PnP)
-		expect(rendered).toContain("yarn exec @brainwav/coding-harness");
+		expect(rendered).toContain("yarn harness");
 		expect(rendered).toContain("--version >/dev/null 2>&1");
 
 		// Only error if both fail
