@@ -76,9 +76,22 @@ function probeCommand(command: string, args: string[]): ProbeOutput {
  * @returns `true` if the command is discoverable on PATH, `false` otherwise.
  */
 function commandExists(command: string): boolean {
-	const probe = probeCommand(process.platform === "win32" ? "where" : "which", [
-		command,
-	]);
+	const locator = process.platform === "win32" ? "where" : "which";
+	// First check if the locator command itself exists
+	const locatorTest = spawnSync(locator, ["--version"], {
+		encoding: "utf-8",
+		stdio: ["ignore", "pipe", "pipe"],
+	});
+	if (locatorTest.error) {
+		// Locator command doesn't exist, fall back to trying the command directly
+		const directTest = spawnSync(command, ["--version"], {
+			encoding: "utf-8",
+			stdio: ["ignore", "pipe", "pipe"],
+		});
+		return !directTest.error;
+	}
+
+	const probe = probeCommand(locator, [command]);
 	return probe.ok;
 }
 
@@ -89,9 +102,28 @@ function commandExists(command: string): boolean {
  * @returns The first filesystem path to `command` as reported by the platform locator, or `undefined` if the command cannot be found or probing fails
  */
 function resolveCommandPath(command: string): string | undefined {
-	const probe = probeCommand(process.platform === "win32" ? "where" : "which", [
-		command,
-	]);
+	const locator = process.platform === "win32" ? "where" : "which";
+	// First check if the locator command itself exists
+	const locatorTest = spawnSync(locator, ["--version"], {
+		encoding: "utf-8",
+		stdio: ["ignore", "pipe", "pipe"],
+	});
+	if (locatorTest.error) {
+		// Locator command doesn't exist, search PATH manually
+		const pathDirs = (process.env.PATH ?? "").split(
+			process.platform === "win32" ? ";" : ":",
+		);
+		for (const dir of pathDirs) {
+			if (!dir) continue;
+			const candidatePath = resolve(dir, command);
+			if (existsSync(candidatePath)) {
+				return candidatePath;
+			}
+		}
+		return undefined;
+	}
+
+	const probe = probeCommand(locator, [command]);
 	if (!probe.ok || !probe.output) {
 		return undefined;
 	}
