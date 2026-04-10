@@ -123,13 +123,13 @@ function checkHarnessVersionCoherence(dir: string): CheckItem {
 }
 
 /**
- * Produce findings about the presence and schema validity of `harness.contract.json` in the given directory.
+ * Analyze the harness.contract.json file in the given directory and produce findings about its presence and whether it conforms to the expected schema.
  *
  * @param dir - Directory to inspect for `harness.contract.json`
- * @returns An array of `CheckItem` findings:
- *  - When the contract file is missing: a single `fail` finding recommending `harness contract init`.
- *  - When the file cannot be parsed as JSON: a single `fail` finding recommending `harness contract validate --json`.
- *  - When the file is present: an `ok` finding reporting the detected section count and schema version, plus a second finding that is `ok` if validation passes or `fail` (with a recommendation `harness contract validate`) if validation reports errors.
+ * @returns An array of CheckItem findings describing one of the following states:
+ *  - Missing file: a single `fail` finding recommending `harness contract init`.
+ *  - Unreadable or invalid JSON: a single `fail` finding recommending `harness contract validate --json`.
+ *  - Present and parseable: an `ok` presence finding reporting the detected section count and schema version, plus a second finding that is `ok` if schema validation passes or `fail` (with a recommendation `harness contract validate`) if validation reports errors.
  */
 function checkContract(dir: string): CheckItem[] {
 	const contractPath = resolve(dir, "harness.contract.json");
@@ -249,7 +249,12 @@ function checkManifest(dir: string): CheckItem {
 	}
 }
 
-// ─── Next-step derivation ─────────────────────────────────────────────────────
+/**
+ * Build an ordered, de-duplicated list of recommended fix commands from check results, prioritizing failures first.
+ *
+ * @param checks - Array of check items to extract fix commands from.
+ * @returns An array of fix command strings with fixes for failed checks first followed by fixes for warned checks; returns `["harness health"]` when no fixes are present.
+ */
 
 function deriveNextSteps(checks: CheckItem[]): string[] {
 	const failed = checks.filter((c) => c.status === "fail");
@@ -273,12 +278,10 @@ function deriveNextSteps(checks: CheckItem[]): string[] {
 }
 
 /**
- * Produce a snapshot report of repository health by running the module's set of checks against a directory.
+ * Create a health snapshot of a repository by running the module's checks against a target directory.
  *
- * Runs the configured checks in a stable order (git repo, harness version coherence, contract, manifest), aggregates their results into counts, determines whether any check failed, and derives recommended next-step commands.
- *
- * @param dir - Filesystem path of the target directory to inspect; resolved paths inside checks are relative to this directory.
- * @returns A CheckReport containing the tool version, inspected directory, ISO timestamp, the array of CheckItem results, aggregated counts, a `hasFailures` flag, and an ordered list of recommended next steps.
+ * @param dir - Path of the directory to inspect; checks resolve files relative to this directory.
+ * @returns A CheckReport containing the tool version, inspected directory, ISO timestamp, the array of CheckItem results, aggregated counts, a `hasFailures` flag, and an ordered list of recommended next-step commands.
  */
 
 export function runCheck(dir: string): CheckReport {

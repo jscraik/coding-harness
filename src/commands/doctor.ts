@@ -100,6 +100,16 @@ function readJsonFile(path: string): unknown | null {
 	}
 }
 
+/**
+ * Checks whether a nested path of own properties exists on a value.
+ *
+ * Traverses `obj` following each `key` in order and returns whether each intermediate
+ * value is a non-null object that has the next key as its own property.
+ *
+ * @param obj - The value to inspect for the key path
+ * @param keys - Sequence of property names representing the nested path to check
+ * @returns `true` if every property in `keys` exists as an own property along the path, `false` otherwise
+ */
 function hasJsonKey(obj: unknown, ...keys: string[]): boolean {
 	let cursor: unknown = obj;
 	for (const key of keys) {
