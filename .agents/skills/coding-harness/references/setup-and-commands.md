@@ -3,6 +3,7 @@
 ## Table of Contents
 - [Prerequisites](#prerequisites)
 - [Command truth source](#command-truth-source)
+- [Agent command catalog](#agent-command-catalog)
 - [Install modes](#install-modes)
 - [Bootstrap workflow](#bootstrap-workflow)
 - [Abbreviations](#abbreviations)
@@ -42,6 +43,15 @@ If harness is not installed globally in the current shell, use:
 
 ```bash
 pnpm exec tsx src/cli.ts --help
+```
+
+## Agent command catalog
+
+For machine-readable planning metadata (category, mutability, required flags,
+artifacts, retryability, and safe-first alternatives), use:
+
+```bash
+harness commands --json
 ```
 
 ## Install modes

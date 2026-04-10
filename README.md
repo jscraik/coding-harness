@@ -371,10 +371,18 @@ just dashboard reporting.
 The tables below keep README parity with the CLI while staying short. For full
 flags, use `harness --help`.
 
+For agent planning and command safety routing, prefer the machine-readable
+capability catalog:
+
+```bash
+harness commands --json
+```
+
 ### Bootstrap And Governance
 
 | Command | Purpose |
 | --- | --- |
+| `commands` | Emit the versioned machine-readable command capability catalog (`--json`) |
 | `init` | Scaffold or update harness-managed repo surfaces (`--project-type`, `--json`, `--dry-run`, `--force`, `--track`, `--update`, `--migrate`, `--minimal`, `--issue-tracker`) |
 | `eject` | Safely remove harness-managed files and templates, including legacy Greptile artifacts, while preserving custom non-Greptile CI workflows (`--dry-run`, `--force`) |
 | `check` | Zero-config repo health snapshot — works before full setup |
