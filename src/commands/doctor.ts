@@ -22,6 +22,7 @@ import {
 	findCircleCIJobNamedCheckNames,
 	normalizeRequiredChecksManifest,
 } from "../lib/policy/required-checks.js";
+import { detectHarnessVersionCoherence } from "../lib/version-coherence.js";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -170,6 +171,47 @@ const CHECKS: CheckFn[] = [
 			label: "pnpm",
 			status: "ok",
 			message: version ?? "found",
+		};
+	},
+
+	// ── Tool: harness version coherence ───────────────────────────────────────
+	(dir) => {
+		const coherence = detectHarnessVersionCoherence(dir);
+		if (coherence.status === "drift") {
+			return {
+				id: "tool:harness-version-coherence",
+				category: "tool",
+				label: "Harness version coherence",
+				status: "fail",
+				message: coherence.message,
+				...(coherence.remediation ? { fix: coherence.remediation } : {}),
+			};
+		}
+		if (coherence.status === "error") {
+			return {
+				id: "tool:harness-version-coherence",
+				category: "tool",
+				label: "Harness version coherence",
+				status: "warn",
+				message: coherence.message,
+				...(coherence.remediation ? { fix: coherence.remediation } : {}),
+			};
+		}
+		if (coherence.status === "skip") {
+			return {
+				id: "tool:harness-version-coherence",
+				category: "tool",
+				label: "Harness version coherence",
+				status: "skip",
+				message: coherence.message,
+			};
+		}
+		return {
+			id: "tool:harness-version-coherence",
+			category: "tool",
+			label: "Harness version coherence",
+			status: "ok",
+			message: coherence.message,
 		};
 	},
 

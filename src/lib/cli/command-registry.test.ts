@@ -22,6 +22,11 @@ describe("command registry", () => {
 	it("exposes migrated command names", () => {
 		expect(MIGRATED_COMMAND_NAMES).toEqual([
 			"commands",
+			"repo",
+			"gate",
+			"work",
+			"ui",
+			"pilot",
 			"linear",
 			"linear-gate",
 			"pr-template-gate",
@@ -76,6 +81,31 @@ describe("command registry", () => {
 			"pilot-rollback",
 			"pilot-evaluate",
 		]);
+	});
+
+	it("routes grouped gate action to legacy gate implementation", () => {
+		const result = dispatchRegistryCommand("gate", [
+			"gate",
+			"policy",
+			"--json",
+		]);
+		expect(result?.spec.name).toBe("gate");
+	});
+
+	it("routes grouped repo action to legacy repo implementation", () => {
+		const result = dispatchRegistryCommand("repo", [
+			"repo",
+			"contract",
+			"validate",
+			"--json",
+		]);
+		expect(result?.spec.name).toBe("repo");
+	});
+
+	it("rejects inherited-key grouped actions without crashing", () => {
+		const invoke = () => dispatchRegistryCommand("repo", ["repo", "toString"]);
+		expect(invoke).not.toThrow();
+		expect(invoke()?.result).toBe(2);
 	});
 
 	it("resolves alias to policy-gate spec", () => {

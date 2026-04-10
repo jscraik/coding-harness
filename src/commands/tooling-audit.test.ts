@@ -99,18 +99,18 @@ repo = "local"
 
 [[repos.hooks]]
 id = "pre-commit"
-name = "Pre-commit"
-entry = "${REQUIRED_PREK_HOOKS["pre-commit"].join(" && ")}"
-language = "system"
-pass_filenames = false
+name = "${REQUIRED_PREK_HOOKS["pre-commit"].name}"
+entry = "${REQUIRED_PREK_HOOKS["pre-commit"].entry}"
+language = "${REQUIRED_PREK_HOOKS["pre-commit"].language}"
+pass_filenames = ${String(REQUIRED_PREK_HOOKS["pre-commit"].pass_filenames)}
 
 [[repos.hooks]]
 id = "pre-push"
-name = "Pre-push"
-entry = "${REQUIRED_PREK_HOOKS["pre-push"].join(" && ")}"
-language = "system"
-pass_filenames = false
-stages = ["pre-push"]
+name = "${REQUIRED_PREK_HOOKS["pre-push"].name}"
+entry = "${REQUIRED_PREK_HOOKS["pre-push"].entry}"
+language = "${REQUIRED_PREK_HOOKS["pre-push"].language}"
+pass_filenames = ${String(REQUIRED_PREK_HOOKS["pre-push"].pass_filenames)}
+stages = ${JSON.stringify(REQUIRED_PREK_HOOKS["pre-push"].stages)}
 `,
 	);
 }

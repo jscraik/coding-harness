@@ -18,6 +18,7 @@ function createRequestError(
 			url: "https://api.github.com/repos/acme/example",
 			headers,
 			data: {},
+			retryCount: 0,
 		},
 	});
 }

@@ -3,6 +3,7 @@
  */
 
 import {
+	chmodSync,
 	existsSync,
 	mkdirSync,
 	mkdtempSync,
@@ -10,7 +11,7 @@ import {
 	writeFileSync,
 } from "node:fs";
 import { tmpdir } from "node:os";
-import { join } from "node:path";
+import { delimiter, join } from "node:path";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { runCheck, runCheckCLI } from "./check.js";
@@ -49,10 +50,17 @@ function writeGitDir(dir: string): void {
 	mkdirSync(join(dir, ".git"), { recursive: true });
 }
 
+function writeExecutable(path: string, content: string): void {
+	writeFileSync(path, content, { encoding: "utf-8" });
+	chmodSync(path, 0o755);
+}
+
 // ─── runCheck (pure) ──────────────────────────────────────────────────────────
 
 describe("runCheck", () => {
 	let dir: string;
+	const originalPath = process.env.PATH ?? "";
+	const cleanupPaths: string[] = [];
 
 	beforeEach(() => {
 		dir = makeTmpDir();
@@ -60,6 +68,10 @@ describe("runCheck", () => {
 
 	afterEach(() => {
 		rmSync(dir, { recursive: true, force: true });
+		for (const path of cleanupPaths.splice(0, cleanupPaths.length)) {
+			rmSync(path, { recursive: true, force: true });
+		}
+		process.env.PATH = originalPath;
 	});
 
 	it("returns a report with version, dir, timestamp, checks, counts, nextSteps", () => {
@@ -162,6 +174,35 @@ describe("runCheck", () => {
 		if (!report.hasFailures && report.counts.warn === 0) {
 			expect(report.nextSteps).toEqual(["harness health"]);
 		}
+	});
+
+	it("fails when global and repo-local harness versions drift", () => {
+		writeGitDir(dir);
+		writeContract(dir);
+		writeManifest(dir);
+
+		const scriptsDir = join(dir, "scripts");
+		mkdirSync(scriptsDir, { recursive: true });
+		writeExecutable(
+			join(scriptsDir, "harness-cli.sh"),
+			"#!/usr/bin/env bash\necho 'harness v0.12.0'\n",
+		);
+
+		const binDir = makeTmpDir();
+		cleanupPaths.push(binDir);
+		writeExecutable(
+			join(binDir, "harness"),
+			"#!/usr/bin/env bash\necho 'harness v0.6.0'\n",
+		);
+		process.env.PATH = `${binDir}${delimiter}${originalPath}`;
+
+		const report = runCheck(dir);
+		const coherenceCheck = report.checks.find(
+			(check) => check.id === "harness:version-coherence",
+		);
+		expect(coherenceCheck?.status).toBe("fail");
+		expect(coherenceCheck?.fix).toContain("scripts/harness-cli.sh");
+		expect(report.hasFailures).toBe(true);
 	});
 });
 
