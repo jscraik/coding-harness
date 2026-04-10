@@ -204,6 +204,56 @@ describe("runCheck", () => {
 		expect(coherenceCheck?.fix).toContain("scripts/harness-cli.sh");
 		expect(report.hasFailures).toBe(true);
 	});
+
+	it("harness:version-coherence is 'ok' when no repo-local runner exists (skip)", () => {
+		// No scripts/harness-cli.sh — detectHarnessVersionCoherence returns skip
+		const report = runCheck(dir);
+		const coherenceCheck = report.checks.find(
+			(check) => check.id === "harness:version-coherence",
+		);
+		expect(coherenceCheck?.status).toBe("ok");
+		expect(coherenceCheck?.detail).toContain("no repo-local harness runner");
+	});
+
+	it("harness:version-coherence is 'warn' when repo-local runner fails to produce a parseable version", () => {
+		const scriptsDir = join(dir, "scripts");
+		mkdirSync(scriptsDir, { recursive: true });
+		// Script outputs unparseable text
+		writeExecutable(
+			join(scriptsDir, "harness-cli.sh"),
+			"#!/usr/bin/env bash\necho 'not-a-version'\n",
+		);
+
+		const report = runCheck(dir);
+		const coherenceCheck = report.checks.find(
+			(check) => check.id === "harness:version-coherence",
+		);
+		expect(coherenceCheck?.status).toBe("warn");
+		expect(coherenceCheck?.detail).toContain("Could not parse");
+	});
+
+	it("harness:version-coherence is 'ok' when versions match, with no fix field", () => {
+		const scriptsDir = join(dir, "scripts");
+		mkdirSync(scriptsDir, { recursive: true });
+		writeExecutable(
+			join(scriptsDir, "harness-cli.sh"),
+			"#!/usr/bin/env bash\necho 'harness v1.0.0'\n",
+		);
+		const binDir = makeTmpDir();
+		cleanupPaths.push(binDir);
+		writeExecutable(
+			join(binDir, "harness"),
+			"#!/usr/bin/env bash\necho 'harness v1.0.0'\n",
+		);
+		process.env.PATH = `${binDir}${delimiter}${originalPath}`;
+
+		const report = runCheck(dir);
+		const coherenceCheck = report.checks.find(
+			(check) => check.id === "harness:version-coherence",
+		);
+		expect(coherenceCheck?.status).toBe("ok");
+		expect(coherenceCheck?.fix).toBeUndefined();
+	});
 });
 
 // ─── runCheckCLI ─────────────────────────────────────────────────────────────

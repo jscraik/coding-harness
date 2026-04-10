@@ -11,7 +11,10 @@ import type {
 import { validateContract } from "../lib/contract/validator.js";
 import { sanitizeError } from "../lib/input/sanitize.js";
 import { validatePath } from "../lib/input/validator.js";
-import { normaliseDocsGateResult } from "../lib/output/normalise.js";
+import {
+	normaliseDocsGateResult,
+	renderGateDecision,
+} from "../lib/output/normalise.js";
 import { isNonWorkflowRequiredCheck } from "../lib/policy/required-checks.js";
 
 export type DocsGateMode = "advisory" | "required";
@@ -1059,40 +1062,12 @@ export function runDocsGate(options: DocsGateOptions = {}): DocsGateResult {
  */
 export function runDocsGateCLI(options: DocsGateOptions = {}): number {
 	const result = runDocsGate(options);
+	const gateResult = normaliseDocsGateResult(result);
 
 	if (options.json) {
-		const gateResult = normaliseDocsGateResult(result);
 		process.stdout.write(`${JSON.stringify(gateResult, null, 2)}\n`);
 	} else {
-		const icon =
-			result.report.status === "success"
-				? "✓"
-				: result.report.status === "partial"
-					? "⚠"
-					: "✗";
-		console.info(
-			`${icon} docs-gate (${result.report.mode}) ${result.report.status} - ${result.report.outcome}`,
-		);
-		console.info(`Findings: ${result.report.summary.finding_count}`);
-		console.info(
-			`Surfaces: ${result.report.summary.required_surface_count} required, ${result.report.summary.missing_surface_count} missing`,
-		);
-
-		if (result.report.findings.length > 0) {
-			console.info("");
-			for (const finding of result.report.findings) {
-				const level =
-					finding.severity === "error"
-						? "ERROR"
-						: finding.severity === "warning"
-							? "WARN"
-							: "INFO";
-				const suffix = finding.path ? ` (${finding.path})` : "";
-				console.info(
-					`- [${level}] ${finding.rule_id}: ${finding.message}${suffix}`,
-				);
-			}
-		}
+		renderGateDecision(gateResult);
 	}
 
 	return result.exitCode;

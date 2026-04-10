@@ -87,6 +87,12 @@ describe("GateResult interface (SA1)", () => {
 				},
 			],
 			summary: { errors: 1, warnings: 0, info: 0, total: 1 },
+			reason: "drift-gate reported blocking findings (1).",
+			action_now: ["Resolve blocking findings and rerun harness drift-gate."],
+			action_later: [
+				"Add regression coverage to prevent future drift-gate failures.",
+			],
+			evidence_ref: ["finding:drift-gate.command.missing"],
 		};
 
 		const json = JSON.parse(JSON.stringify(result)) as GateResult;
@@ -114,6 +120,10 @@ describe("GateResult interface (SA1)", () => {
 				status,
 				findings: [],
 				summary: { errors: 0, warnings: 0, info: 0, total: 0 },
+				reason: "test passed with no blocking findings.",
+				action_now: [],
+				action_later: ["Re-run harness test after the next relevant change."],
+				evidence_ref: ["gate:test"],
 			};
 			expect(["pass", "warn", "fail", "skipped"]).toContain(r.status);
 		}
@@ -127,6 +137,10 @@ describe("GateResult interface (SA1)", () => {
 			status: "skipped",
 			findings: [],
 			summary: { errors: 0, warnings: 0, info: 0, total: 0 },
+			reason: "review-gate was skipped.",
+			action_now: ["Run harness review-gate once prerequisites are available."],
+			action_later: ["Add review-gate to the regular validation flow."],
+			evidence_ref: ["gate:review-gate"],
 			meta: { reason: "async-gate-excluded-from-normalisation-v1" },
 		};
 		expect(result.meta?.reason).toBe(
@@ -142,6 +156,10 @@ describe("GateResult interface (SA1)", () => {
 			status: "warn",
 			findings: [],
 			summary: { errors: 2, warnings: 3, info: 1, total: 6 },
+			reason: "drift-gate reported non-blocking warnings (3).",
+			action_now: ["Review warnings and rerun harness drift-gate."],
+			action_later: ["Automate repeated warning remediation for drift-gate."],
+			evidence_ref: ["gate:drift-gate"],
 		};
 		expect(
 			result.summary.errors + result.summary.warnings + result.summary.info,
@@ -197,7 +215,7 @@ describe("AutoFixResult interface (SA1)", () => {
 });
 
 describe("normalise.ts stub exports (SA1)", () => {
-	it("P0-T3a: all six adapter functions are exported", async () => {
+	it("P0-T3a: all six original adapter functions are exported", async () => {
 		const normalise = await import("./normalise.js");
 		const exports = [
 			"normaliseDriftGateResult",
@@ -211,5 +229,11 @@ describe("normalise.ts stub exports (SA1)", () => {
 		for (const name of exports) {
 			expect(typeof normalise[name]).toBe("function");
 		}
+	});
+
+	it("P0-T3b: new PR adapter functions normalisePreflightGateResult and normaliseReviewGateResult are exported", async () => {
+		const normalise = await import("./normalise.js");
+		expect(typeof normalise.normalisePreflightGateResult).toBe("function");
+		expect(typeof normalise.normaliseReviewGateResult).toBe("function");
 	});
 });
