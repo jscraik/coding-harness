@@ -28,6 +28,49 @@ import type { GateFinding, GateResult } from "./types.js";
 // ─── Re-export canonical types for convenience ────────────────────────────────
 export type { GateFinding, GateResult, AutoFixResult } from "./types.js";
 
+/**
+ * Render a gate result to the console with consistent formatting.
+ * Shared across all gate CLI entry points.
+ *
+ * @param gateResult - The normalized GateResult to render
+ * @param summary - Optional summary object with passed/total counts and durationMs
+ * @param riskTier - Optional risk tier to display
+ */
+export function renderGateDecision(
+	gateResult: GateResult,
+	summary?: { passed: number; total: number; durationMs: number },
+	riskTier?: string,
+): void {
+	const icon =
+		gateResult.status === "pass"
+			? "✓"
+			: gateResult.status === "warn"
+				? "⚠"
+				: "✗";
+	console.info(`${icon} ${gateResult.gate} ${gateResult.status}`);
+	console.info(`Reason: ${gateResult.reason}`);
+	if (gateResult.action_now.length > 0) {
+		console.info("Action now:");
+		for (const step of gateResult.action_now) {
+			console.info(`- ${step}`);
+		}
+	}
+	if (gateResult.action_later.length > 0) {
+		console.info("Action later:");
+		for (const step of gateResult.action_later) {
+			console.info(`- ${step}`);
+		}
+	}
+	if (summary) {
+		console.info(
+			`Summary: ${summary.passed}/${summary.total} checks passed (${summary.durationMs}ms)`,
+		);
+	}
+	if (riskTier) {
+		console.info(`Risk tier: ${riskTier}`);
+	}
+}
+
 export interface LinearGateFailureClassification {
 	failureClass: GateFailureClass;
 	nextAction: string;
@@ -327,9 +370,17 @@ export function normaliseDocsGateResult(result: DocsGateResult): GateResult {
 		status,
 		findings,
 		meta: {
+			version: "v1-legacy",
 			mode: result.report.mode,
 			outcome: result.report.outcome,
 			reportStatus: result.report.status,
+			error_class: result.report.error_class,
+			execution_context: result.report.execution_context,
+			changed_files: result.report.changed_files,
+			categories: result.report.categories,
+			repo_root: result.report.repo_root,
+			base_ref: result.report.base_ref,
+			summary: result.report.summary,
 		},
 	});
 }
@@ -731,9 +782,11 @@ export function normalisePreflightGateResult(
 		);
 
 	const status: GateResult["status"] = result.passed
-		? findings.some((finding) => finding.severity === "warning")
-			? "warn"
-			: "pass"
+		? findings.some((finding) => finding.severity === "error")
+			? "fail"
+			: findings.some((finding) => finding.severity === "warning")
+				? "warn"
+				: "pass"
 		: "fail";
 
 	return buildGateResult({

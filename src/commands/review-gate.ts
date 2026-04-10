@@ -16,7 +16,10 @@ import {
 } from "../lib/github/comments.js";
 import { validateSha } from "../lib/github/sha.js";
 import { sanitizeError } from "../lib/input/sanitize.js";
-import { normaliseReviewGateResult } from "../lib/output/normalise.js";
+import {
+	normaliseReviewGateResult,
+	renderGateDecision,
+} from "../lib/output/normalise.js";
 import { runPlanGate } from "../lib/plan-gate/detector.js";
 // Use the lib-layer bridge instead of importing directly from another command.
 import { runCheckAuthz } from "../lib/review-gate/authz.js";
@@ -908,26 +911,7 @@ export async function runReviewGateCLI(
 			};
 			process.stdout.write(`${JSON.stringify(jsonOutput, null, 2)}\n`);
 		} else {
-			const icon =
-				gateResult.status === "pass"
-					? "✓"
-					: gateResult.status === "warn"
-						? "⚠"
-						: "✗";
-			console.info(`${icon} review-gate ${gateResult.status}`);
-			console.info(`Reason: ${gateResult.reason}`);
-			if (gateResult.action_now.length > 0) {
-				console.info("Action now:");
-				for (const step of gateResult.action_now) {
-					console.info(`- ${step}`);
-				}
-			}
-			if (gateResult.action_later.length > 0) {
-				console.info("Action later:");
-				for (const step of gateResult.action_later) {
-					console.info(`- ${step}`);
-				}
-			}
+			renderGateDecision(gateResult);
 			logConfidenceExport(result.output);
 		}
 
@@ -975,7 +959,8 @@ export async function runReviewGateCLI(
 		};
 		process.stdout.write(`${JSON.stringify(jsonOutput, null, 2)}\n`);
 	} else {
-		console.error(`✗ review-gate ${gateResult.status}`);
+		// Error path uses stderr instead of stdout
+		console.error(`✗ ${gateResult.gate} ${gateResult.status}`);
 		console.error(`Reason: ${gateResult.reason}`);
 		if (gateResult.action_now.length > 0) {
 			console.error("Action now:");

@@ -174,7 +174,6 @@ Compatibility strategy:
 - `policy-gate`
 - `docs-gate`
 - `preflight-gate`
-- `review-gate`
 4. Keep JSON output deterministic and machine-parseable; no command-specific wrapper envelopes for these gates.
 5. Align non-JSON output to the same decision model so human and agent consumers receive equivalent guidance.
 
@@ -238,6 +237,14 @@ export interface GateResult {
     info: number;
     total: number;
   };
+  /** Short diagnosis of the gate result */
+  reason: string;
+  /** Immediate actions to resolve blocking findings */
+  action_now: string[];
+  /** Longer-term actions to improve or automate remediation */
+  action_later: string[];
+  /** Artifact references for audit trails and issue linking */
+  evidence_ref: string[];
   /** Gate-specific metadata (pass-through, not standardised) */
   meta?: Record<string, unknown>;
 }
@@ -288,6 +295,10 @@ export interface AutoFixResult {
 | `gate` field | Must match the CLI subcommand name exactly (e.g. `"drift-gate"`, `"docs-gate"`) |
 | `GateResult.version` | Must be populated from `getVersion()` (harness package root) — not per-gate constants |
 | `GateResult.summary.total` | `errors + warnings + info` — all findings including info-level |
+| `GateResult.reason` | Required: short diagnosis of the gate result |
+| `GateResult.action_now` | Required: array of immediate actions (may be empty for pass status) |
+| `GateResult.action_later` | Required: array of longer-term actions (may be empty) |
+| `GateResult.evidence_ref` | Required: array of artifact references for audit trails |
 
 ---
 

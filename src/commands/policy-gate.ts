@@ -5,7 +5,10 @@ import type {
 	RiskTier,
 } from "../lib/contract/types.js";
 import { sanitizeError } from "../lib/input/sanitize.js";
-import { normalisePolicyGateResult } from "../lib/output/normalise.js";
+import {
+	normalisePolicyGateResult,
+	renderGateDecision,
+} from "../lib/output/normalise.js";
 import {
 	evaluatePolicyChainDecision,
 	resolveGateVerdict,
@@ -173,26 +176,7 @@ export function runPolicyGateCLI(options: PolicyGateOptions): number {
 		if (options.json) {
 			process.stdout.write(`${JSON.stringify(gateResult, null, 2)}\n`);
 		} else {
-			const icon =
-				gateResult.status === "pass"
-					? "✓"
-					: gateResult.status === "warn"
-						? "⚠"
-						: "✗";
-			console.info(`${icon} policy-gate ${gateResult.status}`);
-			console.info(`Reason: ${gateResult.reason}`);
-			if (gateResult.action_now.length > 0) {
-				console.info("Action now:");
-				for (const step of gateResult.action_now) {
-					console.info(`- ${step}`);
-				}
-			}
-			if (gateResult.action_later.length > 0) {
-				console.info("Action later:");
-				for (const step of gateResult.action_later) {
-					console.info(`- ${step}`);
-				}
-			}
+			renderGateDecision(gateResult);
 		}
 		return result.output.passed
 			? EXIT_CODES.SUCCESS
