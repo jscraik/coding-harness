@@ -2511,8 +2511,14 @@ export function fuzzyFindCommand(name: string): FuzzyCommandMatch | undefined {
 }
 
 /**
- * Return the top-N registry commands ranked by edit distance from `name`.
- * Used to populate suggestions in "unknown command" error messages.
+ * Get the closest registry commands to a provided command name using edit-distance ranking.
+ *
+ * Normalizes the input command name before scoring and returns up to `limit` candidate commands
+ * ordered by ascending edit distance (lower is closer).
+ *
+ * @param name - The raw command name to match (may be camelCase, snake_case, etc.)
+ * @param limit - Maximum number of suggestions to return
+ * @returns An array of suggestion objects containing the command `spec` and its numeric `distance` (edit distance from the normalized input)
  */
 export function suggestCommands(
 	name: string,
