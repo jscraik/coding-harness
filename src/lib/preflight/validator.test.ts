@@ -242,4 +242,72 @@ describe("runPreflightGate", () => {
 		expect(coherenceCheck?.message).toContain("Version drift detected");
 		expect(result.passed).toBe(false);
 	});
+
+	it("passes harness-version-coherence when no repo-local runner found (skip)", async () => {
+		// No scripts/harness-cli.sh in cwd — coherence returns skip → passed=true
+		writeFileSync(
+			"harness.contract.json",
+			JSON.stringify({ version: "1.0" }),
+		);
+
+		const result = await runPreflightGate({ files: [] });
+		const coherenceCheck = result.checks.find(
+			(check) => check.id === "harness-version-coherence",
+		);
+
+		expect(coherenceCheck).toBeDefined();
+		expect(coherenceCheck?.passed).toBe(true);
+	});
+
+	it("fails with warning severity when repo-local runner outputs unparseable version", async () => {
+		writeFileSync(
+			"harness.contract.json",
+			JSON.stringify({ version: "1.0" }),
+		);
+		mkdirSync("scripts", { recursive: true });
+		writeExecutable(
+			"scripts/harness-cli.sh",
+			"#!/usr/bin/env bash\necho 'not-a-version'\n",
+		);
+
+		const result = await runPreflightGate({ files: [] });
+		const coherenceCheck = result.checks.find(
+			(check) => check.id === "harness-version-coherence",
+		);
+
+		expect(coherenceCheck?.passed).toBe(false);
+		expect(coherenceCheck?.severity).toBe("warning");
+		expect(coherenceCheck?.message).toContain("Could not parse");
+	});
+
+	it("harness-version-coherence check is registered in PREFLIGHT_CHECKS", async () => {
+		const { PREFLIGHT_CHECKS } = await import("./validator.js");
+		expect(PREFLIGHT_CHECKS).toHaveProperty("harness-version-coherence");
+		const entry = PREFLIGHT_CHECKS["harness-version-coherence"];
+		expect(entry?.name).toBe("Harness Version Coherence");
+		expect(entry?.severity).toBe("error");
+		expect(typeof entry?.fn).toBe("function");
+	});
+
+	it("harness-version-coherence check can be skipped via options.skip", async () => {
+		writeFileSync(
+			"harness.contract.json",
+			JSON.stringify({ version: "1.0" }),
+		);
+		mkdirSync("scripts", { recursive: true });
+		writeExecutable(
+			"scripts/harness-cli.sh",
+			"#!/usr/bin/env bash\necho 'not-a-version'\n",
+		);
+
+		const result = await runPreflightGate({
+			files: [],
+			skip: ["harness-version-coherence"],
+		});
+		const coherenceCheck = result.checks.find(
+			(check) => check.id === "harness-version-coherence",
+		);
+
+		expect(coherenceCheck).toBeUndefined();
+	});
 });

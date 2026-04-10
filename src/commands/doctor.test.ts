@@ -153,6 +153,85 @@ describe("runDoctor — tool checks", () => {
 		expect(coherenceCheck?.message).toContain("Version drift detected");
 		expect(coherenceCheck?.fix).toContain("scripts/harness-cli.sh");
 	});
+
+	it("skips harness version coherence check when no repo-local runner found", () => {
+		// No scripts/harness-cli.sh — coherence returns skip
+		mockAllToolsOk();
+
+		const report = runDoctor({ dir });
+		const coherenceCheck = report.checks.find(
+			(c) => c.id === "tool:harness-version-coherence",
+		);
+		expect(coherenceCheck?.status).toBe("skip");
+		expect(coherenceCheck?.message).toContain("no repo-local harness runner");
+	});
+
+	it("warns when repo-local runner outputs unparseable version", () => {
+		mkdirSync(join(dir, "scripts"), { recursive: true });
+		writeFileSync(
+			join(dir, "scripts/harness-cli.sh"),
+			"#!/usr/bin/env bash\necho 'harness v0.12.0'\n",
+		);
+		mockSpawnSync.mockImplementation((cmd, args) => {
+			const cmdStr = String(cmd);
+			const argsArr = Array.isArray(args) ? args.map(String) : [];
+
+			if (cmdStr === "node") return makeSpawnResult(0, "v24.0.0");
+			if (cmdStr === "pnpm") return makeSpawnResult(0, "10.0.0");
+			if (cmdStr === "git") return makeSpawnResult(0, "git version 2.44.0");
+			if (cmdStr === "gh" && argsArr.includes("status")) {
+				return makeSpawnResult(0, "ok");
+			}
+			if (cmdStr === "gh") return makeSpawnResult(0, "gh version 2.0.0");
+			// bash returns unparseable output for the local harness wrapper
+			if (cmdStr === "bash") return makeSpawnResult(0, "not-a-version");
+			if (cmdStr === "which") return makeSpawnResult(0, "found");
+			return makeSpawnResult(0, "");
+		});
+
+		const report = runDoctor({ dir });
+		const coherenceCheck = report.checks.find(
+			(c) => c.id === "tool:harness-version-coherence",
+		);
+		expect(coherenceCheck?.status).toBe("warn");
+		expect(coherenceCheck?.message).toContain("Could not parse");
+	});
+
+	it("reports ok for harness version coherence when versions match", () => {
+		mkdirSync(join(dir, "scripts"), { recursive: true });
+		writeFileSync(
+			join(dir, "scripts/harness-cli.sh"),
+			"#!/usr/bin/env bash\necho 'harness v1.0.0'\n",
+		);
+		mockSpawnSync.mockImplementation((cmd, args) => {
+			const cmdStr = String(cmd);
+			const argsArr = Array.isArray(args) ? args.map(String) : [];
+
+			if (cmdStr === "node") return makeSpawnResult(0, "v24.0.0");
+			if (cmdStr === "pnpm") return makeSpawnResult(0, "10.0.0");
+			if (cmdStr === "git") return makeSpawnResult(0, "git version 2.44.0");
+			if (cmdStr === "gh" && argsArr.includes("status")) {
+				return makeSpawnResult(0, "ok");
+			}
+			if (cmdStr === "gh") return makeSpawnResult(0, "gh version 2.0.0");
+			if (cmdStr === "bash") return makeSpawnResult(0, "harness v1.0.0");
+			if (cmdStr === "which" && argsArr[0] === "harness") {
+				return makeSpawnResult(0, "/usr/local/bin/harness");
+			}
+			if (cmdStr === "/usr/local/bin/harness") {
+				return makeSpawnResult(0, "harness v1.0.0");
+			}
+			if (cmdStr === "which") return makeSpawnResult(0, "found");
+			return makeSpawnResult(0, "");
+		});
+
+		const report = runDoctor({ dir });
+		const coherenceCheck = report.checks.find(
+			(c) => c.id === "tool:harness-version-coherence",
+		);
+		expect(coherenceCheck?.status).toBe("ok");
+		expect(coherenceCheck?.fix).toBeUndefined();
+	});
 });
 
 describe("runDoctor — file checks", () => {
@@ -365,6 +444,29 @@ describe("runDoctor — config checks", () => {
 		const report = runDoctor({ dir });
 		const check = report.checks.find((c) => c.id === "config:ciProviderPolicy");
 		expect(check?.status).toBe("warn");
+	});
+
+	it("does not treat prototype-inherited keys as own keys (Object.hasOwn guard)", () => {
+		writeFileSync(join(dir, "harness.contract.json"), JSON.stringify({}));
+		mockAllToolsOk();
+		// Inject an object where both keys live only on the prototype
+		vi.spyOn(JSON, "parse").mockImplementation(() =>
+			Object.create({
+				contextIntegrityPolicy: { minCoverage: 0.8 },
+				ciProviderPolicy: { mode: "optional" },
+			}),
+		);
+
+		const report = runDoctor({ dir });
+
+		const ctxCheck = report.checks.find(
+			(c) => c.id === "config:contextIntegrityPolicy",
+		);
+		const ciCheck = report.checks.find((c) => c.id === "config:ciProviderPolicy");
+
+		// Both should warn because Object.hasOwn returns false for prototype keys
+		expect(ctxCheck?.status).toBe("warn");
+		expect(ciCheck?.status).toBe("warn");
 	});
 });
 
