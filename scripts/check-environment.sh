@@ -128,33 +128,63 @@ fi
 		"pre-commit|Pre-commit|make hooks-pre-commit|system|false|"
 		"pre-push|Pre-push|make hooks-pre-push|system|false|pre-push"
 	)
-	for hook_spec in "${required_prek_hooks[@]}"; do
-		IFS='|' read -r hook_name hook_display_name hook_command hook_language hook_pass_filenames hook_stages <<< "$hook_spec"
-		if ! rg -q "^[[:space:]]*id[[:space:]]*=[[:space:]]*\"${hook_name}\"[[:space:]]*$" "$PREK_CONFIG_PATH"; then
-			echo "Error: required prek hook '$hook_name' is missing or out of date in $PREK_CONFIG_PATH"
-			exit 1
-		fi
-		if ! rg -q "^[[:space:]]*name[[:space:]]*=[[:space:]]*\"${hook_display_name}\"[[:space:]]*$" "$PREK_CONFIG_PATH"; then
-			echo "Error: required prek hook '$hook_name' is missing or out of date in $PREK_CONFIG_PATH"
-			exit 1
-		fi
-		if ! rg -q "^[[:space:]]*entry[[:space:]]*=[[:space:]]*\"${hook_command}\"[[:space:]]*$" "$PREK_CONFIG_PATH"; then
-			echo "Error: required prek hook '$hook_name' is missing or out of date in $PREK_CONFIG_PATH"
-			exit 1
-		fi
-		if ! rg -q "^[[:space:]]*language[[:space:]]*=[[:space:]]*\"${hook_language}\"[[:space:]]*$" "$PREK_CONFIG_PATH"; then
-			echo "Error: required prek hook '$hook_name' is missing or out of date in $PREK_CONFIG_PATH"
-			exit 1
-		fi
-		if ! rg -q "^[[:space:]]*pass_filenames[[:space:]]*=[[:space:]]*${hook_pass_filenames}[[:space:]]*$" "$PREK_CONFIG_PATH"; then
-			echo "Error: required prek hook '$hook_name' is missing or out of date in $PREK_CONFIG_PATH"
-			exit 1
-		fi
-		if [[ -n "$hook_stages" ]] && ! rg -q "^[[:space:]]*stages[[:space:]]*=[[:space:]]*\\[\"$hook_stages\"\\][[:space:]]*$" "$PREK_CONFIG_PATH"; then
-			echo "Error: required prek hook '$hook_name' is missing or out of date in $PREK_CONFIG_PATH"
-			exit 1
-		fi
-	done
+	if ! python3 - "$PREK_CONFIG_PATH" <<'PY'
+import sys
+import tomllib
+
+config_path = sys.argv[1]
+with open(config_path, "rb") as handle:
+    data = tomllib.load(handle)
+
+required = {
+    "pre-commit": {
+        "name": "Pre-commit",
+        "entry": "make hooks-pre-commit",
+        "language": "system",
+        "pass_filenames": False,
+        "stages": [],
+    },
+    "pre-push": {
+        "name": "Pre-push",
+        "entry": "make hooks-pre-push",
+        "language": "system",
+        "pass_filenames": False,
+        "stages": ["pre-push"],
+    },
+}
+
+hooks = []
+for repo in data.get("repos", []):
+    if repo.get("repo") == "local":
+        hooks.extend(repo.get("hooks", []))
+
+for hook_id, expected in required.items():
+    matched = False
+    for hook in hooks:
+        if hook.get("id") != hook_id:
+            continue
+        if hook.get("name") != expected["name"]:
+            continue
+        if hook.get("entry") != expected["entry"]:
+            continue
+        if hook.get("language") != expected["language"]:
+            continue
+        if bool(hook.get("pass_filenames")) != expected["pass_filenames"]:
+            continue
+        if list(hook.get("stages", [])) != expected["stages"]:
+            continue
+        matched = True
+        break
+    if not matched:
+        print(
+            f"Error: required prek hook '{hook_id}' is missing or out of date in {config_path}",
+            file=sys.stderr,
+        )
+        sys.exit(1)
+PY
+	then
+		exit 1
+	fi
 
 	if [[ -f "$PACKAGE_JSON_PATH" ]]; then
 		required_package_scripts=("codestyle:validate|bash scripts/validate-codestyle.sh" "secrets:staged|bash scripts/check-staged-secrets.sh" "docs:style:changed|bash scripts/check-doc-style.sh" "test:related|bash scripts/check-related-tests.sh" "semgrep:changed|bash scripts/check-semgrep-changed.sh")

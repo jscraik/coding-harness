@@ -635,25 +635,19 @@ REPO_ROOT="$(cd -- "$SCRIPT_DIR/.." && pwd)"
 
 	CLI_PATH="$REPO_ROOT/node_modules/@brainwav/coding-harness/dist/cli.js"
 
-	if [[ -f "$CLI_PATH" ]]; then
-		exec node "$CLI_PATH" "$@"
-	fi
-
-	# CLI_PATH not found; attempt fallback for Yarn PnP or other non-standard layouts
-	if ${execCommand} --version >/dev/null 2>&1; then
-		exec ${execCommand} "$@"
-	fi
-
-	# Both node_modules path and execCommand fallback failed
-	echo "Error: local @brainwav/coding-harness could not be resolved from this repo." >&2
-	echo "This is a local install/bootstrap problem, not a harness command failure." >&2
-	echo "Repair from the repo root with one of:" >&2
-	echo "  ${installCommand}" >&2
-	echo "  ${addCommand}" >&2
+	if [[ ! -f "$CLI_PATH" ]]; then
+		echo "Error: local @brainwav/coding-harness could not be resolved from this repo." >&2
+		echo "This is a local install/bootstrap problem, not a harness command failure." >&2
+		echo "Repair from the repo root with one of:" >&2
+		echo "  ${installCommand}" >&2
+		echo "  ${addCommand}" >&2
 	echo "After the package is installed, rerun:" >&2
 	echo "  bash scripts/harness-cli.sh <command>" >&2
-	echo "  ${execCommand} <command>" >&2
-	exit 1
+		echo "  ${execCommand} <command>" >&2
+		exit 1
+	fi
+
+	exec node "$CLI_PATH" "$@"
 	`;
 }
 
@@ -3000,9 +2994,9 @@ fi
 
 MANIFEST_PATH="$TMP_DIR/diagrams/manifest.json"
 ROOT_DIR="$ROOT_DIR" TMP_DIR="$TMP_DIR" MANIFEST_PATH="$MANIFEST_PATH" node <<'NODE'
+const { createHash } = require("node:crypto");
 const { readdirSync, readFileSync, writeFileSync } = require("node:fs");
 const { join } = require("node:path");
-const { stableId, parseArchitecture, buildArchitecture, buildDependency } = require(join(process.env.ROOT_DIR, "scripts/lib/diagram-utils.cjs"));
 
 const rootDir = process.env.ROOT_DIR;
 const tmpDir = process.env.TMP_DIR;
@@ -3015,6 +3009,130 @@ if (!rootDir || !tmpDir || !manifestPath) {
 const diagramsDir = join(tmpDir, "diagrams");
 const ensureTrailingNewline = (content) =>
   content.endsWith("\\n") ? content : \`\${content}\\n\`;
+const stableId = (prefix, value) => {
+  const slug = value
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "_")
+    .replace(/^_+|_+$/g, "")
+    .slice(0, 48) || prefix;
+  const digest = createHash("sha1").update(value).digest("hex").slice(0, 8);
+  return \`\${prefix}_\${slug}_\${digest}\`;
+};
+
+const parseArchitecture = (content) => {
+  const lines = content.trimEnd().split(/\\r?\\n/);
+  const subgraphs = [];
+  let currentSubgraph = null;
+
+  for (const line of lines) {
+    const subgraphMatch = line.match(/^  subgraph (\\S+)\\["(.+)"\\]$/);
+    if (subgraphMatch) {
+      currentSubgraph = {
+        rawId: subgraphMatch[1],
+        label: subgraphMatch[2],
+        nodes: [],
+      };
+      subgraphs.push(currentSubgraph);
+      continue;
+    }
+
+    if (line === "  end") {
+      currentSubgraph = null;
+      continue;
+    }
+
+    const nodeMatch = line.match(/^    (\\S+)\\["(.+)"\\]$/);
+    if (nodeMatch && currentSubgraph) {
+      currentSubgraph.nodes.push({
+        rawId: nodeMatch[1],
+        label: nodeMatch[2],
+      });
+    }
+  }
+
+  return subgraphs;
+};
+
+const buildArchitecture = (subgraphs) => {
+  const nodeMap = new Map();
+  const lines = ["graph TD"];
+  const sortedSubgraphs = [...subgraphs].sort((left, right) =>
+    left.label.localeCompare(right.label),
+  );
+
+  for (const subgraph of sortedSubgraphs) {
+    const subgraphId = stableId("sg", subgraph.label);
+    lines.push(\`  subgraph \${subgraphId}["\${subgraph.label}"]\`);
+    const sortedNodes = [...subgraph.nodes].sort((left, right) =>
+      left.label.localeCompare(right.label),
+    );
+    for (const node of sortedNodes) {
+      const nodeId = stableId("node", \`\${subgraph.label}/\${node.label}\`);
+      nodeMap.set(node.rawId, { canonicalId: nodeId, label: node.label });
+      lines.push(\`    \${nodeId}["\${node.label}"]\`);
+    }
+    lines.push("  end");
+  }
+
+  return {
+    content: ensureTrailingNewline(lines.join("\\n")),
+    nodeMap,
+  };
+};
+
+const buildDependency = (content, nodeMap) => {
+  const lines = content.trimEnd().split(/\\r?\\n/);
+  if (lines.length === 0) {
+    return ensureTrailingNewline(content);
+  }
+
+  const externalNodeMap = new Map();
+  const dependencyEdges = [];
+  const styleEntries = [];
+
+  for (const line of lines.slice(1)) {
+    const edgeMatch = line.match(/^  (\\S+)\\["(.+)"\\] --> (\\S+)$/);
+    if (edgeMatch) {
+      const [, rawSourceId, sourceLabel, rawTargetId] = edgeMatch;
+      const target = nodeMap.get(rawTargetId) ?? {
+        canonicalId: stableId("node", rawTargetId),
+        label: rawTargetId,
+      };
+      const sourceCanonicalId =
+        externalNodeMap.get(rawSourceId) ?? stableId("ext", sourceLabel);
+      externalNodeMap.set(rawSourceId, sourceCanonicalId);
+      dependencyEdges.push({
+        line: \`  \${sourceCanonicalId}["\${sourceLabel}"] --> \${target.canonicalId}\`,
+        sortKey: \`\${sourceLabel}::\${target.label}\`,
+      });
+      continue;
+    }
+
+    const styleMatch = line.match(/^  style (\\S+) (.+)$/);
+    if (styleMatch) {
+      const [, rawNodeId, styleSpec] = styleMatch;
+      const canonicalId = externalNodeMap.get(rawNodeId);
+      if (canonicalId) {
+        styleEntries.push({
+          line: \`  style \${canonicalId} \${styleSpec}\`,
+          sortKey: canonicalId,
+        });
+      }
+    }
+  }
+
+  return ensureTrailingNewline(
+    [
+      "graph LR",
+      ...dependencyEdges
+        .sort((left, right) => left.sortKey.localeCompare(right.sortKey))
+        .map((entry) => entry.line),
+      ...styleEntries
+        .sort((left, right) => left.sortKey.localeCompare(right.sortKey))
+        .map((entry) => entry.line),
+    ].join("\\n"),
+  );
+};
 
 const diagramFiles = readdirSync(diagramsDir).filter((entry) => entry.endsWith(".mmd"));
 const architecturePath = join(diagramsDir, "architecture.mmd");
@@ -3130,207 +3248,6 @@ jq --tab -n \\
 	}' > "$META_FILE"
 
 log "ok: refreshed \${DIAGRAM_COUNT} diagrams (changed=\${CHANGED})"
-`,
-	},
-	{
-		path: "scripts/lib/diagram-utils.cjs",
-		render: () => `/**
- * Shared diagram normalization utilities.
- * Used by both normalize-diagram-manifest.cjs and the init template in scaffold.ts.
- */
-
-const { createHash } = require("node:crypto");
-
-/**
- * Generate a stable, content-addressed identifier for diagram elements.
- * @param {string} prefix - The prefix to use (e.g., "node", "ext", "sg")
- * @param {string} value - The value to hash
- * @returns {string} A stable identifier like "prefix_slug_hash"
- */
-const stableId = (prefix, value) => {
-	const slug =
-		value
-			.toLowerCase()
-			.replace(/[^a-z0-9]+/g, "_")
-			.replace(/^_+|_+$/g, "")
-			.slice(0, 48) || prefix;
-	const digest = createHash("sha1").update(value).digest("hex").slice(0, 8);
-	return \\\`\\\${prefix}_\\\${slug}_\\\${digest}\\\`;
-};
-
-/**
- * Parse architecture diagram content into structured subgraphs.
- * @param {string} content - The raw diagram content
- * @returns {Array<{rawId: string, label: string, nodes: Array<{rawId: string, label: string}>}>}
- */
-const parseArchitecture = (content) => {
-	const lines = content.trimEnd().split(/\\\\r?\\\\n/);
-	const subgraphs = [];
-	let currentSubgraph = null;
-
-	for (const line of lines) {
-		const subgraphMatch = line.match(/^ {2}subgraph (\\\\S+)\\\\["(.+)"\\\\]$/);
-		if (subgraphMatch) {
-			currentSubgraph = {
-				rawId: subgraphMatch[1],
-				label: subgraphMatch[2],
-				nodes: [],
-			};
-			subgraphs.push(currentSubgraph);
-			continue;
-		}
-
-		if (line === "  end") {
-			currentSubgraph = null;
-			continue;
-		}
-
-		const nodeMatch = line.match(/^ {4}(\\\\S+)\\\\["(.+)"\\\\]$/);
-		if (nodeMatch && currentSubgraph) {
-			currentSubgraph.nodes.push({
-				rawId: nodeMatch[1],
-				label: nodeMatch[2],
-			});
-		}
-	}
-
-	return subgraphs;
-};
-
-/**
- * Build canonical architecture diagram from parsed subgraphs.
- * @param {Array<{rawId: string, label: string, nodes: Array<{rawId: string, label: string}>}>} subgraphs
- * @returns {{content: string, nodeMap: Map<string, {canonicalId: string, label: string}>}}
- */
-const buildArchitecture = (subgraphs) => {
-	const nodeMap = new Map();
-	const lines = ["graph TD"];
-	const sortedSubgraphs = [...subgraphs].sort((left, right) =>
-		left.label.localeCompare(right.label),
-	);
-
-	for (const subgraph of sortedSubgraphs) {
-		const subgraphId = stableId("sg", subgraph.label);
-		lines.push(\\\`  subgraph \\\${subgraphId}["\\\${subgraph.label}"]\\\`);
-		const sortedNodes = [...subgraph.nodes].sort((left, right) =>
-			left.label.localeCompare(right.label),
-		);
-		for (const node of sortedNodes) {
-			const nodeId = stableId("node", \\\`\\\${subgraph.label}/\\\${node.label}\\\`);
-			nodeMap.set(node.rawId, { canonicalId: nodeId, label: node.label });
-			lines.push(\\\`    \\\${nodeId}["\\\${node.label}"]\\\`);
-		}
-		lines.push("  end");
-	}
-
-	const ensureTrailingNewline = (content) =>
-		content.endsWith("\\\\n") ? content : \\\`\\\${content}\\\\n\\\`;
-
-	return {
-		content: ensureTrailingNewline(lines.join("\\\\n")),
-		nodeMap,
-	};
-};
-
-/**
- * Build canonical dependency diagram from content and node map.
- * @param {string} content - The raw dependency diagram content
- * @param {Map<string, {canonicalId: string, label: string}>} nodeMap - Map of raw node IDs to canonical info
- * @returns {string} Canonical dependency diagram content
- */
-const buildDependency = (content, nodeMap) => {
-	const lines = content.trimEnd().split(/\\\\r?\\\\n/);
-	if (lines.length === 0) {
-		const ensureTrailingNewline = (content) =>
-			content.endsWith("\\\\n") ? content : \\\`\\\${content}\\\\n\\\`;
-		return ensureTrailingNewline(content);
-	}
-
-	const externalNodeMap = new Map();
-	const dependencyEdges = [];
-	const styleEntries = [];
-
-	for (const line of lines.slice(1)) {
-		const edgeMatch = line.match(/^ {2}(\\\\S+)\\\\["(.+)"\\\\] --> (\\\\S+)$/);
-		if (edgeMatch) {
-			const [, rawSourceId, sourceLabel, rawTargetId] = edgeMatch;
-			const target = nodeMap.get(rawTargetId) ?? {
-				canonicalId: stableId("node", rawTargetId),
-				label: rawTargetId,
-			};
-			const sourceCanonicalId =
-				externalNodeMap.get(rawSourceId) ?? stableId("ext", sourceLabel);
-			externalNodeMap.set(rawSourceId, sourceCanonicalId);
-			dependencyEdges.push({
-				line: \\\`  \\\${sourceCanonicalId}["\\\${sourceLabel}"] --> \\\${target.canonicalId}\\\`,
-				sortKey: \\\`\\\${sourceLabel}::\\\${target.label}\\\`,
-			});
-			continue;
-		}
-
-		const styleMatch = line.match(/^ {2}style (\\\\S+) (.+)$/);
-		if (styleMatch) {
-			const [, rawNodeId, styleSpec] = styleMatch;
-			// Try to resolve from externalNodeMap first, then nodeMap
-			const canonicalId =
-				externalNodeMap.get(rawNodeId) || nodeMap.get(rawNodeId)?.canonicalId;
-			if (canonicalId) {
-				styleEntries.push({
-					line: \\\`  style \\\${canonicalId} \\\${styleSpec}\\\`,
-					sortKey: canonicalId,
-				});
-			} else {
-				// Preserve style with rawNodeId if not yet resolved
-				// This handles styles declared before edges
-				styleEntries.push({
-					line: \\\`  style \\\${rawNodeId} \\\${styleSpec}\\\`,
-					sortKey: rawNodeId,
-					rawNodeId, // Mark for potential later resolution
-				});
-			}
-		}
-	}
-
-	// Second pass: resolve any unresolved styles
-	for (let i = 0; i < styleEntries.length; i++) {
-		const entry = styleEntries[i];
-		if (entry.rawNodeId) {
-			const canonicalId =
-				externalNodeMap.get(entry.rawNodeId) ||
-				nodeMap.get(entry.rawNodeId)?.canonicalId;
-			if (canonicalId) {
-				// Replace with resolved version
-				const [, , styleSpec] = entry.line.match(/^ {2}style (\\\\S+) (.+)$/);
-				styleEntries[i] = {
-					line: \\\`  style \\\${canonicalId} \\\${styleSpec}\\\`,
-					sortKey: canonicalId,
-				};
-			}
-		}
-	}
-
-	const ensureTrailingNewline = (content) =>
-		content.endsWith("\\\\n") ? content : \\\`\\\${content}\\\\n\\\`;
-
-	return ensureTrailingNewline(
-		[
-			"graph LR",
-			...dependencyEdges
-				.sort((left, right) => left.sortKey.localeCompare(right.sortKey))
-				.map((entry) => entry.line),
-			...styleEntries
-				.sort((left, right) => left.sortKey.localeCompare(right.sortKey))
-				.map((entry) => entry.line),
-		].join("\\\\n"),
-	);
-};
-
-module.exports = {
-	stableId,
-	parseArchitecture,
-	buildArchitecture,
-	buildDependency,
-};
 `,
 	},
 	{

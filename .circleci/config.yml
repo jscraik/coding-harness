@@ -89,7 +89,7 @@ jobs:
             pnpm --version
       - run:
           name: Install dependencies
-          command: pnpm install
+          command: pnpm install --frozen-lockfile
       - run:
           name: Test (pilot-evaluate only)
           no_output_timeout: 20m
@@ -143,7 +143,7 @@ jobs:
             pnpm --version
       - run:
           name: Install dependencies
-          command: pnpm install
+          command: pnpm install --frozen-lockfile
       - run:
           name: Validate release context
           command: |
