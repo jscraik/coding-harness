@@ -236,7 +236,7 @@ describe("runCheck", () => {
 		expect(report.hasFailures).toBe(false);
 	});
 
-	it("harness:version-coherence is 'warn' when repo-local version is missing", () => {
+	it("harness:version-coherence is 'warn' when repo-local runner fails to produce a parseable version", () => {
 		const scriptsDir = join(dir, "scripts");
 		mkdirSync(scriptsDir, { recursive: true });
 		// Script content should not matter because local version is read from

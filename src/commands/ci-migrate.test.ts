@@ -1518,29 +1518,28 @@ function writeMergeQueueOrchestratorFixture(
 	mkdirSync(dirname(orchestratorPath), { recursive: true });
 	writeFileSync(
 		orchestratorPath,
-		`#!/usr/bin/env bash
-set -euo pipefail
-if [[ "${options?.shouldFail ? "1" : "0"}" == "1" ]]; then
-  echo "forced merge-queue orchestrator failure" >&2
-  exit 23
-fi
-snapshot_id="\${HARNESS_CI_MIGRATE_SNAPSHOT_ID:-}"
-evidence_path="\${HARNESS_CI_MIGRATE_EVIDENCE_PATH:-}"
-signing_key="\${HARNESS_CI_MIGRATE_SIGNING_KEY:-}"
-if [[ -z "$snapshot_id" || -z "$evidence_path" || -z "$signing_key" ]]; then
-  echo "missing orchestration env vars" >&2
-  exit 11
-fi
-mkdir -p "$(dirname "$evidence_path")"
-node <<'NODE'
-const fs = require("fs");
-const crypto = require("crypto");
+		`#!/usr/bin/env node
+const fs = require("node:fs");
+const path = require("node:path");
+const crypto = require("node:crypto");
+if (${options?.shouldFail ? "true" : "false"}) {
+  console.error("forced merge-queue orchestrator failure");
+  process.exit(23);
+}
 const env = process.env;
+const snapshotId = env.HARNESS_CI_MIGRATE_SNAPSHOT_ID ?? "";
+const evidencePath = env.HARNESS_CI_MIGRATE_EVIDENCE_PATH ?? "";
+const signingKey = env.HARNESS_CI_MIGRATE_SIGNING_KEY ?? "";
+if (!snapshotId || !evidencePath || !signingKey) {
+  console.error("missing orchestration env vars");
+  process.exit(11);
+}
+fs.mkdirSync(path.dirname(evidencePath), { recursive: true });
 const pausedAt = "2026-03-14T00:00:00.000Z";
 const fullLifecycle = env.HARNESS_CI_MIGRATE_REQUIRE_FULL_LIFECYCLE === "1";
 const evidence = {
   schemaVersion: "ci-migrate-merge-queue-evidence/v2",
-  snapshotId: env.HARNESS_CI_MIGRATE_SNAPSHOT_ID,
+  snapshotId,
   generatedAt: pausedAt,
   binding: {
     repoFullName: env.HARNESS_CI_MIGRATE_BINDING_REPO_FULL_NAME,
@@ -1557,7 +1556,11 @@ const evidence = {
   revalidatedCandidateCount: fullLifecycle ? 2 : undefined,
   integrity: {
     signatureAlgorithm: "hmac-sha256",
-    signingKeyId: crypto.createHash("sha256").update(env.HARNESS_CI_MIGRATE_SIGNING_KEY, "utf8").digest("hex").slice(0, 16),
+    signingKeyId: crypto
+      .createHash("sha256")
+      .update(signingKey, "utf8")
+      .digest("hex")
+      .slice(0, 16),
     payloadSha256: "",
   },
 };
@@ -1578,12 +1581,17 @@ const canonical = JSON.stringify({
     payloadSha256: "",
   },
 });
-evidence.integrity.payloadSha256 = crypto.createHash("sha256").update(canonical, "utf8").digest("hex");
+evidence.integrity.payloadSha256 = crypto
+  .createHash("sha256")
+  .update(canonical, "utf8")
+  .digest("hex");
 const content = JSON.stringify(evidence, null, 2);
-fs.writeFileSync(env.HARNESS_CI_MIGRATE_EVIDENCE_PATH, content);
-const signature = crypto.createHmac("sha256", env.HARNESS_CI_MIGRATE_SIGNING_KEY).update(content, "utf8").digest("hex");
-fs.writeFileSync(\`\${env.HARNESS_CI_MIGRATE_EVIDENCE_PATH}.sig\`, \`\${signature}\\n\`);
-NODE
+fs.writeFileSync(evidencePath, content);
+const signature = crypto
+  .createHmac("sha256", signingKey)
+  .update(content, "utf8")
+  .digest("hex");
+fs.writeFileSync(\`\${evidencePath}.sig\`, \`\${signature}\\n\`);
 `,
 	);
 	chmodSync(orchestratorPath, 0o755);

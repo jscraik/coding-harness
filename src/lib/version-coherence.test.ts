@@ -106,7 +106,6 @@ describe("detectHarnessVersionCoherence", () => {
 		const repoDir = makeTmpDir("coherence-repo-no-global-");
 		cleanupPaths.push(repoDir);
 		createLocalHarnessWrapper(repoDir, "0.12.0");
-		writeRepoPackageVersion(repoDir, "0.12.0");
 		// Keep core shell utilities available while ensuring no global harness
 		// binary is discoverable on PATH.
 		const emptyBinDir = makeTmpDir("coherence-emptybin-");

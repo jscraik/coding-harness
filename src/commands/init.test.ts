@@ -53,6 +53,7 @@ const EXPECTED_TEMPLATE_PATHS = [
 	"scripts/check-semgrep-changed.sh",
 	"scripts/semgrep-pre-push.yml",
 	"scripts/refresh-diagram-context.sh",
+	"scripts/lib/diagram-utils.cjs",
 	"scripts/check-diagram-freshness.sh",
 	".diagram/.gitkeep",
 	".diagram/context/diagram-context.md",
@@ -1184,6 +1185,10 @@ describe("runInit", () => {
 				join(tempDir, "scripts/check-diagram-freshness.sh"),
 				"utf-8",
 			);
+			const diagramUtils = require("node:fs").readFileSync(
+				join(tempDir, "scripts/lib/diagram-utils.cjs"),
+				"utf-8",
+			);
 			const makefile = require("node:fs").readFileSync(
 				join(tempDir, "Makefile"),
 				"utf-8",
@@ -1555,13 +1560,7 @@ describe("runInit", () => {
 				"diagram manifest generation requires ROOT_DIR, TMP_DIR, and MANIFEST_PATH",
 			);
 			expect(refreshDiagrams).toContain(
-				"const buildArchitecture = (subgraphs) => {",
-			);
-			expect(refreshDiagrams).toContain(
-				"const buildDependency = (content, nodeMap) => {",
-			);
-			expect(refreshDiagrams).toContain(
-				'const { createHash } = require("node:crypto");',
+				'const { stableId, parseArchitecture, buildArchitecture, buildDependency } = require(join(process.env.ROOT_DIR, "scripts/lib/diagram-utils.cjs"));',
 			);
 			expect(refreshDiagrams).toContain(
 				'TRUNC_DIR=".tmp-diagram-refresh-XXXXXX"',
@@ -1585,6 +1584,23 @@ describe("runInit", () => {
 			expect(diagramFreshness).toContain(
 				'bash "$REPO_ROOT/scripts/refresh-diagram-context.sh" --force --quiet',
 			);
+			expect(diagramUtils).toContain("const stableId = (prefix, value) => {");
+			expect(diagramUtils).toContain(
+				"const parseArchitecture = (content) => {",
+			);
+			expect(diagramUtils).toContain(
+				"const buildArchitecture = (subgraphs) => {",
+			);
+			expect(diagramUtils).toContain(
+				"const buildDependency = (content, nodeMap) => {",
+			);
+			expect(diagramUtils).toContain(
+				"// Try to resolve from externalNodeMap first, then nodeMap",
+			);
+			expect(diagramUtils).toContain(
+				"// Second pass: resolve any unresolved styles",
+			);
+			expect(diagramUtils).toContain("module.exports = {");
 		});
 
 		it("fails fast when codex preflight is sourced in zsh", () => {
