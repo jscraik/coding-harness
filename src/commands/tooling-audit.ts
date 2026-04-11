@@ -312,6 +312,43 @@ function auditReadinessScript(
 		}
 	}
 
+	if (toolingPolicy.projectBrainMemoryExtension?.enabled) {
+		if (!content.includes("project_brain_memory_extension_enabled=true")) {
+			findings.push({
+				path: "toolingPolicy.projectBrainMemoryExtension.enabled",
+				severity: "warning",
+				description:
+					"Readiness script no longer enables Project Brain memory-extension checks",
+				expected: "project_brain_memory_extension_enabled=true",
+				actual: toolingPolicy.readinessScriptPath,
+			});
+		}
+
+		if (!content.includes("required_project_brain_paths=(")) {
+			findings.push({
+				path: "toolingPolicy.projectBrainMemoryExtension.requiredPaths",
+				severity: "warning",
+				description:
+					"Readiness script no longer declares required Project Brain memory-extension paths",
+				expected: toolingPolicy.projectBrainMemoryExtension.requiredPaths,
+				actual: toolingPolicy.readinessScriptPath,
+			});
+		}
+
+		for (const requiredPath of toolingPolicy.projectBrainMemoryExtension
+			.requiredPaths) {
+			if (!content.includes(`"${requiredPath}"`)) {
+				findings.push({
+					path: "toolingPolicy.projectBrainMemoryExtension.requiredPaths",
+					severity: "warning",
+					description: `Readiness script no longer checks Project Brain path '${requiredPath}'`,
+					expected: requiredPath,
+					actual: toolingPolicy.readinessScriptPath,
+				});
+			}
+		}
+	}
+
 	for (const detector of toolingPolicy.packagePolicy.capabilityDetectors) {
 		if (!content.includes(detector.capability)) {
 			findings.push({
@@ -462,6 +499,30 @@ function auditMakefile(
 				severity: "warning",
 				description: `Missing Makefile target '${target}'`,
 				expected: target,
+			});
+		}
+	}
+}
+
+function auditProjectBrainMemoryExtension(
+	findings: ToolingAuditFinding[],
+	repoPath: string,
+	contract: HarnessContract,
+): void {
+	const toolingPolicy =
+		contract.toolingPolicy ?? DEFAULT_CONTRACT.toolingPolicy;
+	if (!toolingPolicy?.projectBrainMemoryExtension?.enabled) {
+		return;
+	}
+
+	for (const requiredPath of toolingPolicy.projectBrainMemoryExtension
+		.requiredPaths) {
+		if (!existsSync(join(repoPath, requiredPath))) {
+			findings.push({
+				path: "toolingPolicy.projectBrainMemoryExtension.requiredPaths",
+				severity: "critical",
+				description: `Missing Project Brain memory-extension path '${requiredPath}'`,
+				expected: requiredPath,
 			});
 		}
 	}
@@ -734,6 +795,33 @@ function auditBaseDrift(
 			});
 		}
 	}
+
+	const baseProjectBrain = basePolicy.projectBrainMemoryExtension;
+	const actualProjectBrain = actualPolicy.projectBrainMemoryExtension;
+	if (baseProjectBrain?.enabled) {
+		if (!actualProjectBrain?.enabled) {
+			findings.push({
+				path: "toolingPolicy.projectBrainMemoryExtension.enabled",
+				severity: "warning",
+				description:
+					"Contract drift: Project Brain memory-extension checks are no longer enabled",
+				expected: true,
+				actual: actualProjectBrain?.enabled ?? false,
+			});
+		}
+
+		const actualPaths = new Set(actualProjectBrain?.requiredPaths ?? []);
+		for (const requiredPath of baseProjectBrain.requiredPaths) {
+			if (!actualPaths.has(requiredPath)) {
+				findings.push({
+					path: "toolingPolicy.projectBrainMemoryExtension.requiredPaths",
+					severity: "warning",
+					description: `Contract drift: missing Project Brain memory-extension path '${requiredPath}'`,
+					expected: requiredPath,
+				});
+			}
+		}
+	}
 }
 
 function summarizeFindings(
@@ -813,6 +901,7 @@ async function auditRepository(
 	auditMise(findings, repoPath, contract);
 	auditCodexEnvironment(findings, repoPath, contract);
 	auditMakefile(findings, repoPath, contract);
+	auditProjectBrainMemoryExtension(findings, repoPath, contract);
 	auditPackagePolicy(findings, repoPath, contract);
 	auditLocalHooks(findings, repoPath);
 	if (baseContract) {

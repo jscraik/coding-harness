@@ -68,6 +68,8 @@ function createCompliantRepo(
 required_bins=(${toolingPolicy.requiredBinaries.map((binary) => `"${binary}"`).join(" ")})
 required_codex_actions=(${toolingPolicy.codexEnvironment.requiredActions.map((action) => `"${action.name}|${action.icon}"`).join(" ")})
 required_make_targets=(${toolingPolicy.makefile.requiredTargets.map((target) => `"${target}"`).join(" ")})
+project_brain_memory_extension_enabled=${toolingPolicy.projectBrainMemoryExtension?.enabled ? "true" : "false"}
+required_project_brain_paths=(${(toolingPolicy.projectBrainMemoryExtension?.requiredPaths ?? []).map((requiredPath) => `"${requiredPath}"`).join(" ")})
 explicit_capabilities=(${(toolingPolicy.packagePolicy.explicitCapabilities ?? []).map((capability) => `"${capability}"`).join(" ")})
 capability_detectors=(${toolingPolicy.packagePolicy.capabilityDetectors.map((detector) => `"${detector.capability}" ${detector.dependencyMarkers.map((marker) => `"${marker}"`).join(" ")}`).join(" ")})
 required_package_specs=(${toolingPolicy.packagePolicy.requiredPackages.map((requiredPackage) => `"${requiredPackage.package}|${requiredPackage.dependencyType}|${requiredPackage.requiredWhenCapabilities.join(",")}"`).join(" ")})
@@ -81,6 +83,15 @@ required_package_specs=(${toolingPolicy.packagePolicy.requiredPackages.map((requ
 
 	for (const supportFile of REQUIRED_HOOK_SUPPORT_FILES) {
 		writeRepoFile(root, supportFile, "placeholder\n");
+	}
+
+	for (const requiredPath of toolingPolicy.projectBrainMemoryExtension
+		?.requiredPaths ?? []) {
+		if (requiredPath.endsWith(".md")) {
+			writeRepoFile(root, requiredPath, "# placeholder\n");
+		} else {
+			mkdirSync(join(root, requiredPath), { recursive: true });
+		}
 	}
 
 	const packageJson = {
@@ -168,6 +179,39 @@ describe("tooling-audit command", () => {
 			if (result.ok) {
 				expect(result.value.exitCode).toBe(EXIT_CODES.NO_REPOS_FOUND);
 				expect(result.value.result.totalRepos).toBe(0);
+			}
+		} finally {
+			rmSync(tempRoot, { recursive: true, force: true });
+		}
+	});
+
+	it("flags repos missing required Project Brain memory-extension paths", async () => {
+		const tempRoot = mkdtempSync(
+			join(tmpdir(), "tooling-audit-project-brain-"),
+		);
+		const repoDir = join(tempRoot, "repo");
+		mkdirSync(repoDir, { recursive: true });
+		createCompliantRepo(repoDir, true);
+
+		rmSync(join(repoDir, ".harness", "knowledge", "INDEX.md"), {
+			force: true,
+		});
+
+		try {
+			const result = await runToolingAudit({
+				path: tempRoot,
+				format: "json",
+			});
+
+			expect(result.ok).toBe(true);
+			if (result.ok) {
+				expect(result.value.exitCode).toBe(EXIT_CODES.DRIFT_DETECTED);
+				expect(result.value.result.findings.critical).toBeGreaterThan(0);
+				expect(
+					result.value.result.results[0]?.findings.some((finding) =>
+						finding.description.includes("Project Brain memory-extension"),
+					),
+				).toBe(true);
 			}
 		} finally {
 			rmSync(tempRoot, { recursive: true, force: true });

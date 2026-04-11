@@ -69,6 +69,7 @@ import type {
 	ToolingPackagePolicy,
 	ToolingPackageRequirement,
 	ToolingPolicy,
+	ToolingProjectBrainMemoryExtensionPolicy,
 	UILoopPolicy,
 	UILoopSLO,
 } from "./types.js";
@@ -170,6 +171,7 @@ const VALID_TOOLING_POLICY_KEYS = [
 	"codexEnvironment",
 	"makefile",
 	"packagePolicy",
+	"projectBrainMemoryExtension",
 ] as const;
 const VALID_TOOLING_CODEX_ENVIRONMENT_KEYS = [
 	"path",
@@ -192,6 +194,10 @@ const VALID_TOOLING_PACKAGE_REQUIREMENT_KEYS = [
 	"package",
 	"dependencyType",
 	"requiredWhenCapabilities",
+] as const;
+const VALID_TOOLING_PROJECT_BRAIN_MEMORY_EXTENSION_KEYS = [
+	"enabled",
+	"requiredPaths",
 ] as const;
 const VALID_CI_PROVIDER_POLICY_KEYS = [
 	"activeProvider",
@@ -643,6 +649,29 @@ function isValidToolingPackagePolicy(
 	);
 }
 
+function isValidToolingProjectBrainMemoryExtension(
+	value: unknown,
+): value is ToolingProjectBrainMemoryExtensionPolicy {
+	if (!isPlainObject(value)) return false;
+	const projectBrain = value as Record<string, unknown>;
+	const unknownKeys = Object.keys(projectBrain).filter(
+		(key) =>
+			!VALID_TOOLING_PROJECT_BRAIN_MEMORY_EXTENSION_KEYS.includes(
+				key as (typeof VALID_TOOLING_PROJECT_BRAIN_MEMORY_EXTENSION_KEYS)[number],
+			),
+	);
+	if (unknownKeys.length > 0) {
+		return false;
+	}
+
+	return (
+		typeof projectBrain.enabled === "boolean" &&
+		isStringArray(projectBrain.requiredPaths, {
+			minLength: projectBrain.enabled ? 1 : 0,
+		})
+	);
+}
+
 function isValidToolingPolicy(value: unknown): value is ToolingPolicy {
 	if (!isPlainObject(value)) return false;
 	const policy = value as Record<string, unknown>;
@@ -667,7 +696,11 @@ function isValidToolingPolicy(value: unknown): value is ToolingPolicy {
 		policy.readinessScriptPath.trim().length > 0 &&
 		isValidToolingCodexEnvironment(policy.codexEnvironment) &&
 		isValidToolingMakefile(policy.makefile) &&
-		isValidToolingPackagePolicy(policy.packagePolicy)
+		isValidToolingPackagePolicy(policy.packagePolicy) &&
+		(policy.projectBrainMemoryExtension === undefined ||
+			isValidToolingProjectBrainMemoryExtension(
+				policy.projectBrainMemoryExtension,
+			))
 	);
 }
 
@@ -3030,11 +3063,11 @@ export function validateContract(
 				code: ValidationErrorCode.INVALID_VALUE,
 				path: "toolingPolicy",
 				message:
-					"toolingPolicy must declare required documentation terms, binaries, mise tool pins, readiness script path, Codex environment actions, and Makefile targets",
+					"toolingPolicy must declare required documentation terms, binaries, mise tool pins, readiness script path, Codex environment actions, Makefile targets, and optional Project Brain memory extension settings",
 				expected:
-					"{ requiredDocumentationTerms: string[], requiredBinaries: string[], requiredMiseTools: [{ tool: string, version: string }], miseFilePath: string, readinessScriptPath: string, codexEnvironment: { path: string, requiredActions: [{ name: string, icon: 'tool' | 'run' | 'debug' | 'test' }] }, makefile: { path: string, requiredTargets: string[] }, packagePolicy: { packageJsonPath: string, explicitCapabilities?: ('ui' | 'chatgpt_apps_sdk')[], capabilityDetectors: [{ capability: 'ui' | 'chatgpt_apps_sdk', dependencyMarkers: string[] }], requiredPackages: [{ package: string, dependencyType: 'dependencies' | 'devDependencies' | 'either', requiredWhenCapabilities: ('ui' | 'chatgpt_apps_sdk')[] }] } }",
+					"{ requiredDocumentationTerms: string[], requiredBinaries: string[], requiredMiseTools: [{ tool: string, version: string }], miseFilePath: string, readinessScriptPath: string, codexEnvironment: { path: string, requiredActions: [{ name: string, icon: 'tool' | 'run' | 'debug' | 'test' }] }, makefile: { path: string, requiredTargets: string[] }, packagePolicy: { packageJsonPath: string, explicitCapabilities?: ('ui' | 'chatgpt_apps_sdk')[], capabilityDetectors: [{ capability: 'ui' | 'chatgpt_apps_sdk', dependencyMarkers: string[] }], requiredPackages: [{ package: string, dependencyType: 'dependencies' | 'devDependencies' | 'either', requiredWhenCapabilities: ('ui' | 'chatgpt_apps_sdk')[] }] }, projectBrainMemoryExtension?: { enabled: boolean, requiredPaths: string[] } }",
 				received: JSON.stringify(obj.toolingPolicy),
-				fix: "Ensure toolingPolicy contains only supported keys and uses non-empty strings for terms, binaries, paths, tools, versions, action names, and target names",
+				fix: "Ensure toolingPolicy contains only supported keys and uses non-empty strings for terms, binaries, paths, tools, versions, action names, target names, and Project Brain required paths",
 			});
 		} else {
 			toolingPolicy = obj.toolingPolicy as ToolingPolicy;

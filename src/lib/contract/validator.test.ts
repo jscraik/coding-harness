@@ -460,6 +460,13 @@ describe("validateContract", () => {
 							},
 						],
 					},
+					projectBrainMemoryExtension: {
+						enabled: true,
+						requiredPaths: [
+							".harness/memory/LEARNINGS.md",
+							".harness/knowledge/INDEX.md",
+						],
+					},
 				},
 			});
 
@@ -611,6 +618,48 @@ describe("validateContract", () => {
 								requiredWhenCapabilities: ["ui"],
 							},
 						],
+					},
+				},
+			});
+
+			expect(result.success).toBe(false);
+			expect(result.errors[0]?.path).toBe("toolingPolicy");
+		});
+
+		it("rejects toolingPolicy with invalid projectBrainMemoryExtension paths", () => {
+			const result = validateContract({
+				version: "1.5.0",
+				toolingPolicy: {
+					requiredDocumentationTerms: ["node"],
+					requiredBinaries: ["node"],
+					requiredMiseTools: [{ tool: "node", version: "24.13.1" }],
+					miseFilePath: ".mise.toml",
+					readinessScriptPath: "scripts/check-environment.sh",
+					codexEnvironment: {
+						path: ".codex/environments/environment.toml",
+						requiredActions: [{ name: "Tools", icon: "tool" }],
+					},
+					makefile: {
+						path: "Makefile",
+						requiredTargets: ["check"],
+					},
+					packagePolicy: {
+						packageJsonPath: "package.json",
+						explicitCapabilities: ["ui"],
+						capabilityDetectors: [
+							{ capability: "ui", dependencyMarkers: ["react"] },
+						],
+						requiredPackages: [
+							{
+								package: "@brainwav/design-system-guidance",
+								dependencyType: "either",
+								requiredWhenCapabilities: ["ui"],
+							},
+						],
+					},
+					projectBrainMemoryExtension: {
+						enabled: true,
+						requiredPaths: [".harness/memory/LEARNINGS.md", 42],
 					},
 				},
 			});

@@ -1,0 +1,22 @@
+{
+	"excluded_repositories": [],
+	"repositories": [
+		{
+			"commit_msg_policy": {
+				"command": "node scripts/validate-commit-msg.js $1",
+				"source": "validate-commit-msg.js"
+			},
+			"frameworks_present": ["prek"],
+			"gate_entrypoints": {
+				"hooks-commit-msg": "make hooks-commit-msg",
+				"hooks-pre-commit": "make hooks-pre-commit",
+				"hooks-pre-push": "make hooks-pre-push"
+			},
+			"profile_type": "standard-prek-wrapper",
+			"repo_name": "coding-harness",
+			"repo_path": "/Users/jamiecraik/dev/coding-harness"
+		}
+	],
+	"schema_version": 1,
+	"workspace_root": "/Users/jamiecraik/dev"
+}

@@ -1,0 +1,40 @@
+{
+	"classification_path": "dev/coding-harness/docs/hooks-governance/public-api-classification.json",
+	"evaluated_at": "2026-04-11T20:58:09Z",
+	"metrics_path": "dev/coding-harness/docs/hooks-governance/docstring-ratchet-metrics.json",
+	"repositories": [
+		{
+			"false_positive_rate_weekly": [0.02, 0.03],
+			"files": [
+				{
+					"drift_flags": [],
+					"label": "public",
+					"matched_rule_id": "public-governance-script",
+					"path": "scripts/hook-governance/evaluate_docstring_ratchet.py",
+					"severity_mode": "hard-block"
+				},
+				{
+					"drift_flags": [],
+					"label": "public",
+					"matched_rule_id": "public-governance-script",
+					"path": "scripts/hook-governance/rollout_check.py",
+					"severity_mode": "hard-block"
+				},
+				{
+					"drift_flags": [],
+					"label": "public",
+					"matched_rule_id": "public-shell-entrypoint",
+					"path": "scripts/verify-work.sh",
+					"severity_mode": "hard-block"
+				}
+			],
+			"ratchet_ready": true,
+			"ratchet_reasons": [],
+			"repo_name": "coding-harness",
+			"repo_path": "/Users/jamiecraik/dev/coding-harness",
+			"unresolved_high_conf_suppressions_over_7d": 0
+		}
+	],
+	"schema_version": "docstring-ratchet-evaluation.v1",
+	"window_days": 14
+}

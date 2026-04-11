@@ -1,0 +1,27 @@
+{
+	"schema_version": "public-api-classification.v1",
+	"generated_at": "2026-04-11T00:00:00Z",
+	"repositories": [
+		{
+			"repo_name": "coding-harness",
+			"repo_path": "/Users/jamiecraik/dev/coding-harness",
+			"files": [
+				{
+					"path": "scripts/verify-work.sh",
+					"label": "public",
+					"matched_rule_id": "public-shell-entrypoint"
+				},
+				{
+					"path": "scripts/hook-governance/rollout_check.py",
+					"label": "public",
+					"matched_rule_id": "public-governance-script"
+				},
+				{
+					"path": "scripts/hook-governance/evaluate_docstring_ratchet.py",
+					"label": "public",
+					"matched_rule_id": "public-governance-script"
+				}
+			]
+		}
+	]
+}

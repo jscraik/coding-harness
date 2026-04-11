@@ -23,6 +23,20 @@ normalized_manifest_path=""
 lane_fast_mode_json="false"
 lane_changed_only_json="true"
 lane_strict_mode_json="false"
+hook_governance_scope="project-local"
+current_git_root=""
+current_repo_name=""
+workspace_root=""
+hook_scope_manifest=""
+hook_inventory_builder=""
+hook_rollout_checker=""
+hook_docstring_ratchet_evaluator=""
+hook_classification_input=""
+hook_metrics_input=""
+hook_inventory_output=""
+hook_rollout_output=""
+hook_docstring_output=""
+declare -a hook_temp_paths=()
 
 usage() {
 	cat <<'USAGE'
@@ -38,6 +52,8 @@ Options:
   --resume-from ID   Resume execution from a gate id (requires compatible prior run state)
   --json             Emit final summary as JSON
   --repo-root PATH   Run checks in a specific repository root
+  --project-governance Limit hook-governance checks to this repository only (default)
+  --workspace-governance Run hook-governance checks from docs/hooks-governance/repo-scope.manifest.json
   -h, --help         Show this help text
 USAGE
 }
@@ -120,31 +136,47 @@ prepare_normalized_required_checks_manifest() {
 		return 0
 	fi
 
-	local -a normalize_runner=()
 	local pnpm_bin=""
 	local mise_harness_bin=""
 	local harness_bin=""
-	if [[ -f "$repo_root/src/cli.ts" ]] && pnpm_bin="$(command -v pnpm 2>/dev/null)"; then
-		normalize_runner=("$pnpm_bin" exec tsx "$repo_root/src/cli.ts")
-	elif mise_harness_bin="$(mise which harness 2>/dev/null || true)" && [[ -n "$mise_harness_bin" && -x "$mise_harness_bin" ]]; then
-		normalize_runner=("$mise_harness_bin")
-	elif harness_bin="$(command -v harness 2>/dev/null)"; then
-		normalize_runner=("$harness_bin")
-	else
-		echo "[verify-work] required checks manifest exists but no harness normalization runner is available" >&2
-		return 1
-	fi
-
 	local normalized_tmp
 	normalized_tmp="$(mktemp)"
-	if ! "${normalize_runner[@]}" contract normalize-required-checks --manifest "$manifest_path" > "$normalized_tmp"; then
-		rm -f "$normalized_tmp"
-		echo "[verify-work] required checks normalization failed for $manifest_path" >&2
-		return 1
+
+	if [[ -f "$repo_root/src/cli.ts" ]] && pnpm_bin="$(command -v pnpm 2>/dev/null)"; then
+		if "$pnpm_bin" exec tsx "$repo_root/src/cli.ts" contract normalize-required-checks --manifest "$manifest_path" > "$normalized_tmp"; then
+			normalized_manifest_path="$normalized_tmp"
+			return 0
+		fi
+		echo "[verify-work] required checks normalization via repo runner failed, trying fallback runners" >&2
 	fi
 
-	normalized_manifest_path="$normalized_tmp"
-	return 0
+	mise_harness_bin="$(mise which harness 2>/dev/null || true)"
+	if [[ -n "$mise_harness_bin" && -x "$mise_harness_bin" ]]; then
+		if "$mise_harness_bin" contract normalize-required-checks --manifest "$manifest_path" > "$normalized_tmp"; then
+			normalized_manifest_path="$normalized_tmp"
+			return 0
+		fi
+		echo "[verify-work] required checks normalization via mise harness failed, trying PATH harness" >&2
+	fi
+
+	harness_bin="$(command -v harness 2>/dev/null || true)"
+	if [[ -n "$harness_bin" ]]; then
+		if "$harness_bin" contract normalize-required-checks --manifest "$manifest_path" > "$normalized_tmp"; then
+			normalized_manifest_path="$normalized_tmp"
+			return 0
+		fi
+	fi
+
+	if jq -e 'type == "object"' "$manifest_path" >/dev/null 2>&1; then
+		cp "$manifest_path" "$normalized_tmp"
+		normalized_manifest_path="$normalized_tmp"
+		echo "[verify-work] required checks normalization unavailable; using raw manifest fallback" >&2
+		return 0
+	fi
+
+	rm -f "$normalized_tmp"
+	echo "[verify-work] required checks normalization failed for $manifest_path" >&2
+	return 1
 }
 
 build_resume_hint_from_run_json() {
@@ -175,6 +207,11 @@ cleanup_verify_work_temp_files() {
 	if [[ -n "$normalized_manifest_path" && -f "$normalized_manifest_path" ]]; then
 		rm -f "$normalized_manifest_path"
 	fi
+	for tmp_path in "${hook_temp_paths[@]}"; do
+		if [[ -n "$tmp_path" && -f "$tmp_path" ]]; then
+			rm -f "$tmp_path"
+		fi
+	done
 }
 
 trap cleanup_verify_work_temp_files EXIT
@@ -293,6 +330,128 @@ compute_schema_version() {
 	read_normalized_manifest_value_or_default "1" ".schemaVersion // 1"
 }
 
+first_existing_path() {
+	for candidate in "$@"; do
+		if [[ -f "$candidate" ]]; then
+			echo "$candidate"
+			return 0
+		fi
+	done
+	return 1
+}
+
+prepare_hook_governance_inputs() {
+	hook_inventory_builder="$(
+		first_existing_path \
+			"$repo_root/scripts/hook-governance/inventory_repos.py" \
+			"$repo_root/codex/scripts/hook-governance/inventory_repos.py" \
+			|| true
+	)"
+	hook_rollout_checker="$(
+		first_existing_path \
+			"$repo_root/scripts/hook-governance/rollout_check.py" \
+			"$repo_root/codex/scripts/hook-governance/rollout_check.py" \
+			|| true
+	)"
+	hook_docstring_ratchet_evaluator="$(
+		first_existing_path \
+			"$repo_root/scripts/hook-governance/evaluate_docstring_ratchet.py" \
+			"$repo_root/codex/scripts/hook-governance/evaluate_docstring_ratchet.py" \
+			|| true
+	)"
+	hook_classification_input="$(
+		first_existing_path \
+			"$repo_root/docs/hooks-governance/public-api-classification.json" \
+			"$repo_root/codex/docs/hooks-governance/public-api-classification.json" \
+			|| true
+	)"
+	hook_metrics_input="$(
+		first_existing_path \
+			"$repo_root/docs/hooks-governance/docstring-ratchet-metrics.json" \
+			"$repo_root/codex/docs/hooks-governance/docstring-ratchet-metrics.json" \
+			|| true
+	)"
+
+	if [[ "$hook_governance_scope" == "project-local" ]]; then
+		hook_scope_manifest="$(mktemp "${TMPDIR:-/tmp}/verify-work-hook-scope.XXXXXX.json")"
+		hook_inventory_output="$(mktemp "${TMPDIR:-/tmp}/verify-work-repo-profile-matrix.XXXXXX.json")"
+		hook_rollout_output="$(mktemp "${TMPDIR:-/tmp}/verify-work-rollout-check-report.XXXXXX.json")"
+		hook_docstring_output="$(mktemp "${TMPDIR:-/tmp}/verify-work-docstring-ratchet-report.XXXXXX.json")"
+		hook_temp_paths+=(
+			"$hook_scope_manifest"
+			"$hook_inventory_output"
+			"$hook_rollout_output"
+			"$hook_docstring_output"
+		)
+
+		jq -n \
+			--arg workspaceRoot "$workspace_root" \
+			--arg repoName "$current_repo_name" \
+			'{
+				workspace_root: $workspaceRoot,
+				repos: {
+					in_scope: [$repoName],
+					excluded: []
+				}
+			}' > "$hook_scope_manifest"
+		log_info "[verify-work] hook-governance scope: project-local (repo=$current_repo_name)"
+		return 0
+	fi
+
+	hook_scope_manifest="$(
+		first_existing_path \
+			"$repo_root/docs/hooks-governance/repo-scope.manifest.json" \
+			"$repo_root/codex/docs/hooks-governance/repo-scope.manifest.json" \
+			|| true
+	)"
+	hook_inventory_output="$repo_root/docs/hooks-governance/repo-profile-matrix.json"
+	hook_rollout_output="$repo_root/docs/hooks-governance/rollout-check-report.json"
+	hook_docstring_output="$repo_root/docs/hooks-governance/docstring-ratchet-report.json"
+	mkdir -p "$(dirname "$hook_inventory_output")"
+	log_info "[verify-work] hook-governance scope: workspace"
+}
+
+format_hook_governance_reports() {
+	if [[ "$hook_governance_scope" != "workspace" ]]; then
+		return 0
+	fi
+
+	local -a report_paths=()
+	local path
+	if [[ -n "$hook_inventory_output" && -f "$hook_inventory_output" ]]; then
+		path="$hook_inventory_output"
+		if [[ "$path" == "$repo_root/"* ]]; then
+			path="${path#$repo_root/}"
+		fi
+		report_paths+=("$path")
+	fi
+	if [[ -n "$hook_rollout_output" && -f "$hook_rollout_output" ]]; then
+		path="$hook_rollout_output"
+		if [[ "$path" == "$repo_root/"* ]]; then
+			path="${path#$repo_root/}"
+		fi
+		report_paths+=("$path")
+	fi
+	if [[ -n "$hook_docstring_output" && -f "$hook_docstring_output" ]]; then
+		path="$hook_docstring_output"
+		if [[ "$path" == "$repo_root/"* ]]; then
+			path="${path#$repo_root/}"
+		fi
+		report_paths+=("$path")
+	fi
+
+	if (( ${#report_paths[@]} == 0 )); then
+		return 0
+	fi
+
+	if ! command -v pnpm >/dev/null 2>&1; then
+		echo "[verify-work] pnpm is required to format hook-governance workspace reports"
+		return 1
+	fi
+
+	pnpm fmt "${report_paths[@]}" >/dev/null
+}
+
 declare -a gate_ids=()
 declare -a gate_exec_classes=()
 declare -a gate_failure_defaults=()
@@ -315,8 +474,16 @@ build_gate_plan() {
 
 	if [[ "$fast_mode" -eq 1 ]]; then
 		add_gate "ci-check-alignment" "read_only_parallel" "contract_policy"
+		add_gate "hook-governance-inventory" "serial_guarded" "contract_policy"
+		add_gate "hook-governance-rollout-check" "read_only_parallel" "contract_policy"
+		add_gate "hook-governance-docstring-ratchet" "read_only_parallel" "contract_policy"
+		add_gate "hook-governance-format-reports" "serial_guarded" "contract_policy"
 		add_gate "validate-codestyle-fast" "read_only_parallel" "transient_infra"
 	else
+		add_gate "hook-governance-inventory" "serial_guarded" "contract_policy"
+		add_gate "hook-governance-rollout-check" "read_only_parallel" "contract_policy"
+		add_gate "hook-governance-docstring-ratchet" "read_only_parallel" "contract_policy"
+		add_gate "hook-governance-format-reports" "serial_guarded" "contract_policy"
 		add_gate "validate-codestyle" "serial_guarded" "internal_unknown"
 	fi
 }
@@ -338,6 +505,63 @@ run_gate_command() {
 			echo
 			echo "==> ci-check-alignment"
 			run_ci_check_alignment_gate
+			;;
+		hook-governance-inventory)
+			echo
+			echo "==> hook-governance-inventory"
+			if [[ -z "$hook_inventory_builder" ]]; then
+				echo "[verify-work] hook-governance inventory script not found; skipping"
+				return 0
+			fi
+			if [[ -z "$hook_scope_manifest" || ! -f "$hook_scope_manifest" ]]; then
+				echo "[verify-work] hook-governance scope manifest missing"
+				return 1
+			fi
+			python3 "$hook_inventory_builder" \
+				--manifest "$hook_scope_manifest" \
+				--out "$hook_inventory_output"
+			;;
+		hook-governance-rollout-check)
+			echo
+			echo "==> hook-governance-rollout-check"
+			if [[ -z "$hook_rollout_checker" ]]; then
+				echo "[verify-work] rollout_check.py not found; skipping"
+				return 0
+			fi
+			if [[ -z "$hook_inventory_output" || ! -f "$hook_inventory_output" ]]; then
+				echo "[verify-work] hook-governance inventory output missing"
+				return 1
+			fi
+			python3 "$hook_rollout_checker" \
+				--inventory "$hook_inventory_output" \
+				--recovery-slo-hours 24 \
+				--out "$hook_rollout_output"
+			;;
+		hook-governance-docstring-ratchet)
+			echo
+			echo "==> hook-governance-docstring-ratchet"
+			if [[ -z "$hook_docstring_ratchet_evaluator" ]]; then
+				echo "[verify-work] evaluate_docstring_ratchet.py not found; skipping"
+				return 0
+			fi
+			if [[ -z "$hook_classification_input" || ! -f "$hook_classification_input" ]]; then
+				echo "[verify-work] hook-governance classification input missing"
+				return 1
+			fi
+			if [[ -z "$hook_metrics_input" || ! -f "$hook_metrics_input" ]]; then
+				echo "[verify-work] hook-governance metrics input missing"
+				return 1
+			fi
+			python3 "$hook_docstring_ratchet_evaluator" \
+				--classification "$hook_classification_input" \
+				--metrics "$hook_metrics_input" \
+				--window-days 14 \
+				--out "$hook_docstring_output"
+			;;
+		hook-governance-format-reports)
+			echo
+			echo "==> hook-governance-format-reports"
+			format_hook_governance_reports
 			;;
 		validate-codestyle)
 			echo
@@ -699,6 +923,14 @@ while (( $# > 0 )); do
 			repo_root="${2:-}"
 			shift 2
 			;;
+		--project-governance)
+			hook_governance_scope="project-local"
+			shift
+			;;
+		--workspace-governance)
+			hook_governance_scope="workspace"
+			shift
+			;;
 		-h|--help)
 			usage
 			exit 0
@@ -718,6 +950,10 @@ fi
 cd "$repo_root"
 log_info "[verify-work] repo root: $repo_root"
 
+current_git_root="$(git rev-parse --show-toplevel 2>/dev/null || pwd -P)"
+current_repo_name="$(basename "$current_git_root")"
+workspace_root="$(dirname "$current_git_root")"
+
 if ! prepare_normalized_required_checks_manifest; then
 	exit 1
 fi
@@ -728,6 +964,7 @@ paths_csv="$(preflight_paths_csv "$stack")"
 provider_class="$(compute_provider_class)"
 schema_version="$(compute_schema_version)"
 contract_version="$(compute_contract_version)"
+prepare_hook_governance_inputs
 
 build_gate_plan
 

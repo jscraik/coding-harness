@@ -27,6 +27,7 @@ import {
 	REQUIRED_PACKAGE_SCRIPTS,
 	REQUIRED_PREK_HOOKS,
 	REQUIRED_PREK_INSTALL_HOOK_TYPES,
+	REQUIRED_PROJECT_BRAIN_MEMORY_EXTENSION_PATHS,
 	REQUIRED_TOOLING_BINARIES,
 	REQUIRED_TOOLING_DOC_TERMS,
 } from "../policy/tooling-baseline.js";
@@ -3699,6 +3700,14 @@ CLAUDE_APPROVAL_POSTURE = "require"
 			const explicitCapabilities = packagePolicy?.explicitCapabilities ?? [];
 			const capabilityDetectors = packagePolicy?.capabilityDetectors ?? [];
 			const requiredPackages = packagePolicy?.requiredPackages ?? [];
+			const projectBrainMemoryExtension =
+				DEFAULT_CONTRACT.toolingPolicy?.projectBrainMemoryExtension;
+			const projectBrainMemoryExtensionEnabled =
+				projectBrainMemoryExtension?.enabled ?? false;
+			const requiredProjectBrainPaths =
+				projectBrainMemoryExtension?.requiredPaths ?? [
+					...REQUIRED_PROJECT_BRAIN_MEMORY_EXTENSION_PATHS,
+				];
 			return `#!/usr/bin/env bash
 # Local environment preflight (strict)
 # Fails fast when required tooling is missing.
@@ -3759,6 +3768,20 @@ fi
 			exit 1
 		fi
 	done
+
+	project_brain_memory_extension_enabled=${projectBrainMemoryExtensionEnabled ? "true" : "false"}
+	required_project_brain_paths=(${requiredProjectBrainPaths
+		.map((path) => `"${path}"`)
+		.join(" ")})
+	if [[ "$project_brain_memory_extension_enabled" == "true" ]]; then
+		for required_path in "\${required_project_brain_paths[@]}"; do
+			if [[ ! -e "$REPO_ROOT/\${required_path}" ]]; then
+				echo "Error: required Project Brain memory-extension path '\$required_path' is missing under $REPO_ROOT"
+				echo "Fix: run harness init --update to restore Project Brain scaffolding."
+				exit 1
+			fi
+		done
+	fi
 
 if ! command -v mise >/dev/null 2>&1; then
 	echo "Error: required binary 'mise' is not installed or not on PATH"

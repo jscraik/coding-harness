@@ -29,6 +29,7 @@ When starting a task, follow this lookup order:
 4. Select one or more of the following based on intent:
 
    - **Environment/setup, command selection, or tool preference:** `02-tooling-policy.md`
+   - **Project Brain memory-extension rollout across repos:** `20-project-brain-memory-extension-rollout.md`
    - **Memory/checkpoint workflow or per-project LEARNINGS.md:** `03-local-memory.md`
    - **Validation and gate planning:** `04-validation.md` + `10-agent-testing-gates.md`
    - **Flaky tests and evidence artifacts:** `11-flaky-test-artifacts.md`
@@ -124,3 +125,4 @@ These deep-dive specs live alongside their parent SOPs and are not auto-discover
 - [CI required checks vs branch protection](./17-ci-required-checks.md)
 - [GitHub to Linear automation](./18-github-linear-automation.md)
 - [Linear templates and saved views](./19-linear-templates.md)
+- [Project Brain memory-extension rollout](./20-project-brain-memory-extension-rollout.md)

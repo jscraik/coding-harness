@@ -296,6 +296,27 @@ export const REQUIRED_MAKEFILE_TARGETS = [
 	"env-check",
 ] as const;
 
+export const REQUIRED_PROJECT_BRAIN_MEMORY_EXTENSION_PATHS = [
+	".harness/memory/LEARNINGS.md",
+	".harness/knowledge/INDEX.md",
+	".harness/knowledge/cli/knowledge.md",
+	".harness/knowledge/cli/hypotheses.md",
+	".harness/knowledge/cli/rules.md",
+	".harness/knowledge/ci/knowledge.md",
+	".harness/knowledge/ci/hypotheses.md",
+	".harness/knowledge/ci/rules.md",
+	".harness/knowledge/governance/knowledge.md",
+	".harness/knowledge/governance/hypotheses.md",
+	".harness/knowledge/governance/rules.md",
+	".harness/knowledge/tooling/knowledge.md",
+	".harness/knowledge/tooling/hypotheses.md",
+	".harness/knowledge/tooling/rules.md",
+	".harness/knowledge/tooling/codex-learn-summary.md",
+	".harness/decisions",
+	".harness/quality/criteria.md",
+	".harness/review-log.md",
+] as const;
+
 export const REQUIRED_HOOK_SUPPORT_FILES = [
 	"scripts/codex-preflight.sh",
 	"scripts/codex-preflight-local-memory-legacy.sh",
