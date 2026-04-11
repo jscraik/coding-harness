@@ -19,7 +19,10 @@ fi
 
 if (( is_sourced_invocation )) && [[ "${CODEX_PREFLIGHT_ALLOW_SOURCE:-0}" != "1" ]]; then
 	print_do_not_source_message
-	return 1 2>/dev/null || exit 1
+	# shellcheck disable=SC2317 # exit is a non-sourced fallback when `return` is invalid.
+	if ! return 1 2>/dev/null; then
+		exit 1
+	fi
 fi
 
 set -euo pipefail
@@ -140,6 +143,7 @@ trim_ascii_whitespace() {
 decode_preflight_override_value() {
 	local raw_value="${1:-}"
 	local value=''
+	# shellcheck disable=SC2016 # ${} is intentionally treated as literal characters in this allowlist.
 	local safe_value_re='^[A-Za-z0-9_./,:@+*?${}~ -]*$'
 
 	value="$(trim_ascii_whitespace "${raw_value}")"
@@ -700,7 +704,10 @@ main() {
 }
 
 if is_script_sourced; then
-	return 0 2>/dev/null || exit 0
+	# shellcheck disable=SC2317 # exit is a non-sourced fallback when `return` is invalid.
+	if ! return 0 2>/dev/null; then
+		exit 0
+	fi
 fi
 
 main "$@"
