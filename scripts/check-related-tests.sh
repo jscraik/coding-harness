@@ -43,5 +43,6 @@ done
 for env_name in $(env | cut -d= -f1 | rg '^GIT_PUSH_OPTION_[0-9]+$' || true); do
 	unset "$env_name"
 done
+unset GIT_PUSH_OPTION_COUNT
 
 pnpm exec vitest related --run --passWithNoTests "${related_sources[@]}"

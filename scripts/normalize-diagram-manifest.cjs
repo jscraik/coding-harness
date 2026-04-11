@@ -163,6 +163,11 @@ if (diagramFiles.includes("architecture.mmd")) {
 	console.info(
 		`dependency.mmd exists at ${dependencyPath} but architecture.mmd is missing; applying only whitespace normalization because no nodeMap is available`,
 	);
+	const dependencyContent = readFileSync(dependencyPath, "utf8");
+	writeFileSync(
+		dependencyPath,
+		ensureTrailingNewline(dependencyContent.trimEnd()),
+	);
 }
 
 for (const file of diagramFiles) {
@@ -198,8 +203,6 @@ writeFileSync(
 	manifestPath,
 	`${JSON.stringify(
 		{
-			generatedAt: new Date().toISOString(),
-			rootPath: rootDir,
 			diagramDir: ".diagram",
 			diagrams,
 		},
