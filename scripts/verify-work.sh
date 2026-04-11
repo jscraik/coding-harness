@@ -1,6 +1,14 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
+ensure_optional_npm_token_env() {
+	if [[ -z "${NPM_TOKEN+x}" ]]; then
+		export NPM_TOKEN=""
+	fi
+}
+
+ensure_optional_npm_token_env
+
 SCRIPT_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd -P)"
 REPO_ROOT="$(cd -- "$SCRIPT_DIR/.." && pwd -P)"
 
@@ -136,11 +144,20 @@ prepare_normalized_required_checks_manifest() {
 		return 0
 	fi
 
+	local dist_cli_path="$repo_root/dist/cli.js"
 	local pnpm_bin=""
 	local mise_harness_bin=""
 	local harness_bin=""
 	local normalized_tmp
 	normalized_tmp="$(mktemp)"
+
+	if [[ -f "$dist_cli_path" ]] && command -v node >/dev/null 2>&1; then
+		if node "$dist_cli_path" contract normalize-required-checks --manifest "$manifest_path" > "$normalized_tmp"; then
+			normalized_manifest_path="$normalized_tmp"
+			return 0
+		fi
+		echo "[verify-work] required checks normalization via dist CLI failed, trying fallback runners" >&2
+	fi
 
 	if [[ -f "$repo_root/src/cli.ts" ]] && pnpm_bin="$(command -v pnpm 2>/dev/null)"; then
 		if "$pnpm_bin" exec tsx "$repo_root/src/cli.ts" contract normalize-required-checks --manifest "$manifest_path" > "$normalized_tmp"; then

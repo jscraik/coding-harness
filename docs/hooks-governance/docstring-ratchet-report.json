@@ -1,6 +1,6 @@
 {
 	"classification_path": "dev/coding-harness/docs/hooks-governance/public-api-classification.json",
-	"evaluated_at": "2026-04-11T20:58:09Z",
+	"evaluated_at": "2026-04-11T21:06:33Z",
 	"metrics_path": "dev/coding-harness/docs/hooks-governance/docstring-ratchet-metrics.json",
 	"repositories": [
 		{

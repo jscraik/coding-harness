@@ -27,6 +27,14 @@ fi
 
 set -euo pipefail
 
+ensure_optional_npm_token_env() {
+	if [[ -z "${NPM_TOKEN+x}" ]]; then
+		export NPM_TOKEN=""
+	fi
+}
+
+ensure_optional_npm_token_env
+
 resolve_script_path() {
 	if [[ -n "${ZSH_VERSION:-}" ]]; then
 		eval 'printf "%s\n" "${(%):-%N}"'
@@ -391,14 +399,17 @@ run_local_memory_preflight_with_runner() {
 	fi
 
 	status=$?
-	if [[ -n "${output}" ]]; then
-		printf '%s\n' "${output}" >&2
-	fi
 	case "${output}" in
 		*"Unknown command"*|*"local @brainwav/coding-harness could not be resolved"*|*"MODULE_NOT_FOUND"*|*"Cannot find module"*)
 			return 3
 			;;
+		*"listen EPERM: operation not permitted"*"/tmp/tsx-"*)
+			return 3
+			;;
 	esac
+	if [[ -n "${output}" ]]; then
+		printf '%s\n' "${output}" >&2
+	fi
 	log_warn "Local Memory helper runner failed: ${runner_label}"
 	return "${status}"
 }
