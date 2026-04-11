@@ -219,4 +219,36 @@ describe("scaffold templates resolution", () => {
 		);
 		expect(rendered).not.toContain("git@github.com:");
 	});
+
+	it("harness-cli.sh wrapper includes fallback for Yarn PnP layouts", () => {
+		const tempDir = mkdtempSync(join(tmpdir(), "harness-scaffold-test-"));
+		tempDirs.push(tempDir);
+		writeFileSync(
+			join(tempDir, "package.json"),
+			JSON.stringify({
+				name: "demo",
+				packageManager: "yarn@4.0.0",
+			}),
+		);
+
+		const context = createTemplateRenderContext(tempDir, "circleci");
+		const harnessCliTemplate = TEMPLATES.find(
+			(template) => template.path === "scripts/harness-cli.sh",
+		);
+
+		expect(harnessCliTemplate).toBeDefined();
+		const rendered = harnessCliTemplate!.render("yarn", context);
+
+		// The wrapper should first try the node_modules path
+		expect(rendered).toContain('CLI_PATH="$REPO_ROOT/node_modules/');
+		expect(rendered).toContain('if [[ -f "$CLI_PATH" ]]; then');
+		expect(rendered).toContain('exec node "$CLI_PATH" "$@"');
+
+		// Then attempt the execCommand fallback (for Yarn PnP)
+		expect(rendered).toContain("yarn harness");
+		expect(rendered).toContain("--version >/dev/null 2>&1");
+
+		// Only error if both fail
+		expect(rendered).toContain("# Both node_modules path and execCommand");
+	});
 });
