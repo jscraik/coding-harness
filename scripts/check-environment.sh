@@ -124,6 +124,10 @@ fi
 		fi
 	done
 
+	required_prek_hooks=(
+		"pre-commit|Pre-commit|make hooks-pre-commit|system|false|"
+		"pre-push|Pre-push|make hooks-pre-push|system|false|pre-push"
+	)
 	if ! python3 - "$PREK_CONFIG_PATH" <<'PY'
 import sys
 import tomllib
@@ -167,9 +171,7 @@ for hook_id, expected in required.items():
             continue
         if bool(hook.get("pass_filenames")) != expected["pass_filenames"]:
             continue
-        expected_stages = expected["stages"]
-        actual_stages = hook.get("stages", [])
-        if expected_stages and actual_stages != expected_stages:
+        if list(hook.get("stages", [])) != expected["stages"]:
             continue
         matched = True
         break

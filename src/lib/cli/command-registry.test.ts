@@ -817,14 +817,15 @@ describe("getRegistryCommandHelpRows (updated)", () => {
 		);
 	});
 
-	it("includeLegacy option is accepted but does not filter output", () => {
+	it("includeLegacy option appends alias rows for full help output", () => {
 		const withLegacy = getRegistryCommandHelpRows({ includeLegacy: true });
 		const withoutLegacy = getRegistryCommandHelpRows({ includeLegacy: false });
 		const defaults = getRegistryCommandHelpRows();
-		expect(withLegacy.map((r) => r.name)).toEqual(
-			withoutLegacy.map((r) => r.name),
+		expect(withoutLegacy.map((r) => r.name)).toEqual(
+			defaults.map((r) => r.name),
 		);
-		expect(withLegacy.map((r) => r.name)).toEqual(defaults.map((r) => r.name));
+		expect(withLegacy.length).toBeGreaterThan(withoutLegacy.length);
+		expect(withLegacy.map((r) => r.name)).toContain("risk-policy-gate");
 	});
 
 	it("does not include legacy grouped commands like 'repo' or 'gate'", () => {
