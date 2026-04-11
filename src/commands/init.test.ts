@@ -1223,7 +1223,9 @@ describe("runInit", () => {
 				"Co-authored-by: Codex <noreply@openai.com>",
 			);
 			expect(setupHooks).toContain("Installing prek git hooks");
-			expect(setupHooks).toContain('execFileSync("prek", ["install"]');
+			expect(setupHooks).toContain(
+				'execFileSync("prek", ["install", "--overwrite"]',
+			);
 			expect(setupHooks).toContain("patchInstalledPrekHooks");
 			expect(setupHooks).toContain(
 				'PREK_HOME="${PREK_HOME:-$HERE/../.cache/prek}"',

@@ -8,7 +8,7 @@
  * This script:
  *   1. Verifies prek.toml exists
  *   2. Verifies scripts/validate-commit-msg.js exists
- *   3. Runs `prek install`
+ *   3. Runs `prek install --overwrite`
  *   4. Prints the canonical wrapper targets used by local governance
  */
 
@@ -100,9 +100,9 @@ function patchInstalledPrekHooks() {
 }
 
 /**
- * Validate prerequisites, remove any legacy local Git hooksPath override, run `prek install`, and print installation results and recommended wrapper targets.
+ * Validate prerequisites, remove any legacy local Git hooksPath override, run `prek install --overwrite`, and print installation results and recommended wrapper targets.
  *
- * Verifies that `prek.toml` and `scripts/validate-commit-msg.js` exist in the repository root; if either is missing, prints an error and exits with code 1. Clears any legacy local `core.hooksPath` override before invoking `prek install`. On success, prints the installed hook entrypoints and available governance wrapper targets. On failure, prints a failure message (including the underlying error message when available) and exits with code 1.
+ * Verifies that `prek.toml` and `scripts/validate-commit-msg.js` exist in the repository root; if either is missing, prints an error and exits with code 1. Clears any legacy local `core.hooksPath` override before invoking `prek install --overwrite`. On success, prints the installed hook entrypoints and available governance wrapper targets. On failure, prints a failure message (including the underlying error message when available) and exits with code 1.
  */
 function main() {
 	if (!existsSync(PREK_CONFIG_PATH)) {
@@ -121,7 +121,8 @@ function main() {
 	try {
 		clearLegacyLocalHooksPath();
 		console.info("Installing prek git hooks...");
-		execFileSync("prek", ["install"], { stdio: "inherit" });
+		// Keep canonical hook shims and remove legacy migration wrappers.
+		execFileSync("prek", ["install", "--overwrite"], { stdio: "inherit" });
 		const patchedCount = patchInstalledPrekHooks();
 		if (patchedCount > 0) {
 			console.info(`Patched ${patchedCount} prek hook shim(s) with repo-local PREK_HOME`);
@@ -135,7 +136,7 @@ function main() {
 		console.info('  • make hooks-commit-msg HOOK_COMMIT_MSG="feat: example"');
 		console.info("  • make hooks-pre-push");
 	} catch (error) {
-		console.error("\n⚠️  Failed to run `prek install`.");
+		console.error("\n⚠️  Failed to run `prek install --overwrite`.");
 		if (error instanceof Error && "message" in error && error.message) {
 			console.error(`   ${error.message}`);
 		}

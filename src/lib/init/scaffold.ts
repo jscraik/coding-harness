@@ -2678,7 +2678,7 @@ main();
  * This script:
  *   1. Verifies prek.toml exists
  *   2. Verifies scripts/validate-commit-msg.js exists
- *   3. Runs \`prek install\`
+ *   3. Runs \`prek install --overwrite\`
  *   4. Prints the canonical wrapper targets used by local governance
  */
 
@@ -2754,7 +2754,8 @@ function main() {
 
 	try {
 		console.info("Installing prek git hooks...");
-		execFileSync("prek", ["install"], { stdio: "inherit" });
+		// Keep canonical hook shims and remove legacy migration wrappers.
+		execFileSync("prek", ["install", "--overwrite"], { stdio: "inherit" });
 		const patchedCount = patchInstalledPrekHooks();
 		if (patchedCount > 0) {
 			console.info(\`Patched \${patchedCount} prek hook shim(s) with repo-local PREK_HOME\`);
@@ -2768,7 +2769,7 @@ function main() {
 		console.info('  • make hooks-commit-msg HOOK_COMMIT_MSG="feat: example"');
 		console.info("  • make hooks-pre-push");
 	} catch (error) {
-		console.error("\\n⚠️  Failed to run 'prek install'.");
+		console.error("\\n⚠️  Failed to run \`prek install --overwrite\`.");
 		if (error instanceof Error && "message" in error && error.message) {
 			console.error("   " + error.message);
 		}
@@ -3622,7 +3623,7 @@ regexes = [
 		render: () => {
 			return `# Prek configuration (Rust-based pre-commit replacement)
 # Install prek: mise install cargo-prek || cargo install prek
-# Run: prek install && prek run --all-files
+# Run: prek install --overwrite && prek run --all-files
 
 default_install_hook_types = [${REQUIRED_PREK_INSTALL_HOOK_TYPES.map((hookType) => `"${hookType}"`).join(", ")}]
 
