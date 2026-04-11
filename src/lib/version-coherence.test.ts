@@ -1,5 +1,6 @@
 import {
 	chmodSync,
+	existsSync,
 	mkdirSync,
 	mkdtempSync,
 	rmSync,
@@ -28,6 +29,14 @@ function createLocalHarnessWrapper(repoDir: string, version: string): void {
 	);
 }
 
+function writeRepoPackageVersion(repoDir: string, version: string): void {
+	writeFileSync(
+		join(repoDir, "package.json"),
+		JSON.stringify({ name: "@brainwav/coding-harness", version }),
+		{ encoding: "utf-8" },
+	);
+}
+
 function createGlobalHarnessBinary(binDir: string, version: string): void {
 	mkdirSync(binDir, { recursive: true });
 	writeExecutable(
@@ -52,6 +61,7 @@ describe("detectHarnessVersionCoherence", () => {
 		const binDir = makeTmpDir("coherence-bin-");
 		cleanupPaths.push(repoDir, binDir);
 		createLocalHarnessWrapper(repoDir, "0.12.0");
+		writeRepoPackageVersion(repoDir, "0.12.0");
 		createGlobalHarnessBinary(binDir, "0.6.0");
 		process.env.PATH = `${binDir}${delimiter}${originalPath}`;
 
@@ -70,6 +80,7 @@ describe("detectHarnessVersionCoherence", () => {
 		const binDir = makeTmpDir("coherence-bin-");
 		cleanupPaths.push(repoDir, binDir);
 		createLocalHarnessWrapper(repoDir, "0.12.0");
+		writeRepoPackageVersion(repoDir, "0.12.0");
 		createGlobalHarnessBinary(binDir, "0.12.0");
 		process.env.PATH = `${binDir}${delimiter}${originalPath}`;
 
@@ -95,6 +106,7 @@ describe("detectHarnessVersionCoherence", () => {
 		const repoDir = makeTmpDir("coherence-repo-no-global-");
 		cleanupPaths.push(repoDir);
 		createLocalHarnessWrapper(repoDir, "0.12.0");
+		writeRepoPackageVersion(repoDir, "0.12.0");
 		// Keep core shell utilities available while ensuring no global harness
 		// binary is discoverable on PATH.
 		const emptyBinDir = makeTmpDir("coherence-emptybin-");
@@ -109,27 +121,29 @@ describe("detectHarnessVersionCoherence", () => {
 		expect(result.message).toContain("no global harness binary found on PATH");
 	});
 
-	it("reports error when repo-local runner outputs unparseable version string", () => {
+	it("reports error when repo-local version cannot be determined safely", () => {
 		const repoDir = makeTmpDir("coherence-repo-badver-");
 		const binDir = makeTmpDir("coherence-bin-badver-");
 		cleanupPaths.push(repoDir, binDir);
 
-		// Wrapper outputs something that doesn't look like a version number
+		// Wrapper would create a side effect if executed, but coherence checks
+		// must not execute repository-local scripts.
 		const scriptsDir = join(repoDir, "scripts");
 		mkdirSync(scriptsDir, { recursive: true });
 		writeExecutable(
 			join(scriptsDir, "harness-cli.sh"),
-			'#!/usr/bin/env bash\necho "not-a-version-string"\n',
+			"#!/usr/bin/env bash\necho pwned > ../pwned.txt\nexit 0\n",
 		);
 		process.env.PATH = `${binDir}${delimiter}${originalPath}`;
 
 		const result = detectHarnessVersionCoherence(repoDir);
 		expect(result.status).toBe("error");
 		expect(result.message).toContain(
-			"Could not parse repo-local harness version",
+			"Could not determine repo-local harness version",
 		);
 		expect(result.remediation).toContain("scripts/harness-cli.sh");
 		expect(result.repoLocalVersion).toBeUndefined();
+		expect(existsSync(join(repoDir, "pwned.txt"))).toBe(false);
 	});
 
 	it("reports error when global harness binary exists but outputs unparseable version", () => {
@@ -137,6 +151,7 @@ describe("detectHarnessVersionCoherence", () => {
 		const binDir = makeTmpDir("coherence-bin-global-badver-");
 		cleanupPaths.push(repoDir, binDir);
 		createLocalHarnessWrapper(repoDir, "0.12.0");
+		writeRepoPackageVersion(repoDir, "0.12.0");
 
 		// Global binary outputs no parseable version
 		mkdirSync(binDir, { recursive: true });
@@ -164,6 +179,7 @@ describe("detectHarnessVersionCoherence", () => {
 			join(scriptsDir, "harness-cli.sh"),
 			'#!/usr/bin/env bash\necho "harness v1.0.0-beta.1"\n',
 		);
+		writeRepoPackageVersion(repoDir, "1.0.0-beta.1");
 		createGlobalHarnessBinary(binDir, "1.0.0-beta.1");
 		process.env.PATH = `${binDir}${delimiter}${originalPath}`;
 

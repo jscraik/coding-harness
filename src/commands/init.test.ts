@@ -1224,6 +1224,10 @@ describe("runInit", () => {
 			);
 			expect(setupHooks).toContain("Installing prek git hooks");
 			expect(setupHooks).toContain('execFileSync("prek", ["install"]');
+			expect(setupHooks).toContain("patchInstalledPrekHooks");
+			expect(setupHooks).toContain(
+				'PREK_HOME="${PREK_HOME:-$HERE/../.cache/prek}"',
+			);
 			expect(setupHooks).toContain(
 				'"Error: scripts/validate-commit-msg.js is required for commit message validation."',
 			);

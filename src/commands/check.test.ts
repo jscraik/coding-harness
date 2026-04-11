@@ -55,6 +55,14 @@ function writeExecutable(path: string, content: string): void {
 	chmodSync(path, 0o755);
 }
 
+function writeRepoPackageVersion(dir: string, version: string): void {
+	writeFileSync(
+		join(dir, "package.json"),
+		JSON.stringify({ name: "@brainwav/coding-harness", version }),
+		{ encoding: "utf-8" },
+	);
+}
+
 // ─── runCheck (pure) ──────────────────────────────────────────────────────────
 
 describe("runCheck", () => {
@@ -187,6 +195,7 @@ describe("runCheck", () => {
 			join(scriptsDir, "harness-cli.sh"),
 			"#!/usr/bin/env bash\necho 'harness v0.12.0'\n",
 		);
+		writeRepoPackageVersion(dir, "0.12.0");
 
 		const binDir = makeTmpDir();
 		cleanupPaths.push(binDir);
@@ -227,13 +236,14 @@ describe("runCheck", () => {
 		expect(report.hasFailures).toBe(false);
 	});
 
-	it("harness:version-coherence is 'warn' when repo-local runner fails to produce a parseable version", () => {
+	it("harness:version-coherence is 'warn' when repo-local version is missing", () => {
 		const scriptsDir = join(dir, "scripts");
 		mkdirSync(scriptsDir, { recursive: true });
-		// Script outputs unparseable text
+		// Script content should not matter because local version is read from
+		// package.json; no package.json means coherence cannot be determined.
 		writeExecutable(
 			join(scriptsDir, "harness-cli.sh"),
-			"#!/usr/bin/env bash\necho 'not-a-version'\n",
+			"#!/usr/bin/env bash\necho 'harness v0.12.0'\n",
 		);
 
 		const report = runCheck(dir);
@@ -241,7 +251,7 @@ describe("runCheck", () => {
 			(check) => check.id === "harness:version-coherence",
 		);
 		expect(coherenceCheck?.status).toBe("warn");
-		expect(coherenceCheck?.detail).toContain("Could not parse");
+		expect(coherenceCheck?.detail).toContain("Could not determine");
 	});
 
 	it("harness:version-coherence is 'ok' when versions match, with no fix field", () => {
@@ -251,6 +261,7 @@ describe("runCheck", () => {
 			join(scriptsDir, "harness-cli.sh"),
 			"#!/usr/bin/env bash\necho 'harness v1.0.0'\n",
 		);
+		writeRepoPackageVersion(dir, "1.0.0");
 		const binDir = makeTmpDir();
 		cleanupPaths.push(binDir);
 		writeExecutable(

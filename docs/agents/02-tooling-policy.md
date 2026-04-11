@@ -78,6 +78,7 @@ For repositories with UI or ChatGPT Apps SDK dependency signals, `toolingPolicy.
 The local hook contract is intentionally split by drag profile:
 
 - `prek install` is the only supported hook installer path. Repositories should not keep legacy `simple-git-hooks` package metadata or post-install bootstraps once they migrate.
+- `scripts/setup-git-hooks.js` is the required wrapper around `prek install`; it must patch generated `.git/hooks/*` shims to set `PREK_HOME="${PREK_HOME:-$HERE/../.cache/prek}"` so hook logging works in sandboxed/home-read-only environments.
 - `pre-commit` stays fast and now adds staged `gitleaks`, staged-doc `vale`, and `vitest related` alongside `lint`, `docs:lint`, and `typecheck`.
 - The staged secret scan should use the repo-root `.gitleaks.toml` when present so fixture/example allow lists live in version control instead of hidden local defaults.
 - `pre-push` keeps the heavier governance lane and now adds a narrow changed-files `semgrep` scan for `src/**` plus `pnpm build` before `audit`.

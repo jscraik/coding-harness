@@ -36,6 +36,14 @@ function makeSpawnResult(
 	} as ReturnType<typeof spawnSync>;
 }
 
+function writeRepoPackageVersion(dir: string, version: string): void {
+	writeFileSync(
+		join(dir, "package.json"),
+		JSON.stringify({ name: "@brainwav/coding-harness", version }),
+		{ encoding: "utf-8" },
+	);
+}
+
 /** Set up a happy-path spawn mock: node 24, pnpm, git all present; gh auth ok */
 function mockAllToolsOk(): void {
 	mockSpawnSync.mockImplementation((cmd, args) => {
@@ -123,6 +131,7 @@ describe("runDoctor — tool checks", () => {
 			join(dir, "scripts/harness-cli.sh"),
 			"#!/usr/bin/env bash\necho 'harness v0.12.0'\n",
 		);
+		writeRepoPackageVersion(dir, "0.12.0");
 		mockSpawnSync.mockImplementation((cmd, args) => {
 			const cmdStr = String(cmd);
 			const argsArr = Array.isArray(args) ? args.map(String) : [];
@@ -134,7 +143,6 @@ describe("runDoctor — tool checks", () => {
 				return makeSpawnResult(0, "ok");
 			}
 			if (cmdStr === "gh") return makeSpawnResult(0, "gh version 2.0.0");
-			if (cmdStr === "bash") return makeSpawnResult(0, "harness v0.12.0");
 			if (cmdStr === "which" && argsArr[0] === "harness") {
 				return makeSpawnResult(0, "/opt/homebrew/bin/harness");
 			}
@@ -166,11 +174,11 @@ describe("runDoctor — tool checks", () => {
 		expect(coherenceCheck?.message).toContain("no repo-local harness runner");
 	});
 
-	it("warns when repo-local runner outputs unparseable version", () => {
+	it("warns when repo-local version cannot be determined", () => {
 		mkdirSync(join(dir, "scripts"), { recursive: true });
 		writeFileSync(
 			join(dir, "scripts/harness-cli.sh"),
-			"#!/usr/bin/env bash\necho 'harness v0.12.0'\n",
+			"#!/usr/bin/env bash\necho 'not-a-version'\n",
 		);
 		mockSpawnSync.mockImplementation((cmd, args) => {
 			const cmdStr = String(cmd);
@@ -183,8 +191,6 @@ describe("runDoctor — tool checks", () => {
 				return makeSpawnResult(0, "ok");
 			}
 			if (cmdStr === "gh") return makeSpawnResult(0, "gh version 2.0.0");
-			// bash returns unparseable output for the local harness wrapper
-			if (cmdStr === "bash") return makeSpawnResult(0, "not-a-version");
 			if (cmdStr === "which") return makeSpawnResult(0, "found");
 			return makeSpawnResult(0, "");
 		});
@@ -194,7 +200,7 @@ describe("runDoctor — tool checks", () => {
 			(c) => c.id === "tool:harness-version-coherence",
 		);
 		expect(coherenceCheck?.status).toBe("warn");
-		expect(coherenceCheck?.message).toContain("Could not parse");
+		expect(coherenceCheck?.message).toContain("Could not determine");
 	});
 
 	it("reports ok for harness version coherence when versions match", () => {
@@ -203,6 +209,7 @@ describe("runDoctor — tool checks", () => {
 			join(dir, "scripts/harness-cli.sh"),
 			"#!/usr/bin/env bash\necho 'harness v1.0.0'\n",
 		);
+		writeRepoPackageVersion(dir, "1.0.0");
 		mockSpawnSync.mockImplementation((cmd, args) => {
 			const cmdStr = String(cmd);
 			const argsArr = Array.isArray(args) ? args.map(String) : [];
@@ -214,7 +221,6 @@ describe("runDoctor — tool checks", () => {
 				return makeSpawnResult(0, "ok");
 			}
 			if (cmdStr === "gh") return makeSpawnResult(0, "gh version 2.0.0");
-			if (cmdStr === "bash") return makeSpawnResult(0, "harness v1.0.0");
 			if (cmdStr === "which" && argsArr[0] === "harness") {
 				return makeSpawnResult(0, "/usr/local/bin/harness");
 			}

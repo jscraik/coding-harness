@@ -1,5 +1,5 @@
 import { spawnSync } from "node:child_process";
-import { existsSync } from "node:fs";
+import { existsSync, readFileSync } from "node:fs";
 import { resolve } from "node:path";
 
 type ProbeOutput = {
@@ -12,8 +12,6 @@ interface LocalRunnerProbe {
 	description: string;
 	originPath: string;
 	remediationCommand: string;
-	command: string;
-	args: string[];
 }
 
 export type HarnessVersionCoherenceStatus = "ok" | "drift" | "skip" | "error";
@@ -70,32 +68,6 @@ function probeCommand(command: string, args: string[]): ProbeOutput {
 }
 
 /**
- * Determines whether an executable with the given name can be found on the system PATH.
- *
- * @param command - The program name to look up (e.g., `"node"`, `"harness"`).
- * @returns `true` if the command is discoverable on PATH, `false` otherwise.
- */
-function commandExists(command: string): boolean {
-	const locator = process.platform === "win32" ? "where" : "which";
-	// First check if the locator command itself exists
-	const locatorTest = spawnSync(locator, ["--version"], {
-		encoding: "utf-8",
-		stdio: ["ignore", "pipe", "pipe"],
-	});
-	if (locatorTest.error) {
-		// Locator command doesn't exist, fall back to trying the command directly
-		const directTest = spawnSync(command, ["--version"], {
-			encoding: "utf-8",
-			stdio: ["ignore", "pipe", "pipe"],
-		});
-		return !directTest.error;
-	}
-
-	const probe = probeCommand(locator, [command]);
-	return probe.ok;
-}
-
-/**
  * Locate an executable on PATH and return its first discovered filesystem path.
  *
  * @param command - The command name to locate (e.g., "node" or "harness")
@@ -132,33 +104,31 @@ function resolveCommandPath(command: string): string | undefined {
 }
 
 /**
- * Detects a repository-local harness runner and returns the probe info needed to invoke it.
+ * Detects a repository-local harness runner and returns metadata only (no execution).
  *
- * Checks common repo-local runner locations (in order: src/cli.ts via `pnpm exec tsx`, dist/cli.js via `node`, and scripts/harness-cli.sh via `bash`) and returns a LocalRunnerProbe describing the discovered runner and a suggested remediation command.
+ * Checks common repo-local runner locations (in order: src/cli.ts, dist/cli.js,
+ * and scripts/harness-cli.sh) and returns a LocalRunnerProbe describing the
+ * discovered runner and a suggested remediation command.
  *
  * @param cwd - Filesystem directory to inspect for a repo-local runner
  * @returns A LocalRunnerProbe for the first discovered repo-local runner, or `undefined` if no candidate is found
  */
 function detectRepoLocalRunner(cwd: string): LocalRunnerProbe | undefined {
 	const sourceCliPath = resolve(cwd, "src/cli.ts");
-	if (existsSync(sourceCliPath) && commandExists("pnpm")) {
+	if (existsSync(sourceCliPath)) {
 		return {
 			description: "repo source CLI",
 			originPath: sourceCliPath,
 			remediationCommand: "pnpm exec tsx src/cli.ts <command>",
-			command: "pnpm",
-			args: ["exec", "tsx", sourceCliPath, "--version"],
 		};
 	}
 
 	const distCliPath = resolve(cwd, "dist/cli.js");
-	if (existsSync(distCliPath) && commandExists("node")) {
+	if (existsSync(distCliPath)) {
 		return {
 			description: "repo dist CLI",
 			originPath: distCliPath,
 			remediationCommand: "node dist/cli.js <command>",
-			command: "node",
-			args: [distCliPath, "--version"],
 		};
 	}
 
@@ -168,8 +138,6 @@ function detectRepoLocalRunner(cwd: string): LocalRunnerProbe | undefined {
 			description: "repo wrapper",
 			originPath: wrapperPath,
 			remediationCommand: "bash scripts/harness-cli.sh <command>",
-			command: "bash",
-			args: [wrapperPath, "--version"],
 		};
 	}
 
@@ -177,9 +145,37 @@ function detectRepoLocalRunner(cwd: string): LocalRunnerProbe | undefined {
 }
 
 /**
+ * Reads the repository-local harness version from package.json without
+ * executing any repository-controlled scripts.
+ *
+ * @param cwd - Filesystem directory to inspect
+ * @returns The parsed version string, or `undefined` when missing/unparseable
+ */
+function readRepoPackageVersion(cwd: string): string | undefined {
+	const packageJsonPath = resolve(cwd, "package.json");
+	if (!existsSync(packageJsonPath)) {
+		return undefined;
+	}
+
+	try {
+		const packageData = JSON.parse(readFileSync(packageJsonPath, "utf-8")) as {
+			version?: unknown;
+		};
+		return typeof packageData.version === "string"
+			? parseHarnessVersion(packageData.version)
+			: undefined;
+	} catch {
+		return undefined;
+	}
+}
+
+/**
  * Detects whether a repository-local "harness" runner is present and, if so, compares its version to a global `harness` binary on PATH.
  *
- * Probes for a repo-local runner (e.g., source, dist, or wrapper script), reads and parses its version, optionally locates and probes a global `harness` executable, and returns a structured result describing coherence or problems. Possible `status` values:
+ * Detects repo-local runner artifacts (e.g., source, dist, or wrapper script),
+ * reads and parses the repository package version from `package.json`, optionally
+ * locates and probes a global `harness` executable, and returns a structured
+ * result describing coherence or problems. Possible `status` values:
  * - `"skip"`: no repo-local runner was found in `cwd`.
  * - `"ok"`: either repo-local and global versions match, or a repo-local version exists and no global binary was found.
  * - `"drift"`: repo-local and global versions were both determined but differ.
@@ -199,21 +195,11 @@ export function detectHarnessVersionCoherence(
 		};
 	}
 
-	const localProbe = probeCommand(localRunner.command, localRunner.args);
-	if (!localProbe.ok || !localProbe.output) {
-		return {
-			status: "error",
-			message: `Could not read repo-local harness version from ${localRunner.description} (${localRunner.originPath}): ${localProbe.errorMessage ?? "unknown error"}`,
-			remediation: `Use repo-local runner explicitly: ${localRunner.remediationCommand}`,
-			repoLocalOriginPath: localRunner.originPath,
-		};
-	}
-
-	const repoLocalVersion = parseHarnessVersion(localProbe.output);
+	const repoLocalVersion = readRepoPackageVersion(cwd);
 	if (!repoLocalVersion) {
 		return {
 			status: "error",
-			message: `Could not parse repo-local harness version output from ${localRunner.description} (${localRunner.originPath})`,
+			message: `Could not determine repo-local harness version for ${localRunner.description} (${localRunner.originPath}); expected a parseable package.json version`,
 			remediation: `Use repo-local runner explicitly: ${localRunner.remediationCommand}`,
 			repoLocalOriginPath: localRunner.originPath,
 		};

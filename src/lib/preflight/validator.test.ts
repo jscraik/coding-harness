@@ -35,6 +35,14 @@ describe("runPreflightGate", () => {
 		chmodSync(path, 0o755);
 	}
 
+	function writeRepoPackageVersion(version: string): void {
+		writeFileSync(
+			"package.json",
+			JSON.stringify({ name: "@brainwav/coding-harness", version }),
+			{ encoding: "utf-8" },
+		);
+	}
+
 	it("uses default harness.contract.json when contractPath is omitted", async () => {
 		writeFileSync(
 			"harness.contract.json",
@@ -217,6 +225,7 @@ describe("runPreflightGate", () => {
 			"scripts/harness-cli.sh",
 			"#!/usr/bin/env bash\necho 'harness v0.12.0'\n",
 		);
+		writeRepoPackageVersion("0.12.0");
 
 		const fakeBinDir = join(
 			tmpdir(),
@@ -256,7 +265,7 @@ describe("runPreflightGate", () => {
 		expect(coherenceCheck?.passed).toBe(true);
 	});
 
-	it("fails with warning severity when repo-local runner outputs unparseable version", async () => {
+	it("fails with warning severity when repo-local version cannot be determined", async () => {
 		writeFileSync("harness.contract.json", JSON.stringify({ version: "1.0" }));
 		mkdirSync("scripts", { recursive: true });
 		writeExecutable(
@@ -271,7 +280,7 @@ describe("runPreflightGate", () => {
 
 		expect(coherenceCheck?.passed).toBe(false);
 		expect(coherenceCheck?.severity).toBe("warning");
-		expect(coherenceCheck?.message).toContain("Could not parse");
+		expect(coherenceCheck?.message).toContain("Could not determine");
 	});
 
 	it("harness-version-coherence check is registered in PREFLIGHT_CHECKS", async () => {
