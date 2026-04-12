@@ -109,7 +109,7 @@ Notes:
 - See [docs/agents/18-github-linear-automation.md](./docs/agents/18-github-linear-automation.md) for the full GitHub to Linear automation config and known gaps.
 
 ## Instruction Routing
-This file is the compact operator baseline. Start with [docs/agents/01-instruction-map.md](./docs/agents/01-instruction-map.md), then open only the matching SOPs:
+This file is the compact operator baseline. Start with [docs/README.md](./docs/README.md) for layered docs discovery, then use [docs/agents/01-instruction-map.md](./docs/agents/01-instruction-map.md) to route governance SOPs:
 
 - Architecture and cross-command changes: [docs/agents/00-architecture-bootstrap.md](./docs/agents/00-architecture-bootstrap.md)
 - Tooling, shell, command contracts, and setup: [docs/agents/02-tooling-policy.md](./docs/agents/02-tooling-policy.md)
@@ -141,6 +141,7 @@ This file is the compact operator baseline. Start with [docs/agents/01-instructi
 - Toolchain/runtime guardrails and hook policy live in [docs/agents/02-tooling-policy.md](./docs/agents/02-tooling-policy.md).
 
 ## References
+- [Docs index](./docs/README.md)
 - [Instruction map](./docs/agents/01-instruction-map.md)
 - [CONTRIBUTING.md](./CONTRIBUTING.md)
 - [CLAUDE.md](./CLAUDE.md)

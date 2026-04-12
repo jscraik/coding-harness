@@ -24,6 +24,7 @@ The shortest honest description of the project today is:
 
 Documentation surfaces:
 - Use this README for product overview, installation, and common workflows.
+- Use `docs/README.md` as the layered docs index for workflow, governance, and reference navigation.
 - Use `AGENTS.md` for compact repo-operator defaults and command routing.
 - Use `docs/agents/01-instruction-map.md` to route into deeper governance references.
 

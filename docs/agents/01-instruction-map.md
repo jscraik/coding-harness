@@ -14,6 +14,7 @@
 This repository keeps operational guidance in layers so operators can find the most relevant instructions without scanning every file.
 
 - `README.md` is the repo-facing product entry point (overview, install, common workflows).
+- `docs/README.md` is the layered docs front door for workflow, reference, and governance navigation.
 - `AGENTS.md` is the compact mandatory operator front door (baseline defaults and routing).
 - `CLAUDE.md` and `GEMINI.md` hold mirrored tool-facing guidance for this repo and should stay aligned with the canonical `AGENTS.md`.
 - `00-architecture-bootstrap.md` defines architecture-artifact-first intake for high-impact tasks.
@@ -56,7 +57,12 @@ When starting a task, follow this lookup order:
 ### `README.md`
 
 - Repo-facing overview, installation, and primary workflows.
-- Keep operator policy and governance depth in `AGENTS.md` and routed `docs/agents/*` SOPs.
+- Keep operator policy and governance depth in `AGENTS.md`, `docs/README.md`, and routed `docs/agents/*` SOPs.
+
+### `docs/README.md`
+
+- Layered docs index for day-to-day discovery across workflow, reference, and governance surfaces.
+- Keep detail in linked leaf docs; keep this index concise and stable.
 
 ### `AGENTS.md`
 
@@ -95,6 +101,7 @@ If two instructions conflict:
 - Expand or update only when behavior for an operator changes.
 - Keep the map truthful by removing stale links and adding newly introduced docs.
 - Prefer single-purpose updates over broad rewrites.
+- Keep `docs/README.md` aligned when introducing, moving, or retiring stable docs families.
 - Keep `CLAUDE.md` and `GEMINI.md` aligned with `AGENTS.md` when canonical routing changes.
 
 ## Operational spec companions
@@ -111,6 +118,7 @@ These deep-dive specs live alongside their parent SOPs and are not auto-discover
 ## Canonical links
 
 - [Root AGENTS](../../AGENTS.md)
+- [Docs index](../README.md)
 - [Root CLAUDE](../../CLAUDE.md)
 - [Root GEMINI](../../GEMINI.md)
 - [CLI reference](../cli-reference.md)
