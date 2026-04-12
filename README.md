@@ -41,9 +41,7 @@ Documentation surfaces:
   - [Hero Workflow 1: Bootstrap a repository](#hero-workflow-1-bootstrap-a-repository)
   - [Hero Workflow 2: Start work on an issue](#hero-workflow-2-start-work-on-an-issue)
   - [Hero Workflow 3: Submit a change for review](#hero-workflow-3-submit-a-change-for-review)
-  - [Advanced: Migrate CI with rollback and proof](#advanced-migrate-ci-with-rollback-and-proof)
-  - [Advanced: Validate a Symphony workflow contract](#advanced-validate-a-symphony-workflow-contract)
-  - [Advanced: Evaluate a pilot before expanding autonomy](#advanced-evaluate-a-pilot-before-expanding-autonomy)
+  - [Advanced Workflows](#advanced-workflows)
 - [Command Reference](#command-reference)
 - [Requirements](#requirements)
 - [Local Development](#local-development)
@@ -77,7 +75,7 @@ That is the minimum viable path. The three most common workflows beyond this are
 - **[Start work on an issue](#hero-workflow-2-start-work-on-an-issue)** — linear prepare, preflight, policy gates
 - **[Submit a change for review](#hero-workflow-3-submit-a-change-for-review)** — docs-gate, review-gate, linear sync
 
-For CI migration, pilot evaluation, or workflow contracts, see the [advanced workflows](#advanced-migrate-ci-with-rollback-and-proof) below.
+For CI migration, pilot evaluation, or workflow contracts, see [advanced workflows](#advanced-workflows).
 
 ## Lite Mode (Solo And Small Team)
 
@@ -322,54 +320,13 @@ harness verify-coderabbit --json
 That gives you a concrete local answer for "is the repo-side review wiring
 correct?" before you debug GitHub-side behavior.
 
-### Advanced: Migrate CI with rollback and proof
+### Advanced Workflows
 
-```bash
-harness ci-migrate prepare --provider circleci --dry-run
-harness ci-migrate prepare --provider circleci --apply
-harness ci-migrate verify --snapshot <snapshot-id>
-harness ci-migrate commit --snapshot <snapshot-id>
-```
+Advanced governance and rollout workflows are documented in:
 
-Use `abort` or `--rollback` if parity or external control-plane checks fail.
-For cutover follow-through, the same command family also supports:
+- [`docs/advanced-workflows.md`](./docs/advanced-workflows.md)
 
-```bash
-harness ci-migrate sync-branch-protection
-harness ci-migrate promote-mode
-```
-
-### Advanced: Validate a Symphony workflow contract
-
-Coding Harness can scaffold a `WORKFLOW.md`, generate compact workflow specs,
-and validate readiness for Symphony-style execution.
-
-```bash
-harness workflow:generate --source docs/specs/my-flow.md --output WORKFLOW.md
-harness symphony-check
-pnpm workflow:validate
-```
-
-To keep Linear metadata and findings aligned from the same CLI surface:
-
-```bash
-harness linear prepare --issue JSC-123
-harness linear sync --findings findings.json --team JSC
-```
-
-This is one of the more understated parts of the project today: it is not only
-scaffolding repo files, it also includes machinery for defining, checking, and
-operating workflow contracts.
-
-### Advanced: Evaluate a pilot before expanding autonomy
-
-```bash
-harness pilot-evaluate --artifacts artifacts/pilot --lane health --output artifacts/pilot/result.json
-harness pilot-rollback --mode manual
-```
-
-This part of the CLI is designed for artifact-backed rollout decisions, not
-just dashboard reporting.
+That keeps this README focused on repo-facing onboarding and hero workflows.
 
 ## Command Reference
 
