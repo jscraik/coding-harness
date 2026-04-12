@@ -2,6 +2,57 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [0.12.1](https://github.com/jscraik/coding-harness/compare/v0.11.12...v0.12.1) (2026-04-12)
+
+
+### Bug Fixes
+
+* align CircleCI workflow name with branch protection ([75a8bde](https://github.com/jscraik/coding-harness/commit/75a8bdef3f5a887f45d74cd019cac4f73d934968))
+* align uv policy pin and prefer mise harness resolution ([#154](https://github.com/jscraik/coding-harness/issues/154)) ([92d31b9](https://github.com/jscraik/coding-harness/commit/92d31b9089c05f076da4cc40bfa6d49fb1f5137a))
+* apply CodeRabbit auto-fixes ([c4ccef4](https://github.com/jscraik/coding-harness/commit/c4ccef4c9e73c50ad5607c55b2b400ed27726d48))
+* apply CodeRabbit auto-fixes ([cf50c5d](https://github.com/jscraik/coding-harness/commit/cf50c5d7be7d8c3bf2363a8727537fe441235f7e))
+* apply CodeRabbit auto-fixes ([b5676af](https://github.com/jscraik/coding-harness/commit/b5676affc958c989400cd30b6831bb64e867a276))
+* apply CodeRabbit auto-fixes ([9c4894d](https://github.com/jscraik/coding-harness/commit/9c4894de482ea22d6f13ff84c301b26a73deb776))
+* apply CodeRabbit auto-fixes ([e327f8e](https://github.com/jscraik/coding-harness/commit/e327f8e054437783e4f7cc54faf9152f038ea8bd))
+* apply CodeRabbit auto-fixes ([742551f](https://github.com/jscraik/coding-harness/commit/742551f2b8afed5e9cb460f5062741d74b2ecaed))
+* apply CodeRabbit auto-fixes ([11e8915](https://github.com/jscraik/coding-harness/commit/11e89159442de587598a71c3b76de079e7f3e0f0))
+* apply CodeRabbit auto-fixes ([be1f31c](https://github.com/jscraik/coding-harness/commit/be1f31cd976aa43b8e289b9549c9cf216c8de184))
+* apply CodeRabbit auto-fixes ([4746969](https://github.com/jscraik/coding-harness/commit/4746969eb52d2f4c56680a8cb30a35a332919772))
+* apply CodeRabbit auto-fixes ([b0a594f](https://github.com/jscraik/coding-harness/commit/b0a594f391cc8447478500e64658b7520adfe279))
+* **ci:** rename bridge workflow to break GitHub trigger cache (JSC-101) ([#146](https://github.com/jscraik/coding-harness/issues/146)) ([445ce48](https://github.com/jscraik/coding-harness/commit/445ce484f209a91893ace571e35e8df06623cab4))
+* **cli:** restore command registry dispatch imports ([667f73c](https://github.com/jscraik/coding-harness/commit/667f73c937eb46be9e0bf6d15a8c0d572f05ff47))
+* **deps/cli:** Vite CVE patch + JSC-105 CLI refactor + agent-friendly error messages ([#147](https://github.com/jscraik/coding-harness/issues/147)) ([e22a26d](https://github.com/jscraik/coding-harness/commit/e22a26df52eb3dc698e7d7a7135d56c35f90b05f))
+* **env-check:** remove hanging prek tomllib validation ([0af9906](https://github.com/jscraik/coding-harness/commit/0af99060bd6e3d290cb20273890e3e672617f0bf))
+* **github:** remove invalid retryCount from error mock ([#164](https://github.com/jscraik/coding-harness/issues/164)) ([884b940](https://github.com/jscraik/coding-harness/commit/884b94009ea21f8418670f9c5c713614f77fead7))
+* harden version coherence and prek hook setup ([#167](https://github.com/jscraik/coding-harness/issues/167)) ([c901966](https://github.com/jscraik/coding-harness/commit/c901966d6ade7b3f804de2014b2fe0499b969f81)), closes [#164](https://github.com/jscraik/coding-harness/issues/164) [#164](https://github.com/jscraik/coding-harness/issues/164)
+* **init:** structured JSON errors and harden setup checks (JSC-96) ([f966189](https://github.com/jscraik/coding-harness/commit/f9661890bf6dda6f22544fb0b5f9d7d267925b2c))
+* **init:** structured JSON errors and harden setup checks (JSC-96) ([#151](https://github.com/jscraik/coding-harness/issues/151)) ([fff84e3](https://github.com/jscraik/coding-harness/commit/fff84e3f7c87ad41c99e1e05ef1520e2f29232bf))
+* **lint:** resolve all Biome lint errors to restore CI signal ([#118](https://github.com/jscraik/coding-harness/issues/118)) ([bd1c5b1](https://github.com/jscraik/coding-harness/commit/bd1c5b1d55a8665184ca69f7fa6b29dc7b76420d))
+* **merge:** resolve main conflicts for jsc-178 ([edc0596](https://github.com/jscraik/coding-harness/commit/edc059630d29897363e5fb397f6d2f912d97b404))
+* **release:** harden deterministic publish pipeline ([#166](https://github.com/jscraik/coding-harness/issues/166)) ([29c0788](https://github.com/jscraik/coding-harness/commit/29c07882ed697ff5fe3f17d25093b422566ceebf))
+* restore CircleCI pr-pipeline status ([6e1ded0](https://github.com/jscraik/coding-harness/commit/6e1ded0b03dfcb601107433cefa105a75e5d2007))
+* **test:** sanitize git hook env vars in check-diagram-freshness tests ([#149](https://github.com/jscraik/coding-harness/issues/149)) ([0fe7736](https://github.com/jscraik/coding-harness/commit/0fe77360438f1bb75656f32b1ce9b4e422574e14))
+
+
+### Features
+
+* bootstrap worktree hook setup helper ([#134](https://github.com/jscraik/coding-harness/issues/134)) ([e4906fc](https://github.com/jscraik/coding-harness/commit/e4906fc3da294eea9e076e98a996aa029c200a31))
+* **check:** zero-config harness check entrypoint (JSC-127) ([#152](https://github.com/jscraik/coding-harness/issues/152)) ([05ba6c6](https://github.com/jscraik/coding-harness/commit/05ba6c6d2b5c6bf687ea395a8ef987a1a5943d83))
+* **cli:** add grouped taxonomy commands and drift guard ([#159](https://github.com/jscraik/coding-harness/issues/159)) ([db6cd5c](https://github.com/jscraik/coding-harness/commit/db6cd5c67ef8284b03809235ac25c23a89e87954))
+* **cli:** publish machine-readable command catalog ([#162](https://github.com/jscraik/coding-harness/issues/162)) ([75463c2](https://github.com/jscraik/coding-harness/commit/75463c27e51a6f09c4508801310c6d3a7b4da355))
+* **contract:** add lite-mode onboarding profile ([#160](https://github.com/jscraik/coding-harness/issues/160)) ([a259667](https://github.com/jscraik/coding-harness/commit/a259667e98b9ad369f85b0a99c440099589fb80f))
+* **contract:** harness contract init with preset tiers (JSC-123) ([#150](https://github.com/jscraik/coding-harness/issues/150)) ([d46a073](https://github.com/jscraik/coding-harness/commit/d46a07360ce739c26ff5021e3077a77f4af72bbe))
+* **linear-triage:** enforce cycle throughput guard ([#156](https://github.com/jscraik/coding-harness/issues/156)) ([341113e](https://github.com/jscraik/coding-harness/commit/341113ea8e858cf981192111c9f73abc8029d02e))
+* **linear:** add triage workflow and label governance ([684c514](https://github.com/jscraik/coding-harness/commit/684c5148afba16d8f3aab31b8725b779af496f6d))
+* **output:** normalize gate decision envelopes ([#163](https://github.com/jscraik/coding-harness/issues/163)) ([2a7a916](https://github.com/jscraik/coding-harness/commit/2a7a916736b9bc707067ffb8ccda516111efa8f8))
+* **policy:** align required-check orchestration metadata ([#155](https://github.com/jscraik/coding-harness/issues/155)) ([5c46c6e](https://github.com/jscraik/coding-harness/commit/5c46c6eb4d99aa6195d44be9677a94be59360ada))
+* **scaffold:** harden init flags and wire eject command ([#130](https://github.com/jscraik/coding-harness/issues/130)) ([deb3683](https://github.com/jscraik/coding-harness/commit/deb36839aba139e3d332d269a22e9ec5a11708a6))
+* **security:** adopt OpenSSF OSPS scorecard baseline ([#157](https://github.com/jscraik/coding-harness/issues/157)) ([30e0eca](https://github.com/jscraik/coding-harness/commit/30e0eca2a7ba63899d1deba0d87efe8613c2d6f4))
+* switch required-check contract to CodeRabbit ([336b6ad](https://github.com/jscraik/coding-harness/commit/336b6adac0b546b7397b55bb3f850c43db8fc6d5))
+* **verify:** add resume run-state module and tooling doc sync ([#158](https://github.com/jscraik/coding-harness/issues/158)) ([98d3774](https://github.com/jscraik/coding-harness/commit/98d3774547707b76410a5076764952c41e82fa83))
+
+
+
 # [0.12.0](https://github.com/jscraik/coding-harness/compare/v0.11.12...v0.12.0) (2026-04-04)
 
 
