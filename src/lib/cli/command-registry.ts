@@ -46,15 +46,14 @@ const COMMAND_SPECS: CommandSpec[] = [
 		errorLabel: "Commands Catalog Error",
 		execute: (args) => {
 			const jsonFlag = args.includes("--json");
-			const capabilities = getRegistryCommandCapabilities();
+			const catalog = getRegistryCommandCatalogDocument();
 			if (jsonFlag) {
-				const payload = buildCommandCapabilityCatalogDocument(capabilities);
-				console.info(JSON.stringify(payload));
+				console.info(JSON.stringify(catalog));
 				return 0;
 			}
 
 			console.info("Command capability catalog:");
-			for (const capability of capabilities) {
+			for (const capability of catalog.commands) {
 				const category = capability.category.padEnd(22, " ");
 				console.info(
 					`  ${capability.name.padEnd(24, " ")} ${category} ${capability.mutability}`,
@@ -288,6 +287,12 @@ export function getRegistryCommandCapabilities(): CommandCapability[] {
 	return COMMAND_SPECS.map((spec) => toCommandCapability(spec));
 }
 
+export function getRegistryCommandCatalogDocument(): CommandCapabilityCatalogDocument {
+	return buildCommandCapabilityCatalogDocument(
+		getRegistryCommandCapabilities(),
+	);
+}
+
 const COMMAND_INDEX = new Map<string, CommandSpec>();
 for (const spec of COMMAND_SPECS) {
 	COMMAND_INDEX.set(spec.name, spec);
@@ -457,6 +462,23 @@ export function suggestCommands(
 			...candidates.map((c) => levenshtein(normalized, c)),
 		);
 		return { spec, distance };
+	});
+	scored.sort((a, b) => a.distance - b.distance);
+	return scored.slice(0, limit);
+}
+
+export function suggestCommandCapabilities(
+	name: string,
+	limit = 3,
+): Array<{ capability: CommandCapability; distance: number }> {
+	const normalized = normalizeCommandName(name);
+	const catalog = getRegistryCommandCatalogDocument();
+	const scored = catalog.commands.map((capability) => {
+		const candidates = [capability.name, ...(capability.aliases ?? [])];
+		const distance = Math.min(
+			...candidates.map((candidate) => levenshtein(normalized, candidate)),
+		);
+		return { capability, distance };
 	});
 	scored.sort((a, b) => a.distance - b.distance);
 	return scored.slice(0, limit);
