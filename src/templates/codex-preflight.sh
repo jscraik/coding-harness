@@ -19,10 +19,21 @@ fi
 
 if (( is_sourced_invocation )) && [[ "${CODEX_PREFLIGHT_ALLOW_SOURCE:-0}" != "1" ]]; then
 	print_do_not_source_message
-	return 1 2>/dev/null || exit 1
+	# shellcheck disable=SC2317 # exit is a non-sourced fallback when `return` is invalid.
+	if ! return 1 2>/dev/null; then
+		exit 1
+	fi
 fi
 
 set -euo pipefail
+
+ensure_optional_npm_token_env() {
+	if [[ -z "${NPM_TOKEN+x}" ]]; then
+		export NPM_TOKEN=""
+	fi
+}
+
+ensure_optional_npm_token_env
 
 resolve_script_path() {
 	if [[ -n "${ZSH_VERSION:-}" ]]; then
@@ -140,6 +151,7 @@ trim_ascii_whitespace() {
 decode_preflight_override_value() {
 	local raw_value="${1:-}"
 	local value=''
+	# shellcheck disable=SC2016 # ${} is intentionally treated as literal characters in this allowlist.
 	local safe_value_re='^[A-Za-z0-9_./,:@+*?${}~ -]*$'
 
 	value="$(trim_ascii_whitespace "${raw_value}")"
@@ -387,14 +399,17 @@ run_local_memory_preflight_with_runner() {
 	fi
 
 	status=$?
-	if [[ -n "${output}" ]]; then
-		printf '%s\n' "${output}" >&2
-	fi
 	case "${output}" in
 		*"Unknown command"*|*"local @brainwav/coding-harness could not be resolved"*|*"MODULE_NOT_FOUND"*|*"Cannot find module"*)
 			return 3
 			;;
+		*"listen EPERM: operation not permitted"*"/tmp/tsx-"*)
+			return 3
+			;;
 	esac
+	if [[ -n "${output}" ]]; then
+		printf '%s\n' "${output}" >&2
+	fi
 	log_warn "Local Memory helper runner failed: ${runner_label}"
 	return "${status}"
 }
@@ -700,7 +715,10 @@ main() {
 }
 
 if is_script_sourced; then
-	return 0 2>/dev/null || exit 0
+	# shellcheck disable=SC2317 # exit is a non-sourced fallback when `return` is invalid.
+	if ! return 0 2>/dev/null; then
+		exit 0
+	fi
 fi
 
 main "$@"

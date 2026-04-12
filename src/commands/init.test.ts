@@ -504,6 +504,15 @@ describe("runInit", () => {
 					}),
 				]),
 			);
+			expect(content.toolingPolicy.projectBrainMemoryExtension).toEqual({
+				enabled: true,
+				requiredPaths: expect.arrayContaining([
+					".harness/memory/LEARNINGS.md",
+					".harness/knowledge/INDEX.md",
+					".harness/knowledge/tooling/codex-learn-summary.md",
+					".harness/decisions",
+				]),
+			});
 			expect(content.issueTrackingPolicy.provider).toBe("linear");
 			expect(content.issueTrackingPolicy.requirePackageBugsUrl).toBe(true);
 			expect(content.issueTrackingPolicy.requirePrIssueKey).toBe(true);
@@ -1228,7 +1237,13 @@ describe("runInit", () => {
 				"Co-authored-by: Codex <noreply@openai.com>",
 			);
 			expect(setupHooks).toContain("Installing prek git hooks");
-			expect(setupHooks).toContain('execFileSync("prek", ["install"]');
+			expect(setupHooks).toContain(
+				'execFileSync("prek", ["install", "--overwrite"]',
+			);
+			expect(setupHooks).toContain("patchInstalledPrekHooks");
+			expect(setupHooks).toContain(
+				'PREK_HOME="${PREK_HOME:-$HERE/../.cache/prek}"',
+			);
 			expect(setupHooks).toContain(
 				'"Error: scripts/validate-commit-msg.js is required for commit message validation."',
 			);
@@ -1435,6 +1450,13 @@ describe("runInit", () => {
 			expect(environmentCheck).toContain('"scripts/check-semgrep-changed.sh"');
 			expect(environmentCheck).toContain('"scripts/semgrep-pre-push.yml"');
 			expect(environmentCheck).toContain("required_make_targets=(");
+			expect(environmentCheck).toContain(
+				"project_brain_memory_extension_enabled=true",
+			);
+			expect(environmentCheck).toContain("required_project_brain_paths=(");
+			expect(environmentCheck).toContain('".harness/memory/LEARNINGS.md"');
+			expect(environmentCheck).toContain('".harness/knowledge/INDEX.md"');
+			expect(environmentCheck).toContain('".harness/decisions"');
 			expect(environmentCheck).toContain(
 				'if ! rg -q "^${target}:" "$MAKEFILE_PATH"; then',
 			);
@@ -3687,6 +3709,14 @@ describe("--migrate flag", () => {
 			expect(migrated.toolingPolicy.packagePolicy.explicitCapabilities).toEqual(
 				[],
 			);
+			expect(migrated.toolingPolicy.projectBrainMemoryExtension).toEqual({
+				enabled: true,
+				requiredPaths: expect.arrayContaining([
+					".harness/memory/LEARNINGS.md",
+					".harness/knowledge/INDEX.md",
+					".harness/decisions",
+				]),
+			});
 		}
 	});
 
@@ -3798,6 +3828,13 @@ describe("--migrate flag", () => {
 					}),
 				]),
 			);
+			expect(migrated.toolingPolicy.projectBrainMemoryExtension).toEqual({
+				enabled: true,
+				requiredPaths: expect.arrayContaining([
+					".harness/memory/LEARNINGS.md",
+					".harness/knowledge/INDEX.md",
+				]),
+			});
 		}
 	});
 

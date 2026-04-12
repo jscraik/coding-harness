@@ -1,0 +1,29 @@
+{
+	"blocking_issues": [],
+	"generated_at": "2026-04-11T21:06:33Z",
+	"inventory_path": "docs/hooks-governance/repo-profile-matrix.json",
+	"overall_ok": true,
+	"recovery_slo_hours": 24,
+	"repositories": [
+		{
+			"artifact_path": ".codex/hook-conformance.json",
+			"issues": [],
+			"profile_type": "standard-prek-wrapper",
+			"repo_name": "coding-harness",
+			"repo_path": ".",
+			"rollout_wave": "wave-1",
+			"status": "pass",
+			"warnings": []
+		}
+	],
+	"required_gate_ids": [
+		"docstrings",
+		"lint",
+		"typecheck",
+		"spelling",
+		"unit",
+		"formatting"
+	],
+	"schema_version": "hook-rollout-check.v1",
+	"warnings": []
+}

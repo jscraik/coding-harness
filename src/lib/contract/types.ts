@@ -8,6 +8,7 @@ import {
 	REQUIRED_CODEX_ACTION_PAIRS,
 	REQUIRED_CONDITIONAL_PACKAGES,
 	REQUIRED_MAKEFILE_TARGETS,
+	REQUIRED_PROJECT_BRAIN_MEMORY_EXTENSION_PATHS,
 	REQUIRED_TOOLING_BINARIES,
 	REQUIRED_TOOLING_DOC_TERMS,
 	TOOLING_CAPABILITY_DEPENDENCY_MARKERS,
@@ -373,6 +374,11 @@ export interface ToolingPackagePolicy {
 	requiredPackages: ToolingPackageRequirement[];
 }
 
+export interface ToolingProjectBrainMemoryExtensionPolicy {
+	enabled: boolean;
+	requiredPaths: string[];
+}
+
 export interface ToolingPolicy {
 	requiredDocumentationTerms: string[];
 	requiredBinaries: string[];
@@ -382,6 +388,9 @@ export interface ToolingPolicy {
 	codexEnvironment: ToolingCodexEnvironmentPolicy;
 	makefile: ToolingMakefilePolicy;
 	packagePolicy: ToolingPackagePolicy;
+	projectBrainMemoryExtension?:
+		| ToolingProjectBrainMemoryExtensionPolicy
+		| undefined;
 }
 
 export type IssueTrackingProvider = "linear";
@@ -1160,6 +1169,10 @@ export const DEFAULT_TOOLING_POLICY: ToolingPolicy = {
 				requiredWhenCapabilities: [...requiredWhenCapabilities],
 			}),
 		),
+	},
+	projectBrainMemoryExtension: {
+		enabled: true,
+		requiredPaths: [...REQUIRED_PROJECT_BRAIN_MEMORY_EXTENSION_PATHS],
 	},
 };
 

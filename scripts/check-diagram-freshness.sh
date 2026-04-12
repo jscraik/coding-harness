@@ -55,7 +55,7 @@ snapshot_artifacts() {
 	for path in "${TRACKED_ARTIFACT_PATHS[@]}"; do
 		if [[ -d "$REPO_ROOT/$path" ]]; then
 			while IFS= read -r file; do
-				local rel_path="${file#$REPO_ROOT/}"
+				local rel_path="${file#"$REPO_ROOT"/}"
 				if ! is_git_tracked "$rel_path"; then
 					continue
 				fi

@@ -1,0 +1,10 @@
+{
+	"schema_version": "docstring-ratchet-metrics.v1",
+	"generated_at": "2026-04-11T00:00:00Z",
+	"repositories": {
+		"coding-harness": {
+			"false_positive_rate_weekly": [0.02, 0.03],
+			"unresolved_high_conf_suppressions_over_7d": 0
+		}
+	}
+}

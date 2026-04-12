@@ -59,6 +59,18 @@ fi
 		fi
 	done
 
+	project_brain_memory_extension_enabled=true
+	required_project_brain_paths=(".harness/memory/LEARNINGS.md" ".harness/knowledge/INDEX.md" ".harness/knowledge/cli/knowledge.md" ".harness/knowledge/cli/hypotheses.md" ".harness/knowledge/cli/rules.md" ".harness/knowledge/ci/knowledge.md" ".harness/knowledge/ci/hypotheses.md" ".harness/knowledge/ci/rules.md" ".harness/knowledge/governance/knowledge.md" ".harness/knowledge/governance/hypotheses.md" ".harness/knowledge/governance/rules.md" ".harness/knowledge/tooling/knowledge.md" ".harness/knowledge/tooling/hypotheses.md" ".harness/knowledge/tooling/rules.md" ".harness/knowledge/tooling/codex-learn-summary.md" ".harness/decisions" ".harness/quality/criteria.md" ".harness/review-log.md")
+	if [[ "$project_brain_memory_extension_enabled" == "true" ]]; then
+		for required_path in "${required_project_brain_paths[@]}"; do
+			if [[ ! -e "$REPO_ROOT/${required_path}" ]]; then
+				echo "Error: required Project Brain memory-extension path '$required_path' is missing under $REPO_ROOT"
+				echo "Fix: run harness init --update to restore Project Brain scaffolding."
+				exit 1
+			fi
+		done
+	fi
+
 if ! command -v mise >/dev/null 2>&1; then
 	echo "Error: required binary 'mise' is not installed or not on PATH"
 	exit 1
@@ -356,7 +368,7 @@ else
 	if [[ -n "$mise_harness_bin" && -x "$mise_harness_bin" ]]; then
 		if ! run_check_environment_with_runner "mise harness ($mise_harness_bin)" "$mise_harness_bin"; then
 			echo "Error: mise-resolved harness failed to run check-environment successfully."
-			echo 'Fix: ensure the session activates mise first (eval "$(mise activate bash)") or invoke the mise binary directly.'
+			echo "Fix: ensure the session activates mise first (eval \"\$(mise activate bash)\") or invoke the mise binary directly."
 			exit 1
 		fi
 	else

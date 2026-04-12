@@ -165,7 +165,7 @@ record_failure() {
   "error_type": $(printf '%s' "${error_type}" | jq -R .),
   "details": $(printf '%s' "${details}" | jq -R .),
   "cwd": $(pwd | jq -R .),
-  "pwd_files": $(ls -1 2>/dev/null | head -20 | jq -R . | jq -s .),
+  "pwd_files": $(find . -mindepth 1 -maxdepth 1 -print 2>/dev/null | sed 's#^\./##' | head -20 | jq -R . | jq -s .),
   "env": {
     "NODE_ENV": $(printf '%s' "${NODE_ENV:-}" | jq -R .),
     "PATH_preview": $(printf '%s' "${PATH:0:160}..." | jq -R .)

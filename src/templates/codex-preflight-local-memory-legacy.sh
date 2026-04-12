@@ -112,6 +112,7 @@ set_cleanup_trap() {
 	for path in "$@"; do
 		trap_cmd+=" $(printf '%q' "${path}")"
 	done
+	# shellcheck disable=SC2064 # trap_cmd intentionally captures the computed path list now.
 	trap "${trap_cmd}" RETURN
 }
 
