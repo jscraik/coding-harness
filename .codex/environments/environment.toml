@@ -166,6 +166,31 @@ bash scripts/codex-preflight.sh --stack auto --mode required
 '''
 
 [[actions]]
+name = "Release Finalize"
+icon = "tool"
+command = '''
+set -euo pipefail
+
+release_branch="${1:-}"
+if [ -z "$release_branch" ]; then
+  echo "Usage: Release Finalize <release-branch>"
+  echo "Example: Release Finalize codex/release-0.12.1-coherence"
+  exit 2
+fi
+
+git checkout main
+git pull --ff-only origin main
+git merge --ff-only "$release_branch"
+git push origin main
+
+echo "Merged $release_branch into main and pushed origin/main."
+echo "Optional PR follow-up:"
+echo "  gh pr list --state open --head \"$release_branch\" --json number,url"
+echo "  gh pr comment <number> --body \"Published to npm and merged into main.\""
+echo "  gh pr close <number> --delete-branch=false"
+'''
+
+[[actions]]
 name = "Diagram"
 icon = "tool"
 command = '''

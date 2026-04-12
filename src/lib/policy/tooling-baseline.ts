@@ -132,6 +132,12 @@ export const REQUIRED_CODEX_TOOL_ACTIONS = [
 		command: "command -v prek >/dev/null 2>&1\nprek --version",
 	},
 	{
+		name: "Release Finalize",
+		icon: "tool",
+		command:
+			'release_branch="${1:-}"\nif [ -z "$release_branch" ]; then\n  echo "Usage: Release Finalize <release-branch>"\n  echo "Example: Release Finalize codex/release-0.12.1-coherence"\n  exit 2\nfi\n\ngit checkout main\ngit pull --ff-only origin main\ngit merge --ff-only "$release_branch"\ngit push origin main\n\necho "Merged $release_branch into main and pushed origin/main."\necho "Optional PR follow-up:"\necho "  gh pr list --state open --head \\"$release_branch\\" --json number,url"\necho "  gh pr comment <number> --body \\"Published to npm and merged into main.\\""\necho "  gh pr close <number> --delete-branch=false"',
+	},
+	{
 		name: "Diagram",
 		icon: "tool",
 		command: "command -v diagram >/dev/null 2>&1\ndiagram --help",
