@@ -3,6 +3,7 @@
 ## Table of Contents
 - [Purpose](#purpose)
 - [Machine-readable command catalog](#machine-readable-command-catalog)
+- [Gate JSON Envelope](#gate-json-envelope)
 - [Unknown command guardrails](#unknown-command-guardrails)
 - [Bootstrap and governance](#bootstrap-and-governance)
 - [Review and policy gates](#review-and-policy-gates)
@@ -23,6 +24,21 @@ For agent planning and command safety routing, prefer the machine-readable capab
 ```bash
 harness commands --json
 ```
+
+## Gate JSON Envelope
+
+For gate commands in JSON mode, consume the canonical decision envelope fields:
+
+- `status`
+- `reason`
+- `action_now`
+- `action_later`
+- `evidence_ref`
+
+Compatibility strategy:
+
+- Treat these fields as stable contract surfaces for automation.
+- Treat `meta` as additive; consumers should ignore unknown keys.
 
 ## Unknown command guardrails
 

@@ -1,11 +1,11 @@
 import { mkdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { dirname, join } from "node:path";
-import { afterEach, describe, expect, it } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 import {
 	DEFAULT_CI_PROVIDER_POLICY,
 	DEFAULT_CONTEXT_INTEGRITY_POLICY,
 } from "../lib/contract/types.js";
-import { runDocsGate } from "./docs-gate.js";
+import { runDocsGate, runDocsGateCLI } from "./docs-gate.js";
 
 function write(path: string, content: string): void {
 	mkdirSync(dirname(path), { recursive: true });
@@ -158,6 +158,53 @@ describe("docs-gate command", () => {
 			result.report.findings.some((f) => f.rule_id === "docs.surface.missing"),
 		).toBe(true);
 		expect(result.report.summary.missing_surface_count).toBe(1);
+	});
+
+	it("emits canonical gate envelope fields in JSON mode", () => {
+		const root = join(
+			process.cwd(),
+			"artifacts",
+			"docs-gate-test-json-envelope",
+		);
+		roots.push(root);
+		createContractWithDocsGate(root, {
+			enabled: true,
+			mode: "required",
+			rules: [
+				{
+					ruleId: "cli-surface-docs",
+					when: { categories: ["cli_surface"] },
+					requireDocs: ["README.md"],
+					severity: "error",
+				},
+			],
+		});
+		const stdoutSpy = vi
+			.spyOn(process.stdout, "write")
+			.mockImplementation(() => true);
+
+		const exitCode = runDocsGateCLI({
+			repoRoot: root,
+			mode: "required",
+			json: true,
+			changedFiles: ["src/cli.ts"],
+		});
+
+		expect(exitCode).toBe(10);
+		const payload = stdoutSpy.mock.calls.at(-1)?.[0];
+		expect(typeof payload).toBe("string");
+		const parsed = JSON.parse(String(payload)) as {
+			status: string;
+			reason: string;
+			action_now: unknown[];
+			action_later: unknown[];
+			evidence_ref: unknown[];
+		};
+		expect(parsed.status).toBe("fail");
+		expect(typeof parsed.reason).toBe("string");
+		expect(Array.isArray(parsed.action_now)).toBe(true);
+		expect(Array.isArray(parsed.action_later)).toBe(true);
+		expect(Array.isArray(parsed.evidence_ref)).toBe(true);
 	});
 
 	it("passes when required documentation was updated", () => {
