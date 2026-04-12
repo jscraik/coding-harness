@@ -8,7 +8,7 @@ import {
 	getRegistryCommandHelpRows,
 	suggestCommandCapabilities,
 } from "./lib/cli/command-registry.js";
-import { renderCommandHelpRows } from "./lib/cli/help-renderer.js";
+import { renderGroupedCommandHelpRows } from "./lib/cli/help-renderer.js";
 import { parseCsvList, parseIntegerArg } from "./lib/cli/parse-utils.js";
 import { sanitizeError } from "./lib/input/sanitize.js";
 import { getVersion } from "./lib/version.js";
@@ -33,14 +33,14 @@ process.on("uncaughtException", (error) => {
 /**
  * Print the CLI usage, examples, and command list to stdout.
  *
- * When `options.includeLegacyCommands` is true the full command list (including legacy
- * commands) is shown; otherwise a focused command list is displayed and a hint is printed
- * instructing how to view legacy commands.
+ * When `options.includeLegacyCommands` is true the full command list (including compatibility
+ * aliases) is shown; otherwise a focused command list is displayed and a hint is printed
+ * instructing how to view aliases.
  *
  * This function writes help text and options to stdout/stderr and does not return a value.
  *
  * @param options - Optional settings for rendering the help output.
- * @param options.includeLegacyCommands - If true, include legacy commands in the displayed command list.
+ * @param options.includeLegacyCommands - If true, include compatibility aliases in the displayed command list.
  */
 function printUsage(options: { includeLegacyCommands?: boolean } = {}): void {
 	const includeLegacyCommands = options.includeLegacyCommands ?? false;
@@ -73,9 +73,11 @@ function printUsage(options: { includeLegacyCommands?: boolean } = {}): void {
 	);
 	console.info("");
 	console.info(
-		includeLegacyCommands ? "Commands (full):" : "Commands (focused):",
+		includeLegacyCommands
+			? "Commands (full, with aliases):"
+			: "Commands (focused):",
 	);
-	for (const line of renderCommandHelpRows(
+	for (const line of renderGroupedCommandHelpRows(
 		getRegistryCommandHelpRows({ includeLegacy: includeLegacyCommands }),
 	)) {
 		console.info(line);
@@ -83,16 +85,14 @@ function printUsage(options: { includeLegacyCommands?: boolean } = {}): void {
 	if (!includeLegacyCommands) {
 		console.info("");
 		console.info(
-			'  Run "harness --help --all-commands" to view the full legacy command list.',
+			'  Run "harness --help --all" (or "--all-commands") to include compatibility aliases.',
 		);
 	}
 	console.info("");
 	console.info("Options:");
 	console.info("  --version, -v          Print version");
 	console.info("  --help, -h             Print this help");
-	console.info(
-		"  --all, --all-commands  Include legacy command list in help output",
-	);
+	console.info("  --all, --all-commands  Include aliases in help output");
 	console.info("");
 	console.info("Agent / Robot Mode:");
 	console.info("  Add --json to any command for structured JSON output.");

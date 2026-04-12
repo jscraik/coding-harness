@@ -337,6 +337,8 @@ harness commands --json
 
 Most repo-facing workflows in this README are covered by these command families:
 
+Taxonomy note: this table lists callable top-level commands only. For broader command-family groupings and advanced lanes, use [`docs/cli-reference.md`](./docs/cli-reference.md).
+
 | Command | Purpose |
 | --- | --- |
 | `init` | Scaffold or update harness-managed repo surfaces |
@@ -344,7 +346,7 @@ Most repo-facing workflows in this README are covered by these command families:
 | `health` | Unified gate status scorecard |
 | `contract` | Initialize, validate, or inspect contract schema |
 | `upgrade` | Safely upgrade harness in an existing repo |
-| `repo` | Grouped lifecycle entrypoint (`check`, `doctor`, `health`, `init`, `contract`, `verify`, `upgrade`, `eject`) |
+| `doctor` | Validate toolchain and workflow prerequisites |
 
 ## Requirements
 

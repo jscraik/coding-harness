@@ -88,11 +88,13 @@ export function getRegistryCommandHelpRows(options?: {
 }): Array<{
 	name: string;
 	summary: string;
+	category: CommandCategory;
 }> {
 	const capabilities = getRegistryCommandCapabilities();
 	const canonicalRows = capabilities.map((capability) => ({
 		name: capability.name,
 		summary: capability.summary,
+		category: capability.category,
 	}));
 	if (!options?.includeLegacy) {
 		return canonicalRows;
@@ -102,6 +104,7 @@ export function getRegistryCommandHelpRows(options?: {
 		(capability.aliases ?? []).map((alias) => ({
 			name: alias,
 			summary: capability.summary,
+			category: capability.category,
 		})),
 	);
 

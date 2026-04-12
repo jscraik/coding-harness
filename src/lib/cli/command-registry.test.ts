@@ -166,6 +166,11 @@ describe("command registry", () => {
 		);
 
 		expect(result.missingInReadme).toEqual([]);
+		expect(readmeCommands).not.toContain("repo");
+		expect(readmeCommands).not.toContain("gate");
+		expect(readmeCommands).not.toContain("pilot");
+		expect(readmeCommands).not.toContain("work");
+		expect(readmeCommands).not.toContain("ui");
 	});
 });
 
