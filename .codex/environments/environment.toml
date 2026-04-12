@@ -178,9 +178,18 @@ if [ -z "$release_branch" ]; then
   exit 2
 fi
 
+case "$release_branch" in
+  codex/release-*|release-*) ;;
+  *)
+    echo "Expected a release branch matching codex/release-* or release-*"
+    exit 2
+    ;;
+esac
+
+git fetch --prune origin main "$release_branch"
 git checkout main
 git pull --ff-only origin main
-git merge --ff-only "$release_branch"
+git merge --ff-only "origin/$release_branch"
 git push origin main
 
 echo "Merged $release_branch into main and pushed origin/main."

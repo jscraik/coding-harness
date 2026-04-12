@@ -464,6 +464,10 @@ describe("runInit", () => {
 			expect(content.toolingPolicy.codexEnvironment.requiredActions).toEqual(
 				expect.arrayContaining([
 					expect.objectContaining({ name: "Tools", icon: "tool" }),
+					expect.objectContaining({
+						name: "Release Finalize",
+						icon: "tool",
+					}),
 					expect.objectContaining({ name: "Cloudflared", icon: "run" }),
 					expect.objectContaining({ name: "Vitest", icon: "test" }),
 					expect.objectContaining({ name: "Mermaid CLI", icon: "tool" }),
@@ -634,6 +638,7 @@ describe("runInit", () => {
 			expect(content).toContain('[[actions]]\nname = "Debug"\nicon = "debug"');
 			expect(content).toContain('[[actions]]\nname = "Test"\nicon = "test"');
 			expect(content).toContain('name = "Prek"\nicon = "test"');
+			expect(content).toContain('name = "Release Finalize"\nicon = "tool"');
 			expect(content).toContain('name = "Diagram"\nicon = "tool"');
 			expect(content).toContain('name = "Ralph"\nicon = "debug"');
 			expect(content).toContain('name = "Mise"\nicon = "tool"');
@@ -664,6 +669,13 @@ describe("runInit", () => {
 			expect(content).toContain("mise install");
 			expect(content).toContain("npm install");
 			expect(content).toContain("prek --version");
+			expect(content).toContain(
+				"Expected a release branch matching codex/release-* or release-*",
+			);
+			expect(content).toContain(
+				'git fetch --prune origin main "$release_branch"',
+			);
+			expect(content).toContain('git merge --ff-only "origin/$release_branch"');
 			expect(content).toContain("diagram --help");
 			expect(content).toContain("ralph --help");
 			expect(content).toContain("cosign version");
