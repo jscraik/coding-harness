@@ -157,20 +157,13 @@ If you want the highest-confidence paths today, start with `init`, `upgrade`,
 
 ## Security Posture Baseline
 
-This repository tracks baseline security posture with OpenSSF OSPS + Scorecard
-artifacts that are versioned alongside code.
+Security and governance posture details live in dedicated references:
 
-- Baseline status and control matrix:
-  `docs/security/2026-04-09-openssf-osps-baseline-status.md`
-- Scorecard floor policy:
-  `security/openssf-scorecard-policy.json`
-- Regression evaluator:
-  `scripts/check-scorecard-regressions.mjs`
-- Continuous scorecard workflow:
-  `.github/workflows/openssf-scorecard.yml`
+- [`docs/security/2026-04-09-openssf-osps-baseline-status.md`](./docs/security/2026-04-09-openssf-osps-baseline-status.md)
+- [`docs/agents/06-security-and-governance.md`](./docs/agents/06-security-and-governance.md)
 
-Scorecard checks run on pull requests (`warn` mode), pushes to `main` (`fail`
-mode), and a weekly scheduled run (`fail` mode).
+Those docs track the OpenSSF baseline matrix, scorecard policy artifacts, and
+security governance workflow expectations.
 
 ## Installation
 
