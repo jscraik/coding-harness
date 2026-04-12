@@ -675,6 +675,12 @@ describe("runInit", () => {
 			expect(content).toContain(
 				'git fetch --prune origin main "$release_branch"',
 			);
+			expect(content).toContain(
+				'local_main_ahead_count="$(git rev-list --count origin/main..main)"',
+			);
+			expect(content).toContain(
+				"Local main is ahead of origin/main; aborting.",
+			);
 			expect(content).toContain('git merge --ff-only "origin/$release_branch"');
 			expect(content).toContain("diagram --help");
 			expect(content).toContain("ralph --help");
@@ -694,6 +700,139 @@ describe("runInit", () => {
 			expect(content).toContain("npm run 'check'");
 			expect(content).toContain("npm run 'test'");
 			expect(content).toContain("npm run 'lint:fix'");
+		});
+
+		it("fails release finalize when local main is ahead of origin/main", () => {
+			const initResult = runInit(tempDir, { dryRun: false, force: false });
+			expect(initResult.ok).toBe(true);
+
+			const environmentPath = join(
+				tempDir,
+				".codex/environments/environment.toml",
+			);
+			const environmentContent = readFileSync(environmentPath, "utf-8");
+			const releaseFinalizeMatch = environmentContent.match(
+				/name = "Release Finalize"\nicon = "tool"\ncommand = '''\n([\s\S]*?)\n'''/,
+			);
+			expect(releaseFinalizeMatch).not.toBeNull();
+			const releaseFinalizeCommand = releaseFinalizeMatch?.[1] ?? "";
+			expect(releaseFinalizeCommand.length).toBeGreaterThan(0);
+
+			const scenarioDir = mkdtempSync(join(tmpdir(), "release-finalize-test-"));
+			try {
+				const originDir = join(scenarioDir, "origin.git");
+				const seedDir = join(scenarioDir, "seed");
+				const workDir = join(scenarioDir, "work");
+				mkdirSync(seedDir, { recursive: true });
+
+				const runGit = (args: string[], cwd?: string) =>
+					spawnSync("git", args, {
+						cwd,
+						encoding: "utf8",
+					});
+
+				expect(runGit(["init", "--bare", originDir]).status).toBe(0);
+				expect(runGit(["init", "-b", "main"], seedDir).status).toBe(0);
+				expect(
+					runGit(["config", "user.email", "test@example.com"], seedDir).status,
+				).toBe(0);
+				expect(
+					runGit(["config", "user.name", "Test User"], seedDir).status,
+				).toBe(0);
+
+				writeFileSync(join(seedDir, "README.md"), "seed\n", "utf-8");
+				expect(runGit(["add", "README.md"], seedDir).status).toBe(0);
+				expect(runGit(["commit", "-m", "seed main"], seedDir).status).toBe(0);
+				expect(
+					runGit(["remote", "add", "origin", originDir], seedDir).status,
+				).toBe(0);
+				expect(runGit(["push", "-u", "origin", "main"], seedDir).status).toBe(
+					0,
+				);
+				expect(
+					runGit(
+						["--git-dir", originDir, "symbolic-ref", "HEAD", "refs/heads/main"],
+						seedDir,
+					).status,
+				).toBe(0);
+
+				expect(
+					runGit(["checkout", "-b", "codex/release-0.12.1-coherence"], seedDir)
+						.status,
+				).toBe(0);
+				writeFileSync(join(seedDir, "release.txt"), "release\n", "utf-8");
+				expect(runGit(["add", "release.txt"], seedDir).status).toBe(0);
+				expect(
+					runGit(["commit", "-m", "release branch commit"], seedDir).status,
+				).toBe(0);
+				expect(
+					runGit(
+						["push", "-u", "origin", "codex/release-0.12.1-coherence"],
+						seedDir,
+					).status,
+				).toBe(0);
+
+				expect(runGit(["clone", originDir, "work"], scenarioDir).status).toBe(
+					0,
+				);
+				expect(
+					runGit(["config", "user.email", "test@example.com"], workDir).status,
+				).toBe(0);
+				expect(
+					runGit(["config", "user.name", "Test User"], workDir).status,
+				).toBe(0);
+				writeFileSync(join(workDir, "local-only.txt"), "local\n", "utf-8");
+				expect(runGit(["add", "local-only.txt"], workDir).status).toBe(0);
+				expect(
+					runGit(["commit", "-m", "local-only main commit"], workDir).status,
+				).toBe(0);
+
+				const finalizeRun = spawnSync(
+					"bash",
+					[
+						"-lc",
+						releaseFinalizeCommand,
+						"release-finalize",
+						"codex/release-0.12.1-coherence",
+					],
+					{
+						cwd: workDir,
+						encoding: "utf8",
+					},
+				);
+				expect(finalizeRun.status).toBe(2);
+				const finalizeOutput = `${finalizeRun.stdout}${finalizeRun.stderr}`;
+				expect(finalizeOutput).toContain(
+					"Local main is ahead of origin/main; aborting.",
+				);
+				expect(finalizeOutput).toContain(
+					"Reconcile local commits before running Release Finalize.",
+				);
+
+				const remoteMainSha = runGit(
+					["--git-dir", originDir, "rev-parse", "refs/heads/main"],
+					workDir,
+				);
+				expect(remoteMainSha.status).toBe(0);
+				const localMainSha = runGit(["rev-parse", "main"], workDir);
+				expect(localMainSha.status).toBe(0);
+				expect(localMainSha.stdout.trim()).not.toBe(
+					remoteMainSha.stdout.trim(),
+				);
+
+				const releaseMerged = runGit(
+					[
+						"merge-base",
+						"--is-ancestor",
+						"origin/codex/release-0.12.1-coherence",
+						"main",
+					],
+					workDir,
+				);
+				expect(releaseMerged.status).toBe(1);
+			} finally {
+				rmSync(scenarioDir, { recursive: true, force: true });
+			}
 		});
 
 		it("shell-escapes script names in codex actions", () => {

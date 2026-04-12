@@ -189,6 +189,13 @@ esac
 git fetch --prune origin main "$release_branch"
 git checkout main
 git pull --ff-only origin main
+local_main_ahead_count="$(git rev-list --count origin/main..main)"
+if [ "$local_main_ahead_count" -ne 0 ]; then
+  echo "Local main is ahead of origin/main; aborting."
+  echo "Reconcile local commits before running Release Finalize."
+  exit 2
+fi
+
 git merge --ff-only "origin/$release_branch"
 git push origin main
 
