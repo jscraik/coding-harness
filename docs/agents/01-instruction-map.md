@@ -18,6 +18,7 @@ This repository keeps operational guidance in layers so operators can find the m
 - `CLAUDE.md` and `GEMINI.md` hold mirrored tool-facing guidance for this repo and should stay aligned with the canonical `AGENTS.md`.
 - `00-architecture-bootstrap.md` defines architecture-artifact-first intake for high-impact tasks.
 - `docs/agents/*.md` stores extended governance references and task-specific SOPs.
+- `docs/cli-reference.md` stores the extended command catalog; keep README command guidance compact.
 - `docs/plans/*` and `todos/*` capture larger initiatives and backlog context.
 
 ## Decision map by task type
@@ -111,6 +112,7 @@ These deep-dive specs live alongside their parent SOPs and are not auto-discover
 - [Root AGENTS](../../AGENTS.md)
 - [Root CLAUDE](../../CLAUDE.md)
 - [Root GEMINI](../../GEMINI.md)
+- [CLI reference](../cli-reference.md)
 - [Architecture bootstrap](./00-architecture-bootstrap.md)
 - [Tooling policy](./02-tooling-policy.md)
 - [Local-memory workflow](./03-local-memory.md)
