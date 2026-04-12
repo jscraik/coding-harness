@@ -11,8 +11,10 @@ function renderTemplate(path: string): string {
 	const template = PROJECT_BRAIN_TEMPLATES.find(
 		(candidate) => candidate.path === path,
 	);
-	expect(template).toBeDefined();
-	return template!.render("pnpm", BASE_CONTEXT);
+	if (!template) {
+		throw new Error(`Missing template for path: ${path}`);
+	}
+	return template.render("pnpm", BASE_CONTEXT);
 }
 
 describe("project brain templates", () => {
