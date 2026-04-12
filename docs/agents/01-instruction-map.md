@@ -13,7 +13,7 @@
 
 This repository keeps operational guidance in layers so operators can find the most relevant instructions without scanning every file.
 
-- `AGENTS.md` gives the mandatory top-level baseline.
+- `AGENTS.md` is the compact mandatory front door (baseline only).
 - `CLAUDE.md` and `GEMINI.md` hold mirrored tool-facing guidance for this repo and should stay aligned with the canonical `AGENTS.md`.
 - `00-architecture-bootstrap.md` defines architecture-artifact-first intake for high-impact tasks.
 - `docs/agents/*.md` stores focused SOPs by task type.
@@ -52,9 +52,8 @@ When starting a task, follow this lookup order:
 
 ### `AGENTS.md`
 
-- One-sentence repo description and non-negotiable defaults.
-- Required check and package-manager command set.
-- Minimal command map and workflow priorities.
+- Compact baseline: non-negotiable defaults, startup flow, and command contract.
+- Progressive-disclosure links into `docs/agents/*` for task-specific detail.
 
 ### `CLAUDE.md`
 
@@ -88,6 +87,7 @@ If two instructions conflict:
 - Expand or update only when behavior for an operator changes.
 - Keep the map truthful by removing stale links and adding newly introduced docs.
 - Prefer single-purpose updates over broad rewrites.
+- Keep `CLAUDE.md` and `GEMINI.md` aligned with `AGENTS.md` when canonical routing changes.
 
 ## Operational spec companions
 
