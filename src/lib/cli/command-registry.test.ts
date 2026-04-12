@@ -156,10 +156,10 @@ describe("command registry", () => {
 		);
 	});
 
-	it("ensures migrated commands exist in README command index", () => {
-		const readmePath = join(process.cwd(), "README.md");
-		const readmeContent = readFileSync(readmePath, "utf-8");
-		const readmeCommands = extractReadmeCommandNames(readmeContent);
+	it("ensures migrated commands exist in docs command catalog", () => {
+		const commandCatalogPath = join(process.cwd(), "docs/cli-reference.md");
+		const commandCatalogContent = readFileSync(commandCatalogPath, "utf-8");
+		const readmeCommands = extractReadmeCommandNames(commandCatalogContent);
 		const result = compareRegistryToReadme(
 			MIGRATED_COMMAND_NAMES,
 			readmeCommands,

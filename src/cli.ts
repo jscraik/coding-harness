@@ -6,7 +6,7 @@ import {
 	dispatchRegistryCommand,
 	fuzzyFindCommand,
 	getRegistryCommandHelpRows,
-	suggestCommands,
+	suggestCommandCapabilities,
 } from "./lib/cli/command-registry.js";
 import { renderCommandHelpRows } from "./lib/cli/help-renderer.js";
 import { parseCsvList, parseIntegerArg } from "./lib/cli/parse-utils.js";
@@ -197,17 +197,25 @@ export function run(args: string[]): void {
 		}
 
 		// No match at all — rich error message with suggestions
-		const suggestions = suggestCommands(command);
+		const suggestions = suggestCommandCapabilities(command);
 		if (jsonFlag) {
 			console.info(
 				JSON.stringify({
 					status: "error",
 					error: "unknown_command",
 					received: command,
-					suggestions: suggestions.map(({ spec }) => ({
+					suggestions: suggestions.map(({ spec, capability }) => ({
 						name: spec.name,
 						summary: spec.summary,
 						...(spec.example ? { example: `harness ${spec.example}` } : {}),
+						capability: {
+							category: capability.category,
+							mutability: capability.mutability,
+							retryability: capability.retryability,
+							requiredFlags: capability.requiredFlags,
+							expectedArtifacts: capability.expectedArtifacts,
+							safeFirstAlternatives: capability.safeFirstAlternatives,
+						},
 					})),
 					hint: 'Run "harness --help" for the full command list.',
 				}),
@@ -216,10 +224,15 @@ export function run(args: string[]): void {
 			console.info(`Unknown command: "${command}"`);
 			console.info("");
 			console.info("Did you mean one of these?");
-			for (const { spec } of suggestions) {
+			for (const { spec, capability } of suggestions) {
 				console.info(`  ${spec.name.padEnd(24)} ${spec.summary}`);
 				if (spec.example) {
 					console.info(`  ${"".padEnd(24)} Example: harness ${spec.example}`);
+				}
+				if (capability.safeFirstAlternatives.length > 0) {
+					console.info(
+						`  ${"".padEnd(24)} Safe-first: ${capability.safeFirstAlternatives.join(" | ")}`,
+					);
 				}
 			}
 			console.info("");

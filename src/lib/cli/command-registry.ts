@@ -461,3 +461,24 @@ export function suggestCommands(
 	scored.sort((a, b) => a.distance - b.distance);
 	return scored.slice(0, limit);
 }
+
+/**
+ * Suggest the closest commands and attach capability metadata for guardrail-aware routing.
+ *
+ * @param name - The raw command name to match (may include typos or alternate casing)
+ * @param limit - Maximum number of suggestions to return
+ * @returns Closest command suggestions with the same edit-distance ranking as `suggestCommands`, plus each command capability payload.
+ */
+export function suggestCommandCapabilities(
+	name: string,
+	limit = 3,
+): Array<{
+	spec: CommandSpec;
+	distance: number;
+	capability: CommandCapability;
+}> {
+	return suggestCommands(name, limit).map((suggestion) => ({
+		...suggestion,
+		capability: toCommandCapability(suggestion.spec),
+	}));
+}

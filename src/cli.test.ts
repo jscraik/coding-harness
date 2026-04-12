@@ -114,6 +114,37 @@ describe("run", () => {
 		);
 	});
 
+	it("emits guardrail-aware suggestions for unknown command JSON output", () => {
+		const exitSpy = vi.spyOn(process, "exit").mockImplementation(((
+			code?: number,
+		) => {
+			throw new Error(`EXIT_${String(code)}`);
+		}) as never);
+		const infoSpy = vi.spyOn(console, "info").mockImplementation(() => {});
+
+		expect(() => run(["totally-unknown-command", "--json"])).toThrowError(
+			"EXIT_1",
+		);
+		expect(exitSpy).toHaveBeenCalledWith(1);
+
+		const payload = infoSpy.mock.calls.at(-1)?.[0];
+		expect(typeof payload).toBe("string");
+		const parsed = JSON.parse(String(payload));
+		expect(parsed.error).toBe("unknown_command");
+		expect(Array.isArray(parsed.suggestions)).toBe(true);
+		expect(parsed.suggestions.length).toBeGreaterThan(0);
+
+		const firstSuggestion = parsed.suggestions[0];
+		expect(firstSuggestion.capability).toMatchObject({
+			category: expect.any(String),
+			mutability: expect.stringMatching(/read|write/),
+			retryability: expect.stringMatching(/safe|conditional|manual/),
+			requiredFlags: expect.any(Array),
+			expectedArtifacts: expect.any(Array),
+			safeFirstAlternatives: expect.any(Array),
+		});
+	});
+
 	it.skip("routes remediate run command - async, covered by cli-dispatch.test.ts", () => {
 		const exitSpy = vi
 			.spyOn(process, "exit")

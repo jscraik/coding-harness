@@ -3,6 +3,7 @@
 ## Table of Contents
 - [Purpose](#purpose)
 - [Machine-readable command catalog](#machine-readable-command-catalog)
+- [Unknown command guardrails](#unknown-command-guardrails)
 - [Bootstrap and governance](#bootstrap-and-governance)
 - [Review and policy gates](#review-and-policy-gates)
 - [Linear and workflow operations](#linear-and-workflow-operations)
@@ -22,6 +23,10 @@ For agent planning and command safety routing, prefer the machine-readable capab
 ```bash
 harness commands --json
 ```
+
+## Unknown command guardrails
+
+When an unknown command is invoked with `--json`, harness returns suggested commands with catalog-derived guardrail metadata (`mutability`, `retryability`, `requiredFlags`, and `safeFirstAlternatives`) so agents can choose a safe fallback path.
 
 ## Bootstrap and governance
 
