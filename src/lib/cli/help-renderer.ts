@@ -1,3 +1,8 @@
+import {
+	COMMAND_CATEGORY_LABELS,
+	COMMAND_CATEGORY_ORDER,
+} from "./registry/command-capabilities.js";
+
 export interface CommandHelpRow {
 	name: string;
 	summary: string;
@@ -5,24 +10,6 @@ export interface CommandHelpRow {
 }
 
 const COMMAND_COLUMN_WIDTH = 24;
-const CATEGORY_HEADING_ORDER = [
-	"discovery",
-	"bootstrap-governance",
-	"review-policy",
-	"workflow-linear",
-	"pilot-remediation",
-	"drift-search-evidence",
-	"uncategorized",
-] as const;
-const CATEGORY_LABELS: Readonly<Record<string, string>> = {
-	discovery: "Discovery",
-	"bootstrap-governance": "Bootstrap & Governance",
-	"review-policy": "Review & Policy",
-	"workflow-linear": "Linear & Workflow",
-	"pilot-remediation": "Pilot & Remediation",
-	"drift-search-evidence": "Drift, Search & Evidence",
-	uncategorized: "Other",
-};
 
 export function dedupeCommandHelpRows(
 	rows: CommandHelpRow[],
@@ -62,9 +49,9 @@ export function renderGroupedCommandHelpRows(rows: CommandHelpRow[]): string[] {
 	}
 
 	const orderedCategories: string[] = [
-		...CATEGORY_HEADING_ORDER.filter((category) => grouped.has(category)),
+		...COMMAND_CATEGORY_ORDER.filter((category) => grouped.has(category)),
 	];
-	const knownCategories = new Set<string>(CATEGORY_HEADING_ORDER);
+	const knownCategories = new Set<string>(COMMAND_CATEGORY_ORDER);
 	orderedCategories.push(
 		...[...grouped.keys()]
 			.filter((category) => !knownCategories.has(category))
@@ -73,7 +60,10 @@ export function renderGroupedCommandHelpRows(rows: CommandHelpRow[]): string[] {
 
 	const lines: string[] = [];
 	for (const [index, category] of orderedCategories.entries()) {
-		const categoryLabel = CATEGORY_LABELS[category] ?? category;
+		const categoryLabel =
+			COMMAND_CATEGORY_LABELS[
+				category as keyof typeof COMMAND_CATEGORY_LABELS
+			] ?? category;
 		if (index > 0) {
 			lines.push("");
 		}
