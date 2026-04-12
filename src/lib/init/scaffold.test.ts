@@ -220,7 +220,7 @@ describe("scaffold templates resolution", () => {
 		expect(rendered).not.toContain("git@github.com:");
 	});
 
-	it("harness-cli.sh wrapper includes fallback for Yarn PnP layouts", () => {
+	it("harness-cli.sh wrapper includes fail-fast guidance for local package installs", () => {
 		const tempDir = mkdtempSync(join(tmpdir(), "harness-scaffold-test-"));
 		tempDirs.push(tempDir);
 		writeFileSync(
@@ -239,16 +239,17 @@ describe("scaffold templates resolution", () => {
 		expect(harnessCliTemplate).toBeDefined();
 		const rendered = harnessCliTemplate!.render("yarn", context);
 
-		// The wrapper should first try the node_modules path
+		// The wrapper should resolve the local node_modules CLI path first.
 		expect(rendered).toContain('CLI_PATH="$REPO_ROOT/node_modules/');
-		expect(rendered).toContain('if [[ -f "$CLI_PATH" ]]; then');
+		expect(rendered).toContain('if [[ ! -f "$CLI_PATH" ]]; then');
 		expect(rendered).toContain('exec node "$CLI_PATH" "$@"');
 
-		// Then attempt the execCommand fallback (for Yarn PnP)
+		// If missing, the wrapper should provide package-manager-specific recovery commands.
+		expect(rendered).toContain(
+			"local @brainwav/coding-harness could not be resolved",
+		);
+		expect(rendered).toContain("yarn install");
+		expect(rendered).toContain("yarn add --dev @brainwav/coding-harness");
 		expect(rendered).toContain("yarn harness");
-		expect(rendered).toContain("--version >/dev/null 2>&1");
-
-		// Only error if both fail
-		expect(rendered).toContain("# Both node_modules path and execCommand");
 	});
 });
