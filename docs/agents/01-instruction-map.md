@@ -13,10 +13,11 @@
 
 This repository keeps operational guidance in layers so operators can find the most relevant instructions without scanning every file.
 
-- `AGENTS.md` is the compact mandatory front door (baseline only).
+- `README.md` is the repo-facing product entry point (overview, install, common workflows).
+- `AGENTS.md` is the compact mandatory operator front door (baseline defaults and routing).
 - `CLAUDE.md` and `GEMINI.md` hold mirrored tool-facing guidance for this repo and should stay aligned with the canonical `AGENTS.md`.
 - `00-architecture-bootstrap.md` defines architecture-artifact-first intake for high-impact tasks.
-- `docs/agents/*.md` stores focused SOPs by task type.
+- `docs/agents/*.md` stores extended governance references and task-specific SOPs.
 - `docs/plans/*` and `todos/*` capture larger initiatives and backlog context.
 
 ## Decision map by task type
@@ -50,9 +51,14 @@ When starting a task, follow this lookup order:
 
 ## Scope by document
 
+### `README.md`
+
+- Repo-facing overview, installation, and primary workflows.
+- Keep operator policy and governance depth in `AGENTS.md` and routed `docs/agents/*` SOPs.
+
 ### `AGENTS.md`
 
-- Compact baseline: non-negotiable defaults, startup flow, and command contract.
+- Compact repo-operator baseline: non-negotiable defaults, startup flow, and command contract.
 - Progressive-disclosure links into `docs/agents/*` for task-specific detail.
 
 ### `CLAUDE.md`
@@ -69,7 +75,7 @@ When starting a task, follow this lookup order:
 
 ### `docs/agents/` family
 
-- Compact but actionable workflows tailored to specific operation categories.
+- Extended governance references and compact workflows tailored to specific operation categories.
 - Conflict triage, governance expectations, and safety checks.
 - Designed for quick lookups during task execution.
 

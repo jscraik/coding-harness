@@ -68,12 +68,13 @@ harness --version
 3. Any deeper scoped `AGENTS.md` or `AGENTS.override.md`
 
 Notes:
-- `docs/agents/*.md` are progressive-disclosure references, not auto-discovered instruction files.
+- `README.md` is the repo-facing product surface (overview, install, workflows), not an operator-policy file.
+- `docs/agents/*.md` are progressive-disclosure governance references, not auto-discovered instruction files.
 - `CLAUDE.md` and `GEMINI.md` are mirrored tool-specific surfaces in this repo, not part of Codex's default project-doc discovery unless fallback filenames are explicitly configured.
 - If instruction precedence is unclear, stop and resolve it before editing behavior.
 
 ## Startup Workflow
-1. Read this file, then [docs/agents/01-instruction-map.md](./docs/agents/01-instruction-map.md), and only the task-relevant linked docs.
+1. Read this file first, then [docs/agents/01-instruction-map.md](./docs/agents/01-instruction-map.md) to route into extension docs, and open only task-relevant linked SOPs.
 2. Run `bash scripts/codex-preflight.sh --stack auto --mode required` before multi-step, destructive, or path-sensitive work.
 3. Summarize repo structure, active constraints, and blockers before edits.
 4. Make the smallest change that satisfies the task.
@@ -108,7 +109,7 @@ Notes:
 - See [docs/agents/18-github-linear-automation.md](./docs/agents/18-github-linear-automation.md) for the full GitHub to Linear automation config and known gaps.
 
 ## Instruction Routing
-Start with [docs/agents/01-instruction-map.md](./docs/agents/01-instruction-map.md), then open only the matching SOPs:
+This file is the compact operator baseline. Start with [docs/agents/01-instruction-map.md](./docs/agents/01-instruction-map.md), then open only the matching SOPs:
 
 - Architecture and cross-command changes: [docs/agents/00-architecture-bootstrap.md](./docs/agents/00-architecture-bootstrap.md)
 - Tooling, shell, command contracts, and setup: [docs/agents/02-tooling-policy.md](./docs/agents/02-tooling-policy.md)

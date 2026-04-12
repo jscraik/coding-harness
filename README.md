@@ -22,6 +22,11 @@ The shortest honest description of the project today is:
 - it supports staged CI migration with rollback and parity evidence
 - it evaluates pilot safety before you expand autonomy
 
+Documentation surfaces:
+- Use this README for product overview, installation, and common workflows.
+- Use `AGENTS.md` for compact repo-operator defaults and command routing.
+- Use `docs/agents/01-instruction-map.md` to route into deeper governance references.
+
 ## Table of Contents
 
 - [Start Here](#start-here)
