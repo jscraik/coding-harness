@@ -150,6 +150,26 @@ describe("runHealth", () => {
 		expect(planResult?.status).toBe("error");
 	});
 
+	it("treats plan-gate signal/timeout as error", () => {
+		writeContract(dir);
+		mockSpawnSync.mockReturnValue({
+			status: null,
+			stdout: "",
+			stderr: "",
+			pid: 1,
+			output: [],
+			signal: "SIGTERM",
+			error: new Error("spawnSync: timeout"),
+		});
+
+		const report = runHealth({ dir, gates: ["plan-gate"] });
+
+		expect(report.overall).toBe("error");
+		expect(report.counts.error).toBe(1);
+		const planResult = report.gates.find((g) => g.gate === "plan-gate");
+		expect(planResult?.status).toBe("error");
+	});
+
 	it("filters to only requested gates", () => {
 		writeContract(dir);
 		mockSpawnSync.mockReturnValue({

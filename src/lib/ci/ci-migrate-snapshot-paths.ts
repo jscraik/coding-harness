@@ -12,11 +12,15 @@ function resolveSnapshotArtifactPath(
 	snapshotId: string,
 	suffix: string,
 ): string {
+	const validated = validateSnapshotId(snapshotId);
+	if (!validated.ok) {
+		throw new Error(`Invalid snapshot id: ${validated.error}`);
+	}
 	return resolve(
 		targetDir,
 		HARNESS_DIR,
 		CI_MIGRATE_SNAPSHOT_DIR,
-		`${snapshotId}${suffix}`,
+		`${validated.value}${suffix}`,
 	);
 }
 
@@ -47,6 +51,13 @@ export function getSnapshotAttestationPath(
 }
 
 export function getSnapshotSignaturePath(
+	targetDir: string,
+	snapshotId: string,
+): string {
+	return getSnapshotAttestationSignaturePath(targetDir, snapshotId);
+}
+
+export function getSnapshotAttestationSignaturePath(
 	targetDir: string,
 	snapshotId: string,
 ): string {

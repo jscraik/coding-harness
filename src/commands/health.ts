@@ -315,6 +315,16 @@ function runGate(
 		timeout: 60_000,
 	});
 
+	if (result.status === null && result.signal) {
+		return {
+			gate: spec.gate,
+			displayName: spec.displayName,
+			status: "error",
+			summary: `gate interrupted (${result.signal})`,
+			exitCode: 2,
+		};
+	}
+
 	const exitCode = result.status ?? (result.signal ? 2 : 0);
 	const { status, summary } = spec.interpretExitCode(exitCode);
 

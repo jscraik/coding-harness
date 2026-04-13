@@ -3,11 +3,19 @@ import { describe, expect, it } from "vitest";
 import { HARNESS_DIR } from "../init/types.js";
 import {
 	defaultSnapshotId,
+	getExternalControlPlaneStatePath,
 	getReportPath,
 	getSnapshotArtifactsDirectory,
 	getSnapshotAttestationPath,
+	getSnapshotAttestationSignaturePath,
 	getSnapshotDigestPath,
+	getSnapshotSignaturePath,
 	getSnapshotPath,
+	getStateAttestationPath,
+	getStateAttestationSignaturePath,
+	getStateDigestPath,
+	getStatePath,
+	getStateSignaturePath,
 	validateSnapshotId,
 } from "./ci-migrate-snapshot-paths.js";
 
@@ -26,6 +34,30 @@ describe("ci-migrate snapshot paths", () => {
 		);
 		expect(getSnapshotAttestationPath(targetDir, snapshotId)).toBe(
 			resolve(snapshotDir, `${snapshotId}.attestation.json`),
+		);
+		expect(getSnapshotSignaturePath(targetDir, snapshotId)).toBe(
+			resolve(snapshotDir, `${snapshotId}.attestation.sig`),
+		);
+		expect(getSnapshotAttestationSignaturePath(targetDir, snapshotId)).toBe(
+			resolve(snapshotDir, `${snapshotId}.attestation.sig`),
+		);
+		expect(getExternalControlPlaneStatePath(targetDir, snapshotId)).toBe(
+			resolve(snapshotDir, `${snapshotId}.external-control-plane.json`),
+		);
+		expect(getStatePath(targetDir, snapshotId)).toBe(
+			resolve(snapshotDir, `${snapshotId}.state.json`),
+		);
+		expect(getStateDigestPath(targetDir, snapshotId)).toBe(
+			resolve(snapshotDir, `${snapshotId}.state.sha256`),
+		);
+		expect(getStateSignaturePath(targetDir, snapshotId)).toBe(
+			resolve(snapshotDir, `${snapshotId}.state.sig`),
+		);
+		expect(getStateAttestationPath(targetDir, snapshotId)).toBe(
+			resolve(snapshotDir, `${snapshotId}.state.attestation.json`),
+		);
+		expect(getStateAttestationSignaturePath(targetDir, snapshotId)).toBe(
+			resolve(snapshotDir, `${snapshotId}.state.attestation.sig`),
 		);
 		expect(getReportPath(targetDir, snapshotId)).toBe(
 			resolve(snapshotDir, `${snapshotId}.report.json`),
