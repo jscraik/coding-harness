@@ -19,6 +19,12 @@
 
 This document defines the production workflow for coding-harness work tracked in Linear and executed through coding-harness, Codex, and GitHub pull requests.
 
+## Setup boundary
+
+This document owns lifecycle and transition behavior. Linear setup payloads
+(templates, saved views, and blocked-routing setup details) are owned by
+`docs/agents/19-linear-templates.md`.
+
 ## Operating model
 
 - **Linear** is the system of record for bugs, features, policy gaps, workflow regressions, automation work, orchestration work, and release tasks.
@@ -258,10 +264,9 @@ Before a coding-harness issue is ready for review:
 
 ## Manual workspace follow-ups
 
-These items should be configured in the Linear UI as workspace/team administration tasks:
+Linear UI setup and workspace payload details are maintained in
+`docs/agents/19-linear-templates.md`:
 
-- issue templates for Bug, Feature, Research, Automation, and Release,
-- saved views for Triage, Ready, In Progress, In Review, Blocked, and Delegated,
-- git automation to assign/move issues when branch names are copied,
-- GitHub integration connected to the matching Linear user so branch and PR events resolve back to the correct workspace identity,
-- keep `Blocked` as a label convention; do not add a separate blocked workflow status.
+- issue templates for Bug, Feature, Research, Automation, and Release
+- saved views for Triage, Ready, In Progress, In Review, Blocked, and Delegated
+- blocked-routing setup conventions (`Blocked` label overlay and related guidance)
