@@ -868,3 +868,14 @@ describe("getRegistryCommandHelpRows (updated)", () => {
 		expect(names).toContain("commands");
 	});
 });
+
+describe("command-registry.ts architecture boundaries", () => {
+	it("keeps command wiring concentrated in extracted modules", () => {
+		const filePath = join(process.cwd(), "src/lib/cli/command-registry.ts");
+		const content = readFileSync(filePath, "utf-8");
+
+		expect(content).toContain("...EXTRACTED_COMMAND_SPECS");
+		expect(content).not.toMatch(/from\s+["']\.\.\/\.\.\/commands\//);
+		expect(content).not.toMatch(/run[A-Z].*CLI/);
+	});
+});
