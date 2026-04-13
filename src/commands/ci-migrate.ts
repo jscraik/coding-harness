@@ -8455,10 +8455,10 @@ function writeSnapshot(targetDir: string, snapshotId: string): number {
 		const snapshotPath = getSnapshotPath(targetDir, snapshotId);
 		const digestPath = getSnapshotDigestPath(targetDir, snapshotId);
 		const attestationPath = getSnapshotAttestationPath(targetDir, snapshotId);
-			const signaturePath = getSnapshotAttestationSignaturePath(
-				targetDir,
-				snapshotId,
-			);
+		const signaturePath = getSnapshotAttestationSignaturePath(
+			targetDir,
+			snapshotId,
+		);
 		const externalStateCaptureResult = captureExternalControlPlaneState(
 			targetDir,
 			snapshotId,
@@ -8770,7 +8770,7 @@ function ensurePrepareSnapshotIdAvailable(
 		getSnapshotPath(targetDir, snapshotId),
 		getSnapshotDigestPath(targetDir, snapshotId),
 		getSnapshotAttestationPath(targetDir, snapshotId),
-			getSnapshotAttestationSignaturePath(targetDir, snapshotId),
+		getSnapshotAttestationSignaturePath(targetDir, snapshotId),
 		getExternalControlPlaneStatePath(targetDir, snapshotId),
 		getStatePath(targetDir, snapshotId),
 		getStateDigestPath(targetDir, snapshotId),
