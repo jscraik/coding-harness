@@ -94,4 +94,48 @@ describe("snapshot id helpers", () => {
 			error: "Snapshot id is too long. Maximum length is 64 characters.",
 		});
 	});
+
+	it("path builders throw on invalid snapshot ids", () => {
+		const targetDir = "/tmp/repo";
+		const invalidIds = ["bad..id", "-bad", "a".repeat(65)];
+
+		for (const invalidId of invalidIds) {
+			expect(() => getSnapshotPath(targetDir, invalidId)).toThrow(
+				/Invalid snapshot id:/,
+			);
+			expect(() => getSnapshotDigestPath(targetDir, invalidId)).toThrow(
+				/Invalid snapshot id:/,
+			);
+			expect(() => getSnapshotAttestationPath(targetDir, invalidId)).toThrow(
+				/Invalid snapshot id:/,
+			);
+			expect(() => getSnapshotSignaturePath(targetDir, invalidId)).toThrow(
+				/Invalid snapshot id:/,
+			);
+			expect(() =>
+				getSnapshotAttestationSignaturePath(targetDir, invalidId),
+			).toThrow(/Invalid snapshot id:/);
+			expect(() =>
+				getExternalControlPlaneStatePath(targetDir, invalidId),
+			).toThrow(/Invalid snapshot id:/);
+			expect(() => getStatePath(targetDir, invalidId)).toThrow(
+				/Invalid snapshot id:/,
+			);
+			expect(() => getStateDigestPath(targetDir, invalidId)).toThrow(
+				/Invalid snapshot id:/,
+			);
+			expect(() => getStateSignaturePath(targetDir, invalidId)).toThrow(
+				/Invalid snapshot id:/,
+			);
+			expect(() => getStateAttestationPath(targetDir, invalidId)).toThrow(
+				/Invalid snapshot id:/,
+			);
+			expect(() => getStateAttestationSignaturePath(targetDir, invalidId)).toThrow(
+				/Invalid snapshot id:/,
+			);
+			expect(() => getReportPath(targetDir, invalidId)).toThrow(
+				/Invalid snapshot id:/,
+			);
+		}
+	});
 });

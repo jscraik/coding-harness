@@ -325,7 +325,17 @@ function runGate(
 		};
 	}
 
-	const exitCode = result.status ?? (result.signal ? 2 : 0);
+	if (result.status === null && !result.signal && result.error) {
+		return {
+			gate: spec.gate,
+			displayName: spec.displayName,
+			status: "error",
+			summary: `gate spawn failed: ${result.error.message}`,
+			exitCode: 2,
+		};
+	}
+
+	const exitCode = result.status ?? 0;
 	const { status, summary } = spec.interpretExitCode(exitCode);
 
 	return {

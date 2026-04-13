@@ -210,6 +210,27 @@ describe("runHealth", () => {
 		expect(driftResult?.status).toBe("error");
 	});
 
+	it("reports error when spawnSync fails with ENOENT (no signal)", () => {
+		writeContract(dir);
+		mockSpawnSync.mockReturnValue({
+			status: null,
+			stdout: "",
+			stderr: "",
+			pid: 0,
+			output: [],
+			signal: null,
+			error: new Error("ENOENT"),
+		});
+
+		const report = runHealth({ dir, gates: ["drift-gate"] });
+
+		const driftResult = report.gates.find((g) => g.gate === "drift-gate");
+		expect(driftResult?.status).toBe("error");
+		expect(driftResult?.exitCode).toBe(2);
+		expect(driftResult?.summary).toContain("gate spawn failed");
+		expect(driftResult?.summary).toContain("ENOENT");
+	});
+
 	it("never executes a cwd-controlled harness binary", () => {
 		writeContract(dir);
 		mockSpawnSync.mockReturnValue({
