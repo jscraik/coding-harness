@@ -1,36 +1,25 @@
 # Linear Production Workflow — Compact Operational Spec
 
 ## Table of Contents
-- [Abbreviations](#abbreviations)
-- [Metadata](#metadata)
+- [Workflow Boundary](#workflow-boundary)
 - [Invariants](#invariants)
 - [States](#states)
 - [Transition Table (Canonical)](#transition-table-canonical)
-- [State Diagram](#state-diagram)
-- [Error Handling](#error-handling)
-- [Idempotency](#idempotency)
+- [Error Codes and Idempotency](#error-codes-and-idempotency)
 - [Execution Modes](#execution-modes)
 - [Dry-Run Simulation](#dry-run-simulation)
 - [Observability Logs](#observability-logs)
 - [Validation Checklist](#validation-checklist)
 
-## Abbreviations
-| Term | Definition |
-| --- | --- |
-| LI | Linear Issue |
-| LK | Linear Key (e.g., JSC-37) |
-| DoD | Definition of Done |
-| PR | Pull Request |
+## Workflow Boundary
 
-## Metadata
-| Field | Value |
-| --- | --- |
-| `owner` | `coding-harness-maintainers` |
-| `max_duration` | `1 issue lifecycle` |
-| `escalation` | `set Blocked marker with explicit unblock action` |
+This compact spec is a fast execution contract. Full operating detail lives in:
+
+- `docs/agents/13-linear-production-workflow.md`
+- `docs/agents/19-linear-templates.md`
 
 ## Invariants
-- Exactly one running LI progress thread per issue.
+- Exactly one running Linear issue progress thread per issue.
 - Branch format is `codex/<lk>-<slug>`.
 - Every issue keeps exactly one primary type label (`Bug|Feature|Improvement|Policy|Security`).
 - `S2 IN_PROGRESS -> S3 IN_REVIEW` requires DoD pre-review checks.
@@ -48,7 +37,7 @@ S3 IN_REVIEW (non-terminal)
 S4 DONE (terminal)
 ```
 
-### Blocked Overlay (Label-Based)
+Blocked overlay:
 
 - `Blocked` can be applied to `S1 READY`, `S2 IN_PROGRESS`, or `S3 IN_REVIEW`.
 - Blocked/unblocked events keep the issue in the same canonical state and only change label/guidance metadata.
@@ -74,28 +63,11 @@ S4 DONE (terminal)
 
 Transition table is the source of truth.
 
-## State Diagram
-```mermaid
-stateDiagram-v2
-    S0_TRIAGE --> S1_READY: scoped
-    S1_READY --> S2_IN_PROGRESS: start
-    S2_IN_PROGRESS --> S2_IN_PROGRESS: progress_tick
-    S2_IN_PROGRESS --> S2_IN_PROGRESS: pr_opened
-    S2_IN_PROGRESS --> S3_IN_REVIEW: handoff_ready
-    S3_IN_REVIEW --> S4_DONE: merged
-    S3_IN_REVIEW --> S2_IN_PROGRESS: pr_closed_unmerged
-    S1_READY --> S1_READY: blocked / unblocked
-    S2_IN_PROGRESS --> S2_IN_PROGRESS: blocked / unblocked
-    S3_IN_REVIEW --> S3_IN_REVIEW: blocked / unblocked
-```
-
-## Error Handling
+## Error Codes and Idempotency
 - `VALIDATION_ERROR`
 - `BLOCKED_DEPENDENCY`
 - `POLICY_FAIL`
 - `SYSTEM_ERROR`
-
-## Idempotency
 - Key: `<LK>|<state>|<event>|<pr_url?>`.
 - Replayed `progress_tick` and `pr_opened` events update existing LI artifacts or insert missing ones.
 - Replayed `handoff_ready` must not duplicate evidence links/comments.
