@@ -4,7 +4,14 @@ set -euo pipefail
 REPO_ROOT="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")/.." && pwd)"
 RULESET_PATH="$REPO_ROOT/scripts/semgrep-pre-push.yml"
 SEMGREP_VERSION="1.153.1"
-SEMGREP_STATE_ROOT="${SEMGREP_STATE_ROOT:-$REPO_ROOT/.git/semgrep}"
+DEFAULT_SEMGREP_STATE_ROOT="$REPO_ROOT/.git/semgrep"
+if git_semgrep_state_root="$(git -C "$REPO_ROOT" rev-parse --git-path semgrep 2>/dev/null)"; then
+	if [[ "$git_semgrep_state_root" != /* ]]; then
+		git_semgrep_state_root="$REPO_ROOT/$git_semgrep_state_root"
+	fi
+	DEFAULT_SEMGREP_STATE_ROOT="$git_semgrep_state_root"
+fi
+SEMGREP_STATE_ROOT="${SEMGREP_STATE_ROOT:-$DEFAULT_SEMGREP_STATE_ROOT}"
 HOST_CACHE_HOME="${XDG_CACHE_HOME:-$HOME/.cache}"
 SEMGREP_RUNTIME_CACHE_ROOT="${SEMGREP_RUNTIME_CACHE_ROOT:-$SEMGREP_STATE_ROOT/cache}"
 SEMGREP_RUNTIME_USER_HOME="${SEMGREP_USER_HOME:-$SEMGREP_STATE_ROOT/home}"
