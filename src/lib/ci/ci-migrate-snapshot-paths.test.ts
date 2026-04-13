@@ -130,9 +130,9 @@ describe("snapshot id helpers", () => {
 			expect(() => getStateAttestationPath(targetDir, invalidId)).toThrow(
 				/Invalid snapshot id:/,
 			);
-			expect(() => getStateAttestationSignaturePath(targetDir, invalidId)).toThrow(
-				/Invalid snapshot id:/,
-			);
+			expect(() =>
+				getStateAttestationSignaturePath(targetDir, invalidId),
+			).toThrow(/Invalid snapshot id:/);
 			expect(() => getReportPath(targetDir, invalidId)).toThrow(
 				/Invalid snapshot id:/,
 			);
