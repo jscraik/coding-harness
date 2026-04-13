@@ -93,7 +93,7 @@ export function suggestCommands(
 							levenshtein(normalized, normalizeCommandName(candidate)),
 						),
 					)
-				: Infinity;
+				: Number.POSITIVE_INFINITY;
 		return { spec, distance };
 	});
 	scored.sort((a, b) => a.distance - b.distance);
@@ -115,7 +115,7 @@ export function suggestCommandCapabilities(
 							levenshtein(normalized, normalizeCommandName(candidate)),
 						),
 					)
-				: Infinity;
+				: Number.POSITIVE_INFINITY;
 		return { capability, distance };
 	});
 	scored.sort((a, b) => a.distance - b.distance);
