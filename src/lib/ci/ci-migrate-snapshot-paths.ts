@@ -54,7 +54,7 @@ export function getSnapshotSignaturePath(
 	targetDir: string,
 	snapshotId: string,
 ): string {
-	return getSnapshotAttestationSignaturePath(targetDir, snapshotId);
+	return resolveSnapshotArtifactPath(targetDir, snapshotId, ".sig");
 }
 
 export function getSnapshotAttestationSignaturePath(

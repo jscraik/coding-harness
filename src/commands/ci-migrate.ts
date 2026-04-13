@@ -26,9 +26,9 @@ import {
 	getReportPath,
 	getSnapshotArtifactsDirectory,
 	getSnapshotAttestationPath,
+	getSnapshotAttestationSignaturePath,
 	getSnapshotDigestPath,
 	getSnapshotPath,
-	getSnapshotSignaturePath,
 	getStateAttestationPath,
 	getStateAttestationSignaturePath,
 	getStateDigestPath,
@@ -8455,7 +8455,10 @@ function writeSnapshot(targetDir: string, snapshotId: string): number {
 		const snapshotPath = getSnapshotPath(targetDir, snapshotId);
 		const digestPath = getSnapshotDigestPath(targetDir, snapshotId);
 		const attestationPath = getSnapshotAttestationPath(targetDir, snapshotId);
-		const signaturePath = getSnapshotSignaturePath(targetDir, snapshotId);
+			const signaturePath = getSnapshotAttestationSignaturePath(
+				targetDir,
+				snapshotId,
+			);
 		const externalStateCaptureResult = captureExternalControlPlaneState(
 			targetDir,
 			snapshotId,
@@ -8507,7 +8510,10 @@ function restoreSnapshot(
 	const snapshotPath = getSnapshotPath(targetDir, snapshotId);
 	const digestPath = getSnapshotDigestPath(targetDir, snapshotId);
 	const attestationPath = getSnapshotAttestationPath(targetDir, snapshotId);
-	const signaturePath = getSnapshotSignaturePath(targetDir, snapshotId);
+	const signaturePath = getSnapshotAttestationSignaturePath(
+		targetDir,
+		snapshotId,
+	);
 	const externalStatePath = getExternalControlPlaneStatePath(
 		targetDir,
 		snapshotId,
@@ -8764,7 +8770,7 @@ function ensurePrepareSnapshotIdAvailable(
 		getSnapshotPath(targetDir, snapshotId),
 		getSnapshotDigestPath(targetDir, snapshotId),
 		getSnapshotAttestationPath(targetDir, snapshotId),
-		getSnapshotSignaturePath(targetDir, snapshotId),
+			getSnapshotAttestationSignaturePath(targetDir, snapshotId),
 		getExternalControlPlaneStatePath(targetDir, snapshotId),
 		getStatePath(targetDir, snapshotId),
 		getStateDigestPath(targetDir, snapshotId),

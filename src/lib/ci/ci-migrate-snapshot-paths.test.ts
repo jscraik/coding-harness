@@ -36,7 +36,7 @@ describe("ci-migrate snapshot paths", () => {
 			resolve(snapshotDir, `${snapshotId}.attestation.json`),
 		);
 		expect(getSnapshotSignaturePath(targetDir, snapshotId)).toBe(
-			resolve(snapshotDir, `${snapshotId}.attestation.sig`),
+			resolve(snapshotDir, `${snapshotId}.sig`),
 		);
 		expect(getSnapshotAttestationSignaturePath(targetDir, snapshotId)).toBe(
 			resolve(snapshotDir, `${snapshotId}.attestation.sig`),
