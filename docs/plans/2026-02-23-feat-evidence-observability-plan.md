@@ -1,5 +1,5 @@
 ---
-title: feat: Add Evidence + Observability Hooks
+title: "feat: Add Evidence + Observability Hooks"
 type: feat
 status: completed
 date: 2026-04-13
@@ -284,7 +284,7 @@ harness evidence-verify
 ## Success Metrics
 
 1. `harness evidence-verify` runs in <100ms for 10 files
-2. JSON output is parseable by CI systems
+2. JSON output can be consumed by CI systems
 3. Exit codes distinguish failure modes for automation
 
 ## Dependencies & Risks
@@ -311,14 +311,14 @@ harness evidence-verify
 - Key decisions carried forward:
   1. Screenshots only (MVP) - defer traces, logs, HAR files
   2. Manual file path collection - no GitHub artifact download
-  3. Logs only for OTel - defer full tracing
+  3. Logs only for OpenTelemetry - defer full tracing
 
 ### Internal References
 
 - Command pattern: `src/commands/init.ts:1104-1201`
 - Contract types: `src/lib/contract/types.ts:1-26`
 - Path validation: `src/lib/input/validator.ts:22-48`
-- Error sanitization: `src/lib/input/sanitize.ts:1-25`
+- Error handling helper: `src/lib/input/sanitize.ts:1-25`
 
 ### Institutional Learnings
 
