@@ -29,7 +29,7 @@
 		"harness": "dist/cli.js"
 	},
 	"scripts": {
-		"check": "pnpm lint && pnpm docs:lint && pnpm skill:validate && pnpm workflow:validate && pnpm typecheck && pnpm test && pnpm audit",
+		"check": "pnpm lint && pnpm docs:lint && pnpm skill:validate && pnpm workflow:validate && pnpm typecheck && pnpm test:ci && pnpm audit",
 		"publish:release": "pnpm check && pnpm build && npm publish --access restricted --ignore-scripts=false",
 		"lint": "pnpm codex-preflight:check && biome check .",
 		"lint:fix": "biome check . --write",
