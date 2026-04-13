@@ -87,9 +87,12 @@ export function suggestCommands(
 	const normalized = normalizeCommandName(name);
 	const scored = specs.map((spec) => {
 		const candidates = [spec.name, ...(spec.aliases ?? [])];
-		const distance = Math.min(
-			...candidates.map((candidate) => levenshtein(normalized, candidate)),
-		);
+		const distance =
+			candidates.length > 0
+				? Math.min(
+						...candidates.map((candidate) => levenshtein(normalized, candidate)),
+					)
+				: Infinity;
 		return { spec, distance };
 	});
 	scored.sort((a, b) => a.distance - b.distance);
@@ -104,9 +107,12 @@ export function suggestCommandCapabilities(
 	const normalized = normalizeCommandName(name);
 	const scored = capabilities.map((capability) => {
 		const candidates = [capability.name, ...(capability.aliases ?? [])];
-		const distance = Math.min(
-			...candidates.map((candidate) => levenshtein(normalized, candidate)),
-		);
+		const distance =
+			candidates.length > 0
+				? Math.min(
+						...candidates.map((candidate) => levenshtein(normalized, candidate)),
+					)
+				: Infinity;
 		return { capability, distance };
 	});
 	scored.sort((a, b) => a.distance - b.distance);
