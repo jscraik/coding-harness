@@ -15,6 +15,7 @@ import { tmpdir } from "node:os";
 import { dirname, join } from "node:path";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { CURRENT_SCHEMA_VERSION } from "../lib/init/types.js";
+import { sanitizeGitEnv } from "../lib/workflow-contract/test-harness.js";
 import { EXIT_CODES, runInit, runInitCLI } from "./init.js";
 
 const EXPECTED_TEMPLATE_PATHS = [
@@ -730,6 +731,7 @@ describe("runInit", () => {
 					spawnSync("git", args, {
 						cwd,
 						encoding: "utf8",
+						env: sanitizeGitEnv(),
 					});
 
 				expect(runGit(["init", "--bare", originDir]).status).toBe(0);

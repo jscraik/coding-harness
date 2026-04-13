@@ -229,6 +229,7 @@ contact_links:
 			try {
 				return runLinearGate({
 					repoRoot: tempDir,
+					branch: "",
 					allowMissingBranch: true,
 					allowMissingPrMetadata: true,
 				});
