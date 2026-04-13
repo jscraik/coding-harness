@@ -53,7 +53,7 @@ export function fuzzyFindCommand(
 ): FuzzyCommandMatch | undefined {
 	const normalized = normalizeCommandName(name);
 	const spec = commandIndex.get(normalized);
-	if (spec) {
+	if (spec && spec.name !== name) {
 		return { spec, confidence: "normalized", distance: 0 };
 	}
 
