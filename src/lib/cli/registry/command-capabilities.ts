@@ -11,6 +11,28 @@ export type CommandCategory =
 	| "drift-search-evidence"
 	| "uncategorized";
 
+export const COMMAND_CATEGORY_ORDER = [
+	"discovery",
+	"bootstrap-governance",
+	"review-policy",
+	"workflow-linear",
+	"pilot-remediation",
+	"drift-search-evidence",
+	"uncategorized",
+] as const satisfies readonly CommandCategory[];
+
+export const COMMAND_CATEGORY_LABELS: Readonly<
+	Record<CommandCategory, string>
+> = {
+	discovery: "Discovery",
+	"bootstrap-governance": "Bootstrap & Governance",
+	"review-policy": "Review & Policy",
+	"workflow-linear": "Linear & Workflow",
+	"pilot-remediation": "Pilot & Remediation",
+	"drift-search-evidence": "Drift, Search & Evidence",
+	uncategorized: "Other",
+};
+
 export type CommandMutability = "read" | "write";
 export type CommandRetryability = "safe" | "conditional" | "manual";
 
@@ -176,13 +198,11 @@ function getCommandRetryability(
 	mutability: CommandMutability,
 ): CommandRetryability {
 	const explicit = RETRYABILITY_BY_NAME[name];
-	if (explicit) {
-		return explicit;
-	}
+	if (explicit) return explicit;
 	return mutability === "read" ? "safe" : "conditional";
 }
 
-function toCommandCapability(spec: CommandSpec): CommandCapability {
+export function toCommandCapability(spec: CommandSpec): CommandCapability {
 	const mutability = getCommandMutability(spec.name);
 	return {
 		name: spec.name,

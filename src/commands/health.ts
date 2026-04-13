@@ -217,8 +217,9 @@ const GATE_SPECS: GateSpec[] = [
 		isApplicable: (dir) => hasFile(dir, "harness.contract.json"),
 		interpretExitCode: (code) => {
 			if (code === 0) return { status: "ok", summary: "plan gate satisfied" };
-			if (code === 1 || code === 2)
+			if (code === 2)
 				return { status: "warning", summary: "plan advisory issues" };
+			if (code === 1) return { status: "error", summary: "plan missing" };
 			return { status: "error", summary: "plan gate failed" };
 		},
 	},

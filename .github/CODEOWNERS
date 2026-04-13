@@ -7,4 +7,6 @@
 /scripts/verify-work.sh @jscraik
 /scripts/validate-codestyle.sh @jscraik
 /scripts/prepare-worktree.sh @jscraik
+/scripts/new-task.sh @jscraik
+/scripts/harness-cli.sh @jscraik
 /scripts/check-environment.sh @jscraik

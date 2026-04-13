@@ -8,15 +8,15 @@ import {
 	getCommandCapabilities,
 	getCommandCapabilityCatalogDocument,
 } from "./registry/command-capabilities.js";
+import { suggestCommandCapabilities as suggestCatalogCapabilities } from "./registry/command-fuzzy.js";
+import { COMMAND_SPECS as EXTRACTED_COMMAND_SPECS } from "./registry/command-specs.js";
 import {
 	type FuzzyCommandMatch,
 	type FuzzyMatchConfidence,
 	fuzzyFindCommand as fuzzyFindRegistryCommand,
 	normalizeCommandName,
-	suggestCommandCapabilities as suggestCatalogCapabilities,
 	suggestCommands as suggestRegistryCommands,
-} from "./registry/command-fuzzy.js";
-import { COMMAND_SPECS as EXTRACTED_COMMAND_SPECS } from "./registry/command-specs.js";
+} from "./registry/fuzzy-resolution.js";
 import type { CommandSpec, RegistryDispatchResult } from "./registry/types.js";
 
 export type {
@@ -91,11 +91,13 @@ export function getRegistryCommandHelpRows(options?: {
 }): Array<{
 	name: string;
 	summary: string;
+	category?: CommandCategory;
 }> {
 	const capabilities = getRegistryCommandCapabilities();
 	const canonicalRows = capabilities.map((capability) => ({
 		name: capability.name,
 		summary: capability.summary,
+		category: capability.category,
 	}));
 	if (!options?.includeLegacy) {
 		return canonicalRows;
@@ -105,6 +107,7 @@ export function getRegistryCommandHelpRows(options?: {
 		(capability.aliases ?? []).map((alias) => ({
 			name: alias,
 			summary: capability.summary,
+			category: capability.category,
 		})),
 	);
 

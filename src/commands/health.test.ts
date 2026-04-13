@@ -131,6 +131,25 @@ describe("runHealth", () => {
 		expect(planResult?.status).toBe("warning");
 	});
 
+	it("treats plan-gate missing plan exit code as error", () => {
+		writeContract(dir);
+		mockSpawnSync.mockReturnValue({
+			status: 1,
+			stdout: "",
+			stderr: "",
+			pid: 1,
+			output: [],
+			signal: null,
+		});
+
+		const report = runHealth({ dir, gates: ["plan-gate"] });
+
+		expect(report.overall).toBe("error");
+		expect(report.counts.error).toBe(1);
+		const planResult = report.gates.find((g) => g.gate === "plan-gate");
+		expect(planResult?.status).toBe("error");
+	});
+
 	it("treats plan-gate traceability failures as errors", () => {
 		writeContract(dir);
 		mockSpawnSync.mockReturnValue({

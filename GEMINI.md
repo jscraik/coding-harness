@@ -9,6 +9,7 @@
 
 ## Canonical source
 - Use `/Users/jamiecraik/dev/coding-harness/AGENTS.md` as the canonical source for repo-wide instructions.
+- Treat `AGENTS.md` as a compact baseline and use `docs/agents/01-instruction-map.md` for task routing.
 - Follow the mandatory workflow snippet from `AGENTS.md` (do not duplicate it here).
 - If guidance conflicts, pause and ask which instruction wins.
 

@@ -1,4 +1,13 @@
-import { CONTEXT_COMPACT_STRATEGIES } from "./json-schema.js";
+import {
+	isValidContextCompactPolicy,
+	isValidContextIntegrityPolicy,
+	isValidDocsGatePolicy,
+	isValidEvidencePolicy,
+	isValidPilotAuthzPolicy,
+	isValidPilotGapCasePolicy,
+	isValidPilotRollbackPolicy,
+	isValidRemediationPolicy,
+} from "./policy-validators.js";
 import type {
 	BlastRadiusRule,
 	BlastRadiusRulesMode,
@@ -13,28 +22,19 @@ import type {
 	CodeScanningAlertsThreshold,
 	CodeScanningSecurityAlertsThreshold,
 	ContextCompactPolicy,
-	ContextCompactStrategy,
-	ContextIntegrityMode,
 	ContextIntegrityPolicy,
-	ContextIntegrityTruthSource,
 	ControlPlaneOverridePolicy,
 	ControlPlaneOverrideScope,
 	ControlPlanePolicy,
 	DiffBudget,
 	DocsDriftRules,
-	DocsGateMode,
 	DocsGatePolicy,
-	DocsGateRule,
-	DocsImpactCategory,
-	DocsSurface,
 	EvidencePolicy,
 	GapCasePolicy,
 	GateExtensionHook,
 	GateExtensionHookId,
 	GateExtensionsPolicy,
-	GateVerdict,
 	HarnessContract,
-	ImageFormat,
 	IssueTrackingPolicy,
 	LoopStageContract,
 	LoopStageContracts,
@@ -51,16 +51,13 @@ import type {
 	PilotAuthzPolicy,
 	PilotGapCasePolicy,
 	PilotRollbackPolicy,
-	PolicyAction,
 	PolicyChainPolicy,
 	PrReferenceMode,
 	PreflightGateExtensionsPolicy,
 	RemediationPolicy,
-	RemediationProviderPolicy,
 	ReviewPolicy,
 	RiskTier,
 	RuntimePolicy,
-	TimeoutAction,
 	ToolingCapabilityDetector,
 	ToolingCodexAction,
 	ToolingCodexEnvironmentPolicy,
@@ -75,15 +72,21 @@ import type {
 } from "./types.js";
 import { PREFLIGHT_POST_HOOK_IDS, PREFLIGHT_PRE_HOOK_IDS } from "./types.js";
 import { isValidUILoopCommandSpec } from "./ui-loop-command.js";
+import {
+	FORBIDDEN_KEYS,
+	hasForbiddenKey,
+	isNonEmptyStringArray,
+	isPlainObject,
+	isStringArray,
+	isValidGateVerdict,
+	isValidLinearProjectUrl,
+	isValidPolicyAction,
+	isValidRequiredChecks,
+	isValidRiskTierRules,
+	isValidTimeoutAction,
+} from "./validator-helpers.js";
 
-const VALID_RISK_TIERS: RiskTier[] = ["high", "medium", "low"];
-const VALID_TIMEOUT_ACTIONS: TimeoutAction[] = ["fail", "warn"];
-const VALID_POLICY_ACTIONS: PolicyAction[] = ["allow", "block", "warn"];
-const VALID_GATE_VERDICTS: GateVerdict[] = ["pass", "fail"];
-const VALID_IMAGE_FORMATS: ImageFormat[] = ["png", "jpeg"];
-const VALID_ROLLBACK_MODES = ["manual", "autonomous"] as const;
 const VALID_BLAST_RADIUS_RULES_MODES = ["merge", "replace"] as const;
-const FORBIDDEN_KEYS = ["__proto__", "constructor", "prototype"] as const;
 const VALID_TOP_LEVEL_KEYS = [
 	"$schema",
 	"version",
@@ -297,48 +300,6 @@ export interface ValidationResult<T> {
 	errors: ValidationError[];
 }
 
-function hasForbiddenKey(value: string): boolean {
-	return FORBIDDEN_KEYS.includes(value as (typeof FORBIDDEN_KEYS)[number]);
-}
-
-function isPlainObject(value: unknown): value is Record<string, unknown> {
-	return typeof value === "object" && value !== null && !Array.isArray(value);
-}
-
-function isValidRiskTier(value: unknown): value is RiskTier {
-	return (
-		typeof value === "string" && VALID_RISK_TIERS.includes(value as RiskTier)
-	);
-}
-
-function isValidRiskTierRules(
-	value: unknown,
-): value is Record<string, RiskTier> {
-	if (!isPlainObject(value)) return false;
-
-	for (const [pattern, tier] of Object.entries(value)) {
-		if (hasForbiddenKey(pattern)) {
-			return false;
-		}
-		if (typeof pattern !== "string" || !isValidRiskTier(tier)) return false;
-	}
-	return true;
-}
-
-function isValidPolicyAction(value: unknown): value is PolicyAction {
-	return (
-		typeof value === "string" &&
-		VALID_POLICY_ACTIONS.includes(value as PolicyAction)
-	);
-}
-
-function isValidGateVerdict(value: unknown): value is GateVerdict {
-	return (
-		typeof value === "string" &&
-		VALID_GATE_VERDICTS.includes(value as GateVerdict)
-	);
-}
-
 function isValidPolicyChainPolicy(value: unknown): value is PolicyChainPolicy {
 	if (!isPlainObject(value)) {
 		return false;
@@ -444,34 +405,6 @@ function isValidBlastRadiusRules(value: unknown): value is BlastRadiusRule[] {
 		}
 	}
 	return true;
-}
-
-function isValidTimeoutAction(value: unknown): value is TimeoutAction {
-	return (
-		typeof value === "string" &&
-		VALID_TIMEOUT_ACTIONS.includes(value as TimeoutAction)
-	);
-}
-
-function isValidRequiredChecks(value: unknown): value is string[] {
-	if (!Array.isArray(value)) {
-		return false;
-	}
-	for (const check of value) {
-		if (typeof check !== "string" || check.trim().length === 0) {
-			return false;
-		}
-	}
-	return true;
-}
-
-function isNonEmptyStringArray(value: unknown): value is string[] {
-	if (!Array.isArray(value)) {
-		return false;
-	}
-	return value.every(
-		(item) => typeof item === "string" && item.trim().length > 0,
-	);
 }
 
 function isValidToolingMiseTool(value: unknown): value is ToolingMiseTool {
@@ -1066,19 +999,6 @@ function isValidCIProviderPolicy(value: unknown): value is CIProviderPolicy {
 	return true;
 }
 
-function isValidLinearProjectUrl(value: string): boolean {
-	try {
-		const url = new URL(value);
-		return (
-			url.protocol === "https:" &&
-			url.hostname === "linear.app" &&
-			url.pathname.includes("/project/")
-		);
-	} catch {
-		return false;
-	}
-}
-
 function isValidIssueTrackingPolicy(
 	value: unknown,
 ): value is IssueTrackingPolicy {
@@ -1157,13 +1077,6 @@ function isValidIssueTrackingPolicy(
 	}
 
 	return true;
-}
-
-function isValidImageFormat(value: unknown): value is ImageFormat {
-	return (
-		typeof value === "string" &&
-		VALID_IMAGE_FORMATS.includes(value as ImageFormat)
-	);
 }
 
 function isValidDiffBudget(value: unknown): value is DiffBudget {
@@ -1659,19 +1572,6 @@ function isValidMergePolicy(value: unknown): value is MergePolicy {
 	return true;
 }
 
-function isStringArray(
-	value: unknown,
-	options: { minLength?: number } = {},
-): value is string[] {
-	if (!Array.isArray(value)) {
-		return false;
-	}
-	if (options.minLength !== undefined && value.length < options.minLength) {
-		return false;
-	}
-	return value.every((entry) => typeof entry === "string" && entry.length > 0);
-}
-
 function isValidLoopStageContract(value: unknown): value is LoopStageContract {
 	if (!isPlainObject(value)) {
 		return false;
@@ -1779,420 +1679,6 @@ function isValidDocsDriftRules(value: unknown): value is DocsDriftRules {
 	return true;
 }
 
-// === Docs Gate Policy Validation ===
-
-const VALID_DOCS_GATE_MODES: DocsGateMode[] = ["advisory", "required"];
-const VALID_DOCS_IMPACT_CATEGORIES: DocsImpactCategory[] = [
-	"cli_surface",
-	"contract_policy",
-	"ci_workflow",
-	"branch_protection_or_required_checks",
-	"init_scaffolding",
-	"tooling_runtime",
-	"architecture_context",
-	"workflow_authority",
-	"adr_artifact",
-	"spec_artifact",
-	"plan_artifact",
-	"brainstorm_artifact",
-	"agent_governance",
-	"doc_only",
-	"unknown_governance_change",
-];
-const VALID_DOCS_SURFACE_TYPES = [
-	"root_doc",
-	"governance_doc",
-	"generated_template",
-	"workflow_doc",
-] as const;
-const VALID_DOCS_SURFACE_OWNERS = [
-	"implementation",
-	"contract",
-	"workflow",
-	"template",
-] as const;
-const VALID_DOCS_RULE_SEVERITIES = ["info", "warning", "error"] as const;
-const VALID_CONTEXT_INTEGRITY_MODES: ContextIntegrityMode[] = [
-	"shadow",
-	"advisory",
-	"required",
-];
-const VALID_CONTEXT_INTEGRITY_SOURCE_KINDS = ["file", "directory"] as const;
-const VALID_CONTEXT_INTEGRITY_AUTHORITIES = ["canonical", "governed"] as const;
-const VALID_CONTEXT_CONTRADICTION_CATEGORIES = [
-	"command_contract_conflict",
-	"required_check_conflict",
-	"instruction_precedence_conflict",
-	"workflow_policy_conflict",
-	"source_truth_missing",
-] as const;
-const VALID_CONTEXT_HEALTH_TRIGGER_TYPES = [
-	"current_checkout",
-	"recent_artifacts",
-] as const;
-const VALID_CONTEXT_HEALTH_DEDUPE_SCOPES = ["query", "run"] as const;
-const VALID_CONTEXT_COMPACT_POLICY_KEYS = [
-	"thresholdPercent",
-	"microCompactThresholdTokens",
-	"strategy",
-] as const;
-const VALID_CONTEXT_COMPACT_STRATEGIES: readonly ContextCompactStrategy[] =
-	CONTEXT_COMPACT_STRATEGIES;
-
-function isValidDocsImpactCategory(
-	value: unknown,
-): value is DocsImpactCategory {
-	return (
-		typeof value === "string" &&
-		VALID_DOCS_IMPACT_CATEGORIES.includes(value as DocsImpactCategory)
-	);
-}
-
-function isValidDocsSurface(value: unknown): value is DocsSurface {
-	if (!isPlainObject(value)) return false;
-	const surface = value as Record<string, unknown>;
-
-	// Validate path (required string)
-	if (typeof surface.path !== "string" || surface.path.length === 0) {
-		return false;
-	}
-
-	// Validate surfaceType (required, must be valid value)
-	if (
-		typeof surface.surfaceType !== "string" ||
-		!VALID_DOCS_SURFACE_TYPES.includes(
-			surface.surfaceType as (typeof VALID_DOCS_SURFACE_TYPES)[number],
-		)
-	) {
-		return false;
-	}
-
-	// Validate owner (required, must be valid value)
-	if (
-		typeof surface.owner !== "string" ||
-		!VALID_DOCS_SURFACE_OWNERS.includes(
-			surface.owner as (typeof VALID_DOCS_SURFACE_OWNERS)[number],
-		)
-	) {
-		return false;
-	}
-
-	// Validate requiredFor (required string array of valid categories)
-	if (!Array.isArray(surface.requiredFor)) {
-		return false;
-	}
-	for (const category of surface.requiredFor) {
-		if (!isValidDocsImpactCategory(category)) {
-			return false;
-		}
-	}
-
-	return true;
-}
-
-function isValidDocsGateRule(value: unknown): value is DocsGateRule {
-	if (!isPlainObject(value)) return false;
-	const rule = value as Record<string, unknown>;
-
-	// Validate ruleId (required string)
-	if (typeof rule.ruleId !== "string" || rule.ruleId.length === 0) {
-		return false;
-	}
-
-	// Validate when (required object with categories and/or fileGlobs)
-	if (!isPlainObject(rule.when)) {
-		return false;
-	}
-	const when = rule.when as Record<string, unknown>;
-
-	// Validate when.categories (optional array of valid categories)
-	if (when.categories !== undefined) {
-		if (!Array.isArray(when.categories)) {
-			return false;
-		}
-		for (const category of when.categories) {
-			if (!isValidDocsImpactCategory(category)) {
-				return false;
-			}
-		}
-	}
-
-	// Validate when.fileGlobs (optional string array)
-	if (when.fileGlobs !== undefined) {
-		if (!Array.isArray(when.fileGlobs)) {
-			return false;
-		}
-		for (const glob of when.fileGlobs) {
-			if (typeof glob !== "string" || glob.length === 0) {
-				return false;
-			}
-		}
-	}
-
-	// Validate requireDocs (required string array)
-	if (!Array.isArray(rule.requireDocs)) {
-		return false;
-	}
-	for (const doc of rule.requireDocs) {
-		if (typeof doc !== "string" || doc.length === 0) {
-			return false;
-		}
-	}
-
-	// Validate severity (required, must be valid value)
-	if (
-		typeof rule.severity !== "string" ||
-		!VALID_DOCS_RULE_SEVERITIES.includes(
-			rule.severity as (typeof VALID_DOCS_RULE_SEVERITIES)[number],
-		)
-	) {
-		return false;
-	}
-
-	// Validate allowDocOnly (optional boolean)
-	if (
-		rule.allowDocOnly !== undefined &&
-		typeof rule.allowDocOnly !== "boolean"
-	) {
-		return false;
-	}
-
-	return true;
-}
-
-export function isValidDocsGatePolicy(value: unknown): value is DocsGatePolicy {
-	if (!isPlainObject(value)) return false;
-	const policy = value as Record<string, unknown>;
-
-	// Validate enabled (required boolean)
-	if (typeof policy.enabled !== "boolean") {
-		return false;
-	}
-
-	// Validate mode (required, must be valid value)
-	if (
-		typeof policy.mode !== "string" ||
-		!VALID_DOCS_GATE_MODES.includes(policy.mode as DocsGateMode)
-	) {
-		return false;
-	}
-
-	// Validate rules (required array of valid rules)
-	if (!Array.isArray(policy.rules)) {
-		return false;
-	}
-	for (const rule of policy.rules) {
-		if (!isValidDocsGateRule(rule)) {
-			return false;
-		}
-	}
-
-	// Validate surfaces (optional array of valid surfaces)
-	if (policy.surfaces !== undefined) {
-		if (!Array.isArray(policy.surfaces)) {
-			return false;
-		}
-		for (const surface of policy.surfaces) {
-			if (!isValidDocsSurface(surface)) {
-				return false;
-			}
-		}
-	}
-
-	// Validate localHookEnabled (optional boolean)
-	if (
-		policy.localHookEnabled !== undefined &&
-		typeof policy.localHookEnabled !== "boolean"
-	) {
-		return false;
-	}
-
-	return true;
-}
-
-function isValidContextIntegrityTruthSource(
-	value: unknown,
-): value is ContextIntegrityTruthSource {
-	if (!isPlainObject(value)) {
-		return false;
-	}
-
-	const source = value as Record<string, unknown>;
-	const validKeys = ["path", "kind", "authority", "required"] as const;
-	const invalidKeys = Object.keys(source).filter(
-		(key) => !validKeys.includes(key as (typeof validKeys)[number]),
-	);
-	if (invalidKeys.length > 0) {
-		return false;
-	}
-
-	return (
-		typeof source.path === "string" &&
-		source.path.length > 0 &&
-		typeof source.kind === "string" &&
-		VALID_CONTEXT_INTEGRITY_SOURCE_KINDS.includes(
-			source.kind as (typeof VALID_CONTEXT_INTEGRITY_SOURCE_KINDS)[number],
-		) &&
-		typeof source.authority === "string" &&
-		VALID_CONTEXT_INTEGRITY_AUTHORITIES.includes(
-			source.authority as (typeof VALID_CONTEXT_INTEGRITY_AUTHORITIES)[number],
-		) &&
-		typeof source.required === "boolean"
-	);
-}
-
-function isValidContextIntegrityPolicy(
-	value: unknown,
-): value is ContextIntegrityPolicy {
-	if (!isPlainObject(value)) {
-		return false;
-	}
-
-	const policy = value as Record<string, unknown>;
-	const validKeys = [
-		"mode",
-		"truthSources",
-		"contradictionCatalog",
-		"healthSampling",
-	] as const;
-	const invalidKeys = Object.keys(policy).filter(
-		(key) => !validKeys.includes(key as (typeof validKeys)[number]),
-	);
-	if (invalidKeys.length > 0) {
-		return false;
-	}
-
-	if (
-		typeof policy.mode !== "string" ||
-		!VALID_CONTEXT_INTEGRITY_MODES.includes(policy.mode as ContextIntegrityMode)
-	) {
-		return false;
-	}
-
-	if (
-		!Array.isArray(policy.truthSources) ||
-		policy.truthSources.length === 0 ||
-		!policy.truthSources.every(isValidContextIntegrityTruthSource)
-	) {
-		return false;
-	}
-
-	if (!Array.isArray(policy.contradictionCatalog)) {
-		return false;
-	}
-	for (const entry of policy.contradictionCatalog) {
-		if (!isPlainObject(entry)) {
-			return false;
-		}
-		const valueObject = entry as Record<string, unknown>;
-		const entryKeys = ["id", "category", "severity", "description"] as const;
-		const invalidEntryKeys = Object.keys(valueObject).filter(
-			(key) => !entryKeys.includes(key as (typeof entryKeys)[number]),
-		);
-		if (invalidEntryKeys.length > 0) {
-			return false;
-		}
-		if (
-			typeof valueObject.id !== "string" ||
-			valueObject.id.length === 0 ||
-			typeof valueObject.category !== "string" ||
-			!VALID_CONTEXT_CONTRADICTION_CATEGORIES.includes(
-				valueObject.category as (typeof VALID_CONTEXT_CONTRADICTION_CATEGORIES)[number],
-			) ||
-			(valueObject.severity !== "warning" &&
-				valueObject.severity !== "error") ||
-			typeof valueObject.description !== "string" ||
-			valueObject.description.length === 0
-		) {
-			return false;
-		}
-	}
-
-	if (!isPlainObject(policy.healthSampling)) {
-		return false;
-	}
-	const healthSampling = policy.healthSampling as Record<string, unknown>;
-	const healthSamplingKeys = [
-		"fixtureSetPath",
-		"fixtureSetId",
-		"allowedTriggerTypes",
-		"samplingCadence",
-		"dedupeScope",
-	] as const;
-	const invalidHealthSamplingKeys = Object.keys(healthSampling).filter(
-		(key) =>
-			!healthSamplingKeys.includes(key as (typeof healthSamplingKeys)[number]),
-	);
-	if (invalidHealthSamplingKeys.length > 0) {
-		return false;
-	}
-
-	return (
-		typeof healthSampling.fixtureSetPath === "string" &&
-		healthSampling.fixtureSetPath.length > 0 &&
-		typeof healthSampling.fixtureSetId === "string" &&
-		healthSampling.fixtureSetId.length > 0 &&
-		Array.isArray(healthSampling.allowedTriggerTypes) &&
-		healthSampling.allowedTriggerTypes.length > 0 &&
-		healthSampling.allowedTriggerTypes.every(
-			(value) =>
-				typeof value === "string" &&
-				VALID_CONTEXT_HEALTH_TRIGGER_TYPES.includes(
-					value as (typeof VALID_CONTEXT_HEALTH_TRIGGER_TYPES)[number],
-				),
-		) &&
-		typeof healthSampling.samplingCadence === "string" &&
-		healthSampling.samplingCadence.length > 0 &&
-		typeof healthSampling.dedupeScope === "string" &&
-		VALID_CONTEXT_HEALTH_DEDUPE_SCOPES.includes(
-			healthSampling.dedupeScope as (typeof VALID_CONTEXT_HEALTH_DEDUPE_SCOPES)[number],
-		)
-	);
-}
-
-function isValidContextCompactPolicy(
-	value: unknown,
-): value is ContextCompactPolicy {
-	if (!isPlainObject(value)) {
-		return false;
-	}
-
-	const policy = value as Record<string, unknown>;
-	const invalidKeys = Object.keys(policy).filter(
-		(key) =>
-			!VALID_CONTEXT_COMPACT_POLICY_KEYS.includes(
-				key as (typeof VALID_CONTEXT_COMPACT_POLICY_KEYS)[number],
-			),
-	);
-	if (invalidKeys.length > 0) {
-		return false;
-	}
-
-	if (
-		typeof policy.thresholdPercent !== "number" ||
-		!Number.isFinite(policy.thresholdPercent) ||
-		policy.thresholdPercent <= 0 ||
-		policy.thresholdPercent > 100
-	) {
-		return false;
-	}
-
-	if (
-		typeof policy.microCompactThresholdTokens !== "number" ||
-		!Number.isInteger(policy.microCompactThresholdTokens) ||
-		policy.microCompactThresholdTokens <= 0
-	) {
-		return false;
-	}
-
-	return (
-		typeof policy.strategy === "string" &&
-		VALID_CONTEXT_COMPACT_STRATEGIES.includes(
-			policy.strategy as ContextCompactStrategy,
-		)
-	);
-}
-
 function isValidTopLevel(
 	data: Record<string, unknown>,
 	errors: ValidationError[],
@@ -2211,307 +1697,6 @@ function isValidTopLevel(
 			fix: "Remove the unknown field before re-running this command",
 		});
 	}
-}
-
-export function isValidEvidencePolicy(value: unknown): value is EvidencePolicy {
-	if (!isPlainObject(value)) return false;
-	const policy = value as Record<string, unknown>;
-
-	const invalidKeys = Object.keys(policy).filter(
-		(key) =>
-			![
-				"requiredFor",
-				"allowedTypes",
-				"maxFileSizeBytes",
-				"allowedVideoTypes",
-				"maxVideoSizeBytes",
-			].includes(key),
-	);
-	if (invalidKeys.length > 0) {
-		return false;
-	}
-
-	// Validate requiredFor (must be array of strings)
-	if (!Array.isArray(policy.requiredFor)) {
-		return false;
-	}
-	for (const pattern of policy.requiredFor) {
-		if (typeof pattern !== "string") {
-			return false;
-		}
-		// Block prototype pollution
-		if (FORBIDDEN_KEYS.includes(pattern as (typeof FORBIDDEN_KEYS)[number])) {
-			return false;
-		}
-	}
-
-	// Validate allowedTypes (must be array of valid formats)
-	if (!Array.isArray(policy.allowedTypes)) {
-		return false;
-	}
-	for (const format of policy.allowedTypes) {
-		if (!isValidImageFormat(format)) {
-			return false;
-		}
-	}
-
-	// Validate maxFileSizeBytes (optional, must be positive integer)
-	if (
-		policy.maxFileSizeBytes !== undefined &&
-		(typeof policy.maxFileSizeBytes !== "number" ||
-			policy.maxFileSizeBytes <= 0 ||
-			!Number.isInteger(policy.maxFileSizeBytes))
-	) {
-		return false;
-	}
-
-	// Validate allowedVideoTypes (optional, must be array of valid video formats)
-	if (policy.allowedVideoTypes !== undefined) {
-		if (!Array.isArray(policy.allowedVideoTypes)) {
-			return false;
-		}
-		const validVideoFormats = ["mp4", "webm"];
-		for (const format of policy.allowedVideoTypes) {
-			if (!validVideoFormats.includes(format)) {
-				return false;
-			}
-		}
-	}
-
-	// Validate maxVideoSizeBytes (optional, must be positive integer)
-	if (
-		policy.maxVideoSizeBytes !== undefined &&
-		(typeof policy.maxVideoSizeBytes !== "number" ||
-			policy.maxVideoSizeBytes <= 0 ||
-			!Number.isInteger(policy.maxVideoSizeBytes))
-	) {
-		return false;
-	}
-
-	return true;
-}
-
-/**
- * Validate remediation provider policy.
- */
-function isValidRemediationProviderPolicy(
-	value: unknown,
-): value is RemediationProviderPolicy {
-	if (typeof value !== "object" || value === null) return false;
-	const policy = value as Record<string, unknown>;
-
-	// Validate autoApplyMaxTier
-	if (!isValidRiskTier(policy.autoApplyMaxTier)) {
-		return false;
-	}
-
-	// Validate dryRunOnlyByDefault
-	if (typeof policy.dryRunOnlyByDefault !== "boolean") {
-		return false;
-	}
-
-	return true;
-}
-
-/**
- * Validate full remediation policy.
- */
-export function isValidRemediationPolicy(
-	value: unknown,
-): value is RemediationPolicy {
-	if (typeof value !== "object" || value === null) return false;
-	const policy = value as Record<string, unknown>;
-
-	// Validate providerDefaults (must be object of provider policies)
-	if (
-		typeof policy.providerDefaults !== "object" ||
-		policy.providerDefaults === null
-	) {
-		return false;
-	}
-	for (const [provider, providerPolicy] of Object.entries(
-		policy.providerDefaults as Record<string, unknown>,
-	)) {
-		// Block prototype pollution
-		if (FORBIDDEN_KEYS.includes(provider as (typeof FORBIDDEN_KEYS)[number])) {
-			return false;
-		}
-		if (!isValidRemediationProviderPolicy(providerPolicy)) {
-			return false;
-		}
-	}
-
-	// Validate marker (required string)
-	if (typeof policy.marker !== "string") {
-		return false;
-	}
-
-	// Validate timeoutMinutes (required positive integer)
-	if (
-		typeof policy.timeoutMinutes !== "number" ||
-		policy.timeoutMinutes <= 0 ||
-		!Number.isInteger(policy.timeoutMinutes)
-	) {
-		return false;
-	}
-
-	// Validate retryLimit (required non-negative integer)
-	if (
-		typeof policy.retryLimit !== "number" ||
-		policy.retryLimit < 0 ||
-		!Number.isInteger(policy.retryLimit)
-	) {
-		return false;
-	}
-
-	// Validate requireEvidence (required boolean)
-	if (typeof policy.requireEvidence !== "boolean") {
-		return false;
-	}
-
-	return true;
-}
-
-/**
- * Validate pilot gap-case policy.
- */
-export function isValidPilotGapCasePolicy(
-	value: unknown,
-): value is PilotGapCasePolicy {
-	if (typeof value !== "object" || value === null) return false;
-	const policy = value as Record<string, unknown>;
-
-	// Validate enabled (required boolean)
-	if (typeof policy.enabled !== "boolean") {
-		return false;
-	}
-
-	// Validate defaultSlaHours (required positive integer)
-	if (
-		typeof policy.defaultSlaHours !== "number" ||
-		policy.defaultSlaHours <= 0 ||
-		!Number.isInteger(policy.defaultSlaHours)
-	) {
-		return false;
-	}
-
-	// Validate requireClosureEvidence (required boolean)
-	if (typeof policy.requireClosureEvidence !== "boolean") {
-		return false;
-	}
-
-	// Validate storePath (optional string)
-	if (policy.storePath !== undefined && typeof policy.storePath !== "string") {
-		return false;
-	}
-
-	return true;
-}
-
-/**
- * Validate pilot rollback policy.
- */
-export function isValidPilotRollbackPolicy(
-	value: unknown,
-): value is PilotRollbackPolicy {
-	if (typeof value !== "object" || value === null) return false;
-	const policy = value as Record<string, unknown>;
-
-	// Validate autoTrigger (required boolean)
-	if (typeof policy.autoTrigger !== "boolean") {
-		return false;
-	}
-
-	// Validate requireManualRelease (required boolean)
-	if (typeof policy.requireManualRelease !== "boolean") {
-		return false;
-	}
-
-	// Validate completionMarkerPath (required string)
-	if (typeof policy.completionMarkerPath !== "string") {
-		return false;
-	}
-
-	// Validate mode (required, must be valid value)
-	if (
-		typeof policy.mode !== "string" ||
-		!VALID_ROLLBACK_MODES.includes(
-			policy.mode as (typeof VALID_ROLLBACK_MODES)[number],
-		)
-	) {
-		return false;
-	}
-
-	return true;
-}
-
-/**
- * Validate pilot authorization policy.
- */
-export function isValidPilotAuthzPolicy(
-	value: unknown,
-): value is PilotAuthzPolicy {
-	if (typeof value !== "object" || value === null) return false;
-	const policy = value as Record<string, unknown>;
-
-	// Validate githubScopeAllowlist (required string array)
-	if (!Array.isArray(policy.githubScopeAllowlist)) {
-		return false;
-	}
-	for (const scope of policy.githubScopeAllowlist) {
-		if (typeof scope !== "string") {
-			return false;
-		}
-	}
-
-	// Validate repoAllowlist (required string array)
-	if (!Array.isArray(policy.repoAllowlist)) {
-		return false;
-	}
-	for (const pattern of policy.repoAllowlist) {
-		if (typeof pattern !== "string") {
-			return false;
-		}
-		// Block prototype pollution
-		if (FORBIDDEN_KEYS.includes(pattern as (typeof FORBIDDEN_KEYS)[number])) {
-			return false;
-		}
-	}
-
-	// Validate branchAllowlist (required string array)
-	if (!Array.isArray(policy.branchAllowlist)) {
-		return false;
-	}
-	for (const pattern of policy.branchAllowlist) {
-		if (typeof pattern !== "string") {
-			return false;
-		}
-		// Block prototype pollution
-		if (FORBIDDEN_KEYS.includes(pattern as (typeof FORBIDDEN_KEYS)[number])) {
-			return false;
-		}
-	}
-
-	// Validate protectedBranchDenylist (required string array)
-	if (!Array.isArray(policy.protectedBranchDenylist)) {
-		return false;
-	}
-	for (const pattern of policy.protectedBranchDenylist) {
-		if (typeof pattern !== "string") {
-			return false;
-		}
-		// Block prototype pollution
-		if (FORBIDDEN_KEYS.includes(pattern as (typeof FORBIDDEN_KEYS)[number])) {
-			return false;
-		}
-	}
-
-	// Validate enforceBranchProtection (required boolean)
-	if (typeof policy.enforceBranchProtection !== "boolean") {
-		return false;
-	}
-
-	return true;
 }
 
 export function validateContract(

@@ -13,10 +13,13 @@ const REPO_ROOT = resolve(__dirname, "..");
 const EXECUTABLE_MODE = 0o755;
 const DEFAULT_PAIRS = [
 	{
+		name: "project-preflight",
 		sourcePath: resolve(REPO_ROOT, "src/templates/codex-preflight.sh"),
 		targetPath: resolve(REPO_ROOT, "scripts/codex-preflight.sh"),
+		enforceContentMatch: false,
 	},
 	{
+		name: "legacy-local-memory-fallback",
 		sourcePath: resolve(
 			REPO_ROOT,
 			"src/templates/codex-preflight-local-memory-legacy.sh",
@@ -25,6 +28,7 @@ const DEFAULT_PAIRS = [
 			REPO_ROOT,
 			"scripts/codex-preflight-local-memory-legacy.sh",
 		),
+		enforceContentMatch: true,
 	},
 ];
 
@@ -37,15 +41,19 @@ const DEFAULT_PAIRS = [
 function usage() {
 	console.error(`Usage: node scripts/sync-codex-preflight.cjs [--check|--write] [--source <path>] [--target <path>]
 
-Synchronize the project runtime codex-preflight script from the canonical
-scaffold template source.
+Synchronize codex preflight runtime scripts from scaffold templates.
 
 Options:
-  --check           Fail if target content differs from source or is not executable
+  --check           Validate executable bit and enforce content parity where configured
   --write           Copy source content to target and set executable bit
   --source <path>   Override canonical source path
   --target <path>   Override runtime target path
   -h, --help        Show help
+
+Notes:
+  - Default checks allow project-specific drift for scripts/codex-preflight.sh.
+  - Default checks still enforce content parity for
+    scripts/codex-preflight-local-memory-legacy.sh.
 `);
 }
 
@@ -163,15 +171,26 @@ function hasExecutableBit(filePath) {
  * @param {string} sourcePath - Path to the canonical template file.
  * @param {string} targetPath - Path to the target runtime script to validate.
  */
-function checkPair(sourcePath, targetPath) {
+function checkPair(pair) {
+	const {
+		sourcePath,
+		targetPath,
+		enforceContentMatch = true,
+		name = "pair",
+	} = pair;
 	assertFileExists(sourcePath, "source");
 	assertFileExists(targetPath, "target");
 
 	const sourceContent = readBuffer(sourcePath);
 	const targetContent = readBuffer(targetPath);
-	if (!sourceContent.equals(targetContent)) {
+	if (!sourceContent.equals(targetContent) && enforceContentMatch) {
 		fail(
 			`target drift detected: ${targetPath} no longer matches canonical template ${sourcePath}. Run \`node scripts/sync-codex-preflight.cjs --write\`.`,
+		);
+	}
+	if (!sourceContent.equals(targetContent) && !enforceContentMatch) {
+		console.error(
+			`[codex-preflight-sync] info: ${targetPath} differs from template ${sourcePath}; drift is allowed for ${name}.`,
 		);
 	}
 	if (!hasExecutableBit(targetPath)) {
@@ -179,9 +198,7 @@ function checkPair(sourcePath, targetPath) {
 			`target is not executable: ${targetPath}. Run \`node scripts/sync-codex-preflight.cjs --write\`.`,
 		);
 	}
-	console.error(
-		`[codex-preflight-sync] ok: ${targetPath} matches canonical template ${sourcePath}`,
-	);
+	console.error(`[codex-preflight-sync] ok: ${targetPath} is executable`);
 }
 
 /**
@@ -211,14 +228,16 @@ function writePair(sourcePath, targetPath) {
 function run() {
 	const { mode, sourcePath, targetPath } = parseArgs(process.argv.slice(2));
 	const pairs =
-		sourcePath || targetPath ? [{ sourcePath, targetPath }] : DEFAULT_PAIRS;
+		sourcePath || targetPath
+			? [{ sourcePath, targetPath, enforceContentMatch: true, name: "custom" }]
+			: DEFAULT_PAIRS;
 
 	for (const pair of pairs) {
 		if (mode === "write") {
 			writePair(pair.sourcePath, pair.targetPath);
 			continue;
 		}
-		checkPair(pair.sourcePath, pair.targetPath);
+		checkPair(pair);
 	}
 }
 

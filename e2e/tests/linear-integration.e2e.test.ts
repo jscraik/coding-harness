@@ -127,7 +127,7 @@ describe("Linear Integration E2E", () => {
 				);
 
 				if (teamStates.length < 2) {
-					console.log("Skipping: Not enough states to test transitions");
+					console.info("Skipping: Not enough states to test transitions");
 					return;
 				}
 

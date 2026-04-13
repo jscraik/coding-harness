@@ -545,6 +545,10 @@ run_gate_command() {
 				echo "[verify-work] rollout_check.py not found; skipping"
 				return 0
 			fi
+			if [[ "$hook_governance_scope" == "project-local" && ! -f "$repo_root/.codex/hook-conformance.json" ]]; then
+				echo "[verify-work] project-local rollout check skipped: missing optional local conformance artifact (.codex/hook-conformance.json)"
+				return 0
+			fi
 			if [[ -z "$hook_inventory_output" || ! -f "$hook_inventory_output" ]]; then
 				echo "[verify-work] hook-governance inventory output missing"
 				return 1

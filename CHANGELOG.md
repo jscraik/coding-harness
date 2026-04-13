@@ -2,6 +2,31 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+# [0.13.0](https://github.com/jscraik/coding-harness/compare/v0.12.1...v0.13.0) (2026-04-13)
+
+
+### Bug Fixes
+
+* **cli:** restore help contract and clean e2e logging ([b79c58c](https://github.com/jscraik/coding-harness/commit/b79c58ca7135370ce76bfe4326e8a1c69e5b158d))
+* **coderabbit:** fail closed release finalize main drift ([017375e](https://github.com/jscraik/coding-harness/commit/017375e01fb825cf660fa0eb3927c2a571f85929))
+* **coderabbit:** harden release finalize action ([c08ca21](https://github.com/jscraik/coding-harness/commit/c08ca21dc950182a1d3fc30af14c95a74c34f8d9))
+* **hooks:** unblock pre-push parity and freshness gates ([672d634](https://github.com/jscraik/coding-harness/commit/672d634db4cbce287a6b3aeb919479153419b5ad))
+* **semgrep:** quote shell patterns in pre-push config ([0e31ad9](https://github.com/jscraik/coding-harness/commit/0e31ad9772c5b1179bf7b0749140f3bc67ea228a))
+* **test:** force single-worker vitest runs ([c45a8de](https://github.com/jscraik/coding-harness/commit/c45a8de9b0e4c1ac67e7301328b794985b2a6907))
+* **test:** harden git-env-sensitive pre-push specs ([86aa8ac](https://github.com/jscraik/coding-harness/commit/86aa8acecb57ce6f28e0338322c1758ce588f0d6))
+* **test:** isolate ci-migrate from hook env leakage ([200d8b3](https://github.com/jscraik/coding-harness/commit/200d8b32bc11d2ed0deaaeca41778200bc3e8e7c))
+* **test:** isolate hook env in git-sensitive test paths ([f10c168](https://github.com/jscraik/coding-harness/commit/f10c1684d5e8ef49510e8d54a18bcf37a62e3ade))
+* **test:** route check through resilient ci test lane ([5ca9d54](https://github.com/jscraik/coding-harness/commit/5ca9d54c1c91d4ef7298f2fbbd6b72e583ce4ba5))
+* **verify-work:** allow missing local conformance artifact ([b8af0ea](https://github.com/jscraik/coding-harness/commit/b8af0eabb8d1e2dcab4b5d36cac3c3514f322395))
+
+
+### Features
+
+* **cli:** add guardrail metadata to unknown command suggestions ([62145e5](https://github.com/jscraik/coding-harness/commit/62145e57c80d87540d7f0359f134ffb47f8f57a6))
+* **cli:** consume catalog for unknown-command suggestions ([c6cf17c](https://github.com/jscraik/coding-harness/commit/c6cf17c65561530568e152d8182646884674f446))
+
+
+
 ## [0.12.1](https://github.com/jscraik/coding-harness/compare/v0.11.12...v0.12.1) (2026-04-12)
 
 

@@ -151,12 +151,12 @@ export class ResourceTracker {
 	 */
 	async cleanup(): Promise<void> {
 		if (!this.cleanupEnabled) {
-			console.log(`[ResourceTracker] Cleanup disabled for: ${this.testName}`);
+			console.info(`[ResourceTracker] Cleanup disabled for: ${this.testName}`);
 			return;
 		}
 
 		const resources = this.getResources().reverse();
-		console.log(
+		console.info(
 			`[ResourceTracker] Cleaning up ${resources.length} resources for: ${this.testName}`,
 		);
 
@@ -164,7 +164,7 @@ export class ResourceTracker {
 			try {
 				if (resource.cleanupFunction) {
 					await resource.cleanupFunction();
-					console.log(
+					console.info(
 						`[ResourceTracker] Cleaned up: ${resource.type} - ${resource.name}`,
 					);
 				}
@@ -204,7 +204,7 @@ export class ResourceTracker {
 			const filepath = join(this.recordingsDir, filename);
 
 			writeFileSync(filepath, JSON.stringify(recording, null, 2), "utf-8");
-			console.log(`[ResourceTracker] Recording saved: ${filepath}`);
+			console.info(`[ResourceTracker] Recording saved: ${filepath}`);
 		} catch (error) {
 			console.error("[ResourceTracker] Failed to save recording:", error);
 		}

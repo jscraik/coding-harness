@@ -355,7 +355,7 @@ const warnings = violations.filter((v) => v.severity === "warning");
 const baselined = violations.filter((v) => v.severity === "baseline");
 
 if (FORMAT === "json") {
-	const _out = {
+	const out = {
 		schema_version: 1,
 		command: "check-architecture-rules",
 		status: errors.length === 0 ? "pass" : "fail",
@@ -367,19 +367,36 @@ if (FORMAT === "json") {
 		},
 		violations,
 	};
+	process.stdout.write(`${JSON.stringify(out, null, 2)}\n`);
 } else {
-	for (const _v of errors) {
+	for (const violation of errors) {
+		process.stderr.write(
+			`[error] ${violation.rule} ${violation.file}: ${violation.message}\n`,
+		);
 	}
-	for (const _v of warnings) {
+	for (const violation of warnings) {
+		process.stderr.write(
+			`[warning] ${violation.rule} ${violation.file}: ${violation.message}\n`,
+		);
 	}
 	if (VERBOSE) {
-		for (const _v of baselined) {
+		for (const violation of baselined) {
+			process.stderr.write(
+				`[baseline] ${violation.rule} ${violation.file}: ${violation.message}\n`,
+			);
 		}
 	}
 
 	if (violations.length === 0) {
+		process.stderr.write("[architecture] pass: no violations found\n");
 	} else if (errors.length === 0) {
+		process.stderr.write(
+			`[architecture] pass-with-warnings: ${warnings.length} warning(s), ${baselined.length} baselined\n`,
+		);
 	} else {
+		process.stderr.write(
+			`[architecture] fail: ${errors.length} error(s), ${warnings.length} warning(s), ${baselined.length} baselined\n`,
+		);
 	}
 }
 

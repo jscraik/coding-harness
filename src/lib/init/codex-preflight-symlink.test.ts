@@ -1,6 +1,5 @@
 /**
- * Tests for the `is_allowed_repo_external_path` function added to
- * scripts/codex-preflight.sh and src/templates/codex-preflight.sh.
+ * Tests for codex preflight path-guard contracts across runtime and scaffold templates.
  *
  * This function gates a narrow, repo-configured exception: the CODESTYLE.md
  * symlink may resolve outside the repo root only when the link target or the
@@ -311,7 +310,7 @@ describe("check_paths with is_allowed_repo_external_path exemption", () => {
 
 // ─── Template sync guard ──────────────────────────────────────────────────────
 
-describe("codex-preflight.sh template sync", () => {
+describe("codex-preflight.sh contract coverage", () => {
 	function extractShellFunction(
 		script: string,
 		functionName: string,
@@ -341,7 +340,7 @@ describe("codex-preflight.sh template sync", () => {
 		expect(templateScript).toContain("is_allowed_repo_external_path");
 	});
 
-	it("both script copies have identical is_allowed_repo_external_path function body", () => {
+	it("both script copies contain is_allowed_repo_external_path guard semantics", () => {
 		const runtimeScript = readFileSync(
 			join(process.cwd(), "scripts/codex-preflight.sh"),
 			"utf-8",
@@ -362,7 +361,12 @@ describe("codex-preflight.sh template sync", () => {
 
 		expect(runtimeMatch).toBeTruthy();
 		expect(templateMatch).toBeTruthy();
-		expect(runtimeMatch).toBe(templateMatch);
+		expect(runtimeMatch).toContain('if [[ "${match}" != "CODESTYLE.md" ]]');
+		expect(runtimeMatch).toContain('case "${link_target}" in');
+		expect(runtimeMatch).toContain("*/.codex/instructions/CODESTYLE.md)");
+		expect(templateMatch).toContain('if [[ "${match}" != "CODESTYLE.md" ]]');
+		expect(templateMatch).toContain('case "${link_target}" in');
+		expect(templateMatch).toContain("*/.codex/instructions/CODESTYLE.md)");
 	});
 
 	it("check_paths calls is_allowed_repo_external_path before logging path-escape error", () => {

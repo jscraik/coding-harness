@@ -1144,6 +1144,9 @@ describe("runReviewGateCLI", () => {
 	});
 
 	it("returns REVIEW_NOT_VERIFIED when review follow-up is still required", async () => {
+		const stdoutSpy = vi
+			.spyOn(process.stdout, "write")
+			.mockImplementation(() => true);
 		const mockListCheckRuns = vi.fn().mockResolvedValue([]);
 		mockGitHubClient.mockImplementation(
 			() =>
@@ -1163,6 +1166,20 @@ describe("runReviewGateCLI", () => {
 		const exitCode = await runReviewGateCLI(defaultOptions);
 
 		expect(exitCode).toBe(EXIT_CODES.REVIEW_NOT_VERIFIED);
+		const payload = stdoutSpy.mock.calls.at(-1)?.[0];
+		expect(typeof payload).toBe("string");
+		const parsed = JSON.parse(String(payload)) as {
+			status: string;
+			reason: string;
+			action_now: unknown[];
+			action_later: unknown[];
+			evidence_ref: unknown[];
+		};
+		expect(parsed.status).toBe("fail");
+		expect(typeof parsed.reason).toBe("string");
+		expect(Array.isArray(parsed.action_now)).toBe(true);
+		expect(Array.isArray(parsed.action_later)).toBe(true);
+		expect(Array.isArray(parsed.evidence_ref)).toBe(true);
 		expect(mockEmitReviewGateDecisionArtifacts).toHaveBeenCalledWith(
 			expect.objectContaining({
 				options: expect.objectContaining({
