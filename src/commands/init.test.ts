@@ -68,6 +68,7 @@ const EXPECTED_TEMPLATE_PATHS = [
 	"scripts/verify-work.sh",
 	"scripts/validate-codestyle.sh",
 	"scripts/prepare-worktree.sh",
+	"scripts/new-task.sh",
 	"scripts/harness-cli.sh",
 	"scripts/check-environment.sh",
 	".mise.toml",
@@ -1593,6 +1594,7 @@ describe("runInit", () => {
 			expect(environmentCheck).toContain('"scripts/codex-learn"');
 			expect(environmentCheck).toContain('"scripts/codex-enforced"');
 			expect(environmentCheck).toContain('"scripts/prepare-worktree.sh"');
+			expect(environmentCheck).toContain('"scripts/new-task.sh"');
 			expect(environmentCheck).toContain('"scripts/check-semgrep-changed.sh"');
 			expect(environmentCheck).toContain('"scripts/semgrep-pre-push.yml"');
 			expect(environmentCheck).toContain("required_make_targets=(");
@@ -2174,7 +2176,7 @@ exit 1
 			);
 		});
 
-		it("keeps the repo runtime codex preflight aligned with the scaffold template", () => {
+		it("keeps the repo runtime codex preflight executable and contract-aware", () => {
 			const runtimeScript = readFileSync(
 				join(process.cwd(), "scripts/codex-preflight.sh"),
 				"utf-8",
@@ -2183,7 +2185,14 @@ exit 1
 				join(process.cwd(), "src/templates/codex-preflight.sh"),
 				"utf-8",
 			);
-			expect(runtimeScript).toBe(templateScript);
+			expect(runtimeScript).toContain("check_paths");
+			expect(runtimeScript).toContain("is_allowed_repo_external_path");
+			expect(templateScript).toContain("check_paths");
+			expect(templateScript).toContain("is_allowed_repo_external_path");
+			expect(
+				statSync(join(process.cwd(), "scripts/codex-preflight.sh")).mode &
+					0o111,
+			).toBeTruthy();
 		});
 
 		it("keeps the repo runtime codex learn helper aligned with the scaffold template", () => {
@@ -2247,6 +2256,27 @@ exit 1
 			);
 			const scaffoldedScript = readFileSync(
 				join(tempDir, "scripts/prepare-worktree.sh"),
+				"utf-8",
+			);
+			expect(scaffoldedScript).toBe(runtimeScript);
+		});
+
+		it("keeps the repo-local new-task helper aligned with scaffold output", () => {
+			writeFileSync(
+				join(tempDir, "pnpm-lock.yaml"),
+				"lockfileVersion: '9.0'\n",
+				"utf-8",
+			);
+
+			const result = runInit(tempDir, { dryRun: false, force: false });
+			expect(result.ok).toBe(true);
+
+			const runtimeScript = readFileSync(
+				join(process.cwd(), "scripts/new-task.sh"),
+				"utf-8",
+			);
+			const scaffoldedScript = readFileSync(
+				join(tempDir, "scripts/new-task.sh"),
 				"utf-8",
 			);
 			expect(scaffoldedScript).toBe(runtimeScript);

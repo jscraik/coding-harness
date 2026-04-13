@@ -12,9 +12,9 @@
  *   4. Prints the canonical wrapper targets used by local governance
  */
 
-import { execFileSync } from "node:child_process";
 import { existsSync, readdirSync, readFileSync, writeFileSync } from "node:fs";
 import { resolve } from "node:path";
+import { execFileSync } from "node:child_process";
 
 const PREK_CONFIG_PATH = resolve(process.cwd(), "prek.toml");
 const COMMIT_MSG_VALIDATOR_PATH = resolve(
@@ -29,37 +29,6 @@ const PREK_HOOK_PATCH = [
 	"export PREK_HOME",
 	"",
 ].join("\n");
-
-/**
- * Remove any repository-local Git core.hooksPath configuration so prek can install its hooks.
- *
- * If a local `core.hooksPath` is configured, logs the configured path and unsets the local setting.
- * Any errors (including absence of the setting) are silently ignored.
- */
-function clearLegacyLocalHooksPath() {
-	try {
-		const configuredHooksPath = execFileSync(
-			"git",
-			["config", "--local", "--get", "core.hooksPath"],
-			{
-				encoding: "utf-8",
-				stdio: ["pipe", "pipe", "ignore"],
-			},
-		).trim();
-		if (!configuredHooksPath) {
-			return;
-		}
-
-		console.info(
-			`Removing legacy local core.hooksPath ('${configuredHooksPath}') so prek can install canonical hooks...`,
-		);
-		execFileSync("git", ["config", "--unset-all", "--local", "core.hooksPath"], {
-			stdio: "inherit",
-		});
-	} catch {
-		// No local core.hooksPath override is present.
-	}
-}
 
 function patchInstalledPrekHooks() {
 	const hooksDir = resolve(process.cwd(), ".git/hooks");
@@ -99,11 +68,6 @@ function patchInstalledPrekHooks() {
 	return patchedCount;
 }
 
-/**
- * Validate prerequisites, remove any legacy local Git hooksPath override, run `prek install --overwrite`, and print installation results and recommended wrapper targets.
- *
- * Verifies that `prek.toml` and `scripts/validate-commit-msg.js` exist in the repository root; if either is missing, prints an error and exits with code 1. Clears any legacy local `core.hooksPath` override before invoking `prek install --overwrite`. On success, prints the installed hook entrypoints and available governance wrapper targets. On failure, prints a failure message (including the underlying error message when available) and exits with code 1.
- */
 function main() {
 	if (!existsSync(PREK_CONFIG_PATH)) {
 		console.error("Error: prek.toml not found in current directory");
@@ -119,7 +83,6 @@ function main() {
 	}
 
 	try {
-		clearLegacyLocalHooksPath();
 		console.info("Installing prek git hooks...");
 		// Keep canonical hook shims and remove legacy migration wrappers.
 		execFileSync("prek", ["install", "--overwrite"], { stdio: "inherit" });
@@ -138,10 +101,10 @@ function main() {
 	} catch (error) {
 		console.error("\n⚠️  Failed to run `prek install --overwrite`.");
 		if (error instanceof Error && "message" in error && error.message) {
-			console.error(`   ${error.message}`);
+			console.error("   " + error.message);
 		}
 		console.error(
-			"   Ensure `prek` is installed and available on PATH, then rerun the script.",
+			"   Ensure 'prek' is installed and available on PATH, then rerun the script.",
 		);
 		process.exit(1);
 	}

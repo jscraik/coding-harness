@@ -1,15 +1,28 @@
 # Linear Production Workflow — Compact Operational Spec
 
 ## Table of Contents
+- [Abbreviations](#abbreviations)
+- [Metadata](#metadata)
 - [Workflow Boundary](#workflow-boundary)
 - [Invariants](#invariants)
 - [States](#states)
 - [Transition Table (Canonical)](#transition-table-canonical)
-- [Error Codes and Idempotency](#error-codes-and-idempotency)
+- [Error Handling](#error-handling)
+- [Idempotency](#idempotency)
 - [Execution Modes](#execution-modes)
 - [Dry-Run Simulation](#dry-run-simulation)
 - [Observability Logs](#observability-logs)
 - [Validation Checklist](#validation-checklist)
+
+## Abbreviations
+- `LI`: Linear issue.
+- `LK`: Linear key (example: `JSC-129`).
+- `DoD`: Definition of Done.
+
+## Metadata
+- `workflow_id`: `linear-production-workflow`.
+- Scope: compact operational contract aligned with `docs/agents/13-linear-production-workflow.md`.
+- Source-of-truth transition signature: `S | E | G | A | N`.
 
 ## Workflow Boundary
 
@@ -63,11 +76,13 @@ Blocked overlay:
 
 Transition table is the source of truth.
 
-## Error Codes and Idempotency
+## Error Handling
 - `VALIDATION_ERROR`
 - `BLOCKED_DEPENDENCY`
 - `POLICY_FAIL`
 - `SYSTEM_ERROR`
+
+## Idempotency
 - Key: `<LK>|<state>|<event>|<pr_url?>`.
 - Replayed `progress_tick` and `pr_opened` events update existing LI artifacts or insert missing ones.
 - Replayed `handoff_ready` must not duplicate evidence links/comments.

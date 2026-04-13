@@ -14,7 +14,7 @@ CONTRACT_PATH="$REPO_ROOT/harness.contract.json"
 	PREK_CONFIG_PATH="$REPO_ROOT/prek.toml"
 	PACKAGE_JSON_PATH="$REPO_ROOT/package.json"
 	CODESTYLE_PATH="$REPO_ROOT/CODESTYLE.md"
-	TOOLING_DOC_PATH="${TOOLING_DOC_PATH:-$REPO_ROOT/docs/agents/tooling.md}"
+	TOOLING_DOC_PATH="${TOOLING_DOC_PATH:-$HOME/dev/config/codex/instructions/tooling.md}"
 
 if [[ ! -f "$CONTRACT_PATH" ]]; then
 	echo "Error: missing contract file at $CONTRACT_PATH"
@@ -51,7 +51,7 @@ fi
 		exit 1
 	fi
 
-	required_support_files=("scripts/codex-preflight.sh" "scripts/codex-preflight-local-memory-legacy.sh" "scripts/codex-learn" "scripts/codex-enforced" "scripts/verify-work.sh" "scripts/validate-codestyle.sh" "scripts/prepare-worktree.sh" "scripts/validate-commit-msg.js" "scripts/check-staged-secrets.sh" "scripts/check-doc-style.sh" "scripts/check-related-tests.sh" "scripts/check-semgrep-changed.sh" "scripts/semgrep-pre-push.yml")
+	required_support_files=("scripts/codex-preflight.sh" "scripts/codex-preflight-local-memory-legacy.sh" "scripts/codex-learn" "scripts/codex-enforced" "scripts/verify-work.sh" "scripts/validate-codestyle.sh" "scripts/prepare-worktree.sh" "scripts/new-task.sh" "scripts/validate-commit-msg.js" "scripts/check-staged-secrets.sh" "scripts/check-doc-style.sh" "scripts/check-related-tests.sh" "scripts/check-semgrep-changed.sh" "scripts/semgrep-pre-push.yml")
 	for support_file in "${required_support_files[@]}"; do
 		if [[ ! -f "$REPO_ROOT/${support_file}" ]]; then
 			echo "Error: missing required hook support file at $REPO_ROOT/${support_file}"
@@ -114,7 +114,7 @@ fi
 		fi
 	done
 
-	required_codex_actions=("Tools|tool" "Run|run" "Debug|debug" "Test|test" "Prek|test" "Diagram|tool" "Ralph|debug" "Mise|tool" "Vale|debug" "Argos|test" "Cosign|debug" "Cloudflared|run" "Vitest|test" "Ruff|debug" "ESLint|debug" "Agent Browser|tool" "Agentation|tool" "Mermaid CLI|tool" "MarkdownLint|debug" "Wrangler|run" "1Password|tool" "Beautiful Mermaid|tool" "Auth0|tool" "Semgrep|debug" "Semver|tool" "Trivy|debug" "Gitleaks|debug" "Research|tool" "WSearch|tool")
+	required_codex_actions=("Tools|tool" "Run|run" "Debug|debug" "Test|test" "Prek|test" "Release Finalize|tool" "Diagram|tool" "Ralph|debug" "Mise|tool" "Vale|debug" "Argos|test" "Cosign|debug" "Cloudflared|run" "Vitest|test" "Ruff|debug" "ESLint|debug" "Agent Browser|tool" "Agentation|tool" "Mermaid CLI|tool" "MarkdownLint|debug" "Wrangler|run" "1Password|tool" "Beautiful Mermaid|tool" "Auth0|tool" "Semgrep|debug" "Semver|tool" "Trivy|debug" "Gitleaks|debug" "Research|tool" "WSearch|tool")
 	for action in "${required_codex_actions[@]}"; do
 		name="${action%%|*}"
 		icon="${action##*|}"
@@ -128,7 +128,7 @@ fi
 		fi
 	done
 
-	required_make_targets=("help" "install" "setup" "preflight" "verify-work" "codestyle" "worktree-ready" "hooks" "hooks-pre-commit" "hooks-pre-push" "hooks-commit-msg" "secrets-staged" "docs-style-changed" "related-tests" "semgrep-changed" "diagrams-check" "lint" "docs-lint" "fmt" "typecheck" "test" "check" "audit" "secrets" "security" "clean" "reset" "ci" "diagrams" "env-check")
+	required_make_targets=("help" "install" "setup" "preflight" "worktree-ready" "verify-work" "codestyle" "hooks" "hooks-pre-commit" "hooks-pre-push" "hooks-commit-msg" "secrets-staged" "docs-style-changed" "related-tests" "semgrep-changed" "diagrams-check" "lint" "docs-lint" "fmt" "typecheck" "test" "check" "audit" "secrets" "security" "clean" "reset" "ci" "diagrams" "env-check")
 	for target in "${required_make_targets[@]}"; do
 		if ! rg -q "^${target}:" "$MAKEFILE_PATH"; then
 			echo "Error: required Makefile target '$target' is missing from $MAKEFILE_PATH"
@@ -136,67 +136,34 @@ fi
 		fi
 	done
 
-	required_prek_hooks=(
-		"pre-commit|Pre-commit|make hooks-pre-commit|system|false|"
-		"pre-push|Pre-push|make hooks-pre-push|system|false|pre-push"
-	)
-	if ! python3 - "$PREK_CONFIG_PATH" <<'PY'
-import sys
-import tomllib
-
-config_path = sys.argv[1]
-with open(config_path, "rb") as handle:
-    data = tomllib.load(handle)
-
-required = {
-    "pre-commit": {
-        "name": "Pre-commit",
-        "entry": "make hooks-pre-commit",
-        "language": "system",
-        "pass_filenames": False,
-        "stages": [],
-    },
-    "pre-push": {
-        "name": "Pre-push",
-        "entry": "make hooks-pre-push",
-        "language": "system",
-        "pass_filenames": False,
-        "stages": ["pre-push"],
-    },
-}
-
-hooks = []
-for repo in data.get("repos", []):
-    if repo.get("repo") == "local":
-        hooks.extend(repo.get("hooks", []))
-
-for hook_id, expected in required.items():
-    matched = False
-    for hook in hooks:
-        if hook.get("id") != hook_id:
-            continue
-        if hook.get("name") != expected["name"]:
-            continue
-        if hook.get("entry") != expected["entry"]:
-            continue
-        if hook.get("language") != expected["language"]:
-            continue
-        if bool(hook.get("pass_filenames")) != expected["pass_filenames"]:
-            continue
-        if list(hook.get("stages", [])) != expected["stages"]:
-            continue
-        matched = True
-        break
-    if not matched:
-        print(
-            f"Error: required prek hook '{hook_id}' is missing or out of date in {config_path}",
-            file=sys.stderr,
-        )
-        sys.exit(1)
-PY
-	then
-		exit 1
-	fi
+	required_prek_hooks=("pre-commit|Pre-commit|make hooks-pre-commit|system|false|" "pre-push|Pre-push|make hooks-pre-push|system|false|pre-push")
+	for hook_spec in "${required_prek_hooks[@]}"; do
+		IFS='|' read -r hook_name hook_display_name hook_command hook_language hook_pass_filenames hook_stages <<< "$hook_spec"
+		if ! rg -q "^[[:space:]]*id[[:space:]]*=[[:space:]]*\"${hook_name}\"[[:space:]]*$" "$PREK_CONFIG_PATH"; then
+			echo "Error: required prek hook '$hook_name' is missing or out of date in $PREK_CONFIG_PATH"
+			exit 1
+		fi
+		if ! rg -q "^[[:space:]]*name[[:space:]]*=[[:space:]]*\"${hook_display_name}\"[[:space:]]*$" "$PREK_CONFIG_PATH"; then
+			echo "Error: required prek hook '$hook_name' is missing or out of date in $PREK_CONFIG_PATH"
+			exit 1
+		fi
+		if ! rg -q "^[[:space:]]*entry[[:space:]]*=[[:space:]]*\"${hook_command}\"[[:space:]]*$" "$PREK_CONFIG_PATH"; then
+			echo "Error: required prek hook '$hook_name' is missing or out of date in $PREK_CONFIG_PATH"
+			exit 1
+		fi
+		if ! rg -q "^[[:space:]]*language[[:space:]]*=[[:space:]]*\"${hook_language}\"[[:space:]]*$" "$PREK_CONFIG_PATH"; then
+			echo "Error: required prek hook '$hook_name' is missing or out of date in $PREK_CONFIG_PATH"
+			exit 1
+		fi
+		if ! rg -q "^[[:space:]]*pass_filenames[[:space:]]*=[[:space:]]*${hook_pass_filenames}[[:space:]]*$" "$PREK_CONFIG_PATH"; then
+			echo "Error: required prek hook '$hook_name' is missing or out of date in $PREK_CONFIG_PATH"
+			exit 1
+		fi
+		if [[ -n "$hook_stages" ]] && ! rg -q "^[[:space:]]*stages[[:space:]]*=[[:space:]]*\["$hook_stages"\][[:space:]]*$" "$PREK_CONFIG_PATH"; then
+			echo "Error: required prek hook '$hook_name' is missing or out of date in $PREK_CONFIG_PATH"
+			exit 1
+		fi
+	done
 
 	if [[ -f "$PACKAGE_JSON_PATH" ]]; then
 		required_package_scripts=("codestyle:validate|bash scripts/validate-codestyle.sh" "secrets:staged|bash scripts/check-staged-secrets.sh" "docs:style:changed|bash scripts/check-doc-style.sh" "test:related|bash scripts/check-related-tests.sh" "semgrep:changed|bash scripts/check-semgrep-changed.sh")
@@ -218,7 +185,6 @@ PY
 			exit 1
 		fi
 
-		# has_package_marker checks whether the given package name (marker) is present in package.json's `dependencies` or `devDependencies` and returns success if found.
 		has_package_marker() {
 			local marker="$1"
 			jq -e --arg marker "$marker" '
@@ -356,7 +322,7 @@ elif [[ -f "$REPO_ROOT/dist/cli.js" ]] && command -v node >/dev/null 2>&1; then
 		echo "Error: repo dist CLI failed to run check-environment successfully."
 		exit 1
 	fi
-elif [[ -x "$REPO_ROOT/scripts/harness-cli.sh" ]]; then
+elif [[ -r "$REPO_ROOT/scripts/harness-cli.sh" ]]; then
 	if ! run_check_environment_with_runner "repo wrapper (bash scripts/harness-cli.sh)" bash "$REPO_ROOT/scripts/harness-cli.sh"; then
 		echo "Error: repo wrapper failed to run check-environment successfully."
 		exit 1
@@ -368,7 +334,7 @@ else
 	if [[ -n "$mise_harness_bin" && -x "$mise_harness_bin" ]]; then
 		if ! run_check_environment_with_runner "mise harness ($mise_harness_bin)" "$mise_harness_bin"; then
 			echo "Error: mise-resolved harness failed to run check-environment successfully."
-			echo "Fix: ensure the session activates mise first (eval \"\$(mise activate bash)\") or invoke the mise binary directly."
+			echo 'Fix: ensure the session activates mise first (eval "$(mise activate bash)") or invoke the mise binary directly.'
 			exit 1
 		fi
 	else
@@ -387,21 +353,28 @@ else
 			exit 1
 		fi
 
-		if ! command -v harness >/dev/null 2>&1; then
-			echo "Error: global harness binary is not on PATH after npm installation."
-			echo "Fix: ensure npm global bin directory is on PATH, then retry."
-			exit 1
-		fi
+			npm_global_bin=""
+			npm_global_prefix="$(npm prefix -g 2>/dev/null || true)"
+			if [[ -n "$npm_global_prefix" ]]; then
+				npm_global_bin="$npm_global_prefix/bin"
+			fi
+			npm_harness_bin="$npm_global_bin/harness"
 
-		if ! run_check_environment_with_runner "global npm harness ($(command -v harness))" harness; then
-			echo "Error: global npm harness failed to run check-environment successfully."
-			echo "Reinstall and retry:"
-			echo "  npm i -g @brainwav/coding-harness"
-			echo "If this is CI (CircleCI), confirm NPM_TOKEN is set as a project environment variable."
-			exit 1
+			if [[ -z "$npm_global_bin" || ! -x "$npm_harness_bin" ]]; then
+				echo "Error: unable to resolve npm-global harness binary."
+				echo "Fix: ensure npm global bin directory is available and contains harness."
+				exit 1
+			fi
+
+			if ! run_check_environment_with_runner "global npm harness ($npm_harness_bin)" "$npm_harness_bin"; then
+				echo "Error: global npm harness failed to run check-environment successfully."
+				echo "Reinstall and retry:"
+				echo "  npm i -g @brainwav/coding-harness"
+				echo "If this is CI (CircleCI), confirm NPM_TOKEN is set as a project environment variable."
+				exit 1
+			fi
 		fi
 	fi
-fi
 
 jq -e '.passed == true' "$ATTESTATION_PATH" >/dev/null
 echo "Environment check passed (attestation: $ATTESTATION_PATH)"

@@ -1,5 +1,5 @@
 ---
-last_updated: 2026-02-25
+last_updated: 2026-04-13
 calculated_by: harness-gardener
 ---
 
@@ -7,19 +7,24 @@ calculated_by: harness-gardener
 
 **Score:** 0/100
 
-**Last Updated:** 2026-02-25
+**Last Updated:** 2026-04-13
 
 ## Breakdown
 
 | Category | Count | Deduction |
 |----------|-------|-----------|
-| Stale Docs | 35 | -175 |
+| Stale Docs | 128 | -640 |
 | Broken Links | 0 | -0 |
 
 ## Stale Documents
 
 1. `HARNESS_IMPLEMENTATION_PLAN.md` (never validated)
-1. `QUALITY_SCORE.md` (never validated)
+1. `README.md` (never validated)
+1. `adr/001-result-type-error-handling.md` (never validated)
+1. `adr/002-input-validation-layer.md` (never validated)
+1. `adr/003-scan-caching-strategy.md` (never validated)
+1. `advanced-workflows.md` (never validated)
+1. `agents/00-architecture-bootstrap.md` (never validated)
 1. `agents/01-instruction-map.md` (never validated)
 1. `agents/02-tooling-policy.md` (never validated)
 1. `agents/03-local-memory.md` (never validated)
@@ -31,13 +36,57 @@ calculated_by: harness-gardener
 1. `agents/08-release-and-change-control.md` (never validated)
 1. `agents/09-audit-trail-policy.md` (never validated)
 1. `agents/10-agent-testing-gates.md` (never validated)
+1. `agents/11-flaky-test-artifacts.md` (never validated)
+1. `agents/12-ai-review-governance.md` (never validated)
+1. `agents/13-linear-production-workflow.md` (never validated)
+1. `agents/14-docs-gate-rollout.md` (never validated)
+1. `agents/15-context-integrity-compact.md` (never validated)
+1. `agents/16-linear-production-compact.md` (never validated)
+1. `agents/17-ci-required-checks.md` (never validated)
+1. `agents/18-github-linear-automation.md` (never validated)
+1. `agents/19-linear-templates.md` (never validated)
+1. `agents/20-project-brain-memory-extension-rollout.md` (never validated)
+1. `agents/agent-testing-gates-operational-spec.md` (never validated)
+1. `agents/docs-gate-rollout-operational-spec.md` (never validated)
+1. `agents/linear-workflow-operational-spec.md` (never validated)
+1. `agents/release-change-control-operational-spec.md` (never validated)
+1. `agents/review-gate-operational-spec.md` (never validated)
+1. `agents/review-gate-workflow-contract.md` (never validated)
+1. `agents/tooling.md` (never validated)
+1. `ai-assistant-security-policy.md` (never validated)
+1. `architecture/agent-run-records.md` (never validated)
 1. `architecture/blast-radius.md` (never validated)
+1. `architecture/module-boundaries.md` (never validated)
+1. `benchmarks/README.md` (never validated)
 1. `brainstorms/2026-02-22-harness-gap-analysis-brainstorm.md` (never validated)
 1. `brainstorms/2026-02-23-installability-patches-brainstorm.md` (never validated)
 1. `brainstorms/2026-02-23-phase-4-installability-brainstorm.md` (never validated)
 1. `brainstorms/2026-02-23-phase-5-evidence-observability-brainstorm.md` (never validated)
 1. `brainstorms/2026-02-23-phase-6-recurring-gardening-brainstorm.md` (never validated)
+1. `brainstorms/2026-02-24-code-factory-remediation-gap-loop-brainstorm.md` (never validated)
 1. `brainstorms/2026-02-24-context-compound-ollama-brainstorm.md` (never validated)
+1. `brainstorms/2026-02-24-contract-surface-parity-brainstorm.md` (never validated)
+1. `brainstorms/2026-02-24-envctl-environment-orchestrator-brainstorm.md` (never validated)
+1. `brainstorms/2026-02-25-agent-first-throughput-v1-brainstorm.md` (never validated)
+1. `brainstorms/2026-02-27-roadmap-cli-gap-closure-brainstorm.md` (never validated)
+1. `brainstorms/2026-02-28-code-factory-loop-parity-brainstorm.md` (never validated)
+1. `brainstorms/2026-03-04-command-metadata-registry-brainstorm.md` (never validated)
+1. `brainstorms/2026-03-04-symphony-harness-adoption-brainstorm.md` (never validated)
+1. `brainstorms/2026-03-05-consistency-contract-drift-gate-brainstorm.md` (never validated)
+1. `brainstorms/2026-03-07-cross-project-governance-brainstorm.md` (never validated)
+1. `brainstorms/2026-03-10-docs-gate-governance-parity-brainstorm.md` (never validated)
+1. `brainstorms/2026-03-10-gold-standard-control-plane-hardening-brainstorm.md` (never validated)
+1. `brainstorms/2026-03-11-context-integrity-control-plane-brainstorm.md` (never validated)
+1. `brainstorms/2026-03-24-project-type-detection-brainstorm.md` (never validated)
+1. `brainstorms/2026-04-03-greenfield-self-hosted-ci-platform-requirements.md` (never validated)
+1. `brainstorms/2026-04-08-coding-harness-reliability-orchestration-requirements.md` (never validated)
+1. `ci-responsibility-matrix.md` (never validated)
+1. `cli-reference.md` (never validated)
+1. `cli-specs/2026-04-06-harness-cli-spec.md` (never validated)
+1. `examples/ci-migrate/README.md` (never validated)
+1. `hooks-governance/scope-defaults.md` (never validated)
+1. `ideation/2026-04-03-drone-digitalocean-ci-ideation.md` (never validated)
+1. `linear-sync.md` (never validated)
 1. `plans/2026-02-22-feat-phase-1-bootstrap-plan.md` (never validated)
 1. `plans/2026-02-22-feat-phase-2-contract-policy-core-plan.md` (never validated)
 1. `plans/2026-02-23-feat-evidence-observability-plan.md` (never validated)
@@ -49,10 +98,54 @@ calculated_by: harness-gardener
 1. `plans/2026-02-23-feat-rollback-system-plan.md` (never validated)
 1. `plans/2026-02-23-feat-update-detection-plan.md` (never validated)
 1. `plans/2026-02-24-context-compound-implementation-plan.md` (never validated)
+1. `plans/2026-02-24-feat-deterministic-remediation-gap-loop-plan.md` (never validated)
+1. `plans/2026-02-24-feat-envctl-environment-orchestrator-plan.md` (never validated)
+1. `plans/2026-02-24-feat-envctl-environment-orchestrator-v1-plan.md` (never validated)
+1. `plans/2026-02-24-refactor-contract-surface-runtime-parity-plan.md` (never validated)
+1. `plans/2026-02-25-feat-agent-first-throughput-v1-pilot-plan.md` (never validated)
+1. `plans/2026-02-25-feat-contract-surface-parity-v2-plan.md` (never validated)
+1. `plans/2026-02-25-feat-remediation-loop-implementation-plan.md` (never validated)
+1. `plans/2026-02-27-feat-roadmap-cli-gap-closure-plan.md` (never validated)
+1. `plans/2026-02-28-feat-code-factory-loop-codex-claude-parity-plan.md` (never validated)
+1. `plans/2026-03-04-refactor-loop-parity-governance-gaps-plan.md` (never validated)
+1. `plans/2026-03-05-feat-command-metadata-registry-core-parity-plan.md` (never validated)
+1. `plans/2026-03-05-feat-consistency-contract-advisory-drift-gate-plan.md` (never validated)
+1. `plans/2026-03-07-feat-cross-project-governance-plan.md` (never validated)
+1. `plans/2026-03-08-feat-canonical-run-eval-substrate-plan.md` (never validated)
+1. `plans/2026-03-10-feat-docs-gate-governance-parity-plan.md` (never validated)
+1. `plans/2026-03-10-feat-provider-neutral-gold-standard-control-plane-hardening-plan.md` (never validated)
+1. `plans/2026-03-11-feat-context-integrity-control-plane-plan.md` (never validated)
+1. `plans/2026-03-13-feat-symphony-harness-adoption-plan.md` (never validated)
+1. `plans/2026-03-14-feat-github-actions-to-circleci-transition-status-plan.md` (never validated)
+1. `plans/2026-03-24-feature-project-type-detection-plan.md` (never validated)
+1. `plans/2026-03-24-feature-structured-output-auto-fix-plan.md` (never validated)
+1. `plans/2026-03-25-solo-orchestration-scaffold-plan.md` (never validated)
+1. `plans/2026-04-03-feat-greenfield-self-hosted-ci-platform-plan.md` (never validated)
+1. `plans/2026-04-06-001-refactor-slim-cli-shell-plan.md` (never validated)
+1. `plans/2026-04-08-feat-coding-harness-reliability-orchestration-plan.md` (never validated)
+1. `plans/2026-04-08-feat-linear-triage-system-operationalization-plan.md` (never validated)
+1. `plans/2026-04-09-feat-openssf-osps-baseline-scorecard-plan.md` (never validated)
 1. `prompts/bugfix_template.md` (never validated)
 1. `prompts/feature_template.md` (never validated)
 1. `prompts/refactor_template.md` (never validated)
 1. `prompts/release_template.md` (never validated)
+1. `prompts/workflow-consistency-enforcer.md` (never validated)
+1. `roadmap/agent-first-status.md` (never validated)
+1. `security/2026-04-09-openssf-osps-baseline-status.md` (never validated)
+1. `security-fixes-phase1.md` (never validated)
+1. `sketches/environment-policy-sketch.md` (never validated)
+1. `solutions/integration-issues/2026-04-08-linear-triage-and-type-label-governance.md` (never validated)
+1. `solutions/integration-issues/2026-04-11-cli-registry-modularization-regression-closure.md` (never validated)
+1. `specs/2026-03-08-feat-canonical-run-eval-substrate-spec.md` (never validated)
+1. `specs/2026-03-10-feat-docs-gate-governance-parity-spec.md` (never validated)
+1. `specs/2026-03-10-feat-provider-neutral-gold-standard-control-plane-hardening-spec.md` (never validated)
+1. `specs/2026-03-11-feat-context-integrity-control-plane-spec.md` (never validated)
+1. `specs/2026-03-24-feature-project-type-detection-spec.md` (never validated)
+1. `specs/2026-03-24-feature-structured-output-auto-fix-spec.md` (never validated)
+1. `specs/2026-04-03-feat-greenfield-self-hosted-ci-platform-spec.md` (never validated)
+1. `specs/2026-04-08-feat-coding-harness-reliability-orchestration-spec.md` (never validated)
+1. `specs/workflow-contract-v1.md` (never validated)
+1. `symphony-linear-setup.md` (never validated)
 
 ## Broken Links
 

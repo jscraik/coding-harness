@@ -2,7 +2,7 @@
 title: Contract Surface Runtime Parity Refactor
 type: refactor
 status: implemented
-date: 2026-02-24
+date: 2026-04-13
 plan_id: refactor-contract-surface-runtime-parity
 completed: 2026-02-25
 origin: docs/brainstorms/2026-02-24-contract-surface-parity-brainstorm.md

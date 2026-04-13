@@ -57,9 +57,9 @@ codex:
 ## Metadata
 | Field | Value |
 | --- | --- |
-| `owner` | coding-harness-maintainers |
+| `owner` | `[owner]` |
 | `max_duration` | 60m |
-| `escalation` | https://github.com/jscraik/coding-harness/issues |
+| `escalation` | `[escalation-path]` |
 | `change_class` | behavior |
 
 ## Invariants
@@ -135,4 +135,4 @@ S5 FAIL (terminal)
 - [ ] `change_class` metadata is declared
 - [ ] validation contract fields are declared
 - [ ] behavior-changing workflows include TDD or reviewed exemption metadata
-- [ ] `harness linear` commands are wired into transition actions
+- [ ] tracker-specific workflow actions are wired into transition actions

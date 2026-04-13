@@ -2,7 +2,7 @@
 title: feat: Add Evidence + Observability Hooks
 type: feat
 status: completed
-date: 2026-02-23
+date: 2026-04-13
 plan_id: feat-evidence-observability
 origin: docs/brainstorms/2026-02-23-phase-5-evidence-observability-brainstorm.md
 ---
