@@ -6,6 +6,7 @@ import {
 	dispatchRegistryCommand,
 	fuzzyFindCommand,
 	getRegistryCommandHelpRows,
+	suggestCommandCapabilities,
 	suggestCommands,
 } from "./lib/cli/command-registry.js";
 import { renderCommandHelpRows } from "./lib/cli/help-renderer.js";
@@ -199,15 +200,18 @@ export function run(args: string[]): void {
 		// No match at all — rich error message with suggestions
 		const suggestions = suggestCommands(command);
 		if (jsonFlag) {
+			const capabilitySuggestions = suggestCommandCapabilities(command);
 			console.info(
 				JSON.stringify({
 					status: "error",
 					error: "unknown_command",
 					received: command,
-					suggestions: suggestions.map(({ spec }) => ({
-						name: spec.name,
-						summary: spec.summary,
-						...(spec.example ? { example: `harness ${spec.example}` } : {}),
+					suggestions: capabilitySuggestions.map(({ capability }) => ({
+						name: capability.name,
+						summary: capability.summary,
+						...(capability.example
+							? { example: `harness ${capability.example}` }
+							: {}),
 					})),
 					hint: 'Run "harness --help" for the full command list.',
 				}),

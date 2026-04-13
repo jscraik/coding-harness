@@ -10,8 +10,10 @@ import {
 	dispatchRegistryCommand,
 	fuzzyFindCommand,
 	getRegistryCommandCapabilities,
+	getRegistryCommandCatalogDocument,
 	getRegistryCommandHelpRows,
 	normalizeCommandName,
+	suggestCommandCapabilities,
 	suggestCommands,
 } from "./command-registry.js";
 import {
@@ -238,6 +240,30 @@ describe("suggestCommands", () => {
 		const suggestions = suggestCommands("blast-radius-x");
 		const distances = suggestions.map((s) => s.distance);
 		expect(distances).toEqual([...distances].sort((a, b) => a - b));
+	});
+});
+
+describe("suggestCommandCapabilities", () => {
+	it("returns top-3 closest capability commands by default", () => {
+		const suggestions = suggestCommandCapabilities("doktor");
+		expect(suggestions).toHaveLength(3);
+		expect(suggestions[0]?.capability.name).toBe("doctor");
+	});
+
+	it("respects the limit parameter", () => {
+		expect(suggestCommandCapabilities("blast-raduis", 2)).toHaveLength(2);
+	});
+
+	it("returns capabilities that come from the catalog document", () => {
+		const catalogNames = new Set(
+			getRegistryCommandCatalogDocument().commands.map(
+				(capability) => capability.name,
+			),
+		);
+		const suggestions = suggestCommandCapabilities("blast-radius-x");
+		for (const { capability } of suggestions) {
+			expect(catalogNames.has(capability.name)).toBe(true);
+		}
 	});
 });
 
@@ -840,5 +866,16 @@ describe("getRegistryCommandHelpRows (updated)", () => {
 	it("includes 'commands' in help rows", () => {
 		const names = getRegistryCommandHelpRows().map((r) => r.name);
 		expect(names).toContain("commands");
+	});
+});
+
+describe("command-registry.ts architecture boundaries", () => {
+	it("keeps command wiring concentrated in extracted modules", () => {
+		const filePath = join(process.cwd(), "src/lib/cli/command-registry.ts");
+		const content = readFileSync(filePath, "utf-8");
+
+		expect(content).toContain("...EXTRACTED_COMMAND_SPECS");
+		expect(content).not.toMatch(/from\s+["']\.\.\/\.\.\/commands\//);
+		expect(content).not.toMatch(/run[A-Z].*CLI/);
 	});
 });

@@ -34,6 +34,8 @@ maturity: production-grade
 **Current module boundaries (JSC-178):**
 - `src/lib/cli/command-registry.ts`: thin loader + command index + help/fuzzy resolution
 - `src/lib/cli/registry/command-specs.ts`: command manifests and execute handlers
+- `src/lib/cli/registry/command-capabilities.ts`: catalog metadata derivation and schema document builder
+- `src/lib/cli/registry/command-fuzzy.ts`: command-name normalization and fuzzy matching helpers
 - `src/lib/cli/registry/types.ts`: shared registry interfaces (`CommandSpec`, `RegistryDispatchResult`)
 
 
