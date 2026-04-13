@@ -8,8 +8,6 @@
 - [Execution rule for tooling](#execution-rule-for-tooling)
 - [Recommended command order](#recommended-command-order)
 - [Tooling verification checklist](#tooling-verification-checklist)
-- [Discovery constraints](#discovery-constraints)
-- [Escalation triggers](#escalation-triggers)
 - [Private npm package setup](#private-npm-package-setup)
 - [Local auth](#local-auth)
 - [CI auth](#ci-auth)
@@ -178,20 +176,7 @@ Before claiming a change is verified, confirm:
 - The command version/source is not in conflict with lockfile or repo settings.
 - Output is captured in closeout notes.
 - The repo-local tooling inventory at `docs/agents/tooling.md` stays aligned with `scripts/check-environment.sh` and `.mise.toml`.
-
-## Discovery constraints
-
-- Prefer `rg` for content search.
-- Use `fd` when you need file-name discovery.
-- Use `jq` for JSON filtering/transforms.
-
-## Escalation triggers
-
-Stop and ask before proceeding if:
-
-- You must deviate from `pnpm` due environment constraints.
-- A required command is absent.
-- `pnpm` script behavior conflicts with local/global docs.
+- If a required command is absent, `pnpm` contract behavior conflicts, or you must deviate from `pnpm`, stop and mark the gate blocked before proceeding.
 
 ## Private npm package setup
 
