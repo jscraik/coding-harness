@@ -378,6 +378,24 @@ capability catalog:
 harness commands --json
 ```
 
+Use the catalog directly to choose a safe command before execution:
+
+```bash
+# Human workflow: inspect mutative commands and required flags
+harness commands --json | jq '
+  .commands[]
+  | select(.mutability != "read")
+  | {name, category, mutability, requiredFlags}'
+```
+
+```bash
+# Agent workflow: route to read-only alternatives first when available
+harness commands --json | jq '
+  .commands[]
+  | {name, mutability, safeFirstAlternatives}
+  | select((.safeFirstAlternatives | length) > 0)'
+```
+
 ### Bootstrap And Governance
 
 | Command | Purpose |

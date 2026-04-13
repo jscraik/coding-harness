@@ -114,6 +114,31 @@ describe("run", () => {
 		);
 	});
 
+	it("returns unknown-command JSON suggestions from the catalog path", () => {
+		const exitSpy = vi.spyOn(process, "exit").mockImplementation(((
+			code?: number,
+		) => {
+			throw new Error(`EXIT_${String(code)}`);
+		}) as never);
+		const infoSpy = vi.spyOn(console, "info").mockImplementation(() => {
+			// silence output in test
+		});
+
+		expect(() => run(["totally-unknown-command", "--json"])).toThrowError(
+			"EXIT_1",
+		);
+
+		const payload = JSON.parse(String(infoSpy.mock.calls.at(-1)?.[0] ?? "{}"));
+		expect(payload.status).toBe("error");
+		expect(payload.error).toBe("unknown_command");
+		expect(payload.received).toBe("totally-unknown-command");
+		expect(Array.isArray(payload.suggestions)).toBe(true);
+		expect(payload.suggestions.length).toBeGreaterThan(0);
+		expect(payload.suggestions[0]).toHaveProperty("name");
+		expect(payload.suggestions[0]).toHaveProperty("summary");
+		expect(exitSpy).toHaveBeenCalledWith(1);
+	});
+
 	it.skip("routes remediate run command - async, covered by cli-dispatch.test.ts", () => {
 		const exitSpy = vi
 			.spyOn(process, "exit")
