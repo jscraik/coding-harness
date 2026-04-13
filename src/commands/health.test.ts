@@ -112,6 +112,44 @@ describe("runHealth", () => {
 		expect(report.counts.error).toBe(1);
 	});
 
+	it("treats plan-gate stale exit code as warning", () => {
+		writeContract(dir);
+		mockSpawnSync.mockReturnValue({
+			status: 2,
+			stdout: "",
+			stderr: "",
+			pid: 1,
+			output: [],
+			signal: null,
+		});
+
+		const report = runHealth({ dir, gates: ["plan-gate"] });
+
+		expect(report.overall).toBe("warning");
+		expect(report.counts.warning).toBe(1);
+		const planResult = report.gates.find((g) => g.gate === "plan-gate");
+		expect(planResult?.status).toBe("warning");
+	});
+
+	it("treats plan-gate traceability failures as errors", () => {
+		writeContract(dir);
+		mockSpawnSync.mockReturnValue({
+			status: 7,
+			stdout: "",
+			stderr: "",
+			pid: 1,
+			output: [],
+			signal: null,
+		});
+
+		const report = runHealth({ dir, gates: ["plan-gate"] });
+
+		expect(report.overall).toBe("error");
+		expect(report.counts.error).toBe(1);
+		const planResult = report.gates.find((g) => g.gate === "plan-gate");
+		expect(planResult?.status).toBe("error");
+	});
+
 	it("filters to only requested gates", () => {
 		writeContract(dir);
 		mockSpawnSync.mockReturnValue({
