@@ -119,14 +119,14 @@ Port-free wrapping is expected only for app run actions backed by `dev`/`start` 
 
 ## Execution rule for tooling
 
-Use repo scripts as the source of truth; do not assume global shortcuts. If a command is unavailable, record it immediately and treat the related validation gate as blocked until rerun where that command exists.
+Use repo scripts as the source of truth; do not assume global shortcuts. If a command is unavailable, record it immediately and treat the related gate as blocked until rerun where that command exists.
 
-Exception for harness readiness:
-- Generated `scripts/check-environment.sh` in harness-managed repositories should prefer a repo-local CLI path first (`pnpm exec tsx src/cli.ts`, `node dist/cli.js`, or `bash scripts/harness-cli.sh`) and use the global `harness` binary only as a fallback when no repo-local runner exists.
-- When no repo-local runner exists, resolve `harness` from `mise` first (`mise which harness`) before using whatever `harness` happens to be first on `PATH`; this avoids stale Homebrew/global binaries shadowing the pinned runtime toolchain.
-- The global fallback install path is `npm i -g @brainwav/coding-harness`, with private package auth wired for both local shells and CI.
-- Harness-managed repos may also scaffold `scripts/harness-cli.sh` as the repo-local wrapper for the published CLI package. That wrapper must resolve `@brainwav/coding-harness/dist/cli.js` from the current repo and fail with actionable install hints such as `pnpm install`, `pnpm add -D @brainwav/coding-harness`, and `pnpm exec harness <command>` instead of surfacing a raw `MODULE_NOT_FOUND`.
-- Semgrep hook configs under `scripts/` must remain valid YAML as well as valid Semgrep syntax; quote pattern strings that contain mapping-like fragments such as `shell: true` so pre-push parsing does not fail before policy checks run.
+Harness readiness exception:
+- `scripts/check-environment.sh` should prefer repo-local CLI execution (`pnpm exec tsx src/cli.ts`, `node dist/cli.js`, or `bash scripts/harness-cli.sh`) and only fall back to a global `harness` binary when no local runner exists.
+- For global fallback resolution, prefer `mise which harness` before `PATH` discovery to avoid stale Homebrew/global binaries shadowing the pinned toolchain.
+- If fallback install is required, use `npm i -g @brainwav/coding-harness` with private package auth wired for local shells and CI.
+- `scripts/harness-cli.sh` must fail with actionable install hints (`pnpm install`, `pnpm add -D @brainwav/coding-harness`, `pnpm exec harness <command>`) rather than raw `MODULE_NOT_FOUND`.
+- Semgrep hook configs under `scripts/` must remain valid YAML and valid Semgrep syntax; quote mapping-like pattern fragments such as `shell: true`.
 
 ## Recommended command order
 
@@ -141,22 +141,21 @@ For code changes:
 Additional lanes:
 - CircleCI parity and migration troubleshooting: `pnpm test:ci`
 - Harness setup or scaffold sync verification in this repository: `bash scripts/run-harness-setup-checks.sh`
+- New task boundary for project-local agent work: `bash scripts/new-task.sh <slug>`
 - Fresh git worktrees before first push: `bash scripts/prepare-worktree.sh` (or equivalent wrapper target `make worktree-ready`)
 
-The helper codifies the required sequence: `bash scripts/codex-preflight.sh --stack auto --mode required`, `pnpm build`, `harness init --check-updates` (and `--update` when needed), `bash scripts/check-environment.sh` (which resolves and validates pinned `uv`), and `pnpm check`.
-`scripts/prepare-worktree.sh` is the lightweight bootstrap lane for new worktrees; it ensures dependencies are installed in the active worktree so pre-push hooks that execute `pnpm` gates do not fail from missing `node_modules/`.
-`harness init --check-updates`, `harness init --update`, and `harness upgrade` now auto-repair legacy `.harness/restore-manifest.json` files when `ciProvider` can be inferred from `harness.contract.json`, an unambiguous CI layout on disk, or the current requested/default provider.
-If provider inference is still ambiguous, treat the incomplete manifest as a repo-drift warning for the update lane, print the remediation, and continue the remaining setup gates instead of aborting the whole audit.
-`scripts/codex-preflight.sh` is a CLI script and should be executed, not sourced. Use `bash scripts/codex-preflight.sh --stack auto --mode required` for standard checks (or `--mode optional` for softer checks).
-Scaffolded CI bootstrap should install pinned `pnpm` versions through a user-writable prefix (`$HOME/.local`) and persist that bin path through `$BASH_ENV` or `$GITHUB_PATH`; do not rely on `corepack enable` mutating privileged system shims such as `/usr/local/bin/pnpm`.
-When Local Memory is enabled in required mode, `scripts/codex-preflight.sh` should validate the pinned REST host/port from `~/.local-memory/config.yaml` before trusting `local-memory status --json`, so healthy daemons on `127.0.0.1` do not trigger duplicate restart behavior from stale CLI status output.
-The legacy shell fallback at `scripts/codex-preflight-local-memory-legacy.sh` must validate `rest_api.host`, `rest_api.port`, and `rest_api.auto_port` from that same config block directly, not by matching unrelated keys elsewhere in the file.
-Local Memory REST health retries in the legacy shell fallback should use a bounded curl budget, and `run_local_memory_preflight_via_harness` should continue to the next harness candidate when a helper exits with sentinel code `3` (`unavailable`) instead of failing closed early.
-`scripts/verify-work.sh` is the canonical repo-local verification entrypoint for harness-managed repos. Keep it repo-local, default it to `required` Local Memory mode, and scope its preflight path/binary expectations to scaffolded repo artifacts rather than codex-maintenance-only paths.
-Hook-governance checks in `scripts/verify-work.sh` should default to `project-local` scope, use temporary outputs in local mode, and require an explicit `--workspace-governance` flag before reading workspace manifests or writing shared governance reports.
-`scripts/validate-codestyle.sh` is the canonical fail-closed code-style gate for harness-managed repos. Keep it wired to repo-defined scripts, make it fail when required scripts are absent, and reuse it from `verify-work`, hooks, and downstream repo docs rather than re-describing divergent command bundles in each place.
-Active AI-review scaffolding in this repository is CodeRabbit-first. Any remaining Greptile references in active tooling or scaffold paths should exist only for legacy cleanup and migration safety, not for new repo scaffolding or current review enforcement.
-`scripts/check-diagram-freshness.sh` should compare only git-tracked diagram artifacts before and after refresh. gitignored `.diagram/` refresh output outside tracked files must not fail `pre-push` with an empty "Changed tracked files" list.
+Required sequence (via helper wrappers): `bash scripts/codex-preflight.sh --stack auto --mode required`, `pnpm build`, `harness init --check-updates` (and `--update` when needed), `bash scripts/check-environment.sh`, then `pnpm check`.
+
+Contract-preserving notes:
+- `scripts/codex-preflight.sh` is a CLI script and must be executed, not sourced (`--mode optional` is allowed for softer checks).
+- `scripts/verify-work.sh` is the canonical repo-local verification entrypoint; keep Local Memory required by default and hook-governance project-local unless `--workspace-governance` is explicitly set.
+- `scripts/validate-codestyle.sh` remains the canonical fail-closed code-style wrapper reused by verify/hook/docs surfaces.
+- `scripts/new-task.sh` is the canonical project-local task entrypoint; `scripts/prepare-worktree.sh` is the canonical new-worktree bootstrap lane.
+- `harness init --check-updates`, `harness init --update`, and `harness upgrade` should auto-repair legacy `.harness/restore-manifest.json` when provider inference is safe; ambiguous inference should raise a targeted drift warning and continue remaining setup gates.
+- Local Memory required mode should validate pinned REST host/port from `~/.local-memory/config.yaml`, and the legacy shell fallback must use bounded curl retries plus helper exit code `3` as "unavailable, try next runner".
+- CI bootstrap should install pinned `pnpm` via user-writable prefixes (`$HOME/.local` + `$BASH_ENV`/`$GITHUB_PATH`) rather than mutating privileged shims.
+- Active AI-review scaffolding is CodeRabbit-first; Greptile references in active paths should exist only for legacy cleanup.
+- `scripts/check-diagram-freshness.sh` must compare only git-tracked artifacts and must not fail pre-push for gitignored `.diagram/` output alone.
 
 ## Tag-driven private npm release workflow
 
