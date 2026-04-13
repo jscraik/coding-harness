@@ -801,6 +801,7 @@ describe("runInit", () => {
 					{
 						cwd: workDir,
 						encoding: "utf8",
+						env: sanitizeGitEnv(),
 					},
 				);
 				expect(finalizeRun.status).toBe(2);

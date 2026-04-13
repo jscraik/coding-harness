@@ -6,7 +6,7 @@ import { normaliseLinearGateResult } from "../lib/output/normalise.js";
 import { runLinearGate } from "./linear-gate.js";
 
 function restoreEnvVar(
-	key: "GITHUB_HEAD_REF" | "GITHUB_REF_NAME",
+	key: "GITHUB_HEAD_REF" | "GITHUB_REF_NAME" | "PR_TITLE" | "PR_BODY",
 	value?: string,
 ) {
 	if (value === undefined) {
@@ -222,8 +222,12 @@ contact_links:
 
 		const previousGithubHeadRef = process.env.GITHUB_HEAD_REF;
 		const previousGithubRefName = process.env.GITHUB_REF_NAME;
+		const previousPrTitle = process.env.PR_TITLE;
+		const previousPrBody = process.env.PR_BODY;
 		Reflect.deleteProperty(process.env, "GITHUB_HEAD_REF");
 		Reflect.deleteProperty(process.env, "GITHUB_REF_NAME");
+		Reflect.deleteProperty(process.env, "PR_TITLE");
+		Reflect.deleteProperty(process.env, "PR_BODY");
 
 		const result = (() => {
 			try {
@@ -236,6 +240,8 @@ contact_links:
 			} finally {
 				restoreEnvVar("GITHUB_HEAD_REF", previousGithubHeadRef);
 				restoreEnvVar("GITHUB_REF_NAME", previousGithubRefName);
+				restoreEnvVar("PR_TITLE", previousPrTitle);
+				restoreEnvVar("PR_BODY", previousPrBody);
 			}
 		})();
 
