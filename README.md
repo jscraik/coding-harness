@@ -384,7 +384,7 @@ Use the catalog directly to choose a safe command before execution:
 # Human workflow: inspect mutative commands and required flags
 harness commands --json | jq '
   .commands[]
-  | select(.mutability != "read_only")
+  | select(.mutability != "read")
   | {name, category, mutability, requiredFlags}'
 ```
 
@@ -392,8 +392,8 @@ harness commands --json | jq '
 # Agent workflow: route to read-only alternatives first when available
 harness commands --json | jq '
   .commands[]
-  | {name, mutability, safeAlternatives}
-  | select((.safeAlternatives | length) > 0)'
+  | {name, mutability, safeFirstAlternatives}
+  | select((.safeFirstAlternatives | length) > 0)'
 ```
 
 ### Bootstrap And Governance
