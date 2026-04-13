@@ -10,6 +10,9 @@ export default defineConfig({
 		// to the main process simultaneously. Under Docker's constrained CPUs,
 		// this causes the 60s birpc timeout to fire for ci-migrate tests.
 		fileParallelism: false,
+		// Keep a single worker process to avoid intermittent RPC update
+		// timeouts during long repo-wide runs in pre-push hooks.
+		maxWorkers: 1,
 		testTimeout: 180000,
 		hookTimeout: 180000,
 		teardownTimeout: 60000,
