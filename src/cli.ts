@@ -9,7 +9,10 @@ import {
 	suggestCommandCapabilities,
 	suggestCommands,
 } from "./lib/cli/command-registry.js";
-import { renderCommandHelpRows } from "./lib/cli/help-renderer.js";
+import {
+	renderCommandHelpRows,
+	renderGroupedCommandHelpRows,
+} from "./lib/cli/help-renderer.js";
 import { parseCsvList, parseIntegerArg } from "./lib/cli/parse-utils.js";
 import { sanitizeError } from "./lib/input/sanitize.js";
 import { getVersion } from "./lib/version.js";
@@ -73,12 +76,17 @@ function printUsage(options: { includeLegacyCommands?: boolean } = {}): void {
 		"  Submit for review: harness docs-gate --json && harness review-gate ...",
 	);
 	console.info("");
+	const helpRows = getRegistryCommandHelpRows({
+		includeLegacy: includeLegacyCommands,
+	});
 	console.info(
-		includeLegacyCommands ? "Commands (full):" : "Commands (focused):",
+		includeLegacyCommands
+			? "Commands (full, with aliases):"
+			: "Commands (focused):",
 	);
-	for (const line of renderCommandHelpRows(
-		getRegistryCommandHelpRows({ includeLegacy: includeLegacyCommands }),
-	)) {
+	for (const line of includeLegacyCommands
+		? renderCommandHelpRows(helpRows)
+		: renderGroupedCommandHelpRows(helpRows)) {
 		console.info(line);
 	}
 	if (!includeLegacyCommands) {
