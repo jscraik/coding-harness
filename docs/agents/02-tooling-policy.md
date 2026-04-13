@@ -67,7 +67,7 @@ For this repository only:
 - `biome check` should ignore that repo-root `CODESTYLE.md` path so CI linting stays deterministic when the developer-home symlink target is absent on hosted runners.
 - `scripts/codex-preflight.sh` should honor that symlink exception via `.codex/preflight-allowed-external-paths.txt` or `CODEX_PREFLIGHT_ALLOWED_EXTERNAL_PATHS` instead of failing the repo-root path check.
 - Scaffold rendering and published builds must package a real checked-in `src/templates/CODESTYLE.md` copy so CI and downstream installs do not depend on a developer-home symlink resolving at runtime.
-- `src/templates/codex-preflight.sh` remains the scaffold baseline, but `scripts/codex-preflight.sh` is project-owned after initialization and may diverge intentionally per-repo. Use `node scripts/sync-codex-preflight.cjs --write` only when you explicitly want to resync from template.
+- `src/templates/codex-preflight.sh` remains the scaffold baseline, but `scripts/codex-preflight.sh` is project-owned after initialization and may diverge intentionally per-repo. Use `node scripts/sync-codex-preflight.cjs --write` only when you explicitly want to synchronize from template.
 - `scripts/codex-preflight.sh` remains the public shell entrypoint, but structured Local Memory checks should run through the typed helper path (`local-memory-preflight`) when a harness runner is available. Keep `scripts/codex-preflight-local-memory-legacy.sh` only as the compatibility fallback for repos that cannot yet execute the helper.
 
 For shared/distributed harness-managed repos, keep `CODESTYLE.md` as a real repo-local file scaffolded from the canonical source rather than a user-home symlink.
@@ -149,6 +149,7 @@ Required sequence (via helper wrappers): `bash scripts/codex-preflight.sh --stac
 Contract-preserving notes:
 - `scripts/codex-preflight.sh` is a CLI script and must be executed, not sourced (`--mode optional` is allowed for softer checks).
 - `scripts/verify-work.sh` is the canonical repo-local verification entrypoint; keep Local Memory required by default and hook-governance project-local unless `--workspace-governance` is explicitly set.
+- In project-local mode, `scripts/verify-work.sh` should skip hook-governance rollout failures when `.codex/hook-conformance.json` is absent, and reserve strict conformance-artifact enforcement for explicit `--workspace-governance` runs.
 - `scripts/validate-codestyle.sh` remains the canonical fail-closed code-style wrapper reused by verify/hook/docs surfaces.
 - `scripts/new-task.sh` is the canonical project-local task entrypoint; `scripts/prepare-worktree.sh` is the canonical new-worktree bootstrap lane.
 - `harness init --check-updates`, `harness init --update`, and `harness upgrade` should auto-repair legacy `.harness/restore-manifest.json` when provider inference is safe; ambiguous inference should raise a targeted drift warning and continue remaining setup gates.
