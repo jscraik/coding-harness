@@ -52,11 +52,9 @@ export function fuzzyFindCommand(
 	commandIndex: Map<string, CommandSpec>,
 ): FuzzyCommandMatch | undefined {
 	const normalized = normalizeCommandName(name);
-	if (normalized !== name) {
-		const spec = commandIndex.get(normalized);
-		if (spec) {
-			return { spec, confidence: "normalized", distance: 0 };
-		}
+	const spec = commandIndex.get(normalized);
+	if (spec) {
+		return { spec, confidence: "normalized", distance: 0 };
 	}
 
 	const threshold = fuzzyThreshold(Math.max(name.length, normalized.length));
@@ -65,7 +63,8 @@ export function fuzzyFindCommand(
 	for (const spec of specs) {
 		const candidates = [spec.name, ...(spec.aliases ?? [])];
 		for (const candidate of candidates) {
-			const distance = levenshtein(normalized, candidate);
+			const normalizedCandidate = normalizeCommandName(candidate);
+			const distance = levenshtein(normalized, normalizedCandidate);
 			if (
 				distance > 0 &&
 				distance <= threshold &&
@@ -90,7 +89,9 @@ export function suggestCommands(
 		const distance =
 			candidates.length > 0
 				? Math.min(
-						...candidates.map((candidate) => levenshtein(normalized, candidate)),
+						...candidates.map((candidate) =>
+							levenshtein(normalized, normalizeCommandName(candidate)),
+						),
 					)
 				: Infinity;
 		return { spec, distance };
@@ -110,7 +111,9 @@ export function suggestCommandCapabilities(
 		const distance =
 			candidates.length > 0
 				? Math.min(
-						...candidates.map((candidate) => levenshtein(normalized, candidate)),
+						...candidates.map((candidate) =>
+							levenshtein(normalized, normalizeCommandName(candidate)),
+						),
 					)
 				: Infinity;
 		return { capability, distance };
