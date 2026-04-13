@@ -3489,21 +3489,22 @@ is_architecture_sensitive_change() {
 }
 
 snapshot_artifacts() {
-	local path
-	for path in "\${TRACKED_ARTIFACT_PATHS[@]}"; do
-		if [[ -d "$REPO_ROOT/$path" ]]; then
-			while IFS= read -r file; do
-				local rel_path="\${file#$REPO_ROOT/}"
-				local checksum
-				checksum="$(normalized_checksum "$file" "$rel_path")"
-				printf '%s %s\n' "$rel_path" "$checksum"
-			done < <(find "$REPO_ROOT/$path" -type f | sort)
-		elif [[ -f "$REPO_ROOT/$path" ]]; then
-			local checksum
-			checksum="$(normalized_checksum "$REPO_ROOT/$path" "$path")"
-			printf '%s %s\n' "$path" "$checksum"
-		fi
-	done
+	local rel_path
+	while IFS= read -r rel_path; do
+		[[ -n "$rel_path" ]] || continue
+		local abs_path="$REPO_ROOT/$rel_path"
+		[[ -f "$abs_path" ]] || continue
+		local checksum
+		checksum="$(normalized_checksum "$abs_path" "$rel_path")"
+		printf '%s %s\n' "$rel_path" "$checksum"
+	done < <(tracked_artifact_files)
+}
+
+tracked_artifact_files() {
+	local artifact_path
+	for artifact_path in "\${TRACKED_ARTIFACT_PATHS[@]}"; do
+		git -C "$REPO_ROOT" ls-files -- "$artifact_path"
+	done | awk 'NF { print }' | sort -u
 }
 
 normalized_checksum() {
@@ -3982,7 +3983,7 @@ fi
 			echo "Error: required prek hook '\$hook_name' is missing or out of date in $PREK_CONFIG_PATH"
 			exit 1
 		fi
-		if [[ -n "$hook_stages" ]] && ! rg -q "^[[:space:]]*stages[[:space:]]*=[[:space:]]*\\[\"$hook_stages\"\\][[:space:]]*$" "$PREK_CONFIG_PATH"; then
+		if [[ -n "$hook_stages" ]] && ! rg -q "^[[:space:]]*stages[[:space:]]*=[[:space:]]*\\\\[\\\"$hook_stages\\\"\\\\][[:space:]]*$" "$PREK_CONFIG_PATH"; then
 			echo "Error: required prek hook '\$hook_name' is missing or out of date in $PREK_CONFIG_PATH"
 			exit 1
 		fi

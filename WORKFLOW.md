@@ -57,9 +57,9 @@ codex:
 ## Metadata
 | Field | Value |
 | --- | --- |
-| `owner` | `[owner]` |
+| `owner` | `coding-harness-maintainers` |
 | `max_duration` | 60m |
-| `escalation` | `[escalation-path]` |
+| `escalation` | `set Blocked marker with explicit unblock action` |
 | `change_class` | behavior |
 
 ## Invariants
