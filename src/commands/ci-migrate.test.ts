@@ -2050,6 +2050,7 @@ describe("runCIMigrateCLI", () => {
 	let tempDir: string;
 	let externalFixtureDir: string;
 	let previousSnapshotSigningKey: string | undefined;
+	let previousGitHookEnv: Record<string, string | undefined>;
 	let consoleErrorSpy: ReturnType<typeof vi.spyOn> | undefined;
 	let consoleWarnSpy: ReturnType<typeof vi.spyOn> | undefined;
 	let consoleLogSpy: ReturnType<typeof vi.spyOn> | undefined;
@@ -2093,6 +2094,13 @@ describe("runCIMigrateCLI", () => {
 	});
 
 	beforeEach(() => {
+		previousGitHookEnv = {};
+		for (const [key, value] of Object.entries(process.env)) {
+			if (key.startsWith("GIT_")) {
+				previousGitHookEnv[key] = value;
+				Reflect.deleteProperty(process.env, key);
+			}
+		}
 		tempDir = mkdtempSync(join(tmpdir(), "harness-ci-migrate-"));
 		externalFixtureDir = mkdtempSync(
 			join(tmpdir(), "harness-ci-migrate-external-"),
@@ -2148,6 +2156,18 @@ describe("runCIMigrateCLI", () => {
 	});
 
 	afterEach(() => {
+		for (const key of Object.keys(process.env)) {
+			if (key.startsWith("GIT_")) {
+				Reflect.deleteProperty(process.env, key);
+			}
+		}
+		for (const [key, value] of Object.entries(previousGitHookEnv)) {
+			if (value === undefined) {
+				Reflect.deleteProperty(process.env, key);
+			} else {
+				process.env[key] = value;
+			}
+		}
 		consoleErrorSpy?.mockRestore();
 		consoleWarnSpy?.mockRestore();
 		consoleLogSpy?.mockRestore();

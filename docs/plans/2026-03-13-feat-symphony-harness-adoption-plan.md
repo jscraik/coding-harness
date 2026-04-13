@@ -1,5 +1,5 @@
 ---
-date: 2026-03-13
+date: 2026-04-13
 title: Symphony Harness Adoption Plan (CircleCI-Aware, Deep-Module Aligned)
 status: active
 owners:

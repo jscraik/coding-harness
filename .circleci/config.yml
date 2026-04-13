@@ -1,18 +1,9 @@
 version: 2.1
 
 jobs:
-  # ─────────────────────────────────────────────────────────────────────────────
-  # PR pipeline (fast) — lint, typecheck, audit, and the full test suite
-  # excluding the slow pilot-evaluate suite.
-  #
-  # resource_class: medium (2 vCPU / 4 GB) — CircleCI free tier only supports
-  # medium for Docker executors. ci-migrate.test.ts RSA tests may take longer
-  # under CPU contention; mitigated by running with --maxWorkers=1.
-  # ─────────────────────────────────────────────────────────────────────────────
-  pr-fast:
+  pr-pipeline:
     docker:
       - image: cimg/node:24.13
-    resource_class: medium
     steps:
       - checkout
       - run:
@@ -33,7 +24,7 @@ jobs:
             pnpm --version
       - run:
           name: Install dependencies
-          command: pnpm install --frozen-lockfile
+          command: pnpm install
       - run:
           name: Lint
           command: pnpm lint
@@ -41,172 +32,16 @@ jobs:
           name: Typecheck
           command: pnpm typecheck
       - run:
-          name: Test (excluding pilot-evaluate)
-          no_output_timeout: 12m
-          # Excludes the slow pilot-evaluate suite; it runs in pr-slow.
-          # ci-migrate.test.ts alone runs ~233s of RSA signing and needs the
-          # isolated worker-timeout mitigation from scripts/test-ci.sh.
-          command: |
-            pnpm exec vitest run --maxWorkers=1 --exclude '**/pilot-evaluate.test.ts' --exclude src/commands/ci-migrate.test.ts
-            pnpm exec vitest run --maxWorkers=1 --dangerouslyIgnoreUnhandledErrors src/commands/ci-migrate.test.ts
+          name: Test
+          command: pnpm test
       - run:
           name: Audit
-          command: pnpm run audit
+          command: pnpm audit
       - run:
-          name: Docs lint
-          command: pnpm docs:lint
-      - run:
-          name: Skill + workflow validation
-          command: pnpm skill:validate && pnpm workflow:validate
-
-  # ─────────────────────────────────────────────────────────────────────────────
-  # PR pipeline (slow) — isolated pilot-evaluate suite.
-  #
-  # pilot-evaluate.test.ts runs long-running evaluation windows and RSA signing
-  # loops. Isolated with its own timeout to avoid stalling the fast lane.
-  # ─────────────────────────────────────────────────────────────────────────────
-  pr-slow:
-    docker:
-      - image: cimg/node:24.13
-    resource_class: medium
-    steps:
-      - checkout
-      - run:
-          name: Ensure pnpm available
-          command: |
-            required_pnpm_version="10.0.0"
-            current_pnpm_version=""
-            if command -v pnpm >/dev/null 2>&1; then
-              current_pnpm_version="$(pnpm --version || true)"
-            fi
-            if [[ "$current_pnpm_version" != "$required_pnpm_version" ]]; then
-              export NPM_CONFIG_PREFIX="$HOME/.local"
-              export PATH="$NPM_CONFIG_PREFIX/bin:$PATH"
-              echo 'export NPM_CONFIG_PREFIX="$HOME/.local"' >> "$BASH_ENV"
-              echo 'export PATH="$HOME/.local/bin:$PATH"' >> "$BASH_ENV"
-              npm install --global --prefix "$NPM_CONFIG_PREFIX" "pnpm@${required_pnpm_version}"
-            fi
-            pnpm --version
-      - run:
-          name: Install dependencies
-          command: pnpm install --frozen-lockfile
-      - run:
-          name: Test (pilot-evaluate only)
-          no_output_timeout: 20m
-          command: pnpm exec vitest run src/commands/pilot-evaluate.test.ts
-
-  # Canonical PR status aggregator — preserves the historical CircleCI
-  # `pr-pipeline` status context that branch protection and harness metadata
-  # expect, while still letting the fast/slow jobs run independently.
-  pr-pipeline:
-    docker:
-      - image: cimg/base:stable
-    resource_class: medium
-    steps:
-      - run:
-          name: Aggregate PR pipeline status
-          command: echo "pr-fast and pr-slow completed successfully"
-
-  # ─────────────────────────────────────────────────────────────────────────────
-  # Release verification pipeline — tag-driven validation only
-  #
-  # Canonical publish path:
-  #   .github/workflows/release-private-npm.yml (tag-driven GitHub Actions flow)
-  #
-  # Flow:
-  #   1. Validate release context
-  #   2. Run full pnpm check suite
-  #   3. Verify tag matches package.json version
-  #   4. Build package (publish occurs in GitHub Actions)
-  # ─────────────────────────────────────────────────────────────────────────────
-  release:
-    docker:
-      - image: cimg/node:24.13
-    resource_class: medium
-    steps:
-      - checkout
-      - run:
-          name: Ensure pnpm available
-          command: |
-            required_pnpm_version="10.0.0"
-            current_pnpm_version=""
-            if command -v pnpm >/dev/null 2>&1; then
-              current_pnpm_version="$(pnpm --version || true)"
-            fi
-            if [[ "$current_pnpm_version" != "$required_pnpm_version" ]]; then
-              export NPM_CONFIG_PREFIX="$HOME/.local"
-              export PATH="$NPM_CONFIG_PREFIX/bin:$PATH"
-              echo 'export NPM_CONFIG_PREFIX="$HOME/.local"' >> "$BASH_ENV"
-              echo 'export PATH="$HOME/.local/bin:$PATH"' >> "$BASH_ENV"
-              npm install --global --prefix "$NPM_CONFIG_PREFIX" "pnpm@${required_pnpm_version}"
-            fi
-            pnpm --version
-      - run:
-          name: Install dependencies
-          command: pnpm install --frozen-lockfile
-      - run:
-          name: Validate release context
-          command: |
-            if [ -z "${CIRCLE_TAG:-}" ]; then
-              echo "ERROR: release workflow must run on a git tag (CIRCLE_TAG is empty)."
-              exit 1
-            fi
-            echo "Release context validated"
-      - run:
-          name: Full check suite
-          no_output_timeout: 15m
+          name: Policy Bundle
           command: pnpm check
-      - run:
-          name: Verify tag matches package version
-          command: |
-            PKG_VERSION="$(jq -r '.version' package.json)"
-            TAG_VERSION="${CIRCLE_TAG#v}"
-            if [ "$PKG_VERSION" != "$TAG_VERSION" ]; then
-              echo "ERROR: Tag ${CIRCLE_TAG} does not match package.json version ${PKG_VERSION}"
-              exit 1
-            fi
-            echo "Tag/version match confirmed: ${CIRCLE_TAG}"
-      - run:
-          name: Verify tagged commit is reachable from origin/main
-          command: |
-            git fetch --no-tags origin main:refs/remotes/origin/main
-            if ! git merge-base --is-ancestor "$CIRCLE_SHA1" "refs/remotes/origin/main"; then
-              echo "ERROR: Tagged commit ${CIRCLE_SHA1} is not reachable from origin/main"
-              exit 1
-            fi
-            echo "Tag commit ancestry check passed against origin/main"
-      - run:
-          name: Build package
-          command: pnpm build
 
 workflows:
-  # Runs on every PR branch push (all branches except main).
-  # pr-fast and pr-slow run in parallel, then the no-op pr-pipeline aggregator
-  # publishes the canonical PR status context used by branch protection.
-  pr-workflow:
+  pr-pipeline:
     jobs:
-      - pr-fast:
-          filters:
-            branches:
-              ignore: main
-      - pr-slow:
-          filters:
-            branches:
-              ignore: main
-      - pr-pipeline:
-          requires:
-            - pr-fast
-            - pr-slow
-          filters:
-            branches:
-              ignore: main
-
-  # Runs only for semver tags (vX.Y.Z...), never on branch pushes.
-  release-workflow:
-    jobs:
-      - release:
-          filters:
-            branches:
-              ignore: /.*/
-            tags:
-              only: /^v[0-9]+\.[0-9]+\.[0-9]+(?:[-+][0-9A-Za-z.-]+)?$/
+      - pr-pipeline

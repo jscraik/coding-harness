@@ -9,6 +9,7 @@
 
 ## Canonical source
 - Use `/Users/jamiecraik/dev/coding-harness/AGENTS.md` as the canonical source for repo-wide, cross-tool instructions.
+- Treat `AGENTS.md` as a compact baseline and use `docs/agents/01-instruction-map.md` for task routing.
 - Follow the mandatory workflow snippet from `AGENTS.md` (do not duplicate it here).
 - If guidance conflicts, pause and ask which instruction wins.
 
@@ -23,8 +24,8 @@
 - Use `bash scripts/verify-work.sh` or `pnpm check` when broader repo verification is needed, and run `pnpm test:deep` when runtime or artifact behavior changed.
 
 ## Docs lookup (progressive disclosure)
-- Start with [Architecture bootstrap](./docs/agents/00-architecture-bootstrap.md) for architecture-sensitive tasks.
 - Start with [Instruction map](./docs/agents/01-instruction-map.md).
+- Use [Architecture bootstrap](./docs/agents/00-architecture-bootstrap.md) for architecture-sensitive tasks.
 - Then open only the relevant SOP from `docs/agents/` for the current task type.
 
 ## Closeout contract

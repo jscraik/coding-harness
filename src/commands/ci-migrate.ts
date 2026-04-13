@@ -11,7 +11,7 @@ import {
 	rmSync,
 	writeFileSync,
 } from "node:fs";
-import { dirname, join, resolve, sep } from "node:path";
+import { dirname, resolve, sep } from "node:path";
 import { cwd, env } from "node:process";
 import { fileURLToPath } from "node:url";
 import {
@@ -20,6 +20,22 @@ import {
 	formatBranchProtectSyncWarning,
 	getActiveGHAJobNames,
 } from "../lib/ci/branch-protect-sync.js";
+import {
+	defaultSnapshotId,
+	getExternalControlPlaneStatePath,
+	getReportPath,
+	getSnapshotArtifactsDirectory,
+	getSnapshotAttestationPath,
+	getSnapshotDigestPath,
+	getSnapshotPath,
+	getSnapshotSignaturePath,
+	getStateAttestationPath,
+	getStateAttestationSignaturePath,
+	getStateDigestPath,
+	getStatePath,
+	getStateSignaturePath,
+	validateSnapshotId,
+} from "../lib/ci/ci-migrate-snapshot-paths.js";
 import { validateCIConfigSyntax } from "../lib/ci/config-validator.js";
 import {
 	type RequiredCheckIdentity,
@@ -62,8 +78,6 @@ export function setCIMigrateTestOverrides(
 }
 
 const DEFAULT_PROVIDER = "circleci";
-const SNAPSHOT_DIR = "ci-migrate-snapshots";
-const REPORT_SUFFIX = ".report.json";
 const MAX_SNAPSHOT_AGE_DAYS = 30;
 const SNAPSHOT_SIGNATURE_ALGORITHM = "hmac-sha256";
 const SNAPSHOT_SIGNING_KEY_ENV = "HARNESS_CI_MIGRATE_SIGNING_KEY";
@@ -118,9 +132,6 @@ const EXTERNAL_CONTROL_PLANE_PATHS = [
 const EXTERNAL_CONTROL_PLANE_PATH_SET = new Set<string>(
 	EXTERNAL_CONTROL_PLANE_PATHS,
 );
-const MAX_SNAPSHOT_ID_LENGTH = 64;
-const SNAPSHOT_ID_PATTERN =
-	/^[A-Za-z0-9][A-Za-z0-9._-]*[A-Za-z0-9]$|^[A-Za-z0-9]$/;
 const PREPARED_STATE_MAX_AGE_HOURS = 24;
 const MERGE_QUEUE_WINDOW_PATH =
 	".harness/control-plane/merge-queue-cutover-window.json";
@@ -811,101 +822,6 @@ function isValidMergeQueueCutoverWindow(
 				evidenceQueueCountValid(evidenceRecord.pausedQueueDepth) &&
 				evidenceQueueCountValid(evidenceRecord.drainedCandidateCount) &&
 				evidenceQueueCountValid(evidenceRecord.revalidatedCandidateCount)))
-	);
-}
-
-function getSnapshotPath(targetDir: string, snapshotId: string): string {
-	return resolve(targetDir, HARNESS_DIR, SNAPSHOT_DIR, `${snapshotId}.json`);
-}
-
-function getSnapshotDigestPath(targetDir: string, snapshotId: string): string {
-	return resolve(targetDir, HARNESS_DIR, SNAPSHOT_DIR, `${snapshotId}.sha256`);
-}
-
-function getSnapshotAttestationPath(
-	targetDir: string,
-	snapshotId: string,
-): string {
-	return resolve(
-		targetDir,
-		HARNESS_DIR,
-		SNAPSHOT_DIR,
-		`${snapshotId}.attestation.json`,
-	);
-}
-
-function getSnapshotSignaturePath(
-	targetDir: string,
-	snapshotId: string,
-): string {
-	return resolve(
-		targetDir,
-		HARNESS_DIR,
-		SNAPSHOT_DIR,
-		`${snapshotId}.attestation.sig`,
-	);
-}
-
-function getExternalControlPlaneStatePath(
-	targetDir: string,
-	snapshotId: string,
-): string {
-	return resolve(
-		targetDir,
-		HARNESS_DIR,
-		SNAPSHOT_DIR,
-		`${snapshotId}.external-control-plane.json`,
-	);
-}
-
-function getStatePath(targetDir: string, snapshotId: string): string {
-	return resolve(
-		targetDir,
-		HARNESS_DIR,
-		SNAPSHOT_DIR,
-		`${snapshotId}.state.json`,
-	);
-}
-
-function getStateDigestPath(targetDir: string, snapshotId: string): string {
-	return resolve(
-		targetDir,
-		HARNESS_DIR,
-		SNAPSHOT_DIR,
-		`${snapshotId}.state.sha256`,
-	);
-}
-
-function getStateSignaturePath(targetDir: string, snapshotId: string): string {
-	return resolve(
-		targetDir,
-		HARNESS_DIR,
-		SNAPSHOT_DIR,
-		`${snapshotId}.state.sig`,
-	);
-}
-
-function getStateAttestationPath(
-	targetDir: string,
-	snapshotId: string,
-): string {
-	return resolve(
-		targetDir,
-		HARNESS_DIR,
-		SNAPSHOT_DIR,
-		`${snapshotId}.state.attestation.json`,
-	);
-}
-
-function getStateAttestationSignaturePath(
-	targetDir: string,
-	snapshotId: string,
-): string {
-	return resolve(
-		targetDir,
-		HARNESS_DIR,
-		SNAPSHOT_DIR,
-		`${snapshotId}.state.attestation.sig`,
 	);
 }
 
@@ -2977,51 +2893,6 @@ function restoreExternalControlPlaneState(
 			error: `Failed to restore external control-plane state: ${sanitizeError(error)}`,
 		};
 	}
-}
-
-function getReportPath(targetDir: string, snapshotId: string): string {
-	return resolve(
-		targetDir,
-		HARNESS_DIR,
-		SNAPSHOT_DIR,
-		`${snapshotId}${REPORT_SUFFIX}`,
-	);
-}
-
-function defaultSnapshotId(): string {
-	return `snapshot-${new Date().toISOString().replace(/[:.]/g, "-")}`;
-}
-
-function validateSnapshotId(
-	value: string,
-): { ok: true; value: string } | { ok: false; error: string } {
-	const trimmed = value.trim();
-	if (trimmed.length === 0) {
-		return {
-			ok: false,
-			error: "Snapshot id cannot be empty.",
-		};
-	}
-	if (!SNAPSHOT_ID_PATTERN.test(trimmed)) {
-		return {
-			ok: false,
-			error:
-				"Snapshot id must start and end with a letter or number and may only include '.', '_' or '-' in the middle.",
-		};
-	}
-	if (trimmed.length > MAX_SNAPSHOT_ID_LENGTH) {
-		return {
-			ok: false,
-			error: `Snapshot id is too long. Maximum length is ${MAX_SNAPSHOT_ID_LENGTH} characters.`,
-		};
-	}
-	if (trimmed.includes("..")) {
-		return {
-			ok: false,
-			error: "Snapshot id cannot contain consecutive dots ('..').",
-		};
-	}
-	return { ok: true, value: trimmed };
 }
 
 function isPreparedStateExpired(
@@ -8593,7 +8464,7 @@ function writeSnapshot(targetDir: string, snapshotId: string): number {
 			console.error(`Error: ${externalStateCaptureResult.error}`);
 			return EXIT_CODES.WRITE_ERROR;
 		}
-		mkdirSync(join(targetDir, HARNESS_DIR, SNAPSHOT_DIR), {
+		mkdirSync(getSnapshotArtifactsDirectory(targetDir), {
 			recursive: true,
 		});
 		copyFileSync(manifestPath, snapshotPath);
@@ -8804,7 +8675,7 @@ function writeMigrationReport(
 ): number {
 	try {
 		const reportPath = getReportPath(targetDir, snapshotId);
-		mkdirSync(join(targetDir, HARNESS_DIR, SNAPSHOT_DIR), {
+		mkdirSync(getSnapshotArtifactsDirectory(targetDir), {
 			recursive: true,
 		});
 		writeFileSync(reportPath, JSON.stringify(report, null, 2));
@@ -8866,7 +8737,7 @@ function writeMigrationState(
 			attestationContent,
 			signingKeyResult.key,
 		);
-		mkdirSync(join(targetDir, HARNESS_DIR, SNAPSHOT_DIR), {
+		mkdirSync(getSnapshotArtifactsDirectory(targetDir), {
 			recursive: true,
 		});
 		writeFileSync(statePath, content);

@@ -2,7 +2,7 @@
 title: feat: command metadata registry core parity
 type: feat
 status: completed
-date: 2026-03-05
+date: 2026-04-13
 plan_id: feat-command-metadata-registry-core-parity
 origin: docs/brainstorms/2026-03-04-command-metadata-registry-brainstorm.md
 ---

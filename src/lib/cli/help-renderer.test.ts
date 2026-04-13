@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import {
 	dedupeCommandHelpRows,
 	renderCommandHelpRows,
+	renderGroupedCommandHelpRows,
 } from "./help-renderer.js";
 
 describe("help renderer", () => {
@@ -26,6 +27,74 @@ describe("help renderer", () => {
 
 		expect(lines).toEqual([
 			"  risk-tier                Classify files by risk tier",
+		]);
+	});
+
+	it("renders category-grouped command rows", () => {
+		const lines = renderGroupedCommandHelpRows([
+			{
+				name: "check",
+				summary: "Zero-config repo health snapshot",
+				category: "bootstrap-governance",
+			},
+			{
+				name: "policy-gate",
+				summary: "Validate policy expectations from changed files",
+				category: "review-policy",
+			},
+		]);
+
+		expect(lines).toEqual([
+			"  Bootstrap & Governance:",
+			"    check                    Zero-config repo health snapshot",
+			"",
+			"  Review & Policy:",
+			"    policy-gate              Validate policy expectations from changed files",
+		]);
+	});
+
+	it("falls back to uncategorized heading when category is missing", () => {
+		const lines = renderGroupedCommandHelpRows([
+			{
+				name: "commands",
+				summary: "List machine-readable command metadata",
+			},
+		]);
+
+		expect(lines).toEqual([
+			"  Other:",
+			"    commands                 List machine-readable command metadata",
+		]);
+	});
+
+	it("renders known categories in deterministic order", () => {
+		const lines = renderGroupedCommandHelpRows([
+			{
+				name: "policy-gate",
+				summary: "Validate policy expectations from changed files",
+				category: "review-policy",
+			},
+			{
+				name: "commands",
+				summary: "List machine-readable command metadata",
+				category: "discovery",
+			},
+			{
+				name: "check",
+				summary: "Zero-config repo health snapshot",
+				category: "bootstrap-governance",
+			},
+		]);
+
+		expect(lines).toEqual([
+			"  Discovery:",
+			"    commands                 List machine-readable command metadata",
+			"",
+			"  Bootstrap & Governance:",
+			"    check                    Zero-config repo health snapshot",
+			"",
+			"  Review & Policy:",
+			"    policy-gate              Validate policy expectations from changed files",
 		]);
 	});
 });

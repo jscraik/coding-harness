@@ -3,161 +3,102 @@
 ## Table of Contents
 
 - [Purpose](#purpose)
-- [Canonical lane model](#canonical-lane-model)
-- [Blocked-routing convention](#blocked-routing-convention)
+- [Workflow boundary](#workflow-boundary)
+- [Blocked-routing protocol](#blocked-routing-protocol)
 - [Issue templates](#issue-templates)
 - [Saved views](#saved-views)
 - [Linear UI setup (manual steps)](#linear-ui-setup-manual-steps)
 - [Validation checklist](#validation-checklist)
+- [See also](#see-also)
 
 ## Purpose
 
 Define the baseline Linear templates and saved views for the `coding-harness`
-project and `Jscraik` team, and capture the blocked-routing decision so it is
-consistent and agent-readable.
+project and `Jscraik` team.
 
-Template source files live in `src/templates/linear/` and are the authoritative
-copy — always edit there first, then paste into Linear UI.
+Template source files in `src/templates/linear/` are the authoritative copy:
+edit those files first, then paste into Linear UI.
 
-## Canonical lane model
+## Workflow boundary
 
-Primary workflow states:
+This document is for Linear setup payloads only (templates, views, labels, and
+blocked-routing protocol). Canonical lane/state workflow behavior lives in:
 
-- `Triage`
-- `Ready`
-- `In Progress`
-- `In Review`
-- `Done`
+- [Linear production workflow](./13-linear-production-workflow.md)
+- [Linear workflow compact](./16-linear-production-compact.md)
 
-`Blocked` is an overlay label and must not be modeled as a separate workflow
-status. A blocked issue stays in its primary lane and carries explicit unblock
-guidance.
+## Blocked-routing protocol
 
-Promotion from intake lanes into active work should stay bounded by:
-
-- metadata completeness threshold,
-- in-progress WIP cap,
-- cycle-feasibility checks.
-
-## Blocked-routing convention
-
-**Decision:** `Blocked` stays a **label**, not a workflow status.
-
-### Why
-
-- A blocked issue still has a real primary state (`Todo`, `In Progress`, `In Review`).
-- A separate status would overload the workflow with a special case.
-- Linear native `blockedBy` / `blocks` relations carry the dependency graph.
-- The `Blocked` label provides visibility and a consistent saved-view filter.
-
-### Protocol
+`Blocked` stays a label overlay, not a workflow status.
 
 When work cannot proceed:
 
-1. Keep the issue in its real workflow state.
+1. Keep the issue in its canonical workflow state.
 2. Add the `Blocked` label.
 3. Add a `blockedBy` relation to the blocking issue when one exists.
 4. Add a short blocker note in the latest update or comment.
 
-> [!NOTE]
-> Remove the `Blocked` label as soon as the blocker resolves — do not leave
-> stale labels on issues that are actively progressing.
+Remove the `Blocked` label as soon as the blocker resolves.
 
 ## Issue templates
 
 Template files are in `src/templates/linear/`. Each is copy-paste-ready for
-Linear → Settings → Team → Templates.
+Linear -> Settings -> Team -> Templates.
 
-| Template | File | Key sections |
-|---|---|---|
-| Bug | `src/templates/linear/bug.md` | Goal, Label type, Reproduction, Expected, Actual, Triage inputs, Dependencies, Pull condition, Evidence, Risk, Done when |
-| Feature | `src/templates/linear/feature.md` | Goal, Label type, User value, Scope, Constraints, Triage inputs, Dependencies, Pull condition, Evidence, Done when |
-| Research | `src/templates/linear/research.md` | Question, Label type, Why now, Inputs, Triage inputs, Dependencies, Pull condition, Output, Recommendation format, Done when |
-| Automation | `src/templates/linear/automation.md` | Goal, Label type, Trigger/cadence, Systems, Safety, Triage inputs, Dependencies, Pull condition, Evidence/logs, Done when |
-| Release | `src/templates/linear/release.md` | Goal, Scope, Risks, Validation plan, Rollback plan, Done when |
+| Template | File |
+| --- | --- |
+| Bug | `src/templates/linear/bug.md` |
+| Feature | `src/templates/linear/feature.md` |
+| Research | `src/templates/linear/research.md` |
+| Automation | `src/templates/linear/automation.md` |
+| Release | `src/templates/linear/release.md` |
 
-Type-label baseline for this project:
+Primary type-label baseline:
 
-- issue type labels should come from `Bug`, `Feature`, `Improvement`, `Policy`, `Security`
-- each issue should carry exactly one primary type label
-- `harness linear triage --apply` will add missing primary type labels and normalize multiple primary labels down to one inferred label
+- Use exactly one of `Bug`, `Feature`, `Improvement`, `Policy`, `Security`.
+- `harness linear triage --apply` can add missing primary type labels and
+  normalize multiple primary labels down to one inferred label.
 
 ## Saved views
 
-Create these in **Linear → My Views** or **Team Views** for `Jscraik`.
+Create these in Linear -> My Views or Team Views for `Jscraik`.
 
-### 1. Triage
-
-Filter:
-- Team = `Jscraik`
-- Status in `Backlog`, `Todo`
-- Assignee is empty **or** created in last 7 days (newly arrived work)
-
-### 2. Ready
-
-Filter:
-- Team = `Jscraik`
-- Status = `Todo`
-- Label does **not** include `Blocked`
-
-### 3. In Progress
-
-Filter:
-- Team = `Jscraik`
-- Status = `In Progress`
-
-### 4. In Review
-
-Filter:
-- Team = `Jscraik`
-- Status = `In Review`
-
-### 5. Blocked
-
-Filter:
-- Team = `Jscraik`
-- Label includes `Blocked`
-
-### 6. Delegated
-
-Filter:
-- Team = `Jscraik`
-- Label includes `Agent`
-- Status in `Todo`, `In Progress`, `In Review`
+| View | Filters |
+| --- | --- |
+| Triage | Team = `Jscraik`; Status in `Backlog`, `Todo`; Assignee empty or created in last 7 days |
+| Ready | Team = `Jscraik`; Status = `Todo`; Label does not include `Blocked` |
+| In Progress | Team = `Jscraik`; Status = `In Progress` |
+| In Review | Team = `Jscraik`; Status = `In Review` |
+| Blocked | Team = `Jscraik`; Label includes `Blocked` |
+| Delegated | Team = `Jscraik`; Label includes `Agent`; Status in `Todo`, `In Progress`, `In Review` |
 
 ## Linear UI setup (manual steps)
 
-These cannot be configured via API — do them once in Linear.
+These cannot be configured via API.
 
 ### Issue templates
 
-1. Go to **Linear → Settings → Team → Templates**
-2. Click **New template** for each entry in the table above
-3. Set the name exactly as shown (Bug / Feature / Research / Automation / Release)
-4. Paste the content from the matching `src/templates/linear/<name>.md` file
+1. Go to Linear -> Settings -> Team -> Templates.
+2. Create Bug, Feature, Research, Automation, and Release templates.
+3. Paste content from the matching file in `src/templates/linear/`.
 
 ### Saved views
 
-1. Go to **Linear → My Views** (or your **Team Views**)
-2. Create each view with the filters listed above
-3. Name them exactly: Triage / Ready / In Progress / In Review / Blocked / Delegated
-
-> [!TIP]
-> Pin the **In Progress** and **In Review** views to the sidebar for quick
-> access during daily stand-up or agent handoff checks.
+1. Go to Linear -> My Views or Team Views.
+2. Create each view from the table above with exact names.
 
 ## Validation checklist
 
 - [ ] Templates exist in Linear for Bug, Feature, Research, Automation, Release
-- [ ] Template content matches `src/templates/linear/*.md` (single source of truth)
-- [ ] Six saved views created and named consistently
-- [ ] `Blocked` label exists in team label set
-- [ ] Primary type labels exist in team label set: `Bug`, `Feature`, `Improvement`, `Policy`, `Security`
-- [ ] Blocked-routing protocol documented in onboarding notes
+- [ ] Template content matches `src/templates/linear/*.md`
+- [ ] Six saved views exist and names match this document
+- [ ] `Blocked` label exists in the team label set
+- [ ] Primary type labels exist: `Bug`, `Feature`, `Improvement`, `Policy`, `Security`
+- [ ] Blocked-routing protocol is documented in onboarding notes
 
 ## See also
 
-- [GitHub → Linear automation](./18-github-linear-automation.md)
+- [GitHub -> Linear automation](./18-github-linear-automation.md)
 - [Linear production workflow](./13-linear-production-workflow.md)
 - [Linear workflow compact](./16-linear-production-compact.md)
 - [JSC-35 baseline doc (Linear native)](https://linear.app/jscraik/document/coding-harness-linear-templates-and-views-baseline-1e8adadc1ae1)

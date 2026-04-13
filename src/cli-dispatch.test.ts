@@ -146,6 +146,46 @@ describe("cli command dispatch", () => {
 		expect(lines.join("\n")).toContain("--help, -h");
 	});
 
+	it("keeps focused help grouped and alias-free", async () => {
+		const { run } = await import("./cli.js");
+		const infoSpy = vi.spyOn(console, "info").mockImplementation(() => {});
+
+		run(["--help"]);
+
+		const output = infoSpy.mock.calls.map(([line]) => String(line)).join("\n");
+		const lines = output.split("\n");
+		expect(output).toContain("Commands (focused):");
+		expect(output).toContain("Discovery:");
+		expect(output).toContain("Bootstrap & Governance:");
+		expect(output).toContain("Review & Policy:");
+		expect(
+			lines.some(
+				(line) =>
+					line.trimStart().startsWith("risk-policy-gate ") ||
+					line.trimStart().startsWith("risk-policy-gate\t"),
+			),
+		).toBe(false);
+		expect(
+			lines.some(
+				(line) =>
+					line.trimStart().startsWith("symphony:check ") ||
+					line.trimStart().startsWith("symphony:check\t"),
+			),
+		).toBe(false);
+	});
+
+	it("includes aliases in --help --all output", async () => {
+		const { run } = await import("./cli.js");
+		const infoSpy = vi.spyOn(console, "info").mockImplementation(() => {});
+
+		run(["--help", "--all"]);
+
+		const output = infoSpy.mock.calls.map(([line]) => String(line)).join("\n");
+		expect(output).toContain("Commands (full, with aliases):");
+		expect(output).toContain("risk-policy-gate");
+		expect(output).toContain("symphony:check");
+	});
+
 	it("dispatches risk-tier command and ignores missing contract value", async () => {
 		const { run } = await import("./cli.js");
 		const { runRiskTierCLI } = await import("./commands/risk-tier.js");

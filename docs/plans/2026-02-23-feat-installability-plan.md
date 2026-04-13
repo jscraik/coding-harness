@@ -2,7 +2,7 @@
 title: Phase 4 Installability - harness init Command
 type: feat
 status: completed
-date: 2026-02-23
+date: 2026-04-13
 plan_id: feat-installability
 origin: docs/brainstorms/2026-02-23-phase-4-installability-brainstorm.md
 deepened: 2026-02-23

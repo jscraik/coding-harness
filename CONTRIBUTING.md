@@ -8,13 +8,9 @@
 - [Branch name policy](#branch-name-policy)
 - [Required pre-merge gates](#required-pre-merge-gates)
 - [Required tooling baseline](#required-tooling-baseline)
+- [Project Brain workflow](#project-brain-workflow)
 - [Repo-local verification wrapper](#repo-local-verification-wrapper)
-- [CodeRabbit setup baseline](#coderabbit-setup-baseline)
-- [CodeRabbit configuration hierarchy](#coderabbit-configuration-hierarchy)
-- [CodeRabbit review policy for multi-scope pull requests](#coderabbit-review-policy-for-multi-scope-pull-requests)
-- [CodeRabbit score interpretation policy](#coderabbit-score-interpretation-policy)
-- [CodeRabbit strictness policy](#coderabbit-strictness-policy)
-- [CodeRabbit training and feedback loop](#coderabbit-training-and-feedback-loop)
+- [Repo-local harness wrapper](#repo-local-harness-wrapper)
 - [Recommended security scanner baseline](#recommended-security-scanner-baseline)
 - [Review artifacts requirement](#review-artifacts-requirement)
 - [Credential-safe evidence snippets](#credential-safe-evidence-snippets)
@@ -26,7 +22,7 @@
 - No direct push to `main`.
 - Pull request required for every merge.
 - Required checks must pass before merge.
-- CodeRabbit + Codex review artifacts are required before merge for this repository.
+- CodeRabbit + Codex review artifacts are required before merge.
 - The coding agent must not approve its own PR; review must be independent.
 - Merge only after all gates pass.
 - Delete branch/worktree after merge.
@@ -38,9 +34,11 @@ This workflow keeps delivery auditable, reversible, and consistent even for solo
 ## Branching and PR rule
 
 1. Create a dedicated branch/worktree for each task:
+   - Preferred project-local helper: `bash scripts/new-task.sh <short-description>`
    - Agent-created branch: `git switch -c codex/<short-description>`
-   - Agent-created worktree: `git worktree add ../tmp-worktree -b codex/<short-description>`
+   - Agent-created worktree: `git worktree add ../wt-<short-description> -b codex/<short-description>`
    - Human-authored branch prefixes (when not using `codex/`): `feat/`, `fix/`, `docs/`, `refactor/`, `chore/`, `test/`
+   - Keep one task = one worktree = one branch = one agent thread.
 2. Keep commits small and focused.
 3. Open a PR to merge into `main`.
 4. Do not merge until checks, reviews, and checklist items are complete.
@@ -55,7 +53,7 @@ This workflow keeps delivery auditable, reversible, and consistent even for solo
 
 ## Required pre-merge gates
 
-- bash scripts/validate-code-style.sh
+- bash scripts/validate-codestyle.sh
 - pnpm check
 - test -f memory.json && jq -e '.meta.version == "1.0" and (.preamble.bootstrap | type == "boolean") and (.preamble.search | type == "boolean") and (.entries | type == "array")' memory.json >/dev/null
 
@@ -89,71 +87,55 @@ Recommended policy:
 
 - Pin repo-managed tooling in `.mise.toml` where possible.
 - Treat `scripts/codex-preflight.sh` as required project bootstrap infrastructure.
-- Treat `CODESTYLE.md` and `scripts/validate-code-style.sh` as required repo-local contract files.
+- Treat `CODESTYLE.md` and `scripts/validate-codestyle.sh` as required repo-local contract files.
+- Keep `CODESTYLE.md` as a real repo-local file in generated repositories even when the harness authoring source is maintained globally.
 - Scaffold `scripts/codex-enforced` and `scripts/codex-learn` together with preflight so repo-local wrappers own repo-local state.
 - Keep `bash scripts/codex-preflight.sh --stack auto --mode required` as the default preflight command; only relax mode (`optional` or `off`) when the project documents why.
 - Adjust preflight binary/path lists per project scope instead of deleting the script.
 - Keep repo-scoped telemetry and learned overrides under `.harness/memory/`, and global telemetry under `~/.codex/`.
-- Treat `scripts/verify-work.sh` as the canonical repo-local verification command and keep it wired to repo-local preflight defaults.
-- Treat `scripts/validate-code-style.sh` as the fail-closed code-style gate and require exact proof-of-pass in change summaries and PRs.
+- Treat `scripts/verify-work.sh` as the canonical repo-facing verification command and keep it wired to repo-local preflight defaults.
+- Treat `scripts/validate-codestyle.sh` as the fail-closed codestyle gate and require exact proof-of-pass in change summaries and PRs.
+- Treat `scripts/new-task.sh` as the canonical task-entry helper so each task starts with a repo-local branch/worktree boundary instead of branch switching inside a shared checkout.
+- Treat `scripts/prepare-worktree.sh` as required first-push bootstrap for freshly created worktrees so local hooks run with dependencies and canonical hook wiring.
 - Treat `scripts/check-environment.sh` as the local readiness gate for required tooling.
 - Block merge or promotion work when a required CLI is missing rather than silently skipping the corresponding validation lane.
 - For repositories with explicit `ui` / `chatgpt_apps_sdk` capabilities or matching dependency signals, install `@brainwav/design-system-guidance` and treat its absence as a readiness failure.
 
+## Project Brain workflow
+
+- `harness init` scaffolds a Project Brain baseline under `.harness/`:
+  - `knowledge/INDEX.md`, domain folders (`cli`, `ci`, `governance`, `tooling`), `decisions/`, `quality/criteria.md`, and `review-log.md`.
+  - `.harness/memory/LEARNINGS.md` as the repo-scoped learned-fixes ledger.
+- Repo-local preflight treats the Project Brain scaffold as required baseline paths.
+- Run `./scripts/codex-learn analyze` to generate suggestions and refresh `.harness/knowledge/tooling/codex-learn-summary.md`.
+- Promote repeated patterns into `rules.md` after 3+ confirmations; keep uncertain patterns in `hypotheses.md`.
+
 ## Repo-local verification wrapper
 
-- `scripts/verify-work.sh` is the canonical repo-local verification entrypoint.
+- `harness init` scaffolds `scripts/verify-work.sh` as the canonical repo-local verification entrypoint.
 - The wrapper always runs `scripts/codex-preflight.sh` in `required` Local Memory mode with scaffold-safe path and binary expectations.
-- `scripts/validate-code-style.sh` is the canonical fail-closed code-style gate and is reused by `verify-work`, local hooks, and downstream repo docs.
+- `scripts/validate-codestyle.sh` is the canonical fail-closed codestyle gate and is reused by `verify-work`, local hooks, and downstream repo docs.
+- `scripts/new-task.sh` is the canonical task bootstrap helper. Use it to create one task = one worktree = one branch = one agent thread inside the project itself.
 - Repo-local launches should prefer `./scripts/codex-enforced` so preflight failures are recorded into repo-scoped learn state.
 - Use `./scripts/codex-learn analyze` and `./scripts/codex-learn apply` to inspect repo-scoped failure patterns and write override files into `.harness/memory/`.
-- Use `bash scripts/validate-code-style.sh --fast` during iteration for focused code-style validation.
-- Use `bash scripts/validate-code-style.sh` before handoff for the fail-closed code-style bundle.
+- Start new work with `bash scripts/new-task.sh <slug>`, then enter the generated worktree and continue there.
+- Use `bash scripts/validate-codestyle.sh --fast` during iteration for focused codestyle validation.
+- Use `bash scripts/validate-codestyle.sh` before handoff for the fail-closed codestyle bundle.
 - Use `bash scripts/verify-work.sh` for the broader verification bundle.
-- Use `bash scripts/verify-work.sh --fast` for preflight + code-style fast lane coverage.
+- Use `bash scripts/verify-work.sh --fast` for preflight + codestyle fast lane coverage.
+- Before the first push from a fresh worktree, run `bash scripts/prepare-worktree.sh`.
 
-## CodeRabbit setup baseline
+## Repo-local harness wrapper
 
-- `coding-harness` uses `CodeRabbit` as the primary automated review check.
-- `.coderabbit.yaml` enables `reviews.request_changes_workflow`, so CodeRabbit may request changes for blocking findings and auto-approve once its comment state is clean again.
-- `harness init` scaffolds `.coderabbit.yaml` into harness-managed repositories.
-- Verify setup with:
-  - `harness verify-coderabbit`
-  - `harness verify-coderabbit --token $GITHUB_TOKEN --owner <owner> --repo <repo>`
-- Trigger or refresh a review with:
-  - `@coderabbitai review`
-  - `@coderabbitai full review`
-  - `@coderabbitai resolve`
-  - `@coderabbitai autofix`
-
-## CodeRabbit configuration hierarchy
-
-1. Org-enforced dashboard rules.
-2. Repository `.coderabbit.yaml` settings.
-3. Pull-request comment triggers for review/autofix actions.
-
-## CodeRabbit review policy for multi-scope pull requests
-
-- repository policy remains fail-closed: merge only after required checks pass.
-- unresolved CodeRabbit findings are blockers unless explicitly waived with rationale.
-- CodeRabbit may approve a clean PR automatically after its findings are resolved, but the coding agent must still not self-approve and the PR must still carry independent review evidence.
-- review artifacts should be recorded in the PR body for traceability.
-
-## CodeRabbit score interpretation policy
-
-- blocking findings: must be addressed or explicitly waived.
-- advisory findings: may remain only with documented rationale.
-
-## CodeRabbit strictness policy
-
-- security-critical and governance-critical surfaces should stay in strict review posture.
-- stable non-critical internal surfaces can use narrower review prompts when appropriate.
-
-## CodeRabbit training and feedback loop
-
-- use targeted prompts for scoped follow-up checks.
-- provide rationale when dismissing or waiving findings.
-- re-run review after substantial config or policy changes.
+- `harness init` also scaffolds `scripts/harness-cli.sh` for repositories that want a repo-local wrapper around the published CLI package.
+- The wrapper resolves `@brainwav/coding-harness/dist/cli.js` from the current repository before running any harness command.
+- If the wrapper cannot resolve the package, treat that as local install/bootstrap drift rather than a harness command failure.
+- Repair from the repo root with:
+  - `pnpm install`
+  - `pnpm add -D @brainwav/coding-harness`
+- After repair, rerun:
+  - `bash scripts/harness-cli.sh <command>`
+  - `pnpm exec harness <command>`
 
 ## Recommended security scanner baseline
 
@@ -177,7 +159,7 @@ Each PR must include:
 - Codex review artifact (URL, report, or comment reference).
 - Confirmation that reviewer agent is independent from coding agent.
 
-If either artifact is missing, block merge until it is added or explicitly waived by repository policy.
+If a required review artifact is missing, block merge until it is added or explicitly waived by repository policy.
 
 ## Credential-safe evidence snippets
 

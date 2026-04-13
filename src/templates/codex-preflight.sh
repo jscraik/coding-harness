@@ -284,6 +284,7 @@ is_allowed_repo_external_path() {
 	local config_path="${root}/.codex/preflight-allowed-external-paths.txt"
 	local candidate=''
 	local candidate_abs=''
+	# Narrow path escape exemption: only CODESTYLE.md may resolve outside repo root.
 	if [[ "${match}" != "CODESTYLE.md" ]]; then
 		return 1
 	fi

@@ -2,7 +2,7 @@
 title: feat: Roadmap/CLI gap closure
 type: feat
 status: active
-date: 2026-02-27
+date: 2026-04-13
 plan_id: feat-roadmap-cli-gap-closure
 origin: docs/brainstorms/2026-02-27-roadmap-cli-gap-closure-brainstorm.md
 ---

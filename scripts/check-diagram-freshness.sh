@@ -10,11 +10,6 @@ TRACKED_ARTIFACT_PATHS=(
 	".diagram/context/diagram-context.meta.json"
 )
 
-is_git_tracked() {
-	local path="$1"
-	git -C "$REPO_ROOT" ls-files --error-unmatch -- "$path" >/dev/null 2>&1
-}
-
 is_ignored_change() {
 	local changed_path="$1"
 
@@ -51,26 +46,22 @@ is_architecture_sensitive_change() {
 }
 
 snapshot_artifacts() {
-	local path
-	for path in "${TRACKED_ARTIFACT_PATHS[@]}"; do
-		if [[ -d "$REPO_ROOT/$path" ]]; then
-			while IFS= read -r file; do
-				local rel_path="${file#"$REPO_ROOT"/}"
-				if ! is_git_tracked "$rel_path"; then
-					continue
-				fi
-				local checksum
-				checksum="$(normalized_checksum "$file" "$rel_path")"
-				printf '%s %s
-' "$rel_path" "$checksum"
-			done < <(find "$REPO_ROOT/$path" -type f | sort)
-		elif [[ -f "$REPO_ROOT/$path" ]] && is_git_tracked "$path"; then
-			local checksum
-			checksum="$(normalized_checksum "$REPO_ROOT/$path" "$path")"
-			printf '%s %s
-' "$path" "$checksum"
-		fi
-	done
+	local rel_path
+	while IFS= read -r rel_path; do
+		[[ -n "$rel_path" ]] || continue
+		local abs_path="$REPO_ROOT/$rel_path"
+		[[ -f "$abs_path" ]] || continue
+		local checksum
+		checksum="$(normalized_checksum "$abs_path" "$rel_path")"
+		printf '%s %s\n' "$rel_path" "$checksum"
+	done < <(tracked_artifact_files)
+}
+
+tracked_artifact_files() {
+	local artifact_path
+	for artifact_path in "${TRACKED_ARTIFACT_PATHS[@]}"; do
+		git -C "$REPO_ROOT" ls-files -- "$artifact_path"
+	done | awk 'NF { print }' | sort -u
 }
 
 normalized_checksum() {
@@ -83,6 +74,9 @@ normalized_checksum() {
 			;;
 		*/diagram-context.meta.json)
 			jq -c 'del(.generated_at, .last_generated_epoch, .changed, .context_sha256)' "$file" | shasum -a 256 | awk '{print $1}'
+			;;
+		*/manifest.json)
+			jq -c 'del(.generatedAt)' "$file" | shasum -a 256 | awk '{print $1}'
 			;;
 		*)
 			shasum -a 256 "$file" | awk '{print $1}'

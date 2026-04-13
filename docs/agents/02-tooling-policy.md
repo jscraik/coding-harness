@@ -8,8 +8,6 @@
 - [Execution rule for tooling](#execution-rule-for-tooling)
 - [Recommended command order](#recommended-command-order)
 - [Tooling verification checklist](#tooling-verification-checklist)
-- [Discovery constraints](#discovery-constraints)
-- [Escalation triggers](#escalation-triggers)
 - [Private npm package setup](#private-npm-package-setup)
 - [Local auth](#local-auth)
 - [CI auth](#ci-auth)
@@ -61,20 +59,22 @@ Harness-managed repositories should treat this CLI surface as required:
 - `wsearch` for Wikidata search
 - `make`
 
-Repo-managed pins should live in `.mise.toml` where the tool can be managed there. Externally managed CLIs must still be present on `PATH`, and missing commands should block environment readiness rather than degrade silently.
-The root `Makefile` is also part of the enforced baseline and must retain the harness contract targets required by `scripts/check-environment.sh`.
-`CODESTYLE.md` and `scripts/validate-codestyle.sh` are part of the same baseline. A harness-managed repo should fail readiness if either file is missing or if the validator no longer maps cleanly to repo-defined scripts.
-For this repository only, the repo-root `CODESTYLE.md` path may be a symlink to `/Users/jamiecraik/.codex/instructions/CODESTYLE.md` so the authoring source stays global while repo-local enforcement still targets the root path.
-For this repository only, `biome check` should ignore the repo-root `CODESTYLE.md` path so CI linting stays deterministic even when that developer-home symlink target is absent on hosted runners.
-For this repository only, `scripts/codex-preflight.sh` should honor that documented `CODESTYLE.md` symlink exception via `.codex/preflight-allowed-external-paths.txt` or `CODEX_PREFLIGHT_ALLOWED_EXTERNAL_PATHS` instead of failing the repo-root path check.
-For this repository only, scaffold rendering and published builds must package a real checked-in `src/templates/CODESTYLE.md` copy so CI and downstream installs do not depend on a developer-home symlink resolving at runtime.
-For this repository only, `src/templates/codex-preflight.sh` is the canonical authored source for the downstream scaffold. Keep the repo runtime mirror at `scripts/codex-preflight.sh` byte-identical by running `node scripts/sync-codex-preflight.cjs --write`; `pnpm lint` enforces `--check` so drift fails fast.
-For this repository only, `scripts/codex-preflight.sh` remains the public shell entrypoint, but structured Local Memory checks should run through the typed helper path (`local-memory-preflight`) when a harness runner is available. Keep `scripts/codex-preflight-local-memory-legacy.sh` only as the compatibility fallback for repos that cannot yet execute the helper.
-For shared or distributed harness-managed repos, keep `CODESTYLE.md` as a real repo-local file scaffolded from the canonical authoring source rather than a user-home symlink.
-This baseline is now a first-class contract surface under `harness.contract.json > toolingPolicy`, and `harness tooling-audit --path <dir>` should be used when checking rollout drift across multiple repositories.
-Project Brain memory-extension enforcement is also part of this tooling contract under `toolingPolicy.projectBrainMemoryExtension`: when `enabled=true`, readiness and tooling-audit should require the listed `.harness/**` knowledge paths to exist (project-local only, never workspace-global).
+Repo-managed pins should live in `.mise.toml` where the tool can be managed there, and externally managed CLIs must still be present on `PATH`; missing commands should block readiness instead of degrading silently.
+Baseline contracts also include the root `Makefile` targets required by `scripts/check-environment.sh` plus the `CODESTYLE.md` and `scripts/validate-codestyle.sh` pair.
+
+For this repository only:
+- The repo-root `CODESTYLE.md` path may be a symlink to `/Users/jamiecraik/.codex/instructions/CODESTYLE.md` so authoring can stay global while repo-local enforcement still targets the root path.
+- `biome check` should ignore that repo-root `CODESTYLE.md` path so CI linting stays deterministic when the developer-home symlink target is absent on hosted runners.
+- `scripts/codex-preflight.sh` should honor that symlink exception via `.codex/preflight-allowed-external-paths.txt` or `CODEX_PREFLIGHT_ALLOWED_EXTERNAL_PATHS` instead of failing the repo-root path check.
+- Scaffold rendering and published builds must package a real checked-in `src/templates/CODESTYLE.md` copy so CI and downstream installs do not depend on a developer-home symlink resolving at runtime.
+- `src/templates/codex-preflight.sh` remains the scaffold baseline, but `scripts/codex-preflight.sh` is project-owned after initialization and may diverge intentionally per-repo. Use `node scripts/sync-codex-preflight.cjs --write` only when you explicitly want to synchronize from template.
+- `scripts/codex-preflight.sh` remains the public shell entrypoint, but structured Local Memory checks should run through the typed helper path (`local-memory-preflight`) when a harness runner is available. Keep `scripts/codex-preflight-local-memory-legacy.sh` only as the compatibility fallback for repos that cannot yet execute the helper.
+
+For shared/distributed harness-managed repos, keep `CODESTYLE.md` as a real repo-local file scaffolded from the canonical source rather than a user-home symlink.
+Treat this as a contract surface under `harness.contract.json > toolingPolicy`; use `harness tooling-audit --path <dir>` to check rollout drift across repositories.
+Project Brain enforcement under `toolingPolicy.projectBrainMemoryExtension` should require listed `.harness/**` knowledge paths when `enabled=true` (project-local only, never workspace-global).
 For repositories with UI or ChatGPT Apps SDK dependency signals, `toolingPolicy.packagePolicy` also requires `@brainwav/design-system-guidance` in `package.json`.
-`docs-gate` now also treats tooling/runtime contract changes as documentation-authoritative work, so changes to hook wiring, readiness scripts, `.mise.toml`, or generated Codex environment actions should be landed with updates to this guide and `docs/agents/06-security-and-governance.md`.
+`docs-gate` treats tooling/runtime contract changes as documentation-authoritative work, so updates to hook wiring, readiness scripts, `.mise.toml`, or generated Codex environment actions should land with updates to this guide and `docs/agents/06-security-and-governance.md`.
 
 The local hook contract is intentionally split by drag profile:
 
@@ -82,10 +82,9 @@ The local hook contract is intentionally split by drag profile:
 - `scripts/setup-git-hooks.js` is the required wrapper around `prek install --overwrite`; it must patch generated `.git/hooks/*` shims to set `PREK_HOME="${PREK_HOME:-$HERE/../.cache/prek}"` so hook logging works in sandboxed/home-read-only environments and legacy `.legacy` wrappers do not linger.
 - `pre-commit` stays fast and now adds staged `gitleaks`, staged-doc `vale`, and `vitest related` alongside `lint`, `docs:lint`, and `typecheck`.
 - The staged secret scan should use the repo-root `.gitleaks.toml` when present so fixture/example allow lists live in version control instead of hidden local defaults.
-- `pre-push` keeps the heavier governance lane and now adds a narrow changed-files `semgrep` scan for `src/**` plus `pnpm build` before `audit`.
+- `pre-push` keeps the heavier governance lane and adds a changed-files `semgrep` scan for `src/**` plus `pnpm build` before `audit`.
 - `hooks-commit-msg` is the canonical wrapper target for commit-message policy checks. Keep it available even though `prek.toml` installs only `pre-commit` and `pre-push`.
-- The Semgrep lane is path-filtered to changed implementation files under `src/**` and uses the local ruleset at `scripts/semgrep-pre-push.yml` to avoid turning pre-push into a full repo scan.
-- `scripts/check-semgrep-changed.sh` should pin and execute the same Semgrep version used by `.github/workflows/secret-scan.yml` (`semgrep==1.153.1`) so local and CI security findings do not drift.
+- The Semgrep lane must stay path-filtered to changed implementation files under `src/**`, use `scripts/semgrep-pre-push.yml`, and pin `scripts/check-semgrep-changed.sh` to the same version as `.github/workflows/secret-scan.yml` (`semgrep==1.153.1`) so local and CI findings do not drift.
 - OpenSSF scorecard posture drift is tracked by `.github/workflows/openssf-scorecard.yml` and evaluated against `security/openssf-scorecard-policy.json` via `scripts/check-scorecard-regressions.mjs`; keep these three surfaces aligned when scorecard policy changes.
 - CodeRabbit custom `ast-grep` rules for this repository live under `rules/`; keep them narrowly scoped to repo-specific contracts such as the required `.js` extension on relative ESM imports.
 
@@ -120,17 +119,14 @@ Port-free wrapping is expected only for app run actions backed by `dev`/`start` 
 
 ## Execution rule for tooling
 
-Use repo scripts as the source of truth and do not assume global shortcuts. If a command is unavailable in the environment, record it immediately and treat the corresponding validation gate as blocked until rerun in an environment with the command.
+Use repo scripts as the source of truth; do not assume global shortcuts. If a command is unavailable, record it immediately and treat the related gate as blocked until rerun where that command exists.
 
-Exception for harness readiness:
-- Generated `scripts/check-environment.sh` in harness-managed repositories should prefer a repo-local CLI path first (`pnpm exec tsx src/cli.ts`, `node dist/cli.js`, or `bash scripts/harness-cli.sh`) and use the global `harness` binary only as a fallback when no repo-local runner exists.
-- When no repo-local runner exists, resolve `harness` from `mise` first (`mise which harness`) before using whatever `harness` happens to be first on `PATH`; this avoids stale Homebrew/global binaries shadowing the pinned runtime toolchain.
-- The global fallback install path is `npm i -g @brainwav/coding-harness`.
-- Private package auth must be wired where the global fallback is used:
-  - Local shell: `export NPM_TOKEN=<token>`
-  - GitHub Actions: `env: NPM_TOKEN: ${{ secrets.NPM_TOKEN }}`
-- Harness-managed repos may also scaffold `scripts/harness-cli.sh` as the repo-local wrapper for the published CLI package. That wrapper must resolve `@brainwav/coding-harness/dist/cli.js` from the current repo and fail with actionable install hints such as `pnpm install`, `pnpm add -D @brainwav/coding-harness`, and `pnpm exec harness <command>` instead of surfacing a raw `MODULE_NOT_FOUND`.
-- Semgrep hook configs under `scripts/` must remain valid YAML as well as valid Semgrep syntax; quote pattern strings that contain mapping-like fragments such as `shell: true` so pre-push parsing does not fail before policy checks run.
+Harness readiness exception:
+- `scripts/check-environment.sh` should prefer repo-local CLI execution (`pnpm exec tsx src/cli.ts`, `node dist/cli.js`, or `bash scripts/harness-cli.sh`) and only fall back to a global `harness` binary when no local runner exists.
+- For global fallback resolution, prefer `mise which harness` before `PATH` discovery to avoid stale Homebrew/global binaries shadowing the pinned toolchain.
+- If fallback install is required, use `npm i -g @brainwav/coding-harness` with private package auth wired for local shells and CI.
+- `scripts/harness-cli.sh` must fail with actionable install hints (`pnpm install`, `pnpm add -D @brainwav/coding-harness`, `pnpm exec harness <command>`) rather than raw `MODULE_NOT_FOUND`.
+- Semgrep hook configs under `scripts/` must remain valid YAML and valid Semgrep syntax; quote mapping-like pattern fragments such as `shell: true`.
 
 ## Recommended command order
 
@@ -142,33 +138,25 @@ For code changes:
 4. Run `bash scripts/validate-codestyle.sh` before handoff.
 5. Run `pnpm test:deep` when runtime or artifact behavior changed beyond the baseline code-style gate.
 
-For CircleCI parity checks and migration troubleshooting, run:
+Additional lanes:
+- CircleCI parity and migration troubleshooting: `pnpm test:ci`
+- Harness setup or scaffold sync verification in this repository: `bash scripts/run-harness-setup-checks.sh`
+- New task boundary for project-local agent work: `bash scripts/new-task.sh <slug>`
+- Fresh git worktrees before first push: `bash scripts/prepare-worktree.sh` (or equivalent wrapper target `make worktree-ready`)
 
-1. `pnpm test:ci`
+Required sequence (via helper wrappers): `bash scripts/codex-preflight.sh --stack auto --mode required`, `pnpm build`, `harness init --check-updates` (and `--update` when needed), `bash scripts/check-environment.sh`, then `pnpm check`.
 
-For harness setup or scaffold sync verification in this repository, run:
-
-1. `bash scripts/run-harness-setup-checks.sh`
-
-For fresh git worktrees before first push, run:
-
-1. `bash scripts/prepare-worktree.sh`
-2. `make worktree-ready` is an equivalent wrapper target
-
-The helper codifies the required sequence: `bash scripts/codex-preflight.sh --stack auto --mode required`, `pnpm build`, `harness init --check-updates` (and `--update` when needed), `bash scripts/check-environment.sh` (which resolves and validates pinned `uv`), and `pnpm check`.
-`scripts/prepare-worktree.sh` is the lightweight bootstrap lane for new worktrees; it ensures dependencies are installed in the active worktree so pre-push hooks that execute `pnpm` gates do not fail from missing `node_modules/`.
-`harness init --check-updates`, `harness init --update`, and `harness upgrade` now auto-repair legacy `.harness/restore-manifest.json` files when `ciProvider` can be inferred from `harness.contract.json`, an unambiguous CI layout on disk, or the current requested/default provider.
-If provider inference is still ambiguous, treat the incomplete manifest as a repo-drift warning for the update lane, print the remediation, and continue the remaining setup gates instead of aborting the whole audit.
-`scripts/codex-preflight.sh` is a CLI script and should be executed, not sourced. Use `bash scripts/codex-preflight.sh --stack auto --mode required` for standard checks (or `--mode optional` for softer checks).
-Scaffolded CI bootstrap should install pinned `pnpm` versions through a user-writable prefix (`$HOME/.local`) and persist that bin path through `$BASH_ENV` or `$GITHUB_PATH`; do not rely on `corepack enable` mutating privileged system shims such as `/usr/local/bin/pnpm`.
-When Local Memory is enabled in required mode, `scripts/codex-preflight.sh` should validate the pinned REST host/port from `~/.local-memory/config.yaml` before trusting `local-memory status --json`, so healthy daemons on `127.0.0.1` do not trigger duplicate restart behavior from stale CLI status output.
-The legacy shell fallback at `scripts/codex-preflight-local-memory-legacy.sh` must validate `rest_api.host`, `rest_api.port`, and `rest_api.auto_port` from that same config block directly, not by matching unrelated keys elsewhere in the file.
-Local Memory REST health retries in the legacy shell fallback should use a bounded curl budget, and `run_local_memory_preflight_via_harness` should continue to the next harness candidate when a helper exits with sentinel code `3` (`unavailable`) instead of failing closed early.
-`scripts/verify-work.sh` is the canonical repo-local verification entrypoint for harness-managed repos. Keep it repo-local, default it to `required` Local Memory mode, and scope its preflight path/binary expectations to scaffolded repo artifacts rather than codex-maintenance-only paths.
-Hook-governance checks in `scripts/verify-work.sh` should default to `project-local` scope, use temporary outputs in local mode, and require an explicit `--workspace-governance` flag before reading workspace manifests or writing shared governance reports.
-`scripts/validate-codestyle.sh` is the canonical fail-closed code-style gate for harness-managed repos. Keep it wired to repo-defined scripts, make it fail when required scripts are absent, and reuse it from `verify-work`, hooks, and downstream repo docs rather than re-describing divergent command bundles in each place.
-Active AI-review scaffolding in this repository is CodeRabbit-first. Any remaining Greptile references in active tooling or scaffold paths should exist only for legacy cleanup and migration safety, not for new repo scaffolding or current review enforcement.
-`scripts/check-diagram-freshness.sh` should compare only git-tracked diagram artifacts before and after refresh. gitignored `.diagram/` refresh output outside tracked files must not fail `pre-push` with an empty "Changed tracked files" list.
+Contract-preserving notes:
+- `scripts/codex-preflight.sh` is a CLI script and must be executed, not sourced (`--mode optional` is allowed for softer checks).
+- `scripts/verify-work.sh` is the canonical repo-local verification entrypoint; keep Local Memory required by default and hook-governance project-local unless `--workspace-governance` is explicitly set.
+- In project-local mode, `scripts/verify-work.sh` should skip hook-governance rollout failures when `.codex/hook-conformance.json` is absent, and reserve strict conformance-artifact enforcement for explicit `--workspace-governance` runs.
+- `scripts/validate-codestyle.sh` remains the canonical fail-closed code-style wrapper reused by verify/hook/docs surfaces.
+- `scripts/new-task.sh` is the canonical project-local task entrypoint; `scripts/prepare-worktree.sh` is the canonical new-worktree bootstrap lane.
+- `harness init --check-updates`, `harness init --update`, and `harness upgrade` should auto-repair legacy `.harness/restore-manifest.json` when provider inference is safe; ambiguous inference should raise a targeted drift warning and continue remaining setup gates.
+- Local Memory required mode should validate pinned REST host/port from `~/.local-memory/config.yaml`, and the legacy shell fallback must use bounded curl retries plus helper exit code `3` as "unavailable, try next runner".
+- CI bootstrap should install pinned `pnpm` via user-writable prefixes (`$HOME/.local` + `$BASH_ENV`/`$GITHUB_PATH`) rather than mutating privileged shims.
+- Active AI-review scaffolding is CodeRabbit-first; Greptile references in active paths should exist only for legacy cleanup.
+- `scripts/check-diagram-freshness.sh` must compare only git-tracked artifacts and must not fail pre-push for gitignored `.diagram/` output alone.
 
 ## Tag-driven private npm release workflow
 
@@ -188,20 +176,7 @@ Before claiming a change is verified, confirm:
 - The command version/source is not in conflict with lockfile or repo settings.
 - Output is captured in closeout notes.
 - The repo-local tooling inventory at `docs/agents/tooling.md` stays aligned with `scripts/check-environment.sh` and `.mise.toml`.
-
-## Discovery constraints
-
-- Prefer `rg` for content search.
-- Use `fd` when you need file-name discovery.
-- Use `jq` for JSON filtering/transforms.
-
-## Escalation triggers
-
-Stop and ask before proceeding if:
-
-- You must deviate from `pnpm` due environment constraints.
-- A required command is absent.
-- `pnpm` script behavior conflicts with local/global docs.
+- If a required command is absent, `pnpm` contract behavior conflicts, or you must deviate from `pnpm`, stop and mark the gate blocked before proceeding.
 
 ## Private npm package setup
 

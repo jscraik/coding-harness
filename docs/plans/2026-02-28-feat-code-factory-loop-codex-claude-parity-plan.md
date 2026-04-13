@@ -2,7 +2,7 @@
 title: feat: Close code-factory loop parity for Codex and Claude
 type: feat
 status: completed
-date: 2026-02-28
+date: 2026-04-13
 plan_id: feat-code-factory-loop-codex-claude-parity
 origin: docs/brainstorms/2026-02-28-code-factory-loop-parity-brainstorm.md
 amended: 2026-03-01

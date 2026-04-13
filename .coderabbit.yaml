@@ -1,12 +1,9 @@
-# CodeRabbit configuration for coding-harness.
-# CodeRabbit remains an independent reviewer from the coding agent, but the
-# repository now allows the request-changes workflow to auto-approve clean or
-# fully resolved reviews.
+# Harness-managed CodeRabbit baseline for downstream repositories.
 # yaml-language-server: $schema=https://coderabbit.ai/integrations/schema.v2.json
 
 reviews:
   profile: "assertive"
-  request_changes_workflow: true
+  request_changes_workflow: false
   high_level_summary_in_walkthrough: true
   review_details: true
   sequence_diagrams: true
@@ -30,65 +27,9 @@ reviews:
   path_instructions:
     - path: "**"
       instructions: |
-        Use repo evidence first: prefer package scripts, tracked docs, harness contracts, and validation wrappers over assumptions.
-        Treat contradictions between code, docs, and workflow policy as review-worthy even when the code itself looks reasonable.
-        Focus on concrete behavioral risk, missing validation, and governance drift rather than style-only feedback.
-    - path: "src/**"
-      instructions: |
-        This repository is a TypeScript control plane for coding-harness policy and review workflows.
-        Focus on behavioral regressions in CLI commands, policy derivation, generated contract boundaries, and required-check naming.
-        When command or policy behavior changes, expect matching tests or updated validation coverage.
-    - path: "scripts/**"
-      instructions: |
-        Shell and bootstrap scripts are contract surfaces here.
-        Check bash vs zsh assumptions, path handling, repo-root detection, and failure modes carefully.
-        Flag changes that silently weaken required preflight or verification behavior.
-    - path: ".github/**"
-      instructions: |
-        Treat workflow and template changes as governance changes.
-        Check status-check names, trigger coverage, and PR-template expectations for parity with the actual repository policy and implementation.
-        Flag any change that would weaken merge gates without an explicit policy update.
-    - path: "docs/**/*.md"
-      instructions: |
-        This repo relies on docs as executable governance.
-        Check that commands, required checks, review-provider expectations, and validation steps are accurate for the current repository state.
-        Flag stale Greptile or CodeRabbit guidance, contradictions, or references to checks that no longer exist.
-    - path: "AGENTS.md"
-      instructions: |
-        Keep instructions precise and consistent with the current command contract, repo workflow, and validation expectations.
-        Flag contradictions with the implementation or deeper scoped instruction docs.
-    - path: "CONTRIBUTING.md"
-      instructions: |
-        This file is part of the repo's merge contract.
-        Check required gates, review-provider expectations, and branch-protection guidance for truthfulness against the actual implementation.
-    - path: "WORKFLOW.md"
-      instructions: |
-        Check that workflow stages, responsibilities, and gating language remain aligned with the current harness behavior.
-  tools:
-    ast-grep:
-      essential_rules: true
-      rule_dirs:
-        - "rules"
-    biome:
-      enabled: true
-    gitleaks:
-      enabled: true
-    markdownlint:
-      enabled: true
-    circleci:
-      enabled: true
-    semgrep:
-      enabled: true
-      config_file: "scripts/semgrep-pre-push.yml"
-    checkmake:
-      enabled: true
-  finishing_touches:
-    docstrings:
-      enabled: true
-    unit_tests:
-      enabled: true
-    simplify:
-      enabled: false
+        Use repository evidence first: package scripts, tracked docs, harness contracts, and validation wrappers over assumptions.
+        Treat contradictions between code, docs, and workflow policy as review-worthy even when code changes look reasonable.
+        Prioritize behavioral risk, missing validation, and governance drift over style-only feedback.
   pre_merge_checks:
     override_requested_reviewers_only: true
     title:
@@ -98,19 +39,11 @@ reviews:
       mode: "warning"
     issue_assessment:
       mode: "warning"
-    custom_checks:
-      - name: "Governance Parity"
-        mode: "warning"
-        instructions: "Apply this check only when the PR touches `.coderabbit.yaml`, `.github/**`, `harness.contract.json`, `.harness/ci-required-checks.json`, `src/lib/policy/required-checks.ts`, `src/commands/review-gate.ts`, `src/commands/branch-protect.ts`, `src/commands/ci-migrate.ts`, or `docs/agents/**`. Pass only when the changed policy surface is reflected in the matching governance docs and contract surfaces: `.github/PULL_REQUEST_TEMPLATE.md`, `docs/agents/04-validation.md`, `docs/agents/07b-agent-governance.md`, `docs/agents/12-ai-review-governance.md`, and `docs/agents/17-ci-required-checks.md` when applicable. If none of those trigger paths changed, mark this check as passing."
-      - name: "Validation Evidence"
-        mode: "warning"
-        instructions: "Read the PR description and pass only when `## Testing` includes non-empty values for `verification_commands:`, `verification_outcomes:`, and `blocked_steps_reason:`. Also require each `Command:` line in `## Testing` to record an explicit result and require non-placeholder values for `CodeRabbit:` and `Codex:` under `## Review artifacts`."
+
 chat:
   auto_reply: true
   allow_non_org_members: false
-  integrations:
-    linear: # Keep chat actions enabled so review threads can create or update Linear issues when needed.
-      usage: "enabled"
+
 knowledge_base:
   issues:
     scope: "local"
@@ -118,8 +51,6 @@ knowledge_base:
     scope: "local"
   learnings:
     scope: "local"
-  linear: # Keep Linear out of review grounding so issue text is not treated as repository knowledge-base context.
-    usage: "disabled"
   code_guidelines:
     enabled: true
     filePatterns:
@@ -128,39 +59,12 @@ knowledge_base:
       - "**/GEMINI.md"
       - "**/CODESTYLE.md"
       - "**/WORKFLOW.md"
-      - "instructions/*.md"
-      - ".codex/rules/**/*.md"
-      - "codex/rules/**/*.md"
       - "docs/agents/**/*.md"
   mcp:
     usage: "enabled"
   web_search:
     enabled: true
-code_generation:
-  docstrings:
-    path_instructions:
-      - path: "src/**/*.ts"
-        instructions: |
-          Use TSDoc style with @param and @returns for exported APIs when those sections add real value.
-          Focus on command behavior, side effects, failure modes, and policy constraints instead of repeating type names.
-      - path: "**/*test*"
-        instructions: |
-          Describe the behavior under test and the scenario being protected.
-          Keep docstrings concise and avoid boilerplate for obvious assertions.
-  unit_tests:
-    path_instructions:
-      - path: "**/*.ts"
-        instructions: |
-          Use vitest for testing framework.
-          Generate comprehensive test cases including edge cases and error conditions.
-          Include proper TypeScript types in test expectations.
-      - path: "**/api/**"
-        instructions: |
-          Focus on request/response validation and error handling.
-          Mock external API calls using MSW.
-          Test authentication middleware and rate limiting.
-      - path: "**/components/**"
-        instructions: |
-          Use React Testing Library for component tests.
-          Test user interactions, accessibility, and error boundaries.
-          Mock complex props and verify state changes.
+
+issue_enrichment:
+  auto_enrich:
+    enabled: false

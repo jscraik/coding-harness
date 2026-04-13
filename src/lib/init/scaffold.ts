@@ -32,6 +32,7 @@ import {
 	REQUIRED_TOOLING_DOC_TERMS,
 } from "../policy/tooling-baseline.js";
 import type { ProjectType } from "../project-type/types.js";
+import { PROJECT_BRAIN_TEMPLATES } from "./project-brain-templates.js";
 import {
 	type CIProvider,
 	CODEX_ENVIRONMENT_TEMPLATE_PATH,
@@ -299,201 +300,6 @@ function renderCodexEnforcedTemplate(): string {
 	return readFileSync(templatePath, "utf-8");
 }
 
-const PROJECT_BRAIN_DOMAINS = [
-	{
-		slug: "cli",
-		label: "CLI",
-		focus: "Command surfaces, flags, and operator workflows.",
-	},
-	{
-		slug: "ci",
-		label: "CI",
-		focus: "Pipelines, required checks, and release safety.",
-	},
-	{
-		slug: "governance",
-		label: "Governance",
-		focus: "Policy controls, approvals, and audit expectations.",
-	},
-	{
-		slug: "tooling",
-		label: "Tooling",
-		focus: "Bootstrap scripts, preflight rules, and local runtime contracts.",
-	},
-] as const;
-
-type ProjectBrainDomain = (typeof PROJECT_BRAIN_DOMAINS)[number];
-
-function renderProjectBrainIndexTemplate(): string {
-	const rows = PROJECT_BRAIN_DOMAINS.map(
-		(domain) =>
-			`| [${domain.slug}](./${domain.slug}/) | ${domain.focus} | (none yet) | 0 |`,
-	).join("\n");
-
-	return `# Knowledge Index
-
-Project Brain index for repository-grounded knowledge and decision artifacts.
-
-## Domains
-
-| Domain | Focus | Last updated | Key rules |
-|--------|-------|--------------|-----------|
-${rows}
-
-## Recently active
-
-(none yet)
-
-## Review needed
-
-(none yet)
-`;
-}
-
-function renderProjectBrainKnowledgeTemplate(
-	domain: ProjectBrainDomain,
-): string {
-	return `# ${domain.label} Knowledge
-
-## Confirmed facts
-
-(none yet)
-
-## Patterns
-
-(none yet)
-
-## Gotchas
-
-(none yet)
-
-## References
-
-(none yet)
-`;
-}
-
-function renderProjectBrainHypothesesTemplate(
-	domain: ProjectBrainDomain,
-): string {
-	return `# ${domain.label} Hypotheses
-
-## Active hypotheses
-
-(none yet)
-
-## Under review
-
-(none yet)
-
-## Demoted from rules
-
-(none yet)
-`;
-}
-
-function renderProjectBrainRulesTemplate(domain: ProjectBrainDomain): string {
-	return `# ${domain.label} Rules
-
-**Rule count:** 0
-**Last promoted:** (none yet)
-
-## Active rules
-
-(none yet)
-`;
-}
-
-function renderProjectBrainLearningsTemplate(): string {
-	return `---
-schema_version: 1
-purpose: Project-specific agent knowledge base — repo-scoped fixes and gotchas.
-scope: This repo only.
-update_policy: |
-  Append after any bug, tool failure, or extra-effort fix that is specific to this repository.
-  Universal fixes belong in ~/.codex/instructions/Learnings.md.
-  Do not delete entries; append only.
-  Format: **YYYY-MM-DD [Codex]:** <problem> -> <fix>
----
-
-# Learnings
-
-Repo-specific agent knowledge base. Append-only.
-
-> Scope: this repository only.
-> Format: **YYYY-MM-DD [Codex]:** <problem> -> <fix>
-`;
-}
-
-function renderProjectBrainQualityTemplate(): string {
-	return `# Quality Criteria
-
-**Last updated:** (not yet)
-**Total criteria:** 0
-
-## Categories
-
-### Reliability
-| ID | Criterion | Severity | Source | Last triggered |
-|----|-----------|----------|--------|----------------|
-| (none yet) | | | | |
-
-### Security
-| ID | Criterion | Severity | Source | Last triggered |
-|----|-----------|----------|--------|----------------|
-| (none yet) | | | | |
-
-### Testing
-| ID | Criterion | Severity | Source | Last triggered |
-|----|-----------|----------|--------|----------------|
-| (none yet) | | | | |
-`;
-}
-
-function renderProjectBrainReviewLogTemplate(): string {
-	return `# System Review Log
-
-Record of periodic reviews for knowledge, decisions, and quality criteria.
-
-## Review schedule
-
-- Suggested cadence: every 2 weeks or after major milestones.
-- Last review: (not yet)
-
-## Reviews
-
-(none yet)
-`;
-}
-
-function renderProjectBrainCodexLearnSummaryTemplate(): string {
-	return `# Codex Learn Summary
-
-This file is maintained by \`./scripts/codex-learn analyze\`.
-
-**Last generated:** (not yet)
-**Scope:** repo
-**Failure store:** \`.harness/memory/codex-learned\`
-
-## Error frequency
-
-(none yet)
-
-## Suggested preflight overrides
-
-- Extra bins: (none yet)
-
-## Path hints
-
-- (none yet)
-
-## Promotion guide
-
-- Confirmed 3+ times: promote pattern to \`rules.md\`.
-- Still uncertain: keep investigation notes in \`hypotheses.md\`.
-`;
-}
-
 function renderCodestyleTemplate(): string {
 	// Prefer the packaged template so published builds do not depend on a
 	// user-home symlink. Source checkouts fall back to the repo-root path.
@@ -611,6 +417,140 @@ node scripts/setup-git-hooks.js
 
 echo "[prepare-worktree] ready"
 echo "[prepare-worktree] next: bash scripts/verify-work.sh --fast"
+`;
+}
+
+/**
+ * Produces a bash helper that creates a dedicated worktree and branch for one task.
+ *
+ * The generated script keeps task isolation project-local by creating one branch and one worktree per task,
+ * then prints the bootstrap commands to run inside that worktree.
+ *
+ * @returns A complete POSIX-compatible bash script as a string. When executed, the script exits with:
+ *          - `0` on success,
+ *          - `1` if the branch or worktree path already exists,
+ *          - `2` for invalid arguments.
+ */
+function renderNewTaskScript(): string {
+	return `#!/usr/bin/env bash
+set -euo pipefail
+
+SCRIPT_DIR="$(cd -- "$(dirname -- "\${BASH_SOURCE[0]}")" && pwd -P)"
+REPO_ROOT="$(cd -- "$SCRIPT_DIR/.." && pwd -P)"
+
+usage() {
+	cat <<'USAGE'
+Usage: scripts/new-task.sh [options] <slug>
+
+Create a dedicated git worktree and branch for one task, then print the
+bootstrap commands to run inside that worktree.
+
+This repository expects one task = one worktree = one branch = one agent thread.
+
+Options:
+  --base <ref>            Start the branch from this ref (default: main)
+  --branch-prefix <name>  Branch prefix (default: codex)
+  --path <dir>            Worktree path (default: ../wt-<slug>)
+  -h, --help              Show this help text
+USAGE
+}
+
+base_ref="main"
+branch_prefix="codex"
+worktree_path=""
+slug=""
+
+while (( $# > 0 )); do
+	case "$1" in
+		--base)
+			base_ref="\${2:-}"
+			shift 2
+			;;
+		--branch-prefix)
+			branch_prefix="\${2:-}"
+			shift 2
+			;;
+		--path)
+			worktree_path="\${2:-}"
+			shift 2
+			;;
+		-h|--help)
+			usage
+			exit 0
+			;;
+		--)
+			shift
+			break
+			;;
+		-*)
+			echo "[new-task] unknown option: $1" >&2
+			usage >&2
+			exit 2
+			;;
+		*)
+			slug="$1"
+			shift
+			break
+			;;
+	esac
+done
+
+if [[ -z "$slug" && $# -gt 0 ]]; then
+	slug="$1"
+	shift
+fi
+
+if [[ -z "$slug" || $# -gt 0 ]]; then
+	usage >&2
+	exit 2
+fi
+
+if [[ ! "$slug" =~ ^[a-z0-9][a-z0-9-]*$ ]]; then
+	echo "[new-task] slug must be lower-case kebab-case: $slug" >&2
+	exit 2
+fi
+
+if [[ ! "$branch_prefix" =~ ^[A-Za-z0-9._/-]+$ ]]; then
+	echo "[new-task] invalid branch prefix: $branch_prefix" >&2
+	exit 2
+fi
+
+branch_name="\${branch_prefix}/\${slug}"
+
+if [[ -z "$worktree_path" ]]; then
+	worktree_path="\${REPO_ROOT}/../wt-\${slug}"
+fi
+
+cd "$REPO_ROOT"
+
+git rev-parse --show-toplevel >/dev/null
+
+if git show-ref --verify --quiet "refs/heads/\${branch_name}"; then
+	echo "[new-task] local branch already exists: \${branch_name}" >&2
+	exit 1
+fi
+
+if [[ -e "$worktree_path" ]]; then
+	echo "[new-task] worktree path already exists: $worktree_path" >&2
+	exit 1
+fi
+
+echo "[new-task] repo: $REPO_ROOT"
+echo "[new-task] base: $base_ref"
+echo "[new-task] branch: \${branch_name}"
+echo "[new-task] path: $worktree_path"
+
+git worktree add "$worktree_path" -b "${"${"}branch_name}" "$base_ref"
+
+echo
+echo "[new-task] next:"
+echo "  cd \\"$worktree_path\\""
+if [[ -f "$worktree_path/Makefile" ]] && rg -q '^worktree-ready:' "$worktree_path/Makefile"; then
+	echo "  make worktree-ready"
+else
+	echo "  bash scripts/prepare-worktree.sh"
+fi
+echo "  bash scripts/codex-preflight.sh --mode optional"
 `;
 }
 
@@ -1669,44 +1609,7 @@ export const TEMPLATES: Template[] = [
 		path: ".harness/ci-provider-transition-status.json",
 		render: () => renderTransitionStatusArtifact(),
 	},
-	{
-		path: ".harness/memory/LEARNINGS.md",
-		render: () => renderProjectBrainLearningsTemplate(),
-	},
-	{
-		path: ".harness/knowledge/INDEX.md",
-		render: () => renderProjectBrainIndexTemplate(),
-	},
-	...PROJECT_BRAIN_DOMAINS.flatMap((domain) => [
-		{
-			path: `.harness/knowledge/${domain.slug}/knowledge.md`,
-			render: () => renderProjectBrainKnowledgeTemplate(domain),
-		},
-		{
-			path: `.harness/knowledge/${domain.slug}/hypotheses.md`,
-			render: () => renderProjectBrainHypothesesTemplate(domain),
-		},
-		{
-			path: `.harness/knowledge/${domain.slug}/rules.md`,
-			render: () => renderProjectBrainRulesTemplate(domain),
-		},
-	]),
-	{
-		path: ".harness/knowledge/tooling/codex-learn-summary.md",
-		render: () => renderProjectBrainCodexLearnSummaryTemplate(),
-	},
-	{
-		path: ".harness/decisions/.gitkeep",
-		render: () => "",
-	},
-	{
-		path: ".harness/quality/criteria.md",
-		render: () => renderProjectBrainQualityTemplate(),
-	},
-	{
-		path: ".harness/review-log.md",
-		render: () => renderProjectBrainReviewLogTemplate(),
-	},
+	...PROJECT_BRAIN_TEMPLATES,
 	{
 		path: ".npmrc",
 		render: () => renderDefaultNpmrc(),
@@ -2366,6 +2269,7 @@ Recommended policy:
 - Keep repo-scoped telemetry and learned overrides under \`.harness/memory/\`, and global telemetry under \`~/.codex/\`.
 - Treat \`scripts/verify-work.sh\` as the canonical repo-facing verification command and keep it wired to repo-local preflight defaults.
 - Treat \`scripts/validate-codestyle.sh\` as the fail-closed codestyle gate and require exact proof-of-pass in change summaries and PRs.
+- Treat \`scripts/new-task.sh\` as the canonical task-entry helper so each task starts with a repo-local branch/worktree boundary instead of branch switching inside a shared checkout.
 - Treat \`scripts/prepare-worktree.sh\` as required first-push bootstrap for freshly created worktrees so local hooks run with dependencies and canonical hook wiring.
 - Treat \`scripts/check-environment.sh\` as the local readiness gate for required tooling.
 - Block merge or promotion work when a required CLI is missing rather than silently skipping the corresponding validation lane.
@@ -2385,8 +2289,10 @@ Recommended policy:
 - \`harness init\` scaffolds \`scripts/verify-work.sh\` as the canonical repo-local verification entrypoint.
 - The wrapper always runs \`scripts/codex-preflight.sh\` in \`required\` Local Memory mode with scaffold-safe path and binary expectations.
 - \`scripts/validate-codestyle.sh\` is the canonical fail-closed codestyle gate and is reused by \`verify-work\`, local hooks, and downstream repo docs.
+- \`scripts/new-task.sh\` is the canonical task bootstrap helper. Use it to create one task = one worktree = one branch = one agent thread inside the project itself.
 - Repo-local launches should prefer \`./scripts/codex-enforced\` so preflight failures are recorded into repo-scoped learn state.
 - Use \`./scripts/codex-learn analyze\` and \`./scripts/codex-learn apply\` to inspect repo-scoped failure patterns and write override files into \`.harness/memory/\`.
+- Start new work with \`bash scripts/new-task.sh <slug>\`, then enter the generated worktree and continue there.
 - Use \`bash scripts/validate-codestyle.sh --fast\` during iteration for focused codestyle validation.
 - Use \`bash scripts/validate-codestyle.sh\` before handoff for the fail-closed codestyle bundle.
 - Use \`bash scripts/verify-work.sh\` for the broader verification bundle.
@@ -3352,21 +3258,22 @@ is_architecture_sensitive_change() {
 }
 
 snapshot_artifacts() {
-	local path
-	for path in "\${TRACKED_ARTIFACT_PATHS[@]}"; do
-		if [[ -d "$REPO_ROOT/$path" ]]; then
-			while IFS= read -r file; do
-				local rel_path="\${file#$REPO_ROOT/}"
-				local checksum
-				checksum="$(normalized_checksum "$file" "$rel_path")"
-				printf '%s %s\n' "$rel_path" "$checksum"
-			done < <(find "$REPO_ROOT/$path" -type f | sort)
-		elif [[ -f "$REPO_ROOT/$path" ]]; then
-			local checksum
-			checksum="$(normalized_checksum "$REPO_ROOT/$path" "$path")"
-			printf '%s %s\n' "$path" "$checksum"
-		fi
-	done
+	local rel_path
+	while IFS= read -r rel_path; do
+		[[ -n "$rel_path" ]] || continue
+		local abs_path="$REPO_ROOT/$rel_path"
+		[[ -f "$abs_path" ]] || continue
+		local checksum
+		checksum="$(normalized_checksum "$abs_path" "$rel_path")"
+		printf '%s %s\n' "$rel_path" "$checksum"
+	done < <(tracked_artifact_files)
+}
+
+tracked_artifact_files() {
+	local artifact_path
+	for artifact_path in "\${TRACKED_ARTIFACT_PATHS[@]}"; do
+		git -C "$REPO_ROOT" ls-files -- "$artifact_path"
+	done | awk 'NF { print }' | sort -u
 }
 
 normalized_checksum() {
@@ -3652,6 +3559,10 @@ CLAUDE_APPROVAL_POSTURE = "require"
 		render: (pm) => renderPrepareWorktreeScript(pm),
 	},
 	{
+		path: "scripts/new-task.sh",
+		render: () => renderNewTaskScript(),
+	},
+	{
 		path: "scripts/harness-cli.sh",
 		render: (pm) => renderHarnessCliWrapper(pm),
 	},
@@ -3841,7 +3752,7 @@ fi
 			echo "Error: required prek hook '\$hook_name' is missing or out of date in $PREK_CONFIG_PATH"
 			exit 1
 		fi
-		if [[ -n "$hook_stages" ]] && ! rg -q "^[[:space:]]*stages[[:space:]]*=[[:space:]]*\\[\"$hook_stages\"\\][[:space:]]*$" "$PREK_CONFIG_PATH"; then
+		if [[ -n "$hook_stages" ]] && ! rg -q "^[[:space:]]*stages[[:space:]]*=[[:space:]]*\\\\[\\\"$hook_stages\\\"\\\\][[:space:]]*$" "$PREK_CONFIG_PATH"; then
 			echo "Error: required prek hook '\$hook_name' is missing or out of date in $PREK_CONFIG_PATH"
 			exit 1
 		fi
@@ -4087,6 +3998,7 @@ echo "Environment check passed (attestation: $ATTESTATION_PATH)"
 /scripts/verify-work.sh @jscraik
 /scripts/validate-codestyle.sh @jscraik
 /scripts/prepare-worktree.sh @jscraik
+/scripts/new-task.sh @jscraik
 /scripts/harness-cli.sh @jscraik
 /scripts/check-environment.sh @jscraik
 `,
