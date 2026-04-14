@@ -25,7 +25,8 @@ describe("tooling baseline codex actions", () => {
 		expect(action?.command).toContain(
 			"Local main is ahead of origin/main; aborting.",
 		);
-		expect(action?.command).toContain("if ! git pull --ff-only origin main;");
+		expect(action?.command).toContain("git pull --ff-only origin main");
+		expect(action?.command).toContain("pull_status=$?");
 		expect(action?.command).toContain(
 			'git merge --ff-only "origin/$release_branch"',
 		);
