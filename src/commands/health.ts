@@ -217,8 +217,9 @@ const GATE_SPECS: GateSpec[] = [
 		isApplicable: (dir) => hasFile(dir, "harness.contract.json"),
 		interpretExitCode: (code) => {
 			if (code === 0) return { status: "ok", summary: "plan gate satisfied" };
-			if (code === 1)
+			if (code === 2)
 				return { status: "warning", summary: "plan advisory issues" };
+			if (code === 1) return { status: "error", summary: "plan missing" };
 			return { status: "error", summary: "plan gate failed" };
 		},
 	},
@@ -315,7 +316,27 @@ function runGate(
 		timeout: 60_000,
 	});
 
-	const exitCode = result.status ?? (result.signal ? 2 : 0);
+	if (result.status === null && result.signal) {
+		return {
+			gate: spec.gate,
+			displayName: spec.displayName,
+			status: "error",
+			summary: `gate interrupted (${result.signal})`,
+			exitCode: 2,
+		};
+	}
+
+	if (result.status === null && !result.signal && result.error) {
+		return {
+			gate: spec.gate,
+			displayName: spec.displayName,
+			status: "error",
+			summary: `gate spawn failed: ${result.error.message}`,
+			exitCode: 2,
+		};
+	}
+
+	const exitCode = result.status ?? 0;
 	const { status, summary } = spec.interpretExitCode(exitCode);
 
 	return {

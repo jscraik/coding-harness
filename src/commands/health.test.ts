@@ -112,6 +112,83 @@ describe("runHealth", () => {
 		expect(report.counts.error).toBe(1);
 	});
 
+	it("treats plan-gate stale exit code as warning", () => {
+		writeContract(dir);
+		mockSpawnSync.mockReturnValue({
+			status: 2,
+			stdout: "",
+			stderr: "",
+			pid: 1,
+			output: [],
+			signal: null,
+		});
+
+		const report = runHealth({ dir, gates: ["plan-gate"] });
+
+		expect(report.overall).toBe("warning");
+		expect(report.counts.warning).toBe(1);
+		const planResult = report.gates.find((g) => g.gate === "plan-gate");
+		expect(planResult?.status).toBe("warning");
+	});
+
+	it("treats plan-gate missing plan exit code as error", () => {
+		writeContract(dir);
+		mockSpawnSync.mockReturnValue({
+			status: 1,
+			stdout: "",
+			stderr: "",
+			pid: 1,
+			output: [],
+			signal: null,
+		});
+
+		const report = runHealth({ dir, gates: ["plan-gate"] });
+
+		expect(report.overall).toBe("error");
+		expect(report.counts.error).toBe(1);
+		const planResult = report.gates.find((g) => g.gate === "plan-gate");
+		expect(planResult?.status).toBe("error");
+	});
+
+	it("treats plan-gate traceability failures as errors", () => {
+		writeContract(dir);
+		mockSpawnSync.mockReturnValue({
+			status: 7,
+			stdout: "",
+			stderr: "",
+			pid: 1,
+			output: [],
+			signal: null,
+		});
+
+		const report = runHealth({ dir, gates: ["plan-gate"] });
+
+		expect(report.overall).toBe("error");
+		expect(report.counts.error).toBe(1);
+		const planResult = report.gates.find((g) => g.gate === "plan-gate");
+		expect(planResult?.status).toBe("error");
+	});
+
+	it("treats plan-gate signal/timeout as error", () => {
+		writeContract(dir);
+		mockSpawnSync.mockReturnValue({
+			status: null,
+			stdout: "",
+			stderr: "",
+			pid: 1,
+			output: [],
+			signal: "SIGTERM",
+			error: new Error("spawnSync: timeout"),
+		});
+
+		const report = runHealth({ dir, gates: ["plan-gate"] });
+
+		expect(report.overall).toBe("error");
+		expect(report.counts.error).toBe(1);
+		const planResult = report.gates.find((g) => g.gate === "plan-gate");
+		expect(planResult?.status).toBe("error");
+	});
+
 	it("filters to only requested gates", () => {
 		writeContract(dir);
 		mockSpawnSync.mockReturnValue({
@@ -150,6 +227,27 @@ describe("runHealth", () => {
 		// null status + signal → treated as error (exit code 2)
 		const driftResult = report.gates.find((g) => g.gate === "drift-gate");
 		expect(driftResult?.status).toBe("error");
+	});
+
+	it("reports error when spawnSync fails with ENOENT (no signal)", () => {
+		writeContract(dir);
+		mockSpawnSync.mockReturnValue({
+			status: null,
+			stdout: "",
+			stderr: "",
+			pid: 0,
+			output: [],
+			signal: null,
+			error: new Error("ENOENT"),
+		});
+
+		const report = runHealth({ dir, gates: ["drift-gate"] });
+
+		const driftResult = report.gates.find((g) => g.gate === "drift-gate");
+		expect(driftResult?.status).toBe("error");
+		expect(driftResult?.exitCode).toBe(2);
+		expect(driftResult?.summary).toContain("gate spawn failed");
+		expect(driftResult?.summary).toContain("ENOENT");
 	});
 
 	it("never executes a cwd-controlled harness binary", () => {

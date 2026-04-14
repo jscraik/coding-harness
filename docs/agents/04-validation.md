@@ -28,6 +28,7 @@ Every change must be checked by the smallest gate needed for risk, then by the f
 1. `bash scripts/validate-codestyle.sh --fast`
 2. `bash scripts/validate-codestyle.sh`
 3. `pnpm test:deep` when artifact/runtime behavior changed beyond the baseline gate
+4. When `validate-codestyle.sh` runs via hooks, treat hook-exported git environment (`GIT_DIR`, `GIT_WORK_TREE`, and related `GIT_*`) as untrusted input and ensure the wrapper sanitizes those values before invoking `pnpm run`, so fixture-local git checks are isolated from hook context.
 
 ## CI gates
 
@@ -80,6 +81,7 @@ Enforces plan-traceability and acceptance-evidence requirements for pull-request
 - Run `bash scripts/validate-codestyle.sh`.
 - Add any targeted tests if behavior changed.
 - Run `pnpm test:deep` when runtime/artifact behavior changed or when deeper promotion evidence is required.
+- Keep validation evidence explicit that `scripts/validate-codestyle.sh` sanitizes hook-exported `GIT_*` values before nested `pnpm run` calls, rather than assuming inherited hook env is safe.
 - For pull-requested work, also ensure the PR body lists valid plan IDs and the referenced plans' completed acceptance items carry evidence refs.
 - When review-policy or PR-template behavior changes, ensure the PR body and related docs stay truthful about required CodeRabbit and Codex review artifacts.
 - For this repository, keep `## Testing` in the PR body structured with `verification_commands`, `verification_outcomes`, and `blocked_steps_reason` so CodeRabbit can evaluate validation evidence deterministically.
