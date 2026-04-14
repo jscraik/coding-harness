@@ -804,13 +804,13 @@ describe("runInit", () => {
 						env: sanitizeGitEnv(),
 					},
 				);
-				expect([1, 2]).toContain(finalizeRun.status ?? -1);
+				expect(finalizeRun.status).toBe(2);
 				const finalizeOutput = `${finalizeRun.stdout}${finalizeRun.stderr}`;
 				expect(finalizeOutput).toMatch(
-					/Local main is ahead of origin\/main; aborting\.|Not possible to fast-forward, aborting\./,
+					/Local main is ahead of origin\/main; aborting\./,
 				);
 				expect(finalizeOutput).toMatch(
-					/Reconcile local commits before running Release Finalize\.|Not possible to fast-forward, aborting\./,
+					/Reconcile local commits before running Release Finalize\./,
 				);
 
 				const remoteMainSha = runGit(
