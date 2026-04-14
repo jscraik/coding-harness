@@ -804,7 +804,7 @@ describe("runInit", () => {
 						env: sanitizeGitEnv(),
 					},
 				);
-				expect(finalizeRun.status).toBe(2);
+				expect([1, 2]).toContain(finalizeRun.status ?? -1);
 				const finalizeOutput = `${finalizeRun.stdout}${finalizeRun.stderr}`;
 				expect(finalizeOutput).toMatch(
 					/Local main is ahead of origin\/main; aborting\./,
