@@ -678,7 +678,7 @@ describe("runInit", () => {
 				'git fetch --prune origin main "$release_branch"',
 			);
 			expect(content).toContain(
-				'local_main_ahead_count="$(git rev-list --count origin/main..main)"',
+				'local_main_ahead_count="$(git rev-list --count origin/main..HEAD)"',
 			);
 			expect(content).toContain(
 				"Local main is ahead of origin/main; aborting.",
