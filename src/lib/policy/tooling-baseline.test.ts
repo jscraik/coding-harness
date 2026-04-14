@@ -20,11 +20,12 @@ describe("tooling baseline codex actions", () => {
 			'git fetch --prune origin main "$release_branch"',
 		);
 		expect(action?.command).toContain(
-			'local_main_ahead_count="$(git rev-list --count origin/main..main)"',
+			'local_main_ahead_count="$(git rev-list --count origin/main..HEAD)"',
 		);
 		expect(action?.command).toContain(
 			"Local main is ahead of origin/main; aborting.",
 		);
+		expect(action?.command).toContain("if ! git pull --ff-only origin main;");
 		expect(action?.command).toContain(
 			'git merge --ff-only "origin/$release_branch"',
 		);
