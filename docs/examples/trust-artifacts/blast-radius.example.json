@@ -1,0 +1,25 @@
+{
+	"_comment": "Reference example: output from `harness blast-radius --files src/lib/contract/types.ts --json`",
+	"schema": "blast-radius/v1",
+	"timestamp": "2026-04-15T12:00:00Z",
+	"input": {
+		"files": ["src/lib/contract/types.ts"]
+	},
+	"result": {
+		"directDependencies": [
+			"src/commands/preflight-gate.ts",
+			"src/commands/risk-tier.ts",
+			"src/lib/contract/validator.ts"
+		],
+		"transitiveDependencies": [
+			"src/commands/init.ts",
+			"src/lib/cli/command-registry.ts"
+		],
+		"testFiles": [
+			"src/lib/contract/validator.test.ts",
+			"src/commands/preflight-gate.test.ts"
+		],
+		"totalFiles": 6,
+		"riskAssessment": "high — contract types are a core dependency"
+	}
+}

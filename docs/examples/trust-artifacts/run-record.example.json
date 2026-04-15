@@ -1,0 +1,43 @@
+{
+	"_comment": "Reference example: run record produced by gate execution",
+	"schema": "run-record/v1",
+	"runId": "run-2026-04-15-abcd1234",
+	"timestamp": "2026-04-15T12:00:00Z",
+	"trigger": "pre-push",
+	"branch": "codex/jsc-107-publish-trust-artifacts",
+	"stages": [
+		{
+			"stage": "lint",
+			"command": "pnpm lint",
+			"outcome": "pass",
+			"durationMs": 3200
+		},
+		{
+			"stage": "typecheck",
+			"command": "pnpm typecheck",
+			"outcome": "pass",
+			"durationMs": 8500
+		},
+		{
+			"stage": "test",
+			"command": "pnpm test",
+			"outcome": "pass",
+			"durationMs": 45000,
+			"summary": { "passed": 2709, "failed": 0, "skipped": 9 }
+		},
+		{
+			"stage": "audit",
+			"command": "pnpm audit",
+			"outcome": "pass",
+			"durationMs": 1200
+		},
+		{
+			"stage": "check",
+			"command": "pnpm check",
+			"outcome": "pass",
+			"durationMs": 57900
+		}
+	],
+	"overallOutcome": "pass",
+	"totalDurationMs": 115800
+}

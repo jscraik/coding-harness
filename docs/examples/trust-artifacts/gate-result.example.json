@@ -1,0 +1,25 @@
+{
+	"_comment": "Reference example: output from `harness policy-gate --contract harness.contract.json --json`",
+	"schema": "gate-result/v1",
+	"timestamp": "2026-04-15T12:00:00Z",
+	"contract": "harness.contract.json",
+	"result": {
+		"outcome": "pass",
+		"riskTier": "low",
+		"mergePolicy": ["review-gate"],
+		"gates": [
+			{
+				"gate": "risk-policy-gate",
+				"outcome": "pass",
+				"files": ["src/lib/utils.ts"],
+				"tier": "low"
+			},
+			{
+				"gate": "review-gate",
+				"outcome": "pass",
+				"reviewerCount": 1,
+				"staleReviewsDismissed": true
+			}
+		]
+	}
+}

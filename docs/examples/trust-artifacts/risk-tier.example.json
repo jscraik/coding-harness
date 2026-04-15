@@ -1,0 +1,19 @@
+{
+	"_comment": "Reference example: output from `harness risk-tier --files src/auth/login.ts --json`",
+	"schema": "risk-tier/v1",
+	"timestamp": "2026-04-15T12:00:00Z",
+	"files": [
+		{
+			"path": "src/auth/login.ts",
+			"tier": "high",
+			"matchedRule": "src/auth/**",
+			"mergePolicy": ["review-gate", "evidence-verify"]
+		}
+	],
+	"summary": {
+		"high": 1,
+		"medium": 0,
+		"low": 0,
+		"unknown": 0
+	}
+}
