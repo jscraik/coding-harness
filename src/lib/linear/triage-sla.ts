@@ -64,7 +64,8 @@ export function validateTriageExitMetadata(
 	metadata: TriageExitMetadata,
 ): TriageExitValidationResult {
 	const missing: RequiredTriageExitField[] = [];
-	const reasons: Array<{ field: RequiredTriageExitField; message: string }> = [];
+	const reasons: Array<{ field: RequiredTriageExitField; message: string }> =
+		[];
 
 	if (metadata.priority === null || metadata.priority === undefined) {
 		missing.push("priority");
@@ -168,7 +169,8 @@ export function routeTriageIssue(
 	if (input.isDuplicate) {
 		return {
 			target: "duplicate",
-			reason: "Issue is a duplicate; route to Canceled with duplicate reference.",
+			reason:
+				"Issue is a duplicate; route to Canceled with duplicate reference.",
 			blocked: false,
 			blockedBy: [],
 		};
@@ -178,8 +180,7 @@ export function routeTriageIssue(
 	if (input.isOutOfScope) {
 		return {
 			target: "canceled",
-			reason:
-				"Issue is out of scope; route to Canceled with scope rationale.",
+			reason: "Issue is out of scope; route to Canceled with scope rationale.",
 			blocked: false,
 			blockedBy: [],
 		};
@@ -284,8 +285,7 @@ export function checkTriageSla(options: {
 	const hoursRemaining = config.decisionWindowHours - hoursInTriage;
 
 	const breached = hoursInTriage > config.decisionWindowHours;
-	const approaching =
-		!breached && hoursInTriage > config.warningWindowHours;
+	const approaching = !breached && hoursInTriage > config.warningWindowHours;
 
 	return {
 		withinSla: !breached,

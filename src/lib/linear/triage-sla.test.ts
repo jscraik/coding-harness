@@ -98,8 +98,8 @@ describe("validateTriageExitMetadata", () => {
 			priority: null,
 		});
 		expect(result.reasons).toHaveLength(1);
-		expect(result.reasons[0].field).toBe("priority");
-		expect(result.reasons[0].message).toBeTruthy();
+		expect(result.reasons[0]!.field).toBe("priority");
+		expect(result.reasons[0]!.message).toBeTruthy();
 	});
 });
 
