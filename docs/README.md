@@ -51,6 +51,7 @@
 - [Contradictions and cleanup](./agents/05-contradictions-and-cleanup.md)
 - [Architecture bootstrap](./agents/00-architecture-bootstrap.md)
 - [Project Brain rollout](./agents/20-project-brain-memory-extension-rollout.md)
+- [Planning precedence policy](./agents/22-planning-precedence-policy.md)
 - [Tooling inventory](./agents/tooling.md)
 - [Release change control ops spec](./agents/release-change-control-operational-spec.md)
 - [Linear workflow ops spec](./agents/linear-workflow-operational-spec.md)

@@ -64,6 +64,7 @@ Load only the layer you need. Never require a higher layer to execute a lower-la
 | GitHub to Linear branch and PR automation | [18-github-linear-automation.md](./18-github-linear-automation.md) |
 | Linear templates and saved views | [19-linear-templates.md](./19-linear-templates.md) |
 | Project Brain memory-extension rollout | [20-project-brain-memory-extension-rollout.md](./20-project-brain-memory-extension-rollout.md) |
+| Planning precedence (projects/milestones/cycles) | [22-planning-precedence-policy.md](./22-planning-precedence-policy.md) |
 
 ## Document roles
 
@@ -131,4 +132,5 @@ Layer 3 deep-dive specs live alongside their parent SOPs. Open only for implemen
   [CI required checks vs branch protection](./17-ci-required-checks.md),
   [GitHub to Linear automation](./18-github-linear-automation.md),
   [Linear templates and saved views](./19-linear-templates.md),
-  [Project Brain memory-extension rollout](./20-project-brain-memory-extension-rollout.md)
+  [Project Brain memory-extension rollout](./20-project-brain-memory-extension-rollout.md),
+  [Planning precedence policy](./22-planning-precedence-policy.md)
