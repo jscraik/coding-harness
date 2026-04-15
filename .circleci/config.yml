@@ -40,6 +40,11 @@ jobs:
       - run:
           name: Policy Bundle
           command: pnpm check
+      - run:
+          name: Dogfood silent-error detection
+          # TODO: Remove `|| true` once existing findings are cleaned up (JSC-130)
+          command: |
+            npx tsx src/cli.ts silent-error --path src --fail-on=error || true
 
 workflows:
   pr-pipeline:
