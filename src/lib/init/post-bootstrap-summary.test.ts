@@ -1,0 +1,184 @@
+import { describe, expect, it } from "vitest";
+import {
+	type BootstrapSummary,
+	formatBootstrapSummary,
+	generateBootstrapSummary,
+} from "./post-bootstrap-summary.js";
+import type { InitOutput } from "./types.js";
+
+// ---------------------------------------------------------------------------
+// Helpers
+// ---------------------------------------------------------------------------
+
+function makeOutput(overrides: Partial<InitOutput> = {}): InitOutput {
+	return {
+		packageManager: "pnpm",
+		created: [],
+		skipped: [],
+		...overrides,
+	};
+}
+
+// ---------------------------------------------------------------------------
+// Tests
+// ---------------------------------------------------------------------------
+
+describe("generateBootstrapSummary", () => {
+	it("returns detection info from output", () => {
+		const summary = generateBootstrapSummary(
+			makeOutput({
+				projectTypeDetection: {
+					projectType: "cli",
+					matchedRule: null,
+					confidence: "high",
+					signals: [],
+				},
+			}),
+			"pnpm",
+		);
+		expect(summary.detected.projectType).toBe("cli");
+		expect(summary.detected.confidence).toBe("high");
+		expect(summary.detected.packageManager).toBe("pnpm");
+	});
+
+	it("defaults to unknown when no detection", () => {
+		const summary = generateBootstrapSummary(makeOutput(), "npm");
+		expect(summary.detected.projectType).toBe("unknown");
+		expect(summary.detected.confidence).toBe("none");
+	});
+
+	it("describes created files by category", () => {
+		const summary = generateBootstrapSummary(
+			makeOutput({
+				created: [
+					"harness.contract.json",
+					"WORKFLOW.md",
+					".github/workflows/ci.yml",
+				],
+			}),
+			"pnpm",
+		);
+		expect(summary.created).toContain("Governance contract");
+		expect(summary.created).toContain("Workflow documentation");
+		expect(summary.created).toContain("CI pipeline");
+	});
+
+	it("describes protected files from skipped", () => {
+		const summary = generateBootstrapSummary(
+			makeOutput({
+				skipped: ["AGENTS.md", "CONTRIBUTING.md"],
+			}),
+			"pnpm",
+		);
+		expect(summary.protected).toContain("Agent instructions");
+		expect(summary.protected).toContain("Contributor guide");
+	});
+
+	it("recommends contract validation when contract was created", () => {
+		const summary = generateBootstrapSummary(
+			makeOutput({ created: ["harness.contract.json"] }),
+			"pnpm",
+		);
+		const hasContract = summary.nextCommands.some((cmd) =>
+			cmd.includes("contract validate"),
+		);
+		expect(hasContract).toBe(true);
+	});
+
+	it("recommends branch-protect when CI files created", () => {
+		const summary = generateBootstrapSummary(
+			makeOutput({ created: [".github/workflows/ci.yml"] }),
+			"pnpm",
+		);
+		const hasBranchProtect = summary.nextCommands.some((cmd) =>
+			cmd.includes("branch-protect"),
+		);
+		expect(hasBranchProtect).toBe(true);
+	});
+
+	it("recommends docs-gate when governance docs created", () => {
+		const summary = generateBootstrapSummary(
+			makeOutput({ created: ["AGENTS.md"] }),
+			"pnpm",
+		);
+		const hasDocsGate = summary.nextCommands.some((cmd) =>
+			cmd.includes("docs-gate"),
+		);
+		expect(hasDocsGate).toBe(true);
+	});
+
+	it("recommends index-context on fresh install", () => {
+		const summary = generateBootstrapSummary(
+			makeOutput({
+				created: [
+					"harness.contract.json",
+					"WORKFLOW.md",
+					"AGENTS.md",
+					"CONTRIBUTING.md",
+				],
+			}),
+			"pnpm",
+		);
+		const hasIndex = summary.nextCommands.some((cmd) =>
+			cmd.includes("index-context"),
+		);
+		expect(hasIndex).toBe(true);
+	});
+
+	it("always recommends health check", () => {
+		const summary = generateBootstrapSummary(makeOutput(), "pnpm");
+		const hasCheck = summary.nextCommands.some((cmd) =>
+			cmd.includes("harness check"),
+		);
+		expect(hasCheck).toBe(true);
+	});
+
+	it("passes through unknown file paths", () => {
+		const summary = generateBootstrapSummary(
+			makeOutput({ created: ["unknown-file.txt"] }),
+			"pnpm",
+		);
+		expect(summary.created).toContain("unknown-file.txt");
+	});
+});
+
+describe("formatBootstrapSummary", () => {
+	it("formats all sections", () => {
+		const summary: BootstrapSummary = {
+			detected: {
+				projectType: "cli",
+				confidence: "high",
+				packageManager: "pnpm",
+			},
+			created: ["Governance contract"],
+			protected: ["Agent instructions"],
+			nextCommands: ["harness check  — quick health snapshot"],
+		};
+		const output = formatBootstrapSummary(summary);
+		expect(output).toContain("What we found");
+		expect(output).toContain("cli");
+		expect(output).toContain("What we created");
+		expect(output).toContain("Governance contract");
+		expect(output).toContain("What we protected");
+		expect(output).toContain("Agent instructions");
+		expect(output).toContain("Recommended next commands");
+		expect(output).toContain("harness check");
+	});
+
+	it("omits empty sections", () => {
+		const summary: BootstrapSummary = {
+			detected: {
+				projectType: "unknown",
+				confidence: "none",
+				packageManager: "npm",
+			},
+			created: [],
+			protected: [],
+			nextCommands: [],
+		};
+		const output = formatBootstrapSummary(summary);
+		expect(output).toContain("What we found");
+		expect(output).not.toContain("What we created");
+		expect(output).not.toContain("What we protected");
+	});
+});
