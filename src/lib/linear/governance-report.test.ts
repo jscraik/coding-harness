@@ -22,7 +22,10 @@ const baseInput: GovernanceReportInput = {
 	],
 	totalIssues: 52,
 	promotedThisWeek: [
-		{ identifier: "JSC-190", title: "Establish agentic linear ops control loop" },
+		{
+			identifier: "JSC-190",
+			title: "Establish agentic linear ops control loop",
+		},
 		{ identifier: "JSC-191", title: "Define triage inbox SLA" },
 	],
 	completedThisWeek: [
@@ -89,9 +92,7 @@ describe("generateGovernanceReport", () => {
 		);
 		expect(inProgressDelta?.delta).toBe(1);
 
-		const doneDelta = report.stateDeltas.find(
-			(d) => d.stateName === "Done",
-		);
+		const doneDelta = report.stateDeltas.find((d) => d.stateName === "Done");
 		expect(doneDelta?.delta).toBe(2);
 	});
 
