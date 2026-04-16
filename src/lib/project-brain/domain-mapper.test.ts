@@ -38,9 +38,11 @@ describe("domain-mapper", () => {
 			"README.md",
 		]);
 		for (let i = 1; i < result.length; i++) {
-			expect(result[i - 1].relevance).toBeGreaterThanOrEqual(
-				result[i].relevance,
-			);
+			const prev = result[i - 1];
+			const curr = result[i];
+			if (prev && curr) {
+				expect(prev.relevance).toBeGreaterThanOrEqual(curr.relevance);
+			}
 		}
 	});
 

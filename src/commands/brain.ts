@@ -33,6 +33,10 @@ import {
 	type DomainMapping,
 	mapFilesToDomains,
 } from "../lib/project-brain/domain-mapper.js";
+import {
+	type StalenessReport,
+	scanBrainMetadata,
+} from "../lib/project-brain/metadata-scanner.js";
 
 // ─── Exit codes ──────────────────────────────────────────────────────────────
 
@@ -100,13 +104,18 @@ export interface BrainPreflightResult {
 	totalFacts: number;
 }
 
+export interface BrainStaleResult {
+	report: StalenessReport;
+}
+
 export interface BrainCliResult {
 	exitCode: number;
 	result?:
 		| BrainStatusResult
 		| BrainQueryResult
 		| BrainAddResult
-		| BrainPreflightResult;
+		| BrainPreflightResult
+		| BrainStaleResult;
 }
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
@@ -662,6 +671,90 @@ function cliBrainPreflight(args: string[]): BrainCliResult {
 	return { exitCode: EXIT_CODES.SUCCESS, result };
 }
 
+// ─── brain stale ─────────────────────────────────────────────────────────────
+
+export function runBrainStale(
+	harnessDir: string,
+	options?: { thresholdDays?: number },
+): BrainStaleResult {
+	const scanOptions: { thresholdDays?: number; now?: Date } = {};
+	if (options?.thresholdDays) scanOptions.thresholdDays = options.thresholdDays;
+	const report = scanBrainMetadata(harnessDir, scanOptions);
+	return { report };
+}
+
+function renderBrainStaleHuman(result: BrainStaleResult): string {
+	const { report } = result;
+	const lines: string[] = [];
+
+	lines.push("");
+	lines.push("=== Brain Staleness Report ===");
+	lines.push(
+		`  Domains: ${report.totalDomains} | Files: ${report.totalFiles} | Threshold: ${report.thresholdDays} days`,
+	);
+	lines.push(
+		`  Average staleness: ${report.averageStaleness} | Needs review: ${report.staleFiles.length}`,
+	);
+	lines.push("");
+
+	if (report.staleFiles.length > 0) {
+		lines.push("  Stale / needs review:");
+		for (const f of report.staleFiles) {
+			const stalenessPercent = `${Math.round(f.stalenessScore * 100)}%`;
+			const verified = f.lastVerified ?? "never";
+			lines.push(
+				`    [${f.domain}] ${stalenessPercent} stale - last verified: ${verified}`,
+			);
+			lines.push(`      ${f.stalenessReason}`);
+		}
+		lines.push("");
+	}
+
+	if (report.freshFiles.length > 0) {
+		lines.push("  Fresh:");
+		for (const f of report.freshFiles) {
+			const stalenessPercent = `${Math.round(f.stalenessScore * 100)}%`;
+			lines.push(
+				`    [${f.domain}] ${stalenessPercent} stale - ${f.stalenessReason}`,
+			);
+		}
+		lines.push("");
+	}
+
+	return lines.join("\n");
+}
+
+function cliBrainStale(args: string[]): BrainCliResult {
+	const harnessDir = findHarnessDir(getFlagValue(args, args.indexOf("--dir")));
+	const thresholdIndex = args.indexOf("--threshold-days");
+	const thresholdVal = getFlagValue(args, thresholdIndex);
+	const thresholdDays = thresholdVal
+		? Number.parseInt(thresholdVal, 10)
+		: undefined;
+
+	if (!existsSync(harnessDir)) {
+		process.stderr.write(
+			`Error: No .harness directory found at ${harnessDir}\n`,
+		);
+		return { exitCode: EXIT_CODES.NOT_FOUND };
+	}
+
+	const staleOptions: { thresholdDays?: number } = {};
+	if (thresholdDays) staleOptions.thresholdDays = thresholdDays;
+	const result = runBrainStale(harnessDir, staleOptions);
+	const json = getOutputJson(args);
+
+	if (json) {
+		process.stdout.write(`${JSON.stringify(result, null, 2)}\n`);
+	} else {
+		process.stdout.write(renderBrainStaleHuman(result));
+	}
+
+	if (result.report.staleFiles.length > 0)
+		return { exitCode: EXIT_CODES.WARNINGS, result };
+	return { exitCode: EXIT_CODES.SUCCESS, result };
+}
+
 // ─── CLI entry point ─────────────────────────────────────────────────────────
 
 /**
@@ -709,6 +802,10 @@ Examples:
 		}
 		case "preflight": {
 			const r = cliBrainPreflight(subArgs);
+			return r.exitCode;
+		}
+		case "stale": {
+			const r = cliBrainStale(subArgs);
 			return r.exitCode;
 		}
 		default:
