@@ -285,7 +285,7 @@ describe("validateBatchExecutionGate", () => {
 		expect(result.passed).toBe(2);
 		expect(result.blocked).toBe(1);
 		expect(result.details).toHaveLength(3);
-		expect(result.details[1].missingFields).toContain("priority");
+		expect(result.details[1]!.missingFields).toContain("priority");
 	});
 
 	it("reports warned for Todo with partial metadata", () => {
@@ -305,6 +305,6 @@ describe("validateBatchExecutionGate", () => {
 
 		expect(result.total).toBe(1);
 		expect(result.warned).toBe(1);
-		expect(result.details[0].action).toBe("warn");
+		expect(result.details[0]!.action).toBe("warn");
 	});
 });
