@@ -1,8 +1,8 @@
 import { describe, expect, it } from "vitest";
 import {
 	type BlockedEscalationSla,
-	type BlockerMetadata,
 	type BlockedIssueView,
+	type BlockerMetadata,
 	buildBlockedEscalationComment,
 	classifyBlockedSeverity,
 	generateBlockedReport,
