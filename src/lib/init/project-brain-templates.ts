@@ -28,12 +28,12 @@ type ProjectBrainDomain = (typeof PROJECT_BRAIN_DOMAINS)[number];
 function renderProjectBrainIndexTemplate(): string {
 	const rows = PROJECT_BRAIN_DOMAINS.map(
 		(domain) =>
-			`| [${domain.slug}](./${domain.slug}/) | ${domain.focus} | (none yet) | 0 |`,
+			`| [${domain.slug}](./${domain.slug}/) | ${domain.focus} | ${new Date().toISOString().slice(0, 10)} | 0 rules |`,
 	).join("\n");
 
 	return `# Knowledge Index
 
-Project Brain index for repository-grounded knowledge and decision artifacts.
+**Last updated:** ${new Date().toISOString().slice(0, 10)}
 
 ## Domains
 
@@ -43,11 +43,11 @@ ${rows}
 
 ## Recently active
 
-(none yet)
+- No activity recorded yet
 
 ## Review needed
 
-(none yet)
+(none currently)
 `;
 }
 
@@ -56,21 +56,27 @@ function renderProjectBrainKnowledgeTemplate(
 ): string {
 	return `# ${domain.label} Knowledge
 
+**Last verified:** (not yet)
+**Verification source:** manual
+**Confidence:** medium
+**Owner:** (not yet)
+
 ## Confirmed facts
 
-(none yet)
+- Add confirmed, verified facts about the ${domain.label} domain here
+- Each fact should be independently verifiable
 
 ## Patterns
 
-(none yet)
+- Document recurring patterns and conventions observed in this domain
 
 ## Gotchas
 
-(none yet)
+- Record non-obvious pitfalls and edge cases discovered during development
 
 ## References
 
-(none yet)
+- List key source files, configs, and documentation relevant to this domain
 `;
 }
 
@@ -79,17 +85,19 @@ function renderProjectBrainHypothesesTemplate(
 ): string {
 	return `# ${domain.label} Hypotheses
 
+Unconfirmed patterns under observation. Promote to rules.md after 3+ confirmations.
+
 ## Active hypotheses
 
-(none yet)
+No active hypotheses. Record observations here when patterns are noticed but not yet confirmed.
 
 ## Under review
 
-(none yet)
+(none currently)
 
 ## Demoted from rules
 
-(none yet)
+(none currently)
 `;
 }
 
@@ -97,11 +105,22 @@ function renderProjectBrainRulesTemplate(domain: ProjectBrainDomain): string {
 	return `# ${domain.label} Rules
 
 **Rule count:** 0
-**Last promoted:** (none yet)
+**Last promoted:** (not yet)
 
 ## Active rules
 
-(none yet)
+No rules promoted yet. As patterns become confirmed through repeated observation,
+promote them from hypotheses with a rule ID:
+
+- **Format**: R-NNN: <description>
+- **Severity**: must | should | may
+- **Required fields**: Rationale, Last promoted date, Promoted from source
+
+## Promotion guide
+
+1. Hypothesis observed 3+ times → promote to rule
+2. Rule contradicted by evidence → demote back to hypothesis
+3. Each rule gets a unique R-NNN identifier within its domain
 `;
 }
 
@@ -129,25 +148,32 @@ Repo-specific agent knowledge base. Append-only.
 function renderProjectBrainQualityTemplate(): string {
 	return `# Quality Criteria
 
-**Last updated:** (not yet)
-**Total criteria:** 0
+**Last updated:** ${new Date().toISOString().slice(0, 10)}
+**Total criteria:** 3
+**Project domain:** CLI tool
 
 ## Categories
 
-### Reliability
+### API Design
 | ID | Criterion | Severity | Source | Last triggered |
 |----|-----------|----------|--------|----------------|
-| (none yet) | | | | |
-
-### Security
-| ID | Criterion | Severity | Source | Last triggered |
-|----|-----------|----------|--------|----------------|
-| (none yet) | | | | |
+| Q-001 | All public commands must produce structured, parseable output | must | convention | (not yet) |
+| Q-002 | Gate commands must follow shared output envelope (status, reason, action_now, action_later, evidence_ref) | must | convention | (not yet) |
 
 ### Testing
 | ID | Criterion | Severity | Source | Last triggered |
 |----|-----------|----------|--------|----------------|
-| (none yet) | | | | |
+| Q-003 | New modules must include co-located test files with happy-path and error-path coverage | must | convention | (not yet) |
+
+---
+
+## Usage
+
+Before marking any task complete:
+1. Run through relevant criteria
+2. Note any issues found
+3. Update "Last triggered" for criteria that caught issues
+4. Propose new criteria for any new failure patterns
 `;
 }
 
@@ -163,7 +189,20 @@ Record of periodic reviews for knowledge, decisions, and quality criteria.
 
 ## Reviews
 
-(none yet)
+| Date | Reviewer | Scope | Findings | Actions |
+|------|----------|-------|----------|---------|
+| (no reviews yet) | | | | |
+
+---
+
+## Instructions
+
+Add a new row after each review session. Include:
+- **Date**: ISO date of the review
+- **Reviewer**: Who performed the review
+- **Scope**: Which domains/artifacts were reviewed
+- **Findings**: Summary of issues or observations
+- **Actions**: Follow-up tasks created
 `;
 }
 
@@ -178,15 +217,15 @@ This file is maintained by \`./scripts/codex-learn analyze\`.
 
 ## Error frequency
 
-(none yet)
+No errors recorded yet. Run \`./scripts/codex-learn analyze\` to populate.
 
 ## Suggested preflight overrides
 
-- Extra bins: (none yet)
+- Extra bins: no suggestions yet
 
 ## Path hints
 
-- (none yet)
+- No path hints recorded yet
 
 ## Promotion guide
 
