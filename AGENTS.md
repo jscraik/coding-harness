@@ -4,23 +4,6 @@ schema_version: 1
 
 # Coding Harness - AGENTS.md
 
-## Table of Contents
-- [Project Description](#project-description)
-- [Mandatory Workflow Snippet](#mandatory-workflow-snippet)
-- [Required Essentials](#required-essentials)
-- [Harness CLI for Agents](#harness-cli-for-agents)
-- [Codex Discovery Order](#codex-discovery-order)
-- [Startup Workflow](#startup-workflow)
-- [Command Preflight](#command-preflight)
-- [Fresh Worktree Bootstrap](#fresh-worktree-bootstrap)
-- [Quality Checks](#quality-checks)
-- [Repo Workflow](#repo-workflow)
-- [Instruction Routing](#instruction-routing)
-- [Memory Layer](#memory-layer)
-- [Project Brain](#project-brain)
-- [Implementation Conventions](#implementation-conventions)
-- [References](#references)
-
 ## Project Description
 This repository is a TypeScript control plane for agentic development and review workflows.
 
@@ -94,15 +77,24 @@ Notes:
 - See [docs/agents/18-github-linear-automation.md](./docs/agents/18-github-linear-automation.md) for the full GitHub to Linear automation config and known gaps.
 
 ## Instruction Routing
-This file is the compact operator baseline. Start with [docs/README.md](./docs/README.md), then use [docs/agents/01-instruction-map.md](./docs/agents/01-instruction-map.md) to route to the governing SOP.
 
-- 00 architecture and cross-command changes: [docs/agents/00-architecture-bootstrap.md](./docs/agents/00-architecture-bootstrap.md)
-- 02 tooling, shell, command contracts, and setup: [docs/agents/02-tooling-policy.md](./docs/agents/02-tooling-policy.md)
-- 04 validation, 10 agent testing gates, and 11 flaky artifacts: [docs/agents/04-validation.md](./docs/agents/04-validation.md), [docs/agents/10-agent-testing-gates.md](./docs/agents/10-agent-testing-gates.md), [docs/agents/11-flaky-test-artifacts.md](./docs/agents/11-flaky-test-artifacts.md)
-- 06 security, 07a/07b governance, and 09 auditability: [docs/agents/06-security-and-governance.md](./docs/agents/06-security-and-governance.md), [docs/agents/07a-role-governance.md](./docs/agents/07a-role-governance.md), [docs/agents/07b-agent-governance.md](./docs/agents/07b-agent-governance.md), [docs/agents/09-audit-trail-policy.md](./docs/agents/09-audit-trail-policy.md)
-- 08 release/process control and 14 docs-gate rollout: [docs/agents/08-release-and-change-control.md](./docs/agents/08-release-and-change-control.md), [docs/agents/14-docs-gate-rollout.md](./docs/agents/14-docs-gate-rollout.md)
-- 12 AI review and 13/15/16/18/19 Linear and tracker operations: [docs/agents/12-ai-review-governance.md](./docs/agents/12-ai-review-governance.md), [docs/agents/13-linear-production-workflow.md](./docs/agents/13-linear-production-workflow.md), [docs/agents/15-context-integrity-compact.md](./docs/agents/15-context-integrity-compact.md), [docs/agents/16-linear-production-compact.md](./docs/agents/16-linear-production-compact.md), [docs/agents/18-github-linear-automation.md](./docs/agents/18-github-linear-automation.md), [docs/agents/19-linear-templates.md](./docs/agents/19-linear-templates.md)
-- Additional workflow definitions: [WORKFLOW.md](./WORKFLOW.md), `/Users/jamiecraik/dev/config/codex/instructions/project-brain.md`
+Docs are layered for progressive disclosure (see [documentation layers](./docs/architecture/documentation-layers.md)):
+
+| Layer | When | Where |
+| --- | --- | --- |
+| 0 | Always (this file) | `AGENTS.md` |
+| 1 | Quick execution | [quickstart.md](./docs/agents/quickstart.md) |
+| 2 | Domain work | Route via [01-instruction-map.md](./docs/agents/01-instruction-map.md) |
+| 3 | Deep governance | Operational specs linked from Layer 2 |
+
+Core routing (Layer 2):
+- Tooling and commands: [02-tooling-policy.md](./docs/agents/02-tooling-policy.md)
+- Validation gates: [04-validation.md](./docs/agents/04-validation.md)
+- Security: [06-security-and-governance.md](./docs/agents/06-security-and-governance.md)
+- Release: [08-release-and-change-control.md](./docs/agents/08-release-and-change-control.md)
+- Linear workflow: [13-linear-production-workflow.md](./docs/agents/13-linear-production-workflow.md)
+- Memory: [03-local-memory.md](./docs/agents/03-local-memory.md)
+- Full map: [01-instruction-map.md](./docs/agents/01-instruction-map.md)
 
 ## Memory Layer
 - At session start, read `~/.codex/instructions/Learnings.md` and `.harness/memory/LEARNINGS.md` (bootstrap via [docs/agents/03-local-memory.md](./docs/agents/03-local-memory.md) if missing).
@@ -119,11 +111,6 @@ This file is the compact operator baseline. Start with [docs/README.md](./docs/R
 - Use repo script contracts: `pnpm lint`, `pnpm typecheck`, `pnpm test`, `pnpm audit`, `pnpm build`, `pnpm check`, and `pnpm test:artifacts` (see [docs/agents/02-tooling-policy.md](./docs/agents/02-tooling-policy.md)).
 
 ## References
-- [Docs index](./docs/README.md)
-- [Instruction map](./docs/agents/01-instruction-map.md)
-- [CONTRIBUTING.md](./CONTRIBUTING.md)
-- [CLAUDE.md](./CLAUDE.md)
-- [GEMINI.md](./GEMINI.md)
-- `/Users/jamiecraik/.codex/AGENTS.md`
-- `/Users/jamiecraik/.codex/instructions/standards.md`
-- `/Users/jamiecraik/.codex/instructions/rvcp-common.md`
+- [Docs index](./docs/README.md) · [Instruction map](./docs/agents/01-instruction-map.md) · [Quickstart](./docs/agents/quickstart.md)
+- [CONTRIBUTING.md](./CONTRIBUTING.md) · [CLAUDE.md](./CLAUDE.md) · [GEMINI.md](./GEMINI.md)
+- Global: `~/.codex/AGENTS.md`, `~/.codex/instructions/standards.md`, `~/.codex/instructions/rvcp-common.md`
