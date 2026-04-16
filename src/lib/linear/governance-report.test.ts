@@ -109,7 +109,7 @@ describe("generateGovernanceReport", () => {
 		const report = generateGovernanceReport(baseInput);
 
 		expect(report.throughput.completed).toHaveLength(1);
-		expect(report.throughput.completed[0].identifier).toBe("JSC-177");
+		expect(report.throughput.completed[0]!.identifier).toBe("JSC-177");
 		expect(report.throughput.promoted).toHaveLength(2);
 	});
 
@@ -118,15 +118,15 @@ describe("generateGovernanceReport", () => {
 
 		expect(report.stalledWork).toHaveLength(1);
 		expect(report.blockerRisk).toHaveLength(1);
-		expect(report.blockerRisk[0].dependency).toBe("JSC-120");
+		expect(report.blockerRisk[0]!.dependency).toBe("JSC-120");
 	});
 
 	it("derives top next actions from blocked and stalled", () => {
 		const report = generateGovernanceReport(baseInput);
 
 		expect(report.topNextActions.length).toBeGreaterThan(0);
-		expect(report.topNextActions[0].identifier).toBe("JSC-178");
-		expect(report.topNextActions[1].identifier).toBe("JSC-120");
+		expect(report.topNextActions[0]!.identifier).toBe("JSC-178");
+		expect(report.topNextActions[1]!.identifier).toBe("JSC-120");
 	});
 
 	it("limits top next actions to 5", () => {
