@@ -1,0 +1,24 @@
+{
+	"_comment": "Reference example: output from `harness ci-migrate verify` after CircleCI adoption",
+	"schema": "ci-migration-proof/v1",
+	"timestamp": "2026-04-15T12:00:00Z",
+	"provider": "circleci",
+	"migrationStage": "complete",
+	"evidence": {
+		"configExists": true,
+		"configPath": ".circleci/config.yml",
+		"requiredChecksPass": true,
+		"githubActionsRetired": true,
+		"retiredWorkflows": [".github/workflows/ci-fallback.yml"],
+		"branchProtectionAligned": true,
+		"transitionArtifactPath": ".harness/ci-provider-transition-status.json",
+		"transitionStatus": "completed"
+	},
+	"checks": [
+		{ "name": "lint", "status": "passing", "provider": "circleci" },
+		{ "name": "typecheck", "status": "passing", "provider": "circleci" },
+		{ "name": "test", "status": "passing", "provider": "circleci" },
+		{ "name": "audit", "status": "passing", "provider": "circleci" },
+		{ "name": "check", "status": "passing", "provider": "circleci" }
+	]
+}

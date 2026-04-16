@@ -1,0 +1,38 @@
+{
+	"_comment": "Reference example: minimal harness.contract.json scaffolded by `harness init`. See harness.contract.json at repo root for the full schema used by this repository.",
+	"version": "1.0.0",
+	"riskTierRules": {
+		"src/auth/**": "high",
+		"src/lib/**": "medium",
+		"**/*.test.ts": "low"
+	},
+	"mergePolicy": {
+		"high": ["review-gate", "evidence-verify"],
+		"medium": ["review-gate"],
+		"low": []
+	},
+	"docsDriftRules": {},
+	"branchProtection": {
+		"requiredChecks": ["lint", "typecheck", "test", "audit", "check"],
+		"restrictDeletions": true,
+		"blockForcePushes": true,
+		"requirePullRequest": true,
+		"requiredApprovingReviewCount": 1,
+		"requireLinearHistory": true
+	},
+	"toolingPolicy": {
+		"requiredBinaries": ["pnpm", "node"],
+		"miseFilePath": ".mise.toml",
+		"readinessScriptPath": "scripts/check-environment.sh"
+	},
+	"issueTrackingPolicy": {
+		"provider": "linear",
+		"requireBranchIssueKey": true,
+		"requirePrIssueKey": true,
+		"branchPrefix": "codex"
+	},
+	"ciProviderPolicy": {
+		"activeProvider": "circleci",
+		"mode": "shadow"
+	}
+}
