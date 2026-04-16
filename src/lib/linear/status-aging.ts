@@ -282,16 +282,15 @@ export function generateAgingReport(options: {
 	// Sort: critical first, then by days in state descending
 	staleIssues.sort(
 		(a, b) =>
-			(a.severity === "critical" ? 0 : 1) - (b.severity === "critical" ? 0 : 1) ||
-			b.daysInState - a.daysInState,
+			(a.severity === "critical" ? 0 : 1) -
+				(b.severity === "critical" ? 0 : 1) || b.daysInState - a.daysInState,
 	);
 
-	const topRemediationActions: AgingReport["topRemediationActions"] = Array.from(
-		actionCounts.entries(),
-	)
-		.filter(([action]) => action !== "continue")
-		.map(([action, issues]) => ({ action, count: issues.length, issues }))
-		.sort((a, b) => b.count - a.count);
+	const topRemediationActions: AgingReport["topRemediationActions"] =
+		Array.from(actionCounts.entries())
+			.filter(([action]) => action !== "continue")
+			.map(([action, issues]) => ({ action, count: issues.length, issues }))
+			.sort((a, b) => b.count - a.count);
 
 	return {
 		generatedAt: now.toISOString(),

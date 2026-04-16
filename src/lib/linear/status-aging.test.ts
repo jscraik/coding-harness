@@ -103,9 +103,9 @@ describe("classifyAging", () => {
 	});
 
 	it("uses default thresholds when none provided", () => {
-		expect(
-			classifyAging({ stateName: "In Progress", daysInState: 10 }),
-		).toBe("critical");
+		expect(classifyAging({ stateName: "In Progress", daysInState: 10 })).toBe(
+			"critical",
+		);
 	});
 });
 
