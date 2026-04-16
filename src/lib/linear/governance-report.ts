@@ -243,8 +243,8 @@ export function renderGovernanceMarkdown(report: GovernanceReport): string {
 	// Summary
 	lines.push("## Summary");
 	lines.push("");
-	lines.push(`| Metric | Value |`);
-	lines.push(`| --- | --- |`);
+	lines.push("| Metric | Value |");
+	lines.push("| --- | --- |");
 	lines.push(
 		`| Total issues | ${report.summary.totalIssues}${report.summary.issueDelta !== 0 ? ` (${report.summary.issueDelta > 0 ? "+" : ""}${report.summary.issueDelta})` : ""} |`,
 	);
