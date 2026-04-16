@@ -46,3 +46,12 @@ export {
 	similarityToDistance,
 	validateOllamaUrl,
 } from "./constants.js";
+export {
+	type BackendAvailability,
+	type BackendProbeResult,
+	type SyncConflict,
+	type SyncContractReport,
+	buildSyncReport,
+	classifyIndexingStrategy,
+	probeOllama,
+} from "./sync-contract.js";
