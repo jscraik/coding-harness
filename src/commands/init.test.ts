@@ -405,9 +405,6 @@ describe("runInit", () => {
 			);
 			expect(content.version).toBe("1.5.0");
 			expect(content.reviewPolicy).toBeUndefined();
-			expect(content.branchProtection.requiredChecks).toContain(
-				"security-scan",
-			);
 			expect(content.ciProviderPolicy.activeProvider).toBe("circleci");
 			expect(content.branchProtection.requiredChecks).toContain("linear-gate");
 			expect(content.branchProtection.requiredChecks).toContain("CodeRabbit");

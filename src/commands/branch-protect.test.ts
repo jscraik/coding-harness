@@ -43,7 +43,6 @@ describe("runBranchProtect", () => {
 					"audit",
 					"check",
 					"memory",
-					"security-scan",
 					"CodeRabbit",
 				],
 			},
@@ -462,7 +461,6 @@ describe("runBranchProtect", () => {
 				{ context: "audit" },
 				{ context: "check" },
 				{ context: "memory" },
-				{ context: "security-scan" },
 				{ context: "CodeRabbit" },
 			],
 		});
@@ -475,7 +473,7 @@ describe("runBranchProtect", () => {
 			reviewPolicy: {
 				timeoutSeconds: 600,
 				timeoutAction: "fail",
-				requiredChecks: ["security-scan", "dependency-scan"],
+				requiredChecks: ["dependency-scan"],
 			},
 		});
 
@@ -513,10 +511,7 @@ describe("runBranchProtect", () => {
 			(rule) => rule.type === "required_status_checks",
 		);
 		expect(requiredRule?.parameters).toMatchObject({
-			required_status_checks: [
-				{ context: "security-scan" },
-				{ context: "dependency-scan" },
-			],
+			required_status_checks: [{ context: "dependency-scan" }],
 		});
 	});
 
@@ -573,7 +568,6 @@ describe("runBranchProtect", () => {
 				{ context: "audit" },
 				{ context: "check" },
 				{ context: "memory" },
-				{ context: "security-scan" },
 				{ context: "CodeRabbit" },
 			],
 		});
@@ -1328,7 +1322,6 @@ describe("runBranchProtect", () => {
 						"typecheck",
 						"test",
 						"audit",
-						"security-scan",
 						"dependency-scan",
 					]),
 				);
@@ -1369,12 +1362,7 @@ describe("runBranchProtect", () => {
 			if (result.ok) {
 				expect(result.output.ecosystem).toBe("python");
 				expect(result.output.requiredChecks).toEqual(
-					expect.arrayContaining([
-						"lint",
-						"test",
-						"security-scan",
-						"dependency-scan",
-					]),
+					expect.arrayContaining(["lint", "test", "dependency-scan"]),
 				);
 			}
 		});
@@ -1413,7 +1401,7 @@ describe("runBranchProtect", () => {
 			if (result.ok) {
 				expect(result.output.ecosystem).toBe("rust");
 				expect(result.output.requiredChecks).toEqual(
-					expect.arrayContaining(["lint", "test", "security-scan"]),
+					expect.arrayContaining(["lint", "test"]),
 				);
 			}
 		});
@@ -1451,7 +1439,7 @@ describe("runBranchProtect", () => {
 			expect(result.ok).toBe(true);
 			if (result.ok) {
 				expect(result.output.ecosystem).toBe("minimal");
-				expect(result.output.requiredChecks).toEqual(["security-scan"]);
+				expect(result.output.requiredChecks).toEqual(["lint"]);
 			}
 		});
 
