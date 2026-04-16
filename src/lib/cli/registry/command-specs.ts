@@ -1,3 +1,4 @@
+import { runAuditCLI } from "../../../commands/audit.js";
 import { runAutomationRunCLI } from "../../../commands/automation-run.js";
 import {
 	type BlastRadiusOptions,
@@ -792,6 +793,16 @@ export const COMMAND_SPECS: CommandSpec[] = [
 			const jsonFlag = args.includes("--json");
 			const targetDir = args.find((a) => !a.startsWith("-"));
 			return runCheckCLI(targetDir, { json: jsonFlag });
+		},
+	},
+	{
+		name: "audit",
+		summary:
+			"Comprehensive governance state check with actionable recommendations",
+		example: "audit [--dir <path>] [--json]",
+		errorLabel: "Audit Error",
+		execute: (args) => {
+			return runAuditCLI(args, getVersion);
 		},
 	},
 	{
