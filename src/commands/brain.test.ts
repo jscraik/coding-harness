@@ -6,6 +6,7 @@ import {
 	EXIT_CODES,
 	runBrainAdd,
 	runBrainCLI,
+	runBrainPreflight,
 	runBrainQuery,
 	runBrainStatus,
 } from "./brain.js";
@@ -218,6 +219,53 @@ describe("brain CLI", () => {
 		try {
 			const exitCode = runBrainCLI(["status", "--dir", dir, "--json"]);
 			expect(exitCode).toBe(EXIT_CODES.SUCCESS);
+		} finally {
+			rmSync(dir, { recursive: true, force: true });
+		}
+	});
+
+	it("runs preflight subcommand", () => {
+		const dir = createTempHarness();
+		try {
+			const exitCode = runBrainCLI([
+				"preflight",
+				"--dir",
+				dir,
+				"--files",
+				"src/commands/brain.test.ts",
+				"--json",
+			]);
+			expect(exitCode).toBe(EXIT_CODES.SUCCESS);
+		} finally {
+			rmSync(dir, { recursive: true, force: true });
+		}
+	});
+});
+
+describe("brain preflight", () => {
+	it("returns relevant context for test files", () => {
+		const dir = createTempHarness();
+		try {
+			const result = runBrainPreflight(join(dir, ".harness"), [
+				"src/commands/brain.test.ts",
+			]);
+			expect(result.files).toHaveLength(1);
+			expect(result.domainMappings.length).toBeGreaterThanOrEqual(1);
+			const testingCtx = result.contexts.find((c) => c.domain === "testing");
+			expect(testingCtx).toBeDefined();
+		} finally {
+			rmSync(dir, { recursive: true, force: true });
+		}
+	});
+
+	it("handles sparse brain data gracefully", () => {
+		const dir = createTempHarness();
+		try {
+			const result = runBrainPreflight(join(dir, ".harness"), [
+				"unknown-file.xyz",
+			]);
+			expect(result.files).toHaveLength(1);
+			expect(result.domainMappings.length).toBeGreaterThanOrEqual(1);
 		} finally {
 			rmSync(dir, { recursive: true, force: true });
 		}

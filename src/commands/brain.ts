@@ -1,12 +1,13 @@
 /**
- * harness brain — JSC-184
+ * harness brain — JSC-184, JSC-185
  *
  * Project Brain command suite for knowledge, rules, and quality management.
  *
  * Subcommands:
- *   brain status  — Health summary of Project Brain artifacts
- *   brain query   — Search across knowledge, rules, and quality criteria
- *   brain add     — Capture a learning, decision, rule, or hypothesis
+ *   brain status    — Health summary of Project Brain artifacts
+ *   brain query     — Search across knowledge, rules, and quality criteria
+ *   brain add       — Capture a learning, decision, rule, or hypothesis
+ *   brain preflight — Load relevant context for a set of changed files
  *
  * Exit codes:
  *   0 — success
@@ -28,6 +29,10 @@ import {
 	type BrainValidationResult,
 	validateProjectBrain,
 } from "../lib/project-brain/brain-validator.js";
+import {
+	type DomainMapping,
+	mapFilesToDomains,
+} from "../lib/project-brain/domain-mapper.js";
 
 // ─── Exit codes ──────────────────────────────────────────────────────────────
 
@@ -70,9 +75,38 @@ export interface BrainAddResult {
 	appended: boolean;
 }
 
+export interface BrainPreflightContext {
+	/** Domain that this context relates to */
+	domain: string;
+	/** Relevance score 0–1 */
+	relevance: number;
+	/** Active rules for this domain */
+	rules: string[];
+	/** Recent learnings relevant to this domain */
+	learnings: string[];
+	/** Relevant quality criteria */
+	qualityCriteria: string[];
+	/** Relevant confirmed facts */
+	facts: string[];
+	/** Relevant gotchas */
+	gotchas: string[];
+}
+
+export interface BrainPreflightResult {
+	files: string[];
+	domainMappings: DomainMapping[];
+	contexts: BrainPreflightContext[];
+	totalRules: number;
+	totalFacts: number;
+}
+
 export interface BrainCliResult {
 	exitCode: number;
-	result?: BrainStatusResult | BrainQueryResult | BrainAddResult;
+	result?:
+		| BrainStatusResult
+		| BrainQueryResult
+		| BrainAddResult
+		| BrainPreflightResult;
 }
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
@@ -429,6 +463,205 @@ function cliBrainAdd(args: string[]): BrainCliResult {
 	return { exitCode: EXIT_CODES.SUCCESS, result };
 }
 
+// ─── brain preflight ─────────────────────────────────────────────────────────
+
+/**
+ * Extract rules from a rules.md file content.
+ */
+function extractRules(content: string): string[] {
+	const rules: string[] = [];
+	const regex = /^\s*-\s*\*\*R-\d+\*\*:\s*(.+)$/gm;
+	for (const match of content.matchAll(regex)) {
+		const rule = match[1];
+		if (rule) rules.push(rule.trim());
+	}
+	return rules;
+}
+
+/**
+ * Extract list items from a section of a markdown file.
+ */
+function extractListItems(content: string, sectionHeader: string): string[] {
+	const items: string[] = [];
+	const sectionRegex = new RegExp(
+		`## ${sectionHeader}[\\s\\S]*?(?=## |$)`,
+		"i",
+	);
+	const sectionMatch = sectionRegex.exec(content);
+	if (!sectionMatch) return items;
+
+	const section = sectionMatch[0];
+	if (!section) return items;
+
+	for (const lineMatch of section.matchAll(/^\s*-\s+(.+)$/gm)) {
+		const item = lineMatch[1];
+		if (item) items.push(item.trim());
+	}
+	return items;
+}
+
+export function runBrainPreflight(
+	harnessDir: string,
+	files: string[],
+): BrainPreflightResult {
+	const domainMappings = mapFilesToDomains(files);
+	const contexts: BrainPreflightContext[] = [];
+	let totalRules = 0;
+	let totalFacts = 0;
+
+	for (const mapping of domainMappings) {
+		const ctx: BrainPreflightContext = {
+			domain: mapping.domain,
+			relevance: mapping.relevance,
+			rules: [],
+			learnings: [],
+			qualityCriteria: [],
+			facts: [],
+			gotchas: [],
+		};
+
+		// Load domain rules
+		const rulesPath = join(harnessDir, "knowledge", mapping.domain, "rules.md");
+		if (existsSync(rulesPath)) {
+			const content = readFileSync(rulesPath, "utf-8");
+			ctx.rules = extractRules(content);
+			totalRules += ctx.rules.length;
+		}
+
+		// Load domain knowledge
+		const knowledgePath = join(
+			harnessDir,
+			"knowledge",
+			mapping.domain,
+			"knowledge.md",
+		);
+		if (existsSync(knowledgePath)) {
+			const content = readFileSync(knowledgePath, "utf-8");
+			ctx.facts = extractListItems(content, "Confirmed facts");
+			ctx.gotchas = extractListItems(content, "Gotchas");
+			totalFacts += ctx.facts.length;
+		}
+
+		// Load learnings
+		const learningsPath = join(harnessDir, "memory", "LEARNINGS.md");
+		if (existsSync(learningsPath) && mapping.relevance >= 0.5) {
+			const content = readFileSync(learningsPath, "utf-8");
+			ctx.learnings = extractListItems(content, "Learnings");
+		}
+
+		// Load quality criteria (always include for high-relevance)
+		if (mapping.relevance >= 0.7) {
+			const qualityPath = join(harnessDir, "quality", "criteria.md");
+			if (existsSync(qualityPath)) {
+				const content = readFileSync(qualityPath, "utf-8");
+				for (const qMatch of content.matchAll(
+					/\|\s*(Q-\d+)\s*\|\s*([^|]+)\s*\|/g,
+				)) {
+					const criterion = qMatch[2];
+					if (criterion) {
+						ctx.qualityCriteria.push(`${qMatch[1]}: ${criterion.trim()}`);
+					}
+				}
+			}
+		}
+
+		// Only include domains that have some content
+		const hasContent =
+			ctx.rules.length > 0 ||
+			ctx.facts.length > 0 ||
+			ctx.gotchas.length > 0 ||
+			ctx.qualityCriteria.length > 0;
+		if (hasContent || mapping.relevance >= 0.5) {
+			contexts.push(ctx);
+		}
+	}
+
+	return {
+		files,
+		domainMappings,
+		contexts,
+		totalRules,
+		totalFacts,
+	};
+}
+
+function renderBrainPreflightHuman(result: BrainPreflightResult): string {
+	const lines: string[] = [];
+
+	lines.push("");
+	lines.push("=== Brain Preflight Context ===");
+	lines.push(
+		`  Files: ${result.files.length} | Domains: ${result.domainMappings.length} | Rules: ${result.totalRules} | Facts: ${result.totalFacts}`,
+	);
+	lines.push("");
+
+	for (const ctx of result.contexts) {
+		const relevancePercent = `${Math.round(ctx.relevance * 100)}%`;
+		lines.push(`  📦 ${ctx.domain} (${relevancePercent} relevance)`);
+
+		if (ctx.rules.length > 0) {
+			lines.push("    Rules:");
+			for (const rule of ctx.rules) {
+				lines.push(`      - ${rule}`);
+			}
+		}
+		if (ctx.facts.length > 0) {
+			lines.push("    Facts:");
+			for (const fact of ctx.facts) {
+				lines.push(`      - ${fact}`);
+			}
+		}
+		if (ctx.gotchas.length > 0) {
+			lines.push("    Gotchas:");
+			for (const gotcha of ctx.gotchas) {
+				lines.push(`      ⚠️  ${gotcha}`);
+			}
+		}
+		if (ctx.qualityCriteria.length > 0) {
+			lines.push("    Quality criteria:");
+			for (const criterion of ctx.qualityCriteria) {
+				lines.push(`      ✓ ${criterion}`);
+			}
+		}
+		lines.push("");
+	}
+
+	return lines.join("\n");
+}
+
+function cliBrainPreflight(args: string[]): BrainCliResult {
+	const filesIndex = args.indexOf("--files");
+	const filesArg = getFlagValue(args, filesIndex);
+
+	if (!filesArg) {
+		process.stderr.write(
+			"Error: --files <path1,path2,...> is required for brain preflight\n",
+		);
+		return { exitCode: EXIT_CODES.INVALID_ARGS };
+	}
+
+	const files = filesArg.split(",").map((f) => f.trim());
+	const harnessDir = findHarnessDir(getFlagValue(args, args.indexOf("--dir")));
+
+	if (!existsSync(harnessDir)) {
+		process.stderr.write(
+			`Error: No .harness directory found at ${harnessDir}\n`,
+		);
+		return { exitCode: EXIT_CODES.NOT_FOUND };
+	}
+
+	const result = runBrainPreflight(harnessDir, files);
+	const json = getOutputJson(args);
+
+	if (json) {
+		process.stdout.write(`${JSON.stringify(result, null, 2)}\n`);
+	} else {
+		process.stdout.write(renderBrainPreflightHuman(result));
+	}
+
+	return { exitCode: EXIT_CODES.SUCCESS, result };
+}
+
 // ─── CLI entry point ─────────────────────────────────────────────────────────
 
 /**
@@ -442,6 +675,7 @@ Subcommands:
   status              Health summary of Project Brain artifacts
   query               Search across knowledge, rules, and quality criteria
   add                 Capture a learning, decision, rule, or hypothesis
+  preflight           Load relevant context for a set of changed files
 
 Options:
   --json              Output in JSON format
@@ -471,6 +705,10 @@ Examples:
 		}
 		case "add": {
 			const r = cliBrainAdd(subArgs);
+			return r.exitCode;
+		}
+		case "preflight": {
+			const r = cliBrainPreflight(subArgs);
 			return r.exitCode;
 		}
 		default:
