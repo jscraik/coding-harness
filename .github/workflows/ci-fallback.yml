@@ -8,6 +8,8 @@ name: ci-fallback
 # NOTE: Renamed from pr-pipeline-bridge.yml to ci-fallback.yml to break GitHub's
 # cached workflow trigger registration (JSC-101). The old filename was still firing
 # on push events despite being workflow_dispatch-only in the YAML.
+#
+# Additional guard: the job-level condition prevents execution from cached triggers.
 on:
   workflow_dispatch: {}
 
@@ -21,6 +23,8 @@ concurrency:
 jobs:
   pr-pipeline:
     name: ci/circleci: pr-pipeline
+    # Guard against cached trigger registration firing on push/PR events
+    if: github.event_name == 'workflow_dispatch'
     runs-on: ubuntu-latest
     timeout-minutes: 45
     steps:
