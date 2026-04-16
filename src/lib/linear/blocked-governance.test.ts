@@ -89,7 +89,7 @@ describe("validateBlockerMetadata", () => {
 			metadata: { ...completeMetadata, dependency: null },
 		});
 		expect(result.reasons.length).toBeGreaterThan(0);
-		expect(result.reasons[0].message).toBeTruthy();
+		expect(result.reasons[0]!.message).toBeTruthy();
 	});
 });
 

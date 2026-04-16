@@ -235,7 +235,7 @@ export function generateBlockedReport(options: {
 
 		const metadataValidation = validateBlockerMetadata({
 			metadata: issue.metadata,
-			description: issue.description,
+			description: issue.description ?? null,
 		});
 
 		if (!metadataValidation.valid) incompleteMetadata++;
