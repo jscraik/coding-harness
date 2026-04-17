@@ -38,6 +38,8 @@ export interface AgentInstructionSurface {
 	role: "canonical" | "derived";
 	/** Header marker expected at the start of this surface (for format validation/parity checks). */
 	headerMarker: string;
+	/** Whether this surface is required to exist in the repository. */
+	required?: boolean;
 }
 
 export interface InstructionConsistencyFinding {
@@ -79,6 +81,7 @@ export const AGENT_SURFACES: AgentInstructionSurface[] = [
 		discovery: "auto",
 		role: "derived",
 		headerMarker: "#",
+		required: true,
 	},
 	{
 		agent: "gemini",
@@ -113,12 +116,7 @@ export const AGENT_SURFACES: AgentInstructionSurface[] = [
 /**
  * Required markers that indicate a derived file references its canonical source.
  */
-const CANONICAL_REF_MARKERS = [
-	"canonical source",
-	"agents.md",
-	"@./agents.md",
-	"@agents.md",
-];
+const CANONICAL_REF_REGEX = /\b(?:@\.\/|@)?agents\.md\b/i;
 
 /**
  * Read a file under a repository root and return its UTF-8 text content.
@@ -134,10 +132,11 @@ function readFileContent(repoRoot: string, filePath: string): string | null {
 	try {
 		return readFileSync(fullPath, "utf-8");
 	} catch (error: unknown) {
-		throw new Error(
-			`Failed to read instruction surface: repoRoot=${repoRoot} filePath=${filePath} fullPath=${fullPath}`,
-			{ cause: error },
+		console.warn(
+			`[instruction-compat] failed to read instruction surface: repoRoot=${repoRoot} filePath=${filePath} fullPath=${fullPath}`,
+			error,
 		);
+		return null;
 	}
 }
 
@@ -146,10 +145,7 @@ function checkDerivedReferences(
 	surface: AgentInstructionSurface,
 	findings: InstructionConsistencyFinding[],
 ): void {
-	const contentLower = content.toLowerCase();
-	const hasCanonicalRef = CANONICAL_REF_MARKERS.some((marker) =>
-		contentLower.includes(marker),
-	);
+	const hasCanonicalRef = CANONICAL_REF_REGEX.test(content);
 	if (!hasCanonicalRef) {
 		findings.push({
 			severity: "warning",
@@ -171,26 +167,26 @@ function computeLineOverlap(
 	const derivedLines = derivedContent
 		.split("\n")
 		.filter((line) => line.trim().length > 0);
-	if (derivedLines.length === 0) return 0;
+	if (derivedLines.length === 0 || canonicalLines.length === 0) return 0;
 	const canonicalSet = new Set(canonicalLines);
 	let overlapCount = 0;
 	for (const line of derivedLines) {
 		if (canonicalSet.has(line)) overlapCount++;
 	}
-	return overlapCount / derivedLines.length;
+	return overlapCount / canonicalLines.length;
 }
 
-function collectMissingSurfaces(repoRoot: string): string[] {
-	const missingSurfaceLabels: string[] = [];
+function collectMissingSurfaces(repoRoot: string): AgentInstructionSurface[] {
+	const missingSurfaces: AgentInstructionSurface[] = [];
 	for (const surface of AGENT_SURFACES) {
 		if (
 			surface.role === "derived" &&
 			!existsSync(join(repoRoot, surface.filePath))
 		) {
-			missingSurfaceLabels.push(`${surface.agent}: ${surface.filePath}`);
+			missingSurfaces.push(surface);
 		}
 	}
-	return missingSurfaceLabels;
+	return missingSurfaces;
 }
 
 // ─── Public API ──────────────────────────────────────────────────────────────
@@ -225,7 +221,27 @@ export function validateInstructionConsistency(
 	const findings: InstructionConsistencyFinding[] = [];
 	const presentSurfaces = detectPresentSurfaces(repoRoot);
 
-	const canonicalSurface = AGENT_SURFACES.find((s) => s.role === "canonical");
+	const canonicalSurfaces = AGENT_SURFACES.filter(
+		(surface) => surface.role === "canonical",
+	);
+	if (canonicalSurfaces.length !== 1) {
+		return {
+			consistent: false,
+			surfacesChecked: 0,
+			findings: [
+				{
+					severity: "error",
+					file: "AGENTS.md",
+					message:
+						canonicalSurfaces.length === 0
+							? "Canonical instruction source (AGENTS.md) is not defined in surface map"
+							: "Multiple canonical instruction sources are defined in surface map; exactly one is required",
+					fix: "Keep only AGENTS.md as the single canonical surface",
+				},
+			],
+		};
+	}
+	const canonicalSurface = canonicalSurfaces[0];
 	if (!canonicalSurface) {
 		return {
 			consistent: false,
@@ -236,6 +252,7 @@ export function validateInstructionConsistency(
 					file: "AGENTS.md",
 					message:
 						"Canonical instruction source (AGENTS.md) is not defined in surface map",
+					fix: "Keep only AGENTS.md as the single canonical surface",
 				},
 			],
 		};
@@ -246,8 +263,9 @@ export function validateInstructionConsistency(
 		findings.push({
 			severity: "error",
 			file: canonicalSurface.filePath,
-			message: "Canonical instruction source (AGENTS.md) does not exist",
-			fix: "Create AGENTS.md with project instructions",
+			message:
+				"Canonical instruction source (AGENTS.md) is missing or unreadable",
+			fix: "Ensure AGENTS.md exists and is readable",
 		});
 		return {
 			consistent: false,
@@ -260,7 +278,15 @@ export function validateInstructionConsistency(
 
 	for (const surface of derivedSurfaces) {
 		const content = readFileContent(repoRoot, surface.filePath);
-		if (content === null) continue;
+		if (content === null) {
+			findings.push({
+				severity: "error",
+				file: surface.filePath,
+				message: "Derived instruction surface exists but could not be read",
+				fix: "Check file permissions/encoding and retry consistency validation",
+			});
+			continue;
+		}
 		checkDerivedReferences(content, surface, findings);
 		const overlapRatio = computeLineOverlap(canonicalContent, content);
 		if (overlapRatio > 0.8) {
@@ -273,14 +299,14 @@ export function validateInstructionConsistency(
 		}
 	}
 
-	const missingSurfaceLabels = collectMissingSurfaces(repoRoot);
-
-	if (missingSurfaceLabels.length > 0) {
+	for (const surface of collectMissingSurfaces(repoRoot)) {
 		findings.push({
-			severity: "info",
-			file: "(multiple)",
-			message: `Derived instruction surfaces not present: ${missingSurfaceLabels.join(", ")}`,
-			fix: "Run `harness init` or create these files with references to AGENTS.md",
+			severity: surface.required ? "warning" : "info",
+			file: surface.filePath,
+			message: surface.required
+				? `Required derived instruction surface not present: ${surface.agent}: ${surface.filePath}`
+				: `Optional derived instruction surface not present: ${surface.agent}: ${surface.filePath}`,
+			fix: "Run `harness init` or create this file with references to AGENTS.md",
 		});
 	}
 
