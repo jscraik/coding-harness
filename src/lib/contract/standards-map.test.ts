@@ -1,6 +1,5 @@
 import { describe, expect, it } from "vitest";
 import {
-	type ControlDomain,
 	type StandardsFramework,
 	generateControlMapReport,
 	getAllControls,
@@ -37,66 +36,47 @@ describe("standards-map", () => {
 		});
 
 		it("returns deep-cloned controls", () => {
-			const controls = getAllControls();
-			const originalFirst = controls[0];
-			expect(originalFirst).toBeDefined();
-			if (!originalFirst) return;
+			const first = getAllControls()[0];
+			const second = getAllControls()[0];
+			expect(first).toBeDefined();
+			expect(second).toBeDefined();
+			if (!first || !second) return;
 
-			const originalName = originalFirst.name;
-			const originalControlId = originalFirst.references[0]?.controlId ?? "";
-
-			originalFirst.name = "mutated";
-			if (originalFirst.references[0]) {
-				originalFirst.references[0].controlId = "mutated-ref";
-			}
-
-			const freshControls = getAllControls();
-			expect(freshControls[0]?.name).toBe(originalName);
-			expect(freshControls[0]?.references[0]?.controlId).toBe(
-				originalControlId,
-			);
+			expect(first).not.toBe(second);
+			expect(first.references).not.toBe(second.references);
+			expect(first.references[0]).not.toBe(second.references[0]);
 		});
 	});
 
 	describe("getControlsByDomain", () => {
-		it("returns only controls matching the domain", () => {
-			const controls = getControlsByDomain("source_integrity");
-			expect(controls.length).toBeGreaterThan(0);
-			for (const c of controls) {
-				expect(c.domain).toBe("source_integrity");
-			}
-		});
-
-		it("returns only controls matching the requested domain", () => {
-			const result = getControlsByDomain("access_control" as ControlDomain);
-			expect(Array.isArray(result)).toBe(true);
-			for (const control of result) {
-				expect(control.domain).toBe("access_control");
-			}
-		});
+		it.each(["source_integrity", "access_control"] as const)(
+			"returns only controls matching %s",
+			(domain) => {
+				const controls = getControlsByDomain(domain);
+				expect(Array.isArray(controls)).toBe(true);
+				expect(controls.length).toBeGreaterThan(0);
+				for (const control of controls) {
+					expect(control.domain).toBe(domain);
+				}
+			},
+		);
 	});
 
 	describe("getControlsByFramework", () => {
-		it("returns NIST_SP_800_218A controls", () => {
-			const controls = getControlsByFramework("NIST_SP_800_218A");
-			expect(controls.length).toBeGreaterThan(0);
-			for (const c of controls) {
-				const hasRef = c.references.some(
-					(r) => r.framework === "NIST_SP_800_218A",
-				);
-				expect(hasRef).toBe(true);
-			}
-		});
-
-		it("returns NIST_AI_RMF_1_0 controls", () => {
-			const controls = getControlsByFramework("NIST_AI_RMF_1_0");
-			expect(controls.length).toBeGreaterThan(0);
-		});
-
-		it("returns NIST_AI_600_1 controls", () => {
-			const controls = getControlsByFramework("NIST_AI_600_1");
-			expect(controls.length).toBeGreaterThan(0);
-		});
+		it.each(["NIST_SP_800_218A", "NIST_AI_RMF_1_0", "NIST_AI_600_1"] as const)(
+			"returns controls for framework %s",
+			(framework) => {
+				const controls = getControlsByFramework(framework);
+				expect(controls.length).toBeGreaterThan(0);
+				for (const control of controls) {
+					expect(
+						control.references.some(
+							(reference) => reference.framework === framework,
+						),
+					).toBe(true);
+				}
+			},
+		);
 	});
 
 	describe("getNonOverridableControls", () => {

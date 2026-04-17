@@ -31,41 +31,41 @@ export type ControlDomain =
 
 export interface StandardsControl {
 	/** Unique control ID within this map */
-	id: string;
+	readonly id: string;
 	/** Human-readable control name */
-	name: string;
+	readonly name: string;
 	/** Domain this control belongs to */
-	domain: ControlDomain;
+	readonly domain: ControlDomain;
 	/** Description of what this control enforces */
-	description: string;
+	readonly description: string;
 	/** Workflow-contract construct(s) that implement this control */
-	contractConstructs: string[];
+	readonly contractConstructs: readonly string[];
 	/** Standards references */
-	references: StandardsReference[];
+	readonly references: readonly StandardsReference[];
 	/** Whether this control is non-overridable */
-	nonOverridable: boolean;
+	readonly nonOverridable: boolean;
 }
 
 export interface StandardsReference {
 	/** Standards framework */
-	framework: StandardsFramework;
+	readonly framework: StandardsFramework;
 	/** Control or practice identifier within the framework */
-	controlId: string;
+	readonly controlId: string;
 	/** Human-readable name of the referenced control */
-	controlName: string;
+	readonly controlName: string;
 }
 
 export interface ControlMapReport {
 	/** Total controls mapped */
-	totalControls: number;
+	readonly totalControls: number;
 	/** Controls by domain */
-	byDomain: Partial<Record<ControlDomain, number>>;
+	readonly byDomain: Readonly<Partial<Record<ControlDomain, number>>>;
 	/** Controls by framework */
-	byFramework: Partial<Record<StandardsFramework, number>>;
+	readonly byFramework: Readonly<Partial<Record<StandardsFramework, number>>>;
 	/** Non-overridable controls */
-	nonOverridableCount: number;
+	readonly nonOverridableCount: number;
 	/** All controls */
-	controls: StandardsControl[];
+	readonly controls: readonly StandardsControl[];
 }
 
 // ─── Control Definitions ─────────────────────────────────────────────────────
@@ -146,8 +146,9 @@ const CONTROLS: StandardsControl[] = [
 			"Remote preset URLs are validated against allowlists and private IP ranges to prevent SSRF attacks.",
 		contractConstructs: [
 			"UrlValidationError",
-			"ALLOWED_OLLAMA_HOSTS",
-			"validateOllamaUrl()",
+			"validateRemoteUrl()",
+			"isPrivateOrReservedHost()",
+			"isAllowedRemoteHost()",
 		],
 		references: [
 			{
@@ -454,14 +455,16 @@ function cloneControl(control: StandardsControl): StandardsControl {
 /**
  * Get all controls in the standards map.
  */
-export function getAllControls(): StandardsControl[] {
+export function getAllControls(): readonly StandardsControl[] {
 	return CONTROLS.map(cloneControl);
 }
 
 /**
  * Get controls filtered by domain.
  */
-export function getControlsByDomain(domain: ControlDomain): StandardsControl[] {
+export function getControlsByDomain(
+	domain: ControlDomain,
+): readonly StandardsControl[] {
 	return CONTROLS.filter((c) => c.domain === domain).map(cloneControl);
 }
 
@@ -470,7 +473,7 @@ export function getControlsByDomain(domain: ControlDomain): StandardsControl[] {
  */
 export function getControlsByFramework(
 	framework: StandardsFramework,
-): StandardsControl[] {
+): readonly StandardsControl[] {
 	return CONTROLS.filter((c) =>
 		c.references.some((r) => r.framework === framework),
 	).map(cloneControl);
@@ -479,7 +482,7 @@ export function getControlsByFramework(
 /**
  * Get non-overridable controls.
  */
-export function getNonOverridableControls(): StandardsControl[] {
+export function getNonOverridableControls(): readonly StandardsControl[] {
 	return CONTROLS.filter((c) => c.nonOverridable).map(cloneControl);
 }
 
