@@ -666,6 +666,17 @@ describe("runInit", () => {
 			expect(content).toContain('name = "Script: test"\nicon = "test"');
 			expect(content).toContain('name = "Script: lint:fix"\nicon = "debug"');
 			expect(content).toContain("mise install");
+			expect(content).toContain("mise trust --yes .mise.toml || true");
+			expect(content).toContain(
+				"[codex] detached HEAD detected; creating branch $branch_name",
+			);
+			expect(content).toContain(
+				"[codex] tracking origin/main for $branch_name",
+			);
+			expect(content).toContain(
+				"[codex] fast-forwarding $branch_name with origin/main",
+			);
+			expect(content).toContain("git pull --ff-only origin main");
 			expect(content).toContain("npm install");
 			expect(content).toContain("prek --version");
 			expect(content).toContain(
@@ -1360,6 +1371,10 @@ describe("runInit", () => {
 				join(tempDir, "scripts/prepare-worktree.sh"),
 				"utf-8",
 			);
+			const newTask = require("node:fs").readFileSync(
+				join(tempDir, "scripts/new-task.sh"),
+				"utf-8",
+			);
 			const codexLearn = require("node:fs").readFileSync(
 				join(tempDir, "scripts/codex-learn"),
 				"utf-8",
@@ -1502,6 +1517,32 @@ describe("runInit", () => {
 			expect(verifyWork).toContain("scripts/validate-codestyle.sh");
 			expect(prepareWorktree).toContain(
 				"Prepare a freshly created git worktree for local hooks and pre-push checks.",
+			);
+			expect(prepareWorktree).toContain(
+				"[prepare-worktree] detached HEAD detected; creating branch $branch_name",
+			);
+			expect(prepareWorktree).toContain(
+				"[prepare-worktree] tracking origin/main for $branch_name",
+			);
+			expect(prepareWorktree).toContain(
+				"[prepare-worktree] fast-forwarding $branch_name with origin/main",
+			);
+			expect(prepareWorktree).toContain("git pull --ff-only origin main");
+			expect(prepareWorktree).toContain('git switch -c "$branch_name"');
+			expect(newTask).toContain(
+				"[new-task] fetching latest origin/$remote_base_branch",
+			);
+			expect(newTask).toContain(
+				'resolved_base_ref="refs/remotes/origin/$remote_base_branch"',
+			);
+			expect(newTask).toContain(
+				'if ! git rev-parse --verify --quiet "${resolved_base_ref}^{commit}" >/dev/null; then',
+			);
+			expect(newTask).toContain(
+				"[new-task] base ref is not a valid commit: $base_ref",
+			);
+			expect(newTask).toContain(
+				'git worktree add "$worktree_path" -b "${branch_name}" "$resolved_base_ref"',
 			);
 			expect(prepareWorktree).not.toContain("core.hooksPath");
 			expect(prepareWorktree).toContain("node scripts/setup-git-hooks.js");
