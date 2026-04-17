@@ -289,6 +289,20 @@ interface SuggestionCandidate {
 	dedupeKey: string;
 }
 
+function normalizeArtifactPath(path?: string): string | undefined {
+	return path?.replaceAll("\\", "/");
+}
+
+function isActionableFinding(finding: GateFinding): boolean {
+	const severity = finding.severity?.trim().toLowerCase();
+	return (
+		severity === "warning" ||
+		severity === "warn" ||
+		severity === "error" ||
+		severity === "critical"
+	);
+}
+
 function normalizeDedupeValue(value: string): string {
 	return value.trim().replace(/\s+/g, " ").toLowerCase();
 }
@@ -299,12 +313,22 @@ function buildSuggestionCandidate(
 	sourceType: SuggestionSource,
 	id: string,
 ): SuggestionCandidate {
-	const suggestion = findingToSuggestion(finding, source, sourceType, id);
+	const normalizedPath = normalizeArtifactPath(finding.path);
+	const normalizedFinding: GateFinding =
+		normalizedPath === undefined
+			? finding
+			: { ...finding, path: normalizedPath };
+	const suggestion = findingToSuggestion(
+		normalizedFinding,
+		source,
+		sourceType,
+		id,
+	);
 	const message = sanitizeEvidenceText(
 		finding.message ?? finding.description ?? "No details available",
 	);
 	const category = sanitizeEvidenceText(finding.category ?? "uncategorized");
-	const path = sanitizeEvidenceText(finding.path ?? "unknown");
+	const path = sanitizeEvidenceText(normalizedPath ?? "unknown");
 	const severity = normalizeDedupeValue(finding.severity ?? "unknown");
 	const dedupeKey = [
 		suggestion.type,
@@ -374,6 +398,9 @@ export function generateSuggestions(
 	);
 	for (const { findings, source } of gateResults) {
 		for (const finding of findings) {
+			if (!isActionableFinding(finding)) {
+				continue;
+			}
 			const severity = finding.severity ?? "unknown";
 			const sourceType: SuggestionSource =
 				severity === "error" || severity === "critical"

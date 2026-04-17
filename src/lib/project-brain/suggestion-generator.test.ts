@@ -194,6 +194,32 @@ describe("generateSuggestions", () => {
 		expect(report.total).toBe(0);
 	});
 
+	it("filters non-actionable info findings", () => {
+		tempDir = createTempArtifacts();
+		writeGateReport(tempDir, "gate-info.json", {
+			status: "pass",
+			findings: [
+				{
+					category: "docs_gate",
+					severity: "info",
+					message: "Rule applicability validated",
+					path: "docs/README.md",
+				},
+				{
+					category: "policy",
+					severity: "warning",
+					message: "Missing ownership metadata",
+					path: "src/lib/policy/checks.ts",
+				},
+			],
+		});
+
+		const report = generateSuggestions(tempDir);
+		expect(report.total).toBe(1);
+		expect(report.suggestions[0]?.source).toBe("gate_warning");
+		expect(report.suggestions[0]?.body).toContain("Missing ownership metadata");
+	});
+
 	it("ignores consistency baseline artifacts", () => {
 		tempDir = createTempArtifacts();
 		writeGateReport(tempDir, "consistency-baseline-latest.json", {
@@ -220,6 +246,43 @@ describe("generateSuggestions", () => {
 		const report = generateSuggestions(tempDir);
 		expect(report.total).toBe(1);
 		expect(report.suggestions[0]?.evidenceRef).toBe("gate-current.json");
+	});
+
+	it("normalizes Windows paths for domain mapping and dedupe", () => {
+		tempDir = createTempArtifacts();
+		writeGateReport(tempDir, "gate-a.json", {
+			status: "fail",
+			findings: [
+				{
+					category: "security",
+					severity: "error",
+					message: "Normalize mixed path separators",
+					path: "src\\commands\\run.ts",
+				},
+			],
+		});
+		writeGateReport(tempDir, "gate-b.json", {
+			status: "fail",
+			findings: [
+				{
+					category: "security",
+					severity: "error",
+					message: "Normalize mixed path separators",
+					path: "src/commands/run.ts",
+				},
+			],
+		});
+
+		const report = generateSuggestions(tempDir);
+		expect(report.total).toBe(1);
+		expect(report.deduplicatedCount).toBe(1);
+		expect(report.suggestions[0]?.domain).toBe("cli");
+		expect(report.suggestions[0]?.body).toContain(
+			"**Path:** src/commands/run.ts",
+		);
+		expect(report.suggestions[0]?.additionalEvidenceRefs).toEqual([
+			"gate-b.json",
+		]);
 	});
 
 	it("handles malformed JSON gracefully", () => {
