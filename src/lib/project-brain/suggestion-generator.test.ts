@@ -1,7 +1,7 @@
 import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { describe, expect, it } from "vitest";
+import { afterEach, describe, expect, it } from "vitest";
 import {
 	type SuggestionReport,
 	formatSuggestionsForReview,
@@ -31,6 +31,15 @@ function writeGateReport(
 // ---------------------------------------------------------------------------
 
 describe("generateSuggestions", () => {
+	let tempDir: string | null = null;
+
+	afterEach(() => {
+		if (tempDir) {
+			rmSync(tempDir, { recursive: true, force: true });
+			tempDir = null;
+		}
+	});
+
 	it("returns empty report when artifacts directory does not exist", () => {
 		const report = generateSuggestions("/nonexistent/path");
 		expect(report.total).toBe(0);
@@ -39,222 +48,243 @@ describe("generateSuggestions", () => {
 	});
 
 	it("returns empty report when consistency-gate directory is empty", () => {
-		const dir = createTempArtifacts();
-		try {
-			mkdirSync(join(dir, "consistency-gate"), { recursive: true });
-			const report = generateSuggestions(dir);
-			expect(report.total).toBe(0);
-		} finally {
-			rmSync(dir, { recursive: true, force: true });
-		}
+		tempDir = createTempArtifacts();
+		mkdirSync(join(tempDir, "consistency-gate"), { recursive: true });
+		const report = generateSuggestions(tempDir);
+		expect(report.total).toBe(0);
 	});
 
 	it("extracts findings from gate reports", () => {
-		const dir = createTempArtifacts();
-		try {
-			writeGateReport(dir, "gate-001.json", {
-				status: "fail",
-				findings: [
-					{
-						category: "security",
-						severity: "error",
-						message: "Missing input validation",
-						path: "src/commands/run.ts",
-					},
-				],
-			});
+		tempDir = createTempArtifacts();
+		writeGateReport(tempDir, "gate-001.json", {
+			status: "fail",
+			findings: [
+				{
+					category: "security",
+					severity: "error",
+					message: "Missing input validation",
+					path: "src/commands/run.ts",
+				},
+			],
+		});
 
-			const report = generateSuggestions(dir);
-			expect(report.total).toBe(1);
-			expect(report.suggestions[0]!.type).toBe("rule_promotion_candidate");
-			expect(report.suggestions[0]!.source).toBe("gate_failure");
-			expect(report.suggestions[0]!.domain).toBe("cli");
-			expect(report.suggestions[0]!.confidence).toBe("high");
-		} finally {
-			rmSync(dir, { recursive: true, force: true });
-		}
+		const report = generateSuggestions(tempDir);
+		expect(report.total).toBe(1);
+		const [first] = report.suggestions;
+		expect(first).toBeDefined();
+		expect(first?.type).toBe("rule_promotion_candidate");
+		expect(first?.source).toBe("gate_failure");
+		expect(first?.domain).toBe("cli");
+		expect(first?.confidence).toBe("high");
+		expect(first?.title).toContain("security: Missing input validation");
+		expect(first?.body).toContain("**Path:** src/commands/run.ts");
+		expect(first?.evidenceRef).toBe("gate-001.json");
 	});
 
 	it("classifies warnings as gate_warning source", () => {
-		const dir = createTempArtifacts();
-		try {
-			writeGateReport(dir, "gate-warn.json", {
-				status: "warn",
-				findings: [
-					{
-						category: "style",
-						severity: "warning",
-						message: "Inconsistent naming",
-						path: "src/lib/policy/checks.ts",
-					},
-				],
-			});
+		tempDir = createTempArtifacts();
+		writeGateReport(tempDir, "gate-warn.json", {
+			status: "warn",
+			findings: [
+				{
+					category: "style",
+					severity: "warning",
+					message: "Inconsistent naming",
+					path: "src/lib/policy/checks.ts",
+				},
+			],
+		});
 
-			const report = generateSuggestions(dir);
-			expect(report.total).toBe(1);
-			expect(report.suggestions[0]!.source).toBe("gate_warning");
-			expect(report.suggestions[0]!.type).toBe("learning");
-			expect(report.suggestions[0]!.domain).toBe("governance");
-		} finally {
-			rmSync(dir, { recursive: true, force: true });
-		}
+		const report = generateSuggestions(tempDir);
+		expect(report.total).toBe(1);
+		const [first] = report.suggestions;
+		expect(first).toBeDefined();
+		expect(first?.source).toBe("gate_warning");
+		expect(first?.type).toBe("learning");
+		expect(first?.domain).toBe("governance");
 	});
 
 	it("deduplicates identical findings across reports", () => {
-		const dir = createTempArtifacts();
-		try {
-			const finding = {
-				category: "security",
-				severity: "error",
-				message: "Missing input validation",
-				path: "src/commands/run.ts",
-			};
+		tempDir = createTempArtifacts();
+		const finding = {
+			category: "security",
+			severity: "error",
+			message: "Missing input validation",
+			path: "src/commands/run.ts",
+		};
 
-			writeGateReport(dir, "gate-a.json", {
-				status: "fail",
-				findings: [finding],
-			});
-			writeGateReport(dir, "gate-b.json", {
-				status: "fail",
-				findings: [finding],
-			});
+		writeGateReport(tempDir, "gate-a.json", {
+			status: "fail",
+			findings: [finding],
+		});
+		writeGateReport(tempDir, "gate-b.json", {
+			status: "fail",
+			findings: [finding],
+		});
 
-			const report = generateSuggestions(dir);
-			expect(report.total).toBe(1);
-			expect(report.deduplicatedCount).toBe(1);
-		} finally {
-			rmSync(dir, { recursive: true, force: true });
-		}
+		const report = generateSuggestions(tempDir);
+		expect(report.total).toBe(1);
+		expect(report.deduplicatedCount).toBe(1);
+	});
+
+	it("does not deduplicate distinct file paths", () => {
+		tempDir = createTempArtifacts();
+		writeGateReport(tempDir, "gate-a.json", {
+			status: "fail",
+			findings: [
+				{
+					category: "security",
+					severity: "error",
+					message: "Missing input validation",
+					path: "src/commands/run.ts",
+				},
+				{
+					category: "security",
+					severity: "error",
+					message: "Missing input validation",
+					path: "src/commands/build.ts",
+				},
+			],
+		});
+
+		const report = generateSuggestions(tempDir);
+		expect(report.total).toBe(2);
+		expect(report.deduplicatedCount).toBe(0);
 	});
 
 	it("handles reports with no findings array", () => {
-		const dir = createTempArtifacts();
-		try {
-			writeGateReport(dir, "empty.json", { status: "pass" });
+		tempDir = createTempArtifacts();
+		writeGateReport(tempDir, "empty.json", { status: "pass" });
 
-			const report = generateSuggestions(dir);
-			expect(report.total).toBe(0);
-		} finally {
-			rmSync(dir, { recursive: true, force: true });
-		}
+		const report = generateSuggestions(tempDir);
+		expect(report.total).toBe(0);
 	});
 
 	it("handles malformed JSON gracefully", () => {
-		const dir = createTempArtifacts();
-		try {
-			const gateDir = join(dir, "consistency-gate");
-			mkdirSync(gateDir, { recursive: true });
-			writeFileSync(join(gateDir, "bad.json"), "not valid json{", "utf-8");
+		tempDir = createTempArtifacts();
+		const gateDir = join(tempDir, "consistency-gate");
+		mkdirSync(gateDir, { recursive: true });
+		writeFileSync(join(gateDir, "bad.json"), "not valid json{", "utf-8");
 
-			const report = generateSuggestions(dir);
-			expect(report.total).toBe(0);
-		} finally {
-			rmSync(dir, { recursive: true, force: true });
-		}
+		const report = generateSuggestions(tempDir);
+		expect(report.total).toBe(0);
 	});
 
 	it("ignores non-JSON files in consistency-gate", () => {
-		const dir = createTempArtifacts();
-		try {
-			const gateDir = join(dir, "consistency-gate");
-			mkdirSync(gateDir, { recursive: true });
-			writeFileSync(join(gateDir, "report.txt"), "text file", "utf-8");
+		tempDir = createTempArtifacts();
+		const gateDir = join(tempDir, "consistency-gate");
+		mkdirSync(gateDir, { recursive: true });
+		writeFileSync(join(gateDir, "report.txt"), "text file", "utf-8");
 
-			const report = generateSuggestions(dir);
-			expect(report.total).toBe(0);
-		} finally {
-			rmSync(dir, { recursive: true, force: true });
-		}
+		const report = generateSuggestions(tempDir);
+		expect(report.total).toBe(0);
 	});
 
 	it("aggregates byType and bySource counts", () => {
-		const dir = createTempArtifacts();
-		try {
-			writeGateReport(dir, "gate.json", {
-				status: "fail",
-				findings: [
-					{
-						category: "security",
-						severity: "error",
-						message: "Issue A",
-						path: "src/lib/policy/a.ts",
-					},
-					{
-						category: "style",
-						severity: "warning",
-						message: "Issue B",
-						path: "src/commands/b.ts",
-					},
-				],
-			});
+		tempDir = createTempArtifacts();
+		writeGateReport(tempDir, "gate.json", {
+			status: "fail",
+			findings: [
+				{
+					category: "security",
+					severity: "error",
+					message: "Issue A",
+					path: "src/lib/policy/a.ts",
+				},
+				{
+					category: "style",
+					severity: "warning",
+					message: "Issue B",
+					path: "src/commands/b.ts",
+				},
+			],
+		});
 
-			const report = generateSuggestions(dir);
-			expect(report.total).toBe(2);
-			expect(report.byType.rule_promotion_candidate).toBe(1);
-			expect(report.byType.learning).toBe(1);
-			expect(report.bySource.gate_failure).toBe(1);
-			expect(report.bySource.gate_warning).toBe(1);
-		} finally {
-			rmSync(dir, { recursive: true, force: true });
-		}
+		const report = generateSuggestions(tempDir);
+		expect(report.total).toBe(2);
+		expect(report.byType.rule_promotion_candidate).toBe(1);
+		expect(report.byType.learning).toBe(1);
+		expect(report.bySource.gate_failure).toBe(1);
+		expect(report.bySource.gate_warning).toBe(1);
 	});
 
 	it("classifies domains from paths", () => {
-		const dir = createTempArtifacts();
-		try {
-			writeGateReport(dir, "domains.json", {
-				status: "fail",
-				findings: [
-					{ severity: "warning", message: "A", path: "src/commands/x.ts" },
-					{
-						severity: "warning",
-						message: "B",
-						path: "src/lib/context-compound/y.ts",
-					},
-					{
-						severity: "warning",
-						message: "C",
-						path: ".github/workflows/ci.yml",
-					},
-					{ severity: "warning", message: "D", path: "docs/readme.md" },
-					{ severity: "warning", message: "E" },
-				],
-			});
+		tempDir = createTempArtifacts();
+		writeGateReport(tempDir, "domains.json", {
+			status: "fail",
+			findings: [
+				{ severity: "warning", message: "A", path: "src/commands/x.ts" },
+				{
+					severity: "warning",
+					message: "B",
+					path: "src/lib/context-compound/y.ts",
+				},
+				{
+					severity: "warning",
+					message: "C",
+					path: ".github/workflows/ci.yml",
+				},
+				{
+					severity: "warning",
+					message: "D",
+					path: "src/lib/workflow-contract/run.ts",
+				},
+				{ severity: "warning", message: "E", path: "docs/readme.md" },
+				{ severity: "warning", message: "F" },
+			],
+		});
 
-			const report = generateSuggestions(dir);
-			const domains = report.suggestions.map((s) => s.domain);
-			expect(domains).toContain("cli");
-			expect(domains).toContain("tooling");
-			expect(domains).toContain("ci");
-			expect(domains).toContain("docs");
-			expect(domains).toContain("general");
-		} finally {
-			rmSync(dir, { recursive: true, force: true });
-		}
+		const report = generateSuggestions(tempDir);
+		const domains = report.suggestions.map((s) => s.domain);
+		expect(domains).toContain("cli");
+		expect(domains).toContain("tooling");
+		expect(domains).toContain("ci");
+		expect(domains).toContain("workflow");
+		expect(domains).toContain("docs");
+		expect(domains).toContain("general");
 	});
 
 	it("uses description as fallback when message is missing", () => {
-		const dir = createTempArtifacts();
-		try {
-			writeGateReport(dir, "desc.json", {
-				status: "fail",
-				findings: [
-					{
-						severity: "warning",
-						description: "Fallback description text",
-						path: "src/commands/cmd.ts",
-					},
-				],
-			});
+		tempDir = createTempArtifacts();
+		writeGateReport(tempDir, "desc.json", {
+			status: "fail",
+			findings: [
+				{
+					severity: "warning",
+					description: "Fallback description text",
+					path: "src/commands/cmd.ts",
+				},
+			],
+		});
 
-			const report = generateSuggestions(dir);
-			expect(report.total).toBe(1);
-			expect(report.suggestions[0]!.body).toContain(
-				"Fallback description text",
-			);
-		} finally {
-			rmSync(dir, { recursive: true, force: true });
-		}
+		const report = generateSuggestions(tempDir);
+		expect(report.total).toBe(1);
+		const [first] = report.suggestions;
+		expect(first).toBeDefined();
+		expect(first?.body).toContain("Fallback description text");
+	});
+
+	it("supports deterministic ID generation via idFactory", () => {
+		tempDir = createTempArtifacts();
+		writeGateReport(tempDir, "deterministic.json", {
+			status: "fail",
+			findings: [
+				{
+					severity: "warning",
+					category: "style",
+					message: "Deterministic",
+					path: "src/commands/cmd.ts",
+				},
+			],
+		});
+
+		const report = generateSuggestions(tempDir, {
+			idFactory: ({ index }) => `fixed-${index}`,
+		});
+		expect(report.total).toBe(1);
+		const [first] = report.suggestions;
+		expect(first).toBeDefined();
+		expect(first?.id).toBe("fixed-0");
 	});
 });
 

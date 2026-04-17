@@ -10,6 +10,7 @@
 
 import { existsSync, readFileSync, readdirSync } from "node:fs";
 import { join } from "node:path";
+import { sanitizeEvidenceText } from "../input/sanitize.js";
 
 // ─── Types ───────────────────────────────────────────────────────────────────
 
@@ -62,11 +63,27 @@ export interface SuggestionReport {
 
 // ─── Constants ───────────────────────────────────────────────────────────────
 
-let suggestionCounter = 0;
+interface SuggestionIdContext {
+	source: string;
+	sourceType: SuggestionSource;
+	finding: GateFinding;
+	index: number;
+}
 
-function nextSuggestionId(): string {
-	suggestionCounter++;
-	return `sug-${Date.now()}-${suggestionCounter}`;
+type SuggestionIdFactory = (context: SuggestionIdContext) => string;
+
+function createDefaultIdFactory(): SuggestionIdFactory {
+	let counter = 0;
+
+	return ({ source, index }) => {
+		counter++;
+		const normalizedSource =
+			source
+				.toLowerCase()
+				.replace(/[^a-z0-9]+/g, "-")
+				.replace(/^-+|-+$/g, "") || "source";
+		return `sug-${normalizedSource}-${index + 1}-${counter}`;
+	};
 }
 
 // ─── Artifact mining ─────────────────────────────────────────────────────────
@@ -94,10 +111,85 @@ interface GateReport {
 	};
 }
 
-function readJsonFile(filePath: string): unknown {
+function isRecord(value: unknown): value is Record<string, unknown> {
+	return typeof value === "object" && value !== null && !Array.isArray(value);
+}
+
+function readOptionalString(
+	record: Record<string, unknown>,
+	key: string,
+): string | undefined {
+	const value = record[key];
+	return typeof value === "string" ? value : undefined;
+}
+
+function readGateFinding(value: unknown): GateFinding | null {
+	if (!isRecord(value)) {
+		return null;
+	}
+
+	const category = readOptionalString(value, "category");
+	const severity = readOptionalString(value, "severity");
+	const message = readOptionalString(value, "message");
+	const path = readOptionalString(value, "path");
+	const description = readOptionalString(value, "description");
+
+	return {
+		...(category !== undefined ? { category } : {}),
+		...(severity !== undefined ? { severity } : {}),
+		...(message !== undefined ? { message } : {}),
+		...(path !== undefined ? { path } : {}),
+		...(description !== undefined ? { description } : {}),
+	};
+}
+
+function readGateReport(filePath: string): GateReport | null {
 	if (!existsSync(filePath)) return null;
 	try {
-		return JSON.parse(readFileSync(filePath, "utf-8"));
+		const parsed: unknown = JSON.parse(readFileSync(filePath, "utf-8"));
+		if (!isRecord(parsed)) {
+			return null;
+		}
+
+		const findingsRaw = parsed.findings;
+		const findings = Array.isArray(findingsRaw)
+			? findingsRaw
+					.map((finding) => readGateFinding(finding))
+					.filter((finding): finding is GateFinding => finding !== null)
+			: undefined;
+
+		const summaryRaw = parsed.summary;
+		const summary = isRecord(summaryRaw)
+			? {
+					...(typeof summaryRaw.finding_count === "number"
+						? { finding_count: summaryRaw.finding_count }
+						: {}),
+					...(typeof summaryRaw.error_count === "number"
+						? { error_count: summaryRaw.error_count }
+						: {}),
+					...(typeof summaryRaw.warning_count === "number"
+						? { warning_count: summaryRaw.warning_count }
+						: {}),
+				}
+			: undefined;
+
+		const schemaVersion = readOptionalString(parsed, "schemaVersion");
+		const command = readOptionalString(parsed, "command");
+		const mode = readOptionalString(parsed, "mode");
+		const status = readOptionalString(parsed, "status");
+		const outcome = readOptionalString(parsed, "outcome");
+		const errorClass = readOptionalString(parsed, "error_class");
+
+		return {
+			...(schemaVersion !== undefined ? { schemaVersion } : {}),
+			...(command !== undefined ? { command } : {}),
+			...(mode !== undefined ? { mode } : {}),
+			...(status !== undefined ? { status } : {}),
+			...(outcome !== undefined ? { outcome } : {}),
+			...(errorClass !== undefined ? { error_class: errorClass } : {}),
+			...(findings !== undefined ? { findings } : {}),
+			...(summary !== undefined ? { summary } : {}),
+		};
 	} catch {
 		return null;
 	}
@@ -110,11 +202,9 @@ function extractGateFindings(
 
 	const consistencyDir = join(artifactsDir, "consistency-gate");
 	if (existsSync(consistencyDir)) {
-		for (const entry of readdirSync(consistencyDir)) {
+		for (const entry of readdirSync(consistencyDir).sort()) {
 			if (!entry.endsWith(".json")) continue;
-			const report = readJsonFile(
-				join(consistencyDir, entry),
-			) as GateReport | null;
+			const report = readGateReport(join(consistencyDir, entry));
 			if (report?.findings && report.findings.length > 0) {
 				results.push({ findings: report.findings, source: entry });
 			}
@@ -129,7 +219,15 @@ function classifyDomain(path?: string): string {
 	if (path.includes("src/commands/")) return "cli";
 	if (path.includes("src/lib/contract/")) return "governance";
 	if (path.includes("src/lib/policy/")) return "governance";
+	if (path.includes("src/lib/governance/")) return "governance";
 	if (path.includes("src/lib/cli/")) return "cli";
+	if (path.includes("src/lib/ci/")) return "ci";
+	if (path.includes("src/lib/verify/")) return "verify";
+	if (path.includes("src/lib/workflow-contract/")) return "workflow";
+	if (path.includes("src/lib/workflow/")) return "workflow";
+	if (path.includes("src/lib/review-gate/")) return "review-gate";
+	if (path.includes("src/lib/plan-gate/")) return "plan-gate";
+	if (path.includes("src/lib/linear/")) return "linear";
 	if (path.includes("src/lib/context-compound/")) return "tooling";
 	if (path.includes("src/lib/init/")) return "tooling";
 	if (path.includes("src/lib/project-brain/")) return "project-brain";
@@ -143,6 +241,7 @@ function findingToSuggestion(
 	finding: GateFinding,
 	source: string,
 	sourceType: SuggestionSource,
+	id: string,
 ): BrainSuggestion {
 	const domain = classifyDomain(finding.path);
 	const severity = finding.severity ?? "unknown";
@@ -150,20 +249,24 @@ function findingToSuggestion(
 	const message =
 		finding.message ?? finding.description ?? "No details available";
 	const path = finding.path ?? "unknown";
+	const safeCategory = sanitizeEvidenceText(category);
+	const safeMessage = sanitizeEvidenceText(message);
+	const safePath = sanitizeEvidenceText(path);
 
 	return {
-		id: nextSuggestionId(),
+		id,
 		type:
 			severity === "error" || severity === "critical"
 				? "rule_promotion_candidate"
 				: "learning",
 		source: sourceType,
 		domain,
-		title: `${category}: ${message.slice(0, 80)}`,
-		body: `**Finding:** ${message}\n\n**Path:** ${path}\n**Severity:** ${severity}\n**Category:** ${category}\n\n**Source:** ${source}`,
+		title: `${safeCategory}: ${safeMessage.slice(0, 80)}`,
+		body: `**Finding:** ${safeMessage}\n\n**Path:** ${safePath}\n**Severity:** ${severity}\n**Category:** ${safeCategory}\n\n**Source:** ${source}`,
 		evidenceRef: source,
 		deduplicated: false,
-		confidence: severity === "error" ? "high" : "medium",
+		confidence:
+			severity === "error" || severity === "critical" ? "high" : "medium",
 	};
 }
 
@@ -176,7 +279,9 @@ function deduplicateSuggestions(
 	const result: BrainSuggestion[] = [];
 
 	for (const suggestion of suggestions) {
-		const key = `${suggestion.type}:${suggestion.domain}:${suggestion.title}`;
+		const pathMatch = suggestion.body.match(/\*\*Path:\*\*\s*(.+)/);
+		const pathKey = pathMatch?.[1]?.trim() ?? "unknown";
+		const key = `${suggestion.type}:${suggestion.domain}:${suggestion.title}:${pathKey}`;
 		if (seen.has(key)) {
 			continue;
 		}
@@ -195,8 +300,17 @@ function deduplicateSuggestions(
  * Scans gate reports, consistency findings, and pilot evaluations
  * to produce review-ready suggestions. Never auto-writes.
  */
-export function generateSuggestions(artifactsDir: string): SuggestionReport {
+interface GenerateSuggestionsOptions {
+	idFactory?: SuggestionIdFactory;
+}
+
+export function generateSuggestions(
+	artifactsDir: string,
+	options: GenerateSuggestionsOptions = {},
+): SuggestionReport {
 	const rawSuggestions: BrainSuggestion[] = [];
+	const idFactory = options.idFactory ?? createDefaultIdFactory();
+	let suggestionIndex = 0;
 
 	// Mine gate findings
 	const gateResults = extractGateFindings(artifactsDir);
@@ -207,7 +321,19 @@ export function generateSuggestions(artifactsDir: string): SuggestionReport {
 				severity === "error" || severity === "critical"
 					? "gate_failure"
 					: "gate_warning";
-			rawSuggestions.push(findingToSuggestion(finding, source, sourceType));
+			rawSuggestions.push(
+				findingToSuggestion(
+					finding,
+					source,
+					sourceType,
+					idFactory({
+						source,
+						sourceType,
+						finding,
+						index: suggestionIndex++,
+					}),
+				),
+			);
 		}
 	}
 
@@ -215,8 +341,8 @@ export function generateSuggestions(artifactsDir: string): SuggestionReport {
 	const suggestions = deduplicateSuggestions(rawSuggestions);
 
 	// Build report
-	const byType = {} as Record<SuggestionType, number>;
-	const bySource = {} as Record<SuggestionSource, number>;
+	const byType: Partial<Record<SuggestionType, number>> = {};
+	const bySource: Partial<Record<SuggestionSource, number>> = {};
 	for (const s of suggestions) {
 		byType[s.type] = (byType[s.type] ?? 0) + 1;
 		bySource[s.source] = (bySource[s.source] ?? 0) + 1;
