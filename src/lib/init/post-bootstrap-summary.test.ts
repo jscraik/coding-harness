@@ -73,6 +73,17 @@ describe("generateBootstrapSummary", () => {
 		expect(summary.created).toContain("docs/AGENTS.md.backup");
 	});
 
+	it("normalizes leading dot-slash and backslash paths", () => {
+		const summary = generateBootstrapSummary(
+			makeOutput({
+				created: [".\\AGENTS.md", "./harness.contract.json"],
+			}),
+			"pnpm",
+		);
+		expect(summary.created).toContain("Agent instructions");
+		expect(summary.created).toContain("Governance contract");
+	});
+
 	it("describes protected files from skipped", () => {
 		const summary = generateBootstrapSummary(
 			makeOutput({
@@ -82,6 +93,22 @@ describe("generateBootstrapSummary", () => {
 		);
 		expect(summary.protected).toContain("Agent instructions");
 		expect(summary.protected).toContain("Contributor guide");
+	});
+
+	it("deduplicates labeled created and protected entries", () => {
+		const summary = generateBootstrapSummary(
+			makeOutput({
+				created: [".\\AGENTS.md", "AGENTS.md"],
+				skipped: ["./CONTRIBUTING.md", "CONTRIBUTING.md"],
+			}),
+			"pnpm",
+		);
+		expect(
+			summary.created.filter((v) => v === "Agent instructions"),
+		).toHaveLength(1);
+		expect(
+			summary.protected.filter((v) => v === "Contributor guide"),
+		).toHaveLength(1);
 	});
 
 	it("recommends contract validation when contract was created", () => {

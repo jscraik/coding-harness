@@ -68,6 +68,18 @@ function describeFile(path: string): string {
 	return path;
 }
 
+function mapUniqueLabels(paths: string[]): string[] {
+	const labels: string[] = [];
+	const seen = new Set<string>();
+	for (const path of paths) {
+		const label = describeFile(path);
+		if (seen.has(label)) continue;
+		seen.add(label);
+		labels.push(label);
+	}
+	return labels;
+}
+
 // ─── Public API ──────────────────────────────────────────────────────────────
 
 /**
@@ -84,8 +96,8 @@ export function generateBootstrapSummary(
 		packageManager,
 	};
 
-	const created = output.created.map(describeFile);
-	const protectedFiles = output.skipped.map(describeFile);
+	const created = mapUniqueLabels(output.created);
+	const protectedFiles = mapUniqueLabels(output.skipped);
 
 	const nextCommands: string[] = [];
 
