@@ -443,18 +443,26 @@ const CONTROLS: StandardsControl[] = [
 
 // ─── Public API ──────────────────────────────────────────────────────────────
 
+function cloneControl(control: StandardsControl): StandardsControl {
+	return {
+		...control,
+		contractConstructs: [...control.contractConstructs],
+		references: control.references.map((reference) => ({ ...reference })),
+	};
+}
+
 /**
  * Get all controls in the standards map.
  */
 export function getAllControls(): StandardsControl[] {
-	return [...CONTROLS];
+	return CONTROLS.map(cloneControl);
 }
 
 /**
  * Get controls filtered by domain.
  */
 export function getControlsByDomain(domain: ControlDomain): StandardsControl[] {
-	return CONTROLS.filter((c) => c.domain === domain);
+	return CONTROLS.filter((c) => c.domain === domain).map(cloneControl);
 }
 
 /**
@@ -465,14 +473,14 @@ export function getControlsByFramework(
 ): StandardsControl[] {
 	return CONTROLS.filter((c) =>
 		c.references.some((r) => r.framework === framework),
-	);
+	).map(cloneControl);
 }
 
 /**
  * Get non-overridable controls.
  */
 export function getNonOverridableControls(): StandardsControl[] {
-	return CONTROLS.filter((c) => c.nonOverridable);
+	return CONTROLS.filter((c) => c.nonOverridable).map(cloneControl);
 }
 
 /**
@@ -484,8 +492,11 @@ export function generateControlMapReport(): ControlMapReport {
 
 	for (const control of CONTROLS) {
 		byDomain[control.domain] = (byDomain[control.domain] ?? 0) + 1;
-		for (const ref of control.references) {
-			byFramework[ref.framework] = (byFramework[ref.framework] ?? 0) + 1;
+		const frameworksForControl = new Set(
+			control.references.map((ref) => ref.framework),
+		);
+		for (const framework of frameworksForControl) {
+			byFramework[framework] = (byFramework[framework] ?? 0) + 1;
 		}
 	}
 
@@ -494,7 +505,7 @@ export function generateControlMapReport(): ControlMapReport {
 		byDomain,
 		byFramework,
 		nonOverridableCount: CONTROLS.filter((c) => c.nonOverridable).length,
-		controls: [...CONTROLS],
+		controls: CONTROLS.map(cloneControl),
 	};
 }
 
@@ -502,5 +513,6 @@ export function generateControlMapReport(): ControlMapReport {
  * Look up a control by its ID.
  */
 export function getControlById(id: string): StandardsControl | undefined {
-	return CONTROLS.find((c) => c.id === id);
+	const control = CONTROLS.find((c) => c.id === id);
+	return control ? cloneControl(control) : undefined;
 }

@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import {
 	type ControlDomain,
+	type StandardsFramework,
 	generateControlMapReport,
 	getAllControls,
 	getControlById,
@@ -34,6 +35,27 @@ describe("standards-map", () => {
 				expect(typeof control.nonOverridable).toBe("boolean");
 			}
 		});
+
+		it("returns deep-cloned controls", () => {
+			const controls = getAllControls();
+			const originalFirst = controls[0];
+			expect(originalFirst).toBeDefined();
+			if (!originalFirst) return;
+
+			const originalName = originalFirst.name;
+			const originalControlId = originalFirst.references[0]?.controlId ?? "";
+
+			originalFirst.name = "mutated";
+			if (originalFirst.references[0]) {
+				originalFirst.references[0].controlId = "mutated-ref";
+			}
+
+			const freshControls = getAllControls();
+			expect(freshControls[0]?.name).toBe(originalName);
+			expect(freshControls[0]?.references[0]?.controlId).toBe(
+				originalControlId,
+			);
+		});
 	});
 
 	describe("getControlsByDomain", () => {
@@ -45,10 +67,12 @@ describe("standards-map", () => {
 			}
 		});
 
-		it("returns empty for domains with no controls", () => {
-			// All domains should have at least one control, but test the shape
+		it("returns only controls matching the requested domain", () => {
 			const result = getControlsByDomain("access_control" as ControlDomain);
 			expect(Array.isArray(result)).toBe(true);
+			for (const control of result) {
+				expect(control.domain).toBe("access_control");
+			}
 		});
 	});
 
@@ -127,11 +151,18 @@ describe("standards-map", () => {
 			expect(domainTotal).toBe(report.totalControls);
 		});
 
-		it("counts references by framework", () => {
+		it("counts controls by framework", () => {
 			const report = generateControlMapReport();
-			expect(report.byFramework.NIST_SP_800_218A).toBeGreaterThan(0);
-			expect(report.byFramework.NIST_AI_RMF_1_0).toBeGreaterThan(0);
-			expect(report.byFramework.NIST_AI_600_1).toBeGreaterThan(0);
+			const expected: Partial<Record<StandardsFramework, number>> = {};
+			for (const control of getAllControls()) {
+				const frameworks = new Set(
+					control.references.map((ref) => ref.framework),
+				);
+				for (const framework of frameworks) {
+					expected[framework] = (expected[framework] ?? 0) + 1;
+				}
+			}
+			expect(report.byFramework).toEqual(expected);
 		});
 	});
 });
