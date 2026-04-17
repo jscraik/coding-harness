@@ -225,7 +225,27 @@ export function validateInstructionConsistency(
 	const findings: InstructionConsistencyFinding[] = [];
 	const presentSurfaces = detectPresentSurfaces(repoRoot);
 
-	const canonicalSurface = AGENT_SURFACES.find((s) => s.role === "canonical");
+	const canonicalSurfaces = AGENT_SURFACES.filter(
+		(surface) => surface.role === "canonical",
+	);
+	if (canonicalSurfaces.length !== 1) {
+		return {
+			consistent: false,
+			surfacesChecked: 0,
+			findings: [
+				{
+					severity: "error",
+					file: "AGENTS.md",
+					message:
+						canonicalSurfaces.length === 0
+							? "Canonical instruction source (AGENTS.md) is not defined in surface map"
+							: "Multiple canonical instruction sources are defined in surface map; exactly one is required",
+					fix: "Keep only AGENTS.md as the single canonical surface",
+				},
+			],
+		};
+	}
+	const canonicalSurface = canonicalSurfaces[0];
 	if (!canonicalSurface) {
 		return {
 			consistent: false,
@@ -236,6 +256,7 @@ export function validateInstructionConsistency(
 					file: "AGENTS.md",
 					message:
 						"Canonical instruction source (AGENTS.md) is not defined in surface map",
+					fix: "Keep only AGENTS.md as the single canonical surface",
 				},
 			],
 		};
@@ -246,8 +267,9 @@ export function validateInstructionConsistency(
 		findings.push({
 			severity: "error",
 			file: canonicalSurface.filePath,
-			message: "Canonical instruction source (AGENTS.md) does not exist",
-			fix: "Create AGENTS.md with project instructions",
+			message:
+				"Canonical instruction source (AGENTS.md) is missing or unreadable",
+			fix: "Ensure AGENTS.md exists and is readable",
 		});
 		return {
 			consistent: false,
@@ -260,7 +282,15 @@ export function validateInstructionConsistency(
 
 	for (const surface of derivedSurfaces) {
 		const content = readFileContent(repoRoot, surface.filePath);
-		if (content === null) continue;
+		if (content === null) {
+			findings.push({
+				severity: "error",
+				file: surface.filePath,
+				message: "Derived instruction surface exists but could not be read",
+				fix: "Check file permissions/encoding and retry consistency validation",
+			});
+			continue;
+		}
 		checkDerivedReferences(content, surface, findings);
 		const overlapRatio = computeLineOverlap(canonicalContent, content);
 		if (overlapRatio > 0.8) {

@@ -1,4 +1,4 @@
-import { mkdtempSync, rmSync, writeFileSync } from "node:fs";
+import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { describe, expect, it } from "vitest";
@@ -100,6 +100,22 @@ describe("validateInstructionConsistency", () => {
 		}
 	});
 
+	it("reports error when AGENTS.md is unreadable", () => {
+		const dir = createTempRepo();
+		try {
+			mkdirSync(join(dir, "AGENTS.md"));
+			const report = validateInstructionConsistency(dir);
+			const canonicalError = report.findings.find(
+				(f) =>
+					f.file === "AGENTS.md" && f.message.includes("missing or unreadable"),
+			);
+			expect(report.consistent).toBe(false);
+			expect(canonicalError).toBeDefined();
+		} finally {
+			rmSync(dir, { recursive: true, force: true });
+		}
+	});
+
 	it("passes when only AGENTS.md exists", () => {
 		const dir = createTempRepo();
 		try {
@@ -156,6 +172,23 @@ describe("validateInstructionConsistency", () => {
 				(f) => f.file === "CLAUDE.md" && f.message.includes("line overlap"),
 			);
 			expect(dupWarning).toBeDefined();
+		} finally {
+			rmSync(dir, { recursive: true, force: true });
+		}
+	});
+
+	it("reports error when a derived surface is unreadable", () => {
+		const dir = createTempRepo();
+		try {
+			writeFileSync(join(dir, "AGENTS.md"), CANONICAL_AGENTS);
+			mkdirSync(join(dir, "CLAUDE.md"));
+			const report = validateInstructionConsistency(dir);
+			const derivedReadError = report.findings.find(
+				(f) =>
+					f.file === "CLAUDE.md" && f.message.includes("could not be read"),
+			);
+			expect(report.consistent).toBe(false);
+			expect(derivedReadError).toBeDefined();
 		} finally {
 			rmSync(dir, { recursive: true, force: true });
 		}
