@@ -82,6 +82,14 @@ if [[ ! "$branch_prefix" =~ ^[A-Za-z0-9._/-]+$ ]]; then
 fi
 
 branch_name="${branch_prefix}/${slug}"
+resolved_base_ref="$base_ref"
+remote_base_branch=""
+
+if [[ "$base_ref" == origin/* ]]; then
+	remote_base_branch="${base_ref#origin/}"
+elif [[ "$base_ref" != *"/"* ]]; then
+	remote_base_branch="$base_ref"
+fi
 
 if [[ -z "$worktree_path" ]]; then
 	worktree_path="${REPO_ROOT}/../wt-${slug}"
@@ -101,12 +109,28 @@ if [[ -e "$worktree_path" ]]; then
 	exit 1
 fi
 
+if [[ -n "$remote_base_branch" ]]; then
+	echo "[new-task] fetching latest origin/$remote_base_branch"
+	git fetch --prune origin "$remote_base_branch"
+	if git show-ref --verify --quiet "refs/remotes/origin/$remote_base_branch"; then
+		resolved_base_ref="refs/remotes/origin/$remote_base_branch"
+	fi
+fi
+
+if ! git rev-parse --verify --quiet "${resolved_base_ref}^{commit}" >/dev/null; then
+	echo "[new-task] base ref is not a valid commit: $base_ref" >&2
+	exit 2
+fi
+
 echo "[new-task] repo: $REPO_ROOT"
 echo "[new-task] base: $base_ref"
+if [[ "$resolved_base_ref" != "$base_ref" ]]; then
+	echo "[new-task] resolved base: $resolved_base_ref"
+fi
 echo "[new-task] branch: ${branch_name}"
 echo "[new-task] path: $worktree_path"
 
-git worktree add "$worktree_path" -b "${branch_name}" "$base_ref"
+git worktree add "$worktree_path" -b "${branch_name}" "$resolved_base_ref"
 
 echo
 echo "[new-task] next:"
