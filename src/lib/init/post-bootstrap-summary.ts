@@ -140,8 +140,17 @@ export function generateBootstrapSummary(
 		);
 	}
 
-	// Recommend index-context if new install
-	if (output.created.length > 3) {
+	// Recommend index-context for fresh bootstrap scaffolds, not arbitrary churn.
+	const hasBootstrapArtifacts = output.created.some(
+		(path) =>
+			matchesPattern(path, "harness.contract.json") ||
+			matchesPattern(path, "WORKFLOW.md") ||
+			matchesPattern(path, "AGENTS.md") ||
+			matchesPattern(path, "CONTRIBUTING.md") ||
+			matchesPattern(path, "docs/") ||
+			matchesPattern(path, ".github/workflows/"),
+	);
+	if (hasBootstrapArtifacts && output.created.length > 3) {
 		nextCommands.push(
 			"harness index-context --json --lexical-fallback  — index for semantic search",
 		);

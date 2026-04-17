@@ -186,6 +186,19 @@ describe("generateBootstrapSummary", () => {
 		expect(hasIndex).toBe(true);
 	});
 
+	it("does not recommend index-context for unrelated created files", () => {
+		const summary = generateBootstrapSummary(
+			makeOutput({
+				created: ["a.txt", "b.txt", "c.txt", "d.txt"],
+			}),
+			"pnpm",
+		);
+		const hasIndex = summary.nextCommands.some((cmd) =>
+			cmd.includes("index-context --json --lexical-fallback"),
+		);
+		expect(hasIndex).toBe(false);
+	});
+
 	it("always recommends health check", () => {
 		const summary = generateBootstrapSummary(makeOutput(), "pnpm");
 		const hasCheck = summary.nextCommands.some((cmd) =>
