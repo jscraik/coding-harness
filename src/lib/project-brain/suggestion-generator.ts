@@ -14,11 +14,7 @@ import { sanitizeEvidenceText } from "../input/sanitize.js";
 
 // ─── Types ───────────────────────────────────────────────────────────────────
 
-export type SuggestionType =
-	| "learning"
-	| "hypothesis"
-	| "rule_promotion_candidate"
-	| "quality_criterion_proposal";
+export type SuggestionType = "learning" | "rule_promotion_candidate";
 
 export type SuggestionSource =
 	| "gate_failure"
@@ -42,6 +38,8 @@ export interface BrainSuggestion {
 	body: string;
 	/** Source artifact reference */
 	evidenceRef: string;
+	/** Additional source artifact references merged by deduplication */
+	additionalEvidenceRefs?: string[];
 	/** Whether this suggestion is deduplicated */
 	deduplicated: boolean;
 	/** Confidence: high, medium, low */
@@ -213,6 +211,8 @@ function extractGateFindings(
 	if (existsSync(consistencyDir)) {
 		for (const entry of readdirSync(consistencyDir).sort()) {
 			if (!entry.endsWith(".json")) continue;
+			// Ignore baseline snapshots; only current run findings are actionable.
+			if (entry.toLowerCase().includes("baseline")) continue;
 			const report = readGateReport(
 				join(consistencyDir, entry),
 				onArtifactReadError,
@@ -321,18 +321,29 @@ function buildSuggestionCandidate(
 function deduplicateSuggestions(
 	candidates: SuggestionCandidate[],
 ): BrainSuggestion[] {
-	const seen = new Set<string>();
-	const result: BrainSuggestion[] = [];
+	const deduped = new Map<string, BrainSuggestion>();
 
 	for (const { suggestion, dedupeKey } of candidates) {
-		if (seen.has(dedupeKey)) {
+		const existing = deduped.get(dedupeKey);
+		if (existing) {
+			existing.deduplicated = true;
+			if (
+				suggestion.evidenceRef !== existing.evidenceRef &&
+				!(existing.additionalEvidenceRefs ?? []).includes(
+					suggestion.evidenceRef,
+				)
+			) {
+				existing.additionalEvidenceRefs = [
+					...(existing.additionalEvidenceRefs ?? []),
+					suggestion.evidenceRef,
+				];
+			}
 			continue;
 		}
-		seen.add(dedupeKey);
-		result.push({ ...suggestion, deduplicated: true });
+		deduped.set(dedupeKey, { ...suggestion, deduplicated: false });
 	}
 
-	return result;
+	return [...deduped.values()];
 }
 
 // ─── Public API ──────────────────────────────────────────────────────────────
@@ -418,11 +429,15 @@ export function formatSuggestionsForReview(report: SuggestionReport): string {
 	];
 
 	for (const suggestion of report.suggestions) {
+		const evidenceRefs = [
+			suggestion.evidenceRef,
+			...(suggestion.additionalEvidenceRefs ?? []),
+		];
 		lines.push(`### ${suggestion.type}: ${suggestion.title}`);
 		lines.push(`- **Domain:** ${suggestion.domain}`);
 		lines.push(`- **Source:** ${suggestion.source}`);
 		lines.push(`- **Confidence:** ${suggestion.confidence}`);
-		lines.push(`- **Evidence:** ${suggestion.evidenceRef}`);
+		lines.push(`- **Evidence:** ${evidenceRefs.join(", ")}`);
 		if (suggestion.deduplicated) {
 			lines.push("- **Deduplicated:** yes");
 		}

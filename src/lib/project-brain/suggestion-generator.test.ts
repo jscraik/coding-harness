@@ -125,6 +125,11 @@ describe("generateSuggestions", () => {
 		const report = generateSuggestions(tempDir);
 		expect(report.total).toBe(1);
 		expect(report.deduplicatedCount).toBe(1);
+		const [first] = report.suggestions;
+		expect(first).toBeDefined();
+		expect(first?.deduplicated).toBe(true);
+		expect(first?.evidenceRef).toBe("gate-a.json");
+		expect(first?.additionalEvidenceRefs).toEqual(["gate-b.json"]);
 	});
 
 	it("does not deduplicate distinct file paths", () => {
@@ -150,6 +155,9 @@ describe("generateSuggestions", () => {
 		const report = generateSuggestions(tempDir);
 		expect(report.total).toBe(2);
 		expect(report.deduplicatedCount).toBe(0);
+		expect(
+			report.suggestions.every((suggestion) => !suggestion.deduplicated),
+		).toBe(true);
 	});
 
 	it("does not deduplicate findings that differ after title truncation", () => {
@@ -184,6 +192,34 @@ describe("generateSuggestions", () => {
 
 		const report = generateSuggestions(tempDir);
 		expect(report.total).toBe(0);
+	});
+
+	it("ignores consistency baseline artifacts", () => {
+		tempDir = createTempArtifacts();
+		writeGateReport(tempDir, "consistency-baseline-latest.json", {
+			status: "fail",
+			findings: [
+				{
+					path: "src/lib/workflow-contract/state-normalizer.ts",
+					rule_id: "WF-001",
+				},
+			],
+		});
+		writeGateReport(tempDir, "gate-current.json", {
+			status: "fail",
+			findings: [
+				{
+					category: "security",
+					severity: "error",
+					message: "Current run actionable finding",
+					path: "src/commands/run.ts",
+				},
+			],
+		});
+
+		const report = generateSuggestions(tempDir);
+		expect(report.total).toBe(1);
+		expect(report.suggestions[0]?.evidenceRef).toBe("gate-current.json");
 	});
 
 	it("handles malformed JSON gracefully", () => {
@@ -267,6 +303,26 @@ describe("generateSuggestions", () => {
 				},
 				{
 					severity: "warning",
+					message: "B2",
+					path: "src/lib/ci/status.ts",
+				},
+				{
+					severity: "warning",
+					message: "B3",
+					path: "src/lib/governance/rules.ts",
+				},
+				{
+					severity: "warning",
+					message: "B4",
+					path: "src/lib/verify/guard.ts",
+				},
+				{
+					severity: "warning",
+					message: "B5",
+					path: "src/lib/workflow/step.ts",
+				},
+				{
+					severity: "warning",
 					message: "C",
 					path: ".github/workflows/ci.yml",
 				},
@@ -274,6 +330,21 @@ describe("generateSuggestions", () => {
 					severity: "warning",
 					message: "D",
 					path: "src/lib/workflow-contract/run.ts",
+				},
+				{
+					severity: "warning",
+					message: "D2",
+					path: "src/lib/review-gate/run.ts",
+				},
+				{
+					severity: "warning",
+					message: "D3",
+					path: "src/lib/plan-gate/run.ts",
+				},
+				{
+					severity: "warning",
+					message: "D4",
+					path: "src/lib/linear/client.ts",
 				},
 				{ severity: "warning", message: "E", path: "docs/readme.md" },
 				{ severity: "warning", message: "F" },
@@ -285,7 +356,12 @@ describe("generateSuggestions", () => {
 		expect(domains).toContain("cli");
 		expect(domains).toContain("tooling");
 		expect(domains).toContain("ci");
+		expect(domains).toContain("governance");
+		expect(domains).toContain("verify");
 		expect(domains).toContain("workflow");
+		expect(domains).toContain("review-gate");
+		expect(domains).toContain("plan-gate");
+		expect(domains).toContain("linear");
 		expect(domains).toContain("docs");
 		expect(domains).toContain("general");
 	});
@@ -356,6 +432,7 @@ describe("formatSuggestionsForReview", () => {
 					title: "style: Inconsistent naming",
 					body: "**Finding:** Inconsistent naming\n\n**Path:** src/cmd.ts",
 					evidenceRef: "gate-001.json",
+					additionalEvidenceRefs: ["gate-002.json"],
 					deduplicated: false,
 					confidence: "medium",
 				},
@@ -367,6 +444,7 @@ describe("formatSuggestionsForReview", () => {
 		expect(output).toContain("### learning: style: Inconsistent naming");
 		expect(output).toContain("**Domain:** cli");
 		expect(output).toContain("**Confidence:** medium");
+		expect(output).toContain("**Evidence:** gate-001.json, gate-002.json");
 		expect(output).toContain("**Finding:** Inconsistent naming");
 	});
 
@@ -385,6 +463,7 @@ describe("formatSuggestionsForReview", () => {
 					title: "test: something",
 					body: "body",
 					evidenceRef: "gate.json",
+					additionalEvidenceRefs: ["gate-duplicate.json"],
 					deduplicated: true,
 					confidence: "medium",
 				},
