@@ -122,7 +122,7 @@ export function generateBootstrapSummary(
 		)
 	) {
 		nextCommands.push(
-			"harness branch-protect  — sync required checks to GitHub",
+			"harness branch-protect --owner <owner> --repo <repo> --token $GITHUB_TOKEN  — sync required checks to GitHub",
 		);
 	}
 
