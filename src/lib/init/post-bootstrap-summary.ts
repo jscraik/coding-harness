@@ -48,9 +48,22 @@ const FILE_CATEGORIES: Record<string, string> = {
 	".harness/": "Harness data directory",
 };
 
+function normalizeRepoPath(filePath: string): string {
+	return filePath.split("\\").join("/").replace(/^\.\//, "");
+}
+
+function matchesPattern(filePath: string, pattern: string): boolean {
+	const normalizedPath = normalizeRepoPath(filePath);
+	const normalizedPattern = normalizeRepoPath(pattern);
+	if (normalizedPattern.endsWith("/")) {
+		return normalizedPath.startsWith(normalizedPattern);
+	}
+	return normalizedPath === normalizedPattern;
+}
+
 function describeFile(path: string): string {
 	for (const [pattern, label] of Object.entries(FILE_CATEGORIES)) {
-		if (path.includes(pattern)) return label;
+		if (matchesPattern(path, pattern)) return label;
 	}
 	return path;
 }
@@ -72,7 +85,7 @@ export function generateBootstrapSummary(
 	};
 
 	const created = output.created.map(describeFile);
-	const protected_ = output.skipped.map(describeFile);
+	const protectedFiles = output.skipped.map(describeFile);
 
 	const nextCommands: string[] = [];
 
@@ -89,7 +102,9 @@ export function generateBootstrapSummary(
 	// Recommend branch protection if CI files were created
 	if (
 		output.created.some(
-			(p) => p.includes("workflows/") || p.includes(".circleci/"),
+			(p) =>
+				matchesPattern(p, ".github/workflows/") ||
+				matchesPattern(p, ".circleci/"),
 		)
 	) {
 		nextCommands.push(
@@ -101,9 +116,9 @@ export function generateBootstrapSummary(
 	if (
 		output.created.some(
 			(p) =>
-				p.includes("AGENTS.md") ||
-				p.includes("CONTRIBUTING.md") ||
-				p.includes("docs/"),
+				matchesPattern(p, "AGENTS.md") ||
+				matchesPattern(p, "CONTRIBUTING.md") ||
+				matchesPattern(p, "docs/"),
 		)
 	) {
 		nextCommands.push(
@@ -114,14 +129,14 @@ export function generateBootstrapSummary(
 	// Recommend index-context if new install
 	if (output.created.length > 3) {
 		nextCommands.push(
-			"harness index-context --json  — index for semantic search",
+			"harness index-context --json --lexical-fallback  — index for semantic search",
 		);
 	}
 
 	return {
 		detected,
 		created,
-		protected: protected_,
+		protected: protectedFiles,
 		nextCommands,
 	};
 }

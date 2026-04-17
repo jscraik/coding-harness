@@ -63,6 +63,16 @@ describe("generateBootstrapSummary", () => {
 		expect(summary.created).toContain("CI pipeline");
 	});
 
+	it("does not match category labels with broad substring checks", () => {
+		const summary = generateBootstrapSummary(
+			makeOutput({
+				created: ["docs/AGENTS.md.backup"],
+			}),
+			"pnpm",
+		);
+		expect(summary.created).toContain("docs/AGENTS.md.backup");
+	});
+
 	it("describes protected files from skipped", () => {
 		const summary = generateBootstrapSummary(
 			makeOutput({
@@ -96,6 +106,17 @@ describe("generateBootstrapSummary", () => {
 		expect(hasBranchProtect).toBe(true);
 	});
 
+	it("does not recommend branch-protect for non-CI workflow-like paths", () => {
+		const summary = generateBootstrapSummary(
+			makeOutput({ created: ["docs/workflows/guide.md"] }),
+			"pnpm",
+		);
+		const hasBranchProtect = summary.nextCommands.some((cmd) =>
+			cmd.includes("branch-protect"),
+		);
+		expect(hasBranchProtect).toBe(false);
+	});
+
 	it("recommends docs-gate when governance docs created", () => {
 		const summary = generateBootstrapSummary(
 			makeOutput({ created: ["AGENTS.md"] }),
@@ -120,7 +141,7 @@ describe("generateBootstrapSummary", () => {
 			"pnpm",
 		);
 		const hasIndex = summary.nextCommands.some((cmd) =>
-			cmd.includes("index-context"),
+			cmd.includes("index-context --json --lexical-fallback"),
 		);
 		expect(hasIndex).toBe(true);
 	});
