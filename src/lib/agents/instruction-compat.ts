@@ -132,10 +132,11 @@ function readFileContent(repoRoot: string, filePath: string): string | null {
 	try {
 		return readFileSync(fullPath, "utf-8");
 	} catch (error: unknown) {
-		throw new Error(
-			`Failed to read instruction surface: repoRoot=${repoRoot} filePath=${filePath} fullPath=${fullPath}`,
-			{ cause: error },
+		console.warn(
+			`[instruction-compat] failed to read instruction surface: repoRoot=${repoRoot} filePath=${filePath} fullPath=${fullPath}`,
+			error,
 		);
+		return null;
 	}
 }
 
