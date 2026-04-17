@@ -38,6 +38,8 @@ export interface AgentInstructionSurface {
 	role: "canonical" | "derived";
 	/** Header marker expected at the start of this surface (for format validation/parity checks). */
 	headerMarker: string;
+	/** Whether this surface is required to exist in the repository. */
+	required?: boolean;
 }
 
 export interface InstructionConsistencyFinding {
@@ -79,6 +81,7 @@ export const AGENT_SURFACES: AgentInstructionSurface[] = [
 		discovery: "auto",
 		role: "derived",
 		headerMarker: "#",
+		required: true,
 	},
 	{
 		agent: "gemini",
@@ -113,12 +116,7 @@ export const AGENT_SURFACES: AgentInstructionSurface[] = [
 /**
  * Required markers that indicate a derived file references its canonical source.
  */
-const CANONICAL_REF_MARKERS = [
-	"canonical source",
-	"agents.md",
-	"@./agents.md",
-	"@agents.md",
-];
+const CANONICAL_REF_REGEX = /\b(?:@\.\/|@)?agents\.md\b/i;
 
 /**
  * Read a file under a repository root and return its UTF-8 text content.
@@ -146,10 +144,7 @@ function checkDerivedReferences(
 	surface: AgentInstructionSurface,
 	findings: InstructionConsistencyFinding[],
 ): void {
-	const contentLower = content.toLowerCase();
-	const hasCanonicalRef = CANONICAL_REF_MARKERS.some((marker) =>
-		contentLower.includes(marker),
-	);
+	const hasCanonicalRef = CANONICAL_REF_REGEX.test(content);
 	if (!hasCanonicalRef) {
 		findings.push({
 			severity: "warning",
@@ -180,17 +175,17 @@ function computeLineOverlap(
 	return overlapCount / canonicalLines.length;
 }
 
-function collectMissingSurfaces(repoRoot: string): string[] {
-	const missingSurfaceLabels: string[] = [];
+function collectMissingSurfaces(repoRoot: string): AgentInstructionSurface[] {
+	const missingSurfaces: AgentInstructionSurface[] = [];
 	for (const surface of AGENT_SURFACES) {
 		if (
 			surface.role === "derived" &&
 			!existsSync(join(repoRoot, surface.filePath))
 		) {
-			missingSurfaceLabels.push(`${surface.agent}: ${surface.filePath}`);
+			missingSurfaces.push(surface);
 		}
 	}
-	return missingSurfaceLabels;
+	return missingSurfaces;
 }
 
 // ─── Public API ──────────────────────────────────────────────────────────────
@@ -303,14 +298,14 @@ export function validateInstructionConsistency(
 		}
 	}
 
-	const missingSurfaceLabels = collectMissingSurfaces(repoRoot);
-
-	if (missingSurfaceLabels.length > 0) {
+	for (const surface of collectMissingSurfaces(repoRoot)) {
 		findings.push({
-			severity: "info",
-			file: "(multiple)",
-			message: `Derived instruction surfaces not present: ${missingSurfaceLabels.join(", ")}`,
-			fix: "Run `harness init` or create these files with references to AGENTS.md",
+			severity: surface.required ? "warning" : "info",
+			file: surface.filePath,
+			message: surface.required
+				? `Required derived instruction surface not present: ${surface.agent}: ${surface.filePath}`
+				: `Optional derived instruction surface not present: ${surface.agent}: ${surface.filePath}`,
+			fix: "Run `harness init` or create this file with references to AGENTS.md",
 		});
 	}
 

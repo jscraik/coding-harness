@@ -42,6 +42,12 @@ const DERIVED_NO_REF = `# CLAUDE.md
 - Run shell commands with zsh
 `;
 
+const DERIVED_WRONG_REF = `# CLAUDE.md
+
+## Canonical source
+- README.md
+`;
+
 // ---------------------------------------------------------------------------
 // Tests
 // ---------------------------------------------------------------------------
@@ -116,13 +122,20 @@ describe("validateInstructionConsistency", () => {
 		}
 	});
 
-	it("passes when only AGENTS.md exists", () => {
+	it("warns when required derived surfaces are missing", () => {
 		const dir = createTempRepo();
 		try {
 			writeFileSync(join(dir, "AGENTS.md"), CANONICAL_AGENTS);
 			const report = validateInstructionConsistency(dir);
-			expect(report.consistent).toBe(true);
+			const requiredMissing = report.findings.find(
+				(f) =>
+					f.file === "CLAUDE.md" &&
+					f.severity === "warning" &&
+					f.message.includes("Required derived instruction surface"),
+			);
+			expect(report.consistent).toBe(false);
 			expect(report.surfacesChecked).toBe(1);
+			expect(requiredMissing).toBeDefined();
 		} finally {
 			rmSync(dir, { recursive: true, force: true });
 		}
@@ -157,6 +170,26 @@ describe("validateInstructionConsistency", () => {
 			expect(refWarning).toBeDefined();
 			expect(refWarning!.severity).toBe("warning");
 			expect(refWarning!.fix).toBeTruthy();
+		} finally {
+			rmSync(dir, { recursive: true, force: true });
+		}
+	});
+
+	it("warns when derived file references wrong canonical source", () => {
+		const dir = createTempRepo();
+		try {
+			writeFileSync(join(dir, "AGENTS.md"), CANONICAL_AGENTS);
+			writeFileSync(join(dir, "CLAUDE.md"), DERIVED_WRONG_REF);
+			const report = validateInstructionConsistency(dir);
+			const refWarning = report.findings.find(
+				(f) =>
+					f.file === "CLAUDE.md" &&
+					f.message.includes("does not reference canonical source"),
+			);
+			expect(report.consistent).toBe(false);
+			expect(refWarning).toBeDefined();
+			expect(refWarning?.severity).toBe("warning");
+			expect(refWarning?.fix).toBeTruthy();
 		} finally {
 			rmSync(dir, { recursive: true, force: true });
 		}
@@ -214,13 +247,15 @@ describe("validateInstructionConsistency", () => {
 		}
 	});
 
-	it("reports info for missing derived surfaces", () => {
+	it("reports info for optional missing derived surfaces", () => {
 		const dir = createTempRepo();
 		try {
 			writeFileSync(join(dir, "AGENTS.md"), CANONICAL_AGENTS);
 			const report = validateInstructionConsistency(dir);
 			const infoFinding = report.findings.find(
-				(f) => f.severity === "info" && f.message.includes("not present"),
+				(f) =>
+					f.severity === "info" &&
+					f.message.includes("Optional derived instruction surface"),
 			);
 			expect(infoFinding).toBeDefined();
 		} finally {
