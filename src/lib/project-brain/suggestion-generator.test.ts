@@ -152,6 +152,32 @@ describe("generateSuggestions", () => {
 		expect(report.deduplicatedCount).toBe(0);
 	});
 
+	it("does not deduplicate findings that differ after title truncation", () => {
+		tempDir = createTempArtifacts();
+		const prefix = "A".repeat(80);
+		writeGateReport(tempDir, "gate-long.json", {
+			status: "fail",
+			findings: [
+				{
+					category: "security",
+					severity: "error",
+					message: `${prefix}-suffix-one`,
+					path: "src/commands/run.ts",
+				},
+				{
+					category: "security",
+					severity: "error",
+					message: `${prefix}-suffix-two`,
+					path: "src/commands/run.ts",
+				},
+			],
+		});
+
+		const report = generateSuggestions(tempDir);
+		expect(report.total).toBe(2);
+		expect(report.deduplicatedCount).toBe(0);
+	});
+
 	it("handles reports with no findings array", () => {
 		tempDir = createTempArtifacts();
 		writeGateReport(tempDir, "empty.json", { status: "pass" });
@@ -168,6 +194,26 @@ describe("generateSuggestions", () => {
 
 		const report = generateSuggestions(tempDir);
 		expect(report.total).toBe(0);
+	});
+
+	it("surfaces malformed JSON via onArtifactReadError callback", () => {
+		tempDir = createTempArtifacts();
+		const gateDir = join(tempDir, "consistency-gate");
+		mkdirSync(gateDir, { recursive: true });
+		const badPath = join(gateDir, "bad.json");
+		writeFileSync(badPath, "not valid json{", "utf-8");
+		const errors: { filePath: string; error: unknown }[] = [];
+
+		const report = generateSuggestions(tempDir, {
+			onArtifactReadError: (context) => {
+				errors.push(context);
+			},
+		});
+
+		expect(report.total).toBe(0);
+		expect(errors).toHaveLength(1);
+		expect(errors[0]?.filePath).toBe(badPath);
+		expect(errors[0]?.error).toBeInstanceOf(Error);
 	});
 
 	it("ignores non-JSON files in consistency-gate", () => {

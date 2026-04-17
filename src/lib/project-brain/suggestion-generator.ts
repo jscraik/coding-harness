@@ -1,7 +1,7 @@
 /**
  * Suggestion generator for Project Brain (JSC-186).
  *
- * Mines run artifacts, gate summaries, and test failures to produce
+ * Mines consistency-gate artifact reports to produce
  * review-ready Project Brain entry suggestions. Never auto-writes —
  * all suggestions require explicit human approval.
  *
@@ -71,6 +71,10 @@ interface SuggestionIdContext {
 }
 
 type SuggestionIdFactory = (context: SuggestionIdContext) => string;
+type ArtifactReadErrorCallback = (context: {
+	filePath: string;
+	error: unknown;
+}) => void;
 
 function createDefaultIdFactory(): SuggestionIdFactory {
 	let counter = 0;
@@ -143,7 +147,10 @@ function readGateFinding(value: unknown): GateFinding | null {
 	};
 }
 
-function readGateReport(filePath: string): GateReport | null {
+function readGateReport(
+	filePath: string,
+	onArtifactReadError?: ArtifactReadErrorCallback,
+): GateReport | null {
 	if (!existsSync(filePath)) return null;
 	try {
 		const parsed: unknown = JSON.parse(readFileSync(filePath, "utf-8"));
@@ -190,13 +197,15 @@ function readGateReport(filePath: string): GateReport | null {
 			...(findings !== undefined ? { findings } : {}),
 			...(summary !== undefined ? { summary } : {}),
 		};
-	} catch {
+	} catch (error: unknown) {
+		onArtifactReadError?.({ filePath, error });
 		return null;
 	}
 }
 
 function extractGateFindings(
 	artifactsDir: string,
+	onArtifactReadError?: ArtifactReadErrorCallback,
 ): { findings: GateFinding[]; source: string }[] {
 	const results: { findings: GateFinding[]; source: string }[] = [];
 
@@ -204,7 +213,10 @@ function extractGateFindings(
 	if (existsSync(consistencyDir)) {
 		for (const entry of readdirSync(consistencyDir).sort()) {
 			if (!entry.endsWith(".json")) continue;
-			const report = readGateReport(join(consistencyDir, entry));
+			const report = readGateReport(
+				join(consistencyDir, entry),
+				onArtifactReadError,
+			);
 			if (report?.findings && report.findings.length > 0) {
 				results.push({ findings: report.findings, source: entry });
 			}
@@ -272,20 +284,51 @@ function findingToSuggestion(
 
 // ─── Deduplication ───────────────────────────────────────────────────────────
 
+interface SuggestionCandidate {
+	suggestion: BrainSuggestion;
+	dedupeKey: string;
+}
+
+function normalizeDedupeValue(value: string): string {
+	return value.trim().replace(/\s+/g, " ").toLowerCase();
+}
+
+function buildSuggestionCandidate(
+	finding: GateFinding,
+	source: string,
+	sourceType: SuggestionSource,
+	id: string,
+): SuggestionCandidate {
+	const suggestion = findingToSuggestion(finding, source, sourceType, id);
+	const message = sanitizeEvidenceText(
+		finding.message ?? finding.description ?? "No details available",
+	);
+	const category = sanitizeEvidenceText(finding.category ?? "uncategorized");
+	const path = sanitizeEvidenceText(finding.path ?? "unknown");
+	const severity = normalizeDedupeValue(finding.severity ?? "unknown");
+	const dedupeKey = [
+		suggestion.type,
+		suggestion.domain,
+		normalizeDedupeValue(category),
+		normalizeDedupeValue(message),
+		normalizeDedupeValue(path),
+		severity,
+	].join("|");
+
+	return { suggestion, dedupeKey };
+}
+
 function deduplicateSuggestions(
-	suggestions: BrainSuggestion[],
+	candidates: SuggestionCandidate[],
 ): BrainSuggestion[] {
 	const seen = new Set<string>();
 	const result: BrainSuggestion[] = [];
 
-	for (const suggestion of suggestions) {
-		const pathMatch = suggestion.body.match(/\*\*Path:\*\*\s*(.+)/);
-		const pathKey = pathMatch?.[1]?.trim() ?? "unknown";
-		const key = `${suggestion.type}:${suggestion.domain}:${suggestion.title}:${pathKey}`;
-		if (seen.has(key)) {
+	for (const { suggestion, dedupeKey } of candidates) {
+		if (seen.has(dedupeKey)) {
 			continue;
 		}
-		seen.add(key);
+		seen.add(dedupeKey);
 		result.push({ ...suggestion, deduplicated: true });
 	}
 
@@ -297,23 +340,27 @@ function deduplicateSuggestions(
 /**
  * Generate Project Brain suggestions from repo artifacts.
  *
- * Scans gate reports, consistency findings, and pilot evaluations
- * to produce review-ready suggestions. Never auto-writes.
+ * Scans consistency-gate reports to produce review-ready suggestions.
+ * Never auto-writes.
  */
 interface GenerateSuggestionsOptions {
 	idFactory?: SuggestionIdFactory;
+	onArtifactReadError?: ArtifactReadErrorCallback;
 }
 
 export function generateSuggestions(
 	artifactsDir: string,
 	options: GenerateSuggestionsOptions = {},
 ): SuggestionReport {
-	const rawSuggestions: BrainSuggestion[] = [];
+	const rawSuggestions: SuggestionCandidate[] = [];
 	const idFactory = options.idFactory ?? createDefaultIdFactory();
 	let suggestionIndex = 0;
 
 	// Mine gate findings
-	const gateResults = extractGateFindings(artifactsDir);
+	const gateResults = extractGateFindings(
+		artifactsDir,
+		options.onArtifactReadError,
+	);
 	for (const { findings, source } of gateResults) {
 		for (const finding of findings) {
 			const severity = finding.severity ?? "unknown";
@@ -322,7 +369,7 @@ export function generateSuggestions(
 					? "gate_failure"
 					: "gate_warning";
 			rawSuggestions.push(
-				findingToSuggestion(
+				buildSuggestionCandidate(
 					finding,
 					source,
 					sourceType,
