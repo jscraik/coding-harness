@@ -36,7 +36,7 @@ export interface AgentInstructionSurface {
 	discovery: "auto" | "configured";
 	/** Whether this file should be canonical or derived */
 	role: "canonical" | "derived";
-	/** Required header markers */
+	/** Header marker expected at the start of this surface (for format validation/parity checks). */
 	headerMarker: string;
 }
 
@@ -133,9 +133,62 @@ function readFileContent(repoRoot: string, filePath: string): string | null {
 	if (!existsSync(fullPath)) return null;
 	try {
 		return readFileSync(fullPath, "utf-8");
-	} catch {
+	} catch (error: unknown) {
+		console.warn(`[instruction-compat] failed to read ${fullPath}`, error);
 		return null;
 	}
+}
+
+function checkDerivedReferences(
+	content: string,
+	surface: AgentInstructionSurface,
+	findings: InstructionConsistencyFinding[],
+): void {
+	const contentLower = content.toLowerCase();
+	const hasCanonicalRef = CANONICAL_REF_MARKERS.some((marker) =>
+		contentLower.includes(marker),
+	);
+	if (!hasCanonicalRef) {
+		findings.push({
+			severity: "warning",
+			file: surface.filePath,
+			message:
+				"Derived instruction file does not reference canonical source (AGENTS.md)",
+			fix: 'Add a "Canonical source: AGENTS.md" or "@./AGENTS.md" import directive',
+		});
+	}
+}
+
+function computeLineOverlap(
+	canonicalContent: string,
+	derivedContent: string,
+): number {
+	const canonicalLines = canonicalContent
+		.split("\n")
+		.filter((line) => line.trim().length > 0);
+	const derivedLines = derivedContent
+		.split("\n")
+		.filter((line) => line.trim().length > 0);
+	if (derivedLines.length === 0) return 0;
+	const canonicalSet = new Set(canonicalLines);
+	let overlapCount = 0;
+	for (const line of derivedLines) {
+		if (canonicalSet.has(line)) overlapCount++;
+	}
+	return overlapCount / derivedLines.length;
+}
+
+function collectMissingSurfaces(repoRoot: string): string[] {
+	const missingSurfaceLabels: string[] = [];
+	for (const surface of AGENT_SURFACES) {
+		if (
+			surface.role === "derived" &&
+			!existsSync(join(repoRoot, surface.filePath))
+		) {
+			missingSurfaceLabels.push(`${surface.agent}: ${surface.filePath}`);
+		}
+	}
+	return missingSurfaceLabels;
 }
 
 // ─── Public API ──────────────────────────────────────────────────────────────
@@ -206,35 +259,8 @@ export function validateInstructionConsistency(
 	for (const surface of derivedSurfaces) {
 		const content = readFileContent(repoRoot, surface.filePath);
 		if (content === null) continue;
-
-		const contentLower = content.toLowerCase();
-		const hasCanonicalRef = CANONICAL_REF_MARKERS.some((marker) =>
-			contentLower.includes(marker),
-		);
-
-		if (!hasCanonicalRef) {
-			findings.push({
-				severity: "warning",
-				file: surface.filePath,
-				message:
-					"Derived instruction file does not reference canonical source (AGENTS.md)",
-				fix: 'Add a "Canonical source: AGENTS.md" or "@./AGENTS.md" import directive',
-			});
-		}
-
-		const canonicalLines = canonicalContent
-			.split("\n")
-			.filter((l) => l.trim().length > 0);
-		const derivedLines = content.split("\n").filter((l) => l.trim().length > 0);
-
-		let overlapCount = 0;
-		const canonicalSet = new Set(canonicalLines);
-		for (const line of derivedLines) {
-			if (canonicalSet.has(line)) overlapCount++;
-		}
-
-		const overlapRatio =
-			derivedLines.length > 0 ? overlapCount / derivedLines.length : 0;
+		checkDerivedReferences(content, surface, findings);
+		const overlapRatio = computeLineOverlap(canonicalContent, content);
 		if (overlapRatio > 0.8) {
 			findings.push({
 				severity: "warning",
@@ -245,15 +271,7 @@ export function validateInstructionConsistency(
 		}
 	}
 
-	const missingSurfaceLabels: string[] = [];
-	for (const surface of AGENT_SURFACES) {
-		if (
-			surface.role === "derived" &&
-			!existsSync(join(repoRoot, surface.filePath))
-		) {
-			missingSurfaceLabels.push(`${surface.agent}: ${surface.filePath}`);
-		}
-	}
+	const missingSurfaceLabels = collectMissingSurfaces(repoRoot);
 
 	if (missingSurfaceLabels.length > 0) {
 		findings.push({
