@@ -43,6 +43,7 @@ describe("standards-map", () => {
 			if (!first || !second) return;
 
 			expect(first).not.toBe(second);
+			expect(first.contractConstructs).not.toBe(second.contractConstructs);
 			expect(first.references).not.toBe(second.references);
 			expect(first.references[0]).not.toBe(second.references[0]);
 		});
