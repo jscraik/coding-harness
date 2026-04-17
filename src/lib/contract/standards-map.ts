@@ -147,8 +147,8 @@ const CONTROLS: StandardsControl[] = [
 		contractConstructs: [
 			"UrlValidationError",
 			"validateRemoteUrl()",
-			"isPrivateOrReservedHost()",
-			"isAllowedRemoteHost()",
+			"isPrivateIp()",
+			"DEFAULT_ALLOWED_HOSTS",
 		],
 		references: [
 			{
