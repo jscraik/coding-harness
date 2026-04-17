@@ -38,6 +38,16 @@ function makeTrace(overrides: Partial<ExecutionTrace> = {}): ExecutionTrace {
 				},
 			},
 			{
+				type: "user_input",
+				timestamp: "2026-04-16T10:00:12.000Z",
+				payload: { input: "run all checks" },
+			},
+			{
+				type: "checkpoint",
+				timestamp: "2026-04-16T10:00:14.000Z",
+				payload: { checkpointId: "cp-001", state: { phase: "post-lint" } },
+			},
+			{
 				type: "error",
 				timestamp: "2026-04-16T10:00:15.500Z",
 				payload: { message: "Something went wrong" },
@@ -151,7 +161,7 @@ describe("normalizeTrace", () => {
 	it("preserves correlation IDs", () => {
 		const trace = makeTrace();
 		const result = normalizeTrace(trace);
-		expect(result.events[3]!.correlationId).toBe("corr-001");
+		expect(result.events[5]!.correlationId).toBe("corr-001");
 	});
 
 	it("preserves metadata", () => {

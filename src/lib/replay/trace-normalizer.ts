@@ -228,19 +228,19 @@ function normalizeTimestamp(
  * Walks objects and arrays, relativizing any string value that looks
  * like an absolute path against the given base directory.
  */
-function normalizePayloadPaths<T>(value: T, baseDir: string): T {
+function normalizePayloadPaths(value: unknown, baseDir: string): unknown {
 	if (typeof value === "string" && value.startsWith("/")) {
-		return relativizePath(value, baseDir) as T;
+		return relativizePath(value, baseDir);
 	}
 	if (Array.isArray(value)) {
-		return value.map((item) => normalizePayloadPaths(item, baseDir)) as T;
+		return value.map((item) => normalizePayloadPaths(item, baseDir));
 	}
-	if (value !== null && typeof value === "object") {
+	if (isRecord(value)) {
 		const result: Record<string, unknown> = {};
-		for (const [key, val] of Object.entries(value as Record<string, unknown>)) {
+		for (const [key, val] of Object.entries(value)) {
 			result[key] = normalizePayloadPaths(val, baseDir);
 		}
-		return result as T;
+		return result;
 	}
 	return value;
 }
