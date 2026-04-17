@@ -189,6 +189,12 @@ describe("validateInstructionConsistency", () => {
 });
 
 describe("generateDerivedHeader", () => {
+	it("rejects canonical surface header generation", () => {
+		expect(() => generateDerivedHeader("codex")).toThrow(
+			"generateDerivedHeader only supports derived surfaces",
+		);
+	});
+
 	it("generates header for claude", () => {
 		const header = generateDerivedHeader("claude");
 		expect(header).toContain("# Claude Instructions");

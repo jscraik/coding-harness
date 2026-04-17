@@ -117,6 +117,13 @@ describe("NIST_PHASE_ALIGNMENT", () => {
 // ---------------------------------------------------------------------------
 
 describe("evaluateThresholds", () => {
+	it("uses injected timestamp when provided", () => {
+		const report = evaluateThresholds(makePassingMetrics(), {
+			generatedAt: "2026-01-01T00:00:00.000Z",
+		});
+		expect(report.generatedAt).toBe("2026-01-01T00:00:00.000Z");
+	});
+
 	it("returns a valid schema version", () => {
 		const report = evaluateThresholds(makePassingMetrics());
 		expect(report.schemaVersion).toBe("threshold-audit-report/v1");
@@ -168,6 +175,22 @@ describe("evaluateThresholds", () => {
 		expect(sampleEntry).toBeDefined();
 		expect(sampleEntry!.passed).toBe(false);
 		expect(sampleEntry!.severity).toBe("gate");
+	});
+
+	it("fails when any repository sample size is below per-repo minimum", () => {
+		const metrics = makePassingMetrics();
+		metrics.repoSampleSizes = {
+			"alpha/repo": 30,
+			"beta/repo": 8,
+		};
+		const report = evaluateThresholds(metrics);
+		const perRepoEntry = report.entries.find(
+			(entry) =>
+				entry.metricKey === "repoSampleSizes.beta/repo" && !entry.passed,
+		);
+		expect(perRepoEntry).toBeDefined();
+		expect(perRepoEntry!.severity).toBe("gate");
+		expect(report.allGatesPassed).toBe(false);
 	});
 
 	it("detects high-risk automation incidents above zero", () => {
@@ -287,6 +310,22 @@ describe("generateEvaluationTrace", () => {
 		expect(measureTrace!.status).toBe("skipped");
 	});
 
+	it("blocks measure when threshold report is missing despite captured metrics", () => {
+		const traces = generateEvaluationTrace(
+			makeTraceInput({
+				thresholdReport: null,
+			}),
+		);
+		const measureTrace = traces.find((trace) => trace.phase === "measure");
+		expect(measureTrace).toBeDefined();
+		expect(measureTrace!.status).toBe("blocked");
+		expect(
+			measureTrace!.findings.some(
+				(finding) => finding.code === "MEASURE_NO_THRESHOLD",
+			),
+		).toBe(true);
+	});
+
 	it("includes findings for failed threshold entries", () => {
 		const traces = generateEvaluationTrace(
 			makeTraceInput({
@@ -298,6 +337,22 @@ describe("generateEvaluationTrace", () => {
 		);
 		const measureTrace = traces.find((t) => t.phase === "measure");
 		expect(measureTrace!.findings.length).toBeGreaterThan(0);
+		expect(measureTrace!.status).toBe("blocked");
+	});
+
+	it("blocks measure when guardrails fail even if gates pass", () => {
+		const metrics = makePassingMetrics();
+		metrics.leadTimeP50CiHalfWidth = 0.5;
+		const thresholdReport = evaluateThresholds(metrics);
+		expect(thresholdReport.allGatesPassed).toBe(true);
+		expect(thresholdReport.allGuardrailsPassed).toBe(false);
+		const traces = generateEvaluationTrace(
+			makeTraceInput({
+				metrics,
+				thresholdReport,
+			}),
+		);
+		const measureTrace = traces.find((trace) => trace.phase === "measure");
 		expect(measureTrace!.status).toBe("blocked");
 	});
 
@@ -337,6 +392,24 @@ describe("generateEvaluationTrace", () => {
 		expect(parityFinding!.severity).toBe("error");
 	});
 
+	it("flags instruction parity errors in evaluate phase", () => {
+		const traces = generateEvaluationTrace(
+			makeTraceInput({
+				instructionParityStatus: "error",
+				evaluationDecision: "block_for_parity",
+				decisionReasons: ["Parity errored"],
+				blockerCodes: ["instruction_parity_failed"],
+			}),
+		);
+		const evaluateTrace = traces.find((trace) => trace.phase === "evaluate");
+		expect(
+			evaluateTrace!.findings.some(
+				(finding) => finding.code === "INSTRUCTION_PARITY_FAILED",
+			),
+		).toBe(true);
+		expect(evaluateTrace!.status).toBe("blocked");
+	});
+
 	it("shows promote decision as completed in decide phase", () => {
 		const traces = generateEvaluationTrace(
 			makeTraceInput({
@@ -371,6 +444,27 @@ describe("generateEvaluationTrace", () => {
 		);
 		expect(blockerFindings.length).toBe(2);
 		expect(blockerFindings.every((f) => f.severity === "error")).toBe(true);
+	});
+
+	it("marks hold and rollback outcomes as completed in decide phase", () => {
+		const holdTraces = generateEvaluationTrace(
+			makeTraceInput({
+				evaluationDecision: "hold",
+				decisionReasons: ["Needs manual review"],
+			}),
+		);
+		const rollbackTraces = generateEvaluationTrace(
+			makeTraceInput({
+				evaluationDecision: "rollback",
+				decisionReasons: ["Rollback threshold breached"],
+			}),
+		);
+		expect(holdTraces.find((trace) => trace.phase === "decide")!.status).toBe(
+			"completed",
+		);
+		expect(
+			rollbackTraces.find((trace) => trace.phase === "decide")!.status,
+		).toBe("completed");
 	});
 
 	it("flags report phase when artifacts not written", () => {

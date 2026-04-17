@@ -134,8 +134,10 @@ function readFileContent(repoRoot: string, filePath: string): string | null {
 	try {
 		return readFileSync(fullPath, "utf-8");
 	} catch (error: unknown) {
-		console.warn(`[instruction-compat] failed to read ${fullPath}`, error);
-		return null;
+		throw new Error(
+			`Failed to read instruction surface: repoRoot=${repoRoot} filePath=${filePath} fullPath=${fullPath}`,
+			{ cause: error },
+		);
 	}
 }
 
@@ -283,7 +285,9 @@ export function validateInstructionConsistency(
 	}
 
 	return {
-		consistent: !findings.some((f) => f.severity === "error"),
+		consistent: !findings.some(
+			(f) => f.severity === "error" || f.severity === "warning",
+		),
 		surfacesChecked: presentSurfaces.length,
 		findings,
 	};
@@ -295,6 +299,12 @@ export function validateInstructionConsistency(
  * @returns The Markdown header text to place at the top of the agent's derived instruction file.
  */
 export function generateDerivedHeader(agent: AgentEcosystem): string {
+	const surface = AGENT_SURFACES.find((entry) => entry.agent === agent);
+	if (!surface || surface.role !== "derived") {
+		throw new Error(
+			`generateDerivedHeader only supports derived surfaces. Received: ${agent}`,
+		);
+	}
 	const label = agent.charAt(0).toUpperCase() + agent.slice(1);
 	return [
 		`# ${label} Instructions`,

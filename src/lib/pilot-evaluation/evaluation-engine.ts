@@ -265,6 +265,24 @@ function compareThreshold(
 	}
 }
 
+function asFiniteNumber(value: unknown, label: string): number {
+	if (typeof value !== "number" || !Number.isFinite(value)) {
+		throw new Error(`${label} is not a finite number: ${String(value)}`);
+	}
+	return value;
+}
+
+function operatorFailureSymbol(operator: ThresholdOperator): string {
+	switch (operator) {
+		case "min":
+			return "<";
+		case "max":
+			return ">";
+		case "exact":
+			return "!=";
+	}
+}
+
 /**
  * Evaluate all PILOT_THRESHOLDS against the supplied metrics.
  *
@@ -277,31 +295,58 @@ function compareThreshold(
  */
 export function evaluateThresholds(
 	metrics: PilotMetrics,
+	options?: { generatedAt?: string },
 ): ThresholdAuditReport {
-	const now = new Date().toISOString();
-	const entries: ThresholdAuditEntry[] = THRESHOLD_DEFINITIONS.map((def) => {
-		const actualValue = metrics[def.metricKey];
-		const thresholdValue = PILOT_THRESHOLDS[def.thresholdKey];
-		const numericActual = typeof actualValue === "number" ? actualValue : 0;
-		const numericThreshold =
-			typeof thresholdValue === "number" ? thresholdValue : 0;
-		const passed = compareThreshold(
-			numericActual,
-			numericThreshold,
-			def.operator,
-		);
+	const now = options?.generatedAt ?? new Date().toISOString();
+	const metricEntries: ThresholdAuditEntry[] = THRESHOLD_DEFINITIONS.map(
+		(def) => {
+			const actualValue = asFiniteNumber(
+				metrics[def.metricKey],
+				`Metric ${String(def.metricKey)}`,
+			);
+			const thresholdValue = asFiniteNumber(
+				PILOT_THRESHOLDS[def.thresholdKey],
+				`Threshold ${String(def.thresholdKey)}`,
+			);
+			const passed = compareThreshold(
+				actualValue,
+				thresholdValue,
+				def.operator,
+			);
 
+			return {
+				metricName: def.label,
+				metricKey: def.metricKey,
+				thresholdValue,
+				actualValue,
+				operator: def.operator,
+				passed,
+				severity: def.severity,
+				nistRef: def.nistRef,
+			};
+		},
+	);
+	const minPerRepoSampleSize = PILOT_THRESHOLDS.minPerRepoSampleSize;
+	const perRepoEntries: ThresholdAuditEntry[] = Object.entries(
+		metrics.repoSampleSizes,
+	).map(([repoName, sampleSize]) => {
+		const actualValue = asFiniteNumber(
+			sampleSize,
+			`Per-repo sample size for ${repoName}`,
+		);
+		const passed = compareThreshold(actualValue, minPerRepoSampleSize, "min");
 		return {
-			metricName: def.label,
-			metricKey: def.metricKey,
-			thresholdValue: numericThreshold,
-			actualValue: numericActual,
-			operator: def.operator,
+			metricName: `Per-repo sample size (${repoName})`,
+			metricKey: `repoSampleSizes.${repoName}`,
+			thresholdValue: minPerRepoSampleSize,
+			actualValue,
+			operator: "min",
 			passed,
-			severity: def.severity,
-			nistRef: def.nistRef,
+			severity: "gate",
+			nistRef: "MG-2.9",
 		};
 	});
+	const entries: ThresholdAuditEntry[] = [...metricEntries, ...perRepoEntries];
 
 	const gateEntries = entries.filter((e) => e.severity === "gate");
 	const guardrailEntries = entries.filter((e) => e.severity === "guardrail");
@@ -369,31 +414,34 @@ export interface EvaluationPhaseTrace {
  * @param input - Phase inputs gathered from the evaluation pipeline
  * @returns Ordered array of phase trace records
  */
-export function generateEvaluationTrace(input: {
-	/** Whether metrics capture succeeded */
-	metricsCaptured: boolean;
-	/** Captured metrics (null if capture failed) */
-	metrics: PilotMetrics | null;
-	/** Metrics capture errors */
-	metricsErrors: string[];
-	/** Threshold audit report (null if not yet computed) */
-	thresholdReport: ThresholdAuditReport | null;
-	/** Governance trust level */
-	governanceTrustLevel: "trusted" | "degraded";
-	/** Governance warnings */
-	governanceWarnings: string[];
-	/** Instruction parity status */
-	instructionParityStatus: "pass" | "fail" | "not_applicable" | "error";
-	/** Final evaluation decision */
-	evaluationDecision: string;
-	/** Decision reasons */
-	decisionReasons: string[];
-	/** Decision blocker codes */
-	blockerCodes: string[];
-	/** Whether artifacts were written */
-	artifactsWritten: boolean;
-}): EvaluationPhaseTrace[] {
-	const now = new Date().toISOString();
+export function generateEvaluationTrace(
+	input: {
+		/** Whether metrics capture succeeded */
+		metricsCaptured: boolean;
+		/** Captured metrics (null if capture failed) */
+		metrics: PilotMetrics | null;
+		/** Metrics capture errors */
+		metricsErrors: string[];
+		/** Threshold audit report (null if not yet computed) */
+		thresholdReport: ThresholdAuditReport | null;
+		/** Governance trust level */
+		governanceTrustLevel: "trusted" | "degraded";
+		/** Governance warnings */
+		governanceWarnings: string[];
+		/** Instruction parity status */
+		instructionParityStatus: "pass" | "fail" | "not_applicable" | "error";
+		/** Final evaluation decision */
+		evaluationDecision: string;
+		/** Decision reasons */
+		decisionReasons: string[];
+		/** Decision blocker codes */
+		blockerCodes: string[];
+		/** Whether artifacts were written */
+		artifactsWritten: boolean;
+	},
+	options?: { timestamp?: string },
+): EvaluationPhaseTrace[] {
+	const now = options?.timestamp ?? new Date().toISOString();
 	const traces: EvaluationPhaseTrace[] = [];
 
 	// Phase 1: INGEST
@@ -431,7 +479,7 @@ export function generateEvaluationTrace(input: {
 				measureFindings.push({
 					code: `THRESHOLD_${entry.metricKey.toUpperCase()}`,
 					severity: entry.severity === "gate" ? "error" : "warning",
-					message: `${entry.metricName}: ${entry.actualValue} ${entry.operator === "min" ? "<" : ">"} ${entry.thresholdValue}`,
+					message: `${entry.metricName}: ${entry.actualValue} ${operatorFailureSymbol(entry.operator)} ${entry.thresholdValue}`,
 					threshold: {
 						required: entry.thresholdValue,
 						actual: entry.actualValue,
@@ -446,7 +494,11 @@ export function generateEvaluationTrace(input: {
 			nistAlignment: NIST_PHASE_ALIGNMENT.measure,
 			startedAt: now,
 			completedAt: now,
-			status: input.thresholdReport.allGatesPassed ? "completed" : "blocked",
+			status:
+				input.thresholdReport.allGatesPassed &&
+				input.thresholdReport.allGuardrailsPassed
+					? "completed"
+					: "blocked",
 			findings: measureFindings,
 		});
 	} else if (!input.metricsCaptured) {
@@ -461,6 +513,22 @@ export function generateEvaluationTrace(input: {
 					code: "MEASURE_SKIPPED",
 					severity: "warning",
 					message: "Skipped because INGEST phase was blocked",
+					nistRef: "MG-2.9",
+				},
+			],
+		});
+	} else {
+		traces.push({
+			phase: "measure",
+			nistAlignment: NIST_PHASE_ALIGNMENT.measure,
+			startedAt: now,
+			completedAt: now,
+			status: "blocked",
+			findings: [
+				{
+					code: "MEASURE_NO_THRESHOLD",
+					severity: "error",
+					message: "Threshold audit report was not computed",
 					nistRef: "MG-2.9",
 				},
 			],
@@ -485,11 +553,17 @@ export function generateEvaluationTrace(input: {
 			nistRef: "MV-1.2",
 		});
 	}
-	if (input.instructionParityStatus === "fail") {
+	if (
+		input.instructionParityStatus === "fail" ||
+		input.instructionParityStatus === "error"
+	) {
 		evaluateFindings.push({
 			code: "INSTRUCTION_PARITY_FAILED",
 			severity: "error",
-			message: "Instruction parity check failed",
+			message:
+				input.instructionParityStatus === "error"
+					? "Instruction parity check errored"
+					: "Instruction parity check failed",
 			nistRef: "MV-1.3",
 		});
 	}
@@ -527,7 +601,9 @@ export function generateEvaluationTrace(input: {
 		nistAlignment: NIST_PHASE_ALIGNMENT.decide,
 		startedAt: now,
 		completedAt: now,
-		status: input.evaluationDecision === "promote" ? "completed" : "blocked",
+		status: ["promote", "hold", "rollback"].includes(input.evaluationDecision)
+			? "completed"
+			: "blocked",
 		findings: decideFindings,
 	});
 
@@ -735,6 +811,21 @@ function mapEnforcementLabel(enforcement: string): string {
 	}
 }
 
+const BLOCKER_ACTION_MAP: Record<string, string> = {
+	governance_trust_mismatch:
+		"Resolve governance trust degradation — check contract, workflows, and instruction files",
+	instruction_parity_failed:
+		"Fix instruction parity failures — ensure derived instruction files reference AGENTS.md",
+	missing_required_instruction_surface:
+		"Create missing instruction surface files (e.g., CLAUDE.md, AGENTS.md)",
+	adapter_unresolved:
+		"Register a provider adapter in the agent-adapter-registry or resolve client family",
+	identity_degraded:
+		"Provide complete agent identity (client family, provider ID, model descriptor)",
+	rollback_threshold_breached:
+		"Investigate metric regression before re-attempting evaluation",
+};
+
 /**
  * Builds an ordered list of human-readable operator action strings based on the evaluation decision, blocker codes, warnings, and threshold audit.
  *
@@ -768,40 +859,9 @@ function deriveOperatorActions(
 		);
 	}
 
-	if (blockerCodes.includes("governance_trust_mismatch")) {
-		actions.push(
-			"Resolve governance trust degradation — check contract, workflows, and instruction files",
-		);
-	}
-
-	if (blockerCodes.includes("instruction_parity_failed")) {
-		actions.push(
-			"Fix instruction parity failures — ensure derived instruction files reference AGENTS.md",
-		);
-	}
-
-	if (blockerCodes.includes("missing_required_instruction_surface")) {
-		actions.push(
-			"Create missing instruction surface files (e.g., CLAUDE.md, AGENTS.md)",
-		);
-	}
-
-	if (blockerCodes.includes("adapter_unresolved")) {
-		actions.push(
-			"Register a provider adapter in the agent-adapter-registry or resolve client family",
-		);
-	}
-
-	if (blockerCodes.includes("identity_degraded")) {
-		actions.push(
-			"Provide complete agent identity (client family, provider ID, model descriptor)",
-		);
-	}
-
-	if (blockerCodes.includes("rollback_threshold_breached")) {
-		actions.push(
-			"Investigate metric regression before re-attempting evaluation",
-		);
+	for (const code of blockerCodes) {
+		const mappedAction = BLOCKER_ACTION_MAP[code];
+		if (mappedAction) actions.push(mappedAction);
 	}
 
 	if (actions.length === 0 && decision !== "promote") {
