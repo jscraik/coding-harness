@@ -94,6 +94,37 @@ describe("normalizeTrace", () => {
 		expect(result.workingDirectory).toBe("~/project-v2/src");
 	});
 
+	it("normalizes absolute environment paths for deterministic output", () => {
+		const trace = makeTrace({
+			environment: {
+				NODE_ENV: "test",
+				PWD: "/home/user/project",
+				TMPDIR: "/home/user/project/tmp",
+				HOME: "/home/user",
+			},
+		});
+		const result = normalizeTrace(trace, { baseDir: "/home/user/project" });
+		expect(result.environment.PWD).toBe(".");
+		expect(result.environment.TMPDIR).toBe("./tmp");
+		expect(result.environment.HOME).toBe("~/");
+		expect(result.environment.NODE_ENV).toBe("test");
+	});
+
+	it("keeps environment path normalization when secret redaction is disabled", () => {
+		const trace = makeTrace({
+			environment: {
+				PWD: "/home/user/project",
+				SECRET_TOKEN: "token-123",
+			},
+		});
+		const result = normalizeTrace(trace, {
+			baseDir: "/home/user/project",
+			redactSecrets: false,
+		});
+		expect(result.environment.PWD).toBe(".");
+		expect(result.environment.SECRET_TOKEN).toBe("token-123");
+	});
+
 	it("normalizes timestamps to ordinal offsets", () => {
 		const trace = makeTrace();
 		const result = normalizeTrace(trace);

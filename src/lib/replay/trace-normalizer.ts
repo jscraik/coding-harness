@@ -179,6 +179,19 @@ function redactEnvironment(
 	return normalized;
 }
 
+function normalizeEnvironmentPaths(
+	environment: Record<string, string>,
+	baseDir: string,
+): Record<string, string> {
+	const normalized: Record<string, string> = {};
+	for (const [key, value] of Object.entries(environment)) {
+		normalized[key] = value.startsWith("/")
+			? relativizePath(value, baseDir)
+			: value;
+	}
+	return normalized;
+}
+
 function redactMetadata(
 	metadata: ExecutionTrace["metadata"],
 ): ExecutionTrace["metadata"] {
@@ -287,8 +300,10 @@ export function normalizeTrace(
 			fullOptions.baseDir,
 		),
 		environment: fullOptions.redactSecrets
-			? redactEnvironment(trace.environment)
-			: trace.environment,
+			? redactEnvironment(
+					normalizeEnvironmentPaths(trace.environment, fullOptions.baseDir),
+				)
+			: normalizeEnvironmentPaths(trace.environment, fullOptions.baseDir),
 		command: trace.command,
 		args: trace.args,
 		events: normalizedEvents,
