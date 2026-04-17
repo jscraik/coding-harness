@@ -105,7 +105,9 @@ export function generateBootstrapSummary(
 	nextCommands.push("harness check  — quick health snapshot");
 
 	// Recommend contract validation if contract was created
-	if (output.created.includes("harness.contract.json")) {
+	if (
+		output.created.some((path) => matchesPattern(path, "harness.contract.json"))
+	) {
 		nextCommands.push(
 			"harness contract validate  — validate the scaffolded contract",
 		);

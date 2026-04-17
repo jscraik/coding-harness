@@ -122,6 +122,19 @@ describe("generateBootstrapSummary", () => {
 		expect(hasContract).toBe(true);
 	});
 
+	it("recommends contract validation for normalized contract paths", () => {
+		const summary = generateBootstrapSummary(
+			makeOutput({
+				created: ["./harness.contract.json", ".\\harness.contract.json"],
+			}),
+			"pnpm",
+		);
+		const hasContract = summary.nextCommands.some((cmd) =>
+			cmd.includes("contract validate"),
+		);
+		expect(hasContract).toBe(true);
+	});
+
 	it("recommends branch-protect when CI files created", () => {
 		const summary = generateBootstrapSummary(
 			makeOutput({ created: [".github/workflows/ci.yml"] }),
