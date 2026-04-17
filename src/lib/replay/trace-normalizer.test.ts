@@ -76,6 +76,14 @@ describe("normalizeTrace", () => {
 		expect(result.workingDirectory).toBe("~/my-project");
 	});
 
+	it("does not relativize sibling directories that share a prefix", () => {
+		const trace = makeTrace({
+			workingDirectory: "/home/user/project-v2/src",
+		});
+		const result = normalizeTrace(trace, { baseDir: "/home/user/project" });
+		expect(result.workingDirectory).toBe("~/project-v2/src");
+	});
+
 	it("normalizes timestamps to ordinal offsets", () => {
 		const trace = makeTrace();
 		const result = normalizeTrace(trace);
@@ -101,6 +109,22 @@ describe("normalizeTrace", () => {
 		expect(toolPayload.apiKey).toBe("[REDACTED]");
 		expect(toolPayload.tool).toBe("linter");
 		expect(toolPayload.result).toBe("pass");
+	});
+
+	it("redacts secret keys regardless of casing", () => {
+		const trace = makeTrace({
+			events: [
+				{
+					type: "tool_use",
+					timestamp: "2026-04-16T10:00:00.000Z",
+					payload: { Password: "hunter2", keep: "ok" },
+				},
+			],
+		});
+		const result = normalizeTrace(trace);
+		const payload = result.events[0]!.payload as Record<string, unknown>;
+		expect(payload.Password).toBe("[REDACTED]");
+		expect(payload.keep).toBe("ok");
 	});
 
 	it("preserves non-secret payload values", () => {
@@ -136,6 +160,18 @@ describe("normalizeTrace", () => {
 		expect(result.metadata.gitBranch).toBe("main");
 	});
 
+	it("redacts metadata when enabled", () => {
+		const trace = makeTrace({
+			metadata: {
+				gitCommit: "abcdef1234567890abcdef1234567890",
+				gitBranch: "main",
+			},
+		});
+		const result = normalizeTrace(trace, { redactSecrets: true });
+		expect(result.metadata.gitCommit).toBe("[REDACTED]");
+		expect(result.metadata.gitBranch).toBe("main");
+	});
+
 	it("preserves command and args", () => {
 		const trace = makeTrace();
 		const result = normalizeTrace(trace);
@@ -157,5 +193,49 @@ describe("normalizeTrace", () => {
 		const result1 = normalizeTrace(trace);
 		const result2 = normalizeTrace(trace);
 		expect(JSON.stringify(result1)).toBe(JSON.stringify(result2));
+	});
+
+	it("keeps malformed timestamps when normalization cannot compute offsets", () => {
+		const trace = makeTrace({
+			events: [
+				{
+					type: "error",
+					timestamp: "not-a-date",
+					payload: { message: "bad ts" },
+				},
+			],
+		});
+		const result = normalizeTrace(trace);
+		expect(result.events[0]!.timestamp).toBe("not-a-date");
+	});
+
+	it("handles empty event arrays", () => {
+		const trace = makeTrace({ events: [] });
+		const result = normalizeTrace(trace);
+		expect(result.events).toEqual([]);
+		expect(result.createdAt).toBe("T+0");
+	});
+
+	it("redacts deeply nested secrets", () => {
+		const trace = makeTrace({
+			events: [
+				{
+					type: "tool_use",
+					timestamp: "2026-04-16T10:00:01.000Z",
+					payload: {
+						level1: {
+							level2: {
+								authToken: "secret-token-value",
+							},
+						},
+					},
+				},
+			],
+		});
+		const result = normalizeTrace(trace);
+		const payload = result.events[0]!.payload as Record<string, unknown>;
+		expect((payload.level1 as Record<string, unknown>).level2).toEqual({
+			authToken: "[REDACTED]",
+		});
 	});
 });

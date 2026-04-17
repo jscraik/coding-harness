@@ -72,16 +72,16 @@ const REDACTED_KEYS = new Set([
 	"password",
 	"token",
 	"secret",
-	"apiKey",
+	"apikey",
 	"api_key",
-	"accessToken",
+	"accesstoken",
 	"access_token",
-	"authToken",
+	"authtoken",
 	"auth_token",
-	"privateKey",
+	"privatekey",
 	"private_key",
 	"credentials",
-	"connectionString",
+	"connectionstring",
 	"connection_string",
 ]);
 
@@ -95,9 +95,22 @@ function relativizePath(absolutePath: string, baseDir: string): string {
 	if (!absolutePath.startsWith("/")) {
 		return absolutePath;
 	}
-	// Simple prefix-based relativization
-	if (absolutePath.startsWith(baseDir)) {
-		const relative = absolutePath.slice(baseDir.length);
+
+	const normalizedBase =
+		baseDir.endsWith("/") && baseDir !== "/"
+			? baseDir.slice(0, -1)
+			: baseDir || "/";
+
+	if (normalizedBase === "/") {
+		return absolutePath === "/" ? "." : `.${absolutePath}`;
+	}
+
+	// Boundary-safe relativization: only relativize exact dir or true descendants.
+	if (
+		absolutePath === normalizedBase ||
+		absolutePath.startsWith(`${normalizedBase}/`)
+	) {
+		const relative = absolutePath.slice(normalizedBase.length);
 		if (relative === "") return ".";
 		return relative.startsWith("/") ? `.${relative}` : relative;
 	}
@@ -109,11 +122,15 @@ function relativizePath(absolutePath: string, baseDir: string): string {
 	return absolutePath;
 }
 
+function isRecord(value: unknown): value is Record<string, unknown> {
+	return value !== null && typeof value === "object" && !Array.isArray(value);
+}
+
 /**
  * Redact potential secret values in an object.
  * Returns a new object with secrets replaced with [REDACTED].
  */
-function redactSecrets<T>(value: T): T {
+function redactSecrets(value: unknown): unknown {
 	if (value === null || value === undefined) return value;
 	if (typeof value === "string") {
 		// Check if the string looks like a secret value (long base64 or hex)
@@ -122,16 +139,16 @@ function redactSecrets<T>(value: T): T {
 			/^[A-Za-z0-9+/=_-]+$/.test(value) &&
 			!value.startsWith("http")
 		) {
-			return "[REDACTED]" as T;
+			return "[REDACTED]";
 		}
 		return value;
 	}
 	if (Array.isArray(value)) {
-		return value.map(redactSecrets) as T;
+		return value.map((item) => redactSecrets(item));
 	}
-	if (typeof value === "object") {
+	if (isRecord(value)) {
 		const result: Record<string, unknown> = {};
-		for (const [key, val] of Object.entries(value as Record<string, unknown>)) {
+		for (const [key, val] of Object.entries(value)) {
 			const lowerKey = key.toLowerCase();
 			const isSecretKey = REDACTED_KEYS.has(lowerKey);
 			const matchesPattern = SECRET_PATTERNS.some((pattern) =>
@@ -143,9 +160,48 @@ function redactSecrets<T>(value: T): T {
 				result[key] = redactSecrets(val);
 			}
 		}
-		return result as T;
+		return result;
 	}
 	return value;
+}
+
+function redactEnvironment(
+	environment: Record<string, string>,
+): Record<string, string> {
+	const redacted = redactSecrets(environment);
+	if (!isRecord(redacted)) {
+		return environment;
+	}
+	const normalized: Record<string, string> = {};
+	for (const [key, value] of Object.entries(redacted)) {
+		normalized[key] = typeof value === "string" ? value : String(value);
+	}
+	return normalized;
+}
+
+function redactMetadata(
+	metadata: ExecutionTrace["metadata"],
+): ExecutionTrace["metadata"] {
+	const redacted = redactSecrets(metadata);
+	if (!isRecord(redacted)) {
+		return metadata;
+	}
+	const normalized: ExecutionTrace["metadata"] = {};
+	if (typeof redacted.gitCommit === "string") {
+		normalized.gitCommit = redacted.gitCommit;
+	}
+	if (typeof redacted.gitBranch === "string") {
+		normalized.gitBranch = redacted.gitBranch;
+	}
+	if (typeof redacted.agentVersion === "string") {
+		normalized.agentVersion = redacted.agentVersion;
+	}
+	if (Array.isArray(redacted.tags)) {
+		normalized.tags = redacted.tags.filter(
+			(tag): tag is string => typeof tag === "string",
+		);
+	}
+	return normalized;
 }
 
 /**
@@ -231,11 +287,13 @@ export function normalizeTrace(
 			fullOptions.baseDir,
 		),
 		environment: fullOptions.redactSecrets
-			? redactSecrets(trace.environment)
+			? redactEnvironment(trace.environment)
 			: trace.environment,
 		command: trace.command,
 		args: trace.args,
 		events: normalizedEvents,
-		metadata: trace.metadata,
+		metadata: fullOptions.redactSecrets
+			? redactMetadata(trace.metadata)
+			: trace.metadata,
 	};
 }
