@@ -153,6 +153,7 @@ describe("validateInstructionConsistency", () => {
 					f.file === "CLAUDE.md" &&
 					f.message.includes("does not reference canonical source"),
 			);
+			expect(report.consistent).toBe(false);
 			expect(refWarning).toBeDefined();
 			expect(refWarning!.severity).toBe("warning");
 			expect(refWarning!.fix).toBeTruthy();
@@ -171,6 +172,25 @@ describe("validateInstructionConsistency", () => {
 			const dupWarning = report.findings.find(
 				(f) => f.file === "CLAUDE.md" && f.message.includes("line overlap"),
 			);
+			expect(dupWarning).toBeDefined();
+		} finally {
+			rmSync(dir, { recursive: true, force: true });
+		}
+	});
+
+	it("warns when canonical content is fully duplicated with extra lines", () => {
+		const dir = createTempRepo();
+		try {
+			writeFileSync(join(dir, "AGENTS.md"), CANONICAL_AGENTS);
+			writeFileSync(
+				join(dir, "CLAUDE.md"),
+				`${CANONICAL_AGENTS}\n## Extra\n- Agent-specific addendum`,
+			);
+			const report = validateInstructionConsistency(dir);
+			const dupWarning = report.findings.find(
+				(f) => f.file === "CLAUDE.md" && f.message.includes("line overlap"),
+			);
+			expect(report.consistent).toBe(false);
 			expect(dupWarning).toBeDefined();
 		} finally {
 			rmSync(dir, { recursive: true, force: true });

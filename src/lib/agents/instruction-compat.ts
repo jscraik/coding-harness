@@ -171,13 +171,13 @@ function computeLineOverlap(
 	const derivedLines = derivedContent
 		.split("\n")
 		.filter((line) => line.trim().length > 0);
-	if (derivedLines.length === 0) return 0;
+	if (derivedLines.length === 0 || canonicalLines.length === 0) return 0;
 	const canonicalSet = new Set(canonicalLines);
 	let overlapCount = 0;
 	for (const line of derivedLines) {
 		if (canonicalSet.has(line)) overlapCount++;
 	}
-	return overlapCount / derivedLines.length;
+	return overlapCount / canonicalLines.length;
 }
 
 function collectMissingSurfaces(repoRoot: string): string[] {
