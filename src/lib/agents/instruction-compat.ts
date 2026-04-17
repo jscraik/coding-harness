@@ -120,7 +120,13 @@ const CANONICAL_REF_MARKERS = [
 	"@agents.md",
 ];
 
-// ─── Helpers ─────────────────────────────────────────────────────────────────
+/**
+ * Read a file under a repository root and return its UTF-8 text content.
+ *
+ * @param repoRoot - Repository root directory used as the base path
+ * @param filePath - Repository-relative path to the file
+ * @returns The file contents decoded as UTF-8, or `null` if the file does not exist or cannot be read
+ */
 
 function readFileContent(repoRoot: string, filePath: string): string | null {
 	const fullPath = join(repoRoot, filePath);
@@ -135,7 +141,10 @@ function readFileContent(repoRoot: string, filePath: string): string | null {
 // ─── Public API ──────────────────────────────────────────────────────────────
 
 /**
- * Get agent surfaces that exist in the repository.
+ * List agent instruction surfaces present in the given repository.
+ *
+ * @param repoRoot - Filesystem root of the repository used to resolve surface file paths
+ * @returns The subset of `AGENT_SURFACES` whose `filePath` exists under `repoRoot`
  */
 export function detectPresentSurfaces(
 	repoRoot: string,
@@ -146,12 +155,14 @@ export function detectPresentSurfaces(
 }
 
 /**
- * Validate instruction consistency across agent surfaces.
+ * Validate that repository instruction files for supported agent ecosystems exist,
+ * reference the canonical source (AGENTS.md), and are not verbatim duplicates of it.
  *
- * Checks that:
- * 1. The canonical source (AGENTS.md) exists
- * 2. Derived files reference the canonical source
- * 3. No derived file duplicates canonical content verbatim
+ * @param repoRoot - Repository root directory used to locate instruction files
+ * @returns A validation report containing:
+ *  - `consistent`: `true` if there are no findings with severity `error`, `false` otherwise
+ *  - `surfacesChecked`: number of detected surfaces that were examined
+ *  - `findings`: list of detected issues (errors, warnings, info) with optional suggested fixes
  */
 export function validateInstructionConsistency(
 	repoRoot: string,
@@ -261,7 +272,9 @@ export function validateInstructionConsistency(
 }
 
 /**
- * Generate a derived instruction file header for a given agent ecosystem.
+ * Builds a standardized Markdown header for a derived instruction file for the specified agent ecosystem.
+ *
+ * @returns The Markdown header text to place at the top of the agent's derived instruction file.
  */
 export function generateDerivedHeader(agent: AgentEcosystem): string {
 	const label = agent.charAt(0).toUpperCase() + agent.slice(1);

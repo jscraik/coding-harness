@@ -242,6 +242,14 @@ const THRESHOLD_DEFINITIONS: ThresholdDefinition[] = [
 	},
 ];
 
+/**
+ * Compare a numeric value against a threshold using the given operator.
+ *
+ * @param actual - The measured numeric value to evaluate
+ * @param threshold - The threshold value to compare against
+ * @param operator - Comparison semantics: `"min"` requires `actual >= threshold`, `"max"` requires `actual <= threshold`, `"exact"` requires `actual === threshold`
+ * @returns `true` if the comparison passes according to `operator`, `false` otherwise
+ */
 function compareThreshold(
 	actual: number,
 	threshold: number,
@@ -260,11 +268,12 @@ function compareThreshold(
 /**
  * Evaluate all PILOT_THRESHOLDS against the supplied metrics.
  *
- * Produces a machine-auditable `ThresholdAuditReport` where every threshold
- * check is a structured entry with pass/fail, severity, and NIST reference.
+ * Produces a machine-auditable `ThresholdAuditReport` where each configured
+ * threshold check becomes a structured entry describing pass/fail, severity,
+ * operator, and NIST reference.
  *
  * @param metrics - The captured pilot metrics to evaluate
- * @returns A complete threshold audit report
+ * @returns A `ThresholdAuditReport` containing per-threshold `entries` with pass/fail results, and aggregate booleans and counts for gate and guardrail outcomes
  */
 export function evaluateThresholds(
 	metrics: PilotMetrics,
@@ -680,6 +689,12 @@ export function formatReadableDecision(input: {
 	};
 }
 
+/**
+ * Map a decision code to a concise, human-readable headline.
+ *
+ * @param decision - One of: `"promote"`, `"hold"`, `"rollback"`, `"block_for_parity"`, `"block_for_evidence"`, `"block_for_adapter"`, or any other decision code
+ * @returns A headline string describing the decision; for unrecognized codes returns `Unknown decision: ${decision}`
+ */
 function deriveHeadline(decision: string, _enforcement: string): string {
 	switch (decision) {
 		case "promote":
@@ -699,6 +714,12 @@ function deriveHeadline(decision: string, _enforcement: string): string {
 	}
 }
 
+/**
+ * Map an enforcement keyword to a human-readable label.
+ *
+ * @param enforcement - Enforcement keyword: `"allow"`, `"block"`, `"non_blocking"`, or `"require_human_review"`. Other values are allowed but will be returned unchanged.
+ * @returns A human-readable label describing the enforcement; returns the original `enforcement` string if it is not recognized.
+ */
 function mapEnforcementLabel(enforcement: string): string {
 	switch (enforcement) {
 		case "allow":
@@ -714,6 +735,15 @@ function mapEnforcementLabel(enforcement: string): string {
 	}
 }
 
+/**
+ * Builds an ordered list of human-readable operator action strings based on the evaluation decision, blocker codes, warnings, and threshold audit.
+ *
+ * @param decision - The evaluation decision (e.g., "promote", "hold", "rollback", or block variants) that influences recommended actions
+ * @param blockerCodes - Identifiers for specific blocker conditions that require targeted remediation
+ * @param warnings - Non-blocking warning messages; presence may prompt review actions
+ * @param thresholdReport - Optional threshold audit report; if present and gate thresholds failed, actions to address those failures are included
+ * @returns An ordered array of operator action strings describing recommended remediation or next steps
+ */
 function deriveOperatorActions(
 	decision: string,
 	blockerCodes: string[],
