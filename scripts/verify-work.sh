@@ -428,6 +428,7 @@ prepare_hook_governance_inputs() {
 	log_info "[verify-work] hook-governance scope: workspace"
 }
 
+# format_hook_governance_reports formats workspace-scoped hook-governance report files (inventory, rollout, docstring) with `pnpm fmt` after making their paths relative to the repo root; it is a no-op when scope is not "workspace" or no report files exist, and it prints an error and returns non-zero if `pnpm` is not available.
 format_hook_governance_reports() {
 	if [[ "$hook_governance_scope" != "workspace" ]]; then
 		return 0
