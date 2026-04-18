@@ -8,6 +8,7 @@ spec: docs/specs/2026-03-24-feature-structured-output-auto-fix-spec.md
 origin: JSC-71 (Option B)
 risk: medium
 execution_posture: test-first
+last_validated: 2026-04-18
 ---
 
 > **Enhancement Summary (2026-03-24):** Deepening pass corrected a critical mis-classification: `plan-gate` is **not** binary-result. Repo audit (`src/lib/plan-gate/types.ts`) shows `PlanGateResult` has `errors: PlanError[]` with typed `code` fields, not a plain `passed: boolean + errors: string[]` shape. Plan-gate already has a `--json` path via `createJsonOutput` wrapping the raw result — the adapter must unwrap `PlanError.code` + `getRecoveryHint(code)` to synthesise `GateFinding`. This introduces a fourth adapter class (coded-error) and splits original P2 into P2 (binary: policy, pr-template) and P2b (coded-error: plan-gate). Console.info inventory confirmed for all six gates. Risks and system-wide impact section added. Spec open question 1 (Zod) noted as non-blocker.

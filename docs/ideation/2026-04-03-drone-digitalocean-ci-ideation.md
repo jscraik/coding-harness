@@ -5,6 +5,7 @@ status: "proposed"
 route: "fresh"
 authors:
   - "Codex"
+last_validated: 2026-04-18
 ---
 
 # Ideation: Drone CI on DigitalOcean with CLI-first bootstrap

@@ -4,6 +4,7 @@ topic: contract-surface-parity
 status: implemented
 implemented: 2026-02-25
 plan: docs/plans/2026-02-24-refactor-contract-surface-runtime-parity-plan.md
+last_validated: 2026-04-18
 ---
 
 # Contract Surface Parity

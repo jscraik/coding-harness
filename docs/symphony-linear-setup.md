@@ -1,3 +1,7 @@
+---
+last_validated: 2026-04-18
+---
+
 # Symphony + Linear Setup for coding-harness
 
 ## Table of Contents

@@ -1,6 +1,7 @@
 ---
 date: 2026-02-27
 topic: roadmap-cli-gap-closure
+last_validated: 2026-04-18
 ---
 
 # Roadmap/CLI Gap Closure Brainstorm

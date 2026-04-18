@@ -6,6 +6,7 @@ date: 2026-04-13
 plan_id: feat-rollback-system
 origin: docs/brainstorms/2026-02-23-installability-patches-brainstorm.md
 deepened: 2026-02-23
+last_validated: 2026-04-18
 ---
 
 # Patch 4 - Rollback System for harness init

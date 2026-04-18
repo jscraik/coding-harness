@@ -1,3 +1,7 @@
+---
+last_validated: 2026-04-18
+---
+
 # 17 — CI Required Checks vs GitHub Branch Protection
 
 ## Table of Contents

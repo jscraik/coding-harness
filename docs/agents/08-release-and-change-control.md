@@ -1,3 +1,7 @@
+---
+last_validated: 2026-04-18
+---
+
 # Release and change-control checks
 
 ## Table of Contents

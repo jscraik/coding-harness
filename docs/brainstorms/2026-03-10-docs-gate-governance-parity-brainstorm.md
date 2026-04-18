@@ -5,6 +5,7 @@ status: draft
 spec_required: full
 risk_level: medium
 complexity: medium
+last_validated: 2026-04-18
 ---
 
 # Docs Gate for Governance Parity

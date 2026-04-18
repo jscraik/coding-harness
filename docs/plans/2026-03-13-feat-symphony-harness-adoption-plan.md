@@ -4,6 +4,7 @@ title: Symphony Harness Adoption Plan (CircleCI-Aware, Deep-Module Aligned)
 status: active
 owners:
   - coding-harness-maintainers
+last_validated: 2026-04-18
 ---
 
 # Symphony Harness Adoption Plan

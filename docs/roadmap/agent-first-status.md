@@ -1,3 +1,7 @@
+---
+last_validated: 2026-04-18
+---
+
 # Agent-First Implementation Status Matrix
 
 > Last updated: 2026-02-28

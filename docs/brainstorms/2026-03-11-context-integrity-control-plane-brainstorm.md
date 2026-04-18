@@ -5,6 +5,7 @@ status: draft
 spec_required: full
 risk_level: medium
 complexity: large
+last_validated: 2026-04-18
 ---
 
 # Context Integrity Control Plane

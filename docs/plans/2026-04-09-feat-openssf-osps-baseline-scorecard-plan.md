@@ -5,6 +5,7 @@ status: active
 date: 2026-04-09
 issue: JSC-112
 plan_id: feat-openssf-osps-baseline-scorecard
+last_validated: 2026-04-18
 ---
 
 # OpenSSF OSPS Baseline and Scorecard Adoption Plan

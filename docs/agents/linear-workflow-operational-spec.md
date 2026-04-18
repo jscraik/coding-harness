@@ -4,6 +4,7 @@ type: operational-spec
 status: active
 date: 2026-03-14
 origin: docs/agents/13-linear-production-workflow.md
+last_validated: 2026-04-18
 ---
 
 # Linear Workflow — Compact Operational Spec

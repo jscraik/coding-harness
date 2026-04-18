@@ -4,6 +4,7 @@ type: operational-spec
 status: active
 date: 2026-03-14
 origin: docs/agents/14-docs-gate-rollout.md
+last_validated: 2026-04-18
 ---
 
 # Docs Gate Rollout — Compact Operational Spec

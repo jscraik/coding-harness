@@ -8,6 +8,7 @@ origin: JSC-71 brainstorm (Option B) + existing command audit
 risk: medium
 spec_depth: lite
 ui_required: false
+last_validated: 2026-04-18
 ---
 
 > **Enhancement Summary (2026-03-24, pass 1):** Deepened after command audit revealing three adapter shape classes (rich-finding, binary-result, async). Added explicit adapter synthesis rules for binary-result gates (`policy-gate`, `pr-template-gate`). Excluded `review-gate` from v1 scope (async, network-dependent). Added stdout discipline invariant from Learnings (`process.stdout.write` not `console.info` for JSON). Expanded Failure Model with adapter-specific error cases. Added SA14–SA19 covering binary-result synthesis, async exclusion, stdout discipline, and `linear-gate` check mapping. Resolved Open Question 2.

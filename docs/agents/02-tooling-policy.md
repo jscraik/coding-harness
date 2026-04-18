@@ -1,3 +1,7 @@
+---
+last_validated: 2026-04-18
+---
+
 # Tooling policy
 
 - [Verified command authority](#verified-command-authority)

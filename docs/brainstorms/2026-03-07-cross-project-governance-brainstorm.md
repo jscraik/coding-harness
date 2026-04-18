@@ -1,3 +1,7 @@
+---
+last_validated: 2026-04-18
+---
+
 # Cross-Project Governance for Coding Harness
 
 **Date:** 2026-03-07

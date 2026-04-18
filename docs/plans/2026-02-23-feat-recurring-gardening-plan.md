@@ -1,10 +1,11 @@
 ---
-title: feat: Recurring Gardening Workflow
+title: "feat: Recurring Gardening Workflow"
 type: feat
 status: completed
 date: 2026-04-13
 plan_id: feat-recurring-gardening
 origin: docs/brainstorms/2026-02-23-phase-6-recurring-gardening-brainstorm.md
+last_validated: 2026-04-18
 ---
 
 # feat: Recurring Gardening Workflow

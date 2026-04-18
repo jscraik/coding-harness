@@ -438,21 +438,21 @@ format_hook_governance_reports() {
 	if [[ -n "$hook_inventory_output" && -f "$hook_inventory_output" ]]; then
 		path="$hook_inventory_output"
 		if [[ "$path" == "$repo_root/"* ]]; then
-			path="${path#$repo_root/}"
+			path="${path#"$repo_root"/}"
 		fi
 		report_paths+=("$path")
 	fi
 	if [[ -n "$hook_rollout_output" && -f "$hook_rollout_output" ]]; then
 		path="$hook_rollout_output"
 		if [[ "$path" == "$repo_root/"* ]]; then
-			path="${path#$repo_root/}"
+			path="${path#"$repo_root"/}"
 		fi
 		report_paths+=("$path")
 	fi
 	if [[ -n "$hook_docstring_output" && -f "$hook_docstring_output" ]]; then
 		path="$hook_docstring_output"
 		if [[ "$path" == "$repo_root/"* ]]; then
-			path="${path#$repo_root/}"
+			path="${path#"$repo_root"/}"
 		fi
 		report_paths+=("$path")
 	fi

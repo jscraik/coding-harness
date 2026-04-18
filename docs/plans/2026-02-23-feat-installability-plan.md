@@ -9,6 +9,7 @@ deepened: 2026-02-23
 reviewed: 2026-02-23
 implemented: 2026-02-23
 scope: simplified
+last_validated: 2026-04-18
 ---
 
 # Phase 4 Installability - harness init Command (Simplified)

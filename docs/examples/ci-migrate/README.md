@@ -1,3 +1,7 @@
+---
+last_validated: 2026-04-18
+---
+
 # CI Migration Artifact Templates
 
 These templates are tracked examples for strict `harness ci-migrate verify` preflight inputs.

@@ -6,6 +6,7 @@ date: 2026-03-11
 origin: docs/brainstorms/2026-03-11-context-integrity-control-plane-brainstorm.md
 risk: medium
 spec_depth: full
+last_validated: 2026-04-18
 ---
 
 # Context Integrity Control Plane

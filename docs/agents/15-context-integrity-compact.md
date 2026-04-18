@@ -1,3 +1,7 @@
+---
+last_validated: 2026-04-18
+---
+
 # Context Integrity Control Plane — Agent-Optimized Contract
 
 > **Purpose:** Token-efficient, operationally unambiguous workflow for agent execution.

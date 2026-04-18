@@ -6,6 +6,7 @@ date: 2026-04-08
 origin: docs/brainstorms/2026-04-08-coding-harness-reliability-orchestration-requirements.md
 spec: docs/specs/2026-04-08-feat-coding-harness-reliability-orchestration-spec.md
 deepened: 2026-04-08
+last_validated: 2026-04-18
 ---
 
 # Coding Harness Reliability Orchestration Plan

@@ -1,9 +1,10 @@
 ---
-date: 2026-03-15
+date: 2026-04-18
 title: GitHub Actions to CircleCI Transition Status Plan
 status: completed
 owners:
   - coding-harness-maintainers
+last_validated: 2026-04-18
 ---
 
 # GitHub Actions to CircleCI Transition Status Plan

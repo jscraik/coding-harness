@@ -4,6 +4,7 @@ type: operational-spec
 status: active
 date: 2026-03-14
 origin: docs/agents/10-agent-testing-gates.md
+last_validated: 2026-04-18
 ---
 
 # Agent Testing Gates — Compact Operational Spec

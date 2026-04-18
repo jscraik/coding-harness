@@ -1,3 +1,7 @@
+---
+last_validated: 2026-04-18
+---
+
 # Brainstorm: Coding Harness Gap Analysis
 
 **Date:** 2026-02-22

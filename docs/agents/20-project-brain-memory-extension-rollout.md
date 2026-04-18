@@ -1,3 +1,7 @@
+---
+last_validated: 2026-04-18
+---
+
 # Project Brain memory-extension rollout
 
 - [Purpose](#purpose)

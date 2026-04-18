@@ -1,3 +1,7 @@
+---
+last_validated: 2026-04-18
+---
+
 # Docs Gate Rollout and Operations
 
 ## Table of Contents

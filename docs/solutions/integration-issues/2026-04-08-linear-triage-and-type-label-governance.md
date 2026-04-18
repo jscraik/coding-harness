@@ -22,6 +22,7 @@ tags:
   - label-governance
   - coding-harness
   - workflow
+last_validated: 2026-04-18
 ---
 
 # Solution: Deterministic Linear Triage and Type-Label Governance

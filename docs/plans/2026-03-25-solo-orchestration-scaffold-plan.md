@@ -3,6 +3,7 @@ title: Solo Orchestration & Scaffold Flexibility Plan
 type: generic-plan
 status: draft
 deepened: 2026-03-25
+last_validated: 2026-04-18
 ---
 
 # Solo Orchestration & Scaffold Flexibility Plan

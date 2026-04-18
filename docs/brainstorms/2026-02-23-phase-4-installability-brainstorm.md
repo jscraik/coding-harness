@@ -3,6 +3,7 @@ title: Phase 4 Installability - harness init Command
 type: feat
 date: 2026-02-23
 status: active
+last_validated: 2026-04-18
 ---
 
 # Phase 4 Installability - harness init Command

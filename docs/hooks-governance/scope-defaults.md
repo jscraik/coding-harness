@@ -1,3 +1,7 @@
+---
+last_validated: 2026-04-18
+---
+
 # Hook Governance Scope Defaults
 
 ## Table of Contents

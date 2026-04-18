@@ -4,6 +4,7 @@ type: feat
 date: 2026-02-23
 status: active
 origin: docs/HARNESS_IMPLEMENTATION_PLAN.md Phase 5
+last_validated: 2026-04-18
 ---
 
 # Phase 5 - Evidence + Observability Hooks

@@ -5,6 +5,7 @@ status: active
 date: 2026-04-08
 origin: tmp/LINEAR_TRIAGE.md
 deepened: 2026-04-08
+last_validated: 2026-04-18
 ---
 
 # Linear Triage System Rollout Plan

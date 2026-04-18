@@ -1,3 +1,7 @@
+---
+last_validated: 2026-04-18
+---
+
 # Blast Radius Map
 
 This document maps file paths to required checks, enabling deterministic check routing based on changed files.

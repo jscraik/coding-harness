@@ -6,6 +6,7 @@ date: 2026-03-10
 origin: docs/brainstorms/2026-03-10-gold-standard-control-plane-hardening-brainstorm.md
 risk: high
 spec_depth: full
+last_validated: 2026-04-18
 ---
 
 # Provider-Neutral Gold-Standard Control Plane Hardening

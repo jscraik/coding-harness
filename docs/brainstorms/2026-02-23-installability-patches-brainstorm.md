@@ -4,6 +4,7 @@ type: feat
 date: 2026-02-23
 status: active
 origin: docs/plans/2026-02-23-feat-installability-plan.md (Future Patches section)
+last_validated: 2026-04-18
 ---
 
 # Installability Patches

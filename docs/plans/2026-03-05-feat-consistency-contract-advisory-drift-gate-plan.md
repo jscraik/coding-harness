@@ -5,6 +5,7 @@ status: completed
 date: 2026-04-13
 plan_id: feat-consistency-contract-advisory-drift-gate
 origin: docs/brainstorms/2026-03-05-consistency-contract-drift-gate-brainstorm.md
+last_validated: 2026-04-18
 ---
 
 # feat: Consistency Contract + Advisory Drift Gate

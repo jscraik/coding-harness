@@ -4,6 +4,7 @@ topic: symphony-harness-adoption
 clients:
   - Codex App/CLI
   - Linear
+last_validated: 2026-04-18
 ---
 
 # Symphony + Harness Engineering Adoption Brainstorm

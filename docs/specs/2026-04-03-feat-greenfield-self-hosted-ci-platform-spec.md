@@ -8,6 +8,7 @@ origin: docs/brainstorms/2026-04-03-greenfield-self-hosted-ci-platform-requireme
 risk: high
 spec_depth: full
 ui_required: false
+last_validated: 2026-04-18
 ---
 
 # Greenfield Self-Hosted CI Platform with Infisical

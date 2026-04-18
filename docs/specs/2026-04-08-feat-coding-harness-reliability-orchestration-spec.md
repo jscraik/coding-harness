@@ -13,6 +13,7 @@ origin: docs/brainstorms/2026-04-08-coding-harness-reliability-orchestration-req
 risk: medium
 spec_depth: full
 ui_required: false
+last_validated: 2026-04-18
 ---
 
 # Coding Harness Reliability Orchestration

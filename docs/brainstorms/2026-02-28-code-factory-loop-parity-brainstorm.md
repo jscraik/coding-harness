@@ -4,6 +4,7 @@ topic: code-factory-loop-parity
 clients:
   - Codex App/CLI
   - Claude Code
+last_validated: 2026-04-18
 ---
 
 # Code Factory Loop Parity Brainstorm
