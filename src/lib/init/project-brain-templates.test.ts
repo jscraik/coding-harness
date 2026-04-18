@@ -55,10 +55,58 @@ describe("project brain templates", () => {
 		expect(indexTemplate).toContain(
 			"| [tooling](./tooling/) | Bootstrap scripts, preflight rules, and local runtime contracts.",
 		);
+		expect(indexTemplate).toContain("**Last updated:**");
 		expect(cliKnowledge).toContain("# CLI Knowledge");
+		expect(cliKnowledge).toContain("**Last verified:**");
+		expect(cliKnowledge).toContain("**Confidence:** medium");
 		expect(governanceHypotheses).toContain("# Governance Hypotheses");
+		expect(governanceHypotheses).toContain(
+			"Unconfirmed patterns under observation",
+		);
 		expect(toolingRules).toContain("# Tooling Rules");
 		expect(toolingRules).toContain("**Rule count:** 0");
+		expect(toolingRules).toContain("Promotion guide");
+	});
+
+	it("renders templates without forbidden placeholder patterns", () => {
+		const forbiddenPatterns = [
+			/\{describe\s+focus\}/i,
+			/\{specify\}/i,
+			/\{describe\s+\w+\}/i,
+		];
+		const allowedPlaceholders = [
+			"(not yet)",
+			"(none currently)",
+			"(no reviews yet)",
+			"No active hypotheses",
+			"No rules promoted yet",
+			"No activity recorded yet",
+		];
+
+		for (const template of PROJECT_BRAIN_TEMPLATES) {
+			const rendered = template.render("pnpm", BASE_CONTEXT);
+			for (const pattern of forbiddenPatterns) {
+				expect(
+					pattern.test(rendered),
+					`Template ${template.path} contains forbidden placeholder: ${pattern.source}`,
+				).toBe(false);
+			}
+			// Verify (none yet) is not used — replaced with descriptive text
+			const noneYetCount = (rendered.match(/\(none yet\)/g) || []).length;
+			expect(
+				noneYetCount,
+				`Template ${template.path} still uses (none yet) — use descriptive text instead`,
+			).toBe(0);
+		}
+
+		// Verify at least some templates contain allowed placeholder text
+		const allRendered = PROJECT_BRAIN_TEMPLATES.map((t) =>
+			t.render("pnpm", BASE_CONTEXT),
+		).join("\n");
+		const hasAllowedPlaceholder = allowedPlaceholders.some((p) =>
+			allRendered.includes(p),
+		);
+		expect(hasAllowedPlaceholder).toBe(true);
 	});
 
 	it("renders project brain support artifacts", () => {
@@ -76,9 +124,13 @@ describe("project brain templates", () => {
 		expect(codexLearnSummary).toContain(
 			"This file is maintained by `./scripts/codex-learn analyze`.",
 		);
-		expect(qualityCriteria).toContain("### Reliability");
-		expect(qualityCriteria).toContain("### Security");
+		expect(qualityCriteria).toContain("### API Design");
 		expect(qualityCriteria).toContain("### Testing");
+		expect(qualityCriteria).toContain("Q-001");
+		expect(qualityCriteria).toContain("**Project domain:** CLI tool");
 		expect(reviewLog).toContain("Suggested cadence: every 2 weeks");
+		expect(reviewLog).toContain(
+			"| Date | Reviewer | Scope | Findings | Actions |",
+		);
 	});
 });

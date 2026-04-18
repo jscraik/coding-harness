@@ -42,6 +42,37 @@ if ! git rev-parse --show-toplevel >/dev/null 2>&1; then
 	exit 1
 fi
 
+attach_branch_if_detached() {
+	current_branch="$(git symbolic-ref --short -q HEAD || true)"
+	if [[ -n "$current_branch" ]]; then
+		echo "[prepare-worktree] branch: $current_branch"
+		return 0
+	fi
+
+	repo_slug="$(basename "$REPO_ROOT" | tr '[:upper:]' '[:lower:]' | sed -E 's/[^a-z0-9]+/-/g; s/^-+//; s/-+$//')"
+	if [[ -z "$repo_slug" ]]; then
+		repo_slug="worktree"
+	fi
+
+	short_sha="$(git rev-parse --short HEAD)"
+	branch_base="codex/$repo_slug-worktree-$short_sha"
+	branch_name="$branch_base"
+	suffix=1
+	while git show-ref --verify --quiet "refs/heads/$branch_name"; do
+		branch_name="$branch_base-$suffix"
+		suffix=$((suffix + 1))
+	done
+
+	echo "[prepare-worktree] detached HEAD detected; creating branch $branch_name"
+	git switch -c "$branch_name"
+	if git show-ref --verify --quiet "refs/remotes/origin/main"; then
+		git branch --set-upstream-to=origin/main "$branch_name" >/dev/null 2>&1 || true
+		echo "[prepare-worktree] tracking origin/main for $branch_name"
+		echo "[prepare-worktree] fast-forwarding $branch_name with origin/main"
+		git pull --ff-only origin main
+	fi
+}
+
 if [[ ! -f package.json ]]; then
 	echo "[prepare-worktree] package.json not found; nothing to bootstrap for this repo shape"
 	exit 0
@@ -58,6 +89,7 @@ if ! command -v node >/dev/null 2>&1; then
 fi
 
 echo "[prepare-worktree] repo: $REPO_ROOT"
+attach_branch_if_detached
 
 if [[ "$force_install" -eq 1 || ! -d node_modules ]]; then
 	echo "[prepare-worktree] installing dependencies (pnpm install)"

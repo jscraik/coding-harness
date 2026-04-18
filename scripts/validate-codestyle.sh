@@ -36,6 +36,33 @@ run_script() {
 
 	echo
 	echo "==> $script_name"
+
+	# Git hooks export repo-bound environment variables that can leak into
+	# test subprocesses and break fixture-local git commands.
+	for git_hook_env in \
+		GIT_DIR \
+		GIT_WORK_TREE \
+		GIT_INDEX_FILE \
+		GIT_OBJECT_DIRECTORY \
+		GIT_ALTERNATE_OBJECT_DIRECTORIES \
+		GIT_QUARANTINE_PATH \
+		GIT_REFLOG_ACTION \
+		GIT_PREFIX \
+		GIT_AUTHOR_NAME \
+		GIT_AUTHOR_EMAIL \
+		GIT_AUTHOR_DATE \
+		GIT_COMMITTER_NAME \
+		GIT_COMMITTER_EMAIL \
+		GIT_COMMITTER_DATE; do
+		unset "$git_hook_env"
+	done
+
+	# Also clear any numbered push-option vars when present.
+	for env_name in $(env | cut -d= -f1 | rg '^GIT_PUSH_OPTION_[0-9]+$' || true); do
+		unset "$env_name"
+	done
+	unset GIT_PUSH_OPTION_COUNT
+
 	pnpm run "$script_name"
 }
 

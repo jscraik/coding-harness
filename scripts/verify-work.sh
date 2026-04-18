@@ -390,10 +390,10 @@ prepare_hook_governance_inputs() {
 	)"
 
 	if [[ "$hook_governance_scope" == "project-local" ]]; then
-		hook_scope_manifest="$(mktemp "${TMPDIR:-/tmp}/verify-work-hook-scope.XXXXXX.json")"
-		hook_inventory_output="$(mktemp "${TMPDIR:-/tmp}/verify-work-repo-profile-matrix.XXXXXX.json")"
-		hook_rollout_output="$(mktemp "${TMPDIR:-/tmp}/verify-work-rollout-check-report.XXXXXX.json")"
-		hook_docstring_output="$(mktemp "${TMPDIR:-/tmp}/verify-work-docstring-ratchet-report.XXXXXX.json")"
+		hook_scope_manifest="$(mktemp "${TMPDIR:-/tmp}/verify-work-hook-scope.XXXXXX")"
+		hook_inventory_output="$(mktemp "${TMPDIR:-/tmp}/verify-work-repo-profile-matrix.XXXXXX")"
+		hook_rollout_output="$(mktemp "${TMPDIR:-/tmp}/verify-work-rollout-check-report.XXXXXX")"
+		hook_docstring_output="$(mktemp "${TMPDIR:-/tmp}/verify-work-docstring-ratchet-report.XXXXXX")"
 		hook_temp_paths+=(
 			"$hook_scope_manifest"
 			"$hook_inventory_output"

@@ -182,7 +182,8 @@
         "merge_group"
       ],
       "freshnessWindowDays": 7,
-      "class": "required"
+      "class": "informational",
+      "enabled": false
     },
     {
       "policyId": "required-check-15",

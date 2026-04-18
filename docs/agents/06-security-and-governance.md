@@ -21,11 +21,16 @@ last_validated: 2026-04-18
 
 This repository follows conservative defaults:
 
-- Keep command and runtime mutation minimal: avoid ad hoc global installs, preserve lockfile-driven `pnpm` execution boundaries, and use non-destructive tool resolution (`pnpm` direct, Homebrew path fallback, then `corepack`) that fails closed on missing baseline tools.
+- Minimal command surface in docs and scripts.
+- Explicitly avoid ad hoc global installs and hidden mutation.
+- Preserve existing dependency and execution boundaries (`pnpm` + lockfile-driven installs).
+- Codex environment setup should use non-destructive tool resolution (`pnpm` direct, Homebrew path fallback, then `corepack`) and fail closed on missing baseline tools instead of mutating global installs implicitly.
 - Treat the repo-root `CODESTYLE.md` path plus `scripts/validate-codestyle.sh` as governed contract surfaces: if either drifts, readiness and closeout claims must fail closed.
-- Repo-specific `CODESTYLE.md` exception remains narrow: this repository may use a symlink to `/Users/jamiecraik/.codex/instructions/CODESTYLE.md`, Biome must ignore that repo-root path for hosted CI stability, and `scripts/codex-preflight.sh` may allow only that symlink when it matches `.codex/preflight-allowed-external-paths.txt` (or `CODEX_PREFLIGHT_ALLOWED_EXTERNAL_PATHS`); all other out-of-repo paths fail closed.
-- Scaffold rendering and packaged distributions must read `CODESTYLE.md` from checked-in templates (`src/templates/CODESTYLE.md` and `dist/templates/CODESTYLE.md`) rather than user-home symlinks that may be absent on CI/downstream machines.
-- For preflight template maintenance, author downstream-facing baseline changes in `src/templates/codex-preflight.sh`. Project runtime `scripts/codex-preflight.sh` is allowed to diverge intentionally; run `node scripts/sync-codex-preflight.cjs --write` only when explicit synchronization is required.
+- Repo-specific exception: this repository may satisfy that `CODESTYLE.md` path with a symlink to `/Users/jamiecraik/.codex/instructions/CODESTYLE.md`, but downstream harness-managed repos should keep a real repo-local `CODESTYLE.md` copy.
+- Repo-specific linting invariant: Biome must ignore the repo-root `CODESTYLE.md` path so hosted CI does not fail on a broken developer-home symlink while local readiness still validates the path via preflight.
+- Repo-specific preflight rule: `scripts/codex-preflight.sh` may allow that one documented `CODESTYLE.md` symlink when it matches the repo-local allow-list in `.codex/preflight-allowed-external-paths.txt` (or `CODEX_PREFLIGHT_ALLOWED_EXTERNAL_PATHS`), even though it resolves outside repo root; other out-of-repo paths must still fail closed.
+- Security/runtime invariant: scaffold rendering and packaged distributions must read `CODESTYLE.md` from a checked-in template copy (`src/templates/CODESTYLE.md` / `dist/templates/CODESTYLE.md`), not by following a user-home symlink that may be absent on CI or downstream machines.
+- Repo-specific preflight maintenance rule: author downstream-facing changes in `src/templates/codex-preflight.sh`, then sync the repo runtime mirror with `node scripts/sync-codex-preflight.cjs --write`. `pnpm lint` runs the matching `--check` gate so runtime/template drift is treated as a policy failure, not a later merge surprise.
 - Local Memory preflight fallback probes must fail fast: keep bounded curl timeouts in `scripts/codex-preflight-local-memory-legacy.sh`, validate only the `rest_api.*` settings actually used to construct the health URL, and treat helper-runner exit code `3` as "unavailable, try the next runner" rather than a terminal failure.
 - Harness-managed consumer repositories are a defined exception: `scripts/check-environment.sh` should prefer a repo-local CLI runner or wrapper, then a mise-resolved harness binary (`mise which harness`), and use a global npm install of `@brainwav/coding-harness` only as the final fallback with explicit `NPM_TOKEN` auth wiring.
 - Project Brain memory-extension checks must stay project-local: keep required `.harness/**` knowledge paths in `toolingPolicy.projectBrainMemoryExtension.requiredPaths` and do not gate on workspace-level `~/.codex` state.
@@ -36,7 +41,9 @@ This repository follows conservative defaults:
 
 ## Secret handling
 
-- Never place tokens, keys, or PII in docs, command output, commit text, or memory notes; keep environment-specific credentials outside the repo and sanitize/rotate immediately if sensitive material is committed.
+- Never place tokens, keys, or PII in docs, command output, commit text, or memory notes.
+- If sensitive material appears in a file, sanitize and rotate as soon as practical.
+- Keep environment-specific credentials outside repo and out of command snippets unless placeholders are explicit.
 - Keep repo-specific Gitleaks allow lists in the repo-root `.gitleaks.toml` so staged scans and manual secret scans share the same reviewed exceptions.
 - Scaffolded `secret-scan.yml` workflows should default to least privilege. Do not grant `pull-requests: write` unless PR commenting is intentionally enabled for a scanner; the default scaffold should keep `contents: read` only.
 
@@ -49,8 +56,11 @@ This repository follows conservative defaults:
 
 ## Risk controls
 
-- Do not skip required gates to save time, and stop for human risk acceptance if checks fail repeatedly.
-- Treat stale check output as non-evidence and do not replace `bash scripts/validate-codestyle.sh` with informal command lists; the wrapper is the governed proof surface.
+- Do not skip required gates to save time.
+- If checks fail repeatedly, stop and request decision on risk acceptance.
+- Treat stale check output as non-evidence.
+- Do not replace `bash scripts/validate-codestyle.sh` with an informal list of roughly equivalent commands when documenting or attesting verification; the wrapper is the governed proof surface.
+- Treat hook-exported repository git environment (`GIT_DIR`, `GIT_WORK_TREE`, and related `GIT_*` variables) as untrusted input for nested validation scripts; `scripts/validate-codestyle.sh` should sanitize those values before invoking `pnpm run` so fixture-local git checks are isolated from hook context.
 - CircleCI test reliability guardrail: use `pnpm test:ci` so the long-running `ci-migrate` suite executes in an isolated lane with scoped Vitest worker-timeout mitigation (`--dangerouslyIgnoreUnhandledErrors`) while all functional assertions remain enforced.
 
 ## Governance escalation
@@ -62,17 +72,20 @@ This repository follows conservative defaults:
 
 ## Operational check list
 
-- Package manager consistency, allowed toolchain mutation boundaries, and validation gate outputs must be verified and captured for every behavior/command-contract change.
-- `bash scripts/validate-codestyle.sh` output is required evidence whenever behavior or command-contract surfaces changed, and secrets must never appear in docs or memory notes.
+- Package manager consistency verified in repo files.
+- No unauthorized command or toolchain mutation.
+- Validation gate outputs captured.
+- `bash scripts/validate-codestyle.sh` output captured whenever behavior or command-contract surfaces changed.
+- No secrets in docs/memory.
 - For harness scaffold/setup checks, run `bash scripts/run-harness-setup-checks.sh` so preflight, environment posture (`CLAUDE_APPROVAL_POSTURE=require`), pinned `uv`, and quality gates are evaluated as one auditable sequence.
-- For new task isolation in harness-managed repositories, start with `bash scripts/new-task.sh <slug>` so one task maps to one repo-local branch, worktree, and agent thread.
 - For fresh git worktrees, run `bash scripts/prepare-worktree.sh` before the first push so local pre-push hooks do not fail from missing dependencies in the new worktree.
+- `scripts/prepare-worktree.sh` should auto-attach detached HEAD checkouts to a local `codex/<repo>-worktree-<short-sha>` branch, set `origin/main` tracking when available, and fast-forward to latest `origin/main` before dependency bootstrap so default git branch workflows are available immediately.
+- `scripts/new-task.sh` should fetch the latest remote base branch before `git worktree add` so newly created task worktrees start from current upstream commits.
 - `harness init --check-updates`, `harness init --update`, and `harness upgrade` should auto-repair legacy `.harness/restore-manifest.json` files when `ciProvider` can be inferred safely from `harness.contract.json`, an unambiguous CI layout on disk, or the current requested/default provider.
 - If `scripts/run-harness-setup-checks.sh` still hits an incomplete legacy `.harness/restore-manifest.json`, treat it as a drift warning that blocks only the tracked update lane; keep running `check-environment` and repo quality gates, and print the manifest repair remediation explicitly.
 - Keep `scripts/codex-preflight.sh` executable as a CLI script and invoke it with `bash scripts/codex-preflight.sh --stack auto --mode required` (or `--mode optional` for softer checks); do not source it.
 - Treat `scripts/verify-work.sh` as the canonical repo-local verification entrypoint; it should keep `required` Local Memory enforcement and repo-scoped preflight expectations without depending on codex-maintenance-only paths.
 - Hook-governance scope in `scripts/verify-work.sh` should default to `project-local`; workspace-level mutation and reporting must stay opt-in behind `--workspace-governance`, and direct governance scripts must require explicit input file flags (`--manifest`, `--inventory`, `--classification`, `--metrics`) instead of implicit workspace fallbacks.
-- In project-local mode, treat `.codex/hook-conformance.json` as optional local state: missing files should not fail `verify-work`, while explicit `--workspace-governance` runs should continue enforcing conformance-artifact rollout checks.
 - When scorecard policy surfaces change, confirm `.github/workflows/openssf-scorecard.yml` still runs with `warn` mode on pull requests and `fail` mode on `main` or scheduled runs, then capture that command path in change evidence.
 - Treat scaffolded `scripts/harness-cli.sh` resolution failures as local install/bootstrap drift rather than harness command failures, and remediate with repo-local dependency repair (`pnpm install`, `pnpm add -D @brainwav/coding-harness`, then `pnpm exec harness <command>`).
 - For Local Memory enforcement, pin `~/.local-memory/config.yaml` to `host: 127.0.0.1` and `auto_port: false`, and prefer the pinned REST health endpoint as the source of truth when CLI status output is stale under sandboxed execution.
@@ -94,9 +107,12 @@ This repository uses `prek` as the canonical local hook installer, and `prek.tom
 | `commit-msg` | Validates conventional commit format, reminds about PR template |
 | `pre-push` | Runs `make hooks-pre-push` (`docs-gate --mode required`, diagram freshness, `tooling-audit`, `check-environment`, changed-file `semgrep`, `make codestyle`, `pnpm build`) |
 
-- The staged `gitleaks` lane should prefer the repo-root `.gitleaks.toml` so approved fixture/example exceptions stay consistent across local hooks, manual scans, and scaffold expectations.
-- Keep `hooks-commit-msg` as a required Makefile wrapper even though `prek.toml` only installs `pre-commit` and `pre-push`, and require `scripts/setup-git-hooks.js` to run `prek install --overwrite` plus `PREK_HOME="${PREK_HOME:-$HERE/../.cache/prek}"` shim patching so hook logs/cache writes remain repo-local under sandboxed execution.
-- For local hook/readiness/tooling-runtime changes, update this guide and `docs/agents/02-tooling-policy.md` in the same change so `docs-gate` catches drift before GitHub; keep port-free usage scoped to app-style `dev`/`start` actions (CLI-only repos may omit it).
+The staged `gitleaks` lane should prefer the repo-root `.gitleaks.toml` when present so approved fixture/example exceptions are consistent across local hooks, manual scans, and downstream scaffold expectations.
+`hooks-commit-msg` remains a required Makefile wrapper even though `prek.toml` only installs `pre-commit` and `pre-push`; use that wrapper for deterministic commit-policy verification and cross-repo governance checks.
+`scripts/setup-git-hooks.js` must run `prek install --overwrite` and patch generated `prek` shims with `PREK_HOME="${PREK_HOME:-$HERE/../.cache/prek}"` so hook logs/cache writes stay repo-local under sandboxed executions and legacy hook wrappers are not chained.
+
+`docs-gate` no longer covers only branch/CI governance wording. Local hook, readiness, and tooling-runtime changes are expected to update this guide and `docs/agents/02-tooling-policy.md` in the same change so pre-push drift is caught before GitHub does.
+Port-free usage should remain scoped to app-style run actions that map to `dev`/`start` scripts. CLI-only repositories can omit port-free run actions without violating governance.
 
 ## Plan traceability
 
@@ -109,10 +125,15 @@ This repository uses `prek` as the canonical local hook installer, and `prek.tom
 
 ### Setup
 
-Hooks are installed via the canonical repo wrapper (`node scripts/setup-git-hooks.js`), with equivalent `make` wrappers:
+Hooks are installed via the canonical repo wrapper:
 
 ```bash
 node scripts/setup-git-hooks.js
+```
+
+Equivalent wrappers:
+
+```bash
 make hooks
 make setup
 ```

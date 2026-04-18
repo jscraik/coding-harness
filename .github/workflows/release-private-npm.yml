@@ -76,8 +76,6 @@ jobs:
         with:
           node-version: "24"
           registry-url: "https://registry.npmjs.org/"
-          cache: "pnpm"
-          cache-dependency-path: "pnpm-lock.yaml"
 
       - name: Setup pnpm
         uses: pnpm/action-setup@a8198c4bff370c8506180b035930dea56dbd5288 # v5

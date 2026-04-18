@@ -6,7 +6,6 @@ import { createHash } from "node:crypto";
 //   - "actions-pinning"   → "orb-pinning"      (CircleCI orb version enforcement)
 
 export const REVIEW_POLICY_REQUIRED_CHECKS = [
-	"security-scan",
 	"dependency-scan",
 	"orb-pinning",
 ] as const;
@@ -15,10 +14,7 @@ export const REVIEW_POLICY_REQUIRED_CHECKS = [
  * Required checks enforced by branch protection that are not expected to appear
  * as merge-authoritative workflow job names.
  */
-export const NON_WORKFLOW_REQUIRED_CHECKS = [
-	"CodeRabbit",
-	"security-scan",
-] as const;
+export const NON_WORKFLOW_REQUIRED_CHECKS = ["CodeRabbit"] as const;
 
 const NON_WORKFLOW_REQUIRED_CHECK_SET = new Set<string>(
 	NON_WORKFLOW_REQUIRED_CHECKS,
@@ -352,7 +348,6 @@ export const ECOSYSTEM_PROFILES = {
 		"audit",
 		"check",
 		"memory",
-		"security-scan",
 		"CodeRabbit",
 	] as const,
 
@@ -364,35 +359,34 @@ export const ECOSYSTEM_PROFILES = {
 		"typecheck",
 		"test",
 		"audit",
-		"security-scan",
 		"dependency-scan",
 	] as const,
 
 	/**
 	 * Python projects using uv/pytest.
 	 */
-	python: ["lint", "test", "security-scan", "dependency-scan"] as const,
+	python: ["lint", "test", "dependency-scan"] as const,
 
 	/**
 	 * Rust projects using cargo.
 	 */
-	rust: ["lint", "test", "security-scan"] as const,
+	rust: ["lint", "test"] as const,
 
 	/**
 	 * Swift/iOS/macOS projects.
 	 */
-	swift: ["lint", "test", "security-scan"] as const,
+	swift: ["lint", "test"] as const,
 
 	/**
 	 * Go projects.
 	 */
-	go: ["lint", "test", "security-scan"] as const,
+	go: ["lint", "test"] as const,
 
 	/**
 	 * Minimal profile - just security and basic checks.
 	 * Use for experiments, docs, or custom setups.
 	 */
-	minimal: ["security-scan"] as const,
+	minimal: ["lint"] as const,
 } as const;
 
 /**

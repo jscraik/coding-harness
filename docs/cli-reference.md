@@ -59,6 +59,8 @@ Taxonomy note: section headings in this document represent command families. The
 | `eject` | Safely remove harness-managed files and templates, including legacy Greptile artifacts, while preserving custom non-Greptile CI workflows (`--dry-run`, `--force`) |
 | `check` | Zero-config repo health snapshot — works before full setup |
 | `doctor` | Check all gate prerequisites (tools, files, config, CI) |
+| `audit` | Comprehensive governance state check with actionable recommendations |
+| `brain` | Project Brain knowledge, rules, and quality management (status, query, add, preflight, stale) |
 | `health` | Unified gate status scorecard across all gates |
 | `contract` | Validate `harness.contract.json` or print the JSON Schema (`init`, `validate`, `schema`) |
 | `upgrade` | Safely upgrade harness in an existing repo (`--dry-run` supported) |

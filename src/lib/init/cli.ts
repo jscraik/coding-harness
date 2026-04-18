@@ -26,6 +26,10 @@ import {
 	detectContractVersion,
 	executeMigration,
 } from "./migration.js";
+import {
+	formatBootstrapSummary,
+	generateBootstrapSummary,
+} from "./post-bootstrap-summary.js";
 import { createBackup, executeRollback, loadManifest } from "./rollback.js";
 import {
 	TEMPLATES,
@@ -985,15 +989,9 @@ export function runInitCLI(
 				`  Created: ${created.length} file${created.length === 1 ? "" : "s"}, Skipped: ${skipped.length}`,
 			);
 
-			// Next steps
-			console.info("\nNext steps:");
-			if (created.includes(CONTRACT_FILE)) {
-				console.info(
-					"  harness contract validate   — validate the scaffolded contract",
-				);
-			}
-			console.info("  harness check               — quick health snapshot");
-			console.info("  harness health --json       — full gate scorecard");
+			// JSC-126: Post-bootstrap summary for immediate value
+			const summary = generateBootstrapSummary(result.output, packageManager);
+			console.info(formatBootstrapSummary(summary));
 
 			// Rollback tip
 			if (options.track) {

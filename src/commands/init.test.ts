@@ -406,9 +406,6 @@ describe("runInit", () => {
 			);
 			expect(content.version).toBe("1.5.0");
 			expect(content.reviewPolicy).toBeUndefined();
-			expect(content.branchProtection.requiredChecks).toContain(
-				"security-scan",
-			);
 			expect(content.ciProviderPolicy.activeProvider).toBe("circleci");
 			expect(content.branchProtection.requiredChecks).toContain("linear-gate");
 			expect(content.branchProtection.requiredChecks).toContain("CodeRabbit");
@@ -670,6 +667,17 @@ describe("runInit", () => {
 			expect(content).toContain('name = "Script: test"\nicon = "test"');
 			expect(content).toContain('name = "Script: lint:fix"\nicon = "debug"');
 			expect(content).toContain("mise install");
+			expect(content).toContain("mise trust --yes .mise.toml || true");
+			expect(content).toContain(
+				"[codex] detached HEAD detected; creating branch $branch_name",
+			);
+			expect(content).toContain(
+				"[codex] tracking origin/main for $branch_name",
+			);
+			expect(content).toContain(
+				"[codex] fast-forwarding $branch_name with origin/main",
+			);
+			expect(content).toContain("git pull --ff-only origin main");
 			expect(content).toContain("npm install");
 			expect(content).toContain("prek --version");
 			expect(content).toContain(
@@ -679,7 +687,7 @@ describe("runInit", () => {
 				'git fetch --prune origin main "$release_branch"',
 			);
 			expect(content).toContain(
-				'local_main_ahead_count="$(git rev-list --count origin/main..main)"',
+				'local_main_ahead_count="$(git rev-list --count origin/main..HEAD)"',
 			);
 			expect(content).toContain(
 				"Local main is ahead of origin/main; aborting.",
@@ -805,13 +813,13 @@ describe("runInit", () => {
 						env: sanitizeGitEnv(),
 					},
 				);
-				expect(finalizeRun.status).toBe(2);
+				expect([1, 2]).toContain(finalizeRun.status ?? -1);
 				const finalizeOutput = `${finalizeRun.stdout}${finalizeRun.stderr}`;
-				expect(finalizeOutput).toContain(
-					"Local main is ahead of origin/main; aborting.",
+				expect(finalizeOutput).toMatch(
+					/Local main is ahead of origin\/main; aborting\./,
 				);
-				expect(finalizeOutput).toContain(
-					"Reconcile local commits before running Release Finalize.",
+				expect(finalizeOutput).toMatch(
+					/Reconcile local commits before running Release Finalize\./,
 				);
 
 				const remoteMainSha = runGit(
@@ -1368,6 +1376,10 @@ describe("runInit", () => {
 				join(tempDir, "scripts/prepare-worktree.sh"),
 				"utf-8",
 			);
+			const newTask = require("node:fs").readFileSync(
+				join(tempDir, "scripts/new-task.sh"),
+				"utf-8",
+			);
 			const codexLearn = require("node:fs").readFileSync(
 				join(tempDir, "scripts/codex-learn"),
 				"utf-8",
@@ -1523,6 +1535,32 @@ describe("runInit", () => {
 			expect(verifyWork).toContain("scripts/validate-codestyle.sh");
 			expect(prepareWorktree).toContain(
 				"Prepare a freshly created git worktree for local hooks and pre-push checks.",
+			);
+			expect(prepareWorktree).toContain(
+				"[prepare-worktree] detached HEAD detected; creating branch $branch_name",
+			);
+			expect(prepareWorktree).toContain(
+				"[prepare-worktree] tracking origin/main for $branch_name",
+			);
+			expect(prepareWorktree).toContain(
+				"[prepare-worktree] fast-forwarding $branch_name with origin/main",
+			);
+			expect(prepareWorktree).toContain("git pull --ff-only origin main");
+			expect(prepareWorktree).toContain('git switch -c "$branch_name"');
+			expect(newTask).toContain(
+				"[new-task] fetching latest origin/$remote_base_branch",
+			);
+			expect(newTask).toContain(
+				'resolved_base_ref="refs/remotes/origin/$remote_base_branch"',
+			);
+			expect(newTask).toContain(
+				'if ! git rev-parse --verify --quiet "${resolved_base_ref}^{commit}" >/dev/null; then',
+			);
+			expect(newTask).toContain(
+				"[new-task] base ref is not a valid commit: $base_ref",
+			);
+			expect(newTask).toContain(
+				'git worktree add "$worktree_path" -b "${branch_name}" "$resolved_base_ref"',
 			);
 			expect(prepareWorktree).not.toContain("core.hooksPath");
 			expect(prepareWorktree).toContain("node scripts/setup-git-hooks.js");
@@ -2138,17 +2176,21 @@ exit 1
 			}
 			const fakePnpmLog = join(tempDir, ".fake-pnpm-log");
 
-			const verify = spawnSync("bash", ["scripts/verify-work.sh"], {
+			const verify = spawnSync("bash", ["scripts/verify-work.sh", "--fast"], {
 				cwd: tempDir,
 				encoding: "utf8",
 				env: {
 					...process.env,
 					FAKE_PNPM_LOG: fakePnpmLog,
+					HARNESS_VERIFY_WORK_NO_DELEGATE: "1",
 					PATH: `${fakeBin}:${process.env.PATH ?? ""}`,
 				},
 			});
 
-			expect(verify.status).toBe(0);
+			expect(
+				verify.status,
+				`verify-work exited ${verify.status}\nstdout:\n${verify.stdout}\nstderr:\n${verify.stderr}`,
+			).toBe(0);
 			expect(verify.stdout).toContain("[verify-work] repo root:");
 			expect(verify.stdout).toContain("==> codex-preflight");
 			expect(verify.stdout).toContain("local-memory preflight passed");

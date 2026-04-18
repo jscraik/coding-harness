@@ -30,6 +30,11 @@ import {
 	writeContextSourceInventory,
 } from "../lib/context-compound/sources.js";
 import { VectorStore } from "../lib/context-compound/store.js";
+import {
+	type SyncContractReport,
+	buildSyncReport,
+	probeOllama,
+} from "../lib/context-compound/sync-contract.js";
 import { validatePath } from "../lib/input/validator.js";
 import { type CliResult, createError, err, ok } from "../lib/result/types.js";
 
@@ -74,6 +79,8 @@ export interface IndexContextOutput {
 	inventoryPath?: string;
 	/** Error message if failed */
 	error?: string;
+	/** Sync contract report (JSC-189) */
+	syncReport?: SyncContractReport;
 }
 
 /**
@@ -190,6 +197,8 @@ export async function runIndexContext(
 		const ollama = new OllamaClient();
 		const isAvailable = await ollama.isAvailable();
 		if (!isAvailable) {
+			// Probe Ollama for diagnostic before falling back to lexical
+			const ollamaProbe = await probeOllama();
 			const lexicalIndex = writeLexicalIndex(baseDir, harnessDir);
 			const inventory = writeContextSourceInventory(
 				baseDir,
@@ -207,6 +216,17 @@ export async function runIndexContext(
 				mode: "lexical_degraded",
 				lexicalIndexPath: lexicalIndex.path,
 				inventoryPath: inventory.path,
+				syncReport: buildSyncReport(
+					"incremental",
+					[ollamaProbe],
+					{
+						total: lexicalIndex.indexed,
+						indexed: lexicalIndex.indexed,
+						skipped: 0,
+						errors: 0,
+					},
+					[],
+				),
 			});
 		}
 	}
@@ -231,13 +251,16 @@ export async function runIndexContext(
 
 	if (!isAvailable) {
 		store.close();
+		const ollamaProbe = await probeOllama();
 		return err(
 			createError(
 				"API_ERROR",
-				"Ollama not available. Please start Ollama or install it.",
+				`Ollama not available: ${ollamaProbe.diagnostic}. ${ollamaProbe.remediation}`,
 				{
 					installUrl: "https://ollama.com",
 					startCommand: "ollama serve",
+					availability: ollamaProbe.availability,
+					retryable: ollamaProbe.retryable,
 				},
 			),
 		);
@@ -294,6 +317,13 @@ export async function runIndexContext(
 		.map((result) => relative(baseDir, result.path).split("\\").join("/"));
 	const inventory = writeContextSourceInventory(baseDir, indexedRelativePaths);
 
+	const syncReport = buildSyncReport(
+		options.force ? "full" : "incremental",
+		[await probeOllama()],
+		{ total: allFiles.length, indexed, skipped, errors },
+		[],
+	);
+
 	return ok({
 		success,
 		indexed,
@@ -302,6 +332,7 @@ export async function runIndexContext(
 		results,
 		mode: "semantic",
 		inventoryPath: inventory.path,
+		syncReport,
 	});
 }
 

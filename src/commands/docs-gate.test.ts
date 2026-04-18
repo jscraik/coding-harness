@@ -784,7 +784,7 @@ describe("docs-gate command", () => {
 		write(join(root, "AGENTS.md"), "# AGENTS\n");
 		write(
 			join(root, "CONTRIBUTING.md"),
-			"# CONTRIBUTING\n\n- Require status checks: `lint`, `CodeRabbit`, `security-scan`\n",
+			"# CONTRIBUTING\n\n- Require status checks: `lint`, `CodeRabbit`\n",
 		);
 		write(join(root, "CLAUDE.md"), "# CLAUDE\n");
 		write(join(root, "AI/context/diagram-context.md"), "# Diagram Context\n");
@@ -811,7 +811,7 @@ describe("docs-gate command", () => {
 			branchProtection?: { requiredChecks?: string[] };
 		};
 		contract.branchProtection = {
-			requiredChecks: ["lint", "CodeRabbit", "security-scan"],
+			requiredChecks: ["lint", "CodeRabbit"],
 		};
 		write(contractPath, JSON.stringify(contract, null, 2));
 
