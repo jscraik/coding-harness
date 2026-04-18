@@ -24,6 +24,14 @@ export interface CIProviderAdapter {
 	readRequiredChecks(targetDir: string): AdapterResult<RequiredCheckIdentity[]>;
 }
 
+/**
+ * Checks whether a runtime value matches the shape and constraints of a RequiredCheckIdentity.
+ *
+ * Validates that required string fields are present (`policyId`, `displayName`, `sourceAppSlug`, `sourceAppId`, `externalIdPattern`), that `githubCheckName` is a `string` or `null`, and that `class` is one of `"required"`, `"informational"`, or `"shadow"`. If present, validates `requiredOnEvents` is an array containing only `"pull_request"` and/or `"merge_group"`, `freshnessWindowDays` is an integer between 1 and 7, and `enabled` is boolean.
+ *
+ * @param value - The runtime value to validate
+ * @returns `true` if `value` satisfies the `RequiredCheckIdentity` shape and constraints, `false` otherwise.
+ */
 function isRequiredCheckIdentity(
 	value: unknown,
 ): value is RequiredCheckIdentity {
@@ -115,6 +123,12 @@ function listWorkflowFiles(targetDir: string): string[] {
 	return [...discovered].sort();
 }
 
+/**
+ * Read and validate the repository's required-checks manifest and return enabled required-check identities.
+ *
+ * @param targetDir - Repository root directory used to locate `.harness/ci-required-checks.json`
+ * @returns On success, an object with `ok: true` and `value` containing only entries from the manifest's `requiredChecks` array where `class === "required"` and `enabled !== false`. On failure, an object with `ok: false` and `error` describing why (missing manifest, non-array `requiredChecks`, invalid entries, or JSON parse failure).
+ */
 function readRequiredChecksManifest(
 	targetDir: string,
 ): AdapterResult<RequiredCheckIdentity[]> {

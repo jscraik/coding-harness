@@ -7907,6 +7907,17 @@ function readRequiredCheckNamesFromSourceProviderConfig(
 	return [...checks];
 }
 
+/**
+ * Creates canonical `RequiredCheckIdentity` entries from a list of display names for import.
+ *
+ * Each entry uses an exact-match `externalIdPattern` for the provided display name, sets
+ * GitHub check name to the display name (`githubCheckName`), requires the check on
+ * `pull_request` and `merge_group` events, and applies default freshness and class values.
+ *
+ * @param displayNames - Array of check display names to import
+ * @param sourceProvider - The originating CI provider identifier used for `sourceAppSlug` and `sourceAppId`
+ * @returns An array of `RequiredCheckIdentity` objects representing the imported required checks
+ */
 function buildImportedRequiredChecks(
 	displayNames: string[],
 	sourceProvider: CIProvider,

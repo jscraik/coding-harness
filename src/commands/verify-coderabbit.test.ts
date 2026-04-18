@@ -270,6 +270,22 @@ describe("runVerifyCodeRabbit - .npmrc checks", () => {
 		expect(npmrcCheck?.message).toContain("ignore-scripts=true");
 	});
 
+	it("warns when ignore-scripts=true exists only in comments", async () => {
+		repoPath = createRepoFixture({
+			withCodeRabbitYaml: true,
+			withNpmrc: true,
+			npmrcContent:
+				"@brainwav:registry=https://registry.npmjs.org/\n# ignore-scripts=true\n",
+		});
+		const result = await runVerifyCodeRabbit({ repoPath });
+
+		const npmrcCheck = result.checks.find(
+			(c) => c.name === ".npmrc configuration",
+		);
+		expect(npmrcCheck?.status).toBe("warn");
+		expect(npmrcCheck?.message).toContain("ignore-scripts=true");
+	});
+
 	it("warns when .npmrc contains an auth token override", async () => {
 		repoPath = createRepoFixture({
 			withCodeRabbitYaml: true,
