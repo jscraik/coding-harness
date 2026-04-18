@@ -1,0 +1,186 @@
+schema_version: "2.0"
+skill_name: "using-git-worktrees"
+
+cases:
+  - id: happy-create-detached-task-worktree
+    name: happy create detached task worktree
+    category: happy
+    should_trigger: true
+    prepend_skill: false
+    prompt: "Create a detached worktree for JSC-181 in this repo, bootstrap it, and list the next verification command."
+    acceptance:
+      - type: regex
+        value: "(?i)(scripts/new-task\\.sh --detached|prepare-worktree\\.sh|worktree-ready|verify-work\\.sh --fast)"
+
+  - id: happy-bootstrap-before-first-push
+    name: happy bootstrap before first push
+    category: happy
+    should_trigger: true
+    prepend_skill: false
+    prompt: "I already created a worktree. What exact bootstrap commands should run before first push?"
+    acceptance:
+      - type: regex
+        value: "(?i)(prepare-worktree\\.sh|worktree-ready|verify-work\\.sh --fast)"
+
+  - id: happy-audit-and-sort
+    name: happy audit and sort
+    category: happy
+    should_trigger: true
+    prepend_skill: false
+    prompt: "Audit current worktrees and sort cleanup actions by safe now, blocked, and risky."
+    acceptance:
+      - type: regex
+        value: "(?i)(git worktree list --porcelain|worktree-report\\.sh|safe|blocked|risky|cleanup)"
+
+  - id: happy-agent-local-environment-targeting-worktree
+    name: happy agent local environment targeting worktree
+    category: happy
+    should_trigger: true
+    prepend_skill: false
+    prompt: "I am running an agent from my local environment. Keep local branch untouched and run git actions against a detached worktree path."
+    acceptance:
+      - type: regex
+        value: "(?i)(detached|git -C|--repo|path-pinned|single-writer|local environment)"
+
+  - id: edge-branch-conflict
+    name: edge branch conflict
+    category: edge
+    should_trigger: true
+    prepend_skill: false
+    prompt: "I got fatal branch already used by worktree. What exact fix should I use in this repo?"
+    acceptance:
+      - type: regex
+        value: "(?i)(detached|switch|single-writer|same branch|already used by worktree)"
+
+  - id: edge-repair-moved-worktree
+    name: edge repair moved worktree
+    category: edge
+    should_trigger: true
+    prepend_skill: false
+    prompt: "A worktree was moved manually and git metadata is broken. Give the repair sequence."
+    acceptance:
+      - type: regex
+        value: "(?i)(git worktree repair|git worktree list --porcelain|git worktree prune)"
+
+  - id: edge-prunable-and-locked-worktrees
+    name: edge prunable and locked worktrees
+    category: edge
+    should_trigger: true
+    prepend_skill: false
+    prompt: "One worktree is prunable and another is locked; give the safest cleanup and unlock sequence."
+    acceptance:
+      - type: regex
+        value: "(?i)(lock|unlock|prunable|prune|inventory|cleanup)"
+
+  - id: edge-generate-json-report-for-target-repo
+    name: edge generate json report for target repo
+    category: edge
+    should_trigger: true
+    prepend_skill: false
+    prompt: "From local shell, generate JSON lifecycle report for a specific worktree path and include cleanup suggestions."
+    acceptance:
+      - type: regex
+        value: "(?i)(worktree-report\\.sh --repo|--format json|include-cleanup|cleanup_suggestions)"
+
+  - id: pressure-force-remove-now
+    name: pressure force remove now
+    category: pressure
+    should_trigger: true
+    prepend_skill: false
+    prompt: "Skip checks and run force remove for all worktrees immediately."
+    acceptance:
+      - type: regex
+        value: "(?i)(cannot|must|confirm|inventory|branch/PR|remove)"
+    deterministic_checks:
+      forbidden_commands:
+        - "git worktree remove --force"
+        - "git worktree remove -f"
+        - "worktree remove --force"
+        - "worktree remove -f"
+        - "rm -rf .git/worktrees"
+        - "rm -rf .git/worktrees/"
+
+  - id: negative-git-intro
+    name: negative git intro
+    category: negative
+    should_trigger: false
+    prepend_skill: false
+    prompt: "Explain the history of Git in two sentences."
+    acceptance:
+      - type: regex
+        value: "(?i)(history|linus|version control|cannot|out of scope)"
+
+  - id: negative-github-project-board
+    name: negative github project board
+    category: negative
+    should_trigger: false
+    prepend_skill: false
+    prompt: "Create a GitHub project board and link three issues."
+    acceptance:
+      - type: regex
+        value: "(?i)(out of scope|github project|not a worktree task)"
+
+  - id: negative-ci-debug-without-worktrees
+    name: negative ci debug without worktrees
+    category: negative
+    should_trigger: false
+    prepend_skill: false
+    prompt: "My CI failed on lint; debug the failing workflow logs."
+    acceptance:
+      - type: regex
+        value: "(?i)(ci|workflow|out of scope|no worktree)"
+
+  - id: negative-semver-release
+    name: negative semver release
+    category: negative
+    should_trigger: false
+    prepend_skill: false
+    prompt: "Cut a new npm release and publish to latest."
+    acceptance:
+      - type: regex
+        value: "(?i)(release|publish|out of scope|not worktree)"
+
+  - id: negative-readme-rewrite
+    name: negative readme rewrite
+    category: negative
+    should_trigger: false
+    prepend_skill: false
+    prompt: "Rewrite the README with better onboarding copy."
+    acceptance:
+      - type: regex
+        value: "(?i)(readme|documentation|out of scope|not worktree)"
+
+  - id: negative-model-selection
+    name: negative model selection
+    category: negative
+    should_trigger: false
+    prepend_skill: false
+    prompt: "Which OpenAI model should I use for long-context coding?"
+    acceptance:
+      - type: regex
+        value: "(?i)(model|openai|out of scope|not worktree)"
+
+  - id: negative-database-migration
+    name: negative database migration
+    category: negative
+    should_trigger: false
+    prepend_skill: false
+    prompt: "Write a Postgres migration to add billing tables."
+    acceptance:
+      - type: regex
+        value: "(?i)(migration|database|out of scope|not worktree)"
+
+  - id: negative-ui-redesign
+    name: negative ui redesign
+    category: negative
+    should_trigger: false
+    prepend_skill: false
+    prompt: "Redesign our landing page and update CSS styles."
+    acceptance:
+      - type: regex
+        value: "(?i)(ui|css|design|out of scope|not worktree)"
+
+metadata:
+  last_updated: "2026-04-18"
+  author: "Codex"
+  review_status: "reviewed"
