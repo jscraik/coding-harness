@@ -24,6 +24,7 @@ import {
 	it,
 	vi,
 } from "vitest";
+import { CIRCLECI_PRIMARY_CHECK } from "../lib/ci/branch-protect-sync.js";
 import type {
 	BranchProtectionSatisfiabilityReport,
 	scanOpenPullRequestSatisfiability as scanOpenPullRequestSatisfiabilityType,
@@ -4385,7 +4386,7 @@ describe("runCIMigrateCLI", () => {
 		).toBe(true);
 	});
 
-	it("maps imported CircleCI checks to workflow githubCheckName", () => {
+	it("maps imported CircleCI checks to workflow-level github check names", () => {
 		mkdirSync(join(tempDir, ".harness"), { recursive: true });
 		mkdirSync(join(tempDir, ".circleci"), { recursive: true });
 		writeFileSync(
@@ -4401,17 +4402,11 @@ describe("runCIMigrateCLI", () => {
 			[
 				"version: 2.1",
 				"",
-				"jobs:",
-				"  lint:",
-				"    docker:",
-				"      - image: cimg/node:24.13",
-				"    steps:",
-				"      - run: echo lint",
-				"",
 				"workflows:",
 				"  pr-pipeline:",
 				"    jobs:",
 				"      - lint",
+				"      - typecheck",
 			].join("\n"),
 		);
 		writeFileSync(
@@ -4428,9 +4423,9 @@ describe("runCIMigrateCLI", () => {
 		);
 
 		const exitCode = runCIMigrateCLI(tempDir, {
-			provider: "github-actions",
+			provider: "circleci",
 			apply: true,
-			snapshot: "apply-import-required-checks-circleci-source",
+			snapshot: "apply-import-circleci-github-check-name-map",
 		});
 
 		expect(exitCode).toBe(EXIT_CODES.SUCCESS);
@@ -4441,6 +4436,7 @@ describe("runCIMigrateCLI", () => {
 			requiredChecks: Array<{
 				displayName: string;
 				sourceAppSlug: string;
+				sourceAppId: string;
 				githubCheckName: string | null;
 			}>;
 		};
@@ -4456,7 +4452,12 @@ describe("runCIMigrateCLI", () => {
 		).toBe(true);
 		expect(
 			manifest.requiredChecks.every(
-				(check) => check.githubCheckName === "pr-pipeline",
+				(check) => check.sourceAppId === "circleci",
+			),
+		).toBe(true);
+		expect(
+			manifest.requiredChecks.every(
+				(check) => check.githubCheckName === CIRCLECI_PRIMARY_CHECK,
 			),
 		).toBe(true);
 	});
