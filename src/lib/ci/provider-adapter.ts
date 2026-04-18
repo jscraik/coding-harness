@@ -8,9 +8,11 @@ export interface RequiredCheckIdentity {
 	sourceAppSlug: string;
 	sourceAppId: string;
 	externalIdPattern: string;
+	githubCheckName: string | null;
 	requiredOnEvents?: Array<"pull_request" | "merge_group">;
 	freshnessWindowDays?: number;
 	class: "required" | "informational" | "shadow";
+	enabled?: boolean;
 }
 
 export type AdapterResult<T> =
@@ -35,6 +37,8 @@ function isRequiredCheckIdentity(
 		typeof record.sourceAppSlug === "string" &&
 		typeof record.sourceAppId === "string" &&
 		typeof record.externalIdPattern === "string" &&
+		(typeof record.githubCheckName === "string" ||
+			record.githubCheckName === null) &&
 		(record.class === "required" ||
 			record.class === "informational" ||
 			record.class === "shadow");
@@ -59,6 +63,10 @@ function isRequiredCheckIdentity(
 			record.freshnessWindowDays < 1 ||
 			record.freshnessWindowDays > 7)
 	) {
+		return false;
+	}
+
+	if (record.enabled !== undefined && typeof record.enabled !== "boolean") {
 		return false;
 	}
 

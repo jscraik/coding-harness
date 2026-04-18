@@ -15,6 +15,7 @@ import { tmpdir } from "node:os";
 import { dirname, join } from "node:path";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { CURRENT_SCHEMA_VERSION } from "../lib/init/types.js";
+import { normalizeRequiredChecksManifest } from "../lib/policy/required-checks.js";
 import { sanitizeGitEnv } from "../lib/workflow-contract/test-harness.js";
 import { EXIT_CODES, runInit, runInitCLI } from "./init.js";
 
@@ -258,15 +259,30 @@ describe("runInit", () => {
 			expect(requiredChecks.requiredChecks[0]?.githubCheckName).toBe(
 				"pr-pipeline",
 			);
-			type RequiredCheckEntry = {
-				displayName: string;
-				sourceAppSlug: string;
-				githubCheckName: string;
-				class: string;
-				enabled?: boolean;
-			};
-			const generatedChecks =
-				requiredChecks.requiredChecks as RequiredCheckEntry[];
+			const normalizedRequiredChecks =
+				normalizeRequiredChecksManifest(requiredChecks);
+			expect(normalizedRequiredChecks.ok).toBe(true);
+			if (!normalizedRequiredChecks.ok) {
+				throw new Error(normalizedRequiredChecks.error);
+			}
+			const generatedChecks = normalizedRequiredChecks.value.gates;
+			expect(generatedChecks.map((entry) => entry.displayName)).toEqual([
+				"pr-template",
+				"linear-gate",
+				"risk-policy-gate",
+				"dependency-scan",
+				"orb-pinning",
+				"consistency-drift-health",
+				"docs-gate",
+				"lint",
+				"typecheck",
+				"test",
+				"audit",
+				"check",
+				"memory",
+				"security-scan",
+				"CodeRabbit",
+			]);
 			expect(
 				generatedChecks.every(
 					(entry) => typeof entry.githubCheckName === "string",
@@ -282,16 +298,16 @@ describe("runInit", () => {
 					.every((entry) => entry.githubCheckName === "pr-pipeline"),
 			).toBe(true);
 			const securityScanCheck = generatedChecks.find(
-				(entry: RequiredCheckEntry) => entry.displayName === "security-scan",
+				(entry) => entry.displayName === "security-scan",
 			);
-			expect(securityScanCheck?.sourceAppSlug).toBe("github-actions");
+			expect(securityScanCheck?.provider).toBe("github-actions");
 			expect(securityScanCheck?.githubCheckName).toBe("security-scan");
 			expect(securityScanCheck?.class).toBe("informational");
 			expect(securityScanCheck?.enabled).toBe(false);
 			const codeRabbitCheck = generatedChecks.find(
-				(entry: RequiredCheckEntry) => entry.displayName === "CodeRabbit",
+				(entry) => entry.displayName === "CodeRabbit",
 			);
-			expect(codeRabbitCheck?.sourceAppSlug).toBe("coderabbit");
+			expect(codeRabbitCheck?.provider).toBe("coderabbit");
 			expect(codeRabbitCheck?.githubCheckName).toBe("CodeRabbit");
 
 			const circleConfig = require("node:fs").readFileSync(
@@ -311,6 +327,7 @@ describe("runInit", () => {
 			expect(circleConfig).toContain("name: Policy Bundle");
 			expect(circleConfig).toContain("name: Dogfood silent-error detection");
 			expect(circleConfig).toContain("store_test_results:");
+			expect(circleConfig).toContain("path: artifacts/test-results");
 			expect(circleConfig).not.toContain("name: Enforce Policy Bundle Outcome");
 			expect(circleConfig).not.toContain("name: Enable corepack");
 			expect(circleConfig).not.toContain("name: Lint");

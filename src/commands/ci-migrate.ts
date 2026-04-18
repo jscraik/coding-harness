@@ -7916,6 +7916,7 @@ function buildImportedRequiredChecks(
 		sourceAppSlug: sourceProvider,
 		sourceAppId: sourceProvider,
 		externalIdPattern: `^${escapeRegexLiteral(displayName)}$`,
+		githubCheckName: displayName,
 		requiredOnEvents: ["pull_request", "merge_group"],
 		freshnessWindowDays: 7,
 		class: "required",
