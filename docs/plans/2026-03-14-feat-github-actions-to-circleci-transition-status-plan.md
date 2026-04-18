@@ -1,5 +1,5 @@
 ---
-date: 2026-04-18
+date: 2026-03-15
 title: GitHub Actions to CircleCI Transition Status Plan
 status: completed
 owners:

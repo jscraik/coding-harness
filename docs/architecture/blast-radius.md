@@ -1,4 +1,7 @@
 ---
+schema_version: 1
+status: active
+applies_to: coding-harness maintainers
 last_validated: 2026-04-18
 ---
 

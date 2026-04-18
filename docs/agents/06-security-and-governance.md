@@ -15,6 +15,7 @@ last_validated: 2026-04-18
 - [Setup](#setup)
 - [Commit message format](#commit-message-format)
 - [PR template reminder](#pr-template-reminder)
+- [Frontmatter metadata](#frontmatter-metadata)
 - [Plan traceability](#plan-traceability)
 
 ## Security posture
@@ -113,6 +114,12 @@ The staged `gitleaks` lane should prefer the repo-root `.gitleaks.toml` when pre
 
 `docs-gate` no longer covers only branch/CI governance wording. Local hook, readiness, and tooling-runtime changes are expected to update this guide and `docs/agents/02-tooling-policy.md` in the same change so pre-push drift is caught before GitHub does.
 Port-free usage should remain scoped to app-style run actions that map to `dev`/`start` scripts. CLI-only repositories can omit port-free run actions without violating governance.
+
+## Frontmatter metadata
+
+- `last_validated` must use ISO date format (`YYYY-MM-DD`) and represents when the document was last verified against current tooling or governance behavior.
+- Update `last_validated` when validation wrappers, required checks, or policy contracts change and this document is re-checked.
+- Keep `last_validated` aligned with any in-body freshness marker (for example `Last updated:`) so document evidence is not contradictory.
 
 ## Plan traceability
 

@@ -4,7 +4,7 @@ last_validated: 2026-04-18
 
 # Agent-First Implementation Status Matrix
 
-> Last updated: 2026-02-28
+> Last updated: 2026-04-18
 > Owner: Jamie Craik
 > Review cadence: Per-release or when status changes
 
