@@ -17,6 +17,7 @@ export interface PlanFrontmatter {
 	origin?: string; // Reference to originating brainstorm (path or topic)
 	brainstormDate?: string;
 	decisions?: string[]; // Carried forward from brainstorm
+	last_validated?: string;
 }
 
 export interface PlanMetadata {
@@ -86,6 +87,10 @@ function normalizePlanFrontmatter(
 			? frontmatter.brainstormDate
 			: undefined;
 	const decisions = toStringArray(frontmatter.decisions);
+	const lastValidated =
+		typeof frontmatter.last_validated === "string"
+			? frontmatter.last_validated
+			: undefined;
 	return {
 		title: title.trim(),
 		date: date.trim(),
@@ -94,6 +99,7 @@ function normalizePlanFrontmatter(
 		...(origin ? { origin } : {}),
 		...(brainstormDate ? { brainstormDate } : {}),
 		...(decisions.length > 0 ? { decisions } : {}),
+		...(lastValidated ? { last_validated: lastValidated } : {}),
 	};
 }
 
