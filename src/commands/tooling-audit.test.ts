@@ -1,4 +1,10 @@
-import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
+import {
+	mkdirSync,
+	mkdtempSync,
+	readFileSync,
+	rmSync,
+	writeFileSync,
+} from "node:fs";
 import { tmpdir } from "node:os";
 import { dirname, join } from "node:path";
 import { describe, expect, it } from "vitest";
@@ -7,6 +13,8 @@ import {
 	REQUIRED_HOOK_SUPPORT_FILES,
 	REQUIRED_PACKAGE_SCRIPTS,
 	REQUIRED_PREK_HOOKS,
+	REQUIRED_PREK_INSTALL_HOOK_TYPES,
+	REQUIRED_PREK_VERSION,
 } from "../lib/policy/tooling-baseline.js";
 import {
 	EXIT_CODES,
@@ -100,28 +108,30 @@ required_package_specs=(${toolingPolicy.packagePolicy.requiredPackages.map((requ
 		scripts: REQUIRED_PACKAGE_SCRIPTS,
 	};
 	writeRepoFile(root, "package.json", JSON.stringify(packageJson, null, 2));
+	const hookBlocks = Object.entries(REQUIRED_PREK_HOOKS)
+		.map(([id, hook]) => {
+			const stagesLine =
+				"stages" in hook ? `stages = ${JSON.stringify(hook.stages)}\n` : "";
+			return `[[repos.hooks]]
+id = "${id}"
+name = "${hook.name}"
+entry = "${hook.entry}"
+language = "${hook.language}"
+pass_filenames = ${String(hook.pass_filenames)}
+${stagesLine}`;
+		})
+		.join("\n");
+
 	writeRepoFile(
 		root,
 		"prek.toml",
-		`default_install_hook_types = ["pre-commit", "pre-push"]
+		`minimum_prek_version = "${REQUIRED_PREK_VERSION}"
+default_install_hook_types = ${JSON.stringify(REQUIRED_PREK_INSTALL_HOOK_TYPES)}
 
 [[repos]]
 repo = "local"
 
-[[repos.hooks]]
-id = "pre-commit"
-name = "${REQUIRED_PREK_HOOKS["pre-commit"].name}"
-entry = "${REQUIRED_PREK_HOOKS["pre-commit"].entry}"
-language = "${REQUIRED_PREK_HOOKS["pre-commit"].language}"
-pass_filenames = ${String(REQUIRED_PREK_HOOKS["pre-commit"].pass_filenames)}
-
-[[repos.hooks]]
-id = "pre-push"
-name = "${REQUIRED_PREK_HOOKS["pre-push"].name}"
-entry = "${REQUIRED_PREK_HOOKS["pre-push"].entry}"
-language = "${REQUIRED_PREK_HOOKS["pre-push"].language}"
-pass_filenames = ${String(REQUIRED_PREK_HOOKS["pre-push"].pass_filenames)}
-stages = ${JSON.stringify(REQUIRED_PREK_HOOKS["pre-push"].stages)}
+${hookBlocks}
 `,
 	);
 }
@@ -235,6 +245,39 @@ describe("tooling-audit command", () => {
 				expect(result.value.exitCode).toBe(EXIT_CODES.SUCCESS);
 				expect(result.value.result.findings.total).toBe(0);
 				expect(result.value.result.successfulRepos).toBe(1);
+			}
+		} finally {
+			rmSync(tempRoot, { recursive: true, force: true });
+		}
+	});
+
+	it("flags repos with missing minimum_prek_version", async () => {
+		const tempRoot = mkdtempSync(join(tmpdir(), "tooling-audit-minimum-prek-"));
+		const repoDir = join(tempRoot, "repo");
+		mkdirSync(repoDir, { recursive: true });
+		createCompliantRepo(repoDir, true);
+		const prekPath = join(repoDir, "prek.toml");
+		const prekContent = readFileSync(prekPath, "utf-8").replace(
+			/^minimum_prek_version.*\n/m,
+			"",
+		);
+		writeFileSync(prekPath, prekContent, "utf-8");
+
+		try {
+			const result = await runToolingAudit({
+				path: tempRoot,
+				format: "json",
+			});
+
+			expect(result.ok).toBe(true);
+			if (result.ok) {
+				expect(result.value.exitCode).toBe(EXIT_CODES.DRIFT_DETECTED);
+				expect(result.value.result.findings.critical).toBeGreaterThan(0);
+				expect(
+					result.value.result.results[0]?.findings.some((finding) =>
+						finding.description.includes("minimum_prek_version"),
+					),
+				).toBe(true);
 			}
 		} finally {
 			rmSync(tempRoot, { recursive: true, force: true });

@@ -79,11 +79,12 @@ For repositories with UI or ChatGPT Apps SDK dependency signals, `toolingPolicy.
 The local hook contract is intentionally split by drag profile:
 
 - `prek install --overwrite` (via `scripts/setup-git-hooks.js`) is the only supported hook installer path. Repositories should not keep legacy `simple-git-hooks` package metadata or post-install bootstraps once they migrate.
-- `scripts/setup-git-hooks.js` is the required wrapper around `prek install --overwrite`; it must patch generated `.git/hooks/*` shims to set `PREK_HOME="${PREK_HOME:-$HERE/../.cache/prek}"` so hook logging works in sandboxed/home-read-only environments and legacy `.legacy` wrappers do not linger.
+- `scripts/setup-git-hooks.js` is the required wrapper around `prek install --overwrite`; it must patch generated shims under `git rev-parse --git-path hooks` to set `PREK_HOME="${PREK_HOME:-$HERE/../.cache/prek}"` so hook logging works in sandboxed/home-read-only environments and legacy `.legacy` wrappers do not linger.
 - `pre-commit` stays fast and now adds staged `gitleaks`, staged-doc `vale`, and `vitest related` alongside `lint`, `docs:lint`, and `typecheck`.
 - The staged secret scan should use the repo-root `.gitleaks.toml` when present so fixture/example allow lists live in version control instead of hidden local defaults.
 - `pre-push` keeps the heavier governance lane and adds a changed-files `semgrep` scan for `src/**` plus `pnpm build` before `audit`.
-- `hooks-commit-msg` is the canonical wrapper target for commit-message policy checks. Keep it available even though `prek.toml` installs only `pre-commit` and `pre-push`.
+- `hooks-commit-msg` is the canonical wrapper target for commit-message policy checks and should be routed by the `commit-msg` hook in `prek.toml`.
+- Keep `minimum_prek_version = "0.3.9"` in `prek.toml` so downstream repos fail fast on older binaries that may interpret hook/config fields differently.
 - The Semgrep lane must stay path-filtered to changed implementation files under `src/**`, use `scripts/semgrep-pre-push.yml`, and pin `scripts/check-semgrep-changed.sh` to the same version as `.github/workflows/secret-scan.yml` (`semgrep==1.153.1`) so local and CI findings do not drift.
 - OpenSSF scorecard posture drift is tracked by `.github/workflows/openssf-scorecard.yml` and evaluated against `security/openssf-scorecard-policy.json` via `scripts/check-scorecard-regressions.mjs`; keep these three surfaces aligned when scorecard policy changes.
 - CodeRabbit custom `ast-grep` rules for this repository live under `rules/`; keep them narrowly scoped to repo-specific contracts such as the required `.js` extension on relative ESM imports.
@@ -111,6 +112,7 @@ Port-free wrapping is expected only for app run actions backed by `dev`/`start` 
 | Code-style gate | `bash scripts/validate-codestyle.sh` | Fail-closed repo-local code-style validation |
 | Quality gate | `pnpm check` | `lint + typecheck + test + audit` |
 | Lint | `pnpm lint` | `biome check .` |
+| Lint (CI) | `pnpm lint:ci` | `biome ci .` |
 | Typecheck | `pnpm typecheck` | `tsc --noEmit` |
 | Tests | `pnpm test` | `vitest run` |
 | Tests (CircleCI hardened lane) | `pnpm test:ci` | Runs standard suites plus isolated `ci-migrate` run with targeted Vitest worker-timeout mitigation |
@@ -141,8 +143,16 @@ For code changes:
 Additional lanes:
 - CircleCI parity and migration troubleshooting: `pnpm test:ci`
 - Harness setup or scaffold sync verification in this repository: `bash scripts/run-harness-setup-checks.sh`
-- New task boundary for project-local agent work: `bash scripts/new-task.sh <slug>`
+- New task boundary for project-local agent work: `bash scripts/new-task.sh <slug>` (use `--detached` when you need to keep the same branch checked out in Local)
 - Fresh git worktrees before first push: `bash scripts/prepare-worktree.sh` (or equivalent wrapper target `make worktree-ready`)
+
+Worktree lifecycle lane (script-safe commands):
+- Inventory attached worktrees before cleanup: `git worktree list --porcelain`
+- Keep a branch attached to only one checkout at a time; if Local needs the same branch, use detached worktree mode and branch later.
+- Remove an inactive worktree only after branch/PR state is confirmed: `git worktree remove <path>` (use `--force` only when explicitly intended).
+- Prune stale worktree admin records after manual cleanup: `git worktree prune`
+- Lock long-lived worktrees that must not be auto-pruned by Git tooling: `git worktree lock <path>`
+- Repair moved worktrees when metadata paths drift: `git worktree repair <path>`
 
 Required sequence (via helper wrappers): `bash scripts/codex-preflight.sh --stack auto --mode required`, `pnpm build`, `harness init --check-updates` (and `--update` when needed), `bash scripts/check-environment.sh`, then `pnpm check`.
 
@@ -152,6 +162,7 @@ Contract-preserving notes:
 - In project-local mode, `scripts/verify-work.sh` should skip hook-governance rollout failures when `.codex/hook-conformance.json` is absent, and reserve strict conformance-artifact enforcement for explicit `--workspace-governance` runs.
 - `scripts/validate-codestyle.sh` remains the canonical fail-closed code-style wrapper reused by verify/hook/docs surfaces.
 - `scripts/new-task.sh` is the canonical project-local task entrypoint; `scripts/prepare-worktree.sh` is the canonical new-worktree bootstrap lane.
+- `scripts/new-task.sh --detached` should be preferred for exploration or long-running background work where Local may need the same branch, because Git allows a branch to be checked out in only one worktree at a time.
 - `harness init --check-updates`, `harness init --update`, and `harness upgrade` should auto-repair legacy `.harness/restore-manifest.json` when provider inference is safe; ambiguous inference should raise a targeted drift warning and continue remaining setup gates.
 - Local Memory required mode should validate pinned REST host/port from `~/.local-memory/config.yaml`, and the legacy shell fallback must use bounded curl retries plus helper exit code `3` as "unavailable, try next runner".
 - CI bootstrap should install pinned `pnpm` via user-writable prefixes (`$HOME/.local` + `$BASH_ENV`/`$GITHUB_PATH`) rather than mutating privileged shims.
@@ -226,7 +237,7 @@ The `.npmrc` in this repository sets:
 - `strict-peer-dependencies=false` - Warn on peer issues (not fail)
 - `auto-install-peers=false` - Don't auto-install peers
 - `shamefully-hoist=false` - Better isolation
-- `node-linker=hoisted` - Better compatibility
+- isolated linker default - keep `node-linker=hoisted` opt-in only for legacy compatibility
 
 Projects using coding-harness should adopt similar security-conscious defaults.
 

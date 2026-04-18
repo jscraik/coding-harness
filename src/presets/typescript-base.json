@@ -82,6 +82,7 @@
 			"eslint",
 			"agent-browser",
 			"agentation",
+			"mermaid-cli",
 			"markdownlint-cli2",
 			"wrangler",
 			"beautiful-mermaid",
@@ -110,6 +111,7 @@
 			"eslint",
 			"agent-browser",
 			"agentation-mcp",
+			"mmdc",
 			"markdownlint-cli2",
 			"wrangler",
 			"beautiful-mermaid",
@@ -126,7 +128,7 @@
 			},
 			{
 				"tool": "pnpm",
-				"version": "10.0.0"
+				"version": "10.33.0"
 			},
 			{
 				"tool": "python",
@@ -138,7 +140,7 @@
 			},
 			{
 				"tool": "cargo:prek",
-				"version": "0.3.4"
+				"version": "0.3.9"
 			},
 			{
 				"tool": "npm:@brainwav/diagram",
@@ -179,6 +181,10 @@
 			{
 				"tool": "npm:agentation-mcp",
 				"version": "1.2.0"
+			},
+			{
+				"tool": "npm:@mermaid-js/mermaid-cli",
+				"version": "11.12.0"
 			},
 			{
 				"tool": "npm:@brainwav/rsearch",
@@ -345,6 +351,7 @@
 				"hooks",
 				"hooks-pre-commit",
 				"hooks-pre-push",
+				"hooks-commit-msg",
 				"diagrams-check",
 				"lint",
 				"docs-lint",

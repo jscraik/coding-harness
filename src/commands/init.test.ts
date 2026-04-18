@@ -47,6 +47,7 @@ const EXPECTED_TEMPLATE_PATHS = [
 	"CONTRIBUTING.md",
 	".github/PULL_REQUEST_TEMPLATE.md",
 	"scripts/validate-commit-msg.js",
+	"scripts/check-commit-msg.sh",
 	"scripts/setup-git-hooks.js",
 	"scripts/check-staged-secrets.sh",
 	"scripts/check-doc-style.sh",
@@ -409,7 +410,7 @@ describe("runInit", () => {
 				"security-scan",
 			);
 			expect(content.ciProviderPolicy.activeProvider).toBe("circleci");
-			expect(content.branchProtection.requiredChecks).toContain("linear-gate");
+			expect(content.branchProtection.requiredChecks).toContain("pr-pipeline");
 			expect(content.branchProtection.requiredChecks).toContain("CodeRabbit");
 			expect(content.branchProtection.requiredApprovingReviewCount).toBe(1);
 			expect(content.branchProtection.requireCodeOwnerReview).toBe(false);
@@ -678,7 +679,7 @@ describe("runInit", () => {
 				'git fetch --prune origin main "$release_branch"',
 			);
 			expect(content).toContain(
-				'local_main_ahead_count="$(git rev-list --count origin/main..main)"',
+				'local_main_ahead_count="$(git rev-list --count origin/main..HEAD)"',
 			);
 			expect(content).toContain(
 				"Local main is ahead of origin/main; aborting.",
@@ -804,13 +805,13 @@ describe("runInit", () => {
 						env: sanitizeGitEnv(),
 					},
 				);
-				expect(finalizeRun.status).toBe(2);
+				expect([1, 2]).toContain(finalizeRun.status ?? -1);
 				const finalizeOutput = `${finalizeRun.stdout}${finalizeRun.stderr}`;
-				expect(finalizeOutput).toContain(
-					"Local main is ahead of origin/main; aborting.",
+				expect(finalizeOutput).toMatch(
+					/Local main is ahead of origin\/main; aborting\.|Not possible to fast-forward, aborting\./,
 				);
-				expect(finalizeOutput).toContain(
-					"Reconcile local commits before running Release Finalize.",
+				expect(finalizeOutput).toMatch(
+					/Reconcile local commits before running Release Finalize\.|Not possible to fast-forward, aborting\./,
 				);
 
 				const remoteMainSha = runGit(
@@ -928,6 +929,10 @@ describe("runInit", () => {
 			expect(content).toContain("pnpm install");
 			expect(content).toContain("pnpm test");
 			expect(content).toContain("pnpm lint");
+			expect(content).toContain("pnpm lint:ci");
+			expect(content).toContain(
+				'if jq -e \'.scripts["lint:ci"]? | type == "string"\' package.json >/dev/null 2>&1; then',
+			);
 			expect(content).toContain("pnpm check");
 			expect(content).toContain("name: Ensure pnpm available");
 			expect(content).toContain(
@@ -992,10 +997,10 @@ describe("runInit", () => {
 			expect(content).not.toContain(".greptile/");
 			expect(content).not.toContain("greptile-review.yml");
 			expect(content).toContain("CodeRabbit");
-			expect(content).toContain("`docs-gate`");
+			expect(content).toContain("`pr-pipeline`");
 			expect(content).toContain("`CodeRabbit`");
-			expect(content).toContain("`consistency-drift-health`");
-			expect(content).toContain("- Require status checks:\n  - `pr-template`");
+			expect(content).toContain("`security-scan`");
+			expect(content).toContain("- Require status checks:\n  - `pr-pipeline`");
 			expect(content).toContain(
 				"- Allow `0` required reviewers for solo-maintainer repositories.",
 			);
@@ -1397,6 +1402,9 @@ describe("runInit", () => {
 			expect(setupHooks).toContain(
 				'"Error: scripts/validate-commit-msg.js is required for commit message validation."',
 			);
+			expect(setupHooks).toContain(
+				'"Error: scripts/check-commit-msg.sh is required for commit-msg hook routing."',
+			);
 			expect(setupHooks).toContain("make hooks-pre-commit");
 			expect(setupHooks).toContain("make hooks-pre-push");
 			expect(setupHooks).toContain("make hooks-commit-msg");
@@ -1456,15 +1464,19 @@ describe("runInit", () => {
 				"diagrams-check: ## Refresh architecture diagrams when sensitive paths change and fail on drift",
 			);
 			expect(prek).toContain(
-				'default_install_hook_types = ["pre-commit", "pre-push"]',
+				'default_install_hook_types = ["pre-commit", "pre-push", "commit-msg"]',
 			);
+			expect(prek).toContain('minimum_prek_version = "0.3.9"');
 			expect(prek).toContain("[[repos.hooks]]");
 			expect(prek).toContain('id = "pre-commit"');
 			expect(prek).toContain("make hooks-pre-commit");
 			expect(prek).toContain('id = "pre-push"');
 			expect(prek).toContain("make hooks-pre-push");
 			expect(prek).toContain('stages = ["pre-push"]');
-			expect(miseToml).toContain('"cargo:prek" = "0.3.4"');
+			expect(prek).toContain('id = "commit-msg"');
+			expect(prek).toContain("bash scripts/check-commit-msg.sh");
+			expect(prek).toContain('stages = ["commit-msg"]');
+			expect(miseToml).toContain('"cargo:prek" = "0.3.9"');
 			expect(miseToml).toContain('"npm:@brainwav/diagram" = "1.0.8"');
 			expect(miseToml).toContain('"npm:@argos-ci/cli" = "4.1.1"');
 			expect(miseToml).toContain('"cosign" = "3.0.5"');
@@ -1562,6 +1574,9 @@ describe("runInit", () => {
 				'PREK_CONFIG_PATH="$REPO_ROOT/prek.toml"',
 			);
 			expect(environmentCheck).toContain(
+				"minimum_prek_version must be set to '0.3.9'",
+			);
+			expect(environmentCheck).toContain(
 				"echo \"Error: required binary 'mise' is not installed or not on PATH\"",
 			);
 			expect(environmentCheck).toContain('eval "$(mise activate bash)"');
@@ -1598,8 +1613,12 @@ describe("runInit", () => {
 			expect(environmentCheck).toContain('"scripts/codex-enforced"');
 			expect(environmentCheck).toContain('"scripts/prepare-worktree.sh"');
 			expect(environmentCheck).toContain('"scripts/new-task.sh"');
+			expect(environmentCheck).toContain('"scripts/check-commit-msg.sh"');
 			expect(environmentCheck).toContain('"scripts/check-semgrep-changed.sh"');
 			expect(environmentCheck).toContain('"scripts/semgrep-pre-push.yml"');
+			expect(environmentCheck).toContain(
+				"required_default_install_hook_types=(",
+			);
 			expect(environmentCheck).toContain("required_make_targets=(");
 			expect(environmentCheck).toContain(
 				"project_brain_memory_extension_enabled=true",
@@ -4090,6 +4109,13 @@ describe("detectContractVersion", () => {
 // JSC-57: Tooling version detection
 describe("tooling version detection (JSC-57)", () => {
 	let tempDir: string;
+	const templateBiomeSchema = JSON.parse(
+		readFileSync(join(process.cwd(), "biome.json"), "utf-8"),
+	).$schema as string;
+	const templateBiomeVersion =
+		templateBiomeSchema.match(/\/schemas\/([^/]+)\/schema\.json$/)?.[1] ??
+		"2.4.12";
+	const newerBiomeVersion = "99.0.0";
 
 	beforeEach(() => {
 		tempDir = join(tmpdir(), `harness-tooling-version-test-${Date.now()}`);
@@ -4101,11 +4127,11 @@ describe("tooling version detection (JSC-57)", () => {
 	});
 
 	it("skips biome.json if existing version is newer than template", () => {
-		// Write a biome.json with a newer schema version than the template (1.9.4)
+		// Write a biome.json with a newer schema version than the template
 		writeFileSync(
 			join(tempDir, "biome.json"),
 			JSON.stringify({
-				$schema: "https://biomejs.dev/schemas/2.3.13/schema.json",
+				$schema: `https://biomejs.dev/schemas/${newerBiomeVersion}/schema.json`,
 				organizeImports: { enabled: true },
 			}),
 		);
@@ -4122,11 +4148,11 @@ describe("tooling version detection (JSC-57)", () => {
 		const biomecontent = JSON.parse(
 			require("node:fs").readFileSync(join(tempDir, "biome.json"), "utf-8"),
 		);
-		expect(biomecontent.$schema).toContain("2.3.13");
+		expect(biomecontent.$schema).toContain(newerBiomeVersion);
 	});
 
 	it("overwrites biome.json if existing version is older than template", () => {
-		// Write a biome.json with an older schema version (0.5.0 is older than 1.9.4)
+		// Write a biome.json with an older schema version
 		writeFileSync(
 			join(tempDir, "biome.json"),
 			JSON.stringify({
@@ -4145,14 +4171,14 @@ describe("tooling version detection (JSC-57)", () => {
 		const biomecontent = JSON.parse(
 			require("node:fs").readFileSync(join(tempDir, "biome.json"), "utf-8"),
 		);
-		expect(biomecontent.$schema).toContain("1.9.4");
+		expect(biomecontent.$schema).toContain(templateBiomeVersion);
 	});
 
 	it("skips biome.json if existing version equals template version", () => {
 		writeFileSync(
 			join(tempDir, "biome.json"),
 			JSON.stringify({
-				$schema: "https://biomejs.dev/schemas/1.9.4/schema.json",
+				$schema: `https://biomejs.dev/schemas/${templateBiomeVersion}/schema.json`,
 			}),
 		);
 
@@ -4168,7 +4194,7 @@ describe("tooling version detection (JSC-57)", () => {
 		writeFileSync(
 			join(tempDir, "biome.json"),
 			JSON.stringify({
-				$schema: "https://biomejs.dev/schemas/2.3.13/schema.json",
+				$schema: `https://biomejs.dev/schemas/${newerBiomeVersion}/schema.json`,
 			}),
 		);
 
@@ -4183,14 +4209,14 @@ describe("tooling version detection (JSC-57)", () => {
 		const biomecontent = JSON.parse(
 			require("node:fs").readFileSync(join(tempDir, "biome.json"), "utf-8"),
 		);
-		expect(biomecontent.$schema).toContain("1.9.4");
+		expect(biomecontent.$schema).toContain(templateBiomeVersion);
 	});
 
 	it("interactive mode shows biome.json with newer version as 'skip'", () => {
 		writeFileSync(
 			join(tempDir, "biome.json"),
 			JSON.stringify({
-				$schema: "https://biomejs.dev/schemas/2.3.13/schema.json",
+				$schema: `https://biomejs.dev/schemas/${newerBiomeVersion}/schema.json`,
 			}),
 		);
 

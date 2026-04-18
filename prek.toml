@@ -2,7 +2,9 @@
 # Install prek: mise install cargo-prek || cargo install prek
 # Run: prek install --overwrite && prek run --all-files
 
-default_install_hook_types = ["pre-commit", "pre-push"]
+minimum_prek_version = "0.3.9"
+
+default_install_hook_types = ["pre-commit", "pre-push", "commit-msg"]
 
 [[repos]]
 repo = "local"
@@ -21,3 +23,11 @@ entry = "make hooks-pre-push"
 language = "system"
 pass_filenames = false
 stages = ["pre-push"]
+
+[[repos.hooks]]
+id = "commit-msg"
+name = "Commit-msg"
+entry = "bash scripts/check-commit-msg.sh"
+language = "system"
+pass_filenames = true
+stages = ["commit-msg"]

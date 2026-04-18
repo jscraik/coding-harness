@@ -123,6 +123,7 @@ function writeDownstreamRepoFixture(
 
 describe("control-plane artifacts", () => {
 	let testDir: string;
+	let workspaceDir: string;
 	let docsGateReportPath: string;
 	let originalCwd: string;
 
@@ -134,8 +135,15 @@ describe("control-plane artifacts", () => {
 		}
 		testDir = join(baseDir, `control-plane-test-${Date.now()}`);
 		mkdirSync(testDir, { recursive: true });
-		docsGateReportPath = join(testDir, "docs-gate-report.json");
-		writeDocsGateReport(docsGateReportPath);
+		workspaceDir = join(testDir, "workspace");
+		const baselineContract = JSON.parse(
+			readFileSync(resolve("harness.contract.json"), "utf-8"),
+		) as { branchProtection?: { requiredChecks?: string[] } };
+		const requiredChecks = baselineContract.branchProtection
+			?.requiredChecks ?? ["lint", "typecheck", "test"];
+		const fixture = writeDownstreamRepoFixture(workspaceDir, requiredChecks);
+		docsGateReportPath = fixture.docsGateReportPath;
+		process.chdir(workspaceDir);
 	});
 
 	afterEach(() => {
@@ -311,7 +319,10 @@ describe("control-plane artifacts", () => {
 	});
 
 	it("applies a temporary promote override when contract policy authorizes it", () => {
-		const contractPath = join(testDir, "contract-with-override-policy.json");
+		const contractPath = join(
+			workspaceDir,
+			"contract-with-override-policy.json",
+		);
 		const contract = JSON.parse(
 			readFileSync(resolve("harness.contract.json"), "utf-8"),
 		) as Record<string, unknown>;
@@ -378,7 +389,10 @@ describe("control-plane artifacts", () => {
 	});
 
 	it("derives override expiry from policy TTL when timestamps are omitted", () => {
-		const contractPath = join(testDir, "contract-with-override-policy.json");
+		const contractPath = join(
+			workspaceDir,
+			"contract-with-override-policy.json",
+		);
 		const contract = JSON.parse(
 			readFileSync(resolve("harness.contract.json"), "utf-8"),
 		) as Record<string, unknown>;
@@ -440,7 +454,10 @@ describe("control-plane artifacts", () => {
 			"utf-8",
 		);
 
-		const contractPath = join(testDir, "contract-with-override-policy.json");
+		const contractPath = join(
+			workspaceDir,
+			"contract-with-override-policy.json",
+		);
 		const contract = JSON.parse(
 			readFileSync(resolve("harness.contract.json"), "utf-8"),
 		) as Record<string, unknown>;
@@ -493,7 +510,10 @@ describe("control-plane artifacts", () => {
 	});
 
 	it("ignores expired overrides and preserves the underlying decision", () => {
-		const contractPath = join(testDir, "contract-with-override-policy.json");
+		const contractPath = join(
+			workspaceDir,
+			"contract-with-override-policy.json",
+		);
 		const contract = JSON.parse(
 			readFileSync(resolve("harness.contract.json"), "utf-8"),
 		) as Record<string, unknown>;
@@ -542,7 +562,10 @@ describe("control-plane artifacts", () => {
 	});
 
 	it("requires an applied override record before advisory promotion uses maintainer approvals", () => {
-		const contractPath = join(testDir, "contract-with-override-policy.json");
+		const contractPath = join(
+			workspaceDir,
+			"contract-with-override-policy.json",
+		);
 		const contract = JSON.parse(
 			readFileSync(resolve("harness.contract.json"), "utf-8"),
 		) as Record<string, unknown>;
@@ -674,7 +697,7 @@ describe("control-plane artifacts", () => {
 	});
 
 	it("blocks when contract required-check identity drifts from trusted policy sources", () => {
-		const contractPath = join(testDir, "contract-with-drift.json");
+		const contractPath = join(workspaceDir, "contract-with-drift.json");
 		writeFileSync(
 			contractPath,
 			JSON.stringify(
@@ -1222,7 +1245,10 @@ describe("control-plane artifacts", () => {
 	});
 
 	it("fails closed when the override-policy phase report is missing", () => {
-		const contractPath = join(testDir, "contract-with-override-policy.json");
+		const contractPath = join(
+			workspaceDir,
+			"contract-with-override-policy.json",
+		);
 		const contract = JSON.parse(
 			readFileSync(resolve("harness.contract.json"), "utf-8"),
 		) as Record<string, unknown>;

@@ -1,9 +1,9 @@
 [tools]
 "node" = "24.13.1"
-"pnpm" = "10.0.0"
+"pnpm" = "10.33.0"
 "python" = "3.12"
 "uv" = "0.11.3"
-"cargo:prek" = "0.3.4"
+"cargo:prek" = "0.3.9"
 "npm:@brainwav/diagram" = "1.0.8"
 "npm:@argos-ci/cli" = "4.1.1"
 "cosign" = "3.0.5"

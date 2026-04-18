@@ -61,8 +61,11 @@ This repository follows conservative defaults:
 - Package manager consistency, allowed toolchain mutation boundaries, and validation gate outputs must be verified and captured for every behavior/command-contract change.
 - `bash scripts/validate-codestyle.sh` output is required evidence whenever behavior or command-contract surfaces changed, and secrets must never appear in docs or memory notes.
 - For harness scaffold/setup checks, run `bash scripts/run-harness-setup-checks.sh` so preflight, environment posture (`CLAUDE_APPROVAL_POSTURE=require`), pinned `uv`, and quality gates are evaluated as one auditable sequence.
-- For new task isolation in harness-managed repositories, start with `bash scripts/new-task.sh <slug>` so one task maps to one repo-local branch, worktree, and agent thread.
+- For new task isolation in harness-managed repositories, start with `bash scripts/new-task.sh <slug>` so one task maps to one repo-local worktree and agent thread; use `--detached` for exploration/background work when Local may need the same branch checked out.
 - For fresh git worktrees, run `bash scripts/prepare-worktree.sh` before the first push so local pre-push hooks do not fail from missing dependencies in the new worktree.
+- Treat `scripts/prepare-worktree.sh` as the detached-head safety lane: it should attach detached worktrees to a local branch before push, set upstream to `origin/main` when available, and fast-forward to current upstream state before bootstrap gates run.
+- Git branch checkout ownership is single-writer per worktree. If Local must keep a branch checked out, do not create a worktree on that same branch; prefer `scripts/new-task.sh --detached` and branch later when ready to promote the worktree changes.
+- For lifecycle hygiene, inventory with `git worktree list --porcelain` before deletion, remove only after branch/PR state is confirmed, and follow cleanup with `git worktree prune`.
 - `harness init --check-updates`, `harness init --update`, and `harness upgrade` should auto-repair legacy `.harness/restore-manifest.json` files when `ciProvider` can be inferred safely from `harness.contract.json`, an unambiguous CI layout on disk, or the current requested/default provider.
 - If `scripts/run-harness-setup-checks.sh` still hits an incomplete legacy `.harness/restore-manifest.json`, treat it as a drift warning that blocks only the tracked update lane; keep running `check-environment` and repo quality gates, and print the manifest repair remediation explicitly.
 - Keep `scripts/codex-preflight.sh` executable as a CLI script and invoke it with `bash scripts/codex-preflight.sh --stack auto --mode required` (or `--mode optional` for softer checks); do not source it.
@@ -73,14 +76,14 @@ This repository follows conservative defaults:
 - Treat scaffolded `scripts/harness-cli.sh` resolution failures as local install/bootstrap drift rather than harness command failures, and remediate with repo-local dependency repair (`pnpm install`, `pnpm add -D @brainwav/coding-harness`, then `pnpm exec harness <command>`).
 - For Local Memory enforcement, pin `~/.local-memory/config.yaml` to `host: 127.0.0.1` and `auto_port: false`, and prefer the pinned REST health endpoint as the source of truth when CLI status output is stale under sandboxed execution.
 - If using local shell helpers, prefer `source scripts/codex-shell-helpers.sh` and launch through `codex_d`/`cdxd` so Codex runs with `--profile d` and `--cd` anchored to the repo root.
-- Treat harness-scaffolded governance artifacts as part of the runtime contract: `.npmrc` should exist with the baseline security defaults plus scope-only registry routing, and `.harness/ci-provider-transition-status.json` should exist before strict `ci-migrate verify`. Repo `.npmrc` files must not carry auth token overrides; auth belongs in user-level or CI-injected `~/.npmrc`.
+- Treat harness-scaffolded governance artifacts as part of the runtime contract: `.npmrc` should exist with baseline security defaults plus scope-only registry routing, keep pnpm's isolated linker as default (hoisted linker opt-in only), and `.harness/ci-provider-transition-status.json` should exist before strict `ci-migrate verify`. Repo `.npmrc` files must not carry auth token overrides; auth belongs in user-level or CI-injected `~/.npmrc`.
 - If `toolingPolicy.projectBrainMemoryExtension.enabled=true`, capture verification evidence that the required `.harness/**` paths exist and that `scripts/check-environment.sh` still declares `required_project_brain_paths`.
 - When bumping tooling dependencies that have mirrored configuration schemas, update the package version, the repo config, and the scaffold template in the same change. The init suite enforces this for the Biome schema URL.
 - Diagram freshness enforcement should compare only git-tracked artifacts before and after refresh. Gitignored `.diagram/` refresh output may exist for local analysis, but it must not block `pre-push` unless tracked architecture artifacts actually drift.
 
 ## Pre-commit hooks
 
-This repository uses `prek` as the canonical local hook installer, and `prek.toml` remains the source of truth for installed `pre-commit` and `pre-push` commands:
+This repository uses `prek` as the canonical local hook installer, and `prek.toml` remains the source of truth for installed `pre-commit`, `commit-msg`, and `pre-push` commands:
 
 ### Hooks installed
 
@@ -91,7 +94,8 @@ This repository uses `prek` as the canonical local hook installer, and `prek.tom
 | `pre-push` | Runs `make hooks-pre-push` (`docs-gate --mode required`, diagram freshness, `tooling-audit`, `check-environment`, changed-file `semgrep`, `make codestyle`, `pnpm build`) |
 
 - The staged `gitleaks` lane should prefer the repo-root `.gitleaks.toml` so approved fixture/example exceptions stay consistent across local hooks, manual scans, and scaffold expectations.
-- Keep `hooks-commit-msg` as a required Makefile wrapper even though `prek.toml` only installs `pre-commit` and `pre-push`, and require `scripts/setup-git-hooks.js` to run `prek install --overwrite` plus `PREK_HOME="${PREK_HOME:-$HERE/../.cache/prek}"` shim patching so hook logs/cache writes remain repo-local under sandboxed execution.
+- Keep `hooks-commit-msg` as a required Makefile wrapper, and require `scripts/setup-git-hooks.js` to run `prek install --overwrite` plus `PREK_HOME="${PREK_HOME:-$HERE/../.cache/prek}"` shim patching under the hook directory resolved via `git rev-parse --git-path hooks` so hook logs/cache writes remain repo-local under sandboxed execution.
+- Keep `minimum_prek_version = "0.3.9"` in `prek.toml` and aligned with `.mise.toml` (`cargo:prek`) so commit/push shims run against a known-compatible runtime.
 - For local hook/readiness/tooling-runtime changes, update this guide and `docs/agents/02-tooling-policy.md` in the same change so `docs-gate` catches drift before GitHub; keep port-free usage scoped to app-style `dev`/`start` actions (CLI-only repos may omit it).
 
 ## Plan traceability

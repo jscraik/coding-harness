@@ -11,6 +11,8 @@ import {
 	REQUIRED_HOOK_SUPPORT_FILES,
 	REQUIRED_PACKAGE_SCRIPTS,
 	REQUIRED_PREK_HOOKS,
+	REQUIRED_PREK_INSTALL_HOOK_TYPES,
+	REQUIRED_PREK_VERSION,
 	TOOLING_PACKAGE_JSON_PATH,
 	TOOLING_PREK_CONFIG_PATH,
 } from "../lib/policy/tooling-baseline.js";
@@ -176,15 +178,15 @@ function hasRequiredPackage(
 	const devDependencies = manifest.devDependencies ?? {};
 
 	if (dependencyType === "dependencies") {
-		return Object.prototype.hasOwnProperty.call(dependencies, packageName);
+		return Object.hasOwn(dependencies, packageName);
 	}
 	if (dependencyType === "devDependencies") {
-		return Object.prototype.hasOwnProperty.call(devDependencies, packageName);
+		return Object.hasOwn(devDependencies, packageName);
 	}
 
 	return (
-		Object.prototype.hasOwnProperty.call(dependencies, packageName) ||
-		Object.prototype.hasOwnProperty.call(devDependencies, packageName)
+		Object.hasOwn(dependencies, packageName) ||
+		Object.hasOwn(devDependencies, packageName)
 	);
 }
 
@@ -612,6 +614,33 @@ function auditLocalHooks(
 	if (prekContent === null) {
 		addMissingFileFinding(findings, TOOLING_PREK_CONFIG_PATH, "prek config");
 	} else {
+		for (const hookType of REQUIRED_PREK_INSTALL_HOOK_TYPES) {
+			const hookTypePattern = new RegExp(
+				String.raw`^[\t ]*default_install_hook_types[\t ]*=.*"${hookType}"`,
+				"m",
+			);
+			if (!hookTypePattern.test(prekContent)) {
+				findings.push({
+					path: TOOLING_PREK_CONFIG_PATH,
+					severity: "critical",
+					description: `default_install_hook_types is missing '${hookType}'`,
+					expected: [...REQUIRED_PREK_INSTALL_HOOK_TYPES],
+				});
+			}
+		}
+		const minimumPrekVersionPattern = new RegExp(
+			String.raw`^[\t ]*minimum_prek_version[\t ]*=[\t ]*"${REQUIRED_PREK_VERSION}"[\t ]*$`,
+			"m",
+		);
+		if (!minimumPrekVersionPattern.test(prekContent)) {
+			findings.push({
+				path: TOOLING_PREK_CONFIG_PATH,
+				severity: "critical",
+				description: `minimum_prek_version must be set to '${REQUIRED_PREK_VERSION}'`,
+				expected: REQUIRED_PREK_VERSION,
+			});
+		}
+
 		for (const [hookName, hookConfig] of Object.entries(REQUIRED_PREK_HOOKS)) {
 			const hookStages =
 				"stages" in hookConfig ? (hookConfig.stages ?? []) : [];
@@ -677,7 +706,7 @@ function auditLocalHooks(
 		}
 	}
 
-	if (Object.prototype.hasOwnProperty.call(packageJson, "simple-git-hooks")) {
+	if (Object.hasOwn(packageJson, "simple-git-hooks")) {
 		findings.push({
 			path: TOOLING_PACKAGE_JSON_PATH,
 			severity: "critical",
@@ -888,7 +917,7 @@ async function auditRepository(
 	}
 
 	const findings: ToolingAuditFinding[] = [];
-	if (!Object.prototype.hasOwnProperty.call(rawContract, "toolingPolicy")) {
+	if (!Object.hasOwn(rawContract, "toolingPolicy")) {
 		findings.push({
 			path: "toolingPolicy",
 			severity: "warning",

@@ -9,7 +9,9 @@ export const TOOLING_PREK_CONFIG_PATH = "prek.toml" as const;
 export const REQUIRED_PREK_INSTALL_HOOK_TYPES = [
 	"pre-commit",
 	"pre-push",
+	"commit-msg",
 ] as const;
+export const REQUIRED_PREK_VERSION = "0.3.9" as const;
 
 export const REQUIRED_PREK_HOOKS = {
 	"pre-commit": {
@@ -24,6 +26,13 @@ export const REQUIRED_PREK_HOOKS = {
 		language: "system",
 		pass_filenames: false,
 		stages: ["pre-push"],
+	},
+	"commit-msg": {
+		name: "Commit-msg",
+		entry: "bash scripts/check-commit-msg.sh",
+		language: "system",
+		pass_filenames: true,
+		stages: ["commit-msg"],
 	},
 } as const;
 
@@ -99,10 +108,10 @@ export const REQUIRED_TOOLING_BINARIES = [
 
 export const PROJECT_MISE_REQUIRED_TOOLS = [
 	["node", "24.13.1"],
-	["pnpm", "10.0.0"],
+	["pnpm", "10.33.0"],
 	["python", "3.12"],
 	["uv", "0.11.3"],
-	["cargo:prek", "0.3.4"],
+	["cargo:prek", REQUIRED_PREK_VERSION],
 	["npm:@brainwav/diagram", "1.0.8"],
 	["npm:@argos-ci/cli", "4.1.1"],
 	["cosign", "3.0.5"],
@@ -135,7 +144,7 @@ export const REQUIRED_CODEX_TOOL_ACTIONS = [
 		name: "Release Finalize",
 		icon: "tool",
 		command:
-			'release_branch="${1:-}"\nif [ -z "$release_branch" ]; then\n  echo "Usage: Release Finalize <release-branch>"\n  echo "Example: Release Finalize codex/release-0.12.1-coherence"\n  exit 2\nfi\n\ncase "$release_branch" in\n  codex/release-*|release-*) ;;\n  *)\n    echo "Expected a release branch matching codex/release-* or release-*"\n    exit 2\n    ;;\nesac\n\ngit fetch --prune origin main "$release_branch"\ngit checkout main\ngit pull --ff-only origin main\nlocal_main_ahead_count="$(git rev-list --count origin/main..main)"\nif [ "$local_main_ahead_count" -ne 0 ]; then\n  echo "Local main is ahead of origin/main; aborting."\n  echo "Reconcile local commits before running Release Finalize."\n  exit 2\nfi\n\ngit merge --ff-only "origin/$release_branch"\ngit push origin main\n\necho "Merged $release_branch into main and pushed origin/main."\necho "Optional PR follow-up:"\necho "  gh pr list --state open --head \\"$release_branch\\" --json number,url"\necho "  gh pr comment <number> --body \\"Published to npm and merged into main.\\""\necho "  gh pr close <number> --delete-branch=false"',
+			'release_branch="${1:-}"\nif [ -z "$release_branch" ]; then\n  echo "Usage: Release Finalize <release-branch>"\n  echo "Example: Release Finalize codex/release-0.12.1-coherence"\n  exit 2\nfi\n\ncase "$release_branch" in\n  codex/release-*|release-*) ;;\n  *)\n    echo "Expected a release branch matching codex/release-* or release-*"\n    exit 2\n    ;;\nesac\n\ngit fetch --prune origin main "$release_branch"\ngit checkout main\nlocal_main_ahead_count="$(git rev-list --count origin/main..HEAD)"\nif [ "$local_main_ahead_count" -ne 0 ]; then\n  echo "Local main is ahead of origin/main; aborting."\n  echo "Reconcile local commits before running Release Finalize."\n  exit 2\nfi\nif git pull --ff-only origin main; then\n  :\nelse\n  pull_status=$?\n  local_main_ahead_count="$(git rev-list --count origin/main..HEAD 2>/dev/null || echo 0)"\n  if [ "$local_main_ahead_count" -ne 0 ]; then\n    echo "Local main is ahead of origin/main; aborting."\n    echo "Reconcile local commits before running Release Finalize."\n    exit 2\n  fi\n  exit "$pull_status"\nfi\n\ngit merge --ff-only "origin/$release_branch"\ngit push origin main\n\necho "Merged $release_branch into main and pushed origin/main."\necho "Optional PR follow-up:"\necho "  gh pr list --state open --head \\"$release_branch\\" --json number,url"\necho "  gh pr comment <number> --body \\"Published to npm and merged into main.\\""\necho "  gh pr close <number> --delete-branch=false"',
 	},
 	{
 		name: "Diagram",
@@ -333,6 +342,7 @@ export const REQUIRED_HOOK_SUPPORT_FILES = [
 	"scripts/prepare-worktree.sh",
 	"scripts/new-task.sh",
 	"scripts/validate-commit-msg.js",
+	"scripts/check-commit-msg.sh",
 	"scripts/check-staged-secrets.sh",
 	"scripts/check-doc-style.sh",
 	"scripts/check-related-tests.sh",

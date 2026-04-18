@@ -14,7 +14,13 @@ CONTRACT_PATH="$REPO_ROOT/harness.contract.json"
 	PREK_CONFIG_PATH="$REPO_ROOT/prek.toml"
 	PACKAGE_JSON_PATH="$REPO_ROOT/package.json"
 	CODESTYLE_PATH="$REPO_ROOT/CODESTYLE.md"
-	TOOLING_DOC_PATH="${TOOLING_DOC_PATH:-$HOME/dev/config/codex/instructions/tooling.md}"
+	TOOLING_DOC_PATH="${TOOLING_DOC_PATH:-$REPO_ROOT/docs/agents/tooling.md}"
+
+# Keep pnpm/npm output stable when ~/.npmrc references ${NPM_TOKEN}.
+# OIDC-based release lanes do not require a local token.
+if [[ -z "${NPM_TOKEN+x}" ]]; then
+	export NPM_TOKEN=""
+fi
 
 if [[ ! -f "$CONTRACT_PATH" ]]; then
 	echo "Error: missing contract file at $CONTRACT_PATH"
@@ -51,7 +57,7 @@ fi
 		exit 1
 	fi
 
-	required_support_files=("scripts/codex-preflight.sh" "scripts/codex-preflight-local-memory-legacy.sh" "scripts/codex-learn" "scripts/codex-enforced" "scripts/verify-work.sh" "scripts/validate-codestyle.sh" "scripts/prepare-worktree.sh" "scripts/new-task.sh" "scripts/validate-commit-msg.js" "scripts/check-staged-secrets.sh" "scripts/check-doc-style.sh" "scripts/check-related-tests.sh" "scripts/check-semgrep-changed.sh" "scripts/semgrep-pre-push.yml")
+	required_support_files=("scripts/codex-preflight.sh" "scripts/codex-preflight-local-memory-legacy.sh" "scripts/codex-learn" "scripts/codex-enforced" "scripts/verify-work.sh" "scripts/validate-codestyle.sh" "scripts/prepare-worktree.sh" "scripts/new-task.sh" "scripts/validate-commit-msg.js" "scripts/check-commit-msg.sh" "scripts/check-staged-secrets.sh" "scripts/check-doc-style.sh" "scripts/check-related-tests.sh" "scripts/check-semgrep-changed.sh" "scripts/semgrep-pre-push.yml")
 	for support_file in "${required_support_files[@]}"; do
 		if [[ ! -f "$REPO_ROOT/${support_file}" ]]; then
 			echo "Error: missing required hook support file at $REPO_ROOT/${support_file}"
@@ -136,7 +142,20 @@ fi
 		fi
 	done
 
-	required_prek_hooks=("pre-commit|Pre-commit|make hooks-pre-commit|system|false|" "pre-push|Pre-push|make hooks-pre-push|system|false|pre-push")
+	required_default_install_hook_types=("pre-commit" "pre-push" "commit-msg")
+	for hook_type in "${required_default_install_hook_types[@]}"; do
+		if ! rg -q "^[[:space:]]*default_install_hook_types[[:space:]]*=.*\"${hook_type}\"" "$PREK_CONFIG_PATH"; then
+			echo "Error: default_install_hook_types is missing '$hook_type' in $PREK_CONFIG_PATH"
+			exit 1
+		fi
+	done
+
+	if ! rg -q '^[[:space:]]*minimum_prek_version[[:space:]]*=[[:space:]]*"0.3.9"[[:space:]]*$' "$PREK_CONFIG_PATH"; then
+		echo "Error: minimum_prek_version must be set to '0.3.9' in $PREK_CONFIG_PATH"
+		exit 1
+	fi
+
+	required_prek_hooks=("pre-commit|Pre-commit|make hooks-pre-commit|system|false|" "pre-push|Pre-push|make hooks-pre-push|system|false|pre-push" "commit-msg|Commit-msg|bash scripts/check-commit-msg.sh|system|true|commit-msg")
 	for hook_spec in "${required_prek_hooks[@]}"; do
 		IFS='|' read -r hook_name hook_display_name hook_command hook_language hook_pass_filenames hook_stages <<< "$hook_spec"
 		if ! rg -q "^[[:space:]]*id[[:space:]]*=[[:space:]]*\"${hook_name}\"[[:space:]]*$" "$PREK_CONFIG_PATH"; then
@@ -164,6 +183,34 @@ fi
 			exit 1
 		fi
 	done
+
+	resolve_git_hooks_dir() {
+		local hooks_path
+		hooks_path="$(git rev-parse --git-path hooks 2>/dev/null || true)"
+		if [[ -z "$hooks_path" ]]; then
+			echo "$REPO_ROOT/.git/hooks"
+			return
+		fi
+		if [[ "$hooks_path" = /* ]]; then
+			echo "$hooks_path"
+		else
+			echo "$REPO_ROOT/$hooks_path"
+		fi
+	}
+
+	git_hooks_dir="$(resolve_git_hooks_dir)"
+	if [[ -d "$git_hooks_dir" ]]; then
+		required_installed_hooks=("pre-commit" "pre-push" "commit-msg")
+		for installed_hook in "${required_installed_hooks[@]}"; do
+			if [[ ! -f "$git_hooks_dir/$installed_hook" ]]; then
+				echo "Error: expected installed hook '$installed_hook' at $git_hooks_dir/$installed_hook"
+				echo "Fix: run node scripts/setup-git-hooks.js"
+				exit 1
+			fi
+		done
+	else
+		echo "Warning: git hook directory not found at $git_hooks_dir; skipping installed hook shim checks."
+	fi
 
 	if [[ -f "$PACKAGE_JSON_PATH" ]]; then
 		required_package_scripts=("codestyle:validate|bash scripts/validate-codestyle.sh" "secrets:staged|bash scripts/check-staged-secrets.sh" "docs:style:changed|bash scripts/check-doc-style.sh" "test:related|bash scripts/check-related-tests.sh" "semgrep:changed|bash scripts/check-semgrep-changed.sh")
@@ -334,6 +381,7 @@ else
 	if [[ -n "$mise_harness_bin" && -x "$mise_harness_bin" ]]; then
 		if ! run_check_environment_with_runner "mise harness ($mise_harness_bin)" "$mise_harness_bin"; then
 			echo "Error: mise-resolved harness failed to run check-environment successfully."
+			# shellcheck disable=SC2016
 			echo 'Fix: ensure the session activates mise first (eval "$(mise activate bash)") or invoke the mise binary directly.'
 			exit 1
 		fi
@@ -350,6 +398,7 @@ else
 			echo "Private registry auth is required:"
 			echo "  - Local shell: export NPM_TOKEN=<token>"
 			echo "  - CI (CircleCI): set NPM_TOKEN as a project environment variable in CircleCI project settings"
+			echo "  - OIDC publish lanes can skip local NPM_TOKEN; use trusted publishing in CI"
 			exit 1
 		fi
 
@@ -371,6 +420,7 @@ else
 				echo "Reinstall and retry:"
 				echo "  npm i -g @brainwav/coding-harness"
 				echo "If this is CI (CircleCI), confirm NPM_TOKEN is set as a project environment variable."
+				echo "OIDC trusted publishing is supported for release workflows when token auth is not used."
 				exit 1
 			fi
 		fi

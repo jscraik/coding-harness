@@ -174,7 +174,7 @@ scripts/check-environment.sh        — harness env readiness script
 .codex/environments/environment.toml — Codex action blocks
 .mise.toml                          — pinned tool versions
 Makefile                            — canonical task runner
-prek.toml                           — pre-commit/pre-push hook config
+prek.toml                           — pre-commit/commit-msg/pre-push hook config
 ```
 
 ---
@@ -354,15 +354,20 @@ harness init --check-updates
 
 # 9.4 — Policy baseline
 pnpm check   # or: npm run check
+bash scripts/validate-codestyle.sh
+bash scripts/verify-work.sh --fast
 
-# 9.5 — CodeRabbit (if token available)
+# 9.5 — Deep readiness gate (when runtime/artifact behavior changed)
+bash scripts/verify-work.sh
+
+# 9.6 — CodeRabbit (if token available)
 harness verify-coderabbit --token "$GITHUB_PERSONAL_ACCESS_TOKEN" --owner <owner> --repo <repo>
 
-# 9.6 — Authorization (branch protection matches contract)
+# 9.7 — Authorization (branch protection matches contract)
 harness check-authz --contract harness.contract.json --repo <owner>/<repo> --branch main
 ```
 
-All six steps must pass before the setup is complete.
+All validation steps must pass before the setup is complete.
 
 ---
 
@@ -490,7 +495,7 @@ project uses them. `harness check-environment` will surface which are missing.
 | `beautiful-mermaid` | `mise install -g npm:beautiful-mermaid` | Styled diagram output |
 | `markdownlint-cli2` | `mise install -g npm:markdownlint-cli2` | Docs linting |
 | `wrangler` | `mise install -g npm:wrangler` | Cloudflare Workers deploy |
-| `prek` | `mise install -g cargo:prek` | Pre-commit/pre-push hooks (required for hooks to run) |
+| `prek` | `mise install -g cargo:prek` | Pre-commit/commit-msg/pre-push hooks (required for hooks to run) |
 
 ---
 
