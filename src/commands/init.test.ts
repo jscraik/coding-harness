@@ -57,7 +57,7 @@ const EXPECTED_TEMPLATE_PATHS = [
 	"scripts/refresh-diagram-context.sh",
 	"scripts/check-diagram-freshness.sh",
 	".diagram/.gitkeep",
-	".diagram/context/diagram-context.md",
+	"AI/context/diagram-context.md",
 	".diagramrc",
 	"biome.json",
 	".gitleaks.toml",

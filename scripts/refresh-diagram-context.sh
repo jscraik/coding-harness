@@ -28,15 +28,16 @@ done
 
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 DIAGRAM_DIR="$ROOT_DIR/.diagram"
-CONTEXT_DIR="$DIAGRAM_DIR/context"
+CONTEXT_DIR="$ROOT_DIR/AI/context"
+DIAGRAM_CONTEXT_DIR="$DIAGRAM_DIR/context"
 CONTEXT_FILE="$CONTEXT_DIR/diagram-context.md"
-META_FILE="$CONTEXT_DIR/diagram-context.meta.json"
-LOG_FILE="$CONTEXT_DIR/refresh.log"
+META_FILE="$DIAGRAM_CONTEXT_DIR/diagram-context.meta.json"
+LOG_FILE="$DIAGRAM_CONTEXT_DIR/refresh.log"
 MIN_SECONDS="${DIAGRAM_REFRESH_MIN_SECONDS:-1800}"
 MAX_FILES="${DIAGRAM_REFRESH_MAX_FILES:-1000}"
 NOW_EPOCH="$(date +%s)"
 
-mkdir -p "$DIAGRAM_DIR" "$CONTEXT_DIR"
+mkdir -p "$DIAGRAM_DIR" "$DIAGRAM_CONTEXT_DIR" "$CONTEXT_DIR"
 
 log() {
 	local message="$1"
