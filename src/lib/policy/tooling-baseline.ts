@@ -333,6 +333,7 @@ export const REQUIRED_HOOK_SUPPORT_FILES = [
 	"scripts/prepare-worktree.sh",
 	"scripts/new-task.sh",
 	"scripts/validate-commit-msg.js",
+	"scripts/check-hook-critical-config-sync.sh",
 	"scripts/check-staged-secrets.sh",
 	"scripts/check-doc-style.sh",
 	"scripts/check-related-tests.sh",

@@ -33,6 +33,7 @@ hooks: ## Setup git hooks
 	node scripts/setup-git-hooks.js
 
 hooks-pre-commit: ## Run local pre-commit gates before creating a commit
+	@bash ./scripts/check-hook-critical-config-sync.sh
 	pnpm lint
 	pnpm docs:lint
 	pnpm typecheck
