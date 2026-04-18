@@ -171,7 +171,8 @@ ignore-scripts=true
 strict-peer-dependencies=false
 auto-install-peers=false
 shamefully-hoist=false
-node-linker=hoisted
+# Keep pnpm's isolated linker default; enable hoisted linker only for legacy-compat repos.
+# node-linker=hoisted
 
 # Auth should come from user-level ~/.npmrc or CI-injected ~/.npmrc, not this repo.
 # Do not add //registry.npmjs.org/:_authToken=... here, because it can override
@@ -197,7 +198,7 @@ jobs:
       - run:
           name: Ensure pnpm available
           command: |
-            required_pnpm_version="10.0.0"
+            required_pnpm_version="10.33.0"
             current_pnpm_version=""
             if command -v pnpm >/dev/null 2>&1; then
               current_pnpm_version="$(pnpm --version || true)"
@@ -239,7 +240,7 @@ workflows:
 function renderGitHubActionsPnpmSetupStep(): string {
 	return `      - name: Ensure pnpm available
         run: |
-          required_pnpm_version="10.0.0"
+          required_pnpm_version="10.33.0"
           current_pnpm_version=""
           if command -v pnpm >/dev/null 2>&1; then
             current_pnpm_version="$(pnpm --version || true)"
@@ -1644,8 +1645,8 @@ export const TEMPLATES: Template[] = [
     needs: [pr-template]
     if: ${"${{ always() && (github.event_name == 'merge_group' || needs.pr-template.result == 'success') }}"}
     steps:
-      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
-      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6
+      - uses: actions/setup-node@53b83947a5a98c8d113130e565377fae1a50d02f # v6
         with:
           node-version: "24"
 ${renderGitHubActionsPnpmSetupStep()}
@@ -1779,10 +1780,10 @@ ${linearGateJob}
     needs: ${riskPolicyNeeds}
     if: ${riskPolicyIf}
     steps:
-      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6
         with:
           fetch-depth: 0
-      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
+      - uses: actions/setup-node@53b83947a5a98c8d113130e565377fae1a50d02f # v6
         with:
           node-version: "24"
 ${renderGitHubActionsPnpmSetupStep()}
@@ -1825,7 +1826,7 @@ ${renderGitHubActionsPnpmSetupStep()}
       contents: read
       pull-requests: read
     steps:
-      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6
       - name: Detect dependency review support
         id: dependency-review-support
         if: github.event_name == 'pull_request'
@@ -1855,7 +1856,7 @@ ${renderGitHubActionsPnpmSetupStep()}
     runs-on: ubuntu-latest
     needs: [risk-policy-gate]
     steps:
-      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6
       - name: Enforce pinned GitHub Actions
         shell: bash
         run: |
@@ -1882,8 +1883,8 @@ ${renderGitHubActionsPnpmSetupStep()}
       pull-requests: read
       actions: write
     steps:
-      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
-      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6
+      - uses: actions/setup-node@53b83947a5a98c8d113130e565377fae1a50d02f # v6
         with:
           node-version: "24"
 ${renderGitHubActionsPnpmSetupStep()}
@@ -1951,8 +1952,8 @@ ${renderGitHubActionsPnpmSetupStep()}
       pull-requests: read
       actions: write
     steps:
-      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
-      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6
+      - uses: actions/setup-node@53b83947a5a98c8d113130e565377fae1a50d02f # v6
         with:
           node-version: "24"
 ${renderGitHubActionsPnpmSetupStep()}
@@ -2014,8 +2015,8 @@ ${renderGitHubActionsPnpmSetupStep()}
     runs-on: ubuntu-latest
     needs: [risk-policy-gate]
     steps:
-      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
-      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6
+      - uses: actions/setup-node@53b83947a5a98c8d113130e565377fae1a50d02f # v6
         with:
           node-version: "24"
 ${renderGitHubActionsPnpmSetupStep()}
@@ -2029,8 +2030,8 @@ ${renderGitHubActionsPnpmSetupStep()}
     runs-on: ubuntu-latest
     needs: [risk-policy-gate]
     steps:
-      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
-      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6
+      - uses: actions/setup-node@53b83947a5a98c8d113130e565377fae1a50d02f # v6
         with:
           node-version: "24"
 ${renderGitHubActionsPnpmSetupStep()}
@@ -2044,8 +2045,8 @@ ${renderGitHubActionsPnpmSetupStep()}
     runs-on: ubuntu-latest
     needs: [risk-policy-gate]
     steps:
-      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
-      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6
+      - uses: actions/setup-node@53b83947a5a98c8d113130e565377fae1a50d02f # v6
         with:
           node-version: "24"
 ${renderGitHubActionsPnpmSetupStep()}
@@ -2059,8 +2060,8 @@ ${renderGitHubActionsPnpmSetupStep()}
     runs-on: ubuntu-latest
     needs: [risk-policy-gate]
     steps:
-      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
-      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6
+      - uses: actions/setup-node@53b83947a5a98c8d113130e565377fae1a50d02f # v6
         with:
           node-version: "24"
 ${renderGitHubActionsPnpmSetupStep()}
@@ -2074,8 +2075,8 @@ ${renderGitHubActionsPnpmSetupStep()}
     runs-on: ubuntu-latest
     needs: [risk-policy-gate]
     steps:
-      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
-      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6
+      - uses: actions/setup-node@53b83947a5a98c8d113130e565377fae1a50d02f # v6
         with:
           node-version: "24"
 ${renderGitHubActionsPnpmSetupStep()}
@@ -2089,7 +2090,7 @@ ${renderGitHubActionsPnpmSetupStep()}
     runs-on: ubuntu-latest
     needs: [risk-policy-gate]
     steps:
-      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6
       - name: Validate memory.json
         run: ${memoryValidateCommand}
 `;
@@ -2116,7 +2117,7 @@ jobs:
 
     steps:
       - name: Checkout
-        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6
         with:
           fetch-depth: 0
 

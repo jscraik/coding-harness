@@ -226,7 +226,7 @@ The `.npmrc` in this repository sets:
 - `strict-peer-dependencies=false` - Warn on peer issues (not fail)
 - `auto-install-peers=false` - Don't auto-install peers
 - `shamefully-hoist=false` - Better isolation
-- `node-linker=hoisted` - Better compatibility
+- isolated linker default - keep `node-linker=hoisted` opt-in only for legacy compatibility
 
 Projects using coding-harness should adopt similar security-conscious defaults.
 

@@ -54,7 +54,7 @@ function mockAllToolsOk(): void {
 			return makeSpawnResult(0, "found");
 		}
 		if (cmdStr === "node") return makeSpawnResult(0, "v24.0.0");
-		if (cmdStr === "pnpm") return makeSpawnResult(0, "10.0.0");
+		if (cmdStr === "pnpm") return makeSpawnResult(0, "10.33.0");
 		if (cmdStr === "git") return makeSpawnResult(0, "git version 2.44.0");
 		if (cmdStr === "gh") return makeSpawnResult(0, "gh version 2.0.0");
 		return makeSpawnResult(0, "");
@@ -137,7 +137,7 @@ describe("runDoctor — tool checks", () => {
 			const argsArr = Array.isArray(args) ? args.map(String) : [];
 
 			if (cmdStr === "node") return makeSpawnResult(0, "v24.0.0");
-			if (cmdStr === "pnpm") return makeSpawnResult(0, "10.0.0");
+			if (cmdStr === "pnpm") return makeSpawnResult(0, "10.33.0");
 			if (cmdStr === "git") return makeSpawnResult(0, "git version 2.44.0");
 			if (cmdStr === "gh" && argsArr.includes("status")) {
 				return makeSpawnResult(0, "ok");
@@ -185,7 +185,7 @@ describe("runDoctor — tool checks", () => {
 			const argsArr = Array.isArray(args) ? args.map(String) : [];
 
 			if (cmdStr === "node") return makeSpawnResult(0, "v24.0.0");
-			if (cmdStr === "pnpm") return makeSpawnResult(0, "10.0.0");
+			if (cmdStr === "pnpm") return makeSpawnResult(0, "10.33.0");
 			if (cmdStr === "git") return makeSpawnResult(0, "git version 2.44.0");
 			if (cmdStr === "gh" && argsArr.includes("status")) {
 				return makeSpawnResult(0, "ok");
@@ -215,7 +215,7 @@ describe("runDoctor — tool checks", () => {
 			const argsArr = Array.isArray(args) ? args.map(String) : [];
 
 			if (cmdStr === "node") return makeSpawnResult(0, "v24.0.0");
-			if (cmdStr === "pnpm") return makeSpawnResult(0, "10.0.0");
+			if (cmdStr === "pnpm") return makeSpawnResult(0, "10.33.0");
 			if (cmdStr === "git") return makeSpawnResult(0, "git version 2.44.0");
 			if (cmdStr === "gh" && argsArr.includes("status")) {
 				return makeSpawnResult(0, "ok");

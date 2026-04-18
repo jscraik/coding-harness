@@ -99,7 +99,7 @@ export const REQUIRED_TOOLING_BINARIES = [
 
 export const PROJECT_MISE_REQUIRED_TOOLS = [
 	["node", "24.13.1"],
-	["pnpm", "10.0.0"],
+	["pnpm", "10.33.0"],
 	["python", "3.12"],
 	["uv", "0.11.3"],
 	["cargo:prek", "0.3.4"],

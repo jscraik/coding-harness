@@ -174,8 +174,8 @@ For CI ownership overlap detection, manually verify:
 
 | Dimension | CircleCI | GitHub Actions |
 |---|---|---|
-| Node.js version | `cimg/node:24.13` | `actions/setup-node@v4` (node-version: 24) |
-| pnpm version | npm install --global pnpm@10.0.0 | `pnpm/action-setup@v4` (version: 10.0.0) |
+| Node.js version | `cimg/node:24.13` | `actions/setup-node@v6` (node-version: 24) |
+| pnpm version | npm install --global pnpm@10.33.0 | `pnpm/action-setup@v5` (version: 10.33.0) |
 | Install command | `pnpm install --frozen-lockfile` (PR) / `pnpm install` (release) | `pnpm install --frozen-lockfile` |
 | npm publish token | N/A (does not publish) | `NPM_TOKEN` secret or OIDC (`id-token: write`) |
 | Attestation signing | N/A | OIDC (`actions/attest-build-provenance`) |
