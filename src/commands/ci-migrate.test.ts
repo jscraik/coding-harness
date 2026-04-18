@@ -24,6 +24,7 @@ import {
 	it,
 	vi,
 } from "vitest";
+import { CIRCLECI_PRIMARY_CHECK } from "../lib/ci/branch-protect-sync.js";
 import type {
 	BranchProtectionSatisfiabilityReport,
 	scanOpenPullRequestSatisfiability as scanOpenPullRequestSatisfiabilityType,
@@ -4381,6 +4382,82 @@ describe("runCIMigrateCLI", () => {
 		expect(
 			manifest.requiredChecks.every(
 				(check) => check.sourceAppId === "github-actions",
+			),
+		).toBe(true);
+	});
+
+	it("maps imported CircleCI checks to workflow-level github check names", () => {
+		mkdirSync(join(tempDir, ".harness"), { recursive: true });
+		mkdirSync(join(tempDir, ".circleci"), { recursive: true });
+		writeFileSync(
+			join(tempDir, ".harness/restore-manifest.json"),
+			JSON.stringify({
+				harnessVersion: "0.0.0",
+				ciProvider: "circleci",
+				files: [],
+			}),
+		);
+		writeFileSync(
+			join(tempDir, ".circleci/config.yml"),
+			[
+				"version: 2.1",
+				"",
+				"workflows:",
+				"  pr-pipeline:",
+				"    jobs:",
+				"      - lint",
+				"      - typecheck",
+			].join("\n"),
+		);
+		writeFileSync(
+			join(tempDir, "harness.contract.json"),
+			JSON.stringify(
+				{
+					branchProtection: {
+						requiredChecks: ["lint", "typecheck"],
+					},
+				},
+				null,
+				2,
+			),
+		);
+
+		const exitCode = runCIMigrateCLI(tempDir, {
+			provider: "circleci",
+			apply: true,
+			snapshot: "apply-import-circleci-github-check-name-map",
+		});
+
+		expect(exitCode).toBe(EXIT_CODES.SUCCESS);
+		const manifest = JSON.parse(
+			readFileSync(join(tempDir, ".harness/ci-required-checks.json"), "utf-8"),
+		) as {
+			activeProvider: string;
+			requiredChecks: Array<{
+				displayName: string;
+				sourceAppSlug: string;
+				sourceAppId: string;
+				githubCheckName: string | null;
+			}>;
+		};
+		expect(manifest.activeProvider).toBe("circleci");
+		expect(manifest.requiredChecks.map((check) => check.displayName)).toEqual([
+			"lint",
+			"typecheck",
+		]);
+		expect(
+			manifest.requiredChecks.every(
+				(check) => check.sourceAppSlug === "circleci",
+			),
+		).toBe(true);
+		expect(
+			manifest.requiredChecks.every(
+				(check) => check.sourceAppId === "circleci",
+			),
+		).toBe(true);
+		expect(
+			manifest.requiredChecks.every(
+				(check) => check.githubCheckName === CIRCLECI_PRIMARY_CHECK,
 			),
 		).toBe(true);
 	});

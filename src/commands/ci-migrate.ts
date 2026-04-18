@@ -15,6 +15,7 @@ import { dirname, resolve, sep } from "node:path";
 import { cwd, env } from "node:process";
 import { fileURLToPath } from "node:url";
 import {
+	CIRCLECI_PRIMARY_CHECK,
 	type CheckEntry,
 	buildBranchProtectSyncPlan,
 	formatBranchProtectSyncWarning,
@@ -7916,7 +7917,8 @@ function buildImportedRequiredChecks(
 		sourceAppSlug: sourceProvider,
 		sourceAppId: sourceProvider,
 		externalIdPattern: `^${escapeRegexLiteral(displayName)}$`,
-		githubCheckName: displayName,
+		githubCheckName:
+			sourceProvider === "circleci" ? CIRCLECI_PRIMARY_CHECK : displayName,
 		requiredOnEvents: ["pull_request", "merge_group"],
 		freshnessWindowDays: 7,
 		class: "required",
