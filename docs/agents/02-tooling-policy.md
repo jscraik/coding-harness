@@ -203,7 +203,7 @@ Before claiming a change is verified, confirm:
 
 Stop and ask before proceeding if:
 
-- You must deviate from `pnpm` due environment constraints.
+- You must deviate from `pnpm` due to environment constraints.
 - A required command is absent.
 - `pnpm` script behavior conflicts with local/global docs.
 
@@ -241,9 +241,9 @@ workflow before install steps.
 
 Start with `harness upgrade --dry-run` for routine upgrades in existing installs.
 If the baseline `.npmrc` is missing and needs to be re-scaffolded, run
-`harness init --update`, then `harness verify-coderabbit --check-npmrc` to confirm
+`harness init --update`, then `harness verify-coderabbit` to confirm
 that the repo keeps scope routing and security defaults without a repo-local
-auth token override. If a scaffolded `scripts/harness-cli.sh` wrapper cannot
+auth token override. Use `harness verify-coderabbit --json` for machine-readable output. If a scaffolded `scripts/harness-cli.sh` wrapper cannot
 resolve the local package, treat that as bootstrap drift in the repo install,
 not as a harness command logic failure.
 

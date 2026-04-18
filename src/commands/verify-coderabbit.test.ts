@@ -286,6 +286,23 @@ describe("runVerifyCodeRabbit - .npmrc checks", () => {
 		expect(npmrcCheck?.message).toContain("user-level ~/.npmrc");
 	});
 
+	it("ignores _authToken mention in comment-only guidance", async () => {
+		repoPath = createRepoFixture({
+			withCodeRabbitYaml: true,
+			withNpmrc: true,
+			npmrcContent:
+				"@brainwav:registry=https://registry.npmjs.org/\nignore-scripts=true\n# Do not add //registry.npmjs.org/:_authToken=${NPM_TOKEN} here.\n",
+		});
+		const result = await runVerifyCodeRabbit({ repoPath });
+
+		const npmrcCheck = result.checks.find(
+			(c) => c.name === ".npmrc configuration",
+		);
+		expect(npmrcCheck?.status).toBe("pass");
+		expect(npmrcCheck?.message).toContain("Valid .npmrc");
+		expect(npmrcCheck?.message).not.toContain("user-level ~/.npmrc");
+	});
+
 	it("passes with scoped registry and ignore-scripts=true, lists features", async () => {
 		repoPath = createRepoFixture({
 			withCodeRabbitYaml: true,

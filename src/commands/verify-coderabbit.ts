@@ -177,9 +177,16 @@ function verifyNpmrc(repoPath: string): CodeRabbitCheck {
 		const content = readFileSync(npmrcPath, "utf-8");
 		const issues: string[] = [];
 		const features: string[] = [];
+		const activeLines = content
+			.split(/\r?\n/)
+			.map((line) => line.trim())
+			.filter(
+				(line) =>
+					line.length > 0 && !line.startsWith("#") && !line.startsWith(";"),
+			);
 
 		const hasScopedRegistry = /@[\w-]+:registry=/m.test(content);
-		const hasAuthToken = /_authToken=/m.test(content);
+		const hasAuthToken = activeLines.some((line) => /_authToken=/.test(line));
 		const hasIgnoreScripts = /ignore-scripts\s*=\s*true/m.test(content);
 
 		if (hasScopedRegistry) features.push("scoped registry");
