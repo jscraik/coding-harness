@@ -303,9 +303,8 @@ ${saveCacheStep}      - run:
           command: ${checkCommand}
       - run:
           name: Dogfood silent-error detection
-          # TODO: Remove \`|| true\` once existing findings are cleaned up (JSC-130)
           command: |
-            npx tsx src/cli.ts silent-error --path src --fail-on=error || true
+            npx tsx src/cli.ts silent-error --path src --fail-on=error
       - store_test_results:
           path: artifacts/test-results
       - store_artifacts:

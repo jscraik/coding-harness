@@ -185,9 +185,15 @@ function verifyNpmrc(repoPath: string): CodeRabbitCheck {
 					line.length > 0 && !line.startsWith("#") && !line.startsWith(";"),
 			);
 
-		const hasScopedRegistry = /@[\w-]+:registry=/m.test(content);
-		const hasAuthToken = activeLines.some((line) => /_authToken=/.test(line));
-		const hasIgnoreScripts = /ignore-scripts\s*=\s*true/m.test(content);
+		const hasScopedRegistry = activeLines.some((line) =>
+			/^@[\w-]+:registry\s*=/.test(line),
+		);
+		const hasAuthToken = activeLines.some((line) =>
+			/_authToken\s*=/.test(line),
+		);
+		const hasIgnoreScripts = activeLines.some((line) =>
+			/^ignore-scripts\s*=\s*true$/i.test(line),
+		);
 
 		if (hasScopedRegistry) features.push("scoped registry");
 		if (hasIgnoreScripts) features.push("ignore-scripts=true (security)");
