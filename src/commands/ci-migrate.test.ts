@@ -4414,7 +4414,7 @@ describe("runCIMigrateCLI", () => {
 			JSON.stringify(
 				{
 					branchProtection: {
-						requiredChecks: ["lint", "typecheck"],
+						requiredChecks: ["lint", "typecheck", "CodeRabbit"],
 					},
 				},
 				null,
@@ -4442,24 +4442,40 @@ describe("runCIMigrateCLI", () => {
 		};
 		expect(manifest.activeProvider).toBe("circleci");
 		expect(manifest.requiredChecks.map((check) => check.displayName)).toEqual([
+			"CodeRabbit",
 			"lint",
 			"typecheck",
 		]);
 		expect(
-			manifest.requiredChecks.every(
-				(check) => check.sourceAppSlug === "circleci",
-			),
+			manifest.requiredChecks.find(
+				(check) => check.displayName === "CodeRabbit",
+			)?.sourceAppSlug,
+		).toBe("coderabbit");
+		expect(
+			manifest.requiredChecks.find(
+				(check) => check.displayName === "CodeRabbit",
+			)?.sourceAppId,
+		).toBe("coderabbit");
+		expect(
+			manifest.requiredChecks
+				.filter((check) => check.displayName !== "CodeRabbit")
+				.every((check) => check.sourceAppSlug === "circleci"),
 		).toBe(true);
 		expect(
-			manifest.requiredChecks.every(
-				(check) => check.sourceAppId === "circleci",
-			),
+			manifest.requiredChecks
+				.filter((check) => check.displayName !== "CodeRabbit")
+				.every((check) => check.sourceAppId === "circleci"),
 		).toBe(true);
 		expect(
-			manifest.requiredChecks.every(
-				(check) => check.githubCheckName === CIRCLECI_PRIMARY_CHECK,
-			),
+			manifest.requiredChecks
+				.filter((check) => check.displayName !== "CodeRabbit")
+				.every((check) => check.githubCheckName === CIRCLECI_PRIMARY_CHECK),
 		).toBe(true);
+		expect(
+			manifest.requiredChecks.find(
+				(check) => check.displayName === "CodeRabbit",
+			)?.githubCheckName,
+		).toBe("CodeRabbit");
 	});
 
 	it("fails closed on apply when the required-check manifest contains malformed entries", () => {

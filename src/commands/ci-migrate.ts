@@ -7911,8 +7911,10 @@ function readRequiredCheckNamesFromSourceProviderConfig(
  * Creates canonical `RequiredCheckIdentity` entries from a list of display names for import.
  *
  * Each entry uses an exact-match `externalIdPattern` for the provided display name, sets
- * GitHub check name to the display name (`githubCheckName`), requires the check on
- * `pull_request` and `merge_group` events, and applies default freshness and class values.
+ * GitHub check name (`githubCheckName`) to `CIRCLECI_PRIMARY_CHECK` when importing
+ * CircleCI workflow checks, otherwise to the display name. CodeRabbit and security-scan
+ * keep canonical external source metadata. Entries require checks on `pull_request`
+ * and `merge_group` events, and apply default freshness and class values.
  *
  * @param displayNames - Array of check display names to import
  * @param sourceProvider - The originating CI provider identifier used for `sourceAppSlug` and `sourceAppId`
@@ -7922,18 +7924,35 @@ function buildImportedRequiredChecks(
 	displayNames: string[],
 	sourceProvider: CIProvider,
 ): RequiredCheckIdentity[] {
-	return displayNames.map((displayName, index) => ({
-		policyId: `imported-required-check-${index + 1}`,
-		displayName,
-		sourceAppSlug: sourceProvider,
-		sourceAppId: sourceProvider,
-		externalIdPattern: `^${escapeRegexLiteral(displayName)}$`,
-		githubCheckName:
-			sourceProvider === "circleci" ? CIRCLECI_PRIMARY_CHECK : displayName,
-		requiredOnEvents: ["pull_request", "merge_group"],
-		freshnessWindowDays: 7,
-		class: "required",
-	}));
+	return displayNames.map((displayName, index) => {
+		const source =
+			displayName === "CodeRabbit"
+				? { sourceAppSlug: "coderabbit", sourceAppId: "coderabbit" }
+				: displayName === "security-scan"
+					? {
+							sourceAppSlug: "github-actions",
+							sourceAppId: "github-actions",
+						}
+					: { sourceAppSlug: sourceProvider, sourceAppId: sourceProvider };
+		const isCanonicalExternalCheck =
+			source.sourceAppSlug !== "circleci" || source.sourceAppId !== "circleci";
+		const githubCheckName =
+			sourceProvider === "circleci" && !isCanonicalExternalCheck
+				? CIRCLECI_PRIMARY_CHECK
+				: displayName;
+
+		return {
+			policyId: `imported-required-check-${index + 1}`,
+			displayName,
+			sourceAppSlug: source.sourceAppSlug,
+			sourceAppId: source.sourceAppId,
+			externalIdPattern: `^${escapeRegexLiteral(displayName)}$`,
+			githubCheckName,
+			requiredOnEvents: ["pull_request", "merge_group"],
+			freshnessWindowDays: 7,
+			class: "required",
+		};
+	});
 }
 
 function writeRequiredChecksManifest(
