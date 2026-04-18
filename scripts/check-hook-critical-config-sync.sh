@@ -11,14 +11,18 @@ critical_files=("biome.json")
 drift_files=()
 
 for config_path in "${critical_files[@]}"; do
-	if [[ ! -f "$config_path" ]]; then
-		continue
-	fi
 	if ! git ls-files --error-unmatch -- "$config_path" >/dev/null 2>&1; then
 		continue
 	fi
 
 	index_blob="$(git rev-parse --verify ":$config_path" 2>/dev/null || true)"
+	if [[ -n "$index_blob" && ! -e "$config_path" ]]; then
+		drift_files+=("$config_path")
+		continue
+	fi
+	if [[ ! -f "$config_path" ]]; then
+		continue
+	fi
 	worktree_blob="$(git hash-object --path="$config_path" "$config_path" 2>/dev/null || true)"
 	if [[ -n "$index_blob" && -n "$worktree_blob" && "$index_blob" != "$worktree_blob" ]]; then
 		drift_files+=("$config_path")
