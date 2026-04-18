@@ -165,6 +165,15 @@ function renderTransitionStatusArtifact(): string {
 	);
 }
 
+/**
+ * Produce the repository-level `.npmrc` contents used by generated projects.
+ *
+ * The returned text contains recommended defaults for registry, lifecycle and peer-install behavior,
+ * a commented note preserving pnpm's isolated linker as the default, and guidance that auth tokens
+ * must be provided via user-level or CI-injected `.npmrc` rather than the repository file.
+ *
+ * @returns The `.npmrc` file contents to write into the scaffolded repository
+ */
 function renderDefaultNpmrc(): string {
 	return `@brainwav:registry=https://registry.npmjs.org/
 ignore-scripts=true
@@ -180,6 +189,12 @@ shamefully-hoist=false
 `;
 }
 
+/**
+ * Generate a CircleCI configuration YAML tailored to the specified package manager.
+ *
+ * @param pm - The package manager identifier used to render install and script commands (e.g., "npm", "pnpm", "yarn").
+ * @returns The CircleCI configuration YAML as a string, defining a `pr-pipeline` job and workflow with Node.js 24, steps to ensure pnpm availability, install dependencies, run lint, typecheck, test, audit, and produce a policy bundle.
+ */
 function renderCircleCIConfig(pm: string): string {
 	const installCommand = renderInstallCommand(pm);
 	const lintCommand = renderScriptCommand(pm, "lint");
@@ -237,6 +252,14 @@ workflows:
 `;
 }
 
+/**
+ * Produces a GitHub Actions workflow step that ensures a specific pnpm version is present in the runner.
+ *
+ * The emitted step checks the installed pnpm version and, if it differs from the pinned version (10.33.0),
+ * installs that pnpm to a user-local npm prefix, adds its bin directory to PATH via GITHUB_PATH, and prints the pnpm version.
+ *
+ * @returns The YAML-formatted GitHub Actions step as a string
+ */
 function renderGitHubActionsPnpmSetupStep(): string {
 	return `      - name: Ensure pnpm available
         run: |
