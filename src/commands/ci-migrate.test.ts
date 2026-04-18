@@ -4385,6 +4385,82 @@ describe("runCIMigrateCLI", () => {
 		).toBe(true);
 	});
 
+	it("maps imported CircleCI checks to workflow githubCheckName", () => {
+		mkdirSync(join(tempDir, ".harness"), { recursive: true });
+		mkdirSync(join(tempDir, ".circleci"), { recursive: true });
+		writeFileSync(
+			join(tempDir, ".harness/restore-manifest.json"),
+			JSON.stringify({
+				harnessVersion: "0.0.0",
+				ciProvider: "circleci",
+				files: [],
+			}),
+		);
+		writeFileSync(
+			join(tempDir, ".circleci/config.yml"),
+			[
+				"version: 2.1",
+				"",
+				"jobs:",
+				"  lint:",
+				"    docker:",
+				"      - image: cimg/node:24.13",
+				"    steps:",
+				"      - run: echo lint",
+				"",
+				"workflows:",
+				"  pr-pipeline:",
+				"    jobs:",
+				"      - lint",
+			].join("\n"),
+		);
+		writeFileSync(
+			join(tempDir, "harness.contract.json"),
+			JSON.stringify(
+				{
+					branchProtection: {
+						requiredChecks: ["lint", "typecheck"],
+					},
+				},
+				null,
+				2,
+			),
+		);
+
+		const exitCode = runCIMigrateCLI(tempDir, {
+			provider: "github-actions",
+			apply: true,
+			snapshot: "apply-import-required-checks-circleci-source",
+		});
+
+		expect(exitCode).toBe(EXIT_CODES.SUCCESS);
+		const manifest = JSON.parse(
+			readFileSync(join(tempDir, ".harness/ci-required-checks.json"), "utf-8"),
+		) as {
+			activeProvider: string;
+			requiredChecks: Array<{
+				displayName: string;
+				sourceAppSlug: string;
+				githubCheckName: string | null;
+			}>;
+		};
+		expect(manifest.activeProvider).toBe("circleci");
+		expect(manifest.requiredChecks.map((check) => check.displayName)).toEqual([
+			"lint",
+			"typecheck",
+		]);
+		expect(
+			manifest.requiredChecks.every(
+				(check) => check.sourceAppSlug === "circleci",
+			),
+		).toBe(true);
+		expect(
+			manifest.requiredChecks.every(
+				(check) => check.githubCheckName === "pr-pipeline",
+			),
+		).toBe(true);
+	});
+
 	it("fails closed on apply when the required-check manifest contains malformed entries", () => {
 		mkdirSync(join(tempDir, ".harness"), { recursive: true });
 		mkdirSync(join(tempDir, ".github", "workflows"), { recursive: true });

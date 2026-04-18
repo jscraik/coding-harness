@@ -182,8 +182,10 @@ function verifyNpmrc(repoPath: string): CodeRabbitCheck {
 					line.length > 0 && !line.startsWith("#") && !line.startsWith(";"),
 			);
 
-		const hasScopedRegistry = activeLines.some((line) =>
-			/^@[\w-]+:registry\s*=/.test(line),
+		const hasBrainwavScopedRegistry = activeLines.some((line) =>
+			/^@brainwav:registry\s*=\s*https:\/\/registry\.npmjs\.org\/?$/i.test(
+				line,
+			),
 		);
 		const hasAuthToken = activeLines.some((line) =>
 			/_authToken\s*=/.test(line),
@@ -192,9 +194,14 @@ function verifyNpmrc(repoPath: string): CodeRabbitCheck {
 			/^ignore-scripts\s*=\s*true$/i.test(line),
 		);
 
-		if (hasScopedRegistry) features.push("scoped registry");
+		if (hasBrainwavScopedRegistry) features.push("@brainwav scoped registry");
 		if (hasIgnoreScripts) features.push("ignore-scripts=true (security)");
 
+		if (!hasBrainwavScopedRegistry) {
+			issues.push(
+				"add @brainwav:registry=https://registry.npmjs.org/ for scope routing",
+			);
+		}
 		if (!hasIgnoreScripts) {
 			issues.push("consider setting ignore-scripts=true for security");
 		}

@@ -356,7 +356,7 @@ ${saveCacheStep}      - run:
       - run:
           name: Dogfood silent-error detection
           command: |
-            npx tsx src/cli.ts silent-error --path src --fail-on=error
+            bash scripts/harness-cli.sh silent-error --path src --fail-on=error
       - store_test_results:
           path: artifacts/test-results
       - store_artifacts:

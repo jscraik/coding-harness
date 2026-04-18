@@ -240,7 +240,7 @@ describe("runVerifyCodeRabbit - .npmrc checks", () => {
 		expect(npmrcCheck?.message).toContain("ignore-scripts=true");
 	});
 
-	it("passes when .npmrc has ignore-scripts=true", async () => {
+	it("warns when .npmrc lacks @brainwav scoped registry", async () => {
 		repoPath = createRepoFixture({
 			withCodeRabbitYaml: true,
 			withNpmrc: true,
@@ -251,8 +251,8 @@ describe("runVerifyCodeRabbit - .npmrc checks", () => {
 		const npmrcCheck = result.checks.find(
 			(c) => c.name === ".npmrc configuration",
 		);
-		expect(npmrcCheck?.status).toBe("pass");
-		expect(npmrcCheck?.message).toContain("Valid .npmrc");
+		expect(npmrcCheck?.status).toBe("warn");
+		expect(npmrcCheck?.message).toContain("@brainwav:registry");
 	});
 
 	it("warns when .npmrc lacks ignore-scripts=true", async () => {
@@ -268,6 +268,7 @@ describe("runVerifyCodeRabbit - .npmrc checks", () => {
 		);
 		expect(npmrcCheck?.status).toBe("warn");
 		expect(npmrcCheck?.message).toContain("ignore-scripts=true");
+		expect(npmrcCheck?.message).toContain("@brainwav:registry");
 	});
 
 	it("warns when ignore-scripts=true exists only in comments", async () => {
@@ -332,7 +333,9 @@ describe("runVerifyCodeRabbit - .npmrc checks", () => {
 			(c) => c.name === ".npmrc configuration",
 		);
 		expect(npmrcCheck?.status).toBe("pass");
-		expect(npmrcCheck?.details?.features).toContain("scoped registry");
+		expect(npmrcCheck?.details?.features).toContain(
+			"@brainwav scoped registry",
+		);
 		expect(npmrcCheck?.details?.features).toContain(
 			"ignore-scripts=true (security)",
 		);
@@ -850,14 +853,14 @@ describe("runVerifyCodeRabbit - summary and ok flag", () => {
 
 	it("summary counts are accurate across pass, fail, and warn", async () => {
 		// .coderabbit.yaml missing → fail
-		// .npmrc present with ignore-scripts → pass
+		// .npmrc present with ignore-scripts but missing @brainwav scoped registry → warn
 		// no owner/repo → warn (remote checks skipped)
 		repoPath = createRepoFixture({ withNpmrc: true });
 		const result = await runVerifyCodeRabbit({ repoPath });
 
 		expect(result.summary.failed).toBe(1);
-		expect(result.summary.passed).toBe(1);
-		expect(result.summary.warnings).toBe(1);
+		expect(result.summary.passed).toBe(0);
+		expect(result.summary.warnings).toBe(2);
 		expect(
 			result.summary.passed + result.summary.failed + result.summary.warnings,
 		).toBe(result.checks.length);
