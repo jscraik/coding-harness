@@ -113,6 +113,12 @@ function escapeRegexLiteral(value: string): string {
 	return value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 }
 
+/**
+ * Return the branch-protection required check identifiers for a given render context.
+ *
+ * @param context - Optional render context subset whose `issueTracker` value controls inclusion of tracker-specific checks
+ * @returns An array of required check names; when `context.issueTracker` is `"github"` or `"none"`, the `linear-gate` entry is omitted
+ */
 function getBranchProtectionRequiredChecks(
 	context?: Pick<TemplateRenderContext, "issueTracker">,
 ): readonly string[] {
@@ -125,6 +131,16 @@ function getBranchProtectionRequiredChecks(
 	return BRANCH_PROTECTION_REQUIRED_CHECKS;
 }
 
+/**
+ * Map a required-check display name and CI provider to canonical source identifiers and the GitHub check name.
+ *
+ * @param ciProvider - The CI provider context used to derive default source identifiers (e.g., `"circleci"` or `"github-actions"`).
+ * @param displayName - The display name of the required check (e.g., `"CodeRabbit"`, `"security-scan"`, or other check names).
+ * @returns An object containing:
+ *  - `sourceAppSlug` — the source application's slug used in manifests,
+ *  - `sourceAppId` — the source application's identifier,
+ *  - `githubCheckName` — the GitHub check name to associate with this required check.
+ */
 function resolveRequiredCheckSource(
 	ciProvider: CIProvider,
 	displayName: string,
@@ -161,6 +177,12 @@ function resolveRequiredCheckSource(
 	};
 }
 
+/**
+ * Ensure the `security-scan` check is present, inserting it immediately before `CodeRabbit` when that check exists.
+ *
+ * @param checks - Ordered list of required-check identifiers
+ * @returns The same list with `security-scan` included; if `CodeRabbit` is present, `security-scan` will appear immediately before it, otherwise it will be appended
+ */
 function insertSecurityScanBeforeCodeRabbit(
 	checks: readonly string[],
 ): readonly string[] {
@@ -178,6 +200,20 @@ function insertSecurityScanBeforeCodeRabbit(
 	];
 }
 
+/**
+ * Builds the JSON manifest describing required CI checks used for branch protection.
+ *
+ * The manifest contains a `version`, `activeProvider`, and a `requiredChecks` array where
+ * each entry includes policy id, display name, source app identifiers, an exact-match
+ * external ID pattern, required events, a 7-day freshness window, a `class`, and a
+ * `githubCheckName`. When `ciProvider` is `"circleci"`, `security-scan` is injected into
+ * the checks sequence (placed before `CodeRabbit` when present) and is marked as
+ * `class: "informational"` and `enabled: false`.
+ *
+ * @param ciProvider - The CI provider to target (e.g., `"github-actions"` or `"circleci"`).
+ * @param context - Optional render context affecting check selection (only `issueTracker` is used).
+ * @returns The manifest serialized as a pretty-printed JSON string.
+ */
 function renderRequiredChecksManifest(
 	ciProvider: CIProvider,
 	context?: Pick<TemplateRenderContext, "issueTracker">,
@@ -230,6 +266,11 @@ function renderTransitionStatusArtifact(): string {
 	);
 }
 
+/**
+ * Generate the default .npmrc file content used when scaffolding a repository.
+ *
+ * @returns The text contents of a default `.npmrc` configured with registry, install/peer dependency and node linker settings, and comments instructing that authentication should be provided via user-level or CI-injected `~/.npmrc`.
+ */
 function renderDefaultNpmrc(): string {
 	return `@brainwav:registry=https://registry.npmjs.org/
 ignore-scripts=true
@@ -244,6 +285,17 @@ node-linker=hoisted
 `;
 }
 
+/**
+ * Produce a CircleCI configuration YAML tailored for a Node.js project.
+ *
+ * The `pm` parameter controls package-manager-specific adjustments: when `pm` is
+ * `"pnpm"`, the generated config uses a frozen-lockfile install command and
+ * includes steps to configure and cache the pnpm store; for other package
+ * managers it emits a generic install step.
+ *
+ * @param pm - Package manager identifier (e.g., `"pnpm"`, `"yarn"`, `"npm"`)
+ * @returns The complete CircleCI config YAML as a string
+ */
 function renderCircleCIConfig(pm: string): string {
 	const installCommand =
 		pm === "pnpm" ? "pnpm install --frozen-lockfile" : renderInstallCommand(pm);
