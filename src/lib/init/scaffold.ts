@@ -125,22 +125,80 @@ function getBranchProtectionRequiredChecks(
 	return BRANCH_PROTECTION_REQUIRED_CHECKS;
 }
 
+function resolveRequiredCheckSource(
+	ciProvider: CIProvider,
+	displayName: string,
+): {
+	sourceAppSlug: string;
+	sourceAppId: string;
+	githubCheckName: string;
+} {
+	if (displayName === "CodeRabbit") {
+		return {
+			sourceAppSlug: "coderabbit",
+			sourceAppId: "coderabbit",
+			githubCheckName: "CodeRabbit",
+		};
+	}
+	if (displayName === "security-scan") {
+		return {
+			sourceAppSlug: "github-actions",
+			sourceAppId: "github-actions",
+			githubCheckName: "security-scan",
+		};
+	}
+	if (ciProvider === "circleci") {
+		return {
+			sourceAppSlug: "circleci",
+			sourceAppId: "circleci",
+			githubCheckName: "pr-pipeline",
+		};
+	}
+	return {
+		sourceAppSlug: ciProvider,
+		sourceAppId: ciProvider,
+		githubCheckName: displayName,
+	};
+}
+
 function renderRequiredChecksManifest(
 	ciProvider: CIProvider,
 	context?: Pick<TemplateRenderContext, "issueTracker">,
 ): string {
-	const requiredChecks = getBranchProtectionRequiredChecks(context).map(
-		(displayName, index) => ({
+	const baseChecks = getBranchProtectionRequiredChecks(context);
+	const checksWithSecurityScan =
+		ciProvider === "circleci" && !baseChecks.includes("security-scan")
+			? (() => {
+					const codeRabbitIndex = baseChecks.indexOf("CodeRabbit");
+					if (codeRabbitIndex === -1) {
+						return [...baseChecks, "security-scan"];
+					}
+					return [
+						...baseChecks.slice(0, codeRabbitIndex),
+						"security-scan",
+						...baseChecks.slice(codeRabbitIndex),
+					];
+				})()
+			: baseChecks;
+
+	const requiredChecks = checksWithSecurityScan.map((displayName, index) => {
+		const mapping = resolveRequiredCheckSource(ciProvider, displayName);
+		return {
 			policyId: `required-check-${index + 1}`,
 			displayName,
-			sourceAppSlug: ciProvider,
-			sourceAppId: ciProvider,
+			sourceAppSlug: mapping.sourceAppSlug,
+			sourceAppId: mapping.sourceAppId,
 			externalIdPattern: `^${escapeRegexLiteral(displayName)}$`,
 			requiredOnEvents: ["pull_request", "merge_group"] as const,
 			freshnessWindowDays: 7,
-			class: "required" as const,
-		}),
-	);
+			class:
+				displayName === "security-scan"
+					? ("informational" as const)
+					: ("required" as const),
+			enabled: displayName === "security-scan" ? false : undefined,
+			githubCheckName: mapping.githubCheckName,
+		};
+	});
 
 	return JSON.stringify(
 		{
@@ -180,18 +238,38 @@ node-linker=hoisted
 }
 
 function renderCircleCIConfig(pm: string): string {
-	const installCommand = renderInstallCommand(pm);
-	const lintCommand = renderScriptCommand(pm, "lint");
-	const typecheckCommand = renderScriptCommand(pm, "typecheck");
-	const testCommand = renderScriptCommand(pm, "test");
-	const auditCommand = renderScriptCommand(pm, "audit");
+	const installCommand =
+		pm === "pnpm" ? "pnpm install --frozen-lockfile" : renderInstallCommand(pm);
 	const checkCommand = renderScriptCommand(pm, "check");
+	const configureCacheStep =
+		pm === "pnpm"
+			? `      - run:
+          name: Configure pnpm store
+          command: |
+            mkdir -p "$HOME/.pnpm-store"
+            pnpm config set store-dir "$HOME/.pnpm-store"
+            pnpm store path
+      - restore_cache:
+          keys:
+            - v1-pnpm-store-{{ arch }}-{{ checksum "pnpm-lock.yaml" }}
+`
+			: "";
+	const saveCacheStep =
+		pm === "pnpm"
+			? `      - save_cache:
+          key: v1-pnpm-store-{{ arch }}-{{ checksum "pnpm-lock.yaml" }}
+          paths:
+            - ~/.pnpm-store
+`
+			: "";
 	return `version: 2.1
 
 jobs:
   pr-pipeline:
     docker:
+      # Pinned to specific minor for reproducibility (JSC-115)
       - image: cimg/node:24.13
+    resource_class: small
     steps:
       - checkout
       - run:
@@ -210,24 +288,21 @@ jobs:
               npm install --global --prefix "$NPM_CONFIG_PREFIX" "pnpm@${"${required_pnpm_version}"}"
             fi
             pnpm --version
-      - run:
+${configureCacheStep}      - run:
           name: Install dependencies
           command: ${installCommand}
-      - run:
-          name: Lint
-          command: ${lintCommand}
-      - run:
-          name: Typecheck
-          command: ${typecheckCommand}
-      - run:
-          name: Test
-          command: ${testCommand}
-      - run:
-          name: Audit
-          command: ${auditCommand}
-      - run:
+${saveCacheStep}      - run:
           name: Policy Bundle
           command: ${checkCommand}
+      - run:
+          name: Dogfood silent-error detection
+          # TODO: Remove \`|| true\` once existing findings are cleaned up (JSC-130)
+          command: |
+            npx tsx src/cli.ts silent-error --path src --fail-on=error || true
+      - store_test_results:
+          path: artifacts/test-results
+      - store_artifacts:
+          path: artifacts/test-results
 
 workflows:
   pr-pipeline:

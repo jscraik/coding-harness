@@ -2,8 +2,10 @@
 set -euo pipefail
 
 echo "[test-ci] Running standard Vitest suites"
+TEST_RESULTS_DIR="${TEST_RESULTS_DIR:-artifacts/test-results}"
+mkdir -p "$TEST_RESULTS_DIR"
 # Vitest can intermittently report worker RPC timeout false positives on long suites.
-pnpm vitest run --maxWorkers=1 --dangerouslyIgnoreUnhandledErrors --exclude src/commands/ci-migrate.test.ts
+pnpm vitest run --maxWorkers=1 --dangerouslyIgnoreUnhandledErrors --exclude src/commands/ci-migrate.test.ts --reporter=default --reporter=junit --outputFile.junit="$TEST_RESULTS_DIR/junit-standard.xml"
 
 echo "[test-ci] Running ci-migrate suite with known Vitest worker-timeout mitigation"
-pnpm vitest run --maxWorkers=1 --dangerouslyIgnoreUnhandledErrors src/commands/ci-migrate.test.ts
+pnpm vitest run --maxWorkers=1 --dangerouslyIgnoreUnhandledErrors src/commands/ci-migrate.test.ts --reporter=default --reporter=junit --outputFile.junit="$TEST_RESULTS_DIR/junit-ci-migrate.xml"

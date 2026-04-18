@@ -224,6 +224,10 @@ describe("runInit", () => {
 		});
 
 		it("creates CircleCI templates when ciProvider is circleci", () => {
+			writeFileSync(
+				join(tempDir, "pnpm-lock.yaml"),
+				"lockfileVersion: '9.0'\n",
+			);
 			const result = runInit(tempDir, {
 				dryRun: false,
 				force: false,
@@ -251,17 +255,68 @@ describe("runInit", () => {
 			);
 			expect(requiredChecks.activeProvider).toBe("circleci");
 			expect(requiredChecks.requiredChecks[0]?.sourceAppSlug).toBe("circleci");
+			expect(requiredChecks.requiredChecks[0]?.githubCheckName).toBe(
+				"pr-pipeline",
+			);
+			type RequiredCheckEntry = {
+				displayName: string;
+				sourceAppSlug: string;
+				githubCheckName: string;
+				class: string;
+				enabled?: boolean;
+			};
+			const generatedChecks =
+				requiredChecks.requiredChecks as RequiredCheckEntry[];
+			expect(
+				generatedChecks.every(
+					(entry) => typeof entry.githubCheckName === "string",
+				),
+			).toBe(true);
+			expect(
+				generatedChecks
+					.filter(
+						(entry) =>
+							entry.displayName !== "CodeRabbit" &&
+							entry.displayName !== "security-scan",
+					)
+					.every((entry) => entry.githubCheckName === "pr-pipeline"),
+			).toBe(true);
+			const securityScanCheck = generatedChecks.find(
+				(entry: RequiredCheckEntry) => entry.displayName === "security-scan",
+			);
+			expect(securityScanCheck?.sourceAppSlug).toBe("github-actions");
+			expect(securityScanCheck?.githubCheckName).toBe("security-scan");
+			expect(securityScanCheck?.class).toBe("informational");
+			expect(securityScanCheck?.enabled).toBe(false);
+			const codeRabbitCheck = generatedChecks.find(
+				(entry: RequiredCheckEntry) => entry.displayName === "CodeRabbit",
+			);
+			expect(codeRabbitCheck?.sourceAppSlug).toBe("coderabbit");
+			expect(codeRabbitCheck?.githubCheckName).toBe("CodeRabbit");
 
 			const circleConfig = require("node:fs").readFileSync(
 				join(tempDir, ".circleci/config.yml"),
 				"utf-8",
 			);
 			expect(circleConfig).toContain("name: Ensure pnpm available");
+			expect(circleConfig).toContain("resource_class: small");
+			expect(circleConfig).toContain("name: Configure pnpm store");
+			expect(circleConfig).toContain("restore_cache:");
+			expect(circleConfig).toContain("save_cache:");
 			expect(circleConfig).toContain('export NPM_CONFIG_PREFIX="$HOME/.local"');
 			expect(circleConfig).toContain(
 				'npm install --global --prefix "$NPM_CONFIG_PREFIX" "pnpm@${required_pnpm_version}"',
 			);
+			expect(circleConfig).toContain("pnpm install --frozen-lockfile");
+			expect(circleConfig).toContain("name: Policy Bundle");
+			expect(circleConfig).toContain("name: Dogfood silent-error detection");
+			expect(circleConfig).toContain("store_test_results:");
+			expect(circleConfig).not.toContain("name: Enforce Policy Bundle Outcome");
 			expect(circleConfig).not.toContain("name: Enable corepack");
+			expect(circleConfig).not.toContain("name: Lint");
+			expect(circleConfig).not.toContain("name: Typecheck");
+			expect(circleConfig).not.toContain("name: Test");
+			expect(circleConfig).not.toContain("name: Audit");
 
 			const transitionStatus = JSON.parse(
 				readFileSync(
