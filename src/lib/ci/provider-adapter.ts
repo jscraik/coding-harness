@@ -151,7 +151,9 @@ function readRequiredChecksManifest(
 		}
 		return {
 			ok: true,
-			value: checks.filter((check) => check.class === "required"),
+			value: checks.filter(
+				(check) => check.class === "required" && check.enabled !== false,
+			),
 		};
 	} catch (error) {
 		const message = error instanceof Error ? error.message : String(error);

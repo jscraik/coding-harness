@@ -161,24 +161,31 @@ function resolveRequiredCheckSource(
 	};
 }
 
+function insertSecurityScanBeforeCodeRabbit(
+	checks: readonly string[],
+): readonly string[] {
+	if (checks.includes("security-scan")) {
+		return checks;
+	}
+	const codeRabbitIndex = checks.indexOf("CodeRabbit");
+	if (codeRabbitIndex === -1) {
+		return [...checks, "security-scan"];
+	}
+	return [
+		...checks.slice(0, codeRabbitIndex),
+		"security-scan",
+		...checks.slice(codeRabbitIndex),
+	];
+}
+
 function renderRequiredChecksManifest(
 	ciProvider: CIProvider,
 	context?: Pick<TemplateRenderContext, "issueTracker">,
 ): string {
 	const baseChecks = getBranchProtectionRequiredChecks(context);
 	const checksWithSecurityScan =
-		ciProvider === "circleci" && !baseChecks.includes("security-scan")
-			? (() => {
-					const codeRabbitIndex = baseChecks.indexOf("CodeRabbit");
-					if (codeRabbitIndex === -1) {
-						return [...baseChecks, "security-scan"];
-					}
-					return [
-						...baseChecks.slice(0, codeRabbitIndex),
-						"security-scan",
-						...baseChecks.slice(codeRabbitIndex),
-					];
-				})()
+		ciProvider === "circleci"
+			? insertSecurityScanBeforeCodeRabbit(baseChecks)
 			: baseChecks;
 
 	const requiredChecks = checksWithSecurityScan.map((displayName, index) => {
