@@ -212,10 +212,12 @@ function verifyNpmrc(repoPath: string): CodeRabbitCheck {
 		}
 
 		if (issues.length > 0) {
+			// Fail if scoped registry is missing or auth token is present
+			const hasCriticalIssue = !hasBrainwavScopedRegistry || hasAuthToken;
 			return {
 				name: ".npmrc configuration",
-				status: "warn",
-				message: `.npmrc exists but has recommendations: ${issues.join(", ")}`,
+				status: hasCriticalIssue ? "fail" : "warn",
+				message: `.npmrc exists but has ${hasCriticalIssue ? "critical issues" : "recommendations"}: ${issues.join(", ")}`,
 				details: { path: npmrcPath, features, issues },
 			};
 		}
