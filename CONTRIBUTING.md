@@ -187,6 +187,7 @@ Configure GitHub branch protection (or rulesets) on `main`:
 - Block force pushes.
 - Require linear history.
 - Require status checks:
+  - `pr-pipeline`
   - `pr-template`
   - `linear-gate`
   - `risk-policy-gate`
