@@ -36,4 +36,4 @@
 
 ## Enforcement
 - Security findings at CRITICAL severity are merge blockers.
-- Exceptions require waiver metadata with reason, tracking issue, and expiry or ADR.
+- Exceptions require waiver metadata with rule ID, reason, tracking issue, and expiry or ADR.
