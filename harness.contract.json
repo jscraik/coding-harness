@@ -21,7 +21,7 @@
 	"reviewPolicy": {
 		"timeoutSeconds": 600,
 		"timeoutAction": "fail",
-		"requiredChecks": ["security-scan", "dependency-review", "actions-pinning"],
+		"requiredChecks": ["security-scan", "dependency-scan", "orb-pinning"],
 		"enforceReviewerIndependence": true
 	},
 	"evidencePolicy": {

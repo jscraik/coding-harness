@@ -44,6 +44,7 @@ The shortest honest description of the project today is:
 - [Local Development](#local-development)
 - [Packaged Codex Skill](#packaged-codex-skill)
 - [Issue Reporting](#issue-reporting)
+- [Trust Artifacts](#trust-artifacts)
 
 ## Start Here
 
@@ -551,6 +552,6 @@ This repository uses **Linear-first** intake. Create or update work in the
 
 ## Trust Artifacts
 
-Inspectable reference outputs for the main trust surfaces are in
+Reference outputs for the main trust surfaces are in
 [docs/examples/trust-artifacts/](./docs/examples/trust-artifacts/). These
 examples let you verify what the harness produces without running the full system.

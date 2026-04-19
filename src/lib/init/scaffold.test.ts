@@ -1,9 +1,16 @@
-import { existsSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
+import {
+	existsSync,
+	mkdtempSync,
+	readFileSync,
+	rmSync,
+	writeFileSync,
+} from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { afterEach, describe, expect, it } from "vitest";
 import {
+	CODESTYLE_PACK_TEMPLATE_FILES,
 	TEMPLATES,
 	createTemplateRenderContext,
 	getTemplatesForProvider,
@@ -27,13 +34,56 @@ describe("scaffold templates resolution", () => {
 
 	it("includes codestyle contract templates by default", () => {
 		const templates = getTemplatesForProvider("circleci");
+		const codestyleTemplatePaths = templates
+			.filter((template) => template.path.startsWith("codestyle/"))
+			.map((template) => template.path)
+			.sort();
+		const checksumTemplatePath = fileURLToPath(
+			new URL("../../templates/codestyle/CHECKSUMS.sha256", import.meta.url),
+		);
+		const checksumManifest = readFileSync(checksumTemplatePath, "utf-8");
+		const checksumPathSet = new Set(
+			checksumManifest
+				.split(/\r?\n/)
+				.map((line) => line.trim())
+				.filter((line) => line.length > 0 && !line.startsWith("#"))
+				.map((line) => line.match(/^[a-f0-9]{64}\s+(.+)$/))
+				.filter((match): match is RegExpMatchArray => match !== null)
+				.map((match) => match[1])
+				.filter((path) => path !== "codestyle/CHECKSUMS.sha256"),
+		);
+		const expectedChecksumPathSet = new Set([
+			"CODESTYLE.md",
+			...CODESTYLE_PACK_TEMPLATE_FILES.filter(
+				(path) => path !== "codestyle/CHECKSUMS.sha256",
+			),
+		]);
 
 		expect(templates.some((template) => template.path === "CODESTYLE.md")).toBe(
 			true,
 		);
+		expect(codestyleTemplatePaths).toEqual(
+			[...CODESTYLE_PACK_TEMPLATE_FILES].sort(),
+		);
+
+		// Assert that every entry in CODESTYLE_PACK_TEMPLATE_FILES exists in the template list
+		for (const expectedFile of CODESTYLE_PACK_TEMPLATE_FILES) {
+			expect(templates.some((template) => template.path === expectedFile)).toBe(
+				true,
+			);
+		}
+		expect([...checksumPathSet].sort()).toEqual(
+			[...expectedChecksumPathSet].sort(),
+		);
+
 		expect(
 			templates.some(
 				(template) => template.path === "scripts/validate-codestyle.sh",
+			),
+		).toBe(true);
+		expect(
+			templates.some(
+				(template) => template.path === "scripts/check-codestyle-parity.sh",
 			),
 		).toBe(true);
 	});

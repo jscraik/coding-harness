@@ -1,5 +1,5 @@
 ---
-last_validated: 2026-04-18
+last_validated: 2026-04-19
 ---
 
 # Tooling policy
@@ -9,6 +9,7 @@ last_validated: 2026-04-18
 - [Required tooling baseline](#required-tooling-baseline)
 - [Codex environment actions](#codex-environment-actions)
 - [Repository command contract](#repository-command-contract)
+- [Code-style parity gate](#code-style-parity-gate)
 - [Execution rule for tooling](#execution-rule-for-tooling)
 - [Recommended command order](#recommended-command-order)
 - [Tooling verification checklist](#tooling-verification-checklist)
@@ -68,6 +69,7 @@ Harness-managed repositories should treat this CLI surface as required:
 Repo-managed pins should live in `.mise.toml` where the tool can be managed there. Externally managed CLIs must still be present on `PATH`, and missing commands should block environment readiness rather than degrade silently.
 The root `Makefile` is also part of the enforced baseline and must retain the harness contract targets required by `scripts/check-environment.sh`.
 `CODESTYLE.md` and `scripts/validate-codestyle.sh` are part of the same baseline. A harness-managed repo should fail readiness if either file is missing or if the validator no longer maps cleanly to repo-defined scripts.
+`scripts/check-codestyle-parity.sh` is part of the same governed surface and must fail closed when `codestyle/` or `codestyle/CHECKSUMS.sha256` drift.
 For this repository only, the repo-root `CODESTYLE.md` path may be a symlink to `/Users/jamiecraik/.codex/instructions/CODESTYLE.md` so the authoring source stays global while repo-local enforcement still targets the root path.
 For this repository only, `biome check` should ignore the repo-root `CODESTYLE.md` path so CI linting stays deterministic even when that developer-home symlink target is absent on hosted runners.
 For this repository only, `scripts/codex-preflight.sh` should honor that documented `CODESTYLE.md` symlink exception via `.codex/preflight-allowed-external-paths.txt` or `CODEX_PREFLIGHT_ALLOWED_EXTERNAL_PATHS` instead of failing the repo-root path check.
@@ -122,6 +124,18 @@ Port-free wrapping is expected only for app run actions backed by `dev`/`start` 
 | Tests (CircleCI hardened lane) | `pnpm test:ci` | Runs standard suites plus isolated `ci-migrate` run with targeted Vitest worker-timeout mitigation |
 | Audit | `pnpm audit` | dependency risk check |
 | Build | `pnpm build` | compile TypeScript and generate `dist/cli.js` |
+
+## Code-style parity gate
+
+`bash scripts/check-codestyle-parity.sh` is a required bootstrap verification surface under the same gate family as `bash scripts/codex-preflight.sh --stack auto --mode required` and `bash scripts/verify-work.sh`.
+
+It verifies:
+
+- repo-root `CODESTYLE.md`
+- `codestyle/**`
+- `codestyle/CHECKSUMS.sha256`
+
+Expected failure behavior is fail-closed: if any required code-style file is missing, if a checksum entry drifts, or if a manifest path resolves outside repo root, the command exits non-zero and readiness claims are blocked until parity is restored.
 
 ## Execution rule for tooling
 

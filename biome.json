@@ -8,7 +8,14 @@
 	},
 	"files": {
 		"ignoreUnknown": true,
-		"ignore": ["node_modules", "dist", "coverage", "artifacts"]
+		"ignore": [
+			"node_modules",
+			"dist",
+			"coverage",
+			"artifacts",
+			"CODESTYLE.md",
+			".tmp-diagram-refresh-*"
+		]
 	},
 	"overrides": [
 		{

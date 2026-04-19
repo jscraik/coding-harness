@@ -1,9 +1,11 @@
 # Harness Development Makefile
 # Run `make help` to see available commands
 
-.PHONY: help install setup preflight worktree-ready verify-work codestyle hooks hooks-pre-commit hooks-pre-push hooks-commit-msg secrets-staged docs-style-changed related-tests semgrep-changed diagrams-check dev build lint docs-lint fmt typecheck test check audit secrets security clean reset ci diagrams env-check
+.PHONY: all help install setup preflight worktree-ready verify-work codestyle-parity codestyle hooks hooks-pre-commit hooks-pre-push hooks-commit-msg secrets-staged docs-style-changed related-tests semgrep-changed diagrams-check dev build lint docs-lint fmt typecheck test check audit secrets security clean reset ci diagrams env-check
 
 # Default target
+all: help ## Default aggregate target
+
 help: ## Show this help message
 	@echo 'Usage: make [target]'
 	@echo ''
@@ -26,6 +28,9 @@ worktree-ready: ## Bootstrap a fresh git worktree before first push
 verify-work: ## Run canonical repo-local verification wrapper
 	@bash ./scripts/verify-work.sh
 
+codestyle-parity: ## Verify CODESTYLE pack parity checksums
+	@bash ./scripts/check-codestyle-parity.sh
+
 codestyle: ## Run fail-closed codestyle validation
 	@bash ./scripts/validate-codestyle.sh
 
@@ -34,6 +39,7 @@ hooks: ## Setup git hooks
 
 hooks-pre-commit: ## Run local pre-commit gates before creating a commit
 	@bash ./scripts/check-hook-critical-config-sync.sh
+	$(MAKE) codestyle-parity
 	pnpm lint
 	pnpm docs:lint
 	pnpm typecheck

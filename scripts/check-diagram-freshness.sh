@@ -73,10 +73,67 @@ normalized_checksum() {
 
 	case "$rel_path" in
 		*/diagram-context.md)
-			sed '/^Generated: /d' "$file" | shasum -a 256 | awk '{print $1}'
+			# Normalize volatile Mermaid node identifiers and line order while
+			# preserving edge/label text so unquoted edge changes are still detected.
+			node - "$file" <<'NODE' | shasum -a 256 | awk '{print $1}'
+const fs = require("node:fs");
+
+const filePath = process.argv[2];
+const lines = fs.readFileSync(filePath, "utf8").split(/\r?\n/);
+const normalized = [];
+let inMermaid = false;
+let mermaidLines = [];
+
+const normalizeMermaidLine = (line) => {
+	let value = line.trim();
+	if (!value) return "";
+
+	value = value.replace(/^([A-Za-z0-9_:-]+)\s*(\[[^\]]+\]|\([^)]*\)|\{[^}]*\})/, "NODE$2");
+	value = value.replace(/\b(style|class|click)\s+[A-Za-z0-9_:-]+\b/g, "$1 NODE");
+	value = value.replace(/^([A-Za-z0-9_:-]+)(\s*[-.=]+.*)$/, "NODE$2");
+	value = value.replace(/([-.=]+>|<[-.=]+)\s*([A-Za-z0-9_:-]+)/g, "$1 NODE");
+	return value.replace(/\s+/g, " ").trim();
+};
+
+const flushMermaid = () => {
+	const normalizedBlock = mermaidLines
+		.map(normalizeMermaidLine)
+		.filter(Boolean)
+		.sort();
+	normalized.push("```mermaid");
+	normalized.push(...normalizedBlock);
+	normalized.push("```");
+	mermaidLines = [];
+};
+
+for (const line of lines) {
+	if (/^Generated: /.test(line)) continue;
+	if (line.trim() === "```mermaid") {
+		inMermaid = true;
+		mermaidLines = [];
+		continue;
+	}
+	if (inMermaid && line.trim() === "```") {
+		flushMermaid();
+		inMermaid = false;
+		continue;
+	}
+	if (inMermaid) {
+		mermaidLines.push(line);
+		continue;
+	}
+	normalized.push(line.trimEnd());
+}
+
+if (inMermaid) {
+	flushMermaid();
+}
+
+process.stdout.write(`${normalized.join("\n")}\n`);
+NODE
 			;;
 		*/diagram-context.meta.json)
-			jq -c 'del(.generated_at, .last_generated_epoch, .changed, .context_sha256)' "$file" | shasum -a 256 | awk '{print $1}'
+			jq -c 'del(.generated_at, .last_generated_epoch, .changed, .context_sha256, .git_head)' "$file" | shasum -a 256 | awk '{print $1}'
 			;;
 		*/manifest.json)
 			jq -c 'del(.generatedAt)' "$file" | shasum -a 256 | awk '{print $1}'
@@ -136,6 +193,16 @@ if [[ "$should_refresh" -ne 1 ]]; then
 	exit 0
 fi
 
+mapfile -t tracked_files < <(tracked_artifact_files)
+preexisting_artifact_edits=()
+if (( ${#tracked_files[@]} > 0 )); then
+	for tracked_file in "${tracked_files[@]}"; do
+		if ! git -C "$REPO_ROOT" diff --quiet -- "$tracked_file" || ! git -C "$REPO_ROOT" diff --cached --quiet -- "$tracked_file"; then
+			preexisting_artifact_edits+=("$tracked_file")
+		fi
+	done
+fi
+
 echo "Refreshing architecture diagrams for changed sensitive paths..."
 before_snapshot="$(snapshot_artifacts)"
 bash "$REPO_ROOT/scripts/refresh-diagram-context.sh" --force --quiet
@@ -147,6 +214,31 @@ if [[ "$before_snapshot" != "$after_snapshot" ]]; then
 	git -C "$REPO_ROOT" diff --name-only -- "${TRACKED_ARTIFACT_PATHS[@]}"
 	echo "Fix: run 'bash scripts/refresh-diagram-context.sh --force' and commit the updated artifacts."
 	exit 1
+fi
+
+# Refresh can rewrite tracked artifacts even when semantic checksums are equivalent.
+# Restore only files that were clean before refresh so local edits are preserved.
+files_to_restore=()
+if (( ${#tracked_files[@]} > 0 )); then
+	for tracked_file in "${tracked_files[@]}"; do
+		was_preexisting_edit=0
+		for preexisting_file in "${preexisting_artifact_edits[@]}"; do
+			if [[ "$preexisting_file" == "$tracked_file" ]]; then
+				was_preexisting_edit=1
+				break
+			fi
+		done
+		if (( was_preexisting_edit == 1 )); then
+			continue
+		fi
+		if ! git -C "$REPO_ROOT" diff --quiet -- "$tracked_file"; then
+			files_to_restore+=("$tracked_file")
+		fi
+	done
+fi
+
+if (( ${#files_to_restore[@]} > 0 )); then
+	git -C "$REPO_ROOT" restore --worktree -- "${files_to_restore[@]}" >/dev/null 2>&1 || true
 fi
 
 echo "Diagram freshness check passed."

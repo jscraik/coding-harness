@@ -84,11 +84,27 @@ fi
 branch_name="${branch_prefix}/${slug}"
 resolved_base_ref="$base_ref"
 remote_base_branch=""
+remote_name="origin"
+explicit_remote_ref=0
 
-if [[ "$base_ref" == origin/* ]]; then
-	remote_base_branch="${base_ref#origin/}"
+if [[ "$base_ref" == refs/remotes/*/* ]]; then
+	explicit_remote_ref=1
+	remote_name="${base_ref#refs/remotes/}"
+	remote_name="${remote_name%%/*}"
+elif [[ "$base_ref" == */* ]]; then
+	candidate_remote="${base_ref%%/*}"
+	candidate_branch="${base_ref#*/}"
+	if git -C "$REPO_ROOT" remote get-url "$candidate_remote" >/dev/null 2>&1; then
+		explicit_remote_ref=1
+		remote_name="$candidate_remote"
+		remote_base_branch="$candidate_branch"
+	fi
 elif [[ "$base_ref" != *"/"* ]]; then
-	remote_base_branch="$base_ref"
+	if git -C "$REPO_ROOT" show-ref --verify --quiet "refs/heads/$base_ref"; then
+		remote_base_branch="$base_ref"
+	elif ! git -C "$REPO_ROOT" rev-parse --verify --quiet "${base_ref}^{commit}" >/dev/null; then
+		remote_base_branch="$base_ref"
+	fi
 fi
 
 if [[ -z "$worktree_path" ]]; then
@@ -110,10 +126,23 @@ if [[ -e "$worktree_path" ]]; then
 fi
 
 if [[ -n "$remote_base_branch" ]]; then
-	echo "[new-task] fetching latest origin/$remote_base_branch"
-	git fetch --prune origin "$remote_base_branch"
-	if git show-ref --verify --quiet "refs/remotes/origin/$remote_base_branch"; then
-		resolved_base_ref="refs/remotes/origin/$remote_base_branch"
+	if git remote get-url "$remote_name" >/dev/null 2>&1; then
+		echo "[new-task] fetching latest $remote_name/$remote_base_branch"
+		if ! git fetch --prune "$remote_name" "$remote_base_branch"; then
+			if [[ "$explicit_remote_ref" -eq 1 ]]; then
+				echo "[new-task] failed to fetch explicit remote base: $base_ref" >&2
+				exit 2
+			fi
+			echo "[new-task] warning: could not fetch $remote_name/$remote_base_branch; continuing with local refs" >&2
+		elif git show-ref --verify --quiet "refs/remotes/$remote_name/$remote_base_branch"; then
+			resolved_base_ref="refs/remotes/$remote_name/$remote_base_branch"
+		elif [[ "$explicit_remote_ref" -eq 1 ]]; then
+			echo "[new-task] explicit remote base not found on $remote_name: $base_ref" >&2
+			exit 2
+		fi
+	elif [[ "$explicit_remote_ref" -eq 1 ]]; then
+		echo "[new-task] remote '$remote_name' is required for explicit remote base: $base_ref" >&2
+		exit 2
 	fi
 fi
 

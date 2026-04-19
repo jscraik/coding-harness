@@ -1,10 +1,11 @@
 ---
-last_validated: 2026-04-18
+last_validated: 2026-04-19
 ---
 
 # Security and governance
 
 - [Security posture](#security-posture)
+- [Code-style parity verification surface](#code-style-parity-verification-surface)
 - [Secret handling](#secret-handling)
 - [Code and data governance](#code-and-data-governance)
 - [Risk controls](#risk-controls)
@@ -27,6 +28,7 @@ This repository follows conservative defaults:
 - Preserve existing dependency and execution boundaries (`pnpm` + lockfile-driven installs).
 - Codex environment setup should use non-destructive tool resolution (`pnpm` direct, Homebrew path fallback, then `corepack`) and fail closed on missing baseline tools instead of mutating global installs implicitly.
 - Treat the repo-root `CODESTYLE.md` path plus `scripts/validate-codestyle.sh` as governed contract surfaces: if either drifts, readiness and closeout claims must fail closed.
+- Treat `scripts/check-codestyle-parity.sh` as the required code-style integrity gate for `codestyle/` and `codestyle/CHECKSUMS.sha256`; parity drift must block readiness.
 - Repo-specific exception: this repository may satisfy that `CODESTYLE.md` path with a symlink to `/Users/jamiecraik/.codex/instructions/CODESTYLE.md`, but downstream harness-managed repos should keep a real repo-local `CODESTYLE.md` copy.
 - Repo-specific linting invariant: Biome must ignore the repo-root `CODESTYLE.md` path so hosted CI does not fail on a broken developer-home symlink while local readiness still validates the path via preflight.
 - Repo-specific preflight rule: `scripts/codex-preflight.sh` may allow that one documented `CODESTYLE.md` symlink when it matches the repo-local allow-list in `.codex/preflight-allowed-external-paths.txt` (or `CODEX_PREFLIGHT_ALLOWED_EXTERNAL_PATHS`), even though it resolves outside repo root; other out-of-repo paths must still fail closed.
@@ -39,6 +41,14 @@ This repository follows conservative defaults:
 - OpenSSF baseline tracking for this repository is grounded by `docs/security/2026-04-09-openssf-osps-baseline-status.md`; keep its control matrix synchronized with `.github/workflows/openssf-scorecard.yml`, `security/openssf-scorecard-policy.json`, and `scripts/check-scorecard-regressions.mjs`.
 - Greptile is a legacy cleanup concern only. Keep active review governance, scaffold defaults, and runtime verification aligned to CodeRabbit, and treat any live Greptile scaffold path as contract drift unless it exists solely to remove or quarantine old artifacts.
 - Security/policy hook configuration files must fail closed because of findings, not because the config is syntactically broken; keep Semgrep rule YAML quoted where patterns include mapping-like text such as `shell: true`.
+
+## Code-style parity verification surface
+
+`bash scripts/check-codestyle-parity.sh` is a required verification surface in the bootstrap lane (`bash scripts/codex-preflight.sh --stack auto --mode required`) and in broader readiness checks (`bash scripts/verify-work.sh`).
+
+The parity gate must validate repo-root `CODESTYLE.md`, `codestyle/**`, and `codestyle/CHECKSUMS.sha256`.
+
+Failure mode is intentionally fail-closed: missing code-style files, checksum drift, malformed manifest entries, or path traversal outside repo root must exit non-zero and block readiness until corrected.
 
 ## Secret handling
 

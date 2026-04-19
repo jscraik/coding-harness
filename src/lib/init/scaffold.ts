@@ -60,7 +60,37 @@ const DEFAULT_CI_PROVIDER: CIProvider = "circleci";
 const DEFAULT_TRANSITION_STATUS_UPDATED_AT = "2026-03-14T00:00:00.000Z";
 const BIOME_SCHEMA_VERSION = "1.9.4";
 const BIOME_SCHEMA_URL = `https://biomejs.dev/schemas/${BIOME_SCHEMA_VERSION}/schema.json`;
+export const CODESTYLE_PACK_TEMPLATE_FILES = [
+	"codestyle/README.md",
+	"codestyle/01-foundations.md",
+	"codestyle/02-javascript-ui.md",
+	"codestyle/03-rust-tauri.md",
+	"codestyle/04-docs-config-and-release.md",
+	"codestyle/05-quality-security-ops.md",
+	"codestyle/06-appendices-and-project-overrides.md",
+	"codestyle/07-python.md",
+	"codestyle/08-typescript.md",
+	"codestyle/09-web.md",
+	"codestyle/10-shell-bash-zsh.md",
+	"codestyle/11-package-managers-pnpm-npm.md",
+	"codestyle/12-swift.md",
+	"codestyle/13-git-workflow.md",
+	"codestyle/14-patterns.md",
+	"codestyle/15-performance.md",
+	"codestyle/16-security.md",
+	"codestyle/17-testing.md",
+	"codestyle/18-code-review.md",
+	"codestyle/19-development-workflow.md",
+	"codestyle/CHECKSUMS.sha256",
+] as const;
 
+/**
+ * Builds the shell command to invoke a package script using the given package manager.
+ *
+ * @param packageManager - Package manager identifier (e.g., "npm", "yarn", "pnpm"); when `"npm"` the returned command uses `npm run`
+ * @param script - The script name to execute as defined in `package.json`
+ * @returns The shell command string that runs the specified script with the selected package manager
+ */
 function renderScriptCommand(packageManager: string, script: string): string {
 	if (packageManager === "npm") {
 		return `npm run ${script}`;
@@ -428,6 +458,11 @@ function renderCodexLearnTemplate(): string {
 	return readFileSync(templatePath, "utf-8");
 }
 
+/**
+ * Load and return the packaged Codex "enforced" shell script template.
+ *
+ * @returns The UTF-8 content of the `templates/codex-enforced.sh` file
+ */
 function renderCodexEnforcedTemplate(): string {
 	const templatePath = fileURLToPath(
 		new URL("../../templates/codex-enforced.sh", import.meta.url),
@@ -435,9 +470,16 @@ function renderCodexEnforcedTemplate(): string {
 	return readFileSync(templatePath, "utf-8");
 }
 
+/**
+ * Load the CODESTYLE.md scaffold used for repository codestyle guidance.
+ *
+ * Prefers the packaged template bundled with the published package and falls back to the repository-root CODESTYLE.md when the packaged file is not present.
+ *
+ * @returns The UTF-8 contents of the selected CODESTYLE.md template
+ */
 function renderCodestyleTemplate(): string {
-	// Prefer the packaged template so published builds do not depend on a
-	// user-home symlink. Source checkouts fall back to the repo-root path.
+	// Prefer the packaged template so published builds use the bundled codestyle
+	// contract; source checkouts fall back to the repo-root copy.
 	const packagedTemplatePath = fileURLToPath(
 		new URL("../../templates/CODESTYLE.md", import.meta.url),
 	);
@@ -450,6 +492,31 @@ function renderCodestyleTemplate(): string {
 	return readFileSync(repoTemplatePath, "utf-8");
 }
 
+/**
+ * Load a codestyle pack template, preferring the packaged template under the module's templates directory and falling back to the repository root.
+ *
+ * @param relativePath - Path to the template relative to the templates directory or repository root (for example, `CODESTYLE.md` or `codestyle/pack.md`)
+ * @returns The UTF-8 contents of the selected template file
+ */
+function renderCodestylePackTemplate(relativePath: string): string {
+	const packagedTemplatePath = fileURLToPath(
+		new URL(`../../templates/${relativePath}`, import.meta.url),
+	);
+	if (existsSync(packagedTemplatePath)) {
+		return readFileSync(packagedTemplatePath, "utf-8");
+	}
+	const repoTemplatePath = fileURLToPath(
+		new URL(`../../../${relativePath}`, import.meta.url),
+	);
+	return readFileSync(repoTemplatePath, "utf-8");
+}
+
+/**
+ * Load the packaged `verify-work.sh` script and return its text content.
+ *
+ * @param _packageManager - Ignored; kept for API compatibility with other renderers.
+ * @returns The UTF-8 contents of the `scripts/verify-work.sh` template
+ */
 function renderVerifyWorkScript(_packageManager: string): string {
 	const templatePath = fileURLToPath(
 		new URL("../../../scripts/verify-work.sh", import.meta.url),
@@ -457,9 +524,26 @@ function renderVerifyWorkScript(_packageManager: string): string {
 	return readFileSync(templatePath, "utf-8");
 }
 
+/**
+ * Load the packaged shell script that validates repository codestyle parity.
+ *
+ * @returns The UTF-8 text contents of the packaged `scripts/validate-codestyle.sh` file
+ */
 function renderValidateCodestyleScript(): string {
 	const templatePath = fileURLToPath(
 		new URL("../../../scripts/validate-codestyle.sh", import.meta.url),
+	);
+	return readFileSync(templatePath, "utf-8");
+}
+
+/**
+ * Load the packaged `scripts/check-codestyle-parity.sh` template and return its contents.
+ *
+ * @returns The UTF-8 contents of the packaged `scripts/check-codestyle-parity.sh` file
+ */
+function renderCheckCodestyleParityScript(): string {
+	const templatePath = fileURLToPath(
+		new URL("../../../scripts/check-codestyle-parity.sh", import.meta.url),
 	);
 	return readFileSync(templatePath, "utf-8");
 }
@@ -592,8 +676,8 @@ echo "[prepare-worktree] next: bash scripts/verify-work.sh --fast"
 /**
  * Produces a bash helper that creates a dedicated worktree and branch for one task.
  *
- * The generated script keeps task isolation project-local by fetching the latest base branch from `origin`
- * before creating one branch and one worktree per task, then prints bootstrap commands for that worktree.
+ * The generated script keeps task isolation project-local by resolving the base commit safely, only fetching
+ * `origin/<branch>` when needed, before creating one branch and one worktree per task and printing bootstrap commands.
  *
  * @returns A complete POSIX-compatible bash script as a string. When executed, the script exits with:
  *          - `0` on success,
@@ -687,11 +771,27 @@ fi
 branch_name="\${branch_prefix}/\${slug}"
 resolved_base_ref="$base_ref"
 remote_base_branch=""
+remote_name="origin"
+explicit_remote_ref=0
 
-if [[ "$base_ref" == origin/* ]]; then
-	remote_base_branch="\${base_ref#origin/}"
+if [[ "$base_ref" == refs/remotes/*/* ]]; then
+	explicit_remote_ref=1
+	remote_name="\${base_ref#refs/remotes/}"
+	remote_name="\${remote_name%%/*}"
+elif [[ "$base_ref" == */* ]]; then
+	candidate_remote="\${base_ref%%/*}"
+	candidate_branch="\${base_ref#*/}"
+	if git -C "$REPO_ROOT" remote get-url "$candidate_remote" >/dev/null 2>&1; then
+		explicit_remote_ref=1
+		remote_name="$candidate_remote"
+		remote_base_branch="$candidate_branch"
+	fi
 elif [[ "$base_ref" != *"/"* ]]; then
-	remote_base_branch="$base_ref"
+	if git -C "$REPO_ROOT" show-ref --verify --quiet "refs/heads/$base_ref"; then
+		remote_base_branch="$base_ref"
+	elif ! git -C "$REPO_ROOT" rev-parse --verify --quiet "\${base_ref}^{commit}" >/dev/null; then
+		remote_base_branch="$base_ref"
+	fi
 fi
 
 if [[ -z "$worktree_path" ]]; then
@@ -713,10 +813,23 @@ if [[ -e "$worktree_path" ]]; then
 fi
 
 if [[ -n "$remote_base_branch" ]]; then
-	echo "[new-task] fetching latest origin/$remote_base_branch"
-	git fetch --prune origin "$remote_base_branch"
-	if git show-ref --verify --quiet "refs/remotes/origin/$remote_base_branch"; then
-		resolved_base_ref="refs/remotes/origin/$remote_base_branch"
+	if git remote get-url "$remote_name" >/dev/null 2>&1; then
+		echo "[new-task] fetching latest $remote_name/$remote_base_branch"
+		if ! git fetch --prune "$remote_name" "$remote_base_branch"; then
+			if [[ "$explicit_remote_ref" -eq 1 ]]; then
+				echo "[new-task] failed to fetch explicit remote base: $base_ref" >&2
+				exit 2
+			fi
+			echo "[new-task] warning: could not fetch $remote_name/$remote_base_branch; continuing with local refs" >&2
+		elif git show-ref --verify --quiet "refs/remotes/$remote_name/$remote_base_branch"; then
+			resolved_base_ref="refs/remotes/$remote_name/$remote_base_branch"
+		elif [[ "$explicit_remote_ref" -eq 1 ]]; then
+			echo "[new-task] explicit remote base not found on $remote_name: $base_ref" >&2
+			exit 2
+		fi
+	elif [[ "$explicit_remote_ref" -eq 1 ]]; then
+		echo "[new-task] remote '$remote_name' is required for explicit remote base: $base_ref" >&2
+		exit 2
 	fi
 fi
 
@@ -1215,7 +1328,12 @@ function renderCodexEnvironmentTemplate(
     fi
   fi
 fi
-mise trust --yes .mise.toml || true
+mise_trust_status="$(mise trust --show .mise.toml 2>/dev/null || true)"
+if [[ "$mise_trust_status" != *": trusted"* ]]; then
+  echo "[codex] mise config is not trusted"
+  echo "[codex] Fix: run 'mise trust --yes .mise.toml' and retry"
+  exit 1
+fi
 mise install
 ${renderInstallCommand(packageManager)}`;
 	const runScript = pickScriptForIcon(context.packageScripts, "run");
@@ -1424,7 +1542,17 @@ hooks:
   after_create: |
     git clone --depth 1 ${renderedRepoUrl} .
     ${installCommand}
-    mise trust || true
+    if ! mise trust --yes .mise.toml >/dev/null 2>&1; then
+      echo "[symphony] failed to trust .mise.toml"
+      echo "[symphony] Fix: run 'mise trust --yes .mise.toml' and retry"
+      exit 1
+    fi
+    mise_trust_status="$(mise trust --show .mise.toml 2>/dev/null || true)"
+    if [[ "$mise_trust_status" != *": trusted"* ]]; then
+      echo "[symphony] mise config is not trusted"
+      echo "[symphony] Fix: run 'mise trust --yes .mise.toml' and retry"
+      exit 1
+    fi
   after_run: |
     cd "$WORKSPACE" && rm -rf node_modules
 agent:
@@ -2490,16 +2618,17 @@ Recommended policy:
 
 - Pin repo-managed tooling in \`.mise.toml\` where possible.
 - Treat \`scripts/codex-preflight.sh\` as required project bootstrap infrastructure.
-- Treat \`CODESTYLE.md\` and \`scripts/validate-codestyle.sh\` as required repo-local contract files.
-- Keep \`CODESTYLE.md\` as a real repo-local file in generated repositories even when the harness authoring source is maintained globally.
+- Treat \`CODESTYLE.md\`, \`codestyle/\`, \`codestyle/CHECKSUMS.sha256\`, and \`scripts/validate-codestyle.sh\` as required repo-local contract files.
+- Keep the full codestyle pack as real repo-local files in generated repositories, including \`CODESTYLE.md\` plus all \`codestyle/*.md\` modules.
 - Scaffold \`scripts/codex-enforced\` and \`scripts/codex-learn\` together with preflight so repo-local wrappers own repo-local state.
 - Keep \`bash scripts/codex-preflight.sh --stack auto --mode required\` as the default preflight command; only relax mode (\`optional\` or \`off\`) when the project documents why.
 - Adjust preflight binary/path lists per project scope instead of deleting the script.
 - Keep repo-scoped telemetry and learned overrides under \`.harness/memory/\`, and global telemetry under \`~/.codex/\`.
 - Treat \`scripts/verify-work.sh\` as the canonical repo-facing verification command and keep it wired to repo-local preflight defaults.
-- Treat \`scripts/validate-codestyle.sh\` as the fail-closed codestyle gate and require exact proof-of-pass in change summaries and PRs.
+- Treat \`scripts/check-codestyle-parity.sh\` as the fail-closed codestyle parity gate and require exact proof-of-pass in change summaries and PRs.
+- Treat \`scripts/validate-codestyle.sh\` as the fail-closed codestyle validation gate and require exact proof-of-pass in change summaries and PRs.
 - Treat \`scripts/new-task.sh\` as the canonical task-entry helper so each task starts with a repo-local branch/worktree boundary instead of branch switching inside a shared checkout.
-- Treat \`scripts/new-task.sh\` as an upstream-sync helper that fetches the latest \`origin/<base>\` before creating the task worktree branch.
+- Treat \`scripts/new-task.sh\` as an upstream-sync helper that fetches \`origin/<base>\` only when local refs do not already resolve the requested base.
 - Treat \`scripts/prepare-worktree.sh\` as required first-push bootstrap for freshly created worktrees so local hooks run with dependencies, canonical hook wiring, and detached-head fast-forwarding to latest \`origin/main\`.
 - Treat \`scripts/check-environment.sh\` as the local readiness gate for required tooling.
 - Block merge or promotion work when a required CLI is missing rather than silently skipping the corresponding validation lane.
@@ -2518,7 +2647,8 @@ Recommended policy:
 
 - \`harness init\` scaffolds \`scripts/verify-work.sh\` as the canonical repo-local verification entrypoint.
 - The wrapper always runs \`scripts/codex-preflight.sh\` in \`required\` Local Memory mode with scaffold-safe path and binary expectations.
-- \`scripts/validate-codestyle.sh\` is the canonical fail-closed codestyle gate and is reused by \`verify-work\`, local hooks, and downstream repo docs.
+- \`scripts/check-codestyle-parity.sh\` is the canonical codestyle parity gate and is reused by \`verify-work\`, local hooks, and downstream repo docs.
+- \`scripts/validate-codestyle.sh\` is the canonical fail-closed codestyle validation gate and is reused by \`verify-work\`, local hooks, and downstream repo docs.
 - \`scripts/new-task.sh\` is the canonical task bootstrap helper. Use it to create one task = one worktree = one branch = one agent thread inside the project itself.
 - Repo-local launches should prefer \`./scripts/codex-enforced\` so preflight failures are recorded into repo-scoped learn state.
 - Use \`./scripts/codex-learn analyze\` and \`./scripts/codex-learn apply\` to inspect repo-scoped failure patterns and write override files into \`.harness/memory/\`.
@@ -3580,10 +3710,66 @@ normalized_checksum() {
 
 	case "$rel_path" in
 		*/diagram-context.md)
-			sed '/^Generated: /d' "$file" | shasum -a 256 | awk '{print $1}'
+			node - "$file" <<'NODE' | shasum -a 256 | awk '{print $1}'
+const fs = require("node:fs");
+
+const filePath = process.argv[2];
+const lines = fs.readFileSync(filePath, "utf8").split(/\\r?\\n/);
+const normalized = [];
+let inMermaid = false;
+let mermaidLines = [];
+const mermaidFence = String.fromCharCode(96).repeat(3);
+
+const normalizeMermaidLine = (line) => {
+	let value = line.trim();
+	if (!value) return "";
+
+	value = value.replace(/^([A-Za-z0-9_:-]+)\\s*(\\[[^\\]]+\\]|\\([^)]*\\)|\\{[^}]*\\})/, "NODE$2");
+	value = value.replace(/\\b(style|class|click)\\s+[A-Za-z0-9_:-]+\\b/g, "$1 NODE");
+	value = value.replace(/^([A-Za-z0-9_:-]+)(\\s*[-.=]+.*)$/, "NODE$2");
+	value = value.replace(/([-.=]+>|<[-.=]+)\\s*([A-Za-z0-9_:-]+)/g, "$1 NODE");
+	return value.replace(/\\s+/g, " ").trim();
+};
+
+const flushMermaid = () => {
+	const normalizedBlock = mermaidLines
+		.map(normalizeMermaidLine)
+		.filter(Boolean)
+		.sort();
+	normalized.push(mermaidFence + "mermaid");
+	normalized.push(...normalizedBlock);
+	normalized.push(mermaidFence);
+	mermaidLines = [];
+};
+
+for (const line of lines) {
+	if (/^Generated: /.test(line)) continue;
+	if (line.trim() === mermaidFence + "mermaid") {
+		inMermaid = true;
+		mermaidLines = [];
+		continue;
+	}
+	if (inMermaid && line.trim() === mermaidFence) {
+		flushMermaid();
+		inMermaid = false;
+		continue;
+	}
+	if (inMermaid) {
+		mermaidLines.push(line);
+		continue;
+	}
+	normalized.push(line.trimEnd());
+}
+
+if (inMermaid) {
+	flushMermaid();
+}
+
+process.stdout.write(normalized.join("\\n") + "\\n");
+NODE
 			;;
 		*/diagram-context.meta.json)
-			jq -c 'del(.generated_at, .last_generated_epoch, .changed, .context_sha256)' "$file" | shasum -a 256 | awk '{print $1}'
+			jq -c 'del(.generated_at, .last_generated_epoch, .changed, .context_sha256, .git_head)' "$file" | shasum -a 256 | awk '{print $1}'
 			;;
 		*/manifest.json)
 			jq -c 'del(.generatedAt)' "$file" | shasum -a 256 | awk '{print $1}'
@@ -3643,6 +3829,16 @@ if [[ "$should_refresh" -ne 1 ]]; then
 	exit 0
 fi
 
+mapfile -t tracked_files < <(tracked_artifact_files)
+preexisting_artifact_edits=()
+if (( \${#tracked_files[@]} > 0 )); then
+	for tracked_file in "\${tracked_files[@]}"; do
+		if ! git -C "$REPO_ROOT" diff --quiet -- "$tracked_file" || ! git -C "$REPO_ROOT" diff --cached --quiet -- "$tracked_file"; then
+			preexisting_artifact_edits+=("$tracked_file")
+		fi
+	done
+fi
+
 echo "Refreshing architecture diagrams for changed sensitive paths..."
 before_snapshot="$(snapshot_artifacts)"
 bash "$REPO_ROOT/scripts/refresh-diagram-context.sh" --force --quiet
@@ -3654,6 +3850,31 @@ if [[ "$before_snapshot" != "$after_snapshot" ]]; then
 	git -C "$REPO_ROOT" diff --name-only -- "\${TRACKED_ARTIFACT_PATHS[@]}"
 	echo "Fix: run 'bash scripts/refresh-diagram-context.sh --force' and commit the updated artifacts."
 	exit 1
+fi
+
+# Refresh can rewrite tracked artifacts even when semantic checksums are equivalent.
+# Restore only files that were clean before refresh so local edits are preserved.
+files_to_restore=()
+if (( \${#tracked_files[@]} > 0 )); then
+	for tracked_file in "\${tracked_files[@]}"; do
+		was_preexisting_edit=0
+		for preexisting_file in "\${preexisting_artifact_edits[@]}"; do
+			if [[ "$preexisting_file" == "$tracked_file" ]]; then
+				was_preexisting_edit=1
+				break
+			fi
+		done
+		if (( was_preexisting_edit == 1 )); then
+			continue
+		fi
+		if ! git -C "$REPO_ROOT" diff --quiet -- "$tracked_file"; then
+			files_to_restore+=("$tracked_file")
+		fi
+	done
+fi
+
+if (( \${#files_to_restore[@]} > 0 )); then
+	git -C "$REPO_ROOT" restore --worktree -- "\${files_to_restore[@]}" >/dev/null 2>&1 || true
 fi
 
 echo "Diagram freshness check passed."
@@ -3828,6 +4049,10 @@ CLAUDE_APPROVAL_POSTURE = "require"
 		path: "CODESTYLE.md",
 		render: () => renderCodestyleTemplate(),
 	},
+	...CODESTYLE_PACK_TEMPLATE_FILES.map((path) => ({
+		path,
+		render: () => renderCodestylePackTemplate(path),
+	})),
 	{
 		path: "scripts/codex-preflight.sh",
 		render: () => renderCodexPreflightTemplate(),
@@ -3851,6 +4076,10 @@ CLAUDE_APPROVAL_POSTURE = "require"
 	{
 		path: "scripts/validate-codestyle.sh",
 		render: () => renderValidateCodestyleScript(),
+	},
+	{
+		path: "scripts/check-codestyle-parity.sh",
+		render: () => renderCheckCodestyleParityScript(),
 	},
 	{
 		path: "scripts/prepare-worktree.sh",
@@ -3895,6 +4124,8 @@ CONTRACT_PATH="$REPO_ROOT/harness.contract.json"
 	PREK_CONFIG_PATH="$REPO_ROOT/prek.toml"
 	PACKAGE_JSON_PATH="$REPO_ROOT/${packagePolicy?.packageJsonPath ?? "package.json"}"
 	CODESTYLE_PATH="$REPO_ROOT/CODESTYLE.md"
+	CODESTYLE_DIR_PATH="$REPO_ROOT/codestyle"
+	CODESTYLE_CHECKSUM_PATH="$REPO_ROOT/codestyle/CHECKSUMS.sha256"
 	TOOLING_DOC_PATH="\${TOOLING_DOC_PATH:-$HOME/dev/config/codex/instructions/tooling.md}"
 
 if [[ ! -f "$CONTRACT_PATH" ]]; then
@@ -3932,6 +4163,16 @@ fi
 		exit 1
 	fi
 
+	if [[ ! -d "$CODESTYLE_DIR_PATH" ]]; then
+		echo "Error: missing codestyle module directory at $CODESTYLE_DIR_PATH"
+		exit 1
+	fi
+
+	if [[ ! -f "$CODESTYLE_CHECKSUM_PATH" ]]; then
+		echo "Error: missing codestyle checksum manifest at $CODESTYLE_CHECKSUM_PATH"
+		exit 1
+	fi
+
 	required_support_files=(${REQUIRED_HOOK_SUPPORT_FILES.map((path) => `"${path}"`).join(" ")})
 	for support_file in "\${required_support_files[@]}"; do
 		if [[ ! -f "$REPO_ROOT/\${support_file}" ]]; then
@@ -3959,11 +4200,23 @@ if ! command -v mise >/dev/null 2>&1; then
 	exit 1
 fi
 
-# Bootstrap the full repo-managed environment so hook validation reflects the
-# pinned runtime versions and required approval posture, not only the caller
-# shell's PATH.
-eval "$(mise activate bash)"
-export CLAUDE_APPROVAL_POSTURE="\${CLAUDE_APPROVAL_POSTURE:-require}"
+	# Bootstrap the full repo-managed environment so hook validation reflects the
+	# pinned runtime versions and required approval posture, not only the caller
+	# shell's PATH.
+	MISE_TRUST_STATUS="$(mise --cd "$REPO_ROOT" trust --show "$MISE_PATH" 2>/dev/null || true)"
+	MISE_TRUST_LINE_COUNT="$(printf '%s\n' "$MISE_TRUST_STATUS" | awk 'NF{count++} END{print count+0}')"
+	if [[ "$MISE_TRUST_LINE_COUNT" -ne 1 ]] || [[ "$MISE_TRUST_STATUS" != *": trusted" ]]; then
+		echo "Error: mise config at $MISE_PATH is not trusted"
+		echo "Fix: run 'mise trust --yes $MISE_PATH' and retry."
+		exit 1
+	fi
+
+	if ! eval "$(mise --cd "$REPO_ROOT" activate bash)"; then
+		echo "Error: failed to activate mise runtime from $MISE_PATH"
+		echo "Fix: ensure mise is installed, trusted, and healthy, then retry."
+		exit 1
+	fi
+	export CLAUDE_APPROVAL_POSTURE="\${CLAUDE_APPROVAL_POSTURE:-require}"
 
 required_mise_tools=(${PROJECT_MISE_REQUIRED_TOOLS.map(([tool]) => `"${tool}"`).join(" ")})
 for tool in "\${required_mise_tools[@]}"; do
@@ -4085,12 +4338,12 @@ fi
 			' "$PACKAGE_JSON_PATH" >/dev/null
 		}
 
-		repo_capabilities=()
-		explicit_capabilities=(${explicitCapabilities.map((capability) => `"${capability}"`).join(" ")})
-		for capability in "\${explicit_capabilities[@]}"; do
-			[[ -n "$capability" ]] || continue
-			repo_capabilities+=("$capability")
-		done
+			declare -a repo_capabilities=()
+			declare -a explicit_capabilities=(${explicitCapabilities.map((capability) => `"${capability}"`).join(" ")})
+			for capability in "\${explicit_capabilities[@]:-}"; do
+				[[ -n "$capability" ]] || continue
+				repo_capabilities+=("$capability")
+			done
 ${capabilityDetectors
 	.map(
 		(
@@ -4105,12 +4358,12 @@ ${capabilityDetectors
 	)
 	.join("\n\n")}
 
-		has_capability() {
-			local wanted="$1"
-			for capability in "\${repo_capabilities[@]}"; do
-				if [[ "$capability" == "$wanted" ]]; then
-					return 0
-				fi
+			has_capability() {
+				local wanted="$1"
+				for capability in "\${repo_capabilities[@]:-}"; do
+					if [[ "$capability" == "$wanted" ]]; then
+						return 0
+					fi
 			done
 			return 1
 		}
@@ -4230,7 +4483,7 @@ else
 	if [[ -n "$mise_harness_bin" && -x "$mise_harness_bin" ]]; then
 		if ! run_check_environment_with_runner "mise harness ($mise_harness_bin)" "$mise_harness_bin"; then
 			echo "Error: mise-resolved harness failed to run check-environment successfully."
-			echo 'Fix: ensure the session activates mise first (eval "$(mise activate bash)") or invoke the mise binary directly.'
+			echo 'Fix: ensure the session activates mise first (eval "$(mise --cd \"$REPO_ROOT\" activate bash)") or invoke the mise binary directly.'
 			exit 1
 		fi
 	else
@@ -4295,10 +4548,12 @@ echo "Environment check passed (attestation: $ATTESTATION_PATH)"
 /scripts/codex-preflight.sh @jscraik
 /scripts/verify-work.sh @jscraik
 /scripts/validate-codestyle.sh @jscraik
+/scripts/check-codestyle-parity.sh @jscraik
 /scripts/prepare-worktree.sh @jscraik
 /scripts/new-task.sh @jscraik
 /scripts/harness-cli.sh @jscraik
 /scripts/check-environment.sh @jscraik
+/codestyle/** @jscraik
 `,
 	},
 	{
@@ -4306,7 +4561,7 @@ echo "Environment check passed (attestation: $ATTESTATION_PATH)"
 		render: () => `# Harness Development Makefile
 # Run \`make help\` to see available commands
 
-.PHONY: help install setup preflight worktree-ready verify-work codestyle hooks hooks-pre-commit hooks-pre-push hooks-commit-msg secrets-staged docs-style-changed related-tests semgrep-changed diagrams-check dev build lint docs-lint fmt typecheck test check audit secrets security clean reset ci diagrams env-check
+.PHONY: help install setup preflight worktree-ready verify-work codestyle-parity codestyle hooks hooks-pre-commit hooks-pre-push hooks-commit-msg secrets-staged docs-style-changed related-tests semgrep-changed diagrams-check dev build lint docs-lint fmt typecheck test check audit secrets security clean reset ci diagrams env-check
 
 # Default target
 help: ## Show this help message
@@ -4331,6 +4586,9 @@ worktree-ready: ## Bootstrap a fresh git worktree before first push
 verify-work: ## Run canonical repo-local verification wrapper
 	@bash ./scripts/verify-work.sh
 
+codestyle-parity: ## Verify CODESTYLE pack parity checksums
+	@bash ./scripts/check-codestyle-parity.sh
+
 codestyle: ## Run fail-closed codestyle validation
 	@bash ./scripts/validate-codestyle.sh
 
@@ -4339,6 +4597,7 @@ hooks: ## Setup git hooks
 
 hooks-pre-commit: ## Run local pre-commit gates before creating a commit
 	@bash ./scripts/check-hook-critical-config-sync.sh
+	$(MAKE) codestyle-parity
 	pnpm lint
 	pnpm docs:lint
 	pnpm typecheck
