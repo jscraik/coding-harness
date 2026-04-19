@@ -114,6 +114,11 @@ const stableId = (prefix, value) => {
   return `${prefix}_${slug}_${digest}`;
 };
 
+const rawNodeFingerprint = (rawId) => {
+  const match = rawId.match(/_([0-9a-f]{8})$/i);
+  return match ? match[1].toLowerCase() : rawId.toLowerCase();
+};
+
 const parseArchitecture = (content) => {
   const lines = content.trimEnd().split(/\r?\n/);
   const subgraphs = [];
@@ -159,10 +164,15 @@ const buildArchitecture = (subgraphs) => {
     const subgraphId = stableId("sg", subgraph.label);
     lines.push(`  subgraph ${subgraphId}["${subgraph.label}"]`);
     const sortedNodes = [...subgraph.nodes].sort((left, right) =>
-      left.label.localeCompare(right.label),
+      left.label.localeCompare(right.label) ||
+      rawNodeFingerprint(left.rawId).localeCompare(rawNodeFingerprint(right.rawId)) ||
+      left.rawId.localeCompare(right.rawId),
     );
     for (const node of sortedNodes) {
-      const nodeId = stableId("node", `${subgraph.label}/${node.label}`);
+      const nodeId = stableId(
+        "node",
+        `${subgraph.label}/${node.label}/${rawNodeFingerprint(node.rawId)}`,
+      );
       nodeMap.set(node.rawId, { canonicalId: nodeId, label: node.label });
       lines.push(`    ${nodeId}["${node.label}"]`);
     }
@@ -220,10 +230,10 @@ const buildDependency = (content, nodeMap) => {
     [
       "graph LR",
       ...dependencyEdges
-        .sort((left, right) => left.sortKey.localeCompare(right.sortKey))
+        .sort((left, right) => left.sortKey.localeCompare(right.sortKey) || left.line.localeCompare(right.line))
         .map((entry) => entry.line),
       ...styleEntries
-        .sort((left, right) => left.sortKey.localeCompare(right.sortKey))
+        .sort((left, right) => left.sortKey.localeCompare(right.sortKey) || left.line.localeCompare(right.line))
         .map((entry) => entry.line),
     ].join("\n"),
   );

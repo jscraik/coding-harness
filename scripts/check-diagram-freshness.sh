@@ -73,9 +73,64 @@ normalized_checksum() {
 
 	case "$rel_path" in
 		*/diagram-context.md)
-			# Normalize away the generated timestamp line, but hash the full
-			# remaining document so unquoted mermaid edge changes are detected.
-			sed -E '/^Generated: /d' "$file" | shasum -a 256 | awk '{print $1}'
+			# Normalize volatile Mermaid node identifiers and line order while
+			# preserving edge/label text so unquoted edge changes are still detected.
+			node - "$file" <<'NODE' | shasum -a 256 | awk '{print $1}'
+const fs = require("node:fs");
+
+const filePath = process.argv[2];
+const lines = fs.readFileSync(filePath, "utf8").split(/\r?\n/);
+const normalized = [];
+let inMermaid = false;
+let mermaidLines = [];
+
+const normalizeMermaidLine = (line) => {
+	let value = line.trim();
+	if (!value) return "";
+
+	value = value.replace(/^([A-Za-z0-9_:-]+)\s*(\[[^\]]+\]|\([^)]*\)|\{[^}]*\})/, "NODE$2");
+	value = value.replace(/\b(style|class|click)\s+[A-Za-z0-9_:-]+\b/g, "$1 NODE");
+	value = value.replace(/^([A-Za-z0-9_:-]+)(\s*[-.=]+.*)$/, "NODE$2");
+	value = value.replace(/([-.=]+>|<[-.=]+)\s*([A-Za-z0-9_:-]+)/g, "$1 NODE");
+	return value.replace(/\s+/g, " ").trim();
+};
+
+const flushMermaid = () => {
+	const normalizedBlock = mermaidLines
+		.map(normalizeMermaidLine)
+		.filter(Boolean)
+		.sort();
+	normalized.push("```mermaid");
+	normalized.push(...normalizedBlock);
+	normalized.push("```");
+	mermaidLines = [];
+};
+
+for (const line of lines) {
+	if (/^Generated: /.test(line)) continue;
+	if (line.trim() === "```mermaid") {
+		inMermaid = true;
+		mermaidLines = [];
+		continue;
+	}
+	if (inMermaid && line.trim() === "```") {
+		flushMermaid();
+		inMermaid = false;
+		continue;
+	}
+	if (inMermaid) {
+		mermaidLines.push(line);
+		continue;
+	}
+	normalized.push(line.trimEnd());
+}
+
+if (inMermaid) {
+	flushMermaid();
+}
+
+process.stdout.write(`${normalized.join("\n")}\n`);
+NODE
 			;;
 		*/diagram-context.meta.json)
 			jq -c 'del(.generated_at, .last_generated_epoch, .changed, .context_sha256, .git_head)' "$file" | shasum -a 256 | awk '{print $1}'
