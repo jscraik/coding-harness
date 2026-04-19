@@ -21,7 +21,7 @@
 ## Secret handling
 - Secrets MUST come from environment injection or a secret manager.
 - Exposed secrets MUST be rotated immediately and treated as incidents.
-- Do not print raw secret values in logs, test fixtures, or screenshots.
+- Raw secret values MUST NOT be printed in logs, test fixtures, or screenshots.
 
 ## Secure coding defaults
 - Use parameterized queries for data access.
