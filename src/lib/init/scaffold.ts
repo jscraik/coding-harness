@@ -2424,6 +2424,7 @@ jobs:
 - [Repo-local verification wrapper](#repo-local-verification-wrapper)
 - [Repo-local harness wrapper](#repo-local-harness-wrapper)
 - [Recommended security scanner baseline](#recommended-security-scanner-baseline)
+- [Test runner artifact configuration](#test-runner-artifact-configuration)
 - [Review artifacts requirement](#review-artifacts-requirement)
 - [Credential-safe evidence snippets](#credential-safe-evidence-snippets)
 - [Branch protection recommendation](#branch-protection-recommendation)
@@ -2561,6 +2562,18 @@ Recommended policy:
 - Keep scanner binaries available in local development environments and CI runners.
 - Run scanner checks in CI on pull requests and pushes to protected branches.
 - Treat scanner findings as merge blockers unless explicitly waived with rationale.
+
+## Test runner artifact configuration
+
+CI pipelines collect test results and artifacts from the \`artifacts/test\` directory. Your test framework must be configured to emit JUnit XML reports (or other supported formats) to this location.
+
+Example configurations:
+
+- **Vitest**: \`vitest --reporter=junit --outputFile=artifacts/test/junit.xml\`
+- **Jest**: Configure \`jest.config.js\` with \`reporters: [['jest-junit', { outputDirectory: 'artifacts/test', outputName: 'junit.xml' }]]\`
+- **Mocha**: \`mocha --reporter mocha-junit-reporter --reporter-options mochaFile=artifacts/test/junit.xml\`
+
+Ensure \`artifacts/test\` is created before running tests (CI scaffolds include a step for this).
 
 ## Review artifacts requirement
 

@@ -156,6 +156,19 @@ export function generateBootstrapSummary(
 		);
 	}
 
+	// Recommend test artifact configuration if CI files were created
+	if (
+		output.created.some(
+			(p) =>
+				matchesPattern(p, ".github/workflows/") ||
+				matchesPattern(p, ".circleci/"),
+		)
+	) {
+		nextCommands.push(
+			"Configure test runner to emit reports to artifacts/test/ (see CONTRIBUTING.md)",
+		);
+	}
+
 	return {
 		detected,
 		created,
