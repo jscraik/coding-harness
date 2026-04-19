@@ -71,7 +71,6 @@ Coverage and mutation thresholds MAY be enforced only when wired to executable r
 * Full keyboard operation MUST be supported.
 * Screen reader compatibility MUST be supported.
 * CLI/TUI implementations MUST provide `--plain` and `--no-color` modes.
-
 ---
 
 ## 19. Observability, Logging & Streaming
