@@ -329,6 +329,7 @@ describe("runInit", () => {
 			);
 			expect(circleConfig).toContain("pnpm install --frozen-lockfile");
 			expect(circleConfig).toContain("name: Policy Bundle");
+			expect(circleConfig).toContain("pnpm check");
 			expect(circleConfig).toContain("name: Dogfood silent-error detection");
 			expect(circleConfig).toContain(
 				"bash scripts/harness-cli.sh silent-error --dirs src --strict",

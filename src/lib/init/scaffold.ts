@@ -269,13 +269,7 @@ node-linker=hoisted
 function renderCircleCIConfig(pm: string): string {
 	const installCommand =
 		pm === "pnpm" ? "pnpm install --frozen-lockfile" : renderInstallCommand(pm);
-	const lintCommand = renderScriptCommand(pm, "lint");
-	const typecheckCommand = renderScriptCommand(pm, "typecheck");
-	const testCiCommand =
-		pm === "pnpm"
-			? `if node -e 'process.exit((require("./package.json").scripts || {})["test:ci"] ? 0 : 1)'; then pnpm test:ci; else pnpm test; fi`
-			: renderScriptCommand(pm, "test");
-	const auditCommand = renderScriptCommand(pm, "audit");
+	const checkCommand = renderScriptCommand(pm, "check");
 	const configureCacheStep =
 		pm === "pnpm"
 			? `      - run:
@@ -335,10 +329,7 @@ ${configureCacheStep}      - run:
 ${saveCacheStep}      - run:
           name: Policy Bundle
           command: |
-            ${lintCommand}
-            ${typecheckCommand}
-            ${testCiCommand}
-            ${auditCommand}
+            ${checkCommand}
       - run:
           name: Ensure test artifacts directory
           command: |
