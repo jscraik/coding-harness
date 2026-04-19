@@ -1655,7 +1655,7 @@ describe("runInit", () => {
 			);
 			expect(newTask).toContain('elif [[ "$base_ref" != *"/"* ]]; then');
 			expect(newTask).toContain(
-				'if git show-ref --verify --quiet "refs/heads/$base_ref"; then',
+				'if git -C "$REPO_ROOT" show-ref --verify --quiet "refs/heads/$base_ref"; then',
 			);
 			expect(newTask).toContain(
 				'elif ! git -C "$REPO_ROOT" rev-parse --verify --quiet "${base_ref}^{commit}" >/dev/null; then',
@@ -2217,9 +2217,9 @@ exit 1
 				});
 
 			expect(runGit(["init", "-b", "main"]).status).toBe(0);
-			expect(
-				runGit(["config", "user.email", "test@example.com"]).status,
-			).toBe(0);
+			expect(runGit(["config", "user.email", "test@example.com"]).status).toBe(
+				0,
+			);
 			expect(runGit(["config", "user.name", "Test User"]).status).toBe(0);
 
 			writeFileSync(join(tempDir, "README.md"), "seed\n", "utf-8");
@@ -2242,14 +2242,7 @@ exit 1
 				const worktreePath = join(tempDir, `wt-${slug}`);
 				const taskRun = spawnSync(
 					"bash",
-					[
-						scriptPath,
-						"--base",
-						baseRef,
-						"--path",
-						worktreePath,
-						slug,
-					],
+					[scriptPath, "--base", baseRef, "--path", worktreePath, slug],
 					{
 						cwd: outsideRepoCwd,
 						encoding: "utf8",
@@ -2276,10 +2269,12 @@ exit 1
 			const upstreamFixture = mkdtempSync(join(tmpdir(), "new-task-upstream-"));
 			try {
 				const upstreamBare = join(upstreamFixture, "upstream.git");
-				expect(runGit(["init", "--bare", upstreamBare], upstreamFixture).status).toBe(
+				expect(
+					runGit(["init", "--bare", upstreamBare], upstreamFixture).status,
+				).toBe(0);
+				expect(runGit(["remote", "add", "upstream", upstreamBare]).status).toBe(
 					0,
 				);
-				expect(runGit(["remote", "add", "upstream", upstreamBare]).status).toBe(0);
 				expect(runGit(["push", "-u", "upstream", "main"]).status).toBe(0);
 
 				const upstreamWorktreePath = join(tempDir, "wt-upstream-main");

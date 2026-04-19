@@ -68,9 +68,9 @@ describe("scaffold templates resolution", () => {
 
 		// Assert that every entry in CODESTYLE_PACK_TEMPLATE_FILES exists in the template list
 		for (const expectedFile of CODESTYLE_PACK_TEMPLATE_FILES) {
-			expect(
-				templates.some((template) => template.path === expectedFile),
-			).toBe(true);
+			expect(templates.some((template) => template.path === expectedFile)).toBe(
+				true,
+			);
 		}
 		expect([...checksumPathSet].sort()).toEqual(
 			[...expectedChecksumPathSet].sort(),
