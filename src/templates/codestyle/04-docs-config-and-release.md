@@ -18,6 +18,8 @@ All docs and long-form prose MUST be linted with **Vale**.
 * `AGENTS.md`
 * `docs/**/*.md`
 
+Note: The scaffolded `scripts/check-doc-style.sh` hook enforces Vale checking on the above patterns only. For broader prose linting (e.g., `**/*.mdx`, `**/*.adoc`, `**/*.rst`), configure Vale directly via `.vale.ini` and run `vale` manually or extend the hook script.
+
 ### Configuration
 
 * Repo root MUST include `.vale.ini`.

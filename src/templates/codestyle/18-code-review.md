@@ -45,7 +45,8 @@
 ## Enforcement
 - Review artifacts MUST reference concrete file paths and impacted behavior.
 - Validation and review outcomes MUST be explicit and evidence-backed.
-- Review evidence MUST include repository-governed validation wrappers:
-  - `bash scripts/validate-codestyle.sh`
-  - `pnpm check`
-  - `bash scripts/verify-work.sh --fast`
+- Reviewers MUST run and cite outputs from repository-governed validation wrappers as authoritative proof:
+  - `bash scripts/validate-codestyle.sh` (codestyle pack integrity and linting)
+  - `pnpm check` (aggregate repository health check)
+  - `bash scripts/verify-work.sh --fast` (fast preflight and validation)
+- PR evidence MUST include the exact command invocation and pass/fail/blocked outcome for each required validation gate.

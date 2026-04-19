@@ -25,7 +25,7 @@
 
 ## Linting and module rules
 - Type-aware policy checks MUST run via the TypeScript compiler (`tsc --noEmit`, typically through `pnpm typecheck`).
-- Biome handles formatting and style-level lint where configured and MUST pass where enabled.
+- Formatting and style-level linting is handled by Biome (`biome check .`) where configured and MUST pass where enabled.
 - Prefer ESM and explicit module syntax for Node/TS packages.
 - Keep imports acyclic; avoid barrels that create circular dependency chains.
 
