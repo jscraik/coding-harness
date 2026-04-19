@@ -27,10 +27,6 @@ last_validated: 2026-04-18
 
 Every change must be checked by the smallest gate needed for risk, then by the fail-closed code-style gate, then by any deeper aggregate gate required by the behavior change.
 
-## Frontmatter semantics
-
-`last_validated` records the most recent date this document was verified against the current validation wrapper behavior and command contracts.
-
 ## Required baseline gates
 
 1. `bash scripts/validate-codestyle.sh --fast`
