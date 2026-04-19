@@ -3764,6 +3764,13 @@ if [[ "$before_snapshot" != "$after_snapshot" ]]; then
 	exit 1
 fi
 
+# Refresh can rewrite tracked artifacts even when semantic checksums are equivalent.
+# Restore only tracked files so pre-push hooks do not fail on non-semantic churn.
+mapfile -t tracked_files < <(tracked_artifact_files)
+if (( \${#tracked_files[@]} > 0 )); then
+	git -C "$REPO_ROOT" restore --worktree -- "\${tracked_files[@]}" >/dev/null 2>&1 || true
+fi
+
 echo "Diagram freshness check passed."
 `,
 	},
