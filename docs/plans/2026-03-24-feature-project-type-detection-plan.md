@@ -10,6 +10,7 @@ risk: low
 plan_depth: standard
 linear: JSC-71
 execution_posture: test-first
+last_validated: 2026-04-18
 ---
 
 # Project Type Auto-Detection — Implementation Plan

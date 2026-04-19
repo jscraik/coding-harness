@@ -1,3 +1,7 @@
+---
+last_validated: 2026-04-18
+---
+
 # Tooling Inventory
 
 This document is the repo-local tooling inventory validated by

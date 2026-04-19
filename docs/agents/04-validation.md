@@ -1,3 +1,7 @@
+---
+last_validated: 2026-04-18
+---
+
 # Validation and checks
 
 ## Table of Contents

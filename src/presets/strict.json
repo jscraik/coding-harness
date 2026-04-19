@@ -134,7 +134,7 @@
 			},
 			{
 				"tool": "pnpm",
-				"version": "10.0.0"
+				"version": "10.33.0"
 			},
 			{
 				"tool": "python",

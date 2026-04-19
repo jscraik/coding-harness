@@ -1,3 +1,7 @@
+---
+last_validated: 2026-04-18
+---
+
 # Tooling policy
 
 - [Verified command authority](#verified-command-authority)
@@ -255,7 +259,7 @@ The `.npmrc` in this repository sets:
 - `strict-peer-dependencies=false` - Warn on peer issues (not fail)
 - `auto-install-peers=false` - Don't auto-install peers
 - `shamefully-hoist=false` - Better isolation
-- `node-linker=hoisted` - Better compatibility
+- Keep pnpm's isolated linker as the default; use `node-linker=hoisted` only as an opt-in for legacy compatibility.
 
 Projects using coding-harness should adopt similar security-conscious defaults.
 

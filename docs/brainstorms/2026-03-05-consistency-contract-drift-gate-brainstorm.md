@@ -1,6 +1,7 @@
 ---
 date: 2026-03-05
 topic: consistency-contract-drift-gate
+last_validated: 2026-04-18
 ---
 
 # Consistency Contract + Drift Gate (Advisory-First)

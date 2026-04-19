@@ -6,7 +6,7 @@ REPO_ROOT="$(cd -- "$SCRIPT_DIR/.." && pwd)"
 
 TRACKED_ARTIFACT_PATHS=(
 	".diagram"
-	".diagram/context/diagram-context.md"
+	"AI/context/diagram-context.md"
 	".diagram/context/diagram-context.meta.json"
 )
 
@@ -31,6 +31,9 @@ is_architecture_sensitive_change() {
 			return 0
 			;;
 		.diagram/*)
+			return 0
+			;;
+		AI/context/*)
 			return 0
 			;;
 		src/*)

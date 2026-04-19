@@ -6,6 +6,7 @@ date: 2026-04-13
 plan_id: feat-agent-first-throughput-v1-pilot
 origin: docs/brainstorms/2026-02-25-agent-first-throughput-v1-brainstorm.md
 deepened: 2026-02-25
+last_validated: 2026-04-18
 ---
 
 # Agent-First Throughput v1 Pilot

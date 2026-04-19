@@ -2,6 +2,7 @@
 schema_version: 1
 status: active
 applies_to: all harness-managed repositories
+last_validated: 2026-04-18
 ---
 
 # AI Assistant Security Policy

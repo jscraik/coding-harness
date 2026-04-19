@@ -7,6 +7,7 @@ plan_id: refactor-loop-parity-governance-gaps
 origin: docs/brainstorms/2026-02-28-code-factory-loop-parity-brainstorm.md
 deepened_on: 2026-03-04
 deepened_mode: power-enhancement
+last_validated: 2026-04-18
 ---
 
 # ♻️ refactor: Close loop parity governance gaps

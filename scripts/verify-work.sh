@@ -390,10 +390,10 @@ prepare_hook_governance_inputs() {
 	)"
 
 	if [[ "$hook_governance_scope" == "project-local" ]]; then
-		hook_scope_manifest="$(mktemp "${TMPDIR:-/tmp}/verify-work-hook-scope.XXXXXX.json")"
-		hook_inventory_output="$(mktemp "${TMPDIR:-/tmp}/verify-work-repo-profile-matrix.XXXXXX.json")"
-		hook_rollout_output="$(mktemp "${TMPDIR:-/tmp}/verify-work-rollout-check-report.XXXXXX.json")"
-		hook_docstring_output="$(mktemp "${TMPDIR:-/tmp}/verify-work-docstring-ratchet-report.XXXXXX.json")"
+		hook_scope_manifest="$(mktemp "${TMPDIR:-/tmp}/verify-work-hook-scope.XXXXXX")"
+		hook_inventory_output="$(mktemp "${TMPDIR:-/tmp}/verify-work-repo-profile-matrix.XXXXXX")"
+		hook_rollout_output="$(mktemp "${TMPDIR:-/tmp}/verify-work-rollout-check-report.XXXXXX")"
+		hook_docstring_output="$(mktemp "${TMPDIR:-/tmp}/verify-work-docstring-ratchet-report.XXXXXX")"
 		hook_temp_paths+=(
 			"$hook_scope_manifest"
 			"$hook_inventory_output"
@@ -428,6 +428,7 @@ prepare_hook_governance_inputs() {
 	log_info "[verify-work] hook-governance scope: workspace"
 }
 
+# format_hook_governance_reports formats workspace-scoped hook-governance report files (inventory, rollout, docstring) with `pnpm fmt` after making their paths relative to the repo root; it is a no-op when scope is not "workspace" or no report files exist, and it prints an error and returns non-zero if `pnpm` is not available.
 format_hook_governance_reports() {
 	if [[ "$hook_governance_scope" != "workspace" ]]; then
 		return 0
@@ -438,21 +439,21 @@ format_hook_governance_reports() {
 	if [[ -n "$hook_inventory_output" && -f "$hook_inventory_output" ]]; then
 		path="$hook_inventory_output"
 		if [[ "$path" == "$repo_root/"* ]]; then
-			path="${path#$repo_root/}"
+			path="${path#"$repo_root"/}"
 		fi
 		report_paths+=("$path")
 	fi
 	if [[ -n "$hook_rollout_output" && -f "$hook_rollout_output" ]]; then
 		path="$hook_rollout_output"
 		if [[ "$path" == "$repo_root/"* ]]; then
-			path="${path#$repo_root/}"
+			path="${path#"$repo_root"/}"
 		fi
 		report_paths+=("$path")
 	fi
 	if [[ -n "$hook_docstring_output" && -f "$hook_docstring_output" ]]; then
 		path="$hook_docstring_output"
 		if [[ "$path" == "$repo_root/"* ]]; then
-			path="${path#$repo_root/}"
+			path="${path#"$repo_root"/}"
 		fi
 		report_paths+=("$path")
 	fi

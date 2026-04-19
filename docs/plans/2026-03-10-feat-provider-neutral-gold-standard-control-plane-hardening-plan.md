@@ -6,6 +6,7 @@ date: 2026-04-13
 plan_id: feat-provider-neutral-gold-standard-control-plane-hardening
 origin: docs/brainstorms/2026-03-10-gold-standard-control-plane-hardening-brainstorm.md
 spec: docs/specs/2026-03-10-feat-provider-neutral-gold-standard-control-plane-hardening-spec.md
+last_validated: 2026-04-18
 ---
 
 # feat: Provider-Neutral Gold-Standard Control Plane Hardening

@@ -4,6 +4,7 @@ type: operational-spec
 status: active
 date: 2026-03-14
 origin: docs/agents/08-release-and-change-control.md
+last_validated: 2026-04-18
 ---
 
 # Release and Change Control — Compact Operational Spec

@@ -3,6 +3,7 @@ topic: Context Compound with Ollama Embeddings
 date: 2026-02-24
 status: draft
 decisions: []
+last_validated: 2026-04-18
 ---
 
 # Brainstorm: Context Compound with Ollama Embeddings

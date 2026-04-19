@@ -51,7 +51,7 @@ fi
 		exit 1
 	fi
 
-	required_support_files=("scripts/codex-preflight.sh" "scripts/codex-preflight-local-memory-legacy.sh" "scripts/codex-learn" "scripts/codex-enforced" "scripts/verify-work.sh" "scripts/validate-codestyle.sh" "scripts/prepare-worktree.sh" "scripts/new-task.sh" "scripts/validate-commit-msg.js" "scripts/check-staged-secrets.sh" "scripts/check-doc-style.sh" "scripts/check-related-tests.sh" "scripts/check-semgrep-changed.sh" "scripts/semgrep-pre-push.yml")
+	required_support_files=("scripts/codex-preflight.sh" "scripts/codex-preflight-local-memory-legacy.sh" "scripts/codex-learn" "scripts/codex-enforced" "scripts/verify-work.sh" "scripts/validate-codestyle.sh" "scripts/prepare-worktree.sh" "scripts/new-task.sh" "scripts/validate-commit-msg.js" "scripts/check-hook-critical-config-sync.sh" "scripts/check-staged-secrets.sh" "scripts/check-doc-style.sh" "scripts/check-related-tests.sh" "scripts/check-semgrep-changed.sh" "scripts/semgrep-pre-push.yml")
 	for support_file in "${required_support_files[@]}"; do
 		if [[ ! -f "$REPO_ROOT/${support_file}" ]]; then
 			echo "Error: missing required hook support file at $REPO_ROOT/${support_file}"
@@ -334,7 +334,7 @@ else
 	if [[ -n "$mise_harness_bin" && -x "$mise_harness_bin" ]]; then
 		if ! run_check_environment_with_runner "mise harness ($mise_harness_bin)" "$mise_harness_bin"; then
 			echo "Error: mise-resolved harness failed to run check-environment successfully."
-			echo 'Fix: ensure the session activates mise first (eval "$(mise activate bash)") or invoke the mise binary directly.'
+			echo "Fix: ensure the session activates mise first (eval \"\$(mise activate bash)\") or invoke the mise binary directly."
 			exit 1
 		fi
 	else

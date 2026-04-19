@@ -6,6 +6,7 @@ date: 2026-04-13
 plan_id: feat-remediation-loop-implementation
 origin: docs/brainstorms/2026-02-24-code-factory-remediation-gap-loop-brainstorm.md
 deepened: 2026-02-25
+last_validated: 2026-04-18
 ---
 
 # Remediation Loop Implementation

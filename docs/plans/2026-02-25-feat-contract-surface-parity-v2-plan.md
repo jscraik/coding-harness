@@ -1,3 +1,8 @@
+---
+status: active
+last_validated: 2026-04-18
+---
+
 # Contract Surface Parity v2 - Completion Plan
 
 > **For Claude:** REQUIRED SUB-SKILL: Use superpowers:executing-plans to implement this plan task-by-task.

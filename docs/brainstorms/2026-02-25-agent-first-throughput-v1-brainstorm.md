@@ -1,6 +1,7 @@
 ---
 date: 2026-02-25
 topic: agent-first-throughput-v1
+last_validated: 2026-04-18
 ---
 
 # Agent-First Throughput v1 Brainstorm

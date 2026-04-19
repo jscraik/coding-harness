@@ -50,7 +50,7 @@ function createRepo(refreshScript: string): string {
 	mkdirSync(join(root, ".diagram", "context"), { recursive: true });
 	write(
 		root,
-		".diagram/context/diagram-context.md",
+		"AI/context/diagram-context.md",
 		"# Diagram Context Pack\n\nGenerated: 2026-03-11T00:00:00Z\n\n## system\n\n```mermaid\ngraph TD\n  A[Start] --> B[Finish]\n```\n",
 	);
 	write(
@@ -139,7 +139,7 @@ printf '%s\\n' \
 	"graph TD" \
 	"  A[Start] --> B[Finish]" \
 	"\${fence}" \
-	> .diagram/context/diagram-context.md
+	> AI/context/diagram-context.md
 
 jq -n --tab \
 	--arg generated_at "2026-03-12T10:00:00Z" \
@@ -165,7 +165,7 @@ jq -n --tab \
 		const root = createRepo(`#!/usr/bin/env bash
 set -euo pipefail
 printf '%s\n' "$*" > .refresh-invoked
-printf '\n## Drift detected\n' >> .diagram/context/diagram-context.md
+printf '\n## Drift detected\n' >> AI/context/diagram-context.md
 `);
 		roots.push(root);
 
@@ -176,6 +176,6 @@ printf '\n## Drift detected\n' >> .diagram/context/diagram-context.md
 		expect(result.stdout).toContain(
 			"Error: architecture diagram artifacts are stale after refresh.",
 		);
-		expect(result.stdout).toContain(".diagram/context/diagram-context.md");
+		expect(result.stdout).toContain("AI/context/diagram-context.md");
 	});
 });

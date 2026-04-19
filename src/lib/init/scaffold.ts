@@ -250,9 +250,13 @@ function renderTransitionStatusArtifact(): string {
 }
 
 /**
- * Generates the default `.npmrc` content used when scaffolding a repository.
+ * Produce the repository-level `.npmrc` contents used by generated projects.
  *
- * @returns The `.npmrc` file contents including registry, install/peer dependency and node-linker settings, plus comments advising that authentication should come from a user-level or CI-injected `~/.npmrc`
+ * The returned text contains recommended defaults for registry, lifecycle and peer-install behavior,
+ * a commented note preserving pnpm's isolated linker as the default, and guidance that auth tokens
+ * must be provided via user-level or CI-injected `.npmrc` rather than the repository file.
+ *
+ * @returns The `.npmrc` file contents to write into the scaffolded repository
  */
 function renderDefaultNpmrc(): string {
 	return `@brainwav:registry=https://registry.npmjs.org/
@@ -260,7 +264,8 @@ ignore-scripts=true
 strict-peer-dependencies=false
 auto-install-peers=false
 shamefully-hoist=false
-node-linker=hoisted
+# Keep pnpm's isolated linker default; enable hoisted linker only for legacy-compat repos.
+# node-linker=hoisted
 
 # Auth should come from user-level ~/.npmrc or CI-injected ~/.npmrc, not this repo.
 # Do not add //registry.npmjs.org/:_authToken=... here, because it can override
@@ -269,14 +274,10 @@ node-linker=hoisted
 }
 
 /**
- * Generate a CircleCI workflow YAML configured for Node.js projects.
+ * Generate a CircleCI configuration YAML tailored to the specified package manager.
  *
- * The `pm` parameter controls package-manager-specific behavior: when `"pnpm"` is used
- * the config includes pnpm store configuration and caching and installs with a frozen lockfile;
- * other values produce a generic install step.
- *
- * @param pm - Package manager identifier (e.g., `"pnpm"`, `"yarn"`, `"npm"`)
- * @returns The complete CircleCI configuration YAML as a string
+ * @param pm - The package manager identifier used to render install and script commands (e.g., "npm", "pnpm", "yarn").
+ * @returns The CircleCI configuration YAML as a string, defining a `pr-pipeline` job and workflow with Node.js 24, steps to ensure pnpm availability, install dependencies, run lint, typecheck, test, audit, and produce a policy bundle.
  */
 function renderCircleCIConfig(pm: string): string {
 	const installCommand =
@@ -316,7 +317,7 @@ jobs:
       - run:
           name: Ensure pnpm available
           command: |
-            required_pnpm_version="10.0.0"
+            required_pnpm_version="10.33.0"
             current_pnpm_version=""
             if command -v pnpm >/dev/null 2>&1; then
               current_pnpm_version="$(pnpm --version || true)"
@@ -362,10 +363,18 @@ workflows:
 `;
 }
 
+/**
+ * Produces a GitHub Actions workflow step that ensures a specific pnpm version is present in the runner.
+ *
+ * The emitted step checks the installed pnpm version and, if it differs from the pinned version (10.33.0),
+ * installs that pnpm to a user-local npm prefix, adds its bin directory to PATH via GITHUB_PATH, and prints the pnpm version.
+ *
+ * @returns The YAML-formatted GitHub Actions step as a string
+ */
 function renderGitHubActionsPnpmSetupStep(): string {
 	return `      - name: Ensure pnpm available
         run: |
-          required_pnpm_version="10.0.0"
+          required_pnpm_version="10.33.0"
           current_pnpm_version=""
           if command -v pnpm >/dev/null 2>&1; then
             current_pnpm_version="$(pnpm --version || true)"
@@ -1857,8 +1866,8 @@ export const TEMPLATES: Template[] = [
     needs: [pr-template]
     if: ${"${{ always() && (github.event_name == 'merge_group' || needs.pr-template.result == 'success') }}"}
     steps:
-      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
-      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6
+      - uses: actions/setup-node@53b83947a5a98c8d113130e565377fae1a50d02f # v6
         with:
           node-version: "24"
 ${renderGitHubActionsPnpmSetupStep()}
@@ -1992,10 +2001,10 @@ ${linearGateJob}
     needs: ${riskPolicyNeeds}
     if: ${riskPolicyIf}
     steps:
-      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6
         with:
           fetch-depth: 0
-      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
+      - uses: actions/setup-node@53b83947a5a98c8d113130e565377fae1a50d02f # v6
         with:
           node-version: "24"
 ${renderGitHubActionsPnpmSetupStep()}
@@ -2038,7 +2047,7 @@ ${renderGitHubActionsPnpmSetupStep()}
       contents: read
       pull-requests: read
     steps:
-      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6
       - name: Detect dependency review support
         id: dependency-review-support
         if: github.event_name == 'pull_request'
@@ -2068,7 +2077,7 @@ ${renderGitHubActionsPnpmSetupStep()}
     runs-on: ubuntu-latest
     needs: [risk-policy-gate]
     steps:
-      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6
       - name: Enforce pinned GitHub Actions
         shell: bash
         run: |
@@ -2095,8 +2104,8 @@ ${renderGitHubActionsPnpmSetupStep()}
       pull-requests: read
       actions: write
     steps:
-      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
-      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6
+      - uses: actions/setup-node@53b83947a5a98c8d113130e565377fae1a50d02f # v6
         with:
           node-version: "24"
 ${renderGitHubActionsPnpmSetupStep()}
@@ -2164,8 +2173,8 @@ ${renderGitHubActionsPnpmSetupStep()}
       pull-requests: read
       actions: write
     steps:
-      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
-      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6
+      - uses: actions/setup-node@53b83947a5a98c8d113130e565377fae1a50d02f # v6
         with:
           node-version: "24"
 ${renderGitHubActionsPnpmSetupStep()}
@@ -2227,8 +2236,8 @@ ${renderGitHubActionsPnpmSetupStep()}
     runs-on: ubuntu-latest
     needs: [risk-policy-gate]
     steps:
-      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
-      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6
+      - uses: actions/setup-node@53b83947a5a98c8d113130e565377fae1a50d02f # v6
         with:
           node-version: "24"
 ${renderGitHubActionsPnpmSetupStep()}
@@ -2242,8 +2251,8 @@ ${renderGitHubActionsPnpmSetupStep()}
     runs-on: ubuntu-latest
     needs: [risk-policy-gate]
     steps:
-      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
-      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6
+      - uses: actions/setup-node@53b83947a5a98c8d113130e565377fae1a50d02f # v6
         with:
           node-version: "24"
 ${renderGitHubActionsPnpmSetupStep()}
@@ -2257,8 +2266,8 @@ ${renderGitHubActionsPnpmSetupStep()}
     runs-on: ubuntu-latest
     needs: [risk-policy-gate]
     steps:
-      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
-      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6
+      - uses: actions/setup-node@53b83947a5a98c8d113130e565377fae1a50d02f # v6
         with:
           node-version: "24"
 ${renderGitHubActionsPnpmSetupStep()}
@@ -2272,8 +2281,8 @@ ${renderGitHubActionsPnpmSetupStep()}
     runs-on: ubuntu-latest
     needs: [risk-policy-gate]
     steps:
-      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
-      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6
+      - uses: actions/setup-node@53b83947a5a98c8d113130e565377fae1a50d02f # v6
         with:
           node-version: "24"
 ${renderGitHubActionsPnpmSetupStep()}
@@ -2287,8 +2296,8 @@ ${renderGitHubActionsPnpmSetupStep()}
     runs-on: ubuntu-latest
     needs: [risk-policy-gate]
     steps:
-      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
-      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6
+      - uses: actions/setup-node@53b83947a5a98c8d113130e565377fae1a50d02f # v6
         with:
           node-version: "24"
 ${renderGitHubActionsPnpmSetupStep()}
@@ -2302,7 +2311,7 @@ ${renderGitHubActionsPnpmSetupStep()}
     runs-on: ubuntu-latest
     needs: [risk-policy-gate]
     steps:
-      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6
       - name: Validate memory.json
         run: ${memoryValidateCommand}
 `;
@@ -2331,7 +2340,7 @@ jobs:
 
     steps:
       - name: Checkout
-        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6
         with:
           fetch-depth: 0
 
@@ -2920,6 +2929,54 @@ gitleaks git \\
 `,
 	},
 	{
+		path: "scripts/check-hook-critical-config-sync.sh",
+		render: () => `#!/usr/bin/env bash
+set -euo pipefail
+
+REPO_ROOT="$(cd -- "$(dirname -- "\${BASH_SOURCE[0]}")/.." && pwd)"
+cd "$REPO_ROOT"
+
+# Guard critical hook/lint config from index/worktree drift. Hook runners may
+# temporarily stash unstaged changes, which can make pre-commit evaluate an
+# older staged config snapshot than the file currently shown in the worktree.
+critical_files=("biome.json")
+drift_files=()
+
+	for config_path in "\${critical_files[@]}"; do
+		if ! git ls-files --error-unmatch -- "$config_path" >/dev/null 2>&1; then
+			continue
+		fi
+
+		index_blob="$(git rev-parse --verify ":\${config_path}" 2>/dev/null || true)"
+		if [[ -n "$index_blob" && ! -e "$config_path" ]]; then
+			drift_files+=("$config_path")
+			continue
+		fi
+		if [[ ! -f "$config_path" ]]; then
+			continue
+		fi
+		worktree_blob="$(git hash-object --path="$config_path" "$config_path" 2>/dev/null || true)"
+		if [[ -n "$index_blob" && -n "$worktree_blob" && "$index_blob" != "$worktree_blob" ]]; then
+			drift_files+=("$config_path")
+		fi
+	done
+
+if [[ \${#drift_files[@]} -eq 0 ]]; then
+	exit 0
+fi
+
+echo "Error: critical hook config differs between index and worktree:" >&2
+for config_path in "\${drift_files[@]}"; do
+	echo "  - $config_path" >&2
+done
+echo >&2
+echo "Why this fails: pre-commit style runners stash unstaged changes, so hooks may read stale staged config." >&2
+echo "Fix: stage or stash these files before committing, then retry." >&2
+echo "Example: git add \${drift_files[*]}" >&2
+exit 1
+`,
+	},
+	{
 		path: "scripts/check-doc-style.sh",
 		render: () => `#!/usr/bin/env bash
 set -euo pipefail
@@ -3129,15 +3186,16 @@ done
 
 ROOT_DIR="$(cd "$(dirname "${"${"}BASH_SOURCE[0]}")/.." && pwd)"
 DIAGRAM_DIR="$ROOT_DIR/.diagram"
-CONTEXT_DIR="$DIAGRAM_DIR/context"
+CONTEXT_DIR="$ROOT_DIR/AI/context"
+DIAGRAM_CONTEXT_DIR="$DIAGRAM_DIR/context"
 CONTEXT_FILE="$CONTEXT_DIR/diagram-context.md"
-META_FILE="$CONTEXT_DIR/diagram-context.meta.json"
-LOG_FILE="$CONTEXT_DIR/refresh.log"
+META_FILE="$DIAGRAM_CONTEXT_DIR/diagram-context.meta.json"
+LOG_FILE="$DIAGRAM_CONTEXT_DIR/refresh.log"
 MIN_SECONDS="\${DIAGRAM_REFRESH_MIN_SECONDS:-1800}"
 MAX_FILES="\${DIAGRAM_REFRESH_MAX_FILES:-1000}"
 NOW_EPOCH="$(date +%s)"
 
-mkdir -p "$DIAGRAM_DIR" "$CONTEXT_DIR"
+mkdir -p "$DIAGRAM_DIR" "$DIAGRAM_CONTEXT_DIR" "$CONTEXT_DIR"
 
 log() {
 	local message="$1"
@@ -3455,7 +3513,7 @@ REPO_ROOT="$(cd -- "$SCRIPT_DIR/.." && pwd)"
 
 TRACKED_ARTIFACT_PATHS=(
 	".diagram"
-	".diagram/context/diagram-context.md"
+	"AI/context/diagram-context.md"
 	".diagram/context/diagram-context.meta.json"
 )
 
@@ -3480,6 +3538,9 @@ is_architecture_sensitive_change() {
 			return 0
 			;;
 		.diagram/*)
+			return 0
+			;;
+		AI/context/*)
 			return 0
 			;;
 		src/*)
@@ -3603,7 +3664,7 @@ echo "Diagram freshness check passed."
 		render: () => "",
 	},
 	{
-		path: ".diagram/context/diagram-context.md",
+		path: "AI/context/diagram-context.md",
 		render: () => `# Diagram Context Pack
 
 This file is auto-generated by the diagram-refresh CI job on every PR.
@@ -4277,6 +4338,7 @@ hooks: ## Setup git hooks
 	node scripts/setup-git-hooks.js
 
 hooks-pre-commit: ## Run local pre-commit gates before creating a commit
+	@bash ./scripts/check-hook-critical-config-sync.sh
 	pnpm lint
 	pnpm docs:lint
 	pnpm typecheck

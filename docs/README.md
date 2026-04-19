@@ -1,3 +1,7 @@
+---
+last_validated: 2026-04-18
+---
+
 # Docs Index
 
 > Documentation is organized into progressive layers. See [documentation layers](./architecture/documentation-layers.md) for the full model.

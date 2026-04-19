@@ -1,11 +1,12 @@
 ---
-title: feat: Cross-Project Governance Platform
+title: "feat: Cross-Project Governance Platform"
 type: feat
 status: active
 date: 2026-04-13
 plan_id: feat-cross-project-governance
 origin: docs/brainstorms/2026-03-07-cross-project-governance-brainstorm.md
 deepened: 2026-03-07
+last_validated: 2026-04-18
 ---
 
 # feat: Cross-Project Governance Platform

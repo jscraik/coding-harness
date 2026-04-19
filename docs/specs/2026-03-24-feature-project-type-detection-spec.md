@@ -9,6 +9,7 @@ risk: low
 spec_depth: lite
 ui_required: false
 linear: JSC-71
+last_validated: 2026-04-18
 ---
 
 # Project Type Auto-Detection — Lite Spec

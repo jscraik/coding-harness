@@ -1,11 +1,12 @@
 ---
-title: feat: Context Integrity Control Plane
+title: "feat: Context Integrity Control Plane"
 type: feat
 status: completed
 date: 2026-04-13
 plan_id: feat-context-integrity-control-plane
 origin: docs/brainstorms/2026-03-11-context-integrity-control-plane-brainstorm.md
 spec: docs/specs/2026-03-11-feat-context-integrity-control-plane-spec.md
+last_validated: 2026-04-18
 ---
 
 # feat: Context Integrity Control Plane

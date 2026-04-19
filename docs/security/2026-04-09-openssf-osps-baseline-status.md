@@ -3,6 +3,7 @@ title: OpenSSF OSPS Baseline Status
 date: 2026-04-09
 status: active
 version: 2026.02.19
+last_validated: 2026-04-18
 ---
 
 # OpenSSF OSPS Baseline Status

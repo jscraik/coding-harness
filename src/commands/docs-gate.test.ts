@@ -24,7 +24,7 @@ function seedRequiredTruthSources(root: string): void {
 	);
 	write(
 		join(root, "package.json"),
-		JSON.stringify({ packageManager: "pnpm@10.0.0" }, null, 2),
+		JSON.stringify({ packageManager: "pnpm@10.33.0" }, null, 2),
 	);
 }
 
@@ -629,7 +629,7 @@ describe("docs-gate command", () => {
 		write(join(root, "AI/context/diagram-context.md"), "# Diagram Context\n");
 		write(
 			join(root, "package.json"),
-			JSON.stringify({ packageManager: "pnpm@10.0.0" }, null, 2),
+			JSON.stringify({ packageManager: "pnpm@10.33.0" }, null, 2),
 		);
 
 		const result = runDocsGate({
@@ -682,7 +682,7 @@ describe("docs-gate command", () => {
 		);
 		write(
 			join(root, "package.json"),
-			JSON.stringify({ packageManager: "pnpm@10.0.0" }, null, 2),
+			JSON.stringify({ packageManager: "pnpm@10.33.0" }, null, 2),
 		);
 
 		const result = runDocsGate({
@@ -726,7 +726,7 @@ describe("docs-gate command", () => {
 		);
 		write(
 			join(root, "package.json"),
-			JSON.stringify({ packageManager: "pnpm@10.0.0" }, null, 2),
+			JSON.stringify({ packageManager: "pnpm@10.33.0" }, null, 2),
 		);
 		write(
 			join(root, ".github/workflows/pr-pipeline.yml"),
@@ -794,7 +794,7 @@ describe("docs-gate command", () => {
 		);
 		write(
 			join(root, "package.json"),
-			JSON.stringify({ packageManager: "pnpm@10.0.0" }, null, 2),
+			JSON.stringify({ packageManager: "pnpm@10.33.0" }, null, 2),
 		);
 		write(
 			join(root, ".github/workflows/pr-pipeline.yml"),

@@ -6,6 +6,7 @@ date: 2026-03-10
 origin: docs/brainstorms/2026-03-10-docs-gate-governance-parity-brainstorm.md
 risk: medium
 spec_depth: full
+last_validated: 2026-04-18
 ---
 
 # Docs Gate for Governance Parity

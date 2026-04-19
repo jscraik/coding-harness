@@ -6,6 +6,7 @@ date: 2026-03-10
 plan_id: feat-docs-gate-governance-parity
 origin: docs/brainstorms/2026-03-10-docs-gate-governance-parity-brainstorm.md
 spec: docs/specs/2026-03-10-feat-docs-gate-governance-parity-spec.md
+last_validated: 2026-04-18
 ---
 
 # feat: Docs Gate Governance Parity

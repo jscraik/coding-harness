@@ -11,6 +11,7 @@ decisions:
   - Use sqlite-vec for vector storage
   - Start with full-document chunking
   - Auto-detect Ollama, graceful fallback
+last_validated: 2026-04-18
 ---
 
 # Plan: Context Compound Implementation

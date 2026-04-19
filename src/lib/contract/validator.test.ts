@@ -431,7 +431,7 @@ describe("validateContract", () => {
 					requiredBinaries: ["node", "pnpm"],
 					requiredMiseTools: [
 						{ tool: "node", version: "24.13.1" },
-						{ tool: "pnpm", version: "10.0.0" },
+						{ tool: "pnpm", version: "10.33.0" },
 					],
 					miseFilePath: ".mise.toml",
 					readinessScriptPath: "scripts/check-environment.sh",

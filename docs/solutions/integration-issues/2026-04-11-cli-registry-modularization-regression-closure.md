@@ -24,6 +24,7 @@ tags:
   - check-environment
   - prek
   - regression
+last_validated: 2026-04-18
 ---
 
 # Solution: Close Command Registry Refactor Regressions

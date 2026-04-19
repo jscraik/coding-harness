@@ -1,3 +1,7 @@
+---
+last_validated: 2026-04-18
+---
+
 # Security and governance
 
 - [Security posture](#security-posture)
@@ -11,6 +15,7 @@
 - [Setup](#setup)
 - [Commit message format](#commit-message-format)
 - [PR template reminder](#pr-template-reminder)
+- [Frontmatter metadata](#frontmatter-metadata)
 - [Plan traceability](#plan-traceability)
 
 ## Security posture
@@ -86,7 +91,7 @@ This repository follows conservative defaults:
 - Treat scaffolded `scripts/harness-cli.sh` resolution failures as local install/bootstrap drift rather than harness command failures, and remediate with repo-local dependency repair (`pnpm install`, `pnpm add -D @brainwav/coding-harness`, then `pnpm exec harness <command>`).
 - For Local Memory enforcement, pin `~/.local-memory/config.yaml` to `host: 127.0.0.1` and `auto_port: false`, and prefer the pinned REST health endpoint as the source of truth when CLI status output is stale under sandboxed execution.
 - If using local shell helpers, prefer `source scripts/codex-shell-helpers.sh` and launch through `codex_d`/`cdxd` so Codex runs with `--profile d` and `--cd` anchored to the repo root.
-- Treat harness-scaffolded governance artifacts as part of the runtime contract: `.npmrc` should exist with the baseline security defaults plus scope-only registry routing, and `.harness/ci-provider-transition-status.json` should exist before strict `ci-migrate verify`. Repo `.npmrc` files must not carry auth token overrides; auth belongs in user-level or CI-injected `~/.npmrc`.
+- Treat harness-scaffolded governance artifacts as part of the runtime contract: `.npmrc` should exist with baseline security defaults plus scope-only registry routing, keep pnpm's isolated linker as default (hoisted linker opt-in only), and `.harness/ci-provider-transition-status.json` should exist before strict `ci-migrate verify`. Repo `.npmrc` files must not carry auth token overrides; auth belongs in user-level or CI-injected `~/.npmrc`.
 - If `toolingPolicy.projectBrainMemoryExtension.enabled=true`, capture verification evidence that the required `.harness/**` paths exist and that `scripts/check-environment.sh` still declares `required_project_brain_paths`.
 - When bumping tooling dependencies that have mirrored configuration schemas, update the package version, the repo config, and the scaffold template in the same change. The init suite enforces this for the Biome schema URL.
 - Diagram freshness enforcement should compare only git-tracked artifacts before and after refresh. Gitignored `.diagram/` refresh output may exist for local analysis, but it must not block `pre-push` unless tracked architecture artifacts actually drift.
@@ -109,6 +114,12 @@ The staged `gitleaks` lane should prefer the repo-root `.gitleaks.toml` when pre
 
 `docs-gate` no longer covers only branch/CI governance wording. Local hook, readiness, and tooling-runtime changes are expected to update this guide and `docs/agents/02-tooling-policy.md` in the same change so pre-push drift is caught before GitHub does.
 Port-free usage should remain scoped to app-style run actions that map to `dev`/`start` scripts. CLI-only repositories can omit port-free run actions without violating governance.
+
+## Frontmatter metadata
+
+- `last_validated` must use ISO date format (`YYYY-MM-DD`) and represents when the document was last verified against current tooling or governance behavior.
+- Update `last_validated` when validation wrappers, required checks, or policy contracts change and this document is re-checked.
+- Keep `last_validated` aligned with any in-body freshness marker (for example `Last updated:`) so document evidence is not contradictory.
 
 ## Plan traceability
 

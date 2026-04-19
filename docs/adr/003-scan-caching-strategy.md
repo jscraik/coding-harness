@@ -1,3 +1,7 @@
+---
+last_validated: 2026-04-18
+---
+
 # ADR 003: Scan Caching Strategy for org-audit
 
 ## Status

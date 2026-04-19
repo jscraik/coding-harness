@@ -6,6 +6,7 @@ date: 2026-03-08
 origin: docs/brainstorms/2026-02-25-agent-first-throughput-v1-brainstorm.md + oracle autonomy/eval review
 risk: high
 spec_depth: full
+last_validated: 2026-04-18
 ---
 
 # Canonical Run/Eval Substrate for Agent-First Autonomy

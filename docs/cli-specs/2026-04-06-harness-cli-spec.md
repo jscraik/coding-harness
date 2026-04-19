@@ -6,6 +6,7 @@ created: 2026-04-06
 status: active
 audience: dual-mode
 maturity: production-grade
+last_validated: 2026-04-18
 ---
 
 # Harness CLI — Implementation Contract

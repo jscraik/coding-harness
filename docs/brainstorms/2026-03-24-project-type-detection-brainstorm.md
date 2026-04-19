@@ -5,6 +5,7 @@ status: draft
 spec_required: lite
 risk_level: low
 complexity: medium
+last_validated: 2026-04-18
 ---
 
 # Project Type Auto-Detection for harness init

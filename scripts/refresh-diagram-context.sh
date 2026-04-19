@@ -28,15 +28,16 @@ done
 
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 DIAGRAM_DIR="$ROOT_DIR/.diagram"
-CONTEXT_DIR="$DIAGRAM_DIR/context"
+CONTEXT_DIR="$ROOT_DIR/AI/context"
+DIAGRAM_CONTEXT_DIR="$DIAGRAM_DIR/context"
 CONTEXT_FILE="$CONTEXT_DIR/diagram-context.md"
-META_FILE="$CONTEXT_DIR/diagram-context.meta.json"
-LOG_FILE="$CONTEXT_DIR/refresh.log"
+META_FILE="$DIAGRAM_CONTEXT_DIR/diagram-context.meta.json"
+LOG_FILE="$DIAGRAM_CONTEXT_DIR/refresh.log"
 MIN_SECONDS="${DIAGRAM_REFRESH_MIN_SECONDS:-1800}"
 MAX_FILES="${DIAGRAM_REFRESH_MAX_FILES:-1000}"
 NOW_EPOCH="$(date +%s)"
 
-mkdir -p "$DIAGRAM_DIR" "$CONTEXT_DIR"
+mkdir -p "$DIAGRAM_DIR" "$DIAGRAM_CONTEXT_DIR" "$CONTEXT_DIR"
 
 log() {
 	local message="$1"
@@ -306,7 +307,7 @@ TMP_CONTEXT="$TMP_DIR/diagram-context.md"
 
 CONTEXT_SHA="$(shasum -a 256 "$TMP_CONTEXT" | awk '{print $1}')"
 GIT_HEAD="$(git -C "$ROOT_DIR" rev-parse --short HEAD 2>/dev/null || echo "unknown")"
-DIAGRAM_COUNT="$(ls "$TMP_DIR/diagrams"/*.mmd | wc -l | tr -d ' ')"
+DIAGRAM_COUNT="$(find "$TMP_DIR/diagrams" -maxdepth 1 -type f -name '*.mmd' | wc -l | tr -d ' ')"
 CHANGED=true
 
 if [[ -f "$CONTEXT_FILE" ]] && cmp -s "$TMP_CONTEXT" "$CONTEXT_FILE"; then

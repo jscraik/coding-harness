@@ -27,7 +27,7 @@
 ## Prerequisites
 
 - Node.js `>=24.0.0`
-- `pnpm` (repo package manager)
+- `pnpm@10.33.0` (repo package manager baseline)
 - Repository write access for `harness init` template changes
 - For remote GitHub checks, a valid token (GitHub App JWT is preferred when verifying App installation state)
 

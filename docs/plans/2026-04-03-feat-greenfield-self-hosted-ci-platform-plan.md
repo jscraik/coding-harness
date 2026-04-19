@@ -7,6 +7,7 @@ requirements: docs/brainstorms/2026-04-03-greenfield-self-hosted-ci-platform-req
 spec: docs/specs/2026-04-03-feat-greenfield-self-hosted-ci-platform-spec.md
 deepened: 2026-04-03
 plan_type: standard-plan
+last_validated: 2026-04-18
 ---
 
 # Greenfield Self-Hosted CI Platform Implementation Plan

@@ -1,3 +1,10 @@
+---
+schema_version: 1
+status: active
+applies_to: coding-harness maintainers
+last_validated: 2026-04-18
+---
+
 # Blast Radius Map
 
 This document maps file paths to required checks, enabling deterministic check routing based on changed files.

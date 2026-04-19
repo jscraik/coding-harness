@@ -167,6 +167,36 @@ describe("plan workflow", () => {
 			const loaded = loadPlan(filepath);
 			expect(loaded.frontmatter.origin).toBeDefined();
 		});
+
+		it("preserves last_validated frontmatter when loading plans", () => {
+			const plansDir = join(TEST_DIR, "docs/plans");
+			if (!existsSync(plansDir)) {
+				mkdirSync(plansDir, { recursive: true });
+			}
+			const planPath = join(
+				plansDir,
+				"2026-04-18-feature-last-validated-regression-plan.md",
+			);
+			writeFileSync(
+				planPath,
+				`---
+title: Last Validated Regression
+date: 2026-04-18
+type: feature
+status: draft
+last_validated: 2026-04-18
+---
+
+# Plan
+
+Keep frontmatter fields intact.
+`,
+				"utf-8",
+			);
+
+			const loaded = loadPlan(planPath);
+			expect(loaded.frontmatter.last_validated).toBe("2026-04-18");
+		});
 	});
 
 	describe("findPlans", () => {

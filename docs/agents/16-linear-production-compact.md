@@ -1,3 +1,7 @@
+---
+last_validated: 2026-04-18
+---
+
 # Linear Production Workflow — Compact Operational Spec
 
 ## Table of Contents

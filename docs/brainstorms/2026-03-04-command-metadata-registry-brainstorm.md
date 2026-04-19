@@ -1,6 +1,7 @@
 ---
 date: 2026-03-04
 topic: command-metadata-registry
+last_validated: 2026-04-18
 ---
 
 # Command Metadata Registry Brainstorm

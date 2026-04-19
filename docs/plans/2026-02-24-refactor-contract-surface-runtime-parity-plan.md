@@ -7,6 +7,7 @@ plan_id: refactor-contract-surface-runtime-parity
 completed: 2026-02-25
 origin: docs/brainstorms/2026-02-24-contract-surface-parity-brainstorm.md
 deepened: 2026-02-24
+last_validated: 2026-04-18
 ---
 
 # Plan: Refactor Contract Surface and Runtime Parity

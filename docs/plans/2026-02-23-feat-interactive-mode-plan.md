@@ -5,6 +5,7 @@ status: completed
 date: 2026-04-13
 plan_id: feat-interactive-mode
 origin: docs/brainstorms/2026-02-23-installability-patches-brainstorm.md
+last_validated: 2026-04-18
 ---
 
 # Patch 2 - Interactive Mode for harness init
