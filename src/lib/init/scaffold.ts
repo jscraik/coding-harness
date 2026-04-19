@@ -10,6 +10,7 @@
 import { existsSync, readFileSync } from "node:fs";
 import { resolve } from "node:path";
 import { fileURLToPath } from "node:url";
+import { deriveRequiredCheckMetadata } from "../ci/required-check-metadata.js";
 import {
 	DEFAULT_CI_PROVIDER_POLICY,
 	DEFAULT_CONTRACT,
@@ -132,49 +133,22 @@ function getBranchProtectionRequiredChecks(
 }
 
 /**
- * Map a required-check display name and CI provider to canonical source identifiers and the GitHub check name.
+ * Return canonical required-check names for a provider/context pair.
  *
- * @param ciProvider - The CI provider context used to derive default source identifiers (e.g., `"circleci"` or `"github-actions"`).
- * @param displayName - The display name of the required check (e.g., `"CodeRabbit"`, `"security-scan"`, or other check names).
- * @returns An object containing:
- *  - `sourceAppSlug` — the source application's slug used in manifests,
- *  - `sourceAppId` — the source application's identifier,
- *  - `githubCheckName` — the GitHub check name to associate with this required check.
+ * `circleci` always includes `security-scan` and positions it before `CodeRabbit`.
+ *
+ * @param ciProvider - CI provider used for normalization
+ * @param context - Optional issue-tracker render context affecting base check selection
+ * @returns Normalized required-check list used across scaffold outputs
  */
-function resolveRequiredCheckSource(
+function getNormalizedRequiredChecks(
 	ciProvider: CIProvider,
-	displayName: string,
-): {
-	sourceAppSlug: string;
-	sourceAppId: string;
-	githubCheckName: string;
-} {
-	if (displayName === "CodeRabbit") {
-		return {
-			sourceAppSlug: "coderabbit",
-			sourceAppId: "coderabbit",
-			githubCheckName: "CodeRabbit",
-		};
-	}
-	if (displayName === "security-scan") {
-		return {
-			sourceAppSlug: "github-actions",
-			sourceAppId: "github-actions",
-			githubCheckName: "security-scan",
-		};
-	}
-	if (ciProvider === "circleci") {
-		return {
-			sourceAppSlug: "circleci",
-			sourceAppId: "circleci",
-			githubCheckName: "pr-pipeline",
-		};
-	}
-	return {
-		sourceAppSlug: ciProvider,
-		sourceAppId: ciProvider,
-		githubCheckName: displayName,
-	};
+	context?: Pick<TemplateRenderContext, "issueTracker">,
+): readonly string[] {
+	const baseChecks = getBranchProtectionRequiredChecks(context);
+	return ciProvider === "circleci"
+		? insertSecurityScanBeforeCodeRabbit(baseChecks)
+		: baseChecks;
 }
 
 /**
@@ -218,29 +192,24 @@ function renderRequiredChecksManifest(
 	ciProvider: CIProvider,
 	context?: Pick<TemplateRenderContext, "issueTracker">,
 ): string {
-	const baseChecks = getBranchProtectionRequiredChecks(context);
-	const checksWithSecurityScan =
-		ciProvider === "circleci"
-			? insertSecurityScanBeforeCodeRabbit(baseChecks)
-			: baseChecks;
+	const checksWithSecurityScan = getNormalizedRequiredChecks(
+		ciProvider,
+		context,
+	);
 
 	const requiredChecks = checksWithSecurityScan.map((displayName, index) => {
-		const mapping = resolveRequiredCheckSource(ciProvider, displayName);
-		const isCircleCiSecurityScan =
-			ciProvider === "circleci" && displayName === "security-scan";
+		const metadata = deriveRequiredCheckMetadata(ciProvider, displayName);
 		return {
 			policyId: `required-check-${index + 1}`,
 			displayName,
-			sourceAppSlug: mapping.sourceAppSlug,
-			sourceAppId: mapping.sourceAppId,
+			sourceAppSlug: metadata.sourceAppSlug,
+			sourceAppId: metadata.sourceAppId,
 			externalIdPattern: `^${escapeRegexLiteral(displayName)}$`,
 			requiredOnEvents: ["pull_request", "merge_group"] as const,
 			freshnessWindowDays: 7,
-			class: isCircleCiSecurityScan
-				? ("informational" as const)
-				: ("required" as const),
-			enabled: isCircleCiSecurityScan ? false : undefined,
-			githubCheckName: mapping.githubCheckName,
+			class: metadata.class,
+			enabled: metadata.enabled,
+			githubCheckName: metadata.githubCheckName,
 		};
 	});
 
@@ -1574,7 +1543,12 @@ export const TEMPLATES: Template[] = [
 					},
 					docsDriftRules: {},
 					branchProtection: {
-						requiredChecks: [...getBranchProtectionRequiredChecks(context)],
+						requiredChecks: [
+							...getNormalizedRequiredChecks(
+								context.ciProvider ?? DEFAULT_CI_PROVIDER,
+								context,
+							),
+						],
 						restrictDeletions: true,
 						blockForcePushes: true,
 						requireLinearHistory: true,
@@ -2406,7 +2380,10 @@ jobs:
 			);
 			const localExecCommand = renderLocalHarnessExecCommand(pm);
 			const requiredChecksList = formatRequiredChecksBulleted(
-				getBranchProtectionRequiredChecks(context),
+				getNormalizedRequiredChecks(
+					context.ciProvider ?? DEFAULT_CI_PROVIDER,
+					context,
+				),
 				"  - ",
 			);
 			const reviewArtifactsLines = `- CodeRabbit review artifact (URL, report, or comment reference).

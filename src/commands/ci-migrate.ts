@@ -15,7 +15,6 @@ import { dirname, resolve, sep } from "node:path";
 import { cwd, env } from "node:process";
 import { fileURLToPath } from "node:url";
 import {
-	CIRCLECI_PRIMARY_CHECK,
 	type CheckEntry,
 	buildBranchProtectSyncPlan,
 	formatBranchProtectSyncWarning,
@@ -42,6 +41,7 @@ import {
 	type RequiredCheckIdentity,
 	createCIProviderAdapter,
 } from "../lib/ci/provider-adapter.js";
+import { deriveRequiredCheckMetadata } from "../lib/ci/required-check-metadata.js";
 import {
 	type BranchProtectionSatisfiabilityReport,
 	scanOpenPullRequestSatisfiability,
@@ -7925,35 +7925,19 @@ function buildImportedRequiredChecks(
 	sourceProvider: CIProvider,
 ): RequiredCheckIdentity[] {
 	return displayNames.map((displayName, index) => {
-		const source =
-			displayName === "CodeRabbit"
-				? { sourceAppSlug: "coderabbit", sourceAppId: "coderabbit" }
-				: displayName === "security-scan"
-					? {
-							sourceAppSlug: "github-actions",
-							sourceAppId: "github-actions",
-						}
-					: { sourceAppSlug: sourceProvider, sourceAppId: sourceProvider };
-		const isCanonicalExternalCheck =
-			source.sourceAppSlug !== "circleci" || source.sourceAppId !== "circleci";
-		const githubCheckName =
-			sourceProvider === "circleci" && !isCanonicalExternalCheck
-				? CIRCLECI_PRIMARY_CHECK
-				: displayName;
-		const isCircleCiSecurityScan =
-			sourceProvider === "circleci" && displayName === "security-scan";
+		const metadata = deriveRequiredCheckMetadata(sourceProvider, displayName);
 
 		return {
 			policyId: `imported-required-check-${index + 1}`,
 			displayName,
-			sourceAppSlug: source.sourceAppSlug,
-			sourceAppId: source.sourceAppId,
+			sourceAppSlug: metadata.sourceAppSlug,
+			sourceAppId: metadata.sourceAppId,
 			externalIdPattern: `^${escapeRegexLiteral(displayName)}$`,
-			githubCheckName,
+			githubCheckName: metadata.githubCheckName,
 			requiredOnEvents: ["pull_request", "merge_group"],
 			freshnessWindowDays: 7,
-			class: isCircleCiSecurityScan ? "informational" : "required",
-			...(isCircleCiSecurityScan ? { enabled: false } : {}),
+			class: metadata.class,
+			...(metadata.enabled === undefined ? {} : { enabled: metadata.enabled }),
 		};
 	});
 }
@@ -9511,7 +9495,9 @@ export function runCIMigrateCLI(
 			dir,
 			sourceProvider,
 			provider,
-			requiredChecksImportResult.value,
+			requiredChecksImportResult.value.filter(
+				(check) => check.class === "required" && check.enabled !== false,
+			),
 		);
 		if (!reportResult.ok) {
 			console.error(`Error: ${reportResult.error}`);
