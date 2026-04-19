@@ -210,6 +210,7 @@ const VALID_CI_PROVIDER_POLICY_KEYS = [
 	"authorityConfigPath",
 	"requiredCheckManifestPath",
 	"trustedPolicyRef",
+	"primaryCheckName",
 	"commitMode",
 ] as const;
 const VALID_GAP_CASE_POLICY_KEYS = [
