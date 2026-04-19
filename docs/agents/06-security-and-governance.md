@@ -1,10 +1,11 @@
 ---
-last_validated: 2026-04-18
+last_validated: 2026-04-19
 ---
 
 # Security and governance
 
 - [Security posture](#security-posture)
+- [Code-style parity verification surface](#code-style-parity-verification-surface)
 - [Secret handling](#secret-handling)
 - [Code and data governance](#code-and-data-governance)
 - [Risk controls](#risk-controls)
@@ -40,6 +41,14 @@ This repository follows conservative defaults:
 - OpenSSF baseline tracking for this repository is grounded by `docs/security/2026-04-09-openssf-osps-baseline-status.md`; keep its control matrix synchronized with `.github/workflows/openssf-scorecard.yml`, `security/openssf-scorecard-policy.json`, and `scripts/check-scorecard-regressions.mjs`.
 - Greptile is a legacy cleanup concern only. Keep active review governance, scaffold defaults, and runtime verification aligned to CodeRabbit, and treat any live Greptile scaffold path as contract drift unless it exists solely to remove or quarantine old artifacts.
 - Security/policy hook configuration files must fail closed because of findings, not because the config is syntactically broken; keep Semgrep rule YAML quoted where patterns include mapping-like text such as `shell: true`.
+
+## Code-style parity verification surface
+
+`bash scripts/check-codestyle-parity.sh` is a required verification surface in the bootstrap lane (`bash scripts/codex-preflight.sh --stack auto --mode required`) and in broader readiness checks (`bash scripts/verify-work.sh`).
+
+The parity gate must validate repo-root `CODESTYLE.md`, `codestyle/**`, and `codestyle/CHECKSUMS.sha256`.
+
+Failure mode is intentionally fail-closed: missing code-style files, checksum drift, malformed manifest entries, or path traversal outside repo root must exit non-zero and block readiness until corrected.
 
 ## Secret handling
 

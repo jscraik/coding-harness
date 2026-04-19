@@ -73,11 +73,9 @@ normalized_checksum() {
 
 	case "$rel_path" in
 		*/diagram-context.md)
-			{
-				rg '^## ' "$file" || true
-				rg -o '\["[^"]+"\]|\{\{"[^"]+"\}\}' "$file" \
-					| sed -E 's/^\["(.*)"\]$/\1/; s/^\{\{"(.*)"\}\}$/\1/' || true
-			} | LC_ALL=C sort | shasum -a 256 | awk '{print $1}'
+			# Normalize away the generated timestamp line, but hash the full
+			# remaining document so unquoted mermaid edge changes are detected.
+			sed -E '/^Generated: /d' "$file" | shasum -a 256 | awk '{print $1}'
 			;;
 		*/diagram-context.meta.json)
 			jq -c 'del(.generated_at, .last_generated_epoch, .changed, .context_sha256, .git_head)' "$file" | shasum -a 256 | awk '{print $1}'

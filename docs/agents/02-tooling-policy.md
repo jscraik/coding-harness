@@ -1,5 +1,5 @@
 ---
-last_validated: 2026-04-18
+last_validated: 2026-04-19
 ---
 
 # Tooling policy
@@ -9,6 +9,7 @@ last_validated: 2026-04-18
 - [Required tooling baseline](#required-tooling-baseline)
 - [Codex environment actions](#codex-environment-actions)
 - [Repository command contract](#repository-command-contract)
+- [Code-style parity gate](#code-style-parity-gate)
 - [Execution rule for tooling](#execution-rule-for-tooling)
 - [Recommended command order](#recommended-command-order)
 - [Tooling verification checklist](#tooling-verification-checklist)
@@ -123,6 +124,18 @@ Port-free wrapping is expected only for app run actions backed by `dev`/`start` 
 | Tests (CircleCI hardened lane) | `pnpm test:ci` | Runs standard suites plus isolated `ci-migrate` run with targeted Vitest worker-timeout mitigation |
 | Audit | `pnpm audit` | dependency risk check |
 | Build | `pnpm build` | compile TypeScript and generate `dist/cli.js` |
+
+## Code-style parity gate
+
+`bash scripts/check-codestyle-parity.sh` is a required bootstrap verification surface under the same gate family as `bash scripts/codex-preflight.sh --stack auto --mode required` and `bash scripts/verify-work.sh`.
+
+It verifies:
+
+- repo-root `CODESTYLE.md`
+- `codestyle/**`
+- `codestyle/CHECKSUMS.sha256`
+
+Expected failure behavior is fail-closed: if any required code-style file is missing, if a checksum entry drifts, or if a manifest path resolves outside repo root, the command exits non-zero and readiness claims are blocked until parity is restored.
 
 ## Execution rule for tooling
 

@@ -1531,6 +1531,11 @@ hooks:
   after_create: |
     git clone --depth 1 ${renderedRepoUrl} .
     ${installCommand}
+    if ! mise trust --yes .mise.toml >/dev/null 2>&1; then
+      echo "[symphony] failed to trust .mise.toml"
+      echo "[symphony] Fix: run 'mise trust --yes .mise.toml' and retry"
+      exit 1
+    fi
     mise_trust_status="$(mise trust --show .mise.toml 2>/dev/null || true)"
     if [[ "$mise_trust_status" != *": trusted"* ]]; then
       echo "[symphony] mise config is not trusted"

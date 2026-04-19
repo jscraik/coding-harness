@@ -15,7 +15,7 @@
 
 ## Appendix B — Waivers (Uniform Model)
 
-Any waiver across ESLint, Vale, Semgrep, Clippy, CI checks MUST include:
+Any waiver across ESLint, Vale, Semgrep, Clippy, and CI checks MUST include these fields unless a command contract defines a tool-specific override schema:
 
 * Rule ID or section
 * Reason
