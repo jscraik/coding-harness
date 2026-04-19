@@ -1650,6 +1650,9 @@ describe("runInit", () => {
 			expect(newTask).toContain(
 				"[new-task] fetching latest $remote_name/$remote_base_branch",
 			);
+			expect(newTask).toContain(
+				'if git -C "$REPO_ROOT" remote get-url "$candidate_remote" >/dev/null 2>&1; then',
+			);
 			expect(newTask).toContain('elif [[ "$base_ref" != *"/"* ]]; then');
 			expect(newTask).toContain(
 				'if git show-ref --verify --quiet "refs/heads/$base_ref"; then',
@@ -2194,6 +2197,124 @@ exit 1
 			const loggedRuns = readFileSync(runnerLog, "utf-8").trim().split("\n");
 			expect(loggedRuns[0]).toContain("mise-harness check-environment");
 			expect(loggedRuns[1]).toContain("npm-harness check-environment");
+		});
+
+		it("runs scaffolded new-task for commit-ish and non-origin remote bases from outside repo root", () => {
+			writeFileSync(
+				join(tempDir, "pnpm-lock.yaml"),
+				"lockfileVersion: '9.0'\n",
+				"utf-8",
+			);
+
+			const result = runInit(tempDir, { dryRun: false, force: false });
+			expect(result.ok).toBe(true);
+
+			const runGit = (args: string[], cwd = tempDir) =>
+				spawnSync("git", args, {
+					cwd,
+					encoding: "utf8",
+					env: sanitizeGitEnv(),
+				});
+
+			expect(runGit(["init", "-b", "main"]).status).toBe(0);
+			expect(
+				runGit(["config", "user.email", "test@example.com"]).status,
+			).toBe(0);
+			expect(runGit(["config", "user.name", "Test User"]).status).toBe(0);
+
+			writeFileSync(join(tempDir, "README.md"), "seed\n", "utf-8");
+			expect(runGit(["add", "README.md"]).status).toBe(0);
+			expect(runGit(["commit", "-m", "seed main"]).status).toBe(0);
+
+			const firstSha = runGit(["rev-parse", "HEAD"]).stdout.trim();
+			expect(firstSha).toMatch(/^[0-9a-f]{40}$/);
+
+			writeFileSync(join(tempDir, "CHANGELOG.md"), "second\n", "utf-8");
+			expect(runGit(["add", "CHANGELOG.md"]).status).toBe(0);
+			expect(runGit(["commit", "-m", "second commit"]).status).toBe(0);
+			expect(runGit(["tag", "v0.0.1", firstSha]).status).toBe(0);
+
+			const scriptPath = join(tempDir, "scripts/new-task.sh");
+			const outsideRepoCwd = tmpdir();
+			const createdWorktrees: string[] = [];
+
+			const runNewTask = (baseRef: string, slug: string): string => {
+				const worktreePath = join(tempDir, `wt-${slug}`);
+				const taskRun = spawnSync(
+					"bash",
+					[
+						scriptPath,
+						"--base",
+						baseRef,
+						"--path",
+						worktreePath,
+						slug,
+					],
+					{
+						cwd: outsideRepoCwd,
+						encoding: "utf8",
+						env: sanitizeGitEnv(),
+					},
+				);
+				const output = `${taskRun.stdout}${taskRun.stderr}`;
+				expect(taskRun.status).toBe(0);
+				expect(output).toContain(`[new-task] base: ${baseRef}`);
+				createdWorktrees.push(worktreePath);
+				return output;
+			};
+
+			expect(runNewTask("HEAD~1", "commit-ish-head")).toContain(
+				"[new-task] branch: codex/commit-ish-head",
+			);
+			expect(runNewTask("v0.0.1", "commit-ish-tag")).toContain(
+				"[new-task] branch: codex/commit-ish-tag",
+			);
+			expect(runNewTask(firstSha, "commit-ish-sha")).toContain(
+				`[new-task] base: ${firstSha}`,
+			);
+
+			const upstreamFixture = mkdtempSync(join(tmpdir(), "new-task-upstream-"));
+			try {
+				const upstreamBare = join(upstreamFixture, "upstream.git");
+				expect(runGit(["init", "--bare", upstreamBare], upstreamFixture).status).toBe(
+					0,
+				);
+				expect(runGit(["remote", "add", "upstream", upstreamBare]).status).toBe(0);
+				expect(runGit(["push", "-u", "upstream", "main"]).status).toBe(0);
+
+				const upstreamWorktreePath = join(tempDir, "wt-upstream-main");
+				const upstreamRun = spawnSync(
+					"bash",
+					[
+						scriptPath,
+						"--base",
+						"upstream/main",
+						"--path",
+						upstreamWorktreePath,
+						"upstream-main",
+					],
+					{
+						cwd: outsideRepoCwd,
+						encoding: "utf8",
+						env: sanitizeGitEnv(),
+					},
+				);
+				const upstreamOutput = `${upstreamRun.stdout}${upstreamRun.stderr}`;
+				expect(upstreamRun.status).toBe(0);
+				expect(upstreamOutput).toContain(
+					"[new-task] fetching latest upstream/main",
+				);
+				expect(upstreamOutput).toContain(
+					"[new-task] resolved base: refs/remotes/upstream/main",
+				);
+				createdWorktrees.push(upstreamWorktreePath);
+			} finally {
+				rmSync(upstreamFixture, { recursive: true, force: true });
+				for (const worktreePath of createdWorktrees) {
+					runGit(["worktree", "remove", "--force", worktreePath]);
+					rmSync(worktreePath, { recursive: true, force: true });
+				}
+			}
 		});
 
 		it("passes the scaffolded repo-local verify-work wrapper outside /codex", () => {

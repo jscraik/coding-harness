@@ -782,7 +782,7 @@ if [[ "$base_ref" == refs/remotes/*/* ]]; then
 elif [[ "$base_ref" == */* ]]; then
 	candidate_remote="\${base_ref%%/*}"
 	candidate_branch="\${base_ref#*/}"
-	if git remote get-url "$candidate_remote" >/dev/null 2>&1; then
+	if git -C "$REPO_ROOT" remote get-url "$candidate_remote" >/dev/null 2>&1; then
 		explicit_remote_ref=1
 		remote_name="$candidate_remote"
 		remote_base_branch="$candidate_branch"
