@@ -193,6 +193,16 @@ if [[ "$should_refresh" -ne 1 ]]; then
 	exit 0
 fi
 
+mapfile -t tracked_files < <(tracked_artifact_files)
+preexisting_artifact_edits=()
+if (( ${#tracked_files[@]} > 0 )); then
+	for tracked_file in "${tracked_files[@]}"; do
+		if ! git -C "$REPO_ROOT" diff --quiet -- "$tracked_file" || ! git -C "$REPO_ROOT" diff --cached --quiet -- "$tracked_file"; then
+			preexisting_artifact_edits+=("$tracked_file")
+		fi
+	done
+fi
+
 echo "Refreshing architecture diagrams for changed sensitive paths..."
 before_snapshot="$(snapshot_artifacts)"
 bash "$REPO_ROOT/scripts/refresh-diagram-context.sh" --force --quiet
@@ -207,10 +217,28 @@ if [[ "$before_snapshot" != "$after_snapshot" ]]; then
 fi
 
 # Refresh can rewrite tracked artifacts even when semantic checksums are equivalent.
-# Restore only tracked files so pre-push hooks do not fail on non-semantic churn.
-mapfile -t tracked_files < <(tracked_artifact_files)
+# Restore only files that were clean before refresh so local edits are preserved.
+files_to_restore=()
 if (( ${#tracked_files[@]} > 0 )); then
-	git -C "$REPO_ROOT" restore --worktree -- "${tracked_files[@]}" >/dev/null 2>&1 || true
+	for tracked_file in "${tracked_files[@]}"; do
+		was_preexisting_edit=0
+		for preexisting_file in "${preexisting_artifact_edits[@]}"; do
+			if [[ "$preexisting_file" == "$tracked_file" ]]; then
+				was_preexisting_edit=1
+				break
+			fi
+		done
+		if (( was_preexisting_edit == 1 )); then
+			continue
+		fi
+		if ! git -C "$REPO_ROOT" diff --quiet -- "$tracked_file"; then
+			files_to_restore+=("$tracked_file")
+		fi
+	done
+fi
+
+if (( ${#files_to_restore[@]} > 0 )); then
+	git -C "$REPO_ROOT" restore --worktree -- "${files_to_restore[@]}" >/dev/null 2>&1 || true
 fi
 
 echo "Diagram freshness check passed."
