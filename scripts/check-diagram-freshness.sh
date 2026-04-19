@@ -74,8 +74,8 @@ normalized_checksum() {
 	case "$rel_path" in
 		*/diagram-context.md)
 			{
-				grep -E '^## ' "$file" || true
-				grep -oE '\["[^"]+"\]|\{\{"[^"]+"\}\}' "$file" \
+				rg '^## ' "$file" || true
+				rg -o '\["[^"]+"\]|\{\{"[^"]+"\}\}' "$file" \
 					| sed -E 's/^\["(.*)"\]$/\1/; s/^\{\{"(.*)"\}\}$/\1/' || true
 			} | LC_ALL=C sort | shasum -a 256 | awk '{print $1}'
 			;;
