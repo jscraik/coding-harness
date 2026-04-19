@@ -32,6 +32,7 @@
 		"check": "pnpm lint && pnpm docs:lint && pnpm skill:validate && pnpm workflow:validate && pnpm typecheck && pnpm test:ci && pnpm audit",
 		"publish:release": "pnpm check && pnpm build && npm publish --access restricted --ignore-scripts=false",
 		"lint": "pnpm codex-preflight:check && biome check .",
+		"lint:ci": "biome ci .",
 		"lint:fix": "biome check . --write",
 		"fmt": "biome format . --write",
 		"typecheck": "tsc --noEmit",
@@ -39,7 +40,7 @@
 		"test:ci": "bash scripts/test-ci.sh",
 		"test:watch": "vitest",
 		"test:deep": "pnpm check && pnpm test:artifacts",
-		"build": "tsc && cp -r src/presets dist/presets && cp -r src/templates dist/templates && chmod +x dist/cli.js",
+		"build": "tsc && rm -rf dist/presets dist/templates && cp -r src/presets dist/presets && cp -r src/templates dist/templates && chmod +x dist/cli.js",
 		"prepublishOnly": "pnpm check && pnpm build",
 		"changelog": "standard-version --skip.bump --skip.tag --skip.commit",
 		"release": "standard-version",
@@ -70,7 +71,7 @@
 		"codex-preflight:sync": "node scripts/sync-codex-preflight.cjs --write"
 	},
 	"devDependencies": {
-		"@biomejs/biome": "^1.9.4",
+		"@biomejs/biome": "2.4.12",
 		"@brainwav/diagram": "^1.0.8",
 		"@types/better-sqlite3": "^7.6.13",
 		"@types/lodash": "^4.17.24",
@@ -85,7 +86,7 @@
 		"typescript": "^5.9.3",
 		"vitest": "^3.2.4"
 	},
-	"packageManager": "pnpm@10.0.0",
+	"packageManager": "pnpm@10.33.0",
 	"engines": {
 		"node": ">=24.0.0"
 	},
@@ -105,24 +106,7 @@
 	},
 	"pnpm": {
 		"overrides": {
-			"axios": "^1.15.0",
-			"@vvago/vale>axios": "^1.15.0",
-			"brace-expansion": "^5.0.5",
-			"handlebars": "^4.7.9",
-			"lodash": "^4.18.1",
-			"micromatch>picomatch": "^2.3.2",
-			"minimatch": "^10.2.3",
-			"picomatch": "^4.0.4",
-			"tar": "^7.5.10",
-			"yaml": "^2.8.3",
-			"vite": ">=7.3.2 <8",
-			"handlebars@>=4.0.0 <=4.7.8": ">=4.7.9",
-			"axios@<1.15.0": ">=1.15.0",
-			"brace-expansion@>=4.0.0 <5.0.5": ">=5.0.5",
-			"handlebars@>=4.0.0 <4.7.9": ">=4.7.9",
-			"picomatch@<2.3.2": ">=2.3.2",
-			"picomatch@>=4.0.0 <4.0.4": ">=4.0.4",
-			"yaml@>=2.0.0 <2.8.3": ">=2.8.3"
+			"follow-redirects": "^1.16.0"
 		}
 	},
 	"license": "Apache-2.0",
