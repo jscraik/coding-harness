@@ -53,7 +53,6 @@ fi
 		exit 1
 	fi
 
-	required_support_files=("scripts/codex-preflight.sh" "scripts/codex-preflight-local-memory-legacy.sh" "scripts/codex-learn" "scripts/codex-enforced" "scripts/verify-work.sh" "scripts/validate-codestyle.sh" "scripts/prepare-worktree.sh" "scripts/new-task.sh" "scripts/validate-commit-msg.js" "scripts/check-hook-critical-config-sync.sh" "scripts/check-staged-secrets.sh" "scripts/check-doc-style.sh" "scripts/check-related-tests.sh" "scripts/check-semgrep-changed.sh" "scripts/semgrep-pre-push.yml")
 	if [[ ! -d "$CODESTYLE_DIR_PATH" ]]; then
 		echo "Error: missing codestyle module directory at $CODESTYLE_DIR_PATH"
 		exit 1
@@ -129,7 +128,7 @@ else
 	echo "Warning: tooling doc not found at $TOOLING_DOC_PATH; skipping doc sync check."
 fi
 
-	required_bins=("pnpm" "node" "jq" "make" "rg" "fd" "prek" "diagram" "mise" "vale" "argos" "cosign" "cloudflared" "vitest" "ruff" "eslint" "agent-browser" "agentation-mcp" "mmdc" "markdownlint-cli2" "wrangler" "beautiful-mermaid" "semgrep" "semver" "trivy" "rsearch" "wsearch")
+	required_bins=("pnpm" "node" "jq" "make" "rg" "fd" "prek" "diagram" "mise" "realpath" "vale" "argos" "cosign" "cloudflared" "vitest" "ruff" "eslint" "agent-browser" "agentation-mcp" "mmdc" "markdownlint-cli2" "wrangler" "beautiful-mermaid" "semgrep" "semver" "trivy" "rsearch" "wsearch")
 	for bin in "${required_bins[@]}"; do
 		if ! command -v "$bin" >/dev/null 2>&1; then
 			echo "Error: required binary '$bin' is not installed or not on PATH"

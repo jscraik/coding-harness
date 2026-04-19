@@ -12,32 +12,35 @@
 - This module defines Swift coding standards for Apple-platform projects and utilities.
 
 ## Language and API design
-- Prefer value semantics and protocol-oriented composition for shared logic.
-- Keep API surfaces explicit and readable at call sites.
-- Avoid hidden global state in core logic.
+- Implementations SHOULD prefer value semantics and protocol-oriented composition for shared logic.
+- API surfaces MUST remain explicit and readable at call sites.
+- Hidden global state in core logic MUST be avoided.
 
 ## Concurrency
-- Prefer structured concurrency (`async/await`, task groups) over unmanaged thread patterns.
-- Define actor or synchronization boundaries for mutable shared state.
-- Keep UI-affecting updates on the appropriate main-thread or actor context.
+- Implementations SHOULD prefer structured concurrency (`async/await`, task groups) over unmanaged thread patterns.
+- Mutable shared state MUST use actor or synchronization boundaries.
+- UI-affecting updates MUST stay on the appropriate main-thread or actor context.
 
 ## Error handling and state
-- Propagate typed errors with actionable context.
-- Avoid swallowing errors in async flows.
-- Keep state transitions explicit and testable.
+- Typed errors MUST be propagated with actionable context.
+- Async flows MUST NOT swallow errors.
+- State transitions MUST remain explicit and testable.
 
 ## Testing and formatting
-- Keep unit tests deterministic and focused on behavior contracts.
-- Separate heavier integration/UI tests from fast unit suites.
-- Apply repo formatting/lint tooling consistently for Swift codepaths.
+- Unit tests MUST remain deterministic and focused on behavior contracts.
+- Heavier integration/UI tests SHOULD be separated from fast unit suites.
+- Repo formatting/lint tooling MUST be applied consistently for Swift codepaths.
 
 ## Enforcement
 - Swift changes MUST pass repository baseline gates:
   - `pnpm lint`
   - `pnpm typecheck`
   - `pnpm test`
+  - `pnpm audit`
+  - `pnpm check`
+  - `bash scripts/validate-codestyle.sh`
   - `bash scripts/verify-work.sh --fast`
 - Swift projects SHOULD also run native gates where available:
   - `swift test`
   - `xcodebuild test` (or project-defined equivalent)
-- Concurrency and actor-boundary exceptions require explicit waiver metadata (reason, tracker, expiry/ADR).
+- Concurrency and actor-boundary exceptions require explicit waiver metadata with rule ID or section, reason, tracking ticket, and expiry or ADR reference.

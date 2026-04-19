@@ -21,7 +21,7 @@
 ## Secret handling
 - Secrets MUST come from environment injection or a secret manager.
 - Exposed secrets MUST be rotated immediately and treated as incidents.
-- Do not print raw secret values in logs, test fixtures, or screenshots.
+- Raw secret values MUST NOT be printed in logs, test fixtures, or screenshots.
 
 ## Secure coding defaults
 - Use parameterized queries for data access.
@@ -36,4 +36,4 @@
 
 ## Enforcement
 - Security findings at CRITICAL severity are merge blockers.
-- Exceptions require waiver metadata with reason, tracking issue, and expiry or ADR.
+- Exceptions require waiver metadata with rule ID, reason, tracking issue, and expiry or ADR.

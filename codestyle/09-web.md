@@ -13,36 +13,39 @@
 - This module covers web application standards for React, Vite, Tailwind, and Storybook surfaces.
 
 ## React
-- Use semantic HTML first; add ARIA only where semantics are insufficient.
+- Web surfaces MUST use semantic HTML first; ARIA SHOULD be added only where semantics are insufficient.
 - Hooks MUST follow Rules of Hooks and keep side effects in effect hooks.
-- Prefer controlled inputs unless uncontrolled behavior is intentional and documented.
-- Keep state local by default; avoid global mutable state drift.
+- Implementations SHOULD prefer controlled inputs unless uncontrolled behavior is intentional and documented.
+- State SHOULD stay local by default; global mutable state drift MUST be avoided.
 
 ## Vite
-- Keep environment variable usage explicit, typed, and documented.
-- Never expose secrets in client bundles.
-- Avoid mode-dependent runtime behavior changes without explicit test coverage.
+- Environment variable usage MUST be explicit, typed, and documented.
+- Secrets MUST NOT be exposed in client bundles.
+- Mode-dependent runtime behavior changes MUST NOT ship without explicit test coverage.
 
 ## Tailwind
-- Keep utility usage consistent with repo formatting/lint policy.
-- Prefer design tokens over one-off magic values.
-- Maintain readable conditional class composition.
-- Ensure visible focus states and avoid color-only status communication.
+- Utility usage MUST remain consistent with repo formatting/lint policy.
+- Implementations SHOULD prefer design tokens over one-off magic values.
+- Conditional class composition SHOULD remain readable.
+- Visible focus states MUST be present and color-only status communication MUST be avoided.
 
 ## Storybook
-- Use deterministic fixtures; avoid hidden network calls in stories.
-- Keep interaction and accessibility checks enabled where applicable.
-- Treat Storybook as behavior and visual contract documentation for reusable UI components.
+- Stories MUST use deterministic fixtures and MUST avoid hidden network calls.
+- Interaction and accessibility checks SHOULD stay enabled where applicable.
+- Storybook SHOULD be treated as behavior and visual contract documentation for reusable UI components.
 
 ## Accessibility
-- Target WCAG 2.2 AA for interactive web surfaces.
-- Ensure full keyboard operation, visible focus, and screen-reader-meaningful labels.
+- Interactive web surfaces MUST target WCAG 2.2 AA.
+- Full keyboard operation, visible focus, and screen-reader-meaningful labels MUST be present.
 
 ## Enforcement
 - Web changes MUST pass:
   - `pnpm lint`
   - `pnpm typecheck`
   - `pnpm test`
+  - `pnpm audit`
+  - `pnpm check`
+  - `bash scripts/validate-codestyle.sh`
   - `bash scripts/verify-work.sh --fast`
 - For component-system work, include Storybook/accessibility checks when configured in the touched project.
-- All bypasses require documented waiver metadata (reason, tracker, expiry/ADR).
+- All waivers require documented metadata with rule ID or section, reason, tracking ticket, and expiry or ADR reference.

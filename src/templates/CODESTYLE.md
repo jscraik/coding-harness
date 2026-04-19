@@ -20,7 +20,7 @@ Detailed standards are split under [codestyle/README.md](./codestyle/README.md).
 - Python: Ruff, Pyright, pytest.
 - Rust: rustfmt, Clippy, cargo test.
 - Security/policy: Semgrep, policy guards, supply-chain tooling.
-- Node baseline: repository engine floor `>=24.0.0` from `package.json`; runtime selection follows `mise/config.toml`.
+- Node baseline: repository engine floor `>=24.0.0` from `package.json`; runtime selection follows `.mise.toml`.
 - TypeScript baseline: >= 5.9 (when TS is used).
 - Rust baseline: 2024 edition (rustc >= 1.85).
 - Security advisories override baselines: patch immediately when a baseline dependency has a published fix.
@@ -52,11 +52,14 @@ Detailed standards are split under [codestyle/README.md](./codestyle/README.md).
 - Validation evidence MUST use exact command text and explicit outcomes:
   - `Command: <exact command> -> pass|fail|blocked (<reason>)`
 - Commands are expected from the active instruction scope.
-- For this codex subtree pack, run from `~/dev/configs/codex` and use `bash scripts/...` paths.
+- For this repository, run from the repository root and use `bash scripts/...` paths.
 - Contract checks for this repository:
   - `pnpm lint`
   - `pnpm typecheck`
   - `pnpm test`
+  - `pnpm audit`
+  - `pnpm check`
+  - `bash scripts/validate-codestyle.sh`
   - `bash scripts/verify-work.sh --fast`
 
 ## How to use this pack

@@ -15,7 +15,7 @@
 
 ## Appendix B — Waivers (Uniform Model)
 
-Any waiver across ESLint, Vale, Semgrep, Clippy, CI checks MUST include:
+Any waiver across ESLint, Vale, Semgrep, Clippy, and CI checks MUST include these fields unless a command contract defines a tool-specific override schema:
 
 * Rule ID
 * Reason
@@ -31,7 +31,7 @@ id: WAIVER-001
 rule: no-unsafe-type-assertion
 reason: "Temporary migration of legacy API; runtime validator landing next"
 ticket: GOV-999
-expires: 2026-02-01
+expires: YYYY-MM-DD
 ```
 
 ---

@@ -52,6 +52,11 @@ if [[ ! -f "$manifest_path" ]]; then
 	exit 1
 fi
 
+if ! command -v realpath >/dev/null 2>&1; then
+	echo "[codestyle-parity] missing required command: realpath" >&2
+	exit 1
+fi
+
 if command -v shasum >/dev/null 2>&1; then
 	# hash_file computes the SHA-256 checksum of the given file path and echoes the hexadecimal digest.
 	hash_file() {
@@ -76,7 +81,7 @@ while IFS= read -r raw_line || [[ -n "$raw_line" ]]; do
 	fi
 
 	expected_hash="${line%% *}"
-	relative_path="${line#${expected_hash}}"
+	relative_path="${line#"${expected_hash}"}"
 	relative_path="${relative_path# }"
 	relative_path="${relative_path# }"
 

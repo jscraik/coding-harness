@@ -12,9 +12,10 @@
 - This module defines package-manager behavior for JavaScript/TypeScript workflows.
 
 ## Primary contract
-- Prefer `pnpm` as the default workflow tool in this repository.
+- `pnpm` MUST be used as the default workflow tool in this repository.
 - Use `npm` only where repository scripts or external tooling specifically require it.
 - Keep package-manager usage consistent within a given command sequence.
+- `pnpm-lock.yaml` MUST be treated as the authoritative lockfile.
 
 ## Lockfiles and installs
 - Treat lockfiles as authoritative dependency state.
@@ -33,10 +34,13 @@
 
 ## Enforcement
 - In this repository, package-manager validation MUST use:
+  - `pnpm check` (canonical aggregate contract gate)
   - `pnpm lint`
   - `pnpm typecheck`
   - `pnpm test`
+  - `pnpm audit`
   - `pnpm run test:deep` (when change scope requires deep validation)
+  - `bash scripts/validate-codestyle.sh`
   - `bash scripts/verify-work.sh --fast`
 - Do not default to `npm test` or mixed manager command chains unless the repository contract explicitly requires it.
 - Lockfile rewrites and dependency mutations MUST be intentional and reflected in validation evidence.

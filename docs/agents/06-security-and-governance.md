@@ -27,6 +27,7 @@ This repository follows conservative defaults:
 - Preserve existing dependency and execution boundaries (`pnpm` + lockfile-driven installs).
 - Codex environment setup should use non-destructive tool resolution (`pnpm` direct, Homebrew path fallback, then `corepack`) and fail closed on missing baseline tools instead of mutating global installs implicitly.
 - Treat the repo-root `CODESTYLE.md` path plus `scripts/validate-codestyle.sh` as governed contract surfaces: if either drifts, readiness and closeout claims must fail closed.
+- Treat `scripts/check-codestyle-parity.sh` as the required code-style integrity gate for `codestyle/` and `codestyle/CHECKSUMS.sha256`; parity drift must block readiness.
 - Repo-specific exception: this repository may satisfy that `CODESTYLE.md` path with a symlink to `/Users/jamiecraik/.codex/instructions/CODESTYLE.md`, but downstream harness-managed repos should keep a real repo-local `CODESTYLE.md` copy.
 - Repo-specific linting invariant: Biome must ignore the repo-root `CODESTYLE.md` path so hosted CI does not fail on a broken developer-home symlink while local readiness still validates the path via preflight.
 - Repo-specific preflight rule: `scripts/codex-preflight.sh` may allow that one documented `CODESTYLE.md` symlink when it matches the repo-local allow-list in `.codex/preflight-allowed-external-paths.txt` (or `CODEX_PREFLIGHT_ALLOWED_EXTERNAL_PATHS`), even though it resolves outside repo root; other out-of-repo paths must still fail closed.

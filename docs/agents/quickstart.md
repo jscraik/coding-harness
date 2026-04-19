@@ -4,7 +4,7 @@
 
 ```bash
 node -v   # >= 24.0.0
-pnpm -v   # 10.0.0
+pnpm -v   # 10.33.0
 ```
 
 ## Hero workflows
@@ -39,7 +39,7 @@ bash scripts/verify-work.sh
 | --- | --- |
 | `pnpm check` | lint + typecheck + test + audit |
 | `pnpm lint` | Biome check |
-| `pnpm typecheck` | tsc --noEmit |
+| `pnpm typecheck` | TypeScript compiler no-emit check |
 | `pnpm test` | Vitest run |
 | `pnpm build` | Compile to dist/ |
 

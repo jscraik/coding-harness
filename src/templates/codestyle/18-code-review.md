@@ -27,7 +27,7 @@
 
 ## Severity model
 - `CRITICAL`: security/data-loss risk; merge blocker.
-- `HIGH`: functional correctness risk; should be fixed before merge.
+- `HIGH`: functional correctness risk; merge blocker unless explicit risk acceptance is documented and approved by the repo owner.
 - `MEDIUM`: maintainability/design risk; fix when feasible in current scope.
 - `LOW`: style or minor improvement; optional unless policy demands.
 
@@ -40,7 +40,7 @@
 
 ## Approval criteria
 - Approve when no CRITICAL/HIGH unresolved findings remain.
-- If HIGH findings remain by explicit decision, document risk acceptance and owner.
+- If a HIGH finding remains by explicit decision, document approved risk acceptance and accountable owner in the PR.
 
 ## Enforcement
 - Review artifacts MUST reference concrete file paths and impacted behavior.

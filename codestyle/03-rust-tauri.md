@@ -1,9 +1,9 @@
 # Rust and Tauri Standards
 
 ## Table of Contents
-- [9. Rust & Tauri Standards](#9-rust--tauri-standards)
+- [Rust & Tauri Standards](#rust--tauri-standards)
 
-## 9. Rust & Tauri Standards
+## Rust & Tauri Standards
 
 ### Formatting (Required)
 
@@ -14,13 +14,13 @@
 ### Linting (Required)
 
 * **Clippy** is required.
-* Allow-lists MUST include reason + ticket (+ expiry if temporary) per waiver model.
+* Allow-lists MUST include rule ID, reason, tracking ticket, and expiry (date) or ADR reference per waiver model.
 
 ### Concurrency (Required)
 
-* Prefer structured concurrency (async/await + explicit cancellation).
+* Implementations SHOULD prefer structured concurrency (async/await + explicit cancellation).
 * Shared mutable state MUST be isolated (channels, actors, or controlled ownership).
-* `unsafe` is forbidden unless:
+* `unsafe` MUST NOT be used unless:
 
   * ADR exists,
   * mitigation is documented,
@@ -30,7 +30,7 @@
 
 * Commands MUST validate inputs and return typed errors.
 * UI-facing state MUST be deterministic and testable.
-* Avoid blocking the main thread; spawn heavy work to worker tasks.
+* Implementations MUST NOT block the main thread; heavy work MUST be moved to worker tasks.
 
 ### Testing
 
@@ -38,4 +38,3 @@
 * UI/desktop end-to-end tests SHOULD be separated from unit tests in CI.
 
 ---
-

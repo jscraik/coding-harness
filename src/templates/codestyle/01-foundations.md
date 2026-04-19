@@ -28,7 +28,7 @@
 - Status claims in UIs/logs/docs MUST be evidence-backed by code and passing checks.
 
 **Detection**
-- Pattern guards/AST-Grep/Semgrep/CI checks fail on violations.
+- Pattern guards/AST-Grep/Semgrep/CI checks SHOULD fail on violations where those checks are configured in the repository.
 - Exceptions require an ADR and a time-boxed waiver (see Appendix B).
 
 ---
@@ -66,4 +66,3 @@
   ```
 
 ---
-

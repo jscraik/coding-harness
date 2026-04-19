@@ -33,6 +33,9 @@ PR merge gate MUST pass the repository contract commands:
 * `pnpm lint`
 * `pnpm typecheck`
 * `pnpm test`
+* `pnpm audit`
+* `pnpm check`
+* `bash scripts/validate-codestyle.sh`
 * `bash scripts/verify-work.sh --fast`
 
 Coverage and mutation thresholds MAY be enforced only when wired to executable repository validators.
@@ -109,7 +112,7 @@ Coverage and mutation thresholds MAY be enforced only when wired to executable r
 * ESLint: `eslint.config.mjs` (flat config)
 * Biome: `biome.json` (or repo equivalent)
 * Vale: `.vale.ini`
-* Mise: `mise/config.toml`
+* Mise: `.mise.toml`
 * Rustfmt: `rustfmt.toml`
 * CI: `.github/workflows/*.yml`
 * Rules of AI: `brainwav/governance/00-core/RULES_OF_AI.md`

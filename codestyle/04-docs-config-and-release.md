@@ -18,7 +18,7 @@ All docs and long-form prose MUST be linted with **Vale**.
 ### Configuration
 
 * Repo root MUST include `.vale.ini`.
-* CI MUST run `vale sync` before linting.
+* CI SHOULD run `vale sync` before Vale linting when Vale packages are configured.
 
 ### Severity
 

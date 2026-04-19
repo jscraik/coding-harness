@@ -13,6 +13,7 @@
 			"dist",
 			"coverage",
 			"artifacts",
+			"CODESTYLE.md",
 			".tmp-diagram-refresh-*"
 		]
 	},

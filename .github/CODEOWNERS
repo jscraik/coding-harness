@@ -2,6 +2,7 @@
 /.github/workflows/** @jscraik
 /harness.contract.json @jscraik
 /CONTRIBUTING.md @jscraik
+/CODESTYLE.md @jscraik
 /AGENTS.md @jscraik
 /scripts/codex-preflight.sh @jscraik
 /scripts/verify-work.sh @jscraik

@@ -44,7 +44,10 @@
   - `pnpm lint`
   - `pnpm typecheck`
   - `pnpm test`
+  - `pnpm audit`
+  - `pnpm check`
+  - `bash scripts/validate-codestyle.sh`
   - `bash scripts/verify-work.sh --fast`
-- Avoid soft bypasses for type/lint errors; temporary suppressions require a waiver with reason, tracker, and expiry/ADR.
+- Avoid soft bypasses for type/lint errors; temporary suppressions require waiver metadata with rule ID or section, reason, tracking ticket, and expiry or ADR reference.
 - Validation evidence MUST be explicit:
   - `Command: <exact command> -> pass|fail|blocked (<reason>)`

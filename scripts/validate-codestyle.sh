@@ -144,14 +144,14 @@ if [[ ! -f "$repo_root/CODESTYLE.md" ]]; then
 	exit 1
 fi
 
-if [[ ! -x "$repo_root/scripts/check-codestyle-parity.sh" ]]; then
-	echo "[validate-codestyle] missing executable parity checker: scripts/check-codestyle-parity.sh" >&2
+if [[ ! -f "$repo_root/scripts/check-codestyle-parity.sh" ]]; then
+	echo "[validate-codestyle] missing parity checker: scripts/check-codestyle-parity.sh" >&2
 	exit 1
 fi
 
 echo
 echo "==> codestyle:parity"
-"$repo_root/scripts/check-codestyle-parity.sh" --repo-root "$repo_root"
+bash "$repo_root/scripts/check-codestyle-parity.sh" --repo-root "$repo_root"
 
 if [[ ! -f "$repo_root/package.json" ]]; then
 	echo "[validate-codestyle] missing package.json; this validator expects a pnpm-managed harness repo" >&2

@@ -13,6 +13,7 @@
 
 ## Branch and sync discipline
 - Start from the repository target base branch and keep your branch current before requesting review.
+- When issue tracking is enabled, agent-created branches MUST use `codex/<issue-key>-<slug>`.
 - Use explicit comparison ranges when summarizing change scope:
   - `git diff <base-branch>...HEAD`
 - Do not bypass hooks or governance checks with `--no-verify`.
@@ -24,6 +25,7 @@
 
 ## Pull request discipline
 - PR summaries MUST cover the full branch delta, not only the latest commit.
+- PR titles/bodies MUST reference the issue key with `Refs <KEY>` or `Fixes <KEY>` when issue tracking is required by policy.
 - PR descriptions MUST follow `.github/PULL_REQUEST_TEMPLATE.md` exactly.
 - Testing sections MUST include exact commands and outcomes.
 - If checks are blocked, record concrete blocker reasons rather than placeholders.

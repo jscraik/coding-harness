@@ -37,5 +37,5 @@
   - `bash scripts/verify-work.sh --fast`
 
 ## Enforcement
-- Testing evidence MUST list exact commands and outcomes.
+- Testing evidence MUST list exact commands and outcomes in this form: `Command: <exact command> -> pass|fail|blocked (<reason>)`.
 - Blocked test steps MUST include concrete blocker reasons.

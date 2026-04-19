@@ -20,27 +20,30 @@
 - Prefer retrieval-led reasoning for fast-moving ecosystems and version-sensitive APIs.
 
 ## Plan before implementation
-- For multi-step work, define a short implementation plan before editing.
-- Identify risks, dependencies, validation gates, and rollback path up front.
-- Keep scope explicit; defer non-required follow-ups rather than blending unrelated work.
+- For multi-step work, a short implementation plan MUST be defined before editing.
+- Risks, dependencies, validation gates, and rollback path MUST be identified up front.
+- Scope MUST remain explicit; non-required follow-ups SHOULD be deferred rather than blending unrelated work.
 
 ## Build and verify loop
 1. Implement the smallest meaningful increment.
-2. Run relevant tests/validators immediately.
-3. Fix failures before expanding scope.
+2. Relevant tests/validators MUST run immediately.
+3. Failures MUST be fixed before expanding scope.
 4. Repeat until the intended behavior and contract checks are green (or explicitly blocked).
 
 ## Pre-review readiness
 - Before handoff or PR review:
-  - Ensure branch state and diff scope are understood.
-  - Ensure required validation commands were run and recorded.
-  - Ensure blocker reasons are explicit for any skipped or blocked checks.
+  - Branch state and diff scope MUST be understood.
+  - Required validation commands MUST be run and recorded.
+  - Blocker reasons MUST be explicit for any skipped or blocked checks.
 
 ## Enforcement
 - Required baseline validation for this repository:
   - `pnpm lint`
   - `pnpm typecheck`
   - `pnpm test`
+  - `pnpm audit`
+  - `pnpm check`
+  - `bash scripts/validate-codestyle.sh`
   - `bash scripts/verify-work.sh --fast`
 - Use exact command evidence format:
   - `Command: <exact command> -> pass|fail|blocked (<reason>)`
