@@ -8119,6 +8119,9 @@ function readAllRequiredChecks(targetDir: string):
 						Number.isInteger(freshnessWindowDays) &&
 						freshnessWindowDays >= 1 &&
 						freshnessWindowDays <= 7);
+				const enabled = record.enabled;
+				const enabledValid =
+					enabled === undefined || typeof enabled === "boolean";
 				return (
 					typeof record.policyId === "string" &&
 					typeof record.displayName === "string" &&
@@ -8127,6 +8130,7 @@ function readAllRequiredChecks(targetDir: string):
 					typeof record.externalIdPattern === "string" &&
 					requiredOnEventsValid &&
 					freshnessWindowDaysValid &&
+					enabledValid &&
 					(record.class === "required" ||
 						record.class === "informational" ||
 						record.class === "shadow")
@@ -8142,7 +8146,9 @@ function readAllRequiredChecks(targetDir: string):
 		}
 		return {
 			ok: true,
-			value: validChecks.filter((check) => check.class === "required"),
+			value: validChecks.filter(
+				(check) => check.class === "required" && check.enabled !== false,
+			),
 		};
 	} catch (error) {
 		return {

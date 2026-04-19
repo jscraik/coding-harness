@@ -303,7 +303,9 @@ function renderCircleCIConfig(pm: string): string {
 	const lintCommand = renderScriptCommand(pm, "lint");
 	const typecheckCommand = renderScriptCommand(pm, "typecheck");
 	const testCiCommand =
-		pm === "pnpm" ? "pnpm test:ci" : renderScriptCommand(pm, "test");
+		pm === "pnpm"
+			? `if node -e 'process.exit((require("./package.json").scripts || {})["test:ci"] ? 0 : 1)'; then pnpm test:ci; else pnpm test; fi`
+			: renderScriptCommand(pm, "test");
 	const auditCommand = renderScriptCommand(pm, "audit");
 	const configureCacheStep =
 		pm === "pnpm"
@@ -350,8 +352,8 @@ jobs:
               echo 'export NPM_CONFIG_PREFIX="$HOME/.local"' >> "$BASH_ENV"
               echo 'export PATH="$HOME/.local/bin:$PATH"' >> "$BASH_ENV"
               npm install --global --prefix "$NPM_CONFIG_PREFIX" "pnpm@${"${required_pnpm_version}"}"
-	            fi
-	            pnpm --version
+            fi
+            pnpm --version
 ${configureCacheStep}      - run:
           name: Inject npm auth
           command: |
