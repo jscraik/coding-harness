@@ -32,6 +32,24 @@ For diff-budget overrides (runtime-enforced shape):
 
 Example waiver file:
 
+```yaml
+# .codestyle-waiver.yml
+waivers:
+  - ruleId: "eslint:no-console"
+    reason: "CLI tool requires console output for user feedback"
+    trackingTicket: "JSC-123"
+    expiry: "2026-06-30"
+
+  - ruleId: "vale:Google.FirstPerson"
+    reason: "User-facing docs require first-person voice per product guidelines"
+    trackingTicket: "JSC-456"
+    adrReference: "docs/adr/0042-documentation-voice.md"
+
+diffBudgetOverrides:
+  - approvedBy: "tech-lead@example.com"
+    reason: "Emergency hotfix for production incident INC-789"
+    timestamp: "2026-04-19T10:30:00Z"
+```
 
 ---
 
