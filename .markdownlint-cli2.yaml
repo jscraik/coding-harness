@@ -24,5 +24,7 @@ ignores:
   - .git
   - CODESTYLE.md  # Global canonical codestyle doc is enforced separately
   - src/templates/CODESTYLE.md  # Canonical template mirrors global codestyle content
+  - codestyle  # Canonical codestyle pack is synced verbatim and parity-checked
+  - src/templates/codestyle  # Template mirror of canonical codestyle pack
   - CHANGELOG.md   # Auto-generated, skip linting
   - artifacts      # Auto-generated test artefacts, not source docs

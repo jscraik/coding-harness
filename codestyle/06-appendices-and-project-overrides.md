@@ -1,0 +1,57 @@
+# Appendices and Project Overrides
+
+## Table of Contents
+- [Appendix A — EU AI Act (dates for governance)](#appendix-a--eu-ai-act-dates-for-governance)
+- [Appendix B — Waivers (Uniform Model)](#appendix-b--waivers-uniform-model)
+- [Project-Specific Style Rules](#project-specific-style-rules)
+
+## Appendix A — EU AI Act (dates for governance)
+
+* Act in force: 1 Aug 2024
+* GPAI/foundation-model obligations applicable: 2 Aug 2025
+* Most provisions fully applicable: 2 Aug 2026
+
+---
+
+## Appendix B — Waivers (Uniform Model)
+
+Any waiver across ESLint, Vale, Semgrep, Clippy, CI checks MUST include:
+
+* Rule ID
+* Reason
+* Ticket/issue reference
+* Expiry (date) OR ADR reference
+
+Expired waivers MUST fail CI.
+
+Example waiver file:
+
+```yaml
+id: WAIVER-001
+rule: no-unsafe-type-assertion
+reason: "Temporary migration of legacy API; runtime validator landing next"
+ticket: GOV-999
+expires: 2026-02-01
+```
+
+---
+
+<!-- PROJECT-SPECIFIC: START -->
+
+## Project-Specific Style Rules
+
+> Add project-specific linting, formatting, or architectural rules here. This section is NOT overwritten when upgrading the governance pack.
+
+### Additional Rules
+
+```jsonc
+{
+  // Extend local eslint.config.mjs with project-specific rules
+}
+```
+
+### Architectural Boundaries
+
+<!-- Define project-specific import restrictions or layer rules -->
+
+<!-- PROJECT-SPECIFIC: END -->

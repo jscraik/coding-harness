@@ -59,6 +59,29 @@ const DEFAULT_CI_PROVIDER: CIProvider = "circleci";
 const DEFAULT_TRANSITION_STATUS_UPDATED_AT = "2026-03-14T00:00:00.000Z";
 const BIOME_SCHEMA_VERSION = "1.9.4";
 const BIOME_SCHEMA_URL = `https://biomejs.dev/schemas/${BIOME_SCHEMA_VERSION}/schema.json`;
+const CODESTYLE_PACK_TEMPLATE_FILES = [
+	"codestyle/README.md",
+	"codestyle/01-foundations.md",
+	"codestyle/02-javascript-ui.md",
+	"codestyle/03-rust-tauri.md",
+	"codestyle/04-docs-config-and-release.md",
+	"codestyle/05-quality-security-ops.md",
+	"codestyle/06-appendices-and-project-overrides.md",
+	"codestyle/07-python.md",
+	"codestyle/08-typescript.md",
+	"codestyle/09-web.md",
+	"codestyle/10-shell-bash-zsh.md",
+	"codestyle/11-package-managers-pnpm-npm.md",
+	"codestyle/12-swift.md",
+	"codestyle/13-git-workflow.md",
+	"codestyle/14-patterns.md",
+	"codestyle/15-performance.md",
+	"codestyle/16-security.md",
+	"codestyle/17-testing.md",
+	"codestyle/18-code-review.md",
+	"codestyle/19-development-workflow.md",
+	"codestyle/CHECKSUMS.sha256",
+] as const;
 
 function renderScriptCommand(packageManager: string, script: string): string {
 	if (packageManager === "npm") {
@@ -301,8 +324,8 @@ function renderCodexEnforcedTemplate(): string {
 }
 
 function renderCodestyleTemplate(): string {
-	// Prefer the packaged template so published builds do not depend on a
-	// user-home symlink. Source checkouts fall back to the repo-root path.
+	// Prefer the packaged template so published builds use the bundled codestyle
+	// contract; source checkouts fall back to the repo-root copy.
 	const packagedTemplatePath = fileURLToPath(
 		new URL("../../templates/CODESTYLE.md", import.meta.url),
 	);
@@ -311,6 +334,19 @@ function renderCodestyleTemplate(): string {
 	}
 	const repoTemplatePath = fileURLToPath(
 		new URL("../../../CODESTYLE.md", import.meta.url),
+	);
+	return readFileSync(repoTemplatePath, "utf-8");
+}
+
+function renderCodestylePackTemplate(relativePath: string): string {
+	const packagedTemplatePath = fileURLToPath(
+		new URL(`../../templates/${relativePath}`, import.meta.url),
+	);
+	if (existsSync(packagedTemplatePath)) {
+		return readFileSync(packagedTemplatePath, "utf-8");
+	}
+	const repoTemplatePath = fileURLToPath(
+		new URL(`../../../${relativePath}`, import.meta.url),
 	);
 	return readFileSync(repoTemplatePath, "utf-8");
 }
@@ -325,6 +361,13 @@ function renderVerifyWorkScript(_packageManager: string): string {
 function renderValidateCodestyleScript(): string {
 	const templatePath = fileURLToPath(
 		new URL("../../../scripts/validate-codestyle.sh", import.meta.url),
+	);
+	return readFileSync(templatePath, "utf-8");
+}
+
+function renderCheckCodestyleParityScript(): string {
+	const templatePath = fileURLToPath(
+		new URL("../../../scripts/check-codestyle-parity.sh", import.meta.url),
 	);
 	return readFileSync(templatePath, "utf-8");
 }
@@ -2350,14 +2393,15 @@ Recommended policy:
 
 - Pin repo-managed tooling in \`.mise.toml\` where possible.
 - Treat \`scripts/codex-preflight.sh\` as required project bootstrap infrastructure.
-- Treat \`CODESTYLE.md\` and \`scripts/validate-codestyle.sh\` as required repo-local contract files.
-- Keep \`CODESTYLE.md\` as a real repo-local file in generated repositories even when the harness authoring source is maintained globally.
+- Treat \`CODESTYLE.md\`, \`codestyle/\`, \`codestyle/CHECKSUMS.sha256\`, and \`scripts/validate-codestyle.sh\` as required repo-local contract files.
+- Keep the full codestyle pack as real repo-local files in generated repositories, including \`CODESTYLE.md\` plus all \`codestyle/*.md\` modules.
 - Scaffold \`scripts/codex-enforced\` and \`scripts/codex-learn\` together with preflight so repo-local wrappers own repo-local state.
 - Keep \`bash scripts/codex-preflight.sh --stack auto --mode required\` as the default preflight command; only relax mode (\`optional\` or \`off\`) when the project documents why.
 - Adjust preflight binary/path lists per project scope instead of deleting the script.
 - Keep repo-scoped telemetry and learned overrides under \`.harness/memory/\`, and global telemetry under \`~/.codex/\`.
 - Treat \`scripts/verify-work.sh\` as the canonical repo-facing verification command and keep it wired to repo-local preflight defaults.
-- Treat \`scripts/validate-codestyle.sh\` as the fail-closed codestyle gate and require exact proof-of-pass in change summaries and PRs.
+- Treat \`scripts/check-codestyle-parity.sh\` as the fail-closed codestyle parity gate and require exact proof-of-pass in change summaries and PRs.
+- Treat \`scripts/validate-codestyle.sh\` as the fail-closed codestyle validation gate and require exact proof-of-pass in change summaries and PRs.
 - Treat \`scripts/new-task.sh\` as the canonical task-entry helper so each task starts with a repo-local branch/worktree boundary instead of branch switching inside a shared checkout.
 - Treat \`scripts/new-task.sh\` as an upstream-sync helper that fetches the latest \`origin/<base>\` before creating the task worktree branch.
 - Treat \`scripts/prepare-worktree.sh\` as required first-push bootstrap for freshly created worktrees so local hooks run with dependencies, canonical hook wiring, and detached-head fast-forwarding to latest \`origin/main\`.
@@ -2378,7 +2422,8 @@ Recommended policy:
 
 - \`harness init\` scaffolds \`scripts/verify-work.sh\` as the canonical repo-local verification entrypoint.
 - The wrapper always runs \`scripts/codex-preflight.sh\` in \`required\` Local Memory mode with scaffold-safe path and binary expectations.
-- \`scripts/validate-codestyle.sh\` is the canonical fail-closed codestyle gate and is reused by \`verify-work\`, local hooks, and downstream repo docs.
+- \`scripts/check-codestyle-parity.sh\` is the canonical codestyle parity gate and is reused by \`verify-work\`, local hooks, and downstream repo docs.
+- \`scripts/validate-codestyle.sh\` is the canonical fail-closed codestyle validation gate and is reused by \`verify-work\`, local hooks, and downstream repo docs.
 - \`scripts/new-task.sh\` is the canonical task bootstrap helper. Use it to create one task = one worktree = one branch = one agent thread inside the project itself.
 - Repo-local launches should prefer \`./scripts/codex-enforced\` so preflight failures are recorded into repo-scoped learn state.
 - Use \`./scripts/codex-learn analyze\` and \`./scripts/codex-learn apply\` to inspect repo-scoped failure patterns and write override files into \`.harness/memory/\`.
@@ -3620,6 +3665,10 @@ CLAUDE_APPROVAL_POSTURE = "require"
 		path: "CODESTYLE.md",
 		render: () => renderCodestyleTemplate(),
 	},
+	...CODESTYLE_PACK_TEMPLATE_FILES.map((path) => ({
+		path,
+		render: () => renderCodestylePackTemplate(path),
+	})),
 	{
 		path: "scripts/codex-preflight.sh",
 		render: () => renderCodexPreflightTemplate(),
@@ -3643,6 +3692,10 @@ CLAUDE_APPROVAL_POSTURE = "require"
 	{
 		path: "scripts/validate-codestyle.sh",
 		render: () => renderValidateCodestyleScript(),
+	},
+	{
+		path: "scripts/check-codestyle-parity.sh",
+		render: () => renderCheckCodestyleParityScript(),
 	},
 	{
 		path: "scripts/prepare-worktree.sh",
@@ -3687,6 +3740,8 @@ CONTRACT_PATH="$REPO_ROOT/harness.contract.json"
 	PREK_CONFIG_PATH="$REPO_ROOT/prek.toml"
 	PACKAGE_JSON_PATH="$REPO_ROOT/${packagePolicy?.packageJsonPath ?? "package.json"}"
 	CODESTYLE_PATH="$REPO_ROOT/CODESTYLE.md"
+	CODESTYLE_DIR_PATH="$REPO_ROOT/codestyle"
+	CODESTYLE_CHECKSUM_PATH="$REPO_ROOT/codestyle/CHECKSUMS.sha256"
 	TOOLING_DOC_PATH="\${TOOLING_DOC_PATH:-$HOME/dev/config/codex/instructions/tooling.md}"
 
 if [[ ! -f "$CONTRACT_PATH" ]]; then
@@ -3724,6 +3779,16 @@ fi
 		exit 1
 	fi
 
+	if [[ ! -d "$CODESTYLE_DIR_PATH" ]]; then
+		echo "Error: missing codestyle module directory at $CODESTYLE_DIR_PATH"
+		exit 1
+	fi
+
+	if [[ ! -f "$CODESTYLE_CHECKSUM_PATH" ]]; then
+		echo "Error: missing codestyle checksum manifest at $CODESTYLE_CHECKSUM_PATH"
+		exit 1
+	fi
+
 	required_support_files=(${REQUIRED_HOOK_SUPPORT_FILES.map((path) => `"${path}"`).join(" ")})
 	for support_file in "\${required_support_files[@]}"; do
 		if [[ ! -f "$REPO_ROOT/\${support_file}" ]]; then
@@ -3751,11 +3816,21 @@ if ! command -v mise >/dev/null 2>&1; then
 	exit 1
 fi
 
-# Bootstrap the full repo-managed environment so hook validation reflects the
-# pinned runtime versions and required approval posture, not only the caller
-# shell's PATH.
-eval "$(mise activate bash)"
-export CLAUDE_APPROVAL_POSTURE="\${CLAUDE_APPROVAL_POSTURE:-require}"
+	# Bootstrap the full repo-managed environment so hook validation reflects the
+	# pinned runtime versions and required approval posture, not only the caller
+	# shell's PATH.
+	if ! mise trust --yes "$MISE_PATH" >/dev/null 2>&1; then
+		echo "Error: unable to trust mise config at $MISE_PATH"
+		echo "Fix: run 'mise trust --yes $MISE_PATH' and retry."
+		exit 1
+	fi
+
+	if ! eval "$(mise activate bash)"; then
+		echo "Error: failed to activate mise runtime from $MISE_PATH"
+		echo "Fix: ensure mise is installed, trusted, and healthy, then retry."
+		exit 1
+	fi
+	export CLAUDE_APPROVAL_POSTURE="\${CLAUDE_APPROVAL_POSTURE:-require}"
 
 required_mise_tools=(${PROJECT_MISE_REQUIRED_TOOLS.map(([tool]) => `"${tool}"`).join(" ")})
 for tool in "\${required_mise_tools[@]}"; do
@@ -3877,12 +3952,12 @@ fi
 			' "$PACKAGE_JSON_PATH" >/dev/null
 		}
 
-		repo_capabilities=()
-		explicit_capabilities=(${explicitCapabilities.map((capability) => `"${capability}"`).join(" ")})
-		for capability in "\${explicit_capabilities[@]}"; do
-			[[ -n "$capability" ]] || continue
-			repo_capabilities+=("$capability")
-		done
+			declare -a repo_capabilities=()
+			declare -a explicit_capabilities=(${explicitCapabilities.map((capability) => `"${capability}"`).join(" ")})
+			for capability in "\${explicit_capabilities[@]:-}"; do
+				[[ -n "$capability" ]] || continue
+				repo_capabilities+=("$capability")
+			done
 ${capabilityDetectors
 	.map(
 		(
@@ -3897,12 +3972,12 @@ ${capabilityDetectors
 	)
 	.join("\n\n")}
 
-		has_capability() {
-			local wanted="$1"
-			for capability in "\${repo_capabilities[@]}"; do
-				if [[ "$capability" == "$wanted" ]]; then
-					return 0
-				fi
+			has_capability() {
+				local wanted="$1"
+				for capability in "\${repo_capabilities[@]:-}"; do
+					if [[ "$capability" == "$wanted" ]]; then
+						return 0
+					fi
 			done
 			return 1
 		}
@@ -4087,10 +4162,12 @@ echo "Environment check passed (attestation: $ATTESTATION_PATH)"
 /scripts/codex-preflight.sh @jscraik
 /scripts/verify-work.sh @jscraik
 /scripts/validate-codestyle.sh @jscraik
+/scripts/check-codestyle-parity.sh @jscraik
 /scripts/prepare-worktree.sh @jscraik
 /scripts/new-task.sh @jscraik
 /scripts/harness-cli.sh @jscraik
 /scripts/check-environment.sh @jscraik
+/codestyle/** @jscraik
 `,
 	},
 	{
@@ -4098,7 +4175,7 @@ echo "Environment check passed (attestation: $ATTESTATION_PATH)"
 		render: () => `# Harness Development Makefile
 # Run \`make help\` to see available commands
 
-.PHONY: help install setup preflight worktree-ready verify-work codestyle hooks hooks-pre-commit hooks-pre-push hooks-commit-msg secrets-staged docs-style-changed related-tests semgrep-changed diagrams-check dev build lint docs-lint fmt typecheck test check audit secrets security clean reset ci diagrams env-check
+.PHONY: help install setup preflight worktree-ready verify-work codestyle-parity codestyle hooks hooks-pre-commit hooks-pre-push hooks-commit-msg secrets-staged docs-style-changed related-tests semgrep-changed diagrams-check dev build lint docs-lint fmt typecheck test check audit secrets security clean reset ci diagrams env-check
 
 # Default target
 help: ## Show this help message
@@ -4123,6 +4200,9 @@ worktree-ready: ## Bootstrap a fresh git worktree before first push
 verify-work: ## Run canonical repo-local verification wrapper
 	@bash ./scripts/verify-work.sh
 
+codestyle-parity: ## Verify CODESTYLE pack parity checksums
+	@bash ./scripts/check-codestyle-parity.sh
+
 codestyle: ## Run fail-closed codestyle validation
 	@bash ./scripts/validate-codestyle.sh
 
@@ -4130,6 +4210,7 @@ hooks: ## Setup git hooks
 	node scripts/setup-git-hooks.js
 
 hooks-pre-commit: ## Run local pre-commit gates before creating a commit
+	$(MAKE) codestyle-parity
 	pnpm lint
 	pnpm docs:lint
 	pnpm typecheck

@@ -1,0 +1,107 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+SCRIPT_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd -P)"
+REPO_ROOT_DEFAULT="$(cd -- "$SCRIPT_DIR/.." && pwd -P)"
+
+repo_root="$REPO_ROOT_DEFAULT"
+manifest_path=""
+
+usage() {
+	cat <<'USAGE'
+Usage: scripts/check-codestyle-parity.sh [options]
+
+Fail if the repo-local codestyle pack drifts from the pinned checksum manifest.
+
+Options:
+  --repo-root PATH  Repo root to validate (default: script parent)
+  --manifest PATH   Manifest file path (default: <repo-root>/codestyle/CHECKSUMS.sha256)
+  -h, --help        Show this help text
+USAGE
+}
+
+while (( $# > 0 )); do
+	case "$1" in
+		--repo-root)
+			repo_root="${2:-}"
+			shift 2
+			;;
+		--manifest)
+			manifest_path="${2:-}"
+			shift 2
+			;;
+		-h|--help)
+			usage
+			exit 0
+			;;
+		*)
+			echo "[codestyle-parity] unknown argument: $1" >&2
+			usage >&2
+			exit 2
+			;;
+	esac
+done
+
+if [[ -z "$manifest_path" ]]; then
+	manifest_path="$repo_root/codestyle/CHECKSUMS.sha256"
+fi
+
+if [[ ! -f "$manifest_path" ]]; then
+	echo "[codestyle-parity] missing checksum manifest: $manifest_path" >&2
+	exit 1
+fi
+
+if command -v shasum >/dev/null 2>&1; then
+	hash_file() {
+		shasum -a 256 "$1" | awk '{print $1}'
+	}
+elif command -v sha256sum >/dev/null 2>&1; then
+	hash_file() {
+		sha256sum "$1" | awk '{print $1}'
+	}
+else
+	echo "[codestyle-parity] missing required hash command: shasum or sha256sum" >&2
+	exit 1
+fi
+
+checked=0
+while IFS= read -r raw_line || [[ -n "$raw_line" ]]; do
+	line="${raw_line%%#*}"
+	line="$(printf '%s' "$line" | sed -e 's/^[[:space:]]*//' -e 's/[[:space:]]*$//')"
+	if [[ -z "$line" ]]; then
+		continue
+	fi
+
+	expected_hash="${line%% *}"
+	relative_path="${line#${expected_hash}}"
+	relative_path="${relative_path# }"
+	relative_path="${relative_path# }"
+
+	if [[ -z "$expected_hash" || -z "$relative_path" ]]; then
+		echo "[codestyle-parity] malformed manifest entry: $raw_line" >&2
+		exit 1
+	fi
+
+	target_path="$repo_root/$relative_path"
+	if [[ ! -f "$target_path" ]]; then
+		echo "[codestyle-parity] missing codestyle file: $relative_path" >&2
+		exit 1
+	fi
+
+	actual_hash="$(hash_file "$target_path")"
+	if [[ "$actual_hash" != "$expected_hash" ]]; then
+		echo "[codestyle-parity] checksum mismatch: $relative_path" >&2
+		echo "  expected: $expected_hash" >&2
+		echo "  actual:   $actual_hash" >&2
+		exit 1
+	fi
+
+	checked=$((checked + 1))
+done < "$manifest_path"
+
+if [[ "$checked" -eq 0 ]]; then
+	echo "[codestyle-parity] checksum manifest is empty: $manifest_path" >&2
+	exit 1
+fi
+
+echo "[codestyle-parity] verified $checked codestyle file(s)"

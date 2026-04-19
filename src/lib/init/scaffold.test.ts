@@ -32,8 +32,21 @@ describe("scaffold templates resolution", () => {
 			true,
 		);
 		expect(
+			templates.some((template) => template.path === "codestyle/README.md"),
+		).toBe(true);
+		expect(
+			templates.some(
+				(template) => template.path === "codestyle/CHECKSUMS.sha256",
+			),
+		).toBe(true);
+		expect(
 			templates.some(
 				(template) => template.path === "scripts/validate-codestyle.sh",
+			),
+		).toBe(true);
+		expect(
+			templates.some(
+				(template) => template.path === "scripts/check-codestyle-parity.sh",
 			),
 		).toBe(true);
 	});
