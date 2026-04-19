@@ -64,12 +64,34 @@ const EXPECTED_TEMPLATE_PATHS = [
 	".gitleaks.toml",
 	"prek.toml",
 	"CODESTYLE.md",
+	"codestyle/README.md",
+	"codestyle/01-foundations.md",
+	"codestyle/02-javascript-ui.md",
+	"codestyle/03-rust-tauri.md",
+	"codestyle/04-docs-config-and-release.md",
+	"codestyle/05-quality-security-ops.md",
+	"codestyle/06-appendices-and-project-overrides.md",
+	"codestyle/07-python.md",
+	"codestyle/08-typescript.md",
+	"codestyle/09-web.md",
+	"codestyle/10-shell-bash-zsh.md",
+	"codestyle/11-package-managers-pnpm-npm.md",
+	"codestyle/12-swift.md",
+	"codestyle/13-git-workflow.md",
+	"codestyle/14-patterns.md",
+	"codestyle/15-performance.md",
+	"codestyle/16-security.md",
+	"codestyle/17-testing.md",
+	"codestyle/18-code-review.md",
+	"codestyle/19-development-workflow.md",
+	"codestyle/CHECKSUMS.sha256",
 	"scripts/codex-preflight.sh",
 	"scripts/codex-preflight-local-memory-legacy.sh",
 	"scripts/codex-learn",
 	"scripts/codex-enforced",
 	"scripts/verify-work.sh",
 	"scripts/validate-codestyle.sh",
+	"scripts/check-codestyle-parity.sh",
 	"scripts/prepare-worktree.sh",
 	"scripts/new-task.sh",
 	"scripts/harness-cli.sh",
@@ -2048,6 +2070,9 @@ printf '%s\\n' '{"passed":true}'
 				join(fakeBin, "mise"),
 				`#!/usr/bin/env bash
 set -euo pipefail
+if [[ "$1" == "trust" ]]; then
+	exit 0
+fi
 if [[ "$1" == "activate" ]]; then
 	echo 'true'
 	exit 0

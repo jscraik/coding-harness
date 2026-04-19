@@ -17,10 +17,9 @@
 - Run shell commands with `zsh -lc`.
 - Prefer `rg`, `fd`, and `jq`; read `/Users/jamiecraik/.codex/instructions/tooling.md` before choosing tools.
 - Use repo-verified commands from `AGENTS.md` and `package.json`.
-- Read the repo-root `CODESTYLE.md` before making edits or claiming validation.
-- In this repo, `CODESTYLE.md` is the enforced repo-root mount point and symlinks to `/Users/jamiecraik/.codex/instructions/CODESTYLE.md`.
-- Treat the repo-root `CODESTYLE.md` path and `bash scripts/validate-codestyle.sh` as required contract surfaces for local verification.
-- Default validation baseline: `bash scripts/validate-codestyle.sh --fast` during iteration, then `bash scripts/validate-codestyle.sh` before handoff when behavior changed.
+- Read the repo-root `CODESTYLE.md` before making edits or claiming validation, then route into `codestyle/README.md` modules as needed.
+- Treat `CODESTYLE.md`, `codestyle/`, `codestyle/CHECKSUMS.sha256`, `bash scripts/check-codestyle-parity.sh`, and `bash scripts/validate-codestyle.sh` as required contract surfaces.
+- Default validation baseline: `bash scripts/check-codestyle-parity.sh` and `bash scripts/validate-codestyle.sh --fast` during iteration, then `bash scripts/validate-codestyle.sh` before handoff when behavior changed.
 - Use `bash scripts/verify-work.sh` or `pnpm check` when broader repo verification is needed, and run `pnpm test:deep` when runtime or artifact behavior changed.
 
 ## Docs lookup (progressive disclosure)

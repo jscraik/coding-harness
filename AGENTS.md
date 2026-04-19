@@ -10,12 +10,12 @@ This repository is a TypeScript control plane for agentic development and review
 ## Mandatory Workflow Snippet
 1. Explore project first, then invoke a task-relevant skill.
 2. IMPORTANT: Prefer retrieval-led reasoning over pre-training-led reasoning for any React, Tauri, Apps-SDK-ui, Tailwind, Vite, Storybook + Chat Widget tasks.
-3. Read the repo-root [CODESTYLE.md](./CODESTYLE.md) before making edits or claiming validation.
+3. Read the repo-root [CODESTYLE.md](./CODESTYLE.md) before making edits or claiming validation, then route to [codestyle/README.md](./codestyle/README.md) for module-level standards.
 4. Add a Table of Contents when creating or materially restructuring docs.
 
 ## Required Essentials
 - Runtime/toolchain: `pnpm@10.33.0` and Node `>=24.0.0` (see `package.json`).
-- Baseline gates: `pnpm check`, `bash scripts/validate-codestyle.sh`, and `bash scripts/verify-work.sh`.
+- Baseline gates: `pnpm codestyle:parity`, `pnpm check`, `bash scripts/validate-codestyle.sh`, and `bash scripts/verify-work.sh`.
 - Compatibility posture: canonical-only.
 - Treat repo evidence (`package.json`, lockfiles, tsconfig, scripts) as authoritative over copied instructions.
 
@@ -55,7 +55,7 @@ Notes:
 ## Command Preflight
 - Run shell commands with `zsh -lc`; prefer `rg`, `fd`, and `jq`.
 - Before edits, confirm `pwd`, repo root, required binaries, and target paths.
-- Keep `bash scripts/codex-preflight.sh --stack auto --mode required` as the bootstrap gate beneath `bash scripts/verify-work.sh`, and treat repo-root `CODESTYLE.md` plus `bash scripts/validate-codestyle.sh` as required verification surfaces.
+- Keep `bash scripts/codex-preflight.sh --stack auto --mode required` as the bootstrap gate beneath `bash scripts/verify-work.sh`, and treat repo-root `CODESTYLE.md`, `codestyle/`, `codestyle/CHECKSUMS.sha256`, `bash scripts/check-codestyle-parity.sh`, and `bash scripts/validate-codestyle.sh` as required verification surfaces.
 - For detailed tooling and command-selection policy, use [docs/agents/02-tooling-policy.md](./docs/agents/02-tooling-policy.md).
 
 ## Fresh Worktree Bootstrap
@@ -107,7 +107,7 @@ Core routing (Layer 2):
 ## Implementation Conventions
 - Local ESM imports must include `.js` extensions.
 - This repo publishes a harness skill to downstream repos via `harness init`; installed path is `.agents/skills/coding-harness/` in the target repo (not this repo's local skills tree).
-- Keep repo-root `CODESTYLE.md` as a symlink to `/Users/jamiecraik/.codex/instructions/CODESTYLE.md`; downstream harness-managed repos should keep a real repo-local `CODESTYLE.md` scaffolded from that source.
+- Keep the repo-root code-style pack (`CODESTYLE.md` + `codestyle/`) verbatim-synced from `/Users/jamiecraik/dev/configs/codex/instructions/` and enforce integrity with `codestyle/CHECKSUMS.sha256` plus `bash scripts/check-codestyle-parity.sh`.
 - Use repo script contracts: `pnpm lint`, `pnpm typecheck`, `pnpm test`, `pnpm audit`, `pnpm build`, `pnpm check`, and `pnpm test:artifacts` (see [docs/agents/02-tooling-policy.md](./docs/agents/02-tooling-policy.md)).
 
 ## References
