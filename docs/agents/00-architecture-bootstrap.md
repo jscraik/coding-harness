@@ -52,7 +52,7 @@ The local `make hooks-pre-push` path also runs `scripts/check-diagram-freshness.
 
 `scripts/refresh-diagram-context.sh` canonicalizes node identities before sorting to keep generated artifacts stable:
 
-- `rawNodeFingerprint(rawId)` extracts the trailing fingerprint suffix with `/_([0-9a-f]{8})$/`.
+- `rawNodeFingerprint(rawId)` extracts the trailing fingerprint suffix with `/_([0-9a-f]{8})$/i` (case-insensitive).
 - If a suffix is present, the canonical key is the matched 8-hex fingerprint lowercased.
 - If no suffix is present, canonicalization falls back to `rawId.toLowerCase()`.
 - Deterministic ordering uses this canonical key, so output ordering can change when fingerprint suffixes or raw node IDs change.
