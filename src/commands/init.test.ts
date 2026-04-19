@@ -334,7 +334,7 @@ describe("runInit", () => {
 				"bash scripts/harness-cli.sh silent-error --dirs src --strict",
 			);
 			expect(circleConfig).toContain("store_test_results:");
-			expect(circleConfig).toContain("path: artifacts/test-results");
+			expect(circleConfig).toContain("path: artifacts/test");
 			expect(circleConfig).not.toContain("name: Enforce Policy Bundle Outcome");
 			expect(circleConfig).not.toContain("name: Enable corepack");
 			expect(circleConfig).not.toContain("name: Lint");
