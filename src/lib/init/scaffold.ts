@@ -84,6 +84,13 @@ const CODESTYLE_PACK_TEMPLATE_FILES = [
 	"codestyle/CHECKSUMS.sha256",
 ] as const;
 
+/**
+ * Builds the shell command to invoke a package script using the given package manager.
+ *
+ * @param packageManager - Package manager identifier (e.g., "npm", "yarn", "pnpm"); when `"npm"` the returned command uses `npm run`
+ * @param script - The script name to execute as defined in `package.json`
+ * @returns The shell command string that runs the specified script with the selected package manager
+ */
 function renderScriptCommand(packageManager: string, script: string): string {
 	if (packageManager === "npm") {
 		return `npm run ${script}`;
@@ -451,6 +458,11 @@ function renderCodexLearnTemplate(): string {
 	return readFileSync(templatePath, "utf-8");
 }
 
+/**
+ * Load and return the packaged Codex "enforced" shell script template.
+ *
+ * @returns The UTF-8 content of the `templates/codex-enforced.sh` file
+ */
 function renderCodexEnforcedTemplate(): string {
 	const templatePath = fileURLToPath(
 		new URL("../../templates/codex-enforced.sh", import.meta.url),
@@ -458,6 +470,13 @@ function renderCodexEnforcedTemplate(): string {
 	return readFileSync(templatePath, "utf-8");
 }
 
+/**
+ * Load the CODESTYLE.md scaffold used for repository codestyle guidance.
+ *
+ * Prefers the packaged template bundled with the published package and falls back to the repository-root CODESTYLE.md when the packaged file is not present.
+ *
+ * @returns The UTF-8 contents of the selected CODESTYLE.md template
+ */
 function renderCodestyleTemplate(): string {
 	// Prefer the packaged template so published builds use the bundled codestyle
 	// contract; source checkouts fall back to the repo-root copy.
@@ -473,6 +492,12 @@ function renderCodestyleTemplate(): string {
 	return readFileSync(repoTemplatePath, "utf-8");
 }
 
+/**
+ * Load a codestyle pack template, preferring the packaged template under the module's templates directory and falling back to the repository root.
+ *
+ * @param relativePath - Path to the template relative to the templates directory or repository root (for example, `CODESTYLE.md` or `codestyle/pack.md`)
+ * @returns The UTF-8 contents of the selected template file
+ */
 function renderCodestylePackTemplate(relativePath: string): string {
 	const packagedTemplatePath = fileURLToPath(
 		new URL(`../../templates/${relativePath}`, import.meta.url),
@@ -486,6 +511,12 @@ function renderCodestylePackTemplate(relativePath: string): string {
 	return readFileSync(repoTemplatePath, "utf-8");
 }
 
+/**
+ * Load the packaged `verify-work.sh` script and return its text content.
+ *
+ * @param _packageManager - Ignored; kept for API compatibility with other renderers.
+ * @returns The UTF-8 contents of the `scripts/verify-work.sh` template
+ */
 function renderVerifyWorkScript(_packageManager: string): string {
 	const templatePath = fileURLToPath(
 		new URL("../../../scripts/verify-work.sh", import.meta.url),
@@ -493,6 +524,11 @@ function renderVerifyWorkScript(_packageManager: string): string {
 	return readFileSync(templatePath, "utf-8");
 }
 
+/**
+ * Load the packaged shell script that validates repository codestyle parity.
+ *
+ * @returns The UTF-8 text contents of the packaged `scripts/validate-codestyle.sh` file
+ */
 function renderValidateCodestyleScript(): string {
 	const templatePath = fileURLToPath(
 		new URL("../../../scripts/validate-codestyle.sh", import.meta.url),
@@ -500,6 +536,11 @@ function renderValidateCodestyleScript(): string {
 	return readFileSync(templatePath, "utf-8");
 }
 
+/**
+ * Load the packaged `scripts/check-codestyle-parity.sh` template and return its contents.
+ *
+ * @returns The UTF-8 contents of the packaged `scripts/check-codestyle-parity.sh` file
+ */
 function renderCheckCodestyleParityScript(): string {
 	const templatePath = fileURLToPath(
 		new URL("../../../scripts/check-codestyle-parity.sh", import.meta.url),
