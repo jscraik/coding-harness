@@ -76,7 +76,7 @@ while IFS= read -r raw_line || [[ -n "$raw_line" ]]; do
 	fi
 
 	expected_hash="${line%% *}"
-	relative_path="${line#${expected_hash}}"
+	relative_path="${line#"${expected_hash}"}"
 	relative_path="${relative_path# }"
 	relative_path="${relative_path# }"
 
