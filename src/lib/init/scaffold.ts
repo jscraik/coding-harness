@@ -779,7 +779,7 @@ if [[ "$base_ref" == origin/* ]]; then
 elif [[ "$base_ref" == refs/remotes/origin/* ]]; then
 	explicit_remote_ref=1
 	remote_base_branch="\${base_ref#refs/remotes/origin/}"
-elif [[ "$base_ref" != *"/"* ]] && ! git rev-parse --verify --quiet "\${base_ref}^{commit}" >/dev/null; then
+elif [[ "$base_ref" != *"/"* ]] && ! git -C "$REPO_ROOT" rev-parse --verify --quiet "\${base_ref}^{commit}" >/dev/null; then
 	remote_base_branch="$base_ref"
 fi
 
