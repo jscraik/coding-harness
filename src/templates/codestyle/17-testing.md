@@ -23,10 +23,10 @@
 3. Refactor safely while keeping tests green (REFACTOR).
 
 ## Test quality standards
-- Keep tests deterministic and isolated.
-- Use Arrange-Act-Assert structure when practical.
-- Name tests by behavior and expected outcome.
-- Fix implementation when behavior is wrong; only rewrite tests when assertions are invalid.
+- Tests MUST remain deterministic and isolated.
+- Tests SHOULD use Arrange-Act-Assert structure when practical.
+- Test names SHOULD describe behavior and expected outcome.
+- If behavior is wrong, implementations MUST be fixed; tests SHOULD be rewritten only when assertions are invalid.
 
 ## Coverage and gates
 - Default target is >= 80% coverage unless a repository contract defines a different threshold.
