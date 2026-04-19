@@ -197,21 +197,23 @@ function renderRequiredChecksManifest(
 		context,
 	);
 
-	const requiredChecks = checksWithSecurityScan.map((displayName, index) => {
-		const metadata = deriveRequiredCheckMetadata(ciProvider, displayName);
-		return {
-			policyId: `required-check-${index + 1}`,
-			displayName,
-			sourceAppSlug: metadata.sourceAppSlug,
-			sourceAppId: metadata.sourceAppId,
-			externalIdPattern: `^${escapeRegexLiteral(metadata.githubCheckName)}$`,
-			requiredOnEvents: ["pull_request", "merge_group"] as const,
-			freshnessWindowDays: 7,
-			class: metadata.class,
-			enabled: metadata.enabled,
-			githubCheckName: metadata.githubCheckName,
-		};
-	});
+	const requiredChecks = checksWithSecurityScan
+		.map((displayName, index) => {
+			const metadata = deriveRequiredCheckMetadata(ciProvider, displayName);
+			return {
+				policyId: `required-check-${index + 1}`,
+				displayName,
+				sourceAppSlug: metadata.sourceAppSlug,
+				sourceAppId: metadata.sourceAppId,
+				externalIdPattern: `^${escapeRegexLiteral(metadata.githubCheckName)}$`,
+				requiredOnEvents: ["pull_request", "merge_group"] as const,
+				freshnessWindowDays: 7,
+				class: metadata.class,
+				enabled: metadata.enabled,
+				githubCheckName: metadata.githubCheckName,
+			};
+		})
+		.filter((check) => check.enabled !== false);
 
 	return JSON.stringify(
 		{
@@ -243,10 +245,13 @@ function getBranchProtectionGithubCheckNames(
 		context,
 	);
 
-	return checksWithSecurityScan.map((displayName) => {
-		const metadata = deriveRequiredCheckMetadata(ciProvider, displayName);
-		return metadata.githubCheckName;
-	});
+	return checksWithSecurityScan
+		.map((displayName) => {
+			const metadata = deriveRequiredCheckMetadata(ciProvider, displayName);
+			return metadata;
+		})
+		.filter((metadata) => metadata.enabled !== false)
+		.map((metadata) => metadata.githubCheckName);
 }
 
 function renderTransitionStatusArtifact(): string {
@@ -2410,6 +2415,11 @@ jobs:
 - Codex review artifact (URL, report, or comment reference).
 - Confirmation that reviewer agent is independent from coding agent.
 `;
+			const isCircleCI =
+				(context.ciProvider ?? DEFAULT_CI_PROVIDER) === "circleci";
+			const testArtifactTocEntry = isCircleCI
+				? "- [Test runner artifact configuration](#test-runner-artifact-configuration)\n"
+				: "";
 			return `# Contributing
 
 ## Table of Contents
@@ -2424,8 +2434,7 @@ jobs:
 - [Repo-local verification wrapper](#repo-local-verification-wrapper)
 - [Repo-local harness wrapper](#repo-local-harness-wrapper)
 - [Recommended security scanner baseline](#recommended-security-scanner-baseline)
-- [Test runner artifact configuration](#test-runner-artifact-configuration)
-- [Review artifacts requirement](#review-artifacts-requirement)
+${testArtifactTocEntry}- [Review artifacts requirement](#review-artifacts-requirement)
 - [Credential-safe evidence snippets](#credential-safe-evidence-snippets)
 - [Branch protection recommendation](#branch-protection-recommendation)
 
@@ -2562,7 +2571,9 @@ Recommended policy:
 - Keep scanner binaries available in local development environments and CI runners.
 - Run scanner checks in CI on pull requests and pushes to protected branches.
 - Treat scanner findings as merge blockers unless explicitly waived with rationale.
-
+${
+	isCircleCI
+		? `
 ## Test runner artifact configuration
 
 CI pipelines collect test results and artifacts from the \`artifacts/test\` directory. Your test framework must be configured to emit JUnit XML reports (or other supported formats) to this location.
@@ -2574,7 +2585,9 @@ Example configurations:
 - **Mocha**: \`mocha --reporter mocha-junit-reporter --reporter-options mochaFile=artifacts/test/junit.xml\`
 
 Ensure \`artifacts/test\` is created before running tests (CI scaffolds include a step for this).
-
+`
+		: ""
+}
 ## Review artifacts requirement
 
 Each PR must include:
