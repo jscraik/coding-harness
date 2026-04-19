@@ -44,7 +44,9 @@ const EXPECTED_TEMPLATE_PATHS = [
 	".harness/review-log.md",
 	".npmrc",
 	".coderabbit.yaml",
+	"CHANGELOG.md",
 	".circleci/config.yml",
+	".github/workflows/release-private-npm.yml",
 	"CONTRIBUTING.md",
 	".github/PULL_REQUEST_TEMPLATE.md",
 	"scripts/validate-commit-msg.js",
@@ -209,10 +211,14 @@ describe("runInit", () => {
 				),
 			).toBe(true);
 			expect(existsSync(join(tempDir, ".npmrc"))).toBe(true);
+			expect(existsSync(join(tempDir, "CHANGELOG.md"))).toBe(true);
 			expect(existsSync(join(tempDir, ".greptile/config.json"))).toBe(false);
 			expect(
 				existsSync(join(tempDir, ".github/workflows/greptile-review.yml")),
 			).toBe(false);
+			expect(
+				existsSync(join(tempDir, ".github/workflows/release-private-npm.yml")),
+			).toBe(true);
 			expect(existsSync(join(tempDir, "CONTRIBUTING.md"))).toBe(true);
 			expect(
 				existsSync(join(tempDir, ".github/PULL_REQUEST_TEMPLATE.md")),
@@ -270,6 +276,9 @@ describe("runInit", () => {
 			expect(
 				existsSync(join(tempDir, ".github/workflows/secret-scan.yml")),
 			).toBe(false);
+			expect(
+				existsSync(join(tempDir, ".github/workflows/release-private-npm.yml")),
+			).toBe(true);
 
 			const requiredChecks = JSON.parse(
 				require("node:fs").readFileSync(
@@ -673,6 +682,9 @@ describe("runInit", () => {
 			).toBe(true);
 			expect(
 				existsSync(join(tempDir, ".github/workflows/secret-scan.yml")),
+			).toBe(true);
+			expect(
+				existsSync(join(tempDir, ".github/workflows/release-private-npm.yml")),
 			).toBe(true);
 			// legacy review bridge workflow is no longer scaffolded
 			expect(

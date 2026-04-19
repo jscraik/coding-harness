@@ -54,6 +54,8 @@ describe("generateBootstrapSummary", () => {
 					"harness.contract.json",
 					"WORKFLOW.md",
 					".github/workflows/ci.yml",
+					".github/workflows/release-private-npm.yml",
+					"CHANGELOG.md",
 				],
 			}),
 			"pnpm",
@@ -61,6 +63,8 @@ describe("generateBootstrapSummary", () => {
 		expect(summary.created).toContain("Governance contract");
 		expect(summary.created).toContain("Workflow documentation");
 		expect(summary.created).toContain("CI pipeline");
+		expect(summary.created).toContain("Release pipeline");
+		expect(summary.created).toContain("Release changelog");
 	});
 
 	it("does not match category labels with broad substring checks", () => {

@@ -22,6 +22,9 @@ describe("classifySurface", () => {
 	it("classifies CI templates", () => {
 		expect(classifySurface(".github/workflows/pr-pipeline.yml")).toBe("ci");
 		expect(classifySurface(".github/workflows/secret-scan.yml")).toBe("ci");
+		expect(classifySurface(".github/workflows/release-private-npm.yml")).toBe(
+			"ci",
+		);
 		expect(classifySurface(".circleci/config.yml")).toBe("ci");
 		expect(classifySurface(".harness/ci-required-checks.json")).toBe("ci");
 	});
