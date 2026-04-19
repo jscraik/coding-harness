@@ -269,12 +269,6 @@ else
 	while IFS="$sep" read -r row_path row_branch row_head row_detached row_locked row_prunable row_dirty row_current; do
 		locked_cell="${row_locked:-no}"
 		prunable_cell="${row_prunable:-no}"
-		if [[ -z "$locked_cell" ]]; then
-			locked_cell="no"
-		fi
-		if [[ -z "$prunable_cell" ]]; then
-			prunable_cell="no"
-		fi
 
 		printf "| \`%s\` | \`%s\` | \`%s\` | \`%s\` | \`%s\` | %s | %s | \`%s\` |\n" \
 			"$row_path" \
