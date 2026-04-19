@@ -9,6 +9,10 @@ export interface RequiredCheckMetadata {
 	enabled?: boolean;
 }
 
+export interface DeriveRequiredCheckMetadataOptions {
+	circleciPrimaryCheckName?: string;
+}
+
 const CIRCLECI_WORKFLOW_OWNED_CHECKS = new Set<string>([
 	"pr-pipeline",
 	"harness-gates",
@@ -38,6 +42,7 @@ const CIRCLECI_WORKFLOW_OWNED_CHECKS = new Set<string>([
 export function deriveRequiredCheckMetadata(
 	provider: CIProvider,
 	displayName: string,
+	options?: DeriveRequiredCheckMetadataOptions,
 ): RequiredCheckMetadata {
 	if (displayName === "CodeRabbit") {
 		return {
@@ -58,11 +63,16 @@ export function deriveRequiredCheckMetadata(
 		};
 	}
 	if (provider === "circleci") {
+		const circleciPrimaryCheckName =
+			typeof options?.circleciPrimaryCheckName === "string" &&
+			options.circleciPrimaryCheckName.trim().length > 0
+				? options.circleciPrimaryCheckName.trim()
+				: CIRCLECI_PRIMARY_CHECK;
 		if (CIRCLECI_WORKFLOW_OWNED_CHECKS.has(displayName)) {
 			return {
 				sourceAppSlug: "circleci",
 				sourceAppId: "circleci",
-				githubCheckName: CIRCLECI_PRIMARY_CHECK,
+				githubCheckName: circleciPrimaryCheckName,
 				class: "required",
 			};
 		}

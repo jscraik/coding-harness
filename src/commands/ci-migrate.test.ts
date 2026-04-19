@@ -4443,6 +4443,7 @@ describe("runCIMigrateCLI", () => {
 				displayName: string;
 				sourceAppSlug: string;
 				sourceAppId: string;
+				externalIdPattern: string;
 				githubCheckName: string | null;
 				class: "required" | "informational";
 				enabled?: boolean;
@@ -4531,6 +4532,18 @@ describe("runCIMigrateCLI", () => {
 				)
 				.every((check) => check.githubCheckName === CIRCLECI_PRIMARY_CHECK),
 		).toBe(true);
+		expect(
+			manifest.requiredChecks
+				.filter(
+					(check) =>
+						check.displayName !== "CodeRabbit" &&
+						check.displayName !== "security-scan" &&
+						check.displayName !== "semgrep-cloud-platform/scan",
+				)
+				.every(
+					(check) => check.externalIdPattern === `^${CIRCLECI_PRIMARY_CHECK}$`,
+				),
+		).toBe(true);
 		const externalCheck = manifest.requiredChecks.find(
 			(check) => check.displayName === "semgrep-cloud-platform/scan",
 		);
@@ -4543,6 +4556,78 @@ describe("runCIMigrateCLI", () => {
 				(check) => check.displayName === "CodeRabbit",
 			)?.githubCheckName,
 		).toBe("CodeRabbit");
+	});
+
+	it("honors ciProviderPolicy.primaryCheckName for imported CircleCI workflow checks", () => {
+		mkdirSync(join(tempDir, ".harness"), { recursive: true });
+		mkdirSync(join(tempDir, ".circleci"), { recursive: true });
+		writeFileSync(
+			join(tempDir, ".harness/restore-manifest.json"),
+			JSON.stringify({
+				harnessVersion: "0.0.0",
+				ciProvider: "circleci",
+				files: [],
+			}),
+		);
+		writeFileSync(
+			join(tempDir, ".circleci/config.yml"),
+			[
+				"version: 2.1",
+				"",
+				"workflows:",
+				"  pr-pipeline:",
+				"    jobs:",
+				"      - lint",
+				"      - typecheck",
+			].join("\n"),
+		);
+		writeFileSync(
+			join(tempDir, "harness.contract.json"),
+			JSON.stringify(
+				{
+					ciProviderPolicy: {
+						primaryCheckName: "quality-gates",
+					},
+					branchProtection: {
+						requiredChecks: ["lint", "typecheck"],
+					},
+				},
+				null,
+				2,
+			),
+		);
+
+		const exitCode = runCIMigrateCLI(tempDir, {
+			provider: "circleci",
+			apply: true,
+			snapshot: "apply-import-circleci-primary-check-name-override",
+		});
+
+		expect(exitCode).toBe(EXIT_CODES.SUCCESS);
+		const manifest = JSON.parse(
+			readFileSync(join(tempDir, ".harness/ci-required-checks.json"), "utf-8"),
+		) as {
+			requiredChecks: Array<{
+				displayName: string;
+				githubCheckName: string | null;
+				externalIdPattern: string;
+			}>;
+		};
+		const workflowOwnedChecks = manifest.requiredChecks.filter(
+			(check) =>
+				check.displayName === "lint" || check.displayName === "typecheck",
+		);
+		expect(workflowOwnedChecks.length).toBe(2);
+		expect(
+			workflowOwnedChecks.every(
+				(check) => check.githubCheckName === "quality-gates",
+			),
+		).toBe(true);
+		expect(
+			workflowOwnedChecks.every(
+				(check) => check.externalIdPattern === "^quality-gates$",
+			),
+		).toBe(true);
 	});
 
 	it("fails closed on apply when the required-check manifest contains malformed entries", () => {

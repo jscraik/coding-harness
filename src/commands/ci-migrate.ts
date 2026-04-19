@@ -41,7 +41,10 @@ import {
 	type RequiredCheckIdentity,
 	createCIProviderAdapter,
 } from "../lib/ci/provider-adapter.js";
-import { deriveRequiredCheckMetadata } from "../lib/ci/required-check-metadata.js";
+import {
+	type DeriveRequiredCheckMetadataOptions,
+	deriveRequiredCheckMetadata,
+} from "../lib/ci/required-check-metadata.js";
 import {
 	type BranchProtectionSatisfiabilityReport,
 	scanOpenPullRequestSatisfiability,
@@ -397,6 +400,7 @@ interface CIProviderPolicyConfig {
 	trustedPolicyRef: string;
 	requiredCheckManifestPath: string;
 	authorityConfigPath: string;
+	primaryCheckName?: string;
 }
 
 type CheckOwner = CIProvider | "both" | "external" | "neither";
@@ -3143,6 +3147,28 @@ function readContractProviderMode(targetDir: string): CIProviderMode | null {
 	return null;
 }
 
+function readContractPrimaryCheckName(targetDir: string): string | undefined {
+	const contractPath = resolve(targetDir, "harness.contract.json");
+	if (!existsSync(contractPath)) {
+		return undefined;
+	}
+	try {
+		const parsed = JSON.parse(readFileSync(contractPath, "utf-8")) as {
+			ciProviderPolicy?: { primaryCheckName?: string | undefined } | undefined;
+		};
+		const primaryCheckName = parsed.ciProviderPolicy?.primaryCheckName;
+		if (
+			typeof primaryCheckName === "string" &&
+			primaryCheckName.trim().length > 0
+		) {
+			return primaryCheckName.trim();
+		}
+	} catch {
+		// Best-effort primary check detection.
+	}
+	return undefined;
+}
+
 function readContractProviderPolicy(
 	targetDir: string,
 	options?: { strict?: boolean | undefined },
@@ -3166,6 +3192,7 @@ function readContractProviderPolicy(
 						trustedPolicyRef?: string | undefined;
 						requiredCheckManifestPath?: string | undefined;
 						authorityConfigPath?: string | undefined;
+						primaryCheckName?: string | undefined;
 				  }
 				| undefined;
 		};
@@ -3253,6 +3280,10 @@ function readContractProviderPolicy(
 				trustedPolicyRef: policy.trustedPolicyRef.trim(),
 				requiredCheckManifestPath: policy.requiredCheckManifestPath.trim(),
 				authorityConfigPath: policy.authorityConfigPath.trim(),
+				...(typeof policy.primaryCheckName === "string" &&
+				policy.primaryCheckName.trim().length > 0
+					? { primaryCheckName: policy.primaryCheckName.trim() }
+					: {}),
 			},
 		};
 	} catch (error) {
@@ -7910,29 +7941,36 @@ function readRequiredCheckNamesFromSourceProviderConfig(
 /**
  * Creates canonical `RequiredCheckIdentity` entries from a list of display names for import.
  *
- * Each entry uses an exact-match `externalIdPattern` for the provided display name, sets
- * GitHub check name (`githubCheckName`) to `CIRCLECI_PRIMARY_CHECK` when importing
- * CircleCI workflow checks, otherwise to the display name. CodeRabbit and security-scan
- * keep canonical external source metadata. Entries require checks on `pull_request`
- * and `merge_group` events, and apply default freshness and class values.
+ * Each entry uses an exact-match `externalIdPattern` for the derived GitHub check
+ * identity (`githubCheckName`). CircleCI workflow checks map to the canonical
+ * CircleCI primary check name (overrideable through options), while other checks
+ * preserve their display name. CodeRabbit and security-scan keep canonical external
+ * source metadata. Entries require checks on `pull_request` and `merge_group`
+ * events, and apply default freshness and class values.
  *
  * @param displayNames - Array of check display names to import
  * @param sourceProvider - The originating CI provider identifier used for `sourceAppSlug` and `sourceAppId`
+ * @param options - Optional metadata overrides (for example CircleCI primary check naming)
  * @returns An array of `RequiredCheckIdentity` objects representing the imported required checks
  */
 function buildImportedRequiredChecks(
 	displayNames: string[],
 	sourceProvider: CIProvider,
+	options?: DeriveRequiredCheckMetadataOptions,
 ): RequiredCheckIdentity[] {
 	return displayNames.map((displayName, index) => {
-		const metadata = deriveRequiredCheckMetadata(sourceProvider, displayName);
+		const metadata = deriveRequiredCheckMetadata(
+			sourceProvider,
+			displayName,
+			options,
+		);
 
 		return {
 			policyId: `imported-required-check-${index + 1}`,
 			displayName,
 			sourceAppSlug: metadata.sourceAppSlug,
 			sourceAppId: metadata.sourceAppId,
-			externalIdPattern: `^${escapeRegexLiteral(displayName)}$`,
+			externalIdPattern: `^${escapeRegexLiteral(metadata.githubCheckName)}$`,
 			githubCheckName: metadata.githubCheckName,
 			requiredOnEvents: ["pull_request", "merge_group"],
 			freshnessWindowDays: 7,
@@ -7979,6 +8017,7 @@ function readOrImportRequiredChecks(
 	targetDir: string,
 	sourceProvider: CIProvider,
 	allowPersistManifest: boolean,
+	options?: DeriveRequiredCheckMetadataOptions,
 ):
 	| {
 			ok: true;
@@ -8029,6 +8068,7 @@ function readOrImportRequiredChecks(
 	const importedChecks = buildImportedRequiredChecks(
 		importedCheckNames,
 		sourceProvider,
+		options,
 	);
 	if (allowPersistManifest) {
 		const writeResult = writeRequiredChecksManifest(
@@ -9456,10 +9496,14 @@ export function runCIMigrateCLI(
 	if (!rollback) {
 		const sourceProvider = detectSourceProvider(dir);
 		sourceProviderForRollback = sourceProvider;
+		const contractPrimaryCheckName = readContractPrimaryCheckName(dir);
 		const requiredChecksImportResult = readOrImportRequiredChecks(
 			dir,
 			sourceProvider,
 			apply && !dryRun,
+			contractPrimaryCheckName
+				? { circleciPrimaryCheckName: contractPrimaryCheckName }
+				: undefined,
 		);
 		if (!requiredChecksImportResult.ok) {
 			console.error(`Error: ${requiredChecksImportResult.error}`);
