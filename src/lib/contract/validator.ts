@@ -209,6 +209,7 @@ const VALID_CI_PROVIDER_POLICY_KEYS = [
 	"transitionStatusArtifactPath",
 	"authorityConfigPath",
 	"requiredCheckManifestPath",
+	"primaryCheckName",
 	"trustedPolicyRef",
 	"commitMode",
 ] as const;
@@ -985,6 +986,13 @@ function isValidCIProviderPolicy(value: unknown): value is CIProviderPolicy {
 	if (
 		typeof policy.requiredCheckManifestPath !== "string" ||
 		policy.requiredCheckManifestPath.trim().length === 0
+	) {
+		return false;
+	}
+	if (
+		policy.primaryCheckName !== undefined &&
+		(typeof policy.primaryCheckName !== "string" ||
+			policy.primaryCheckName.trim().length === 0)
 	) {
 		return false;
 	}

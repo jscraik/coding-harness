@@ -15,6 +15,7 @@ import { dirname, resolve, sep } from "node:path";
 import { cwd, env } from "node:process";
 import { fileURLToPath } from "node:url";
 import {
+	CIRCLECI_PRIMARY_CHECK,
 	type CheckEntry,
 	buildBranchProtectSyncPlan,
 	formatBranchProtectSyncWarning,
@@ -9585,12 +9586,15 @@ export function runCIMigrateCLI(
 			console.error(`Error: ${requiredChecksImportResult.error}`);
 			return EXIT_CODES.WRITE_ERROR;
 		}
+		const activeImportedChecks = requiredChecksImportResult.value.filter(
+			(check) => check.class === "required" && check.enabled !== false,
+		);
 		if (requiredChecksImportResult.imported) {
 			if (requiredChecksImportResult.persisted) {
 				console.info(
 					"Required checks manifest bootstrapped from legacy contract/workflow evidence: .harness/ci-required-checks.json",
 				);
-				printProviderCheckNameAdvice(provider);
+				printProviderCheckNameAdvice(provider, contractPrimaryCheckName);
 			} else {
 				console.info(
 					"Required checks manifest missing; using imported legacy contract/workflow checks for this run (dry-run).",
@@ -9615,9 +9619,7 @@ export function runCIMigrateCLI(
 			dir,
 			sourceProvider,
 			provider,
-			requiredChecksImportResult.value.filter(
-				(check) => check.class === "required" && check.enabled !== false,
-			),
+			activeImportedChecks,
 		);
 		if (!reportResult.ok) {
 			console.error(`Error: ${reportResult.error}`);
@@ -9662,11 +9664,6 @@ export function runCIMigrateCLI(
 				console.error(`Error: ${policyResult.error}`);
 				return EXIT_CODES.INVALID_PATH;
 			}
-			const requiredChecksResult = readAllRequiredChecks(dir);
-			if (!requiredChecksResult.ok) {
-				console.error(`Error: ${requiredChecksResult.error}`);
-				return EXIT_CODES.INVALID_PATH;
-			}
 			// JSC-59: Validate CI config syntax before declaring verify success
 			const configSyntaxViolations = validateCIConfigSyntax(
 				dir,
@@ -9674,7 +9671,7 @@ export function runCIMigrateCLI(
 			).map((v) => v.message);
 			const verificationViolations = [
 				...configSyntaxViolations,
-				...validateRequiredChecksForVerify(requiredChecksResult.value),
+				...validateRequiredChecksForVerify(activeImportedChecks),
 				...validateTransitionStatusArtifact(
 					dir,
 					policyResult.value.transitionStatusArtifactPath,
@@ -10217,15 +10214,23 @@ export function runCIMigrateCLI(
  * This advisory is printed after bootstrap and after commit so operators know
  * exactly what to configure in GitHub branch protection rulesets.
  */
-function printProviderCheckNameAdvice(provider: CIProvider): void {
+function printProviderCheckNameAdvice(
+	provider: CIProvider,
+	circleciPrimaryCheckName?: string,
+): void {
 	const lines: string[] = [""];
 	if (provider === "circleci") {
+		const workflowCheckName =
+			typeof circleciPrimaryCheckName === "string" &&
+			circleciPrimaryCheckName.trim().length > 0
+				? circleciPrimaryCheckName.trim()
+				: CIRCLECI_PRIMARY_CHECK;
 		lines.push(
 			"ℹ️  CircleCI reports one GitHub check-run per workflow (not per job).",
 			"   Individual CI jobs (lint, test, …) are NOT visible as separate GitHub checks.",
 			"   Add these workflow names to GitHub branch protection rulesets:",
 			"",
-			"     pr-pipeline    ← main CI workflow",
+			`     ${workflowCheckName}    ← main CI workflow`,
 			"     harness-gates  ← harness gate workflow (if present)",
 			"",
 			"   Run: harness branch-protect --apply to sync ruleset required checks.",

@@ -190,7 +190,7 @@ function insertSecurityScanBeforeCodeRabbit(
  * `externalIdPattern` (an exact-match regex for the canonical GitHub check name),
  * `requiredOnEvents`, `freshnessWindowDays`, `class`, `enabled`, and `githubCheckName`.
  * When `ciProvider` is `"circleci"`, a `security-scan` check may be injected (placed before
- * `CodeRabbit` when present); checks with `enabled === false` are omitted from the serialized output.
+ * `CodeRabbit` when present).
  *
  * @param ciProvider - The target CI provider (e.g., `"github-actions"` or `"circleci"`).
  * @param context - Optional render context; only `issueTracker` is consulted for check selection.
@@ -205,23 +205,21 @@ function renderRequiredChecksManifest(
 		context,
 	);
 
-	const requiredChecks = checksWithSecurityScan
-		.map((displayName, index) => {
-			const metadata = deriveRequiredCheckMetadata(ciProvider, displayName);
-			return {
-				policyId: `required-check-${index + 1}`,
-				displayName,
-				sourceAppSlug: metadata.sourceAppSlug,
-				sourceAppId: metadata.sourceAppId,
-				externalIdPattern: `^${escapeRegexLiteral(metadata.githubCheckName)}$`,
-				requiredOnEvents: ["pull_request", "merge_group"] as const,
-				freshnessWindowDays: 7,
-				class: metadata.class,
-				enabled: metadata.enabled,
-				githubCheckName: metadata.githubCheckName,
-			};
-		})
-		.filter((check) => check.enabled !== false);
+	const requiredChecks = checksWithSecurityScan.map((displayName, index) => {
+		const metadata = deriveRequiredCheckMetadata(ciProvider, displayName);
+		return {
+			policyId: `required-check-${index + 1}`,
+			displayName,
+			sourceAppSlug: metadata.sourceAppSlug,
+			sourceAppId: metadata.sourceAppId,
+			externalIdPattern: `^${escapeRegexLiteral(metadata.githubCheckName)}$`,
+			requiredOnEvents: ["pull_request", "merge_group"] as const,
+			freshnessWindowDays: 7,
+			class: metadata.class,
+			enabled: metadata.enabled,
+			githubCheckName: metadata.githubCheckName,
+		};
+	});
 
 	return JSON.stringify(
 		{
@@ -232,33 +230,6 @@ function renderRequiredChecksManifest(
 		null,
 		2,
 	);
-}
-
-/**
- * Produce canonical GitHub check names for branch protection based on the normalized required checks.
- *
- * Filters out checks that are marked disabled in their metadata.
- *
- * @param ciProvider - The CI provider to target, e.g. `"github-actions"` or `"circleci"`.
- * @param context - Optional render context; only `issueTracker` influences selection.
- * @returns An array of canonical GitHub check names to be used in branch protection configuration.
- */
-function getBranchProtectionGithubCheckNames(
-	ciProvider: CIProvider,
-	context?: Pick<TemplateRenderContext, "issueTracker">,
-): readonly string[] {
-	const checksWithSecurityScan = getNormalizedRequiredChecks(
-		ciProvider,
-		context,
-	);
-
-	return checksWithSecurityScan
-		.map((displayName) => {
-			const metadata = deriveRequiredCheckMetadata(ciProvider, displayName);
-			return metadata;
-		})
-		.filter((metadata) => metadata.enabled !== false)
-		.map((metadata) => metadata.githubCheckName);
 }
 
 /**
@@ -1579,12 +1550,7 @@ export const TEMPLATES: Template[] = [
 					},
 					docsDriftRules: {},
 					branchProtection: {
-						requiredChecks: [
-							...getBranchProtectionGithubCheckNames(
-								context.ciProvider ?? DEFAULT_CI_PROVIDER,
-								context,
-							),
-						],
+						requiredChecks: [...getBranchProtectionRequiredChecks(context)],
 						restrictDeletions: true,
 						blockForcePushes: true,
 						requireLinearHistory: true,
@@ -2416,10 +2382,7 @@ jobs:
 			);
 			const localExecCommand = renderLocalHarnessExecCommand(pm);
 			const requiredChecksList = formatRequiredChecksBulleted(
-				getBranchProtectionGithubCheckNames(
-					context.ciProvider ?? DEFAULT_CI_PROVIDER,
-					context,
-				),
+				getBranchProtectionRequiredChecks(context),
 				"  - ",
 			);
 			const reviewArtifactsLines = `- CodeRabbit review artifact (URL, report, or comment reference).
