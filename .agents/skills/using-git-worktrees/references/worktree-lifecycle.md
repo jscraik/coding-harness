@@ -23,7 +23,7 @@ Use this playbook for `jscraik/coding-harness` only. It binds upstream git workt
 - Structured inventory + suggestions: `bash .agents/skills/using-git-worktrees/scripts/worktree-report.sh --repo . --format markdown --include-cleanup`
 - Remove clean inactive tree: `git worktree remove <path>`
 - Prune stale admin records: `git worktree prune`
-- Lock long-lived tree: `git worktree lock <path> --reason "<reason>"`
+- Lock long-lived tree: `git worktree lock --reason "<reason>" <path>`
 - Repair moved tree metadata: `git worktree repair <path>`
 
 ## Agent execution contexts
