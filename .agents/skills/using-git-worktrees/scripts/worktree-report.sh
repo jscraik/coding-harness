@@ -23,11 +23,21 @@ include_cleanup=0
 while (( $# > 0 )); do
 	case "$1" in
 		--repo)
-			repo_path="${2:-}"
+			if [[ $# -lt 2 || -z "${2:-}" ]]; then
+				echo "[worktree-report] --repo requires a value" >&2
+				usage >&2
+				exit 2
+			fi
+			repo_path="$2"
 			shift 2
 			;;
 		--format)
-			format="${2:-}"
+			if [[ $# -lt 2 || -z "${2:-}" ]]; then
+				echo "[worktree-report] --format requires a value" >&2
+				usage >&2
+				exit 2
+			fi
+			format="$2"
 			shift 2
 			;;
 		--include-cleanup)
