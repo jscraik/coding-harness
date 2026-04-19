@@ -1317,7 +1317,11 @@ function renderCodexEnvironmentTemplate(
     fi
   fi
 fi
-mise trust --yes .mise.toml || true
+if ! mise trust --status .mise.toml >/dev/null 2>&1; then
+  echo "[codex] mise config is not trusted"
+  echo "[codex] Fix: run 'mise trust --yes .mise.toml' and retry"
+  exit 1
+fi
 mise install
 ${renderInstallCommand(packageManager)}`;
 	const runScript = pickScriptForIcon(context.packageScripts, "run");
@@ -1526,7 +1530,11 @@ hooks:
   after_create: |
     git clone --depth 1 ${renderedRepoUrl} .
     ${installCommand}
-    mise trust || true
+    if ! mise trust --status .mise.toml >/dev/null 2>&1; then
+      echo "[symphony] mise config is not trusted"
+      echo "[symphony] Fix: run 'mise trust --yes .mise.toml' and retry"
+      exit 1
+    fi
   after_run: |
     cd "$WORKSPACE" && rm -rf node_modules
 agent:

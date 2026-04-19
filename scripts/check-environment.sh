@@ -96,8 +96,8 @@ fi
 # Bootstrap the full repo-managed environment so hook validation reflects the
 # pinned runtime versions and required approval posture, not only the caller
 # shell's PATH.
-if ! mise trust --yes "$MISE_PATH" >/dev/null 2>&1; then
-	echo "Error: unable to trust mise config at $MISE_PATH"
+if ! mise trust --status "$MISE_PATH" >/dev/null 2>&1; then
+	echo "Error: mise config at $MISE_PATH is not trusted"
 	echo "Fix: run 'mise trust --yes $MISE_PATH' and retry."
 	exit 1
 fi

@@ -86,12 +86,25 @@ while IFS= read -r raw_line || [[ -n "$raw_line" ]]; do
 	fi
 
 	target_path="$repo_root/$relative_path"
-	if [[ ! -f "$target_path" ]]; then
+
+	# Resolve to absolute path and verify containment within repo_root
+	if ! resolved_path="$(realpath -e "$target_path" 2>/dev/null)"; then
 		echo "[codestyle-parity] missing codestyle file: $relative_path" >&2
 		exit 1
 	fi
 
-	actual_hash="$(hash_file "$target_path")"
+	resolved_repo_root="$(realpath -e "$repo_root" 2>/dev/null)"
+	if [[ "$resolved_path" != "$resolved_repo_root"/* && "$resolved_path" != "$resolved_repo_root" ]]; then
+		echo "[codestyle-parity] path traversal detected: $relative_path resolves outside repo root" >&2
+		exit 1
+	fi
+
+	if [[ ! -f "$resolved_path" ]]; then
+		echo "[codestyle-parity] missing codestyle file: $relative_path" >&2
+		exit 1
+	fi
+
+	actual_hash="$(hash_file "$resolved_path")"
 	if [[ "$actual_hash" != "$expected_hash" ]]; then
 		echo "[codestyle-parity] checksum mismatch: $relative_path" >&2
 		echo "  expected: $expected_hash" >&2
