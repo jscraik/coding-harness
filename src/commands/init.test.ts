@@ -1648,10 +1648,10 @@ describe("runInit", () => {
 			expect(prepareWorktree).toContain("git pull --ff-only origin main");
 			expect(prepareWorktree).toContain('git switch -c "$branch_name"');
 			expect(newTask).toContain(
-				"[new-task] fetching latest origin/$remote_base_branch",
+				"[new-task] fetching latest $remote_name/$remote_base_branch",
 			);
 			expect(newTask).toContain(
-				'resolved_base_ref="refs/remotes/origin/$remote_base_branch"',
+				'resolved_base_ref="refs/remotes/$remote_name/$remote_base_branch"',
 			);
 			expect(newTask).toContain(
 				'if ! git rev-parse --verify --quiet "${resolved_base_ref}^{commit}" >/dev/null; then',
@@ -2070,14 +2070,22 @@ printf '%s\\n' '{"passed":true}'
 				join(fakeBin, "mise"),
 				`#!/usr/bin/env bash
 set -euo pipefail
-if [[ "$1" == "trust" ]]; then
+args=("$@")
+if [[ "\${args[0]:-}" == "--cd" ]]; then
+	args=("\${args[@]:2}")
+fi
+if [[ "\${args[0]:-}" == "trust" ]]; then
+	if [[ "\${args[1]:-}" == "--show" ]]; then
+		target="\${args[2]:-.}"
+		echo "$target: trusted"
+	fi
 	exit 0
 fi
-if [[ "$1" == "activate" ]]; then
+if [[ "\${args[0]:-}" == "activate" ]]; then
 	echo 'true'
 	exit 0
 fi
-if [[ "$1" == "which" && "$2" == "harness" ]]; then
+if [[ "\${args[0]:-}" == "which" && "\${args[1]:-}" == "harness" ]]; then
 	if [[ "\${FAKE_MISE_WHICH_MODE:-present}" == "present" ]]; then
 		echo "\${FAKE_MISE_HARNESS:?}"
 	fi

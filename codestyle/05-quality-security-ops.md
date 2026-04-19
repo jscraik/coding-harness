@@ -115,6 +115,5 @@ Coverage and mutation thresholds MAY be enforced only when wired to executable r
 * Mise: `.mise.toml`
 * Rustfmt: `rustfmt.toml`
 * CI: `.github/workflows/*.yml`
-* Rules of AI: `brainwav/governance/00-core/RULES_OF_AI.md`
 
 ---

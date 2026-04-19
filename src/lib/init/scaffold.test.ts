@@ -4,6 +4,7 @@ import { join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { afterEach, describe, expect, it } from "vitest";
 import {
+	CODESTYLE_PACK_TEMPLATE_FILES,
 	TEMPLATES,
 	createTemplateRenderContext,
 	getTemplatesForProvider,
@@ -27,18 +28,17 @@ describe("scaffold templates resolution", () => {
 
 	it("includes codestyle contract templates by default", () => {
 		const templates = getTemplatesForProvider("circleci");
+		const codestyleTemplatePaths = templates
+			.filter((template) => template.path.startsWith("codestyle/"))
+			.map((template) => template.path)
+			.sort();
 
 		expect(templates.some((template) => template.path === "CODESTYLE.md")).toBe(
 			true,
 		);
-		expect(
-			templates.some((template) => template.path === "codestyle/README.md"),
-		).toBe(true);
-		expect(
-			templates.some(
-				(template) => template.path === "codestyle/CHECKSUMS.sha256",
-			),
-		).toBe(true);
+		expect(codestyleTemplatePaths).toEqual(
+			[...CODESTYLE_PACK_TEMPLATE_FILES].sort(),
+		);
 		expect(
 			templates.some(
 				(template) => template.path === "scripts/validate-codestyle.sh",

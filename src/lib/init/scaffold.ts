@@ -60,7 +60,7 @@ const DEFAULT_CI_PROVIDER: CIProvider = "circleci";
 const DEFAULT_TRANSITION_STATUS_UPDATED_AT = "2026-03-14T00:00:00.000Z";
 const BIOME_SCHEMA_VERSION = "1.9.4";
 const BIOME_SCHEMA_URL = `https://biomejs.dev/schemas/${BIOME_SCHEMA_VERSION}/schema.json`;
-const CODESTYLE_PACK_TEMPLATE_FILES = [
+export const CODESTYLE_PACK_TEMPLATE_FILES = [
 	"codestyle/README.md",
 	"codestyle/01-foundations.md",
 	"codestyle/02-javascript-ui.md",
@@ -771,14 +771,22 @@ fi
 branch_name="\${branch_prefix}/\${slug}"
 resolved_base_ref="$base_ref"
 remote_base_branch=""
+remote_name="origin"
 explicit_remote_ref=0
 
-if [[ "$base_ref" == origin/* ]]; then
+if [[ "$base_ref" == refs/remotes/*/* ]]; then
 	explicit_remote_ref=1
-	remote_base_branch="\${base_ref#origin/}"
-elif [[ "$base_ref" == refs/remotes/origin/* ]]; then
-	explicit_remote_ref=1
-	remote_base_branch="\${base_ref#refs/remotes/origin/}"
+	remote_name="\${base_ref#refs/remotes/}"
+	remote_name="\${remote_name%%/*}"
+	remote_base_branch="\${base_ref#refs/remotes/\${remote_name}/}"
+elif [[ "$base_ref" == */* ]]; then
+	candidate_remote="\${base_ref%%/*}"
+	candidate_branch="\${base_ref#*/}"
+	if git remote get-url "$candidate_remote" >/dev/null 2>&1; then
+		explicit_remote_ref=1
+		remote_name="$candidate_remote"
+		remote_base_branch="$candidate_branch"
+	fi
 elif [[ "$base_ref" != *"/"* ]] && ! git -C "$REPO_ROOT" rev-parse --verify --quiet "\${base_ref}^{commit}" >/dev/null; then
 	remote_base_branch="$base_ref"
 fi
@@ -802,22 +810,22 @@ if [[ -e "$worktree_path" ]]; then
 fi
 
 if [[ -n "$remote_base_branch" ]]; then
-	if git remote get-url origin >/dev/null 2>&1; then
-		echo "[new-task] fetching latest origin/$remote_base_branch"
-		if ! git fetch --prune origin "$remote_base_branch"; then
+	if git remote get-url "$remote_name" >/dev/null 2>&1; then
+		echo "[new-task] fetching latest $remote_name/$remote_base_branch"
+		if ! git fetch --prune "$remote_name" "$remote_base_branch"; then
 			if [[ "$explicit_remote_ref" -eq 1 ]]; then
 				echo "[new-task] failed to fetch explicit remote base: $base_ref" >&2
 				exit 2
 			fi
-			echo "[new-task] warning: could not fetch origin/$remote_base_branch; continuing with local refs" >&2
-		elif git show-ref --verify --quiet "refs/remotes/origin/$remote_base_branch"; then
-			resolved_base_ref="refs/remotes/origin/$remote_base_branch"
+			echo "[new-task] warning: could not fetch $remote_name/$remote_base_branch; continuing with local refs" >&2
+		elif git show-ref --verify --quiet "refs/remotes/$remote_name/$remote_base_branch"; then
+			resolved_base_ref="refs/remotes/$remote_name/$remote_base_branch"
 		elif [[ "$explicit_remote_ref" -eq 1 ]]; then
-			echo "[new-task] explicit remote base not found on origin: $base_ref" >&2
+			echo "[new-task] explicit remote base not found on $remote_name: $base_ref" >&2
 			exit 2
 		fi
 	elif [[ "$explicit_remote_ref" -eq 1 ]]; then
-		echo "[new-task] origin remote is required for explicit remote base: $base_ref" >&2
+		echo "[new-task] remote '$remote_name' is required for explicit remote base: $base_ref" >&2
 		exit 2
 	fi
 fi
@@ -3699,11 +3707,63 @@ normalized_checksum() {
 
 	case "$rel_path" in
 		*/diagram-context.md)
-			{
-				rg '^## ' "$file" || true
-				rg -o '\["[^"]+"\]|\{\{"[^"]+"\}\}' "$file" \
-					| sed -E 's/^\["(.*)"\]$/\\1/; s/^\{\{"(.*)"\}\}$/\\1/' || true
-			} | LC_ALL=C sort | shasum -a 256 | awk '{print $1}'
+			node - "$file" <<'NODE' | shasum -a 256 | awk '{print $1}'
+const fs = require("node:fs");
+
+const filePath = process.argv[2];
+const lines = fs.readFileSync(filePath, "utf8").split(/\\r?\\n/);
+const normalized = [];
+let inMermaid = false;
+let mermaidLines = [];
+const mermaidFence = String.fromCharCode(96).repeat(3);
+
+const normalizeMermaidLine = (line) => {
+	let value = line.trim();
+	if (!value) return "";
+
+	value = value.replace(/^([A-Za-z0-9_:-]+)\\s*(\\[[^\\]]+\\]|\\([^)]*\\)|\\{[^}]*\\})/, "NODE$2");
+	value = value.replace(/\\b(style|class|click)\\s+[A-Za-z0-9_:-]+\\b/g, "$1 NODE");
+	value = value.replace(/^([A-Za-z0-9_:-]+)(\\s*[-.=]+.*)$/, "NODE$2");
+	value = value.replace(/([-.=]+>|<[-.=]+)\\s*([A-Za-z0-9_:-]+)/g, "$1 NODE");
+	return value.replace(/\\s+/g, " ").trim();
+};
+
+const flushMermaid = () => {
+	const normalizedBlock = mermaidLines
+		.map(normalizeMermaidLine)
+		.filter(Boolean)
+		.sort();
+	normalized.push(mermaidFence + "mermaid");
+	normalized.push(...normalizedBlock);
+	normalized.push(mermaidFence);
+	mermaidLines = [];
+};
+
+for (const line of lines) {
+	if (/^Generated: /.test(line)) continue;
+	if (line.trim() === mermaidFence + "mermaid") {
+		inMermaid = true;
+		mermaidLines = [];
+		continue;
+	}
+	if (inMermaid && line.trim() === mermaidFence) {
+		flushMermaid();
+		inMermaid = false;
+		continue;
+	}
+	if (inMermaid) {
+		mermaidLines.push(line);
+		continue;
+	}
+	normalized.push(line.trimEnd());
+}
+
+if (inMermaid) {
+	flushMermaid();
+}
+
+process.stdout.write(normalized.join("\\n") + "\\n");
+NODE
 			;;
 		*/diagram-context.meta.json)
 			jq -c 'del(.generated_at, .last_generated_epoch, .changed, .context_sha256, .git_head)' "$file" | shasum -a 256 | awk '{print $1}'
@@ -4112,8 +4172,10 @@ fi
 	# Bootstrap the full repo-managed environment so hook validation reflects the
 	# pinned runtime versions and required approval posture, not only the caller
 	# shell's PATH.
-	if ! mise trust --yes "$MISE_PATH" >/dev/null 2>&1; then
-		echo "Error: unable to trust mise config at $MISE_PATH"
+	MISE_TRUST_STATUS="$(mise --cd "$REPO_ROOT" trust --show "$MISE_PATH" 2>/dev/null || true)"
+	MISE_TRUST_LINE_COUNT="$(printf '%s\n' "$MISE_TRUST_STATUS" | awk 'NF{count++} END{print count+0}')"
+	if [[ "$MISE_TRUST_LINE_COUNT" -ne 1 ]] || [[ "$MISE_TRUST_STATUS" != *": trusted" ]]; then
+		echo "Error: mise config at $MISE_PATH is not trusted"
 		echo "Fix: run 'mise trust --yes $MISE_PATH' and retry."
 		exit 1
 	fi

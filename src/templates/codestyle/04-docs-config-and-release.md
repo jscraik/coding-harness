@@ -13,7 +13,10 @@ All docs and long-form prose MUST be linted with **Vale**.
 
 ### Scope
 
-* `**/*.md`, `**/*.mdx`, `**/*.adoc`, `**/*.rst`
+* `README.md`
+* `CONTRIBUTING.md`
+* `AGENTS.md`
+* `docs/**/*.md`
 
 ### Configuration
 
