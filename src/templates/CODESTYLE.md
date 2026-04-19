@@ -52,7 +52,7 @@ Detailed standards are split under [codestyle/README.md](./codestyle/README.md).
 - Validation evidence MUST use exact command text and explicit outcomes:
   - `Command: <exact command> -> pass|fail|blocked (<reason>)`
 - Commands are expected from the active instruction scope.
-- For this codex subtree pack, run from `~/dev/configs/codex` and use `bash scripts/...` paths.
+- For this repository, run from the repository root and use `bash scripts/...` paths.
 - Contract checks for this repository:
   - `pnpm lint`
   - `pnpm typecheck`
