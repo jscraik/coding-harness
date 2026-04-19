@@ -1,6 +1,9 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
+# Ensure realpath is available before using it
+command -v realpath >/dev/null || { echo "[codestyle-parity] error: realpath is required but not found" >&2; exit 1; }
+
 SCRIPT_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd -P)"
 REPO_ROOT_DEFAULT="$(cd -- "$SCRIPT_DIR/.." && pwd -P)"
 

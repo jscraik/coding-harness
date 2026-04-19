@@ -17,12 +17,18 @@
 
 Any waiver across ESLint, Vale, Semgrep, Clippy, CI checks MUST include:
 
-* Rule ID
+* Rule ID or section
 * Reason
-* Ticket/issue reference
-* Expiry (date) OR ADR reference
+* Tracking ticket
+* Expiry or ADR reference
 
 Expired waivers MUST fail CI.
+
+For diff-budget overrides (runtime-enforced shape):
+
+* `approvedBy`: person approving the override
+* `reason`: reason for the override
+* `timestamp`: timestamp of approval
 
 Example waiver file:
 

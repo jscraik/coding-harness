@@ -36,7 +36,7 @@ Use this directory for detailed coding standards. Keep [../CODESTYLE.md](../CODE
 
 ## Enforcement defaults
 - Treat this directory as policy, not guidance: `MUST` and `MUST NOT` are enforced defaults.
-- Temporary exceptions require a waiver with reason, tracker, and expiry/ADR reference.
+- Temporary exceptions require a waiver with rule ID (or section), reason, tracking ticket, and expiry or ADR reference.
 - Record validation evidence using exact command lines and `pass|fail|blocked` outcomes.
 
 ## Maintenance rules
