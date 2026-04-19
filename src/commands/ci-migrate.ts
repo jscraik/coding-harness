@@ -7940,6 +7940,8 @@ function buildImportedRequiredChecks(
 			sourceProvider === "circleci" && !isCanonicalExternalCheck
 				? CIRCLECI_PRIMARY_CHECK
 				: displayName;
+		const isCircleCiSecurityScan =
+			sourceProvider === "circleci" && displayName === "security-scan";
 
 		return {
 			policyId: `imported-required-check-${index + 1}`,
@@ -7950,7 +7952,8 @@ function buildImportedRequiredChecks(
 			githubCheckName,
 			requiredOnEvents: ["pull_request", "merge_group"],
 			freshnessWindowDays: 7,
-			class: "required",
+			class: isCircleCiSecurityScan ? "informational" : "required",
+			...(isCircleCiSecurityScan ? { enabled: false } : {}),
 		};
 	});
 }

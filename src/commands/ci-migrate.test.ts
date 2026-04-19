@@ -4443,6 +4443,8 @@ describe("runCIMigrateCLI", () => {
 				sourceAppSlug: string;
 				sourceAppId: string;
 				githubCheckName: string | null;
+				class: "required" | "informational";
+				enabled?: boolean;
 			}>;
 		};
 		expect(manifest.activeProvider).toBe("circleci");
@@ -4495,6 +4497,25 @@ describe("runCIMigrateCLI", () => {
 				(check) => check.displayName === "security-scan",
 			)?.githubCheckName,
 		).toBe("security-scan");
+		expect(
+			manifest.requiredChecks.find(
+				(check) => check.displayName === "security-scan",
+			)?.class,
+		).toBe("informational");
+		expect(
+			manifest.requiredChecks.find(
+				(check) => check.displayName === "security-scan",
+			)?.enabled,
+		).toBe(false);
+		expect(
+			manifest.requiredChecks
+				.filter(
+					(check) =>
+						check.displayName !== "CodeRabbit" &&
+						check.displayName !== "security-scan",
+				)
+				.every((check) => check.class === "required"),
+		).toBe(true);
 		expect(
 			manifest.requiredChecks
 				.filter(

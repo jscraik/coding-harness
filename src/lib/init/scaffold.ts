@@ -226,6 +226,8 @@ function renderRequiredChecksManifest(
 
 	const requiredChecks = checksWithSecurityScan.map((displayName, index) => {
 		const mapping = resolveRequiredCheckSource(ciProvider, displayName);
+		const isCircleCiSecurityScan =
+			ciProvider === "circleci" && displayName === "security-scan";
 		return {
 			policyId: `required-check-${index + 1}`,
 			displayName,
@@ -234,11 +236,10 @@ function renderRequiredChecksManifest(
 			externalIdPattern: `^${escapeRegexLiteral(displayName)}$`,
 			requiredOnEvents: ["pull_request", "merge_group"] as const,
 			freshnessWindowDays: 7,
-			class:
-				displayName === "security-scan"
-					? ("informational" as const)
-					: ("required" as const),
-			enabled: displayName === "security-scan" ? false : undefined,
+			class: isCircleCiSecurityScan
+				? ("informational" as const)
+				: ("required" as const),
+			enabled: isCircleCiSecurityScan ? false : undefined,
 			githubCheckName: mapping.githubCheckName,
 		};
 	});

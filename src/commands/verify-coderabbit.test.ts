@@ -24,6 +24,15 @@ vi.mock("../lib/github/client.js", () => ({
 import { GitHubClient } from "../lib/github/client.js";
 
 const mockGitHubClient = vi.mocked(GitHubClient);
+const DEFAULT_REPO_NPMRC_CONTENT = [
+	"@brainwav:registry=https://registry.npmjs.org/",
+	"ignore-scripts=true",
+	"strict-peer-dependencies=false",
+	"auto-install-peers=false",
+	"shamefully-hoist=false",
+	"node-linker=hoisted",
+	"",
+].join("\n");
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -47,9 +56,7 @@ function createRepoFixture(
 	}
 
 	if (opts.withNpmrc) {
-		const content =
-			opts.npmrcContent ??
-			"@brainwav:registry=https://registry.npmjs.org/\nignore-scripts=true\n";
+		const content = opts.npmrcContent ?? DEFAULT_REPO_NPMRC_CONTENT;
 		writeFileSync(join(repoPath, ".npmrc"), content);
 	}
 
@@ -326,8 +333,7 @@ describe("runVerifyCodeRabbit - .npmrc checks", () => {
 		repoPath = createRepoFixture({
 			withCodeRabbitYaml: true,
 			withNpmrc: true,
-			npmrcContent:
-				"@brainwav:registry=https://registry.npmjs.org/\nignore-scripts=true\n",
+			npmrcContent: DEFAULT_REPO_NPMRC_CONTENT,
 		});
 		const result = await runVerifyCodeRabbit({ repoPath });
 
