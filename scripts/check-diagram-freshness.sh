@@ -73,10 +73,14 @@ normalized_checksum() {
 
 	case "$rel_path" in
 		*/diagram-context.md)
-			sed '/^Generated: /d' "$file" | shasum -a 256 | awk '{print $1}'
+			{
+				grep -E '^## ' "$file" || true
+				grep -oE '\["[^"]+"\]|\{\{"[^"]+"\}\}' "$file" \
+					| sed -E 's/^\["(.*)"\]$/\1/; s/^\{\{"(.*)"\}\}$/\1/' || true
+			} | LC_ALL=C sort | shasum -a 256 | awk '{print $1}'
 			;;
 		*/diagram-context.meta.json)
-			jq -c 'del(.generated_at, .last_generated_epoch, .changed, .context_sha256)' "$file" | shasum -a 256 | awk '{print $1}'
+			jq -c 'del(.generated_at, .last_generated_epoch, .changed, .context_sha256, .git_head)' "$file" | shasum -a 256 | awk '{print $1}'
 			;;
 		*/manifest.json)
 			jq -c 'del(.generatedAt)' "$file" | shasum -a 256 | awk '{print $1}'
