@@ -2,6 +2,71 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [0.13.1](https://github.com/jscraik/coding-harness/compare/v0.13.0...v0.13.1) (2026-04-19)
+
+
+### Bug Fixes
+
+* **agents:** handle unreadable instruction surfaces gracefully ([d94c925](https://github.com/jscraik/coding-harness/commit/d94c925572284108be98ad9b957d95f34d76815c))
+* **agents:** harden canonical reference policy ([e5b0dcf](https://github.com/jscraik/coding-harness/commit/e5b0dcf061854e4a4fb72c97e6a8fdbe3dcb2990))
+* **agents:** refactor instruction consistency checks ([628f303](https://github.com/jscraik/coding-harness/commit/628f3034fd6e5504ac00da0d7528fb5cf4505aa3))
+* **agents:** tighten consistency scoring and overlap ([4b7ae15](https://github.com/jscraik/coding-harness/commit/4b7ae1563be12f41fae5683d2fbbacb3bd3bef8c))
+* **agents:** tighten instruction consistency checks ([b9dcdd0](https://github.com/jscraik/coding-harness/commit/b9dcdd030453db8cf46b645ce0f25f9a78eba020)), closes [#199](https://github.com/jscraik/coding-harness/issues/199)
+* **ci:** address CodeRabbit findings on pr203 ([614e46e](https://github.com/jscraik/coding-harness/commit/614e46e4af121d18a1c388400bdd8b27d956bd64))
+* **ci:** align circleci scaffold and check contracts ([#201](https://github.com/jscraik/coding-harness/issues/201)) ([d29db16](https://github.com/jscraik/coding-harness/commit/d29db16087618304da671fd8d4863f08fe4d89bd))
+* **ci:** align pnpm and contract check baselines ([be59dfc](https://github.com/jscraik/coding-harness/commit/be59dfc3b87c12549ee7cf5dbdf31bfc9a815480))
+* **ci:** remove security-scan from required checks and add billing guards ([#193](https://github.com/jscraik/coding-harness/issues/193)) ([539da41](https://github.com/jscraik/coding-harness/commit/539da41e25fd617cc8341e37a904f25da84eafdd))
+* **codex:** restore required environment action mappings ([be9f74f](https://github.com/jscraik/coding-harness/commit/be9f74f5497592350c5fd59be48aa6b4fb483cbe))
+* **contract:** align WC-004 construct mapping ([2b64f89](https://github.com/jscraik/coding-harness/commit/2b64f891cbc59ad63965c8e6befc9bd5e94ff709))
+* **contract:** harden standards map API contracts ([96b5fc6](https://github.com/jscraik/coding-harness/commit/96b5fc6ba98906abee5b2b50fb07b57580302768))
+* **contract:** harden standards-map reporting and API safety ([1392e3d](https://github.com/jscraik/coding-harness/commit/1392e3da865f8c461da4370d63a86566dbaf3b15))
+* **diagram:** align scaffold context path with contract ([918884c](https://github.com/jscraik/coding-harness/commit/918884c51cc6025170616814bba9a3c55ccb00ad))
+* **hooks:** fail fast on staged biome config drift ([2615cbb](https://github.com/jscraik/coding-harness/commit/2615cbb9ea6e289ae30667a58f2fa04863833e7c))
+* **init:** make branch-protect guidance executable ([31604b8](https://github.com/jscraik/coding-harness/commit/31604b8dacfcd79da6bbff71bced162569a72e9f))
+* **init:** mirror config-drift guard in scaffold template ([856aab4](https://github.com/jscraik/coding-harness/commit/856aab4cf6a359d8d433a2a30c97c36791c7e520))
+* **init:** normalize and dedupe bootstrap summary labels ([3f62348](https://github.com/jscraik/coding-harness/commit/3f62348e6c491037bf8d50d7a4e7297ae3db49ea))
+* **init:** normalize contract recommendation path check ([1d9cf42](https://github.com/jscraik/coding-harness/commit/1d9cf42ad848185709ce7441f25703650c5e628f))
+* **init:** scope index-context recommendation ([61793c8](https://github.com/jscraik/coding-harness/commit/61793c866f539a0021a292a0ad1ecc9222805e30))
+* **init:** tighten post-bootstrap summary matching ([52dc76c](https://github.com/jscraik/coding-harness/commit/52dc76c7fcb4c160e4bbafb0f73d36498d2d4c58))
+* **pilot-eval:** close threshold and trace gaps ([aa924fa](https://github.com/jscraik/coding-harness/commit/aa924fa9ebf033601483bb1cbff29033a58dfd65))
+* **project-brain:** filter non-actionable findings ([21451b7](https://github.com/jscraik/coding-harness/commit/21451b71831f74c40480f640164723ed62ecab7f))
+* **project-brain:** harden suggestion dedupe semantics ([ca2e6a4](https://github.com/jscraik/coding-harness/commit/ca2e6a420a1ef5fcb5fb8107b72bd0ed23a3bc5c))
+* **project-brain:** harden suggestion generator safety ([0bd25ba](https://github.com/jscraik/coding-harness/commit/0bd25ba4b46012450f3801f5401ea390574c1997))
+* **project-brain:** replace scaffold placeholders with seeded baseline (JSC-187) ([#187](https://github.com/jscraik/coding-harness/issues/187)) ([01e0b16](https://github.com/jscraik/coding-harness/commit/01e0b16fc984341a1f4d57b28096376a5744584a))
+* **project-brain:** tighten suggestion dedupe and error reporting ([76271f3](https://github.com/jscraik/coding-harness/commit/76271f3a3dcda1788b18a16dd0992eba85a9e557))
+* register audit and brain commands in category catalog (CI fix) ([#192](https://github.com/jscraik/coding-harness/issues/192)) ([e3cc821](https://github.com/jscraik/coding-harness/commit/e3cc821dfc008f6d8fe69976b322fb150e1a09ac))
+* **release:** avoid pnpm cache bootstrap failure ([#172](https://github.com/jscraik/coding-harness/issues/172)) ([7d515f9](https://github.com/jscraik/coding-harness/commit/7d515f9740abf3ba0bb21159b22f0a615e53c7ff))
+* **replay:** harden trace normalization and redaction ([c453932](https://github.com/jscraik/coding-harness/commit/c4539325ddba0c080598720c42fab656a78c7a70))
+* **replay:** normalize environment paths in traces ([2d5cd40](https://github.com/jscraik/coding-harness/commit/2d5cd406e15435da37d5f53d7eea1aecc519e8fa))
+* **replay:** remove unsafe path-normalization casts ([e5b7c9b](https://github.com/jscraik/coding-harness/commit/e5b7c9b903873ec2b978de437eeb16650ae21b48))
+* stabilize worktree pre-push validation ([#171](https://github.com/jscraik/coding-harness/issues/171)) ([ae75f18](https://github.com/jscraik/coding-harness/commit/ae75f18a65326e4d5e54b91427282db45740fbdf))
+* **workflow:** preserve last_validated in plan frontmatter ([2f33912](https://github.com/jscraik/coding-harness/commit/2f3391248cf7a533f5caae2d8fbf73bea8fc5c1a))
+* **worktree:** sync bootstrap branches to latest origin ([3f701c7](https://github.com/jscraik/coding-harness/commit/3f701c76df626a39748bd4d13745b55108628550))
+
+
+### Features
+
+* **agents:** add cross-agent instruction compatibility (JSC-125) ([801a165](https://github.com/jscraik/coding-harness/commit/801a165e8d05ef9e1f3449d21f96c775c371a13c))
+* **audit:** comprehensive governance state check command (JSC-158) ([#191](https://github.com/jscraik/coding-harness/issues/191)) ([b2d7bd8](https://github.com/jscraik/coding-harness/commit/b2d7bd8bb7c060ecd0db21e7af097f5919065b64))
+* **brain:** add brain status/query/add command suite (JSC-184) ([#188](https://github.com/jscraik/coding-harness/issues/188)) ([89d0c16](https://github.com/jscraik/coding-harness/commit/89d0c162773fcf1271ebfea5de830183432f2c07))
+* **brain:** add relevance-aware preflight for changed-file context (JSC-185) ([#189](https://github.com/jscraik/coding-harness/issues/189)) ([f54382d](https://github.com/jscraik/coding-harness/commit/f54382d1f10072b1975cccea2e80065d3d7ba17a))
+* **brain:** add suggestion generator for gate artifacts (JSC-186) ([4abc81e](https://github.com/jscraik/coding-harness/commit/4abc81e79899c37451be749a3737642d40980b00))
+* **brain:** add trust/freshness metadata and stale knowledge surfacing (JSC-188) ([#190](https://github.com/jscraik/coding-harness/issues/190)) ([ee45e19](https://github.com/jscraik/coding-harness/commit/ee45e19a5a27e0a4c8b823c8cd84168881a0d3a7))
+* **contract:** add contextCompact policy to contract schema (JSC-134) ([#179](https://github.com/jscraik/coding-harness/issues/179)) ([3942b5b](https://github.com/jscraik/coding-harness/commit/3942b5ba86e77f44cc4485013a2492a2192f6a4f))
+* **contract:** add public API barrel and NIST standards map (JSC-108) ([3f43a52](https://github.com/jscraik/coding-harness/commit/3f43a52b5ff0b5584016996effb2713b1a9dd8da))
+* **indexer:** add sync contract and backend diagnostics for Project Brain (JSC-189) ([#194](https://github.com/jscraik/coding-harness/issues/194)) ([f499ca9](https://github.com/jscraik/coding-harness/commit/f499ca9806eedef575354726f21951c615bf6f76))
+* **init:** add post-bootstrap summary for immediate value (JSC-126) ([74c144a](https://github.com/jscraik/coding-harness/commit/74c144a9c2312ee1b5ab7d2e33b39b68742d5014))
+* **linear:** blocked governance model and escalation SLA (JSC-196) ([#177](https://github.com/jscraik/coding-harness/issues/177)) ([7392c8a](https://github.com/jscraik/coding-harness/commit/7392c8aca5e4d685846786623898b1cc90963027))
+* **linear:** enforce required metadata gate before issue execution starts (JSC-193) ([#175](https://github.com/jscraik/coding-harness/issues/175)) ([b859925](https://github.com/jscraik/coding-harness/commit/b859925e635bc7b268e53fa8a32dd6142c00475d))
+* **linear:** status-aging watchdog for In Progress and In Review lanes (JSC-192) ([#176](https://github.com/jscraik/coding-harness/issues/176)) ([f741a5b](https://github.com/jscraik/coding-harness/commit/f741a5be1be12e0c8d49a6aa50d99676251d8ce7))
+* **linear:** triage inbox SLA and deterministic routing policy (JSC-191) ([#174](https://github.com/jscraik/coding-harness/issues/174)) ([1efea6b](https://github.com/jscraik/coding-harness/commit/1efea6b8ad7de00db877467c1cac84836a56471a))
+* **linear:** weekly governance status report generation (JSC-195) ([#178](https://github.com/jscraik/coding-harness/issues/178)) ([cc10e3b](https://github.com/jscraik/coding-harness/commit/cc10e3b0f0c365c1729382f3a8ca10792d548035))
+* **pilot-eval:** add NIST AI RMF-aligned evaluation engine (JSC-109) ([13177a4](https://github.com/jscraik/coding-harness/commit/13177a42e0419b7a82125c000548c16bb9598e98))
+* **project-brain:** v1 contract and validation (JSC-183) ([#186](https://github.com/jscraik/coding-harness/issues/186)) ([33b6bd0](https://github.com/jscraik/coding-harness/commit/33b6bd018d890795d27104683b9b9b0c1fc024e8))
+* **replay:** normalize traces for simulation stability (JSC-132) ([4e945ed](https://github.com/jscraik/coding-harness/commit/4e945ed241d75bb6c04788ad1fffe6635bc3fe7a))
+
+
+
 # [0.13.0](https://github.com/jscraik/coding-harness/compare/v0.12.1...v0.13.0) (2026-04-13)
 
 
