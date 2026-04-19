@@ -10,6 +10,7 @@
 import { existsSync, readFileSync } from "node:fs";
 import { resolve } from "node:path";
 import { fileURLToPath } from "node:url";
+import { deriveRequiredCheckMetadata } from "../ci/required-check-metadata.js";
 import {
 	DEFAULT_CI_PROVIDER_POLICY,
 	DEFAULT_CONTRACT,
@@ -109,10 +110,24 @@ function renderMemoryValidateCommand(): string {
 	return `test -f memory.json && jq -e '.meta.version == "1.0" and (.preamble.bootstrap | type == "boolean") and (.preamble.search | type == "boolean") and (.entries | type == "array")' memory.json >/dev/null`;
 }
 
+/**
+ * Escapes all RegExp metacharacters in a string so it can be used as a literal in a regular expression.
+ *
+ * @param value - The input string to escape
+ * @returns The input with regex metacharacters (e.g., . * + ? ^ $ { } ( ) | [ ] \ ) prefixed by a backslash
+ */
 function escapeRegexLiteral(value: string): string {
 	return value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 }
 
+/**
+ * Determine which branch-protection required check identifiers apply for a given render context.
+ *
+ * When the provided `context.issueTracker` is `"github"` or `"none"`, the `linear-gate` check is omitted.
+ *
+ * @param context - Optional subset of the template render context; only `issueTracker` is consulted
+ * @returns An array of required check identifier strings; excludes `linear-gate` when `context.issueTracker` is `"github"` or `"none"`
+ */
 function getBranchProtectionRequiredChecks(
 	context?: Pick<TemplateRenderContext, "issueTracker">,
 ): readonly string[] {
@@ -125,22 +140,86 @@ function getBranchProtectionRequiredChecks(
 	return BRANCH_PROTECTION_REQUIRED_CHECKS;
 }
 
+/**
+ * Get the canonical list of required branch-check identifiers for a given CI provider and context.
+ *
+ * When `ciProvider` is `"circleci"`, ensures `security-scan` is present and placed immediately before `CodeRabbit`.
+ *
+ * @param ciProvider - CI provider used to normalize required checks
+ * @param context - Optional render context whose `issueTracker` can alter the base required-check selection
+ * @returns The normalized, ordered list of required-check identifiers for use in scaffold outputs
+ */
+function getNormalizedRequiredChecks(
+	ciProvider: CIProvider,
+	context?: Pick<TemplateRenderContext, "issueTracker">,
+): readonly string[] {
+	const baseChecks = getBranchProtectionRequiredChecks(context);
+	return ciProvider === "circleci"
+		? insertSecurityScanBeforeCodeRabbit(baseChecks)
+		: baseChecks;
+}
+
+/**
+ * Ensure the `security-scan` check is present, inserting it immediately before `CodeRabbit` when that check exists.
+ *
+ * @param checks - Ordered list of required-check identifiers
+ * @returns The same list with `security-scan` included; if `CodeRabbit` is present, `security-scan` will appear immediately before it, otherwise it will be appended
+ */
+function insertSecurityScanBeforeCodeRabbit(
+	checks: readonly string[],
+): readonly string[] {
+	if (checks.includes("security-scan")) {
+		return checks;
+	}
+	const codeRabbitIndex = checks.indexOf("CodeRabbit");
+	if (codeRabbitIndex === -1) {
+		return [...checks, "security-scan"];
+	}
+	return [
+		...checks.slice(0, codeRabbitIndex),
+		"security-scan",
+		...checks.slice(codeRabbitIndex),
+	];
+}
+
+/**
+ * Generate the JSON manifest describing required CI checks for branch protection.
+ *
+ * The manifest is an object with `version`, `activeProvider`, and `requiredChecks`.
+ * Each required check includes `policyId`, `displayName`, `sourceAppSlug`, `sourceAppId`,
+ * `externalIdPattern` (an exact-match regex for the canonical GitHub check name),
+ * `requiredOnEvents`, `freshnessWindowDays`, `class`, `enabled`, and `githubCheckName`.
+ * When `ciProvider` is `"circleci"`, a `security-scan` check may be injected (placed before
+ * `CodeRabbit` when present) and retained as informational metadata (for example `enabled: false`).
+ *
+ * @param ciProvider - The target CI provider (e.g., `"github-actions"` or `"circleci"`).
+ * @param context - Optional render context; only `issueTracker` is consulted for check selection.
+ * @returns A pretty-printed JSON string representing the manifest with `version`, `activeProvider`, and `requiredChecks`.
+ */
 function renderRequiredChecksManifest(
 	ciProvider: CIProvider,
 	context?: Pick<TemplateRenderContext, "issueTracker">,
 ): string {
-	const requiredChecks = getBranchProtectionRequiredChecks(context).map(
-		(displayName, index) => ({
+	const checksWithSecurityScan = getNormalizedRequiredChecks(
+		ciProvider,
+		context,
+	);
+
+	const requiredChecks = checksWithSecurityScan.map((displayName, index) => {
+		const metadata = deriveRequiredCheckMetadata(ciProvider, displayName);
+		return {
 			policyId: `required-check-${index + 1}`,
 			displayName,
-			sourceAppSlug: ciProvider,
-			sourceAppId: ciProvider,
-			externalIdPattern: `^${escapeRegexLiteral(displayName)}$`,
+			sourceAppSlug: metadata.sourceAppSlug,
+			sourceAppId: metadata.sourceAppId,
+			externalIdPattern: `^${escapeRegexLiteral(metadata.githubCheckName)}$`,
 			requiredOnEvents: ["pull_request", "merge_group"] as const,
 			freshnessWindowDays: 7,
-			class: "required" as const,
-		}),
-	);
+			class: metadata.class,
+			enabled: metadata.enabled,
+			githubCheckName: metadata.githubCheckName,
+		};
+	});
 
 	return JSON.stringify(
 		{
@@ -153,6 +232,11 @@ function renderRequiredChecksManifest(
 	);
 }
 
+/**
+ * Produces a JSON string representing the CI provider transition status artifact.
+ *
+ * @returns A JSON string containing `schemaVersion: "ci-provider-transition-status/v1"`, `nextGateComplete: false`, and `updatedAt` set to a fixed timestamp
+ */
 function renderTransitionStatusArtifact(): string {
 	return JSON.stringify(
 		{
@@ -165,6 +249,11 @@ function renderTransitionStatusArtifact(): string {
 	);
 }
 
+/**
+ * Generates the default `.npmrc` content used when scaffolding a repository.
+ *
+ * @returns The `.npmrc` file contents including registry, install/peer dependency and node-linker settings, plus comments advising that authentication should come from a user-level or CI-injected `~/.npmrc`
+ */
 function renderDefaultNpmrc(): string {
 	return `@brainwav:registry=https://registry.npmjs.org/
 ignore-scripts=true
@@ -179,19 +268,49 @@ node-linker=hoisted
 `;
 }
 
+/**
+ * Generate a CircleCI workflow YAML configured for Node.js projects.
+ *
+ * The `pm` parameter controls package-manager-specific behavior: when `"pnpm"` is used
+ * the config includes pnpm store configuration and caching and installs with a frozen lockfile;
+ * other values produce a generic install step.
+ *
+ * @param pm - Package manager identifier (e.g., `"pnpm"`, `"yarn"`, `"npm"`)
+ * @returns The complete CircleCI configuration YAML as a string
+ */
 function renderCircleCIConfig(pm: string): string {
-	const installCommand = renderInstallCommand(pm);
-	const lintCommand = renderScriptCommand(pm, "lint");
-	const typecheckCommand = renderScriptCommand(pm, "typecheck");
-	const testCommand = renderScriptCommand(pm, "test");
-	const auditCommand = renderScriptCommand(pm, "audit");
+	const installCommand =
+		pm === "pnpm" ? "pnpm install --frozen-lockfile" : renderInstallCommand(pm);
 	const checkCommand = renderScriptCommand(pm, "check");
+	const configureCacheStep =
+		pm === "pnpm"
+			? `      - run:
+          name: Configure pnpm store
+          command: |
+            mkdir -p "$HOME/.pnpm-store"
+            pnpm config set store-dir "$HOME/.pnpm-store"
+            pnpm store path
+      - restore_cache:
+          keys:
+            - v1-pnpm-store-{{ arch }}-{{ checksum "pnpm-lock.yaml" }}
+`
+			: "";
+	const saveCacheStep =
+		pm === "pnpm"
+			? `      - save_cache:
+          key: v1-pnpm-store-{{ arch }}-{{ checksum "pnpm-lock.yaml" }}
+          paths:
+            - ~/.pnpm-store
+`
+			: "";
 	return `version: 2.1
 
 jobs:
   pr-pipeline:
     docker:
+      # Pinned to specific minor for reproducibility (JSC-115)
       - image: cimg/node:24.13
+    resource_class: small
     steps:
       - checkout
       - run:
@@ -210,24 +329,31 @@ jobs:
               npm install --global --prefix "$NPM_CONFIG_PREFIX" "pnpm@${"${required_pnpm_version}"}"
             fi
             pnpm --version
+${configureCacheStep}      - run:
+          name: Inject npm auth
+          command: |
+            if [[ -n "${"${NPM_TOKEN:-}"}" ]]; then
+              printf '%s\n' "//registry.npmjs.org/:_authToken=$NPM_TOKEN" >> "$HOME/.npmrc"
+            fi
       - run:
           name: Install dependencies
           command: ${installCommand}
-      - run:
-          name: Lint
-          command: ${lintCommand}
-      - run:
-          name: Typecheck
-          command: ${typecheckCommand}
-      - run:
-          name: Test
-          command: ${testCommand}
-      - run:
-          name: Audit
-          command: ${auditCommand}
+${saveCacheStep}      - run:
+          name: Ensure test artifacts directory
+          command: |
+            mkdir -p artifacts/test
       - run:
           name: Policy Bundle
-          command: ${checkCommand}
+          command: |
+            ${checkCommand}
+      - run:
+          name: Dogfood silent-error detection
+          command: |
+            bash scripts/harness-cli.sh silent-error --dirs src --strict
+      - store_test_results:
+          path: artifacts/test
+      - store_artifacts:
+          path: artifacts/test
 
 workflows:
   pr-pipeline:
@@ -1490,7 +1616,7 @@ export const TEMPLATES: Template[] = [
 						},
 					},
 					runtimePolicy: {
-						nodeVersion: "20.x",
+						nodeVersion: "24.x",
 						createIssueOnAgentFindings: true,
 					},
 					memoryPolicy: {
@@ -2263,6 +2389,11 @@ jobs:
 - Codex review artifact (URL, report, or comment reference).
 - Confirmation that reviewer agent is independent from coding agent.
 `;
+			const isCircleCI =
+				(context.ciProvider ?? DEFAULT_CI_PROVIDER) === "circleci";
+			const testArtifactTocEntry = isCircleCI
+				? "- [Test runner artifact configuration](#test-runner-artifact-configuration)\n"
+				: "";
 			return `# Contributing
 
 ## Table of Contents
@@ -2277,7 +2408,7 @@ jobs:
 - [Repo-local verification wrapper](#repo-local-verification-wrapper)
 - [Repo-local harness wrapper](#repo-local-harness-wrapper)
 - [Recommended security scanner baseline](#recommended-security-scanner-baseline)
-- [Review artifacts requirement](#review-artifacts-requirement)
+${testArtifactTocEntry}- [Review artifacts requirement](#review-artifacts-requirement)
 - [Credential-safe evidence snippets](#credential-safe-evidence-snippets)
 - [Branch protection recommendation](#branch-protection-recommendation)
 
@@ -2414,7 +2545,23 @@ Recommended policy:
 - Keep scanner binaries available in local development environments and CI runners.
 - Run scanner checks in CI on pull requests and pushes to protected branches.
 - Treat scanner findings as merge blockers unless explicitly waived with rationale.
+${
+	isCircleCI
+		? `
+## Test runner artifact configuration
 
+CI pipelines collect test results and artifacts from the \`artifacts/test\` directory. Your test framework must be configured to emit JUnit XML reports (or other supported formats) to this location.
+
+Example configurations:
+
+- **Vitest**: \`vitest --reporter=junit --outputFile=artifacts/test/junit.xml\`
+- **Jest**: Configure \`jest.config.js\` with \`reporters: [['jest-junit', { outputDirectory: 'artifacts/test', outputName: 'junit.xml' }]]\`
+- **Mocha**: \`mocha --reporter mocha-junit-reporter --reporter-options mochaFile=artifacts/test/junit.xml\`
+
+Ensure \`artifacts/test\` is created before running tests (CI scaffolds include a step for this).
+`
+		: ""
+}
 ## Review artifacts requirement
 
 Each PR must include:

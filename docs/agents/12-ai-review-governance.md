@@ -30,7 +30,7 @@ All automated review usage in this repository must align with this policy and li
 
 - `coding-harness` uses the native GitHub `CodeRabbit` check as its primary automated review signal.
 - `.coderabbit.yaml` is the active repository-local review configuration for this repository.
-- `reviews.request_changes_workflow` is enabled for this repository so CodeRabbit may request changes when it finds blocking issues and auto-approve once its review state is clean again.
+- `reviews.request_changes_workflow` is disabled in this repository baseline (`false`) so CodeRabbit feedback stays advisory while branch-protection checks and independent reviewer evidence remain the merge gate.
 - CodeRabbit Semgrep for this repository is driven by `scripts/semgrep-pre-push.yml`; treat `ERROR` findings as merge blockers and record the disposition of any remaining `WARNING` findings in the PR.
 - Repo-specific CodeRabbit `ast-grep` rules live under `rules/` and should stay limited to repository contracts that generic linters or vendor-essential rules do not already cover.
 
@@ -95,33 +95,19 @@ The local CodeRabbit CLI is optional for `coding-harness`. It is useful for
 drafting or previewing review prompts, but it does not replace the GitHub App
 check that branch protection enforces on this repository.
 
-Recommended pinned local flow for this repository:
+Recommended local CLI flow for this repository:
 
 ```bash
-CODERABBIT_VERSION="0.3.11"
-CODERABBIT_OS="darwin"
-CODERABBIT_ARCH="arm64"
-CODERABBIT_ARCHIVE_URL="https://cli.coderabbit.ai/releases/${CODERABBIT_VERSION}/coderabbit-${CODERABBIT_OS}-${CODERABBIT_ARCH}.zip"
-CODERABBIT_ARCHIVE_SHA256="1c23eda82e4283a64e35b9826372951a486bd8b81973d327f7310eb6ba112c01"
-TMP_DIR="$(mktemp -d)"
-ARCHIVE_PATH="${TMP_DIR}/coderabbit-${CODERABBIT_OS}-${CODERABBIT_ARCH}.zip"
-
-curl -fsSL "${CODERABBIT_ARCHIVE_URL}" -o "${ARCHIVE_PATH}"
-echo "${CODERABBIT_ARCHIVE_SHA256}  ${ARCHIVE_PATH}" | shasum -a 256 -c -
-install -d "${HOME}/.local/bin"
-unzip -q "${ARCHIVE_PATH}" -d "${TMP_DIR}"
-install -m 0755 "${TMP_DIR}/coderabbit" "${HOME}/.local/bin/coderabbit"
-ln -sf "${HOME}/.local/bin/coderabbit" "${HOME}/.local/bin/cr"
-
-coderabbit auth login
-coderabbit review --base main --cwd /path/to/coding-harness -c .coderabbit.yaml
+coderabbit --version
+coderabbit auth status --agent || coderabbit auth login --agent
+coderabbit review --agent --base main -c .coderabbit.yaml
 ```
 
 Notes:
 
-- The example above is pinned to CodeRabbit CLI `0.3.11` for `darwin-arm64`.
+- Use `coderabbit update` before review runs when the local CLI is stale.
 - Do not use `curl | sh` in this repository runbook for CodeRabbit CLI install.
-- The CLI requires interactive `coderabbit auth login` or `--api-key`.
+- Agent workflows should use `coderabbit auth login --agent` (or `--api-key` for non-interactive runs).
 - Use `.coderabbit.yaml` as the repo-local instruction source.
 - Treat local CLI output as advisory; merge authority still comes from the
   GitHub `CodeRabbit` check on the PR head SHA.
