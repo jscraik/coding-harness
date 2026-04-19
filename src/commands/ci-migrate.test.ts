@@ -4419,6 +4419,7 @@ describe("runCIMigrateCLI", () => {
 							"typecheck",
 							"security-scan",
 							"CodeRabbit",
+							"semgrep-cloud-platform/scan",
 						],
 					},
 				},
@@ -4452,6 +4453,7 @@ describe("runCIMigrateCLI", () => {
 			"CodeRabbit",
 			"lint",
 			"security-scan",
+			"semgrep-cloud-platform/scan",
 			"typecheck",
 		]);
 		expect(
@@ -4469,7 +4471,8 @@ describe("runCIMigrateCLI", () => {
 				.filter(
 					(check) =>
 						check.displayName !== "CodeRabbit" &&
-						check.displayName !== "security-scan",
+						check.displayName !== "security-scan" &&
+						check.displayName !== "semgrep-cloud-platform/scan",
 				)
 				.every((check) => check.sourceAppSlug === "circleci"),
 		).toBe(true);
@@ -4478,7 +4481,8 @@ describe("runCIMigrateCLI", () => {
 				.filter(
 					(check) =>
 						check.displayName !== "CodeRabbit" &&
-						check.displayName !== "security-scan",
+						check.displayName !== "security-scan" &&
+						check.displayName !== "semgrep-cloud-platform/scan",
 				)
 				.every((check) => check.sourceAppId === "circleci"),
 		).toBe(true);
@@ -4512,7 +4516,8 @@ describe("runCIMigrateCLI", () => {
 				.filter(
 					(check) =>
 						check.displayName !== "CodeRabbit" &&
-						check.displayName !== "security-scan",
+						check.displayName !== "security-scan" &&
+						check.displayName !== "semgrep-cloud-platform/scan",
 				)
 				.every((check) => check.class === "required"),
 		).toBe(true);
@@ -4521,10 +4526,18 @@ describe("runCIMigrateCLI", () => {
 				.filter(
 					(check) =>
 						check.displayName !== "CodeRabbit" &&
-						check.displayName !== "security-scan",
+						check.displayName !== "security-scan" &&
+						check.displayName !== "semgrep-cloud-platform/scan",
 				)
 				.every((check) => check.githubCheckName === CIRCLECI_PRIMARY_CHECK),
 		).toBe(true);
+		const externalCheck = manifest.requiredChecks.find(
+			(check) => check.displayName === "semgrep-cloud-platform/scan",
+		);
+		expect(externalCheck?.sourceAppSlug).toBe("external");
+		expect(externalCheck?.sourceAppId).toBe("external");
+		expect(externalCheck?.githubCheckName).toBe("semgrep-cloud-platform/scan");
+		expect(externalCheck?.class).toBe("required");
 		expect(
 			manifest.requiredChecks.find(
 				(check) => check.displayName === "CodeRabbit",

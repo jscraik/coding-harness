@@ -204,7 +204,7 @@ function renderRequiredChecksManifest(
 			displayName,
 			sourceAppSlug: metadata.sourceAppSlug,
 			sourceAppId: metadata.sourceAppId,
-			externalIdPattern: `^${escapeRegexLiteral(displayName)}$`,
+			externalIdPattern: `^${escapeRegexLiteral(metadata.githubCheckName)}$`,
 			requiredOnEvents: ["pull_request", "merge_group"] as const,
 			freshnessWindowDays: 7,
 			class: metadata.class,

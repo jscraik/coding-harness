@@ -9,6 +9,25 @@ export interface RequiredCheckMetadata {
 	enabled?: boolean;
 }
 
+const CIRCLECI_WORKFLOW_OWNED_CHECKS = new Set<string>([
+	"pr-pipeline",
+	"harness-gates",
+	"lint",
+	"typecheck",
+	"test",
+	"audit",
+	"check",
+	"build",
+	"memory",
+	"dependency-scan",
+	"orb-pinning",
+	"docs-gate",
+	"linear-gate",
+	"risk-policy-gate",
+	"consistency-drift-health",
+	"pr-template",
+]);
+
 /**
  * Derive canonical required-check metadata for scaffold and migration flows.
  *
@@ -39,10 +58,18 @@ export function deriveRequiredCheckMetadata(
 		};
 	}
 	if (provider === "circleci") {
+		if (CIRCLECI_WORKFLOW_OWNED_CHECKS.has(displayName)) {
+			return {
+				sourceAppSlug: "circleci",
+				sourceAppId: "circleci",
+				githubCheckName: CIRCLECI_PRIMARY_CHECK,
+				class: "required",
+			};
+		}
 		return {
-			sourceAppSlug: "circleci",
-			sourceAppId: "circleci",
-			githubCheckName: CIRCLECI_PRIMARY_CHECK,
+			sourceAppSlug: "external",
+			sourceAppId: "external",
+			githubCheckName: displayName,
 			class: "required",
 		};
 	}

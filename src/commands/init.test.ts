@@ -254,11 +254,6 @@ describe("runInit", () => {
 					"utf-8",
 				),
 			);
-			expect(requiredChecks.activeProvider).toBe("circleci");
-			expect(requiredChecks.requiredChecks[0]?.sourceAppSlug).toBe("circleci");
-			expect(requiredChecks.requiredChecks[0]?.githubCheckName).toBe(
-				"pr-pipeline",
-			);
 			const normalizedRequiredChecks =
 				normalizeRequiredChecksManifest(requiredChecks);
 			expect(normalizedRequiredChecks.ok).toBe(true);
@@ -266,6 +261,9 @@ describe("runInit", () => {
 				throw new Error(normalizedRequiredChecks.error);
 			}
 			const generatedChecks = normalizedRequiredChecks.value.gates;
+			expect(normalizedRequiredChecks.value.activeProvider).toBe("circleci");
+			expect(generatedChecks[0]?.provider).toBe("circleci");
+			expect(generatedChecks[0]?.githubCheckName).toBe("pr-pipeline");
 			expect(generatedChecks.map((entry) => entry.displayName)).toEqual([
 				"pr-template",
 				"linear-gate",
