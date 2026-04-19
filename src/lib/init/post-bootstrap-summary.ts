@@ -83,7 +83,11 @@ function mapUniqueLabels(paths: string[]): string[] {
 // ─── Public API ──────────────────────────────────────────────────────────────
 
 /**
- * Generate a structured bootstrap summary from init output.
+ * Create a BootstrapSummary describing detected project info, categorized created and protected files, and recommended next commands.
+ *
+ * @param output - Result of the init run containing `projectTypeDetection`, `created`, and `skipped` entries
+ * @param packageManager - Package manager identifier to include in the detected section
+ * @returns A `BootstrapSummary` containing `detected` (project type, confidence, and package manager), `created` and `protected` label lists, and `nextCommands` recommendations
  */
 export function generateBootstrapSummary(
 	output: InitOutput,
@@ -156,6 +160,13 @@ export function generateBootstrapSummary(
 		);
 	}
 
+	// Recommend test artifact configuration only for CircleCI scaffold output.
+	if (output.created.some((path) => matchesPattern(path, ".circleci/"))) {
+		nextCommands.push(
+			"Configure test runner to emit reports to artifacts/test/ (see CONTRIBUTING.md)",
+		);
+	}
+
 	return {
 		detected,
 		created,
@@ -165,7 +176,13 @@ export function generateBootstrapSummary(
 }
 
 /**
- * Format the bootstrap summary for human-readable CLI output.
+ * Produce a multi-section, human-readable string summarizing bootstrap results for CLI output.
+ *
+ * The output includes a "What we found" detection block, optional "What we created" and
+ * "What we protected (already exists)" lists, and an optional "Recommended next commands" list.
+ *
+ * @param summary - The bootstrap summary containing detection info, created/protected labels, and next commands
+ * @returns A formatted multi-line string ready for CLI display
  */
 export function formatBootstrapSummary(summary: BootstrapSummary): string {
 	const lines: string[] = [];

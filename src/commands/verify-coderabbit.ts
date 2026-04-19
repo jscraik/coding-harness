@@ -150,15 +150,12 @@ function verifyCodeRabbitConfig(repoPath: string): CodeRabbitCheck {
 }
 
 /**
- *Checks the repository's .npmrc for presence and security-relevant settings and returns a check result.
+ * Inspect the repository's .npmrc for security-relevant settings.
  *
- *Examines whether a .npmrc exists at the provided repository path, detects scoped registry entries, an embedded `_authToken`, and whether `ignore-scripts=true` is set; recommends fixes when insecure or missing settings are found.
+ * Checks for presence of the file, scoped registry entries, an embedded `_authToken`, and whether `ignore-scripts=true` is set; provides recommendations when insecure or missing settings are found.
  *
  * @param repoPath - Filesystem path to the repository root where `.npmrc` should be inspected
- * @returns A `CodeRabbitCheck` describing the outcome:
- *          - `status: "pass"` when `.npmrc` exists and no recommendations are needed (features included when present),
- *          - `status: "warn"` when `.npmrc` is missing or contains recommendations (e.g., missing `ignore-scripts=true` or presence of `_authToken`),
- *          - `status: "fail"` if the file cannot be read (message includes the read error)
+ * @returns A `CodeRabbitCheck` describing the outcome: `status` is `"pass"` when `.npmrc` exists and no issues are found, `"warn"` for non-critical recommendations (for example missing `ignore-scripts=true`), and `"fail"` for critical issues (missing `@brainwav:registry`, embedded `_authToken`, or read errors)
  */
 function verifyNpmrc(repoPath: string): CodeRabbitCheck {
 	const npmrcPath = resolve(repoPath, ".npmrc");
@@ -177,14 +174,34 @@ function verifyNpmrc(repoPath: string): CodeRabbitCheck {
 		const content = readFileSync(npmrcPath, "utf-8");
 		const issues: string[] = [];
 		const features: string[] = [];
+		const activeLines = content
+			.split(/\r?\n/)
+			.map((line) => line.trim())
+			.filter(
+				(line) =>
+					line.length > 0 && !line.startsWith("#") && !line.startsWith(";"),
+			);
 
-		const hasScopedRegistry = /@[\w-]+:registry=/m.test(content);
-		const hasAuthToken = /_authToken=/m.test(content);
-		const hasIgnoreScripts = /ignore-scripts\s*=\s*true/m.test(content);
+		const hasBrainwavScopedRegistry = activeLines.some((line) =>
+			/^@brainwav:registry\s*=\s*https:\/\/registry\.npmjs\.org\/?$/i.test(
+				line,
+			),
+		);
+		const hasAuthToken = activeLines.some((line) =>
+			/_authToken\s*=/.test(line),
+		);
+		const hasIgnoreScripts = activeLines.some((line) =>
+			/^ignore-scripts\s*=\s*true$/i.test(line),
+		);
 
-		if (hasScopedRegistry) features.push("scoped registry");
+		if (hasBrainwavScopedRegistry) features.push("@brainwav scoped registry");
 		if (hasIgnoreScripts) features.push("ignore-scripts=true (security)");
 
+		if (!hasBrainwavScopedRegistry) {
+			issues.push(
+				"add @brainwav:registry=https://registry.npmjs.org/ for scope routing",
+			);
+		}
 		if (!hasIgnoreScripts) {
 			issues.push("consider setting ignore-scripts=true for security");
 		}
@@ -195,10 +212,12 @@ function verifyNpmrc(repoPath: string): CodeRabbitCheck {
 		}
 
 		if (issues.length > 0) {
+			// Fail if scoped registry is missing or auth token is present
+			const hasCriticalIssue = !hasBrainwavScopedRegistry || hasAuthToken;
 			return {
 				name: ".npmrc configuration",
-				status: "warn",
-				message: `.npmrc exists but has recommendations: ${issues.join(", ")}`,
+				status: hasCriticalIssue ? "fail" : "warn",
+				message: `.npmrc exists but has ${hasCriticalIssue ? "critical issues" : "recommendations"}: ${issues.join(", ")}`,
 				details: { path: npmrcPath, features, issues },
 			};
 		}

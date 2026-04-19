@@ -8,9 +8,11 @@ export interface RequiredCheckIdentity {
 	sourceAppSlug: string;
 	sourceAppId: string;
 	externalIdPattern: string;
+	githubCheckName: string | null;
 	requiredOnEvents?: Array<"pull_request" | "merge_group">;
 	freshnessWindowDays?: number;
 	class: "required" | "informational" | "shadow";
+	enabled?: boolean;
 }
 
 export type AdapterResult<T> =
@@ -22,6 +24,14 @@ export interface CIProviderAdapter {
 	readRequiredChecks(targetDir: string): AdapterResult<RequiredCheckIdentity[]>;
 }
 
+/**
+ * Checks whether a runtime value matches the shape and constraints of a RequiredCheckIdentity.
+ *
+ * Validates that required string fields are present (`policyId`, `displayName`, `sourceAppSlug`, `sourceAppId`, `externalIdPattern`), that `githubCheckName` is a `string` or `null`, and that `class` is one of `"required"`, `"informational"`, or `"shadow"`. If present, validates `requiredOnEvents` is an array containing only `"pull_request"` and/or `"merge_group"`, `freshnessWindowDays` is an integer between 1 and 7, and `enabled` is boolean.
+ *
+ * @param value - The runtime value to validate
+ * @returns `true` if `value` satisfies the `RequiredCheckIdentity` shape and constraints, `false` otherwise.
+ */
 function isRequiredCheckIdentity(
 	value: unknown,
 ): value is RequiredCheckIdentity {
@@ -35,6 +45,8 @@ function isRequiredCheckIdentity(
 		typeof record.sourceAppSlug === "string" &&
 		typeof record.sourceAppId === "string" &&
 		typeof record.externalIdPattern === "string" &&
+		(typeof record.githubCheckName === "string" ||
+			record.githubCheckName === null) &&
 		(record.class === "required" ||
 			record.class === "informational" ||
 			record.class === "shadow");
@@ -62,6 +74,10 @@ function isRequiredCheckIdentity(
 		return false;
 	}
 
+	if (record.enabled !== undefined && typeof record.enabled !== "boolean") {
+		return false;
+	}
+
 	return true;
 }
 
@@ -77,6 +93,12 @@ function toRepoRelativePath(targetDir: string, absolutePath: string): string {
 	return relative.startsWith("/") ? relative.slice(1) : relative;
 }
 
+/**
+ * Discover GitHub Actions workflow files under a repository directory.
+ *
+ * @param targetDir - Path to the repository root to search for workflows
+ * @returns A sorted array of repository-relative paths to workflow files (files ending with `.yml` or `.yaml` located under `.github/workflows`). Returns an empty array if the workflows directory does not exist.
+ */
 function listWorkflowFiles(targetDir: string): string[] {
 	const workflowsDir = resolve(targetDir, ".github", "workflows");
 	if (!existsSync(workflowsDir)) {
@@ -107,6 +129,12 @@ function listWorkflowFiles(targetDir: string): string[] {
 	return [...discovered].sort();
 }
 
+/**
+ * Read and validate the repository's required-checks manifest and return enabled required-check identities.
+ *
+ * @param targetDir - Repository root directory used to locate `.harness/ci-required-checks.json`
+ * @returns On success, an object with `ok: true` and `value` containing only entries from the manifest's `requiredChecks` array where `class === "required"` and `enabled !== false`. On failure, an object with `ok: false` and `error` describing why (missing manifest, non-array `requiredChecks`, invalid entries, or JSON parse failure).
+ */
 function readRequiredChecksManifest(
 	targetDir: string,
 ): AdapterResult<RequiredCheckIdentity[]> {
@@ -143,7 +171,9 @@ function readRequiredChecksManifest(
 		}
 		return {
 			ok: true,
-			value: checks.filter((check) => check.class === "required"),
+			value: checks.filter(
+				(check) => check.class === "required" && check.enabled !== false,
+			),
 		};
 	} catch (error) {
 		const message = error instanceof Error ? error.message : String(error);
