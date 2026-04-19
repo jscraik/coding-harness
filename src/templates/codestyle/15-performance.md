@@ -26,5 +26,6 @@
 - Repeated recomputation SHOULD be avoided when caching or memoization is appropriate.
 
 ## Enforcement
-- If a change is marked as a performance improvement, include measurable evidence in PR/testing notes.
-- If performance validation cannot run, mark it explicitly as blocked with the concrete blocker.
+## Enforcement
+- If a change is marked as a performance improvement, it MUST include measurable evidence in PR/testing notes.
+- If performance validation cannot run, it MUST be marked explicitly as blocked with the concrete blocker.
