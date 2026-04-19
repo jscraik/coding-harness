@@ -327,13 +327,13 @@ ${configureCacheStep}      - run:
           name: Install dependencies
           command: ${installCommand}
 ${saveCacheStep}      - run:
-          name: Policy Bundle
-          command: |
-            ${checkCommand}
-      - run:
           name: Ensure test artifacts directory
           command: |
             mkdir -p artifacts/test
+      - run:
+          name: Policy Bundle
+          command: |
+            ${checkCommand}
       - run:
           name: Dogfood silent-error detection
           command: |
