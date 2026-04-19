@@ -72,6 +72,13 @@ const NON_WORKFLOW_REQUIRED_CHECK_SET = new Set<string>(
 	NON_WORKFLOW_REQUIRED_CHECKS,
 );
 
+/**
+ * Render the shell command used to invoke a package script for the given package manager.
+ *
+ * @param packageManager - Package manager identifier (e.g., `"npm"`, `"yarn"`, `"pnpm"`)
+ * @param script - The name of the script to run (as defined in package.json)
+ * @returns The command string to execute the script (for `"npm"`: `npm run <script>`, otherwise: `<packageManager> <script>`)
+ */
 function renderScriptCommand(packageManager: string, script: string): string {
 	if (packageManager === "npm") {
 		return `npm run ${script}`;
@@ -121,10 +128,22 @@ function renderMemoryValidateCommand(): string {
 	return `test -f memory.json && jq -e '.meta.version == "1.0" and (.preamble.bootstrap | type == "boolean") and (.preamble.search | type == "boolean") and (.entries | type == "array")' memory.json >/dev/null`;
 }
 
+/**
+ * Escapes RegExp metacharacters in a string so it can be used as a literal inside a regular expression.
+ *
+ * @param value - The input string to escape
+ * @returns The input string with regex metacharacters escaped with backslashes
+ */
 function escapeRegexLiteral(value: string): string {
 	return value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 }
 
+/**
+ * Selects the internal list of branch-protection required checks appropriate for the project's issue tracker.
+ *
+ * @param context - Optional render context; when `context.issueTracker` is `"github"` or `"none"`, the returned list will exclude the `"linear-gate"` check.
+ * @returns The array of required check identifiers to use for branch protection (may omit `"linear-gate"` depending on the issue tracker).
+ */
 function getHarnessInternalRequiredChecks(
 	context?: Pick<TemplateRenderContext, "issueTracker">,
 ): readonly string[] {
@@ -137,6 +156,13 @@ function getHarnessInternalRequiredChecks(
 	return BRANCH_PROTECTION_REQUIRED_CHECKS;
 }
 
+/**
+ * Selects the set of branch-protection check identifiers appropriate for the given CI provider.
+ *
+ * @param ciProvider - The CI provider to target (e.g., `"circleci"` or `"github-actions"`).
+ * @param context - Optional render context; when provided, `context.issueTracker` influences the non-CircleCI selection.
+ * @returns The ordered list of check names to require for branch protection; returns the CircleCI-specific checks when `ciProvider` is `"circleci"`, otherwise returns the checks chosen for the repository/context.
+ */
 function getBranchProtectionRequiredChecks(
 	ciProvider: CIProvider,
 	context?: Pick<TemplateRenderContext, "issueTracker">,
@@ -147,6 +173,13 @@ function getBranchProtectionRequiredChecks(
 	return getHarnessInternalRequiredChecks(context);
 }
 
+/**
+ * Selects the GitHub check name to emit for a required-checks manifest entry.
+ *
+ * @param ciProvider - The CI provider identifier; used to determine provider-specific name mapping (e.g., `"circleci"`).
+ * @param displayName - The display name of the required check from internal policy
+ * @returns The GitHub check name to use for the manifest entry: typically the original `displayName`, or a provider-mapped name when applicable (e.g., a CircleCI primary check name)
+ */
 function getGithubCheckNameForManifestEntry(
 	ciProvider: CIProvider,
 	displayName: string,
@@ -160,6 +193,13 @@ function getGithubCheckNameForManifestEntry(
 	return CIRCLECI_PRIMARY_GITHUB_CHECK;
 }
 
+/**
+ * Build a JSON manifest listing required CI checks tailored to a CI provider.
+ *
+ * @param ciProvider - Target CI provider identifier (e.g., "circleci" or "github-actions")
+ * @param context - Partial render context; only `issueTracker` is consulted when deriving checks
+ * @returns A pretty-printed JSON string containing `version`, `activeProvider`, and a `requiredChecks` array where each entry includes policy metadata and a provider-aware `githubCheckName`
+ */
 function renderRequiredChecksManifest(
 	ciProvider: CIProvider,
 	context?: Pick<TemplateRenderContext, "issueTracker">,
@@ -204,6 +244,16 @@ function renderTransitionStatusArtifact(): string {
 	);
 }
 
+/**
+ * Produce the default .npmrc content used by scaffolded repositories.
+ *
+ * The returned text sets the @brainwav registry and common pnpm-related flags,
+ * includes a commented note about the node-linker choice, and warns that
+ * authentication should be provided via user- or CI-level .npmrc rather than
+ * the repository file.
+ *
+ * @returns The complete `.npmrc` file contents as a string
+ */
 function renderDefaultNpmrc(): string {
 	return `@brainwav:registry=https://registry.npmjs.org/
 ignore-scripts=true
@@ -219,6 +269,18 @@ shamefully-hoist=false
 `;
 }
 
+/**
+ * Produce a CircleCI config.yml (as a YAML string) tailored to the given package manager.
+ *
+ * The generated config contains a single `pr-pipeline` job that ensures a required pnpm
+ * version is available, installs dependencies, and runs lint, typecheck, test, audit,
+ * skill contract validation, and policy bundle steps. The lint step prefers `lint:ci`
+ * when present in package.json. A conditional "Sync PR lifecycle to Linear" step runs
+ * `scripts/circleci-linear-sync.ts` if that file exists.
+ *
+ * @param pm - Package manager identifier (e.g. "npm", "yarn", "pnpm") used to render commands
+ * @returns The contents of a CircleCI `config.yml` document as a string
+ */
 function renderCircleCIConfig(pm: string): string {
 	const installCommand = renderInstallCommand(pm);
 	const lintCommand = renderScriptCommand(pm, "lint");
@@ -300,6 +362,11 @@ workflows:
 `;
 }
 
+/**
+ * Ensures pnpm is available in GitHub Actions runners by installing the pinned pnpm version and exposing it on PATH.
+ *
+ * @returns A YAML snippet for a GitHub Actions job step that installs pnpm version 10.33.0 when missing or mismatched, adds its bin directory to `GITHUB_PATH`, and prints the installed pnpm version.
+ */
 function renderGitHubActionsPnpmSetupStep(): string {
 	return `      - name: Ensure pnpm available
         run: |
@@ -1052,8 +1119,10 @@ export function shouldAutoUpdateTemplate(
 }
 
 /**
- * Extract the version from a biome $schema URL.
- * e.g. "https://biomejs.dev/schemas/2.4.12/schema.json" → "2.4.12"
+ * Extracts the semantic version string from a Biome `$schema` URL.
+ *
+ * @param schemaUrl - The `$schema` URL from `biome.json`, e.g. "https://biomejs.dev/schemas/2.4.12/schema.json"
+ * @returns The extracted `MAJOR.MINOR.PATCH` version (for example, `"2.4.12"`) if present, `undefined` otherwise.
  */
 function extractBiomeSchemaVersion(schemaUrl: string): string | undefined {
 	const match = schemaUrl.match(/\/schemas\/([0-9]+\.[0-9]+\.[0-9]+)\//);

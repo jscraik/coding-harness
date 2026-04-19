@@ -169,6 +169,14 @@ function detectCapabilities(
 	return capabilities;
 }
 
+/**
+ * Check whether a package is declared in the manifest for the specified dependency section.
+ *
+ * @param manifest - The parsed package.json manifest to inspect
+ * @param packageName - The package name to look for
+ * @param dependencyType - Which section to check: `"dependencies"`, `"devDependencies"`, or `"either"`
+ * @returns `true` if the package is declared in the specified section (or in either section when `dependencyType` is `either`), `false` otherwise.
+ */
 function hasRequiredPackage(
 	manifest: PackageManifest,
 	packageName: string,
@@ -874,6 +882,22 @@ function summarizeFindings(
 	};
 }
 
+/**
+ * Audits a repository at the given path for required tooling artifacts and returns the per-repo audit result.
+ *
+ * If the repository lacks a harness.contract.json file, the function returns a result with status `"no-contract"`
+ * when `includeMissing` is true; otherwise it returns status `"error"` with an `error` message. If the contract file
+ * exists but cannot be parsed or loaded, the function returns status `"error"` and includes the parser/loader message
+ * in `error`. When successful, the function runs a series of auditors (readiness script, mise, Codex environment,
+ * Makefile, Project Brain memory extension, package policy, local hooks) and optionally compares the loaded contract
+ * against `baseContract` to detect drift.
+ *
+ * @param repoPath - Absolute or relative path to the repository root to audit
+ * @param baseContract - Optional base contract to compare against for tooling drift
+ * @param includeMissing - If true, treat repositories missing `harness.contract.json` as `no-contract` instead of an error
+ * @returns A `ToolingAuditRepoResult` describing the repo `path`, `status` (`"success" | "error" | "no-contract"`),
+ *          collected `findings`, and an optional `error` message when `status` is `"error"`
+ */
 async function auditRepository(
 	repoPath: string,
 	baseContract?: HarnessContract,

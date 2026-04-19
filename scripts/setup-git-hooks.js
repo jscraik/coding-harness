@@ -34,6 +34,13 @@ const PREK_HOOK_PATCH = [
 	"",
 ].join("\n");
 
+/**
+ * Patch installed `prek` hook shims in the repository hooks directory to set a repo-local `PREK_HOME`.
+ *
+ * Inspects the repository hooks directory (resolved via `resolveHooksDir()`) and, for each readable hook file that contains the `PREK_HOOK_MARKER` but does not already include the repo-local `PREK_HOME` line, inserts `PREK_HOOK_PATCH` immediately before the `exec "$PREK" hook-impl` marker and writes the updated content back to disk. If the hooks directory does not exist, returns `0`.
+ *
+ * @returns {number} The number of hook files that were modified.
+ */
 function patchInstalledPrekHooks() {
 	const hooksDir = resolveHooksDir();
 	if (!existsSync(hooksDir)) {
@@ -71,6 +78,11 @@ function patchInstalledPrekHooks() {
 	return patchedCount;
 }
 
+/**
+ * Resolve the repository's git hooks directory path.
+ *
+ * @returns {string} Absolute path to the hooks directory. If `git rev-parse --git-path hooks` succeeds, returns the hooks path resolved relative to the current working directory; otherwise returns `<cwd>/.git/hooks`.
+ */
 function resolveHooksDir() {
 	try {
 		const output = execFileSync("git", ["rev-parse", "--git-path", "hooks"], {
@@ -86,6 +98,11 @@ function resolveHooksDir() {
 	return resolve(process.cwd(), ".git/hooks");
 }
 
+/**
+ * Install and activate prek-managed Git hooks for the current repository.
+ *
+ * Performs preflight checks for repository configuration and commit-message routing scripts, runs `prek install --overwrite`, applies repo-local PREK_HOME patches to installed prek hook shims when present, and prints status messages. On missing preconditions or on installation failure the process exits with status code 1.
+ */
 function main() {
 	if (!existsSync(PREK_CONFIG_PATH)) {
 		console.error("Error: prek.toml not found in current directory");

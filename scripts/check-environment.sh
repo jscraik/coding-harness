@@ -184,6 +184,7 @@ fi
 		fi
 	done
 
+	# resolve_git_hooks_dir echoes the repository's Git hooks directory path; it uses `git rev-parse --git-path hooks` when available, falls back to `$REPO_ROOT/.git/hooks` when not, and resolves relative `git`-returned paths against `$REPO_ROOT`.
 	resolve_git_hooks_dir() {
 		local hooks_path
 		hooks_path="$(git rev-parse --git-path hooks 2>/dev/null || true)"

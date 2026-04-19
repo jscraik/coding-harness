@@ -1,6 +1,7 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
+# usage prints the script's usage/help text describing available options (`--repo`, `--format`, `--include-cleanup`, `-h|--help`) and their defaults.
 usage() {
 	cat <<'USAGE'
 Usage: .agents/skills/using-git-worktrees/scripts/worktree-report.sh [options]
@@ -77,6 +78,12 @@ detached="no"
 locked_reason=""
 prunable_reason=""
 
+# emit_row writes the currently-accumulated worktree fields as a single separator-delimited line to the rows_file, or does nothing if path is empty.
+# The emitted fields (in order) are: path, branch, head, detached, locked_reason, prunable_reason, dirty, is_current.
+# - branch is the short branch name or "(detached)".
+# - dirty is one of "clean", "dirty", "missing", or "n/a" (when prunable_reason is present).
+# - is_current is "yes" when the row's path equals the current_worktree, otherwise "no".
+# Fields are joined with the separator stored in $sep and appended to $rows_file.
 emit_row() {
 	if [[ -z "$path" ]]; then
 		return
@@ -172,6 +179,7 @@ sort -t "$sep" -k2,2 -k1,1 "$rows_file" -o "$rows_file"
 
 awk -F "$sep" '$2 != "(detached)" {count[$2]++} END {for (b in count) if (count[b] > 1) print b}' "$rows_file" | sort > "$dup_file"
 
+# generate_cleanup_suggestions generates suggested cleanup actions for parsed worktrees and writes sorted, deduplicated suggestion lines to "$cleanup_file".
 generate_cleanup_suggestions() {
 	: > "$cleanup_file"
 	while IFS="$sep" read -r row_path row_branch _ row_detached row_locked row_prunable row_dirty row_current; do
