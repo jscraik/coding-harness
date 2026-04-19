@@ -10,8 +10,8 @@ Use this directory for detailed coding standards. Keep [../CODESTYLE.md](../CODE
 
 ## Scope
 - This directory is the detailed, layered coding standards pack for the `codex/` subtree.
-- `instructions/CODESTYLE.md` remains the canonical entrypoint and link index.
-- Technical work under `codex/` MUST route through `instructions/CODESTYLE.md` before these modules.
+- `../CODESTYLE.md` remains the canonical entrypoint and link index.
+- Technical work under `codex/` MUST route through `../CODESTYLE.md` before these modules.
 
 ## Modules
 - [01-foundations.md](./01-foundations.md)
