@@ -84,10 +84,15 @@ fi
 branch_name="${branch_prefix}/${slug}"
 resolved_base_ref="$base_ref"
 remote_base_branch=""
+explicit_remote_ref=0
 
 if [[ "$base_ref" == origin/* ]]; then
+	explicit_remote_ref=1
 	remote_base_branch="${base_ref#origin/}"
-elif [[ "$base_ref" != *"/"* ]]; then
+elif [[ "$base_ref" == refs/remotes/origin/* ]]; then
+	explicit_remote_ref=1
+	remote_base_branch="${base_ref#refs/remotes/origin/}"
+elif [[ "$base_ref" != *"/"* ]] && ! git rev-parse --verify --quiet "${base_ref}^{commit}" >/dev/null; then
 	remote_base_branch="$base_ref"
 fi
 
@@ -110,10 +115,23 @@ if [[ -e "$worktree_path" ]]; then
 fi
 
 if [[ -n "$remote_base_branch" ]]; then
-	echo "[new-task] fetching latest origin/$remote_base_branch"
-	git fetch --prune origin "$remote_base_branch"
-	if git show-ref --verify --quiet "refs/remotes/origin/$remote_base_branch"; then
-		resolved_base_ref="refs/remotes/origin/$remote_base_branch"
+	if git remote get-url origin >/dev/null 2>&1; then
+		echo "[new-task] fetching latest origin/$remote_base_branch"
+		if ! git fetch --prune origin "$remote_base_branch"; then
+			if [[ "$explicit_remote_ref" -eq 1 ]]; then
+				echo "[new-task] failed to fetch explicit remote base: $base_ref" >&2
+				exit 2
+			fi
+			echo "[new-task] warning: could not fetch origin/$remote_base_branch; continuing with local refs" >&2
+		elif git show-ref --verify --quiet "refs/remotes/origin/$remote_base_branch"; then
+			resolved_base_ref="refs/remotes/origin/$remote_base_branch"
+		elif [[ "$explicit_remote_ref" -eq 1 ]]; then
+			echo "[new-task] explicit remote base not found on origin: $base_ref" >&2
+			exit 2
+		fi
+	elif [[ "$explicit_remote_ref" -eq 1 ]]; then
+		echo "[new-task] origin remote is required for explicit remote base: $base_ref" >&2
+		exit 2
 	fi
 fi
 

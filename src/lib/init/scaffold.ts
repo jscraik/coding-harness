@@ -676,8 +676,8 @@ echo "[prepare-worktree] next: bash scripts/verify-work.sh --fast"
 /**
  * Produces a bash helper that creates a dedicated worktree and branch for one task.
  *
- * The generated script keeps task isolation project-local by fetching the latest base branch from `origin`
- * before creating one branch and one worktree per task, then prints bootstrap commands for that worktree.
+ * The generated script keeps task isolation project-local by resolving the base commit safely, only fetching
+ * `origin/<branch>` when needed, before creating one branch and one worktree per task and printing bootstrap commands.
  *
  * @returns A complete POSIX-compatible bash script as a string. When executed, the script exits with:
  *          - `0` on success,
@@ -771,10 +771,15 @@ fi
 branch_name="\${branch_prefix}/\${slug}"
 resolved_base_ref="$base_ref"
 remote_base_branch=""
+explicit_remote_ref=0
 
 if [[ "$base_ref" == origin/* ]]; then
+	explicit_remote_ref=1
 	remote_base_branch="\${base_ref#origin/}"
-elif [[ "$base_ref" != *"/"* ]]; then
+elif [[ "$base_ref" == refs/remotes/origin/* ]]; then
+	explicit_remote_ref=1
+	remote_base_branch="\${base_ref#refs/remotes/origin/}"
+elif [[ "$base_ref" != *"/"* ]] && ! git rev-parse --verify --quiet "\${base_ref}^{commit}" >/dev/null; then
 	remote_base_branch="$base_ref"
 fi
 
@@ -797,10 +802,23 @@ if [[ -e "$worktree_path" ]]; then
 fi
 
 if [[ -n "$remote_base_branch" ]]; then
-	echo "[new-task] fetching latest origin/$remote_base_branch"
-	git fetch --prune origin "$remote_base_branch"
-	if git show-ref --verify --quiet "refs/remotes/origin/$remote_base_branch"; then
-		resolved_base_ref="refs/remotes/origin/$remote_base_branch"
+	if git remote get-url origin >/dev/null 2>&1; then
+		echo "[new-task] fetching latest origin/$remote_base_branch"
+		if ! git fetch --prune origin "$remote_base_branch"; then
+			if [[ "$explicit_remote_ref" -eq 1 ]]; then
+				echo "[new-task] failed to fetch explicit remote base: $base_ref" >&2
+				exit 2
+			fi
+			echo "[new-task] warning: could not fetch origin/$remote_base_branch; continuing with local refs" >&2
+		elif git show-ref --verify --quiet "refs/remotes/origin/$remote_base_branch"; then
+			resolved_base_ref="refs/remotes/origin/$remote_base_branch"
+		elif [[ "$explicit_remote_ref" -eq 1 ]]; then
+			echo "[new-task] explicit remote base not found on origin: $base_ref" >&2
+			exit 2
+		fi
+	elif [[ "$explicit_remote_ref" -eq 1 ]]; then
+		echo "[new-task] origin remote is required for explicit remote base: $base_ref" >&2
+		exit 2
 	fi
 fi
 
@@ -2584,7 +2602,7 @@ Recommended policy:
 - Treat \`scripts/check-codestyle-parity.sh\` as the fail-closed codestyle parity gate and require exact proof-of-pass in change summaries and PRs.
 - Treat \`scripts/validate-codestyle.sh\` as the fail-closed codestyle validation gate and require exact proof-of-pass in change summaries and PRs.
 - Treat \`scripts/new-task.sh\` as the canonical task-entry helper so each task starts with a repo-local branch/worktree boundary instead of branch switching inside a shared checkout.
-- Treat \`scripts/new-task.sh\` as an upstream-sync helper that fetches the latest \`origin/<base>\` before creating the task worktree branch.
+- Treat \`scripts/new-task.sh\` as an upstream-sync helper that fetches \`origin/<base>\` only when local refs do not already resolve the requested base.
 - Treat \`scripts/prepare-worktree.sh\` as required first-push bootstrap for freshly created worktrees so local hooks run with dependencies, canonical hook wiring, and detached-head fast-forwarding to latest \`origin/main\`.
 - Treat \`scripts/check-environment.sh\` as the local readiness gate for required tooling.
 - Block merge or promotion work when a required CLI is missing rather than silently skipping the corresponding validation lane.
