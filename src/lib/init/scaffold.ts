@@ -224,6 +224,31 @@ function renderRequiredChecksManifest(
 	);
 }
 
+/**
+ * Return canonical GitHub check names for branch protection, derived from the normalized required checks.
+ *
+ * This function ensures that all branch-protection outputs use the same canonical `githubCheckName` values
+ * that are defined in the required-checks manifest, rather than the display names.
+ *
+ * @param ciProvider - The CI provider to target (e.g., `"github-actions"` or `"circleci"`).
+ * @param context - Optional render context affecting check selection (only `issueTracker` is used).
+ * @returns An array of canonical GitHub check names suitable for branch protection configuration.
+ */
+function getBranchProtectionGithubCheckNames(
+	ciProvider: CIProvider,
+	context?: Pick<TemplateRenderContext, "issueTracker">,
+): readonly string[] {
+	const checksWithSecurityScan = getNormalizedRequiredChecks(
+		ciProvider,
+		context,
+	);
+
+	return checksWithSecurityScan.map((displayName) => {
+		const metadata = deriveRequiredCheckMetadata(ciProvider, displayName);
+		return metadata.githubCheckName;
+	});
+}
+
 function renderTransitionStatusArtifact(): string {
 	return JSON.stringify(
 		{
@@ -1538,7 +1563,12 @@ export const TEMPLATES: Template[] = [
 					},
 					docsDriftRules: {},
 					branchProtection: {
-						requiredChecks: [...getBranchProtectionRequiredChecks(context)],
+						requiredChecks: [
+							...getBranchProtectionGithubCheckNames(
+								context.ciProvider ?? DEFAULT_CI_PROVIDER,
+								context,
+							),
+						],
 						restrictDeletions: true,
 						blockForcePushes: true,
 						requireLinearHistory: true,
@@ -2370,7 +2400,10 @@ jobs:
 			);
 			const localExecCommand = renderLocalHarnessExecCommand(pm);
 			const requiredChecksList = formatRequiredChecksBulleted(
-				getBranchProtectionRequiredChecks(context),
+				getBranchProtectionGithubCheckNames(
+					context.ciProvider ?? DEFAULT_CI_PROVIDER,
+					context,
+				),
 				"  - ",
 			);
 			const reviewArtifactsLines = `- CodeRabbit review artifact (URL, report, or comment reference).
