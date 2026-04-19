@@ -53,8 +53,8 @@ Coverage and mutation thresholds MAY be enforced only when wired to executable r
 
 ## 17. Security, Supply Chain & Compliance
 
-* No hard-coded secrets; use env injection/secret manager.
-* Validate/sanitize all external inputs.
+* Secrets MUST NOT be hard-coded; use environment injection or a secret manager.
+* All external inputs MUST be validated and sanitized.
 * Scanning per PR SHOULD include:
 
   * OSV / audits per ecosystem
@@ -68,10 +68,9 @@ Coverage and mutation thresholds MAY be enforced only when wired to executable r
 ## 18. Accessibility
 
 * Baseline: WCAG 2.2 AA.
-* Full keyboard operation required.
-* Screen reader compatibility required.
-* CLI/TUI: `--plain` / `--no-color` modes required.
-
+* Full keyboard operation MUST be supported.
+* Screen reader compatibility MUST be supported.
+* CLI/TUI implementations MUST provide `--plain` and `--no-color` modes.
 ---
 
 ## 19. Observability, Logging & Streaming
