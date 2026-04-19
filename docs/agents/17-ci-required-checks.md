@@ -176,7 +176,7 @@ Add these to GitHub branch protection rulesets:
 
 ```
 pr-pipeline     ← CircleCI workflow-level check context for harness checks
-security-scan   ← GitHub Actions security check context
+security-scan   ← CircleCI security check context
 CodeRabbit      ← CodeRabbit review check context
 ```
 
@@ -220,7 +220,7 @@ harness ci-migrate status --provider circleci
 - `.harness/ci-required-checks.json` is present
 - any active-provider CircleCI entries (`sourceAppSlug: "circleci"`) have a `githubCheckName` that looks like a CircleCI job name instead of a workflow name
 
-Entries for non-CircleCI providers (for example `github-actions` check contexts like `security-scan`) are excluded from the CircleCI job-name warning.
+Entries for non-CircleCI providers are excluded from the CircleCI job-name warning.
 
 Operator wording alignment:
 

@@ -233,8 +233,8 @@ function insertSecurityScanBeforeCodeRabbit(
  * Each required check includes `policyId`, `displayName`, `sourceAppSlug`, `sourceAppId`,
  * `externalIdPattern` (an exact-match regex for the canonical GitHub check name),
  * `requiredOnEvents`, `freshnessWindowDays`, `class`, `enabled`, and `githubCheckName`.
- * When `ciProvider` is `"circleci"`, a `security-scan` check may be injected (placed before
- * `CodeRabbit` when present) and retained as informational metadata (for example `enabled: false`).
+ * When `ciProvider` is `"circleci"`, a `security-scan` check is injected (placed before
+ * `CodeRabbit` when present) and owned by CircleCI metadata.
  *
  * @param ciProvider - The target CI provider (e.g., `"github-actions"` or `"circleci"`).
  * @param context - Optional render context; only `issueTracker` is consulted for check selection.
@@ -321,12 +321,21 @@ shamefully-hoist=false
  * Generate a CircleCI configuration YAML tailored to the specified package manager.
  *
  * @param pm - The package manager identifier used to render install and script commands (e.g., "npm", "pnpm", "yarn").
- * @returns The CircleCI configuration YAML as a string, defining a `pr-pipeline` job and workflow with Node.js 24, steps to ensure pnpm availability, install dependencies, run lint, typecheck, test, audit, and produce a policy bundle.
+ * @returns The CircleCI configuration YAML as a string, defining a reusable gate-runner job and a `pr-pipeline` workflow that fans out governance and quality checks.
  */
 function renderCircleCIConfig(pm: string): string {
 	const installCommand =
-		pm === "pnpm" ? "pnpm install --frozen-lockfile" : renderInstallCommand(pm);
+		pm === "pnpm"
+			? "pnpm install --frozen-lockfile --prefer-offline"
+			: renderInstallCommand(pm);
 	const checkCommand = renderScriptCommand(pm, "check");
+	const lintCommand = renderScriptCommand(pm, "lint");
+	const typecheckCommand = renderScriptCommand(pm, "typecheck");
+	const testCommand = renderScriptCommand(pm, "test");
+	const auditCommand = renderScriptCommand(pm, "audit");
+	const dependencyAuditCommand = renderScriptCommand(pm, "audit:strict");
+	const semgrepCommand = renderScriptCommand(pm, "semgrep:changed");
+	const memoryValidateCommand = renderMemoryValidateCommand();
 	const configureCacheStep =
 		pm === "pnpm"
 			? `      - run:
@@ -337,13 +346,14 @@ function renderCircleCIConfig(pm: string): string {
             pnpm store path
       - restore_cache:
           keys:
-            - v1-pnpm-store-{{ arch }}-{{ checksum "pnpm-lock.yaml" }}
+            - v2-pnpm-store-{{ arch }}-{{ checksum "pnpm-lock.yaml" }}
+            - v2-pnpm-store-{{ arch }}-
 `
 			: "";
 	const saveCacheStep =
 		pm === "pnpm"
 			? `      - save_cache:
-          key: v1-pnpm-store-{{ arch }}-{{ checksum "pnpm-lock.yaml" }}
+          key: v2-pnpm-store-{{ arch }}-{{ checksum "pnpm-lock.yaml" }}
           paths:
             - ~/.pnpm-store
 `
@@ -351,13 +361,26 @@ function renderCircleCIConfig(pm: string): string {
 	return `version: 2.1
 
 jobs:
-  pr-pipeline:
+  run-governance-check:
     docker:
       # Pinned to specific minor for reproducibility (JSC-115)
       - image: cimg/node:24.13
     resource_class: small
+    parameters:
+      check_name:
+        type: string
+      command:
+        type: string
     steps:
       - checkout
+      - run:
+          name: Verify GH token wiring
+          command: |
+            if [ -n "${"${GH_TOKEN:-${GITHUB_PERSONAL_ACCESS_TOKEN:-}}"}" ]; then
+              echo "GitHub token is available for gh-backed steps."
+            else
+              echo "GH_TOKEN/GITHUB_PERSONAL_ACCESS_TOKEN not set; gh-backed steps may fail."
+            fi
       - run:
           name: Ensure pnpm available
           command: |
@@ -384,26 +407,107 @@ ${configureCacheStep}      - run:
           name: Install dependencies
           command: ${installCommand}
 ${saveCacheStep}      - run:
-          name: Ensure test artifacts directory
+          name: Ensure test-results directory exists
+          when: always
           command: |
-            mkdir -p artifacts/test
+            mkdir -p artifacts/test-results
       - run:
-          name: Policy Bundle
-          command: |
-            ${checkCommand}
-      - run:
-          name: Dogfood silent-error detection
-          command: |
-            bash scripts/harness-cli.sh silent-error --dirs src --strict
+          name: << parameters.check_name >>
+          command: << parameters.command >>
       - store_test_results:
-          path: artifacts/test
+          path: artifacts/test-results
+          when: always
       - store_artifacts:
-          path: artifacts/test
+          path: artifacts/test-results
+          when: always
 
 workflows:
   pr-pipeline:
     jobs:
-      - pr-pipeline
+      - run-governance-check:
+          name: risk-policy-gate
+          check_name: risk-policy-gate
+          command: bash scripts/run-harness-gate.sh policy-gate --max-tier medium --json
+          filters:
+            tags:
+              ignore: /.*/
+      - run-governance-check:
+          name: dependency-scan
+          check_name: dependency-scan
+          command: ${dependencyAuditCommand}
+          filters:
+            tags:
+              ignore: /.*/
+      - run-governance-check:
+          name: orb-pinning
+          check_name: orb-pinning
+          command: bash scripts/check-environment.sh
+          filters:
+            tags:
+              ignore: /.*/
+      - run-governance-check:
+          name: docs-gate
+          check_name: docs-gate
+          command: bash scripts/run-harness-gate.sh docs-gate --mode required --json
+          filters:
+            tags:
+              ignore: /.*/
+      - run-governance-check:
+          name: lint
+          check_name: lint
+          command: ${lintCommand}
+          filters:
+            tags:
+              ignore: /.*/
+      - run-governance-check:
+          name: typecheck
+          check_name: typecheck
+          command: ${typecheckCommand}
+          filters:
+            tags:
+              ignore: /.*/
+      - run-governance-check:
+          name: test
+          check_name: test
+          command: ${testCommand}
+          filters:
+            tags:
+              ignore: /.*/
+      - run-governance-check:
+          name: audit
+          check_name: audit
+          command: ${auditCommand}
+          filters:
+            tags:
+              ignore: /.*/
+      - run-governance-check:
+          name: check
+          check_name: check
+          command: ${checkCommand}
+          filters:
+            tags:
+              ignore: /.*/
+      - run-governance-check:
+          name: memory
+          check_name: memory
+          command: ${memoryValidateCommand}
+          filters:
+            tags:
+              ignore: /.*/
+      - run-governance-check:
+          name: security-scan
+          check_name: security-scan
+          command: ${semgrepCommand}
+          filters:
+            tags:
+              ignore: /.*/
+      - run-governance-check:
+          name: CodeRabbit
+          check_name: CodeRabbit
+          command: echo "External CodeRabbit status is tracked by GitHub App integration."
+          filters:
+            tags:
+              ignore: /.*/
 `;
 }
 
@@ -716,7 +820,8 @@ echo "[prepare-worktree] next: bash scripts/verify-work.sh --fast"
  * Produces a bash helper that creates a dedicated worktree and branch for one task.
  *
  * The generated script keeps task isolation project-local by resolving the base commit safely, only fetching
- * `origin/<branch>` when needed, before creating one branch and one worktree per task and printing bootstrap commands.
+ * `origin/<branch>` when needed, before creating one branch and one worktree per task and either printing
+ * bootstrap commands or running them immediately when `--bootstrap` is requested.
  *
  * @returns A complete POSIX-compatible bash script as a string. When executed, the script exits with:
  *          - `0` on success,
@@ -743,6 +848,7 @@ Options:
   --base <ref>            Start the branch from this ref (default: main)
   --branch-prefix <name>  Branch prefix (default: codex)
   --path <dir>            Worktree path (default: ../wt-<slug>)
+  --bootstrap             Run worktree bootstrap immediately after creation
   -h, --help              Show this help text
 USAGE
 }
@@ -750,6 +856,7 @@ USAGE
 base_ref="main"
 branch_prefix="codex"
 worktree_path=""
+bootstrap=0
 slug=""
 
 while (( $# > 0 )); do
@@ -765,6 +872,10 @@ while (( $# > 0 )); do
 		--path)
 			worktree_path="\${2:-}"
 			shift 2
+			;;
+		--bootstrap)
+			bootstrap=1
+			shift
 			;;
 		-h|--help)
 			usage
@@ -887,10 +998,24 @@ echo "[new-task] path: $worktree_path"
 
 git worktree add "$worktree_path" -b "${"${"}branch_name}" "$resolved_base_ref"
 
+if [[ "$bootstrap" -eq 1 ]]; then
+	echo "[new-task] bootstrapping worktree"
+	(
+		cd "$worktree_path"
+		if [[ -f Makefile ]] && rg -q '^worktree-ready:' Makefile; then
+			make worktree-ready
+		else
+			bash scripts/prepare-worktree.sh
+		fi
+	)
+fi
+
 echo
 echo "[new-task] next:"
 echo "  cd \\"$worktree_path\\""
-if [[ -f "$worktree_path/Makefile" ]] && rg -q '^worktree-ready:' "$worktree_path/Makefile"; then
+if [[ "$bootstrap" -eq 1 ]]; then
+	echo "  # bootstrap already ran (--bootstrap)"
+elif [[ -f "$worktree_path/Makefile" ]] && rg -q '^worktree-ready:' "$worktree_path/Makefile"; then
 	echo "  make worktree-ready"
 else
 	echo "  bash scripts/prepare-worktree.sh"
@@ -933,8 +1058,48 @@ REPO_ROOT="$(cd -- "$SCRIPT_DIR/.." && pwd)"
 		exit 1
 	fi
 
-	exec node "$CLI_PATH" "$@"
-	`;
+		exec node "$CLI_PATH" "$@"
+		`;
+}
+
+function renderHarnessGateRunner(packageManager: string): string {
+	const installCommand = renderInstallCommand(packageManager);
+	const localExecCommand = renderLocalHarnessExecCommand(packageManager);
+	return `#!/usr/bin/env bash
+set -euo pipefail
+
+SCRIPT_DIR="$(cd -- "$(dirname -- "${"${"}BASH_SOURCE[0]}")" && pwd)"
+REPO_ROOT="$(cd -- "$SCRIPT_DIR/.." && pwd)"
+
+if [[ $# -eq 0 ]]; then
+	echo "Usage: bash scripts/run-harness-gate.sh <harness-subcommand> [args...]" >&2
+	exit 2
+fi
+
+if [[ -f "$REPO_ROOT/src/cli.ts" ]]; then
+	if ! command -v pnpm >/dev/null 2>&1; then
+		echo "Error: pnpm is required to run the repo-local harness CLI." >&2
+		echo "Install pnpm and retry." >&2
+		exit 1
+	fi
+	exec pnpm exec tsx "$REPO_ROOT/src/cli.ts" "$@"
+fi
+
+if [[ -x "$REPO_ROOT/scripts/harness-cli.sh" ]]; then
+	exec bash "$REPO_ROOT/scripts/harness-cli.sh" "$@"
+fi
+
+if command -v harness >/dev/null 2>&1; then
+	exec harness "$@"
+fi
+
+echo "Error: unable to resolve a harness runner for this repository." >&2
+echo "Install dependencies with:" >&2
+echo "  ${installCommand}" >&2
+echo "or run with a local harness install via:" >&2
+echo "  ${localExecCommand} <command>" >&2
+exit 1
+`;
 }
 
 function readPackageJson(targetDir: string): PackageJsonLike | undefined {
@@ -1327,9 +1492,9 @@ export function shouldSkipDueToNewerToolingVersion(
  * Generates the Codex "local environment" TOML used by Codex/CodeRabbit for the repository.
  *
  * Produces a TOML document (prefixed with the autogen header) that defines a setup script
- * (auto-attaches detached git worktrees to a local `codex/*` branch, fast-forwards to latest
- * `origin/main` when available, trusts `.mise.toml`, then runs `mise install`, followed by the
- * package-manager install command) and a set of action blocks:
+ * (trusts `.mise.toml`, runs `mise install`, then delegates worktree bootstrap to
+ * `scripts/prepare-worktree.sh` when present, with package-manager install as fallback) and a
+ * set of action blocks:
  * - standard Tools/Run/Debug/Test actions (Run/Debug/Test will contain a deterministic failing placeholder when the corresponding npm script is absent),
  * - required tool actions from the harness constants,
  * - one action per script found in `context.packageScripts`, each assigned an inferred icon.
@@ -1342,39 +1507,15 @@ function renderCodexEnvironmentTemplate(
 	packageManager: string,
 	context: TemplateRenderContext,
 ): string {
-	const installCommand = `if command -v git >/dev/null 2>&1 && git rev-parse --is-inside-work-tree >/dev/null 2>&1; then
-  current_branch="$(git symbolic-ref --short -q HEAD || true)"
-  if [ -z "$current_branch" ]; then
-    repo_slug="$(basename "$PWD" | tr '[:upper:]' '[:lower:]' | sed -E 's/[^a-z0-9]+/-/g; s/^-+//; s/-+$//')"
-    if [ -z "$repo_slug" ]; then
-      repo_slug="worktree"
-    fi
-    short_sha="$(git rev-parse --short HEAD)"
-    branch_base="codex/$repo_slug-worktree-$short_sha"
-    branch_name="$branch_base"
-    suffix=1
-    while git show-ref --verify --quiet "refs/heads/$branch_name"; do
-      branch_name="$branch_base-$suffix"
-      suffix=$((suffix + 1))
-    done
-    echo "[codex] detached HEAD detected; creating branch $branch_name"
-    git switch -c "$branch_name"
-    if git show-ref --verify --quiet "refs/remotes/origin/main"; then
-      git branch --set-upstream-to=origin/main "$branch_name" >/dev/null 2>&1 || true
-      echo "[codex] tracking origin/main for $branch_name"
-      echo "[codex] fast-forwarding $branch_name with origin/main"
-      git pull --ff-only origin main
-    fi
-  fi
+	const installCommand = `if command -v mise >/dev/null 2>&1; then
+  mise trust --yes .mise.toml || true
+  mise install
 fi
-mise_trust_status="$(mise trust --show .mise.toml 2>/dev/null || true)"
-if [[ "$mise_trust_status" != *": trusted"* ]]; then
-  echo "[codex] mise config is not trusted"
-  echo "[codex] Fix: run 'mise trust --yes .mise.toml' and retry"
-  exit 1
-fi
-mise install
-${renderInstallCommand(packageManager)}`;
+if [[ -f scripts/prepare-worktree.sh ]]; then
+  bash scripts/prepare-worktree.sh
+else
+  ${renderInstallCommand(packageManager)}
+fi`;
 	const runScript = pickScriptForIcon(context.packageScripts, "run");
 	const debugScript = pickScriptForIcon(context.packageScripts, "debug");
 	const testScript = pickScriptForIcon(context.packageScripts, "test");
@@ -2709,13 +2850,16 @@ Recommended policy:
 - \`scripts/validate-codestyle.sh\` is the canonical fail-closed codestyle validation gate and is reused by \`verify-work\`, local hooks, and downstream repo docs.
 - \`scripts/new-task.sh\` is the canonical task bootstrap helper. Use it to create one task = one worktree = one branch = one agent thread inside the project itself.
 - Repo-local launches should prefer \`./scripts/codex-enforced\` so preflight failures are recorded into repo-scoped learn state.
+- \`scripts/codex-enforced\` should guard \`main\` by auto-creating a dedicated task worktree (via \`scripts/new-task.sh --bootstrap\`) before launching Codex for feature work.
 - Use \`./scripts/codex-learn analyze\` and \`./scripts/codex-learn apply\` to inspect repo-scoped failure patterns and write override files into \`.harness/memory/\`.
 - Start new work with \`bash scripts/new-task.sh <slug>\`, then enter the generated worktree and continue there.
+- Use \`bash scripts/new-task.sh --bootstrap <slug>\` when you want to create and bootstrap the worktree in one command.
 - Use \`bash scripts/validate-codestyle.sh --fast\` during iteration for focused codestyle validation.
 - Use \`bash scripts/validate-codestyle.sh\` before handoff for the fail-closed codestyle bundle.
 - Use \`bash scripts/verify-work.sh\` for the broader verification bundle.
 - Use \`bash scripts/verify-work.sh --fast\` for preflight + codestyle fast lane coverage.
 - Before the first push from a fresh worktree, run \`bash scripts/prepare-worktree.sh\` to ensure detached checkouts are attached and fast-forwarded to latest \`origin/main\`.
+- Generated \`.codex/environments/environment.toml\` setup and \`Tools\` actions should invoke \`scripts/prepare-worktree.sh\` when available so Codex app bootstrap matches manual worktree setup.
 
 ## Repo-local harness wrapper
 
@@ -4152,6 +4296,10 @@ CLAUDE_APPROVAL_POSTURE = "require"
 		render: (pm) => renderHarnessCliWrapper(pm),
 	},
 	{
+		path: "scripts/run-harness-gate.sh",
+		render: (pm) => renderHarnessGateRunner(pm),
+	},
+	{
 		path: "scripts/check-environment.sh",
 		render: () => {
 			const packagePolicy = DEFAULT_CONTRACT.toolingPolicy?.packagePolicy;
@@ -4780,15 +4928,9 @@ export function isTemplateEnabledForProvider(
 	templatePath: string,
 	ciProvider: CIProvider,
 ): boolean {
-	// Release publish workflow is canonical across providers because publishing
-	// stays on GitHub Actions even when PR validation runs on CircleCI.
-	if (templatePath === ".github/workflows/release-private-npm.yml") {
-		return true;
-	}
-	// github-actions workflow templates are disabled for circleci (the only active provider).
-	// .github/workflows/ files only apply when explicitly using github-actions CI.
+	// GitHub Actions is release-only for this control plane.
 	if (templatePath.startsWith(".github/workflows/")) {
-		return ciProvider === "github-actions";
+		return templatePath === ".github/workflows/release-private-npm.yml";
 	}
 	// CircleCI config is only written for circleci provider.
 	if (templatePath === ".circleci/config.yml") {

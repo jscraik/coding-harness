@@ -17,6 +17,7 @@ Options:
   --base <ref>            Start the branch from this ref (default: main)
   --branch-prefix <name>  Branch prefix (default: codex)
   --path <dir>            Worktree path (default: ../wt-<slug>)
+  --bootstrap             Run worktree bootstrap immediately after creation
   -h, --help              Show this help text
 USAGE
 }
@@ -24,6 +25,7 @@ USAGE
 base_ref="main"
 branch_prefix="codex"
 worktree_path=""
+bootstrap=0
 slug=""
 
 while (( $# > 0 )); do
@@ -39,6 +41,10 @@ while (( $# > 0 )); do
 		--path)
 			worktree_path="${2:-}"
 			shift 2
+			;;
+		--bootstrap)
+			bootstrap=1
+			shift
 			;;
 		-h|--help)
 			usage
@@ -161,10 +167,24 @@ echo "[new-task] path: $worktree_path"
 
 git worktree add "$worktree_path" -b "${branch_name}" "$resolved_base_ref"
 
+if [[ "$bootstrap" -eq 1 ]]; then
+	echo "[new-task] bootstrapping worktree"
+	(
+		cd "$worktree_path"
+		if [[ -f Makefile ]] && rg -q '^worktree-ready:' Makefile; then
+			make worktree-ready
+		else
+			bash scripts/prepare-worktree.sh
+		fi
+	)
+fi
+
 echo
 echo "[new-task] next:"
 echo "  cd \"$worktree_path\""
-if [[ -f "$worktree_path/Makefile" ]] && rg -q '^worktree-ready:' "$worktree_path/Makefile"; then
+if [[ "$bootstrap" -eq 1 ]]; then
+	echo "  # bootstrap already ran (--bootstrap)"
+elif [[ -f "$worktree_path/Makefile" ]] && rg -q '^worktree-ready:' "$worktree_path/Makefile"; then
 	echo "  make worktree-ready"
 else
 	echo "  bash scripts/prepare-worktree.sh"

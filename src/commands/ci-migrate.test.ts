@@ -4485,27 +4485,27 @@ describe("runCIMigrateCLI", () => {
 			manifest.requiredChecks.find(
 				(check) => check.displayName === "security-scan",
 			)?.sourceAppSlug,
-		).toBe("github-actions");
+		).toBe("circleci");
 		expect(
 			manifest.requiredChecks.find(
 				(check) => check.displayName === "security-scan",
 			)?.sourceAppId,
-		).toBe("github-actions");
+		).toBe("circleci");
 		expect(
 			manifest.requiredChecks.find(
 				(check) => check.displayName === "security-scan",
 			)?.githubCheckName,
-		).toBe("security-scan");
+		).toBe(CIRCLECI_PRIMARY_CHECK);
 		expect(
 			manifest.requiredChecks.find(
 				(check) => check.displayName === "security-scan",
 			)?.class,
-		).toBe("informational");
+		).toBe("required");
 		expect(
 			manifest.requiredChecks.find(
 				(check) => check.displayName === "security-scan",
 			)?.enabled,
-		).toBe(false);
+		).toBeUndefined();
 		expect(
 			circleCiWorkflowChecks.every((check) => check.class === "required"),
 		).toBe(true);

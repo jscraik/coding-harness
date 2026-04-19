@@ -91,8 +91,8 @@ The local hook contract is intentionally split by drag profile:
 - `pre-push` keeps the heavier governance lane and now adds a narrow changed-files `semgrep` scan for `src/**` plus `pnpm build` before `audit`.
 - `hooks-commit-msg` is the canonical wrapper target for commit-message policy checks. Keep it available even though `prek.toml` installs only `pre-commit` and `pre-push`.
 - The Semgrep lane is path-filtered to changed implementation files under `src/**` and uses the local ruleset at `scripts/semgrep-pre-push.yml` to avoid turning pre-push into a full repo scan.
-- `scripts/check-semgrep-changed.sh` should pin and execute the same Semgrep version used by `.github/workflows/secret-scan.yml` (`semgrep==1.153.1`) so local and CI security findings do not drift.
-- OpenSSF scorecard posture drift is tracked by `.github/workflows/openssf-scorecard.yml` and evaluated against `security/openssf-scorecard-policy.json` via `scripts/check-scorecard-regressions.mjs`; keep these three surfaces aligned when scorecard policy changes.
+- `scripts/check-semgrep-changed.sh` should pin and execute the same Semgrep version used by the CircleCI `security-scan` job in `.circleci/config.yml` (`semgrep==1.153.1`) so local and CI security findings do not drift.
+- OpenSSF scorecard posture drift is tracked by the repo status document `docs/security/2026-04-09-openssf-osps-baseline-status.md` and evaluated against `security/openssf-scorecard-policy.json` via `scripts/check-scorecard-regressions.mjs`; keep those surfaces aligned when scorecard policy changes.
 - CodeRabbit custom `ast-grep` rules for this repository live under `rules/`; keep them narrowly scoped to repo-specific contracts such as the required `.js` extension on relative ESM imports.
 
 ## Codex environment actions
@@ -173,11 +173,15 @@ For fresh git worktrees before first push, run:
 
 1. `bash scripts/prepare-worktree.sh`
 2. `make worktree-ready` is an equivalent wrapper target
+3. `bash scripts/new-task.sh --bootstrap <slug>` is the optional one-command lane that creates then bootstraps the worktree immediately.
+4. `./scripts/codex-enforced --worktree-slug <slug> "<prompt>"` auto-creates and bootstraps a dedicated worktree when launched from `main`, then re-runs Codex inside that worktree.
 
 The helper codifies the required sequence: `bash scripts/codex-preflight.sh --stack auto --mode required`, `pnpm build`, `harness init --check-updates` (and `--update` when needed), `bash scripts/check-environment.sh` (which resolves and validates pinned `uv`), and `pnpm check`.
 `scripts/prepare-worktree.sh` is the lightweight bootstrap lane for new worktrees; it ensures dependencies are installed in the active worktree so pre-push hooks that execute `pnpm` gates do not fail from missing `node_modules/`.
 The helper should also attach detached HEAD checkouts to a local `codex/<repo>-worktree-<short-sha>` branch, wire `origin/main` tracking when present, and fast-forward to latest `origin/main` so branch-aware workflows (for example `git pull` without explicit ref args) do not fail on fresh worktree sessions.
 `scripts/new-task.sh` should fetch the latest remote base branch (`origin/<base>`) and create the worktree branch from that updated ref so fresh task worktrees start from current upstream state.
+`scripts/codex-enforced` should treat `main` as protected task-entry context: auto-create a dedicated `codex/<slug>` worktree via `scripts/new-task.sh --bootstrap`, then re-launch Codex inside the new worktree.
+Generated `.codex/environments/environment.toml` setup and `Tools` actions should run `scripts/prepare-worktree.sh` when available so Codex app bootstrap follows the same branch-attach, dependency, and hook-sync contract as manual worktree setup.
 `harness init --check-updates`, `harness init --update`, and `harness upgrade` now auto-repair legacy `.harness/restore-manifest.json` files when `ciProvider` can be inferred from `harness.contract.json`, an unambiguous CI layout on disk, or the current requested/default provider.
 If provider inference is still ambiguous, treat the incomplete manifest as a repo-drift warning for the update lane, print the remediation, and continue the remaining setup gates instead of aborting the whole audit.
 `scripts/codex-preflight.sh` is a CLI script and should be executed, not sourced. Use `bash scripts/codex-preflight.sh --stack auto --mode required` for standard checks (or `--mode optional` for softer checks).
@@ -197,9 +201,9 @@ Active AI-review scaffolding in this repository is CodeRabbit-first. Any remaini
 - Canonical publish workflow: `.github/workflows/release-private-npm.yml`
 - Trigger: semantic-version tag pushes matching `vX.Y.Z` (for example `v0.12.0`) and guarded manual dispatch.
 - Publish authority: GitHub Actions OIDC trusted publishing (default) with optional token fallback (`publish_auth=token`) for bootstrap recovery.
-- CircleCI `release` is verification-only in this repository; do not add `pnpm publish` or token-based publish steps there.
+- CircleCI is non-release only in this repository; do not add `pnpm publish` or token-based publish steps there.
 - Keep release docs and scaffolds aligned with this split:
-  - CircleCI: lint/test/security + release verification.
+  - CircleCI: PR governance and security checks.
   - GitHub Actions: private npm publish + attestation + GitHub release creation.
 
 ## Tooling verification checklist

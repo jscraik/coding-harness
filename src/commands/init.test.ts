@@ -97,6 +97,7 @@ const EXPECTED_TEMPLATE_PATHS = [
 	"scripts/prepare-worktree.sh",
 	"scripts/new-task.sh",
 	"scripts/harness-cli.sh",
+	"scripts/run-harness-gate.sh",
 	"scripts/check-environment.sh",
 	".mise.toml",
 	".codex/environments/environment.toml",
@@ -330,10 +331,9 @@ describe("runInit", () => {
 			const securityScanCheck = generatedChecks.find(
 				(entry) => entry.displayName === "security-scan",
 			);
-			expect(securityScanCheck?.provider).toBe("github-actions");
-			expect(securityScanCheck?.githubCheckName).toBe("security-scan");
-			expect(securityScanCheck?.class).toBe("informational");
-			expect(securityScanCheck?.enabled).toBe(false);
+			expect(securityScanCheck?.provider).toBe("circleci");
+			expect(securityScanCheck?.githubCheckName).toBe("pr-pipeline");
+			expect(securityScanCheck?.class).toBe("required");
 			const codeRabbitCheck = generatedChecks.find(
 				(entry) => entry.displayName === "CodeRabbit",
 			);
@@ -345,6 +345,9 @@ describe("runInit", () => {
 				"utf-8",
 			);
 			expect(circleConfig).toContain("name: Ensure pnpm available");
+			expect(circleConfig).toContain("run-governance-check:");
+			expect(circleConfig).toContain("check_name:");
+			expect(circleConfig).toContain("command:");
 			expect(circleConfig).toContain("resource_class: small");
 			expect(circleConfig).toContain("name: Configure pnpm store");
 			expect(circleConfig).toContain("restore_cache:");
@@ -354,24 +357,23 @@ describe("runInit", () => {
 				'npm install --global --prefix "$NPM_CONFIG_PREFIX" "pnpm@${required_pnpm_version}"',
 			);
 			expect(circleConfig).toContain("name: Inject npm auth");
-			expect(circleConfig).toContain(
-				'"//registry.npmjs.org/:_authToken=$NPM_TOKEN"',
-			);
 			expect(circleConfig).toContain("pnpm install --frozen-lockfile");
-			expect(circleConfig).toContain("name: Policy Bundle");
-			expect(circleConfig).toContain("pnpm check");
-			expect(circleConfig).toContain("name: Dogfood silent-error detection");
+			expect(circleConfig).toContain("name: check");
+			expect(circleConfig).toContain("command: pnpm check");
 			expect(circleConfig).toContain(
-				"bash scripts/harness-cli.sh silent-error --dirs src --strict",
+				"command: bash scripts/run-harness-gate.sh policy-gate --max-tier medium --json",
+			);
+			expect(circleConfig).toContain(
+				"command: bash scripts/run-harness-gate.sh docs-gate --mode required --json",
 			);
 			expect(circleConfig).toContain("store_test_results:");
-			expect(circleConfig).toContain("path: artifacts/test");
+			expect(circleConfig).toContain("path: artifacts/test-results");
 			expect(circleConfig).not.toContain("name: Enforce Policy Bundle Outcome");
 			expect(circleConfig).not.toContain("name: Enable corepack");
-			expect(circleConfig).not.toContain("name: Lint");
-			expect(circleConfig).not.toContain("name: Typecheck");
-			expect(circleConfig).not.toContain("name: Test");
-			expect(circleConfig).not.toContain("name: Audit");
+			expect(circleConfig).toContain("name: lint");
+			expect(circleConfig).toContain("name: typecheck");
+			expect(circleConfig).toContain("name: test");
+			expect(circleConfig).toContain("name: audit");
 
 			const transitionStatus = JSON.parse(
 				readFileSync(
@@ -667,7 +669,7 @@ describe("runInit", () => {
 			expect(existsSync(join(tempDir, ".greptile/files.json"))).toBe(false);
 		});
 
-		it("scaffolds GHA workflow files when provider is github-actions", () => {
+		it("scaffolds only release workflow files when provider is github-actions", () => {
 			const result = runInit(tempDir, {
 				dryRun: false,
 				force: false,
@@ -676,13 +678,13 @@ describe("runInit", () => {
 
 			expect(result.ok).toBe(true);
 
-			// Verify GHA-specific templates are created
+			// Verify GitHub Actions remains release-only.
 			expect(
 				existsSync(join(tempDir, ".github/workflows/pr-pipeline.yml")),
-			).toBe(true);
+			).toBe(false);
 			expect(
 				existsSync(join(tempDir, ".github/workflows/secret-scan.yml")),
-			).toBe(true);
+			).toBe(false);
 			expect(
 				existsSync(join(tempDir, ".github/workflows/release-private-npm.yml")),
 			).toBe(true);
@@ -690,14 +692,7 @@ describe("runInit", () => {
 			expect(
 				existsSync(join(tempDir, ".github/workflows/greptile-review.yml")),
 			).toBe(false);
-			const secretScanWorkflow = require("node:fs").readFileSync(
-				join(tempDir, ".github/workflows/secret-scan.yml"),
-				"utf-8",
-			);
-			expect(secretScanWorkflow).toContain("pull-requests: write");
-			expect(secretScanWorkflow).toContain("contents: read");
-			expect(secretScanWorkflow).toContain("GITLEAKS_CONFIG: .gitleaks.toml");
-			// CircleCI file should NOT be created
+			// CircleCI file should not be created when github-actions is explicitly selected.
 			expect(existsSync(join(tempDir, ".circleci/config.yml"))).toBe(false);
 		});
 
@@ -780,6 +775,7 @@ describe("runInit", () => {
 			expect(content).toContain('name = "Script: lint:fix"\nicon = "debug"');
 			expect(content).toContain("mise install");
 			expect(content).toContain("mise trust --yes .mise.toml || true");
+			expect(content).toContain("bash scripts/prepare-worktree.sh");
 			expect(content).toContain(
 				"[codex] detached HEAD detected; creating branch $branch_name",
 			);
@@ -1031,7 +1027,7 @@ describe("runInit", () => {
 			expect(Array.isArray(memory.entries)).toBe(true);
 		});
 
-		it("includes package manager in workflow (github-actions)", () => {
+		it("includes package manager in release workflow (github-actions)", () => {
 			// Create pnpm lockfile
 			writeFileSync(join(tempDir, "pnpm-lock.yaml"), "");
 
@@ -1043,29 +1039,32 @@ describe("runInit", () => {
 
 			expect(result.ok).toBe(true);
 
-			// Read workflow and verify pnpm is used
-			const workflowPath = join(tempDir, ".github/workflows/pr-pipeline.yml");
+			// Read release workflow and verify pnpm is used
+			const workflowPath = join(
+				tempDir,
+				".github/workflows/release-private-npm.yml",
+			);
 			const content = require("node:fs").readFileSync(workflowPath, "utf-8");
 			expect(content).toContain("pnpm install");
-			expect(content).toContain("pnpm test");
-			expect(content).toContain("pnpm lint");
 			expect(content).toContain("pnpm check");
+			expect(content).toContain("pnpm build");
 			expect(content).toContain("name: Ensure pnpm available");
 			expect(content).toContain(
 				'echo "$NPM_CONFIG_PREFIX/bin" >> "$GITHUB_PATH"',
 			);
 			expect(content).not.toContain("name: Enable corepack");
-			expect(content).toContain("name: pr-template");
-			expect(content).toContain("Validate memory.json");
-			expect(content).toContain("test -f memory.json");
+			expect(content).toContain("name: Publish private package (token)");
+			expect(content).toContain(
+				"name: Publish private package (OIDC trusted publisher)",
+			);
 		});
 
-		it("uses npm run for npm script commands", () => {
+		it("uses npm run for npm script commands in CircleCI templates", () => {
 			// No lockfile => npm
 			const result = runInit(tempDir, {
 				dryRun: false,
 				force: false,
-				ciProvider: "github-actions",
+				ciProvider: "circleci",
 			});
 
 			expect(result.ok).toBe(true);
@@ -1078,10 +1077,11 @@ describe("runInit", () => {
 			expect(contract.uiLoopPolicy.verifyCommand).toBe("npm run ui:verify");
 			expect(contract.uiLoopPolicy.exploreCommand).toBe("npm run ui:explore");
 
-			const workflowPath = join(tempDir, ".github/workflows/pr-pipeline.yml");
+			const workflowPath = join(tempDir, ".circleci/config.yml");
 			const workflow = require("node:fs").readFileSync(workflowPath, "utf-8");
 			expect(workflow).toContain("npm run lint");
 			expect(workflow).toContain("npm run check");
+			expect(workflow).toContain("npm run audit:strict");
 		});
 
 		it("includes recommended security scanners in contributing template", () => {
@@ -1206,21 +1206,17 @@ describe("runInit", () => {
 			expect(issueTemplateConfig).toContain("Private security disclosure");
 		});
 
-		it("renders github tracker workflow assets without linear-only gates", () => {
+		it("renders github tracker assets without linear-only checks", () => {
 			const result = runInit(tempDir, {
 				dryRun: false,
 				force: true,
-				ciProvider: "github-actions",
+				ciProvider: "circleci",
 				issueTracker: "github",
 			});
 			expect(result.ok).toBe(true);
 
 			const workflowContent = require("node:fs").readFileSync(
 				join(tempDir, "WORKFLOW.md"),
-				"utf-8",
-			);
-			const pipelineContent = require("node:fs").readFileSync(
-				join(tempDir, ".github/workflows/pr-pipeline.yml"),
 				"utf-8",
 			);
 			const checksManifest = JSON.parse(
@@ -1235,8 +1231,6 @@ describe("runInit", () => {
 			expect(workflowContent).toContain(
 				"open PR and attach validation evidence",
 			);
-			expect(pipelineContent).not.toContain("linear-gate:");
-			expect(pipelineContent).toContain("needs: [pr-template]");
 			expect(
 				checksManifest.requiredChecks.map(
 					(entry: { displayName: string }) => entry.displayName,
@@ -1663,6 +1657,9 @@ describe("runInit", () => {
 				"[new-task] fetching latest $remote_name/$remote_base_branch",
 			);
 			expect(newTask).toContain(
+				"--bootstrap             Run worktree bootstrap immediately after creation",
+			);
+			expect(newTask).toContain(
 				'if git -C "$REPO_ROOT" remote get-url "$candidate_remote" >/dev/null 2>&1; then',
 			);
 			expect(newTask).toContain('elif [[ "$base_ref" != *"/"* ]]; then');
@@ -1684,6 +1681,9 @@ describe("runInit", () => {
 			expect(newTask).toContain(
 				'git worktree add "$worktree_path" -b "${branch_name}" "$resolved_base_ref"',
 			);
+			expect(newTask).toContain('if [[ "$bootstrap" -eq 1 ]]; then');
+			expect(newTask).toContain("[new-task] bootstrapping worktree");
+			expect(newTask).toContain("# bootstrap already ran (--bootstrap)");
 			expect(prepareWorktree).not.toContain("core.hooksPath");
 			expect(prepareWorktree).toContain("node scripts/setup-git-hooks.js");
 			expect(prepareWorktree).not.toContain("simple-git-hooks");
@@ -1703,6 +1703,15 @@ describe("runInit", () => {
 			expect(codexLearn).toContain("Project Brain summary updated:");
 			expect(codexEnforced).toContain(
 				"Runs repo-local preflight before executing codex.",
+			);
+			expect(codexEnforced).toContain(
+				"--worktree-slug     On main, force task worktree slug before codex launch",
+			);
+			expect(codexEnforced).toContain(
+				"Main branch guard: creating dedicated task worktree...",
+			);
+			expect(codexEnforced).toContain(
+				'exec bash "${worktree_path}/scripts/codex-enforced" --skip-worktree-guard "${ORIGINAL_ARGS[@]}"',
 			);
 			expect(codexEnforced).toContain(
 				"./scripts/codex-enforced --skip-preflight <your prompt>",
@@ -2766,7 +2775,10 @@ describe("--track flag", () => {
 	it("rejects symlinks with error", () => {
 		// Create symlink to a file outside the repo
 		mkdirSync(join(tempDir, ".github", "workflows"), { recursive: true });
-		const symlinkPath = join(tempDir, ".github/workflows/pr-pipeline.yml");
+		const symlinkPath = join(
+			tempDir,
+			".github/workflows/release-private-npm.yml",
+		);
 		symlinkSync("/etc/passwd", symlinkPath);
 
 		const result = runInit(tempDir, {
@@ -2840,9 +2852,9 @@ describe("--rollback flag", () => {
 
 		// Verify files deleted
 		expect(existsSync(join(tempDir, "harness.contract.json"))).toBe(false);
-		expect(existsSync(join(tempDir, ".github/workflows/pr-pipeline.yml"))).toBe(
-			false,
-		);
+		expect(
+			existsSync(join(tempDir, ".github/workflows/release-private-npm.yml")),
+		).toBe(false);
 		expect(existsSync(join(tempDir, "CONTRIBUTING.md"))).toBe(false);
 		expect(existsSync(join(tempDir, ".github/PULL_REQUEST_TEMPLATE.md"))).toBe(
 			false,
@@ -3008,9 +3020,9 @@ describe("--rollback flag", () => {
 		});
 
 		expect(rollbackResult.ok).toBe(true);
-		expect(existsSync(join(tempDir, ".github/workflows/pr-pipeline.yml"))).toBe(
-			false,
-		);
+		expect(
+			existsSync(join(tempDir, ".github/workflows/release-private-npm.yml")),
+		).toBe(false);
 		expect(existsSync(join(tempDir, ".harness/restore-manifest.json"))).toBe(
 			false,
 		);
@@ -3388,9 +3400,9 @@ describe("--update flag", () => {
 			ciProvider: "github-actions",
 		});
 		expect(installResult.ok).toBe(true);
-		expect(existsSync(join(tempDir, ".github/workflows/pr-pipeline.yml"))).toBe(
-			true,
-		);
+		expect(
+			existsSync(join(tempDir, ".github/workflows/release-private-npm.yml")),
+		).toBe(true);
 		expect(existsSync(join(tempDir, ".circleci/config.yml"))).toBe(false);
 
 		const result = runInit(tempDir, {
@@ -3400,9 +3412,9 @@ describe("--update flag", () => {
 		});
 
 		expect(result.ok).toBe(true);
-		expect(existsSync(join(tempDir, ".github/workflows/pr-pipeline.yml"))).toBe(
-			true,
-		);
+		expect(
+			existsSync(join(tempDir, ".github/workflows/release-private-npm.yml")),
+		).toBe(true);
 		expect(existsSync(join(tempDir, ".circleci/config.yml"))).toBe(false);
 	});
 

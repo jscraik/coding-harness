@@ -187,17 +187,16 @@
     {
       "policyId": "required-check-14",
       "displayName": "security-scan",
-      "sourceAppSlug": "github-actions",
-      "sourceAppId": "github-actions",
-      "externalIdPattern": "^security-scan$",
+      "sourceAppSlug": "circleci",
+      "sourceAppId": "circleci",
+      "externalIdPattern": "^pr-pipeline$",
       "requiredOnEvents": [
         "pull_request",
         "merge_group"
       ],
       "freshnessWindowDays": 7,
-      "class": "informational",
-      "enabled": false,
-      "githubCheckName": "security-scan"
+      "class": "required",
+      "githubCheckName": "pr-pipeline"
     },
     {
       "policyId": "required-check-15",

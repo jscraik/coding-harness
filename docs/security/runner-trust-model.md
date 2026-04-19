@@ -2,7 +2,7 @@
 
 **Issue:** JSC-115
 **Status:** Active
-**Last reviewed:** 2026-04-15
+**Last reviewed:** 2026-04-19
 
 ## Overview
 
@@ -16,21 +16,16 @@ All GitHub Actions workflows use `ubuntu-latest` (GitHub-hosted runners).
 
 ### Trust rationale
 
-- GitHub-hosted runners provide ephemeral, isolated VMs with a clean slate per job.
+- GitHub-hosted runners provide ephemeral, isolated virtual machines with a clean slate per job.
 - No persistent state between runs; no custom runner software.
-- Suitable for: secret scanning, OpenSSF Scorecard, CI fallback, release publishing.
+- Suitable for: release publishing and provenance attestation.
 - **Not suitable for:** workloads requiring self-hosted GPU, special hardware, or network access to internal services.
 
 ### Token permissions
 
 | Workflow | `contents` | `pull-requests` | `id-token` | `attestations` |
 | --- | --- | --- | --- | --- |
-| `secret-scan.yml` | read | write* | — | — |
-| `ci-fallback.yml` | read | — | — | — |
-| `openssf-scorecard.yml` | read | — | — | — |
 | `release-private-npm.yml` | write | — | write | write |
-
-\* `pull-requests: write` in `secret-scan.yml` is granted for Gitleaks PR comment integration. This is the minimal permission needed; no other workflows require PR write access.
 
 ### Action pinning
 
@@ -40,7 +35,6 @@ All third-party actions are pinned to immutable commit SHAs with version comment
 - `actions/setup-node@49933ea5...` # v4
 - `pnpm/action-setup@41ff7265...` # v4
 - `actions/upload-artifact@ea165f8d...` # v4.6.2
-- `ossf/scorecard-action@99c09fe9...` # v2.4.3
 - `actions/attest-build-provenance@977bb373...` # v3
 
 ### Workflow protection
@@ -67,7 +61,7 @@ CircleCI uses the `cimg/node:24.13` Docker convenience image on GitHub-hosted in
 
 | Secret | Usage | Scope |
 | --- | --- | --- |
-| `NPM_TOKEN` | npm publish (release workflow only) | npm registry |
+| `NPM_TOKEN` | optional token fallback for npm publish (release workflow only) | npm registry |
 | `GITHUB_PERSONAL_ACCESS_TOKEN` | GitHub API interactions | Repository-scoped |
 
 ### Hardening measures

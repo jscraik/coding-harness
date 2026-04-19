@@ -30,6 +30,7 @@ const CIRCLECI_WORKFLOW_OWNED_CHECKS = new Set<string>([
 	"risk-policy-gate",
 	"consistency-drift-health",
 	"pr-template",
+	"security-scan",
 ]);
 
 /**
@@ -55,13 +56,20 @@ export function deriveRequiredCheckMetadata(
 		};
 	}
 	if (displayName === "security-scan") {
-		const isCircleCiSecurityScan = provider === "circleci";
+		if (provider === "circleci") {
+			return {
+				sourceAppSlug: "circleci",
+				sourceAppId: "circleci",
+				githubCheckName:
+					options?.circleciPrimaryCheckName?.trim() || CIRCLECI_PRIMARY_CHECK,
+				class: "required",
+			};
+		}
 		return {
 			sourceAppSlug: "github-actions",
 			sourceAppId: "github-actions",
 			githubCheckName: "security-scan",
-			class: isCircleCiSecurityScan ? "informational" : "required",
-			...(isCircleCiSecurityScan ? { enabled: false } : {}),
+			class: "required",
 		};
 	}
 	if (provider === "circleci") {
