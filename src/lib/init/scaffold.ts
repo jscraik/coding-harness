@@ -119,6 +119,12 @@ function renderAddPackageCommand(
 	return `${packageManager} add -D ${packageName}`;
 }
 
+/**
+ * Selects a package-manager-specific install command suitable for CI or bootstrap runs.
+ *
+ * @param packageManager - The package manager identifier (e.g., `"npm"`, `"yarn"`, or `"pnpm"`).
+ * @returns The shell command to install dependencies for CI: `"npm ci"` when `packageManager` is `"npm"`, otherwise the install command with `--frozen-lockfile`
+ */
 function renderWorkflowBootstrapInstallCommand(packageManager: string): string {
 	if (packageManager === "npm") {
 		return "npm ci";
@@ -126,6 +132,13 @@ function renderWorkflowBootstrapInstallCommand(packageManager: string): string {
 	return `${renderInstallCommand(packageManager)} --frozen-lockfile`;
 }
 
+/**
+ * Build a package-manager-specific command to publish a package to a private npm registry with an optional provenance flag.
+ *
+ * @param packageManager - The package manager identifier (e.g., `"pnpm"` or `"npm"`).
+ * @param withProvenance - If `true`, include the provenance flag when supported by the package manager.
+ * @returns The shell command string to publish the package with restricted access. For `pnpm` the command includes `--no-git-checks --access restricted` and optionally `--provenance`; for `npm` the command is `npm publish --access restricted` with an optional `--provenance` flag.
+ */
 function renderPrivateNpmPublishCommand(
 	packageManager: string,
 	withProvenance: boolean,
@@ -140,6 +153,12 @@ function renderPrivateNpmPublishCommand(
 	return `npm publish --access restricted${provenanceFlag}`;
 }
 
+/**
+ * Render the command used to execute the locally installed Harness CLI for a given package manager.
+ *
+ * @param packageManager - Package manager identifier (e.g., `"npm"`, `"yarn"`, or another executable name)
+ * @returns The shell command string that invokes the locally installed `harness` CLI for the specified package manager
+ */
 function renderLocalHarnessExecCommand(packageManager: string): string {
 	if (packageManager === "npm") {
 		return "npm exec harness --";
@@ -525,6 +544,12 @@ function renderCodestylePackTemplate(relativePath: string): string {
 	return readFileSync(repoTemplatePath, "utf-8");
 }
 
+/**
+ * Produce a GitHub Actions workflow YAML for publishing a private npm package, tailored to the given package manager.
+ *
+ * @param packageManager - The package manager identifier (`"pnpm"`, `"yarn"`, or `"npm"`) used to select setup and publish commands
+ * @returns The rendered workflow YAML as a string with package-manager-specific setup, install, check, build, and publish steps injected
+ */
 function renderReleasePrivateNpmWorkflow(packageManager: string): string {
 	const templatePath = fileURLToPath(
 		new URL("../../templates/release-private-npm.yml", import.meta.url),
