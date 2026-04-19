@@ -208,6 +208,7 @@ fi
 			exit 1
 		fi
 
+		# has_package_marker checks whether the given package name appears in `dependencies` or `devDependencies` of the JSON file pointed to by `$PACKAGE_JSON_PATH`.
 		has_package_marker() {
 			local marker="$1"
 			jq -e --arg marker "$marker" '
@@ -237,6 +238,7 @@ fi
 			fi
 		done
 
+		# has_capability checks whether the repository capabilities include the specified capability and returns 0 if found, 1 otherwise.
 		has_capability() {
 			local wanted="$1"
 			for capability in "${repo_capabilities[@]:-}"; do

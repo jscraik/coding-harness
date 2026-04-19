@@ -7,6 +7,7 @@ REPO_ROOT_DEFAULT="$(cd -- "$SCRIPT_DIR/.." && pwd -P)"
 repo_root="$REPO_ROOT_DEFAULT"
 manifest_path=""
 
+# usage prints the help/usage text for scripts/check-codestyle-parity.sh, describing the --repo-root, --manifest, and -h/--help options.
 usage() {
 	cat <<'USAGE'
 Usage: scripts/check-codestyle-parity.sh [options]
@@ -52,10 +53,12 @@ if [[ ! -f "$manifest_path" ]]; then
 fi
 
 if command -v shasum >/dev/null 2>&1; then
+	# hash_file computes the SHA-256 checksum of the given file path and echoes the hexadecimal digest.
 	hash_file() {
 		shasum -a 256 "$1" | awk '{print $1}'
 	}
 elif command -v sha256sum >/dev/null 2>&1; then
+	# hash_file extracts the SHA-256 hex digest of the given file path and echoes it.
 	hash_file() {
 		sha256sum "$1" | awk '{print $1}'
 	}
