@@ -4467,25 +4467,19 @@ describe("runCIMigrateCLI", () => {
 				(check) => check.displayName === "CodeRabbit",
 			)?.sourceAppId,
 		).toBe("coderabbit");
+		const circleCiWorkflowChecks = manifest.requiredChecks.filter(
+			(check) =>
+				check.displayName !== "CodeRabbit" &&
+				check.displayName !== "security-scan" &&
+				check.displayName !== "semgrep-cloud-platform/scan",
+		);
 		expect(
-			manifest.requiredChecks
-				.filter(
-					(check) =>
-						check.displayName !== "CodeRabbit" &&
-						check.displayName !== "security-scan" &&
-						check.displayName !== "semgrep-cloud-platform/scan",
-				)
-				.every((check) => check.sourceAppSlug === "circleci"),
+			circleCiWorkflowChecks.every(
+				(check) => check.sourceAppSlug === "circleci",
+			),
 		).toBe(true);
 		expect(
-			manifest.requiredChecks
-				.filter(
-					(check) =>
-						check.displayName !== "CodeRabbit" &&
-						check.displayName !== "security-scan" &&
-						check.displayName !== "semgrep-cloud-platform/scan",
-				)
-				.every((check) => check.sourceAppId === "circleci"),
+			circleCiWorkflowChecks.every((check) => check.sourceAppId === "circleci"),
 		).toBe(true);
 		expect(
 			manifest.requiredChecks.find(
@@ -4513,36 +4507,17 @@ describe("runCIMigrateCLI", () => {
 			)?.enabled,
 		).toBe(false);
 		expect(
-			manifest.requiredChecks
-				.filter(
-					(check) =>
-						check.displayName !== "CodeRabbit" &&
-						check.displayName !== "security-scan" &&
-						check.displayName !== "semgrep-cloud-platform/scan",
-				)
-				.every((check) => check.class === "required"),
+			circleCiWorkflowChecks.every((check) => check.class === "required"),
 		).toBe(true);
 		expect(
-			manifest.requiredChecks
-				.filter(
-					(check) =>
-						check.displayName !== "CodeRabbit" &&
-						check.displayName !== "security-scan" &&
-						check.displayName !== "semgrep-cloud-platform/scan",
-				)
-				.every((check) => check.githubCheckName === CIRCLECI_PRIMARY_CHECK),
+			circleCiWorkflowChecks.every(
+				(check) => check.githubCheckName === CIRCLECI_PRIMARY_CHECK,
+			),
 		).toBe(true);
 		expect(
-			manifest.requiredChecks
-				.filter(
-					(check) =>
-						check.displayName !== "CodeRabbit" &&
-						check.displayName !== "security-scan" &&
-						check.displayName !== "semgrep-cloud-platform/scan",
-				)
-				.every(
-					(check) => check.externalIdPattern === `^${CIRCLECI_PRIMARY_CHECK}$`,
-				),
+			circleCiWorkflowChecks.every(
+				(check) => check.externalIdPattern === `^${CIRCLECI_PRIMARY_CHECK}$`,
+			),
 		).toBe(true);
 		const externalCheck = manifest.requiredChecks.find(
 			(check) => check.displayName === "semgrep-cloud-platform/scan",

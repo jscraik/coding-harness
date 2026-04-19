@@ -2370,10 +2370,7 @@ jobs:
 			);
 			const localExecCommand = renderLocalHarnessExecCommand(pm);
 			const requiredChecksList = formatRequiredChecksBulleted(
-				getNormalizedRequiredChecks(
-					context.ciProvider ?? DEFAULT_CI_PROVIDER,
-					context,
-				),
+				getBranchProtectionRequiredChecks(context),
 				"  - ",
 			);
 			const reviewArtifactsLines = `- CodeRabbit review artifact (URL, report, or comment reference).

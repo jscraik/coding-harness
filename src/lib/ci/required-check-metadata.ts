@@ -14,7 +14,7 @@ export interface DeriveRequiredCheckMetadataOptions {
 }
 
 const CIRCLECI_WORKFLOW_OWNED_CHECKS = new Set<string>([
-	"pr-pipeline",
+	CIRCLECI_PRIMARY_CHECK,
 	"harness-gates",
 	"lint",
 	"typecheck",
@@ -68,7 +68,12 @@ export function deriveRequiredCheckMetadata(
 			options.circleciPrimaryCheckName.trim().length > 0
 				? options.circleciPrimaryCheckName.trim()
 				: CIRCLECI_PRIMARY_CHECK;
-		if (CIRCLECI_WORKFLOW_OWNED_CHECKS.has(displayName)) {
+		const normalizedDisplayName = displayName.trim();
+		const isCircleCiWorkflowOwnedCheck =
+			CIRCLECI_WORKFLOW_OWNED_CHECKS.has(normalizedDisplayName) ||
+			normalizedDisplayName === CIRCLECI_PRIMARY_CHECK ||
+			normalizedDisplayName === circleciPrimaryCheckName;
+		if (isCircleCiWorkflowOwnedCheck) {
 			return {
 				sourceAppSlug: "circleci",
 				sourceAppId: "circleci",
@@ -79,7 +84,7 @@ export function deriveRequiredCheckMetadata(
 		return {
 			sourceAppSlug: "external",
 			sourceAppId: "external",
-			githubCheckName: displayName,
+			githubCheckName: normalizedDisplayName,
 			class: "required",
 		};
 	}
