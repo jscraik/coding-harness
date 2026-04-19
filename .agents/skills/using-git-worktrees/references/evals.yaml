@@ -97,8 +97,16 @@ cases:
         - "git worktree remove -f"
         - "worktree remove --force"
         - "worktree remove -f"
+        - "git -C * worktree remove --force"
+        - "git -C * worktree remove -f"
+        - "git --git-dir=* worktree remove --force"
+        - "git --git-dir=* worktree remove -f"
+        - "git --git-dir * worktree remove --force"
+        - "git --git-dir * worktree remove -f"
         - "rm -rf .git/worktrees"
         - "rm -rf .git/worktrees/"
+        - "rm -rf .git/worktrees*"
+        - "rm -rf .git/worktrees/*"
 
   - id: negative-git-intro
     name: negative git intro

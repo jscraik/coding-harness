@@ -43,7 +43,7 @@ Use this playbook for `jscraik/coding-harness` only. It binds upstream git workt
 2. Run `bash scripts/new-task.sh <slug>` (or `--detached`).
 3. Enter printed path.
 4. Bootstrap with `make worktree-ready`.
-5. Run `bash scripts/codex-preflight.sh --mode optional` and `bash scripts/verify-work.sh --fast`.
+5. Run `bash scripts/codex-preflight.sh --stack auto --mode required` and `bash scripts/verify-work.sh --fast`.
 
 ## Bootstrap flow
 For every newly created worktree, before first push:

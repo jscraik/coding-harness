@@ -198,7 +198,7 @@ generate_cleanup_suggestions() {
 			continue
 		fi
 
-		if [[ "$row_detached" == "yes" && "$row_dirty" == "clean" ]]; then
+		if [[ "$row_detached" == "yes" && "$row_dirty" == "clean" && "$row_current" == "no" ]]; then
 			echo "- detached clean worktree can be removed after review: git -C '$repo_root' worktree remove '$row_path'" >> "$cleanup_file"
 		fi
 

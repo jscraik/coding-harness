@@ -61,7 +61,7 @@ Non-triggers:
 
 ## Outputs
 - A worktree lifecycle summary with exact commands and outcomes.
-- Optional inventory artifact from `scripts/worktree-report.sh` in markdown or JSON.
+- Optional inventory artifact from `.agents/skills/using-git-worktrees/scripts/worktree-report.sh` in Markdown or JSON.
 - Explicit cleanup recommendations sorted by risk:
   - safe now
   - blocked pending review
