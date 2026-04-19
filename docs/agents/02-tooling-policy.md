@@ -1,3 +1,7 @@
+---
+last_validated: 2026-04-18
+---
+
 # Tooling policy
 
 - [Verified command authority](#verified-command-authority)
@@ -34,32 +38,19 @@ For all repo operations, this repository treats scripts and package manager sett
 
 ## Required tooling baseline
 
-Harness-managed repositories should treat this CLI surface as required:
+Harness-managed repositories should treat this CLI surface as required core tooling:
 
 - `prek`
 - `diagram`
 - `mise`
 - `vale`
-- `argos`
-- `cosign`
-- `cloudflared`
-- `vitest`
-- `ruff`
-- `eslint`
-- `agent-browser`
-- `agentation` via `agentation-mcp`
 - `mermaid-cli` via `mmdc`
 - `markdownlint-cli2`
-- `wrangler`
-- `beautiful-mermaid`
 - `semgrep`
-- `semver`
-- `trivy`
-- `rsearch` for arXiv research
-- `wsearch` for Wikidata search
 - `make`
 
-Repo-managed pins should live in `.mise.toml` where the tool can be managed there, and externally managed CLIs must still be present on `PATH`; missing commands should block readiness instead of degrading silently.
+Optional capability tooling (for example `argos`, `wrangler`, `trivy`, `rsearch`, `wsearch`, `agent-browser`) should be pinned when used, but missing optional tools should emit warnings instead of blocking core readiness.
+Repo-managed pins should live in `.mise.toml` where the tool can be managed there, and externally managed CLIs must still be present on `PATH`; missing core commands should block readiness instead of degrading silently.
 Baseline contracts also include the root `Makefile` targets required by `scripts/check-environment.sh` plus the `CODESTYLE.md` and `scripts/validate-codestyle.sh` pair.
 
 For this repository only:
@@ -80,6 +71,7 @@ The local hook contract is intentionally split by drag profile:
 
 - `prek install --overwrite` (via `scripts/setup-git-hooks.js`) is the only supported hook installer path. Repositories should not keep legacy `simple-git-hooks` package metadata or post-install bootstraps once they migrate.
 - `scripts/setup-git-hooks.js` is the required wrapper around `prek install --overwrite`; it must patch generated shims under `git rev-parse --git-path hooks` to set `PREK_HOME="${PREK_HOME:-$HERE/../.cache/prek}"` so hook logging works in sandboxed/home-read-only environments and legacy `.legacy` wrappers do not linger.
+- Hook patching must fail closed if a generated `prek` shim cannot be patched at the expected exec insertion point. Do not silently continue on partial patch failure.
 - `pre-commit` stays fast and now adds staged `gitleaks`, staged-doc `vale`, and `vitest related` alongside `lint`, `docs:lint`, and `typecheck`.
 - The staged secret scan should use the repo-root `.gitleaks.toml` when present so fixture/example allow lists live in version control instead of hidden local defaults.
 - `pre-push` keeps the heavier governance lane and adds a changed-files `semgrep` scan for `src/**` plus `pnpm build` before `audit`.
@@ -110,13 +102,14 @@ Port-free wrapping is expected only for app run actions backed by `dev`/`start` 
 | --- | --- | --- |
 | Install/deps | `pnpm install` | Dependency installation |
 | Code-style gate | `bash scripts/validate-codestyle.sh` | Fail-closed repo-local code-style validation |
-| Quality gate | `pnpm check` | `lint + typecheck + test + audit` |
+| Quality gate | `pnpm check` | `lint + docs + workflow + make-contract + typecheck + test + audit` |
 | Lint | `pnpm lint` | `biome check .` |
 | Lint (CI) | `pnpm lint:ci` | `biome ci .` |
 | Typecheck | `pnpm typecheck` | `tsc --noEmit` |
 | Tests | `pnpm test` | `vitest run` |
 | Tests (CircleCI hardened lane) | `pnpm test:ci` | Runs standard suites plus isolated `ci-migrate` run with targeted Vitest worker-timeout mitigation |
-| Audit | `pnpm audit` | dependency risk check |
+| Make contract | `pnpm make:contract` | verify `Makefile` `pnpm` routes resolve to valid script contracts |
+| Audit | `pnpm run audit` | dependency risk check via audited timeout wrapper |
 | Build | `pnpm build` | compile TypeScript and generate `dist/cli.js` |
 
 ## Execution rule for tooling
@@ -125,6 +118,7 @@ Use repo scripts as the source of truth; do not assume global shortcuts. If a co
 
 Harness readiness exception:
 - `scripts/check-environment.sh` should prefer repo-local CLI execution (`pnpm exec tsx src/cli.ts`, `node dist/cli.js`, or `bash scripts/harness-cli.sh`) and only fall back to a global `harness` binary when no local runner exists.
+- `scripts/check-environment.sh` should default tooling-doc validation to `docs/agents/tooling.md` inside the repository and require explicit `TOOLING_DOC_PATH` override for non-standard layouts.
 - For global fallback resolution, prefer `mise which harness` before `PATH` discovery to avoid stale Homebrew/global binaries shadowing the pinned toolchain.
 - If fallback install is required, use `npm i -g @brainwav/coding-harness` with private package auth wired for local shells and CI.
 - `scripts/harness-cli.sh` must fail with actionable install hints (`pnpm install`, `pnpm add -D @brainwav/coding-harness`, `pnpm exec harness <command>`) rather than raw `MODULE_NOT_FOUND`.
@@ -144,7 +138,11 @@ Additional lanes:
 - CircleCI parity and migration troubleshooting: `pnpm test:ci`
 - Harness setup or scaffold sync verification in this repository: `bash scripts/run-harness-setup-checks.sh`
 - New task boundary for project-local agent work: `bash scripts/new-task.sh <slug>` (use `--detached` when you need to keep the same branch checked out in Local)
+- Agent automation handoff: use `bash scripts/new-task.sh --json <slug>` and `bash scripts/prepare-worktree.sh --json` for machine-readable orchestration outputs.
+- Combined automation wrapper: `bash scripts/new-task-and-bootstrap.sh <slug>` emits one merged JSON payload covering both task creation and worktree bootstrap.
+- New-task ergonomics: use `--bootstrap` to run bootstrap immediately, `--run-cmd '<cmd>'` when app run detection is nonstandard, and `--no-portless` to print a direct run hint.
 - Fresh git worktrees before first push: `bash scripts/prepare-worktree.sh` (or equivalent wrapper target `make worktree-ready`)
+- Portless app routing from new task output: when the created worktree has `package.json` scripts for `dev` or `start`, `scripts/new-task.sh` prints an optional `portless run -- <pm run dev|start>` command for per-worktree URL/port allocation.
 
 Worktree lifecycle lane (script-safe commands):
 - Inventory attached worktrees before cleanup: `git worktree list --porcelain`
@@ -162,6 +160,8 @@ Contract-preserving notes:
 - In project-local mode, `scripts/verify-work.sh` should skip hook-governance rollout failures when `.codex/hook-conformance.json` is absent, and reserve strict conformance-artifact enforcement for explicit `--workspace-governance` runs.
 - `scripts/validate-codestyle.sh` remains the canonical fail-closed code-style wrapper reused by verify/hook/docs surfaces.
 - `scripts/new-task.sh` is the canonical project-local task entrypoint; `scripts/prepare-worktree.sh` is the canonical new-worktree bootstrap lane.
+- `--json` modes in `scripts/new-task.sh` and `scripts/prepare-worktree.sh` are the canonical machine-readable interfaces for higher-level agent automation.
+- `scripts/new-task-and-bootstrap.sh` is the canonical convenience wrapper when automation wants a single consolidated JSON envelope for create+bootstrap orchestration.
 - `scripts/new-task.sh --detached` should be preferred for exploration or long-running background work where Local may need the same branch, because Git allows a branch to be checked out in only one worktree at a time.
 - `harness init --check-updates`, `harness init --update`, and `harness upgrade` should auto-repair legacy `.harness/restore-manifest.json` when provider inference is safe; ambiguous inference should raise a targeted drift warning and continue remaining setup gates.
 - Local Memory required mode should validate pinned REST host/port from `~/.local-memory/config.yaml`, and the legacy shell fallback must use bounded curl retries plus helper exit code `3` as "unavailable, try next runner".

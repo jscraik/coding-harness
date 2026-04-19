@@ -7,20 +7,22 @@ set -euo pipefail
 SCRIPT_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
 REPO_ROOT="$(cd -- "$SCRIPT_DIR/.." && pwd)"
 CONTRACT_PATH="$REPO_ROOT/harness.contract.json"
-	ATTESTATION_PATH="$REPO_ROOT/artifacts/policy/environment-attestation.json"
-	MISE_PATH="$REPO_ROOT/.mise.toml"
-	CODEX_ENVIRONMENT_PATH="$REPO_ROOT/.codex/environments/environment.toml"
-	MAKEFILE_PATH="$REPO_ROOT/Makefile"
-	PREK_CONFIG_PATH="$REPO_ROOT/prek.toml"
-	PACKAGE_JSON_PATH="$REPO_ROOT/package.json"
-	CODESTYLE_PATH="$REPO_ROOT/CODESTYLE.md"
-	TOOLING_DOC_PATH="${TOOLING_DOC_PATH:-$REPO_ROOT/docs/agents/tooling.md}"
+ATTESTATION_PATH="$REPO_ROOT/artifacts/policy/environment-attestation.json"
+MISE_PATH="$REPO_ROOT/.mise.toml"
+CODEX_ENVIRONMENT_PATH="$REPO_ROOT/.codex/environments/environment.toml"
+MAKEFILE_PATH="$REPO_ROOT/Makefile"
+PREK_CONFIG_PATH="$REPO_ROOT/prek.toml"
+PACKAGE_JSON_PATH="$REPO_ROOT/package.json"
+CODESTYLE_PATH="$REPO_ROOT/CODESTYLE.md"
+TOOLING_DOC_PATH="${TOOLING_DOC_PATH:-$REPO_ROOT/docs/agents/tooling.md}"
 
-# Keep pnpm/npm output stable when ~/.npmrc references ${NPM_TOKEN}.
-# OIDC-based release lanes do not require a local token.
-if [[ -z "${NPM_TOKEN+x}" ]]; then
-	export NPM_TOKEN=""
-fi
+warning_count=0
+
+warn_optional() {
+	local message="$1"
+	printf 'Warning: %s\n' "$message" >&2
+	warning_count=$((warning_count + 1))
+}
 
 if [[ ! -f "$CONTRACT_PATH" ]]; then
 	echo "Error: missing contract file at $CONTRACT_PATH"
@@ -57,7 +59,7 @@ fi
 		exit 1
 	fi
 
-	required_support_files=("scripts/codex-preflight.sh" "scripts/codex-preflight-local-memory-legacy.sh" "scripts/codex-learn" "scripts/codex-enforced" "scripts/verify-work.sh" "scripts/validate-codestyle.sh" "scripts/prepare-worktree.sh" "scripts/new-task.sh" "scripts/validate-commit-msg.js" "scripts/check-commit-msg.sh" "scripts/check-staged-secrets.sh" "scripts/check-doc-style.sh" "scripts/check-related-tests.sh" "scripts/check-semgrep-changed.sh" "scripts/semgrep-pre-push.yml")
+	required_support_files=("scripts/codex-preflight.sh" "scripts/codex-preflight-local-memory-legacy.sh" "scripts/codex-learn" "scripts/codex-enforced" "scripts/verify-work.sh" "scripts/validate-codestyle.sh" "scripts/prepare-worktree.sh" "scripts/new-task.sh" "scripts/new-task-and-bootstrap.sh" "scripts/validate-commit-msg.js" "scripts/check-commit-msg.sh" "scripts/check-hook-critical-config-sync.sh" "scripts/check-staged-secrets.sh" "scripts/check-doc-style.sh" "scripts/check-related-tests.sh" "scripts/check-semgrep-changed.sh" "scripts/semgrep-pre-push.yml")
 	for support_file in "${required_support_files[@]}"; do
 		if [[ ! -f "$REPO_ROOT/${support_file}" ]]; then
 			echo "Error: missing required hook support file at $REPO_ROOT/${support_file}"
@@ -88,7 +90,9 @@ fi
 eval "$(mise activate bash)"
 export CLAUDE_APPROVAL_POSTURE="${CLAUDE_APPROVAL_POSTURE:-require}"
 
-required_mise_tools=("node" "pnpm" "python" "uv" "cargo:prek" "npm:@brainwav/diagram" "npm:@argos-ci/cli" "cosign" "cloudflared" "npm:vitest" "ruff" "npm:eslint" "npm:agent-browser" "npm:agentation" "npm:agentation-mcp" "npm:@mermaid-js/mermaid-cli" "npm:@brainwav/rsearch" "npm:@brainwav/wsearch-cli" "npm:beautiful-mermaid" "npm:markdownlint-cli2" "npm:semver" "npm:wrangler" "semgrep" "trivy" "vale")
+required_mise_tools=("node" "pnpm" "python" "uv" "cargo:prek" "npm:@brainwav/diagram" "npm:@mermaid-js/mermaid-cli" "npm:markdownlint-cli2" "semgrep" "vale")
+optional_mise_tools=("npm:@argos-ci/cli" "cosign" "cloudflared" "npm:vitest" "ruff" "npm:eslint" "npm:agent-browser" "npm:agentation" "npm:agentation-mcp" "npm:@brainwav/rsearch" "npm:@brainwav/wsearch-cli" "npm:beautiful-mermaid" "npm:semver" "npm:wrangler" "trivy")
+
 for tool in "${required_mise_tools[@]}"; do
 	tool_pattern="$(printf '%s' "$tool" | sed 's/[][(){}.^$*+?|\\]/\\&/g')"
 	if ! rg -q "^[[:space:]]*(\"${tool_pattern}\"|${tool_pattern})[[:space:]]*=" "$MISE_PATH"; then
@@ -98,8 +102,16 @@ for tool in "${required_mise_tools[@]}"; do
 	fi
 done
 
+for tool in "${optional_mise_tools[@]}"; do
+	tool_pattern="$(printf '%s' "$tool" | sed 's/[][(){}.^$*+?|\\]/\\&/g')"
+	if ! rg -q "^[[:space:]]*(\"${tool_pattern}\"|${tool_pattern})[[:space:]]*=" "$MISE_PATH"; then
+		warn_optional "optional tool '$tool' is not pinned in $MISE_PATH [tools]"
+	fi
+done
+
 if [[ -f "$TOOLING_DOC_PATH" ]]; then
-	required_tooling_doc_terms=("node" "pnpm" "python" "uv" "make" "rg" "fd" "jq" "prek" "diagram" "mise" "vale" "argos" "cosign" "cloudflared" "vitest" "ruff" "eslint" "agent-browser" "agentation" "mermaid-cli" "markdownlint-cli2" "wrangler" "beautiful-mermaid" "semgrep" "semver" "trivy" "rsearch" "wsearch")
+	required_tooling_doc_terms=("node" "pnpm" "python" "uv" "make" "rg" "fd" "jq" "prek" "diagram" "mise" "vale" "semgrep" "mermaid-cli" "markdownlint-cli2")
+	optional_tooling_doc_terms=("argos" "cosign" "cloudflared" "vitest" "ruff" "eslint" "agent-browser" "agentation" "wrangler" "beautiful-mermaid" "semver" "trivy" "rsearch" "wsearch")
 	for term in "${required_tooling_doc_terms[@]}"; do
 		if ! rg -qi "(^|[^A-Za-z0-9_-])${term}([^A-Za-z0-9_-]|$)" "$TOOLING_DOC_PATH"; then
 			echo "Error: tooling doc missing expected term '$term': $TOOLING_DOC_PATH"
@@ -108,19 +120,31 @@ if [[ -f "$TOOLING_DOC_PATH" ]]; then
 			exit 1
 		fi
 	done
+	for term in "${optional_tooling_doc_terms[@]}"; do
+		if ! rg -qi "(^|[^A-Za-z0-9_-])${term}([^A-Za-z0-9_-]|$)" "$TOOLING_DOC_PATH"; then
+			warn_optional "tooling doc missing optional term '$term': $TOOLING_DOC_PATH"
+		fi
+	done
 else
 	echo "Warning: tooling doc not found at $TOOLING_DOC_PATH; skipping doc sync check."
 fi
 
-	required_bins=("pnpm" "node" "jq" "make" "rg" "fd" "prek" "diagram" "mise" "vale" "argos" "cosign" "cloudflared" "vitest" "ruff" "eslint" "agent-browser" "agentation-mcp" "mmdc" "markdownlint-cli2" "wrangler" "beautiful-mermaid" "semgrep" "semver" "trivy" "rsearch" "wsearch")
+	required_bins=("pnpm" "node" "jq" "make" "rg" "fd" "prek" "diagram" "mise" "vale" "mmdc" "markdownlint-cli2" "semgrep")
+	optional_bins=("argos" "cosign" "cloudflared" "vitest" "ruff" "eslint" "agent-browser" "agentation-mcp" "wrangler" "beautiful-mermaid" "semver" "trivy" "rsearch" "wsearch")
 	for bin in "${required_bins[@]}"; do
 		if ! command -v "$bin" >/dev/null 2>&1; then
 			echo "Error: required binary '$bin' is not installed or not on PATH"
 			exit 1
 		fi
 	done
+	for bin in "${optional_bins[@]}"; do
+		if ! command -v "$bin" >/dev/null 2>&1; then
+			warn_optional "optional binary '$bin' is not installed or not on PATH"
+		fi
+	done
 
-	required_codex_actions=("Tools|tool" "Run|run" "Debug|debug" "Test|test" "Prek|test" "Release Finalize|tool" "Diagram|tool" "Ralph|debug" "Mise|tool" "Vale|debug" "Argos|test" "Cosign|debug" "Cloudflared|run" "Vitest|test" "Ruff|debug" "ESLint|debug" "Agent Browser|tool" "Agentation|tool" "Mermaid CLI|tool" "MarkdownLint|debug" "Wrangler|run" "1Password|tool" "Beautiful Mermaid|tool" "Auth0|tool" "Semgrep|debug" "Semver|tool" "Trivy|debug" "Gitleaks|debug" "Research|tool" "WSearch|tool")
+	required_codex_actions=("Tools|tool" "Run|run" "Debug|debug" "Test|test" "Prek|test" "Diagram|tool" "Mise|tool" "Vale|debug" "Mermaid CLI|tool" "MarkdownLint|debug" "Semgrep|debug")
+	optional_codex_actions=("Release Finalize|tool" "Ralph|debug" "Argos|test" "Cosign|debug" "Cloudflared|run" "Vitest|test" "Ruff|debug" "ESLint|debug" "Agent Browser|tool" "Agentation|tool" "Wrangler|run" "1Password|tool" "Beautiful Mermaid|tool" "Auth0|tool" "Semver|tool" "Trivy|debug" "Gitleaks|debug" "Research|tool" "WSearch|tool")
 	for action in "${required_codex_actions[@]}"; do
 		name="${action%%|*}"
 		icon="${action##*|}"
@@ -133,8 +157,19 @@ fi
 			exit 1
 		fi
 	done
+	for action in "${optional_codex_actions[@]}"; do
+		name="${action%%|*}"
+		icon="${action##*|}"
+		if ! awk -v name="$name" -v icon="$icon" '
+			prev == "name = \"" name "\"" && $0 == "icon = \"" icon "\"" { found = 1 }
+			{ prev = $0 }
+			END { exit found ? 0 : 1 }
+		' "$CODEX_ENVIRONMENT_PATH"; then
+			warn_optional "Codex environment action '$name' is missing or mapped incorrectly in $CODEX_ENVIRONMENT_PATH"
+		fi
+	done
 
-	required_make_targets=("help" "install" "setup" "preflight" "worktree-ready" "verify-work" "codestyle" "hooks" "hooks-pre-commit" "hooks-pre-push" "hooks-commit-msg" "secrets-staged" "docs-style-changed" "related-tests" "semgrep-changed" "diagrams-check" "lint" "docs-lint" "fmt" "typecheck" "test" "check" "audit" "secrets" "security" "clean" "reset" "ci" "diagrams" "env-check")
+	required_make_targets=("help" "install" "setup" "preflight" "worktree-ready" "verify-work" "codestyle" "hooks" "hooks-pre-commit" "hooks-pre-push" "hooks-commit-msg" "secrets-staged" "docs-style-changed" "related-tests" "semgrep-changed" "diagrams-check" "lint" "docs-lint" "fmt" "typecheck" "test" "check" "make-contract" "audit" "secrets" "security" "clean" "reset" "ci" "diagrams" "env-check")
 	for target in "${required_make_targets[@]}"; do
 		if ! rg -q "^${target}:" "$MAKEFILE_PATH"; then
 			echo "Error: required Makefile target '$target' is missing from $MAKEFILE_PATH"
@@ -142,16 +177,13 @@ fi
 		fi
 	done
 
-	required_default_install_hook_types=("pre-commit" "pre-push" "commit-msg")
-	for hook_type in "${required_default_install_hook_types[@]}"; do
-		if ! rg -q "^[[:space:]]*default_install_hook_types[[:space:]]*=.*\"${hook_type}\"" "$PREK_CONFIG_PATH"; then
-			echo "Error: default_install_hook_types is missing '$hook_type' in $PREK_CONFIG_PATH"
-			exit 1
-		fi
-	done
+	if ! rg -q "^[[:space:]]*minimum_prek_version[[:space:]]*=[[:space:]]*\"0\\.3\\.9\"[[:space:]]*$" "$PREK_CONFIG_PATH"; then
+		echo "Error: required minimum_prek_version = \"0.3.9\" is missing from $PREK_CONFIG_PATH"
+		exit 1
+	fi
 
-	if ! rg -q '^[[:space:]]*minimum_prek_version[[:space:]]*=[[:space:]]*"0.3.9"[[:space:]]*$' "$PREK_CONFIG_PATH"; then
-		echo "Error: minimum_prek_version must be set to '0.3.9' in $PREK_CONFIG_PATH"
+	if ! rg -q '^[[:space:]]*default_install_hook_types[[:space:]]*=[[:space:]]*\["pre-commit",[[:space:]]*"pre-push",[[:space:]]*"commit-msg"\][[:space:]]*$' "$PREK_CONFIG_PATH"; then
+		echo "Error: required default_install_hook_types pre-commit/pre-push/commit-msg is missing from $PREK_CONFIG_PATH"
 		exit 1
 	fi
 
@@ -178,42 +210,35 @@ fi
 			echo "Error: required prek hook '$hook_name' is missing or out of date in $PREK_CONFIG_PATH"
 			exit 1
 		fi
-		if [[ -n "$hook_stages" ]] && ! rg -q "^[[:space:]]*stages[[:space:]]*=[[:space:]]*\\[\"${hook_stages}\"\\][[:space:]]*$" "$PREK_CONFIG_PATH"; then
+		if [[ -n "$hook_stages" ]] && ! rg -q "^[[:space:]]*stages[[:space:]]*=[[:space:]]*\\[\"$hook_stages\"\\][[:space:]]*$" "$PREK_CONFIG_PATH"; then
 			echo "Error: required prek hook '$hook_name' is missing or out of date in $PREK_CONFIG_PATH"
 			exit 1
 		fi
 	done
 
-	resolve_git_hooks_dir() {
-		local hooks_path
-		hooks_path="$(git rev-parse --git-path hooks 2>/dev/null || true)"
-		if [[ -z "$hooks_path" ]]; then
-			echo "$REPO_ROOT/.git/hooks"
-			return
+	hooks_dir="$(git -C "$REPO_ROOT" rev-parse --git-path hooks)"
+	required_git_hook_shims=("pre-commit" "pre-push" "commit-msg")
+	for hook_name in "${required_git_hook_shims[@]}"; do
+		hook_path="$hooks_dir/$hook_name"
+		if [[ ! -f "$hook_path" ]]; then
+			echo "Error: expected installed git hook shim missing: $hook_path"
+			echo "Fix: run node scripts/setup-git-hooks.js"
+			exit 1
 		fi
-		if [[ "$hooks_path" = /* ]]; then
-			echo "$hooks_path"
-		else
-			echo "$REPO_ROOT/$hooks_path"
+		if ! rg -q "^# File generated by prek:" "$hook_path"; then
+			echo "Error: git hook shim is not prek-managed: $hook_path"
+			echo "Fix: run node scripts/setup-git-hooks.js"
+			exit 1
 		fi
-	}
-
-	git_hooks_dir="$(resolve_git_hooks_dir)"
-	if [[ -d "$git_hooks_dir" ]]; then
-		required_installed_hooks=("pre-commit" "pre-push" "commit-msg")
-		for installed_hook in "${required_installed_hooks[@]}"; do
-			if [[ ! -f "$git_hooks_dir/$installed_hook" ]]; then
-				echo "Error: expected installed hook '$installed_hook' at $git_hooks_dir/$installed_hook"
-				echo "Fix: run node scripts/setup-git-hooks.js"
-				exit 1
-			fi
-		done
-	else
-		echo "Warning: git hook directory not found at $git_hooks_dir; skipping installed hook shim checks."
-	fi
+		if ! rg -q 'PREK_HOME="\${PREK_HOME:-\$HERE/\.\./\.cache/prek}"' "$hook_path"; then
+			echo "Error: git hook shim missing repo-local PREK_HOME patch: $hook_path"
+			echo "Fix: run node scripts/setup-git-hooks.js"
+			exit 1
+		fi
+	done
 
 	if [[ -f "$PACKAGE_JSON_PATH" ]]; then
-		required_package_scripts=("codestyle:validate|bash scripts/validate-codestyle.sh" "secrets:staged|bash scripts/check-staged-secrets.sh" "docs:style:changed|bash scripts/check-doc-style.sh" "test:related|bash scripts/check-related-tests.sh" "semgrep:changed|bash scripts/check-semgrep-changed.sh")
+		required_package_scripts=("codestyle:validate|bash scripts/validate-codestyle.sh" "make:contract|bash scripts/check-make-contract.sh" "secrets:staged|bash scripts/check-staged-secrets.sh" "docs:style:changed|bash scripts/check-doc-style.sh" "test:related|bash scripts/check-related-tests.sh" "semgrep:changed|bash scripts/check-semgrep-changed.sh")
 		for script_spec in "${required_package_scripts[@]}"; do
 			script_name="${script_spec%%|*}"
 			script_command="${script_spec#*|}"
@@ -381,8 +406,7 @@ else
 	if [[ -n "$mise_harness_bin" && -x "$mise_harness_bin" ]]; then
 		if ! run_check_environment_with_runner "mise harness ($mise_harness_bin)" "$mise_harness_bin"; then
 			echo "Error: mise-resolved harness failed to run check-environment successfully."
-			# shellcheck disable=SC2016
-			echo 'Fix: ensure the session activates mise first (eval "$(mise activate bash)") or invoke the mise binary directly.'
+			echo "Fix: ensure the session activates mise first (eval \"\$(mise activate bash)\") or invoke the mise binary directly."
 			exit 1
 		fi
 	else
@@ -398,7 +422,6 @@ else
 			echo "Private registry auth is required:"
 			echo "  - Local shell: export NPM_TOKEN=<token>"
 			echo "  - CI (CircleCI): set NPM_TOKEN as a project environment variable in CircleCI project settings"
-			echo "  - OIDC publish lanes can skip local NPM_TOKEN; use trusted publishing in CI"
 			exit 1
 		fi
 
@@ -420,11 +443,13 @@ else
 				echo "Reinstall and retry:"
 				echo "  npm i -g @brainwav/coding-harness"
 				echo "If this is CI (CircleCI), confirm NPM_TOKEN is set as a project environment variable."
-				echo "OIDC trusted publishing is supported for release workflows when token auth is not used."
 				exit 1
 			fi
 		fi
-	fi
+fi
 
 jq -e '.passed == true' "$ATTESTATION_PATH" >/dev/null
+if (( warning_count > 0 )); then
+	echo "Environment check passed with $warning_count warning(s) (optional capability drift)."
+fi
 echo "Environment check passed (attestation: $ATTESTATION_PATH)"

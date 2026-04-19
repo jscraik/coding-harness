@@ -1,3 +1,7 @@
+---
+last_validated: 2026-04-18
+---
+
 # Security and governance
 
 - [Security posture](#security-posture)
@@ -24,6 +28,7 @@ This repository follows conservative defaults:
 - For preflight template maintenance, author downstream-facing baseline changes in `src/templates/codex-preflight.sh`. Project runtime `scripts/codex-preflight.sh` is allowed to diverge intentionally; run `node scripts/sync-codex-preflight.cjs --write` only when explicit synchronization is required.
 - Local Memory preflight fallback probes must fail fast: keep bounded curl timeouts in `scripts/codex-preflight-local-memory-legacy.sh`, validate only the `rest_api.*` settings actually used to construct the health URL, and treat helper-runner exit code `3` as "unavailable, try the next runner" rather than a terminal failure.
 - Harness-managed consumer repositories are a defined exception: `scripts/check-environment.sh` should prefer a repo-local CLI runner or wrapper, then a mise-resolved harness binary (`mise which harness`), and use a global npm install of `@brainwav/coding-harness` only as the final fallback with explicit `NPM_TOKEN` auth wiring.
+- `scripts/check-environment.sh` should fail closed on core tooling/runtime contract drift and report optional capability drift as warnings so day-to-day governance is portable across narrower local toolchains.
 - Project Brain memory-extension checks must stay project-local: keep required `.harness/**` knowledge paths in `toolingPolicy.projectBrainMemoryExtension.requiredPaths` and do not gate on workspace-level `~/.codex` state.
 - CI pnpm bootstrap must avoid privileged shim rewrites. Prefer a user-writable prefix such as `$HOME/.local` plus `$BASH_ENV`/`$GITHUB_PATH` path propagation over `corepack enable`, which can fail on hosted runners when `/usr/local/bin/pnpm` is not writable.
 - OpenSSF baseline tracking for this repository is grounded by `docs/security/2026-04-09-openssf-osps-baseline-status.md`; keep its control matrix synchronized with `.github/workflows/openssf-scorecard.yml`, `security/openssf-scorecard-policy.json`, and `scripts/check-scorecard-regressions.mjs`.
@@ -62,7 +67,11 @@ This repository follows conservative defaults:
 - `bash scripts/validate-codestyle.sh` output is required evidence whenever behavior or command-contract surfaces changed, and secrets must never appear in docs or memory notes.
 - For harness scaffold/setup checks, run `bash scripts/run-harness-setup-checks.sh` so preflight, environment posture (`CLAUDE_APPROVAL_POSTURE=require`), pinned `uv`, and quality gates are evaluated as one auditable sequence.
 - For new task isolation in harness-managed repositories, start with `bash scripts/new-task.sh <slug>` so one task maps to one repo-local worktree and agent thread; use `--detached` for exploration/background work when Local may need the same branch checked out.
+- For automation and wrapper scripts, prefer `bash scripts/new-task.sh --json <slug>` and `bash scripts/prepare-worktree.sh --json` so agents can consume branch/path/bootstrap hints without brittle text parsing.
+- For one-shot orchestration, use `bash scripts/new-task-and-bootstrap.sh <slug>` so task creation and bootstrap execute as one command with one consolidated JSON output.
+- When app run detection is nonstandard, use `scripts/new-task.sh --run-cmd '<command>'`; use `--no-portless` only when direct run hints are explicitly required, and `--bootstrap` when immediate bootstrap in the new worktree is intended.
 - For fresh git worktrees, run `bash scripts/prepare-worktree.sh` before the first push so local pre-push hooks do not fail from missing dependencies in the new worktree.
+- For app-style repositories with `dev`/`start` scripts, prefer the `portless run -- <pm run dev|start>` command emitted by `scripts/new-task.sh` so concurrent worktrees avoid manual port collision handling.
 - Treat `scripts/prepare-worktree.sh` as the detached-head safety lane: it should attach detached worktrees to a local branch before push, set upstream to `origin/main` when available, and fast-forward to current upstream state before bootstrap gates run.
 - Git branch checkout ownership is single-writer per worktree. If Local must keep a branch checked out, do not create a worktree on that same branch; prefer `scripts/new-task.sh --detached` and branch later when ready to promote the worktree changes.
 - For lifecycle hygiene, inventory with `git worktree list --porcelain` before deletion, remove only after branch/PR state is confirmed, and follow cleanup with `git worktree prune`.
@@ -95,6 +104,7 @@ This repository uses `prek` as the canonical local hook installer, and `prek.tom
 
 - The staged `gitleaks` lane should prefer the repo-root `.gitleaks.toml` so approved fixture/example exceptions stay consistent across local hooks, manual scans, and scaffold expectations.
 - Keep `hooks-commit-msg` as a required Makefile wrapper, and require `scripts/setup-git-hooks.js` to run `prek install --overwrite` plus `PREK_HOME="${PREK_HOME:-$HERE/../.cache/prek}"` shim patching under the hook directory resolved via `git rev-parse --git-path hooks` so hook logs/cache writes remain repo-local under sandboxed execution.
+- `scripts/setup-git-hooks.js` must fail if a generated `prek` shim cannot be patched at the expected exec insertion point; silent skip-on-failure behavior is not allowed for hook patching.
 - Keep `minimum_prek_version = "0.3.9"` in `prek.toml` and aligned with `.mise.toml` (`cargo:prek`) so commit/push shims run against a known-compatible runtime.
 - For local hook/readiness/tooling-runtime changes, update this guide and `docs/agents/02-tooling-policy.md` in the same change so `docs-gate` catches drift before GitHub; keep port-free usage scoped to app-style `dev`/`start` actions (CLI-only repos may omit it).
 

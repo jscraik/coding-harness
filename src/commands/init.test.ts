@@ -48,6 +48,7 @@ const EXPECTED_TEMPLATE_PATHS = [
 	".github/PULL_REQUEST_TEMPLATE.md",
 	"scripts/validate-commit-msg.js",
 	"scripts/check-commit-msg.sh",
+	"scripts/check-hook-critical-config-sync.sh",
 	"scripts/setup-git-hooks.js",
 	"scripts/check-staged-secrets.sh",
 	"scripts/check-doc-style.sh",
@@ -71,6 +72,7 @@ const EXPECTED_TEMPLATE_PATHS = [
 	"scripts/validate-codestyle.sh",
 	"scripts/prepare-worktree.sh",
 	"scripts/new-task.sh",
+	"scripts/new-task-and-bootstrap.sh",
 	"scripts/harness-cli.sh",
 	"scripts/check-environment.sh",
 	".mise.toml",
@@ -1320,6 +1322,10 @@ describe("runInit", () => {
 				join(tempDir, "scripts/check-staged-secrets.sh"),
 				"utf-8",
 			);
+			const hookCriticalConfigSync = require("node:fs").readFileSync(
+				join(tempDir, "scripts/check-hook-critical-config-sync.sh"),
+				"utf-8",
+			);
 			const docStyle = require("node:fs").readFileSync(
 				join(tempDir, "scripts/check-doc-style.sh"),
 				"utf-8",
@@ -1411,6 +1417,16 @@ describe("runInit", () => {
 			expect(setupHooks).not.toContain("simple-git-hooks");
 			expect(stagedSecrets).toContain("gitleaks git");
 			expect(stagedSecrets).toContain("--staged");
+			expect(hookCriticalConfigSync).toContain('critical_files=("biome.json")');
+			expect(hookCriticalConfigSync).toContain(
+				'git rev-parse --verify ":${config_path}"',
+			);
+			expect(hookCriticalConfigSync).toContain(
+				'git hash-object --path="$config_path" "$config_path"',
+			);
+			expect(hookCriticalConfigSync).toContain(
+				"pre-commit style runners stash unstaged changes",
+			);
 			expect(docStyle).toContain("vale --config .vale.ini");
 			expect(docStyle).toContain('":(glob)docs/**/*.md"');
 			expect(relatedTests).toContain(
@@ -1438,6 +1454,9 @@ describe("runInit", () => {
 			expect(makefile).toContain("\t@bash ./scripts/verify-work.sh");
 			expect(makefile).toContain(
 				"hooks-pre-commit: ## Run local pre-commit gates before creating a commit",
+			);
+			expect(makefile).toContain(
+				"\t@bash ./scripts/check-hook-critical-config-sync.sh",
 			);
 			expect(makefile).toContain(
 				"hooks-pre-push: ## Run local pre-push governance gates before pushing",
@@ -1613,7 +1632,11 @@ describe("runInit", () => {
 			expect(environmentCheck).toContain('"scripts/codex-enforced"');
 			expect(environmentCheck).toContain('"scripts/prepare-worktree.sh"');
 			expect(environmentCheck).toContain('"scripts/new-task.sh"');
+			expect(environmentCheck).toContain('"scripts/new-task-and-bootstrap.sh"');
 			expect(environmentCheck).toContain('"scripts/check-commit-msg.sh"');
+			expect(environmentCheck).toContain(
+				'"scripts/check-hook-critical-config-sync.sh"',
+			);
 			expect(environmentCheck).toContain('"scripts/check-semgrep-changed.sh"');
 			expect(environmentCheck).toContain('"scripts/semgrep-pre-push.yml"');
 			expect(environmentCheck).toContain(
@@ -2299,6 +2322,27 @@ exit 1
 			);
 			const scaffoldedScript = readFileSync(
 				join(tempDir, "scripts/new-task.sh"),
+				"utf-8",
+			);
+			expect(scaffoldedScript).toBe(runtimeScript);
+		});
+
+		it("keeps the repo-local new-task-and-bootstrap helper aligned with scaffold output", () => {
+			writeFileSync(
+				join(tempDir, "pnpm-lock.yaml"),
+				"lockfileVersion: '9.0'\n",
+				"utf-8",
+			);
+
+			const result = runInit(tempDir, { dryRun: false, force: false });
+			expect(result.ok).toBe(true);
+
+			const runtimeScript = readFileSync(
+				join(process.cwd(), "scripts/new-task-and-bootstrap.sh"),
+				"utf-8",
+			);
+			const scaffoldedScript = readFileSync(
+				join(tempDir, "scripts/new-task-and-bootstrap.sh"),
 				"utf-8",
 			);
 			expect(scaffoldedScript).toBe(runtimeScript);

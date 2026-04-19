@@ -408,112 +408,38 @@ function renderValidateCodestyleScript(): string {
  */
 function renderPrepareWorktreeScript(packageManager: string): string {
 	const installCommand = renderInstallCommand(packageManager);
-	return `#!/usr/bin/env bash
-set -euo pipefail
+	const packagedTemplatePath = fileURLToPath(
+		new URL("../../templates/prepare-worktree.sh", import.meta.url),
+	);
+	const repoTemplatePath = fileURLToPath(
+		new URL("../../../scripts/prepare-worktree.sh", import.meta.url),
+	);
+	const runtimeTemplate = readFileSync(
+		existsSync(packagedTemplatePath) ? packagedTemplatePath : repoTemplatePath,
+		"utf-8",
+	);
 
-SCRIPT_DIR="$(cd -- "$(dirname -- "${"${"}BASH_SOURCE[0]}")" && pwd -P)"
-REPO_ROOT="$(cd -- "$SCRIPT_DIR/.." && pwd -P)"
+	if (packageManager === "pnpm") {
+		return runtimeTemplate;
+	}
 
-usage() {
-	cat <<'USAGE'
-Usage: scripts/prepare-worktree.sh [options]
-
-Prepare a freshly created git worktree for local hooks and pre-push checks.
-
-Options:
-  --force-install   Run ${installCommand} even if node_modules already exists
-  -h, --help        Show this help text
-USAGE
-}
-
-force_install=0
-while (( $# > 0 )); do
-	case "$1" in
-		--force-install)
-			force_install=1
-			shift
-			;;
-		-h|--help)
-			usage
-			exit 0
-			;;
-		*)
-			echo "[prepare-worktree] unknown argument: $1" >&2
-			usage >&2
-			exit 2
-			;;
-	esac
-done
-
-cd "$REPO_ROOT"
-
-if ! git rev-parse --show-toplevel >/dev/null 2>&1; then
-	echo "[prepare-worktree] not inside a git work tree" >&2
-	exit 1
-fi
-
-attach_branch_if_detached() {
-	current_branch="$(git symbolic-ref --short -q HEAD || true)"
-	if [[ -n "$current_branch" ]]; then
-		echo "[prepare-worktree] branch: $current_branch"
-		return 0
-	fi
-
-	repo_slug="$(basename "$REPO_ROOT" | tr '[:upper:]' '[:lower:]' | sed -E 's/[^a-z0-9]+/-/g; s/^-+//; s/-+$//')"
-	if [[ -z "$repo_slug" ]]; then
-		repo_slug="worktree"
-	fi
-
-	short_sha="$(git rev-parse --short HEAD)"
-	branch_base="codex/$repo_slug-worktree-$short_sha"
-	branch_name="$branch_base"
-	suffix=1
-	while git show-ref --verify --quiet "refs/heads/$branch_name"; do
-		branch_name="$branch_base-$suffix"
-		suffix=$((suffix + 1))
-	done
-
-	echo "[prepare-worktree] detached HEAD detected; creating branch $branch_name"
-	git switch -c "$branch_name"
-	if git show-ref --verify --quiet "refs/remotes/origin/main"; then
-		git branch --set-upstream-to=origin/main "$branch_name" >/dev/null 2>&1 || true
-		echo "[prepare-worktree] tracking origin/main for $branch_name"
-		echo "[prepare-worktree] fast-forwarding $branch_name with origin/main"
-		git pull --ff-only origin main
-	fi
-}
-
-if [[ ! -f package.json ]]; then
-	echo "[prepare-worktree] package.json not found; nothing to bootstrap for this repo shape"
-	exit 0
-fi
-
-if ! command -v ${packageManager} >/dev/null 2>&1; then
-	echo "[prepare-worktree] ${packageManager} is required but not on PATH" >&2
-	exit 1
-fi
-
-if ! command -v node >/dev/null 2>&1; then
-	echo "[prepare-worktree] node is required but not on PATH" >&2
-	exit 1
-fi
-
-echo "[prepare-worktree] repo: $REPO_ROOT"
-attach_branch_if_detached
-
-if [[ "$force_install" -eq 1 || ! -d node_modules ]]; then
-	echo "[prepare-worktree] installing dependencies (${installCommand})"
-	${installCommand}
-else
-	echo "[prepare-worktree] node_modules already present; skipping install"
-fi
-
-echo "[prepare-worktree] syncing git hooks"
-node scripts/setup-git-hooks.js
-
-echo "[prepare-worktree] ready"
-echo "[prepare-worktree] next: bash scripts/verify-work.sh --fast"
-`;
+	return runtimeTemplate
+		.replace(
+			"Run pnpm install even if node_modules already exists",
+			`Run ${installCommand} even if node_modules already exists`,
+		)
+		.replace("if ! command -v pnpm >/dev/null 2>&1; then", () => {
+			return `if ! command -v ${packageManager} >/dev/null 2>&1; then`;
+		})
+		.replace(
+			'echo "[prepare-worktree] pnpm is required but not on PATH" >&2',
+			`echo "[prepare-worktree] ${packageManager} is required but not on PATH" >&2`,
+		)
+		.replace(
+			'echo "[prepare-worktree] installing dependencies (pnpm install)"',
+			`echo "[prepare-worktree] installing dependencies (${installCommand})"`,
+		)
+		.replace("\tpnpm install", `\t${installCommand}`);
 }
 
 /**
@@ -528,169 +454,29 @@ echo "[prepare-worktree] next: bash scripts/verify-work.sh --fast"
  *          - `2` for invalid arguments.
  */
 function renderNewTaskScript(): string {
-	return `#!/usr/bin/env bash
-set -euo pipefail
-
-SCRIPT_DIR="$(cd -- "$(dirname -- "\${BASH_SOURCE[0]}")" && pwd -P)"
-REPO_ROOT="$(cd -- "$SCRIPT_DIR/.." && pwd -P)"
-
-usage() {
-	cat <<'USAGE'
-Usage: scripts/new-task.sh [options] <slug>
-
-Create a dedicated git worktree (and optional branch) for one task, then print the
-bootstrap commands to run inside that worktree.
-
-This repository expects one task = one worktree = one agent thread.
-
-Options:
-  --base <ref>            Start the branch from this ref (default: main)
-  --branch-prefix <name>  Branch prefix (default: codex)
-  --detached              Create the worktree in detached HEAD mode
-  --path <dir>            Worktree path (default: ../wt-<slug>)
-  -h, --help              Show this help text
-USAGE
+	const packagedTemplatePath = fileURLToPath(
+		new URL("../../templates/new-task.sh", import.meta.url),
+	);
+	const repoTemplatePath = fileURLToPath(
+		new URL("../../../scripts/new-task.sh", import.meta.url),
+	);
+	return readFileSync(
+		existsSync(packagedTemplatePath) ? packagedTemplatePath : repoTemplatePath,
+		"utf-8",
+	);
 }
 
-base_ref="main"
-branch_prefix="codex"
-detached_mode=0
-worktree_path=""
-slug=""
-
-while (( $# > 0 )); do
-	case "$1" in
-		--base)
-			base_ref="\${2:-}"
-			shift 2
-			;;
-		--branch-prefix)
-			branch_prefix="\${2:-}"
-			shift 2
-			;;
-		--detached)
-			detached_mode=1
-			shift
-			;;
-		--path)
-			worktree_path="\${2:-}"
-			shift 2
-			;;
-		-h|--help)
-			usage
-			exit 0
-			;;
-		--)
-			shift
-			break
-			;;
-		-*)
-			echo "[new-task] unknown option: $1" >&2
-			usage >&2
-			exit 2
-			;;
-		*)
-			slug="$1"
-			shift
-			break
-			;;
-	esac
-done
-
-if [[ -z "$slug" && $# -gt 0 ]]; then
-	slug="$1"
-	shift
-fi
-
-if [[ -z "$slug" || $# -gt 0 ]]; then
-	usage >&2
-	exit 2
-fi
-
-if [[ ! "$slug" =~ ^[a-z0-9][a-z0-9-]*$ ]]; then
-	echo "[new-task] slug must be lower-case kebab-case: $slug" >&2
-	exit 2
-fi
-
-if [[ ! "$branch_prefix" =~ ^[A-Za-z0-9._/-]+$ ]]; then
-	echo "[new-task] invalid branch prefix: $branch_prefix" >&2
-	exit 2
-fi
-
-branch_name="\${branch_prefix}/\${slug}"
-resolved_base_ref="$base_ref"
-remote_base_branch=""
-
-if [[ "$base_ref" == origin/* ]]; then
-	remote_base_branch="\${base_ref#origin/}"
-elif [[ "$base_ref" != *"/"* ]]; then
-	remote_base_branch="$base_ref"
-fi
-
-if [[ -z "$worktree_path" ]]; then
-	worktree_path="\${REPO_ROOT}/../wt-\${slug}"
-fi
-
-cd "$REPO_ROOT"
-
-git rev-parse --show-toplevel >/dev/null
-
-if [[ "$detached_mode" -eq 0 ]] && git show-ref --verify --quiet "refs/heads/\${branch_name}"; then
-	echo "[new-task] local branch already exists: \${branch_name}" >&2
-	exit 1
-fi
-
-if [[ -e "$worktree_path" ]]; then
-	echo "[new-task] worktree path already exists: $worktree_path" >&2
-	exit 1
-fi
-
-if [[ -n "$remote_base_branch" ]]; then
-	echo "[new-task] fetching latest origin/$remote_base_branch"
-	git fetch --prune origin "$remote_base_branch"
-	if git show-ref --verify --quiet "refs/remotes/origin/$remote_base_branch"; then
-		resolved_base_ref="refs/remotes/origin/$remote_base_branch"
-	fi
-fi
-
-if ! git rev-parse --verify --quiet "\${resolved_base_ref}^{commit}" >/dev/null; then
-	echo "[new-task] base ref is not a valid commit: $base_ref" >&2
-	exit 2
-fi
-
-echo "[new-task] repo: $REPO_ROOT"
-echo "[new-task] base: $base_ref"
-if [[ "$resolved_base_ref" != "$base_ref" ]]; then
-	echo "[new-task] resolved base: $resolved_base_ref"
-fi
-if [[ "$detached_mode" -eq 1 ]]; then
-	echo "[new-task] mode: detached"
-else
-	echo "[new-task] mode: branch"
-	echo "[new-task] branch: \${branch_name}"
-fi
-echo "[new-task] path: $worktree_path"
-
-if [[ "$detached_mode" -eq 1 ]]; then
-	git worktree add --detach "$worktree_path" "$resolved_base_ref"
-else
-	git worktree add "$worktree_path" -b "${"${"}branch_name}" "$resolved_base_ref"
-fi
-
-echo
-echo "[new-task] next:"
-echo "  cd \\"$worktree_path\\""
-if [[ -f "$worktree_path/Makefile" ]] && rg -q '^worktree-ready:' "$worktree_path/Makefile"; then
-	echo "  make worktree-ready"
-else
-	echo "  bash scripts/prepare-worktree.sh"
-fi
-if [[ "$detached_mode" -eq 1 ]]; then
-	echo "  # Optional: create a branch after initial exploration"
-	echo "  git -C \\"$worktree_path\\" switch -c \\"\${branch_name}\\""
-fi
-echo "  bash scripts/codex-preflight.sh --mode optional"
-`;
+function renderNewTaskAndBootstrapScript(): string {
+	const packagedTemplatePath = fileURLToPath(
+		new URL("../../templates/new-task-and-bootstrap.sh", import.meta.url),
+	);
+	const repoTemplatePath = fileURLToPath(
+		new URL("../../../scripts/new-task-and-bootstrap.sh", import.meta.url),
+	);
+	return readFileSync(
+		existsSync(packagedTemplatePath) ? packagedTemplatePath : repoTemplatePath,
+		"utf-8",
+	);
 }
 
 function renderHarnessCliWrapper(packageManager: string): string {
@@ -2423,7 +2209,8 @@ Recommended policy:
 - Keep repo-scoped telemetry and learned overrides under \`.harness/memory/\`, and global telemetry under \`~/.codex/\`.
 - Treat \`scripts/verify-work.sh\` as the canonical repo-facing verification command and keep it wired to repo-local preflight defaults.
 - Treat \`scripts/validate-codestyle.sh\` as the fail-closed codestyle gate and require exact proof-of-pass in change summaries and PRs.
-- Treat \`scripts/new-task.sh\` as the canonical task-entry helper so each task starts with a repo-local worktree boundary instead of branch switching inside a shared checkout.
+- Treat \`scripts/new-task.sh\` as the canonical low-level task-entry helper so each task starts with a repo-local worktree boundary instead of branch switching inside a shared checkout.
+- Treat \`scripts/new-task-and-bootstrap.sh\` as the canonical high-level task-entry helper for agents, since it provisions the worktree and bootstrap in one machine-readable step.
 - Prefer \`scripts/new-task.sh --detached\` for exploration/background work when Local may need the same branch checked out.
 - Treat \`scripts/prepare-worktree.sh\` as required first-push bootstrap for freshly created worktrees so local hooks run with dependencies and canonical hook wiring.
 - Treat \`scripts/check-environment.sh\` as the local readiness gate for required tooling.
@@ -2444,10 +2231,12 @@ Recommended policy:
 - \`harness init\` scaffolds \`scripts/verify-work.sh\` as the canonical repo-local verification entrypoint.
 - The wrapper always runs \`scripts/codex-preflight.sh\` in \`required\` Local Memory mode with scaffold-safe path and binary expectations.
 - \`scripts/validate-codestyle.sh\` is the canonical fail-closed codestyle gate and is reused by \`verify-work\`, local hooks, and downstream repo docs.
-- \`scripts/new-task.sh\` is the canonical task bootstrap helper. Use it to create one task = one worktree = one agent thread inside the project itself.
+- \`scripts/new-task.sh\` is the canonical low-level task bootstrap helper. Use it for manual worktree creation flows.
+- \`scripts/new-task-and-bootstrap.sh\` is the canonical agent-facing helper for one command that creates and bootstraps a worktree while emitting JSON for automation.
 - Repo-local launches should prefer \`./scripts/codex-enforced\` so preflight failures are recorded into repo-scoped learn state.
 - Use \`./scripts/codex-learn analyze\` and \`./scripts/codex-learn apply\` to inspect repo-scoped failure patterns and write override files into \`.harness/memory/\`.
-- Start new work with \`bash scripts/new-task.sh <slug>\`, then enter the generated worktree and continue there.
+- Start new work with \`bash scripts/new-task-and-bootstrap.sh <slug>\` when automation wants one-step setup.
+- Use \`bash scripts/new-task.sh <slug>\` when manual step-by-step control is preferred, then enter the generated worktree and continue there.
 - If Local must keep the same branch checked out, start with \`bash scripts/new-task.sh --detached <slug>\` and create a branch in the worktree only when ready to promote changes.
 - Use \`bash scripts/validate-codestyle.sh --fast\` during iteration for focused codestyle validation.
 - Use \`bash scripts/validate-codestyle.sh\` before handoff for the fail-closed codestyle bundle.
@@ -2881,6 +2670,50 @@ gitleaks git \\
 	--redact \\
 	--no-banner \\
 	"\${config_args[@]}"
+`,
+	},
+	{
+		path: "scripts/check-hook-critical-config-sync.sh",
+		render: () => `#!/usr/bin/env bash
+set -euo pipefail
+
+REPO_ROOT="$(cd -- "$(dirname -- "\${BASH_SOURCE[0]}")/.." && pwd)"
+cd "$REPO_ROOT"
+
+# Guard critical hook/lint config from index/worktree drift. Hook runners may
+# temporarily stash unstaged changes, which can make pre-commit evaluate an
+# older staged config snapshot than the file currently shown in the worktree.
+critical_files=("biome.json")
+drift_files=()
+
+for config_path in "\${critical_files[@]}"; do
+	if [[ ! -f "$config_path" ]]; then
+		continue
+	fi
+	if ! git ls-files --error-unmatch -- "$config_path" >/dev/null 2>&1; then
+		continue
+	fi
+
+	index_blob="$(git rev-parse --verify ":\${config_path}" 2>/dev/null || true)"
+	worktree_blob="$(git hash-object --path="$config_path" "$config_path" 2>/dev/null || true)"
+	if [[ -n "$index_blob" && -n "$worktree_blob" && "$index_blob" != "$worktree_blob" ]]; then
+		drift_files+=("$config_path")
+	fi
+done
+
+if [[ \${#drift_files[@]} -eq 0 ]]; then
+	exit 0
+fi
+
+echo "Error: critical hook config differs between index and worktree:" >&2
+for config_path in "\${drift_files[@]}"; do
+	echo "  - $config_path" >&2
+done
+echo >&2
+echo "Why this fails: pre-commit style runners stash unstaged changes, so hooks may read stale staged config." >&2
+echo "Fix: stage or stash these files before committing, then retry." >&2
+echo "Example: git add \${drift_files[*]}" >&2
+exit 1
 `,
 	},
 	{
@@ -3790,6 +3623,10 @@ CLAUDE_APPROVAL_POSTURE = "require"
 		render: () => renderNewTaskScript(),
 	},
 	{
+		path: "scripts/new-task-and-bootstrap.sh",
+		render: () => renderNewTaskAndBootstrapScript(),
+	},
+	{
 		path: "scripts/harness-cli.sh",
 		render: (pm) => renderHarnessCliWrapper(pm),
 	},
@@ -4264,6 +4101,7 @@ echo "Environment check passed (attestation: $ATTESTATION_PATH)"
 /scripts/validate-codestyle.sh @jscraik
 /scripts/prepare-worktree.sh @jscraik
 /scripts/new-task.sh @jscraik
+/scripts/new-task-and-bootstrap.sh @jscraik
 /scripts/harness-cli.sh @jscraik
 /scripts/check-environment.sh @jscraik
 `,
@@ -4305,6 +4143,7 @@ hooks: ## Setup git hooks
 	node scripts/setup-git-hooks.js
 
 hooks-pre-commit: ## Run local pre-commit gates before creating a commit
+	@bash ./scripts/check-hook-critical-config-sync.sh
 	pnpm lint
 	pnpm docs:lint
 	pnpm typecheck
