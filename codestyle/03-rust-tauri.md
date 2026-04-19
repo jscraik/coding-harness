@@ -14,7 +14,7 @@
 ### Linting (Required)
 
 * **Clippy** is required.
-* Allow-lists MUST include reason + ticket (+ expiry if temporary) per waiver model.
+* Allow-lists MUST include rule ID, reason, tracking ticket, and expiry (date) OR ADR reference per waiver model.
 
 ### Concurrency (Required)
 
