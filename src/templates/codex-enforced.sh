@@ -17,6 +17,7 @@ YELLOW='\033[1;33m'
 BLUE='\033[0;34m'
 NC='\033[0m'
 
+# usage prints the script usage message showing supported options and indicates that remaining arguments are passed through to `codex`.
 usage() {
 	echo "Usage: codex-enforced [options] <prompt>"
 	echo ""
@@ -85,6 +86,7 @@ while (( $# > 0 )); do
 	esac
 done
 
+# slugify converts a raw string into a lowercase, URL-safe slug, defaults to "task" if empty, and echoes the result truncated to 48 characters.
 slugify() {
 	local raw="${1:-}"
 	local normalized=""
@@ -95,6 +97,8 @@ slugify() {
 	printf '%s' "${normalized:0:48}"
 }
 
+# ensure_task_worktree creates and switches to a dedicated task worktree (bootstrapping it via scripts/new-task.sh) when running on the `main` branch and the guard is not skipped, then re-executes the wrapper from that worktree.
+# It returns immediately if running outside a git repo, not on `main`, or if `SKIP_WORKTREE_GUARD`, `PREFLIGHT_ONLY`, or `LEARN_ONLY` are set; it also ensures a unique branch slug and worktree path before bootstrapping.
 ensure_task_worktree() {
 	local repo_root=""
 	local current_branch=""

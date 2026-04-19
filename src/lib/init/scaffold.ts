@@ -119,6 +119,12 @@ function renderAddPackageCommand(
 	return `${packageManager} add -D ${packageName}`;
 }
 
+/**
+ * Constructs a package-manager-specific install command used during workflow bootstrap.
+ *
+ * @param packageManager - Package manager identifier (e.g., `"npm"`, `"pnpm"`, `"yarn"`).
+ * @returns The install command string: `"npm ci"` when `packageManager` is `"npm"`, otherwise the package manager's install command with `--frozen-lockfile` appended.
+ */
 function renderWorkflowBootstrapInstallCommand(packageManager: string): string {
 	if (packageManager === "npm") {
 		return "npm ci";
@@ -126,6 +132,13 @@ function renderWorkflowBootstrapInstallCommand(packageManager: string): string {
 	return `${renderInstallCommand(packageManager)} --frozen-lockfile`;
 }
 
+/**
+ * Construct a private-package publish command tailored to the specified package manager.
+ *
+ * @param packageManager - Package manager identifier; recognized value: `"pnpm"` (anything else uses npm-style command)
+ * @param withProvenance - If `true`, include the provenance flag supported by the package manager
+ * @returns The shell command to publish a restricted private package (e.g. `pnpm publish --no-git-checks --access restricted --provenance` or `npm publish --access restricted --provenance`)
+ */
 function renderPrivateNpmPublishCommand(
 	packageManager: string,
 	withProvenance: boolean,
@@ -140,6 +153,12 @@ function renderPrivateNpmPublishCommand(
 	return `npm publish --access restricted${provenanceFlag}`;
 }
 
+/**
+ * Constructs the package-manager-specific command to execute the local `harness` binary.
+ *
+ * @param packageManager - Package manager identifier (e.g., `"npm"`, `"yarn"`, `"pnpm"`); determines the command form.
+ * @returns The shell command string to invoke `harness`: returns `"npm exec harness --"` for `npm`, `"yarn harness"` for `yarn`, and `"<packageManager> exec harness"` for other package managers.
+ */
 function renderLocalHarnessExecCommand(packageManager: string): string {
 	if (packageManager === "npm") {
 		return "npm exec harness --";
@@ -629,6 +648,12 @@ function renderCodestylePackTemplate(relativePath: string): string {
 	return readFileSync(repoTemplatePath, "utf-8");
 }
 
+/**
+ * Produces the GitHub Actions workflow YAML for releasing a private npm package, configured for the given package manager.
+ *
+ * @param packageManager - The package manager to target (e.g., `"pnpm"`, `"yarn"`, or `"npm"`); controls setup, install, build, check, and publish command insertion.
+ * @returns The rendered workflow YAML as a string with all package-manager-specific steps and commands populated.
+ */
 function renderReleasePrivateNpmWorkflow(packageManager: string): string {
 	const templatePath = fileURLToPath(
 		new URL("../../templates/release-private-npm.yml", import.meta.url),
@@ -692,19 +717,15 @@ function renderCheckCodestyleParityScript(): string {
 }
 
 /**
- * Produces a bash script that prepares a newly created git worktree for local hooks and pre-push checks.
+ * Generate a POSIX-compatible bash script that prepares a git worktree for local hooks and pre-push checks.
  *
- * The generated script validates it's inside a git worktree, auto-attaches detached HEAD checkouts to a
- * local `codex/*` branch, fast-forwards the newly attached branch to latest `origin/main` when available,
- * requires a package.json, verifies the requested package manager and Node are on PATH, optionally installs
- * dependencies, and runs the repository's hook-setup script
- * (`node scripts/setup-git-hooks.js`).
+ * The produced script validates it is inside a git worktree, ensures a package.json exists, verifies the
+ * requested package manager and Node are available on PATH, optionally installs dependencies, attaches a
+ * detached HEAD to a new local branch (and fast-forwards it to `origin/main` when available), and runs the
+ * repository's hook setup script (`node scripts/setup-git-hooks.js`).
  *
- * @param packageManager - The package manager executable name used to construct the install command (e.g., "npm", "pnpm", "yarn").
- * @returns A complete POSIX-compatible bash script as a string. When executed, the script exits with:
- *          - `0` on success,
- *          - `1` if not in a git worktree, package.json is missing, or the package manager/Node is not available,
- *          - `2` for unrecognized command-line arguments.
+ * @param packageManager - The package manager executable name used to construct the install command (e.g., "npm", "pnpm", "yarn")
+ * @returns A POSIX-compatible bash script as a string. When executed, the script exits `0` on success, `1` for missing git/worktree or required tools, and `2` for unrecognized command-line arguments.
  */
 function renderPrepareWorktreeScript(packageManager: string): string {
 	const installCommand = renderInstallCommand(packageManager);
@@ -1029,6 +1050,17 @@ echo "  bash scripts/codex-preflight.sh --mode optional"
 `;
 }
 
+/**
+ * Generate a POSIX-compatible bash wrapper that resolves and executes the repository-local harness CLI.
+ *
+ * The generated script verifies Node.js is present, checks for a local
+ * @brainwav/coding-harness install under node_modules, prints package-manager-specific
+ * repair guidance when the package is missing, and then execs the local CLI with
+ * forwarded arguments.
+ *
+ * @param packageManager - The package manager identifier used to render the install/add/exec commands (e.g., "pnpm", "yarn", "npm").
+ * @returns The full contents of the bash wrapper script as a string.
+ */
 function renderHarnessCliWrapper(packageManager: string): string {
 	const installCommand = renderInstallCommand(packageManager);
 	const addCommand = renderAddPackageCommand(
@@ -1067,6 +1099,18 @@ REPO_ROOT="$(cd -- "$SCRIPT_DIR/.." && pwd)"
 		`;
 }
 
+/**
+ * Produce a portable bash script that resolves and runs the repository's harness CLI.
+ *
+ * The returned script locates the repository root and attempts, in order, to:
+ * - run the repo-local `src/cli.ts` via `pnpm exec tsx` (when present),
+ * - run `scripts/harness-cli.sh` (when executable),
+ * - invoke a globally installed `harness` binary.
+ * If none are available the script prints installation and local-exec guidance and exits with a non-zero status.
+ *
+ * @param packageManager - The package manager identifier used to render install and local-exec commands (e.g., `"pnpm"`, `"npm"`, `"yarn"`).
+ * @returns The full bash script text to be written to `scripts/run-harness-gate.sh`.
+ */
 function renderHarnessGateRunner(packageManager: string): string {
 	const installCommand = renderInstallCommand(packageManager);
 	const localExecCommand = renderLocalHarnessExecCommand(packageManager);
@@ -1107,6 +1151,12 @@ exit 1
 `;
 }
 
+/**
+ * Read and parse a package.json file from a directory.
+ *
+ * @param targetDir - Directory to read `package.json` from
+ * @returns The parsed `package.json` as `PackageJsonLike` if the file exists and contains a valid JSON object, `undefined` otherwise
+ */
 function readPackageJson(targetDir: string): PackageJsonLike | undefined {
 	const packageJsonPath = resolve(targetDir, "package.json");
 	if (!existsSync(packageJsonPath)) {
@@ -1494,19 +1544,14 @@ export function shouldSkipDueToNewerToolingVersion(
 }
 
 /**
- * Generates the Codex "local environment" TOML used by Codex/CodeRabbit for the repository.
+ * Render the Codex local-environment TOML for the repository.
  *
- * Produces a TOML document (prefixed with the autogen header) that defines a setup script
- * (trusts `.mise.toml`, runs `mise install`, then delegates worktree bootstrap to
- * `scripts/prepare-worktree.sh` when present, with package-manager install as fallback) and a
- * set of action blocks:
- * - standard Tools/Run/Debug/Test actions (Run/Debug/Test will contain a deterministic failing placeholder when the corresponding npm script is absent),
- * - required tool actions from the harness constants,
- * - one action per script found in `context.packageScripts`, each assigned an inferred icon.
+ * Produces a TOML document (prefixed with the autogen header) that contains a setup script and a set of action blocks:
+ * standard Tools/Run/Debug/Test actions, required Codex tool actions, and one action per script discovered in `context.packageScripts`.
  *
- * @param packageManager - Package manager identifier used to render install and script invocation commands (e.g., "npm", "yarn", "pnpm").
- * @param context - Template render context containing `packageScripts` and metadata used to build the action blocks.
- * @returns The complete TOML content for the Codex local environment file.
+ * @param packageManager - Package manager identifier used to render install and script invocation commands (e.g., "npm", "yarn", "pnpm")
+ * @param context - Template render context containing `packageScripts` and repository metadata used to build the action blocks
+ * @returns The complete TOML content for the Codex local environment file, including the autogen header
  */
 function renderCodexEnvironmentTemplate(
 	packageManager: string,
