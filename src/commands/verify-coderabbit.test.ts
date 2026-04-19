@@ -47,7 +47,9 @@ function createRepoFixture(
 	}
 
 	if (opts.withNpmrc) {
-		const content = opts.npmrcContent ?? "ignore-scripts=true\n";
+		const content =
+			opts.npmrcContent ??
+			"@brainwav:registry=https://registry.npmjs.org/\nignore-scripts=true\n";
 		writeFileSync(join(repoPath, ".npmrc"), content);
 	}
 
@@ -240,7 +242,7 @@ describe("runVerifyCodeRabbit - .npmrc checks", () => {
 		expect(npmrcCheck?.message).toContain("ignore-scripts=true");
 	});
 
-	it("warns when .npmrc lacks @brainwav scoped registry", async () => {
+	it("fails when .npmrc lacks @brainwav scoped registry", async () => {
 		repoPath = createRepoFixture({
 			withCodeRabbitYaml: true,
 			withNpmrc: true,
@@ -251,7 +253,7 @@ describe("runVerifyCodeRabbit - .npmrc checks", () => {
 		const npmrcCheck = result.checks.find(
 			(c) => c.name === ".npmrc configuration",
 		);
-		expect(npmrcCheck?.status).toBe("warn");
+		expect(npmrcCheck?.status).toBe("fail");
 		expect(npmrcCheck?.message).toContain("@brainwav:registry");
 	});
 
@@ -259,7 +261,7 @@ describe("runVerifyCodeRabbit - .npmrc checks", () => {
 		repoPath = createRepoFixture({
 			withCodeRabbitYaml: true,
 			withNpmrc: true,
-			npmrcContent: "@myorg:registry=https://registry.npmjs.org/\n",
+			npmrcContent: "@brainwav:registry=https://registry.npmjs.org/\n",
 		});
 		const result = await runVerifyCodeRabbit({ repoPath });
 
@@ -268,7 +270,7 @@ describe("runVerifyCodeRabbit - .npmrc checks", () => {
 		);
 		expect(npmrcCheck?.status).toBe("warn");
 		expect(npmrcCheck?.message).toContain("ignore-scripts=true");
-		expect(npmrcCheck?.message).toContain("@brainwav:registry");
+		expect(npmrcCheck?.message).not.toContain("@brainwav:registry");
 	});
 
 	it("warns when ignore-scripts=true exists only in comments", async () => {
@@ -287,7 +289,7 @@ describe("runVerifyCodeRabbit - .npmrc checks", () => {
 		expect(npmrcCheck?.message).toContain("ignore-scripts=true");
 	});
 
-	it("warns when .npmrc contains an auth token override", async () => {
+	it("fails when .npmrc contains an auth token override", async () => {
 		repoPath = createRepoFixture({
 			withCodeRabbitYaml: true,
 			withNpmrc: true,
@@ -299,7 +301,7 @@ describe("runVerifyCodeRabbit - .npmrc checks", () => {
 		const npmrcCheck = result.checks.find(
 			(c) => c.name === ".npmrc configuration",
 		);
-		expect(npmrcCheck?.status).toBe("warn");
+		expect(npmrcCheck?.status).toBe("fail");
 		expect(npmrcCheck?.message).toContain("user-level ~/.npmrc");
 	});
 
@@ -853,14 +855,14 @@ describe("runVerifyCodeRabbit - summary and ok flag", () => {
 
 	it("summary counts are accurate across pass, fail, and warn", async () => {
 		// .coderabbit.yaml missing → fail
-		// .npmrc present with ignore-scripts but missing @brainwav scoped registry → warn
+		// .npmrc present with secure defaults → pass
 		// no owner/repo → warn (remote checks skipped)
 		repoPath = createRepoFixture({ withNpmrc: true });
 		const result = await runVerifyCodeRabbit({ repoPath });
 
 		expect(result.summary.failed).toBe(1);
-		expect(result.summary.passed).toBe(0);
-		expect(result.summary.warnings).toBe(2);
+		expect(result.summary.passed).toBe(1);
+		expect(result.summary.warnings).toBe(1);
 		expect(
 			result.summary.passed + result.summary.failed + result.summary.warnings,
 		).toBe(result.checks.length);
