@@ -15,7 +15,7 @@ This repository expects one task = one worktree = one branch = one agent thread.
 
 Options:
   --base <ref>            Start the branch from this ref (default: main)
-  --branch-prefix <name>  Branch prefix (default: codex)
+  --branch-prefix <name>  Branch prefix (default: jscraik/feature)
   --path <dir>            Worktree path (default: ../wt-<slug>)
   --bootstrap             Run worktree bootstrap immediately after creation
   -h, --help              Show this help text
@@ -23,7 +23,7 @@ USAGE
 }
 
 base_ref="main"
-branch_prefix="codex"
+branch_prefix="jscraik/feature"
 worktree_path=""
 bootstrap=0
 slug=""
@@ -123,6 +123,11 @@ git rev-parse --show-toplevel >/dev/null
 
 if git show-ref --verify --quiet "refs/heads/${branch_name}"; then
 	echo "[new-task] local branch already exists: ${branch_name}" >&2
+	exit 1
+fi
+
+if git remote get-url origin >/dev/null 2>&1 && git ls-remote --exit-code --heads origin "${branch_name}" >/dev/null 2>&1; then
+	echo "[new-task] remote branch already exists on origin: ${branch_name}" >&2
 	exit 1
 fi
 

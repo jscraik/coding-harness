@@ -70,7 +70,7 @@ Notes:
 
 ## Repo Workflow
 - Branch from `main` and never push directly to `main`.
-- Use `codex/<linear-key>-<short-description>` when the work is tracked in Linear, and open a PR for every merge to `main`.
+- Use `jscraik/feature/<linear-key>-<short-description>` when the work is tracked in Linear, and open a PR for every merge to `main`.
 - PR description linking: use `Refs JSC-N` while the issue is in review; use `Closes JSC-N` only when the merge fully completes the issue.
 - CodeRabbit review must remain independent; the coding agent cannot self-approve.
 - If you touch tooling/runtime contract surfaces such as hooks, `Makefile`, `.mise.toml`, readiness scripts, or generated Codex environment actions, update [docs/agents/02-tooling-policy.md](./docs/agents/02-tooling-policy.md) and [docs/agents/06-security-and-governance.md](./docs/agents/06-security-and-governance.md) in the same change.

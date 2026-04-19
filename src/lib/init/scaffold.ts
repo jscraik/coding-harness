@@ -765,7 +765,7 @@ attach_branch_if_detached() {
 	fi
 
 	short_sha="$(git rev-parse --short HEAD)"
-	branch_base="codex/$repo_slug-worktree-$short_sha"
+	branch_base="jscraik/feature/$repo_slug-worktree-$short_sha"
 	branch_name="$branch_base"
 	suffix=1
 	while git show-ref --verify --quiet "refs/heads/$branch_name"; do
@@ -846,7 +846,7 @@ This repository expects one task = one worktree = one branch = one agent thread.
 
 Options:
   --base <ref>            Start the branch from this ref (default: main)
-  --branch-prefix <name>  Branch prefix (default: codex)
+  --branch-prefix <name>  Branch prefix (default: jscraik/feature)
   --path <dir>            Worktree path (default: ../wt-<slug>)
   --bootstrap             Run worktree bootstrap immediately after creation
   -h, --help              Show this help text
@@ -854,7 +854,7 @@ USAGE
 }
 
 base_ref="main"
-branch_prefix="codex"
+branch_prefix="jscraik/feature"
 worktree_path=""
 bootstrap=0
 slug=""
@@ -954,6 +954,11 @@ git rev-parse --show-toplevel >/dev/null
 
 if git show-ref --verify --quiet "refs/heads/\${branch_name}"; then
 	echo "[new-task] local branch already exists: \${branch_name}" >&2
+	exit 1
+fi
+
+if git remote get-url origin >/dev/null 2>&1 && git ls-remote --exit-code --heads origin "\${branch_name}" >/dev/null 2>&1; then
+	echo "[new-task] remote branch already exists on origin: \${branch_name}" >&2
 	exit 1
 fi
 
@@ -2766,9 +2771,9 @@ This workflow keeps delivery auditable, reversible, and consistent even for solo
 ## Branching and PR rule
 
 1. Create a dedicated branch/worktree for each task:
-   - Agent-created branch: \`git switch -c codex/<short-description>\`
-   - Agent-created worktree: \`git worktree add ../tmp-worktree -b codex/<short-description>\`
-   - Human-authored branch prefixes (when not using \`codex/\`): \`feat/\`, \`fix/\`, \`docs/\`, \`refactor/\`, \`chore/\`, \`test/\`
+   - Agent-created branch: \`git switch -c jscraik/feature/<short-description>\`
+   - Agent-created worktree: \`git worktree add ../tmp-worktree -b jscraik/feature/<short-description>\`
+   - Human-authored branch prefixes (when not using \`jscraik/feature/\`): \`feat/\`, \`fix/\`, \`docs/\`, \`refactor/\`, \`chore/\`, \`test/\`
 2. Keep commits small and focused.
 3. Open a PR to merge into \`main\`.
 4. Do not merge until checks, reviews, and checklist items are complete.
@@ -2777,7 +2782,7 @@ This workflow keeps delivery auditable, reversible, and consistent even for solo
 ## Branch name policy
 
 - Use lower-case, kebab-case slugs.
-- Agent-created branches must use \`codex/<short-description>\`.
+- Agent-created branches must use \`jscraik/feature/<short-description>\`.
 - Human-authored branches may use: \`feat/\`, \`fix/\`, \`docs/\`, \`refactor/\`, \`chore/\`, \`test/\`.
 - Avoid \`main\`-like names and do not include secrets or issue-pii.
 

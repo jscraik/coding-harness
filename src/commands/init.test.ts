@@ -2278,10 +2278,10 @@ exit 1
 			};
 
 			expect(runNewTask("HEAD~1", "commit-ish-head")).toContain(
-				"[new-task] branch: codex/commit-ish-head",
+				"[new-task] branch: jscraik/feature/commit-ish-head",
 			);
 			expect(runNewTask("v0.0.1", "commit-ish-tag")).toContain(
-				"[new-task] branch: codex/commit-ish-tag",
+				"[new-task] branch: jscraik/feature/commit-ish-tag",
 			);
 			expect(runNewTask(firstSha, "commit-ish-sha")).toContain(
 				`[new-task] base: ${firstSha}`,

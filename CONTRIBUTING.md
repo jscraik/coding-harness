@@ -35,9 +35,9 @@ This workflow keeps delivery auditable, reversible, and consistent even for solo
 
 1. Create a dedicated branch/worktree for each task:
    - Preferred project-local helper: `bash scripts/new-task.sh <short-description>`
-   - Agent-created branch: `git switch -c codex/<short-description>`
-   - Agent-created worktree: `git worktree add ../wt-<short-description> -b codex/<short-description>`
-   - Human-authored branch prefixes (when not using `codex/`): `feat/`, `fix/`, `docs/`, `refactor/`, `chore/`, `test/`
+   - Agent-created branch: `git switch -c jscraik/feature/<short-description>`
+   - Agent-created worktree: `git worktree add ../wt-<short-description> -b jscraik/feature/<short-description>`
+   - Human-authored branch prefixes (when not using `jscraik/feature/`): `feat/`, `fix/`, `docs/`, `refactor/`, `chore/`, `test/`
    - Keep one task = one worktree = one branch = one agent thread.
 2. Keep commits small and focused.
 3. Open a PR to merge into `main`.
@@ -47,7 +47,7 @@ This workflow keeps delivery auditable, reversible, and consistent even for solo
 ## Branch name policy
 
 - Use lower-case, kebab-case slugs.
-- Agent-created branches must use `codex/<short-description>`.
+- Agent-created branches must use `jscraik/feature/<short-description>`.
 - Human-authored branches may use: `feat/`, `fix/`, `docs/`, `refactor/`, `chore/`, `test/`.
 - Avoid `main`-like names and do not include secrets or issue-pii.
 
@@ -94,7 +94,7 @@ Recommended policy:
 - Adjust preflight binary/path lists per project scope instead of deleting the script.
 - Keep repo-scoped telemetry and learned overrides under `.harness/memory/`, and global telemetry under `~/.codex/`.
 - Treat `scripts/verify-work.sh` as the canonical repo-facing verification command and keep it wired to repo-local preflight defaults.
-- Treat `scripts/validate-codestyle.sh` as the fail-closed codestyle gate and require exact proof-of-pass in change summaries and PRs.
+- Treat `scripts/validate-codestyle.sh` as the fail-closed code style gate and require exact proof-of-pass in change summaries and PRs.
 - Treat `scripts/new-task.sh` as the canonical task-entry helper so each task starts with a repo-local branch/worktree boundary instead of branch switching inside a shared checkout.
 - Treat `scripts/prepare-worktree.sh` as required first-push bootstrap for freshly created worktrees so local hooks run with dependencies and canonical hook wiring.
 - Treat `scripts/check-environment.sh` as the local readiness gate for required tooling.
@@ -114,15 +114,15 @@ Recommended policy:
 
 - `harness init` scaffolds `scripts/verify-work.sh` as the canonical repo-local verification entrypoint.
 - The wrapper always runs `scripts/codex-preflight.sh` in `required` Local Memory mode with scaffold-safe path and binary expectations.
-- `scripts/validate-codestyle.sh` is the canonical fail-closed codestyle gate and is reused by `verify-work`, local hooks, and downstream repo docs.
+- `scripts/validate-codestyle.sh` is the canonical fail-closed code style gate and is reused by `verify-work`, local hooks, and downstream repo docs.
 - `scripts/new-task.sh` is the canonical task bootstrap helper. Use it to create one task = one worktree = one branch = one agent thread inside the project itself.
 - Repo-local launches should prefer `./scripts/codex-enforced` so preflight failures are recorded into repo-scoped learn state.
 - Use `./scripts/codex-learn analyze` and `./scripts/codex-learn apply` to inspect repo-scoped failure patterns and write override files into `.harness/memory/`.
 - Start new work with `bash scripts/new-task.sh <slug>`, then enter the generated worktree and continue there.
-- Use `bash scripts/validate-codestyle.sh --fast` during iteration for focused codestyle validation.
-- Use `bash scripts/validate-codestyle.sh` before handoff for the fail-closed codestyle bundle.
+- Use `bash scripts/validate-codestyle.sh --fast` during iteration for focused code style validation.
+- Use `bash scripts/validate-codestyle.sh` before handoff for the fail-closed code style bundle.
 - Use `bash scripts/verify-work.sh` for the broader verification bundle.
-- Use `bash scripts/verify-work.sh --fast` for preflight + codestyle fast lane coverage.
+- Use `bash scripts/verify-work.sh --fast` for preflight + code style fast lane coverage.
 - Before the first push from a fresh worktree, run `bash scripts/prepare-worktree.sh`.
 
 ## Repo-local harness wrapper

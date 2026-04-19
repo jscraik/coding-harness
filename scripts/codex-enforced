@@ -9,6 +9,7 @@ set -euo pipefail
 SCRIPT_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd -P)"
 PREFLIGHT_SCRIPT="${SCRIPT_DIR}/codex-preflight.sh"
 LEARN_SCRIPT="${SCRIPT_DIR}/codex-learn"
+WORKTREE_BRANCH_PREFIX="jscraik/feature"
 
 RED='\033[0;31m'
 GREEN='\033[0;32m'
@@ -131,7 +132,9 @@ ensure_task_worktree() {
 
 	slug="$(slugify "${slug_source}")"
 	base_slug="${slug}"
-	while git -C "${repo_root}" show-ref --verify --quiet "refs/heads/codex/${slug}"; do
+	while git -C "${repo_root}" show-ref --verify --quiet "refs/heads/${WORKTREE_BRANCH_PREFIX}/${slug}" || \
+		(git -C "${repo_root}" remote get-url origin >/dev/null 2>&1 && \
+			git -C "${repo_root}" ls-remote --exit-code --heads origin "${WORKTREE_BRANCH_PREFIX}/${slug}" >/dev/null 2>&1); do
 		slug="${base_slug}-${suffix}"
 		suffix=$((suffix + 1))
 	done
@@ -152,7 +155,7 @@ ensure_task_worktree() {
 	echo "  slug: ${slug}"
 	echo "  path: ${worktree_path}"
 
-	if ! bash "${SCRIPT_DIR}/new-task.sh" --bootstrap --path "${worktree_path}" "${slug}"; then
+	if ! bash "${SCRIPT_DIR}/new-task.sh" --bootstrap --branch-prefix "${WORKTREE_BRANCH_PREFIX}" --path "${worktree_path}" "${slug}"; then
 		echo -e "${RED}ERROR: failed to create/bootstrap worktree${NC}"
 		exit 1
 	fi
