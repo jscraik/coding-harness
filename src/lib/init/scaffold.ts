@@ -2233,18 +2233,18 @@ ${renderGitHubActionsPnpmSetupStep()}
         with:
           node-version: "24"
 ${renderGitHubActionsPnpmSetupStep()}
-	      - name: Install dependencies
-	        run: ${installCommand}
-	      - name: Run lint
-	        shell: bash
-	        run: |
-	          if jq -e '.scripts["lint:ci"]? | type == "string"' package.json >/dev/null 2>&1; then
-	            ${lintCiCommand}
-	          else
-	            ${lintCommand}
-	          fi
+      - name: Install dependencies
+        run: ${installCommand}
+      - name: Run lint
+        shell: bash
+        run: |
+          if jq -e '.scripts["lint:ci"]? | type == "string"' package.json >/dev/null 2>&1; then
+            ${lintCiCommand}
+          else
+            ${lintCommand}
+          fi
 
-	  typecheck:
+  typecheck:
     name: typecheck
     runs-on: ubuntu-latest
     needs: [risk-policy-gate]
