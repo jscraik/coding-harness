@@ -3,7 +3,7 @@
 ## Table of Contents
 - [Scope](#scope)
 - [Type discipline](#type-discipline)
-- [Banned patterns](#banned-patterns)
+- [Warn-level Patterns](#warn-level-patterns)
 - [Linting and module rules](#linting-and-module-rules)
 - [Async and cancellation](#async-and-cancellation)
 - [Testing](#testing)
@@ -15,10 +15,10 @@
 ## Type discipline
 - Explicit types at public API boundaries (functions, modules, component props) are REQUIRED.
 - Use strict TypeScript configuration and keep boundary validation explicit.
-- `any` is forbidden in production paths; use concrete types or `unknown` plus narrowing.
+- `any` SHOULD be avoided in production paths; use concrete types or `unknown` plus narrowing.
 
-## Banned patterns
-- `: any`, `as any`, `Promise<any>`, and `Record<string, any>` in production code.
+## Warn-level Patterns
+- `: any`, `as any`, `Promise<any>`, and `Record<string, any>` in production code SHOULD remain warn-level findings in baseline lint gates.
 - `value as unknown as T` double assertions without runtime validation.
 - `// @ts-ignore` and `// @ts-nocheck`; use `@ts-expect-error` with rationale only when unavoidable.
 - Unsafe type assertions without guard functions or schema validation.

@@ -99,7 +99,7 @@ if [[ "$MISE_TRUST_LINE_COUNT" -ne 1 ]] || [[ "$MISE_TRUST_STATUS" != *": truste
 	exit 1
 fi
 
-if ! eval "$(mise activate bash)"; then
+if ! eval "$(mise --cd "$REPO_ROOT" activate bash)"; then
 	echo "Error: failed to activate mise runtime from $MISE_PATH"
 	echo "Fix: ensure mise is installed, trusted, and healthy, then retry."
 	exit 1
@@ -360,7 +360,7 @@ else
 	if [[ -n "$mise_harness_bin" && -x "$mise_harness_bin" ]]; then
 		if ! run_check_environment_with_runner "mise harness ($mise_harness_bin)" "$mise_harness_bin"; then
 			echo "Error: mise-resolved harness failed to run check-environment successfully."
-			echo "Fix: ensure the session activates mise first (eval \"\$(mise activate bash)\") or invoke the mise binary directly."
+			echo "Fix: ensure the session activates mise first (eval \"\$(mise --cd \\\"$REPO_ROOT\\\" activate bash)\") or invoke the mise binary directly."
 			exit 1
 		fi
 	else

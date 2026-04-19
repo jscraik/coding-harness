@@ -1650,6 +1650,13 @@ describe("runInit", () => {
 			expect(newTask).toContain(
 				"[new-task] fetching latest $remote_name/$remote_base_branch",
 			);
+			expect(newTask).toContain('elif [[ "$base_ref" != *"/"* ]]; then');
+			expect(newTask).toContain(
+				'if git show-ref --verify --quiet "refs/heads/$base_ref"; then',
+			);
+			expect(newTask).toContain(
+				'elif ! git -C "$REPO_ROOT" rev-parse --verify --quiet "${base_ref}^{commit}" >/dev/null; then',
+			);
 			expect(newTask).toContain(
 				'resolved_base_ref="refs/remotes/$remote_name/$remote_base_branch"',
 			);
@@ -1720,7 +1727,9 @@ describe("runInit", () => {
 			expect(environmentCheck).toContain(
 				"echo \"Error: required binary 'mise' is not installed or not on PATH\"",
 			);
-			expect(environmentCheck).toContain('eval "$(mise activate bash)"');
+			expect(environmentCheck).toContain(
+				'eval "$(mise --cd "$REPO_ROOT" activate bash)"',
+			);
 			expect(environmentCheck).toContain(
 				'export CLAUDE_APPROVAL_POSTURE="${CLAUDE_APPROVAL_POSTURE:-require}"',
 			);

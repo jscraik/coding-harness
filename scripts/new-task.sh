@@ -100,8 +100,12 @@ elif [[ "$base_ref" == */* ]]; then
 		remote_name="$candidate_remote"
 		remote_base_branch="$candidate_branch"
 	fi
-elif [[ "$base_ref" != *"/"* ]] && ! git -C "$REPO_ROOT" rev-parse --verify --quiet "${base_ref}^{commit}" >/dev/null; then
-	remote_base_branch="$base_ref"
+elif [[ "$base_ref" != *"/"* ]]; then
+	if git show-ref --verify --quiet "refs/heads/$base_ref"; then
+		remote_base_branch="$base_ref"
+	elif ! git -C "$REPO_ROOT" rev-parse --verify --quiet "${base_ref}^{commit}" >/dev/null; then
+		remote_base_branch="$base_ref"
+	fi
 fi
 
 if [[ -z "$worktree_path" ]]; then
