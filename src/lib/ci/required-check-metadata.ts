@@ -33,11 +33,13 @@ const CIRCLECI_WORKFLOW_OWNED_CHECKS = new Set<string>([
 ]);
 
 /**
- * Derive canonical required-check metadata for scaffold and migration flows.
+ * Produce normalized required-check metadata (source ownership, GitHub check name, class, and optional enabled) from a CI provider and display name.
  *
- * @param provider - CI provider context for non-external checks
- * @param displayName - Required check display name
- * @returns Normalized source ownership, GitHub check identity, and active class metadata
+ * @param provider - The CI provider identifier used to determine source ownership (e.g., `"circleci"`, `"github-actions"`, or other provider slugs`)
+ * @param displayName - The display name of the required check; certain names (e.g., `"CodeRabbit"`, `"security-scan"`) are handled specially
+ * @param options - Optional derivation flags
+ * @param options.circleciPrimaryCheckName - When present and non-empty, overrides the CircleCI primary check name used to map workflow-owned CircleCI checks
+ * @returns A `RequiredCheckMetadata` object with `sourceAppSlug`, `sourceAppId`, `githubCheckName`, `class` (`"required"` | `"informational"`), and optionally `enabled` when a check should be disabled by default
  */
 export function deriveRequiredCheckMetadata(
 	provider: CIProvider,

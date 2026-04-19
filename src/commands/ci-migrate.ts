@@ -3128,6 +3128,12 @@ function readContractProvider(targetDir: string): CIProvider | null {
 	return null;
 }
 
+/**
+ * Detects the CI provider mode declared in harness.contract.json.
+ *
+ * @param targetDir - Repository root directory to read `harness.contract.json` from
+ * @returns `shadow` or `required` when declared and valid, `null` otherwise
+ */
 function readContractProviderMode(targetDir: string): CIProviderMode | null {
 	const contractPath = resolve(targetDir, "harness.contract.json");
 	if (!existsSync(contractPath)) {
@@ -3147,6 +3153,15 @@ function readContractProviderMode(targetDir: string): CIProviderMode | null {
 	return null;
 }
 
+/**
+ * Detects a primary required check name declared in harness.contract.json, if present.
+ *
+ * Attempts to read and parse `harness.contract.json` and return the trimmed
+ * `ciProviderPolicy.primaryCheckName` when it is a non-empty string; returns
+ * `undefined` if the file is missing, malformed, or the field is absent/empty.
+ *
+ * @returns The trimmed `primaryCheckName` from the contract, or `undefined` when not available.
+ */
 function readContractPrimaryCheckName(targetDir: string): string | undefined {
 	const contractPath = resolve(targetDir, "harness.contract.json");
 	if (!existsSync(contractPath)) {
@@ -3169,6 +3184,19 @@ function readContractPrimaryCheckName(targetDir: string): string | undefined {
 	return undefined;
 }
 
+/**
+ * Read and validate the `ciProviderPolicy` section from a repository's harness.contract.json.
+ *
+ * Validates that `ciProviderPolicy` exists and that required fields are present and well-formed.
+ * In strict mode, enforces that `migrationStage` is one of `dual-provider`, `circleci-primary`, or `circleci-only`
+ * and that `transitionStatusArtifactPath` is provided and non-empty.
+ *
+ * @param targetDir - Repository root directory where `harness.contract.json` is expected.
+ * @param options - Validation options.
+ * @param options.strict - When true, apply stricter validation rules (see description).
+ * @returns An object with `ok: true` and the normalized `CIProviderPolicyConfig` in `value` on success,
+ * or `ok: false` and an `error` string describing the validation or parse failure.
+ */
 function readContractProviderPolicy(
 	targetDir: string,
 	options?: { strict?: boolean | undefined },
@@ -7904,6 +7932,17 @@ function readRequiredCheckNamesFromContract(targetDir: string): string[] {
 	}
 }
 
+/**
+ * Extracts display names of checks from source provider configuration files when available.
+ *
+ * This performs a best-effort scan of discovered GitHub Actions workflow files under the repository for
+ * lines matching a four-space-indented `name: <displayName>` pattern and returns the unique set of those names.
+ * Unreadable files are ignored; non-GitHub Actions providers yield an empty array.
+ *
+ * @param targetDir - Repository root directory in which to resolve provider config paths
+ * @param sourceProvider - CI provider identifier; only `"github-actions"` triggers file scanning
+ * @returns An array of discovered workflow/job display names (unique, insertion order not guaranteed)
+ */
 function readRequiredCheckNamesFromSourceProviderConfig(
 	targetDir: string,
 	sourceProvider: CIProvider,
@@ -7980,6 +8019,14 @@ function buildImportedRequiredChecks(
 	});
 }
 
+/**
+ * Writes the required checks manifest to .harness/ci-required-checks.json for the given repository.
+ *
+ * @param targetDir - Repository root directory where the manifest will be written
+ * @param provider - The active CI provider to record in the manifest
+ * @param requiredChecks - Array of required check identities to include in the manifest
+ * @returns An object with `ok: true` on success; on failure `ok: false` and an `error` string describing the failure
+ */
 function writeRequiredChecksManifest(
 	targetDir: string,
 	provider: CIProvider,
@@ -8013,6 +8060,17 @@ function writeRequiredChecksManifest(
 	}
 }
 
+/**
+ * Reads the project's required-checks manifest or imports legacy required-check names from the contract/workflow sources when the manifest is absent.
+ *
+ * Attempts to return an existing `.harness/ci-required-checks.json` parsed into `RequiredCheckIdentity[]`. If that manifest is missing, discovers required-check names from `harness.contract.json` and the source provider workflow/config, derives canonical required-check identities, and optionally persists a new manifest.
+ *
+ * @param targetDir - Repository root directory to read/write manifests and configs
+ * @param sourceProvider - Source CI provider used when deriving check metadata
+ * @param allowPersistManifest - When true, write an imported required-checks manifest back to the repository
+ * @param options - Optional metadata-derivation settings used when importing legacy check names
+ * @returns On success, `{ ok: true, value, imported, persisted }` where `value` is the resolved list of required-check identities, `imported` is true when the list was discovered (not read from an existing manifest), and `persisted` is true when an imported list was written to disk. On failure, `{ ok: false, error }` with a descriptive error string.
+ */
 function readOrImportRequiredChecks(
 	targetDir: string,
 	sourceProvider: CIProvider,
@@ -8088,6 +8146,14 @@ function readOrImportRequiredChecks(
 	};
 }
 
+/**
+ * Loads and validates the repository's required checks manifest at `.harness/ci-required-checks.json`.
+ *
+ * Ensures the manifest defines `requiredChecks` as an array of valid `RequiredCheckIdentity` records and returns only entries whose `class` is `"required"` and whose `enabled` field is not `false`.
+ *
+ * @param targetDir - Repository root directory containing the `.harness` directory.
+ * @returns On success, `{ ok: true, value: RequiredCheckIdentity[] }` containing validated required checks. On failure, `{ ok: false, error: string }` describing the problem (missing manifest, parse error, or invalid entries).
+ */
 function readAllRequiredChecks(targetDir: string):
 	| {
 			ok: true;
@@ -9076,6 +9142,16 @@ function hashRequiredCheckNames(requiredCheckNames: string[]): string {
 	return hashContent(JSON.stringify([...requiredCheckNames].sort()));
 }
 
+/**
+ * CLI entry point that executes the full `harness ci-migrate` workflow, orchestrating actions
+ * such as prepare, commit, abort, verify, bootstrap, apply/rollback modes, merge-queue orchestration,
+ * break-glass checks, snapshot/state handling, and required-check/proof-pack evaluation.
+ *
+ * @param targetDir - Repository root directory to operate on. If omitted, the current working directory is used.
+ * @param options - Runtime CLI options that control action selection, provider, snapshot id, dry-run/apply/rollback
+ *                  behavior, merge-queue orchestration, break-glass inputs, and other migration flags.
+ * @returns `EXIT_CODES.SUCCESS` on success, or another `EXIT_CODES.*` value indicating the specific failure reason.
+ */
 export function runCIMigrateCLI(
 	targetDir: string | undefined,
 	options: CIMigrateOptions,

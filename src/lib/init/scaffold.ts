@@ -110,15 +110,23 @@ function renderMemoryValidateCommand(): string {
 	return `test -f memory.json && jq -e '.meta.version == "1.0" and (.preamble.bootstrap | type == "boolean") and (.preamble.search | type == "boolean") and (.entries | type == "array")' memory.json >/dev/null`;
 }
 
+/**
+ * Escapes all RegExp metacharacters in a string so it can be used as a literal in a regular expression.
+ *
+ * @param value - The input string to escape
+ * @returns The input with regex metacharacters (e.g., . * + ? ^ $ { } ( ) | [ ] \ ) prefixed by a backslash
+ */
 function escapeRegexLiteral(value: string): string {
 	return value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 }
 
 /**
- * Return the branch-protection required check identifiers for a given render context.
+ * Determine which branch-protection required check identifiers apply for a given render context.
  *
- * @param context - Optional render context subset whose `issueTracker` value controls inclusion of tracker-specific checks
- * @returns An array of required check names; when `context.issueTracker` is `"github"` or `"none"`, the `linear-gate` entry is omitted
+ * When the provided `context.issueTracker` is `"github"` or `"none"`, the `linear-gate` check is omitted.
+ *
+ * @param context - Optional subset of the template render context; only `issueTracker` is consulted
+ * @returns An array of required check identifier strings; excludes `linear-gate` when `context.issueTracker` is `"github"` or `"none"`
  */
 function getBranchProtectionRequiredChecks(
 	context?: Pick<TemplateRenderContext, "issueTracker">,
@@ -133,13 +141,13 @@ function getBranchProtectionRequiredChecks(
 }
 
 /**
- * Return canonical required-check names for a provider/context pair.
+ * Get the canonical list of required branch-check identifiers for a given CI provider and context.
  *
- * `circleci` always includes `security-scan` and positions it before `CodeRabbit`.
+ * When `ciProvider` is `"circleci"`, ensures `security-scan` is present and placed immediately before `CodeRabbit`.
  *
- * @param ciProvider - CI provider used for normalization
- * @param context - Optional issue-tracker render context affecting base check selection
- * @returns Normalized required-check list used across scaffold outputs
+ * @param ciProvider - CI provider used to normalize required checks
+ * @param context - Optional render context whose `issueTracker` can alter the base required-check selection
+ * @returns The normalized, ordered list of required-check identifiers for use in scaffold outputs
  */
 function getNormalizedRequiredChecks(
 	ciProvider: CIProvider,
@@ -175,18 +183,18 @@ function insertSecurityScanBeforeCodeRabbit(
 }
 
 /**
- * Builds the JSON manifest describing required CI checks used for branch protection.
+ * Generate the JSON manifest describing required CI checks for branch protection.
  *
- * The manifest contains a `version`, `activeProvider`, and a `requiredChecks` array where
- * each entry includes policy id, display name, source app identifiers, an exact-match
- * external ID pattern, required events, a 7-day freshness window, a `class`, and a
- * `githubCheckName`. When `ciProvider` is `"circleci"`, `security-scan` is injected into
- * the checks sequence (placed before `CodeRabbit` when present) and is marked as
- * `class: "informational"` and `enabled: false`.
+ * The manifest is an object with `version`, `activeProvider`, and `requiredChecks`.
+ * Each required check includes `policyId`, `displayName`, `sourceAppSlug`, `sourceAppId`,
+ * `externalIdPattern` (an exact-match regex for the canonical GitHub check name),
+ * `requiredOnEvents`, `freshnessWindowDays`, `class`, `enabled`, and `githubCheckName`.
+ * When `ciProvider` is `"circleci"`, a `security-scan` check may be injected (placed before
+ * `CodeRabbit` when present); checks with `enabled === false` are omitted from the serialized output.
  *
- * @param ciProvider - The CI provider to target (e.g., `"github-actions"` or `"circleci"`).
- * @param context - Optional render context affecting check selection (only `issueTracker` is used).
- * @returns The manifest serialized as a pretty-printed JSON string.
+ * @param ciProvider - The target CI provider (e.g., `"github-actions"` or `"circleci"`).
+ * @param context - Optional render context; only `issueTracker` is consulted for check selection.
+ * @returns A pretty-printed JSON string representing the manifest with `version`, `activeProvider`, and `requiredChecks`.
  */
 function renderRequiredChecksManifest(
 	ciProvider: CIProvider,
@@ -227,14 +235,13 @@ function renderRequiredChecksManifest(
 }
 
 /**
- * Return canonical GitHub check names for branch protection, derived from the normalized required checks.
+ * Produce canonical GitHub check names for branch protection based on the normalized required checks.
  *
- * This function ensures that all branch-protection outputs use the same canonical `githubCheckName` values
- * that are defined in the required-checks manifest, rather than the display names.
+ * Filters out checks that are marked disabled in their metadata.
  *
- * @param ciProvider - The CI provider to target (e.g., `"github-actions"` or `"circleci"`).
- * @param context - Optional render context affecting check selection (only `issueTracker` is used).
- * @returns An array of canonical GitHub check names suitable for branch protection configuration.
+ * @param ciProvider - The CI provider to target, e.g. `"github-actions"` or `"circleci"`.
+ * @param context - Optional render context; only `issueTracker` influences selection.
+ * @returns An array of canonical GitHub check names to be used in branch protection configuration.
  */
 function getBranchProtectionGithubCheckNames(
 	ciProvider: CIProvider,
@@ -254,6 +261,11 @@ function getBranchProtectionGithubCheckNames(
 		.map((metadata) => metadata.githubCheckName);
 }
 
+/**
+ * Produces a JSON string representing the CI provider transition status artifact.
+ *
+ * @returns A JSON string containing `schemaVersion: "ci-provider-transition-status/v1"`, `nextGateComplete: false`, and `updatedAt` set to a fixed timestamp
+ */
 function renderTransitionStatusArtifact(): string {
 	return JSON.stringify(
 		{
@@ -267,9 +279,9 @@ function renderTransitionStatusArtifact(): string {
 }
 
 /**
- * Generate the default .npmrc file content used when scaffolding a repository.
+ * Generates the default `.npmrc` content used when scaffolding a repository.
  *
- * @returns The text contents of a default `.npmrc` configured with registry, install/peer dependency and node linker settings, and comments instructing that authentication should be provided via user-level or CI-injected `~/.npmrc`.
+ * @returns The `.npmrc` file contents including registry, install/peer dependency and node-linker settings, plus comments advising that authentication should come from a user-level or CI-injected `~/.npmrc`
  */
 function renderDefaultNpmrc(): string {
 	return `@brainwav:registry=https://registry.npmjs.org/
@@ -286,15 +298,14 @@ node-linker=hoisted
 }
 
 /**
- * Produce a CircleCI configuration YAML tailored for a Node.js project.
+ * Generate a CircleCI workflow YAML configured for Node.js projects.
  *
- * The `pm` parameter controls package-manager-specific adjustments: when `pm` is
- * `"pnpm"`, the generated config uses a frozen-lockfile install command and
- * includes steps to configure and cache the pnpm store; for other package
- * managers it emits a generic install step.
+ * The `pm` parameter controls package-manager-specific behavior: when `"pnpm"` is used
+ * the config includes pnpm store configuration and caching and installs with a frozen lockfile;
+ * other values produce a generic install step.
  *
  * @param pm - Package manager identifier (e.g., `"pnpm"`, `"yarn"`, `"npm"`)
- * @returns The complete CircleCI config YAML as a string
+ * @returns The complete CircleCI configuration YAML as a string
  */
 function renderCircleCIConfig(pm: string): string {
 	const installCommand =

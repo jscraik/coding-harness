@@ -93,6 +93,12 @@ function toRepoRelativePath(targetDir: string, absolutePath: string): string {
 	return relative.startsWith("/") ? relative.slice(1) : relative;
 }
 
+/**
+ * Discover GitHub Actions workflow files under a repository directory.
+ *
+ * @param targetDir - Path to the repository root to search for workflows
+ * @returns A sorted array of repository-relative paths to workflow files (files ending with `.yml` or `.yaml` located under `.github/workflows`). Returns an empty array if the workflows directory does not exist.
+ */
 function listWorkflowFiles(targetDir: string): string[] {
 	const workflowsDir = resolve(targetDir, ".github", "workflows");
 	if (!existsSync(workflowsDir)) {
