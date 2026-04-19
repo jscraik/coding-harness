@@ -10,7 +10,7 @@
 
 ## 4. JavaScript / TypeScript
 - Canonical TypeScript rules live in [08-typescript.md](./08-typescript.md).
-- Do not duplicate TypeScript policy rules in this file.
+- This index MUST NOT duplicate TypeScript policy rules.
 
 ## 5. React Standards
 - Canonical React rules live in [09-web.md](./09-web.md#react).
@@ -25,6 +25,6 @@
 - Canonical Storybook rules live in [09-web.md](./09-web.md#storybook).
 
 ## Cross-cutting JS/UI rules
-- Keep JS/UI standards split by domain and avoid parallel copies.
-- If a rule applies to TypeScript and web UI, place it in the domain-specific module and link to it.
-- Use this file as an index, not a second source of truth.
+- JS/UI standards MUST stay split by domain and MUST avoid parallel copies.
+- If a rule applies to TypeScript and web UI, it SHOULD be defined in the domain-specific module and linked here.
+- This file MUST be treated as an index, not a second source of truth.
