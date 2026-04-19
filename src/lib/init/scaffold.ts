@@ -340,13 +340,17 @@ ${saveCacheStep}      - run:
             ${testCiCommand}
             ${auditCommand}
       - run:
+          name: Ensure test artifacts directory
+          command: |
+            mkdir -p artifacts/test
+      - run:
           name: Dogfood silent-error detection
           command: |
             bash scripts/harness-cli.sh silent-error --dirs src --strict
       - store_test_results:
-          path: artifacts/test-results
+          path: artifacts/test
       - store_artifacts:
-          path: artifacts/test-results
+          path: artifacts/test
 
 workflows:
   pr-pipeline:
@@ -1543,12 +1547,7 @@ export const TEMPLATES: Template[] = [
 					},
 					docsDriftRules: {},
 					branchProtection: {
-						requiredChecks: [
-							...getNormalizedRequiredChecks(
-								context.ciProvider ?? DEFAULT_CI_PROVIDER,
-								context,
-							),
-						],
+						requiredChecks: [...getBranchProtectionRequiredChecks(context)],
 						restrictDeletions: true,
 						blockForcePushes: true,
 						requireLinearHistory: true,
