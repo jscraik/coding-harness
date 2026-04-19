@@ -568,6 +568,8 @@ export interface CIProviderPolicy {
 	transitionStatusArtifactPath: string;
 	authorityConfigPath: string;
 	requiredCheckManifestPath: string;
+	/** Optional override for the canonical CircleCI workflow-level check context. */
+	primaryCheckName?: string | undefined;
 	/** Required for team/enterprise mode; omit for solo. */
 	trustedPolicyRef?: string | undefined;
 	/**

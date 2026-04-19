@@ -10220,7 +10220,7 @@ function printProviderCheckNameAdvice(
 ): void {
 	const lines: string[] = [""];
 	if (provider === "circleci") {
-		const primaryCheckName =
+		const workflowCheckName =
 			typeof circleciPrimaryCheckName === "string" &&
 			circleciPrimaryCheckName.trim().length > 0
 				? circleciPrimaryCheckName.trim()
@@ -10230,7 +10230,7 @@ function printProviderCheckNameAdvice(
 			"   Individual CI jobs (lint, test, …) are NOT visible as separate GitHub checks.",
 			"   Add these workflow names to GitHub branch protection rulesets:",
 			"",
-			`     ${primaryCheckName}    ← main CI workflow`,
+			`     ${workflowCheckName}    ← main CI workflow`,
 			"     harness-gates  ← harness gate workflow (if present)",
 			"",
 			"   Run: harness branch-protect --apply to sync ruleset required checks.",
