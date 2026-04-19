@@ -28,10 +28,20 @@ while (( $# > 0 )); do
 	case "$1" in
 		--repo-root)
 			repo_root="${2:-}"
+			if [[ -z "$repo_root" ]]; then
+				echo "[codestyle-parity] error: --repo-root requires a non-empty value" >&2
+				usage >&2
+				exit 2
+			fi
 			shift 2
 			;;
 		--manifest)
 			manifest_path="${2:-}"
+			if [[ -z "$manifest_path" ]]; then
+				echo "[codestyle-parity] error: --manifest requires a non-empty value" >&2
+				usage >&2
+				exit 2
+			fi
 			shift 2
 			;;
 		-h|--help)
@@ -45,6 +55,17 @@ while (( $# > 0 )); do
 			;;
 	esac
 done
+
+# Validate and resolve repo_root before use (portable across GNU/BSD realpath)
+if [[ ! -d "$repo_root" ]]; then
+	echo "[codestyle-parity] error: repo-root does not exist or is not accessible: $repo_root" >&2
+	exit 1
+fi
+if ! resolved_repo_root="$(realpath "$repo_root" 2>/dev/null)"; then
+	echo "[codestyle-parity] error: repo-root does not exist or is not accessible: $repo_root" >&2
+	exit 1
+fi
+repo_root="$resolved_repo_root"
 
 if [[ -z "$manifest_path" ]]; then
 	manifest_path="$repo_root/codestyle/CHECKSUMS.sha256"
@@ -97,16 +118,12 @@ while IFS= read -r raw_line || [[ -n "$raw_line" ]]; do
 
 	# Resolve to absolute path and verify containment within repo_root
 	if ! resolved_path="$(realpath "$target_path" 2>/dev/null)"; then
-		echo "[codestyle-parity] unable to resolve codestyle file path: $relative_path" >&2
+		echo "[codestyle-parity] missing codestyle file: $relative_path" >&2
 		exit 1
 	fi
 
-	if ! resolved_repo_root="$(realpath "$repo_root" 2>/dev/null)"; then
-		echo "[codestyle-parity] unable to resolve repo root: $repo_root" >&2
-		exit 1
-	fi
-
-	if [[ "$resolved_path" != "$resolved_repo_root"/* && "$resolved_path" != "$resolved_repo_root" ]]; then
+	# repo_root is already resolved at this point
+	if [[ "$resolved_path" != "$repo_root"/* && "$resolved_path" != "$repo_root" ]]; then
 		echo "[codestyle-parity] path traversal detected: $relative_path resolves outside repo root" >&2
 		exit 1
 	fi

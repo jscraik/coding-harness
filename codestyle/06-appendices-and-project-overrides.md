@@ -15,7 +15,7 @@
 
 ## Appendix B — Waivers (Uniform Model)
 
-Any waiver across ESLint, Vale, Semgrep, Clippy, and CI checks MUST include these fields unless a command contract defines a tool-specific override schema:
+Any waiver across ESLint, Vale, Semgrep, Clippy, CI checks MUST include:
 
 * Rule ID or section
 * Reason
@@ -33,11 +33,22 @@ For diff-budget overrides (runtime-enforced shape):
 Example waiver file:
 
 ```yaml
-id: WAIVER-001
-rule: no-unsafe-type-assertion
-reason: "Temporary migration of legacy API; runtime validator landing next"
-ticket: GOV-999
-expires: YYYY-MM-DD
+# .codestyle-waiver.yml
+waivers:
+  - ruleId: "eslint:no-console"
+    reason: "CLI tool requires console output for user feedback"
+    trackingTicket: "JSC-123"
+    expiry: "2026-06-30"
+
+  - ruleId: "vale:Google.FirstPerson"
+    reason: "User-facing docs require first-person voice per product guidelines"
+    trackingTicket: "JSC-456"
+    adrReference: "docs/adr/0042-documentation-voice.md"
+
+diffBudgetOverrides:
+  - approvedBy: "tech-lead@example.com"
+    reason: "Emergency hotfix for production incident INC-789"
+    timestamp: "2026-04-19T10:30:00Z"
 ```
 
 ---
