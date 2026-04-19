@@ -299,7 +299,11 @@ node-linker=hoisted
 function renderCircleCIConfig(pm: string): string {
 	const installCommand =
 		pm === "pnpm" ? "pnpm install --frozen-lockfile" : renderInstallCommand(pm);
-	const checkCommand = renderScriptCommand(pm, "check");
+	const lintCommand = renderScriptCommand(pm, "lint");
+	const typecheckCommand = renderScriptCommand(pm, "typecheck");
+	const testCiCommand =
+		pm === "pnpm" ? "pnpm test:ci" : renderScriptCommand(pm, "test");
+	const auditCommand = renderScriptCommand(pm, "audit");
 	const configureCacheStep =
 		pm === "pnpm"
 			? `      - run:
@@ -345,18 +349,28 @@ jobs:
               echo 'export NPM_CONFIG_PREFIX="$HOME/.local"' >> "$BASH_ENV"
               echo 'export PATH="$HOME/.local/bin:$PATH"' >> "$BASH_ENV"
               npm install --global --prefix "$NPM_CONFIG_PREFIX" "pnpm@${"${required_pnpm_version}"}"
-            fi
-            pnpm --version
+	            fi
+	            pnpm --version
 ${configureCacheStep}      - run:
+          name: Inject npm auth
+          command: |
+            if [[ -n "${"${NPM_TOKEN:-}"}" ]]; then
+              printf '%s\n' "//registry.npmjs.org/:_authToken=$NPM_TOKEN" >> "$HOME/.npmrc"
+            fi
+      - run:
           name: Install dependencies
           command: ${installCommand}
 ${saveCacheStep}      - run:
           name: Policy Bundle
-          command: ${checkCommand}
+          command: |
+            ${lintCommand}
+            ${typecheckCommand}
+            ${testCiCommand}
+            ${auditCommand}
       - run:
           name: Dogfood silent-error detection
           command: |
-            bash scripts/harness-cli.sh silent-error --path src --fail-on=error
+            bash scripts/harness-cli.sh silent-error --dirs src --strict
       - store_test_results:
           path: artifacts/test-results
       - store_artifacts:
@@ -1623,7 +1637,7 @@ export const TEMPLATES: Template[] = [
 						},
 					},
 					runtimePolicy: {
-						nodeVersion: "20.x",
+						nodeVersion: "24.x",
 						createIssueOnAgentFindings: true,
 					},
 					memoryPolicy: {

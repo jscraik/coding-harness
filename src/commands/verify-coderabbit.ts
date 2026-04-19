@@ -155,7 +155,7 @@ function verifyCodeRabbitConfig(repoPath: string): CodeRabbitCheck {
  * Checks for presence of the file, scoped registry entries, an embedded `_authToken`, and whether `ignore-scripts=true` is set; provides recommendations when insecure or missing settings are found.
  *
  * @param repoPath - Filesystem path to the repository root where `.npmrc` should be inspected
- * @returns A `CodeRabbitCheck` describing the outcome: `status` is `"pass"` when `.npmrc` exists and no recommendations are needed (features included when present), `"warn"` when the file is missing or contains recommendations (for example missing `ignore-scripts=true` or presence of `_authToken`), and `"fail"` if the file cannot be read (message includes the read error)
+ * @returns A `CodeRabbitCheck` describing the outcome: `status` is `"pass"` when `.npmrc` exists and no issues are found, `"warn"` for non-critical recommendations (for example missing `ignore-scripts=true`), and `"fail"` for critical issues (missing `@brainwav:registry`, embedded `_authToken`, or read errors)
  */
 function verifyNpmrc(repoPath: string): CodeRabbitCheck {
 	const npmrcPath = resolve(repoPath, ".npmrc");

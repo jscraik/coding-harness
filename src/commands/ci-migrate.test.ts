@@ -4414,7 +4414,12 @@ describe("runCIMigrateCLI", () => {
 			JSON.stringify(
 				{
 					branchProtection: {
-						requiredChecks: ["lint", "typecheck", "CodeRabbit"],
+						requiredChecks: [
+							"lint",
+							"typecheck",
+							"security-scan",
+							"CodeRabbit",
+						],
 					},
 				},
 				null,
@@ -4444,6 +4449,7 @@ describe("runCIMigrateCLI", () => {
 		expect(manifest.requiredChecks.map((check) => check.displayName)).toEqual([
 			"CodeRabbit",
 			"lint",
+			"security-scan",
 			"typecheck",
 		]);
 		expect(
@@ -4458,17 +4464,44 @@ describe("runCIMigrateCLI", () => {
 		).toBe("coderabbit");
 		expect(
 			manifest.requiredChecks
-				.filter((check) => check.displayName !== "CodeRabbit")
+				.filter(
+					(check) =>
+						check.displayName !== "CodeRabbit" &&
+						check.displayName !== "security-scan",
+				)
 				.every((check) => check.sourceAppSlug === "circleci"),
 		).toBe(true);
 		expect(
 			manifest.requiredChecks
-				.filter((check) => check.displayName !== "CodeRabbit")
+				.filter(
+					(check) =>
+						check.displayName !== "CodeRabbit" &&
+						check.displayName !== "security-scan",
+				)
 				.every((check) => check.sourceAppId === "circleci"),
 		).toBe(true);
 		expect(
+			manifest.requiredChecks.find(
+				(check) => check.displayName === "security-scan",
+			)?.sourceAppSlug,
+		).toBe("github-actions");
+		expect(
+			manifest.requiredChecks.find(
+				(check) => check.displayName === "security-scan",
+			)?.sourceAppId,
+		).toBe("github-actions");
+		expect(
+			manifest.requiredChecks.find(
+				(check) => check.displayName === "security-scan",
+			)?.githubCheckName,
+		).toBe("security-scan");
+		expect(
 			manifest.requiredChecks
-				.filter((check) => check.displayName !== "CodeRabbit")
+				.filter(
+					(check) =>
+						check.displayName !== "CodeRabbit" &&
+						check.displayName !== "security-scan",
+				)
 				.every((check) => check.githubCheckName === CIRCLECI_PRIMARY_CHECK),
 		).toBe(true);
 		expect(

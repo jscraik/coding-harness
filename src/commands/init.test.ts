@@ -323,11 +323,15 @@ describe("runInit", () => {
 			expect(circleConfig).toContain(
 				'npm install --global --prefix "$NPM_CONFIG_PREFIX" "pnpm@${required_pnpm_version}"',
 			);
+			expect(circleConfig).toContain("name: Inject npm auth");
+			expect(circleConfig).toContain(
+				'"//registry.npmjs.org/:_authToken=$NPM_TOKEN"',
+			);
 			expect(circleConfig).toContain("pnpm install --frozen-lockfile");
 			expect(circleConfig).toContain("name: Policy Bundle");
 			expect(circleConfig).toContain("name: Dogfood silent-error detection");
 			expect(circleConfig).toContain(
-				"bash scripts/harness-cli.sh silent-error --path src --fail-on=error",
+				"bash scripts/harness-cli.sh silent-error --dirs src --strict",
 			);
 			expect(circleConfig).toContain("store_test_results:");
 			expect(circleConfig).toContain("path: artifacts/test-results");
