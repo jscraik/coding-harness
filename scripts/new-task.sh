@@ -91,7 +91,6 @@ if [[ "$base_ref" == refs/remotes/*/* ]]; then
 	explicit_remote_ref=1
 	remote_name="${base_ref#refs/remotes/}"
 	remote_name="${remote_name%%/*}"
-	remote_base_branch="${base_ref#refs/remotes/${remote_name}/}"
 elif [[ "$base_ref" == */* ]]; then
 	candidate_remote="${base_ref%%/*}"
 	candidate_branch="${base_ref#*/}"
@@ -101,7 +100,7 @@ elif [[ "$base_ref" == */* ]]; then
 		remote_base_branch="$candidate_branch"
 	fi
 elif [[ "$base_ref" != *"/"* ]]; then
-	if git show-ref --verify --quiet "refs/heads/$base_ref"; then
+	if git -C "$REPO_ROOT" show-ref --verify --quiet "refs/heads/$base_ref"; then
 		remote_base_branch="$base_ref"
 	elif ! git -C "$REPO_ROOT" rev-parse --verify --quiet "${base_ref}^{commit}" >/dev/null; then
 		remote_base_branch="$base_ref"
