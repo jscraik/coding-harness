@@ -91,7 +91,9 @@ export type IndexerErrorCode =
 	| "FILE_TOO_LARGE"
 	| "READ_FAILED"
 	| "PARSE_FAILED"
-	| "EMBED_FAILED";
+	| "EMBED_FAILED"
+	| "BACKEND_UNAVAILABLE"
+	| "BACKEND_MISCONFIGURED";
 
 /**
  * Error details from indexer.

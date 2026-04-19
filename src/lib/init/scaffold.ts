@@ -10,6 +10,7 @@
 import { existsSync, readFileSync } from "node:fs";
 import { resolve } from "node:path";
 import { fileURLToPath } from "node:url";
+import { deriveRequiredCheckMetadata } from "../ci/required-check-metadata.js";
 import {
 	DEFAULT_CI_PROVIDER_POLICY,
 	DEFAULT_CONTRACT,
@@ -208,9 +209,9 @@ function renderRequiredChecksManifest(
 		(displayName, index) => ({
 			policyId: `required-check-${index + 1}`,
 			displayName,
-			sourceAppSlug: ciProvider,
-			sourceAppId: ciProvider,
-			externalIdPattern: `^${escapeRegexLiteral(displayName)}$`,
+			sourceAppSlug: metadata.sourceAppSlug,
+			sourceAppId: metadata.sourceAppId,
+			externalIdPattern: `^${escapeRegexLiteral(metadata.githubCheckName)}$`,
 			requiredOnEvents: ["pull_request", "merge_group"] as const,
 			freshnessWindowDays: 7,
 			class: "required" as const,
@@ -232,6 +233,11 @@ function renderRequiredChecksManifest(
 	);
 }
 
+/**
+ * Produces a JSON string representing the CI provider transition status artifact.
+ *
+ * @returns A JSON string containing `schemaVersion: "ci-provider-transition-status/v1"`, `nextGateComplete: false`, and `updatedAt` set to a fixed timestamp
+ */
 function renderTransitionStatusArtifact(): string {
 	return JSON.stringify(
 		{
@@ -300,7 +306,9 @@ function renderCircleCIConfig(pm: string): string {
 jobs:
   pr-pipeline:
     docker:
+      # Pinned to specific minor for reproducibility (JSC-115)
       - image: cimg/node:24.13
+    resource_class: small
     steps:
       - checkout
       - run:
@@ -319,6 +327,12 @@ jobs:
               npm install --global --prefix "$NPM_CONFIG_PREFIX" "pnpm@${"${required_pnpm_version}"}"
             fi
             pnpm --version
+${configureCacheStep}      - run:
+          name: Inject npm auth
+          command: |
+            if [[ -n "${"${NPM_TOKEN:-}"}" ]]; then
+              printf '%s\n' "//registry.npmjs.org/:_authToken=$NPM_TOKEN" >> "$HOME/.npmrc"
+            fi
       - run:
           name: Install dependencies
           command: ${installCommand}
@@ -463,9 +477,11 @@ function renderValidateCodestyleScript(): string {
 /**
  * Produces a bash script that prepares a newly created git worktree for local hooks and pre-push checks.
  *
- * The generated script validates it's inside a git worktree, requires a package.json, verifies the requested
- * package manager and Node are on PATH, optionally installs dependencies, and runs the repository's
- * hook-setup script (`node scripts/setup-git-hooks.js`).
+ * The generated script validates it's inside a git worktree, auto-attaches detached HEAD checkouts to a
+ * local `codex/*` branch, fast-forwards the newly attached branch to latest `origin/main` when available,
+ * requires a package.json, verifies the requested package manager and Node are on PATH, optionally installs
+ * dependencies, and runs the repository's hook-setup script
+ * (`node scripts/setup-git-hooks.js`).
  *
  * @param packageManager - The package manager executable name used to construct the install command (e.g., "npm", "pnpm", "yarn").
  * @returns A complete POSIX-compatible bash script as a string. When executed, the script exits with:
@@ -1190,7 +1206,9 @@ export function shouldSkipDueToNewerToolingVersion(
  * Generates the Codex "local environment" TOML used by Codex/CodeRabbit for the repository.
  *
  * Produces a TOML document (prefixed with the autogen header) that defines a setup script
- * (runs `mise install` followed by the package-manager install command) and a set of action blocks:
+ * (auto-attaches detached git worktrees to a local `codex/*` branch, fast-forwards to latest
+ * `origin/main` when available, trusts `.mise.toml`, then runs `mise install`, followed by the
+ * package-manager install command) and a set of action blocks:
  * - standard Tools/Run/Debug/Test actions (Run/Debug/Test will contain a deterministic failing placeholder when the corresponding npm script is absent),
  * - required tool actions from the harness constants,
  * - one action per script found in `context.packageScripts`, each assigned an inferred icon.
@@ -1203,7 +1221,34 @@ function renderCodexEnvironmentTemplate(
 	packageManager: string,
 	context: TemplateRenderContext,
 ): string {
-	const installCommand = `mise install\n${renderInstallCommand(packageManager)}`;
+	const installCommand = `if command -v git >/dev/null 2>&1 && git rev-parse --is-inside-work-tree >/dev/null 2>&1; then
+  current_branch="$(git symbolic-ref --short -q HEAD || true)"
+  if [ -z "$current_branch" ]; then
+    repo_slug="$(basename "$PWD" | tr '[:upper:]' '[:lower:]' | sed -E 's/[^a-z0-9]+/-/g; s/^-+//; s/-+$//')"
+    if [ -z "$repo_slug" ]; then
+      repo_slug="worktree"
+    fi
+    short_sha="$(git rev-parse --short HEAD)"
+    branch_base="codex/$repo_slug-worktree-$short_sha"
+    branch_name="$branch_base"
+    suffix=1
+    while git show-ref --verify --quiet "refs/heads/$branch_name"; do
+      branch_name="$branch_base-$suffix"
+      suffix=$((suffix + 1))
+    done
+    echo "[codex] detached HEAD detected; creating branch $branch_name"
+    git switch -c "$branch_name"
+    if git show-ref --verify --quiet "refs/remotes/origin/main"; then
+      git branch --set-upstream-to=origin/main "$branch_name" >/dev/null 2>&1 || true
+      echo "[codex] tracking origin/main for $branch_name"
+      echo "[codex] fast-forwarding $branch_name with origin/main"
+      git pull --ff-only origin main
+    fi
+  fi
+fi
+mise trust --yes .mise.toml || true
+mise install
+${renderInstallCommand(packageManager)}`;
 	const runScript = pickScriptForIcon(context.packageScripts, "run");
 	const debugScript = pickScriptForIcon(context.packageScripts, "debug");
 	const testScript = pickScriptForIcon(context.packageScripts, "test");
@@ -1616,7 +1661,7 @@ export const TEMPLATES: Template[] = [
 						},
 					},
 					runtimePolicy: {
-						nodeVersion: "20.x",
+						nodeVersion: "24.x",
 						createIssueOnAgentFindings: true,
 					},
 					memoryPolicy: {
@@ -2333,6 +2378,8 @@ jobs:
   secret-scan:
     name: security-scan
     runs-on: ubuntu-latest
+    # Continue-on-error ensures billing/infra failures don't block PRs
+    continue-on-error: true
 
     steps:
       - name: Checkout
@@ -2397,6 +2444,11 @@ jobs:
 - Codex review artifact (URL, report, or comment reference).
 - Confirmation that reviewer agent is independent from coding agent.
 `;
+			const isCircleCI =
+				(context.ciProvider ?? DEFAULT_CI_PROVIDER) === "circleci";
+			const testArtifactTocEntry = isCircleCI
+				? "- [Test runner artifact configuration](#test-runner-artifact-configuration)\n"
+				: "";
 			return `# Contributing
 
 ## Table of Contents
@@ -2411,7 +2463,7 @@ jobs:
 - [Repo-local verification wrapper](#repo-local-verification-wrapper)
 - [Repo-local harness wrapper](#repo-local-harness-wrapper)
 - [Recommended security scanner baseline](#recommended-security-scanner-baseline)
-- [Review artifacts requirement](#review-artifacts-requirement)
+${testArtifactTocEntry}- [Review artifacts requirement](#review-artifacts-requirement)
 - [Credential-safe evidence snippets](#credential-safe-evidence-snippets)
 - [Branch protection recommendation](#branch-protection-recommendation)
 
@@ -2522,7 +2574,7 @@ Recommended policy:
 - Use \`bash scripts/validate-codestyle.sh\` before handoff for the fail-closed codestyle bundle.
 - Use \`bash scripts/verify-work.sh\` for the broader verification bundle.
 - Use \`bash scripts/verify-work.sh --fast\` for preflight + codestyle fast lane coverage.
-- Before the first push from a fresh worktree, run \`bash scripts/prepare-worktree.sh\`.
+- Before the first push from a fresh worktree, run \`bash scripts/prepare-worktree.sh\` to ensure detached checkouts are attached and fast-forwarded to latest \`origin/main\`.
 
 ## Repo-local harness wrapper
 
@@ -2549,7 +2601,23 @@ Recommended policy:
 - Keep scanner binaries available in local development environments and CI runners.
 - Run scanner checks in CI on pull requests and pushes to protected branches.
 - Treat scanner findings as merge blockers unless explicitly waived with rationale.
+${
+	isCircleCI
+		? `
+## Test runner artifact configuration
 
+CI pipelines collect test results and artifacts from the \`artifacts/test\` directory. Your test framework must be configured to emit JUnit XML reports (or other supported formats) to this location.
+
+Example configurations:
+
+- **Vitest**: \`vitest --reporter=junit --outputFile=artifacts/test/junit.xml\`
+- **Jest**: Configure \`jest.config.js\` with \`reporters: [['jest-junit', { outputDirectory: 'artifacts/test', outputName: 'junit.xml' }]]\`
+- **Mocha**: \`mocha --reporter mocha-junit-reporter --reporter-options mochaFile=artifacts/test/junit.xml\`
+
+Ensure \`artifacts/test\` is created before running tests (CI scaffolds include a step for this).
+`
+		: ""
+}
 ## Review artifacts requirement
 
 Each PR must include:

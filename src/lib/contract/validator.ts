@@ -209,7 +209,9 @@ const VALID_CI_PROVIDER_POLICY_KEYS = [
 	"transitionStatusArtifactPath",
 	"authorityConfigPath",
 	"requiredCheckManifestPath",
+	"primaryCheckName",
 	"trustedPolicyRef",
+	"primaryCheckName",
 	"commitMode",
 ] as const;
 const VALID_GAP_CASE_POLICY_KEYS = [
@@ -985,6 +987,13 @@ function isValidCIProviderPolicy(value: unknown): value is CIProviderPolicy {
 	if (
 		typeof policy.requiredCheckManifestPath !== "string" ||
 		policy.requiredCheckManifestPath.trim().length === 0
+	) {
+		return false;
+	}
+	if (
+		policy.primaryCheckName !== undefined &&
+		(typeof policy.primaryCheckName !== "string" ||
+			policy.primaryCheckName.trim().length === 0)
 	) {
 		return false;
 	}

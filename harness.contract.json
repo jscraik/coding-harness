@@ -712,6 +712,11 @@
 			"dedupeScope": "query"
 		}
 	},
+	"contextCompact": {
+		"thresholdPercent": 85,
+		"microCompactThresholdTokens": 1200,
+		"strategy": "balanced"
+	},
 	"docsGatePolicy": {
 		"enabled": true,
 		"mode": "advisory",

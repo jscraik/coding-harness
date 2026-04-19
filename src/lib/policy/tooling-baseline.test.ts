@@ -20,11 +20,13 @@ describe("tooling baseline codex actions", () => {
 			'git fetch --prune origin main "$release_branch"',
 		);
 		expect(action?.command).toContain(
-			'local_main_ahead_count="$(git rev-list --count origin/main..main)"',
+			'local_main_ahead_count="$(git rev-list --count origin/main..HEAD)"',
 		);
 		expect(action?.command).toContain(
 			"Local main is ahead of origin/main; aborting.",
 		);
+		expect(action?.command).toContain("git pull --ff-only origin main");
+		expect(action?.command).toContain("pull_status=$?");
 		expect(action?.command).toContain(
 			'git merge --ff-only "origin/$release_branch"',
 		);
@@ -34,5 +36,31 @@ describe("tooling baseline codex actions", () => {
 		expect(REQUIRED_CODEX_ACTION_PAIRS).toEqual(
 			expect.arrayContaining([{ name: "Release Finalize", icon: "tool" }]),
 		);
+	});
+
+	it("hardens Mise action for detached worktree bootstrap", () => {
+		const action = REQUIRED_CODEX_TOOL_ACTIONS.find(
+			(candidate) => candidate.name === "Mise",
+		);
+
+		expect(action).toBeDefined();
+		expect(action?.icon).toBe("tool");
+		expect(action?.command).toContain("git rev-parse --is-inside-work-tree");
+		expect(action?.command).toContain(
+			'echo "[codex] detached HEAD detected; creating branch $branch_name"',
+		);
+		expect(action?.command).toContain('git switch -c "$branch_name"');
+		expect(action?.command).toContain(
+			'git branch --set-upstream-to=origin/main "$branch_name"',
+		);
+		expect(action?.command).toContain(
+			'echo "[codex] tracking origin/main for $branch_name"',
+		);
+		expect(action?.command).toContain(
+			'echo "[codex] fast-forwarding $branch_name with origin/main"',
+		);
+		expect(action?.command).toContain("git pull --ff-only origin main");
+		expect(action?.command).toContain("mise trust --yes .mise.toml || true");
+		expect(action?.command).toContain("mise install");
 	});
 });

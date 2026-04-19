@@ -548,3 +548,9 @@ Repository-local skills follow the same convention:
 
 This repository uses **Linear-first** intake. Create or update work in the
 [coding-harness project](https://linear.app/jscraik/project/coding-harness-bb735dbbda79).
+
+## Trust Artifacts
+
+Inspectable reference outputs for the main trust surfaces are in
+[docs/examples/trust-artifacts/](./docs/examples/trust-artifacts/). These
+examples let you verify what the harness produces without running the full system.

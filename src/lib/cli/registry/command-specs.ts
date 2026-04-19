@@ -1,8 +1,10 @@
+import { runAuditCLI } from "../../../commands/audit.js";
 import { runAutomationRunCLI } from "../../../commands/automation-run.js";
 import {
 	type BlastRadiusOptions,
 	runBlastRadiusCLI,
 } from "../../../commands/blast-radius.js";
+import { runBrainCLI } from "../../../commands/brain.js";
 import { runBrainstormGateCLI } from "../../../commands/brainstorm-gate.js";
 import { runBranchProtectCLI } from "../../../commands/branch-protect.js";
 import { runCheckAuthzCLI } from "../../../commands/check-authz.js";
@@ -794,6 +796,16 @@ export const COMMAND_SPECS: CommandSpec[] = [
 		},
 	},
 	{
+		name: "audit",
+		summary:
+			"Comprehensive governance state check with actionable recommendations",
+		example: "audit [--dir <path>] [--json]",
+		errorLabel: "Audit Error",
+		execute: (args) => {
+			return runAuditCLI(args, getVersion);
+		},
+	},
+	{
 		name: "doctor",
 		summary: "Diagnose harness installation and environment issues",
 		example: "doctor --json",
@@ -1044,6 +1056,15 @@ export const COMMAND_SPECS: CommandSpec[] = [
 			}
 
 			return runBrainstormGateCLI(options);
+		},
+	},
+	{
+		name: "brain",
+		summary: "Project Brain knowledge and quality management",
+		example: "brain status --json",
+		errorLabel: "Brain Error",
+		execute: (args) => {
+			return runBrainCLI(args);
 		},
 	},
 	{

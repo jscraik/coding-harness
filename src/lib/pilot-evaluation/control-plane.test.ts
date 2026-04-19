@@ -859,7 +859,7 @@ describe("control-plane artifacts", () => {
 	it("excludes shared non-workflow required checks from workflow-surface drift", () => {
 		const repoDir = join(testDir, "downstream-external-check-repo");
 		const repoArtifactsDir = join(repoDir, "artifacts");
-		const requiredChecks = ["lint", "CodeRabbit", "security-scan"];
+		const requiredChecks = ["lint", "CodeRabbit"];
 		const { contractPath, docsGateReportPath: repoDocsGateReportPath } =
 			writeDownstreamRepoFixture(repoDir, requiredChecks);
 

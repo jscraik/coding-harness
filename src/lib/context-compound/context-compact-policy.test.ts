@@ -28,4 +28,38 @@ describe("loadContextCompactPolicy", () => {
 		const policy = loadContextCompactPolicy(dir);
 		expect(policy).toEqual(DEFAULT_CONTEXT_COMPACT_POLICY);
 	});
+
+	it("loads explicit contextCompact policy from contract", () => {
+		const dir = mkdtempSync(join(tmpdir(), "context-compact-policy-"));
+		tempDirs.push(dir);
+
+		const explicitPolicy = {
+			thresholdPercent: 90,
+			microCompactThresholdTokens: 800,
+			strategy: "aggressive" as const,
+		};
+
+		writeFileSync(
+			join(dir, "harness.contract.json"),
+			JSON.stringify(
+				{ version: "1.0", contextCompact: explicitPolicy },
+				null,
+				2,
+			),
+			"utf-8",
+		);
+
+		const policy = loadContextCompactPolicy(dir);
+		expect(policy).toEqual(explicitPolicy);
+		expect(policy?.thresholdPercent).toBe(90);
+		expect(policy?.strategy).toBe("aggressive");
+	});
+
+	it("returns undefined when contract file does not exist", () => {
+		const dir = mkdtempSync(join(tmpdir(), "context-compact-policy-"));
+		tempDirs.push(dir);
+
+		const policy = loadContextCompactPolicy(dir);
+		expect(policy).toBeUndefined();
+	});
 });

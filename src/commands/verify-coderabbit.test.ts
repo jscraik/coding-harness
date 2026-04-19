@@ -24,6 +24,15 @@ vi.mock("../lib/github/client.js", () => ({
 import { GitHubClient } from "../lib/github/client.js";
 
 const mockGitHubClient = vi.mocked(GitHubClient);
+const DEFAULT_REPO_NPMRC_CONTENT = [
+	"@brainwav:registry=https://registry.npmjs.org/",
+	"ignore-scripts=true",
+	"strict-peer-dependencies=false",
+	"auto-install-peers=false",
+	"shamefully-hoist=false",
+	"node-linker=hoisted",
+	"",
+].join("\n");
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -47,7 +56,7 @@ function createRepoFixture(
 	}
 
 	if (opts.withNpmrc) {
-		const content = opts.npmrcContent ?? "ignore-scripts=true\n";
+		const content = opts.npmrcContent ?? DEFAULT_REPO_NPMRC_CONTENT;
 		writeFileSync(join(repoPath, ".npmrc"), content);
 	}
 
@@ -240,7 +249,7 @@ describe("runVerifyCodeRabbit - .npmrc checks", () => {
 		expect(npmrcCheck?.message).toContain("ignore-scripts=true");
 	});
 
-	it("passes when .npmrc has ignore-scripts=true", async () => {
+	it("fails when .npmrc lacks @brainwav scoped registry", async () => {
 		repoPath = createRepoFixture({
 			withCodeRabbitYaml: true,
 			withNpmrc: true,
@@ -251,15 +260,32 @@ describe("runVerifyCodeRabbit - .npmrc checks", () => {
 		const npmrcCheck = result.checks.find(
 			(c) => c.name === ".npmrc configuration",
 		);
-		expect(npmrcCheck?.status).toBe("pass");
-		expect(npmrcCheck?.message).toContain("Valid .npmrc");
+		expect(npmrcCheck?.status).toBe("fail");
+		expect(npmrcCheck?.message).toContain("@brainwav:registry");
 	});
 
 	it("warns when .npmrc lacks ignore-scripts=true", async () => {
 		repoPath = createRepoFixture({
 			withCodeRabbitYaml: true,
 			withNpmrc: true,
-			npmrcContent: "@myorg:registry=https://registry.npmjs.org/\n",
+			npmrcContent: "@brainwav:registry=https://registry.npmjs.org/\n",
+		});
+		const result = await runVerifyCodeRabbit({ repoPath });
+
+		const npmrcCheck = result.checks.find(
+			(c) => c.name === ".npmrc configuration",
+		);
+		expect(npmrcCheck?.status).toBe("warn");
+		expect(npmrcCheck?.message).toContain("ignore-scripts=true");
+		expect(npmrcCheck?.message).not.toContain("@brainwav:registry");
+	});
+
+	it("warns when ignore-scripts=true exists only in comments", async () => {
+		repoPath = createRepoFixture({
+			withCodeRabbitYaml: true,
+			withNpmrc: true,
+			npmrcContent:
+				"@brainwav:registry=https://registry.npmjs.org/\n# ignore-scripts=true\n",
 		});
 		const result = await runVerifyCodeRabbit({ repoPath });
 
@@ -270,7 +296,7 @@ describe("runVerifyCodeRabbit - .npmrc checks", () => {
 		expect(npmrcCheck?.message).toContain("ignore-scripts=true");
 	});
 
-	it("warns when .npmrc contains an auth token override", async () => {
+	it("fails when .npmrc contains an auth token override", async () => {
 		repoPath = createRepoFixture({
 			withCodeRabbitYaml: true,
 			withNpmrc: true,
@@ -282,16 +308,16 @@ describe("runVerifyCodeRabbit - .npmrc checks", () => {
 		const npmrcCheck = result.checks.find(
 			(c) => c.name === ".npmrc configuration",
 		);
-		expect(npmrcCheck?.status).toBe("warn");
+		expect(npmrcCheck?.status).toBe("fail");
 		expect(npmrcCheck?.message).toContain("user-level ~/.npmrc");
 	});
 
-	it("passes with scoped registry and ignore-scripts=true, lists features", async () => {
+	it("ignores _authToken mention in comment-only guidance", async () => {
 		repoPath = createRepoFixture({
 			withCodeRabbitYaml: true,
 			withNpmrc: true,
 			npmrcContent:
-				"@brainwav:registry=https://registry.npmjs.org/\nignore-scripts=true\n",
+				"@brainwav:registry=https://registry.npmjs.org/\nignore-scripts=true\n# Do not add //registry.npmjs.org/:_authToken=${NPM_TOKEN} here.\n",
 		});
 		const result = await runVerifyCodeRabbit({ repoPath });
 
@@ -299,7 +325,25 @@ describe("runVerifyCodeRabbit - .npmrc checks", () => {
 			(c) => c.name === ".npmrc configuration",
 		);
 		expect(npmrcCheck?.status).toBe("pass");
-		expect(npmrcCheck?.details?.features).toContain("scoped registry");
+		expect(npmrcCheck?.message).toContain("Valid .npmrc");
+		expect(npmrcCheck?.message).not.toContain("user-level ~/.npmrc");
+	});
+
+	it("passes with scoped registry and ignore-scripts=true, lists features", async () => {
+		repoPath = createRepoFixture({
+			withCodeRabbitYaml: true,
+			withNpmrc: true,
+			npmrcContent: DEFAULT_REPO_NPMRC_CONTENT,
+		});
+		const result = await runVerifyCodeRabbit({ repoPath });
+
+		const npmrcCheck = result.checks.find(
+			(c) => c.name === ".npmrc configuration",
+		);
+		expect(npmrcCheck?.status).toBe("pass");
+		expect(npmrcCheck?.details?.features).toContain(
+			"@brainwav scoped registry",
+		);
 		expect(npmrcCheck?.details?.features).toContain(
 			"ignore-scripts=true (security)",
 		);
@@ -817,7 +861,7 @@ describe("runVerifyCodeRabbit - summary and ok flag", () => {
 
 	it("summary counts are accurate across pass, fail, and warn", async () => {
 		// .coderabbit.yaml missing → fail
-		// .npmrc present with ignore-scripts → pass
+		// .npmrc present with secure defaults → pass
 		// no owner/repo → warn (remote checks skipped)
 		repoPath = createRepoFixture({ withNpmrc: true });
 		const result = await runVerifyCodeRabbit({ repoPath });
