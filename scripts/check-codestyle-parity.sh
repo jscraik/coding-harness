@@ -1,6 +1,9 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
+# Ensure realpath is available before using it
+command -v realpath >/dev/null || { echo "[codestyle-parity] error: realpath is required but not found" >&2; exit 1; }
+
 SCRIPT_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd -P)"
 REPO_ROOT_DEFAULT="$(cd -- "$SCRIPT_DIR/.." && pwd -P)"
 
@@ -52,11 +55,6 @@ if [[ ! -f "$manifest_path" ]]; then
 	exit 1
 fi
 
-if ! command -v realpath >/dev/null 2>&1; then
-	echo "[codestyle-parity] missing required command: realpath" >&2
-	exit 1
-fi
-
 if command -v shasum >/dev/null 2>&1; then
 	# hash_file computes the SHA-256 checksum of the given file path and echoes the hexadecimal digest.
 	hash_file() {
@@ -91,12 +89,29 @@ while IFS= read -r raw_line || [[ -n "$raw_line" ]]; do
 	fi
 
 	target_path="$repo_root/$relative_path"
+
 	if [[ ! -f "$target_path" ]]; then
 		echo "[codestyle-parity] missing codestyle file: $relative_path" >&2
 		exit 1
 	fi
 
-	actual_hash="$(hash_file "$target_path")"
+	# Resolve to absolute path and verify containment within repo_root
+	if ! resolved_path="$(realpath "$target_path" 2>/dev/null)"; then
+		echo "[codestyle-parity] unable to resolve codestyle file path: $relative_path" >&2
+		exit 1
+	fi
+
+	if ! resolved_repo_root="$(realpath "$repo_root" 2>/dev/null)"; then
+		echo "[codestyle-parity] unable to resolve repo root: $repo_root" >&2
+		exit 1
+	fi
+
+	if [[ "$resolved_path" != "$resolved_repo_root"/* && "$resolved_path" != "$resolved_repo_root" ]]; then
+		echo "[codestyle-parity] path traversal detected: $relative_path resolves outside repo root" >&2
+		exit 1
+	fi
+
+	actual_hash="$(hash_file "$resolved_path")"
 	if [[ "$actual_hash" != "$expected_hash" ]]; then
 		echo "[codestyle-parity] checksum mismatch: $relative_path" >&2
 		echo "  expected: $expected_hash" >&2
