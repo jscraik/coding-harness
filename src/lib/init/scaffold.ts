@@ -1317,7 +1317,8 @@ function renderCodexEnvironmentTemplate(
     fi
   fi
 fi
-if ! mise trust --status .mise.toml >/dev/null 2>&1; then
+mise_trust_status="$(mise trust --show .mise.toml 2>/dev/null || true)"
+if [[ "$mise_trust_status" != *": trusted"* ]]; then
   echo "[codex] mise config is not trusted"
   echo "[codex] Fix: run 'mise trust --yes .mise.toml' and retry"
   exit 1
@@ -1530,7 +1531,8 @@ hooks:
   after_create: |
     git clone --depth 1 ${renderedRepoUrl} .
     ${installCommand}
-    if ! mise trust --status .mise.toml >/dev/null 2>&1; then
+    mise_trust_status="$(mise trust --show .mise.toml 2>/dev/null || true)"
+    if [[ "$mise_trust_status" != *": trusted"* ]]; then
       echo "[symphony] mise config is not trusted"
       echo "[symphony] Fix: run 'mise trust --yes .mise.toml' and retry"
       exit 1
