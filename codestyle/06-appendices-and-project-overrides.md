@@ -26,13 +26,6 @@ Expired waivers MUST fail CI.
 
 Example waiver file:
 
-```yaml
-id: WAIVER-001
-rule: no-unsafe-type-assertion
-reason: "Temporary migration of legacy API; runtime validator landing next"
-ticket: GOV-999
-expires: 2026-02-01
-```
 
 ---
 
