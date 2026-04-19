@@ -53,7 +53,11 @@ fi
 		exit 1
 	fi
 
-	required_support_files=("scripts/codex-preflight.sh" "scripts/codex-preflight-local-memory-legacy.sh" "scripts/codex-learn" "scripts/codex-enforced" "scripts/verify-work.sh" "scripts/validate-codestyle.sh" "scripts/prepare-worktree.sh" "scripts/new-task.sh" "scripts/validate-commit-msg.js" "scripts/check-hook-critical-config-sync.sh" "scripts/check-staged-secrets.sh" "scripts/check-doc-style.sh" "scripts/check-related-tests.sh" "scripts/check-semgrep-changed.sh" "scripts/semgrep-pre-push.yml")
+	if [[ ! -f "$CODESTYLE_PATH" ]]; then
+		echo "Error: missing CODESTYLE contract at $CODESTYLE_PATH"
+		exit 1
+	fi
+
 	if [[ ! -d "$CODESTYLE_DIR_PATH" ]]; then
 		echo "Error: missing codestyle module directory at $CODESTYLE_DIR_PATH"
 		exit 1
