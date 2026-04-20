@@ -171,10 +171,13 @@ ensure_task_worktree() {
 	done
 	# Check remote after local check; treat ls-remote failures as collisions
 	if git -C "${repo_root}" remote get-url origin >/dev/null 2>&1; then
-		local remote_check_failed=0
-		while ! git -C "${repo_root}" ls-remote --exit-code --heads origin "${WORKTREE_BRANCH_PREFIX}/${slug}" >/dev/null 2>&1; remote_check_failed=$?; [[ $remote_check_failed -ne 2 ]]; do
+		git -C "${repo_root}" ls-remote --exit-code --heads origin "${WORKTREE_BRANCH_PREFIX}/${slug}" >/dev/null 2>&1
+		local remote_check_failed=$?
+		while [[ $remote_check_failed -ne 2 ]]; do
 			slug="${base_slug}-${suffix}"
 			suffix=$((suffix + 1))
+			git -C "${repo_root}" ls-remote --exit-code --heads origin "${WORKTREE_BRANCH_PREFIX}/${slug}" >/dev/null 2>&1
+			remote_check_failed=$?
 		done
 	fi
 
