@@ -189,14 +189,14 @@
       "displayName": "security-scan",
       "sourceAppSlug": "circleci",
       "sourceAppId": "circleci",
-      "externalIdPattern": "^pr-pipeline$",
+      "externalIdPattern": "^security-scan$",
       "requiredOnEvents": [
         "pull_request",
         "merge_group"
       ],
       "freshnessWindowDays": 7,
       "class": "required",
-      "githubCheckName": "pr-pipeline"
+      "githubCheckName": "security-scan"
     },
     {
       "policyId": "required-check-15",

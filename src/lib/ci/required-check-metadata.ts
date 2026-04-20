@@ -65,8 +65,7 @@ export function deriveRequiredCheckMetadata(
 			return {
 				sourceAppSlug: "circleci",
 				sourceAppId: "circleci",
-				githubCheckName:
-					options?.circleciPrimaryCheckName?.trim() || CIRCLECI_PRIMARY_CHECK,
+				githubCheckName: "security-scan",
 				class: "required",
 			};
 		}

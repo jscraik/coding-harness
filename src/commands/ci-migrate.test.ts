@@ -4495,7 +4495,12 @@ describe("runCIMigrateCLI", () => {
 			manifest.requiredChecks.find(
 				(check) => check.displayName === "security-scan",
 			)?.githubCheckName,
-		).toBe(CIRCLECI_PRIMARY_CHECK);
+		).toBe("security-scan");
+		expect(
+			manifest.requiredChecks.find(
+				(check) => check.displayName === "security-scan",
+			)?.externalIdPattern,
+		).toBe("^security-scan$");
 		expect(
 			manifest.requiredChecks.find(
 				(check) => check.displayName === "security-scan",

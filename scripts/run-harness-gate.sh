@@ -22,6 +22,13 @@ if [[ -x "$REPO_ROOT/scripts/harness-cli.sh" ]]; then
 	exec bash "$REPO_ROOT/scripts/harness-cli.sh" "$@"
 fi
 
+if command -v mise >/dev/null 2>&1; then
+	MISE_RESOLVED="$(mise which harness 2>/dev/null || true)"
+	if [[ -n "$MISE_RESOLVED" && -x "$MISE_RESOLVED" ]]; then
+		exec "$MISE_RESOLVED" "$@"
+	fi
+fi
+
 if command -v harness >/dev/null 2>&1; then
 	exec harness "$@"
 fi

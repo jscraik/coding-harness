@@ -1096,7 +1096,7 @@ REPO_ROOT="$(cd -- "$SCRIPT_DIR/.." && pwd)"
 	fi
 
 		exec node "$CLI_PATH" "$@"
-		`;
+`;
 }
 
 /**

@@ -115,9 +115,9 @@ workflows:
             tags:
               ignore: /.*/
       - run-governance-check:
-          name: test
-          check_name: test
-          command: pnpm test
+          name: test:ci
+          check_name: test:ci
+          command: pnpm test:ci
           filters:
             tags:
               ignore: /.*/
@@ -149,6 +149,9 @@ workflows:
           filters:
             tags:
               ignore: /.*/
+      # CodeRabbit: External GitHub App integration (not a CircleCI check).
+      # This placeholder exists solely to document the CodeRabbit dependency.
+      # The actual CodeRabbit check runs via GitHub App webhook, not CircleCI.
       - run-governance-check:
           name: CodeRabbit
           check_name: CodeRabbit
