@@ -1635,7 +1635,7 @@ describe("runInit", () => {
 			);
 			expect(semgrepFull).toContain('SEMGREP_VERSION="1.153.1"');
 			expect(semgrepFull).toContain("run_semgrep scan");
-			expect(semgrepFull).toContain("\t.");
+			expect(semgrepFull).toMatch(/^\s*\.$/m);
 			expect(semgrepRules).toContain("ts-no-eval");
 			expect(semgrepRules).toContain("ts-no-shell-true");
 			expect(makefile).toContain("check: ## Run all required quality gates");

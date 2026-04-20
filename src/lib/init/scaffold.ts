@@ -3868,6 +3868,7 @@ ensure_semgrep_version
 
 run_semgrep scan \\
 	--config "$RULESET_PATH" \\
+	--config p/security-audit \\
 	--disable-version-check \\
 	--error \\
 	--jobs 1 \\
