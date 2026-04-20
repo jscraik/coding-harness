@@ -9,7 +9,7 @@ set -euo pipefail
 SCRIPT_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd -P)"
 PREFLIGHT_SCRIPT="${SCRIPT_DIR}/codex-preflight.sh"
 LEARN_SCRIPT="${SCRIPT_DIR}/codex-learn"
-WORKTREE_BRANCH_PREFIX="jscraik/feature"
+WORKTREE_BRANCH_PREFIX="codex/feature"
 
 RED='\033[0;31m'
 GREEN='\033[0;32m'
@@ -117,6 +117,18 @@ ensure_task_worktree() {
 	current_branch="$(git -C "${repo_root}" symbolic-ref --short -q HEAD || true)"
 	if [[ "${current_branch}" != "main" ]]; then
 		return 0
+	fi
+
+	# Fail fast if working tree is dirty
+	if [[ -n "$(git -C "${repo_root}" status --porcelain)" ]]; then
+		echo -e "${RED}ERROR: Working tree has uncommitted changes. Cannot create worktree from dirty main.${NC}"
+		echo ""
+		echo "Please commit, stash, or clean your changes before running codex on main:"
+		echo "  git status"
+		echo "  git add <files> && git commit -m 'message'"
+		echo "  # or"
+		echo "  git stash"
+		exit 1
 	fi
 
 	if [[ -n "${WORKTREE_SLUG}" ]]; then

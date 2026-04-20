@@ -9,7 +9,7 @@ set -euo pipefail
 SCRIPT_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd -P)"
 PREFLIGHT_SCRIPT="${SCRIPT_DIR}/codex-preflight.sh"
 LEARN_SCRIPT="${SCRIPT_DIR}/codex-learn"
-WORKTREE_BRANCH_PREFIX="jscraik/feature"
+WORKTREE_BRANCH_PREFIX="codex/feature"
 
 RED='\033[0;31m'
 GREEN='\033[0;32m'
@@ -125,13 +125,39 @@ ensure_task_worktree() {
 	if [[ -n "${WORKTREE_SLUG}" ]]; then
 		slug_source="${WORKTREE_SLUG}"
 	else
+		# Extract positional arguments by skipping options and their values
+		local positional_args=()
+		local skip_next=false
 		for arg in "${NEW_ARGS[@]}"; do
-			if [[ "${arg}" == --* ]]; then
+			if [[ "${skip_next}" == true ]]; then
+				skip_next=false
 				continue
 			fi
-			slug_source="${arg}"
-			break
+			# Skip long options with values (--option=value or --option value)
+			if [[ "${arg}" == --*=* ]]; then
+				continue
+			elif [[ "${arg}" == --* ]]; then
+				# Long option that may have a value in the next arg
+				# Common codex options that take values: --model, --max-tokens, --temperature
+				if [[ "${arg}" =~ ^--(model|max-tokens|temperature|timeout|config)$ ]]; then
+					skip_next=true
+				fi
+				continue
+			elif [[ "${arg}" == -* ]]; then
+				# Short option; common ones that take values: -m, -t
+				if [[ "${arg}" =~ ^-(m|t)$ ]]; then
+					skip_next=true
+				fi
+				continue
+			fi
+			# This is a positional argument
+			positional_args+=("${arg}")
 		done
+
+		# Only use the first positional as slug source if exactly one exists
+		if [[ ${#positional_args[@]} -eq 1 ]]; then
+			slug_source="${positional_args[0]}"
+		fi
 	fi
 
 	slug="$(slugify "${slug_source}")"

@@ -16,7 +16,7 @@ This repository expects one task = one worktree = one branch = one agent thread.
 
 Options:
   --base <ref>            Start the branch from this ref (default: main)
-  --branch-prefix <name>  Branch prefix (default: jscraik/feature)
+  --branch-prefix <name>  Branch prefix (default: codex)
   --path <dir>            Worktree path (default: ../wt-<slug>)
   --bootstrap             Run worktree bootstrap immediately after creation
   -h, --help              Show this help text
@@ -24,7 +24,7 @@ USAGE
 }
 
 base_ref="main"
-branch_prefix="jscraik/feature"
+branch_prefix="codex"
 worktree_path=""
 bootstrap=0
 slug=""

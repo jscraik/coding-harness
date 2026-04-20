@@ -91,7 +91,7 @@ The local hook contract is intentionally split by drag profile:
 - `pre-push` keeps the heavier governance lane and now adds a narrow changed-files `semgrep` scan for `src/**` plus `pnpm build` before `audit`.
 - `hooks-commit-msg` is the canonical wrapper target for commit-message policy checks. Keep it available even though `prek.toml` installs only `pre-commit` and `pre-push`.
 - The Semgrep lane is path-filtered to changed implementation files under `src/**` and uses the local ruleset at `scripts/semgrep-pre-push.yml` to avoid turning pre-push into a full repo scan.
-- `scripts/check-semgrep-changed.sh` should pin and execute the same Semgrep version used by the CircleCI `security-scan` job in `.circleci/config.yml` (`semgrep==1.153.1`) so local and CI security findings do not drift.
+- `scripts/check-semgrep-changed.sh` pins the Semgrep version (`semgrep==1.153.1`) and is invoked by the `pnpm semgrep:changed` script; the CircleCI `security-scan` job invokes `pnpm semgrep:changed` rather than directly pinning Semgrep. Keep `scripts/check-semgrep-changed.sh`, the `pnpm semgrep:changed` script, and any CI invocation aligned when changing the Semgrep version.
 - OpenSSF scorecard posture drift is tracked by the repo status document `docs/security/2026-04-09-openssf-osps-baseline-status.md` and evaluated against `security/openssf-scorecard-policy.json` via `scripts/check-scorecard-regressions.mjs`; keep those surfaces aligned when scorecard policy changes.
 - CodeRabbit custom `ast-grep` rules for this repository live under `rules/`; keep them narrowly scoped to repo-specific contracts such as the required `.js` extension on relative ESM imports.
 
