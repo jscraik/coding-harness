@@ -17,12 +17,24 @@ const CHECK_SCRIPT_SOURCE = join(
 	"scripts",
 	"check-diagram-freshness.sh",
 );
+const STABLE_PATH = [
+	dirname(process.execPath),
+	"/opt/homebrew/bin",
+	"/usr/local/bin",
+	"/usr/bin",
+	"/bin",
+	"/usr/sbin",
+	"/sbin",
+	process.env.HOME ? join(process.env.HOME, ".local", "bin") : "",
+]
+	.filter(Boolean)
+	.join(":");
 
 function run(root: string, command: string, args: string[]) {
 	return spawnSync(command, args, {
 		cwd: root,
 		encoding: "utf-8",
-		env: sanitizeGitEnv(),
+		env: { ...sanitizeGitEnv(), PATH: STABLE_PATH },
 	});
 }
 

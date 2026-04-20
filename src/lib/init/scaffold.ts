@@ -354,7 +354,7 @@ function renderCircleCIConfig(pm: string): string {
 	const testCommand = renderScriptCommand(pm, "test:ci");
 	const auditCommand = renderScriptCommand(pm, "audit");
 	const dependencyAuditCommand = renderScriptCommand(pm, "audit:strict");
-	const semgrepCommand = renderScriptCommand(pm, "semgrep:changed");
+	const semgrepCommand = "bash scripts/check-semgrep-full.sh";
 	const memoryValidateCommand = renderMemoryValidateCommand();
 	const configureCacheStep =
 		pm === "pnpm"
@@ -396,8 +396,18 @@ jobs:
       - run:
           name: Verify GH token wiring
           command: |
-            if [ -n "${"${GH_TOKEN:-${GITHUB_PERSONAL_ACCESS_TOKEN:-}}"}" ]; then
-              echo "GitHub token is available for gh-backed steps."
+            if [ -n "${"${GH_TOKEN:-}"}" ]; then
+              echo "GH_TOKEN is already available for gh-backed steps."
+            elif [ -n "${"${GITHUB_TOKEN:-}"}" ]; then
+              export GH_TOKEN="${"${GITHUB_TOKEN}"}"
+              echo 'export GH_TOKEN="${"${GITHUB_TOKEN}"}"' >> "$BASH_ENV"
+              echo "Promoted GITHUB_TOKEN to GH_TOKEN for gh-backed steps."
+            elif [ -n "${"${GITHUB_PERSONAL_ACCESS_TOKEN:-}"}" ]; then
+              export GH_TOKEN="${"${GITHUB_PERSONAL_ACCESS_TOKEN}"}"
+              export GITHUB_TOKEN="${"${GITHUB_PERSONAL_ACCESS_TOKEN}"}"
+              echo 'export GH_TOKEN="${"${GITHUB_PERSONAL_ACCESS_TOKEN}"}"' >> "$BASH_ENV"
+              echo 'export GITHUB_TOKEN="${"${GITHUB_PERSONAL_ACCESS_TOKEN}"}"' >> "$BASH_ENV"
+              echo "Promoted GITHUB_PERSONAL_ACCESS_TOKEN to GH_TOKEN/GITHUB_TOKEN for gh-backed steps."
             else
               echo "GH_TOKEN/GITHUB_PERSONAL_ACCESS_TOKEN not set; gh-backed steps may fail."
             fi
@@ -525,15 +535,6 @@ workflows:
             tags:
               ignore: /.*/
 
-  CodeRabbit:
-    jobs:
-      - run-governance-check:
-          name: CodeRabbit
-          check_name: CodeRabbit
-          command: echo "External CodeRabbit status is tracked by GitHub App integration."
-          filters:
-            tags:
-              ignore: /.*/
 `;
 }
 
@@ -946,6 +947,11 @@ if [[ ! "$branch_prefix" =~ ^[A-Za-z0-9._/-]+$ ]]; then
 	exit 2
 fi
 
+if [[ "$branch_prefix" == codex* ]] && [[ ! "$slug" =~ ^[a-z][a-z0-9]*-[0-9]+-[a-z0-9][a-z0-9-]*$ ]]; then
+	echo "[new-task] for codex branches, slug must start with an issue key (example: jsc-123-my-task): $slug" >&2
+	exit 2
+fi
+
 branch_name="\${branch_prefix}/\${slug}"
 resolved_base_ref="$base_ref"
 remote_base_branch=""
@@ -1110,8 +1116,8 @@ REPO_ROOT="$(cd -- "$SCRIPT_DIR/.." && pwd)"
  * Produce a portable bash script that resolves and runs the repository's harness CLI.
  *
  * The returned script locates the repository root and attempts, in order, to:
- * - run the repo-local `src/cli.ts` via `pnpm exec tsx` (when present),
  * - run `scripts/harness-cli.sh` (when executable),
+ * - run the repo-local `src/cli.ts` via `pnpm exec tsx` only when the repo is the harness source repo,
  * - invoke a globally installed `harness` binary.
  * If none are available the script prints installation and local-exec guidance and exits with a non-zero status.
  *
@@ -1132,17 +1138,29 @@ if [[ $# -eq 0 ]]; then
 	exit 2
 fi
 
-if [[ -f "$REPO_ROOT/src/cli.ts" ]]; then
+is_harness_source_repo() {
+	[[ -f "$REPO_ROOT/src/cli.ts" ]] || return 1
+	[[ -f "$REPO_ROOT/package.json" ]] || return 1
+	command -v node >/dev/null 2>&1 || return 1
+
+	node -e '
+		const { readFileSync } = require("node:fs");
+		const packageJson = JSON.parse(readFileSync(process.argv[1], "utf8"));
+		process.exit(packageJson.name === "@brainwav/coding-harness" ? 0 : 1);
+	' "$REPO_ROOT/package.json" >/dev/null 2>&1
+}
+
+if [[ -x "$REPO_ROOT/scripts/harness-cli.sh" ]]; then
+	exec bash "$REPO_ROOT/scripts/harness-cli.sh" "$@"
+fi
+
+if is_harness_source_repo; then
 	if ! command -v pnpm >/dev/null 2>&1; then
-		echo "Error: pnpm is required to run the repo-local harness CLI." >&2
+		echo "Error: pnpm is required to run the harness source CLI." >&2
 		echo "Install pnpm and retry." >&2
 		exit 1
 	fi
 	exec pnpm exec tsx "$REPO_ROOT/src/cli.ts" "$@"
-fi
-
-if [[ -x "$REPO_ROOT/scripts/harness-cli.sh" ]]; then
-	exec bash "$REPO_ROOT/scripts/harness-cli.sh" "$@"
 fi
 
 mise_harness_bin="$(mise which harness 2>/dev/null || true)"
@@ -3514,6 +3532,92 @@ fi
 `,
 	},
 	{
+		path: "scripts/check-semgrep-full.sh",
+		render: () => `#!/usr/bin/env bash
+set -euo pipefail
+
+REPO_ROOT="$(cd -- "$(dirname -- "\${BASH_SOURCE[0]}")/.." && pwd)"
+RULESET_PATH="$REPO_ROOT/scripts/semgrep-pre-push.yml"
+SEMGREP_VERSION="1.153.1"
+DEFAULT_SEMGREP_STATE_ROOT="$REPO_ROOT/.git/semgrep"
+if git_semgrep_state_root="$(git -C "$REPO_ROOT" rev-parse --git-path semgrep 2>/dev/null)"; then
+	if [[ "$git_semgrep_state_root" != /* ]]; then
+		git_semgrep_state_root="$REPO_ROOT/$git_semgrep_state_root"
+	fi
+	DEFAULT_SEMGREP_STATE_ROOT="$git_semgrep_state_root"
+fi
+SEMGREP_STATE_ROOT="\${SEMGREP_STATE_ROOT:-$DEFAULT_SEMGREP_STATE_ROOT}"
+HOST_CACHE_HOME="\${XDG_CACHE_HOME:-\$HOME/.cache}"
+SEMGREP_RUNTIME_CACHE_ROOT="\${SEMGREP_RUNTIME_CACHE_ROOT:-\$SEMGREP_STATE_ROOT/cache}"
+SEMGREP_RUNTIME_USER_HOME="\${SEMGREP_USER_HOME:-\$SEMGREP_STATE_ROOT/home}"
+SEMGREP_RUNTIME_LOG_FILE="\${SEMGREP_LOG_FILE:-\$SEMGREP_STATE_ROOT/semgrep.log}"
+if [[ -z "\${SSL_CERT_FILE:-}" ]]; then
+	for cert_path in /etc/ssl/cert.pem /etc/ssl/certs/ca-certificates.crt; do
+		if [[ -f "$cert_path" ]]; then
+			export SSL_CERT_FILE="$cert_path"
+			break
+		fi
+	done
+fi
+
+SEMGREP_CACHE_ROOT="\${SEMGREP_CACHE_ROOT:-\$SEMGREP_STATE_ROOT/tool-cache}"
+SEMGREP_VENV_DIR="\${SEMGREP_CACHE_ROOT}/semgrep-venv-\${SEMGREP_VERSION}"
+SEMGREP_BIN="\$SEMGREP_VENV_DIR/bin/semgrep"
+SEMGREP_PYTHON="\$SEMGREP_VENV_DIR/bin/python"
+cd "$REPO_ROOT"
+
+run_semgrep() {
+	XDG_CACHE_HOME="\$SEMGREP_RUNTIME_CACHE_ROOT" \\
+		SEMGREP_USER_HOME="\$SEMGREP_RUNTIME_USER_HOME" \\
+		SEMGREP_LOG_FILE="\$SEMGREP_RUNTIME_LOG_FILE" \\
+		"\$SEMGREP_BIN" "$@"
+}
+
+install_semgrep() {
+	mkdir -p "$SEMGREP_STATE_ROOT" "$SEMGREP_RUNTIME_CACHE_ROOT" "$SEMGREP_RUNTIME_USER_HOME"
+	mkdir -p "$(dirname "$SEMGREP_RUNTIME_LOG_FILE")"
+	mkdir -p "$SEMGREP_CACHE_ROOT"
+	local legacy_venv_dir="$HOST_CACHE_HOME/coding-harness/semgrep-venv-\${SEMGREP_VERSION}"
+	if [[ -d "$legacy_venv_dir" ]]; then
+		rm -rf "$SEMGREP_VENV_DIR"
+		cp -R "$legacy_venv_dir" "$SEMGREP_VENV_DIR"
+		if [[ -x "$SEMGREP_BIN" ]]; then
+			return
+		fi
+	fi
+	python3 -m venv "$SEMGREP_VENV_DIR"
+	"$SEMGREP_PYTHON" -m pip install --quiet --upgrade pip "semgrep==\$SEMGREP_VERSION"
+}
+
+ensure_semgrep_version() {
+	if [[ ! -x "$SEMGREP_BIN" ]]; then
+		install_semgrep
+		return
+	fi
+
+	local detected_version
+	detected_version="$(run_semgrep --version 2>/dev/null | tr -d '[:space:]')"
+	if [[ "$detected_version" != "$SEMGREP_VERSION" ]]; then
+		install_semgrep
+	fi
+}
+
+if [[ ! -f "$RULESET_PATH" ]]; then
+	echo "Error: missing Semgrep ruleset at $RULESET_PATH"
+	exit 1
+fi
+
+ensure_semgrep_version
+
+run_semgrep scan \\
+	--config "$RULESET_PATH" \\
+	--disable-version-check \\
+	--error \\
+	--jobs 1 \\
+	.
+`,
+	},
+	{
 		path: "scripts/semgrep-pre-push.yml",
 		render: () => `rules:
   - id: ts-no-eval
@@ -4990,12 +5094,9 @@ export function isTemplateEnabledForProvider(
 	templatePath: string,
 	ciProvider: CIProvider,
 ): boolean {
-	// GitHub Actions workflows: include release workflow always, and PR/security workflows only when github-actions is the provider.
+	// GitHub Actions workflows are release-only in scaffold output.
 	if (templatePath.startsWith(".github/workflows/")) {
-		if (templatePath === ".github/workflows/release-private-npm.yml") {
-			return true;
-		}
-		return ciProvider === "github-actions";
+		return templatePath === ".github/workflows/release-private-npm.yml";
 	}
 	// CircleCI config is only written for circleci provider.
 	if (templatePath === ".circleci/config.yml") {

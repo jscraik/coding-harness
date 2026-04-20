@@ -76,6 +76,7 @@ while (( $# > 0 )); do
 			shift
 			;;
 		--)
+			NEW_ARGS+=("--")
 			shift
 			while (( $# > 0 )); do
 				NEW_ARGS+=("${1}")
@@ -125,6 +126,12 @@ ensure_task_worktree() {
 		return 0
 	fi
 
+	if [[ -n "$(git -C "${repo_root}" status --porcelain --untracked-files=normal)" ]]; then
+		echo "[codex] refusing to auto-create a task worktree from a dirty main checkout." >&2
+		echo "[codex] commit or stash local changes first, or rerun with SKIP_WORKTREE_GUARD=true." >&2
+		exit 2
+	fi
+
 	if [[ -n "${WORKTREE_SLUG}" ]]; then
 		slug_source="${WORKTREE_SLUG}"
 	else
@@ -165,9 +172,27 @@ ensure_task_worktree() {
 
 	slug="$(slugify "${slug_source}")"
 	base_slug="${slug}"
-	while git -C "${repo_root}" show-ref --verify --quiet "refs/heads/${WORKTREE_BRANCH_PREFIX}/${slug}" || \
-		(git -C "${repo_root}" remote get-url origin >/dev/null 2>&1 && \
-			git -C "${repo_root}" ls-remote --exit-code --heads origin "${WORKTREE_BRANCH_PREFIX}/${slug}" >/dev/null 2>&1); do
+	local local_collision=0
+	local remote_collision=0
+	local remote_refs=""
+	while :; do
+		local_collision=0
+		remote_collision=0
+		if git -C "${repo_root}" show-ref --verify --quiet "refs/heads/${WORKTREE_BRANCH_PREFIX}/${slug}"; then
+			local_collision=1
+		fi
+		if [[ "${local_collision}" -eq 0 ]] && git -C "${repo_root}" remote get-url origin >/dev/null 2>&1; then
+			if ! remote_refs="$(git -C "${repo_root}" ls-remote --heads origin "${WORKTREE_BRANCH_PREFIX}/${slug}" 2>/dev/null)"; then
+				echo "[codex] unable to verify remote branch availability for ${WORKTREE_BRANCH_PREFIX}/${slug}; refusing auto-create." >&2
+				exit 2
+			fi
+			if [[ -n "${remote_refs}" ]]; then
+				remote_collision=1
+			fi
+		fi
+		if [[ "${local_collision}" -eq 0 && "${remote_collision}" -eq 0 ]]; then
+			break
+		fi
 		slug="${base_slug}-${suffix}"
 		suffix=$((suffix + 1))
 	done

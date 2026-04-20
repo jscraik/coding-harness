@@ -87,6 +87,11 @@ if [[ ! "$branch_prefix" =~ ^[A-Za-z0-9._/-]+$ ]]; then
 	exit 2
 fi
 
+if [[ "$branch_prefix" == codex* ]] && [[ ! "$slug" =~ ^[a-z][a-z0-9]*-[0-9]+-[a-z0-9][a-z0-9-]*$ ]]; then
+	echo "[new-task] for codex branches, slug must start with an issue key (example: jsc-123-my-task): $slug" >&2
+	exit 2
+fi
+
 branch_name="${branch_prefix}/${slug}"
 resolved_base_ref="$base_ref"
 remote_base_branch=""

@@ -91,7 +91,7 @@ The local hook contract is intentionally split by drag profile:
 - `pre-push` keeps the heavier governance lane and now adds a narrow changed-files `semgrep` scan for `src/**` plus `pnpm build` before `audit`.
 - `hooks-commit-msg` is the canonical wrapper target for commit-message policy checks. Keep it available even though `prek.toml` installs only `pre-commit` and `pre-push`.
 - The Semgrep lane is path-filtered to changed implementation files under `src/**` and uses the local ruleset at `scripts/semgrep-pre-push.yml` to avoid turning pre-push into a full repo scan.
-- `scripts/check-semgrep-changed.sh` pins the Semgrep version (`semgrep==1.153.1`) and is invoked by the `pnpm semgrep:changed` script; the CircleCI `security-scan` job invokes `pnpm semgrep:changed` rather than directly pinning Semgrep. Keep `scripts/check-semgrep-changed.sh`, the `pnpm semgrep:changed` script, and any CI invocation aligned when changing the Semgrep version.
+- `scripts/check-semgrep-changed.sh` pins the Semgrep version (`semgrep==1.153.1`) for changed-file hooks, and `scripts/check-semgrep-full.sh` reuses the same pinned runtime for full-repository CI scans. Keep both scripts, the `pnpm semgrep:changed` script, and the CircleCI `security-scan` invocation aligned when changing the Semgrep version.
 - OpenSSF scorecard posture drift is tracked by the repo status document `docs/security/2026-04-09-openssf-osps-baseline-status.md` and evaluated against `security/openssf-scorecard-policy.json` via `scripts/check-scorecard-regressions.mjs`; keep those surfaces aligned when scorecard policy changes.
 - CodeRabbit custom `ast-grep` rules for this repository live under `rules/`; keep them narrowly scoped to repo-specific contracts such as the required `.js` extension on relative ESM imports.
 
@@ -142,7 +142,7 @@ Expected failure behavior is fail-closed: if any required code-style file is mis
 Use repo scripts as the source of truth and do not assume global shortcuts. If a command is unavailable in the environment, record it immediately and treat the corresponding validation gate as blocked until rerun in an environment with the command.
 
 Exception for harness readiness:
-- Generated `scripts/check-environment.sh` in harness-managed repositories should prefer a repo-local CLI path first (`pnpm exec tsx src/cli.ts`, `node dist/cli.js`, or `bash scripts/harness-cli.sh`) and use the global `harness` binary only as a fallback when no repo-local runner exists.
+- Generated `scripts/check-environment.sh` in harness-managed repositories should prefer a dedicated harness runner first (`bash scripts/harness-cli.sh`, `node dist/cli.js`, or `pnpm exec tsx src/cli.ts` when the repository itself is the harness source repo) and use the global `harness` binary only as a fallback when no repo-local runner exists.
 - When no repo-local runner exists, resolve `harness` from `mise` first (`mise which harness`) before using whatever `harness` happens to be first on `PATH`; this avoids stale Homebrew/global binaries shadowing the pinned runtime toolchain.
 - The global fallback install path is `npm i -g @brainwav/coding-harness`.
 - Private package auth must be wired where the global fallback is used:
@@ -201,7 +201,7 @@ Active AI-review scaffolding in this repository is CodeRabbit-first. Any remaini
 - Canonical publish workflow: `.github/workflows/release-private-npm.yml`
 - Trigger: semantic-version tag pushes matching `vX.Y.Z` (for example `v0.12.0`) and guarded manual dispatch.
 - Publish authority: GitHub Actions OIDC trusted publishing (default) with optional token fallback (`publish_auth=token`) for bootstrap recovery.
-- CircleCI is non-release only in this repository; do not add `pnpm publish` or token-based publish steps there.
+- CircleCI is non-release only in this repository. The only release-adjacent behavior allowed there is verification-only gating; do not add `pnpm publish`, token-based publish, or GitHub release creation steps there.
 - Keep release docs and scaffolds aligned with this split:
   - CircleCI: PR governance and security checks.
   - GitHub Actions: private npm publish + attestation + GitHub release creation.

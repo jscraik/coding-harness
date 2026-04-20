@@ -16,8 +16,18 @@ jobs:
       - run:
           name: Verify GH token wiring
           command: |
-            if [ -n "${GH_TOKEN:-${GITHUB_PERSONAL_ACCESS_TOKEN:-}}" ]; then
-              echo "GitHub token is available for gh-backed steps."
+            if [ -n "${GH_TOKEN:-}" ]; then
+              echo "GH_TOKEN is already available for gh-backed steps."
+            elif [ -n "${GITHUB_TOKEN:-}" ]; then
+              export GH_TOKEN="${GITHUB_TOKEN}"
+              echo 'export GH_TOKEN="${GITHUB_TOKEN}"' >> "$BASH_ENV"
+              echo "Promoted GITHUB_TOKEN to GH_TOKEN for gh-backed steps."
+            elif [ -n "${GITHUB_PERSONAL_ACCESS_TOKEN:-}" ]; then
+              export GH_TOKEN="${GITHUB_PERSONAL_ACCESS_TOKEN}"
+              export GITHUB_TOKEN="${GITHUB_PERSONAL_ACCESS_TOKEN}"
+              echo 'export GH_TOKEN="${GITHUB_PERSONAL_ACCESS_TOKEN}"' >> "$BASH_ENV"
+              echo 'export GITHUB_TOKEN="${GITHUB_PERSONAL_ACCESS_TOKEN}"' >> "$BASH_ENV"
+              echo "Promoted GITHUB_PERSONAL_ACCESS_TOKEN to GH_TOKEN/GITHUB_TOKEN for gh-backed steps."
             else
               echo "GH_TOKEN/GITHUB_PERSONAL_ACCESS_TOKEN not set; gh-backed steps may fail."
             fi
@@ -148,20 +158,7 @@ workflows:
       - run-governance-check:
           name: security-scan
           check_name: security-scan
-          command: pnpm semgrep:changed
-          filters:
-            tags:
-              ignore: /.*/
-
-  CodeRabbit:
-    jobs:
-      # CodeRabbit: External GitHub App integration (not a CircleCI check).
-      # This placeholder exists solely to document the CodeRabbit dependency.
-      # The actual CodeRabbit check runs via GitHub App webhook, not CircleCI.
-      - run-governance-check:
-          name: CodeRabbit
-          check_name: CodeRabbit
-          command: echo "External CodeRabbit status is tracked by GitHub App integration."
+          command: bash scripts/check-semgrep-full.sh
           filters:
             tags:
               ignore: /.*/

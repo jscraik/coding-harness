@@ -56,6 +56,7 @@ const EXPECTED_TEMPLATE_PATHS = [
 	"scripts/check-doc-style.sh",
 	"scripts/check-related-tests.sh",
 	"scripts/check-semgrep-changed.sh",
+	"scripts/check-semgrep-full.sh",
 	"scripts/semgrep-pre-push.yml",
 	"scripts/refresh-diagram-context.sh",
 	"scripts/check-diagram-freshness.sh",
@@ -345,6 +346,12 @@ describe("runInit", () => {
 				"utf-8",
 			);
 			expect(circleConfig).toContain("name: Ensure pnpm available");
+			expect(circleConfig).toContain(
+				'export GH_TOKEN="${GITHUB_PERSONAL_ACCESS_TOKEN}"',
+			);
+			expect(circleConfig).toContain(
+				'export GITHUB_TOKEN="${GITHUB_PERSONAL_ACCESS_TOKEN}"',
+			);
 			expect(circleConfig).toContain("run-governance-check:");
 			expect(circleConfig).toContain("check_name:");
 			expect(circleConfig).toContain("command:");
@@ -374,6 +381,9 @@ describe("runInit", () => {
 			expect(circleConfig).toContain("name: typecheck");
 			expect(circleConfig).toContain("name: test");
 			expect(circleConfig).toContain("name: audit");
+			expect(circleConfig).toContain(
+				"command: bash scripts/check-semgrep-full.sh",
+			);
 
 			const transitionStatus = JSON.parse(
 				readFileSync(
@@ -1449,6 +1459,10 @@ describe("runInit", () => {
 				join(tempDir, "scripts/check-semgrep-changed.sh"),
 				"utf-8",
 			);
+			const semgrepFull = require("node:fs").readFileSync(
+				join(tempDir, "scripts/check-semgrep-full.sh"),
+				"utf-8",
+			);
 			const semgrepRules = require("node:fs").readFileSync(
 				join(tempDir, "scripts/semgrep-pre-push.yml"),
 				"utf-8",
@@ -1475,6 +1489,10 @@ describe("runInit", () => {
 			);
 			const harnessCli = require("node:fs").readFileSync(
 				join(tempDir, "scripts/harness-cli.sh"),
+				"utf-8",
+			);
+			const runHarnessGate = require("node:fs").readFileSync(
+				join(tempDir, "scripts/run-harness-gate.sh"),
 				"utf-8",
 			);
 			const verifyWork = require("node:fs").readFileSync(
@@ -1552,6 +1570,12 @@ describe("runInit", () => {
 			);
 			expect(semgrepChanged).toContain('SEMGREP_VERSION="1.153.1"');
 			expect(semgrepChanged).toContain('"$SEMGREP_BIN" scan');
+			expect(semgrepFull).toContain(
+				'RULESET_PATH="$REPO_ROOT/scripts/semgrep-pre-push.yml"',
+			);
+			expect(semgrepFull).toContain('SEMGREP_VERSION="1.153.1"');
+			expect(semgrepFull).toContain("run_semgrep scan");
+			expect(semgrepFull).toContain("\t.");
 			expect(semgrepRules).toContain("ts-no-eval");
 			expect(semgrepRules).toContain("ts-no-shell-true");
 			expect(makefile).toContain("check: ## Run all required quality gates");
@@ -1635,6 +1659,22 @@ describe("runInit", () => {
 				"npm install --save-dev @brainwav/coding-harness",
 			);
 			expect(harnessCli).toContain("npm exec harness -- <command>");
+			expect(runHarnessGate).toContain(
+				'exec bash "$REPO_ROOT/scripts/harness-cli.sh" "$@"',
+			);
+			expect(runHarnessGate).toContain("is_harness_source_repo()");
+			expect(runHarnessGate).toContain(
+				"command -v node >/dev/null 2>&1 || return 1",
+			);
+			expect(runHarnessGate).toContain(
+				'process.exit(packageJson.name === "@brainwav/coding-harness" ? 0 : 1);',
+			);
+			expect(runHarnessGate).toContain(
+				'echo "Error: pnpm is required to run the harness source CLI." >&2',
+			);
+			expect(runHarnessGate).toContain(
+				'mise_harness_bin="$(mise which harness 2>/dev/null || true)"',
+			);
 			expect(verifyWork).toContain("Canonical repo-local verification runner.");
 			expect(verifyWork).toContain("--mode required");
 			expect(verifyWork).toContain("scripts/verify-work.sh");
@@ -1713,6 +1753,13 @@ describe("runInit", () => {
 			expect(codexEnforced).toContain(
 				"Main branch guard: creating dedicated task worktree...",
 			);
+			expect(codexEnforced).toContain(
+				"[codex] refusing to auto-create a task worktree from a dirty main checkout.",
+			);
+			expect(codexEnforced).toContain(
+				"[codex] unable to verify remote branch availability for ${WORKTREE_BRANCH_PREFIX}/${slug}; refusing auto-create.",
+			);
+			expect(codexEnforced).toContain('NEW_ARGS+=("--")');
 			expect(codexEnforced).toContain(
 				'exec bash "${worktree_path}/scripts/codex-enforced" --skip-worktree-guard "${ORIGINAL_ARGS[@]}"',
 			);
@@ -1794,6 +1841,7 @@ describe("runInit", () => {
 				'"scripts/check-hook-critical-config-sync.sh"',
 			);
 			expect(environmentCheck).toContain('"scripts/check-semgrep-changed.sh"');
+			expect(environmentCheck).toContain('"scripts/check-semgrep-full.sh"');
 			expect(environmentCheck).toContain('"scripts/semgrep-pre-push.yml"');
 			expect(environmentCheck).toContain("required_make_targets=(");
 			expect(environmentCheck).toContain(
@@ -2280,13 +2328,13 @@ exit 1
 				return output;
 			};
 
-			expect(runNewTask("HEAD~1", "commit-ish-head")).toContain(
-				"[new-task] branch: codex/commit-ish-head",
+			expect(runNewTask("HEAD~1", "jsc-101-commit-ish-head")).toContain(
+				"[new-task] branch: codex/jsc-101-commit-ish-head",
 			);
-			expect(runNewTask("v0.0.1", "commit-ish-tag")).toContain(
-				"[new-task] branch: codex/commit-ish-tag",
+			expect(runNewTask("v0.0.1", "jsc-102-commit-ish-tag")).toContain(
+				"[new-task] branch: codex/jsc-102-commit-ish-tag",
 			);
-			expect(runNewTask(firstSha, "commit-ish-sha")).toContain(
+			expect(runNewTask(firstSha, "jsc-103-commit-ish-sha")).toContain(
 				`[new-task] base: ${firstSha}`,
 			);
 
@@ -2301,7 +2349,8 @@ exit 1
 				);
 				expect(runGit(["push", "-u", "upstream", "main"]).status).toBe(0);
 
-				const upstreamWorktreePath = join(tempDir, "wt-upstream-main");
+				const upstreamSlug = "jsc-104-upstream-main";
+				const upstreamWorktreePath = join(tempDir, `wt-${upstreamSlug}`);
 				const upstreamRun = spawnSync(
 					"bash",
 					[
@@ -2310,7 +2359,7 @@ exit 1
 						"upstream/main",
 						"--path",
 						upstreamWorktreePath,
-						"upstream-main",
+						upstreamSlug,
 					],
 					{
 						cwd: outsideRepoCwd,

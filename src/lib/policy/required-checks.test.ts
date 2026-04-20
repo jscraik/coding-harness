@@ -212,4 +212,25 @@ describe("findCircleCIJobNamedCheckBindings", () => {
 		);
 		expect(suspicious).toEqual([]);
 	});
+
+	it("allows the CircleCI security-scan check context", () => {
+		const normalized = normalizeManifest([
+			createRequiredCheck({
+				gateId: "security-scan",
+				displayName: "security-scan",
+				externalIdPattern: "^security-scan$",
+				githubCheckName: "security-scan",
+			}),
+		]);
+
+		expect(normalized.ok).toBe(true);
+		if (!normalized.ok) {
+			return;
+		}
+
+		const suspicious = findCircleCIJobNamedCheckBindings(
+			normalized.value.gates,
+		);
+		expect(suspicious).toEqual([]);
+	});
 });

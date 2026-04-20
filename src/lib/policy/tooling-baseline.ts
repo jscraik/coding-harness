@@ -342,6 +342,7 @@ export const REQUIRED_HOOK_SUPPORT_FILES = [
 	"scripts/check-doc-style.sh",
 	"scripts/check-related-tests.sh",
 	"scripts/check-semgrep-changed.sh",
+	"scripts/check-semgrep-full.sh",
 	"scripts/semgrep-pre-push.yml",
 ] as const;
 
