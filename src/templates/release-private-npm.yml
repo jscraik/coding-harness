@@ -131,74 +131,61 @@ jobs:
           npm install --prefix "$TMP_DIR" "./$TARBALL" >/dev/null
 
           # Read package metadata to derive bin name and package name
-          TARBALL="$TARBALL" TMP_DIR="$TMP_DIR" node <<'EOF'
-          const fs = require("node:fs");
-          const path = require("node:path");
-          const tmpDir = process.env.TMP_DIR;
-          const pkgJsonPath = path.join(tmpDir, "node_modules", fs.readdirSync(path.join(tmpDir, "node_modules")).find(d => d.startsWith("@") || !d.startsWith("."))[0] === "@" ? fs.readdirSync(path.join(tmpDir, "node_modules")).find(d => d.startsWith("@")) : "", fs.readdirSync(path.join(tmpDir, "node_modules", fs.readdirSync(path.join(tmpDir, "node_modules")).find(d => d.startsWith("@")) || ".")).find(d => !d.startsWith(".")) || "", "package.json");
-
-          // Simpler approach: find the first installed package that isn't a dot-file
-          const nodeModules = path.join(tmpDir, "node_modules");
-          let pkgDir = "";
-          const entries = fs.readdirSync(nodeModules);
-          for (const entry of entries) {
-            if (entry.startsWith(".")) continue;
-            if (entry.startsWith("@")) {
-              const scopedEntries = fs.readdirSync(path.join(nodeModules, entry));
-              pkgDir = path.join(nodeModules, entry, scopedEntries[0]);
-              break;
-            } else {
-              pkgDir = path.join(nodeModules, entry);
-              break;
-            }
-          }
-
-          const pkgJson = JSON.parse(fs.readFileSync(path.join(pkgDir, "package.json"), "utf8"));
-          const binEntries = pkgJson.bin || {};
-
-          if (Object.keys(binEntries).length === 0) {
-            console.log("SKIP_CLI_TEST=1");
-            process.exit(0);
-          }
-
-          const binName = typeof binEntries === "string" ? path.basename(pkgJson.name) : Object.keys(binEntries)[0];
-          const binPath = path.join(tmpDir, "node_modules", ".bin", binName);
-
-          console.log(`BIN_PATH=${binPath}`);
-          console.log(`BIN_NAME=${binName}`);
-          console.log(`PKG_NAME=${pkgJson.name}`);
-          EOF
-
           eval "$(TARBALL="$TARBALL" TMP_DIR="$TMP_DIR" node <<'EOF'
           const fs = require("node:fs");
           const path = require("node:path");
           const tmpDir = process.env.TMP_DIR;
-          const nodeModules = path.join(tmpDir, "node_modules");
-          let pkgDir = "";
-          const entries = fs.readdirSync(nodeModules);
-          for (const entry of entries) {
-            if (entry.startsWith(".")) continue;
-            if (entry.startsWith("@")) {
-              const scopedEntries = fs.readdirSync(path.join(nodeModules, entry));
-              pkgDir = path.join(nodeModules, entry, scopedEntries[0]);
-              break;
-            } else {
-              pkgDir = path.join(nodeModules, entry);
-              break;
+          const tarball = process.env.TARBALL;
+
+          // Extract package name from tarball or use env var
+          let packageName = process.env.PACKAGE_NAME || "";
+          if (!packageName) {
+            // Try to extract from package.json in workspace
+            try {
+              const workspacePkg = JSON.parse(fs.readFileSync("./package.json", "utf8"));
+              packageName = workspacePkg.name;
+            } catch (err) {
+              // Fall back to first non-dot package
+              const nodeModules = path.join(tmpDir, "node_modules");
+              const entries = fs.readdirSync(nodeModules);
+              for (const entry of entries) {
+                if (entry.startsWith(".")) continue;
+                if (entry.startsWith("@")) {
+                  const scopedEntries = fs.readdirSync(path.join(nodeModules, entry));
+                  if (scopedEntries.length > 0) {
+                    packageName = `${entry}/${scopedEntries[0]}`;
+                    break;
+                  }
+                } else {
+                  packageName = entry;
+                  break;
+                }
+              }
             }
           }
-          const pkgJson = JSON.parse(fs.readFileSync(path.join(pkgDir, "package.json"), "utf8"));
-          const binEntries = pkgJson.bin || {};
-          if (Object.keys(binEntries).length === 0) {
-            console.log("SKIP_CLI_TEST=1");
+
+          if (!packageName) {
+            console.log("export SKIP_CLI_TEST=1");
             process.exit(0);
           }
+
+          const pkgDir = path.join(tmpDir, "node_modules", packageName);
+          const pkgJson = JSON.parse(fs.readFileSync(path.join(pkgDir, "package.json"), "utf8"));
+          const binEntries = pkgJson.bin || {};
+
+          if (Object.keys(binEntries).length === 0) {
+            console.log("export SKIP_CLI_TEST=1");
+            process.exit(0);
+          }
+
           const binName = typeof binEntries === "string" ? path.basename(pkgJson.name) : Object.keys(binEntries)[0];
           const binPath = path.join(tmpDir, "node_modules", ".bin", binName);
+
           console.log(`export BIN_PATH="${binPath}"`);
           console.log(`export BIN_NAME="${binName}"`);
           console.log(`export PKG_NAME="${pkgJson.name}"`);
-          console.log(`export SKIP_CLI_TEST="${Object.keys(binEntries).length === 0 ? "1" : "0"}"`);
+          console.log(`export PKG_VERSION="${pkgJson.version}"`);
+          console.log(`export SKIP_CLI_TEST=0`);
           EOF
           )"
 
@@ -209,15 +196,15 @@ jobs:
 
           VERSION_FILE="$TMP_DIR/version.txt"
           "$BIN_PATH" --version | tee "$VERSION_FILE"
-          VERSION_FILE="$VERSION_FILE" BIN_NAME="$BIN_NAME" node <<'EOF'
+          VERSION_FILE="$VERSION_FILE" PKG_VERSION="$PKG_VERSION" node <<'EOF'
           const fs = require("node:fs");
-          const binName = process.env.BIN_NAME;
-          const version = fs.readFileSync(process.env.VERSION_FILE, "utf8").trim();
-          const expectedPattern = new RegExp(`^${binName} v\\d+\\.\\d+\\.\\d+(?:-[0-9A-Za-z.-]+)?$`);
-          if (!expectedPattern.test(version)) {
-            console.error(`Unexpected ${binName} --version output: ${version}`);
+          const pkgVersion = process.env.PKG_VERSION;
+          const versionOutput = fs.readFileSync(process.env.VERSION_FILE, "utf8").trim();
+          if (!versionOutput.includes(pkgVersion)) {
+            console.error(`CLI --version output does not contain expected version ${pkgVersion}: ${versionOutput}`);
             process.exit(1);
           }
+          console.log(`CLI version check passed: output contains ${pkgVersion}`);
           EOF
 
       - name: Verify tag matches package version
