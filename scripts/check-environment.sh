@@ -68,7 +68,7 @@ fi
 
 	project_brain_memory_extension_enabled=true
 	required_project_brain_paths=(".harness/memory/LEARNINGS.md" ".harness/knowledge/INDEX.md" ".harness/knowledge/cli/knowledge.md" ".harness/knowledge/cli/hypotheses.md" ".harness/knowledge/cli/rules.md" ".harness/knowledge/ci/knowledge.md" ".harness/knowledge/ci/hypotheses.md" ".harness/knowledge/ci/rules.md" ".harness/knowledge/governance/knowledge.md" ".harness/knowledge/governance/hypotheses.md" ".harness/knowledge/governance/rules.md" ".harness/knowledge/tooling/knowledge.md" ".harness/knowledge/tooling/hypotheses.md" ".harness/knowledge/tooling/rules.md" ".harness/knowledge/tooling/codex-learn-summary.md" ".harness/decisions" ".harness/quality/criteria.md" ".harness/review-log.md")
-	if [[ "$project_brain_memory_extension_enabled" == "true" ]]; then
+if [[ "$project_brain_memory_extension_enabled" == "true" ]]; then
 		for required_path in "${required_project_brain_paths[@]}"; do
 			if [[ ! -e "$REPO_ROOT/${required_path}" ]]; then
 				echo "Error: required Project Brain memory-extension path '$required_path' is missing under $REPO_ROOT"
@@ -77,6 +77,33 @@ fi
 			fi
 		done
 	fi
+
+ensure_mise_available() {
+	if command -v mise >/dev/null 2>&1; then
+		return 0
+	fi
+
+	if [[ -z "${CI:-}" && -z "${CIRCLECI:-}" ]]; then
+		return 1
+	fi
+
+	if ! command -v curl >/dev/null 2>&1; then
+		return 1
+	fi
+
+	export PATH="$HOME/.local/bin:$PATH"
+	if command -v mise >/dev/null 2>&1; then
+		return 0
+	fi
+
+	curl -fsSL https://mise.run | sh
+	command -v mise >/dev/null 2>&1
+}
+
+if ! ensure_mise_available; then
+	echo "Error: required binary 'mise' is not installed or not on PATH"
+	exit 1
+fi
 
 if ! command -v mise >/dev/null 2>&1; then
 	echo "Error: required binary 'mise' is not installed or not on PATH"

@@ -1873,6 +1873,8 @@ describe("runInit", () => {
 			expect(environmentCheck).toContain('"scripts/codex-enforced"');
 			expect(environmentCheck).toContain('"scripts/prepare-worktree.sh"');
 			expect(environmentCheck).toContain('"scripts/new-task.sh"');
+			expect(environmentCheck).toContain("ensure_mise_available()");
+			expect(environmentCheck).toContain("curl -fsSL https://mise.run | sh");
 			expect(environmentCheck).toContain(
 				'"scripts/check-hook-critical-config-sync.sh"',
 			);
