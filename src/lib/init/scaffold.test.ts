@@ -48,16 +48,16 @@ describe("scaffold templates resolution", () => {
 					template.path === ".github/workflows/release-private-npm.yml",
 			),
 		).toBe(true);
-		expect(
-			ghaTemplates.some(
-				(template) => template.path === ".github/workflows/pr-pipeline.yml",
-			),
-		).toBe(true);
-		expect(
-			ghaTemplates.some(
-				(template) => template.path === ".github/workflows/secret-scan.yml",
-			),
-		).toBe(true);
+			expect(
+				ghaTemplates.some(
+					(template) => template.path === ".github/workflows/pr-pipeline.yml",
+				),
+			).toBe(true);
+			expect(
+				ghaTemplates.some(
+					(template) => template.path === ".github/workflows/secret-scan.yml",
+				),
+			).toBe(true);
 		expect(
 			circleciTemplates.some(
 				(template) => template.path === ".github/workflows/pr-pipeline.yml",

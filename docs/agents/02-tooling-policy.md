@@ -142,8 +142,12 @@ Expected failure behavior is fail-closed: if any required code-style file is mis
 Use repo scripts as the source of truth and do not assume global shortcuts. If a command is unavailable in the environment, record it immediately and treat the corresponding validation gate as blocked until rerun in an environment with the command.
 
 Exception for harness readiness:
-- Generated `scripts/check-environment.sh` in harness-managed repositories should prefer a dedicated harness runner first (`pnpm exec tsx src/cli.ts` when the repository itself is the harness source repo, then `node dist/cli.js`, then `bash scripts/harness-cli.sh`) and use the global `harness` binary only as a fallback when no repo-local runner exists.
-- When no repo-local runner exists, resolve `harness` from `mise` first (`mise which harness`) before using whatever `harness` happens to be first on `PATH`; this avoids stale Homebrew/global binaries shadowing the pinned runtime toolchain.
+- Generated `scripts/check-environment.sh` in harness-managed repositories should prefer a dedicated harness runner using the following lookup order:
+  1. `pnpm exec tsx src/cli.ts` (when repo-local TS source exists)
+  2. `bash scripts/harness-cli.sh`
+  3. `mise which harness`
+  4. global `harness` binary
+- This lookup order avoids stale Homebrew/global binaries shadowing the pinned runtime toolchain.
 - Keep `scripts/check-environment.sh` validation-only for `mise`: it may assert that `mise` exists, is trusted, and can activate the repo, but CI/bootstrap flows must install `mise` and run `mise trust --yes .mise.toml` before invoking the gate.
 - The global fallback install path is `npm i -g @brainwav/coding-harness`.
 - Private package auth must be wired where the global fallback is used:

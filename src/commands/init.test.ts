@@ -381,11 +381,13 @@ describe("runInit", () => {
 			expect(circleConfig).toContain("name: pr-template");
 			expect(circleConfig).toContain("check_name: pr-template");
 			expect(circleConfig).toContain(
-				"pnpm exec tsx src/cli.ts pr-template-gate --json",
+				"bash scripts/run-harness-gate.sh pr-template-gate --json",
 			);
 			expect(circleConfig).toContain("name: linear-gate");
 			expect(circleConfig).toContain("check_name: linear-gate");
-			expect(circleConfig).toContain("pnpm exec tsx src/cli.ts linear-gate \\");
+			expect(circleConfig).toContain(
+				"bash scripts/run-harness-gate.sh linear-gate \\",
+			);
 			expect(circleConfig).toContain("requires:");
 			expect(circleConfig).toContain(
 				"command: bash scripts/run-harness-gate.sh policy-gate --max-tier medium --json",
@@ -724,9 +726,6 @@ describe("runInit", () => {
 			).toBe(true);
 			expect(
 				existsSync(join(tempDir, ".github/workflows/secret-scan.yml")),
-			).toBe(true);
-			expect(
-				existsSync(join(tempDir, ".github/workflows/release-private-npm.yml")),
 			).toBe(true);
 			expect(
 				existsSync(join(tempDir, ".github/workflows/release-private-npm.yml")),
@@ -1618,7 +1617,7 @@ describe("runInit", () => {
 				'git diff --name-only --diff-filter=ACMR -z "$base_ref"...HEAD --',
 			);
 			expect(semgrepChanged).toContain('SEMGREP_VERSION="1.153.1"');
-			expect(semgrepChanged).toContain('"$SEMGREP_BIN" scan');
+			expect(semgrepChanged).toContain("run_semgrep scan");
 			expect(semgrepFull).toContain(
 				'RULESET_PATH="$REPO_ROOT/scripts/semgrep-pre-push.yml"',
 			);
