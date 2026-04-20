@@ -688,6 +688,9 @@ describe("runInit", () => {
 			expect(
 				existsSync(join(tempDir, ".github/workflows/release-private-npm.yml")),
 			).toBe(true);
+			expect(
+				existsSync(join(tempDir, ".github/workflows/release-private-npm.yml")),
+			).toBe(true);
 			// legacy review bridge workflow is no longer scaffolded
 			expect(
 				existsSync(join(tempDir, ".github/workflows/greptile-review.yml")),
