@@ -32,6 +32,54 @@ jobs:
               echo "GH_TOKEN/GITHUB_PERSONAL_ACCESS_TOKEN not set; gh-backed steps may fail."
             fi
       - run:
+          name: Ensure baseline shell tools
+          command: |
+            packages=()
+            if ! command -v gh >/dev/null 2>&1; then
+              packages+=("gh")
+            fi
+            if ! command -v rg >/dev/null 2>&1; then
+              packages+=("ripgrep")
+            fi
+            if ! command -v fd >/dev/null 2>&1 && ! command -v fdfind >/dev/null 2>&1; then
+              packages+=("fd-find")
+            fi
+            if ! command -v jq >/dev/null 2>&1; then
+              packages+=("jq")
+            fi
+            if ! command -v make >/dev/null 2>&1; then
+              packages+=("make")
+            fi
+            if ! command -v realpath >/dev/null 2>&1; then
+              packages+=("coreutils")
+            fi
+            if (( ${#packages[@]} > 0 )); then
+              sudo apt-get update
+              sudo apt-get install -y "${packages[@]}"
+            fi
+            gh --version | head -n 1
+            if ! command -v fd >/dev/null 2>&1 && command -v fdfind >/dev/null 2>&1; then
+              mkdir -p "$HOME/.local/bin"
+              ln -sf "$(command -v fdfind)" "$HOME/.local/bin/fd"
+              echo 'export PATH="$HOME/.local/bin:$PATH"' >> "$BASH_ENV"
+              export PATH="$HOME/.local/bin:$PATH"
+            fi
+            rg --version
+            fd --version
+            jq --version
+            make --version | head -n 1
+            realpath --version | head -n 1
+      - run:
+          name: Ensure mise available
+          command: |
+            export PATH="$HOME/.local/bin:$PATH"
+            echo 'export PATH="$HOME/.local/bin:$PATH"' >> "$BASH_ENV"
+            if ! command -v mise >/dev/null 2>&1; then
+              curl -fsSL https://mise.run | sh
+            fi
+            mise trust --yes .mise.toml
+            mise --version
+      - run:
           name: Ensure pnpm available
           command: |
             required_pnpm_version="10.33.0"
@@ -83,8 +131,54 @@ workflows:
   pr-pipeline:
     jobs:
       - run-governance-check:
+          name: pr-template
+          check_name: pr-template
+          command: |
+            pr_ref="${CIRCLE_PULL_REQUEST:-}"
+            if [[ -z "$pr_ref" && -n "${CIRCLE_BRANCH:-}" ]]; then
+              pr_ref="$(gh pr list --head "$CIRCLE_BRANCH" --state open --json url --jq '.[0].url // ""')"
+            fi
+            if [[ -z "$pr_ref" ]]; then
+              echo "Error: unable to resolve pull request context for pr-template."
+              exit 1
+            fi
+            export PR_TEMPLATE_BODY
+            PR_TEMPLATE_BODY="$(gh pr view "$pr_ref" --json body --jq .body)"
+            pnpm exec tsx src/cli.ts pr-template-gate --json
+          filters:
+            tags:
+              ignore: /.*/
+      - run-governance-check:
+          name: linear-gate
+          check_name: linear-gate
+          requires:
+            - pr-template
+          command: |
+            pr_ref="${CIRCLE_PULL_REQUEST:-}"
+            if [[ -z "$pr_ref" && -n "${CIRCLE_BRANCH:-}" ]]; then
+              pr_ref="$(gh pr list --head "$CIRCLE_BRANCH" --state open --json url --jq '.[0].url // ""')"
+            fi
+            if [[ -z "$pr_ref" ]]; then
+              echo "Error: unable to resolve pull request context for linear-gate."
+              exit 1
+            fi
+            branch_name="$(gh pr view "$pr_ref" --json headRefName --jq .headRefName)"
+            pr_title="$(gh pr view "$pr_ref" --json title --jq .title)"
+            pr_body="$(gh pr view "$pr_ref" --json body --jq .body)"
+            pnpm exec tsx src/cli.ts linear-gate \
+              --branch "$branch_name" \
+              --pr-title "$pr_title" \
+              --pr-body "$pr_body" \
+              --json
+          filters:
+            tags:
+              ignore: /.*/
+      - run-governance-check:
           name: risk-policy-gate
           check_name: risk-policy-gate
+          requires:
+            - pr-template
+            - linear-gate
           command: bash scripts/run-harness-gate.sh policy-gate --max-tier medium --json
           filters:
             tags:

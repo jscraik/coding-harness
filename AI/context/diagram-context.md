@@ -1,5 +1,9 @@
 # Diagram Context Pack
 
+## Table of Contents
+
+- [architecture](#architecture)
+
 Generated: 2026-04-20T19:32:17Z
 
 ## architecture
@@ -2463,4 +2467,3 @@ flowchart LR
   classDef userNode fill:#16a34a,color:#fff
 
 ```
-

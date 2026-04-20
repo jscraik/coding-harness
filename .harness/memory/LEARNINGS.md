@@ -6,7 +6,7 @@ update_policy: |
   Append after any bug, tool failure, or extra-effort fix that is specific to this repository.
   Universal fixes belong in ~/.codex/instructions/Learnings.md.
   Do not delete entries; append only.
-  Format: **YYYY-MM-DD [Codex]:** `problem -> fix`
+  Format: **YYYY-MM-DD [Agent]:** `problem → fix`
 ---
 
 # Learnings
@@ -14,4 +14,4 @@ update_policy: |
 Repo-specific agent knowledge base. Append-only.
 
 > Scope: this repository only.
-> Format: **YYYY-MM-DD [Codex]:** `problem -> fix`
+> Format: **YYYY-MM-DD [Agent]:** `problem → fix`

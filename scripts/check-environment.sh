@@ -79,24 +79,6 @@ if [[ "$project_brain_memory_extension_enabled" == "true" ]]; then
 	fi
 
 ensure_mise_available() {
-	if command -v mise >/dev/null 2>&1; then
-		return 0
-	fi
-
-	if [[ -z "${CI:-}" && -z "${CIRCLECI:-}" ]]; then
-		return 1
-	fi
-
-	if ! command -v curl >/dev/null 2>&1; then
-		return 1
-	fi
-
-	export PATH="$HOME/.local/bin:$PATH"
-	if command -v mise >/dev/null 2>&1; then
-		return 0
-	fi
-
-	curl -fsSL https://mise.run | sh
 	command -v mise >/dev/null 2>&1
 }
 

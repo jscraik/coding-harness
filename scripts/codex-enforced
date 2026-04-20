@@ -10,9 +10,9 @@ SCRIPT_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd -P)"
 PREFLIGHT_SCRIPT="${SCRIPT_DIR}/codex-preflight.sh"
 LEARN_SCRIPT="${SCRIPT_DIR}/codex-learn"
 # WORKTREE_BRANCH_PREFIX: Default branch prefix for auto-created worktrees.
-# For Linear-tracked work, use --worktree-slug JSC-XXX-short-description or
-# set WORKTREE_BRANCH_PREFIX="codex/JSC-" to preserve ticket traceability.
-WORKTREE_BRANCH_PREFIX="codex/feature"
+# For Linear-tracked work, use --worktree-slug JSC-XXX-short-description so the
+# resulting branch matches the repo's codex/JSC-<number>-<short-slug> contract.
+WORKTREE_BRANCH_PREFIX="${WORKTREE_BRANCH_PREFIX:-codex}"
 
 RED='\033[0;31m'
 GREEN='\033[0;32m'
@@ -41,10 +41,10 @@ if [[ "${1:-}" == "--help" || "${1:-}" == "-h" ]]; then
 	exit 0
 fi
 
-SKIP_PREFLIGHT=false
+SKIP_PREFLIGHT="${SKIP_PREFLIGHT:-false}"
 PREFLIGHT_ONLY=false
 LEARN_ONLY=false
-SKIP_WORKTREE_GUARD=false
+SKIP_WORKTREE_GUARD="${SKIP_WORKTREE_GUARD:-false}"
 WORKTREE_SLUG=""
 ORIGINAL_ARGS=("$@")
 NEW_ARGS=()
@@ -99,6 +99,24 @@ slugify() {
 		normalized="task"
 	fi
 	printf '%s' "${normalized:0:48}"
+}
+
+issue_key_slug() {
+	local raw="${1:-}"
+	local issue_key=""
+	local suffix_source=""
+	local suffix=""
+
+	if [[ "$raw" =~ ([A-Za-z][A-Za-z0-9]*-[0-9]+) ]]; then
+		issue_key="${BASH_REMATCH[1]}"
+		suffix_source="${raw#*"${issue_key}"}"
+		suffix_source="$(printf '%s' "${suffix_source}" | sed -E 's/^[^A-Za-z0-9]+//')"
+		suffix="$(slugify "${suffix_source}")"
+		printf '%s-%s' "${issue_key}" "${suffix}"
+		return 0
+	fi
+
+	return 1
 }
 
 # ensure_task_worktree creates and switches to a dedicated task worktree (bootstrapping it via scripts/new-task.sh) when running on the `main` branch and the guard is not skipped, then re-executes the wrapper from that worktree.
@@ -184,7 +202,15 @@ ensure_task_worktree() {
 		fi
 	fi
 
-	slug="$(slugify "${slug_source}")"
+	if [[ "${WORKTREE_BRANCH_PREFIX}" == codex* ]]; then
+		if ! slug="$(issue_key_slug "${slug_source}")"; then
+			echo "[codex] main-branch auto worktree requires an issue-keyed slug." >&2
+			echo "[codex] rerun with --worktree-slug JSC-123-short-description or include the issue key in your prompt." >&2
+			exit 2
+		fi
+	else
+		slug="$(slugify "${slug_source}")"
+	fi
 	base_slug="${slug}"
 	local local_collision=0
 	local remote_collision=0

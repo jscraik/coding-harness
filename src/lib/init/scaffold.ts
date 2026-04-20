@@ -343,7 +343,10 @@ shamefully-hoist=false
  * @param pm - The package manager identifier used to render install and script commands (e.g., "npm", "pnpm", "yarn").
  * @returns The CircleCI configuration YAML as a string, defining a reusable gate-runner job and a `pr-pipeline` workflow that fans out governance and quality checks.
  */
-function renderCircleCIConfig(pm: string): string {
+function renderCircleCIConfig(
+	pm: string,
+	context: TemplateRenderContext,
+): string {
 	const installCommand =
 		pm === "pnpm"
 			? "pnpm install --frozen-lockfile --prefer-offline"
@@ -378,6 +381,44 @@ function renderCircleCIConfig(pm: string): string {
             - ~/.pnpm-store
 `
 			: "";
+	const linearTrackingEnabled =
+		context.issueTracker !== "github" && context.issueTracker !== "none";
+	const linearGateJob = linearTrackingEnabled
+		? `      - run-governance-check:
+          name: linear-gate
+          check_name: linear-gate
+          requires:
+            - pr-template
+          command: |
+            pr_ref="${"${CIRCLE_PULL_REQUEST:-}"}"
+            if [[ -z "$pr_ref" && -n "${"${CIRCLE_BRANCH:-}"}" ]]; then
+              pr_ref="$(gh pr list --head "$CIRCLE_BRANCH" --state open --json url --jq '.[0].url // ""')"
+            fi
+            if [[ -z "$pr_ref" ]]; then
+              echo "Error: unable to resolve pull request context for linear-gate."
+              exit 1
+            fi
+            branch_name="$(gh pr view "$pr_ref" --json headRefName --jq .headRefName)"
+            pr_title="$(gh pr view "$pr_ref" --json title --jq .title)"
+            pr_body="$(gh pr view "$pr_ref" --json body --jq .body)"
+            pnpm exec tsx src/cli.ts linear-gate \\
+              --branch "$branch_name" \\
+              --pr-title "$pr_title" \\
+              --pr-body "$pr_body" \\
+              --json
+          filters:
+            tags:
+              ignore: /.*/
+`
+		: "";
+	const riskPolicyRequires = linearTrackingEnabled
+		? `          requires:
+            - pr-template
+            - linear-gate
+`
+		: `          requires:
+            - pr-template
+`;
 	return `version: 2.1
 
 jobs:
@@ -411,6 +452,54 @@ jobs:
             else
               echo "GH_TOKEN/GITHUB_PERSONAL_ACCESS_TOKEN not set; gh-backed steps may fail."
             fi
+      - run:
+          name: Ensure baseline shell tools
+          command: |
+            packages=()
+            if ! command -v gh >/dev/null 2>&1; then
+              packages+=("gh")
+            fi
+            if ! command -v rg >/dev/null 2>&1; then
+              packages+=("ripgrep")
+            fi
+            if ! command -v fd >/dev/null 2>&1 && ! command -v fdfind >/dev/null 2>&1; then
+              packages+=("fd-find")
+            fi
+            if ! command -v jq >/dev/null 2>&1; then
+              packages+=("jq")
+            fi
+            if ! command -v make >/dev/null 2>&1; then
+              packages+=("make")
+            fi
+            if ! command -v realpath >/dev/null 2>&1; then
+              packages+=("coreutils")
+            fi
+            if (( ${"${#packages[@]}"} > 0 )); then
+              sudo apt-get update
+              sudo apt-get install -y "${"${packages[@]}"}"
+            fi
+            gh --version | head -n 1
+            if ! command -v fd >/dev/null 2>&1 && command -v fdfind >/dev/null 2>&1; then
+              mkdir -p "$HOME/.local/bin"
+              ln -sf "$(command -v fdfind)" "$HOME/.local/bin/fd"
+              echo 'export PATH="$HOME/.local/bin:$PATH"' >> "$BASH_ENV"
+              export PATH="$HOME/.local/bin:$PATH"
+            fi
+            rg --version
+            fd --version
+            jq --version
+            make --version | head -n 1
+            realpath --version | head -n 1
+      - run:
+          name: Ensure mise available
+          command: |
+            export PATH="$HOME/.local/bin:$PATH"
+            echo 'export PATH="$HOME/.local/bin:$PATH"' >> "$BASH_ENV"
+            if ! command -v mise >/dev/null 2>&1; then
+              curl -fsSL https://mise.run | sh
+            fi
+            mise trust --yes .mise.toml
+            mise --version
       - run:
           name: Ensure pnpm available
           command: |
@@ -455,9 +544,27 @@ workflows:
   pr-pipeline:
     jobs:
       - run-governance-check:
+          name: pr-template
+          check_name: pr-template
+          command: |
+            pr_ref="${"${CIRCLE_PULL_REQUEST:-}"}"
+            if [[ -z "$pr_ref" && -n "${"${CIRCLE_BRANCH:-}"}" ]]; then
+              pr_ref="$(gh pr list --head "$CIRCLE_BRANCH" --state open --json url --jq '.[0].url // ""')"
+            fi
+            if [[ -z "$pr_ref" ]]; then
+              echo "Error: unable to resolve pull request context for pr-template."
+              exit 1
+            fi
+            export PR_TEMPLATE_BODY
+            PR_TEMPLATE_BODY="$(gh pr view "$pr_ref" --json body --jq .body)"
+            pnpm exec tsx src/cli.ts pr-template-gate --json
+          filters:
+            tags:
+              ignore: /.*/
+${linearGateJob}      - run-governance-check:
           name: risk-policy-gate
           check_name: risk-policy-gate
-          command: bash scripts/run-harness-gate.sh policy-gate --max-tier medium --json
+${riskPolicyRequires}          command: bash scripts/run-harness-gate.sh policy-gate --max-tier medium --json
           filters:
             tags:
               ignore: /.*/
@@ -865,7 +972,7 @@ REPO_ROOT="$(cd -- "$SCRIPT_DIR/.." && pwd -P)"
 
 usage() {
 	cat <<'USAGE'
-Usage: scripts/new-task.sh [options] <slug>
+Usage: scripts/new-task.sh [options] <issue-key>-<slug>
 
 Create a dedicated git worktree and branch for one task, then print the
 bootstrap commands to run inside that worktree.
@@ -875,7 +982,7 @@ This repository expects one task = one worktree = one branch = one agent thread.
 Options:
   --base <ref>            Start the branch from this ref (default: main)
   --branch-prefix <name>  Branch prefix (default: ${AGENT_BRANCH_PREFIX})
-  --path <dir>            Worktree path (default: ../wt-<slug>)
+  --path <dir>            Worktree path (default: ../wt-<issue-key>-<slug>)
   --bootstrap             Run worktree bootstrap immediately after creation
   -h, --help              Show this help text
 USAGE
@@ -936,18 +1043,18 @@ if [[ -z "$slug" || $# -gt 0 ]]; then
 	exit 2
 fi
 
-if [[ ! "$slug" =~ ^[a-z0-9][a-z0-9-]*$ ]]; then
-	echo "[new-task] slug must be lower-case kebab-case: $slug" >&2
-	exit 2
-fi
-
 if [[ ! "$branch_prefix" =~ ^[A-Za-z0-9._/-]+$ ]]; then
 	echo "[new-task] invalid branch prefix: $branch_prefix" >&2
 	exit 2
 fi
 
-if [[ "$branch_prefix" == codex* ]] && [[ ! "$slug" =~ ^[a-z][a-z0-9]*-[0-9]+-[a-z0-9][a-z0-9-]*$ ]]; then
-	echo "[new-task] for codex branches, slug must start with an issue key (example: jsc-123-my-task): $slug" >&2
+if [[ "$branch_prefix" == codex* ]]; then
+	if [[ ! "$slug" =~ ^[A-Za-z][A-Za-z0-9]*-[0-9]+-[a-z0-9][a-z0-9-]*$ ]]; then
+		echo "[new-task] for codex branches, slug must start with an issue key (example: JSC-123-my-task): $slug" >&2
+		exit 2
+	fi
+elif [[ ! "$slug" =~ ^[a-z0-9][a-z0-9-]*$ ]]; then
+	echo "[new-task] slug must be lower-case kebab-case: $slug" >&2
 	exit 2
 fi
 
@@ -1116,7 +1223,7 @@ REPO_ROOT="$(cd -- "$SCRIPT_DIR/.." && pwd)"
  *
  * The returned script locates the repository root and attempts, in order, to:
  * - run the repo-local `src/cli.ts` via `pnpm exec tsx` only when the repo is the harness source repo,
- * - run `scripts/harness-cli.sh` (when executable),
+ * - run `scripts/harness-cli.sh` (when present and readable),
  * - invoke a globally installed `harness` binary.
  * If none are available the script prints installation and local-exec guidance and exits with a non-zero status.
  *
@@ -1158,7 +1265,7 @@ if is_harness_source_repo; then
 	exec pnpm exec tsx "$REPO_ROOT/src/cli.ts" "$@"
 fi
 
-if [[ -x "$REPO_ROOT/scripts/harness-cli.sh" ]]; then
+if [[ -f "$REPO_ROOT/scripts/harness-cli.sh" && -r "$REPO_ROOT/scripts/harness-cli.sh" ]]; then
 	exec bash "$REPO_ROOT/scripts/harness-cli.sh" "$@"
 fi
 
@@ -2782,7 +2889,7 @@ jobs:
 	},
 	{
 		path: ".circleci/config.yml",
-		render: (pm) => renderCircleCIConfig(pm),
+		render: (pm, context) => renderCircleCIConfig(pm, context),
 	},
 	{
 		path: "CONTRIBUTING.md",
@@ -2845,8 +2952,8 @@ This workflow keeps delivery auditable, reversible, and consistent even for solo
 ## Branching and PR rule
 
 1. Create a dedicated branch/worktree for each task:
-   - Agent-created branch: \`git switch -c ${AGENT_BRANCH_PREFIX}/<short-description>\`
-   - Agent-created worktree: \`git worktree add ../tmp-worktree -b ${AGENT_BRANCH_PREFIX}/<short-description>\`
+   - Agent-created branch: \`git switch -c ${AGENT_BRANCH_PREFIX}/<issue-key>-<short-description>\`
+   - Agent-created worktree: \`git worktree add ../tmp-worktree -b ${AGENT_BRANCH_PREFIX}/<issue-key>-<short-description>\`
    - Human-authored branch prefixes (when not using \`${AGENT_BRANCH_PREFIX}/\`): \`feat/\`, \`fix/\`, \`docs/\`, \`refactor/\`, \`chore/\`, \`test/\`
 2. Keep commits small and focused.
 3. Open a PR to merge into \`main\`.
@@ -2856,7 +2963,7 @@ This workflow keeps delivery auditable, reversible, and consistent even for solo
 ## Branch name policy
 
 - Use lower-case, kebab-case slugs.
-- Agent-created branches must use \`${AGENT_BRANCH_PREFIX}/<short-description>\`.
+- Agent-created branches must use \`${AGENT_BRANCH_PREFIX}/<issue-key>-<short-description>\`.
 - Human-authored branches may use: \`feat/\`, \`fix/\`, \`docs/\`, \`refactor/\`, \`chore/\`, \`test/\`.
 - Avoid \`main\`-like names and do not include secrets or issue-pii.
 
@@ -2931,8 +3038,8 @@ Recommended policy:
 - Repo-local launches should prefer \`./scripts/codex-enforced\` so preflight failures are recorded into repo-scoped learn state.
 - \`scripts/codex-enforced\` should guard \`main\` by auto-creating a dedicated task worktree (via \`scripts/new-task.sh --bootstrap\`) before launching Codex for feature work.
 - Use \`./scripts/codex-learn analyze\` and \`./scripts/codex-learn apply\` to inspect repo-scoped failure patterns and write override files into \`.harness/memory/\`.
-- Start new work with \`bash scripts/new-task.sh <slug>\`, then enter the generated worktree and continue there.
-- Use \`bash scripts/new-task.sh --bootstrap <slug>\` when you want to create and bootstrap the worktree in one command.
+- Start new work with \`bash scripts/new-task.sh <issue-key>-<slug>\`, then enter the generated worktree and continue there.
+- Use \`bash scripts/new-task.sh --bootstrap <issue-key>-<slug>\` when you want to create and bootstrap the worktree in one command.
 - Use \`bash scripts/validate-codestyle.sh --fast\` during iteration for focused codestyle validation.
 - Use \`bash scripts/validate-codestyle.sh\` before handoff for the fail-closed codestyle bundle.
 - Use \`bash scripts/verify-work.sh\` for the broader verification bundle.
@@ -3496,6 +3603,11 @@ ensure_python_packaging_tools() {
 }
 
 install_semgrep() {
+	if ! command -v python3 >/dev/null 2>&1; then
+		echo "Error: python3 is required to install Semgrep." >&2
+		exit 1
+	fi
+
 	mkdir -p "\$SEMGREP_CACHE_ROOT"
 	if python3 -m venv "\$SEMGREP_VENV_DIR" >/dev/null 2>&1; then
 		"\$SEMGREP_PYTHON" -m pip install --quiet --upgrade pip "semgrep==\$SEMGREP_VERSION"
@@ -3503,6 +3615,8 @@ install_semgrep() {
 	fi
 
 	if python3 -m pip --version >/dev/null 2>&1; then
+		rm -rf "\$SEMGREP_VENV_DIR"
+		rm -f "\$SEMGREP_BIN"
 		rm -rf "\$SEMGREP_SITE_PACKAGES_DIR"
 		mkdir -p "\$SEMGREP_SITE_PACKAGES_DIR"
 		python3 -m pip install --quiet --upgrade --target "\$SEMGREP_SITE_PACKAGES_DIR" "semgrep==\$SEMGREP_VERSION"
@@ -3660,6 +3774,11 @@ ensure_python_packaging_tools() {
 }
 
 install_semgrep() {
+	if ! command -v python3 >/dev/null 2>&1; then
+		echo "Error: python3 is required to install Semgrep." >&2
+		exit 1
+	fi
+
 	mkdir -p "$SEMGREP_STATE_ROOT" "$SEMGREP_RUNTIME_CACHE_ROOT" "$SEMGREP_RUNTIME_USER_HOME"
 	mkdir -p "$(dirname "$SEMGREP_RUNTIME_LOG_FILE")"
 	mkdir -p "$SEMGREP_CACHE_ROOT"
@@ -3677,6 +3796,8 @@ install_semgrep() {
 	fi
 
 	if python3 -m pip --version >/dev/null 2>&1; then
+		rm -rf "$SEMGREP_VENV_DIR"
+		rm -f "$SEMGREP_BIN"
 		rm -rf "$SEMGREP_SITE_PACKAGES_DIR"
 		mkdir -p "$SEMGREP_SITE_PACKAGES_DIR"
 		python3 -m pip install --quiet --upgrade --target "$SEMGREP_SITE_PACKAGES_DIR" "semgrep==\$SEMGREP_VERSION"
@@ -4667,24 +4788,6 @@ fi
 	fi
 
 ensure_mise_available() {
-	if command -v mise >/dev/null 2>&1; then
-		return 0
-	fi
-
-	if [[ -z "\${CI:-}" && -z "\${CIRCLECI:-}" ]]; then
-		return 1
-	fi
-
-	if ! command -v curl >/dev/null 2>&1; then
-		return 1
-	fi
-
-	export PATH="$HOME/.local/bin:$PATH"
-	if command -v mise >/dev/null 2>&1; then
-		return 0
-	fi
-
-	curl -fsSL https://mise.run | sh
 	command -v mise >/dev/null 2>&1
 }
 
@@ -5220,9 +5323,11 @@ export function isTemplateEnabledForProvider(
 	templatePath: string,
 	ciProvider: CIProvider,
 ): boolean {
-	// GitHub Actions workflows are release-only in scaffold output.
 	if (templatePath.startsWith(".github/workflows/")) {
-		return templatePath === ".github/workflows/release-private-npm.yml";
+		if (templatePath === ".github/workflows/release-private-npm.yml") {
+			return true;
+		}
+		return ciProvider === "github-actions";
 	}
 	// CircleCI config is only written for circleci provider.
 	if (templatePath === ".circleci/config.yml") {

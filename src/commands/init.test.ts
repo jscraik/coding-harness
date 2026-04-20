@@ -345,6 +345,15 @@ describe("runInit", () => {
 				join(tempDir, ".circleci/config.yml"),
 				"utf-8",
 			);
+			expect(circleConfig).toContain("name: Ensure baseline shell tools");
+			expect(circleConfig).toContain('packages+=("gh")');
+			expect(circleConfig).toContain('packages+=("ripgrep")');
+			expect(circleConfig).toContain('packages+=("fd-find")');
+			expect(circleConfig).toContain(
+				'ln -sf "$(command -v fdfind)" "$HOME/.local/bin/fd"',
+			);
+			expect(circleConfig).toContain("name: Ensure mise available");
+			expect(circleConfig).toContain("mise trust --yes .mise.toml");
 			expect(circleConfig).toContain("name: Ensure pnpm available");
 			expect(circleConfig).toContain(
 				'export GH_TOKEN="${GITHUB_PERSONAL_ACCESS_TOKEN}"',
@@ -367,6 +376,15 @@ describe("runInit", () => {
 			expect(circleConfig).toContain("pnpm install --frozen-lockfile");
 			expect(circleConfig).toContain("name: check");
 			expect(circleConfig).toContain("command: pnpm check");
+			expect(circleConfig).toContain("name: pr-template");
+			expect(circleConfig).toContain("check_name: pr-template");
+			expect(circleConfig).toContain(
+				"pnpm exec tsx src/cli.ts pr-template-gate --json",
+			);
+			expect(circleConfig).toContain("name: linear-gate");
+			expect(circleConfig).toContain("check_name: linear-gate");
+			expect(circleConfig).toContain("pnpm exec tsx src/cli.ts linear-gate \\");
+			expect(circleConfig).toContain("requires:");
 			expect(circleConfig).toContain(
 				"command: bash scripts/run-harness-gate.sh policy-gate --max-tier medium --json",
 			);
@@ -380,6 +398,7 @@ describe("runInit", () => {
 			expect(circleConfig).toContain("name: lint");
 			expect(circleConfig).toContain("name: typecheck");
 			expect(circleConfig).toContain("name: test");
+			expect(circleConfig).toContain("command: pnpm test:ci");
 			expect(circleConfig).toContain("name: audit");
 			expect(circleConfig).toContain(
 				"command: bash scripts/check-semgrep-full.sh",
@@ -679,7 +698,7 @@ describe("runInit", () => {
 			expect(existsSync(join(tempDir, ".greptile/files.json"))).toBe(false);
 		});
 
-		it("scaffolds only release workflow files when provider is github-actions", () => {
+		it("scaffolds github-actions workflow files when provider is github-actions", () => {
 			const result = runInit(tempDir, {
 				dryRun: false,
 				force: false,
@@ -688,13 +707,12 @@ describe("runInit", () => {
 
 			expect(result.ok).toBe(true);
 
-			// Verify GitHub Actions remains release-only.
 			expect(
 				existsSync(join(tempDir, ".github/workflows/pr-pipeline.yml")),
-			).toBe(false);
+			).toBe(true);
 			expect(
 				existsSync(join(tempDir, ".github/workflows/secret-scan.yml")),
-			).toBe(false);
+			).toBe(true);
 			expect(
 				existsSync(join(tempDir, ".github/workflows/release-private-npm.yml")),
 			).toBe(true);
@@ -1070,6 +1088,11 @@ describe("runInit", () => {
 			expect(content).toContain(
 				"name: Publish private package (OIDC trusted publisher)",
 			);
+			expect(content).toContain("name: Verify tag matches package version");
+			expect(content).toContain("name: Generate build provenance attestation");
+			expect(content).toContain("name: Verify attestations");
+			expect(content).toContain("gh attestation verify");
+			expect(content).toContain("name: Create GitHub Release");
 		});
 
 		it("uses npm run for npm script commands in CircleCI templates", () => {
@@ -1238,6 +1261,16 @@ describe("runInit", () => {
 					"utf-8",
 				),
 			);
+			const contract = JSON.parse(
+				require("node:fs").readFileSync(
+					join(tempDir, "harness.contract.json"),
+					"utf-8",
+				),
+			);
+			const circleConfig = require("node:fs").readFileSync(
+				join(tempDir, ".circleci/config.yml"),
+				"utf-8",
+			);
 
 			expect(workflowContent).toContain("kind: github");
 			expect(workflowContent).not.toContain("harness linear claim");
@@ -1249,6 +1282,10 @@ describe("runInit", () => {
 					(entry: { displayName: string }) => entry.displayName,
 				),
 			).not.toContain("linear-gate");
+			expect(contract.branchProtection.requiredChecks).not.toContain(
+				"linear-gate",
+			);
+			expect(circleConfig).not.toContain("name: linear-gate");
 		});
 
 		it("creates WORKFLOW.md with auto-populated Symphony config", () => {
@@ -1676,7 +1713,13 @@ describe("runInit", () => {
 				'exec bash "$REPO_ROOT/scripts/harness-cli.sh" "$@"',
 			);
 			expect(runHarnessGate).toContain(
+				'if [[ -f "$REPO_ROOT/scripts/harness-cli.sh" && -r "$REPO_ROOT/scripts/harness-cli.sh" ]]; then',
+			);
+			expect(runHarnessGate).toContain(
 				'mise_harness_bin="$(mise which harness 2>/dev/null || true)"',
+			);
+			expect(semgrepChanged).toContain(
+				'echo "Error: python3 is required to install Semgrep." >&2',
 			);
 			expect(semgrepChanged).toContain(
 				'SEMGREP_SITE_PACKAGES_DIR="${SEMGREP_CACHE_ROOT}/semgrep-site-packages-${SEMGREP_VERSION}"',
@@ -1797,6 +1840,19 @@ describe("runInit", () => {
 			);
 			expect(codexEnforced).toContain('NEW_ARGS+=("--")');
 			expect(codexEnforced).toContain(
+				'WORKTREE_BRANCH_PREFIX="${WORKTREE_BRANCH_PREFIX:-codex}"',
+			);
+			expect(codexEnforced).toContain(
+				'SKIP_PREFLIGHT="${SKIP_PREFLIGHT:-false}"',
+			);
+			expect(codexEnforced).toContain(
+				'SKIP_WORKTREE_GUARD="${SKIP_WORKTREE_GUARD:-false}"',
+			);
+			expect(codexEnforced).toContain("issue_key_slug()");
+			expect(codexEnforced).toContain(
+				"[codex] main-branch auto worktree requires an issue-keyed slug.",
+			);
+			expect(codexEnforced).toContain(
 				'exec bash "${worktree_path}/scripts/codex-enforced" --skip-worktree-guard "${ORIGINAL_ARGS[@]}"',
 			);
 			expect(codexEnforced).toContain(
@@ -1874,7 +1930,10 @@ describe("runInit", () => {
 			expect(environmentCheck).toContain('"scripts/prepare-worktree.sh"');
 			expect(environmentCheck).toContain('"scripts/new-task.sh"');
 			expect(environmentCheck).toContain("ensure_mise_available()");
-			expect(environmentCheck).toContain("curl -fsSL https://mise.run | sh");
+			expect(environmentCheck).not.toContain(
+				"curl -fsSL https://mise.run | sh",
+			);
+			expect(environmentCheck).toContain("command -v mise >/dev/null 2>&1");
 			expect(environmentCheck).toContain(
 				'"scripts/check-hook-critical-config-sync.sh"',
 			);

@@ -14,6 +14,6 @@ promote them from hypotheses with a rule ID:
 
 ## Promotion guide
 
-1. Hypothesis observed 3+ times -> promote to rule
-2. Rule contradicted by evidence -> demote back to hypothesis
+1. Hypothesis observed 3+ times → promote to rule
+2. Rule contradicted by evidence → demote back to hypothesis
 3. Each rule gets a unique R-NNN identifier within its domain

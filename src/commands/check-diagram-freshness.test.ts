@@ -8,7 +8,7 @@ import {
 	writeFileSync,
 } from "node:fs";
 import { tmpdir } from "node:os";
-import { dirname, join } from "node:path";
+import { delimiter, dirname, join } from "node:path";
 import { afterEach, describe, expect, it } from "vitest";
 import { sanitizeGitEnv } from "../lib/workflow-contract/test-harness.js";
 
@@ -26,9 +26,10 @@ const STABLE_PATH = [
 	"/usr/sbin",
 	"/sbin",
 	process.env.HOME ? join(process.env.HOME, ".local", "bin") : "",
+	process.env.PATH ?? "",
 ]
 	.filter(Boolean)
-	.join(":");
+	.join(delimiter);
 
 function run(root: string, command: string, args: string[]) {
 	return spawnSync(command, args, {

@@ -73,6 +73,11 @@ ensure_python_packaging_tools() {
 }
 
 install_semgrep() {
+	if ! command -v python3 >/dev/null 2>&1; then
+		echo "Error: python3 is required to install Semgrep." >&2
+		exit 1
+	fi
+
 	mkdir -p "$SEMGREP_STATE_ROOT" "$SEMGREP_RUNTIME_CACHE_ROOT" "$SEMGREP_RUNTIME_USER_HOME"
 	mkdir -p "$(dirname "$SEMGREP_RUNTIME_LOG_FILE")"
 	mkdir -p "$SEMGREP_CACHE_ROOT"
@@ -91,6 +96,8 @@ install_semgrep() {
 	fi
 
 	if python3 -m pip --version >/dev/null 2>&1; then
+		rm -rf "$SEMGREP_VENV_DIR"
+		rm -f "$SEMGREP_BIN"
 		rm -rf "$SEMGREP_SITE_PACKAGES_DIR"
 		mkdir -p "$SEMGREP_SITE_PACKAGES_DIR"
 		python3 -m pip install --quiet --upgrade --target "$SEMGREP_SITE_PACKAGES_DIR" "semgrep==$SEMGREP_VERSION"

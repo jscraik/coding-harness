@@ -31,7 +31,7 @@ if is_harness_source_repo; then
 	fi
 fi
 
-if [[ -x "$REPO_ROOT/scripts/harness-cli.sh" ]]; then
+if [[ -f "$REPO_ROOT/scripts/harness-cli.sh" && -r "$REPO_ROOT/scripts/harness-cli.sh" ]]; then
 	exec bash "$REPO_ROOT/scripts/harness-cli.sh" "$@"
 fi
 
