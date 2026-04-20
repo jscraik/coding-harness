@@ -9,6 +9,9 @@ set -euo pipefail
 SCRIPT_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd -P)"
 PREFLIGHT_SCRIPT="${SCRIPT_DIR}/codex-preflight.sh"
 LEARN_SCRIPT="${SCRIPT_DIR}/codex-learn"
+# WORKTREE_BRANCH_PREFIX: Default branch prefix for auto-created worktrees.
+# For Linear-tracked work, use --worktree-slug JSC-XXX-short-description or
+# set WORKTREE_BRANCH_PREFIX="codex/JSC-" to preserve ticket traceability.
 WORKTREE_BRANCH_PREFIX="codex/feature"
 
 RED='\033[0;31m'
