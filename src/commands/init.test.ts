@@ -1687,6 +1687,12 @@ describe("runInit", () => {
 			expect(semgrepChanged).toContain(
 				'python3 -m pip install --quiet --upgrade --target "$SEMGREP_SITE_PACKAGES_DIR" "semgrep==$SEMGREP_VERSION"',
 			);
+			expect(semgrepChanged).toContain(
+				'if [[ -z "${CI:-}" && -z "${CIRCLECI:-}" ]]; then',
+			);
+			expect(semgrepChanged).toContain(
+				"sudo apt-get install -y python3-pip python3-venv",
+			);
 			expect(semgrepFull).toContain(
 				'SEMGREP_SITE_PACKAGES_DIR="${SEMGREP_CACHE_ROOT}/semgrep-site-packages-${SEMGREP_VERSION}"',
 			);
@@ -1695,6 +1701,12 @@ describe("runInit", () => {
 			);
 			expect(semgrepFull).toContain(
 				'python3 -m pip install --quiet --upgrade --target "$SEMGREP_SITE_PACKAGES_DIR" "semgrep==$SEMGREP_VERSION"',
+			);
+			expect(semgrepFull).toContain(
+				'if [[ -z "${CI:-}" && -z "${CIRCLECI:-}" ]]; then',
+			);
+			expect(semgrepFull).toContain(
+				"sudo apt-get install -y python3-pip python3-venv",
 			);
 			expect(semgrepFull).toContain(
 				"python3 -m venv is unavailable and python3 -m pip could not be used as a fallback.",

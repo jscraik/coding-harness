@@ -48,6 +48,30 @@ run_semgrep() {
 		python3 -m semgrep "$@"
 }
 
+ensure_python_packaging_tools() {
+	if [[ -z "${CI:-}" && -z "${CIRCLECI:-}" ]]; then
+		return 1
+	fi
+
+	if ! command -v apt-get >/dev/null 2>&1; then
+		return 1
+	fi
+
+	if [[ "$(id -u)" -eq 0 ]]; then
+		apt-get update
+		apt-get install -y python3-pip python3-venv
+		return 0
+	fi
+
+	if command -v sudo >/dev/null 2>&1; then
+		sudo apt-get update
+		sudo apt-get install -y python3-pip python3-venv
+		return 0
+	fi
+
+	return 1
+}
+
 install_semgrep() {
 	mkdir -p "$SEMGREP_STATE_ROOT" "$SEMGREP_RUNTIME_CACHE_ROOT" "$SEMGREP_RUNTIME_USER_HOME"
 	mkdir -p "$(dirname "$SEMGREP_RUNTIME_LOG_FILE")"
@@ -70,6 +94,11 @@ install_semgrep() {
 		rm -rf "$SEMGREP_SITE_PACKAGES_DIR"
 		mkdir -p "$SEMGREP_SITE_PACKAGES_DIR"
 		python3 -m pip install --quiet --upgrade --target "$SEMGREP_SITE_PACKAGES_DIR" "semgrep==$SEMGREP_VERSION"
+		return
+	fi
+
+	if ensure_python_packaging_tools; then
+		install_semgrep
 		return
 	fi
 
