@@ -77,7 +77,8 @@ jobs:
           node-version: "24"
           registry-url: "https://registry.npmjs.org/"
 
-__PACKAGE_MANAGER_SETUP_STEP__      - name: Install dependencies
+      # __PACKAGE_MANAGER_SETUP_STEP__
+      - name: Install dependencies
         run: __INSTALL_COMMAND__
 
       - name: Materialize CODESTYLE.md for CI
