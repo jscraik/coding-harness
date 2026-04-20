@@ -9,6 +9,9 @@ set -euo pipefail
 SCRIPT_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd -P)"
 PREFLIGHT_SCRIPT="${SCRIPT_DIR}/codex-preflight.sh"
 LEARN_SCRIPT="${SCRIPT_DIR}/codex-learn"
+# WORKTREE_BRANCH_PREFIX: Default branch prefix for auto-created worktrees.
+# For Linear-tracked work, use --worktree-slug JSC-XXX-short-description or
+# set WORKTREE_BRANCH_PREFIX="codex/JSC-" to preserve ticket traceability.
 WORKTREE_BRANCH_PREFIX="codex/feature"
 
 RED='\033[0;31m'
@@ -17,6 +20,7 @@ YELLOW='\033[1;33m'
 BLUE='\033[0;34m'
 NC='\033[0m'
 
+# usage prints the script usage message showing supported options and indicates that remaining arguments are passed through to `codex`.
 usage() {
 	echo "Usage: codex-enforced [options] <prompt>"
 	echo ""
@@ -72,7 +76,6 @@ while (( $# > 0 )); do
 			shift
 			;;
 		--)
-			NEW_ARGS+=("--")
 			shift
 			while (( $# > 0 )); do
 				NEW_ARGS+=("${1}")
@@ -86,6 +89,7 @@ while (( $# > 0 )); do
 	esac
 done
 
+# slugify converts a raw string into a lowercase, URL-safe slug, defaults to "task" if empty, and echoes the result truncated to 48 characters.
 slugify() {
 	local raw="${1:-}"
 	local normalized=""
@@ -96,6 +100,8 @@ slugify() {
 	printf '%s' "${normalized:0:48}"
 }
 
+# ensure_task_worktree creates and switches to a dedicated task worktree (bootstrapping it via scripts/new-task.sh) when running on the `main` branch and the guard is not skipped, then re-executes the wrapper from that worktree.
+# It returns immediately if running outside a git repo, not on `main`, or if `SKIP_WORKTREE_GUARD`, `PREFLIGHT_ONLY`, or `LEARN_ONLY` are set; it also ensures a unique branch slug and worktree path before bootstrapping.
 ensure_task_worktree() {
 	local repo_root=""
 	local current_branch=""
@@ -119,28 +125,42 @@ ensure_task_worktree() {
 		return 0
 	fi
 
-	# Fail fast if working tree is dirty
-	if [[ -n "$(git -C "${repo_root}" status --porcelain)" ]]; then
-		echo -e "${RED}ERROR: Working tree has uncommitted changes. Cannot create worktree from dirty main.${NC}"
-		echo ""
-		echo "Please commit, stash, or clean your changes before running codex on main:"
-		echo "  git status"
-		echo "  git add <files> && git commit -m 'message'"
-		echo "  # or"
-		echo "  git stash"
-		exit 1
-	fi
-
 	if [[ -n "${WORKTREE_SLUG}" ]]; then
 		slug_source="${WORKTREE_SLUG}"
 	else
+		# Extract positional arguments by skipping options and their values
+		local positional_args=()
+		local skip_next=false
 		for arg in "${NEW_ARGS[@]}"; do
-			if [[ "${arg}" == --* ]]; then
+			if [[ "${skip_next}" == true ]]; then
+				skip_next=false
 				continue
 			fi
-			slug_source="${arg}"
-			break
+			# Skip long options with values (--option=value or --option value)
+			if [[ "${arg}" == --*=* ]]; then
+				continue
+			elif [[ "${arg}" == --* ]]; then
+				# Long option that may have a value in the next arg
+				# Common codex options that take values: --model, --max-tokens, --temperature
+				if [[ "${arg}" =~ ^--(model|max-tokens|temperature|timeout|config)$ ]]; then
+					skip_next=true
+				fi
+				continue
+			elif [[ "${arg}" == -* ]]; then
+				# Short option; common ones that take values: -m, -t
+				if [[ "${arg}" =~ ^-(m|t)$ ]]; then
+					skip_next=true
+				fi
+				continue
+			fi
+			# This is a positional argument
+			positional_args+=("${arg}")
 		done
+
+		# Only use the first positional as slug source if exactly one exists
+		if [[ ${#positional_args[@]} -eq 1 ]]; then
+			slug_source="${positional_args[0]}"
+		fi
 	fi
 
 	slug="$(slugify "${slug_source}")"
