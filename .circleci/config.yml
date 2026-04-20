@@ -131,8 +131,6 @@ jobs:
 
 workflows:
   pr-pipeline:
-    when:
-      equal: ["pull_request", << pipeline.event.name >>]
     jobs:
       - run-governance-check:
           name: pr-template
