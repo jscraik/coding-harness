@@ -1115,8 +1115,8 @@ REPO_ROOT="$(cd -- "$SCRIPT_DIR/.." && pwd)"
  * Produce a portable bash script that resolves and runs the repository's harness CLI.
  *
  * The returned script locates the repository root and attempts, in order, to:
- * - run `scripts/harness-cli.sh` (when executable),
  * - run the repo-local `src/cli.ts` via `pnpm exec tsx` only when the repo is the harness source repo,
+ * - run `scripts/harness-cli.sh` (when executable),
  * - invoke a globally installed `harness` binary.
  * If none are available the script prints installation and local-exec guidance and exits with a non-zero status.
  *
@@ -1149,10 +1149,6 @@ is_harness_source_repo() {
 	' "$REPO_ROOT/package.json" >/dev/null 2>&1
 }
 
-if [[ -x "$REPO_ROOT/scripts/harness-cli.sh" ]]; then
-	exec bash "$REPO_ROOT/scripts/harness-cli.sh" "$@"
-fi
-
 if is_harness_source_repo; then
 	if ! command -v pnpm >/dev/null 2>&1; then
 		echo "Error: pnpm is required to run the harness source CLI." >&2
@@ -1160,6 +1156,10 @@ if is_harness_source_repo; then
 		exit 1
 	fi
 	exec pnpm exec tsx "$REPO_ROOT/src/cli.ts" "$@"
+fi
+
+if [[ -x "$REPO_ROOT/scripts/harness-cli.sh" ]]; then
+	exec bash "$REPO_ROOT/scripts/harness-cli.sh" "$@"
 fi
 
 mise_harness_bin="$(mise which harness 2>/dev/null || true)"
@@ -3458,12 +3458,36 @@ SEMGREP_CACHE_ROOT="\${XDG_CACHE_HOME:-\$HOME/.cache}/coding-harness"
 SEMGREP_VENV_DIR="\${SEMGREP_CACHE_ROOT}/semgrep-venv-\${SEMGREP_VERSION}"
 SEMGREP_BIN="\$SEMGREP_VENV_DIR/bin/semgrep"
 SEMGREP_PYTHON="\$SEMGREP_VENV_DIR/bin/python"
+SEMGREP_SITE_PACKAGES_DIR="\${SEMGREP_CACHE_ROOT}/semgrep-site-packages-\${SEMGREP_VERSION}"
 cd "$REPO_ROOT"
+
+run_semgrep() {
+	if [[ -x "\$SEMGREP_BIN" ]]; then
+		"\$SEMGREP_BIN" "$@"
+		return
+	fi
+
+	PYTHONPATH="\$SEMGREP_SITE_PACKAGES_DIR\${PYTHONPATH:+:\$PYTHONPATH}" \\
+		python3 -m semgrep "$@"
+}
 
 install_semgrep() {
 	mkdir -p "\$SEMGREP_CACHE_ROOT"
-	python3 -m venv "\$SEMGREP_VENV_DIR"
-	"\$SEMGREP_PYTHON" -m pip install --quiet --upgrade pip "semgrep==\$SEMGREP_VERSION"
+	if python3 -m venv "\$SEMGREP_VENV_DIR" >/dev/null 2>&1; then
+		"\$SEMGREP_PYTHON" -m pip install --quiet --upgrade pip "semgrep==\$SEMGREP_VERSION"
+		return
+	fi
+
+	if python3 -m pip --version >/dev/null 2>&1; then
+		rm -rf "\$SEMGREP_SITE_PACKAGES_DIR"
+		mkdir -p "\$SEMGREP_SITE_PACKAGES_DIR"
+		python3 -m pip install --quiet --upgrade --target "\$SEMGREP_SITE_PACKAGES_DIR" "semgrep==\$SEMGREP_VERSION"
+		return
+	fi
+
+	echo "Error: unable to install Semgrep." >&2
+	echo "python3 -m venv is unavailable and python3 -m pip could not be used as a fallback." >&2
+	exit 1
 }
 
 ensure_semgrep_version() {
@@ -3473,7 +3497,7 @@ ensure_semgrep_version() {
 	fi
 
 	local detected_version
-	detected_version="\$("\$SEMGREP_BIN" --version 2>/dev/null | tr -d '[:space:]')"
+	detected_version="\$(run_semgrep --version 2>/dev/null | tr -d '[:space:]')"
 	if [[ "\$detected_version" != "\$SEMGREP_VERSION" ]]; then
 		install_semgrep
 	fi
@@ -3563,13 +3587,23 @@ SEMGREP_CACHE_ROOT="\${SEMGREP_CACHE_ROOT:-\$SEMGREP_STATE_ROOT/tool-cache}"
 SEMGREP_VENV_DIR="\${SEMGREP_CACHE_ROOT}/semgrep-venv-\${SEMGREP_VERSION}"
 SEMGREP_BIN="\$SEMGREP_VENV_DIR/bin/semgrep"
 SEMGREP_PYTHON="\$SEMGREP_VENV_DIR/bin/python"
+SEMGREP_SITE_PACKAGES_DIR="\${SEMGREP_CACHE_ROOT}/semgrep-site-packages-\${SEMGREP_VERSION}"
 cd "$REPO_ROOT"
 
 run_semgrep() {
-	XDG_CACHE_HOME="\$SEMGREP_RUNTIME_CACHE_ROOT" \\
+	if [[ -x "\$SEMGREP_BIN" ]]; then
+		XDG_CACHE_HOME="\$SEMGREP_RUNTIME_CACHE_ROOT" \\
+			SEMGREP_USER_HOME="\$SEMGREP_RUNTIME_USER_HOME" \\
+			SEMGREP_LOG_FILE="\$SEMGREP_RUNTIME_LOG_FILE" \\
+			"\$SEMGREP_BIN" "$@"
+		return
+	fi
+
+	PYTHONPATH="\$SEMGREP_SITE_PACKAGES_DIR\${PYTHONPATH:+:\$PYTHONPATH}" \\
+		XDG_CACHE_HOME="\$SEMGREP_RUNTIME_CACHE_ROOT" \\
 		SEMGREP_USER_HOME="\$SEMGREP_RUNTIME_USER_HOME" \\
 		SEMGREP_LOG_FILE="\$SEMGREP_RUNTIME_LOG_FILE" \\
-		"\$SEMGREP_BIN" "$@"
+		python3 -m semgrep "$@"
 }
 
 install_semgrep() {
@@ -3584,8 +3618,21 @@ install_semgrep() {
 			return
 		fi
 	fi
-	python3 -m venv "$SEMGREP_VENV_DIR"
-	"$SEMGREP_PYTHON" -m pip install --quiet --upgrade pip "semgrep==\$SEMGREP_VERSION"
+	if python3 -m venv "$SEMGREP_VENV_DIR" >/dev/null 2>&1; then
+		"$SEMGREP_PYTHON" -m pip install --quiet --upgrade pip "semgrep==\$SEMGREP_VERSION"
+		return
+	fi
+
+	if python3 -m pip --version >/dev/null 2>&1; then
+		rm -rf "$SEMGREP_SITE_PACKAGES_DIR"
+		mkdir -p "$SEMGREP_SITE_PACKAGES_DIR"
+		python3 -m pip install --quiet --upgrade --target "$SEMGREP_SITE_PACKAGES_DIR" "semgrep==\$SEMGREP_VERSION"
+		return
+	fi
+
+	echo "Error: unable to install Semgrep." >&2
+	echo "python3 -m venv is unavailable and python3 -m pip could not be used as a fallback." >&2
+	exit 1
 }
 
 ensure_semgrep_version() {
@@ -4501,11 +4548,6 @@ CONTRACT_PATH="$REPO_ROOT/harness.contract.json"
 
 if [[ ! -f "$CONTRACT_PATH" ]]; then
 	echo "Error: missing contract file at $CONTRACT_PATH"
-	exit 1
-fi
-
-if ! command -v rg >/dev/null 2>&1; then
-	echo "Error: required binary 'rg' is not installed or not on PATH"
 	exit 1
 fi
 

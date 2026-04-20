@@ -23,11 +23,6 @@ if [[ ! -f "$CONTRACT_PATH" ]]; then
 	exit 1
 fi
 
-if ! command -v rg >/dev/null 2>&1; then
-	echo "Error: required binary 'rg' is not installed or not on PATH"
-	exit 1
-fi
-
 	if [[ ! -f "$MISE_PATH" ]]; then
 		echo "Error: missing mise config at $MISE_PATH"
 		exit 1

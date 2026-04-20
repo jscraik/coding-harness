@@ -21,10 +21,6 @@ is_harness_source_repo() {
 	' "$REPO_ROOT/package.json" >/dev/null 2>&1
 }
 
-if [[ -x "$REPO_ROOT/scripts/harness-cli.sh" ]]; then
-	exec bash "$REPO_ROOT/scripts/harness-cli.sh" "$@"
-fi
-
 if is_harness_source_repo; then
 	if command -v pnpm >/dev/null 2>&1; then
 		exec pnpm exec tsx "$REPO_ROOT/src/cli.ts" "$@"
@@ -33,6 +29,10 @@ if is_harness_source_repo; then
 		echo "Install pnpm and retry." >&2
 		exit 1
 	fi
+fi
+
+if [[ -x "$REPO_ROOT/scripts/harness-cli.sh" ]]; then
+	exec bash "$REPO_ROOT/scripts/harness-cli.sh" "$@"
 fi
 
 if command -v mise >/dev/null 2>&1; then

@@ -1660,7 +1660,7 @@ describe("runInit", () => {
 			);
 			expect(harnessCli).toContain("npm exec harness -- <command>");
 			expect(runHarnessGate).toContain(
-				'exec bash "$REPO_ROOT/scripts/harness-cli.sh" "$@"',
+				'exec pnpm exec tsx "$REPO_ROOT/src/cli.ts" "$@"',
 			);
 			expect(runHarnessGate).toContain("is_harness_source_repo()");
 			expect(runHarnessGate).toContain(
@@ -1673,7 +1673,31 @@ describe("runInit", () => {
 				'echo "Error: pnpm is required to run the harness source CLI." >&2',
 			);
 			expect(runHarnessGate).toContain(
+				'exec bash "$REPO_ROOT/scripts/harness-cli.sh" "$@"',
+			);
+			expect(runHarnessGate).toContain(
 				'mise_harness_bin="$(mise which harness 2>/dev/null || true)"',
+			);
+			expect(semgrepChanged).toContain(
+				'SEMGREP_SITE_PACKAGES_DIR="${SEMGREP_CACHE_ROOT}/semgrep-site-packages-${SEMGREP_VERSION}"',
+			);
+			expect(semgrepChanged).toContain(
+				'PYTHONPATH="$SEMGREP_SITE_PACKAGES_DIR${PYTHONPATH:+:$PYTHONPATH}" \\',
+			);
+			expect(semgrepChanged).toContain(
+				'python3 -m pip install --quiet --upgrade --target "$SEMGREP_SITE_PACKAGES_DIR" "semgrep==$SEMGREP_VERSION"',
+			);
+			expect(semgrepFull).toContain(
+				'SEMGREP_SITE_PACKAGES_DIR="${SEMGREP_CACHE_ROOT}/semgrep-site-packages-${SEMGREP_VERSION}"',
+			);
+			expect(semgrepFull).toContain(
+				'python3 -m venv "$SEMGREP_VENV_DIR" >/dev/null 2>&1',
+			);
+			expect(semgrepFull).toContain(
+				'python3 -m pip install --quiet --upgrade --target "$SEMGREP_SITE_PACKAGES_DIR" "semgrep==$SEMGREP_VERSION"',
+			);
+			expect(semgrepFull).toContain(
+				"python3 -m venv is unavailable and python3 -m pip could not be used as a fallback.",
 			);
 			expect(verifyWork).toContain("Canonical repo-local verification runner.");
 			expect(verifyWork).toContain("--mode required");
