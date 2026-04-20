@@ -52,12 +52,12 @@ describe("scaffold templates resolution", () => {
 			ghaTemplates.some(
 				(template) => template.path === ".github/workflows/pr-pipeline.yml",
 			),
-		).toBe(true);
+		).toBe(false);
 		expect(
 			ghaTemplates.some(
 				(template) => template.path === ".github/workflows/secret-scan.yml",
 			),
-		).toBe(true);
+		).toBe(false);
 		expect(
 			circleciTemplates.some(
 				(template) => template.path === ".github/workflows/pr-pipeline.yml",

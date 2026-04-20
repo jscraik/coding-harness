@@ -11,6 +11,9 @@ update_policy: |
 
 # Learnings
 
+## Table of Contents
+- [Learnings](#learnings)
+
 Repo-specific agent knowledge base. Append-only.
 
 > Scope: this repository only.

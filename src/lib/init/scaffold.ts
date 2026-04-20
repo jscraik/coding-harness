@@ -401,7 +401,7 @@ function renderCircleCIConfig(
             branch_name="$(gh pr view "$pr_ref" --json headRefName --jq .headRefName)"
             pr_title="$(gh pr view "$pr_ref" --json title --jq .title)"
             pr_body="$(gh pr view "$pr_ref" --json body --jq .body)"
-            pnpm exec tsx src/cli.ts linear-gate \\
+            bash scripts/run-harness-gate.sh linear-gate \\
               --branch "$branch_name" \\
               --pr-title "$pr_title" \\
               --pr-body "$pr_body" \\
@@ -557,7 +557,7 @@ workflows:
             fi
             export PR_TEMPLATE_BODY
             PR_TEMPLATE_BODY="$(gh pr view "$pr_ref" --json body --jq .body)"
-            pnpm exec tsx src/cli.ts pr-template-gate --json
+            bash scripts/run-harness-gate.sh pr-template-gate --json
           filters:
             tags:
               ignore: /.*/
@@ -3695,7 +3695,7 @@ if [[ \${#changed_sources[@]} -eq 0 ]]; then
 	exit 0
 fi
 
-"\$SEMGREP_BIN" scan \\
+run_semgrep scan \\
 	--config "$RULESET_PATH" \\
 	--disable-version-check \\
 	--error \\
