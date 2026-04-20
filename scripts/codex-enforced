@@ -134,12 +134,12 @@ ensure_task_worktree() {
 	if [[ -n "${WORKTREE_SLUG}" ]]; then
 		slug_source="${WORKTREE_SLUG}"
 	else
-		for arg in "${NEW_ARGS[@]}"; do
-			if [[ "${arg}" == --* ]]; then
-				continue
+		for (( i=${#NEW_ARGS[@]}-1; i>=0; i-- )); do
+			arg="${NEW_ARGS[$i]}"
+			if [[ "${arg}" != -* ]]; then
+				slug_source="${arg}"
+				break
 			fi
-			slug_source="${arg}"
-			break
 		done
 	fi
 

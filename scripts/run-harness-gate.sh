@@ -10,12 +10,11 @@ if [[ $# -eq 0 ]]; then
 fi
 
 if [[ -f "$REPO_ROOT/src/cli.ts" ]]; then
-	if ! command -v pnpm >/dev/null 2>&1; then
-		echo "Error: pnpm is required to run the repo-local harness CLI." >&2
-		echo "Install pnpm and retry." >&2
-		exit 1
+	if command -v pnpm >/dev/null 2>&1; then
+		exec pnpm exec tsx "$REPO_ROOT/src/cli.ts" "$@"
+	else
+		echo "Warning: pnpm not found; skipping repo-local harness CLI at $REPO_ROOT/src/cli.ts" >&2
 	fi
-	exec pnpm exec tsx "$REPO_ROOT/src/cli.ts" "$@"
 fi
 
 if [[ -x "$REPO_ROOT/scripts/harness-cli.sh" ]]; then

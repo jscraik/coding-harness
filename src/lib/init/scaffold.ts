@@ -347,7 +347,7 @@ function renderCircleCIConfig(pm: string): string {
 	const installCommand =
 		pm === "pnpm"
 			? "pnpm install --frozen-lockfile --prefer-offline"
-			: renderInstallCommand(pm);
+			: renderWorkflowBootstrapInstallCommand(pm);
 	const checkCommand = renderScriptCommand(pm, "check");
 	const lintCommand = renderScriptCommand(pm, "lint");
 	const typecheckCommand = renderScriptCommand(pm, "typecheck");
@@ -514,6 +514,9 @@ workflows:
           filters:
             tags:
               ignore: /.*/
+
+  security-scan:
+    jobs:
       - run-governance-check:
           name: security-scan
           check_name: security-scan
@@ -521,6 +524,9 @@ workflows:
           filters:
             tags:
               ignore: /.*/
+
+  CodeRabbit:
+    jobs:
       - run-governance-check:
           name: CodeRabbit
           check_name: CodeRabbit
@@ -4984,9 +4990,12 @@ export function isTemplateEnabledForProvider(
 	templatePath: string,
 	ciProvider: CIProvider,
 ): boolean {
-	// GitHub Actions is release-only for this control plane.
+	// GitHub Actions workflows: include release workflow always, and PR/security workflows only when github-actions is the provider.
 	if (templatePath.startsWith(".github/workflows/")) {
-		return templatePath === ".github/workflows/release-private-npm.yml";
+		if (templatePath === ".github/workflows/release-private-npm.yml") {
+			return true;
+		}
+		return ciProvider === "github-actions";
 	}
 	// CircleCI config is only written for circleci provider.
 	if (templatePath === ".circleci/config.yml") {
