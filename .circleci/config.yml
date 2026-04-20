@@ -196,13 +196,24 @@ workflows:
           name: orb-pinning
           check_name: orb-pinning
           command: |
-            if ! command -v cargo >/dev/null 2>&1; then
+            packages=()
+            if ! dpkg -s python3-venv >/dev/null 2>&1; then
+              packages+=("python3-venv")
+            fi
+            if (( ${#packages[@]} > 0 )); then
               sudo apt-get update
-              sudo apt-get install -y cargo
+              sudo apt-get install -y "${packages[@]}"
             fi
             mkdir -p "$HOME/.local/bin" "$HOME/.local/share"
             export PATH="$HOME/.local/bin:$PATH"
             echo 'export PATH="$HOME/.local/bin:$PATH"' >> "$BASH_ENV"
+            if ! command -v cargo >/dev/null 2>&1; then
+              mise install rust@stable
+              if [[ -f "$HOME/.cargo/env" ]]; then
+                # rustup does not update the current shell PATH for non-interactive jobs.
+                . "$HOME/.cargo/env"
+              fi
+            fi
             SEMGREP_VERSION="1.153.1"
             SEMGREP_VENV="$HOME/.local/share/semgrep-venv-${SEMGREP_VERSION}"
             if [[ ! -x "$SEMGREP_VENV/bin/semgrep" ]]; then

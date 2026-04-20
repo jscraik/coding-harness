@@ -414,10 +414,17 @@ describe("runInit", () => {
 			);
 			expect(circleConfig).toContain("bash scripts/check-semgrep-full.sh");
 			expect(circleConfig).toContain("name: orb-pinning");
+			expect(circleConfig).toContain("packages=()");
+			expect(circleConfig).toContain('packages+=("python3-venv")');
+			expect(circleConfig).toContain(
+				'sudo apt-get install -y "${packages[@]}"',
+			);
 			expect(circleConfig).toContain(
 				"if ! command -v cargo >/dev/null 2>&1; then",
 			);
-			expect(circleConfig).toContain("sudo apt-get install -y cargo");
+			expect(circleConfig).toContain("mise install rust@stable");
+			expect(circleConfig).toContain('if [[ -f "$HOME/.cargo/env" ]]; then');
+			expect(circleConfig).toContain('. "$HOME/.cargo/env"');
 			expect(circleConfig).toContain("export MISE_CARGO_BINSTALL=false");
 			expect(circleConfig).toContain('export PATH="$HOME/.local/bin:$PATH"');
 			expect(circleConfig).toContain('SEMGREP_VERSION="1.153.1"');
@@ -1635,7 +1642,7 @@ describe("runInit", () => {
 			);
 			expect(semgrepFull).toContain('SEMGREP_VERSION="1.153.1"');
 			expect(semgrepFull).toContain("run_semgrep scan");
-			expect(semgrepFull).toMatch(/^\s*\.$/m);
+			expect(semgrepFull).toContain("\t.");
 			expect(semgrepRules).toContain("ts-no-eval");
 			expect(semgrepRules).toContain("ts-no-shell-true");
 			expect(makefile).toContain("check: ## Run all required quality gates");
