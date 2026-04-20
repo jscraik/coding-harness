@@ -1856,6 +1856,9 @@ describe("runInit", () => {
 				'exec bash "${worktree_path}/scripts/codex-enforced" --skip-worktree-guard "${ORIGINAL_ARGS[@]}"',
 			);
 			expect(codexEnforced).toContain(
+				"Skipping preflight before worktree creation (not recommended)",
+			);
+			expect(codexEnforced).toContain(
 				"./scripts/codex-enforced --skip-preflight <your prompt>",
 			);
 			expect(codexEnforced).toContain("./scripts/codex-learn analyze");

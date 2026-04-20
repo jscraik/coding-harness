@@ -150,8 +150,10 @@ ensure_task_worktree() {
 		exit 2
 	fi
 
-	# Run preflight before any worktree creation or git operations from main.
-	if [[ -x "${PREFLIGHT_SCRIPT}" ]]; then
+	# Run preflight before any worktree creation or git operations from main unless explicitly skipped.
+	if [[ "${SKIP_PREFLIGHT}" == true ]]; then
+		echo -e "${YELLOW}WARNING: Skipping preflight before worktree creation (not recommended)${NC}"
+	elif [[ -x "${PREFLIGHT_SCRIPT}" ]]; then
 		echo "Running preflight checks before worktree creation..."
 		if ! "${PREFLIGHT_SCRIPT}" --stack auto --mode required; then
 			echo -e "${RED}ERROR: Preflight checks failed before worktree creation${NC}"
