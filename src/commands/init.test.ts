@@ -349,6 +349,8 @@ describe("runInit", () => {
 			expect(circleConfig).toContain('packages+=("gh")');
 			expect(circleConfig).toContain('packages+=("ripgrep")');
 			expect(circleConfig).toContain('packages+=("fd-find")');
+			expect(circleConfig).toContain("gh --version");
+			expect(circleConfig).not.toContain("gh --version | head -n 1");
 			expect(circleConfig).toContain(
 				'ln -sf "$(command -v fdfind)" "$HOME/.local/bin/fd"',
 			);
@@ -402,6 +404,11 @@ describe("runInit", () => {
 			expect(circleConfig).toContain("name: audit");
 			expect(circleConfig).toContain(
 				"command: bash scripts/check-semgrep-full.sh",
+			);
+			expect(circleConfig).toContain("name: orb-pinning");
+			expect(circleConfig).toContain("mise install");
+			expect(circleConfig).toContain(
+				"mise exec -- bash scripts/check-environment.sh",
 			);
 
 			const transitionStatus = JSON.parse(

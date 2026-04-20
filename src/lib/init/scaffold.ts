@@ -478,7 +478,7 @@ jobs:
               sudo apt-get update
               sudo apt-get install -y "${"${packages[@]}"}"
             fi
-            gh --version | head -n 1
+            gh --version
             if ! command -v fd >/dev/null 2>&1 && command -v fdfind >/dev/null 2>&1; then
               mkdir -p "$HOME/.local/bin"
               ln -sf "$(command -v fdfind)" "$HOME/.local/bin/fd"
@@ -488,8 +488,8 @@ jobs:
             rg --version
             fd --version
             jq --version
-            make --version | head -n 1
-            realpath --version | head -n 1
+            make --version
+            realpath --version
       - run:
           name: Ensure mise available
           command: |
@@ -578,7 +578,9 @@ ${riskPolicyRequires}          command: bash scripts/run-harness-gate.sh policy-
       - run-governance-check:
           name: orb-pinning
           check_name: orb-pinning
-          command: bash scripts/check-environment.sh
+          command: |
+            mise install
+            mise exec -- bash scripts/check-environment.sh
           filters:
             tags:
               ignore: /.*/
