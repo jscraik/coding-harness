@@ -579,6 +579,10 @@ ${riskPolicyRequires}          command: bash scripts/run-harness-gate.sh policy-
           name: orb-pinning
           check_name: orb-pinning
           command: |
+            if ! command -v cargo >/dev/null 2>&1; then
+              sudo apt-get update
+              sudo apt-get install -y cargo
+            fi
             mise install
             mise exec -- bash scripts/check-environment.sh
           filters:

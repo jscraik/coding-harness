@@ -406,6 +406,10 @@ describe("runInit", () => {
 				"command: bash scripts/check-semgrep-full.sh",
 			);
 			expect(circleConfig).toContain("name: orb-pinning");
+			expect(circleConfig).toContain(
+				"if ! command -v cargo >/dev/null 2>&1; then",
+			);
+			expect(circleConfig).toContain("sudo apt-get install -y cargo");
 			expect(circleConfig).toContain("mise install");
 			expect(circleConfig).toContain(
 				"mise exec -- bash scripts/check-environment.sh",
@@ -2184,6 +2188,7 @@ describe("runInit", () => {
 				"make",
 				"rg",
 				"fd",
+				"realpath",
 				"prek",
 				"diagram",
 				"vale",
