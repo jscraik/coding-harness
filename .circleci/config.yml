@@ -200,9 +200,26 @@ workflows:
               sudo apt-get update
               sudo apt-get install -y cargo
             fi
+            mkdir -p "$HOME/.local/bin" "$HOME/.local/share"
+            export PATH="$HOME/.local/bin:$PATH"
+            echo 'export PATH="$HOME/.local/bin:$PATH"' >> "$BASH_ENV"
+            SEMGREP_VERSION="1.153.1"
+            SEMGREP_VENV="$HOME/.local/share/semgrep-venv-${SEMGREP_VERSION}"
+            if [[ ! -x "$SEMGREP_VENV/bin/semgrep" ]]; then
+              python3 -m venv "$SEMGREP_VENV"
+              "$SEMGREP_VENV/bin/python" -m pip install --quiet --upgrade pip "semgrep==${SEMGREP_VERSION}"
+            fi
+            ln -sf "$SEMGREP_VENV/bin/semgrep" "$HOME/.local/bin/semgrep"
             export MISE_CARGO_BINSTALL=false
             export MISE_NODE_VERIFY=false
-            mise install
+            mise install \
+              node pnpm python uv cargo:prek \
+              npm:@brainwav/diagram npm:@argos-ci/cli cosign cloudflared npm:vitest \
+              ruff npm:eslint npm:agent-browser npm:agentation npm:agentation-mcp \
+              npm:@mermaid-js/mermaid-cli npm:@brainwav/rsearch npm:@brainwav/wsearch-cli \
+              npm:beautiful-mermaid npm:markdownlint-cli2 npm:semver npm:wrangler \
+              trivy vale
+            semgrep --version
             mise exec -- bash scripts/check-environment.sh
           filters:
             tags:
