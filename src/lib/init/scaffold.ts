@@ -1138,6 +1138,11 @@ if [[ -x "$REPO_ROOT/scripts/harness-cli.sh" ]]; then
 	exec bash "$REPO_ROOT/scripts/harness-cli.sh" "$@"
 fi
 
+mise_harness_bin="$(mise which harness 2>/dev/null || true)"
+if [[ -n "$mise_harness_bin" && -x "$mise_harness_bin" ]]; then
+	exec "$mise_harness_bin" "$@"
+fi
+
 if command -v harness >/dev/null 2>&1; then
 	exec harness "$@"
 fi
