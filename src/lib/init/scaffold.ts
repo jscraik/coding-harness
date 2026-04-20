@@ -524,16 +524,6 @@ workflows:
           filters:
             tags:
               ignore: /.*/
-
-  CodeRabbit:
-    jobs:
-      - run-governance-check:
-          name: CodeRabbit
-          check_name: CodeRabbit
-          command: echo "External CodeRabbit status is tracked by GitHub App integration."
-          filters:
-            tags:
-              ignore: /.*/
 `;
 }
 
@@ -943,6 +933,14 @@ fi
 
 if [[ ! "$branch_prefix" =~ ^[A-Za-z0-9._/-]+$ ]]; then
 	echo "[new-task] invalid branch prefix: $branch_prefix" >&2
+	exit 2
+fi
+
+# Enforce Linear-key prefix requirement
+if [[ ! "$slug" =~ ^[A-Z]+-[0-9]+ ]]; then
+	echo "[new-task] ERROR: slug must start with a Linear key (e.g., JSC-37-description)" >&2
+	echo "[new-task] Current slug: $slug" >&2
+	echo "[new-task] Expected format: <LINEAR-KEY>-<description> (e.g., JSC-37-add-feature)" >&2
 	exit 2
 fi
 

@@ -138,7 +138,7 @@ workflows:
       - run-governance-check:
           name: memory
           check_name: memory
-          command: test -f memory.json && jq -e '.meta.version == "1.0" and (.preamble.bootstrap | type == "boolean") and (.preamble.search | type == "boolean") and (.entries | type == "array")' memory.json >/dev/null
+          command: bash scripts/run-harness-gate.sh memory-gate --json
           filters:
             tags:
               ignore: /.*/
@@ -149,19 +149,6 @@ workflows:
           name: security-scan
           check_name: security-scan
           command: pnpm semgrep:changed
-          filters:
-            tags:
-              ignore: /.*/
-
-  CodeRabbit:
-    jobs:
-      # CodeRabbit: External GitHub App integration (not a CircleCI check).
-      # This placeholder exists solely to document the CodeRabbit dependency.
-      # The actual CodeRabbit check runs via GitHub App webhook, not CircleCI.
-      - run-governance-check:
-          name: CodeRabbit
-          check_name: CodeRabbit
-          command: echo "External CodeRabbit status is tracked by GitHub App integration."
           filters:
             tags:
               ignore: /.*/
