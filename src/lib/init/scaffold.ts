@@ -357,6 +357,10 @@ function renderCircleCIConfig(
 	const testCommand = renderScriptCommand(pm, "test:ci");
 	const auditCommand = renderScriptCommand(pm, "audit");
 	const dependencyAuditCommand = renderScriptCommand(pm, "audit:strict");
+	const gitleaksCommand =
+		'if [ -f .gitleaks.toml ]; then gitleaks detect --source . --config .gitleaks.toml --redact --no-banner; else gitleaks detect --source . --redact --no-banner; fi';
+	const trivyCommand =
+		"trivy fs --scanners vuln --severity HIGH,CRITICAL --ignore-unfixed --exit-code 1 .";
 	const semgrepCommand = "bash scripts/check-semgrep-full.sh";
 	const memoryValidateCommand = renderMemoryValidateCommand();
 	const configureCacheStep =
@@ -662,7 +666,10 @@ ${riskPolicyRequires}          command: bash scripts/run-harness-gate.sh policy-
       - run-governance-check:
           name: security-scan
           check_name: security-scan
-          command: ${semgrepCommand}
+          command: |
+            ${gitleaksCommand}
+            ${trivyCommand}
+            ${semgrepCommand}
           filters:
             tags:
               ignore: /.*/
