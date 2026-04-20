@@ -413,6 +413,7 @@ describe("runInit", () => {
 			);
 			expect(circleConfig).toContain("sudo apt-get install -y cargo");
 			expect(circleConfig).toContain("export MISE_CARGO_BINSTALL=false");
+			expect(circleConfig).toContain("export MISE_NODE_VERIFY=false");
 			expect(circleConfig).toContain("mise install");
 			expect(circleConfig).toContain(
 				"mise exec -- bash scripts/check-environment.sh",
