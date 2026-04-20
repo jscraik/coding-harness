@@ -72,6 +72,7 @@ while (( $# > 0 )); do
 			shift
 			;;
 		--)
+			NEW_ARGS+=("--")
 			shift
 			while (( $# > 0 )); do
 				NEW_ARGS+=("${1}")
