@@ -132,6 +132,20 @@ ensure_task_worktree() {
 		exit 2
 	fi
 
+	# Run preflight before any worktree creation or git operations from main.
+	if [[ -x "${PREFLIGHT_SCRIPT}" ]]; then
+		echo "Running preflight checks before worktree creation..."
+		if ! "${PREFLIGHT_SCRIPT}" --stack auto --mode required; then
+			echo -e "${RED}ERROR: Preflight checks failed before worktree creation${NC}"
+			exit 1
+		fi
+		echo -e "${GREEN}Preflight passed.${NC}"
+		echo ""
+	else
+		echo -e "${RED}ERROR: Preflight script not found: ${PREFLIGHT_SCRIPT}${NC}"
+		exit 1
+	fi
+
 	if [[ -n "${WORKTREE_SLUG}" ]]; then
 		slug_source="${WORKTREE_SLUG}"
 	else
@@ -220,6 +234,7 @@ ensure_task_worktree() {
 
 	echo ""
 	echo -e "${GREEN}Re-launching codex from worktree:${NC} ${worktree_path}"
+	cd "${worktree_path}"
 	exec bash "${worktree_path}/scripts/codex-enforced" --skip-worktree-guard "${ORIGINAL_ARGS[@]}"
 }
 

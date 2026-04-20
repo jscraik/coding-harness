@@ -534,7 +534,6 @@ workflows:
           filters:
             tags:
               ignore: /.*/
-
 `;
 }
 

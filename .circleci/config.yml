@@ -148,7 +148,7 @@ workflows:
       - run-governance-check:
           name: memory
           check_name: memory
-          command: test -f memory.json && jq -e '.meta.version == "1.0" and (.preamble.bootstrap | type == "boolean") and (.preamble.search | type == "boolean") and (.entries | type == "array")' memory.json >/dev/null
+          command: bash scripts/run-harness-gate.sh memory-gate --json
           filters:
             tags:
               ignore: /.*/
