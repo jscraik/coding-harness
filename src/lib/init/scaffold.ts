@@ -607,7 +607,7 @@ ${riskPolicyRequires}          command: bash scripts/run-harness-gate.sh policy-
               npm:beautiful-mermaid npm:markdownlint-cli2 npm:semver npm:wrangler \\
               trivy vale
             semgrep --version
-            mise exec -- bash scripts/check-environment.sh
+            bash scripts/check-environment.sh
           filters:
             tags:
               ignore: /.*/

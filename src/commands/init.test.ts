@@ -428,9 +428,7 @@ describe("runInit", () => {
 			expect(circleConfig).toContain("export MISE_NODE_VERIFY=false");
 			expect(circleConfig).toContain("mise install \\");
 			expect(circleConfig).toContain("semgrep --version");
-			expect(circleConfig).toContain(
-				"mise exec -- bash scripts/check-environment.sh",
-			);
+			expect(circleConfig).toContain("bash scripts/check-environment.sh");
 
 			const transitionStatus = JSON.parse(
 				readFileSync(
