@@ -48,16 +48,14 @@ describe("scaffold templates resolution", () => {
 					template.path === ".github/workflows/release-private-npm.yml",
 			),
 		).toBe(true);
-		const disallowedNonReleaseWorkflows = [
+		const githubActionsOnlyWorkflows = [
 			".github/workflows/pr-pipeline.yml",
 			".github/workflows/secret-scan.yml",
-			".github/workflows/ci-fallback.yml",
-			".github/workflows/openssf-scorecard.yml",
 		];
-		for (const workflowPath of disallowedNonReleaseWorkflows) {
+		for (const workflowPath of githubActionsOnlyWorkflows) {
 			expect(
 				ghaTemplates.some((template) => template.path === workflowPath),
-			).toBe(false);
+			).toBe(true);
 			expect(
 				circleciTemplates.some((template) => template.path === workflowPath),
 			).toBe(false);

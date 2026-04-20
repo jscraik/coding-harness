@@ -404,9 +404,15 @@ describe("runInit", () => {
 			expect(circleConfig).toContain("name: test");
 			expect(circleConfig).toContain("command: pnpm test:ci");
 			expect(circleConfig).toContain("name: audit");
+			expect(circleConfig).toContain("name: security-scan");
+			expect(circleConfig).toContain("check_name: security-scan");
 			expect(circleConfig).toContain(
-				"command: bash scripts/check-semgrep-full.sh",
+				"gitleaks detect --source . --config .gitleaks.toml --redact --no-banner",
 			);
+			expect(circleConfig).toContain(
+				"trivy fs --scanners vuln --severity HIGH,CRITICAL --ignore-unfixed --exit-code 1 .",
+			);
+			expect(circleConfig).toContain("bash scripts/check-semgrep-full.sh");
 			expect(circleConfig).toContain("name: orb-pinning");
 			expect(circleConfig).toContain(
 				"if ! command -v cargo >/dev/null 2>&1; then",

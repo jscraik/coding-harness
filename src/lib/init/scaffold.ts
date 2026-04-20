@@ -358,7 +358,7 @@ function renderCircleCIConfig(
 	const auditCommand = renderScriptCommand(pm, "audit");
 	const dependencyAuditCommand = renderScriptCommand(pm, "audit:strict");
 	const gitleaksCommand =
-		'if [ -f .gitleaks.toml ]; then gitleaks detect --source . --config .gitleaks.toml --redact --no-banner; else gitleaks detect --source . --redact --no-banner; fi';
+		"if [ -f .gitleaks.toml ]; then gitleaks detect --source . --config .gitleaks.toml --redact --no-banner; else gitleaks detect --source . --redact --no-banner; fi";
 	const trivyCommand =
 		"trivy fs --scanners vuln --severity HIGH,CRITICAL --ignore-unfixed --exit-code 1 .";
 	const semgrepCommand = "bash scripts/check-semgrep-full.sh";
