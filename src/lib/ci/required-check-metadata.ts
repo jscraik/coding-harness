@@ -34,13 +34,18 @@ const CIRCLECI_WORKFLOW_OWNED_CHECKS = new Set<string>([
 ]);
 
 /**
- * Produce normalized required-check metadata (source ownership, GitHub check name, class, and optional enabled) from a CI provider and display name.
+ * Derive normalized required-check metadata (source ownership, GitHub check name, and class) for a given CI provider and check display name.
  *
- * @param provider - The CI provider identifier used to determine source ownership (e.g., `"circleci"`, `"github-actions"`, or other provider slugs`)
- * @param displayName - The display name of the required check; certain names (e.g., `"CodeRabbit"`, `"security-scan"`) are handled specially
+ * Special handling:
+ * - A display name of `"CodeRabbit"` maps to the `coderabbit` source and `CodeRabbit` GitHub check name.
+ * - A display name of `"security-scan"` maps to CircleCI primary check metadata when `provider` is `"circleci"`, otherwise to the `github-actions` source with GitHub check name `"security-scan"`.
+ * - For CircleCI, certain workflow-owned check names (including the configured primary check) are mapped to the CircleCI primary check name; other CircleCI names are treated as external checks.
+ *
+ * @param provider - CI provider slug used to determine source ownership (for example, `"circleci"` or `"github-actions"`)
+ * @param displayName - The display name of the required check; some display names are treated specially as described above
  * @param options - Optional derivation flags
- * @param options.circleciPrimaryCheckName - When present and non-empty, overrides the CircleCI primary check name used to map workflow-owned CircleCI checks
- * @returns A `RequiredCheckMetadata` object with `sourceAppSlug`, `sourceAppId`, `githubCheckName`, `class` (`"required"` | `"informational"`), and optionally `enabled` when a check should be disabled by default
+ * @param options.circleciPrimaryCheckName - When present and non-empty, overrides the CircleCI primary check name used to represent workflow-owned CircleCI checks
+ * @returns A `RequiredCheckMetadata` object containing `sourceAppSlug`, `sourceAppId`, `githubCheckName`, and `class` (`"required"` or `"informational"`)
  */
 export function deriveRequiredCheckMetadata(
 	provider: CIProvider,

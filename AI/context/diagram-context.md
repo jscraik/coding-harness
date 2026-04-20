@@ -2466,3 +2466,21 @@ flowchart LR
 
 ```
 
+# Diagram Context Pack
+
+Generated: 2026-04-19T21:39:08Z
+
+## Table of Contents
+- [architecture](`#architecture`)
+- [auth](`#auth`)
+- [class](`#class`)
+- [database](`#database`)
+- [dependency](`#dependency`)
+- [events](`#events`)
+- [flow](`#flow`)
+- [security](`#security`)
+- [sequence](`#sequence`)
+- [user](`#user`)
+
+## architecture
+

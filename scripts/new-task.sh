@@ -4,6 +4,7 @@ set -euo pipefail
 SCRIPT_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd -P)"
 REPO_ROOT="$(cd -- "$SCRIPT_DIR/.." && pwd -P)"
 
+# usage prints the help message for scripts/new-task.sh, describing the required <slug>, available options (--base, --branch-prefix, --path, --bootstrap, -h/--help), and the script's purpose of creating a task-specific git worktree and branch.
 usage() {
 	cat <<'USAGE'
 Usage: scripts/new-task.sh [options] <slug>
