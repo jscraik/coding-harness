@@ -32,6 +32,24 @@ describe("scaffold templates resolution", () => {
 		).toBe(true);
 	});
 
+	it("includes the release workflow for all CI providers", () => {
+		const circleciTemplates = getTemplatesForProvider("circleci");
+		const ghaTemplates = getTemplatesForProvider("github-actions");
+
+		expect(
+			circleciTemplates.some(
+				(template) =>
+					template.path === ".github/workflows/release-private-npm.yml",
+			),
+		).toBe(true);
+		expect(
+			ghaTemplates.some(
+				(template) =>
+					template.path === ".github/workflows/release-private-npm.yml",
+			),
+		).toBe(true);
+	});
+
 	it("includes codestyle contract templates by default", () => {
 		const templates = getTemplatesForProvider("circleci");
 		const codestyleTemplatePaths = templates

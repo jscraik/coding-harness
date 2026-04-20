@@ -119,6 +119,12 @@ function renderAddPackageCommand(
 	return `${packageManager} add -D ${packageName}`;
 }
 
+/**
+ * Selects a package-manager-specific install command suitable for CI or bootstrap runs.
+ *
+ * @param packageManager - The package manager identifier (e.g., `"npm"`, `"yarn"`, or `"pnpm"`).
+ * @returns The shell command to install dependencies for CI: `"npm ci"` when `packageManager` is `"npm"`, otherwise the install command with `--frozen-lockfile`
+ */
 function renderWorkflowBootstrapInstallCommand(packageManager: string): string {
 	if (packageManager === "npm") {
 		return "npm ci";
@@ -126,6 +132,33 @@ function renderWorkflowBootstrapInstallCommand(packageManager: string): string {
 	return `${renderInstallCommand(packageManager)} --frozen-lockfile`;
 }
 
+/**
+ * Build a package-manager-specific command to publish a package to a private npm registry with an optional provenance flag.
+ *
+ * @param packageManager - The package manager identifier (e.g., `"pnpm"` or `"npm"`).
+ * @param withProvenance - If `true`, include the provenance flag when supported by the package manager.
+ * @returns The shell command string to publish the package with restricted access. For `pnpm` the command includes `--no-git-checks --access restricted` and optionally `--provenance`; for `npm` the command is `npm publish --access restricted` with an optional `--provenance` flag.
+ */
+function renderPrivateNpmPublishCommand(
+	packageManager: string,
+	withProvenance: boolean,
+): string {
+	if (packageManager === "pnpm") {
+		return withProvenance
+			? "pnpm publish --no-git-checks --access restricted --provenance"
+			: "pnpm publish --no-git-checks --access restricted";
+	}
+
+	const provenanceFlag = withProvenance ? " --provenance" : "";
+	return `npm publish --access restricted${provenanceFlag}`;
+}
+
+/**
+ * Render the command used to execute the locally installed Harness CLI for a given package manager.
+ *
+ * @param packageManager - Package manager identifier (e.g., `"npm"`, `"yarn"`, or another executable name)
+ * @returns The shell command string that invokes the locally installed `harness` CLI for the specified package manager
+ */
 function renderLocalHarnessExecCommand(packageManager: string): string {
 	if (packageManager === "npm") {
 		return "npm exec harness --";
@@ -509,6 +542,37 @@ function renderCodestylePackTemplate(relativePath: string): string {
 		new URL(`../../../${relativePath}`, import.meta.url),
 	);
 	return readFileSync(repoTemplatePath, "utf-8");
+}
+
+/**
+ * Produce a GitHub Actions workflow YAML for publishing a private npm package, tailored to the given package manager.
+ *
+ * @param packageManager - The package manager identifier (`"pnpm"`, `"yarn"`, or `"npm"`) used to select setup and publish commands
+ * @returns The rendered workflow YAML as a string with package-manager-specific setup, install, check, build, and publish steps injected
+ */
+function renderReleasePrivateNpmWorkflow(packageManager: string): string {
+	const templatePath = fileURLToPath(
+		new URL("../../templates/release-private-npm.yml", import.meta.url),
+	);
+	const packageManagerSetupStep =
+		packageManager === "pnpm" ? `${renderGitHubActionsPnpmSetupStep()}\n` : "";
+
+	return readFileSync(templatePath, "utf-8")
+		.replace("__PACKAGE_MANAGER_SETUP_STEP__", packageManagerSetupStep)
+		.replace(
+			"__INSTALL_COMMAND__",
+			renderWorkflowBootstrapInstallCommand(packageManager),
+		)
+		.replace("__CHECK_COMMAND__", renderScriptCommand(packageManager, "check"))
+		.replace("__BUILD_COMMAND__", renderScriptCommand(packageManager, "build"))
+		.replace(
+			"__PUBLISH_TOKEN_COMMAND__",
+			renderPrivateNpmPublishCommand(packageManager, false),
+		)
+		.replace(
+			"__PUBLISH_OIDC_COMMAND__",
+			renderPrivateNpmPublishCommand(packageManager, true),
+		);
 }
 
 /**
@@ -1967,6 +2031,25 @@ export const TEMPLATES: Template[] = [
 	{
 		path: ".coderabbit.yaml",
 		render: () => renderCodeRabbitTemplate(),
+	},
+	{
+		path: "CHANGELOG.md",
+		render: () => `# Changelog
+
+All notable changes to this project will be documented in this file.
+
+The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
+and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
+
+## [Unreleased]
+
+### Added
+- Bootstrap release/changelog pipeline scaffolding via \`harness init\`.
+`,
+	},
+	{
+		path: ".github/workflows/release-private-npm.yml",
+		render: (pm) => renderReleasePrivateNpmWorkflow(pm),
 	},
 	{
 		path: ".github/workflows/pr-pipeline.yml",
@@ -4722,6 +4805,11 @@ export function isTemplateEnabledForProvider(
 	templatePath: string,
 	ciProvider: CIProvider,
 ): boolean {
+	// Release publish workflow is canonical across providers because publishing
+	// stays on GitHub Actions even when PR validation runs on CircleCI.
+	if (templatePath === ".github/workflows/release-private-npm.yml") {
+		return true;
+	}
 	// github-actions workflow templates are disabled for circleci (the only active provider).
 	// .github/workflows/ files only apply when explicitly using github-actions CI.
 	if (templatePath.startsWith(".github/workflows/")) {
