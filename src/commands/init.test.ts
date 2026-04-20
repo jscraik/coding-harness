@@ -410,6 +410,7 @@ describe("runInit", () => {
 				"if ! command -v cargo >/dev/null 2>&1; then",
 			);
 			expect(circleConfig).toContain("sudo apt-get install -y cargo");
+			expect(circleConfig).toContain("export MISE_CARGO_BINSTALL=false");
 			expect(circleConfig).toContain("mise install");
 			expect(circleConfig).toContain(
 				"mise exec -- bash scripts/check-environment.sh",
@@ -2321,8 +2322,13 @@ exit 1
 				expect(chmod.status).toBe(0);
 			}
 
+			const {
+				BASH_ENV: _ignoredBashEnv,
+				ENV: _ignoredEnv,
+				...inheritedEnv
+			} = process.env;
 			const baseEnv = {
-				...process.env,
+				...inheritedEnv,
 				PATH: `${fakeBin}:${process.env.PATH ?? ""}`,
 				FAKE_RUNNER_LOG: runnerLog,
 				FAKE_MISE_HARNESS: fakeMiseHarness,

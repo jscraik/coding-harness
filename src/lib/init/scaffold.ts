@@ -583,6 +583,7 @@ ${riskPolicyRequires}          command: bash scripts/run-harness-gate.sh policy-
               sudo apt-get update
               sudo apt-get install -y cargo
             fi
+            export MISE_CARGO_BINSTALL=false
             mise install
             mise exec -- bash scripts/check-environment.sh
           filters:
