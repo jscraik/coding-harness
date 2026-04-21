@@ -6,8 +6,15 @@ name = "harness local environment"
 script = '''
 set -euo pipefail
 
-mise install
-pnpm install
+if command -v mise >/dev/null 2>&1; then
+  mise trust --yes .mise.toml || true
+  mise install
+fi
+if [[ -f scripts/prepare-worktree.sh ]]; then
+  bash scripts/prepare-worktree.sh
+else
+  pnpm install
+fi
 '''
 
 [[actions]]
@@ -16,8 +23,15 @@ icon = "tool"
 command = '''
 set -euo pipefail
 
-mise install
-pnpm install
+if command -v mise >/dev/null 2>&1; then
+  mise trust --yes .mise.toml || true
+  mise install
+fi
+if [[ -f scripts/prepare-worktree.sh ]]; then
+  bash scripts/prepare-worktree.sh
+else
+  pnpm install
+fi
 '''
 
 [[actions]]

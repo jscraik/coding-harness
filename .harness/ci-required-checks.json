@@ -195,8 +195,7 @@
         "merge_group"
       ],
       "freshnessWindowDays": 7,
-      "class": "informational",
-      "enabled": false,
+      "class": "required",
       "githubCheckName": "security-scan"
     },
     {

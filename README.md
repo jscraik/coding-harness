@@ -164,11 +164,12 @@ artifacts that are versioned alongside code.
   `security/openssf-scorecard-policy.json`
 - Regression evaluator:
   `scripts/check-scorecard-regressions.mjs`
-- Continuous scorecard workflow:
-  `.github/workflows/openssf-scorecard.yml`
+- Continuous CI security gate:
+  `.circleci/config.yml` (`security-scan` in `pr-pipeline`)
 
-Scorecard checks run on pull requests (`warn` mode), pushes to `main` (`fail`
-mode), and a weekly scheduled run (`fail` mode).
+Security scanning now runs in CircleCI as part of `pr-pipeline`. GitHub Actions
+in this repository is reserved for release publishing only
+(`.github/workflows/release-private-npm.yml`).
 
 ## Installation
 

@@ -56,6 +56,7 @@ const EXPECTED_TEMPLATE_PATHS = [
 	"scripts/check-doc-style.sh",
 	"scripts/check-related-tests.sh",
 	"scripts/check-semgrep-changed.sh",
+	"scripts/check-semgrep-full.sh",
 	"scripts/semgrep-pre-push.yml",
 	"scripts/refresh-diagram-context.sh",
 	"scripts/check-diagram-freshness.sh",
@@ -97,6 +98,7 @@ const EXPECTED_TEMPLATE_PATHS = [
 	"scripts/prepare-worktree.sh",
 	"scripts/new-task.sh",
 	"scripts/harness-cli.sh",
+	"scripts/run-harness-gate.sh",
 	"scripts/check-environment.sh",
 	".mise.toml",
 	".codex/environments/environment.toml",
@@ -330,10 +332,9 @@ describe("runInit", () => {
 			const securityScanCheck = generatedChecks.find(
 				(entry) => entry.displayName === "security-scan",
 			);
-			expect(securityScanCheck?.provider).toBe("github-actions");
+			expect(securityScanCheck?.provider).toBe("circleci");
 			expect(securityScanCheck?.githubCheckName).toBe("security-scan");
-			expect(securityScanCheck?.class).toBe("informational");
-			expect(securityScanCheck?.enabled).toBe(false);
+			expect(securityScanCheck?.class).toBe("required");
 			const codeRabbitCheck = generatedChecks.find(
 				(entry) => entry.displayName === "CodeRabbit",
 			);
@@ -344,7 +345,32 @@ describe("runInit", () => {
 				join(tempDir, ".circleci/config.yml"),
 				"utf-8",
 			);
+			expect(circleConfig).toContain("name: Ensure baseline shell tools");
+			expect(circleConfig).toContain('packages+=("gh")');
+			expect(circleConfig).toContain('packages+=("ripgrep")');
+			expect(circleConfig).toContain('packages+=("fd-find")');
+			expect(circleConfig).toContain("gh --version");
+			expect(circleConfig).not.toContain("gh --version | head -n 1");
+			expect(circleConfig).toContain(
+				'ln -sf "$(command -v fdfind)" "$HOME/.local/bin/fd"',
+			);
+			expect(circleConfig).toContain("name: Ensure mise available");
+			expect(circleConfig).toContain('export MISE_VERSION="v2025.1.5"');
+			expect(circleConfig).toContain('current_mise_version="$(mise --version');
+			expect(circleConfig).toContain(
+				'if [[ "$current_mise_version" != "${MISE_VERSION#v}" ]]; then',
+			);
+			expect(circleConfig).toContain("mise trust --yes .mise.toml");
 			expect(circleConfig).toContain("name: Ensure pnpm available");
+			expect(circleConfig).toContain(
+				'export GH_TOKEN="${GITHUB_PERSONAL_ACCESS_TOKEN}"',
+			);
+			expect(circleConfig).toContain(
+				'export GITHUB_TOKEN="${GITHUB_PERSONAL_ACCESS_TOKEN}"',
+			);
+			expect(circleConfig).toContain("run-governance-check:");
+			expect(circleConfig).toContain("check_name:");
+			expect(circleConfig).toContain("command:");
 			expect(circleConfig).toContain("resource_class: small");
 			expect(circleConfig).toContain("name: Configure pnpm store");
 			expect(circleConfig).toContain("restore_cache:");
@@ -354,24 +380,67 @@ describe("runInit", () => {
 				'npm install --global --prefix "$NPM_CONFIG_PREFIX" "pnpm@${required_pnpm_version}"',
 			);
 			expect(circleConfig).toContain("name: Inject npm auth");
-			expect(circleConfig).toContain(
-				'"//registry.npmjs.org/:_authToken=$NPM_TOKEN"',
-			);
 			expect(circleConfig).toContain("pnpm install --frozen-lockfile");
-			expect(circleConfig).toContain("name: Policy Bundle");
-			expect(circleConfig).toContain("pnpm check");
-			expect(circleConfig).toContain("name: Dogfood silent-error detection");
+			expect(circleConfig).toContain("name: check");
+			expect(circleConfig).toContain("command: pnpm check");
+			expect(circleConfig).toContain("name: pr-template");
+			expect(circleConfig).toContain("check_name: pr-template");
 			expect(circleConfig).toContain(
-				"bash scripts/harness-cli.sh silent-error --dirs src --strict",
+				"bash scripts/run-harness-gate.sh pr-template-gate --json",
+			);
+			expect(circleConfig).toContain("name: linear-gate");
+			expect(circleConfig).toContain("check_name: linear-gate");
+			expect(circleConfig).toContain(
+				"bash scripts/run-harness-gate.sh linear-gate \\",
+			);
+			expect(circleConfig).toContain("requires:");
+			expect(circleConfig).toContain(
+				"command: bash scripts/run-harness-gate.sh policy-gate --max-tier medium --json",
+			);
+			expect(circleConfig).toContain(
+				"command: bash scripts/run-harness-gate.sh docs-gate --mode required --json",
 			);
 			expect(circleConfig).toContain("store_test_results:");
-			expect(circleConfig).toContain("path: artifacts/test");
+			expect(circleConfig).toContain("path: artifacts/test-results");
 			expect(circleConfig).not.toContain("name: Enforce Policy Bundle Outcome");
 			expect(circleConfig).not.toContain("name: Enable corepack");
-			expect(circleConfig).not.toContain("name: Lint");
-			expect(circleConfig).not.toContain("name: Typecheck");
-			expect(circleConfig).not.toContain("name: Test");
-			expect(circleConfig).not.toContain("name: Audit");
+			expect(circleConfig).toContain("name: lint");
+			expect(circleConfig).toContain("name: typecheck");
+			expect(circleConfig).toContain("name: test");
+			expect(circleConfig).toContain("command: pnpm test:ci");
+			expect(circleConfig).toContain("name: audit");
+			expect(circleConfig).toContain("name: security-scan");
+			expect(circleConfig).toContain("check_name: security-scan");
+			expect(circleConfig).toContain(
+				"gitleaks detect --source . --config .gitleaks.toml --redact --no-banner",
+			);
+			expect(circleConfig).toContain(
+				"trivy fs --scanners vuln --severity HIGH,CRITICAL --ignore-unfixed --exit-code 1 .",
+			);
+			expect(circleConfig).toContain("bash scripts/check-semgrep-full.sh");
+			expect(circleConfig).toContain("name: orb-pinning");
+			expect(circleConfig).toContain("packages=()");
+			expect(circleConfig).toContain('packages+=("python3-venv")');
+			expect(circleConfig).toContain(
+				'sudo apt-get install -y "${packages[@]}"',
+			);
+			expect(circleConfig).toContain("mise install rust@stable");
+			expect(circleConfig).not.toContain(
+				"if ! command -v cargo >/dev/null 2>&1; then",
+			);
+			expect(circleConfig).toContain('if [[ -f "$HOME/.cargo/env" ]]; then');
+			expect(circleConfig).toContain('. "$HOME/.cargo/env"');
+			expect(circleConfig).toContain("export MISE_CARGO_BINSTALL=false");
+			expect(circleConfig).toContain('export PATH="$HOME/.local/bin:$PATH"');
+			expect(circleConfig).toContain('SEMGREP_VERSION="1.153.1"');
+			expect(circleConfig).toContain('python3 -m venv "$SEMGREP_VENV"');
+			expect(circleConfig).toContain(
+				'ln -sf "$SEMGREP_VENV/bin/semgrep" "$HOME/.local/bin/semgrep"',
+			);
+			expect(circleConfig).toContain("export MISE_NODE_VERIFY=false");
+			expect(circleConfig).toContain("mise install \\");
+			expect(circleConfig).toContain("semgrep --version");
+			expect(circleConfig).toContain("bash scripts/check-environment.sh");
 
 			const transitionStatus = JSON.parse(
 				readFileSync(
@@ -667,7 +736,7 @@ describe("runInit", () => {
 			expect(existsSync(join(tempDir, ".greptile/files.json"))).toBe(false);
 		});
 
-		it("scaffolds GHA workflow files when provider is github-actions", () => {
+		it("scaffolds github-actions workflow files when provider is github-actions", () => {
 			const result = runInit(tempDir, {
 				dryRun: false,
 				force: false,
@@ -676,7 +745,6 @@ describe("runInit", () => {
 
 			expect(result.ok).toBe(true);
 
-			// Verify GHA-specific templates are created
 			expect(
 				existsSync(join(tempDir, ".github/workflows/pr-pipeline.yml")),
 			).toBe(true);
@@ -690,14 +758,7 @@ describe("runInit", () => {
 			expect(
 				existsSync(join(tempDir, ".github/workflows/greptile-review.yml")),
 			).toBe(false);
-			const secretScanWorkflow = require("node:fs").readFileSync(
-				join(tempDir, ".github/workflows/secret-scan.yml"),
-				"utf-8",
-			);
-			expect(secretScanWorkflow).toContain("pull-requests: write");
-			expect(secretScanWorkflow).toContain("contents: read");
-			expect(secretScanWorkflow).toContain("GITLEAKS_CONFIG: .gitleaks.toml");
-			// CircleCI file should NOT be created
+			// CircleCI file should not be created when github-actions is explicitly selected.
 			expect(existsSync(join(tempDir, ".circleci/config.yml"))).toBe(false);
 		});
 
@@ -780,6 +841,7 @@ describe("runInit", () => {
 			expect(content).toContain('name = "Script: lint:fix"\nicon = "debug"');
 			expect(content).toContain("mise install");
 			expect(content).toContain("mise trust --yes .mise.toml || true");
+			expect(content).toContain("bash scripts/prepare-worktree.sh");
 			expect(content).toContain(
 				"[codex] detached HEAD detected; creating branch $branch_name",
 			);
@@ -1031,7 +1093,7 @@ describe("runInit", () => {
 			expect(Array.isArray(memory.entries)).toBe(true);
 		});
 
-		it("includes package manager in workflow (github-actions)", () => {
+		it("includes package manager in release workflow (github-actions)", () => {
 			// Create pnpm lockfile
 			writeFileSync(join(tempDir, "pnpm-lock.yaml"), "");
 
@@ -1043,29 +1105,37 @@ describe("runInit", () => {
 
 			expect(result.ok).toBe(true);
 
-			// Read workflow and verify pnpm is used
-			const workflowPath = join(tempDir, ".github/workflows/pr-pipeline.yml");
+			// Read release workflow and verify pnpm is used
+			const workflowPath = join(
+				tempDir,
+				".github/workflows/release-private-npm.yml",
+			);
 			const content = require("node:fs").readFileSync(workflowPath, "utf-8");
 			expect(content).toContain("pnpm install");
-			expect(content).toContain("pnpm test");
-			expect(content).toContain("pnpm lint");
 			expect(content).toContain("pnpm check");
+			expect(content).toContain("pnpm build");
 			expect(content).toContain("name: Ensure pnpm available");
 			expect(content).toContain(
 				'echo "$NPM_CONFIG_PREFIX/bin" >> "$GITHUB_PATH"',
 			);
 			expect(content).not.toContain("name: Enable corepack");
-			expect(content).toContain("name: pr-template");
-			expect(content).toContain("Validate memory.json");
-			expect(content).toContain("test -f memory.json");
+			expect(content).toContain("name: Publish private package (token)");
+			expect(content).toContain(
+				"name: Publish private package (OIDC trusted publisher)",
+			);
+			expect(content).toContain("name: Verify tag matches package version");
+			expect(content).toContain("name: Generate build provenance attestation");
+			expect(content).toContain("name: Verify attestations");
+			expect(content).toContain("gh attestation verify");
+			expect(content).toContain("name: Create GitHub Release");
 		});
 
-		it("uses npm run for npm script commands", () => {
+		it("uses npm run for npm script commands in CircleCI templates", () => {
 			// No lockfile => npm
 			const result = runInit(tempDir, {
 				dryRun: false,
 				force: false,
-				ciProvider: "github-actions",
+				ciProvider: "circleci",
 			});
 
 			expect(result.ok).toBe(true);
@@ -1078,10 +1148,11 @@ describe("runInit", () => {
 			expect(contract.uiLoopPolicy.verifyCommand).toBe("npm run ui:verify");
 			expect(contract.uiLoopPolicy.exploreCommand).toBe("npm run ui:explore");
 
-			const workflowPath = join(tempDir, ".github/workflows/pr-pipeline.yml");
+			const workflowPath = join(tempDir, ".circleci/config.yml");
 			const workflow = require("node:fs").readFileSync(workflowPath, "utf-8");
 			expect(workflow).toContain("npm run lint");
 			expect(workflow).toContain("npm run check");
+			expect(workflow).toContain("npm run audit:strict");
 		});
 
 		it("includes recommended security scanners in contributing template", () => {
@@ -1206,11 +1277,11 @@ describe("runInit", () => {
 			expect(issueTemplateConfig).toContain("Private security disclosure");
 		});
 
-		it("renders github tracker workflow assets without linear-only gates", () => {
+		it("renders github tracker assets without linear-only checks", () => {
 			const result = runInit(tempDir, {
 				dryRun: false,
 				force: true,
-				ciProvider: "github-actions",
+				ciProvider: "circleci",
 				issueTracker: "github",
 			});
 			expect(result.ok).toBe(true);
@@ -1219,15 +1290,21 @@ describe("runInit", () => {
 				join(tempDir, "WORKFLOW.md"),
 				"utf-8",
 			);
-			const pipelineContent = require("node:fs").readFileSync(
-				join(tempDir, ".github/workflows/pr-pipeline.yml"),
-				"utf-8",
-			);
 			const checksManifest = JSON.parse(
 				require("node:fs").readFileSync(
 					join(tempDir, ".harness/ci-required-checks.json"),
 					"utf-8",
 				),
+			);
+			const contract = JSON.parse(
+				require("node:fs").readFileSync(
+					join(tempDir, "harness.contract.json"),
+					"utf-8",
+				),
+			);
+			const circleConfig = require("node:fs").readFileSync(
+				join(tempDir, ".circleci/config.yml"),
+				"utf-8",
 			);
 
 			expect(workflowContent).toContain("kind: github");
@@ -1235,13 +1312,15 @@ describe("runInit", () => {
 			expect(workflowContent).toContain(
 				"open PR and attach validation evidence",
 			);
-			expect(pipelineContent).not.toContain("linear-gate:");
-			expect(pipelineContent).toContain("needs: [pr-template]");
 			expect(
 				checksManifest.requiredChecks.map(
 					(entry: { displayName: string }) => entry.displayName,
 				),
 			).not.toContain("linear-gate");
+			expect(contract.branchProtection.requiredChecks).not.toContain(
+				"linear-gate",
+			);
+			expect(circleConfig).not.toContain("name: linear-gate");
 		});
 
 		it("creates WORKFLOW.md with auto-populated Symphony config", () => {
@@ -1452,6 +1531,10 @@ describe("runInit", () => {
 				join(tempDir, "scripts/check-semgrep-changed.sh"),
 				"utf-8",
 			);
+			const semgrepFull = require("node:fs").readFileSync(
+				join(tempDir, "scripts/check-semgrep-full.sh"),
+				"utf-8",
+			);
 			const semgrepRules = require("node:fs").readFileSync(
 				join(tempDir, "scripts/semgrep-pre-push.yml"),
 				"utf-8",
@@ -1478,6 +1561,10 @@ describe("runInit", () => {
 			);
 			const harnessCli = require("node:fs").readFileSync(
 				join(tempDir, "scripts/harness-cli.sh"),
+				"utf-8",
+			);
+			const runHarnessGate = require("node:fs").readFileSync(
+				join(tempDir, "scripts/run-harness-gate.sh"),
 				"utf-8",
 			);
 			const verifyWork = require("node:fs").readFileSync(
@@ -1554,7 +1641,13 @@ describe("runInit", () => {
 				'git diff --name-only --diff-filter=ACMR -z "$base_ref"...HEAD --',
 			);
 			expect(semgrepChanged).toContain('SEMGREP_VERSION="1.153.1"');
-			expect(semgrepChanged).toContain('"$SEMGREP_BIN" scan');
+			expect(semgrepChanged).toContain("run_semgrep scan");
+			expect(semgrepFull).toContain(
+				'RULESET_PATH="$REPO_ROOT/scripts/semgrep-pre-push.yml"',
+			);
+			expect(semgrepFull).toContain('SEMGREP_VERSION="1.153.1"');
+			expect(semgrepFull).toContain("run_semgrep scan");
+			expect(semgrepFull).toContain("\t.");
 			expect(semgrepRules).toContain("ts-no-eval");
 			expect(semgrepRules).toContain("ts-no-shell-true");
 			expect(makefile).toContain("check: ## Run all required quality gates");
@@ -1638,6 +1731,72 @@ describe("runInit", () => {
 				"npm install --save-dev @brainwav/coding-harness",
 			);
 			expect(harnessCli).toContain("npm exec harness -- <command>");
+			expect(runHarnessGate).toContain(
+				'exec pnpm exec tsx "$REPO_ROOT/src/cli.ts" "$@"',
+			);
+			expect(runHarnessGate).toContain("is_harness_source_repo()");
+			expect(runHarnessGate).toContain(
+				"command -v node >/dev/null 2>&1 || return 1",
+			);
+			expect(runHarnessGate).toContain(
+				'process.exit(packageJson.name === "@brainwav/coding-harness" ? 0 : 1);',
+			);
+			expect(runHarnessGate).toContain(
+				'echo "Error: pnpm is required to run the harness source CLI." >&2',
+			);
+			expect(runHarnessGate).toContain(
+				'exec bash "$REPO_ROOT/scripts/harness-cli.sh" "$@"',
+			);
+			expect(runHarnessGate).toContain(
+				'if [[ -f "$REPO_ROOT/scripts/harness-cli.sh" && -r "$REPO_ROOT/scripts/harness-cli.sh" ]]; then',
+			);
+			expect(runHarnessGate).toContain(
+				'mise_harness_bin="$(mise which harness 2>/dev/null || true)"',
+			);
+			expect(semgrepChanged).toContain(
+				'echo "Error: python3 is required to install Semgrep." >&2',
+			);
+			expect(semgrepChanged).toContain(
+				'SEMGREP_SITE_PACKAGES_DIR="${SEMGREP_CACHE_ROOT}/semgrep-site-packages-${SEMGREP_VERSION}"',
+			);
+			expect(semgrepChanged).toContain(
+				'PYTHONPATH="$SEMGREP_SITE_PACKAGES_DIR${PYTHONPATH:+:$PYTHONPATH}" \\',
+			);
+			expect(semgrepChanged).toContain(
+				'python3 -m pip install --quiet --upgrade --target "$SEMGREP_SITE_PACKAGES_DIR" "semgrep==$SEMGREP_VERSION"',
+			);
+			expect(semgrepChanged).toContain("has_semgrep_installation()");
+			expect(semgrepChanged).toContain(
+				'if [[ -d "$SEMGREP_SITE_PACKAGES_DIR/semgrep" ]]; then',
+			);
+			expect(semgrepChanged).toContain(
+				'if [[ -z "${CI:-}" && -z "${CIRCLECI:-}" ]]; then',
+			);
+			expect(semgrepChanged).toContain(
+				"sudo apt-get install -y python3-pip python3-venv",
+			);
+			expect(semgrepFull).toContain(
+				'SEMGREP_SITE_PACKAGES_DIR="${SEMGREP_CACHE_ROOT}/semgrep-site-packages-${SEMGREP_VERSION}"',
+			);
+			expect(semgrepFull).toContain(
+				'python3 -m venv "$SEMGREP_VENV_DIR" >/dev/null 2>&1',
+			);
+			expect(semgrepFull).toContain(
+				'python3 -m pip install --quiet --upgrade --target "$SEMGREP_SITE_PACKAGES_DIR" "semgrep==$SEMGREP_VERSION"',
+			);
+			expect(semgrepFull).toContain("has_semgrep_installation()");
+			expect(semgrepFull).toContain(
+				'if [[ -d "$SEMGREP_SITE_PACKAGES_DIR/semgrep" ]]; then',
+			);
+			expect(semgrepFull).toContain(
+				'if [[ -z "${CI:-}" && -z "${CIRCLECI:-}" ]]; then',
+			);
+			expect(semgrepFull).toContain(
+				"sudo apt-get install -y python3-pip python3-venv",
+			);
+			expect(semgrepFull).toContain(
+				"python3 -m venv is unavailable and python3 -m pip could not be used as a fallback.",
+			);
 			expect(verifyWork).toContain("Canonical repo-local verification runner.");
 			expect(verifyWork).toContain("--mode required");
 			expect(verifyWork).toContain("scripts/verify-work.sh");
@@ -1663,6 +1822,9 @@ describe("runInit", () => {
 				"[new-task] fetching latest $remote_name/$remote_base_branch",
 			);
 			expect(newTask).toContain(
+				"--bootstrap             Run worktree bootstrap immediately after creation",
+			);
+			expect(newTask).toContain(
 				'if git -C "$REPO_ROOT" remote get-url "$candidate_remote" >/dev/null 2>&1; then',
 			);
 			expect(newTask).toContain('elif [[ "$base_ref" != *"/"* ]]; then');
@@ -1684,6 +1846,9 @@ describe("runInit", () => {
 			expect(newTask).toContain(
 				'git worktree add "$worktree_path" -b "${branch_name}" "$resolved_base_ref"',
 			);
+			expect(newTask).toContain('if [[ "$bootstrap" -eq 1 ]]; then');
+			expect(newTask).toContain("[new-task] bootstrapping worktree");
+			expect(newTask).toContain("# bootstrap already ran (--bootstrap)");
 			expect(prepareWorktree).not.toContain("core.hooksPath");
 			expect(prepareWorktree).toContain("node scripts/setup-git-hooks.js");
 			expect(prepareWorktree).not.toContain("simple-git-hooks");
@@ -1703,6 +1868,38 @@ describe("runInit", () => {
 			expect(codexLearn).toContain("Project Brain summary updated:");
 			expect(codexEnforced).toContain(
 				"Runs repo-local preflight before executing codex.",
+			);
+			expect(codexEnforced).toContain(
+				"--worktree-slug     On main, force task worktree slug before codex launch",
+			);
+			expect(codexEnforced).toContain(
+				"Main branch guard: creating dedicated task worktree...",
+			);
+			expect(codexEnforced).toContain(
+				"[codex] refusing to auto-create a task worktree from a dirty main checkout.",
+			);
+			expect(codexEnforced).toContain(
+				"[codex] unable to verify remote branch availability for ${WORKTREE_BRANCH_PREFIX}/${slug}; refusing auto-create.",
+			);
+			expect(codexEnforced).toContain('NEW_ARGS+=("--")');
+			expect(codexEnforced).toContain(
+				'WORKTREE_BRANCH_PREFIX="${WORKTREE_BRANCH_PREFIX:-codex}"',
+			);
+			expect(codexEnforced).toContain(
+				'SKIP_PREFLIGHT="${SKIP_PREFLIGHT:-false}"',
+			);
+			expect(codexEnforced).toContain(
+				'SKIP_WORKTREE_GUARD="${SKIP_WORKTREE_GUARD:-false}"',
+			);
+			expect(codexEnforced).toContain("issue_key_slug()");
+			expect(codexEnforced).toContain(
+				"[codex] main-branch auto worktree requires an issue-keyed slug.",
+			);
+			expect(codexEnforced).toContain(
+				'exec bash "${worktree_path}/scripts/codex-enforced" --skip-worktree-guard "${ORIGINAL_ARGS[@]}"',
+			);
+			expect(codexEnforced).toContain(
+				"Skipping preflight before worktree creation (not recommended)",
 			);
 			expect(codexEnforced).toContain(
 				"./scripts/codex-enforced --skip-preflight <your prompt>",
@@ -1778,10 +1975,16 @@ describe("runInit", () => {
 			expect(environmentCheck).toContain('"scripts/codex-enforced"');
 			expect(environmentCheck).toContain('"scripts/prepare-worktree.sh"');
 			expect(environmentCheck).toContain('"scripts/new-task.sh"');
+			expect(environmentCheck).toContain("ensure_mise_available()");
+			expect(environmentCheck).not.toContain(
+				"curl -fsSL https://mise.run | sh",
+			);
+			expect(environmentCheck).toContain("command -v mise >/dev/null 2>&1");
 			expect(environmentCheck).toContain(
 				'"scripts/check-hook-critical-config-sync.sh"',
 			);
 			expect(environmentCheck).toContain('"scripts/check-semgrep-changed.sh"');
+			expect(environmentCheck).toContain('"scripts/check-semgrep-full.sh"');
 			expect(environmentCheck).toContain('"scripts/semgrep-pre-push.yml"');
 			expect(environmentCheck).toContain("required_make_targets=(");
 			expect(environmentCheck).toContain(
@@ -2017,6 +2220,7 @@ describe("runInit", () => {
 				"make",
 				"rg",
 				"fd",
+				"realpath",
 				"prek",
 				"diagram",
 				"vale",
@@ -2149,8 +2353,13 @@ exit 1
 				expect(chmod.status).toBe(0);
 			}
 
+			const {
+				BASH_ENV: _ignoredBashEnv,
+				ENV: _ignoredEnv,
+				...inheritedEnv
+			} = process.env;
 			const baseEnv = {
-				...process.env,
+				...inheritedEnv,
 				PATH: `${fakeBin}:${process.env.PATH ?? ""}`,
 				FAKE_RUNNER_LOG: runnerLog,
 				FAKE_MISE_HARNESS: fakeMiseHarness,
@@ -2268,13 +2477,13 @@ exit 1
 				return output;
 			};
 
-			expect(runNewTask("HEAD~1", "commit-ish-head")).toContain(
-				"[new-task] branch: codex/commit-ish-head",
+			expect(runNewTask("HEAD~1", "jsc-101-commit-ish-head")).toContain(
+				"[new-task] branch: codex/jsc-101-commit-ish-head",
 			);
-			expect(runNewTask("v0.0.1", "commit-ish-tag")).toContain(
-				"[new-task] branch: codex/commit-ish-tag",
+			expect(runNewTask("v0.0.1", "jsc-102-commit-ish-tag")).toContain(
+				"[new-task] branch: codex/jsc-102-commit-ish-tag",
 			);
-			expect(runNewTask(firstSha, "commit-ish-sha")).toContain(
+			expect(runNewTask(firstSha, "jsc-103-commit-ish-sha")).toContain(
 				`[new-task] base: ${firstSha}`,
 			);
 
@@ -2289,7 +2498,8 @@ exit 1
 				);
 				expect(runGit(["push", "-u", "upstream", "main"]).status).toBe(0);
 
-				const upstreamWorktreePath = join(tempDir, "wt-upstream-main");
+				const upstreamSlug = "jsc-104-upstream-main";
+				const upstreamWorktreePath = join(tempDir, `wt-${upstreamSlug}`);
 				const upstreamRun = spawnSync(
 					"bash",
 					[
@@ -2298,7 +2508,7 @@ exit 1
 						"upstream/main",
 						"--path",
 						upstreamWorktreePath,
-						"upstream-main",
+						upstreamSlug,
 					],
 					{
 						cwd: outsideRepoCwd,
@@ -2766,7 +2976,10 @@ describe("--track flag", () => {
 	it("rejects symlinks with error", () => {
 		// Create symlink to a file outside the repo
 		mkdirSync(join(tempDir, ".github", "workflows"), { recursive: true });
-		const symlinkPath = join(tempDir, ".github/workflows/pr-pipeline.yml");
+		const symlinkPath = join(
+			tempDir,
+			".github/workflows/release-private-npm.yml",
+		);
 		symlinkSync("/etc/passwd", symlinkPath);
 
 		const result = runInit(tempDir, {
@@ -2840,9 +3053,9 @@ describe("--rollback flag", () => {
 
 		// Verify files deleted
 		expect(existsSync(join(tempDir, "harness.contract.json"))).toBe(false);
-		expect(existsSync(join(tempDir, ".github/workflows/pr-pipeline.yml"))).toBe(
-			false,
-		);
+		expect(
+			existsSync(join(tempDir, ".github/workflows/release-private-npm.yml")),
+		).toBe(false);
 		expect(existsSync(join(tempDir, "CONTRIBUTING.md"))).toBe(false);
 		expect(existsSync(join(tempDir, ".github/PULL_REQUEST_TEMPLATE.md"))).toBe(
 			false,
@@ -3008,9 +3221,9 @@ describe("--rollback flag", () => {
 		});
 
 		expect(rollbackResult.ok).toBe(true);
-		expect(existsSync(join(tempDir, ".github/workflows/pr-pipeline.yml"))).toBe(
-			false,
-		);
+		expect(
+			existsSync(join(tempDir, ".github/workflows/release-private-npm.yml")),
+		).toBe(false);
 		expect(existsSync(join(tempDir, ".harness/restore-manifest.json"))).toBe(
 			false,
 		);
@@ -3388,9 +3601,9 @@ describe("--update flag", () => {
 			ciProvider: "github-actions",
 		});
 		expect(installResult.ok).toBe(true);
-		expect(existsSync(join(tempDir, ".github/workflows/pr-pipeline.yml"))).toBe(
-			true,
-		);
+		expect(
+			existsSync(join(tempDir, ".github/workflows/release-private-npm.yml")),
+		).toBe(true);
 		expect(existsSync(join(tempDir, ".circleci/config.yml"))).toBe(false);
 
 		const result = runInit(tempDir, {
@@ -3400,9 +3613,9 @@ describe("--update flag", () => {
 		});
 
 		expect(result.ok).toBe(true);
-		expect(existsSync(join(tempDir, ".github/workflows/pr-pipeline.yml"))).toBe(
-			true,
-		);
+		expect(
+			existsSync(join(tempDir, ".github/workflows/release-private-npm.yml")),
+		).toBe(true);
 		expect(existsSync(join(tempDir, ".circleci/config.yml"))).toBe(false);
 	});
 
