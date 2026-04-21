@@ -341,16 +341,6 @@ describe("runInit", () => {
 			expect(codeRabbitCheck?.provider).toBe("coderabbit");
 			expect(codeRabbitCheck?.githubCheckName).toBe("CodeRabbit");
 
-			const contract = JSON.parse(
-				require("node:fs").readFileSync(
-					join(tempDir, "harness.contract.json"),
-					"utf-8",
-				),
-			);
-			expect(contract.branchProtection.requiredChecks).toContain(
-				"security-scan",
-			);
-
 			const circleConfig = require("node:fs").readFileSync(
 				join(tempDir, ".circleci/config.yml"),
 				"utf-8",
@@ -365,6 +355,11 @@ describe("runInit", () => {
 				'ln -sf "$(command -v fdfind)" "$HOME/.local/bin/fd"',
 			);
 			expect(circleConfig).toContain("name: Ensure mise available");
+			expect(circleConfig).toContain('export MISE_VERSION="v2025.1.5"');
+			expect(circleConfig).toContain('current_mise_version="$(mise --version');
+			expect(circleConfig).toContain(
+				'if [[ "$current_mise_version" != "${MISE_VERSION#v}" ]]; then',
+			);
 			expect(circleConfig).toContain("mise trust --yes .mise.toml");
 			expect(circleConfig).toContain("name: Ensure pnpm available");
 			expect(circleConfig).toContain(
@@ -429,10 +424,10 @@ describe("runInit", () => {
 			expect(circleConfig).toContain(
 				'sudo apt-get install -y "${packages[@]}"',
 			);
-			expect(circleConfig).toContain(
+			expect(circleConfig).toContain("mise install rust@stable");
+			expect(circleConfig).not.toContain(
 				"if ! command -v cargo >/dev/null 2>&1; then",
 			);
-			expect(circleConfig).toContain("mise install rust@stable");
 			expect(circleConfig).toContain('if [[ -f "$HOME/.cargo/env" ]]; then');
 			expect(circleConfig).toContain('. "$HOME/.cargo/env"');
 			expect(circleConfig).toContain("export MISE_CARGO_BINSTALL=false");

@@ -497,9 +497,15 @@ jobs:
       - run:
           name: Ensure mise available
           command: |
+            export MISE_VERSION="v2025.1.5"
+            echo 'export MISE_VERSION="v2025.1.5"' >> "$BASH_ENV"
             export PATH="$HOME/.local/bin:$PATH"
             echo 'export PATH="$HOME/.local/bin:$PATH"' >> "$BASH_ENV"
-            if ! command -v mise >/dev/null 2>&1; then
+            current_mise_version=""
+            if command -v mise >/dev/null 2>&1; then
+              current_mise_version="$(mise --version | grep -Eo '[0-9]+\\.[0-9]+\\.[0-9]+' | head -n1 || true)"
+            fi
+            if [[ "$current_mise_version" != "\${MISE_VERSION#v}" ]]; then
               curl -fsSL https://mise.run | sh
             fi
             mise trust --yes .mise.toml
@@ -594,12 +600,10 @@ ${riskPolicyRequires}          command: bash scripts/run-harness-gate.sh policy-
             mkdir -p "$HOME/.local/bin" "$HOME/.local/share"
             export PATH="$HOME/.local/bin:$PATH"
             echo 'export PATH="$HOME/.local/bin:$PATH"' >> "$BASH_ENV"
-            if ! command -v cargo >/dev/null 2>&1; then
-              mise install rust@stable
-              if [[ -f "$HOME/.cargo/env" ]]; then
-                # rustup does not update the current shell PATH for non-interactive jobs.
-                . "$HOME/.cargo/env"
-              fi
+            mise install rust@stable
+            if [[ -f "$HOME/.cargo/env" ]]; then
+              # rustup does not update the current shell PATH for non-interactive jobs.
+              . "$HOME/.cargo/env"
             fi
             SEMGREP_VERSION="1.153.1"
             SEMGREP_VENV="$HOME/.local/share/semgrep-venv-\${SEMGREP_VERSION}"
