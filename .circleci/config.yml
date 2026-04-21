@@ -29,7 +29,7 @@ jobs:
               echo 'export GITHUB_TOKEN="${GITHUB_PERSONAL_ACCESS_TOKEN}"' >> "$BASH_ENV"
               echo "Promoted GITHUB_PERSONAL_ACCESS_TOKEN to GH_TOKEN/GITHUB_TOKEN for gh-backed steps."
             else
-              echo "GH_TOKEN/GITHUB_PERSONAL_ACCESS_TOKEN not set; gh-backed steps may fail."
+              echo "GH_TOKEN/GITHUB_TOKEN/GITHUB_PERSONAL_ACCESS_TOKEN not set; gh-backed steps may fail."
             fi
       - run:
           name: Ensure baseline shell tools
