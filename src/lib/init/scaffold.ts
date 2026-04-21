@@ -3680,8 +3680,20 @@ install_semgrep() {
 	exit 1
 }
 
+has_semgrep_installation() {
+	if [[ -x "\$SEMGREP_BIN" ]]; then
+		return 0
+	fi
+
+	if [[ -d "\$SEMGREP_SITE_PACKAGES_DIR/semgrep" ]]; then
+		return 0
+	fi
+
+	return 1
+}
+
 ensure_semgrep_version() {
-	if [[ ! -x "\$SEMGREP_BIN" ]]; then
+	if ! has_semgrep_installation; then
 		install_semgrep
 		return
 	fi
@@ -3861,8 +3873,20 @@ install_semgrep() {
 	exit 1
 }
 
+has_semgrep_installation() {
+	if [[ -x "$SEMGREP_BIN" ]]; then
+		return 0
+	fi
+
+	if [[ -d "$SEMGREP_SITE_PACKAGES_DIR/semgrep" ]]; then
+		return 0
+	fi
+
+	return 1
+}
+
 ensure_semgrep_version() {
-	if [[ ! -x "$SEMGREP_BIN" ]]; then
+	if ! has_semgrep_installation; then
 		install_semgrep
 		return
 	fi

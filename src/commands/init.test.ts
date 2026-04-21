@@ -1765,6 +1765,10 @@ describe("runInit", () => {
 			expect(semgrepChanged).toContain(
 				'python3 -m pip install --quiet --upgrade --target "$SEMGREP_SITE_PACKAGES_DIR" "semgrep==$SEMGREP_VERSION"',
 			);
+			expect(semgrepChanged).toContain("has_semgrep_installation()");
+			expect(semgrepChanged).toContain(
+				'if [[ -d "$SEMGREP_SITE_PACKAGES_DIR/semgrep" ]]; then',
+			);
 			expect(semgrepChanged).toContain(
 				'if [[ -z "${CI:-}" && -z "${CIRCLECI:-}" ]]; then',
 			);
@@ -1779,6 +1783,10 @@ describe("runInit", () => {
 			);
 			expect(semgrepFull).toContain(
 				'python3 -m pip install --quiet --upgrade --target "$SEMGREP_SITE_PACKAGES_DIR" "semgrep==$SEMGREP_VERSION"',
+			);
+			expect(semgrepFull).toContain("has_semgrep_installation()");
+			expect(semgrepFull).toContain(
+				'if [[ -d "$SEMGREP_SITE_PACKAGES_DIR/semgrep" ]]; then',
 			);
 			expect(semgrepFull).toContain(
 				'if [[ -z "${CI:-}" && -z "${CIRCLECI:-}" ]]; then',

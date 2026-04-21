@@ -186,20 +186,6 @@
     },
     {
       "policyId": "required-check-14",
-      "displayName": "config-validation",
-      "sourceAppSlug": "config-ci",
-      "sourceAppId": "config-ci",
-      "externalIdPattern": "^config-validation$",
-      "requiredOnEvents": [
-        "pull_request",
-        "merge_group"
-      ],
-      "freshnessWindowDays": 7,
-      "class": "required",
-      "githubCheckName": "config-validation"
-    },
-    {
-      "policyId": "required-check-15",
       "displayName": "security-scan",
       "sourceAppSlug": "circleci",
       "sourceAppId": "circleci",
@@ -213,7 +199,7 @@
       "githubCheckName": "security-scan"
     },
     {
-      "policyId": "required-check-16",
+      "policyId": "required-check-15",
       "displayName": "CodeRabbit",
       "sourceAppSlug": "coderabbit",
       "sourceAppId": "coderabbit",
