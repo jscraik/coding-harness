@@ -1,4 +1,4 @@
-import { spawnSync } from "node:child_process";
+import { execSync } from "node:child_process";
 import { Octokit } from "@octokit/rest";
 
 const octokit = new Octokit({ auth: process.env.GITHUB_TOKEN });
@@ -129,12 +129,12 @@ async function run() {
 			"--issue",
 			issueKey,
 			"--state",
-			"In Progress",
+			'"In Progress"',
 			"--no-assign",
 			"--pr-url",
 			prHtmlUrl,
 			"--comment",
-			comment,
+			`"${comment}"`,
 			"--json",
 		);
 	} else {
@@ -145,15 +145,15 @@ async function run() {
 			"--pr-url",
 			prHtmlUrl,
 			"--comment",
-			comment,
+			`"${comment}"`,
 			"--json",
 		);
 	}
 
 	console.info(`Executing: ${cmdArgs.join(" ")}`);
-	const [command, ...args] = cmdArgs;
-	const result = spawnSync(command, args, { stdio: "inherit" });
-	if (result.status !== 0) {
+	try {
+		execSync(cmdArgs.join(" "), { stdio: "inherit" });
+	} catch (_error) {
 		console.error("Linear CLI command failed");
 		process.exit(1);
 	}

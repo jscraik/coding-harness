@@ -112,7 +112,7 @@ function renderProjectBrainRulesTemplate(domain: ProjectBrainDomain): string {
 No rules promoted yet. As patterns become confirmed through repeated observation,
 promote them from hypotheses with a rule ID:
 
-- **Format**: \`R-NNN: description\`
+- **Format**: R-NNN: <description>
 - **Severity**: must | should | may
 - **Required fields**: Rationale, Last promoted date, Promoted from source
 
@@ -133,7 +133,7 @@ update_policy: |
   Append after any bug, tool failure, or extra-effort fix that is specific to this repository.
   Universal fixes belong in ~/.codex/instructions/Learnings.md.
   Do not delete entries; append only.
-  Format: **YYYY-MM-DD [Agent]:** \`problem → fix\`
+  Format: **YYYY-MM-DD [Codex]:** <problem> -> <fix>
 ---
 
 # Learnings
@@ -141,7 +141,7 @@ update_policy: |
 Repo-specific agent knowledge base. Append-only.
 
 > Scope: this repository only.
-> Format: **YYYY-MM-DD [Agent]:** \`problem → fix\`
+> Format: **YYYY-MM-DD [Codex]:** <problem> -> <fix>
 `;
 }
 

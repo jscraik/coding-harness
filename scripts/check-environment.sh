@@ -23,6 +23,11 @@ if [[ ! -f "$CONTRACT_PATH" ]]; then
 	exit 1
 fi
 
+if ! command -v rg >/dev/null 2>&1; then
+	echo "Error: required binary 'rg' is not installed or not on PATH"
+	exit 1
+fi
+
 	if [[ ! -f "$MISE_PATH" ]]; then
 		echo "Error: missing mise config at $MISE_PATH"
 		exit 1
@@ -58,7 +63,7 @@ fi
 		exit 1
 	fi
 
-	required_support_files=("scripts/codex-preflight.sh" "scripts/codex-preflight-local-memory-legacy.sh" "scripts/codex-learn" "scripts/codex-enforced" "scripts/verify-work.sh" "scripts/validate-codestyle.sh" "scripts/check-codestyle-parity.sh" "scripts/prepare-worktree.sh" "scripts/new-task.sh" "scripts/validate-commit-msg.js" "scripts/check-hook-critical-config-sync.sh" "scripts/check-staged-secrets.sh" "scripts/check-doc-style.sh" "scripts/check-related-tests.sh" "scripts/check-semgrep-changed.sh" "scripts/check-semgrep-full.sh" "scripts/semgrep-pre-push.yml")
+	required_support_files=("scripts/codex-preflight.sh" "scripts/codex-preflight-local-memory-legacy.sh" "scripts/codex-learn" "scripts/codex-enforced" "scripts/verify-work.sh" "scripts/validate-codestyle.sh" "scripts/check-codestyle-parity.sh" "scripts/prepare-worktree.sh" "scripts/new-task.sh" "scripts/validate-commit-msg.js" "scripts/check-hook-critical-config-sync.sh" "scripts/check-staged-secrets.sh" "scripts/check-doc-style.sh" "scripts/check-related-tests.sh" "scripts/check-semgrep-changed.sh" "scripts/semgrep-pre-push.yml")
 	for support_file in "${required_support_files[@]}"; do
 		if [[ ! -f "$REPO_ROOT/${support_file}" ]]; then
 			echo "Error: missing required hook support file at $REPO_ROOT/${support_file}"
@@ -68,7 +73,7 @@ fi
 
 	project_brain_memory_extension_enabled=true
 	required_project_brain_paths=(".harness/memory/LEARNINGS.md" ".harness/knowledge/INDEX.md" ".harness/knowledge/cli/knowledge.md" ".harness/knowledge/cli/hypotheses.md" ".harness/knowledge/cli/rules.md" ".harness/knowledge/ci/knowledge.md" ".harness/knowledge/ci/hypotheses.md" ".harness/knowledge/ci/rules.md" ".harness/knowledge/governance/knowledge.md" ".harness/knowledge/governance/hypotheses.md" ".harness/knowledge/governance/rules.md" ".harness/knowledge/tooling/knowledge.md" ".harness/knowledge/tooling/hypotheses.md" ".harness/knowledge/tooling/rules.md" ".harness/knowledge/tooling/codex-learn-summary.md" ".harness/decisions" ".harness/quality/criteria.md" ".harness/review-log.md")
-if [[ "$project_brain_memory_extension_enabled" == "true" ]]; then
+	if [[ "$project_brain_memory_extension_enabled" == "true" ]]; then
 		for required_path in "${required_project_brain_paths[@]}"; do
 			if [[ ! -e "$REPO_ROOT/${required_path}" ]]; then
 				echo "Error: required Project Brain memory-extension path '$required_path' is missing under $REPO_ROOT"
@@ -77,15 +82,6 @@ if [[ "$project_brain_memory_extension_enabled" == "true" ]]; then
 			fi
 		done
 	fi
-
-ensure_mise_available() {
-	command -v mise >/dev/null 2>&1
-}
-
-if ! ensure_mise_available; then
-	echo "Error: required binary 'mise' is not installed or not on PATH"
-	exit 1
-fi
 
 if ! command -v mise >/dev/null 2>&1; then
 	echo "Error: required binary 'mise' is not installed or not on PATH"

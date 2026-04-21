@@ -8,7 +8,7 @@ import {
 	writeFileSync,
 } from "node:fs";
 import { tmpdir } from "node:os";
-import { delimiter, dirname, join } from "node:path";
+import { dirname, join } from "node:path";
 import { afterEach, describe, expect, it } from "vitest";
 import { sanitizeGitEnv } from "../lib/workflow-contract/test-harness.js";
 
@@ -17,25 +17,12 @@ const CHECK_SCRIPT_SOURCE = join(
 	"scripts",
 	"check-diagram-freshness.sh",
 );
-const STABLE_PATH = [
-	dirname(process.execPath),
-	"/opt/homebrew/bin",
-	"/usr/local/bin",
-	"/usr/bin",
-	"/bin",
-	"/usr/sbin",
-	"/sbin",
-	process.env.HOME ? join(process.env.HOME, ".local", "bin") : "",
-	process.env.PATH ?? "",
-]
-	.filter(Boolean)
-	.join(delimiter);
 
 function run(root: string, command: string, args: string[]) {
 	return spawnSync(command, args, {
 		cwd: root,
 		encoding: "utf-8",
-		env: { ...sanitizeGitEnv(), PATH: STABLE_PATH },
+		env: sanitizeGitEnv(),
 	});
 }
 

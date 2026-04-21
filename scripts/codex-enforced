@@ -220,6 +220,7 @@ ensure_task_worktree() {
 
 	echo ""
 	echo -e "${GREEN}Re-launching codex from worktree:${NC} ${worktree_path}"
+	cd "${worktree_path}"
 	exec bash "${worktree_path}/scripts/codex-enforced" --skip-worktree-guard "${ORIGINAL_ARGS[@]}"
 }
 

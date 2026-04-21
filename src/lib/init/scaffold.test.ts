@@ -48,18 +48,6 @@ describe("scaffold templates resolution", () => {
 					template.path === ".github/workflows/release-private-npm.yml",
 			),
 		).toBe(true);
-		const githubActionsOnlyWorkflows = [
-			".github/workflows/pr-pipeline.yml",
-			".github/workflows/secret-scan.yml",
-		];
-		for (const workflowPath of githubActionsOnlyWorkflows) {
-			expect(
-				ghaTemplates.some((template) => template.path === workflowPath),
-			).toBe(true);
-			expect(
-				circleciTemplates.some((template) => template.path === workflowPath),
-			).toBe(false);
-		}
 	});
 
 	it("includes codestyle contract templates by default", () => {

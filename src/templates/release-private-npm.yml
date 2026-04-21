@@ -264,11 +264,8 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          TARBALL="${{ steps.package-tarball.outputs.path }}"
-          if [[ -z "$TARBALL" ]]; then
-            VERSION="$(node -p "require('./package.json').version")"
-            TARBALL="brainwav-coding-harness-${VERSION}.tgz"
-          fi
+          VERSION="$(node -p "require('./package.json').version")"
+          TARBALL="brainwav-coding-harness-${VERSION}.tgz"
           if [[ -f "$TARBALL" ]]; then
             gh attestation verify "$TARBALL" --repo "${{ github.repository }}"
           fi
