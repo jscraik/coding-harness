@@ -286,6 +286,13 @@ workflows:
           filters:
             tags:
               ignore: /.*/
+      - run-governance-check:
+          name: consistency-drift-health
+          check_name: consistency-drift-health
+          command: bash scripts/run-harness-gate.sh consistency-drift-health --json
+          filters:
+            tags:
+              ignore: /.*/
 
   security-scan:
     jobs:
