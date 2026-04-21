@@ -341,6 +341,16 @@ describe("runInit", () => {
 			expect(codeRabbitCheck?.provider).toBe("coderabbit");
 			expect(codeRabbitCheck?.githubCheckName).toBe("CodeRabbit");
 
+			const contract = JSON.parse(
+				require("node:fs").readFileSync(
+					join(tempDir, "harness.contract.json"),
+					"utf-8",
+				),
+			);
+			expect(contract.branchProtection.requiredChecks).toContain(
+				"security-scan",
+			);
+
 			const circleConfig = require("node:fs").readFileSync(
 				join(tempDir, ".circleci/config.yml"),
 				"utf-8",
