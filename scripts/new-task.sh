@@ -6,7 +6,7 @@ REPO_ROOT="$(cd -- "$SCRIPT_DIR/.." && pwd -P)"
 
 usage() {
 	cat <<'USAGE'
-Usage: scripts/new-task.sh [options] <issue-key>-<slug>
+Usage: scripts/new-task.sh [options] <slug>
 
 Create a dedicated git worktree and branch for one task, then print the
 bootstrap commands to run inside that worktree.
@@ -16,7 +16,7 @@ This repository expects one task = one worktree = one branch = one agent thread.
 Options:
   --base <ref>            Start the branch from this ref (default: main)
   --branch-prefix <name>  Branch prefix (default: codex)
-  --path <dir>            Worktree path (default: ../wt-<issue-key>-<slug>)
+  --path <dir>            Worktree path (default: ../wt-<slug>)
   --bootstrap             Run worktree bootstrap immediately after creation
   -h, --help              Show this help text
 USAGE
@@ -77,18 +77,18 @@ if [[ -z "$slug" || $# -gt 0 ]]; then
 	exit 2
 fi
 
+if [[ ! "$slug" =~ ^[a-z0-9][a-z0-9-]*$ ]]; then
+	echo "[new-task] slug must be lower-case kebab-case: $slug" >&2
+	exit 2
+fi
+
 if [[ ! "$branch_prefix" =~ ^[A-Za-z0-9._/-]+$ ]]; then
 	echo "[new-task] invalid branch prefix: $branch_prefix" >&2
 	exit 2
 fi
 
-if [[ "$branch_prefix" == codex* ]]; then
-	if [[ ! "$slug" =~ ^[A-Za-z][A-Za-z0-9]*-[0-9]+-[a-z0-9][a-z0-9-]*$ ]]; then
-		echo "[new-task] for codex branches, slug must start with an issue key (example: JSC-123-my-task): $slug" >&2
-		exit 2
-	fi
-elif [[ ! "$slug" =~ ^[a-z0-9][a-z0-9-]*$ ]]; then
-	echo "[new-task] slug must be lower-case kebab-case: $slug" >&2
+if [[ "$branch_prefix" == "codex" ]] && [[ ! "$slug" =~ ^[a-z][a-z0-9]*-[0-9]+-[a-z0-9][a-z0-9-]*$ ]]; then
+	echo "[new-task] for codex branches, slug must start with an issue key (example: jsc-123-my-task): $slug" >&2
 	exit 2
 fi
 

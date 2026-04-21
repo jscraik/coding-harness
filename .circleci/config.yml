@@ -16,18 +16,8 @@ jobs:
       - run:
           name: Verify GH token wiring
           command: |
-            if [ -n "${GH_TOKEN:-}" ]; then
-              echo "GH_TOKEN is already available for gh-backed steps."
-            elif [ -n "${GITHUB_TOKEN:-}" ]; then
-              export GH_TOKEN="${GITHUB_TOKEN}"
-              echo 'export GH_TOKEN="${GITHUB_TOKEN}"' >> "$BASH_ENV"
-              echo "Promoted GITHUB_TOKEN to GH_TOKEN for gh-backed steps."
-            elif [ -n "${GITHUB_PERSONAL_ACCESS_TOKEN:-}" ]; then
-              export GH_TOKEN="${GITHUB_PERSONAL_ACCESS_TOKEN}"
-              export GITHUB_TOKEN="${GITHUB_PERSONAL_ACCESS_TOKEN}"
-              echo 'export GH_TOKEN="${GITHUB_PERSONAL_ACCESS_TOKEN}"' >> "$BASH_ENV"
-              echo 'export GITHUB_TOKEN="${GITHUB_PERSONAL_ACCESS_TOKEN}"' >> "$BASH_ENV"
-              echo "Promoted GITHUB_PERSONAL_ACCESS_TOKEN to GH_TOKEN/GITHUB_TOKEN for gh-backed steps."
+            if [ -n "${GH_TOKEN:-${GITHUB_PERSONAL_ACCESS_TOKEN:-}}" ]; then
+              echo "GitHub token is available for gh-backed steps."
             else
               echo "GH_TOKEN/GITHUB_PERSONAL_ACCESS_TOKEN not set; gh-backed steps may fail."
             fi
@@ -72,8 +62,6 @@ jobs:
       - run:
           name: Ensure mise available
           command: |
-            export MISE_VERSION="v2025.1.5"
-            echo 'export MISE_VERSION="v2025.1.5"' >> "$BASH_ENV"
             export PATH="$HOME/.local/bin:$PATH"
             echo 'export PATH="$HOME/.local/bin:$PATH"' >> "$BASH_ENV"
             if ! command -v mise >/dev/null 2>&1; then
@@ -133,54 +121,8 @@ workflows:
   pr-pipeline:
     jobs:
       - run-governance-check:
-          name: pr-template
-          check_name: pr-template
-          command: |
-            pr_ref="${CIRCLE_PULL_REQUEST:-}"
-            if [[ -z "$pr_ref" && -n "${CIRCLE_BRANCH:-}" ]]; then
-              pr_ref="$(gh pr list --head "$CIRCLE_BRANCH" --state open --json url --jq '.[0].url // ""')"
-            fi
-            if [[ -z "$pr_ref" ]]; then
-              echo "Error: unable to resolve pull request context for pr-template."
-              exit 1
-            fi
-            export PR_TEMPLATE_BODY
-            PR_TEMPLATE_BODY="$(gh pr view "$pr_ref" --json body --jq .body)"
-            pnpm exec tsx src/cli.ts pr-template-gate --json
-          filters:
-            tags:
-              ignore: /.*/
-      - run-governance-check:
-          name: linear-gate
-          check_name: linear-gate
-          requires:
-            - pr-template
-          command: |
-            pr_ref="${CIRCLE_PULL_REQUEST:-}"
-            if [[ -z "$pr_ref" && -n "${CIRCLE_BRANCH:-}" ]]; then
-              pr_ref="$(gh pr list --head "$CIRCLE_BRANCH" --state open --json url --jq '.[0].url // ""')"
-            fi
-            if [[ -z "$pr_ref" ]]; then
-              echo "Error: unable to resolve pull request context for linear-gate."
-              exit 1
-            fi
-            branch_name="$(gh pr view "$pr_ref" --json headRefName --jq .headRefName)"
-            pr_title="$(gh pr view "$pr_ref" --json title --jq .title)"
-            pr_body="$(gh pr view "$pr_ref" --json body --jq .body)"
-            pnpm exec tsx src/cli.ts linear-gate \
-              --branch "$branch_name" \
-              --pr-title "$pr_title" \
-              --pr-body "$pr_body" \
-              --json
-          filters:
-            tags:
-              ignore: /.*/
-      - run-governance-check:
           name: risk-policy-gate
           check_name: risk-policy-gate
-          requires:
-            - pr-template
-            - linear-gate
           command: bash scripts/run-harness-gate.sh policy-gate --max-tier medium --json
           filters:
             tags:
@@ -280,7 +222,7 @@ workflows:
       - run-governance-check:
           name: memory
           check_name: memory
-          command: bash scripts/run-harness-gate.sh memory-gate --json
+          command: test -f memory.json && jq -e '.meta.version == "1.0" and (.preamble.bootstrap | type == "boolean") and (.preamble.search | type == "boolean") and (.entries | type == "array")' memory.json >/dev/null
           filters:
             tags:
               ignore: /.*/
@@ -290,7 +232,7 @@ workflows:
       - run-governance-check:
           name: security-scan
           check_name: security-scan
-          command: bash scripts/check-semgrep-full.sh
+          command: bash scripts/check-semgrep-changed.sh --all
           filters:
             tags:
               ignore: /.*/

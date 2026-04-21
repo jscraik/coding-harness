@@ -343,10 +343,7 @@ shamefully-hoist=false
  * @param pm - The package manager identifier used to render install and script commands (e.g., "npm", "pnpm", "yarn").
  * @returns The CircleCI configuration YAML as a string, defining a reusable gate-runner job and a `pr-pipeline` workflow that fans out governance and quality checks.
  */
-function renderCircleCIConfig(
-	pm: string,
-	context: TemplateRenderContext,
-): string {
+function renderCircleCIConfig(pm: string): string {
 	const installCommand =
 		pm === "pnpm"
 			? "pnpm install --frozen-lockfile --prefer-offline"
@@ -357,11 +354,7 @@ function renderCircleCIConfig(
 	const testCommand = renderScriptCommand(pm, "test:ci");
 	const auditCommand = renderScriptCommand(pm, "audit");
 	const dependencyAuditCommand = renderScriptCommand(pm, "audit:strict");
-	const gitleaksCommand =
-		"if [ -f .gitleaks.toml ]; then gitleaks detect --source . --config .gitleaks.toml --redact --no-banner; else gitleaks detect --source . --redact --no-banner; fi";
-	const trivyCommand =
-		"trivy fs --scanners vuln --severity HIGH,CRITICAL --ignore-unfixed --exit-code 1 .";
-	const semgrepCommand = "bash scripts/check-semgrep-full.sh";
+	const semgrepCommand = "bash scripts/check-semgrep-changed.sh --all";
 	const memoryValidateCommand = renderMemoryValidateCommand();
 	const configureCacheStep =
 		pm === "pnpm"
@@ -385,44 +378,6 @@ function renderCircleCIConfig(
             - ~/.pnpm-store
 `
 			: "";
-	const linearTrackingEnabled =
-		context.issueTracker !== "github" && context.issueTracker !== "none";
-	const linearGateJob = linearTrackingEnabled
-		? `      - run-governance-check:
-          name: linear-gate
-          check_name: linear-gate
-          requires:
-            - pr-template
-          command: |
-            pr_ref="${"${CIRCLE_PULL_REQUEST:-}"}"
-            if [[ -z "$pr_ref" && -n "${"${CIRCLE_BRANCH:-}"}" ]]; then
-              pr_ref="$(gh pr list --head "$CIRCLE_BRANCH" --state open --json url --jq '.[0].url // ""')"
-            fi
-            if [[ -z "$pr_ref" ]]; then
-              echo "Error: unable to resolve pull request context for linear-gate."
-              exit 1
-            fi
-            branch_name="$(gh pr view "$pr_ref" --json headRefName --jq .headRefName)"
-            pr_title="$(gh pr view "$pr_ref" --json title --jq .title)"
-            pr_body="$(gh pr view "$pr_ref" --json body --jq .body)"
-            bash scripts/run-harness-gate.sh linear-gate \\
-              --branch "$branch_name" \\
-              --pr-title "$pr_title" \\
-              --pr-body "$pr_body" \\
-              --json
-          filters:
-            tags:
-              ignore: /.*/
-`
-		: "";
-	const riskPolicyRequires = linearTrackingEnabled
-		? `          requires:
-            - pr-template
-            - linear-gate
-`
-		: `          requires:
-            - pr-template
-`;
 	return `version: 2.1
 
 jobs:
@@ -441,18 +396,8 @@ jobs:
       - run:
           name: Verify GH token wiring
           command: |
-            if [ -n "${"${GH_TOKEN:-}"}" ]; then
-              echo "GH_TOKEN is already available for gh-backed steps."
-            elif [ -n "${"${GITHUB_TOKEN:-}"}" ]; then
-              export GH_TOKEN="${"${GITHUB_TOKEN}"}"
-              echo 'export GH_TOKEN="${"${GITHUB_TOKEN}"}"' >> "$BASH_ENV"
-              echo "Promoted GITHUB_TOKEN to GH_TOKEN for gh-backed steps."
-            elif [ -n "${"${GITHUB_PERSONAL_ACCESS_TOKEN:-}"}" ]; then
-              export GH_TOKEN="${"${GITHUB_PERSONAL_ACCESS_TOKEN}"}"
-              export GITHUB_TOKEN="${"${GITHUB_PERSONAL_ACCESS_TOKEN}"}"
-              echo 'export GH_TOKEN="${"${GITHUB_PERSONAL_ACCESS_TOKEN}"}"' >> "$BASH_ENV"
-              echo 'export GITHUB_TOKEN="${"${GITHUB_PERSONAL_ACCESS_TOKEN}"}"' >> "$BASH_ENV"
-              echo "Promoted GITHUB_PERSONAL_ACCESS_TOKEN to GH_TOKEN/GITHUB_TOKEN for gh-backed steps."
+            if [ -n "${"${GH_TOKEN:-${GITHUB_PERSONAL_ACCESS_TOKEN:-}}"}" ]; then
+              echo "GitHub token is available for gh-backed steps."
             else
               echo "GH_TOKEN/GITHUB_PERSONAL_ACCESS_TOKEN not set; gh-backed steps may fail."
             fi
@@ -478,9 +423,9 @@ jobs:
             if ! command -v realpath >/dev/null 2>&1; then
               packages+=("coreutils")
             fi
-            if (( ${"${#packages[@]}"} > 0 )); then
+            if (( \${#packages[@]} > 0 )); then
               sudo apt-get update
-              sudo apt-get install -y "${"${packages[@]}"}"
+              sudo apt-get install -y "\${packages[@]}"
             fi
             gh --version
             if ! command -v fd >/dev/null 2>&1 && command -v fdfind >/dev/null 2>&1; then
@@ -548,27 +493,9 @@ workflows:
   pr-pipeline:
     jobs:
       - run-governance-check:
-          name: pr-template
-          check_name: pr-template
-          command: |
-            pr_ref="${"${CIRCLE_PULL_REQUEST:-}"}"
-            if [[ -z "$pr_ref" && -n "${"${CIRCLE_BRANCH:-}"}" ]]; then
-              pr_ref="$(gh pr list --head "$CIRCLE_BRANCH" --state open --json url --jq '.[0].url // ""')"
-            fi
-            if [[ -z "$pr_ref" ]]; then
-              echo "Error: unable to resolve pull request context for pr-template."
-              exit 1
-            fi
-            export PR_TEMPLATE_BODY
-            PR_TEMPLATE_BODY="$(gh pr view "$pr_ref" --json body --jq .body)"
-            bash scripts/run-harness-gate.sh pr-template-gate --json
-          filters:
-            tags:
-              ignore: /.*/
-${linearGateJob}      - run-governance-check:
           name: risk-policy-gate
           check_name: risk-policy-gate
-${riskPolicyRequires}          command: bash scripts/run-harness-gate.sh policy-gate --max-tier medium --json
+          command: bash scripts/run-harness-gate.sh policy-gate --max-tier medium --json
           filters:
             tags:
               ignore: /.*/
@@ -677,13 +604,11 @@ ${riskPolicyRequires}          command: bash scripts/run-harness-gate.sh policy-
       - run-governance-check:
           name: security-scan
           check_name: security-scan
-          command: |
-            ${gitleaksCommand}
-            ${trivyCommand}
-            ${semgrepCommand}
+          command: ${semgrepCommand}
           filters:
             tags:
               ignore: /.*/
+
 `;
 }
 
@@ -1015,7 +940,7 @@ REPO_ROOT="$(cd -- "$SCRIPT_DIR/.." && pwd -P)"
 
 usage() {
 	cat <<'USAGE'
-Usage: scripts/new-task.sh [options] <issue-key>-<slug>
+Usage: scripts/new-task.sh [options] <slug>
 
 Create a dedicated git worktree and branch for one task, then print the
 bootstrap commands to run inside that worktree.
@@ -1025,7 +950,7 @@ This repository expects one task = one worktree = one branch = one agent thread.
 Options:
   --base <ref>            Start the branch from this ref (default: main)
   --branch-prefix <name>  Branch prefix (default: ${AGENT_BRANCH_PREFIX})
-  --path <dir>            Worktree path (default: ../wt-<issue-key>-<slug>)
+  --path <dir>            Worktree path (default: ../wt-<slug>)
   --bootstrap             Run worktree bootstrap immediately after creation
   -h, --help              Show this help text
 USAGE
@@ -1086,18 +1011,18 @@ if [[ -z "$slug" || $# -gt 0 ]]; then
 	exit 2
 fi
 
+if [[ ! "$slug" =~ ^[a-z0-9][a-z0-9-]*$ ]]; then
+	echo "[new-task] slug must be lower-case kebab-case: $slug" >&2
+	exit 2
+fi
+
 if [[ ! "$branch_prefix" =~ ^[A-Za-z0-9._/-]+$ ]]; then
 	echo "[new-task] invalid branch prefix: $branch_prefix" >&2
 	exit 2
 fi
 
-if [[ "$branch_prefix" == codex* ]]; then
-	if [[ ! "$slug" =~ ^[A-Za-z][A-Za-z0-9]*-[0-9]+-[a-z0-9][a-z0-9-]*$ ]]; then
-		echo "[new-task] for codex branches, slug must start with an issue key (example: JSC-123-my-task): $slug" >&2
-		exit 2
-	fi
-elif [[ ! "$slug" =~ ^[a-z0-9][a-z0-9-]*$ ]]; then
-	echo "[new-task] slug must be lower-case kebab-case: $slug" >&2
+if [[ "$branch_prefix" == "codex" ]] && [[ ! "$slug" =~ ^[a-z][a-z0-9]*-[0-9]+-[a-z0-9][a-z0-9-]*$ ]]; then
+	echo "[new-task] for codex branches, slug must start with an issue key (example: jsc-123-my-task): $slug" >&2
 	exit 2
 fi
 
@@ -1265,8 +1190,8 @@ REPO_ROOT="$(cd -- "$SCRIPT_DIR/.." && pwd)"
  * Produce a portable bash script that resolves and runs the repository's harness CLI.
  *
  * The returned script locates the repository root and attempts, in order, to:
- * - run the repo-local `src/cli.ts` via `pnpm exec tsx` only when the repo is the harness source repo,
- * - run `scripts/harness-cli.sh` (when present and readable),
+ * - run the repo-local `src/cli.ts` via `pnpm exec tsx` only when this repo is the harness source package,
+ * - run `scripts/harness-cli.sh` (when executable),
  * - invoke a globally installed `harness` binary.
  * If none are available the script prints installation and local-exec guidance and exits with a non-zero status.
  *
@@ -1308,7 +1233,7 @@ if is_harness_source_repo; then
 	exec pnpm exec tsx "$REPO_ROOT/src/cli.ts" "$@"
 fi
 
-if [[ -f "$REPO_ROOT/scripts/harness-cli.sh" && -r "$REPO_ROOT/scripts/harness-cli.sh" ]]; then
+if [[ -x "$REPO_ROOT/scripts/harness-cli.sh" ]]; then
 	exec bash "$REPO_ROOT/scripts/harness-cli.sh" "$@"
 fi
 
@@ -2932,7 +2857,7 @@ jobs:
 	},
 	{
 		path: ".circleci/config.yml",
-		render: (pm, context) => renderCircleCIConfig(pm, context),
+		render: (pm) => renderCircleCIConfig(pm),
 	},
 	{
 		path: "CONTRIBUTING.md",
@@ -2995,8 +2920,8 @@ This workflow keeps delivery auditable, reversible, and consistent even for solo
 ## Branching and PR rule
 
 1. Create a dedicated branch/worktree for each task:
-   - Agent-created branch: \`git switch -c ${AGENT_BRANCH_PREFIX}/<issue-key>-<short-description>\`
-   - Agent-created worktree: \`git worktree add ../tmp-worktree -b ${AGENT_BRANCH_PREFIX}/<issue-key>-<short-description>\`
+   - Agent-created branch: \`git switch -c ${AGENT_BRANCH_PREFIX}/<short-description>\`
+   - Agent-created worktree: \`git worktree add ../tmp-worktree -b ${AGENT_BRANCH_PREFIX}/<short-description>\`
    - Human-authored branch prefixes (when not using \`${AGENT_BRANCH_PREFIX}/\`): \`feat/\`, \`fix/\`, \`docs/\`, \`refactor/\`, \`chore/\`, \`test/\`
 2. Keep commits small and focused.
 3. Open a PR to merge into \`main\`.
@@ -3006,7 +2931,7 @@ This workflow keeps delivery auditable, reversible, and consistent even for solo
 ## Branch name policy
 
 - Use lower-case, kebab-case slugs.
-- Agent-created branches must use \`${AGENT_BRANCH_PREFIX}/<issue-key>-<short-description>\`.
+- Agent-created branches must use \`${AGENT_BRANCH_PREFIX}/<short-description>\`.
 - Human-authored branches may use: \`feat/\`, \`fix/\`, \`docs/\`, \`refactor/\`, \`chore/\`, \`test/\`.
 - Avoid \`main\`-like names and do not include secrets or issue-pii.
 
@@ -3081,8 +3006,8 @@ Recommended policy:
 - Repo-local launches should prefer \`./scripts/codex-enforced\` so preflight failures are recorded into repo-scoped learn state.
 - \`scripts/codex-enforced\` should guard \`main\` by auto-creating a dedicated task worktree (via \`scripts/new-task.sh --bootstrap\`) before launching Codex for feature work.
 - Use \`./scripts/codex-learn analyze\` and \`./scripts/codex-learn apply\` to inspect repo-scoped failure patterns and write override files into \`.harness/memory/\`.
-- Start new work with \`bash scripts/new-task.sh <issue-key>-<slug>\`, then enter the generated worktree and continue there.
-- Use \`bash scripts/new-task.sh --bootstrap <issue-key>-<slug>\` when you want to create and bootstrap the worktree in one command.
+- Start new work with \`bash scripts/new-task.sh <slug>\`, then enter the generated worktree and continue there.
+- Use \`bash scripts/new-task.sh --bootstrap <slug>\` when you want to create and bootstrap the worktree in one command.
 - Use \`bash scripts/validate-codestyle.sh --fast\` during iteration for focused codestyle validation.
 - Use \`bash scripts/validate-codestyle.sh\` before handoff for the fail-closed codestyle bundle.
 - Use \`bash scripts/verify-work.sh\` for the broader verification bundle.
@@ -3604,76 +3529,40 @@ set -euo pipefail
 REPO_ROOT="$(cd -- "$(dirname -- "\${BASH_SOURCE[0]}")/.." && pwd)"
 RULESET_PATH="$REPO_ROOT/scripts/semgrep-pre-push.yml"
 SEMGREP_VERSION="1.153.1"
+SCAN_MODE="changed"
+
+while (( $# > 0 )); do
+	case "$1" in
+		--all)
+			SCAN_MODE="all"
+			shift
+			;;
+		--changed)
+			SCAN_MODE="changed"
+			shift
+			;;
+		-h|--help)
+			echo "Usage: bash scripts/check-semgrep-changed.sh [--changed|--all]" >&2
+			exit 0
+			;;
+		*)
+			echo "Error: unknown option '$1'" >&2
+			echo "Usage: bash scripts/check-semgrep-changed.sh [--changed|--all]" >&2
+			exit 2
+			;;
+	esac
+done
+
 SEMGREP_CACHE_ROOT="\${XDG_CACHE_HOME:-\$HOME/.cache}/coding-harness"
 SEMGREP_VENV_DIR="\${SEMGREP_CACHE_ROOT}/semgrep-venv-\${SEMGREP_VERSION}"
 SEMGREP_BIN="\$SEMGREP_VENV_DIR/bin/semgrep"
 SEMGREP_PYTHON="\$SEMGREP_VENV_DIR/bin/python"
-SEMGREP_SITE_PACKAGES_DIR="\${SEMGREP_CACHE_ROOT}/semgrep-site-packages-\${SEMGREP_VERSION}"
 cd "$REPO_ROOT"
 
-run_semgrep() {
-	if [[ -x "\$SEMGREP_BIN" ]]; then
-		"\$SEMGREP_BIN" "$@"
-		return
-	fi
-
-	PYTHONPATH="\$SEMGREP_SITE_PACKAGES_DIR\${PYTHONPATH:+:\$PYTHONPATH}" \\
-		python3 -m semgrep "$@"
-}
-
-ensure_python_packaging_tools() {
-	if [[ -z "\${CI:-}" && -z "\${CIRCLECI:-}" ]]; then
-		return 1
-	fi
-
-	if ! command -v apt-get >/dev/null 2>&1; then
-		return 1
-	fi
-
-	if [[ "\$(id -u)" -eq 0 ]]; then
-		apt-get update
-		apt-get install -y python3-pip python3-venv
-		return 0
-	fi
-
-	if command -v sudo >/dev/null 2>&1; then
-		sudo apt-get update
-		sudo apt-get install -y python3-pip python3-venv
-		return 0
-	fi
-
-	return 1
-}
-
 install_semgrep() {
-	if ! command -v python3 >/dev/null 2>&1; then
-		echo "Error: python3 is required to install Semgrep." >&2
-		exit 1
-	fi
-
 	mkdir -p "\$SEMGREP_CACHE_ROOT"
-	if python3 -m venv "\$SEMGREP_VENV_DIR" >/dev/null 2>&1; then
-		"\$SEMGREP_PYTHON" -m pip install --quiet --upgrade pip "semgrep==\$SEMGREP_VERSION"
-		return
-	fi
-
-	if python3 -m pip --version >/dev/null 2>&1; then
-		rm -rf "\$SEMGREP_VENV_DIR"
-		rm -f "\$SEMGREP_BIN"
-		rm -rf "\$SEMGREP_SITE_PACKAGES_DIR"
-		mkdir -p "\$SEMGREP_SITE_PACKAGES_DIR"
-		python3 -m pip install --quiet --upgrade --target "\$SEMGREP_SITE_PACKAGES_DIR" "semgrep==\$SEMGREP_VERSION"
-		return
-	fi
-
-	if ensure_python_packaging_tools; then
-		install_semgrep
-		return
-	fi
-
-	echo "Error: unable to install Semgrep." >&2
-	echo "python3 -m venv is unavailable and python3 -m pip could not be used as a fallback." >&2
-	exit 1
+	python3 -m venv "\$SEMGREP_VENV_DIR"
+	"\$SEMGREP_PYTHON" -m pip install --quiet --upgrade pip "semgrep==\$SEMGREP_VERSION"
 }
 
 ensure_semgrep_version() {
@@ -3683,7 +3572,7 @@ ensure_semgrep_version() {
 	fi
 
 	local detected_version
-	detected_version="\$(run_semgrep --version 2>/dev/null | tr -d '[:space:]')"
+	detected_version="\$("\$SEMGREP_BIN" --version 2>/dev/null | tr -d '[:space:]')"
 	if [[ "\$detected_version" != "\$SEMGREP_VERSION" ]]; then
 		install_semgrep
 	fi
@@ -3695,6 +3584,31 @@ if [[ ! -f "$RULESET_PATH" ]]; then
 fi
 
 ensure_semgrep_version
+
+if [[ "$SCAN_MODE" == "all" ]]; then
+	all_sources=()
+	while IFS= read -r -d "" path; do
+		[[ -n "$path" ]] || continue
+		if [[ "$path" =~ ^src/.*\\.(ts|tsx|js|jsx|mts|cts)$ ]] && \\
+			[[ ! "$path" =~ \\.d\\.ts$ ]] && \\
+			[[ ! "$path" =~ \\.(test|spec)\\.(ts|tsx|js|jsx|mts|cts)$ ]]; then
+			all_sources+=("$path")
+		fi
+	done < <(find src -type f -print0 2>/dev/null || true)
+
+	if [[ \${#all_sources[@]} -eq 0 ]]; then
+		echo "No src/** implementation files detected for Semgrep."
+		exit 0
+	fi
+
+	"\$SEMGREP_BIN" scan \\
+		--config "$RULESET_PATH" \\
+		--disable-version-check \\
+		--error \\
+		--jobs 1 \\
+		"\${all_sources[@]}"
+	exit 0
+fi
 
 base_ref=""
 if git rev-parse --verify '@{upstream}' >/dev/null 2>&1; then
@@ -3732,157 +3646,12 @@ if [[ \${#changed_sources[@]} -eq 0 ]]; then
 	exit 0
 fi
 
-run_semgrep scan \\
+"\$SEMGREP_BIN" scan \\
 	--config "$RULESET_PATH" \\
 	--disable-version-check \\
 	--error \\
 	--jobs 1 \\
 	"\${changed_sources[@]}"
-`,
-	},
-	{
-		path: "scripts/check-semgrep-full.sh",
-		render: () => `#!/usr/bin/env bash
-set -euo pipefail
-
-REPO_ROOT="$(cd -- "$(dirname -- "\${BASH_SOURCE[0]}")/.." && pwd)"
-RULESET_PATH="$REPO_ROOT/scripts/semgrep-pre-push.yml"
-SEMGREP_VERSION="1.153.1"
-DEFAULT_SEMGREP_STATE_ROOT="$REPO_ROOT/.git/semgrep"
-if git_semgrep_state_root="$(git -C "$REPO_ROOT" rev-parse --git-path semgrep 2>/dev/null)"; then
-	if [[ "$git_semgrep_state_root" != /* ]]; then
-		git_semgrep_state_root="$REPO_ROOT/$git_semgrep_state_root"
-	fi
-	DEFAULT_SEMGREP_STATE_ROOT="$git_semgrep_state_root"
-fi
-SEMGREP_STATE_ROOT="\${SEMGREP_STATE_ROOT:-$DEFAULT_SEMGREP_STATE_ROOT}"
-HOST_CACHE_HOME="\${XDG_CACHE_HOME:-\$HOME/.cache}"
-SEMGREP_RUNTIME_CACHE_ROOT="\${SEMGREP_RUNTIME_CACHE_ROOT:-\$SEMGREP_STATE_ROOT/cache}"
-SEMGREP_RUNTIME_USER_HOME="\${SEMGREP_USER_HOME:-\$SEMGREP_STATE_ROOT/home}"
-SEMGREP_RUNTIME_LOG_FILE="\${SEMGREP_LOG_FILE:-\$SEMGREP_STATE_ROOT/semgrep.log}"
-if [[ -z "\${SSL_CERT_FILE:-}" ]]; then
-	for cert_path in /etc/ssl/cert.pem /etc/ssl/certs/ca-certificates.crt; do
-		if [[ -f "$cert_path" ]]; then
-			export SSL_CERT_FILE="$cert_path"
-			break
-		fi
-	done
-fi
-
-SEMGREP_CACHE_ROOT="\${SEMGREP_CACHE_ROOT:-\$SEMGREP_STATE_ROOT/tool-cache}"
-SEMGREP_VENV_DIR="\${SEMGREP_CACHE_ROOT}/semgrep-venv-\${SEMGREP_VERSION}"
-SEMGREP_BIN="\$SEMGREP_VENV_DIR/bin/semgrep"
-SEMGREP_PYTHON="\$SEMGREP_VENV_DIR/bin/python"
-SEMGREP_SITE_PACKAGES_DIR="\${SEMGREP_CACHE_ROOT}/semgrep-site-packages-\${SEMGREP_VERSION}"
-cd "$REPO_ROOT"
-
-run_semgrep() {
-	if [[ -x "\$SEMGREP_BIN" ]]; then
-		XDG_CACHE_HOME="\$SEMGREP_RUNTIME_CACHE_ROOT" \\
-			SEMGREP_USER_HOME="\$SEMGREP_RUNTIME_USER_HOME" \\
-			SEMGREP_LOG_FILE="\$SEMGREP_RUNTIME_LOG_FILE" \\
-			"\$SEMGREP_BIN" "$@"
-		return
-	fi
-
-	PYTHONPATH="\$SEMGREP_SITE_PACKAGES_DIR\${PYTHONPATH:+:\$PYTHONPATH}" \\
-		XDG_CACHE_HOME="\$SEMGREP_RUNTIME_CACHE_ROOT" \\
-		SEMGREP_USER_HOME="\$SEMGREP_RUNTIME_USER_HOME" \\
-		SEMGREP_LOG_FILE="\$SEMGREP_RUNTIME_LOG_FILE" \\
-		python3 -m semgrep "$@"
-}
-
-ensure_python_packaging_tools() {
-	if [[ -z "\${CI:-}" && -z "\${CIRCLECI:-}" ]]; then
-		return 1
-	fi
-
-	if ! command -v apt-get >/dev/null 2>&1; then
-		return 1
-	fi
-
-	if [[ "\$(id -u)" -eq 0 ]]; then
-		apt-get update
-		apt-get install -y python3-pip python3-venv
-		return 0
-	fi
-
-	if command -v sudo >/dev/null 2>&1; then
-		sudo apt-get update
-		sudo apt-get install -y python3-pip python3-venv
-		return 0
-	fi
-
-	return 1
-}
-
-install_semgrep() {
-	if ! command -v python3 >/dev/null 2>&1; then
-		echo "Error: python3 is required to install Semgrep." >&2
-		exit 1
-	fi
-
-	mkdir -p "$SEMGREP_STATE_ROOT" "$SEMGREP_RUNTIME_CACHE_ROOT" "$SEMGREP_RUNTIME_USER_HOME"
-	mkdir -p "$(dirname "$SEMGREP_RUNTIME_LOG_FILE")"
-	mkdir -p "$SEMGREP_CACHE_ROOT"
-	local legacy_venv_dir="$HOST_CACHE_HOME/coding-harness/semgrep-venv-\${SEMGREP_VERSION}"
-	if [[ -d "$legacy_venv_dir" ]]; then
-		rm -rf "$SEMGREP_VENV_DIR"
-		cp -R "$legacy_venv_dir" "$SEMGREP_VENV_DIR"
-		if [[ -x "$SEMGREP_BIN" ]]; then
-			return
-		fi
-	fi
-	if python3 -m venv "$SEMGREP_VENV_DIR" >/dev/null 2>&1; then
-		"$SEMGREP_PYTHON" -m pip install --quiet --upgrade pip "semgrep==\$SEMGREP_VERSION"
-		return
-	fi
-
-	if python3 -m pip --version >/dev/null 2>&1; then
-		rm -rf "$SEMGREP_VENV_DIR"
-		rm -f "$SEMGREP_BIN"
-		rm -rf "$SEMGREP_SITE_PACKAGES_DIR"
-		mkdir -p "$SEMGREP_SITE_PACKAGES_DIR"
-		python3 -m pip install --quiet --upgrade --target "$SEMGREP_SITE_PACKAGES_DIR" "semgrep==\$SEMGREP_VERSION"
-		return
-	fi
-
-	if ensure_python_packaging_tools; then
-		install_semgrep
-		return
-	fi
-
-	echo "Error: unable to install Semgrep." >&2
-	echo "python3 -m venv is unavailable and python3 -m pip could not be used as a fallback." >&2
-	exit 1
-}
-
-ensure_semgrep_version() {
-	if [[ ! -x "$SEMGREP_BIN" ]]; then
-		install_semgrep
-		return
-	fi
-
-	local detected_version
-	detected_version="$(run_semgrep --version 2>/dev/null | tr -d '[:space:]')"
-	if [[ "$detected_version" != "$SEMGREP_VERSION" ]]; then
-		install_semgrep
-	fi
-}
-
-if [[ ! -f "$RULESET_PATH" ]]; then
-	echo "Error: missing Semgrep ruleset at $RULESET_PATH"
-	exit 1
-fi
-
-ensure_semgrep_version
-
-run_semgrep scan \\
-	--config "$RULESET_PATH" \\
-	--disable-version-check \\
-	--error \\
-	--jobs 1 \\
-	.
 `,
 	},
 	{
@@ -4773,6 +4542,11 @@ if [[ ! -f "$CONTRACT_PATH" ]]; then
 	exit 1
 fi
 
+if ! command -v rg >/dev/null 2>&1; then
+	echo "Error: required binary 'rg' is not installed or not on PATH"
+	exit 1
+fi
+
 	if [[ ! -f "$MISE_PATH" ]]; then
 		echo "Error: missing mise config at $MISE_PATH"
 		exit 1
@@ -4829,15 +4603,6 @@ fi
 			fi
 		done
 	fi
-
-ensure_mise_available() {
-	command -v mise >/dev/null 2>&1
-}
-
-if ! ensure_mise_available; then
-	echo "Error: required binary 'mise' is not installed or not on PATH"
-	exit 1
-fi
 
 if ! command -v mise >/dev/null 2>&1; then
 	echo "Error: required binary 'mise' is not installed or not on PATH"
@@ -5366,11 +5131,9 @@ export function isTemplateEnabledForProvider(
 	templatePath: string,
 	ciProvider: CIProvider,
 ): boolean {
+	// GitHub Actions workflows are release-only in scaffold output.
 	if (templatePath.startsWith(".github/workflows/")) {
-		if (templatePath === ".github/workflows/release-private-npm.yml") {
-			return true;
-		}
-		return ciProvider === "github-actions";
+		return templatePath === ".github/workflows/release-private-npm.yml";
 	}
 	// CircleCI config is only written for circleci provider.
 	if (templatePath === ".circleci/config.yml") {

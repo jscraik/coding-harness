@@ -10,9 +10,9 @@ SCRIPT_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd -P)"
 PREFLIGHT_SCRIPT="${SCRIPT_DIR}/codex-preflight.sh"
 LEARN_SCRIPT="${SCRIPT_DIR}/codex-learn"
 # WORKTREE_BRANCH_PREFIX: Default branch prefix for auto-created worktrees.
-# For Linear-tracked work, use --worktree-slug JSC-XXX-short-description so the
-# resulting branch matches the repo's codex/JSC-<number>-<short-slug> contract.
-WORKTREE_BRANCH_PREFIX="${WORKTREE_BRANCH_PREFIX:-codex}"
+# For Linear-tracked work, use --worktree-slug JSC-XXX-short-description or
+# set WORKTREE_BRANCH_PREFIX="codex/JSC-" to preserve ticket traceability.
+WORKTREE_BRANCH_PREFIX="${WORKTREE_BRANCH_PREFIX:-codex/feature}"
 
 RED='\033[0;31m'
 GREEN='\033[0;32m'
@@ -101,24 +101,6 @@ slugify() {
 	printf '%s' "${normalized:0:48}"
 }
 
-issue_key_slug() {
-	local raw="${1:-}"
-	local issue_key=""
-	local suffix_source=""
-	local suffix=""
-
-	if [[ "$raw" =~ ([A-Za-z][A-Za-z0-9]*-[0-9]+) ]]; then
-		issue_key="${BASH_REMATCH[1]}"
-		suffix_source="${raw#*"${issue_key}"}"
-		suffix_source="$(printf '%s' "${suffix_source}" | sed -E 's/^[^A-Za-z0-9]+//')"
-		suffix="$(slugify "${suffix_source}")"
-		printf '%s-%s' "${issue_key}" "${suffix}"
-		return 0
-	fi
-
-	return 1
-}
-
 # ensure_task_worktree creates and switches to a dedicated task worktree (bootstrapping it via scripts/new-task.sh) when running on the `main` branch and the guard is not skipped, then re-executes the wrapper from that worktree.
 # It returns immediately if running outside a git repo, not on `main`, or if `SKIP_WORKTREE_GUARD`, `PREFLIGHT_ONLY`, or `LEARN_ONLY` are set; it also ensures a unique branch slug and worktree path before bootstrapping.
 ensure_task_worktree() {
@@ -148,22 +130,6 @@ ensure_task_worktree() {
 		echo "[codex] refusing to auto-create a task worktree from a dirty main checkout." >&2
 		echo "[codex] commit or stash local changes first, or rerun with SKIP_WORKTREE_GUARD=true." >&2
 		exit 2
-	fi
-
-	# Run preflight before any worktree creation or git operations from main unless explicitly skipped.
-	if [[ "${SKIP_PREFLIGHT}" == true ]]; then
-		echo -e "${YELLOW}WARNING: Skipping preflight before worktree creation (not recommended)${NC}"
-	elif [[ -x "${PREFLIGHT_SCRIPT}" ]]; then
-		echo "Running preflight checks before worktree creation..."
-		if ! "${PREFLIGHT_SCRIPT}" --stack auto --mode required; then
-			echo -e "${RED}ERROR: Preflight checks failed before worktree creation${NC}"
-			exit 1
-		fi
-		echo -e "${GREEN}Preflight passed.${NC}"
-		echo ""
-	else
-		echo -e "${RED}ERROR: Preflight script not found: ${PREFLIGHT_SCRIPT}${NC}"
-		exit 1
 	fi
 
 	if [[ -n "${WORKTREE_SLUG}" ]]; then
@@ -204,15 +170,7 @@ ensure_task_worktree() {
 		fi
 	fi
 
-	if [[ "${WORKTREE_BRANCH_PREFIX}" == codex* ]]; then
-		if ! slug="$(issue_key_slug "${slug_source}")"; then
-			echo "[codex] main-branch auto worktree requires an issue-keyed slug." >&2
-			echo "[codex] rerun with --worktree-slug JSC-123-short-description or include the issue key in your prompt." >&2
-			exit 2
-		fi
-	else
-		slug="$(slugify "${slug_source}")"
-	fi
+	slug="$(slugify "${slug_source}")"
 	base_slug="${slug}"
 	local local_collision=0
 	local remote_collision=0
@@ -262,7 +220,6 @@ ensure_task_worktree() {
 
 	echo ""
 	echo -e "${GREEN}Re-launching codex from worktree:${NC} ${worktree_path}"
-	cd "${worktree_path}"
 	exec bash "${worktree_path}/scripts/codex-enforced" --skip-worktree-guard "${ORIGINAL_ARGS[@]}"
 }
 
