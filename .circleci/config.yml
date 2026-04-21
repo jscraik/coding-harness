@@ -11,6 +11,9 @@ jobs:
         type: string
       command:
         type: string
+      skip_dependency_bootstrap:
+        type: boolean
+        default: false
     steps:
       - checkout
       - run:
@@ -101,23 +104,27 @@ jobs:
               npm install --global --prefix "$NPM_CONFIG_PREFIX" "pnpm@${required_pnpm_version}"
             fi
             pnpm --version
-      - run:
-          name: Configure pnpm store
-          command: |
-            mkdir -p "$HOME/.pnpm-store"
-            pnpm config set store-dir "$HOME/.pnpm-store"
-            pnpm store path
-      - restore_cache:
-          keys:
-            - v2-pnpm-store-{{ arch }}-{{ checksum "pnpm-lock.yaml" }}
-            - v2-pnpm-store-{{ arch }}-
-      - run:
-          name: Install dependencies
-          command: pnpm install --frozen-lockfile --prefer-offline
-      - save_cache:
-          key: v2-pnpm-store-{{ arch }}-{{ checksum "pnpm-lock.yaml" }}
-          paths:
-            - ~/.pnpm-store
+      - when:
+          condition:
+            not: << parameters.skip_dependency_bootstrap >>
+          steps:
+            - run:
+                name: Configure pnpm store
+                command: |
+                  mkdir -p "$HOME/.pnpm-store"
+                  pnpm config set store-dir "$HOME/.pnpm-store"
+                  pnpm store path
+            - restore_cache:
+                keys:
+                  - v2-pnpm-store-{{ arch }}-{{ checksum "pnpm-lock.yaml" }}
+                  - v2-pnpm-store-{{ arch }}-
+            - run:
+                name: Install dependencies
+                command: pnpm install --frozen-lockfile --prefer-offline
+            - save_cache:
+                key: v2-pnpm-store-{{ arch }}-{{ checksum "pnpm-lock.yaml" }}
+                paths:
+                  - ~/.pnpm-store
       - run:
           name: Ensure test-results directory exists
           when: always
@@ -299,6 +306,7 @@ workflows:
       - run-governance-check:
           name: security-scan
           check_name: security-scan
+          skip_dependency_bootstrap: true
           command: bash scripts/check-semgrep-full.sh
           filters:
             tags:
