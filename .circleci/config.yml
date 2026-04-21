@@ -289,7 +289,7 @@ workflows:
       - run-governance-check:
           name: consistency-drift-health
           check_name: consistency-drift-health
-          command: bash scripts/run-harness-gate.sh consistency-drift-health --json
+          command: bash scripts/run-harness-gate.sh drift-gate --mode health --json
           filters:
             tags:
               ignore: /.*/
