@@ -75,6 +75,7 @@ interface ReadinessOptions {
 		status: ReviewGateOutput["plan_traceability_status"];
 		planIds: string[];
 	};
+	policyCheckName?: string;
 }
 
 function withReadinessFields(
@@ -91,20 +92,23 @@ function withReadinessFields(
 				: "pending";
 
 	const blockers: string[] = [];
+	const policyCheckName = options.policyCheckName ?? "risk-policy-gate";
 	const planTraceabilityStatus =
 		options.planTraceability?.status ?? ("missing" as const);
 	const planIds = options.planTraceability?.planIds ?? [];
 	if (policyGateStatus === "missing") {
-		blockers.push("risk-policy-gate check run not found for current HEAD SHA");
+		blockers.push(
+			`${policyCheckName} check run not found for current HEAD SHA`,
+		);
 	}
 	if (policyGateStatus === "fail") {
 		blockers.push(
-			`risk-policy-gate check did not pass (conclusion: ${base.checkConclusion ?? "unknown"})`,
+			`${policyCheckName} check did not pass (conclusion: ${base.checkConclusion ?? "unknown"})`,
 		);
 	}
 	if (policyGateStatus === "pending" && (base.needsRerun || base.timedOut)) {
 		blockers.push(
-			"risk-policy-gate verification is incomplete for current HEAD SHA",
+			`${policyCheckName} verification is incomplete for current HEAD SHA`,
 		);
 	}
 	if (options.additionalBlockers && options.additionalBlockers.length > 0) {
@@ -122,7 +126,7 @@ function withReadinessFields(
 					score: 5,
 					level: "high",
 					rationale: [
-						"risk-policy-gate passed for the current HEAD SHA",
+						`${policyCheckName} passed for the current HEAD SHA`,
 						"PR work maps to validated plan IDs",
 						"no merge blockers detected in review gate",
 					],
@@ -132,7 +136,7 @@ function withReadinessFields(
 						score: 2,
 						level: "low",
 						rationale: [
-							"risk-policy-gate verification has not reached a terminal pass state",
+							`${policyCheckName} verification has not reached a terminal pass state`,
 							"merge confidence is reduced until blockers are resolved",
 						],
 					}
@@ -141,7 +145,7 @@ function withReadinessFields(
 							score: 2,
 							level: "low",
 							rationale: [
-								"risk-policy-gate passed but merge-readiness blockers remain",
+								`${policyCheckName} passed but merge-readiness blockers remain`,
 								"merge should remain blocked until required checks and review policies are satisfied",
 							],
 						}
@@ -149,7 +153,7 @@ function withReadinessFields(
 							score: 1,
 							level: "low",
 							rationale: [
-								"risk-policy-gate did not provide a passing result for current HEAD SHA",
+								`${policyCheckName} did not provide a passing result for current HEAD SHA`,
 								"merge should remain blocked until policy gate issues are resolved",
 							],
 						};
@@ -506,6 +510,7 @@ export async function runReviewGate(
 						},
 						{
 							additionalBlockers: planTraceability.blockers,
+							policyCheckName: options.checkName,
 							planTraceability: {
 								status: planTraceability.status,
 								planIds: planTraceability.planIds,
@@ -576,6 +581,7 @@ export async function runReviewGate(
 						},
 						{
 							additionalBlockers,
+							policyCheckName: options.checkName,
 							planTraceability: {
 								status: planTraceability.status,
 								planIds: planTraceability.planIds,
@@ -599,6 +605,7 @@ export async function runReviewGate(
 						},
 						{
 							additionalBlockers: planTraceability.blockers,
+							policyCheckName: options.checkName,
 							planTraceability: {
 								status: planTraceability.status,
 								planIds: planTraceability.planIds,
@@ -643,6 +650,7 @@ export async function runReviewGate(
 				},
 				{
 					additionalBlockers: planTraceability.blockers,
+					policyCheckName: options.checkName,
 					planTraceability: {
 						status: planTraceability.status,
 						planIds: planTraceability.planIds,

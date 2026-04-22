@@ -1021,11 +1021,6 @@ if [[ ! "$branch_prefix" =~ ^[A-Za-z0-9._/-]+$ ]]; then
 	exit 2
 fi
 
-if [[ "$branch_prefix" == "codex" ]] && [[ ! "$slug" =~ ^[a-z][a-z0-9]*-[0-9]+-[a-z0-9][a-z0-9-]*$ ]]; then
-	echo "[new-task] for codex branches, slug must start with an issue key (example: jsc-123-my-task): $slug" >&2
-	exit 2
-fi
-
 branch_name="\${branch_prefix}/\${slug}"
 resolved_base_ref="$base_ref"
 remote_base_branch=""
@@ -1212,11 +1207,14 @@ if [[ $# -eq 0 ]]; then
 	exit 2
 fi
 
-is_harness_source_repo() {
+is_harness_source_checkout() {
 	[[ -f "$REPO_ROOT/src/cli.ts" ]] || return 1
 	[[ -f "$REPO_ROOT/package.json" ]] || return 1
+	[[ -x "$REPO_ROOT/node_modules/.bin/tsx" ]] || command -v tsx >/dev/null 2>&1 || return 1
 	command -v node >/dev/null 2>&1 || return 1
+}
 
+is_canonical_harness_package() {
 	node -e '
 		const { readFileSync } = require("node:fs");
 		const packageJson = JSON.parse(readFileSync(process.argv[1], "utf8"));
@@ -1224,11 +1222,14 @@ is_harness_source_repo() {
 	' "$REPO_ROOT/package.json" >/dev/null 2>&1
 }
 
-if is_harness_source_repo; then
+if is_harness_source_checkout; then
 	if ! command -v pnpm >/dev/null 2>&1; then
 		echo "Error: pnpm is required to run the harness source CLI." >&2
 		echo "Install pnpm and retry." >&2
 		exit 1
+	fi
+	if ! is_canonical_harness_package; then
+		echo "Warning: package name does not match @brainwav/coding-harness; using repo-local source CLI." >&2
 	fi
 	exec pnpm exec tsx "$REPO_ROOT/src/cli.ts" "$@"
 fi

@@ -17,6 +17,8 @@ export interface VerifyWorkCliOptions {
 	changedOnly?: boolean;
 	strict?: boolean;
 	fast?: boolean;
+	projectGovernance?: boolean;
+	workspaceGovernance?: boolean;
 	resumeFrom?: string;
 	json?: boolean;
 	repoRoot?: string;
@@ -35,6 +37,8 @@ export interface VerifyWorkCliOptions {
  *  - `changedOnly`: include `--changed-only`
  *  - `strict`: include `--strict`
  *  - `fast`: include `--fast`
+ *  - `projectGovernance`: include `--project-governance`
+ *  - `workspaceGovernance`: include `--workspace-governance`
  *  - `resumeFrom`: include `--resume-from <gateId>`
  *  - `json`: include `--json`
  *  - `repoRoot`: include `--repo-root <resolved path>`
@@ -52,6 +56,12 @@ function buildVerifyWorkArgs(options: VerifyWorkCliOptions): string[] {
 	}
 	if (options.fast) {
 		args.push("--fast");
+	}
+	if (options.projectGovernance) {
+		args.push("--project-governance");
+	}
+	if (options.workspaceGovernance) {
+		args.push("--workspace-governance");
 	}
 	if (options.resumeFrom) {
 		args.push("--resume-from", options.resumeFrom);

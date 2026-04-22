@@ -2006,6 +2006,178 @@ describe("runInit", () => {
 			expect(wrapper.stdout).toBe("");
 		});
 
+		it("routes run-harness-gate through the repo source checkout and requires pnpm", () => {
+			writeFileSync(
+				join(tempDir, "package.json"),
+				JSON.stringify({ name: "fixture", private: true }, null, 2),
+				"utf-8",
+			);
+
+			const result = runInit(tempDir, { dryRun: false, force: false });
+			expect(result.ok).toBe(true);
+
+			mkdirSync(join(tempDir, "src"), { recursive: true });
+			writeFileSync(
+				join(tempDir, "src/cli.ts"),
+				'console.log("fixture harness source");\n',
+				"utf-8",
+			);
+
+			const fakeBin = join(tempDir, ".fake-bin");
+			const fakePnpmLog = join(tempDir, ".fake-pnpm-log");
+			mkdirSync(fakeBin, { recursive: true });
+
+			const fakeTsx = join(fakeBin, "tsx");
+			writeFileSync(
+				fakeTsx,
+				`#!/usr/bin/env bash
+set -euo pipefail
+exit 0
+`,
+				"utf-8",
+			);
+			const fakeNode = join(fakeBin, "node");
+			writeFileSync(
+				fakeNode,
+				`#!/usr/bin/env bash
+set -euo pipefail
+exit 0
+`,
+				"utf-8",
+			);
+
+			const baseEnv = {
+				...process.env,
+				PATH: `${fakeBin}:/usr/bin:/bin`,
+			};
+
+			for (const toolPath of [fakeTsx, fakeNode]) {
+				const chmod = spawnSync("chmod", ["+x", toolPath], {
+					encoding: "utf8",
+				});
+				expect(chmod.status).toBe(0);
+			}
+
+			const pnpmMissingRun = spawnSync(
+				"bash",
+				["scripts/run-harness-gate.sh", "policy-gate", "--json"],
+				{
+					cwd: tempDir,
+					encoding: "utf8",
+					env: baseEnv,
+				},
+			);
+
+			expect(pnpmMissingRun.status).toBe(1);
+			expect(pnpmMissingRun.stderr).toContain(
+				"pnpm is required to run the harness source CLI",
+			);
+			expect(pnpmMissingRun.stderr).toContain("Install pnpm and retry.");
+
+			const fakePnpm = join(fakeBin, "pnpm");
+			writeFileSync(
+				fakePnpm,
+				`#!/usr/bin/env bash
+set -euo pipefail
+printf '%s\n' "$*" >> "\${FAKE_PNPM_LOG:?}"
+exit 0
+`,
+				"utf-8",
+			);
+
+			for (const toolPath of [fakeTsx, fakeNode, fakePnpm]) {
+				const chmod = spawnSync("chmod", ["+x", toolPath], {
+					encoding: "utf8",
+				});
+				expect(chmod.status).toBe(0);
+			}
+
+			const sourceCheckoutRun = spawnSync(
+				"bash",
+				[
+					"scripts/run-harness-gate.sh",
+					"policy-gate",
+					"--max-tier",
+					"medium",
+					"--json",
+				],
+				{
+					cwd: tempDir,
+					encoding: "utf8",
+					env: {
+						...baseEnv,
+						FAKE_PNPM_LOG: fakePnpmLog,
+					},
+				},
+			);
+
+			expect(sourceCheckoutRun.status).toBe(0);
+			const fakePnpmCommandLog = readFileSync(fakePnpmLog, "utf-8");
+			expect(fakePnpmCommandLog).toContain("exec tsx");
+			expect(fakePnpmCommandLog).toContain(
+				"src/cli.ts policy-gate --max-tier medium --json",
+			);
+		});
+
+		it("falls back to mise in run-harness-gate when no source checkout or repo wrapper exists", () => {
+			const result = runInit(tempDir, { dryRun: false, force: false });
+			expect(result.ok).toBe(true);
+
+			rmSync(join(tempDir, "scripts/harness-cli.sh"), { force: true });
+
+			const fakeBin = join(tempDir, ".fake-bin");
+			const fakeMiseHarness = join(fakeBin, "mise-harness");
+			const runnerLog = join(tempDir, ".runner-log");
+			mkdirSync(fakeBin, { recursive: true });
+
+			writeFileSync(
+				join(fakeBin, "mise"),
+				`#!/usr/bin/env bash
+set -euo pipefail
+if [[ "$1" == "which" && "$2" == "harness" ]]; then
+	printf '%s\n' "\${FAKE_MISE_HARNESS:?}"
+	exit 0
+fi
+exit 1
+`,
+				"utf-8",
+			);
+			writeFileSync(
+				fakeMiseHarness,
+				`#!/usr/bin/env bash
+set -euo pipefail
+printf '%s\n' "$*" >> "\${FAKE_RUNNER_LOG:?}"
+exit 0
+`,
+				"utf-8",
+			);
+
+			for (const toolPath of [join(fakeBin, "mise"), fakeMiseHarness]) {
+				const chmod = spawnSync("chmod", ["+x", toolPath], {
+					encoding: "utf8",
+				});
+				expect(chmod.status).toBe(0);
+			}
+
+			const fallbackRun = spawnSync(
+				"bash",
+				["scripts/run-harness-gate.sh", "review-gate", "--json"],
+				{
+					cwd: tempDir,
+					encoding: "utf8",
+					env: {
+						...process.env,
+						PATH: `${fakeBin}:${process.env.PATH ?? ""}`,
+						FAKE_MISE_HARNESS: fakeMiseHarness,
+						FAKE_RUNNER_LOG: runnerLog,
+					},
+				},
+			);
+
+			expect(fallbackRun.status).toBe(0);
+			expect(readFileSync(runnerLog, "utf-8")).toContain("review-gate --json");
+		});
+
 		it("executes scaffolded check-environment with mise-first then npm fallback runner selection", () => {
 			const result = runInit(tempDir, { dryRun: false, force: false });
 			expect(result.ok).toBe(true);
@@ -2282,6 +2454,9 @@ exit 1
 
 			expect(runNewTask("HEAD~1", "commit-ish-head")).toContain(
 				"[new-task] branch: codex/commit-ish-head",
+			);
+			expect(runNewTask("HEAD", "non-issue-slug")).toContain(
+				"[new-task] branch: codex/non-issue-slug",
 			);
 			expect(runNewTask("v0.0.1", "commit-ish-tag")).toContain(
 				"[new-task] branch: codex/commit-ish-tag",

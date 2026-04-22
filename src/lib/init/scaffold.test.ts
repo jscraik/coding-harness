@@ -32,6 +32,28 @@ describe("scaffold templates resolution", () => {
 		).toBe(true);
 	});
 
+	it("keeps committed run-harness-gate.sh in parity with scaffold template", () => {
+		const tempDir = mkdtempSync(join(tmpdir(), "harness-scaffold-test-"));
+		tempDirs.push(tempDir);
+		const template = TEMPLATES.find(
+			(candidate) => candidate.path === "scripts/run-harness-gate.sh",
+		);
+		expect(template).toBeDefined();
+
+		const context = createTemplateRenderContext(tempDir, "circleci");
+		const rendered = template!
+			.render("pnpm", context)
+			.replace(/\r\n/g, "\n")
+			.trim();
+		const committed = readFileSync(
+			join(process.cwd(), "scripts/run-harness-gate.sh"),
+			"utf-8",
+		)
+			.replace(/\r\n/g, "\n")
+			.trim();
+		expect(committed).toBe(rendered);
+	});
+
 	it("includes the release workflow for all CI providers", () => {
 		const circleciTemplates = getTemplatesForProvider("circleci");
 		const ghaTemplates = getTemplatesForProvider("github-actions");

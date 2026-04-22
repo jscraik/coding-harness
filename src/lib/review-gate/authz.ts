@@ -1,5 +1,5 @@
 import { existsSync, readFileSync } from "node:fs";
-import { resolve } from "node:path";
+import { dirname, relative, resolve } from "node:path";
 import { loadContract } from "../contract/loader.js";
 import type { HarnessContract, PilotAuthzPolicy } from "../contract/types.js";
 import { DEFAULT_PILOT_AUTHZ_POLICY } from "../contract/types.js";
@@ -68,11 +68,18 @@ function matchesPattern(value: string, patterns: string[]): boolean {
 			return true;
 		}
 
-		// Convert glob pattern to regex
+		// Convert glob pattern to regex while escaping all other regex metacharacters.
 		const regexPattern = pattern
-			.replace(/\*\*/g, "<<<DOUBLE_STAR>>>")
-			.replace(/\*/g, "[^/]*")
-			.replace(/<<<DOUBLE_STAR>>>/g, ".*");
+			.split("**")
+			.map((doubleStarSegment) =>
+				doubleStarSegment
+					.split("*")
+					.map((singleStarSegment) =>
+						singleStarSegment.replace(/[|\\{}()[\]^$+?.]/g, "\\$&"),
+					)
+					.join("[^/]*"),
+			)
+			.join(".*");
 
 		const regex = new RegExp(`^${regexPattern}$`);
 		if (regex.test(value)) {
@@ -127,11 +134,15 @@ async function getTokenScopes(): Promise<string[]> {
 export async function runCheckAuthz(
 	options: CheckAuthzOptions,
 ): Promise<CheckAuthzResult> {
+	const contractPathInput = options.contractPath ?? "harness.contract.json";
+	const resolvedContractPath = resolve(contractPathInput);
+	const contractRoot = dirname(resolvedContractPath);
+	const contractPath = relative(contractRoot, resolvedContractPath);
+
 	// Load contract
 	let contract: HarnessContract;
 	try {
-		const contractPath = options.contractPath ?? "harness.contract.json";
-		contract = loadContract(contractPath);
+		contract = loadContract(contractPath, contractRoot);
 	} catch (e) {
 		return {
 			ok: false,
@@ -216,7 +227,7 @@ export async function runCheckAuthz(
 
 	// Check that artifacts/pilot/ is excluded from git tracking
 	// to prevent pilot artifacts from being accidentally committed.
-	const gitignorePath = resolve(process.cwd(), ".gitignore");
+	const gitignorePath = resolve(contractRoot, ".gitignore");
 	if (existsSync(gitignorePath)) {
 		try {
 			const gitignoreContent = readFileSync(gitignorePath, "utf-8");

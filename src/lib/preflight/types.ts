@@ -27,6 +27,37 @@ export const EXIT_CODES = {
  */
 export type PreflightSeverity = "error" | "warning" | "info";
 
+export type PreflightMetricImpactDeclared =
+	| "direct_reduction"
+	| "path_strengthening"
+	| "none";
+
+export type PreflightSurfaceClass = "core" | "adjacent" | "experimental";
+
+/**
+ * Admission declaration passed to preflight gate for north-star accountability.
+ */
+export interface PreflightAdmissionDeclaration {
+	north_star_metric: string;
+	primary_bottleneck: string;
+	affected_surface_ids: string[];
+	affected_surface_classes: PreflightSurfaceClass[];
+	policy_surface_delta: number;
+	manual_glue_delta: number;
+	metric_impact_declared: PreflightMetricImpactDeclared;
+	evidence_links: string[];
+	why_this_improves_throughput_or_reliability: string;
+}
+
+/**
+ * Compact summary emitted by preflight for downstream gate normalisation.
+ */
+export interface PreflightNorthStarSummary {
+	metric: string;
+	primaryBottleneck: string;
+	impactDeclared: PreflightMetricImpactDeclared;
+}
+
 /**
  * Individual preflight check result
  */
@@ -65,6 +96,8 @@ export interface PreflightGateOptions {
 	maxTier?: RiskTier;
 	/** Head SHA for determinism checks (optional) */
 	headSha?: string;
+	/** Admission declaration payload for north-star accountability checks */
+	admission?: PreflightAdmissionDeclaration;
 }
 
 /**
@@ -85,6 +118,10 @@ export interface PreflightGateResult {
 	};
 	/** Risk tier if determined */
 	riskTier?: RiskTier | undefined;
+	/** Optional north-star summary for reporting surfaces */
+	northStarSummary?: PreflightNorthStarSummary | undefined;
+	/** Parsed admission declaration echoed in gate outputs */
+	admissionDeclaration?: PreflightAdmissionDeclaration | undefined;
 	/** Decisions emitted by pre/post gate extension hooks */
 	hookDecisions?: PreflightHookDecision[] | undefined;
 }

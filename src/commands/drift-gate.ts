@@ -778,7 +778,26 @@ export function runDriftGate(options: DriftGateOptions = {}): DriftGateResult {
 		}
 	}
 
-	const exitCode = mode === "health" && report.outcome === "error" ? 2 : 0;
+	const hasHealthBlockingFinding = report.findings.some(
+		(finding) =>
+			finding.severity === "error" ||
+			(finding.surface === "status" && finding.rule_result === "fail"),
+	);
+	if (
+		mode === "health" &&
+		report.outcome !== "error" &&
+		hasHealthBlockingFinding
+	) {
+		report.status = "blocked";
+	}
+	const exitCode =
+		mode !== "health"
+			? 0
+			: report.outcome === "error"
+				? 2
+				: hasHealthBlockingFinding
+					? 1
+					: 0;
 	return { report, exitCode };
 }
 

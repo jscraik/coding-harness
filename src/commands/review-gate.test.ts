@@ -228,6 +228,110 @@ describe("runReviewGate", () => {
 		}
 	});
 
+	it.each([
+		{
+			name: "missing",
+			checkName: "policy-surface-check",
+			options: {},
+			checkRuns: [],
+			expectedBlocker:
+				"policy-surface-check check run not found for current HEAD SHA",
+			expectedRationale:
+				"policy-surface-check did not provide a passing result for current HEAD SHA",
+		},
+		{
+			name: "fail",
+			checkName: "policy-surface-check",
+			options: {},
+			checkRuns: [
+				{
+					id: 1,
+					name: "policy-surface-check",
+					status: "completed",
+					conclusion: "failure",
+					head_sha: validSha,
+				},
+			] satisfies CheckRun[],
+			expectedBlocker:
+				"policy-surface-check check did not pass (conclusion: failure)",
+			expectedRationale:
+				"policy-surface-check did not provide a passing result for current HEAD SHA",
+		},
+		{
+			name: "pending timeout",
+			checkName: "policy-surface-check",
+			options: {
+				reviewPolicy: {
+					timeoutSeconds: 0,
+					timeoutAction: "warn" as const,
+					enforceReviewerIndependence: true,
+				},
+			},
+			checkRuns: [
+				{
+					id: 1,
+					name: "policy-surface-check",
+					status: "in_progress",
+					conclusion: null,
+					head_sha: validSha,
+				},
+			] satisfies CheckRun[],
+			expectedBlocker:
+				"policy-surface-check verification is incomplete for current HEAD SHA",
+			expectedRationale:
+				"policy-surface-check verification has not reached a terminal pass state",
+		},
+	])(
+		"uses the configured check name in blocker and rationale text for $name states",
+		async ({
+			checkName,
+			options,
+			checkRuns,
+			expectedBlocker,
+			expectedRationale,
+		}) => {
+			mockLoadContract.mockReturnValue({
+				version: "1.0",
+				riskTierRules: {},
+				reviewPolicy: {
+					timeoutSeconds: 600,
+					timeoutAction: "fail",
+					enforceReviewerIndependence: true,
+					...(options.reviewPolicy ?? {}),
+				},
+			});
+			mockGitHubClient.mockImplementation(
+				() =>
+					({
+						getPullRequest: vi.fn().mockResolvedValue({
+							number: defaultOptions.prNumber,
+							title: "Traceability hardening",
+							body: "- Plan IDs: `feat-review-gate-traceability`",
+							user: { login: "coding-actor" },
+							head: { sha: validSha, ref: "feature/test" },
+						}),
+						listPullRequestFiles: vi
+							.fn()
+							.mockResolvedValue([{ filename: "src/commands/review-gate.ts" }]),
+						listCheckRunsForRef: vi.fn().mockResolvedValue(checkRuns),
+					}) as unknown as GitHubClient,
+			);
+
+			const result = await runReviewGate({
+				...defaultOptions,
+				checkName,
+			});
+
+			expect(result.ok).toBe(true);
+			if (result.ok) {
+				expect(result.output.blockers).toContain(expectedBlocker);
+				expect(result.output.confidence_rubric.rationale).toContain(
+					expectedRationale,
+				);
+			}
+		},
+	);
+
 	it("returns verified when check run is completed with success", async () => {
 		const mockCheckRuns: CheckRun[] = [
 			{

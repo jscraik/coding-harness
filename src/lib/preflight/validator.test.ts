@@ -2,6 +2,7 @@ import { chmodSync, mkdirSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { delimiter, join } from "node:path";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
+import type { PreflightAdmissionDeclaration } from "./types.js";
 import { runPreflightGate } from "./validator.js";
 
 describe("runPreflightGate", () => {
@@ -127,6 +128,40 @@ describe("runPreflightGate", () => {
 			"Skipped: no contract or files provided",
 		);
 		expect(result.riskTier).toBeUndefined();
+	});
+
+	it("echoes north-star admission summary fields in the preflight result", async () => {
+		writeFileSync(
+			"harness.contract.json",
+			JSON.stringify({
+				version: "1.0",
+			}),
+		);
+
+		const admission: PreflightAdmissionDeclaration = {
+			north_star_metric: "pr_lead_time",
+			primary_bottleneck: "review_rework_loop",
+			affected_surface_ids: ["preflight-gate"],
+			affected_surface_classes: ["core"],
+			policy_surface_delta: 0,
+			manual_glue_delta: -1,
+			metric_impact_declared: "path_strengthening" as const,
+			evidence_links: ["docs/roadmap/north-star.md"],
+			why_this_improves_throughput_or_reliability:
+				"Carries the north-star declaration into downstream gate outputs.",
+		};
+
+		const result = await runPreflightGate({
+			admission,
+		});
+
+		expect(result.passed).toBe(true);
+		expect(result.northStarSummary).toEqual({
+			metric: "pr_lead_time",
+			primaryBottleneck: "review_rework_loop",
+			impactDeclared: "path_strengthening",
+		});
+		expect(result.admissionDeclaration).toEqual(admission);
 	});
 
 	it("short-circuits native checks when pre hook skip-all-checks is enabled", async () => {

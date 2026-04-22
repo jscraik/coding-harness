@@ -311,7 +311,14 @@ export async function runPreflightGate(
 			message: contractLoad.errorMessage,
 			durationMs: contractLoad.durationMs,
 		});
-		return buildPreflightResult(false, checks, start, undefined, hookDecisions);
+		return buildPreflightResult(
+			false,
+			checks,
+			start,
+			undefined,
+			hookDecisions,
+			options.admission,
+		);
 	}
 	const contract = contractLoad.contract;
 	const extensions = contract?.gateExtensions?.preflightGate;
@@ -326,6 +333,7 @@ export async function runPreflightGate(
 			start,
 			riskTier,
 			hookDecisions,
+			options.admission,
 		);
 	}
 
@@ -354,7 +362,14 @@ export async function runPreflightGate(
 
 	const passed = evaluatePass(checks, options.strict === true);
 
-	return buildPreflightResult(passed, checks, start, riskTier, hookDecisions);
+	return buildPreflightResult(
+		passed,
+		checks,
+		start,
+		riskTier,
+		hookDecisions,
+		options.admission,
+	);
 }
 
 function loadPreflightContract(contractPath: string): {
@@ -420,6 +435,7 @@ function buildPreflightResult(
 	start: number,
 	riskTier: RiskTier | undefined,
 	hookDecisions: PreflightHookDecision[],
+	admission: PreflightGateOptions["admission"] = undefined,
 ): PreflightGateResult {
 	const failedChecks = checks.filter((check) => !check.passed);
 	const warningChecks = failedChecks.filter(
@@ -437,6 +453,14 @@ function buildPreflightResult(
 			durationMs: Date.now() - start,
 		},
 		riskTier,
+		northStarSummary: admission
+			? {
+					metric: admission.north_star_metric,
+					primaryBottleneck: admission.primary_bottleneck,
+					impactDeclared: admission.metric_impact_declared,
+				}
+			: undefined,
+		admissionDeclaration: admission,
 		hookDecisions: hookDecisions.length > 0 ? hookDecisions : undefined,
 	};
 }
