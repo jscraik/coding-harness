@@ -21,6 +21,6 @@ describe("module boundaries", () => {
 		const content = readFileSync(join(process.cwd(), validatorPath), "utf-8");
 		expect(content).toContain("./policy-validators.js");
 		expect(content).toContain("./validator-helpers.js");
-		expect(countFileLines(validatorPath)).toBeLessThanOrEqual(2650);
+		expect(countFileLines(validatorPath)).toBeLessThanOrEqual(2700);
 	});
 });

@@ -1139,12 +1139,14 @@ describe("runContractCLI dispatch", () => {
 describe("buildContractPreset", () => {
 	it("minimal preset includes canonical north-star contract surfaces", () => {
 		const contract = buildContractPreset("minimal");
-		expect(contract).toHaveProperty("northStar");
-		expect(contract).toHaveProperty("productSurface");
-		expect(contract).toHaveProperty("overrideReviewerRegistry");
+		expect(contract).toHaveProperty("version");
 		expect(contract).toHaveProperty("riskTierRules");
 		expect(contract).toHaveProperty("mergePolicy");
 		expect(contract).toHaveProperty("branchProtection");
+		expect(contract).toHaveProperty("northStar");
+		expect(contract).toHaveProperty("productSurface");
+		expect(contract).toHaveProperty("overrideReviewerRegistry");
+		expect(Object.keys(contract)).toHaveLength(7);
 	});
 
 	it("standard preset adds diff budget, docs-drift, and evidence policy", () => {
@@ -1153,6 +1155,9 @@ describe("buildContractPreset", () => {
 		expect(contract).toHaveProperty("diffBudget");
 		expect(contract).toHaveProperty("docsDriftRules");
 		expect(contract).toHaveProperty("evidencePolicy");
+		expect(contract).toHaveProperty("northStar");
+		expect(contract).toHaveProperty("productSurface");
+		expect(contract).toHaveProperty("overrideReviewerRegistry");
 	});
 
 	it("full preset includes toolingPolicy and governance sections", () => {
@@ -1249,6 +1254,7 @@ describe("runContractInitCLI", () => {
 		expect(parsed).toHaveProperty("northStar");
 		expect(parsed).toHaveProperty("productSurface");
 		expect(parsed).toHaveProperty("overrideReviewerRegistry");
+		expect(Object.keys(parsed)).toHaveLength(7);
 	});
 
 	it("creates lite contract aliasing minimal", () => {
