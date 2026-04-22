@@ -178,11 +178,18 @@ workflows:
             branch_name="$(gh pr view "$pr_ref" --json headRefName --jq .headRefName)"
             pr_title="$(gh pr view "$pr_ref" --json title --jq .title)"
             pr_body="$(gh pr view "$pr_ref" --json body --jq .body)"
-            bash scripts/run-harness-gate.sh linear-gate \
-              --branch "$branch_name" \
-              --pr-title "$pr_title" \
-              --pr-body "$pr_body" \
+            linear_gate_args=(
+              --pr-title "$pr_title"
+              --pr-body "$pr_body"
               --json
+            )
+            if [[ "$branch_name" =~ ^codex/pr[0-9]+($|[-/]) ]]; then
+              echo "linear-gate: allowing missing branch linkage for split PR branch '$branch_name'"
+              linear_gate_args=(--allow-missing-branch "${linear_gate_args[@]}")
+            else
+              linear_gate_args=(--branch "$branch_name" "${linear_gate_args[@]}")
+            fi
+            bash scripts/run-harness-gate.sh linear-gate "${linear_gate_args[@]}"
           filters:
             tags:
               ignore: /.*/
