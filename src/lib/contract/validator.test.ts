@@ -299,6 +299,21 @@ describe("validateContract", () => {
 			expect(result.data?.productSurface?.surfaces).toHaveLength(2);
 		});
 
+		it("rejects productSurface registries with no registered surfaces", () => {
+			const result = validateContract(
+				withCanonicalNorthStarSurfaces({
+					version: "1.5.0",
+					productSurface: {
+						surfaces: [],
+					},
+				}),
+			);
+
+			expect(result.success).toBe(false);
+			expect(result.errors[0]?.path).toBe("productSurface");
+			expect(result.errors[0]?.code).toBe(ValidationErrorCode.INVALID_VALUE);
+		});
+
 		it("rejects overrideReviewerRegistry without an active trusted reviewer", () => {
 			const result = validateContract(
 				withCanonicalNorthStarSurfaces({
