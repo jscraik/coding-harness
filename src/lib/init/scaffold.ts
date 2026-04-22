@@ -1095,9 +1095,9 @@ if [[ ! "$branch_prefix" =~ ^[A-Za-z0-9._/-]+$ ]]; then
 	exit 2
 fi
 
-if [[ "$branch_prefix" == codex* ]]; then
+if [[ "$branch_prefix" == ${AGENT_BRANCH_PREFIX}* ]]; then
 	if [[ ! "$slug" =~ ^[A-Za-z][A-Za-z0-9]*-[0-9]+-[a-z0-9][a-z0-9-]*$ ]]; then
-		echo "[new-task] for codex branches, slug must start with an issue key (example: JSC-123-my-task): $slug" >&2
+		echo "[new-task] for ${AGENT_BRANCH_PREFIX} branches, slug must start with an issue key (example: JSC-123-my-task): $slug" >&2
 		exit 2
 	fi
 elif [[ ! "$slug" =~ ^[a-z0-9][a-z0-9-]*$ ]]; then
@@ -1312,7 +1312,8 @@ if is_harness_source_repo; then
 	exec pnpm exec tsx "$REPO_ROOT/src/cli.ts" "$@"
 fi
 
-if [[ -f "$REPO_ROOT/scripts/harness-cli.sh" && -r "$REPO_ROOT/scripts/harness-cli.sh" ]]; then
+if [[ -f "$REPO_ROOT/scripts/harness-cli.sh" && -x "$REPO_ROOT/scripts/harness-cli.sh" ]] && \
+   [[ -f "$REPO_ROOT/node_modules/@brainwav/coding-harness/dist/cli.js" ]]; then
 	exec bash "$REPO_ROOT/scripts/harness-cli.sh" "$@"
 fi
 
@@ -2100,7 +2101,12 @@ export const TEMPLATES: Template[] = [
 					},
 					docsDriftRules: {},
 					branchProtection: {
-						requiredChecks: [...getBranchProtectionRequiredChecks(context)],
+						requiredChecks: [
+							...getNormalizedRequiredChecks(
+								context.ciProvider ?? DEFAULT_CI_PROVIDER,
+								context,
+							),
+						],
 						restrictDeletions: true,
 						blockForcePushes: true,
 						requireLinearHistory: true,
@@ -2951,7 +2957,10 @@ jobs:
 			);
 			const localExecCommand = renderLocalHarnessExecCommand(pm);
 			const requiredChecksList = formatRequiredChecksBulleted(
-				getBranchProtectionRequiredChecks(context),
+				getNormalizedRequiredChecks(
+					context.ciProvider ?? DEFAULT_CI_PROVIDER,
+					context,
+				),
 				"  - ",
 			);
 			const reviewArtifactsLines = `- CodeRabbit review artifact (URL, report, or comment reference).
