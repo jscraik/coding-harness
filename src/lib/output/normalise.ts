@@ -307,6 +307,7 @@ function adaptDriftFinding(f: DriftFinding): GateFinding {
  * Normalise a DriftGateResult to canonical GateResult.
  * Status mapping:
  *   report.outcome === "error" → "fail"
+ *   report.status  === "blocked" → "fail"
  *   report.status  === "partial" → "warn"
  *   otherwise → "pass"
  */
@@ -317,7 +318,7 @@ export function normaliseDriftGateResult(result: DriftGateResult): GateResult {
 	const findings = result.report.findings.map(adaptDriftFinding);
 
 	let status: GateResult["status"];
-	if (result.report.outcome === "error") {
+	if (result.report.outcome === "error" || result.report.status === "blocked") {
 		status = "fail";
 	} else if (result.report.status === "partial") {
 		status = "warn";

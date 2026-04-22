@@ -6,8 +6,8 @@ import {
 	writeFileSync,
 } from "node:fs";
 import { dirname, join } from "node:path";
-import { afterEach, describe, expect, it } from "vitest";
-import { runDriftGate } from "./drift-gate.js";
+import { afterEach, describe, expect, it, vi } from "vitest";
+import { runDriftGate, runDriftGateCLI } from "./drift-gate.js";
 
 function write(path: string, content: string): void {
 	mkdirSync(dirname(path), { recursive: true });
@@ -370,5 +370,91 @@ describe("drift-gate command", () => {
 		expect(statusFinding?.fix).toBeDefined();
 		expect(statusFinding?.fix?.manual).toContain("agent-first-status.md");
 		expect(statusFinding?.fix?.suppressible).toBe(true);
+	});
+
+	it("CLI emits normalised GateResult JSON when --json is set", () => {
+		const root = join(process.cwd(), "artifacts", "drift-gate-cli-json");
+		roots.push(root);
+		createRepoFixture(root);
+
+		const stdoutSpy = vi
+			.spyOn(process.stdout, "write")
+			.mockImplementation(() => true);
+		try {
+			const exitCode = runDriftGateCLI({
+				repoRoot: root,
+				mode: "advisory",
+				json: true,
+				seedBaseline: false,
+			});
+			expect(exitCode).toBe(0);
+			expect(stdoutSpy).toHaveBeenCalledTimes(1);
+			const payload = JSON.parse(String(stdoutSpy.mock.calls[0]?.[0])) as {
+				gate: string;
+				status: string;
+				findings: unknown[];
+			};
+			expect(payload.gate).toBe("drift-gate");
+			expect(payload.status).toBe("warn");
+			expect(Array.isArray(payload.findings)).toBe(true);
+		} finally {
+			stdoutSpy.mockRestore();
+		}
+	});
+
+	it("CLI returns health-mode exit code and human summary output", () => {
+		const root = join(process.cwd(), "artifacts", "drift-gate-cli-human");
+		roots.push(root);
+		createRepoFixture(root);
+		write(
+			join(root, "artifacts/consistency-gate/consistency-baseline-latest.json"),
+			JSON.stringify({ wrong: true }, null, 2),
+		);
+
+		const infoSpy = vi.spyOn(console, "info").mockImplementation(() => {});
+		try {
+			const exitCode = runDriftGateCLI({
+				repoRoot: root,
+				mode: "health",
+			});
+			expect(exitCode).toBe(2);
+			expect(infoSpy).toHaveBeenCalled();
+			const firstLine = String(infoSpy.mock.calls[0]?.[0] ?? "");
+			expect(firstLine).toContain("drift-gate (health) blocked");
+		} finally {
+			infoSpy.mockRestore();
+		}
+	});
+
+	it("health-mode JSON reports fail for blocking status-surface drift", () => {
+		const root = join(process.cwd(), "artifacts", "drift-gate-cli-health-json");
+		roots.push(root);
+		createRepoFixture(root);
+		rmSync(join(root, "docs/roadmap/agent-first-status.md"));
+
+		const stdoutSpy = vi
+			.spyOn(process.stdout, "write")
+			.mockImplementation(() => true);
+		try {
+			const exitCode = runDriftGateCLI({
+				repoRoot: root,
+				mode: "health",
+				json: true,
+			});
+			expect(exitCode).toBe(1);
+			expect(stdoutSpy).toHaveBeenCalledTimes(1);
+			const payload = JSON.parse(String(stdoutSpy.mock.calls[0]?.[0])) as {
+				status: string;
+				findings: Array<{ id: string }>;
+			};
+			expect(payload.status).toBe("fail");
+			expect(
+				payload.findings.some((finding) =>
+					finding.id.includes("status.matrix.missing"),
+				),
+			).toBe(true);
+		} finally {
+			stdoutSpy.mockRestore();
+		}
 	});
 });

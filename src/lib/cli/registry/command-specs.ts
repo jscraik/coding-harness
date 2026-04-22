@@ -59,7 +59,7 @@ import {
 	runRemediateCLI,
 } from "../../../commands/remediate.js";
 import { runReplayCLI } from "../../../commands/replay.js";
-import { runReviewGateCLI } from "../../../commands/review-gate.js";
+import type { runReviewGateCLI } from "../../../commands/review-gate.js";
 import { runRiskTierCLI } from "../../../commands/risk-tier.js";
 import { runSearchCLI } from "../../../commands/search.js";
 import { runSilentErrorDetectorCLI } from "../../../commands/silent-error.js";
@@ -578,7 +578,9 @@ export const COMMAND_SPECS: CommandSpec[] = [
 			const contractArg = getFlagValue(args, contractIndex);
 			if (contractArg !== undefined) options.contractPath = contractArg;
 
-			return runReviewGateCLI(options);
+			return import("../../../commands/review-gate.js").then(
+				({ runReviewGateCLI }) => runReviewGateCLI(options),
+			);
 		},
 	},
 	{

@@ -20,7 +20,7 @@ const NON_WORKFLOW_REQUIRED_CHECK_SET = new Set<string>(
 	NON_WORKFLOW_REQUIRED_CHECKS,
 );
 
-const CIRCLECI_JOB_NAMES = new Set<string>([
+export const CIRCLECI_JOB_NAME_CHECK_NAMES = [
 	"lint",
 	"typecheck",
 	"test",
@@ -35,7 +35,9 @@ const CIRCLECI_JOB_NAMES = new Set<string>([
 	"risk-policy-gate",
 	"consistency-drift-health",
 	"pr-template",
-]);
+] as const;
+
+const CIRCLECI_JOB_NAMES = new Set<string>(CIRCLECI_JOB_NAME_CHECK_NAMES);
 
 const GOVERNANCE_GATE_IDS = new Set<string>([
 	"pr-template",
@@ -347,6 +349,7 @@ export const ECOSYSTEM_PROFILES = {
 		"audit",
 		"check",
 		"memory",
+		"security-scan",
 		"CodeRabbit",
 	] as const,
 

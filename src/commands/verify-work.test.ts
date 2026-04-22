@@ -53,6 +53,7 @@ printf '%s\\n' "$HARNESS_VERIFY_WORK_NO_DELEGATE" > "${envLogPath}"
 			fast: true,
 			strict: true,
 			changedOnly: true,
+			projectGovernance: true,
 			resumeFrom: "validate-codestyle-fast",
 			json: true,
 		});
@@ -62,6 +63,7 @@ printf '%s\\n' "$HARNESS_VERIFY_WORK_NO_DELEGATE" > "${envLogPath}"
 		const args = readFileSync(argsLogPath, "utf-8").trim().split("\n");
 		expect(args).toContain("--changed-only");
 		expect(args).toContain("--fast");
+		expect(args).toContain("--project-governance");
 		expect(args).toContain("--strict");
 		expect(args).toContain("--json");
 		const resumeFromFlagIndex = args.indexOf("--resume-from");
@@ -70,6 +72,34 @@ printf '%s\\n' "$HARNESS_VERIFY_WORK_NO_DELEGATE" > "${envLogPath}"
 		const repoRootFlagIndex = args.indexOf("--repo-root");
 		expect(repoRootFlagIndex).toBeGreaterThanOrEqual(0);
 		expect(args[repoRootFlagIndex + 1]).toBe(repoRoot);
+	});
+
+	it("passes workspace governance through to the wrapper", () => {
+		const scriptsDir = join(repoRoot, "scripts");
+		mkdirSync(scriptsDir, { recursive: true });
+
+		const wrapperPath = join(scriptsDir, "verify-work.sh");
+		const argsLogPath = join(repoRoot, "args-workspace-governance.log");
+
+		writeFileSync(
+			wrapperPath,
+			`#!/usr/bin/env bash
+set -euo pipefail
+printf '%s\\n' "$@" > "${argsLogPath}"
+`,
+			"utf-8",
+		);
+		chmodSync(wrapperPath, 0o755);
+
+		const exitCode = runVerifyWorkCLI({
+			repoRoot,
+			workspaceGovernance: true,
+		});
+
+		expect(exitCode).toBe(EXIT_CODES.SUCCESS);
+		const args = readFileSync(argsLogPath, "utf-8").trim().split("\n");
+		expect(args).toContain("--workspace-governance");
+		expect(args).not.toContain("--project-governance");
 	});
 
 	it("maps SIGTERM termination to the conventional signal exit code", () => {
