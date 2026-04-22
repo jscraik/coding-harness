@@ -364,6 +364,21 @@ describe("run", () => {
 		);
 		expect(exitSpy).not.toHaveBeenCalled();
 	});
+
+	it("prints top-level help when modifier flags precede --help", () => {
+		const exitSpy = vi.spyOn(process, "exit").mockImplementation(((
+			code?: number,
+		) => {
+			throw new Error(`EXIT_${String(code)}`);
+		}) as never);
+		const infoSpy = vi.spyOn(console, "info").mockImplementation(() => {});
+
+		expect(() => run(["--all", "--help"])).not.toThrow();
+		expect(infoSpy).toHaveBeenCalledWith(
+			expect.stringContaining("Usage: harness"),
+		);
+		expect(exitSpy).not.toHaveBeenCalled();
+	});
 });
 
 describe("isDirectExecution", () => {

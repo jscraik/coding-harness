@@ -14,6 +14,9 @@ import { deriveRequiredCheckMetadata } from "../ci/required-check-metadata.js";
 import {
 	DEFAULT_CI_PROVIDER_POLICY,
 	DEFAULT_CONTRACT,
+	NORTH_STAR_DECISION_QUESTION_SPECS,
+	NORTH_STAR_PRIMARY_BOTTLENECK,
+	NORTH_STAR_PRIMARY_METRIC,
 } from "../contract/types.js";
 import {
 	BRANCH_PROTECTION_REQUIRED_CHECKS,
@@ -2101,6 +2104,77 @@ ${transitionRows}
 `;
 }
 
+function renderScaffoldNorthStar(
+	context: TemplateRenderContext,
+): NonNullable<typeof DEFAULT_CONTRACT.northStar> {
+	const projectName = context.projectName?.trim() || "This repository";
+	return {
+		mission: `${projectName} uses Coding Harness to reduce PR lead time while preserving safe, evidence-backed human oversight.`,
+		primaryMetric: NORTH_STAR_PRIMARY_METRIC,
+		primaryBottleneck: NORTH_STAR_PRIMARY_BOTTLENECK,
+		autonomyBoundary:
+			"Low and medium-risk changes may be automated when evidence is deterministic and rollback remains explicit; high-risk changes remain human-mediated.",
+		safetyFloor: [
+			"deterministic evidence over intuition",
+			"strict current-head SHA discipline",
+			"bounded auto-remediation instead of open-ended write access",
+			"explicit rollback paths for higher-risk automation",
+			"independent review surfaces that do not collapse back into self-approval",
+		],
+		nonGoals: [
+			"governance surface area as a proxy for progress",
+			"feature count without measurable throughput or reliability benefit",
+			"manual coordination steps that recur every run or every PR",
+			"broad autonomy expansion without evidence that the review or rework loop got cheaper",
+		],
+		decisionQuestions: NORTH_STAR_DECISION_QUESTION_SPECS.map((question) => ({
+			id: question.id,
+			prompt: question.prompt,
+		})),
+	};
+}
+
+function renderScaffoldProductSurface(): NonNullable<
+	typeof DEFAULT_CONTRACT.productSurface
+> {
+	return {
+		surfaces: [
+			{
+				surfaceId: "automation-control-plane",
+				surfaceType: "policy",
+				class: "core",
+				owner: "maintainers",
+				northStarContribution:
+					"Keeps delivery automation aligned to PR lead-time outcomes.",
+				manualGlueReductionClaim:
+					"Converts recurring reviewer reminders into explicit policy checks.",
+				reliabilityContribution:
+					"Centralizes automation guardrails in one deterministic contract surface.",
+				evidenceReference: "harness.contract.json",
+				ownedPaths: ["harness.contract.json"],
+				lastReviewedAt: "2026-04-22",
+			},
+		],
+	};
+}
+
+function renderScaffoldOverrideReviewerRegistry(
+	context: TemplateRenderContext,
+): NonNullable<typeof DEFAULT_CONTRACT.overrideReviewerRegistry> {
+	const projectName = context.projectName?.trim() || "Project";
+	return {
+		trustedReviewers: [
+			{
+				reviewerId: "project-maintainers",
+				reviewerType: "team",
+				signatureRef: "refs/reviewers/project-maintainers",
+				displayName: `${projectName} Maintainers`,
+				status: "active",
+			},
+		],
+	};
+}
+
 export const TEMPLATES: Template[] = [
 	{
 		path: "harness.contract.json",
@@ -2172,9 +2246,10 @@ export const TEMPLATES: Template[] = [
 						allowedTypes: ["png", "jpeg"],
 						maxFileSizeBytes: 1048576,
 					},
-					northStar: DEFAULT_CONTRACT.northStar,
-					productSurface: DEFAULT_CONTRACT.productSurface,
-					overrideReviewerRegistry: DEFAULT_CONTRACT.overrideReviewerRegistry,
+					northStar: renderScaffoldNorthStar(context),
+					productSurface: renderScaffoldProductSurface(),
+					overrideReviewerRegistry:
+						renderScaffoldOverrideReviewerRegistry(context),
 					diffBudget: {
 						maxFiles: 10,
 						maxNetLOC: 400,

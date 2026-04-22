@@ -255,6 +255,39 @@ describe("scaffold templates resolution", () => {
 		expect(rendered.issueTrackingPolicy?.provider).toBe("linear");
 	});
 
+	it("scaffolds neutral north-star and trusted reviewer defaults", () => {
+		const tempDir = mkdtempSync(join(tmpdir(), "harness-scaffold-test-"));
+		tempDirs.push(tempDir);
+		writeFileSync(
+			join(tempDir, "package.json"),
+			JSON.stringify({
+				name: "demo-repo",
+				repository: "https://github.com/example/demo-repo.git",
+			}),
+		);
+
+		const context = createTemplateRenderContext(tempDir, "circleci");
+		const contractTemplate = TEMPLATES.find(
+			(template) => template.path === "harness.contract.json",
+		);
+		expect(contractTemplate).toBeDefined();
+
+		const rendered = JSON.parse(contractTemplate!.render("pnpm", context));
+		expect(rendered.northStar?.mission).toContain("demo-repo");
+		expect(rendered.northStar?.mission).not.toContain(
+			"Coding Harness exists to let humans steer",
+		);
+		expect(
+			rendered.overrideReviewerRegistry?.trustedReviewers?.[0]?.reviewerId,
+		).toBe("project-maintainers");
+		expect(
+			rendered.overrideReviewerRegistry?.trustedReviewers?.[0]?.signatureRef,
+		).toBe("refs/reviewers/project-maintainers");
+		expect(rendered.productSurface?.surfaces?.[0]?.ownedPaths).toContain(
+			"harness.contract.json",
+		);
+	});
+
 	it("omits the linear contact link when tracker mode is github", () => {
 		const tempDir = mkdtempSync(join(tmpdir(), "harness-scaffold-test-"));
 		tempDirs.push(tempDir);

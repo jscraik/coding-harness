@@ -152,6 +152,9 @@ export function run(args: string[]): void {
 		!firstArg.startsWith("-");
 	const includeLegacyCommandsInHelp =
 		dispatchArgs.includes("--all-commands") || dispatchArgs.includes("--all");
+	const noCommandHelpRequested =
+		!hasCommandToken &&
+		dispatchArgs.some((arg) => arg === "--help" || arg === "-h");
 	const commandHelpFlagIndex = hasCommandToken
 		? dispatchArgs.findIndex(
 				(arg, index) => index > 0 && (arg === "--help" || arg === "-h"),
@@ -170,7 +173,7 @@ export function run(args: string[]): void {
 	// (`harness <command> --help`) so malformed invocations like
 	// `harness policy-gate --files --help` still return usage errors.
 	if (
-		(!hasCommandToken && (firstArg === "--help" || firstArg === "-h")) ||
+		noCommandHelpRequested ||
 		(hasCommandToken && commandHelpFlagIndex === 1)
 	) {
 		console.info(`harness v${version}`);

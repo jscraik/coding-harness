@@ -420,7 +420,6 @@ export const COMMAND_SPECS: CommandSpec[] = [
 			const maxTierIndex = args.indexOf("--max-tier");
 			const skipIndex = args.indexOf("--skip");
 			const headShaIndex = args.indexOf("--head-sha");
-			const admissionFileIndex = args.indexOf("--admission-file");
 			const admissionFileInspection = inspectFlagValue(
 				args,
 				"--admission-file",
@@ -461,8 +460,8 @@ export const COMMAND_SPECS: CommandSpec[] = [
 			if (headShaArg) {
 				options.headSha = headShaArg;
 			}
-			const admissionFileArg = getFlagValue(args, admissionFileIndex);
-			if (admissionFileArg !== undefined) {
+			if (admissionFileInspection.value !== undefined) {
+				const admissionFileArg = admissionFileInspection.value;
 				try {
 					const parsedAdmission = JSON.parse(
 						readFileSync(admissionFileArg, "utf-8"),
