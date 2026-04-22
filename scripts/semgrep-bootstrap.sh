@@ -35,8 +35,19 @@ SEMGREP_BIN="$SEMGREP_VENV_DIR/bin/semgrep"
 SEMGREP_PYTHON="$SEMGREP_VENV_DIR/bin/python"
 SEMGREP_SITE_PACKAGES_DIR="${SEMGREP_CACHE_ROOT}/semgrep-site-packages-${SEMGREP_VERSION}"
 
+semgrep_binary_usable() {
+  if [[ ! -x "$SEMGREP_BIN" ]]; then
+    return 1
+  fi
+
+  XDG_CACHE_HOME="$SEMGREP_RUNTIME_CACHE_ROOT" \
+    SEMGREP_USER_HOME="$SEMGREP_RUNTIME_USER_HOME" \
+    SEMGREP_LOG_FILE="$SEMGREP_RUNTIME_LOG_FILE" \
+    "$SEMGREP_BIN" --version >/dev/null 2>&1
+}
+
 run_semgrep() {
-  if [[ -x "$SEMGREP_BIN" ]]; then
+  if semgrep_binary_usable; then
     XDG_CACHE_HOME="$SEMGREP_RUNTIME_CACHE_ROOT" \
       SEMGREP_USER_HOME="$SEMGREP_RUNTIME_USER_HOME" \
       SEMGREP_LOG_FILE="$SEMGREP_RUNTIME_LOG_FILE" \
@@ -89,14 +100,17 @@ install_semgrep() {
   if [[ -d "$legacy_venv_dir" ]]; then
     rm -rf "$SEMGREP_VENV_DIR"
     cp -R "$legacy_venv_dir" "$SEMGREP_VENV_DIR"
-    if [[ -x "$SEMGREP_BIN" ]]; then
+    if semgrep_binary_usable; then
       return
     fi
+    rm -rf "$SEMGREP_VENV_DIR"
   fi
 
   if python3 -m venv "$SEMGREP_VENV_DIR" >/dev/null 2>&1; then
     "$SEMGREP_PYTHON" -m pip install --quiet --upgrade pip "semgrep==${SEMGREP_VERSION}"
-    return
+    if semgrep_binary_usable; then
+      return
+    fi
   fi
 
   if python3 -m pip --version >/dev/null 2>&1; then
@@ -109,8 +123,22 @@ install_semgrep() {
   fi
 
   if ensure_python_packaging_tools; then
-    install_semgrep
-    return
+    rm -rf "$SEMGREP_VENV_DIR"
+    if python3 -m venv "$SEMGREP_VENV_DIR" >/dev/null 2>&1; then
+      "$SEMGREP_PYTHON" -m pip install --quiet --upgrade pip "semgrep==${SEMGREP_VERSION}"
+      if semgrep_binary_usable; then
+        return
+      fi
+    fi
+
+    if python3 -m pip --version >/dev/null 2>&1; then
+      rm -rf "$SEMGREP_VENV_DIR"
+      rm -f "$SEMGREP_BIN"
+      rm -rf "$SEMGREP_SITE_PACKAGES_DIR"
+      mkdir -p "$SEMGREP_SITE_PACKAGES_DIR"
+      python3 -m pip install --quiet --upgrade --target "$SEMGREP_SITE_PACKAGES_DIR" "semgrep==${SEMGREP_VERSION}"
+      return
+    fi
   fi
 
   echo "Error: unable to install Semgrep." >&2
@@ -119,7 +147,7 @@ install_semgrep() {
 }
 
 has_semgrep_installation() {
-  if [[ -x "$SEMGREP_BIN" ]]; then
+  if semgrep_binary_usable; then
     return 0
   fi
 
