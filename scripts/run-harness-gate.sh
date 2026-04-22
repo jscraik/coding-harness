@@ -12,19 +12,26 @@ fi
 is_harness_source_repo() {
 	[[ -f "$REPO_ROOT/src/cli.ts" ]] || return 1
 	[[ -f "$REPO_ROOT/package.json" ]] || return 1
-	command -v node >/dev/null 2>&1 || return 1
-
-	node -e '
-		const { readFileSync } = require("node:fs");
-		const packageJson = JSON.parse(readFileSync(process.argv[1], "utf8"));
-		process.exit(packageJson.name === "@brainwav/coding-harness" ? 0 : 1);
-	' "$REPO_ROOT/package.json" >/dev/null 2>&1
+	grep -Eq \
+		'"name"[[:space:]]*:[[:space:]]*"@brainwav/coding-harness"' \
+		"$REPO_ROOT/package.json"
+	return 0
 }
 
 if is_harness_source_repo; then
+	if ! command -v node >/dev/null 2>&1; then
+		echo "Error: node is required to run the harness source CLI." >&2
+		echo "Install Node.js and retry." >&2
+		exit 1
+	fi
 	if ! command -v pnpm >/dev/null 2>&1; then
 		echo "Error: pnpm is required to run the harness source CLI." >&2
 		echo "Install pnpm and retry." >&2
+		exit 1
+	fi
+	if [[ ! -x "$REPO_ROOT/node_modules/.bin/tsx" ]]; then
+		echo "Error: source checkout detected but tsx is not installed locally." >&2
+		echo "Run 'pnpm install' in this repository, then retry." >&2
 		exit 1
 	fi
 	exec pnpm exec tsx "$REPO_ROOT/src/cli.ts" "$@"

@@ -5,9 +5,11 @@
 [![License](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](LICENSE)
 [![OpenSSF Scorecard](https://api.scorecard.dev/projects/github.com/jscraik/coding-harness/badge)](https://scorecard.dev/viewer/?uri=github.com/jscraik/coding-harness)
 
-Coding Harness is a CLI control plane for repositories that use AI coding agents.
-It turns repo policy, workflow docs, review gates, and rollout criteria into
-things you can scaffold, validate, and enforce.
+Coding Harness is a CLI control plane for repositories that use AI coding
+agents. Coding Harness exists to let humans steer and agents execute safely,
+with PR lead time as the primary north-star metric. Its north star is reducing
+PR lead time by shrinking the review and rework loop while keeping humans in
+the steering role and preserving strict evidence, SHA, and rollback discipline.
 
 It is best thought of as the layer around the agents, not the agent runtime
 itself. It helps you make a repo safer to automate by giving it a contract,
@@ -16,16 +18,18 @@ artifact-backed rollout checks.
 
 The shortest honest description of the project today is:
 
-- it bootstraps governed, agent-ready repositories
+- it helps humans steer and agents execute safely
+- it reduces PR lead time by making review and rework cheaper
 - it gives downstream repos repo-local verification and preflight scripts
 - it validates review, docs, plan, and authorization policy before merge
-- it supports staged CI migration with rollback and parity evidence
-- it evaluates pilot safety before you expand autonomy
+- it supports staged CI migration, rollback, and autonomy expansion with
+  artifact-backed evidence
 
 ## Table of Contents
 
 - [Start Here](#start-here)
 - [Lite Mode (Solo And Small Team)](#lite-mode-solo-and-small-team)
+- [North Star](#north-star)
 - [Why Teams Use It](#why-teams-use-it)
 - [What It Is Best At Today](#what-it-is-best-at-today)
 - [Security Posture Baseline](#security-posture-baseline)
@@ -104,6 +108,22 @@ harness contract validate
 
 That upgrade preserves your lightweight adoption start while adding the
 recommended default policy layers for team-scale operation.
+
+## North Star
+
+Coding Harness is not trying to maximize governance surface area. Its canonical
+north star is to reduce PR lead time by shrinking the review and rework loop
+without weakening evidence quality, SHA discipline, or rollback safety.
+
+- Humans steer. Agents execute.
+- Low and medium-risk autonomy should be automated when evidence is
+  deterministic.
+- High-risk changes remain human-mediated.
+- Repeated failures should become durable guardrails instead of repeated review
+  comments or chat reminders.
+
+The canonical statement of that contract lives in
+[docs/roadmap/north-star.md](./docs/roadmap/north-star.md).
 
 ## Why Teams Use It
 
@@ -309,6 +329,13 @@ harness plan-gate --require-plan-id --require-traceability --json
 harness review-gate --token "$GITHUB_TOKEN" --owner <owner> --repo <repo> --pr <number> --sha <head-sha>
 harness linear sync --findings findings.json --team <TEAM>
 ```
+
+If `harness.contract.json` declares governed north-star surfaces and your diff
+touches one of them, `review-gate` also requires four PR-body decisions:
+`lead_time_path`, `manual_glue`, `agent_reliability`, and `safety_floor`. Each
+line must answer `yes` and include an `Evidence:` reference. Repos that do not
+declare `northStar` governance or do not touch governed surfaces keep the
+legacy SHA and review-check behavior.
 
 For repos using CodeRabbit, pair the review-gate with:
 

@@ -14,6 +14,13 @@ function write(path: string, content: string): void {
 	writeFileSync(path, content, "utf-8");
 }
 
+function copyRepoFile(root: string, relativePath: string): void {
+	write(
+		join(root, relativePath),
+		readFileSync(join(process.cwd(), relativePath), "utf-8"),
+	);
+}
+
 function createRepoFixture(root: string): void {
 	write(
 		join(root, "src/cli.ts"),
@@ -37,7 +44,7 @@ function createRepoFixture(root: string): void {
 		join(root, "docs/QUALITY_SCORE.md"),
 		[
 			"---",
-			"last_updated: 2026-03-05",
+			"last_updated: 2026-04-21",
 			"calculated_by: harness-gardener",
 			"---",
 			"",
@@ -372,6 +379,92 @@ describe("drift-gate command", () => {
 		expect(statusFinding?.fix?.suppressible).toBe(true);
 	});
 
+	it("flags north-star surface drift when contract-backed surfaces diverge", () => {
+		const root = join(
+			process.cwd(),
+			"artifacts",
+			"drift-gate-test-north-star-drift",
+		);
+		roots.push(root);
+		createRepoFixture(root);
+		copyRepoFile(root, "harness.contract.json");
+		copyRepoFile(root, "docs/roadmap/north-star.md");
+
+		const result = runDriftGate({
+			repoRoot: root,
+			mode: "health",
+			seedBaseline: false,
+		});
+
+		expect(result.exitCode).toBe(1);
+		expect(
+			result.report.findings.some(
+				(f) =>
+					f.rule_id === "status.north_star.contract_parity.readme" &&
+					f.path === "README.md",
+			),
+		).toBe(true);
+		expect(
+			result.report.findings.some(
+				(f) =>
+					f.rule_id ===
+						"status.north_star.contract_parity.agent_first_status" &&
+					f.path === "docs/roadmap/agent-first-status.md",
+			),
+		).toBe(true);
+	});
+
+	it("passes north-star parity when governed surfaces stay aligned", () => {
+		const root = join(
+			process.cwd(),
+			"artifacts",
+			"drift-gate-test-north-star-aligned",
+		);
+		roots.push(root);
+		createRepoFixture(root);
+		copyRepoFile(root, "harness.contract.json");
+		copyRepoFile(root, "README.md");
+		copyRepoFile(root, "docs/roadmap/north-star.md");
+		copyRepoFile(root, "docs/roadmap/agent-first-status.md");
+
+		const result = runDriftGate({
+			repoRoot: root,
+			mode: "health",
+			seedBaseline: false,
+		});
+
+		expect(
+			result.report.findings.some((f) =>
+				f.rule_id.startsWith("status.north_star.contract_parity."),
+			),
+		).toBe(false);
+	});
+
+	it("reports schema blockers when the north-star contract cannot be loaded", () => {
+		const root = join(
+			process.cwd(),
+			"artifacts",
+			"drift-gate-test-north-star-contract-invalid",
+		);
+		roots.push(root);
+		createRepoFixture(root);
+		write(join(root, "harness.contract.json"), "{\n  invalid json\n");
+
+		const result = runDriftGate({
+			repoRoot: root,
+			mode: "health",
+			seedBaseline: false,
+		});
+
+		expect(result.exitCode).toBe(2);
+		expect(result.report.outcome).toBe("error");
+		expect(result.report.error_class).toBe("schema");
+		expect(
+			result.report.findings.some(
+				(f) => f.rule_id === "status.north_star.contract.invalid",
+			),
+		).toBe(true);
+	});
 	it("CLI emits normalised GateResult JSON when --json is set", () => {
 		const root = join(process.cwd(), "artifacts", "drift-gate-cli-json");
 		roots.push(root);

@@ -6,6 +6,9 @@ import {
 	writeFileSync,
 } from "node:fs";
 import { dirname, join, resolve } from "node:path";
+import { ContractLoadError, loadContract } from "../lib/contract/loader.js";
+import { evaluateNorthStarSurfaceParity } from "../lib/contract/north-star-alignment.js";
+import type { HarnessContract } from "../lib/contract/types.js";
 import { sanitizeError } from "../lib/input/sanitize.js";
 import { validatePath } from "../lib/input/validator.js";
 import { normaliseDriftGateResult } from "../lib/output/normalise.js";
@@ -309,6 +312,26 @@ const FIX_GUIDANCE: Record<string, DriftFixGuidance> = {
 			"Resolve remaining ready todos or update the status matrix to reflect incomplete status.",
 		suppressible: false,
 	},
+	"status.north_star.contract.invalid": {
+		manual:
+			"Repair harness.contract.json so north-star runtime surfaces can be validated against the canonical contract.",
+		suppressible: false,
+	},
+	"status.north_star.contract_parity.readme": {
+		manual:
+			"Restore the README north-star framing so it preserves the canonical mission, metric, and bottleneck.",
+		suppressible: false,
+	},
+	"status.north_star.contract_parity.north_star_doc": {
+		manual:
+			"Restore docs/roadmap/north-star.md so it matches the canonical mission, metric, autonomy boundary, and safety floor.",
+		suppressible: false,
+	},
+	"status.north_star.contract_parity.agent_first_status": {
+		manual:
+			"Update docs/roadmap/agent-first-status.md so it reports progress against PR lead time and the review/rework loop bottleneck.",
+		suppressible: false,
+	},
 	"baseline.seed.missing": {
 		command: "harness drift-gate --seed-baseline",
 		manual:
@@ -344,6 +367,7 @@ function push(
 function evaluate(
 	repoRoot: string,
 	baselineFingerprints: Set<string>,
+	contract: HarnessContract | undefined,
 ): DriftFinding[] {
 	const findings: DriftFinding[] = [];
 
@@ -605,6 +629,42 @@ function evaluate(
 		}
 	}
 
+	if (contract?.northStar) {
+		const northStarPath = join(repoRoot, "docs/roadmap/north-star.md");
+		const northStarSource = readTextFile(northStarPath);
+		const parityIssues = evaluateNorthStarSurfaceParity(contract, [
+			{
+				key: "readme",
+				path: "README.md",
+				content: readmeSource,
+			},
+			{
+				key: "north_star_doc",
+				path: "docs/roadmap/north-star.md",
+				content: northStarSource,
+			},
+			{
+				key: "agent_first_status",
+				path: "docs/roadmap/agent-first-status.md",
+				content: statusSource,
+			},
+		]);
+		for (const issue of parityIssues) {
+			push(
+				findings,
+				{
+					rule_id: issue.ruleId,
+					surface: "status",
+					rule_result: "fail",
+					severity: issue.severity,
+					message: issue.message,
+					path: issue.path,
+				},
+				baselineFingerprints,
+			);
+		}
+	}
+
 	return findings;
 }
 
@@ -614,11 +674,24 @@ export function runDriftGate(options: DriftGateOptions = {}): DriftGateResult {
 	const baselinePath = options.baselinePath ?? DEFAULT_BASELINE_PATH;
 	const suppressions = new Set(options.suppressions ?? []);
 	const baseline = loadBaselineFingerprints(repoRoot, baselinePath);
+	let contract: HarnessContract | undefined;
+	let contractLoadingError: string | undefined;
+	const contractPath = join(repoRoot, "harness.contract.json");
+	if (existsSync(contractPath)) {
+		try {
+			contract = loadContract(contractPath, repoRoot);
+		} catch (error) {
+			contractLoadingError =
+				error instanceof ContractLoadError
+					? sanitizeError(error)
+					: `Failed to load contract: ${sanitizeError(error)}`;
+		}
+	}
 
 	let outcome: DriftOutcome = "ok";
 	let errorClass: DriftErrorClass = "none";
 	let baselineSeeded = false;
-	const allFindings = evaluate(repoRoot, baseline.fingerprints);
+	const allFindings = evaluate(repoRoot, baseline.fingerprints, contract);
 
 	// Separate suppressed findings
 	const suppressed: DriftFinding[] = [];
@@ -629,6 +702,23 @@ export function runDriftGate(options: DriftGateOptions = {}): DriftGateResult {
 		} else {
 			findings.push(finding);
 		}
+	}
+
+	if (contractLoadingError) {
+		outcome = "error";
+		errorClass = "schema";
+		push(
+			findings,
+			{
+				rule_id: "status.north_star.contract.invalid",
+				surface: "status",
+				rule_result: "error",
+				severity: "error",
+				message: contractLoadingError,
+				path: "harness.contract.json",
+			},
+			baseline.fingerprints,
+		);
 	}
 
 	if (baseline.loadingError) {

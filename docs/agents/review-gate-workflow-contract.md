@@ -7,6 +7,7 @@ last_validated: 2026-04-18
 ## Table of Contents
 
 - [Transition Table](#transition-table)
+- [North-Star Evidence Contract](#north-star-evidence-contract)
 - [State Definitions](#state-definitions)
 - [Event Definitions](#event-definitions)
 - [Guard Conditions](#guard-conditions)
@@ -55,6 +56,36 @@ last_validated: 2026-04-18
 | * | error.uncaught | G_notFoundError | A_logNotFound | FAILED_NOT_FOUND |
 | * | error.uncaught | G_permissionError | A_logPermissionDenied | FAILED_PERMISSION_DENIED |
 | * | error.uncaught | G_systemError | A_logSystemError | FAILED_SYSTEM_ERROR |
+
+---
+
+## North-Star Evidence Contract
+
+`review-gate` enforces a second contract layer when both of these are true:
+
+1. `harness.contract.json` defines `northStar`.
+2. The changed files match a governed surface declared under
+   `productSurface.surfaces`.
+
+When that scope is active, the PR body must contain all of these lines:
+
+- `lead_time_path: yes. Evidence: <ref>`
+- `manual_glue: yes. Evidence: <ref>`
+- `agent_reliability: yes. Evidence: <ref>`
+- `safety_floor: yes. Evidence: <ref>`
+
+Failure classes:
+
+- Missing question lines or missing `Evidence:` references emit
+  `review_evidence_incomplete`.
+- Any answer other than `yes` emits `review_evidence_contradiction`.
+
+Compatibility and rollout:
+
+- Repos without `northStar` governance keep the legacy SHA and review-check
+  contract.
+- Repos with `northStar` governance only activate these blockers for governed
+  surfaces, so non-governed changes continue to use the legacy flow.
 
 ---
 

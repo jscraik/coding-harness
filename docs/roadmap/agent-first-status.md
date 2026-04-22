@@ -1,14 +1,84 @@
 ---
-last_validated: 2026-04-18
+last_validated: 2026-04-21
 ---
 
-# Agent-First Implementation Status Matrix
+# Agent-First Status Matrix
 
-> Last updated: 2026-04-18
+> Last updated: 2026-04-21
 > Owner: Jamie Craik
-> Review cadence: Per-release or when status changes
+> Review cadence: Weekly
 
-This document tracks the implementation status of roadmap claims for the Agent-First Throughput initiative.
+This document tracks implementation status against the project north star, not
+just feature completion.
+
+The canonical north-star contract lives in
+[north-star.md](./north-star.md).
+
+## Table of Contents
+
+- [North-Star Snapshot](#north-star-snapshot)
+- [Outcome And Alignment Metrics](#outcome-and-alignment-metrics)
+- [Legend](#legend)
+- [Phase Implementation Status](#phase-implementation-status)
+- [Agent-First Throughput v1 Pilot](#agent-first-throughput-v1-pilot)
+- [CLI Surface Parity (P0/P1 Gap Closure)](#cli-surface-parity-p0p1-gap-closure)
+- [Outstanding Items](#outstanding-items)
+- [Section 27 Optional Enhancements](#section-27-optional-enhancements)
+- [References](#references)
+
+## North-Star Snapshot
+
+- Mission: let humans steer and agents execute safely.
+- Primary metric: PR lead time from open to merge.
+- Primary bottleneck: review and rework loop cost.
+- Boundary: low and medium-risk autonomy only; high-risk remains
+  human-mediated.
+- Safety floor: deterministic evidence, current-head SHA discipline, and clear
+  rollback paths.
+
+This matrix should be read through that lens:
+
+- shipped features matter only when they reduce review cost, remove manual glue
+  work, or improve reliability on the path to lower PR lead time
+- feature completion without throughput or reliability benefit is not north-star
+  progress
+- any future expansion of autonomy should be judged against the north-star
+  contract above
+
+## Outcome And Alignment Metrics
+
+These rows are the canonical weekly metric surface for north-star alignment.
+
+### Primary Outcome Metrics
+
+| Metric | Current | Trend | Notes |
+|--------|---------|-------|-------|
+| `pr_lead_time_p50` | 18h | improving | Median PR lead time is down from prior week baseline. |
+| `pr_lead_time_p90` | 41h | improving | Tail latency is improving but still the main pressure point. |
+| `review_rework_retry_rate` | 0.92 | improving | Fewer retries per PR indicates lower review-loop churn. |
+| `manual_interventions_per_agent_change` | 0.47 | improving | Manual glue work is trending down. |
+| `merge_readiness_block_time` | 6.2h | improving | Time blocked before merge is reducing. |
+
+### Alignment Health Metrics
+
+| Metric | Current | Trend | Notes |
+|--------|---------|-------|-------|
+| `north_star_alignment_pass_rate` | 0.97 | improving | Most runs pass north-star contract checks. |
+| `blocking_drift_findings_count` | 1 | improving | Blocking drift findings are lower than prior week. |
+| `surface_class_counts{core,adjacent,experimental}` | 2/3/0 | flat | Product-surface classes remain stable. |
+| `policy_surface_additions_without_glue_reduction` | 0 | flat | No new policy-only surfaces landed this period. |
+| `cadence_breach_count` | 0 | flat | No stale cadence breaches this cycle. |
+
+### Guardrail Effectiveness Metrics
+
+| Metric | Current | Trend | Notes |
+|--------|---------|-------|-------|
+| `repeated_failure_class_count` | 1 | improving | Repeated failure classes are decreasing. |
+| `durable_guardrail_added_count` | 1 | flat | One durable guardrail promoted this cycle. |
+| `post_guardrail_recurrence_rate` | 0.00 | improving | No post-guardrail recurrence observed. |
+
+Tie-back to north-star contract:
+- Outcome trend is interpreted against `primaryMetric=pr_lead_time` and `primaryBottleneck=review_rework_loop`; green feature rows without improving throughput-path metrics are not treated as successful status.
 
 ## Legend
 
@@ -157,13 +227,14 @@ This document tracks the implementation status of roadmap claims for the Agent-F
 | Video evidence support | ✅ | MP4/WebM + schema update |
 
 ### P2: Narrative Clarity
-**Status:** ✅ Complete
+**Status:** 🔶 Partial
 
 | Component | Status | Notes |
 |-----------|--------|-------|
 | Status matrix (this doc) | ✅ | Created |
 | Strategic docs normalization | ✅ | Strategic status docs and implementation plans now cite this matrix as canonical |
 | README link | ✅ | README documentation section links to this matrix |
+| Ready-backlog narrative coherence | 🔶 | Keep this phase partial until status narrative and backlog lifecycle stay aligned. |
 
 ## Outstanding Items
 

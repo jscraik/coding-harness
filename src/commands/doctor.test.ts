@@ -1,7 +1,13 @@
 import { spawnSync } from "node:child_process";
-import { existsSync, mkdirSync, rmSync, writeFileSync } from "node:fs";
+import {
+	existsSync,
+	mkdirSync,
+	readFileSync,
+	rmSync,
+	writeFileSync,
+} from "node:fs";
 import { tmpdir } from "node:os";
-import { join } from "node:path";
+import { dirname, join } from "node:path";
 /**
  * Tests for harness doctor command (JSC-65)
  */
@@ -41,6 +47,16 @@ function writeRepoPackageVersion(dir: string, version: string): void {
 		join(dir, "package.json"),
 		JSON.stringify({ name: "@brainwav/coding-harness", version }),
 		{ encoding: "utf-8" },
+	);
+}
+
+function copyRepoFile(dir: string, relativePath: string): void {
+	const destinationPath = join(dir, relativePath);
+	mkdirSync(dirname(destinationPath), { recursive: true });
+	writeFileSync(
+		destinationPath,
+		readFileSync(join(process.cwd(), relativePath), "utf-8"),
+		"utf-8",
 	);
 }
 
@@ -388,6 +404,112 @@ describe("runDoctor — file checks", () => {
 		const check = report.checks.find((c) => c.id === "file:agent-first-status");
 		expect(check?.status).toBe("ok");
 	});
+
+	it("fails when the canonical north-star doc is missing", () => {
+		copyRepoFile(dir, "harness.contract.json");
+		mockAllToolsOk();
+
+		const report = runDoctor({ dir });
+		const check = report.checks.find((c) => c.id === "file:north-star-doc");
+		expect(check?.status).toBe("fail");
+		expect(check?.message).toContain("canonical north-star parity");
+	});
+
+	it("fails when the contract omits the north-star runtime slice", () => {
+		const contract = JSON.parse(
+			readFileSync(join(process.cwd(), "harness.contract.json"), "utf-8"),
+		) as Record<string, unknown>;
+		contract.version = "1.5.0";
+		contract.northStar = undefined;
+		contract.productSurface = undefined;
+		contract.overrideReviewerRegistry = undefined;
+
+		writeFileSync(
+			join(dir, "harness.contract.json"),
+			`${JSON.stringify(contract, null, 2)}\n`,
+			"utf-8",
+		);
+		copyRepoFile(dir, "docs/roadmap/north-star.md");
+		mockAllToolsOk();
+
+		const report = runDoctor({ dir });
+		const check = report.checks.find(
+			(c) => c.id === "config:north-star-contract",
+		);
+		expect(check?.status).toBe("fail");
+		expect(check?.message).toContain("northStar block missing");
+	});
+
+	it("passes when canonical north-star contract surfaces are present", () => {
+		copyRepoFile(dir, "harness.contract.json");
+		copyRepoFile(dir, "docs/roadmap/north-star.md");
+		mockAllToolsOk();
+
+		const report = runDoctor({ dir });
+		const check = report.checks.find(
+			(c) => c.id === "config:north-star-contract",
+		);
+		expect(check?.status).toBe("ok");
+	});
+});
+
+describe("runDoctorCLI", () => {
+	afterEach(() => {
+		vi.restoreAllMocks();
+	});
+
+	it("returns 0 for --help", () => {
+		expect(runDoctorCLI(["--help"], () => "0.0.0-test")).toBe(0);
+	});
+
+	it("returns 0 for --checklist", () => {
+		expect(runDoctorCLI(["--checklist"], () => "0.0.0-test")).toBe(0);
+	});
+
+	it("returns 2 when --dir is missing a value", () => {
+		const consoleErrorSpy = vi
+			.spyOn(console, "error")
+			.mockImplementation(() => undefined);
+		try {
+			expect(runDoctorCLI(["--dir", "--json"], () => "0.0.0-test")).toBe(2);
+			expect(consoleErrorSpy).toHaveBeenCalledWith(
+				"Error: --dir requires a path",
+			);
+		} finally {
+			consoleErrorSpy.mockRestore();
+		}
+	});
+
+	it("emits JSON report when --json is provided", () => {
+		const dir = makeTmpDir();
+		mockAllToolsOk();
+		writeFileSync(
+			join(dir, "harness.contract.json"),
+			JSON.stringify({ version: "1.0.0" }),
+		);
+		const consoleInfoSpy = vi
+			.spyOn(console, "info")
+			.mockImplementation(() => undefined);
+		try {
+			const exitCode = runDoctorCLI(
+				["--json", "--dir", dir],
+				() => "0.0.0-test",
+			);
+			expect(exitCode).toBeTypeOf("number");
+			expect(consoleInfoSpy).toHaveBeenCalledTimes(1);
+			const payload = JSON.parse(String(consoleInfoSpy.mock.calls[0]?.[0])) as {
+				version: string;
+				dir: string;
+				checks: unknown[];
+			};
+			expect(payload.version).toBe("0.0.0-test");
+			expect(payload.dir).toBe(dir);
+			expect(Array.isArray(payload.checks)).toBe(true);
+		} finally {
+			consoleInfoSpy.mockRestore();
+			if (existsSync(dir)) rmSync(dir, { recursive: true, force: true });
+		}
+	});
 });
 
 describe("runDoctorCLI", () => {
@@ -630,15 +752,12 @@ describe("runDoctor — report structure", () => {
 
 	it("hasFailures is false when only warnings are present", () => {
 		mockAllToolsOk();
-		// No files at all → all file checks are warn, not fail
-		// (contract missing = fail, so we need contract to be present)
-		writeFileSync(
-			join(dir, "harness.contract.json"),
-			JSON.stringify({ version: "1.0.0" }),
-		);
+		copyRepoFile(dir, "harness.contract.json");
+		copyRepoFile(dir, "docs/roadmap/north-star.md");
 
 		const report = runDoctor({ dir });
-		// With contract present and tools ok, should only have warns (no fails)
+		// With the canonical north-star surfaces present and tools ok, the
+		// remaining gaps in this fixture should be advisory only.
 		expect(report.hasFailures).toBe(false);
 		expect(report.counts.warn).toBeGreaterThan(0);
 	});

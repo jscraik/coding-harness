@@ -44,6 +44,21 @@ describe("runPreflightGate", () => {
 		);
 	}
 
+	function buildAdmissionDeclaration(): PreflightAdmissionDeclaration {
+		return {
+			north_star_metric: "pr_lead_time",
+			primary_bottleneck: "review_rework_loop",
+			affected_surface_ids: ["preflight-gate"],
+			affected_surface_classes: ["core"],
+			policy_surface_delta: 0,
+			manual_glue_delta: -1,
+			metric_impact_declared: "path_strengthening",
+			evidence_links: ["docs/roadmap/north-star.md"],
+			why_this_improves_throughput_or_reliability:
+				"Carries the north-star declaration into downstream gate outputs.",
+		};
+	}
+
 	it("uses default harness.contract.json when contractPath is omitted", async () => {
 		writeFileSync(
 			"harness.contract.json",
@@ -138,18 +153,7 @@ describe("runPreflightGate", () => {
 			}),
 		);
 
-		const admission: PreflightAdmissionDeclaration = {
-			north_star_metric: "pr_lead_time",
-			primary_bottleneck: "review_rework_loop",
-			affected_surface_ids: ["preflight-gate"],
-			affected_surface_classes: ["core"],
-			policy_surface_delta: 0,
-			manual_glue_delta: -1,
-			metric_impact_declared: "path_strengthening" as const,
-			evidence_links: ["docs/roadmap/north-star.md"],
-			why_this_improves_throughput_or_reliability:
-				"Carries the north-star declaration into downstream gate outputs.",
-		};
+		const admission = buildAdmissionDeclaration();
 
 		const result = await runPreflightGate({
 			admission,
@@ -164,6 +168,23 @@ describe("runPreflightGate", () => {
 		expect(result.admissionDeclaration).toEqual(admission);
 	});
 
+	it("retains admission metadata when contract loading fails", async () => {
+		writeFileSync("harness.contract.json", "{invalid-json");
+		const admission = buildAdmissionDeclaration();
+
+		const result = await runPreflightGate({
+			files: ["src/auth/login.ts"],
+			admission,
+		});
+
+		expect(result.passed).toBe(false);
+		expect(result.northStarSummary).toEqual({
+			metric: "pr_lead_time",
+			primaryBottleneck: "review_rework_loop",
+			impactDeclared: "path_strengthening",
+		});
+		expect(result.admissionDeclaration).toEqual(admission);
+	});
 	it("short-circuits native checks when pre hook skip-all-checks is enabled", async () => {
 		writeFileSync(
 			"harness.contract.json",
@@ -189,6 +210,33 @@ describe("runPreflightGate", () => {
 			result.checks.some((check) => check.id === "hook:pre:skip-all-checks"),
 		).toBe(true);
 		expect(result.hookDecisions?.[0]?.action).toBe("short-circuit");
+	});
+
+	it("retains admission metadata when pre-hook short-circuits execution", async () => {
+		writeFileSync(
+			"harness.contract.json",
+			JSON.stringify({
+				version: "1.0",
+				gateExtensions: {
+					preflightGate: {
+						pre: [{ id: "skip-all-checks" }],
+					},
+				},
+			}),
+		);
+		const admission = buildAdmissionDeclaration();
+
+		const result = await runPreflightGate({
+			admission,
+		});
+
+		expect(result.passed).toBe(true);
+		expect(result.northStarSummary).toEqual({
+			metric: "pr_lead_time",
+			primaryBottleneck: "review_rework_loop",
+			impactDeclared: "path_strengthening",
+		});
+		expect(result.admissionDeclaration).toEqual(admission);
 	});
 
 	it("applies pre hooks when files option is omitted", async () => {

@@ -775,6 +775,7 @@ type ReviewGateFailureClass =
 	| "contract_invalid"
 	| "admission_incomplete"
 	| "admission_unjustified"
+	| "review_evidence_incomplete"
 	| "review_evidence_contradiction"
 	| "surface_registration_gap"
 	| "drift_blocking"
@@ -792,7 +793,7 @@ type ReviewGateFailureClass =
 
 function classifyReviewGateBlocker(blocker: string): ReviewGateFailureClass {
 	const explicitFailureClass = blocker.match(
-		/\b(contract_invalid|admission_incomplete|admission_unjustified|review_evidence_contradiction|surface_registration_gap|drift_blocking|safety_floor_violation|cadence_breach):/u,
+		/\b(contract_invalid|admission_incomplete|admission_unjustified|review_evidence_incomplete|review_evidence_contradiction|surface_registration_gap|drift_blocking|safety_floor_violation|cadence_breach):/u,
 	)?.[1] as ReviewGateFailureClass | undefined;
 	if (explicitFailureClass) {
 		return explicitFailureClass;

@@ -1360,6 +1360,42 @@ describe("normaliseReviewGateResult (additional edge cases)", () => {
 		);
 	});
 
+	it("maps review_evidence_incomplete blockers to a stable review failure class", () => {
+		const result = normaliseReviewGateResult(
+			makeReviewResult({
+				ok: true,
+				output: {
+					verified: false,
+					headSha: "aabbccddaabbccddaabbccddaabbccddaabbccdd",
+					checkStatus: "completed",
+					checkConclusion: "success",
+					needsRerun: false,
+					timedOut: false,
+					policy_gate_status: "pass",
+					plan_traceability_status: "pass",
+					plan_ids: ["feat-review-gate-traceability"],
+					blockers: [
+						"review_evidence_incomplete: missing lead_time_path decision evidence in PR body",
+					],
+					actionable_count: 1,
+					informational_count: 0,
+					confidence_rubric: {
+						score: 1,
+						level: "low",
+						rationale: ["blocked"],
+					},
+				},
+			}),
+		);
+
+		expect(result.findings[0]?.id).toBe(
+			"review-gate.blocker.review_evidence_incomplete",
+		);
+		expect(result.meta?.blockedFailureClasses).toEqual(
+			expect.arrayContaining(["review_evidence_incomplete"]),
+		);
+	});
+
 	it("plan_ids appear in evidence_ref as plan: refs", () => {
 		const result = normaliseReviewGateResult(
 			makeReviewResult({

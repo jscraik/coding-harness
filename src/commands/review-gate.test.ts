@@ -55,6 +55,7 @@ vi.mock("../lib/review-gate/decision-packet.js", () => ({
 }));
 
 import { loadContract } from "../lib/contract/loader.js";
+import { DEFAULT_NORTH_STAR_CONTRACT } from "../lib/contract/types.js";
 import { GitHubClient } from "../lib/github/client.js";
 import { validateSha } from "../lib/github/sha.js";
 import { runPlanGate } from "../lib/plan-gate/detector.js";
@@ -81,6 +82,51 @@ const authzPassOutput = {
 		enforceBranchProtection: false,
 	},
 };
+
+const northStarDecisionQuestions = [
+	"lead_time_path",
+	"manual_glue",
+	"agent_reliability",
+	"safety_floor",
+] as const;
+
+function buildNorthStarEvidenceBody(): string {
+	return northStarDecisionQuestions
+		.map(
+			(questionId) =>
+				`- ${questionId}: yes. Evidence: docs/roadmap/north-star.md#${questionId}`,
+		)
+		.join("\n");
+}
+
+function buildNorthStarEvidenceBodyWithOverride(
+	questionId: (typeof northStarDecisionQuestions)[number],
+	line: string,
+): string {
+	return northStarDecisionQuestions
+		.map((currentQuestionId) =>
+			currentQuestionId === questionId
+				? line
+				: `- ${currentQuestionId}: yes. Evidence: docs/roadmap/north-star.md#${currentQuestionId}`,
+		)
+		.join("\n");
+}
+
+function buildGovernedSurfaceRegistration(paths: string[]) {
+	return {
+		surfaceId: "review-gate",
+		surfaceType: "command" as const,
+		class: "core" as const,
+		owner: "workflow",
+		northStarContribution: "Protects merge-readiness on governed surfaces.",
+		manualGlueReductionClaim:
+			"Turns review guidance into deterministic checks.",
+		reliabilityContribution: "Keeps governed review decisions consistent.",
+		evidenceReference: "src/commands/review-gate.ts",
+		ownedPaths: paths,
+		lastReviewedAt: "2026-04-21",
+	};
+}
 
 describe("runReviewGate", () => {
 	const validSha = "0123456789abcdef0123456789abcdef01234567";
@@ -380,6 +426,388 @@ describe("runReviewGate", () => {
 			expect(result.output.actionable_count).toBe(0);
 			expect(result.output.informational_count).toBe(3);
 			expect(result.output.confidence_rubric.score).toBe(5);
+		}
+	});
+
+	it("uses configured check name in the verified-pass rationale", async () => {
+		const checkName = "policy-surface-check";
+		const mockCheckRuns: CheckRun[] = [
+			{
+				id: 1,
+				name: checkName,
+				status: "completed",
+				conclusion: "success",
+				head_sha: validSha,
+			},
+		];
+		mockGitHubClient.mockImplementation(
+			() =>
+				({
+					listPullRequestFiles: vi
+						.fn()
+						.mockResolvedValue([{ filename: "src/commands/review-gate.ts" }]),
+					listCheckRunsForRef: vi.fn().mockResolvedValue(mockCheckRuns),
+					getPullRequest: vi.fn().mockResolvedValue({
+						number: defaultOptions.prNumber,
+						user: { login: "coding-actor" },
+						head: { sha: validSha, ref: "feature/test" },
+					}),
+					listPullRequestReviews: vi.fn().mockResolvedValue([
+						{
+							state: "APPROVED",
+							commit_id: validSha,
+							user: { login: "independent-reviewer" },
+						},
+					]),
+					listPullRequestReviewThreads: vi.fn().mockResolvedValue([]),
+				}) as unknown as GitHubClient,
+		);
+
+		const result = await runReviewGate({
+			...defaultOptions,
+			checkName,
+		});
+
+		expect(result.ok).toBe(true);
+		if (result.ok) {
+			expect(result.output.verified).toBe(true);
+			expect(result.output.confidence_rubric.rationale).toContain(
+				`${checkName} passed for the current HEAD SHA`,
+			);
+			expect(
+				result.output.confidence_rubric.rationale.some((line) =>
+					line.includes("risk-policy-gate"),
+				),
+			).toBe(false);
+		}
+	});
+
+	it("blocks governed north-star surfaces when decision evidence is missing", async () => {
+		mockLoadContract.mockReturnValue({
+			version: "1.6.0",
+			riskTierRules: {},
+			reviewPolicy: {
+				timeoutSeconds: 600,
+				timeoutAction: "fail",
+				enforceReviewerIndependence: true,
+			},
+			northStar: DEFAULT_NORTH_STAR_CONTRACT,
+			productSurface: {
+				surfaces: [
+					buildGovernedSurfaceRegistration([
+						"src/commands/review-gate.ts",
+						"src/commands/review-gate.test.ts",
+					]),
+				],
+			},
+		});
+
+		const mockCheckRuns: CheckRun[] = [
+			{
+				id: 1,
+				name: "review-check",
+				status: "completed",
+				conclusion: "success",
+				head_sha: validSha,
+			},
+		];
+		mockGitHubClient.mockImplementation(
+			() =>
+				({
+					getPullRequest: vi.fn().mockResolvedValue({
+						number: defaultOptions.prNumber,
+						title: "North-star contract realignment",
+						body: "- Plan IDs: `feat-review-gate-traceability`",
+						user: { login: "coding-actor" },
+						head: { sha: validSha, ref: "feature/test" },
+					}),
+					listPullRequestFiles: vi
+						.fn()
+						.mockResolvedValue([{ filename: "src/commands/review-gate.ts" }]),
+					listCheckRunsForRef: vi.fn().mockResolvedValue(mockCheckRuns),
+					listPullRequestReviews: vi.fn().mockResolvedValue([
+						{
+							state: "APPROVED",
+							commit_id: validSha,
+							user: { login: "independent-reviewer" },
+						},
+					]),
+					listPullRequestReviewThreads: vi.fn().mockResolvedValue([]),
+				}) as unknown as GitHubClient,
+		);
+
+		const result = await runReviewGate(defaultOptions);
+
+		expect(result.ok).toBe(true);
+		if (result.ok) {
+			expect(result.output.verified).toBe(false);
+			expect(result.output.blockers).toEqual(
+				expect.arrayContaining([
+					"review_evidence_incomplete: missing lead_time_path decision evidence in PR body",
+					"review_evidence_incomplete: missing manual_glue decision evidence in PR body",
+				]),
+			);
+		}
+	});
+
+	it("blocks governed north-star surfaces when the PR body is empty", async () => {
+		mockLoadContract.mockReturnValue({
+			version: "1.6.0",
+			riskTierRules: {},
+			reviewPolicy: {
+				timeoutSeconds: 600,
+				timeoutAction: "fail",
+				enforceReviewerIndependence: true,
+			},
+			northStar: DEFAULT_NORTH_STAR_CONTRACT,
+			productSurface: {
+				surfaces: [
+					buildGovernedSurfaceRegistration(["src/commands/review-gate.ts"]),
+				],
+			},
+		});
+
+		const mockCheckRuns: CheckRun[] = [
+			{
+				id: 1,
+				name: "review-check",
+				status: "completed",
+				conclusion: "success",
+				head_sha: validSha,
+			},
+		];
+		mockGitHubClient.mockImplementation(
+			() =>
+				({
+					getPullRequest: vi.fn().mockResolvedValue({
+						number: defaultOptions.prNumber,
+						title: "North-star contract realignment",
+						body: null,
+						user: { login: "coding-actor" },
+						head: { sha: validSha, ref: "feature/test" },
+					}),
+					listPullRequestFiles: vi
+						.fn()
+						.mockResolvedValue([{ filename: "src/commands/review-gate.ts" }]),
+					listCheckRunsForRef: vi.fn().mockResolvedValue(mockCheckRuns),
+					listPullRequestReviews: vi.fn().mockResolvedValue([
+						{
+							state: "APPROVED",
+							commit_id: validSha,
+							user: { login: "independent-reviewer" },
+						},
+					]),
+					listPullRequestReviewThreads: vi.fn().mockResolvedValue([]),
+				}) as unknown as GitHubClient,
+		);
+
+		const result = await runReviewGate(defaultOptions);
+
+		expect(result.ok).toBe(true);
+		if (result.ok) {
+			expect(result.output.verified).toBe(false);
+			expect(result.output.blockers).toEqual(
+				expect.arrayContaining([
+					"review_evidence_incomplete: missing lead_time_path decision evidence in PR body",
+					"review_evidence_incomplete: missing manual_glue decision evidence in PR body",
+					"review_evidence_incomplete: missing agent_reliability decision evidence in PR body",
+					"review_evidence_incomplete: missing safety_floor decision evidence in PR body",
+				]),
+			);
+		}
+	});
+
+	it("passes governed north-star surfaces when decision evidence is complete", async () => {
+		mockLoadContract.mockReturnValue({
+			version: "1.6.0",
+			riskTierRules: {},
+			reviewPolicy: {
+				timeoutSeconds: 600,
+				timeoutAction: "fail",
+				enforceReviewerIndependence: true,
+			},
+			northStar: DEFAULT_NORTH_STAR_CONTRACT,
+			productSurface: {
+				surfaces: [
+					buildGovernedSurfaceRegistration(["src/commands/review-gate.ts"]),
+				],
+			},
+		});
+
+		const mockCheckRuns: CheckRun[] = [
+			{
+				id: 1,
+				name: "review-check",
+				status: "completed",
+				conclusion: "success",
+				head_sha: validSha,
+			},
+		];
+		mockGitHubClient.mockImplementation(
+			() =>
+				({
+					getPullRequest: vi.fn().mockResolvedValue({
+						number: defaultOptions.prNumber,
+						title: "North-star contract realignment",
+						body: buildNorthStarEvidenceBody(),
+						user: { login: "coding-actor" },
+						head: { sha: validSha, ref: "feature/test" },
+					}),
+					listPullRequestFiles: vi
+						.fn()
+						.mockResolvedValue([{ filename: "src/commands/review-gate.ts" }]),
+					listCheckRunsForRef: vi.fn().mockResolvedValue(mockCheckRuns),
+					listPullRequestReviews: vi.fn().mockResolvedValue([
+						{
+							state: "APPROVED",
+							commit_id: validSha,
+							user: { login: "independent-reviewer" },
+						},
+					]),
+					listPullRequestReviewThreads: vi.fn().mockResolvedValue([]),
+				}) as unknown as GitHubClient,
+		);
+
+		const result = await runReviewGate(defaultOptions);
+
+		expect(result.ok).toBe(true);
+		if (result.ok) {
+			expect(result.output.verified).toBe(true);
+			expect(
+				result.output.blockers.some((blocker) =>
+					blocker.startsWith("review_evidence_"),
+				),
+			).toBe(false);
+		}
+	});
+
+	it("blocks governed north-star surfaces when a decision answer is not yes", async () => {
+		mockLoadContract.mockReturnValue({
+			version: "1.6.0",
+			riskTierRules: {},
+			reviewPolicy: {
+				timeoutSeconds: 600,
+				timeoutAction: "fail",
+				enforceReviewerIndependence: true,
+			},
+			northStar: DEFAULT_NORTH_STAR_CONTRACT,
+			productSurface: {
+				surfaces: [
+					buildGovernedSurfaceRegistration(["src/commands/review-gate.ts"]),
+				],
+			},
+		});
+
+		const mockCheckRuns: CheckRun[] = [
+			{
+				id: 1,
+				name: "review-check",
+				status: "completed",
+				conclusion: "success",
+				head_sha: validSha,
+			},
+		];
+		mockGitHubClient.mockImplementation(
+			() =>
+				({
+					getPullRequest: vi.fn().mockResolvedValue({
+						number: defaultOptions.prNumber,
+						title: "North-star contract realignment",
+						body: buildNorthStarEvidenceBodyWithOverride(
+							"manual_glue",
+							"- manual_glue: no. Evidence: docs/roadmap/north-star.md#manual_glue",
+						),
+						user: { login: "coding-actor" },
+						head: { sha: validSha, ref: "feature/test" },
+					}),
+					listPullRequestFiles: vi
+						.fn()
+						.mockResolvedValue([{ filename: "src/commands/review-gate.ts" }]),
+					listCheckRunsForRef: vi.fn().mockResolvedValue(mockCheckRuns),
+					listPullRequestReviews: vi.fn().mockResolvedValue([
+						{
+							state: "APPROVED",
+							commit_id: validSha,
+							user: { login: "independent-reviewer" },
+						},
+					]),
+					listPullRequestReviewThreads: vi.fn().mockResolvedValue([]),
+				}) as unknown as GitHubClient,
+		);
+
+		const result = await runReviewGate(defaultOptions);
+
+		expect(result.ok).toBe(true);
+		if (result.ok) {
+			expect(result.output.verified).toBe(false);
+			expect(result.output.blockers).toContain(
+				"review_evidence_contradiction: manual_glue must be answered yes for governed north-star surfaces",
+			);
+		}
+	});
+
+	it("blocks governed north-star surfaces when evidence is missing from an answered question", async () => {
+		mockLoadContract.mockReturnValue({
+			version: "1.6.0",
+			riskTierRules: {},
+			reviewPolicy: {
+				timeoutSeconds: 600,
+				timeoutAction: "fail",
+				enforceReviewerIndependence: true,
+			},
+			northStar: DEFAULT_NORTH_STAR_CONTRACT,
+			productSurface: {
+				surfaces: [
+					buildGovernedSurfaceRegistration(["src/commands/review-gate.ts"]),
+				],
+			},
+		});
+
+		const mockCheckRuns: CheckRun[] = [
+			{
+				id: 1,
+				name: "review-check",
+				status: "completed",
+				conclusion: "success",
+				head_sha: validSha,
+			},
+		];
+		mockGitHubClient.mockImplementation(
+			() =>
+				({
+					getPullRequest: vi.fn().mockResolvedValue({
+						number: defaultOptions.prNumber,
+						title: "North-star contract realignment",
+						body: buildNorthStarEvidenceBodyWithOverride(
+							"safety_floor",
+							"- safety_floor: yes.",
+						),
+						user: { login: "coding-actor" },
+						head: { sha: validSha, ref: "feature/test" },
+					}),
+					listPullRequestFiles: vi
+						.fn()
+						.mockResolvedValue([{ filename: "src/commands/review-gate.ts" }]),
+					listCheckRunsForRef: vi.fn().mockResolvedValue(mockCheckRuns),
+					listPullRequestReviews: vi.fn().mockResolvedValue([
+						{
+							state: "APPROVED",
+							commit_id: validSha,
+							user: { login: "independent-reviewer" },
+						},
+					]),
+					listPullRequestReviewThreads: vi.fn().mockResolvedValue([]),
+				}) as unknown as GitHubClient,
+		);
+
+		const result = await runReviewGate(defaultOptions);
+
+		expect(result.ok).toBe(true);
+		if (result.ok) {
+			expect(result.output.verified).toBe(false);
+			expect(result.output.blockers).toContain(
+				"review_evidence_incomplete: safety_floor is missing an Evidence: reference",
+			);
 		}
 	});
 

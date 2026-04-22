@@ -1,7 +1,8 @@
 import { ContractLoadError, loadContract } from "../lib/contract/loader.js";
+import { evaluateNorthStarReviewEvidence } from "../lib/contract/north-star-alignment.js";
 import {
 	DEFAULT_REVIEW_POLICY,
-	type ReviewPolicy,
+	type HarnessContract,
 } from "../lib/contract/types.js";
 import {
 	findReviewCheckRun,
@@ -438,7 +439,7 @@ export async function runReviewGate(
 		};
 	}
 
-	let contract: { reviewPolicy?: ReviewPolicy | undefined };
+	let contract: HarnessContract;
 	try {
 		contract = loadContract(options.contractPath);
 	} catch (e) {
@@ -482,6 +483,11 @@ export async function runReviewGate(
 			...(pullRequest.body !== undefined ? { prBody: pullRequest.body } : {}),
 			changedFiles,
 		});
+		const northStarEvidence = evaluateNorthStarReviewEvidence(
+			contract,
+			pullRequest.body,
+			changedFiles,
+		);
 
 		if (pullRequestHeadSha.toLowerCase() !== options.headSha.toLowerCase()) {
 			return {
@@ -509,7 +515,10 @@ export async function runReviewGate(
 							needsRerun: true,
 						},
 						{
-							additionalBlockers: planTraceability.blockers,
+							additionalBlockers: [
+								...planTraceability.blockers,
+								...northStarEvidence.blockers,
+							],
 							policyCheckName: options.checkName,
 							planTraceability: {
 								status: planTraceability.status,
@@ -564,6 +573,7 @@ export async function runReviewGate(
 					...threadReadiness.blockers,
 					...requiredCheckBlockers,
 					...planTraceability.blockers,
+					...northStarEvidence.blockers,
 				];
 				return {
 					ok: true,
@@ -604,7 +614,10 @@ export async function runReviewGate(
 							needsRerun: true,
 						},
 						{
-							additionalBlockers: planTraceability.blockers,
+							additionalBlockers: [
+								...planTraceability.blockers,
+								...northStarEvidence.blockers,
+							],
 							policyCheckName: options.checkName,
 							planTraceability: {
 								status: planTraceability.status,
@@ -649,7 +662,10 @@ export async function runReviewGate(
 					timedOut: true,
 				},
 				{
-					additionalBlockers: planTraceability.blockers,
+					additionalBlockers: [
+						...planTraceability.blockers,
+						...northStarEvidence.blockers,
+					],
 					policyCheckName: options.checkName,
 					planTraceability: {
 						status: planTraceability.status,
