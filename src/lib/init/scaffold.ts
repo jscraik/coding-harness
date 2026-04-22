@@ -593,6 +593,9 @@ ${riskPolicyRequires}          command: bash scripts/run-harness-gate.sh policy-
             if ! dpkg -s python3-venv >/dev/null 2>&1; then
               packages+=("python3-venv")
             fi
+            if ! dpkg -s python3-pip >/dev/null 2>&1; then
+              packages+=("python3-pip")
+            fi
             if (( \${#packages[@]} > 0 )); then
               sudo apt-get update
               sudo apt-get install -y "\${packages[@]}"
@@ -609,7 +612,7 @@ ${riskPolicyRequires}          command: bash scripts/run-harness-gate.sh policy-
             SEMGREP_VENV="$HOME/.local/share/semgrep-venv-\${SEMGREP_VERSION}"
             if [[ ! -x "$SEMGREP_VENV/bin/semgrep" ]]; then
               python3 -m venv "$SEMGREP_VENV"
-              "$SEMGREP_VENV/bin/python" -m pip install --quiet --upgrade pip "semgrep==\${SEMGREP_VERSION}"
+              "$SEMGREP_VENV/bin/python" -m pip install --quiet --upgrade pip "semgrep>=\${SEMGREP_VERSION},<2.0.0"
             fi
             ln -sf "$SEMGREP_VENV/bin/semgrep" "$HOME/.local/bin/semgrep"
             export MISE_CARGO_BINSTALL=false
