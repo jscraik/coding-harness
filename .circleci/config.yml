@@ -134,49 +134,48 @@ workflows:
           filters:
             tags:
               ignore: /.*/
-      - run-governance-check:
-          name: orb-pinning
-          check_name: orb-pinning
-          command: |
-            packages=()
-            if ! dpkg -s python3-venv >/dev/null 2>&1; then
-              packages+=("python3-venv")
-            fi
-            if (( ${#packages[@]} > 0 )); then
-              sudo apt-get update
-              sudo apt-get install -y "${packages[@]}"
-            fi
-            mkdir -p "$HOME/.local/bin" "$HOME/.local/share"
+	      - run-governance-check:
+	          name: orb-pinning
+	          check_name: orb-pinning
+	          command: |
+	            packages=()
+	            for pkg in python3 python3-venv python3-pip; do
+	              if ! dpkg -s "$pkg" >/dev/null 2>&1; then
+	                packages+=("$pkg")
+	              fi
+	            done
+	            if (( ${#packages[@]} > 0 )); then
+	              sudo apt-get update
+	              sudo apt-get install -y "${packages[@]}"
+	            fi
+	            mkdir -p "$HOME/.local/bin" "$HOME/.local/share"
             export PATH="$HOME/.local/bin:$PATH"
             echo 'export PATH="$HOME/.local/bin:$PATH"' >> "$BASH_ENV"
             if ! command -v cargo >/dev/null 2>&1; then
               mise install rust@stable
-              if [[ -f "$HOME/.cargo/env" ]]; then
-                # rustup does not update the current shell PATH for non-interactive jobs.
-                . "$HOME/.cargo/env"
-              fi
-            fi
-            SEMGREP_VERSION="1.153.1"
-            SEMGREP_VENV="$HOME/.local/share/semgrep-venv-${SEMGREP_VERSION}"
-            if [[ ! -x "$SEMGREP_VENV/bin/semgrep" ]]; then
-              python3 -m venv "$SEMGREP_VENV"
-              "$SEMGREP_VENV/bin/python" -m pip install --quiet --upgrade pip "semgrep==${SEMGREP_VERSION}"
-            fi
-            ln -sf "$SEMGREP_VENV/bin/semgrep" "$HOME/.local/bin/semgrep"
-            export MISE_CARGO_BINSTALL=false
-            export MISE_NODE_VERIFY=false
-            mise install \
-              node pnpm python uv cargo:prek \
-              npm:@brainwav/diagram npm:@argos-ci/cli cosign cloudflared npm:vitest \
+	              if [[ -f "$HOME/.cargo/env" ]]; then
+	                # rustup does not update the current shell PATH for non-interactive jobs.
+	                . "$HOME/.cargo/env"
+	              fi
+	            fi
+	            # Reuse the shared Semgrep bootstrap so orb-pinning and security-scan resolve the same runtime path.
+	            # shellcheck source=scripts/semgrep-bootstrap.sh
+	            source "$PWD/scripts/semgrep-bootstrap.sh"
+	            ensure_semgrep_version
+	            export MISE_CARGO_BINSTALL=false
+	            export MISE_NODE_VERIFY=false
+	            mise install \
+	              node pnpm python uv cargo:prek \
+	              npm:@brainwav/diagram npm:@argos-ci/cli cosign cloudflared npm:vitest \
               ruff npm:eslint npm:agent-browser npm:agentation npm:agentation-mcp \
-              npm:@mermaid-js/mermaid-cli npm:@brainwav/rsearch npm:@brainwav/wsearch-cli \
-              npm:beautiful-mermaid npm:markdownlint-cli2 npm:semver npm:wrangler \
-              trivy vale
-            semgrep --version
-            bash scripts/check-environment.sh
-          filters:
-            tags:
-              ignore: /.*/
+	              npm:@mermaid-js/mermaid-cli npm:@brainwav/rsearch npm:@brainwav/wsearch-cli \
+	              npm:beautiful-mermaid npm:markdownlint-cli2 npm:semver npm:wrangler \
+	              trivy vale
+	            run_semgrep --version
+	            bash scripts/check-environment.sh
+	          filters:
+	            tags:
+	              ignore: /.*/
       - run-governance-check:
           name: docs-gate
           check_name: docs-gate
