@@ -6,7 +6,17 @@ if [[ -z "${REPO_ROOT:-}" ]]; then
 fi
 
 SEMGREP_VERSION="${SEMGREP_VERSION:-1.153.1}"
-SEMGREP_PIP_SPEC="${SEMGREP_PIP_SPEC:-semgrep>=${SEMGREP_VERSION},<2.0.0}"
+SEMGREP_VERSION_SERIES="${SEMGREP_VERSION%.*}"
+DEFAULT_SEMGREP_PIP_SPEC="semgrep>=${SEMGREP_VERSION},<2.0.0"
+if [[ "$SEMGREP_VERSION_SERIES" == *.* ]]; then
+  semgrep_series_major="${SEMGREP_VERSION_SERIES%%.*}"
+  semgrep_series_minor="${SEMGREP_VERSION_SERIES##*.}"
+  if [[ "$semgrep_series_major" =~ ^[0-9]+$ && "$semgrep_series_minor" =~ ^[0-9]+$ ]]; then
+    semgrep_next_minor="$((semgrep_series_minor + 1))"
+    DEFAULT_SEMGREP_PIP_SPEC="semgrep>=${SEMGREP_VERSION},<${semgrep_series_major}.${semgrep_next_minor}.0"
+  fi
+fi
+SEMGREP_PIP_SPEC="${SEMGREP_PIP_SPEC:-$DEFAULT_SEMGREP_PIP_SPEC}"
 DEFAULT_SEMGREP_STATE_ROOT="$REPO_ROOT/.git/semgrep"
 if git_semgrep_state_root="$(git -C "$REPO_ROOT" rev-parse --git-path semgrep 2>/dev/null)"; then
   if [[ "$git_semgrep_state_root" != /* ]]; then
@@ -47,6 +57,22 @@ semgrep_binary_usable() {
     "$SEMGREP_BIN" --version >/dev/null 2>&1
 }
 
+detect_semgrep_package_version() {
+  if semgrep_binary_usable; then
+    "$SEMGREP_PYTHON" - <<'PY' 2>/dev/null
+import importlib.metadata
+print(importlib.metadata.version("semgrep"))
+PY
+    return
+  fi
+
+  PYTHONPATH="$SEMGREP_SITE_PACKAGES_DIR${PYTHONPATH:+:$PYTHONPATH}" \
+    python3 - <<'PY' 2>/dev/null
+import importlib.metadata
+print(importlib.metadata.version("semgrep"))
+PY
+}
+
 run_semgrep() {
   if semgrep_binary_usable; then
     XDG_CACHE_HOME="$SEMGREP_RUNTIME_CACHE_ROOT" \
@@ -65,13 +91,13 @@ run_semgrep() {
 
 semgrep_version_usable() {
   local detected_version
-  detected_version="$(run_semgrep --version 2>/dev/null | tr -d "[:space:]")" || return 1
+  detected_version="$(detect_semgrep_package_version | tr -d "[:space:]")" || return 1
   if [[ "$detected_version" == "$SEMGREP_VERSION" ]]; then
     return 0
   fi
   # Some Python runtimes cannot resolve older Semgrep pins and install a newer
   # compatible release instead. Accept only newer patch releases in the same
-  # major.minor series to avoid cross-series scanner drift.
+  # major.minor package series to avoid cross-series scanner drift.
   local requested_series detected_series
   requested_series="${SEMGREP_VERSION%.*}"
   detected_series="${detected_version%.*}"
