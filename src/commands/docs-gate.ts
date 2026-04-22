@@ -1076,10 +1076,42 @@ function resolveChangedFiles(
 			}
 		}
 		if (trackedOutput === undefined) {
-			trackedOutput = execFileSync("git", [...trackedDiffArgs, "HEAD"], {
-				encoding: "utf-8",
-				stdio: ["ignore", "pipe", "pipe"],
-			});
+			try {
+				const fallbackBase = execFileSync(
+					"git",
+					["-C", repoRoot, "rev-parse", "--verify", "HEAD^"],
+					{
+						encoding: "utf-8",
+						stdio: ["ignore", "pipe", "pipe"],
+					},
+				).trim();
+				trackedOutput = execFileSync(
+					"git",
+					[...trackedDiffArgs, `${fallbackBase}...HEAD`],
+					{
+						encoding: "utf-8",
+						stdio: ["ignore", "pipe", "pipe"],
+					},
+				);
+			} catch {
+				trackedOutput = execFileSync(
+					"git",
+					[
+						"-C",
+						repoRoot,
+						"diff-tree",
+						"--no-commit-id",
+						"--name-only",
+						"--diff-filter=ACMR",
+						"-r",
+						"HEAD",
+					],
+					{
+						encoding: "utf-8",
+						stdio: ["ignore", "pipe", "pipe"],
+					},
+				);
+			}
 		}
 		const untrackedOutput = execFileSync(
 			"git",

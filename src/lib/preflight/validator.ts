@@ -337,6 +337,7 @@ export async function runPreflightGate(
 	const admissionCheck = validateAdmissionDeclaration(
 		options.admission,
 		contract,
+		contractLoad.northStarDeclared,
 		options,
 	);
 	if (admissionCheck) {
@@ -383,6 +384,7 @@ function loadPreflightContract(contractPath: string): {
 	contract: HarnessContract | undefined;
 	errorMessage: string | undefined;
 	durationMs: number;
+	northStarDeclared: boolean;
 } {
 	const start = Date.now();
 	if (!existsSync(contractPath)) {
@@ -390,7 +392,22 @@ function loadPreflightContract(contractPath: string): {
 			contract: undefined,
 			errorMessage: undefined,
 			durationMs: Date.now() - start,
+			northStarDeclared: false,
 		};
+	}
+
+	let northStarDeclared = false;
+	try {
+		const contractSource = readFileSync(contractPath, "utf-8");
+		const parsedSource = JSON.parse(contractSource) as unknown;
+		if (typeof parsedSource === "object" && parsedSource !== null) {
+			northStarDeclared = Object.prototype.hasOwnProperty.call(
+				parsedSource,
+				"northStar",
+			);
+		}
+	} catch {
+		// Ignore source-parse failures here. loadContract will report parsing errors.
 	}
 
 	try {
@@ -398,6 +415,7 @@ function loadPreflightContract(contractPath: string): {
 			contract: loadContract(contractPath),
 			errorMessage: undefined,
 			durationMs: Date.now() - start,
+			northStarDeclared,
 		};
 	} catch (error) {
 		if (isMissingContractError(error)) {
@@ -405,6 +423,7 @@ function loadPreflightContract(contractPath: string): {
 				contract: undefined,
 				errorMessage: undefined,
 				durationMs: Date.now() - start,
+				northStarDeclared: false,
 			};
 		}
 		const message = error instanceof Error ? error.message : String(error);
@@ -412,6 +431,7 @@ function loadPreflightContract(contractPath: string): {
 			contract: undefined,
 			errorMessage: `Invalid contract: ${message}`,
 			durationMs: Date.now() - start,
+			northStarDeclared,
 		};
 	}
 }
@@ -486,6 +506,7 @@ function buildNorthStarSummary(
 function validateAdmissionDeclaration(
 	declaration: PreflightAdmissionDeclaration | undefined,
 	contract: HarnessContract | undefined,
+	northStarDeclared: boolean,
 	options?: Pick<PreflightGateOptions, "skip" | "files">,
 ): PreflightCheck | undefined {
 	if (options?.skip?.includes("admission-declaration")) {
@@ -493,7 +514,7 @@ function validateAdmissionDeclaration(
 	}
 
 	if (!declaration) {
-		if (!contract?.northStar) {
+		if (!northStarDeclared) {
 			return undefined;
 		}
 		return {
@@ -777,6 +798,31 @@ function validateAdmissionDeclaration(
 			if (unknownSurfaceIds.length > 0) {
 				addIssue(
 					`affected_surface_ids contains unknown surface id(s): ${unknownSurfaceIds.join(", ")}`,
+					"surface_registration_gap",
+				);
+			}
+		}
+		if (
+			affectedSurfaceIds &&
+			affectedSurfaceIds.length > 0 &&
+			affectedSurfaceClasses &&
+			affectedSurfaceClasses.length > 0
+		) {
+			const expectedClasses = new Set(
+				registeredSurfaces
+					.filter((surface) => affectedSurfaceIds.includes(surface.surfaceId))
+					.map((surface) => surface.class?.trim())
+					.filter(
+						(surfaceClass): surfaceClass is string =>
+							typeof surfaceClass === "string" && surfaceClass.length > 0,
+					),
+			);
+			const mismatchedClasses = affectedSurfaceClasses.filter(
+				(surfaceClass) => !expectedClasses.has(surfaceClass),
+			);
+			if (expectedClasses.size > 0 && mismatchedClasses.length > 0) {
+				addIssue(
+					`affected_surface_classes contains class(es) not registered for affected_surface_ids: ${mismatchedClasses.join(", ")}; expected: ${[...expectedClasses].join(", ")}`,
 					"surface_registration_gap",
 				);
 			}

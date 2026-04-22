@@ -70,7 +70,25 @@ semgrep_version_usable() {
   fi
   # Some Python runtimes cannot resolve older Semgrep pins and install the
   # nearest compatible newer release instead. Accept >= requested version.
-  [[ "$(printf '%s\n%s\n' "$SEMGREP_VERSION" "$detected_version" | sort -V | head -n 1)" == "$SEMGREP_VERSION" ]]
+  local req_major req_minor req_patch det_major det_minor det_patch
+  IFS=. read -r req_major req_minor req_patch <<< "$SEMGREP_VERSION"
+  IFS=. read -r det_major det_minor det_patch <<< "$detected_version"
+  for segment in \
+    "$req_major" "$req_minor" "$req_patch" \
+    "$det_major" "$det_minor" "$det_patch"; do
+    if [[ ! "$segment" =~ ^[0-9]+$ ]]; then
+      return 1
+    fi
+  done
+  if (( det_major != req_major )); then
+    (( det_major > req_major ))
+    return
+  fi
+  if (( det_minor != req_minor )); then
+    (( det_minor > req_minor ))
+    return
+  fi
+  (( det_patch >= req_patch ))
 }
 
 ensure_python_packaging_tools() {

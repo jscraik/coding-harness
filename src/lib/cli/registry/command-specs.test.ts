@@ -206,6 +206,10 @@ describe("linear execute validation", () => {
 		expect(spec.execute(["--json"])).toBe(2);
 	});
 
+	it("returns 2 when --branch value is empty", () => {
+		expect(spec.execute(["claim", "--branch", "   "])).toBe(2);
+	});
+
 	it("accepts valid actions and passes validation (does not return 2)", async () => {
 		const validActions = [
 			"claim",
@@ -221,6 +225,14 @@ describe("linear execute validation", () => {
 			const result = await spec.execute([action]);
 			expect(result).not.toBe(2);
 		}
+	});
+});
+
+describe("linear-gate execute validation", () => {
+	const spec = findSpec("linear-gate");
+
+	it("returns 2 when --branch value is empty", () => {
+		expect(spec.execute(["--branch", "   "])).toBe(2);
 	});
 });
 

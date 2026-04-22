@@ -86,6 +86,7 @@ import {
 	isNonEmptyStringArray,
 	isPlainObject,
 	isStringArray,
+	isValidContractVersionString,
 	isValidGateVerdict,
 	isValidLinearProjectUrl,
 	isValidPolicyAction,
@@ -1748,6 +1749,15 @@ export function validateContract(
 			expected: "string (e.g., '1.0')",
 			received: typeof obj.version,
 			fix: 'Add "version": "1.0" to your contract',
+		});
+	} else if (!isValidContractVersionString(obj.version)) {
+		errors.push({
+			code: ValidationErrorCode.INVALID_VALUE,
+			path: "version",
+			message: "Version must match MAJOR.MINOR or MAJOR.MINOR.PATCH",
+			expected: 'string semver (e.g., "1.0" or "1.6.0")',
+			received: obj.version,
+			fix: 'Use a numeric contract version like "1.0" or "1.6.0"',
 		});
 	}
 

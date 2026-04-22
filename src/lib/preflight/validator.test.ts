@@ -288,6 +288,74 @@ describe("runPreflightGate", () => {
 		expect(admissionCheck?.message).not.toContain("surface_registration_gap");
 	});
 
+	it("does not require admission when northStar is only present via defaults", async () => {
+		writeFileSync("harness.contract.json", JSON.stringify({ version: "1.0" }), {
+			encoding: "utf-8",
+		});
+		mkdirSync("src", { recursive: true });
+		writeFileSync("src/example.ts", "export const example = true;\n");
+
+		const result = await runPreflightGate({
+			files: ["src/example.ts"],
+		});
+
+		expect(
+			result.checks.some((check) => check.id === "admission-declaration"),
+		).toBe(false);
+	});
+
+	it("requires admission when northStar is explicitly declared", async () => {
+		writeNorthStarContract();
+		mkdirSync("src/commands", { recursive: true });
+		writeFileSync("src/commands/review-gate.ts", "export const gate = true;\n");
+
+		const result = await runPreflightGate({
+			files: ["src/commands/review-gate.ts"],
+			skip: [
+				"git-repository",
+				"harness-version-coherence",
+				"contract-exists",
+				"risk-tier",
+				"file-size",
+				"forbidden-patterns",
+			],
+		});
+		const admissionCheck = result.checks.find(
+			(check) => check.id === "admission-declaration",
+		);
+
+		expect(admissionCheck?.passed).toBe(false);
+		expect(admissionCheck?.message).toContain("admission_incomplete");
+	});
+
+	it("fails admission when affected_surface_classes mismatches registered class", async () => {
+		writeNorthStarContract();
+		mkdirSync("src/commands", { recursive: true });
+		writeFileSync("src/commands/review-gate.ts", "export const gate = true;\n");
+		const admission = createAdmissionDeclaration();
+		admission.affected_surface_classes = ["adjacent"];
+
+		const result = await runPreflightGate({
+			files: ["src/commands/review-gate.ts"],
+			admission,
+			skip: [
+				"git-repository",
+				"harness-version-coherence",
+				"contract-exists",
+				"risk-tier",
+				"file-size",
+				"forbidden-patterns",
+			],
+		});
+		const admissionCheck = result.checks.find(
+			(check) => check.id === "admission-declaration",
+		);
+
+		expect(admissionCheck?.passed).toBe(false);
+		expect(admissionCheck?.message).toContain("affected_surface_classes");
+		expect(admissionCheck?.message).toContain("expected: core");
+	});
+
 	it("applies pre hooks when files option is omitted", async () => {
 		writeFileSync(
 			"harness.contract.json",

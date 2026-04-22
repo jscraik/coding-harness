@@ -256,6 +256,18 @@ describe("validateContract", () => {
 		);
 	});
 
+	it("rejects malformed semver versions", () => {
+		const result = validateContract({ version: "1.6.x" });
+		expect(result.success).toBe(false);
+		expect(result.errors.map((error) => error.path)).toContain("version");
+	});
+
+	it("rejects prefixed semver versions", () => {
+		const result = validateContract({ version: "v1.6.0" });
+		expect(result.success).toBe(false);
+		expect(result.errors.map((error) => error.path)).toContain("version");
+	});
+
 	it("accumulates multiple errors", () => {
 		const result = validateContract({
 			version: 123,
