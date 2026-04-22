@@ -34,9 +34,9 @@ This workflow keeps delivery auditable, reversible, and consistent even for solo
 ## Branching and PR rule
 
 1. Create a dedicated branch/worktree for each task:
-   - Preferred project-local helper: `bash scripts/new-task.sh <short-description>`
-   - Agent-created branch: `git switch -c jscraik/feature/<short-description>`
-   - Agent-created worktree: `git worktree add ../wt-<short-description> -b jscraik/feature/<short-description>`
+   - Preferred project-local helper: `bash scripts/new-task.sh <issue-key>-<short-description>`
+   - Agent-created branch: `git switch -c codex/<issue-key>-<short-description>`
+   - Agent-created worktree: `git worktree add ../wt-<issue-key>-<short-description> -b codex/<issue-key>-<short-description>`
    - Human-authored branch prefixes (when not using `jscraik/feature/`): `feat/`, `fix/`, `docs/`, `refactor/`, `chore/`, `test/`
    - Keep one task = one worktree = one branch = one agent thread.
 2. Keep commits small and focused.
@@ -47,7 +47,7 @@ This workflow keeps delivery auditable, reversible, and consistent even for solo
 ## Branch name policy
 
 - Use lower-case, kebab-case slugs.
-- Agent-created branches must use `jscraik/feature/<short-description>`.
+- Agent-created branches must use `codex/<issue-key>-<short-description>`.
 - Human-authored branches may use: `feat/`, `fix/`, `docs/`, `refactor/`, `chore/`, `test/`.
 - Avoid `main`-like names and do not include secrets or issue-pii.
 
@@ -118,7 +118,7 @@ Recommended policy:
 - `scripts/new-task.sh` is the canonical task bootstrap helper. Use it to create one task = one worktree = one branch = one agent thread inside the project itself.
 - Repo-local launches should prefer `./scripts/codex-enforced` so preflight failures are recorded into repo-scoped learn state.
 - Use `./scripts/codex-learn analyze` and `./scripts/codex-learn apply` to inspect repo-scoped failure patterns and write override files into `.harness/memory/`.
-- Start new work with `bash scripts/new-task.sh <slug>`, then enter the generated worktree and continue there.
+- Start new work with `bash scripts/new-task.sh <issue-key>-<slug>`, then enter the generated worktree and continue there.
 - Use `bash scripts/validate-codestyle.sh --fast` during iteration for focused code style validation.
 - Use `bash scripts/validate-codestyle.sh` before handoff for the fail-closed code style bundle.
 - Use `bash scripts/verify-work.sh` for the broader verification bundle.

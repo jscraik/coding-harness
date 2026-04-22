@@ -9,15 +9,30 @@ if [[ $# -eq 0 ]]; then
 	exit 2
 fi
 
-if [[ -f "$REPO_ROOT/src/cli.ts" ]]; then
+is_harness_source_repo() {
+	[[ -f "$REPO_ROOT/src/cli.ts" ]] || return 1
+	[[ -f "$REPO_ROOT/package.json" ]] || return 1
+	command -v node >/dev/null 2>&1 || return 1
+
+	node -e '
+		const { readFileSync } = require("node:fs");
+		const packageJson = JSON.parse(readFileSync(process.argv[1], "utf8"));
+		process.exit(packageJson.name === "@brainwav/coding-harness" ? 0 : 1);
+	' "$REPO_ROOT/package.json" >/dev/null 2>&1
+}
+
+if is_harness_source_repo; then
 	if command -v pnpm >/dev/null 2>&1; then
-		exec pnpm exec tsx "$REPO_ROOT/src/cli.ts" "$@"
+		if pnpm exec -- tsx --version >/dev/null 2>&1; then
+			exec pnpm exec tsx "$REPO_ROOT/src/cli.ts" "$@"
+		fi
+		echo "Warning: pnpm is installed but tsx is unavailable; falling back to alternate harness runners." >&2
 	else
-		echo "Warning: pnpm not found; skipping repo-local harness CLI at $REPO_ROOT/src/cli.ts" >&2
+		echo "Warning: pnpm is unavailable; falling back to alternate harness runners." >&2
 	fi
 fi
 
-if [[ -x "$REPO_ROOT/scripts/harness-cli.sh" ]]; then
+if [[ -f "$REPO_ROOT/scripts/harness-cli.sh" && -r "$REPO_ROOT/scripts/harness-cli.sh" ]]; then
 	exec bash "$REPO_ROOT/scripts/harness-cli.sh" "$@"
 fi
 

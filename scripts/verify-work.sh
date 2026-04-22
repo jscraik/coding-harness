@@ -302,10 +302,10 @@ run_ci_check_alignment_gate() {
 		local circleci_check_names
 		circleci_check_names="$(jq -r '.gates[]? | select((.provider // "") == "circleci") | .githubCheckName // empty' "$normalized_manifest_path")"
 		while IFS= read -r name; do
-				case "$name" in
-					lint|typecheck|test|audit|check|build|memory|dependency-scan|orb-pinning|docs-gate|linear-gate|risk-policy-gate|consistency-drift-health|pr-template)
-						suspicious+=("$name")
-						;;
+			case "$name" in
+				lint|typecheck|test|audit|check|build|memory|dependency-scan|orb-pinning|docs-gate|linear-gate|risk-policy-gate|consistency-drift-health|pr-template)
+					suspicious+=("$name")
+					;;
 				*)
 					;;
 			esac

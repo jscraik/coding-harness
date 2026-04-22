@@ -30,6 +30,7 @@ const CIRCLECI_WORKFLOW_OWNED_CHECKS = new Set<string>([
 	"risk-policy-gate",
 	"consistency-drift-health",
 	"pr-template",
+	"security-scan",
 ]);
 
 /**
@@ -37,7 +38,7 @@ const CIRCLECI_WORKFLOW_OWNED_CHECKS = new Set<string>([
  *
  * Special handling:
  * - A display name of `"CodeRabbit"` maps to the `coderabbit` source and `CodeRabbit` GitHub check name.
- * - A display name of `"security-scan"` always maps to the explicit `security-scan` check context (CircleCI or GitHub Actions source based on provider).
+ * - A display name of `"security-scan"` maps to CircleCI primary check metadata when `provider` is `"circleci"`, otherwise to the `github-actions` source with GitHub check name `"security-scan"`.
  * - For CircleCI, certain workflow-owned check names (including the configured primary check) are mapped to the CircleCI primary check name; other CircleCI names are treated as external checks.
  *
  * @param provider - CI provider slug used to determine source ownership (for example, `"circleci"` or `"github-actions"`)
@@ -60,9 +61,17 @@ export function deriveRequiredCheckMetadata(
 		};
 	}
 	if (displayName === "security-scan") {
+		if (provider === "circleci") {
+			return {
+				sourceAppSlug: "circleci",
+				sourceAppId: "circleci",
+				githubCheckName: "security-scan",
+				class: "required",
+			};
+		}
 		return {
-			sourceAppSlug: provider === "circleci" ? "circleci" : "github-actions",
-			sourceAppId: provider === "circleci" ? "circleci" : "github-actions",
+			sourceAppSlug: "github-actions",
+			sourceAppId: "github-actions",
 			githubCheckName: "security-scan",
 			class: "required",
 		};

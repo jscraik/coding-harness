@@ -540,13 +540,16 @@ async function resolveCodingActor(
 	prNumber: number,
 	headSha: string,
 	prAuthorLogin: string | undefined,
+	botLogins: Set<string>,
 ): Promise<string | undefined> {
 	const normalizedPrAuthor = normalizeBotLogin(prAuthorLogin);
 	if (
 		typeof (client as Partial<GitHubClient>).listPullRequestCommits !==
 		"function"
 	) {
-		return normalizedPrAuthor;
+		return isAutomatedActorLogin(normalizedPrAuthor, botLogins)
+			? undefined
+			: normalizedPrAuthor;
 	}
 
 	try {
@@ -556,12 +559,38 @@ async function resolveCodingActor(
 			return undefined;
 		}
 
-		const commitActor =
+		const commitActorCandidates = [
 			normalizeBotLogin(headCommit.author?.login) ??
-			normalizeBotLogin(headCommit.committer?.login);
-		return commitActor ?? normalizedPrAuthor;
+				normalizeBotLogin(headCommit.committer?.login),
+			normalizeBotLogin(headCommit.committer?.login),
+		].filter((login): login is string => login !== undefined);
+		const headCommitHumanActor = commitActorCandidates.find(
+			(login) => !isAutomatedActorLogin(login, botLogins),
+		);
+		if (headCommitHumanActor) {
+			return headCommitHumanActor;
+		}
+
+		const latestHumanCommitActor = [...commits]
+			.reverse()
+			.map(
+				(commit) =>
+					normalizeBotLogin(commit.author?.login) ??
+					normalizeBotLogin(commit.committer?.login),
+			)
+			.filter((login): login is string => login !== undefined)
+			.find((login) => !isAutomatedActorLogin(login, botLogins));
+		if (latestHumanCommitActor) {
+			return latestHumanCommitActor;
+		}
+
+		return isAutomatedActorLogin(normalizedPrAuthor, botLogins)
+			? undefined
+			: normalizedPrAuthor;
 	} catch {
-		return normalizedPrAuthor;
+		return isAutomatedActorLogin(normalizedPrAuthor, botLogins)
+			? undefined
+			: normalizedPrAuthor;
 	}
 }
 
@@ -1127,6 +1156,7 @@ export async function runReviewGate(
 				const requiredChecks = (reviewPolicy.requiredChecks ?? []).filter(
 					(checkName) => !activeReviewGateChecks.has(checkName),
 				);
+				const botLogins = buildBotLoginSet(options.botLogin);
 				// Always enforce that at least one APPROVED review exists for the
 				// current HEAD SHA. enforceReviewerIndependence only controls
 				// whether the approver must be different from the PR author —
@@ -1136,8 +1166,8 @@ export async function runReviewGate(
 					options.prNumber,
 					pullRequestHeadSha,
 					pullRequest.user?.login?.trim(),
+					botLogins,
 				);
-				const botLogins = buildBotLoginSet(options.botLogin);
 				const approvals = await evaluateApprovals(
 					client,
 					options.prNumber,
@@ -1395,6 +1425,16 @@ interface AuthzPreflightResult {
 function normalizeBotLogin(login: string | undefined): string | undefined {
 	const trimmed = login?.trim().toLowerCase();
 	return trimmed && trimmed.length > 0 ? trimmed : undefined;
+}
+
+function isAutomatedActorLogin(
+	login: string | undefined,
+	botLogins: Set<string>,
+): boolean {
+	if (!login) {
+		return true;
+	}
+	return botLogins.has(login) || /\[bot\]$/u.test(login);
 }
 
 async function resolveBotOnlyThreads(
