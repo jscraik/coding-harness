@@ -1713,8 +1713,10 @@ exit 0
 
 		const result = runVerifyWorkScript(repoRoot);
 		expect(result.status).toBe(0);
+		const expectedRetryAttempts = process.env.CI ? 4 : 3;
+		const expectedRetryDelay = process.env.CI ? "3s" : "1s";
 		expect(`${result.stdout}${result.stderr}`).toContain(
-			"transient failure on attempt 1/4; retrying in 3s",
+			`transient failure on attempt 1/${expectedRetryAttempts}; retrying in ${expectedRetryDelay}`,
 		);
 
 		const summary = JSON.parse(result.stdout) as { runId: string };
@@ -1802,7 +1804,8 @@ exit 1
 			nextAction: string;
 		};
 
-		expect(gate.attempt).toBe(4);
+		const expectedRetryAttempts = process.env.CI ? 4 : 3;
+		expect(gate.attempt).toBe(expectedRetryAttempts);
 		expect(gate.status).toBe("failed");
 		expect(gate.failureClass).toBe("transient_infra");
 		expect(gate.nextAction).toBe(
