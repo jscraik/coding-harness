@@ -554,23 +554,24 @@ describe("runBranchProtect", () => {
 			(rule) => rule.type === "required_status_checks",
 		);
 		expect(requiredRule?.parameters).toMatchObject({
-			required_status_checks: [
-				{ context: "pr-template" },
-				{ context: "linear-gate" },
-				{ context: "risk-policy-gate" },
-				{ context: "dependency-scan" },
-				{ context: "orb-pinning" },
-				{ context: "consistency-drift-health" },
-				{ context: "docs-gate" },
-				{ context: "lint" },
-				{ context: "typecheck" },
-				{ context: "test" },
-				{ context: "audit" },
-				{ context: "check" },
-				{ context: "memory" },
-				{ context: "CodeRabbit" },
-			],
-		});
+				required_status_checks: [
+					{ context: "pr-template" },
+					{ context: "linear-gate" },
+					{ context: "risk-policy-gate" },
+					{ context: "dependency-scan" },
+					{ context: "orb-pinning" },
+					{ context: "consistency-drift-health" },
+					{ context: "docs-gate" },
+					{ context: "lint" },
+					{ context: "typecheck" },
+					{ context: "test" },
+					{ context: "audit" },
+					{ context: "check" },
+					{ context: "memory" },
+					{ context: "security-scan" },
+					{ context: "CodeRabbit" },
+				],
+			});
 	});
 
 	it("supports dry-run without applying changes", async () => {

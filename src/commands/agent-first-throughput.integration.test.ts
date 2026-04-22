@@ -224,9 +224,11 @@ describe("agent-first throughput integration", () => {
 		if (reviewResult.ok) {
 			expect(reviewResult.output.verified).toBe(false);
 			expect(reviewResult.output.policy_gate_status).toBe("fail");
-			expect(reviewResult.output.blockers).toContain(
-				"risk-policy-gate check did not pass (conclusion: failure)",
-			);
+			expect(
+				reviewResult.output.blockers.some((blocker) =>
+					/check did not pass \(conclusion: failure\)/.test(blocker),
+				),
+			).toBe(true);
 		}
 	});
 

@@ -22,24 +22,21 @@ is_harness_source_repo() {
 }
 
 if is_harness_source_repo; then
-	if command -v pnpm >/dev/null 2>&1; then
-		exec pnpm exec tsx "$REPO_ROOT/src/cli.ts" "$@"
-	else
+	if ! command -v pnpm >/dev/null 2>&1; then
 		echo "Error: pnpm is required to run the harness source CLI." >&2
 		echo "Install pnpm and retry." >&2
 		exit 1
 	fi
+	exec pnpm exec tsx "$REPO_ROOT/src/cli.ts" "$@"
 fi
 
 if [[ -f "$REPO_ROOT/scripts/harness-cli.sh" && -r "$REPO_ROOT/scripts/harness-cli.sh" ]]; then
 	exec bash "$REPO_ROOT/scripts/harness-cli.sh" "$@"
 fi
 
-if command -v mise >/dev/null 2>&1; then
-	MISE_RESOLVED="$(mise which harness 2>/dev/null || true)"
-	if [[ -n "$MISE_RESOLVED" && -x "$MISE_RESOLVED" ]]; then
-		exec "$MISE_RESOLVED" "$@"
-	fi
+mise_harness_bin="$(mise which harness 2>/dev/null || true)"
+if [[ -n "$mise_harness_bin" && -x "$mise_harness_bin" ]]; then
+	exec "$mise_harness_bin" "$@"
 fi
 
 if command -v harness >/dev/null 2>&1; then

@@ -16,6 +16,7 @@ describe("check-authz", () => {
 		testDir = join(baseDir, `check-authz-test-${Date.now()}`);
 		mkdirSync(testDir, { recursive: true });
 		contractPath = join(testDir, "harness.contract.json");
+		writeFileSync(join(testDir, ".gitignore"), "artifacts/pilot/\n", "utf-8");
 	});
 
 	afterEach(() => {
