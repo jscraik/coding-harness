@@ -225,8 +225,9 @@ describe("agent-first throughput integration", () => {
 			expect(reviewResult.output.verified).toBe(false);
 			expect(reviewResult.output.policy_gate_status).toBe("fail");
 			expect(
-				reviewResult.output.blockers.some((blocker) =>
-					/check did not pass \(conclusion: failure\)/.test(blocker),
+				reviewResult.output.blockers.some(
+					(blocker) =>
+						blocker === "review-check check did not pass (conclusion: failure)",
 				),
 			).toBe(true);
 		}

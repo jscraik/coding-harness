@@ -1304,7 +1304,6 @@ is_harness_source_repo() {
 			exit(found ? 0 : 1)
 		}
 	' "$REPO_ROOT/package.json" >/dev/null
-	return 0
 }
 
 if is_harness_source_repo; then

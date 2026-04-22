@@ -296,6 +296,7 @@ run_ci_check_alignment_gate() {
 		jq -r '
 			.activeProvider
 			// (.requiredChecks[]? | (.provider // .sourceAppSlug // .sourceAppId // empty))
+			// (.gates[]? | (.provider // .sourceAppSlug // .sourceAppId // empty))
 			// ""
 		' "$normalized_manifest_path" | head -n 1
 	)"

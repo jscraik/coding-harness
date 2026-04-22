@@ -296,9 +296,13 @@ describe("runInit", () => {
 			}
 			const generatedChecks = normalizedRequiredChecks.value.gates;
 			expect(normalizedRequiredChecks.value.activeProvider).toBe("circleci");
-			expect(generatedChecks[0]?.provider).toBe("circleci");
-			expect(generatedChecks[0]?.githubCheckName).toBe("pr-pipeline");
+			const prTemplateCheck = generatedChecks.find(
+				(entry) => entry.displayName === "pr-template",
+			);
+			expect(prTemplateCheck?.provider).toBe("circleci");
+			expect(prTemplateCheck?.githubCheckName).toBe("pr-pipeline");
 			expect(generatedChecks.map((entry) => entry.displayName)).toEqual([
+				"config-validation",
 				"pr-template",
 				"linear-gate",
 				"risk-policy-gate",
@@ -324,6 +328,7 @@ describe("runInit", () => {
 				generatedChecks
 					.filter(
 						(entry) =>
+							entry.displayName !== "config-validation" &&
 							entry.displayName !== "CodeRabbit" &&
 							entry.displayName !== "security-scan",
 					)
@@ -1187,7 +1192,9 @@ describe("runInit", () => {
 			expect(content).toContain("`docs-gate`");
 			expect(content).toContain("`CodeRabbit`");
 			expect(content).toContain("`consistency-drift-health`");
-			expect(content).toContain("- Require status checks:\n  - `pr-template`");
+			expect(content).toContain(
+				"- Require status checks:\n  - `config-validation`\n  - `pr-template`",
+			);
 			expect(content).toContain(
 				"- Allow `0` required reviewers for solo-maintainer repositories.",
 			);

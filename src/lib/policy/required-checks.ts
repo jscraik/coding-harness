@@ -336,6 +336,7 @@ export const ECOSYSTEM_PROFILES = {
 	 * coding-harness itself - full governance suite with all checks.
 	 */
 	harness: [
+		"config-validation",
 		"pr-template",
 		"linear-gate",
 		"risk-policy-gate",
