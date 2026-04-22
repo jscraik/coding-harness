@@ -12,9 +12,15 @@ fi
 is_harness_source_repo() {
 	[[ -f "$REPO_ROOT/src/cli.ts" ]] || return 1
 	[[ -f "$REPO_ROOT/package.json" ]] || return 1
-	grep -Eq \
-		'"name"[[:space:]]*:[[:space:]]*"@brainwav/coding-harness"' \
-		"$REPO_ROOT/package.json"
+	awk '
+		/"name"[[:space:]]*:[[:space:]]*"@brainwav\/coding-harness"/ {
+			found = 1
+			exit
+		}
+		END {
+			exit(found ? 0 : 1)
+		}
+	' "$REPO_ROOT/package.json" >/dev/null
 	return 0
 }
 
