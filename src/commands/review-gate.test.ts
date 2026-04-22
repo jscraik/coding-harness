@@ -3068,6 +3068,114 @@ describe("runReviewGate", () => {
 		}
 	});
 
+	it("resolves default required-check manifest from repo root for nested contract paths", async () => {
+		const tempDir = mkdtempSync(join(tmpdir(), "review-gate-root-manifest-"));
+		const manifestPath = join(tempDir, ".harness", "ci-required-checks.json");
+		mkdirSync(join(tempDir, ".harness"), { recursive: true });
+		mkdirSync(join(tempDir, ".git"), { recursive: true });
+		mkdirSync(join(tempDir, "config"), { recursive: true });
+		writeFileSync(
+			manifestPath,
+			JSON.stringify(
+				{
+					version: 1,
+					activeProvider: "circleci",
+					requiredChecks: [
+						{
+							displayName: "security-scan",
+							sourceAppSlug: "circleci",
+							sourceAppId: "circleci",
+							externalIdPattern: "^pr-pipeline$",
+							class: "required",
+							githubCheckName: "pr-pipeline",
+						},
+					],
+				},
+				null,
+				2,
+			),
+			"utf-8",
+		);
+
+		try {
+			mockLoadContract.mockReturnValue({
+				version: "1.0",
+				riskTierRules: {},
+				ciProviderPolicy: {
+					activeProvider: "circleci",
+					mode: "required",
+					migrationStage: "circleci-only",
+					transitionStatusArtifactPath:
+						".harness/ci-provider-transition-status.json",
+					authorityConfigPath:
+						"docs/examples/ci-migrate/authority-config.example.json",
+					requiredCheckManifestPath: ".harness/ci-required-checks.json",
+				},
+				reviewPolicy: {
+					timeoutSeconds: 600,
+					timeoutAction: "fail",
+					requiredChecks: ["security-scan"],
+				},
+			});
+
+			const mockCheckRuns: CheckRun[] = [
+				{
+					id: 1,
+					name: "review-check",
+					status: "completed",
+					conclusion: "success",
+					head_sha: validSha,
+				},
+				{
+					id: 2,
+					name: "pr-pipeline",
+					status: "completed",
+					conclusion: "success",
+					head_sha: validSha,
+					app: {
+						slug: "circleci",
+						id: 2,
+					},
+				},
+			];
+
+			mockGitHubClient.mockImplementation(
+				() =>
+					({
+						listPullRequestFiles: vi
+							.fn()
+							.mockResolvedValue([{ filename: "src/commands/review-gate.ts" }]),
+						listCheckRunsForRef: vi.fn().mockResolvedValue(mockCheckRuns),
+						getPullRequest: vi.fn().mockResolvedValue({
+							number: defaultOptions.prNumber,
+							user: { login: "coding-actor" },
+							head: { sha: validSha, ref: "feature/test" },
+						}),
+						listPullRequestReviews: vi.fn().mockResolvedValue([
+							{
+								state: "APPROVED",
+								commit_id: validSha,
+								user: { login: "independent-reviewer" },
+							},
+						]),
+					}) as unknown as GitHubClient,
+			);
+
+			const result = await runReviewGate({
+				...defaultOptions,
+				contractPath: join(tempDir, "config", "harness.contract.json"),
+			});
+
+			expect(result.ok).toBe(true);
+			if (result.ok) {
+				expect(result.output.verified).toBe(true);
+				expect(result.output.blockers).toEqual([]);
+			}
+		} finally {
+			rmSync(tempDir, { recursive: true, force: true });
+		}
+	});
+
 	it("derives default check identity from active provider metadata when --check is omitted", async () => {
 		const tempDir = mkdtempSync(join(tmpdir(), "review-gate-default-check-"));
 		const manifestPath = join(tempDir, ".harness", "ci-required-checks.json");

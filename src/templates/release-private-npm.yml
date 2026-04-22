@@ -178,13 +178,16 @@ jobs:
             process.exit(1);
           }
 
-          const cliEntryPath = path.join(pkgDir, "dist", "cli.js");
-          if (!fs.existsSync(cliEntryPath)) {
-            console.error(`Packed package ${pkgJson.name || packageName} is missing dist/cli.js`);
+          const binName = typeof binEntries === "string" ? path.basename(pkgJson.name) : Object.keys(binEntries)[0];
+          const binEntryRelPath =
+            typeof binEntries === "string" ? binEntries : binEntries[binName];
+          const binEntryPath = path.join(pkgDir, binEntryRelPath);
+          if (!binEntryRelPath || !fs.existsSync(binEntryPath)) {
+            console.error(
+              `Packed package ${pkgJson.name || packageName} is missing declared bin target ${binEntryRelPath || "<undefined>"}`,
+            );
             process.exit(1);
           }
-
-          const binName = typeof binEntries === "string" ? path.basename(pkgJson.name) : Object.keys(binEntries)[0];
           const binPath = path.join(tmpDir, "node_modules", ".bin", binName);
 
           console.log(`export BIN_PATH="${binPath}"`);

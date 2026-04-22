@@ -1,5 +1,10 @@
 import { existsSync, readFileSync } from "node:fs";
-import { dirname, isAbsolute, resolve as resolvePath } from "node:path";
+import {
+	basename,
+	dirname,
+	isAbsolute,
+	resolve as resolvePath,
+} from "node:path";
 import { ContractLoadError, loadContract } from "../lib/contract/loader.js";
 import {
 	DEFAULT_REVIEW_POLICY,
@@ -66,6 +71,7 @@ import type {
 const POLL_INTERVAL_MS = 5000; // 5 seconds
 const DEFAULT_REVIEW_GATE_AUTHZ_CONTRACT = "harness.contract.json";
 const DEFAULT_REVIEW_CHECK_NAME = "pr-pipeline";
+const DEFAULT_REQUIRED_CHECK_MANIFEST_PATH = ".harness/ci-required-checks.json";
 const LEGACY_REVIEW_CHECK_NAME_FALLBACKS = [
 	"risk-policy-gate",
 	"code-review",
@@ -780,7 +786,7 @@ function resolveRequiredChecksManifestPath(
 ): string {
 	const manifestPath =
 		contract.ciProviderPolicy?.requiredCheckManifestPath ??
-		".harness/ci-required-checks.json";
+		DEFAULT_REQUIRED_CHECK_MANIFEST_PATH;
 	const resolvedContractPath =
 		typeof contractPath === "string" && contractPath.trim().length > 0
 			? resolvePath(contractPath)
@@ -788,9 +794,35 @@ function resolveRequiredChecksManifestPath(
 	const contractDir = resolvedContractPath
 		? dirname(resolvedContractPath)
 		: process.cwd();
-	return isAbsolute(manifestPath)
-		? manifestPath
-		: resolvePath(contractDir, manifestPath);
+	if (isAbsolute(manifestPath)) {
+		return manifestPath;
+	}
+	const manifestFromContractDir = resolvePath(contractDir, manifestPath);
+	if (existsSync(manifestFromContractDir)) {
+		return manifestFromContractDir;
+	}
+	const usesDefaultManifestPath =
+		manifestPath === DEFAULT_REQUIRED_CHECK_MANIFEST_PATH;
+	const isCanonicalContractPath =
+		typeof resolvedContractPath === "string" &&
+		basename(resolvedContractPath) === "harness.contract.json";
+	if (!usesDefaultManifestPath || !isCanonicalContractPath) {
+		return manifestFromContractDir;
+	}
+	let cursor = contractDir;
+	while (true) {
+		if (existsSync(resolvePath(cursor, ".git"))) {
+			const manifestFromRepoRoot = resolvePath(cursor, manifestPath);
+			if (existsSync(manifestFromRepoRoot)) {
+				return manifestFromRepoRoot;
+			}
+		}
+		const parent = dirname(cursor);
+		if (parent === cursor) {
+			return manifestFromContractDir;
+		}
+		cursor = parent;
+	}
 }
 
 function loadNormalizedRequiredChecksManifest(

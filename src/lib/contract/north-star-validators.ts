@@ -288,6 +288,7 @@ export function isValidProductSurfaceRegistry(
 	}
 	return (
 		Array.isArray(record.surfaces) &&
+		record.surfaces.length > 0 &&
 		record.surfaces.every((surface) => isValidSurfaceRegistration(surface))
 	);
 }

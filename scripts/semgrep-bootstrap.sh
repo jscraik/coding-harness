@@ -107,7 +107,13 @@ semgrep_version_usable() {
   if [[ "$requested_series" != "$detected_series" ]]; then
     return 1
   fi
-  [[ "$(printf '%s\n%s\n' "$SEMGREP_VERSION" "$detected_version" | sort -V | head -n 1)" == "$SEMGREP_VERSION" ]]
+  local requested_patch detected_patch
+  requested_patch="${SEMGREP_VERSION##*.}"
+  detected_patch="${detected_version##*.}"
+  if [[ ! "$requested_patch" =~ ^[0-9]+$ || ! "$detected_patch" =~ ^[0-9]+$ ]]; then
+    return 1
+  fi
+  (( detected_patch >= requested_patch ))
 }
 
 ensure_python_packaging_tools() {

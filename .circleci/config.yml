@@ -249,8 +249,12 @@ workflows:
               npm:@mermaid-js/mermaid-cli npm:@brainwav/rsearch npm:@brainwav/wsearch-cli \
               npm:beautiful-mermaid npm:markdownlint-cli2 npm:semver npm:wrangler \
               trivy vale
-            if ! command -v ralph >/dev/null 2>&1; then
-              RALPH_VERSION="1.0.0"
+            RALPH_VERSION="1.0.0"
+            current_ralph_version=""
+            if command -v ralph >/dev/null 2>&1; then
+              current_ralph_version="$(ralph --version | grep -Eo '[0-9]+\.[0-9]+\.[0-9]+' | head -n1 || true)"
+            fi
+            if [[ "$current_ralph_version" != "$RALPH_VERSION" ]]; then
               RALPH_PACKAGE_SPEC="ralph-gold==${RALPH_VERSION}"
               RALPH_GIT_FALLBACK_SPEC="git+https://github.com/jscraik/ralph-gold.git@5d4b57537a29c3edb566665c9482ae5ca1d49eed"
               RALPH_VENV="$HOME/.local/share/ralph-venv-${RALPH_VERSION}"
