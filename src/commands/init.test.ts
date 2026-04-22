@@ -1732,9 +1732,12 @@ describe("runInit", () => {
 			);
 			expect(harnessCli).toContain("npm exec harness -- <command>");
 			expect(runHarnessGate).toContain(
-				'exec pnpm exec tsx "$REPO_ROOT/src/cli.ts" "$@"',
+				'if pnpm exec tsx "$REPO_ROOT/src/cli.ts" "$@"; then',
 			);
 			expect(runHarnessGate).toContain("is_harness_source_repo()");
+			expect(runHarnessGate).toContain(
+				'echo "Warning: pnpm tsx runner failed; falling back to alternate harness runners." >&2',
+			);
 			expect(runHarnessGate).toContain(
 				'echo "Warning: pnpm is installed but tsx is unavailable; falling back to alternate harness runners." >&2',
 			);
@@ -1751,7 +1754,10 @@ describe("runInit", () => {
 				'exec bash "$REPO_ROOT/scripts/harness-cli.sh" "$@"',
 			);
 			expect(runHarnessGate).toContain(
-				'if [[ -f "$REPO_ROOT/scripts/harness-cli.sh" && -r "$REPO_ROOT/scripts/harness-cli.sh" ]]; then',
+				'if [[ -x "$REPO_ROOT/scripts/harness-cli.sh" && -f "$REPO_ROOT/node_modules/@brainwav/coding-harness/dist/cli.js" ]]; then',
+			);
+			expect(runHarnessGate).toContain(
+				"if command -v mise >/dev/null 2>&1; then",
 			);
 			expect(runHarnessGate).toContain(
 				'mise_harness_bin="$(mise which harness 2>/dev/null || true)"',
