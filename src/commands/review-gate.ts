@@ -1,8 +1,12 @@
+import { existsSync, readFileSync } from "node:fs";
+import { dirname, isAbsolute, resolve as resolvePath } from "node:path";
 import { ContractLoadError, loadContract } from "../lib/contract/loader.js";
 import {
 	DEFAULT_REVIEW_POLICY,
-	type ReviewPolicy,
+	type HarnessContract,
+	type NorthStarDecisionQuestion,
 } from "../lib/contract/types.js";
+import { requiresCanonicalNorthStarSurfaces } from "../lib/contract/validator-helpers.js";
 import {
 	findReviewCheckRun,
 	isCheckRunInProgress,
@@ -21,6 +25,10 @@ import {
 	renderGateDecision,
 } from "../lib/output/normalise.js";
 import { runPlanGate } from "../lib/plan-gate/detector.js";
+import {
+	type NormalizedRequiredChecksManifest,
+	normalizeRequiredChecksManifest,
+} from "../lib/policy/required-checks.js";
 // Use the lib-layer bridge instead of importing directly from another command.
 import { runCheckAuthz } from "../lib/review-gate/authz.js";
 import { emitReviewGateDecisionArtifacts } from "../lib/review-gate/decision-packet.js";
@@ -57,6 +65,21 @@ import type {
 
 const POLL_INTERVAL_MS = 5000; // 5 seconds
 const DEFAULT_REVIEW_GATE_AUTHZ_CONTRACT = "harness.contract.json";
+const DEFAULT_REVIEW_CHECK_NAME = "pr-pipeline";
+const LEGACY_REVIEW_CHECK_NAME_FALLBACKS = [
+	"risk-policy-gate",
+	"code-review",
+] as const;
+
+class RequiredChecksManifestError extends Error {
+	readonly manifestPath: string;
+
+	constructor(manifestPath: string, reason: string) {
+		super(`Invalid required-check manifest '${manifestPath}': ${reason}`);
+		this.name = "RequiredChecksManifestError";
+		this.manifestPath = manifestPath;
+	}
+}
 
 type BaseReviewGateOutput = Omit<
 	ReviewGateOutput,
@@ -71,9 +94,62 @@ type BaseReviewGateOutput = Omit<
 
 interface ReadinessOptions {
 	additionalBlockers?: string[];
+	checkName?: string;
 	planTraceability?: {
 		status: ReviewGateOutput["plan_traceability_status"];
 		planIds: string[];
+	};
+}
+
+function getReadinessCheckLabel(checkName?: string): string {
+	const normalizedCheckName = checkName?.trim();
+	if (!normalizedCheckName) {
+		return DEFAULT_REVIEW_CHECK_NAME;
+	}
+	return normalizedCheckName;
+}
+
+function resolveReviewCheckResult(
+	checkRuns: CheckRun[],
+	requestedCheckName: string,
+	pullRequestHeadSha: string,
+): {
+	checkResult: ReturnType<typeof findReviewCheckRun>;
+	resolvedCheckName: string;
+} {
+	const candidates = [requestedCheckName];
+	const canonicalFallbackCandidates = new Set<string>([
+		DEFAULT_REVIEW_CHECK_NAME,
+		...LEGACY_REVIEW_CHECK_NAME_FALLBACKS,
+	]);
+	if (canonicalFallbackCandidates.has(requestedCheckName)) {
+		for (const fallbackCheckName of canonicalFallbackCandidates) {
+			if (fallbackCheckName === requestedCheckName) {
+				continue;
+			}
+			if (!candidates.includes(fallbackCheckName)) {
+				candidates.push(fallbackCheckName);
+			}
+		}
+	}
+
+	for (const candidateCheckName of candidates) {
+		const checkResult = findReviewCheckRun(checkRuns, candidateCheckName, {
+			headSha: pullRequestHeadSha,
+		});
+		if (checkResult.found) {
+			return {
+				checkResult,
+				resolvedCheckName: candidateCheckName,
+			};
+		}
+	}
+
+	return {
+		checkResult: findReviewCheckRun(checkRuns, requestedCheckName, {
+			headSha: pullRequestHeadSha,
+		}),
+		resolvedCheckName: requestedCheckName,
 	};
 }
 
@@ -81,6 +157,8 @@ function withReadinessFields(
 	base: BaseReviewGateOutput,
 	options: ReadinessOptions = {},
 ): ReviewGateOutput {
+	const checkLabel = getReadinessCheckLabel(options.checkName);
+	const effectiveCheckName = options.checkName?.trim();
 	const policyGateStatus: ReviewGateOutput["policy_gate_status"] =
 		base.checkStatus === "not_found"
 			? "missing"
@@ -95,16 +173,16 @@ function withReadinessFields(
 		options.planTraceability?.status ?? ("missing" as const);
 	const planIds = options.planTraceability?.planIds ?? [];
 	if (policyGateStatus === "missing") {
-		blockers.push("risk-policy-gate check run not found for current HEAD SHA");
+		blockers.push(`${checkLabel} check run not found for current HEAD SHA`);
 	}
 	if (policyGateStatus === "fail") {
 		blockers.push(
-			`risk-policy-gate check did not pass (conclusion: ${base.checkConclusion ?? "unknown"})`,
+			`${checkLabel} check did not pass (conclusion: ${base.checkConclusion ?? "unknown"})`,
 		);
 	}
 	if (policyGateStatus === "pending" && (base.needsRerun || base.timedOut)) {
 		blockers.push(
-			"risk-policy-gate verification is incomplete for current HEAD SHA",
+			`${checkLabel} verification is incomplete for current HEAD SHA`,
 		);
 	}
 	if (options.additionalBlockers && options.additionalBlockers.length > 0) {
@@ -122,7 +200,7 @@ function withReadinessFields(
 					score: 5,
 					level: "high",
 					rationale: [
-						"risk-policy-gate passed for the current HEAD SHA",
+						`${checkLabel} passed for the current HEAD SHA`,
 						"PR work maps to validated plan IDs",
 						"no merge blockers detected in review gate",
 					],
@@ -132,7 +210,7 @@ function withReadinessFields(
 						score: 2,
 						level: "low",
 						rationale: [
-							"risk-policy-gate verification has not reached a terminal pass state",
+							`${checkLabel} verification has not reached a terminal pass state`,
 							"merge confidence is reduced until blockers are resolved",
 						],
 					}
@@ -141,7 +219,7 @@ function withReadinessFields(
 							score: 2,
 							level: "low",
 							rationale: [
-								"risk-policy-gate passed but merge-readiness blockers remain",
+								`${checkLabel} passed but merge-readiness blockers remain`,
 								"merge should remain blocked until required checks and review policies are satisfied",
 							],
 						}
@@ -149,13 +227,14 @@ function withReadinessFields(
 							score: 1,
 							level: "low",
 							rationale: [
-								"risk-policy-gate did not provide a passing result for current HEAD SHA",
+								`${checkLabel} did not provide a passing result for current HEAD SHA`,
 								"merge should remain blocked until policy gate issues are resolved",
 							],
 						};
 
 	return {
 		...base,
+		...(effectiveCheckName ? { effectiveCheckName } : {}),
 		policy_gate_status: policyGateStatus,
 		plan_traceability_status: planTraceabilityStatus,
 		plan_ids: planIds,
@@ -190,43 +269,230 @@ interface PlanTraceabilityResult {
 	blockers: string[];
 }
 
-function resolveCurrentApprovers(
-	reviews: PullRequestReview[],
-	headSha: string,
-): string[] {
-	const latestStateByReviewer = new Map<
-		string,
-		{ state: string; commitId?: string | null; submittedAt: number }
-	>();
+interface RequiredCheckSourceConstraint {
+	providerSlugs: Set<string>;
+	sourceAppIds: Set<string>;
+}
 
-	for (const review of reviews) {
-		const login = review.user?.login?.trim();
-		if (!login) {
+function escapeRegExp(value: string): string {
+	return value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+}
+
+function normalizeQuestionText(value: string): string {
+	return value
+		.toLowerCase()
+		.replace(/[^\w\s/-]+/g, " ")
+		.replace(/\s+/g, " ")
+		.trim();
+}
+
+function hasEvidenceReference(text: string): boolean {
+	const evidencePatterns = [
+		/\[[^\]]+\]\([^)]+\)/i,
+		/https?:\/\/\S+/i,
+		/(?:^|[\s(\[])(?:\/|\.\.?\/)?(?:[A-Za-z0-9._-]+\/)+[A-Za-z0-9._-]+:[0-9]+(?:$|[\s),.;\]])/i,
+		/(?:^|[\s(\[])(?:\/|\.\.?\/)?[A-Za-z._-][A-Za-z0-9._-]*:[0-9]+(?:$|[\s),.;\]])/i,
+		/artifacts\/[A-Za-z0-9._/-]+/i,
+	];
+	return evidencePatterns.some((pattern) => pattern.test(text));
+}
+
+function getStructuredListIndent(line: string): number | undefined {
+	const match = line.match(/^(\s*)(?:[-*+](?:\s+\[[xX ]\])?|\d+[.)])\s+/);
+	if (!match) {
+		return undefined;
+	}
+	return match[1]?.length ?? 0;
+}
+
+function extractQuestionResponseBlock(
+	rawBody: string,
+	question: NorthStarDecisionQuestion,
+): string {
+	const lines = rawBody.split(/\r?\n/);
+	const questionPrompt = normalizeQuestionText(question.prompt);
+	const idPattern = new RegExp(`\\b${escapeRegExp(question.id)}\\b`, "i");
+	const collected: string[] = [];
+
+	for (let index = 0; index < lines.length; index += 1) {
+		const line = lines[index] ?? "";
+		const normalizedLine = normalizeQuestionText(line);
+		if (!idPattern.test(line) && !normalizedLine.includes(questionPrompt)) {
 			continue;
 		}
-		const submittedAt = review.submitted_at
-			? Date.parse(review.submitted_at)
-			: Number.MIN_SAFE_INTEGER;
-		if (Number.isNaN(submittedAt)) {
-			continue;
-		}
-		const previousState = latestStateByReviewer.get(login);
-		if (!previousState || submittedAt > previousState.submittedAt) {
-			latestStateByReviewer.set(login, {
-				state: review.state,
-				commitId: review.commit_id ?? null,
-				submittedAt,
-			});
+		const startListIndent =
+			getStructuredListIndent(line) ?? line.match(/^\s*/)?.[0].length ?? 0;
+		collected.push(line);
+		for (let next = index + 1; next < lines.length; next += 1) {
+			const continuation = lines[next] ?? "";
+			const continuationListIndent = getStructuredListIndent(continuation);
+			if (
+				continuationListIndent !== undefined &&
+				continuationListIndent <= startListIndent
+			) {
+				break;
+			}
+			if (continuation.trim().length === 0) {
+				break;
+			}
+			collected.push(continuation);
 		}
 	}
 
-	return [...latestStateByReviewer.entries()]
-		.filter(([, review]) => {
-			if (review.state !== "APPROVED") {
-				return false;
-			}
-			return review.commitId === headSha;
+	return collected.join("\n");
+}
+
+function hasExplicitNegativeAnswer(responseBlock: string): boolean {
+	for (const line of responseBlock.split(/\r?\n/)) {
+		const trimmedLine = line.trim();
+		if (trimmedLine.length === 0) {
+			continue;
+		}
+		const leadingToken = normalizeQuestionText(trimmedLine).split(" ")[0];
+		if (leadingToken === "no" || leadingToken === "false") {
+			return true;
+		}
+		const separatorIndex = trimmedLine.indexOf(":");
+		const answerCandidate =
+			separatorIndex === -1
+				? trimmedLine
+				: trimmedLine.slice(separatorIndex + 1).trim();
+		const answerToken = normalizeQuestionText(answerCandidate).split(" ")[0];
+		if (answerToken === "no" || answerToken === "false") {
+			return true;
+		}
+	}
+	return false;
+}
+
+function hasNoImpactDeclaration(responseBlock: string): boolean {
+	const normalizedBlock = normalizeQuestionText(responseBlock);
+	if (normalizedBlock.includes("metric_impact_declared none")) {
+		return true;
+	}
+	if (normalizedBlock.includes("metric impact declared none")) {
+		return true;
+	}
+	return normalizedBlock.includes("no direct metric impact");
+}
+
+function hasPositivePolicySurfaceDelta(responseBlock: string): boolean {
+	const match = responseBlock.match(
+		/policy[_\s-]*surface[_\s-]*delta\s*:?\s*([+-]?\d+(?:\.\d+)?)/i,
+	);
+	if (!match) {
+		return false;
+	}
+	const parsed = Number(match[1]);
+	return Number.isFinite(parsed) && parsed > 0;
+}
+
+function evaluateNorthStarDecisionQuestions(params: {
+	prBody?: string | null | undefined;
+	decisionQuestions: NorthStarDecisionQuestion[];
+	requireQuestions?: boolean;
+}): string[] {
+	if (params.decisionQuestions.length === 0) {
+		return params.requireQuestions
+			? [
+					"contract_invalid: Canonical north-star contracts must declare at least one decision question.",
+				]
+			: [];
+	}
+
+	const rawBody = params.prBody ?? "";
+	const normalizedBody = normalizeQuestionText(rawBody);
+	const missingQuestionIds: string[] = [];
+	const questionIdsMissingEvidence: string[] = [];
+	const questionIdsWithNegativeAnswer: string[] = [];
+	for (const question of params.decisionQuestions) {
+		const idPattern = new RegExp(`\\b${escapeRegExp(question.id)}\\b`, "i");
+		const hasIdReference = idPattern.test(rawBody);
+		const hasPromptReference = normalizedBody.includes(
+			normalizeQuestionText(question.prompt),
+		);
+		if (!hasIdReference && !hasPromptReference) {
+			missingQuestionIds.push(question.id);
+			continue;
+		}
+		const responseBlock = extractQuestionResponseBlock(rawBody, question);
+		if (!hasEvidenceReference(responseBlock)) {
+			questionIdsMissingEvidence.push(question.id);
+		}
+		if (
+			hasExplicitNegativeAnswer(responseBlock) &&
+			!(
+				hasNoImpactDeclaration(responseBlock) &&
+				!hasPositivePolicySurfaceDelta(responseBlock)
+			)
+		) {
+			questionIdsWithNegativeAnswer.push(question.id);
+		}
+	}
+
+	const blockers: string[] = [];
+	if (missingQuestionIds.length > 0) {
+		blockers.push(
+			`review_evidence_contradiction: North-star decision questions missing from PR context: ${missingQuestionIds.join(", ")}`,
+		);
+	}
+	if (questionIdsMissingEvidence.length > 0) {
+		blockers.push(
+			`review_evidence_contradiction: North-star decision responses must include evidence references for each question (URL, artifact path, or file:line link); missing evidence for: ${questionIdsMissingEvidence.join(", ")}`,
+		);
+	}
+	if (questionIdsWithNegativeAnswer.length > 0) {
+		blockers.push(
+			`safety_floor_violation: North-star decision responses contradict throughput intent unless explicitly declared as no-impact (metric_impact_declared:none with non-positive policy_surface_delta); negative answers found for: ${questionIdsWithNegativeAnswer.join(", ")}`,
+		);
+	}
+	return blockers;
+}
+
+function resolveCurrentApprovers(
+	reviews: PullRequestReview[],
+	headSha: string,
+	botLogins: Set<string>,
+): string[] {
+	const approvalStateByReviewer = new Map<string, boolean>();
+	const reviewsInChronologicalOrder = reviews
+		.map((review, index) => {
+			const submittedAt = review.submitted_at
+				? Date.parse(review.submitted_at)
+				: Number.MIN_SAFE_INTEGER;
+			return {
+				review,
+				order: index,
+				submittedAt: Number.isNaN(submittedAt)
+					? Number.MIN_SAFE_INTEGER
+					: submittedAt,
+			};
 		})
+		.sort(
+			(left, right) =>
+				left.submittedAt - right.submittedAt || left.order - right.order,
+		);
+
+	for (const { review } of reviewsInChronologicalOrder) {
+		const login = normalizeBotLogin(review.user?.login);
+		if (!login || botLogins.has(login)) {
+			continue;
+		}
+		if (review.state === "CHANGES_REQUESTED" || review.state === "DISMISSED") {
+			approvalStateByReviewer.set(login, false);
+			continue;
+		}
+		if (review.commit_id !== headSha) {
+			continue;
+		}
+
+		if (review.state === "APPROVED") {
+			approvalStateByReviewer.set(login, true);
+		}
+	}
+
+	return [...approvalStateByReviewer.entries()]
+		.filter(([, approved]) => approved)
 		.map(([login]) => login);
 }
 
@@ -235,24 +501,68 @@ async function evaluateApprovals(
 	prNumber: number,
 	headSha: string,
 	codingActor: string | undefined,
+	botLogins: Set<string>,
+	options: {
+		requireCodingActor: boolean;
+	},
 ): Promise<ApprovalResult> {
 	const reviews = await client.listPullRequestReviews(prNumber);
-	const approvers = resolveCurrentApprovers(reviews, headSha);
+	const approvers = resolveCurrentApprovers(reviews, headSha, botLogins);
 
 	const blockers: string[] = [];
-	if (!codingActor) {
+	if (options.requireCodingActor && !codingActor) {
 		blockers.push(
-			"Unable to determine coding actor from PR author; cannot verify reviewer independence",
+			"Unable to determine coding actor from PR commit metadata; cannot verify reviewer independence",
 		);
 		return { passed: false, blockers, approvers };
 	}
 
 	if (approvers.length === 0) {
 		blockers.push("No APPROVED reviews found for the current HEAD SHA");
-		return { passed: false, blockers, approvers, codingActor };
+		return {
+			passed: false,
+			blockers,
+			approvers,
+			...(codingActor ? { codingActor } : {}),
+		};
 	}
 
-	return { passed: true, blockers: [], approvers, codingActor };
+	return {
+		passed: true,
+		blockers: [],
+		approvers,
+		...(codingActor ? { codingActor } : {}),
+	};
+}
+
+async function resolveCodingActor(
+	client: GitHubClient,
+	prNumber: number,
+	headSha: string,
+	prAuthorLogin: string | undefined,
+): Promise<string | undefined> {
+	const normalizedPrAuthor = normalizeBotLogin(prAuthorLogin);
+	if (
+		typeof (client as Partial<GitHubClient>).listPullRequestCommits !==
+		"function"
+	) {
+		return normalizedPrAuthor;
+	}
+
+	try {
+		const commits = await client.listPullRequestCommits(prNumber);
+		const headCommit = commits.find((commit) => commit.sha === headSha);
+		if (!headCommit) {
+			return undefined;
+		}
+
+		const commitActor =
+			normalizeBotLogin(headCommit.author?.login) ??
+			normalizeBotLogin(headCommit.committer?.login);
+		return commitActor ?? normalizedPrAuthor;
+	} catch {
+		return normalizedPrAuthor;
+	}
 }
 
 function evaluateReviewerIndependence({
@@ -281,20 +591,99 @@ function evaluateReviewerIndependence({
 function evaluateRequiredChecks(
 	checkRuns: CheckRun[],
 	requiredChecks: string[],
+	requiredCheckAliases: Map<string, string[]>,
+	requiredCheckSources: Map<string, RequiredCheckSourceConstraint>,
 ): string[] {
 	const blockers: string[] = [];
-	const latestByCheckName = new Map<string, CheckRun>();
+	const latestByCheckName = new Map<string, CheckRun[]>();
 
 	for (const run of checkRuns) {
-		const current = latestByCheckName.get(run.name);
-		if (!current || run.id > current.id) {
-			latestByCheckName.set(run.name, run);
-		}
+		const existing = latestByCheckName.get(run.name) ?? [];
+		existing.push(run);
+		latestByCheckName.set(run.name, existing);
 	}
 
+	const normalizeSourceToken = (
+		value: string | number | undefined,
+	): string | undefined => {
+		if (typeof value === "number") {
+			return String(value);
+		}
+		if (typeof value !== "string") {
+			return undefined;
+		}
+		const normalized = value
+			.trim()
+			.toLowerCase()
+			.replace(/[\s_]+/g, "-")
+			.replace(/-+/g, "-")
+			.replace(/^-+|-+$/g, "");
+		return normalized.length > 0 ? normalized : undefined;
+	};
+
+	const matchesExpectedSource = (
+		run: CheckRun,
+		constraint: RequiredCheckSourceConstraint | undefined,
+	): boolean => {
+		if (!constraint) {
+			return true;
+		}
+
+		const appSlug = normalizeSourceToken(run.app?.slug);
+		const appId = normalizeSourceToken(run.app?.id);
+		const appName = normalizeSourceToken(run.app?.name);
+
+		if (!appSlug && !appId && !appName) {
+			return false;
+		}
+		if (
+			(appSlug && constraint.providerSlugs.has(appSlug)) ||
+			(appSlug && constraint.sourceAppIds.has(appSlug)) ||
+			(appId && constraint.sourceAppIds.has(appId)) ||
+			(appName && constraint.providerSlugs.has(appName)) ||
+			(appName && constraint.sourceAppIds.has(appName))
+		) {
+			return true;
+		}
+		return false;
+	};
+
+	const describeExpectedSource = (
+		constraint: RequiredCheckSourceConstraint | undefined,
+	): string | undefined => {
+		if (!constraint) {
+			return undefined;
+		}
+		const expected = [
+			...constraint.providerSlugs.values(),
+			...constraint.sourceAppIds.values(),
+		].filter((value, index, values) => values.indexOf(value) === index);
+		return expected.length > 0 ? expected.join(", ") : undefined;
+	};
+
 	for (const checkName of requiredChecks) {
-		const checkRun = latestByCheckName.get(checkName);
+		const candidateNames = [
+			checkName,
+			...(requiredCheckAliases.get(checkName) ?? []),
+		].filter((value, index, values) => values.indexOf(value) === index);
+		const sourceConstraint = requiredCheckSources.get(checkName);
+		const candidateRuns = candidateNames
+			.flatMap((candidateName) => latestByCheckName.get(candidateName) ?? [])
+			.filter((run, index, runs) => runs.indexOf(run) === index);
+		const sourceMatchedRuns = candidateRuns
+			.filter((run) => matchesExpectedSource(run, sourceConstraint))
+			.sort((left, right) => right.id - left.id);
+		const checkRun = sourceMatchedRuns[0];
 		if (!checkRun) {
+			if (candidateRuns.length > 0 && sourceConstraint) {
+				const expectedSource = describeExpectedSource(sourceConstraint);
+				blockers.push(
+					expectedSource
+						? `Required check '${checkName}' was found, but only from non-authoritative providers (expected source: ${expectedSource})`
+						: `Required check '${checkName}' was found, but only from non-authoritative providers`,
+				);
+				continue;
+			}
 			blockers.push(
 				`Required check '${checkName}' was not found for current HEAD SHA`,
 			);
@@ -314,6 +703,183 @@ function evaluateRequiredChecks(
 	}
 
 	return blockers;
+}
+
+function resolveRequiredChecksManifestPath(
+	contract: HarnessContract,
+	contractPath?: string,
+): string {
+	const manifestPath =
+		contract.ciProviderPolicy?.requiredCheckManifestPath ??
+		".harness/ci-required-checks.json";
+	const resolvedContractPath =
+		typeof contractPath === "string" && contractPath.trim().length > 0
+			? resolvePath(contractPath)
+			: undefined;
+	const contractDir = resolvedContractPath
+		? dirname(resolvedContractPath)
+		: process.cwd();
+	return isAbsolute(manifestPath)
+		? manifestPath
+		: resolvePath(contractDir, manifestPath);
+}
+
+function loadNormalizedRequiredChecksManifest(
+	contract: HarnessContract,
+	contractPath?: string,
+): NormalizedRequiredChecksManifest | undefined {
+	const resolvedManifestPath = resolveRequiredChecksManifestPath(
+		contract,
+		contractPath,
+	);
+	if (!existsSync(resolvedManifestPath)) {
+		return undefined;
+	}
+	let parsedManifest: unknown;
+	try {
+		parsedManifest = JSON.parse(readFileSync(resolvedManifestPath, "utf-8"));
+	} catch (error) {
+		throw new RequiredChecksManifestError(
+			resolvedManifestPath,
+			`malformed JSON (${sanitizeError(error)})`,
+		);
+	}
+	const normalized = normalizeRequiredChecksManifest(parsedManifest);
+	if (!normalized.ok) {
+		throw new RequiredChecksManifestError(
+			resolvedManifestPath,
+			normalized.error,
+		);
+	}
+	return normalized.value;
+}
+
+function resolveDefaultReviewCheckName(
+	contract: HarnessContract,
+	contractPath?: string,
+): string {
+	const policyPrimaryCheck =
+		contract.ciProviderPolicy?.primaryCheckName?.trim() ?? "";
+	if (policyPrimaryCheck.length > 0) {
+		return policyPrimaryCheck;
+	}
+
+	const normalizedManifest = loadNormalizedRequiredChecksManifest(
+		contract,
+		contractPath,
+	);
+	if (!normalizedManifest) {
+		return DEFAULT_REVIEW_CHECK_NAME;
+	}
+
+	const activeProviderGate = normalizedManifest.gates.find(
+		(gate) =>
+			gate.enabled !== false &&
+			gate.class === "required" &&
+			gate.provider === normalizedManifest.activeProvider &&
+			typeof gate.githubCheckName === "string" &&
+			gate.githubCheckName.trim().length > 0,
+	);
+	return activeProviderGate?.githubCheckName ?? DEFAULT_REVIEW_CHECK_NAME;
+}
+
+function resolveRequestedReviewCheckName(
+	checkName: string,
+	contract: HarnessContract,
+	contractPath?: string,
+): string {
+	const explicitCheckName = checkName.trim();
+	if (explicitCheckName.length > 0) {
+		return explicitCheckName;
+	}
+	return resolveDefaultReviewCheckName(contract, contractPath);
+}
+
+function resolveRequiredCheckAliases(
+	contract: HarnessContract,
+	contractPath?: string,
+): Map<string, string[]> {
+	const aliases = new Map<string, string[]>();
+	const normalizedManifest = loadNormalizedRequiredChecksManifest(
+		contract,
+		contractPath,
+	);
+	if (!normalizedManifest) {
+		return aliases;
+	}
+	for (const gate of normalizedManifest.gates) {
+		if (
+			gate.enabled === false ||
+			gate.class !== "required" ||
+			gate.provider !== normalizedManifest.activeProvider
+		) {
+			continue;
+		}
+		if (!gate.githubCheckName || gate.githubCheckName === gate.displayName) {
+			continue;
+		}
+		const existing = aliases.get(gate.displayName) ?? [];
+		if (!existing.includes(gate.githubCheckName)) {
+			existing.push(gate.githubCheckName);
+		}
+		aliases.set(gate.displayName, existing);
+	}
+	return aliases;
+}
+
+function resolveRequiredCheckSources(
+	contract: HarnessContract,
+	contractPath?: string,
+): Map<string, RequiredCheckSourceConstraint> {
+	const sources = new Map<string, RequiredCheckSourceConstraint>();
+	const normalizedManifest = loadNormalizedRequiredChecksManifest(
+		contract,
+		contractPath,
+	);
+	if (!normalizedManifest) {
+		return sources;
+	}
+
+	for (const gate of normalizedManifest.gates) {
+		if (
+			gate.enabled === false ||
+			gate.class !== "required" ||
+			gate.provider !== normalizedManifest.activeProvider
+		) {
+			continue;
+		}
+
+		const normalizeConstraintSourceToken = (value: string): string =>
+			value
+				.trim()
+				.toLowerCase()
+				.replace(/[\s_]+/g, "-")
+				.replace(/-+/g, "-")
+				.replace(/^-+|-+$/g, "");
+		const normalizedProvider = normalizeConstraintSourceToken(gate.provider);
+		const normalizedSourceAppId = normalizeConstraintSourceToken(
+			gate.sourceAppId,
+		);
+		const keys = [
+			gate.displayName,
+			...(gate.githubCheckName ? [gate.githubCheckName] : []),
+		];
+		for (const key of keys) {
+			const existing = sources.get(key) ?? {
+				providerSlugs: new Set<string>(),
+				sourceAppIds: new Set<string>(),
+			};
+			if (normalizedProvider.length > 0) {
+				existing.providerSlugs.add(normalizedProvider);
+			}
+			if (normalizedSourceAppId.length > 0) {
+				existing.sourceAppIds.add(normalizedSourceAppId);
+			}
+			sources.set(key, existing);
+		}
+	}
+
+	return sources;
 }
 
 /**
@@ -434,7 +1000,7 @@ export async function runReviewGate(
 		};
 	}
 
-	let contract: { reviewPolicy?: ReviewPolicy | undefined };
+	let contract: HarnessContract;
 	try {
 		contract = loadContract(options.contractPath);
 	} catch (e) {
@@ -453,6 +1019,30 @@ export async function runReviewGate(
 	const reviewPolicy = contract.reviewPolicy ?? DEFAULT_REVIEW_POLICY;
 	const timeoutMs = reviewPolicy.timeoutSeconds * 1000;
 	const startTime = Date.now();
+	let requestedCheckName: string;
+	try {
+		requestedCheckName = resolveRequestedReviewCheckName(
+			options.checkName,
+			contract,
+			options.contractPath,
+		);
+	} catch (error) {
+		if (error instanceof RequiredChecksManifestError) {
+			return {
+				ok: false,
+				error: {
+					code: "VALIDATION_ERROR",
+					message: error.message,
+				},
+			};
+		}
+		return {
+			ok: false,
+			error: { code: "SYSTEM_ERROR", message: sanitizeError(error) },
+		};
+	}
+	let lastResolvedCheckName = requestedCheckName;
+	let checkRunObserved = false;
 
 	try {
 		const client = new GitHubClient({
@@ -478,6 +1068,21 @@ export async function runReviewGate(
 			...(pullRequest.body !== undefined ? { prBody: pullRequest.body } : {}),
 			changedFiles,
 		});
+		const decisionQuestionBlockers = evaluateNorthStarDecisionQuestions({
+			prBody: pullRequest.body,
+			decisionQuestions: requiresCanonicalNorthStarSurfaces(contract.version)
+				? (contract.northStar?.decisionQuestions ?? [])
+				: [],
+			requireQuestions: requiresCanonicalNorthStarSurfaces(contract.version),
+		});
+		const requiredCheckAliases = resolveRequiredCheckAliases(
+			contract,
+			options.contractPath,
+		);
+		const requiredCheckSources = resolveRequiredCheckSources(
+			contract,
+			options.contractPath,
+		);
 
 		if (pullRequestHeadSha.toLowerCase() !== options.headSha.toLowerCase()) {
 			return {
@@ -492,53 +1097,70 @@ export async function runReviewGate(
 		// Poll for check run completion with timeout
 		while (Date.now() - startTime < timeoutMs) {
 			const checkRuns = await client.listCheckRunsForRef(pullRequestHeadSha);
-			const checkResult = findReviewCheckRun(checkRuns, options.checkName);
+			const { checkResult, resolvedCheckName } = resolveReviewCheckResult(
+				checkRuns,
+				requestedCheckName,
+				pullRequestHeadSha,
+			);
+			lastResolvedCheckName = resolvedCheckName;
 
 			if (!checkResult.found) {
-				return {
-					ok: true,
-					output: withReadinessFields(
-						{
-							verified: false,
-							headSha: pullRequestHeadSha,
-							checkStatus: "not_found",
-							needsRerun: true,
-						},
-						{
-							additionalBlockers: planTraceability.blockers,
-							planTraceability: {
-								status: planTraceability.status,
-								planIds: planTraceability.planIds,
-							},
-						},
-					),
-				};
+				const elapsedMs = Date.now() - startTime;
+				const remainingMs = timeoutMs - elapsedMs;
+				if (remainingMs <= 0) {
+					break;
+				}
+				await sleep(Math.min(POLL_INTERVAL_MS, remainingMs));
+				continue;
 			}
+			checkRunObserved = true;
 
 			if (isCheckRunPassing(checkResult)) {
 				const enforceReviewerIndependence =
 					reviewPolicy.enforceReviewerIndependence ??
 					DEFAULT_REVIEW_POLICY.enforceReviewerIndependence ??
 					false;
+				const activeReviewGateChecks = new Set([
+					requestedCheckName,
+					resolvedCheckName,
+				]);
 				const requiredChecks = (reviewPolicy.requiredChecks ?? []).filter(
-					(checkName) => checkName !== options.checkName,
+					(checkName) => !activeReviewGateChecks.has(checkName),
 				);
 				// Always enforce that at least one APPROVED review exists for the
 				// current HEAD SHA. enforceReviewerIndependence only controls
 				// whether the approver must be different from the PR author —
 				// it cannot skip the approval requirement itself.
-				const approvals = await evaluateApprovals(
+				const codingActor = await resolveCodingActor(
 					client,
 					options.prNumber,
 					pullRequestHeadSha,
 					pullRequest.user?.login?.trim(),
 				);
+				const botLogins = buildBotLoginSet(options.botLogin);
+				const approvals = await evaluateApprovals(
+					client,
+					options.prNumber,
+					pullRequestHeadSha,
+					codingActor,
+					botLogins,
+					{
+						requireCodingActor: enforceReviewerIndependence,
+					},
+				);
 				const independence =
 					enforceReviewerIndependence && approvals.passed
-						? evaluateReviewerIndependence({
-								approvers: approvals.approvers,
-								codingActor: approvals.codingActor ?? "",
-							})
+						? approvals.codingActor
+							? evaluateReviewerIndependence({
+									approvers: approvals.approvers,
+									codingActor: approvals.codingActor,
+								})
+							: {
+									passed: false,
+									blockers: [
+										"Unable to determine coding actor from PR commit metadata; cannot verify reviewer independence",
+									],
+								}
 						: { passed: true, blockers: [] };
 				const threads =
 					typeof (client as Partial<GitHubClient>)
@@ -547,11 +1169,13 @@ export async function runReviewGate(
 						: [];
 				const threadReadiness = evaluateUnresolvedReviewThreads(
 					threads,
-					buildBotLoginSet(options.botLogin),
+					botLogins,
 				);
 				const requiredCheckBlockers = evaluateRequiredChecks(
 					checkRuns,
 					requiredChecks,
+					requiredCheckAliases,
+					requiredCheckSources,
 				);
 				const additionalBlockers = [
 					...approvals.blockers,
@@ -559,6 +1183,7 @@ export async function runReviewGate(
 					...threadReadiness.blockers,
 					...requiredCheckBlockers,
 					...planTraceability.blockers,
+					...decisionQuestionBlockers,
 				];
 				return {
 					ok: true,
@@ -575,6 +1200,7 @@ export async function runReviewGate(
 							needsRerun: false,
 						},
 						{
+							checkName: resolvedCheckName,
 							additionalBlockers,
 							planTraceability: {
 								status: planTraceability.status,
@@ -598,7 +1224,11 @@ export async function runReviewGate(
 							needsRerun: true,
 						},
 						{
-							additionalBlockers: planTraceability.blockers,
+							checkName: resolvedCheckName,
+							additionalBlockers: [
+								...planTraceability.blockers,
+								...decisionQuestionBlockers,
+							],
 							planTraceability: {
 								status: planTraceability.status,
 								planIds: planTraceability.planIds,
@@ -637,12 +1267,21 @@ export async function runReviewGate(
 				{
 					verified: false,
 					headSha: pullRequestHeadSha,
-					checkStatus: "in_progress",
+					checkStatus: checkRunObserved ? "in_progress" : "not_found",
 					needsRerun: true,
 					timedOut: true,
 				},
 				{
-					additionalBlockers: planTraceability.blockers,
+					checkName: lastResolvedCheckName,
+					additionalBlockers: [
+						...(!checkRunObserved && lastResolvedCheckName
+							? [
+									`${lastResolvedCheckName} check run not found for HEAD SHA ${pullRequestHeadSha}`,
+								]
+							: []),
+						...planTraceability.blockers,
+						...decisionQuestionBlockers,
+					],
 					planTraceability: {
 						status: planTraceability.status,
 						planIds: planTraceability.planIds,
@@ -670,6 +1309,15 @@ export async function runReviewGate(
 			return {
 				ok: false,
 				error: { code: "PERMISSION_DENIED", message: errorMessage },
+			};
+		}
+		if (e instanceof RequiredChecksManifestError) {
+			return {
+				ok: false,
+				error: {
+					code: "VALIDATION_ERROR",
+					message: e.message,
+				},
 			};
 		}
 
@@ -794,7 +1442,7 @@ async function runAuthzPreflight({
 	let branch = targetBranch;
 	if (branch === undefined) {
 		const pullRequest = await client.getPullRequest(prNumber);
-		branch = pullRequest.head.ref;
+		branch = pullRequest.base?.ref ?? pullRequest.head.ref;
 	}
 
 	const result = await runCheckAuthz({
@@ -838,6 +1486,24 @@ function getRecoveryHint(code: string): string | undefined {
 			return "Increase timeoutSeconds in harness.contract.json or re-run the check";
 		default:
 			return undefined;
+	}
+}
+
+function resolveArtifactCheckName(options: ReviewGateOptions): string {
+	const explicitCheckName = options.checkName.trim();
+	if (explicitCheckName.length > 0) {
+		return explicitCheckName;
+	}
+
+	try {
+		const contract = loadContract(options.contractPath);
+		return resolveRequestedReviewCheckName(
+			options.checkName,
+			contract,
+			options.contractPath,
+		);
+	} catch {
+		return DEFAULT_REVIEW_CHECK_NAME;
 	}
 }
 
@@ -899,25 +1565,14 @@ export async function runReviewGateCLI(
 		const exitCode = result.output.verified
 			? EXIT_CODES.SUCCESS
 			: EXIT_CODES.REVIEW_NOT_VERIFIED;
-		const gateResult = normaliseReviewGateResult(result);
-
-		if (options.json) {
-			const jsonOutput = {
-				...gateResult,
-				meta: {
-					...(gateResult.meta ?? {}),
-					exitCode,
-				},
-			};
-			process.stdout.write(`${JSON.stringify(jsonOutput, null, 2)}\n`);
-		} else {
-			renderGateDecision(gateResult);
-			logConfidenceExport(result.output);
-		}
+		let finalExitCode: number = exitCode;
 
 		try {
 			emitReviewGateDecisionArtifacts({
 				options,
+				...(result.output.effectiveCheckName
+					? { effectiveCheckName: result.output.effectiveCheckName }
+					: {}),
 				startedAt,
 				finishedAt: new Date().toISOString(),
 				exitCode,
@@ -927,9 +1582,25 @@ export async function runReviewGateCLI(
 			console.error(
 				`Failed to emit review-gate decision artifacts: ${sanitizeError(error)}`,
 			);
+			finalExitCode = EXIT_CODES.SYSTEM_ERROR;
+		}
+		const gateResult = normaliseReviewGateResult(result);
+
+		if (options.json) {
+			const jsonOutput = {
+				...gateResult,
+				meta: {
+					...(gateResult.meta ?? {}),
+					exitCode: finalExitCode,
+				},
+			};
+			process.stdout.write(`${JSON.stringify(jsonOutput, null, 2)}\n`);
+		} else {
+			renderGateDecision(gateResult);
+			logConfidenceExport(result.output);
 		}
 
-		return exitCode;
+		return finalExitCode;
 	}
 
 	const recoveryHint = getRecoveryHint(result.error.code);
@@ -947,32 +1618,12 @@ export async function runReviewGateCLI(
 				return EXIT_CODES.SYSTEM_ERROR;
 		}
 	})();
-	const gateResult = normaliseReviewGateResult(result, recoveryHint);
-
-	if (options.json) {
-		const jsonOutput = {
-			...gateResult,
-			meta: {
-				...(gateResult.meta ?? {}),
-				exitCode,
-			},
-		};
-		process.stdout.write(`${JSON.stringify(jsonOutput, null, 2)}\n`);
-	} else {
-		// Error path uses stderr instead of stdout
-		console.error(`✗ ${gateResult.gate} ${gateResult.status}`);
-		console.error(`Reason: ${gateResult.reason}`);
-		if (gateResult.action_now.length > 0) {
-			console.error("Action now:");
-			for (const step of gateResult.action_now) {
-				console.error(`- ${step}`);
-			}
-		}
-	}
+	let finalExitCode = exitCode;
 
 	try {
 		emitReviewGateDecisionArtifacts({
 			options,
+			effectiveCheckName: resolveArtifactCheckName(options),
 			startedAt,
 			finishedAt: new Date().toISOString(),
 			exitCode,
@@ -988,10 +1639,32 @@ export async function runReviewGateCLI(
 		console.error(
 			`Failed to emit review-gate decision artifacts: ${sanitizeError(error)}`,
 		);
-		return EXIT_CODES.SYSTEM_ERROR;
+		finalExitCode = EXIT_CODES.SYSTEM_ERROR;
+	}
+	const gateResult = normaliseReviewGateResult(result, recoveryHint);
+
+	if (options.json) {
+		const jsonOutput = {
+			...gateResult,
+			meta: {
+				...(gateResult.meta ?? {}),
+				exitCode: finalExitCode,
+			},
+		};
+		process.stdout.write(`${JSON.stringify(jsonOutput, null, 2)}\n`);
+	} else {
+		// Error path uses stderr instead of stdout
+		console.error(`✗ ${gateResult.gate} ${gateResult.status}`);
+		console.error(`Reason: ${gateResult.reason}`);
+		if (gateResult.action_now.length > 0) {
+			console.error("Action now:");
+			for (const step of gateResult.action_now) {
+				console.error(`- ${step}`);
+			}
+		}
 	}
 
-	return exitCode;
+	return finalExitCode;
 }
 
 function sleep(ms: number): Promise<void> {

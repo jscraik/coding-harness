@@ -24,7 +24,7 @@ The harness maintains **two independent "required checks" concepts** that are of
 | System | File / Location | Purpose | Example values |
 |--------|----------------|---------|----------------|
 | **Harness internal checks** | `.harness/ci-required-checks.json` | Tracks what the harness considers a complete CI run for governance gates | `lint`, `typecheck`, `test`, `audit`, `docs-gate` |
-| **GitHub branch protection** | GitHub Ruleset / `harness.contract.json → branchProtection.requiredChecks` | The actual check names GitHub enforces before a PR can merge | `pr-pipeline`, `harness-gates` |
+| **GitHub branch protection** | GitHub Ruleset / `harness.contract.json → branchProtection.requiredChecks` | The GitHub check contexts enforced before merge (resolved from `githubCheckName`) | `pr-pipeline`, `CodeRabbit` |
 
 > [!IMPORTANT]
 > These systems use **completely different check names**. A project can have 15 harness internal checks but only 2 GitHub branch protection checks. They are independent.
@@ -70,7 +70,7 @@ Each entry in `.harness/ci-required-checks.json` supports optional canonical orc
       "displayName": "lint",
       "sourceAppSlug": "circleci",
       "sourceAppId": "circleci",
-      "externalIdPattern": "^lint$",
+      "externalIdPattern": "^pr-pipeline$",
       "requiredOnEvents": ["pull_request", "merge_group"],
       "freshnessWindowDays": 7,
       "class": "required",
@@ -86,7 +86,7 @@ Each entry in `.harness/ci-required-checks.json` supports optional canonical orc
       "displayName": "docs-gate",
       "sourceAppSlug": "circleci",
       "sourceAppId": "circleci",
-      "externalIdPattern": "^docs-gate$",
+      "externalIdPattern": "^pr-pipeline$",
       "requiredOnEvents": ["pull_request", "merge_group"],
       "freshnessWindowDays": 7,
       "class": "required",
@@ -116,7 +116,7 @@ Use `harness doctor` to verify that all `githubCheckName` values match what the 
 
 `verify-work` and `doctor` now consume one normalized projection of `.harness/ci-required-checks.json` for gate identity and check-alignment terms.
 
-For this repository, keep `githubCheckName: "pr-pipeline"` for CircleCI workflow-backed harness checks to preserve required-check naming continuity.
+For this repository, keep `githubCheckName: "pr-pipeline"` for CircleCI workflow-backed harness checks to preserve required-check naming continuity. `CodeRabbit` remains an independent required context.
 
 The normalized identity tuple is:
 
@@ -148,7 +148,6 @@ CircleCI reports **one check run per workflow**, not per job:
 | CircleCI entity | GitHub check-run name |
 |---|---|
 | Workflow `pr-pipeline` | `pr-pipeline` |
-| Workflow `harness-gates` | `harness-gates` |
 | Individual jobs (`lint`, `test`) | ❌ not visible as separate GitHub checks |
 
 > [!NOTE]
@@ -176,7 +175,6 @@ Add these to GitHub branch protection rulesets:
 
 ```
 pr-pipeline     ← CircleCI workflow-level check context for harness checks
-security-scan   ← CircleCI security check context
 CodeRabbit      ← CodeRabbit review check context
 ```
 
@@ -205,7 +203,6 @@ Or workflow-level fan-in names if you use a status aggregation job.
 harness ci-migrate status --provider circleci
 # Output includes:
 #   GitHub branch protection check: pr-pipeline
-#   GitHub branch protection check: security-scan
 #   GitHub branch protection check: CodeRabbit
 ```
 
@@ -234,5 +231,5 @@ This split is intentional: the doctor check id remains namespace-scoped for repo
 
 ```
 ci-check-alignment: CircleCI job-like githubCheckName values detected: lint. Canonical check identity requires workflow-level githubCheckName values (for example "pr-pipeline"), not job names.
-Fix: Update githubCheckName fields to workflow-level check names (pr-pipeline / harness-gates). See docs/agents/17-ci-required-checks.md
+Fix: Update githubCheckName fields to workflow-level check names (for this repo, pr-pipeline), not CircleCI job names. See docs/agents/17-ci-required-checks.md
 ```

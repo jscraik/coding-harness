@@ -1,5 +1,5 @@
 import { existsSync, readFileSync } from "node:fs";
-import { resolve } from "node:path";
+import { basename, dirname, resolve } from "node:path";
 import { loadContract } from "../contract/loader.js";
 import type { HarnessContract, PilotAuthzPolicy } from "../contract/types.js";
 import { DEFAULT_PILOT_AUTHZ_POLICY } from "../contract/types.js";
@@ -68,10 +68,12 @@ function matchesPattern(value: string, patterns: string[]): boolean {
 			return true;
 		}
 
-		// Convert glob pattern to regex
-		const regexPattern = pattern
-			.replace(/\*\*/g, "<<<DOUBLE_STAR>>>")
-			.replace(/\*/g, "[^/]*")
+		// Escape regex metacharacters so policy values are interpreted as globs,
+		// not raw regular expressions.
+		const escapedPattern = pattern.replace(/[|\\{}()[\]^$+*?.]/g, "\\$&");
+		const regexPattern = escapedPattern
+			.replace(/\\\*\\\*/g, "<<<DOUBLE_STAR>>>")
+			.replace(/\\\*/g, "[^/]*")
 			.replace(/<<<DOUBLE_STAR>>>/g, ".*");
 
 		const regex = new RegExp(`^${regexPattern}$`);
@@ -127,11 +129,13 @@ async function getTokenScopes(): Promise<string[]> {
 export async function runCheckAuthz(
 	options: CheckAuthzOptions,
 ): Promise<CheckAuthzResult> {
+	const contractPath = resolve(options.contractPath ?? "harness.contract.json");
+	const repoRoot = dirname(contractPath);
+	const contractFileName = basename(contractPath);
 	// Load contract
 	let contract: HarnessContract;
 	try {
-		const contractPath = options.contractPath ?? "harness.contract.json";
-		contract = loadContract(contractPath);
+		contract = loadContract(contractFileName, repoRoot);
 	} catch (e) {
 		return {
 			ok: false,
@@ -216,7 +220,7 @@ export async function runCheckAuthz(
 
 	// Check that artifacts/pilot/ is excluded from git tracking
 	// to prevent pilot artifacts from being accidentally committed.
-	const gitignorePath = resolve(process.cwd(), ".gitignore");
+	const gitignorePath = resolve(repoRoot, ".gitignore");
 	if (existsSync(gitignorePath)) {
 		try {
 			const gitignoreContent = readFileSync(gitignorePath, "utf-8");

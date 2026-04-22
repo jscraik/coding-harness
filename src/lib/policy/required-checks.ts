@@ -6,6 +6,7 @@ import { createHash } from "node:crypto";
 //   - "actions-pinning"   → "orb-pinning"      (CircleCI orb version enforcement)
 
 export const REVIEW_POLICY_REQUIRED_CHECKS = [
+	"security-scan",
 	"dependency-scan",
 	"orb-pinning",
 ] as const;
@@ -112,7 +113,11 @@ export type RequiredChecksParseResult =
 	| { ok: false; error: string };
 
 function asNonEmptyString(value: unknown): string | null {
-	return typeof value === "string" && value.trim().length > 0 ? value : null;
+	if (typeof value !== "string") {
+		return null;
+	}
+	const trimmed = value.trim();
+	return trimmed.length > 0 ? trimmed : null;
 }
 
 function asPositiveInteger(value: unknown): number | null {
@@ -348,6 +353,7 @@ export const ECOSYSTEM_PROFILES = {
 		"audit",
 		"check",
 		"memory",
+		"security-scan",
 		"CodeRabbit",
 	] as const,
 

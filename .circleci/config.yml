@@ -123,7 +123,92 @@ workflows:
       - run-governance-check:
           name: risk-policy-gate
           check_name: risk-policy-gate
-          command: bash scripts/run-harness-gate.sh policy-gate --max-tier medium --json
+          command: |
+            set -euo pipefail
+            if git rev-parse --verify origin/main >/dev/null 2>&1; then
+              CHANGED_FILES="$(git diff --name-only origin/main...HEAD | paste -sd, -)"
+            else
+              CHANGED_FILES="$(git diff --name-only HEAD~1 HEAD | paste -sd, -)"
+            fi
+            if [[ -z "$CHANGED_FILES" ]]; then
+              CHANGED_FILES="$(git ls-files | paste -sd, -)"
+            fi
+            ADMISSION_FILE="$(mktemp)"
+            cat > "$ADMISSION_FILE" <<'JSON'
+            {
+              "north_star_metric": "pr_lead_time",
+              "primary_bottleneck": "review_rework_loop",
+              "affected_surface_ids": ["preflight-gate"],
+              "affected_surface_classes": ["command"],
+              "policy_surface_delta": 0,
+              "manual_glue_delta": -1,
+              "evidence_links": ["harness.contract.json:1"],
+              "metric_impact_declared": "path_strengthening",
+              "why_this_improves_throughput_or_reliability": "Maintains contract-aligned preflight admission checks in CI."
+            }
+            JSON
+            bash scripts/run-harness-gate.sh preflight-gate --contract harness.contract.json --max-tier medium --files "$CHANGED_FILES" --admission-file "$ADMISSION_FILE" --json
+          filters:
+            tags:
+              ignore: /.*/
+      - run-governance-check:
+          name: review-gate
+          check_name: review-gate
+          requires:
+            - risk-policy-gate
+          command: |
+            set -euo pipefail
+            TOKEN="${GH_TOKEN:-${GITHUB_PERSONAL_ACCESS_TOKEN:-}}"
+            if [[ -z "$TOKEN" ]]; then
+              echo "GH_TOKEN/GITHUB_PERSONAL_ACCESS_TOKEN is required for review-gate"
+              exit 1
+            fi
+            PR_URL="${CIRCLE_PULL_REQUEST:-}"
+            if [[ -z "$PR_URL" ]]; then
+              echo "CIRCLE_PULL_REQUEST is required for review-gate"
+              exit 1
+            fi
+            PR_NUMBER="${PR_URL##*/}"
+            OWNER="${CIRCLE_PROJECT_USERNAME:-}"
+            REPO="${CIRCLE_PROJECT_REPONAME:-}"
+            if [[ -z "$OWNER" || -z "$REPO" ]]; then
+              echo "CIRCLE_PROJECT_USERNAME and CIRCLE_PROJECT_REPONAME are required for review-gate"
+              exit 1
+            fi
+            HEAD_SHA="${CIRCLE_SHA1:-$(git rev-parse HEAD)}"
+            bash scripts/run-harness-gate.sh review-gate \
+              --token "$TOKEN" \
+              --owner "$OWNER" \
+              --repo "$REPO" \
+              --pr "$PR_NUMBER" \
+              --sha "$HEAD_SHA" \
+              --check risk-policy-gate \
+              --contract harness.contract.json \
+              --json
+          filters:
+            tags:
+              ignore: /.*/
+      - run-governance-check:
+          name: evidence-verify
+          check_name: evidence-verify
+          requires:
+            - review-gate
+          command: |
+            set -euo pipefail
+            if git rev-parse --verify origin/main >/dev/null 2>&1; then
+              CHANGED_FILES="$(git diff --name-only origin/main...HEAD | paste -sd, -)"
+            else
+              CHANGED_FILES="$(git diff --name-only HEAD~1 HEAD | paste -sd, -)"
+            fi
+            if [[ -z "$CHANGED_FILES" ]]; then
+              CHANGED_FILES="$(git ls-files | paste -sd, -)"
+            fi
+            EVIDENCE_FILES="$(git ls-files "artifacts/**/*.png" "artifacts/**/*.jpeg" "artifacts/**/*.jpg" | paste -sd, -)"
+            if [[ -n "$EVIDENCE_FILES" ]]; then
+              bash scripts/run-harness-gate.sh evidence-verify --contract harness.contract.json --changed "$CHANGED_FILES" --files "$EVIDENCE_FILES" --json
+            else
+              bash scripts/run-harness-gate.sh evidence-verify --contract harness.contract.json --changed "$CHANGED_FILES" --json
+            fi
           filters:
             tags:
               ignore: /.*/

@@ -13,8 +13,23 @@ export interface ReviewCheckResult {
 export function findReviewCheckRun(
 	checkRuns: CheckRun[],
 	checkName: string,
+	options: { headSha?: string } = {},
 ): ReviewCheckResult {
-	const reviewCheck = checkRuns.find((check) => check.name === checkName);
+	const expectedHeadSha = options.headSha?.toLowerCase();
+	let reviewCheck: CheckRun | undefined;
+	for (const check of checkRuns) {
+		if (check.name !== checkName) {
+			continue;
+		}
+		const checkHeadSha =
+			typeof check.head_sha === "string" ? check.head_sha.toLowerCase() : "";
+		if (expectedHeadSha && checkHeadSha !== expectedHeadSha) {
+			continue;
+		}
+		if (!reviewCheck || check.id > reviewCheck.id) {
+			reviewCheck = check;
+		}
+	}
 
 	if (!reviewCheck) {
 		return {
@@ -49,6 +64,8 @@ export function isCheckRunPassing(result: ReviewCheckResult): boolean {
 export function isCheckRunInProgress(result: ReviewCheckResult): boolean {
 	return (
 		result.found &&
-		(result.status === "in_progress" || result.status === "queued")
+		(result.status === "in_progress" ||
+			result.status === "queued" ||
+			result.status === "pending")
 	);
 }

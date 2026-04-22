@@ -35,10 +35,10 @@ See `src/lib/output/normalise.ts` (`normaliseReviewGateResult`) and `src/lib/out
 | Error | Condition | Routing |
 |-------|-----------|---------|
 | `VALIDATION_ERROR` | Invalid SHA format, SHA mismatch, contract load failure | Terminal fail (exit 1) |
-| `NOT_FOUND` | PR not found, check run not found | Terminal fail (exit 2) |
+| `NOT_FOUND` | PR not found or required API resource missing before review evaluation begins (excluding required check-run absence during gate evaluation) | Terminal fail (exit 2) |
 | `PERMISSION_DENIED` | 403 Forbidden, 401 Unauthorized | Terminal fail (exit 3) |
 | `TIMEOUT` | Polling exceeded timeout with `timeoutAction: fail` | Terminal fail (exit 4) |
-| `REVIEW_NOT_VERIFIED` | Gate completed but verification failed | Terminal fail (exit 5) |
+| `REVIEW_NOT_VERIFIED` | Gate completed but verification failed, including required check-run absence during gate evaluation (`checkStatus: "not_found"`) | Terminal fail (exit 5) |
 | `SYSTEM_ERROR` | Unexpected exception, network failure | Terminal fail (exit 10) |
 
 ## 4. States
@@ -117,6 +117,7 @@ S24 FAILED_SYSTEM_ERROR (terminal)
 - Approvals must be for current HEAD SHA (`commitId === headSha` filter)
 - Reviewer independence requires at least one non-coding-actor approver
 - Required checks must be complete and passing (status `completed` + conclusion `success`)
+- In provider fan-in mode, `reviewPolicy.requiredChecks` logical names may alias to one workflow check context via `.harness/ci-required-checks.json`
 - Unresolved human threads block verification (bot-only threads may be auto-resolved)
 - Confidence score 5 requires all gates passing
 - Timeout action determines terminal state (`fail` → error; `warn` → `needsRerun: true`)
@@ -335,7 +336,7 @@ function execute(gate: ReviewGate, event: E): Transition {
   "metadata": {
     "pr_number": 123,
     "head_sha": "abc123...",
-    "check_name": "review-gate",
+    "check_name": "pr-pipeline",
     "timeout_seconds": 600,
     "poll_interval_ms": 5000,
     "poll_iterations": 12,
@@ -362,24 +363,8 @@ function execute(gate: ReviewGate, event: E): Transition {
 }
 ```
 
-## 11. Modes: STRICT | ADVISORY
+## 11. Runtime Interface
 
-| Mode | Behavior |
-|------|----------|
-| `STRICT` | SHA mismatch is fatal (no bypass); all required checks must pass; all human review threads must be resolved; reviewer independence strictly enforced; timeout action `fail` halts workflow |
-| `ADVISORY` | Warnings for non-critical check failures; best-effort thread resolution; relaxed reviewer independence (configurable); timeout action `warn` returns `needsRerun: true`; allows partial verification with blockers listed |
-
-## 12. Dry-Run Simulation
-
-| State | Dry-Run Behavior |
-|-------|------------------|
-| `S0 IDLE` | Validate inputs, no client initialization |
-| `S1 PR_LOADED` | Mock PR data, skip SHA comparison |
-| `S2 CHECK_POLLING` | Return mock check status, no polling |
-| `S5 APPROVAL_EVALUATION` | Mock approval data |
-| `S13 CONFIDENCE_COMPUTED` | Compute confidence with mock data |
-
-- No side effects: no actual GitHub API calls.
-- Deterministic: guard evaluation runs against mock results.
-- Emit transition trace rows: `[S,E,G,A,N,decision]` per transition attempt.
-- Returns full transition path without mutation.
+- The current CLI/runtime interface does not expose `--mode` or `--dry-run`.
+- Behavior is controlled by contract policy, command flags, and required-check state.
+- Use `--check` to override check-run identity; default is derived from contract policy and required-check metadata (`pr-pipeline` for current CircleCI baseline).

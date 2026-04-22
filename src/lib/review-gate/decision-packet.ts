@@ -16,6 +16,7 @@ import type {
 
 type ReviewGateArtifactInput = {
 	options: ReviewGateOptions;
+	effectiveCheckName?: string;
 	startedAt: string;
 	finishedAt: string;
 	exitCode: number;
@@ -23,6 +24,9 @@ type ReviewGateArtifactInput = {
 		| { ok: true; output: ReviewGateOutput }
 		| { ok: false; error: { code: ReviewGateErrorCode; message: string } };
 };
+
+const CANONICAL_ALIGNMENT_DECISION_PATH =
+	".harness/guardrails/north-star/alignment-decision.json";
 
 interface ReviewDecisionPacket {
 	schemaVersion: "review-decision-packet/v1";
@@ -190,8 +194,13 @@ function writeDecisionPacket(
 
 export function emitReviewGateDecisionArtifacts(
 	input: ReviewGateArtifactInput,
-): { runId: string; decisionPacketPath: string } {
+): {
+	runId: string;
+	decisionPacketPath: string;
+	alignmentDecisionPath: string;
+} {
 	const runId = createReviewGateRunId();
+	const repoRoot = dirname(resolve(input.options.contractPath));
 	const runPaths = resolveRunRecordPaths({
 		runId,
 		...(input.options.runRecordsDir
@@ -214,7 +223,10 @@ export function emitReviewGateDecisionArtifacts(
 			repo: input.options.repo,
 			prNumber: input.options.prNumber,
 			headSha: input.options.headSha,
-			checkName: input.options.checkName,
+			checkName:
+				input.effectiveCheckName?.trim() ||
+				input.options.checkName.trim() ||
+				"pr-pipeline",
 		},
 		decision,
 		compaction: {
@@ -251,6 +263,11 @@ export function emitReviewGateDecisionArtifacts(
 	};
 
 	const artifact = writeDecisionPacket(decisionPacketPath, packet);
+	const alignmentDecisionPath = join(
+		repoRoot,
+		CANONICAL_ALIGNMENT_DECISION_PATH,
+	);
+	const alignmentArtifact = writeDecisionPacket(alignmentDecisionPath, packet);
 	const outcome = input.result.ok
 		? input.result.output.verified
 			? "success"
@@ -309,6 +326,11 @@ export function emitReviewGateDecisionArtifacts(
 				path: decisionPacketPath,
 				checksum: artifact.checksum,
 			},
+			{
+				type: "alignment-decision",
+				path: alignmentDecisionPath,
+				checksum: alignmentArtifact.checksum,
+			},
 		],
 		contract: {
 			path: input.options.contractPath,
@@ -343,9 +365,10 @@ export function emitReviewGateDecisionArtifacts(
 				compactionRecommended: packet.compaction.recommended,
 				guardrailPromotionRecommended: packet.guardrailPromotion.recommended,
 				decisionPacketPath,
+				alignmentDecisionPath,
 			},
 		},
 	});
 
-	return { runId, decisionPacketPath };
+	return { runId, decisionPacketPath, alignmentDecisionPath };
 }

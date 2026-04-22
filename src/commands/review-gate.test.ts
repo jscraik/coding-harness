@@ -1,4 +1,12 @@
+import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import {
+	NORTH_STAR_DECISION_QUESTION_SPECS,
+	NORTH_STAR_PRIMARY_BOTTLENECK,
+	NORTH_STAR_PRIMARY_METRIC,
+} from "../lib/contract/types.js";
 import type { CheckRun } from "../lib/github/client.js";
 import {
 	EXIT_CODES,
@@ -100,6 +108,8 @@ describe("runReviewGate", () => {
 			runId: "review-gate-run-1",
 			decisionPacketPath:
 				"/tmp/agent-runs/review-gate-run-1/decision-packet.json",
+			alignmentDecisionPath:
+				"/tmp/agent-runs/review-gate-run-1/alignment-decision.json",
 		});
 		mockValidateSha.mockReturnValue(undefined); // No-op = valid
 		mockRunPlanGate.mockReturnValue({
@@ -196,7 +206,53 @@ describe("runReviewGate", () => {
 		}
 	});
 
-	it("returns not_found when check run does not exist", async () => {
+	it("returns timeout warn output when check run never appears", async () => {
+		mockLoadContract.mockReturnValue({
+			version: "1.0",
+			riskTierRules: {},
+			reviewPolicy: { timeoutSeconds: 0, timeoutAction: "warn" },
+		});
+		const mockListCheckRuns = vi.fn().mockResolvedValue([]);
+		mockGitHubClient.mockImplementation(
+			() =>
+				({
+					getPullRequest: vi.fn().mockResolvedValue({
+						number: defaultOptions.prNumber,
+						user: { login: "coding-actor" },
+						head: { sha: validSha, ref: "feature/test" },
+					}),
+					listPullRequestFiles: vi
+						.fn()
+						.mockResolvedValue([{ filename: "src/commands/review-gate.ts" }]),
+					listCheckRunsForRef: mockListCheckRuns,
+				}) as unknown as GitHubClient,
+		);
+		const result = await runReviewGate(defaultOptions);
+
+		expect(mockListCheckRuns).not.toHaveBeenCalled();
+		expect(result.ok).toBe(true);
+		if (result.ok) {
+			expect(result.output.verified).toBe(false);
+			expect(result.output.checkStatus).toBe("not_found");
+			expect(result.output.needsRerun).toBe(true);
+			expect(result.output.timedOut).toBe(true);
+			expect(result.output.policy_gate_status).toBe("missing");
+			expect(result.output.blockers.length).toBeGreaterThan(0);
+			expect(result.output.blockers.join(" ")).toContain(
+				`${defaultOptions.checkName} check run not found`,
+			);
+			expect(result.output.actionable_count).toBeGreaterThan(0);
+			expect(result.output.informational_count).toBe(1);
+			expect(result.output.confidence_rubric.level).toBe("low");
+		}
+	});
+
+	it("returns TIMEOUT error when check run does not appear before timeout in fail mode", async () => {
+		mockLoadContract.mockReturnValue({
+			version: "1.0",
+			riskTierRules: {},
+			reviewPolicy: { timeoutSeconds: 0, timeoutAction: "fail" },
+		});
 		const mockListCheckRuns = vi.fn().mockResolvedValue([]);
 		mockGitHubClient.mockImplementation(
 			() =>
@@ -215,16 +271,11 @@ describe("runReviewGate", () => {
 
 		const result = await runReviewGate(defaultOptions);
 
-		expect(result.ok).toBe(true);
-		if (result.ok) {
-			expect(result.output.verified).toBe(false);
-			expect(result.output.checkStatus).toBe("not_found");
-			expect(result.output.needsRerun).toBe(true);
-			expect(result.output.policy_gate_status).toBe("missing");
-			expect(result.output.blockers.length).toBeGreaterThan(0);
-			expect(result.output.actionable_count).toBeGreaterThan(0);
-			expect(result.output.informational_count).toBe(1);
-			expect(result.output.confidence_rubric.level).toBe("low");
+		expect(mockListCheckRuns).not.toHaveBeenCalled();
+		expect(result.ok).toBe(false);
+		if (!result.ok) {
+			expect(result.error.code).toBe("TIMEOUT");
+			expect(result.error.message).toContain("timed out");
 		}
 	});
 
@@ -276,6 +327,61 @@ describe("runReviewGate", () => {
 			expect(result.output.actionable_count).toBe(0);
 			expect(result.output.informational_count).toBe(3);
 			expect(result.output.confidence_rubric.score).toBe(5);
+		}
+	});
+
+	it("falls back to legacy risk-policy-gate check when code-review check is absent", async () => {
+		mockLoadContract.mockReturnValue({
+			version: "1.0",
+			riskTierRules: {},
+			reviewPolicy: {
+				timeoutSeconds: 600,
+				timeoutAction: "fail",
+				enforceReviewerIndependence: true,
+			},
+		});
+		const mockCheckRuns: CheckRun[] = [
+			{
+				id: 1,
+				name: "risk-policy-gate",
+				status: "completed",
+				conclusion: "success",
+				head_sha: validSha,
+			},
+		];
+		mockGitHubClient.mockImplementation(
+			() =>
+				({
+					getPullRequest: vi.fn().mockResolvedValue({
+						number: defaultOptions.prNumber,
+						user: { login: "coding-actor" },
+						head: { sha: validSha, ref: "feature/test" },
+					}),
+					listPullRequestFiles: vi
+						.fn()
+						.mockResolvedValue([{ filename: "src/commands/review-gate.ts" }]),
+					listCheckRunsForRef: vi.fn().mockResolvedValue(mockCheckRuns),
+					listPullRequestReviews: vi.fn().mockResolvedValue([
+						{
+							state: "APPROVED",
+							commit_id: validSha,
+							user: { login: "independent-reviewer" },
+						},
+					]),
+				}) as unknown as GitHubClient,
+		);
+
+		const result = await runReviewGate({
+			...defaultOptions,
+			checkName: "code-review",
+		});
+
+		expect(result.ok).toBe(true);
+		if (result.ok) {
+			expect(result.output.verified).toBe(true);
+			expect(result.output.policy_gate_status).toBe("pass");
+			expect(result.output.blockers).toEqual([]);
+			expect(result.output.actionable_count).toBe(0);
 		}
 	});
 
@@ -384,6 +490,68 @@ describe("runReviewGate", () => {
 		}
 	});
 
+	it("sets plan traceability status to fail when plan IDs exist but validation fails", async () => {
+		mockRunPlanGate.mockReturnValue({
+			passed: false,
+			artifacts: [],
+			errors: [
+				{
+					code: "TRACEABILITY_MISSING",
+					path: "traceability.planIds",
+					message: "Plan IDs were found but acceptance evidence was incomplete",
+				},
+			],
+			traceability: {
+				planIds: ["feat-review-gate-traceability"],
+				matchedPlanIds: ["feat-review-gate-traceability"],
+				changedFiles: ["src/commands/review-gate.ts"],
+			},
+		});
+
+		const mockCheckRuns: CheckRun[] = [
+			{
+				id: 1,
+				name: "review-check",
+				status: "completed",
+				conclusion: "success",
+				head_sha: validSha,
+			},
+		];
+		mockGitHubClient.mockImplementation(
+			() =>
+				({
+					getPullRequest: vi.fn().mockResolvedValue({
+						number: defaultOptions.prNumber,
+						title: "Traceability hardening",
+						body: "- Plan IDs: `feat-review-gate-traceability`",
+						user: { login: "coding-actor" },
+						head: { sha: validSha, ref: "feature/test" },
+					}),
+					listPullRequestFiles: vi
+						.fn()
+						.mockResolvedValue([{ filename: "src/commands/review-gate.ts" }]),
+					listCheckRunsForRef: vi.fn().mockResolvedValue(mockCheckRuns),
+					listPullRequestReviews: vi.fn().mockResolvedValue([
+						{
+							state: "APPROVED",
+							commit_id: validSha,
+							user: { login: "independent-reviewer" },
+						},
+					]),
+				}) as unknown as GitHubClient,
+		);
+
+		const result = await runReviewGate(defaultOptions);
+
+		expect(result.ok).toBe(true);
+		if (result.ok) {
+			expect(result.output.verified).toBe(false);
+			expect(result.output.plan_traceability_status).toBe("fail");
+			expect(result.output.plan_ids).toEqual(["feat-review-gate-traceability"]);
+			expect(result.output.blockers.join(" ")).toContain("Plan traceability");
+		}
+	});
+
 	it("enforces reviewer independence when coding actor is sole approver", async () => {
 		const mockCheckRuns: CheckRun[] = [
 			{
@@ -430,6 +598,1520 @@ describe("runReviewGate", () => {
 				"Reviewer independence failed",
 			);
 			expect(result.output.actionable_count).toBeGreaterThan(0);
+		}
+	});
+
+	it("does not enforce north-star decision questions for legacy contract versions", async () => {
+		mockLoadContract.mockReturnValue({
+			version: "1.0",
+			riskTierRules: {},
+			reviewPolicy: {
+				timeoutSeconds: 600,
+				timeoutAction: "fail",
+				enforceReviewerIndependence: true,
+			},
+			northStar: {
+				mission:
+					"Coding Harness exists to let humans steer and agents execute safely, with PR lead time as the primary north-star metric.",
+				primaryMetric: NORTH_STAR_PRIMARY_METRIC,
+				primaryBottleneck: NORTH_STAR_PRIMARY_BOTTLENECK,
+				autonomyBoundary:
+					"Low and medium-risk autonomy should be automated where evidence is deterministic and rollback is clear; high-risk changes remain human-mediated.",
+				safetyFloor: [
+					"deterministic evidence over intuition",
+					"strict current-head SHA discipline",
+				],
+				nonGoals: ["governance surface area as a proxy for progress"],
+				decisionQuestions: NORTH_STAR_DECISION_QUESTION_SPECS.map(
+					(question) => ({
+						id: question.id,
+						prompt: question.prompt,
+					}),
+				),
+			},
+		});
+
+		const mockCheckRuns: CheckRun[] = [
+			{
+				id: 1,
+				name: "review-check",
+				status: "completed",
+				conclusion: "success",
+				head_sha: validSha,
+			},
+		];
+		mockGitHubClient.mockImplementation(
+			() =>
+				({
+					getPullRequest: vi.fn().mockResolvedValue({
+						number: defaultOptions.prNumber,
+						title: "Traceability hardening",
+						body: "- Plan IDs: `feat-review-gate-traceability`",
+						user: { login: "coding-actor" },
+						head: { sha: validSha, ref: "feature/test" },
+					}),
+					listPullRequestFiles: vi
+						.fn()
+						.mockResolvedValue([{ filename: "src/commands/review-gate.ts" }]),
+					listCheckRunsForRef: vi.fn().mockResolvedValue(mockCheckRuns),
+					listPullRequestReviews: vi.fn().mockResolvedValue([
+						{
+							state: "APPROVED",
+							commit_id: validSha,
+							user: { login: "independent-reviewer" },
+						},
+					]),
+				}) as unknown as GitHubClient,
+		);
+
+		const result = await runReviewGate(defaultOptions);
+
+		expect(result.ok).toBe(true);
+		if (result.ok) {
+			expect(result.output.verified).toBe(true);
+			expect(
+				result.output.blockers.some((blocker) =>
+					blocker.includes("North-star decision questions"),
+				),
+			).toBe(false);
+		}
+	});
+
+	it("blocks merge readiness when canonical north-star decision questions are missing", async () => {
+		mockLoadContract.mockReturnValue({
+			version: "1.6.0",
+			riskTierRules: {},
+			reviewPolicy: {
+				timeoutSeconds: 600,
+				timeoutAction: "fail",
+				enforceReviewerIndependence: true,
+			},
+			northStar: {
+				mission:
+					"Coding Harness exists to let humans steer and agents execute safely, with PR lead time as the primary north-star metric.",
+				primaryMetric: NORTH_STAR_PRIMARY_METRIC,
+				primaryBottleneck: NORTH_STAR_PRIMARY_BOTTLENECK,
+				autonomyBoundary:
+					"Low and medium-risk autonomy should be automated where evidence is deterministic and rollback is clear; high-risk changes remain human-mediated.",
+				safetyFloor: [
+					"deterministic evidence over intuition",
+					"strict current-head SHA discipline",
+				],
+				nonGoals: ["governance surface area as a proxy for progress"],
+				decisionQuestions: NORTH_STAR_DECISION_QUESTION_SPECS.map(
+					(question) => ({
+						id: question.id,
+						prompt: question.prompt,
+					}),
+				),
+			},
+		});
+
+		const mockCheckRuns: CheckRun[] = [
+			{
+				id: 1,
+				name: "review-check",
+				status: "completed",
+				conclusion: "success",
+				head_sha: validSha,
+			},
+		];
+		mockGitHubClient.mockImplementation(
+			() =>
+				({
+					getPullRequest: vi.fn().mockResolvedValue({
+						number: defaultOptions.prNumber,
+						title: "Traceability hardening",
+						body: "- Plan IDs: `feat-review-gate-traceability`",
+						user: { login: "coding-actor" },
+						head: { sha: validSha, ref: "feature/test" },
+					}),
+					listPullRequestFiles: vi
+						.fn()
+						.mockResolvedValue([{ filename: "src/commands/review-gate.ts" }]),
+					listCheckRunsForRef: vi.fn().mockResolvedValue(mockCheckRuns),
+					listPullRequestReviews: vi.fn().mockResolvedValue([
+						{
+							state: "APPROVED",
+							commit_id: validSha,
+							user: { login: "independent-reviewer" },
+						},
+					]),
+				}) as unknown as GitHubClient,
+		);
+
+		const result = await runReviewGate(defaultOptions);
+
+		expect(result.ok).toBe(true);
+		if (result.ok) {
+			expect(result.output.verified).toBe(false);
+			expect(result.output.blockers.join(" ")).toContain(
+				"North-star decision questions missing",
+			);
+			expect(result.output.blockers.join(" ")).toContain("lead_time_path");
+			expect(result.output.blockers.join(" ")).toContain("manual_glue");
+		}
+	});
+
+	it("blocks merge readiness when canonical contracts provide an empty decision-question array", async () => {
+		mockLoadContract.mockReturnValue({
+			version: "1.6.0",
+			riskTierRules: {},
+			reviewPolicy: {
+				timeoutSeconds: 600,
+				timeoutAction: "fail",
+				enforceReviewerIndependence: true,
+			},
+			northStar: {
+				mission:
+					"Coding Harness exists to let humans steer and agents execute safely, with PR lead time as the primary north-star metric.",
+				primaryMetric: NORTH_STAR_PRIMARY_METRIC,
+				primaryBottleneck: NORTH_STAR_PRIMARY_BOTTLENECK,
+				autonomyBoundary:
+					"Low and medium-risk autonomy should be automated where evidence is deterministic and rollback is clear; high-risk changes remain human-mediated.",
+				safetyFloor: [
+					"deterministic evidence over intuition",
+					"strict current-head SHA discipline",
+				],
+				nonGoals: ["governance surface area as a proxy for progress"],
+				decisionQuestions: [],
+			},
+		});
+
+		const mockCheckRuns: CheckRun[] = [
+			{
+				id: 1,
+				name: "review-check",
+				status: "completed",
+				conclusion: "success",
+				head_sha: validSha,
+			},
+		];
+		mockGitHubClient.mockImplementation(
+			() =>
+				({
+					getPullRequest: vi.fn().mockResolvedValue({
+						number: defaultOptions.prNumber,
+						title: "Traceability hardening",
+						body: "- Plan IDs: `feat-review-gate-traceability`",
+						user: { login: "coding-actor" },
+						head: { sha: validSha, ref: "feature/test" },
+					}),
+					listPullRequestFiles: vi
+						.fn()
+						.mockResolvedValue([{ filename: "src/commands/review-gate.ts" }]),
+					listCheckRunsForRef: vi.fn().mockResolvedValue(mockCheckRuns),
+					listPullRequestReviews: vi.fn().mockResolvedValue([
+						{
+							state: "APPROVED",
+							commit_id: validSha,
+							user: { login: "independent-reviewer" },
+						},
+					]),
+				}) as unknown as GitHubClient,
+		);
+
+		const result = await runReviewGate(defaultOptions);
+
+		expect(result.ok).toBe(true);
+		if (result.ok) {
+			expect(result.output.verified).toBe(false);
+			expect(result.output.blockers).toContain(
+				"contract_invalid: Canonical north-star contracts must declare at least one decision question.",
+			);
+		}
+	});
+
+	it("passes north-star decision checks when PR context includes canonical answers with evidence", async () => {
+		mockLoadContract.mockReturnValue({
+			version: "1.6.0",
+			riskTierRules: {},
+			reviewPolicy: {
+				timeoutSeconds: 600,
+				timeoutAction: "fail",
+				enforceReviewerIndependence: true,
+			},
+			northStar: {
+				mission:
+					"Coding Harness exists to let humans steer and agents execute safely, with PR lead time as the primary north-star metric.",
+				primaryMetric: NORTH_STAR_PRIMARY_METRIC,
+				primaryBottleneck: NORTH_STAR_PRIMARY_BOTTLENECK,
+				autonomyBoundary:
+					"Low and medium-risk autonomy should be automated where evidence is deterministic and rollback is clear; high-risk changes remain human-mediated.",
+				safetyFloor: [
+					"deterministic evidence over intuition",
+					"strict current-head SHA discipline",
+				],
+				nonGoals: ["governance surface area as a proxy for progress"],
+				decisionQuestions: NORTH_STAR_DECISION_QUESTION_SPECS.map(
+					(question) => ({
+						id: question.id,
+						prompt: question.prompt,
+					}),
+				),
+			},
+		});
+
+		const mockCheckRuns: CheckRun[] = [
+			{
+				id: 1,
+				name: "review-check",
+				status: "completed",
+				conclusion: "success",
+				head_sha: validSha,
+			},
+		];
+		const prBody = [
+			"- Plan IDs: `feat-review-gate-traceability`",
+			"- lead_time_path: yes. Evidence: [lead-time-metrics](/artifacts/review/lead-time.md:12)",
+			"- manual_glue: yes. Evidence: [workflow](/artifacts/review/glue.md:7)",
+			"- agent_reliability: yes. Evidence: [tests](/artifacts/review/reliability.md:5)",
+			"- safety_floor: yes. Evidence: [gate](/artifacts/review/safety.md:3)",
+		].join("\n");
+		mockGitHubClient.mockImplementation(
+			() =>
+				({
+					getPullRequest: vi.fn().mockResolvedValue({
+						number: defaultOptions.prNumber,
+						title: "Traceability hardening",
+						body: prBody,
+						user: { login: "coding-actor" },
+						head: { sha: validSha, ref: "feature/test" },
+					}),
+					listPullRequestFiles: vi
+						.fn()
+						.mockResolvedValue([{ filename: "src/commands/review-gate.ts" }]),
+					listCheckRunsForRef: vi.fn().mockResolvedValue(mockCheckRuns),
+					listPullRequestReviews: vi.fn().mockResolvedValue([
+						{
+							state: "APPROVED",
+							commit_id: validSha,
+							user: { login: "independent-reviewer" },
+						},
+					]),
+				}) as unknown as GitHubClient,
+		);
+
+		const result = await runReviewGate(defaultOptions);
+
+		expect(result.ok).toBe(true);
+		if (result.ok) {
+			expect(result.output.verified).toBe(true);
+			expect(result.output.blockers).toEqual([]);
+		}
+	});
+
+	it("accepts repo-relative file:line references as evidence", async () => {
+		mockLoadContract.mockReturnValue({
+			version: "1.6.0",
+			riskTierRules: {},
+			reviewPolicy: {
+				timeoutSeconds: 600,
+				timeoutAction: "fail",
+				enforceReviewerIndependence: true,
+			},
+			northStar: {
+				mission:
+					"Coding Harness exists to let humans steer and agents execute safely, with PR lead time as the primary north-star metric.",
+				primaryMetric: NORTH_STAR_PRIMARY_METRIC,
+				primaryBottleneck: NORTH_STAR_PRIMARY_BOTTLENECK,
+				autonomyBoundary:
+					"Low and medium-risk autonomy should be automated where evidence is deterministic and rollback is clear; high-risk changes remain human-mediated.",
+				safetyFloor: [
+					"deterministic evidence over intuition",
+					"strict current-head SHA discipline",
+				],
+				nonGoals: ["governance surface area as a proxy for progress"],
+				decisionQuestions: NORTH_STAR_DECISION_QUESTION_SPECS.map(
+					(question) => ({
+						id: question.id,
+						prompt: question.prompt,
+					}),
+				),
+			},
+		});
+
+		const prBody = [
+			"- Plan IDs: `feat-review-gate-traceability`",
+			"- lead_time_path: yes. Evidence: README.md:12",
+			"- manual_glue: yes. Evidence: docs/roadmap/north-star.md:21",
+			"- agent_reliability: yes. Evidence: src/commands/review-gate.ts:220",
+			"- safety_floor: yes. Evidence: src/commands/review-gate.test.ts:600",
+		].join("\n");
+		mockGitHubClient.mockImplementation(
+			() =>
+				({
+					getPullRequest: vi.fn().mockResolvedValue({
+						number: defaultOptions.prNumber,
+						title: "Traceability hardening",
+						body: prBody,
+						user: { login: "coding-actor" },
+						head: { sha: validSha, ref: "feature/test" },
+					}),
+					listPullRequestFiles: vi
+						.fn()
+						.mockResolvedValue([{ filename: "src/commands/review-gate.ts" }]),
+					listCheckRunsForRef: vi.fn().mockResolvedValue([
+						{
+							id: 1,
+							name: "review-check",
+							status: "completed",
+							conclusion: "success",
+							head_sha: validSha,
+						},
+					]),
+					listPullRequestReviews: vi.fn().mockResolvedValue([
+						{
+							state: "APPROVED",
+							commit_id: validSha,
+							user: { login: "independent-reviewer" },
+						},
+					]),
+				}) as unknown as GitHubClient,
+		);
+
+		const result = await runReviewGate(defaultOptions);
+		expect(result.ok).toBe(true);
+		if (result.ok) {
+			expect(result.output.verified).toBe(true);
+			expect(result.output.blockers).toEqual([]);
+		}
+	});
+
+	it("accepts extensionless and dotfile file:line evidence references", async () => {
+		mockLoadContract.mockReturnValue({
+			version: "1.6.0",
+			riskTierRules: {},
+			reviewPolicy: {
+				timeoutSeconds: 600,
+				timeoutAction: "fail",
+				enforceReviewerIndependence: true,
+			},
+			northStar: {
+				mission:
+					"Coding Harness exists to let humans steer and agents execute safely, with PR lead time as the primary north-star metric.",
+				primaryMetric: NORTH_STAR_PRIMARY_METRIC,
+				primaryBottleneck: NORTH_STAR_PRIMARY_BOTTLENECK,
+				autonomyBoundary:
+					"Low and medium-risk autonomy should be automated where evidence is deterministic and rollback is clear; high-risk changes remain human-mediated.",
+				safetyFloor: [
+					"deterministic evidence over intuition",
+					"strict current-head SHA discipline",
+				],
+				nonGoals: ["governance surface area as a proxy for progress"],
+				decisionQuestions: NORTH_STAR_DECISION_QUESTION_SPECS.map(
+					(question) => ({
+						id: question.id,
+						prompt: question.prompt,
+					}),
+				),
+			},
+		});
+
+		const prBody = [
+			"- Plan IDs: `feat-review-gate-traceability`",
+			"- lead_time_path: yes. Evidence: Makefile:12",
+			"- manual_glue: yes. Evidence: Dockerfile:8",
+			"- agent_reliability: yes. Evidence: .github/workflows/pr-pipeline.yml:42",
+			"- safety_floor: yes. Evidence: codex/hooks/pre-tool-use-guard.sh:19",
+		].join("\n");
+		mockGitHubClient.mockImplementation(
+			() =>
+				({
+					getPullRequest: vi.fn().mockResolvedValue({
+						number: defaultOptions.prNumber,
+						title: "Traceability hardening",
+						body: prBody,
+						user: { login: "coding-actor" },
+						head: { sha: validSha, ref: "feature/test" },
+					}),
+					listPullRequestFiles: vi
+						.fn()
+						.mockResolvedValue([{ filename: "src/commands/review-gate.ts" }]),
+					listCheckRunsForRef: vi.fn().mockResolvedValue([
+						{
+							id: 1,
+							name: "review-check",
+							status: "completed",
+							conclusion: "success",
+							head_sha: validSha,
+						},
+					]),
+					listPullRequestReviews: vi.fn().mockResolvedValue([
+						{
+							state: "APPROVED",
+							commit_id: validSha,
+							user: { login: "independent-reviewer" },
+						},
+					]),
+				}) as unknown as GitHubClient,
+		);
+
+		const result = await runReviewGate(defaultOptions);
+		expect(result.ok).toBe(true);
+		if (result.ok) {
+			expect(result.output.verified).toBe(true);
+			expect(result.output.blockers).toEqual([]);
+		}
+	});
+
+	it("passes north-star decision checks when responses use numbered list formatting", async () => {
+		mockLoadContract.mockReturnValue({
+			version: "1.6.0",
+			riskTierRules: {},
+			reviewPolicy: {
+				timeoutSeconds: 600,
+				timeoutAction: "fail",
+				enforceReviewerIndependence: true,
+			},
+			northStar: {
+				mission:
+					"Coding Harness exists to let humans steer and agents execute safely, with PR lead time as the primary north-star metric.",
+				primaryMetric: NORTH_STAR_PRIMARY_METRIC,
+				primaryBottleneck: NORTH_STAR_PRIMARY_BOTTLENECK,
+				autonomyBoundary:
+					"Low and medium-risk autonomy should be automated where evidence is deterministic and rollback is clear; high-risk changes remain human-mediated.",
+				safetyFloor: [
+					"deterministic evidence over intuition",
+					"strict current-head SHA discipline",
+				],
+				nonGoals: ["governance surface area as a proxy for progress"],
+				decisionQuestions: NORTH_STAR_DECISION_QUESTION_SPECS.map(
+					(question) => ({
+						id: question.id,
+						prompt: question.prompt,
+					}),
+				),
+			},
+		});
+
+		const mockCheckRuns: CheckRun[] = [
+			{
+				id: 1,
+				name: "review-check",
+				status: "completed",
+				conclusion: "success",
+				head_sha: validSha,
+			},
+		];
+		const prBody = [
+			"- Plan IDs: `feat-review-gate-traceability`",
+			"1. lead_time_path: yes. Evidence: [lead-time-metrics](/artifacts/review/lead-time.md:12)",
+			"2. manual_glue: yes. Evidence: [workflow](/artifacts/review/glue.md:7)",
+			"3. agent_reliability: yes. Evidence: [tests](/artifacts/review/reliability.md:5)",
+			"4. safety_floor: yes. Evidence: [gate](/artifacts/review/safety.md:3)",
+		].join("\n");
+		mockGitHubClient.mockImplementation(
+			() =>
+				({
+					getPullRequest: vi.fn().mockResolvedValue({
+						number: defaultOptions.prNumber,
+						title: "Traceability hardening",
+						body: prBody,
+						user: { login: "coding-actor" },
+						head: { sha: validSha, ref: "feature/test" },
+					}),
+					listPullRequestFiles: vi
+						.fn()
+						.mockResolvedValue([{ filename: "src/commands/review-gate.ts" }]),
+					listCheckRunsForRef: vi.fn().mockResolvedValue(mockCheckRuns),
+					listPullRequestReviews: vi.fn().mockResolvedValue([
+						{
+							state: "APPROVED",
+							commit_id: validSha,
+							user: { login: "independent-reviewer" },
+						},
+					]),
+				}) as unknown as GitHubClient,
+		);
+
+		const result = await runReviewGate(defaultOptions);
+
+		expect(result.ok).toBe(true);
+		if (result.ok) {
+			expect(result.output.verified).toBe(true);
+			expect(result.output.blockers).toEqual([]);
+		}
+	});
+
+	it("passes north-star decision checks when responses reference canonical prompts without IDs", async () => {
+		mockLoadContract.mockReturnValue({
+			version: "1.6.0",
+			riskTierRules: {},
+			reviewPolicy: {
+				timeoutSeconds: 600,
+				timeoutAction: "fail",
+				enforceReviewerIndependence: true,
+			},
+			northStar: {
+				mission:
+					"Coding Harness exists to let humans steer and agents execute safely, with PR lead time as the primary north-star metric.",
+				primaryMetric: NORTH_STAR_PRIMARY_METRIC,
+				primaryBottleneck: NORTH_STAR_PRIMARY_BOTTLENECK,
+				autonomyBoundary:
+					"Low and medium-risk autonomy should be automated where evidence is deterministic and rollback is clear; high-risk changes remain human-mediated.",
+				safetyFloor: [
+					"deterministic evidence over intuition",
+					"strict current-head SHA discipline",
+				],
+				nonGoals: ["governance surface area as a proxy for progress"],
+				decisionQuestions: NORTH_STAR_DECISION_QUESTION_SPECS.map(
+					(question) => ({
+						id: question.id,
+						prompt: question.prompt,
+					}),
+				),
+			},
+		});
+
+		const mockCheckRuns: CheckRun[] = [
+			{
+				id: 1,
+				name: "review-check",
+				status: "completed",
+				conclusion: "success",
+				head_sha: validSha,
+			},
+		];
+		const prBody = [
+			"- Plan IDs: `feat-review-gate-traceability`",
+			...NORTH_STAR_DECISION_QUESTION_SPECS.map(
+				(question, index) =>
+					`- ${question.prompt}: yes. Evidence: [evidence-${index + 1}](/artifacts/review/proof-${index + 1}.md:1)`,
+			),
+		].join("\n");
+		mockGitHubClient.mockImplementation(
+			() =>
+				({
+					getPullRequest: vi.fn().mockResolvedValue({
+						number: defaultOptions.prNumber,
+						title: "Traceability hardening",
+						body: prBody,
+						user: { login: "coding-actor" },
+						head: { sha: validSha, ref: "feature/test" },
+					}),
+					listPullRequestFiles: vi
+						.fn()
+						.mockResolvedValue([{ filename: "src/commands/review-gate.ts" }]),
+					listCheckRunsForRef: vi.fn().mockResolvedValue(mockCheckRuns),
+					listPullRequestReviews: vi.fn().mockResolvedValue([
+						{
+							state: "APPROVED",
+							commit_id: validSha,
+							user: { login: "independent-reviewer" },
+						},
+					]),
+				}) as unknown as GitHubClient,
+		);
+
+		const result = await runReviewGate(defaultOptions);
+
+		expect(result.ok).toBe(true);
+		if (result.ok) {
+			expect(result.output.verified).toBe(true);
+			expect(result.output.blockers).toEqual([]);
+		}
+	});
+
+	it("blocks north-star decision checks when canonical IDs exist without evidence references", async () => {
+		mockLoadContract.mockReturnValue({
+			version: "1.6.0",
+			riskTierRules: {},
+			reviewPolicy: {
+				timeoutSeconds: 600,
+				timeoutAction: "fail",
+				enforceReviewerIndependence: true,
+			},
+			northStar: {
+				mission:
+					"Coding Harness exists to let humans steer and agents execute safely, with PR lead time as the primary north-star metric.",
+				primaryMetric: NORTH_STAR_PRIMARY_METRIC,
+				primaryBottleneck: NORTH_STAR_PRIMARY_BOTTLENECK,
+				autonomyBoundary:
+					"Low and medium-risk autonomy should be automated where evidence is deterministic and rollback is clear; high-risk changes remain human-mediated.",
+				safetyFloor: [
+					"deterministic evidence over intuition",
+					"strict current-head SHA discipline",
+				],
+				nonGoals: ["governance surface area as a proxy for progress"],
+				decisionQuestions: NORTH_STAR_DECISION_QUESTION_SPECS.map(
+					(question) => ({
+						id: question.id,
+						prompt: question.prompt,
+					}),
+				),
+			},
+		});
+
+		const mockCheckRuns: CheckRun[] = [
+			{
+				id: 1,
+				name: "review-check",
+				status: "completed",
+				conclusion: "success",
+				head_sha: validSha,
+			},
+		];
+		const prBody = [
+			"- Plan IDs: `feat-review-gate-traceability`",
+			"- lead_time_path: yes",
+			"- manual_glue: yes",
+			"- agent_reliability: yes",
+			"- safety_floor: yes",
+		].join("\n");
+		mockGitHubClient.mockImplementation(
+			() =>
+				({
+					getPullRequest: vi.fn().mockResolvedValue({
+						number: defaultOptions.prNumber,
+						title: "Traceability hardening",
+						body: prBody,
+						user: { login: "coding-actor" },
+						head: { sha: validSha, ref: "feature/test" },
+					}),
+					listPullRequestFiles: vi
+						.fn()
+						.mockResolvedValue([{ filename: "src/commands/review-gate.ts" }]),
+					listCheckRunsForRef: vi.fn().mockResolvedValue(mockCheckRuns),
+					listPullRequestReviews: vi.fn().mockResolvedValue([
+						{
+							state: "APPROVED",
+							commit_id: validSha,
+							user: { login: "independent-reviewer" },
+						},
+					]),
+				}) as unknown as GitHubClient,
+		);
+
+		const result = await runReviewGate(defaultOptions);
+
+		expect(result.ok).toBe(true);
+		if (result.ok) {
+			expect(result.output.verified).toBe(false);
+			expect(result.output.blockers.join(" ")).toContain(
+				"must include evidence references for each question",
+			);
+			expect(result.output.blockers.join(" ")).not.toContain(
+				"North-star decision questions missing",
+			);
+		}
+	});
+
+	it("blocks north-star decision checks when only one response includes evidence", async () => {
+		mockLoadContract.mockReturnValue({
+			version: "1.6.0",
+			riskTierRules: {},
+			reviewPolicy: {
+				timeoutSeconds: 600,
+				timeoutAction: "fail",
+				enforceReviewerIndependence: true,
+			},
+			northStar: {
+				mission:
+					"Coding Harness exists to let humans steer and agents execute safely, with PR lead time as the primary north-star metric.",
+				primaryMetric: NORTH_STAR_PRIMARY_METRIC,
+				primaryBottleneck: NORTH_STAR_PRIMARY_BOTTLENECK,
+				autonomyBoundary:
+					"Low and medium-risk autonomy should be automated where evidence is deterministic and rollback is clear; high-risk changes remain human-mediated.",
+				safetyFloor: [
+					"deterministic evidence over intuition",
+					"strict current-head SHA discipline",
+				],
+				nonGoals: ["governance surface area as a proxy for progress"],
+				decisionQuestions: NORTH_STAR_DECISION_QUESTION_SPECS.map(
+					(question) => ({
+						id: question.id,
+						prompt: question.prompt,
+					}),
+				),
+			},
+		});
+
+		const mockCheckRuns: CheckRun[] = [
+			{
+				id: 1,
+				name: "review-check",
+				status: "completed",
+				conclusion: "success",
+				head_sha: validSha,
+			},
+		];
+		const prBody = [
+			"- Plan IDs: `feat-review-gate-traceability`",
+			"- lead_time_path: yes. Evidence: [lead-time](/artifacts/review/lead-time.md:12)",
+			"- manual_glue: yes",
+			"- agent_reliability: yes",
+			"- safety_floor: yes",
+		].join("\n");
+		mockGitHubClient.mockImplementation(
+			() =>
+				({
+					getPullRequest: vi.fn().mockResolvedValue({
+						number: defaultOptions.prNumber,
+						title: "Traceability hardening",
+						body: prBody,
+						user: { login: "coding-actor" },
+						head: { sha: validSha, ref: "feature/test" },
+					}),
+					listPullRequestFiles: vi
+						.fn()
+						.mockResolvedValue([{ filename: "src/commands/review-gate.ts" }]),
+					listCheckRunsForRef: vi.fn().mockResolvedValue(mockCheckRuns),
+					listPullRequestReviews: vi.fn().mockResolvedValue([
+						{
+							state: "APPROVED",
+							commit_id: validSha,
+							user: { login: "independent-reviewer" },
+						},
+					]),
+				}) as unknown as GitHubClient,
+		);
+
+		const result = await runReviewGate(defaultOptions);
+
+		expect(result.ok).toBe(true);
+		if (result.ok) {
+			expect(result.output.verified).toBe(false);
+			expect(result.output.blockers.join(" ")).toContain(
+				"missing evidence for: manual_glue, agent_reliability, safety_floor",
+			);
+		}
+	});
+
+	it("does not attribute adjacent evidence across checklist-style decision responses", async () => {
+		mockLoadContract.mockReturnValue({
+			version: "1.6.0",
+			riskTierRules: {},
+			reviewPolicy: {
+				timeoutSeconds: 600,
+				timeoutAction: "fail",
+				enforceReviewerIndependence: true,
+			},
+			northStar: {
+				mission:
+					"Coding Harness exists to let humans steer and agents execute safely, with PR lead time as the primary north-star metric.",
+				primaryMetric: NORTH_STAR_PRIMARY_METRIC,
+				primaryBottleneck: NORTH_STAR_PRIMARY_BOTTLENECK,
+				autonomyBoundary:
+					"Low and medium-risk autonomy should be automated where evidence is deterministic and rollback is clear; high-risk changes remain human-mediated.",
+				safetyFloor: [
+					"deterministic evidence over intuition",
+					"strict current-head SHA discipline",
+				],
+				nonGoals: ["governance surface area as a proxy for progress"],
+				decisionQuestions: NORTH_STAR_DECISION_QUESTION_SPECS.map(
+					(question) => ({
+						id: question.id,
+						prompt: question.prompt,
+					}),
+				),
+			},
+		});
+
+		const mockCheckRuns: CheckRun[] = [
+			{
+				id: 1,
+				name: "review-check",
+				status: "completed",
+				conclusion: "success",
+				head_sha: validSha,
+			},
+		];
+		const prBody = [
+			"- Plan IDs: `feat-review-gate-traceability`",
+			"- [x] lead_time_path: yes. Evidence: [lead-time](/artifacts/review/lead-time.md:12)",
+			"- [x] manual_glue: yes",
+			"- [x] agent_reliability: yes. Evidence: [tests](/artifacts/review/reliability.md:5)",
+			"- [x] safety_floor: yes. Evidence: [gate](/artifacts/review/safety.md:3)",
+		].join("\n");
+		mockGitHubClient.mockImplementation(
+			() =>
+				({
+					getPullRequest: vi.fn().mockResolvedValue({
+						number: defaultOptions.prNumber,
+						title: "Traceability hardening",
+						body: prBody,
+						user: { login: "coding-actor" },
+						head: { sha: validSha, ref: "feature/test" },
+					}),
+					listPullRequestFiles: vi
+						.fn()
+						.mockResolvedValue([{ filename: "src/commands/review-gate.ts" }]),
+					listCheckRunsForRef: vi.fn().mockResolvedValue(mockCheckRuns),
+					listPullRequestReviews: vi.fn().mockResolvedValue([
+						{
+							state: "APPROVED",
+							commit_id: validSha,
+							user: { login: "independent-reviewer" },
+						},
+					]),
+				}) as unknown as GitHubClient,
+		);
+
+		const result = await runReviewGate(defaultOptions);
+
+		expect(result.ok).toBe(true);
+		if (result.ok) {
+			expect(result.output.verified).toBe(false);
+			expect(result.output.blockers.join(" ")).toContain(
+				"missing evidence for: manual_glue",
+			);
+			expect(result.output.blockers.join(" ")).not.toContain(
+				"agent_reliability",
+			);
+			expect(result.output.blockers.join(" ")).not.toContain("safety_floor");
+		}
+	});
+
+	it("blocks north-star decision checks when a canonical response uses explicit negative answers", async () => {
+		mockLoadContract.mockReturnValue({
+			version: "1.6.0",
+			riskTierRules: {},
+			reviewPolicy: {
+				timeoutSeconds: 600,
+				timeoutAction: "fail",
+				enforceReviewerIndependence: true,
+			},
+			northStar: {
+				mission:
+					"Coding Harness exists to let humans steer and agents execute safely, with PR lead time as the primary north-star metric.",
+				primaryMetric: NORTH_STAR_PRIMARY_METRIC,
+				primaryBottleneck: NORTH_STAR_PRIMARY_BOTTLENECK,
+				autonomyBoundary:
+					"Low and medium-risk autonomy should be automated where evidence is deterministic and rollback is clear; high-risk changes remain human-mediated.",
+				safetyFloor: [
+					"deterministic evidence over intuition",
+					"strict current-head SHA discipline",
+				],
+				nonGoals: ["governance surface area as a proxy for progress"],
+				decisionQuestions: NORTH_STAR_DECISION_QUESTION_SPECS.map(
+					(question) => ({
+						id: question.id,
+						prompt: question.prompt,
+					}),
+				),
+			},
+		});
+
+		const mockCheckRuns: CheckRun[] = [
+			{
+				id: 1,
+				name: "review-check",
+				status: "completed",
+				conclusion: "success",
+				head_sha: validSha,
+			},
+		];
+		const prBody = [
+			"- Plan IDs: `feat-review-gate-traceability`",
+			"- lead_time_path: yes. Evidence: [lead-time](/artifacts/review/lead-time.md:12)",
+			"- manual_glue: no. Evidence: [workflow](/artifacts/review/glue.md:7)",
+			"- agent_reliability: yes. Evidence: [tests](/artifacts/review/reliability.md:5)",
+			"- safety_floor: yes. Evidence: [gate](/artifacts/review/safety.md:3)",
+		].join("\n");
+		mockGitHubClient.mockImplementation(
+			() =>
+				({
+					getPullRequest: vi.fn().mockResolvedValue({
+						number: defaultOptions.prNumber,
+						title: "Traceability hardening",
+						body: prBody,
+						user: { login: "coding-actor" },
+						head: { sha: validSha, ref: "feature/test" },
+					}),
+					listPullRequestFiles: vi
+						.fn()
+						.mockResolvedValue([{ filename: "src/commands/review-gate.ts" }]),
+					listCheckRunsForRef: vi.fn().mockResolvedValue(mockCheckRuns),
+					listPullRequestReviews: vi.fn().mockResolvedValue([
+						{
+							state: "APPROVED",
+							commit_id: validSha,
+							user: { login: "independent-reviewer" },
+						},
+					]),
+				}) as unknown as GitHubClient,
+		);
+
+		const result = await runReviewGate(defaultOptions);
+
+		expect(result.ok).toBe(true);
+		if (result.ok) {
+			expect(result.output.verified).toBe(false);
+			expect(result.output.blockers.join(" ")).toContain(
+				"contradict throughput intent",
+			);
+			expect(result.output.blockers.join(" ")).toContain("manual_glue");
+		}
+	});
+
+	it("blocks north-star decision checks when a canonical answer is negative on a continuation line", async () => {
+		mockLoadContract.mockReturnValue({
+			version: "1.6.0",
+			riskTierRules: {},
+			reviewPolicy: {
+				timeoutSeconds: 600,
+				timeoutAction: "fail",
+				enforceReviewerIndependence: true,
+			},
+			northStar: {
+				mission:
+					"Coding Harness exists to let humans steer and agents execute safely, with PR lead time as the primary north-star metric.",
+				primaryMetric: NORTH_STAR_PRIMARY_METRIC,
+				primaryBottleneck: NORTH_STAR_PRIMARY_BOTTLENECK,
+				autonomyBoundary:
+					"Low and medium-risk autonomy should be automated where evidence is deterministic and rollback is clear; high-risk changes remain human-mediated.",
+				safetyFloor: [
+					"deterministic evidence over intuition",
+					"strict current-head SHA discipline",
+				],
+				nonGoals: ["governance surface area as a proxy for progress"],
+				decisionQuestions: NORTH_STAR_DECISION_QUESTION_SPECS.map(
+					(question) => ({
+						id: question.id,
+						prompt: question.prompt,
+					}),
+				),
+			},
+		});
+
+		const mockCheckRuns: CheckRun[] = [
+			{
+				id: 1,
+				name: "review-check",
+				status: "completed",
+				conclusion: "success",
+				head_sha: validSha,
+			},
+		];
+		const prBody = [
+			"- Plan IDs: `feat-review-gate-traceability`",
+			"- lead_time_path: yes. Evidence: [lead-time](/artifacts/review/lead-time.md:12)",
+			"- manual_glue:",
+			"  no, this adds manual coordination. Evidence: [workflow](/artifacts/review/glue.md:7)",
+			"- agent_reliability: yes. Evidence: [tests](/artifacts/review/reliability.md:5)",
+			"- safety_floor: yes. Evidence: [gate](/artifacts/review/safety.md:3)",
+		].join("\n");
+		mockGitHubClient.mockImplementation(
+			() =>
+				({
+					getPullRequest: vi.fn().mockResolvedValue({
+						number: defaultOptions.prNumber,
+						title: "Traceability hardening",
+						body: prBody,
+						user: { login: "coding-actor" },
+						head: { sha: validSha, ref: "feature/test" },
+					}),
+					listPullRequestFiles: vi
+						.fn()
+						.mockResolvedValue([{ filename: "src/commands/review-gate.ts" }]),
+					listCheckRunsForRef: vi.fn().mockResolvedValue(mockCheckRuns),
+					listPullRequestReviews: vi.fn().mockResolvedValue([
+						{
+							state: "APPROVED",
+							commit_id: validSha,
+							user: { login: "independent-reviewer" },
+						},
+					]),
+				}) as unknown as GitHubClient,
+		);
+
+		const result = await runReviewGate(defaultOptions);
+
+		expect(result.ok).toBe(true);
+		if (result.ok) {
+			expect(result.output.verified).toBe(false);
+			expect(result.output.blockers.join(" ")).toContain(
+				"negative answers found for: manual_glue",
+			);
+		}
+	});
+
+	it("blocks north-star decision checks when a prompt-only response uses explicit false", async () => {
+		mockLoadContract.mockReturnValue({
+			version: "1.6.0",
+			riskTierRules: {},
+			reviewPolicy: {
+				timeoutSeconds: 600,
+				timeoutAction: "fail",
+				enforceReviewerIndependence: true,
+			},
+			northStar: {
+				mission:
+					"Coding Harness exists to let humans steer and agents execute safely, with PR lead time as the primary north-star metric.",
+				primaryMetric: NORTH_STAR_PRIMARY_METRIC,
+				primaryBottleneck: NORTH_STAR_PRIMARY_BOTTLENECK,
+				autonomyBoundary:
+					"Low and medium-risk autonomy should be automated where evidence is deterministic and rollback is clear; high-risk changes remain human-mediated.",
+				safetyFloor: [
+					"deterministic evidence over intuition",
+					"strict current-head SHA discipline",
+				],
+				nonGoals: ["governance surface area as a proxy for progress"],
+				decisionQuestions: NORTH_STAR_DECISION_QUESTION_SPECS.map(
+					(question) => ({
+						id: question.id,
+						prompt: question.prompt,
+					}),
+				),
+			},
+		});
+
+		const mockCheckRuns: CheckRun[] = [
+			{
+				id: 1,
+				name: "review-check",
+				status: "completed",
+				conclusion: "success",
+				head_sha: validSha,
+			},
+		];
+		const manualGlueQuestion = NORTH_STAR_DECISION_QUESTION_SPECS.find(
+			(question) => question.id === "manual_glue",
+		);
+		expect(manualGlueQuestion).toBeDefined();
+		const prBody = [
+			"- Plan IDs: `feat-review-gate-traceability`",
+			...NORTH_STAR_DECISION_QUESTION_SPECS.map((question, index) => {
+				const answerToken = question.id === "manual_glue" ? "false" : "yes";
+				return `- ${question.prompt}: ${answerToken}. Evidence: [evidence-${index + 1}](/artifacts/review/proof-${index + 1}.md:1)`;
+			}),
+		].join("\n");
+		mockGitHubClient.mockImplementation(
+			() =>
+				({
+					getPullRequest: vi.fn().mockResolvedValue({
+						number: defaultOptions.prNumber,
+						title: "Traceability hardening",
+						body: prBody,
+						user: { login: "coding-actor" },
+						head: { sha: validSha, ref: "feature/test" },
+					}),
+					listPullRequestFiles: vi
+						.fn()
+						.mockResolvedValue([{ filename: "src/commands/review-gate.ts" }]),
+					listCheckRunsForRef: vi.fn().mockResolvedValue(mockCheckRuns),
+					listPullRequestReviews: vi.fn().mockResolvedValue([
+						{
+							state: "APPROVED",
+							commit_id: validSha,
+							user: { login: "independent-reviewer" },
+						},
+					]),
+				}) as unknown as GitHubClient,
+		);
+
+		const result = await runReviewGate(defaultOptions);
+
+		expect(result.ok).toBe(true);
+		if (result.ok) {
+			expect(result.output.verified).toBe(false);
+			expect(result.output.blockers.join(" ")).toContain(
+				"negative answers found for: manual_glue",
+			);
+		}
+	});
+
+	it("allows explicit no-impact negative responses when declaration includes non-positive policy surface delta", async () => {
+		mockLoadContract.mockReturnValue({
+			version: "1.6.0",
+			riskTierRules: {},
+			reviewPolicy: {
+				timeoutSeconds: 600,
+				timeoutAction: "fail",
+				enforceReviewerIndependence: true,
+			},
+			northStar: {
+				mission:
+					"Coding Harness exists to let humans steer and agents execute safely, with PR lead time as the primary north-star metric.",
+				primaryMetric: NORTH_STAR_PRIMARY_METRIC,
+				primaryBottleneck: NORTH_STAR_PRIMARY_BOTTLENECK,
+				autonomyBoundary:
+					"Low and medium-risk autonomy should be automated where evidence is deterministic and rollback is clear; high-risk changes remain human-mediated.",
+				safetyFloor: [
+					"deterministic evidence over intuition",
+					"strict current-head SHA discipline",
+				],
+				nonGoals: ["governance surface area as a proxy for progress"],
+				decisionQuestions: NORTH_STAR_DECISION_QUESTION_SPECS.map(
+					(question) => ({
+						id: question.id,
+						prompt: question.prompt,
+					}),
+				),
+			},
+		});
+
+		const mockCheckRuns: CheckRun[] = [
+			{
+				id: 1,
+				name: "review-check",
+				status: "completed",
+				conclusion: "success",
+				head_sha: validSha,
+			},
+		];
+		const prBody = [
+			"- Plan IDs: `feat-review-gate-traceability`",
+			"- lead_time_path: yes. Evidence: [lead-time](/artifacts/review/lead-time.md:12)",
+			"- manual_glue: no. Evidence: [workflow](/artifacts/review/glue.md:7)",
+			"  metric_impact_declared: none; policy_surface_delta: 0",
+			"- agent_reliability: yes. Evidence: [tests](/artifacts/review/reliability.md:5)",
+			"- safety_floor: yes. Evidence: [gate](/artifacts/review/safety.md:3)",
+		].join("\n");
+		mockGitHubClient.mockImplementation(
+			() =>
+				({
+					getPullRequest: vi.fn().mockResolvedValue({
+						number: defaultOptions.prNumber,
+						title: "Traceability hardening",
+						body: prBody,
+						user: { login: "coding-actor" },
+						head: { sha: validSha, ref: "feature/test" },
+					}),
+					listPullRequestFiles: vi
+						.fn()
+						.mockResolvedValue([{ filename: "src/commands/review-gate.ts" }]),
+					listCheckRunsForRef: vi.fn().mockResolvedValue(mockCheckRuns),
+					listPullRequestReviews: vi.fn().mockResolvedValue([
+						{
+							state: "APPROVED",
+							commit_id: validSha,
+							user: { login: "independent-reviewer" },
+						},
+					]),
+				}) as unknown as GitHubClient,
+		);
+
+		const result = await runReviewGate(defaultOptions);
+
+		expect(result.ok).toBe(true);
+		if (result.ok) {
+			expect(result.output.verified).toBe(true);
+			expect(result.output.blockers).toEqual([]);
+		}
+	});
+
+	it("blocks north-star decision checks when one required question is missing from PR context", async () => {
+		mockLoadContract.mockReturnValue({
+			version: "1.6.0",
+			riskTierRules: {},
+			reviewPolicy: {
+				timeoutSeconds: 600,
+				timeoutAction: "fail",
+				enforceReviewerIndependence: true,
+			},
+			northStar: {
+				mission:
+					"Coding Harness exists to let humans steer and agents execute safely, with PR lead time as the primary north-star metric.",
+				primaryMetric: NORTH_STAR_PRIMARY_METRIC,
+				primaryBottleneck: NORTH_STAR_PRIMARY_BOTTLENECK,
+				autonomyBoundary:
+					"Low and medium-risk autonomy should be automated where evidence is deterministic and rollback is clear; high-risk changes remain human-mediated.",
+				safetyFloor: [
+					"deterministic evidence over intuition",
+					"strict current-head SHA discipline",
+				],
+				nonGoals: ["governance surface area as a proxy for progress"],
+				decisionQuestions: NORTH_STAR_DECISION_QUESTION_SPECS.map(
+					(question) => ({
+						id: question.id,
+						prompt: question.prompt,
+					}),
+				),
+			},
+		});
+
+		const mockCheckRuns: CheckRun[] = [
+			{
+				id: 1,
+				name: "review-check",
+				status: "completed",
+				conclusion: "success",
+				head_sha: validSha,
+			},
+		];
+		const prBody = [
+			"- Plan IDs: `feat-review-gate-traceability`",
+			"- lead_time_path: yes. Evidence: [lead-time](/artifacts/review/lead-time.md:12)",
+			"- manual_glue: yes. Evidence: [workflow](/artifacts/review/glue.md:7)",
+			"- agent_reliability: yes. Evidence: [tests](/artifacts/review/reliability.md:5)",
+		].join("\n");
+		mockGitHubClient.mockImplementation(
+			() =>
+				({
+					getPullRequest: vi.fn().mockResolvedValue({
+						number: defaultOptions.prNumber,
+						title: "Traceability hardening",
+						body: prBody,
+						user: { login: "coding-actor" },
+						head: { sha: validSha, ref: "feature/test" },
+					}),
+					listPullRequestFiles: vi
+						.fn()
+						.mockResolvedValue([{ filename: "src/commands/review-gate.ts" }]),
+					listCheckRunsForRef: vi.fn().mockResolvedValue(mockCheckRuns),
+					listPullRequestReviews: vi.fn().mockResolvedValue([
+						{
+							state: "APPROVED",
+							commit_id: validSha,
+							user: { login: "independent-reviewer" },
+						},
+					]),
+				}) as unknown as GitHubClient,
+		);
+
+		const result = await runReviewGate(defaultOptions);
+
+		expect(result.ok).toBe(true);
+		if (result.ok) {
+			expect(result.output.verified).toBe(false);
+			expect(result.output.blockers.join(" ")).toContain(
+				"North-star decision questions missing from PR context: safety_floor",
+			);
+		}
+	});
+
+	it("blocks no-impact exemptions when policy_surface_delta is positive", async () => {
+		mockLoadContract.mockReturnValue({
+			version: "1.6.0",
+			riskTierRules: {},
+			reviewPolicy: {
+				timeoutSeconds: 600,
+				timeoutAction: "fail",
+				enforceReviewerIndependence: true,
+			},
+			northStar: {
+				mission:
+					"Coding Harness exists to let humans steer and agents execute safely, with PR lead time as the primary north-star metric.",
+				primaryMetric: NORTH_STAR_PRIMARY_METRIC,
+				primaryBottleneck: NORTH_STAR_PRIMARY_BOTTLENECK,
+				autonomyBoundary:
+					"Low and medium-risk autonomy should be automated where evidence is deterministic and rollback is clear; high-risk changes remain human-mediated.",
+				safetyFloor: [
+					"deterministic evidence over intuition",
+					"strict current-head SHA discipline",
+				],
+				nonGoals: ["governance surface area as a proxy for progress"],
+				decisionQuestions: NORTH_STAR_DECISION_QUESTION_SPECS.map(
+					(question) => ({
+						id: question.id,
+						prompt: question.prompt,
+					}),
+				),
+			},
+		});
+
+		const mockCheckRuns: CheckRun[] = [
+			{
+				id: 1,
+				name: "review-check",
+				status: "completed",
+				conclusion: "success",
+				head_sha: validSha,
+			},
+		];
+		const prBody = [
+			"- Plan IDs: `feat-review-gate-traceability`",
+			"- lead_time_path: yes. Evidence: [lead-time](/artifacts/review/lead-time.md:12)",
+			"- manual_glue: no. Evidence: [workflow](/artifacts/review/glue.md:7)",
+			"  metric_impact_declared: none; policy_surface_delta: 1",
+			"- agent_reliability: yes. Evidence: [tests](/artifacts/review/reliability.md:5)",
+			"- safety_floor: yes. Evidence: [gate](/artifacts/review/safety.md:3)",
+		].join("\n");
+		mockGitHubClient.mockImplementation(
+			() =>
+				({
+					getPullRequest: vi.fn().mockResolvedValue({
+						number: defaultOptions.prNumber,
+						title: "Traceability hardening",
+						body: prBody,
+						user: { login: "coding-actor" },
+						head: { sha: validSha, ref: "feature/test" },
+					}),
+					listPullRequestFiles: vi
+						.fn()
+						.mockResolvedValue([{ filename: "src/commands/review-gate.ts" }]),
+					listCheckRunsForRef: vi.fn().mockResolvedValue(mockCheckRuns),
+					listPullRequestReviews: vi.fn().mockResolvedValue([
+						{
+							state: "APPROVED",
+							commit_id: validSha,
+							user: { login: "independent-reviewer" },
+						},
+					]),
+				}) as unknown as GitHubClient,
+		);
+
+		const result = await runReviewGate(defaultOptions);
+
+		expect(result.ok).toBe(true);
+		if (result.ok) {
+			expect(result.output.verified).toBe(false);
+			expect(result.output.blockers.join(" ")).toContain(
+				"negative answers found for: manual_glue",
+			);
+		}
+	});
+
+	it("preserves nested evidence bullets within a decision response block", async () => {
+		mockLoadContract.mockReturnValue({
+			version: "1.6.0",
+			riskTierRules: {},
+			reviewPolicy: {
+				timeoutSeconds: 600,
+				timeoutAction: "fail",
+				enforceReviewerIndependence: true,
+			},
+			northStar: {
+				mission:
+					"Coding Harness exists to let humans steer and agents execute safely, with PR lead time as the primary north-star metric.",
+				primaryMetric: NORTH_STAR_PRIMARY_METRIC,
+				primaryBottleneck: NORTH_STAR_PRIMARY_BOTTLENECK,
+				autonomyBoundary:
+					"Low and medium-risk autonomy should be automated where evidence is deterministic and rollback is clear; high-risk changes remain human-mediated.",
+				safetyFloor: [
+					"deterministic evidence over intuition",
+					"strict current-head SHA discipline",
+				],
+				nonGoals: ["governance surface area as a proxy for progress"],
+				decisionQuestions: NORTH_STAR_DECISION_QUESTION_SPECS.map(
+					(question) => ({
+						id: question.id,
+						prompt: question.prompt,
+					}),
+				),
+			},
+		});
+
+		const mockCheckRuns: CheckRun[] = [
+			{
+				id: 1,
+				name: "review-check",
+				status: "completed",
+				conclusion: "success",
+				head_sha: validSha,
+			},
+		];
+		const prBody = [
+			"- Plan IDs: `feat-review-gate-traceability`",
+			"- lead_time_path: yes",
+			"  - Evidence: [lead-time](/artifacts/review/lead-time.md:12)",
+			"- manual_glue: yes. Evidence: [workflow](/artifacts/review/glue.md:7)",
+			"- agent_reliability: yes. Evidence: [tests](/artifacts/review/reliability.md:5)",
+			"- safety_floor: yes. Evidence: [gate](/artifacts/review/safety.md:3)",
+		].join("\n");
+		mockGitHubClient.mockImplementation(
+			() =>
+				({
+					getPullRequest: vi.fn().mockResolvedValue({
+						number: defaultOptions.prNumber,
+						title: "Traceability hardening",
+						body: prBody,
+						user: { login: "coding-actor" },
+						head: { sha: validSha, ref: "feature/test" },
+					}),
+					listPullRequestFiles: vi
+						.fn()
+						.mockResolvedValue([{ filename: "src/commands/review-gate.ts" }]),
+					listCheckRunsForRef: vi.fn().mockResolvedValue(mockCheckRuns),
+					listPullRequestReviews: vi.fn().mockResolvedValue([
+						{
+							state: "APPROVED",
+							commit_id: validSha,
+							user: { login: "independent-reviewer" },
+						},
+					]),
+				}) as unknown as GitHubClient,
+		);
+
+		const result = await runReviewGate(defaultOptions);
+
+		expect(result.ok).toBe(true);
+		if (result.ok) {
+			expect(result.output.verified).toBe(true);
+			expect(result.output.blockers).toEqual([]);
+		}
+	});
+
+	it("does not treat numeric time-like tokens as evidence references", async () => {
+		mockLoadContract.mockReturnValue({
+			version: "1.6.0",
+			riskTierRules: {},
+			reviewPolicy: {
+				timeoutSeconds: 600,
+				timeoutAction: "fail",
+				enforceReviewerIndependence: true,
+			},
+			northStar: {
+				mission:
+					"Coding Harness exists to let humans steer and agents execute safely, with PR lead time as the primary north-star metric.",
+				primaryMetric: NORTH_STAR_PRIMARY_METRIC,
+				primaryBottleneck: NORTH_STAR_PRIMARY_BOTTLENECK,
+				autonomyBoundary:
+					"Low and medium-risk autonomy should be automated where evidence is deterministic and rollback is clear; high-risk changes remain human-mediated.",
+				safetyFloor: [
+					"deterministic evidence over intuition",
+					"strict current-head SHA discipline",
+				],
+				nonGoals: ["governance surface area as a proxy for progress"],
+				decisionQuestions: NORTH_STAR_DECISION_QUESTION_SPECS.map(
+					(question) => ({
+						id: question.id,
+						prompt: question.prompt,
+					}),
+				),
+			},
+		});
+
+		const mockCheckRuns: CheckRun[] = [
+			{
+				id: 1,
+				name: "review-check",
+				status: "completed",
+				conclusion: "success",
+				head_sha: validSha,
+			},
+		];
+		const prBody = [
+			"- Plan IDs: `feat-review-gate-traceability`",
+			"- lead_time_path: yes. Evidence: 12:34",
+			"- manual_glue: yes. Evidence: [workflow](/artifacts/review/glue.md:7)",
+			"- agent_reliability: yes. Evidence: [tests](/artifacts/review/reliability.md:5)",
+			"- safety_floor: yes. Evidence: [gate](/artifacts/review/safety.md:3)",
+		].join("\n");
+		mockGitHubClient.mockImplementation(
+			() =>
+				({
+					getPullRequest: vi.fn().mockResolvedValue({
+						number: defaultOptions.prNumber,
+						title: "Traceability hardening",
+						body: prBody,
+						user: { login: "coding-actor" },
+						head: { sha: validSha, ref: "feature/test" },
+					}),
+					listPullRequestFiles: vi
+						.fn()
+						.mockResolvedValue([{ filename: "src/commands/review-gate.ts" }]),
+					listCheckRunsForRef: vi.fn().mockResolvedValue(mockCheckRuns),
+					listPullRequestReviews: vi.fn().mockResolvedValue([
+						{
+							state: "APPROVED",
+							commit_id: validSha,
+							user: { login: "independent-reviewer" },
+						},
+					]),
+				}) as unknown as GitHubClient,
+		);
+
+		const result = await runReviewGate(defaultOptions);
+
+		expect(result.ok).toBe(true);
+		if (result.ok) {
+			expect(result.output.verified).toBe(false);
+			expect(result.output.blockers.join(" ")).toContain(
+				"missing evidence for: lead_time_path",
+			);
 		}
 	});
 
@@ -484,6 +2166,330 @@ describe("runReviewGate", () => {
 		if (result.ok) {
 			expect(result.output.verified).toBe(true);
 			expect(result.output.policy_gate_status).toBe("pass");
+			expect(result.output.blockers).toEqual([]);
+		}
+	});
+
+	it("enforces reviewer independence against the current head commit actor", async () => {
+		const mockCheckRuns: CheckRun[] = [
+			{
+				id: 1,
+				name: "review-check",
+				status: "completed",
+				conclusion: "success",
+				head_sha: validSha,
+			},
+		];
+		mockGitHubClient.mockImplementation(
+			() =>
+				({
+					listPullRequestFiles: vi
+						.fn()
+						.mockResolvedValue([{ filename: "src/commands/review-gate.ts" }]),
+					listCheckRunsForRef: vi.fn().mockResolvedValue(mockCheckRuns),
+					getPullRequest: vi.fn().mockResolvedValue({
+						number: defaultOptions.prNumber,
+						user: { login: "automation-bot" },
+						head: { sha: validSha, ref: "feature/test" },
+					}),
+					listPullRequestCommits: vi.fn().mockResolvedValue([
+						{
+							sha: validSha,
+							author: { login: "alice" },
+						},
+					]),
+					listPullRequestReviews: vi.fn().mockResolvedValue([
+						{
+							state: "APPROVED",
+							commit_id: validSha,
+							user: { login: "alice" },
+						},
+					]),
+				}) as unknown as GitHubClient,
+		);
+
+		const result = await runReviewGate(defaultOptions);
+
+		expect(result.ok).toBe(true);
+		if (result.ok) {
+			expect(result.output.verified).toBe(false);
+			expect(result.output.blockers.join(" ")).toContain(
+				"Reviewer independence failed",
+			);
+			expect(result.output.blockers.join(" ")).toContain("alice");
+		}
+	});
+
+	it("falls back to PR author when commit actor resolution errors during independence checks", async () => {
+		const mockCheckRuns: CheckRun[] = [
+			{
+				id: 1,
+				name: "review-check",
+				status: "completed",
+				conclusion: "success",
+				head_sha: validSha,
+			},
+		];
+		mockGitHubClient.mockImplementation(
+			() =>
+				({
+					listPullRequestFiles: vi
+						.fn()
+						.mockResolvedValue([{ filename: "src/commands/review-gate.ts" }]),
+					listCheckRunsForRef: vi.fn().mockResolvedValue(mockCheckRuns),
+					getPullRequest: vi.fn().mockResolvedValue({
+						number: defaultOptions.prNumber,
+						user: { login: "coding-actor" },
+						head: { sha: validSha, ref: "feature/test" },
+					}),
+					listPullRequestCommits: vi
+						.fn()
+						.mockRejectedValue(new Error("github API unavailable")),
+					listPullRequestReviews: vi.fn().mockResolvedValue([
+						{
+							state: "APPROVED",
+							commit_id: validSha,
+							user: { login: "reviewer-one" },
+						},
+					]),
+				}) as unknown as GitHubClient,
+		);
+
+		const result = await runReviewGate(defaultOptions);
+
+		expect(result.ok).toBe(true);
+		if (result.ok) {
+			expect(result.output.verified).toBe(true);
+			expect(result.output.blockers).toEqual([]);
+			expect(result.output.policy_gate_status).toBe("pass");
+		}
+	});
+
+	it("fails closed when head commit is absent from PR commit metadata", async () => {
+		const mockCheckRuns: CheckRun[] = [
+			{
+				id: 1,
+				name: "review-check",
+				status: "completed",
+				conclusion: "success",
+				head_sha: validSha,
+			},
+		];
+		mockGitHubClient.mockImplementation(
+			() =>
+				({
+					listPullRequestFiles: vi
+						.fn()
+						.mockResolvedValue([{ filename: "src/commands/review-gate.ts" }]),
+					listCheckRunsForRef: vi.fn().mockResolvedValue(mockCheckRuns),
+					getPullRequest: vi.fn().mockResolvedValue({
+						number: defaultOptions.prNumber,
+						user: { login: "coding-actor" },
+						head: { sha: validSha, ref: "feature/test" },
+					}),
+					listPullRequestCommits: vi.fn().mockResolvedValue([
+						{
+							sha: "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+							author: { login: "coding-actor" },
+						},
+					]),
+					listPullRequestReviews: vi.fn().mockResolvedValue([
+						{
+							state: "APPROVED",
+							commit_id: validSha,
+							user: { login: "reviewer-one" },
+						},
+					]),
+				}) as unknown as GitHubClient,
+		);
+
+		const result = await runReviewGate(defaultOptions);
+
+		expect(result.ok).toBe(true);
+		if (result.ok) {
+			expect(result.output.verified).toBe(false);
+			expect(result.output.blockers).toContain(
+				"Unable to determine coding actor from PR commit metadata; cannot verify reviewer independence",
+			);
+		}
+	});
+
+	it("falls back to PR author when commit metadata API is unavailable", async () => {
+		const mockCheckRuns: CheckRun[] = [
+			{
+				id: 1,
+				name: "review-check",
+				status: "completed",
+				conclusion: "success",
+				head_sha: validSha,
+			},
+		];
+		mockGitHubClient.mockImplementation(
+			() =>
+				({
+					listPullRequestFiles: vi
+						.fn()
+						.mockResolvedValue([{ filename: "src/commands/review-gate.ts" }]),
+					listCheckRunsForRef: vi.fn().mockResolvedValue(mockCheckRuns),
+					getPullRequest: vi.fn().mockResolvedValue({
+						number: defaultOptions.prNumber,
+						user: { login: "coding-actor" },
+						head: { sha: validSha, ref: "feature/test" },
+					}),
+					listPullRequestReviews: vi.fn().mockResolvedValue([
+						{
+							state: "APPROVED",
+							commit_id: validSha,
+							user: { login: "reviewer-one" },
+						},
+					]),
+				}) as unknown as GitHubClient,
+		);
+
+		const result = await runReviewGate(defaultOptions);
+
+		expect(result.ok).toBe(true);
+		if (result.ok) {
+			expect(result.output.verified).toBe(true);
+			expect(result.output.blockers).toEqual([]);
+			expect(result.output.policy_gate_status).toBe("pass");
+		}
+	});
+
+	it("treats reviewer login matching as case-insensitive for independence checks", async () => {
+		const mockCheckRuns: CheckRun[] = [
+			{
+				id: 1,
+				name: "review-check",
+				status: "completed",
+				conclusion: "success",
+				head_sha: validSha,
+			},
+		];
+		mockGitHubClient.mockImplementation(
+			() =>
+				({
+					listPullRequestFiles: vi
+						.fn()
+						.mockResolvedValue([{ filename: "src/commands/review-gate.ts" }]),
+					listCheckRunsForRef: vi.fn().mockResolvedValue(mockCheckRuns),
+					getPullRequest: vi.fn().mockResolvedValue({
+						number: defaultOptions.prNumber,
+						user: { login: "automation-bot" },
+						head: { sha: validSha, ref: "feature/test" },
+					}),
+					listPullRequestCommits: vi.fn().mockResolvedValue([
+						{
+							sha: validSha,
+							author: { login: "alice" },
+						},
+					]),
+					listPullRequestReviews: vi.fn().mockResolvedValue([
+						{
+							state: "APPROVED",
+							commit_id: validSha,
+							user: { login: "Alice" },
+						},
+					]),
+				}) as unknown as GitHubClient,
+		);
+
+		const result = await runReviewGate(defaultOptions);
+
+		expect(result.ok).toBe(true);
+		if (result.ok) {
+			expect(result.output.verified).toBe(false);
+			expect(result.output.blockers.join(" ")).toContain(
+				"Reviewer independence failed",
+			);
+		}
+	});
+
+	it("does not treat bot-only approvals as satisfying human review requirement", async () => {
+		const mockCheckRuns: CheckRun[] = [
+			{
+				id: 1,
+				name: "review-check",
+				status: "completed",
+				conclusion: "success",
+				head_sha: validSha,
+			},
+		];
+		mockGitHubClient.mockImplementation(
+			() =>
+				({
+					listPullRequestFiles: vi
+						.fn()
+						.mockResolvedValue([{ filename: "src/commands/review-gate.ts" }]),
+					listCheckRunsForRef: vi.fn().mockResolvedValue(mockCheckRuns),
+					getPullRequest: vi.fn().mockResolvedValue({
+						number: defaultOptions.prNumber,
+						user: { login: "coding-actor" },
+						head: { sha: validSha, ref: "feature/test" },
+					}),
+					listPullRequestReviews: vi.fn().mockResolvedValue([
+						{
+							state: "APPROVED",
+							commit_id: validSha,
+							user: { login: "coderabbitai[bot]" },
+						},
+					]),
+				}) as unknown as GitHubClient,
+		);
+
+		const result = await runReviewGate(defaultOptions);
+
+		expect(result.ok).toBe(true);
+		if (result.ok) {
+			expect(result.output.verified).toBe(false);
+			expect(result.output.blockers).toContain(
+				"No APPROVED reviews found for the current HEAD SHA",
+			);
+		}
+	});
+
+	it("allows independent human approval when bot approvals are also present", async () => {
+		const mockCheckRuns: CheckRun[] = [
+			{
+				id: 1,
+				name: "review-check",
+				status: "completed",
+				conclusion: "success",
+				head_sha: validSha,
+			},
+		];
+		mockGitHubClient.mockImplementation(
+			() =>
+				({
+					listPullRequestFiles: vi
+						.fn()
+						.mockResolvedValue([{ filename: "src/commands/review-gate.ts" }]),
+					listCheckRunsForRef: vi.fn().mockResolvedValue(mockCheckRuns),
+					getPullRequest: vi.fn().mockResolvedValue({
+						number: defaultOptions.prNumber,
+						user: { login: "coding-actor" },
+						head: { sha: validSha, ref: "feature/test" },
+					}),
+					listPullRequestReviews: vi.fn().mockResolvedValue([
+						{
+							state: "APPROVED",
+							commit_id: validSha,
+							user: { login: "coderabbitai[bot]" },
+						},
+						{
+							state: "APPROVED",
+							commit_id: validSha,
+							user: { login: "independent-reviewer" },
+						},
+					]),
+				}) as unknown as GitHubClient,
+		);
+
+		const result = await runReviewGate(defaultOptions);
+
+		expect(result.ok).toBe(true);
+		if (result.ok) {
+			expect(result.output.verified).toBe(true);
 			expect(result.output.blockers).toEqual([]);
 		}
 	});
@@ -640,6 +2646,111 @@ describe("runReviewGate", () => {
 				state: "CHANGES_REQUESTED",
 				commit_id: validSha,
 				submitted_at: "2026-03-01T09:00:00Z",
+				user: { login: "independent-reviewer" },
+			},
+		]);
+		mockGitHubClient.mockImplementation(
+			() =>
+				({
+					listPullRequestFiles: vi
+						.fn()
+						.mockResolvedValue([{ filename: "src/commands/review-gate.ts" }]),
+					listCheckRunsForRef: mockListCheckRuns,
+					getPullRequest: mockGetPullRequest,
+					listPullRequestReviews: mockListReviews,
+				}) as unknown as GitHubClient,
+		);
+
+		const result = await runReviewGate(defaultOptions);
+
+		expect(result.ok).toBe(true);
+		if (result.ok) {
+			expect(result.output.verified).toBe(true);
+			expect(result.output.policy_gate_status).toBe("pass");
+			expect(result.output.blockers).toEqual([]);
+		}
+	});
+
+	it("invalidates prior approvals when a later dismissal has no matching head commit", async () => {
+		const mockCheckRuns: CheckRun[] = [
+			{
+				id: 1,
+				name: "review-check",
+				status: "completed",
+				conclusion: "success",
+				head_sha: validSha,
+			},
+		];
+		const mockListCheckRuns = vi.fn().mockResolvedValue(mockCheckRuns);
+		const mockGetPullRequest = vi.fn().mockResolvedValue({
+			number: defaultOptions.prNumber,
+			user: { login: "coding-actor" },
+			head: { sha: validSha, ref: "feature/test" },
+		});
+		const mockListReviews = vi.fn().mockResolvedValue([
+			{
+				state: "APPROVED",
+				commit_id: validSha,
+				submitted_at: "2026-03-01T09:00:00Z",
+				user: { login: "independent-reviewer" },
+			},
+			{
+				state: "DISMISSED",
+				commit_id: null,
+				submitted_at: "2026-03-01T10:00:00Z",
+				user: { login: "independent-reviewer" },
+			},
+		]);
+		mockGitHubClient.mockImplementation(
+			() =>
+				({
+					listPullRequestFiles: vi
+						.fn()
+						.mockResolvedValue([{ filename: "src/commands/review-gate.ts" }]),
+					listCheckRunsForRef: mockListCheckRuns,
+					getPullRequest: mockGetPullRequest,
+					listPullRequestReviews: mockListReviews,
+				}) as unknown as GitHubClient,
+		);
+
+		const result = await runReviewGate(defaultOptions);
+
+		expect(result.ok).toBe(true);
+		if (result.ok) {
+			expect(result.output.verified).toBe(false);
+			expect(result.output.blockers.join(" ")).toContain(
+				"No APPROVED reviews found for the current HEAD SHA",
+			);
+		}
+	});
+
+	it("retains a valid approval when a later review is COMMENTED", async () => {
+		const mockCheckRuns: CheckRun[] = [
+			{
+				id: 1,
+				name: "review-check",
+				status: "completed",
+				conclusion: "success",
+				head_sha: validSha,
+			},
+		];
+		const mockListCheckRuns = vi.fn().mockResolvedValue(mockCheckRuns);
+		const mockGetPullRequest = vi.fn().mockResolvedValue({
+			number: defaultOptions.prNumber,
+			user: { login: "coding-actor" },
+			head: { sha: validSha, ref: "feature/test" },
+		});
+		const mockListReviews = vi.fn().mockResolvedValue([
+			{
+				state: "APPROVED",
+				commit_id: validSha,
+				submitted_at: "2026-03-01T09:00:00Z",
+				user: { login: "independent-reviewer" },
+			},
+			{
+				state: "COMMENTED",
+				commit_id: validSha,
+				submitted_at: "2026-03-01T10:00:00Z",
 				user: { login: "independent-reviewer" },
 			},
 		]);
@@ -847,6 +2958,1094 @@ describe("runReviewGate", () => {
 		}
 	});
 
+	it("resolves required-check aliases relative to contract path", async () => {
+		const tempDir = mkdtempSync(join(tmpdir(), "review-gate-aliases-"));
+		const manifestPath = join(
+			tempDir,
+			".harness",
+			"ci-required-checks-alias-test.json",
+		);
+		mkdirSync(join(tempDir, ".harness"), { recursive: true });
+		writeFileSync(
+			manifestPath,
+			JSON.stringify(
+				{
+					version: 1,
+					activeProvider: "circleci",
+					requiredChecks: [
+						{
+							displayName: "security-scan",
+							sourceAppSlug: "circleci",
+							sourceAppId: "circleci",
+							externalIdPattern: "^pr-pipeline$",
+							class: "required",
+							githubCheckName: "pr-pipeline",
+						},
+					],
+				},
+				null,
+				2,
+			),
+			"utf-8",
+		);
+
+		try {
+			mockLoadContract.mockReturnValue({
+				version: "1.0",
+				riskTierRules: {},
+				ciProviderPolicy: {
+					activeProvider: "circleci",
+					mode: "required",
+					migrationStage: "circleci-only",
+					transitionStatusArtifactPath:
+						".harness/ci-provider-transition-status.json",
+					authorityConfigPath:
+						"docs/examples/ci-migrate/authority-config.example.json",
+					requiredCheckManifestPath:
+						".harness/ci-required-checks-alias-test.json",
+				},
+				reviewPolicy: {
+					timeoutSeconds: 600,
+					timeoutAction: "fail",
+					requiredChecks: ["security-scan"],
+				},
+			});
+
+			const mockCheckRuns: CheckRun[] = [
+				{
+					id: 1,
+					name: "review-check",
+					status: "completed",
+					conclusion: "success",
+					head_sha: validSha,
+				},
+				{
+					id: 2,
+					name: "pr-pipeline",
+					status: "completed",
+					conclusion: "success",
+					head_sha: validSha,
+					app: {
+						slug: "circleci",
+						id: 2,
+					},
+				},
+			];
+			mockGitHubClient.mockImplementation(
+				() =>
+					({
+						listPullRequestFiles: vi
+							.fn()
+							.mockResolvedValue([{ filename: "src/commands/review-gate.ts" }]),
+						listCheckRunsForRef: vi.fn().mockResolvedValue(mockCheckRuns),
+						getPullRequest: vi.fn().mockResolvedValue({
+							number: defaultOptions.prNumber,
+							user: { login: "coding-actor" },
+							head: { sha: validSha, ref: "feature/test" },
+						}),
+						listPullRequestReviews: vi.fn().mockResolvedValue([
+							{
+								state: "APPROVED",
+								commit_id: validSha,
+								user: { login: "independent-reviewer" },
+							},
+						]),
+					}) as unknown as GitHubClient,
+			);
+
+			const result = await runReviewGate({
+				...defaultOptions,
+				contractPath: join(tempDir, "harness.contract.json"),
+			});
+
+			expect(result.ok).toBe(true);
+			if (result.ok) {
+				expect(result.output.verified).toBe(true);
+				expect(result.output.blockers).toEqual([]);
+			}
+		} finally {
+			rmSync(tempDir, { recursive: true, force: true });
+		}
+	});
+
+	it("derives default check identity from active provider metadata when --check is omitted", async () => {
+		const tempDir = mkdtempSync(join(tmpdir(), "review-gate-default-check-"));
+		const manifestPath = join(tempDir, ".harness", "ci-required-checks.json");
+		mkdirSync(join(tempDir, ".harness"), { recursive: true });
+		writeFileSync(
+			manifestPath,
+			JSON.stringify(
+				{
+					version: 1,
+					activeProvider: "circleci",
+					requiredChecks: [
+						{
+							displayName: "risk-policy-gate",
+							sourceAppSlug: "circleci",
+							sourceAppId: "circleci",
+							externalIdPattern: "^pr-pipeline$",
+							class: "required",
+							githubCheckName: "pr-pipeline",
+						},
+					],
+				},
+				null,
+				2,
+			),
+			"utf-8",
+		);
+
+		try {
+			mockLoadContract.mockReturnValue({
+				version: "1.0",
+				riskTierRules: {},
+				ciProviderPolicy: {
+					activeProvider: "circleci",
+					mode: "required",
+					migrationStage: "circleci-only",
+					transitionStatusArtifactPath:
+						".harness/ci-provider-transition-status.json",
+					authorityConfigPath:
+						"docs/examples/ci-migrate/authority-config.example.json",
+					requiredCheckManifestPath: ".harness/ci-required-checks.json",
+				},
+				reviewPolicy: {
+					timeoutSeconds: 600,
+					timeoutAction: "fail",
+				},
+			});
+
+			const mockCheckRuns: CheckRun[] = [
+				{
+					id: 1,
+					name: "pr-pipeline",
+					status: "completed",
+					conclusion: "success",
+					head_sha: validSha,
+				},
+			];
+
+			mockGitHubClient.mockImplementation(
+				() =>
+					({
+						listPullRequestFiles: vi
+							.fn()
+							.mockResolvedValue([{ filename: "src/commands/review-gate.ts" }]),
+						listCheckRunsForRef: vi.fn().mockResolvedValue(mockCheckRuns),
+						getPullRequest: vi.fn().mockResolvedValue({
+							number: defaultOptions.prNumber,
+							user: { login: "coding-actor" },
+							head: { sha: validSha, ref: "feature/test" },
+						}),
+						listPullRequestReviews: vi.fn().mockResolvedValue([
+							{
+								state: "APPROVED",
+								commit_id: validSha,
+								user: { login: "independent-reviewer" },
+							},
+						]),
+					}) as unknown as GitHubClient,
+			);
+
+			const result = await runReviewGate({
+				...defaultOptions,
+				checkName: "",
+				contractPath: join(tempDir, "harness.contract.json"),
+			});
+
+			expect(result.ok).toBe(true);
+			if (result.ok) {
+				expect(result.output.verified).toBe(true);
+				expect(result.output.blockers).toEqual([]);
+			}
+		} finally {
+			rmSync(tempDir, { recursive: true, force: true });
+		}
+	});
+
+	it("fails with VALIDATION_ERROR when required-check manifest JSON is malformed", async () => {
+		const tempDir = mkdtempSync(
+			join(tmpdir(), "review-gate-default-check-malformed-json-"),
+		);
+		const manifestPath = join(tempDir, ".harness", "ci-required-checks.json");
+		mkdirSync(join(tempDir, ".harness"), { recursive: true });
+		writeFileSync(manifestPath, "{ invalid-json", "utf-8");
+
+		try {
+			mockLoadContract.mockReturnValue({
+				version: "1.0",
+				riskTierRules: {},
+				ciProviderPolicy: {
+					activeProvider: "circleci",
+					mode: "required",
+					migrationStage: "circleci-only",
+					transitionStatusArtifactPath:
+						".harness/ci-provider-transition-status.json",
+					authorityConfigPath:
+						"docs/examples/ci-migrate/authority-config.example.json",
+					requiredCheckManifestPath: ".harness/ci-required-checks.json",
+				},
+				reviewPolicy: {
+					timeoutSeconds: 600,
+					timeoutAction: "fail",
+				},
+			});
+
+			const mockCheckRuns: CheckRun[] = [
+				{
+					id: 1,
+					name: "pr-pipeline",
+					status: "completed",
+					conclusion: "success",
+					head_sha: validSha,
+				},
+			];
+
+			mockGitHubClient.mockImplementation(
+				() =>
+					({
+						listPullRequestFiles: vi
+							.fn()
+							.mockResolvedValue([{ filename: "src/commands/review-gate.ts" }]),
+						listCheckRunsForRef: vi.fn().mockResolvedValue(mockCheckRuns),
+						getPullRequest: vi.fn().mockResolvedValue({
+							number: defaultOptions.prNumber,
+							user: { login: "coding-actor" },
+							head: { sha: validSha, ref: "feature/test" },
+						}),
+						listPullRequestReviews: vi.fn().mockResolvedValue([
+							{
+								state: "APPROVED",
+								commit_id: validSha,
+								user: { login: "independent-reviewer" },
+							},
+						]),
+					}) as unknown as GitHubClient,
+			);
+
+			const result = await runReviewGate({
+				...defaultOptions,
+				checkName: "",
+				contractPath: join(tempDir, "harness.contract.json"),
+			});
+
+			expect(result.ok).toBe(false);
+			if (!result.ok) {
+				expect(result.error.code).toBe("VALIDATION_ERROR");
+				expect(result.error.message).toContain(
+					"Invalid required-check manifest",
+				);
+				expect(result.error.message).toContain("malformed JSON");
+			}
+		} finally {
+			rmSync(tempDir, { recursive: true, force: true });
+		}
+	});
+
+	it("fails with VALIDATION_ERROR when required-check manifest shape is invalid", async () => {
+		const tempDir = mkdtempSync(
+			join(tmpdir(), "review-gate-default-check-invalid-manifest-"),
+		);
+		const manifestPath = join(tempDir, ".harness", "ci-required-checks.json");
+		mkdirSync(join(tempDir, ".harness"), { recursive: true });
+		writeFileSync(
+			manifestPath,
+			JSON.stringify(
+				{
+					version: 1,
+					activeProvider: "circleci",
+					requiredChecks: [
+						{
+							displayName: 123,
+							class: "required",
+						},
+					],
+				},
+				null,
+				2,
+			),
+			"utf-8",
+		);
+
+		try {
+			mockLoadContract.mockReturnValue({
+				version: "1.0",
+				riskTierRules: {},
+				ciProviderPolicy: {
+					activeProvider: "circleci",
+					mode: "required",
+					migrationStage: "circleci-only",
+					transitionStatusArtifactPath:
+						".harness/ci-provider-transition-status.json",
+					authorityConfigPath:
+						"docs/examples/ci-migrate/authority-config.example.json",
+					requiredCheckManifestPath: ".harness/ci-required-checks.json",
+				},
+				reviewPolicy: {
+					timeoutSeconds: 600,
+					timeoutAction: "fail",
+				},
+			});
+
+			const mockCheckRuns: CheckRun[] = [
+				{
+					id: 1,
+					name: "pr-pipeline",
+					status: "completed",
+					conclusion: "success",
+					head_sha: validSha,
+				},
+			];
+
+			mockGitHubClient.mockImplementation(
+				() =>
+					({
+						listPullRequestFiles: vi
+							.fn()
+							.mockResolvedValue([{ filename: "src/commands/review-gate.ts" }]),
+						listCheckRunsForRef: vi.fn().mockResolvedValue(mockCheckRuns),
+						getPullRequest: vi.fn().mockResolvedValue({
+							number: defaultOptions.prNumber,
+							user: { login: "coding-actor" },
+							head: { sha: validSha, ref: "feature/test" },
+						}),
+						listPullRequestReviews: vi.fn().mockResolvedValue([
+							{
+								state: "APPROVED",
+								commit_id: validSha,
+								user: { login: "independent-reviewer" },
+							},
+						]),
+					}) as unknown as GitHubClient,
+			);
+
+			const result = await runReviewGate({
+				...defaultOptions,
+				checkName: "",
+				contractPath: join(tempDir, "harness.contract.json"),
+			});
+
+			expect(result.ok).toBe(false);
+			if (!result.ok) {
+				expect(result.error.code).toBe("VALIDATION_ERROR");
+				expect(result.error.message).toContain(
+					"Invalid required-check manifest",
+				);
+			}
+		} finally {
+			rmSync(tempDir, { recursive: true, force: true });
+		}
+	});
+
+	it("derives default check from active required gate in mixed manifests", async () => {
+		const tempDir = mkdtempSync(
+			join(tmpdir(), "review-gate-default-check-mixed-manifest-"),
+		);
+		const manifestPath = join(tempDir, ".harness", "ci-required-checks.json");
+		mkdirSync(join(tempDir, ".harness"), { recursive: true });
+		writeFileSync(
+			manifestPath,
+			JSON.stringify(
+				{
+					version: 1,
+					activeProvider: "circleci",
+					requiredChecks: [
+						{
+							displayName: "disabled-required",
+							sourceAppSlug: "circleci",
+							sourceAppId: "circleci",
+							externalIdPattern: "^disabled-required$",
+							class: "required",
+							githubCheckName: "disabled-required-check",
+							enabled: false,
+						},
+						{
+							displayName: "informational-only",
+							sourceAppSlug: "circleci",
+							sourceAppId: "circleci",
+							externalIdPattern: "^informational-only$",
+							class: "informational",
+							githubCheckName: "informational-check",
+						},
+						{
+							displayName: "off-provider-required",
+							sourceAppSlug: "github-actions",
+							sourceAppId: "github-actions",
+							externalIdPattern: "^off-provider-required$",
+							class: "required",
+							githubCheckName: "gha-required-check",
+						},
+						{
+							displayName: "active-provider-required",
+							sourceAppSlug: "circleci",
+							sourceAppId: "circleci",
+							externalIdPattern: "^active-provider-required$",
+							class: "required",
+							githubCheckName: "circleci-required-check",
+						},
+					],
+				},
+				null,
+				2,
+			),
+			"utf-8",
+		);
+
+		try {
+			mockLoadContract.mockReturnValue({
+				version: "1.0",
+				riskTierRules: {},
+				ciProviderPolicy: {
+					activeProvider: "circleci",
+					mode: "required",
+					migrationStage: "circleci-only",
+					transitionStatusArtifactPath:
+						".harness/ci-provider-transition-status.json",
+					authorityConfigPath:
+						"docs/examples/ci-migrate/authority-config.example.json",
+					requiredCheckManifestPath: ".harness/ci-required-checks.json",
+				},
+				reviewPolicy: {
+					timeoutSeconds: 600,
+					timeoutAction: "fail",
+				},
+			});
+
+			const mockCheckRuns: CheckRun[] = [
+				{
+					id: 1,
+					name: "circleci-required-check",
+					status: "completed",
+					conclusion: "success",
+					head_sha: validSha,
+				},
+			];
+
+			mockGitHubClient.mockImplementation(
+				() =>
+					({
+						listPullRequestFiles: vi
+							.fn()
+							.mockResolvedValue([{ filename: "src/commands/review-gate.ts" }]),
+						listCheckRunsForRef: vi.fn().mockResolvedValue(mockCheckRuns),
+						getPullRequest: vi.fn().mockResolvedValue({
+							number: defaultOptions.prNumber,
+							user: { login: "coding-actor" },
+							head: { sha: validSha, ref: "feature/test" },
+						}),
+						listPullRequestReviews: vi.fn().mockResolvedValue([
+							{
+								state: "APPROVED",
+								commit_id: validSha,
+								user: { login: "independent-reviewer" },
+							},
+						]),
+					}) as unknown as GitHubClient,
+			);
+
+			const result = await runReviewGate({
+				...defaultOptions,
+				checkName: "",
+				contractPath: join(tempDir, "harness.contract.json"),
+			});
+
+			expect(result.ok).toBe(true);
+			if (result.ok) {
+				expect(result.output.checkStatus).toBe("completed");
+				expect(result.output.verified).toBe(true);
+				expect(result.output.blockers).toEqual([]);
+			}
+		} finally {
+			rmSync(tempDir, { recursive: true, force: true });
+		}
+	});
+
+	it("maps required checks through fan-in aliases when multiple checks share one github check name", async () => {
+		const tempDir = mkdtempSync(join(tmpdir(), "review-gate-fanout-"));
+		const manifestPath = join(tempDir, ".harness", "ci-required-checks.json");
+		mkdirSync(join(tempDir, ".harness"), { recursive: true });
+		writeFileSync(
+			manifestPath,
+			JSON.stringify(
+				{
+					version: 1,
+					activeProvider: "circleci",
+					requiredChecks: [
+						{
+							displayName: "security-scan",
+							sourceAppSlug: "circleci",
+							sourceAppId: "circleci",
+							externalIdPattern: "^pr-pipeline$",
+							class: "required",
+							githubCheckName: "pr-pipeline",
+						},
+						{
+							displayName: "dependency-scan",
+							sourceAppSlug: "circleci",
+							sourceAppId: "circleci",
+							externalIdPattern: "^pr-pipeline$",
+							class: "required",
+							githubCheckName: "pr-pipeline",
+						},
+						{
+							displayName: "docs-gate",
+							sourceAppSlug: "circleci",
+							sourceAppId: "circleci",
+							externalIdPattern: "^pr-pipeline$",
+							class: "required",
+							githubCheckName: "pr-pipeline",
+						},
+					],
+				},
+				null,
+				2,
+			),
+			"utf-8",
+		);
+
+		try {
+			mockLoadContract.mockReturnValue({
+				version: "1.0",
+				riskTierRules: {},
+				ciProviderPolicy: {
+					activeProvider: "circleci",
+					mode: "required",
+					migrationStage: "circleci-only",
+					transitionStatusArtifactPath:
+						".harness/ci-provider-transition-status.json",
+					authorityConfigPath:
+						"docs/examples/ci-migrate/authority-config.example.json",
+					requiredCheckManifestPath: ".harness/ci-required-checks.json",
+				},
+				reviewPolicy: {
+					timeoutSeconds: 600,
+					timeoutAction: "fail",
+					requiredChecks: ["security-scan", "dependency-scan", "docs-gate"],
+				},
+			});
+
+			const mockCheckRuns: CheckRun[] = [
+				{
+					id: 1,
+					name: "review-check",
+					status: "completed",
+					conclusion: "success",
+					head_sha: validSha,
+				},
+				{
+					id: 2,
+					name: "pr-pipeline",
+					status: "in_progress",
+					conclusion: null,
+					head_sha: validSha,
+					app: {
+						slug: "circleci",
+						id: 2,
+					},
+				},
+			];
+
+			mockGitHubClient.mockImplementation(
+				() =>
+					({
+						listPullRequestFiles: vi
+							.fn()
+							.mockResolvedValue([{ filename: "src/commands/review-gate.ts" }]),
+						listCheckRunsForRef: vi.fn().mockResolvedValue(mockCheckRuns),
+						getPullRequest: vi.fn().mockResolvedValue({
+							number: defaultOptions.prNumber,
+							user: { login: "coding-actor" },
+							head: { sha: validSha, ref: "feature/test" },
+						}),
+						listPullRequestReviews: vi.fn().mockResolvedValue([
+							{
+								state: "APPROVED",
+								commit_id: validSha,
+								user: { login: "independent-reviewer" },
+							},
+						]),
+					}) as unknown as GitHubClient,
+			);
+
+			const result = await runReviewGate({
+				...defaultOptions,
+				contractPath: join(tempDir, "harness.contract.json"),
+			});
+
+			expect(result.ok).toBe(true);
+			if (result.ok) {
+				expect(result.output.verified).toBe(false);
+				expect(result.output.blockers.join("\n")).toContain(
+					"Required check 'security-scan' is not complete (status: in_progress)",
+				);
+				expect(result.output.blockers.join("\n")).toContain(
+					"Required check 'dependency-scan' is not complete (status: in_progress)",
+				);
+				expect(result.output.blockers.join("\n")).toContain(
+					"Required check 'docs-gate' is not complete (status: in_progress)",
+				);
+			}
+		} finally {
+			rmSync(tempDir, { recursive: true, force: true });
+		}
+	});
+
+	it("prefers active-provider check runs when duplicate check names exist across providers", async () => {
+		const tempDir = mkdtempSync(
+			join(tmpdir(), "review-gate-provider-source-filtering-"),
+		);
+		const manifestPath = join(tempDir, ".harness", "ci-required-checks.json");
+		mkdirSync(join(tempDir, ".harness"), { recursive: true });
+		writeFileSync(
+			manifestPath,
+			JSON.stringify(
+				{
+					version: 1,
+					activeProvider: "circleci",
+					requiredChecks: [
+						{
+							displayName: "security-scan",
+							sourceAppSlug: "circleci",
+							sourceAppId: "circleci",
+							externalIdPattern: "^security-scan$",
+							class: "required",
+							githubCheckName: "security-scan",
+						},
+						{
+							displayName: "security-scan",
+							sourceAppSlug: "github-actions",
+							sourceAppId: "github-actions",
+							externalIdPattern: "^security-scan$",
+							class: "required",
+							githubCheckName: "security-scan",
+						},
+					],
+				},
+				null,
+				2,
+			),
+			"utf-8",
+		);
+
+		try {
+			mockLoadContract.mockReturnValue({
+				version: "1.0",
+				riskTierRules: {},
+				ciProviderPolicy: {
+					activeProvider: "circleci",
+					mode: "required",
+					migrationStage: "circleci-only",
+					transitionStatusArtifactPath:
+						".harness/ci-provider-transition-status.json",
+					authorityConfigPath:
+						"docs/examples/ci-migrate/authority-config.example.json",
+					requiredCheckManifestPath: ".harness/ci-required-checks.json",
+				},
+				reviewPolicy: {
+					timeoutSeconds: 600,
+					timeoutAction: "fail",
+					requiredChecks: ["security-scan"],
+				},
+			});
+
+			const mockCheckRuns: CheckRun[] = [
+				{
+					id: 1,
+					name: "review-check",
+					status: "completed",
+					conclusion: "success",
+					head_sha: validSha,
+					app: { id: 100, slug: "circleci", name: "CircleCI" },
+				},
+				{
+					id: 10,
+					name: "security-scan",
+					status: "completed",
+					conclusion: "success",
+					head_sha: validSha,
+					app: { id: 100, slug: "circleci", name: "CircleCI" },
+				},
+				{
+					id: 20,
+					name: "security-scan",
+					status: "completed",
+					conclusion: "failure",
+					head_sha: validSha,
+					app: { id: 200, slug: "github-actions", name: "GitHub Actions" },
+				},
+			];
+
+			mockGitHubClient.mockImplementation(
+				() =>
+					({
+						listPullRequestFiles: vi
+							.fn()
+							.mockResolvedValue([{ filename: "src/commands/review-gate.ts" }]),
+						listCheckRunsForRef: vi.fn().mockResolvedValue(mockCheckRuns),
+						getPullRequest: vi.fn().mockResolvedValue({
+							number: defaultOptions.prNumber,
+							user: { login: "coding-actor" },
+							head: { sha: validSha, ref: "feature/test" },
+						}),
+						listPullRequestReviews: vi.fn().mockResolvedValue([
+							{
+								state: "APPROVED",
+								commit_id: validSha,
+								user: { login: "independent-reviewer" },
+							},
+						]),
+					}) as unknown as GitHubClient,
+			);
+
+			const result = await runReviewGate({
+				...defaultOptions,
+				contractPath: join(tempDir, "harness.contract.json"),
+			});
+
+			expect(result.ok).toBe(true);
+			if (result.ok) {
+				expect(result.output.verified).toBe(true);
+				expect(result.output.blockers).toEqual([]);
+			}
+		} finally {
+			rmSync(tempDir, { recursive: true, force: true });
+		}
+	});
+
+	it("treats equivalent provider/source token punctuation as authoritative", async () => {
+		const tempDir = mkdtempSync(
+			join(tmpdir(), "review-gate-provider-source-punctuation-"),
+		);
+		const manifestPath = join(tempDir, ".harness", "ci-required-checks.json");
+		mkdirSync(join(tempDir, ".harness"), { recursive: true });
+		writeFileSync(
+			manifestPath,
+			JSON.stringify(
+				{
+					version: 1,
+					activeProvider: "circleci",
+					requiredChecks: [
+						{
+							displayName: "security-scan",
+							sourceAppSlug: "github-actions",
+							sourceAppId: "github-actions",
+							externalIdPattern: "^security-scan$",
+							class: "required",
+							githubCheckName: "security-scan",
+						},
+					],
+				},
+				null,
+				2,
+			),
+			"utf-8",
+		);
+
+		try {
+			mockLoadContract.mockReturnValue({
+				version: "1.0",
+				riskTierRules: {},
+				ciProviderPolicy: {
+					activeProvider: "circleci",
+					mode: "required",
+					migrationStage: "circleci-only",
+					transitionStatusArtifactPath:
+						".harness/ci-provider-transition-status.json",
+					authorityConfigPath:
+						"docs/examples/ci-migrate/authority-config.example.json",
+					requiredCheckManifestPath: ".harness/ci-required-checks.json",
+				},
+				reviewPolicy: {
+					timeoutSeconds: 600,
+					timeoutAction: "fail",
+					requiredChecks: ["security-scan"],
+				},
+			});
+
+			const mockCheckRuns: CheckRun[] = [
+				{
+					id: 1,
+					name: "review-check",
+					status: "completed",
+					conclusion: "success",
+					head_sha: validSha,
+					app: { id: 100, slug: "circleci", name: "CircleCI" },
+				},
+				{
+					id: 20,
+					name: "security-scan",
+					status: "completed",
+					conclusion: "success",
+					head_sha: validSha,
+					app: { id: 200, slug: "github_actions", name: "GitHub Actions" },
+				},
+			];
+
+			mockGitHubClient.mockImplementation(
+				() =>
+					({
+						listPullRequestFiles: vi
+							.fn()
+							.mockResolvedValue([{ filename: "src/commands/review-gate.ts" }]),
+						listCheckRunsForRef: vi.fn().mockResolvedValue(mockCheckRuns),
+						getPullRequest: vi.fn().mockResolvedValue({
+							number: defaultOptions.prNumber,
+							user: { login: "coding-actor" },
+							head: { sha: validSha, ref: "feature/test" },
+						}),
+						listPullRequestReviews: vi.fn().mockResolvedValue([
+							{
+								state: "APPROVED",
+								commit_id: validSha,
+								user: { login: "independent-reviewer" },
+							},
+						]),
+					}) as unknown as GitHubClient,
+			);
+
+			const result = await runReviewGate({
+				...defaultOptions,
+				contractPath: join(tempDir, "harness.contract.json"),
+			});
+
+			expect(result.ok).toBe(true);
+			if (result.ok) {
+				expect(result.output.verified).toBe(true);
+				expect(result.output.blockers).toEqual([]);
+			}
+		} finally {
+			rmSync(tempDir, { recursive: true, force: true });
+		}
+	});
+
+	it("blocks when matching check name exists only from non-authoritative provider source", async () => {
+		const tempDir = mkdtempSync(
+			join(tmpdir(), "review-gate-provider-source-mismatch-"),
+		);
+		const manifestPath = join(tempDir, ".harness", "ci-required-checks.json");
+		mkdirSync(join(tempDir, ".harness"), { recursive: true });
+		writeFileSync(
+			manifestPath,
+			JSON.stringify(
+				{
+					version: 1,
+					activeProvider: "circleci",
+					requiredChecks: [
+						{
+							displayName: "security-scan",
+							sourceAppSlug: "circleci",
+							sourceAppId: "circleci",
+							externalIdPattern: "^security-scan$",
+							class: "required",
+							githubCheckName: "security-scan",
+						},
+					],
+				},
+				null,
+				2,
+			),
+			"utf-8",
+		);
+
+		try {
+			mockLoadContract.mockReturnValue({
+				version: "1.0",
+				riskTierRules: {},
+				ciProviderPolicy: {
+					activeProvider: "circleci",
+					mode: "required",
+					migrationStage: "circleci-only",
+					transitionStatusArtifactPath:
+						".harness/ci-provider-transition-status.json",
+					authorityConfigPath:
+						"docs/examples/ci-migrate/authority-config.example.json",
+					requiredCheckManifestPath: ".harness/ci-required-checks.json",
+				},
+				reviewPolicy: {
+					timeoutSeconds: 600,
+					timeoutAction: "fail",
+					requiredChecks: ["security-scan"],
+				},
+			});
+
+			const mockCheckRuns: CheckRun[] = [
+				{
+					id: 1,
+					name: "review-check",
+					status: "completed",
+					conclusion: "success",
+					head_sha: validSha,
+					app: { id: 100, slug: "circleci", name: "CircleCI" },
+				},
+				{
+					id: 20,
+					name: "security-scan",
+					status: "completed",
+					conclusion: "success",
+					head_sha: validSha,
+					app: { id: 200, slug: "github-actions", name: "GitHub Actions" },
+				},
+			];
+
+			mockGitHubClient.mockImplementation(
+				() =>
+					({
+						listPullRequestFiles: vi
+							.fn()
+							.mockResolvedValue([{ filename: "src/commands/review-gate.ts" }]),
+						listCheckRunsForRef: vi.fn().mockResolvedValue(mockCheckRuns),
+						getPullRequest: vi.fn().mockResolvedValue({
+							number: defaultOptions.prNumber,
+							user: { login: "coding-actor" },
+							head: { sha: validSha, ref: "feature/test" },
+						}),
+						listPullRequestReviews: vi.fn().mockResolvedValue([
+							{
+								state: "APPROVED",
+								commit_id: validSha,
+								user: { login: "independent-reviewer" },
+							},
+						]),
+					}) as unknown as GitHubClient,
+			);
+
+			const result = await runReviewGate({
+				...defaultOptions,
+				contractPath: join(tempDir, "harness.contract.json"),
+			});
+
+			expect(result.ok).toBe(true);
+			if (result.ok) {
+				expect(result.output.verified).toBe(false);
+				expect(result.output.blockers.join(" ")).toContain(
+					"Required check 'security-scan' was found, but only from non-authoritative providers",
+				);
+			}
+		} finally {
+			rmSync(tempDir, { recursive: true, force: true });
+		}
+	});
+
+	it("blocks merge readiness when a required check is still in progress", async () => {
+		mockLoadContract.mockReturnValue({
+			version: "1.0",
+			riskTierRules: {},
+			reviewPolicy: {
+				timeoutSeconds: 600,
+				timeoutAction: "fail",
+				requiredChecks: ["security-scan"],
+			},
+		});
+
+		const mockCheckRuns: CheckRun[] = [
+			{
+				id: 1,
+				name: "review-check",
+				status: "completed",
+				conclusion: "success",
+				head_sha: validSha,
+			},
+			{
+				id: 2,
+				name: "security-scan",
+				status: "in_progress",
+				conclusion: null,
+				head_sha: validSha,
+			},
+		];
+		mockGitHubClient.mockImplementation(
+			() =>
+				({
+					listPullRequestFiles: vi
+						.fn()
+						.mockResolvedValue([{ filename: "src/commands/review-gate.ts" }]),
+					listCheckRunsForRef: vi.fn().mockResolvedValue(mockCheckRuns),
+					getPullRequest: vi.fn().mockResolvedValue({
+						number: defaultOptions.prNumber,
+						user: { login: "coding-actor" },
+						head: { sha: validSha, ref: "feature/test" },
+					}),
+					listPullRequestReviews: vi.fn().mockResolvedValue([
+						{
+							state: "APPROVED",
+							commit_id: validSha,
+							user: { login: "independent-reviewer" },
+						},
+					]),
+				}) as unknown as GitHubClient,
+		);
+
+		const result = await runReviewGate(defaultOptions);
+
+		expect(result.ok).toBe(true);
+		if (result.ok) {
+			expect(result.output.verified).toBe(false);
+			expect(result.output.blockers.join(" ")).toContain(
+				"Required check 'security-scan' is not complete (status: in_progress)",
+			);
+		}
+	});
+
+	it("blocks merge readiness when a required check concludes with failure", async () => {
+		mockLoadContract.mockReturnValue({
+			version: "1.0",
+			riskTierRules: {},
+			reviewPolicy: {
+				timeoutSeconds: 600,
+				timeoutAction: "fail",
+				requiredChecks: ["security-scan"],
+			},
+		});
+
+		const mockCheckRuns: CheckRun[] = [
+			{
+				id: 1,
+				name: "review-check",
+				status: "completed",
+				conclusion: "success",
+				head_sha: validSha,
+			},
+			{
+				id: 2,
+				name: "security-scan",
+				status: "completed",
+				conclusion: "failure",
+				head_sha: validSha,
+			},
+		];
+		mockGitHubClient.mockImplementation(
+			() =>
+				({
+					listPullRequestFiles: vi
+						.fn()
+						.mockResolvedValue([{ filename: "src/commands/review-gate.ts" }]),
+					listCheckRunsForRef: vi.fn().mockResolvedValue(mockCheckRuns),
+					getPullRequest: vi.fn().mockResolvedValue({
+						number: defaultOptions.prNumber,
+						user: { login: "coding-actor" },
+						head: { sha: validSha, ref: "feature/test" },
+					}),
+					listPullRequestReviews: vi.fn().mockResolvedValue([
+						{
+							state: "APPROVED",
+							commit_id: validSha,
+							user: { login: "independent-reviewer" },
+						},
+					]),
+				}) as unknown as GitHubClient,
+		);
+
+		const result = await runReviewGate(defaultOptions);
+
+		expect(result.ok).toBe(true);
+		if (result.ok) {
+			expect(result.output.verified).toBe(false);
+			expect(result.output.blockers.join(" ")).toContain(
+				"Required check 'security-scan' did not pass (conclusion: failure)",
+			);
+		}
+	});
+
 	it("blocks merge readiness when unresolved non-bot review threads remain", async () => {
 		const mockCheckRuns: CheckRun[] = [
 			{
@@ -1016,6 +4215,55 @@ describe("runReviewGate", () => {
 		}
 	});
 
+	it("uses the newest primary review check run when duplicate names exist", async () => {
+		const mockCheckRuns: CheckRun[] = [
+			{
+				id: 1,
+				name: "review-check",
+				status: "completed",
+				conclusion: "failure",
+				head_sha: validSha,
+			},
+			{
+				id: 9,
+				name: "review-check",
+				status: "completed",
+				conclusion: "success",
+				head_sha: validSha,
+			},
+		];
+		mockGitHubClient.mockImplementation(
+			() =>
+				({
+					listPullRequestFiles: vi
+						.fn()
+						.mockResolvedValue([{ filename: "src/commands/review-gate.ts" }]),
+					listCheckRunsForRef: vi.fn().mockResolvedValue(mockCheckRuns),
+					getPullRequest: vi.fn().mockResolvedValue({
+						number: defaultOptions.prNumber,
+						user: { login: "coding-actor" },
+						head: { sha: validSha, ref: "feature/test" },
+					}),
+					listPullRequestReviews: vi.fn().mockResolvedValue([
+						{
+							state: "APPROVED",
+							commit_id: validSha,
+							user: { login: "independent-reviewer" },
+						},
+					]),
+				}) as unknown as GitHubClient,
+		);
+
+		const result = await runReviewGate(defaultOptions);
+
+		expect(result.ok).toBe(true);
+		if (result.ok) {
+			expect(result.output.verified).toBe(true);
+			expect(result.output.checkConclusion).toBe("success");
+			expect(result.output.needsRerun).toBe(false);
+		}
+	});
+
 	it("returns needsRerun when check run is completed with failure", async () => {
 		const mockCheckRuns: CheckRun[] = [
 			{
@@ -1096,6 +4344,61 @@ describe("runReviewGate", () => {
 			expect(result.error.code).toBe("TIMEOUT");
 		}
 	});
+
+	it.each(["in_progress", "queued", "pending"] as const)(
+		"returns warn timeout output when timeoutAction is warn and check status is %s",
+		async (checkStatus) => {
+			mockLoadContract.mockReturnValue({
+				version: "1.0",
+				riskTierRules: {},
+				reviewPolicy: { timeoutSeconds: 1, timeoutAction: "warn" },
+			});
+
+			const mockCheckRuns: CheckRun[] = [
+				{
+					id: 1,
+					name: "review-check",
+					status: checkStatus,
+					conclusion: null,
+					head_sha: validSha,
+				},
+			];
+			mockGitHubClient.mockImplementation(
+				() =>
+					({
+						getPullRequest: vi.fn().mockResolvedValue({
+							number: defaultOptions.prNumber,
+							user: { login: "coding-actor" },
+							head: { sha: validSha, ref: "feature/test" },
+						}),
+						listPullRequestFiles: vi
+							.fn()
+							.mockResolvedValue([{ filename: "src/commands/review-gate.ts" }]),
+						listCheckRunsForRef: vi.fn().mockResolvedValue(mockCheckRuns),
+					}) as unknown as GitHubClient,
+			);
+
+			vi.useFakeTimers();
+			try {
+				const resultPromise = runReviewGate(defaultOptions);
+				await vi.advanceTimersByTimeAsync(1000);
+				const result = await resultPromise;
+
+				expect(result.ok).toBe(true);
+				if (result.ok) {
+					expect(result.output.verified).toBe(false);
+					expect(result.output.timedOut).toBe(true);
+					expect(result.output.needsRerun).toBe(true);
+					expect(result.output.policy_gate_status).toBe("pending");
+					expect(result.output.blockers.join(" ")).toContain(
+						"verification is incomplete",
+					);
+				}
+			} finally {
+				vi.useRealTimers();
+			}
+		},
+	);
 });
 
 describe("runReviewGateCLI", () => {
@@ -1113,6 +4416,13 @@ describe("runReviewGateCLI", () => {
 
 	beforeEach(() => {
 		vi.clearAllMocks();
+		mockEmitReviewGateDecisionArtifacts.mockReturnValue({
+			runId: "review-gate-run-cli",
+			decisionPacketPath:
+				"/tmp/agent-runs/review-gate-run-cli/decision-packet.json",
+			alignmentDecisionPath:
+				"/tmp/agent-runs/review-gate-run-cli/alignment-decision.json",
+		});
 		mockValidateSha.mockReturnValue(undefined);
 		mockRunPlanGate.mockReturnValue({
 			passed: true,
@@ -1147,7 +4457,15 @@ describe("runReviewGateCLI", () => {
 		const stdoutSpy = vi
 			.spyOn(process.stdout, "write")
 			.mockImplementation(() => true);
-		const mockListCheckRuns = vi.fn().mockResolvedValue([]);
+		const mockListCheckRuns = vi.fn().mockResolvedValue([
+			{
+				id: 1,
+				name: "review-check",
+				status: "completed",
+				conclusion: "failure",
+				head_sha: validSha,
+			},
+		]);
 		mockGitHubClient.mockImplementation(
 			() =>
 				({
@@ -1209,6 +4527,7 @@ describe("runReviewGateCLI", () => {
 		expect(mockEmitReviewGateDecisionArtifacts).toHaveBeenCalledWith(
 			expect.objectContaining({
 				exitCode: EXIT_CODES.VALIDATION_ERROR,
+				effectiveCheckName: defaultOptions.checkName,
 				result: {
 					ok: false,
 					error: {
@@ -1219,6 +4538,262 @@ describe("runReviewGateCLI", () => {
 			}),
 		);
 	});
+
+	it("returns SYSTEM_ERROR when artifact emission fails on invalid input", async () => {
+		const consoleErrorSpy = vi
+			.spyOn(console, "error")
+			.mockImplementation(() => undefined);
+		mockValidateSha.mockImplementation(() => {
+			throw new Error("Invalid SHA format: invalid");
+		});
+		mockEmitReviewGateDecisionArtifacts.mockImplementation(() => {
+			throw new Error("artifact write failed");
+		});
+
+		const exitCode = await runReviewGateCLI({
+			...defaultOptions,
+			headSha: "invalid",
+		});
+
+		expect(exitCode).toBe(EXIT_CODES.SYSTEM_ERROR);
+		expect(consoleErrorSpy).toHaveBeenCalledWith(
+			expect.stringContaining("Failed to emit review-gate decision artifacts"),
+		);
+	});
+
+	it("returns SYSTEM_ERROR when decision artifact emission fails on error path", async () => {
+		const consoleErrorSpy = vi
+			.spyOn(console, "error")
+			.mockImplementation(() => undefined);
+		mockGitHubClient.mockImplementation(
+			() =>
+				({
+					getPullRequest: vi.fn().mockRejectedValue(
+						Object.assign(new Error("PR not found"), {
+							name: "NotFoundError",
+						}),
+					),
+				}) as unknown as GitHubClient,
+		);
+		mockEmitReviewGateDecisionArtifacts.mockImplementation(() => {
+			throw new Error("artifact write failed");
+		});
+
+		const exitCode = await runReviewGateCLI(defaultOptions);
+
+		expect(exitCode).toBe(EXIT_CODES.SYSTEM_ERROR);
+		expect(consoleErrorSpy).toHaveBeenCalledWith(
+			expect.stringContaining("Failed to emit review-gate decision artifacts"),
+		);
+	});
+
+	it("emits canonical default check identity in error artifacts when --check is omitted", async () => {
+		mockValidateSha.mockImplementation(() => {
+			throw new Error("Invalid SHA format: invalid");
+		});
+
+		const exitCode = await runReviewGateCLI({
+			...defaultOptions,
+			headSha: "invalid",
+			checkName: "",
+		});
+
+		expect(exitCode).toBe(EXIT_CODES.VALIDATION_ERROR);
+		expect(mockEmitReviewGateDecisionArtifacts).toHaveBeenCalledWith(
+			expect.objectContaining({
+				effectiveCheckName: "pr-pipeline",
+			}),
+		);
+	});
+
+	it("returns PERMISSION_DENIED for ForbiddenError", async () => {
+		mockGitHubClient.mockImplementation(
+			() =>
+				({
+					getPullRequest: vi.fn().mockRejectedValue(
+						Object.assign(new Error("Forbidden"), {
+							name: "ForbiddenError",
+						}),
+					),
+				}) as unknown as GitHubClient,
+		);
+
+		const exitCode = await runReviewGateCLI(defaultOptions);
+
+		expect(exitCode).toBe(EXIT_CODES.PERMISSION_DENIED);
+	});
+
+	it("returns NOT_FOUND for NotFoundError", async () => {
+		mockGitHubClient.mockImplementation(
+			() =>
+				({
+					getPullRequest: vi.fn().mockRejectedValue(
+						Object.assign(new Error("Not Found"), {
+							name: "NotFoundError",
+						}),
+					),
+				}) as unknown as GitHubClient,
+		);
+
+		const exitCode = await runReviewGateCLI(defaultOptions);
+
+		expect(exitCode).toBe(EXIT_CODES.NOT_FOUND);
+	});
+
+	it("returns PERMISSION_DENIED for UnauthorizedError", async () => {
+		mockGitHubClient.mockImplementation(
+			() =>
+				({
+					getPullRequest: vi.fn().mockRejectedValue(
+						Object.assign(new Error("Unauthorized"), {
+							name: "UnauthorizedError",
+						}),
+					),
+				}) as unknown as GitHubClient,
+		);
+
+		const exitCode = await runReviewGateCLI(defaultOptions);
+
+		expect(exitCode).toBe(EXIT_CODES.PERMISSION_DENIED);
+	});
+
+	it("auto-resolves only bot-only unresolved threads when enabled", async () => {
+		const stdoutSpy = vi
+			.spyOn(process.stdout, "write")
+			.mockImplementation(() => true);
+		const consoleInfoSpy = vi
+			.spyOn(console, "info")
+			.mockImplementation(() => undefined);
+		const mockResolveThread = vi.fn().mockResolvedValue(undefined);
+
+		mockGitHubClient
+			.mockImplementationOnce(
+				() =>
+					({
+						getPullRequest: vi.fn().mockResolvedValue({
+							number: defaultOptions.prNumber,
+							user: { login: "coding-actor" },
+							head: { sha: validSha, ref: "feature/test" },
+						}),
+						listPullRequestFiles: vi
+							.fn()
+							.mockResolvedValue([{ filename: "src/commands/review-gate.ts" }]),
+						listCheckRunsForRef: vi.fn().mockResolvedValue([
+							{
+								id: 1,
+								name: defaultOptions.checkName,
+								status: "completed",
+								conclusion: "success",
+								head_sha: validSha,
+							},
+						]),
+						listPullRequestReviews: vi.fn().mockResolvedValue([
+							{
+								state: "APPROVED",
+								commit_id: validSha,
+								user: { login: "independent-reviewer" },
+							},
+						]),
+						listPullRequestReviewThreads: vi.fn().mockResolvedValue([]),
+					}) as unknown as GitHubClient,
+			)
+			.mockImplementationOnce(
+				() =>
+					({
+						listPullRequestReviewThreads: vi.fn().mockResolvedValue([
+							{
+								id: "thread-bot-only",
+								isResolved: false,
+								comments: [{ author: { login: "coderabbitai[bot]" } }],
+							},
+							{
+								id: "thread-mixed",
+								isResolved: false,
+								comments: [
+									{ author: { login: "coderabbitai[bot]" } },
+									{ author: { login: "independent-reviewer" } },
+								],
+							},
+						]),
+						resolvePullRequestReviewThread: mockResolveThread,
+					}) as unknown as GitHubClient,
+			);
+
+		const exitCode = await runReviewGateCLI({
+			...defaultOptions,
+			autoResolveBotThreads: true,
+			json: false,
+		});
+
+		expect(exitCode).toBe(EXIT_CODES.SUCCESS);
+		expect(mockResolveThread).toHaveBeenCalledTimes(1);
+		expect(mockResolveThread).toHaveBeenCalledWith("thread-bot-only");
+		expect(consoleInfoSpy).toHaveBeenCalledWith(
+			"Resolved 1 bot-only review thread(s).",
+		);
+		expect(stdoutSpy).not.toHaveBeenCalled();
+	});
+
+	it("emits JSON warning when auto-resolve thread mutation fails", async () => {
+		const stdoutSpy = vi
+			.spyOn(process.stdout, "write")
+			.mockImplementation(() => true);
+		const consoleErrorSpy = vi
+			.spyOn(console, "error")
+			.mockImplementation(() => undefined);
+
+		mockGitHubClient
+			.mockImplementationOnce(
+				() =>
+					({
+						getPullRequest: vi.fn().mockResolvedValue({
+							number: defaultOptions.prNumber,
+							user: { login: "coding-actor" },
+							head: { sha: validSha, ref: "feature/test" },
+						}),
+						listPullRequestFiles: vi
+							.fn()
+							.mockResolvedValue([{ filename: "src/commands/review-gate.ts" }]),
+						listCheckRunsForRef: vi.fn().mockResolvedValue([
+							{
+								id: 1,
+								name: defaultOptions.checkName,
+								status: "completed",
+								conclusion: "success",
+								head_sha: validSha,
+							},
+						]),
+						listPullRequestReviews: vi.fn().mockResolvedValue([
+							{
+								state: "APPROVED",
+								commit_id: validSha,
+								user: { login: "independent-reviewer" },
+							},
+						]),
+						listPullRequestReviewThreads: vi.fn().mockResolvedValue([]),
+					}) as unknown as GitHubClient,
+			)
+			.mockImplementationOnce(
+				() =>
+					({
+						listPullRequestReviewThreads: vi
+							.fn()
+							.mockRejectedValue(new Error("resolve failure")),
+					}) as unknown as GitHubClient,
+			);
+
+		const exitCode = await runReviewGateCLI({
+			...defaultOptions,
+			autoResolveBotThreads: true,
+			json: true,
+		});
+
+		expect(exitCode).toBe(EXIT_CODES.SUCCESS);
+		expect(consoleErrorSpy).toHaveBeenCalledWith(
+			expect.stringContaining("Failed to auto-resolve bot-only threads"),
+		);
+		expect(stdoutSpy).toHaveBeenCalled();
+	});
 });
 
 describe("postRerunCommentIfNeeded", () => {
@@ -1226,6 +4801,7 @@ describe("postRerunCommentIfNeeded", () => {
 
 	const mockRepositoryIdentifier = "acme/repo";
 	const mockBranch = "feature/review-gate";
+	const mockBaseBranch = "main";
 	const defaultOptions = {
 		reason: "Need rerun",
 		botLogin: "harness-bot",
@@ -1252,6 +4828,9 @@ describe("postRerunCommentIfNeeded", () => {
 			getPullRequest:
 				overrides.getPullRequest ??
 				vi.fn().mockResolvedValue({
+					base: {
+						ref: mockBaseBranch,
+					},
 					head: {
 						ref: mockBranch,
 						sha: "1111111111111111111111111111111111111111",
@@ -1347,5 +4926,137 @@ describe("postRerunCommentIfNeeded", () => {
 		});
 		expect(mockListIssueComments).toHaveBeenCalledWith(defaultOptions.prNumber);
 		expect(mockCreateIssueComment).toHaveBeenCalledTimes(1);
+	});
+
+	it("does not post duplicate rerun comment for same SHA and bot login", async () => {
+		mockRunCheckAuthz.mockResolvedValue({
+			ok: true,
+			output: {
+				passed: true,
+				violations: [],
+				policyApplied: {
+					...authzPassOutput.policyApplied,
+				},
+				repoChecked: mockRepositoryIdentifier,
+				branchChecked: "feature/review-gate",
+			},
+		});
+
+		const existingTimestamp = "2026-04-22T00:00:00.000Z";
+		const mockListIssueComments = vi.fn().mockResolvedValue([
+			{
+				id: 22,
+				body: [
+					"<!-- harness-review-rerun -->",
+					"## Review Rerun Requested",
+					"",
+					`**SHA:** \`${headSha}\``,
+					"**Reason:** duplicate check",
+				].join("\n"),
+				created_at: existingTimestamp,
+				user: { login: defaultOptions.botLogin },
+			},
+		]);
+		const mockCreateIssueComment = vi.fn();
+		const mockClient = createMockClient({
+			listIssueComments: mockListIssueComments,
+			createIssueComment: mockCreateIssueComment,
+		});
+
+		const result = await postRerunCommentIfNeeded(
+			mockClient,
+			defaultOptions.prNumber,
+			headSha,
+			defaultOptions.botLogin,
+			defaultOptions.reason,
+			"harness.contract.json",
+			"feature/review-gate",
+		);
+
+		expect(result.posted).toBe(false);
+		expect(result.message).toContain(
+			`Rerun comment already exists for SHA ${headSha}`,
+		);
+		expect(mockCreateIssueComment).not.toHaveBeenCalled();
+	});
+
+	it("returns a failure message when createIssueComment throws", async () => {
+		mockRunCheckAuthz.mockResolvedValue({
+			ok: true,
+			output: {
+				passed: true,
+				violations: [],
+				policyApplied: {
+					...authzPassOutput.policyApplied,
+				},
+				repoChecked: mockRepositoryIdentifier,
+				branchChecked: "feature/review-gate",
+			},
+		});
+
+		const mockCreateIssueComment = vi
+			.fn()
+			.mockRejectedValue(new Error("comment API down"));
+		const mockClient = createMockClient({
+			listIssueComments: vi.fn().mockResolvedValue([]),
+			createIssueComment: mockCreateIssueComment,
+		});
+
+		const result = await postRerunCommentIfNeeded(
+			mockClient,
+			defaultOptions.prNumber,
+			headSha,
+			defaultOptions.botLogin,
+			defaultOptions.reason,
+			"harness.contract.json",
+			"feature/review-gate",
+		);
+
+		expect(result).toEqual({
+			posted: false,
+			message: "Failed to post rerun comment: comment API down",
+		});
+	});
+
+	it("uses PR base branch for authz preflight when targetBranch is omitted", async () => {
+		mockRunCheckAuthz.mockResolvedValue({
+			ok: true,
+			output: {
+				passed: true,
+				violations: [],
+				policyApplied: {
+					...authzPassOutput.policyApplied,
+				},
+				repoChecked: mockRepositoryIdentifier,
+				branchChecked: mockBranch,
+			},
+		});
+
+		const mockListIssueComments = vi.fn().mockResolvedValue([]);
+		const mockCreateIssueComment = vi.fn().mockResolvedValue({
+			id: 10,
+			body: "comment",
+			created_at: new Date().toISOString(),
+			user: { login: "harness-bot" },
+		});
+		const mockClient = createMockClient({
+			listIssueComments: mockListIssueComments,
+			createIssueComment: mockCreateIssueComment,
+		});
+
+		const result = await postRerunCommentIfNeeded(
+			mockClient,
+			defaultOptions.prNumber,
+			headSha,
+			defaultOptions.botLogin,
+			defaultOptions.reason,
+		);
+
+		expect(result).toEqual({ posted: true });
+		expect(mockRunCheckAuthz).toHaveBeenCalledWith({
+			contractPath: "harness.contract.json",
+			repo: mockRepositoryIdentifier,
+			branch: mockBaseBranch,
+		});
 	});
 });
