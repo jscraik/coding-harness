@@ -1,7 +1,8 @@
 import { mkdirSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { afterEach, beforeEach, describe, expect, it } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { DEFAULT_CONTRACT } from "../lib/contract/types.js";
 import {
 	EXIT_CODES,
 	runEvidenceVerify,
@@ -17,6 +18,7 @@ describe("evidence-verify", () => {
 	});
 
 	afterEach(() => {
+		vi.restoreAllMocks();
 		rmSync(tempDir, { recursive: true, force: true });
 	});
 
@@ -119,6 +121,115 @@ describe("evidence-verify", () => {
 			}
 		});
 
+		it("enforces policy when contract and changed files are provided", () => {
+			const contractFile = join(tempDir, "harness.contract.json");
+			writeFileSync(
+				contractFile,
+				JSON.stringify(
+					{
+						...DEFAULT_CONTRACT,
+						evidencePolicy: {
+							requiredFor: ["src/ui/**"],
+							allowedTypes: ["png"],
+							maxFileSizeBytes: 1024 * 1024,
+						},
+					},
+					null,
+					2,
+				),
+			);
+
+			const pngFile = join(tempDir, "button.png");
+			const pngHeader = Buffer.from([
+				0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a,
+			]);
+			writeFileSync(pngFile, pngHeader);
+
+			const passing = runEvidenceVerify({
+				files: ["button.png"],
+				contract: "harness.contract.json",
+				changed: ["src/ui/button.tsx"],
+				baseDir: tempDir,
+			});
+			expect(passing.ok).toBe(true);
+			if (passing.ok) {
+				expect(passing.output.failed).toBe(0);
+				expect(passing.output.verified).toBe(1);
+			}
+
+			const missingEvidence = runEvidenceVerify({
+				files: ["button.png"],
+				contract: "harness.contract.json",
+				changed: ["src/ui/card.tsx"],
+				baseDir: tempDir,
+			});
+			expect(missingEvidence.ok).toBe(true);
+			if (missingEvidence.ok) {
+				expect(missingEvidence.output.failed).toBeGreaterThan(0);
+				expect(
+					missingEvidence.output.errors.some(
+						(error) =>
+							error.code === "FILE_NOT_FOUND" &&
+							error.path === "src/ui/card.tsx",
+					),
+				).toBe(true);
+			}
+		});
+
+		it("propagates disallowed evidence format violations at command level", () => {
+			const contractFile = join(tempDir, "harness.contract.json");
+			writeFileSync(
+				contractFile,
+				JSON.stringify(
+					{
+						...DEFAULT_CONTRACT,
+						evidencePolicy: {
+							requiredFor: ["src/ui/**"],
+							allowedTypes: ["png"],
+							maxFileSizeBytes: 1024 * 1024,
+						},
+					},
+					null,
+					2,
+				),
+			);
+
+			const jpegFile = join(tempDir, "button.jpg");
+			const jpegHeader = Buffer.from([
+				0xff, 0xd8, 0xff, 0x00, 0x00, 0x00, 0x00, 0x00,
+			]);
+			writeFileSync(jpegFile, jpegHeader);
+
+			const result = runEvidenceVerify({
+				files: ["button.jpg"],
+				contract: "harness.contract.json",
+				changed: ["src/ui/button.tsx"],
+				baseDir: tempDir,
+			});
+			expect(result.ok).toBe(true);
+			if (result.ok) {
+				expect(
+					result.output.errors.some((error) => error.code === "INVALID_FORMAT"),
+				).toBe(true);
+			}
+		});
+
+		it("maps malformed contract files to VALIDATION_ERROR", () => {
+			const invalidContract = join(tempDir, "invalid.contract.json");
+			writeFileSync(invalidContract, "{invalid-json", "utf-8");
+
+			const result = runEvidenceVerify({
+				files: [],
+				contract: "invalid.contract.json",
+				baseDir: tempDir,
+			});
+
+			expect(result.ok).toBe(false);
+			if (!result.ok) {
+				expect(result.error.code).toBe("VALIDATION_ERROR");
+			}
+		});
+
 		it("handles empty files array", () => {
 			const result = runEvidenceVerify({
 				files: [],
@@ -213,6 +324,69 @@ describe("evidence-verify", () => {
 			});
 
 			expect(exitCode).toBe(EXIT_CODES.FILE_NOT_FOUND);
+		});
+
+		it("prints structured JSON output in --json mode for successful verification", () => {
+			const pngFile = join(tempDir, "test.png");
+			const pngHeader = Buffer.from([
+				0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a,
+			]);
+			writeFileSync(pngFile, pngHeader);
+
+			const infoSpy = vi
+				.spyOn(console, "info")
+				.mockImplementation(() => undefined);
+
+			const exitCode = runEvidenceVerifyCLI({
+				files: ["test.png"],
+				baseDir: tempDir,
+				json: true,
+			});
+
+			expect(exitCode).toBe(EXIT_CODES.SUCCESS);
+			const payload = JSON.parse(
+				String(infoSpy.mock.calls[infoSpy.mock.calls.length - 1]?.[0]),
+			) as {
+				verified: number;
+				failed: number;
+				files: unknown[];
+				errors: unknown[];
+			};
+			expect(payload.verified).toBe(1);
+			expect(payload.failed).toBe(0);
+			expect(payload.files).toHaveLength(1);
+			expect(payload.errors).toHaveLength(0);
+		});
+
+		it("prints structured JSON output in --json mode for failing verification", () => {
+			const txtFile = join(tempDir, "test.txt");
+			writeFileSync(txtFile, "not an image");
+
+			const infoSpy = vi
+				.spyOn(console, "info")
+				.mockImplementation(() => undefined);
+
+			const exitCode = runEvidenceVerifyCLI({
+				files: ["test.txt"],
+				baseDir: tempDir,
+				json: true,
+			});
+
+			expect(exitCode).toBe(EXIT_CODES.VALIDATION_ERROR);
+			const payload = JSON.parse(
+				String(infoSpy.mock.calls[infoSpy.mock.calls.length - 1]?.[0]),
+			) as {
+				verified: number;
+				failed: number;
+				files: unknown[];
+				errors: Array<{ code?: string }>;
+			};
+			expect(payload.verified).toBe(0);
+			expect(payload.failed).toBe(1);
+			expect(payload.files).toHaveLength(0);
+			expect(
+				payload.errors.some((error) => error.code === "INVALID_FORMAT"),
+			).toBe(true);
 		});
 	});
 

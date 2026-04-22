@@ -17,10 +17,29 @@ export interface VerifyWorkCliOptions {
 	changedOnly?: boolean;
 	strict?: boolean;
 	fast?: boolean;
+	projectGovernance?: boolean;
+	workspaceGovernance?: boolean;
 	resumeFrom?: string;
 	json?: boolean;
 	repoRoot?: string;
 }
+
+export const verifyWorkRuntime = {
+	executeVerifyWorkWrapper(
+		scriptPath: string,
+		commandArgs: string[],
+		repoRoot: string,
+	) {
+		return spawnSync("bash", [scriptPath, ...commandArgs], {
+			cwd: repoRoot,
+			stdio: "inherit",
+			env: {
+				...process.env,
+				HARNESS_VERIFY_WORK_NO_DELEGATE: "1",
+			},
+		});
+	},
+};
 
 /**
  * Create the argument list for the verify-work wrapper according to the provided options.
@@ -53,6 +72,11 @@ function buildVerifyWorkArgs(options: VerifyWorkCliOptions): string[] {
 	if (options.fast) {
 		args.push("--fast");
 	}
+	if (options.projectGovernance) {
+		args.push("--project-governance");
+	} else if (options.workspaceGovernance) {
+		args.push("--workspace-governance");
+	}
 	if (options.resumeFrom) {
 		args.push("--resume-from", options.resumeFrom);
 	}
@@ -78,6 +102,12 @@ export function runVerifyWorkCLI(options: VerifyWorkCliOptions): number {
 		console.error("Error: --all and --changed-only are mutually exclusive");
 		return EXIT_CODES.USAGE_ERROR;
 	}
+	if (options.projectGovernance && options.workspaceGovernance) {
+		console.error(
+			"Error: --project-governance and --workspace-governance are mutually exclusive",
+		);
+		return EXIT_CODES.USAGE_ERROR;
+	}
 
 	const repoRoot = resolve(options.repoRoot ?? process.cwd());
 	const scriptPath = join(repoRoot, "scripts/verify-work.sh");
@@ -89,14 +119,11 @@ export function runVerifyWorkCLI(options: VerifyWorkCliOptions): number {
 	}
 
 	const commandArgs = buildVerifyWorkArgs(options);
-	const result = spawnSync("bash", [scriptPath, ...commandArgs], {
-		cwd: repoRoot,
-		stdio: "inherit",
-		env: {
-			...process.env,
-			HARNESS_VERIFY_WORK_NO_DELEGATE: "1",
-		},
-	});
+	const result = verifyWorkRuntime.executeVerifyWorkWrapper(
+		scriptPath,
+		commandArgs,
+		repoRoot,
+	);
 
 	if (result.error) {
 		console.error(

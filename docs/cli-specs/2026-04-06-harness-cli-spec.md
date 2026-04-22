@@ -85,44 +85,17 @@ Commands are grouped by domain. `[R]` = in registry (`command-registry.ts`). `[I
 | `verify-coderabbit` | [R] ✓ |
 | `contract` | [R] ✓ |
 
-#### Remaining inline branches (pending migration — Units 2–5)
-| Command | Unit | Notes |
-|---------|------|-------|
-| `risk-tier` | 2 | Simple flag parsing |
-| `replay` | 2 | Positional trace ID |
-| `gardener` | 2 | Simple |
-| `memory-gate` | 2 | Simple |
-| `silent-error` | 2 | Simple |
-| `brainstorm-gate` | 2 | Simple |
-| `plan-gate` | 2 | Simple |
-| `prompt-gate` | 2 | Simple |
-| `blast-radius` | 3 | Moderate flags |
-| `remediate` | 3 | Moderate flags |
-| `gap-case` | 3 | Moderate flags |
-| `observability-gate` | 3 | Moderate flags |
-| `drift-gate` | 3 | Moderate flags |
-| `automation-run` | 3 | Moderate flags |
-| `ui:fast` | 3 | Subcommand-style |
-| `ui:verify` | 4 | Subcommand-style |
-| `ui:explore` | 4 | Subcommand-style |
-| `simulate` | 4 | Has separate `printSimulateUsage` |
-| `context` | 4 | Moderate flags |
-| `search` | 4 | Moderate flags |
-| `index-context` | 4 | Moderate flags |
-| `context-health` | 4 | Moderate flags |
-| `init` | 5 | Heaviest — interactive mode |
-| `ci-migrate` | 5 | Sub-modes: prepare/commit/abort/verify |
-| `promote-mode` | 5 | Sub-mode of ci-migrate family |
-| `diff-budget` | 5 | Heavy flags |
-| `pilot-evaluate` | 5 | Heaviest — 20+ flags |
-| `pilot-rollback` | 5 | Complex options type |
-| `upgrade` | 5 | Complex options type |
+#### Registry-backed command coverage
+
+This CLI surface is registry-backed. Treat `harness commands --json` as the canonical source of active commands, aliases, and capability metadata.
 
 #### Help and meta
 | Flag | Behavior |
 |------|---------|
 | `--version`, `-v` | Print version and exit 0 |
 | `--help`, `-h` | Print usage and exit 0 |
+| `--allow-fuzzy` | Opt in to typo/case command correction |
+| `--no-fuzzy` | Force fail-closed unknown command handling |
 | (no command) | Print usage and exit 0 |
 | (unknown command) | Print "Unknown command: X" and exit 1 |
 
@@ -158,7 +131,7 @@ interface CommandSpec {
 | `--json` | boolean | false | Emit machine-readable JSON to stdout |
 | `--dry-run` | boolean | false | Preview changes without writing state |
 | `--contract <path>` | string | `harness.contract.json` | Path to contract file |
-| `--token <value>` | string | env | API token override |
+| `--token <value>` | string | env | API token override (defaults to `GH_TOKEN` or `GITHUB_TOKEN` when command supports env fallback) |
 
 ### Command: `linear`
 
@@ -245,21 +218,19 @@ harness local-memory-preflight [options]
 
 ### JSON output envelope
 
-All `--json` commands emit to stdout. Shape varies by command, but every conforming command should include:
+All `--json` commands emit to stdout, but output shape is command-specific.
 
-```json
-{
-  "status": "pass" | "fail" | "warning",
-  "command": "<command-name>",
-  "exitCode": 0 | 1 | 2,
-  "findings": [],
-  "errors": []
-}
-```
+For gate commands, the canonical contract is the `GateResult` shape (`src/lib/output/types.ts`) with stable fields:
 
-> **Current state:** JSON output shape is command-specific. The registry pattern
-> enables future normalization — each `CommandSpec.execute()` can adopt a shared
-> envelope helper. This is deferred to Unit 6/7 of JSC-105.
+- `gate`
+- `status`
+- `summary`
+- `reason`
+- `action_now`
+- `action_later`
+- `evidence_ref`
+- optional `findings`
+- optional `meta` (additive; consumers should ignore unknown keys)
 
 ### Process-level error handling (cli.ts shell responsibility)
 
@@ -322,7 +293,7 @@ without `--force`, but is non-interactive when `--json` is present.
 ### CA1 — Registry dispatch completeness
 Every command reachable via `harness <name>` resolves through `COMMAND_INDEX`.
 - **Test:** `MIGRATED_COMMAND_AND_ALIAS_NAMES` list matches `COMMAND_INDEX` keys.
-- **Current state:** 31 canonical commands registered. 20 inline branches pending (Units 3–5).
+- **Current state:** registry-backed; verify live state with `harness commands --json`.
 
 ### CA2 — Alias resolution
 Aliases resolve to the canonical `CommandSpec.name`, not their own name.
@@ -349,10 +320,9 @@ Every canonical command name in `MIGRATED_COMMAND_NAMES` appears in `README.md`.
 - **Test:** `expect(dispatchRegistryCommand("unknown", [])).toBeUndefined()`.
 - **Status:** ✓ Covered by `command-registry.test.ts`.
 
-### CA7 — LOC target
-`src/cli.ts` under 200 lines after all units complete.
-- **Current state:** 1710 LOC (down from 2109). Target: ~150–200.
-- **Status:** Pending Units 2–7.
+### CA7 — CLI shell remains thin
+`src/cli.ts` should remain a thin shell (global flags + registry dispatch + unknown-command handling), with command behavior in registry specs.
+- **Status:** Active invariant.
 
 ### CA8 — No behavioral regression
 All commands produce identical output before and after migration.
@@ -378,8 +348,8 @@ A new command can be added by editing only `command-registry.ts` + new command m
 | Unit 1 (simple pass-through) | org-audit, tooling-audit, preset, doctor, health, eject, verify-coderabbit, contract | ✓ Complete |
 | Unit 1b (governance gates, already in registry) | linear, linear-gate, pr-template-gate, policy-gate, evidence-verify, preflight-gate, review-gate, branch-protect, check-authz, check-environment, docs-gate, license-gate, symphony-check, workflow:generate, local-memory-preflight | ✓ Complete |
 | Unit 2 (batch A — simple) | risk-tier, replay, gardener, memory-gate, silent-error, brainstorm-gate, plan-gate, prompt-gate | ✓ Complete |
-| Unit 3 (batch B — moderate) | blast-radius, remediate, gap-case, observability-gate, drift-gate, automation-run, ui:fast | Pending |
-| Unit 4 (batch C — remaining) | ui:verify, ui:explore, simulate, context, search, index-context, context-health | Pending |
-| Unit 5 (complex) | init, ci-migrate, promote-mode, diff-budget, pilot-evaluate, pilot-rollback, upgrade | Pending |
-| Unit 6 | Replace printUsage() | Pending |
-| Unit 7 | Final cleanup + LOC validation | Pending |
+| Unit 3 (batch B — moderate) | blast-radius, remediate, gap-case, observability-gate, drift-gate, automation-run, ui:fast | ✓ Complete |
+| Unit 4 (batch C — remaining) | ui:verify, ui:explore, simulate, context, search, index-context, context-health | ✓ Complete |
+| Unit 5 (complex) | init, ci-migrate, promote-mode, diff-budget, pilot-evaluate, pilot-rollback, upgrade | ✓ Complete |
+| Unit 6 | Replace printUsage() | ✓ Complete |
+| Unit 7 | Final cleanup + LOC validation | ✓ Complete |

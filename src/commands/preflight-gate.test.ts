@@ -26,7 +26,11 @@ vi.mock("../lib/preflight/validator.js", () => ({
 	},
 }));
 
-import type { PreflightGateResult } from "../lib/preflight/types.js";
+import type {
+	PreflightAdmissionDeclaration,
+	PreflightGateResult,
+	PreflightNorthStarSummary,
+} from "../lib/preflight/types.js";
 import { runPreflightGate } from "../lib/preflight/validator.js";
 import { EXIT_CODES, runPreflightGateCLI } from "./preflight-gate.js";
 
@@ -78,12 +82,16 @@ function makeFailingResult(
 
 describe("runPreflightGateCLI", () => {
 	let consoleInfoSpy: ReturnType<typeof vi.spyOn>;
+	let consoleErrorSpy: ReturnType<typeof vi.spyOn>;
 	let stdoutSpy: MockInstance<typeof process.stdout.write>;
 
 	beforeEach(() => {
 		vi.clearAllMocks();
 		consoleInfoSpy = vi
 			.spyOn(console, "info")
+			.mockImplementation(() => undefined);
+		consoleErrorSpy = vi
+			.spyOn(console, "error")
 			.mockImplementation(() => undefined);
 		stdoutSpy = vi
 			.spyOn(process.stdout, "write")
@@ -109,6 +117,61 @@ describe("runPreflightGateCLI", () => {
 				contractPath: "harness.contract.json",
 			});
 			expect(code).toBe(EXIT_CODES.POLICY_VIOLATION);
+		});
+
+		it("returns CONTRACT_ERROR (3) when contract-load check fails", async () => {
+			mockRunPreflightGate.mockResolvedValue(
+				makeFailingResult({
+					checks: [
+						{
+							id: "contract-load",
+							description: "Load harness contract",
+							severity: "error",
+							passed: false,
+							message: "Invalid contract: malformed JSON",
+							durationMs: 1,
+						},
+					],
+				}),
+			);
+			const code = await runPreflightGateCLI({
+				contractPath: "harness.contract.json",
+			});
+			expect(code).toBe(EXIT_CODES.CONTRACT_ERROR);
+		});
+
+		it("returns CONTRACT_ERROR (3) when contract-exists check fails", async () => {
+			mockRunPreflightGate.mockResolvedValue(
+				makeFailingResult({
+					checks: [
+						{
+							id: "contract-exists",
+							description: "Verify harness contract exists",
+							severity: "error",
+							passed: false,
+							message: "Contract not found: harness.contract.json",
+							durationMs: 1,
+						},
+					],
+				}),
+			);
+			const code = await runPreflightGateCLI({
+				contractPath: "harness.contract.json",
+			});
+			expect(code).toBe(EXIT_CODES.CONTRACT_ERROR);
+		});
+
+		it("returns SYSTEM_ERROR (10) when validator throws unexpectedly", async () => {
+			mockRunPreflightGate.mockRejectedValue(new Error("boom"));
+			const code = await runPreflightGateCLI({
+				contractPath: "harness.contract.json",
+			});
+			expect(code).toBe(EXIT_CODES.SYSTEM_ERROR);
+			expect(consoleErrorSpy).toHaveBeenCalledWith(
+				expect.stringContaining(
+					"Preflight Gate Error: unexpected failure: Error: boom",
+				),
+			);
 		});
 	});
 
@@ -176,6 +239,53 @@ describe("runPreflightGateCLI", () => {
 
 			expect(typeof parsed.summary.errors).toBe("number");
 			expect(typeof parsed.summary.total).toBe("number");
+		});
+
+		it("includes north-star summary and admission declaration in meta when present", async () => {
+			const expectedNorthStarSummary: PreflightNorthStarSummary = {
+				mission:
+					"Coding Harness exists to let humans steer and agents execute safely, with PR lead time as the primary north-star metric.",
+				primary_metric: "pr_lead_time",
+				primary_bottleneck: "review_rework_loop",
+				autonomy_boundary:
+					"Low and medium-risk autonomy only; high-risk changes stay human-mediated.",
+				safety_floor: [
+					"deterministic evidence over intuition",
+					"strict current-head SHA discipline",
+				],
+			};
+			const expectedAdmissionDeclaration: PreflightAdmissionDeclaration = {
+				north_star_metric: "pr_lead_time",
+				primary_bottleneck: "review_rework_loop",
+				affected_surface_ids: ["review-gate"],
+				affected_surface_classes: ["core"],
+				policy_surface_delta: 0,
+				manual_glue_delta: -1,
+				metric_impact_declared: "path_strengthening",
+				evidence_links: ["docs/roadmap/north-star.md"],
+				why_this_improves_throughput_or_reliability:
+					"Reduces repeated reviewer correction loops.",
+			};
+			mockRunPreflightGate.mockResolvedValue(
+				makePassingResult({
+					northStarSummary: expectedNorthStarSummary,
+					admissionDeclaration: expectedAdmissionDeclaration,
+				}),
+			);
+			await runPreflightGateCLI({
+				contractPath: "harness.contract.json",
+				json: true,
+			});
+
+			const written = stdoutSpy.mock.calls[0]?.[0] as string;
+			const parsed = JSON.parse(written) as {
+				meta: Record<string, unknown>;
+			};
+
+			expect(parsed.meta.northStarSummary).toEqual(expectedNorthStarSummary);
+			expect(parsed.meta.admissionDeclaration).toEqual(
+				expectedAdmissionDeclaration,
+			);
 		});
 	});
 

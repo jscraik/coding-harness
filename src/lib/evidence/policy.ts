@@ -120,10 +120,24 @@ function findMatchingEvidence(
 	evidenceFiles: EvidenceFile[],
 ): EvidenceFile | undefined {
 	const changedBase = getBaseName(changedFile);
+
+	const isEquivalentBaseName = (left: string, right: string): boolean => {
+		if (left === right) {
+			return true;
+		}
+		// Allow singular/plural suffix variance while preventing broad substring collisions.
+		if (left.endsWith("s") && left.slice(0, -1) === right) {
+			return true;
+		}
+		if (right.endsWith("s") && right.slice(0, -1) === left) {
+			return true;
+		}
+		return false;
+	};
+
 	return evidenceFiles.find((ev) => {
 		const evBase = getBaseName(ev.path);
-		// Match if either name contains the other (handles pluralization, etc)
-		return evBase.includes(changedBase) || changedBase.includes(evBase);
+		return isEquivalentBaseName(evBase, changedBase);
 	});
 }
 

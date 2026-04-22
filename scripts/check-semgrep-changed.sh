@@ -4,6 +4,30 @@ set -euo pipefail
 REPO_ROOT="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")/.." && pwd)"
 RULESET_PATH="$REPO_ROOT/scripts/semgrep-pre-push.yml"
 SEMGREP_VERSION="1.153.1"
+SCAN_MODE="changed"
+
+while (( $# > 0 )); do
+	case "$1" in
+		--all)
+			SCAN_MODE="all"
+			shift
+			;;
+		--changed)
+			SCAN_MODE="changed"
+			shift
+			;;
+		-h|--help)
+			echo "Usage: bash scripts/check-semgrep-changed.sh [--changed|--all]" >&2
+			exit 0
+			;;
+		*)
+			echo "Error: unknown option '$1'" >&2
+			echo "Usage: bash scripts/check-semgrep-changed.sh [--changed|--all]" >&2
+			exit 2
+			;;
+	esac
+done
+
 DEFAULT_SEMGREP_STATE_ROOT="$REPO_ROOT/.git/semgrep"
 if git_semgrep_state_root="$(git -C "$REPO_ROOT" rev-parse --git-path semgrep 2>/dev/null)"; then
 	if [[ "$git_semgrep_state_root" != /* ]]; then
@@ -36,6 +60,32 @@ run_semgrep() {
 		SEMGREP_USER_HOME="$SEMGREP_RUNTIME_USER_HOME" \
 		SEMGREP_LOG_FILE="$SEMGREP_RUNTIME_LOG_FILE" \
 		"$SEMGREP_BIN" "$@"
+}
+
+run_semgrep_batched() {
+	local batch_size="${1:-200}"
+	shift || true
+	local input_files=("$@")
+	local total_files="${#input_files[@]}"
+	if [[ "$total_files" -eq 0 ]]; then
+		return 0
+	fi
+
+	local start_index=0
+	local batches=0
+	while (( start_index < total_files )); do
+		local batch=("${input_files[@]:start_index:batch_size}")
+		run_semgrep scan \
+			--config "$RULESET_PATH" \
+			--disable-version-check \
+			--error \
+			--jobs 1 \
+			"${batch[@]}"
+		start_index=$((start_index + batch_size))
+		batches=$((batches + 1))
+	done
+
+	echo "Semgrep scanned ${total_files} files in ${batches} batch(es)."
 }
 
 install_semgrep() {
@@ -74,6 +124,26 @@ fi
 
 ensure_semgrep_version
 
+if [[ "$SCAN_MODE" == "all" ]]; then
+	all_sources=()
+	while IFS= read -r -d "" path; do
+		[[ -n "$path" ]] || continue
+		if [[ "$path" =~ ^src/.*\.(ts|tsx|js|jsx|mts|cts)$ ]] && \
+			[[ ! "$path" =~ \.d\.ts$ ]] && \
+			[[ ! "$path" =~ \.(test|spec)\.(ts|tsx|js|jsx|mts|cts)$ ]]; then
+			all_sources+=("$path")
+		fi
+	done < <(cd "$REPO_ROOT" && find src -type f -print0 2>/dev/null || true)
+
+	if [[ ${#all_sources[@]} -eq 0 ]]; then
+		echo "No src/** implementation files detected for Semgrep."
+		exit 0
+	fi
+
+	run_semgrep_batched 200 "${all_sources[@]}"
+	exit 0
+fi
+
 base_ref=""
 if git rev-parse --verify '@{upstream}' >/dev/null 2>&1; then
 	base_ref="$(git merge-base HEAD '@{upstream}')"
@@ -110,9 +180,4 @@ if [[ ${#changed_sources[@]} -eq 0 ]]; then
 	exit 0
 fi
 
-run_semgrep scan \
-	--config "$RULESET_PATH" \
-	--disable-version-check \
-	--error \
-	--jobs 1 \
-	"${changed_sources[@]}"
+run_semgrep_batched 200 "${changed_sources[@]}"

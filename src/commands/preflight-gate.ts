@@ -4,6 +4,7 @@
  * Fast checks to run before expensive operations (tests, builds).
  */
 
+import { sanitizeError } from "../lib/input/sanitize.js";
 import {
 	normalisePreflightGateResult,
 	renderGateDecision,
@@ -23,14 +24,31 @@ export type { PreflightGateOptions };
 export async function runPreflightGateCLI(
 	options: PreflightGateOptions,
 ): Promise<number> {
-	const result = await runPreflightGate(options);
-	const gateResult = normalisePreflightGateResult(result);
+	try {
+		const result = await runPreflightGate(options);
+		const gateResult = normalisePreflightGateResult(result);
 
-	if (options.json) {
-		process.stdout.write(`${JSON.stringify(gateResult, null, 2)}\n`);
-	} else {
-		renderGateDecision(gateResult, result.summary, result.riskTier);
+		if (options.json) {
+			process.stdout.write(`${JSON.stringify(gateResult, null, 2)}\n`);
+		} else {
+			renderGateDecision(gateResult, result.summary, result.riskTier);
+		}
+
+		if (result.passed) {
+			return EXIT_CODES.SUCCESS;
+		}
+		const contractLoadFailure = result.checks.some(
+			(check) =>
+				(check.id === "contract-load" || check.id === "contract-exists") &&
+				check.passed === false,
+		);
+		return contractLoadFailure
+			? EXIT_CODES.CONTRACT_ERROR
+			: EXIT_CODES.POLICY_VIOLATION;
+	} catch (error) {
+		console.error(
+			`Preflight Gate Error: unexpected failure: ${sanitizeError(error)}`,
+		);
+		return EXIT_CODES.SYSTEM_ERROR;
 	}
-
-	return result.passed ? EXIT_CODES.SUCCESS : EXIT_CODES.POLICY_VIOLATION;
 }
