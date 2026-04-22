@@ -590,7 +590,7 @@ function validateAdmissionDeclaration(
 				.slice(0, wildcardMatch.index)
 				.replace(/\/+$/, "");
 			if (staticPrefix.length === 0) {
-				return [];
+				return ["."];
 			}
 			const parentPrefix = staticPrefix.replace(/\/[^/]*$/, "");
 			return parentPrefix.length > 0
@@ -636,6 +636,9 @@ function validateAdmissionDeclaration(
 	const isGovernedPath = (pathValue: string): boolean => {
 		const normalizedPath = normalizeRepoRelativePath(pathValue);
 		return governedRoots.some((normalizedRoot) => {
+			if (normalizedRoot === ".") {
+				return true;
+			}
 			return (
 				normalizedPath === normalizedRoot ||
 				normalizedPath.startsWith(`${normalizedRoot}/`)

@@ -20,6 +20,7 @@ repo_root=""
 resume_from=""
 normalized_manifest_path=""
 normalized_manifest_source=""
+normalized_manifest_provider=""
 lane_fast_mode_json="false"
 lane_changed_only_json="true"
 lane_strict_mode_json="false"
@@ -135,6 +136,7 @@ prepare_normalized_required_checks_manifest() {
 	local manifest_path="$repo_root/.harness/ci-required-checks.json"
 	normalized_manifest_path=""
 	normalized_manifest_source=""
+	normalized_manifest_provider=""
 	if [[ ! -f "$manifest_path" ]]; then
 		return 0
 	fi
@@ -194,6 +196,20 @@ prepare_normalized_required_checks_manifest() {
 	rm -f "$normalized_tmp"
 	echo "[verify-work] required checks normalization failed for $manifest_path" >&2
 	return 1
+}
+
+resolve_manifest_provider() {
+	if [[ -z "$normalized_manifest_path" || ! -f "$normalized_manifest_path" ]]; then
+		echo ""
+		return 0
+	fi
+
+	jq -r '
+		.activeProvider
+		// (.requiredChecks[]? | (.provider // .sourceAppSlug // .sourceAppId // empty))
+		// (.gates[]? | (.provider // empty))
+		// ""
+	' "$normalized_manifest_path" | head -n 1
 }
 
 build_resume_hint_from_run_json() {
@@ -285,13 +301,8 @@ run_ci_check_alignment_gate() {
 	fi
 
 	local provider
-	provider="$(
-		jq -r '
-			.activeProvider
-			// (.requiredChecks[]? | (.provider // .sourceAppSlug // .sourceAppId // empty))
-			// ""
-		' "$normalized_manifest_path" | head -n 1
-	)"
+	provider="$(resolve_manifest_provider)"
+	normalized_manifest_provider="$provider"
 	if [[ -z "$provider" ]]; then
 		echo "[verify-work] ci-check-alignment: active provider identity is required in required checks manifest"
 		echo "[verify-work] ci-check-alignment: blocking due to missing canonical provider identity"
@@ -369,9 +380,11 @@ compute_contract_fingerprint() {
 		fingerprint="$(
 			node -e 'const fs=require("node:fs"); const crypto=require("node:crypto"); const path=process.argv[1]; const bytes=fs.readFileSync(path); process.stdout.write(crypto.createHash("sha256").update(bytes).digest("hex"));' "$contract_path" 2>/dev/null || true
 		)"
-	elif command -v shasum >/dev/null 2>&1; then
+	fi
+	if [[ -z "$fingerprint" ]] && command -v shasum >/dev/null 2>&1; then
 		fingerprint="$(shasum -a 256 "$contract_path" 2>/dev/null | awk '{print $1}')"
-	elif command -v openssl >/dev/null 2>&1; then
+	fi
+	if [[ -z "$fingerprint" ]] && command -v openssl >/dev/null 2>&1; then
 		fingerprint="$(
 			openssl dgst -sha256 -r "$contract_path" 2>/dev/null | awk '{print $1}' || true
 		)"
@@ -386,7 +399,19 @@ compute_contract_fingerprint() {
 }
 
 compute_provider_class() {
-	read_normalized_manifest_value_or_default "unknown" '.activeProvider // "unknown"'
+	if [[ "$normalized_manifest_source" == "raw-fallback" && -n "$normalized_manifest_provider" ]]; then
+		echo "$normalized_manifest_provider"
+		return 0
+	fi
+
+	local provider
+	provider="$(resolve_manifest_provider)"
+	if [[ -n "$provider" ]]; then
+		echo "$provider"
+		return 0
+	fi
+
+	echo "unknown"
 }
 
 compute_schema_version() {

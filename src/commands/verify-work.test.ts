@@ -1161,9 +1161,11 @@ exit 1
 			"utf-8",
 		);
 
-		const jqPath = spawnSync("zsh", ["-lc", "command -v jq"], {
+		const jqLookup = spawnSync("bash", ["-lc", "command -v jq"], {
 			encoding: "utf-8",
-		}).stdout.trim();
+		});
+		expect(jqLookup.status).toBe(0);
+		const jqPath = (jqLookup.stdout ?? "").trim();
 		expect(jqPath.length).toBeGreaterThan(0);
 		const binDir = mkdtempSync(join(tmpdir(), "verify-work-no-pnpm-"));
 		writeBinExecutable(
