@@ -1,4 +1,5 @@
-import type { RiskTier } from "./types.js";
+import semver from "semver";
+import type { DocsDriftRules, RiskTier } from "./types.js";
 
 export const FORBIDDEN_KEYS = [
 	"__proto__",
@@ -126,4 +127,60 @@ export function isValidImageFormat(
 		typeof value === "string" &&
 		VALID_IMAGE_FORMATS.includes(value as (typeof VALID_IMAGE_FORMATS)[number])
 	);
+}
+
+export function isValidDocsDriftRules(value: unknown): value is DocsDriftRules {
+	if (!isPlainObject(value)) {
+		return false;
+	}
+	for (const [pattern, rules] of Object.entries(value)) {
+		if (hasForbiddenKey(pattern) || !Array.isArray(rules)) {
+			return false;
+		}
+		if (!rules.every((rule) => typeof rule === "string")) {
+			return false;
+		}
+	}
+	return true;
+}
+
+export interface ParsedContractVersion {
+	major: number;
+	minor: number;
+	patch: number | undefined;
+}
+
+export function parseContractVersion(
+	version: unknown,
+): ParsedContractVersion | undefined {
+	if (typeof version !== "string") {
+		return undefined;
+	}
+	const match = version.match(/^(0|[1-9]\d*)\.(\d+)(?:\.(\d+))?$/);
+	if (!match) {
+		return undefined;
+	}
+	const patchRaw = match[3];
+	const canonicalVersion = patchRaw === undefined ? `${version}.0` : version;
+	const parsed = semver.parse(canonicalVersion, { loose: false });
+	if (!parsed) {
+		return undefined;
+	}
+	return {
+		major: parsed.major,
+		minor: parsed.minor,
+		patch: patchRaw === undefined ? undefined : parsed.patch,
+	};
+}
+
+export function isValidContractVersionString(version: unknown): boolean {
+	return parseContractVersion(version) !== undefined;
+}
+
+export function requiresCanonicalNorthStarSurfaces(version: unknown): boolean {
+	const parsed = parseContractVersion(version);
+	if (!parsed) {
+		return false;
+	}
+	return parsed.major > 1 || (parsed.major === 1 && parsed.minor >= 6);
 }

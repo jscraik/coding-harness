@@ -206,6 +206,133 @@ export interface PackageManagerPolicy {
 	requiredManager: string | null;
 }
 
+export const NORTH_STAR_PRIMARY_METRIC = "pr_lead_time" as const;
+export const NORTH_STAR_PRIMARY_BOTTLENECK = "review_rework_loop" as const;
+
+export type NorthStarPrimaryMetric = typeof NORTH_STAR_PRIMARY_METRIC;
+export type NorthStarPrimaryBottleneck = typeof NORTH_STAR_PRIMARY_BOTTLENECK;
+
+export const NORTH_STAR_DECISION_QUESTION_SPECS = [
+	{
+		id: "lead_time_path",
+		prompt:
+			"Does this reduce PR lead time directly, or strengthen the path to lower PR lead time by reducing review or rework cost?",
+	},
+	{
+		id: "manual_glue",
+		prompt:
+			"Does this remove repeated manual glue work rather than normalizing it?",
+	},
+	{
+		id: "agent_reliability",
+		prompt:
+			"Does this make acceptable output easier for agents to produce reliably?",
+	},
+	{
+		id: "safety_floor",
+		prompt:
+			"Does this preserve strict evidence, SHA discipline, and rollback safety?",
+	},
+] as const;
+
+export type NorthStarDecisionQuestionId =
+	(typeof NORTH_STAR_DECISION_QUESTION_SPECS)[number]["id"];
+
+export interface NorthStarDecisionQuestion {
+	id: NorthStarDecisionQuestionId;
+	prompt: string;
+}
+
+export interface NorthStarContract {
+	mission: string;
+	primaryMetric: NorthStarPrimaryMetric;
+	primaryBottleneck: NorthStarPrimaryBottleneck;
+	autonomyBoundary: string;
+	safetyFloor: string[];
+	nonGoals: string[];
+	decisionQuestions: NorthStarDecisionQuestion[];
+}
+
+export type ProductSurfaceClass = "core" | "adjacent" | "experimental";
+export type ProductSurfaceType = "command" | "document" | "policy" | "workflow";
+
+export interface SurfaceRegistration {
+	surfaceId: string;
+	surfaceType: ProductSurfaceType;
+	class: ProductSurfaceClass;
+	owner: string;
+	northStarContribution: string;
+	manualGlueReductionClaim: string;
+	reliabilityContribution: string;
+	evidenceReference: string;
+	reviewCadence?: string;
+	ownedPaths: string[];
+	lastReviewedAt: string;
+}
+
+export interface ProductSurfaceRegistry {
+	surfaces: SurfaceRegistration[];
+}
+
+export type TrustedReviewerType = "user" | "team" | "service";
+export type TrustedReviewerStatus = "active" | "revoked";
+
+export interface TrustedReviewer {
+	reviewerId: string;
+	reviewerType: TrustedReviewerType;
+	signatureRef: string;
+	displayName: string;
+	status: TrustedReviewerStatus;
+}
+
+export interface OverrideReviewerRegistry {
+	trustedReviewers: TrustedReviewer[];
+}
+
+export const DEFAULT_NORTH_STAR_CONTRACT: NorthStarContract = {
+	mission:
+		"Coding Harness exists to let humans steer and agents execute safely, with PR lead time as the primary north-star metric.",
+	primaryMetric: NORTH_STAR_PRIMARY_METRIC,
+	primaryBottleneck: NORTH_STAR_PRIMARY_BOTTLENECK,
+	autonomyBoundary:
+		"Low and medium-risk autonomy should be automated where evidence is deterministic and rollback is clear; high-risk changes remain human-mediated.",
+	safetyFloor: [
+		"deterministic evidence over intuition",
+		"strict current-head SHA discipline",
+		"bounded auto-remediation instead of open-ended write access",
+		"explicit rollback paths for higher-risk automation",
+		"independent review surfaces that do not collapse back into self-approval",
+	],
+	nonGoals: [
+		"governance surface area as a proxy for progress",
+		"feature count without measurable throughput or reliability benefit",
+		"manual coordination steps that recur every run or every PR",
+		"broad autonomy expansion without evidence that the review or rework loop got cheaper",
+	],
+	decisionQuestions: NORTH_STAR_DECISION_QUESTION_SPECS.map(
+		(question): NorthStarDecisionQuestion => ({
+			id: question.id,
+			prompt: question.prompt,
+		}),
+	),
+};
+
+export const DEFAULT_PRODUCT_SURFACE_REGISTRY: ProductSurfaceRegistry = {
+	surfaces: [],
+};
+
+export const DEFAULT_OVERRIDE_REVIEWER_REGISTRY: OverrideReviewerRegistry = {
+	trustedReviewers: [
+		{
+			reviewerId: "jamie-craik",
+			reviewerType: "user",
+			signatureRef: "refs/reviewers/jamie-craik",
+			displayName: "Jamie Craik",
+			status: "active",
+		},
+	],
+};
+
 export const PREFLIGHT_PRE_HOOK_IDS = [
 	"skip-all-checks",
 	"force-fail",
@@ -271,6 +398,12 @@ export interface DiffBudgetOverride {
 export interface ReviewPolicy {
 	timeoutSeconds: number;
 	timeoutAction: TimeoutAction;
+	/**
+	 * Required merge-readiness checks.
+	 * In provider fan-in modes (for example CircleCI `pr-pipeline`), multiple
+	 * logical check names may resolve to one workflow-level GitHub check context
+	 * via `.harness/ci-required-checks.json`.
+	 */
 	requiredChecks?: string[] | undefined;
 	enforceReviewerIndependence?: boolean | undefined;
 }
@@ -1196,6 +1329,12 @@ export const DEFAULT_POLICY_CHAIN: PolicyChainPolicy = {
 export interface HarnessContract {
 	version: string;
 	riskTierRules: Record<string, RiskTier>;
+	/** Canonical throughput-oriented mission and decision rubric */
+	northStar?: NorthStarContract | undefined;
+	/** Governed inventory of product surfaces aligned to north-star outcomes */
+	productSurface?: ProductSurfaceRegistry | undefined;
+	/** Trusted reviewer identities used for override acknowledgement verification */
+	overrideReviewerRegistry?: OverrideReviewerRegistry | undefined;
 	policyChain?: PolicyChainPolicy | undefined;
 	mergePolicy?: MergePolicy | undefined;
 	docsDriftRules?: DocsDriftRules | undefined;
@@ -1248,8 +1387,11 @@ export interface HarnessContract {
 }
 
 export const DEFAULT_CONTRACT: HarnessContract = {
-	version: "1.5.0",
+	version: "1.6.0",
 	riskTierRules: {},
+	northStar: DEFAULT_NORTH_STAR_CONTRACT,
+	productSurface: DEFAULT_PRODUCT_SURFACE_REGISTRY,
+	overrideReviewerRegistry: DEFAULT_OVERRIDE_REVIEWER_REGISTRY,
 	policyChain: DEFAULT_POLICY_CHAIN,
 	reviewPolicy: DEFAULT_REVIEW_POLICY,
 	evidencePolicy: DEFAULT_EVIDENCE_POLICY,
