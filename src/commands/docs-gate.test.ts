@@ -1,3 +1,4 @@
+import { execFileSync } from "node:child_process";
 import { mkdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { afterEach, describe, expect, it, vi } from "vitest";
@@ -874,8 +875,64 @@ describe("docs-gate command", () => {
 		).toBe(false);
 	});
 
-	it("parses quoted activeProvider declarations when checking workflow policy conflicts", () => {
+	it("uses trusted base refs to detect committed branch changes", () => {
 		const root = join(process.cwd(), "artifacts", "docs-gate-test-21");
+		roots.push(root);
+		const gitEnv = { ...process.env };
+		gitEnv.GIT_INDEX_FILE = undefined;
+		gitEnv.GIT_DIR = undefined;
+		gitEnv.GIT_WORK_TREE = undefined;
+		gitEnv.GIT_PREFIX = undefined;
+		createContractWithDocsGate(root, {
+			enabled: true,
+			mode: "required",
+			rules: [
+				{
+					ruleId: "cli-surface-docs",
+					when: { categories: ["cli_surface"] },
+					requireDocs: ["README.md"],
+					severity: "error",
+				},
+			],
+		});
+
+		execFileSync("git", ["init", "-b", "main"], { cwd: root, env: gitEnv });
+		execFileSync("git", ["config", "user.email", "codex@example.com"], {
+			cwd: root,
+			env: gitEnv,
+		});
+		execFileSync("git", ["config", "user.name", "Codex"], {
+			cwd: root,
+			env: gitEnv,
+		});
+		execFileSync("git", ["add", "-f", "."], { cwd: root, env: gitEnv });
+		execFileSync("git", ["commit", "-m", "base"], { cwd: root, env: gitEnv });
+		const baseSha = execFileSync("git", ["rev-parse", "HEAD"], {
+			cwd: root,
+			encoding: "utf-8",
+			env: gitEnv,
+		}).trim();
+
+		write(join(root, "src/cli.ts"), "export const changed = true;\n");
+		execFileSync("git", ["add", "src/cli.ts"], { cwd: root, env: gitEnv });
+		execFileSync("git", ["commit", "-m", "feature"], {
+			cwd: root,
+			env: gitEnv,
+		});
+
+		const result = runDocsGate({
+			repoRoot: root,
+			mode: "required",
+			trustedBaseRef: baseSha,
+		});
+
+		expect(result.report.changed_files).toContain("src/cli.ts");
+		expect(result.report.categories).toContain("cli_surface");
+		expect(result.report.outcome).toBe("drift_detected");
+	});
+
+	it("parses quoted activeProvider declarations when checking workflow policy conflicts", () => {
+		const root = join(process.cwd(), "artifacts", "docs-gate-test-22");
 		roots.push(root);
 		createContractWithDocsGate(root, {
 			enabled: true,

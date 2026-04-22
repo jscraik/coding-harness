@@ -1,4 +1,5 @@
 import { describe, expect, it } from "vitest";
+import { NORTH_STAR_DECISION_QUESTION_SPECS } from "./types.js";
 import { ValidationErrorCode, validateContract } from "./validator.js";
 
 describe("validateContract", () => {
@@ -20,6 +21,79 @@ describe("validateContract", () => {
 		const result = validateContract({ version: "1.0" });
 		expect(result.success).toBe(true);
 		expect(result.data?.riskTierRules).toEqual({});
+	});
+
+	it("accepts canonical north-star contract surfaces for version 1.6+", () => {
+		const result = validateContract({
+			version: "1.6.0",
+			northStar: {
+				mission:
+					"Example repo exists to reduce manual release overhead while keeping PR throughput high.",
+				primaryMetric: "pr_lead_time",
+				primaryBottleneck: "review_rework_loop",
+				autonomyBoundary:
+					"Automate low and medium-risk changes with deterministic evidence and explicit rollback.",
+				safetyFloor: [
+					"deterministic evidence over intuition",
+					"strict current-head SHA discipline",
+				],
+				nonGoals: ["feature count without throughput impact"],
+				decisionQuestions: NORTH_STAR_DECISION_QUESTION_SPECS.map(
+					(question) => ({
+						id: question.id,
+						prompt: question.prompt,
+					}),
+				),
+			},
+			productSurface: {
+				surfaces: [
+					{
+						surfaceId: "review-gate",
+						surfaceType: "command",
+						class: "core",
+						owner: "workflow",
+						northStarContribution:
+							"Ensures merge-readiness decisions protect throughput outcomes",
+						manualGlueReductionClaim:
+							"Automates repeated policy checks in review loops",
+						reliabilityContribution:
+							"Applies the same decision criteria on every run",
+						evidenceReference: "artifacts/north-star/review-gate.json",
+						ownedPaths: ["src/commands/review-gate.ts"],
+						lastReviewedAt: "2026-04-22",
+					},
+				],
+			},
+			overrideReviewerRegistry: {
+				trustedReviewers: [
+					{
+						reviewerId: "project-maintainers",
+						reviewerType: "team",
+						signatureRef: "refs/reviewers/project-maintainers",
+						displayName: "Project Maintainers",
+						status: "active",
+					},
+				],
+			},
+		});
+		expect(result.success).toBe(true);
+		expect(result.data?.northStar?.primaryMetric).toBe("pr_lead_time");
+		expect(result.data?.productSurface?.surfaces).toHaveLength(1);
+		expect(
+			result.data?.overrideReviewerRegistry?.trustedReviewers,
+		).toHaveLength(1);
+	});
+
+	it("requires north-star contract surfaces from version 1.6+", () => {
+		const result = validateContract({ version: "1.6.0" });
+		expect(result.success).toBe(false);
+		expect(result.errors.map((error) => error.path)).toEqual(
+			expect.arrayContaining([
+				"northStar",
+				"productSurface",
+				"overrideReviewerRegistry",
+			]),
+		);
 	});
 
 	it("accepts blastRadiusRules and blastRadiusRulesMode", () => {

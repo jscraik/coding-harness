@@ -1032,14 +1032,55 @@ function resolveChangedFiles(
 	}
 
 	try {
-		const trackedOutput = execFileSync(
-			"git",
-			["-C", repoRoot, "diff", "--name-only", "--diff-filter=ACMR", "HEAD"],
-			{
+		const trackedDiffArgs = [
+			"-C",
+			repoRoot,
+			"diff",
+			"--name-only",
+			"--diff-filter=ACMR",
+		] as const;
+		const baseRefCandidates = [
+			options.mergeQueueBaseSha,
+			options.trustedBaseRef,
+			"origin/main",
+			"origin/master",
+		].filter(
+			(value): value is string =>
+				typeof value === "string" && value.trim().length > 0,
+		);
+		let trackedOutput: string | undefined;
+		for (const baseRef of baseRefCandidates) {
+			try {
+				const mergeBase = execFileSync(
+					"git",
+					["-C", repoRoot, "merge-base", baseRef, "HEAD"],
+					{
+						encoding: "utf-8",
+						stdio: ["ignore", "pipe", "pipe"],
+					},
+				).trim();
+				if (mergeBase.length === 0) {
+					continue;
+				}
+				trackedOutput = execFileSync(
+					"git",
+					[...trackedDiffArgs, `${mergeBase}...HEAD`],
+					{
+						encoding: "utf-8",
+						stdio: ["ignore", "pipe", "pipe"],
+					},
+				);
+				break;
+			} catch {
+				// Try the next base candidate.
+			}
+		}
+		if (trackedOutput === undefined) {
+			trackedOutput = execFileSync("git", [...trackedDiffArgs, "HEAD"], {
 				encoding: "utf-8",
 				stdio: ["ignore", "pipe", "pipe"],
-			},
-		);
+			});
+		}
 		const untrackedOutput = execFileSync(
 			"git",
 			["-C", repoRoot, "ls-files", "--others", "--exclude-standard"],
@@ -1059,7 +1100,7 @@ function resolveChangedFiles(
 		return {
 			changedFiles: [],
 			source: "full_repo_fallback",
-			error: `Unable to resolve changed files from git diff: ${sanitizeError(error)}`,
+			error: `Unable to resolve changed files from git history: ${sanitizeError(error)}`,
 		};
 	}
 }

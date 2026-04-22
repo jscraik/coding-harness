@@ -864,6 +864,8 @@ export const COMMAND_SPECS: CommandSpec[] = [
 				changedOnly: args.includes("--changed-only"),
 				strict: args.includes("--strict"),
 				fast: args.includes("--fast"),
+				projectGovernance: args.includes("--project-governance"),
+				workspaceGovernance: args.includes("--workspace-governance"),
 				json: args.includes("--json"),
 				...(resumeFromFlag.value ? { resumeFrom: resumeFromFlag.value } : {}),
 				...(repoRootFlag.value ? { repoRoot: repoRootFlag.value } : {}),
