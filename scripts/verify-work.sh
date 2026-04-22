@@ -28,6 +28,7 @@ json_mode=0
 repo_root=""
 resume_from=""
 normalized_manifest_path=""
+normalized_manifest_source=""
 lane_fast_mode_json="false"
 lane_changed_only_json="true"
 lane_strict_mode_json="false"
@@ -140,6 +141,7 @@ has_package_script() {
 prepare_normalized_required_checks_manifest() {
 	local manifest_path="$repo_root/.harness/ci-required-checks.json"
 	normalized_manifest_path=""
+	normalized_manifest_source=""
 	if [[ ! -f "$manifest_path" ]]; then
 		return 0
 	fi
@@ -154,6 +156,7 @@ prepare_normalized_required_checks_manifest() {
 	if [[ -f "$dist_cli_path" ]] && command -v node >/dev/null 2>&1; then
 		if node "$dist_cli_path" contract normalize-required-checks --manifest "$manifest_path" > "$normalized_tmp"; then
 			normalized_manifest_path="$normalized_tmp"
+			normalized_manifest_source="normalized"
 			return 0
 		fi
 		echo "[verify-work] required checks normalization via dist CLI failed, trying fallback runners" >&2
@@ -162,6 +165,7 @@ prepare_normalized_required_checks_manifest() {
 	if [[ -f "$repo_root/src/cli.ts" ]] && pnpm_bin="$(command -v pnpm 2>/dev/null)"; then
 		if "$pnpm_bin" exec tsx "$repo_root/src/cli.ts" contract normalize-required-checks --manifest "$manifest_path" > "$normalized_tmp"; then
 			normalized_manifest_path="$normalized_tmp"
+			normalized_manifest_source="normalized"
 			return 0
 		fi
 		echo "[verify-work] required checks normalization via repo runner failed, trying fallback runners" >&2
@@ -171,6 +175,7 @@ prepare_normalized_required_checks_manifest() {
 	if [[ -n "$mise_harness_bin" && -x "$mise_harness_bin" ]]; then
 		if "$mise_harness_bin" contract normalize-required-checks --manifest "$manifest_path" > "$normalized_tmp"; then
 			normalized_manifest_path="$normalized_tmp"
+			normalized_manifest_source="normalized"
 			return 0
 		fi
 		echo "[verify-work] required checks normalization via mise harness failed, trying PATH harness" >&2
@@ -180,6 +185,7 @@ prepare_normalized_required_checks_manifest() {
 	if [[ -n "$harness_bin" ]]; then
 		if "$harness_bin" contract normalize-required-checks --manifest "$manifest_path" > "$normalized_tmp"; then
 			normalized_manifest_path="$normalized_tmp"
+			normalized_manifest_source="normalized"
 			return 0
 		fi
 	fi
@@ -187,6 +193,7 @@ prepare_normalized_required_checks_manifest() {
 	if jq -e 'type == "object"' "$manifest_path" >/dev/null 2>&1; then
 		cp "$manifest_path" "$normalized_tmp"
 		normalized_manifest_path="$normalized_tmp"
+		normalized_manifest_source="raw-fallback"
 		echo "[verify-work] required checks normalization unavailable; using raw manifest fallback" >&2
 		return 0
 	fi
@@ -285,31 +292,49 @@ run_ci_check_alignment_gate() {
 	fi
 
 	local provider
-	provider="$(jq -r '.activeProvider // ""' "$normalized_manifest_path")"
+	provider="$(
+		jq -r '
+			.activeProvider
+			// (.requiredChecks[]? | (.provider // .sourceAppSlug // .sourceAppId // empty))
+			// ""
+		' "$normalized_manifest_path" | head -n 1
+	)"
+	if [[ -z "$provider" ]]; then
+		echo "[verify-work] ci-check-alignment: active provider identity is required in required checks manifest"
+		echo "[verify-work] ci-check-alignment: blocking due to missing canonical provider identity"
+		return 1
+	fi
+
 	local github_check_names
-	github_check_names="$(jq -r '.gates[]?.githubCheckName // empty' "$normalized_manifest_path")"
+	if [[ "$normalized_manifest_source" == "raw-fallback" ]]; then
+		github_check_names="$(jq -r --arg provider "$provider" '.requiredChecks[]? | select((.provider // .sourceAppSlug // .sourceAppId // "") == $provider) | .githubCheckName // empty' "$normalized_manifest_path")"
+	else
+		github_check_names="$(jq -r --arg provider "$provider" '.gates[]? | select((.provider // "") == $provider) | .githubCheckName // empty' "$normalized_manifest_path")"
+	fi
 
 	if [[ -z "$github_check_names" ]]; then
-		echo "[verify-work] ci-check-alignment: no githubCheckName values found"
-		if [[ "$strict_mode" -eq 1 ]]; then
-			return 1
-		fi
-		return 0
+		echo "[verify-work] ci-check-alignment: no githubCheckName values found for active provider"
+		echo "[verify-work] ci-check-alignment: blocking due to missing canonical check identity"
+		return 1
 	fi
 
 	if [[ "$provider" == "circleci" ]]; then
 		local suspicious=()
 		local circleci_check_names
-		circleci_check_names="$(jq -r '.gates[]? | select((.provider // "") == "circleci") | .githubCheckName // empty' "$normalized_manifest_path")"
-			while IFS= read -r name; do
-				case "$name" in
-					lint|typecheck|test|audit|check|build|memory|dependency-scan|orb-pinning|docs-gate|linear-gate|risk-policy-gate|consistency-drift-health|pr-template)
-						suspicious+=("$name")
-						;;
-					*)
-						;;
-				esac
-			done <<< "$circleci_check_names"
+		if [[ "$normalized_manifest_source" == "raw-fallback" ]]; then
+			circleci_check_names="$(jq -r '.requiredChecks[]? | select((.provider // .sourceAppSlug // .sourceAppId // "") == "circleci") | .githubCheckName // empty' "$normalized_manifest_path")"
+		else
+			circleci_check_names="$(jq -r '.gates[]? | select((.provider // "") == "circleci") | .githubCheckName // empty' "$normalized_manifest_path")"
+		fi
+		while IFS= read -r name; do
+			case "$name" in
+				lint|typecheck|test|audit|check|build|memory|dependency-scan|orb-pinning|docs-gate|linear-gate|risk-policy-gate|consistency-drift-health|pr-template)
+					suspicious+=("$name")
+					;;
+				*)
+					;;
+			esac
+		done <<< "$circleci_check_names"
 
 		if (( ${#suspicious[@]} > 0 )); then
 			printf '[verify-work] ci-check-alignment: CircleCI job-like githubCheckName values detected: %s\n' "${suspicious[*]}"

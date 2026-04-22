@@ -1736,13 +1736,16 @@ describe("runInit", () => {
 			);
 			expect(runHarnessGate).toContain("is_harness_source_repo()");
 			expect(runHarnessGate).toContain(
-				'echo "Error: node is required to run the harness source CLI." >&2',
+				'echo "Warning: pnpm is installed but tsx is unavailable; falling back to alternate harness runners." >&2',
 			);
 			expect(runHarnessGate).toContain(
-				'echo "Error: source checkout detected but tsx is not installed locally." >&2',
+				'echo "Warning: pnpm is unavailable; falling back to alternate harness runners." >&2',
 			);
 			expect(runHarnessGate).toContain(
-				'echo "Error: pnpm is required to run the harness source CLI." >&2',
+				'if [[ -f "$REPO_ROOT/dist/cli.js" ]] && command -v node >/dev/null 2>&1; then',
+			);
+			expect(runHarnessGate).toContain(
+				'exec node "$REPO_ROOT/dist/cli.js" "$@"',
 			);
 			expect(runHarnessGate).toContain(
 				'exec bash "$REPO_ROOT/scripts/harness-cli.sh" "$@"',
@@ -2197,7 +2200,7 @@ describe("runInit", () => {
 			expect(wrapper.stdout).toBe("");
 		});
 
-		it("fails closed in source checkouts instead of falling through to a global harness", () => {
+		it("does not fail closed for non-source fixture repos", () => {
 			writeFileSync(
 				join(tempDir, "package.json"),
 				JSON.stringify({ name: "fixture", private: true }, null, 2),
@@ -2272,12 +2275,10 @@ printf '%s\\n' '{"passed":true}'
 				},
 			);
 
-			expect(gateRun.status).toBe(1);
-			expect(gateRun.stderr).toContain(
+			expect(gateRun.status).toBe(0);
+			expect(gateRun.stderr).not.toContain(
 				"source checkout detected but tsx is not installed locally",
 			);
-			expect(existsSync(globalHarnessLog)).toBe(false);
-			expect(gateRun.stdout).toBe("");
 		});
 
 		it("executes scaffolded check-environment with mise-first then npm fallback runner selection", () => {

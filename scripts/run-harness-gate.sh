@@ -25,22 +25,18 @@ is_harness_source_repo() {
 }
 
 if is_harness_source_repo; then
-	if ! command -v node >/dev/null 2>&1; then
-		echo "Error: node is required to run the harness source CLI." >&2
-		echo "Install Node.js and retry." >&2
-		exit 1
+	if command -v pnpm >/dev/null 2>&1; then
+		if pnpm exec -- tsx --version >/dev/null 2>&1; then
+			exec pnpm exec tsx "$REPO_ROOT/src/cli.ts" "$@"
+		fi
+		echo "Warning: pnpm is installed but tsx is unavailable; falling back to alternate harness runners." >&2
+	else
+		echo "Warning: pnpm is unavailable; falling back to alternate harness runners." >&2
 	fi
-	if ! command -v pnpm >/dev/null 2>&1; then
-		echo "Error: pnpm is required to run the harness source CLI." >&2
-		echo "Install pnpm and retry." >&2
-		exit 1
-	fi
-	if [[ ! -x "$REPO_ROOT/node_modules/.bin/tsx" ]]; then
-		echo "Error: source checkout detected but tsx is not installed locally." >&2
-		echo "Run 'pnpm install' in this repository, then retry." >&2
-		exit 1
-	fi
-	exec pnpm exec tsx "$REPO_ROOT/src/cli.ts" "$@"
+fi
+
+if [[ -f "$REPO_ROOT/dist/cli.js" ]] && command -v node >/dev/null 2>&1; then
+	exec node "$REPO_ROOT/dist/cli.js" "$@"
 fi
 
 if [[ -f "$REPO_ROOT/scripts/harness-cli.sh" && -r "$REPO_ROOT/scripts/harness-cli.sh" ]]; then
