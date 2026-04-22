@@ -28,8 +28,10 @@ if is_harness_source_repo; then
 			tsx_available=true
 			if pnpm exec tsx "$REPO_ROOT/src/cli.ts" "$@"; then
 				exit 0
+			else
+				runner_status=$?
+				exit "$runner_status"
 			fi
-			echo "Warning: pnpm tsx runner failed; falling back to alternate harness runners." >&2
 		fi
 		if [[ "$tsx_available" == false ]]; then
 			echo "Warning: pnpm is installed but tsx is unavailable; falling back to alternate harness runners." >&2
