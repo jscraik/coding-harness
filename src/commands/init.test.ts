@@ -2477,13 +2477,13 @@ exit 1
 				return output;
 			};
 
-			expect(runNewTask("HEAD~1", "commit-ish-head")).toContain(
-				"[new-task] branch: codex/commit-ish-head",
+			expect(runNewTask("HEAD~1", "jsc-101-commit-ish-head")).toContain(
+				"[new-task] branch: codex/jsc-101-commit-ish-head",
 			);
-			expect(runNewTask("v0.0.1", "commit-ish-tag")).toContain(
-				"[new-task] branch: codex/commit-ish-tag",
+			expect(runNewTask("v0.0.1", "jsc-102-commit-ish-tag")).toContain(
+				"[new-task] branch: codex/jsc-102-commit-ish-tag",
 			);
-			expect(runNewTask(firstSha, "commit-ish-sha")).toContain(
+			expect(runNewTask(firstSha, "jsc-103-commit-ish-sha")).toContain(
 				`[new-task] base: ${firstSha}`,
 			);
 
@@ -2498,7 +2498,8 @@ exit 1
 				);
 				expect(runGit(["push", "-u", "upstream", "main"]).status).toBe(0);
 
-				const upstreamWorktreePath = join(tempDir, "wt-upstream-main");
+				const upstreamSlug = "jsc-104-upstream-main";
+				const upstreamWorktreePath = join(tempDir, `wt-${upstreamSlug}`);
 				const upstreamRun = spawnSync(
 					"bash",
 					[
@@ -2507,7 +2508,7 @@ exit 1
 						"upstream/main",
 						"--path",
 						upstreamWorktreePath,
-						"upstream-main",
+						upstreamSlug,
 					],
 					{
 						cwd: outsideRepoCwd,

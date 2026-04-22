@@ -40,16 +40,6 @@ function createSpawnResult(stdout: string): SpawnSyncReturns<string> {
 	} as SpawnSyncReturns<string>;
 }
 
-function buildNorthStarCompliantPrBody(): string {
-	return [
-		"- Plan IDs: `feat-context-integrity-control-plane`",
-		"- `lead_time_path`: yes. Evidence: [Lead time status](docs/roadmap/agent-first-status.md)",
-		"- `manual_glue`: yes. Evidence: removes manual coordinator steps via deterministic gates. [North star contract](docs/roadmap/north-star.md)",
-		"- `agent_reliability`: improved via deterministic gates. Evidence: [Review gate artifact](artifacts/reviews/review-gate.md)",
-		"- `safety_floor`: preserved strict SHA + rollback safeguards. Evidence: [/Users/jamiecraik/dev/coding-harness/src/commands/review-gate.ts:1]",
-	].join("\n");
-}
-
 describe("agent-first throughput integration", () => {
 	let tempDir: string;
 	let findingsPath: string;
@@ -134,7 +124,7 @@ describe("agent-first throughput integration", () => {
 		const mockGetPullRequest = vi.fn().mockResolvedValue({
 			number: 1,
 			title: "Agent-first throughput remediation loop",
-			body: buildNorthStarCompliantPrBody(),
+			body: "- Plan IDs: `feat-context-integrity-control-plane`",
 			user: { login: "coding-actor" },
 			head: { sha: headSha, ref: "feature/throughput" },
 		});
@@ -208,7 +198,7 @@ describe("agent-first throughput integration", () => {
 		const mockGetPullRequest = vi.fn().mockResolvedValue({
 			number: 1,
 			title: "Agent-first throughput remediation loop",
-			body: buildNorthStarCompliantPrBody(),
+			body: "- Plan IDs: `feat-context-integrity-control-plane`",
 			user: { login: "coding-actor" },
 			head: { sha: headSha, ref: "feature/throughput" },
 		});
@@ -235,7 +225,7 @@ describe("agent-first throughput integration", () => {
 			expect(reviewResult.output.verified).toBe(false);
 			expect(reviewResult.output.policy_gate_status).toBe("fail");
 			expect(reviewResult.output.blockers).toContain(
-				"review-check check did not pass (conclusion: failure)",
+				"risk-policy-gate check did not pass (conclusion: failure)",
 			);
 		}
 	});
@@ -376,7 +366,7 @@ describe("agent-first throughput integration", () => {
 		const mockGetPullRequest = vi.fn().mockResolvedValue({
 			number: 1,
 			title: "Agent-first throughput performance loop",
-			body: buildNorthStarCompliantPrBody(),
+			body: "- Plan IDs: `feat-context-integrity-control-plane`",
 			user: { login: "coding-actor" },
 			head: { sha: headSha, ref: "feature/perf" },
 		});
