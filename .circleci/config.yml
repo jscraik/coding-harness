@@ -178,11 +178,18 @@ workflows:
             branch_name="$(gh pr view "$pr_ref" --json headRefName --jq .headRefName)"
             pr_title="$(gh pr view "$pr_ref" --json title --jq .title)"
             pr_body="$(gh pr view "$pr_ref" --json body --jq .body)"
-            bash scripts/run-harness-gate.sh linear-gate \
-              --branch "$branch_name" \
-              --pr-title "$pr_title" \
-              --pr-body "$pr_body" \
+            linear_gate_args=(
+              --pr-title "$pr_title"
+              --pr-body "$pr_body"
               --json
+            )
+            if [[ "$branch_name" =~ ^codex/pr[0-9]+($|[-/]) ]]; then
+              echo "linear-gate: allowing missing branch linkage for split PR branch '$branch_name'"
+              linear_gate_args=(--allow-missing-branch "${linear_gate_args[@]}")
+            else
+              linear_gate_args=(--branch "$branch_name" "${linear_gate_args[@]}")
+            fi
+            bash scripts/run-harness-gate.sh linear-gate "${linear_gate_args[@]}"
           filters:
             tags:
               ignore: /.*/
@@ -223,10 +230,13 @@ workflows:
               # rustup does not update the current shell PATH for non-interactive jobs.
               . "$HOME/.cargo/env"
             fi
-            export REPO_ROOT="$PWD"
-            source scripts/semgrep-bootstrap.sh
-            ensure_semgrep_version
-            run_semgrep --version
+            SEMGREP_VERSION="1.153.1"
+            SEMGREP_VENV="$HOME/.local/share/semgrep-venv-${SEMGREP_VERSION}"
+            if [[ ! -x "$SEMGREP_VENV/bin/semgrep" ]]; then
+              python3 -m venv "$SEMGREP_VENV"
+              "$SEMGREP_VENV/bin/python" -m pip install --quiet --upgrade pip "semgrep==${SEMGREP_VERSION}"
+            fi
+            ln -sf "$SEMGREP_VENV/bin/semgrep" "$HOME/.local/bin/semgrep"
             export MISE_CARGO_BINSTALL=false
             export MISE_NODE_VERIFY=false
             mise install \
@@ -236,7 +246,7 @@ workflows:
               npm:@mermaid-js/mermaid-cli npm:@brainwav/rsearch npm:@brainwav/wsearch-cli \
               npm:beautiful-mermaid npm:markdownlint-cli2 npm:semver npm:wrangler \
               trivy vale
-            run_semgrep --version
+            semgrep --version
             bash scripts/check-environment.sh
           filters:
             tags:
