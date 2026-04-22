@@ -96,6 +96,20 @@ describe("validateContract", () => {
 		);
 	});
 
+	it("rejects empty productSurface registry when provided", () => {
+		const result = validateContract({
+			version: "1.6.0",
+			productSurface: {
+				surfaces: [],
+			},
+		});
+
+		expect(result.success).toBe(false);
+		expect(result.errors.some((error) => error.path === "productSurface")).toBe(
+			true,
+		);
+	});
+
 	it("accepts blastRadiusRules and blastRadiusRulesMode", () => {
 		const result = validateContract({
 			version: "1.0",

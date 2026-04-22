@@ -244,11 +244,10 @@ export const COMMAND_SPECS: CommandSpec[] = [
 			if (commentArg) options.comment = commentArg;
 			const branchArg = getFlagValue(args, branchIndex);
 			if (branchArg !== undefined) {
-				if (branchArg.trim().length === 0) {
-					console.error("Error: --branch requires a non-empty value");
-					return 2;
+				const trimmedBranch = branchArg.trim();
+				if (trimmedBranch.length > 0) {
+					options.branch = branchArg;
 				}
-				options.branch = branchArg;
 			}
 			const workspaceArg = getFlagValue(args, workspaceIndex);
 			if (workspaceArg) options.workspace = workspaceArg;
@@ -292,11 +291,10 @@ export const COMMAND_SPECS: CommandSpec[] = [
 			if (repoRootArg) options.repoRoot = repoRootArg;
 			const branchArg = getFlagValue(args, branchIndex);
 			if (branchArg !== undefined) {
-				if (branchArg.trim().length === 0) {
-					console.error("Error: --branch requires a non-empty value");
-					return 2;
+				const trimmedBranch = branchArg.trim();
+				if (trimmedBranch.length > 0) {
+					options.branch = branchArg;
 				}
-				options.branch = branchArg;
 			}
 			const prTitleArg = getFlagValue(args, prTitleIndex);
 			if (prTitleArg !== undefined) options.prTitle = prTitleArg;

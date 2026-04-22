@@ -185,7 +185,7 @@ workflows:
             )
             if [[ "$branch_name" =~ ^codex/pr[0-9]+($|[-/]) ]]; then
               echo "linear-gate: allowing missing branch linkage for split PR branch '$branch_name'"
-              linear_gate_args=(--allow-missing-branch --branch "" "${linear_gate_args[@]}")
+              linear_gate_args=(--allow-missing-branch "${linear_gate_args[@]}")
             else
               linear_gate_args=(--branch "$branch_name" "${linear_gate_args[@]}")
             fi

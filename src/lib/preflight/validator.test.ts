@@ -260,7 +260,7 @@ describe("runPreflightGate", () => {
 		).toBe(true);
 	});
 
-	it("skips owned-path coverage enforcement when productSurface registry is empty", async () => {
+	it("fails when productSurface registry is empty", async () => {
 		writeNorthStarContract({
 			emptySurfaceRegistry: true,
 		});
@@ -279,13 +279,13 @@ describe("runPreflightGate", () => {
 				"forbidden-patterns",
 			],
 		});
-		const admissionCheck = result.checks.find(
-			(check) => check.id === "admission-declaration",
+		const contractLoadCheck = result.checks.find(
+			(check) => check.id === "contract-load",
 		);
 
-		expect(result.passed).toBe(true);
-		expect(admissionCheck?.passed).toBe(true);
-		expect(admissionCheck?.message).not.toContain("surface_registration_gap");
+		expect(result.passed).toBe(false);
+		expect(contractLoadCheck?.passed).toBe(false);
+		expect(contractLoadCheck?.message).toContain("Invalid contract");
 	});
 
 	it("does not require admission when northStar is only present via defaults", async () => {

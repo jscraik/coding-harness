@@ -283,7 +283,9 @@ function extractDeclaredPathToken(value: string): string | undefined {
 	const normalized = token
 		.trim()
 		.replace(/^<|>$/g, "")
-		.replace(/^[\s(]+|[\s).,;]+$/g, "");
+		.replace(/^[\s(]+|[\s).,;]+$/g, "")
+		.replace(/^\.\/+/, "")
+		.replace(/#.*$/, "");
 	return normalized.length > 0 ? normalized : undefined;
 }
 
