@@ -6,6 +6,7 @@ if [[ -z "${REPO_ROOT:-}" ]]; then
 fi
 
 SEMGREP_VERSION="${SEMGREP_VERSION:-1.153.1}"
+SEMGREP_PIP_SPEC="${SEMGREP_PIP_SPEC:-semgrep>=${SEMGREP_VERSION},<2.0.0}"
 DEFAULT_SEMGREP_STATE_ROOT="$REPO_ROOT/.git/semgrep"
 if git_semgrep_state_root="$(git -C "$REPO_ROOT" rev-parse --git-path semgrep 2>/dev/null)"; then
   if [[ "$git_semgrep_state_root" != /* ]]; then
@@ -69,7 +70,17 @@ semgrep_version_usable() {
     return 0
   fi
   # Some Python runtimes cannot resolve older Semgrep pins and install the
-  # nearest compatible newer release instead. Accept >= requested version.
+  # nearest compatible newer release instead. Accept newer patch/minor releases
+  # within the same major line.
+  local requested_major detected_major
+  requested_major="${SEMGREP_VERSION%%.*}"
+  detected_major="${detected_version%%.*}"
+  if [[ -z "$requested_major" || -z "$detected_major" ]]; then
+    return 1
+  fi
+  if [[ "$requested_major" != "$detected_major" ]]; then
+    return 1
+  fi
   [[ "$(printf '%s\n%s\n' "$SEMGREP_VERSION" "$detected_version" | sort -V | head -n 1)" == "$SEMGREP_VERSION" ]]
 }
 
@@ -104,7 +115,7 @@ install_semgrep_with_venv() {
   if ! python3 -m venv "$SEMGREP_VENV_DIR" >/dev/null 2>&1; then
     return 1
   fi
-  if ! "$SEMGREP_PYTHON" -m pip install --quiet --upgrade pip "semgrep==${SEMGREP_VERSION}"; then
+  if ! "$SEMGREP_PYTHON" -m pip install --quiet --upgrade pip "$SEMGREP_PIP_SPEC"; then
     return 1
   fi
   semgrep_binary_usable && semgrep_version_usable
@@ -118,7 +129,7 @@ install_semgrep_with_site_packages() {
   rm -f "$SEMGREP_BIN"
   rm -rf "$SEMGREP_SITE_PACKAGES_DIR"
   mkdir -p "$SEMGREP_SITE_PACKAGES_DIR"
-  if ! python3 -m pip install --quiet --upgrade --target "$SEMGREP_SITE_PACKAGES_DIR" "semgrep==${SEMGREP_VERSION}"; then
+  if ! python3 -m pip install --quiet --upgrade --target "$SEMGREP_SITE_PACKAGES_DIR" "$SEMGREP_PIP_SPEC"; then
     return 1
   fi
   semgrep_version_usable

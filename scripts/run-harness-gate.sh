@@ -26,10 +26,17 @@ is_harness_source_repo() {
 
 if is_harness_source_repo; then
 	if command -v pnpm >/dev/null 2>&1; then
+		tsx_available=false
 		if pnpm exec -- tsx --version >/dev/null 2>&1; then
-			exec pnpm exec tsx "$REPO_ROOT/src/cli.ts" "$@"
+			tsx_available=true
+			if pnpm exec tsx "$REPO_ROOT/src/cli.ts" "$@"; then
+				exit 0
+			fi
+			echo "Warning: pnpm tsx runner failed; falling back to alternate harness runners." >&2
 		fi
-		echo "Warning: pnpm is installed but tsx is unavailable; falling back to alternate harness runners." >&2
+		if [[ "$tsx_available" == false ]]; then
+			echo "Warning: pnpm is installed but tsx is unavailable; falling back to alternate harness runners." >&2
+		fi
 	else
 		echo "Warning: pnpm is unavailable; falling back to alternate harness runners." >&2
 	fi
@@ -39,13 +46,15 @@ if [[ -f "$REPO_ROOT/dist/cli.js" ]] && command -v node >/dev/null 2>&1; then
 	exec node "$REPO_ROOT/dist/cli.js" "$@"
 fi
 
-if [[ -f "$REPO_ROOT/scripts/harness-cli.sh" && -r "$REPO_ROOT/scripts/harness-cli.sh" ]]; then
+if [[ -x "$REPO_ROOT/scripts/harness-cli.sh" && -f "$REPO_ROOT/node_modules/@brainwav/coding-harness/dist/cli.js" ]]; then
 	exec bash "$REPO_ROOT/scripts/harness-cli.sh" "$@"
 fi
 
-mise_harness_bin="$(mise which harness 2>/dev/null || true)"
-if [[ -n "$mise_harness_bin" && -x "$mise_harness_bin" ]]; then
-	exec "$mise_harness_bin" "$@"
+if command -v mise >/dev/null 2>&1; then
+	mise_harness_bin="$(mise which harness 2>/dev/null || true)"
+	if [[ -n "$mise_harness_bin" && -x "$mise_harness_bin" ]]; then
+		exec "$mise_harness_bin" "$@"
+	fi
 fi
 
 if command -v harness >/dev/null 2>&1; then
