@@ -345,7 +345,7 @@ function extractDeclaredActiveProvider(content: string): string | undefined {
 			continue;
 		}
 		const match = normalizedLine.match(
-			/\b(?:active(?:\s+ci)?\s+provider|activeprovider)\b\s*(?::|=|is)\s*`?([a-z0-9 _-]+)`?/i,
+			/(?:^|[{\s])(?:"(?:activeprovider|active(?:\s+ci)?\s+provider)"|\b(?:active(?:\s+ci)?\s+provider|activeprovider)\b)\s*(?::|=|is)\s*(?:["'`])?([a-z0-9 _-]+)(?:["'`])?/i,
 		);
 		if (!match?.[1]) {
 			continue;

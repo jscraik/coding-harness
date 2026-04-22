@@ -873,4 +873,55 @@ describe("docs-gate command", () => {
 			),
 		).toBe(false);
 	});
+
+	it("parses quoted activeProvider declarations when checking workflow policy conflicts", () => {
+		const root = join(process.cwd(), "artifacts", "docs-gate-test-21");
+		roots.push(root);
+		createContractWithDocsGate(root, {
+			enabled: true,
+			mode: "required",
+			rules: [],
+		});
+
+		const contractPath = join(root, "harness.contract.json");
+		const contract = JSON.parse(readFileSync(contractPath, "utf-8")) as {
+			ciProviderPolicy?: {
+				activeProvider?: string;
+				migrationStage?: string;
+				mode?: string;
+			};
+		};
+		contract.ciProviderPolicy = {
+			...DEFAULT_CI_PROVIDER_POLICY,
+			activeProvider: "circleci",
+			migrationStage: "circleci-only",
+			mode: "required",
+		};
+		write(contractPath, JSON.stringify(contract, null, 2));
+		write(
+			join(root, "docs/agents/17-ci-required-checks.md"),
+			[
+				"# CI Required Checks",
+				"```json",
+				'{ "activeProvider": "github-actions" }',
+				"```",
+			].join("\n"),
+		);
+
+		const result = runDocsGate({
+			repoRoot: root,
+			mode: "required",
+			changedFiles: ["docs/agents/17-ci-required-checks.md"],
+		});
+
+		expect(result.exitCode).toBe(12);
+		expect(result.report.outcome).toBe("trust_mismatch");
+		expect(
+			result.report.findings.some(
+				(finding) =>
+					finding.category === "workflow_policy_conflict" &&
+					finding.path === "docs/agents/17-ci-required-checks.md",
+			),
+		).toBe(true);
+	});
 });
