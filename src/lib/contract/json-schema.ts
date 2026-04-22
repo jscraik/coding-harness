@@ -14,12 +14,24 @@
  * - Each $defs block mirrors the isValid* guard functions in validator.ts
  */
 
-import { PREFLIGHT_POST_HOOK_IDS, PREFLIGHT_PRE_HOOK_IDS } from "./types.js";
-export { PREFLIGHT_POST_HOOK_IDS, PREFLIGHT_PRE_HOOK_IDS } from "./types.js";
+import {
+	NORTH_STAR_DECISION_QUESTION_SPECS,
+	NORTH_STAR_PRIMARY_BOTTLENECK,
+	NORTH_STAR_PRIMARY_METRIC,
+	PREFLIGHT_POST_HOOK_IDS,
+	PREFLIGHT_PRE_HOOK_IDS,
+} from "./types.js";
+export {
+	NORTH_STAR_DECISION_QUESTION_SPECS,
+	NORTH_STAR_PRIMARY_BOTTLENECK,
+	NORTH_STAR_PRIMARY_METRIC,
+	PREFLIGHT_POST_HOOK_IDS,
+	PREFLIGHT_PRE_HOOK_IDS,
+} from "./types.js";
 
 // ─── Schema version ───────────────────────────────────────────────────────────
 
-export const SCHEMA_VERSION = "1.5.0" as const;
+export const SCHEMA_VERSION = "1.6.0" as const;
 export const SCHEMA_ID =
 	`https://schema.brainwav.io/coding-harness/contract/v${SCHEMA_VERSION}.json` as const;
 
@@ -69,6 +81,19 @@ export const GATE_EXTENSION_HOOK_IDS = [
 export const RISK_TIERS = ["high", "medium", "low"] as const;
 export const POLICY_ACTIONS = ["allow", "block", "warn"] as const;
 export const GATE_VERDICTS = ["pass", "fail"] as const;
+export const PRODUCT_SURFACE_CLASSES = [
+	"core",
+	"adjacent",
+	"experimental",
+] as const;
+export const PRODUCT_SURFACE_TYPES = [
+	"command",
+	"document",
+	"policy",
+	"workflow",
+] as const;
+export const TRUSTED_REVIEWER_TYPES = ["user", "team", "service"] as const;
+export const TRUSTED_REVIEWER_STATUSES = ["active", "revoked"] as const;
 
 // ─── JSON Schema factory ──────────────────────────────────────────────────────
 
@@ -77,6 +102,58 @@ export const GATE_VERDICTS = ["pass", "fail"] as const;
  * The result is a plain object — serialize it to JSON for output.
  */
 export function buildContractJsonSchema(): Record<string, unknown> {
+	const loopStageContractSchema = {
+		type: "object",
+		required: [
+			"inputs",
+			"outputs",
+			"schema",
+			"failPolicy",
+			"if",
+			"permissions",
+			"timeoutMinutes",
+			"concurrency",
+		],
+		additionalProperties: false,
+		properties: {
+			inputs: {
+				type: "array",
+				minItems: 1,
+				items: { type: "string", minLength: 1 },
+			},
+			outputs: {
+				type: "array",
+				minItems: 1,
+				items: { type: "string", minLength: 1 },
+			},
+			schema: {
+				type: "string",
+				minLength: 1,
+			},
+			failPolicy: {
+				type: "string",
+				enum: ["fail_closed", "warn_only"],
+			},
+			if: {
+				type: "string",
+				minLength: 1,
+			},
+			permissions: {
+				type: "array",
+				minItems: 1,
+				items: { type: "string", minLength: 1 },
+			},
+			timeoutMinutes: {
+				type: "integer",
+				minimum: 1,
+			},
+			concurrency: {
+				type: "string",
+				minLength: 1,
+			},
+		},
+	} as const;
+
 	return {
 		$schema: "http://json-schema.org/draft-07/schema#",
 		$id: SCHEMA_ID,
@@ -85,17 +162,280 @@ export function buildContractJsonSchema(): Record<string, unknown> {
 			"The harness.contract.json file declares governance policy for a coding-harness managed project.",
 		type: "object",
 		required: ["version"],
+		anyOf: [
+			{
+				properties: {
+					version: {
+						type: "string",
+						pattern: "^(?:(?:0\\.[0-9]+)|(?:1\\.(?:[0-5])))(?:\\.[0-9]+)?$",
+					},
+				},
+				required: ["version"],
+			},
+			{
+				allOf: [
+					{
+						required: ["version"],
+					},
+					{
+						properties: {
+							version: {
+								type: "string",
+								pattern:
+									"^(?:(?:1\\.(?:[6-9]|[1-9][0-9]))|(?:[2-9][0-9]*\\.[0-9]+))(?:\\.[0-9]+)?$",
+							},
+						},
+					},
+					{
+						required: [
+							"northStar",
+							"productSurface",
+							"overrideReviewerRegistry",
+						],
+					},
+				],
+			},
+		],
 		additionalProperties: false,
 		properties: {
 			$schema: {
 				type: "string",
 				description: "JSON Schema reference URL for editor autocomplete.",
 			},
+			extends: {
+				description:
+					"Optional contract preset references. Supports string shorthand, structured sources, or arrays of either form.",
+				oneOf: [
+					{ type: "string", minLength: 1 },
+					{
+						type: "object",
+						required: ["source"],
+						additionalProperties: false,
+						properties: {
+							source: { type: "string", minLength: 1 },
+							arrays: {
+								type: "string",
+								enum: ["replace", "append", "prepend"],
+							},
+							integrity: {
+								type: "string",
+								pattern: "^sha256-.+",
+							},
+						},
+					},
+					{
+						type: "array",
+						minItems: 1,
+						items: {
+							oneOf: [
+								{ type: "string", minLength: 1 },
+								{
+									type: "object",
+									required: ["source"],
+									additionalProperties: false,
+									properties: {
+										source: { type: "string", minLength: 1 },
+										arrays: {
+											type: "string",
+											enum: ["replace", "append", "prepend"],
+										},
+										integrity: {
+											type: "string",
+											pattern: "^sha256-.+",
+										},
+									},
+								},
+							],
+						},
+					},
+				],
+			},
 			version: {
 				type: "string",
 				description:
-					'Contract schema version. Example: "1.5.0". Increment on breaking changes.',
-				examples: ["1.0", "1.5.0"],
+					'Contract schema version. Example: "1.6.0". Increment on breaking changes.',
+				examples: ["1.0", "1.6.0"],
+			},
+			northStar: {
+				type: "object",
+				description:
+					"Canonical north-star contract that defines throughput mission, metric, bottleneck, autonomy boundary, and decision rubric.",
+				required: [
+					"mission",
+					"primaryMetric",
+					"primaryBottleneck",
+					"autonomyBoundary",
+					"safetyFloor",
+					"nonGoals",
+					"decisionQuestions",
+				],
+				additionalProperties: false,
+				properties: {
+					mission: {
+						type: "string",
+						minLength: 1,
+						description: "Canonical mission statement.",
+					},
+					primaryMetric: {
+						type: "string",
+						enum: [NORTH_STAR_PRIMARY_METRIC],
+						description: "Canonical primary outcome metric.",
+					},
+					primaryBottleneck: {
+						type: "string",
+						enum: [NORTH_STAR_PRIMARY_BOTTLENECK],
+						description: "Canonical bottleneck this system optimizes.",
+					},
+					autonomyBoundary: {
+						type: "string",
+						minLength: 1,
+						description: "Boundary statement for autonomous execution scope.",
+					},
+					safetyFloor: {
+						type: "array",
+						minItems: 1,
+						items: { type: "string", minLength: 1 },
+						description: "Non-negotiable safety controls.",
+					},
+					nonGoals: {
+						type: "array",
+						minItems: 1,
+						items: { type: "string", minLength: 1 },
+						description: "Explicitly out-of-scope optimization targets.",
+					},
+					decisionQuestions: {
+						type: "array",
+						minItems: NORTH_STAR_DECISION_QUESTION_SPECS.length,
+						maxItems: NORTH_STAR_DECISION_QUESTION_SPECS.length,
+						description:
+							"Canonical ordered decision-question set used by alignment gates.",
+						items: NORTH_STAR_DECISION_QUESTION_SPECS.map((question) => ({
+							type: "object",
+							required: ["id", "prompt"],
+							additionalProperties: false,
+							properties: {
+								id: {
+									type: "string",
+									enum: [question.id],
+								},
+								prompt: {
+									type: "string",
+									enum: [question.prompt],
+								},
+							},
+						})),
+						additionalItems: false,
+					},
+				},
+			},
+			productSurface: {
+				type: "object",
+				description:
+					"Governed inventory of product surfaces and their north-star contribution claims.",
+				required: ["surfaces"],
+				additionalProperties: false,
+				properties: {
+					surfaces: {
+						type: "array",
+						items: {
+							type: "object",
+							required: [
+								"surfaceId",
+								"surfaceType",
+								"class",
+								"owner",
+								"northStarContribution",
+								"manualGlueReductionClaim",
+								"reliabilityContribution",
+								"evidenceReference",
+								"ownedPaths",
+								"lastReviewedAt",
+							],
+							additionalProperties: false,
+							properties: {
+								surfaceId: { type: "string", minLength: 1 },
+								surfaceType: {
+									type: "string",
+									enum: [...PRODUCT_SURFACE_TYPES],
+								},
+								class: {
+									type: "string",
+									enum: [...PRODUCT_SURFACE_CLASSES],
+								},
+								owner: { type: "string", minLength: 1 },
+								northStarContribution: { type: "string", minLength: 1 },
+								manualGlueReductionClaim: { type: "string", minLength: 1 },
+								reliabilityContribution: { type: "string", minLength: 1 },
+								evidenceReference: { type: "string", minLength: 1 },
+								reviewCadence: { type: "string", minLength: 1 },
+								ownedPaths: {
+									type: "array",
+									minItems: 1,
+									items: { type: "string", minLength: 1 },
+								},
+								lastReviewedAt: { type: "string", minLength: 1 },
+							},
+							anyOf: [
+								{
+									properties: {
+										class: {
+											type: "string",
+											enum: ["core"],
+										},
+									},
+									required: ["class"],
+								},
+								{
+									required: ["reviewCadence"],
+								},
+							],
+						},
+					},
+				},
+			},
+			overrideReviewerRegistry: {
+				type: "object",
+				description:
+					"Trusted reviewer registry used for override acknowledgement signature checks.",
+				required: ["trustedReviewers"],
+				additionalProperties: false,
+				properties: {
+					trustedReviewers: {
+						type: "array",
+						minItems: 1,
+						contains: {
+							type: "object",
+							required: ["status"],
+							properties: {
+								status: { type: "string", enum: ["active"] },
+							},
+						},
+						items: {
+							type: "object",
+							required: [
+								"reviewerId",
+								"reviewerType",
+								"signatureRef",
+								"displayName",
+								"status",
+							],
+							additionalProperties: false,
+							properties: {
+								reviewerId: { type: "string", minLength: 1 },
+								reviewerType: {
+									type: "string",
+									enum: [...TRUSTED_REVIEWER_TYPES],
+								},
+								signatureRef: { type: "string", minLength: 1 },
+								displayName: { type: "string", minLength: 1 },
+								status: {
+									type: "string",
+									enum: [...TRUSTED_REVIEWER_STATUSES],
+								},
+							},
+						},
+					},
+				},
 			},
 
 			// ── CI Provider Policy ─────────────────────────────────────────────
@@ -103,7 +443,14 @@ export function buildContractJsonSchema(): Record<string, unknown> {
 				type: "object",
 				description:
 					"Controls which CI provider is active, migration stage, and enforcement mode.",
-				required: ["activeProvider", "mode", "migrationStage"],
+				required: [
+					"activeProvider",
+					"mode",
+					"migrationStage",
+					"transitionStatusArtifactPath",
+					"authorityConfigPath",
+					"requiredCheckManifestPath",
+				],
 				additionalProperties: false,
 				properties: {
 					activeProvider: {
@@ -132,18 +479,27 @@ export function buildContractJsonSchema(): Record<string, unknown> {
 					},
 					transitionStatusArtifactPath: {
 						type: "string",
+						minLength: 1,
 						description:
 							"Path to the JSON artifact that records per-run migration status.",
 					},
 					authorityConfigPath: {
 						type: "string",
+						minLength: 1,
 						description:
 							"Path to the file that acts as the authoritative contract (usually harness.contract.json).",
 					},
 					requiredCheckManifestPath: {
 						type: "string",
+						minLength: 1,
 						description:
 							"Path to ci-required-checks.json that declares which GitHub checks must pass.",
+					},
+					primaryCheckName: {
+						type: "string",
+						minLength: 1,
+						description:
+							"Optional canonical primary check name used by CI migration validation.",
 					},
 					trustedPolicyRef: {
 						type: "string",
@@ -378,6 +734,12 @@ export function buildContractJsonSchema(): Record<string, unknown> {
 						type: "array",
 						items: { type: "string" },
 					},
+					sessionLogPath: {
+						type: "string",
+						minLength: 1,
+						description:
+							"Optional explicit path for session log persistence when default branch-derived path is unsuitable.",
+					},
 				},
 			},
 
@@ -603,7 +965,19 @@ export function buildContractJsonSchema(): Record<string, unknown> {
 			},
 			loopStageContracts: {
 				type: "object",
-				additionalProperties: true,
+				required: [
+					"risk-policy-gate",
+					"review-gate",
+					"evidence-verify",
+					"remediation-decision",
+				],
+				additionalProperties: false,
+				properties: {
+					"risk-policy-gate": loopStageContractSchema,
+					"review-gate": loopStageContractSchema,
+					"evidence-verify": loopStageContractSchema,
+					"remediation-decision": loopStageContractSchema,
+				},
 				description:
 					"Semantic contracts for each gate loop stage (inputs, outputs, permissions).",
 			},
