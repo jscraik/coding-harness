@@ -318,7 +318,22 @@ export const DEFAULT_NORTH_STAR_CONTRACT: NorthStarContract = {
 };
 
 export const DEFAULT_PRODUCT_SURFACE_REGISTRY: ProductSurfaceRegistry = {
-	surfaces: [],
+	surfaces: [
+		{
+			surfaceId: "review-gate",
+			surfaceType: "command",
+			class: "core",
+			owner: "workflow",
+			northStarContribution:
+				"Constrains merge-readiness decisions to throughput path",
+			manualGlueReductionClaim:
+				"Converts repeated review comments into deterministic checks",
+			reliabilityContribution: "Ensures the same questions are asked every run",
+			evidenceReference: "docs/agents/review-gate-operational-spec.md",
+			ownedPaths: ["src/commands/review-gate.ts"],
+			lastReviewedAt: "2026-04-22",
+		},
+	],
 };
 
 export const DEFAULT_OVERRIDE_REVIEWER_REGISTRY: OverrideReviewerRegistry = {

@@ -7,6 +7,7 @@ import type {
 	MergePolicyValue,
 } from "./types.js";
 import { DEFAULT_CONTRACT } from "./types.js";
+import { requiresCanonicalNorthStarSurfaces } from "./validator-helpers.js";
 import {
 	type ValidationError,
 	ValidationErrorCode,
@@ -206,8 +207,19 @@ export function loadContract(
 	const normalizedData = Object.fromEntries(
 		Object.entries(validatedData).filter(([, value]) => value !== undefined),
 	) as Partial<HarnessContract>;
+	const {
+		northStar: _defaultNorthStar,
+		productSurface: _defaultProductSurface,
+		overrideReviewerRegistry: _defaultOverrideReviewerRegistry,
+		...legacyCompatibleDefaults
+	} = DEFAULT_CONTRACT;
+	const mergeDefaults = requiresCanonicalNorthStarSurfaces(
+		normalizedData.version,
+	)
+		? DEFAULT_CONTRACT
+		: legacyCompatibleDefaults;
 	const contract: HarnessContract = {
-		...DEFAULT_CONTRACT,
+		...mergeDefaults,
 		...normalizedData,
 	};
 

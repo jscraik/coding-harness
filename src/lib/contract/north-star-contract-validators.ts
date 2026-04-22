@@ -269,6 +269,9 @@ export function isValidProductSurfaceRegistry(
 	if (!Array.isArray(registry.surfaces)) {
 		return false;
 	}
+	if (registry.surfaces.length === 0) {
+		return false;
+	}
 
 	const surfaceIds = new Set<string>();
 	for (const entry of registry.surfaces) {

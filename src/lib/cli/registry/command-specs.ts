@@ -504,12 +504,9 @@ export const COMMAND_SPECS: CommandSpec[] = [
 			const repoIndex = args.indexOf("--repo");
 			const prIndex = args.indexOf("--pr");
 			const shaIndex = args.indexOf("--sha");
-			const checkIndex = args.indexOf("--check");
-			const botLoginIndex = args.indexOf("--bot-login");
 			const autoResolveBotThreadsFlag = args.includes(
 				"--auto-resolve-bot-threads",
 			);
-			const contractIndex = args.indexOf("--contract");
 			const requiredFlagSpecs = [
 				{ flag: "--owner", label: "owner" },
 				{ flag: "--repo", label: "repo" },
@@ -518,9 +515,22 @@ export const COMMAND_SPECS: CommandSpec[] = [
 			] as const;
 			const missingRequiredFlags: string[] = [];
 			const tokenInspection = inspectFlagValue(args, "--token");
+			const checkInspection = inspectFlagValue(args, "--check");
+			const botLoginInspection = inspectFlagValue(args, "--bot-login");
+			const contractInspection = inspectFlagValue(args, "--contract");
 			if (tokenInspection.present && tokenInspection.missingValue) {
 				console.error("Error: --token requires a value");
 				return 2;
+			}
+			for (const { flag, inspected } of [
+				{ flag: "--check", inspected: checkInspection },
+				{ flag: "--bot-login", inspected: botLoginInspection },
+				{ flag: "--contract", inspected: contractInspection },
+			]) {
+				if (inspected.present && inspected.missingValue) {
+					console.error(`Error: ${flag} requires a value`);
+					return 2;
+				}
 			}
 			const resolvedToken = tokenInspection.value ?? envToken;
 			if (!resolvedToken) {
@@ -570,13 +580,16 @@ export const COMMAND_SPECS: CommandSpec[] = [
 			}
 			const shaArg = getFlagValue(args, shaIndex);
 			if (shaArg) options.headSha = shaArg;
-			const checkArg = getFlagValue(args, checkIndex);
-			if (checkArg) options.checkName = checkArg;
-			const botLoginArg = getFlagValue(args, botLoginIndex);
-			if (botLoginArg) options.botLogin = botLoginArg;
+			if (checkInspection.value !== undefined) {
+				options.checkName = checkInspection.value;
+			}
+			if (botLoginInspection.value !== undefined) {
+				options.botLogin = botLoginInspection.value;
+			}
 			if (autoResolveBotThreadsFlag) options.autoResolveBotThreads = true;
-			const contractArg = getFlagValue(args, contractIndex);
-			if (contractArg !== undefined) options.contractPath = contractArg;
+			if (contractInspection.value !== undefined) {
+				options.contractPath = contractInspection.value;
+			}
 
 			return import("../../../commands/review-gate.js").then(
 				({ runReviewGateCLI }) => runReviewGateCLI(options),

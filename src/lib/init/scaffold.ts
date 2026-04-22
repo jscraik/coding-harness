@@ -1331,7 +1331,7 @@ if is_harness_source_repo && [[ -f "$REPO_ROOT/dist/cli.js" ]] && command -v nod
 	exec node "$REPO_ROOT/dist/cli.js" "$@"
 fi
 
-if [[ -x "$REPO_ROOT/scripts/harness-cli.sh" && -f "$REPO_ROOT/node_modules/@brainwav/coding-harness/dist/cli.js" ]]; then
+if [[ -r "$REPO_ROOT/scripts/harness-cli.sh" && -f "$REPO_ROOT/node_modules/@brainwav/coding-harness/dist/cli.js" ]]; then
 	exec bash "$REPO_ROOT/scripts/harness-cli.sh" "$@"
 fi
 
