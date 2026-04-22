@@ -92,6 +92,7 @@ install_semgrep() {
 	mkdir -p "$SEMGREP_STATE_ROOT" "$SEMGREP_RUNTIME_CACHE_ROOT" "$SEMGREP_RUNTIME_USER_HOME"
 	mkdir -p "$(dirname "$SEMGREP_RUNTIME_LOG_FILE")"
 	mkdir -p "$SEMGREP_CACHE_ROOT"
+	ensure_python_packaging
 	local legacy_venv_dir="$HOST_CACHE_HOME/coding-harness/semgrep-venv-${SEMGREP_VERSION}"
 	if [[ -d "$legacy_venv_dir" ]]; then
 		rm -rf "$SEMGREP_VENV_DIR"
@@ -102,6 +103,27 @@ install_semgrep() {
 	fi
 	python3 -m venv "$SEMGREP_VENV_DIR"
 	"$SEMGREP_PYTHON" -m pip install --quiet --upgrade pip "semgrep==$SEMGREP_VERSION"
+}
+
+ensure_python_packaging() {
+	if command -v python3 >/dev/null 2>&1 && \
+		python3 -m venv --help >/dev/null 2>&1 && \
+		python3 -m pip --version >/dev/null 2>&1; then
+		return
+	fi
+
+	if ! command -v apt-get >/dev/null 2>&1; then
+		echo "Error: python3 venv/pip are unavailable and apt-get is not present." >&2
+		exit 1
+	fi
+
+	local elevate=()
+	if command -v sudo >/dev/null 2>&1; then
+		elevate=(sudo)
+	fi
+
+	"${elevate[@]}" apt-get update
+	"${elevate[@]}" apt-get install -y python3 python3-venv python3-pip
 }
 
 ensure_semgrep_version() {
