@@ -495,7 +495,92 @@ workflows:
       - run-governance-check:
           name: risk-policy-gate
           check_name: risk-policy-gate
-          command: bash scripts/run-harness-gate.sh policy-gate --max-tier medium --json
+          command: |
+            set -euo pipefail
+            if git rev-parse --verify origin/main >/dev/null 2>&1; then
+              CHANGED_FILES="$(git diff --name-only origin/main...HEAD | paste -sd, -)"
+            else
+              CHANGED_FILES="$(git diff --name-only HEAD~1 HEAD | paste -sd, -)"
+            fi
+            if [[ -z "$CHANGED_FILES" ]]; then
+              CHANGED_FILES="$(git ls-files | paste -sd, -)"
+            fi
+            ADMISSION_FILE="$(mktemp)"
+            cat > "$ADMISSION_FILE" <<'JSON'
+            {
+              "north_star_metric": "pr_lead_time",
+              "primary_bottleneck": "review_rework_loop",
+              "affected_surface_ids": ["preflight-gate"],
+              "affected_surface_classes": ["command"],
+              "policy_surface_delta": 0,
+              "manual_glue_delta": -1,
+              "evidence_links": ["harness.contract.json:1"],
+              "metric_impact_declared": "path_strengthening",
+              "why_this_improves_throughput_or_reliability": "Maintains contract-aligned preflight admission checks in CI."
+            }
+            JSON
+            bash scripts/run-harness-gate.sh preflight-gate --contract harness.contract.json --max-tier medium --files "$CHANGED_FILES" --admission-file "$ADMISSION_FILE" --json
+          filters:
+            tags:
+              ignore: /.*/
+      - run-governance-check:
+          name: review-gate
+          check_name: review-gate
+          requires:
+            - risk-policy-gate
+          command: |
+            set -euo pipefail
+            TOKEN="$(printenv GH_TOKEN || printenv GITHUB_PERSONAL_ACCESS_TOKEN || true)"
+            if [[ -z "$TOKEN" ]]; then
+              echo "GH_TOKEN/GITHUB_PERSONAL_ACCESS_TOKEN is required for review-gate"
+              exit 1
+            fi
+            PR_URL="$(printenv CIRCLE_PULL_REQUEST || true)"
+            if [[ -z "$PR_URL" ]]; then
+              echo "CIRCLE_PULL_REQUEST is required for review-gate"
+              exit 1
+            fi
+            PR_NUMBER="${"${PR_URL##*/}"}"
+            OWNER="$(printenv CIRCLE_PROJECT_USERNAME || true)"
+            REPO="$(printenv CIRCLE_PROJECT_REPONAME || true)"
+            if [[ -z "$OWNER" || -z "$REPO" ]]; then
+              echo "CIRCLE_PROJECT_USERNAME and CIRCLE_PROJECT_REPONAME are required for review-gate"
+              exit 1
+            fi
+            HEAD_SHA="$(printenv CIRCLE_SHA1 || git rev-parse HEAD)"
+            bash scripts/run-harness-gate.sh review-gate \\
+              --token "$TOKEN" \\
+              --owner "$OWNER" \\
+              --repo "$REPO" \\
+              --pr "$PR_NUMBER" \\
+              --sha "$HEAD_SHA" \\
+              --check risk-policy-gate \\
+              --contract harness.contract.json \\
+              --json
+          filters:
+            tags:
+              ignore: /.*/
+      - run-governance-check:
+          name: evidence-verify
+          check_name: evidence-verify
+          requires:
+            - review-gate
+          command: |
+            set -euo pipefail
+            if git rev-parse --verify origin/main >/dev/null 2>&1; then
+              CHANGED_FILES="$(git diff --name-only origin/main...HEAD | paste -sd, -)"
+            else
+              CHANGED_FILES="$(git diff --name-only HEAD~1 HEAD | paste -sd, -)"
+            fi
+            if [[ -z "$CHANGED_FILES" ]]; then
+              CHANGED_FILES="$(git ls-files | paste -sd, -)"
+            fi
+            EVIDENCE_FILES="$(git ls-files "artifacts/**/*.png" "artifacts/**/*.jpeg" "artifacts/**/*.jpg" | paste -sd, -)"
+            if [[ -n "$EVIDENCE_FILES" ]]; then
+              bash scripts/run-harness-gate.sh evidence-verify --contract harness.contract.json --changed "$CHANGED_FILES" --files "$EVIDENCE_FILES" --json
+            else
+              bash scripts/run-harness-gate.sh evidence-verify --contract harness.contract.json --changed "$CHANGED_FILES" --json
+            fi
           filters:
             tags:
               ignore: /.*/
@@ -1191,6 +1276,8 @@ REPO_ROOT="$(cd -- "$SCRIPT_DIR/.." && pwd)"
  *
  * The returned script locates the repository root and attempts, in order, to:
  * - run the repo-local `src/cli.ts` via `pnpm exec tsx` only when this repo is the harness source package,
+ * - detect source-repo identity using package metadata without requiring `node` on PATH,
+ * - fail closed in source repos only when `pnpm` is unavailable and no executable fallback runner exists,
  * - run `scripts/harness-cli.sh` (when executable),
  * - invoke a globally installed `harness` binary.
  * If none are available the script prints installation and local-exec guidance and exits with a non-zero status.
@@ -1215,31 +1302,104 @@ fi
 is_harness_source_repo() {
 	[[ -f "$REPO_ROOT/src/cli.ts" ]] || return 1
 	[[ -f "$REPO_ROOT/package.json" ]] || return 1
-	command -v node >/dev/null 2>&1 || return 1
+
+	if command -v python3 >/dev/null 2>&1; then
+		python3 - "$REPO_ROOT/package.json" >/dev/null <<'PY'
+import json
+import sys
+
+path = sys.argv[1]
+try:
+    with open(path, "r", encoding="utf-8") as handle:
+        package_json = json.load(handle)
+except Exception as exc:
+    print(f"Failed to parse {path} with python3: {exc}", file=sys.stderr)
+    raise SystemExit(2)
+
+raise SystemExit(
+    0 if package_json.get("name") == "@brainwav/coding-harness" else 1
+)
+PY
+		return $?
+	fi
+
+	if command -v jq >/dev/null 2>&1; then
+		local package_name
+		if ! package_name="$(jq -er '.name // empty' "$REPO_ROOT/package.json" 2>/dev/null)"; then
+			echo "Failed to parse $REPO_ROOT/package.json with jq" >&2
+			return 2
+		fi
+		[[ "$package_name" == "@brainwav/coding-harness" ]] && return 0
+		return 1
+	fi
+
+	if ! command -v node >/dev/null 2>&1; then
+		echo "Unable to resolve harness source-repo identity: python3, jq, and node are unavailable." >&2
+		return 2
+	fi
 
 	node -e '
 		const { readFileSync } = require("node:fs");
-		const packageJson = JSON.parse(readFileSync(process.argv[1], "utf8"));
-		process.exit(packageJson.name === "@brainwav/coding-harness" ? 0 : 1);
-	' "$REPO_ROOT/package.json" >/dev/null 2>&1
+		const path = process.argv[1];
+		try {
+			const packageJson = JSON.parse(readFileSync(path, "utf8"));
+			process.exit(packageJson.name === "@brainwav/coding-harness" ? 0 : 1);
+		} catch (error) {
+			const message = error instanceof Error ? error.message : String(error);
+			process.stderr.write("Failed to parse " + path + ": " + message + "\\n");
+			process.exit(2);
+		}
+	' "$REPO_ROOT/package.json" >/dev/null
 }
 
+source_repo_status=1
 if is_harness_source_repo; then
-	if ! command -v pnpm >/dev/null 2>&1; then
-		echo "Error: pnpm is required to run the harness source CLI." >&2
-		echo "Install pnpm and retry." >&2
+	source_repo_status=0
+else
+	source_repo_status="$?"
+fi
+
+if [[ "$source_repo_status" -eq 2 ]]; then
+	echo "Error: unable to resolve harness source-runner identity from package metadata." >&2
+	exit 1
+fi
+
+has_fallback_runner() {
+	if [[ -x "$REPO_ROOT/scripts/harness-cli.sh" ]]; then
+		return 0
+	fi
+	if command -v mise >/dev/null 2>&1; then
+		MISE_RESOLVED="$(mise which harness 2>/dev/null || true)"
+		if [[ -n "$MISE_RESOLVED" && -x "$MISE_RESOLVED" ]]; then
+			return 0
+		fi
+	fi
+	command -v harness >/dev/null 2>&1
+}
+
+if [[ "$source_repo_status" -eq 0 ]]; then
+	if command -v pnpm >/dev/null 2>&1; then
+		exec pnpm exec tsx "$REPO_ROOT/src/cli.ts" "$@"
+	fi
+	if [[ "\${HARNESS_ALLOW_SOURCE_RUNNER_FALLBACK:-0}" == "1" ]]; then
+		echo "Warning: pnpm not found; HARNESS_ALLOW_SOURCE_RUNNER_FALLBACK=1 enabled fallback to non-source harness runners." >&2
+	else
+		echo "Error: pnpm is required to run the harness source CLI in this repository." >&2
+		echo "Set HARNESS_ALLOW_SOURCE_RUNNER_FALLBACK=1 only when you intentionally want to use a non-source harness runner." >&2
+		echo "Install pnpm or provide an executable fallback runner (scripts/harness-cli.sh, mise harness, or global harness)." >&2
 		exit 1
 	fi
-	exec pnpm exec tsx "$REPO_ROOT/src/cli.ts" "$@"
 fi
 
 if [[ -x "$REPO_ROOT/scripts/harness-cli.sh" ]]; then
 	exec bash "$REPO_ROOT/scripts/harness-cli.sh" "$@"
 fi
 
-mise_harness_bin="$(mise which harness 2>/dev/null || true)"
-if [[ -n "$mise_harness_bin" && -x "$mise_harness_bin" ]]; then
-	exec "$mise_harness_bin" "$@"
+if command -v mise >/dev/null 2>&1; then
+	MISE_RESOLVED="$(mise which harness 2>/dev/null || true)"
+	if [[ -n "$MISE_RESOLVED" && -x "$MISE_RESOLVED" ]]; then
+		exec "$MISE_RESOLVED" "$@"
+	fi
 fi
 
 if command -v harness >/dev/null 2>&1; then
@@ -2014,6 +2174,9 @@ export const TEMPLATES: Template[] = [
 						"src/lib/**": "medium",
 						"**/*.test.ts": "low",
 					},
+					northStar: DEFAULT_CONTRACT.northStar,
+					productSurface: DEFAULT_CONTRACT.productSurface,
+					overrideReviewerRegistry: DEFAULT_CONTRACT.overrideReviewerRegistry,
 					mergePolicy: {
 						high: ["review-gate", "evidence-verify"],
 						medium: ["review-gate"],

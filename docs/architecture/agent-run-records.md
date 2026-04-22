@@ -86,6 +86,6 @@ If the canonical file exists but is invalid, fail closed; do not silently fall b
 - Companion artifacts must use command-specific schema versions and remain
   additive; do not extend canonical manifest/event schemas for v1 operator
   state.
-- `repo.headSha` must be either a lowercase hex SHA or the explicit `unknown` sentinel for degraded provenance capture; producers must never fabricate a hash-shaped placeholder.
+- `repo.headSha` must be either a 40-character lowercase hex SHA or the explicit `unknown` sentinel for degraded provenance capture; producers must never fabricate a hash-shaped placeholder.
 - Artifacts must reject known sensitive key classes (`token`, `secret`, `password`, `apiKey`, `authorization`, `cookie`) before persistence.
 - Event logs must remain parseable line-by-line and hash-valid end-to-end.

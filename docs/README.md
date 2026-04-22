@@ -68,7 +68,8 @@ last_validated: 2026-04-18
 - [Module boundaries](./architecture/module-boundaries.md)
 - [Architecture decision records](./adr/001-result-type-error-handling.md)
 - [Plans](./plans/2026-04-08-feat-coding-harness-reliability-orchestration-plan.md)
-- [Roadmap](./roadmap/agent-first-status.md)
+- [North star](./roadmap/north-star.md)
+- [Roadmap status matrix](./roadmap/agent-first-status.md)
 - [CLI spec](./cli-specs/2026-04-06-harness-cli-spec.md)
 - [Benchmarks](./benchmarks/README.md)
 

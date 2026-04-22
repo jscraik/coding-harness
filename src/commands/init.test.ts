@@ -361,8 +361,10 @@ describe("runInit", () => {
 			expect(circleConfig).toContain("name: check");
 			expect(circleConfig).toContain("command: pnpm check");
 			expect(circleConfig).toContain(
-				"command: bash scripts/run-harness-gate.sh policy-gate --max-tier medium --json",
+				'bash scripts/run-harness-gate.sh preflight-gate --contract harness.contract.json --max-tier medium --files "$CHANGED_FILES" --admission-file "$ADMISSION_FILE" --json',
 			);
+			expect(circleConfig).toContain("name: review-gate");
+			expect(circleConfig).toContain("name: evidence-verify");
 			expect(circleConfig).toContain(
 				"command: bash scripts/run-harness-gate.sh docs-gate --mode required --json",
 			);
@@ -515,7 +517,7 @@ describe("runInit", () => {
 			const content = JSON.parse(
 				require("node:fs").readFileSync(contractPath, "utf-8"),
 			);
-			expect(content.version).toBe("1.5.0");
+			expect(content.version).toBe("1.6.0");
 			expect(content.reviewPolicy).toBeUndefined();
 			expect(content.ciProviderPolicy.activeProvider).toBe("circleci");
 			expect(content.branchProtection.requiredChecks).toContain("linear-gate");
@@ -2280,13 +2282,13 @@ exit 1
 				return output;
 			};
 
-			expect(runNewTask("HEAD~1", "commit-ish-head")).toContain(
-				"[new-task] branch: codex/commit-ish-head",
+			expect(runNewTask("HEAD~1", "jsc-101-commit-ish-head")).toContain(
+				"[new-task] branch: codex/jsc-101-commit-ish-head",
 			);
-			expect(runNewTask("v0.0.1", "commit-ish-tag")).toContain(
-				"[new-task] branch: codex/commit-ish-tag",
+			expect(runNewTask("v0.0.1", "jsc-102-commit-ish-tag")).toContain(
+				"[new-task] branch: codex/jsc-102-commit-ish-tag",
 			);
-			expect(runNewTask(firstSha, "commit-ish-sha")).toContain(
+			expect(runNewTask(firstSha, "jsc-103-commit-ish-sha")).toContain(
 				`[new-task] base: ${firstSha}`,
 			);
 
@@ -2301,7 +2303,8 @@ exit 1
 				);
 				expect(runGit(["push", "-u", "upstream", "main"]).status).toBe(0);
 
-				const upstreamWorktreePath = join(tempDir, "wt-upstream-main");
+				const upstreamSlug = "jsc-104-upstream-main";
+				const upstreamWorktreePath = join(tempDir, `wt-${upstreamSlug}`);
 				const upstreamRun = spawnSync(
 					"bash",
 					[
@@ -2310,7 +2313,7 @@ exit 1
 						"upstream/main",
 						"--path",
 						upstreamWorktreePath,
-						"upstream-main",
+						upstreamSlug,
 					],
 					{
 						cwd: outsideRepoCwd,
@@ -3980,7 +3983,7 @@ describe("--interactive flag", () => {
 			expect(contractChange).toBeDefined();
 			expect(contractChange?.action).toBe("modify");
 			expect(contractChange?.currentContent).toBe('{"version": "old"}');
-			expect(contractChange?.newContent).toContain('"version": "1.5.0"');
+			expect(contractChange?.newContent).toContain('"version": "1.6.0"');
 		}
 	});
 
@@ -4108,7 +4111,7 @@ describe("--migrate flag", () => {
 		writeFileSync(
 			join(tempDir, "harness.contract.json"),
 			JSON.stringify({
-				version: "1.5.0",
+				version: "1.6.0",
 				riskTierRules: {},
 				reviewPolicy: { timeoutSeconds: 600, timeoutAction: "fail" },
 			}),
@@ -4170,7 +4173,7 @@ describe("--migrate flag", () => {
 		}
 	});
 
-	it("migrates legacy 1.0.0 contracts to 1.5.0", () => {
+	it("migrates legacy 1.0.0 contracts to 1.6.0", () => {
 		writeFileSync(
 			join(tempDir, "harness.contract.json"),
 			JSON.stringify({
@@ -4195,7 +4198,7 @@ describe("--migrate flag", () => {
 					"utf-8",
 				),
 			);
-			expect(migrated.version).toBe("1.5.0");
+			expect(migrated.version).toBe("1.6.0");
 			expect(migrated.riskTierRules["src/legacy/*"]).toBe("low");
 			expect(migrated.reviewPolicy.timeoutSeconds).toBe(300);
 			expect(migrated.reviewPolicy.timeoutAction).toBe("warn");
@@ -4237,7 +4240,7 @@ describe("--migrate flag", () => {
 		if (!result.ok) {
 			expect(result.error.code).toBe("E_UNSUPPORTED_MIGRATION_PATH");
 			expect(result.error.message).toContain(
-				"No supported migration path from 0.9.0 to 1.5.0",
+				"No supported migration path from 0.9.0 to 1.6.0",
 			);
 		}
 	});
@@ -4309,7 +4312,7 @@ describe("--migrate flag", () => {
 				),
 			);
 			// Custom settings should be preserved
-			expect(migrated.version).toBe("1.5.0");
+			expect(migrated.version).toBe("1.6.0");
 			expect(migrated.riskTierRules["src/auth/*"]).toBe("high");
 			expect(migrated.reviewPolicy.timeoutSeconds).toBe(300);
 			expect(migrated.toolingPolicy.readinessScriptPath).toBe(
@@ -4338,7 +4341,7 @@ describe("--migrate flag", () => {
 	it("preserves contract content when already up to date", () => {
 		// Create a contract at current version with customizations
 		const originalContent = {
-			version: "1.5.0",
+			version: "1.6.0",
 			riskTierRules: { "src/api/*": "medium" },
 			reviewPolicy: { timeoutSeconds: 900, timeoutAction: "fail" },
 		};
