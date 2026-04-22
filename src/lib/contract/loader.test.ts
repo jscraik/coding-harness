@@ -229,6 +229,62 @@ describe("loadContract", () => {
 		expect(contract.riskTierRules["src/auth/**"]).toBe("high");
 	});
 
+	it("loads contracts with structured extends objects", () => {
+		const dir = join(process.cwd(), "artifacts");
+		mkdirSync(dir, { recursive: true });
+		const path = join(dir, "contract-loader-extends-structured.json");
+		createdFiles.push(path);
+
+		writeFileSync(
+			path,
+			JSON.stringify({
+				version: "1.0",
+				extends: {
+					source: "preset://typescript",
+					arrays: "append",
+					integrity: "sha256-abc123",
+				},
+				riskTierRules: {
+					"src/auth/**": "high",
+				},
+			}),
+			"utf-8",
+		);
+
+		const contract = loadContract(path);
+		expect(contract.version).toBe("1.0");
+		expect(contract.riskTierRules["src/auth/**"]).toBe("high");
+	});
+
+	it("loads contracts with mixed extends arrays", () => {
+		const dir = join(process.cwd(), "artifacts");
+		mkdirSync(dir, { recursive: true });
+		const path = join(dir, "contract-loader-extends-array.json");
+		createdFiles.push(path);
+
+		writeFileSync(
+			path,
+			JSON.stringify({
+				version: "1.0",
+				extends: [
+					"preset://base",
+					{
+						source: "preset://typescript",
+						arrays: "prepend",
+					},
+				],
+				riskTierRules: {
+					"src/auth/**": "high",
+				},
+			}),
+			"utf-8",
+		);
+
+		const contract = loadContract(path);
+		expect(contract.version).toBe("1.0");
+		expect(contract.riskTierRules["src/auth/**"]).toBe("high");
+	});
+
 	it("rejects contracts with extends when caller disallows inheritance", () => {
 		const dir = join(process.cwd(), "artifacts");
 		mkdirSync(dir, { recursive: true });

@@ -401,6 +401,13 @@ export function runContractCLI(
 		const rest = subArgs.slice(1);
 		const manifestIdx = rest.findIndex((a) => a === "--manifest" || a === "-m");
 		const manifestPath = manifestIdx !== -1 ? rest[manifestIdx + 1] : undefined;
+		if (
+			manifestIdx !== -1 &&
+			(manifestPath === undefined || manifestPath.startsWith("-"))
+		) {
+			console.error("Missing value for --manifest");
+			return 2;
+		}
 		return runContractNormalizeRequiredChecksCLI(undefined, { manifestPath });
 	}
 
@@ -411,8 +418,16 @@ export function runContractCLI(
 			presetIdx !== -1
 				? (rest[presetIdx + 1] as ContractPresetInput | undefined)
 				: undefined;
+		if (presetIdx !== -1 && (preset === undefined || preset.startsWith("-"))) {
+			console.error("Missing value for --preset");
+			return 2;
+		}
 		const outputIdx = rest.findIndex((a) => a === "--output" || a === "-o");
 		const output = outputIdx !== -1 ? rest[outputIdx + 1] : undefined;
+		if (outputIdx !== -1 && (output === undefined || output.startsWith("-"))) {
+			console.error("Missing value for --output");
+			return 2;
+		}
 		const force = rest.includes("--force");
 		return runContractInitCLI({ preset, output, force, json: options.json });
 	}

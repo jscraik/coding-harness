@@ -1,3 +1,6 @@
+import { mkdirSync, mkdtempSync, writeFileSync } from "node:fs";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import type {
 	Ruleset,
@@ -466,6 +469,195 @@ describe("runBranchProtect", () => {
 		});
 	});
 
+	it("maps logical contract checks to deduped githubCheckName contexts via manifest metadata for the active provider", async () => {
+		const tempDir = mkdtempSync(join(tmpdir(), "branch-protect-manifest-"));
+		mkdirSync(join(tempDir, ".harness"), { recursive: true });
+		writeFileSync(join(tempDir, "harness.contract.json"), "{}\n", "utf-8");
+		writeFileSync(
+			join(tempDir, ".harness", "ci-required-checks.json"),
+			JSON.stringify({
+				version: 1,
+				activeProvider: "circleci",
+				requiredChecks: [
+					{
+						policyId: "required-check-1",
+						displayName: "lint",
+						sourceAppSlug: "circleci",
+						sourceAppId: "circleci",
+						externalIdPattern: "^pr-pipeline$",
+						githubCheckName: "pr-pipeline",
+					},
+					{
+						policyId: "required-check-2",
+						displayName: "docs-gate",
+						sourceAppSlug: "circleci",
+						sourceAppId: "circleci",
+						externalIdPattern: "^pr-pipeline$",
+						githubCheckName: "pr-pipeline",
+					},
+					{
+						policyId: "required-check-3",
+						displayName: "security-scan",
+						sourceAppSlug: "circleci",
+						sourceAppId: "circleci",
+						externalIdPattern: "^security-scan$",
+						githubCheckName: "security-scan",
+					},
+					{
+						policyId: "required-check-4",
+						displayName: "security-scan",
+						sourceAppSlug: "github-actions",
+						sourceAppId: "github-actions",
+						externalIdPattern: "^security-scan$",
+						githubCheckName: "security-scan",
+					},
+					{
+						policyId: "required-check-5",
+						displayName: "CodeRabbit",
+						sourceAppSlug: "coderabbit",
+						sourceAppId: "coderabbit",
+						externalIdPattern: "^CodeRabbit$",
+						githubCheckName: "CodeRabbit",
+					},
+				],
+			}),
+			"utf-8",
+		);
+		mockLoadContract.mockReturnValue({
+			version: "1.0",
+			riskTierRules: {},
+			branchProtection: {
+				requiredChecks: ["lint", "docs-gate", "security-scan", "CodeRabbit"],
+			},
+			ciProviderPolicy: {
+				activeProvider: "circleci",
+				mode: "required",
+				migrationStage: "cutover-complete",
+				transitionStatusArtifactPath:
+					".harness/ci-provider-transition-status.json",
+				authorityConfigPath: ".harness/ci-provider-authority.json",
+				requiredCheckManifestPath: ".harness/ci-required-checks.json",
+			},
+		});
+
+		const listRulesets = vi.fn(async () => [] as RulesetSummary[]);
+		const createRuleset = vi.fn(
+			async (payload: RulesetPayload) =>
+				({
+					id: 155,
+					name: payload.name,
+					target: payload.target,
+					enforcement: payload.enforcement,
+					bypass_actors: payload.bypass_actors,
+					conditions: payload.conditions,
+					rules: payload.rules,
+				}) as Ruleset,
+		);
+		mockGitHubClient.mockImplementation(
+			() =>
+				({
+					listRulesets,
+					createRuleset,
+				}) as unknown as GitHubClient,
+		);
+
+		const result = await runBranchProtect({
+			token: "token",
+			owner: "octo",
+			repo: "harness",
+			contractPath: join(tempDir, "harness.contract.json"),
+		});
+
+		expect(result.ok).toBe(true);
+		const payload = createRuleset.mock.calls[0]?.[0];
+		const requiredRule = payload?.rules.find(
+			(rule) => rule.type === "required_status_checks",
+		);
+		expect(requiredRule?.parameters).toMatchObject({
+			required_status_checks: [
+				{ context: "pr-pipeline" },
+				{ context: "security-scan" },
+				{ context: "CodeRabbit" },
+			],
+		});
+		if (result.ok) {
+			expect(result.output.requiredChecks).toEqual([
+				"pr-pipeline",
+				"security-scan",
+				"CodeRabbit",
+			]);
+		}
+	});
+
+	it("falls back to provider metadata mapping when required-check manifest is unavailable, including security-scan remaps", async () => {
+		const tempDir = mkdtempSync(join(tmpdir(), "branch-protect-provider-"));
+		writeFileSync(join(tempDir, "harness.contract.json"), "{}\n", "utf-8");
+		mockLoadContract.mockReturnValue({
+			version: "1.0",
+			riskTierRules: {},
+			branchProtection: {
+				requiredChecks: ["lint", "docs-gate", "security-scan", "CodeRabbit"],
+			},
+			ciProviderPolicy: {
+				activeProvider: "circleci",
+				mode: "required",
+				migrationStage: "cutover-complete",
+				transitionStatusArtifactPath:
+					".harness/ci-provider-transition-status.json",
+				authorityConfigPath: ".harness/ci-provider-authority.json",
+				requiredCheckManifestPath: ".harness/missing-required-checks.json",
+			},
+		});
+
+		const listRulesets = vi.fn(async () => [] as RulesetSummary[]);
+		const createRuleset = vi.fn(
+			async (payload: RulesetPayload) =>
+				({
+					id: 156,
+					name: payload.name,
+					target: payload.target,
+					enforcement: payload.enforcement,
+					bypass_actors: payload.bypass_actors,
+					conditions: payload.conditions,
+					rules: payload.rules,
+				}) as Ruleset,
+		);
+		mockGitHubClient.mockImplementation(
+			() =>
+				({
+					listRulesets,
+					createRuleset,
+				}) as unknown as GitHubClient,
+		);
+
+		const result = await runBranchProtect({
+			token: "token",
+			owner: "octo",
+			repo: "harness",
+			contractPath: join(tempDir, "harness.contract.json"),
+		});
+
+		expect(result.ok).toBe(true);
+		const payload = createRuleset.mock.calls[0]?.[0];
+		const requiredRule = payload?.rules.find(
+			(rule) => rule.type === "required_status_checks",
+		);
+		expect(requiredRule?.parameters).toMatchObject({
+			required_status_checks: [
+				{ context: "pr-pipeline" },
+				{ context: "security-scan" },
+				{ context: "CodeRabbit" },
+			],
+		});
+		if (result.ok) {
+			expect(result.output.requiredChecks).toEqual([
+				"pr-pipeline",
+				"security-scan",
+				"CodeRabbit",
+			]);
+		}
+	});
+
 	it("falls back to legacy reviewPolicy.requiredChecks when branchProtection is absent", async () => {
 		mockLoadContract.mockReturnValue({
 			version: "1.0",
@@ -568,6 +760,7 @@ describe("runBranchProtect", () => {
 				{ context: "audit" },
 				{ context: "check" },
 				{ context: "memory" },
+				{ context: "security-scan" },
 				{ context: "CodeRabbit" },
 			],
 		});
@@ -1462,6 +1655,22 @@ describe("runBranchProtect", () => {
 		});
 
 		it("explicit requiredChecks overrides ecosystem", async () => {
+			mockLoadContract.mockReturnValue({
+				version: "1.0",
+				riskTierRules: {},
+				branchProtection: {
+					requiredChecks: ["lint", "security-scan"],
+				},
+				ciProviderPolicy: {
+					activeProvider: "circleci",
+					mode: "required",
+					migrationStage: "cutover-complete",
+					transitionStatusArtifactPath:
+						".harness/ci-provider-transition-status.json",
+					authorityConfigPath: ".harness/ci-provider-authority.json",
+					requiredCheckManifestPath: ".harness/missing-required-checks.json",
+				},
+			});
 			const listRulesets = vi.fn(async () => [] as RulesetSummary[]);
 			const createRuleset = vi.fn(
 				async (payload: RulesetPayload) =>
@@ -1489,7 +1698,7 @@ describe("runBranchProtect", () => {
 				owner: "octo",
 				repo: "my-app",
 				ecosystem: "typescript",
-				requiredChecks: ["custom-check-1", "custom-check-2"],
+				requiredChecks: ["security-scan", "custom-check-1"],
 			});
 
 			expect(result.ok).toBe(true);
@@ -1497,8 +1706,8 @@ describe("runBranchProtect", () => {
 				// ecosystem should not be set when explicit checks are provided
 				expect(result.output.ecosystem).toBeUndefined();
 				expect(result.output.requiredChecks).toEqual([
+					"security-scan",
 					"custom-check-1",
-					"custom-check-2",
 				]);
 			}
 		});

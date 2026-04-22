@@ -16,6 +16,7 @@ describe("check-authz", () => {
 		testDir = join(baseDir, `check-authz-test-${Date.now()}`);
 		mkdirSync(testDir, { recursive: true });
 		contractPath = join(testDir, "harness.contract.json");
+		writeFileSync(join(testDir, ".gitignore"), "artifacts/pilot/\n", "utf-8");
 	});
 
 	afterEach(() => {
@@ -142,6 +143,133 @@ describe("check-authz", () => {
 			expect(result.output.violations.map((v) => v.type)).not.toContain(
 				"branch_not_allowed",
 			);
+		}
+	});
+
+	it("treats regex metacharacters in allowlist patterns as literals", async () => {
+		writeFileSync(
+			contractPath,
+			JSON.stringify({
+				version: "1.0",
+				riskTierRules: {},
+				pilotAuthzPolicy: {
+					githubScopeAllowlist: ["contents:write"],
+					repoAllowlist: ["acme/repo.v2"],
+					branchAllowlist: ["feature/*"],
+					protectedBranchDenylist: ["main", "master"],
+					enforceBranchProtection: false,
+				},
+			}),
+		);
+
+		const mismatchResult = await runCheckAuthz({
+			contractPath,
+			repo: "acme/repoXv2",
+			branch: "feature/test",
+		});
+
+		expect(mismatchResult.ok).toBe(true);
+		if (mismatchResult.ok) {
+			expect(mismatchResult.output.passed).toBe(false);
+			expect(mismatchResult.output.violations).toContainEqual(
+				expect.objectContaining({
+					type: "repo_not_allowed",
+				}),
+			);
+		}
+
+		const exactMatchResult = await runCheckAuthz({
+			contractPath,
+			repo: "acme/repo.v2",
+			branch: "feature/test",
+		});
+
+		expect(exactMatchResult.ok).toBe(true);
+		if (exactMatchResult.ok) {
+			expect(exactMatchResult.output.passed).toBe(true);
+			expect(exactMatchResult.output.violations).toHaveLength(0);
+		}
+	});
+
+	it("resolves .gitignore relative to the contract root when invoked from another cwd", async () => {
+		writeFileSync(
+			contractPath,
+			JSON.stringify({
+				version: "1.0",
+				riskTierRules: {},
+				pilotAuthzPolicy: {
+					githubScopeAllowlist: ["contents:write"],
+					repoAllowlist: ["acme/*"],
+					branchAllowlist: ["feature/*"],
+					protectedBranchDenylist: ["main", "master"],
+					enforceBranchProtection: false,
+				},
+			}),
+		);
+
+		const callerCwd = join(testDir, "caller-cwd");
+		mkdirSync(callerCwd, { recursive: true });
+		const originalCwd = process.cwd();
+		process.chdir(callerCwd);
+		try {
+			const result = await runCheckAuthz({
+				contractPath,
+				branch: "feature/test",
+			});
+
+			expect(result.ok).toBe(true);
+			if (result.ok) {
+				expect(result.output.passed).toBe(true);
+				expect(
+					result.output.violations.some(
+						(violation) => violation.type === "gitignore_missing",
+					),
+				).toBe(false);
+			}
+		} finally {
+			process.chdir(originalCwd);
+		}
+	});
+
+	it("fails closed when contract root is missing .gitignore even if caller cwd has one", async () => {
+		writeFileSync(
+			contractPath,
+			JSON.stringify({
+				version: "1.0",
+				riskTierRules: {},
+				pilotAuthzPolicy: {
+					githubScopeAllowlist: ["contents:write"],
+					repoAllowlist: ["acme/*"],
+					branchAllowlist: ["feature/*"],
+					protectedBranchDenylist: ["main", "master"],
+					enforceBranchProtection: false,
+				},
+			}),
+		);
+		rmSync(join(testDir, ".gitignore"), { force: true });
+
+		const callerCwd = join(testDir, "caller-cwd-with-gitignore");
+		mkdirSync(callerCwd, { recursive: true });
+		writeFileSync(join(callerCwd, ".gitignore"), "artifacts/pilot/\n", "utf-8");
+		const originalCwd = process.cwd();
+		process.chdir(callerCwd);
+		try {
+			const result = await runCheckAuthz({
+				contractPath,
+				branch: "feature/test",
+			});
+
+			expect(result.ok).toBe(true);
+			if (result.ok) {
+				expect(result.output.passed).toBe(false);
+				expect(
+					result.output.violations.some(
+						(violation) => violation.type === "gitignore_missing",
+					),
+				).toBe(true);
+			}
+		} finally {
+			process.chdir(originalCwd);
 		}
 	});
 });

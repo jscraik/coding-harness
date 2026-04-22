@@ -140,7 +140,7 @@ describe("command registry", () => {
 			expect(policyGate).toMatchObject({
 				category: "review-policy",
 				mutability: "read",
-				requiredFlags: ["--files"],
+				requiredFlags: [],
 			});
 			expect(Array.isArray(policyGate.expectedArtifacts)).toBe(true);
 			expect(typeof policyGate.retryability).toBe("string");
@@ -423,25 +423,25 @@ describe("getRegistryCommandCapabilities", () => {
 	});
 
 	describe("required flags", () => {
-		it("policy-gate requires --files", () => {
+		it("policy-gate has no required flags", () => {
 			const cap = getRegistryCommandCapabilities().find(
 				(c) => c.name === "policy-gate",
 			);
-			expect(cap?.requiredFlags).toEqual(["--files"]);
+			expect(cap?.requiredFlags).toEqual([]);
 		});
 
-		it("preflight-gate requires --files", () => {
+		it("preflight-gate has no required flags", () => {
 			const cap = getRegistryCommandCapabilities().find(
 				(c) => c.name === "preflight-gate",
 			);
-			expect(cap?.requiredFlags).toEqual(["--files"]);
+			expect(cap?.requiredFlags).toEqual([]);
 		});
 
-		it("risk-tier requires --files", () => {
+		it("risk-tier has no required flags", () => {
 			const cap = getRegistryCommandCapabilities().find(
 				(c) => c.name === "risk-tier",
 			);
-			expect(cap?.requiredFlags).toEqual(["--files"]);
+			expect(cap?.requiredFlags).toEqual([]);
 		});
 
 		it("blast-radius requires --files", () => {

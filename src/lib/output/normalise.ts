@@ -213,11 +213,24 @@ function buildGateResult(params: BuildGateResultParams): GateResult {
  * Maps a linear-gate error code to a failure classification used for next-action guidance.
  *
  * @param errorCode - Error code reported by the linear gate
- * @returns `contract_policy` when `errorCode` is `"CONTRACT_ERROR"` or `"VALIDATION_ERROR"`, `internal_unknown` otherwise
+ * @returns `contract_policy` for policy/contract validation failures, `transient_infra` for retryable infra/network classes, `internal_unknown` otherwise
  */
 function classifyLinearGateErrorCode(errorCode: string): GateFailureClass {
 	if (errorCode === "CONTRACT_ERROR" || errorCode === "VALIDATION_ERROR") {
 		return "contract_policy";
+	}
+	const normalizedCode = errorCode.trim().toUpperCase();
+	if (
+		normalizedCode.includes("TIMEOUT") ||
+		normalizedCode.includes("RATE_LIMIT") ||
+		normalizedCode.includes("TRANSIENT") ||
+		normalizedCode.includes("NETWORK") ||
+		normalizedCode.includes("UNAVAILABLE") ||
+		normalizedCode === "ECONNRESET" ||
+		normalizedCode === "ETIMEDOUT" ||
+		normalizedCode === "EAI_AGAIN"
+	) {
+		return "transient_infra";
 	}
 	return "internal_unknown";
 }
@@ -757,6 +770,78 @@ function reviewStatusFromOutput(
 	return "fail";
 }
 
+type ReviewGateFailureClass =
+	| "contract_invalid"
+	| "admission_incomplete"
+	| "admission_unjustified"
+	| "review_evidence_contradiction"
+	| "surface_registration_gap"
+	| "drift_blocking"
+	| "safety_floor_violation"
+	| "cadence_breach"
+	| "required_check_missing"
+	| "required_check_pending"
+	| "required_check_failed"
+	| "required_check_source_mismatch"
+	| "review_missing"
+	| "reviewer_independence"
+	| "review_thread_unresolved"
+	| "plan_traceability_gap"
+	| "review_blocked_unknown";
+
+function classifyReviewGateBlocker(blocker: string): ReviewGateFailureClass {
+	const explicitFailureClass = blocker.match(
+		/\b(contract_invalid|admission_incomplete|admission_unjustified|review_evidence_contradiction|surface_registration_gap|drift_blocking|safety_floor_violation|cadence_breach):/u,
+	)?.[1] as ReviewGateFailureClass | undefined;
+	if (explicitFailureClass) {
+		return explicitFailureClass;
+	}
+
+	if (
+		blocker.includes("non-authoritative providers") ||
+		blocker.includes("expected source:")
+	) {
+		return "required_check_source_mismatch";
+	}
+	if (
+		blocker.includes("was not found for current HEAD SHA") ||
+		blocker.includes("check run not found for HEAD SHA")
+	) {
+		return "required_check_missing";
+	}
+	if (
+		blocker.includes("is not complete") ||
+		blocker.includes("verification is incomplete") ||
+		/\bpending\b/iu.test(blocker)
+	) {
+		return "required_check_pending";
+	}
+	if (
+		blocker.includes("did not pass") ||
+		blocker.includes("conclusion:") ||
+		/\bfailed\b/iu.test(blocker)
+	) {
+		return "required_check_failed";
+	}
+	if (
+		blocker.includes("No APPROVED reviews found") ||
+		/\bmissing approval\b/iu.test(blocker)
+	) {
+		return "review_missing";
+	}
+	if (blocker.includes("Reviewer independence failed")) {
+		return "reviewer_independence";
+	}
+	if (blocker.includes("Unresolved review thread comments remain")) {
+		return "review_thread_unresolved";
+	}
+	if (blocker.startsWith("Plan traceability:")) {
+		return "plan_traceability_gap";
+	}
+
+	return "review_blocked_unknown";
+}
+
 /**
  * Normalise preflight-gate output to canonical GateResult.
  */
@@ -764,22 +849,70 @@ export function normalisePreflightGateResult(
 	result: PreflightGateResult,
 ): GateResult {
 	const gate = "preflight-gate";
+	type AdmissionFailureClass =
+		| "admission_incomplete"
+		| "admission_unjustified"
+		| "surface_registration_gap";
+	const admissionFailureClasses = new Set<AdmissionFailureClass>([
+		"admission_incomplete",
+		"admission_unjustified",
+		"surface_registration_gap",
+	]);
+	const admissionFailureClassRegex =
+		/\b(admission_incomplete|admission_unjustified|surface_registration_gap):/g;
+	const extractAdmissionFailureClasses = (
+		message: string | undefined,
+	): AdmissionFailureClass[] => {
+		if (!message) {
+			return ["admission_incomplete"];
+		}
+		const matches = [...message.matchAll(admissionFailureClassRegex)]
+			.map((match) => match[1] as AdmissionFailureClass)
+			.filter((failureClass) => admissionFailureClasses.has(failureClass));
+		const deduped = uniqueStrings(matches).filter(
+			(candidate): candidate is AdmissionFailureClass =>
+				admissionFailureClasses.has(candidate as AdmissionFailureClass),
+		);
+		return deduped.length > 0 ? deduped : ["admission_incomplete"];
+	};
 	const findings = result.checks
 		.filter((check) => !check.passed)
-		.map(
-			(check): GateFinding => ({
-				id: `preflight-gate.check.${check.id}`,
-				severity: check.severity,
-				gate,
-				message: check.message ?? check.description,
-				...(check.files?.[0] ? { path: check.files[0] } : {}),
-				baseline: false,
-				fix: {
-					manual: `Resolve '${check.id}' and rerun harness preflight-gate.`,
-					suppressible: false,
+		.flatMap((check): GateFinding[] => {
+			if (check.id !== "admission-declaration") {
+				const findingId = `preflight-gate.check.${check.id}`;
+				return [
+					{
+						id: findingId,
+						severity: check.severity,
+						gate,
+						message: check.message ?? check.description,
+						...(check.files?.[0] ? { path: check.files[0] } : {}),
+						baseline: false,
+						fix: {
+							manual: `Resolve '${findingId}' and rerun harness preflight-gate.`,
+							suppressible: false,
+						},
+					},
+				];
+			}
+			return extractAdmissionFailureClasses(check.message).map(
+				(failureClass) => {
+					const findingId = `preflight-gate.blocker.${failureClass}`;
+					return {
+						id: findingId,
+						severity: check.severity,
+						gate,
+						message: check.message ?? check.description,
+						...(check.files?.[0] ? { path: check.files[0] } : {}),
+						baseline: false,
+						fix: {
+							manual: `Resolve '${findingId}' and rerun harness preflight-gate.`,
+							suppressible: false,
+						},
+					};
 				},
-			}),
-		);
+			);
+		});
 
 	const status: GateResult["status"] = result.passed
 		? findings.some((finding) => finding.severity === "error")
@@ -800,7 +933,18 @@ export function normalisePreflightGateResult(
 			failedChecks: result.summary.failed,
 			warningChecks: result.summary.warnings,
 			durationMs: result.summary.durationMs,
+			blockedFailureClasses: uniqueStrings(
+				findings
+					.filter((finding) => finding.id.startsWith("preflight-gate.blocker."))
+					.map((finding) => finding.id.replace("preflight-gate.blocker.", "")),
+			),
 			...(result.riskTier ? { riskTier: result.riskTier } : {}),
+			...(result.northStarSummary
+				? { northStarSummary: result.northStarSummary }
+				: {}),
+			...(result.admissionDeclaration
+				? { admissionDeclaration: result.admissionDeclaration }
+				: {}),
 		},
 		decision: {
 			reason: result.passed
@@ -861,9 +1005,19 @@ export function normaliseReviewGateResult(
 	const status = reviewStatusFromOutput(result.output);
 	const findingSeverity: GateFinding["severity"] =
 		status === "warn" ? "warning" : "error";
-	const findings: GateFinding[] = result.output.blockers.map(
-		(blocker, index): GateFinding => ({
-			id: `review-gate.blocker.${index}`,
+	const blockerClassCounts = new Map<ReviewGateFailureClass, number>();
+	const blockerClasses: ReviewGateFailureClass[] = [];
+	const findings: GateFinding[] = result.output.blockers.map((blocker) => {
+		const failureClass = classifyReviewGateBlocker(blocker);
+		blockerClasses.push(failureClass);
+		const occurrence = (blockerClassCounts.get(failureClass) ?? 0) + 1;
+		blockerClassCounts.set(failureClass, occurrence);
+		const findingId =
+			occurrence === 1
+				? `review-gate.blocker.${failureClass}`
+				: `review-gate.blocker.${failureClass}.${occurrence}`;
+		return {
+			id: findingId,
 			severity: findingSeverity,
 			gate,
 			message: blocker,
@@ -872,14 +1026,17 @@ export function normaliseReviewGateResult(
 				manual: "Address blocker and rerun harness review-gate.",
 				suppressible: false,
 			},
-		}),
-	);
+		};
+	});
 
 	return buildGateResult({
 		gate,
 		status,
 		findings,
 		meta: {
+			...(blockerClasses.length > 0
+				? { blockedFailureClasses: uniqueStrings(blockerClasses) }
+				: {}),
 			headSha: result.output.headSha,
 			checkStatus: result.output.checkStatus,
 			checkConclusion: result.output.checkConclusion,

@@ -103,7 +103,7 @@ describe("runIndexContext", () => {
 		expect(indexedPaths).toContain(join(nestedDir, "nested.md"));
 	});
 
-	it("returns ERROR when --harness-dir value is missing", async () => {
+	it("returns USAGE_ERROR when --harness-dir value is missing", async () => {
 		const { runIndexContextCLI, EXIT_CODES } = await import(
 			"./index-context.js"
 		);
@@ -113,7 +113,7 @@ describe("runIndexContext", () => {
 
 		const exitCode = await runIndexContextCLI(["--harness-dir", "--force"]);
 
-		expect(exitCode).toBe(EXIT_CODES.ERROR);
+		expect(exitCode).toBe(EXIT_CODES.USAGE_ERROR);
 		expect(consoleErrorSpy).toHaveBeenCalledWith(
 			"Error: --harness-dir requires a value",
 		);
@@ -121,7 +121,7 @@ describe("runIndexContext", () => {
 		consoleErrorSpy.mockRestore();
 	});
 
-	it("returns ERROR when --harness-dir value is another flag", async () => {
+	it("returns USAGE_ERROR when --harness-dir value is another flag", async () => {
 		const { runIndexContextCLI, EXIT_CODES } = await import(
 			"./index-context.js"
 		);
@@ -131,9 +131,27 @@ describe("runIndexContext", () => {
 
 		const exitCode = await runIndexContextCLI(["--harness-dir", "-j"]);
 
-		expect(exitCode).toBe(EXIT_CODES.ERROR);
+		expect(exitCode).toBe(EXIT_CODES.USAGE_ERROR);
 		expect(consoleErrorSpy).toHaveBeenCalledWith(
 			"Error: --harness-dir requires a value",
+		);
+
+		consoleErrorSpy.mockRestore();
+	});
+
+	it("returns USAGE_ERROR for unknown arguments", async () => {
+		const { runIndexContextCLI, EXIT_CODES } = await import(
+			"./index-context.js"
+		);
+		const consoleErrorSpy = vi
+			.spyOn(console, "error")
+			.mockImplementation(() => undefined);
+
+		const exitCode = await runIndexContextCLI(["--unexpected-flag"]);
+
+		expect(exitCode).toBe(EXIT_CODES.USAGE_ERROR);
+		expect(consoleErrorSpy).toHaveBeenCalledWith(
+			"Error: unknown argument '--unexpected-flag'",
 		);
 
 		consoleErrorSpy.mockRestore();

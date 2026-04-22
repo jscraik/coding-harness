@@ -338,6 +338,54 @@ describe("run-records", () => {
 		).not.toThrow();
 	});
 
+	it("rejects abbreviated repo SHA values in canonical manifests", () => {
+		const runId = "run-cp1-abbreviated-head-sha";
+		const manifest = makeManifest(runId);
+		manifest.repo.headSha = "abc1234";
+
+		expect(() =>
+			writeCanonicalManifest({
+				manifest,
+				baseDir: testRoot,
+			}),
+		).toThrow(/repo\.headSha must be a 40-character lowercase hex SHA/i);
+	});
+
+	it("rejects invalid ancestryBaseSha values in canonical manifests", () => {
+		const runId = "run-cp1-invalid-ancestry-base-sha";
+		const invalidValues = [
+			"abc1234",
+			"A123456789abcdef0123456789abcdef01234567",
+			"zzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzz",
+		];
+
+		for (const ancestryBaseSha of invalidValues) {
+			const manifest = makeManifest(runId);
+			manifest.repo.ancestryBaseSha = ancestryBaseSha;
+			expect(() =>
+				writeCanonicalManifest({
+					manifest,
+					baseDir: testRoot,
+				}),
+			).toThrow(
+				/repo\.ancestryBaseSha must be a 40-character lowercase hex SHA/i,
+			);
+		}
+	});
+
+	it("accepts a canonical ancestryBaseSha value in canonical manifests", () => {
+		const runId = "run-cp1-valid-ancestry-base-sha";
+		const manifest = makeManifest(runId);
+		manifest.repo.ancestryBaseSha = "b".repeat(40);
+
+		expect(() =>
+			writeCanonicalManifest({
+				manifest,
+				baseDir: testRoot,
+			}),
+		).not.toThrow();
+	});
+
 	it("rejects manifests with unsupported enum values or extra properties", () => {
 		const manifest = {
 			...makeManifest("run-cp1-invalid-manifest"),

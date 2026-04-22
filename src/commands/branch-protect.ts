@@ -1,3 +1,6 @@
+import { readFileSync } from "node:fs";
+import { dirname, resolve } from "node:path";
+import { deriveRequiredCheckMetadata } from "../lib/ci/required-check-metadata.js";
 import { loadContract } from "../lib/contract/loader.js";
 import {
 	type BranchProtectionCodeQualityPolicy,
@@ -13,11 +16,13 @@ import {
 	type RulesetRule,
 	type RulesetSummary,
 } from "../lib/github/client.js";
+import type { CIProvider } from "../lib/init/types.js";
 import { sanitizeError } from "../lib/input/sanitize.js";
 import {
 	BRANCH_PROTECTION_REQUIRED_CHECKS,
 	getEcosystemChecks,
 	listEcosystemProfiles,
+	normalizeRequiredChecksManifest,
 } from "../lib/policy/required-checks.js";
 
 const DEFAULT_RULESET_NAME = "protect";
@@ -101,13 +106,26 @@ function normalizeToken(value: string | undefined): string | undefined {
  * Resolves required checks from ecosystem profile, explicit checks, or contract.
  * Priority: explicit --required-checks > --ecosystem > contract > defaults
  */
+type RequiredChecksResolutionSource =
+	| "explicit"
+	| "ecosystem"
+	| "contract"
+	| "default";
+
 function resolveRequiredChecks(
 	options: BranchProtectOptions,
 	contractPolicy: BranchProtectionPolicy,
-): { checks: string[]; ecosystem?: string } {
+): {
+	checks: string[];
+	source: RequiredChecksResolutionSource;
+	ecosystem?: string;
+} {
 	// 1. Explicit checks take highest priority
 	if (options.requiredChecks && options.requiredChecks.length > 0) {
-		return { checks: normalizeChecks(options.requiredChecks) };
+		return {
+			checks: normalizeChecks(options.requiredChecks),
+			source: "explicit",
+		};
 	}
 
 	// 2. Ecosystem profile
@@ -116,6 +134,7 @@ function resolveRequiredChecks(
 		if (ecosystemChecks) {
 			return {
 				checks: normalizeChecks([...ecosystemChecks]),
+				source: "ecosystem",
 				ecosystem: options.ecosystem,
 			};
 		}
@@ -124,11 +143,14 @@ function resolveRequiredChecks(
 	// 3. Contract
 	const contractChecks = contractPolicy.requiredChecks;
 	if (contractChecks && contractChecks.length > 0) {
-		return { checks: normalizeChecks(contractChecks) };
+		return { checks: normalizeChecks(contractChecks), source: "contract" };
 	}
 
 	// 4. Defaults
-	return { checks: normalizeChecks([...DEFAULT_REQUIRED_CHECKS]) };
+	return {
+		checks: normalizeChecks([...DEFAULT_REQUIRED_CHECKS]),
+		source: "default",
+	};
 }
 
 interface ResolvedBranchProtectionPolicy {
@@ -147,41 +169,116 @@ interface ResolvedBranchProtectionPolicy {
 	publicCodeScanning: BranchProtectionCodeScanningPolicy | undefined;
 }
 
+interface ContractBranchProtectionResolution {
+	branchProtectionPolicy: BranchProtectionPolicy;
+	activeProvider?: CIProvider;
+	requiredCheckManifestPath?: string;
+}
+
 function resolveContractBranchProtectionPolicy(
 	contractPath: string,
-): BranchProtectionPolicy {
+): ContractBranchProtectionResolution {
 	try {
 		const contract = loadContract(contractPath);
+		const ciProviderPolicy = contract.ciProviderPolicy;
+		const activeProvider = ciProviderPolicy?.activeProvider;
+		const requiredCheckManifestPath =
+			ciProviderPolicy?.requiredCheckManifestPath;
 		const legacyRequiredChecks =
 			contract.branchProtection?.requiredChecks &&
 			contract.branchProtection.requiredChecks.length > 0
 				? contract.branchProtection.requiredChecks
 				: contract.reviewPolicy?.requiredChecks;
 		return {
-			...DEFAULT_BRANCH_PROTECTION_POLICY,
-			...(contract.branchProtection ?? {}),
-			requiredChecks:
-				legacyRequiredChecks ?? DEFAULT_BRANCH_PROTECTION_POLICY.requiredChecks,
-			allowedMergeMethods: {
-				...DEFAULT_MERGE_METHODS,
-				...(contract.branchProtection?.allowedMergeMethods ?? {}),
+			branchProtectionPolicy: {
+				...DEFAULT_BRANCH_PROTECTION_POLICY,
+				...(contract.branchProtection ?? {}),
+				requiredChecks:
+					legacyRequiredChecks ??
+					DEFAULT_BRANCH_PROTECTION_POLICY.requiredChecks,
+				allowedMergeMethods: {
+					...DEFAULT_MERGE_METHODS,
+					...(contract.branchProtection?.allowedMergeMethods ?? {}),
+				},
+				codeQuality: contract.branchProtection?.codeQuality
+					? {
+							...(DEFAULT_BRANCH_PROTECTION_POLICY.codeQuality ?? {}),
+							...contract.branchProtection.codeQuality,
+						}
+					: DEFAULT_BRANCH_PROTECTION_POLICY.codeQuality,
+				publicCodeScanning: contract.branchProtection?.publicCodeScanning
+					? {
+							...(DEFAULT_BRANCH_PROTECTION_POLICY.publicCodeScanning ?? {}),
+							...contract.branchProtection.publicCodeScanning,
+						}
+					: DEFAULT_BRANCH_PROTECTION_POLICY.publicCodeScanning,
 			},
-			codeQuality: contract.branchProtection?.codeQuality
-				? {
-						...(DEFAULT_BRANCH_PROTECTION_POLICY.codeQuality ?? {}),
-						...contract.branchProtection.codeQuality,
-					}
-				: DEFAULT_BRANCH_PROTECTION_POLICY.codeQuality,
-			publicCodeScanning: contract.branchProtection?.publicCodeScanning
-				? {
-						...(DEFAULT_BRANCH_PROTECTION_POLICY.publicCodeScanning ?? {}),
-						...contract.branchProtection.publicCodeScanning,
-					}
-				: DEFAULT_BRANCH_PROTECTION_POLICY.publicCodeScanning,
+			...(activeProvider ? { activeProvider } : {}),
+			...(requiredCheckManifestPath ? { requiredCheckManifestPath } : {}),
 		};
 	} catch {
-		return { ...DEFAULT_BRANCH_PROTECTION_POLICY };
+		return {
+			branchProtectionPolicy: { ...DEFAULT_BRANCH_PROTECTION_POLICY },
+		};
 	}
+}
+
+function resolveManifestBackedRequiredCheckContexts(input: {
+	requiredChecks: string[];
+	contractPath: string;
+	requiredCheckManifestPath: string;
+	activeProvider?: CIProvider;
+}): string[] | null {
+	const manifestPath = resolve(
+		dirname(input.contractPath),
+		input.requiredCheckManifestPath,
+	);
+
+	let parsedManifest: unknown;
+	try {
+		parsedManifest = JSON.parse(readFileSync(manifestPath, "utf-8"));
+	} catch {
+		return null;
+	}
+
+	const normalized = normalizeRequiredChecksManifest(parsedManifest);
+	if (!normalized.ok) {
+		return null;
+	}
+
+	const providerForRemap =
+		input.activeProvider ?? normalized.value.activeProvider;
+	const gateByName = new Map(
+		normalized.value.gates
+			.filter((gate) => gate.provider === providerForRemap)
+			.flatMap((gate) => [
+				[gate.gateId, gate],
+				[gate.displayName, gate],
+			]),
+	);
+
+	return normalizeChecks(
+		input.requiredChecks.map((check) => {
+			const matchedGate = gateByName.get(check);
+			return matchedGate?.githubCheckName ?? check;
+		}),
+	);
+}
+
+function resolveProviderBackedRequiredCheckContexts(input: {
+	requiredChecks: string[];
+	activeProvider?: CIProvider;
+}): string[] {
+	const { activeProvider } = input;
+	if (!activeProvider) {
+		return normalizeChecks(input.requiredChecks);
+	}
+	return normalizeChecks(
+		input.requiredChecks.map(
+			(check) =>
+				deriveRequiredCheckMetadata(activeProvider, check).githubCheckName,
+		),
+	);
 }
 
 function resolveManagedPolicy(
@@ -314,12 +411,33 @@ export async function runBranchProtect(
 		}
 	}
 
-	const contractPolicy = resolveContractBranchProtectionPolicy(contractPath);
+	const contractResolution =
+		resolveContractBranchProtectionPolicy(contractPath);
+	const contractPolicy = contractResolution.branchProtectionPolicy;
 	const { checks: requestedChecks, ecosystem } = resolveRequiredChecks(
 		options,
 		contractPolicy,
 	);
-	if (requestedChecks.length === 0) {
+	const requiredCheckContexts =
+		(contractResolution.requiredCheckManifestPath
+			? resolveManifestBackedRequiredCheckContexts({
+					requiredChecks: requestedChecks,
+					contractPath,
+					requiredCheckManifestPath:
+						contractResolution.requiredCheckManifestPath,
+					...(contractResolution.activeProvider
+						? { activeProvider: contractResolution.activeProvider }
+						: {}),
+				})
+			: null) ??
+		resolveProviderBackedRequiredCheckContexts({
+			requiredChecks: requestedChecks,
+			...(contractResolution.activeProvider
+				? { activeProvider: contractResolution.activeProvider }
+				: {}),
+		});
+
+	if (requiredCheckContexts.length === 0) {
 		return {
 			ok: false,
 			error: {
@@ -362,7 +480,7 @@ export async function runBranchProtect(
 		const payload = buildPayload({
 			branchRef,
 			rulesetName,
-			requiredChecks: requestedChecks,
+			requiredChecks: requiredCheckContexts,
 			policy: managedPolicy,
 			repositoryVisibility,
 			existingRuleset,
@@ -376,7 +494,7 @@ export async function runBranchProtect(
 					repository: `${owner}/${repo}`,
 					branch,
 					rulesetName,
-					requiredChecks: requestedChecks,
+					requiredChecks: requiredCheckContexts,
 					ecosystem,
 					repositoryVisibility,
 					managedPolicy: formatManagedPolicyOutput(managedPolicy),
@@ -416,7 +534,7 @@ export async function runBranchProtect(
 				branch,
 				rulesetId: updatedRuleset.id,
 				rulesetName,
-				requiredChecks: requestedChecks,
+				requiredChecks: requiredCheckContexts,
 				ecosystem,
 				repositoryVisibility,
 				managedPolicy: formatManagedPolicyOutput(managedPolicy),

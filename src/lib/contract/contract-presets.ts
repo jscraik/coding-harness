@@ -3,10 +3,10 @@
  *
  * Three tiers of contract complexity:
  *
- * - `minimal`  — 4 sections (~1.4 KB). Solo-dev or first-time setup.
- *                Only the fields required for gate dispatch to work.
+ * - `minimal`  — 7 sections (~2.5 KB). Solo-dev or first-time setup.
+ *                Includes canonical north-star governance surfaces.
  *
- * - `standard` — 7 sections (~3 KB). Small team or CI-integrated project.
+ * - `standard` — 10 sections (~4 KB). Small team or CI-integrated project.
  *                Adds diff budget, docs-drift rules, and evidence policy.
  *                This is the recommended default.
  *
@@ -17,7 +17,13 @@
  */
 
 import { SCHEMA_VERSION } from "./json-schema.js";
-import { DEFAULT_CONTRACT, DEFAULT_TOOLING_POLICY } from "./types.js";
+import {
+	DEFAULT_CONTRACT,
+	DEFAULT_NORTH_STAR_CONTRACT,
+	DEFAULT_OVERRIDE_REVIEWER_REGISTRY,
+	DEFAULT_PRODUCT_SURFACE_REGISTRY,
+	DEFAULT_TOOLING_POLICY,
+} from "./types.js";
 
 // ─── Preset type ─────────────────────────────────────────────────────────────
 
@@ -85,17 +91,45 @@ const STANDARD_RISK_TIER_RULES = {
 	"**/*.test.ts": "low",
 };
 
+function buildCanonicalNorthStarSurfaces(): Record<string, unknown> {
+	return {
+		northStar: {
+			...DEFAULT_NORTH_STAR_CONTRACT,
+			safetyFloor: [...DEFAULT_NORTH_STAR_CONTRACT.safetyFloor],
+			nonGoals: [...DEFAULT_NORTH_STAR_CONTRACT.nonGoals],
+			decisionQuestions: DEFAULT_NORTH_STAR_CONTRACT.decisionQuestions.map(
+				(question) => ({ ...question }),
+			),
+		},
+		productSurface: {
+			surfaces: DEFAULT_PRODUCT_SURFACE_REGISTRY.surfaces.map((surface) => ({
+				...surface,
+				ownedPaths: [...surface.ownedPaths],
+			})),
+		},
+		overrideReviewerRegistry: {
+			trustedReviewers: DEFAULT_OVERRIDE_REVIEWER_REGISTRY.trustedReviewers.map(
+				(reviewer) => ({
+					...reviewer,
+				}),
+			),
+		},
+	};
+}
+
 // ─── Preset builders ──────────────────────────────────────────────────────────
 
 /**
- * `minimal` preset — 4 sections.
+ * `minimal` preset — canonical core sections.
  *
- * Enough for gates to dispatch correctly. Suitable for first-time setup
- * or solo-dev repos that don't yet need governance overhead.
+ * Enough for gates to dispatch correctly and preserve canonical north-star
+ * contract surfaces. Suitable for first-time setup or solo-dev repos that
+ * don't yet need broader governance overhead.
  */
 function buildMinimalPreset(): Record<string, unknown> {
 	return {
 		version: SCHEMA_VERSION,
+		...buildCanonicalNorthStarSurfaces(),
 		riskTierRules: { ...STANDARD_RISK_TIER_RULES },
 		mergePolicy: {
 			high: ["review-gate"],
@@ -115,6 +149,7 @@ function buildMinimalPreset(): Record<string, unknown> {
 function buildStandardPreset(): Record<string, unknown> {
 	return {
 		version: SCHEMA_VERSION,
+		...buildCanonicalNorthStarSurfaces(),
 		riskTierRules: { ...STANDARD_RISK_TIER_RULES },
 		mergePolicy: {
 			high: ["review-gate", "evidence-verify"],
@@ -149,6 +184,7 @@ function buildStandardPreset(): Record<string, unknown> {
 function buildFullPreset(): Record<string, unknown> {
 	return {
 		version: SCHEMA_VERSION,
+		...buildCanonicalNorthStarSurfaces(),
 		riskTierRules: { ...STANDARD_RISK_TIER_RULES },
 		mergePolicy: {
 			high: ["review-gate", "evidence-verify"],
@@ -207,8 +243,8 @@ export function buildContractPreset(
  */
 export const PRESET_DESCRIPTIONS: Record<ContractPreset, string> = {
 	minimal:
-		"4 sections (~1.4 KB). Solo-dev / first-time setup. Just enough for gates to dispatch.",
+		"7 sections (~2.5 KB). Solo-dev / first-time setup with canonical north-star surfaces.",
 	standard:
-		"7 sections (~3 KB). Recommended default. Adds diff budget, docs-drift, and evidence policy.",
+		"10 sections (~4 KB). Recommended default. Adds diff budget, docs-drift, and evidence policy.",
 	full: "All governance sections (~10 KB). Enterprise / advanced. Equivalent to `harness init` output.",
 };

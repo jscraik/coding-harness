@@ -6,6 +6,11 @@ import {
 	DEFAULT_DB_FILENAME,
 	DEFAULT_HARNESS_DIR,
 } from "../lib/context-compound/constants.js";
+import {
+	NORTH_STAR_DECISION_QUESTION_SPECS,
+	NORTH_STAR_PRIMARY_BOTTLENECK,
+	NORTH_STAR_PRIMARY_METRIC,
+} from "../lib/contract/types.js";
 
 const constructorPaths: string[] = [];
 let ollamaAvailable = true;
@@ -56,6 +61,60 @@ vi.mock("../lib/context-compound/ollama.js", () => ({
 		}
 	},
 }));
+
+function minimalValidContract(overrides: Record<string, unknown> = {}) {
+	return {
+		version: "1.5.0",
+		northStar: {
+			mission:
+				"Coding Harness exists to let humans steer and agents execute safely, with PR lead time as the primary north-star metric.",
+			primaryMetric: NORTH_STAR_PRIMARY_METRIC,
+			primaryBottleneck: NORTH_STAR_PRIMARY_BOTTLENECK,
+			autonomyBoundary:
+				"Low and medium-risk autonomy should be automated where evidence is deterministic and rollback is clear; high-risk changes remain human-mediated.",
+			safetyFloor: [
+				"deterministic evidence",
+				"strict current-head SHA discipline",
+			],
+			nonGoals: ["policy surface area as proxy progress"],
+			decisionQuestions: NORTH_STAR_DECISION_QUESTION_SPECS.map((question) => ({
+				id: question.id,
+				prompt: question.prompt,
+			})),
+		},
+		productSurface: {
+			surfaces: [
+				{
+					surfaceId: "context",
+					surfaceType: "command",
+					class: "core",
+					owner: "workflow",
+					northStarContribution:
+						"Retrieval access keeps review and rework loops tight for agents.",
+					manualGlueReductionClaim:
+						"Avoids repeated manual context curation before each run.",
+					reliabilityContribution:
+						"Provides deterministic context retrieval defaults from contract policy.",
+					evidenceReference: "src/commands/context.ts",
+					ownedPaths: ["src/commands/context.ts"],
+					lastReviewedAt: "2026-04-21",
+				},
+			],
+		},
+		overrideReviewerRegistry: {
+			trustedReviewers: [
+				{
+					reviewerId: "jamie-craik",
+					reviewerType: "user",
+					signatureRef: "refs/reviewers/jamie-craik",
+					displayName: "Jamie Craik",
+					status: "active",
+				},
+			],
+		},
+		...overrides,
+	};
+}
 
 describe("runContextCLI", () => {
 	const tempDirs: string[] = [];
@@ -173,14 +232,13 @@ describe("runContextCLI", () => {
 		writeFileSync(
 			join(root, "harness.contract.json"),
 			JSON.stringify(
-				{
-					version: "1.5.0",
+				minimalValidContract({
 					contextCompact: {
 						thresholdPercent: 62,
 						microCompactThresholdTokens: 1400,
 						strategy: "micro",
 					},
-				},
+				}),
 				null,
 				2,
 			),
@@ -208,14 +266,13 @@ describe("runContextCLI", () => {
 		writeFileSync(
 			join(root, "harness.contract.json"),
 			JSON.stringify(
-				{
-					version: "1.5.0",
+				minimalValidContract({
 					contextCompact: {
 						thresholdPercent: 99,
 						microCompactThresholdTokens: 999_999,
 						strategy: "balanced",
 					},
-				},
+				}),
 				null,
 				2,
 			),
@@ -245,14 +302,13 @@ describe("runContextCLI", () => {
 		writeFileSync(
 			join(root, "harness.contract.json"),
 			JSON.stringify(
-				{
-					version: "1.5.0",
+				minimalValidContract({
 					contextCompact: {
 						thresholdPercent: 50,
 						microCompactThresholdTokens: 5,
 						strategy: "balanced",
 					},
-				},
+				}),
 				null,
 				2,
 			),
@@ -280,14 +336,13 @@ describe("runContextCLI", () => {
 		writeFileSync(
 			join(root, "harness.contract.json"),
 			JSON.stringify(
-				{
-					version: "1.5.0",
+				minimalValidContract({
 					contextCompact: {
 						thresholdPercent: 95,
 						microCompactThresholdTokens: 900,
 						strategy: "aggressive",
 					},
-				},
+				}),
 				null,
 				2,
 			),

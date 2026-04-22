@@ -516,6 +516,26 @@ describe("normaliseLinearGateResult (P4 governance failure classification)", () 
 		}
 	});
 
+	it("maps transient infrastructure error codes to transient_infra", () => {
+		for (const code of [
+			"TIMEOUT",
+			"NETWORK_ERROR",
+			"RATE_LIMITED",
+			"SERVICE_UNAVAILABLE",
+			"ETIMEDOUT",
+		]) {
+			const classification = classifyLinearGateFailure({
+				ok: false,
+				error: { code, message: "transient failure" },
+			});
+			expect(classification).toEqual({
+				failureClass: "transient_infra",
+				nextAction:
+					"Retry once after infrastructure recovers, then rerun linear-gate.",
+			});
+		}
+	});
+
 	it("returns null for classifyLinearGateFailure when gate passed", () => {
 		const classification = classifyLinearGateFailure(
 			makeLinearGateResult({
@@ -737,8 +757,13 @@ describe("normaliseReviewGateResult", () => {
 
 		expect(result.status).toBe("fail");
 		expect(result.findings).toHaveLength(1);
-		expect(result.findings[0]?.id).toBe("review-gate.blocker.0");
+		expect(result.findings[0]?.id).toBe(
+			"review-gate.blocker.required_check_failed",
+		);
 		expect(result.action_now[0]).toContain("Required check");
+		expect(result.meta?.blockedFailureClasses).toContain(
+			"required_check_failed",
+		);
 	});
 
 	it("maps error output to internal finding and recovery action", () => {
@@ -1056,6 +1081,88 @@ describe("normalisePreflightGateResult (additional edge cases)", () => {
 		expect(result.findings[0]?.fix.manual).toContain("my-check");
 		expect(result.findings[0]?.fix.suppressible).toBe(false);
 	});
+
+	it("maps admission-declaration incomplete failures to admission_incomplete blocker class", () => {
+		const result = normalisePreflightGateResult(
+			makePreflightResult({
+				passed: false,
+				checks: [
+					{
+						id: "admission-declaration",
+						description: "Validate north-star admission declaration",
+						severity: "error",
+						passed: false,
+						message:
+							"admission_incomplete: north_star_metric is required; evidence_links must contain at least one evidence reference",
+						durationMs: 1,
+					},
+				],
+				summary: { total: 1, passed: 0, failed: 1, warnings: 0, durationMs: 1 },
+			}),
+		);
+
+		expect(result.findings[0]?.id).toBe(
+			"preflight-gate.blocker.admission_incomplete",
+		);
+		expect(result.meta?.blockedFailureClasses).toContain(
+			"admission_incomplete",
+		);
+	});
+
+	it("maps admission-declaration unjustified failures to admission_unjustified blocker class", () => {
+		const result = normalisePreflightGateResult(
+			makePreflightResult({
+				passed: false,
+				checks: [
+					{
+						id: "admission-declaration",
+						description: "Validate north-star admission declaration",
+						severity: "error",
+						passed: false,
+						message:
+							"admission_unjustified: metric_impact_declared cannot be 'none' when policy_surface_delta > 0",
+						durationMs: 1,
+					},
+				],
+				summary: { total: 1, passed: 0, failed: 1, warnings: 0, durationMs: 1 },
+			}),
+		);
+
+		expect(result.findings[0]?.id).toBe(
+			"preflight-gate.blocker.admission_unjustified",
+		);
+		expect(result.meta?.blockedFailureClasses).toContain(
+			"admission_unjustified",
+		);
+	});
+
+	it("preserves all admission failure classes when both classes are present", () => {
+		const result = normalisePreflightGateResult(
+			makePreflightResult({
+				passed: false,
+				checks: [
+					{
+						id: "admission-declaration",
+						description: "Validate north-star admission declaration",
+						severity: "error",
+						passed: false,
+						message:
+							"admission_incomplete: north_star_metric is required; admission_unjustified: metric_impact_declared cannot be 'none' when policy_surface_delta > 0",
+						durationMs: 1,
+					},
+				],
+				summary: { total: 1, passed: 0, failed: 1, warnings: 0, durationMs: 1 },
+			}),
+		);
+
+		expect(result.findings.map((finding) => finding.id)).toEqual([
+			"preflight-gate.blocker.admission_incomplete",
+			"preflight-gate.blocker.admission_unjustified",
+		]);
+		expect(result.meta?.blockedFailureClasses).toEqual(
+			expect.arrayContaining(["admission_incomplete", "admission_unjustified"]),
+		);
+	});
 });
 
 describe("normaliseReviewGateResult (additional edge cases)", () => {
@@ -1168,7 +1275,7 @@ describe("normaliseReviewGateResult (additional edge cases)", () => {
 		);
 	});
 
-	it("multiple blockers → one finding per blocker with indexed ids", () => {
+	it("multiple blockers → one finding per blocker with stable failure-class ids", () => {
 		const result = normaliseReviewGateResult(
 			makeReviewResult({
 				ok: true,
@@ -1194,9 +1301,63 @@ describe("normaliseReviewGateResult (additional edge cases)", () => {
 			}),
 		);
 		expect(result.findings).toHaveLength(3);
-		expect(result.findings[0]?.id).toBe("review-gate.blocker.0");
-		expect(result.findings[1]?.id).toBe("review-gate.blocker.1");
-		expect(result.findings[2]?.id).toBe("review-gate.blocker.2");
+		expect(result.findings[0]?.id).toBe(
+			"review-gate.blocker.required_check_failed",
+		);
+		expect(result.findings[1]?.id).toBe(
+			"review-gate.blocker.required_check_pending",
+		);
+		expect(result.findings[2]?.id).toBe("review-gate.blocker.review_missing");
+		expect(result.meta?.blockedFailureClasses).toEqual(
+			expect.arrayContaining([
+				"required_check_failed",
+				"required_check_pending",
+				"review_missing",
+			]),
+		);
+	});
+
+	it("maps canonical north-star blocker prefixes to stable review failure classes", () => {
+		const result = normaliseReviewGateResult(
+			makeReviewResult({
+				ok: true,
+				output: {
+					verified: false,
+					headSha: "aabbccddaabbccddaabbccddaabbccddaabbccdd",
+					checkStatus: "completed",
+					checkConclusion: "failure",
+					needsRerun: false,
+					timedOut: false,
+					policy_gate_status: "fail",
+					plan_traceability_status: "fail",
+					plan_ids: [],
+					blockers: [
+						"review_evidence_contradiction: North-star decision responses must include evidence references for each question; missing evidence for: lead_time_path",
+						"safety_floor_violation: North-star decision responses contradict throughput intent unless explicitly declared as no-impact; negative answers found for: manual_glue",
+					],
+					actionable_count: 2,
+					informational_count: 0,
+					confidence_rubric: {
+						score: 1,
+						level: "low",
+						rationale: ["blocked"],
+					},
+				},
+			}),
+		);
+
+		expect(result.findings[0]?.id).toBe(
+			"review-gate.blocker.review_evidence_contradiction",
+		);
+		expect(result.findings[1]?.id).toBe(
+			"review-gate.blocker.safety_floor_violation",
+		);
+		expect(result.meta?.blockedFailureClasses).toEqual(
+			expect.arrayContaining([
+				"review_evidence_contradiction",
+				"safety_floor_violation",
+			]),
+		);
 	});
 
 	it("plan_ids appear in evidence_ref as plan: refs", () => {

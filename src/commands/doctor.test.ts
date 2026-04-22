@@ -6,7 +6,7 @@ import { join } from "node:path";
  * Tests for harness doctor command (JSC-65)
  */
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { runDoctor } from "./doctor.js";
+import { runDoctor, runDoctorCLI } from "./doctor.js";
 
 // Mock spawnSync for tool checks (node, pnpm, git, gh)
 vi.mock("node:child_process", async (importOriginal) => {
@@ -291,6 +291,21 @@ describe("runDoctor — file checks", () => {
 		expect(check?.status).toBe("ok");
 	});
 
+	it("fails when harness.contract.json is schema-invalid", () => {
+		writeFileSync(
+			join(dir, "harness.contract.json"),
+			JSON.stringify({ version: "not-a-contract-version" }),
+		);
+		mockAllToolsOk();
+
+		const report = runDoctor({ dir });
+		const check = report.checks.find(
+			(c) => c.id === "file:harness.contract.json",
+		);
+		expect(check?.status).toBe("fail");
+		expect(check?.message).toContain("fails contract validation");
+	});
+
 	it("warns when memory.json is missing", () => {
 		mockAllToolsOk();
 		const report = runDoctor({ dir });
@@ -357,6 +372,7 @@ describe("runDoctor — file checks", () => {
 		const report = runDoctor({ dir });
 		const check = report.checks.find((c) => c.id === "file:agent-first-status");
 		expect(check?.status).toBe("warn");
+		expect(check?.message).toContain("health mode blocks");
 	});
 
 	it("ok when agent-first-status.md is present", () => {
@@ -371,6 +387,65 @@ describe("runDoctor — file checks", () => {
 		const report = runDoctor({ dir });
 		const check = report.checks.find((c) => c.id === "file:agent-first-status");
 		expect(check?.status).toBe("ok");
+	});
+});
+
+describe("runDoctorCLI", () => {
+	afterEach(() => {
+		vi.restoreAllMocks();
+	});
+
+	it("returns 0 for --help", () => {
+		expect(runDoctorCLI(["--help"], () => "0.0.0-test")).toBe(0);
+	});
+
+	it("returns 0 for --checklist", () => {
+		expect(runDoctorCLI(["--checklist"], () => "0.0.0-test")).toBe(0);
+	});
+
+	it("returns 2 when --dir is missing a value", () => {
+		const consoleErrorSpy = vi
+			.spyOn(console, "error")
+			.mockImplementation(() => undefined);
+		try {
+			expect(runDoctorCLI(["--dir", "--json"], () => "0.0.0-test")).toBe(2);
+			expect(consoleErrorSpy).toHaveBeenCalledWith(
+				"Error: --dir requires a path",
+			);
+		} finally {
+			consoleErrorSpy.mockRestore();
+		}
+	});
+
+	it("emits JSON report when --json is provided", () => {
+		const dir = makeTmpDir();
+		mockAllToolsOk();
+		writeFileSync(
+			join(dir, "harness.contract.json"),
+			JSON.stringify({ version: "1.0.0" }),
+		);
+		const consoleInfoSpy = vi
+			.spyOn(console, "info")
+			.mockImplementation(() => undefined);
+		try {
+			const exitCode = runDoctorCLI(
+				["--json", "--dir", dir],
+				() => "0.0.0-test",
+			);
+			expect(exitCode).toBeTypeOf("number");
+			expect(consoleInfoSpy).toHaveBeenCalledTimes(1);
+			const payload = JSON.parse(String(consoleInfoSpy.mock.calls[0]?.[0])) as {
+				version: string;
+				dir: string;
+				checks: unknown[];
+			};
+			expect(payload.version).toBe("0.0.0-test");
+			expect(payload.dir).toBe(dir);
+			expect(Array.isArray(payload.checks)).toBe(true);
+		} finally {
+			consoleInfoSpy.mockRestore();
+			if (existsSync(dir)) rmSync(dir, { recursive: true, force: true });
+		}
 	});
 });
 

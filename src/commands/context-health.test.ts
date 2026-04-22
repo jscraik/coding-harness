@@ -1,7 +1,12 @@
 import { mkdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { afterEach, describe, expect, it } from "vitest";
-import { DEFAULT_CONTEXT_INTEGRITY_POLICY } from "../lib/contract/types.js";
+import {
+	DEFAULT_CONTEXT_INTEGRITY_POLICY,
+	NORTH_STAR_DECISION_QUESTION_SPECS,
+	NORTH_STAR_PRIMARY_BOTTLENECK,
+	NORTH_STAR_PRIMARY_METRIC,
+} from "../lib/contract/types.js";
 import {
 	EXIT_CODES,
 	runContextHealth,
@@ -11,6 +16,60 @@ import {
 function write(path: string, content: string): void {
 	mkdirSync(dirname(path), { recursive: true });
 	writeFileSync(path, content, "utf-8");
+}
+
+function minimalValidContract(overrides: Record<string, unknown> = {}) {
+	return {
+		version: "1.5.0",
+		northStar: {
+			mission:
+				"Coding Harness exists to let humans steer and agents execute safely, with PR lead time as the primary north-star metric.",
+			primaryMetric: NORTH_STAR_PRIMARY_METRIC,
+			primaryBottleneck: NORTH_STAR_PRIMARY_BOTTLENECK,
+			autonomyBoundary:
+				"Low and medium-risk autonomy should be automated where evidence is deterministic and rollback is clear; high-risk changes remain human-mediated.",
+			safetyFloor: [
+				"deterministic evidence",
+				"strict current-head SHA discipline",
+			],
+			nonGoals: ["policy surface area as proxy progress"],
+			decisionQuestions: NORTH_STAR_DECISION_QUESTION_SPECS.map((question) => ({
+				id: question.id,
+				prompt: question.prompt,
+			})),
+		},
+		productSurface: {
+			surfaces: [
+				{
+					surfaceId: "context-health",
+					surfaceType: "command",
+					class: "core",
+					owner: "workflow",
+					northStarContribution:
+						"Keeps context integrity measurable along the PR lead-time path.",
+					manualGlueReductionClaim:
+						"Automates integrity checks that were previously manual.",
+					reliabilityContribution:
+						"Produces deterministic context-health reports for governance checks.",
+					evidenceReference: "src/commands/context-health.ts",
+					ownedPaths: ["src/commands/context-health.ts"],
+					lastReviewedAt: "2026-04-21",
+				},
+			],
+		},
+		overrideReviewerRegistry: {
+			trustedReviewers: [
+				{
+					reviewerId: "jamie-craik",
+					reviewerType: "user",
+					signatureRef: "refs/reviewers/jamie-craik",
+					displayName: "Jamie Craik",
+					status: "active",
+				},
+			],
+		},
+		...overrides,
+	};
 }
 
 describe("context-health command", () => {
@@ -30,10 +89,9 @@ describe("context-health command", () => {
 		write(
 			join(root, "harness.contract.json"),
 			JSON.stringify(
-				{
-					version: "1.5.0",
+				minimalValidContract({
 					contextIntegrityPolicy: DEFAULT_CONTEXT_INTEGRITY_POLICY,
-				},
+				}),
 				null,
 				2,
 			),
@@ -85,10 +143,9 @@ describe("context-health command", () => {
 		write(
 			join(root, "harness.contract.json"),
 			JSON.stringify(
-				{
-					version: "1.5.0",
+				minimalValidContract({
 					contextIntegrityPolicy: DEFAULT_CONTEXT_INTEGRITY_POLICY,
-				},
+				}),
 				null,
 				2,
 			),
@@ -206,10 +263,9 @@ describe("context-health command", () => {
 		write(
 			join(root, "harness.contract.json"),
 			JSON.stringify(
-				{
-					version: "1.5.0",
+				minimalValidContract({
 					contextIntegrityPolicy: DEFAULT_CONTEXT_INTEGRITY_POLICY,
-				},
+				}),
 				null,
 				2,
 			),
