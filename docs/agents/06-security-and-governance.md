@@ -1,5 +1,5 @@
 ---
-last_validated: 2026-04-20
+last_validated: 2026-04-22
 ---
 
 # Security and governance
@@ -37,6 +37,7 @@ This repository follows conservative defaults:
 - Local Memory preflight fallback probes must fail fast: keep bounded curl timeouts in `scripts/codex-preflight-local-memory-legacy.sh`, validate only the `rest_api.*` settings actually used to construct the health URL, and treat helper-runner exit code `3` as "unavailable, try the next runner" rather than a terminal failure.
 - Harness-managed consumer repositories are a defined exception: `scripts/check-environment.sh` should prefer a repo-local CLI runner or wrapper, then a mise-resolved harness binary (`mise which harness`), and use a global npm install of `@brainwav/coding-harness` only as the final fallback with explicit `NPM_TOKEN` auth wiring.
 - CircleCI bootstrap is allowed to install baseline shell tooling (`gh`, `rg`, `fd`, `jq`, `make`, `realpath`) and `mise`, then trust `.mise.toml`, before readiness gates run; the readiness gate itself must remain fail-closed and should not hide missing-tool drift by self-installing them.
+- CircleCI orb-pinning enforcement should verify `ralph` availability (`ralph --version`) and may install pinned `ralph-gold` in ephemeral CI jobs when the CLI is missing.
 - Project Brain memory-extension checks must stay project-local: keep required `.harness/**` knowledge paths in `toolingPolicy.projectBrainMemoryExtension.requiredPaths` and do not gate on workspace-level `~/.codex` state.
 - CI pnpm bootstrap must avoid privileged shim rewrites. Prefer a user-writable prefix such as `$HOME/.local` plus `$BASH_ENV`/`$GITHUB_PATH` path propagation over `corepack enable`, which can fail on hosted runners when `/usr/local/bin/pnpm` is not writable.
 - OpenSSF baseline tracking for this repository is grounded by `docs/security/2026-04-09-openssf-osps-baseline-status.md`; keep its control matrix synchronized with `security/openssf-scorecard-policy.json` and `scripts/check-scorecard-regressions.mjs`.
@@ -126,7 +127,7 @@ The staged `gitleaks` lane should prefer the repo-root `.gitleaks.toml` when pre
 `hooks-commit-msg` remains a required Makefile wrapper even though `prek.toml` only installs `pre-commit` and `pre-push`; use that wrapper for deterministic commit-policy verification and cross-repo governance checks.
 `scripts/setup-git-hooks.js` must run `prek install --overwrite` and patch generated `prek` shims with `PREK_HOME="${PREK_HOME:-$HERE/../.cache/prek}"` so hook logs/cache writes stay repo-local under sandboxed executions and legacy hook wrappers are not chained.
 
-`docs-gate` no longer covers only branch/CI governance wording. Local hook, readiness, and tooling-runtime changes are expected to update this guide and `docs/agents/02-tooling-policy.md` in the same change so pre-push drift is caught before GitHub does.
+`docs-gate` no longer covers only branch/CI governance wording. Local hook, readiness, tooling-runtime, and architecture-context changes are expected to update this guide together with `docs/agents/02-tooling-policy.md`, `docs/agents/00-architecture-bootstrap.md`, and the operator-facing surfaces (`README.md`, `AGENTS.md`, `CONTRIBUTING.md`) in the same change so pre-push drift is caught before GitHub does.
 Port-free usage should remain scoped to app-style run actions that map to `dev`/`start` scripts. CLI-only repositories can omit port-free run actions without violating governance.
 
 ## Frontmatter metadata

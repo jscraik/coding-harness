@@ -250,6 +250,10 @@ workflows:
               npm:beautiful-mermaid npm:markdownlint-cli2 npm:semver npm:wrangler \
               trivy vale
             semgrep --version
+            if ! command -v ralph >/dev/null 2>&1; then
+              python3 -m pip install --quiet --user "ralph-gold==1.0.0"
+            fi
+            ralph --version
             bash scripts/check-environment.sh
           filters:
             tags:

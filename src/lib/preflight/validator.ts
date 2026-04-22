@@ -319,14 +319,6 @@ export async function runPreflightGate(
 	const extensions = contract?.gateExtensions?.preflightGate;
 	const riskTier = resolveRiskTier(options, contract);
 	const northStarSummary = buildNorthStarSummary(contract);
-	const admissionCheck = validateAdmissionDeclaration(
-		options.admission,
-		contract,
-		options,
-	);
-	if (admissionCheck) {
-		checks.push(admissionCheck);
-	}
 
 	// Run pre-gate extension hooks before native checks.
 	const shortCircuit = runPreHooks(extensions, checks, hookDecisions);
@@ -340,6 +332,15 @@ export async function runPreflightGate(
 			northStarSummary,
 			options.admission,
 		);
+	}
+
+	const admissionCheck = validateAdmissionDeclaration(
+		options.admission,
+		contract,
+		options,
+	);
+	if (admissionCheck) {
+		checks.push(admissionCheck);
 	}
 
 	// Determine which checks to run
@@ -780,20 +781,22 @@ function validateAdmissionDeclaration(
 				);
 			}
 		}
-		const governedChangedFiles = (options?.files ?? [])
-			.map((filePath) => normalizeRepoRelativePath(filePath))
-			.filter((filePath) => isGovernedPath(filePath));
-		for (const governedFile of governedChangedFiles) {
-			const matchedByInventory = registeredSurfaces.some((surface) =>
-				(surface.ownedPaths ?? []).some((ownedPath) =>
-					matchesOwnedPath(governedFile, ownedPath),
-				),
-			);
-			if (!matchedByInventory) {
-				addIssue(
-					`governed changed file '${governedFile}' is not covered by productSurface.surfaces[].ownedPaths`,
-					"surface_registration_gap",
+		if (registeredSurfaces.length > 0) {
+			const governedChangedFiles = (options?.files ?? [])
+				.map((filePath) => normalizeRepoRelativePath(filePath))
+				.filter((filePath) => isGovernedPath(filePath));
+			for (const governedFile of governedChangedFiles) {
+				const matchedByInventory = registeredSurfaces.some((surface) =>
+					(surface.ownedPaths ?? []).some((ownedPath) =>
+						matchesOwnedPath(governedFile, ownedPath),
+					),
 				);
+				if (!matchedByInventory) {
+					addIssue(
+						`governed changed file '${governedFile}' is not covered by productSurface.surfaces[].ownedPaths`,
+						"surface_registration_gap",
+					);
+				}
 			}
 		}
 	}
