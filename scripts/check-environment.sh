@@ -134,10 +134,13 @@ else
 	echo "Warning: tooling doc not found at $TOOLING_DOC_PATH; skipping doc sync check."
 fi
 
-	required_bins=("pnpm" "node" "jq" "make" "rg" "fd" "prek" "diagram" "mise" "realpath" "vale" "argos" "cosign" "cloudflared" "vitest" "ruff" "eslint" "agent-browser" "agentation-mcp" "mmdc" "markdownlint-cli2" "wrangler" "beautiful-mermaid" "semgrep" "semver" "trivy" "rsearch" "wsearch")
-	for bin in "${required_bins[@]}"; do
-		if ! command -v "$bin" >/dev/null 2>&1; then
-			echo "Error: required binary '$bin' is not installed or not on PATH"
+		required_bins=("pnpm" "node" "jq" "make" "rg" "fd" "prek" "diagram" "mise" "realpath" "vale" "argos" "cosign" "cloudflared" "vitest" "ruff" "eslint" "agent-browser" "agentation-mcp" "mmdc" "markdownlint-cli2" "wrangler" "semgrep" "semver" "trivy" "rsearch" "wsearch")
+		if [[ "$(uname -s)" == "Darwin" ]]; then
+			required_bins+=("beautiful-mermaid")
+		fi
+		for bin in "${required_bins[@]}"; do
+			if ! command -v "$bin" >/dev/null 2>&1; then
+				echo "Error: required binary '$bin' is not installed or not on PATH"
 			exit 1
 		fi
 	done
