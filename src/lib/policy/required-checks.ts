@@ -28,7 +28,6 @@ const CIRCLECI_JOB_NAMES = new Set<string>([
 	"check",
 	"build",
 	"memory",
-	"security-scan",
 	"dependency-scan",
 	"orb-pinning",
 	"docs-gate",

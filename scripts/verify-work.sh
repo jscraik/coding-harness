@@ -315,7 +315,7 @@ run_ci_check_alignment_gate() {
 		fi
 		while IFS= read -r name; do
 			case "$name" in
-				lint|typecheck|test|audit|check|build|memory|security-scan|dependency-scan|orb-pinning|docs-gate|linear-gate|risk-policy-gate|consistency-drift-health|pr-template)
+				lint|typecheck|test|audit|check|build|memory|dependency-scan|orb-pinning|docs-gate|linear-gate|risk-policy-gate|consistency-drift-health|pr-template)
 					suspicious+=("$name")
 					;;
 				*)
