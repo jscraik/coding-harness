@@ -498,7 +498,8 @@ export const COMMAND_SPECS: CommandSpec[] = [
 		errorLabel: "Review Gate Error",
 		execute: (args) => {
 			const jsonFlag = args.includes("--json");
-			const envToken = process.env.GH_TOKEN ?? process.env.GITHUB_TOKEN;
+			const envToken =
+				process.env.GH_TOKEN?.trim() || process.env.GITHUB_TOKEN?.trim();
 			const ownerIndex = args.indexOf("--owner");
 			const repoIndex = args.indexOf("--repo");
 			const prIndex = args.indexOf("--pr");
