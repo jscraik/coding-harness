@@ -285,16 +285,22 @@ run_ci_check_alignment_gate() {
 	fi
 
 	local provider
-	provider="$(jq -r '.activeProvider // ""' "$normalized_manifest_path")"
+	provider="$(
+		jq -r '
+			.activeProvider
+			// (.requiredChecks[]? | (.provider // .sourceAppSlug // .sourceAppId // empty))
+			// ""
+		' "$normalized_manifest_path" | head -n 1
+	)"
 	if [[ -z "$provider" ]]; then
-		echo "[verify-work] ci-check-alignment: activeProvider is required in required checks manifest"
+		echo "[verify-work] ci-check-alignment: active provider identity is required in required checks manifest"
 		echo "[verify-work] ci-check-alignment: blocking due to missing canonical provider identity"
 		return 1
 	fi
 
 	local github_check_names
 	if [[ "$normalized_manifest_source" == "raw-fallback" ]]; then
-		github_check_names="$(jq -r --arg provider "$provider" '.requiredChecks[]? | select((.sourceAppSlug // .sourceAppId // "") == $provider) | .githubCheckName // empty' "$normalized_manifest_path")"
+		github_check_names="$(jq -r --arg provider "$provider" '.requiredChecks[]? | select((.provider // .sourceAppSlug // .sourceAppId // "") == $provider) | .githubCheckName // empty' "$normalized_manifest_path")"
 	else
 		github_check_names="$(jq -r --arg provider "$provider" '.gates[]? | select((.provider // "") == $provider) | .githubCheckName // empty' "$normalized_manifest_path")"
 	fi
@@ -309,19 +315,19 @@ run_ci_check_alignment_gate() {
 		local suspicious=()
 		local circleci_check_names
 		if [[ "$normalized_manifest_source" == "raw-fallback" ]]; then
-			circleci_check_names="$(jq -r '.requiredChecks[]? | select((.sourceAppSlug // .sourceAppId // "") == "circleci") | .githubCheckName // empty' "$normalized_manifest_path")"
+			circleci_check_names="$(jq -r '.requiredChecks[]? | select((.provider // .sourceAppSlug // .sourceAppId // "") == "circleci") | .githubCheckName // empty' "$normalized_manifest_path")"
 		else
 			circleci_check_names="$(jq -r '.gates[]? | select((.provider // "") == "circleci") | .githubCheckName // empty' "$normalized_manifest_path")"
 		fi
-			while IFS= read -r name; do
-				case "$name" in
-					lint|typecheck|test|audit|check|build|memory|dependency-scan|orb-pinning|docs-gate|linear-gate|risk-policy-gate|consistency-drift-health|pr-template)
-						suspicious+=("$name")
-						;;
-					*)
-						;;
-				esac
-			done <<< "$circleci_check_names"
+		while IFS= read -r name; do
+			case "$name" in
+				lint|typecheck|test|audit|check|build|memory|dependency-scan|orb-pinning|docs-gate|linear-gate|risk-policy-gate|consistency-drift-health|pr-template)
+					suspicious+=("$name")
+					;;
+				*)
+					;;
+			esac
+		done <<< "$circleci_check_names"
 
 		if (( ${#suspicious[@]} > 0 )); then
 			printf '[verify-work] ci-check-alignment: CircleCI job-like githubCheckName values detected: %s\n' "${suspicious[*]}"

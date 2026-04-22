@@ -553,6 +553,7 @@ function validateAdmissionDeclaration(
 		const escapedPattern = pattern.replace(/[|\\{}()[\]^$+*?.]/g, "\\$&");
 		const regexPattern = escapedPattern
 			.replace(/\\\*\\\*/g, "<<<DOUBLE_STAR>>>")
+			.replace(/\\\?/g, "[^/]")
 			.replace(/\\\*/g, "[^/]*")
 			.replace(/<<<DOUBLE_STAR>>>/g, ".*");
 		return new RegExp(`^${regexPattern}$`);

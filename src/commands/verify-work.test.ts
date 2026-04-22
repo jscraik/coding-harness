@@ -589,13 +589,35 @@ describe("scripts/verify-work.sh ci-check-alignment", () => {
 		);
 	});
 
-	it("blocks in raw fallback mode when activeProvider is missing", () => {
+	it("passes in raw fallback mode when provider is inferred from requiredChecks", () => {
 		scaffoldVerifyWorkScriptRepo({
 			repoRoot,
 			manifest: {
 				requiredChecks: [
 					{
+						provider: "github-actions",
 						sourceAppSlug: "github-actions",
+						githubCheckName: "ci / test",
+					},
+				],
+			},
+		});
+
+		const result = runVerifyWorkScript(repoRoot);
+		const combinedOutput = `${result.stdout}${result.stderr}`;
+
+		expect(result.status).toBe(0);
+		expect(combinedOutput).toContain(
+			"ci-check-alignment: manifest check names look aligned",
+		);
+	});
+
+	it("blocks in raw fallback mode when provider identity is unavailable", () => {
+		scaffoldVerifyWorkScriptRepo({
+			repoRoot,
+			manifest: {
+				requiredChecks: [
+					{
 						githubCheckName: "ci / test",
 					},
 				],
@@ -607,7 +629,7 @@ describe("scripts/verify-work.sh ci-check-alignment", () => {
 
 		expect(result.status).toBe(1);
 		expect(combinedOutput).toContain(
-			"ci-check-alignment: activeProvider is required in required checks manifest",
+			"ci-check-alignment: active provider identity is required in required checks manifest",
 		);
 		expect(combinedOutput).toContain(
 			"ci-check-alignment: blocking due to missing canonical provider identity",

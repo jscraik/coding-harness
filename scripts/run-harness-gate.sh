@@ -23,12 +23,17 @@ is_harness_source_repo() {
 
 if is_harness_source_repo; then
 	if command -v pnpm >/dev/null 2>&1; then
-		exec pnpm exec tsx "$REPO_ROOT/src/cli.ts" "$@"
+		if pnpm exec -- tsx --version >/dev/null 2>&1; then
+			exec pnpm exec tsx "$REPO_ROOT/src/cli.ts" "$@"
+		fi
+		echo "Warning: pnpm is installed but tsx is unavailable; falling back to alternate harness runners." >&2
 	else
-		echo "Error: pnpm is required to run the harness source CLI." >&2
-		echo "Install pnpm and retry." >&2
-		exit 1
+		echo "Warning: pnpm is unavailable; falling back to alternate harness runners." >&2
 	fi
+fi
+
+if [[ -f "$REPO_ROOT/dist/cli.js" ]] && command -v node >/dev/null 2>&1; then
+	exec node "$REPO_ROOT/dist/cli.js" "$@"
 fi
 
 if [[ -f "$REPO_ROOT/scripts/harness-cli.sh" && -r "$REPO_ROOT/scripts/harness-cli.sh" ]]; then
