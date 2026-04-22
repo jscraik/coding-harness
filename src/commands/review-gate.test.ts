@@ -2265,7 +2265,7 @@ describe("runReviewGate", () => {
 		}
 	});
 
-	it("fails closed when head commit is absent from PR commit metadata", async () => {
+	it("falls back to PR author when head commit is absent from commit metadata", async () => {
 		const mockCheckRuns: CheckRun[] = [
 			{
 				id: 1,
@@ -2307,8 +2307,8 @@ describe("runReviewGate", () => {
 
 		expect(result.ok).toBe(true);
 		if (result.ok) {
-			expect(result.output.verified).toBe(false);
-			expect(result.output.blockers).toContain(
+			expect(result.output.verified).toBe(true);
+			expect(result.output.blockers).not.toContain(
 				"Unable to determine coding actor from PR commit metadata; cannot verify reviewer independence",
 			);
 		}

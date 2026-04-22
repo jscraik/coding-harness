@@ -36,6 +36,7 @@ const CIRCLECI_JOB_NAMES = new Set<string>([
 	"risk-policy-gate",
 	"consistency-drift-health",
 	"pr-template",
+	"security-scan",
 ]);
 
 const GOVERNANCE_GATE_IDS = new Set<string>([

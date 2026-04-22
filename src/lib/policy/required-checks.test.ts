@@ -277,7 +277,7 @@ describe("findCircleCIJobNamedCheckBindings", () => {
 		expect(suspicious).toEqual([]);
 	});
 
-	it("allows the CircleCI security-scan check context", () => {
+	it("classifies CircleCI security-scan check contexts as job-name bindings", () => {
 		const normalized = normalizeManifest([
 			createRequiredCheck({
 				gateId: "security-scan",
@@ -295,6 +295,6 @@ describe("findCircleCIJobNamedCheckBindings", () => {
 		const suspicious = findCircleCIJobNamedCheckBindings(
 			normalized.value.gates,
 		);
-		expect(suspicious).toEqual([]);
+		expect(suspicious).toEqual(["security-scan"]);
 	});
 });

@@ -322,15 +322,7 @@ export const DEFAULT_PRODUCT_SURFACE_REGISTRY: ProductSurfaceRegistry = {
 };
 
 export const DEFAULT_OVERRIDE_REVIEWER_REGISTRY: OverrideReviewerRegistry = {
-	trustedReviewers: [
-		{
-			reviewerId: "jamie-craik",
-			reviewerType: "user",
-			signatureRef: "refs/reviewers/jamie-craik",
-			displayName: "Jamie Craik",
-			status: "active",
-		},
-	],
+	trustedReviewers: [],
 };
 
 export const PREFLIGHT_PRE_HOOK_IDS = [

@@ -109,10 +109,20 @@ function getReadinessCheckLabel(checkName?: string): string {
 	return normalizedCheckName;
 }
 
+function normalizeConstraintSourceToken(value: string): string {
+	return value
+		.trim()
+		.toLowerCase()
+		.replace(/[\s_]+/g, "-")
+		.replace(/-+/g, "-")
+		.replace(/^-+|-+$/g, "");
+}
+
 function resolveReviewCheckResult(
 	checkRuns: CheckRun[],
 	requestedCheckName: string,
 	pullRequestHeadSha: string,
+	requiredCheckSources?: Map<string, RequiredCheckSourceConstraint>,
 ): {
 	checkResult: ReturnType<typeof findReviewCheckRun>;
 	resolvedCheckName: string;
@@ -134,9 +144,21 @@ function resolveReviewCheckResult(
 	}
 
 	for (const candidateCheckName of candidates) {
-		const checkResult = findReviewCheckRun(checkRuns, candidateCheckName, {
+		const sourceConstraint = requiredCheckSources?.get(candidateCheckName);
+		let checkResult = findReviewCheckRun(checkRuns, candidateCheckName, {
 			headSha: pullRequestHeadSha,
+			...(sourceConstraint?.providerSlugs
+				? { providerSlugs: sourceConstraint.providerSlugs }
+				: {}),
+			...(sourceConstraint?.sourceAppIds
+				? { sourceAppIds: sourceConstraint.sourceAppIds }
+				: {}),
 		});
+		if (!checkResult.found && sourceConstraint) {
+			checkResult = findReviewCheckRun(checkRuns, candidateCheckName, {
+				headSha: pullRequestHeadSha,
+			});
+		}
 		if (checkResult.found) {
 			return {
 				checkResult,
@@ -145,10 +167,25 @@ function resolveReviewCheckResult(
 		}
 	}
 
-	return {
-		checkResult: findReviewCheckRun(checkRuns, requestedCheckName, {
+	const fallbackSourceConstraint =
+		requiredCheckSources?.get(requestedCheckName);
+	let fallbackCheckResult = findReviewCheckRun(checkRuns, requestedCheckName, {
+		headSha: pullRequestHeadSha,
+		...(fallbackSourceConstraint?.providerSlugs
+			? { providerSlugs: fallbackSourceConstraint.providerSlugs }
+			: {}),
+		...(fallbackSourceConstraint?.sourceAppIds
+			? { sourceAppIds: fallbackSourceConstraint.sourceAppIds }
+			: {}),
+	});
+	if (!fallbackCheckResult.found && fallbackSourceConstraint) {
+		fallbackCheckResult = findReviewCheckRun(checkRuns, requestedCheckName, {
 			headSha: pullRequestHeadSha,
-		}),
+		});
+	}
+
+	return {
+		checkResult: fallbackCheckResult,
 		resolvedCheckName: requestedCheckName,
 	};
 }
@@ -326,13 +363,14 @@ function extractQuestionResponseBlock(
 		for (let next = index + 1; next < lines.length; next += 1) {
 			const continuation = lines[next] ?? "";
 			const continuationListIndent = getStructuredListIndent(continuation);
+			if (continuation.trim().length === 0) {
+				collected.push(continuation);
+				continue;
+			}
 			if (
 				continuationListIndent !== undefined &&
 				continuationListIndent <= startListIndent
 			) {
-				break;
-			}
-			if (continuation.trim().length === 0) {
 				break;
 			}
 			collected.push(continuation);
@@ -556,7 +594,9 @@ async function resolveCodingActor(
 		const commits = await client.listPullRequestCommits(prNumber);
 		const headCommit = commits.find((commit) => commit.sha === headSha);
 		if (!headCommit) {
-			return undefined;
+			return isAutomatedActorLogin(normalizedPrAuthor, botLogins)
+				? undefined
+				: normalizedPrAuthor;
 		}
 
 		const commitActorCandidates = [
@@ -878,13 +918,6 @@ function resolveRequiredCheckSources(
 			continue;
 		}
 
-		const normalizeConstraintSourceToken = (value: string): string =>
-			value
-				.trim()
-				.toLowerCase()
-				.replace(/[\s_]+/g, "-")
-				.replace(/-+/g, "-")
-				.replace(/^-+|-+$/g, "");
 		const normalizedProvider = normalizeConstraintSourceToken(gate.provider);
 		const normalizedSourceAppId = normalizeConstraintSourceToken(
 			gate.sourceAppId,
@@ -1130,6 +1163,7 @@ export async function runReviewGate(
 				checkRuns,
 				requestedCheckName,
 				pullRequestHeadSha,
+				requiredCheckSources,
 			);
 			lastResolvedCheckName = resolvedCheckName;
 
@@ -1153,6 +1187,18 @@ export async function runReviewGate(
 					requestedCheckName,
 					resolvedCheckName,
 				]);
+				const canonicalReviewGateChecks = new Set([
+					DEFAULT_REVIEW_CHECK_NAME,
+					...LEGACY_REVIEW_CHECK_NAME_FALLBACKS,
+				]);
+				if (
+					canonicalReviewGateChecks.has(requestedCheckName) ||
+					canonicalReviewGateChecks.has(resolvedCheckName)
+				) {
+					for (const checkName of canonicalReviewGateChecks) {
+						activeReviewGateChecks.add(checkName);
+					}
+				}
 				const requiredChecks = (reviewPolicy.requiredChecks ?? []).filter(
 					(checkName) => !activeReviewGateChecks.has(checkName),
 				);

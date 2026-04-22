@@ -69,16 +69,16 @@ semgrep_version_usable() {
   if [[ "$detected_version" == "$SEMGREP_VERSION" ]]; then
     return 0
   fi
-  # Some Python runtimes cannot resolve older Semgrep pins and install the
-  # nearest compatible newer release instead. Accept newer patch/minor releases
-  # within the same major line.
-  local requested_major detected_major
-  requested_major="${SEMGREP_VERSION%%.*}"
-  detected_major="${detected_version%%.*}"
-  if [[ -z "$requested_major" || -z "$detected_major" ]]; then
+  # Some Python runtimes cannot resolve older Semgrep pins and install a newer
+  # compatible release instead. Accept only newer patch releases in the same
+  # major.minor series to avoid cross-series scanner drift.
+  local requested_series detected_series
+  requested_series="${SEMGREP_VERSION%.*}"
+  detected_series="${detected_version%.*}"
+  if [[ -z "$requested_series" || -z "$detected_series" ]]; then
     return 1
   fi
-  if [[ "$requested_major" != "$detected_major" ]]; then
+  if [[ "$requested_series" != "$detected_series" ]]; then
     return 1
   fi
   [[ "$(printf '%s\n%s\n' "$SEMGREP_VERSION" "$detected_version" | sort -V | head -n 1)" == "$SEMGREP_VERSION" ]]

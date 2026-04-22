@@ -224,6 +224,90 @@ describe("linear execute validation", () => {
 	});
 });
 
+describe("linear-gate execute parsing", () => {
+	const spec = findSpec("linear-gate");
+
+	it("preserves an explicit empty --branch when --allow-missing-branch is set", async () => {
+		await withTempWorkspace(async (workspacePath) => {
+			mkdirSync(join(workspacePath, ".github/ISSUE_TEMPLATE"), {
+				recursive: true,
+			});
+			writeFileSync(
+				join(workspacePath, "harness.contract.json"),
+				JSON.stringify(
+					{
+						version: "1.2.0",
+						riskTierRules: {},
+						issueTrackingPolicy: {
+							provider: "linear",
+							projectUrl: "https://linear.app/acme/project/platform-123",
+							requirePackageBugsUrl: true,
+							disableGitHubIssues: true,
+							requireBranchIssueKey: true,
+							requirePrIssueKey: true,
+							prReferenceMode: "either",
+							branchPrefix: "codex",
+						},
+					},
+					null,
+					2,
+				),
+				"utf-8",
+			);
+			writeFileSync(
+				join(workspacePath, "package.json"),
+				JSON.stringify(
+					{
+						name: "fixture",
+						bugs: {
+							url: "https://linear.app/acme/project/platform-123",
+						},
+					},
+					null,
+					2,
+				),
+				"utf-8",
+			);
+			writeFileSync(
+				join(workspacePath, ".github/ISSUE_TEMPLATE/config.yml"),
+				`blank_issues_enabled: false
+contact_links:
+  - name: Linear work intake
+    url: https://linear.app/acme/project/platform-123
+    about: Track all work in Linear.
+`,
+				"utf-8",
+			);
+
+			const previousGithubRefName = process.env.GITHUB_REF_NAME;
+			process.env.GITHUB_REF_NAME = "feature/no-linear-key";
+			try {
+				const result = await withCwd(workspacePath, () =>
+					Promise.resolve(
+						spec.execute([
+							"--allow-missing-branch",
+							"--branch",
+							"",
+							"--pr-title",
+							"JSC-42: enforce branch parser handling",
+							"--pr-body",
+							"Refs JSC-42",
+							"--json",
+						]),
+					),
+				);
+				expect(result).toBe(0);
+			} finally {
+				if (previousGithubRefName === undefined) {
+					Reflect.deleteProperty(process.env, "GITHUB_REF_NAME");
+				} else {
+					process.env.GITHUB_REF_NAME = previousGithubRefName;
+				}
+			}
+		});
+	});
+});
+
 describe("prompt-gate execute validation", () => {
 	const spec = findSpec("prompt-gate");
 

@@ -2453,6 +2453,10 @@ export function validateContract(
 		data: {
 			version: obj.version as string,
 			riskTierRules: (obj.riskTierRules as Record<string, RiskTier>) ?? {},
+			northStar: obj.northStar as HarnessContract["northStar"],
+			productSurface: obj.productSurface as HarnessContract["productSurface"],
+			overrideReviewerRegistry:
+				obj.overrideReviewerRegistry as HarnessContract["overrideReviewerRegistry"],
 			policyChain,
 			mergePolicy,
 			docsDriftRules,

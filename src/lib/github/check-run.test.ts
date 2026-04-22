@@ -102,6 +102,44 @@ describe("check-run helpers", () => {
 		});
 	});
 
+	it("filters same-named check runs by expected provider identity when provided", () => {
+		const runs: CheckRun[] = [
+			{
+				id: 12,
+				name: "pr-pipeline",
+				status: "completed",
+				conclusion: "success",
+				head_sha: HEAD_SHA,
+				app: {
+					id: 1001,
+					slug: "github-actions",
+					name: "GitHub Actions",
+				},
+			},
+			{
+				id: 35,
+				name: "pr-pipeline",
+				status: "completed",
+				conclusion: "failure",
+				head_sha: HEAD_SHA,
+				app: {
+					id: 1002,
+					slug: "circleci",
+					name: "CircleCI",
+				},
+			},
+		];
+
+		const result = findReviewCheckRun(runs, "pr-pipeline", {
+			headSha: HEAD_SHA,
+			providerSlugs: new Set(["circleci"]),
+			sourceAppIds: new Set(["circleci"]),
+		});
+		expect(result.found).toBe(true);
+		expect(result.checkRun?.id).toBe(35);
+		expect(result.conclusion).toBe("failure");
+	});
+
 	it.each(["in_progress", "queued", "pending"] as const)(
 		"treats %s as in-progress",
 		(status) => {
