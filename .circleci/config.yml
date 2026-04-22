@@ -223,13 +223,10 @@ workflows:
               # rustup does not update the current shell PATH for non-interactive jobs.
               . "$HOME/.cargo/env"
             fi
-            SEMGREP_VERSION="1.153.1"
-            SEMGREP_VENV="$HOME/.local/share/semgrep-venv-${SEMGREP_VERSION}"
-            if [[ ! -x "$SEMGREP_VENV/bin/semgrep" ]]; then
-              python3 -m venv "$SEMGREP_VENV"
-              "$SEMGREP_VENV/bin/python" -m pip install --quiet --upgrade pip "semgrep==${SEMGREP_VERSION}"
-            fi
-            ln -sf "$SEMGREP_VENV/bin/semgrep" "$HOME/.local/bin/semgrep"
+            export REPO_ROOT="$PWD"
+            source scripts/semgrep-bootstrap.sh
+            ensure_semgrep_version
+            run_semgrep --version
             export MISE_CARGO_BINSTALL=false
             export MISE_NODE_VERIFY=false
             mise install \
@@ -239,7 +236,7 @@ workflows:
               npm:@mermaid-js/mermaid-cli npm:@brainwav/rsearch npm:@brainwav/wsearch-cli \
               npm:beautiful-mermaid npm:markdownlint-cli2 npm:semver npm:wrangler \
               trivy vale
-            semgrep --version
+            run_semgrep --version
             bash scripts/check-environment.sh
           filters:
             tags:
