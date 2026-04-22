@@ -62,6 +62,12 @@ run_semgrep() {
     python3 -m semgrep "$@"
 }
 
+semgrep_version_usable() {
+  local detected_version
+  detected_version="$(run_semgrep --version 2>/dev/null | tr -d "[:space:]")" || return 1
+  [[ "$detected_version" == "$SEMGREP_VERSION" ]]
+}
+
 ensure_python_packaging_tools() {
   if [[ -z "${CI:-}" && -z "${CIRCLECI:-}" ]]; then
     return 1
@@ -72,18 +78,45 @@ ensure_python_packaging_tools() {
   fi
 
   if [[ "$(id -u)" -eq 0 ]]; then
-    apt-get update
-    apt-get install -y python3-pip python3-venv
+    apt-get update >/dev/null &&
+      apt-get install -y python3-pip python3-venv >/dev/null || return 1
+    python3 -m pip --version >/dev/null 2>&1 || return 1
     return 0
   fi
 
   if command -v sudo >/dev/null 2>&1; then
-    sudo apt-get update
-    sudo apt-get install -y python3-pip python3-venv
+    sudo apt-get update >/dev/null &&
+      sudo apt-get install -y python3-pip python3-venv >/dev/null || return 1
+    python3 -m pip --version >/dev/null 2>&1 || return 1
     return 0
   fi
 
   return 1
+}
+
+install_semgrep_with_venv() {
+  rm -rf "$SEMGREP_VENV_DIR"
+  if ! python3 -m venv "$SEMGREP_VENV_DIR" >/dev/null 2>&1; then
+    return 1
+  fi
+  if ! "$SEMGREP_PYTHON" -m pip install --quiet --upgrade pip "semgrep==${SEMGREP_VERSION}"; then
+    return 1
+  fi
+  semgrep_binary_usable && semgrep_version_usable
+}
+
+install_semgrep_with_site_packages() {
+  if ! python3 -m pip --version >/dev/null 2>&1; then
+    return 1
+  fi
+  rm -rf "$SEMGREP_VENV_DIR"
+  rm -f "$SEMGREP_BIN"
+  rm -rf "$SEMGREP_SITE_PACKAGES_DIR"
+  mkdir -p "$SEMGREP_SITE_PACKAGES_DIR"
+  if ! python3 -m pip install --quiet --upgrade --target "$SEMGREP_SITE_PACKAGES_DIR" "semgrep==${SEMGREP_VERSION}"; then
+    return 1
+  fi
+  semgrep_version_usable
 }
 
 install_semgrep() {
@@ -99,44 +132,23 @@ install_semgrep() {
   local legacy_venv_dir="$HOST_CACHE_HOME/coding-harness/semgrep-venv-${SEMGREP_VERSION}"
   if [[ -d "$legacy_venv_dir" ]]; then
     rm -rf "$SEMGREP_VENV_DIR"
-    cp -R "$legacy_venv_dir" "$SEMGREP_VENV_DIR"
-    if semgrep_binary_usable; then
+    cp -a "$legacy_venv_dir" "$SEMGREP_VENV_DIR"
+    if semgrep_binary_usable && semgrep_version_usable; then
       return
     fi
     rm -rf "$SEMGREP_VENV_DIR"
   fi
 
-  if python3 -m venv "$SEMGREP_VENV_DIR" >/dev/null 2>&1; then
-    "$SEMGREP_PYTHON" -m pip install --quiet --upgrade pip "semgrep==${SEMGREP_VERSION}"
-    if semgrep_binary_usable; then
-      return
-    fi
+  if install_semgrep_with_venv; then
+    return
   fi
 
-  if python3 -m pip --version >/dev/null 2>&1; then
-    rm -rf "$SEMGREP_VENV_DIR"
-    rm -f "$SEMGREP_BIN"
-    rm -rf "$SEMGREP_SITE_PACKAGES_DIR"
-    mkdir -p "$SEMGREP_SITE_PACKAGES_DIR"
-    python3 -m pip install --quiet --upgrade --target "$SEMGREP_SITE_PACKAGES_DIR" "semgrep==${SEMGREP_VERSION}"
+  if install_semgrep_with_site_packages; then
     return
   fi
 
   if ensure_python_packaging_tools; then
-    rm -rf "$SEMGREP_VENV_DIR"
-    if python3 -m venv "$SEMGREP_VENV_DIR" >/dev/null 2>&1; then
-      "$SEMGREP_PYTHON" -m pip install --quiet --upgrade pip "semgrep==${SEMGREP_VERSION}"
-      if semgrep_binary_usable; then
-        return
-      fi
-    fi
-
-    if python3 -m pip --version >/dev/null 2>&1; then
-      rm -rf "$SEMGREP_VENV_DIR"
-      rm -f "$SEMGREP_BIN"
-      rm -rf "$SEMGREP_SITE_PACKAGES_DIR"
-      mkdir -p "$SEMGREP_SITE_PACKAGES_DIR"
-      python3 -m pip install --quiet --upgrade --target "$SEMGREP_SITE_PACKAGES_DIR" "semgrep==${SEMGREP_VERSION}"
+    if install_semgrep_with_venv || install_semgrep_with_site_packages; then
       return
     fi
   fi
@@ -147,11 +159,11 @@ install_semgrep() {
 }
 
 has_semgrep_installation() {
-  if semgrep_binary_usable; then
+  if semgrep_binary_usable && semgrep_version_usable; then
     return 0
   fi
 
-  if [[ -d "$SEMGREP_SITE_PACKAGES_DIR/semgrep" ]]; then
+  if [[ -d "$SEMGREP_SITE_PACKAGES_DIR/semgrep" ]] && semgrep_version_usable; then
     return 0
   fi
 
@@ -161,12 +173,12 @@ has_semgrep_installation() {
 ensure_semgrep_version() {
   if ! has_semgrep_installation; then
     install_semgrep
-    return
+  elif ! semgrep_version_usable; then
+    install_semgrep
   fi
 
-  local detected_version
-  detected_version="$(run_semgrep --version 2>/dev/null | tr -d "[:space:]")"
-  if [[ "$detected_version" != "$SEMGREP_VERSION" ]]; then
-    install_semgrep
+  if ! semgrep_version_usable; then
+    echo "Error: semgrep bootstrap did not provision Semgrep ${SEMGREP_VERSION}." >&2
+    exit 1
   fi
 }
