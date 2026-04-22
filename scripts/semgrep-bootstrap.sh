@@ -65,7 +65,12 @@ run_semgrep() {
 semgrep_version_usable() {
   local detected_version
   detected_version="$(run_semgrep --version 2>/dev/null | tr -d "[:space:]")" || return 1
-  [[ "$detected_version" == "$SEMGREP_VERSION" ]]
+  if [[ "$detected_version" == "$SEMGREP_VERSION" ]]; then
+    return 0
+  fi
+  # Some Python runtimes cannot resolve older Semgrep pins and install the
+  # nearest compatible newer release instead. Accept >= requested version.
+  [[ "$(printf '%s\n%s\n' "$SEMGREP_VERSION" "$detected_version" | sort -V | head -n 1)" == "$SEMGREP_VERSION" ]]
 }
 
 ensure_python_packaging_tools() {
@@ -153,8 +158,8 @@ install_semgrep() {
     fi
   fi
 
-  echo "Error: unable to install Semgrep." >&2
-  echo "python3 -m venv is unavailable and python3 -m pip could not be used as a fallback." >&2
+  echo "Error: unable to install Semgrep ${SEMGREP_VERSION} or newer." >&2
+  echo "Tried venv + pip install paths and CI packaging bootstrap." >&2
   exit 1
 }
 
