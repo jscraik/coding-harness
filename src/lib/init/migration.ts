@@ -308,17 +308,6 @@ const MIGRATIONS: Migration[] = [
 				version: "1.5.0",
 			}) as ContractSchema,
 	},
-	{
-		fromVersion: "1.5.0",
-		toVersion: "1.6.0",
-		description:
-			"Inject canonical north-star contract surfaces and trusted reviewer defaults",
-		migrate: (contract) =>
-			({
-				...addSchemaDefaults(contract),
-				version: "1.6.0",
-			}) as ContractSchema,
-	},
 ];
 
 // === Public Functions ===

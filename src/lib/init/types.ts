@@ -254,7 +254,7 @@ export type MigrationResultType =
 	| { ok: false; error: InitErrorOutput };
 
 /** Current latest schema version (must match template) */
-export const CURRENT_SCHEMA_VERSION = "1.6.0";
+export const CURRENT_SCHEMA_VERSION = "1.5.0";
 
 // === Init Output Types ===
 
