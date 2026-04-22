@@ -22,6 +22,88 @@ describe("validateContract", () => {
 		expect(result.data?.riskTierRules).toEqual({});
 	});
 
+	it("rejects malformed northStar decision questions", () => {
+		const result = validateContract({
+			version: "1.6.0",
+			northStar: {
+				mission: "Throughput over ceremony",
+				primaryMetric: "pr_lead_time",
+				primaryBottleneck: "review_rework_loop",
+				autonomyBoundary: "bounded autonomy",
+				safetyFloor: ["deterministic evidence"],
+				nonGoals: ["manual glue loops"],
+				decisionQuestions: [{ id: "invalid_question", prompt: "bad" }],
+			},
+		});
+
+		expect(result.success).toBe(false);
+		expect(result.errors.some((error) => error.path === "northStar")).toBe(
+			true,
+		);
+	});
+
+	it("accepts valid northStar, productSurface, and overrideReviewerRegistry", () => {
+		const result = validateContract({
+			version: "1.6.0",
+			northStar: {
+				mission: "Reduce PR lead time through reliable agent execution",
+				primaryMetric: "pr_lead_time",
+				primaryBottleneck: "review_rework_loop",
+				autonomyBoundary:
+					"Low and medium risk changes are autonomous when evidence is deterministic",
+				safetyFloor: ["deterministic evidence over intuition"],
+				nonGoals: ["manual recurring glue steps"],
+				decisionQuestions: [
+					{
+						id: "lead_time_path",
+						prompt: "Does this reduce PR lead time directly?",
+					},
+					{
+						id: "manual_glue",
+						prompt: "Does this remove recurring manual glue work?",
+					},
+					{
+						id: "agent_reliability",
+						prompt: "Does this make reliable output easier for agents?",
+					},
+					{
+						id: "safety_floor",
+						prompt: "Does this preserve deterministic safety guardrails?",
+					},
+				],
+			},
+			productSurface: {
+				surfaces: [
+					{
+						surfaceId: "harness.review-gate",
+						surfaceType: "command",
+						class: "core",
+						owner: "review-gate",
+						northStarContribution: "Cuts review churn",
+						manualGlueReductionClaim: "Removes manual check aggregation",
+						reliabilityContribution: "Deterministic gate outputs",
+						evidenceReference: "docs/agents/12-ai-review-governance.md",
+						ownedPaths: ["src/commands/review-gate.ts"],
+						lastReviewedAt: "2026-04-22",
+					},
+				],
+			},
+			overrideReviewerRegistry: {
+				trustedReviewers: [
+					{
+						reviewerId: "ops/release",
+						reviewerType: "team",
+						signatureRef: "refs/heads/main",
+						displayName: "Release Engineering",
+						status: "active",
+					},
+				],
+			},
+		});
+
+		expect(result.success).toBe(true);
+	});
+
 	it("accepts blastRadiusRules and blastRadiusRulesMode", () => {
 		const result = validateContract({
 			version: "1.0",
