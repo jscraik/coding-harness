@@ -1270,7 +1270,7 @@ REPO_ROOT="$(cd -- "$SCRIPT_DIR/.." && pwd)"
  *
  * The returned script locates the repository root and attempts, in order, to:
  * - run the repo-local `src/cli.ts` via `pnpm exec tsx` only when the repo is the harness source repo,
- * - run `dist/cli.js` (when present and Node.js is available),
+ * - run `dist/cli.js` when this repo is the harness source repo and Node.js is available,
  * - run `scripts/harness-cli.sh` (when present and readable),
  * - invoke a globally installed `harness` binary.
  * If none are available the script prints installation and local-exec guidance and exits with a non-zero status.
@@ -1324,7 +1324,7 @@ if is_harness_source_repo; then
 	fi
 fi
 
-if [[ -f "$REPO_ROOT/dist/cli.js" ]] && command -v node >/dev/null 2>&1; then
+if is_harness_source_repo && [[ -f "$REPO_ROOT/dist/cli.js" ]] && command -v node >/dev/null 2>&1; then
 	exec node "$REPO_ROOT/dist/cli.js" "$@"
 fi
 

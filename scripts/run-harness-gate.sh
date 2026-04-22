@@ -41,7 +41,7 @@ if is_harness_source_repo; then
 	fi
 fi
 
-if [[ -f "$REPO_ROOT/dist/cli.js" ]] && command -v node >/dev/null 2>&1; then
+if is_harness_source_repo && [[ -f "$REPO_ROOT/dist/cli.js" ]] && command -v node >/dev/null 2>&1; then
 	exec node "$REPO_ROOT/dist/cli.js" "$@"
 fi
 
