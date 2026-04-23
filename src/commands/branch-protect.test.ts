@@ -555,7 +555,6 @@ describe("runBranchProtect", () => {
 		);
 		expect(requiredRule?.parameters).toMatchObject({
 			required_status_checks: [
-				{ context: "config-validation" },
 				{ context: "pr-template" },
 				{ context: "linear-gate" },
 				{ context: "risk-policy-gate" },

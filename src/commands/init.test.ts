@@ -302,7 +302,6 @@ describe("runInit", () => {
 			expect(prTemplateCheck?.provider).toBe("circleci");
 			expect(prTemplateCheck?.githubCheckName).toBe("pr-pipeline");
 			expect(generatedChecks.map((entry) => entry.displayName)).toEqual([
-				"config-validation",
 				"pr-template",
 				"linear-gate",
 				"risk-policy-gate",
@@ -328,7 +327,6 @@ describe("runInit", () => {
 				generatedChecks
 					.filter(
 						(entry) =>
-							entry.displayName !== "config-validation" &&
 							entry.displayName !== "CodeRabbit" &&
 							entry.displayName !== "security-scan",
 					)
@@ -1192,9 +1190,7 @@ describe("runInit", () => {
 			expect(content).toContain("`docs-gate`");
 			expect(content).toContain("`CodeRabbit`");
 			expect(content).toContain("`consistency-drift-health`");
-			expect(content).toContain(
-				"- Require status checks:\n  - `config-validation`\n  - `pr-template`",
-			);
+			expect(content).toContain("- Require status checks:\n  - `pr-template`");
 			expect(content).toContain(
 				"- Allow `0` required reviewers for solo-maintainer repositories.",
 			);
@@ -1738,36 +1734,27 @@ describe("runInit", () => {
 				"npm install --save-dev @brainwav/coding-harness",
 			);
 			expect(harnessCli).toContain("npm exec harness -- <command>");
+			expect(runHarnessGate).toContain("if is_harness_source_repo; then");
 			expect(runHarnessGate).toContain(
-				'if pnpm exec tsx "$REPO_ROOT/src/cli.ts" "$@"; then',
-			);
-			expect(runHarnessGate).toContain("is_harness_source_repo()");
-			expect(runHarnessGate).toContain(
-				'echo "Warning: pnpm tsx runner failed; falling back to alternate harness runners." >&2',
+				'echo "Error: pnpm is required to run the harness source CLI." >&2',
 			);
 			expect(runHarnessGate).toContain(
-				'echo "Warning: pnpm is installed but tsx is unavailable; falling back to alternate harness runners." >&2',
+				"if ! pnpm exec -- tsx --version >/dev/null 2>&1; then",
 			);
 			expect(runHarnessGate).toContain(
-				'echo "Warning: pnpm is unavailable; falling back to alternate harness runners." >&2',
+				'exec pnpm exec tsx "$REPO_ROOT/src/cli.ts" "$@"',
 			);
 			expect(runHarnessGate).toContain(
-				'if is_harness_source_repo && [[ -f "$REPO_ROOT/dist/cli.js" ]] && command -v node >/dev/null 2>&1; then',
-			);
-			expect(runHarnessGate).toContain(
-				'exec node "$REPO_ROOT/dist/cli.js" "$@"',
+				'if [[ -x "$REPO_ROOT/scripts/harness-cli.sh" && -f "$REPO_ROOT/node_modules/@brainwav/coding-harness/dist/cli.js" ]]; then',
 			);
 			expect(runHarnessGate).toContain(
 				'exec bash "$REPO_ROOT/scripts/harness-cli.sh" "$@"',
 			);
 			expect(runHarnessGate).toContain(
-				'if [[ -r "$REPO_ROOT/scripts/harness-cli.sh" && -f "$REPO_ROOT/node_modules/@brainwav/coding-harness/dist/cli.js" ]]; then',
-			);
-			expect(runHarnessGate).toContain(
 				"if command -v mise >/dev/null 2>&1; then",
 			);
 			expect(runHarnessGate).toContain(
-				'mise_harness_bin="$(mise which harness 2>/dev/null || true)"',
+				'MISE_RESOLVED="$(mise which harness 2>/dev/null || true)"',
 			);
 			expect(semgrepChanged).toContain(
 				'echo "Error: python3 is required to install Semgrep." >&2',
