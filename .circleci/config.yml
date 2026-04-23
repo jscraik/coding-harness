@@ -252,7 +252,7 @@ workflows:
             RALPH_VERSION="1.0.0"
             current_ralph_version=""
             if command -v ralph >/dev/null 2>&1; then
-              current_ralph_version="$(ralph --version | grep -Eo '[0-9]+\.[0-9]+\.[0-9]+' | head -n1 || true)"
+              current_ralph_version="$(ralph --version | grep -Eo '[0-9]+\.[0-9]+\.[0-9]+([+-][0-9A-Za-z.-]+)?' | head -n1 || true)"
             fi
             if [[ "$current_ralph_version" != "$RALPH_VERSION" ]]; then
               RALPH_PACKAGE_SPEC="ralph-gold==${RALPH_VERSION}"

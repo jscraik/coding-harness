@@ -145,4 +145,29 @@ describe("check-authz", () => {
 			);
 		}
 	});
+
+	it("uses the contract directory for gitignore validation when cwd differs", async () => {
+		writeFileSync(
+			contractPath,
+			JSON.stringify({ version: "1.0", riskTierRules: {} }),
+		);
+
+		const originalCwd = process.cwd();
+		const isolatedCwd = join(testDir, "isolated-cwd");
+		mkdirSync(isolatedCwd, { recursive: true });
+		process.chdir(isolatedCwd);
+
+		try {
+			const result = await runCheckAuthz({
+				contractPath,
+			});
+			expect(result.ok).toBe(true);
+			if (result.ok) {
+				expect(result.output.passed).toBe(true);
+				expect(result.output.violations).toEqual([]);
+			}
+		} finally {
+			process.chdir(originalCwd);
+		}
+	});
 });
