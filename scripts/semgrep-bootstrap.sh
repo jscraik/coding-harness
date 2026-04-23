@@ -180,7 +180,8 @@ install_semgrep() {
   local legacy_venv_dir="$HOST_CACHE_HOME/coding-harness/semgrep-venv-${SEMGREP_VERSION}"
   if [[ -d "$legacy_venv_dir" ]]; then
     rm -rf "$SEMGREP_VENV_DIR"
-    cp -a "$legacy_venv_dir" "$SEMGREP_VENV_DIR"
+    # `cp -a` is GNU-only; `cp -Rp` works on both GNU and BSD/macOS.
+    cp -Rp "$legacy_venv_dir" "$SEMGREP_VENV_DIR"
     if semgrep_binary_usable && semgrep_version_usable; then
       return
     fi
