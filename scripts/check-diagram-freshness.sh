@@ -193,7 +193,11 @@ if [[ "$should_refresh" -ne 1 ]]; then
 	exit 0
 fi
 
-mapfile -t tracked_files < <(tracked_artifact_files)
+tracked_files=()
+while IFS= read -r tracked_file; do
+	[[ -n "$tracked_file" ]] || continue
+	tracked_files+=("$tracked_file")
+done < <(tracked_artifact_files)
 preexisting_artifact_edits=()
 if (( ${#tracked_files[@]} > 0 )); then
 	for tracked_file in "${tracked_files[@]}"; do
@@ -222,7 +226,7 @@ files_to_restore=()
 if (( ${#tracked_files[@]} > 0 )); then
 	for tracked_file in "${tracked_files[@]}"; do
 		was_preexisting_edit=0
-		for preexisting_file in "${preexisting_artifact_edits[@]}"; do
+		for preexisting_file in "${preexisting_artifact_edits[@]-}"; do
 			if [[ "$preexisting_file" == "$tracked_file" ]]; then
 				was_preexisting_edit=1
 				break

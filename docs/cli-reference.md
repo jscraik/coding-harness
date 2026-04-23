@@ -47,7 +47,9 @@ Compatibility strategy:
 
 ## Unknown command guardrails
 
-When an unknown command is invoked with `--json`, harness returns suggested commands with catalog-derived guardrail metadata (`mutability`, `retryability`, `requiredFlags`, and `safeFirstAlternatives`) so agents can choose a safe fallback path.
+By default, unknown commands fail closed with suggestions. In `--json` mode, harness returns suggested commands with catalog-derived guardrail metadata (`mutability`, `retryability`, `requiredFlags`, and `safeFirstAlternatives`) so agents can choose a safe fallback path.
+
+Fuzzy typo/case correction is opt-in via `--allow-fuzzy` (or `HARNESS_ALLOW_FUZZY_COMMANDS=1`).
 
 ## Bootstrap and governance
 
@@ -78,7 +80,7 @@ Taxonomy note: section headings in this document represent command families. The
 | --- | --- |
 | `policy-gate` | Validate policy expectations from changed files |
 | `preflight-gate` | Run fast policy checks before expensive work |
-| `review-gate` | Enforce merge-readiness and SHA-linked review checks |
+| `review-gate` | Validate SHA-linked review readiness (review check + review-policy required checks) |
 | `docs-gate` | Enforce documentation parity for governed changes |
 | `plan-gate` | Validate plan IDs, traceability, and acceptance evidence |
 | `brainstorm-gate` | Validate brainstorm artifacts |
@@ -125,8 +127,6 @@ Compatibility:
 | Command | Purpose |
 | --- | --- |
 | `linear` | Claim, hand off, close, prepare, or sync Linear work from one command family |
-| `linear prepare` | Pre-fill branch name, PR title, body, and closing line from a Linear issue |
-| `linear sync` | Promote harness findings into Linear issues idempotently |
 | `linear-gate` | Enforce Linear-first intake, branch naming, and PR linkage |
 | `workflow:generate` | Generate compact workflow specs from annotated markdown |
 

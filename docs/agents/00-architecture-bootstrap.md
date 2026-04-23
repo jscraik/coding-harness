@@ -1,5 +1,5 @@
 ---
-last_validated: 2026-04-18
+last_validated: 2026-04-22
 ---
 
 # Architecture bootstrap
@@ -32,9 +32,11 @@ Run these checks before architecture-sensitive edits:
 ```bash
 jq -r '.generatedAt, (.diagrams | length)' AI/diagrams/manifest.json
 rg -n '^## ' AI/context/diagram-context.md
+harness docs-gate --mode advisory --json
 ```
 
 If either command fails, refresh artifacts before proceeding.
+When `docs-gate` reports required documentation surfaces for the same change category, update the listed operator guides in that PR before merge.
 
 ## Refresh workflow
 
@@ -50,11 +52,11 @@ The local `make hooks-pre-push` path also runs `scripts/check-diagram-freshness.
 
 ## Deterministic Fingerprints
 
-`scripts/refresh-diagram-context.sh` canonicalizes node identities before sorting to keep generated artifacts stable:
+`scripts/refresh-diagram-context.sh` normalizes node identities before sorting to keep generated artifacts stable:
 
 - `rawNodeFingerprint(rawId)` extracts the trailing fingerprint suffix with `/_([0-9a-f]{8})$/i` (case-insensitive).
-- If a suffix is present, the canonical key is the matched 8-hex fingerprint lowercased.
-- If no suffix is present, canonicalization falls back to `rawId.toLowerCase()`.
+- If a suffix is present, the canonical key is the matched 8-hex fingerprint converted to lower case.
+- If no suffix is present, normalization falls back to `rawId.toLowerCase()`.
 - Deterministic ordering uses this canonical key, so output ordering can change when fingerprint suffixes or raw node IDs change.
 
 ## Stop conditions

@@ -102,7 +102,7 @@ Enforces plan-traceability and acceptance-evidence requirements for pull-request
 
 `bash scripts/verify-work.sh` now records run-state under `.harness/runs/<run-id>/`:
 
-- `run.json` for run metadata (`mode`, `schemaVersion`, `contractVersion`, provider class)
+- `run.json` for run metadata (`mode`, `schemaVersion`, `contractVersion`, `contractFingerprint`, provider class)
 - `gates/<gate-id>.json` for per-gate outcomes
 - `summary.json` for terminal status, failed gate identity (`failedGateId`), and execution mode (`freshVsResumed`)
 
@@ -114,7 +114,8 @@ Fast-mode orchestration uses two classes:
 Resume behavior:
 
 - Use `bash scripts/verify-work.sh --resume-from <gate-id>` to restart from a failed gate boundary.
-- Resume is admitted only when the latest compatible run matches repo root, provider class, `schemaVersion`, and `contractVersion`.
+- Resume is admitted only when the latest compatible run matches repo root, provider class, `schemaVersion`, `contractVersion`, and `contractFingerprint`.
+- Resume is blocked when deterministic fingerprint tooling is unavailable (`node`, `shasum`, or `openssl`).
 - Reused prior gates must already be `passed`; otherwise resume is rejected and a fresh run is required.
 
 ## Execution order and restart policy
@@ -144,7 +145,7 @@ For check-identity diagnostics, keep terminology aligned across surfaces:
 1. Read the latest gate artifact at `.harness/runs/<run-id>/gates/<gate-id>.json` and capture `failureClass` + `nextAction`.
 2. Fix the blocker identified by the failed gate output (contract/policy mismatch, infra dependency, or internal script error).
 3. Resume with `bash scripts/verify-work.sh --resume-from <gate-id>` when compatibility checks pass.
-4. If resume is rejected (`contract/provider/root must match`), run a fresh lane from the start.
+4. If resume is rejected (`contract/provider/root/fingerprint must match`), run a fresh lane from the start.
 
 ## Evidence reporting
 
