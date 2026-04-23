@@ -1,3 +1,4 @@
+import { execFileSync } from "node:child_process";
 import { mkdirSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
@@ -242,6 +243,72 @@ contact_links:
 				restoreEnvVar("GITHUB_REF_NAME", previousGithubRefName);
 				restoreEnvVar("PR_TITLE", previousPrTitle);
 				restoreEnvVar("PR_BODY", previousPrBody);
+			}
+		})();
+
+		expect(result.ok).toBe(true);
+		if (!result.ok) {
+			return;
+		}
+
+		expect(result.output.passed).toBe(true);
+		expect(
+			result.output.checks.find((check) => check.code === "branch-linkage")
+				?.message,
+		).toContain("skipped");
+	});
+
+	it("skips branch linkage when --allow-missing-branch is set for split PR runs", () => {
+		writeFileSync(
+			join(tempDir, "package.json"),
+			JSON.stringify(
+				{
+					name: "fixture",
+					bugs: "https://linear.app/acme/project/platform-123",
+				},
+				null,
+				2,
+			),
+			"utf-8",
+		);
+		writeFileSync(
+			join(tempDir, ".github/ISSUE_TEMPLATE/config.yml"),
+			`blank_issues_enabled: false
+contact_links:
+  - name: Linear work intake
+    url: https://linear.app/acme/project/platform-123
+    about: Track all work in Linear.
+`,
+			"utf-8",
+		);
+		execFileSync("git", ["init", "--quiet", "--initial-branch=main"], {
+			cwd: tempDir,
+		});
+		execFileSync(
+			"git",
+			["checkout", "-b", "codex/pr2-validation-preflight-gates"],
+			{
+				cwd: tempDir,
+				stdio: "ignore",
+			},
+		);
+
+		const previousGithubHeadRef = process.env.GITHUB_HEAD_REF;
+		const previousGithubRefName = process.env.GITHUB_REF_NAME;
+		Reflect.deleteProperty(process.env, "GITHUB_HEAD_REF");
+		Reflect.deleteProperty(process.env, "GITHUB_REF_NAME");
+
+		const result = (() => {
+			try {
+				return runLinearGate({
+					repoRoot: tempDir,
+					prTitle: "JSC-210: Tighten preflight and workflow gates",
+					prBody: "Refs JSC-210",
+					allowMissingBranch: true,
+				});
+			} finally {
+				restoreEnvVar("GITHUB_HEAD_REF", previousGithubHeadRef);
+				restoreEnvVar("GITHUB_REF_NAME", previousGithubRefName);
 			}
 		})();
 
