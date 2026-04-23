@@ -1,4 +1,9 @@
 import {
+	isValidNorthStarContract,
+	isValidOverrideReviewerRegistry,
+	isValidProductSurfaceRegistry,
+} from "./north-star-validators.js";
+import {
 	isValidContextCompactPolicy,
 	isValidContextIntegrityPolicy,
 	isValidDocsGatePolicy,
@@ -91,6 +96,9 @@ const VALID_TOP_LEVEL_KEYS = [
 	"$schema",
 	"version",
 	"riskTierRules",
+	"northStar",
+	"productSurface",
+	"overrideReviewerRegistry",
 	"policyChain",
 	"blastRadiusRules",
 	"blastRadiusRulesMode",
@@ -1774,6 +1782,69 @@ export function validateContract(
 		}
 	}
 
+	// Validate northStar (optional)
+	let northStar: HarnessContract["northStar"] | undefined;
+	if ("northStar" in obj && obj.northStar !== undefined) {
+		if (!isValidNorthStarContract(obj.northStar)) {
+			errors.push({
+				code: ValidationErrorCode.INVALID_VALUE,
+				path: "northStar",
+				message:
+					"northStar must include mission, primary metric/bottleneck, autonomy boundary, safety floor, non-goals, and canonical decision questions",
+				expected:
+					"{ mission: string, primaryMetric: 'pr_lead_time', primaryBottleneck: 'review_rework_loop', autonomyBoundary: string, safetyFloor: string[], nonGoals: string[], decisionQuestions: [{ id, prompt }] }",
+				received: JSON.stringify(obj.northStar),
+				fix: "Use the canonical northStar schema with non-empty strings and canonical decision question IDs",
+			});
+		} else {
+			northStar = obj.northStar as HarnessContract["northStar"];
+		}
+	}
+
+	// Validate productSurface (optional)
+	let productSurface: HarnessContract["productSurface"] | undefined;
+	if ("productSurface" in obj && obj.productSurface !== undefined) {
+		if (!isValidProductSurfaceRegistry(obj.productSurface)) {
+			errors.push({
+				code: ValidationErrorCode.INVALID_VALUE,
+				path: "productSurface",
+				message:
+					"productSurface must declare a surfaces array of valid product surface registrations",
+				expected:
+					"{ surfaces: [{ surfaceId, surfaceType, class, owner, northStarContribution, manualGlueReductionClaim, reliabilityContribution, evidenceReference, ownedPaths, lastReviewedAt, reviewCadence? }] }",
+				received: JSON.stringify(obj.productSurface),
+				fix: "Ensure every product surface registration has supported enum values and non-empty required fields",
+			});
+		} else {
+			productSurface = obj.productSurface as HarnessContract["productSurface"];
+		}
+	}
+
+	// Validate overrideReviewerRegistry (optional)
+	let overrideReviewerRegistry:
+		| HarnessContract["overrideReviewerRegistry"]
+		| undefined;
+	if (
+		"overrideReviewerRegistry" in obj &&
+		obj.overrideReviewerRegistry !== undefined
+	) {
+		if (!isValidOverrideReviewerRegistry(obj.overrideReviewerRegistry)) {
+			errors.push({
+				code: ValidationErrorCode.INVALID_VALUE,
+				path: "overrideReviewerRegistry",
+				message:
+					"overrideReviewerRegistry must declare trusted reviewers with reviewer id, type, signatureRef, display name, and status",
+				expected:
+					"{ trustedReviewers: [{ reviewerId, reviewerType: 'user' | 'team' | 'service', signatureRef, displayName, status: 'active' | 'revoked' }] }",
+				received: JSON.stringify(obj.overrideReviewerRegistry),
+				fix: "Ensure trustedReviewers entries use supported enum values and non-empty string metadata",
+			});
+		} else {
+			overrideReviewerRegistry =
+				obj.overrideReviewerRegistry as HarnessContract["overrideReviewerRegistry"];
+		}
+	}
+
 	// Validate mergePolicy
 	let policyChain: PolicyChainPolicy | undefined;
 	if ("policyChain" in obj && obj.policyChain !== undefined) {
@@ -2450,6 +2521,9 @@ export function validateContract(
 		data: {
 			version: obj.version as string,
 			riskTierRules: (obj.riskTierRules as Record<string, RiskTier>) ?? {},
+			northStar,
+			productSurface,
+			overrideReviewerRegistry,
 			policyChain,
 			mergePolicy,
 			docsDriftRules,

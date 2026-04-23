@@ -8,7 +8,8 @@ import {
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { fileURLToPath } from "node:url";
-import { describe, expect, it } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import * as reviewGateCommand from "../../../commands/review-gate.js";
 import { COMMAND_SPECS } from "./command-specs.js";
 import type { CommandSpec } from "./types.js";
 
@@ -221,6 +222,152 @@ describe("linear execute validation", () => {
 			const result = await spec.execute([action]);
 			expect(result).not.toBe(2);
 		}
+	});
+});
+
+describe("linear-gate execute parsing", () => {
+	const spec = findSpec("linear-gate");
+
+	it("preserves an explicit empty --branch when --allow-missing-branch is set", async () => {
+		await withTempWorkspace(async (workspacePath) => {
+			mkdirSync(join(workspacePath, ".github/ISSUE_TEMPLATE"), {
+				recursive: true,
+			});
+			writeFileSync(
+				join(workspacePath, "harness.contract.json"),
+				JSON.stringify(
+					{
+						version: "1.2.0",
+						riskTierRules: {},
+						issueTrackingPolicy: {
+							provider: "linear",
+							projectUrl: "https://linear.app/acme/project/platform-123",
+							requirePackageBugsUrl: true,
+							disableGitHubIssues: true,
+							requireBranchIssueKey: true,
+							requirePrIssueKey: true,
+							prReferenceMode: "either",
+							branchPrefix: "codex",
+						},
+					},
+					null,
+					2,
+				),
+				"utf-8",
+			);
+			writeFileSync(
+				join(workspacePath, "package.json"),
+				JSON.stringify(
+					{
+						name: "fixture",
+						bugs: {
+							url: "https://linear.app/acme/project/platform-123",
+						},
+					},
+					null,
+					2,
+				),
+				"utf-8",
+			);
+			writeFileSync(
+				join(workspacePath, ".github/ISSUE_TEMPLATE/config.yml"),
+				`blank_issues_enabled: false
+contact_links:
+  - name: Linear work intake
+    url: https://linear.app/acme/project/platform-123
+    about: Track all work in Linear.
+`,
+				"utf-8",
+			);
+
+			const previousGithubRefName = process.env.GITHUB_REF_NAME;
+			process.env.GITHUB_REF_NAME = "feature/no-linear-key";
+			try {
+				const result = await withCwd(workspacePath, () =>
+					Promise.resolve(
+						spec.execute([
+							"--allow-missing-branch",
+							"--branch",
+							"",
+							"--pr-title",
+							"JSC-42: enforce branch parser handling",
+							"--pr-body",
+							"Refs JSC-42",
+							"--json",
+						]),
+					),
+				);
+				expect(result).toBe(0);
+			} finally {
+				if (previousGithubRefName === undefined) {
+					Reflect.deleteProperty(process.env, "GITHUB_REF_NAME");
+				} else {
+					process.env.GITHUB_REF_NAME = previousGithubRefName;
+				}
+			}
+		});
+	});
+});
+
+describe("review-gate execute parsing", () => {
+	const spec = findSpec("review-gate");
+
+	beforeEach(() => {
+		vi.spyOn(reviewGateCommand, "runReviewGateCLI").mockResolvedValue(0);
+	});
+
+	afterEach(() => {
+		vi.restoreAllMocks();
+	});
+
+	it("uses an empty checkName by default so manifest defaults can resolve", async () => {
+		const result = await Promise.resolve(
+			spec.execute([
+				"--token",
+				"test-token",
+				"--owner",
+				"acme",
+				"--repo",
+				"harness",
+				"--pr",
+				"42",
+				"--sha",
+				"0123456789abcdef0123456789abcdef01234567",
+				"--json",
+			]),
+		);
+		expect(result).toBe(0);
+		expect(reviewGateCommand.runReviewGateCLI).toHaveBeenCalledWith(
+			expect.objectContaining({
+				checkName: "",
+			}),
+		);
+	});
+
+	it("honors an explicit --check override", async () => {
+		const result = await Promise.resolve(
+			spec.execute([
+				"--token",
+				"test-token",
+				"--owner",
+				"acme",
+				"--repo",
+				"harness",
+				"--pr",
+				"42",
+				"--sha",
+				"0123456789abcdef0123456789abcdef01234567",
+				"--check",
+				"ci/circleci: pr-pipeline",
+				"--json",
+			]),
+		);
+		expect(result).toBe(0);
+		expect(reviewGateCommand.runReviewGateCLI).toHaveBeenCalledWith(
+			expect.objectContaining({
+				checkName: "ci/circleci: pr-pipeline",
+			}),
+		);
 	});
 });
 

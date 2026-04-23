@@ -243,7 +243,7 @@ export const COMMAND_SPECS: CommandSpec[] = [
 			const commentArg = getFlagValue(args, commentIndex);
 			if (commentArg) options.comment = commentArg;
 			const branchArg = getFlagValue(args, branchIndex);
-			if (branchArg) options.branch = branchArg;
+			if (branchArg !== undefined) options.branch = branchArg;
 			const workspaceArg = getFlagValue(args, workspaceIndex);
 			if (workspaceArg) options.workspace = workspaceArg;
 			const prUrlArg = getFlagValue(args, prUrlIndex);
@@ -285,7 +285,7 @@ export const COMMAND_SPECS: CommandSpec[] = [
 			const repoRootArg = getFlagValue(args, repoRootIndex);
 			if (repoRootArg) options.repoRoot = repoRootArg;
 			const branchArg = getFlagValue(args, branchIndex);
-			if (branchArg) options.branch = branchArg;
+			if (branchArg !== undefined) options.branch = branchArg;
 			const prTitleArg = getFlagValue(args, prTitleIndex);
 			if (prTitleArg !== undefined) options.prTitle = prTitleArg;
 			const prBodyArg = getFlagValue(args, prBodyIndex);
@@ -454,7 +454,7 @@ export const COMMAND_SPECS: CommandSpec[] = [
 				repo: "",
 				prNumber: 0,
 				headSha: "",
-				checkName: "code-review",
+				checkName: "",
 				contractPath: "harness.contract.json",
 			};
 

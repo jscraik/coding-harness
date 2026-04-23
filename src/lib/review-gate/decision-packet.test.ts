@@ -73,11 +73,15 @@ describe("emitReviewGateDecisionArtifacts", () => {
 		const packet = JSON.parse(
 			readFileSync(result.decisionPacketPath, "utf-8"),
 		) as Record<string, unknown>;
+		const alignmentPacket = JSON.parse(
+			readFileSync(result.alignmentDecisionPath, "utf-8"),
+		) as Record<string, unknown>;
 		expect(packet.decision).toEqual({
 			state: "green-and-ready",
 			prClosureStatus: "ready-to-merge",
 			requiresHumanDecision: false,
 		});
+		expect(alignmentPacket.decision).toEqual(packet.decision);
 		expect(packet.compaction).toEqual({
 			recommended: false,
 			reasons: [],
@@ -93,6 +97,7 @@ describe("emitReviewGateDecisionArtifacts", () => {
 						prClosureStatus: "ready-to-merge",
 						compactionRecommended: false,
 						guardrailPromotionRecommended: false,
+						alignmentDecisionPath: result.alignmentDecisionPath,
 					}),
 				}),
 			}),
@@ -167,5 +172,154 @@ describe("emitReviewGateDecisionArtifacts", () => {
 				classification: "policy_blocked",
 			}),
 		);
+	});
+
+	it("writes repository.checkName from effective runtime check identity when CLI input omitted --check", () => {
+		const runRecordsDir = relative(process.cwd(), tempDir);
+		const result = emitReviewGateDecisionArtifacts({
+			options: {
+				contractPath: "harness.contract.json",
+				token: "test-token",
+				owner: "acme",
+				repo: "harness",
+				prNumber: 42,
+				headSha: "0123456789abcdef0123456789abcdef01234567",
+				checkName: "",
+				runRecordsDir,
+			},
+			effectiveCheckName: "pr-pipeline",
+			startedAt: "2026-03-14T12:00:00.000Z",
+			finishedAt: "2026-03-14T12:00:05.000Z",
+			exitCode: 0,
+			result: {
+				ok: true,
+				output: {
+					verified: false,
+					headSha: "0123456789abcdef0123456789abcdef01234567",
+					checkStatus: "not_found",
+					effectiveCheckName: "pr-pipeline",
+					needsRerun: true,
+					policy_gate_status: "missing",
+					plan_traceability_status: "missing",
+					plan_ids: [],
+					blockers: ["pr-pipeline check run not found for current HEAD SHA"],
+					actionable_count: 1,
+					informational_count: 1,
+					confidence_rubric: {
+						score: 2,
+						level: "low",
+						rationale: ["missing"],
+					},
+				},
+			},
+		});
+
+		const packet = JSON.parse(
+			readFileSync(result.decisionPacketPath, "utf-8"),
+		) as {
+			repository: { checkName: string };
+		};
+		expect(packet.repository.checkName).toBe("pr-pipeline");
+	});
+
+	it("classifies escalation and timeout error codes with deterministic decision taxonomy", () => {
+		const runRecordsDir = relative(process.cwd(), tempDir);
+		const scenarios = [
+			{
+				code: "PERMISSION_DENIED" as const,
+				message: "Token lacks pull_requests:read",
+				expectedDecision: {
+					state: "escalated-for-decision",
+					prClosureStatus: "awaiting-operator-decision",
+					requiresHumanDecision: true,
+				},
+				expectedOutcome: "hold",
+				expectedClassification: "manual_intervention_required",
+				expectCompaction: false,
+				expectTimedOut: false,
+			},
+			{
+				code: "SYSTEM_ERROR" as const,
+				message: "GitHub API unavailable",
+				expectedDecision: {
+					state: "escalated-for-decision",
+					prClosureStatus: "awaiting-operator-decision",
+					requiresHumanDecision: true,
+				},
+				expectedOutcome: "failed",
+				expectedClassification: "runtime_failed",
+				expectCompaction: true,
+				expectTimedOut: false,
+			},
+			{
+				code: "TIMEOUT" as const,
+				message: "review-gate timed out",
+				expectedDecision: {
+					state: "blocked-with-remediation",
+					prClosureStatus: "awaiting-remediation",
+					requiresHumanDecision: false,
+				},
+				expectedOutcome: "hold",
+				expectedClassification: "manual_intervention_required",
+				expectCompaction: true,
+				expectTimedOut: true,
+			},
+		];
+
+		for (const scenario of scenarios) {
+			emitTerminalRunRecordMock.mockClear();
+			const result = emitReviewGateDecisionArtifacts({
+				options: {
+					contractPath: "harness.contract.json",
+					token: "test-token",
+					owner: "acme",
+					repo: "harness",
+					prNumber: 42,
+					headSha: "0123456789abcdef0123456789abcdef01234567",
+					checkName: "review-check",
+					runRecordsDir,
+				},
+				startedAt: "2026-03-14T12:00:00.000Z",
+				finishedAt: "2026-03-14T12:00:05.000Z",
+				exitCode: 1,
+				result: {
+					ok: false,
+					error: {
+						code: scenario.code,
+						message: scenario.message,
+					},
+				},
+			});
+
+			const packet = JSON.parse(
+				readFileSync(result.decisionPacketPath, "utf-8"),
+			) as {
+				decision: {
+					state: string;
+					prClosureStatus: string;
+					requiresHumanDecision: boolean;
+				};
+				compaction: { recommended: boolean };
+				reviewGate: { timedOut: boolean; errorCode?: string };
+			};
+
+			expect(packet.decision).toEqual(scenario.expectedDecision);
+			expect(packet.compaction.recommended).toBe(scenario.expectCompaction);
+			expect(packet.reviewGate.timedOut).toBe(scenario.expectTimedOut);
+			expect(packet.reviewGate.errorCode).toBe(scenario.code);
+			expect(emitTerminalRunRecordMock).toHaveBeenCalledWith(
+				expect.objectContaining({
+					outcome: scenario.expectedOutcome,
+					classification: scenario.expectedClassification,
+					event: expect.objectContaining({
+						payload: expect.objectContaining({
+							decisionState: scenario.expectedDecision.state,
+							prClosureStatus: scenario.expectedDecision.prClosureStatus,
+							compactionRecommended: scenario.expectCompaction,
+						}),
+					}),
+				}),
+			);
+		}
 	});
 });

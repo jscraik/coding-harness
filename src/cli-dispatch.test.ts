@@ -1223,7 +1223,7 @@ describe("cli command dispatch", () => {
 			repo: "harness",
 			prNumber: 123,
 			headSha: "a".repeat(40),
-			checkName: "code-review",
+			checkName: "",
 			contractPath: "harness.contract.json",
 			autoResolveBotThreads: true,
 			json: true,
