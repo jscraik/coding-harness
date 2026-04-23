@@ -1086,7 +1086,7 @@ function resolveChangedFiles(
 	if (options.changedFiles) {
 		return {
 			changedFiles: options.changedFiles,
-			deletedFiles: [],
+			deletedFiles: options.deletedFiles ?? [],
 			source: "explicit_flag",
 		};
 	}
