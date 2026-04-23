@@ -5050,7 +5050,7 @@ describe("postRerunCommentIfNeeded", () => {
 			},
 		});
 
-		const existingTimestamp = "2026-04-22T00:00:00.000Z";
+		const existingTimestamp = new Date(Date.now() - 60_000).toISOString();
 		const mockListIssueComments = vi.fn().mockResolvedValue([
 			{
 				id: 22,
@@ -5126,7 +5126,7 @@ describe("postRerunCommentIfNeeded", () => {
 		});
 	});
 
-	it("uses PR base branch for authz preflight when targetBranch is omitted", async () => {
+	it("uses PR head branch for authz preflight when targetBranch is omitted", async () => {
 		mockRunCheckAuthz.mockResolvedValue({
 			ok: true,
 			output: {
@@ -5164,7 +5164,7 @@ describe("postRerunCommentIfNeeded", () => {
 		expect(mockRunCheckAuthz).toHaveBeenCalledWith({
 			contractPath: "harness.contract.json",
 			repo: mockRepositoryIdentifier,
-			branch: mockBaseBranch,
+			branch: mockBranch,
 		});
 	});
 });

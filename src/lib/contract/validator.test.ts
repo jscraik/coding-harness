@@ -118,6 +118,28 @@ describe("validateContract", () => {
 		);
 	});
 
+	it("rejects malformed overrideReviewerRegistry when provided", () => {
+		const result = validateContract({
+			version: "1.6.0",
+			overrideReviewerRegistry: {
+				trustedReviewers: [
+					{
+						reviewerId: "ops/release",
+						reviewerType: "invalid",
+						signatureRef: "refs/heads/main",
+						displayName: "Release Engineering",
+						status: "active",
+					},
+				],
+			},
+		});
+
+		expect(result.success).toBe(false);
+		expect(
+			result.errors.some((error) => error.path === "overrideReviewerRegistry"),
+		).toBe(true);
+	});
+
 	it("accepts blastRadiusRules and blastRadiusRulesMode", () => {
 		const result = validateContract({
 			version: "1.0",

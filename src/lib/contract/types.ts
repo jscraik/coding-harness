@@ -1382,7 +1382,6 @@ export const DEFAULT_CONTRACT: HarnessContract = {
 	version: "1.6.0",
 	riskTierRules: {},
 	northStar: DEFAULT_NORTH_STAR_CONTRACT,
-	productSurface: DEFAULT_PRODUCT_SURFACE_REGISTRY,
 	overrideReviewerRegistry: DEFAULT_OVERRIDE_REVIEWER_REGISTRY,
 	policyChain: DEFAULT_POLICY_CHAIN,
 	reviewPolicy: DEFAULT_REVIEW_POLICY,

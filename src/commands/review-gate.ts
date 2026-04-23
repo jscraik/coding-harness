@@ -1560,7 +1560,7 @@ async function runAuthzPreflight({
 	let branch = targetBranch;
 	if (branch === undefined) {
 		const pullRequest = await client.getPullRequest(prNumber);
-		branch = pullRequest.base?.ref ?? pullRequest.head.ref;
+		branch = pullRequest.head.ref;
 	}
 
 	const result = await runCheckAuthz({

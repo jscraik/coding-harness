@@ -217,7 +217,11 @@ function isValidSurfaceRegistration(
 		"ownedPaths",
 		"lastReviewedAt",
 	];
-	if (!requiredKeys.every((key) => key in record)) {
+	if (
+		!requiredKeys.every((key) =>
+			Object.prototype.hasOwnProperty.call(record, key),
+		)
+	) {
 		return false;
 	}
 	if (
