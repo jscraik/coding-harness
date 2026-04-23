@@ -23,6 +23,57 @@ describe("validateContract", () => {
 		expect(result.data?.riskTierRules).toEqual({});
 	});
 
+	const createCanonicalNorthStarContract = () => ({
+		version: "1.6.0",
+		northStar: {
+			mission:
+				"Example repo exists to reduce manual release overhead while keeping PR throughput high.",
+			primaryMetric: "pr_lead_time",
+			primaryBottleneck: "review_rework_loop",
+			autonomyBoundary:
+				"Automate low and medium-risk changes with deterministic evidence and explicit rollback.",
+			safetyFloor: [
+				"deterministic evidence over intuition",
+				"strict current-head SHA discipline",
+			],
+			nonGoals: ["feature count without throughput impact"],
+			decisionQuestions: NORTH_STAR_DECISION_QUESTION_SPECS.map((question) => ({
+				id: question.id,
+				prompt: question.prompt,
+			})),
+		},
+		productSurface: {
+			surfaces: [
+				{
+					surfaceId: "review-gate",
+					surfaceType: "command",
+					class: "core",
+					owner: "workflow",
+					northStarContribution:
+						"Ensures merge-readiness decisions protect throughput outcomes",
+					manualGlueReductionClaim:
+						"Automates repeated policy checks in review loops",
+					reliabilityContribution:
+						"Applies the same decision criteria on every run",
+					evidenceReference: "artifacts/north-star/review-gate.json",
+					ownedPaths: ["src/commands/review-gate.ts"],
+					lastReviewedAt: "2026-04-22",
+				},
+			],
+		},
+		overrideReviewerRegistry: {
+			trustedReviewers: [
+				{
+					reviewerId: "project-maintainers",
+					reviewerType: "team",
+					signatureRef: "refs/reviewers/project-maintainers",
+					displayName: "Project Maintainers",
+					status: "active",
+				},
+			],
+		},
+	});
+
 	it("accepts canonical north-star contract surfaces for version 1.6+", () => {
 		const result = validateContract({
 			version: "1.6.0",
@@ -108,6 +159,29 @@ describe("validateContract", () => {
 		expect(result.errors.some((error) => error.path === "productSurface")).toBe(
 			true,
 		);
+	});
+
+	it("rejects surface registrations with padded surfaceId values", () => {
+		const contract = createCanonicalNorthStarContract();
+		contract.productSurface.surfaces[0]!.surfaceId = " review-gate ";
+		const result = validateContract(contract);
+
+		expect(result.success).toBe(false);
+		expect(result.errors.some((error) => error.path === "productSurface")).toBe(
+			true,
+		);
+	});
+
+	it("rejects override reviewers with padded reviewerId values", () => {
+		const contract = createCanonicalNorthStarContract();
+		contract.overrideReviewerRegistry.trustedReviewers[0]!.reviewerId =
+			" project-maintainers ";
+		const result = validateContract(contract);
+
+		expect(result.success).toBe(false);
+		expect(
+			result.errors.some((error) => error.path === "overrideReviewerRegistry"),
+		).toBe(true);
 	});
 
 	it("accepts blastRadiusRules and blastRadiusRulesMode", () => {

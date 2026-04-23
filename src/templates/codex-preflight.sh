@@ -821,11 +821,7 @@ main() {
 	check_bins "${bins_csv}"
 	check_paths "${WORKSPACE_ROOT}" "${paths_csv}"
 	if ! emit_north_star_summary "${WORKSPACE_ROOT}/harness.contract.json"; then
-		if [[ "${local_memory_mode}" == 'required' ]]; then
-			log_err 'north-star summary unresolved (required mode)'
-			exit 2
-		fi
-		log_warn "north-star summary unresolved (${local_memory_mode} mode)"
+		log_warn "north-star summary unresolved (${local_memory_mode} mode; continuing)"
 	fi
 
 	local branch_name

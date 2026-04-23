@@ -612,7 +612,7 @@ function validateAdmissionDeclaration(
 				.slice(0, wildcardMatch.index)
 				.replace(/\/+$/, "");
 			if (staticPrefix.length === 0) {
-				return ["."];
+				return [];
 			}
 			const parentPrefix = staticPrefix.replace(/\/[^/]*$/, "");
 			return parentPrefix.length > 0
@@ -634,10 +634,20 @@ function validateAdmissionDeclaration(
 		"scripts/verify-work.sh",
 		"src/commands/",
 	];
+	const hasExplicitProductSurfaceRegistry =
+		(contract?.productSurface?.surfaces?.length ?? 0) > 0;
+	const rootlessWildcardOwnedPaths = new Set<string>();
 	const governedRoots = (() => {
 		const contractOwnedRoots = new Set<string>();
 		for (const surface of contract?.productSurface?.surfaces ?? []) {
 			for (const ownedPath of surface.ownedPaths ?? []) {
+				const normalizedOwnedPath = normalizeRepoRelativePath(
+					ownedPath,
+				).replace(/\/+$/, "");
+				const wildcardMatch = normalizedOwnedPath.match(/[?*]/u);
+				if (normalizedOwnedPath.length > 0 && wildcardMatch?.index === 0) {
+					rootlessWildcardOwnedPaths.add(normalizedOwnedPath);
+				}
 				for (const root of deriveGovernedRootsFromOwnedPath(ownedPath)) {
 					const normalizedRoot = normalizeRepoRelativePath(root).replace(
 						/\/+$/,
@@ -649,7 +659,7 @@ function validateAdmissionDeclaration(
 				}
 			}
 		}
-		return contractOwnedRoots.size > 0
+		return contractOwnedRoots.size > 0 || hasExplicitProductSurfaceRegistry
 			? [...contractOwnedRoots]
 			: legacyGovernedRoots.map((root) =>
 					normalizeRepoRelativePath(root).replace(/\/+$/, ""),
@@ -657,15 +667,18 @@ function validateAdmissionDeclaration(
 	})();
 	const isGovernedPath = (pathValue: string): boolean => {
 		const normalizedPath = normalizeRepoRelativePath(pathValue);
-		return governedRoots.some((normalizedRoot) => {
-			if (normalizedRoot === ".") {
-				return true;
-			}
-			return (
-				normalizedPath === normalizedRoot ||
-				normalizedPath.startsWith(`${normalizedRoot}/`)
-			);
-		});
+		if (
+			governedRoots.some(
+				(normalizedRoot) =>
+					normalizedPath === normalizedRoot ||
+					normalizedPath.startsWith(`${normalizedRoot}/`),
+			)
+		) {
+			return true;
+		}
+		return [...rootlessWildcardOwnedPaths].some((ownedPath) =>
+			matchesOwnedPath(normalizedPath, ownedPath),
+		);
 	};
 	const isEvidenceReference = (value: string): boolean => {
 		const lineRefPath = value.split(":")[0] ?? "";

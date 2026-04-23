@@ -129,6 +129,13 @@ const INSTRUCTION_PRECEDENCE_SOURCE_PATHS = [
 ] as const;
 const WORKFLOW_POLICY_SOURCE_PATHS = [
 	...INSTRUCTION_PRECEDENCE_SOURCE_PATHS,
+	"docs/agents/04-validation.md",
+	"docs/agents/08-release-and-change-control.md",
+	"docs/agents/10-agent-testing-gates.md",
+	"docs/agents/13-linear-production-workflow.md",
+	"docs/agents/14-docs-gate-rollout.md",
+	"docs/agents/15-context-integrity-compact.md",
+	"docs/agents/16-linear-production-compact.md",
 	"docs/agents/17-ci-required-checks.md",
 ] as const;
 interface LoadedContract {
@@ -1039,7 +1046,7 @@ function resolveChangedFiles(
 			repoRoot,
 			"diff",
 			"--name-only",
-			"--diff-filter=ACMR",
+			"--diff-filter=ACMRD",
 		] as const;
 		const baseRefCandidates = [
 			options.mergeQueueBaseSha,
@@ -1104,7 +1111,7 @@ function resolveChangedFiles(
 						"diff-tree",
 						"--no-commit-id",
 						"--name-only",
-						"--diff-filter=ACMR",
+						"--diff-filter=ACMRD",
 						"-r",
 						"HEAD",
 					],

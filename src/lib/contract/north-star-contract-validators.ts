@@ -173,9 +173,13 @@ function isValidSurfaceRegistration(
 		return false;
 	}
 
+	if (typeof surface.surfaceId !== "string") {
+		return false;
+	}
+	const normalizedSurfaceId = surface.surfaceId.trim();
 	if (
-		typeof surface.surfaceId !== "string" ||
-		surface.surfaceId.trim().length === 0
+		normalizedSurfaceId.length === 0 ||
+		normalizedSurfaceId !== surface.surfaceId
 	) {
 		return false;
 	}
@@ -278,10 +282,11 @@ export function isValidProductSurfaceRegistry(
 		if (!isValidSurfaceRegistration(entry)) {
 			return false;
 		}
-		if (surfaceIds.has(entry.surfaceId)) {
+		const normalizedSurfaceId = entry.surfaceId.trim();
+		if (surfaceIds.has(normalizedSurfaceId)) {
 			return false;
 		}
-		surfaceIds.add(entry.surfaceId);
+		surfaceIds.add(normalizedSurfaceId);
 	}
 
 	return true;
@@ -328,9 +333,13 @@ export function isValidOverrideReviewerRegistry(
 		if (itemUnknownKeys.length > 0) {
 			return false;
 		}
+		if (typeof item.reviewerId !== "string") {
+			return false;
+		}
+		const normalizedReviewerId = item.reviewerId.trim();
 		if (
-			typeof item.reviewerId !== "string" ||
-			item.reviewerId.trim().length === 0
+			normalizedReviewerId.length === 0 ||
+			normalizedReviewerId !== item.reviewerId
 		) {
 			return false;
 		}
@@ -342,9 +351,13 @@ export function isValidOverrideReviewerRegistry(
 		) {
 			return false;
 		}
+		if (typeof item.signatureRef !== "string") {
+			return false;
+		}
+		const normalizedSignatureRef = item.signatureRef.trim();
 		if (
-			typeof item.signatureRef !== "string" ||
-			item.signatureRef.trim().length === 0
+			normalizedSignatureRef.length === 0 ||
+			normalizedSignatureRef !== item.signatureRef
 		) {
 			return false;
 		}
@@ -363,14 +376,14 @@ export function isValidOverrideReviewerRegistry(
 			return false;
 		}
 
-		if (reviewerIds.has(item.reviewerId)) {
+		if (reviewerIds.has(normalizedReviewerId)) {
 			return false;
 		}
-		reviewerIds.add(item.reviewerId);
-		if (signatureRefs.has(item.signatureRef)) {
+		reviewerIds.add(normalizedReviewerId);
+		if (signatureRefs.has(normalizedSignatureRef)) {
 			return false;
 		}
-		signatureRefs.add(item.signatureRef);
+		signatureRefs.add(normalizedSignatureRef);
 		if (item.status === "active") {
 			activeReviewerCount += 1;
 		}

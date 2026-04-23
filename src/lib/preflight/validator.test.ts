@@ -47,6 +47,7 @@ describe("runPreflightGate", () => {
 	function writeNorthStarContract(options?: {
 		preHook?: { id: "skip-all-checks" | "force-fail" };
 		emptySurfaceRegistry?: boolean;
+		ownedPaths?: string[];
 	}): void {
 		writeFileSync(
 			"harness.contract.json",
@@ -84,7 +85,7 @@ describe("runPreflightGate", () => {
 									reliabilityContribution:
 										"Applies the same policy checks every run.",
 									evidenceReference: "docs/agents/04-validation.md:1",
-									ownedPaths: ["src/commands/"],
+									ownedPaths: options?.ownedPaths ?? ["src/commands/"],
 									lastReviewedAt: "2026-04-22",
 								},
 							],
@@ -326,6 +327,33 @@ describe("runPreflightGate", () => {
 
 		expect(admissionCheck?.passed).toBe(false);
 		expect(admissionCheck?.message).toContain("admission_incomplete");
+	});
+
+	it("does not require admission for non-governed files when ownedPaths uses rootless wildcard globs", async () => {
+		writeNorthStarContract({
+			ownedPaths: ["**/*.ts"],
+		});
+		writeFileSync("README.md", "# docs\n", { encoding: "utf-8" });
+		const admission = createAdmissionDeclaration();
+
+		const result = await runPreflightGate({
+			files: ["README.md"],
+			admission,
+			skip: [
+				"git-repository",
+				"harness-version-coherence",
+				"contract-exists",
+				"risk-tier",
+				"file-size",
+				"forbidden-patterns",
+			],
+		});
+
+		const admissionCheck = result.checks.find(
+			(check) => check.id === "admission-declaration",
+		);
+		expect(admissionCheck?.passed).toBe(true);
+		expect(admissionCheck?.message).not.toContain("surface_registration_gap");
 	});
 
 	it("fails admission when affected_surface_classes mismatches registered class", async () => {

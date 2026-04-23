@@ -981,4 +981,52 @@ describe("docs-gate command", () => {
 			),
 		).toBe(true);
 	});
+
+	it("treats validation docs as workflow policy conflict sources", () => {
+		const root = join(process.cwd(), "artifacts", "docs-gate-test-23");
+		roots.push(root);
+		createContractWithDocsGate(root, {
+			enabled: true,
+			mode: "required",
+			rules: [],
+		});
+
+		const contractPath = join(root, "harness.contract.json");
+		const contract = JSON.parse(readFileSync(contractPath, "utf-8")) as {
+			ciProviderPolicy?: {
+				activeProvider?: string;
+				migrationStage?: string;
+				mode?: string;
+			};
+		};
+		contract.ciProviderPolicy = {
+			...DEFAULT_CI_PROVIDER_POLICY,
+			activeProvider: "circleci",
+			migrationStage: "circleci-only",
+			mode: "required",
+		};
+		write(contractPath, JSON.stringify(contract, null, 2));
+		write(
+			join(root, "docs/agents/04-validation.md"),
+			["# Validation", "```yaml", "activeProvider: github-actions", "```"].join(
+				"\n",
+			),
+		);
+
+		const result = runDocsGate({
+			repoRoot: root,
+			mode: "required",
+			changedFiles: ["docs/agents/04-validation.md"],
+		});
+
+		expect(result.exitCode).toBe(12);
+		expect(result.report.outcome).toBe("trust_mismatch");
+		expect(
+			result.report.findings.some(
+				(finding) =>
+					finding.category === "workflow_policy_conflict" &&
+					finding.path === "docs/agents/04-validation.md",
+			),
+		).toBe(true);
+	});
 });
