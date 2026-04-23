@@ -259,11 +259,13 @@ export function runLinearGate(options: LinearGateOptions): LinearGateResult {
 		};
 	}
 
-	const branch =
+	const branchFromInputs =
 		options.branch ??
 		process.env.GITHUB_HEAD_REF ??
-		process.env.GITHUB_REF_NAME ??
-		detectBranchName(repoRoot);
+		process.env.GITHUB_REF_NAME;
+	const branch =
+		branchFromInputs ??
+		(options.allowMissingBranch ? undefined : detectBranchName(repoRoot));
 	const prTitle = options.prTitle ?? process.env.PR_TITLE;
 	const prBody = options.prBody ?? process.env.PR_BODY;
 	const prText = [prTitle, prBody].filter(Boolean).join("\n");

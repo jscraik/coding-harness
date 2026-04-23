@@ -92,7 +92,7 @@ export function runEvidenceVerify(
 
 		// Load and validate contract
 		try {
-			const contract = loadContract(contractPath);
+			const contract = loadContract(contractPath, baseDir);
 			evidencePolicy = contract.evidencePolicy;
 		} catch (e) {
 			return {

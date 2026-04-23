@@ -542,6 +542,8 @@ harness commands --json | jq '
   `search`, `context`, and `index-context`
 - **Browser automation tooling:** required for `ui:verify` and `ui:explore`
   workflows
+- **Ralph CLI:** required for environment readiness and CircleCI orb-pinning
+  validation (`ralph --version`)
 
 Coding Harness does **not** create secrets for you and does **not** bypass
 branch protection or review policy. It also does **not** run your CI provider

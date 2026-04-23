@@ -59,6 +59,8 @@ WORKSPACE_ROOT="$(cd -- "${SCRIPT_DIR}/.." && pwd -P)"
 PREFLIGHT_OVERRIDES_FILE="${WORKSPACE_ROOT}/.harness/memory/codex-preflight-overrides.env"
 LOCAL_MEMORY_FALLBACK_SCRIPT="${SCRIPT_DIR}/codex-preflight-local-memory-legacy.sh"
 PROJECT_BRAIN_REQUIRED_PATHS='.harness/memory/LEARNINGS.md,.harness/knowledge/INDEX.md,.harness/knowledge/cli/knowledge.md,.harness/knowledge/cli/hypotheses.md,.harness/knowledge/cli/rules.md,.harness/knowledge/ci/knowledge.md,.harness/knowledge/ci/hypotheses.md,.harness/knowledge/ci/rules.md,.harness/knowledge/governance/knowledge.md,.harness/knowledge/governance/hypotheses.md,.harness/knowledge/governance/rules.md,.harness/knowledge/tooling/knowledge.md,.harness/knowledge/tooling/hypotheses.md,.harness/knowledge/tooling/rules.md,.harness/knowledge/tooling/codex-learn-summary.md,.harness/decisions,.harness/quality/criteria.md,.harness/review-log.md'
+WORKSPACE_GIT_USE_WORKTREE_OVERRIDE=0
+WORKSPACE_GIT_ROOT=''
 
 # usage prints the CLI usage text, available options, examples, and the legacy positional-interface note for the codex preflight script.
 usage() {
@@ -101,6 +103,37 @@ log_warn() {
 
 log_err() {
 	printf '❌ %s\n' "$*" >&2
+}
+
+workspace_git() {
+	if (( WORKSPACE_GIT_USE_WORKTREE_OVERRIDE )); then
+		GIT_WORK_TREE="${WORKSPACE_ROOT}" git -C "${WORKSPACE_ROOT}" "$@"
+		return
+	fi
+	git -C "${WORKSPACE_ROOT}" "$@"
+}
+
+resolve_workspace_git_root() {
+	local git_root=''
+	local canonical_workspace_root=''
+	canonical_workspace_root="$(cd -- "${WORKSPACE_ROOT}" 2>/dev/null && pwd -P)"
+	WORKSPACE_GIT_USE_WORKTREE_OVERRIDE=0
+	WORKSPACE_GIT_ROOT=''
+
+	if git_root="$(git -C "${WORKSPACE_ROOT}" rev-parse --show-toplevel 2>/dev/null)"; then
+		git_root="$(cd -- "${git_root}" 2>/dev/null && pwd -P || printf '%s\n' "${git_root}")"
+		if [[ "${canonical_workspace_root}" == "${git_root}" || "${canonical_workspace_root}" == "${git_root}"/* ]]; then
+			WORKSPACE_GIT_ROOT="${git_root}"
+			return 0
+		fi
+	fi
+	if git_root="$(GIT_WORK_TREE="${WORKSPACE_ROOT}" git -C "${WORKSPACE_ROOT}" rev-parse --show-toplevel 2>/dev/null)"; then
+		git_root="$(cd -- "${git_root}" 2>/dev/null && pwd -P || printf '%s\n' "${git_root}")"
+		WORKSPACE_GIT_USE_WORKTREE_OVERRIDE=1
+		WORKSPACE_GIT_ROOT="${git_root}"
+		return 0
+	fi
+	return 1
 }
 
 # append_csv_values combines two comma-separated lists: if one is empty returns the other, otherwise returns both joined with a single comma.
@@ -379,6 +412,113 @@ check_paths() {
 	log_ok "paths ok: ${paths_csv}"
 }
 
+emit_north_star_summary() {
+	local contract_path="$1"
+	local parsed=''
+	local status=''
+	local mission=''
+	local primary_metric=''
+	local primary_bottleneck=''
+	local autonomy_boundary=''
+	local safety_floor=''
+
+	if [[ ! -f "${contract_path}" ]]; then
+		log_warn "north-star summary skipped: missing ${contract_path}"
+		return 1
+	fi
+
+	if ! parsed="$(
+		python3 - "${contract_path}" <<'PY'
+import json
+import sys
+
+contract_path = sys.argv[1]
+try:
+    with open(contract_path, encoding="utf-8") as handle:
+        contract = json.load(handle)
+except Exception as exc:  # pragma: no cover - shell-consumed diagnostics only
+    print(f"error::{exc}")
+    raise SystemExit(0)
+
+north_star = contract.get("northStar")
+if not isinstance(north_star, dict):
+    print("missing")
+    raise SystemExit(0)
+
+def normalized(value):
+    if isinstance(value, str):
+        return value.strip()
+    return ""
+
+required_fields = (
+    "mission",
+    "primaryMetric",
+    "primaryBottleneck",
+    "autonomyBoundary",
+)
+if any(not normalized(north_star.get(field)) for field in required_fields):
+    print("invalid")
+    raise SystemExit(0)
+
+safety_floor = north_star.get("safetyFloor")
+if isinstance(safety_floor, list):
+    safety_items = [
+        item.strip()
+        for item in (str(entry) for entry in safety_floor)
+        if item.strip()
+    ]
+else:
+    print("invalid")
+    raise SystemExit(0)
+
+if not safety_items:
+    print("invalid")
+    raise SystemExit(0)
+
+print("ok")
+print(normalized(north_star.get("mission")))
+print(normalized(north_star.get("primaryMetric")))
+print(normalized(north_star.get("primaryBottleneck")))
+print(normalized(north_star.get("autonomyBoundary")))
+print(" | ".join(safety_items))
+PY
+	)"; then
+		log_warn "north-star summary skipped: failed to parse ${contract_path}"
+		return 1
+	fi
+
+	status="$(printf '%s\n' "${parsed}" | sed -n '1p')"
+	case "${status}" in
+		ok)
+			mission="$(printf '%s\n' "${parsed}" | sed -n '2p')"
+			primary_metric="$(printf '%s\n' "${parsed}" | sed -n '3p')"
+			primary_bottleneck="$(printf '%s\n' "${parsed}" | sed -n '4p')"
+			autonomy_boundary="$(printf '%s\n' "${parsed}" | sed -n '5p')"
+			safety_floor="$(printf '%s\n' "${parsed}" | sed -n '6p')"
+			log_section "North-Star Summary"
+			printf 'mission: %s\n' "${mission:-<unset>}"
+			printf 'primary metric: %s\n' "${primary_metric:-<unset>}"
+			printf 'primary bottleneck: %s\n' "${primary_bottleneck:-<unset>}"
+			printf 'autonomy boundary: %s\n' "${autonomy_boundary:-<unset>}"
+			printf 'safety floor: %s\n' "${safety_floor:-<unset>}"
+			;;
+		missing | invalid)
+			log_warn "north-star summary skipped: contract northStar block missing or invalid"
+			return 1
+			;;
+		error::*)
+			log_warn "north-star summary skipped: ${status#error::}"
+			return 1
+			;;
+		*)
+			log_warn "north-star summary skipped: unexpected parser output"
+			return 1
+			;;
+	esac
+
+	return 0
+}
+
 # run_local_memory_preflight_with_runner runs the given Local Memory helper command, appends a `--config` argument when a config path is available, prints the helper's output on success, writes the helper's output to stderr on failure, returns `0` on success, returns `3` when the output indicates a module-resolution/unknown-command error, and otherwise returns the helper's exit status.
 run_local_memory_preflight_with_runner() {
 	local runner_label="$1"
@@ -655,11 +795,11 @@ main() {
 		exit 2
 	fi
 
-	local git_root
-	if ! git_root="$(git rev-parse --show-toplevel 2>/dev/null)"; then
+	if ! resolve_workspace_git_root; then
 		log_err 'not inside a git repo (git rev-parse failed)'
 		exit 2
 	fi
+	local git_root="${WORKSPACE_GIT_ROOT}"
 	if [[ -z "${git_root}" ]]; then
 		log_err 'git rev-parse returned empty root'
 		exit 2
@@ -667,9 +807,8 @@ main() {
 	git_root="$(cd -- "${git_root}" && pwd -P)"
 	echo "git root: ${git_root}"
 	echo "workspace root: ${WORKSPACE_ROOT}"
-
-	if [[ "${WORKSPACE_ROOT}" != "${git_root}" && "${WORKSPACE_ROOT}" != "${git_root}"/* ]]; then
-		log_err "script workspace mismatch: ${WORKSPACE_ROOT} is not inside git root ${git_root}"
+	if [[ "$(workspace_git rev-parse --is-inside-work-tree 2>/dev/null || true)" != 'true' ]]; then
+		log_err 'git workspace validation failed for current workspace root'
 		exit 2
 	fi
 	if [[ -n "${expected_repo}" && "${WORKSPACE_ROOT}" != *"${expected_repo}"* ]]; then
@@ -696,11 +835,14 @@ main() {
 
 	check_bins "${bins_csv}"
 	check_paths "${WORKSPACE_ROOT}" "${paths_csv}"
+	if ! emit_north_star_summary "${WORKSPACE_ROOT}/harness.contract.json"; then
+		log_warn "north-star summary unresolved (continuing)"
+	fi
 
 	local branch_name
-	branch_name="$(git -C "${WORKSPACE_ROOT}" rev-parse --abbrev-ref HEAD 2>/dev/null || true)"
+	branch_name="$(workspace_git rev-parse --abbrev-ref HEAD 2>/dev/null || true)"
 	echo "git branch: ${branch_name:-HEAD}"
-	echo "clean?: $(git -C "${WORKSPACE_ROOT}" status --porcelain -- . | wc -l | tr -d ' ') changes"
+	echo "clean?: $(workspace_git status --porcelain -- . | wc -l | tr -d ' ') changes"
 
 	if [[ "${local_memory_mode}" != 'off' ]]; then
 		if ! preflight_local_memory_gold; then

@@ -610,6 +610,12 @@ describe("runVerifyCodeRabbit - remote checks with token", () => {
 		expect(rulesetCheck?.message).toContain('does not require "CodeRabbit"');
 		expect(rulesetCheck?.details?.currentChecks).toContain("lint");
 		expect(rulesetCheck?.details?.currentChecks).toContain("security-scan");
+		expect(String(rulesetCheck?.details?.hint ?? "")).toContain(
+			"harness branch-protect --checks CodeRabbit",
+		);
+		expect(String(rulesetCheck?.details?.hint ?? "")).not.toContain(
+			"--add-check",
+		);
 		expect(result.ok).toBe(false);
 	});
 

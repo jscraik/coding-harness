@@ -6,7 +6,7 @@
  */
 
 import { existsSync, readFileSync } from "node:fs";
-import { resolve } from "node:path";
+import { isAbsolute, relative, resolve } from "node:path";
 import { isMissingContractError } from "../contract/errors.js";
 import { loadContract } from "../contract/loader.js";
 import type {
@@ -18,12 +18,14 @@ import { resolveOverallTier } from "../policy/risk-tier.js";
 import { detectHarnessVersionCoherence } from "../version-coherence.js";
 import {
 	EXIT_CODES,
+	type PreflightAdmissionDeclaration,
 	type PreflightCheck,
 	type PreflightCheckFn,
 	type PreflightCheckRegistry,
 	type PreflightGateOptions,
 	type PreflightGateResult,
 	type PreflightHookDecision,
+	type PreflightNorthStarSummary,
 } from "./types.js";
 
 export type { PreflightGateOptions };
@@ -316,6 +318,7 @@ export async function runPreflightGate(
 	const contract = contractLoad.contract;
 	const extensions = contract?.gateExtensions?.preflightGate;
 	const riskTier = resolveRiskTier(options, contract);
+	const northStarSummary = buildNorthStarSummary(contract);
 
 	// Run pre-gate extension hooks before native checks.
 	const shortCircuit = runPreHooks(extensions, checks, hookDecisions);
@@ -326,7 +329,19 @@ export async function runPreflightGate(
 			start,
 			riskTier,
 			hookDecisions,
+			northStarSummary,
+			options.admission,
 		);
+	}
+
+	const admissionCheck = validateAdmissionDeclaration(
+		options.admission,
+		contract,
+		contractLoad.northStarDeclared,
+		options,
+	);
+	if (admissionCheck) {
+		checks.push(admissionCheck);
 	}
 
 	// Determine which checks to run
@@ -354,13 +369,22 @@ export async function runPreflightGate(
 
 	const passed = evaluatePass(checks, options.strict === true);
 
-	return buildPreflightResult(passed, checks, start, riskTier, hookDecisions);
+	return buildPreflightResult(
+		passed,
+		checks,
+		start,
+		riskTier,
+		hookDecisions,
+		northStarSummary,
+		options.admission,
+	);
 }
 
 function loadPreflightContract(contractPath: string): {
 	contract: HarnessContract | undefined;
 	errorMessage: string | undefined;
 	durationMs: number;
+	northStarDeclared: boolean;
 } {
 	const start = Date.now();
 	if (!existsSync(contractPath)) {
@@ -368,7 +392,22 @@ function loadPreflightContract(contractPath: string): {
 			contract: undefined,
 			errorMessage: undefined,
 			durationMs: Date.now() - start,
+			northStarDeclared: false,
 		};
+	}
+
+	let northStarDeclared = false;
+	try {
+		const contractSource = readFileSync(contractPath, "utf-8");
+		const parsedSource = JSON.parse(contractSource) as unknown;
+		if (typeof parsedSource === "object" && parsedSource !== null) {
+			northStarDeclared = Object.prototype.hasOwnProperty.call(
+				parsedSource,
+				"northStar",
+			);
+		}
+	} catch {
+		// Ignore source-parse failures here. loadContract will report parsing errors.
 	}
 
 	try {
@@ -376,6 +415,7 @@ function loadPreflightContract(contractPath: string): {
 			contract: loadContract(contractPath),
 			errorMessage: undefined,
 			durationMs: Date.now() - start,
+			northStarDeclared,
 		};
 	} catch (error) {
 		if (isMissingContractError(error)) {
@@ -383,6 +423,7 @@ function loadPreflightContract(contractPath: string): {
 				contract: undefined,
 				errorMessage: undefined,
 				durationMs: Date.now() - start,
+				northStarDeclared: false,
 			};
 		}
 		const message = error instanceof Error ? error.message : String(error);
@@ -390,6 +431,7 @@ function loadPreflightContract(contractPath: string): {
 			contract: undefined,
 			errorMessage: `Invalid contract: ${message}`,
 			durationMs: Date.now() - start,
+			northStarDeclared,
 		};
 	}
 }
@@ -420,6 +462,8 @@ function buildPreflightResult(
 	start: number,
 	riskTier: RiskTier | undefined,
 	hookDecisions: PreflightHookDecision[],
+	northStarSummary?: PreflightNorthStarSummary,
+	admissionDeclaration?: PreflightAdmissionDeclaration,
 ): PreflightGateResult {
 	const failedChecks = checks.filter((check) => !check.passed);
 	const warningChecks = failedChecks.filter(
@@ -438,6 +482,407 @@ function buildPreflightResult(
 		},
 		riskTier,
 		hookDecisions: hookDecisions.length > 0 ? hookDecisions : undefined,
+		northStarSummary,
+		admissionDeclaration,
+	};
+}
+
+function buildNorthStarSummary(
+	contract: HarnessContract | undefined,
+): PreflightNorthStarSummary | undefined {
+	const northStar = contract?.northStar;
+	if (!northStar) {
+		return undefined;
+	}
+	return {
+		mission: northStar.mission,
+		primary_metric: northStar.primaryMetric,
+		primary_bottleneck: northStar.primaryBottleneck,
+		autonomy_boundary: northStar.autonomyBoundary,
+		safety_floor: northStar.safetyFloor,
+	};
+}
+
+function validateAdmissionDeclaration(
+	declaration: PreflightAdmissionDeclaration | undefined,
+	contract: HarnessContract | undefined,
+	northStarDeclared: boolean,
+	options?: Pick<PreflightGateOptions, "skip" | "files">,
+): PreflightCheck | undefined {
+	if (options?.skip?.includes("admission-declaration")) {
+		return undefined;
+	}
+
+	if (!declaration) {
+		if (!northStarDeclared) {
+			return undefined;
+		}
+		return {
+			id: "admission-declaration",
+			description: "Validate north-star admission declaration",
+			severity: "error",
+			passed: false,
+			message:
+				"admission_incomplete: admission declaration is required when contract northStar is defined; provide --admission-file or explicitly bypass with --skip admission-declaration",
+			durationMs: 0,
+		};
+	}
+
+	const start = Date.now();
+	type AdmissionFailureClass =
+		| "admission_incomplete"
+		| "admission_unjustified"
+		| "surface_registration_gap";
+	type AdmissionIssue = {
+		failureClass: AdmissionFailureClass;
+		message: string;
+	};
+	const issues: AdmissionIssue[] = [];
+	const addIssue = (
+		message: string,
+		failureClass: AdmissionFailureClass = "admission_incomplete",
+	): void => {
+		issues.push({ failureClass, message });
+	};
+	const asNonEmptyString = (value: unknown): string | undefined => {
+		if (typeof value !== "string") {
+			return undefined;
+		}
+		const trimmed = value.trim();
+		return trimmed.length > 0 ? trimmed : undefined;
+	};
+	const asNonEmptyStringArray = (value: unknown): string[] | undefined => {
+		if (!Array.isArray(value)) {
+			return undefined;
+		}
+		return value
+			.map((item) => (typeof item === "string" ? item.trim() : ""))
+			.filter((item) => item.length > 0);
+	};
+	const normalizeRepoRelativePath = (value: string): string => {
+		const normalizedSlashes = value.replace(/\\/g, "/").trim();
+		const withoutDotPrefix = normalizedSlashes.replace(/^\.\//, "");
+		if (!isAbsolute(withoutDotPrefix)) {
+			return withoutDotPrefix;
+		}
+		const cwdRelative = relative(process.cwd(), withoutDotPrefix).replace(
+			/\\/g,
+			"/",
+		);
+		return cwdRelative.startsWith("../") ? withoutDotPrefix : cwdRelative;
+	};
+	const toGlobRegex = (pattern: string): RegExp => {
+		const escapedPattern = pattern.replace(/[|\\{}()[\]^$+*?.]/g, "\\$&");
+		const regexPattern = escapedPattern
+			.replace(/\\\*\\\*\\\//g, "(?:.*/)?")
+			.replace(/\\\*\\\*/g, "<<<DOUBLE_STAR>>>")
+			.replace(/\\\?/g, "[^/]")
+			.replace(/\\\*/g, "[^/]*")
+			.replace(/<<<DOUBLE_STAR>>>/g, ".*");
+		return new RegExp(`^${regexPattern}$`);
+	};
+	const matchesOwnedPath = (
+		changedPath: string,
+		ownedPath: string,
+	): boolean => {
+		const normalizedChangedPath = normalizeRepoRelativePath(changedPath);
+		const normalizedOwnedPath = normalizeRepoRelativePath(ownedPath).replace(
+			/\/+$/,
+			"",
+		);
+		if (normalizedOwnedPath.length === 0) {
+			return false;
+		}
+		if (/[?*]/u.test(normalizedOwnedPath)) {
+			return toGlobRegex(normalizedOwnedPath).test(normalizedChangedPath);
+		}
+		return (
+			normalizedChangedPath === normalizedOwnedPath ||
+			normalizedChangedPath.startsWith(`${normalizedOwnedPath}/`)
+		);
+	};
+	const deriveGovernedRootsFromOwnedPath = (ownedPath: string): string[] => {
+		const normalizedOwnedPath = normalizeRepoRelativePath(ownedPath).replace(
+			/\/+$/,
+			"",
+		);
+		if (normalizedOwnedPath.length === 0) {
+			return [];
+		}
+
+		const wildcardMatch = normalizedOwnedPath.match(/[?*]/u);
+		if (wildcardMatch && wildcardMatch.index !== undefined) {
+			const staticPrefix = normalizedOwnedPath
+				.slice(0, wildcardMatch.index)
+				.replace(/\/+$/, "");
+			if (staticPrefix.length === 0) {
+				return [];
+			}
+			const parentPrefix = staticPrefix.replace(/\/[^/]*$/, "");
+			return parentPrefix.length > 0
+				? [staticPrefix, parentPrefix]
+				: [staticPrefix];
+		}
+
+		const pathSegments = normalizedOwnedPath.split("/").filter(Boolean);
+		if (pathSegments.length <= 1) {
+			return [normalizedOwnedPath];
+		}
+		return [normalizedOwnedPath, pathSegments.slice(0, -1).join("/")];
+	};
+	const legacyGovernedRoots = [
+		"harness.contract.json",
+		"docs/roadmap/",
+		"README.md",
+		"scripts/codex-preflight.sh",
+		"scripts/verify-work.sh",
+		"src/commands/",
+	];
+	const hasExplicitProductSurfaceRegistry =
+		(contract?.productSurface?.surfaces?.length ?? 0) > 0;
+	const rootlessWildcardOwnedPaths = new Set<string>();
+	const governedRoots = (() => {
+		const contractOwnedRoots = new Set<string>();
+		for (const surface of contract?.productSurface?.surfaces ?? []) {
+			for (const ownedPath of surface.ownedPaths ?? []) {
+				const normalizedOwnedPath = normalizeRepoRelativePath(
+					ownedPath,
+				).replace(/\/+$/, "");
+				const wildcardMatch = normalizedOwnedPath.match(/[?*]/u);
+				if (normalizedOwnedPath.length > 0 && wildcardMatch?.index === 0) {
+					rootlessWildcardOwnedPaths.add(normalizedOwnedPath);
+				}
+				for (const root of deriveGovernedRootsFromOwnedPath(ownedPath)) {
+					const normalizedRoot = normalizeRepoRelativePath(root).replace(
+						/\/+$/,
+						"",
+					);
+					if (normalizedRoot.length > 0) {
+						contractOwnedRoots.add(normalizedRoot);
+					}
+				}
+			}
+		}
+		return contractOwnedRoots.size > 0 || hasExplicitProductSurfaceRegistry
+			? [...contractOwnedRoots]
+			: legacyGovernedRoots.map((root) =>
+					normalizeRepoRelativePath(root).replace(/\/+$/, ""),
+				);
+	})();
+	const isGovernedPath = (pathValue: string): boolean => {
+		const normalizedPath = normalizeRepoRelativePath(pathValue);
+		if (
+			governedRoots.some(
+				(normalizedRoot) =>
+					normalizedPath === normalizedRoot ||
+					normalizedPath.startsWith(`${normalizedRoot}/`),
+			)
+		) {
+			return true;
+		}
+		return [...rootlessWildcardOwnedPaths].some((ownedPath) =>
+			matchesOwnedPath(normalizedPath, ownedPath),
+		);
+	};
+	const isEvidenceReference = (value: string): boolean => {
+		const lineRefPath = value.split(":")[0] ?? "";
+		if (/^https?:\/\/\S+$/iu.test(value)) {
+			return true;
+		}
+		if (/^\[[^\]]+\]\([^)]+\)$/u.test(value)) {
+			return true;
+		}
+		if (/^[^:\s]+:\d+$/u.test(value) && /[./\\]/u.test(lineRefPath)) {
+			return true;
+		}
+		if (/^[A-Za-z0-9._~/-]+\.[A-Za-z0-9_-]+(?::\d+)?$/u.test(value)) {
+			return true;
+		}
+		if (
+			/^(artifacts|docs|src|scripts|tests|todos|codex|\.codex|\.harness)\//u.test(
+				value,
+			)
+		) {
+			return true;
+		}
+		return false;
+	};
+	const northStarMetric = asNonEmptyString(declaration.north_star_metric);
+	const primaryBottleneck = asNonEmptyString(declaration.primary_bottleneck);
+	const affectedSurfaceIds = asNonEmptyStringArray(
+		declaration.affected_surface_ids,
+	);
+	const affectedSurfaceClasses = asNonEmptyStringArray(
+		declaration.affected_surface_classes,
+	);
+	const evidenceLinks = asNonEmptyStringArray(declaration.evidence_links);
+	const metricImpactDeclared =
+		typeof declaration.metric_impact_declared === "string"
+			? declaration.metric_impact_declared
+			: undefined;
+	const validMetricImpacts = new Set(["direct", "path_strengthening", "none"]);
+	const throughputRationale = asNonEmptyString(
+		declaration.why_this_improves_throughput_or_reliability,
+	);
+	if (!northStarMetric) {
+		addIssue("north_star_metric is required");
+	}
+	if (!primaryBottleneck) {
+		addIssue("primary_bottleneck is required");
+	}
+	if (affectedSurfaceIds === undefined || affectedSurfaceIds.length === 0) {
+		addIssue("affected_surface_ids must contain at least one surface id");
+	}
+	if (
+		affectedSurfaceClasses === undefined ||
+		affectedSurfaceClasses.length === 0
+	) {
+		addIssue(
+			"affected_surface_classes must contain at least one surface class",
+		);
+	}
+	if (!Number.isFinite(declaration.policy_surface_delta)) {
+		addIssue("policy_surface_delta must be a finite number");
+	}
+	if (!Number.isFinite(declaration.manual_glue_delta)) {
+		addIssue("manual_glue_delta must be a finite number");
+	}
+	if (evidenceLinks === undefined || evidenceLinks.length === 0) {
+		addIssue("evidence_links must contain at least one evidence reference");
+	} else {
+		const invalidEvidenceReferences = evidenceLinks.filter(
+			(reference) => !isEvidenceReference(reference),
+		);
+		if (invalidEvidenceReferences.length > 0) {
+			addIssue(
+				`evidence_links entries must be URL, markdown link, path, or file:line reference (invalid: ${invalidEvidenceReferences.join(", ")})`,
+			);
+		}
+	}
+	if (!throughputRationale) {
+		addIssue("why_this_improves_throughput_or_reliability is required");
+	}
+	if (
+		metricImpactDeclared === undefined ||
+		!validMetricImpacts.has(metricImpactDeclared)
+	) {
+		addIssue(
+			"metric_impact_declared must be one of: direct, path_strengthening, none",
+		);
+	}
+	if (
+		declaration.policy_surface_delta > 0 &&
+		declaration.metric_impact_declared === "none"
+	) {
+		addIssue(
+			"metric_impact_declared cannot be 'none' when policy_surface_delta > 0",
+			"admission_unjustified",
+		);
+	}
+	if (contract?.northStar) {
+		if (
+			northStarMetric &&
+			northStarMetric !== contract.northStar.primaryMetric
+		) {
+			addIssue(
+				`north_star_metric must match contract primaryMetric '${contract.northStar.primaryMetric}'`,
+			);
+		}
+		if (
+			primaryBottleneck &&
+			primaryBottleneck !== contract.northStar.primaryBottleneck
+		) {
+			addIssue(
+				`primary_bottleneck must match contract primaryBottleneck '${contract.northStar.primaryBottleneck}'`,
+			);
+		}
+	}
+	if (contract?.productSurface?.surfaces) {
+		const registeredSurfaces = contract.productSurface.surfaces;
+		const registeredSurfaceIds = new Set(
+			registeredSurfaces
+				.map((surface) => surface.surfaceId?.trim())
+				.filter((surfaceId): surfaceId is string => Boolean(surfaceId)),
+		);
+		if (
+			registeredSurfaceIds.size > 0 &&
+			affectedSurfaceIds &&
+			affectedSurfaceIds.length > 0
+		) {
+			const unknownSurfaceIds = affectedSurfaceIds.filter(
+				(surfaceId) => !registeredSurfaceIds.has(surfaceId),
+			);
+			if (unknownSurfaceIds.length > 0) {
+				addIssue(
+					`affected_surface_ids contains unknown surface id(s): ${unknownSurfaceIds.join(", ")}`,
+					"surface_registration_gap",
+				);
+			}
+		}
+		if (
+			affectedSurfaceIds &&
+			affectedSurfaceIds.length > 0 &&
+			affectedSurfaceClasses &&
+			affectedSurfaceClasses.length > 0
+		) {
+			const expectedClasses = new Set(
+				registeredSurfaces
+					.filter((surface) => affectedSurfaceIds.includes(surface.surfaceId))
+					.map((surface) => surface.class?.trim())
+					.filter(
+						(surfaceClass): surfaceClass is string =>
+							typeof surfaceClass === "string" && surfaceClass.length > 0,
+					),
+			);
+			const declaredClasses = new Set(affectedSurfaceClasses);
+			const missingClasses = [...expectedClasses].filter(
+				(surfaceClass) => !declaredClasses.has(surfaceClass),
+			);
+			const unexpectedClasses = [...declaredClasses].filter(
+				(surfaceClass) => !expectedClasses.has(surfaceClass),
+			);
+			if (
+				expectedClasses.size > 0 &&
+				(missingClasses.length > 0 || unexpectedClasses.length > 0)
+			) {
+				addIssue(
+					`affected_surface_classes must exactly match registered classes for affected_surface_ids; missing: ${missingClasses.join(", ") || "<none>"}; unexpected: ${unexpectedClasses.join(", ") || "<none>"}; expected: ${[...expectedClasses].join(", ")}`,
+					"surface_registration_gap",
+				);
+			}
+		}
+		if (registeredSurfaces.length > 0) {
+			const governedChangedFiles = (options?.files ?? [])
+				.map((filePath) => normalizeRepoRelativePath(filePath))
+				.filter((filePath) => isGovernedPath(filePath));
+			for (const governedFile of governedChangedFiles) {
+				const matchedByInventory = registeredSurfaces.some((surface) =>
+					(surface.ownedPaths ?? []).some((ownedPath) =>
+						matchesOwnedPath(governedFile, ownedPath),
+					),
+				);
+				if (!matchedByInventory) {
+					addIssue(
+						`governed changed file '${governedFile}' is not covered by productSurface.surfaces[].ownedPaths`,
+						"surface_registration_gap",
+					);
+				}
+			}
+		}
+	}
+
+	return {
+		id: "admission-declaration",
+		description: "Validate north-star admission declaration",
+		severity: "error",
+		passed: issues.length === 0,
+		message:
+			issues.length === 0
+				? "Admission declaration is complete and aligned to contract north-star fields"
+				: issues
+						.map((issue) => `${issue.failureClass}: ${issue.message}`)
+						.join("; "),
+		durationMs: Date.now() - start,
 	};
 }
 

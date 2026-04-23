@@ -63,6 +63,7 @@ Harness-managed repositories should keep this baseline available locally before 
 
 - `prek`
 - `diagram`
+- `ralph`
 - `mise`
 - `vale`
 - `argos`
@@ -95,6 +96,7 @@ Recommended policy:
 - Keep repo-scoped telemetry and learned overrides under `.harness/memory/`, and global telemetry under `~/.codex/`.
 - Treat `scripts/verify-work.sh` as the canonical repo-facing verification command and keep it wired to repo-local preflight defaults.
 - Treat `scripts/validate-codestyle.sh` as the fail-closed code style gate and require exact proof-of-pass in change summaries and PRs.
+- Keep docs-gate required documentation surfaces updated together when validation, required-check, tooling/runtime, or architecture-context behavior changes.
 - Treat `scripts/new-task.sh` as the canonical task-entry helper so each task starts with a repo-local branch/worktree boundary instead of branch switching inside a shared checkout.
 - Treat `scripts/prepare-worktree.sh` as required first-push bootstrap for freshly created worktrees so local hooks run with dependencies and canonical hook wiring.
 - Treat `scripts/check-environment.sh` as the local readiness gate for required tooling.

@@ -12,15 +12,6 @@ ensure_optional_npm_token_env
 SCRIPT_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd -P)"
 REPO_ROOT="$(cd -- "$SCRIPT_DIR/.." && pwd -P)"
 
-if [[ "${HARNESS_VERIFY_WORK_NO_DELEGATE:-0}" != "1" ]]; then
-	if command -v harness >/dev/null 2>&1; then
-		harness_help="$(harness --help 2>/dev/null || true)"
-		if [[ "$harness_help" =~ (^|[[:space:]])verify-work([[:space:]]|$) ]]; then
-			exec harness verify-work "$@"
-		fi
-	fi
-fi
-
 changed_only=1
 fast_mode=0
 strict_mode=0
@@ -28,10 +19,14 @@ json_mode=0
 repo_root=""
 resume_from=""
 normalized_manifest_path=""
+normalized_manifest_source=""
+normalized_manifest_provider=""
 lane_fast_mode_json="false"
 lane_changed_only_json="true"
 lane_strict_mode_json="false"
 hook_governance_scope="project-local"
+project_governance_flag=0
+workspace_governance_flag=0
 current_git_root=""
 current_repo_name=""
 workspace_root=""
@@ -140,6 +135,8 @@ has_package_script() {
 prepare_normalized_required_checks_manifest() {
 	local manifest_path="$repo_root/.harness/ci-required-checks.json"
 	normalized_manifest_path=""
+	normalized_manifest_source=""
+	normalized_manifest_provider=""
 	if [[ ! -f "$manifest_path" ]]; then
 		return 0
 	fi
@@ -154,6 +151,7 @@ prepare_normalized_required_checks_manifest() {
 	if [[ -f "$dist_cli_path" ]] && command -v node >/dev/null 2>&1; then
 		if node "$dist_cli_path" contract normalize-required-checks --manifest "$manifest_path" > "$normalized_tmp"; then
 			normalized_manifest_path="$normalized_tmp"
+			normalized_manifest_source="normalized"
 			return 0
 		fi
 		echo "[verify-work] required checks normalization via dist CLI failed, trying fallback runners" >&2
@@ -162,6 +160,7 @@ prepare_normalized_required_checks_manifest() {
 	if [[ -f "$repo_root/src/cli.ts" ]] && pnpm_bin="$(command -v pnpm 2>/dev/null)"; then
 		if "$pnpm_bin" exec tsx "$repo_root/src/cli.ts" contract normalize-required-checks --manifest "$manifest_path" > "$normalized_tmp"; then
 			normalized_manifest_path="$normalized_tmp"
+			normalized_manifest_source="normalized"
 			return 0
 		fi
 		echo "[verify-work] required checks normalization via repo runner failed, trying fallback runners" >&2
@@ -171,6 +170,7 @@ prepare_normalized_required_checks_manifest() {
 	if [[ -n "$mise_harness_bin" && -x "$mise_harness_bin" ]]; then
 		if "$mise_harness_bin" contract normalize-required-checks --manifest "$manifest_path" > "$normalized_tmp"; then
 			normalized_manifest_path="$normalized_tmp"
+			normalized_manifest_source="normalized"
 			return 0
 		fi
 		echo "[verify-work] required checks normalization via mise harness failed, trying PATH harness" >&2
@@ -180,6 +180,7 @@ prepare_normalized_required_checks_manifest() {
 	if [[ -n "$harness_bin" ]]; then
 		if "$harness_bin" contract normalize-required-checks --manifest "$manifest_path" > "$normalized_tmp"; then
 			normalized_manifest_path="$normalized_tmp"
+			normalized_manifest_source="normalized"
 			return 0
 		fi
 	fi
@@ -187,6 +188,7 @@ prepare_normalized_required_checks_manifest() {
 	if jq -e 'type == "object"' "$manifest_path" >/dev/null 2>&1; then
 		cp "$manifest_path" "$normalized_tmp"
 		normalized_manifest_path="$normalized_tmp"
+		normalized_manifest_source="raw-fallback"
 		echo "[verify-work] required checks normalization unavailable; using raw manifest fallback" >&2
 		return 0
 	fi
@@ -196,14 +198,28 @@ prepare_normalized_required_checks_manifest() {
 	return 1
 }
 
+resolve_manifest_provider() {
+	if [[ -z "$normalized_manifest_path" || ! -f "$normalized_manifest_path" ]]; then
+		echo ""
+		return 0
+	fi
+
+	jq -r '
+		.activeProvider
+		// (.requiredChecks[]? | (.provider // .sourceAppSlug // .sourceAppId // empty))
+		// (.gates[]? | (.provider // empty))
+		// ""
+	' "$normalized_manifest_path" | head -n 1
+}
+
 build_resume_hint_from_run_json() {
 	local run_json_path="$1"
 	local hint=""
 	local lane_fast lane_changed lane_strict
 
-	lane_fast="$(jq -r '.lane.fastMode // false' "$run_json_path" 2>/dev/null || echo false)"
-	lane_changed="$(jq -r '.lane.changedOnly // true' "$run_json_path" 2>/dev/null || echo true)"
-	lane_strict="$(jq -r '.lane.strictMode // false' "$run_json_path" 2>/dev/null || echo false)"
+	lane_fast="$(jq -r 'if (.lane.fastMode == null) then false else .lane.fastMode end' "$run_json_path" 2>/dev/null || echo false)"
+	lane_changed="$(jq -r 'if (.lane.changedOnly == null) then true else .lane.changedOnly end' "$run_json_path" 2>/dev/null || echo true)"
+	lane_strict="$(jq -r 'if (.lane.strictMode == null) then false else .lane.strictMode end' "$run_json_path" 2>/dev/null || echo false)"
 
 	if [[ "$lane_fast" == "true" ]]; then
 		hint+=" --fast"
@@ -224,7 +240,7 @@ cleanup_verify_work_temp_files() {
 	if [[ -n "$normalized_manifest_path" && -f "$normalized_manifest_path" ]]; then
 		rm -f "$normalized_manifest_path"
 	fi
-	for tmp_path in "${hook_temp_paths[@]}"; do
+	for tmp_path in "${hook_temp_paths[@]-}"; do
 		if [[ -n "$tmp_path" && -f "$tmp_path" ]]; then
 			rm -f "$tmp_path"
 		fi
@@ -285,16 +301,25 @@ run_ci_check_alignment_gate() {
 	fi
 
 	local provider
-	provider="$(jq -r '.activeProvider // ""' "$normalized_manifest_path")"
+	provider="$(resolve_manifest_provider)"
+	normalized_manifest_provider="$provider"
+	if [[ -z "$provider" ]]; then
+		echo "[verify-work] ci-check-alignment: active provider identity is required in required checks manifest"
+		echo "[verify-work] ci-check-alignment: blocking due to missing canonical provider identity"
+		return 1
+	fi
+
 	local github_check_names
-	github_check_names="$(jq -r '.gates[]?.githubCheckName // empty' "$normalized_manifest_path")"
+	if [[ "$normalized_manifest_source" == "raw-fallback" ]]; then
+		github_check_names="$(jq -r --arg provider "$provider" '.requiredChecks[]? | select((.provider // .sourceAppSlug // .sourceAppId // "") == $provider) | .githubCheckName // empty' "$normalized_manifest_path")"
+	else
+		github_check_names="$(jq -r --arg provider "$provider" '.gates[]? | select((.provider // "") == $provider) | .githubCheckName // empty' "$normalized_manifest_path")"
+	fi
 
 	if [[ -z "$github_check_names" ]]; then
-		echo "[verify-work] ci-check-alignment: no githubCheckName values found"
-		if [[ "$strict_mode" -eq 1 ]]; then
-			return 1
-		fi
-		return 0
+		echo "[verify-work] ci-check-alignment: no githubCheckName values found for active provider"
+		echo "[verify-work] ci-check-alignment: blocking due to missing canonical check identity"
+		return 1
 	fi
 
 	if [[ "$provider" == "circleci" ]]; then
@@ -339,8 +364,50 @@ compute_contract_version() {
 	read_normalized_manifest_value_or_default "1" '.contractVersion // "1"'
 }
 
+compute_contract_fingerprint() {
+	local contract_path="$repo_root/harness.contract.json"
+	if [[ ! -f "$contract_path" ]]; then
+		echo "missing"
+		return 0
+	fi
+
+	local fingerprint=""
+	if command -v node >/dev/null 2>&1; then
+		fingerprint="$(
+			node -e 'const fs=require("node:fs"); const crypto=require("node:crypto"); const path=process.argv[1]; const bytes=fs.readFileSync(path); process.stdout.write(crypto.createHash("sha256").update(bytes).digest("hex"));' "$contract_path" 2>/dev/null || true
+		)"
+	fi
+	if [[ -z "$fingerprint" ]] && command -v shasum >/dev/null 2>&1; then
+		fingerprint="$(shasum -a 256 "$contract_path" 2>/dev/null | awk '{print $1}')"
+	fi
+	if [[ -z "$fingerprint" ]] && command -v openssl >/dev/null 2>&1; then
+		fingerprint="$(
+			openssl dgst -sha256 -r "$contract_path" 2>/dev/null | awk '{print $1}' || true
+		)"
+	fi
+
+	if [[ -z "$fingerprint" ]]; then
+		echo "unknown"
+		return 0
+	fi
+
+	echo "$fingerprint"
+}
+
 compute_provider_class() {
-	read_normalized_manifest_value_or_default "unknown" '.activeProvider // "unknown"'
+	if [[ "$normalized_manifest_source" == "raw-fallback" && -n "$normalized_manifest_provider" ]]; then
+		echo "$normalized_manifest_provider"
+		return 0
+	fi
+
+	local provider
+	provider="$(resolve_manifest_provider)"
+	if [[ -n "$provider" ]]; then
+		echo "$provider"
+		return 0
+	fi
+
+	echo "unknown"
 }
 
 compute_schema_version() {
@@ -629,6 +696,7 @@ write_run_header() {
 		--arg providerClass "$provider_class" \
 		--arg schemaVersion "$schema_version" \
 		--arg contractVersion "$contract_version" \
+		--arg contractFingerprint "$contract_fingerprint" \
 		--argjson laneFastMode "$lane_fast_mode_json" \
 		--argjson laneChangedOnly "$lane_changed_only_json" \
 		--argjson laneStrictMode "$lane_strict_mode_json" \
@@ -643,6 +711,7 @@ write_run_header() {
 			providerClass: $providerClass,
 			schemaVersion: $schemaVersion,
 			contractVersion: $contractVersion,
+			contractFingerprint: $contractFingerprint,
 			lane: {
 				fastMode: $laneFastMode,
 				changedOnly: $laneChangedOnly,
@@ -823,20 +892,32 @@ find_resume_source_run_dir() {
 		[[ -n "$candidate" ]] || continue
 		[[ -f "$candidate/run.json" && -f "$candidate/summary.json" ]] || continue
 		[[ "$candidate" == "$run_dir" ]] && continue
-		local same_root same_schema same_contract same_provider same_lane
+		local same_root same_schema same_contract same_contract_fingerprint same_provider same_lane
 		same_root="$(jq -r --arg repoRoot "$repo_root" '.repoRoot == $repoRoot' "$candidate/run.json" 2>/dev/null || echo false)"
 		same_schema="$(jq -r --arg schemaVersion "$schema_version" '.schemaVersion == $schemaVersion' "$candidate/run.json" 2>/dev/null || echo false)"
 		same_contract="$(jq -r --arg contractVersion "$contract_version" '.contractVersion == $contractVersion' "$candidate/run.json" 2>/dev/null || echo false)"
+		same_contract_fingerprint="$(
+			jq -r \
+				--arg contractFingerprint "$contract_fingerprint" \
+				--argjson allowLegacyMissingFingerprint "$(if [[ "$contract_fingerprint" == "missing" ]]; then echo true; else echo false; fi)" \
+				'
+					if has("contractFingerprint") then
+						.contractFingerprint == $contractFingerprint
+					else
+						$allowLegacyMissingFingerprint
+					end
+				' "$candidate/run.json" 2>/dev/null || echo false
+		)"
 		same_provider="$(jq -r --arg providerClass "$provider_class" '.providerClass == $providerClass' "$candidate/run.json" 2>/dev/null || echo false)"
 		same_lane="$(
 			jq -r \
 				--argjson laneFastMode "$lane_fast_mode_json" \
 				--argjson laneChangedOnly "$lane_changed_only_json" \
 				--argjson laneStrictMode "$lane_strict_mode_json" \
-				'((.lane.fastMode // false) == $laneFastMode) and ((.lane.changedOnly // true) == $laneChangedOnly) and ((.lane.strictMode // false) == $laneStrictMode)' \
+				'((if (.lane.fastMode == null) then false else .lane.fastMode end) == $laneFastMode) and ((if (.lane.changedOnly == null) then true else .lane.changedOnly end) == $laneChangedOnly) and ((if (.lane.strictMode == null) then false else .lane.strictMode end) == $laneStrictMode)' \
 				"$candidate/run.json" 2>/dev/null || echo false
 		)"
-		if [[ "$same_root" == "true" && "$same_schema" == "true" && "$same_contract" == "true" && "$same_provider" == "true" && "$same_lane" == "true" ]]; then
+		if [[ "$same_root" == "true" && "$same_schema" == "true" && "$same_contract" == "true" && "$same_contract_fingerprint" == "true" && "$same_provider" == "true" && "$same_lane" == "true" ]]; then
 			echo "$candidate"
 			return 0
 		fi
@@ -943,14 +1024,20 @@ while (( $# > 0 )); do
 			;;
 		--repo-root)
 			repo_root="${2:-}"
+			if [[ -z "$repo_root" || "$repo_root" == -* ]]; then
+				echo "[verify-work] --repo-root requires a path" >&2
+				exit 2
+			fi
 			shift 2
 			;;
 		--project-governance)
 			hook_governance_scope="project-local"
+			project_governance_flag=1
 			shift
 			;;
 		--workspace-governance)
 			hook_governance_scope="workspace"
+			workspace_governance_flag=1
 			shift
 			;;
 		-h|--help)
@@ -964,6 +1051,11 @@ while (( $# > 0 )); do
 			;;
 	esac
 done
+
+if [[ "$project_governance_flag" -eq 1 && "$workspace_governance_flag" -eq 1 ]]; then
+	echo "[verify-work] --project-governance and --workspace-governance are mutually exclusive" >&2
+	exit 2
+fi
 
 if [[ -z "$repo_root" ]]; then
 	repo_root="$REPO_ROOT"
@@ -986,6 +1078,7 @@ paths_csv="$(preflight_paths_csv "$stack")"
 provider_class="$(compute_provider_class)"
 schema_version="$(compute_schema_version)"
 contract_version="$(compute_contract_version)"
+contract_fingerprint="$(compute_contract_fingerprint)"
 prepare_hook_governance_inputs
 
 build_gate_plan
@@ -995,6 +1088,11 @@ refresh_lane_metadata
 start_index=0
 if [[ -n "$resume_from" ]]; then
 	run_mode="resume"
+	if [[ "$contract_fingerprint" == "unknown" ]]; then
+		echo "[verify-work] resume blocked: deterministic contract fingerprint is unavailable" >&2
+		echo "[verify-work] install node, shasum, or openssl to enable safe resume matching" >&2
+		exit 1
+	fi
 	found_resume_gate=0
 	for idx in "${!gate_ids[@]}"; do
 		if [[ "${gate_ids[$idx]}" == "$resume_from" ]]; then
@@ -1021,7 +1119,7 @@ write_run_header
 if [[ "$run_mode" == "resume" ]]; then
 	source_run_dir="$(find_resume_source_run_dir || true)"
 	if [[ -z "${source_run_dir:-}" ]]; then
-		echo "[verify-work] no compatible prior run found for resume (contract/provider/root must match)" >&2
+		echo "[verify-work] no compatible prior run found for resume (contract/provider/root/fingerprint must match)" >&2
 		rm -rf "$run_dir"
 		exit 1
 	fi
@@ -1113,6 +1211,7 @@ if [[ "$json_mode" -eq 1 ]]; then
 		echo "[verify-work] run id: $run_id"
 		echo "[verify-work] mode: $run_mode"
 		echo "[verify-work] contract version: $contract_version"
+		echo "[verify-work] contract fingerprint: $contract_fingerprint"
 		if [[ "$overall_status" == "passed" ]]; then
 			echo "[verify-work] status: pass"
 		else
