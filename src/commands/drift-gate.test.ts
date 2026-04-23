@@ -273,6 +273,28 @@ describe("drift-gate command", () => {
 		expect(written.command).toBe("drift-gate");
 	});
 
+	it("persists blocked status in health-mode report output", () => {
+		const root = join(process.cwd(), "artifacts", "drift-gate-test-health-out");
+		roots.push(root);
+		createRepoFixture(root);
+		rmSync(join(root, "docs/roadmap/agent-first-status.md"));
+
+		const outPath = "artifacts/consistency-gate/custom-health-report.json";
+		const result = runDriftGate({
+			repoRoot: root,
+			mode: "health",
+			outPath,
+		});
+
+		expect(result.exitCode).toBe(1);
+		expect(result.report.status).toBe("blocked");
+
+		const written = JSON.parse(readFileSync(join(root, outPath), "utf-8")) as {
+			status: string;
+		};
+		expect(written.status).toBe("blocked");
+	});
+
 	it("auto-seeds baseline on first run when no baseline exists", () => {
 		const root = join(process.cwd(), "artifacts", "drift-gate-test-seed-1");
 		roots.push(root);

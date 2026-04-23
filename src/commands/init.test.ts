@@ -1751,11 +1751,15 @@ describe("runInit", () => {
 				'exec node "$REPO_ROOT/dist/cli.js" "$@"',
 			);
 			expect(runHarnessGate).toContain(
-				'if bash "$REPO_ROOT/scripts/harness-cli.sh" "$@"; then',
+				'bash "$REPO_ROOT/scripts/harness-cli.sh" "$@" || wrapper_exit=$?',
 			);
 			expect(runHarnessGate).toContain(
-				'echo "Warning: scripts/harness-cli.sh failed; attempting fallback runners." >&2',
+				'if [[ "$wrapper_exit" -eq 126 || "$wrapper_exit" -eq 127 ]]; then',
 			);
+			expect(runHarnessGate).toContain(
+				'echo "Warning: scripts/harness-cli.sh unavailable (exit $wrapper_exit); attempting fallback runners." >&2',
+			);
+			expect(runHarnessGate).toContain('exit "$wrapper_exit"');
 			expect(runHarnessGate).toContain(
 				"if command -v mise >/dev/null 2>&1; then",
 			);

@@ -62,8 +62,8 @@ Use this document before milestones, release-tagged branches, or behavior-changi
 ## Review-gate north-star evidence
 
 When `harness.contract.json` declares `northStar` governance and the PR touches
-governed `productSurface.surfaces[].ownedPaths`, `review-gate` enforces four PR
-body decisions:
+governed `productSurface.surfaces[].ownedPaths`, `review-gate` enforces four
+PR-body decisions:
 
 - `lead_time_path: yes. Evidence: <ref>`
 - `manual_glue: yes. Evidence: <ref>`

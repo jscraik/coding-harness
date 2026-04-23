@@ -1326,10 +1326,16 @@ if [[ -f "$REPO_ROOT/dist/cli.js" ]] && command -v node >/dev/null 2>&1; then
 fi
 
 if [[ -f "$REPO_ROOT/scripts/harness-cli.sh" && -r "$REPO_ROOT/scripts/harness-cli.sh" ]]; then
-	if bash "$REPO_ROOT/scripts/harness-cli.sh" "$@"; then
+	wrapper_exit=0
+	bash "$REPO_ROOT/scripts/harness-cli.sh" "$@" || wrapper_exit=$?
+	if [[ "$wrapper_exit" -eq 0 ]]; then
 		exit 0
 	fi
-	echo "Warning: scripts/harness-cli.sh failed; attempting fallback runners." >&2
+	if [[ "$wrapper_exit" -eq 126 || "$wrapper_exit" -eq 127 ]]; then
+		echo "Warning: scripts/harness-cli.sh unavailable (exit $wrapper_exit); attempting fallback runners." >&2
+	else
+		exit "$wrapper_exit"
+	fi
 fi
 
 if command -v mise >/dev/null 2>&1; then

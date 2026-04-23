@@ -408,6 +408,53 @@ describe("validateContract", () => {
 			expect(result.errors[0]?.code).toBe(ValidationErrorCode.INVALID_VALUE);
 		});
 
+		it("rejects productSurface surfaceId values that only differ by whitespace", () => {
+			const result = validateContract(
+				withCanonicalNorthStarSurfaces({
+					version: "1.5.0",
+					productSurface: {
+						surfaces: [
+							{
+								surfaceId: "review-gate",
+								surfaceType: "command",
+								class: "core",
+								owner: "workflow",
+								northStarContribution:
+									"Constrains merge-readiness decisions to throughput path",
+								manualGlueReductionClaim:
+									"Converts repeated review comments into deterministic checks",
+								reliabilityContribution:
+									"Ensures the same questions are asked every run",
+								evidenceReference: "artifacts/north-star/review-gate.json",
+								ownedPaths: ["src/commands/review-gate.ts"],
+								lastReviewedAt: "2026-04-21",
+							},
+							{
+								surfaceId: "review-gate ",
+								surfaceType: "document",
+								class: "adjacent",
+								owner: "workflow",
+								northStarContribution:
+									"Tracks throughput posture in the status matrix",
+								manualGlueReductionClaim:
+									"Removes manual summarization for release reviews",
+								reliabilityContribution:
+									"Creates one canonical reporting surface",
+								evidenceReference: "docs/roadmap/agent-first-status.md",
+								reviewCadence: "per_release",
+								ownedPaths: ["docs/roadmap/agent-first-status.md"],
+								lastReviewedAt: "2026-04-21",
+							},
+						],
+					},
+				}),
+			);
+
+			expect(result.success).toBe(false);
+			expect(result.errors[0]?.path).toBe("productSurface");
+			expect(result.errors[0]?.code).toBe(ValidationErrorCode.INVALID_VALUE);
+		});
+
 		it("rejects duplicate overrideReviewerRegistry reviewerId values", () => {
 			const result = validateContract(
 				withCanonicalNorthStarSurfaces({

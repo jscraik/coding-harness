@@ -278,10 +278,11 @@ export function isValidProductSurfaceRegistry(
 		if (!isValidSurfaceRegistration(entry)) {
 			return false;
 		}
-		if (surfaceIds.has(entry.surfaceId)) {
+		const normalizedSurfaceId = entry.surfaceId.trim();
+		if (surfaceIds.has(normalizedSurfaceId)) {
 			return false;
 		}
-		surfaceIds.add(entry.surfaceId);
+		surfaceIds.add(normalizedSurfaceId);
 	}
 
 	return true;

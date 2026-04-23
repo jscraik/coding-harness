@@ -827,6 +827,18 @@ export function runDriftGate(options: DriftGateOptions = {}): DriftGateResult {
 		...(baselineSeeded ? { baseline_seeded: true } : {}),
 	};
 
+	const hasHealthBlockingFinding = report.findings.some(
+		(finding) =>
+			finding.severity === "error" ||
+			(finding.surface === "status" && finding.rule_result === "fail"),
+	);
+	if (
+		mode === "health" &&
+		report.outcome !== "error" &&
+		hasHealthBlockingFinding
+	) {
+		report.status = "blocked";
+	}
 	const outPath =
 		options.outPath ?? (mode === "advisory" ? DEFAULT_OUT_PATH : undefined);
 	if (outPath) {
@@ -866,19 +878,6 @@ export function runDriftGate(options: DriftGateOptions = {}): DriftGateResult {
 				suppressed_count: suppressed.length,
 			};
 		}
-	}
-
-	const hasHealthBlockingFinding = report.findings.some(
-		(finding) =>
-			finding.severity === "error" ||
-			(finding.surface === "status" && finding.rule_result === "fail"),
-	);
-	if (
-		mode === "health" &&
-		report.outcome !== "error" &&
-		hasHealthBlockingFinding
-	) {
-		report.status = "blocked";
 	}
 	const exitCode =
 		mode !== "health"
