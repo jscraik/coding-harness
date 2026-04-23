@@ -48,6 +48,7 @@ export interface DocsGateOptions {
 	json?: boolean;
 	outPath?: string;
 	changedFiles?: string[];
+	deletedFiles?: string[];
 	repoRoot?: string;
 	trustedBaseRef?: string;
 	trustedContractSha?: string;
