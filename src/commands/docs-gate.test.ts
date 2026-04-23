@@ -238,6 +238,73 @@ describe("docs-gate command", () => {
 		expect(result.report.summary.missing_surface_count).toBe(0);
 	});
 
+	it("treats deleted required documentation surfaces as missing", () => {
+		const root = join(process.cwd(), "artifacts", "docs-gate-test-5b");
+		roots.push(root);
+		const gitEnv = { ...process.env };
+		gitEnv.GIT_INDEX_FILE = undefined;
+		gitEnv.GIT_DIR = undefined;
+		gitEnv.GIT_WORK_TREE = undefined;
+		gitEnv.GIT_PREFIX = undefined;
+		createContractWithDocsGate(root, {
+			enabled: true,
+			mode: "required",
+			rules: [
+				{
+					ruleId: "cli-surface-docs",
+					when: { categories: ["cli_surface"] },
+					requireDocs: ["README.md"],
+					severity: "error",
+				},
+			],
+		});
+		execFileSync("git", ["init"], { cwd: root, stdio: "ignore", env: gitEnv });
+		execFileSync("git", ["config", "user.email", "docs-gate@example.com"], {
+			cwd: root,
+			stdio: "ignore",
+			env: gitEnv,
+		});
+		execFileSync("git", ["config", "user.name", "Docs Gate Test"], {
+			cwd: root,
+			stdio: "ignore",
+			env: gitEnv,
+		});
+		execFileSync("git", ["add", "."], {
+			cwd: root,
+			stdio: "ignore",
+			env: gitEnv,
+		});
+		execFileSync("git", ["commit", "-m", "seed"], {
+			cwd: root,
+			stdio: "ignore",
+			env: gitEnv,
+		});
+		write(join(root, "src/cli.ts"), "export const cli = true;\n");
+		rmSync(join(root, "README.md"), { force: true });
+		execFileSync("git", ["add", "-A"], {
+			cwd: root,
+			stdio: "ignore",
+			env: gitEnv,
+		});
+		execFileSync("git", ["commit", "-m", "delete required docs surface"], {
+			cwd: root,
+			stdio: "ignore",
+			env: gitEnv,
+		});
+
+		const result = runDocsGate({
+			repoRoot: root,
+			mode: "required",
+		});
+
+		expect(result.exitCode).toBe(13);
+		expect(result.report.outcome).toBe("policy_error");
+		const missingFinding = result.report.findings.find(
+			(f) => f.rule_id === "docs.surface.missing" && f.surface === "README.md",
+		);
+		expect(missingFinding).toBeDefined();
+	});
+
 	it("reports advisory (warning) in advisory mode for missing docs", () => {
 		const root = join(process.cwd(), "artifacts", "docs-gate-test-6");
 		roots.push(root);

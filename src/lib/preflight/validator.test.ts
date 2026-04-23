@@ -356,6 +356,35 @@ describe("runPreflightGate", () => {
 		expect(admissionCheck?.message).not.toContain("surface_registration_gap");
 	});
 
+	it("treats root-level files as governed for **/*.ts ownedPaths", async () => {
+		writeNorthStarContract({
+			ownedPaths: ["**/*.ts"],
+		});
+		writeFileSync("index.ts", "export const root = true;\n", {
+			encoding: "utf-8",
+		});
+		const admission = createAdmissionDeclaration();
+
+		const result = await runPreflightGate({
+			files: ["index.ts"],
+			admission,
+			skip: [
+				"git-repository",
+				"harness-version-coherence",
+				"contract-exists",
+				"risk-tier",
+				"file-size",
+				"forbidden-patterns",
+			],
+		});
+
+		const admissionCheck = result.checks.find(
+			(check) => check.id === "admission-declaration",
+		);
+		expect(admissionCheck?.passed).toBe(true);
+		expect(admissionCheck?.message).not.toContain("surface_registration_gap");
+	});
+
 	it("fails admission when affected_surface_classes mismatches registered class", async () => {
 		writeNorthStarContract();
 		mkdirSync("src/commands", { recursive: true });
@@ -382,6 +411,103 @@ describe("runPreflightGate", () => {
 		expect(admissionCheck?.passed).toBe(false);
 		expect(admissionCheck?.message).toContain("affected_surface_classes");
 		expect(admissionCheck?.message).toContain("expected: core");
+	});
+
+	it("fails admission when affected_surface_classes omits expected classes", async () => {
+		writeFileSync(
+			"harness.contract.json",
+			JSON.stringify({
+				version: "1.6.0",
+				northStar: {
+					mission:
+						"Reduce PR throughput drag while preserving deterministic evidence.",
+					primaryMetric: "pr_lead_time",
+					primaryBottleneck: "review_rework_loop",
+					autonomyBoundary:
+						"Automate low and medium-risk changes with deterministic checks.",
+					safetyFloor: ["deterministic evidence", "head sha discipline"],
+					nonGoals: ["shipping without validation"],
+					decisionQuestions: NORTH_STAR_DECISION_QUESTION_SPECS.map(
+						(question) => ({
+							id: question.id,
+							prompt: question.prompt,
+						}),
+					),
+				},
+				productSurface: {
+					surfaces: [
+						{
+							surfaceId: "review-gate",
+							surfaceType: "command",
+							class: "core",
+							owner: "workflow",
+							northStarContribution:
+								"Protects merge-readiness decisions for throughput.",
+							manualGlueReductionClaim:
+								"Removes repeated reviewer triage work.",
+							reliabilityContribution:
+								"Applies the same policy checks every run.",
+							evidenceReference: "docs/agents/04-validation.md:1",
+							ownedPaths: ["src/commands/"],
+							lastReviewedAt: "2026-04-22",
+						},
+						{
+							surfaceId: "review-docs",
+							surfaceType: "document",
+							class: "adjacent",
+							owner: "workflow",
+							northStarContribution:
+								"Keeps review documentation aligned with gate output.",
+							manualGlueReductionClaim:
+								"Removes manual cross-checking of review docs.",
+							reliabilityContribution:
+								"Ensures docs-gate expectations stay explicit.",
+							evidenceReference: "docs/agents/04-validation.md:1",
+							ownedPaths: ["docs/agents/"],
+							reviewCadence: "weekly",
+							lastReviewedAt: "2026-04-22",
+						},
+					],
+				},
+				overrideReviewerRegistry: {
+					trustedReviewers: [
+						{
+							reviewerId: "project-maintainers",
+							reviewerType: "team",
+							signatureRef: "refs/reviewers/project-maintainers",
+							displayName: "Project Maintainers",
+							status: "active",
+						},
+					],
+				},
+			}),
+			{ encoding: "utf-8" },
+		);
+		mkdirSync("src/commands", { recursive: true });
+		writeFileSync("src/commands/review-gate.ts", "export const gate = true;\n");
+		const admission = createAdmissionDeclaration();
+		admission.affected_surface_ids = ["review-gate", "review-docs"];
+		admission.affected_surface_classes = ["core"];
+
+		const result = await runPreflightGate({
+			files: ["src/commands/review-gate.ts"],
+			admission,
+			skip: [
+				"git-repository",
+				"harness-version-coherence",
+				"contract-exists",
+				"risk-tier",
+				"file-size",
+				"forbidden-patterns",
+			],
+		});
+		const admissionCheck = result.checks.find(
+			(check) => check.id === "admission-declaration",
+		);
+
+		expect(admissionCheck?.passed).toBe(false);
+		expect(admissionCheck?.message).toContain("missing: adjacent");
+		expect(admissionCheck?.message).toContain("unexpected: <none>");
 	});
 
 	it("applies pre hooks when files option is omitted", async () => {

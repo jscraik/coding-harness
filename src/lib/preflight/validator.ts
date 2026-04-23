@@ -574,6 +574,7 @@ function validateAdmissionDeclaration(
 	const toGlobRegex = (pattern: string): RegExp => {
 		const escapedPattern = pattern.replace(/[|\\{}()[\]^$+*?.]/g, "\\$&");
 		const regexPattern = escapedPattern
+			.replace(/\\\*\\\*\\\//g, "(?:.*/)?")
 			.replace(/\\\*\\\*/g, "<<<DOUBLE_STAR>>>")
 			.replace(/\\\?/g, "[^/]")
 			.replace(/\\\*/g, "[^/]*")
@@ -830,12 +831,19 @@ function validateAdmissionDeclaration(
 							typeof surfaceClass === "string" && surfaceClass.length > 0,
 					),
 			);
-			const mismatchedClasses = affectedSurfaceClasses.filter(
+			const declaredClasses = new Set(affectedSurfaceClasses);
+			const missingClasses = [...expectedClasses].filter(
+				(surfaceClass) => !declaredClasses.has(surfaceClass),
+			);
+			const unexpectedClasses = [...declaredClasses].filter(
 				(surfaceClass) => !expectedClasses.has(surfaceClass),
 			);
-			if (expectedClasses.size > 0 && mismatchedClasses.length > 0) {
+			if (
+				expectedClasses.size > 0 &&
+				(missingClasses.length > 0 || unexpectedClasses.length > 0)
+			) {
 				addIssue(
-					`affected_surface_classes contains class(es) not registered for affected_surface_ids: ${mismatchedClasses.join(", ")}; expected: ${[...expectedClasses].join(", ")}`,
+					`affected_surface_classes must exactly match registered classes for affected_surface_ids; missing: ${missingClasses.join(", ") || "<none>"}; unexpected: ${unexpectedClasses.join(", ") || "<none>"}; expected: ${[...expectedClasses].join(", ")}`,
 					"surface_registration_gap",
 				);
 			}

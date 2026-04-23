@@ -159,6 +159,7 @@ interface ContradictionFinding extends DocsFinding {
 
 interface ChangedFilesResolution {
 	changedFiles: string[];
+	deletedFiles: string[];
 	source: DocsGateExecutionContext["changedFilesSource"];
 	error?: string;
 }
@@ -930,6 +931,7 @@ function checkSurfacePresence(
 	requiredSurfaces: string[],
 	changedFiles: string[],
 	policy: DocsGatePolicy,
+	deletedFiles: Set<string>,
 ): { present: string[]; missing: string[]; findings: DocsFinding[] } {
 	const present: string[] = [];
 	const missing: string[] = [];
@@ -937,10 +939,13 @@ function checkSurfacePresence(
 
 	for (const surface of requiredSurfaces) {
 		const isDirectorySurface = surface.endsWith("/");
-		const isChanged = changedFiles.some((f) =>
+		const matchingChangedFiles = changedFiles.filter((f) =>
 			isDirectorySurface
 				? f.startsWith(surface)
 				: f === surface || f.endsWith(`/${surface}`),
+		);
+		const isChanged = matchingChangedFiles.some(
+			(filePath) => !deletedFiles.has(filePath),
 		);
 
 		if (isChanged) {
@@ -1029,6 +1034,41 @@ function parseGitFileList(output: string): string[] {
 		.filter((line) => line.length > 0);
 }
 
+function parseGitNameStatus(output: string): {
+	changedFiles: string[];
+	deletedFiles: string[];
+} {
+	const changedFiles: string[] = [];
+	const deletedFiles = new Set<string>();
+
+	for (const line of output.split(/\r?\n/)) {
+		if (line.trim().length === 0) {
+			continue;
+		}
+		const fields = line.split("\t");
+		const statusField = fields[0]?.trim() ?? "";
+		const status = statusField[0] ?? "";
+		let filePath = "";
+
+		if ((status === "R" || status === "C") && fields.length >= 3) {
+			filePath = fields[2]?.trim() ?? "";
+		} else if (fields.length >= 2) {
+			filePath = fields[1]?.trim() ?? "";
+		}
+
+		if (filePath.length === 0) {
+			continue;
+		}
+
+		changedFiles.push(filePath);
+		if (status === "D") {
+			deletedFiles.add(filePath);
+		}
+	}
+
+	return { changedFiles, deletedFiles: [...deletedFiles] };
+}
+
 function resolveChangedFiles(
 	options: DocsGateOptions,
 	repoRoot: string,
@@ -1036,6 +1076,7 @@ function resolveChangedFiles(
 	if (options.changedFiles) {
 		return {
 			changedFiles: options.changedFiles,
+			deletedFiles: [],
 			source: "explicit_flag",
 		};
 	}
@@ -1045,7 +1086,7 @@ function resolveChangedFiles(
 			"-C",
 			repoRoot,
 			"diff",
-			"--name-only",
+			"--name-status",
 			"--diff-filter=ACMRD",
 		] as const;
 		const baseRefCandidates = [
@@ -1116,7 +1157,7 @@ function resolveChangedFiles(
 						repoRoot,
 						"diff-tree",
 						"--no-commit-id",
-						"--name-only",
+						"--name-status",
 						"--diff-filter=ACMRD",
 						"-r",
 						"HEAD",
@@ -1136,16 +1177,20 @@ function resolveChangedFiles(
 				stdio: ["ignore", "pipe", "pipe"],
 			},
 		);
+		const trackedFileLists = parseGitNameStatus(trackedOutput);
+		const untrackedFiles = parseGitFileList(untrackedOutput);
 		const changedFiles = [
-			...new Set([
-				...parseGitFileList(trackedOutput),
-				...parseGitFileList(untrackedOutput),
-			]),
+			...new Set([...trackedFileLists.changedFiles, ...untrackedFiles]),
 		];
-		return { changedFiles, source: "git_diff" };
+		return {
+			changedFiles,
+			deletedFiles: trackedFileLists.deletedFiles,
+			source: "git_diff",
+		};
 	} catch (error) {
 		return {
 			changedFiles: [],
+			deletedFiles: [],
 			source: "full_repo_fallback",
 			error: `Unable to resolve changed files from git history: ${sanitizeError(error)}`,
 		};
@@ -1168,6 +1213,7 @@ export function runDocsGate(options: DocsGateOptions = {}): DocsGateResult {
 	const repoRoot = resolve(options.repoRoot ?? process.cwd());
 	const changedFilesResolution = resolveChangedFiles(options, repoRoot);
 	const { changedFiles } = changedFilesResolution;
+	const deletedFiles = new Set(changedFilesResolution.deletedFiles);
 	const hasChangedFilesResolutionError = Boolean(changedFilesResolution.error);
 	const changedFilesResolutionIsBlocking =
 		hasChangedFilesResolutionError && mode === "required";
@@ -1352,6 +1398,7 @@ export function runDocsGate(options: DocsGateOptions = {}): DocsGateResult {
 		requiredSurfaces,
 		changedFiles,
 		policy,
+		deletedFiles,
 	);
 	findings.push(...presenceFindings);
 

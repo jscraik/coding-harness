@@ -450,6 +450,16 @@ def normalized(value):
         return value.strip()
     return ""
 
+required_fields = (
+    "mission",
+    "primaryMetric",
+    "primaryBottleneck",
+    "autonomyBoundary",
+)
+if any(not normalized(north_star.get(field)) for field in required_fields):
+    print("invalid")
+    raise SystemExit(0)
+
 safety_floor = north_star.get("safetyFloor")
 if isinstance(safety_floor, list):
     safety_items = [
@@ -458,7 +468,12 @@ if isinstance(safety_floor, list):
         if item.strip()
     ]
 else:
-    safety_items = []
+    print("invalid")
+    raise SystemExit(0)
+
+if not safety_items:
+    print("invalid")
+    raise SystemExit(0)
 
 print("ok")
 print(normalized(north_star.get("mission")))
@@ -487,8 +502,8 @@ PY
 			printf 'autonomy boundary: %s\n' "${autonomy_boundary:-<unset>}"
 			printf 'safety floor: %s\n' "${safety_floor:-<unset>}"
 			;;
-		missing)
-			log_warn "north-star summary skipped: contract northStar block missing"
+		missing | invalid)
+			log_warn "north-star summary skipped: contract northStar block missing or invalid"
 			return 1
 			;;
 		error::*)
