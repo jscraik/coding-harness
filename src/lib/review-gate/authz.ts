@@ -71,10 +71,9 @@ function matchesPattern(value: string, patterns: string[]): boolean {
 		// Escape regex metacharacters so policy values are interpreted as globs,
 		// not raw regular expressions.
 		const escapedPattern = pattern.replace(/[|\\{}()[\]^$+*?.]/g, "\\$&");
-		const regexPattern = escapedPattern
-			.replace(/\\\*\\\*/g, "<<<DOUBLE_STAR>>>")
-			.replace(/\\\*/g, "[^/]*")
-			.replace(/<<<DOUBLE_STAR>>>/g, ".*");
+		const regexPattern = escapedPattern.replace(/\\\*\\\*|\\\*/g, (token) =>
+			token === "\\*\\*" ? ".*" : "[^/]*",
+		);
 
 		const regex = new RegExp(`^${regexPattern}$`);
 		if (regex.test(value)) {

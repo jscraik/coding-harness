@@ -16,6 +16,7 @@ function gateFixture(
 		gateId: overrides.gateId ?? "gate",
 		displayName: overrides.displayName ?? `Gate ${overrides.gateId ?? "gate"}`,
 		provider: overrides.provider ?? "circleci",
+		sourceAppSlug: overrides.sourceAppSlug ?? "circleci",
 		sourceAppId: overrides.sourceAppId ?? "app-circleci",
 		externalIdPattern:
 			overrides.externalIdPattern ?? `^${overrides.gateId ?? "gate"}$`,

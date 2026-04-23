@@ -19,7 +19,7 @@ export { PREFLIGHT_POST_HOOK_IDS, PREFLIGHT_PRE_HOOK_IDS } from "./types.js";
 
 // ─── Schema version ───────────────────────────────────────────────────────────
 
-export const SCHEMA_VERSION = "1.6.0" as const;
+export const SCHEMA_VERSION = "1.5.0" as const;
 export const SCHEMA_ID =
 	`https://schema.brainwav.io/coding-harness/contract/v${SCHEMA_VERSION}.json` as const;
 

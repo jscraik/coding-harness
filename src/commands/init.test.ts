@@ -1757,7 +1757,7 @@ describe("runInit", () => {
 				'exec bash "$REPO_ROOT/scripts/harness-cli.sh" "$@"',
 			);
 			expect(runHarnessGate).toContain(
-				'if [[ -x "$REPO_ROOT/scripts/harness-cli.sh" && -f "$REPO_ROOT/node_modules/@brainwav/coding-harness/dist/cli.js" ]]; then',
+				'if [[ -f "$REPO_ROOT/scripts/harness-cli.sh" && -f "$REPO_ROOT/node_modules/@brainwav/coding-harness/dist/cli.js" ]]; then',
 			);
 			expect(runHarnessGate).toContain(
 				"if command -v mise >/dev/null 2>&1; then",

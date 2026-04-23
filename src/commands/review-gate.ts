@@ -942,7 +942,9 @@ function resolveRequiredCheckSources(
 			continue;
 		}
 
-		const normalizedProvider = normalizeConstraintSourceToken(gate.provider);
+		const normalizedSourceAppSlug = normalizeConstraintSourceToken(
+			gate.sourceAppSlug,
+		);
 		const normalizedSourceAppId = normalizeConstraintSourceToken(
 			gate.sourceAppId,
 		);
@@ -955,8 +957,8 @@ function resolveRequiredCheckSources(
 				providerSlugs: new Set<string>(),
 				sourceAppIds: new Set<string>(),
 			};
-			if (normalizedProvider.length > 0) {
-				existing.providerSlugs.add(normalizedProvider);
+			if (normalizedSourceAppSlug.length > 0) {
+				existing.providerSlugs.add(normalizedSourceAppSlug);
 			}
 			if (normalizedSourceAppId.length > 0) {
 				existing.sourceAppIds.add(normalizedSourceAppId);

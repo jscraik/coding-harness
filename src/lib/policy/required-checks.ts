@@ -91,6 +91,7 @@ export interface GateContractIdentity {
 export interface NormalizedGateDefinition extends GateContractIdentity {
 	policyId: string;
 	displayName: string;
+	sourceAppSlug: string;
 	sourceAppId: string;
 	requiredOnEvents: Array<"pull_request" | "merge_group">;
 	freshnessWindowDays: number;
@@ -197,6 +198,7 @@ function normalizeGate(
 		gateId,
 		displayName,
 		provider: sourceAppSlug,
+		sourceAppSlug,
 		sourceAppId,
 		externalIdPattern,
 		githubCheckName,
