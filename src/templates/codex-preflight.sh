@@ -836,7 +836,7 @@ main() {
 	check_bins "${bins_csv}"
 	check_paths "${WORKSPACE_ROOT}" "${paths_csv}"
 	if ! emit_north_star_summary "${WORKSPACE_ROOT}/harness.contract.json"; then
-		log_warn "north-star summary unresolved (${local_memory_mode} mode; continuing)"
+		log_warn "north-star summary unresolved (continuing)"
 	fi
 
 	local branch_name

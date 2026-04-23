@@ -262,23 +262,26 @@ if (diagramFiles.includes("class.mmd")) {
   const loaderMatch = classContent.match(
     /class\s+(\S+)\s*\{\s*\n\s*\+src\/lib\/contract\/loader\.ts\s*\n\s*\}/m,
   );
-  if (loaderMatch) {
-    const loaderClassId = loaderMatch[1];
-    const validatorMatch = classContent.match(
-      /class\s+(\S+)\s*\{\s*\n\s*\+src\/lib\/contract\/validator\.ts\s*\n\s*\}/m,
+  if (!loaderMatch) {
+    throw new Error(
+      "class.mmd is missing the src/lib/contract/loader.ts anchor; refusing to publish stale diagram context",
     );
-    const validatorClassId =
-      validatorMatch?.[1] ?? stableId("contract_validator", "src/lib/contract/validator.ts");
-    if (!validatorMatch) {
-      classContent = `${classContent.trimEnd()}\n  class ${validatorClassId} {\n    +src/lib/contract/validator.ts\n  }\n`;
-    }
-    const validateContractEdge = new RegExp(
-      `^\\s*${loaderClassId}\\s+-->\\s+${validatorClassId}\\s*:\\s*validateContract\\s*$`,
-      "m",
-    );
-    if (!validateContractEdge.test(classContent)) {
-      classContent = `${classContent.trimEnd()}\n  ${loaderClassId} --> ${validatorClassId} : validateContract\n`;
-    }
+  }
+  const loaderClassId = loaderMatch[1];
+  const validatorMatch = classContent.match(
+    /class\s+(\S+)\s*\{\s*\n\s*\+src\/lib\/contract\/validator\.ts\s*\n\s*\}/m,
+  );
+  const validatorClassId =
+    validatorMatch?.[1] ?? stableId("contract_validator", "src/lib/contract/validator.ts");
+  if (!validatorMatch) {
+    classContent = `${classContent.trimEnd()}\n  class ${validatorClassId} {\n    +src/lib/contract/validator.ts\n  }\n`;
+  }
+  const validateContractEdge = new RegExp(
+    `^\\s*${loaderClassId}\\s+-->\\s+${validatorClassId}\\s*:\\s*validateContract\\s*$`,
+    "m",
+  );
+  if (!validateContractEdge.test(classContent)) {
+    classContent = `${classContent.trimEnd()}\n  ${loaderClassId} --> ${validatorClassId} : validateContract\n`;
   }
   writeFileSync(classPath, ensureTrailingNewline(classContent.trimEnd()));
 }

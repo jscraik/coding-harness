@@ -570,8 +570,12 @@ function collectContradictionFindings(
 	const uniqueDeclaredProviders = Array.from(
 		new Set(providerDeclarations.map((entry) => entry.provider)),
 	);
+	const interDocConflictPaths = new Set<string>();
 	if (uniqueDeclaredProviders.length > 1) {
 		const sourcePaths = providerDeclarations.map((entry) => entry.sourcePath);
+		for (const sourcePath of sourcePaths) {
+			interDocConflictPaths.add(sourcePath);
+		}
 		const summary = providerDeclarations
 			.map((entry) => `${entry.sourcePath} -> ${entry.provider}`)
 			.join("; ");
@@ -606,6 +610,9 @@ function collectContradictionFindings(
 			: undefined;
 	if (normalizedActiveProvider) {
 		for (const declaration of providerDeclarations) {
+			if (interDocConflictPaths.has(declaration.sourcePath)) {
+				continue;
+			}
 			if (declaration.provider === normalizedActiveProvider) {
 				continue;
 			}
@@ -1089,6 +1096,21 @@ function resolveChangedFiles(
 			"--name-status",
 			"--diff-filter=ACMRD",
 		] as const;
+		const workingTreeDiffArgs = [
+			"-C",
+			repoRoot,
+			"diff",
+			"--name-status",
+			"--diff-filter=ACMRD",
+		] as const;
+		const stagedDiffArgs = [
+			"-C",
+			repoRoot,
+			"diff",
+			"--name-status",
+			"--cached",
+			"--diff-filter=ACMRD",
+		] as const;
 		const baseRefCandidates = [
 			options.mergeQueueBaseSha,
 			options.trustedBaseRef,
@@ -1131,6 +1153,32 @@ function resolveChangedFiles(
 			);
 		}
 		const trackedFileLists = parseGitNameStatus(trackedOutput);
+		let workingTreeTrackedFileLists = {
+			changedFiles: [] as string[],
+			deletedFiles: [] as string[],
+		};
+		try {
+			const workingTreeOutput = execFileSync("git", workingTreeDiffArgs, {
+				encoding: "utf-8",
+				stdio: ["ignore", "pipe", "pipe"],
+			});
+			workingTreeTrackedFileLists = parseGitNameStatus(workingTreeOutput);
+		} catch {
+			// Keep merge-base diff results if local tracked-file discovery fails.
+		}
+		let stagedTrackedFileLists = {
+			changedFiles: [] as string[],
+			deletedFiles: [] as string[],
+		};
+		try {
+			const stagedOutput = execFileSync("git", stagedDiffArgs, {
+				encoding: "utf-8",
+				stdio: ["ignore", "pipe", "pipe"],
+			});
+			stagedTrackedFileLists = parseGitNameStatus(stagedOutput);
+		} catch {
+			// Keep merge-base diff results if staged tracked-file discovery fails.
+		}
 		let untrackedFiles: string[] = [];
 		try {
 			const untrackedOutput = execFileSync(
@@ -1146,11 +1194,21 @@ function resolveChangedFiles(
 			// Keep tracked diff results if untracked discovery fails.
 		}
 		const changedFiles = [
-			...new Set([...trackedFileLists.changedFiles, ...untrackedFiles]),
+			...new Set([
+				...trackedFileLists.changedFiles,
+				...workingTreeTrackedFileLists.changedFiles,
+				...stagedTrackedFileLists.changedFiles,
+				...untrackedFiles,
+			]),
 		];
+		const deletedFiles = new Set<string>([
+			...trackedFileLists.deletedFiles,
+			...workingTreeTrackedFileLists.deletedFiles,
+			...stagedTrackedFileLists.deletedFiles,
+		]);
 		return {
 			changedFiles,
-			deletedFiles: trackedFileLists.deletedFiles,
+			deletedFiles: [...deletedFiles],
 			source: "git_diff",
 		};
 	} catch (error) {

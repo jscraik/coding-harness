@@ -53,6 +53,34 @@ function createContractWithoutDocsGate(root: string): void {
 	write(join(root, "harness.contract.json"), JSON.stringify(contract, null, 2));
 }
 
+function createIsolatedGitEnv(): NodeJS.ProcessEnv {
+	return Object.fromEntries(
+		Object.entries(process.env).filter(([key]) => !key.startsWith("GIT_")),
+	);
+}
+
+function runDocsGateWithIsolatedGitEnv(
+	options: Parameters<typeof runDocsGate>[0],
+): ReturnType<typeof runDocsGate> {
+	const savedGitEnv = Object.entries(process.env).filter(([key]) =>
+		key.startsWith("GIT_"),
+	);
+	for (const [key] of savedGitEnv) {
+		delete process.env[key];
+	}
+	try {
+		return runDocsGate(options);
+	} finally {
+		for (const [key, value] of savedGitEnv) {
+			if (value === undefined) {
+				delete process.env[key];
+				continue;
+			}
+			process.env[key] = value;
+		}
+	}
+}
+
 describe("docs-gate command", () => {
 	const roots: string[] = [];
 
@@ -241,11 +269,7 @@ describe("docs-gate command", () => {
 	it("treats deleted required documentation surfaces as missing", () => {
 		const root = join(process.cwd(), "artifacts", "docs-gate-test-5b");
 		roots.push(root);
-		const gitEnv = { ...process.env };
-		gitEnv.GIT_INDEX_FILE = undefined;
-		gitEnv.GIT_DIR = undefined;
-		gitEnv.GIT_WORK_TREE = undefined;
-		gitEnv.GIT_PREFIX = undefined;
+		const gitEnv = createIsolatedGitEnv();
 		createContractWithDocsGate(root, {
 			enabled: true,
 			mode: "required",
@@ -297,7 +321,7 @@ describe("docs-gate command", () => {
 			env: gitEnv,
 		});
 
-		const result = runDocsGate({
+		const result = runDocsGateWithIsolatedGitEnv({
 			repoRoot: root,
 			mode: "required",
 			trustedBaseRef: baseSha,
@@ -951,11 +975,7 @@ describe("docs-gate command", () => {
 	it("uses trusted base refs to detect committed branch changes", () => {
 		const root = join(process.cwd(), "artifacts", "docs-gate-test-21");
 		roots.push(root);
-		const gitEnv = { ...process.env };
-		gitEnv.GIT_INDEX_FILE = undefined;
-		gitEnv.GIT_DIR = undefined;
-		gitEnv.GIT_WORK_TREE = undefined;
-		gitEnv.GIT_PREFIX = undefined;
+		const gitEnv = createIsolatedGitEnv();
 		createContractWithDocsGate(root, {
 			enabled: true,
 			mode: "required",
@@ -993,7 +1013,52 @@ describe("docs-gate command", () => {
 			env: gitEnv,
 		});
 
-		const result = runDocsGate({
+		const result = runDocsGateWithIsolatedGitEnv({
+			repoRoot: root,
+			mode: "required",
+			trustedBaseRef: baseSha,
+		});
+
+		expect(result.report.changed_files).toContain("src/cli.ts");
+		expect(result.report.categories).toContain("cli_surface");
+		expect(result.report.outcome).toBe("drift_detected");
+	});
+
+	it("includes tracked worktree edits when auto-discovering changed files", () => {
+		const root = join(process.cwd(), "artifacts", "docs-gate-test-21b");
+		roots.push(root);
+		const gitEnv = createIsolatedGitEnv();
+		createContractWithDocsGate(root, {
+			enabled: true,
+			mode: "required",
+			rules: [
+				{
+					ruleId: "cli-surface-docs",
+					when: { categories: ["cli_surface"] },
+					requireDocs: ["README.md"],
+					severity: "error",
+				},
+			],
+		});
+		execFileSync("git", ["init", "-b", "main"], { cwd: root, env: gitEnv });
+		execFileSync("git", ["config", "user.email", "codex@example.com"], {
+			cwd: root,
+			env: gitEnv,
+		});
+		execFileSync("git", ["config", "user.name", "Codex"], {
+			cwd: root,
+			env: gitEnv,
+		});
+		execFileSync("git", ["add", "-f", "."], { cwd: root, env: gitEnv });
+		execFileSync("git", ["commit", "-m", "base"], { cwd: root, env: gitEnv });
+		const baseSha = execFileSync("git", ["rev-parse", "HEAD"], {
+			cwd: root,
+			encoding: "utf-8",
+			env: gitEnv,
+		}).trim();
+		write(join(root, "src/cli.ts"), "export const changed = true;\n");
+
+		const result = runDocsGateWithIsolatedGitEnv({
 			repoRoot: root,
 			mode: "required",
 			trustedBaseRef: baseSha,

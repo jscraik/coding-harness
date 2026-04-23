@@ -586,7 +586,10 @@ function validateAdmissionDeclaration(
 		ownedPath: string,
 	): boolean => {
 		const normalizedChangedPath = normalizeRepoRelativePath(changedPath);
-		const normalizedOwnedPath = normalizeRepoRelativePath(ownedPath);
+		const normalizedOwnedPath = normalizeRepoRelativePath(ownedPath).replace(
+			/\/+$/,
+			"",
+		);
 		if (normalizedOwnedPath.length === 0) {
 			return false;
 		}
