@@ -71,6 +71,11 @@ function runDocsGateWithIsolatedGitEnv(
 	try {
 		return runDocsGate(options);
 	} finally {
+		for (const key of Object.keys(process.env)) {
+			if (key.startsWith("GIT_")) {
+				delete process.env[key];
+			}
+		}
 		for (const [key, value] of savedGitEnv) {
 			if (value === undefined) {
 				delete process.env[key];
