@@ -612,7 +612,7 @@ ${riskPolicyRequires}          command: bash scripts/run-harness-gate.sh policy-
             SEMGREP_VENV="$HOME/.local/share/semgrep-venv-\${SEMGREP_VERSION}"
             if [[ ! -x "$SEMGREP_VENV/bin/semgrep" ]]; then
               python3 -m venv "$SEMGREP_VENV"
-              "$SEMGREP_VENV/bin/python" -m pip install --quiet --upgrade pip "semgrep==\${SEMGREP_VERSION}"
+              "$SEMGREP_VENV/bin/python" -m pip install --quiet --upgrade pip "semgrep>=\${SEMGREP_VERSION},<2.0.0"
             fi
             ln -sf "$SEMGREP_VENV/bin/semgrep" "$HOME/.local/bin/semgrep"
             export MISE_CARGO_BINSTALL=false
@@ -1306,25 +1306,31 @@ is_harness_source_repo() {
 	' "$REPO_ROOT/package.json" >/dev/null 2>&1
 }
 
-	if is_harness_source_repo; then
-		if ! command -v pnpm >/dev/null 2>&1; then
-			echo "Error: source checkout detected but pnpm is unavailable; refusing fallback to avoid stale harness binaries." >&2
-			exit 1
-		fi
-		if ! pnpm --dir "$REPO_ROOT" exec -- tsx --version >/dev/null 2>&1; then
-			echo "Error: source checkout detected but tsx is unavailable via pnpm exec; refusing fallback to avoid stale harness binaries." >&2
-			exit 1
-		fi
-		exec pnpm --dir "$REPO_ROOT" exec tsx "$REPO_ROOT/src/cli.ts" "$@"
+if is_harness_source_repo; then
+	if ! command -v pnpm >/dev/null 2>&1; then
+		echo "Error: pnpm is required to run the harness source CLI." >&2
+		echo "Install pnpm and retry." >&2
+		exit 1
 	fi
 
-if [[ -f "$REPO_ROOT/scripts/harness-cli.sh" && -r "$REPO_ROOT/scripts/harness-cli.sh" ]]; then
+	if ! pnpm exec -- tsx --version >/dev/null 2>&1; then
+		echo "Error: tsx is required to run the harness source CLI." >&2
+		echo "Install repository dependencies (pnpm install) and retry." >&2
+		exit 1
+	fi
+
+	exec pnpm exec tsx "$REPO_ROOT/src/cli.ts" "$@"
+fi
+
+if [[ -f "$REPO_ROOT/scripts/harness-cli.sh" && -f "$REPO_ROOT/node_modules/@brainwav/coding-harness/dist/cli.js" ]]; then
 	exec bash "$REPO_ROOT/scripts/harness-cli.sh" "$@"
 fi
 
-mise_harness_bin="$(mise which harness 2>/dev/null || true)"
-if [[ -n "$mise_harness_bin" && -x "$mise_harness_bin" ]]; then
-	exec "$mise_harness_bin" "$@"
+if command -v mise >/dev/null 2>&1; then
+	mise_harness_bin="$(mise which harness 2>/dev/null || true)"
+	if [[ -n "$mise_harness_bin" && -x "$mise_harness_bin" ]]; then
+		exec "$mise_harness_bin" "$@"
+	fi
 fi
 
 if command -v harness >/dev/null 2>&1; then
@@ -4240,47 +4246,6 @@ if (diagramFiles.includes("architecture.mmd")) {
     const dependencyContent = readFileSync(dependencyPath, "utf8");
     writeFileSync(dependencyPath, buildDependency(dependencyContent, nodeMap));
   }
-}
-
-if (diagramFiles.includes("class.mmd")) {
-  const classPath = join(diagramsDir, "class.mmd");
-  let classContent = readFileSync(classPath, "utf8");
-  const loaderMatch = classContent.match(
-    /class\\s+(\\S+)\\s*\\{\\s*\\n\\s*\\+src\\/lib\\/contract\\/loader\\.ts\\s*\\n\\s*\\}/m,
-  );
-  if (loaderMatch) {
-    const loaderClassId = loaderMatch[1];
-    const validatorMatch = classContent.match(
-      /class\\s+(\\S+)\\s*\\{\\s*\\n\\s*\\+src\\/lib\\/contract\\/validator\\.ts\\s*\\n\\s*\\}/m,
-    );
-    const validatorClassId =
-      validatorMatch?.[1] ?? stableId("contract_validator", "src/lib/contract/validator.ts");
-    if (!validatorMatch) {
-      classContent =
-        classContent.trimEnd() +
-        "\\n  class " +
-        validatorClassId +
-        " {\\n    +src/lib/contract/validator.ts\\n  }\\n";
-    }
-    const validateContractEdge = new RegExp(
-      "^\\\\s*" +
-        loaderClassId +
-        "\\\\s+-->\\\\s+" +
-        validatorClassId +
-        "\\\\s*:\\\\s*validateContract\\\\s*$",
-      "m",
-    );
-    if (!validateContractEdge.test(classContent)) {
-      classContent =
-        classContent.trimEnd() +
-        "\\n  " +
-        loaderClassId +
-        " --> " +
-        validatorClassId +
-        " : validateContract\\n";
-    }
-  }
-  writeFileSync(classPath, ensureTrailingNewline(classContent.trimEnd()));
 }
 
 for (const file of diagramFiles) {

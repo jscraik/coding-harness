@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { NORTH_STAR_DECISION_QUESTION_SPECS } from "./types.js";
+import { DEFAULT_PRODUCT_SURFACE_REGISTRY } from "./types.js";
 import { ValidationErrorCode, validateContract } from "./validator.js";
 
 describe("validateContract", () => {
@@ -23,93 +23,111 @@ describe("validateContract", () => {
 		expect(result.data?.riskTierRules).toEqual({});
 	});
 
-	const createCanonicalNorthStarContract = () => ({
-		version: "1.6.0",
-		northStar: {
-			mission:
-				"Example repo exists to reduce manual release overhead while keeping PR throughput high.",
-			primaryMetric: "pr_lead_time",
-			primaryBottleneck: "review_rework_loop",
-			autonomyBoundary:
-				"Automate low and medium-risk changes with deterministic evidence and explicit rollback.",
-			safetyFloor: [
-				"deterministic evidence over intuition",
-				"strict current-head SHA discipline",
-			],
-			nonGoals: ["feature count without throughput impact"],
-			decisionQuestions: NORTH_STAR_DECISION_QUESTION_SPECS.map((question) => ({
-				id: question.id,
-				prompt: question.prompt,
-			})),
-		},
-		productSurface: {
-			surfaces: [
-				{
-					surfaceId: "review-gate",
-					surfaceType: "command",
-					class: "core",
-					owner: "workflow",
-					northStarContribution:
-						"Ensures merge-readiness decisions protect throughput outcomes",
-					manualGlueReductionClaim:
-						"Automates repeated policy checks in review loops",
-					reliabilityContribution:
-						"Applies the same decision criteria on every run",
-					evidenceReference: "artifacts/north-star/review-gate.json",
-					ownedPaths: ["src/commands/review-gate.ts"],
-					lastReviewedAt: "2026-04-22",
-				},
-			],
-		},
-		overrideReviewerRegistry: {
-			trustedReviewers: [
-				{
-					reviewerId: "project-maintainers",
-					reviewerType: "team",
-					signatureRef: "refs/reviewers/project-maintainers",
-					displayName: "Project Maintainers",
-					status: "active",
-				},
-			],
-		},
-	});
-
-	it("accepts canonical north-star contract surfaces for version 1.6+", () => {
+	it("rejects malformed northStar decision questions", () => {
 		const result = validateContract({
 			version: "1.6.0",
 			northStar: {
-				mission:
-					"Example repo exists to reduce manual release overhead while keeping PR throughput high.",
+				mission: "Throughput over ceremony",
+				primaryMetric: "pr_lead_time",
+				primaryBottleneck: "review_rework_loop",
+				autonomyBoundary: "bounded autonomy",
+				safetyFloor: ["deterministic evidence"],
+				nonGoals: ["manual glue loops"],
+				decisionQuestions: [{ id: "invalid_question", prompt: "bad" }],
+			},
+		});
+
+		expect(result.success).toBe(false);
+		expect(result.errors.some((error) => error.path === "northStar")).toBe(
+			true,
+		);
+	});
+
+	it("rejects northStar decision questions when prompt text drifts from canonical mapping", () => {
+		const result = validateContract({
+			version: "1.6.0",
+			northStar: {
+				mission: "Throughput over ceremony",
+				primaryMetric: "pr_lead_time",
+				primaryBottleneck: "review_rework_loop",
+				autonomyBoundary: "bounded autonomy",
+				safetyFloor: ["deterministic evidence"],
+				nonGoals: ["manual glue loops"],
+				decisionQuestions: [
+					{
+						id: "lead_time_path",
+						prompt: "Does this reduce lead time?",
+					},
+					{
+						id: "manual_glue",
+						prompt:
+							"Does this remove repeated manual glue work rather than normalizing it?",
+					},
+					{
+						id: "agent_reliability",
+						prompt:
+							"Does this make acceptable output easier for agents to produce reliably?",
+					},
+					{
+						id: "safety_floor",
+						prompt:
+							"Does this preserve strict evidence, SHA discipline, and rollback safety?",
+					},
+				],
+			},
+		});
+
+		expect(result.success).toBe(false);
+		expect(result.errors.some((error) => error.path === "northStar")).toBe(
+			true,
+		);
+	});
+
+	it("accepts valid northStar, productSurface, and overrideReviewerRegistry", () => {
+		const result = validateContract({
+			version: "1.6.0",
+			northStar: {
+				mission: "Reduce PR lead time through reliable agent execution",
 				primaryMetric: "pr_lead_time",
 				primaryBottleneck: "review_rework_loop",
 				autonomyBoundary:
-					"Automate low and medium-risk changes with deterministic evidence and explicit rollback.",
-				safetyFloor: [
-					"deterministic evidence over intuition",
-					"strict current-head SHA discipline",
+					"Low and medium risk changes are autonomous when evidence is deterministic",
+				safetyFloor: ["deterministic evidence over intuition"],
+				nonGoals: ["manual recurring glue steps"],
+				decisionQuestions: [
+					{
+						id: "lead_time_path",
+						prompt:
+							"Does this reduce PR lead time directly, or strengthen the path to lower PR lead time by reducing review or rework cost?",
+					},
+					{
+						id: "manual_glue",
+						prompt:
+							"Does this remove repeated manual glue work rather than normalizing it?",
+					},
+					{
+						id: "agent_reliability",
+						prompt:
+							"Does this make acceptable output easier for agents to produce reliably?",
+					},
+					{
+						id: "safety_floor",
+						prompt:
+							"Does this preserve strict evidence, SHA discipline, and rollback safety?",
+					},
 				],
-				nonGoals: ["feature count without throughput impact"],
-				decisionQuestions: NORTH_STAR_DECISION_QUESTION_SPECS.map(
-					(question) => ({
-						id: question.id,
-						prompt: question.prompt,
-					}),
-				),
 			},
 			productSurface: {
 				surfaces: [
 					{
-						surfaceId: "review-gate",
+						surfaceId: "harness.review-gate",
 						surfaceType: "command",
 						class: "core",
-						owner: "workflow",
-						northStarContribution:
-							"Ensures merge-readiness decisions protect throughput outcomes",
-						manualGlueReductionClaim:
-							"Automates repeated policy checks in review loops",
-						reliabilityContribution:
-							"Applies the same decision criteria on every run",
-						evidenceReference: "artifacts/north-star/review-gate.json",
+						owner: "review-gate",
+						northStarContribution: "Cuts review churn",
+						manualGlueReductionClaim: "Removes manual check aggregation",
+						reliabilityContribution: "Deterministic gate outputs",
+						evidenceReference: "docs/agents/12-ai-review-governance.md",
 						ownedPaths: ["src/commands/review-gate.ts"],
 						lastReviewedAt: "2026-04-22",
 					},
@@ -118,33 +136,17 @@ describe("validateContract", () => {
 			overrideReviewerRegistry: {
 				trustedReviewers: [
 					{
-						reviewerId: "project-maintainers",
+						reviewerId: "ops/release",
 						reviewerType: "team",
-						signatureRef: "refs/reviewers/project-maintainers",
-						displayName: "Project Maintainers",
+						signatureRef: "refs/heads/main",
+						displayName: "Release Engineering",
 						status: "active",
 					},
 				],
 			},
 		});
-		expect(result.success).toBe(true);
-		expect(result.data?.northStar?.primaryMetric).toBe("pr_lead_time");
-		expect(result.data?.productSurface?.surfaces).toHaveLength(1);
-		expect(
-			result.data?.overrideReviewerRegistry?.trustedReviewers,
-		).toHaveLength(1);
-	});
 
-	it("requires north-star contract surfaces from version 1.6+", () => {
-		const result = validateContract({ version: "1.6.0" });
-		expect(result.success).toBe(false);
-		expect(result.errors.map((error) => error.path)).toEqual(
-			expect.arrayContaining([
-				"northStar",
-				"productSurface",
-				"overrideReviewerRegistry",
-			]),
-		);
+		expect(result.success).toBe(true);
 	});
 
 	it("rejects empty productSurface registry when provided", () => {
@@ -161,22 +163,30 @@ describe("validateContract", () => {
 		);
 	});
 
-	it("rejects surface registrations with padded surfaceId values", () => {
-		const contract = createCanonicalNorthStarContract();
-		contract.productSurface.surfaces[0]!.surfaceId = " review-gate ";
-		const result = validateContract(contract);
+	it("accepts exported default productSurface registry when provided", () => {
+		const result = validateContract({
+			version: "1.6.0",
+			productSurface: DEFAULT_PRODUCT_SURFACE_REGISTRY,
+		});
 
-		expect(result.success).toBe(false);
-		expect(result.errors.some((error) => error.path === "productSurface")).toBe(
-			true,
-		);
+		expect(result.success).toBe(true);
 	});
 
-	it("rejects override reviewers with padded reviewerId values", () => {
-		const contract = createCanonicalNorthStarContract();
-		contract.overrideReviewerRegistry.trustedReviewers[0]!.reviewerId =
-			" project-maintainers ";
-		const result = validateContract(contract);
+	it("rejects malformed overrideReviewerRegistry when provided", () => {
+		const result = validateContract({
+			version: "1.6.0",
+			overrideReviewerRegistry: {
+				trustedReviewers: [
+					{
+						reviewerId: "ops/release",
+						reviewerType: "invalid",
+						signatureRef: "refs/heads/main",
+						displayName: "Release Engineering",
+						status: "active",
+					},
+				],
+			},
+		});
 
 		expect(result.success).toBe(false);
 		expect(
@@ -342,18 +352,6 @@ describe("validateContract", () => {
 		expect(result.errors[0]?.code).toBe(
 			ValidationErrorCode.MISSING_REQUIRED_FIELD,
 		);
-	});
-
-	it("rejects malformed semver versions", () => {
-		const result = validateContract({ version: "1.6.x" });
-		expect(result.success).toBe(false);
-		expect(result.errors.map((error) => error.path)).toContain("version");
-	});
-
-	it("rejects prefixed semver versions", () => {
-		const result = validateContract({ version: "v1.6.0" });
-		expect(result.success).toBe(false);
-		expect(result.errors.map((error) => error.path)).toContain("version");
 	});
 
 	it("accumulates multiple errors", () => {

@@ -238,10 +238,10 @@ export const NORTH_STAR_DECISION_QUESTION_SPECS = [
 export type NorthStarDecisionQuestionId =
 	(typeof NORTH_STAR_DECISION_QUESTION_SPECS)[number]["id"];
 
-export type NorthStarDecisionQuestion =
-	(typeof NORTH_STAR_DECISION_QUESTION_SPECS)[number];
-export type NorthStarDecisionQuestionTuple =
-	typeof NORTH_STAR_DECISION_QUESTION_SPECS;
+export interface NorthStarDecisionQuestion {
+	id: NorthStarDecisionQuestionId;
+	prompt: string;
+}
 
 export interface NorthStarContract {
 	mission: string;
@@ -250,7 +250,7 @@ export interface NorthStarContract {
 	autonomyBoundary: string;
 	safetyFloor: string[];
 	nonGoals: string[];
-	decisionQuestions: NorthStarDecisionQuestionTuple;
+	decisionQuestions: NorthStarDecisionQuestion[];
 }
 
 export type ProductSurfaceClass = "core" | "adjacent" | "experimental";
@@ -309,101 +309,40 @@ export const DEFAULT_NORTH_STAR_CONTRACT: NorthStarContract = {
 		"manual coordination steps that recur every run or every PR",
 		"broad autonomy expansion without evidence that the review or rework loop got cheaper",
 	],
-	decisionQuestions: NORTH_STAR_DECISION_QUESTION_SPECS,
+	decisionQuestions: NORTH_STAR_DECISION_QUESTION_SPECS.map(
+		(question): NorthStarDecisionQuestion => ({
+			id: question.id,
+			prompt: question.prompt,
+		}),
+	),
 };
 
+/**
+ * Canonical default product-surface registry shipped with the contract model.
+ * Exported for tooling/schema consumers that seed or compare registry defaults.
+ */
 export const DEFAULT_PRODUCT_SURFACE_REGISTRY: ProductSurfaceRegistry = {
 	surfaces: [
 		{
-			surfaceId: "harness.command-surface",
+			surfaceId: "harness.review-gate",
 			surfaceType: "command",
 			class: "core",
-			owner: "cli-runtime",
+			owner: "review-gate",
 			northStarContribution:
-				"Ensures CLI command execution stays deterministic across review and remediation loops.",
+				"Preserves deterministic merge-readiness decisions tied to current-head evidence.",
 			manualGlueReductionClaim:
-				"Centralizes repetitive command dispatch and gate orchestration in one governed surface.",
+				"Consolidates required check and independent-review verification into a single gate output.",
 			reliabilityContribution:
-				"Prevents command drift between source, generated wrappers, and validation gates.",
-			evidenceReference: "docs/agents/02-tooling-policy.md",
-			ownedPaths: ["src/commands/**", "src/cli.ts", "src/cli-dispatch.ts"],
-			lastReviewedAt: "2026-04-23",
-		},
-		{
-			surfaceId: "harness.contract-policy",
-			surfaceType: "policy",
-			class: "core",
-			owner: "contract-governance",
-			northStarContribution:
-				"Keeps north-star policy and risk controls load-bearing at runtime.",
-			manualGlueReductionClaim:
-				"Removes manual policy interpretation by enforcing contract truth in code.",
-			reliabilityContribution:
-				"Aligns default contracts, validators, and policy helpers to avoid hidden drift.",
-			evidenceReference: "docs/agents/06-security-and-governance.md",
-			ownedPaths: [
-				"harness.contract.json",
-				"src/lib/contract/**",
-				"src/lib/policy/**",
-			],
-			lastReviewedAt: "2026-04-23",
-		},
-		{
-			surfaceId: "harness.workflow-gates",
-			surfaceType: "workflow",
-			class: "core",
-			owner: "workflow-runtime",
-			northStarContribution:
-				"Maintains fast, trustworthy preflight and verification workflows for PR lead time.",
-			manualGlueReductionClaim:
-				"Automates preflight, gate, and verification sequences that used to require manual coordination.",
-			reliabilityContribution:
-				"Ensures source wrappers and generated templates evaluate the same gating rules.",
-			evidenceReference: "docs/agents/04-validation.md",
-			ownedPaths: [
-				"scripts/**",
-				"src/lib/preflight/**",
-				"src/lib/workflow/**",
-				"src/templates/**",
-			],
-			lastReviewedAt: "2026-04-23",
-		},
-		{
-			surfaceId: "harness.governance-docs",
-			surfaceType: "document",
-			class: "core",
-			owner: "governance-docs",
-			northStarContribution:
-				"Preserves explicit policy intent so operators and agents execute the same workflow contract.",
-			manualGlueReductionClaim:
-				"Reduces repeated clarification work by keeping authoritative docs synchronized.",
-			reliabilityContribution:
-				"Limits instruction drift between docs, checks, and repository policy surfaces.",
-			evidenceReference: "docs/agents/01-instruction-map.md",
-			ownedPaths: [
-				"README.md",
-				"AGENTS.md",
-				"CODESTYLE.md",
-				"CONTRIBUTING.md",
-				"docs/**",
-				".github/**",
-				".harness/**",
-			],
+				"Fails closed when required-check identity or trusted-source constraints are missing.",
+			evidenceReference: "docs/agents/12-ai-review-governance.md",
+			ownedPaths: ["src/commands/review-gate.ts"],
 			lastReviewedAt: "2026-04-22",
 		},
 	],
 };
 
 export const DEFAULT_OVERRIDE_REVIEWER_REGISTRY: OverrideReviewerRegistry = {
-	trustedReviewers: [
-		{
-			reviewerId: "jamie-craik",
-			reviewerType: "user",
-			signatureRef: "refs/reviewers/jamie-craik",
-			displayName: "Jamie Craik",
-			status: "active",
-		},
-	],
+	trustedReviewers: [],
 };
 
 export const PREFLIGHT_PRE_HOOK_IDS = [
@@ -1460,11 +1399,10 @@ export interface HarnessContract {
 }
 
 export const DEFAULT_CONTRACT: HarnessContract = {
-	version: "1.6.0",
-	northStar: DEFAULT_NORTH_STAR_CONTRACT,
-	productSurface: DEFAULT_PRODUCT_SURFACE_REGISTRY,
-	overrideReviewerRegistry: DEFAULT_OVERRIDE_REVIEWER_REGISTRY,
+	version: "1.5.0",
 	riskTierRules: {},
+	northStar: DEFAULT_NORTH_STAR_CONTRACT,
+	overrideReviewerRegistry: DEFAULT_OVERRIDE_REVIEWER_REGISTRY,
 	policyChain: DEFAULT_POLICY_CHAIN,
 	reviewPolicy: DEFAULT_REVIEW_POLICY,
 	evidencePolicy: DEFAULT_EVIDENCE_POLICY,

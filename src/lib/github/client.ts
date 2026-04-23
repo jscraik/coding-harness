@@ -18,6 +18,11 @@ export interface CheckRun {
 	status: "completed" | "in_progress" | "queued" | "pending";
 	conclusion: string | null;
 	head_sha: string;
+	app?: {
+		id?: number;
+		slug?: string;
+		name?: string;
+	};
 }
 
 export interface Comment {
@@ -36,6 +41,9 @@ export interface PullRequest {
 	body?: string | null;
 	user?: {
 		login: string;
+	};
+	base?: {
+		ref: string;
 	};
 	head: {
 		sha: string;
@@ -56,6 +64,16 @@ export interface PullRequestReview {
 	user?: {
 		login?: string;
 	};
+}
+
+export interface PullRequestCommit {
+	sha: string;
+	author?: {
+		login?: string;
+	} | null;
+	committer?: {
+		login?: string;
+	} | null;
 }
 
 export interface PullRequestReviewThreadComment {
@@ -188,7 +206,26 @@ export class GitHubClient {
 					per_page: 100,
 				},
 			);
-			return response as CheckRun[];
+			return response.map((item) => ({
+				id: item.id,
+				name: item.name,
+				status: item.status as CheckRun["status"],
+				conclusion: item.conclusion,
+				head_sha: typeof item.head_sha === "string" ? item.head_sha : "",
+				...(item.app
+					? {
+							app: {
+								...(typeof item.app.id === "number" ? { id: item.app.id } : {}),
+								...(typeof item.app.slug === "string"
+									? { slug: item.app.slug }
+									: {}),
+								...(typeof item.app.name === "string"
+									? { name: item.app.name }
+									: {}),
+							},
+						}
+					: {}),
+			}));
 		} catch (error) {
 			throw this.classifyError(error);
 		}
@@ -257,6 +294,25 @@ export class GitHubClient {
 				},
 			);
 			return response as PullRequestFile[];
+		} catch (error) {
+			throw this.classifyError(error);
+		}
+	}
+
+	async listPullRequestCommits(
+		pullNumber: number,
+	): Promise<PullRequestCommit[]> {
+		try {
+			const response = await this.octokit.paginate(
+				this.octokit.pulls.listCommits,
+				{
+					owner: this.owner,
+					repo: this.repo,
+					pull_number: pullNumber,
+					per_page: 100,
+				},
+			);
+			return response as PullRequestCommit[];
 		} catch (error) {
 			throw this.classifyError(error);
 		}

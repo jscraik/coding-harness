@@ -243,12 +243,7 @@ export const COMMAND_SPECS: CommandSpec[] = [
 			const commentArg = getFlagValue(args, commentIndex);
 			if (commentArg) options.comment = commentArg;
 			const branchArg = getFlagValue(args, branchIndex);
-			if (branchArg !== undefined) {
-				const trimmedBranch = branchArg.trim();
-				if (trimmedBranch.length > 0) {
-					options.branch = branchArg;
-				}
-			}
+			if (branchArg !== undefined) options.branch = branchArg;
 			const workspaceArg = getFlagValue(args, workspaceIndex);
 			if (workspaceArg) options.workspace = workspaceArg;
 			const prUrlArg = getFlagValue(args, prUrlIndex);
@@ -290,12 +285,7 @@ export const COMMAND_SPECS: CommandSpec[] = [
 			const repoRootArg = getFlagValue(args, repoRootIndex);
 			if (repoRootArg) options.repoRoot = repoRootArg;
 			const branchArg = getFlagValue(args, branchIndex);
-			if (branchArg !== undefined) {
-				const trimmedBranch = branchArg.trim();
-				if (trimmedBranch.length > 0) {
-					options.branch = branchArg;
-				}
-			}
+			if (branchArg !== undefined) options.branch = branchArg;
 			const prTitleArg = getFlagValue(args, prTitleIndex);
 			if (prTitleArg !== undefined) options.prTitle = prTitleArg;
 			const prBodyArg = getFlagValue(args, prBodyIndex);
@@ -464,7 +454,7 @@ export const COMMAND_SPECS: CommandSpec[] = [
 				repo: "",
 				prNumber: 0,
 				headSha: "",
-				checkName: "code-review",
+				checkName: "",
 				contractPath: "harness.contract.json",
 			};
 
@@ -874,8 +864,6 @@ export const COMMAND_SPECS: CommandSpec[] = [
 				changedOnly: args.includes("--changed-only"),
 				strict: args.includes("--strict"),
 				fast: args.includes("--fast"),
-				projectGovernance: args.includes("--project-governance"),
-				workspaceGovernance: args.includes("--workspace-governance"),
 				json: args.includes("--json"),
 				...(resumeFromFlag.value ? { resumeFrom: resumeFromFlag.value } : {}),
 				...(repoRootFlag.value ? { repoRoot: repoRootFlag.value } : {}),

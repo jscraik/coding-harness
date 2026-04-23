@@ -6,6 +6,7 @@ import { createHash } from "node:crypto";
 //   - "actions-pinning"   → "orb-pinning"      (CircleCI orb version enforcement)
 
 export const REVIEW_POLICY_REQUIRED_CHECKS = [
+	"security-scan",
 	"dependency-scan",
 	"orb-pinning",
 ] as const;
@@ -35,6 +36,7 @@ const CIRCLECI_JOB_NAMES = new Set<string>([
 	"risk-policy-gate",
 	"consistency-drift-health",
 	"pr-template",
+	"security-scan",
 ]);
 
 const GOVERNANCE_GATE_IDS = new Set<string>([
@@ -89,6 +91,7 @@ export interface GateContractIdentity {
 export interface NormalizedGateDefinition extends GateContractIdentity {
 	policyId: string;
 	displayName: string;
+	sourceAppSlug: string;
 	sourceAppId: string;
 	requiredOnEvents: Array<"pull_request" | "merge_group">;
 	freshnessWindowDays: number;
@@ -111,7 +114,11 @@ export type RequiredChecksParseResult =
 	| { ok: false; error: string };
 
 function asNonEmptyString(value: unknown): string | null {
-	return typeof value === "string" && value.trim().length > 0 ? value : null;
+	if (typeof value !== "string") {
+		return null;
+	}
+	const trimmed = value.trim();
+	return trimmed.length > 0 ? trimmed : null;
 }
 
 function asPositiveInteger(value: unknown): number | null {
@@ -191,6 +198,7 @@ function normalizeGate(
 		gateId,
 		displayName,
 		provider: sourceAppSlug,
+		sourceAppSlug,
 		sourceAppId,
 		externalIdPattern,
 		githubCheckName,
@@ -347,6 +355,7 @@ export const ECOSYSTEM_PROFILES = {
 		"audit",
 		"check",
 		"memory",
+		"security-scan",
 		"CodeRabbit",
 	] as const,
 
