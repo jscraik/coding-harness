@@ -1394,6 +1394,56 @@ exit 127
 		expect(ciCheckGate.sourceRunId).toBe("run-older-compatible");
 	});
 
+	it("does not coerce changedOnly=false to true when selecting resume source runs", () => {
+		scaffoldVerifyWorkScriptRepo({
+			repoRoot,
+			manifest: {
+				activeProvider: "github-actions",
+				requiredChecks: [
+					{ sourceAppSlug: "github-actions", githubCheckName: "ci / test" },
+				],
+			},
+		});
+		writePriorRun({
+			repoRoot,
+			runId: "run-compatible-older",
+			lane: { fastMode: true, changedOnly: true, strictMode: false },
+			gates: {
+				preflight: { status: "passed" },
+				"ci-check-alignment": { status: "passed" },
+			},
+		});
+		// Write an incompatible run last so mtime ordering would prefer it if
+		// changedOnly=false were incorrectly treated as a missing value.
+		writePriorRun({
+			repoRoot,
+			runId: "run-incompatible-newest",
+			lane: { fastMode: true, changedOnly: false, strictMode: false },
+			gates: {
+				preflight: { status: "passed" },
+				"ci-check-alignment": { status: "passed" },
+			},
+		});
+
+		const result = runVerifyWorkScript(
+			repoRoot,
+			["--resume-from", "hook-governance-inventory"],
+			{
+				inheritEnv: false,
+				env: makeDeterministicScriptEnv(process.env.PATH ?? ""),
+			},
+		);
+		expect(result.status).toBe(0);
+		const summary = JSON.parse(result.stdout) as { runId: string };
+		const runJson = JSON.parse(
+			readFileSync(
+				join(repoRoot, ".harness/runs", summary.runId, "run.json"),
+				"utf-8",
+			),
+		) as { sourceRunId: string | null };
+		expect(runJson.sourceRunId).toBe("run-compatible-older");
+	});
+
 	it("blocks resume when required prior gate in source run is not passed", () => {
 		scaffoldVerifyWorkScriptRepo({
 			repoRoot,

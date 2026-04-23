@@ -217,9 +217,9 @@ build_resume_hint_from_run_json() {
 	local hint=""
 	local lane_fast lane_changed lane_strict
 
-	lane_fast="$(jq -r '.lane.fastMode // false' "$run_json_path" 2>/dev/null || echo false)"
-	lane_changed="$(jq -r '.lane.changedOnly // true' "$run_json_path" 2>/dev/null || echo true)"
-	lane_strict="$(jq -r '.lane.strictMode // false' "$run_json_path" 2>/dev/null || echo false)"
+	lane_fast="$(jq -r 'if (.lane.fastMode == null) then false else .lane.fastMode end' "$run_json_path" 2>/dev/null || echo false)"
+	lane_changed="$(jq -r 'if (.lane.changedOnly == null) then true else .lane.changedOnly end' "$run_json_path" 2>/dev/null || echo true)"
+	lane_strict="$(jq -r 'if (.lane.strictMode == null) then false else .lane.strictMode end' "$run_json_path" 2>/dev/null || echo false)"
 
 	if [[ "$lane_fast" == "true" ]]; then
 		hint+=" --fast"
@@ -918,7 +918,7 @@ find_resume_source_run_dir() {
 				--argjson laneFastMode "$lane_fast_mode_json" \
 				--argjson laneChangedOnly "$lane_changed_only_json" \
 				--argjson laneStrictMode "$lane_strict_mode_json" \
-				'((.lane.fastMode // false) == $laneFastMode) and ((.lane.changedOnly // true) == $laneChangedOnly) and ((.lane.strictMode // false) == $laneStrictMode)' \
+				'((if (.lane.fastMode == null) then false else .lane.fastMode end) == $laneFastMode) and ((if (.lane.changedOnly == null) then true else .lane.changedOnly end) == $laneChangedOnly) and ((if (.lane.strictMode == null) then false else .lane.strictMode end) == $laneStrictMode)' \
 				"$candidate/run.json" 2>/dev/null || echo false
 		)"
 		if [[ "$same_root" == "true" && "$same_schema" == "true" && "$same_contract" == "true" && "$same_contract_fingerprint" == "true" && "$same_provider" == "true" && "$same_lane" == "true" ]]; then
