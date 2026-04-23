@@ -187,10 +187,15 @@ export function buildContractJsonSchema(): Record<string, unknown> {
 						},
 					},
 					{
-						required: [
-							"northStar",
-							"productSurface",
-							"overrideReviewerRegistry",
+						anyOf: [
+							{ required: ["extends"] },
+							{
+								required: [
+									"northStar",
+									"productSurface",
+									"overrideReviewerRegistry",
+								],
+							},
 						],
 					},
 				],
