@@ -1086,17 +1086,23 @@ function resolveChangedFiles(
 		}
 		if (trackedOutput === undefined) {
 			try {
-				const fallbackBase = execFileSync(
+				const rootCommit = execFileSync(
 					"git",
-					["-C", repoRoot, "rev-parse", "--verify", "HEAD^"],
+					["-C", repoRoot, "rev-list", "--max-parents=0", "HEAD"],
 					{
 						encoding: "utf-8",
 						stdio: ["ignore", "pipe", "pipe"],
 					},
-				).trim();
+				)
+					.split("\n")
+					.map((line) => line.trim())
+					.find((line) => line.length > 0);
+				if (!rootCommit) {
+					throw new Error("unable to resolve repository root commit");
+				}
 				trackedOutput = execFileSync(
 					"git",
-					[...trackedDiffArgs, `${fallbackBase}...HEAD`],
+					[...trackedDiffArgs, `${rootCommit}...HEAD`],
 					{
 						encoding: "utf-8",
 						stdio: ["ignore", "pipe", "pipe"],

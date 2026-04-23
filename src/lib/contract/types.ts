@@ -238,10 +238,10 @@ export const NORTH_STAR_DECISION_QUESTION_SPECS = [
 export type NorthStarDecisionQuestionId =
 	(typeof NORTH_STAR_DECISION_QUESTION_SPECS)[number]["id"];
 
-export interface NorthStarDecisionQuestion {
-	id: NorthStarDecisionQuestionId;
-	prompt: string;
-}
+export type NorthStarDecisionQuestion =
+	(typeof NORTH_STAR_DECISION_QUESTION_SPECS)[number];
+export type NorthStarDecisionQuestionTuple =
+	typeof NORTH_STAR_DECISION_QUESTION_SPECS;
 
 export interface NorthStarContract {
 	mission: string;
@@ -250,7 +250,7 @@ export interface NorthStarContract {
 	autonomyBoundary: string;
 	safetyFloor: string[];
 	nonGoals: string[];
-	decisionQuestions: NorthStarDecisionQuestion[];
+	decisionQuestions: NorthStarDecisionQuestionTuple;
 }
 
 export type ProductSurfaceClass = "core" | "adjacent" | "experimental";
@@ -309,28 +309,86 @@ export const DEFAULT_NORTH_STAR_CONTRACT: NorthStarContract = {
 		"manual coordination steps that recur every run or every PR",
 		"broad autonomy expansion without evidence that the review or rework loop got cheaper",
 	],
-	decisionQuestions: NORTH_STAR_DECISION_QUESTION_SPECS.map(
-		(question): NorthStarDecisionQuestion => ({
-			id: question.id,
-			prompt: question.prompt,
-		}),
-	),
+	decisionQuestions: NORTH_STAR_DECISION_QUESTION_SPECS,
 };
 
 export const DEFAULT_PRODUCT_SURFACE_REGISTRY: ProductSurfaceRegistry = {
 	surfaces: [
 		{
-			surfaceId: "harness.review-gate",
+			surfaceId: "harness.command-surface",
 			surfaceType: "command",
 			class: "core",
-			owner: "review-gate",
-			northStarContribution: "Cuts review churn and rerun uncertainty.",
+			owner: "cli-runtime",
+			northStarContribution:
+				"Ensures CLI command execution stays deterministic across review and remediation loops.",
 			manualGlueReductionClaim:
-				"Replaces manual required-check triage with deterministic policy output.",
+				"Centralizes repetitive command dispatch and gate orchestration in one governed surface.",
 			reliabilityContribution:
-				"Pins review decisions to canonical checks and replay-safe evidence.",
-			evidenceReference: "docs/agents/12-ai-review-governance.md",
-			ownedPaths: ["src/commands/review-gate.ts"],
+				"Prevents command drift between source, generated wrappers, and validation gates.",
+			evidenceReference: "docs/agents/02-tooling-policy.md",
+			ownedPaths: ["src/commands/**", "src/cli.ts", "src/cli-dispatch.ts"],
+			lastReviewedAt: "2026-04-23",
+		},
+		{
+			surfaceId: "harness.contract-policy",
+			surfaceType: "policy",
+			class: "core",
+			owner: "contract-governance",
+			northStarContribution:
+				"Keeps north-star policy and risk controls load-bearing at runtime.",
+			manualGlueReductionClaim:
+				"Removes manual policy interpretation by enforcing contract truth in code.",
+			reliabilityContribution:
+				"Aligns default contracts, validators, and policy helpers to avoid hidden drift.",
+			evidenceReference: "docs/agents/06-security-and-governance.md",
+			ownedPaths: [
+				"harness.contract.json",
+				"src/lib/contract/**",
+				"src/lib/policy/**",
+			],
+			lastReviewedAt: "2026-04-23",
+		},
+		{
+			surfaceId: "harness.workflow-gates",
+			surfaceType: "workflow",
+			class: "core",
+			owner: "workflow-runtime",
+			northStarContribution:
+				"Maintains fast, trustworthy preflight and verification workflows for PR lead time.",
+			manualGlueReductionClaim:
+				"Automates preflight, gate, and verification sequences that used to require manual coordination.",
+			reliabilityContribution:
+				"Ensures source wrappers and generated templates evaluate the same gating rules.",
+			evidenceReference: "docs/agents/04-validation.md",
+			ownedPaths: [
+				"scripts/**",
+				"src/lib/preflight/**",
+				"src/lib/workflow/**",
+				"src/templates/**",
+			],
+			lastReviewedAt: "2026-04-23",
+		},
+		{
+			surfaceId: "harness.governance-docs",
+			surfaceType: "document",
+			class: "core",
+			owner: "governance-docs",
+			northStarContribution:
+				"Preserves explicit policy intent so operators and agents execute the same workflow contract.",
+			manualGlueReductionClaim:
+				"Reduces repeated clarification work by keeping authoritative docs synchronized.",
+			reliabilityContribution:
+				"Limits instruction drift between docs, checks, and repository policy surfaces.",
+			evidenceReference: "docs/agents/01-instruction-map.md",
+			ownedPaths: [
+				"README.md",
+				"AGENTS.md",
+				"CODESTYLE.md",
+				"CONTRIBUTING.md",
+				"docs/**",
+				".github/**",
+				".harness/**",
+			],
 			lastReviewedAt: "2026-04-22",
 		},
 	],

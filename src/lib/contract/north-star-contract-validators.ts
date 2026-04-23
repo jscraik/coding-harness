@@ -1,6 +1,5 @@
 import type {
 	NorthStarContract,
-	NorthStarDecisionQuestion,
 	OverrideReviewerRegistry,
 	ProductSurfaceClass,
 	ProductSurfaceRegistry,
@@ -70,7 +69,7 @@ const VALID_TRUSTED_REVIEWER_STATUSES: TrustedReviewerStatus[] = [
 
 function isValidNorthStarDecisionQuestions(
 	value: unknown,
-): value is NorthStarDecisionQuestion[] {
+): value is NorthStarContract["decisionQuestions"] {
 	if (!Array.isArray(value)) {
 		return false;
 	}
