@@ -1269,7 +1269,7 @@ function isValidMemoryPolicy(value: unknown): value is MemoryPolicy {
 	if (
 		policy.sessionLogPath !== undefined &&
 		(typeof policy.sessionLogPath !== "string" ||
-			policy.sessionLogPath.trim().length === 0)
+			policy.sessionLogPath.length === 0)
 	) {
 		return false;
 	}

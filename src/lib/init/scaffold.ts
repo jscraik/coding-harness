@@ -1274,6 +1274,7 @@ REPO_ROOT="$(cd -- "$SCRIPT_DIR/.." && pwd)"
  * The returned script locates the repository root and attempts, in order, to:
  * - run the repo-local `src/cli.ts` via `pnpm exec tsx` only when the repo is the harness source repo,
  * - run `scripts/harness-cli.sh` (when present and executable),
+ * - resolve `harness` via `mise which harness` (when available),
  * - invoke a globally installed `harness` binary.
  * If none are available the script prints installation and local-exec guidance and exits with a non-zero status.
  *
@@ -2111,6 +2112,9 @@ export const TEMPLATES: Template[] = [
 						low: [],
 					},
 					docsDriftRules: {},
+					northStar: DEFAULT_CONTRACT.northStar,
+					productSurface: DEFAULT_CONTRACT.productSurface,
+					overrideReviewerRegistry: DEFAULT_CONTRACT.overrideReviewerRegistry,
 					branchProtection: {
 						requiredChecks: [
 							...getNormalizedRequiredChecks(

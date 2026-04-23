@@ -324,10 +324,10 @@ export const DEFAULT_PRODUCT_SURFACE_REGISTRY: ProductSurfaceRegistry = {
 export const DEFAULT_OVERRIDE_REVIEWER_REGISTRY: OverrideReviewerRegistry = {
 	trustedReviewers: [
 		{
-			reviewerId: "jamie-craik",
+			reviewerId: "project-maintainer",
 			reviewerType: "user",
-			signatureRef: "refs/reviewers/jamie-craik",
-			displayName: "Jamie Craik",
+			signatureRef: "refs/reviewers/project-maintainer",
+			displayName: "Project Maintainer",
 			status: "active",
 		},
 	],
