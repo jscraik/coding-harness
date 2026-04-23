@@ -342,6 +342,9 @@ export function buildContractJsonSchema(): Record<string, unknown> {
 				properties: {
 					surfaces: {
 						type: "array",
+						uniqueItems: true,
+						description:
+							"Surface entries must be unique. Runtime validation additionally enforces unique surfaceId values.",
 						items: {
 							type: "object",
 							required: [
@@ -408,6 +411,9 @@ export function buildContractJsonSchema(): Record<string, unknown> {
 					trustedReviewers: {
 						type: "array",
 						minItems: 1,
+						uniqueItems: true,
+						description:
+							"Reviewer entries must be unique. Runtime validation additionally enforces unique reviewerId and signatureRef values.",
 						contains: {
 							type: "object",
 							required: ["status"],

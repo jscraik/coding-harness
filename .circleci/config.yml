@@ -265,7 +265,7 @@ workflows:
             RALPH_GIT_FALLBACK_SPEC="git+https://github.com/jscraik/ralph-gold.git@5d4b57537a29c3edb566665c9482ae5ca1d49eed"
             installed_ralph_version=""
             if command -v ralph >/dev/null 2>&1; then
-              installed_ralph_version="$(ralph --version | grep -Eo '[0-9]+\.[0-9]+\.[0-9]+' | head -n1 || true)"
+              installed_ralph_version="$(ralph --version | grep -Eo '[0-9]+\.[0-9]+\.[0-9]+([+-][0-9A-Za-z.-]+)?' | head -n1 || true)"
             fi
             if [[ "$installed_ralph_version" != "$RALPH_VERSION" ]]; then
               RALPH_VENV="$HOME/.local/share/ralph-venv-${RALPH_VERSION}"
@@ -278,7 +278,7 @@ workflows:
               fi
               ln -sf "$RALPH_VENV/bin/ralph" "$HOME/.local/bin/ralph"
             fi
-            installed_ralph_version="$(ralph --version | grep -Eo '[0-9]+\.[0-9]+\.[0-9]+' | head -n1 || true)"
+            installed_ralph_version="$(ralph --version | grep -Eo '[0-9]+\.[0-9]+\.[0-9]+([+-][0-9A-Za-z.-]+)?' | head -n1 || true)"
             if [[ "$installed_ralph_version" != "$RALPH_VERSION" ]]; then
               echo "Expected ralph ${RALPH_VERSION}, got ${installed_ralph_version:-<none>}" >&2
               exit 1
