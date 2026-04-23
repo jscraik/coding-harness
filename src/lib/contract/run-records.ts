@@ -459,20 +459,20 @@ export function validateAgentRunManifest(value: unknown): AgentRunManifest {
 	}
 	if (
 		typeof repo.headSha !== "string" ||
-		(repo.headSha !== "unknown" && !/^[a-f0-9]{7,64}$/.test(repo.headSha))
+		(repo.headSha !== "unknown" && !/^[a-f0-9]{40}$/.test(repo.headSha))
 	) {
 		throw new RunRecordError(
-			"Manifest repo.headSha must be 7-64 lowercase hex characters or the explicit unknown sentinel",
+			"Manifest repo.headSha must be a 40-character lowercase hex SHA or the explicit unknown sentinel",
 			"E_MANIFEST_INVALID",
 		);
 	}
 	if (
 		repo.ancestryBaseSha !== undefined &&
 		(typeof repo.ancestryBaseSha !== "string" ||
-			!/^[a-f0-9]{7,64}$/.test(repo.ancestryBaseSha))
+			!/^[a-f0-9]{40}$/.test(repo.ancestryBaseSha))
 	) {
 		throw new RunRecordError(
-			"Manifest repo.ancestryBaseSha must be 7-64 lowercase hex characters",
+			"Manifest repo.ancestryBaseSha must be a 40-character lowercase hex SHA",
 			"E_MANIFEST_INVALID",
 		);
 	}

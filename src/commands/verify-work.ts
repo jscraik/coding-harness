@@ -54,6 +54,8 @@ export const verifyWorkRuntime = {
  *  - `changedOnly`: include `--changed-only`
  *  - `strict`: include `--strict`
  *  - `fast`: include `--fast`
+ *  - `projectGovernance`: include `--project-governance`
+ *  - `workspaceGovernance`: include `--workspace-governance`
  *  - `resumeFrom`: include `--resume-from <gateId>`
  *  - `json`: include `--json`
  *  - `repoRoot`: include `--repo-root <resolved path>`

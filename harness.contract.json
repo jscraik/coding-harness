@@ -73,8 +73,11 @@
 				"ownedPaths": [
 					"src/commands/drift-gate.ts",
 					"src/commands/drift-gate.test.ts",
+					"src/lib/contract/north-star-alignment.ts",
+					"src/lib/contract/north-star-contract-validators.ts",
 					"docs/roadmap/north-star.md",
 					"docs/roadmap/agent-first-status.md",
+					"docs/agents/review-gate-workflow-contract.md",
 					"README.md"
 				],
 				"lastReviewedAt": "2026-04-21"

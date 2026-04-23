@@ -31,6 +31,9 @@ import {
 	CI_PROVIDERS,
 	CI_PROVIDER_MODES,
 	CONTEXT_COMPACT_STRATEGIES,
+	NORTH_STAR_DECISION_QUESTION_SPECS,
+	NORTH_STAR_PRIMARY_BOTTLENECK,
+	NORTH_STAR_PRIMARY_METRIC,
 	SCHEMA_VERSION,
 	buildContractJsonSchema,
 } from "../lib/contract/json-schema.js";
@@ -60,7 +63,40 @@ function makeTmpDir(): string {
 
 /** Minimal valid contract that passes all field validations */
 function minimalValidContract(): Record<string, unknown> {
-	return { version: "1.5.0" };
+	return {
+		version: "1.5.0",
+		northStar: canonicalNorthStarBlock(),
+		productSurface: {
+			surfaces: [
+				{
+					surfaceId: "review-gate",
+					surfaceType: "command",
+					class: "core",
+					owner: "workflow",
+					northStarContribution:
+						"Constrains merge-readiness decisions to throughput path",
+					manualGlueReductionClaim:
+						"Converts repeated review comments into deterministic checks",
+					reliabilityContribution:
+						"Ensures the same questions are asked every run",
+					evidenceReference: "artifacts/north-star/review-gate.json",
+					ownedPaths: ["src/commands/review-gate.ts"],
+					lastReviewedAt: "2026-04-21",
+				},
+			],
+		},
+		overrideReviewerRegistry: {
+			trustedReviewers: [
+				{
+					reviewerId: "jamie-craik",
+					reviewerType: "user",
+					signatureRef: "refs/reviewers/jamie-craik",
+					displayName: "Jamie Craik",
+					status: "active",
+				},
+			],
+		},
+	};
 }
 
 /** Minimal valid ciProviderPolicy block (solo, no trustedPolicyRef) */
@@ -75,6 +111,27 @@ function ciPolicyBlock(
 		authorityConfigPath: "harness.contract.json",
 		requiredCheckManifestPath: ".harness/ci-required-checks.json",
 		commitMode: "solo",
+		...overrides,
+	};
+}
+
+function canonicalNorthStarBlock(overrides: Record<string, unknown> = {}) {
+	return {
+		mission:
+			"Coding Harness exists to let humans steer and agents execute safely, with PR lead time as the primary north-star metric.",
+		primaryMetric: NORTH_STAR_PRIMARY_METRIC,
+		primaryBottleneck: NORTH_STAR_PRIMARY_BOTTLENECK,
+		autonomyBoundary:
+			"Low and medium-risk autonomy should be automated where evidence is deterministic and rollback is clear; high-risk changes remain human-mediated.",
+		safetyFloor: [
+			"deterministic evidence",
+			"strict current-head SHA discipline",
+		],
+		nonGoals: ["policy surface area as proxy progress"],
+		decisionQuestions: NORTH_STAR_DECISION_QUESTION_SPECS.map((question) => ({
+			id: question.id,
+			prompt: question.prompt,
+		})),
 		...overrides,
 	};
 }
@@ -96,6 +153,81 @@ describe("buildContractJsonSchema", () => {
 		};
 		expect(schema.required).toContain("version");
 		expect(schema.properties).toHaveProperty("version");
+	});
+
+	it("requires canonical north-star surfaces for contract versions 1.6+", () => {
+		const schema = buildContractJsonSchema() as {
+			anyOf: Array<{
+				properties?: {
+					version?: { pattern?: string };
+				};
+				allOf?: Array<{
+					required?: string[];
+					properties?: {
+						version?: { pattern?: string };
+					};
+				}>;
+			}>;
+		};
+		expect(Array.isArray(schema.anyOf)).toBe(true);
+		const canonicalBranch = schema.anyOf.find(
+			(branch) =>
+				Array.isArray(branch.allOf) &&
+				branch.allOf.some((entry) => entry.required?.includes("northStar")),
+		);
+		expect(canonicalBranch).toBeDefined();
+		const requiredKeys = new Set(
+			canonicalBranch?.allOf?.flatMap((entry) => entry.required ?? []) ?? [],
+		);
+		expect(requiredKeys.has("northStar")).toBe(true);
+		expect(requiredKeys.has("productSurface")).toBe(true);
+		expect(requiredKeys.has("overrideReviewerRegistry")).toBe(true);
+
+		const canonicalVersionPattern = canonicalBranch?.allOf
+			?.map((entry) => entry.properties?.version?.pattern)
+			.find((pattern): pattern is string => typeof pattern === "string");
+		expect(canonicalVersionPattern).toContain("1\\.(?:[6-9]");
+		expect(canonicalVersionPattern).toContain("[2-9][0-9]*");
+	});
+
+	it("keeps version schema patterns aligned with runtime version semantics", () => {
+		const schema = buildContractJsonSchema() as {
+			anyOf: Array<{
+				properties?: {
+					version?: { pattern?: string };
+				};
+				allOf?: Array<{
+					properties?: {
+						version?: { pattern?: string };
+					};
+				}>;
+			}>;
+		};
+		const preCanonicalPattern = schema.anyOf
+			.map((entry) => entry.properties?.version?.pattern)
+			.find((pattern): pattern is string => typeof pattern === "string");
+		const canonicalPattern = schema.anyOf
+			.flatMap((entry) =>
+				(entry.allOf ?? []).map(
+					(nested) => nested.properties?.version?.pattern,
+				),
+			)
+			.find((pattern): pattern is string => typeof pattern === "string");
+		expect(typeof preCanonicalPattern).toBe("string");
+		expect(typeof canonicalPattern).toBe("string");
+
+		const preCanonicalRegex = new RegExp(preCanonicalPattern ?? "");
+		const canonicalRegex = new RegExp(canonicalPattern ?? "");
+		expect(preCanonicalRegex.test("0.13.0")).toBe(true);
+		expect(preCanonicalRegex.test("1.4.9")).toBe(true);
+		expect(preCanonicalRegex.test("1.5")).toBe(true);
+		expect(preCanonicalRegex.test("1.5.0")).toBe(true);
+		expect(preCanonicalRegex.test("1.6.0")).toBe(false);
+		expect(canonicalRegex.test("1.5")).toBe(false);
+		expect(canonicalRegex.test("1.6")).toBe(true);
+		expect(canonicalRegex.test("1.6.0")).toBe(true);
+		expect(canonicalRegex.test("2.0.0")).toBe(true);
+		expect(canonicalRegex.test("2")).toBe(false);
 	});
 
 	it("ciProviderPolicy.mode enum contains all CI_PROVIDER_MODES", () => {
@@ -143,9 +275,184 @@ describe("buildContractJsonSchema", () => {
 		}
 	});
 
+	it("top-level schema includes extends for inheritance-aware loaders", () => {
+		const schema = buildContractJsonSchema() as {
+			properties: Record<string, unknown>;
+		};
+		expect(schema.properties).toHaveProperty("extends");
+	});
+
+	it("ciProviderPolicy requires artifact paths used by runtime validator", () => {
+		const schema = buildContractJsonSchema() as {
+			properties: {
+				ciProviderPolicy: { required: string[] };
+			};
+		};
+		expect(schema.properties.ciProviderPolicy.required).toEqual(
+			expect.arrayContaining([
+				"activeProvider",
+				"mode",
+				"migrationStage",
+				"transitionStatusArtifactPath",
+				"authorityConfigPath",
+				"requiredCheckManifestPath",
+			]),
+		);
+	});
+
+	it("ciProviderPolicy exposes optional primaryCheckName", () => {
+		const schema = buildContractJsonSchema() as {
+			properties: {
+				ciProviderPolicy: {
+					properties: {
+						primaryCheckName: { type: string; minLength: number };
+					};
+				};
+			};
+		};
+		expect(
+			schema.properties.ciProviderPolicy.properties.primaryCheckName,
+		).toEqual({
+			type: "string",
+			minLength: 1,
+			description:
+				"Optional canonical primary check name used by CI migration validation.",
+		});
+	});
+
 	it("is serializable to JSON", () => {
 		const schema = buildContractJsonSchema();
 		expect(() => JSON.parse(JSON.stringify(schema))).not.toThrow();
+	});
+
+	it("northStar enums include canonical metric and bottleneck values", () => {
+		const schema = buildContractJsonSchema() as {
+			properties: {
+				northStar: {
+					properties: {
+						primaryMetric: { enum: string[] };
+						primaryBottleneck: { enum: string[] };
+					};
+				};
+			};
+		};
+
+		expect(schema.properties.northStar.properties.primaryMetric.enum).toEqual([
+			NORTH_STAR_PRIMARY_METRIC,
+		]);
+		expect(
+			schema.properties.northStar.properties.primaryBottleneck.enum,
+		).toEqual([NORTH_STAR_PRIMARY_BOTTLENECK]);
+	});
+
+	it("northStar decision questions stay aligned with canonical id+prompt order", () => {
+		const schema = buildContractJsonSchema() as {
+			properties: {
+				northStar: {
+					properties: {
+						decisionQuestions: {
+							items: Array<{
+								properties: {
+									id: { enum: string[] };
+									prompt: { enum: string[] };
+								};
+							}>;
+						};
+					};
+				};
+			};
+		};
+		expect(
+			schema.properties.northStar.properties.decisionQuestions.items,
+		).toHaveLength(NORTH_STAR_DECISION_QUESTION_SPECS.length);
+		expect(
+			schema.properties.northStar.properties.decisionQuestions.items.map(
+				(item) => item.properties.id.enum[0],
+			),
+		).toEqual(NORTH_STAR_DECISION_QUESTION_SPECS.map((item) => item.id));
+		expect(
+			schema.properties.northStar.properties.decisionQuestions.items.map(
+				(item) => item.properties.prompt.enum[0],
+			),
+		).toEqual(NORTH_STAR_DECISION_QUESTION_SPECS.map((item) => item.prompt));
+	});
+
+	it("productSurface requires reviewCadence for adjacent and experimental classes", () => {
+		const schema = buildContractJsonSchema() as {
+			properties: {
+				productSurface: {
+					properties: {
+						surfaces: {
+							items: {
+								anyOf: Array<{
+									properties?: {
+										class: { type: string; enum: string[] };
+									};
+									required: string[];
+								}>;
+							};
+						};
+					};
+				};
+			};
+		};
+		expect(
+			schema.properties.productSurface.properties.surfaces.items.anyOf,
+		).toContainEqual({
+			properties: {
+				class: {
+					type: "string",
+					enum: ["core"],
+				},
+			},
+			required: ["class"],
+		});
+		expect(
+			schema.properties.productSurface.properties.surfaces.items.anyOf,
+		).toContainEqual({
+			required: ["reviewCadence"],
+		});
+	});
+
+	it("overrideReviewerRegistry requires at least one active reviewer", () => {
+		const schema = buildContractJsonSchema() as {
+			properties: {
+				overrideReviewerRegistry: {
+					properties: {
+						trustedReviewers: {
+							contains: {
+								properties: {
+									status: { enum: string[] };
+								};
+							};
+						};
+					};
+				};
+			};
+		};
+		expect(
+			schema.properties.overrideReviewerRegistry.properties.trustedReviewers
+				.contains.properties.status.enum,
+		).toEqual(["active"]);
+	});
+
+	it("memoryPolicy exposes optional sessionLogPath override", () => {
+		const schema = buildContractJsonSchema() as {
+			properties: {
+				memoryPolicy: {
+					properties: {
+						sessionLogPath: { type: string; minLength: number };
+					};
+				};
+			};
+		};
+
+		expect(schema.properties.memoryPolicy.properties.sessionLogPath).toEqual({
+			type: "string",
+			minLength: 1,
+			description:
+				"Optional explicit path for session log persistence when default branch-derived path is unsuitable.",
+		});
 	});
 
 	it("contextCompact.strategy enum contains supported strategies", () => {
@@ -161,6 +468,237 @@ describe("buildContractJsonSchema", () => {
 			expect(
 				schema.properties.contextCompact.properties.strategy.enum,
 			).toContain(strategy);
+		}
+	});
+
+	it("loopStageContracts schema mirrors runtime-required stage keys and fields", () => {
+		const schema = buildContractJsonSchema() as {
+			properties: {
+				loopStageContracts: {
+					required: string[];
+					additionalProperties: boolean;
+					properties: Record<
+						string,
+						{
+							required: string[];
+							additionalProperties: boolean;
+							properties: Record<string, unknown>;
+						}
+					>;
+				};
+			};
+		};
+
+		const loopSchema = schema.properties.loopStageContracts;
+		expect(loopSchema.additionalProperties).toBe(false);
+		expect(loopSchema.required).toEqual([
+			"risk-policy-gate",
+			"review-gate",
+			"evidence-verify",
+			"remediation-decision",
+		]);
+
+		for (const stageName of loopSchema.required) {
+			const stageSchema = loopSchema.properties[stageName];
+			expect(stageSchema).toBeDefined();
+			if (!stageSchema) {
+				continue;
+			}
+			expect(stageSchema.additionalProperties).toBe(false);
+			expect(stageSchema.required).toEqual([
+				"inputs",
+				"outputs",
+				"schema",
+				"failPolicy",
+				"if",
+				"permissions",
+				"timeoutMinutes",
+				"concurrency",
+			]);
+		}
+	});
+
+	it("committed productSurface paths reference existing repository files", () => {
+		const repoRoot = process.cwd();
+		const committedContract = JSON.parse(
+			readFileSync(join(repoRoot, "harness.contract.json"), "utf-8"),
+		) as {
+			productSurface?: {
+				surfaces?: Array<{
+					surfaceId?: string;
+					ownedPaths?: string[];
+					evidenceReference?: string;
+				}>;
+			};
+		};
+		const missingOwnedPaths: string[] = [];
+		const missingEvidencePaths: string[] = [];
+
+		for (const surface of committedContract.productSurface?.surfaces ?? []) {
+			const surfaceId = surface.surfaceId ?? "unknown";
+			for (const ownedPath of surface.ownedPaths ?? []) {
+				if (!existsSync(join(repoRoot, ownedPath))) {
+					missingOwnedPaths.push(`${surfaceId}:${ownedPath}`);
+				}
+			}
+
+			if (typeof surface.evidenceReference !== "string") {
+				continue;
+			}
+			const evidencePath = surface.evidenceReference
+				.trim()
+				.replace(/#.*$/, "")
+				.replace(/:(\d+)(?::\d+)?$/, "")
+				.replace(/^\/+/, "");
+			if (
+				evidencePath.length === 0 ||
+				evidencePath.startsWith("artifacts/") ||
+				/^[a-z][a-z0-9+.-]*:\/\//i.test(evidencePath)
+			) {
+				continue;
+			}
+			if (!existsSync(join(repoRoot, evidencePath))) {
+				missingEvidencePaths.push(`${surfaceId}:${surface.evidenceReference}`);
+			}
+		}
+
+		expect(missingOwnedPaths).toEqual([]);
+		expect(missingEvidencePaths).toEqual([]);
+	});
+});
+
+describe("validateContract: north-star/runtime parity guards", () => {
+	it("accepts extends shorthand and structured references", () => {
+		const shorthand = validateContract({
+			...minimalValidContract(),
+			extends: "minimal",
+		});
+		expect(shorthand.success).toBe(true);
+
+		const structured = validateContract({
+			...minimalValidContract(),
+			extends: [
+				{
+					source: "standard",
+					arrays: "append",
+				},
+			],
+		});
+		expect(structured.success).toBe(true);
+	});
+
+	it("rejects schema-invalid extends references", () => {
+		const result = validateContract({
+			...minimalValidContract(),
+			extends: [
+				{
+					source: "standard",
+					arrays: "merge",
+				},
+			],
+		});
+		expect(result.success).toBe(false);
+		if (!result.success) {
+			expect(result.errors.some((error) => error.path === "extends")).toBe(
+				true,
+			);
+		}
+	});
+
+	it("rejects non-canonical northStar decision question prompt text", () => {
+		const result = validateContract({
+			...minimalValidContract(),
+			northStar: canonicalNorthStarBlock({
+				decisionQuestions: NORTH_STAR_DECISION_QUESTION_SPECS.map(
+					(question, index) => ({
+						id: question.id,
+						prompt:
+							index === 0 ? `${question.prompt} (edited)` : question.prompt,
+					}),
+				),
+			}),
+		});
+		expect(result.success).toBe(false);
+		if (!result.success) {
+			expect(result.errors.some((error) => error.path === "northStar")).toBe(
+				true,
+			);
+		}
+	});
+
+	it("rejects experimental productSurface entries missing reviewCadence", () => {
+		const result = validateContract({
+			...minimalValidContract(),
+			productSurface: {
+				surfaces: [
+					{
+						surfaceId: "experiment-surface",
+						surfaceType: "workflow",
+						class: "experimental",
+						owner: "workflow",
+						northStarContribution: "Tests experimental gate path",
+						manualGlueReductionClaim: "Codifies repeated manual checks",
+						reliabilityContribution: "Keeps decision inputs deterministic",
+						evidenceReference: "artifacts/north-star/experiment.json",
+						ownedPaths: ["src/commands/preflight-gate.ts"],
+						lastReviewedAt: "2026-04-21",
+					},
+				],
+			},
+		});
+		expect(result.success).toBe(false);
+		if (!result.success) {
+			expect(
+				result.errors.some((error) => error.path === "productSurface"),
+			).toBe(true);
+		}
+	});
+
+	it("accepts core productSurface entries without reviewCadence", () => {
+		const result = validateContract({
+			...minimalValidContract(),
+			productSurface: {
+				surfaces: [
+					{
+						surfaceId: "core-surface",
+						surfaceType: "command",
+						class: "core",
+						owner: "workflow",
+						northStarContribution: "Protects merge-readiness throughput path",
+						manualGlueReductionClaim: "Removes repeated manual review glue",
+						reliabilityContribution: "Ensures deterministic gate behavior",
+						evidenceReference: "src/commands/review-gate.ts",
+						ownedPaths: ["src/commands/review-gate.ts"],
+						lastReviewedAt: "2026-04-21",
+					},
+				],
+			},
+		});
+		expect(result.success).toBe(true);
+	});
+
+	it("rejects overrideReviewerRegistry when all reviewers are revoked", () => {
+		const result = validateContract({
+			...minimalValidContract(),
+			overrideReviewerRegistry: {
+				trustedReviewers: [
+					{
+						reviewerId: "legacy-reviewer",
+						reviewerType: "user",
+						signatureRef: "refs/reviewers/legacy-reviewer",
+						displayName: "Legacy Reviewer",
+						status: "revoked",
+					},
+				],
+			},
+		});
+		expect(result.success).toBe(false);
+		if (!result.success) {
+			expect(
+				result.errors.some(
+					(error) => error.path === "overrideReviewerRegistry",
+				),
+			).toBe(true);
 		}
 	});
 });
@@ -512,6 +1050,81 @@ describe("runContractCLI dispatch", () => {
 		expect(parsed.gates[0]?.gateId).toBe("lint");
 	});
 
+	it("returns usage error when normalize-required-checks is passed --manifest without a value", () => {
+		const code = runContractCLI(
+			["normalize-required-checks", "--manifest"],
+			{},
+		);
+		expect(code).toBe(2);
+		expect(consoleErrSpy).toHaveBeenCalledWith("Missing value for --manifest");
+	});
+
+	it("returns usage error when init is passed --preset without a value", () => {
+		const code = runContractCLI(["init", "--preset"], {});
+		expect(code).toBe(2);
+		expect(consoleErrSpy).toHaveBeenCalledWith("Missing value for --preset");
+	});
+
+	it("returns usage error when init is passed --output without a value", () => {
+		const code = runContractCLI(["init", "--output"], {});
+		expect(code).toBe(2);
+		expect(consoleErrSpy).toHaveBeenCalledWith("Missing value for --output");
+	});
+
+	it("returns usage error when init would otherwise consume --json as --output value", () => {
+		const code = runContractCLI(["init", "--output", "--json"], {
+			json: true,
+		});
+		expect(code).toBe(2);
+		expect(consoleErrSpy).toHaveBeenCalledWith("Missing value for --output");
+	});
+
+	it("returns failure when normalize-required-checks manifest does not exist", () => {
+		const missingManifest = join(dir, "missing-required-checks.json");
+		const code = runContractCLI(
+			["normalize-required-checks", "--manifest", missingManifest],
+			{},
+		);
+		expect(code).toBe(1);
+		expect(consoleErrSpy).toHaveBeenCalledWith(
+			`Required checks manifest not found: ${missingManifest}`,
+		);
+	});
+
+	it("returns failure when normalize-required-checks manifest JSON is malformed", () => {
+		const malformedManifest = join(dir, "malformed-required-checks.json");
+		writeFileSync(malformedManifest, "{invalid-json", "utf-8");
+		const code = runContractCLI(
+			["normalize-required-checks", "--manifest", malformedManifest],
+			{},
+		);
+		expect(code).toBe(1);
+		expect(consoleErrSpy).toHaveBeenCalledWith(
+			expect.stringContaining("Failed to parse required checks manifest:"),
+		);
+	});
+
+	it("returns failure when normalize-required-checks manifest is structurally invalid", () => {
+		const invalidManifest = join(dir, "invalid-required-checks.json");
+		writeFileSync(
+			invalidManifest,
+			JSON.stringify({
+				version: 1,
+				activeProvider: "circleci",
+				requiredChecks: "not-an-array",
+			}),
+			"utf-8",
+		);
+		const code = runContractCLI(
+			["normalize-required-checks", "--manifest", invalidManifest],
+			{},
+		);
+		expect(code).toBe(1);
+		expect(consoleErrSpy).toHaveBeenCalledWith(
+			expect.stringContaining("Required checks manifest is invalid:"),
+		);
+	});
+
 	it("returns 1 for unknown subcommand", () => {
 		const code = runContractCLI(["unknown-cmd"], {});
 		expect(code).toBe(1);
@@ -524,7 +1137,7 @@ describe("runContractCLI dispatch", () => {
 // ─── buildContractPreset ──────────────────────────────────────────────────────
 
 describe("buildContractPreset", () => {
-	it("minimal preset includes the canonical baseline sections", () => {
+	it("minimal preset includes canonical north-star contract surfaces", () => {
 		const contract = buildContractPreset("minimal");
 		expect(contract).toHaveProperty("version");
 		expect(contract).toHaveProperty("riskTierRules");
@@ -536,7 +1149,7 @@ describe("buildContractPreset", () => {
 		expect(Object.keys(contract)).toHaveLength(7);
 	});
 
-	it("standard preset includes governance and north-star sections", () => {
+	it("standard preset adds diff budget, docs-drift, and evidence policy", () => {
 		const contract = buildContractPreset("standard");
 		expect(Object.keys(contract)).toHaveLength(10);
 		expect(contract).toHaveProperty("diffBudget");
@@ -638,6 +1251,9 @@ describe("runContractInitCLI", () => {
 		const code = runContractInitCLI({ preset: "minimal", output });
 		expect(code).toBe(0);
 		const parsed = JSON.parse(readFileSync(output, "utf-8"));
+		expect(parsed).toHaveProperty("northStar");
+		expect(parsed).toHaveProperty("productSurface");
+		expect(parsed).toHaveProperty("overrideReviewerRegistry");
 		expect(Object.keys(parsed)).toHaveLength(7);
 	});
 
@@ -735,4 +1351,18 @@ describe("runContractInitCLI", () => {
 		expect(code).toBe(0);
 		expect(existsSync(output)).toBe(true);
 	});
+
+	it.each(CONTRACT_PRESET_INPUTS)(
+		"generated %s preset validates against the current contract schema",
+		(preset) => {
+			const output = join(dir, `harness.contract.${preset}.json`);
+			const initCode = runContractInitCLI({ preset, output });
+			expect(initCode).toBe(0);
+
+			const validateCode = runContractValidateCLI(undefined, {
+				contractPath: output,
+			});
+			expect(validateCode).toBe(0);
+		},
+	);
 });

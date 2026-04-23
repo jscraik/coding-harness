@@ -14,6 +14,9 @@ import { deriveRequiredCheckMetadata } from "../ci/required-check-metadata.js";
 import {
 	DEFAULT_CI_PROVIDER_POLICY,
 	DEFAULT_CONTRACT,
+	NORTH_STAR_DECISION_QUESTION_SPECS,
+	NORTH_STAR_PRIMARY_BOTTLENECK,
+	NORTH_STAR_PRIMARY_METRIC,
 } from "../contract/types.js";
 import {
 	BRANCH_PROTECTION_REQUIRED_CHECKS,
@@ -1274,7 +1277,6 @@ REPO_ROOT="$(cd -- "$SCRIPT_DIR/.." && pwd)"
  * The returned script locates the repository root and attempts, in order, to:
  * - run the repo-local `src/cli.ts` via `pnpm exec tsx` only when the repo is the harness source repo,
  * - run `scripts/harness-cli.sh` (when present and executable),
- * - resolve `harness` via `mise which harness` (when available),
  * - invoke a globally installed `harness` binary.
  * If none are available the script prints installation and local-exec guidance and exits with a non-zero status.
  *
@@ -1309,22 +1311,31 @@ is_harness_source_repo() {
 
 if is_harness_source_repo; then
 	if ! command -v pnpm >/dev/null 2>&1; then
-		echo "Error: pnpm is required to run the harness source CLI." >&2
-		echo "Install pnpm and retry." >&2
+		echo "Error: source checkout detected but pnpm is unavailable; refusing fallback to avoid stale harness binaries." >&2
 		exit 1
 	fi
-
-	if ! pnpm exec -- tsx --version >/dev/null 2>&1; then
-		echo "Error: tsx is required to run the harness source CLI." >&2
-		echo "Install repository dependencies (pnpm install) and retry." >&2
+	if ! pnpm --dir "$REPO_ROOT" exec -- tsx --version >/dev/null 2>&1; then
+		echo "Error: source checkout detected but tsx is unavailable via pnpm exec; refusing fallback to avoid stale harness binaries." >&2
 		exit 1
 	fi
-
-	exec pnpm exec tsx "$REPO_ROOT/src/cli.ts" "$@"
+	exec pnpm --dir "$REPO_ROOT" exec tsx "$REPO_ROOT/src/cli.ts" "$@"
 fi
 
-if [[ -r "$REPO_ROOT/scripts/harness-cli.sh" && -f "$REPO_ROOT/node_modules/@brainwav/coding-harness/dist/cli.js" ]]; then
-	exec bash "$REPO_ROOT/scripts/harness-cli.sh" "$@"
+if [[ -f "$REPO_ROOT/dist/cli.js" ]] && command -v node >/dev/null 2>&1; then
+	exec node "$REPO_ROOT/dist/cli.js" "$@"
+fi
+
+if [[ -f "$REPO_ROOT/scripts/harness-cli.sh" && -r "$REPO_ROOT/scripts/harness-cli.sh" ]]; then
+	wrapper_exit=0
+	bash "$REPO_ROOT/scripts/harness-cli.sh" "$@" || wrapper_exit=$?
+	if [[ "$wrapper_exit" -eq 0 ]]; then
+		exit 0
+	fi
+	if [[ "$wrapper_exit" -eq 126 || "$wrapper_exit" -eq 127 ]]; then
+		echo "Warning: scripts/harness-cli.sh unavailable (exit $wrapper_exit); attempting fallback runners." >&2
+	else
+		exit "$wrapper_exit"
+	fi
 fi
 
 if command -v mise >/dev/null 2>&1; then
@@ -2093,6 +2104,77 @@ ${transitionRows}
 `;
 }
 
+function renderScaffoldNorthStar(
+	context: TemplateRenderContext,
+): NonNullable<typeof DEFAULT_CONTRACT.northStar> {
+	const projectName = context.projectName?.trim() || "This repository";
+	return {
+		mission: `${projectName} uses Coding Harness to reduce PR lead time while preserving safe, evidence-backed human oversight.`,
+		primaryMetric: NORTH_STAR_PRIMARY_METRIC,
+		primaryBottleneck: NORTH_STAR_PRIMARY_BOTTLENECK,
+		autonomyBoundary:
+			"Low and medium-risk changes may be automated when evidence is deterministic and rollback remains explicit; high-risk changes remain human-mediated.",
+		safetyFloor: [
+			"deterministic evidence over intuition",
+			"strict current-head SHA discipline",
+			"bounded auto-remediation instead of open-ended write access",
+			"explicit rollback paths for higher-risk automation",
+			"independent review surfaces that do not collapse back into self-approval",
+		],
+		nonGoals: [
+			"governance surface area as a proxy for progress",
+			"feature count without measurable throughput or reliability benefit",
+			"manual coordination steps that recur every run or every PR",
+			"broad autonomy expansion without evidence that the review or rework loop got cheaper",
+		],
+		decisionQuestions: NORTH_STAR_DECISION_QUESTION_SPECS.map((question) => ({
+			id: question.id,
+			prompt: question.prompt,
+		})),
+	};
+}
+
+function renderScaffoldProductSurface(): NonNullable<
+	typeof DEFAULT_CONTRACT.productSurface
+> {
+	return {
+		surfaces: [
+			{
+				surfaceId: "automation-control-plane",
+				surfaceType: "policy",
+				class: "core",
+				owner: "maintainers",
+				northStarContribution:
+					"Keeps delivery automation aligned to PR lead-time outcomes.",
+				manualGlueReductionClaim:
+					"Converts recurring reviewer reminders into explicit policy checks.",
+				reliabilityContribution:
+					"Centralizes automation guardrails in one deterministic contract surface.",
+				evidenceReference: "harness.contract.json",
+				ownedPaths: ["harness.contract.json"],
+				lastReviewedAt: "2026-04-22",
+			},
+		],
+	};
+}
+
+function renderScaffoldOverrideReviewerRegistry(
+	context: TemplateRenderContext,
+): NonNullable<typeof DEFAULT_CONTRACT.overrideReviewerRegistry> {
+	const projectName = context.projectName?.trim() || "Project";
+	return {
+		trustedReviewers: [
+			{
+				reviewerId: "project-maintainers",
+				reviewerType: "team",
+				signatureRef: "refs/reviewers/project-maintainers",
+				displayName: `${projectName} Maintainers`,
+				status: "active",
+			},
+		],
+	};
+}
+
 export const TEMPLATES: Template[] = [
 	{
 		path: "harness.contract.json",
@@ -2112,9 +2194,6 @@ export const TEMPLATES: Template[] = [
 						low: [],
 					},
 					docsDriftRules: {},
-					northStar: DEFAULT_CONTRACT.northStar,
-					productSurface: DEFAULT_CONTRACT.productSurface,
-					overrideReviewerRegistry: DEFAULT_CONTRACT.overrideReviewerRegistry,
 					branchProtection: {
 						requiredChecks: [
 							...getNormalizedRequiredChecks(
@@ -2172,6 +2251,10 @@ export const TEMPLATES: Template[] = [
 						allowedTypes: ["png", "jpeg"],
 						maxFileSizeBytes: 1048576,
 					},
+					northStar: renderScaffoldNorthStar(context),
+					productSurface: renderScaffoldProductSurface(),
+					overrideReviewerRegistry:
+						renderScaffoldOverrideReviewerRegistry(context),
 					diffBudget: {
 						maxFiles: 10,
 						maxNetLOC: 400,
@@ -3122,6 +3205,7 @@ Recommended policy:
 
 - \`harness init\` also scaffolds \`scripts/harness-cli.sh\` for repositories that want a repo-local wrapper around the published CLI package.
 - The wrapper resolves \`@brainwav/coding-harness/dist/cli.js\` from the current repository before running any harness command.
+- \`scripts/run-harness-gate.sh\` treats source checkouts as fail-closed when \`pnpm\`/\`tsx\` are unavailable so gates do not silently fall back to stale binaries.
 - If the wrapper cannot resolve the package, treat that as local install/bootstrap drift rather than a harness command failure.
 - Repair from the repo root with:
   - \`${installCommand}\`

@@ -1269,7 +1269,7 @@ function isValidMemoryPolicy(value: unknown): value is MemoryPolicy {
 	if (
 		policy.sessionLogPath !== undefined &&
 		(typeof policy.sessionLogPath !== "string" ||
-			policy.sessionLogPath.length === 0)
+			policy.sessionLogPath.trim().length === 0)
 	) {
 		return false;
 	}
@@ -1773,20 +1773,18 @@ export function validateContract(
 			});
 		}
 	}
+	const extendsReference =
+		"extends" in obj && obj.extends !== undefined
+			? (obj.extends as HarnessContractWithPreset["extends"])
+			: undefined;
 
 	const northStarSurfacesRequired = requiresCanonicalNorthStarSurfaces(
 		obj.version,
 	);
-	const hasExtendsReference = "extends" in obj && obj.extends !== undefined;
-	const extendsReference = hasExtendsReference
-		? (obj.extends as HarnessContractWithPreset["extends"])
-		: undefined;
-	const requireInlineNorthStarSurfaces =
-		northStarSurfacesRequired && !hasExtendsReference;
 
 	let northStar: NorthStarContract | undefined;
 	if (!("northStar" in obj) || obj.northStar === undefined) {
-		if (requireInlineNorthStarSurfaces) {
+		if (northStarSurfacesRequired) {
 			errors.push({
 				code: ValidationErrorCode.MISSING_REQUIRED_FIELD,
 				path: "northStar",
@@ -1817,7 +1815,7 @@ export function validateContract(
 
 	let productSurface: ProductSurfaceRegistry | undefined;
 	if (!("productSurface" in obj) || obj.productSurface === undefined) {
-		if (requireInlineNorthStarSurfaces) {
+		if (northStarSurfacesRequired) {
 			errors.push({
 				code: ValidationErrorCode.MISSING_REQUIRED_FIELD,
 				path: "productSurface",
@@ -1851,7 +1849,7 @@ export function validateContract(
 		!("overrideReviewerRegistry" in obj) ||
 		obj.overrideReviewerRegistry === undefined
 	) {
-		if (requireInlineNorthStarSurfaces) {
+		if (northStarSurfacesRequired) {
 			errors.push({
 				code: ValidationErrorCode.MISSING_REQUIRED_FIELD,
 				path: "overrideReviewerRegistry",

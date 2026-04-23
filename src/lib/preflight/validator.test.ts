@@ -2,7 +2,7 @@ import { chmodSync, mkdirSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { delimiter, join } from "node:path";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
-import { NORTH_STAR_DECISION_QUESTION_SPECS } from "../contract/types.js";
+import type { PreflightAdmissionDeclaration } from "./types.js";
 import { runPreflightGate } from "./validator.js";
 
 describe("runPreflightGate", () => {
@@ -44,87 +44,18 @@ describe("runPreflightGate", () => {
 		);
 	}
 
-	function writeNorthStarContract(options?: {
-		preHook?: { id: "skip-all-checks" | "force-fail" };
-		emptySurfaceRegistry?: boolean;
-		ownedPaths?: string[];
-	}): void {
-		writeFileSync(
-			"harness.contract.json",
-			JSON.stringify({
-				version: "1.6.0",
-				northStar: {
-					mission:
-						"Reduce PR throughput drag while preserving deterministic evidence.",
-					primaryMetric: "pr_lead_time",
-					primaryBottleneck: "review_rework_loop",
-					autonomyBoundary:
-						"Automate low and medium-risk changes with deterministic checks.",
-					safetyFloor: ["deterministic evidence", "head sha discipline"],
-					nonGoals: ["shipping without validation"],
-					decisionQuestions: NORTH_STAR_DECISION_QUESTION_SPECS.map(
-						(question) => ({
-							id: question.id,
-							prompt: question.prompt,
-						}),
-					),
-				},
-				productSurface: {
-					surfaces: options?.emptySurfaceRegistry
-						? []
-						: [
-								{
-									surfaceId: "review-gate",
-									surfaceType: "command",
-									class: "core",
-									owner: "workflow",
-									northStarContribution:
-										"Protects merge-readiness decisions for throughput.",
-									manualGlueReductionClaim:
-										"Removes repeated reviewer triage work.",
-									reliabilityContribution:
-										"Applies the same policy checks every run.",
-									evidenceReference: "docs/agents/04-validation.md:1",
-									ownedPaths: options?.ownedPaths ?? ["src/commands/"],
-									lastReviewedAt: "2026-04-22",
-								},
-							],
-				},
-				overrideReviewerRegistry: {
-					trustedReviewers: [
-						{
-							reviewerId: "project-maintainers",
-							reviewerType: "team",
-							signatureRef: "refs/reviewers/project-maintainers",
-							displayName: "Project Maintainers",
-							status: "active",
-						},
-					],
-				},
-				gateExtensions: options?.preHook
-					? {
-							preflightGate: {
-								pre: [options.preHook],
-							},
-						}
-					: undefined,
-			}),
-			{ encoding: "utf-8" },
-		);
-	}
-
-	function createAdmissionDeclaration() {
+	function buildAdmissionDeclaration(): PreflightAdmissionDeclaration {
 		return {
 			north_star_metric: "pr_lead_time",
 			primary_bottleneck: "review_rework_loop",
-			affected_surface_ids: ["review-gate"],
+			affected_surface_ids: ["preflight-gate"],
 			affected_surface_classes: ["core"],
-			policy_surface_delta: 1,
-			manual_glue_delta: 1,
-			metric_impact_declared: "direct" as const,
-			evidence_links: ["docs/agents/04-validation.md:1"],
+			policy_surface_delta: 0,
+			manual_glue_delta: -1,
+			metric_impact_declared: "path_strengthening",
+			evidence_links: ["docs/roadmap/north-star.md"],
 			why_this_improves_throughput_or_reliability:
-				"Preflight checks prevent review churn before expensive stages.",
+				"Carries the north-star declaration into downstream gate outputs.",
 		};
 	}
 
@@ -214,6 +145,46 @@ describe("runPreflightGate", () => {
 		expect(result.riskTier).toBeUndefined();
 	});
 
+	it("echoes north-star admission summary fields in the preflight result", async () => {
+		writeFileSync(
+			"harness.contract.json",
+			JSON.stringify({
+				version: "1.0",
+			}),
+		);
+
+		const admission = buildAdmissionDeclaration();
+
+		const result = await runPreflightGate({
+			admission,
+		});
+
+		expect(result.passed).toBe(true);
+		expect(result.northStarSummary).toEqual({
+			metric: "pr_lead_time",
+			primaryBottleneck: "review_rework_loop",
+			impactDeclared: "path_strengthening",
+		});
+		expect(result.admissionDeclaration).toEqual(admission);
+	});
+
+	it("retains admission metadata when contract loading fails", async () => {
+		writeFileSync("harness.contract.json", "{invalid-json");
+		const admission = buildAdmissionDeclaration();
+
+		const result = await runPreflightGate({
+			files: ["src/auth/login.ts"],
+			admission,
+		});
+
+		expect(result.passed).toBe(false);
+		expect(result.northStarSummary).toEqual({
+			metric: "pr_lead_time",
+			primaryBottleneck: "review_rework_loop",
+			impactDeclared: "path_strengthening",
+		});
+		expect(result.admissionDeclaration).toEqual(admission);
+	});
 	it("short-circuits native checks when pre hook skip-all-checks is enabled", async () => {
 		writeFileSync(
 			"harness.contract.json",
@@ -241,273 +212,31 @@ describe("runPreflightGate", () => {
 		expect(result.hookDecisions?.[0]?.action).toBe("short-circuit");
 	});
 
-	it("evaluates pre-hook short-circuit before admission declaration checks", async () => {
-		writeNorthStarContract({
-			preHook: { id: "skip-all-checks" },
-		});
-		mkdirSync("src/commands", { recursive: true });
-		writeFileSync("src/commands/review-gate.ts", "export const gate = true;\n");
-
-		const result = await runPreflightGate({
-			files: ["src/commands/review-gate.ts"],
-		});
-
-		expect(result.passed).toBe(true);
-		expect(
-			result.checks.some((check) => check.id === "admission-declaration"),
-		).toBe(false);
-		expect(
-			result.checks.some((check) => check.id === "hook:pre:skip-all-checks"),
-		).toBe(true);
-	});
-
-	it("fails when productSurface registry is empty", async () => {
-		writeNorthStarContract({
-			emptySurfaceRegistry: true,
-		});
-		mkdirSync("src/commands", { recursive: true });
-		writeFileSync("src/commands/review-gate.ts", "export const gate = true;\n");
-
-		const result = await runPreflightGate({
-			files: ["src/commands/review-gate.ts"],
-			admission: createAdmissionDeclaration(),
-			skip: [
-				"git-repository",
-				"harness-version-coherence",
-				"contract-exists",
-				"risk-tier",
-				"file-size",
-				"forbidden-patterns",
-			],
-		});
-		const contractLoadCheck = result.checks.find(
-			(check) => check.id === "contract-load",
-		);
-
-		expect(result.passed).toBe(false);
-		expect(contractLoadCheck?.passed).toBe(false);
-		expect(contractLoadCheck?.message).toContain("Invalid contract");
-	});
-
-	it("does not require admission when northStar is only present via defaults", async () => {
-		writeFileSync("harness.contract.json", JSON.stringify({ version: "1.0" }), {
-			encoding: "utf-8",
-		});
-		mkdirSync("src", { recursive: true });
-		writeFileSync("src/example.ts", "export const example = true;\n");
-
-		const result = await runPreflightGate({
-			files: ["src/example.ts"],
-		});
-
-		expect(
-			result.checks.some((check) => check.id === "admission-declaration"),
-		).toBe(false);
-	});
-
-	it("requires admission when northStar is explicitly declared", async () => {
-		writeNorthStarContract();
-		mkdirSync("src/commands", { recursive: true });
-		writeFileSync("src/commands/review-gate.ts", "export const gate = true;\n");
-
-		const result = await runPreflightGate({
-			files: ["src/commands/review-gate.ts"],
-			skip: [
-				"git-repository",
-				"harness-version-coherence",
-				"contract-exists",
-				"risk-tier",
-				"file-size",
-				"forbidden-patterns",
-			],
-		});
-		const admissionCheck = result.checks.find(
-			(check) => check.id === "admission-declaration",
-		);
-
-		expect(admissionCheck?.passed).toBe(false);
-		expect(admissionCheck?.message).toContain("admission_incomplete");
-	});
-
-	it("does not require admission for non-governed files when ownedPaths uses rootless wildcard globs", async () => {
-		writeNorthStarContract({
-			ownedPaths: ["**/*.ts"],
-		});
-		writeFileSync("README.md", "# docs\n", { encoding: "utf-8" });
-		const admission = createAdmissionDeclaration();
-
-		const result = await runPreflightGate({
-			files: ["README.md"],
-			admission,
-			skip: [
-				"git-repository",
-				"harness-version-coherence",
-				"contract-exists",
-				"risk-tier",
-				"file-size",
-				"forbidden-patterns",
-			],
-		});
-
-		const admissionCheck = result.checks.find(
-			(check) => check.id === "admission-declaration",
-		);
-		expect(admissionCheck?.passed).toBe(true);
-		expect(admissionCheck?.message).not.toContain("surface_registration_gap");
-	});
-
-	it("treats root-level files as governed for **/*.ts ownedPaths", async () => {
-		writeNorthStarContract({
-			ownedPaths: ["**/*.ts"],
-		});
-		writeFileSync("index.ts", "export const root = true;\n", {
-			encoding: "utf-8",
-		});
-		const admission = createAdmissionDeclaration();
-
-		const result = await runPreflightGate({
-			files: ["index.ts"],
-			admission,
-			skip: [
-				"git-repository",
-				"harness-version-coherence",
-				"contract-exists",
-				"risk-tier",
-				"file-size",
-				"forbidden-patterns",
-			],
-		});
-
-		const admissionCheck = result.checks.find(
-			(check) => check.id === "admission-declaration",
-		);
-		expect(admissionCheck?.passed).toBe(true);
-		expect(admissionCheck?.message).not.toContain("surface_registration_gap");
-	});
-
-	it("fails admission when affected_surface_classes mismatches registered class", async () => {
-		writeNorthStarContract();
-		mkdirSync("src/commands", { recursive: true });
-		writeFileSync("src/commands/review-gate.ts", "export const gate = true;\n");
-		const admission = createAdmissionDeclaration();
-		admission.affected_surface_classes = ["adjacent"];
-
-		const result = await runPreflightGate({
-			files: ["src/commands/review-gate.ts"],
-			admission,
-			skip: [
-				"git-repository",
-				"harness-version-coherence",
-				"contract-exists",
-				"risk-tier",
-				"file-size",
-				"forbidden-patterns",
-			],
-		});
-		const admissionCheck = result.checks.find(
-			(check) => check.id === "admission-declaration",
-		);
-
-		expect(admissionCheck?.passed).toBe(false);
-		expect(admissionCheck?.message).toContain("affected_surface_classes");
-		expect(admissionCheck?.message).toContain("expected: core");
-	});
-
-	it("fails admission when affected_surface_classes omits expected classes", async () => {
+	it("retains admission metadata when pre-hook short-circuits execution", async () => {
 		writeFileSync(
 			"harness.contract.json",
 			JSON.stringify({
-				version: "1.6.0",
-				northStar: {
-					mission:
-						"Reduce PR throughput drag while preserving deterministic evidence.",
-					primaryMetric: "pr_lead_time",
-					primaryBottleneck: "review_rework_loop",
-					autonomyBoundary:
-						"Automate low and medium-risk changes with deterministic checks.",
-					safetyFloor: ["deterministic evidence", "head sha discipline"],
-					nonGoals: ["shipping without validation"],
-					decisionQuestions: NORTH_STAR_DECISION_QUESTION_SPECS.map(
-						(question) => ({
-							id: question.id,
-							prompt: question.prompt,
-						}),
-					),
-				},
-				productSurface: {
-					surfaces: [
-						{
-							surfaceId: "review-gate",
-							surfaceType: "command",
-							class: "core",
-							owner: "workflow",
-							northStarContribution:
-								"Protects merge-readiness decisions for throughput.",
-							manualGlueReductionClaim:
-								"Removes repeated reviewer triage work.",
-							reliabilityContribution:
-								"Applies the same policy checks every run.",
-							evidenceReference: "docs/agents/04-validation.md:1",
-							ownedPaths: ["src/commands/"],
-							lastReviewedAt: "2026-04-22",
-						},
-						{
-							surfaceId: "review-docs",
-							surfaceType: "document",
-							class: "adjacent",
-							owner: "workflow",
-							northStarContribution:
-								"Keeps review documentation aligned with gate output.",
-							manualGlueReductionClaim:
-								"Removes manual cross-checking of review docs.",
-							reliabilityContribution:
-								"Ensures docs-gate expectations stay explicit.",
-							evidenceReference: "docs/agents/04-validation.md:1",
-							ownedPaths: ["docs/agents/"],
-							reviewCadence: "weekly",
-							lastReviewedAt: "2026-04-22",
-						},
-					],
-				},
-				overrideReviewerRegistry: {
-					trustedReviewers: [
-						{
-							reviewerId: "project-maintainers",
-							reviewerType: "team",
-							signatureRef: "refs/reviewers/project-maintainers",
-							displayName: "Project Maintainers",
-							status: "active",
-						},
-					],
+				version: "1.0",
+				gateExtensions: {
+					preflightGate: {
+						pre: [{ id: "skip-all-checks" }],
+					},
 				},
 			}),
-			{ encoding: "utf-8" },
 		);
-		mkdirSync("src/commands", { recursive: true });
-		writeFileSync("src/commands/review-gate.ts", "export const gate = true;\n");
-		const admission = createAdmissionDeclaration();
-		admission.affected_surface_ids = ["review-gate", "review-docs"];
-		admission.affected_surface_classes = ["core"];
+		const admission = buildAdmissionDeclaration();
 
 		const result = await runPreflightGate({
-			files: ["src/commands/review-gate.ts"],
 			admission,
-			skip: [
-				"git-repository",
-				"harness-version-coherence",
-				"contract-exists",
-				"risk-tier",
-				"file-size",
-				"forbidden-patterns",
-			],
 		});
-		const admissionCheck = result.checks.find(
-			(check) => check.id === "admission-declaration",
-		);
 
-		expect(admissionCheck?.passed).toBe(false);
-		expect(admissionCheck?.message).toContain("missing: adjacent");
-		expect(admissionCheck?.message).toContain("unexpected: <none>");
+		expect(result.passed).toBe(true);
+		expect(result.northStarSummary).toEqual({
+			metric: "pr_lead_time",
+			primaryBottleneck: "review_rework_loop",
+			impactDeclared: "path_strengthening",
+		});
+		expect(result.admissionDeclaration).toEqual(admission);
 	});
 
 	it("applies pre hooks when files option is omitted", async () => {

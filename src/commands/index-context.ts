@@ -42,6 +42,7 @@ import { type CliResult, createError, err, ok } from "../lib/result/types.js";
 export const EXIT_CODES = {
 	SUCCESS: 0,
 	NO_FILES: 1,
+	USAGE_ERROR: 2,
 	OLLAMA_UNAVAILABLE: 2,
 	ERROR: 3,
 	PARTIAL_SUCCESS: 4,
@@ -358,7 +359,7 @@ export async function runIndexContextCLI(args: string[]): Promise<number> {
 			const harnessDirArg = args[i + 1];
 			if (!harnessDirArg || harnessDirArg.startsWith("-")) {
 				console.error("Error: --harness-dir requires a value");
-				return EXIT_CODES.ERROR;
+				return EXIT_CODES.USAGE_ERROR;
 			}
 			harnessDir = harnessDirArg;
 			i++;
@@ -382,6 +383,9 @@ export async function runIndexContextCLI(args: string[]): Promise<number> {
 			console.info("  harness index-context");
 			console.info("  harness index-context --json");
 			return EXIT_CODES.SUCCESS;
+		} else {
+			console.error(`Error: unknown argument '${arg}'`);
+			return EXIT_CODES.USAGE_ERROR;
 		}
 	}
 

@@ -6,12 +6,19 @@ import {
 	writeFileSync,
 } from "node:fs";
 import { dirname, join } from "node:path";
-import { afterEach, describe, expect, it } from "vitest";
-import { runDriftGate } from "./drift-gate.js";
+import { afterEach, describe, expect, it, vi } from "vitest";
+import { runDriftGate, runDriftGateCLI } from "./drift-gate.js";
 
 function write(path: string, content: string): void {
 	mkdirSync(dirname(path), { recursive: true });
 	writeFileSync(path, content, "utf-8");
+}
+
+function copyRepoFile(root: string, relativePath: string): void {
+	write(
+		join(root, relativePath),
+		readFileSync(join(process.cwd(), relativePath), "utf-8"),
+	);
 }
 
 function createRepoFixture(root: string): void {
@@ -37,7 +44,7 @@ function createRepoFixture(root: string): void {
 		join(root, "docs/QUALITY_SCORE.md"),
 		[
 			"---",
-			"last_updated: 2026-03-05",
+			"last_updated: 2026-04-21",
 			"calculated_by: harness-gardener",
 			"---",
 			"",
@@ -266,6 +273,28 @@ describe("drift-gate command", () => {
 		expect(written.command).toBe("drift-gate");
 	});
 
+	it("persists blocked status in health-mode report output", () => {
+		const root = join(process.cwd(), "artifacts", "drift-gate-test-health-out");
+		roots.push(root);
+		createRepoFixture(root);
+		rmSync(join(root, "docs/roadmap/agent-first-status.md"));
+
+		const outPath = "artifacts/consistency-gate/custom-health-report.json";
+		const result = runDriftGate({
+			repoRoot: root,
+			mode: "health",
+			outPath,
+		});
+
+		expect(result.exitCode).toBe(1);
+		expect(result.report.status).toBe("blocked");
+
+		const written = JSON.parse(readFileSync(join(root, outPath), "utf-8")) as {
+			status: string;
+		};
+		expect(written.status).toBe("blocked");
+	});
+
 	it("auto-seeds baseline on first run when no baseline exists", () => {
 		const root = join(process.cwd(), "artifacts", "drift-gate-test-seed-1");
 		roots.push(root);
@@ -370,5 +399,177 @@ describe("drift-gate command", () => {
 		expect(statusFinding?.fix).toBeDefined();
 		expect(statusFinding?.fix?.manual).toContain("agent-first-status.md");
 		expect(statusFinding?.fix?.suppressible).toBe(true);
+	});
+
+	it("flags north-star surface drift when contract-backed surfaces diverge", () => {
+		const root = join(
+			process.cwd(),
+			"artifacts",
+			"drift-gate-test-north-star-drift",
+		);
+		roots.push(root);
+		createRepoFixture(root);
+		copyRepoFile(root, "harness.contract.json");
+		copyRepoFile(root, "docs/roadmap/north-star.md");
+
+		const result = runDriftGate({
+			repoRoot: root,
+			mode: "health",
+			seedBaseline: false,
+		});
+
+		expect(result.exitCode).toBe(1);
+		expect(
+			result.report.findings.some(
+				(f) =>
+					f.rule_id === "status.north_star.contract_parity.readme" &&
+					f.path === "README.md",
+			),
+		).toBe(true);
+		expect(
+			result.report.findings.some(
+				(f) =>
+					f.rule_id ===
+						"status.north_star.contract_parity.agent_first_status" &&
+					f.path === "docs/roadmap/agent-first-status.md",
+			),
+		).toBe(true);
+	});
+
+	it("passes north-star parity when governed surfaces stay aligned", () => {
+		const root = join(
+			process.cwd(),
+			"artifacts",
+			"drift-gate-test-north-star-aligned",
+		);
+		roots.push(root);
+		createRepoFixture(root);
+		copyRepoFile(root, "harness.contract.json");
+		copyRepoFile(root, "README.md");
+		copyRepoFile(root, "docs/roadmap/north-star.md");
+		copyRepoFile(root, "docs/roadmap/agent-first-status.md");
+
+		const result = runDriftGate({
+			repoRoot: root,
+			mode: "health",
+			seedBaseline: false,
+		});
+
+		expect(
+			result.report.findings.some((f) =>
+				f.rule_id.startsWith("status.north_star.contract_parity."),
+			),
+		).toBe(false);
+	});
+
+	it("reports schema blockers when the north-star contract cannot be loaded", () => {
+		const root = join(
+			process.cwd(),
+			"artifacts",
+			"drift-gate-test-north-star-contract-invalid",
+		);
+		roots.push(root);
+		createRepoFixture(root);
+		write(join(root, "harness.contract.json"), "{\n  invalid json\n");
+
+		const result = runDriftGate({
+			repoRoot: root,
+			mode: "health",
+			seedBaseline: false,
+		});
+
+		expect(result.exitCode).toBe(2);
+		expect(result.report.outcome).toBe("error");
+		expect(result.report.error_class).toBe("schema");
+		expect(
+			result.report.findings.some(
+				(f) => f.rule_id === "status.north_star.contract.invalid",
+			),
+		).toBe(true);
+	});
+	it("CLI emits normalised GateResult JSON when --json is set", () => {
+		const root = join(process.cwd(), "artifacts", "drift-gate-cli-json");
+		roots.push(root);
+		createRepoFixture(root);
+
+		const stdoutSpy = vi
+			.spyOn(process.stdout, "write")
+			.mockImplementation(() => true);
+		try {
+			const exitCode = runDriftGateCLI({
+				repoRoot: root,
+				mode: "advisory",
+				json: true,
+				seedBaseline: false,
+			});
+			expect(exitCode).toBe(0);
+			expect(stdoutSpy).toHaveBeenCalledTimes(1);
+			const payload = JSON.parse(String(stdoutSpy.mock.calls[0]?.[0])) as {
+				gate: string;
+				status: string;
+				findings: unknown[];
+			};
+			expect(payload.gate).toBe("drift-gate");
+			expect(payload.status).toBe("warn");
+			expect(Array.isArray(payload.findings)).toBe(true);
+		} finally {
+			stdoutSpy.mockRestore();
+		}
+	});
+
+	it("CLI returns health-mode exit code and human summary output", () => {
+		const root = join(process.cwd(), "artifacts", "drift-gate-cli-human");
+		roots.push(root);
+		createRepoFixture(root);
+		write(
+			join(root, "artifacts/consistency-gate/consistency-baseline-latest.json"),
+			JSON.stringify({ wrong: true }, null, 2),
+		);
+
+		const infoSpy = vi.spyOn(console, "info").mockImplementation(() => {});
+		try {
+			const exitCode = runDriftGateCLI({
+				repoRoot: root,
+				mode: "health",
+			});
+			expect(exitCode).toBe(2);
+			expect(infoSpy).toHaveBeenCalled();
+			const firstLine = String(infoSpy.mock.calls[0]?.[0] ?? "");
+			expect(firstLine).toContain("drift-gate (health) blocked");
+		} finally {
+			infoSpy.mockRestore();
+		}
+	});
+
+	it("health-mode JSON reports fail for blocking status-surface drift", () => {
+		const root = join(process.cwd(), "artifacts", "drift-gate-cli-health-json");
+		roots.push(root);
+		createRepoFixture(root);
+		rmSync(join(root, "docs/roadmap/agent-first-status.md"));
+
+		const stdoutSpy = vi
+			.spyOn(process.stdout, "write")
+			.mockImplementation(() => true);
+		try {
+			const exitCode = runDriftGateCLI({
+				repoRoot: root,
+				mode: "health",
+				json: true,
+			});
+			expect(exitCode).toBe(1);
+			expect(stdoutSpy).toHaveBeenCalledTimes(1);
+			const payload = JSON.parse(String(stdoutSpy.mock.calls[0]?.[0])) as {
+				status: string;
+				findings: Array<{ id: string }>;
+			};
+			expect(payload.status).toBe("fail");
+			expect(
+				payload.findings.some((finding) =>
+					finding.id.includes("status.matrix.missing"),
+				),
+			).toBe(true);
+		} finally {
+			stdoutSpy.mockRestore();
+		}
 	});
 });

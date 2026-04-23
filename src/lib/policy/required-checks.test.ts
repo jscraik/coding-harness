@@ -1,5 +1,7 @@
+import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
 import {
+	CIRCLECI_JOB_NAME_CHECK_NAMES,
 	findCircleCIJobNamedCheckBindings,
 	normalizeRequiredChecksManifest,
 } from "./required-checks.js";
@@ -30,6 +32,33 @@ function normalizeManifest(
 		requiredChecks,
 		...overrides,
 	});
+}
+
+function readVerifyWorkSuspiciousCircleCIJobNames(): string[] {
+	const script = readFileSync(
+		new URL("../../../scripts/verify-work.sh", import.meta.url),
+		"utf8",
+	);
+	const lines = script.split("\n");
+	const suspiciousIndex = lines.findIndex((line) =>
+		line.includes('suspicious+=("$name")'),
+	);
+	if (suspiciousIndex <= 0) {
+		throw new Error(
+			"Could not locate suspicious CircleCI case arm in scripts/verify-work.sh",
+		);
+	}
+	const caseLine = lines[suspiciousIndex - 1]?.trim();
+	if (!caseLine?.endsWith(")")) {
+		throw new Error(
+			"Could not parse suspicious CircleCI case pattern in scripts/verify-work.sh",
+		);
+	}
+	return caseLine
+		.slice(0, -1)
+		.split("|")
+		.map((name) => name.trim())
+		.filter(Boolean);
 }
 
 describe("normalizeRequiredChecksManifest", () => {
@@ -232,6 +261,12 @@ describe("normalizeRequiredChecksManifest", () => {
 });
 
 describe("findCircleCIJobNamedCheckBindings", () => {
+	it("keeps verify-work shell suspicious-name policy aligned with the TS source", () => {
+		expect(readVerifyWorkSuspiciousCircleCIJobNames()).toEqual([
+			...CIRCLECI_JOB_NAME_CHECK_NAMES,
+		]);
+	});
+
 	it("flags suspicious CircleCI job-name check contexts", () => {
 		const normalized = normalizeManifest([
 			createRequiredCheck({ githubCheckName: "lint" }),
@@ -252,6 +287,27 @@ describe("findCircleCIJobNamedCheckBindings", () => {
 			normalized.value.gates,
 		);
 		expect(suspicious).toEqual(["lint"]);
+	});
+
+	it("allows CircleCI workflow-level security-scan contexts", () => {
+		const normalized = normalizeManifest([
+			createRequiredCheck({
+				gateId: "security-scan",
+				displayName: "Security Scan",
+				externalIdPattern: "^security-scan$",
+				githubCheckName: "security-scan",
+			}),
+		]);
+
+		expect(normalized.ok).toBe(true);
+		if (!normalized.ok) {
+			return;
+		}
+
+		const suspicious = findCircleCIJobNamedCheckBindings(
+			normalized.value.gates,
+		);
+		expect(suspicious).toEqual([]);
 	});
 
 	it("ignores non-CircleCI gates when checking suspicious names", () => {

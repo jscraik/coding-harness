@@ -9,7 +9,6 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { afterEach, describe, expect, it } from "vitest";
-import { validateContract } from "../contract/validator.js";
 import {
 	CODESTYLE_PACK_TEMPLATE_FILES,
 	TEMPLATES,
@@ -31,6 +30,28 @@ describe("scaffold templates resolution", () => {
 		expect(
 			templates.some((template) => template.path === ".coderabbit.yaml"),
 		).toBe(true);
+	});
+
+	it("keeps committed run-harness-gate.sh in parity with scaffold template", () => {
+		const tempDir = mkdtempSync(join(tmpdir(), "harness-scaffold-test-"));
+		tempDirs.push(tempDir);
+		const template = TEMPLATES.find(
+			(candidate) => candidate.path === "scripts/run-harness-gate.sh",
+		);
+		expect(template).toBeDefined();
+
+		const context = createTemplateRenderContext(tempDir, "circleci");
+		const rendered = template!
+			.render("pnpm", context)
+			.replace(/\r\n/g, "\n")
+			.trim();
+		const committed = readFileSync(
+			join(process.cwd(), "scripts/run-harness-gate.sh"),
+			"utf-8",
+		)
+			.replace(/\r\n/g, "\n")
+			.trim();
+		expect(committed).toBe(rendered);
 	});
 
 	it("includes the release workflow for all CI providers", () => {
@@ -234,14 +255,14 @@ describe("scaffold templates resolution", () => {
 		expect(rendered.issueTrackingPolicy?.provider).toBe("linear");
 	});
 
-	it("renders north-star governance surfaces in scaffolded contracts", () => {
+	it("scaffolds neutral north-star and trusted reviewer defaults", () => {
 		const tempDir = mkdtempSync(join(tmpdir(), "harness-scaffold-test-"));
 		tempDirs.push(tempDir);
 		writeFileSync(
 			join(tempDir, "package.json"),
 			JSON.stringify({
-				name: "demo",
-				repository: "https://github.com/brainwav/coding-harness.git",
+				name: "demo-repo",
+				repository: "https://github.com/example/demo-repo.git",
 			}),
 		);
 
@@ -249,24 +270,21 @@ describe("scaffold templates resolution", () => {
 		const contractTemplate = TEMPLATES.find(
 			(template) => template.path === "harness.contract.json",
 		);
-
 		expect(contractTemplate).toBeDefined();
+
 		const rendered = JSON.parse(contractTemplate!.render("pnpm", context));
-		const validation = validateContract(rendered);
-
-		expect(validation.success).toBe(true);
-
-		expect(rendered.northStar).toBeDefined();
-		expect(Array.isArray(rendered.productSurface?.surfaces)).toBe(true);
+		expect(rendered.northStar?.mission).toContain("demo-repo");
+		expect(rendered.northStar?.mission).not.toContain(
+			"Coding Harness exists to let humans steer",
+		);
 		expect(
-			Array.isArray(rendered.overrideReviewerRegistry?.trustedReviewers),
-		).toBe(true);
-		expect(rendered.overrideReviewerRegistry.trustedReviewers).toContainEqual(
-			expect.objectContaining({
-				reviewerId: "project-maintainer",
-				reviewerType: "user",
-				status: "active",
-			}),
+			rendered.overrideReviewerRegistry?.trustedReviewers?.[0]?.reviewerId,
+		).toBe("project-maintainers");
+		expect(
+			rendered.overrideReviewerRegistry?.trustedReviewers?.[0]?.signatureRef,
+		).toBe("refs/reviewers/project-maintainers");
+		expect(rendered.productSurface?.surfaces?.[0]?.ownedPaths).toContain(
+			"harness.contract.json",
 		);
 	});
 

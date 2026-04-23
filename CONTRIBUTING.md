@@ -131,6 +131,7 @@ Recommended policy:
 
 - `harness init` also scaffolds `scripts/harness-cli.sh` for repositories that want a repo-local wrapper around the published CLI package.
 - The wrapper resolves `@brainwav/coding-harness/dist/cli.js` from the current repository before running any harness command.
+- `scripts/run-harness-gate.sh` treats source checkouts as fail-closed when `pnpm`/`tsx` are unavailable so gates do not silently fall back to stale binaries.
 - If the wrapper cannot resolve the package, treat that as local install/bootstrap drift rather than a harness command failure.
 - Repair from the repo root with:
   - `pnpm install`

@@ -1,5 +1,67 @@
 import { describe, expect, it } from "vitest";
+import { NORTH_STAR_DECISION_QUESTION_SPECS } from "./types.js";
 import { ValidationErrorCode, validateContract } from "./validator.js";
+
+const canonicalDecisionQuestions = NORTH_STAR_DECISION_QUESTION_SPECS.map(
+	(question) => ({
+		id: question.id,
+		prompt: question.prompt,
+	}),
+);
+
+const validNorthStar = {
+	mission:
+		"Coding Harness exists to let humans steer and agents execute safely, with PR lead time as the primary north-star metric.",
+	primaryMetric: "pr_lead_time",
+	primaryBottleneck: "review_rework_loop",
+	autonomyBoundary:
+		"Low and medium-risk autonomy should be automated where evidence is deterministic and rollback is clear; high-risk changes remain human-mediated.",
+	safetyFloor: ["deterministic evidence", "strict current-head SHA discipline"],
+	nonGoals: ["policy surface area as proxy progress"],
+	decisionQuestions: canonicalDecisionQuestions,
+} as const;
+
+const validProductSurface = {
+	surfaces: [
+		{
+			surfaceId: "review-gate",
+			surfaceType: "command",
+			class: "core",
+			owner: "workflow",
+			northStarContribution:
+				"Constrains merge-readiness decisions to throughput path",
+			manualGlueReductionClaim:
+				"Converts repeated review comments into deterministic checks",
+			reliabilityContribution: "Ensures the same questions are asked every run",
+			evidenceReference: "artifacts/north-star/review-gate.json",
+			ownedPaths: ["src/commands/review-gate.ts"],
+			lastReviewedAt: "2026-04-21",
+		},
+	],
+} as const;
+
+const validOverrideReviewerRegistry = {
+	trustedReviewers: [
+		{
+			reviewerId: "jamie-craik",
+			reviewerType: "user",
+			signatureRef: "refs/reviewers/jamie-craik",
+			displayName: "Jamie Craik",
+			status: "active",
+		},
+	],
+} as const;
+
+function withCanonicalNorthStarSurfaces(
+	contract: Record<string, unknown>,
+): Record<string, unknown> {
+	return {
+		northStar: validNorthStar,
+		productSurface: validProductSurface,
+		overrideReviewerRegistry: validOverrideReviewerRegistry,
+		...contract,
+	};
+}
 
 describe("validateContract", () => {
 	it("accepts minimal valid contract with version only", () => {
@@ -22,27 +84,438 @@ describe("validateContract", () => {
 		expect(result.data?.riskTierRules).toEqual({});
 	});
 
-	it("allows 1.6 contracts to omit north-star surfaces when extends is present", () => {
-		const result = validateContract({
-			version: "1.6.0",
-			extends: "bundled:starter",
+	describe("extends field validation", () => {
+		it.each([
+			{ version: "1.0", extends: "preset://base" },
+			{
+				version: "1.0",
+				extends: {
+					source: "preset://typescript",
+					arrays: "append",
+					integrity: "sha256-abc123",
+				},
+			},
+			{
+				version: "1.0",
+				extends: [
+					"preset://base",
+					{
+						source: "preset://typescript",
+						arrays: "prepend",
+					},
+				],
+			},
+		])("accepts valid extends shape: %j", (contract) => {
+			const result = validateContract(contract);
+			expect(result.success).toBe(true);
 		});
-		expect(result.success).toBe(true);
-		expect(result.data?.extends).toBe("bundled:starter");
+
+		it.each([
+			{ version: "1.0", extends: [] },
+			{
+				version: "1.0",
+				extends: {
+					source: "preset://typescript",
+					arrays: "merge",
+				},
+			},
+			{
+				version: "1.0",
+				extends: {
+					source: "preset://typescript",
+					integrity: "sha1-deadbeef",
+				},
+			},
+		])("rejects invalid extends shape: %j", (contract) => {
+			const result = validateContract(contract);
+			expect(result.success).toBe(false);
+			expect(
+				result.errors.some(
+					(error) =>
+						error.path === "extends" &&
+						error.code === ValidationErrorCode.INVALID_VALUE,
+				),
+			).toBe(true);
+		});
 	});
 
-	it("requires north-star surfaces for 1.6 contracts without extends", () => {
-		const result = validateContract({ version: "1.6.0" });
-		expect(result.success).toBe(false);
-		expect(result.errors.some((error) => error.path === "northStar")).toBe(
-			true,
+	describe("north-star contract surfaces", () => {
+		it("requires canonical north-star surfaces for contract versions 1.6+", () => {
+			const result = validateContract({ version: "1.6.0" });
+
+			expect(result.success).toBe(false);
+			expect(result.errors.map((error) => error.path)).toEqual(
+				expect.arrayContaining([
+					"northStar",
+					"productSurface",
+					"overrideReviewerRegistry",
+				]),
+			);
+		});
+
+		it.each([
+			{ version: "1.4.9", expectsRequired: false },
+			{ version: "1.5", expectsRequired: false },
+			{ version: "1.5.0", expectsRequired: false },
+			{ version: "1.6", expectsRequired: true },
+			{ version: "1.6.0", expectsRequired: true },
+			{ version: "2.0.0", expectsRequired: true },
+		])(
+			"enforces canonical north-star surfaces only from version boundary ($version)",
+			({ version, expectsRequired }) => {
+				const result = validateContract({ version });
+				const hasNorthStarRequiredError = result.errors.some(
+					(error) => error.path === "northStar",
+				);
+				if (expectsRequired) {
+					expect(hasNorthStarRequiredError).toBe(true);
+					return;
+				}
+				expect(hasNorthStarRequiredError).toBe(false);
+			},
 		);
-		expect(result.errors.some((error) => error.path === "productSurface")).toBe(
-			true,
+
+		it.each(["v1.5.0", "1.5.x", "01.5.0"])(
+			"rejects malformed contract version format (%s)",
+			(version) => {
+				const result = validateContract({ version });
+				expect(result.success).toBe(false);
+				expect(
+					result.errors.some(
+						(error) =>
+							error.path === "version" &&
+							error.code === ValidationErrorCode.INVALID_VALUE,
+					),
+				).toBe(true);
+			},
 		);
-		expect(
-			result.errors.some((error) => error.path === "overrideReviewerRegistry"),
-		).toBe(true);
+
+		it("accepts a canonical northStar block", () => {
+			const result = validateContract(
+				withCanonicalNorthStarSurfaces({
+					version: "1.5.0",
+					northStar: validNorthStar,
+				}),
+			);
+
+			expect(result.success).toBe(true);
+			expect(result.data?.northStar?.primaryMetric).toBe("pr_lead_time");
+			expect(result.data?.northStar?.decisionQuestions).toEqual(
+				canonicalDecisionQuestions,
+			);
+		});
+
+		it("rejects northStar with non-canonical decision question order", () => {
+			const reversedQuestions = [...canonicalDecisionQuestions].reverse();
+			const result = validateContract(
+				withCanonicalNorthStarSurfaces({
+					version: "1.5.0",
+					northStar: {
+						...validNorthStar,
+						decisionQuestions: reversedQuestions,
+					},
+				}),
+			);
+
+			expect(result.success).toBe(false);
+			expect(result.errors[0]?.path).toBe("northStar");
+			expect(result.errors[0]?.code).toBe(ValidationErrorCode.INVALID_VALUE);
+		});
+
+		it("rejects productSurface entries missing reviewCadence for adjacent class", () => {
+			const result = validateContract(
+				withCanonicalNorthStarSurfaces({
+					version: "1.5.0",
+					productSurface: {
+						surfaces: [
+							{
+								surfaceId: "preflight-gate",
+								surfaceType: "command",
+								class: "adjacent",
+								owner: "workflow",
+								northStarContribution:
+									"Blocks non-throughput policy surface expansion",
+								manualGlueReductionClaim:
+									"Codifies recurring admission comments",
+								reliabilityContribution:
+									"Normalizes admission requirements before review",
+								evidenceReference: "artifacts/north-star/preflight-gate.json",
+								ownedPaths: ["src/commands/preflight-gate.ts"],
+								lastReviewedAt: "2026-04-21",
+							},
+						],
+					},
+				}),
+			);
+
+			expect(result.success).toBe(false);
+			expect(result.errors[0]?.path).toBe("productSurface");
+			expect(result.errors[0]?.code).toBe(ValidationErrorCode.INVALID_VALUE);
+		});
+
+		it("accepts productSurface entries with required cadence on non-core classes", () => {
+			const result = validateContract(
+				withCanonicalNorthStarSurfaces({
+					version: "1.5.0",
+					productSurface: {
+						surfaces: [
+							{
+								surfaceId: "review-gate",
+								surfaceType: "command",
+								class: "core",
+								owner: "workflow",
+								northStarContribution:
+									"Constrains merge-readiness decisions to throughput path",
+								manualGlueReductionClaim:
+									"Converts repeated review comments into deterministic checks",
+								reliabilityContribution:
+									"Ensures the same questions are asked every run",
+								evidenceReference: "artifacts/north-star/review-gate.json",
+								ownedPaths: ["src/commands/review-gate.ts"],
+								lastReviewedAt: "2026-04-21",
+							},
+							{
+								surfaceId: "agent-first-status",
+								surfaceType: "document",
+								class: "adjacent",
+								owner: "workflow",
+								northStarContribution:
+									"Tracks outcomes directly against primary throughput metric",
+								manualGlueReductionClaim:
+									"Removes manual status interpretation for release reviews",
+								reliabilityContribution:
+									"Makes drift visible in one canonical matrix",
+								evidenceReference: "docs/roadmap/agent-first-status.md",
+								reviewCadence: "per_release",
+								ownedPaths: ["docs/roadmap/agent-first-status.md"],
+								lastReviewedAt: "2026-04-21",
+							},
+						],
+					},
+				}),
+			);
+
+			expect(result.success).toBe(true);
+			expect(result.data?.productSurface?.surfaces).toHaveLength(2);
+		});
+
+		it("rejects productSurface registries with no registered surfaces", () => {
+			const result = validateContract(
+				withCanonicalNorthStarSurfaces({
+					version: "1.5.0",
+					productSurface: {
+						surfaces: [],
+					},
+				}),
+			);
+
+			expect(result.success).toBe(false);
+			expect(result.errors[0]?.path).toBe("productSurface");
+			expect(result.errors[0]?.code).toBe(ValidationErrorCode.INVALID_VALUE);
+		});
+
+		it("rejects overrideReviewerRegistry without an active trusted reviewer", () => {
+			const result = validateContract(
+				withCanonicalNorthStarSurfaces({
+					version: "1.5.0",
+					overrideReviewerRegistry: {
+						trustedReviewers: [
+							{
+								reviewerId: "legacy-reviewer",
+								reviewerType: "user",
+								signatureRef: "refs/reviewers/legacy",
+								displayName: "Legacy Reviewer",
+								status: "revoked",
+							},
+						],
+					},
+				}),
+			);
+
+			expect(result.success).toBe(false);
+			expect(result.errors[0]?.path).toBe("overrideReviewerRegistry");
+			expect(result.errors[0]?.code).toBe(ValidationErrorCode.INVALID_VALUE);
+		});
+
+		it("accepts overrideReviewerRegistry with unique trusted reviewer refs", () => {
+			const result = validateContract(
+				withCanonicalNorthStarSurfaces({
+					version: "1.5.0",
+					overrideReviewerRegistry: {
+						trustedReviewers: [
+							{
+								reviewerId: "jamie-craik",
+								reviewerType: "user",
+								signatureRef: "refs/reviewers/jamie-craik",
+								displayName: "Jamie Craik",
+								status: "active",
+							},
+						],
+					},
+				}),
+			);
+
+			expect(result.success).toBe(true);
+			expect(
+				result.data?.overrideReviewerRegistry?.trustedReviewers[0]?.status,
+			).toBe("active");
+		});
+
+		it("rejects duplicate productSurface surfaceId values", () => {
+			const result = validateContract(
+				withCanonicalNorthStarSurfaces({
+					version: "1.5.0",
+					productSurface: {
+						surfaces: [
+							{
+								surfaceId: "review-gate",
+								surfaceType: "command",
+								class: "core",
+								owner: "workflow",
+								northStarContribution:
+									"Constrains merge-readiness decisions to throughput path",
+								manualGlueReductionClaim:
+									"Converts repeated review comments into deterministic checks",
+								reliabilityContribution:
+									"Ensures the same questions are asked every run",
+								evidenceReference: "artifacts/north-star/review-gate.json",
+								ownedPaths: ["src/commands/review-gate.ts"],
+								lastReviewedAt: "2026-04-21",
+							},
+							{
+								surfaceId: "review-gate",
+								surfaceType: "document",
+								class: "adjacent",
+								owner: "workflow",
+								northStarContribution:
+									"Tracks throughput posture in the status matrix",
+								manualGlueReductionClaim:
+									"Removes manual summarization for release reviews",
+								reliabilityContribution:
+									"Creates one canonical reporting surface",
+								evidenceReference: "docs/roadmap/agent-first-status.md",
+								reviewCadence: "per_release",
+								ownedPaths: ["docs/roadmap/agent-first-status.md"],
+								lastReviewedAt: "2026-04-21",
+							},
+						],
+					},
+				}),
+			);
+
+			expect(result.success).toBe(false);
+			expect(result.errors[0]?.path).toBe("productSurface");
+			expect(result.errors[0]?.code).toBe(ValidationErrorCode.INVALID_VALUE);
+		});
+
+		it("rejects productSurface surfaceId values that only differ by whitespace", () => {
+			const result = validateContract(
+				withCanonicalNorthStarSurfaces({
+					version: "1.5.0",
+					productSurface: {
+						surfaces: [
+							{
+								surfaceId: "review-gate",
+								surfaceType: "command",
+								class: "core",
+								owner: "workflow",
+								northStarContribution:
+									"Constrains merge-readiness decisions to throughput path",
+								manualGlueReductionClaim:
+									"Converts repeated review comments into deterministic checks",
+								reliabilityContribution:
+									"Ensures the same questions are asked every run",
+								evidenceReference: "artifacts/north-star/review-gate.json",
+								ownedPaths: ["src/commands/review-gate.ts"],
+								lastReviewedAt: "2026-04-21",
+							},
+							{
+								surfaceId: "review-gate ",
+								surfaceType: "document",
+								class: "adjacent",
+								owner: "workflow",
+								northStarContribution:
+									"Tracks throughput posture in the status matrix",
+								manualGlueReductionClaim:
+									"Removes manual summarization for release reviews",
+								reliabilityContribution:
+									"Creates one canonical reporting surface",
+								evidenceReference: "docs/roadmap/agent-first-status.md",
+								reviewCadence: "per_release",
+								ownedPaths: ["docs/roadmap/agent-first-status.md"],
+								lastReviewedAt: "2026-04-21",
+							},
+						],
+					},
+				}),
+			);
+
+			expect(result.success).toBe(false);
+			expect(result.errors[0]?.path).toBe("productSurface");
+			expect(result.errors[0]?.code).toBe(ValidationErrorCode.INVALID_VALUE);
+		});
+
+		it("rejects duplicate overrideReviewerRegistry reviewerId values", () => {
+			const result = validateContract(
+				withCanonicalNorthStarSurfaces({
+					version: "1.5.0",
+					overrideReviewerRegistry: {
+						trustedReviewers: [
+							{
+								reviewerId: "jamie-craik",
+								reviewerType: "user",
+								signatureRef: "refs/reviewers/jamie-craik",
+								displayName: "Jamie Craik",
+								status: "active",
+							},
+							{
+								reviewerId: "jamie-craik",
+								reviewerType: "service",
+								signatureRef: "refs/reviewers/jamie-craik-agent",
+								displayName: "Jamie Agent",
+								status: "revoked",
+							},
+						],
+					},
+				}),
+			);
+
+			expect(result.success).toBe(false);
+			expect(result.errors[0]?.path).toBe("overrideReviewerRegistry");
+			expect(result.errors[0]?.code).toBe(ValidationErrorCode.INVALID_VALUE);
+			expect(result.errors[0]?.message).toContain("unique trusted reviewers");
+		});
+
+		it("rejects duplicate overrideReviewerRegistry signatureRef values", () => {
+			const result = validateContract(
+				withCanonicalNorthStarSurfaces({
+					version: "1.5.0",
+					overrideReviewerRegistry: {
+						trustedReviewers: [
+							{
+								reviewerId: "jamie-craik",
+								reviewerType: "user",
+								signatureRef: "refs/reviewers/shared-signature",
+								displayName: "Jamie Craik",
+								status: "active",
+							},
+							{
+								reviewerId: "automation-bot",
+								reviewerType: "service",
+								signatureRef: "refs/reviewers/shared-signature",
+								displayName: "Automation Bot",
+								status: "revoked",
+							},
+						],
+					},
+				}),
+			);
+
+			expect(result.success).toBe(false);
+			expect(result.errors[0]?.path).toBe("overrideReviewerRegistry");
+			expect(result.errors[0]?.code).toBe(ValidationErrorCode.INVALID_VALUE);
+			expect(result.errors[0]?.message).toContain("unique trusted reviewers");
+		});
 	});
 
 	it("accepts blastRadiusRules and blastRadiusRulesMode", () => {
@@ -448,7 +921,7 @@ describe("validateContract", () => {
 	describe("toolingPolicy", () => {
 		it("accepts the required tooling policy surface", () => {
 			const result = validateContract({
-				version: "1.5.0",
+				version: "1.0",
 				toolingPolicy: {
 					requiredDocumentationTerms: ["node", "pnpm"],
 					requiredBinaries: ["node", "pnpm"],
@@ -499,7 +972,7 @@ describe("validateContract", () => {
 
 		it("rejects invalid tooling action icons", () => {
 			const result = validateContract({
-				version: "1.5.0",
+				version: "1.0",
 				toolingPolicy: {
 					requiredDocumentationTerms: ["node"],
 					requiredBinaries: ["node"],
@@ -537,7 +1010,7 @@ describe("validateContract", () => {
 
 		it("rejects toolingPolicy with missing mise tool version", () => {
 			const result = validateContract({
-				version: "1.5.0",
+				version: "1.0",
 				toolingPolicy: {
 					requiredDocumentationTerms: ["node"],
 					requiredBinaries: ["node"],
@@ -575,7 +1048,7 @@ describe("validateContract", () => {
 
 		it("rejects toolingPolicy with invalid conditional package dependency type", () => {
 			const result = validateContract({
-				version: "1.5.0",
+				version: "1.0",
 				toolingPolicy: {
 					requiredDocumentationTerms: ["node"],
 					requiredBinaries: ["node"],
@@ -613,7 +1086,7 @@ describe("validateContract", () => {
 
 		it("rejects toolingPolicy with invalid explicit capability", () => {
 			const result = validateContract({
-				version: "1.5.0",
+				version: "1.0",
 				toolingPolicy: {
 					requiredDocumentationTerms: ["node"],
 					requiredBinaries: ["node"],
@@ -651,7 +1124,7 @@ describe("validateContract", () => {
 
 		it("rejects toolingPolicy with invalid projectBrainMemoryExtension paths", () => {
 			const result = validateContract({
-				version: "1.5.0",
+				version: "1.0",
 				toolingPolicy: {
 					requiredDocumentationTerms: ["node"],
 					requiredBinaries: ["node"],
@@ -714,6 +1187,47 @@ describe("validateContract", () => {
 			});
 			expect(result.success).toBe(false);
 			expect(result.errors[0]?.path).toBe("runtimePolicy");
+		});
+	});
+
+	describe("memoryPolicy", () => {
+		const baseMemoryPolicy = {
+			enabled: true,
+			provider: "local-memory",
+			sessionIdTemplate: "{branch}-{timestamp}",
+			domain: "coding-harness",
+			requiredTags: ["session", "review"],
+			maxObservationsPerStep: 10,
+			allowedLevels: ["info", "warn", "error"],
+			requireStartRead: true,
+			requireCloseoutSummary: true,
+			forbiddenContentPatterns: ["password", "secret"],
+		} as const;
+
+		it("accepts memoryPolicy with optional sessionLogPath", () => {
+			const result = validateContract({
+				version: "1.0",
+				memoryPolicy: {
+					...baseMemoryPolicy,
+					sessionLogPath: ".harness/memory/sessions.log",
+				},
+			});
+			expect(result.success).toBe(true);
+			expect(result.data?.memoryPolicy?.sessionLogPath).toBe(
+				".harness/memory/sessions.log",
+			);
+		});
+
+		it("rejects memoryPolicy with empty sessionLogPath", () => {
+			const result = validateContract({
+				version: "1.0",
+				memoryPolicy: {
+					...baseMemoryPolicy,
+					sessionLogPath: "   ",
+				},
+			});
+			expect(result.success).toBe(false);
+			expect(result.errors[0]?.path).toBe("memoryPolicy");
 		});
 	});
 
@@ -1515,7 +2029,7 @@ describe("validateContract", () => {
 	describe("contextIntegrityPolicy", () => {
 		it("accepts valid contextIntegrityPolicy", () => {
 			const result = validateContract({
-				version: "1.5.0",
+				version: "1.0",
 				contextIntegrityPolicy: {
 					mode: "shadow",
 					truthSources: [
@@ -1550,7 +2064,7 @@ describe("validateContract", () => {
 
 		it("rejects invalid contextIntegrityPolicy mode", () => {
 			const result = validateContract({
-				version: "1.5.0",
+				version: "1.0",
 				contextIntegrityPolicy: {
 					mode: "enforced",
 					truthSources: [
@@ -1580,7 +2094,7 @@ describe("validateContract", () => {
 	describe("contextCompact", () => {
 		it("accepts valid contextCompact policy", () => {
 			const result = validateContract({
-				version: "1.5.0",
+				version: "1.0",
 				contextCompact: {
 					thresholdPercent: 85,
 					microCompactThresholdTokens: 1200,
@@ -1594,7 +2108,7 @@ describe("validateContract", () => {
 
 		it("rejects invalid contextCompact strategy", () => {
 			const result = validateContract({
-				version: "1.5.0",
+				version: "1.0",
 				contextCompact: {
 					thresholdPercent: 85,
 					microCompactThresholdTokens: 1200,

@@ -234,7 +234,7 @@ Tie-back to north-star contract:
 | Status matrix (this doc) | ✅ | Created |
 | Strategic docs normalization | ✅ | Strategic status docs and implementation plans now cite this matrix as canonical |
 | README link | ✅ | README documentation section links to this matrix |
-| Ready-backlog narrative coherence | 🔶 | `todos/*-ready-*.md` backlog still exists; keep this phase partial until ready backlog is reconciled with status narrative |
+| Ready-backlog narrative coherence | 🔶 | Keep this phase partial until status narrative and backlog lifecycle stay aligned. |
 
 ## Outstanding Items
 

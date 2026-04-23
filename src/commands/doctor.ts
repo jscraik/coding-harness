@@ -12,12 +12,14 @@
  *   1 — one or more prerequisites are missing / misconfigured
  *
  * Usage:
- *   harness doctor [--dir <path>] [--json] [--fix]
+ *   harness doctor [--dir <path>] [--json]
  */
 
 import { spawnSync } from "node:child_process";
 import { existsSync, readFileSync, statSync } from "node:fs";
 import { resolve } from "node:path";
+import { inspectFlagValue } from "../lib/cli/parse-utils.js";
+import { validateContract } from "../lib/contract/validator.js";
 import {
 	findCircleCIJobNamedCheckNames,
 	normalizeRequiredChecksManifest,
@@ -314,12 +316,23 @@ const CHECKS: CheckFn[] = [
 				fix: "Validate with: node -e \"JSON.parse(require('fs').readFileSync('harness.contract.json','utf8'))\"",
 			};
 		}
+		const validation = validateContract(contract);
+		if (!validation.success) {
+			return {
+				id: "file:harness.contract.json",
+				category: "file",
+				label: "harness.contract.json",
+				status: "fail",
+				message: `valid JSON but fails contract validation (${validation.errors.length} error${validation.errors.length === 1 ? "" : "s"})`,
+				fix: "harness contract validate --json",
+			};
+		}
 		return {
 			id: "file:harness.contract.json",
 			category: "file",
 			label: "harness.contract.json",
 			status: "ok",
-			message: "present and valid JSON",
+			message: "present and valid contract schema",
 		};
 	},
 
@@ -394,7 +407,7 @@ const CHECKS: CheckFn[] = [
 				status: "warn",
 				message:
 					"artifacts/consistency-gate/consistency-baseline-latest.json missing — drift-gate will warn on first run",
-				fix: "harness drift-gate --contract harness.contract.json --seed-baseline",
+				fix: "harness drift-gate --seed-baseline",
 			};
 		}
 		const baseline = readJsonFile(baselinePath);
@@ -405,7 +418,7 @@ const CHECKS: CheckFn[] = [
 				label: "drift-gate baseline",
 				status: "warn",
 				message: "baseline file exists but is not valid JSON",
-				fix: "Re-seed: harness drift-gate --contract harness.contract.json --seed-baseline",
+				fix: "Re-seed: harness drift-gate --seed-baseline",
 			};
 		}
 		// Check the baseline is not empty
@@ -420,7 +433,7 @@ const CHECKS: CheckFn[] = [
 				label: "drift-gate baseline",
 				status: "warn",
 				message: "baseline file is empty — re-seed recommended",
-				fix: "harness drift-gate --contract harness.contract.json --seed-baseline",
+				fix: "harness drift-gate --seed-baseline",
 			};
 		}
 		// Check file is not stale (>30 days)
@@ -434,7 +447,7 @@ const CHECKS: CheckFn[] = [
 					label: "drift-gate baseline",
 					status: "warn",
 					message: `baseline is ${Math.floor(ageDays)} days old — consider refreshing`,
-					fix: "harness drift-gate --contract harness.contract.json --seed-baseline",
+					fix: "harness drift-gate --seed-baseline",
 				};
 			}
 		} catch {
@@ -458,7 +471,8 @@ const CHECKS: CheckFn[] = [
 				category: "file",
 				label: "docs/roadmap/agent-first-status.md",
 				status: "warn",
-				message: "missing — drift-gate will warn if this file is absent",
+				message:
+					"missing — drift-gate advisory warns; drift-gate health mode blocks",
 				fix: "harness init --update  (seeds this file with a template)",
 			};
 		}
@@ -468,6 +482,137 @@ const CHECKS: CheckFn[] = [
 			label: "docs/roadmap/agent-first-status.md",
 			status: "ok",
 			message: "present",
+		};
+	},
+
+	// ── File: north-star.md ───────────────────────────────────────────────────
+	(dir) => {
+		const northStarPath = resolve(dir, "docs/roadmap/north-star.md");
+		if (!existsSync(northStarPath)) {
+			return {
+				id: "file:north-star-doc",
+				category: "file",
+				label: "docs/roadmap/north-star.md",
+				status: "fail",
+				message:
+					"missing — drift-gate health mode cannot verify canonical north-star parity without this file",
+				fix: "Restore docs/roadmap/north-star.md from the canonical north-star contract slice",
+			};
+		}
+		return {
+			id: "file:north-star-doc",
+			category: "file",
+			label: "docs/roadmap/north-star.md",
+			status: "ok",
+			message: "present",
+		};
+	},
+
+	// ── Config: north-star contract surfaces ──────────────────────────────────
+	(dir) => {
+		const contractPath = resolve(dir, "harness.contract.json");
+		if (!existsSync(contractPath)) {
+			return {
+				id: "config:north-star-contract",
+				category: "config",
+				label: "contract: northStar/productSurface/overrideReviewerRegistry",
+				status: "skip",
+				message: "skipped — harness.contract.json not found",
+			};
+		}
+		const contract = readJsonFile(contractPath);
+		const validation = validateContract(contract);
+		if (!validation.success) {
+			return {
+				id: "config:north-star-contract",
+				category: "config",
+				label: "contract: northStar/productSurface/overrideReviewerRegistry",
+				status: "fail",
+				message:
+					"harness.contract.json is invalid, so north-star runtime readiness cannot be verified",
+				fix: "Run harness contract validate and repair the reported contract errors",
+			};
+		}
+		const contractData = validation.data;
+		if (!contractData) {
+			return {
+				id: "config:north-star-contract",
+				category: "config",
+				label: "contract: northStar/productSurface/overrideReviewerRegistry",
+				status: "fail",
+				message:
+					"harness.contract.json validated without returning contract data; north-star readiness cannot be verified",
+				fix: "Re-run harness contract validate and repair the contract serialization path",
+			};
+		}
+
+		if (!contractData.northStar) {
+			return {
+				id: "config:north-star-contract",
+				category: "config",
+				label: "contract: northStar/productSurface/overrideReviewerRegistry",
+				status: "fail",
+				message:
+					"northStar block missing — runtime north-star contract is not load-bearing",
+				fix: "Add canonical northStar fields to harness.contract.json",
+			};
+		}
+		if (
+			!contractData.productSurface ||
+			contractData.productSurface.surfaces.length === 0
+		) {
+			return {
+				id: "config:north-star-contract",
+				category: "config",
+				label: "contract: northStar/productSurface/overrideReviewerRegistry",
+				status: "fail",
+				message:
+					"productSurface registry missing or empty — governed north-star surfaces are not explicit",
+				fix: "Register canonical command/document surfaces in productSurface.surfaces",
+			};
+		}
+		if (
+			!contractData.overrideReviewerRegistry ||
+			contractData.overrideReviewerRegistry.trustedReviewers.length === 0
+		) {
+			return {
+				id: "config:north-star-contract",
+				category: "config",
+				label: "contract: northStar/productSurface/overrideReviewerRegistry",
+				status: "fail",
+				message:
+					"overrideReviewerRegistry is missing or empty — north-star override trust cannot be verified",
+				fix: "Declare at least one active trusted reviewer in overrideReviewerRegistry",
+			};
+		}
+
+		const ownedPaths = new Set(
+			contractData.productSurface.surfaces.flatMap(
+				(surface) => surface.ownedPaths,
+			),
+		);
+		const missingOwnedPaths = [
+			"README.md",
+			"docs/roadmap/north-star.md",
+			"docs/roadmap/agent-first-status.md",
+		].filter((pathValue) => !ownedPaths.has(pathValue));
+		if (missingOwnedPaths.length > 0) {
+			return {
+				id: "config:north-star-contract",
+				category: "config",
+				label: "contract: northStar/productSurface/overrideReviewerRegistry",
+				status: "warn",
+				message: `productSurface coverage is missing canonical ownedPaths: ${missingOwnedPaths.join(", ")}`,
+				fix: "Add README and roadmap/status files to productSurface.surfaces[].ownedPaths",
+			};
+		}
+
+		return {
+			id: "config:north-star-contract",
+			category: "config",
+			label: "contract: northStar/productSurface/overrideReviewerRegistry",
+			status: "ok",
+			message: "canonical north-star runtime surfaces are present",
 		};
 	},
 
@@ -701,7 +846,7 @@ const CHECKS: CheckFn[] = [
 const POST_INIT_CHECKLIST = [
 	"Set up NPM auth for @brainwav private packages in CI (add NPM_TOKEN to CircleCI env vars)",
 	"Add GH_TOKEN / GITHUB_PERSONAL_ACCESS_TOKEN to CircleCI project settings",
-	"Seed drift-gate baseline: harness drift-gate --contract harness.contract.json --seed-baseline",
+	"Seed drift-gate baseline: harness drift-gate --seed-baseline",
 	"Update memory.json closeout at the end of each session: set closeout.forjamie_updated = true",
 	"Review docs/roadmap/agent-first-status.md and fill in your current agent rollout state",
 ];
@@ -807,11 +952,14 @@ export function runDoctorCLI(args: string[], getVersion: () => string): number {
 
 	const jsonFlag = args.includes("--json");
 	const checklistFlag = args.includes("--checklist");
-	const dirIndex = args.indexOf("--dir");
-	const dir = dirIndex >= 0 ? args[dirIndex + 1] : undefined;
+	const dirFlag = inspectFlagValue(args, "--dir");
+	if (dirFlag.missingValue) {
+		console.error("Error: --dir requires a path");
+		return 2;
+	}
 
 	const opts: DoctorOptions = {};
-	if (dir) opts.dir = dir;
+	if (dirFlag.value) opts.dir = dirFlag.value;
 
 	const report = runDoctor(opts);
 	report.version = getVersion();

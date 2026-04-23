@@ -14,7 +14,65 @@ import { tmpdir } from "node:os";
 import { delimiter, join } from "node:path";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
+import {
+	NORTH_STAR_DECISION_QUESTION_SPECS,
+	NORTH_STAR_PRIMARY_BOTTLENECK,
+	NORTH_STAR_PRIMARY_METRIC,
+} from "../lib/contract/types.js";
 import { runCheck, runCheckCLI } from "./check.js";
+
+function minimalValidContract(): Record<string, unknown> {
+	return {
+		version: "1.5.0",
+		northStar: {
+			mission:
+				"Coding Harness exists to let humans steer and agents execute safely, with PR lead time as the primary north-star metric.",
+			primaryMetric: NORTH_STAR_PRIMARY_METRIC,
+			primaryBottleneck: NORTH_STAR_PRIMARY_BOTTLENECK,
+			autonomyBoundary:
+				"Low and medium-risk autonomy should be automated where evidence is deterministic and rollback is clear; high-risk changes remain human-mediated.",
+			safetyFloor: [
+				"deterministic evidence",
+				"strict current-head SHA discipline",
+			],
+			nonGoals: ["policy surface area as proxy progress"],
+			decisionQuestions: NORTH_STAR_DECISION_QUESTION_SPECS.map((question) => ({
+				id: question.id,
+				prompt: question.prompt,
+			})),
+		},
+		productSurface: {
+			surfaces: [
+				{
+					surfaceId: "review-gate",
+					surfaceType: "command",
+					class: "core",
+					owner: "workflow",
+					northStarContribution:
+						"Constrains merge-readiness decisions to throughput path",
+					manualGlueReductionClaim:
+						"Converts repeated review comments into deterministic checks",
+					reliabilityContribution:
+						"Ensures the same questions are asked every run",
+					evidenceReference: "src/commands/review-gate.ts",
+					ownedPaths: ["src/commands/review-gate.ts"],
+					lastReviewedAt: "2026-04-21",
+				},
+			],
+		},
+		overrideReviewerRegistry: {
+			trustedReviewers: [
+				{
+					reviewerId: "jamie-craik",
+					reviewerType: "user",
+					signatureRef: "refs/reviewers/jamie-craik",
+					displayName: "Jamie Craik",
+					status: "active",
+				},
+			],
+		},
+	};
+}
 
 function makeTmpDir(): string {
 	return mkdtempSync(join(tmpdir(), "jsc127-"));
@@ -22,7 +80,7 @@ function makeTmpDir(): string {
 
 function writeContract(
 	dir: string,
-	data: unknown = { version: "1.5.0" },
+	data: unknown = minimalValidContract(),
 ): void {
 	writeFileSync(
 		join(dir, "harness.contract.json"),

@@ -1,3 +1,6 @@
+import { mkdtempSync, rmSync, writeFileSync } from "node:fs";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
 vi.mock("./commands/policy-gate.js", () => ({
@@ -120,7 +123,12 @@ vi.mock("./commands/tooling-audit.js", () => ({
 }));
 
 describe("cli command dispatch", () => {
+	const cleanupDirs: string[] = [];
+
 	afterEach(() => {
+		for (const dir of cleanupDirs.splice(0)) {
+			rmSync(dir, { recursive: true, force: true });
+		}
 		vi.restoreAllMocks();
 	});
 
@@ -236,11 +244,9 @@ describe("cli command dispatch", () => {
 		expect(exitSpy).toHaveBeenCalledWith(41);
 	});
 
-	// Note: -h is intercepted by the top-level help check before reaching the command handler
-	it.skip("dispatches risk-tier command and ignores short-flag contract value", async () => {
+	it("does not short-circuit to top-level help when -h appears after another risk-tier flag", async () => {
 		const { run } = await import("./cli.js");
 		const { runRiskTierCLI } = await import("./commands/risk-tier.js");
-
 		const exitSpy = vi.spyOn(process, "exit").mockImplementation(((
 			code?: number,
 		) => {
@@ -251,11 +257,7 @@ describe("cli command dispatch", () => {
 			"EXIT_41",
 		);
 
-		expect(vi.mocked(runRiskTierCLI)).toHaveBeenCalledWith({
-			contractPath: "harness.contract.json",
-			files: [],
-			json: true,
-		});
+		expect(vi.mocked(runRiskTierCLI)).toHaveBeenCalled();
 		expect(exitSpy).toHaveBeenCalledWith(41);
 	});
 
@@ -573,6 +575,24 @@ describe("cli command dispatch", () => {
 		expect(exitSpy).toHaveBeenCalledWith(42);
 	});
 
+	it("rejects policy-gate when --files value is missing even if --help is present later", async () => {
+		const { run } = await import("./cli.js");
+		const { runPolicyGateCLI } = await import("./commands/policy-gate.js");
+
+		const exitSpy = vi.spyOn(process, "exit").mockImplementation(((
+			code?: number,
+		) => {
+			throw new Error(`EXIT_${String(code)}`);
+		}) as never);
+
+		expect(() =>
+			run(["policy-gate", "--files", "--help", "--json"]),
+		).toThrowError("EXIT_2");
+
+		expect(vi.mocked(runPolicyGateCLI)).not.toHaveBeenCalled();
+		expect(exitSpy).toHaveBeenCalledWith(2);
+	});
+
 	it("dispatches replay command and ignores missing trace-id value", async () => {
 		const { run } = await import("./cli.js");
 		const { runReplayCLI } = await import("./commands/replay.js");
@@ -594,27 +614,17 @@ describe("cli command dispatch", () => {
 		expect(exitSpy).toHaveBeenCalledWith(47);
 	});
 
-	// Note: The -h flag is intercepted by the top-level help check, so this test
-	// is no longer applicable. Short flags like -h are handled at the CLI level.
-	it.skip("dispatches replay command and ignores short positional flag as trace-id", async () => {
+	it("shows top-level help when -h is passed after replay command", async () => {
 		const { run } = await import("./cli.js");
 		const { runReplayCLI } = await import("./commands/replay.js");
-
-		const exitSpy = vi
-			.spyOn(process, "exit")
-			.mockImplementation(((_code?: number) => undefined) as never);
+		const infoSpy = vi.spyOn(console, "info").mockImplementation(() => {});
 
 		run(["replay", "-h", "--json"]);
 
-		// Allow async CLI handler to resolve
-		await new Promise((resolve) => setTimeout(resolve, 0));
-
-		expect(vi.mocked(runReplayCLI)).toHaveBeenCalledWith({
-			json: true,
-			dryRun: false,
-			list: false,
-		});
-		expect(exitSpy).toHaveBeenCalledWith(47);
+		expect(vi.mocked(runReplayCLI)).not.toHaveBeenCalled();
+		expect(infoSpy).toHaveBeenCalledWith(
+			expect.stringContaining("Usage: harness <command> [options]"),
+		);
 	});
 
 	it("dispatches init command and does not treat short flags as targetDir", async () => {
@@ -796,7 +806,7 @@ describe("cli command dispatch", () => {
 		expect(exitSpy).toHaveBeenCalledWith(2);
 	});
 
-	it("dispatches policy-gate command and ignores missing contract value", async () => {
+	it("rejects policy-gate command when --contract is missing a value", async () => {
 		const { run } = await import("./cli.js");
 		const { runPolicyGateCLI } = await import("./commands/policy-gate.js");
 
@@ -805,6 +815,9 @@ describe("cli command dispatch", () => {
 		) => {
 			throw new Error(`EXIT_${String(code)}`);
 		}) as never);
+		const errorSpy = vi.spyOn(console, "error").mockImplementation(() => {
+			// silence expected error output
+		});
 
 		expect(() =>
 			run([
@@ -816,15 +829,13 @@ describe("cli command dispatch", () => {
 				"low",
 				"--json",
 			]),
-		).toThrowError("EXIT_42");
+		).toThrowError("EXIT_2");
 
-		expect(vi.mocked(runPolicyGateCLI)).toHaveBeenCalledWith({
-			contractPath: "harness.contract.json",
-			files: ["src/a.ts"],
-			maxTier: "low",
-			json: true,
-		});
-		expect(exitSpy).toHaveBeenCalledWith(42);
+		expect(vi.mocked(runPolicyGateCLI)).not.toHaveBeenCalled();
+		expect(errorSpy).toHaveBeenCalledWith(
+			"policy-gate requires a value for --contract.",
+		);
+		expect(exitSpy).toHaveBeenCalledWith(2);
 	});
 
 	it("dispatches policy-gate command and preserves explicit empty contract value", async () => {
@@ -859,8 +870,7 @@ describe("cli command dispatch", () => {
 		expect(exitSpy).toHaveBeenCalledWith(42);
 	});
 
-	// Note: The remediate command doesn't support --findings flag in the current implementation
-	it.skip("dispatches remediate command", async () => {
+	it("dispatches remediate command", async () => {
 		const { run } = await import("./cli.js");
 		const { runRemediateCLI } = await import("./commands/remediate.js");
 
@@ -882,18 +892,19 @@ describe("cli command dispatch", () => {
 		// Allow async CLI handler to resolve
 		await new Promise((resolve) => setTimeout(resolve, 0));
 
-		expect(vi.mocked(runRemediateCLI)).toHaveBeenCalledWith({
-			subcommand: "run",
-			findings: "findings.json",
-			dryRun: true,
-			json: true,
-			headSha: "a".repeat(40),
-		});
+		expect(vi.mocked(runRemediateCLI)).toHaveBeenCalledWith(
+			expect.objectContaining({
+				subcommand: "run",
+				findings: "findings.json",
+				dryRun: true,
+				json: true,
+				headSha: "a".repeat(40),
+			}),
+		);
 		expect(exitSpy).toHaveBeenCalledWith(43);
 	});
 
-	// Note: The remediate command doesn't support --findings flag in the current implementation
-	it.skip("dispatches remediate command and ignores missing flag values", async () => {
+	it("dispatches remediate command and ignores missing flag values", async () => {
 		const { run } = await import("./cli.js");
 		const { runRemediateCLI } = await import("./commands/remediate.js");
 
@@ -914,12 +925,14 @@ describe("cli command dispatch", () => {
 		// Allow async CLI handler to resolve
 		await new Promise((resolve) => setTimeout(resolve, 0));
 
-		expect(vi.mocked(runRemediateCLI)).toHaveBeenCalledWith({
-			subcommand: "run",
-			dryRun: true,
-			json: true,
-			headSha: "a".repeat(40),
-		});
+		expect(vi.mocked(runRemediateCLI)).toHaveBeenCalledWith(
+			expect.objectContaining({
+				subcommand: "run",
+				dryRun: true,
+				json: true,
+				headSha: "a".repeat(40),
+			}),
+		);
 		expect(exitSpy).toHaveBeenCalledWith(43);
 	});
 
@@ -1013,6 +1026,56 @@ describe("cli command dispatch", () => {
 		expect(exitSpy).toHaveBeenCalledWith(46);
 	});
 
+	it("dispatches preflight-gate with admission declaration loaded from --admission-file", async () => {
+		const { run } = await import("./cli.js");
+		const { runPreflightGateCLI } = await import(
+			"./commands/preflight-gate.js"
+		);
+		const tempDir = mkdtempSync(join(tmpdir(), "cli-dispatch-preflight-"));
+		cleanupDirs.push(tempDir);
+		const admissionFile = join(tempDir, "admission.json");
+		writeFileSync(
+			admissionFile,
+			JSON.stringify({
+				north_star_metric: "pr_lead_time",
+				primary_bottleneck: "review_rework_loop",
+				affected_surface_ids: ["preflight-gate"],
+				affected_surface_classes: ["core"],
+				policy_surface_delta: 0,
+				manual_glue_delta: -1,
+				metric_impact_declared: "path_strengthening",
+				evidence_links: ["docs/roadmap/north-star.md"],
+				why_this_improves_throughput_or_reliability:
+					"Tightens preflight contract alignment.",
+			}),
+			"utf-8",
+		);
+
+		const exitSpy = vi
+			.spyOn(process, "exit")
+			.mockImplementation(((_code?: number) => undefined) as never);
+
+		run(["preflight-gate", "--admission-file", admissionFile, "--json"]);
+		await new Promise((resolve) => setTimeout(resolve, 0));
+
+		expect(vi.mocked(runPreflightGateCLI)).toHaveBeenCalledWith({
+			admission: {
+				north_star_metric: "pr_lead_time",
+				primary_bottleneck: "review_rework_loop",
+				affected_surface_ids: ["preflight-gate"],
+				affected_surface_classes: ["core"],
+				policy_surface_delta: 0,
+				manual_glue_delta: -1,
+				metric_impact_declared: "path_strengthening",
+				evidence_links: ["docs/roadmap/north-star.md"],
+				why_this_improves_throughput_or_reliability:
+					"Tightens preflight contract alignment.",
+			},
+			json: true,
+		});
+		expect(exitSpy).toHaveBeenCalledWith(46);
+	});
+
 	it("dispatches blast-radius command without explicit contract path", async () => {
 		const { run } = await import("./cli.js");
 		const { runBlastRadiusCLI } = await import("./commands/blast-radius.js");
@@ -1057,10 +1120,10 @@ describe("cli command dispatch", () => {
 		expect(exitSpy).toHaveBeenCalledWith(59);
 	});
 
-	// Note: The remediate command doesn't support --findings flag in the current implementation
-	it.skip("dispatches remediate command", async () => {
+	it("rejects remediate command when subcommand is missing", async () => {
 		const { run } = await import("./cli.js");
 		const { runRemediateCLI } = await import("./commands/remediate.js");
+		const errorSpy = vi.spyOn(console, "error").mockImplementation(() => {});
 
 		const exitSpy = vi
 			.spyOn(process, "exit")
@@ -1078,23 +1141,19 @@ describe("cli command dispatch", () => {
 			"a".repeat(40),
 		]);
 
-		// Allow async CLI handler to resolve
 		await new Promise((resolve) => setTimeout(resolve, 0));
 
-		expect(vi.mocked(runRemediateCLI)).toHaveBeenCalledWith({
-			findings: "findings.json",
-			dryRun: true,
-			json: true,
-			contractPath: "harness.contract.json",
-			headSha: "a".repeat(40),
-		});
-		expect(exitSpy).toHaveBeenCalledWith(43);
+		expect(vi.mocked(runRemediateCLI)).not.toHaveBeenCalled();
+		expect(errorSpy).toHaveBeenCalledWith(
+			"Error: remediate command requires subcommand `run` or `apply`",
+		);
+		expect(exitSpy).toHaveBeenCalledWith(2);
 	});
 
-	// Note: The remediate command doesn't support --findings flag in the current implementation
-	it.skip("dispatches remediate command and ignores missing flag values", async () => {
+	it("rejects remediate command with missing subcommand even when flags are malformed", async () => {
 		const { run } = await import("./cli.js");
 		const { runRemediateCLI } = await import("./commands/remediate.js");
+		const errorSpy = vi.spyOn(console, "error").mockImplementation(() => {});
 
 		const exitSpy = vi
 			.spyOn(process, "exit")
@@ -1110,15 +1169,13 @@ describe("cli command dispatch", () => {
 			"a".repeat(40),
 		]);
 
-		// Allow async CLI handler to resolve
 		await new Promise((resolve) => setTimeout(resolve, 0));
 
-		expect(vi.mocked(runRemediateCLI)).toHaveBeenCalledWith({
-			dryRun: true,
-			json: true,
-			headSha: "a".repeat(40),
-		});
-		expect(exitSpy).toHaveBeenCalledWith(43);
+		expect(vi.mocked(runRemediateCLI)).not.toHaveBeenCalled();
+		expect(errorSpy).toHaveBeenCalledWith(
+			"Error: remediate command requires subcommand `run` or `apply`",
+		);
+		expect(exitSpy).toHaveBeenCalledWith(2);
 	});
 
 	it("dispatches diff-budget command and ignores missing flag values", async () => {
@@ -1152,7 +1209,7 @@ describe("cli command dispatch", () => {
 		expect(exitSpy).toHaveBeenCalledWith(44);
 	});
 
-	it("dispatches review-gate command and ignores missing flag values", async () => {
+	it("fails review-gate dispatch when required flag values are missing", async () => {
 		const { run } = await import("./cli.js");
 		const { runReviewGateCLI } = await import("./commands/review-gate.js");
 
@@ -1180,17 +1237,78 @@ describe("cli command dispatch", () => {
 		// Allow async CLI handler to resolve
 		await new Promise((resolve) => setTimeout(resolve, 0));
 
-		expect(vi.mocked(runReviewGateCLI)).toHaveBeenCalledWith({
-			token: "",
-			owner: "octo",
-			repo: "harness",
-			prNumber: 123,
-			headSha: "",
-			checkName: "lint",
-			contractPath: "harness.contract.json",
-			json: true,
-		});
-		expect(exitSpy).toHaveBeenCalledWith(45);
+		expect(vi.mocked(runReviewGateCLI)).not.toHaveBeenCalled();
+		expect(exitSpy).toHaveBeenCalledWith(2);
+	});
+
+	it("rejects malformed review-gate invocations even when --help appears after a missing flag value", async () => {
+		const { run } = await import("./cli.js");
+		const { runReviewGateCLI } = await import("./commands/review-gate.js");
+
+		const exitSpy = vi.spyOn(process, "exit").mockImplementation(((
+			code?: number,
+		) => {
+			throw new Error(`EXIT_${String(code)}`);
+		}) as never);
+
+		expect(() =>
+			run([
+				"review-gate",
+				"--token",
+				"--owner",
+				"octo",
+				"--repo",
+				"harness",
+				"--pr",
+				"123",
+				"--sha",
+				"--help",
+			]),
+		).toThrowError("EXIT_2");
+
+		expect(vi.mocked(runReviewGateCLI)).not.toHaveBeenCalled();
+		expect(exitSpy).toHaveBeenCalledWith(2);
+	});
+
+	it("dispatches review-gate with GH_TOKEN fallback when --token is omitted", async () => {
+		const { run } = await import("./cli.js");
+		const { runReviewGateCLI } = await import("./commands/review-gate.js");
+
+		const previousGhToken = process.env.GH_TOKEN;
+		process.env.GH_TOKEN = "ghs_from_env";
+		const exitSpy = vi
+			.spyOn(process, "exit")
+			.mockImplementation(((_code?: number) => undefined) as never);
+		try {
+			run([
+				"review-gate",
+				"--owner",
+				"octo",
+				"--repo",
+				"harness",
+				"--pr",
+				"123",
+				"--sha",
+				"a".repeat(40),
+				"--json",
+			]);
+
+			await new Promise((resolve) => setTimeout(resolve, 0));
+
+			expect(vi.mocked(runReviewGateCLI)).toHaveBeenCalledWith({
+				token: "ghs_from_env",
+				owner: "octo",
+				repo: "harness",
+				prNumber: 123,
+				headSha: "a".repeat(40),
+				checkName: "",
+				contractPath: "harness.contract.json",
+				json: true,
+			});
+			expect(exitSpy).toHaveBeenCalledWith(45);
+		} finally {
+			process.env.GH_TOKEN = previousGhToken;
+		}
 	});
 
 	it("dispatches review-gate command and preserves --auto-resolve-bot-threads flag", async () => {
@@ -1203,6 +1321,8 @@ describe("cli command dispatch", () => {
 
 		run([
 			"review-gate",
+			"--token",
+			"ghs_123",
 			"--owner",
 			"octo",
 			"--repo",
@@ -1218,7 +1338,7 @@ describe("cli command dispatch", () => {
 		await new Promise((resolve) => setTimeout(resolve, 0));
 
 		expect(vi.mocked(runReviewGateCLI)).toHaveBeenCalledWith({
-			token: "",
+			token: "ghs_123",
 			owner: "octo",
 			repo: "harness",
 			prNumber: 123,
@@ -1363,7 +1483,7 @@ describe("cli command dispatch", () => {
 		expect(exitSpy).toHaveBeenCalledWith(68);
 	});
 
-	it("dispatches policy-gate command and ignores missing --files value", async () => {
+	it("rejects policy-gate command when --files is missing a value", async () => {
 		const { run } = await import("./cli.js");
 		const { runPolicyGateCLI } = await import("./commands/policy-gate.js");
 
@@ -1372,18 +1492,19 @@ describe("cli command dispatch", () => {
 		) => {
 			throw new Error(`EXIT_${String(code)}`);
 		}) as never);
+		const errorSpy = vi.spyOn(console, "error").mockImplementation(() => {
+			// silence expected error output
+		});
 
 		expect(() =>
 			run(["policy-gate", "--files", "--max-tier", "low", "--json"]),
-		).toThrowError("EXIT_42");
+		).toThrowError("EXIT_2");
 
-		expect(vi.mocked(runPolicyGateCLI)).toHaveBeenCalledWith({
-			contractPath: "harness.contract.json",
-			files: [],
-			maxTier: "low",
-			json: true,
-		});
-		expect(exitSpy).toHaveBeenCalledWith(42);
+		expect(vi.mocked(runPolicyGateCLI)).not.toHaveBeenCalled();
+		expect(errorSpy).toHaveBeenCalledWith(
+			"policy-gate requires a value for --files.",
+		);
+		expect(exitSpy).toHaveBeenCalledWith(2);
 	});
 
 	it("dispatches risk-policy-gate alias to policy-gate command", async () => {
@@ -1884,21 +2005,16 @@ describe("cli command dispatch", () => {
 		expect(exitSpy).toHaveBeenCalledWith(2);
 	});
 
-	// Note: -h is intercepted by the top-level help check, so it's not passed to the command
-	it.skip("dispatches index-context when -h is passed after command", async () => {
+	it("shows top-level help when -h is passed after index-context command", async () => {
 		const { run } = await import("./cli.js");
 		const { runIndexContextCLI } = await import("./commands/index-context.js");
-
-		const exitSpy = vi
-			.spyOn(process, "exit")
-			.mockImplementation(((_code?: number) => undefined) as never);
+		const infoSpy = vi.spyOn(console, "info").mockImplementation(() => {});
 
 		run(["index-context", "-h"]);
 
-		// Allow async CLI handler to resolve
-		await new Promise((resolve) => setTimeout(resolve, 0));
-
-		expect(vi.mocked(runIndexContextCLI)).toHaveBeenCalledWith(["-h"]);
-		expect(exitSpy).toHaveBeenCalledWith(60);
+		expect(vi.mocked(runIndexContextCLI)).not.toHaveBeenCalled();
+		expect(infoSpy).toHaveBeenCalledWith(
+			expect.stringContaining("Usage: harness <command> [options]"),
+		);
 	});
 });

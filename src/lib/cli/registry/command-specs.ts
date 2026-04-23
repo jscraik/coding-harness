@@ -1,3 +1,4 @@
+import { readFileSync } from "node:fs";
 import { runAuditCLI } from "../../../commands/audit.js";
 import { runAutomationRunCLI } from "../../../commands/automation-run.js";
 import {
@@ -58,7 +59,7 @@ import {
 	runRemediateCLI,
 } from "../../../commands/remediate.js";
 import { runReplayCLI } from "../../../commands/replay.js";
-import { runReviewGateCLI } from "../../../commands/review-gate.js";
+import type { runReviewGateCLI } from "../../../commands/review-gate.js";
 import { runRiskTierCLI } from "../../../commands/risk-tier.js";
 import { runSearchCLI } from "../../../commands/search.js";
 import { runSilentErrorDetectorCLI } from "../../../commands/silent-error.js";
@@ -326,9 +327,22 @@ export const COMMAND_SPECS: CommandSpec[] = [
 		errorLabel: "Policy Gate Error",
 		execute: (args) => {
 			const jsonFlag = args.includes("--json");
-			const contractIndex = args.indexOf("--contract");
-			const filesIndex = args.indexOf("--files");
-			const maxTierIndex = args.indexOf("--max-tier");
+			const contractFlag = inspectFlagValue(args, "--contract");
+			const filesFlag = inspectFlagValue(args, "--files");
+			const maxTierFlag = inspectFlagValue(args, "--max-tier");
+
+			if (contractFlag.present && contractFlag.missingValue) {
+				console.error("policy-gate requires a value for --contract.");
+				return 2;
+			}
+			if (filesFlag.present && filesFlag.missingValue) {
+				console.error("policy-gate requires a value for --files.");
+				return 2;
+			}
+			if (maxTierFlag.present && maxTierFlag.missingValue) {
+				console.error("policy-gate requires a value for --max-tier.");
+				return 2;
+			}
 
 			const options: Parameters<typeof runPolicyGateCLI>[0] = {
 				contractPath: "harness.contract.json",
@@ -336,13 +350,24 @@ export const COMMAND_SPECS: CommandSpec[] = [
 			};
 
 			if (jsonFlag) options.json = true;
-			const contractArg = getFlagValue(args, contractIndex);
+			const contractArg = contractFlag.value;
 			if (contractArg !== undefined) options.contractPath = contractArg;
-			const filesArg = getFlagValue(args, filesIndex);
+			const filesArg = filesFlag.value;
 			if (filesArg) {
 				options.files = parseCsvList(filesArg);
 			}
-			const maxTierArg = getFlagValue(args, maxTierIndex);
+			const maxTierArg = maxTierFlag.value;
+			if (
+				maxTierArg !== undefined &&
+				maxTierArg !== "high" &&
+				maxTierArg !== "medium" &&
+				maxTierArg !== "low"
+			) {
+				console.error(
+					"policy-gate --max-tier must be one of: high, medium, low.",
+				);
+				return 2;
+			}
 			if (
 				maxTierArg === "high" ||
 				maxTierArg === "medium" ||
@@ -395,6 +420,17 @@ export const COMMAND_SPECS: CommandSpec[] = [
 			const maxTierIndex = args.indexOf("--max-tier");
 			const skipIndex = args.indexOf("--skip");
 			const headShaIndex = args.indexOf("--head-sha");
+			const admissionFileInspection = inspectFlagValue(
+				args,
+				"--admission-file",
+			);
+			if (
+				admissionFileInspection.present &&
+				admissionFileInspection.missingValue
+			) {
+				console.error("Error: --admission-file requires a value");
+				return 2;
+			}
 
 			const options: Parameters<typeof runPreflightGateCLI>[0] = {};
 
@@ -424,6 +460,32 @@ export const COMMAND_SPECS: CommandSpec[] = [
 			if (headShaArg) {
 				options.headSha = headShaArg;
 			}
+			if (admissionFileInspection.value !== undefined) {
+				const admissionFileArg = admissionFileInspection.value;
+				try {
+					const parsedAdmission = JSON.parse(
+						readFileSync(admissionFileArg, "utf-8"),
+					) as unknown;
+					if (
+						parsedAdmission === null ||
+						typeof parsedAdmission !== "object" ||
+						Array.isArray(parsedAdmission)
+					) {
+						console.error("Error: --admission-file must contain a JSON object");
+						return 2;
+					}
+					options.admission = parsedAdmission as NonNullable<
+						Parameters<typeof runPreflightGateCLI>[0]["admission"]
+					>;
+				} catch (error) {
+					const message =
+						error instanceof Error ? error.message : String(error);
+					console.error(
+						`Error: failed to parse --admission-file '${admissionFileArg}': ${message}`,
+					);
+					return 2;
+				}
+			}
 
 			return runPreflightGateCLI(options);
 		},
@@ -432,21 +494,64 @@ export const COMMAND_SPECS: CommandSpec[] = [
 		name: "review-gate",
 		summary: "Review gate with SHA enforcement",
 		example:
-			"review-gate --token $GH_TOKEN --owner org --repo repo --pr 42 --sha abc123 --json",
+			"review-gate --token $GH_TOKEN --owner org --repo repo --pr 42 --sha 0123456789abcdef0123456789abcdef01234567 --json",
 		errorLabel: "Review Gate Error",
 		execute: (args) => {
 			const jsonFlag = args.includes("--json");
-			const tokenIndex = args.indexOf("--token");
+			const envToken =
+				process.env.GH_TOKEN?.trim() || process.env.GITHUB_TOKEN?.trim();
 			const ownerIndex = args.indexOf("--owner");
 			const repoIndex = args.indexOf("--repo");
 			const prIndex = args.indexOf("--pr");
 			const shaIndex = args.indexOf("--sha");
-			const checkIndex = args.indexOf("--check");
-			const botLoginIndex = args.indexOf("--bot-login");
 			const autoResolveBotThreadsFlag = args.includes(
 				"--auto-resolve-bot-threads",
 			);
-			const contractIndex = args.indexOf("--contract");
+			const requiredFlagSpecs = [
+				{ flag: "--owner", label: "owner" },
+				{ flag: "--repo", label: "repo" },
+				{ flag: "--pr", label: "pr" },
+				{ flag: "--sha", label: "sha" },
+			] as const;
+			const missingRequiredFlags: string[] = [];
+			const tokenInspection = inspectFlagValue(args, "--token");
+			const checkInspection = inspectFlagValue(args, "--check");
+			const botLoginInspection = inspectFlagValue(args, "--bot-login");
+			const contractInspection = inspectFlagValue(args, "--contract");
+			if (tokenInspection.present && tokenInspection.missingValue) {
+				console.error("Error: --token requires a value");
+				return 2;
+			}
+			for (const { flag, inspected } of [
+				{ flag: "--check", inspected: checkInspection },
+				{ flag: "--bot-login", inspected: botLoginInspection },
+				{ flag: "--contract", inspected: contractInspection },
+			]) {
+				if (inspected.present && inspected.missingValue) {
+					console.error(`Error: ${flag} requires a value`);
+					return 2;
+				}
+			}
+			const resolvedToken = tokenInspection.value ?? envToken;
+			if (!resolvedToken) {
+				missingRequiredFlags.push("--token");
+			}
+			for (const { flag, label } of requiredFlagSpecs) {
+				const inspected = inspectFlagValue(args, flag);
+				if (inspected.present && inspected.missingValue) {
+					console.error(`Error: ${flag} requires a value`);
+					return 2;
+				}
+				if (!inspected.value) {
+					missingRequiredFlags.push(`--${label}`);
+				}
+			}
+			if (missingRequiredFlags.length > 0) {
+				console.error(
+					`Error: missing required flags for review-gate: ${missingRequiredFlags.join(", ")}`,
+				);
+				return 2;
+			}
 
 			const options: Parameters<typeof runReviewGateCLI>[0] = {
 				token: "",
@@ -459,8 +564,7 @@ export const COMMAND_SPECS: CommandSpec[] = [
 			};
 
 			if (jsonFlag) options.json = true;
-			const tokenArg = getFlagValue(args, tokenIndex);
-			if (tokenArg) options.token = tokenArg;
+			if (resolvedToken) options.token = resolvedToken;
 			const ownerArg = getFlagValue(args, ownerIndex);
 			if (ownerArg) options.owner = ownerArg;
 			const repoArg = getFlagValue(args, repoIndex);
@@ -468,19 +572,28 @@ export const COMMAND_SPECS: CommandSpec[] = [
 			const prArg = getFlagValue(args, prIndex);
 			if (prArg) {
 				const parsedPr = parseIntegerArg(prArg, 1);
-				if (parsedPr !== undefined) options.prNumber = parsedPr;
+				if (parsedPr === undefined) {
+					console.error("Error: --pr expects a positive integer");
+					return 2;
+				}
+				options.prNumber = parsedPr;
 			}
 			const shaArg = getFlagValue(args, shaIndex);
 			if (shaArg) options.headSha = shaArg;
-			const checkArg = getFlagValue(args, checkIndex);
-			if (checkArg) options.checkName = checkArg;
-			const botLoginArg = getFlagValue(args, botLoginIndex);
-			if (botLoginArg) options.botLogin = botLoginArg;
+			if (checkInspection.value !== undefined) {
+				options.checkName = checkInspection.value;
+			}
+			if (botLoginInspection.value !== undefined) {
+				options.botLogin = botLoginInspection.value;
+			}
 			if (autoResolveBotThreadsFlag) options.autoResolveBotThreads = true;
-			const contractArg = getFlagValue(args, contractIndex);
-			if (contractArg !== undefined) options.contractPath = contractArg;
+			if (contractInspection.value !== undefined) {
+				options.contractPath = contractInspection.value;
+			}
 
-			return runReviewGateCLI(options);
+			return import("../../../commands/review-gate.js").then(
+				({ runReviewGateCLI }) => runReviewGateCLI(options),
+			);
 		},
 	},
 	{
@@ -850,6 +963,8 @@ export const COMMAND_SPECS: CommandSpec[] = [
 		execute: (args) => {
 			const resumeFromFlag = inspectFlagValue(args, "--resume-from");
 			const repoRootFlag = inspectFlagValue(args, "--repo-root");
+			const projectGovernanceFlag = args.includes("--project-governance");
+			const workspaceGovernanceFlag = args.includes("--workspace-governance");
 			if (resumeFromFlag.missingValue) {
 				console.error("Error: --resume-from requires a gate id");
 				return VERIFY_WORK_EXIT_CODES.USAGE_ERROR;
@@ -858,12 +973,20 @@ export const COMMAND_SPECS: CommandSpec[] = [
 				console.error("Error: --repo-root requires a path");
 				return VERIFY_WORK_EXIT_CODES.USAGE_ERROR;
 			}
+			if (projectGovernanceFlag && workspaceGovernanceFlag) {
+				console.error(
+					"Error: --project-governance and --workspace-governance are mutually exclusive",
+				);
+				return VERIFY_WORK_EXIT_CODES.USAGE_ERROR;
+			}
 
 			return runVerifyWorkCLI({
 				all: args.includes("--all"),
 				changedOnly: args.includes("--changed-only"),
 				strict: args.includes("--strict"),
 				fast: args.includes("--fast"),
+				projectGovernance: projectGovernanceFlag,
+				workspaceGovernance: workspaceGovernanceFlag,
 				json: args.includes("--json"),
 				...(resumeFromFlag.value ? { resumeFrom: resumeFromFlag.value } : {}),
 				...(repoRootFlag.value ? { repoRoot: repoRootFlag.value } : {}),
@@ -1164,10 +1287,32 @@ export const COMMAND_SPECS: CommandSpec[] = [
 			const jsonFlag = args.includes("--json");
 			const seedBaselineFlag = args.includes("--seed-baseline");
 			const noSeedFlag = args.includes("--no-seed");
-			const modeIndex = args.indexOf("--mode");
-			const outIndex = args.indexOf("--out");
-			const baselineIndex = args.indexOf("--baseline");
-			const suppressIndex = args.indexOf("--suppress");
+			const modeFlag = inspectFlagValue(args, "--mode");
+			const outFlag = inspectFlagValue(args, "--out");
+			const baselineFlag = inspectFlagValue(args, "--baseline");
+			const suppressFlag = inspectFlagValue(args, "--suppress");
+			const repoRootFlag = inspectFlagValue(args, "--repo-root");
+
+			if (modeFlag.missingValue) {
+				console.error("Error: --mode requires advisory or health");
+				return 2;
+			}
+			if (outFlag.missingValue) {
+				console.error("Error: --out requires a file path");
+				return 2;
+			}
+			if (baselineFlag.missingValue) {
+				console.error("Error: --baseline requires a file path");
+				return 2;
+			}
+			if (suppressFlag.missingValue) {
+				console.error("Error: --suppress requires a comma-separated list");
+				return 2;
+			}
+			if (repoRootFlag.missingValue) {
+				console.error("Error: --repo-root requires a path");
+				return 2;
+			}
 
 			const options: {
 				mode?: "advisory" | "health";
@@ -1176,12 +1321,13 @@ export const COMMAND_SPECS: CommandSpec[] = [
 				baselinePath?: string;
 				seedBaseline?: boolean;
 				suppressions?: string[];
+				repoRoot?: string;
 			} = {};
 
 			if (jsonFlag) options.json = true;
 			if (seedBaselineFlag) options.seedBaseline = true;
 			if (noSeedFlag) options.seedBaseline = false;
-			const modeArg = getFlagValue(args, modeIndex);
+			const modeArg = modeFlag.value;
 			if (modeArg) {
 				if (modeArg !== "advisory" && modeArg !== "health") {
 					console.error("Error: --mode must be advisory or health");
@@ -1189,12 +1335,14 @@ export const COMMAND_SPECS: CommandSpec[] = [
 				}
 				options.mode = modeArg;
 			}
-			const outArg = getFlagValue(args, outIndex);
+			const outArg = outFlag.value;
 			if (outArg) options.outPath = outArg;
-			const baselineArg = getFlagValue(args, baselineIndex);
+			const baselineArg = baselineFlag.value;
 			if (baselineArg) options.baselinePath = baselineArg;
-			const suppressArg = getFlagValue(args, suppressIndex);
+			const suppressArg = suppressFlag.value;
 			if (suppressArg) options.suppressions = parseCsvList(suppressArg);
+			const repoRootArg = repoRootFlag.value;
+			if (repoRootArg) options.repoRoot = repoRootArg;
 
 			return runDriftGateCLI(options);
 		},

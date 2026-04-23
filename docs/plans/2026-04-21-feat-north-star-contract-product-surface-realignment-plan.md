@@ -519,7 +519,7 @@ STEP_ID | status | owner | evidence
 ---|---|---|---
 P0 | completed | implementation | `pnpm check` (pass; contract schema/validator/loader and command suites covered)
 P1 | completed | implementation | `pnpm check` (pass; shared north-star helper integration and dependent command suites covered)
-P2 | in_progress | implementation | `pnpm vitest src/commands/verify-work.test.ts` (pass); `bash scripts/verify-work.sh --fast` (pass); artifact/failure-class taxonomy alignment remains open against current spec draft
+P2 | in progress | implementation | `pnpm vitest src/commands/verify-work.test.ts` (pass); `bash scripts/verify-work.sh --fast` (pass); artifact/failure-class taxonomy alignment remains open against current spec draft
 P3 | completed | implementation | `bash scripts/validate-codestyle.sh --fast` (pass); `pnpm check` (pass, codex-preflight runtime/template parity verified via codex-preflight-sync and init drift tests)
 P4 | completed | implementation | `bash scripts/validate-codestyle.sh --fast` (pass); `bash scripts/verify-work.sh --fast` (pass); `artifacts/reviews/postfix2-api-contract.md`, `artifacts/reviews/postfix2-correctness.md`, `artifacts/reviews/postfix3-testing.md` (no findings)
 

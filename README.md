@@ -335,7 +335,7 @@ For contracts with a `northStar` block (`harness.contract.json` v1.6+), `preflig
 
 `preflight-gate` exit codes are command-specific: `0` for pass, `1` for policy
 violations, `3` for contract load or existence failures, and `10` for
-unexpected system errors. Automations that need richer categorization should
+unexpected system errors. Automation workflows that need richer categorization should
 also consume the JSON payload.
 
 ### Hero Workflow 3: Submit a change for review
@@ -349,15 +349,17 @@ harness review-gate --token "$GITHUB_TOKEN" --owner <owner> --repo <repo> --pr <
 harness linear sync --findings findings.json --team <TEAM>
 ```
 
-For repos on contract version `1.6+`, `review-gate` also requires PR body
-coverage of canonical north-star decision questions (`lead_time_path`,
-`manual_glue`, `agent_reliability`, `safety_floor`) with evidence references
-for each response (URL, artifact path, or `file:line`).
-
-`reviewPolicy.requiredChecks` is evaluated against the active provider's check
-manifest (`.harness/ci-required-checks.json`). In workflow fan-in setups (for
-example CircleCI with `pr-pipeline`), multiple logical required checks can map
-to one GitHub check context.
+If `harness.contract.json` declares governed north-star surfaces and your diff
+touches one of them, `review-gate` also requires four PR-body decisions:
+`lead_time_path`, `manual_glue`, `agent_reliability`, and `safety_floor`. Each
+line must answer `yes` and include an `Evidence:` reference. Repos that do not
+declare `northStar` governance or do not touch governed surfaces keep the
+legacy SHA and review-check behavior.
+If `review-gate` returns `review_evidence_incomplete` or
+`review_evidence_contradiction`, update the PR body with the required decision
+lines and evidence, or roll back high-risk changes until evidence is coherent;
+see [review-gate north-star evidence](./docs/cli-reference.md#review-gate-north-star-evidence)
+for complete recovery steps.
 
 For repos using CodeRabbit, pair the review-gate with:
 

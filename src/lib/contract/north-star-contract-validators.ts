@@ -269,16 +269,20 @@ export function isValidProductSurfaceRegistry(
 	if (!Array.isArray(registry.surfaces)) {
 		return false;
 	}
+	if (registry.surfaces.length === 0) {
+		return false;
+	}
 
 	const surfaceIds = new Set<string>();
 	for (const entry of registry.surfaces) {
 		if (!isValidSurfaceRegistration(entry)) {
 			return false;
 		}
-		if (surfaceIds.has(entry.surfaceId)) {
+		const normalizedSurfaceId = entry.surfaceId.trim();
+		if (surfaceIds.has(normalizedSurfaceId)) {
 			return false;
 		}
-		surfaceIds.add(entry.surfaceId);
+		surfaceIds.add(normalizedSurfaceId);
 	}
 
 	return true;

@@ -25,7 +25,6 @@ import {
 	type PreflightGateOptions,
 	type PreflightGateResult,
 	type PreflightHookDecision,
-	type PreflightNorthStarSummary,
 } from "./types.js";
 
 export type { PreflightGateOptions };
@@ -313,12 +312,18 @@ export async function runPreflightGate(
 			message: contractLoad.errorMessage,
 			durationMs: contractLoad.durationMs,
 		});
-		return buildPreflightResult(false, checks, start, undefined, hookDecisions);
+		return buildPreflightResult(
+			false,
+			checks,
+			start,
+			undefined,
+			hookDecisions,
+			options.admission,
+		);
 	}
 	const contract = contractLoad.contract;
 	const extensions = contract?.gateExtensions?.preflightGate;
 	const riskTier = resolveRiskTier(options, contract);
-	const northStarSummary = buildNorthStarSummary(contract);
 
 	// Run pre-gate extension hooks before native checks.
 	const shortCircuit = runPreHooks(extensions, checks, hookDecisions);
@@ -329,7 +334,6 @@ export async function runPreflightGate(
 			start,
 			riskTier,
 			hookDecisions,
-			northStarSummary,
 			options.admission,
 		);
 	}
@@ -375,7 +379,6 @@ export async function runPreflightGate(
 		start,
 		riskTier,
 		hookDecisions,
-		northStarSummary,
 		options.admission,
 	);
 }
@@ -480,8 +483,7 @@ function buildPreflightResult(
 	start: number,
 	riskTier: RiskTier | undefined,
 	hookDecisions: PreflightHookDecision[],
-	northStarSummary?: PreflightNorthStarSummary,
-	admissionDeclaration?: PreflightAdmissionDeclaration,
+	admission: PreflightGateOptions["admission"] = undefined,
 ): PreflightGateResult {
 	const failedChecks = checks.filter((check) => !check.passed);
 	const warningChecks = failedChecks.filter(
@@ -499,25 +501,15 @@ function buildPreflightResult(
 			durationMs: Date.now() - start,
 		},
 		riskTier,
+		northStarSummary: admission
+			? {
+					metric: admission.north_star_metric,
+					primaryBottleneck: admission.primary_bottleneck,
+					impactDeclared: admission.metric_impact_declared,
+				}
+			: undefined,
+		admissionDeclaration: admission,
 		hookDecisions: hookDecisions.length > 0 ? hookDecisions : undefined,
-		northStarSummary,
-		admissionDeclaration,
-	};
-}
-
-function buildNorthStarSummary(
-	contract: HarnessContract | undefined,
-): PreflightNorthStarSummary | undefined {
-	const northStar = contract?.northStar;
-	if (!northStar) {
-		return undefined;
-	}
-	return {
-		mission: northStar.mission,
-		primary_metric: northStar.primaryMetric,
-		primary_bottleneck: northStar.primaryBottleneck,
-		autonomy_boundary: northStar.autonomyBoundary,
-		safety_floor: northStar.safetyFloor,
 	};
 }
 
@@ -738,7 +730,12 @@ function validateAdmissionDeclaration(
 		typeof declaration.metric_impact_declared === "string"
 			? declaration.metric_impact_declared
 			: undefined;
-	const validMetricImpacts = new Set(["direct", "path_strengthening", "none"]);
+	const validMetricImpacts = new Set([
+		"direct",
+		"direct_reduction",
+		"path_strengthening",
+		"none",
+	]);
 	const throughputRationale = asNonEmptyString(
 		declaration.why_this_improves_throughput_or_reliability,
 	);
@@ -785,7 +782,7 @@ function validateAdmissionDeclaration(
 		!validMetricImpacts.has(metricImpactDeclared)
 	) {
 		addIssue(
-			"metric_impact_declared must be one of: direct, path_strengthening, none",
+			"metric_impact_declared must be one of: direct, direct_reduction, path_strengthening, none",
 		);
 	}
 	if (

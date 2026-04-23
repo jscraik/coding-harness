@@ -102,17 +102,26 @@ function printUsage(options: { includeLegacyCommands?: boolean } = {}): void {
 	console.info(
 		"  --all, --all-commands  Include legacy command list in help output",
 	);
+	console.info(
+		"  --allow-fuzzy          Opt in to typo/case auto-correction for command names",
+	);
+	console.info("  --no-fuzzy             Disable fuzzy command correction");
 	console.info("");
 	console.info("Agent / Robot Mode:");
-	console.info("  Add --json to any command for structured JSON output.");
 	console.info(
-		"  Exit codes: 0 = pass/success, 1 = fail/unknown command, 2 = usage error.",
+		"  Add --json to commands that support machine-readable output.",
 	);
 	console.info(
-		"  Typos and camelCase/snake_case variants are auto-corrected with a note on stderr.",
+		"  Exit codes: default contract is 0 = pass/success, 1 = fail/unknown command, 2 = usage error.",
+	);
+	console.info(
+		"  Some command families preserve richer process exit semantics (for example wrapper pass-through commands).",
 	);
 	console.info(
 		"  On unknown commands, harness prints suggestions with examples to stdout.",
+	);
+	console.info(
+		"  Fuzzy correction is opt-in via --allow-fuzzy or HARNESS_ALLOW_FUZZY_COMMANDS=1.",
 	);
 }
 export { parseIntegerArg, parseCsvList };
@@ -128,32 +137,56 @@ export { parseIntegerArg, parseCsvList };
  * @param args - Command-line arguments excluding the node and executable path (e.g., `process.argv.slice(2)`)
  */
 export function run(args: string[]): void {
+	const allowFuzzyFlag = args.includes("--allow-fuzzy");
+	const disableFuzzyFlag = args.includes("--no-fuzzy");
+	const allowFuzzyFromEnv = process.env.HARNESS_ALLOW_FUZZY_COMMANDS === "1";
+	const allowFuzzy = !disableFuzzyFlag && (allowFuzzyFlag || allowFuzzyFromEnv);
+	const dispatchArgs = args.filter(
+		(arg) => arg !== "--allow-fuzzy" && arg !== "--no-fuzzy",
+	);
 	const version = getVersion();
+	const firstArg = dispatchArgs[0];
+	const hasCommandToken =
+		typeof firstArg === "string" &&
+		firstArg.length > 0 &&
+		!firstArg.startsWith("-");
 	const includeLegacyCommandsInHelp =
-		args.includes("--all-commands") || args.includes("--all");
+		dispatchArgs.includes("--all-commands") || dispatchArgs.includes("--all");
+	const noCommandHelpRequested =
+		!hasCommandToken &&
+		dispatchArgs.some((arg) => arg === "--help" || arg === "-h");
+	const commandHelpFlagIndex = hasCommandToken
+		? dispatchArgs.findIndex(
+				(arg, index) => index > 0 && (arg === "--help" || arg === "-h"),
+			)
+		: -1;
 
-	// Handle top-level --version and --help before parsing command
-	// These work even without a command
-	if (args.includes("--version") || args.includes("-v")) {
+	// Handle top-level --version before parsing command.
+	// This only applies in no-command mode.
+	if (!hasCommandToken && (firstArg === "--version" || firstArg === "-v")) {
 		console.info(`harness v${version}`);
 		return;
 	}
 
-	// Handle --help/-h before dispatching any command.
-	// Short-circuit here prevents mutating commands (init, eject, ci-migrate)
-	// from executing side effects when the user just wants usage text.
-	if (args.includes("--help") || args.includes("-h")) {
+	// Handle top-level --help/-h in no-command mode.
+	// In command mode, only short-circuit when help is the first command option
+	// (`harness <command> --help`) so malformed invocations like
+	// `harness policy-gate --files --help` still return usage errors.
+	if (
+		noCommandHelpRequested ||
+		(hasCommandToken && commandHelpFlagIndex === 1)
+	) {
 		console.info(`harness v${version}`);
 		printUsage({ includeLegacyCommands: includeLegacyCommandsInHelp });
 		return;
 	}
 
 	// Parse command
-	const command = args[0];
-	const jsonFlag = args.includes("--json");
+	const command = dispatchArgs[0];
+	const jsonFlag = dispatchArgs.includes("--json");
 
 	// Exact registry dispatch
-	const registryDispatch = dispatchRegistryCommand(command, args);
+	const registryDispatch = dispatchRegistryCommand(command, dispatchArgs);
 	if (registryDispatch) {
 		if (registryDispatch.result instanceof Promise) {
 			registryDispatch.result
@@ -168,7 +201,7 @@ export function run(args: string[]): void {
 	}
 
 	// No exact match — try fuzzy resolution
-	if (command) {
+	if (command && allowFuzzy) {
 		const fuzzy = fuzzyFindCommand(command);
 		if (fuzzy) {
 			// Emit a correction note on stderr (keeps stdout JSON pristine for agents)
@@ -186,7 +219,7 @@ export function run(args: string[]): void {
 				process.stderr.write(`${note}\n`);
 			}
 			// Re-dispatch with the canonical name
-			const correctedArgs = [fuzzy.spec.name, ...args.slice(1)];
+			const correctedArgs = [fuzzy.spec.name, ...dispatchArgs.slice(1)];
 			const correctedDispatch = dispatchRegistryCommand(
 				fuzzy.spec.name,
 				correctedArgs,
@@ -204,7 +237,8 @@ export function run(args: string[]): void {
 				return;
 			}
 		}
-
+	}
+	if (command) {
 		// No match at all — rich error message with suggestions
 		const suggestions = suggestCommands(command);
 		if (jsonFlag) {
@@ -217,6 +251,10 @@ export function run(args: string[]): void {
 					suggestions: capabilitySuggestions.map(({ capability }) => ({
 						name: capability.name,
 						summary: capability.summary,
+						mutability: capability.mutability,
+						retryability: capability.retryability,
+						requiredFlags: capability.requiredFlags,
+						safeFirstAlternatives: capability.safeFirstAlternatives,
 						...(capability.example
 							? { example: `harness ${capability.example}` }
 							: {}),

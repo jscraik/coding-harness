@@ -20,7 +20,6 @@ repo_root=""
 resume_from=""
 normalized_manifest_path=""
 normalized_manifest_source=""
-normalized_manifest_provider=""
 lane_fast_mode_json="false"
 lane_changed_only_json="true"
 lane_strict_mode_json="false"
@@ -136,7 +135,6 @@ prepare_normalized_required_checks_manifest() {
 	local manifest_path="$repo_root/.harness/ci-required-checks.json"
 	normalized_manifest_path=""
 	normalized_manifest_source=""
-	normalized_manifest_provider=""
 	if [[ ! -f "$manifest_path" ]]; then
 		return 0
 	fi
@@ -301,8 +299,14 @@ run_ci_check_alignment_gate() {
 	fi
 
 	local provider
-	provider="$(resolve_manifest_provider)"
-	normalized_manifest_provider="$provider"
+	provider="$(
+		jq -r '
+			.activeProvider
+			// (.requiredChecks[]? | (.provider // .sourceAppSlug // .sourceAppId // empty))
+			// (.gates[]? | (.provider // .sourceAppSlug // .sourceAppId // empty))
+			// ""
+		' "$normalized_manifest_path" | head -n 1
+	)"
 	if [[ -z "$provider" ]]; then
 		echo "[verify-work] ci-check-alignment: active provider identity is required in required checks manifest"
 		echo "[verify-work] ci-check-alignment: blocking due to missing canonical provider identity"
@@ -324,6 +328,10 @@ run_ci_check_alignment_gate() {
 
 	if [[ "$provider" == "circleci" ]]; then
 		local suspicious=()
+		local circleci_check_names="$github_check_names"
+		if [[ "$normalized_manifest_source" != "raw-fallback" ]]; then
+			circleci_check_names="$(jq -r '.gates[]? | select((.provider // "") == "circleci") | .githubCheckName // empty' "$normalized_manifest_path")"
+		fi
 		while IFS= read -r name; do
 			case "$name" in
 				lint|typecheck|test|audit|check|build|memory|dependency-scan|orb-pinning|docs-gate|linear-gate|risk-policy-gate|consistency-drift-health|pr-template)
@@ -393,11 +401,6 @@ compute_contract_fingerprint() {
 }
 
 compute_provider_class() {
-	if [[ "$normalized_manifest_source" == "raw-fallback" && -n "$normalized_manifest_provider" ]]; then
-		echo "$normalized_manifest_provider"
-		return 0
-	fi
-
 	local provider
 	provider="$(resolve_manifest_provider)"
 	if [[ -n "$provider" ]]; then

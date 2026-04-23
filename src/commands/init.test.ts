@@ -296,8 +296,11 @@ describe("runInit", () => {
 			}
 			const generatedChecks = normalizedRequiredChecks.value.gates;
 			expect(normalizedRequiredChecks.value.activeProvider).toBe("circleci");
-			expect(generatedChecks[0]?.provider).toBe("circleci");
-			expect(generatedChecks[0]?.githubCheckName).toBe("pr-pipeline");
+			const prTemplateCheck = generatedChecks.find(
+				(entry) => entry.displayName === "pr-template",
+			);
+			expect(prTemplateCheck?.provider).toBe("circleci");
+			expect(prTemplateCheck?.githubCheckName).toBe("pr-pipeline");
 			expect(generatedChecks.map((entry) => entry.displayName)).toEqual([
 				"pr-template",
 				"linear-gate",
@@ -1733,30 +1736,30 @@ describe("runInit", () => {
 			expect(harnessCli).toContain("npm exec harness -- <command>");
 			expect(runHarnessGate).toContain("if is_harness_source_repo; then");
 			expect(runHarnessGate).toContain(
-				'exec pnpm exec tsx "$REPO_ROOT/src/cli.ts" "$@"',
-			);
-			expect(runHarnessGate).toContain("is_harness_source_repo()");
-			expect(runHarnessGate).toContain(
-				"command -v node >/dev/null 2>&1 || return 1",
+				'echo "Error: source checkout detected but pnpm is unavailable; refusing fallback to avoid stale harness binaries." >&2',
 			);
 			expect(runHarnessGate).toContain(
-				'process.exit(packageJson.name === "@brainwav/coding-harness" ? 0 : 1);',
+				'if ! pnpm --dir "$REPO_ROOT" exec -- tsx --version >/dev/null 2>&1; then',
 			);
 			expect(runHarnessGate).toContain(
-				'echo "Error: pnpm is required to run the harness source CLI." >&2',
+				'exec pnpm --dir "$REPO_ROOT" exec tsx "$REPO_ROOT/src/cli.ts" "$@"',
 			);
 			expect(runHarnessGate).toContain(
-				"if ! pnpm exec -- tsx --version >/dev/null 2>&1; then",
+				'if [[ -f "$REPO_ROOT/dist/cli.js" ]] && command -v node >/dev/null 2>&1; then',
 			);
 			expect(runHarnessGate).toContain(
-				'exec pnpm exec tsx "$REPO_ROOT/src/cli.ts" "$@"',
+				'exec node "$REPO_ROOT/dist/cli.js" "$@"',
 			);
 			expect(runHarnessGate).toContain(
-				'if [[ -r "$REPO_ROOT/scripts/harness-cli.sh" && -f "$REPO_ROOT/node_modules/@brainwav/coding-harness/dist/cli.js" ]]; then',
+				'bash "$REPO_ROOT/scripts/harness-cli.sh" "$@" || wrapper_exit=$?',
 			);
 			expect(runHarnessGate).toContain(
-				'exec bash "$REPO_ROOT/scripts/harness-cli.sh" "$@"',
+				'if [[ "$wrapper_exit" -eq 126 || "$wrapper_exit" -eq 127 ]]; then',
 			);
+			expect(runHarnessGate).toContain(
+				'echo "Warning: scripts/harness-cli.sh unavailable (exit $wrapper_exit); attempting fallback runners." >&2',
+			);
+			expect(runHarnessGate).toContain('exit "$wrapper_exit"');
 			expect(runHarnessGate).toContain(
 				"if command -v mise >/dev/null 2>&1; then",
 			);
@@ -2205,6 +2208,87 @@ describe("runInit", () => {
 			expect(wrapper.stderr).toContain("pnpm add -D @brainwav/coding-harness");
 			expect(wrapper.stderr).toContain("pnpm exec harness <command>");
 			expect(wrapper.stdout).toBe("");
+		});
+
+		it("does not fail closed for non-source fixture repos", () => {
+			writeFileSync(
+				join(tempDir, "package.json"),
+				JSON.stringify({ name: "fixture", private: true }, null, 2),
+				"utf-8",
+			);
+			writeFileSync(
+				join(tempDir, "pnpm-lock.yaml"),
+				"lockfileVersion: '9.0'\n",
+				"utf-8",
+			);
+
+			const result = runInit(tempDir, { dryRun: false, force: false });
+			expect(result.ok).toBe(true);
+
+			mkdirSync(join(tempDir, "src"), { recursive: true });
+			writeFileSync(
+				join(tempDir, "src/cli.ts"),
+				"console.log('source harness runner');\n",
+				"utf-8",
+			);
+
+			// Remove the repo wrapper so a broken source-detection path would fall
+			// through to the fake global harness and expose the regression.
+			rmSync(join(tempDir, "scripts/harness-cli.sh"), { force: true });
+
+			const fakeBin = join(tempDir, ".fake-bin");
+			const globalHarnessLog = join(tempDir, ".global-harness.log");
+			mkdirSync(fakeBin, { recursive: true });
+			writeFileSync(
+				join(fakeBin, "mise"),
+				`#!/usr/bin/env bash
+set -euo pipefail
+exit 1
+`,
+				"utf-8",
+			);
+			writeFileSync(
+				join(fakeBin, "harness"),
+				`#!/usr/bin/env bash
+set -euo pipefail
+printf '%s\\n' "$*" >> "\${GLOBAL_HARNESS_LOG:?}"
+printf '%s\\n' '{"passed":true}'
+`,
+				"utf-8",
+			);
+			for (const toolPath of [
+				join(fakeBin, "mise"),
+				join(fakeBin, "harness"),
+			]) {
+				const chmod = spawnSync("chmod", ["+x", toolPath], {
+					encoding: "utf8",
+				});
+				expect(chmod.status).toBe(0);
+			}
+
+			const {
+				BASH_ENV: _ignoredBashEnv,
+				ENV: _ignoredEnv,
+				...inheritedEnv
+			} = process.env;
+			const gateRun = spawnSync(
+				"bash",
+				["scripts/run-harness-gate.sh", "docs-gate", "--json"],
+				{
+					cwd: tempDir,
+					encoding: "utf8",
+					env: {
+						...inheritedEnv,
+						PATH: `${fakeBin}:${process.env.PATH ?? ""}`,
+						GLOBAL_HARNESS_LOG: globalHarnessLog,
+					},
+				},
+			);
+
+			expect(gateRun.status).toBe(0);
+			expect(gateRun.stderr).not.toContain(
+				"source checkout detected but tsx is not installed locally",
+			);
 		});
 
 		it("executes scaffolded check-environment with mise-first then npm fallback runner selection", () => {

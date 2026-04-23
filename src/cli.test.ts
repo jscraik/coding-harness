@@ -136,7 +136,99 @@ describe("run", () => {
 		expect(payload.suggestions.length).toBeGreaterThan(0);
 		expect(payload.suggestions[0]).toHaveProperty("name");
 		expect(payload.suggestions[0]).toHaveProperty("summary");
+		expect(payload.suggestions[0]).toHaveProperty("mutability");
+		expect(payload.suggestions[0]).toHaveProperty("retryability");
+		expect(payload.suggestions[0]).toHaveProperty("requiredFlags");
+		expect(payload.suggestions[0]).toHaveProperty("safeFirstAlternatives");
 		expect(exitSpy).toHaveBeenCalledWith(1);
+	});
+
+	it("keeps unknown commands fail-closed by default even when typo is close", () => {
+		const exitSpy = vi.spyOn(process, "exit").mockImplementation(((
+			code?: number,
+		) => {
+			throw new Error(`EXIT_${String(code)}`);
+		}) as never);
+		const infoSpy = vi.spyOn(console, "info").mockImplementation(() => {
+			// silence output in test
+		});
+
+		expect(() => run(["drfit-gate", "--json"])).toThrowError("EXIT_1");
+		const payload = JSON.parse(String(infoSpy.mock.calls.at(-1)?.[0] ?? "{}"));
+		expect(payload.error).toBe("unknown_command");
+		expect(payload.received).toBe("drfit-gate");
+		expect(exitSpy).toHaveBeenCalledWith(1);
+	});
+
+	it("allows fuzzy command correction only when --allow-fuzzy is provided", () => {
+		const exitSpy = vi.spyOn(process, "exit").mockImplementation(((
+			code?: number,
+		) => {
+			throw new Error(`EXIT_${String(code)}`);
+		}) as never);
+		const stderrWriteSpy = vi
+			.spyOn(process.stderr, "write")
+			.mockImplementation(() => true);
+
+		expect(() => run(["drfit-gate", "--allow-fuzzy", "--json"])).toThrowError(
+			"EXIT_0",
+		);
+		expect(exitSpy).toHaveBeenCalledWith(0);
+		expect(stderrWriteSpy).toHaveBeenCalled();
+		const correctionPayload = JSON.parse(
+			String(stderrWriteSpy.mock.calls.at(-1)?.[0] ?? "{}"),
+		) as {
+			_agent_correction: boolean;
+			received: string;
+			interpreted_as: string;
+		};
+		expect(correctionPayload._agent_correction).toBe(true);
+		expect(correctionPayload.received).toBe("drfit-gate");
+		expect(correctionPayload.interpreted_as).toBe("drift-gate");
+	});
+
+	it("supports HARNESS_ALLOW_FUZZY_COMMANDS=1 env override", () => {
+		const original = process.env.HARNESS_ALLOW_FUZZY_COMMANDS;
+		process.env.HARNESS_ALLOW_FUZZY_COMMANDS = "1";
+		const exitSpy = vi.spyOn(process, "exit").mockImplementation(((
+			code?: number,
+		) => {
+			throw new Error(`EXIT_${String(code)}`);
+		}) as never);
+
+		try {
+			expect(() => run(["drfit-gate", "--json"])).toThrowError("EXIT_0");
+			expect(exitSpy).toHaveBeenCalledWith(0);
+		} finally {
+			if (original === undefined) {
+				process.env.HARNESS_ALLOW_FUZZY_COMMANDS = undefined;
+			} else {
+				process.env.HARNESS_ALLOW_FUZZY_COMMANDS = original;
+			}
+		}
+	});
+
+	it("keeps fuzzy correction disabled when --no-fuzzy is set even if env override is enabled", () => {
+		const original = process.env.HARNESS_ALLOW_FUZZY_COMMANDS;
+		process.env.HARNESS_ALLOW_FUZZY_COMMANDS = "1";
+		const exitSpy = vi.spyOn(process, "exit").mockImplementation(((
+			code?: number,
+		) => {
+			throw new Error(`EXIT_${String(code)}`);
+		}) as never);
+
+		try {
+			expect(() => run(["drfit-gate", "--no-fuzzy", "--json"])).toThrowError(
+				"EXIT_1",
+			);
+			expect(exitSpy).toHaveBeenCalledWith(1);
+		} finally {
+			if (original === undefined) {
+				process.env.HARNESS_ALLOW_FUZZY_COMMANDS = undefined;
+			} else {
+				process.env.HARNESS_ALLOW_FUZZY_COMMANDS = original;
+			}
+		}
 	});
 
 	it.skip("routes remediate run command - async, covered by cli-dispatch.test.ts", () => {
@@ -267,6 +359,21 @@ describe("run", () => {
 		const infoSpy = vi.spyOn(console, "info").mockImplementation(() => {});
 
 		expect(() => run(["init", "--help"])).not.toThrow();
+		expect(infoSpy).toHaveBeenCalledWith(
+			expect.stringContaining("Usage: harness"),
+		);
+		expect(exitSpy).not.toHaveBeenCalled();
+	});
+
+	it("prints top-level help when modifier flags precede --help", () => {
+		const exitSpy = vi.spyOn(process, "exit").mockImplementation(((
+			code?: number,
+		) => {
+			throw new Error(`EXIT_${String(code)}`);
+		}) as never);
+		const infoSpy = vi.spyOn(console, "info").mockImplementation(() => {});
+
+		expect(() => run(["--all", "--help"])).not.toThrow();
 		expect(infoSpy).toHaveBeenCalledWith(
 			expect.stringContaining("Usage: harness"),
 		);

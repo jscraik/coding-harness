@@ -123,7 +123,7 @@ Related gaps are visible in runtime gates:
   does not require fields like `north_star_metric`, `primary_bottleneck`, or
   `why_this_improves_throughput_or_reliability`
   (`src/lib/plan-gate/detector.ts:112-171`, `src/lib/plan-gate/detector.ts:437`)
-- `drift-gate` currently checks command parity, todo lifecycle, quality score,
+- `drift-gate` currently checks command parity, to-do lifecycle, quality score,
   and the status matrix, but not whether `README.md`, the contract, preflight,
   or PR surfaces agree with the canonical north star
   (`src/commands/drift-gate.ts:24`, `src/commands/drift-gate.ts:350-600`)
@@ -146,7 +146,7 @@ workflow platform:
   (`README.md:464-473`)
 - search, context indexing, semantic retrieval, and UI loops as peer surfaces
   (`README.md:488-505`)
-- requirements that include Linear auth, Local Memory, Ollama or local
+- requirements that include Linear auth, Local Memory, and a local embedding
   embeddings, and browser automation tooling (`README.md:506-519`)
 
 The effect is subtle but important. The repo's first honest sentence says
@@ -195,7 +195,7 @@ The strongest single-file evidence of control-plane sprawl is
 - `Makefile`
 - `prek.toml`
 - `CODESTYLE.md`
-- the full codestyle module directory and checksum manifest
+- the full code-style module directory and checksum manifest
 - a long list of support scripts
 - a full Project Brain scaffold
 - a large pinned tool inventory
@@ -216,7 +216,7 @@ teach "full ceremony" as normal.
 
 The same coupling shows up in scaffold output. `src/lib/init/scaffold.ts`
 contains template logic for Codex wrappers, CodeRabbit config, Linear intake,
-workflow generation, Project Brain scaffolding, Git hooks, docs, codestyle
+workflow generation, Project Brain scaffolding, Git hooks, docs, code-style
 packs, workflow files, and environment actions all in one giant emission
 surface (`src/lib/init/scaffold.ts:1-220`, `src/lib/init/scaffold.ts` matches
 around lines `563-605`, `1715-1910`, `2207-2245`, `2896-2912`, `4317-4594`,
@@ -226,7 +226,7 @@ That is drift from the north-star principle "keep repo structures legible to
 agents by making patterns uniform and local to a subtree." The scaffold knows
 too much at once.
 
-### 5. Control-plane hotspots are too large to teach cleanly
+### 5. Control-plane hot spots are too large to teach cleanly
 
 Some complexity is justified. The repo genuinely does hard things. But the
 largest control-plane files now carry too many responsibilities:
@@ -237,7 +237,7 @@ largest control-plane files now carry too many responsibilities:
   emission (`src/commands/review-gate.ts:320-560`, `src/commands/review-gate.ts`
   matches around `523-559`, `686-928`)
 - `src/commands/ci-migrate.ts` has grown into an enormous migration and
-  provenance engine with snapshotting, break-glass policy, merge-queue
+  provenance engine with snapshot capture, break-glass policy, merge-queue
   orchestration, artifact signing, external control-plane capture, parity proof
   bundles, and commit-mode branching (`src/commands/ci-migrate.ts:1-220` and
   matches throughout the file)
@@ -370,7 +370,7 @@ harness bug, not a user obligation.
 
 - Remove `linear-gate` from the conceptual default path unless the selected
   profile explicitly requires Linear.
-- Keep issue tracking pluggable in both docs and scaffold output.
+- Keep issue tracking configurable in both docs and scaffold output.
 - Either automate the remaining Linear repair seams or stop making Linear
   hygiene look like a default success criterion for every repo.
 

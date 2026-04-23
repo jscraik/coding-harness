@@ -134,9 +134,6 @@ const WRITE_COMMANDS = new Set<string>([
 ]);
 
 const REQUIRED_FLAGS_BY_NAME: Partial<Record<string, string[]>> = {
-	"policy-gate": ["--files"],
-	"preflight-gate": ["--files"],
-	"risk-tier": ["--files"],
 	"blast-radius": ["--files"],
 	"review-gate": ["--token", "--owner", "--repo", "--pr", "--sha"],
 	"workflow:generate": ["--source"],

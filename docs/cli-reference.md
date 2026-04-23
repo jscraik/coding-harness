@@ -11,6 +11,7 @@ last_validated: 2026-04-18
 - [Unknown command guardrails](#unknown-command-guardrails)
 - [Bootstrap and governance](#bootstrap-and-governance)
 - [Review and policy gates](#review-and-policy-gates)
+- [review-gate north-star evidence](#review-gate-north-star-evidence)
 - [Linear and workflow operations](#linear-and-workflow-operations)
 - [Pilot, remediation, and automation](#pilot-remediation-and-automation)
 - [Drift, search, and evidence](#drift-search-and-evidence)
@@ -96,8 +97,31 @@ Taxonomy note: section headings in this document represent command families. The
 | `silent-error` | Detect silent error-handling anti-patterns |
 | `memory-gate` | Validate local-memory workflow compliance |
 
-`preflight-gate` contract note: when `harness.contract.json` defines `northStar`, pass `--admission-file <path>` (or explicitly bypass with `--skip admission-declaration`). Command-specific exit codes are `0` pass, `1` policy violation, `3` contract load or existence failure, and `10` unexpected system error.
+## review-gate north-star evidence
 
+When `harness.contract.json` defines `northStar` governance and the changed
+files match a governed product surface, `review-gate` enforces a PR-body
+decision contract in addition to the existing SHA, approvals, and required
+check rules.
+
+Required PR-body lines:
+
+- `lead_time_path: yes. Evidence: <ref>`
+- `manual_glue: yes. Evidence: <ref>`
+- `agent_reliability: yes. Evidence: <ref>`
+- `safety_floor: yes. Evidence: <ref>`
+
+Blocking behavior:
+
+- Missing question lines or missing `Evidence:` references produce
+  `review_evidence_incomplete`.
+- Any answer other than `yes` produces `review_evidence_contradiction`.
+
+Compatibility:
+
+- Repos without `northStar` configuration keep legacy `review-gate` behavior.
+- Repos with `northStar` configured only enforce these decisions when the diff
+  touches a governed surface declared under `productSurface.surfaces`.
 ## Linear and workflow operations
 
 | Command | Purpose |
