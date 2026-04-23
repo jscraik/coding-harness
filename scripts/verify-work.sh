@@ -324,17 +324,15 @@ run_ci_check_alignment_gate() {
 
 	if [[ "$provider" == "circleci" ]]; then
 		local suspicious=()
-		local circleci_check_names
-		circleci_check_names="$(jq -r '.gates[]? | select((.provider // "") == "circleci") | .githubCheckName // empty' "$normalized_manifest_path")"
-			while IFS= read -r name; do
-				case "$name" in
-					lint|typecheck|test|audit|check|build|memory|dependency-scan|orb-pinning|docs-gate|linear-gate|risk-policy-gate|consistency-drift-health|pr-template)
-						suspicious+=("$name")
-						;;
-					*)
-						;;
-				esac
-			done <<< "$circleci_check_names"
+		while IFS= read -r name; do
+			case "$name" in
+				lint|typecheck|test|audit|check|build|memory|dependency-scan|orb-pinning|docs-gate|linear-gate|risk-policy-gate|consistency-drift-health|pr-template)
+					suspicious+=("$name")
+					;;
+				*)
+					;;
+			esac
+		done <<< "$github_check_names"
 
 		if (( ${#suspicious[@]} > 0 )); then
 			printf '[verify-work] ci-check-alignment: CircleCI job-like githubCheckName values detected: %s\n' "${suspicious[*]}"
