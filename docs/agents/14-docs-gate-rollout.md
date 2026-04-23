@@ -1,5 +1,5 @@
 ---
-last_validated: 2026-04-18
+last_validated: 2026-04-23
 ---
 
 # Docs Gate Rollout and Operations
@@ -8,6 +8,7 @@ last_validated: 2026-04-18
 
 - [Overview](#overview)
 - [Verify-Work Lifecycle Alignment](#verify-work-lifecycle-alignment)
+- [Review-gate north-star evidence](#review-gate-north-star-evidence)
 - [Rollout Phases](#rollout-phases)
 - [Promotion Thresholds](#promotion-thresholds)
 - [Demotion and Rollback Triggers](#demotion-and-rollback-triggers)
@@ -41,6 +42,23 @@ Docs-gate rollout decisions should stay aligned with the current `verify-work` l
 - Resume requires deterministic fingerprint tooling (`node`, `shasum`, or `openssl`).
 
 If rollout changes alter gate identity or compatibility fields, rerun `verify-work` and `harness doctor` before promoting docs-gate posture.
+
+## Review-gate north-star evidence
+
+`docs-gate` rollout should stay aligned with review-gate evidence policy.
+When `harness.contract.json` declares `northStar` governance and a PR touches
+governed `productSurface.surfaces[].ownedPaths`, `review-gate` requires these
+PR-body decisions:
+
+- `lead_time_path: yes. Evidence: <ref>`
+- `manual_glue: yes. Evidence: <ref>`
+- `agent_reliability: yes. Evidence: <ref>`
+- `safety_floor: yes. Evidence: <ref>`
+
+Missing decisions or missing `Evidence:` references fail with
+`review_evidence_incomplete`; any non-`yes` answer fails with
+`review_evidence_contradiction`. Repos without declared `northStar` governance
+or without touched governed surfaces keep legacy review-gate behavior.
 
 ## Rollout Phases
 

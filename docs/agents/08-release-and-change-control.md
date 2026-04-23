@@ -1,5 +1,5 @@
 ---
-last_validated: 2026-04-18
+last_validated: 2026-04-23
 ---
 
 # Release and change-control checks
@@ -11,6 +11,7 @@ last_validated: 2026-04-18
 - [Benchmark cadence requirements](#benchmark-cadence-requirements)
 - [Tag-Driven Release Path](#tag-driven-release-path)
 - [Change-control flow](#change-control-flow)
+- [Review-gate north-star evidence](#review-gate-north-star-evidence)
 - [Verify-Work Run State And Resume Compatibility](#verify-work-run-state-and-resume-compatibility)
 - [Rollback policy](#rollback-policy)
 - [Post-change validation](#post-change-validation)
@@ -57,6 +58,22 @@ Use this document before milestones, release-tagged branches, or behavior-changi
 3. Validate against required gates.
 4. Update process artifacts if workflow changed.
 5. Confirm rollback behavior (or document as not applicable).
+
+## Review-gate north-star evidence
+
+When `harness.contract.json` declares `northStar` governance and the PR touches
+governed `productSurface.surfaces[].ownedPaths`, `review-gate` enforces four PR
+body decisions:
+
+- `lead_time_path: yes. Evidence: <ref>`
+- `manual_glue: yes. Evidence: <ref>`
+- `agent_reliability: yes. Evidence: <ref>`
+- `safety_floor: yes. Evidence: <ref>`
+
+Missing decisions or missing `Evidence:` references return
+`review_evidence_incomplete`. Any non-`yes` answer returns
+`review_evidence_contradiction`. Repos without `northStar` governance or
+without touched governed surfaces keep legacy review-gate behavior.
 
 ## Verify-Work Run State And Resume Compatibility
 

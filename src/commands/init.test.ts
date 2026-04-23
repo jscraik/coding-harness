@@ -1751,7 +1751,10 @@ describe("runInit", () => {
 				'exec node "$REPO_ROOT/dist/cli.js" "$@"',
 			);
 			expect(runHarnessGate).toContain(
-				'exec bash "$REPO_ROOT/scripts/harness-cli.sh" "$@"',
+				'if bash "$REPO_ROOT/scripts/harness-cli.sh" "$@"; then',
+			);
+			expect(runHarnessGate).toContain(
+				'echo "Warning: scripts/harness-cli.sh failed; attempting fallback runners." >&2',
 			);
 			expect(runHarnessGate).toContain(
 				"if command -v mise >/dev/null 2>&1; then",

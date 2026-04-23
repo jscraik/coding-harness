@@ -336,6 +336,11 @@ touches one of them, `review-gate` also requires four PR-body decisions:
 line must answer `yes` and include an `Evidence:` reference. Repos that do not
 declare `northStar` governance or do not touch governed surfaces keep the
 legacy SHA and review-check behavior.
+If `review-gate` returns `review_evidence_incomplete` or
+`review_evidence_contradiction`, update the PR body with the required decision
+lines and evidence, or roll back high-risk changes until evidence is coherent;
+see [review-gate north-star evidence](./docs/cli-reference.md#review-gate-north-star-evidence)
+for complete recovery steps.
 
 For repos using CodeRabbit, pair the review-gate with:
 

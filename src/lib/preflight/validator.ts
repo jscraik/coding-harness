@@ -712,7 +712,12 @@ function validateAdmissionDeclaration(
 		typeof declaration.metric_impact_declared === "string"
 			? declaration.metric_impact_declared
 			: undefined;
-	const validMetricImpacts = new Set(["direct", "path_strengthening", "none"]);
+	const validMetricImpacts = new Set([
+		"direct",
+		"direct_reduction",
+		"path_strengthening",
+		"none",
+	]);
 	const throughputRationale = asNonEmptyString(
 		declaration.why_this_improves_throughput_or_reliability,
 	);
@@ -759,7 +764,7 @@ function validateAdmissionDeclaration(
 		!validMetricImpacts.has(metricImpactDeclared)
 	) {
 		addIssue(
-			"metric_impact_declared must be one of: direct, path_strengthening, none",
+			"metric_impact_declared must be one of: direct, direct_reduction, path_strengthening, none",
 		);
 	}
 	if (

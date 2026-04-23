@@ -38,7 +38,10 @@ if [[ -f "$REPO_ROOT/dist/cli.js" ]] && command -v node >/dev/null 2>&1; then
 fi
 
 if [[ -f "$REPO_ROOT/scripts/harness-cli.sh" && -r "$REPO_ROOT/scripts/harness-cli.sh" ]]; then
-	exec bash "$REPO_ROOT/scripts/harness-cli.sh" "$@"
+	if bash "$REPO_ROOT/scripts/harness-cli.sh" "$@"; then
+		exit 0
+	fi
+	echo "Warning: scripts/harness-cli.sh failed; attempting fallback runners." >&2
 fi
 
 if command -v mise >/dev/null 2>&1; then

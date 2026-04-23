@@ -213,18 +213,19 @@ export function loadContract(
 		overrideReviewerRegistry: _defaultOverrideReviewerRegistry,
 		...legacyCompatibleDefaults
 	} = DEFAULT_CONTRACT;
-	const mergeDefaults = requiresCanonicalNorthStarSurfaces(
-		normalizedData.version,
-	)
+	const resolvedVersion =
+		normalizedData.version ??
+		legacyCompatibleDefaults.version ??
+		DEFAULT_CONTRACT.version;
+	const mergeDefaults = requiresCanonicalNorthStarSurfaces(resolvedVersion)
 		? DEFAULT_CONTRACT
 		: legacyCompatibleDefaults;
 	const contract: HarnessContract = {
 		...mergeDefaults,
 		...normalizedData,
 	};
-	const canonicalNorthStarRequired = requiresCanonicalNorthStarSurfaces(
-		contract.version,
-	);
+	const canonicalNorthStarRequired =
+		requiresCanonicalNorthStarSurfaces(resolvedVersion);
 	if (!canonicalNorthStarRequired) {
 		if (!Object.prototype.hasOwnProperty.call(normalizedData, "northStar")) {
 			contract.northStar = undefined;

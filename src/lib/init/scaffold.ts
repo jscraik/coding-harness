@@ -1326,7 +1326,10 @@ if [[ -f "$REPO_ROOT/dist/cli.js" ]] && command -v node >/dev/null 2>&1; then
 fi
 
 if [[ -f "$REPO_ROOT/scripts/harness-cli.sh" && -r "$REPO_ROOT/scripts/harness-cli.sh" ]]; then
-	exec bash "$REPO_ROOT/scripts/harness-cli.sh" "$@"
+	if bash "$REPO_ROOT/scripts/harness-cli.sh" "$@"; then
+		exit 0
+	fi
+	echo "Warning: scripts/harness-cli.sh failed; attempting fallback runners." >&2
 fi
 
 if command -v mise >/dev/null 2>&1; then
@@ -3188,6 +3191,7 @@ Recommended policy:
 
 - \`harness init\` also scaffolds \`scripts/harness-cli.sh\` for repositories that want a repo-local wrapper around the published CLI package.
 - The wrapper resolves \`@brainwav/coding-harness/dist/cli.js\` from the current repository before running any harness command.
+- \`scripts/run-harness-gate.sh\` treats source checkouts as fail-closed when \`pnpm\`/\`tsx\` are unavailable so gates do not silently fall back to stale binaries.
 - If the wrapper cannot resolve the package, treat that as local install/bootstrap drift rather than a harness command failure.
 - Repair from the repo root with:
   - \`${installCommand}\`
