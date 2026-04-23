@@ -1,10 +1,5 @@
 import { existsSync, readFileSync } from "node:fs";
-import {
-	basename,
-	dirname,
-	isAbsolute,
-	resolve as resolvePath,
-} from "node:path";
+import { dirname, isAbsolute, resolve as resolvePath } from "node:path";
 import { ContractLoadError, loadContract } from "../lib/contract/loader.js";
 import {
 	DEFAULT_REVIEW_POLICY,
@@ -803,10 +798,7 @@ function resolveRequiredChecksManifestPath(
 	}
 	const usesDefaultManifestPath =
 		manifestPath === DEFAULT_REQUIRED_CHECK_MANIFEST_PATH;
-	const isCanonicalContractPath =
-		typeof resolvedContractPath === "string" &&
-		basename(resolvedContractPath) === "harness.contract.json";
-	if (!usesDefaultManifestPath || !isCanonicalContractPath) {
+	if (!usesDefaultManifestPath) {
 		return manifestFromContractDir;
 	}
 	let cursor = contractDir;

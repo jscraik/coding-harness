@@ -2567,6 +2567,10 @@ describe("runReviewGate", () => {
 				status: "completed",
 				conclusion: "success",
 				head_sha: validSha,
+				app: {
+					slug: "circleci",
+					id: 2,
+				},
 			},
 			{
 				id: 3,
@@ -2907,6 +2911,10 @@ describe("runReviewGate", () => {
 				status: "completed",
 				conclusion: "success",
 				head_sha: validSha,
+				app: {
+					slug: "circleci",
+					id: 2,
+				},
 			},
 			{
 				id: 3,
@@ -2914,6 +2922,10 @@ describe("runReviewGate", () => {
 				status: "completed",
 				conclusion: "success",
 				head_sha: validSha,
+				app: {
+					slug: "coderabbit",
+					id: 3,
+				},
 			},
 			{
 				id: 4,
@@ -3163,7 +3175,7 @@ describe("runReviewGate", () => {
 
 			const result = await runReviewGate({
 				...defaultOptions,
-				contractPath: join(tempDir, "config", "harness.contract.json"),
+				contractPath: join(tempDir, "config", "review.contract.json"),
 			});
 
 			expect(result.ok).toBe(true);
@@ -4059,6 +4071,10 @@ describe("runReviewGate", () => {
 				status: "in_progress",
 				conclusion: null,
 				head_sha: validSha,
+				app: {
+					slug: "circleci",
+					id: 2,
+				},
 			},
 		];
 		mockGitHubClient.mockImplementation(
@@ -4119,6 +4135,10 @@ describe("runReviewGate", () => {
 				status: "completed",
 				conclusion: "failure",
 				head_sha: validSha,
+				app: {
+					slug: "circleci",
+					id: 2,
+				},
 			},
 		];
 		mockGitHubClient.mockImplementation(
@@ -4280,6 +4300,10 @@ describe("runReviewGate", () => {
 				status: "completed",
 				conclusion: "failure",
 				head_sha: validSha,
+				app: {
+					slug: "circleci",
+					id: 2,
+				},
 			},
 			{
 				id: 5,
@@ -4287,6 +4311,10 @@ describe("runReviewGate", () => {
 				status: "completed",
 				conclusion: "success",
 				head_sha: validSha,
+				app: {
+					slug: "circleci",
+					id: 2,
+				},
 			},
 		];
 		const mockListCheckRuns = vi.fn().mockResolvedValue(mockCheckRuns);

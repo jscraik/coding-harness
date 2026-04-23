@@ -76,6 +76,9 @@ const EXPECTED_NORTH_STAR_DECISION_QUESTION_IDS =
 	new Set<NorthStarDecisionQuestionId>(
 		NORTH_STAR_DECISION_QUESTION_SPECS.map(({ id }) => id),
 	);
+const EXPECTED_NORTH_STAR_DECISION_QUESTION_PROMPTS = new Map(
+	NORTH_STAR_DECISION_QUESTION_SPECS.map(({ id, prompt }) => [id, prompt]),
+);
 
 function isValidNorthStarDecisionQuestion(
 	value: unknown,
@@ -108,7 +111,14 @@ function isValidNorthStarDecisionQuestion(
 	) {
 		return false;
 	}
-	return typeof record.prompt === "string" && record.prompt.trim().length > 0;
+	const expectedPrompt = EXPECTED_NORTH_STAR_DECISION_QUESTION_PROMPTS.get(
+		record.id as NorthStarDecisionQuestionId,
+	);
+	return (
+		typeof record.prompt === "string" &&
+		record.prompt.trim().length > 0 &&
+		record.prompt === expectedPrompt
+	);
 }
 
 export function isValidNorthStarContract(

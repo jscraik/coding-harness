@@ -1,4 +1,5 @@
 import { describe, expect, it } from "vitest";
+import { DEFAULT_PRODUCT_SURFACE_REGISTRY } from "./types.js";
 import { ValidationErrorCode, validateContract } from "./validator.js";
 
 describe("validateContract", () => {
@@ -42,6 +43,46 @@ describe("validateContract", () => {
 		);
 	});
 
+	it("rejects northStar decision questions when prompt text drifts from canonical mapping", () => {
+		const result = validateContract({
+			version: "1.6.0",
+			northStar: {
+				mission: "Throughput over ceremony",
+				primaryMetric: "pr_lead_time",
+				primaryBottleneck: "review_rework_loop",
+				autonomyBoundary: "bounded autonomy",
+				safetyFloor: ["deterministic evidence"],
+				nonGoals: ["manual glue loops"],
+				decisionQuestions: [
+					{
+						id: "lead_time_path",
+						prompt: "Does this reduce lead time?",
+					},
+					{
+						id: "manual_glue",
+						prompt:
+							"Does this remove repeated manual glue work rather than normalizing it?",
+					},
+					{
+						id: "agent_reliability",
+						prompt:
+							"Does this make acceptable output easier for agents to produce reliably?",
+					},
+					{
+						id: "safety_floor",
+						prompt:
+							"Does this preserve strict evidence, SHA discipline, and rollback safety?",
+					},
+				],
+			},
+		});
+
+		expect(result.success).toBe(false);
+		expect(result.errors.some((error) => error.path === "northStar")).toBe(
+			true,
+		);
+	});
+
 	it("accepts valid northStar, productSurface, and overrideReviewerRegistry", () => {
 		const result = validateContract({
 			version: "1.6.0",
@@ -56,19 +97,23 @@ describe("validateContract", () => {
 				decisionQuestions: [
 					{
 						id: "lead_time_path",
-						prompt: "Does this reduce PR lead time directly?",
+						prompt:
+							"Does this reduce PR lead time directly, or strengthen the path to lower PR lead time by reducing review or rework cost?",
 					},
 					{
 						id: "manual_glue",
-						prompt: "Does this remove recurring manual glue work?",
+						prompt:
+							"Does this remove repeated manual glue work rather than normalizing it?",
 					},
 					{
 						id: "agent_reliability",
-						prompt: "Does this make reliable output easier for agents?",
+						prompt:
+							"Does this make acceptable output easier for agents to produce reliably?",
 					},
 					{
 						id: "safety_floor",
-						prompt: "Does this preserve deterministic safety guardrails?",
+						prompt:
+							"Does this preserve strict evidence, SHA discipline, and rollback safety?",
 					},
 				],
 			},
@@ -116,6 +161,15 @@ describe("validateContract", () => {
 		expect(result.errors.some((error) => error.path === "productSurface")).toBe(
 			true,
 		);
+	});
+
+	it("accepts exported default productSurface registry when provided", () => {
+		const result = validateContract({
+			version: "1.6.0",
+			productSurface: DEFAULT_PRODUCT_SURFACE_REGISTRY,
+		});
+
+		expect(result.success).toBe(true);
 	});
 
 	it("rejects malformed overrideReviewerRegistry when provided", () => {
