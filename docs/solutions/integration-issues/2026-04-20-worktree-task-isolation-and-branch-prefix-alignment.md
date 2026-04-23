@@ -25,7 +25,9 @@ tags:
   - codex-enforced
   - new-task
   - prepare-worktree
-last_validated: 2026-04-20
+  - review-gates
+  - ci-checks
+last_validated: 2026-04-23
 ---
 
 # Solution: Enforce Unique Task Worktrees with `jscraik/feature`
@@ -36,6 +38,7 @@ last_validated: 2026-04-20
 - [Implemented Solution](#implemented-solution)
 - [Verification Evidence](#verification-evidence)
 - [Prevention](#prevention)
+- [Review-Loop Learnings (2026-04-23)](#review-loop-learnings-2026-04-23)
 - [Related Artifacts](#related-artifacts)
 
 ## Problem
@@ -97,9 +100,59 @@ Delivery evidence:
 - Treat `main` as a protected entry context for feature work and immediately re-home runs into dedicated task worktrees.
 - Keep docs and generated templates in parity whenever branch/worktree policies change.
 
+## Review-Loop Learnings (2026-04-23)
+
+This artifact was refreshed after the PR remediation/merge loop for `#210`, `#211`, and `#212`, where CodeRabbit and Codex review threads were iteratively resolved and all three PRs were merged.
+
+### 1. Gate wrappers must preserve functional failures
+
+- `scripts/run-harness-gate.sh` should only fallback when a wrapper cannot execute (for example `126/127`).
+- For functional harness failures, preserve the original exit status so CI and pre-push behavior remain fail-closed and diagnosable.
+- Evidence:
+  - https://github.com/jscraik/coding-harness/pull/211#discussion_r3126567590
+  - https://github.com/jscraik/coding-harness/pull/211#discussion_r3126309930
+
+### 2. Docs-gate diff logic must use PR-accurate ranges
+
+- `docs-gate` change discovery should use merge-base/PR commit ranges rather than weak local fallbacks.
+- Weak fallbacks can misclassify required-surface edits and create false pass/fail outcomes.
+- Evidence:
+  - https://github.com/jscraik/coding-harness/pull/210#discussion_r3126884157
+  - https://github.com/jscraik/coding-harness/pull/210#discussion_r3127718406
+
+### 3. Contract schema and runtime validators must stay in lockstep
+
+- High-severity review findings clustered around north-star contract behavior where schema defaults/constraints drifted from runtime checks.
+- Version gating, extends-aware validation, and uniqueness constraints need synchronized updates across:
+  - `src/lib/contract/json-schema.ts`
+  - `src/lib/contract/types.ts`
+  - `src/lib/contract/validator.ts`
+- Evidence:
+  - https://github.com/jscraik/coding-harness/pull/212#discussion_r3127251079
+  - https://github.com/jscraik/coding-harness/pull/212#discussion_r3129786416
+  - https://github.com/jscraik/coding-harness/pull/212#discussion_r3129786438
+
+### 4. Merge readiness depends on both status contexts and review-thread closure
+
+- Required checks can remain blocked even when most CircleCI jobs are green (for example, a stuck `orb-pinning` dependency preventing `pr-pipeline` closure).
+- Conversation-thread resolution is a separate hard gate; unresolved bot threads can block merge after code and CI appear ready.
+- Operational rule: track merge readiness by required status contexts plus unresolved thread count, not by job list alone.
+
+### 5. CI bootstrap scripts need portability-safe assumptions
+
+- Review findings repeatedly flagged bootstrap fragility in Semgrep setup and shell/platform assumptions.
+- Environment bootstrap should avoid GNU-only behavior and keep version/path handling deterministic across runners.
+- Evidence:
+  - https://github.com/jscraik/coding-harness/pull/210#discussion_r3127224904
+  - https://github.com/jscraik/coding-harness/pull/212#discussion_r3123253240
+
 ## Related Artifacts
 
 - Commit: `31cecabbdfcdd61b2c9e570e26caa32c93f0e9cb` (`fix(tooling): align task branch prefix and worktree guards`)
+- PR merge outcomes from this refresh pass:
+  - `#210` merged (review-gate/provider-resolution lane)
+  - `#211` merged at `2026-04-23T13:41:41Z` (`6fa543d6a21b8c795dea32111549b332915d2375`)
+  - `#212` merged at `2026-04-23T13:09:30Z` (`fa13aba31ae59af2f40c10a9bd9015e97ede19e0`)
 - Modified policy/runtime surfaces:
   - `scripts/codex-enforced`
   - `scripts/new-task.sh`
