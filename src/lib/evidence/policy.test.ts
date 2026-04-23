@@ -115,6 +115,59 @@ describe("enforceEvidencePolicy", () => {
 		expect(result.violations).toHaveLength(0);
 	});
 
+	it("accepts singular/plural basename matches without requiring exact extension", () => {
+		const verifiedFiles = [mockEvidenceFile("evidence/buttons.png", "png")];
+		const changedFiles = ["src/ui/Button.tsx"];
+		const policy = {
+			requiredFor: ["src/ui/**/*.tsx"],
+			allowedTypes: ["png", "jpeg"] as ImageFormat[],
+		};
+
+		const result = enforceEvidencePolicy(verifiedFiles, changedFiles, policy);
+		expect(result.passed).toBe(true);
+		expect(result.violations).toHaveLength(0);
+	});
+
+	it("does not treat substring basename collisions as valid evidence", () => {
+		const verifiedFiles = [
+			mockEvidenceFile("evidence/authentication-flow.png", "png"),
+		];
+		const changedFiles = ["src/ui/auth.tsx"];
+		const policy = {
+			requiredFor: ["src/ui/**/*.tsx"],
+			allowedTypes: ["png", "jpeg"] as ImageFormat[],
+		};
+
+		const result = enforceEvidencePolicy(verifiedFiles, changedFiles, policy);
+		expect(result.passed).toBe(false);
+		expect(
+			result.violations.some(
+				(violation) => violation.code === "FILE_NOT_FOUND",
+			),
+		).toBe(true);
+		expect(result.missingEvidence).toContain("src/ui/auth.tsx");
+	});
+
+	it("does not treat supersets of unrelated basenames as valid evidence", () => {
+		const verifiedFiles = [
+			mockEvidenceFile("evidence/profile-summary.png", "png"),
+		];
+		const changedFiles = ["src/ui/file.tsx"];
+		const policy = {
+			requiredFor: ["src/ui/**/*.tsx"],
+			allowedTypes: ["png", "jpeg"] as ImageFormat[],
+		};
+
+		const result = enforceEvidencePolicy(verifiedFiles, changedFiles, policy);
+		expect(result.passed).toBe(false);
+		expect(
+			result.violations.some(
+				(violation) => violation.code === "FILE_NOT_FOUND",
+			),
+		).toBe(true);
+		expect(result.missingEvidence).toContain("src/ui/file.tsx");
+	});
+
 	it("handles multiple violations", () => {
 		const verifiedFiles = [
 			mockEvidenceFile("evidence/button.png", "png"),

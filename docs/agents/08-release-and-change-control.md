@@ -62,11 +62,11 @@ Use this document before milestones, release-tagged branches, or behavior-changi
 
 `bash scripts/verify-work.sh` stores run-state under `.harness/runs/<run-id>/`:
 
-- `run.json` contains lane metadata and compatibility keys (`repoRoot`, `providerClass`, `schemaVersion`, `contractVersion`).
+- `run.json` contains lane metadata and compatibility keys (`repoRoot`, `providerClass`, `schemaVersion`, `contractVersion`, `contractFingerprint`).
 - `gates/<gate-id>.json` stores each gate outcome.
 - `summary.json` stores terminal status and failed gate identity.
 
-When resuming with `bash scripts/verify-work.sh --resume-from <gate-id>`, prior gates are reused only if the compatibility tuple still matches and reused gates are already `passed`.
+When resuming with `bash scripts/verify-work.sh --resume-from <gate-id>`, prior gates are reused only if the compatibility tuple still matches and reused gates are already `passed`. Resume is rejected if deterministic fingerprint tooling is unavailable (`node`, `shasum`, or `openssl`).
 
 ## Rollback policy
 

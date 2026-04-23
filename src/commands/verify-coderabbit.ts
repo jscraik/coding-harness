@@ -355,7 +355,7 @@ async function verifyRemoteCodeRabbitSetup(
 					details: {
 						rulesetId: protectRuleset.id,
 						currentChecks: requiredChecks.map((c) => c.context),
-						hint: "Add CodeRabbit to required checks: harness branch-protect --add-check CodeRabbit",
+						hint: "Add CodeRabbit to required checks: harness branch-protect --checks CodeRabbit",
 					},
 				});
 			}

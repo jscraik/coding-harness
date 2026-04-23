@@ -37,7 +37,7 @@ For any behavior-affecting change:
 - `gates/<gate-id>.json` (per-gate results),
 - `summary.json` (terminal status).
 
-Fast-mode orchestration uses `read_only_parallel` for safe parallel checks and `serial_guarded` for fail-closed gates. Resume with `bash scripts/verify-work.sh --resume-from <gate-id>` only when the latest compatible run matches `repoRoot`, `providerClass`, `schemaVersion`, and `contractVersion`, and reused gates are already `passed`.
+Fast-mode orchestration uses `read_only_parallel` for safe parallel checks and `serial_guarded` for fail-closed gates. Resume with `bash scripts/verify-work.sh --resume-from <gate-id>` only when the latest compatible run matches `repoRoot`, `providerClass`, `schemaVersion`, `contractVersion`, and `contractFingerprint`, and reused gates are already `passed`. Resume is blocked when the current environment cannot compute a deterministic `contractFingerprint` (requires one of `node`, `shasum`, or `openssl`).
 
 ## Gate-by-gate intent
 

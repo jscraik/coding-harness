@@ -7,6 +7,7 @@ import type {
 	MergePolicyValue,
 } from "./types.js";
 import { DEFAULT_CONTRACT } from "./types.js";
+import { requiresCanonicalNorthStarSurfaces } from "./validator-helpers.js";
 import {
 	type ValidationError,
 	ValidationErrorCode,
@@ -210,6 +211,27 @@ export function loadContract(
 		...DEFAULT_CONTRACT,
 		...normalizedData,
 	};
+	const canonicalNorthStarRequired = requiresCanonicalNorthStarSurfaces(
+		contract.version,
+	);
+	if (!canonicalNorthStarRequired) {
+		if (!Object.prototype.hasOwnProperty.call(normalizedData, "northStar")) {
+			contract.northStar = undefined;
+		}
+		if (
+			!Object.prototype.hasOwnProperty.call(normalizedData, "productSurface")
+		) {
+			contract.productSurface = undefined;
+		}
+		if (
+			!Object.prototype.hasOwnProperty.call(
+				normalizedData,
+				"overrideReviewerRegistry",
+			)
+		) {
+			contract.overrideReviewerRegistry = undefined;
+		}
+	}
 
 	// Normalize merge policy if present
 	if (contract.mergePolicy) {

@@ -1,3 +1,4 @@
+import { execFileSync } from "node:child_process";
 import { createHash } from "node:crypto";
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { dirname, join, resolve } from "node:path";
@@ -8,6 +9,7 @@ import type {
 	DocsImpactCategory,
 	HarnessContract,
 } from "../lib/contract/types.js";
+import { DEFAULT_DOCS_GATE_POLICY } from "../lib/contract/types.js";
 import { validateContract } from "../lib/contract/validator.js";
 import { sanitizeError } from "../lib/input/sanitize.js";
 import { validatePath } from "../lib/input/validator.js";
@@ -46,6 +48,7 @@ export interface DocsGateOptions {
 	json?: boolean;
 	outPath?: string;
 	changedFiles?: string[];
+	deletedFiles?: string[];
 	repoRoot?: string;
 	trustedBaseRef?: string;
 	trustedContractSha?: string;
@@ -120,6 +123,30 @@ const PACKAGE_JSON_PATH = "package.json";
 const WORKFLOW_PATH = ".github/workflows/pr-pipeline.yml";
 const CONTRADICTION_HISTORY_PATH =
 	"artifacts/context-integrity/contradiction-history.jsonl";
+const INSTRUCTION_PRECEDENCE_SOURCE_PATHS = [
+	"AGENTS.md",
+	"README.md",
+	"CONTRIBUTING.md",
+	"CLAUDE.md",
+] as const;
+const WORKFLOW_AUTHORITY_DOC_PATHS = Array.from(
+	new Set(
+		(DEFAULT_DOCS_GATE_POLICY.surfaces ?? [])
+			.filter((surface) => surface.requiredFor.includes("workflow_authority"))
+			.map((surface) => surface.path)
+			.filter((path) => path.endsWith(".md")),
+	),
+);
+const WORKFLOW_POLICY_ADDITIONAL_SOURCE_PATHS = [
+	"docs/agents/17-ci-required-checks.md",
+] as const;
+const WORKFLOW_POLICY_SOURCE_PATHS: readonly string[] = Array.from(
+	new Set([
+		...INSTRUCTION_PRECEDENCE_SOURCE_PATHS,
+		...WORKFLOW_AUTHORITY_DOC_PATHS,
+		...WORKFLOW_POLICY_ADDITIONAL_SOURCE_PATHS,
+	]),
+);
 interface LoadedContract {
 	contract: HarnessContract;
 }
@@ -137,6 +164,13 @@ interface ContradictionRecord {
 interface ContradictionFinding extends DocsFinding {
 	finding_id: string;
 	source_paths: string[];
+}
+
+interface ChangedFilesResolution {
+	changedFiles: string[];
+	deletedFiles: string[];
+	source: DocsGateExecutionContext["changedFilesSource"];
+	error?: string;
 }
 
 /**
@@ -249,6 +283,98 @@ function parseWorkflowCheckNames(repoRoot: string): Set<string> {
 		}
 	}
 	return checks;
+}
+
+function extractDeclaredPathToken(value: string): string | undefined {
+	const markdownLinkMatch = value.match(/\[[^\]]+\]\(([^)]+)\)/);
+	const backtickMatch = value.match(/`([^`]+)`/);
+	const token =
+		markdownLinkMatch?.[1] ??
+		backtickMatch?.[1] ??
+		value.match(
+			/(?:^|\s)(?:~\/|\.{1,2}\/|\/)?[A-Za-z0-9._/-]+(?:\.md)?(?:#\w[\w-]*)?(?=$|[\s),.;])/,
+		)?.[0];
+	if (!token) {
+		return undefined;
+	}
+	const normalized = token
+		.trim()
+		.replace(/^<|>$/g, "")
+		.replace(/^[\s(]+|[\s).,;]+$/g, "")
+		.replace(/^\.\/+/, "")
+		.replace(/#.*$/, "");
+	return normalized.length > 0 ? normalized : undefined;
+}
+
+function extractDiscoveryFirstSource(content: string): string | undefined {
+	const headingMatch = content.match(
+		/(?:^|\n)#{1,6}\s*codex discovery order\b[^\n]*\n([\s\S]*?)(?=\n#{1,6}\s|$)/i,
+	);
+	const sectionBody = headingMatch?.[1];
+	if (sectionBody) {
+		for (const line of sectionBody.split(/\r?\n/)) {
+			const firstStepMatch = line.match(/^\s*1\.\s+(.+)$/);
+			if (!firstStepMatch?.[1]) {
+				continue;
+			}
+			const declaredPath = extractDeclaredPathToken(firstStepMatch[1]);
+			if (declaredPath) {
+				return declaredPath;
+			}
+		}
+	}
+
+	for (const line of content.split(/\r?\n/)) {
+		const readFirstMatch = line.match(
+			/\b(?:read|open|follow)\s+(.+?)\s+first\b/i,
+		);
+		if (!readFirstMatch?.[1]) {
+			continue;
+		}
+		const declaredPath = extractDeclaredPathToken(readFirstMatch[1]);
+		if (declaredPath) {
+			return declaredPath;
+		}
+	}
+	return undefined;
+}
+
+function normalizeProviderToken(value: string): string | undefined {
+	const normalized = value.trim().toLowerCase();
+	if (normalized.length === 0) {
+		return undefined;
+	}
+	if (
+		normalized === "github-actions" ||
+		normalized === "github actions" ||
+		normalized === "github"
+	) {
+		return "github-actions";
+	}
+	if (normalized === "circleci" || normalized === "circle ci") {
+		return "circleci";
+	}
+	return normalized;
+}
+
+function extractDeclaredActiveProvider(content: string): string | undefined {
+	for (const line of content.split(/\r?\n/)) {
+		const normalizedLine = line.trim();
+		if (normalizedLine.length === 0 || normalizedLine.startsWith("#")) {
+			continue;
+		}
+		const match = normalizedLine.match(
+			/(?:^|[{\s])(?:"(?:activeprovider|active(?:\s+ci)?\s+provider)"|\b(?:active(?:\s+ci)?\s+provider|activeprovider)\b)\s*(?::|=|is)\s*(?:["'`])?([a-z0-9 _-]+)(?:["'`])?/i,
+		);
+		if (!match?.[1]) {
+			continue;
+		}
+		const provider = normalizeProviderToken(match[1]);
+		if (provider) {
+			return provider;
+		}
+	}
+	return undefined;
 }
 
 function buildFindingId(
@@ -389,6 +515,142 @@ function collectContradictionFindings(
 		}
 	}
 
+	const precedenceDeclarations = INSTRUCTION_PRECEDENCE_SOURCE_PATHS.flatMap(
+		(sourcePath) => {
+			const content = loadFileIfPresent(join(repoRoot, sourcePath));
+			if (!content) {
+				return [];
+			}
+			const firstSource = extractDiscoveryFirstSource(content);
+			if (!firstSource) {
+				return [];
+			}
+			return [{ sourcePath, firstSource }];
+		},
+	);
+	const uniqueFirstSources = Array.from(
+		new Set(precedenceDeclarations.map((entry) => entry.firstSource)),
+	);
+	if (uniqueFirstSources.length > 1) {
+		const sourcePaths = precedenceDeclarations.map((entry) => entry.sourcePath);
+		const declarationSummary = precedenceDeclarations
+			.map((entry) => `${entry.sourcePath} -> ${entry.firstSource}`)
+			.join("; ");
+		for (const declaration of precedenceDeclarations) {
+			const message = `Instruction precedence conflict: canonical docs disagree on first discovery source (${declarationSummary})`;
+			findings.push({
+				finding_id: buildFindingId(
+					"instruction_precedence_conflict",
+					declaration.sourcePath,
+					message,
+				),
+				rule_id: "context-integrity.instruction_precedence_conflict",
+				category: "instruction_precedence_conflict",
+				surface: declaration.sourcePath,
+				rule_result: "fail",
+				result: "fail",
+				severity:
+					mode === "required"
+						? resolveContradictionSeverity(
+								contextIntegrityPolicy,
+								"instruction_precedence_conflict",
+							)
+						: "warning",
+				message,
+				path: declaration.sourcePath,
+				source_paths: sourcePaths,
+			});
+		}
+	}
+
+	const providerDeclarations = WORKFLOW_POLICY_SOURCE_PATHS.flatMap(
+		(sourcePath) => {
+			const content = loadFileIfPresent(join(repoRoot, sourcePath));
+			if (!content) {
+				return [];
+			}
+			const provider = extractDeclaredActiveProvider(content);
+			if (!provider) {
+				return [];
+			}
+			return [{ sourcePath, provider }];
+		},
+	);
+	const uniqueDeclaredProviders = Array.from(
+		new Set(providerDeclarations.map((entry) => entry.provider)),
+	);
+	const interDocConflictPaths = new Set<string>();
+	if (uniqueDeclaredProviders.length > 1) {
+		const sourcePaths = providerDeclarations.map((entry) => entry.sourcePath);
+		for (const sourcePath of sourcePaths) {
+			interDocConflictPaths.add(sourcePath);
+		}
+		const summary = providerDeclarations
+			.map((entry) => `${entry.sourcePath} -> ${entry.provider}`)
+			.join("; ");
+		const message = `Workflow policy conflict: docs declare inconsistent active providers (${summary})`;
+		findings.push({
+			finding_id: buildFindingId(
+				"workflow_policy_conflict",
+				sourcePaths.join(","),
+				message,
+			),
+			rule_id: "context-integrity.workflow_policy_conflict",
+			category: "workflow_policy_conflict",
+			surface: sourcePaths[0] ?? "docs/agents",
+			rule_result: "fail",
+			result: "fail",
+			severity:
+				mode === "required"
+					? resolveContradictionSeverity(
+							contextIntegrityPolicy,
+							"workflow_policy_conflict",
+						)
+					: "warning",
+			message,
+			...(sourcePaths[0] ? { path: sourcePaths[0] } : {}),
+			source_paths: sourcePaths,
+		});
+	}
+
+	const normalizedActiveProvider =
+		typeof activeProvider === "string"
+			? normalizeProviderToken(activeProvider)
+			: undefined;
+	if (normalizedActiveProvider) {
+		for (const declaration of providerDeclarations) {
+			if (interDocConflictPaths.has(declaration.sourcePath)) {
+				continue;
+			}
+			if (declaration.provider === normalizedActiveProvider) {
+				continue;
+			}
+			const message = `Workflow policy conflict: ${declaration.sourcePath} declares active provider '${declaration.provider}' but contract requires '${normalizedActiveProvider}'`;
+			findings.push({
+				finding_id: buildFindingId(
+					"workflow_policy_conflict",
+					declaration.sourcePath,
+					message,
+				),
+				rule_id: "context-integrity.workflow_policy_conflict",
+				category: "workflow_policy_conflict",
+				surface: declaration.sourcePath,
+				rule_result: "fail",
+				result: "fail",
+				severity:
+					mode === "required"
+						? resolveContradictionSeverity(
+								contextIntegrityPolicy,
+								"workflow_policy_conflict",
+							)
+						: "warning",
+				message,
+				path: declaration.sourcePath,
+				source_paths: [declaration.sourcePath, CONTRACT_PATH],
+			});
+		}
+	}
+
 	return findings;
 }
 
@@ -493,16 +755,11 @@ function classifyChanges(
 		".diagram/",
 		"ops/",
 	];
-	const workflowAuthorityDocs = new Set([
-		"docs/agents/01-instruction-map.md",
-		"docs/agents/04-validation.md",
-		"docs/agents/08-release-and-change-control.md",
-		"docs/agents/10-agent-testing-gates.md",
-		"docs/agents/13-linear-production-workflow.md",
-		"docs/agents/14-docs-gate-rollout.md",
-		"docs/agents/15-context-integrity-compact.md",
-		"docs/agents/16-linear-production-compact.md",
-	]);
+	const workflowAuthorityDocs = new Set(
+		WORKFLOW_POLICY_SOURCE_PATHS.filter((path) =>
+			path.startsWith("docs/agents/"),
+		),
+	);
 
 	for (const file of changedFiles) {
 		let matched = false;
@@ -685,6 +942,7 @@ function checkSurfacePresence(
 	requiredSurfaces: string[],
 	changedFiles: string[],
 	policy: DocsGatePolicy,
+	deletedFiles: Set<string>,
 ): { present: string[]; missing: string[]; findings: DocsFinding[] } {
 	const present: string[] = [];
 	const missing: string[] = [];
@@ -692,10 +950,13 @@ function checkSurfacePresence(
 
 	for (const surface of requiredSurfaces) {
 		const isDirectorySurface = surface.endsWith("/");
-		const isChanged = changedFiles.some((f) =>
+		const matchingChangedFiles = changedFiles.filter((f) =>
 			isDirectorySurface
 				? f.startsWith(surface)
 				: f === surface || f.endsWith(`/${surface}`),
+		);
+		const isChanged = matchingChangedFiles.some(
+			(filePath) => !deletedFiles.has(filePath),
 		);
 
 		if (isChanged) {
@@ -742,6 +1003,7 @@ function checkSurfacePresence(
 function buildExecutionContext(
 	options: DocsGateOptions,
 	policy?: DocsGatePolicy,
+	changedFilesSource: DocsGateExecutionContext["changedFilesSource"] = "git_diff",
 ): DocsGateExecutionContext {
 	const trigger = options.trigger ?? "local";
 	const policyMode = policy?.mode ?? options.mode ?? "advisory";
@@ -771,9 +1033,196 @@ function buildExecutionContext(
 		mergeQueueTargetRef: options.mergeQueueTargetRef,
 		mergeQueueBaseSha: options.mergeQueueBaseSha,
 		bootstrapState,
-		changedFilesSource: options.changedFiles ? "explicit_flag" : "git_diff",
+		changedFilesSource,
 		outputRoot: "artifacts/consistency-gate",
 	};
+}
+
+function parseGitFileList(output: string): string[] {
+	return output
+		.split(/\r?\n/)
+		.map((line) => line.trim())
+		.filter((line) => line.length > 0);
+}
+
+function parseGitNameStatus(output: string): {
+	changedFiles: string[];
+	deletedFiles: string[];
+} {
+	const changedFiles: string[] = [];
+	const deletedFiles = new Set<string>();
+
+	for (const line of output.split(/\r?\n/)) {
+		if (line.trim().length === 0) {
+			continue;
+		}
+		const fields = line.split("\t");
+		const statusField = fields[0]?.trim() ?? "";
+		const status = statusField[0] ?? "";
+		let filePath = "";
+
+		if ((status === "R" || status === "C") && fields.length >= 3) {
+			filePath = fields[2]?.trim() ?? "";
+		} else if (fields.length >= 2) {
+			filePath = fields[1]?.trim() ?? "";
+		}
+
+		if (filePath.length === 0) {
+			continue;
+		}
+
+		changedFiles.push(filePath);
+		if (status === "D") {
+			deletedFiles.add(filePath);
+		}
+	}
+
+	return { changedFiles, deletedFiles: [...deletedFiles] };
+}
+
+function resolveChangedFiles(
+	options: DocsGateOptions,
+	repoRoot: string,
+): ChangedFilesResolution {
+	if (options.changedFiles) {
+		return {
+			changedFiles: options.changedFiles,
+			deletedFiles: options.deletedFiles ?? [],
+			source: "explicit_flag",
+		};
+	}
+
+	try {
+		const trackedDiffArgs = [
+			"-C",
+			repoRoot,
+			"diff",
+			"--name-status",
+			"--diff-filter=ACMRD",
+		] as const;
+		const workingTreeDiffArgs = [
+			"-C",
+			repoRoot,
+			"diff",
+			"--name-status",
+			"--diff-filter=ACMRD",
+		] as const;
+		const stagedDiffArgs = [
+			"-C",
+			repoRoot,
+			"diff",
+			"--name-status",
+			"--cached",
+			"--diff-filter=ACMRD",
+		] as const;
+		const baseRefCandidates = [
+			options.mergeQueueBaseSha,
+			options.trustedBaseRef,
+			"origin/main",
+			"origin/master",
+		].filter(
+			(value): value is string =>
+				typeof value === "string" && value.trim().length > 0,
+		);
+		let trackedOutput: string | undefined;
+		for (const baseRef of baseRefCandidates) {
+			try {
+				const mergeBase = execFileSync(
+					"git",
+					["-C", repoRoot, "merge-base", baseRef, "HEAD"],
+					{
+						encoding: "utf-8",
+						stdio: ["ignore", "pipe", "pipe"],
+					},
+				).trim();
+				if (mergeBase.length === 0) {
+					continue;
+				}
+				trackedOutput = execFileSync(
+					"git",
+					[...trackedDiffArgs, `${mergeBase}...HEAD`],
+					{
+						encoding: "utf-8",
+						stdio: ["ignore", "pipe", "pipe"],
+					},
+				);
+				break;
+			} catch {
+				// Try the next base candidate.
+			}
+		}
+		if (trackedOutput === undefined) {
+			throw new Error(
+				"unable to resolve git merge-base for docs-gate; provide --trusted-base-ref or configure origin/main",
+			);
+		}
+		const trackedFileLists = parseGitNameStatus(trackedOutput);
+		let workingTreeTrackedFileLists = {
+			changedFiles: [] as string[],
+			deletedFiles: [] as string[],
+		};
+		try {
+			const workingTreeOutput = execFileSync("git", workingTreeDiffArgs, {
+				encoding: "utf-8",
+				stdio: ["ignore", "pipe", "pipe"],
+			});
+			workingTreeTrackedFileLists = parseGitNameStatus(workingTreeOutput);
+		} catch {
+			// Keep merge-base diff results if local tracked-file discovery fails.
+		}
+		let stagedTrackedFileLists = {
+			changedFiles: [] as string[],
+			deletedFiles: [] as string[],
+		};
+		try {
+			const stagedOutput = execFileSync("git", stagedDiffArgs, {
+				encoding: "utf-8",
+				stdio: ["ignore", "pipe", "pipe"],
+			});
+			stagedTrackedFileLists = parseGitNameStatus(stagedOutput);
+		} catch {
+			// Keep merge-base diff results if staged tracked-file discovery fails.
+		}
+		let untrackedFiles: string[] = [];
+		try {
+			const untrackedOutput = execFileSync(
+				"git",
+				["-C", repoRoot, "ls-files", "--others", "--exclude-standard"],
+				{
+					encoding: "utf-8",
+					stdio: ["ignore", "pipe", "pipe"],
+				},
+			);
+			untrackedFiles = parseGitFileList(untrackedOutput);
+		} catch {
+			// Keep tracked diff results if untracked discovery fails.
+		}
+		const changedFiles = [
+			...new Set([
+				...trackedFileLists.changedFiles,
+				...workingTreeTrackedFileLists.changedFiles,
+				...stagedTrackedFileLists.changedFiles,
+				...untrackedFiles,
+			]),
+		];
+		const deletedFiles = new Set<string>([
+			...trackedFileLists.deletedFiles,
+			...workingTreeTrackedFileLists.deletedFiles,
+			...stagedTrackedFileLists.deletedFiles,
+		]);
+		return {
+			changedFiles,
+			deletedFiles: [...deletedFiles],
+			source: "git_diff",
+		};
+	} catch (error) {
+		return {
+			changedFiles: [],
+			deletedFiles: [],
+			source: "full_repo_fallback",
+			error: `Unable to resolve changed files from git history: ${sanitizeError(error)}`,
+		};
+	}
 }
 
 /**
@@ -790,7 +1239,12 @@ function buildExecutionContext(
 export function runDocsGate(options: DocsGateOptions = {}): DocsGateResult {
 	const mode: DocsGateMode = options.mode ?? "advisory";
 	const repoRoot = resolve(options.repoRoot ?? process.cwd());
-	const changedFiles = options.changedFiles ?? [];
+	const changedFilesResolution = resolveChangedFiles(options, repoRoot);
+	const { changedFiles } = changedFilesResolution;
+	const deletedFiles = new Set(changedFilesResolution.deletedFiles);
+	const hasChangedFilesResolutionError = Boolean(changedFilesResolution.error);
+	const changedFilesResolutionIsBlocking =
+		hasChangedFilesResolutionError && mode === "required";
 
 	// Initialize with defaults
 	let outcome: DocsGateOutcome = "ok";
@@ -804,7 +1258,11 @@ export function runDocsGate(options: DocsGateOptions = {}): DocsGateResult {
 	const policy = contract?.docsGatePolicy;
 
 	// Build execution context
-	const executionContext = buildExecutionContext(options, policy);
+	const executionContext = buildExecutionContext(
+		options,
+		policy,
+		changedFilesResolution.source,
+	);
 
 	// Handle bootstrap gap
 	if (contractResult.error || !contract || !policy) {
@@ -916,12 +1374,33 @@ export function runDocsGate(options: DocsGateOptions = {}): DocsGateResult {
 		return { report, exitCode: 0 };
 	}
 
+	if (changedFilesResolution.error) {
+		outcome =
+			mode === "required"
+				? ("policy_error" as const)
+				: ("drift_detected" as const);
+		status = "partial";
+		findings.push({
+			rule_id: "docs.gate.changed_files_resolution_error",
+			category: "system",
+			surface: "changed_files",
+			rule_result: mode === "required" ? "error" : "fail",
+			result: mode === "required" ? "error" : "fail",
+			severity: mode === "required" ? "error" : "warning",
+			message: changedFilesResolution.error,
+			details:
+				"Pass --files explicitly, or run docs-gate in a git worktree where changed files can be resolved.",
+		});
+	}
+
 	// Classify changes
 	const { categories, unknownFiles } = classifyChanges(changedFiles, repoRoot);
 
 	// Add findings for unknown governance changes
 	if (unknownFiles.length > 0) {
-		outcome = "drift_detected";
+		if (outcome !== "policy_error") {
+			outcome = "drift_detected";
+		}
 		findings.push({
 			rule_id: "docs.gate.unknown_governance_change",
 			category: "unknown_governance_change",
@@ -947,11 +1426,14 @@ export function runDocsGate(options: DocsGateOptions = {}): DocsGateResult {
 		requiredSurfaces,
 		changedFiles,
 		policy,
+		deletedFiles,
 	);
 	findings.push(...presenceFindings);
 
 	if (missing.length > 0) {
-		outcome = "drift_detected";
+		if (outcome !== "policy_error") {
+			outcome = "drift_detected";
+		}
 	}
 
 	const contradictionFindings = collectContradictionFindings(
@@ -961,6 +1443,7 @@ export function runDocsGate(options: DocsGateOptions = {}): DocsGateResult {
 	);
 	findings.push(...contradictionFindings);
 	if (
+		changedFilesResolutionIsBlocking ||
 		contradictionFindings.some(
 			(finding) => finding.category === "source_truth_missing",
 		)
@@ -968,7 +1451,9 @@ export function runDocsGate(options: DocsGateOptions = {}): DocsGateResult {
 		outcome = "policy_error";
 	} else if (
 		contradictionFindings.some(
-			(finding) => finding.category === "required_check_conflict",
+			(finding) =>
+				finding.category === "required_check_conflict" ||
+				finding.category === "workflow_policy_conflict",
 		)
 	) {
 		outcome = "trust_mismatch";

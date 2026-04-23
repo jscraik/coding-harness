@@ -37,7 +37,8 @@ Docs-gate rollout decisions should stay aligned with the current `verify-work` l
 - Required artifacts: `run.json`, `gates/<gate-id>.json`, and `summary.json`.
 - Fast-mode classes: `read_only_parallel` and `serial_guarded`.
 - Resume command: `bash scripts/verify-work.sh --resume-from <gate-id>`.
-- Resume compatibility tuple: `repoRoot`, `providerClass`, `schemaVersion`, `contractVersion` with reused gates already `passed`.
+- Resume compatibility tuple: `repoRoot`, `providerClass`, `schemaVersion`, `contractVersion`, `contractFingerprint` with reused gates already `passed`.
+- Resume requires deterministic fingerprint tooling (`node`, `shasum`, or `openssl`).
 
 If rollout changes alter gate identity or compatibility fields, rerun `verify-work` and `harness doctor` before promoting docs-gate posture.
 

@@ -1,3 +1,4 @@
+import { execFileSync } from "node:child_process";
 import { mkdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { afterEach, describe, expect, it, vi } from "vitest";
@@ -50,6 +51,39 @@ function createContractWithoutDocsGate(root: string): void {
 		riskTierRules: {},
 	};
 	write(join(root, "harness.contract.json"), JSON.stringify(contract, null, 2));
+}
+
+function createIsolatedGitEnv(): NodeJS.ProcessEnv {
+	return Object.fromEntries(
+		Object.entries(process.env).filter(([key]) => !key.startsWith("GIT_")),
+	);
+}
+
+function runDocsGateWithIsolatedGitEnv(
+	options: Parameters<typeof runDocsGate>[0],
+): ReturnType<typeof runDocsGate> {
+	const savedGitEnv = Object.entries(process.env).filter(([key]) =>
+		key.startsWith("GIT_"),
+	);
+	for (const [key] of savedGitEnv) {
+		delete process.env[key];
+	}
+	try {
+		return runDocsGate(options);
+	} finally {
+		for (const key of Object.keys(process.env)) {
+			if (key.startsWith("GIT_")) {
+				delete process.env[key];
+			}
+		}
+		for (const [key, value] of savedGitEnv) {
+			if (value === undefined) {
+				delete process.env[key];
+				continue;
+			}
+			process.env[key] = value;
+		}
+	}
 }
 
 describe("docs-gate command", () => {
@@ -235,6 +269,75 @@ describe("docs-gate command", () => {
 			result.report.findings.some((f) => f.rule_id === "docs.surface.present"),
 		).toBe(true);
 		expect(result.report.summary.missing_surface_count).toBe(0);
+	});
+
+	it("treats deleted required documentation surfaces as missing", () => {
+		const root = join(process.cwd(), "artifacts", "docs-gate-test-5b");
+		roots.push(root);
+		const gitEnv = createIsolatedGitEnv();
+		createContractWithDocsGate(root, {
+			enabled: true,
+			mode: "required",
+			rules: [
+				{
+					ruleId: "cli-surface-docs",
+					when: { categories: ["cli_surface"] },
+					requireDocs: ["README.md"],
+					severity: "error",
+				},
+			],
+		});
+		execFileSync("git", ["init"], { cwd: root, stdio: "ignore", env: gitEnv });
+		execFileSync("git", ["config", "user.email", "docs-gate@example.com"], {
+			cwd: root,
+			stdio: "ignore",
+			env: gitEnv,
+		});
+		execFileSync("git", ["config", "user.name", "Docs Gate Test"], {
+			cwd: root,
+			stdio: "ignore",
+			env: gitEnv,
+		});
+		execFileSync("git", ["add", "."], {
+			cwd: root,
+			stdio: "ignore",
+			env: gitEnv,
+		});
+		execFileSync("git", ["commit", "-m", "seed"], {
+			cwd: root,
+			stdio: "ignore",
+			env: gitEnv,
+		});
+		const baseSha = execFileSync("git", ["rev-parse", "HEAD"], {
+			cwd: root,
+			encoding: "utf-8",
+			env: gitEnv,
+		}).trim();
+		write(join(root, "src/cli.ts"), "export const cli = true;\n");
+		rmSync(join(root, "README.md"), { force: true });
+		execFileSync("git", ["add", "-A"], {
+			cwd: root,
+			stdio: "ignore",
+			env: gitEnv,
+		});
+		execFileSync("git", ["commit", "-m", "delete required docs surface"], {
+			cwd: root,
+			stdio: "ignore",
+			env: gitEnv,
+		});
+
+		const result = runDocsGateWithIsolatedGitEnv({
+			repoRoot: root,
+			mode: "required",
+			trustedBaseRef: baseSha,
+		});
+
+		expect(result.exitCode).toBe(13);
+		expect(result.report.outcome).toBe("policy_error");
+		const missingFinding = result.report.findings.find(
+			(f) => f.rule_id === "docs.surface.missing" && f.surface === "README.md",
+		);
+		expect(missingFinding).toBeDefined();
 	});
 
 	it("reports advisory (warning) in advisory mode for missing docs", () => {
@@ -872,5 +975,201 @@ describe("docs-gate command", () => {
 				(finding) => finding.category === "required_check_conflict",
 			),
 		).toBe(false);
+	});
+
+	it("uses trusted base refs to detect committed branch changes", () => {
+		const root = join(process.cwd(), "artifacts", "docs-gate-test-21");
+		roots.push(root);
+		const gitEnv = createIsolatedGitEnv();
+		createContractWithDocsGate(root, {
+			enabled: true,
+			mode: "required",
+			rules: [
+				{
+					ruleId: "cli-surface-docs",
+					when: { categories: ["cli_surface"] },
+					requireDocs: ["README.md"],
+					severity: "error",
+				},
+			],
+		});
+
+		execFileSync("git", ["init", "-b", "main"], { cwd: root, env: gitEnv });
+		execFileSync("git", ["config", "user.email", "codex@example.com"], {
+			cwd: root,
+			env: gitEnv,
+		});
+		execFileSync("git", ["config", "user.name", "Codex"], {
+			cwd: root,
+			env: gitEnv,
+		});
+		execFileSync("git", ["add", "-f", "."], { cwd: root, env: gitEnv });
+		execFileSync("git", ["commit", "-m", "base"], { cwd: root, env: gitEnv });
+		const baseSha = execFileSync("git", ["rev-parse", "HEAD"], {
+			cwd: root,
+			encoding: "utf-8",
+			env: gitEnv,
+		}).trim();
+
+		write(join(root, "src/cli.ts"), "export const changed = true;\n");
+		execFileSync("git", ["add", "src/cli.ts"], { cwd: root, env: gitEnv });
+		execFileSync("git", ["commit", "-m", "feature"], {
+			cwd: root,
+			env: gitEnv,
+		});
+
+		const result = runDocsGateWithIsolatedGitEnv({
+			repoRoot: root,
+			mode: "required",
+			trustedBaseRef: baseSha,
+		});
+
+		expect(result.report.changed_files).toContain("src/cli.ts");
+		expect(result.report.categories).toContain("cli_surface");
+		expect(result.report.outcome).toBe("drift_detected");
+	});
+
+	it("includes tracked worktree edits when auto-discovering changed files", () => {
+		const root = join(process.cwd(), "artifacts", "docs-gate-test-21b");
+		roots.push(root);
+		const gitEnv = createIsolatedGitEnv();
+		createContractWithDocsGate(root, {
+			enabled: true,
+			mode: "required",
+			rules: [
+				{
+					ruleId: "cli-surface-docs",
+					when: { categories: ["cli_surface"] },
+					requireDocs: ["README.md"],
+					severity: "error",
+				},
+			],
+		});
+		execFileSync("git", ["init", "-b", "main"], { cwd: root, env: gitEnv });
+		execFileSync("git", ["config", "user.email", "codex@example.com"], {
+			cwd: root,
+			env: gitEnv,
+		});
+		execFileSync("git", ["config", "user.name", "Codex"], {
+			cwd: root,
+			env: gitEnv,
+		});
+		execFileSync("git", ["add", "-f", "."], { cwd: root, env: gitEnv });
+		execFileSync("git", ["commit", "-m", "base"], { cwd: root, env: gitEnv });
+		const baseSha = execFileSync("git", ["rev-parse", "HEAD"], {
+			cwd: root,
+			encoding: "utf-8",
+			env: gitEnv,
+		}).trim();
+		write(join(root, "src/cli.ts"), "export const changed = true;\n");
+
+		const result = runDocsGateWithIsolatedGitEnv({
+			repoRoot: root,
+			mode: "required",
+			trustedBaseRef: baseSha,
+		});
+
+		expect(result.report.changed_files).toContain("src/cli.ts");
+		expect(result.report.categories).toContain("cli_surface");
+		expect(result.report.outcome).toBe("drift_detected");
+	});
+
+	it("parses quoted activeProvider declarations when checking workflow policy conflicts", () => {
+		const root = join(process.cwd(), "artifacts", "docs-gate-test-22");
+		roots.push(root);
+		createContractWithDocsGate(root, {
+			enabled: true,
+			mode: "required",
+			rules: [],
+		});
+
+		const contractPath = join(root, "harness.contract.json");
+		const contract = JSON.parse(readFileSync(contractPath, "utf-8")) as {
+			ciProviderPolicy?: {
+				activeProvider?: string;
+				migrationStage?: string;
+				mode?: string;
+			};
+		};
+		contract.ciProviderPolicy = {
+			...DEFAULT_CI_PROVIDER_POLICY,
+			activeProvider: "circleci",
+			migrationStage: "circleci-only",
+			mode: "required",
+		};
+		write(contractPath, JSON.stringify(contract, null, 2));
+		write(
+			join(root, "docs/agents/17-ci-required-checks.md"),
+			[
+				"# CI Required Checks",
+				"```json",
+				'{ "activeProvider": "github-actions" }',
+				"```",
+			].join("\n"),
+		);
+
+		const result = runDocsGate({
+			repoRoot: root,
+			mode: "required",
+			changedFiles: ["docs/agents/17-ci-required-checks.md"],
+		});
+
+		expect(result.exitCode).toBe(12);
+		expect(result.report.outcome).toBe("trust_mismatch");
+		expect(
+			result.report.findings.some(
+				(finding) =>
+					finding.category === "workflow_policy_conflict" &&
+					finding.path === "docs/agents/17-ci-required-checks.md",
+			),
+		).toBe(true);
+	});
+
+	it("treats validation docs as workflow policy conflict sources", () => {
+		const root = join(process.cwd(), "artifacts", "docs-gate-test-23");
+		roots.push(root);
+		createContractWithDocsGate(root, {
+			enabled: true,
+			mode: "required",
+			rules: [],
+		});
+
+		const contractPath = join(root, "harness.contract.json");
+		const contract = JSON.parse(readFileSync(contractPath, "utf-8")) as {
+			ciProviderPolicy?: {
+				activeProvider?: string;
+				migrationStage?: string;
+				mode?: string;
+			};
+		};
+		contract.ciProviderPolicy = {
+			...DEFAULT_CI_PROVIDER_POLICY,
+			activeProvider: "circleci",
+			migrationStage: "circleci-only",
+			mode: "required",
+		};
+		write(contractPath, JSON.stringify(contract, null, 2));
+		write(
+			join(root, "docs/agents/04-validation.md"),
+			["# Validation", "```yaml", "activeProvider: github-actions", "```"].join(
+				"\n",
+			),
+		);
+
+		const result = runDocsGate({
+			repoRoot: root,
+			mode: "required",
+			changedFiles: ["docs/agents/04-validation.md"],
+		});
+
+		expect(result.exitCode).toBe(12);
+		expect(result.report.outcome).toBe("trust_mismatch");
+		expect(
+			result.report.findings.some(
+				(finding) =>
+					finding.category === "workflow_policy_conflict" &&
+					finding.path === "docs/agents/04-validation.md",
+			),
+		).toBe(true);
 	});
 });

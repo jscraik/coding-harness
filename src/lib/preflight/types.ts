@@ -65,6 +65,28 @@ export interface PreflightGateOptions {
 	maxTier?: RiskTier;
 	/** Head SHA for determinism checks (optional) */
 	headSha?: string;
+	/** Optional admission declaration used for north-star alignment checks */
+	admission?: PreflightAdmissionDeclaration;
+}
+
+export interface PreflightAdmissionDeclaration {
+	north_star_metric: string;
+	primary_bottleneck: string;
+	affected_surface_ids: string[];
+	affected_surface_classes: string[];
+	policy_surface_delta: number;
+	manual_glue_delta: number;
+	metric_impact_declared: "direct" | "path_strengthening" | "none";
+	evidence_links: string[];
+	why_this_improves_throughput_or_reliability: string;
+}
+
+export interface PreflightNorthStarSummary {
+	mission: string;
+	primary_metric: string;
+	primary_bottleneck: string;
+	autonomy_boundary: string;
+	safety_floor: string[];
 }
 
 /**
@@ -87,6 +109,10 @@ export interface PreflightGateResult {
 	riskTier?: RiskTier | undefined;
 	/** Decisions emitted by pre/post gate extension hooks */
 	hookDecisions?: PreflightHookDecision[] | undefined;
+	/** Contract-derived north-star summary emitted for preflight consumers */
+	northStarSummary?: PreflightNorthStarSummary | undefined;
+	/** Admission declaration echoed for downstream gate surfaces */
+	admissionDeclaration?: PreflightAdmissionDeclaration | undefined;
 }
 
 export type PreflightHookPhase = "pre" | "post";
