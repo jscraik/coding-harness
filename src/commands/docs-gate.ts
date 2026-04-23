@@ -9,6 +9,7 @@ import type {
 	DocsImpactCategory,
 	HarnessContract,
 } from "../lib/contract/types.js";
+import { DEFAULT_DOCS_GATE_POLICY } from "../lib/contract/types.js";
 import { validateContract } from "../lib/contract/validator.js";
 import { sanitizeError } from "../lib/input/sanitize.js";
 import { validatePath } from "../lib/input/validator.js";
@@ -127,17 +128,24 @@ const INSTRUCTION_PRECEDENCE_SOURCE_PATHS = [
 	"CONTRIBUTING.md",
 	"CLAUDE.md",
 ] as const;
-const WORKFLOW_POLICY_SOURCE_PATHS = [
-	...INSTRUCTION_PRECEDENCE_SOURCE_PATHS,
-	"docs/agents/04-validation.md",
-	"docs/agents/08-release-and-change-control.md",
-	"docs/agents/10-agent-testing-gates.md",
-	"docs/agents/13-linear-production-workflow.md",
-	"docs/agents/14-docs-gate-rollout.md",
-	"docs/agents/15-context-integrity-compact.md",
-	"docs/agents/16-linear-production-compact.md",
+const WORKFLOW_AUTHORITY_DOC_PATHS = Array.from(
+	new Set(
+		(DEFAULT_DOCS_GATE_POLICY.surfaces ?? [])
+			.filter((surface) => surface.requiredFor.includes("workflow_authority"))
+			.map((surface) => surface.path)
+			.filter((path) => path.endsWith(".md")),
+	),
+);
+const WORKFLOW_POLICY_ADDITIONAL_SOURCE_PATHS = [
 	"docs/agents/17-ci-required-checks.md",
 ] as const;
+const WORKFLOW_POLICY_SOURCE_PATHS: readonly string[] = Array.from(
+	new Set([
+		...INSTRUCTION_PRECEDENCE_SOURCE_PATHS,
+		...WORKFLOW_AUTHORITY_DOC_PATHS,
+		...WORKFLOW_POLICY_ADDITIONAL_SOURCE_PATHS,
+	]),
+);
 interface LoadedContract {
 	contract: HarnessContract;
 }
@@ -746,16 +754,11 @@ function classifyChanges(
 		".diagram/",
 		"ops/",
 	];
-	const workflowAuthorityDocs = new Set([
-		"docs/agents/01-instruction-map.md",
-		"docs/agents/04-validation.md",
-		"docs/agents/08-release-and-change-control.md",
-		"docs/agents/10-agent-testing-gates.md",
-		"docs/agents/13-linear-production-workflow.md",
-		"docs/agents/14-docs-gate-rollout.md",
-		"docs/agents/15-context-integrity-compact.md",
-		"docs/agents/16-linear-production-compact.md",
-	]);
+	const workflowAuthorityDocs = new Set(
+		WORKFLOW_POLICY_SOURCE_PATHS.filter((path) =>
+			path.startsWith("docs/agents/"),
+		),
+	);
 
 	for (const file of changedFiles) {
 		let matched = false;
