@@ -228,11 +228,9 @@ For script-driven gating in downstream repos, use:
 bash scripts/run-harness-gate.sh <gate-command> [args...]
 ```
 
-When run from a harness source checkout (`@brainwav/coding-harness`), this
-wrapper fails closed if `pnpm` is unavailable so the repo does not silently
-fall back to a different harness binary. Set
-`HARNESS_ALLOW_SOURCE_RUNNER_FALLBACK=1` only when you intentionally want that
-fallback behavior and explicitly trust a non-source harness runner.
+When run from a harness source checkout (`@brainwav/coding-harness`), use
+`scripts/run-harness-gate.sh` for fail-closed `pnpm`/`tsx` checks so the repo
+does not silently fall back to a different harness binary.
 
 If the wrapper cannot resolve local `@brainwav/coding-harness`, treat that as a
 repo bootstrap/install problem, not a harness command failure. In a pnpm repo,
@@ -532,8 +530,8 @@ harness commands --json | jq '
 
 ## Requirements
 
-- **Node.js:** `>= 24`
-- **Package manager for this repo:** `pnpm@10`
+- **Node.js:** `>= 24.0.0`
+- **Package manager for this repo:** `pnpm@10.33.0`
 - **GitHub auth:** required for commands that inspect or mutate remote GitHub
   state, including `branch-protect`, `review-gate`, and remote CodeRabbit checks
 - **Linear auth:** required for `linear*` flows and for a clean
