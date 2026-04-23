@@ -317,6 +317,10 @@ export const DEFAULT_NORTH_STAR_CONTRACT: NorthStarContract = {
 	),
 };
 
+/**
+ * Canonical default product-surface registry shipped with the contract model.
+ * Exported for tooling/schema consumers that seed or compare registry defaults.
+ */
 export const DEFAULT_PRODUCT_SURFACE_REGISTRY: ProductSurfaceRegistry = {
 	surfaces: [
 		{

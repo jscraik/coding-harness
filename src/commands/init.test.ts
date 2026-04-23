@@ -1732,16 +1732,23 @@ describe("runInit", () => {
 			);
 			expect(harnessCli).toContain("npm exec harness -- <command>");
 			expect(runHarnessGate).toContain(
-				'if pnpm exec tsx "$REPO_ROOT/src/cli.ts" "$@"; then',
+				"if ! command -v pnpm >/dev/null 2>&1; then",
+			);
+			expect(runHarnessGate).toContain(
+				'echo "Error: pnpm is required to run the harness source CLI." >&2',
+			);
+			expect(runHarnessGate).toContain(
+				"if ! pnpm exec -- tsx --version >/dev/null 2>&1; then",
+			);
+			expect(runHarnessGate).toContain(
+				'echo "Error: tsx is required to run the harness source CLI." >&2',
+			);
+			expect(runHarnessGate).toContain(
+				'exec pnpm exec tsx "$REPO_ROOT/src/cli.ts" "$@"',
 			);
 			expect(runHarnessGate).toContain("is_harness_source_repo()");
 			expect(runHarnessGate).toContain(
 				"command -v node >/dev/null 2>&1 || return 1",
-			);
-			expect(runHarnessGate).toContain("runner_status=$?");
-			expect(runHarnessGate).toContain('exit "$runner_status"');
-			expect(runHarnessGate).toContain(
-				'echo "Warning: pnpm is installed but tsx is unavailable; falling back to alternate harness runners." >&2',
 			);
 			expect(runHarnessGate).toContain(
 				'process.exit(packageJson.name === "@brainwav/coding-harness" ? 0 : 1);',

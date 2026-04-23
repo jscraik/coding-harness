@@ -514,7 +514,7 @@ function resolveCurrentApprovers(
 
 	for (const { review } of reviewsInChronologicalOrder) {
 		const login = normalizeBotLogin(review.user?.login);
-		if (!login || botLogins.has(login)) {
+		if (!login || isAutomatedActorLogin(login, botLogins)) {
 			continue;
 		}
 		if (review.state === "CHANGES_REQUESTED" || review.state === "DISMISSED") {

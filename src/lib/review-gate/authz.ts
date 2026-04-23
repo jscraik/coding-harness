@@ -1,5 +1,5 @@
 import { existsSync, readFileSync } from "node:fs";
-import { basename, dirname, resolve } from "node:path";
+import { resolve } from "node:path";
 import { loadContract } from "../contract/loader.js";
 import type { HarnessContract, PilotAuthzPolicy } from "../contract/types.js";
 import { DEFAULT_PILOT_AUTHZ_POLICY } from "../contract/types.js";
@@ -129,13 +129,12 @@ async function getTokenScopes(): Promise<string[]> {
 export async function runCheckAuthz(
 	options: CheckAuthzOptions,
 ): Promise<CheckAuthzResult> {
-	const contractPath = resolve(options.contractPath ?? "harness.contract.json");
-	const repoRoot = dirname(contractPath);
-	const contractFileName = basename(contractPath);
+	const repoRoot = process.cwd();
+	const contractPath = options.contractPath ?? "harness.contract.json";
 	// Load contract
 	let contract: HarnessContract;
 	try {
-		contract = loadContract(contractFileName, repoRoot);
+		contract = loadContract(contractPath, repoRoot);
 	} catch (e) {
 		return {
 			ok: false,
