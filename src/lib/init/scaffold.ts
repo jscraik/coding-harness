@@ -1273,7 +1273,7 @@ REPO_ROOT="$(cd -- "$SCRIPT_DIR/.." && pwd)"
  *
  * The returned script locates the repository root and attempts, in order, to:
  * - run the repo-local `src/cli.ts` via `pnpm exec tsx` only when the repo is the harness source repo,
- * - run `scripts/harness-cli.sh` (when present and readable),
+ * - run `scripts/harness-cli.sh` (when present and executable),
  * - invoke a globally installed `harness` binary.
  * If none are available the script prints installation and local-exec guidance and exits with a non-zero status.
  *
@@ -1312,17 +1312,25 @@ if is_harness_source_repo; then
 		echo "Install pnpm and retry." >&2
 		exit 1
 	fi
+
+	if ! pnpm exec -- tsx --version >/dev/null 2>&1; then
+		echo "Error: tsx is required to run the harness source CLI." >&2
+		echo "Install repository dependencies (pnpm install) and retry." >&2
+		exit 1
+	fi
+
 	exec pnpm exec tsx "$REPO_ROOT/src/cli.ts" "$@"
 fi
 
-if [[ -f "$REPO_ROOT/scripts/harness-cli.sh" && -x "$REPO_ROOT/scripts/harness-cli.sh" ]] && \
-   [[ -f "$REPO_ROOT/node_modules/@brainwav/coding-harness/dist/cli.js" ]]; then
+if [[ -x "$REPO_ROOT/scripts/harness-cli.sh" && -f "$REPO_ROOT/node_modules/@brainwav/coding-harness/dist/cli.js" ]]; then
 	exec bash "$REPO_ROOT/scripts/harness-cli.sh" "$@"
 fi
 
-mise_harness_bin="$(mise which harness 2>/dev/null || true)"
-if [[ -n "$mise_harness_bin" && -x "$mise_harness_bin" ]]; then
-	exec "$mise_harness_bin" "$@"
+if command -v mise >/dev/null 2>&1; then
+	MISE_RESOLVED="$(mise which harness 2>/dev/null || true)"
+	if [[ -n "$MISE_RESOLVED" && -x "$MISE_RESOLVED" ]]; then
+		exec "$MISE_RESOLVED" "$@"
+	fi
 fi
 
 if command -v harness >/dev/null 2>&1; then

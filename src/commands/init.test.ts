@@ -1731,6 +1731,7 @@ describe("runInit", () => {
 				"npm install --save-dev @brainwav/coding-harness",
 			);
 			expect(harnessCli).toContain("npm exec harness -- <command>");
+			expect(runHarnessGate).toContain("if is_harness_source_repo; then");
 			expect(runHarnessGate).toContain(
 				'exec pnpm exec tsx "$REPO_ROOT/src/cli.ts" "$@"',
 			);
@@ -1745,13 +1746,22 @@ describe("runInit", () => {
 				'echo "Error: pnpm is required to run the harness source CLI." >&2',
 			);
 			expect(runHarnessGate).toContain(
-				'exec bash "$REPO_ROOT/scripts/harness-cli.sh" "$@"',
-			);
-			expect(runHarnessGate).toMatch(
-				/if \[\[ -f "\$REPO_ROOT\/scripts\/harness-cli\.sh" && -x "\$REPO_ROOT\/scripts\/harness-cli\.sh" \]\] &&\s*\\?\s*\[\[ -f "\$REPO_ROOT\/node_modules\/@brainwav\/coding-harness\/dist\/cli\.js" \]\]; then/,
+				"if ! pnpm exec -- tsx --version >/dev/null 2>&1; then",
 			);
 			expect(runHarnessGate).toContain(
-				'mise_harness_bin="$(mise which harness 2>/dev/null || true)"',
+				'exec pnpm exec tsx "$REPO_ROOT/src/cli.ts" "$@"',
+			);
+			expect(runHarnessGate).toContain(
+				'if [[ -x "$REPO_ROOT/scripts/harness-cli.sh" && -f "$REPO_ROOT/node_modules/@brainwav/coding-harness/dist/cli.js" ]]; then',
+			);
+			expect(runHarnessGate).toContain(
+				'exec bash "$REPO_ROOT/scripts/harness-cli.sh" "$@"',
+			);
+			expect(runHarnessGate).toContain(
+				"if command -v mise >/dev/null 2>&1; then",
+			);
+			expect(runHarnessGate).toContain(
+				'MISE_RESOLVED="$(mise which harness 2>/dev/null || true)"',
 			);
 			expect(semgrepChanged).toContain(
 				'echo "Error: python3 is required to install Semgrep." >&2',
