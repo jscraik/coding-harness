@@ -406,9 +406,14 @@ process.exit(1);
 function runVerifyWorkScript(
 	repoRoot: string,
 	extraArgs: string[] = [],
-	options: { env?: NodeJS.ProcessEnv; json?: boolean } = {},
+	options: {
+		env?: NodeJS.ProcessEnv;
+		json?: boolean;
+		inheritEnv?: boolean;
+	} = {},
 ) {
 	const includeJson = options.json ?? true;
+	const parentEnv = options.inheritEnv === false ? {} : process.env;
 	const args = [
 		join(repoRoot, "scripts/verify-work.sh"),
 		"--fast",
@@ -424,11 +429,21 @@ function runVerifyWorkScript(
 		encoding: "utf-8",
 		maxBuffer: 8 * 1024 * 1024,
 		env: {
-			...process.env,
+			...parentEnv,
 			HARNESS_VERIFY_WORK_NO_DELEGATE: "1",
 			...options.env,
 		},
 	});
+}
+
+function makeDeterministicScriptEnv(pathValue: string): NodeJS.ProcessEnv {
+	return {
+		PATH: pathValue,
+		HOME: process.env.HOME ?? tmpdir(),
+		TMPDIR: process.env.TMPDIR ?? tmpdir(),
+		LANG: process.env.LANG ?? "C.UTF-8",
+		LC_ALL: process.env.LC_ALL ?? "C.UTF-8",
+	};
 }
 
 function writePriorRun(options: {
@@ -785,19 +800,12 @@ exit 1
 `,
 		);
 
-		const sandboxedEnv: NodeJS.ProcessEnv = {
-			PATH: `${binDir}:${process.env.PATH ?? ""}`,
-		};
-		for (const key of Object.keys(process.env)) {
-			if (
-				key.startsWith("BASH_FUNC_pnpm%%") ||
-				key.startsWith("BASH_FUNC_mise%%")
-			) {
-				sandboxedEnv[key] = undefined;
-			}
-		}
+		const sandboxedEnv = makeDeterministicScriptEnv(
+			`${binDir}:${process.env.PATH ?? ""}`,
+		);
 
 		const result = runVerifyWorkScript(repoRoot, [], {
+			inheritEnv: false,
 			env: sandboxedEnv,
 		});
 		const combinedOutput = `${result.stdout}${result.stderr}`;
@@ -1347,10 +1355,14 @@ exit 127
 			},
 		});
 
-		const result = runVerifyWorkScript(repoRoot, [
-			"--resume-from",
-			"hook-governance-inventory",
-		]);
+		const result = runVerifyWorkScript(
+			repoRoot,
+			["--resume-from", "hook-governance-inventory"],
+			{
+				inheritEnv: false,
+				env: makeDeterministicScriptEnv(process.env.PATH ?? ""),
+			},
+		);
 		expect(result.status).toBe(0);
 		const summary = JSON.parse(result.stdout) as {
 			runId: string;
