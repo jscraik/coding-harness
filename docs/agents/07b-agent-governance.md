@@ -1,5 +1,5 @@
 ---
-last_validated: 2026-04-22
+last_validated: 2026-04-23
 ---
 
 # Agent governance
@@ -59,6 +59,7 @@ Every agent handoff should include:
 - If a reproducible coding-harness bug, policy gap, workflow regression, automation task, or release follow-up is found: create or update a Linear issue with repro + evidence before handoff.
 - If PR review artifacts are missing (CodeRabbit/Codex for this repo): do not merge; complete reviews or explicitly escalate the exception.
 - If the `CodeRabbit` check is absent, pending, or failing for the current head SHA: do not merge.
+- If `docs-gate` reports warning findings for required surfaces on the current head SHA: do not merge until those warnings are resolved in the PR.
 - If CodeRabbit reports Semgrep findings: fix all `ERROR` findings before merge. `WARNING` findings may remain only when the PR records the rationale and containment.
 - Any run of `harness linear*` commands must have `LINEAR_API_KEY` available in the runtime environment (or supplied with `--token`); if secrets are kept in `~/.codex/.env`, load it into the active shell/session first.
 - When Linear secret discovery behavior changes, include `harness symphony-check` evidence so the runtime secret-loading path is auditable.
