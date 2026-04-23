@@ -44,6 +44,7 @@ export interface ReviewGateOutput {
 	verified: boolean;
 	headSha: string;
 	checkStatus: "completed" | "in_progress" | "queued" | "pending" | "not_found";
+	effectiveCheckName?: string;
 	checkConclusion?: string | undefined;
 	needsRerun: boolean;
 	timedOut?: boolean;

@@ -38,7 +38,7 @@ This document is the operational source of truth for CI ownership intent. `harne
 | Responsibility | Workflow | Job | Trigger |
 |---|---|---|---|
 | PR governance and quality checks (`pr-template`, `linear-gate`, `risk-policy-gate`, `docs-gate`, `lint`, `typecheck`, `test`, `audit`, `check`, `memory`) | `pr-pipeline` | `run-governance-check` fan-out jobs | Pull request and merge queue events via GitHub webhook |
-| Security scanning (`security-scan`) | `pr-pipeline` | `security-scan` | Pull request and merge queue events via GitHub webhook |
+| Security scanning (`security-scan`) | `security-scan` | `security-scan` | Pull request and merge queue events via GitHub webhook |
 | Environment and dependency policy checks (`dependency-scan`, `orb-pinning`) | `pr-pipeline` | `dependency-scan`, `orb-pinning` | Pull request and merge queue events via GitHub webhook |
 
 ### GitHub Actions Owns

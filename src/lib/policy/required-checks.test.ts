@@ -62,6 +62,47 @@ function readVerifyWorkSuspiciousCircleCIJobNames(): string[] {
 }
 
 describe("normalizeRequiredChecksManifest", () => {
+	it.each([
+		{
+			name: "rejects non-object manifests",
+			manifest: "invalid-manifest",
+			error: "required checks manifest must be an object",
+		},
+		{
+			name: "rejects missing activeProvider",
+			manifest: { requiredChecks: [createRequiredCheck()] },
+			error: "activeProvider must be a non-empty string",
+		},
+		{
+			name: "rejects non-array requiredChecks",
+			manifest: {
+				activeProvider: "circleci",
+				requiredChecks: "not-an-array",
+			},
+			error: "requiredChecks must be an array",
+		},
+		{
+			name: "rejects non-object requiredChecks entries",
+			manifest: {
+				activeProvider: "circleci",
+				requiredChecks: ["not-an-object"],
+			},
+			error: "requiredChecks[0] must be an object",
+		},
+		{
+			name: "rejects entries missing required gate identity fields",
+			manifest: {
+				activeProvider: "circleci",
+				requiredChecks: [{ displayName: "Lint" }],
+			},
+			error:
+				"requiredChecks[0] is missing required fields (displayName/sourceAppSlug/sourceAppId/externalIdPattern)",
+		},
+	])("$name", ({ manifest, error }) => {
+		const result = normalizeRequiredChecksManifest(manifest);
+		expect(result).toEqual({ ok: false, error });
+	});
+
 	it("defaults executionClass to serial_guarded when omitted", () => {
 		const result = normalizeManifest([createRequiredCheck()]);
 
@@ -194,6 +235,29 @@ describe("normalizeRequiredChecksManifest", () => {
 		}
 		expect(result.value.contractVersion).toBe("manual-v1");
 	});
+
+	it("trims activeProvider and source identity strings before normalization", () => {
+		const result = normalizeRequiredChecksManifest({
+			version: 1,
+			activeProvider: " circleci ",
+			requiredChecks: [
+				createRequiredCheck({
+					sourceAppSlug: " circleci ",
+					sourceAppId: " circleci ",
+					displayName: " security-scan ",
+				}),
+			],
+		});
+
+		expect(result.ok).toBe(true);
+		if (!result.ok) {
+			return;
+		}
+		expect(result.value.activeProvider).toBe("circleci");
+		expect(result.value.gates[0]?.provider).toBe("circleci");
+		expect(result.value.gates[0]?.sourceAppId).toBe("circleci");
+		expect(result.value.gates[0]?.displayName).toBe("security-scan");
+	});
 });
 
 describe("findCircleCIJobNamedCheckBindings", () => {
@@ -269,7 +333,7 @@ describe("findCircleCIJobNamedCheckBindings", () => {
 		expect(suspicious).toEqual([]);
 	});
 
-	it("allows the CircleCI security-scan check context", () => {
+	it("classifies CircleCI security-scan check contexts as job-name bindings", () => {
 		const normalized = normalizeManifest([
 			createRequiredCheck({
 				gateId: "security-scan",
@@ -287,6 +351,6 @@ describe("findCircleCIJobNamedCheckBindings", () => {
 		const suspicious = findCircleCIJobNamedCheckBindings(
 			normalized.value.gates,
 		);
-		expect(suspicious).toEqual([]);
+		expect(suspicious).toEqual(["security-scan"]);
 	});
 });

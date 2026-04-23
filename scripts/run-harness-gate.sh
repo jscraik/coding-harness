@@ -12,47 +12,39 @@ fi
 is_harness_source_repo() {
 	[[ -f "$REPO_ROOT/src/cli.ts" ]] || return 1
 	[[ -f "$REPO_ROOT/package.json" ]] || return 1
-	awk '
-		/"name"[[:space:]]*:[[:space:]]*"@brainwav\/coding-harness"/ {
-			found = 1
-			exit
-		}
-		END {
-			exit(found ? 0 : 1)
-		}
-	' "$REPO_ROOT/package.json" >/dev/null
+	command -v node >/dev/null 2>&1 || return 1
+
+	node -e '
+		const { readFileSync } = require("node:fs");
+		const packageJson = JSON.parse(readFileSync(process.argv[1], "utf8"));
+		process.exit(packageJson.name === "@brainwav/coding-harness" ? 0 : 1);
+	' "$REPO_ROOT/package.json" >/dev/null 2>&1
 }
 
 if is_harness_source_repo; then
-	if command -v pnpm >/dev/null 2>&1; then
-		tsx_available=false
-		if pnpm exec -- tsx --version >/dev/null 2>&1; then
-			tsx_available=true
-			if pnpm exec tsx "$REPO_ROOT/src/cli.ts" "$@"; then
-				exit 0
-			fi
-			echo "Warning: pnpm tsx runner failed; falling back to alternate harness runners." >&2
-		fi
-		if [[ "$tsx_available" == false ]]; then
-			echo "Warning: pnpm is installed but tsx is unavailable; falling back to alternate harness runners." >&2
-		fi
-	else
-		echo "Warning: pnpm is unavailable; falling back to alternate harness runners." >&2
+	if ! command -v pnpm >/dev/null 2>&1; then
+		echo "Error: pnpm is required to run the harness source CLI." >&2
+		echo "Install pnpm and retry." >&2
+		exit 1
 	fi
+
+	if ! pnpm exec -- tsx --version >/dev/null 2>&1; then
+		echo "Error: tsx is required to run the harness source CLI." >&2
+		echo "Install repository dependencies (pnpm install) and retry." >&2
+		exit 1
+	fi
+
+	exec pnpm exec tsx "$REPO_ROOT/src/cli.ts" "$@"
 fi
 
-if is_harness_source_repo && [[ -f "$REPO_ROOT/dist/cli.js" ]] && command -v node >/dev/null 2>&1; then
-	exec node "$REPO_ROOT/dist/cli.js" "$@"
-fi
-
-if [[ -r "$REPO_ROOT/scripts/harness-cli.sh" && -f "$REPO_ROOT/node_modules/@brainwav/coding-harness/dist/cli.js" ]]; then
+if [[ -x "$REPO_ROOT/scripts/harness-cli.sh" && -f "$REPO_ROOT/node_modules/@brainwav/coding-harness/dist/cli.js" ]]; then
 	exec bash "$REPO_ROOT/scripts/harness-cli.sh" "$@"
 fi
 
 if command -v mise >/dev/null 2>&1; then
-	mise_harness_bin="$(mise which harness 2>/dev/null || true)"
-	if [[ -n "$mise_harness_bin" && -x "$mise_harness_bin" ]]; then
-		exec "$mise_harness_bin" "$@"
+	MISE_RESOLVED="$(mise which harness 2>/dev/null || true)"
+	if [[ -n "$MISE_RESOLVED" && -x "$MISE_RESOLVED" ]]; then
+		exec "$MISE_RESOLVED" "$@"
 	fi
 fi
 

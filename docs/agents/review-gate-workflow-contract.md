@@ -206,10 +206,10 @@ Compatibility and rollout:
 | Code | Category | Trigger | Exit Code |
 |------|----------|---------|-----------|
 | VALIDATION_ERROR | Validation | Invalid SHA format, SHA mismatch, contract load failure | 1 |
-| NOT_FOUND | Lookup | PR not found, check run not found, resource missing | 2 |
+| NOT_FOUND | Lookup | PR not found or required API resource missing before review evaluation begins (excluding required check-run absence during gate evaluation) | 2 |
 | PERMISSION_DENIED | Auth | 403 Forbidden, 401 Unauthorized | 3 |
 | TIMEOUT | Timeout | Check polling exceeded `timeoutSeconds` with `timeoutAction: fail` | 4 |
-| REVIEW_NOT_VERIFIED | Policy | Review gate completed but verification failed (blockers present) | 5 |
+| REVIEW_NOT_VERIFIED | Policy | Review gate completed but verification failed (blockers present), including required check-run absence during gate evaluation (`checkStatus: "not_found"`) | 5 |
 | SYSTEM_ERROR | Unknown | Unexpected exception, network failure | 10 |
 
 ---
@@ -240,6 +240,7 @@ Compatibility and rollout:
 | INV-7 | Unresolved human threads block verification | Bot-only threads may be auto-resolved |
 | INV-8 | Confidence score 5 requires all gates passing | `policy_gate_status === "pass" && plan_traceability_status === "pass" && actionableCount === 0` |
 | INV-9 | Timeout action determines terminal state | `timeoutAction: fail` → error; `warn` → `needsRerun: true` |
+| INV-10 | Required-check names may alias to provider workflow checks in fan-in mode | Alias map from `.harness/ci-required-checks.json` resolves display names to GitHub check contexts |
 
 ---
 
@@ -301,31 +302,16 @@ interface ReviewGateWorkflowLog {
 
 ## Modes
 
-### STRICT Mode
+The runtime command surface does not expose `--mode` or `--dry-run` for
+`review-gate`.
 
-- SHA mismatch is fatal (no bypass)
-- All required checks must pass
-- All human review threads must be resolved
-- Reviewer independence strictly enforced
-- Timeout action `fail` halts workflow
+Runtime behavior is controlled by:
+- contract policy (`reviewPolicy.timeoutAction`, `enforceReviewerIndependence`, `requiredChecks`)
+- explicit CLI overrides (`--check`)
+- live required-check metadata from `.harness/ci-required-checks.json`
 
-### ADVISORY Mode
-
-- Warnings for non-critical check failures
-- Best-effort thread resolution
-- Relaxed reviewer independence (configurable)
-- Timeout action `warn` returns `needsRerun: true`
-- Allows partial verification with blockers listed
-
-### Dry-Run Simulation
-
-| State | Dry-Run Behavior |
-|-------|------------------|
-| IDLE | Validate inputs, no client initialization |
-| PR_LOADED | Mock PR data, skip SHA comparison |
-| CHECK_POLLING | Return mock check status, no polling |
-| APPROVAL_EVALUATION | Mock approval data |
-| CONFIDENCE_COMPUTED | Compute confidence with mock data |
+Use [`docs/agents/review-gate-operational-spec.md`](./review-gate-operational-spec.md)
+as the authoritative runtime interface reference.
 
 ---
 
