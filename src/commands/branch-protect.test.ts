@@ -568,6 +568,7 @@ describe("runBranchProtect", () => {
 				{ context: "audit" },
 				{ context: "check" },
 				{ context: "memory" },
+				{ context: "security-scan" },
 				{ context: "CodeRabbit" },
 			],
 		});

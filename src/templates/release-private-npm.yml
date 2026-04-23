@@ -131,7 +131,7 @@ jobs:
           npm install --prefix "$TMP_DIR" "./$TARBALL" >/dev/null
 
           # Read package metadata to derive bin name and package name
-          PACKAGE_METADATA_JSON="$(TARBALL="$TARBALL" TMP_DIR="$TMP_DIR" node <<'EOF'
+          eval "$(TARBALL="$TARBALL" TMP_DIR="$TMP_DIR" node <<'EOF'
           const fs = require("node:fs");
           const path = require("node:path");
           const tmpDir = process.env.TMP_DIR;
@@ -165,8 +165,8 @@ jobs:
           }
 
           if (!packageName) {
-            console.log(JSON.stringify({ SKIP_CLI_TEST: 1 }));
-            process.exit(0);
+            console.error("Unable to determine installed package name for CLI smoke test");
+            process.exit(1);
           }
 
           const pkgDir = path.join(tmpDir, "node_modules", packageName);
@@ -174,39 +174,29 @@ jobs:
           const binEntries = pkgJson.bin || {};
 
           if (Object.keys(binEntries).length === 0) {
-            console.log(JSON.stringify({ SKIP_CLI_TEST: 1 }));
-            process.exit(0);
+            console.error(`Packed package ${pkgJson.name || packageName} has no bin entry`);
+            process.exit(1);
           }
 
           const binName = typeof binEntries === "string" ? path.basename(pkgJson.name) : Object.keys(binEntries)[0];
+          const binEntryRelPath =
+            typeof binEntries === "string" ? binEntries : binEntries[binName];
+          const binEntryPath = path.join(pkgDir, binEntryRelPath);
+          if (!binEntryRelPath || !fs.existsSync(binEntryPath)) {
+            console.error(
+              `Packed package ${pkgJson.name || packageName} is missing declared bin target ${binEntryRelPath || "<undefined>"}`,
+            );
+            process.exit(1);
+          }
           const binPath = path.join(tmpDir, "node_modules", ".bin", binName);
 
-          console.log(JSON.stringify({
-            BIN_PATH: binPath,
-            BIN_NAME: binName,
-            PKG_NAME: pkgJson.name,
-            PKG_VERSION: pkgJson.version,
-            SKIP_CLI_TEST: 0
-          }));
+          console.log(`export BIN_PATH="${binPath}"`);
+          console.log(`export BIN_NAME="${binName}"`);
+          console.log(`export PKG_NAME="${pkgJson.name}"`);
+          console.log(`export PKG_VERSION="${pkgJson.version}"`);
+          console.log(`export SKIP_CLI_TEST=0`);
           EOF
           )"
-
-          SKIP_CLI_TEST="$(jq -r '.SKIP_CLI_TEST // 1' <<<"$PACKAGE_METADATA_JSON")"
-          if [[ "${SKIP_CLI_TEST}" == "1" ]]; then
-            echo "No bin entry found in package.json; skipping CLI smoke test"
-            exit 0
-          fi
-
-          BIN_PATH="$(jq -r '.BIN_PATH // empty' <<<"$PACKAGE_METADATA_JSON")"
-          BIN_NAME="$(jq -r '.BIN_NAME // empty' <<<"$PACKAGE_METADATA_JSON")"
-          PKG_NAME="$(jq -r '.PKG_NAME // empty' <<<"$PACKAGE_METADATA_JSON")"
-          PKG_VERSION="$(jq -r '.PKG_VERSION // empty' <<<"$PACKAGE_METADATA_JSON")"
-
-          if [[ -z "$BIN_PATH" || -z "$BIN_NAME" || -z "$PKG_NAME" || -z "$PKG_VERSION" ]]; then
-            echo "Error: package metadata probe returned incomplete CLI fields." >&2
-            echo "$PACKAGE_METADATA_JSON" >&2
-            exit 1
-          fi
 
           VERSION_FILE="$TMP_DIR/version.txt"
           "$BIN_PATH" --version | tee "$VERSION_FILE"

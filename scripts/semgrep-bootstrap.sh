@@ -6,6 +6,17 @@ if [[ -z "${REPO_ROOT:-}" ]]; then
 fi
 
 SEMGREP_VERSION="${SEMGREP_VERSION:-1.153.1}"
+SEMGREP_VERSION_SERIES="${SEMGREP_VERSION%.*}"
+DEFAULT_SEMGREP_PIP_SPEC="semgrep>=${SEMGREP_VERSION},<2.0.0"
+if [[ "$SEMGREP_VERSION_SERIES" == *.* ]]; then
+  semgrep_series_major="${SEMGREP_VERSION_SERIES%%.*}"
+  semgrep_series_minor="${SEMGREP_VERSION_SERIES##*.}"
+  if [[ "$semgrep_series_major" =~ ^[0-9]+$ && "$semgrep_series_minor" =~ ^[0-9]+$ ]]; then
+    semgrep_next_minor="$((semgrep_series_minor + 1))"
+    DEFAULT_SEMGREP_PIP_SPEC="semgrep>=${SEMGREP_VERSION},<${semgrep_series_major}.${semgrep_next_minor}.0"
+  fi
+fi
+SEMGREP_PIP_SPEC="${SEMGREP_PIP_SPEC:-$DEFAULT_SEMGREP_PIP_SPEC}"
 DEFAULT_SEMGREP_STATE_ROOT="$REPO_ROOT/.git/semgrep"
 if git_semgrep_state_root="$(git -C "$REPO_ROOT" rev-parse --git-path semgrep 2>/dev/null)"; then
   if [[ "$git_semgrep_state_root" != /* ]]; then
@@ -34,7 +45,6 @@ SEMGREP_VENV_DIR="${SEMGREP_CACHE_ROOT}/semgrep-venv-${SEMGREP_VERSION}"
 SEMGREP_BIN="$SEMGREP_VENV_DIR/bin/semgrep"
 SEMGREP_PYTHON="$SEMGREP_VENV_DIR/bin/python"
 SEMGREP_SITE_PACKAGES_DIR="${SEMGREP_CACHE_ROOT}/semgrep-site-packages-${SEMGREP_VERSION}"
-SEMGREP_INSTALL_SPEC="semgrep>=${SEMGREP_VERSION},<2.0.0"
 
 semgrep_binary_usable() {
   if [[ ! -x "$SEMGREP_BIN" ]]; then
@@ -45,6 +55,22 @@ semgrep_binary_usable() {
     SEMGREP_USER_HOME="$SEMGREP_RUNTIME_USER_HOME" \
     SEMGREP_LOG_FILE="$SEMGREP_RUNTIME_LOG_FILE" \
     "$SEMGREP_BIN" --version >/dev/null 2>&1
+}
+
+detect_semgrep_package_version() {
+  if semgrep_binary_usable; then
+    "$SEMGREP_PYTHON" - <<'PY' 2>/dev/null
+import importlib.metadata
+print(importlib.metadata.version("semgrep"))
+PY
+    return
+  fi
+
+  PYTHONPATH="$SEMGREP_SITE_PACKAGES_DIR${PYTHONPATH:+:$PYTHONPATH}" \
+    python3 - <<'PY' 2>/dev/null
+import importlib.metadata
+print(importlib.metadata.version("semgrep"))
+PY
 }
 
 run_semgrep() {
@@ -65,13 +91,29 @@ run_semgrep() {
 
 semgrep_version_usable() {
   local detected_version
-  detected_version="$(run_semgrep --version 2>/dev/null | tr -d "[:space:]")" || return 1
+  detected_version="$(detect_semgrep_package_version | tr -d "[:space:]")" || return 1
   if [[ "$detected_version" == "$SEMGREP_VERSION" ]]; then
     return 0
   fi
-  # Some Python runtimes cannot resolve older Semgrep pins and install the
-  # nearest compatible newer release instead. Accept >= requested version.
-  [[ "$(printf '%s\n%s\n' "$SEMGREP_VERSION" "$detected_version" | sort -V | head -n 1)" == "$SEMGREP_VERSION" ]]
+  # Some Python runtimes cannot resolve older Semgrep pins and install a newer
+  # compatible release instead. Accept only newer patch releases in the same
+  # major.minor package series to avoid cross-series scanner drift.
+  local requested_series detected_series
+  requested_series="${SEMGREP_VERSION%.*}"
+  detected_series="${detected_version%.*}"
+  if [[ -z "$requested_series" || -z "$detected_series" ]]; then
+    return 1
+  fi
+  if [[ "$requested_series" != "$detected_series" ]]; then
+    return 1
+  fi
+  local requested_patch detected_patch
+  requested_patch="${SEMGREP_VERSION##*.}"
+  detected_patch="${detected_version##*.}"
+  if [[ ! "$requested_patch" =~ ^[0-9]+$ || ! "$detected_patch" =~ ^[0-9]+$ ]]; then
+    return 1
+  fi
+  (( detected_patch >= requested_patch ))
 }
 
 ensure_python_packaging_tools() {
@@ -105,7 +147,7 @@ install_semgrep_with_venv() {
   if ! python3 -m venv "$SEMGREP_VENV_DIR" >/dev/null 2>&1; then
     return 1
   fi
-  if ! "$SEMGREP_PYTHON" -m pip install --quiet --upgrade pip "$SEMGREP_INSTALL_SPEC"; then
+  if ! "$SEMGREP_PYTHON" -m pip install --quiet --upgrade pip "$SEMGREP_PIP_SPEC"; then
     return 1
   fi
   semgrep_binary_usable && semgrep_version_usable
@@ -119,7 +161,7 @@ install_semgrep_with_site_packages() {
   rm -f "$SEMGREP_BIN"
   rm -rf "$SEMGREP_SITE_PACKAGES_DIR"
   mkdir -p "$SEMGREP_SITE_PACKAGES_DIR"
-  if ! python3 -m pip install --quiet --upgrade --target "$SEMGREP_SITE_PACKAGES_DIR" "$SEMGREP_INSTALL_SPEC"; then
+  if ! python3 -m pip install --quiet --upgrade --target "$SEMGREP_SITE_PACKAGES_DIR" "$SEMGREP_PIP_SPEC"; then
     return 1
   fi
   semgrep_version_usable
@@ -138,7 +180,8 @@ install_semgrep() {
   local legacy_venv_dir="$HOST_CACHE_HOME/coding-harness/semgrep-venv-${SEMGREP_VERSION}"
   if [[ -d "$legacy_venv_dir" ]]; then
     rm -rf "$SEMGREP_VENV_DIR"
-    cp -a "$legacy_venv_dir" "$SEMGREP_VENV_DIR"
+    # `cp -a` is GNU-only; `cp -Rp` works on both GNU and BSD/macOS.
+    cp -Rp "$legacy_venv_dir" "$SEMGREP_VENV_DIR"
     if semgrep_binary_usable && semgrep_version_usable; then
       return
     fi
