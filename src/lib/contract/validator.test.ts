@@ -28,6 +28,7 @@ describe("validateContract", () => {
 			extends: "bundled:starter",
 		});
 		expect(result.success).toBe(true);
+		expect(result.data?.extends).toBe("bundled:starter");
 	});
 
 	it("requires north-star surfaces for 1.6 contracts without extends", () => {
