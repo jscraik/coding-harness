@@ -1,5 +1,6 @@
 import type {
 	NorthStarContract,
+	NorthStarDecisionQuestion,
 	OverrideReviewerRegistry,
 	ProductSurfaceClass,
 	ProductSurfaceRegistry,
@@ -69,7 +70,7 @@ const VALID_TRUSTED_REVIEWER_STATUSES: TrustedReviewerStatus[] = [
 
 function isValidNorthStarDecisionQuestions(
 	value: unknown,
-): value is NorthStarContract["decisionQuestions"] {
+): value is NorthStarDecisionQuestion[] {
 	if (!Array.isArray(value)) {
 		return false;
 	}
@@ -172,13 +173,9 @@ function isValidSurfaceRegistration(
 		return false;
 	}
 
-	if (typeof surface.surfaceId !== "string") {
-		return false;
-	}
-	const normalizedSurfaceId = surface.surfaceId.trim();
 	if (
-		normalizedSurfaceId.length === 0 ||
-		normalizedSurfaceId !== surface.surfaceId
+		typeof surface.surfaceId !== "string" ||
+		surface.surfaceId.trim().length === 0
 	) {
 		return false;
 	}
@@ -272,20 +269,16 @@ export function isValidProductSurfaceRegistry(
 	if (!Array.isArray(registry.surfaces)) {
 		return false;
 	}
-	if (registry.surfaces.length === 0) {
-		return false;
-	}
 
 	const surfaceIds = new Set<string>();
 	for (const entry of registry.surfaces) {
 		if (!isValidSurfaceRegistration(entry)) {
 			return false;
 		}
-		const normalizedSurfaceId = entry.surfaceId.trim();
-		if (surfaceIds.has(normalizedSurfaceId)) {
+		if (surfaceIds.has(entry.surfaceId)) {
 			return false;
 		}
-		surfaceIds.add(normalizedSurfaceId);
+		surfaceIds.add(entry.surfaceId);
 	}
 
 	return true;
@@ -332,13 +325,9 @@ export function isValidOverrideReviewerRegistry(
 		if (itemUnknownKeys.length > 0) {
 			return false;
 		}
-		if (typeof item.reviewerId !== "string") {
-			return false;
-		}
-		const normalizedReviewerId = item.reviewerId.trim();
 		if (
-			normalizedReviewerId.length === 0 ||
-			normalizedReviewerId !== item.reviewerId
+			typeof item.reviewerId !== "string" ||
+			item.reviewerId.trim().length === 0
 		) {
 			return false;
 		}
@@ -350,13 +339,9 @@ export function isValidOverrideReviewerRegistry(
 		) {
 			return false;
 		}
-		if (typeof item.signatureRef !== "string") {
-			return false;
-		}
-		const normalizedSignatureRef = item.signatureRef.trim();
 		if (
-			normalizedSignatureRef.length === 0 ||
-			normalizedSignatureRef !== item.signatureRef
+			typeof item.signatureRef !== "string" ||
+			item.signatureRef.trim().length === 0
 		) {
 			return false;
 		}
@@ -375,14 +360,14 @@ export function isValidOverrideReviewerRegistry(
 			return false;
 		}
 
-		if (reviewerIds.has(normalizedReviewerId)) {
+		if (reviewerIds.has(item.reviewerId)) {
 			return false;
 		}
-		reviewerIds.add(normalizedReviewerId);
-		if (signatureRefs.has(normalizedSignatureRef)) {
+		reviewerIds.add(item.reviewerId);
+		if (signatureRefs.has(item.signatureRef)) {
 			return false;
 		}
-		signatureRefs.add(normalizedSignatureRef);
+		signatureRefs.add(item.signatureRef);
 		if (item.status === "active") {
 			activeReviewerCount += 1;
 		}

@@ -9,6 +9,7 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { afterEach, describe, expect, it } from "vitest";
+import { validateContract } from "../contract/validator.js";
 import {
 	CODESTYLE_PACK_TEMPLATE_FILES,
 	TEMPLATES,
@@ -231,6 +232,42 @@ describe("scaffold templates resolution", () => {
 		const rendered = JSON.parse(contractTemplate!.render("pnpm", context));
 
 		expect(rendered.issueTrackingPolicy?.provider).toBe("linear");
+	});
+
+	it("renders north-star governance surfaces in scaffolded contracts", () => {
+		const tempDir = mkdtempSync(join(tmpdir(), "harness-scaffold-test-"));
+		tempDirs.push(tempDir);
+		writeFileSync(
+			join(tempDir, "package.json"),
+			JSON.stringify({
+				name: "demo",
+				repository: "https://github.com/brainwav/coding-harness.git",
+			}),
+		);
+
+		const context = createTemplateRenderContext(tempDir, "circleci");
+		const contractTemplate = TEMPLATES.find(
+			(template) => template.path === "harness.contract.json",
+		);
+
+		expect(contractTemplate).toBeDefined();
+		const rendered = JSON.parse(contractTemplate!.render("pnpm", context));
+		const validation = validateContract(rendered);
+
+		expect(validation.success).toBe(true);
+
+		expect(rendered.northStar).toBeDefined();
+		expect(Array.isArray(rendered.productSurface?.surfaces)).toBe(true);
+		expect(
+			Array.isArray(rendered.overrideReviewerRegistry?.trustedReviewers),
+		).toBe(true);
+		expect(rendered.overrideReviewerRegistry.trustedReviewers).toContainEqual(
+			expect.objectContaining({
+				reviewerId: "project-maintainer",
+				reviewerType: "user",
+				status: "active",
+			}),
+		);
 	});
 
 	it("omits the linear contact link when tracker mode is github", () => {

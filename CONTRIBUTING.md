@@ -121,10 +121,10 @@ Recommended policy:
 - Repo-local launches should prefer `./scripts/codex-enforced` so preflight failures are recorded into repo-scoped learn state.
 - Use `./scripts/codex-learn analyze` and `./scripts/codex-learn apply` to inspect repo-scoped failure patterns and write override files into `.harness/memory/`.
 - Start new work with `bash scripts/new-task.sh <issue-key>-<slug>`, then enter the generated worktree and continue there.
-- Use `bash scripts/validate-codestyle.sh --fast` during iteration for focused code style validation.
-- Use `bash scripts/validate-codestyle.sh` before handoff for the fail-closed code style bundle.
-- Use `bash scripts/verify-work.sh` for the broader verification bundle.
-- Use `bash scripts/verify-work.sh --fast` for preflight + code style fast lane coverage.
+- During iteration, run `bash scripts/validate-codestyle.sh --fast` for focused code style validation.
+- Before handoff, run `bash scripts/validate-codestyle.sh` for the fail-closed code style bundle.
+- For the broader verification bundle, run `bash scripts/verify-work.sh`.
+- For preflight + code style fast lane coverage, run `bash scripts/verify-work.sh --fast`.
 - Before the first push from a fresh worktree, run `bash scripts/prepare-worktree.sh`.
 
 ## Repo-local harness wrapper

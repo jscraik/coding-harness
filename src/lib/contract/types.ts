@@ -317,32 +317,20 @@ export const DEFAULT_NORTH_STAR_CONTRACT: NorthStarContract = {
 	),
 };
 
-/**
- * Canonical default product-surface registry shipped with the contract model.
- * Exported for tooling/schema consumers that seed or compare registry defaults.
- */
 export const DEFAULT_PRODUCT_SURFACE_REGISTRY: ProductSurfaceRegistry = {
-	surfaces: [
-		{
-			surfaceId: "harness.review-gate",
-			surfaceType: "command",
-			class: "core",
-			owner: "review-gate",
-			northStarContribution:
-				"Preserves deterministic merge-readiness decisions tied to current-head evidence.",
-			manualGlueReductionClaim:
-				"Consolidates required check and independent-review verification into a single gate output.",
-			reliabilityContribution:
-				"Fails closed when required-check identity or trusted-source constraints are missing.",
-			evidenceReference: "docs/agents/12-ai-review-governance.md",
-			ownedPaths: ["src/commands/review-gate.ts"],
-			lastReviewedAt: "2026-04-22",
-		},
-	],
+	surfaces: [],
 };
 
 export const DEFAULT_OVERRIDE_REVIEWER_REGISTRY: OverrideReviewerRegistry = {
-	trustedReviewers: [],
+	trustedReviewers: [
+		{
+			reviewerId: "project-maintainer",
+			reviewerType: "user",
+			signatureRef: "refs/reviewers/project-maintainer",
+			displayName: "Project Maintainer",
+			status: "active",
+		},
+	],
 };
 
 export const PREFLIGHT_PRE_HOOK_IDS = [
@@ -1399,9 +1387,10 @@ export interface HarnessContract {
 }
 
 export const DEFAULT_CONTRACT: HarnessContract = {
-	version: "1.5.0",
+	version: "1.6.0",
 	riskTierRules: {},
 	northStar: DEFAULT_NORTH_STAR_CONTRACT,
+	productSurface: DEFAULT_PRODUCT_SURFACE_REGISTRY,
 	overrideReviewerRegistry: DEFAULT_OVERRIDE_REVIEWER_REGISTRY,
 	policyChain: DEFAULT_POLICY_CHAIN,
 	reviewPolicy: DEFAULT_REVIEW_POLICY,

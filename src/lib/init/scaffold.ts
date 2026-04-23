@@ -1098,9 +1098,9 @@ if [[ ! "$branch_prefix" =~ ^[A-Za-z0-9._/-]+$ ]]; then
 	exit 2
 fi
 
-if [[ "$branch_prefix" == codex* ]]; then
+if [[ "$branch_prefix" == ${AGENT_BRANCH_PREFIX}* ]]; then
 	if [[ ! "$slug" =~ ^[A-Za-z][A-Za-z0-9]*-[0-9]+-[a-z0-9][a-z0-9-]*$ ]]; then
-		echo "[new-task] for codex branches, slug must start with an issue key (example: JSC-123-my-task): $slug" >&2
+		echo "[new-task] for ${AGENT_BRANCH_PREFIX} branches, slug must start with an issue key (example: JSC-123-my-task): $slug" >&2
 		exit 2
 	fi
 elif [[ ! "$slug" =~ ^[a-z0-9][a-z0-9-]*$ ]]; then
@@ -1273,7 +1273,8 @@ REPO_ROOT="$(cd -- "$SCRIPT_DIR/.." && pwd)"
  *
  * The returned script locates the repository root and attempts, in order, to:
  * - run the repo-local `src/cli.ts` via `pnpm exec tsx` only when the repo is the harness source repo,
- * - run `scripts/harness-cli.sh` (when present and readable),
+ * - run `scripts/harness-cli.sh` (when present and executable),
+ * - resolve `harness` via `mise which harness` (when available),
  * - invoke a globally installed `harness` binary.
  * If none are available the script prints installation and local-exec guidance and exits with a non-zero status.
  *
@@ -1322,14 +1323,14 @@ if is_harness_source_repo; then
 	exec pnpm exec tsx "$REPO_ROOT/src/cli.ts" "$@"
 fi
 
-if [[ -f "$REPO_ROOT/scripts/harness-cli.sh" && -f "$REPO_ROOT/node_modules/@brainwav/coding-harness/dist/cli.js" ]]; then
+if [[ -r "$REPO_ROOT/scripts/harness-cli.sh" && -f "$REPO_ROOT/node_modules/@brainwav/coding-harness/dist/cli.js" ]]; then
 	exec bash "$REPO_ROOT/scripts/harness-cli.sh" "$@"
 fi
 
 if command -v mise >/dev/null 2>&1; then
-	mise_harness_bin="$(mise which harness 2>/dev/null || true)"
-	if [[ -n "$mise_harness_bin" && -x "$mise_harness_bin" ]]; then
-		exec "$mise_harness_bin" "$@"
+	MISE_RESOLVED="$(mise which harness 2>/dev/null || true)"
+	if [[ -n "$MISE_RESOLVED" && -x "$MISE_RESOLVED" ]]; then
+		exec "$MISE_RESOLVED" "$@"
 	fi
 fi
 
@@ -2111,8 +2112,16 @@ export const TEMPLATES: Template[] = [
 						low: [],
 					},
 					docsDriftRules: {},
+					northStar: DEFAULT_CONTRACT.northStar,
+					productSurface: DEFAULT_CONTRACT.productSurface,
+					overrideReviewerRegistry: DEFAULT_CONTRACT.overrideReviewerRegistry,
 					branchProtection: {
-						requiredChecks: [...getBranchProtectionRequiredChecks(context)],
+						requiredChecks: [
+							...getNormalizedRequiredChecks(
+								context.ciProvider ?? DEFAULT_CI_PROVIDER,
+								context,
+							),
+						],
 						restrictDeletions: true,
 						blockForcePushes: true,
 						requireLinearHistory: true,
@@ -2963,7 +2972,10 @@ jobs:
 			);
 			const localExecCommand = renderLocalHarnessExecCommand(pm);
 			const requiredChecksList = formatRequiredChecksBulleted(
-				getBranchProtectionRequiredChecks(context),
+				getNormalizedRequiredChecks(
+					context.ciProvider ?? DEFAULT_CI_PROVIDER,
+					context,
+				),
 				"  - ",
 			);
 			const reviewArtifactsLines = `- CodeRabbit review artifact (URL, report, or comment reference).

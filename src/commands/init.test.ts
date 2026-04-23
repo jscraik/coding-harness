@@ -582,7 +582,7 @@ describe("runInit", () => {
 			const content = JSON.parse(
 				require("node:fs").readFileSync(contractPath, "utf-8"),
 			);
-			expect(content.version).toBe("1.5.0");
+			expect(content.version).toBe(CURRENT_SCHEMA_VERSION);
 			expect(content.reviewPolicy).toBeUndefined();
 			expect(content.ciProviderPolicy.activeProvider).toBe("circleci");
 			expect(content.branchProtection.requiredChecks).toContain("linear-gate");
@@ -1731,18 +1731,7 @@ describe("runInit", () => {
 				"npm install --save-dev @brainwav/coding-harness",
 			);
 			expect(harnessCli).toContain("npm exec harness -- <command>");
-			expect(runHarnessGate).toContain(
-				"if ! command -v pnpm >/dev/null 2>&1; then",
-			);
-			expect(runHarnessGate).toContain(
-				'echo "Error: pnpm is required to run the harness source CLI." >&2',
-			);
-			expect(runHarnessGate).toContain(
-				"if ! pnpm exec -- tsx --version >/dev/null 2>&1; then",
-			);
-			expect(runHarnessGate).toContain(
-				'echo "Error: tsx is required to run the harness source CLI." >&2',
-			);
+			expect(runHarnessGate).toContain("if is_harness_source_repo; then");
 			expect(runHarnessGate).toContain(
 				'exec pnpm exec tsx "$REPO_ROOT/src/cli.ts" "$@"',
 			);
@@ -1754,16 +1743,25 @@ describe("runInit", () => {
 				'process.exit(packageJson.name === "@brainwav/coding-harness" ? 0 : 1);',
 			);
 			expect(runHarnessGate).toContain(
-				'exec bash "$REPO_ROOT/scripts/harness-cli.sh" "$@"',
+				'echo "Error: pnpm is required to run the harness source CLI." >&2',
 			);
 			expect(runHarnessGate).toContain(
-				'if [[ -f "$REPO_ROOT/scripts/harness-cli.sh" && -f "$REPO_ROOT/node_modules/@brainwav/coding-harness/dist/cli.js" ]]; then',
+				"if ! pnpm exec -- tsx --version >/dev/null 2>&1; then",
+			);
+			expect(runHarnessGate).toContain(
+				'exec pnpm exec tsx "$REPO_ROOT/src/cli.ts" "$@"',
+			);
+			expect(runHarnessGate).toContain(
+				'if [[ -r "$REPO_ROOT/scripts/harness-cli.sh" && -f "$REPO_ROOT/node_modules/@brainwav/coding-harness/dist/cli.js" ]]; then',
+			);
+			expect(runHarnessGate).toContain(
+				'exec bash "$REPO_ROOT/scripts/harness-cli.sh" "$@"',
 			);
 			expect(runHarnessGate).toContain(
 				"if command -v mise >/dev/null 2>&1; then",
 			);
 			expect(runHarnessGate).toContain(
-				'mise_harness_bin="$(mise which harness 2>/dev/null || true)"',
+				'MISE_RESOLVED="$(mise which harness 2>/dev/null || true)"',
 			);
 			expect(semgrepChanged).toContain(
 				'echo "Error: python3 is required to install Semgrep." >&2',
@@ -4190,7 +4188,9 @@ describe("--interactive flag", () => {
 			expect(contractChange).toBeDefined();
 			expect(contractChange?.action).toBe("modify");
 			expect(contractChange?.currentContent).toBe('{"version": "old"}');
-			expect(contractChange?.newContent).toContain('"version": "1.5.0"');
+			expect(contractChange?.newContent).toContain(
+				`"version": "${CURRENT_SCHEMA_VERSION}"`,
+			);
 		}
 	});
 
@@ -4318,7 +4318,7 @@ describe("--migrate flag", () => {
 		writeFileSync(
 			join(tempDir, "harness.contract.json"),
 			JSON.stringify({
-				version: "1.5.0",
+				version: CURRENT_SCHEMA_VERSION,
 				riskTierRules: {},
 				reviewPolicy: { timeoutSeconds: 600, timeoutAction: "fail" },
 			}),
@@ -4380,7 +4380,7 @@ describe("--migrate flag", () => {
 		}
 	});
 
-	it("migrates legacy 1.0.0 contracts to 1.5.0", () => {
+	it("migrates legacy 1.0.0 contracts to current schema", () => {
 		writeFileSync(
 			join(tempDir, "harness.contract.json"),
 			JSON.stringify({
@@ -4405,7 +4405,7 @@ describe("--migrate flag", () => {
 					"utf-8",
 				),
 			);
-			expect(migrated.version).toBe("1.5.0");
+			expect(migrated.version).toBe(CURRENT_SCHEMA_VERSION);
 			expect(migrated.riskTierRules["src/legacy/*"]).toBe("low");
 			expect(migrated.reviewPolicy.timeoutSeconds).toBe(300);
 			expect(migrated.reviewPolicy.timeoutAction).toBe("warn");
@@ -4447,7 +4447,7 @@ describe("--migrate flag", () => {
 		if (!result.ok) {
 			expect(result.error.code).toBe("E_UNSUPPORTED_MIGRATION_PATH");
 			expect(result.error.message).toContain(
-				"No supported migration path from 0.9.0 to 1.5.0",
+				`No supported migration path from 0.9.0 to ${CURRENT_SCHEMA_VERSION}`,
 			);
 		}
 	});
@@ -4519,7 +4519,7 @@ describe("--migrate flag", () => {
 				),
 			);
 			// Custom settings should be preserved
-			expect(migrated.version).toBe("1.5.0");
+			expect(migrated.version).toBe(CURRENT_SCHEMA_VERSION);
 			expect(migrated.riskTierRules["src/auth/*"]).toBe("high");
 			expect(migrated.reviewPolicy.timeoutSeconds).toBe(300);
 			expect(migrated.toolingPolicy.readinessScriptPath).toBe(
@@ -4548,7 +4548,7 @@ describe("--migrate flag", () => {
 	it("preserves contract content when already up to date", () => {
 		// Create a contract at current version with customizations
 		const originalContent = {
-			version: "1.5.0",
+			version: CURRENT_SCHEMA_VERSION,
 			riskTierRules: { "src/api/*": "medium" },
 			reviewPolicy: { timeoutSeconds: 900, timeoutAction: "fail" },
 		};

@@ -1,10 +1,138 @@
 {
-	"version": "1.5.0",
+	"version": "1.6.0",
 	"riskTierRules": {
 		"src/auth/**": "high",
 		"src/api/**": "high",
 		"src/lib/**": "medium",
 		"**/*.test.ts": "low"
+	},
+	"northStar": {
+		"mission": "Coding Harness exists to let humans steer and agents execute safely, with PR lead time as the primary north-star metric.",
+		"primaryMetric": "pr_lead_time",
+		"primaryBottleneck": "review_rework_loop",
+		"autonomyBoundary": "Low and medium-risk autonomy should be automated where evidence is deterministic and rollback is clear; high-risk changes remain human-mediated.",
+		"safetyFloor": [
+			"deterministic evidence over intuition",
+			"strict current-head SHA discipline",
+			"bounded auto-remediation instead of open-ended write access",
+			"explicit rollback paths for higher-risk automation",
+			"independent review surfaces that do not collapse back into self-approval"
+		],
+		"nonGoals": [
+			"governance surface area as a proxy for progress",
+			"feature count without measurable throughput or reliability benefit",
+			"manual coordination steps that recur every run or every PR",
+			"broad autonomy expansion without evidence that the review or rework loop got cheaper",
+			"docs, artifacts, or dashboards that do not reduce ambiguity, shorten decision-making time, or remove manual glue work"
+		],
+		"decisionQuestions": [
+			{
+				"id": "lead_time_path",
+				"prompt": "Does this reduce PR lead time directly, or strengthen the path to lower PR lead time by reducing review or rework cost?"
+			},
+			{
+				"id": "manual_glue",
+				"prompt": "Does this remove repeated manual glue work rather than normalizing it?"
+			},
+			{
+				"id": "agent_reliability",
+				"prompt": "Does this make acceptable output easier for agents to produce reliably?"
+			},
+			{
+				"id": "safety_floor",
+				"prompt": "Does this preserve strict evidence, SHA discipline, and rollback safety?"
+			}
+		]
+	},
+	"productSurface": {
+		"surfaces": [
+			{
+				"surfaceId": "review-gate",
+				"surfaceType": "command",
+				"class": "core",
+				"owner": "workflow",
+				"northStarContribution": "Enforces merge-readiness decisions on the throughput path with strict SHA and independent review checks.",
+				"manualGlueReductionClaim": "Converts repeated review comments into deterministic gate outcomes.",
+				"reliabilityContribution": "Maintains consistent merge-readiness decisions across reruns.",
+				"evidenceReference": "src/commands/review-gate.ts",
+				"ownedPaths": [
+					"src/commands/review-gate.ts",
+					"src/commands/review-gate.test.ts"
+				],
+				"lastReviewedAt": "2026-04-21"
+			},
+			{
+				"surfaceId": "drift-gate",
+				"surfaceType": "command",
+				"class": "core",
+				"owner": "workflow",
+				"northStarContribution": "Fails fast when canonical north-star and status surfaces drift apart.",
+				"manualGlueReductionClaim": "Eliminates repetitive manual parity checks between roadmap and runtime-facing docs.",
+				"reliabilityContribution": "Produces deterministic drift findings with machine-readable remediation.",
+				"evidenceReference": "src/commands/drift-gate.ts",
+				"ownedPaths": [
+					"src/commands/drift-gate.ts",
+					"src/commands/drift-gate.test.ts",
+					"docs/roadmap/north-star.md",
+					"docs/roadmap/agent-first-status.md",
+					"README.md"
+				],
+				"lastReviewedAt": "2026-04-21"
+			},
+			{
+				"surfaceId": "preflight-gate",
+				"surfaceType": "command",
+				"class": "adjacent",
+				"owner": "workflow",
+				"northStarContribution": "Blocks unjustified policy-surface additions before review and merge work starts.",
+				"manualGlueReductionClaim": "Promotes repeated human admission feedback into reusable guardrail checks.",
+				"reliabilityContribution": "Standardizes admission declarations before review-gate execution.",
+				"evidenceReference": "src/commands/preflight-gate.ts",
+				"reviewCadence": "per_release",
+				"ownedPaths": [
+					"src/commands/preflight-gate.ts",
+					"src/commands/preflight-gate.test.ts"
+				],
+				"lastReviewedAt": "2026-04-21"
+			},
+			{
+				"surfaceId": "north-star-roadmap-doc",
+				"surfaceType": "document",
+				"class": "adjacent",
+				"owner": "workflow",
+				"northStarContribution": "Defines the canonical mission, metric, bottleneck, and safety floor consumed by runtime checks.",
+				"manualGlueReductionClaim": "Removes ad-hoc interpretation by keeping one canonical narrative source.",
+				"reliabilityContribution": "Anchors runtime and status surfaces to stable canonical wording.",
+				"evidenceReference": "docs/roadmap/north-star.md",
+				"reviewCadence": "per_release",
+				"ownedPaths": ["docs/roadmap/north-star.md"],
+				"lastReviewedAt": "2026-04-21"
+			},
+			{
+				"surfaceId": "agent-first-status-matrix",
+				"surfaceType": "document",
+				"class": "adjacent",
+				"owner": "workflow",
+				"northStarContribution": "Tracks north-star outcomes with throughput-path and guardrail effectiveness metrics.",
+				"manualGlueReductionClaim": "Reduces manual interpretation overhead during readiness and release checks.",
+				"reliabilityContribution": "Keeps status reporting constrained to canonical outcome metrics.",
+				"evidenceReference": "docs/roadmap/agent-first-status.md",
+				"reviewCadence": "weekly",
+				"ownedPaths": ["docs/roadmap/agent-first-status.md"],
+				"lastReviewedAt": "2026-04-21"
+			}
+		]
+	},
+	"overrideReviewerRegistry": {
+		"trustedReviewers": [
+			{
+				"reviewerId": "jamie-craik",
+				"reviewerType": "user",
+				"signatureRef": "refs/reviewers/jamie-craik",
+				"displayName": "Jamie Craik",
+				"status": "active"
+			}
+		]
 	},
 	"policyChain": {
 		"tierToAction": {

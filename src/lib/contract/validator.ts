@@ -1,8 +1,9 @@
+import { isValidExtendsFieldShape } from "./extends-validator.js";
 import {
 	isValidNorthStarContract,
 	isValidOverrideReviewerRegistry,
 	isValidProductSurfaceRegistry,
-} from "./north-star-validators.js";
+} from "./north-star-contract-validators.js";
 import {
 	isValidContextCompactPolicy,
 	isValidContextIntegrityPolicy,
@@ -39,7 +40,7 @@ import type {
 	GateExtensionHook,
 	GateExtensionHookId,
 	GateExtensionsPolicy,
-	HarnessContract,
+	HarnessContractWithPreset,
 	IssueTrackingPolicy,
 	LoopStageContract,
 	LoopStageContracts,
@@ -51,7 +52,9 @@ import type {
 	MergePolicy,
 	MergePolicyEntry,
 	MergePolicyValue,
+	NorthStarContract,
 	ObservabilityPolicy,
+	OverrideReviewerRegistry,
 	PackageManagerPolicy,
 	PilotAuthzPolicy,
 	PilotGapCasePolicy,
@@ -59,6 +62,7 @@ import type {
 	PolicyChainPolicy,
 	PrReferenceMode,
 	PreflightGateExtensionsPolicy,
+	ProductSurfaceRegistry,
 	RemediationPolicy,
 	ReviewPolicy,
 	RiskTier,
@@ -83,12 +87,15 @@ import {
 	isNonEmptyStringArray,
 	isPlainObject,
 	isStringArray,
+	isValidContractVersionString,
+	isValidDocsDriftRules,
 	isValidGateVerdict,
 	isValidLinearProjectUrl,
 	isValidPolicyAction,
 	isValidRequiredChecks,
 	isValidRiskTierRules,
 	isValidTimeoutAction,
+	requiresCanonicalNorthStarSurfaces,
 } from "./validator-helpers.js";
 
 const VALID_BLAST_RADIUS_RULES_MODES = ["merge", "replace"] as const;
@@ -153,6 +160,7 @@ const VALID_MEMORY_POLICY_KEYS = [
 	"requireStartRead",
 	"requireCloseoutSummary",
 	"forbiddenContentPatterns",
+	"sessionLogPath",
 ] as const;
 const VALID_MEMORY_MAINTENANCE_POLICY_KEYS = [
 	"validateSchedule",
@@ -1258,6 +1266,13 @@ function isValidMemoryPolicy(value: unknown): value is MemoryPolicy {
 		!policy.forbiddenContentPatterns.every((value) => typeof value === "string")
 	)
 		return false;
+	if (
+		policy.sessionLogPath !== undefined &&
+		(typeof policy.sessionLogPath !== "string" ||
+			policy.sessionLogPath.length === 0)
+	) {
+		return false;
+	}
 	return true;
 }
 
@@ -1683,19 +1698,6 @@ function isValidLoopStageContracts(
 	return true;
 }
 
-function isValidDocsDriftRules(value: unknown): value is DocsDriftRules {
-	if (!isPlainObject(value)) return false;
-	for (const [pattern, rules] of Object.entries(value)) {
-		if (hasForbiddenKey(pattern) || !Array.isArray(rules)) {
-			return false;
-		}
-		if (!rules.every((rule) => typeof rule === "string")) {
-			return false;
-		}
-	}
-	return true;
-}
-
 function isValidTopLevel(
 	data: Record<string, unknown>,
 	errors: ValidationError[],
@@ -1718,7 +1720,7 @@ function isValidTopLevel(
 
 export function validateContract(
 	data: unknown,
-): ValidationResult<HarnessContract> {
+): ValidationResult<HarnessContractWithPreset> {
 	const errors: ValidationError[] = [];
 
 	if (typeof data !== "object" || data === null) {
@@ -1745,6 +1747,138 @@ export function validateContract(
 			received: typeof obj.version,
 			fix: 'Add "version": "1.0" to your contract',
 		});
+	} else if (!isValidContractVersionString(obj.version)) {
+		errors.push({
+			code: ValidationErrorCode.INVALID_VALUE,
+			path: "version",
+			message:
+				"Version must use canonical numeric semver-style format: <major>.<minor> or <major>.<minor>.<patch>",
+			expected: 'string (for example: "1.6.0")',
+			received: obj.version,
+			fix: 'Use a numeric version string such as "1.0", "1.6.0", or "2.0.0"',
+		});
+	}
+
+	if ("extends" in obj && obj.extends !== undefined) {
+		if (!isValidExtendsFieldShape(obj.extends)) {
+			errors.push({
+				code: ValidationErrorCode.INVALID_VALUE,
+				path: "extends",
+				message:
+					"extends must be a non-empty string/source reference, a structured preset reference object, or a non-empty array of those values",
+				expected:
+					"string | { source: string, arrays?: 'replace'|'append'|'prepend', integrity?: 'sha256-...' } | Array<string | { source: string, arrays?: 'replace'|'append'|'prepend', integrity?: 'sha256-...' }>",
+				received: JSON.stringify(obj.extends),
+				fix: "Use canonical extends shorthand or structured preset references only",
+			});
+		}
+	}
+
+	const northStarSurfacesRequired = requiresCanonicalNorthStarSurfaces(
+		obj.version,
+	);
+	const hasExtendsReference = "extends" in obj && obj.extends !== undefined;
+	const extendsReference = hasExtendsReference
+		? (obj.extends as HarnessContractWithPreset["extends"])
+		: undefined;
+	const requireInlineNorthStarSurfaces =
+		northStarSurfacesRequired && !hasExtendsReference;
+
+	let northStar: NorthStarContract | undefined;
+	if (!("northStar" in obj) || obj.northStar === undefined) {
+		if (requireInlineNorthStarSurfaces) {
+			errors.push({
+				code: ValidationErrorCode.MISSING_REQUIRED_FIELD,
+				path: "northStar",
+				message:
+					"northStar is required for contract versions 1.6+ to keep north-star governance load-bearing",
+				expected:
+					"{ mission: string, primaryMetric: 'pr_lead_time', primaryBottleneck: 'review_rework_loop', autonomyBoundary: string, safetyFloor: string[], nonGoals: string[], decisionQuestions: [{ id, prompt }] }",
+				received: "undefined",
+				fix: "Add a canonical northStar block to harness.contract.json",
+			});
+		}
+	} else {
+		if (!isValidNorthStarContract(obj.northStar)) {
+			errors.push({
+				code: ValidationErrorCode.INVALID_VALUE,
+				path: "northStar",
+				message:
+					"northStar must define canonical mission, metric, bottleneck, boundary, safety/non-goal arrays, and ordered canonical decision questions",
+				expected:
+					"{ mission: string, primaryMetric: 'pr_lead_time', primaryBottleneck: 'review_rework_loop', autonomyBoundary: string, safetyFloor: string[], nonGoals: string[], decisionQuestions: [{ id, prompt }] }",
+				received: JSON.stringify(obj.northStar),
+				fix: "Use the canonical northStar shape and preserve the required decisionQuestions ids, order, and prompt text",
+			});
+		} else {
+			northStar = obj.northStar as NorthStarContract;
+		}
+	}
+
+	let productSurface: ProductSurfaceRegistry | undefined;
+	if (!("productSurface" in obj) || obj.productSurface === undefined) {
+		if (requireInlineNorthStarSurfaces) {
+			errors.push({
+				code: ValidationErrorCode.MISSING_REQUIRED_FIELD,
+				path: "productSurface",
+				message:
+					"productSurface is required for contract versions 1.6+ so governed surfaces remain explicit",
+				expected:
+					"{ surfaces: [{ surfaceId, surfaceType, class, owner, northStarContribution, manualGlueReductionClaim, reliabilityContribution, evidenceReference, reviewCadence?, ownedPaths, lastReviewedAt }] }",
+				received: "undefined",
+				fix: "Add productSurface.surfaces entries for canonical command/document surfaces",
+			});
+		}
+	} else {
+		if (!isValidProductSurfaceRegistry(obj.productSurface)) {
+			errors.push({
+				code: ValidationErrorCode.INVALID_VALUE,
+				path: "productSurface",
+				message:
+					"productSurface must declare unique surface registrations with required contribution fields and cadence for adjacent/experimental classes",
+				expected:
+					"{ surfaces: [{ surfaceId, surfaceType, class, owner, northStarContribution, manualGlueReductionClaim, reliabilityContribution, evidenceReference, reviewCadence?, ownedPaths, lastReviewedAt }] }",
+				received: JSON.stringify(obj.productSurface),
+				fix: "Ensure each registration has a unique surfaceId, non-empty ownedPaths, and reviewCadence for adjacent/experimental classes",
+			});
+		} else {
+			productSurface = obj.productSurface as ProductSurfaceRegistry;
+		}
+	}
+
+	let overrideReviewerRegistry: OverrideReviewerRegistry | undefined;
+	if (
+		!("overrideReviewerRegistry" in obj) ||
+		obj.overrideReviewerRegistry === undefined
+	) {
+		if (requireInlineNorthStarSurfaces) {
+			errors.push({
+				code: ValidationErrorCode.MISSING_REQUIRED_FIELD,
+				path: "overrideReviewerRegistry",
+				message:
+					"overrideReviewerRegistry is required for contract versions 1.6+",
+				expected:
+					"{ trustedReviewers: [{ reviewerId, reviewerType: 'user'|'team'|'service', signatureRef, displayName, status: 'active'|'revoked' }] }",
+				received: "undefined",
+				fix: "Declare at least one active trusted reviewer in overrideReviewerRegistry",
+			});
+		}
+	} else {
+		if (!isValidOverrideReviewerRegistry(obj.overrideReviewerRegistry)) {
+			errors.push({
+				code: ValidationErrorCode.INVALID_VALUE,
+				path: "overrideReviewerRegistry",
+				message:
+					"overrideReviewerRegistry must declare unique trusted reviewers with supported reviewerType/status values and at least one active reviewer",
+				expected:
+					"{ trustedReviewers: [{ reviewerId, reviewerType: 'user'|'team'|'service', signatureRef, displayName, status: 'active'|'revoked' }] }",
+				received: JSON.stringify(obj.overrideReviewerRegistry),
+				fix: "Provide unique reviewerId/signatureRef pairs and keep at least one active trusted reviewer",
+			});
+		} else {
+			overrideReviewerRegistry =
+				obj.overrideReviewerRegistry as OverrideReviewerRegistry;
+		}
 	}
 
 	// Validate riskTierRules
@@ -1779,69 +1913,6 @@ export function validateContract(
 					fix: "Ensure all tier values are valid risk tiers",
 				});
 			}
-		}
-	}
-
-	// Validate northStar (optional)
-	let northStar: HarnessContract["northStar"] | undefined;
-	if ("northStar" in obj && obj.northStar !== undefined) {
-		if (!isValidNorthStarContract(obj.northStar)) {
-			errors.push({
-				code: ValidationErrorCode.INVALID_VALUE,
-				path: "northStar",
-				message:
-					"northStar must include mission, primary metric/bottleneck, autonomy boundary, safety floor, non-goals, and canonical decision questions",
-				expected:
-					"{ mission: string, primaryMetric: 'pr_lead_time', primaryBottleneck: 'review_rework_loop', autonomyBoundary: string, safetyFloor: string[], nonGoals: string[], decisionQuestions: [{ id, prompt }] }",
-				received: JSON.stringify(obj.northStar),
-				fix: "Use the canonical northStar schema with non-empty strings and canonical decision question IDs",
-			});
-		} else {
-			northStar = obj.northStar as HarnessContract["northStar"];
-		}
-	}
-
-	// Validate productSurface (optional)
-	let productSurface: HarnessContract["productSurface"] | undefined;
-	if ("productSurface" in obj && obj.productSurface !== undefined) {
-		if (!isValidProductSurfaceRegistry(obj.productSurface)) {
-			errors.push({
-				code: ValidationErrorCode.INVALID_VALUE,
-				path: "productSurface",
-				message:
-					"productSurface must declare a surfaces array of valid product surface registrations",
-				expected:
-					"{ surfaces: [{ surfaceId, surfaceType, class, owner, northStarContribution, manualGlueReductionClaim, reliabilityContribution, evidenceReference, ownedPaths, lastReviewedAt, reviewCadence? }] }",
-				received: JSON.stringify(obj.productSurface),
-				fix: "Ensure every product surface registration has supported enum values and non-empty required fields",
-			});
-		} else {
-			productSurface = obj.productSurface as HarnessContract["productSurface"];
-		}
-	}
-
-	// Validate overrideReviewerRegistry (optional)
-	let overrideReviewerRegistry:
-		| HarnessContract["overrideReviewerRegistry"]
-		| undefined;
-	if (
-		"overrideReviewerRegistry" in obj &&
-		obj.overrideReviewerRegistry !== undefined
-	) {
-		if (!isValidOverrideReviewerRegistry(obj.overrideReviewerRegistry)) {
-			errors.push({
-				code: ValidationErrorCode.INVALID_VALUE,
-				path: "overrideReviewerRegistry",
-				message:
-					"overrideReviewerRegistry must declare trusted reviewers with reviewer id, type, signatureRef, display name, and status",
-				expected:
-					"{ trustedReviewers: [{ reviewerId, reviewerType: 'user' | 'team' | 'service', signatureRef, displayName, status: 'active' | 'revoked' }] }",
-				received: JSON.stringify(obj.overrideReviewerRegistry),
-				fix: "Ensure trustedReviewers entries use supported enum values and non-empty string metadata",
-			});
-		} else {
-			overrideReviewerRegistry =
-				obj.overrideReviewerRegistry as HarnessContract["overrideReviewerRegistry"];
 		}
 	}
 
@@ -1966,7 +2037,7 @@ export function validateContract(
 				path: "memoryPolicy",
 				message: "memoryPolicy fields are invalid",
 				expected:
-					"{ enabled, provider, sessionIdTemplate, domain, requiredTags, maxObservationsPerStep, allowedLevels, requireStartRead, requireCloseoutSummary, forbiddenContentPatterns }",
+					"{ enabled, provider, sessionIdTemplate, domain, requiredTags, maxObservationsPerStep, allowedLevels, requireStartRead, requireCloseoutSummary, forbiddenContentPatterns, sessionLogPath? }",
 				received: JSON.stringify(obj.memoryPolicy),
 				fix: "Ensure all required fields exist and are typed correctly",
 			});
@@ -2516,45 +2587,51 @@ export function validateContract(
 		return { success: false, errors };
 	}
 
+	const validatedContract: HarnessContractWithPreset = {
+		version: obj.version as string,
+		riskTierRules: (obj.riskTierRules as Record<string, RiskTier>) ?? {},
+		northStar,
+		productSurface,
+		overrideReviewerRegistry,
+		policyChain,
+		mergePolicy,
+		docsDriftRules,
+		diffBudget,
+		uiLoopPolicy,
+		runtimePolicy,
+		memoryPolicy,
+		memoryMaintenancePolicy,
+		memoryEvalPolicy,
+		observabilityPolicy,
+		packageManagerPolicy,
+		gapCasePolicy,
+		reviewPolicy,
+		evidencePolicy,
+		remediationPolicy,
+		loopStageContracts,
+		pilotGapCasePolicy,
+		pilotRollbackPolicy,
+		pilotAuthzPolicy,
+		docsGatePolicy,
+		contextCompact,
+		contextIntegrityPolicy,
+		controlPlanePolicy,
+		toolingPolicy,
+		ciProviderPolicy,
+		branchProtection,
+		issueTrackingPolicy,
+		blastRadiusRules,
+		blastRadiusRulesMode,
+		gateExtensions,
+	};
+
+	if (extendsReference !== undefined) {
+		validatedContract.extends = extendsReference;
+	}
+
 	return {
 		success: true,
-		data: {
-			version: obj.version as string,
-			riskTierRules: (obj.riskTierRules as Record<string, RiskTier>) ?? {},
-			northStar,
-			productSurface,
-			overrideReviewerRegistry,
-			policyChain,
-			mergePolicy,
-			docsDriftRules,
-			diffBudget,
-			uiLoopPolicy,
-			runtimePolicy,
-			memoryPolicy,
-			memoryMaintenancePolicy,
-			memoryEvalPolicy,
-			observabilityPolicy,
-			packageManagerPolicy,
-			gapCasePolicy,
-			reviewPolicy,
-			evidencePolicy,
-			remediationPolicy,
-			loopStageContracts,
-			pilotGapCasePolicy,
-			pilotRollbackPolicy,
-			pilotAuthzPolicy,
-			docsGatePolicy,
-			contextCompact,
-			contextIntegrityPolicy,
-			controlPlanePolicy,
-			toolingPolicy,
-			ciProviderPolicy,
-			branchProtection,
-			issueTrackingPolicy,
-			blastRadiusRules,
-			blastRadiusRulesMode,
-			gateExtensions,
-		},
+		data: validatedContract,
 		errors: [],
 	};
 }
