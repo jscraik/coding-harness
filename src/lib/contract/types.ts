@@ -318,7 +318,22 @@ export const DEFAULT_NORTH_STAR_CONTRACT: NorthStarContract = {
 };
 
 export const DEFAULT_PRODUCT_SURFACE_REGISTRY: ProductSurfaceRegistry = {
-	surfaces: [],
+	surfaces: [
+		{
+			surfaceId: "harness.review-gate",
+			surfaceType: "command",
+			class: "core",
+			owner: "review-gate",
+			northStarContribution: "Cuts review churn and rerun uncertainty.",
+			manualGlueReductionClaim:
+				"Replaces manual required-check triage with deterministic policy output.",
+			reliabilityContribution:
+				"Pins review decisions to canonical checks and replay-safe evidence.",
+			evidenceReference: "docs/agents/12-ai-review-governance.md",
+			ownedPaths: ["src/commands/review-gate.ts"],
+			lastReviewedAt: "2026-04-22",
+		},
+	],
 };
 
 export const DEFAULT_OVERRIDE_REVIEWER_REGISTRY: OverrideReviewerRegistry = {
