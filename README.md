@@ -228,9 +228,9 @@ For script-driven gating in downstream repos, use:
 bash scripts/run-harness-gate.sh <gate-command> [args...]
 ```
 
-When run from a harness source checkout (`@brainwav/coding-harness`), this
-wrapper fails closed if `pnpm` or `tsx` is unavailable so the repo does not
-silently fall back to a different harness binary.
+When run from a harness source checkout (`@brainwav/coding-harness`), use
+`scripts/run-harness-gate.sh` for fail-closed `pnpm`/`tsx` checks so the repo
+does not silently fall back to a different harness binary.
 
 If the wrapper cannot resolve local `@brainwav/coding-harness`, treat that as a
 repo bootstrap/install problem, not a harness command failure. In a pnpm repo,

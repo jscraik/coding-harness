@@ -137,6 +137,9 @@ This artifact was refreshed after the PR remediation/merge loop for `#210`, `#21
 - Required checks can remain blocked even when most CircleCI jobs are green (for example, a stuck `orb-pinning` dependency preventing `pr-pipeline` closure).
 - Conversation-thread resolution is a separate hard gate; unresolved bot threads can block merge after code and CI appear ready.
 - Operational rule: track merge readiness by required status contexts plus unresolved thread count, not by job list alone.
+- Evidence:
+  - https://circleci.com/gh/jscraik/coding-harness/3507
+  - https://github.com/jscraik/coding-harness/pull/213#discussion_r3131424124
 
 ### 5. CI bootstrap scripts need portability-safe assumptions
 
@@ -150,7 +153,7 @@ This artifact was refreshed after the PR remediation/merge loop for `#210`, `#21
 
 - Commit: `31cecabbdfcdd61b2c9e570e26caa32c93f0e9cb` (`fix(tooling): align task branch prefix and worktree guards`)
 - PR merge outcomes from this refresh pass:
-  - `#210` merged (review-gate/provider-resolution lane)
+  - `#210` merged at `2026-04-23T11:35:13Z` (`377842bc644d49ba352b12f72af69be23c7cd62f`)
   - `#211` merged at `2026-04-23T13:41:41Z` (`6fa543d6a21b8c795dea32111549b332915d2375`)
   - `#212` merged at `2026-04-23T13:09:30Z` (`fa13aba31ae59af2f40c10a9bd9015e97ede19e0`)
 - Modified policy/runtime surfaces:
