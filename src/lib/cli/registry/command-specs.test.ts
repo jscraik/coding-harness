@@ -8,7 +8,8 @@ import {
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { fileURLToPath } from "node:url";
-import { describe, expect, it } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import * as reviewGateCommand from "../../../commands/review-gate.js";
 import { COMMAND_SPECS } from "./command-specs.js";
 import type { CommandSpec } from "./types.js";
 
@@ -305,6 +306,68 @@ contact_links:
 				}
 			}
 		});
+	});
+});
+
+describe("review-gate execute parsing", () => {
+	const spec = findSpec("review-gate");
+
+	beforeEach(() => {
+		vi.spyOn(reviewGateCommand, "runReviewGateCLI").mockResolvedValue(0);
+	});
+
+	afterEach(() => {
+		vi.restoreAllMocks();
+	});
+
+	it("uses an empty checkName by default so manifest defaults can resolve", async () => {
+		const result = await Promise.resolve(
+			spec.execute([
+				"--token",
+				"test-token",
+				"--owner",
+				"acme",
+				"--repo",
+				"harness",
+				"--pr",
+				"42",
+				"--sha",
+				"0123456789abcdef0123456789abcdef01234567",
+				"--json",
+			]),
+		);
+		expect(result).toBe(0);
+		expect(reviewGateCommand.runReviewGateCLI).toHaveBeenCalledWith(
+			expect.objectContaining({
+				checkName: "",
+			}),
+		);
+	});
+
+	it("honors an explicit --check override", async () => {
+		const result = await Promise.resolve(
+			spec.execute([
+				"--token",
+				"test-token",
+				"--owner",
+				"acme",
+				"--repo",
+				"harness",
+				"--pr",
+				"42",
+				"--sha",
+				"0123456789abcdef0123456789abcdef01234567",
+				"--check",
+				"ci/circleci: pr-pipeline",
+				"--json",
+			]),
+		);
+		expect(result).toBe(0);
+		expect(reviewGateCommand.runReviewGateCLI).toHaveBeenCalledWith(
+			expect.objectContaining({
+				checkName: "ci/circleci: pr-pipeline",
+			}),
+		);
 	});
 });
 

@@ -454,7 +454,7 @@ export const COMMAND_SPECS: CommandSpec[] = [
 				repo: "",
 				prNumber: 0,
 				headSha: "",
-				checkName: "code-review",
+				checkName: "",
 				contractPath: "harness.contract.json",
 			};
 
