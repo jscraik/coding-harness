@@ -34,6 +34,7 @@ SEMGREP_VENV_DIR="${SEMGREP_CACHE_ROOT}/semgrep-venv-${SEMGREP_VERSION}"
 SEMGREP_BIN="$SEMGREP_VENV_DIR/bin/semgrep"
 SEMGREP_PYTHON="$SEMGREP_VENV_DIR/bin/python"
 SEMGREP_SITE_PACKAGES_DIR="${SEMGREP_CACHE_ROOT}/semgrep-site-packages-${SEMGREP_VERSION}"
+SEMGREP_INSTALL_SPEC="semgrep>=${SEMGREP_VERSION},<2.0.0"
 
 semgrep_binary_usable() {
   if [[ ! -x "$SEMGREP_BIN" ]]; then
@@ -104,7 +105,7 @@ install_semgrep_with_venv() {
   if ! python3 -m venv "$SEMGREP_VENV_DIR" >/dev/null 2>&1; then
     return 1
   fi
-  if ! "$SEMGREP_PYTHON" -m pip install --quiet --upgrade pip "semgrep==${SEMGREP_VERSION}"; then
+  if ! "$SEMGREP_PYTHON" -m pip install --quiet --upgrade pip "$SEMGREP_INSTALL_SPEC"; then
     return 1
   fi
   semgrep_binary_usable && semgrep_version_usable
@@ -118,7 +119,7 @@ install_semgrep_with_site_packages() {
   rm -f "$SEMGREP_BIN"
   rm -rf "$SEMGREP_SITE_PACKAGES_DIR"
   mkdir -p "$SEMGREP_SITE_PACKAGES_DIR"
-  if ! python3 -m pip install --quiet --upgrade --target "$SEMGREP_SITE_PACKAGES_DIR" "semgrep==${SEMGREP_VERSION}"; then
+  if ! python3 -m pip install --quiet --upgrade --target "$SEMGREP_SITE_PACKAGES_DIR" "$SEMGREP_INSTALL_SPEC"; then
     return 1
   fi
   semgrep_version_usable

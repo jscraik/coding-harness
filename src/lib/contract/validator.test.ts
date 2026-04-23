@@ -22,6 +22,28 @@ describe("validateContract", () => {
 		expect(result.data?.riskTierRules).toEqual({});
 	});
 
+	it("allows 1.6 contracts to omit north-star surfaces when extends is present", () => {
+		const result = validateContract({
+			version: "1.6.0",
+			extends: "bundled:starter",
+		});
+		expect(result.success).toBe(true);
+	});
+
+	it("requires north-star surfaces for 1.6 contracts without extends", () => {
+		const result = validateContract({ version: "1.6.0" });
+		expect(result.success).toBe(false);
+		expect(result.errors.some((error) => error.path === "northStar")).toBe(
+			true,
+		);
+		expect(result.errors.some((error) => error.path === "productSurface")).toBe(
+			true,
+		);
+		expect(
+			result.errors.some((error) => error.path === "overrideReviewerRegistry"),
+		).toBe(true);
+	});
+
 	it("accepts blastRadiusRules and blastRadiusRulesMode", () => {
 		const result = validateContract({
 			version: "1.0",
