@@ -222,6 +222,18 @@ Use it like this:
 bash scripts/harness-cli.sh verify-coderabbit
 ```
 
+For script-driven gating in downstream repos, use:
+
+```bash
+bash scripts/run-harness-gate.sh <gate-command> [args...]
+```
+
+When run from a harness source checkout (`@brainwav/coding-harness`), this
+wrapper fails closed if `pnpm` is unavailable so the repo does not silently
+fall back to a different harness binary. Set
+`HARNESS_ALLOW_SOURCE_RUNNER_FALLBACK=1` only when you intentionally want that
+fallback behavior and explicitly trust a non-source harness runner.
+
 If the wrapper cannot resolve local `@brainwav/coding-harness`, treat that as a
 repo bootstrap/install problem, not a harness command failure. In a pnpm repo,
 repair it with:
@@ -311,13 +323,20 @@ each file as you work.
 
 ```bash
 harness linear prepare --issue <KEY>         # pre-fill branch, PR title, closing line
-harness preflight-gate --contract harness.contract.json --files <changed-files>
+harness preflight-gate --contract harness.contract.json --files <changed-files> --admission-file artifacts/admission/declaration.json
 harness policy-gate --contract harness.contract.json --files <changed-files>
 harness blast-radius --files <changed-files> --json   # see which gates apply
 ```
 
 The `linear prepare` command outputs a branch name, PR title, and body fragment
 so you never need to construct these by hand or from memory.
+
+For contracts with a `northStar` block (`harness.contract.json` v1.6+), `preflight-gate` requires an admission declaration via `--admission-file <path>`. Use `--skip admission-declaration` only when bypass is explicitly authorized for the run.
+
+`preflight-gate` exit codes are command-specific: `0` for pass, `1` for policy
+violations, `3` for contract load or existence failures, and `10` for
+unexpected system errors. Automation workflows that need richer categorization should
+also consume the JSON payload.
 
 ### Hero Workflow 3: Submit a change for review
 
@@ -438,9 +457,10 @@ harness commands --json | jq '
 | `init` | Scaffold or update harness-managed repo surfaces (`--project-type`, `--json`, `--dry-run`, `--force`, `--track`, `--update`, `--migrate`, `--minimal`, `--issue-tracker`) |
 | `eject` | Safely remove harness-managed files and templates, including legacy Greptile artifacts, while preserving custom non-Greptile CI workflows (`--dry-run`, `--force`) |
 | `check` | Zero-config repo health snapshot — works before full setup |
+| `audit` | Audit for configuration drift, parity gaps, and governance posture |
 | `doctor` | Check all gate prerequisites (tools, files, config, CI) |
 | `health` | Unified gate status scorecard across all gates |
-| `repo` | Grouped repo lifecycle entrypoint (`check`, `doctor`, `health`, `init`, `contract`, `verify`, `upgrade`, `eject`) |
+| `brain` | Query and update Project Brain context artifacts |
 | `contract` | Validate `harness.contract.json` or print the JSON Schema (`init`, `validate`, `schema`) |
 | `upgrade` | Safely upgrade harness in an existing repo (`--dry-run` supported) |
 | `ci-migrate` | Stage, verify, commit, abort, sync branch protection, or promote CI mode |
@@ -455,9 +475,8 @@ harness commands --json | jq '
 | Command | Purpose |
 | --- | --- |
 | `policy-gate` | Validate policy expectations from changed files |
-| `gate` | Grouped gate entrypoint (`policy`, `preflight`, `review`, `docs`, `license`, `linear`, `plan`, `prompt`, `pr-template`, `brainstorm`, `drift`, `memory`, `observability`, `authz`, `environment`, `local-memory`) |
 | `preflight-gate` | Run fast policy checks before expensive work |
-| `review-gate` | Enforce merge-readiness and SHA-linked review checks |
+| `review-gate` | Validate SHA-linked review readiness (review check + review-policy required checks) |
 | `docs-gate` | Enforce documentation parity for governed changes |
 | `plan-gate` | Validate plan IDs, traceability, and acceptance evidence |
 | `brainstorm-gate` | Validate brainstorm artifacts |
@@ -479,8 +498,6 @@ harness commands --json | jq '
 | Command | Purpose |
 | --- | --- |
 | `linear` | Claim, hand off, close, prepare, or sync Linear work from one command family |
-| `linear prepare` | Pre-fill branch name, PR title, body, and closing line from a Linear issue |
-| `linear sync` | Promote harness findings into Linear issues idempotently |
 | `linear-gate` | Enforce Linear-first intake, branch naming, and PR linkage |
 | `workflow:generate` | Generate compact workflow specs from annotated markdown |
 
@@ -490,8 +507,6 @@ harness commands --json | jq '
 | --- | --- |
 | `pilot-evaluate` | Evaluate pilot metrics and determine promotion readiness |
 | `pilot-rollback` | Move pilot mode between autonomous and manual states |
-| `pilot` | Grouped pilot entrypoint (`evaluate`, `rollback`) |
-| `work` | Grouped change-analysis/remediation entrypoint (`risk`, `blast`, `simulate`, `replay`, `remediate`, `automation`, `diff`, `gap`, `gardener`) |
 | `simulate` | Run counterfactual policy simulation |
 | `automation-run` | Execute idempotent automation playbooks |
 | `gap-case` | Manage production gap cases |
@@ -511,7 +526,6 @@ harness commands --json | jq '
 | `context` | Search indexed plans, specs, and brainstorms; if `--limit` or `--threshold` is omitted, `contextCompact` policy applies when present, otherwise static defaults (`DEFAULT_SEARCH_LIMIT`, `DEFAULT_SIMILARITY_THRESHOLD`) are used |
 | `index-context` | Build the local semantic-search index |
 | `evidence-verify` | Validate screenshot and evidence artifacts |
-| `ui` | Grouped UI entrypoint (`fast`, `verify`, `explore`) |
 | `ui:fast` | Run a Storybook-first local UI loop |
 | `ui:verify` | Run Playwright smoke verification with evidence capture |
 | `ui:explore` | Run agent-browser exploratory testing |

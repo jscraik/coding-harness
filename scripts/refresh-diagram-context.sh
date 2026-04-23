@@ -71,7 +71,7 @@ fi
 TRUNC_DIR=".tmp-diagram-refresh-XXXXXX"
 TMP_DIR="$(mktemp -d "$ROOT_DIR/${TRUNC_DIR}")"
 TMP_BASENAME="$(basename "$TMP_DIR")"
-EXCLUDE_PATTERNS="node_modules/**,.git/**,dist/**,${TMP_BASENAME}/**"
+EXCLUDE_PATTERNS="node_modules/**,.git/**,dist/**,artifacts/tmp-*/**,artifacts/tmp/**,${TMP_BASENAME}/**"
 trap 'rm -rf "$TMP_DIR"' EXIT
 
 pushd "$ROOT_DIR" >/dev/null

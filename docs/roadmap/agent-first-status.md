@@ -97,7 +97,7 @@ Tie-back to north-star contract:
 | Component | Status | Notes |
 |-----------|--------|-------|
 | Repository structure | ✅ | Standard layout with `src/`, `docs/`, `contracts/` |
-| Build system | ✅ | TypeScript + pnpm + Vite |
+| Build system | ✅ | TypeScript + pnpm + `tsc` build |
 | Testing framework | ✅ | Vitest with comprehensive coverage |
 
 ### Phase 2: Contract Core

@@ -400,22 +400,40 @@ function loadPreflightContract(contractPath: string): {
 	}
 
 	let northStarDeclared = false;
+	let emptyProductSurfaceRegistryDeclared = false;
 	try {
 		const contractSource = readFileSync(contractPath, "utf-8");
 		const parsedSource = JSON.parse(contractSource) as unknown;
 		if (typeof parsedSource === "object" && parsedSource !== null) {
+			const parsedRecord = parsedSource as Record<string, unknown>;
 			northStarDeclared = Object.prototype.hasOwnProperty.call(
-				parsedSource,
+				parsedRecord,
 				"northStar",
 			);
+			const productSurface = parsedRecord.productSurface;
+			if (typeof productSurface === "object" && productSurface !== null) {
+				const surfaces = (productSurface as Record<string, unknown>).surfaces;
+				emptyProductSurfaceRegistryDeclared =
+					Array.isArray(surfaces) && surfaces.length === 0;
+			}
 		}
 	} catch {
 		// Ignore source-parse failures here. loadContract will report parsing errors.
 	}
 
 	try {
+		const contract = loadContract(contractPath);
+		if (northStarDeclared && emptyProductSurfaceRegistryDeclared) {
+			return {
+				contract,
+				errorMessage:
+					"Invalid contract: northStar requires at least one productSurface.surfaces entry",
+				durationMs: Date.now() - start,
+				northStarDeclared,
+			};
+		}
 		return {
-			contract: loadContract(contractPath),
+			contract,
 			errorMessage: undefined,
 			durationMs: Date.now() - start,
 			northStarDeclared,

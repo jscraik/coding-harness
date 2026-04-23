@@ -21,12 +21,13 @@ This repository is a TypeScript control plane for agentic development and review
 
 ## Harness CLI for Agents
 
-Use `harness` directly in CI and local workflows with canonical command names (`kebab-case` or explicit `:` command families). Prefer `--json` when output feeds automation and parse stdout only.
+Use `harness` directly in CI and local workflows with canonical command names (`kebab-case` or explicit `:` command families). Prefer `--json` when output feeds automation; parse stdout JSON when present, and treat stderr text as fallback diagnostics for command families that still return usage/validation errors as text.
 
 CLI contract:
 - Exit code `0`: success/pass.
 - Exit code `1`: fail/gate blocked/unknown command.
 - Exit code `2`: usage error (missing or invalid required values).
+- Some command families intentionally preserve richer process exit semantics; treat the `0/1/2` mapping as the default top-level contract unless command-specific docs state otherwise.
 
 Common machine-readable invocations:
 ```bash

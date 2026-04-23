@@ -40,7 +40,7 @@ import type {
 	GateExtensionHook,
 	GateExtensionHookId,
 	GateExtensionsPolicy,
-	HarnessContract,
+	HarnessContractWithPreset,
 	IssueTrackingPolicy,
 	LoopStageContract,
 	LoopStageContracts,
@@ -1720,7 +1720,7 @@ function isValidTopLevel(
 
 export function validateContract(
 	data: unknown,
-): ValidationResult<HarnessContract> {
+): ValidationResult<HarnessContractWithPreset> {
 	const errors: ValidationError[] = [];
 
 	if (typeof data !== "object" || data === null) {
@@ -1773,6 +1773,10 @@ export function validateContract(
 			});
 		}
 	}
+	const extendsReference =
+		"extends" in obj && obj.extends !== undefined
+			? (obj.extends as HarnessContractWithPreset["extends"])
+			: undefined;
 
 	const northStarSurfacesRequired = requiresCanonicalNorthStarSurfaces(
 		obj.version,
@@ -2581,45 +2585,51 @@ export function validateContract(
 		return { success: false, errors };
 	}
 
+	const validatedContract: HarnessContractWithPreset = {
+		version: obj.version as string,
+		riskTierRules: (obj.riskTierRules as Record<string, RiskTier>) ?? {},
+		northStar,
+		productSurface,
+		overrideReviewerRegistry,
+		policyChain,
+		mergePolicy,
+		docsDriftRules,
+		diffBudget,
+		uiLoopPolicy,
+		runtimePolicy,
+		memoryPolicy,
+		memoryMaintenancePolicy,
+		memoryEvalPolicy,
+		observabilityPolicy,
+		packageManagerPolicy,
+		gapCasePolicy,
+		reviewPolicy,
+		evidencePolicy,
+		remediationPolicy,
+		loopStageContracts,
+		pilotGapCasePolicy,
+		pilotRollbackPolicy,
+		pilotAuthzPolicy,
+		docsGatePolicy,
+		contextCompact,
+		contextIntegrityPolicy,
+		controlPlanePolicy,
+		toolingPolicy,
+		ciProviderPolicy,
+		branchProtection,
+		issueTrackingPolicy,
+		blastRadiusRules,
+		blastRadiusRulesMode,
+		gateExtensions,
+	};
+
+	if (extendsReference !== undefined) {
+		validatedContract.extends = extendsReference;
+	}
+
 	return {
 		success: true,
-		data: {
-			version: obj.version as string,
-			riskTierRules: (obj.riskTierRules as Record<string, RiskTier>) ?? {},
-			northStar,
-			productSurface,
-			overrideReviewerRegistry,
-			policyChain,
-			mergePolicy,
-			docsDriftRules,
-			diffBudget,
-			uiLoopPolicy,
-			runtimePolicy,
-			memoryPolicy,
-			memoryMaintenancePolicy,
-			memoryEvalPolicy,
-			observabilityPolicy,
-			packageManagerPolicy,
-			gapCasePolicy,
-			reviewPolicy,
-			evidencePolicy,
-			remediationPolicy,
-			loopStageContracts,
-			pilotGapCasePolicy,
-			pilotRollbackPolicy,
-			pilotAuthzPolicy,
-			docsGatePolicy,
-			contextCompact,
-			contextIntegrityPolicy,
-			controlPlanePolicy,
-			toolingPolicy,
-			ciProviderPolicy,
-			branchProtection,
-			issueTrackingPolicy,
-			blastRadiusRules,
-			blastRadiusRulesMode,
-			gateExtensions,
-		},
+		data: validatedContract,
 		errors: [],
 	};
 }

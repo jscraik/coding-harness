@@ -340,7 +340,7 @@ run_ci_check_alignment_gate() {
 				*)
 					;;
 			esac
-		done <<< "$circleci_check_names"
+		done <<< "$github_check_names"
 
 		if (( ${#suspicious[@]} > 0 )); then
 			printf '[verify-work] ci-check-alignment: CircleCI job-like githubCheckName values detected: %s\n' "${suspicious[*]}"
