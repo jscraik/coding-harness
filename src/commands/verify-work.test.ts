@@ -745,7 +745,9 @@ process.exit(1);
 `,
 		);
 		mkdirSync(join(repoRoot, "src"), { recursive: true });
-		writeFileSync(join(repoRoot, "src/cli.ts"), "export {};\n", "utf-8");
+		// Force repo-runner normalization to fail deterministically even if an
+		// environment-provided pnpm function bypasses our PATH stub.
+		writeFileSync(join(repoRoot, "src/cli.ts"), "process.exit(1);\n", "utf-8");
 
 		const payload = JSON.stringify({
 			schemaVersion: 1,
@@ -783,8 +785,20 @@ exit 1
 `,
 		);
 
+		const sandboxedEnv: NodeJS.ProcessEnv = {
+			PATH: `${binDir}:${process.env.PATH ?? ""}`,
+		};
+		for (const key of Object.keys(process.env)) {
+			if (
+				key.startsWith("BASH_FUNC_pnpm%%") ||
+				key.startsWith("BASH_FUNC_mise%%")
+			) {
+				sandboxedEnv[key] = undefined;
+			}
+		}
+
 		const result = runVerifyWorkScript(repoRoot, [], {
-			env: { PATH: `${binDir}:${process.env.PATH ?? ""}` },
+			env: sandboxedEnv,
 		});
 		const combinedOutput = `${result.stdout}${result.stderr}`;
 
