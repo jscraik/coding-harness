@@ -279,6 +279,11 @@ describe("docs-gate command", () => {
 			stdio: "ignore",
 			env: gitEnv,
 		});
+		const baseSha = execFileSync("git", ["rev-parse", "HEAD"], {
+			cwd: root,
+			encoding: "utf-8",
+			env: gitEnv,
+		}).trim();
 		write(join(root, "src/cli.ts"), "export const cli = true;\n");
 		rmSync(join(root, "README.md"), { force: true });
 		execFileSync("git", ["add", "-A"], {
@@ -295,6 +300,7 @@ describe("docs-gate command", () => {
 		const result = runDocsGate({
 			repoRoot: root,
 			mode: "required",
+			trustedBaseRef: baseSha,
 		});
 
 		expect(result.exitCode).toBe(13);

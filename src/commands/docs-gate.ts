@@ -1126,59 +1126,25 @@ function resolveChangedFiles(
 			}
 		}
 		if (trackedOutput === undefined) {
-			try {
-				const rootCommit = execFileSync(
-					"git",
-					["-C", repoRoot, "rev-list", "--max-parents=0", "HEAD"],
-					{
-						encoding: "utf-8",
-						stdio: ["ignore", "pipe", "pipe"],
-					},
-				)
-					.split("\n")
-					.map((line) => line.trim())
-					.find((line) => line.length > 0);
-				if (!rootCommit) {
-					throw new Error("unable to resolve repository root commit");
-				}
-				trackedOutput = execFileSync(
-					"git",
-					[...trackedDiffArgs, `${rootCommit}...HEAD`],
-					{
-						encoding: "utf-8",
-						stdio: ["ignore", "pipe", "pipe"],
-					},
-				);
-			} catch {
-				trackedOutput = execFileSync(
-					"git",
-					[
-						"-C",
-						repoRoot,
-						"diff-tree",
-						"--no-commit-id",
-						"--name-status",
-						"--diff-filter=ACMRD",
-						"-r",
-						"HEAD",
-					],
-					{
-						encoding: "utf-8",
-						stdio: ["ignore", "pipe", "pipe"],
-					},
-				);
-			}
+			throw new Error(
+				"unable to resolve git merge-base for docs-gate; provide --trusted-base-ref or configure origin/main",
+			);
 		}
-		const untrackedOutput = execFileSync(
-			"git",
-			["-C", repoRoot, "ls-files", "--others", "--exclude-standard"],
-			{
-				encoding: "utf-8",
-				stdio: ["ignore", "pipe", "pipe"],
-			},
-		);
 		const trackedFileLists = parseGitNameStatus(trackedOutput);
-		const untrackedFiles = parseGitFileList(untrackedOutput);
+		let untrackedFiles: string[] = [];
+		try {
+			const untrackedOutput = execFileSync(
+				"git",
+				["-C", repoRoot, "ls-files", "--others", "--exclude-standard"],
+				{
+					encoding: "utf-8",
+					stdio: ["ignore", "pipe", "pipe"],
+				},
+			);
+			untrackedFiles = parseGitFileList(untrackedOutput);
+		} catch {
+			// Keep tracked diff results if untracked discovery fails.
+		}
 		const changedFiles = [
 			...new Set([...trackedFileLists.changedFiles, ...untrackedFiles]),
 		];

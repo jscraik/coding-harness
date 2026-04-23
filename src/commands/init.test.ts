@@ -1732,7 +1732,7 @@ describe("runInit", () => {
 			);
 			expect(harnessCli).toContain("npm exec harness -- <command>");
 			expect(runHarnessGate).toContain(
-				'exec pnpm exec tsx "$REPO_ROOT/src/cli.ts" "$@"',
+				'exec pnpm --dir "$REPO_ROOT" exec tsx "$REPO_ROOT/src/cli.ts" "$@"',
 			);
 			expect(runHarnessGate).toContain("is_harness_source_repo()");
 			expect(runHarnessGate).toContain(
@@ -1742,7 +1742,7 @@ describe("runInit", () => {
 				'process.exit(packageJson.name === "@brainwav/coding-harness" ? 0 : 1);',
 			);
 			expect(runHarnessGate).toContain(
-				'echo "Error: pnpm is required to run the harness source CLI." >&2',
+				'echo "Error: source checkout detected but pnpm is unavailable; refusing fallback to avoid stale harness binaries." >&2',
 			);
 			expect(runHarnessGate).toContain(
 				'exec bash "$REPO_ROOT/scripts/harness-cli.sh" "$@"',

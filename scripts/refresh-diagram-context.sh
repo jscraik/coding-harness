@@ -256,6 +256,33 @@ if (diagramFiles.includes("architecture.mmd")) {
   }
 }
 
+if (diagramFiles.includes("class.mmd")) {
+  const classPath = join(diagramsDir, "class.mmd");
+  let classContent = readFileSync(classPath, "utf8");
+  const loaderMatch = classContent.match(
+    /class\s+(\S+)\s*\{\s*\n\s*\+src\/lib\/contract\/loader\.ts\s*\n\s*\}/m,
+  );
+  if (loaderMatch) {
+    const loaderClassId = loaderMatch[1];
+    const validatorMatch = classContent.match(
+      /class\s+(\S+)\s*\{\s*\n\s*\+src\/lib\/contract\/validator\.ts\s*\n\s*\}/m,
+    );
+    const validatorClassId =
+      validatorMatch?.[1] ?? stableId("contract_validator", "src/lib/contract/validator.ts");
+    if (!validatorMatch) {
+      classContent = `${classContent.trimEnd()}\n  class ${validatorClassId} {\n    +src/lib/contract/validator.ts\n  }\n`;
+    }
+    const validateContractEdge = new RegExp(
+      `^\\s*${loaderClassId}\\s+-->\\s+${validatorClassId}\\s*:\\s*validateContract\\s*$`,
+      "m",
+    );
+    if (!validateContractEdge.test(classContent)) {
+      classContent = `${classContent.trimEnd()}\n  ${loaderClassId} --> ${validatorClassId} : validateContract\n`;
+    }
+  }
+  writeFileSync(classPath, ensureTrailingNewline(classContent.trimEnd()));
+}
+
 for (const file of diagramFiles) {
   if (file === "architecture.mmd" || file === "dependency.mmd") {
     continue;
