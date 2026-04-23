@@ -1736,16 +1736,19 @@ describe("runInit", () => {
 			expect(harnessCli).toContain("npm exec harness -- <command>");
 			expect(runHarnessGate).toContain("if is_harness_source_repo; then");
 			expect(runHarnessGate).toContain(
-				'echo "Error: pnpm is required to run the harness source CLI." >&2',
+				'echo "Error: source checkout detected but pnpm is unavailable; refusing fallback to avoid stale harness binaries." >&2',
 			);
 			expect(runHarnessGate).toContain(
-				"if ! pnpm exec -- tsx --version >/dev/null 2>&1; then",
+				'if ! pnpm --dir "$REPO_ROOT" exec -- tsx --version >/dev/null 2>&1; then',
 			);
 			expect(runHarnessGate).toContain(
-				'exec pnpm exec tsx "$REPO_ROOT/src/cli.ts" "$@"',
+				'exec pnpm --dir "$REPO_ROOT" exec tsx "$REPO_ROOT/src/cli.ts" "$@"',
 			);
 			expect(runHarnessGate).toContain(
-				'if [[ -x "$REPO_ROOT/scripts/harness-cli.sh" && -f "$REPO_ROOT/node_modules/@brainwav/coding-harness/dist/cli.js" ]]; then',
+				'if [[ -f "$REPO_ROOT/dist/cli.js" ]] && command -v node >/dev/null 2>&1; then',
+			);
+			expect(runHarnessGate).toContain(
+				'exec node "$REPO_ROOT/dist/cli.js" "$@"',
 			);
 			expect(runHarnessGate).toContain(
 				'exec bash "$REPO_ROOT/scripts/harness-cli.sh" "$@"',

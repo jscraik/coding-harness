@@ -25,7 +25,6 @@ import {
 	type PreflightGateOptions,
 	type PreflightGateResult,
 	type PreflightHookDecision,
-	type PreflightNorthStarSummary,
 } from "./types.js";
 
 export type { PreflightGateOptions };
@@ -325,7 +324,6 @@ export async function runPreflightGate(
 	const contract = contractLoad.contract;
 	const extensions = contract?.gateExtensions?.preflightGate;
 	const riskTier = resolveRiskTier(options, contract);
-	const northStarSummary = buildNorthStarSummary(contract);
 
 	// Run pre-gate extension hooks before native checks.
 	const shortCircuit = runPreHooks(extensions, checks, hookDecisions);
@@ -494,24 +492,6 @@ function buildPreflightResult(
 			: undefined,
 		admissionDeclaration: admission,
 		hookDecisions: hookDecisions.length > 0 ? hookDecisions : undefined,
-		northStarSummary,
-		admissionDeclaration,
-	};
-}
-
-function buildNorthStarSummary(
-	contract: HarnessContract | undefined,
-): PreflightNorthStarSummary | undefined {
-	const northStar = contract?.northStar;
-	if (!northStar) {
-		return undefined;
-	}
-	return {
-		mission: northStar.mission,
-		primary_metric: northStar.primaryMetric,
-		primary_bottleneck: northStar.primaryBottleneck,
-		autonomy_boundary: northStar.autonomyBoundary,
-		safety_floor: northStar.safetyFloor,
 	};
 }
 

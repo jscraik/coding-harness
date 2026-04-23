@@ -70,7 +70,7 @@ printf '%s\\n' "$HARNESS_VERIFY_WORK_NO_DELEGATE" > "${envLogPath}"
 		expect(args).toContain("--project-governance");
 		expect(args).toContain("--strict");
 		expect(args).toContain("--json");
-		expect(args).toContain("--workspace-governance");
+		expect(args).not.toContain("--workspace-governance");
 		const resumeFromFlagIndex = args.indexOf("--resume-from");
 		expect(resumeFromFlagIndex).toBeGreaterThanOrEqual(0);
 		expect(args[resumeFromFlagIndex + 1]).toBe("validate-codestyle-fast");

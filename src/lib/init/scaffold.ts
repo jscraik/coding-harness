@@ -1311,21 +1311,21 @@ is_harness_source_repo() {
 
 if is_harness_source_repo; then
 	if ! command -v pnpm >/dev/null 2>&1; then
-		echo "Error: pnpm is required to run the harness source CLI." >&2
-		echo "Install pnpm and retry." >&2
+		echo "Error: source checkout detected but pnpm is unavailable; refusing fallback to avoid stale harness binaries." >&2
 		exit 1
 	fi
-
-	if ! pnpm exec -- tsx --version >/dev/null 2>&1; then
-		echo "Error: tsx is required to run the harness source CLI." >&2
-		echo "Install repository dependencies (pnpm install) and retry." >&2
+	if ! pnpm --dir "$REPO_ROOT" exec -- tsx --version >/dev/null 2>&1; then
+		echo "Error: source checkout detected but tsx is unavailable via pnpm exec; refusing fallback to avoid stale harness binaries." >&2
 		exit 1
 	fi
-
-	exec pnpm exec tsx "$REPO_ROOT/src/cli.ts" "$@"
+	exec pnpm --dir "$REPO_ROOT" exec tsx "$REPO_ROOT/src/cli.ts" "$@"
 fi
 
-if [[ -x "$REPO_ROOT/scripts/harness-cli.sh" && -f "$REPO_ROOT/node_modules/@brainwav/coding-harness/dist/cli.js" ]]; then
+if [[ -f "$REPO_ROOT/dist/cli.js" ]] && command -v node >/dev/null 2>&1; then
+	exec node "$REPO_ROOT/dist/cli.js" "$@"
+fi
+
+if [[ -f "$REPO_ROOT/scripts/harness-cli.sh" && -r "$REPO_ROOT/scripts/harness-cli.sh" ]]; then
 	exec bash "$REPO_ROOT/scripts/harness-cli.sh" "$@"
 fi
 

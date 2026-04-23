@@ -328,10 +328,8 @@ run_ci_check_alignment_gate() {
 
 	if [[ "$provider" == "circleci" ]]; then
 		local suspicious=()
-		local circleci_check_names
-		if [[ "$normalized_manifest_source" == "raw-fallback" ]]; then
-			circleci_check_names="$(jq -r '.requiredChecks[]? | select((.provider // .sourceAppSlug // .sourceAppId // "") == "circleci") | .githubCheckName // empty' "$normalized_manifest_path")"
-		else
+		local circleci_check_names="$github_check_names"
+		if [[ "$normalized_manifest_source" != "raw-fallback" ]]; then
 			circleci_check_names="$(jq -r '.gates[]? | select((.provider // "") == "circleci") | .githubCheckName // empty' "$normalized_manifest_path")"
 		fi
 		while IFS= read -r name; do
@@ -403,11 +401,6 @@ compute_contract_fingerprint() {
 }
 
 compute_provider_class() {
-	if [[ "$normalized_manifest_source" == "raw-fallback" && -n "$normalized_manifest_provider" ]]; then
-		echo "$normalized_manifest_provider"
-		return 0
-	fi
-
 	local provider
 	provider="$(resolve_manifest_provider)"
 	if [[ -n "$provider" ]]; then

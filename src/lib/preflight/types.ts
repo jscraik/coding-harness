@@ -124,10 +124,6 @@ export interface PreflightGateResult {
 	admissionDeclaration?: PreflightAdmissionDeclaration | undefined;
 	/** Decisions emitted by pre/post gate extension hooks */
 	hookDecisions?: PreflightHookDecision[] | undefined;
-	/** Contract-derived north-star summary emitted for preflight consumers */
-	northStarSummary?: PreflightNorthStarSummary | undefined;
-	/** Admission declaration echoed for downstream gate surfaces */
-	admissionDeclaration?: PreflightAdmissionDeclaration | undefined;
 }
 
 export type PreflightHookPhase = "pre" | "post";
