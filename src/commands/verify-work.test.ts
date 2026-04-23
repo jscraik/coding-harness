@@ -698,7 +698,9 @@ process.exit(1);
 `,
 		);
 		mkdirSync(join(repoRoot, "src"), { recursive: true });
-		writeFileSync(join(repoRoot, "src/cli.ts"), "export {};\n", "utf-8");
+		// Force repo-runner normalization to fail deterministically even if an
+		// environment-provided pnpm function bypasses our PATH stub.
+		writeFileSync(join(repoRoot, "src/cli.ts"), "process.exit(1);\n", "utf-8");
 
 		const payload = JSON.stringify({
 			schemaVersion: 1,
