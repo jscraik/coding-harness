@@ -7,13 +7,14 @@ settings:
 overrides:
   axios: ^1.15.0
   '@vvago/vale>axios': ^1.15.0
-  follow-redirects: ^1.16.0
   brace-expansion: ^5.0.5
+  follow-redirects: ^1.16.0
   handlebars: ^4.7.9
   lodash: ^4.18.1
   micromatch>picomatch: ^2.3.2
   minimatch: ^10.2.3
   picomatch: ^4.0.4
+  postcss: ^8.5.10
   tar: ^7.5.10
   yaml: ^2.8.3
   vite: '>=7.3.2 <8'
@@ -1950,8 +1951,8 @@ packages:
     resolution: {integrity: sha512-C3FsVNH1udSEX48gGX1xfvwTWfsYWj5U+8/uK15BGzIGrKoUpghX8hWZwa/OFnakBiiVNmBvemTJR5mcy7iPcg==}
     engines: {node: '>=4'}
 
-  postcss@8.5.8:
-    resolution: {integrity: sha512-OW/rX8O/jXnm82Ey1k44pObPtdblfiuWnrd8X7GJ7emImCOstunGbXUpp7HdBrFQX6rJzn3sPT397Wp5aCwCHg==}
+  postcss@8.5.10:
+    resolution: {integrity: sha512-pMMHxBOZKFU6HgAZ4eyGnwXF/EvPGGqUr0MnZ5+99485wwW41kW91A4LOGxSHhgugZmSChL5AlElNdwlNgcnLQ==}
     engines: {node: ^10 || ^12 || >=14}
 
   prebuild-install@7.1.3:
@@ -4285,7 +4286,7 @@ snapshots:
 
   pify@3.0.0: {}
 
-  postcss@8.5.8:
+  postcss@8.5.10:
     dependencies:
       nanoid: 3.3.11
       picocolors: 1.1.1
@@ -4734,7 +4735,7 @@ snapshots:
       esbuild: 0.27.3
       fdir: 6.5.0(picomatch@4.0.4)
       picomatch: 4.0.4
-      postcss: 8.5.8
+      postcss: 8.5.10
       rollup: 4.60.1
       tinyglobby: 0.2.15
     optionalDependencies:
