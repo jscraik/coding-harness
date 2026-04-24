@@ -10,7 +10,7 @@
 	"artifacts": [],
 	"git": {
 		"commit": "b632f81f8d5fde87b815818247baa5c58331ef2e",
-		"branch": "jscraik/feature/release-0-14-0-prep",
+		"branch": "codex/jsc-224-prepare-coding-harness-0-14-0-release",
 		"repository": "https://github.com/jscraik/coding-harness.git"
 	},
 	"metrics": {
