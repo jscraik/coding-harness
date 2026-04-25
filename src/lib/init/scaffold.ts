@@ -38,8 +38,8 @@ import {
 	getNormalizedRequiredChecks,
 	isTemplateEnabledForProvider,
 	renderCircleCIConfig,
-	renderGitHubActionsPnpmSetupStep,
 	renderGitHubActionsPrPipelineWorkflow,
+	renderReleasePrivateNpmWorkflow,
 	renderRequiredChecksManifest,
 	renderTransitionStatusArtifact,
 } from "./scaffold-ci-templates.js";
@@ -127,27 +127,6 @@ function renderWorkflowBootstrapInstallCommand(packageManager: string): string {
 	return `${renderInstallCommand(packageManager)} --frozen-lockfile`;
 }
 
-/**
- * Construct a private-package publish command tailored to the specified package manager.
- *
- * @param packageManager - Package manager identifier; recognized value: `"pnpm"` (anything else uses npm-style command)
- * @param withProvenance - If `true`, include the provenance flag supported by the package manager
- * @returns The shell command to publish a restricted private package (e.g. `pnpm publish --no-git-checks --access restricted --provenance` or `npm publish --access restricted --provenance`)
- */
-function renderPrivateNpmPublishCommand(
-	packageManager: string,
-	withProvenance: boolean,
-): string {
-	if (packageManager === "pnpm") {
-		return withProvenance
-			? "pnpm publish --no-git-checks --access restricted --provenance"
-			: "pnpm publish --no-git-checks --access restricted";
-	}
-
-	const provenanceFlag = withProvenance ? " --provenance" : "";
-	return `npm publish --access restricted${provenanceFlag}`;
-}
-
 function renderMemoryValidateCommand(): string {
 	return `test -f memory.json && jq -e '.meta.version == "1.0" and (.preamble.bootstrap | type == "boolean") and (.preamble.search | type == "boolean") and (.entries | type == "array")' memory.json >/dev/null`;
 }
@@ -180,37 +159,6 @@ shamefully-hoist=false
 # Do not add //registry.npmjs.org/:_authToken=... here, because it can override
 # a valid npm login and break local installs.
 `;
-}
-
-/**
- * Produces the GitHub Actions workflow YAML for releasing a private npm package, configured for the given package manager.
- *
- * @param packageManager - The package manager to target (e.g., `"pnpm"`, `"yarn"`, or `"npm"`); controls setup, install, build, check, and publish command insertion.
- * @returns The rendered workflow YAML as a string with all package-manager-specific steps and commands populated.
- */
-function renderReleasePrivateNpmWorkflow(packageManager: string): string {
-	const templatePath = fileURLToPath(
-		new URL("../../templates/release-private-npm.yml", import.meta.url),
-	);
-	const packageManagerSetupStep =
-		packageManager === "pnpm" ? `${renderGitHubActionsPnpmSetupStep()}\n` : "";
-
-	return readFileSync(templatePath, "utf-8")
-		.replace("__PACKAGE_MANAGER_SETUP_STEP__", packageManagerSetupStep)
-		.replace(
-			"__INSTALL_COMMAND__",
-			renderWorkflowBootstrapInstallCommand(packageManager),
-		)
-		.replace("__CHECK_COMMAND__", renderScriptCommand(packageManager, "check"))
-		.replace("__BUILD_COMMAND__", renderScriptCommand(packageManager, "build"))
-		.replace(
-			"__PUBLISH_TOKEN_COMMAND__",
-			renderPrivateNpmPublishCommand(packageManager, false),
-		)
-		.replace(
-			"__PUBLISH_OIDC_COMMAND__",
-			renderPrivateNpmPublishCommand(packageManager, true),
-		);
 }
 
 /**
@@ -1368,7 +1316,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 	},
 	{
 		path: ".github/workflows/release-private-npm.yml",
-		render: (pm) => renderReleasePrivateNpmWorkflow(pm),
+		render: (pm) =>
+			renderReleasePrivateNpmWorkflow({
+				packageManager: pm,
+				installCommand: renderWorkflowBootstrapInstallCommand(pm),
+				checkCommand: renderScriptCommand(pm, "check"),
+				buildCommand: renderScriptCommand(pm, "build"),
+			}),
 	},
 	{
 		path: ".github/workflows/pr-pipeline.yml",
