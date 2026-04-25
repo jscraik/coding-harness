@@ -53,6 +53,18 @@ import {
 	renderValidateCodestyleScript,
 } from "./scaffold-root-templates.js";
 import {
+	renderAddPackageCommand,
+	renderCodexEnforcedTemplate,
+	renderCodexLearnTemplate,
+	renderCodexPreflightLegacyLocalMemoryTemplate,
+	renderCodexPreflightTemplate,
+	renderHarnessCliWrapper,
+	renderHarnessGateRunner,
+	renderInstallCommand,
+	renderLocalHarnessExecCommand,
+	renderVerifyWorkScript,
+} from "./scaffold-shell-templates.js";
+import {
 	type CIProvider,
 	CODEX_ENVIRONMENT_TEMPLATE_PATH,
 	CURRENT_SCHEMA_VERSION,
@@ -98,23 +110,6 @@ function shellEscapeArg(value: string): string {
 	return `'${value.split("'").join(`'"'"'`)}'`;
 }
 
-function renderInstallCommand(packageManager: string): string {
-	return `${packageManager} install`;
-}
-
-function renderAddPackageCommand(
-	packageManager: string,
-	packageName: string,
-): string {
-	if (packageManager === "npm") {
-		return `npm install --save-dev ${packageName}`;
-	}
-	if (packageManager === "yarn") {
-		return `yarn add --dev ${packageName}`;
-	}
-	return `${packageManager} add -D ${packageName}`;
-}
-
 /**
  * Constructs a package-manager-specific install command used during workflow bootstrap.
  *
@@ -147,22 +142,6 @@ function renderPrivateNpmPublishCommand(
 
 	const provenanceFlag = withProvenance ? " --provenance" : "";
 	return `npm publish --access restricted${provenanceFlag}`;
-}
-
-/**
- * Constructs the package-manager-specific command to execute the local `harness` binary.
- *
- * @param packageManager - Package manager identifier (e.g., `"npm"`, `"yarn"`, `"pnpm"`); determines the command form.
- * @returns The shell command string to invoke `harness`: returns `"npm exec harness --"` for `npm`, `"yarn harness"` for `yarn`, and `"<packageManager> exec harness"` for other package managers.
- */
-function renderLocalHarnessExecCommand(packageManager: string): string {
-	if (packageManager === "npm") {
-		return "npm exec harness --";
-	}
-	if (packageManager === "yarn") {
-		return "yarn harness";
-	}
-	return `${packageManager} exec harness`;
 }
 
 function renderMemoryValidateCommand(): string {
@@ -200,57 +179,6 @@ shamefully-hoist=false
 }
 
 /**
- * Load the packaged Codex preflight shell template resolved relative to this module.
- *
- * @returns The UTF-8 contents of the templates/codex-preflight.sh file
- */
-function renderCodexPreflightTemplate(): string {
-	const templatePath = fileURLToPath(
-		new URL("../../templates/codex-preflight.sh", import.meta.url),
-	);
-	return readFileSync(templatePath, "utf-8");
-}
-
-/**
- * Load the legacy Codex preflight shell template used for local memory workflows.
- *
- * @returns The UTF-8 contents of the packaged template file `templates/codex-preflight-local-memory-legacy.sh`.
- */
-function renderCodexPreflightLegacyLocalMemoryTemplate(): string {
-	const templatePath = fileURLToPath(
-		new URL(
-			"../../templates/codex-preflight-local-memory-legacy.sh",
-			import.meta.url,
-		),
-	);
-	return readFileSync(templatePath, "utf-8");
-}
-
-/**
- * Load the packaged Codex "learn" shell template used by the scaffold.
- *
- * @returns The UTF-8 contents of the `templates/codex-learn.sh` template file
- */
-function renderCodexLearnTemplate(): string {
-	const templatePath = fileURLToPath(
-		new URL("../../templates/codex-learn.sh", import.meta.url),
-	);
-	return readFileSync(templatePath, "utf-8");
-}
-
-/**
- * Load and return the packaged Codex "enforced" shell script template.
- *
- * @returns The UTF-8 content of the `templates/codex-enforced.sh` file
- */
-function renderCodexEnforcedTemplate(): string {
-	const templatePath = fileURLToPath(
-		new URL("../../templates/codex-enforced.sh", import.meta.url),
-	);
-	return readFileSync(templatePath, "utf-8");
-}
-
-/**
  * Produces the GitHub Actions workflow YAML for releasing a private npm package, configured for the given package manager.
  *
  * @param packageManager - The package manager to target (e.g., `"pnpm"`, `"yarn"`, or `"npm"`); controls setup, install, build, check, and publish command insertion.
@@ -279,19 +207,6 @@ function renderReleasePrivateNpmWorkflow(packageManager: string): string {
 			"__PUBLISH_OIDC_COMMAND__",
 			renderPrivateNpmPublishCommand(packageManager, true),
 		);
-}
-
-/**
- * Load the packaged `verify-work.sh` script and return its text content.
- *
- * @param _packageManager - Ignored; kept for API compatibility with other renderers.
- * @returns The UTF-8 contents of the `scripts/verify-work.sh` template
- */
-function renderVerifyWorkScript(_packageManager: string): string {
-	const templatePath = fileURLToPath(
-		new URL("../../../scripts/verify-work.sh", import.meta.url),
-	);
-	return readFileSync(templatePath, "utf-8");
 }
 
 /**
@@ -630,142 +545,6 @@ else
 	echo "  bash scripts/prepare-worktree.sh"
 fi
 echo "  bash scripts/codex-preflight.sh --mode optional"
-`;
-}
-
-/**
- * Generate a POSIX-compatible bash wrapper that resolves and executes the repository-local harness CLI.
- *
- * The generated script verifies Node.js is present, checks for a local
- * @brainwav/coding-harness install under node_modules, prints package-manager-specific
- * repair guidance when the package is missing, and then execs the local CLI with
- * forwarded arguments.
- *
- * @param packageManager - The package manager identifier used to render the install/add/exec commands (e.g., "pnpm", "yarn", "npm").
- * @returns The full contents of the bash wrapper script as a string.
- */
-function renderHarnessCliWrapper(packageManager: string): string {
-	const installCommand = renderInstallCommand(packageManager);
-	const addCommand = renderAddPackageCommand(
-		packageManager,
-		"@brainwav/coding-harness",
-	);
-	const execCommand = renderLocalHarnessExecCommand(packageManager);
-
-	return `#!/usr/bin/env bash
-set -euo pipefail
-
-SCRIPT_DIR="$(cd -- "$(dirname -- "${"${"}BASH_SOURCE[0]}")" && pwd)"
-REPO_ROOT="$(cd -- "$SCRIPT_DIR/.." && pwd)"
-
-	if ! command -v node >/dev/null 2>&1; then
-		echo "Error: node is required to run scripts/harness-cli.sh." >&2
-		echo "Install Node.js and retry." >&2
-		exit 1
-	fi
-
-	CLI_PATH="$REPO_ROOT/node_modules/@brainwav/coding-harness/dist/cli.js"
-
-	if [[ ! -f "$CLI_PATH" ]]; then
-		echo "Error: local @brainwav/coding-harness could not be resolved from this repo." >&2
-		echo "This is a local install/bootstrap problem, not a harness command failure." >&2
-		echo "Repair from the repo root with one of:" >&2
-		echo "  ${installCommand}" >&2
-		echo "  ${addCommand}" >&2
-	echo "After the package is installed, rerun:" >&2
-	echo "  bash scripts/harness-cli.sh <command>" >&2
-		echo "  ${execCommand} <command>" >&2
-		exit 1
-	fi
-
-		exec node "$CLI_PATH" "$@"
-`;
-}
-
-/**
- * Produce a portable bash script that resolves and runs the repository's harness CLI.
- *
- * The returned script locates the repository root and attempts, in order, to:
- * - run the repo-local `src/cli.ts` via `pnpm exec tsx` only when the repo is the harness source repo,
- * - run `scripts/harness-cli.sh` (when present and executable),
- * - invoke a globally installed `harness` binary.
- * If none are available the script prints installation and local-exec guidance and exits with a non-zero status.
- *
- * @param packageManager - The package manager identifier used to render install and local-exec commands (e.g., `"pnpm"`, `"npm"`, `"yarn"`).
- * @returns The full bash script text to be written to `scripts/run-harness-gate.sh`.
- */
-function renderHarnessGateRunner(packageManager: string): string {
-	const installCommand = renderInstallCommand(packageManager);
-	const localExecCommand = renderLocalHarnessExecCommand(packageManager);
-	return `#!/usr/bin/env bash
-set -euo pipefail
-
-SCRIPT_DIR="$(cd -- "$(dirname -- "${"${"}BASH_SOURCE[0]}")" && pwd)"
-REPO_ROOT="$(cd -- "$SCRIPT_DIR/.." && pwd)"
-
-if [[ $# -eq 0 ]]; then
-	echo "Usage: bash scripts/run-harness-gate.sh <harness-subcommand> [args...]" >&2
-	exit 2
-fi
-
-is_harness_source_repo() {
-	[[ -f "$REPO_ROOT/src/cli.ts" ]] || return 1
-	[[ -f "$REPO_ROOT/package.json" ]] || return 1
-	command -v node >/dev/null 2>&1 || return 1
-
-	node -e '
-		const { readFileSync } = require("node:fs");
-		const packageJson = JSON.parse(readFileSync(process.argv[1], "utf8"));
-		process.exit(packageJson.name === "@brainwav/coding-harness" ? 0 : 1);
-	' "$REPO_ROOT/package.json" >/dev/null 2>&1
-}
-
-if is_harness_source_repo; then
-	if ! command -v pnpm >/dev/null 2>&1; then
-		echo "Error: source checkout detected but pnpm is unavailable; refusing fallback to avoid stale harness binaries." >&2
-		exit 1
-	fi
-	if ! pnpm --dir "$REPO_ROOT" exec -- tsx --version >/dev/null 2>&1; then
-		echo "Error: source checkout detected but tsx is unavailable via pnpm exec; refusing fallback to avoid stale harness binaries." >&2
-		exit 1
-	fi
-	exec pnpm --dir "$REPO_ROOT" exec tsx "$REPO_ROOT/src/cli.ts" "$@"
-fi
-
-if [[ -f "$REPO_ROOT/dist/cli.js" ]] && command -v node >/dev/null 2>&1; then
-	exec node "$REPO_ROOT/dist/cli.js" "$@"
-fi
-
-if [[ -f "$REPO_ROOT/scripts/harness-cli.sh" && -r "$REPO_ROOT/scripts/harness-cli.sh" ]]; then
-	wrapper_exit=0
-	bash "$REPO_ROOT/scripts/harness-cli.sh" "$@" || wrapper_exit=$?
-	if [[ "$wrapper_exit" -eq 0 ]]; then
-		exit 0
-	fi
-	if [[ "$wrapper_exit" -eq 126 || "$wrapper_exit" -eq 127 ]]; then
-		echo "Warning: scripts/harness-cli.sh unavailable (exit $wrapper_exit); attempting fallback runners." >&2
-	else
-		exit "$wrapper_exit"
-	fi
-fi
-
-if command -v mise >/dev/null 2>&1; then
-	MISE_RESOLVED="$(mise which harness 2>/dev/null || true)"
-	if [[ -n "$MISE_RESOLVED" && -x "$MISE_RESOLVED" ]]; then
-		exec "$MISE_RESOLVED" "$@"
-	fi
-fi
-
-if command -v harness >/dev/null 2>&1; then
-	exec harness "$@"
-fi
-
-echo "Error: unable to resolve a harness runner for this repository." >&2
-echo "Install dependencies with:" >&2
-echo "  ${installCommand}" >&2
-echo "or run with a local harness install via:" >&2
-echo "  ${localExecCommand} <command>" >&2
-exit 1
 `;
 }
 
