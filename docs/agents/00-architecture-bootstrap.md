@@ -21,10 +21,13 @@ Use this guide first when a task changes architecture, policy flow, or cross-com
 ## One-task-at-a-time intake
 
 1. Confirm architecture artifacts exist:
-   - `AI/diagrams/manifest.json`
+   - `.diagram/manifest.json`
    - `AI/context/diagram-context.md`
-2. Read `AI/diagrams/manifest.json` to identify generated diagram types and timestamp.
+2. Read `.diagram/manifest.json` to identify generated diagram types and timestamp.
 3. Read only the relevant sections in `AI/context/diagram-context.md` for the task.
+   - For schema, persistence, or data-integrity work, check `## erd` when
+     present; otherwise use `## database` as the current diagram-cli
+     persistence view.
 4. Route to deeper SOPs in `docs/agents/` after architecture context is loaded.
 
 ## Artifact validation gates
@@ -32,7 +35,7 @@ Use this guide first when a task changes architecture, policy flow, or cross-com
 Run these checks before architecture-sensitive edits:
 
 ```bash
-jq -r '.generatedAt, (.diagrams | length)' AI/diagrams/manifest.json
+jq -r '.generatedAt, (.diagrams | length)' .diagram/manifest.json
 rg -n '^## ' AI/context/diagram-context.md
 harness docs-gate --mode advisory --json
 ```
@@ -67,7 +70,7 @@ Use this sequence when artifacts are missing or stale:
 ```bash
 bash scripts/refresh-diagram-context.sh --dry-run
 bash scripts/refresh-diagram-context.sh --force
-jq -r '.generated_at, .diagram_count, .changed' AI/context/diagram-context.meta.json
+jq -r '.generated_at, .diagram_count, .changed' .diagram/context/diagram-context.meta.json
 ```
 
 The local `make hooks-pre-push` path also runs `scripts/check-diagram-freshness.sh`. That gate now skips refresh work unless architecture-sensitive implementation paths changed, and it ignores test-only source changes to keep the local loop tighter.
