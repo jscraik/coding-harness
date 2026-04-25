@@ -2,6 +2,7 @@ import { spawnSync } from "node:child_process";
 import type { SpawnSyncReturns } from "node:child_process";
 import { mkdirSync, rmSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
+import { type PartialDeep, fromPartial } from "@total-typescript/shoehorn";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import type { CheckRun } from "../lib/github/client.js";
 import {
@@ -23,6 +24,8 @@ vi.mock("../lib/github/client.js", () => ({
 import { GitHubClient } from "../lib/github/client.js";
 
 const mockGitHubClient = vi.mocked(GitHubClient);
+const mockAgentFirstGitHubClient = (client: PartialDeep<GitHubClient>) =>
+	fromPartial<GitHubClient>(client);
 
 function makeSha(value: string): string {
 	return value.repeat(40);
@@ -135,13 +138,12 @@ describe("agent-first throughput integration", () => {
 				user: { login: "independent-reviewer" },
 			},
 		]);
-		mockGitHubClient.mockImplementation(
-			() =>
-				({
-					listCheckRunsForRef: mockListCheckRuns,
-					getPullRequest: mockGetPullRequest,
-					listPullRequestReviews: mockListPullRequestReviews,
-				}) as unknown as GitHubClient,
+		mockGitHubClient.mockImplementation(() =>
+			mockAgentFirstGitHubClient({
+				listCheckRunsForRef: mockListCheckRuns,
+				getPullRequest: mockGetPullRequest,
+				listPullRequestReviews: mockListPullRequestReviews,
+			}),
 		);
 
 		const reviewResult = await runReviewGate({
@@ -202,12 +204,11 @@ describe("agent-first throughput integration", () => {
 			user: { login: "coding-actor" },
 			head: { sha: headSha, ref: "feature/throughput" },
 		});
-		mockGitHubClient.mockImplementation(
-			() =>
-				({
-					getPullRequest: mockGetPullRequest,
-					listCheckRunsForRef: mockListCheckRuns,
-				}) as unknown as GitHubClient,
+		mockGitHubClient.mockImplementation(() =>
+			mockAgentFirstGitHubClient({
+				getPullRequest: mockGetPullRequest,
+				listCheckRunsForRef: mockListCheckRuns,
+			}),
 		);
 
 		const reviewResult = await runReviewGate({
@@ -295,13 +296,12 @@ describe("agent-first throughput integration", () => {
 				user: { login: "independent-reviewer" },
 			},
 		]);
-		mockGitHubClient.mockImplementation(
-			() =>
-				({
-					listCheckRunsForRef: mockListCheckRuns,
-					getPullRequest: mockGetPullRequest,
-					listPullRequestReviews: mockListPullRequestReviews,
-				}) as unknown as GitHubClient,
+		mockGitHubClient.mockImplementation(() =>
+			mockAgentFirstGitHubClient({
+				listCheckRunsForRef: mockListCheckRuns,
+				getPullRequest: mockGetPullRequest,
+				listPullRequestReviews: mockListPullRequestReviews,
+			}),
 		);
 
 		const gateA = await runReviewGate({
@@ -379,13 +379,12 @@ describe("agent-first throughput integration", () => {
 				user: { login: "independent-reviewer" },
 			},
 		]);
-		mockGitHubClient.mockImplementation(
-			() =>
-				({
-					listCheckRunsForRef: mockListCheckRuns,
-					getPullRequest: mockGetPullRequest,
-					listPullRequestReviews: mockListPullRequestReviews,
-				}) as unknown as GitHubClient,
+		mockGitHubClient.mockImplementation(() =>
+			mockAgentFirstGitHubClient({
+				listCheckRunsForRef: mockListCheckRuns,
+				getPullRequest: mockGetPullRequest,
+				listPullRequestReviews: mockListPullRequestReviews,
+			}),
 		);
 
 		const durationsMs: number[] = [];
