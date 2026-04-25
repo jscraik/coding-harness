@@ -60,6 +60,7 @@ const EXPECTED_TEMPLATE_PATHS = [
 	"scripts/lib/changed-files.mjs",
 	"scripts/check-semgrep-changed.sh",
 	"scripts/check-semgrep-full.sh",
+	"scripts/semgrep-bootstrap.sh",
 	"scripts/semgrep-pre-push.yml",
 	"scripts/refresh-diagram-context.sh",
 	"scripts/check-diagram-freshness.sh",
@@ -1562,6 +1563,10 @@ describe("runInit", () => {
 				join(tempDir, "scripts/check-semgrep-full.sh"),
 				"utf-8",
 			);
+			const semgrepBootstrap = require("node:fs").readFileSync(
+				join(tempDir, "scripts/semgrep-bootstrap.sh"),
+				"utf-8",
+			);
 			const semgrepRules = require("node:fs").readFileSync(
 				join(tempDir, "scripts/semgrep-pre-push.yml"),
 				"utf-8",
@@ -1674,14 +1679,25 @@ describe("runInit", () => {
 			expect(semgrepChanged).toContain(
 				'git diff --name-only --diff-filter=ACMR -z "$base_ref"...HEAD --',
 			);
-			expect(semgrepChanged).toContain('SEMGREP_VERSION="1.153.1"');
+			expect(semgrepChanged).toContain(
+				'source "$REPO_ROOT/scripts/semgrep-bootstrap.sh"',
+			);
 			expect(semgrepChanged).toContain("run_semgrep scan");
 			expect(semgrepFull).toContain(
 				'RULESET_PATH="$REPO_ROOT/scripts/semgrep-pre-push.yml"',
 			);
-			expect(semgrepFull).toContain('SEMGREP_VERSION="1.153.1"');
+			expect(semgrepFull).toContain(
+				'source "$REPO_ROOT/scripts/semgrep-bootstrap.sh"',
+			);
 			expect(semgrepFull).toContain("run_semgrep scan");
 			expect(semgrepFull).toContain("\t.");
+			expect(semgrepBootstrap).toContain(
+				'SEMGREP_VERSION="${SEMGREP_VERSION:-1.153.1}"',
+			);
+			expect(semgrepBootstrap).toContain("semgrep_version_usable()");
+			expect(semgrepBootstrap).toContain(
+				"install_semgrep_with_site_packages()",
+			);
 			expect(semgrepRules).toContain("ts-no-eval");
 			expect(semgrepRules).toContain("ts-no-shell-true");
 			expect(makefile).toContain("check: ## Run all required quality gates");
@@ -1799,49 +1815,49 @@ describe("runInit", () => {
 			expect(runHarnessGate).toContain(
 				'MISE_RESOLVED="$(mise which harness 2>/dev/null || true)"',
 			);
-			expect(semgrepChanged).toContain(
+			expect(semgrepBootstrap).toContain(
 				'echo "Error: python3 is required to install Semgrep." >&2',
 			);
-			expect(semgrepChanged).toContain(
+			expect(semgrepBootstrap).toContain(
 				'SEMGREP_SITE_PACKAGES_DIR="${SEMGREP_CACHE_ROOT}/semgrep-site-packages-${SEMGREP_VERSION}"',
 			);
-			expect(semgrepChanged).toContain(
+			expect(semgrepBootstrap).toContain(
 				'PYTHONPATH="$SEMGREP_SITE_PACKAGES_DIR${PYTHONPATH:+:$PYTHONPATH}" \\',
 			);
-			expect(semgrepChanged).toContain(
-				'python3 -m pip install --quiet --upgrade --target "$SEMGREP_SITE_PACKAGES_DIR" "semgrep==$SEMGREP_VERSION"',
+			expect(semgrepBootstrap).toContain(
+				'python3 -m pip install --quiet --upgrade --target "$SEMGREP_SITE_PACKAGES_DIR" "$SEMGREP_PIP_SPEC"',
 			);
-			expect(semgrepChanged).toContain("has_semgrep_installation()");
-			expect(semgrepChanged).toContain(
-				'if [[ -d "$SEMGREP_SITE_PACKAGES_DIR/semgrep" ]]; then',
+			expect(semgrepBootstrap).toContain("has_semgrep_installation()");
+			expect(semgrepBootstrap).toContain(
+				'if [[ -d "$SEMGREP_SITE_PACKAGES_DIR/semgrep" ]] && semgrep_version_usable; then',
 			);
-			expect(semgrepChanged).toContain(
+			expect(semgrepBootstrap).toContain(
 				'if [[ -z "${CI:-}" && -z "${CIRCLECI:-}" ]]; then',
 			);
-			expect(semgrepChanged).toContain(
+			expect(semgrepBootstrap).toContain(
 				"sudo apt-get install -y python3-pip python3-venv",
 			);
-			expect(semgrepFull).toContain(
+			expect(semgrepBootstrap).toContain(
 				'SEMGREP_SITE_PACKAGES_DIR="${SEMGREP_CACHE_ROOT}/semgrep-site-packages-${SEMGREP_VERSION}"',
 			);
-			expect(semgrepFull).toContain(
+			expect(semgrepBootstrap).toContain(
 				'python3 -m venv "$SEMGREP_VENV_DIR" >/dev/null 2>&1',
 			);
-			expect(semgrepFull).toContain(
-				'python3 -m pip install --quiet --upgrade --target "$SEMGREP_SITE_PACKAGES_DIR" "semgrep==$SEMGREP_VERSION"',
+			expect(semgrepBootstrap).toContain(
+				'python3 -m pip install --quiet --upgrade --target "$SEMGREP_SITE_PACKAGES_DIR" "$SEMGREP_PIP_SPEC"',
 			);
-			expect(semgrepFull).toContain("has_semgrep_installation()");
-			expect(semgrepFull).toContain(
-				'if [[ -d "$SEMGREP_SITE_PACKAGES_DIR/semgrep" ]]; then',
+			expect(semgrepBootstrap).toContain("has_semgrep_installation()");
+			expect(semgrepBootstrap).toContain(
+				'if [[ -d "$SEMGREP_SITE_PACKAGES_DIR/semgrep" ]] && semgrep_version_usable; then',
 			);
-			expect(semgrepFull).toContain(
+			expect(semgrepBootstrap).toContain(
 				'if [[ -z "${CI:-}" && -z "${CIRCLECI:-}" ]]; then',
 			);
-			expect(semgrepFull).toContain(
+			expect(semgrepBootstrap).toContain(
 				"sudo apt-get install -y python3-pip python3-venv",
 			);
-			expect(semgrepFull).toContain(
-				"python3 -m venv is unavailable and python3 -m pip could not be used as a fallback.",
+			expect(semgrepBootstrap).toContain(
+				"Error: unable to install Semgrep ${SEMGREP_VERSION} or newer.",
 			);
 			expect(verifyWork).toContain("Canonical repo-local verification runner.");
 			expect(verifyWork).toContain("--mode required");
