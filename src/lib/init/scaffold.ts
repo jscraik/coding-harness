@@ -2543,6 +2543,13 @@ if (!rootDir || !tmpDir || !manifestPath) {
 const diagramsDir = join(tmpDir, "diagrams");
 const ensureTrailingNewline = (content) =>
   content.endsWith("\\n") ? content : \`\${content}\\n\`;
+const sourceManifest = (() => {
+  try {
+    return JSON.parse(readFileSync(manifestPath, "utf8"));
+  } catch {
+    return {};
+  }
+})();
 const stableId = (prefix, value) => {
   const slug = value
     .toLowerCase()
@@ -2715,6 +2722,7 @@ writeFileSync(
 	manifestPath,
 	\`\${JSON.stringify(
 		{
+			...sourceManifest,
 			generatedAt: new Date().toISOString(),
 			rootPath: rootDir,
 			diagramDir: ".diagram",

@@ -2177,6 +2177,8 @@ describe("runInit", () => {
 			);
 			expect(refreshDiagrams).toContain('--max-files "$MAX_FILES"');
 			expect(refreshDiagrams).toContain('cp "$TMP_DIR/diagrams/manifest.json"');
+			expect(refreshDiagrams).toContain("const sourceManifest = (() => {");
+			expect(refreshDiagrams).toContain("...sourceManifest,");
 			expect(diagramFreshness).toContain("is_ignored_change()");
 			expect(diagramFreshness).toContain("is_architecture_sensitive_change()");
 			expect(diagramFreshness).toContain(".diagram/*)");
