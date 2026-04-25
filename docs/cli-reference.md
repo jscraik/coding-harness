@@ -159,3 +159,10 @@ Compatibility:
 | `ui:fast` | Run a Storybook-first local UI loop |
 | `ui:verify` | Run Playwright smoke verification with evidence capture |
 | `ui:explore` | Run agent-browser exploratory testing |
+
+Use `source-outline` as the first read for TypeScript-family source files:
+
+```bash
+harness source-outline src/commands/search.ts
+harness source-outline src/commands/search.ts --symbol runSearchCLI --json
+```

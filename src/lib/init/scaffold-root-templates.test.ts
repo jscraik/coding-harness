@@ -30,6 +30,14 @@ describe("scaffold root templates", () => {
 		expect(content).toContain("# Codestyle Instruction Set");
 	});
 
+	it("scaffolds source-outline as the TypeScript source-inspection default", () => {
+		const content = renderCodestylePackTemplate(
+			"codestyle/05-quality-security-ops.md",
+		);
+		expect(content).toContain("harness source-outline <path>");
+		expect(content).toContain("--symbol <name>");
+	});
+
 	it("loads the actual staged-document Vale wrapper", () => {
 		const content = renderCheckDocStyleScript();
 		expect(content).toContain("vale --config .vale.ini");

@@ -547,6 +547,10 @@ harness commands --json | jq '
 | `ui:verify`       | Run Playwright smoke verification with evidence capture                                                                                                                                                                           |
 | `ui:explore`      | Run agent-browser exploratory testing                                                                                                                                                                                             |
 
+For agent source inspection, use `harness source-outline <path>` before opening
+raw TypeScript-family files. If implementation detail is needed, unwrap one
+symbol at a time with `--symbol <name>` so context growth stays deliberate.
+
 ## Requirements
 
 - **Node.js:** `>= 24.0.0`

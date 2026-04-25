@@ -409,6 +409,7 @@ describe("getRegistryCommandCapabilities", () => {
 			"drift-gate",
 			"search",
 			"context",
+			"source-outline",
 		] as const;
 
 		it.each(EXPECTED_READ_COMMANDS)(
@@ -724,6 +725,7 @@ describe("getRegistryCommandCapabilities", () => {
 			["context-health", "drift-search-evidence"],
 			["search", "drift-search-evidence"],
 			["context", "drift-search-evidence"],
+			["source-outline", "drift-search-evidence"],
 			["index-context", "drift-search-evidence"],
 			["evidence-verify", "drift-search-evidence"],
 			["ui:fast", "drift-search-evidence"],
