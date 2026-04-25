@@ -9,6 +9,7 @@ import {
 	renderGitHubActionsPrPipelineWorkflow,
 	renderReleasePrivateNpmWorkflow,
 	renderRequiredChecksManifest,
+	renderSecurityScanWorkflow,
 	renderTransitionStatusArtifact,
 } from "./scaffold-ci-templates.js";
 
@@ -175,6 +176,17 @@ describe("scaffold CI templates", () => {
 		expect(workflow).toContain("npm publish --access restricted --provenance");
 		expect(workflow).not.toContain("pnpm publish");
 		expect(workflow).not.toMatch(/__[A-Z_]+__/);
+	});
+
+	it("renders the GitHub Actions security scan workflow", () => {
+		const workflow = renderSecurityScanWorkflow();
+
+		expect(workflow).toContain("name: security-scan");
+		expect(workflow).toContain("gitleaks/gitleaks-action@");
+		expect(workflow).toContain("aquasecurity/trivy-action@");
+		expect(workflow).toContain("semgrep==1.153.1");
+		expect(workflow).toContain("--config p/security-audit");
+		expect(workflow).toContain("GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}");
 	});
 
 	it("renders the CircleCI PR pipeline with Linear gating enabled", () => {

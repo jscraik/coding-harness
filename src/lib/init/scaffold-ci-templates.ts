@@ -271,6 +271,15 @@ export function renderReleasePrivateNpmWorkflow(
 }
 
 /**
+ * Render the scaffolded GitHub Actions security scan workflow.
+ *
+ * @returns The YAML contents for `.github/workflows/secret-scan.yml`.
+ */
+export function renderSecurityScanWorkflow(): string {
+	return renderCiTemplate("secret-scan.yml");
+}
+
+/**
  * Render the scaffolded CircleCI PR pipeline configuration.
  *
  * @param input - Pre-resolved package-manager commands and issue-tracker mode.

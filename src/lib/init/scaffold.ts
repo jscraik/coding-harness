@@ -33,6 +33,7 @@ import {
 	renderGitHubActionsPrPipelineWorkflow,
 	renderReleasePrivateNpmWorkflow,
 	renderRequiredChecksManifest,
+	renderSecurityScanWorkflow,
 	renderTransitionStatusArtifact,
 } from "./scaffold-ci-templates.js";
 import {
@@ -1175,60 +1176,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 	},
 	{
 		path: ".github/workflows/secret-scan.yml",
-		render: () => `name: security-scan
-
-on:
-  push:
-    branches: ["main"]
-  pull_request:
-  merge_group:
-
-permissions:
-  contents: read
-  pull-requests: write
-
-jobs:
-  secret-scan:
-    name: security-scan
-    runs-on: ubuntu-latest
-    # Continue-on-error ensures billing/infra failures don't block PRs
-    continue-on-error: true
-
-    steps:
-      - name: Checkout
-        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6
-        with:
-          fetch-depth: 0
-
-      - name: Gitleaks Scan
-        uses: gitleaks/gitleaks-action@ff98106e4c7b2bc287b24eaf42907196329070c7 # v2
-        env:
-          GITHUB_TOKEN: ${"${{ secrets.GITHUB_TOKEN }}"}
-          GITLEAKS_CONFIG: .gitleaks.toml
-
-      - name: Trivy Scan
-        uses: aquasecurity/trivy-action@97e0b3872f55f89b95b2f65b3dbab56962816478 # 0.34.2
-        with:
-          scan-type: fs
-          scan-ref: .
-          scanners: vuln
-          ignore-unfixed: true
-          severity: HIGH,CRITICAL
-          exit-code: 1
-
-      - name: Semgrep Scan
-        run: |
-          set -euo pipefail
-          python3 -m venv "${"${RUNNER_TEMP}"}/semgrep-venv"
-          "${"${RUNNER_TEMP}"}/semgrep-venv/bin/python" -m pip install --quiet --upgrade pip semgrep==1.153.1
-          "${"${RUNNER_TEMP}"}/semgrep-venv/bin/semgrep" scan \\
-            --config p/security-audit \\
-            --error \\
-            --severity ERROR \\
-            --exclude node_modules \\
-            --exclude dist \\
-            .
-`,
+		render: () => renderSecurityScanWorkflow(),
 	},
 	{
 		path: ".circleci/config.yml",
