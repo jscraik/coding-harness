@@ -121,11 +121,6 @@ const stableId = (prefix, value) => {
   return `${prefix}_${slug}_${digest}`;
 };
 
-const rawNodeFingerprint = (rawId) => {
-  const match = rawId.match(/_([0-9a-f]{8})$/i);
-  return match ? match[1].toLowerCase() : rawId.toLowerCase();
-};
-
 const parseArchitecture = (content) => {
   const lines = content.trimEnd().split(/\r?\n/);
   const subgraphs = [];
@@ -171,14 +166,12 @@ const buildArchitecture = (subgraphs) => {
     const subgraphId = stableId("sg", subgraph.label);
     lines.push(`  subgraph ${subgraphId}["${subgraph.label}"]`);
     const sortedNodes = [...subgraph.nodes].sort((left, right) =>
-      left.label.localeCompare(right.label) ||
-      rawNodeFingerprint(left.rawId).localeCompare(rawNodeFingerprint(right.rawId)) ||
-      left.rawId.localeCompare(right.rawId),
+      left.label.localeCompare(right.label) || left.rawId.localeCompare(right.rawId),
     );
     for (const node of sortedNodes) {
       const nodeId = stableId(
         "node",
-        `${subgraph.label}/${node.label}/${rawNodeFingerprint(node.rawId)}`,
+        `${subgraph.label}/${node.label}`,
       );
       nodeMap.set(node.rawId, { canonicalId: nodeId, label: node.label });
       lines.push(`    ${nodeId}["${node.label}"]`);

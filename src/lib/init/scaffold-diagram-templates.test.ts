@@ -15,7 +15,7 @@ describe("scaffold diagram templates", () => {
 		expect(script).toContain('MAX_FILES="${DIAGRAM_REFRESH_MAX_FILES:-1000}"');
 		expect(script).toContain("const sourceManifest = (() => {");
 		expect(script).toContain("...sourceManifest,");
-		expect(script).toContain("rawNodeFingerprint");
+		expect(script).toContain("`${subgraph.label}/${node.label}`");
 		expect(script).toContain("artifacts/tmp-*/**");
 		expect(script).toContain('cp "$TMP_DIR/diagrams/manifest.json"');
 	});

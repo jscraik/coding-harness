@@ -1,568 +1,568 @@
 # Diagram Context Pack
 
-Generated: 2026-04-25T13:42:54Z
+Generated: 2026-04-25T13:49:01Z
 
 ## architecture
 
 ```mermaid
 graph TD
   subgraph sg_sg_3a52ce78["."]
-    node_vitest_config_a9f1245e_18ed3616["vitest.config"]
+    node_vitest_config_79ed63ec["vitest.config"]
   end
   subgraph sg_artifacts_debug_drift_north_star_src_348bbc2d["artifacts/debug-drift-north-star/src"]
-    node_artifacts_debug_drift_north_star_src_cli_10bc8a7_379f1d5d["cli"]
+    node_artifacts_debug_drift_north_star_src_cli_61dec5c7["cli"]
   end
   subgraph sg_artifacts_docs_gate_repro_src_5edf9cbc["artifacts/docs-gate-repro/src"]
-    node_artifacts_docs_gate_repro_src_cli_9d90d3fe_2d616d52["cli"]
+    node_artifacts_docs_gate_repro_src_cli_dd288ec8["cli"]
   end
   subgraph sg_coverage_6dafbcf6["coverage"]
-    node_coverage_block_navigation_138e923e_bc8e885a["block-navigation"]
-    node_coverage_prettify_d0759c37_56574182["prettify"]
-    node_coverage_sorter_d0a8e9fc_4777e2b6["sorter"]
+    node_coverage_block_navigation_c70859a9["block-navigation"]
+    node_coverage_prettify_7c8a086a["prettify"]
+    node_coverage_sorter_f2899884["sorter"]
   end
   subgraph sg_e2e_44491d4b["e2e"]
-    node_e2e_run_e2e_39efe696_cb0b0924["run-e2e"]
-    node_e2e_vitest_e2e_config_4e2a61bc_f8151db8["vitest.e2e.config"]
+    node_e2e_run_e2e_f80c6fa8["run-e2e"]
+    node_e2e_vitest_e2e_config_2ffe3e5c["vitest.e2e.config"]
   end
   subgraph sg_e2e_clients_6e118f25["e2e/clients"]
-    node_e2e_clients_github_e2e_2891a341_aacd937a["github-e2e"]
-    node_e2e_clients_linear_e2e_decf3708_8c7d0cce["linear-e2e"]
+    node_e2e_clients_github_e2e_886b5936["github-e2e"]
+    node_e2e_clients_linear_e2e_058a3bd3["linear-e2e"]
   end
   subgraph sg_e2e_tests_0c5ead1b["e2e/tests"]
-    node_e2e_tests_command_pipeline_e2e_test_a0aa069a_a8ee24c9["command-pipeline.e2e.test"]
-    node_e2e_tests_github_integration_e2e_test_0b124522_8577c76d["github-integration.e2e.test"]
-    node_e2e_tests_linear_integration_e2e_test_dbc5e6db_9deed64f["linear-integration.e2e.test"]
+    node_e2e_tests_command_pipeline_e2e_test_7b78a199["command-pipeline.e2e.test"]
+    node_e2e_tests_github_integration_e2e_test_8f5767c3["github-integration.e2e.test"]
+    node_e2e_tests_linear_integration_e2e_test_1632523d["linear-integration.e2e.test"]
   end
   subgraph sg_e2e_utils_45bc2f1c["e2e/utils"]
-    node_e2e_utils_env_b77349bf_80e7a7a3["env"]
-    node_e2e_utils_resource_tracker_d95b6649_0a725485["resource-tracker"]
+    node_e2e_utils_env_f291bf22["env"]
+    node_e2e_utils_resource_tracker_d629c5ed["resource-tracker"]
   end
   subgraph sg_scripts_16728d18["scripts"]
-    node_scripts_circleci_linear_sync_19c0d6da_073fdc09["circleci-linear-sync"]
-    node_scripts_circleci_stale_management_664de1d9_2a4ce90b["circleci-stale-management"]
-    node_scripts_setup_git_hooks_70750d40_a643d955["setup-git-hooks"]
-    node_scripts_validate_commit_msg_43b008fe_177887ed["validate-commit-msg"]
+    node_scripts_circleci_linear_sync_0dede1a9["circleci-linear-sync"]
+    node_scripts_circleci_stale_management_7936b746["circleci-stale-management"]
+    node_scripts_setup_git_hooks_2ed98c53["setup-git-hooks"]
+    node_scripts_validate_commit_msg_c49346f6["validate-commit-msg"]
   end
   subgraph sg_scripts_hook_governance_22d136eb["scripts/hook-governance"]
-    node_scripts_hook_governance_evaluate_docstring_ratch_d2833626["evaluate_docstring_ratchet"]
-    node_scripts_hook_governance_inventory_repos_4ea09ad7_3293e24f["inventory_repos"]
-    node_scripts_hook_governance_rollout_check_6c0140db_705d638f["rollout_check"]
+    node_scripts_hook_governance_evaluate_docstring_ratch_407d0d3c["evaluate_docstring_ratchet"]
+    node_scripts_hook_governance_inventory_repos_0e496bf6["inventory_repos"]
+    node_scripts_hook_governance_rollout_check_7c494353["rollout_check"]
   end
   subgraph sg_scripts_hook_governance_tests_df090b28["scripts/hook-governance/tests"]
-    node_scripts_hook_governance_tests_init_759f8df0_8fa5b4a6["__init__"]
-    node_scripts_hook_governance_tests_test_evaluate_docs_68acb28c["test_evaluate_docstring_ratchet"]
-    node_scripts_hook_governance_tests_test_inventory_rep_e8f2384b["test_inventory_repos"]
-    node_scripts_hook_governance_tests_test_rollout_check_3249066e["test_rollout_check"]
+    node_scripts_hook_governance_tests_init_d095a8dc["__init__"]
+    node_scripts_hook_governance_tests_test_evaluate_docs_4a092543["test_evaluate_docstring_ratchet"]
+    node_scripts_hook_governance_tests_test_inventory_rep_e8bf3377["test_inventory_repos"]
+    node_scripts_hook_governance_tests_test_rollout_check_ba44f7c6["test_rollout_check"]
   end
   subgraph sg_src_f27fede2["src"]
-    node_src_cli_99bb8840_d48ba2e4["cli"]
-    node_src_cli_dispatch_test_54c9f17b_179f85f0["cli-dispatch.test"]
-    node_src_cli_test_4851f28b_523d2a86["cli.test"]
+    node_src_cli_50037f41["cli"]
+    node_src_cli_dispatch_test_83d1aecc["cli-dispatch.test"]
+    node_src_cli_test_c0ddbe99["cli.test"]
   end
   subgraph sg_src_commands_ac7f36e3["src/commands"]
-    node_src_commands_agent_first_throughput_integration__7c59b283["agent-first-throughput.integration.test"]
-    node_src_commands_audit_b81f37a0_4a8057db["audit"]
-    node_src_commands_audit_test_54ea1006_a3e1e261["audit.test"]
-    node_src_commands_automation_run_22331800_b476f10f["automation-run"]
-    node_src_commands_automation_run_test_7b21d905_ed093c97["automation-run.test"]
-    node_src_commands_blast_radius_f776a633_0d93412c["blast-radius"]
-    node_src_commands_blast_radius_test_045450fc_9b55a936["blast-radius.test"]
-    node_src_commands_brain_bbbf7a64_8b0052ef["brain"]
-    node_src_commands_brain_test_428d4d67_9c2251ff["brain.test"]
-    node_src_commands_brainstorm_gate_1789ba44_99c4df84["brainstorm-gate"]
-    node_src_commands_brainstorm_gate_test_2fb2aec1_ebb3826f["brainstorm-gate.test"]
-    node_src_commands_branch_protect_b9d345eb_0917aabd["branch-protect"]
-    node_src_commands_branch_protect_test_c8d80aab_898c50dc["branch-protect.test"]
-    node_src_commands_check_20f65c28_8b102645["check"]
-    node_src_commands_check_authz_fee242b1_6371b9be["check-authz"]
-    node_src_commands_check_authz_test_327903fb_fd074017["check-authz.test"]
-    node_src_commands_check_diagram_freshness_test_c1dc40_8ffe6bb0["check-diagram-freshness.test"]
-    node_src_commands_check_environment_fe68d4be_6f3dadd7["check-environment"]
-    node_src_commands_check_environment_test_5fa29c35_c89d6225["check-environment.test"]
-    node_src_commands_check_test_7469a186_614dc441["check.test"]
-    node_src_commands_ci_migrate_78bb70b1_a0e2c114["ci-migrate"]
-    node_src_commands_ci_migrate_test_2a015bb9_07515c3d["ci-migrate.test"]
-    node_src_commands_context_ea7792a2_52d036cb["context"]
-    node_src_commands_context_health_80bb7da9_c636a657["context-health"]
-    node_src_commands_context_health_test_3b5b87f3_b2ea595f["context-health.test"]
-    node_src_commands_context_integrity_acceptance_test_5_b80c666c["context-integrity-acceptance.test"]
-    node_src_commands_context_test_57aad306_79de8eab["context.test"]
-    node_src_commands_contract_cc8321d6_dfc1f388["contract"]
-    node_src_commands_contract_test_2262847f_99dea614["contract.test"]
-    node_src_commands_diff_budget_9da0268d_6991f714["diff-budget"]
-    node_src_commands_diff_budget_test_c0b72453_6e2bf489["diff-budget.test"]
-    node_src_commands_docs_gate_c441fbb4_1e3c43d7["docs-gate"]
-    node_src_commands_docs_gate_test_a25e972f_33a82806["docs-gate.test"]
-    node_src_commands_doctor_72f4be89_12ca0d23["doctor"]
-    node_src_commands_doctor_test_e032e8b5_6705010c["doctor.test"]
-    node_src_commands_drift_gate_23bbee85_69873e08["drift-gate"]
-    node_src_commands_drift_gate_test_816765e3_c705e6e0["drift-gate.test"]
-    node_src_commands_eject_bb9fec73_534af953["eject"]
-    node_src_commands_evidence_verify_3b73c290_1f8dd9f2["evidence-verify"]
-    node_src_commands_evidence_verify_test_7373101d_c288ceac["evidence-verify.test"]
-    node_src_commands_gap_case_82e69111_dee253c1["gap-case"]
-    node_src_commands_gap_case_test_e32159fb_a0da53ec["gap-case.test"]
-    node_src_commands_gardener_9416a9df_a5388d61["gardener"]
-    node_src_commands_gardener_test_98f0b9a5_08a91964["gardener.test"]
-    node_src_commands_health_62484e22_b2e6cd58["health"]
-    node_src_commands_health_test_f79de76d_c624883e["health.test"]
-    node_src_commands_index_context_de3ed39d_df7e312f["index-context"]
-    node_src_commands_index_context_test_1949ea6f_d34c884d["index-context.test"]
-    node_src_commands_init_bb54068a_c4673a99["init"]
-    node_src_commands_init_test_cbba76a6_c720fdf4["init.test"]
-    node_src_commands_license_gate_3d7eb57e_6e9cf4c4["license-gate"]
-    node_src_commands_license_gate_test_1edffa1c_c8840f73["license-gate.test"]
-    node_src_commands_linear_gate_fac14a46_0dc194d7["linear-gate"]
-    node_src_commands_linear_gate_test_4fcca11a_4eb96b1b["linear-gate.test"]
-    node_src_commands_linear_prepare_0c613ba6_c1519409["linear-prepare"]
-    node_src_commands_linear_prepare_test_678f11a9_432b536b["linear-prepare.test"]
-    node_src_commands_linear_sync_a2fa2bf7_3761718f["linear-sync"]
-    node_src_commands_linear_sync_test_da1e1eab_5c2963f6["linear-sync.test"]
-    node_src_commands_linear_triage_083177a8_7aa7cdfe["linear-triage"]
-    node_src_commands_linear_triage_test_1b75a8b8_19863a59["linear-triage.test"]
-    node_src_commands_linear_workflow_c5cb6267_0a8fcc8a["linear-workflow"]
-    node_src_commands_linear_workflow_test_a351dcb0_73fc7cb1["linear-workflow.test"]
-    node_src_commands_local_memory_preflight_dcc36c42_284fb0f7["local-memory-preflight"]
-    node_src_commands_local_memory_preflight_test_5e323bb_7198fc35["local-memory-preflight.test"]
-    node_src_commands_memory_gate_a577a506_f15f12cd["memory-gate"]
-    node_src_commands_observability_gate_455f1f2f_708a892e["observability-gate"]
-    node_src_commands_observability_gate_test_ca2979e0_3c8bb89a["observability-gate.test"]
-    node_src_commands_org_audit_d739e44b_fc2ca563["org-audit"]
-    node_src_commands_org_audit_test_0fd9cae8_806cc649["org-audit.test"]
-    node_src_commands_pilot_evaluate_2045b1a1_a8a3ac85["pilot-evaluate"]
-    node_src_commands_pilot_evaluate_test_a2ac06fc_388cb18c["pilot-evaluate.test"]
-    node_src_commands_pilot_rollback_00c1f82c_e5dc550a["pilot-rollback"]
-    node_src_commands_pilot_rollback_test_e61d5a2b_4a4df783["pilot-rollback.test"]
-    node_src_commands_plan_gate_c2cf5008_76f98572["plan-gate"]
-    node_src_commands_plan_gate_test_0c0192e6_d293ab91["plan-gate.test"]
-    node_src_commands_policy_gate_213f7313_38fb255a["policy-gate"]
-    node_src_commands_policy_gate_test_203a5261_6fce0009["policy-gate.test"]
-    node_src_commands_pr_template_gate_281778f9_bf031e00["pr-template-gate"]
-    node_src_commands_pr_template_gate_test_35faef1d_8b9385b9["pr-template-gate.test"]
-    node_src_commands_preflight_gate_c543e5ba_977ef4d4["preflight-gate"]
-    node_src_commands_preflight_gate_test_6821f821_7f94dfdb["preflight-gate.test"]
-    node_src_commands_preset_d410850f_b6ab9df8["preset"]
-    node_src_commands_preset_test_9e489c16_9798caf0["preset.test"]
-    node_src_commands_promote_mode_test_7ca3f5ec_5ed4f47d["promote-mode.test"]
-    node_src_commands_prompt_gate_c5e9d207_a1d2e6f6["prompt-gate"]
-    node_src_commands_prompt_gate_test_1a442b27_a7737ddc["prompt-gate.test"]
-    node_src_commands_refresh_diagram_context_test_03bf21_16fd4e17["refresh-diagram-context.test"]
-    node_src_commands_remediate_06b9c7fc_c8f75798["remediate"]
-    node_src_commands_remediate_test_6f59cafe_3435fed4["remediate.test"]
-    node_src_commands_replay_ac203c98_9feea993["replay"]
-    node_src_commands_replay_test_935f7436_90eb00d2["replay.test"]
-    node_src_commands_review_gate_09b579c4_66c6d307["review-gate"]
-    node_src_commands_review_gate_test_000e2ed6_4bdcd834["review-gate.test"]
-    node_src_commands_risk_tier_807f33f9_952824a3["risk-tier"]
-    node_src_commands_risk_tier_test_ae056367_d99a1738["risk-tier.test"]
-    node_src_commands_search_24193290_34c14966["search"]
-    node_src_commands_search_test_0c66bc11_d61d2826["search.test"]
-    node_src_commands_silent_error_64e8c933_240fd7ed["silent-error"]
-    node_src_commands_simulate_b9efe395_6237778e["simulate"]
-    node_src_commands_simulate_test_24df93e5_c915ccfe["simulate.test"]
-    node_src_commands_solo_mode_test_a7f03f80_a7d627f3["solo-mode.test"]
-    node_src_commands_source_outline_54a631fa_b35d9187["source-outline"]
-    node_src_commands_source_outline_test_df6fa3a7_0137a404["source-outline.test"]
-    node_src_commands_symphony_check_e97f2ea0_b9617cb6["symphony-check"]
-    node_src_commands_symphony_check_test_6cb33eb2_4f0d91b6["symphony-check.test"]
-    node_src_commands_tooling_audit_8a8239ff_69d34e15["tooling-audit"]
-    node_src_commands_tooling_audit_test_d2aee28c_9ee5e5db["tooling-audit.test"]
-    node_src_commands_ui_loop_11660889_457f358d["ui-loop"]
-    node_src_commands_ui_loop_test_f0eabc42_a6f3d2d0["ui-loop.test"]
-    node_src_commands_upgrade_7fef9479_ae38afa9["upgrade"]
-    node_src_commands_upgrade_test_b92741eb_071ab85d["upgrade.test"]
-    node_src_commands_verify_coderabbit_490b4e71_227b4f8c["verify-coderabbit"]
-    node_src_commands_verify_coderabbit_test_46cfcf29_41f03a50["verify-coderabbit.test"]
-    node_src_commands_verify_work_df70ecac_ed5d932c["verify-work"]
-    node_src_commands_verify_work_test_0e12f6c5_128a29b7["verify-work.test"]
-    node_src_commands_workflow_generate_2fc0af62_3767d3c5["workflow-generate"]
-    node_src_commands_workflow_generate_test_b543473a_9e976a7c["workflow-generate.test"]
+    node_src_commands_agent_first_throughput_integration__4f0ddd7b["agent-first-throughput.integration.test"]
+    node_src_commands_audit_bd6de8bd["audit"]
+    node_src_commands_audit_test_cf82f906["audit.test"]
+    node_src_commands_automation_run_2d0faa41["automation-run"]
+    node_src_commands_automation_run_test_e2f83281["automation-run.test"]
+    node_src_commands_blast_radius_bd615614["blast-radius"]
+    node_src_commands_blast_radius_test_fb4e7d14["blast-radius.test"]
+    node_src_commands_brain_65b70a91["brain"]
+    node_src_commands_brain_test_bb8017ac["brain.test"]
+    node_src_commands_brainstorm_gate_554b176a["brainstorm-gate"]
+    node_src_commands_brainstorm_gate_test_8feca557["brainstorm-gate.test"]
+    node_src_commands_branch_protect_e57bd6e5["branch-protect"]
+    node_src_commands_branch_protect_test_d26f0ed4["branch-protect.test"]
+    node_src_commands_check_9717c3ed["check"]
+    node_src_commands_check_authz_c5a905d9["check-authz"]
+    node_src_commands_check_authz_test_f6b000b3["check-authz.test"]
+    node_src_commands_check_diagram_freshness_test_5e858bc8["check-diagram-freshness.test"]
+    node_src_commands_check_environment_61a1e6d1["check-environment"]
+    node_src_commands_check_environment_test_177a8ad6["check-environment.test"]
+    node_src_commands_check_test_aaa8bb13["check.test"]
+    node_src_commands_ci_migrate_9cb53e30["ci-migrate"]
+    node_src_commands_ci_migrate_test_7c0f9981["ci-migrate.test"]
+    node_src_commands_context_a173b3b5["context"]
+    node_src_commands_context_health_c8159838["context-health"]
+    node_src_commands_context_health_test_cee466db["context-health.test"]
+    node_src_commands_context_integrity_acceptance_test_ec3eafae["context-integrity-acceptance.test"]
+    node_src_commands_context_test_04afd925["context.test"]
+    node_src_commands_contract_5477dad2["contract"]
+    node_src_commands_contract_test_e27f09d5["contract.test"]
+    node_src_commands_diff_budget_b8b3e926["diff-budget"]
+    node_src_commands_diff_budget_test_abd7c3ee["diff-budget.test"]
+    node_src_commands_docs_gate_a9482c33["docs-gate"]
+    node_src_commands_docs_gate_test_bebd4eac["docs-gate.test"]
+    node_src_commands_doctor_2b7caa84["doctor"]
+    node_src_commands_doctor_test_7af6f23c["doctor.test"]
+    node_src_commands_drift_gate_5163a260["drift-gate"]
+    node_src_commands_drift_gate_test_46e320e7["drift-gate.test"]
+    node_src_commands_eject_f04a1cce["eject"]
+    node_src_commands_evidence_verify_8b283e40["evidence-verify"]
+    node_src_commands_evidence_verify_test_d25d21f3["evidence-verify.test"]
+    node_src_commands_gap_case_f7fe09bc["gap-case"]
+    node_src_commands_gap_case_test_1e9bd913["gap-case.test"]
+    node_src_commands_gardener_16ee9f29["gardener"]
+    node_src_commands_gardener_test_01d5ad19["gardener.test"]
+    node_src_commands_health_71013327["health"]
+    node_src_commands_health_test_6d5f075c["health.test"]
+    node_src_commands_index_context_76d00fdb["index-context"]
+    node_src_commands_index_context_test_552c8613["index-context.test"]
+    node_src_commands_init_a32504f5["init"]
+    node_src_commands_init_test_208f2f42["init.test"]
+    node_src_commands_license_gate_f78650b8["license-gate"]
+    node_src_commands_license_gate_test_0cecbd36["license-gate.test"]
+    node_src_commands_linear_gate_3a2dbdda["linear-gate"]
+    node_src_commands_linear_gate_test_d7fab54c["linear-gate.test"]
+    node_src_commands_linear_prepare_676859a4["linear-prepare"]
+    node_src_commands_linear_prepare_test_e563937e["linear-prepare.test"]
+    node_src_commands_linear_sync_80a223b3["linear-sync"]
+    node_src_commands_linear_sync_test_5d50c953["linear-sync.test"]
+    node_src_commands_linear_triage_e9dbe076["linear-triage"]
+    node_src_commands_linear_triage_test_e9358c88["linear-triage.test"]
+    node_src_commands_linear_workflow_bc2c047f["linear-workflow"]
+    node_src_commands_linear_workflow_test_b60c6e12["linear-workflow.test"]
+    node_src_commands_local_memory_preflight_953c95d5["local-memory-preflight"]
+    node_src_commands_local_memory_preflight_test_d06baa31["local-memory-preflight.test"]
+    node_src_commands_memory_gate_851ca244["memory-gate"]
+    node_src_commands_observability_gate_4e33a519["observability-gate"]
+    node_src_commands_observability_gate_test_72a003c4["observability-gate.test"]
+    node_src_commands_org_audit_bd496958["org-audit"]
+    node_src_commands_org_audit_test_8f29d4e0["org-audit.test"]
+    node_src_commands_pilot_evaluate_83c96a06["pilot-evaluate"]
+    node_src_commands_pilot_evaluate_test_983799d7["pilot-evaluate.test"]
+    node_src_commands_pilot_rollback_9ad729c0["pilot-rollback"]
+    node_src_commands_pilot_rollback_test_635b55ad["pilot-rollback.test"]
+    node_src_commands_plan_gate_0a15fb14["plan-gate"]
+    node_src_commands_plan_gate_test_d9d60c82["plan-gate.test"]
+    node_src_commands_policy_gate_6f39556d["policy-gate"]
+    node_src_commands_policy_gate_test_558cba5e["policy-gate.test"]
+    node_src_commands_pr_template_gate_fd6e14c3["pr-template-gate"]
+    node_src_commands_pr_template_gate_test_a29a4275["pr-template-gate.test"]
+    node_src_commands_preflight_gate_e934bc38["preflight-gate"]
+    node_src_commands_preflight_gate_test_98d1a08e["preflight-gate.test"]
+    node_src_commands_preset_46228187["preset"]
+    node_src_commands_preset_test_ad6ae07f["preset.test"]
+    node_src_commands_promote_mode_test_e8e5e339["promote-mode.test"]
+    node_src_commands_prompt_gate_bda26456["prompt-gate"]
+    node_src_commands_prompt_gate_test_8ce58238["prompt-gate.test"]
+    node_src_commands_refresh_diagram_context_test_7c9f3447["refresh-diagram-context.test"]
+    node_src_commands_remediate_ae676761["remediate"]
+    node_src_commands_remediate_test_b0fcf4ec["remediate.test"]
+    node_src_commands_replay_fcae3a4a["replay"]
+    node_src_commands_replay_test_1134c260["replay.test"]
+    node_src_commands_review_gate_b74630a3["review-gate"]
+    node_src_commands_review_gate_test_dea5880b["review-gate.test"]
+    node_src_commands_risk_tier_acf26560["risk-tier"]
+    node_src_commands_risk_tier_test_da8ec745["risk-tier.test"]
+    node_src_commands_search_8c19fcb1["search"]
+    node_src_commands_search_test_ac250e89["search.test"]
+    node_src_commands_silent_error_f4595a23["silent-error"]
+    node_src_commands_simulate_f06a3ac7["simulate"]
+    node_src_commands_simulate_test_17cdb2fd["simulate.test"]
+    node_src_commands_solo_mode_test_cd5d21e8["solo-mode.test"]
+    node_src_commands_source_outline_4aeff6d7["source-outline"]
+    node_src_commands_source_outline_test_e77c23d2["source-outline.test"]
+    node_src_commands_symphony_check_055464ba["symphony-check"]
+    node_src_commands_symphony_check_test_b9bd2d4d["symphony-check.test"]
+    node_src_commands_tooling_audit_6606d949["tooling-audit"]
+    node_src_commands_tooling_audit_test_874a714a["tooling-audit.test"]
+    node_src_commands_ui_loop_14f94e39["ui-loop"]
+    node_src_commands_ui_loop_test_1c615cb8["ui-loop.test"]
+    node_src_commands_upgrade_7c2e21f2["upgrade"]
+    node_src_commands_upgrade_test_5c1f4810["upgrade.test"]
+    node_src_commands_verify_coderabbit_9883399d["verify-coderabbit"]
+    node_src_commands_verify_coderabbit_test_ceaa2143["verify-coderabbit.test"]
+    node_src_commands_verify_work_43c69927["verify-work"]
+    node_src_commands_verify_work_test_24b4f5ea["verify-work.test"]
+    node_src_commands_workflow_generate_3099b8dd["workflow-generate"]
+    node_src_commands_workflow_generate_test_981498a8["workflow-generate.test"]
   end
   subgraph sg_src_dev_9a5e9cab["src/dev"]
-    node_src_dev_run_local_memory_preflight_36e92808_6c3bec68["run-local-memory-preflight"]
-    node_src_dev_run_local_memory_preflight_test_1d7c5aa0_9a6c63cd["run-local-memory-preflight.test"]
+    node_src_dev_run_local_memory_preflight_9778893b["run-local-memory-preflight"]
+    node_src_dev_run_local_memory_preflight_test_fcecd725["run-local-memory-preflight.test"]
   end
   subgraph sg_src_lib_9b0c0e9c["src/lib"]
-    node_src_lib_pr_template_validator_f1a53aee_607e2ffe["pr-template-validator"]
-    node_src_lib_pr_template_validator_test_569b1cef_06f2e40e["pr-template-validator.test"]
-    node_src_lib_preset_detection_b0f00a17_fc900a93["preset-detection"]
-    node_src_lib_preset_detection_test_13b58525_5aaa63e0["preset-detection.test"]
-    node_src_lib_source_outline_c86cb1d0_6ecff2b4["source-outline"]
-    node_src_lib_version_5ca4f385_a197ae62["version"]
-    node_src_lib_version_coherence_69733bcb_31759adc["version-coherence"]
-    node_src_lib_version_coherence_test_b81c6d8e_0f77549c["version-coherence.test"]
+    node_src_lib_pr_template_validator_a13f8444["pr-template-validator"]
+    node_src_lib_pr_template_validator_test_7a4ffc2f["pr-template-validator.test"]
+    node_src_lib_preset_detection_df7bb651["preset-detection"]
+    node_src_lib_preset_detection_test_26643c48["preset-detection.test"]
+    node_src_lib_source_outline_7130a0cd["source-outline"]
+    node_src_lib_version_337bb7ee["version"]
+    node_src_lib_version_coherence_cb803a5e["version-coherence"]
+    node_src_lib_version_coherence_test_c9c1cc52["version-coherence.test"]
   end
   subgraph sg_src_lib_agents_8a727b80["src/lib/agents"]
-    node_src_lib_agents_instruction_compat_06a469fd_af52553b["instruction-compat"]
-    node_src_lib_agents_instruction_compat_test_15974a83_a01a1aae["instruction-compat.test"]
+    node_src_lib_agents_instruction_compat_2828d0f1["instruction-compat"]
+    node_src_lib_agents_instruction_compat_test_14014b84["instruction-compat.test"]
   end
   subgraph sg_src_lib_architecture_0de1dc44["src/lib/architecture"]
-    node_src_lib_architecture_module_boundaries_test_c0ca_9d1087a8["module-boundaries.test"]
+    node_src_lib_architecture_module_boundaries_test_4b2e2143["module-boundaries.test"]
   end
   subgraph sg_src_lib_blast_radius_03046b1f["src/lib/blast-radius"]
-    node_src_lib_blast_radius_resolver_439c3635_5d8cb557["resolver"]
-    node_src_lib_blast_radius_resolver_test_84b219fe_3cf33f2d["resolver.test"]
+    node_src_lib_blast_radius_resolver_5f0dc5b6["resolver"]
+    node_src_lib_blast_radius_resolver_test_2434a14b["resolver.test"]
   end
   subgraph sg_src_lib_brainstorm_3c8aa833["src/lib/brainstorm"]
-    node_src_lib_brainstorm_detector_86ca96aa_726f791b["detector"]
-    node_src_lib_brainstorm_detector_test_85cbb456_08c70acb["detector.test"]
-    node_src_lib_brainstorm_types_37582e2a_a4781b47["types"]
+    node_src_lib_brainstorm_detector_20d990d6["detector"]
+    node_src_lib_brainstorm_detector_test_22068a91["detector.test"]
+    node_src_lib_brainstorm_types_1dfefbfb["types"]
   end
   subgraph sg_src_lib_ci_3d688c55["src/lib/ci"]
-    node_src_lib_ci_branch_protect_sync_570adb18_4e76efe4["branch-protect-sync"]
-    node_src_lib_ci_branch_protect_sync_test_159bb533_b615eb31["branch-protect-sync.test"]
-    node_src_lib_ci_ci_migrate_command_contract_95f47c9e_b49a5210["ci-migrate-command-contract"]
-    node_src_lib_ci_ci_migrate_command_contract_test_1274_e095d3a5["ci-migrate-command-contract.test"]
-    node_src_lib_ci_ci_migrate_snapshot_paths_a10de06b_9ee07ab5["ci-migrate-snapshot-paths"]
-    node_src_lib_ci_ci_migrate_snapshot_paths_test_8bcd0e_7195da91["ci-migrate-snapshot-paths.test"]
-    node_src_lib_ci_config_validator_669ebc2e_efe732cc["config-validator"]
-    node_src_lib_ci_config_validator_test_f70500fa_5e09d89e["config-validator.test"]
-    node_src_lib_ci_provider_adapter_3bcf82b7_df71fd61["provider-adapter"]
-    node_src_lib_ci_required_check_metadata_dc610201_a5552889["required-check-metadata"]
-    node_src_lib_ci_satisfiability_6c08de4b_7cf44516["satisfiability"]
+    node_src_lib_ci_branch_protect_sync_1ea26be7["branch-protect-sync"]
+    node_src_lib_ci_branch_protect_sync_test_35b16538["branch-protect-sync.test"]
+    node_src_lib_ci_ci_migrate_command_contract_34db411f["ci-migrate-command-contract"]
+    node_src_lib_ci_ci_migrate_command_contract_test_e03eefee["ci-migrate-command-contract.test"]
+    node_src_lib_ci_ci_migrate_snapshot_paths_d973b626["ci-migrate-snapshot-paths"]
+    node_src_lib_ci_ci_migrate_snapshot_paths_test_52ed25b1["ci-migrate-snapshot-paths.test"]
+    node_src_lib_ci_config_validator_b0366834["config-validator"]
+    node_src_lib_ci_config_validator_test_718b5a94["config-validator.test"]
+    node_src_lib_ci_provider_adapter_c2af78b0["provider-adapter"]
+    node_src_lib_ci_required_check_metadata_873ef686["required-check-metadata"]
+    node_src_lib_ci_satisfiability_e825a617["satisfiability"]
   end
   subgraph sg_src_lib_cli_be82f541["src/lib/cli"]
-    node_src_lib_cli_command_registry_a88eb2e3_e556efff["command-registry"]
-    node_src_lib_cli_command_registry_test_0cf92cba_b3dd285c["command-registry.test"]
-    node_src_lib_cli_doc_parity_1c991d34_21f89884["doc-parity"]
-    node_src_lib_cli_doc_parity_test_bef81709_c5682060["doc-parity.test"]
-    node_src_lib_cli_help_renderer_96293ac5_9278d440["help-renderer"]
-    node_src_lib_cli_help_renderer_test_6b225cb3_c57293af["help-renderer.test"]
-    node_src_lib_cli_legacy_dispatch_guard_test_4700087d_0ef25856["legacy-dispatch-guard.test"]
-    node_src_lib_cli_parse_utils_48efb14b_266d2be9["parse-utils"]
+    node_src_lib_cli_command_registry_aa702320["command-registry"]
+    node_src_lib_cli_command_registry_test_30bb0a99["command-registry.test"]
+    node_src_lib_cli_doc_parity_fffe943f["doc-parity"]
+    node_src_lib_cli_doc_parity_test_deda4d95["doc-parity.test"]
+    node_src_lib_cli_help_renderer_ea70b199["help-renderer"]
+    node_src_lib_cli_help_renderer_test_063a8bbc["help-renderer.test"]
+    node_src_lib_cli_legacy_dispatch_guard_test_c6d6c5c7["legacy-dispatch-guard.test"]
+    node_src_lib_cli_parse_utils_505d2b9f["parse-utils"]
   end
   subgraph sg_src_lib_cli_registry_3382fdac["src/lib/cli/registry"]
-    node_src_lib_cli_registry_command_capabilities_a4d5c7_1a081917["command-capabilities"]
-    node_src_lib_cli_registry_command_fuzzy_e87c4206_872d0c89["command-fuzzy"]
-    node_src_lib_cli_registry_command_specs_69167c63_d907f2ee["command-specs"]
-    node_src_lib_cli_registry_command_specs_test_7f693e85_0524568c["command-specs.test"]
-    node_src_lib_cli_registry_fuzzy_resolution_fcd86de8_620d2690["fuzzy-resolution"]
-    node_src_lib_cli_registry_source_outline_spec_1525425_c9b162c2["source-outline-spec"]
-    node_src_lib_cli_registry_types_eb4ad5f0_40acccf9["types"]
+    node_src_lib_cli_registry_command_capabilities_303d7143["command-capabilities"]
+    node_src_lib_cli_registry_command_fuzzy_e5eb5599["command-fuzzy"]
+    node_src_lib_cli_registry_command_specs_3533d0bd["command-specs"]
+    node_src_lib_cli_registry_command_specs_test_771e2132["command-specs.test"]
+    node_src_lib_cli_registry_fuzzy_resolution_7b679ee8["fuzzy-resolution"]
+    node_src_lib_cli_registry_source_outline_spec_86678e99["source-outline-spec"]
+    node_src_lib_cli_registry_types_9f162bf6["types"]
   end
   subgraph sg_src_lib_context_compound_85349b31["src/lib/context-compound"]
-    node_src_lib_context_compound_constants_7517017f_18e4c3a0["constants"]
-    node_src_lib_context_compound_constants_test_5492ae98_aac20c5e["constants.test"]
-    node_src_lib_context_compound_context_compact_policy__79724c15["context-compact-policy"]
-    node_src_lib_context_compound_context_compact_policy__33ca3593["context-compact-policy.test"]
-    node_src_lib_context_compound_index_522f772a_7a73d807["index"]
-    node_src_lib_context_compound_indexer_70fa78e5_8f1646af["indexer"]
-    node_src_lib_context_compound_indexer_test_d492f0aa_4bd5aca2["indexer.test"]
-    node_src_lib_context_compound_init_error_5c7dd49f_3e7ecedb["init-error"]
-    node_src_lib_context_compound_lexical_fallback_723e2b_6f1ddfed["lexical-fallback"]
-    node_src_lib_context_compound_ollama_76e3c7bf_bc2b47a3["ollama"]
-    node_src_lib_context_compound_ollama_test_71f9750e_00d7d6b9["ollama.test"]
-    node_src_lib_context_compound_rollout_a4fa034c_c64dc829["rollout"]
-    node_src_lib_context_compound_sources_878a52fc_fab46182["sources"]
-    node_src_lib_context_compound_store_824d80d7_303b2fc6["store"]
-    node_src_lib_context_compound_sync_contract_c79fa191_859b8e55["sync-contract"]
-    node_src_lib_context_compound_sync_contract_test_5dc3_40181dd7["sync-contract.test"]
-    node_src_lib_context_compound_types_ed30531c_6d4298d0["types"]
+    node_src_lib_context_compound_constants_9e247b81["constants"]
+    node_src_lib_context_compound_constants_test_c131a9ba["constants.test"]
+    node_src_lib_context_compound_context_compact_policy_1d16d447["context-compact-policy"]
+    node_src_lib_context_compound_context_compact_policy__0ad86893["context-compact-policy.test"]
+    node_src_lib_context_compound_index_65ba65e9["index"]
+    node_src_lib_context_compound_indexer_e7ad2047["indexer"]
+    node_src_lib_context_compound_indexer_test_473c7216["indexer.test"]
+    node_src_lib_context_compound_init_error_8d4fe562["init-error"]
+    node_src_lib_context_compound_lexical_fallback_eeb9773b["lexical-fallback"]
+    node_src_lib_context_compound_ollama_6ac6599b["ollama"]
+    node_src_lib_context_compound_ollama_test_972f3fc8["ollama.test"]
+    node_src_lib_context_compound_rollout_0fa807e3["rollout"]
+    node_src_lib_context_compound_sources_4de9a2ad["sources"]
+    node_src_lib_context_compound_store_d1f2d9b9["store"]
+    node_src_lib_context_compound_sync_contract_4a4a6123["sync-contract"]
+    node_src_lib_context_compound_sync_contract_test_46843710["sync-contract.test"]
+    node_src_lib_context_compound_types_ab11fede["types"]
   end
   subgraph sg_src_lib_contract_8b2646d4["src/lib/contract"]
-    node_src_lib_contract_contract_presets_bbab169b_a7c45600["contract-presets"]
-    node_src_lib_contract_errors_84b56c88_b66a3a2c["errors"]
-    node_src_lib_contract_extends_validator_0c9b8dcc_81f8e522["extends-validator"]
-    node_src_lib_contract_extends_validator_test_cee1fc26_42aefad6["extends-validator.test"]
-    node_src_lib_contract_idempotency_f5d39a07_436bfde4["idempotency"]
-    node_src_lib_contract_index_013aa0e3_5cf5e083["index"]
-    node_src_lib_contract_json_schema_74a768d7_36a995cc["json-schema"]
-    node_src_lib_contract_loader_16749818_757b1786["loader"]
-    node_src_lib_contract_loader_test_03424671_327c1920["loader.test"]
-    node_src_lib_contract_merger_3e167607_2e7682e8["merger"]
-    node_src_lib_contract_merger_test_a3d79da0_0c77c3eb["merger.test"]
-    node_src_lib_contract_north_star_alignment_00440188_61b06098["north-star-alignment"]
-    node_src_lib_contract_north_star_contract_validators__1b45a937["north-star-contract-validators"]
-    node_src_lib_contract_north_star_validators_cfc926ce_7f4be777["north-star-validators"]
-    node_src_lib_contract_policy_validators_6682e192_cfb0982b["policy-validators"]
-    node_src_lib_contract_preset_resolver_dc3dd716_6ba7f673["preset-resolver"]
-    node_src_lib_contract_preset_resolver_test_e112a012_88ef1235["preset-resolver.test"]
-    node_src_lib_contract_run_record_emitter_00168a3a_651cc3ec["run-record-emitter"]
-    node_src_lib_contract_run_record_emitter_test_5475c0d_611e26d8["run-record-emitter.test"]
-    node_src_lib_contract_run_records_f616aa7c_5fbe7536["run-records"]
-    node_src_lib_contract_run_records_test_3ee6a0e3_c22e3d30["run-records.test"]
-    node_src_lib_contract_standards_map_eda18880_bb11985a["standards-map"]
-    node_src_lib_contract_standards_map_test_795df7d4_91710ad0["standards-map.test"]
-    node_src_lib_contract_types_0fae1112_b243c8bf["types"]
-    node_src_lib_contract_ui_loop_command_4db6cd6c_55600dff["ui-loop-command"]
-    node_src_lib_contract_ui_loop_command_test_3f014158_e12112c1["ui-loop-command.test"]
-    node_src_lib_contract_validator_b19ac2be_156d6de6["validator"]
-    node_src_lib_contract_validator_helpers_7b927667_11374b64["validator-helpers"]
-    node_src_lib_contract_validator_test_2bb3219d_499fe2fa["validator.test"]
+    node_src_lib_contract_contract_presets_581909b1["contract-presets"]
+    node_src_lib_contract_errors_fbb37c9d["errors"]
+    node_src_lib_contract_extends_validator_30914a7f["extends-validator"]
+    node_src_lib_contract_extends_validator_test_e719b8a7["extends-validator.test"]
+    node_src_lib_contract_idempotency_af93997f["idempotency"]
+    node_src_lib_contract_index_3f557468["index"]
+    node_src_lib_contract_json_schema_10b34e77["json-schema"]
+    node_src_lib_contract_loader_c7304ec8["loader"]
+    node_src_lib_contract_loader_test_5aaec341["loader.test"]
+    node_src_lib_contract_merger_15f87e65["merger"]
+    node_src_lib_contract_merger_test_9319ae2c["merger.test"]
+    node_src_lib_contract_north_star_alignment_7d3313d2["north-star-alignment"]
+    node_src_lib_contract_north_star_contract_validators_98f903ea["north-star-contract-validators"]
+    node_src_lib_contract_north_star_validators_e48b4f34["north-star-validators"]
+    node_src_lib_contract_policy_validators_f8e3b6f1["policy-validators"]
+    node_src_lib_contract_preset_resolver_ed8af332["preset-resolver"]
+    node_src_lib_contract_preset_resolver_test_d386cdbf["preset-resolver.test"]
+    node_src_lib_contract_run_record_emitter_ae66a1ec["run-record-emitter"]
+    node_src_lib_contract_run_record_emitter_test_6d46c5c8["run-record-emitter.test"]
+    node_src_lib_contract_run_records_836e164b["run-records"]
+    node_src_lib_contract_run_records_test_29458901["run-records.test"]
+    node_src_lib_contract_standards_map_82a471e8["standards-map"]
+    node_src_lib_contract_standards_map_test_e6f98748["standards-map.test"]
+    node_src_lib_contract_types_60c2ea40["types"]
+    node_src_lib_contract_ui_loop_command_6b6b96af["ui-loop-command"]
+    node_src_lib_contract_ui_loop_command_test_58d91b1f["ui-loop-command.test"]
+    node_src_lib_contract_validator_585f17f0["validator"]
+    node_src_lib_contract_validator_helpers_e56d062f["validator-helpers"]
+    node_src_lib_contract_validator_test_be05f8e6["validator.test"]
   end
   subgraph sg_src_lib_deps_ec348b66["src/lib/deps"]
-    node_src_lib_deps_ralph_runtime_73d63c0e_5f9a6516["ralph-runtime"]
-    node_src_lib_deps_ralph_runtime_test_682f806b_edc2f6ed["ralph-runtime.test"]
+    node_src_lib_deps_ralph_runtime_e8f53b41["ralph-runtime"]
+    node_src_lib_deps_ralph_runtime_test_76613c79["ralph-runtime.test"]
   end
   subgraph sg_src_lib_evidence_ce17bc42["src/lib/evidence"]
-    node_src_lib_evidence_index_7e40d474_45b1a025["index"]
-    node_src_lib_evidence_loader_d47712cc_8043f340["loader"]
-    node_src_lib_evidence_logger_2686af9f_fe11c2af["logger"]
-    node_src_lib_evidence_policy_823412d1_53854513["policy"]
-    node_src_lib_evidence_policy_test_2c06901d_a15d04cb["policy.test"]
-    node_src_lib_evidence_types_86775c96_1f5cf94d["types"]
-    node_src_lib_evidence_validator_5180cf23_535928fa["validator"]
-    node_src_lib_evidence_validator_test_9ad9ac55_81767cd8["validator.test"]
+    node_src_lib_evidence_index_e429c7d7["index"]
+    node_src_lib_evidence_loader_05d04a48["loader"]
+    node_src_lib_evidence_logger_09f27768["logger"]
+    node_src_lib_evidence_policy_c212a2b9["policy"]
+    node_src_lib_evidence_policy_test_0fda159e["policy.test"]
+    node_src_lib_evidence_types_c304b8db["types"]
+    node_src_lib_evidence_validator_4a254158["validator"]
+    node_src_lib_evidence_validator_test_9ebe4bd6["validator.test"]
   end
   subgraph sg_src_lib_gap_case_1a2e655a["src/lib/gap-case"]
-    node_src_lib_gap_case_types_fe7507be_13c9c963["types"]
+    node_src_lib_gap_case_types_cf3c9eba["types"]
   end
   subgraph sg_src_lib_gardener_2ee3d9f5["src/lib/gardener"]
-    node_src_lib_gardener_link_checker_d0fa555f_defff88c["link-checker"]
-    node_src_lib_gardener_pr_creator_dc6b1ea4_a5bdc6f6["pr-creator"]
-    node_src_lib_gardener_quality_scorer_362f2a90_5438aaca["quality-scorer"]
-    node_src_lib_gardener_stale_detector_a563289e_38a37745["stale-detector"]
-    node_src_lib_gardener_stale_detector_test_7dc85478_b896df09["stale-detector.test"]
-    node_src_lib_gardener_types_2b09659a_17c27bf5["types"]
+    node_src_lib_gardener_link_checker_95a109ed["link-checker"]
+    node_src_lib_gardener_pr_creator_f89e512d["pr-creator"]
+    node_src_lib_gardener_quality_scorer_8fe3e3db["quality-scorer"]
+    node_src_lib_gardener_stale_detector_3ad97daa["stale-detector"]
+    node_src_lib_gardener_stale_detector_test_ae0df545["stale-detector.test"]
+    node_src_lib_gardener_types_bd794d6b["types"]
   end
   subgraph sg_src_lib_github_b68c7543["src/lib/github"]
-    node_src_lib_github_check_run_2fc00bd3_fd2f9926["check-run"]
-    node_src_lib_github_check_run_test_85d17d04_80ba548f["check-run.test"]
-    node_src_lib_github_client_914e1681_515c4ae1["client"]
-    node_src_lib_github_client_test_6fa17bd4_78314172["client.test"]
-    node_src_lib_github_comments_2b4244fb_e33d0ad8["comments"]
-    node_src_lib_github_comments_test_f8c9ae41_f3323f58["comments.test"]
-    node_src_lib_github_errors_be4bd567_c45541f4["errors"]
-    node_src_lib_github_errors_test_1a443b6a_dd2ec165["errors.test"]
-    node_src_lib_github_mutation_queue_ce5a530e_05a19463["mutation-queue"]
-    node_src_lib_github_mutation_queue_test_10b599e8_d6af24f9["mutation-queue.test"]
-    node_src_lib_github_sha_d600474b_a283697a["sha"]
-    node_src_lib_github_sha_test_5a5924fc_84f7b037["sha.test"]
+    node_src_lib_github_check_run_94cd4597["check-run"]
+    node_src_lib_github_check_run_test_0e7a0970["check-run.test"]
+    node_src_lib_github_client_51b3b29d["client"]
+    node_src_lib_github_client_test_3345dbf3["client.test"]
+    node_src_lib_github_comments_91a21eb6["comments"]
+    node_src_lib_github_comments_test_e411297a["comments.test"]
+    node_src_lib_github_errors_36723665["errors"]
+    node_src_lib_github_errors_test_133cfe4b["errors.test"]
+    node_src_lib_github_mutation_queue_44c6f93a["mutation-queue"]
+    node_src_lib_github_mutation_queue_test_4604276b["mutation-queue.test"]
+    node_src_lib_github_sha_16a8af8a["sha"]
+    node_src_lib_github_sha_test_f22f6abd["sha.test"]
   end
   subgraph sg_src_lib_governance_f5be96f9["src/lib/governance"]
-    node_src_lib_governance_repo_scanner_a8b2579e_d292a09c["repo-scanner"]
-    node_src_lib_governance_repo_scanner_test_cb7e9d00_82e29b31["repo-scanner.test"]
-    node_src_lib_governance_scan_cache_fc02c79c_dbe1a47a["scan-cache"]
-    node_src_lib_governance_scan_cache_test_dd1160a2_427b9803["scan-cache.test"]
-    node_src_lib_governance_url_validator_3c5a1568_98696d21["url-validator"]
-    node_src_lib_governance_url_validator_secure_fetch_te_5ef55df0["url-validator.secure-fetch.test"]
-    node_src_lib_governance_url_validator_test_f781df3b_5b71f4a4["url-validator.test"]
+    node_src_lib_governance_repo_scanner_6df641c5["repo-scanner"]
+    node_src_lib_governance_repo_scanner_test_8643e7e8["repo-scanner.test"]
+    node_src_lib_governance_scan_cache_e0415545["scan-cache"]
+    node_src_lib_governance_scan_cache_test_6c8cf65d["scan-cache.test"]
+    node_src_lib_governance_url_validator_c0cec5fa["url-validator"]
+    node_src_lib_governance_url_validator_secure_fetch_te_f62ff797["url-validator.secure-fetch.test"]
+    node_src_lib_governance_url_validator_test_88688db7["url-validator.test"]
   end
   subgraph sg_src_lib_init_18ad2a79["src/lib/init"]
-    node_src_lib_init_ast_grep_rules_test_2b69fd9a_c48c69e0["ast-grep-rules.test"]
-    node_src_lib_init_cli_084e05fe_7beaed99["cli"]
-    node_src_lib_init_codex_preflight_symlink_test_037558_5789ffec["codex-preflight-symlink.test"]
-    node_src_lib_init_eject_d0ecd4d1_229c1a6a["eject"]
-    node_src_lib_init_eject_test_96dad02e_601f605d["eject.test"]
-    node_src_lib_init_index_10143590_ede5503c["index"]
-    node_src_lib_init_interactive_0eb42ac4_0f5a1037["interactive"]
-    node_src_lib_init_migration_8a6cead4_4ce3e628["migration"]
-    node_src_lib_init_post_bootstrap_summary_b2b5a20a_731b0271["post-bootstrap-summary"]
-    node_src_lib_init_post_bootstrap_summary_test_e985d55_4a41b411["post-bootstrap-summary.test"]
-    node_src_lib_init_project_brain_templates_7ef51530_212a9996["project-brain-templates"]
-    node_src_lib_init_project_brain_templates_test_0b6509_fc96d6cd["project-brain-templates.test"]
-    node_src_lib_init_rollback_da25480f_6e61d987["rollback"]
-    node_src_lib_init_rollback_test_5435eb9c_fc5022cd["rollback.test"]
-    node_src_lib_init_scaffold_db8a7260_c79e8b6f["scaffold"]
-    node_src_lib_init_scaffold_ci_templates_2afd6392_3c6c62a7["scaffold-ci-templates"]
-    node_src_lib_init_scaffold_ci_templates_test_9efd47ab_a8a53f08["scaffold-ci-templates.test"]
-    node_src_lib_init_scaffold_codex_environment_template_9422ce31["scaffold-codex-environment-templates"]
-    node_src_lib_init_scaffold_codex_environment_template_74d6f8ac["scaffold-codex-environment-templates.test"]
-    node_src_lib_init_scaffold_diagram_templates_dd88e83c_927bc2cb["scaffold-diagram-templates"]
-    node_src_lib_init_scaffold_diagram_templates_test_f37_e1304cc7["scaffold-diagram-templates.test"]
-    node_src_lib_init_scaffold_environment_templates_c1ce_b0337b2e["scaffold-environment-templates"]
-    node_src_lib_init_scaffold_environment_templates_test_e371154b["scaffold-environment-templates.test"]
-    node_src_lib_init_scaffold_governance_templates_5c949_45b4fd56["scaffold-governance-templates"]
-    node_src_lib_init_scaffold_governance_templates_test__cc9713ed["scaffold-governance-templates.test"]
-    node_src_lib_init_scaffold_hook_templates_8c74ab50_b4a749ea["scaffold-hook-templates"]
-    node_src_lib_init_scaffold_hook_templates_test_b40a19_d100ce61["scaffold-hook-templates.test"]
-    node_src_lib_init_scaffold_root_templates_61731280_b524fb4e["scaffold-root-templates"]
-    node_src_lib_init_scaffold_root_templates_test_f66046_fa165292["scaffold-root-templates.test"]
-    node_src_lib_init_scaffold_semgrep_templates_de3dbed2_314786fe["scaffold-semgrep-templates"]
-    node_src_lib_init_scaffold_semgrep_templates_test_43e_d9b0b183["scaffold-semgrep-templates.test"]
-    node_src_lib_init_scaffold_shell_quality_test_79567d0_ba574a2f["scaffold-shell-quality.test"]
-    node_src_lib_init_scaffold_shell_templates_0ad0f915_85748e76["scaffold-shell-templates"]
-    node_src_lib_init_scaffold_shell_templates_test_52e6b_48ac3799["scaffold-shell-templates.test"]
-    node_src_lib_init_scaffold_surfaces_12d6494e_037bd826["scaffold-surfaces"]
-    node_src_lib_init_scaffold_surfaces_test_f11f3af1_2bdfbde3["scaffold-surfaces.test"]
-    node_src_lib_init_scaffold_worktree_templates_66a38e9_2d4b2d03["scaffold-worktree-templates"]
-    node_src_lib_init_scaffold_worktree_templates_test_c2_c7d54c25["scaffold-worktree-templates.test"]
-    node_src_lib_init_scaffold_test_96f4ccea_0a85d882["scaffold.test"]
-    node_src_lib_init_schema_migrate_c0646635_817a98ff["schema-migrate"]
-    node_src_lib_init_types_d025517b_dc1a93dd["types"]
-    node_src_lib_init_update_2937013f_43f3ca69["update"]
-    node_src_lib_init_upgrade_b277486e_b2698ece["upgrade"]
-    node_src_lib_init_workflow_contract_scripts_test_681e_ab4d6c14["workflow-contract-scripts.test"]
+    node_src_lib_init_ast_grep_rules_test_b664c54b["ast-grep-rules.test"]
+    node_src_lib_init_cli_43b2583c["cli"]
+    node_src_lib_init_codex_preflight_symlink_test_34429399["codex-preflight-symlink.test"]
+    node_src_lib_init_eject_8b3ad60e["eject"]
+    node_src_lib_init_eject_test_06d19bd1["eject.test"]
+    node_src_lib_init_index_14b0069f["index"]
+    node_src_lib_init_interactive_83232b08["interactive"]
+    node_src_lib_init_migration_e4b291ff["migration"]
+    node_src_lib_init_post_bootstrap_summary_e845224e["post-bootstrap-summary"]
+    node_src_lib_init_post_bootstrap_summary_test_016769ea["post-bootstrap-summary.test"]
+    node_src_lib_init_project_brain_templates_f4ecd6a7["project-brain-templates"]
+    node_src_lib_init_project_brain_templates_test_6fa392fe["project-brain-templates.test"]
+    node_src_lib_init_rollback_b5f0b59d["rollback"]
+    node_src_lib_init_rollback_test_13a5730f["rollback.test"]
+    node_src_lib_init_scaffold_0491ad83["scaffold"]
+    node_src_lib_init_scaffold_ci_templates_07d643ff["scaffold-ci-templates"]
+    node_src_lib_init_scaffold_ci_templates_test_84dc8597["scaffold-ci-templates.test"]
+    node_src_lib_init_scaffold_codex_environment_template_4ff9df35["scaffold-codex-environment-templates"]
+    node_src_lib_init_scaffold_codex_environment_template_bac692a5["scaffold-codex-environment-templates.test"]
+    node_src_lib_init_scaffold_diagram_templates_915cc787["scaffold-diagram-templates"]
+    node_src_lib_init_scaffold_diagram_templates_test_429cae2f["scaffold-diagram-templates.test"]
+    node_src_lib_init_scaffold_environment_templates_eeed9041["scaffold-environment-templates"]
+    node_src_lib_init_scaffold_environment_templates_test_2d7b8173["scaffold-environment-templates.test"]
+    node_src_lib_init_scaffold_governance_templates_004f982f["scaffold-governance-templates"]
+    node_src_lib_init_scaffold_governance_templates_test_576bbcda["scaffold-governance-templates.test"]
+    node_src_lib_init_scaffold_hook_templates_0b5a55e9["scaffold-hook-templates"]
+    node_src_lib_init_scaffold_hook_templates_test_d526c745["scaffold-hook-templates.test"]
+    node_src_lib_init_scaffold_root_templates_32adb40e["scaffold-root-templates"]
+    node_src_lib_init_scaffold_root_templates_test_94044835["scaffold-root-templates.test"]
+    node_src_lib_init_scaffold_semgrep_templates_1c07176e["scaffold-semgrep-templates"]
+    node_src_lib_init_scaffold_semgrep_templates_test_762f3bf2["scaffold-semgrep-templates.test"]
+    node_src_lib_init_scaffold_shell_quality_test_03012dbf["scaffold-shell-quality.test"]
+    node_src_lib_init_scaffold_shell_templates_8b422313["scaffold-shell-templates"]
+    node_src_lib_init_scaffold_shell_templates_test_c3cc73d7["scaffold-shell-templates.test"]
+    node_src_lib_init_scaffold_surfaces_26dc77da["scaffold-surfaces"]
+    node_src_lib_init_scaffold_surfaces_test_26fb93a9["scaffold-surfaces.test"]
+    node_src_lib_init_scaffold_worktree_templates_7418d0c4["scaffold-worktree-templates"]
+    node_src_lib_init_scaffold_worktree_templates_test_79c26c9c["scaffold-worktree-templates.test"]
+    node_src_lib_init_scaffold_test_afcf14e9["scaffold.test"]
+    node_src_lib_init_schema_migrate_ea60619f["schema-migrate"]
+    node_src_lib_init_types_6665ca5f["types"]
+    node_src_lib_init_update_e8dc9bf6["update"]
+    node_src_lib_init_upgrade_e1d7cdbc["upgrade"]
+    node_src_lib_init_workflow_contract_scripts_test_42efa4fe["workflow-contract-scripts.test"]
   end
   subgraph sg_src_lib_input_6d2e2e5b["src/lib/input"]
-    node_src_lib_input_sanitize_af6a3bb0_1009c581["sanitize"]
-    node_src_lib_input_sanitize_test_f3d34916_ef3208f8["sanitize.test"]
-    node_src_lib_input_validation_98c41dcd_28d2a5b9["validation"]
-    node_src_lib_input_validation_test_bc73cdff_1d90ce61["validation.test"]
-    node_src_lib_input_validator_28b6e9f3_80136ef4["validator"]
-    node_src_lib_input_validator_test_d5942e9e_e5ddc2a5["validator.test"]
+    node_src_lib_input_sanitize_13ffa2ad["sanitize"]
+    node_src_lib_input_sanitize_test_1e7f2d95["sanitize.test"]
+    node_src_lib_input_validation_eee23fdc["validation"]
+    node_src_lib_input_validation_test_edefff50["validation.test"]
+    node_src_lib_input_validator_b95e8971["validator"]
+    node_src_lib_input_validator_test_4844e0b1["validator.test"]
   end
   subgraph sg_src_lib_license_635c8128["src/lib/license"]
-    node_src_lib_license_spdx_09506966_49e9b7de["spdx"]
-    node_src_lib_license_spdx_test_099e8b3b_936dd912["spdx.test"]
-    node_src_lib_license_validator_744853f5_943ad7c8["validator"]
-    node_src_lib_license_validator_test_8dbecf99_910782df["validator.test"]
+    node_src_lib_license_spdx_99891942["spdx"]
+    node_src_lib_license_spdx_test_da41c474["spdx.test"]
+    node_src_lib_license_validator_9be9419a["validator"]
+    node_src_lib_license_validator_test_305b4930["validator.test"]
   end
   subgraph sg_src_lib_linear_306ffaca["src/lib/linear"]
-    node_src_lib_linear_automation_6d65ed5c_b0d00ef4["automation"]
-    node_src_lib_linear_automation_test_3da74b47_b2019eba["automation.test"]
-    node_src_lib_linear_blocked_governance_31d6f9c3_67398d26["blocked-governance"]
-    node_src_lib_linear_blocked_governance_test_444423cc_2da6bdaa["blocked-governance.test"]
-    node_src_lib_linear_client_948fe603_801bafb9["client"]
-    node_src_lib_linear_client_test_4b44c0f5_b02c0b59["client.test"]
-    node_src_lib_linear_governance_report_50af62c0_3014ec94["governance-report"]
-    node_src_lib_linear_governance_report_test_160fb2e0_4abcaa82["governance-report.test"]
-    node_src_lib_linear_metadata_gate_2dcdb343_ccf02051["metadata-gate"]
-    node_src_lib_linear_metadata_gate_test_ee86e7df_0d9c8033["metadata-gate.test"]
-    node_src_lib_linear_status_aging_4adb4e56_60095188["status-aging"]
-    node_src_lib_linear_status_aging_test_e89d94b2_e41e5f5d["status-aging.test"]
-    node_src_lib_linear_triage_lanes_5c8ea001_a2a76d38["triage-lanes"]
-    node_src_lib_linear_triage_lanes_test_0937d75a_ec89dc4d["triage-lanes.test"]
-    node_src_lib_linear_triage_scoring_f60c945b_63b4be92["triage-scoring"]
-    node_src_lib_linear_triage_scoring_test_71fd48fa_197d9051["triage-scoring.test"]
-    node_src_lib_linear_triage_sla_de9cc25f_426eacce["triage-sla"]
-    node_src_lib_linear_triage_sla_test_7c85b63b_c09ff001["triage-sla.test"]
-    node_src_lib_linear_triage_type_labels_8bc8350f_6a0d4c4a["triage-type-labels"]
-    node_src_lib_linear_triage_type_labels_test_c2c72e21_940af8c4["triage-type-labels.test"]
-    node_src_lib_linear_utils_6fd89734_99051e27["utils"]
-    node_src_lib_linear_utils_test_e2ccb8ba_ca0148a1["utils.test"]
+    node_src_lib_linear_automation_b83eb7ee["automation"]
+    node_src_lib_linear_automation_test_aac87654["automation.test"]
+    node_src_lib_linear_blocked_governance_7b4f4485["blocked-governance"]
+    node_src_lib_linear_blocked_governance_test_2c91153b["blocked-governance.test"]
+    node_src_lib_linear_client_a6f832ad["client"]
+    node_src_lib_linear_client_test_59c554fc["client.test"]
+    node_src_lib_linear_governance_report_95878b76["governance-report"]
+    node_src_lib_linear_governance_report_test_b25569a2["governance-report.test"]
+    node_src_lib_linear_metadata_gate_b0c1d0be["metadata-gate"]
+    node_src_lib_linear_metadata_gate_test_9bdbacc8["metadata-gate.test"]
+    node_src_lib_linear_status_aging_b903f84a["status-aging"]
+    node_src_lib_linear_status_aging_test_4e705b9f["status-aging.test"]
+    node_src_lib_linear_triage_lanes_d2d429af["triage-lanes"]
+    node_src_lib_linear_triage_lanes_test_59679ffb["triage-lanes.test"]
+    node_src_lib_linear_triage_scoring_0bd07d1e["triage-scoring"]
+    node_src_lib_linear_triage_scoring_test_bc78777b["triage-scoring.test"]
+    node_src_lib_linear_triage_sla_8f825cd5["triage-sla"]
+    node_src_lib_linear_triage_sla_test_34ddeb55["triage-sla.test"]
+    node_src_lib_linear_triage_type_labels_2b4c4985["triage-type-labels"]
+    node_src_lib_linear_triage_type_labels_test_8a1ed129["triage-type-labels.test"]
+    node_src_lib_linear_utils_6af4e5df["utils"]
+    node_src_lib_linear_utils_test_73543a4a["utils.test"]
   end
   subgraph sg_src_lib_memory_df2051c4["src/lib/memory"]
-    node_src_lib_memory_branch_enforcer_acb749cd_b5113172["branch-enforcer"]
-    node_src_lib_memory_metrics_tracker_98cec29c_e35fb5f1["metrics-tracker"]
-    node_src_lib_memory_metrics_tracker_test_3de156fa_d34e311d["metrics-tracker.test"]
-    node_src_lib_memory_types_4be3ee64_871c8a1e["types"]
-    node_src_lib_memory_validator_0c0621d8_32b394c2["validator"]
-    node_src_lib_memory_validator_test_c5015ca0_03bed048["validator.test"]
+    node_src_lib_memory_branch_enforcer_f38c3b70["branch-enforcer"]
+    node_src_lib_memory_metrics_tracker_8f20bcc7["metrics-tracker"]
+    node_src_lib_memory_metrics_tracker_test_2fadfb06["metrics-tracker.test"]
+    node_src_lib_memory_types_4683a2d7["types"]
+    node_src_lib_memory_validator_dbba8eeb["validator"]
+    node_src_lib_memory_validator_test_66feb032["validator.test"]
   end
   subgraph sg_src_lib_org_0b99f346["src/lib/org"]
-    node_src_lib_org_repositories_a8038884_313eb64f["repositories"]
+    node_src_lib_org_repositories_8d4fc5a7["repositories"]
   end
   subgraph sg_src_lib_output_d7e44ba2["src/lib/output"]
-    node_src_lib_output_normalise_cc83ddc1_b341f476["normalise"]
-    node_src_lib_output_normalise_test_73e8a615_835598a4["normalise.test"]
-    node_src_lib_output_types_75e5a4a0_0f0744c8["types"]
-    node_src_lib_output_types_test_5c77418d_677bb693["types.test"]
+    node_src_lib_output_normalise_29c1f8a3["normalise"]
+    node_src_lib_output_normalise_test_92b976f4["normalise.test"]
+    node_src_lib_output_types_639c61f7["types"]
+    node_src_lib_output_types_test_2aec04cc["types.test"]
   end
   subgraph sg_src_lib_pilot_evaluation_72792273["src/lib/pilot-evaluation"]
-    node_src_lib_pilot_evaluation_control_plane_96826665_9976cd16["control-plane"]
-    node_src_lib_pilot_evaluation_control_plane_test_cd59_cb9d2fae["control-plane.test"]
-    node_src_lib_pilot_evaluation_decision_packet_dd44377_511d2198["decision-packet"]
-    node_src_lib_pilot_evaluation_decision_packet_test_68_9b77b927["decision-packet.test"]
-    node_src_lib_pilot_evaluation_evaluation_engine_c232e_28c2ceb0["evaluation-engine"]
-    node_src_lib_pilot_evaluation_evaluation_engine_test__96caf1be["evaluation-engine.test"]
-    node_src_lib_pilot_evaluation_metrics_capture_1d1a2c0_c0e5aa29["metrics-capture"]
-    node_src_lib_pilot_evaluation_registries_06402afa_ead89890["registries"]
-    node_src_lib_pilot_evaluation_types_1db4641f_d07d737d["types"]
+    node_src_lib_pilot_evaluation_control_plane_9fcff894["control-plane"]
+    node_src_lib_pilot_evaluation_control_plane_test_6b85b9d4["control-plane.test"]
+    node_src_lib_pilot_evaluation_decision_packet_9b582bf2["decision-packet"]
+    node_src_lib_pilot_evaluation_decision_packet_test_b0ad3727["decision-packet.test"]
+    node_src_lib_pilot_evaluation_evaluation_engine_a9da5c53["evaluation-engine"]
+    node_src_lib_pilot_evaluation_evaluation_engine_test_f7020457["evaluation-engine.test"]
+    node_src_lib_pilot_evaluation_metrics_capture_6a557a25["metrics-capture"]
+    node_src_lib_pilot_evaluation_registries_0709e622["registries"]
+    node_src_lib_pilot_evaluation_types_8e80f8a7["types"]
   end
   subgraph sg_src_lib_plan_gate_504885f2["src/lib/plan-gate"]
-    node_src_lib_plan_gate_detector_b0fc2f46_0d566d69["detector"]
-    node_src_lib_plan_gate_types_f6283648_2f2364a8["types"]
+    node_src_lib_plan_gate_detector_a9899778["detector"]
+    node_src_lib_plan_gate_types_8b36a45a["types"]
   end
   subgraph sg_src_lib_policy_b3a76617["src/lib/policy"]
-    node_src_lib_policy_cardinality_ebef8aff_af9162cc["cardinality"]
-    node_src_lib_policy_cardinality_test_c00e7edb_3f75f9ec["cardinality.test"]
-    node_src_lib_policy_command_policy_test_66e89e89_b9431172["command-policy.test"]
-    node_src_lib_policy_diff_budget_9f85eb1c_8dc44482["diff-budget"]
-    node_src_lib_policy_policy_chain_0c92e343_4ed41d44["policy-chain"]
-    node_src_lib_policy_policy_chain_test_bce92046_3ca45d46["policy-chain.test"]
-    node_src_lib_policy_required_checks_46396214_5c6c6064["required-checks"]
-    node_src_lib_policy_required_checks_test_e7da46e9_17dc678f["required-checks.test"]
-    node_src_lib_policy_risk_tier_96b6ff91_59f0d2d1["risk-tier"]
-    node_src_lib_policy_risk_tier_test_6f021f87_05753241["risk-tier.test"]
-    node_src_lib_policy_tooling_baseline_50ab2eeb_645cbb56["tooling-baseline"]
-    node_src_lib_policy_tooling_baseline_test_d272ddb6_7ad39be6["tooling-baseline.test"]
+    node_src_lib_policy_cardinality_ef7a33eb["cardinality"]
+    node_src_lib_policy_cardinality_test_f35eeec9["cardinality.test"]
+    node_src_lib_policy_command_policy_test_f85a3204["command-policy.test"]
+    node_src_lib_policy_diff_budget_3f96be28["diff-budget"]
+    node_src_lib_policy_policy_chain_bcd37284["policy-chain"]
+    node_src_lib_policy_policy_chain_test_6a8e2878["policy-chain.test"]
+    node_src_lib_policy_required_checks_cc5260df["required-checks"]
+    node_src_lib_policy_required_checks_test_db06e8af["required-checks.test"]
+    node_src_lib_policy_risk_tier_6393c9ab["risk-tier"]
+    node_src_lib_policy_risk_tier_test_60010fdc["risk-tier.test"]
+    node_src_lib_policy_tooling_baseline_78829751["tooling-baseline"]
+    node_src_lib_policy_tooling_baseline_test_2c1d1aa5["tooling-baseline.test"]
   end
   subgraph sg_src_lib_preflight_a53c17b5["src/lib/preflight"]
-    node_src_lib_preflight_local_memory_0db17ecc_3ae90876["local-memory"]
-    node_src_lib_preflight_performance_overload_c685bfcf_bdb17e6b["performance-overload"]
-    node_src_lib_preflight_performance_overload_test_4d9c_caf4d863["performance-overload.test"]
-    node_src_lib_preflight_types_2f1ed65e_86fe1876["types"]
-    node_src_lib_preflight_validator_f82af321_ea26984b["validator"]
-    node_src_lib_preflight_validator_test_b4b482f8_d93b105b["validator.test"]
+    node_src_lib_preflight_local_memory_83be6dca["local-memory"]
+    node_src_lib_preflight_performance_overload_02c46206["performance-overload"]
+    node_src_lib_preflight_performance_overload_test_32fe659f["performance-overload.test"]
+    node_src_lib_preflight_types_e1807687["types"]
+    node_src_lib_preflight_validator_4657555d["validator"]
+    node_src_lib_preflight_validator_test_580e17d6["validator.test"]
   end
   subgraph sg_src_lib_project_brain_1b1de03b["src/lib/project-brain"]
-    node_src_lib_project_brain_brain_validator_be251832_436a25a5["brain-validator"]
-    node_src_lib_project_brain_brain_validator_test_5e40c_6f5a3bad["brain-validator.test"]
-    node_src_lib_project_brain_domain_mapper_cd9333d2_9e66e620["domain-mapper"]
-    node_src_lib_project_brain_domain_mapper_test_dc5a989_0594a5a2["domain-mapper.test"]
-    node_src_lib_project_brain_metadata_scanner_6a101b66_fd9fee3a["metadata-scanner"]
-    node_src_lib_project_brain_metadata_scanner_test_faee_e950afb0["metadata-scanner.test"]
-    node_src_lib_project_brain_suggestion_generator_0956f_5c7f1842["suggestion-generator"]
-    node_src_lib_project_brain_suggestion_generator_test__80c0030e["suggestion-generator.test"]
+    node_src_lib_project_brain_brain_validator_d1c3cb6a["brain-validator"]
+    node_src_lib_project_brain_brain_validator_test_c51ec770["brain-validator.test"]
+    node_src_lib_project_brain_domain_mapper_d7a3673c["domain-mapper"]
+    node_src_lib_project_brain_domain_mapper_test_c2ede2f1["domain-mapper.test"]
+    node_src_lib_project_brain_metadata_scanner_f8a74ca7["metadata-scanner"]
+    node_src_lib_project_brain_metadata_scanner_test_97060023["metadata-scanner.test"]
+    node_src_lib_project_brain_suggestion_generator_50c228fb["suggestion-generator"]
+    node_src_lib_project_brain_suggestion_generator_test_1fcfcfaf["suggestion-generator.test"]
   end
   subgraph sg_src_lib_project_type_80726172["src/lib/project-type"]
-    node_src_lib_project_type_detector_b37d288b_3125c793["detector"]
-    node_src_lib_project_type_detector_test_a3d69c08_2911626c["detector.test"]
-    node_src_lib_project_type_index_faebc14e_32052f98["index"]
-    node_src_lib_project_type_types_1818fb91_6945d85a["types"]
+    node_src_lib_project_type_detector_0ee6f281["detector"]
+    node_src_lib_project_type_detector_test_cdd46054["detector.test"]
+    node_src_lib_project_type_index_a8d9ade8["index"]
+    node_src_lib_project_type_types_0aa9a421["types"]
   end
   subgraph sg_src_lib_remediation_056b0e90["src/lib/remediation"]
-    node_src_lib_remediation_finding_normalizer_13f1559c_e962dcd1["finding-normalizer"]
-    node_src_lib_remediation_finding_normalizer_test_d463_234993b6["finding-normalizer.test"]
-    node_src_lib_remediation_orchestrator_6b7137c5_86db0fbf["orchestrator"]
-    node_src_lib_remediation_orchestrator_test_c291cde7_2601cbf5["orchestrator.test"]
-    node_src_lib_remediation_types_f869ec4b_a6d05d4b["types"]
+    node_src_lib_remediation_finding_normalizer_deea8cce["finding-normalizer"]
+    node_src_lib_remediation_finding_normalizer_test_8082eaaf["finding-normalizer.test"]
+    node_src_lib_remediation_orchestrator_e915f272["orchestrator"]
+    node_src_lib_remediation_orchestrator_test_e409976c["orchestrator.test"]
+    node_src_lib_remediation_types_a70edef6["types"]
   end
   subgraph sg_src_lib_replay_e36f123f["src/lib/replay"]
-    node_src_lib_replay_trace_normalizer_cb1be1d2_aa282f94["trace-normalizer"]
-    node_src_lib_replay_trace_normalizer_test_0c362866_dfbf9d7e["trace-normalizer.test"]
-    node_src_lib_replay_tracer_1e6243a2_c84ed67b["tracer"]
-    node_src_lib_replay_tracer_test_cb965d81_06ea2a0c["tracer.test"]
+    node_src_lib_replay_trace_normalizer_45702dce["trace-normalizer"]
+    node_src_lib_replay_trace_normalizer_test_0a4e0106["trace-normalizer.test"]
+    node_src_lib_replay_tracer_c6b49784["tracer"]
+    node_src_lib_replay_tracer_test_eec65c7d["tracer.test"]
   end
   subgraph sg_src_lib_result_41f6ea66["src/lib/result"]
-    node_src_lib_result_types_822d0f88_a25db228["types"]
+    node_src_lib_result_types_2af05f87["types"]
   end
   subgraph sg_src_lib_review_gate_c92299dd["src/lib/review-gate"]
-    node_src_lib_review_gate_authz_29ba2f46_8e02f0be["authz"]
-    node_src_lib_review_gate_decision_packet_8ee9d119_a5022670["decision-packet"]
-    node_src_lib_review_gate_decision_packet_test_9ea0e97_9d4ab165["decision-packet.test"]
-    node_src_lib_review_gate_types_9675d69b_8854ed8b["types"]
+    node_src_lib_review_gate_authz_473e26c6["authz"]
+    node_src_lib_review_gate_decision_packet_093b7885["decision-packet"]
+    node_src_lib_review_gate_decision_packet_test_90fb9411["decision-packet.test"]
+    node_src_lib_review_gate_types_9efb28dc["types"]
   end
   subgraph sg_src_lib_silent_error_2368b365["src/lib/silent-error"]
-    node_src_lib_silent_error_detector_f2b3cbe4_42d3b416["detector"]
-    node_src_lib_silent_error_detector_test_d10b3555_2c298e11["detector.test"]
-    node_src_lib_silent_error_types_d9bc6e7a_3622377b["types"]
+    node_src_lib_silent_error_detector_06385e9f["detector"]
+    node_src_lib_silent_error_detector_test_f1fe45a6["detector.test"]
+    node_src_lib_silent_error_types_c3d5f806["types"]
   end
   subgraph sg_src_lib_simulate_1125ef2f["src/lib/simulate"]
-    node_src_lib_simulate_types_4ecdf56e_54c95b78["types"]
+    node_src_lib_simulate_types_ea3a077a["types"]
   end
   subgraph sg_src_lib_test_1a4dfe9a["src/lib/test"]
-    node_src_lib_test_overload_guard_2748c559_98821912["overload-guard"]
-    node_src_lib_test_overload_guard_test_6ece9f86_ac5b6294["overload-guard.test"]
+    node_src_lib_test_overload_guard_f486fb04["overload-guard"]
+    node_src_lib_test_overload_guard_test_77d5d34a["overload-guard.test"]
   end
   subgraph sg_src_lib_verify_51991d26["src/lib/verify"]
-    node_src_lib_verify_orchestrator_11376b7e_11b1030b["orchestrator"]
-    node_src_lib_verify_orchestrator_test_18d2fe26_0cefa964["orchestrator.test"]
-    node_src_lib_verify_resume_admissibility_a59835da_9a8ac049["resume-admissibility"]
-    node_src_lib_verify_resume_admissibility_test_eba58e3_2e57a5c3["resume-admissibility.test"]
-    node_src_lib_verify_retry_policy_eebf8de9_394abc5e["retry-policy"]
-    node_src_lib_verify_retry_policy_test_fff144eb_2ad7e0d7["retry-policy.test"]
-    node_src_lib_verify_run_state_94d814a7_6bd70f72["run-state"]
-    node_src_lib_verify_run_state_test_ee8298e8_22f322e3["run-state.test"]
+    node_src_lib_verify_orchestrator_2242dca0["orchestrator"]
+    node_src_lib_verify_orchestrator_test_b991fb74["orchestrator.test"]
+    node_src_lib_verify_resume_admissibility_f9c6e863["resume-admissibility"]
+    node_src_lib_verify_resume_admissibility_test_67530e17["resume-admissibility.test"]
+    node_src_lib_verify_retry_policy_66741c82["retry-policy"]
+    node_src_lib_verify_retry_policy_test_76322c8b["retry-policy.test"]
+    node_src_lib_verify_run_state_084e83b2["run-state"]
+    node_src_lib_verify_run_state_test_6fc192b5["run-state.test"]
   end
   subgraph sg_src_lib_workflow_bf0d40a1["src/lib/workflow"]
-    node_src_lib_workflow_brainstorm_e2e2381d_e32b3f02["brainstorm"]
-    node_src_lib_workflow_brainstorm_test_78cf7a1e_32a2f845["brainstorm.test"]
-    node_src_lib_workflow_plan_64879f7d_cd9e2fad["plan"]
-    node_src_lib_workflow_plan_test_e7c3b920_e31df245["plan.test"]
+    node_src_lib_workflow_brainstorm_6ca71c32["brainstorm"]
+    node_src_lib_workflow_brainstorm_test_6ac1356e["brainstorm.test"]
+    node_src_lib_workflow_plan_1246fd80["plan"]
+    node_src_lib_workflow_plan_test_09539389["plan.test"]
   end
   subgraph sg_src_lib_workflow_contract_d7e80669["src/lib/workflow-contract"]
-    node_src_lib_workflow_contract_checker_d2d2328e_847ebbc3["checker"]
-    node_src_lib_workflow_contract_checker_test_ee38befa_0c00b6ed["checker.test"]
-    node_src_lib_workflow_contract_ci_adapter_90d6f8f4_9497772b["ci-adapter"]
-    node_src_lib_workflow_contract_ci_adapter_test_5a1c16_0ab9b1b1["ci-adapter.test"]
-    node_src_lib_workflow_contract_gate_bundle_28601503_7726ee2c["gate-bundle"]
-    node_src_lib_workflow_contract_gate_bundle_test_f729a_57823319["gate-bundle.test"]
-    node_src_lib_workflow_contract_index_1bc04b52_fd54a007["index"]
-    node_src_lib_workflow_contract_operator_scorecard_cc6_75c4cc4d["operator-scorecard"]
-    node_src_lib_workflow_contract_operator_scorecard_tes_6c71c6b6["operator-scorecard.test"]
-    node_src_lib_workflow_contract_parser_b17d4512_c1de46a9["parser"]
-    node_src_lib_workflow_contract_parser_test_3c7414cf_9fd264b6["parser.test"]
-    node_src_lib_workflow_contract_pilot_tracker_5c767813_bcb1478b["pilot-tracker"]
-    node_src_lib_workflow_contract_pilot_tracker_test_803_dbb50df5["pilot-tracker.test"]
-    node_src_lib_workflow_contract_registry_872491a3_0484b10f["registry"]
-    node_src_lib_workflow_contract_registry_test_89f095f8_c0651ef8["registry.test"]
-    node_src_lib_workflow_contract_state_normalizer_147c0_79dd8c5b["state-normalizer"]
-    node_src_lib_workflow_contract_state_normalizer_test__b5f56a5d["state-normalizer.test"]
-    node_src_lib_workflow_contract_test_harness_6e520b98_2684883b["test-harness"]
-    node_src_lib_workflow_contract_test_harness_test_657d_33a21cc8["test-harness.test"]
-    node_src_lib_workflow_contract_types_8d846022_98e8ece9["types"]
+    node_src_lib_workflow_contract_checker_4b4be38a["checker"]
+    node_src_lib_workflow_contract_checker_test_e4aa801a["checker.test"]
+    node_src_lib_workflow_contract_ci_adapter_40c654d3["ci-adapter"]
+    node_src_lib_workflow_contract_ci_adapter_test_00f59d71["ci-adapter.test"]
+    node_src_lib_workflow_contract_gate_bundle_e1b1aa61["gate-bundle"]
+    node_src_lib_workflow_contract_gate_bundle_test_45e3c653["gate-bundle.test"]
+    node_src_lib_workflow_contract_index_2053757e["index"]
+    node_src_lib_workflow_contract_operator_scorecard_163ee09a["operator-scorecard"]
+    node_src_lib_workflow_contract_operator_scorecard_tes_e7ea05ba["operator-scorecard.test"]
+    node_src_lib_workflow_contract_parser_42e51fd4["parser"]
+    node_src_lib_workflow_contract_parser_test_66082e58["parser.test"]
+    node_src_lib_workflow_contract_pilot_tracker_6ba1af4c["pilot-tracker"]
+    node_src_lib_workflow_contract_pilot_tracker_test_8eb3b02c["pilot-tracker.test"]
+    node_src_lib_workflow_contract_registry_d423a051["registry"]
+    node_src_lib_workflow_contract_registry_test_144a7a3a["registry.test"]
+    node_src_lib_workflow_contract_state_normalizer_7f9328b9["state-normalizer"]
+    node_src_lib_workflow_contract_state_normalizer_test_fb3e6bb6["state-normalizer.test"]
+    node_src_lib_workflow_contract_test_harness_ab8265f7["test-harness"]
+    node_src_lib_workflow_contract_test_harness_test_9c43ce28["test-harness.test"]
+    node_src_lib_workflow_contract_types_6e578d40["types"]
   end
 
 ```
@@ -640,8 +640,8 @@ flowchart TD
   Boundary --> triage_lanes_5c8ea001
   metadata_gate_2dcdb343["metadata-gate"]
   Boundary --> metadata_gate_2dcdb343
-  types_13_d025517b["types"]
-  Boundary --> types_13_d025517b
+  types_12_2b09659a["types"]
+  Boundary --> types_12_2b09659a
   scaffold_db8a7260["scaffold"]
   Boundary --> scaffold_db8a7260
   scaffold_root_templates_61731280["scaffold-root-templates"]
@@ -731,14 +731,14 @@ classDiagram
   class required_checks_46396214 {
     +src/lib/policy/required-checks.ts
   }
+  class client_948fe603 {
+    +src/lib/linear/client.ts
+  }
   class validator_3_28b6e9f3 {
     +src/lib/input/validator.ts
   }
   class validation_98c41dcd {
     +src/lib/input/validation.ts
-  }
-  class client_948fe603 {
-    +src/lib/linear/client.ts
   }
   class sha_d600474b {
     +src/lib/github/sha.ts
@@ -885,15 +885,15 @@ flowchart TD
   types_11_4be3ee64["types"]
   UserRequest --> types_11_4be3ee64
   types_11_4be3ee64 --> types_11_4be3ee64_result["result"]
-  sanitize_af6a3bb0["sanitize"]
-  UserRequest --> sanitize_af6a3bb0
-  sanitize_af6a3bb0 --> sanitize_af6a3bb0_result["result"]
   governance_report_test_160fb2e0["governance-report.test"]
   UserRequest --> governance_report_test_160fb2e0
   governance_report_test_160fb2e0 --> governance_report_test_160fb2e0_result["result"]
   client_948fe603["client"]
   UserRequest --> client_948fe603
   client_948fe603 --> client_948fe603_result["result"]
+  sanitize_af6a3bb0["sanitize"]
+  UserRequest --> sanitize_af6a3bb0
+  sanitize_af6a3bb0 --> sanitize_af6a3bb0_result["result"]
   url_validator_test_f781df3b["url-validator.test"]
   UserRequest --> url_validator_test_f781df3b
   url_validator_test_f781df3b --> url_validator_test_f781df3b_result["result"]
@@ -924,9 +924,9 @@ flowchart TD
   UserRequest --> update_2937013f
   update_2937013f --> update_2937013f_write["write/update"]
   update_2937013f_write --> update_2937013f_result["result"]
-  types_13_d025517b["types"]
-  UserRequest --> types_13_d025517b
-  types_13_d025517b --> types_13_d025517b_result["result"]
+  types_12_2b09659a["types"]
+  UserRequest --> types_12_2b09659a
+  types_12_2b09659a --> types_12_2b09659a_result["result"]
   schema_migrate_c0646635["schema-migrate"]
   UserRequest --> schema_migrate_c0646635
   schema_migrate_c0646635 --> schema_migrate_c0646635_result["result"]
@@ -1035,926 +1035,926 @@ flowchart TD
 
 ```mermaid
 graph LR
-  ext_future_05a73385["__future__"] --> node_scripts_hook_governance_evaluate_docstring_ratch_d2833626
-  ext_future_05a73385["__future__"] --> node_scripts_hook_governance_inventory_repos_4ea09ad7_3293e24f
-  ext_future_05a73385["__future__"] --> node_scripts_hook_governance_rollout_check_6c0140db_705d638f
-  ext_future_05a73385["__future__"] --> node_scripts_hook_governance_tests_test_evaluate_docs_68acb28c
-  ext_future_05a73385["__future__"] --> node_scripts_hook_governance_tests_test_inventory_rep_e8f2384b
-  ext_future_05a73385["__future__"] --> node_scripts_hook_governance_tests_test_rollout_check_3249066e
-  ext_inquirer_prompts_4d547149["@inquirer/prompts"] --> node_src_lib_init_cli_084e05fe_7beaed99
-  ext_octokit_plugin_retry_c9aecc53["@octokit/plugin-retry"] --> node_src_lib_github_client_914e1681_515c4ae1
-  ext_octokit_plugin_throttling_7909ece3["@octokit/plugin-throttling"] --> node_src_lib_github_client_914e1681_515c4ae1
-  ext_octokit_plugin_throttling_7909ece3["@octokit/plugin-throttling"] --> node_src_lib_gardener_pr_creator_dc6b1ea4_a5bdc6f6
-  ext_octokit_request_error_98ae13cc["@octokit/request-error"] --> node_src_lib_github_client_test_6fa17bd4_78314172
-  ext_octokit_request_error_98ae13cc["@octokit/request-error"] --> node_src_lib_github_errors_be4bd567_c45541f4
-  ext_octokit_request_error_98ae13cc["@octokit/request-error"] --> node_src_lib_github_errors_test_1a443b6a_dd2ec165
-  ext_octokit_rest_c6e4d192["@octokit/rest"] --> node_scripts_circleci_linear_sync_19c0d6da_073fdc09
-  ext_octokit_rest_c6e4d192["@octokit/rest"] --> node_scripts_circleci_stale_management_664de1d9_2a4ce90b
-  ext_octokit_rest_c6e4d192["@octokit/rest"] --> node_src_lib_github_client_914e1681_515c4ae1
-  ext_octokit_rest_c6e4d192["@octokit/rest"] --> node_src_lib_gardener_pr_creator_dc6b1ea4_a5bdc6f6
-  ext_total_typescript_shoehorn_667cfbd3["@total-typescript/shoehorn"] --> node_src_commands_agent_first_throughput_integration__7c59b283
-  ext_total_typescript_shoehorn_667cfbd3["@total-typescript/shoehorn"] --> node_src_commands_branch_protect_test_c8d80aab_898c50dc
-  ext_total_typescript_shoehorn_667cfbd3["@total-typescript/shoehorn"] --> node_src_commands_linear_prepare_test_678f11a9_432b536b
-  ext_total_typescript_shoehorn_667cfbd3["@total-typescript/shoehorn"] --> node_src_commands_linear_triage_test_1b75a8b8_19863a59
-  ext_total_typescript_shoehorn_667cfbd3["@total-typescript/shoehorn"] --> node_src_commands_linear_workflow_test_a351dcb0_73fc7cb1
-  ext_total_typescript_shoehorn_667cfbd3["@total-typescript/shoehorn"] --> node_src_commands_review_gate_test_000e2ed6_4bdcd834
-  ext_total_typescript_shoehorn_667cfbd3["@total-typescript/shoehorn"] --> node_src_commands_ui_loop_test_f0eabc42_a6f3d2d0
-  ext_total_typescript_shoehorn_667cfbd3["@total-typescript/shoehorn"] --> node_src_commands_verify_coderabbit_test_46cfcf29_41f03a50
-  ext_api_d93d10ff["API"] --> node_scripts_hook_governance_evaluate_docstring_ratch_d2833626
-  ext_argparse_e750ee7c["argparse"] --> node_scripts_hook_governance_evaluate_docstring_ratch_d2833626
-  ext_argparse_e750ee7c["argparse"] --> node_scripts_hook_governance_inventory_repos_4ea09ad7_3293e24f
-  ext_argparse_e750ee7c["argparse"] --> node_scripts_hook_governance_rollout_check_6c0140db_705d638f
-  ext_better_sqlite3_d7ed8f1a["better-sqlite3"] --> node_src_lib_context_compound_store_824d80d7_303b2fc6
-  ext_datetime_89ffad08["datetime"] --> node_scripts_hook_governance_evaluate_docstring_ratch_d2833626
-  ext_datetime_89ffad08["datetime"] --> node_scripts_hook_governance_rollout_check_6c0140db_705d638f
-  ext_datetime_89ffad08["datetime"] --> node_scripts_hook_governance_tests_test_rollout_check_3249066e
-  ext_diff_75a0ee1b["diff"] --> node_src_lib_init_interactive_0eb42ac4_0f5a1037
-  ext_evaluate_docstring_ratchet_8d419891["evaluate_docstring_ratchet"] --> node_scripts_hook_governance_tests_test_evaluate_docs_68acb28c
-  ext_evaluate_docstring_ratchet_8d419891["evaluate_docstring_ratchet"] --> node_scripts_hook_governance_tests_test_evaluate_docs_68acb28c
-  ext_exc_778865dc["exc"] --> node_scripts_hook_governance_inventory_repos_4ea09ad7_3293e24f
-  ext_exc_778865dc["exc"] --> node_scripts_hook_governance_inventory_repos_4ea09ad7_3293e24f
-  ext_exc_778865dc["exc"] --> node_scripts_hook_governance_inventory_repos_4ea09ad7_3293e24f
-  ext_exc_778865dc["exc"] --> node_scripts_hook_governance_rollout_check_6c0140db_705d638f
-  ext_fs_3f4bb586["fs"] --> node_src_commands_doctor_72f4be89_12ca0d23
-  ext_inventory_repos_812f8dd4["inventory_repos"] --> node_scripts_hook_governance_tests_test_inventory_rep_e8f2384b
-  ext_json_05d97e6e["json"] --> node_scripts_hook_governance_evaluate_docstring_ratch_d2833626
-  ext_json_05d97e6e["json"] --> node_scripts_hook_governance_inventory_repos_4ea09ad7_3293e24f
-  ext_json_05d97e6e["json"] --> node_scripts_hook_governance_rollout_check_6c0140db_705d638f
-  ext_json_05d97e6e["json"] --> node_scripts_hook_governance_tests_test_evaluate_docs_68acb28c
-  ext_json_05d97e6e["json"] --> node_scripts_hook_governance_tests_test_inventory_rep_e8f2384b
-  ext_json_05d97e6e["json"] --> node_scripts_hook_governance_tests_test_rollout_check_3249066e
-  ext_lodash_901466a5["lodash"] --> node_src_lib_contract_merger_3e167607_2e7682e8
-  ext_math_7a488390["math"] --> node_scripts_hook_governance_evaluate_docstring_ratch_d2833626
-  ext_node_child_process_f62b7d19["node:child_process"] --> node_src_commands_agent_first_throughput_integration__7c59b283
-  ext_node_child_process_f62b7d19["node:child_process"] --> node_src_lib_memory_branch_enforcer_acb749cd_b5113172
-  ext_node_child_process_f62b7d19["node:child_process"] --> node_src_commands_check_diagram_freshness_test_c1dc40_8ffe6bb0
-  ext_node_child_process_f62b7d19["node:child_process"] --> node_src_commands_check_environment_fe68d4be_6f3dadd7
-  ext_node_child_process_f62b7d19["node:child_process"] --> node_src_commands_check_environment_test_5fa29c35_c89d6225
-  ext_node_child_process_f62b7d19["node:child_process"] --> node_src_commands_check_environment_test_5fa29c35_c89d6225
-  ext_node_child_process_f62b7d19["node:child_process"] --> node_src_commands_check_environment_test_5fa29c35_c89d6225
-  ext_node_child_process_f62b7d19["node:child_process"] --> node_src_commands_check_environment_test_5fa29c35_c89d6225
-  ext_node_child_process_f62b7d19["node:child_process"] --> node_src_commands_check_environment_test_5fa29c35_c89d6225
-  ext_node_child_process_f62b7d19["node:child_process"] --> node_src_commands_check_environment_test_5fa29c35_c89d6225
-  ext_node_child_process_f62b7d19["node:child_process"] --> node_src_commands_ci_migrate_78bb70b1_a0e2c114
-  ext_node_child_process_f62b7d19["node:child_process"] --> node_src_commands_ci_migrate_test_2a015bb9_07515c3d
-  ext_node_child_process_f62b7d19["node:child_process"] --> node_scripts_circleci_linear_sync_19c0d6da_073fdc09
-  ext_node_child_process_f62b7d19["node:child_process"] --> node_src_lib_init_codex_preflight_symlink_test_037558_5789ffec
-  ext_node_child_process_f62b7d19["node:child_process"] --> node_src_lib_pilot_evaluation_control_plane_96826665_9976cd16
-  ext_node_child_process_f62b7d19["node:child_process"] --> node_src_commands_diff_budget_9da0268d_6991f714
-  ext_node_child_process_f62b7d19["node:child_process"] --> node_src_commands_diff_budget_test_c0b72453_6e2bf489
-  ext_node_child_process_f62b7d19["node:child_process"] --> node_src_commands_docs_gate_c441fbb4_1e3c43d7
-  ext_node_child_process_f62b7d19["node:child_process"] --> node_src_commands_docs_gate_test_a25e972f_33a82806
-  ext_node_child_process_f62b7d19["node:child_process"] --> node_src_commands_doctor_72f4be89_12ca0d23
-  ext_node_child_process_f62b7d19["node:child_process"] --> node_src_commands_doctor_test_e032e8b5_6705010c
-  ext_node_child_process_f62b7d19["node:child_process"] --> node_src_commands_doctor_test_e032e8b5_6705010c
-  ext_node_child_process_f62b7d19["node:child_process"] --> node_e2e_clients_github_e2e_2891a341_aacd937a
-  ext_node_child_process_f62b7d19["node:child_process"] --> node_src_commands_health_62484e22_b2e6cd58
-  ext_node_child_process_f62b7d19["node:child_process"] --> node_src_commands_health_test_f79de76d_c624883e
-  ext_node_child_process_f62b7d19["node:child_process"] --> node_src_commands_health_test_f79de76d_c624883e
-  ext_node_child_process_f62b7d19["node:child_process"] --> node_src_commands_init_test_cbba76a6_c720fdf4
-  ext_node_child_process_f62b7d19["node:child_process"] --> node_src_commands_linear_gate_fac14a46_0dc194d7
-  ext_node_child_process_f62b7d19["node:child_process"] --> node_src_commands_linear_gate_test_4fcca11a_4eb96b1b
-  ext_node_child_process_f62b7d19["node:child_process"] --> node_src_lib_gardener_link_checker_d0fa555f_defff88c
-  ext_node_child_process_f62b7d19["node:child_process"] --> node_src_lib_preflight_local_memory_0db17ecc_3ae90876
-  ext_node_child_process_f62b7d19["node:child_process"] --> node_src_commands_local_memory_preflight_test_5e323bb_7198fc35
-  ext_node_child_process_f62b7d19["node:child_process"] --> node_src_commands_local_memory_preflight_test_5e323bb_7198fc35
-  ext_node_child_process_f62b7d19["node:child_process"] --> node_src_commands_local_memory_preflight_test_5e323bb_7198fc35
-  ext_node_child_process_f62b7d19["node:child_process"] --> node_src_commands_refresh_diagram_context_test_03bf21_16fd4e17
-  ext_node_child_process_f62b7d19["node:child_process"] --> node_src_commands_remediate_06b9c7fc_c8f75798
-  ext_node_child_process_f62b7d19["node:child_process"] --> node_src_commands_remediate_test_6f59cafe_3435fed4
-  ext_node_child_process_f62b7d19["node:child_process"] --> node_e2e_run_e2e_39efe696_cb0b0924
-  ext_node_child_process_f62b7d19["node:child_process"] --> node_src_lib_init_scaffold_hook_templates_8c74ab50_b4a749ea
-  ext_node_child_process_f62b7d19["node:child_process"] --> node_src_lib_init_scaffold_hook_templates_8c74ab50_b4a749ea
-  ext_node_child_process_f62b7d19["node:child_process"] --> node_src_commands_search_24193290_34c14966
-  ext_node_child_process_f62b7d19["node:child_process"] --> node_src_commands_search_test_0c66bc11_d61d2826
-  ext_node_child_process_f62b7d19["node:child_process"] --> node_scripts_setup_git_hooks_70750d40_a643d955
-  ext_node_child_process_f62b7d19["node:child_process"] --> node_src_commands_symphony_check_test_6cb33eb2_4f0d91b6
-  ext_node_child_process_f62b7d19["node:child_process"] --> node_src_lib_workflow_contract_test_harness_6e520b98_2684883b
-  ext_node_child_process_f62b7d19["node:child_process"] --> node_src_commands_ui_loop_11660889_457f358d
-  ext_node_child_process_f62b7d19["node:child_process"] --> node_src_commands_ui_loop_test_f0eabc42_a6f3d2d0
-  ext_node_child_process_f62b7d19["node:child_process"] --> node_scripts_validate_commit_msg_43b008fe_177887ed
-  ext_node_child_process_f62b7d19["node:child_process"] --> node_src_commands_verify_work_df70ecac_ed5d932c
-  ext_node_child_process_f62b7d19["node:child_process"] --> node_src_commands_verify_work_test_0e12f6c5_128a29b7
-  ext_node_child_process_f62b7d19["node:child_process"] --> node_src_lib_version_coherence_69733bcb_31759adc
-  ext_node_child_process_f62b7d19["node:child_process"] --> node_src_lib_init_workflow_contract_scripts_test_681e_ab4d6c14
-  ext_node_crypto_c7dfc512["node:crypto"] --> node_src_commands_check_environment_fe68d4be_6f3dadd7
-  ext_node_crypto_c7dfc512["node:crypto"] --> node_src_commands_ci_migrate_78bb70b1_a0e2c114
-  ext_node_crypto_c7dfc512["node:crypto"] --> node_src_commands_ci_migrate_test_2a015bb9_07515c3d
-  ext_node_crypto_c7dfc512["node:crypto"] --> node_src_commands_ci_migrate_test_2a015bb9_07515c3d
-  ext_node_crypto_c7dfc512["node:crypto"] --> node_src_cli_test_4851f28b_523d2a86
-  ext_node_crypto_c7dfc512["node:crypto"] --> node_src_lib_pilot_evaluation_control_plane_96826665_9976cd16
-  ext_node_crypto_c7dfc512["node:crypto"] --> node_src_lib_pilot_evaluation_decision_packet_dd44377_511d2198
-  ext_node_crypto_c7dfc512["node:crypto"] --> node_src_lib_review_gate_decision_packet_8ee9d119_a5022670
-  ext_node_crypto_c7dfc512["node:crypto"] --> node_src_commands_docs_gate_c441fbb4_1e3c43d7
-  ext_node_crypto_c7dfc512["node:crypto"] --> node_src_lib_contract_idempotency_f5d39a07_436bfde4
-  ext_node_crypto_c7dfc512["node:crypto"] --> node_src_lib_context_compound_indexer_70fa78e5_8f1646af
-  ext_node_crypto_c7dfc512["node:crypto"] --> node_src_lib_context_compound_indexer_test_d492f0aa_4bd5aca2
-  ext_node_crypto_c7dfc512["node:crypto"] --> node_src_lib_context_compound_lexical_fallback_723e2b_6f1ddfed
-  ext_node_crypto_c7dfc512["node:crypto"] --> node_src_commands_linear_sync_a2fa2bf7_3761718f
-  ext_node_crypto_c7dfc512["node:crypto"] --> node_src_lib_gardener_link_checker_d0fa555f_defff88c
-  ext_node_crypto_c7dfc512["node:crypto"] --> node_src_lib_init_migration_8a6cead4_4ce3e628
-  ext_node_crypto_c7dfc512["node:crypto"] --> node_src_commands_pilot_rollback_00c1f82c_e5dc550a
-  ext_node_crypto_c7dfc512["node:crypto"] --> node_src_commands_plan_gate_test_0c0192e6_d293ab91
-  ext_node_crypto_c7dfc512["node:crypto"] --> node_src_lib_contract_preset_resolver_dc3dd716_6ba7f673
-  ext_node_crypto_c7dfc512["node:crypto"] --> node_src_lib_contract_preset_resolver_test_e112a012_88ef1235
-  ext_node_crypto_c7dfc512["node:crypto"] --> node_src_commands_remediate_06b9c7fc_c8f75798
-  ext_node_crypto_c7dfc512["node:crypto"] --> node_src_lib_policy_required_checks_46396214_5c6c6064
-  ext_node_crypto_c7dfc512["node:crypto"] --> node_src_lib_init_rollback_da25480f_6e61d987
-  ext_node_crypto_c7dfc512["node:crypto"] --> node_src_lib_contract_run_record_emitter_00168a3a_651cc3ec
-  ext_node_crypto_c7dfc512["node:crypto"] --> node_src_lib_contract_run_records_f616aa7c_5fbe7536
-  ext_node_crypto_c7dfc512["node:crypto"] --> node_src_lib_verify_run_state_94d814a7_6bd70f72
-  ext_node_crypto_c7dfc512["node:crypto"] --> node_src_lib_governance_scan_cache_fc02c79c_dbe1a47a
-  ext_node_crypto_c7dfc512["node:crypto"] --> node_src_commands_simulate_b9efe395_6237778e
-  ext_node_crypto_c7dfc512["node:crypto"] --> node_src_lib_context_compound_sources_878a52fc_fab46182
-  ext_node_crypto_c7dfc512["node:crypto"] --> node_src_lib_replay_tracer_1e6243a2_c84ed67b
-  ext_node_crypto_c7dfc512["node:crypto"] --> node_src_commands_ui_loop_11660889_457f358d
-  ext_node_crypto_c7dfc512["node:crypto"] --> node_src_lib_init_upgrade_b277486e_b2698ece
-  ext_node_dns_828a0bbf["node:dns"] --> node_src_lib_governance_url_validator_3c5a1568_98696d21
-  ext_node_fs_a15b7d96["node:fs"] --> node_src_commands_agent_first_throughput_integration__7c59b283
-  ext_node_fs_a15b7d96["node:fs"] --> node_src_lib_init_ast_grep_rules_test_2b69fd9a_c48c69e0
-  ext_node_fs_a15b7d96["node:fs"] --> node_src_commands_audit_b81f37a0_4a8057db
-  ext_node_fs_a15b7d96["node:fs"] --> node_src_commands_audit_test_54ea1006_a3e1e261
-  ext_node_fs_a15b7d96["node:fs"] --> node_src_commands_audit_test_54ea1006_a3e1e261
-  ext_node_fs_a15b7d96["node:fs"] --> node_src_commands_audit_test_54ea1006_a3e1e261
-  ext_node_fs_a15b7d96["node:fs"] --> node_src_lib_review_gate_authz_29ba2f46_8e02f0be
-  ext_node_fs_a15b7d96["node:fs"] --> node_src_commands_blast_radius_test_045450fc_9b55a936
-  ext_node_fs_a15b7d96["node:fs"] --> node_src_lib_project_brain_brain_validator_be251832_436a25a5
-  ext_node_fs_a15b7d96["node:fs"] --> node_src_lib_project_brain_brain_validator_test_5e40c_6f5a3bad
-  ext_node_fs_a15b7d96["node:fs"] --> node_src_commands_brain_test_428d4d67_9c2251ff
-  ext_node_fs_a15b7d96["node:fs"] --> node_src_commands_brain_test_428d4d67_9c2251ff
-  ext_node_fs_a15b7d96["node:fs"] --> node_src_commands_brainstorm_gate_test_2fb2aec1_ebb3826f
-  ext_node_fs_a15b7d96["node:fs"] --> node_src_lib_workflow_brainstorm_test_78cf7a1e_32a2f845
-  ext_node_fs_a15b7d96["node:fs"] --> node_src_lib_memory_branch_enforcer_acb749cd_b5113172
-  ext_node_fs_a15b7d96["node:fs"] --> node_src_commands_branch_protect_b9d345eb_0917aabd
-  ext_node_fs_a15b7d96["node:fs"] --> node_src_lib_ci_branch_protect_sync_570adb18_4e76efe4
-  ext_node_fs_a15b7d96["node:fs"] --> node_src_lib_ci_branch_protect_sync_test_159bb533_b615eb31
-  ext_node_fs_a15b7d96["node:fs"] --> node_src_commands_check_20f65c28_8b102645
-  ext_node_fs_a15b7d96["node:fs"] --> node_src_commands_check_authz_test_327903fb_fd074017
-  ext_node_fs_a15b7d96["node:fs"] --> node_src_commands_check_environment_fe68d4be_6f3dadd7
-  ext_node_fs_a15b7d96["node:fs"] --> node_src_commands_check_environment_fe68d4be_6f3dadd7
-  ext_node_fs_a15b7d96["node:fs"] --> node_src_commands_ci_migrate_test_2a015bb9_07515c3d
-  ext_node_fs_a15b7d96["node:fs"] --> node_src_cli_99bb8840_d48ba2e4
-  ext_node_fs_a15b7d96["node:fs"] --> node_src_cli_dispatch_test_54c9f17b_179f85f0
-  ext_node_fs_a15b7d96["node:fs"] --> node_src_cli_test_4851f28b_523d2a86
-  ext_node_fs_a15b7d96["node:fs"] --> node_e2e_tests_command_pipeline_e2e_test_a0aa069a_a8ee24c9
-  ext_node_fs_a15b7d96["node:fs"] --> node_src_lib_policy_command_policy_test_66e89e89_b9431172
-  ext_node_fs_a15b7d96["node:fs"] --> node_src_lib_cli_command_registry_test_0cf92cba_b3dd285c
-  ext_node_fs_a15b7d96["node:fs"] --> node_src_lib_cli_registry_command_specs_69167c63_d907f2ee
-  ext_node_fs_a15b7d96["node:fs"] --> node_src_lib_ci_config_validator_669ebc2e_efe732cc
-  ext_node_fs_a15b7d96["node:fs"] --> node_src_lib_ci_config_validator_test_f70500fa_5e09d89e
-  ext_node_fs_a15b7d96["node:fs"] --> node_src_lib_context_compound_context_compact_policy__33ca3593
-  ext_node_fs_a15b7d96["node:fs"] --> node_src_commands_context_health_80bb7da9_c636a657
-  ext_node_fs_a15b7d96["node:fs"] --> node_src_commands_context_health_test_3b5b87f3_b2ea595f
-  ext_node_fs_a15b7d96["node:fs"] --> node_src_commands_context_integrity_acceptance_test_5_b80c666c
-  ext_node_fs_a15b7d96["node:fs"] --> node_src_commands_context_test_57aad306_79de8eab
-  ext_node_fs_a15b7d96["node:fs"] --> node_src_commands_contract_cc8321d6_dfc1f388
-  ext_node_fs_a15b7d96["node:fs"] --> node_src_lib_pilot_evaluation_decision_packet_dd44377_511d2198
-  ext_node_fs_a15b7d96["node:fs"] --> node_src_lib_review_gate_decision_packet_8ee9d119_a5022670
-  ext_node_fs_a15b7d96["node:fs"] --> node_src_lib_pilot_evaluation_decision_packet_test_68_9b77b927
-  ext_node_fs_a15b7d96["node:fs"] --> node_src_lib_review_gate_decision_packet_test_9ea0e97_9d4ab165
-  ext_node_fs_a15b7d96["node:fs"] --> node_src_lib_brainstorm_detector_86ca96aa_726f791b
-  ext_node_fs_a15b7d96["node:fs"] --> node_src_lib_plan_gate_detector_b0fc2f46_0d566d69
-  ext_node_fs_a15b7d96["node:fs"] --> node_src_lib_project_type_detector_b37d288b_3125c793
-  ext_node_fs_a15b7d96["node:fs"] --> node_src_lib_silent_error_detector_f2b3cbe4_42d3b416
-  ext_node_fs_a15b7d96["node:fs"] --> node_src_lib_brainstorm_detector_test_85cbb456_08c70acb
-  ext_node_fs_a15b7d96["node:fs"] --> node_src_lib_project_type_detector_test_a3d69c08_2911626c
-  ext_node_fs_a15b7d96["node:fs"] --> node_src_lib_project_type_detector_test_a3d69c08_2911626c
-  ext_node_fs_a15b7d96["node:fs"] --> node_src_commands_diff_budget_9da0268d_6991f714
-  ext_node_fs_a15b7d96["node:fs"] --> node_src_commands_diff_budget_test_c0b72453_6e2bf489
-  ext_node_fs_a15b7d96["node:fs"] --> node_src_commands_docs_gate_c441fbb4_1e3c43d7
-  ext_node_fs_a15b7d96["node:fs"] --> node_src_commands_docs_gate_test_a25e972f_33a82806
-  ext_node_fs_a15b7d96["node:fs"] --> node_src_commands_doctor_72f4be89_12ca0d23
-  ext_node_fs_a15b7d96["node:fs"] --> node_src_lib_init_eject_d0ecd4d1_229c1a6a
-  ext_node_fs_a15b7d96["node:fs"] --> node_src_lib_init_eject_test_96dad02e_601f605d
-  ext_node_fs_a15b7d96["node:fs"] --> node_src_lib_init_eject_test_96dad02e_601f605d
-  ext_node_fs_a15b7d96["node:fs"] --> node_src_commands_evidence_verify_3b73c290_1f8dd9f2
-  ext_node_fs_a15b7d96["node:fs"] --> node_src_commands_evidence_verify_test_7373101d_c288ceac
-  ext_node_fs_a15b7d96["node:fs"] --> node_src_commands_gap_case_test_e32159fb_a0da53ec
-  ext_node_fs_a15b7d96["node:fs"] --> node_src_commands_gardener_9416a9df_a5388d61
-  ext_node_fs_a15b7d96["node:fs"] --> node_e2e_clients_github_e2e_2891a341_aacd937a
-  ext_node_fs_a15b7d96["node:fs"] --> node_e2e_tests_github_integration_e2e_test_0b124522_8577c76d
-  ext_node_fs_a15b7d96["node:fs"] --> node_src_commands_health_62484e22_b2e6cd58
-  ext_node_fs_a15b7d96["node:fs"] --> node_src_commands_health_test_f79de76d_c624883e
-  ext_node_fs_a15b7d96["node:fs"] --> node_src_commands_index_context_de3ed39d_df7e312f
-  ext_node_fs_a15b7d96["node:fs"] --> node_src_lib_context_compound_indexer_70fa78e5_8f1646af
-  ext_node_fs_a15b7d96["node:fs"] --> node_src_commands_init_test_cbba76a6_c720fdf4
-  ext_node_fs_a15b7d96["node:fs"] --> node_src_commands_init_test_cbba76a6_c720fdf4
-  ext_node_fs_a15b7d96["node:fs"] --> node_src_commands_init_test_cbba76a6_c720fdf4
-  ext_node_fs_a15b7d96["node:fs"] --> node_src_commands_init_test_cbba76a6_c720fdf4
-  ext_node_fs_a15b7d96["node:fs"] --> node_src_commands_init_test_cbba76a6_c720fdf4
-  ext_node_fs_a15b7d96["node:fs"] --> node_src_commands_init_test_cbba76a6_c720fdf4
-  ext_node_fs_a15b7d96["node:fs"] --> node_src_commands_init_test_cbba76a6_c720fdf4
-  ext_node_fs_a15b7d96["node:fs"] --> node_src_commands_init_test_cbba76a6_c720fdf4
-  ext_node_fs_a15b7d96["node:fs"] --> node_src_commands_init_test_cbba76a6_c720fdf4
-  ext_node_fs_a15b7d96["node:fs"] --> node_src_commands_init_test_cbba76a6_c720fdf4
-  ext_node_fs_a15b7d96["node:fs"] --> node_src_commands_init_test_cbba76a6_c720fdf4
-  ext_node_fs_a15b7d96["node:fs"] --> node_src_commands_init_test_cbba76a6_c720fdf4
-  ext_node_fs_a15b7d96["node:fs"] --> node_src_commands_init_test_cbba76a6_c720fdf4
-  ext_node_fs_a15b7d96["node:fs"] --> node_src_commands_init_test_cbba76a6_c720fdf4
-  ext_node_fs_a15b7d96["node:fs"] --> node_src_commands_init_test_cbba76a6_c720fdf4
-  ext_node_fs_a15b7d96["node:fs"] --> node_src_commands_init_test_cbba76a6_c720fdf4
-  ext_node_fs_a15b7d96["node:fs"] --> node_src_commands_init_test_cbba76a6_c720fdf4
-  ext_node_fs_a15b7d96["node:fs"] --> node_src_commands_init_test_cbba76a6_c720fdf4
-  ext_node_fs_a15b7d96["node:fs"] --> node_src_commands_init_test_cbba76a6_c720fdf4
-  ext_node_fs_a15b7d96["node:fs"] --> node_src_commands_init_test_cbba76a6_c720fdf4
-  ext_node_fs_a15b7d96["node:fs"] --> node_src_commands_init_test_cbba76a6_c720fdf4
-  ext_node_fs_a15b7d96["node:fs"] --> node_src_commands_init_test_cbba76a6_c720fdf4
-  ext_node_fs_a15b7d96["node:fs"] --> node_src_commands_init_test_cbba76a6_c720fdf4
-  ext_node_fs_a15b7d96["node:fs"] --> node_src_commands_init_test_cbba76a6_c720fdf4
-  ext_node_fs_a15b7d96["node:fs"] --> node_src_commands_init_test_cbba76a6_c720fdf4
-  ext_node_fs_a15b7d96["node:fs"] --> node_src_commands_init_test_cbba76a6_c720fdf4
-  ext_node_fs_a15b7d96["node:fs"] --> node_src_commands_init_test_cbba76a6_c720fdf4
-  ext_node_fs_a15b7d96["node:fs"] --> node_src_commands_init_test_cbba76a6_c720fdf4
-  ext_node_fs_a15b7d96["node:fs"] --> node_src_commands_init_test_cbba76a6_c720fdf4
-  ext_node_fs_a15b7d96["node:fs"] --> node_src_commands_init_test_cbba76a6_c720fdf4
-  ext_node_fs_a15b7d96["node:fs"] --> node_src_commands_init_test_cbba76a6_c720fdf4
-  ext_node_fs_a15b7d96["node:fs"] --> node_src_commands_init_test_cbba76a6_c720fdf4
-  ext_node_fs_a15b7d96["node:fs"] --> node_src_commands_init_test_cbba76a6_c720fdf4
-  ext_node_fs_a15b7d96["node:fs"] --> node_src_commands_init_test_cbba76a6_c720fdf4
-  ext_node_fs_a15b7d96["node:fs"] --> node_src_commands_init_test_cbba76a6_c720fdf4
-  ext_node_fs_a15b7d96["node:fs"] --> node_src_commands_init_test_cbba76a6_c720fdf4
-  ext_node_fs_a15b7d96["node:fs"] --> node_src_commands_init_test_cbba76a6_c720fdf4
-  ext_node_fs_a15b7d96["node:fs"] --> node_src_commands_init_test_cbba76a6_c720fdf4
-  ext_node_fs_a15b7d96["node:fs"] --> node_src_commands_init_test_cbba76a6_c720fdf4
-  ext_node_fs_a15b7d96["node:fs"] --> node_src_commands_init_test_cbba76a6_c720fdf4
-  ext_node_fs_a15b7d96["node:fs"] --> node_src_commands_init_test_cbba76a6_c720fdf4
-  ext_node_fs_a15b7d96["node:fs"] --> node_src_commands_init_test_cbba76a6_c720fdf4
-  ext_node_fs_a15b7d96["node:fs"] --> node_src_commands_init_test_cbba76a6_c720fdf4
-  ext_node_fs_a15b7d96["node:fs"] --> node_src_commands_init_test_cbba76a6_c720fdf4
-  ext_node_fs_a15b7d96["node:fs"] --> node_src_commands_init_test_cbba76a6_c720fdf4
-  ext_node_fs_a15b7d96["node:fs"] --> node_src_commands_init_test_cbba76a6_c720fdf4
-  ext_node_fs_a15b7d96["node:fs"] --> node_src_commands_init_test_cbba76a6_c720fdf4
-  ext_node_fs_a15b7d96["node:fs"] --> node_src_commands_init_test_cbba76a6_c720fdf4
-  ext_node_fs_a15b7d96["node:fs"] --> node_src_commands_init_test_cbba76a6_c720fdf4
-  ext_node_fs_a15b7d96["node:fs"] --> node_src_commands_init_test_cbba76a6_c720fdf4
-  ext_node_fs_a15b7d96["node:fs"] --> node_src_commands_init_test_cbba76a6_c720fdf4
-  ext_node_fs_a15b7d96["node:fs"] --> node_src_commands_init_test_cbba76a6_c720fdf4
-  ext_node_fs_a15b7d96["node:fs"] --> node_src_commands_init_test_cbba76a6_c720fdf4
-  ext_node_fs_a15b7d96["node:fs"] --> node_src_commands_init_test_cbba76a6_c720fdf4
-  ext_node_fs_a15b7d96["node:fs"] --> node_src_commands_init_test_cbba76a6_c720fdf4
-  ext_node_fs_a15b7d96["node:fs"] --> node_src_commands_init_test_cbba76a6_c720fdf4
-  ext_node_fs_a15b7d96["node:fs"] --> node_src_commands_init_test_cbba76a6_c720fdf4
-  ext_node_fs_a15b7d96["node:fs"] --> node_src_commands_init_test_cbba76a6_c720fdf4
-  ext_node_fs_a15b7d96["node:fs"] --> node_src_commands_init_test_cbba76a6_c720fdf4
-  ext_node_fs_a15b7d96["node:fs"] --> node_src_commands_init_test_cbba76a6_c720fdf4
-  ext_node_fs_a15b7d96["node:fs"] --> node_src_commands_init_test_cbba76a6_c720fdf4
-  ext_node_fs_a15b7d96["node:fs"] --> node_src_commands_init_test_cbba76a6_c720fdf4
-  ext_node_fs_a15b7d96["node:fs"] --> node_src_commands_init_test_cbba76a6_c720fdf4
-  ext_node_fs_a15b7d96["node:fs"] --> node_src_commands_init_test_cbba76a6_c720fdf4
-  ext_node_fs_a15b7d96["node:fs"] --> node_src_commands_init_test_cbba76a6_c720fdf4
-  ext_node_fs_a15b7d96["node:fs"] --> node_src_commands_init_test_cbba76a6_c720fdf4
-  ext_node_fs_a15b7d96["node:fs"] --> node_src_commands_init_test_cbba76a6_c720fdf4
-  ext_node_fs_a15b7d96["node:fs"] --> node_src_commands_init_test_cbba76a6_c720fdf4
-  ext_node_fs_a15b7d96["node:fs"] --> node_src_commands_init_test_cbba76a6_c720fdf4
-  ext_node_fs_a15b7d96["node:fs"] --> node_src_commands_init_test_cbba76a6_c720fdf4
-  ext_node_fs_a15b7d96["node:fs"] --> node_src_commands_init_test_cbba76a6_c720fdf4
-  ext_node_fs_a15b7d96["node:fs"] --> node_src_commands_init_test_cbba76a6_c720fdf4
-  ext_node_fs_a15b7d96["node:fs"] --> node_src_commands_init_test_cbba76a6_c720fdf4
-  ext_node_fs_a15b7d96["node:fs"] --> node_src_commands_init_test_cbba76a6_c720fdf4
-  ext_node_fs_a15b7d96["node:fs"] --> node_src_commands_init_test_cbba76a6_c720fdf4
-  ext_node_fs_a15b7d96["node:fs"] --> node_src_commands_init_test_cbba76a6_c720fdf4
-  ext_node_fs_a15b7d96["node:fs"] --> node_src_commands_init_test_cbba76a6_c720fdf4
-  ext_node_fs_a15b7d96["node:fs"] --> node_src_commands_init_test_cbba76a6_c720fdf4
-  ext_node_fs_a15b7d96["node:fs"] --> node_src_commands_init_test_cbba76a6_c720fdf4
-  ext_node_fs_a15b7d96["node:fs"] --> node_src_commands_init_test_cbba76a6_c720fdf4
-  ext_node_fs_a15b7d96["node:fs"] --> node_src_commands_init_test_cbba76a6_c720fdf4
-  ext_node_fs_a15b7d96["node:fs"] --> node_src_commands_init_test_cbba76a6_c720fdf4
-  ext_node_fs_a15b7d96["node:fs"] --> node_src_commands_init_test_cbba76a6_c720fdf4
-  ext_node_fs_a15b7d96["node:fs"] --> node_src_commands_init_test_cbba76a6_c720fdf4
-  ext_node_fs_a15b7d96["node:fs"] --> node_src_commands_init_test_cbba76a6_c720fdf4
-  ext_node_fs_a15b7d96["node:fs"] --> node_src_commands_init_test_cbba76a6_c720fdf4
-  ext_node_fs_a15b7d96["node:fs"] --> node_src_lib_agents_instruction_compat_06a469fd_af52553b
-  ext_node_fs_a15b7d96["node:fs"] --> node_src_lib_agents_instruction_compat_test_15974a83_a01a1aae
-  ext_node_fs_a15b7d96["node:fs"] --> node_src_lib_cli_legacy_dispatch_guard_test_4700087d_0ef25856
-  ext_node_fs_a15b7d96["node:fs"] --> node_src_lib_context_compound_lexical_fallback_723e2b_6f1ddfed
-  ext_node_fs_a15b7d96["node:fs"] --> node_src_commands_license_gate_test_1edffa1c_c8840f73
-  ext_node_fs_a15b7d96["node:fs"] --> node_src_commands_linear_gate_fac14a46_0dc194d7
-  ext_node_fs_a15b7d96["node:fs"] --> node_src_commands_linear_gate_test_4fcca11a_4eb96b1b
-  ext_node_fs_a15b7d96["node:fs"] --> node_e2e_tests_linear_integration_e2e_test_dbc5e6db_9deed64f
-  ext_node_fs_a15b7d96["node:fs"] --> node_src_commands_linear_sync_a2fa2bf7_3761718f
-  ext_node_fs_a15b7d96["node:fs"] --> node_src_lib_gardener_link_checker_d0fa555f_defff88c
-  ext_node_fs_a15b7d96["node:fs"] --> node_src_lib_contract_loader_16749818_757b1786
-  ext_node_fs_a15b7d96["node:fs"] --> node_src_lib_evidence_loader_d47712cc_8043f340
-  ext_node_fs_a15b7d96["node:fs"] --> node_src_lib_evidence_loader_d47712cc_8043f340
-  ext_node_fs_a15b7d96["node:fs"] --> node_src_lib_contract_loader_test_03424671_327c1920
-  ext_node_fs_a15b7d96["node:fs"] --> node_src_lib_preflight_local_memory_0db17ecc_3ae90876
-  ext_node_fs_a15b7d96["node:fs"] --> node_src_commands_local_memory_preflight_test_5e323bb_7198fc35
-  ext_node_fs_a15b7d96["node:fs"] --> node_src_lib_project_brain_metadata_scanner_6a101b66_fd9fee3a
-  ext_node_fs_a15b7d96["node:fs"] --> node_src_lib_project_brain_metadata_scanner_test_faee_e950afb0
-  ext_node_fs_a15b7d96["node:fs"] --> node_src_lib_pilot_evaluation_metrics_capture_1d1a2c0_c0e5aa29
-  ext_node_fs_a15b7d96["node:fs"] --> node_src_lib_memory_metrics_tracker_test_3de156fa_d34e311d
-  ext_node_fs_a15b7d96["node:fs"] --> node_src_lib_architecture_module_boundaries_test_c0ca_9d1087a8
-  ext_node_fs_a15b7d96["node:fs"] --> node_src_commands_org_audit_d739e44b_fc2ca563
-  ext_node_fs_a15b7d96["node:fs"] --> node_src_commands_org_audit_test_0fd9cae8_806cc649
-  ext_node_fs_a15b7d96["node:fs"] --> node_src_lib_workflow_contract_parser_test_3c7414cf_9fd264b6
-  ext_node_fs_a15b7d96["node:fs"] --> node_src_commands_pilot_evaluate_2045b1a1_a8a3ac85
-  ext_node_fs_a15b7d96["node:fs"] --> node_src_commands_pilot_evaluate_test_a2ac06fc_388cb18c
-  ext_node_fs_a15b7d96["node:fs"] --> node_src_commands_pilot_rollback_test_e61d5a2b_4a4df783
-  ext_node_fs_a15b7d96["node:fs"] --> node_src_commands_pilot_rollback_test_e61d5a2b_4a4df783
-  ext_node_fs_a15b7d96["node:fs"] --> node_src_commands_pilot_rollback_test_e61d5a2b_4a4df783
-  ext_node_fs_a15b7d96["node:fs"] --> node_src_commands_pilot_rollback_test_e61d5a2b_4a4df783
-  ext_node_fs_a15b7d96["node:fs"] --> node_src_commands_pilot_rollback_test_e61d5a2b_4a4df783
-  ext_node_fs_a15b7d96["node:fs"] --> node_src_commands_pilot_rollback_test_e61d5a2b_4a4df783
-  ext_node_fs_a15b7d96["node:fs"] --> node_src_commands_pilot_rollback_test_e61d5a2b_4a4df783
-  ext_node_fs_a15b7d96["node:fs"] --> node_src_lib_workflow_plan_64879f7d_cd9e2fad
-  ext_node_fs_a15b7d96["node:fs"] --> node_src_commands_plan_gate_test_0c0192e6_d293ab91
-  ext_node_fs_a15b7d96["node:fs"] --> node_src_commands_pr_template_gate_281778f9_bf031e00
-  ext_node_fs_a15b7d96["node:fs"] --> node_src_lib_preset_detection_b0f00a17_fc900a93
-  ext_node_fs_a15b7d96["node:fs"] --> node_src_lib_contract_preset_resolver_dc3dd716_6ba7f673
-  ext_node_fs_a15b7d96["node:fs"] --> node_src_commands_prompt_gate_c5e9d207_a1d2e6f6
-  ext_node_fs_a15b7d96["node:fs"] --> node_src_lib_ci_provider_adapter_3bcf82b7_df71fd61
-  ext_node_fs_a15b7d96["node:fs"] --> node_src_lib_gardener_quality_scorer_362f2a90_5438aaca
-  ext_node_fs_a15b7d96["node:fs"] --> node_src_lib_pilot_evaluation_registries_06402afa_ead89890
-  ext_node_fs_a15b7d96["node:fs"] --> node_src_lib_workflow_contract_registry_872491a3_0484b10f
-  ext_node_fs_a15b7d96["node:fs"] --> node_src_lib_workflow_contract_registry_872491a3_0484b10f
-  ext_node_fs_a15b7d96["node:fs"] --> node_src_commands_remediate_test_6f59cafe_3435fed4
-  ext_node_fs_a15b7d96["node:fs"] --> node_src_commands_replay_test_935f7436_90eb00d2
-  ext_node_fs_a15b7d96["node:fs"] --> node_src_lib_governance_repo_scanner_a8b2579e_d292a09c
-  ext_node_fs_a15b7d96["node:fs"] --> node_src_lib_org_repositories_a8038884_313eb64f
-  ext_node_fs_a15b7d96["node:fs"] --> node_src_lib_policy_required_checks_test_e7da46e9_17dc678f
-  ext_node_fs_a15b7d96["node:fs"] --> node_e2e_utils_resource_tracker_d95b6649_0a725485
-  ext_node_fs_a15b7d96["node:fs"] --> node_e2e_utils_resource_tracker_d95b6649_0a725485
-  ext_node_fs_a15b7d96["node:fs"] --> node_src_lib_verify_resume_admissibility_a59835da_9a8ac049
-  ext_node_fs_a15b7d96["node:fs"] --> node_src_commands_review_gate_09b579c4_66c6d307
-  ext_node_fs_a15b7d96["node:fs"] --> node_src_commands_review_gate_test_000e2ed6_4bdcd834
-  ext_node_fs_a15b7d96["node:fs"] --> node_src_commands_risk_tier_test_ae056367_d99a1738
-  ext_node_fs_a15b7d96["node:fs"] --> node_e2e_run_e2e_39efe696_cb0b0924
-  ext_node_fs_a15b7d96["node:fs"] --> node_src_lib_contract_run_record_emitter_00168a3a_651cc3ec
-  ext_node_fs_a15b7d96["node:fs"] --> node_src_lib_contract_run_records_test_3ee6a0e3_c22e3d30
-  ext_node_fs_a15b7d96["node:fs"] --> node_src_lib_ci_satisfiability_6c08de4b_7cf44516
-  ext_node_fs_a15b7d96["node:fs"] --> node_src_lib_init_scaffold_db8a7260_c79e8b6f
-  ext_node_fs_a15b7d96["node:fs"] --> node_src_lib_init_scaffold_ci_templates_2afd6392_3c6c62a7
-  ext_node_fs_a15b7d96["node:fs"] --> node_src_lib_init_scaffold_governance_templates_5c949_45b4fd56
-  ext_node_fs_a15b7d96["node:fs"] --> node_src_lib_init_scaffold_hook_templates_8c74ab50_b4a749ea
-  ext_node_fs_a15b7d96["node:fs"] --> node_src_lib_init_scaffold_hook_templates_8c74ab50_b4a749ea
-  ext_node_fs_a15b7d96["node:fs"] --> node_src_lib_init_scaffold_root_templates_61731280_b524fb4e
-  ext_node_fs_a15b7d96["node:fs"] --> node_src_lib_init_scaffold_shell_templates_0ad0f915_85748e76
-  ext_node_fs_a15b7d96["node:fs"] --> node_src_lib_init_scaffold_shell_templates_0ad0f915_85748e76
-  ext_node_fs_a15b7d96["node:fs"] --> node_src_lib_init_scaffold_worktree_templates_66a38e9_2d4b2d03
-  ext_node_fs_a15b7d96["node:fs"] --> node_src_lib_governance_scan_cache_test_dd1160a2_427b9803
-  ext_node_fs_a15b7d96["node:fs"] --> node_src_lib_governance_scan_cache_test_dd1160a2_427b9803
-  ext_node_fs_a15b7d96["node:fs"] --> node_scripts_setup_git_hooks_70750d40_a643d955
-  ext_node_fs_a15b7d96["node:fs"] --> node_src_commands_simulate_test_24df93e5_c915ccfe
-  ext_node_fs_a15b7d96["node:fs"] --> node_src_commands_solo_mode_test_a7f03f80_a7d627f3
-  ext_node_fs_a15b7d96["node:fs"] --> node_src_lib_source_outline_c86cb1d0_6ecff2b4
-  ext_node_fs_a15b7d96["node:fs"] --> node_src_commands_source_outline_test_df6fa3a7_0137a404
-  ext_node_fs_a15b7d96["node:fs"] --> node_src_lib_gardener_stale_detector_a563289e_38a37745
-  ext_node_fs_a15b7d96["node:fs"] --> node_src_lib_gardener_stale_detector_test_7dc85478_b896df09
-  ext_node_fs_a15b7d96["node:fs"] --> node_src_lib_context_compound_store_824d80d7_303b2fc6
-  ext_node_fs_a15b7d96["node:fs"] --> node_src_lib_context_compound_store_824d80d7_303b2fc6
-  ext_node_fs_a15b7d96["node:fs"] --> node_src_lib_project_brain_suggestion_generator_0956f_5c7f1842
-  ext_node_fs_a15b7d96["node:fs"] --> node_src_lib_project_brain_suggestion_generator_test__80c0030e
-  ext_node_fs_a15b7d96["node:fs"] --> node_src_commands_symphony_check_e97f2ea0_b9617cb6
-  ext_node_fs_a15b7d96["node:fs"] --> node_src_commands_symphony_check_test_6cb33eb2_4f0d91b6
-  ext_node_fs_a15b7d96["node:fs"] --> node_src_lib_workflow_contract_test_harness_6e520b98_2684883b
-  ext_node_fs_a15b7d96["node:fs"] --> node_src_lib_workflow_contract_test_harness_test_657d_33a21cc8
-  ext_node_fs_a15b7d96["node:fs"] --> node_src_commands_tooling_audit_8a8239ff_69d34e15
-  ext_node_fs_a15b7d96["node:fs"] --> node_src_commands_tooling_audit_test_d2aee28c_9ee5e5db
-  ext_node_fs_a15b7d96["node:fs"] --> node_src_lib_replay_tracer_1e6243a2_c84ed67b
-  ext_node_fs_a15b7d96["node:fs"] --> node_src_lib_replay_tracer_1e6243a2_c84ed67b
-  ext_node_fs_a15b7d96["node:fs"] --> node_src_lib_replay_tracer_test_cb965d81_06ea2a0c
-  ext_node_fs_a15b7d96["node:fs"] --> node_src_lib_replay_tracer_test_cb965d81_06ea2a0c
-  ext_node_fs_a15b7d96["node:fs"] --> node_src_commands_ui_loop_11660889_457f358d
-  ext_node_fs_a15b7d96["node:fs"] --> node_src_commands_ui_loop_test_f0eabc42_a6f3d2d0
-  ext_node_fs_a15b7d96["node:fs"] --> node_src_lib_init_update_2937013f_43f3ca69
-  ext_node_fs_a15b7d96["node:fs"] --> node_src_commands_upgrade_7fef9479_ae38afa9
-  ext_node_fs_a15b7d96["node:fs"] --> node_src_lib_init_upgrade_b277486e_b2698ece
-  ext_node_fs_a15b7d96["node:fs"] --> node_scripts_validate_commit_msg_43b008fe_177887ed
-  ext_node_fs_a15b7d96["node:fs"] --> node_src_lib_evidence_validator_5180cf23_535928fa
-  ext_node_fs_a15b7d96["node:fs"] --> node_src_lib_evidence_validator_5180cf23_535928fa
-  ext_node_fs_a15b7d96["node:fs"] --> node_src_lib_input_validator_28b6e9f3_80136ef4
-  ext_node_fs_a15b7d96["node:fs"] --> node_src_lib_license_validator_744853f5_943ad7c8
-  ext_node_fs_a15b7d96["node:fs"] --> node_src_lib_memory_validator_0c0621d8_32b394c2
-  ext_node_fs_a15b7d96["node:fs"] --> node_src_lib_preflight_validator_f82af321_ea26984b
-  ext_node_fs_a15b7d96["node:fs"] --> node_src_lib_evidence_validator_test_9ad9ac55_81767cd8
-  ext_node_fs_a15b7d96["node:fs"] --> node_src_lib_license_validator_test_8dbecf99_910782df
-  ext_node_fs_a15b7d96["node:fs"] --> node_src_lib_memory_validator_test_c5015ca0_03bed048
-  ext_node_fs_a15b7d96["node:fs"] --> node_src_lib_preflight_validator_test_b4b482f8_d93b105b
-  ext_node_fs_a15b7d96["node:fs"] --> node_src_commands_verify_coderabbit_490b4e71_227b4f8c
-  ext_node_fs_a15b7d96["node:fs"] --> node_src_commands_verify_coderabbit_test_46cfcf29_41f03a50
-  ext_node_fs_a15b7d96["node:fs"] --> node_src_commands_verify_work_df70ecac_ed5d932c
-  ext_node_fs_a15b7d96["node:fs"] --> node_src_lib_version_5ca4f385_a197ae62
-  ext_node_fs_a15b7d96["node:fs"] --> node_src_lib_version_coherence_69733bcb_31759adc
-  ext_node_fs_a15b7d96["node:fs"] --> node_src_commands_workflow_generate_2fc0af62_3767d3c5
-  ext_node_module_ca1b42af["node:module"] --> node_src_commands_health_62484e22_b2e6cd58
-  ext_node_os_d93fe73a["node:os"] --> node_src_commands_automation_run_test_7b21d905_ed093c97
-  ext_node_os_d93fe73a["node:os"] --> node_src_commands_blast_radius_test_045450fc_9b55a936
-  ext_node_os_d93fe73a["node:os"] --> node_src_lib_project_brain_brain_validator_test_5e40c_6f5a3bad
-  ext_node_os_d93fe73a["node:os"] --> node_src_commands_brainstorm_gate_test_2fb2aec1_ebb3826f
-  ext_node_os_d93fe73a["node:os"] --> node_src_lib_ci_branch_protect_sync_test_159bb533_b615eb31
-  ext_node_os_d93fe73a["node:os"] --> node_src_commands_check_diagram_freshness_test_c1dc40_8ffe6bb0
-  ext_node_os_d93fe73a["node:os"] --> node_src_commands_check_environment_test_5fa29c35_c89d6225
-  ext_node_os_d93fe73a["node:os"] --> node_src_commands_check_test_7469a186_614dc441
-  ext_node_os_d93fe73a["node:os"] --> node_src_commands_ci_migrate_test_2a015bb9_07515c3d
-  ext_node_os_d93fe73a["node:os"] --> node_src_cli_dispatch_test_54c9f17b_179f85f0
-  ext_node_os_d93fe73a["node:os"] --> node_src_lib_init_codex_preflight_symlink_test_037558_5789ffec
-  ext_node_os_d93fe73a["node:os"] --> node_e2e_tests_command_pipeline_e2e_test_a0aa069a_a8ee24c9
-  ext_node_os_d93fe73a["node:os"] --> node_src_lib_cli_registry_command_specs_test_7f693e85_0524568c
-  ext_node_os_d93fe73a["node:os"] --> node_src_lib_ci_config_validator_test_f70500fa_5e09d89e
-  ext_node_os_d93fe73a["node:os"] --> node_src_lib_context_compound_context_compact_policy__33ca3593
-  ext_node_os_d93fe73a["node:os"] --> node_src_commands_context_test_57aad306_79de8eab
-  ext_node_os_d93fe73a["node:os"] --> node_src_commands_contract_test_2262847f_99dea614
-  ext_node_os_d93fe73a["node:os"] --> node_src_lib_project_type_detector_test_a3d69c08_2911626c
-  ext_node_os_d93fe73a["node:os"] --> node_src_lib_silent_error_detector_test_d10b3555_2c298e11
-  ext_node_os_d93fe73a["node:os"] --> node_src_commands_doctor_test_e032e8b5_6705010c
-  ext_node_os_d93fe73a["node:os"] --> node_src_lib_init_eject_test_96dad02e_601f605d
-  ext_node_os_d93fe73a["node:os"] --> node_src_commands_evidence_verify_test_7373101d_c288ceac
-  ext_node_os_d93fe73a["node:os"] --> node_e2e_clients_github_e2e_2891a341_aacd937a
-  ext_node_os_d93fe73a["node:os"] --> node_e2e_tests_github_integration_e2e_test_0b124522_8577c76d
-  ext_node_os_d93fe73a["node:os"] --> node_src_commands_health_test_f79de76d_c624883e
-  ext_node_os_d93fe73a["node:os"] --> node_src_commands_index_context_test_1949ea6f_d34c884d
-  ext_node_os_d93fe73a["node:os"] --> node_src_lib_context_compound_indexer_test_d492f0aa_4bd5aca2
-  ext_node_os_d93fe73a["node:os"] --> node_src_commands_init_test_cbba76a6_c720fdf4
-  ext_node_os_d93fe73a["node:os"] --> node_src_lib_agents_instruction_compat_test_15974a83_a01a1aae
-  ext_node_os_d93fe73a["node:os"] --> node_src_commands_license_gate_test_1edffa1c_c8840f73
-  ext_node_os_d93fe73a["node:os"] --> node_src_commands_linear_gate_test_4fcca11a_4eb96b1b
-  ext_node_os_d93fe73a["node:os"] --> node_e2e_tests_linear_integration_e2e_test_dbc5e6db_9deed64f
-  ext_node_os_d93fe73a["node:os"] --> node_src_lib_gardener_link_checker_d0fa555f_defff88c
-  ext_node_os_d93fe73a["node:os"] --> node_src_commands_local_memory_preflight_test_5e323bb_7198fc35
-  ext_node_os_d93fe73a["node:os"] --> node_src_commands_org_audit_test_0fd9cae8_806cc649
-  ext_node_os_d93fe73a["node:os"] --> node_src_lib_test_overload_guard_2748c559_98821912
-  ext_node_os_d93fe73a["node:os"] --> node_src_lib_test_overload_guard_test_6ece9f86_ac5b6294
-  ext_node_os_d93fe73a["node:os"] --> node_src_lib_preflight_performance_overload_c685bfcf_bdb17e6b
-  ext_node_os_d93fe73a["node:os"] --> node_src_commands_pilot_rollback_test_e61d5a2b_4a4df783
-  ext_node_os_d93fe73a["node:os"] --> node_src_commands_pr_template_gate_test_35faef1d_8b9385b9
-  ext_node_os_d93fe73a["node:os"] --> node_src_commands_promote_mode_test_7ca3f5ec_5ed4f47d
-  ext_node_os_d93fe73a["node:os"] --> node_src_commands_refresh_diagram_context_test_03bf21_16fd4e17
-  ext_node_os_d93fe73a["node:os"] --> node_src_commands_replay_test_935f7436_90eb00d2
-  ext_node_os_d93fe73a["node:os"] --> node_src_lib_verify_resume_admissibility_test_eba58e3_2e57a5c3
-  ext_node_os_d93fe73a["node:os"] --> node_src_commands_review_gate_test_000e2ed6_4bdcd834
-  ext_node_os_d93fe73a["node:os"] --> node_src_lib_init_rollback_test_5435eb9c_fc5022cd
-  ext_node_os_d93fe73a["node:os"] --> node_src_lib_verify_run_state_test_ee8298e8_22f322e3
-  ext_node_os_d93fe73a["node:os"] --> node_src_lib_init_scaffold_test_96f4ccea_0a85d882
-  ext_node_os_d93fe73a["node:os"] --> node_src_lib_governance_scan_cache_test_dd1160a2_427b9803
-  ext_node_os_d93fe73a["node:os"] --> node_src_lib_governance_scan_cache_test_dd1160a2_427b9803
-  ext_node_os_d93fe73a["node:os"] --> node_src_commands_simulate_test_24df93e5_c915ccfe
-  ext_node_os_d93fe73a["node:os"] --> node_src_commands_solo_mode_test_a7f03f80_a7d627f3
-  ext_node_os_d93fe73a["node:os"] --> node_src_commands_source_outline_test_df6fa3a7_0137a404
-  ext_node_os_d93fe73a["node:os"] --> node_src_lib_project_brain_suggestion_generator_test__80c0030e
-  ext_node_os_d93fe73a["node:os"] --> node_src_commands_symphony_check_test_6cb33eb2_4f0d91b6
-  ext_node_os_d93fe73a["node:os"] --> node_src_lib_workflow_contract_test_harness_6e520b98_2684883b
-  ext_node_os_d93fe73a["node:os"] --> node_src_commands_tooling_audit_test_d2aee28c_9ee5e5db
-  ext_node_os_d93fe73a["node:os"] --> node_src_commands_upgrade_test_b92741eb_071ab85d
-  ext_node_os_d93fe73a["node:os"] --> node_src_lib_evidence_validator_test_9ad9ac55_81767cd8
-  ext_node_os_d93fe73a["node:os"] --> node_src_lib_input_validator_test_d5942e9e_e5ddc2a5
-  ext_node_os_d93fe73a["node:os"] --> node_src_lib_license_validator_test_8dbecf99_910782df
-  ext_node_os_d93fe73a["node:os"] --> node_src_lib_memory_validator_test_c5015ca0_03bed048
-  ext_node_os_d93fe73a["node:os"] --> node_src_lib_preflight_validator_test_b4b482f8_d93b105b
-  ext_node_os_d93fe73a["node:os"] --> node_src_commands_verify_coderabbit_test_46cfcf29_41f03a50
-  ext_node_os_d93fe73a["node:os"] --> node_src_commands_verify_work_df70ecac_ed5d932c
-  ext_node_os_d93fe73a["node:os"] --> node_src_commands_verify_work_test_0e12f6c5_128a29b7
-  ext_node_os_d93fe73a["node:os"] --> node_src_lib_version_coherence_test_b81c6d8e_0f77549c
-  ext_node_os_d93fe73a["node:os"] --> node_src_lib_init_workflow_contract_scripts_test_681e_ab4d6c14
-  ext_node_os_d93fe73a["node:os"] --> node_src_commands_workflow_generate_test_b543473a_9e976a7c
-  ext_node_path_78811c13["node:path"] --> node_src_commands_agent_first_throughput_integration__7c59b283
-  ext_node_path_78811c13["node:path"] --> node_src_lib_init_ast_grep_rules_test_2b69fd9a_c48c69e0
-  ext_node_path_78811c13["node:path"] --> node_src_commands_audit_b81f37a0_4a8057db
-  ext_node_path_78811c13["node:path"] --> node_src_commands_audit_test_54ea1006_a3e1e261
-  ext_node_path_78811c13["node:path"] --> node_src_lib_review_gate_authz_29ba2f46_8e02f0be
-  ext_node_path_78811c13["node:path"] --> node_src_commands_automation_run_22331800_b476f10f
-  ext_node_path_78811c13["node:path"] --> node_src_commands_automation_run_test_7b21d905_ed093c97
-  ext_node_path_78811c13["node:path"] --> node_src_commands_blast_radius_test_045450fc_9b55a936
-  ext_node_path_78811c13["node:path"] --> node_src_commands_brain_bbbf7a64_8b0052ef
-  ext_node_path_78811c13["node:path"] --> node_src_lib_project_brain_brain_validator_be251832_436a25a5
-  ext_node_path_78811c13["node:path"] --> node_src_lib_project_brain_brain_validator_test_5e40c_6f5a3bad
-  ext_node_path_78811c13["node:path"] --> node_src_commands_brain_test_428d4d67_9c2251ff
-  ext_node_path_78811c13["node:path"] --> node_src_lib_workflow_brainstorm_e2e2381d_e32b3f02
-  ext_node_path_78811c13["node:path"] --> node_src_commands_brainstorm_gate_test_2fb2aec1_ebb3826f
-  ext_node_path_78811c13["node:path"] --> node_src_lib_workflow_brainstorm_test_78cf7a1e_32a2f845
-  ext_node_path_78811c13["node:path"] --> node_src_lib_memory_branch_enforcer_acb749cd_b5113172
-  ext_node_path_78811c13["node:path"] --> node_src_commands_branch_protect_b9d345eb_0917aabd
-  ext_node_path_78811c13["node:path"] --> node_src_lib_ci_branch_protect_sync_570adb18_4e76efe4
-  ext_node_path_78811c13["node:path"] --> node_src_lib_ci_branch_protect_sync_test_159bb533_b615eb31
-  ext_node_path_78811c13["node:path"] --> node_src_commands_check_20f65c28_8b102645
-  ext_node_path_78811c13["node:path"] --> node_src_commands_check_authz_test_327903fb_fd074017
-  ext_node_path_78811c13["node:path"] --> node_src_commands_check_diagram_freshness_test_c1dc40_8ffe6bb0
-  ext_node_path_78811c13["node:path"] --> node_src_commands_check_environment_fe68d4be_6f3dadd7
-  ext_node_path_78811c13["node:path"] --> node_src_commands_check_environment_test_5fa29c35_c89d6225
-  ext_node_path_78811c13["node:path"] --> node_src_commands_check_test_7469a186_614dc441
-  ext_node_path_78811c13["node:path"] --> node_src_commands_ci_migrate_78bb70b1_a0e2c114
-  ext_node_path_78811c13["node:path"] --> node_src_lib_ci_ci_migrate_snapshot_paths_a10de06b_9ee07ab5
-  ext_node_path_78811c13["node:path"] --> node_src_lib_ci_ci_migrate_snapshot_paths_test_8bcd0e_7195da91
-  ext_node_path_78811c13["node:path"] --> node_src_commands_ci_migrate_test_2a015bb9_07515c3d
-  ext_node_path_78811c13["node:path"] --> node_src_commands_ci_migrate_test_2a015bb9_07515c3d
-  ext_node_path_78811c13["node:path"] --> node_src_cli_99bb8840_d48ba2e4
-  ext_node_path_78811c13["node:path"] --> node_src_lib_init_cli_084e05fe_7beaed99
-  ext_node_path_78811c13["node:path"] --> node_src_cli_dispatch_test_54c9f17b_179f85f0
-  ext_node_path_78811c13["node:path"] --> node_src_cli_test_4851f28b_523d2a86
-  ext_node_path_78811c13["node:path"] --> node_src_lib_init_codex_preflight_symlink_test_037558_5789ffec
-  ext_node_path_78811c13["node:path"] --> node_e2e_tests_command_pipeline_e2e_test_a0aa069a_a8ee24c9
-  ext_node_path_78811c13["node:path"] --> node_src_lib_policy_command_policy_test_66e89e89_b9431172
-  ext_node_path_78811c13["node:path"] --> node_src_lib_cli_command_registry_test_0cf92cba_b3dd285c
-  ext_node_path_78811c13["node:path"] --> node_src_lib_cli_registry_command_specs_test_7f693e85_0524568c
-  ext_node_path_78811c13["node:path"] --> node_src_lib_ci_config_validator_669ebc2e_efe732cc
-  ext_node_path_78811c13["node:path"] --> node_src_lib_ci_config_validator_test_f70500fa_5e09d89e
-  ext_node_path_78811c13["node:path"] --> node_src_commands_context_ea7792a2_52d036cb
-  ext_node_path_78811c13["node:path"] --> node_src_lib_context_compound_context_compact_policy__33ca3593
-  ext_node_path_78811c13["node:path"] --> node_src_commands_context_health_80bb7da9_c636a657
-  ext_node_path_78811c13["node:path"] --> node_src_commands_context_health_test_3b5b87f3_b2ea595f
-  ext_node_path_78811c13["node:path"] --> node_src_commands_context_integrity_acceptance_test_5_b80c666c
-  ext_node_path_78811c13["node:path"] --> node_src_commands_context_test_57aad306_79de8eab
-  ext_node_path_78811c13["node:path"] --> node_src_commands_contract_cc8321d6_dfc1f388
-  ext_node_path_78811c13["node:path"] --> node_src_commands_contract_test_2262847f_99dea614
-  ext_node_path_78811c13["node:path"] --> node_src_lib_pilot_evaluation_control_plane_96826665_9976cd16
-  ext_node_path_78811c13["node:path"] --> node_src_lib_pilot_evaluation_control_plane_test_cd59_cb9d2fae
-  ext_node_path_78811c13["node:path"] --> node_src_lib_pilot_evaluation_decision_packet_dd44377_511d2198
-  ext_node_path_78811c13["node:path"] --> node_src_lib_review_gate_decision_packet_8ee9d119_a5022670
-  ext_node_path_78811c13["node:path"] --> node_src_lib_pilot_evaluation_decision_packet_test_68_9b77b927
-  ext_node_path_78811c13["node:path"] --> node_src_lib_review_gate_decision_packet_test_9ea0e97_9d4ab165
-  ext_node_path_78811c13["node:path"] --> node_src_lib_brainstorm_detector_86ca96aa_726f791b
-  ext_node_path_78811c13["node:path"] --> node_src_lib_plan_gate_detector_b0fc2f46_0d566d69
-  ext_node_path_78811c13["node:path"] --> node_src_lib_project_type_detector_b37d288b_3125c793
-  ext_node_path_78811c13["node:path"] --> node_src_lib_silent_error_detector_f2b3cbe4_42d3b416
-  ext_node_path_78811c13["node:path"] --> node_src_lib_brainstorm_detector_test_85cbb456_08c70acb
-  ext_node_path_78811c13["node:path"] --> node_src_lib_project_type_detector_test_a3d69c08_2911626c
-  ext_node_path_78811c13["node:path"] --> node_src_lib_project_type_detector_test_a3d69c08_2911626c
-  ext_node_path_78811c13["node:path"] --> node_src_lib_silent_error_detector_test_d10b3555_2c298e11
-  ext_node_path_78811c13["node:path"] --> node_src_commands_docs_gate_c441fbb4_1e3c43d7
-  ext_node_path_78811c13["node:path"] --> node_src_commands_docs_gate_test_a25e972f_33a82806
-  ext_node_path_78811c13["node:path"] --> node_src_commands_doctor_72f4be89_12ca0d23
-  ext_node_path_78811c13["node:path"] --> node_src_commands_doctor_test_e032e8b5_6705010c
-  ext_node_path_78811c13["node:path"] --> node_src_commands_drift_gate_23bbee85_69873e08
-  ext_node_path_78811c13["node:path"] --> node_src_commands_drift_gate_test_816765e3_c705e6e0
-  ext_node_path_78811c13["node:path"] --> node_src_lib_init_eject_d0ecd4d1_229c1a6a
-  ext_node_path_78811c13["node:path"] --> node_src_lib_init_eject_test_96dad02e_601f605d
-  ext_node_path_78811c13["node:path"] --> node_src_commands_evidence_verify_3b73c290_1f8dd9f2
-  ext_node_path_78811c13["node:path"] --> node_src_commands_evidence_verify_test_7373101d_c288ceac
-  ext_node_path_78811c13["node:path"] --> node_src_commands_gap_case_82e69111_dee253c1
-  ext_node_path_78811c13["node:path"] --> node_src_commands_gap_case_test_e32159fb_a0da53ec
-  ext_node_path_78811c13["node:path"] --> node_src_commands_gardener_9416a9df_a5388d61
-  ext_node_path_78811c13["node:path"] --> node_src_commands_gardener_test_98f0b9a5_08a91964
-  ext_node_path_78811c13["node:path"] --> node_e2e_clients_github_e2e_2891a341_aacd937a
-  ext_node_path_78811c13["node:path"] --> node_e2e_tests_github_integration_e2e_test_0b124522_8577c76d
-  ext_node_path_78811c13["node:path"] --> node_src_commands_health_62484e22_b2e6cd58
-  ext_node_path_78811c13["node:path"] --> node_src_commands_health_test_f79de76d_c624883e
-  ext_node_path_78811c13["node:path"] --> node_src_lib_contract_idempotency_f5d39a07_436bfde4
-  ext_node_path_78811c13["node:path"] --> node_src_commands_index_context_de3ed39d_df7e312f
-  ext_node_path_78811c13["node:path"] --> node_src_commands_index_context_test_1949ea6f_d34c884d
-  ext_node_path_78811c13["node:path"] --> node_src_lib_context_compound_indexer_70fa78e5_8f1646af
-  ext_node_path_78811c13["node:path"] --> node_src_lib_context_compound_indexer_test_d492f0aa_4bd5aca2
-  ext_node_path_78811c13["node:path"] --> node_src_commands_init_test_cbba76a6_c720fdf4
-  ext_node_path_78811c13["node:path"] --> node_src_lib_agents_instruction_compat_06a469fd_af52553b
-  ext_node_path_78811c13["node:path"] --> node_src_lib_agents_instruction_compat_test_15974a83_a01a1aae
-  ext_node_path_78811c13["node:path"] --> node_src_lib_init_interactive_0eb42ac4_0f5a1037
-  ext_node_path_78811c13["node:path"] --> node_src_lib_cli_legacy_dispatch_guard_test_4700087d_0ef25856
-  ext_node_path_78811c13["node:path"] --> node_src_lib_context_compound_lexical_fallback_723e2b_6f1ddfed
-  ext_node_path_78811c13["node:path"] --> node_src_commands_license_gate_test_1edffa1c_c8840f73
-  ext_node_path_78811c13["node:path"] --> node_src_commands_linear_gate_fac14a46_0dc194d7
-  ext_node_path_78811c13["node:path"] --> node_src_commands_linear_gate_test_4fcca11a_4eb96b1b
-  ext_node_path_78811c13["node:path"] --> node_e2e_tests_linear_integration_e2e_test_dbc5e6db_9deed64f
-  ext_node_path_78811c13["node:path"] --> node_src_lib_gardener_link_checker_d0fa555f_defff88c
-  ext_node_path_78811c13["node:path"] --> node_src_lib_contract_loader_16749818_757b1786
-  ext_node_path_78811c13["node:path"] --> node_src_lib_evidence_loader_d47712cc_8043f340
-  ext_node_path_78811c13["node:path"] --> node_src_lib_contract_loader_test_03424671_327c1920
-  ext_node_path_78811c13["node:path"] --> node_src_commands_local_memory_preflight_test_5e323bb_7198fc35
-  ext_node_path_78811c13["node:path"] --> node_src_lib_project_brain_metadata_scanner_6a101b66_fd9fee3a
-  ext_node_path_78811c13["node:path"] --> node_src_lib_project_brain_metadata_scanner_test_faee_e950afb0
-  ext_node_path_78811c13["node:path"] --> node_src_lib_pilot_evaluation_metrics_capture_1d1a2c0_c0e5aa29
-  ext_node_path_78811c13["node:path"] --> node_src_lib_memory_metrics_tracker_98cec29c_e35fb5f1
-  ext_node_path_78811c13["node:path"] --> node_src_lib_memory_metrics_tracker_test_3de156fa_d34e311d
-  ext_node_path_78811c13["node:path"] --> node_src_lib_init_migration_8a6cead4_4ce3e628
-  ext_node_path_78811c13["node:path"] --> node_src_lib_architecture_module_boundaries_test_c0ca_9d1087a8
-  ext_node_path_78811c13["node:path"] --> node_src_commands_org_audit_d739e44b_fc2ca563
-  ext_node_path_78811c13["node:path"] --> node_src_commands_org_audit_test_0fd9cae8_806cc649
-  ext_node_path_78811c13["node:path"] --> node_src_lib_workflow_contract_parser_test_3c7414cf_9fd264b6
-  ext_node_path_78811c13["node:path"] --> node_src_commands_pilot_evaluate_2045b1a1_a8a3ac85
-  ext_node_path_78811c13["node:path"] --> node_src_commands_pilot_evaluate_test_a2ac06fc_388cb18c
-  ext_node_path_78811c13["node:path"] --> node_src_commands_pilot_rollback_00c1f82c_e5dc550a
-  ext_node_path_78811c13["node:path"] --> node_src_commands_pilot_rollback_test_e61d5a2b_4a4df783
-  ext_node_path_78811c13["node:path"] --> node_src_lib_workflow_plan_64879f7d_cd9e2fad
-  ext_node_path_78811c13["node:path"] --> node_src_commands_plan_gate_test_0c0192e6_d293ab91
-  ext_node_path_78811c13["node:path"] --> node_src_lib_workflow_plan_test_e7c3b920_e31df245
-  ext_node_path_78811c13["node:path"] --> node_src_commands_pr_template_gate_test_35faef1d_8b9385b9
-  ext_node_path_78811c13["node:path"] --> node_src_lib_preset_detection_b0f00a17_fc900a93
-  ext_node_path_78811c13["node:path"] --> node_src_lib_contract_preset_resolver_dc3dd716_6ba7f673
-  ext_node_path_78811c13["node:path"] --> node_src_commands_promote_mode_test_7ca3f5ec_5ed4f47d
-  ext_node_path_78811c13["node:path"] --> node_src_commands_prompt_gate_c5e9d207_a1d2e6f6
-  ext_node_path_78811c13["node:path"] --> node_src_lib_ci_provider_adapter_3bcf82b7_df71fd61
-  ext_node_path_78811c13["node:path"] --> node_src_lib_gardener_quality_scorer_362f2a90_5438aaca
-  ext_node_path_78811c13["node:path"] --> node_src_commands_refresh_diagram_context_test_03bf21_16fd4e17
-  ext_node_path_78811c13["node:path"] --> node_src_lib_pilot_evaluation_registries_06402afa_ead89890
-  ext_node_path_78811c13["node:path"] --> node_src_lib_workflow_contract_registry_872491a3_0484b10f
-  ext_node_path_78811c13["node:path"] --> node_src_lib_workflow_contract_registry_test_89f095f8_c0651ef8
-  ext_node_path_78811c13["node:path"] --> node_src_commands_remediate_06b9c7fc_c8f75798
-  ext_node_path_78811c13["node:path"] --> node_src_commands_replay_ac203c98_9feea993
-  ext_node_path_78811c13["node:path"] --> node_src_commands_replay_test_935f7436_90eb00d2
-  ext_node_path_78811c13["node:path"] --> node_src_lib_governance_repo_scanner_a8b2579e_d292a09c
-  ext_node_path_78811c13["node:path"] --> node_src_lib_governance_repo_scanner_test_cb7e9d00_82e29b31
-  ext_node_path_78811c13["node:path"] --> node_src_lib_org_repositories_a8038884_313eb64f
-  ext_node_path_78811c13["node:path"] --> node_e2e_utils_resource_tracker_d95b6649_0a725485
-  ext_node_path_78811c13["node:path"] --> node_src_lib_verify_resume_admissibility_a59835da_9a8ac049
-  ext_node_path_78811c13["node:path"] --> node_src_lib_verify_resume_admissibility_test_eba58e3_2e57a5c3
-  ext_node_path_78811c13["node:path"] --> node_src_commands_review_gate_09b579c4_66c6d307
-  ext_node_path_78811c13["node:path"] --> node_src_commands_review_gate_test_000e2ed6_4bdcd834
-  ext_node_path_78811c13["node:path"] --> node_src_commands_risk_tier_test_ae056367_d99a1738
-  ext_node_path_78811c13["node:path"] --> node_src_lib_init_rollback_da25480f_6e61d987
-  ext_node_path_78811c13["node:path"] --> node_src_lib_init_rollback_test_5435eb9c_fc5022cd
-  ext_node_path_78811c13["node:path"] --> node_e2e_run_e2e_39efe696_cb0b0924
-  ext_node_path_78811c13["node:path"] --> node_src_dev_run_local_memory_preflight_36e92808_6c3bec68
-  ext_node_path_78811c13["node:path"] --> node_src_lib_contract_run_record_emitter_00168a3a_651cc3ec
-  ext_node_path_78811c13["node:path"] --> node_src_lib_contract_run_records_f616aa7c_5fbe7536
-  ext_node_path_78811c13["node:path"] --> node_src_lib_contract_run_records_test_3ee6a0e3_c22e3d30
-  ext_node_path_78811c13["node:path"] --> node_src_lib_verify_run_state_94d814a7_6bd70f72
-  ext_node_path_78811c13["node:path"] --> node_src_lib_verify_run_state_test_ee8298e8_22f322e3
-  ext_node_path_78811c13["node:path"] --> node_src_lib_ci_satisfiability_6c08de4b_7cf44516
-  ext_node_path_78811c13["node:path"] --> node_src_lib_init_scaffold_db8a7260_c79e8b6f
-  ext_node_path_78811c13["node:path"] --> node_src_lib_init_scaffold_hook_templates_8c74ab50_b4a749ea
-  ext_node_path_78811c13["node:path"] --> node_src_lib_init_scaffold_test_96f4ccea_0a85d882
-  ext_node_path_78811c13["node:path"] --> node_src_lib_governance_scan_cache_fc02c79c_dbe1a47a
-  ext_node_path_78811c13["node:path"] --> node_src_lib_governance_scan_cache_test_dd1160a2_427b9803
-  ext_node_path_78811c13["node:path"] --> node_src_lib_governance_scan_cache_test_dd1160a2_427b9803
-  ext_node_path_78811c13["node:path"] --> node_src_commands_search_24193290_34c14966
-  ext_node_path_78811c13["node:path"] --> node_scripts_setup_git_hooks_70750d40_a643d955
-  ext_node_path_78811c13["node:path"] --> node_src_commands_simulate_b9efe395_6237778e
-  ext_node_path_78811c13["node:path"] --> node_src_commands_simulate_test_24df93e5_c915ccfe
-  ext_node_path_78811c13["node:path"] --> node_src_commands_solo_mode_test_a7f03f80_a7d627f3
-  ext_node_path_78811c13["node:path"] --> node_src_lib_source_outline_c86cb1d0_6ecff2b4
-  ext_node_path_78811c13["node:path"] --> node_src_commands_source_outline_test_df6fa3a7_0137a404
-  ext_node_path_78811c13["node:path"] --> node_src_lib_context_compound_sources_878a52fc_fab46182
-  ext_node_path_78811c13["node:path"] --> node_src_lib_gardener_stale_detector_a563289e_38a37745
-  ext_node_path_78811c13["node:path"] --> node_src_lib_gardener_stale_detector_test_7dc85478_b896df09
-  ext_node_path_78811c13["node:path"] --> node_src_lib_context_compound_store_824d80d7_303b2fc6
-  ext_node_path_78811c13["node:path"] --> node_src_lib_project_brain_suggestion_generator_0956f_5c7f1842
-  ext_node_path_78811c13["node:path"] --> node_src_lib_project_brain_suggestion_generator_test__80c0030e
-  ext_node_path_78811c13["node:path"] --> node_src_commands_symphony_check_e97f2ea0_b9617cb6
-  ext_node_path_78811c13["node:path"] --> node_src_commands_symphony_check_test_6cb33eb2_4f0d91b6
-  ext_node_path_78811c13["node:path"] --> node_src_lib_workflow_contract_test_harness_6e520b98_2684883b
-  ext_node_path_78811c13["node:path"] --> node_src_lib_workflow_contract_test_harness_test_657d_33a21cc8
-  ext_node_path_78811c13["node:path"] --> node_src_commands_tooling_audit_8a8239ff_69d34e15
-  ext_node_path_78811c13["node:path"] --> node_src_commands_tooling_audit_test_d2aee28c_9ee5e5db
-  ext_node_path_78811c13["node:path"] --> node_src_lib_replay_tracer_1e6243a2_c84ed67b
-  ext_node_path_78811c13["node:path"] --> node_src_commands_ui_loop_11660889_457f358d
-  ext_node_path_78811c13["node:path"] --> node_src_lib_init_update_2937013f_43f3ca69
-  ext_node_path_78811c13["node:path"] --> node_src_commands_upgrade_7fef9479_ae38afa9
-  ext_node_path_78811c13["node:path"] --> node_src_lib_init_upgrade_b277486e_b2698ece
-  ext_node_path_78811c13["node:path"] --> node_src_commands_upgrade_test_b92741eb_071ab85d
-  ext_node_path_78811c13["node:path"] --> node_src_lib_evidence_validator_5180cf23_535928fa
-  ext_node_path_78811c13["node:path"] --> node_src_lib_input_validator_28b6e9f3_80136ef4
-  ext_node_path_78811c13["node:path"] --> node_src_lib_license_validator_744853f5_943ad7c8
-  ext_node_path_78811c13["node:path"] --> node_src_lib_memory_validator_0c0621d8_32b394c2
-  ext_node_path_78811c13["node:path"] --> node_src_lib_preflight_validator_f82af321_ea26984b
-  ext_node_path_78811c13["node:path"] --> node_src_lib_evidence_validator_test_9ad9ac55_81767cd8
-  ext_node_path_78811c13["node:path"] --> node_src_lib_input_validator_test_d5942e9e_e5ddc2a5
-  ext_node_path_78811c13["node:path"] --> node_src_lib_license_validator_test_8dbecf99_910782df
-  ext_node_path_78811c13["node:path"] --> node_src_lib_memory_validator_test_c5015ca0_03bed048
-  ext_node_path_78811c13["node:path"] --> node_src_lib_preflight_validator_test_b4b482f8_d93b105b
-  ext_node_path_78811c13["node:path"] --> node_src_commands_verify_coderabbit_490b4e71_227b4f8c
-  ext_node_path_78811c13["node:path"] --> node_src_commands_verify_coderabbit_test_46cfcf29_41f03a50
-  ext_node_path_78811c13["node:path"] --> node_src_commands_verify_work_df70ecac_ed5d932c
-  ext_node_path_78811c13["node:path"] --> node_src_commands_verify_work_test_0e12f6c5_128a29b7
-  ext_node_path_78811c13["node:path"] --> node_src_lib_version_5ca4f385_a197ae62
-  ext_node_path_78811c13["node:path"] --> node_src_lib_version_coherence_69733bcb_31759adc
-  ext_node_path_78811c13["node:path"] --> node_src_lib_version_coherence_test_b81c6d8e_0f77549c
-  ext_node_path_78811c13["node:path"] --> node_src_lib_init_workflow_contract_scripts_test_681e_ab4d6c14
-  ext_node_path_78811c13["node:path"] --> node_src_commands_workflow_generate_2fc0af62_3767d3c5
-  ext_node_path_78811c13["node:path"] --> node_src_commands_workflow_generate_test_b543473a_9e976a7c
-  ext_node_perf_hooks_906292ff["node:perf_hooks"] --> node_src_lib_preflight_performance_overload_c685bfcf_bdb17e6b
-  ext_node_process_00cdf119["node:process"] --> node_src_commands_check_20f65c28_8b102645
-  ext_node_process_00cdf119["node:process"] --> node_src_commands_ci_migrate_78bb70b1_a0e2c114
-  ext_node_process_00cdf119["node:process"] --> node_src_lib_init_cli_084e05fe_7beaed99
-  ext_node_process_00cdf119["node:process"] --> node_src_commands_contract_cc8321d6_dfc1f388
-  ext_node_process_00cdf119["node:process"] --> node_src_lib_preflight_performance_overload_c685bfcf_bdb17e6b
-  ext_node_process_00cdf119["node:process"] --> node_src_commands_upgrade_7fef9479_ae38afa9
-  ext_node_readline_bb6096cc["node:readline"] --> node_src_lib_init_eject_d0ecd4d1_229c1a6a
-  ext_node_url_d0cb3ad7["node:url"] --> node_src_commands_ci_migrate_78bb70b1_a0e2c114
-  ext_node_url_d0cb3ad7["node:url"] --> node_src_commands_ci_migrate_test_2a015bb9_07515c3d
-  ext_node_url_d0cb3ad7["node:url"] --> node_src_cli_99bb8840_d48ba2e4
-  ext_node_url_d0cb3ad7["node:url"] --> node_src_cli_test_4851f28b_523d2a86
-  ext_node_url_d0cb3ad7["node:url"] --> node_src_lib_cli_registry_command_specs_test_7f693e85_0524568c
-  ext_node_url_d0cb3ad7["node:url"] --> node_src_lib_pilot_evaluation_control_plane_96826665_9976cd16
-  ext_node_url_d0cb3ad7["node:url"] --> node_src_lib_project_type_detector_test_a3d69c08_2911626c
-  ext_node_url_d0cb3ad7["node:url"] --> node_src_commands_health_62484e22_b2e6cd58
-  ext_node_url_d0cb3ad7["node:url"] --> node_src_lib_contract_preset_resolver_dc3dd716_6ba7f673
-  ext_node_url_d0cb3ad7["node:url"] --> node_src_dev_run_local_memory_preflight_36e92808_6c3bec68
-  ext_node_url_d0cb3ad7["node:url"] --> node_src_lib_init_scaffold_ci_templates_2afd6392_3c6c62a7
-  ext_node_url_d0cb3ad7["node:url"] --> node_src_lib_init_scaffold_governance_templates_5c949_45b4fd56
-  ext_node_url_d0cb3ad7["node:url"] --> node_src_lib_init_scaffold_root_templates_61731280_b524fb4e
-  ext_node_url_d0cb3ad7["node:url"] --> node_src_lib_init_scaffold_shell_templates_0ad0f915_85748e76
-  ext_node_url_d0cb3ad7["node:url"] --> node_src_lib_init_scaffold_worktree_templates_66a38e9_2d4b2d03
-  ext_node_url_d0cb3ad7["node:url"] --> node_src_lib_init_scaffold_test_96f4ccea_0a85d882
-  ext_node_url_d0cb3ad7["node:url"] --> node_src_commands_ui_loop_11660889_457f358d
-  ext_node_url_d0cb3ad7["node:url"] --> node_src_lib_version_5ca4f385_a197ae62
-  ext_os_999a3419["os"] --> node_scripts_hook_governance_tests_test_inventory_rep_e8f2384b
-  ext_os_999a3419["os"] --> node_scripts_hook_governance_tests_test_rollout_check_3249066e
-  ext_pathlib_4471f74a["pathlib"] --> node_scripts_hook_governance_evaluate_docstring_ratch_d2833626
-  ext_pathlib_4471f74a["pathlib"] --> node_scripts_hook_governance_inventory_repos_4ea09ad7_3293e24f
-  ext_pathlib_4471f74a["pathlib"] --> node_scripts_hook_governance_rollout_check_6c0140db_705d638f
-  ext_pathlib_4471f74a["pathlib"] --> node_scripts_hook_governance_tests_test_evaluate_docs_68acb28c
-  ext_pathlib_4471f74a["pathlib"] --> node_scripts_hook_governance_tests_test_inventory_rep_e8f2384b
-  ext_pathlib_4471f74a["pathlib"] --> node_scripts_hook_governance_tests_test_rollout_check_3249066e
-  ext_picomatch_2ebdbf14["picomatch"] --> node_src_lib_project_type_detector_b37d288b_3125c793
-  ext_picomatch_2ebdbf14["picomatch"] --> node_src_lib_evidence_policy_823412d1_53854513
-  ext_picomatch_2ebdbf14["picomatch"] --> node_src_lib_blast_radius_resolver_439c3635_5d8cb557
-  ext_picomatch_2ebdbf14["picomatch"] --> node_src_lib_policy_risk_tier_96b6ff91_59f0d2d1
-  ext_pytest_0eaa389e["pytest"] --> node_scripts_hook_governance_tests_test_evaluate_docs_68acb28c
-  ext_pytest_0eaa389e["pytest"] --> node_scripts_hook_governance_tests_test_inventory_rep_e8f2384b
-  ext_pytest_0eaa389e["pytest"] --> node_scripts_hook_governance_tests_test_rollout_check_3249066e
-  ext_repos_in_scope_2029ac7b["repos.in_scope"] --> node_scripts_hook_governance_inventory_repos_4ea09ad7_3293e24f
-  ext_rollout_check_0d6adad5["rollout_check"] --> node_scripts_hook_governance_tests_test_rollout_check_3249066e
-  ext_semver_b4039641["semver"] --> node_src_commands_check_environment_fe68d4be_6f3dadd7
-  ext_semver_b4039641["semver"] --> node_src_lib_init_migration_8a6cead4_4ce3e628
-  ext_semver_b4039641["semver"] --> node_src_lib_init_schema_migrate_c0646635_817a98ff
-  ext_semver_b4039641["semver"] --> node_src_lib_init_update_2937013f_43f3ca69
-  ext_semver_b4039641["semver"] --> node_src_lib_init_upgrade_b277486e_b2698ece
-  ext_semver_b4039641["semver"] --> node_src_lib_contract_validator_helpers_7b927667_11374b64
-  ext_sqlite_vec_bae73cf2["sqlite-vec"] --> node_src_lib_context_compound_store_824d80d7_303b2fc6
-  ext_sys_b4c56ee8["sys"] --> node_scripts_hook_governance_tests_test_evaluate_docs_68acb28c
-  ext_sys_b4c56ee8["sys"] --> node_scripts_hook_governance_tests_test_inventory_rep_e8f2384b
-  ext_sys_b4c56ee8["sys"] --> node_scripts_hook_governance_tests_test_rollout_check_3249066e
-  ext_the_bbccdf2e["the"] --> node_scripts_hook_governance_tests_test_evaluate_docs_68acb28c
-  ext_the_bbccdf2e["the"] --> node_scripts_hook_governance_tests_test_inventory_rep_e8f2384b
-  ext_the_bbccdf2e["the"] --> node_scripts_hook_governance_tests_test_inventory_rep_e8f2384b
-  ext_the_bbccdf2e["the"] --> node_scripts_hook_governance_tests_test_rollout_check_3249066e
-  ext_typescript_fb9da861["typescript"] --> node_src_lib_source_outline_c86cb1d0_6ecff2b4
-  ext_vitest_4c9cfa13["vitest"] --> node_src_commands_agent_first_throughput_integration__7c59b283
-  ext_vitest_4c9cfa13["vitest"] --> node_src_lib_init_ast_grep_rules_test_2b69fd9a_c48c69e0
-  ext_vitest_4c9cfa13["vitest"] --> node_src_commands_audit_test_54ea1006_a3e1e261
-  ext_vitest_4c9cfa13["vitest"] --> node_src_commands_automation_run_test_7b21d905_ed093c97
-  ext_vitest_4c9cfa13["vitest"] --> node_src_lib_linear_automation_test_3da74b47_b2019eba
-  ext_vitest_4c9cfa13["vitest"] --> node_src_commands_blast_radius_test_045450fc_9b55a936
-  ext_vitest_4c9cfa13["vitest"] --> node_src_lib_linear_blocked_governance_test_444423cc_2da6bdaa
-  ext_vitest_4c9cfa13["vitest"] --> node_src_lib_project_brain_brain_validator_test_5e40c_6f5a3bad
-  ext_vitest_4c9cfa13["vitest"] --> node_src_commands_brain_test_428d4d67_9c2251ff
-  ext_vitest_4c9cfa13["vitest"] --> node_src_commands_brainstorm_gate_test_2fb2aec1_ebb3826f
-  ext_vitest_4c9cfa13["vitest"] --> node_src_lib_workflow_brainstorm_test_78cf7a1e_32a2f845
-  ext_vitest_4c9cfa13["vitest"] --> node_src_lib_ci_branch_protect_sync_test_159bb533_b615eb31
-  ext_vitest_4c9cfa13["vitest"] --> node_src_commands_branch_protect_test_c8d80aab_898c50dc
-  ext_vitest_4c9cfa13["vitest"] --> node_src_lib_policy_cardinality_test_c00e7edb_3f75f9ec
-  ext_vitest_4c9cfa13["vitest"] --> node_src_commands_check_authz_test_327903fb_fd074017
-  ext_vitest_4c9cfa13["vitest"] --> node_src_commands_check_diagram_freshness_test_c1dc40_8ffe6bb0
-  ext_vitest_4c9cfa13["vitest"] --> node_src_commands_check_environment_test_5fa29c35_c89d6225
-  ext_vitest_4c9cfa13["vitest"] --> node_src_lib_github_check_run_test_85d17d04_80ba548f
-  ext_vitest_4c9cfa13["vitest"] --> node_src_commands_check_test_7469a186_614dc441
-  ext_vitest_4c9cfa13["vitest"] --> node_src_lib_workflow_contract_checker_test_ee38befa_0c00b6ed
-  ext_vitest_4c9cfa13["vitest"] --> node_src_lib_workflow_contract_ci_adapter_test_5a1c16_0ab9b1b1
-  ext_vitest_4c9cfa13["vitest"] --> node_src_lib_ci_ci_migrate_command_contract_test_1274_e095d3a5
-  ext_vitest_4c9cfa13["vitest"] --> node_src_lib_ci_ci_migrate_snapshot_paths_test_8bcd0e_7195da91
-  ext_vitest_4c9cfa13["vitest"] --> node_src_cli_dispatch_test_54c9f17b_179f85f0
-  ext_vitest_4c9cfa13["vitest"] --> node_src_cli_test_4851f28b_523d2a86
-  ext_vitest_4c9cfa13["vitest"] --> node_src_lib_github_client_test_6fa17bd4_78314172
-  ext_vitest_4c9cfa13["vitest"] --> node_src_lib_linear_client_test_4b44c0f5_b02c0b59
-  ext_vitest_4c9cfa13["vitest"] --> node_src_lib_init_codex_preflight_symlink_test_037558_5789ffec
-  ext_vitest_4c9cfa13["vitest"] --> node_e2e_tests_command_pipeline_e2e_test_a0aa069a_a8ee24c9
-  ext_vitest_4c9cfa13["vitest"] --> node_src_lib_policy_command_policy_test_66e89e89_b9431172
-  ext_vitest_4c9cfa13["vitest"] --> node_src_lib_cli_command_registry_test_0cf92cba_b3dd285c
-  ext_vitest_4c9cfa13["vitest"] --> node_src_lib_cli_registry_command_specs_test_7f693e85_0524568c
-  ext_vitest_4c9cfa13["vitest"] --> node_src_lib_github_comments_test_f8c9ae41_f3323f58
-  ext_vitest_4c9cfa13["vitest"] --> node_src_lib_ci_config_validator_test_f70500fa_5e09d89e
-  ext_vitest_4c9cfa13["vitest"] --> node_src_lib_context_compound_constants_test_5492ae98_aac20c5e
-  ext_vitest_4c9cfa13["vitest"] --> node_src_lib_context_compound_context_compact_policy__33ca3593
-  ext_vitest_4c9cfa13["vitest"] --> node_src_commands_context_health_test_3b5b87f3_b2ea595f
-  ext_vitest_4c9cfa13["vitest"] --> node_src_commands_context_integrity_acceptance_test_5_b80c666c
-  ext_vitest_4c9cfa13["vitest"] --> node_src_commands_context_test_57aad306_79de8eab
-  ext_vitest_4c9cfa13["vitest"] --> node_src_commands_contract_test_2262847f_99dea614
-  ext_vitest_4c9cfa13["vitest"] --> node_src_lib_pilot_evaluation_control_plane_test_cd59_cb9d2fae
-  ext_vitest_4c9cfa13["vitest"] --> node_src_lib_pilot_evaluation_decision_packet_test_68_9b77b927
-  ext_vitest_4c9cfa13["vitest"] --> node_src_lib_review_gate_decision_packet_test_9ea0e97_9d4ab165
-  ext_vitest_4c9cfa13["vitest"] --> node_src_lib_brainstorm_detector_test_85cbb456_08c70acb
-  ext_vitest_4c9cfa13["vitest"] --> node_src_lib_project_type_detector_test_a3d69c08_2911626c
-  ext_vitest_4c9cfa13["vitest"] --> node_src_lib_silent_error_detector_test_d10b3555_2c298e11
-  ext_vitest_4c9cfa13["vitest"] --> node_src_commands_diff_budget_test_c0b72453_6e2bf489
-  ext_vitest_4c9cfa13["vitest"] --> node_src_lib_cli_doc_parity_test_bef81709_c5682060
-  ext_vitest_4c9cfa13["vitest"] --> node_src_commands_docs_gate_test_a25e972f_33a82806
-  ext_vitest_4c9cfa13["vitest"] --> node_src_commands_doctor_test_e032e8b5_6705010c
-  ext_vitest_4c9cfa13["vitest"] --> node_src_lib_project_brain_domain_mapper_test_dc5a989_0594a5a2
-  ext_vitest_4c9cfa13["vitest"] --> node_src_commands_drift_gate_test_816765e3_c705e6e0
-  ext_vitest_4c9cfa13["vitest"] --> node_src_lib_init_eject_test_96dad02e_601f605d
-  ext_vitest_4c9cfa13["vitest"] --> node_src_lib_github_errors_test_1a443b6a_dd2ec165
-  ext_vitest_4c9cfa13["vitest"] --> node_src_lib_pilot_evaluation_evaluation_engine_test__96caf1be
-  ext_vitest_4c9cfa13["vitest"] --> node_src_commands_evidence_verify_test_7373101d_c288ceac
-  ext_vitest_4c9cfa13["vitest"] --> node_src_lib_contract_extends_validator_test_cee1fc26_42aefad6
-  ext_vitest_4c9cfa13["vitest"] --> node_src_lib_remediation_finding_normalizer_test_d463_234993b6
-  ext_vitest_4c9cfa13["vitest"] --> node_src_commands_gap_case_test_e32159fb_a0da53ec
-  ext_vitest_4c9cfa13["vitest"] --> node_src_commands_gardener_test_98f0b9a5_08a91964
-  ext_vitest_4c9cfa13["vitest"] --> node_src_lib_workflow_contract_gate_bundle_test_f729a_57823319
-  ext_vitest_4c9cfa13["vitest"] --> node_e2e_tests_github_integration_e2e_test_0b124522_8577c76d
-  ext_vitest_4c9cfa13["vitest"] --> node_src_lib_linear_governance_report_test_160fb2e0_4abcaa82
-  ext_vitest_4c9cfa13["vitest"] --> node_src_commands_health_test_f79de76d_c624883e
-  ext_vitest_4c9cfa13["vitest"] --> node_src_lib_cli_help_renderer_test_6b225cb3_c57293af
-  ext_vitest_4c9cfa13["vitest"] --> node_src_commands_index_context_test_1949ea6f_d34c884d
-  ext_vitest_4c9cfa13["vitest"] --> node_src_lib_context_compound_indexer_test_d492f0aa_4bd5aca2
-  ext_vitest_4c9cfa13["vitest"] --> node_src_commands_init_test_cbba76a6_c720fdf4
-  ext_vitest_4c9cfa13["vitest"] --> node_src_lib_agents_instruction_compat_test_15974a83_a01a1aae
-  ext_vitest_4c9cfa13["vitest"] --> node_src_lib_cli_legacy_dispatch_guard_test_4700087d_0ef25856
-  ext_vitest_4c9cfa13["vitest"] --> node_src_commands_license_gate_test_1edffa1c_c8840f73
-  ext_vitest_4c9cfa13["vitest"] --> node_src_commands_linear_gate_test_4fcca11a_4eb96b1b
-  ext_vitest_4c9cfa13["vitest"] --> node_e2e_tests_linear_integration_e2e_test_dbc5e6db_9deed64f
-  ext_vitest_4c9cfa13["vitest"] --> node_src_commands_linear_prepare_test_678f11a9_432b536b
-  ext_vitest_4c9cfa13["vitest"] --> node_src_commands_linear_sync_test_da1e1eab_5c2963f6
-  ext_vitest_4c9cfa13["vitest"] --> node_src_commands_linear_triage_test_1b75a8b8_19863a59
-  ext_vitest_4c9cfa13["vitest"] --> node_src_commands_linear_workflow_test_a351dcb0_73fc7cb1
-  ext_vitest_4c9cfa13["vitest"] --> node_src_lib_contract_loader_test_03424671_327c1920
-  ext_vitest_4c9cfa13["vitest"] --> node_src_commands_local_memory_preflight_test_5e323bb_7198fc35
-  ext_vitest_4c9cfa13["vitest"] --> node_src_lib_contract_merger_test_a3d79da0_0c77c3eb
-  ext_vitest_4c9cfa13["vitest"] --> node_src_lib_linear_metadata_gate_test_ee86e7df_0d9c8033
-  ext_vitest_4c9cfa13["vitest"] --> node_src_lib_project_brain_metadata_scanner_test_faee_e950afb0
-  ext_vitest_4c9cfa13["vitest"] --> node_src_lib_memory_metrics_tracker_test_3de156fa_d34e311d
-  ext_vitest_4c9cfa13["vitest"] --> node_src_lib_architecture_module_boundaries_test_c0ca_9d1087a8
-  ext_vitest_4c9cfa13["vitest"] --> node_src_lib_github_mutation_queue_test_10b599e8_d6af24f9
-  ext_vitest_4c9cfa13["vitest"] --> node_src_lib_output_normalise_test_73e8a615_835598a4
-  ext_vitest_4c9cfa13["vitest"] --> node_src_commands_observability_gate_test_ca2979e0_3c8bb89a
-  ext_vitest_4c9cfa13["vitest"] --> node_src_lib_context_compound_ollama_test_71f9750e_00d7d6b9
-  ext_vitest_4c9cfa13["vitest"] --> node_src_lib_workflow_contract_operator_scorecard_tes_6c71c6b6
-  ext_vitest_4c9cfa13["vitest"] --> node_src_lib_remediation_orchestrator_test_c291cde7_2601cbf5
-  ext_vitest_4c9cfa13["vitest"] --> node_src_lib_verify_orchestrator_test_18d2fe26_0cefa964
-  ext_vitest_4c9cfa13["vitest"] --> node_src_commands_org_audit_test_0fd9cae8_806cc649
-  ext_vitest_4c9cfa13["vitest"] --> node_src_lib_test_overload_guard_test_6ece9f86_ac5b6294
-  ext_vitest_4c9cfa13["vitest"] --> node_src_lib_workflow_contract_parser_test_3c7414cf_9fd264b6
-  ext_vitest_4c9cfa13["vitest"] --> node_src_lib_preflight_performance_overload_test_4d9c_caf4d863
-  ext_vitest_4c9cfa13["vitest"] --> node_src_commands_pilot_evaluate_test_a2ac06fc_388cb18c
-  ext_vitest_4c9cfa13["vitest"] --> node_src_commands_pilot_rollback_test_e61d5a2b_4a4df783
-  ext_vitest_4c9cfa13["vitest"] --> node_src_lib_workflow_contract_pilot_tracker_test_803_dbb50df5
-  ext_vitest_4c9cfa13["vitest"] --> node_src_commands_plan_gate_test_0c0192e6_d293ab91
-  ext_vitest_4c9cfa13["vitest"] --> node_src_lib_workflow_plan_test_e7c3b920_e31df245
-  ext_vitest_4c9cfa13["vitest"] --> node_src_lib_policy_policy_chain_test_bce92046_3ca45d46
-  ext_vitest_4c9cfa13["vitest"] --> node_src_lib_evidence_policy_test_2c06901d_a15d04cb
-  ext_vitest_4c9cfa13["vitest"] --> node_src_lib_init_post_bootstrap_summary_test_e985d55_4a41b411
-  ext_vitest_4c9cfa13["vitest"] --> node_src_commands_pr_template_gate_test_35faef1d_8b9385b9
-  ext_vitest_4c9cfa13["vitest"] --> node_src_lib_pr_template_validator_test_569b1cef_06f2e40e
-  ext_vitest_4c9cfa13["vitest"] --> node_src_lib_preset_detection_test_13b58525_5aaa63e0
-  ext_vitest_4c9cfa13["vitest"] --> node_src_lib_contract_preset_resolver_test_e112a012_88ef1235
-  ext_vitest_4c9cfa13["vitest"] --> node_src_commands_preset_test_9e489c16_9798caf0
-  ext_vitest_4c9cfa13["vitest"] --> node_src_lib_init_project_brain_templates_test_0b6509_fc96d6cd
-  ext_vitest_4c9cfa13["vitest"] --> node_src_commands_promote_mode_test_7ca3f5ec_5ed4f47d
-  ext_vitest_4c9cfa13["vitest"] --> node_src_commands_prompt_gate_test_1a442b27_a7737ddc
-  ext_vitest_4c9cfa13["vitest"] --> node_src_lib_deps_ralph_runtime_test_682f806b_edc2f6ed
-  ext_vitest_4c9cfa13["vitest"] --> node_src_commands_refresh_diagram_context_test_03bf21_16fd4e17
-  ext_vitest_4c9cfa13["vitest"] --> node_src_lib_workflow_contract_registry_test_89f095f8_c0651ef8
-  ext_vitest_4c9cfa13["vitest"] --> node_src_commands_remediate_test_6f59cafe_3435fed4
-  ext_vitest_4c9cfa13["vitest"] --> node_src_commands_replay_test_935f7436_90eb00d2
-  ext_vitest_4c9cfa13["vitest"] --> node_src_lib_governance_repo_scanner_test_cb7e9d00_82e29b31
-  ext_vitest_4c9cfa13["vitest"] --> node_src_lib_policy_required_checks_test_e7da46e9_17dc678f
-  ext_vitest_4c9cfa13["vitest"] --> node_src_lib_blast_radius_resolver_test_84b219fe_3cf33f2d
-  ext_vitest_4c9cfa13["vitest"] --> node_src_lib_verify_resume_admissibility_test_eba58e3_2e57a5c3
-  ext_vitest_4c9cfa13["vitest"] --> node_src_lib_verify_retry_policy_test_fff144eb_2ad7e0d7
-  ext_vitest_4c9cfa13["vitest"] --> node_src_commands_review_gate_test_000e2ed6_4bdcd834
-  ext_vitest_4c9cfa13["vitest"] --> node_src_commands_risk_tier_test_ae056367_d99a1738
-  ext_vitest_4c9cfa13["vitest"] --> node_src_lib_policy_risk_tier_test_6f021f87_05753241
-  ext_vitest_4c9cfa13["vitest"] --> node_src_lib_init_rollback_test_5435eb9c_fc5022cd
-  ext_vitest_4c9cfa13["vitest"] --> node_src_dev_run_local_memory_preflight_test_1d7c5aa0_9a6c63cd
-  ext_vitest_4c9cfa13["vitest"] --> node_src_lib_contract_run_record_emitter_test_5475c0d_611e26d8
-  ext_vitest_4c9cfa13["vitest"] --> node_src_lib_contract_run_records_test_3ee6a0e3_c22e3d30
-  ext_vitest_4c9cfa13["vitest"] --> node_src_lib_verify_run_state_test_ee8298e8_22f322e3
-  ext_vitest_4c9cfa13["vitest"] --> node_src_lib_input_sanitize_test_f3d34916_ef3208f8
-  ext_vitest_4c9cfa13["vitest"] --> node_src_lib_init_scaffold_ci_templates_test_9efd47ab_a8a53f08
-  ext_vitest_4c9cfa13["vitest"] --> node_src_lib_init_scaffold_codex_environment_template_74d6f8ac
-  ext_vitest_4c9cfa13["vitest"] --> node_src_lib_init_scaffold_diagram_templates_test_f37_e1304cc7
-  ext_vitest_4c9cfa13["vitest"] --> node_src_lib_init_scaffold_environment_templates_test_e371154b
-  ext_vitest_4c9cfa13["vitest"] --> node_src_lib_init_scaffold_governance_templates_test__cc9713ed
-  ext_vitest_4c9cfa13["vitest"] --> node_src_lib_init_scaffold_hook_templates_test_b40a19_d100ce61
-  ext_vitest_4c9cfa13["vitest"] --> node_src_lib_init_scaffold_root_templates_test_f66046_fa165292
-  ext_vitest_4c9cfa13["vitest"] --> node_src_lib_init_scaffold_semgrep_templates_test_43e_d9b0b183
-  ext_vitest_4c9cfa13["vitest"] --> node_src_lib_init_scaffold_shell_quality_test_79567d0_ba574a2f
-  ext_vitest_4c9cfa13["vitest"] --> node_src_lib_init_scaffold_shell_templates_test_52e6b_48ac3799
-  ext_vitest_4c9cfa13["vitest"] --> node_src_lib_init_scaffold_surfaces_test_f11f3af1_2bdfbde3
-  ext_vitest_4c9cfa13["vitest"] --> node_src_lib_init_scaffold_worktree_templates_test_c2_c7d54c25
-  ext_vitest_4c9cfa13["vitest"] --> node_src_lib_init_scaffold_test_96f4ccea_0a85d882
-  ext_vitest_4c9cfa13["vitest"] --> node_src_lib_governance_scan_cache_test_dd1160a2_427b9803
-  ext_vitest_4c9cfa13["vitest"] --> node_src_commands_search_test_0c66bc11_d61d2826
-  ext_vitest_4c9cfa13["vitest"] --> node_src_lib_github_sha_test_5a5924fc_84f7b037
-  ext_vitest_4c9cfa13["vitest"] --> node_src_commands_simulate_test_24df93e5_c915ccfe
-  ext_vitest_4c9cfa13["vitest"] --> node_src_commands_solo_mode_test_a7f03f80_a7d627f3
-  ext_vitest_4c9cfa13["vitest"] --> node_src_commands_source_outline_test_df6fa3a7_0137a404
-  ext_vitest_4c9cfa13["vitest"] --> node_src_lib_license_spdx_test_099e8b3b_936dd912
-  ext_vitest_4c9cfa13["vitest"] --> node_src_lib_gardener_stale_detector_test_7dc85478_b896df09
-  ext_vitest_4c9cfa13["vitest"] --> node_src_lib_contract_standards_map_test_795df7d4_91710ad0
-  ext_vitest_4c9cfa13["vitest"] --> node_src_lib_workflow_contract_state_normalizer_test__b5f56a5d
-  ext_vitest_4c9cfa13["vitest"] --> node_src_lib_linear_status_aging_test_e89d94b2_e41e5f5d
-  ext_vitest_4c9cfa13["vitest"] --> node_src_lib_project_brain_suggestion_generator_test__80c0030e
-  ext_vitest_4c9cfa13["vitest"] --> node_src_commands_symphony_check_test_6cb33eb2_4f0d91b6
-  ext_vitest_4c9cfa13["vitest"] --> node_src_lib_context_compound_sync_contract_test_5dc3_40181dd7
-  ext_vitest_4c9cfa13["vitest"] --> node_src_lib_workflow_contract_test_harness_test_657d_33a21cc8
-  ext_vitest_4c9cfa13["vitest"] --> node_src_commands_tooling_audit_test_d2aee28c_9ee5e5db
-  ext_vitest_4c9cfa13["vitest"] --> node_src_lib_policy_tooling_baseline_test_d272ddb6_7ad39be6
-  ext_vitest_4c9cfa13["vitest"] --> node_src_lib_replay_trace_normalizer_test_0c362866_dfbf9d7e
-  ext_vitest_4c9cfa13["vitest"] --> node_src_lib_replay_tracer_test_cb965d81_06ea2a0c
-  ext_vitest_4c9cfa13["vitest"] --> node_src_lib_linear_triage_lanes_test_0937d75a_ec89dc4d
-  ext_vitest_4c9cfa13["vitest"] --> node_src_lib_linear_triage_scoring_test_71fd48fa_197d9051
-  ext_vitest_4c9cfa13["vitest"] --> node_src_lib_linear_triage_sla_test_7c85b63b_c09ff001
-  ext_vitest_4c9cfa13["vitest"] --> node_src_lib_linear_triage_type_labels_test_c2c72e21_940af8c4
-  ext_vitest_4c9cfa13["vitest"] --> node_src_lib_output_types_test_5c77418d_677bb693
-  ext_vitest_4c9cfa13["vitest"] --> node_src_lib_contract_ui_loop_command_test_3f014158_e12112c1
-  ext_vitest_4c9cfa13["vitest"] --> node_src_commands_ui_loop_test_f0eabc42_a6f3d2d0
-  ext_vitest_4c9cfa13["vitest"] --> node_src_commands_upgrade_test_b92741eb_071ab85d
-  ext_vitest_4c9cfa13["vitest"] --> node_src_lib_governance_url_validator_secure_fetch_te_5ef55df0
-  ext_vitest_4c9cfa13["vitest"] --> node_src_lib_governance_url_validator_test_f781df3b_5b71f4a4
-  ext_vitest_4c9cfa13["vitest"] --> node_src_lib_linear_utils_test_e2ccb8ba_ca0148a1
-  ext_vitest_4c9cfa13["vitest"] --> node_src_lib_input_validation_test_bc73cdff_1d90ce61
-  ext_vitest_4c9cfa13["vitest"] --> node_src_lib_contract_validator_test_2bb3219d_499fe2fa
-  ext_vitest_4c9cfa13["vitest"] --> node_src_lib_evidence_validator_test_9ad9ac55_81767cd8
-  ext_vitest_4c9cfa13["vitest"] --> node_src_lib_input_validator_test_d5942e9e_e5ddc2a5
-  ext_vitest_4c9cfa13["vitest"] --> node_src_lib_license_validator_test_8dbecf99_910782df
-  ext_vitest_4c9cfa13["vitest"] --> node_src_lib_memory_validator_test_c5015ca0_03bed048
-  ext_vitest_4c9cfa13["vitest"] --> node_src_lib_preflight_validator_test_b4b482f8_d93b105b
-  ext_vitest_4c9cfa13["vitest"] --> node_src_commands_verify_coderabbit_test_46cfcf29_41f03a50
-  ext_vitest_4c9cfa13["vitest"] --> node_src_commands_verify_work_test_0e12f6c5_128a29b7
-  ext_vitest_4c9cfa13["vitest"] --> node_src_lib_version_coherence_test_b81c6d8e_0f77549c
-  ext_vitest_4c9cfa13["vitest"] --> node_vitest_config_a9f1245e_18ed3616
-  ext_vitest_4c9cfa13["vitest"] --> node_e2e_vitest_e2e_config_4e2a61bc_f8151db8
-  ext_vitest_4c9cfa13["vitest"] --> node_src_lib_init_workflow_contract_scripts_test_681e_ab4d6c14
-  ext_vitest_4c9cfa13["vitest"] --> node_src_commands_workflow_generate_test_b543473a_9e976a7c
-  ext_yaml_c94c088e["yaml"] --> node_scripts_hook_governance_evaluate_docstring_ratch_d2833626
-  ext_yaml_c94c088e["yaml"] --> node_scripts_hook_governance_rollout_check_6c0140db_705d638f
+  ext_future_05a73385["__future__"] --> node_scripts_hook_governance_evaluate_docstring_ratch_407d0d3c
+  ext_future_05a73385["__future__"] --> node_scripts_hook_governance_inventory_repos_0e496bf6
+  ext_future_05a73385["__future__"] --> node_scripts_hook_governance_rollout_check_7c494353
+  ext_future_05a73385["__future__"] --> node_scripts_hook_governance_tests_test_evaluate_docs_4a092543
+  ext_future_05a73385["__future__"] --> node_scripts_hook_governance_tests_test_inventory_rep_e8bf3377
+  ext_future_05a73385["__future__"] --> node_scripts_hook_governance_tests_test_rollout_check_ba44f7c6
+  ext_inquirer_prompts_4d547149["@inquirer/prompts"] --> node_src_lib_init_cli_43b2583c
+  ext_octokit_plugin_retry_c9aecc53["@octokit/plugin-retry"] --> node_src_lib_github_client_51b3b29d
+  ext_octokit_plugin_throttling_7909ece3["@octokit/plugin-throttling"] --> node_src_lib_github_client_51b3b29d
+  ext_octokit_plugin_throttling_7909ece3["@octokit/plugin-throttling"] --> node_src_lib_gardener_pr_creator_f89e512d
+  ext_octokit_request_error_98ae13cc["@octokit/request-error"] --> node_src_lib_github_client_test_3345dbf3
+  ext_octokit_request_error_98ae13cc["@octokit/request-error"] --> node_src_lib_github_errors_36723665
+  ext_octokit_request_error_98ae13cc["@octokit/request-error"] --> node_src_lib_github_errors_test_133cfe4b
+  ext_octokit_rest_c6e4d192["@octokit/rest"] --> node_scripts_circleci_linear_sync_0dede1a9
+  ext_octokit_rest_c6e4d192["@octokit/rest"] --> node_scripts_circleci_stale_management_7936b746
+  ext_octokit_rest_c6e4d192["@octokit/rest"] --> node_src_lib_github_client_51b3b29d
+  ext_octokit_rest_c6e4d192["@octokit/rest"] --> node_src_lib_gardener_pr_creator_f89e512d
+  ext_total_typescript_shoehorn_667cfbd3["@total-typescript/shoehorn"] --> node_src_commands_agent_first_throughput_integration__4f0ddd7b
+  ext_total_typescript_shoehorn_667cfbd3["@total-typescript/shoehorn"] --> node_src_commands_branch_protect_test_d26f0ed4
+  ext_total_typescript_shoehorn_667cfbd3["@total-typescript/shoehorn"] --> node_src_commands_linear_prepare_test_e563937e
+  ext_total_typescript_shoehorn_667cfbd3["@total-typescript/shoehorn"] --> node_src_commands_linear_triage_test_e9358c88
+  ext_total_typescript_shoehorn_667cfbd3["@total-typescript/shoehorn"] --> node_src_commands_linear_workflow_test_b60c6e12
+  ext_total_typescript_shoehorn_667cfbd3["@total-typescript/shoehorn"] --> node_src_commands_review_gate_test_dea5880b
+  ext_total_typescript_shoehorn_667cfbd3["@total-typescript/shoehorn"] --> node_src_commands_ui_loop_test_1c615cb8
+  ext_total_typescript_shoehorn_667cfbd3["@total-typescript/shoehorn"] --> node_src_commands_verify_coderabbit_test_ceaa2143
+  ext_api_d93d10ff["API"] --> node_scripts_hook_governance_evaluate_docstring_ratch_407d0d3c
+  ext_argparse_e750ee7c["argparse"] --> node_scripts_hook_governance_evaluate_docstring_ratch_407d0d3c
+  ext_argparse_e750ee7c["argparse"] --> node_scripts_hook_governance_inventory_repos_0e496bf6
+  ext_argparse_e750ee7c["argparse"] --> node_scripts_hook_governance_rollout_check_7c494353
+  ext_better_sqlite3_d7ed8f1a["better-sqlite3"] --> node_src_lib_context_compound_store_d1f2d9b9
+  ext_datetime_89ffad08["datetime"] --> node_scripts_hook_governance_evaluate_docstring_ratch_407d0d3c
+  ext_datetime_89ffad08["datetime"] --> node_scripts_hook_governance_rollout_check_7c494353
+  ext_datetime_89ffad08["datetime"] --> node_scripts_hook_governance_tests_test_rollout_check_ba44f7c6
+  ext_diff_75a0ee1b["diff"] --> node_src_lib_init_interactive_83232b08
+  ext_evaluate_docstring_ratchet_8d419891["evaluate_docstring_ratchet"] --> node_scripts_hook_governance_tests_test_evaluate_docs_4a092543
+  ext_evaluate_docstring_ratchet_8d419891["evaluate_docstring_ratchet"] --> node_scripts_hook_governance_tests_test_evaluate_docs_4a092543
+  ext_exc_778865dc["exc"] --> node_scripts_hook_governance_inventory_repos_0e496bf6
+  ext_exc_778865dc["exc"] --> node_scripts_hook_governance_inventory_repos_0e496bf6
+  ext_exc_778865dc["exc"] --> node_scripts_hook_governance_inventory_repos_0e496bf6
+  ext_exc_778865dc["exc"] --> node_scripts_hook_governance_rollout_check_7c494353
+  ext_fs_3f4bb586["fs"] --> node_src_commands_doctor_2b7caa84
+  ext_inventory_repos_812f8dd4["inventory_repos"] --> node_scripts_hook_governance_tests_test_inventory_rep_e8bf3377
+  ext_json_05d97e6e["json"] --> node_scripts_hook_governance_evaluate_docstring_ratch_407d0d3c
+  ext_json_05d97e6e["json"] --> node_scripts_hook_governance_inventory_repos_0e496bf6
+  ext_json_05d97e6e["json"] --> node_scripts_hook_governance_rollout_check_7c494353
+  ext_json_05d97e6e["json"] --> node_scripts_hook_governance_tests_test_evaluate_docs_4a092543
+  ext_json_05d97e6e["json"] --> node_scripts_hook_governance_tests_test_inventory_rep_e8bf3377
+  ext_json_05d97e6e["json"] --> node_scripts_hook_governance_tests_test_rollout_check_ba44f7c6
+  ext_lodash_901466a5["lodash"] --> node_src_lib_contract_merger_15f87e65
+  ext_math_7a488390["math"] --> node_scripts_hook_governance_evaluate_docstring_ratch_407d0d3c
+  ext_node_child_process_f62b7d19["node:child_process"] --> node_src_commands_agent_first_throughput_integration__4f0ddd7b
+  ext_node_child_process_f62b7d19["node:child_process"] --> node_src_lib_memory_branch_enforcer_f38c3b70
+  ext_node_child_process_f62b7d19["node:child_process"] --> node_src_commands_check_diagram_freshness_test_5e858bc8
+  ext_node_child_process_f62b7d19["node:child_process"] --> node_src_commands_check_environment_61a1e6d1
+  ext_node_child_process_f62b7d19["node:child_process"] --> node_src_commands_check_environment_test_177a8ad6
+  ext_node_child_process_f62b7d19["node:child_process"] --> node_src_commands_check_environment_test_177a8ad6
+  ext_node_child_process_f62b7d19["node:child_process"] --> node_src_commands_check_environment_test_177a8ad6
+  ext_node_child_process_f62b7d19["node:child_process"] --> node_src_commands_check_environment_test_177a8ad6
+  ext_node_child_process_f62b7d19["node:child_process"] --> node_src_commands_check_environment_test_177a8ad6
+  ext_node_child_process_f62b7d19["node:child_process"] --> node_src_commands_check_environment_test_177a8ad6
+  ext_node_child_process_f62b7d19["node:child_process"] --> node_src_commands_ci_migrate_9cb53e30
+  ext_node_child_process_f62b7d19["node:child_process"] --> node_src_commands_ci_migrate_test_7c0f9981
+  ext_node_child_process_f62b7d19["node:child_process"] --> node_scripts_circleci_linear_sync_0dede1a9
+  ext_node_child_process_f62b7d19["node:child_process"] --> node_src_lib_init_codex_preflight_symlink_test_34429399
+  ext_node_child_process_f62b7d19["node:child_process"] --> node_src_lib_pilot_evaluation_control_plane_9fcff894
+  ext_node_child_process_f62b7d19["node:child_process"] --> node_src_commands_diff_budget_b8b3e926
+  ext_node_child_process_f62b7d19["node:child_process"] --> node_src_commands_diff_budget_test_abd7c3ee
+  ext_node_child_process_f62b7d19["node:child_process"] --> node_src_commands_docs_gate_a9482c33
+  ext_node_child_process_f62b7d19["node:child_process"] --> node_src_commands_docs_gate_test_bebd4eac
+  ext_node_child_process_f62b7d19["node:child_process"] --> node_src_commands_doctor_2b7caa84
+  ext_node_child_process_f62b7d19["node:child_process"] --> node_src_commands_doctor_test_7af6f23c
+  ext_node_child_process_f62b7d19["node:child_process"] --> node_src_commands_doctor_test_7af6f23c
+  ext_node_child_process_f62b7d19["node:child_process"] --> node_e2e_clients_github_e2e_886b5936
+  ext_node_child_process_f62b7d19["node:child_process"] --> node_src_commands_health_71013327
+  ext_node_child_process_f62b7d19["node:child_process"] --> node_src_commands_health_test_6d5f075c
+  ext_node_child_process_f62b7d19["node:child_process"] --> node_src_commands_health_test_6d5f075c
+  ext_node_child_process_f62b7d19["node:child_process"] --> node_src_commands_init_test_208f2f42
+  ext_node_child_process_f62b7d19["node:child_process"] --> node_src_commands_linear_gate_3a2dbdda
+  ext_node_child_process_f62b7d19["node:child_process"] --> node_src_commands_linear_gate_test_d7fab54c
+  ext_node_child_process_f62b7d19["node:child_process"] --> node_src_lib_gardener_link_checker_95a109ed
+  ext_node_child_process_f62b7d19["node:child_process"] --> node_src_lib_preflight_local_memory_83be6dca
+  ext_node_child_process_f62b7d19["node:child_process"] --> node_src_commands_local_memory_preflight_test_d06baa31
+  ext_node_child_process_f62b7d19["node:child_process"] --> node_src_commands_local_memory_preflight_test_d06baa31
+  ext_node_child_process_f62b7d19["node:child_process"] --> node_src_commands_local_memory_preflight_test_d06baa31
+  ext_node_child_process_f62b7d19["node:child_process"] --> node_src_commands_refresh_diagram_context_test_7c9f3447
+  ext_node_child_process_f62b7d19["node:child_process"] --> node_src_commands_remediate_ae676761
+  ext_node_child_process_f62b7d19["node:child_process"] --> node_src_commands_remediate_test_b0fcf4ec
+  ext_node_child_process_f62b7d19["node:child_process"] --> node_e2e_run_e2e_f80c6fa8
+  ext_node_child_process_f62b7d19["node:child_process"] --> node_src_lib_init_scaffold_hook_templates_0b5a55e9
+  ext_node_child_process_f62b7d19["node:child_process"] --> node_src_lib_init_scaffold_hook_templates_0b5a55e9
+  ext_node_child_process_f62b7d19["node:child_process"] --> node_src_commands_search_8c19fcb1
+  ext_node_child_process_f62b7d19["node:child_process"] --> node_src_commands_search_test_ac250e89
+  ext_node_child_process_f62b7d19["node:child_process"] --> node_scripts_setup_git_hooks_2ed98c53
+  ext_node_child_process_f62b7d19["node:child_process"] --> node_src_commands_symphony_check_test_b9bd2d4d
+  ext_node_child_process_f62b7d19["node:child_process"] --> node_src_lib_workflow_contract_test_harness_ab8265f7
+  ext_node_child_process_f62b7d19["node:child_process"] --> node_src_commands_ui_loop_14f94e39
+  ext_node_child_process_f62b7d19["node:child_process"] --> node_src_commands_ui_loop_test_1c615cb8
+  ext_node_child_process_f62b7d19["node:child_process"] --> node_scripts_validate_commit_msg_c49346f6
+  ext_node_child_process_f62b7d19["node:child_process"] --> node_src_commands_verify_work_43c69927
+  ext_node_child_process_f62b7d19["node:child_process"] --> node_src_commands_verify_work_test_24b4f5ea
+  ext_node_child_process_f62b7d19["node:child_process"] --> node_src_lib_version_coherence_cb803a5e
+  ext_node_child_process_f62b7d19["node:child_process"] --> node_src_lib_init_workflow_contract_scripts_test_42efa4fe
+  ext_node_crypto_c7dfc512["node:crypto"] --> node_src_commands_check_environment_61a1e6d1
+  ext_node_crypto_c7dfc512["node:crypto"] --> node_src_commands_ci_migrate_9cb53e30
+  ext_node_crypto_c7dfc512["node:crypto"] --> node_src_commands_ci_migrate_test_7c0f9981
+  ext_node_crypto_c7dfc512["node:crypto"] --> node_src_commands_ci_migrate_test_7c0f9981
+  ext_node_crypto_c7dfc512["node:crypto"] --> node_src_cli_test_c0ddbe99
+  ext_node_crypto_c7dfc512["node:crypto"] --> node_src_lib_pilot_evaluation_control_plane_9fcff894
+  ext_node_crypto_c7dfc512["node:crypto"] --> node_src_lib_pilot_evaluation_decision_packet_9b582bf2
+  ext_node_crypto_c7dfc512["node:crypto"] --> node_src_lib_review_gate_decision_packet_093b7885
+  ext_node_crypto_c7dfc512["node:crypto"] --> node_src_commands_docs_gate_a9482c33
+  ext_node_crypto_c7dfc512["node:crypto"] --> node_src_lib_contract_idempotency_af93997f
+  ext_node_crypto_c7dfc512["node:crypto"] --> node_src_lib_context_compound_indexer_e7ad2047
+  ext_node_crypto_c7dfc512["node:crypto"] --> node_src_lib_context_compound_indexer_test_473c7216
+  ext_node_crypto_c7dfc512["node:crypto"] --> node_src_lib_context_compound_lexical_fallback_eeb9773b
+  ext_node_crypto_c7dfc512["node:crypto"] --> node_src_commands_linear_sync_80a223b3
+  ext_node_crypto_c7dfc512["node:crypto"] --> node_src_lib_gardener_link_checker_95a109ed
+  ext_node_crypto_c7dfc512["node:crypto"] --> node_src_lib_init_migration_e4b291ff
+  ext_node_crypto_c7dfc512["node:crypto"] --> node_src_commands_pilot_rollback_9ad729c0
+  ext_node_crypto_c7dfc512["node:crypto"] --> node_src_commands_plan_gate_test_d9d60c82
+  ext_node_crypto_c7dfc512["node:crypto"] --> node_src_lib_contract_preset_resolver_ed8af332
+  ext_node_crypto_c7dfc512["node:crypto"] --> node_src_lib_contract_preset_resolver_test_d386cdbf
+  ext_node_crypto_c7dfc512["node:crypto"] --> node_src_commands_remediate_ae676761
+  ext_node_crypto_c7dfc512["node:crypto"] --> node_src_lib_policy_required_checks_cc5260df
+  ext_node_crypto_c7dfc512["node:crypto"] --> node_src_lib_init_rollback_b5f0b59d
+  ext_node_crypto_c7dfc512["node:crypto"] --> node_src_lib_contract_run_record_emitter_ae66a1ec
+  ext_node_crypto_c7dfc512["node:crypto"] --> node_src_lib_contract_run_records_836e164b
+  ext_node_crypto_c7dfc512["node:crypto"] --> node_src_lib_verify_run_state_084e83b2
+  ext_node_crypto_c7dfc512["node:crypto"] --> node_src_lib_governance_scan_cache_e0415545
+  ext_node_crypto_c7dfc512["node:crypto"] --> node_src_commands_simulate_f06a3ac7
+  ext_node_crypto_c7dfc512["node:crypto"] --> node_src_lib_context_compound_sources_4de9a2ad
+  ext_node_crypto_c7dfc512["node:crypto"] --> node_src_lib_replay_tracer_c6b49784
+  ext_node_crypto_c7dfc512["node:crypto"] --> node_src_commands_ui_loop_14f94e39
+  ext_node_crypto_c7dfc512["node:crypto"] --> node_src_lib_init_upgrade_e1d7cdbc
+  ext_node_dns_828a0bbf["node:dns"] --> node_src_lib_governance_url_validator_c0cec5fa
+  ext_node_fs_a15b7d96["node:fs"] --> node_src_commands_agent_first_throughput_integration__4f0ddd7b
+  ext_node_fs_a15b7d96["node:fs"] --> node_src_lib_init_ast_grep_rules_test_b664c54b
+  ext_node_fs_a15b7d96["node:fs"] --> node_src_commands_audit_bd6de8bd
+  ext_node_fs_a15b7d96["node:fs"] --> node_src_commands_audit_test_cf82f906
+  ext_node_fs_a15b7d96["node:fs"] --> node_src_commands_audit_test_cf82f906
+  ext_node_fs_a15b7d96["node:fs"] --> node_src_commands_audit_test_cf82f906
+  ext_node_fs_a15b7d96["node:fs"] --> node_src_lib_review_gate_authz_473e26c6
+  ext_node_fs_a15b7d96["node:fs"] --> node_src_commands_blast_radius_test_fb4e7d14
+  ext_node_fs_a15b7d96["node:fs"] --> node_src_lib_project_brain_brain_validator_d1c3cb6a
+  ext_node_fs_a15b7d96["node:fs"] --> node_src_lib_project_brain_brain_validator_test_c51ec770
+  ext_node_fs_a15b7d96["node:fs"] --> node_src_commands_brain_test_bb8017ac
+  ext_node_fs_a15b7d96["node:fs"] --> node_src_commands_brain_test_bb8017ac
+  ext_node_fs_a15b7d96["node:fs"] --> node_src_commands_brainstorm_gate_test_8feca557
+  ext_node_fs_a15b7d96["node:fs"] --> node_src_lib_workflow_brainstorm_test_6ac1356e
+  ext_node_fs_a15b7d96["node:fs"] --> node_src_lib_memory_branch_enforcer_f38c3b70
+  ext_node_fs_a15b7d96["node:fs"] --> node_src_commands_branch_protect_e57bd6e5
+  ext_node_fs_a15b7d96["node:fs"] --> node_src_lib_ci_branch_protect_sync_1ea26be7
+  ext_node_fs_a15b7d96["node:fs"] --> node_src_lib_ci_branch_protect_sync_test_35b16538
+  ext_node_fs_a15b7d96["node:fs"] --> node_src_commands_check_9717c3ed
+  ext_node_fs_a15b7d96["node:fs"] --> node_src_commands_check_authz_test_f6b000b3
+  ext_node_fs_a15b7d96["node:fs"] --> node_src_commands_check_environment_61a1e6d1
+  ext_node_fs_a15b7d96["node:fs"] --> node_src_commands_check_environment_61a1e6d1
+  ext_node_fs_a15b7d96["node:fs"] --> node_src_commands_ci_migrate_test_7c0f9981
+  ext_node_fs_a15b7d96["node:fs"] --> node_src_cli_50037f41
+  ext_node_fs_a15b7d96["node:fs"] --> node_src_cli_dispatch_test_83d1aecc
+  ext_node_fs_a15b7d96["node:fs"] --> node_src_cli_test_c0ddbe99
+  ext_node_fs_a15b7d96["node:fs"] --> node_e2e_tests_command_pipeline_e2e_test_7b78a199
+  ext_node_fs_a15b7d96["node:fs"] --> node_src_lib_policy_command_policy_test_f85a3204
+  ext_node_fs_a15b7d96["node:fs"] --> node_src_lib_cli_command_registry_test_30bb0a99
+  ext_node_fs_a15b7d96["node:fs"] --> node_src_lib_cli_registry_command_specs_3533d0bd
+  ext_node_fs_a15b7d96["node:fs"] --> node_src_lib_ci_config_validator_b0366834
+  ext_node_fs_a15b7d96["node:fs"] --> node_src_lib_ci_config_validator_test_718b5a94
+  ext_node_fs_a15b7d96["node:fs"] --> node_src_lib_context_compound_context_compact_policy__0ad86893
+  ext_node_fs_a15b7d96["node:fs"] --> node_src_commands_context_health_c8159838
+  ext_node_fs_a15b7d96["node:fs"] --> node_src_commands_context_health_test_cee466db
+  ext_node_fs_a15b7d96["node:fs"] --> node_src_commands_context_integrity_acceptance_test_ec3eafae
+  ext_node_fs_a15b7d96["node:fs"] --> node_src_commands_context_test_04afd925
+  ext_node_fs_a15b7d96["node:fs"] --> node_src_commands_contract_5477dad2
+  ext_node_fs_a15b7d96["node:fs"] --> node_src_lib_pilot_evaluation_decision_packet_9b582bf2
+  ext_node_fs_a15b7d96["node:fs"] --> node_src_lib_review_gate_decision_packet_093b7885
+  ext_node_fs_a15b7d96["node:fs"] --> node_src_lib_pilot_evaluation_decision_packet_test_b0ad3727
+  ext_node_fs_a15b7d96["node:fs"] --> node_src_lib_review_gate_decision_packet_test_90fb9411
+  ext_node_fs_a15b7d96["node:fs"] --> node_src_lib_brainstorm_detector_20d990d6
+  ext_node_fs_a15b7d96["node:fs"] --> node_src_lib_plan_gate_detector_a9899778
+  ext_node_fs_a15b7d96["node:fs"] --> node_src_lib_project_type_detector_0ee6f281
+  ext_node_fs_a15b7d96["node:fs"] --> node_src_lib_silent_error_detector_06385e9f
+  ext_node_fs_a15b7d96["node:fs"] --> node_src_lib_brainstorm_detector_test_22068a91
+  ext_node_fs_a15b7d96["node:fs"] --> node_src_lib_project_type_detector_test_cdd46054
+  ext_node_fs_a15b7d96["node:fs"] --> node_src_lib_project_type_detector_test_cdd46054
+  ext_node_fs_a15b7d96["node:fs"] --> node_src_commands_diff_budget_b8b3e926
+  ext_node_fs_a15b7d96["node:fs"] --> node_src_commands_diff_budget_test_abd7c3ee
+  ext_node_fs_a15b7d96["node:fs"] --> node_src_commands_docs_gate_a9482c33
+  ext_node_fs_a15b7d96["node:fs"] --> node_src_commands_docs_gate_test_bebd4eac
+  ext_node_fs_a15b7d96["node:fs"] --> node_src_commands_doctor_2b7caa84
+  ext_node_fs_a15b7d96["node:fs"] --> node_src_lib_init_eject_8b3ad60e
+  ext_node_fs_a15b7d96["node:fs"] --> node_src_lib_init_eject_test_06d19bd1
+  ext_node_fs_a15b7d96["node:fs"] --> node_src_lib_init_eject_test_06d19bd1
+  ext_node_fs_a15b7d96["node:fs"] --> node_src_commands_evidence_verify_8b283e40
+  ext_node_fs_a15b7d96["node:fs"] --> node_src_commands_evidence_verify_test_d25d21f3
+  ext_node_fs_a15b7d96["node:fs"] --> node_src_commands_gap_case_test_1e9bd913
+  ext_node_fs_a15b7d96["node:fs"] --> node_src_commands_gardener_16ee9f29
+  ext_node_fs_a15b7d96["node:fs"] --> node_e2e_clients_github_e2e_886b5936
+  ext_node_fs_a15b7d96["node:fs"] --> node_e2e_tests_github_integration_e2e_test_8f5767c3
+  ext_node_fs_a15b7d96["node:fs"] --> node_src_commands_health_71013327
+  ext_node_fs_a15b7d96["node:fs"] --> node_src_commands_health_test_6d5f075c
+  ext_node_fs_a15b7d96["node:fs"] --> node_src_commands_index_context_76d00fdb
+  ext_node_fs_a15b7d96["node:fs"] --> node_src_lib_context_compound_indexer_e7ad2047
+  ext_node_fs_a15b7d96["node:fs"] --> node_src_commands_init_test_208f2f42
+  ext_node_fs_a15b7d96["node:fs"] --> node_src_commands_init_test_208f2f42
+  ext_node_fs_a15b7d96["node:fs"] --> node_src_commands_init_test_208f2f42
+  ext_node_fs_a15b7d96["node:fs"] --> node_src_commands_init_test_208f2f42
+  ext_node_fs_a15b7d96["node:fs"] --> node_src_commands_init_test_208f2f42
+  ext_node_fs_a15b7d96["node:fs"] --> node_src_commands_init_test_208f2f42
+  ext_node_fs_a15b7d96["node:fs"] --> node_src_commands_init_test_208f2f42
+  ext_node_fs_a15b7d96["node:fs"] --> node_src_commands_init_test_208f2f42
+  ext_node_fs_a15b7d96["node:fs"] --> node_src_commands_init_test_208f2f42
+  ext_node_fs_a15b7d96["node:fs"] --> node_src_commands_init_test_208f2f42
+  ext_node_fs_a15b7d96["node:fs"] --> node_src_commands_init_test_208f2f42
+  ext_node_fs_a15b7d96["node:fs"] --> node_src_commands_init_test_208f2f42
+  ext_node_fs_a15b7d96["node:fs"] --> node_src_commands_init_test_208f2f42
+  ext_node_fs_a15b7d96["node:fs"] --> node_src_commands_init_test_208f2f42
+  ext_node_fs_a15b7d96["node:fs"] --> node_src_commands_init_test_208f2f42
+  ext_node_fs_a15b7d96["node:fs"] --> node_src_commands_init_test_208f2f42
+  ext_node_fs_a15b7d96["node:fs"] --> node_src_commands_init_test_208f2f42
+  ext_node_fs_a15b7d96["node:fs"] --> node_src_commands_init_test_208f2f42
+  ext_node_fs_a15b7d96["node:fs"] --> node_src_commands_init_test_208f2f42
+  ext_node_fs_a15b7d96["node:fs"] --> node_src_commands_init_test_208f2f42
+  ext_node_fs_a15b7d96["node:fs"] --> node_src_commands_init_test_208f2f42
+  ext_node_fs_a15b7d96["node:fs"] --> node_src_commands_init_test_208f2f42
+  ext_node_fs_a15b7d96["node:fs"] --> node_src_commands_init_test_208f2f42
+  ext_node_fs_a15b7d96["node:fs"] --> node_src_commands_init_test_208f2f42
+  ext_node_fs_a15b7d96["node:fs"] --> node_src_commands_init_test_208f2f42
+  ext_node_fs_a15b7d96["node:fs"] --> node_src_commands_init_test_208f2f42
+  ext_node_fs_a15b7d96["node:fs"] --> node_src_commands_init_test_208f2f42
+  ext_node_fs_a15b7d96["node:fs"] --> node_src_commands_init_test_208f2f42
+  ext_node_fs_a15b7d96["node:fs"] --> node_src_commands_init_test_208f2f42
+  ext_node_fs_a15b7d96["node:fs"] --> node_src_commands_init_test_208f2f42
+  ext_node_fs_a15b7d96["node:fs"] --> node_src_commands_init_test_208f2f42
+  ext_node_fs_a15b7d96["node:fs"] --> node_src_commands_init_test_208f2f42
+  ext_node_fs_a15b7d96["node:fs"] --> node_src_commands_init_test_208f2f42
+  ext_node_fs_a15b7d96["node:fs"] --> node_src_commands_init_test_208f2f42
+  ext_node_fs_a15b7d96["node:fs"] --> node_src_commands_init_test_208f2f42
+  ext_node_fs_a15b7d96["node:fs"] --> node_src_commands_init_test_208f2f42
+  ext_node_fs_a15b7d96["node:fs"] --> node_src_commands_init_test_208f2f42
+  ext_node_fs_a15b7d96["node:fs"] --> node_src_commands_init_test_208f2f42
+  ext_node_fs_a15b7d96["node:fs"] --> node_src_commands_init_test_208f2f42
+  ext_node_fs_a15b7d96["node:fs"] --> node_src_commands_init_test_208f2f42
+  ext_node_fs_a15b7d96["node:fs"] --> node_src_commands_init_test_208f2f42
+  ext_node_fs_a15b7d96["node:fs"] --> node_src_commands_init_test_208f2f42
+  ext_node_fs_a15b7d96["node:fs"] --> node_src_commands_init_test_208f2f42
+  ext_node_fs_a15b7d96["node:fs"] --> node_src_commands_init_test_208f2f42
+  ext_node_fs_a15b7d96["node:fs"] --> node_src_commands_init_test_208f2f42
+  ext_node_fs_a15b7d96["node:fs"] --> node_src_commands_init_test_208f2f42
+  ext_node_fs_a15b7d96["node:fs"] --> node_src_commands_init_test_208f2f42
+  ext_node_fs_a15b7d96["node:fs"] --> node_src_commands_init_test_208f2f42
+  ext_node_fs_a15b7d96["node:fs"] --> node_src_commands_init_test_208f2f42
+  ext_node_fs_a15b7d96["node:fs"] --> node_src_commands_init_test_208f2f42
+  ext_node_fs_a15b7d96["node:fs"] --> node_src_commands_init_test_208f2f42
+  ext_node_fs_a15b7d96["node:fs"] --> node_src_commands_init_test_208f2f42
+  ext_node_fs_a15b7d96["node:fs"] --> node_src_commands_init_test_208f2f42
+  ext_node_fs_a15b7d96["node:fs"] --> node_src_commands_init_test_208f2f42
+  ext_node_fs_a15b7d96["node:fs"] --> node_src_commands_init_test_208f2f42
+  ext_node_fs_a15b7d96["node:fs"] --> node_src_commands_init_test_208f2f42
+  ext_node_fs_a15b7d96["node:fs"] --> node_src_commands_init_test_208f2f42
+  ext_node_fs_a15b7d96["node:fs"] --> node_src_commands_init_test_208f2f42
+  ext_node_fs_a15b7d96["node:fs"] --> node_src_commands_init_test_208f2f42
+  ext_node_fs_a15b7d96["node:fs"] --> node_src_commands_init_test_208f2f42
+  ext_node_fs_a15b7d96["node:fs"] --> node_src_commands_init_test_208f2f42
+  ext_node_fs_a15b7d96["node:fs"] --> node_src_commands_init_test_208f2f42
+  ext_node_fs_a15b7d96["node:fs"] --> node_src_commands_init_test_208f2f42
+  ext_node_fs_a15b7d96["node:fs"] --> node_src_commands_init_test_208f2f42
+  ext_node_fs_a15b7d96["node:fs"] --> node_src_commands_init_test_208f2f42
+  ext_node_fs_a15b7d96["node:fs"] --> node_src_commands_init_test_208f2f42
+  ext_node_fs_a15b7d96["node:fs"] --> node_src_commands_init_test_208f2f42
+  ext_node_fs_a15b7d96["node:fs"] --> node_src_commands_init_test_208f2f42
+  ext_node_fs_a15b7d96["node:fs"] --> node_src_commands_init_test_208f2f42
+  ext_node_fs_a15b7d96["node:fs"] --> node_src_commands_init_test_208f2f42
+  ext_node_fs_a15b7d96["node:fs"] --> node_src_commands_init_test_208f2f42
+  ext_node_fs_a15b7d96["node:fs"] --> node_src_commands_init_test_208f2f42
+  ext_node_fs_a15b7d96["node:fs"] --> node_src_commands_init_test_208f2f42
+  ext_node_fs_a15b7d96["node:fs"] --> node_src_commands_init_test_208f2f42
+  ext_node_fs_a15b7d96["node:fs"] --> node_src_commands_init_test_208f2f42
+  ext_node_fs_a15b7d96["node:fs"] --> node_src_commands_init_test_208f2f42
+  ext_node_fs_a15b7d96["node:fs"] --> node_src_commands_init_test_208f2f42
+  ext_node_fs_a15b7d96["node:fs"] --> node_src_commands_init_test_208f2f42
+  ext_node_fs_a15b7d96["node:fs"] --> node_src_commands_init_test_208f2f42
+  ext_node_fs_a15b7d96["node:fs"] --> node_src_commands_init_test_208f2f42
+  ext_node_fs_a15b7d96["node:fs"] --> node_src_commands_init_test_208f2f42
+  ext_node_fs_a15b7d96["node:fs"] --> node_src_commands_init_test_208f2f42
+  ext_node_fs_a15b7d96["node:fs"] --> node_src_commands_init_test_208f2f42
+  ext_node_fs_a15b7d96["node:fs"] --> node_src_commands_init_test_208f2f42
+  ext_node_fs_a15b7d96["node:fs"] --> node_src_commands_init_test_208f2f42
+  ext_node_fs_a15b7d96["node:fs"] --> node_src_commands_init_test_208f2f42
+  ext_node_fs_a15b7d96["node:fs"] --> node_src_lib_agents_instruction_compat_2828d0f1
+  ext_node_fs_a15b7d96["node:fs"] --> node_src_lib_agents_instruction_compat_test_14014b84
+  ext_node_fs_a15b7d96["node:fs"] --> node_src_lib_cli_legacy_dispatch_guard_test_c6d6c5c7
+  ext_node_fs_a15b7d96["node:fs"] --> node_src_lib_context_compound_lexical_fallback_eeb9773b
+  ext_node_fs_a15b7d96["node:fs"] --> node_src_commands_license_gate_test_0cecbd36
+  ext_node_fs_a15b7d96["node:fs"] --> node_src_commands_linear_gate_3a2dbdda
+  ext_node_fs_a15b7d96["node:fs"] --> node_src_commands_linear_gate_test_d7fab54c
+  ext_node_fs_a15b7d96["node:fs"] --> node_e2e_tests_linear_integration_e2e_test_1632523d
+  ext_node_fs_a15b7d96["node:fs"] --> node_src_commands_linear_sync_80a223b3
+  ext_node_fs_a15b7d96["node:fs"] --> node_src_lib_gardener_link_checker_95a109ed
+  ext_node_fs_a15b7d96["node:fs"] --> node_src_lib_contract_loader_c7304ec8
+  ext_node_fs_a15b7d96["node:fs"] --> node_src_lib_evidence_loader_05d04a48
+  ext_node_fs_a15b7d96["node:fs"] --> node_src_lib_evidence_loader_05d04a48
+  ext_node_fs_a15b7d96["node:fs"] --> node_src_lib_contract_loader_test_5aaec341
+  ext_node_fs_a15b7d96["node:fs"] --> node_src_lib_preflight_local_memory_83be6dca
+  ext_node_fs_a15b7d96["node:fs"] --> node_src_commands_local_memory_preflight_test_d06baa31
+  ext_node_fs_a15b7d96["node:fs"] --> node_src_lib_project_brain_metadata_scanner_f8a74ca7
+  ext_node_fs_a15b7d96["node:fs"] --> node_src_lib_project_brain_metadata_scanner_test_97060023
+  ext_node_fs_a15b7d96["node:fs"] --> node_src_lib_pilot_evaluation_metrics_capture_6a557a25
+  ext_node_fs_a15b7d96["node:fs"] --> node_src_lib_memory_metrics_tracker_test_2fadfb06
+  ext_node_fs_a15b7d96["node:fs"] --> node_src_lib_architecture_module_boundaries_test_4b2e2143
+  ext_node_fs_a15b7d96["node:fs"] --> node_src_commands_org_audit_bd496958
+  ext_node_fs_a15b7d96["node:fs"] --> node_src_commands_org_audit_test_8f29d4e0
+  ext_node_fs_a15b7d96["node:fs"] --> node_src_lib_workflow_contract_parser_test_66082e58
+  ext_node_fs_a15b7d96["node:fs"] --> node_src_commands_pilot_evaluate_83c96a06
+  ext_node_fs_a15b7d96["node:fs"] --> node_src_commands_pilot_evaluate_test_983799d7
+  ext_node_fs_a15b7d96["node:fs"] --> node_src_commands_pilot_rollback_test_635b55ad
+  ext_node_fs_a15b7d96["node:fs"] --> node_src_commands_pilot_rollback_test_635b55ad
+  ext_node_fs_a15b7d96["node:fs"] --> node_src_commands_pilot_rollback_test_635b55ad
+  ext_node_fs_a15b7d96["node:fs"] --> node_src_commands_pilot_rollback_test_635b55ad
+  ext_node_fs_a15b7d96["node:fs"] --> node_src_commands_pilot_rollback_test_635b55ad
+  ext_node_fs_a15b7d96["node:fs"] --> node_src_commands_pilot_rollback_test_635b55ad
+  ext_node_fs_a15b7d96["node:fs"] --> node_src_commands_pilot_rollback_test_635b55ad
+  ext_node_fs_a15b7d96["node:fs"] --> node_src_lib_workflow_plan_1246fd80
+  ext_node_fs_a15b7d96["node:fs"] --> node_src_commands_plan_gate_test_d9d60c82
+  ext_node_fs_a15b7d96["node:fs"] --> node_src_commands_pr_template_gate_fd6e14c3
+  ext_node_fs_a15b7d96["node:fs"] --> node_src_lib_preset_detection_df7bb651
+  ext_node_fs_a15b7d96["node:fs"] --> node_src_lib_contract_preset_resolver_ed8af332
+  ext_node_fs_a15b7d96["node:fs"] --> node_src_commands_prompt_gate_bda26456
+  ext_node_fs_a15b7d96["node:fs"] --> node_src_lib_ci_provider_adapter_c2af78b0
+  ext_node_fs_a15b7d96["node:fs"] --> node_src_lib_gardener_quality_scorer_8fe3e3db
+  ext_node_fs_a15b7d96["node:fs"] --> node_src_lib_pilot_evaluation_registries_0709e622
+  ext_node_fs_a15b7d96["node:fs"] --> node_src_lib_workflow_contract_registry_d423a051
+  ext_node_fs_a15b7d96["node:fs"] --> node_src_lib_workflow_contract_registry_d423a051
+  ext_node_fs_a15b7d96["node:fs"] --> node_src_commands_remediate_test_b0fcf4ec
+  ext_node_fs_a15b7d96["node:fs"] --> node_src_commands_replay_test_1134c260
+  ext_node_fs_a15b7d96["node:fs"] --> node_src_lib_governance_repo_scanner_6df641c5
+  ext_node_fs_a15b7d96["node:fs"] --> node_src_lib_org_repositories_8d4fc5a7
+  ext_node_fs_a15b7d96["node:fs"] --> node_src_lib_policy_required_checks_test_db06e8af
+  ext_node_fs_a15b7d96["node:fs"] --> node_e2e_utils_resource_tracker_d629c5ed
+  ext_node_fs_a15b7d96["node:fs"] --> node_e2e_utils_resource_tracker_d629c5ed
+  ext_node_fs_a15b7d96["node:fs"] --> node_src_lib_verify_resume_admissibility_f9c6e863
+  ext_node_fs_a15b7d96["node:fs"] --> node_src_commands_review_gate_b74630a3
+  ext_node_fs_a15b7d96["node:fs"] --> node_src_commands_review_gate_test_dea5880b
+  ext_node_fs_a15b7d96["node:fs"] --> node_src_commands_risk_tier_test_da8ec745
+  ext_node_fs_a15b7d96["node:fs"] --> node_e2e_run_e2e_f80c6fa8
+  ext_node_fs_a15b7d96["node:fs"] --> node_src_lib_contract_run_record_emitter_ae66a1ec
+  ext_node_fs_a15b7d96["node:fs"] --> node_src_lib_contract_run_records_test_29458901
+  ext_node_fs_a15b7d96["node:fs"] --> node_src_lib_ci_satisfiability_e825a617
+  ext_node_fs_a15b7d96["node:fs"] --> node_src_lib_init_scaffold_0491ad83
+  ext_node_fs_a15b7d96["node:fs"] --> node_src_lib_init_scaffold_ci_templates_07d643ff
+  ext_node_fs_a15b7d96["node:fs"] --> node_src_lib_init_scaffold_governance_templates_004f982f
+  ext_node_fs_a15b7d96["node:fs"] --> node_src_lib_init_scaffold_hook_templates_0b5a55e9
+  ext_node_fs_a15b7d96["node:fs"] --> node_src_lib_init_scaffold_hook_templates_0b5a55e9
+  ext_node_fs_a15b7d96["node:fs"] --> node_src_lib_init_scaffold_root_templates_32adb40e
+  ext_node_fs_a15b7d96["node:fs"] --> node_src_lib_init_scaffold_shell_templates_8b422313
+  ext_node_fs_a15b7d96["node:fs"] --> node_src_lib_init_scaffold_shell_templates_8b422313
+  ext_node_fs_a15b7d96["node:fs"] --> node_src_lib_init_scaffold_worktree_templates_7418d0c4
+  ext_node_fs_a15b7d96["node:fs"] --> node_src_lib_governance_scan_cache_test_6c8cf65d
+  ext_node_fs_a15b7d96["node:fs"] --> node_src_lib_governance_scan_cache_test_6c8cf65d
+  ext_node_fs_a15b7d96["node:fs"] --> node_scripts_setup_git_hooks_2ed98c53
+  ext_node_fs_a15b7d96["node:fs"] --> node_src_commands_simulate_test_17cdb2fd
+  ext_node_fs_a15b7d96["node:fs"] --> node_src_commands_solo_mode_test_cd5d21e8
+  ext_node_fs_a15b7d96["node:fs"] --> node_src_lib_source_outline_7130a0cd
+  ext_node_fs_a15b7d96["node:fs"] --> node_src_commands_source_outline_test_e77c23d2
+  ext_node_fs_a15b7d96["node:fs"] --> node_src_lib_gardener_stale_detector_3ad97daa
+  ext_node_fs_a15b7d96["node:fs"] --> node_src_lib_gardener_stale_detector_test_ae0df545
+  ext_node_fs_a15b7d96["node:fs"] --> node_src_lib_context_compound_store_d1f2d9b9
+  ext_node_fs_a15b7d96["node:fs"] --> node_src_lib_context_compound_store_d1f2d9b9
+  ext_node_fs_a15b7d96["node:fs"] --> node_src_lib_project_brain_suggestion_generator_50c228fb
+  ext_node_fs_a15b7d96["node:fs"] --> node_src_lib_project_brain_suggestion_generator_test_1fcfcfaf
+  ext_node_fs_a15b7d96["node:fs"] --> node_src_commands_symphony_check_055464ba
+  ext_node_fs_a15b7d96["node:fs"] --> node_src_commands_symphony_check_test_b9bd2d4d
+  ext_node_fs_a15b7d96["node:fs"] --> node_src_lib_workflow_contract_test_harness_ab8265f7
+  ext_node_fs_a15b7d96["node:fs"] --> node_src_lib_workflow_contract_test_harness_test_9c43ce28
+  ext_node_fs_a15b7d96["node:fs"] --> node_src_commands_tooling_audit_6606d949
+  ext_node_fs_a15b7d96["node:fs"] --> node_src_commands_tooling_audit_test_874a714a
+  ext_node_fs_a15b7d96["node:fs"] --> node_src_lib_replay_tracer_c6b49784
+  ext_node_fs_a15b7d96["node:fs"] --> node_src_lib_replay_tracer_c6b49784
+  ext_node_fs_a15b7d96["node:fs"] --> node_src_lib_replay_tracer_test_eec65c7d
+  ext_node_fs_a15b7d96["node:fs"] --> node_src_lib_replay_tracer_test_eec65c7d
+  ext_node_fs_a15b7d96["node:fs"] --> node_src_commands_ui_loop_14f94e39
+  ext_node_fs_a15b7d96["node:fs"] --> node_src_commands_ui_loop_test_1c615cb8
+  ext_node_fs_a15b7d96["node:fs"] --> node_src_lib_init_update_e8dc9bf6
+  ext_node_fs_a15b7d96["node:fs"] --> node_src_commands_upgrade_7c2e21f2
+  ext_node_fs_a15b7d96["node:fs"] --> node_src_lib_init_upgrade_e1d7cdbc
+  ext_node_fs_a15b7d96["node:fs"] --> node_scripts_validate_commit_msg_c49346f6
+  ext_node_fs_a15b7d96["node:fs"] --> node_src_lib_evidence_validator_4a254158
+  ext_node_fs_a15b7d96["node:fs"] --> node_src_lib_evidence_validator_4a254158
+  ext_node_fs_a15b7d96["node:fs"] --> node_src_lib_input_validator_b95e8971
+  ext_node_fs_a15b7d96["node:fs"] --> node_src_lib_license_validator_9be9419a
+  ext_node_fs_a15b7d96["node:fs"] --> node_src_lib_memory_validator_dbba8eeb
+  ext_node_fs_a15b7d96["node:fs"] --> node_src_lib_preflight_validator_4657555d
+  ext_node_fs_a15b7d96["node:fs"] --> node_src_lib_evidence_validator_test_9ebe4bd6
+  ext_node_fs_a15b7d96["node:fs"] --> node_src_lib_license_validator_test_305b4930
+  ext_node_fs_a15b7d96["node:fs"] --> node_src_lib_memory_validator_test_66feb032
+  ext_node_fs_a15b7d96["node:fs"] --> node_src_lib_preflight_validator_test_580e17d6
+  ext_node_fs_a15b7d96["node:fs"] --> node_src_commands_verify_coderabbit_9883399d
+  ext_node_fs_a15b7d96["node:fs"] --> node_src_commands_verify_coderabbit_test_ceaa2143
+  ext_node_fs_a15b7d96["node:fs"] --> node_src_commands_verify_work_43c69927
+  ext_node_fs_a15b7d96["node:fs"] --> node_src_lib_version_337bb7ee
+  ext_node_fs_a15b7d96["node:fs"] --> node_src_lib_version_coherence_cb803a5e
+  ext_node_fs_a15b7d96["node:fs"] --> node_src_commands_workflow_generate_3099b8dd
+  ext_node_module_ca1b42af["node:module"] --> node_src_commands_health_71013327
+  ext_node_os_d93fe73a["node:os"] --> node_src_commands_automation_run_test_e2f83281
+  ext_node_os_d93fe73a["node:os"] --> node_src_commands_blast_radius_test_fb4e7d14
+  ext_node_os_d93fe73a["node:os"] --> node_src_lib_project_brain_brain_validator_test_c51ec770
+  ext_node_os_d93fe73a["node:os"] --> node_src_commands_brainstorm_gate_test_8feca557
+  ext_node_os_d93fe73a["node:os"] --> node_src_lib_ci_branch_protect_sync_test_35b16538
+  ext_node_os_d93fe73a["node:os"] --> node_src_commands_check_diagram_freshness_test_5e858bc8
+  ext_node_os_d93fe73a["node:os"] --> node_src_commands_check_environment_test_177a8ad6
+  ext_node_os_d93fe73a["node:os"] --> node_src_commands_check_test_aaa8bb13
+  ext_node_os_d93fe73a["node:os"] --> node_src_commands_ci_migrate_test_7c0f9981
+  ext_node_os_d93fe73a["node:os"] --> node_src_cli_dispatch_test_83d1aecc
+  ext_node_os_d93fe73a["node:os"] --> node_src_lib_init_codex_preflight_symlink_test_34429399
+  ext_node_os_d93fe73a["node:os"] --> node_e2e_tests_command_pipeline_e2e_test_7b78a199
+  ext_node_os_d93fe73a["node:os"] --> node_src_lib_cli_registry_command_specs_test_771e2132
+  ext_node_os_d93fe73a["node:os"] --> node_src_lib_ci_config_validator_test_718b5a94
+  ext_node_os_d93fe73a["node:os"] --> node_src_lib_context_compound_context_compact_policy__0ad86893
+  ext_node_os_d93fe73a["node:os"] --> node_src_commands_context_test_04afd925
+  ext_node_os_d93fe73a["node:os"] --> node_src_commands_contract_test_e27f09d5
+  ext_node_os_d93fe73a["node:os"] --> node_src_lib_project_type_detector_test_cdd46054
+  ext_node_os_d93fe73a["node:os"] --> node_src_lib_silent_error_detector_test_f1fe45a6
+  ext_node_os_d93fe73a["node:os"] --> node_src_commands_doctor_test_7af6f23c
+  ext_node_os_d93fe73a["node:os"] --> node_src_lib_init_eject_test_06d19bd1
+  ext_node_os_d93fe73a["node:os"] --> node_src_commands_evidence_verify_test_d25d21f3
+  ext_node_os_d93fe73a["node:os"] --> node_e2e_clients_github_e2e_886b5936
+  ext_node_os_d93fe73a["node:os"] --> node_e2e_tests_github_integration_e2e_test_8f5767c3
+  ext_node_os_d93fe73a["node:os"] --> node_src_commands_health_test_6d5f075c
+  ext_node_os_d93fe73a["node:os"] --> node_src_commands_index_context_test_552c8613
+  ext_node_os_d93fe73a["node:os"] --> node_src_lib_context_compound_indexer_test_473c7216
+  ext_node_os_d93fe73a["node:os"] --> node_src_commands_init_test_208f2f42
+  ext_node_os_d93fe73a["node:os"] --> node_src_lib_agents_instruction_compat_test_14014b84
+  ext_node_os_d93fe73a["node:os"] --> node_src_commands_license_gate_test_0cecbd36
+  ext_node_os_d93fe73a["node:os"] --> node_src_commands_linear_gate_test_d7fab54c
+  ext_node_os_d93fe73a["node:os"] --> node_e2e_tests_linear_integration_e2e_test_1632523d
+  ext_node_os_d93fe73a["node:os"] --> node_src_lib_gardener_link_checker_95a109ed
+  ext_node_os_d93fe73a["node:os"] --> node_src_commands_local_memory_preflight_test_d06baa31
+  ext_node_os_d93fe73a["node:os"] --> node_src_commands_org_audit_test_8f29d4e0
+  ext_node_os_d93fe73a["node:os"] --> node_src_lib_test_overload_guard_f486fb04
+  ext_node_os_d93fe73a["node:os"] --> node_src_lib_test_overload_guard_test_77d5d34a
+  ext_node_os_d93fe73a["node:os"] --> node_src_lib_preflight_performance_overload_02c46206
+  ext_node_os_d93fe73a["node:os"] --> node_src_commands_pilot_rollback_test_635b55ad
+  ext_node_os_d93fe73a["node:os"] --> node_src_commands_pr_template_gate_test_a29a4275
+  ext_node_os_d93fe73a["node:os"] --> node_src_commands_promote_mode_test_e8e5e339
+  ext_node_os_d93fe73a["node:os"] --> node_src_commands_refresh_diagram_context_test_7c9f3447
+  ext_node_os_d93fe73a["node:os"] --> node_src_commands_replay_test_1134c260
+  ext_node_os_d93fe73a["node:os"] --> node_src_lib_verify_resume_admissibility_test_67530e17
+  ext_node_os_d93fe73a["node:os"] --> node_src_commands_review_gate_test_dea5880b
+  ext_node_os_d93fe73a["node:os"] --> node_src_lib_init_rollback_test_13a5730f
+  ext_node_os_d93fe73a["node:os"] --> node_src_lib_verify_run_state_test_6fc192b5
+  ext_node_os_d93fe73a["node:os"] --> node_src_lib_init_scaffold_test_afcf14e9
+  ext_node_os_d93fe73a["node:os"] --> node_src_lib_governance_scan_cache_test_6c8cf65d
+  ext_node_os_d93fe73a["node:os"] --> node_src_lib_governance_scan_cache_test_6c8cf65d
+  ext_node_os_d93fe73a["node:os"] --> node_src_commands_simulate_test_17cdb2fd
+  ext_node_os_d93fe73a["node:os"] --> node_src_commands_solo_mode_test_cd5d21e8
+  ext_node_os_d93fe73a["node:os"] --> node_src_commands_source_outline_test_e77c23d2
+  ext_node_os_d93fe73a["node:os"] --> node_src_lib_project_brain_suggestion_generator_test_1fcfcfaf
+  ext_node_os_d93fe73a["node:os"] --> node_src_commands_symphony_check_test_b9bd2d4d
+  ext_node_os_d93fe73a["node:os"] --> node_src_lib_workflow_contract_test_harness_ab8265f7
+  ext_node_os_d93fe73a["node:os"] --> node_src_commands_tooling_audit_test_874a714a
+  ext_node_os_d93fe73a["node:os"] --> node_src_commands_upgrade_test_5c1f4810
+  ext_node_os_d93fe73a["node:os"] --> node_src_lib_evidence_validator_test_9ebe4bd6
+  ext_node_os_d93fe73a["node:os"] --> node_src_lib_input_validator_test_4844e0b1
+  ext_node_os_d93fe73a["node:os"] --> node_src_lib_license_validator_test_305b4930
+  ext_node_os_d93fe73a["node:os"] --> node_src_lib_memory_validator_test_66feb032
+  ext_node_os_d93fe73a["node:os"] --> node_src_lib_preflight_validator_test_580e17d6
+  ext_node_os_d93fe73a["node:os"] --> node_src_commands_verify_coderabbit_test_ceaa2143
+  ext_node_os_d93fe73a["node:os"] --> node_src_commands_verify_work_43c69927
+  ext_node_os_d93fe73a["node:os"] --> node_src_commands_verify_work_test_24b4f5ea
+  ext_node_os_d93fe73a["node:os"] --> node_src_lib_version_coherence_test_c9c1cc52
+  ext_node_os_d93fe73a["node:os"] --> node_src_lib_init_workflow_contract_scripts_test_42efa4fe
+  ext_node_os_d93fe73a["node:os"] --> node_src_commands_workflow_generate_test_981498a8
+  ext_node_path_78811c13["node:path"] --> node_src_commands_agent_first_throughput_integration__4f0ddd7b
+  ext_node_path_78811c13["node:path"] --> node_src_lib_init_ast_grep_rules_test_b664c54b
+  ext_node_path_78811c13["node:path"] --> node_src_commands_audit_bd6de8bd
+  ext_node_path_78811c13["node:path"] --> node_src_commands_audit_test_cf82f906
+  ext_node_path_78811c13["node:path"] --> node_src_lib_review_gate_authz_473e26c6
+  ext_node_path_78811c13["node:path"] --> node_src_commands_automation_run_2d0faa41
+  ext_node_path_78811c13["node:path"] --> node_src_commands_automation_run_test_e2f83281
+  ext_node_path_78811c13["node:path"] --> node_src_commands_blast_radius_test_fb4e7d14
+  ext_node_path_78811c13["node:path"] --> node_src_commands_brain_65b70a91
+  ext_node_path_78811c13["node:path"] --> node_src_lib_project_brain_brain_validator_d1c3cb6a
+  ext_node_path_78811c13["node:path"] --> node_src_lib_project_brain_brain_validator_test_c51ec770
+  ext_node_path_78811c13["node:path"] --> node_src_commands_brain_test_bb8017ac
+  ext_node_path_78811c13["node:path"] --> node_src_lib_workflow_brainstorm_6ca71c32
+  ext_node_path_78811c13["node:path"] --> node_src_commands_brainstorm_gate_test_8feca557
+  ext_node_path_78811c13["node:path"] --> node_src_lib_workflow_brainstorm_test_6ac1356e
+  ext_node_path_78811c13["node:path"] --> node_src_lib_memory_branch_enforcer_f38c3b70
+  ext_node_path_78811c13["node:path"] --> node_src_commands_branch_protect_e57bd6e5
+  ext_node_path_78811c13["node:path"] --> node_src_lib_ci_branch_protect_sync_1ea26be7
+  ext_node_path_78811c13["node:path"] --> node_src_lib_ci_branch_protect_sync_test_35b16538
+  ext_node_path_78811c13["node:path"] --> node_src_commands_check_9717c3ed
+  ext_node_path_78811c13["node:path"] --> node_src_commands_check_authz_test_f6b000b3
+  ext_node_path_78811c13["node:path"] --> node_src_commands_check_diagram_freshness_test_5e858bc8
+  ext_node_path_78811c13["node:path"] --> node_src_commands_check_environment_61a1e6d1
+  ext_node_path_78811c13["node:path"] --> node_src_commands_check_environment_test_177a8ad6
+  ext_node_path_78811c13["node:path"] --> node_src_commands_check_test_aaa8bb13
+  ext_node_path_78811c13["node:path"] --> node_src_commands_ci_migrate_9cb53e30
+  ext_node_path_78811c13["node:path"] --> node_src_lib_ci_ci_migrate_snapshot_paths_d973b626
+  ext_node_path_78811c13["node:path"] --> node_src_lib_ci_ci_migrate_snapshot_paths_test_52ed25b1
+  ext_node_path_78811c13["node:path"] --> node_src_commands_ci_migrate_test_7c0f9981
+  ext_node_path_78811c13["node:path"] --> node_src_commands_ci_migrate_test_7c0f9981
+  ext_node_path_78811c13["node:path"] --> node_src_cli_50037f41
+  ext_node_path_78811c13["node:path"] --> node_src_lib_init_cli_43b2583c
+  ext_node_path_78811c13["node:path"] --> node_src_cli_dispatch_test_83d1aecc
+  ext_node_path_78811c13["node:path"] --> node_src_cli_test_c0ddbe99
+  ext_node_path_78811c13["node:path"] --> node_src_lib_init_codex_preflight_symlink_test_34429399
+  ext_node_path_78811c13["node:path"] --> node_e2e_tests_command_pipeline_e2e_test_7b78a199
+  ext_node_path_78811c13["node:path"] --> node_src_lib_policy_command_policy_test_f85a3204
+  ext_node_path_78811c13["node:path"] --> node_src_lib_cli_command_registry_test_30bb0a99
+  ext_node_path_78811c13["node:path"] --> node_src_lib_cli_registry_command_specs_test_771e2132
+  ext_node_path_78811c13["node:path"] --> node_src_lib_ci_config_validator_b0366834
+  ext_node_path_78811c13["node:path"] --> node_src_lib_ci_config_validator_test_718b5a94
+  ext_node_path_78811c13["node:path"] --> node_src_commands_context_a173b3b5
+  ext_node_path_78811c13["node:path"] --> node_src_lib_context_compound_context_compact_policy__0ad86893
+  ext_node_path_78811c13["node:path"] --> node_src_commands_context_health_c8159838
+  ext_node_path_78811c13["node:path"] --> node_src_commands_context_health_test_cee466db
+  ext_node_path_78811c13["node:path"] --> node_src_commands_context_integrity_acceptance_test_ec3eafae
+  ext_node_path_78811c13["node:path"] --> node_src_commands_context_test_04afd925
+  ext_node_path_78811c13["node:path"] --> node_src_commands_contract_5477dad2
+  ext_node_path_78811c13["node:path"] --> node_src_commands_contract_test_e27f09d5
+  ext_node_path_78811c13["node:path"] --> node_src_lib_pilot_evaluation_control_plane_9fcff894
+  ext_node_path_78811c13["node:path"] --> node_src_lib_pilot_evaluation_control_plane_test_6b85b9d4
+  ext_node_path_78811c13["node:path"] --> node_src_lib_pilot_evaluation_decision_packet_9b582bf2
+  ext_node_path_78811c13["node:path"] --> node_src_lib_review_gate_decision_packet_093b7885
+  ext_node_path_78811c13["node:path"] --> node_src_lib_pilot_evaluation_decision_packet_test_b0ad3727
+  ext_node_path_78811c13["node:path"] --> node_src_lib_review_gate_decision_packet_test_90fb9411
+  ext_node_path_78811c13["node:path"] --> node_src_lib_brainstorm_detector_20d990d6
+  ext_node_path_78811c13["node:path"] --> node_src_lib_plan_gate_detector_a9899778
+  ext_node_path_78811c13["node:path"] --> node_src_lib_project_type_detector_0ee6f281
+  ext_node_path_78811c13["node:path"] --> node_src_lib_silent_error_detector_06385e9f
+  ext_node_path_78811c13["node:path"] --> node_src_lib_brainstorm_detector_test_22068a91
+  ext_node_path_78811c13["node:path"] --> node_src_lib_project_type_detector_test_cdd46054
+  ext_node_path_78811c13["node:path"] --> node_src_lib_project_type_detector_test_cdd46054
+  ext_node_path_78811c13["node:path"] --> node_src_lib_silent_error_detector_test_f1fe45a6
+  ext_node_path_78811c13["node:path"] --> node_src_commands_docs_gate_a9482c33
+  ext_node_path_78811c13["node:path"] --> node_src_commands_docs_gate_test_bebd4eac
+  ext_node_path_78811c13["node:path"] --> node_src_commands_doctor_2b7caa84
+  ext_node_path_78811c13["node:path"] --> node_src_commands_doctor_test_7af6f23c
+  ext_node_path_78811c13["node:path"] --> node_src_commands_drift_gate_5163a260
+  ext_node_path_78811c13["node:path"] --> node_src_commands_drift_gate_test_46e320e7
+  ext_node_path_78811c13["node:path"] --> node_src_lib_init_eject_8b3ad60e
+  ext_node_path_78811c13["node:path"] --> node_src_lib_init_eject_test_06d19bd1
+  ext_node_path_78811c13["node:path"] --> node_src_commands_evidence_verify_8b283e40
+  ext_node_path_78811c13["node:path"] --> node_src_commands_evidence_verify_test_d25d21f3
+  ext_node_path_78811c13["node:path"] --> node_src_commands_gap_case_f7fe09bc
+  ext_node_path_78811c13["node:path"] --> node_src_commands_gap_case_test_1e9bd913
+  ext_node_path_78811c13["node:path"] --> node_src_commands_gardener_16ee9f29
+  ext_node_path_78811c13["node:path"] --> node_src_commands_gardener_test_01d5ad19
+  ext_node_path_78811c13["node:path"] --> node_e2e_clients_github_e2e_886b5936
+  ext_node_path_78811c13["node:path"] --> node_e2e_tests_github_integration_e2e_test_8f5767c3
+  ext_node_path_78811c13["node:path"] --> node_src_commands_health_71013327
+  ext_node_path_78811c13["node:path"] --> node_src_commands_health_test_6d5f075c
+  ext_node_path_78811c13["node:path"] --> node_src_lib_contract_idempotency_af93997f
+  ext_node_path_78811c13["node:path"] --> node_src_commands_index_context_76d00fdb
+  ext_node_path_78811c13["node:path"] --> node_src_commands_index_context_test_552c8613
+  ext_node_path_78811c13["node:path"] --> node_src_lib_context_compound_indexer_e7ad2047
+  ext_node_path_78811c13["node:path"] --> node_src_lib_context_compound_indexer_test_473c7216
+  ext_node_path_78811c13["node:path"] --> node_src_commands_init_test_208f2f42
+  ext_node_path_78811c13["node:path"] --> node_src_lib_agents_instruction_compat_2828d0f1
+  ext_node_path_78811c13["node:path"] --> node_src_lib_agents_instruction_compat_test_14014b84
+  ext_node_path_78811c13["node:path"] --> node_src_lib_init_interactive_83232b08
+  ext_node_path_78811c13["node:path"] --> node_src_lib_cli_legacy_dispatch_guard_test_c6d6c5c7
+  ext_node_path_78811c13["node:path"] --> node_src_lib_context_compound_lexical_fallback_eeb9773b
+  ext_node_path_78811c13["node:path"] --> node_src_commands_license_gate_test_0cecbd36
+  ext_node_path_78811c13["node:path"] --> node_src_commands_linear_gate_3a2dbdda
+  ext_node_path_78811c13["node:path"] --> node_src_commands_linear_gate_test_d7fab54c
+  ext_node_path_78811c13["node:path"] --> node_e2e_tests_linear_integration_e2e_test_1632523d
+  ext_node_path_78811c13["node:path"] --> node_src_lib_gardener_link_checker_95a109ed
+  ext_node_path_78811c13["node:path"] --> node_src_lib_contract_loader_c7304ec8
+  ext_node_path_78811c13["node:path"] --> node_src_lib_evidence_loader_05d04a48
+  ext_node_path_78811c13["node:path"] --> node_src_lib_contract_loader_test_5aaec341
+  ext_node_path_78811c13["node:path"] --> node_src_commands_local_memory_preflight_test_d06baa31
+  ext_node_path_78811c13["node:path"] --> node_src_lib_project_brain_metadata_scanner_f8a74ca7
+  ext_node_path_78811c13["node:path"] --> node_src_lib_project_brain_metadata_scanner_test_97060023
+  ext_node_path_78811c13["node:path"] --> node_src_lib_pilot_evaluation_metrics_capture_6a557a25
+  ext_node_path_78811c13["node:path"] --> node_src_lib_memory_metrics_tracker_8f20bcc7
+  ext_node_path_78811c13["node:path"] --> node_src_lib_memory_metrics_tracker_test_2fadfb06
+  ext_node_path_78811c13["node:path"] --> node_src_lib_init_migration_e4b291ff
+  ext_node_path_78811c13["node:path"] --> node_src_lib_architecture_module_boundaries_test_4b2e2143
+  ext_node_path_78811c13["node:path"] --> node_src_commands_org_audit_bd496958
+  ext_node_path_78811c13["node:path"] --> node_src_commands_org_audit_test_8f29d4e0
+  ext_node_path_78811c13["node:path"] --> node_src_lib_workflow_contract_parser_test_66082e58
+  ext_node_path_78811c13["node:path"] --> node_src_commands_pilot_evaluate_83c96a06
+  ext_node_path_78811c13["node:path"] --> node_src_commands_pilot_evaluate_test_983799d7
+  ext_node_path_78811c13["node:path"] --> node_src_commands_pilot_rollback_9ad729c0
+  ext_node_path_78811c13["node:path"] --> node_src_commands_pilot_rollback_test_635b55ad
+  ext_node_path_78811c13["node:path"] --> node_src_lib_workflow_plan_1246fd80
+  ext_node_path_78811c13["node:path"] --> node_src_commands_plan_gate_test_d9d60c82
+  ext_node_path_78811c13["node:path"] --> node_src_lib_workflow_plan_test_09539389
+  ext_node_path_78811c13["node:path"] --> node_src_commands_pr_template_gate_test_a29a4275
+  ext_node_path_78811c13["node:path"] --> node_src_lib_preset_detection_df7bb651
+  ext_node_path_78811c13["node:path"] --> node_src_lib_contract_preset_resolver_ed8af332
+  ext_node_path_78811c13["node:path"] --> node_src_commands_promote_mode_test_e8e5e339
+  ext_node_path_78811c13["node:path"] --> node_src_commands_prompt_gate_bda26456
+  ext_node_path_78811c13["node:path"] --> node_src_lib_ci_provider_adapter_c2af78b0
+  ext_node_path_78811c13["node:path"] --> node_src_lib_gardener_quality_scorer_8fe3e3db
+  ext_node_path_78811c13["node:path"] --> node_src_commands_refresh_diagram_context_test_7c9f3447
+  ext_node_path_78811c13["node:path"] --> node_src_lib_pilot_evaluation_registries_0709e622
+  ext_node_path_78811c13["node:path"] --> node_src_lib_workflow_contract_registry_d423a051
+  ext_node_path_78811c13["node:path"] --> node_src_lib_workflow_contract_registry_test_144a7a3a
+  ext_node_path_78811c13["node:path"] --> node_src_commands_remediate_ae676761
+  ext_node_path_78811c13["node:path"] --> node_src_commands_replay_fcae3a4a
+  ext_node_path_78811c13["node:path"] --> node_src_commands_replay_test_1134c260
+  ext_node_path_78811c13["node:path"] --> node_src_lib_governance_repo_scanner_6df641c5
+  ext_node_path_78811c13["node:path"] --> node_src_lib_governance_repo_scanner_test_8643e7e8
+  ext_node_path_78811c13["node:path"] --> node_src_lib_org_repositories_8d4fc5a7
+  ext_node_path_78811c13["node:path"] --> node_e2e_utils_resource_tracker_d629c5ed
+  ext_node_path_78811c13["node:path"] --> node_src_lib_verify_resume_admissibility_f9c6e863
+  ext_node_path_78811c13["node:path"] --> node_src_lib_verify_resume_admissibility_test_67530e17
+  ext_node_path_78811c13["node:path"] --> node_src_commands_review_gate_b74630a3
+  ext_node_path_78811c13["node:path"] --> node_src_commands_review_gate_test_dea5880b
+  ext_node_path_78811c13["node:path"] --> node_src_commands_risk_tier_test_da8ec745
+  ext_node_path_78811c13["node:path"] --> node_src_lib_init_rollback_b5f0b59d
+  ext_node_path_78811c13["node:path"] --> node_src_lib_init_rollback_test_13a5730f
+  ext_node_path_78811c13["node:path"] --> node_e2e_run_e2e_f80c6fa8
+  ext_node_path_78811c13["node:path"] --> node_src_dev_run_local_memory_preflight_9778893b
+  ext_node_path_78811c13["node:path"] --> node_src_lib_contract_run_record_emitter_ae66a1ec
+  ext_node_path_78811c13["node:path"] --> node_src_lib_contract_run_records_836e164b
+  ext_node_path_78811c13["node:path"] --> node_src_lib_contract_run_records_test_29458901
+  ext_node_path_78811c13["node:path"] --> node_src_lib_verify_run_state_084e83b2
+  ext_node_path_78811c13["node:path"] --> node_src_lib_verify_run_state_test_6fc192b5
+  ext_node_path_78811c13["node:path"] --> node_src_lib_ci_satisfiability_e825a617
+  ext_node_path_78811c13["node:path"] --> node_src_lib_init_scaffold_0491ad83
+  ext_node_path_78811c13["node:path"] --> node_src_lib_init_scaffold_hook_templates_0b5a55e9
+  ext_node_path_78811c13["node:path"] --> node_src_lib_init_scaffold_test_afcf14e9
+  ext_node_path_78811c13["node:path"] --> node_src_lib_governance_scan_cache_e0415545
+  ext_node_path_78811c13["node:path"] --> node_src_lib_governance_scan_cache_test_6c8cf65d
+  ext_node_path_78811c13["node:path"] --> node_src_lib_governance_scan_cache_test_6c8cf65d
+  ext_node_path_78811c13["node:path"] --> node_src_commands_search_8c19fcb1
+  ext_node_path_78811c13["node:path"] --> node_scripts_setup_git_hooks_2ed98c53
+  ext_node_path_78811c13["node:path"] --> node_src_commands_simulate_f06a3ac7
+  ext_node_path_78811c13["node:path"] --> node_src_commands_simulate_test_17cdb2fd
+  ext_node_path_78811c13["node:path"] --> node_src_commands_solo_mode_test_cd5d21e8
+  ext_node_path_78811c13["node:path"] --> node_src_lib_source_outline_7130a0cd
+  ext_node_path_78811c13["node:path"] --> node_src_commands_source_outline_test_e77c23d2
+  ext_node_path_78811c13["node:path"] --> node_src_lib_context_compound_sources_4de9a2ad
+  ext_node_path_78811c13["node:path"] --> node_src_lib_gardener_stale_detector_3ad97daa
+  ext_node_path_78811c13["node:path"] --> node_src_lib_gardener_stale_detector_test_ae0df545
+  ext_node_path_78811c13["node:path"] --> node_src_lib_context_compound_store_d1f2d9b9
+  ext_node_path_78811c13["node:path"] --> node_src_lib_project_brain_suggestion_generator_50c228fb
+  ext_node_path_78811c13["node:path"] --> node_src_lib_project_brain_suggestion_generator_test_1fcfcfaf
+  ext_node_path_78811c13["node:path"] --> node_src_commands_symphony_check_055464ba
+  ext_node_path_78811c13["node:path"] --> node_src_commands_symphony_check_test_b9bd2d4d
+  ext_node_path_78811c13["node:path"] --> node_src_lib_workflow_contract_test_harness_ab8265f7
+  ext_node_path_78811c13["node:path"] --> node_src_lib_workflow_contract_test_harness_test_9c43ce28
+  ext_node_path_78811c13["node:path"] --> node_src_commands_tooling_audit_6606d949
+  ext_node_path_78811c13["node:path"] --> node_src_commands_tooling_audit_test_874a714a
+  ext_node_path_78811c13["node:path"] --> node_src_lib_replay_tracer_c6b49784
+  ext_node_path_78811c13["node:path"] --> node_src_commands_ui_loop_14f94e39
+  ext_node_path_78811c13["node:path"] --> node_src_lib_init_update_e8dc9bf6
+  ext_node_path_78811c13["node:path"] --> node_src_commands_upgrade_7c2e21f2
+  ext_node_path_78811c13["node:path"] --> node_src_lib_init_upgrade_e1d7cdbc
+  ext_node_path_78811c13["node:path"] --> node_src_commands_upgrade_test_5c1f4810
+  ext_node_path_78811c13["node:path"] --> node_src_lib_evidence_validator_4a254158
+  ext_node_path_78811c13["node:path"] --> node_src_lib_input_validator_b95e8971
+  ext_node_path_78811c13["node:path"] --> node_src_lib_license_validator_9be9419a
+  ext_node_path_78811c13["node:path"] --> node_src_lib_memory_validator_dbba8eeb
+  ext_node_path_78811c13["node:path"] --> node_src_lib_preflight_validator_4657555d
+  ext_node_path_78811c13["node:path"] --> node_src_lib_evidence_validator_test_9ebe4bd6
+  ext_node_path_78811c13["node:path"] --> node_src_lib_input_validator_test_4844e0b1
+  ext_node_path_78811c13["node:path"] --> node_src_lib_license_validator_test_305b4930
+  ext_node_path_78811c13["node:path"] --> node_src_lib_memory_validator_test_66feb032
+  ext_node_path_78811c13["node:path"] --> node_src_lib_preflight_validator_test_580e17d6
+  ext_node_path_78811c13["node:path"] --> node_src_commands_verify_coderabbit_9883399d
+  ext_node_path_78811c13["node:path"] --> node_src_commands_verify_coderabbit_test_ceaa2143
+  ext_node_path_78811c13["node:path"] --> node_src_commands_verify_work_43c69927
+  ext_node_path_78811c13["node:path"] --> node_src_commands_verify_work_test_24b4f5ea
+  ext_node_path_78811c13["node:path"] --> node_src_lib_version_337bb7ee
+  ext_node_path_78811c13["node:path"] --> node_src_lib_version_coherence_cb803a5e
+  ext_node_path_78811c13["node:path"] --> node_src_lib_version_coherence_test_c9c1cc52
+  ext_node_path_78811c13["node:path"] --> node_src_lib_init_workflow_contract_scripts_test_42efa4fe
+  ext_node_path_78811c13["node:path"] --> node_src_commands_workflow_generate_3099b8dd
+  ext_node_path_78811c13["node:path"] --> node_src_commands_workflow_generate_test_981498a8
+  ext_node_perf_hooks_906292ff["node:perf_hooks"] --> node_src_lib_preflight_performance_overload_02c46206
+  ext_node_process_00cdf119["node:process"] --> node_src_commands_check_9717c3ed
+  ext_node_process_00cdf119["node:process"] --> node_src_commands_ci_migrate_9cb53e30
+  ext_node_process_00cdf119["node:process"] --> node_src_lib_init_cli_43b2583c
+  ext_node_process_00cdf119["node:process"] --> node_src_commands_contract_5477dad2
+  ext_node_process_00cdf119["node:process"] --> node_src_lib_preflight_performance_overload_02c46206
+  ext_node_process_00cdf119["node:process"] --> node_src_commands_upgrade_7c2e21f2
+  ext_node_readline_bb6096cc["node:readline"] --> node_src_lib_init_eject_8b3ad60e
+  ext_node_url_d0cb3ad7["node:url"] --> node_src_commands_ci_migrate_9cb53e30
+  ext_node_url_d0cb3ad7["node:url"] --> node_src_commands_ci_migrate_test_7c0f9981
+  ext_node_url_d0cb3ad7["node:url"] --> node_src_cli_50037f41
+  ext_node_url_d0cb3ad7["node:url"] --> node_src_cli_test_c0ddbe99
+  ext_node_url_d0cb3ad7["node:url"] --> node_src_lib_cli_registry_command_specs_test_771e2132
+  ext_node_url_d0cb3ad7["node:url"] --> node_src_lib_pilot_evaluation_control_plane_9fcff894
+  ext_node_url_d0cb3ad7["node:url"] --> node_src_lib_project_type_detector_test_cdd46054
+  ext_node_url_d0cb3ad7["node:url"] --> node_src_commands_health_71013327
+  ext_node_url_d0cb3ad7["node:url"] --> node_src_lib_contract_preset_resolver_ed8af332
+  ext_node_url_d0cb3ad7["node:url"] --> node_src_dev_run_local_memory_preflight_9778893b
+  ext_node_url_d0cb3ad7["node:url"] --> node_src_lib_init_scaffold_ci_templates_07d643ff
+  ext_node_url_d0cb3ad7["node:url"] --> node_src_lib_init_scaffold_governance_templates_004f982f
+  ext_node_url_d0cb3ad7["node:url"] --> node_src_lib_init_scaffold_root_templates_32adb40e
+  ext_node_url_d0cb3ad7["node:url"] --> node_src_lib_init_scaffold_shell_templates_8b422313
+  ext_node_url_d0cb3ad7["node:url"] --> node_src_lib_init_scaffold_worktree_templates_7418d0c4
+  ext_node_url_d0cb3ad7["node:url"] --> node_src_lib_init_scaffold_test_afcf14e9
+  ext_node_url_d0cb3ad7["node:url"] --> node_src_commands_ui_loop_14f94e39
+  ext_node_url_d0cb3ad7["node:url"] --> node_src_lib_version_337bb7ee
+  ext_os_999a3419["os"] --> node_scripts_hook_governance_tests_test_inventory_rep_e8bf3377
+  ext_os_999a3419["os"] --> node_scripts_hook_governance_tests_test_rollout_check_ba44f7c6
+  ext_pathlib_4471f74a["pathlib"] --> node_scripts_hook_governance_evaluate_docstring_ratch_407d0d3c
+  ext_pathlib_4471f74a["pathlib"] --> node_scripts_hook_governance_inventory_repos_0e496bf6
+  ext_pathlib_4471f74a["pathlib"] --> node_scripts_hook_governance_rollout_check_7c494353
+  ext_pathlib_4471f74a["pathlib"] --> node_scripts_hook_governance_tests_test_evaluate_docs_4a092543
+  ext_pathlib_4471f74a["pathlib"] --> node_scripts_hook_governance_tests_test_inventory_rep_e8bf3377
+  ext_pathlib_4471f74a["pathlib"] --> node_scripts_hook_governance_tests_test_rollout_check_ba44f7c6
+  ext_picomatch_2ebdbf14["picomatch"] --> node_src_lib_project_type_detector_0ee6f281
+  ext_picomatch_2ebdbf14["picomatch"] --> node_src_lib_evidence_policy_c212a2b9
+  ext_picomatch_2ebdbf14["picomatch"] --> node_src_lib_blast_radius_resolver_5f0dc5b6
+  ext_picomatch_2ebdbf14["picomatch"] --> node_src_lib_policy_risk_tier_6393c9ab
+  ext_pytest_0eaa389e["pytest"] --> node_scripts_hook_governance_tests_test_evaluate_docs_4a092543
+  ext_pytest_0eaa389e["pytest"] --> node_scripts_hook_governance_tests_test_inventory_rep_e8bf3377
+  ext_pytest_0eaa389e["pytest"] --> node_scripts_hook_governance_tests_test_rollout_check_ba44f7c6
+  ext_repos_in_scope_2029ac7b["repos.in_scope"] --> node_scripts_hook_governance_inventory_repos_0e496bf6
+  ext_rollout_check_0d6adad5["rollout_check"] --> node_scripts_hook_governance_tests_test_rollout_check_ba44f7c6
+  ext_semver_b4039641["semver"] --> node_src_commands_check_environment_61a1e6d1
+  ext_semver_b4039641["semver"] --> node_src_lib_init_migration_e4b291ff
+  ext_semver_b4039641["semver"] --> node_src_lib_init_schema_migrate_ea60619f
+  ext_semver_b4039641["semver"] --> node_src_lib_init_update_e8dc9bf6
+  ext_semver_b4039641["semver"] --> node_src_lib_init_upgrade_e1d7cdbc
+  ext_semver_b4039641["semver"] --> node_src_lib_contract_validator_helpers_e56d062f
+  ext_sqlite_vec_bae73cf2["sqlite-vec"] --> node_src_lib_context_compound_store_d1f2d9b9
+  ext_sys_b4c56ee8["sys"] --> node_scripts_hook_governance_tests_test_evaluate_docs_4a092543
+  ext_sys_b4c56ee8["sys"] --> node_scripts_hook_governance_tests_test_inventory_rep_e8bf3377
+  ext_sys_b4c56ee8["sys"] --> node_scripts_hook_governance_tests_test_rollout_check_ba44f7c6
+  ext_the_bbccdf2e["the"] --> node_scripts_hook_governance_tests_test_evaluate_docs_4a092543
+  ext_the_bbccdf2e["the"] --> node_scripts_hook_governance_tests_test_inventory_rep_e8bf3377
+  ext_the_bbccdf2e["the"] --> node_scripts_hook_governance_tests_test_inventory_rep_e8bf3377
+  ext_the_bbccdf2e["the"] --> node_scripts_hook_governance_tests_test_rollout_check_ba44f7c6
+  ext_typescript_fb9da861["typescript"] --> node_src_lib_source_outline_7130a0cd
+  ext_vitest_4c9cfa13["vitest"] --> node_src_commands_agent_first_throughput_integration__4f0ddd7b
+  ext_vitest_4c9cfa13["vitest"] --> node_src_lib_init_ast_grep_rules_test_b664c54b
+  ext_vitest_4c9cfa13["vitest"] --> node_src_commands_audit_test_cf82f906
+  ext_vitest_4c9cfa13["vitest"] --> node_src_commands_automation_run_test_e2f83281
+  ext_vitest_4c9cfa13["vitest"] --> node_src_lib_linear_automation_test_aac87654
+  ext_vitest_4c9cfa13["vitest"] --> node_src_commands_blast_radius_test_fb4e7d14
+  ext_vitest_4c9cfa13["vitest"] --> node_src_lib_linear_blocked_governance_test_2c91153b
+  ext_vitest_4c9cfa13["vitest"] --> node_src_lib_project_brain_brain_validator_test_c51ec770
+  ext_vitest_4c9cfa13["vitest"] --> node_src_commands_brain_test_bb8017ac
+  ext_vitest_4c9cfa13["vitest"] --> node_src_commands_brainstorm_gate_test_8feca557
+  ext_vitest_4c9cfa13["vitest"] --> node_src_lib_workflow_brainstorm_test_6ac1356e
+  ext_vitest_4c9cfa13["vitest"] --> node_src_lib_ci_branch_protect_sync_test_35b16538
+  ext_vitest_4c9cfa13["vitest"] --> node_src_commands_branch_protect_test_d26f0ed4
+  ext_vitest_4c9cfa13["vitest"] --> node_src_lib_policy_cardinality_test_f35eeec9
+  ext_vitest_4c9cfa13["vitest"] --> node_src_commands_check_authz_test_f6b000b3
+  ext_vitest_4c9cfa13["vitest"] --> node_src_commands_check_diagram_freshness_test_5e858bc8
+  ext_vitest_4c9cfa13["vitest"] --> node_src_commands_check_environment_test_177a8ad6
+  ext_vitest_4c9cfa13["vitest"] --> node_src_lib_github_check_run_test_0e7a0970
+  ext_vitest_4c9cfa13["vitest"] --> node_src_commands_check_test_aaa8bb13
+  ext_vitest_4c9cfa13["vitest"] --> node_src_lib_workflow_contract_checker_test_e4aa801a
+  ext_vitest_4c9cfa13["vitest"] --> node_src_lib_workflow_contract_ci_adapter_test_00f59d71
+  ext_vitest_4c9cfa13["vitest"] --> node_src_lib_ci_ci_migrate_command_contract_test_e03eefee
+  ext_vitest_4c9cfa13["vitest"] --> node_src_lib_ci_ci_migrate_snapshot_paths_test_52ed25b1
+  ext_vitest_4c9cfa13["vitest"] --> node_src_cli_dispatch_test_83d1aecc
+  ext_vitest_4c9cfa13["vitest"] --> node_src_cli_test_c0ddbe99
+  ext_vitest_4c9cfa13["vitest"] --> node_src_lib_github_client_test_3345dbf3
+  ext_vitest_4c9cfa13["vitest"] --> node_src_lib_linear_client_test_59c554fc
+  ext_vitest_4c9cfa13["vitest"] --> node_src_lib_init_codex_preflight_symlink_test_34429399
+  ext_vitest_4c9cfa13["vitest"] --> node_e2e_tests_command_pipeline_e2e_test_7b78a199
+  ext_vitest_4c9cfa13["vitest"] --> node_src_lib_policy_command_policy_test_f85a3204
+  ext_vitest_4c9cfa13["vitest"] --> node_src_lib_cli_command_registry_test_30bb0a99
+  ext_vitest_4c9cfa13["vitest"] --> node_src_lib_cli_registry_command_specs_test_771e2132
+  ext_vitest_4c9cfa13["vitest"] --> node_src_lib_github_comments_test_e411297a
+  ext_vitest_4c9cfa13["vitest"] --> node_src_lib_ci_config_validator_test_718b5a94
+  ext_vitest_4c9cfa13["vitest"] --> node_src_lib_context_compound_constants_test_c131a9ba
+  ext_vitest_4c9cfa13["vitest"] --> node_src_lib_context_compound_context_compact_policy__0ad86893
+  ext_vitest_4c9cfa13["vitest"] --> node_src_commands_context_health_test_cee466db
+  ext_vitest_4c9cfa13["vitest"] --> node_src_commands_context_integrity_acceptance_test_ec3eafae
+  ext_vitest_4c9cfa13["vitest"] --> node_src_commands_context_test_04afd925
+  ext_vitest_4c9cfa13["vitest"] --> node_src_commands_contract_test_e27f09d5
+  ext_vitest_4c9cfa13["vitest"] --> node_src_lib_pilot_evaluation_control_plane_test_6b85b9d4
+  ext_vitest_4c9cfa13["vitest"] --> node_src_lib_pilot_evaluation_decision_packet_test_b0ad3727
+  ext_vitest_4c9cfa13["vitest"] --> node_src_lib_review_gate_decision_packet_test_90fb9411
+  ext_vitest_4c9cfa13["vitest"] --> node_src_lib_brainstorm_detector_test_22068a91
+  ext_vitest_4c9cfa13["vitest"] --> node_src_lib_project_type_detector_test_cdd46054
+  ext_vitest_4c9cfa13["vitest"] --> node_src_lib_silent_error_detector_test_f1fe45a6
+  ext_vitest_4c9cfa13["vitest"] --> node_src_commands_diff_budget_test_abd7c3ee
+  ext_vitest_4c9cfa13["vitest"] --> node_src_lib_cli_doc_parity_test_deda4d95
+  ext_vitest_4c9cfa13["vitest"] --> node_src_commands_docs_gate_test_bebd4eac
+  ext_vitest_4c9cfa13["vitest"] --> node_src_commands_doctor_test_7af6f23c
+  ext_vitest_4c9cfa13["vitest"] --> node_src_lib_project_brain_domain_mapper_test_c2ede2f1
+  ext_vitest_4c9cfa13["vitest"] --> node_src_commands_drift_gate_test_46e320e7
+  ext_vitest_4c9cfa13["vitest"] --> node_src_lib_init_eject_test_06d19bd1
+  ext_vitest_4c9cfa13["vitest"] --> node_src_lib_github_errors_test_133cfe4b
+  ext_vitest_4c9cfa13["vitest"] --> node_src_lib_pilot_evaluation_evaluation_engine_test_f7020457
+  ext_vitest_4c9cfa13["vitest"] --> node_src_commands_evidence_verify_test_d25d21f3
+  ext_vitest_4c9cfa13["vitest"] --> node_src_lib_contract_extends_validator_test_e719b8a7
+  ext_vitest_4c9cfa13["vitest"] --> node_src_lib_remediation_finding_normalizer_test_8082eaaf
+  ext_vitest_4c9cfa13["vitest"] --> node_src_commands_gap_case_test_1e9bd913
+  ext_vitest_4c9cfa13["vitest"] --> node_src_commands_gardener_test_01d5ad19
+  ext_vitest_4c9cfa13["vitest"] --> node_src_lib_workflow_contract_gate_bundle_test_45e3c653
+  ext_vitest_4c9cfa13["vitest"] --> node_e2e_tests_github_integration_e2e_test_8f5767c3
+  ext_vitest_4c9cfa13["vitest"] --> node_src_lib_linear_governance_report_test_b25569a2
+  ext_vitest_4c9cfa13["vitest"] --> node_src_commands_health_test_6d5f075c
+  ext_vitest_4c9cfa13["vitest"] --> node_src_lib_cli_help_renderer_test_063a8bbc
+  ext_vitest_4c9cfa13["vitest"] --> node_src_commands_index_context_test_552c8613
+  ext_vitest_4c9cfa13["vitest"] --> node_src_lib_context_compound_indexer_test_473c7216
+  ext_vitest_4c9cfa13["vitest"] --> node_src_commands_init_test_208f2f42
+  ext_vitest_4c9cfa13["vitest"] --> node_src_lib_agents_instruction_compat_test_14014b84
+  ext_vitest_4c9cfa13["vitest"] --> node_src_lib_cli_legacy_dispatch_guard_test_c6d6c5c7
+  ext_vitest_4c9cfa13["vitest"] --> node_src_commands_license_gate_test_0cecbd36
+  ext_vitest_4c9cfa13["vitest"] --> node_src_commands_linear_gate_test_d7fab54c
+  ext_vitest_4c9cfa13["vitest"] --> node_e2e_tests_linear_integration_e2e_test_1632523d
+  ext_vitest_4c9cfa13["vitest"] --> node_src_commands_linear_prepare_test_e563937e
+  ext_vitest_4c9cfa13["vitest"] --> node_src_commands_linear_sync_test_5d50c953
+  ext_vitest_4c9cfa13["vitest"] --> node_src_commands_linear_triage_test_e9358c88
+  ext_vitest_4c9cfa13["vitest"] --> node_src_commands_linear_workflow_test_b60c6e12
+  ext_vitest_4c9cfa13["vitest"] --> node_src_lib_contract_loader_test_5aaec341
+  ext_vitest_4c9cfa13["vitest"] --> node_src_commands_local_memory_preflight_test_d06baa31
+  ext_vitest_4c9cfa13["vitest"] --> node_src_lib_contract_merger_test_9319ae2c
+  ext_vitest_4c9cfa13["vitest"] --> node_src_lib_linear_metadata_gate_test_9bdbacc8
+  ext_vitest_4c9cfa13["vitest"] --> node_src_lib_project_brain_metadata_scanner_test_97060023
+  ext_vitest_4c9cfa13["vitest"] --> node_src_lib_memory_metrics_tracker_test_2fadfb06
+  ext_vitest_4c9cfa13["vitest"] --> node_src_lib_architecture_module_boundaries_test_4b2e2143
+  ext_vitest_4c9cfa13["vitest"] --> node_src_lib_github_mutation_queue_test_4604276b
+  ext_vitest_4c9cfa13["vitest"] --> node_src_lib_output_normalise_test_92b976f4
+  ext_vitest_4c9cfa13["vitest"] --> node_src_commands_observability_gate_test_72a003c4
+  ext_vitest_4c9cfa13["vitest"] --> node_src_lib_context_compound_ollama_test_972f3fc8
+  ext_vitest_4c9cfa13["vitest"] --> node_src_lib_workflow_contract_operator_scorecard_tes_e7ea05ba
+  ext_vitest_4c9cfa13["vitest"] --> node_src_lib_remediation_orchestrator_test_e409976c
+  ext_vitest_4c9cfa13["vitest"] --> node_src_lib_verify_orchestrator_test_b991fb74
+  ext_vitest_4c9cfa13["vitest"] --> node_src_commands_org_audit_test_8f29d4e0
+  ext_vitest_4c9cfa13["vitest"] --> node_src_lib_test_overload_guard_test_77d5d34a
+  ext_vitest_4c9cfa13["vitest"] --> node_src_lib_workflow_contract_parser_test_66082e58
+  ext_vitest_4c9cfa13["vitest"] --> node_src_lib_preflight_performance_overload_test_32fe659f
+  ext_vitest_4c9cfa13["vitest"] --> node_src_commands_pilot_evaluate_test_983799d7
+  ext_vitest_4c9cfa13["vitest"] --> node_src_commands_pilot_rollback_test_635b55ad
+  ext_vitest_4c9cfa13["vitest"] --> node_src_lib_workflow_contract_pilot_tracker_test_8eb3b02c
+  ext_vitest_4c9cfa13["vitest"] --> node_src_commands_plan_gate_test_d9d60c82
+  ext_vitest_4c9cfa13["vitest"] --> node_src_lib_workflow_plan_test_09539389
+  ext_vitest_4c9cfa13["vitest"] --> node_src_lib_policy_policy_chain_test_6a8e2878
+  ext_vitest_4c9cfa13["vitest"] --> node_src_lib_evidence_policy_test_0fda159e
+  ext_vitest_4c9cfa13["vitest"] --> node_src_lib_init_post_bootstrap_summary_test_016769ea
+  ext_vitest_4c9cfa13["vitest"] --> node_src_commands_pr_template_gate_test_a29a4275
+  ext_vitest_4c9cfa13["vitest"] --> node_src_lib_pr_template_validator_test_7a4ffc2f
+  ext_vitest_4c9cfa13["vitest"] --> node_src_lib_preset_detection_test_26643c48
+  ext_vitest_4c9cfa13["vitest"] --> node_src_lib_contract_preset_resolver_test_d386cdbf
+  ext_vitest_4c9cfa13["vitest"] --> node_src_commands_preset_test_ad6ae07f
+  ext_vitest_4c9cfa13["vitest"] --> node_src_lib_init_project_brain_templates_test_6fa392fe
+  ext_vitest_4c9cfa13["vitest"] --> node_src_commands_promote_mode_test_e8e5e339
+  ext_vitest_4c9cfa13["vitest"] --> node_src_commands_prompt_gate_test_8ce58238
+  ext_vitest_4c9cfa13["vitest"] --> node_src_lib_deps_ralph_runtime_test_76613c79
+  ext_vitest_4c9cfa13["vitest"] --> node_src_commands_refresh_diagram_context_test_7c9f3447
+  ext_vitest_4c9cfa13["vitest"] --> node_src_lib_workflow_contract_registry_test_144a7a3a
+  ext_vitest_4c9cfa13["vitest"] --> node_src_commands_remediate_test_b0fcf4ec
+  ext_vitest_4c9cfa13["vitest"] --> node_src_commands_replay_test_1134c260
+  ext_vitest_4c9cfa13["vitest"] --> node_src_lib_governance_repo_scanner_test_8643e7e8
+  ext_vitest_4c9cfa13["vitest"] --> node_src_lib_policy_required_checks_test_db06e8af
+  ext_vitest_4c9cfa13["vitest"] --> node_src_lib_blast_radius_resolver_test_2434a14b
+  ext_vitest_4c9cfa13["vitest"] --> node_src_lib_verify_resume_admissibility_test_67530e17
+  ext_vitest_4c9cfa13["vitest"] --> node_src_lib_verify_retry_policy_test_76322c8b
+  ext_vitest_4c9cfa13["vitest"] --> node_src_commands_review_gate_test_dea5880b
+  ext_vitest_4c9cfa13["vitest"] --> node_src_commands_risk_tier_test_da8ec745
+  ext_vitest_4c9cfa13["vitest"] --> node_src_lib_policy_risk_tier_test_60010fdc
+  ext_vitest_4c9cfa13["vitest"] --> node_src_lib_init_rollback_test_13a5730f
+  ext_vitest_4c9cfa13["vitest"] --> node_src_dev_run_local_memory_preflight_test_fcecd725
+  ext_vitest_4c9cfa13["vitest"] --> node_src_lib_contract_run_record_emitter_test_6d46c5c8
+  ext_vitest_4c9cfa13["vitest"] --> node_src_lib_contract_run_records_test_29458901
+  ext_vitest_4c9cfa13["vitest"] --> node_src_lib_verify_run_state_test_6fc192b5
+  ext_vitest_4c9cfa13["vitest"] --> node_src_lib_input_sanitize_test_1e7f2d95
+  ext_vitest_4c9cfa13["vitest"] --> node_src_lib_init_scaffold_ci_templates_test_84dc8597
+  ext_vitest_4c9cfa13["vitest"] --> node_src_lib_init_scaffold_codex_environment_template_bac692a5
+  ext_vitest_4c9cfa13["vitest"] --> node_src_lib_init_scaffold_diagram_templates_test_429cae2f
+  ext_vitest_4c9cfa13["vitest"] --> node_src_lib_init_scaffold_environment_templates_test_2d7b8173
+  ext_vitest_4c9cfa13["vitest"] --> node_src_lib_init_scaffold_governance_templates_test_576bbcda
+  ext_vitest_4c9cfa13["vitest"] --> node_src_lib_init_scaffold_hook_templates_test_d526c745
+  ext_vitest_4c9cfa13["vitest"] --> node_src_lib_init_scaffold_root_templates_test_94044835
+  ext_vitest_4c9cfa13["vitest"] --> node_src_lib_init_scaffold_semgrep_templates_test_762f3bf2
+  ext_vitest_4c9cfa13["vitest"] --> node_src_lib_init_scaffold_shell_quality_test_03012dbf
+  ext_vitest_4c9cfa13["vitest"] --> node_src_lib_init_scaffold_shell_templates_test_c3cc73d7
+  ext_vitest_4c9cfa13["vitest"] --> node_src_lib_init_scaffold_surfaces_test_26fb93a9
+  ext_vitest_4c9cfa13["vitest"] --> node_src_lib_init_scaffold_worktree_templates_test_79c26c9c
+  ext_vitest_4c9cfa13["vitest"] --> node_src_lib_init_scaffold_test_afcf14e9
+  ext_vitest_4c9cfa13["vitest"] --> node_src_lib_governance_scan_cache_test_6c8cf65d
+  ext_vitest_4c9cfa13["vitest"] --> node_src_commands_search_test_ac250e89
+  ext_vitest_4c9cfa13["vitest"] --> node_src_lib_github_sha_test_f22f6abd
+  ext_vitest_4c9cfa13["vitest"] --> node_src_commands_simulate_test_17cdb2fd
+  ext_vitest_4c9cfa13["vitest"] --> node_src_commands_solo_mode_test_cd5d21e8
+  ext_vitest_4c9cfa13["vitest"] --> node_src_commands_source_outline_test_e77c23d2
+  ext_vitest_4c9cfa13["vitest"] --> node_src_lib_license_spdx_test_da41c474
+  ext_vitest_4c9cfa13["vitest"] --> node_src_lib_gardener_stale_detector_test_ae0df545
+  ext_vitest_4c9cfa13["vitest"] --> node_src_lib_contract_standards_map_test_e6f98748
+  ext_vitest_4c9cfa13["vitest"] --> node_src_lib_workflow_contract_state_normalizer_test_fb3e6bb6
+  ext_vitest_4c9cfa13["vitest"] --> node_src_lib_linear_status_aging_test_4e705b9f
+  ext_vitest_4c9cfa13["vitest"] --> node_src_lib_project_brain_suggestion_generator_test_1fcfcfaf
+  ext_vitest_4c9cfa13["vitest"] --> node_src_commands_symphony_check_test_b9bd2d4d
+  ext_vitest_4c9cfa13["vitest"] --> node_src_lib_context_compound_sync_contract_test_46843710
+  ext_vitest_4c9cfa13["vitest"] --> node_src_lib_workflow_contract_test_harness_test_9c43ce28
+  ext_vitest_4c9cfa13["vitest"] --> node_src_commands_tooling_audit_test_874a714a
+  ext_vitest_4c9cfa13["vitest"] --> node_src_lib_policy_tooling_baseline_test_2c1d1aa5
+  ext_vitest_4c9cfa13["vitest"] --> node_src_lib_replay_trace_normalizer_test_0a4e0106
+  ext_vitest_4c9cfa13["vitest"] --> node_src_lib_replay_tracer_test_eec65c7d
+  ext_vitest_4c9cfa13["vitest"] --> node_src_lib_linear_triage_lanes_test_59679ffb
+  ext_vitest_4c9cfa13["vitest"] --> node_src_lib_linear_triage_scoring_test_bc78777b
+  ext_vitest_4c9cfa13["vitest"] --> node_src_lib_linear_triage_sla_test_34ddeb55
+  ext_vitest_4c9cfa13["vitest"] --> node_src_lib_linear_triage_type_labels_test_8a1ed129
+  ext_vitest_4c9cfa13["vitest"] --> node_src_lib_output_types_test_2aec04cc
+  ext_vitest_4c9cfa13["vitest"] --> node_src_lib_contract_ui_loop_command_test_58d91b1f
+  ext_vitest_4c9cfa13["vitest"] --> node_src_commands_ui_loop_test_1c615cb8
+  ext_vitest_4c9cfa13["vitest"] --> node_src_commands_upgrade_test_5c1f4810
+  ext_vitest_4c9cfa13["vitest"] --> node_src_lib_governance_url_validator_secure_fetch_te_f62ff797
+  ext_vitest_4c9cfa13["vitest"] --> node_src_lib_governance_url_validator_test_88688db7
+  ext_vitest_4c9cfa13["vitest"] --> node_src_lib_linear_utils_test_73543a4a
+  ext_vitest_4c9cfa13["vitest"] --> node_src_lib_input_validation_test_edefff50
+  ext_vitest_4c9cfa13["vitest"] --> node_src_lib_contract_validator_test_be05f8e6
+  ext_vitest_4c9cfa13["vitest"] --> node_src_lib_evidence_validator_test_9ebe4bd6
+  ext_vitest_4c9cfa13["vitest"] --> node_src_lib_input_validator_test_4844e0b1
+  ext_vitest_4c9cfa13["vitest"] --> node_src_lib_license_validator_test_305b4930
+  ext_vitest_4c9cfa13["vitest"] --> node_src_lib_memory_validator_test_66feb032
+  ext_vitest_4c9cfa13["vitest"] --> node_src_lib_preflight_validator_test_580e17d6
+  ext_vitest_4c9cfa13["vitest"] --> node_src_commands_verify_coderabbit_test_ceaa2143
+  ext_vitest_4c9cfa13["vitest"] --> node_src_commands_verify_work_test_24b4f5ea
+  ext_vitest_4c9cfa13["vitest"] --> node_src_lib_version_coherence_test_c9c1cc52
+  ext_vitest_4c9cfa13["vitest"] --> node_vitest_config_79ed63ec
+  ext_vitest_4c9cfa13["vitest"] --> node_e2e_vitest_e2e_config_2ffe3e5c
+  ext_vitest_4c9cfa13["vitest"] --> node_src_lib_init_workflow_contract_scripts_test_42efa4fe
+  ext_vitest_4c9cfa13["vitest"] --> node_src_commands_workflow_generate_test_981498a8
+  ext_yaml_c94c088e["yaml"] --> node_scripts_hook_governance_evaluate_docstring_ratch_407d0d3c
+  ext_yaml_c94c088e["yaml"] --> node_scripts_hook_governance_rollout_check_7c494353
   style ext_api_d93d10ff fill:#f59e0b,color:#fff
   style ext_argparse_e750ee7c fill:#f59e0b,color:#fff
   style ext_better_sqlite3_d7ed8f1a fill:#f59e0b,color:#fff
@@ -2191,8 +2191,6 @@ flowchart TD
   Untrusted --> command_pipeline_e2e_test_a0aa069a
   gate_bundle_28601503["gate-bundle"]
   Untrusted --> gate_bundle_28601503
-  types_1_4ecdf56e["types"]
-  Untrusted --> types_1_4ecdf56e
   run_state_94d814a7["run-state"]
   Untrusted --> run_state_94d814a7
   run_state_test_ee8298e8["run-state.test"]
@@ -2209,6 +2207,8 @@ flowchart TD
   Untrusted --> orchestrator_11376b7e
   orchestrator_test_18d2fe26["orchestrator.test"]
   Untrusted --> orchestrator_test_18d2fe26
+  types_1_4ecdf56e["types"]
+  Untrusted --> types_1_4ecdf56e
   decision_packet_8ee9d119["decision-packet"]
   Untrusted --> decision_packet_8ee9d119
   decision_packet_test_9ea0e97b["decision-packet.test"]
@@ -2271,8 +2271,6 @@ flowchart TD
   Untrusted --> normalise_cc83ddc1
   normalise_test_73e8a615["normalise.test"]
   Untrusted --> normalise_test_73e8a615
-  sanitize_test_f3d34916["sanitize.test"]
-  Untrusted --> sanitize_test_f3d34916
   utils_6fd89734["utils"]
   Untrusted --> utils_6fd89734
   triage_type_labels_8bc8350f["triage-type-labels"]
@@ -2285,12 +2283,14 @@ flowchart TD
   Untrusted --> triage_lanes_5c8ea001
   metadata_gate_2dcdb343["metadata-gate"]
   Untrusted --> metadata_gate_2dcdb343
+  sanitize_test_f3d34916["sanitize.test"]
+  Untrusted --> sanitize_test_f3d34916
   scan_cache_fc02c79c["scan-cache"]
   Untrusted --> scan_cache_fc02c79c
   repo_scanner_a8b2579e["repo-scanner"]
   Untrusted --> repo_scanner_a8b2579e
-  types_13_d025517b["types"]
-  Untrusted --> types_13_d025517b
+  types_12_2b09659a["types"]
+  Untrusted --> types_12_2b09659a
   scaffold_db8a7260["scaffold"]
   Untrusted --> scaffold_db8a7260
   scaffold_test_96f4ccea["scaffold.test"]
@@ -2425,14 +2425,14 @@ flowchart TD
   Untrusted --> github_e2e_2891a341
   finding_normalizer_13f1559c["finding-normalizer"]
   Untrusted --> finding_normalizer_13f1559c
-  validation_test_bc73cdff["validation.test"]
-  Untrusted --> validation_test_bc73cdff
-  sanitize_af6a3bb0["sanitize"]
-  Untrusted --> sanitize_af6a3bb0
   governance_report_test_160fb2e0["governance-report.test"]
   Untrusted --> governance_report_test_160fb2e0
   automation_test_3da74b47["automation.test"]
   Untrusted --> automation_test_3da74b47
+  validation_test_bc73cdff["validation.test"]
+  Untrusted --> validation_test_bc73cdff
+  sanitize_af6a3bb0["sanitize"]
+  Untrusted --> sanitize_af6a3bb0
   url_validator_3c5a1568["url-validator"]
   Untrusted --> url_validator_3c5a1568
   url_validator_test_f781df3b["url-validator.test"]
@@ -2463,8 +2463,6 @@ flowchart TD
   Untrusted --> check_run_2fc00bd3
   check_run_test_85d17d04["check-run.test"]
   Untrusted --> check_run_test_85d17d04
-  pr_creator_dc6b1ea4["pr-creator"]
-  Untrusted --> pr_creator_dc6b1ea4
   update_2937013f["update"]
   Untrusted --> update_2937013f
   scaffold_surfaces_12d6494e["scaffold-surfaces"]
@@ -2479,6 +2477,8 @@ flowchart TD
   Untrusted --> eject_1_d0ecd4d1
   eject_test_96dad02e["eject.test"]
   Untrusted --> eject_test_96dad02e
+  pr_creator_dc6b1ea4["pr-creator"]
+  Untrusted --> pr_creator_dc6b1ea4
   provider_adapter_3bcf82b7["provider-adapter"]
   Untrusted --> provider_adapter_3bcf82b7
   config_validator_669ebc2e["config-validator"]
@@ -2594,8 +2594,6 @@ flowchart LR
   User --> control_plane_96826665
   control_plane_test_cd590ea0["control-plane.test"]
   User --> control_plane_test_cd590ea0
-  validation_test_bc73cdff["validation.test"]
-  User --> validation_test_bc73cdff
   utils_6fd89734["utils"]
   User --> utils_6fd89734
   utils_test_e2ccb8ba["utils.test"]
@@ -2606,6 +2604,8 @@ flowchart LR
   User --> client_948fe603
   client_test_4b44c0f5["client.test"]
   User --> client_test_4b44c0f5
+  validation_test_bc73cdff["validation.test"]
+  User --> validation_test_bc73cdff
   errors_be4bd567["errors"]
   User --> errors_be4bd567
   errors_test_1a443b6a["errors.test"]
