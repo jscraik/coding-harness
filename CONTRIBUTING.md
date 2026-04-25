@@ -212,6 +212,7 @@ Configure GitHub branch protection (or rulesets) on `main`:
   - `memory`
   - `security-scan`
   - `CodeRabbit`
+  - `semgrep-cloud-platform/scan`
 - Require branches to be up to date before merge.
 - Require code quality results with severity `all`.
 - In public repositories, require `CodeQL` code scanning results with `high_or_higher` security alerts and `errors` alerts thresholds.

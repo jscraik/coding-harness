@@ -1,8 +1,11 @@
 import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
 import {
+	BRANCH_PROTECTION_REQUIRED_CHECKS,
 	CIRCLECI_JOB_NAME_CHECK_NAMES,
+	SEMGREP_CLOUD_CHECK_NAME,
 	findCircleCIJobNamedCheckBindings,
+	isNonWorkflowRequiredCheck,
 	normalizeRequiredChecksManifest,
 } from "./required-checks.js";
 
@@ -62,6 +65,13 @@ function readVerifyWorkSuspiciousCircleCIJobNames(): string[] {
 }
 
 describe("normalizeRequiredChecksManifest", () => {
+	it("treats Semgrep Cloud as a default non-workflow required check", () => {
+		expect(BRANCH_PROTECTION_REQUIRED_CHECKS).toContain(
+			SEMGREP_CLOUD_CHECK_NAME,
+		);
+		expect(isNonWorkflowRequiredCheck(SEMGREP_CLOUD_CHECK_NAME)).toBe(true);
+	});
+
 	it.each([
 		{
 			name: "rejects non-object manifests",

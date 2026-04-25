@@ -320,6 +320,7 @@ describe("runInit", () => {
 				"memory",
 				"security-scan",
 				"CodeRabbit",
+				"semgrep-cloud-platform/scan",
 			]);
 			expect(
 				generatedChecks.every(
@@ -331,7 +332,8 @@ describe("runInit", () => {
 					.filter(
 						(entry) =>
 							entry.displayName !== "CodeRabbit" &&
-							entry.displayName !== "security-scan",
+							entry.displayName !== "security-scan" &&
+							entry.displayName !== "semgrep-cloud-platform/scan",
 					)
 					.every((entry) => entry.githubCheckName === "pr-pipeline"),
 			).toBe(true);
@@ -346,6 +348,13 @@ describe("runInit", () => {
 			);
 			expect(codeRabbitCheck?.provider).toBe("coderabbit");
 			expect(codeRabbitCheck?.githubCheckName).toBe("CodeRabbit");
+			const semgrepCloudCheck = generatedChecks.find(
+				(entry) => entry.displayName === "semgrep-cloud-platform/scan",
+			);
+			expect(semgrepCloudCheck?.provider).toBe("semgrep-cloud-platform");
+			expect(semgrepCloudCheck?.githubCheckName).toBe(
+				"semgrep-cloud-platform/scan",
+			);
 
 			const circleConfig = require("node:fs").readFileSync(
 				join(tempDir, ".circleci/config.yml"),

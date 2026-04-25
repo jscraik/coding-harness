@@ -152,7 +152,12 @@
 	"reviewPolicy": {
 		"timeoutSeconds": 600,
 		"timeoutAction": "fail",
-		"requiredChecks": ["security-scan", "dependency-scan", "orb-pinning"],
+		"requiredChecks": [
+			"security-scan",
+			"dependency-scan",
+			"orb-pinning",
+			"semgrep-cloud-platform/scan"
+		],
 		"enforceReviewerIndependence": true
 	},
 	"evidencePolicy": {
@@ -199,7 +204,8 @@
 			"check",
 			"memory",
 			"security-scan",
-			"CodeRabbit"
+			"CodeRabbit",
+			"semgrep-cloud-platform/scan"
 		],
 		"restrictDeletions": true,
 		"blockForcePushes": true,

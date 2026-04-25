@@ -16,6 +16,7 @@ This repository is a TypeScript control plane for agentic development and review
 ## Required Essentials
 - Runtime/toolchain: `pnpm@10.33.0` and Node `>=24.0.0` (see `package.json`).
 - Baseline gates: `pnpm codestyle:parity`, `pnpm check`, `bash scripts/validate-codestyle.sh`, and `bash scripts/verify-work.sh`.
+- Branch-protection defaults include the external Semgrep Cloud GitHub App check `semgrep-cloud-platform/scan`; keep it aligned across generated contracts, `.harness/ci-required-checks.json`, and required-check docs.
 - Compatibility posture: canonical-only.
 - Treat repo evidence (`package.json`, lockfiles, tsconfig, scripts) as authoritative over copied instructions.
 

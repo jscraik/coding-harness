@@ -19,6 +19,7 @@
 			"typecheck",
 			"test",
 			"security-scan",
+			"semgrep-cloud-platform/scan",
 			"dependency-review"
 		],
 		"enforceReviewerIndependence": true
@@ -29,6 +30,7 @@
 			"typecheck",
 			"test",
 			"security-scan",
+			"semgrep-cloud-platform/scan",
 			"dependency-review"
 		],
 		"restrictDeletions": true,

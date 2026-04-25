@@ -49,14 +49,17 @@ describe("scaffold CI templates", () => {
 		).not.toContain("linear-gate");
 	});
 
-	it("injects security-scan before CodeRabbit for CircleCI checks", () => {
+	it("injects external security checks around CodeRabbit for CircleCI checks", () => {
 		const checks = getNormalizedRequiredChecks("circleci");
 		const securityScanIndex = checks.indexOf("security-scan");
 		const codeRabbitIndex = checks.indexOf("CodeRabbit");
+		const semgrepCloudIndex = checks.indexOf("semgrep-cloud-platform/scan");
 
 		expect(securityScanIndex).toBeGreaterThanOrEqual(0);
 		expect(codeRabbitIndex).toBeGreaterThanOrEqual(0);
+		expect(semgrepCloudIndex).toBeGreaterThanOrEqual(0);
 		expect(securityScanIndex).toBe(codeRabbitIndex - 1);
+		expect(semgrepCloudIndex).toBe(codeRabbitIndex + 1);
 	});
 
 	it("renders provider metadata into required-check manifest", () => {
@@ -68,6 +71,12 @@ describe("scaffold CI templates", () => {
 				expect.objectContaining({
 					displayName: "security-scan",
 					githubCheckName: "security-scan",
+					requiredOnEvents: ["pull_request", "merge_group"],
+				}),
+				expect.objectContaining({
+					displayName: "semgrep-cloud-platform/scan",
+					sourceAppSlug: "semgrep-cloud-platform",
+					githubCheckName: "semgrep-cloud-platform/scan",
 					requiredOnEvents: ["pull_request", "merge_group"],
 				}),
 			]),

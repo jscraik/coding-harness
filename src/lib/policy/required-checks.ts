@@ -5,17 +5,23 @@ import { createHash } from "node:crypto";
 //   - "dependency-review" → "dependency-scan"  (Trivy SCA in CircleCI)
 //   - "actions-pinning"   → "orb-pinning"      (CircleCI orb version enforcement)
 
+export const SEMGREP_CLOUD_CHECK_NAME = "semgrep-cloud-platform/scan";
+
 export const REVIEW_POLICY_REQUIRED_CHECKS = [
 	"security-scan",
 	"dependency-scan",
 	"orb-pinning",
+	SEMGREP_CLOUD_CHECK_NAME,
 ] as const;
 
 /**
  * Required checks enforced by branch protection that are not expected to appear
  * as merge-authoritative workflow job names.
  */
-export const NON_WORKFLOW_REQUIRED_CHECKS = ["CodeRabbit"] as const;
+export const NON_WORKFLOW_REQUIRED_CHECKS = [
+	"CodeRabbit",
+	SEMGREP_CLOUD_CHECK_NAME,
+] as const;
 
 const NON_WORKFLOW_REQUIRED_CHECK_SET = new Set<string>(
 	NON_WORKFLOW_REQUIRED_CHECKS,
@@ -48,11 +54,15 @@ const GOVERNANCE_GATE_IDS = new Set<string>([
 	"consistency-drift-health",
 ]);
 
+/** Return whether a required check is enforced outside the workflow provider. */
 export function isNonWorkflowRequiredCheck(check: string): boolean {
 	return NON_WORKFLOW_REQUIRED_CHECK_SET.has(check);
 }
 
+/** Execution scheduling class for a required gate. */
 export type GateExecutionClass = "read_only_parallel" | "serial_guarded";
+
+/** Default failure classification used by retry and recovery policy. */
 export type GateFailureClass =
 	| "transient_infra"
 	| "contract_policy"
@@ -82,6 +92,7 @@ interface RequiredChecksManifestLike {
 	requiredChecks?: unknown;
 }
 
+/** Stable identity tuple used to detect required-check contract drift. */
 export interface GateContractIdentity {
 	gateId: string;
 	provider: string;
@@ -89,6 +100,7 @@ export interface GateContractIdentity {
 	githubCheckName: string | null;
 }
 
+/** Normalized required-check gate definition consumed by governance commands. */
 export interface NormalizedGateDefinition extends GateContractIdentity {
 	policyId: string;
 	displayName: string;
@@ -103,6 +115,7 @@ export interface NormalizedGateDefinition extends GateContractIdentity {
 	enabled: boolean;
 }
 
+/** Parsed required-check manifest with sorted normalized gates. */
 export interface NormalizedRequiredChecksManifest {
 	schemaVersion: number;
 	contractVersion: string;
@@ -110,6 +123,7 @@ export interface NormalizedRequiredChecksManifest {
 	gates: NormalizedGateDefinition[];
 }
 
+/** Result type returned by required-check manifest parsing. */
 export type RequiredChecksParseResult =
 	| { ok: true; value: NormalizedRequiredChecksManifest }
 	| { ok: false; error: string };
@@ -239,6 +253,7 @@ function identityPayload(gates: NormalizedGateDefinition[]): string {
 	return JSON.stringify(tuples);
 }
 
+/** Derive a stable short contract version from required-check gate identities. */
 export function deriveContractVersionFromGates(
 	gates: NormalizedGateDefinition[],
 ): string {
@@ -251,6 +266,7 @@ export function deriveContractVersionFromGates(
 	return digest.slice(0, 16);
 }
 
+/** Parse and normalize a required-check manifest into governance gate metadata. */
 export function normalizeRequiredChecksManifest(
 	manifest: unknown,
 ): RequiredChecksParseResult {
@@ -306,6 +322,7 @@ export function normalizeRequiredChecksManifest(
 	};
 }
 
+/** Find CircleCI manifest gates that bind required checks directly to job names. */
 export function findCircleCIJobNamedCheckBindings(
 	gates: NormalizedGateDefinition[],
 ): string[] {
@@ -318,6 +335,7 @@ export function findCircleCIJobNamedCheckBindings(
 	return findCircleCIJobNamedCheckNames(checkNames);
 }
 
+/** Find GitHub check names that collide with known CircleCI job-level checks. */
 export function findCircleCIJobNamedCheckNames(
 	githubCheckNames: string[],
 ): string[] {
@@ -358,6 +376,7 @@ export const ECOSYSTEM_PROFILES = {
 		"memory",
 		"security-scan",
 		"CodeRabbit",
+		SEMGREP_CLOUD_CHECK_NAME,
 	] as const,
 
 	/**
@@ -369,33 +388,39 @@ export const ECOSYSTEM_PROFILES = {
 		"test",
 		"audit",
 		"dependency-scan",
+		SEMGREP_CLOUD_CHECK_NAME,
 	] as const,
 
 	/**
 	 * Python projects using uv/pytest.
 	 */
-	python: ["lint", "test", "dependency-scan"] as const,
+	python: [
+		"lint",
+		"test",
+		"dependency-scan",
+		SEMGREP_CLOUD_CHECK_NAME,
+	] as const,
 
 	/**
 	 * Rust projects using cargo.
 	 */
-	rust: ["lint", "test"] as const,
+	rust: ["lint", "test", SEMGREP_CLOUD_CHECK_NAME] as const,
 
 	/**
 	 * Swift/iOS/macOS projects.
 	 */
-	swift: ["lint", "test"] as const,
+	swift: ["lint", "test", SEMGREP_CLOUD_CHECK_NAME] as const,
 
 	/**
 	 * Go projects.
 	 */
-	go: ["lint", "test"] as const,
+	go: ["lint", "test", SEMGREP_CLOUD_CHECK_NAME] as const,
 
 	/**
 	 * Minimal profile - just security and basic checks.
 	 * Use for experiments, docs, or custom setups.
 	 */
-	minimal: ["lint"] as const,
+	minimal: ["lint", SEMGREP_CLOUD_CHECK_NAME] as const,
 } as const;
 
 /**
@@ -404,12 +429,14 @@ export const ECOSYSTEM_PROFILES = {
  */
 export const BRANCH_PROTECTION_REQUIRED_CHECKS = ECOSYSTEM_PROFILES.harness;
 
+/** Format required checks as an inline Markdown list. */
 export function formatRequiredChecksInline(
 	checks: readonly string[] = BRANCH_PROTECTION_REQUIRED_CHECKS,
 ): string {
 	return checks.map((check) => `\`${check}\``).join(", ");
 }
 
+/** Format required checks as Markdown bullet lines with a configurable prefix. */
 export function formatRequiredChecksBulleted(
 	checks: readonly string[] = BRANCH_PROTECTION_REQUIRED_CHECKS,
 	indent = "  - ",

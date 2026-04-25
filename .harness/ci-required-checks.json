@@ -211,6 +211,20 @@
       "freshnessWindowDays": 7,
       "class": "required",
       "githubCheckName": "CodeRabbit"
+    },
+    {
+      "policyId": "required-check-17",
+      "displayName": "semgrep-cloud-platform/scan",
+      "sourceAppSlug": "semgrep-cloud-platform",
+      "sourceAppId": "semgrep-cloud-platform",
+      "externalIdPattern": "^semgrep-cloud-platform/scan$",
+      "requiredOnEvents": [
+        "pull_request",
+        "merge_group"
+      ],
+      "freshnessWindowDays": 7,
+      "class": "required",
+      "githubCheckName": "semgrep-cloud-platform/scan"
     }
   ]
 }

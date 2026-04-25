@@ -5,6 +5,7 @@ last_validated: 2026-04-25
 # Architecture bootstrap
 
 ## Table of Contents
+
 - [Purpose](#purpose)
 - [One-task-at-a-time intake](#one-task-at-a-time-intake)
 - [Artifact validation gates](#artifact-validation-gates)
@@ -39,6 +40,7 @@ harness docs-gate --mode advisory --json
 If either command fails, refresh artifacts before proceeding.
 When `docs-gate` reports required documentation surfaces for the same change category, update the listed operator guides in that PR before merge.
 For north-star contract/scaffold updates that affect workflow authority, update this guide and `docs/agents/07b-agent-governance.md` together in the same PR.
+For required-check architecture changes, keep the branch-protection identity set aligned across `harness.contract.json`, `.harness/ci-required-checks.json`, generated scaffold templates, and external app checks such as `semgrep-cloud-platform/scan`.
 
 ## Exact behavior evidence
 
@@ -82,6 +84,7 @@ The local `make hooks-pre-push` path also runs `scripts/check-diagram-freshness.
 ## Stop conditions
 
 Stop and ask for direction when any gate fails:
+
 - `scripts/refresh-diagram-context.sh` exits non-zero.
 - `AI/context/diagram-context.md` is missing after refresh.
 - Diagram output does not include the command or module area touched by your change.

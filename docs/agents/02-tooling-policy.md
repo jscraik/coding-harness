@@ -95,6 +95,7 @@ The local hook contract is intentionally split by drag profile:
 - `hooks-commit-msg` is the canonical wrapper target for commit-message policy checks. Keep it available even though `prek.toml` installs only `pre-commit` and `pre-push`.
 - The Semgrep lane is path-filtered to changed implementation files under `src/**` and uses the local ruleset at `scripts/semgrep-pre-push.yml` to avoid turning pre-push into a full repo scan.
 - `scripts/check-semgrep-changed.sh` pins the Semgrep version (`semgrep==1.153.1`) for changed-file hooks, and `scripts/check-semgrep-full.sh` reuses the same pinned runtime for full-repository CI scans. The CircleCI `security-scan` job calls `bash scripts/check-semgrep-changed.sh --all` directly. Keep both scripts, the `pnpm semgrep:changed` script, and the CircleCI `security-scan` invocation aligned when changing the Semgrep version.
+- Semgrep Cloud enforcement is a separate external GitHub App required check named `semgrep-cloud-platform/scan`. Keep it in branch-protection required-check policy and do not model it as a CircleCI job.
 - OpenSSF scorecard posture drift is tracked by the repo status document `docs/security/2026-04-09-openssf-osps-baseline-status.md` and evaluated against `security/openssf-scorecard-policy.json` via `scripts/check-scorecard-regressions.mjs`; keep those surfaces aligned when scorecard policy changes.
 - CodeRabbit custom `ast-grep` rules for this repository live under `rules/`; keep them narrowly scoped to repo-specific contracts such as the required `.js` extension on relative ESM imports.
 
@@ -116,17 +117,17 @@ Port-free wrapping is expected only for app run actions backed by `dev`/`start` 
 
 ## Repository command contract
 
-| Surface | Primary command | Purpose |
-| --- | --- | --- |
-| Install/deps | `pnpm install` | Dependency installation |
-| Code-style gate | `bash scripts/validate-codestyle.sh` | Fail-closed repo-local code-style validation |
-| Quality gate | `pnpm check` | `lint + typecheck + test + audit` |
-| Lint | `pnpm lint` | `biome check .` |
-| Typecheck | `pnpm typecheck` | `tsc --noEmit` |
-| Tests | `pnpm test` | `vitest run` |
-| Tests (CircleCI hardened lane) | `pnpm test:ci` | Runs standard suites plus isolated `ci-migrate` run with targeted Vitest worker-timeout mitigation |
-| Audit | `pnpm audit` | dependency risk check |
-| Build | `pnpm build` | compile TypeScript and generate `dist/cli.js` |
+| Surface                        | Primary command                      | Purpose                                                                                            |
+| ------------------------------ | ------------------------------------ | -------------------------------------------------------------------------------------------------- |
+| Install/deps                   | `pnpm install`                       | Dependency installation                                                                            |
+| Code-style gate                | `bash scripts/validate-codestyle.sh` | Fail-closed repo-local code-style validation                                                       |
+| Quality gate                   | `pnpm check`                         | `lint + typecheck + test + audit`                                                                  |
+| Lint                           | `pnpm lint`                          | `biome check .`                                                                                    |
+| Typecheck                      | `pnpm typecheck`                     | `tsc --noEmit`                                                                                     |
+| Tests                          | `pnpm test`                          | `vitest run`                                                                                       |
+| Tests (CircleCI hardened lane) | `pnpm test:ci`                       | Runs standard suites plus isolated `ci-migrate` run with targeted Vitest worker-timeout mitigation |
+| Audit                          | `pnpm audit`                         | dependency risk check                                                                              |
+| Build                          | `pnpm build`                         | compile TypeScript and generate `dist/cli.js`                                                      |
 
 ## Code-style parity gate
 
@@ -145,6 +146,7 @@ Expected failure behavior is fail-closed: if any required code-style file is mis
 Use repo scripts as the source of truth and do not assume global shortcuts. If a command is unavailable in the environment, record it immediately and treat the corresponding validation gate as blocked until rerun in an environment with the command.
 
 Exception for harness readiness:
+
 - Generated `scripts/check-environment.sh` in harness-managed repositories should prefer a dedicated harness runner using the following lookup order:
   1. `pnpm exec tsx src/cli.ts` (when repo-local TS source exists)
   2. `bash scripts/harness-cli.sh`
@@ -324,23 +326,25 @@ Harness-managed repos should also keep `.harness/ci-provider-transition-status.j
 
 `harness init` automatically detects the project type from filesystem signals and persists it into `harness.contract.json` as `projectType`. Detection is pure and read-only.
 
-| Rule | Type | Signal |
-| --- | --- | --- |
-| `tauri` | `desktop` | `src-tauri/` directory present |
-| `cli-ts` | `cli` | `src/cli.ts` file present |
-| `cli-js` | `cli` | `src/cli.js` file present |
-| `vite` | `web` | `vite.config.*` glob match at root |
-| `next` | `web` | `next.config.*` glob match at root |
-| `nuxt` | `web` | `nuxt.config.*` glob match at root |
-| `library` | `library` | `src/index.ts` file present |
+| Rule      | Type      | Signal                             |
+| --------- | --------- | ---------------------------------- |
+| `tauri`   | `desktop` | `src-tauri/` directory present     |
+| `cli-ts`  | `cli`     | `src/cli.ts` file present          |
+| `cli-js`  | `cli`     | `src/cli.js` file present          |
+| `vite`    | `web`     | `vite.config.*` glob match at root |
+| `next`    | `web`     | `next.config.*` glob match at root |
+| `nuxt`    | `web`     | `nuxt.config.*` glob match at root |
+| `library` | `library` | `src/index.ts` file present        |
 
 Rules are priority-ordered (lower = higher priority). `"unknown"` is emitted when no rule matches and init proceeds with universal defaults.
 
 **CLI flags:**
+
 - `harness init --project-type <cli|desktop|library|web>` — explicit override; patches the existing contract atomically without requiring `--force`
 - `harness init --json` — emits the full `InitOutput` structure as JSON, including `projectTypeDetection`
 
 **Idempotency:**
+
 - Re-init without `--project-type` preserves the stored value in `harness.contract.json`
 - `--project-type` always wins and overwrites the stored value
 - `"unknown"` is printed as a `console.warn` in human mode but suppressed in `--json` mode (result still appears in `projectTypeDetection`)

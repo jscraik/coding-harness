@@ -7992,8 +7992,8 @@ function readRequiredCheckNamesFromSourceProviderConfig(
  * Each entry uses an exact-match `externalIdPattern` for the derived GitHub check
  * identity (`githubCheckName`). CircleCI workflow checks map to the canonical
  * CircleCI primary check name (overrideable through options), while other checks
- * preserve their display name. CodeRabbit and security-scan keep canonical external
- * source metadata. Entries require checks on `pull_request` and `merge_group`
+ * preserve their display name. CodeRabbit, Semgrep Cloud, and security-scan keep
+ * canonical external source metadata. Entries require checks on `pull_request` and `merge_group`
  * events, and apply default freshness and class values.
  *
  * @param displayNames - Array of check display names to import

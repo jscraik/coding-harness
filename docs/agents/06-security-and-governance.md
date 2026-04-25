@@ -58,7 +58,7 @@ Failure mode is intentionally fail-closed: missing code-style files, checksum dr
 - If sensitive material appears in a file, sanitize and rotate as soon as practical.
 - Keep environment-specific credentials outside repo and out of command snippets unless placeholders are explicit.
 - Keep repo-specific Gitleaks allow lists in the repo-root `.gitleaks.toml` so staged scans and manual secret scans share the same reviewed exceptions.
-- CircleCI now owns non-release security scanning in this repository. Keep `security-scan` in `.circleci/config.yml` and avoid reintroducing non-release GitHub Actions security workflows.
+- CircleCI now owns repo-run non-release security scanning in this repository. Keep `security-scan` in `.circleci/config.yml` and avoid reintroducing non-release GitHub Actions security workflows. Semgrep Cloud is enforced separately through the external GitHub App check `semgrep-cloud-platform/scan`; do not fold that required check into CircleCI workflow metadata.
 
 ## Code and data governance
 
@@ -120,11 +120,11 @@ This repository uses `prek` as the canonical local hook installer, and `prek.tom
 
 ### Hooks installed
 
-| Hook | Purpose |
-| --- | --- |
+| Hook         | Purpose                                                                                                                                                                    |
+| ------------ | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `pre-commit` | Runs `make hooks-pre-commit` (`pnpm lint`, `pnpm docs:lint`, `pnpm typecheck`, changed-code docstring and size gates, staged `gitleaks`, staged-doc `vale`, related tests) |
-| `commit-msg` | Validates conventional commit format, reminds about PR template |
-| `pre-push` | Runs `make hooks-pre-push` (`docs-gate --mode required`, diagram freshness, `tooling-audit`, `check-environment`, changed-file `semgrep`, `make codestyle`, `pnpm build`) |
+| `commit-msg` | Validates conventional commit format, reminds about PR template                                                                                                            |
+| `pre-push`   | Runs `make hooks-pre-push` (`docs-gate --mode required`, diagram freshness, `tooling-audit`, `check-environment`, changed-file `semgrep`, `make codestyle`, `pnpm build`)  |
 
 The staged `gitleaks` lane should prefer the repo-root `.gitleaks.toml` when present so approved fixture/example exceptions are consistent across local hooks, manual scans, and downstream scaffold expectations.
 `hooks-commit-msg` remains a required Makefile wrapper even though `prek.toml` only installs `pre-commit` and `pre-push`; use that wrapper for deterministic commit-policy verification and cross-repo governance checks.
@@ -146,7 +146,7 @@ Port-free usage should remain scoped to app-style run actions that map to `dev`/
 - Completed acceptance checklist items in referenced plans must carry evidence links or refs before merge.
 - `risk-policy-gate` enforces this in CI, and `review-gate` treats missing or invalid plan traceability as a merge blocker even when the review check itself passed.
 
-`scripts/check-semgrep-changed.sh` is intentionally narrow: it compares `HEAD` to the upstream merge-base (or the nearest main/master fallback), filters to changed implementation files under `src/**`, and runs only the local `scripts/semgrep-pre-push.yml` ruleset. That keeps the local lane useful without duplicating the full CI security scan. Keep the script pinned to the same Semgrep version used by the CircleCI `security-scan` lane in `.circleci/config.yml` (`semgrep==1.153.1`) so local and CI findings stay aligned.
+`scripts/check-semgrep-changed.sh` is intentionally narrow: it compares `HEAD` to the upstream merge-base (or the nearest main/master fallback), filters to changed implementation files under `src/**`, and runs only the local `scripts/semgrep-pre-push.yml` ruleset. That keeps the local lane useful without duplicating the full CI security scan. Keep the script pinned to the same Semgrep version used by the CircleCI `security-scan` lane in `.circleci/config.yml` (`semgrep==1.153.1`) so local and CI findings stay aligned. Keep Semgrep Cloud's `semgrep-cloud-platform/scan` branch-protection check as an independent external app gate.
 
 ### Setup
 
@@ -180,6 +180,7 @@ Types: `feat`, `fix`, `chore`, `docs`, `refactor`, `test`, `style`, `perf`, `ci`
 ### PR template reminder
 
 On agent branches (`codex/*`, `claude/*`), the commit-msg hook reminds about PR template requirements:
+
 - ## Summary (1-3 bullet points)
 - Plan IDs
 - ## Checklist (all items checked)

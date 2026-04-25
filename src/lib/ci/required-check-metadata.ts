@@ -1,6 +1,8 @@
 import type { CIProvider } from "../init/types.js";
+import { SEMGREP_CLOUD_CHECK_NAME } from "../policy/required-checks.js";
 import { CIRCLECI_PRIMARY_CHECK } from "./branch-protect-sync.js";
 
+/** Source ownership and GitHub-facing identity for a required check. */
 export interface RequiredCheckMetadata {
 	sourceAppSlug: string;
 	sourceAppId: string;
@@ -9,6 +11,7 @@ export interface RequiredCheckMetadata {
 	enabled?: boolean;
 }
 
+/** Options that customize required-check metadata derivation. */
 export interface DeriveRequiredCheckMetadataOptions {
 	circleciPrimaryCheckName?: string;
 }
@@ -38,6 +41,7 @@ const CIRCLECI_WORKFLOW_OWNED_CHECKS = new Set<string>([
  *
  * Special handling:
  * - A display name of `"CodeRabbit"` maps to the `coderabbit` source and `CodeRabbit` GitHub check name.
+ * - A display name of `"semgrep-cloud-platform/scan"` maps to the Semgrep Cloud GitHub App check name.
  * - A display name of `"security-scan"` preserves the standalone `security-scan` GitHub check name so dedicated security workflows remain addressable across providers.
  * - For CircleCI, certain workflow-owned check names (including the configured primary check) are mapped to the CircleCI primary check name; other CircleCI names are treated as external checks.
  *
@@ -57,6 +61,14 @@ export function deriveRequiredCheckMetadata(
 			sourceAppSlug: "coderabbit",
 			sourceAppId: "coderabbit",
 			githubCheckName: "CodeRabbit",
+			class: "required",
+		};
+	}
+	if (displayName === SEMGREP_CLOUD_CHECK_NAME) {
+		return {
+			sourceAppSlug: "semgrep-cloud-platform",
+			sourceAppId: "semgrep-cloud-platform",
+			githubCheckName: SEMGREP_CLOUD_CHECK_NAME,
 			class: "required",
 		};
 	}

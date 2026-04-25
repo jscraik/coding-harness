@@ -43,7 +43,9 @@ describe("runBranchProtect", () => {
 					"audit",
 					"check",
 					"memory",
+					"security-scan",
 					"CodeRabbit",
+					"semgrep-cloud-platform/scan",
 				],
 			},
 		});
@@ -461,7 +463,9 @@ describe("runBranchProtect", () => {
 				{ context: "audit" },
 				{ context: "check" },
 				{ context: "memory" },
+				{ context: "security-scan" },
 				{ context: "CodeRabbit" },
+				{ context: "semgrep-cloud-platform/scan" },
 			],
 		});
 	});
@@ -570,6 +574,7 @@ describe("runBranchProtect", () => {
 				{ context: "memory" },
 				{ context: "security-scan" },
 				{ context: "CodeRabbit" },
+				{ context: "semgrep-cloud-platform/scan" },
 			],
 		});
 	});
@@ -1440,7 +1445,10 @@ describe("runBranchProtect", () => {
 			expect(result.ok).toBe(true);
 			if (result.ok) {
 				expect(result.output.ecosystem).toBe("minimal");
-				expect(result.output.requiredChecks).toEqual(["lint"]);
+				expect(result.output.requiredChecks).toEqual([
+					"lint",
+					"semgrep-cloud-platform/scan",
+				]);
 			}
 		});
 
