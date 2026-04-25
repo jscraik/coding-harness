@@ -1,4 +1,4 @@
-import { runSourceOutlineCLI } from "../../../commands/source-outline.js";
+import { runSourceOutlineCLI } from "../../source-outline.js";
 import type { CommandSpec } from "./types.js";
 
 /** Registry entry for the source-outline exploration command. */

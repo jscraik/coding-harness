@@ -8,6 +8,8 @@
 		"scripts/verify-work.sh",
 		"scripts/validate-codestyle.sh",
 		"scripts/check-related-tests.sh",
+		"scripts/refresh-diagram-context.sh",
+		"scripts/check-diagram-freshness.sh",
 		"scripts/check-public-api-docs.mjs",
 		"scripts/check-code-size.mjs",
 		"scripts/lib",
