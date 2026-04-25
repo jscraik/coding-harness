@@ -9,13 +9,6 @@
 
 import { existsSync, readFileSync } from "node:fs";
 import { resolve } from "node:path";
-import {
-	DEFAULT_CI_PROVIDER_POLICY,
-	DEFAULT_CONTRACT,
-	NORTH_STAR_DECISION_QUESTION_SPECS,
-	NORTH_STAR_PRIMARY_BOTTLENECK,
-	NORTH_STAR_PRIMARY_METRIC,
-} from "../contract/types.js";
 import { formatRequiredChecksBulleted } from "../policy/required-checks.js";
 import type { ProjectType } from "../project-type/types.js";
 import { PROJECT_BRAIN_TEMPLATES } from "./project-brain-templates.js";
@@ -40,6 +33,7 @@ import {
 	renderGitleaksConfigTemplate,
 	renderMiseConfigTemplate,
 } from "./scaffold-config-templates.js";
+import { renderHarnessContractTemplate } from "./scaffold-contract-template.js";
 import {
 	renderCheckDiagramFreshnessScript,
 	renderDiagramRcTemplate,
@@ -91,6 +85,7 @@ import {
 	renderLocalHarnessExecCommand,
 	renderVerifyWorkScript,
 } from "./scaffold-shell-templates.js";
+import { renderWorkflowTemplate } from "./scaffold-workflow-template.js";
 import {
 	renderNewTaskScript,
 	renderPrepareWorktreeScript,
@@ -98,7 +93,6 @@ import {
 import {
 	type CIProvider,
 	CODEX_ENVIRONMENT_TEMPLATE_PATH,
-	CURRENT_SCHEMA_VERSION,
 	type InitErrorOutput,
 	type InitOptions,
 	type PackageJsonLike,
@@ -127,10 +121,6 @@ function renderScriptCommand(packageManager: string, script: string): string {
 		return `npm run ${script}`;
 	}
 	return `${packageManager} ${script}`;
-}
-
-function shellEscapeArg(value: string): string {
-	return `'${value.split("'").join(`'"'"'`)}'`;
 }
 
 /**
@@ -507,524 +497,19 @@ export function shouldSkipDueToNewerToolingVersion(
 	return decision === "skip";
 }
 
-/**
- * Produce a Symphony workflow configuration and accompanying human-readable workflow document tailored to the repository.
- *
- * @param pm - Package manager identifier (e.g., `"npm"`, `"yarn"`, `"pnpm"`) used to choose install and command wrappers embedded in the workflow.
- * @param context - Template render context whose fields (notably `linearProjectSlug`, `projectName`, `repoUrl`, and `issueTracker`) populate tracker configuration, repository bootstrap commands, and workflow metadata.
- * @returns The complete workflow file content as a string: a Symphony YAML configuration section followed by an extensive Markdown workflow document with states, transition table, error handling, and validation checklist.
- */
-function renderWorkflowTemplate(
-	pm: string,
-	context: TemplateRenderContext,
-): string {
-	const projectSlug = context.linearProjectSlug || "<your-project-slug>";
-	const projectName = context.projectName || "<project-name>";
-	const repoUrl = context.repoUrl || "$SOURCE_REPO_URL";
-	const trackerKind = context.issueTracker ?? "linear";
-	const renderedRepoUrl =
-		repoUrl === "$SOURCE_REPO_URL" ? repoUrl : shellEscapeArg(repoUrl);
-	const installCommand = renderWorkflowBootstrapInstallCommand(pm);
-	const checkCommand = renderScriptCommand(pm, "check");
-	const trackerBlock =
-		trackerKind === "linear"
-			? `tracker:
-  kind: linear
-  api_key: $LINEAR_API_KEY
-  project_slug: "${projectSlug}"
-  active_states:
-    - Todo
-    - In Progress
-  terminal_states:
-    - Done
-    - Canceled
-    - Duplicate`
-			: trackerKind === "github"
-				? `tracker:
-  kind: github
-  active_states:
-    - OPEN
-  terminal_states:
-    - MERGED
-    - CLOSED`
-				: `tracker:
-  kind: none`;
-	const transitionRows =
-		trackerKind === "linear"
-			? `| \`S0 TODO\` | \`claim\` | preflight passes | \`harness linear claim --issue <LK> --branch <codex/...>\` | \`S1 IN_PROGRESS\` |
-| \`S1 IN_PROGRESS\` | \`advance\` | \`${checkCommand}\` passes | \`harness linear handoff --issue <LK> --pr-url <url> --evidence-urls <url>\` | \`S2 IN_REVIEW\` |
-| \`S1 IN_PROGRESS\` | \`blocked\` | dependency unavailable | emit unblock payload | \`S4 BLOCKED\` |
-| \`S1 IN_PROGRESS\` | \`error\` | unrecoverable runtime/policy issue | record failure artifact | \`S5 FAIL\` |
-| \`S2 IN_REVIEW\` | \`approved\` | review and CI pass | \`harness linear close --issue <LK> --pr-url <url>\` | \`S3 DONE\` |
-| \`S2 IN_REVIEW\` | \`rejected\` | review gate fails | route back to working | \`S1 IN_PROGRESS\` |
-| \`S4 BLOCKED\` | \`unblocked\` | dependency restored | resume execution | \`S1 IN_PROGRESS\` |`
-			: `| \`S0 TODO\` | \`claim\` | preflight passes | create branch/worktree and start implementation | \`S1 IN_PROGRESS\` |
-| \`S1 IN_PROGRESS\` | \`advance\` | \`${checkCommand}\` passes | open PR and attach validation evidence | \`S2 IN_REVIEW\` |
-| \`S1 IN_PROGRESS\` | \`blocked\` | dependency unavailable | emit unblock payload | \`S4 BLOCKED\` |
-| \`S1 IN_PROGRESS\` | \`error\` | unrecoverable runtime/policy issue | record failure artifact | \`S5 FAIL\` |
-| \`S2 IN_REVIEW\` | \`approved\` | review and CI pass | merge PR and record closeout evidence | \`S3 DONE\` |
-| \`S2 IN_REVIEW\` | \`rejected\` | review gate fails | route back to working | \`S1 IN_PROGRESS\` |
-| \`S4 BLOCKED\` | \`unblocked\` | dependency restored | resume execution | \`S1 IN_PROGRESS\` |`;
-
-	return `---
-# Symphony Workflow Configuration
-# Generated by harness init — customize values below for your project.
-${trackerBlock}
-workspace:
-  root: $SYMPHONY_WORKSPACE_ROOT
-hooks:
-  after_create: |
-    git clone --depth 1 ${renderedRepoUrl} .
-    ${installCommand}
-    if ! mise trust --yes .mise.toml >/dev/null 2>&1; then
-      echo "[symphony] failed to trust .mise.toml"
-      echo "[symphony] Fix: run 'mise trust --yes .mise.toml' and retry"
-      exit 1
-    fi
-    mise_trust_status="$(mise trust --show .mise.toml 2>/dev/null || true)"
-    if [[ "$mise_trust_status" != *": trusted"* ]]; then
-      echo "[symphony] mise config is not trusted"
-      echo "[symphony] Fix: run 'mise trust --yes .mise.toml' and retry"
-      exit 1
-    fi
-  after_run: |
-    cd "$WORKSPACE" && rm -rf node_modules
-agent:
-  max_concurrent_agents: 3
-  max_turns: 12
-codex:
-  command: "\${CODEX_BIN:-codex} app-server"
-  approval_policy: on-request
-  thread_sandbox: workspace-write
----
-
-# ${projectName} Workflow
-
-## Table of Contents
-- [Abbreviations](#abbreviations)
-- [Metadata](#metadata)
-- [Invariants](#invariants)
-- [States](#states)
-- [Transition Table (Canonical)](#transition-table-canonical)
-- [Error Handling](#error-handling)
-- [Idempotency](#idempotency)
-- [Execution Modes](#execution-modes)
-- [Dry-Run Simulation](#dry-run-simulation)
-- [Observability Logs](#observability-logs)
-- [Validation Checklist](#validation-checklist)
-
-## Abbreviations
-| Abbr | Meaning |
-| --- | --- |
-| \`S\` | state |
-| \`E\` | event |
-| \`G\` | guard |
-| \`A\` | action |
-| \`N\` | next state |
-
-## Metadata
-| Field | Value |
-| --- | --- |
-| \`owner\` | <owner> |
-| \`max_duration\` | 60m |
-| \`escalation\` | <escalation-path> |
-| \`change_class\` | behavior |
-
-## Invariants
-| Field | Value |
-| --- | --- |
-| \`test_mode\` | tdd-required |
-| \`test_tier\` | integration |
-| \`tracer_bullet_first\` | yes |
-| \`red_evidence_required\` | yes |
-
-## States
-\`\`\`txt
-S0 TODO (non-terminal)
-S1 IN_PROGRESS (non-terminal)
-S2 IN_REVIEW (non-terminal)
-S3 DONE (terminal)
-S4 BLOCKED (non-terminal)
-S5 FAIL (terminal)
-\`\`\`
-
-## Transition Table (Canonical)
-\`S | E | G | A | N\`
-
-| S | E | G | A | N |
-| --- | --- | --- | --- | --- |
-${transitionRows}
-
-## Error Handling
-- \`VALIDATION_ERROR\`: invalid input, malformed data, or missing required fields.
-- \`BLOCKED_DEPENDENCY\`: missing auth/secret/permission; route to BLOCKED.
-- \`POLICY_FAIL\`: required checks, policy, or gate failures.
-- \`SYSTEM_ERROR\`: CLI/runtime/network failure; emit failed command.
-
-## Idempotency
-- Idempotency key: \`{{workflow_id}}|{{event}}|{{from_state}}|{{correlation_id}}\`.
-- Replayed events with same key must no-op or upsert only.
-- Side effects must be guarded against duplication.
-
-## Execution Modes
-- \`STRICT\`: hard-fail on validation/policy violations.
-- \`ADVISORY\`: emit warnings and continue for non-safety violations.
-
-## Dry-Run Simulation
-- Dry-run has no side effects.
-- Dry-run emits deterministic transition trace output.
-- Output includes selected transition row and guard evaluation.
-
-## Observability Logs
-\`\`\`json
-{
-  "workflow_id": "{{WORKFLOW_ID}}",
-  "transition_code": "S0:claim",
-  "from_state": "S0 TODO",
-  "to_state": "S1 IN_PROGRESS",
-  "correlation_id": "{{CORRELATION_FORMAT}}",
-  "result": "success|blocked|failed"
-}
-\`\`\`
-
-## Validation Checklist
-- [ ] canonical \`S | E | G | A | N\` table exists
-- [ ] 5 non-empty cells in each transition row
-- [ ] all required error codes are present
-- [ ] \`STRICT\` and \`ADVISORY\` modes are declared
-- [ ] dry-run semantics include no side effects and deterministic trace output
-- [ ] required observability log fields are present
-- [ ] \`change_class\` metadata is declared
-- [ ] validation contract fields are declared
-- [ ] behavior-changing workflows include TDD or reviewed exemption metadata
-- [ ] tracker-specific workflow actions are wired into transition actions
-`;
-}
-
-function renderScaffoldNorthStar(
-	context: TemplateRenderContext,
-): NonNullable<typeof DEFAULT_CONTRACT.northStar> {
-	const projectName = context.projectName?.trim() || "This repository";
-	return {
-		mission: `${projectName} uses Coding Harness to reduce PR lead time while preserving safe, evidence-backed human oversight.`,
-		primaryMetric: NORTH_STAR_PRIMARY_METRIC,
-		primaryBottleneck: NORTH_STAR_PRIMARY_BOTTLENECK,
-		autonomyBoundary:
-			"Low and medium-risk changes may be automated when evidence is deterministic and rollback remains explicit; high-risk changes remain human-mediated.",
-		safetyFloor: [
-			"deterministic evidence over intuition",
-			"strict current-head SHA discipline",
-			"bounded auto-remediation instead of open-ended write access",
-			"explicit rollback paths for higher-risk automation",
-			"independent review surfaces that do not collapse back into self-approval",
-		],
-		nonGoals: [
-			"governance surface area as a proxy for progress",
-			"feature count without measurable throughput or reliability benefit",
-			"manual coordination steps that recur every run or every PR",
-			"broad autonomy expansion without evidence that the review or rework loop got cheaper",
-		],
-		decisionQuestions: NORTH_STAR_DECISION_QUESTION_SPECS.map((question) => ({
-			id: question.id,
-			prompt: question.prompt,
-		})),
-	};
-}
-
-function renderScaffoldProductSurface(): NonNullable<
-	typeof DEFAULT_CONTRACT.productSurface
-> {
-	return {
-		surfaces: [
-			{
-				surfaceId: "automation-control-plane",
-				surfaceType: "policy",
-				class: "core",
-				owner: "maintainers",
-				northStarContribution:
-					"Keeps delivery automation aligned to PR lead-time outcomes.",
-				manualGlueReductionClaim:
-					"Converts recurring reviewer reminders into explicit policy checks.",
-				reliabilityContribution:
-					"Centralizes automation guardrails in one deterministic contract surface.",
-				evidenceReference: "harness.contract.json",
-				ownedPaths: ["harness.contract.json"],
-				lastReviewedAt: "2026-04-22",
-			},
-		],
-	};
-}
-
-function renderScaffoldOverrideReviewerRegistry(
-	context: TemplateRenderContext,
-): NonNullable<typeof DEFAULT_CONTRACT.overrideReviewerRegistry> {
-	const projectName = context.projectName?.trim() || "Project";
-	return {
-		trustedReviewers: [
-			{
-				reviewerId: "project-maintainers",
-				reviewerType: "team",
-				signatureRef: "refs/reviewers/project-maintainers",
-				displayName: `${projectName} Maintainers`,
-				status: "active",
-			},
-		],
-	};
-}
-
 export const TEMPLATES: Template[] = [
 	{
 		path: "harness.contract.json",
 		render: (pm, context) =>
-			JSON.stringify(
-				{
-					version: CURRENT_SCHEMA_VERSION,
-					riskTierRules: {
-						"src/auth/**": "high",
-						"src/api/**": "high",
-						"src/lib/**": "medium",
-						"**/*.test.ts": "low",
-					},
-					mergePolicy: {
-						high: ["review-gate", "evidence-verify"],
-						medium: ["review-gate"],
-						low: [],
-					},
-					docsDriftRules: {},
-					branchProtection: {
-						requiredChecks: [
-							...getNormalizedRequiredChecks(
-								context.ciProvider ?? DEFAULT_CI_PROVIDER,
-								context,
-							),
-						],
-						restrictDeletions: true,
-						blockForcePushes: true,
-						requireLinearHistory: true,
-						requirePullRequest: true,
-						requiredApprovingReviewCount: 1,
-						dismissStaleReviewsOnPush: true,
-						requireConversationResolution: true,
-						requireCodeOwnerReview: false,
-						requireLastPushApproval: false,
-						requireBranchesUpToDate: true,
-						allowedMergeMethods: {
-							mergeCommit: true,
-							squash: true,
-							rebase: true,
-						},
-						codeQuality: {
-							required: true,
-							severity: "all",
-						},
-						publicCodeScanning: {
-							required: true,
-							publicOnly: true,
-							tool: "CodeQL",
-							alertsThreshold: "errors",
-							securityAlertsThreshold: "high_or_higher",
-						},
-					},
-					toolingPolicy: DEFAULT_CONTRACT.toolingPolicy,
-					...(context.issueTracker === "github" ||
-					context.issueTracker === "none"
-						? {}
-						: {
-								issueTrackingPolicy: {
-									provider: "linear" as const,
-									...(context.issueTrackingUrl
-										? { projectUrl: context.issueTrackingUrl }
-										: {}),
-									requirePackageBugsUrl: true,
-									disableGitHubIssues: true,
-									requireBranchIssueKey: true,
-									requirePrIssueKey: true,
-									prReferenceMode: "either" as const,
-									branchPrefix: AGENT_BRANCH_PREFIX,
-								},
-							}),
-					evidencePolicy: {
-						requiredFor: [],
-						allowedTypes: ["png", "jpeg"],
-						maxFileSizeBytes: 1048576,
-					},
-					northStar: renderScaffoldNorthStar(context),
-					productSurface: renderScaffoldProductSurface(),
-					overrideReviewerRegistry:
-						renderScaffoldOverrideReviewerRegistry(context),
-					diffBudget: {
-						maxFiles: 10,
-						maxNetLOC: 400,
-						overrideLabel: "diff-budget-override",
-					},
-					uiLoopPolicy: {
-						fastCommand: renderScriptCommand(pm, "ui:fast"),
-						verifyCommand: renderScriptCommand(pm, "ui:verify"),
-						exploreCommand: renderScriptCommand(pm, "ui:explore"),
-						sloTargets: {
-							fastLoopSeconds: 30,
-							verifyLoopSeconds: 120,
-						},
-					},
-					runtimePolicy: {
-						nodeVersion: "24.x",
-						createIssueOnAgentFindings: true,
-					},
-					memoryPolicy: {
-						enabled: true,
-						provider: "local",
-						sessionIdTemplate: "repo:<name>:task:<id>",
-						domain: "default",
-						requiredTags: ["repo", "area", "type"],
-						maxObservationsPerStep: 3,
-						allowedLevels: ["observation", "learning", "pattern"],
-						requireStartRead: true,
-						requireCloseoutSummary: true,
-						forbiddenContentPatterns: [
-							"token",
-							"api[_-]?key",
-							"secret",
-							"password",
-							"credential",
-						],
-					},
-					memoryMaintenancePolicy: {
-						validateSchedule: "weekly",
-						reflectSchedule: "weekly",
-						questionSlaDays: 7,
-						duplicateThreshold: 0.8,
-					},
-					memoryEvalPolicy: {
-						trialsPerTask: 3,
-						requiredMetrics: ["pass^k", "tool_errors", "duplicate_rate"],
-						passPowKThreshold: 0.8,
-					},
-					observabilityPolicy: {
-						provider: "logs",
-						collectorEndpoint: "http://localhost:4318",
-					},
-					packageManagerPolicy: {
-						allowedManagers: ["pnpm", "npm", "yarn"],
-						requiredManager: null,
-					},
-					remediationPolicy: {
-						providerDefaults: {
-							codex: {
-								autoApplyMaxTier: "medium",
-								dryRunOnlyByDefault: false,
-							},
-						},
-						marker: "[auto-remediate]",
-						timeoutMinutes: 10,
-						retryLimit: 3,
-						requireEvidence: true,
-					},
-					loopStageContracts: {
-						"risk-policy-gate": {
-							inputs: ["changed_files", "harness.contract.json"],
-							outputs: ["risk-policy-gate.result"],
-							schema: "loop-stage-contract/v1",
-							failPolicy: "fail_closed" as const,
-							if: "always()",
-							permissions: ["contents:read", "pull-requests:read"],
-							timeoutMinutes: 15,
-							concurrency: "none",
-						},
-						"review-gate": {
-							inputs: [
-								"risk-policy-gate.result",
-								"head_sha",
-								"harness.contract.json",
-							],
-							outputs: ["review-gate.result"],
-							schema: "loop-stage-contract/v1",
-							failPolicy: "fail_closed" as const,
-							if: "always()",
-							permissions: ["contents:read", "pull-requests:read"],
-							timeoutMinutes: 15,
-							concurrency: "none",
-						},
-						"evidence-verify": {
-							inputs: [
-								"review-gate.result",
-								"evidence_files",
-								"harness.contract.json",
-							],
-							outputs: ["evidence-verify.result", "browser-evidence-artifacts"],
-							schema: "loop-stage-contract/v1",
-							failPolicy: "fail_closed" as const,
-							if: "always()",
-							permissions: ["contents:read"],
-							timeoutMinutes: 15,
-							concurrency: "none",
-						},
-						"remediation-decision": {
-							inputs: [
-								"evidence-verify.result",
-								"findings.json",
-								"harness.contract.json",
-							],
-							outputs: [
-								"remediation-decision.result",
-								"remediation-decision-artifacts",
-							],
-							schema: "loop-stage-contract/v1",
-							failPolicy: "fail_closed" as const,
-							if: "always()",
-							permissions: ["contents:read", "pull-requests:write"],
-							timeoutMinutes: 15,
-							concurrency: "none",
-						},
-					},
-					pilotGapCasePolicy: {
-						enabled: false,
-						defaultSlaHours: 72,
-						requireClosureEvidence: true,
-						storePath: ".harness/gap-cases.v1.json",
-					},
-					pilotRollbackPolicy: {
-						autoTrigger: true,
-						requireManualRelease: true,
-						completionMarkerPath: ".harness/rollback-marker.json",
-						mode: "manual" as const,
-					},
-					pilotAuthzPolicy: {
-						githubScopeAllowlist: [
-							"pull_requests:write",
-							"contents:read",
-							"issues:write",
-						],
-						repoAllowlist: [],
-						branchAllowlist: [],
-						protectedBranchDenylist: ["main", "master", "release/*"],
-						enforceBranchProtection: true,
-					},
-					controlPlanePolicy: {
-						overridePolicy: {
-							authorizedPrincipals: [],
-							dualApprovalScopes: ["temporary_unblock", "temporary_promote"],
-							maxTtlHours: 24,
-							nonOverridableControls: [
-								"canonical_runtime_invalid",
-								"governance_trust_mismatch",
-								"missing_required_instruction_surface",
-								"missing_snapshot_integrity_verification",
-							],
-						},
-					},
-					ciProviderPolicy: {
-						...DEFAULT_CI_PROVIDER_POLICY,
-						activeProvider:
-							context.ciProvider ?? DEFAULT_CI_PROVIDER_POLICY.activeProvider,
-					},
-					contextIntegrityPolicy: DEFAULT_CONTRACT.contextIntegrityPolicy,
-					...(context.projectType !== undefined
-						? { projectType: context.projectType }
-						: {}),
-				},
-				null,
-				2,
-			),
+			renderHarnessContractTemplate({
+				agentBranchPrefix: AGENT_BRANCH_PREFIX,
+				context,
+				packageManager: pm,
+				requiredChecks: getNormalizedRequiredChecks(
+					context.ciProvider ?? DEFAULT_CI_PROVIDER,
+					context,
+				),
+			}),
 	},
 	{
 		path: "memory.json",
@@ -1485,7 +970,12 @@ env-check: ## Check environment policy envelope
 	},
 	{
 		path: "WORKFLOW.md",
-		render: (pm, context) => renderWorkflowTemplate(pm, context),
+		render: (pm, context) =>
+			renderWorkflowTemplate({
+				checkCommand: renderScriptCommand(pm, "check"),
+				context,
+				installCommand: renderWorkflowBootstrapInstallCommand(pm),
+			}),
 	},
 ];
 

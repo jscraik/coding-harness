@@ -178,7 +178,16 @@ jq -n --tab \
 		const root = createRepo(`#!/usr/bin/env bash
 set -euo pipefail
 printf '%s\n' "$*" > .refresh-invoked
-printf '\n## Drift detected\n' >> AI/context/diagram-context.md
+fence="$(printf '\\x60\\x60\\x60')"
+printf '%s\n' \
+	"" \
+	"## architecture" \
+	"" \
+	"\${fence}mermaid" \
+	"graph TD" \
+	"  A[Start] --> C[Changed]" \
+	"\${fence}" \
+	>> AI/context/diagram-context.md
 `);
 		roots.push(root);
 

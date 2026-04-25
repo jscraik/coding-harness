@@ -83,12 +83,14 @@ const lines = fs.readFileSync(filePath, "utf8").split(/\r?\n/);
 const normalized = [];
 let inMermaid = false;
 let mermaidLines = [];
+let activeSection = "";
 
 const normalizeMermaidLine = (line) => {
 	let value = line.trim();
 	if (!value) return "";
 
 	value = value.replace(/^([A-Za-z0-9_:-]+)\s*(\[[^\]]+\]|\([^)]*\)|\{[^}]*\})/, "NODE$2");
+	value = value.replace(/^class\s+[A-Za-z0-9_:-]+\s*\{$/, "class NODE {");
 	value = value.replace(/\b(style|class|click)\s+[A-Za-z0-9_:-]+\b/g, "$1 NODE");
 	value = value.replace(/^([A-Za-z0-9_:-]+)(\s*[-.=]+.*)$/, "NODE$2");
 	value = value.replace(/([-.=]+>|<[-.=]+)\s*([A-Za-z0-9_:-]+)/g, "$1 NODE");
@@ -108,6 +110,16 @@ const flushMermaid = () => {
 
 for (const line of lines) {
 	if (/^Generated: /.test(line)) continue;
+	if (/^##\s+/.test(line)) {
+		activeSection = line.trim();
+	}
+	if (
+		activeSection &&
+		activeSection !== "## architecture" &&
+		activeSection !== "## dependency"
+	) {
+		continue;
+	}
 	if (line.trim() === "```mermaid") {
 		inMermaid = true;
 		mermaidLines = [];
