@@ -153,6 +153,7 @@ Compatibility:
 | `context-health` | Generate advisory context-integrity scorecards |
 | `search` | Run hybrid lexical and semantic search; if `--limit` or `--threshold` is omitted, `contextCompact` policy applies when present, otherwise static defaults (`DEFAULT_SEARCH_LIMIT`, `DEFAULT_SIMILARITY_THRESHOLD`) are used |
 | `context` | Search indexed plans, specs, and brainstorms; if `--limit` or `--threshold` is omitted, `contextCompact` policy applies when present, otherwise static defaults (`DEFAULT_SEARCH_LIMIT`, `DEFAULT_SIMILARITY_THRESHOLD`) are used |
+| `source-outline` | Print declaration-style TypeScript-family source signatures and comments, with optional single-symbol implementation unwrapping via `--symbol` |
 | `index-context` | Build the local semantic-search index |
 | `evidence-verify` | Validate screenshot and evidence artifacts |
 | `ui:fast` | Run a Storybook-first local UI loop |
