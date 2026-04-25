@@ -1,5 +1,5 @@
 ---
-last_validated: 2026-04-23
+last_validated: 2026-04-25
 ---
 
 # Agent testing gates
@@ -8,6 +8,7 @@ last_validated: 2026-04-23
 
 - [Primary required gates](#primary-required-gates)
 - [Optional gates](#optional-gates)
+- [Exact behavior checks](#exact-behavior-checks)
 - [Verify-work orchestration and resume](#verify-work-orchestration-and-resume)
 - [Review-gate north-star evidence](#review-gate-north-star-evidence)
 - [Gate-by-gate intent](#gate-by-gate-intent)
@@ -29,6 +30,32 @@ For any behavior-affecting change:
 
 - `pnpm build` when CLI output, entrypoints, or distribution artifacts change.
 - Manual smoke checks for command-flow changes.
+
+## Exact behavior checks
+
+Broad gates are necessary, but they are not enough on their own when
+executable behavior changes. Run the smallest real executable path that
+exercises the exact production code touched before claiming the change is
+verified.
+
+Prefer invoking the production function, class, CLI command, shell script,
+validator, or route directly. If no existing test covers the path, create a
+temporary local reproduction harness under `codex-scripts/`, keep it
+gitignored, and import or invoke production code directly instead of copying
+implementation into the harness.
+
+If the exact path cannot run because it depends on unavailable credentials,
+external services, unsafe side effects, or missing generated runtime state,
+state that blocker explicitly and run the nearest meaningful validation
+instead. Do not describe production behavior as verified unless the touched
+path actually ran.
+
+## Changed-code ratchets
+
+- `pnpm run quality:docstrings` requires JSDoc for changed exported public API declarations in production `src/**` files.
+- `pnpm run quality:size` enforces changed-file size limits for production `src/**` files and reports explicit legacy allowlist skips.
+- `pnpm run test:related` runs Vitest related mode for changed production `src/**` files without `--passWithNoTests`; missing related tests are a blocker, not a green signal.
+- `bash scripts/validate-codestyle.sh --fast`, `pnpm check`, and `make hooks-pre-commit` include these gates so the contract is enforced locally and in downstream harness-managed repos.
 
 ## Verify-work orchestration and resume
 

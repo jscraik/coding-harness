@@ -22,6 +22,12 @@ import {
 	getActiveGHAJobNames,
 } from "../lib/ci/branch-protect-sync.js";
 import {
+	type CIMigrateAction,
+	DEFAULT_CI_MIGRATE_PROVIDER,
+	VALID_CI_MIGRATE_ACTIONS,
+	VALID_CI_MIGRATE_PROVIDERS,
+} from "../lib/ci/ci-migrate-command-contract.js";
+import {
 	defaultSnapshotId,
 	getExternalControlPlaneStatePath,
 	getReportPath,
@@ -68,6 +74,11 @@ let runInitCLIImpl: RunInitCLIImpl = runInitCLI;
 let scanOpenPullRequestSatisfiabilityImpl: ScanOpenPullRequestSatisfiabilityImpl =
 	scanOpenPullRequestSatisfiability;
 
+/**
+ * Installs deterministic test doubles for external collaborators used by `ci-migrate`.
+ *
+ * @param overrides - Optional collaborator replacements; omitted values reset to production implementations.
+ */
 export function setCIMigrateTestOverrides(
 	overrides?: Readonly<{
 		runInitCLI?: RunInitCLIImpl | undefined;
@@ -82,7 +93,6 @@ export function setCIMigrateTestOverrides(
 		scanOpenPullRequestSatisfiability;
 }
 
-const DEFAULT_PROVIDER = "circleci";
 const MAX_SNAPSHOT_AGE_DAYS = 30;
 const SNAPSHOT_SIGNATURE_ALGORITHM = "hmac-sha256";
 const SNAPSHOT_SIGNING_KEY_ENV = "HARNESS_CI_MIGRATE_SIGNING_KEY";
@@ -157,19 +167,9 @@ const PARITY_PROOF_SOURCE_ARTIFACTS_PREFIX =
 	".harness/ci-parity-proof-source-artifacts/";
 const DEFAULT_TRANSITION_STATUS_ARTIFACT_PATH =
 	".harness/ci-provider-transition-status.json";
-const VALID_PROVIDERS: CIProvider[] = ["github-actions", "circleci"];
-const VALID_ACTIONS = [
-	"prepare",
-	"commit",
-	"abort",
-	"verify",
-	"bootstrap",
-] as const;
 const SHA256_HEX_PATTERN = /^[a-f0-9]{64}$/;
 const COMMIT_SHA_PATTERN = /^[a-f0-9]{40}$/;
 const HEX_TOKEN_PATTERN = /^[a-f0-9]+$/;
-
-type CIMigrateAction = (typeof VALID_ACTIONS)[number];
 
 type MigrationClassification =
 	| "translatable"
@@ -182,6 +182,9 @@ type CIProviderMigrationStage =
 	| "circleci-only";
 type RequiredParityScenario = (typeof REQUIRED_PARITY_SCENARIOS)[number];
 
+/**
+ * Runtime options accepted by the `harness ci-migrate` CLI entry point.
+ */
 export interface CIMigrateOptions {
 	provider?: string | undefined;
 	dryRun?: boolean | undefined;
@@ -2935,7 +2938,7 @@ function normalizeAction(value: string | undefined):
 	if (!value || value.trim().length === 0) {
 		return { ok: true, value: null };
 	}
-	if (VALID_ACTIONS.includes(value as CIMigrateAction)) {
+	if (VALID_CI_MIGRATE_ACTIONS.includes(value as CIMigrateAction)) {
 		return { ok: true, value: value as CIMigrateAction };
 	}
 	return {
@@ -3075,9 +3078,9 @@ function normalizeProvider(value: string | undefined):
 			error: string;
 	  } {
 	if (!value || value.trim().length === 0) {
-		return { ok: true, value: DEFAULT_PROVIDER };
+		return { ok: true, value: DEFAULT_CI_MIGRATE_PROVIDER };
 	}
-	if (VALID_PROVIDERS.includes(value as CIProvider)) {
+	if (VALID_CI_MIGRATE_PROVIDERS.includes(value as CIProvider)) {
 		return { ok: true, value: value as CIProvider };
 	}
 	return {
@@ -3097,7 +3100,7 @@ function readManifestProvider(targetDir: string): CIProvider | null {
 		};
 		if (
 			parsed.ciProvider &&
-			VALID_PROVIDERS.includes(parsed.ciProvider as CIProvider)
+			VALID_CI_MIGRATE_PROVIDERS.includes(parsed.ciProvider as CIProvider)
 		) {
 			return parsed.ciProvider as CIProvider;
 		}
@@ -3119,7 +3122,7 @@ function readContractProvider(targetDir: string): CIProvider | null {
 		const activeProvider = parsed.ciProviderPolicy?.activeProvider;
 		if (
 			activeProvider &&
-			VALID_PROVIDERS.includes(activeProvider as CIProvider)
+			VALID_CI_MIGRATE_PROVIDERS.includes(activeProvider as CIProvider)
 		) {
 			return activeProvider as CIProvider;
 		}
@@ -3325,6 +3328,9 @@ function readContractProviderPolicy(
 
 // ─── Shadow → Required mode promotion (JSC-61) ───────────────────────────────
 
+/**
+ * Result emitted when CI provider mode promotion succeeds or is already complete.
+ */
 export interface PromoteModeResult {
 	/** Whether mode was actually changed (false if already required) */
 	promoted: boolean;
@@ -3643,7 +3649,9 @@ function isCIProviderArray(value: unknown): value is CIProvider[] {
 	return (
 		Array.isArray(value) &&
 		value.length > 0 &&
-		value.every((entry) => VALID_PROVIDERS.includes(entry as CIProvider))
+		value.every((entry) =>
+			VALID_CI_MIGRATE_PROVIDERS.includes(entry as CIProvider),
+		)
 	);
 }
 

@@ -1,5 +1,5 @@
 ---
-last_validated: 2026-04-22
+last_validated: 2026-04-25
 ---
 
 # Tooling policy
@@ -11,6 +11,7 @@ last_validated: 2026-04-22
 - [Repository command contract](#repository-command-contract)
 - [Code-style parity gate](#code-style-parity-gate)
 - [Execution rule for tooling](#execution-rule-for-tooling)
+- [Exact behavior checks](#exact-behavior-checks)
 - [Recommended command order](#recommended-command-order)
 - [Tooling verification checklist](#tooling-verification-checklist)
 - [Discovery constraints](#discovery-constraints)
@@ -158,15 +159,42 @@ Exception for harness readiness:
 - Harness-managed repos may also scaffold `scripts/harness-cli.sh` as the repo-local wrapper for the published CLI package. That wrapper must resolve `@brainwav/coding-harness/dist/cli.js` from the current repo and fail with actionable install hints such as `pnpm install`, `pnpm add -D @brainwav/coding-harness`, and `pnpm exec harness <command>` instead of surfacing a raw `MODULE_NOT_FOUND`.
 - Semgrep hook configs under `scripts/` must remain valid YAML as well as valid Semgrep syntax; quote pattern strings that contain mapping-like fragments such as `shell: true` so pre-push parsing does not fail before policy checks run.
 
+## Exact behavior checks
+
+When executable behavior changes, do not stop at broad validation alone. Run
+the smallest real code path that exercises the exact production code touched
+before claiming the change is verified.
+
+Prefer invoking the production function, class, CLI command, shell script,
+validator, or route directly. If no existing test covers the path, create a
+temporary local reproduction harness under `codex-scripts/`, keep it
+gitignored, and import or invoke production code directly instead of copying
+implementation into the harness.
+
+If the exact path cannot run because it depends on unavailable credentials,
+external services, unsafe side effects, or missing generated runtime state,
+state that blocker explicitly, run the nearest meaningful validation, and do
+not describe production behavior as verified unless the touched path actually
+ran.
+
+Changed production source also carries three local ratchet gates:
+`pnpm run quality:docstrings` requires JSDoc on changed exported public API
+declarations, `pnpm run quality:size` enforces changed-file function/file size
+limits with explicit legacy allowlists, and `pnpm run test:related` runs Vitest
+related mode without a no-tests pass-through. These commands are part of
+`pnpm check`, `bash scripts/validate-codestyle.sh --fast`, and
+`make hooks-pre-commit`.
+
 ## Recommended command order
 
 For code changes:
 
 1. Read/inspect target files.
 2. Apply minimal patch.
-3. Run `bash scripts/validate-codestyle.sh --fast`.
-4. Run `bash scripts/validate-codestyle.sh` before handoff.
-5. Run `pnpm test:deep` when runtime or artifact behavior changed beyond the baseline code-style gate.
+3. Run the smallest real executable path that exercises the exact production code touched whenever feasible.
+4. Run `bash scripts/validate-codestyle.sh --fast`.
+5. Run `bash scripts/validate-codestyle.sh` before handoff.
+6. Run `pnpm test:deep` when runtime or artifact behavior changed beyond the baseline code-style gate.
 
 For CircleCI parity checks and migration troubleshooting, run:
 

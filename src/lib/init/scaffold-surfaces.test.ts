@@ -32,6 +32,10 @@ describe("classifySurface", () => {
 	it("classifies script templates", () => {
 		expect(classifySurface("scripts/verify-work.sh")).toBe("scripts");
 		expect(classifySurface("scripts/validate-codestyle.sh")).toBe("scripts");
+		expect(classifySurface("scripts/check-public-api-docs.mjs")).toBe(
+			"scripts",
+		);
+		expect(classifySurface("scripts/check-code-size.mjs")).toBe("scripts");
 		expect(classifySurface("scripts/prepare-worktree.sh")).toBe("scripts");
 		expect(classifySurface("scripts/new-task.sh")).toBe("scripts");
 		expect(classifySurface("scripts/harness-cli.sh")).toBe("scripts");

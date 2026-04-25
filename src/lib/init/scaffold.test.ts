@@ -138,6 +138,16 @@ describe("scaffold templates resolution", () => {
 				(template) => template.path === "scripts/check-codestyle-parity.sh",
 			),
 		).toBe(true);
+		expect(
+			templates.some(
+				(template) => template.path === "scripts/check-public-api-docs.mjs",
+			),
+		).toBe(true);
+		expect(
+			templates.some(
+				(template) => template.path === "scripts/check-code-size.mjs",
+			),
+		).toBe(true);
 	});
 
 	it("ships a checked-in CODESTYLE template for source checkouts", () => {

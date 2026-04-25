@@ -147,7 +147,8 @@
 			"steps": [
 				"mkdir -p .harness/memory",
 				"test -f .harness/memory/LEARNINGS.md || cat > .harness/memory/LEARNINGS.md << 'EOF'\n---\nschema_version: 1\npurpose: Per-project agent knowledge base.\nscope: This repo only.\n---\n# Learnings\nEOF",
-				"grep -q '.harness/memory' .gitignore || echo '.harness/memory/' >> .gitignore"
+				"grep -q '.harness/memory' .gitignore || echo '.harness/memory/' >> .gitignore",
+				"grep -q '^/codex-scripts/$' .gitignore || echo '/codex-scripts/' >> .gitignore"
 			]
 		},
 		{

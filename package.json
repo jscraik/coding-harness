@@ -7,6 +7,10 @@
 		"scripts/codex-preflight-local-memory-legacy.sh",
 		"scripts/verify-work.sh",
 		"scripts/validate-codestyle.sh",
+		"scripts/check-related-tests.sh",
+		"scripts/check-public-api-docs.mjs",
+		"scripts/check-code-size.mjs",
+		"scripts/lib",
 		"scripts/check-codestyle-parity.sh",
 		"codestyle",
 		"README.md",
@@ -31,7 +35,7 @@
 		"harness": "dist/cli.js"
 	},
 	"scripts": {
-		"check": "pnpm lint && pnpm docs:lint && pnpm skill:validate && pnpm workflow:validate && pnpm typecheck && pnpm test:ci && pnpm audit",
+		"check": "pnpm lint && pnpm docs:lint && pnpm skill:validate && pnpm workflow:validate && pnpm typecheck && pnpm quality:docstrings && pnpm quality:size && pnpm test:ci && pnpm audit",
 		"publish:release": "pnpm check && pnpm build && npm publish --access restricted --ignore-scripts=false",
 		"lint": "pnpm codestyle:parity && pnpm codex-preflight:check && biome check .",
 		"lint:fix": "biome check . --write",
@@ -57,6 +61,8 @@
 		"markdownlint": "markdownlint-cli2 \"**/*.md\"",
 		"codestyle:parity": "bash scripts/check-codestyle-parity.sh",
 		"codestyle:validate": "bash scripts/validate-codestyle.sh",
+		"quality:docstrings": "node scripts/check-public-api-docs.mjs",
+		"quality:size": "node scripts/check-code-size.mjs",
 		"secrets:staged": "bash scripts/check-staged-secrets.sh",
 		"semgrep:changed": "bash scripts/check-semgrep-changed.sh",
 		"test:artifacts": "bash scripts/test-with-artifacts.sh all",

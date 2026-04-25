@@ -1,5 +1,5 @@
 ---
-last_validated: 2026-04-22
+last_validated: 2026-04-25
 ---
 
 # Security and governance
@@ -63,6 +63,7 @@ Failure mode is intentionally fail-closed: missing code-style files, checksum dr
 ## Code and data governance
 
 - Validate behavior changes before merge using documented gates.
+- Validate behavior changes with the smallest real executable path that exercises the exact production code touched whenever feasible; broad gates are necessary but not sufficient on their own.
 - Keep audit trail artifacts (closeout outputs, validation status) in the task record.
 - For high-risk edits (policy/validation gates), include rollback expectations in docs.
 - Validation evidence must name the wrapper that ran (`validate-codestyle.sh`, `verify-work.sh`, or deeper gates), not just the underlying tool categories.
@@ -72,6 +73,7 @@ Failure mode is intentionally fail-closed: missing code-style files, checksum dr
 - Do not skip required gates to save time.
 - If checks fail repeatedly, stop and request decision on risk acceptance.
 - Treat stale check output as non-evidence.
+- If the exact touched path cannot run because it depends on unavailable credentials, external services, unsafe side effects, or missing generated runtime state, record that blocker explicitly and run the nearest meaningful validation instead.
 - Do not replace `bash scripts/validate-codestyle.sh` with an informal list of roughly equivalent commands when documenting or attesting verification; the wrapper is the governed proof surface.
 - Treat hook-exported repository git environment (`GIT_DIR`, `GIT_WORK_TREE`, and related `GIT_*` variables) as untrusted input for nested validation scripts; `scripts/validate-codestyle.sh` should sanitize those values before invoking `pnpm run` so fixture-local git checks are isolated from hook context.
 - CircleCI test reliability guardrail: use `pnpm test:ci` so the long-running `ci-migrate` suite executes in an isolated lane with scoped Vitest worker-timeout mitigation (`--dangerouslyIgnoreUnhandledErrors`) while all functional assertions remain enforced.
@@ -89,6 +91,7 @@ Failure mode is intentionally fail-closed: missing code-style files, checksum dr
 - No unauthorized command or toolchain mutation.
 - Validation gate outputs captured.
 - `bash scripts/validate-codestyle.sh` output captured whenever behavior or command-contract surfaces changed.
+- Exact behavior evidence captured whenever executable behavior changed, or the blocker recorded when the touched path could not be run safely.
 - No secrets in docs/memory.
 - For harness scaffold/setup checks, run `bash scripts/run-harness-setup-checks.sh` so preflight, environment posture (`CLAUDE_APPROVAL_POSTURE=require`), pinned `uv`, and quality gates are evaluated as one auditable sequence.
 - For fresh git worktrees, run `bash scripts/prepare-worktree.sh` before the first push so local pre-push hooks do not fail from missing dependencies in the new worktree.
@@ -119,7 +122,7 @@ This repository uses `prek` as the canonical local hook installer, and `prek.tom
 
 | Hook | Purpose |
 | --- | --- |
-| `pre-commit` | Runs `make hooks-pre-commit` (`pnpm lint`, `pnpm docs:lint`, `pnpm typecheck`, staged `gitleaks`, staged-doc `vale`, related tests) |
+| `pre-commit` | Runs `make hooks-pre-commit` (`pnpm lint`, `pnpm docs:lint`, `pnpm typecheck`, changed-code docstring and size gates, staged `gitleaks`, staged-doc `vale`, related tests) |
 | `commit-msg` | Validates conventional commit format, reminds about PR template |
 | `pre-push` | Runs `make hooks-pre-push` (`docs-gate --mode required`, diagram freshness, `tooling-audit`, `check-environment`, changed-file `semgrep`, `make codestyle`, `pnpm build`) |
 

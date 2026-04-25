@@ -251,11 +251,26 @@ Use `bash scripts/verify-work.sh` as the canonical repo-local verification
 entrypoint. It runs repo-local preflight in `required` Local Memory mode and
 then executes the full verification bundle.
 
+When executable behavior changes, do not stop at broad validation alone. Run
+the smallest real code path that exercises the exact production code touched:
+prefer the production function, class, CLI command, shell script, validator,
+or route directly. If no existing test covers the path, use a temporary local
+reproduction harness under `codex-scripts/` and keep that directory gitignored.
+If the exact path cannot run because it needs unavailable credentials, external
+services, unsafe side effects, or generated runtime state, say so explicitly
+and run the nearest meaningful validation instead.
+
 For a quicker local loop, use:
 
 ```bash
 bash scripts/verify-work.sh --fast
 ```
+
+The fast lane now includes changed-file enforcement for public API docstrings,
+function/file size, and related tests through `pnpm run quality:docstrings`,
+`pnpm run quality:size`, and `pnpm run test:related`. Related tests must find
+and run a real Vitest related path; the gate no longer passes silently when no
+test covers changed production source.
 
 For downstream repos, this is one of the most practical parts of harness. It
 turns "what do I need to run before handoff?" into a single local command.
@@ -561,6 +576,11 @@ pnpm build
 pnpm exec tsx src/cli.ts --help
 pnpm check
 ```
+
+When you change executable behavior in this repository, run the smallest real
+path that exercises the touched production code before claiming it works. If
+you need a throwaway reproduction harness, keep it under `codex-scripts/` so
+it stays local-only.
 
 When you change runtime behavior or artifact formats, run the deeper validation
 path as well:

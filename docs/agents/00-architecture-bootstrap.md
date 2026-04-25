@@ -1,5 +1,5 @@
 ---
-last_validated: 2026-04-23
+last_validated: 2026-04-25
 ---
 
 # Architecture bootstrap
@@ -8,6 +8,7 @@ last_validated: 2026-04-23
 - [Purpose](#purpose)
 - [One-task-at-a-time intake](#one-task-at-a-time-intake)
 - [Artifact validation gates](#artifact-validation-gates)
+- [Exact behavior evidence](#exact-behavior-evidence)
 - [Refresh workflow](#refresh-workflow)
 - [Deterministic Fingerprints](#deterministic-fingerprints)
 - [Stop conditions](#stop-conditions)
@@ -38,6 +39,24 @@ harness docs-gate --mode advisory --json
 If either command fails, refresh artifacts before proceeding.
 When `docs-gate` reports required documentation surfaces for the same change category, update the listed operator guides in that PR before merge.
 For north-star contract/scaffold updates that affect workflow authority, update this guide and `docs/agents/07b-agent-governance.md` together in the same PR.
+
+## Exact behavior evidence
+
+When architecture or cross-command behavior changes, do not rely only on broad
+validation. Run the smallest real executable path that exercises the exact
+production code touched whenever feasible.
+
+Prefer invoking the production function, class, CLI command, shell script,
+validator, or route directly. If no existing test covers the path, create a
+temporary local reproduction harness under `codex-scripts/`, keep it
+gitignored, and import or invoke production code directly instead of copying
+implementation into the harness.
+
+If the exact path cannot run because it depends on unavailable credentials,
+external services, unsafe side effects, or missing generated runtime state,
+record that blocker explicitly and run the nearest meaningful validation
+instead. Do not describe production behavior as verified unless the touched
+path actually ran.
 
 ## Refresh workflow
 
