@@ -9,7 +9,6 @@
 
 import { existsSync, readFileSync } from "node:fs";
 import { resolve } from "node:path";
-import { fileURLToPath } from "node:url";
 import {
 	DEFAULT_CI_PROVIDER_POLICY,
 	DEFAULT_CONTRACT,
@@ -47,6 +46,12 @@ import {
 	renderRefreshDiagramContextScript,
 } from "./scaffold-diagram-templates.js";
 import { renderCheckEnvironmentScript } from "./scaffold-environment-templates.js";
+import {
+	renderChangelogTemplate,
+	renderCodeRabbitTemplate,
+	renderCodeownersTemplate,
+	renderIssueTemplateConfig,
+} from "./scaffold-governance-templates.js";
 import {
 	CODESTYLE_PACK_TEMPLATE_FILES,
 	renderCheckCodestyleParityScript,
@@ -492,71 +497,6 @@ export function shouldSkipDueToNewerToolingVersion(
 ): boolean {
 	const decision = getToolingVersionDecision(templatePath, targetPath);
 	return decision === "skip";
-}
-
-/**
- * Build a GitHub issue template configuration YAML that provides curated contact links.
- *
- * The generated YAML disables blank issues and constructs `contact_links` entries:
- * - Adds a Linear intake link unless `context.issueTracker` is `"github"` or `"none"`.
- * - Adds a "Repository docs" link when `context.repoUrl` is present (points at the repo README).
- * - Always adds a private security disclosure link using `context.securityEmail` (falls back to `security@example.com`).
- *
- * @param context - Template render context; used fields: `issueTracker`, `issueTrackingUrl`, `repoUrl`, and `securityEmail`.
- * @returns A YAML string for `.github/ISSUE_TEMPLATE/config.yml` with `blank_issues_enabled: false` and a `contact_links` list.
- */
-function renderIssueTemplateConfig(context: TemplateRenderContext): string {
-	const securityEmail = context.securityEmail ?? "security@example.com";
-	const repoDocsUrl = context.repoUrl
-		? `${context.repoUrl.replace(/\.git$/, "")}#readme`
-		: undefined;
-	const contactLinks = [];
-
-	if (context.issueTracker !== "github" && context.issueTracker !== "none") {
-		const linearUrl = context.issueTrackingUrl ?? "https://linear.app/";
-		contactLinks.push(
-			`  - name: Linear work intake
-    url: ${linearUrl}
-    about: Create or update bugs, features, policy gaps, automation work, and release follow-ups in Linear.`,
-		);
-	}
-
-	if (repoDocsUrl) {
-		contactLinks.push(
-			`  - name: Repository docs
-    url: ${repoDocsUrl}
-    about: Review setup, workflow, and command documentation before opening new work.`,
-		);
-	}
-	contactLinks.push(
-		`  - name: Private security disclosure
-    url: mailto:${securityEmail}
-    about: Report security vulnerabilities privately instead of using public issue flows.`,
-	);
-	return `# Issue template configuration
-blank_issues_enabled: false
-contact_links:
-${contactLinks.join("\n")}
-`;
-}
-
-/**
- * Load the CodeRabbit configuration template, preferring the packaged template bundled with the tool and falling back to the repository root `.coderabbit.yaml`.
- *
- * @returns The UTF-8 text contents of the selected `.coderabbit.yaml` template.
- * @throws If neither the packaged template nor the repository `.coderabbit.yaml` can be read (file missing or read failure).
- */
-function renderCodeRabbitTemplate(): string {
-	const packagedTemplatePath = fileURLToPath(
-		new URL("../../templates/coderabbit.yaml", import.meta.url),
-	);
-	if (existsSync(packagedTemplatePath)) {
-		return readFileSync(packagedTemplatePath, "utf-8");
-	}
-	const repoTemplatePath = fileURLToPath(
-		new URL("../../../.coderabbit.yaml", import.meta.url),
-	);
-	return readFileSync(repoTemplatePath, "utf-8");
 }
 
 /**
@@ -1136,18 +1076,7 @@ export const TEMPLATES: Template[] = [
 	},
 	{
 		path: "CHANGELOG.md",
-		render: () => `# Changelog
-
-All notable changes to this project will be documented in this file.
-
-The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
-and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
-
-## [Unreleased]
-
-### Added
-- Bootstrap release/changelog pipeline scaffolding via \`harness init\`.
-`,
+		render: () => renderChangelogTemplate(),
 	},
 	{
 		path: ".github/workflows/release-private-npm.yml",
@@ -2053,25 +1982,7 @@ CLAUDE_APPROVAL_POSTURE = "require"
 	},
 	{
 		path: ".github/CODEOWNERS",
-		render: () => `# Governance-sensitive surfaces
-/.github/workflows/** @jscraik
-/harness.contract.json @jscraik
-/CONTRIBUTING.md @jscraik
-/AGENTS.md @jscraik
-/scripts/codex-preflight.sh @jscraik
-/scripts/verify-work.sh @jscraik
-/scripts/validate-codestyle.sh @jscraik
-/scripts/check-related-tests.sh @jscraik
-/scripts/check-public-api-docs.mjs @jscraik
-/scripts/check-code-size.mjs @jscraik
-/scripts/lib/changed-files.mjs @jscraik
-/scripts/check-codestyle-parity.sh @jscraik
-/scripts/prepare-worktree.sh @jscraik
-/scripts/new-task.sh @jscraik
-/scripts/harness-cli.sh @jscraik
-/scripts/check-environment.sh @jscraik
-/codestyle/** @jscraik
-`,
+		render: () => renderCodeownersTemplate(),
 	},
 	{
 		path: "Makefile",
