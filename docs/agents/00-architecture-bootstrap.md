@@ -48,6 +48,12 @@ harness docs-gate --mode advisory --json
 If either command fails, refresh artifacts before proceeding.
 When `docs-gate` reports required documentation surfaces for the same change category, update the listed operator guides in that PR before merge.
 For north-star contract/scaffold updates that affect workflow authority, update this guide and `docs/agents/07b-agent-governance.md` together in the same PR.
+For north-star artifact contract updates, confirm the generated architecture
+context includes the command helpers and contract modules that own the artifact
+paths. Current stable paths include
+`.harness/guardrails/north-star/drift-findings.json`,
+`.harness/guardrails/north-star/surface-classification-snapshot.json`, and
+`.harness/review-gate/north-star-alignment.json`.
 For required-check architecture changes, keep the branch-protection identity set aligned across `harness.contract.json`, `.harness/ci-required-checks.json`, generated scaffold templates, and external app checks such as `semgrep-cloud-platform/scan`.
 
 ## Exact behavior evidence

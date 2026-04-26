@@ -21,6 +21,10 @@ import type {
 	PolicyGateOutput,
 	PolicyGateResult,
 } from "../../commands/policy-gate.js";
+import {
+	NORTH_STAR_ARTIFACT_SCHEMA_VERSIONS,
+	getNorthStarDriftFindingsPath,
+} from "../contract/north-star-artifacts.js";
 import type { PreflightGateResult } from "../preflight/types.js";
 import type { ReviewGateResult } from "../review-gate/types.js";
 import {
@@ -52,6 +56,7 @@ function makeDriftResult(
 	overrides: {
 		outcome?: "ok" | "error";
 		status?: "success" | "partial" | "blocked";
+		artifactRefs?: DriftGateResult["report"]["artifact_refs"];
 	} = {},
 ): DriftGateResult {
 	return {
@@ -75,6 +80,9 @@ function makeDriftResult(
 				suppressed_count: 0,
 			},
 			findings,
+			...(overrides.artifactRefs
+				? { artifact_refs: overrides.artifactRefs }
+				: {}),
 		},
 		exitCode: overrides.outcome === "error" ? 2 : 0,
 	};
@@ -351,6 +359,24 @@ describe("normaliseDriftGateResult (SA2, SA10, SA11)", () => {
 	it("SA2-h: timestamp is preserved from report.generated_at", () => {
 		const result = normaliseDriftGateResult(makeDriftResult([]));
 		expect(result.timestamp).toBe("2026-03-24T00:00:00.000Z");
+	});
+
+	it("includes drift artifact references in metadata and evidence", () => {
+		const artifactPath = getNorthStarDriftFindingsPath();
+		const artifactRefs = [
+			{
+				type: "north-star-drift-findings" as const,
+				path: artifactPath,
+				schemaVersion: NORTH_STAR_ARTIFACT_SCHEMA_VERSIONS.driftFindings,
+			},
+		];
+
+		const result = normaliseDriftGateResult(
+			makeDriftResult([makeDriftFinding()], { artifactRefs }),
+		);
+
+		expect(result.meta).toEqual({ artifactRefs });
+		expect(result.evidence_ref).toContain(`artifact:${artifactPath}`);
 	});
 });
 

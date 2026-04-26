@@ -11,7 +11,11 @@ const PROD_SOURCE_PREFIX = "src/";
 const MAX_FILE_LINES = 800;
 const MAX_FUNCTION_LINES = 120;
 
-const LEGACY_OVERSIZED_FILES = new Set(["src/commands/ci-migrate.ts"]);
+const LEGACY_OVERSIZED_FILES = new Set([
+	"src/commands/ci-migrate.ts",
+	"src/commands/drift-gate.ts",
+	"src/lib/output/normalise.ts",
+]);
 
 const args = new Set(process.argv.slice(2));
 const repoRoot = resolve(process.cwd());

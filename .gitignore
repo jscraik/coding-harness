@@ -33,6 +33,7 @@ dockercfg*
 # IDE
 .idea/
 .vscode/
+.obsidian/
 *.swp
 *.code-workspace
 

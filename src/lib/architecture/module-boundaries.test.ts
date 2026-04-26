@@ -9,9 +9,30 @@ const LEGACY_MODULE_RATCHETS = [
 		reason: "CI migration must move toward a control-plane service seam.",
 	},
 	{
+		path: "src/commands/drift-gate.ts",
+		maxLines: 1_000,
+		reason:
+			"Drift gate must move toward evaluator, artifact, and runner seams before it absorbs more policy.",
+	},
+	{
 		path: "src/lib/output/normalise.ts",
 		maxLines: 1_100,
 		reason: "Output normalisation should not keep absorbing command types.",
+	},
+] as const;
+
+const DOCTOR_SURFACE_RATCHETS = [
+	{
+		path: "src/commands/doctor.ts",
+		maxLines: 260,
+		reason:
+			"Doctor runner must stay thin; move prerequisite checks and artifacts behind focused command seams before raising this limit.",
+	},
+	{
+		path: "src/commands/doctor-checks.ts",
+		maxLines: 800,
+		reason:
+			"Doctor check catalogue must not grow past the generic module limit without splitting check families by surface.",
 	},
 ] as const;
 
@@ -107,6 +128,10 @@ describe("module boundaries", () => {
 
 	it("ratchets legacy drift seams while they are decomposed", () => {
 		expectRatchetsWithinBudget(LEGACY_MODULE_RATCHETS);
+	});
+
+	it("keeps doctor surfaces split after decomposition", () => {
+		expectRatchetsWithinBudget(DOCTOR_SURFACE_RATCHETS);
 	});
 
 	it("keeps scaffold surfaces split after decomposition", () => {

@@ -16,7 +16,7 @@ if [[ ! -f "$AGENTS_FILE" ]]; then
 	exit 1
 fi
 
-if ! grep -Fq "UBIQUITOUS_LANGUAGE.md" "$AGENTS_FILE"; then
+if ! rg --fixed-strings --quiet "UBIQUITOUS_LANGUAGE.md" "$AGENTS_FILE"; then
 	echo "[check-ubiquitous-language-link] AGENTS.md must reference UBIQUITOUS_LANGUAGE.md" >&2
 	exit 1
 fi

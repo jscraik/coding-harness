@@ -71,6 +71,7 @@ export function renderGateDecision(
 	}
 }
 
+/** Failure class and next action derived from a linear-gate error code. */
 export interface LinearGateFailureClassification {
 	failureClass: GateFailureClass;
 	nextAction: string;
@@ -316,6 +317,14 @@ export function normaliseDriftGateResult(result: DriftGateResult): GateResult {
 	const timestamp = result.report.generated_at ?? new Date().toISOString();
 
 	const findings = result.report.findings.map(adaptDriftFinding);
+	const artifactRefs = result.report.artifact_refs ?? [];
+	const artifactEvidenceRefs = artifactRefs.map(
+		(artifact) => `artifact:${artifact.path}`,
+	);
+	const evidenceRef = uniqueStrings([
+		...defaultEvidenceRef(gate, findings),
+		...artifactEvidenceRefs,
+	]);
 
 	let status: GateResult["status"];
 	if (result.report.outcome === "error" || result.report.status === "blocked") {
@@ -331,6 +340,12 @@ export function normaliseDriftGateResult(result: DriftGateResult): GateResult {
 		timestamp,
 		status,
 		findings,
+		...(artifactRefs.length > 0
+			? {
+					meta: { artifactRefs },
+					decision: { evidenceRef },
+				}
+			: {}),
 	});
 }
 

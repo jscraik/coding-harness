@@ -12,10 +12,22 @@ import type { HarnessContract } from "../lib/contract/types.js";
 import { sanitizeError } from "../lib/input/sanitize.js";
 import { validatePath } from "../lib/input/validator.js";
 import { normaliseDriftGateResult } from "../lib/output/normalise.js";
+import {
+	type DriftSummary,
+	type NorthStarDriftArtifactRef,
+	createNorthStarDriftArtifactRef,
+	getNorthStarDriftArtifactPath,
+	summarizeDriftFindings,
+	writeNorthStarDriftFindingsArtifact,
+} from "./drift-gate-artifacts.js";
 
+/** Drift-gate execution mode. */
 export type DriftGateMode = "advisory" | "health";
+/** Aggregate drift-gate report status. */
 export type DriftStatus = "success" | "partial" | "blocked";
+/** Top-level drift-gate runtime outcome. */
 export type DriftOutcome = "ok" | "error";
+/** Machine-readable drift-gate failure class. */
 export type DriftErrorClass =
 	| "none"
 	| "evaluator"
@@ -23,11 +35,16 @@ export type DriftErrorClass =
 	| "schema"
 	| "runtime"
 	| "integrity";
+/** Result of one drift rule evaluation. */
 export type DriftRuleResult = "pass" | "fail" | "not_applicable" | "error";
+/** Drift surface family used for grouping findings. */
 export type DriftSurface = "command" | "status" | "todo" | "quality-score";
+/** Finding severity emitted by drift-gate. */
 export type DriftSeverity = "info" | "warning" | "error";
+/** Whether a finding already exists in the drift baseline. */
 export type DriftBaselineState = "preexisting" | "new";
 
+/** Runtime options for invoking drift-gate directly or through the CLI adapter. */
 export interface DriftGateOptions {
 	mode?: DriftGateMode;
 	json?: boolean;
@@ -38,12 +55,14 @@ export interface DriftGateOptions {
 	suppressions?: string[];
 }
 
+/** Remediation guidance attached to a drift finding. */
 export interface DriftFixGuidance {
 	command?: string;
 	manual?: string;
 	suppressible?: boolean;
 }
 
+/** One drift-gate finding before conversion to canonical structured output. */
 export interface DriftFinding {
 	rule_id: string;
 	surface: DriftSurface;
@@ -62,6 +81,7 @@ interface DriftBaselineInfo {
 	reason?: string;
 }
 
+/** Full drift-gate report persisted to disk and returned by programmatic callers. */
 export interface DriftReport {
 	schemaVersion: "1.0.0";
 	command: "drift-gate";
@@ -72,18 +92,14 @@ export interface DriftReport {
 	generated_at: string;
 	repo_root: string;
 	baseline: DriftBaselineInfo;
-	summary: {
-		finding_count: number;
-		new_count: number;
-		preexisting_count: number;
-		error_count: number;
-		suppressed_count: number;
-	};
+	summary: DriftSummary;
 	findings: DriftFinding[];
 	suppressed?: DriftFinding[];
 	baseline_seeded?: boolean;
+	artifact_refs?: NorthStarDriftArtifactRef[];
 }
 
+/** Programmatic result returned by a drift-gate run. */
 export interface DriftGateResult {
 	report: DriftReport;
 	exitCode: number;
@@ -668,6 +684,7 @@ function evaluate(
 	return findings;
 }
 
+/** Run drift-gate and return the report plus process-style exit code. */
 export function runDriftGate(options: DriftGateOptions = {}): DriftGateResult {
 	const mode: DriftGateMode = options.mode ?? "advisory";
 	const repoRoot = resolve(options.repoRoot ?? process.cwd());
@@ -813,15 +830,7 @@ export function runDriftGate(options: DriftGateOptions = {}): DriftGateResult {
 		generated_at: new Date().toISOString(),
 		repo_root: repoRoot,
 		baseline: baseline.info,
-		summary: {
-			finding_count: findings.length,
-			new_count: findings.filter((f) => f.baseline_state === "new").length,
-			preexisting_count: findings.filter(
-				(f) => f.baseline_state === "preexisting",
-			).length,
-			error_count: findings.filter((f) => f.rule_result === "error").length,
-			suppressed_count: suppressed.length,
-		},
+		summary: summarizeDriftFindings(findings, suppressed),
 		findings,
 		...(suppressed.length > 0 ? { suppressed } : {}),
 		...(baselineSeeded ? { baseline_seeded: true } : {}),
@@ -839,6 +848,29 @@ export function runDriftGate(options: DriftGateOptions = {}): DriftGateResult {
 	) {
 		report.status = "blocked";
 	}
+
+	try {
+		writeNorthStarDriftFindingsArtifact(repoRoot, report);
+		report.artifact_refs = [createNorthStarDriftArtifactRef()];
+	} catch (error) {
+		report.outcome = "error";
+		report.error_class = "io";
+		report.status = "blocked";
+		push(
+			report.findings,
+			{
+				rule_id: "status.north_star.drift_artifact.write_error",
+				surface: "status",
+				rule_result: "error",
+				severity: "error",
+				message: `Failed to write north-star drift artifact: ${sanitizeError(error)}`,
+				path: getNorthStarDriftArtifactPath(),
+			},
+			baseline.fingerprints,
+		);
+		report.summary = summarizeDriftFindings(report.findings, suppressed);
+	}
+
 	const outPath =
 		options.outPath ?? (mode === "advisory" ? DEFAULT_OUT_PATH : undefined);
 	if (outPath) {
@@ -866,17 +898,7 @@ export function runDriftGate(options: DriftGateOptions = {}): DriftGateResult {
 				},
 				baseline.fingerprints,
 			);
-			report.summary = {
-				finding_count: report.findings.length,
-				new_count: report.findings.filter((f) => f.baseline_state === "new")
-					.length,
-				preexisting_count: report.findings.filter(
-					(f) => f.baseline_state === "preexisting",
-				).length,
-				error_count: report.findings.filter((f) => f.rule_result === "error")
-					.length,
-				suppressed_count: suppressed.length,
-			};
+			report.summary = summarizeDriftFindings(report.findings, suppressed);
 		}
 	}
 	const exitCode =
@@ -890,6 +912,7 @@ export function runDriftGate(options: DriftGateOptions = {}): DriftGateResult {
 	return { report, exitCode };
 }
 
+/** Execute the drift-gate CLI adapter and write human or JSON output. */
 export function runDriftGateCLI(options: DriftGateOptions = {}): number {
 	const result = runDriftGate(options);
 

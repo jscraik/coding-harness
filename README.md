@@ -125,6 +125,14 @@ without weakening evidence quality, SHA discipline, or rollback safety.
 The canonical statement of that contract lives in
 [docs/roadmap/north-star.md](./docs/roadmap/north-star.md).
 
+North-star command outputs also use canonical artifact contracts so agents can
+carry evidence between tools without guessing path or schema names. Current
+stable artifact paths include
+`.harness/guardrails/north-star/drift-findings.json` for `drift-gate`,
+`.harness/guardrails/north-star/surface-classification-snapshot.json` for
+`doctor`, and `.harness/review-gate/north-star-alignment.json` for
+review-gate alignment decisions.
+
 ## Why Teams Use It
 
 Teams usually adopt Coding Harness for one of four jobs:
@@ -170,7 +178,6 @@ The code, tests, and recent history point to a few especially strong surfaces.
   `context-health`, `tooling-audit`, and `org-audit` make the project broader
   than "just repo init". It also helps teams inspect governed context and drift
   across repositories.
-
 
 If you want the highest-confidence paths today, start with `init`, `upgrade`,
 `ci-migrate`, `docs-gate` or `review-gate`, `verify-coderabbit`,
@@ -534,23 +541,23 @@ harness commands --json | jq '
 
 ### Drift, Search, And Evidence
 
-| Command           | Purpose                                                                                                                                                                                                                           |
-| ----------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `drift-gate`      | Evaluate consistency drift across governance surfaces                                                                                                                                                                             |
-| `org-audit`       | Scan multi-repo governance and drift posture                                                                                                                                                                                      |
-| `tooling-audit`   | Audit managed repo tooling baselines                                                                                                                                                                                              |
-| `gardener`        | Detect stale docs and broken links                                                                                                                                                                                                |
-| `context-health`  | Generate advisory context-integrity scorecards                                                                                                                                                                                    |
-| `search`          | Run hybrid lexical and semantic search; if `--limit` or `--threshold` is omitted, `contextCompact` policy applies when present, otherwise static defaults (`DEFAULT_SEARCH_LIMIT`, `DEFAULT_SIMILARITY_THRESHOLD`) are used       |
-| `context`         | Search indexed plans, specs, and brainstorms; if `--limit` or `--threshold` is omitted, `contextCompact` policy applies when present, otherwise static defaults (`DEFAULT_SEARCH_LIMIT`, `DEFAULT_SIMILARITY_THRESHOLD`) are used |
+| Command          | Purpose                                                                                                                                                                                                                           |
+| ---------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `drift-gate`     | Evaluate consistency drift across governance surfaces                                                                                                                                                                             |
+| `org-audit`      | Scan multi-repo governance and drift posture                                                                                                                                                                                      |
+| `tooling-audit`  | Audit managed repo tooling baselines                                                                                                                                                                                              |
+| `gardener`       | Detect stale docs and broken links                                                                                                                                                                                                |
+| `context-health` | Generate advisory context-integrity scorecards                                                                                                                                                                                    |
+| `search`         | Run hybrid lexical and semantic search; if `--limit` or `--threshold` is omitted, `contextCompact` policy applies when present, otherwise static defaults (`DEFAULT_SEARCH_LIMIT`, `DEFAULT_SIMILARITY_THRESHOLD`) are used       |
+| `context`        | Search indexed plans, specs, and brainstorms; if `--limit` or `--threshold` is omitted, `contextCompact` policy applies when present, otherwise static defaults (`DEFAULT_SEARCH_LIMIT`, `DEFAULT_SIMILARITY_THRESHOLD`) are used |
 
-| `source-outline`  | Inspect TypeScript-family signatures and comments before opening implementations, with optional single-symbol implementation unwrapping via `--symbol`                                                                            |
+| `source-outline` | Inspect TypeScript-family signatures and comments before opening implementations, with optional single-symbol implementation unwrapping via `--symbol` |
 
-| `index-context`   | Build the local semantic-search index                                                                                                                                                                                             |
-| `evidence-verify` | Validate screenshot and evidence artifacts                                                                                                                                                                                        |
-| `ui:fast`         | Run a Storybook-first local UI loop                                                                                                                                                                                               |
-| `ui:verify`       | Run Playwright smoke verification with evidence capture                                                                                                                                                                           |
-| `ui:explore`      | Run agent-browser exploratory testing                                                                                                                                                                                             |
+| `index-context` | Build the local semantic-search index |
+| `evidence-verify` | Validate screenshot and evidence artifacts |
+| `ui:fast` | Run a Storybook-first local UI loop |
+| `ui:verify` | Run Playwright smoke verification with evidence capture |
+| `ui:explore` | Run agent-browser exploratory testing |
 
 For agent source inspection, use `harness source-outline <path>` before opening
 raw TypeScript-family files. If implementation detail is needed, unwrap one
@@ -560,7 +567,6 @@ After instruction discovery, use `AI/context/diagram-context.md` as the compact
 architecture map; it combines Mermaid architecture, dependency, database, and
 ERD diagrams, with `.diagram/manifest.json` available when a narrower diagram
 file is enough.
-
 
 ## Requirements
 

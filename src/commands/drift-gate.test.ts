@@ -7,6 +7,10 @@ import {
 } from "node:fs";
 import { dirname, join } from "node:path";
 import { afterEach, describe, expect, it, vi } from "vitest";
+import {
+	NORTH_STAR_ARTIFACT_SCHEMA_VERSIONS,
+	getNorthStarDriftFindingsPath,
+} from "../lib/contract/north-star-artifacts.js";
 import { runDriftGate, runDriftGateCLI } from "./drift-gate.js";
 
 function write(path: string, content: string): void {
@@ -432,6 +436,55 @@ describe("drift-gate command", () => {
 					f.rule_id ===
 						"status.north_star.contract_parity.agent_first_status" &&
 					f.path === "docs/roadmap/agent-first-status.md",
+			),
+		).toBe(true);
+	});
+
+	it("writes canonical north-star drift findings artifact", () => {
+		const root = join(
+			process.cwd(),
+			"artifacts",
+			"drift-gate-test-north-star-artifact",
+		);
+		roots.push(root);
+		createRepoFixture(root);
+		copyRepoFile(root, "harness.contract.json");
+		copyRepoFile(root, "docs/roadmap/north-star.md");
+
+		const result = runDriftGate({
+			repoRoot: root,
+			mode: "health",
+			seedBaseline: false,
+		});
+
+		const artifactPath = getNorthStarDriftFindingsPath();
+		const artifact = JSON.parse(
+			readFileSync(join(root, artifactPath), "utf-8"),
+		) as {
+			schemaVersion: string;
+			sourceReport: { schemaVersion: string; status: string; outcome: string };
+			findings: Array<{ rule_id: string }>;
+		};
+
+		expect(result.report.artifact_refs).toEqual([
+			{
+				type: "north-star-drift-findings",
+				path: artifactPath,
+				schemaVersion: NORTH_STAR_ARTIFACT_SCHEMA_VERSIONS.driftFindings,
+			},
+		]);
+		expect(artifact.schemaVersion).toBe(
+			NORTH_STAR_ARTIFACT_SCHEMA_VERSIONS.driftFindings,
+		);
+		expect(artifact.sourceReport).toMatchObject({
+			schemaVersion: "1.0.0",
+			status: result.report.status,
+			outcome: result.report.outcome,
+		});
+		expect(artifact.findings.length).toBeGreaterThan(0);
+		expect(
+			artifact.findings.every((finding) =>
+				finding.rule_id.startsWith("status.north_star."),
 			),
 		).toBe(true);
 	});
