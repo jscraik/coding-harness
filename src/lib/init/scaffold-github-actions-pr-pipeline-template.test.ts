@@ -31,6 +31,7 @@ describe("GitHub Actions PR pipeline scaffold template", () => {
 	it("renders the GitHub Actions PR pipeline with Linear gating enabled", () => {
 		const workflow = renderGitHubActionsPrPipelineWorkflow(pipelineInput);
 
+		expect(workflow).not.toContain("\t");
 		expect(workflow).toContain("linear-gate:");
 		expect(workflow).toContain("pnpm exec tsx src/cli.ts linear-gate");
 		expect(workflow).toContain("needs: [pr-template, linear-gate]");
@@ -50,6 +51,9 @@ describe("GitHub Actions PR pipeline scaffold template", () => {
 		expect(workflow).not.toMatch(/{{[a-zA-Z]+}}/);
 		expect(workflow).toContain(
 			'done < <(rg -n "^[[:space:]]*(-[[:space:]]*)?uses:[[:space:]]*[^[:space:]]+" .github/workflows/*.yml)',
+		);
+		expect(workflow).toContain(
+			"Advisory report missing; generated deterministic fallback report.",
 		);
 	});
 
