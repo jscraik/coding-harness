@@ -186,7 +186,7 @@ ${transitionRows}
 - \`SYSTEM_ERROR\`: CLI/runtime/network failure; emit failed command.
 
 ## Idempotency
-- Idempotency key: \`{{workflow_id}}|{{event}}|{{from_state}}|{{correlation_id}}\`.
+- Idempotency key: \`<workflow_id>|<event>|<from_state>|<correlation_id>\`.
 - Replayed events with same key must no-op or upsert only.
 - Side effects must be guarded against duplication.
 
@@ -202,11 +202,11 @@ ${transitionRows}
 ## Observability Logs
 \`\`\`json
 {
-  "workflow_id": "{{WORKFLOW_ID}}",
+  "workflow_id": "<WORKFLOW_ID>",
   "transition_code": "S0:claim",
   "from_state": "S0 TODO",
   "to_state": "S1 IN_PROGRESS",
-  "correlation_id": "{{CORRELATION_FORMAT}}",
+  "correlation_id": "<CORRELATION_FORMAT>",
   "result": "success|blocked|failed"
 }
 \`\`\`

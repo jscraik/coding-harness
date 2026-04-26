@@ -52,6 +52,11 @@ describe("workflow scaffold template", () => {
 		expect(workflow).toContain("kind: github");
 		expect(workflow).toContain("open PR and attach validation evidence");
 		expect(workflow).not.toContain("harness linear");
+		expect(workflow).toContain(
+			"`<workflow_id>|<event>|<from_state>|<correlation_id>`",
+		);
+		expect(workflow).toContain('"workflow_id": "<WORKFLOW_ID>"');
+		expect(workflow).not.toMatch(/\{\{[^}]+\}\}/);
 	});
 
 	it("renders tracker-less workflows and shell-escapes repository URLs", () => {

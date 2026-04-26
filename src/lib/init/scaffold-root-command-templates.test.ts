@@ -26,6 +26,7 @@ describe("scaffold root command templates", () => {
 		expect(renderMemoryValidateCommand()).toContain('.meta.version == "1.0"');
 		expect(renderDefaultNpmrc()).toContain("ignore-scripts=true");
 		expect(renderDefaultNpmrc()).toContain("node-linker=isolated");
+		expect(renderDefaultNpmrc()).not.toContain("_authToken=");
 	});
 
 	it("renders the root Makefile command surface", () => {

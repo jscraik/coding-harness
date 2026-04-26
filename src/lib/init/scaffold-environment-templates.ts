@@ -299,22 +299,23 @@ function renderRepositoryPolicyChecks(): string {
 			script_command="\${script_spec#*|}"
 			if ! jq -e --arg script_name "$script_name" --arg script_command "$script_command" '
 				(.scripts // {})[$script_name] == $script_command
+				' "$PACKAGE_JSON_PATH" >/dev/null; then
+					echo "Error: package script '\$script_name' is missing or out of date in $PACKAGE_JSON_PATH"
+					echo "Fix: run harness init --update"
+					exit 1
+				fi
+			done
+
+			if jq -e '
+				has("simple-git-hooks")
+				or ((.dependencies // {}) | has("simple-git-hooks"))
+				or ((.devDependencies // {}) | has("simple-git-hooks"))
+				or (((.scripts // {}) | to_entries | any(.value | test("simple-git-hooks"))))
 			' "$PACKAGE_JSON_PATH" >/dev/null; then
-				echo "Error: package script '\$script_name' is missing or out of date in $PACKAGE_JSON_PATH"
-				echo "Fix: run node scripts/setup-git-hooks.js"
+				echo "Error: legacy simple-git-hooks config must be removed from $PACKAGE_JSON_PATH"
+				echo "Fix: delete the simple-git-hooks package/config and use node scripts/setup-git-hooks.js to install prek hooks."
 				exit 1
 			fi
-		done
-
-		if jq -e '
-			has("simple-git-hooks")
-			or ((.dependencies // {}) | has("simple-git-hooks"))
-			or ((.devDependencies // {}) | has("simple-git-hooks"))
-			or (((.scripts // {}) | to_entries | any(.value | test("simple-git-hooks"))))
-		' "$PACKAGE_JSON_PATH" >/dev/null; then
-			echo "Error: legacy simple-git-hooks config must be removed from $PACKAGE_JSON_PATH"
-			echo "Fix: delete the simple-git-hooks package/config and use node scripts/setup-git-hooks.js to install prek hooks."
-			exit 1
 		fi`;
 }
 
@@ -323,10 +324,11 @@ function renderPackageCapabilityChecks(
 	capabilityDetectors: readonly CapabilityDetector[],
 	requiredPackages: readonly RequiredPackagePolicy[],
 ): string {
-	return `		has_package_marker() {
-			local marker="$1"
-			jq -e --arg marker "$marker" '
-				((.dependencies // {}) + (.devDependencies // {})) | has($marker)
+	return `	if [[ -f "$PACKAGE_JSON_PATH" ]]; then
+		has_package_marker() {
+				local marker="$1"
+				jq -e --arg marker "$marker" '
+					((.dependencies // {}) + (.devDependencies // {})) | has($marker)
 			' "$PACKAGE_JSON_PATH" >/dev/null
 		}
 
@@ -381,12 +383,16 @@ ${renderCapabilityDetectorBlocks(capabilityDetectors)}
 					break
 				fi
 		done
-			if [[ "$should_apply" -eq 1 ]] && ! has_required_package "$pkg" "$dependency_type"; then
-				echo "Error: required package '$pkg' is missing from $PACKAGE_JSON_PATH for explicit or detected UI/App SDK capabilities"
-				echo "Fix: npm i $pkg"
-				exit 1
-			fi
-		done
+				if [[ "$should_apply" -eq 1 ]] && ! has_required_package "$pkg" "$dependency_type"; then
+					echo "Error: required package '$pkg' is missing from $PACKAGE_JSON_PATH for explicit or detected UI/App SDK capabilities"
+					if [[ "$dependency_type" == "devDependencies" ]]; then
+						echo "Fix: pnpm add -D $pkg"
+					else
+						echo "Fix: pnpm add $pkg"
+					fi
+					exit 1
+				fi
+			done
 	fi
 
 	mkdir -p "$REPO_ROOT/artifacts/policy"
@@ -441,7 +447,7 @@ function renderEnvironmentRunnerFunction(): string {
 
 function renderEnvironmentRunnerSelection(): string {
 	return `if [[ -f "$REPO_ROOT/src/cli.ts" ]] && command -v pnpm >/dev/null 2>&1; then
-	if ! run_check_environment_with_runner "repo source CLI (pnpm exec tsx src/cli.ts)" pnpm exec tsx "$REPO_ROOT/src/cli.ts"; then
+	if ! run_check_environment_with_runner "repo source CLI (pnpm exec tsx src/cli.ts)" pnpm --dir "$REPO_ROOT" exec tsx "$REPO_ROOT/src/cli.ts"; then
 		echo "Error: repo source CLI failed to run check-environment successfully."
 		exit 1
 	fi

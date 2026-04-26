@@ -69,7 +69,7 @@ shamefully-hoist=false
 # node-linker=hoisted
 
 # Auth should come from user-level ~/.npmrc or CI-injected ~/.npmrc, not this repo.
-# Do not add //registry.npmjs.org/:_authToken=... here, because it can override
+# Do not add registry auth-token entries here, because they can override
 # a valid npm login and break local installs.
 `;
 }

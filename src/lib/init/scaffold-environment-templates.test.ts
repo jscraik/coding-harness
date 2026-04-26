@@ -19,6 +19,10 @@ describe("scaffold environment templates", () => {
 		expect(script).toContain("required_prek_hooks=(");
 		expect(script).toContain("required_package_scripts=(");
 		expect(script).toContain("run_check_environment_with_runner()");
+		expect(script).toContain('if [[ -f "$PACKAGE_JSON_PATH" ]]; then');
+		expect(script).toContain("Fix: run harness init --update");
+		expect(script).toContain("Fix: pnpm add -D $pkg");
+		expect(script).toContain('pnpm --dir "$REPO_ROOT" exec tsx');
 	});
 
 	it("preserves runner fallback order from source checkout to global harness", () => {
