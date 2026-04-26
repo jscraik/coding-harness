@@ -14,7 +14,9 @@
 - Implementations SHOULD prioritize KISS, DRY, and YAGNI in that order.
 - Production paths SHOULD favor immutable updates over in-place mutation.
 - Functions SHOULD remain focused and deeply nested logic SHOULD be split into named helpers.
+
 - Changed production `src/**` files MUST pass `pnpm run quality:size`; oversized legacy files MUST have an explicit allowlist entry and SHOULD be reduced opportunistically rather than expanded.
+
 
 ## Structural patterns
 - Code SHOULD be organized by feature/domain boundaries instead of technology buckets when practical.
@@ -27,6 +29,8 @@
 - Named constants MUST be used for thresholds, limits, and policy values; magic numbers MUST be avoided.
 
 ## Enforcement
+
 - Changed production code MUST run `pnpm run quality:size` before handoff.
+
 - Pattern changes SHOULD be reviewed with targeted examples in PR notes.
 - Any deliberate deviation from these defaults MUST include rationale and a tracker reference.

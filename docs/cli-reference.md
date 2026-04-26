@@ -165,6 +165,7 @@ Compatibility:
 Use `source-outline` as the first read for TypeScript-family source files:
 
 ```bash
+
 bash scripts/harness-cli.sh source-outline src/commands/search.ts --json
 bash scripts/harness-cli.sh source-outline src/commands/search.ts --symbol runSearchCLI --json
 ```

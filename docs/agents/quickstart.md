@@ -39,6 +39,7 @@ bash scripts/verify-work.sh
 
 ## Command reference
 
+
 | Command                                                    | Purpose                                                                                  |
 | ---------------------------------------------------------- | ---------------------------------------------------------------------------------------- |
 | `pnpm check`                                               | lint + typecheck + test + audit                                                          |
@@ -47,6 +48,7 @@ bash scripts/verify-work.sh
 | `pnpm test`                                                | Vitest run                                                                               |
 | `pnpm build`                                               | Compile to dist/                                                                         |
 | `bash scripts/harness-cli.sh source-outline <path> --json` | Inspect TypeScript-family comments and signatures before raw file reads in this checkout |
+
 
 ## Where to go next
 

@@ -38,19 +38,24 @@ jobs:
               }
             }
 
+
             const checklistMatch = body.match(/## Checklist([\s\S]*?)(?:\n## |\n# |$)/i);
+
             if (!checklistMatch) {
               errors.push('Missing checklist block.');
             } else {
               const checklistBody = checklistMatch[1] ?? '';
               const checklistItems = checklistBody
+
                 .split('\n')
                 .map((line) => line.trim())
                 .filter((line) => /^- \[[ xX]\]/.test(line));
 
+
               if (checklistItems.length === 0) {
                 errors.push('Checklist has no checkbox items.');
               }
+
 
               const unchecked = checklistItems.filter((line) => /^- \[ \]/.test(line));
               const unresolvedUnchecked = unchecked.filter(
@@ -60,6 +65,7 @@ jobs:
                 errors.push(
                   'Checklist has unchecked item(s) without explicit status marker ((Pending) or (N/A)):\n' +
                     unresolvedUnchecked.join('\n'),
+
                 );
               }
             }
@@ -77,17 +83,21 @@ jobs:
               }
             }
 
+
             const reviewArtifactsMatch = body.match(/## Review artifacts([\s\S]*?)(?:\n## |\n# |$)/i);
             if (reviewArtifactsMatch) {
               const reviewArtifactsBody = reviewArtifactsMatch[1] ?? '';
               const unresolvedTokens = reviewArtifactsBody.match(/<[^>\n]+>/g) ?? [];
+
               for (const token of unresolvedTokens) {
                 errors.push('Replace unresolved placeholder token: ' + token);
               }
             }
 
             if (errors.length > 0) {
+
               core.setFailed(errors.join('\n'));
+
             }
       - name: Skip PR template enforcement for merge queue
         if: github.event_name == 'merge_group'
@@ -132,10 +142,12 @@ jobs:
           if [[ -z "$CHANGED_FILES" ]]; then
             CHANGED_FILES="$(git ls-files | paste -sd, -)"
           fi
+
           pnpm exec tsx src/cli.ts preflight-gate \
             --contract "$CONTRACT_PATH" \
             --max-tier medium \
             --files "${CHANGED_FILES}" \
+
             --json
 
   dependency-review:
@@ -160,12 +172,16 @@ jobs:
             const dependencyGraph = security.dependency_graph?.status === 'enabled';
             core.setOutput('supported', advanced && dependencyGraph ? 'true' : 'false');
       - name: Run dependency review (pull_request)
+
         if: github.event_name == 'pull_request' && steps.dependency-review-support.outputs.supported == 'true'
+
         uses: actions/dependency-review-action@2031cfc080254a8a887f58cffee85186f0e49e48 # v4.9.0
         with:
           fail-on-severity: high
       - name: Skip dependency review when repository support is unavailable
+
         if: github.event_name == 'pull_request' && steps.dependency-review-support.outputs.supported != 'true'
+
         run: echo "Dependency review unsupported (requires dependency graph + advanced security); skipping."
       - name: Skip dependency review for merge queue
         if: github.event_name == 'merge_group'
@@ -182,7 +198,9 @@ jobs:
         run: |
           set -euo pipefail
           violations=0
+
           while IFS=: read -r file line raw || [[ -n "$file" ]]; do
+
             ref="$(printf "%s" "$raw" | sed -E 's/^[[:space:]]*(-[[:space:]]*)?uses:[[:space:]]*([^[:space:]#]+).*/\\2/')"
             if [[ "$ref" == ./* ]] || [[ "$ref" == docker://* ]]; then
               continue
@@ -191,7 +209,9 @@ jobs:
               echo "::error file=$file,line=$line::Action is not pinned to a full commit SHA: $ref"
               violations=1
             fi
+
           done < <(rg -n "^[[:space:]]*(-[[:space:]]*)?uses:[[:space:]]*[^[:space:]]+" .github/workflows/*.yml 2>/dev/null || true)
+
           exit "$violations"
 
   consistency-drift-advisory:
@@ -223,6 +243,7 @@ jobs:
           fi
       - name: Run advisory drift gate
         run: |
+
           pnpm exec tsx src/cli.ts drift-gate \
             --mode advisory \
             --json \
@@ -231,6 +252,7 @@ jobs:
         run: |
           if [[ ! -s artifacts/consistency-gate/consistency-drift-advisory-latest.json ]]; then
             echo "::warning::advisory report missing; writing deterministic fallback report."
+
             cat > artifacts/consistency-gate/consistency-drift-advisory-latest.json <<'JSON'
           {
             "schemaVersion": "1.0.0",
@@ -250,7 +272,9 @@ jobs:
                 "rule_result": "error",
                 "severity": "error",
                 "baseline_state": "new",
+
                 "message": "Advisory report missing; generated deterministic fallback report."
+
               }
             ]
           }
@@ -291,9 +315,11 @@ jobs:
       - name: Run health drift gate
         if: steps.baseline-seed.outputs.seeded == 'true'
         run: |
+
           pnpm exec tsx src/cli.ts drift-gate \
             --mode health \
             --json \
+
             --out artifacts/consistency-gate/health.json
       - name: Bootstrap health warning (first-run)
         if: steps.baseline-seed.outputs.seeded != 'true'
@@ -412,4 +438,5 @@ jobs:
     steps:
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6
       - name: Validate memory.json
+
         run: {{memoryValidateCommand}}

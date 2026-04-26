@@ -1,6 +1,7 @@
 import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
+
 import { afterEach, describe, expect, it, vi } from "vitest";
 import {
 	EXIT_CODES,
@@ -41,10 +42,12 @@ export interface WorkerOptions {
 
 /** Runs queued work. */
 export class Worker {
+
 	/** Handler set at construction time. */
 	handler = (value: number): number => {
 		return value + 10;
 	};
+
 
 	/** Start one job. */
 	run(count: number): number {
@@ -109,6 +112,7 @@ export const format = (value: number): string => {
 		expect(output.mode).toBe("implementation");
 		expect(output.implementation?.symbol).toBe("Worker.run");
 		expect(output.implementation?.text).toContain("return count + 1;");
+
 		expect(output.implementation?.text).not.toContain("toUpperCase");
 		expect(output.implementation?.text).not.toContain("return String(value);");
 	});

@@ -15,7 +15,9 @@ describe("scaffold diagram templates", () => {
 		expect(script).toContain('MAX_FILES="${DIAGRAM_REFRESH_MAX_FILES:-1000}"');
 		expect(script).toContain("const sourceManifest = (() => {");
 		expect(script).toContain("...sourceManifest,");
+
 		expect(script).toContain("normalizedRawNodeKey(node.rawId)");
+
 		expect(script).toContain("artifacts/tmp-*/**");
 		expect(script).toContain('cp "$TMP_DIR/diagrams/manifest.json"');
 	});
@@ -38,6 +40,7 @@ describe("scaffold diagram templates", () => {
 
 		expect(context).toContain("# Diagram Context Pack");
 		expect(context).toContain("Reference this file to understand:");
+
 		expect(context).toContain("Database and ERD relationships");
 		expect(context).toContain("harness source-outline <path>");
 		expect(context).toContain(

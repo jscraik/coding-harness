@@ -45,8 +45,10 @@
   - `pnpm lint`
   - `pnpm typecheck`
   - `pnpm run quality:docstrings`
+
   - `pnpm run quality:size`
   - `pnpm run test:related`
+
   - `pnpm test`
   - `pnpm audit`
   - `pnpm check`

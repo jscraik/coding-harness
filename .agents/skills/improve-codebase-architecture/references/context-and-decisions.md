@@ -1,5 +1,6 @@
 # Context And Linear Decisions
 
+
 ## Table of Contents
 
 - [Decision Records](#decision-records)
@@ -9,6 +10,7 @@
 - [ADR Compatibility](#adr-compatibility)
 - [CONTEXT.md Format](#contextmd-format)
 - [Single vs Multi-Context Repos](#single-vs-multi-context-repos)
+
 
 Use this reference only when architecture work needs durable project language or
 decision records.

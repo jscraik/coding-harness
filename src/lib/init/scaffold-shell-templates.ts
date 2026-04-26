@@ -47,6 +47,7 @@ export function renderAddPackageCommand(
 	packageName: string,
 ): string {
 	assertSafePackageName(packageName);
+
 	if (packageManager === "npm") {
 		return `npm install --save-dev ${packageName}`;
 	}
@@ -134,6 +135,7 @@ export function renderHarnessCliWrapper(packageManager: string): string {
 		"@brainwav/coding-harness",
 	);
 	const execCommand = renderLocalHarnessExecCommand(packageManager);
+
 	const packageExecCommand =
 		packageManager === "pnpm"
 			? 'pnpm --dir "$REPO_ROOT" exec'
@@ -144,6 +146,7 @@ set -euo pipefail
 
 SCRIPT_DIR="$(cd -- "$(dirname -- "${"${"}BASH_SOURCE[0]}")" && pwd)"
 REPO_ROOT="$(cd -- "$SCRIPT_DIR/.." && pwd)"
+
 
 if ! command -v node >/dev/null 2>&1; then
 	echo "Error: node is required to run scripts/harness-cli.sh." >&2
@@ -191,6 +194,7 @@ if [[ ! -f "$CLI_PATH" ]]; then
 fi
 
 exec node "$CLI_PATH" "$@"
+
 `;
 }
 

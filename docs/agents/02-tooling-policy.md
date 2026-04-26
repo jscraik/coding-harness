@@ -36,11 +36,13 @@ For all repo operations, this repository treats scripts and package manager sett
 
 - Shell: `zsh -lc`.
 - Discovery: `rg`, `fd`, and `jq` (when available).
+
 - File reads: keep snippets bounded and explicit. For TypeScript-family source
   in this checkout, prefer `bash scripts/harness-cli.sh source-outline <path>
 --json` before opening the raw file, then use `--symbol <name>` when
   implementation detail is actually needed. In downstream repositories, the
   installed command shape is `harness source-outline <path>`.
+
 - Do not add dependencies or global tool changes unless requested.
 - Optional local shell helper: `source scripts/codex-shell-helpers.sh` to expose preflight wrappers and `codex_d`/`cdxd` launchers. These wrappers use `codex --profile d --cd <repo-root> "<PROMPT>"`, where the prompt is positional (not `-p`).
 
@@ -195,9 +197,11 @@ related mode without a no-tests pass-through. These commands are part of
 
 For code changes:
 
+
 1. Inspect TypeScript-family target files with `bash scripts/harness-cli.sh
 source-outline <path> --json`; unwrap only the needed symbol with `--symbol
 <name>` before reading full bodies.
+
 2. Apply minimal patch.
 3. Run the smallest real executable path that exercises the exact production code touched whenever feasible.
 4. Run `bash scripts/validate-codestyle.sh --fast`.

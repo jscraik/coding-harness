@@ -21,6 +21,7 @@ export const EXIT_CODES = {
 	SUCCESS: 0,
 	NOT_FOUND: 1,
 	VALIDATION_ERROR: 2,
+
 	ERROR: 1,
 } as const;
 
@@ -276,6 +277,7 @@ function methodSignature(
 				.trimEnd();
 			return `${compactWhitespace(declarationPrefix)} = ...;`;
 		}
+
 		return `${compactWhitespace(getNodeText(sourceFile, node)).replace(/;?$/, "")};`;
 	}
 	return undefined;
@@ -490,11 +492,13 @@ function parseSourceOutlineArgs(
 	args: string[],
 ): SourceOutlineOptions | undefined {
 	const json = args.includes("--json");
+
 	const symbolIndex = args.indexOf("--symbol");
 	const symbol = symbolIndex >= 0 ? args[symbolIndex + 1] : undefined;
 	if (symbolIndex >= 0 && (!symbol || symbol.startsWith("--"))) {
 		return undefined;
 	}
+
 	const path = args.find((arg, index) => {
 		if (arg.startsWith("--")) return false;
 		if (index > 0 && args[index - 1] === "--symbol") return false;
@@ -510,8 +514,10 @@ function parseSourceOutlineArgs(
 function printSourceOutlineUsage(): void {
 	console.info(`Usage: harness source-outline <path> [--symbol <name>] [--json]
 
+
 Inspect declaration-style comments and signatures before opening implementation bodies.
 Use --symbol to unwrap one implementation body for a top-level symbol or class member.
+
 
 Examples:
   harness source-outline src/commands/source-outline.ts
@@ -619,6 +625,7 @@ export function runSourceOutlineCLI(args: string[]): number {
 		printSourceOutlineUsage();
 		return EXIT_CODES.SUCCESS;
 	}
+
 	const options = parseSourceOutlineArgs(args);
 	if (!options) {
 		printSourceOutlineUsage();

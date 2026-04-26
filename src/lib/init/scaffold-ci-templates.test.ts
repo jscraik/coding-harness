@@ -1,4 +1,5 @@
 import { describe, expect, it } from "vitest";
+
 import { DEFAULT_CI_PROVIDER } from "./scaffold-ci-templates.js";
 
 describe("scaffold CI templates", () => {

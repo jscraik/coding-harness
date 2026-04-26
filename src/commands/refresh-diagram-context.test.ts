@@ -20,6 +20,7 @@ const SCRIPT_SOURCE = join(
 );
 const STABLE_PATH = [
 	...(process.platform === "darwin" ? ["/opt/homebrew/bin"] : []),
+
 	"/usr/local/bin",
 	"/usr/bin",
 	"/bin",
@@ -76,8 +77,10 @@ mkdir -p "$out_dir"
 cat > "$out_dir/architecture.mmd" <<'MMD'
 graph TD
   subgraph src["src"]
+
     api_aaaaaaaa["api"]
     api_bbbbbbbb["api"]
+
   end
 MMD
 cat > "$out_dir/erd.mmd" <<'MMD'
@@ -159,6 +162,7 @@ describe("refresh-diagram-context.sh", () => {
 				join(root, "AI", "context", "diagram-context.md"),
 				"utf-8",
 			);
+
 			expect(context).toContain("## How to use this pack");
 			expect(context).toContain("database, and ERD context");
 			expect(context).toContain("harness source-outline <path>");

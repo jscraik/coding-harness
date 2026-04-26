@@ -3,7 +3,9 @@
     name: linear-gate
     runs-on: ubuntu-latest
     needs: [pr-template]
+
     if: ${{ !cancelled() && (github.event_name == 'merge_group' || needs.pr-template.result == 'success') }}
+
     steps:
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6
       - uses: actions/setup-node@53b83947a5a98c8d113130e565377fae1a50d02f # v6
@@ -25,6 +27,7 @@ EOF
 ${{ github.event.pull_request.body }}
 EOF
 )"
+
             pnpm exec tsx src/cli.ts linear-gate \
               --branch "$BRANCH" \
               --pr-title "$PR_TITLE" \

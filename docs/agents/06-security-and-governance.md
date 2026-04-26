@@ -1,5 +1,7 @@
 ---
+
 last_validated: 2026-04-26
+
 ---
 
 # Security and governance

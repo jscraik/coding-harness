@@ -66,6 +66,8 @@ Use these names as branch-protection check contexts, not as shorthand for local 
   `consistency-drift-health`, `docs-gate`, `lint`, `typecheck`, `test`,
   `audit`, `check`, `memory`, `security-scan`
 
+
+
 Local commands such as `pnpm lint` or `pnpm check` are validation evidence only
 unless they correspond to one of the required check contexts above.
 

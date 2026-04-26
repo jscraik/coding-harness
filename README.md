@@ -165,10 +165,12 @@ The code, tests, and recent history point to a few especially strong surfaces.
   `scripts/validate-codestyle.sh` so a downstream repo has a local verification
   contract instead of a loosely documented checklist.
 - **Context, search, and multi-repo audit.** `search`, `context`,
+
   `source-outline`, diagram/ERD context packs, `index-context`,
   `context-health`, `tooling-audit`, and `org-audit` make the project broader
   than "just repo init". It also helps teams inspect governed context and drift
   across repositories.
+
 
 If you want the highest-confidence paths today, start with `init`, `upgrade`,
 `ci-migrate`, `docs-gate` or `review-gate`, `verify-coderabbit`,
@@ -541,7 +543,9 @@ harness commands --json | jq '
 | `context-health`  | Generate advisory context-integrity scorecards                                                                                                                                                                                    |
 | `search`          | Run hybrid lexical and semantic search; if `--limit` or `--threshold` is omitted, `contextCompact` policy applies when present, otherwise static defaults (`DEFAULT_SEARCH_LIMIT`, `DEFAULT_SIMILARITY_THRESHOLD`) are used       |
 | `context`         | Search indexed plans, specs, and brainstorms; if `--limit` or `--threshold` is omitted, `contextCompact` policy applies when present, otherwise static defaults (`DEFAULT_SEARCH_LIMIT`, `DEFAULT_SIMILARITY_THRESHOLD`) are used |
+
 | `source-outline`  | Inspect TypeScript-family signatures and comments before opening implementations, with optional single-symbol implementation unwrapping via `--symbol`                                                                            |
+
 | `index-context`   | Build the local semantic-search index                                                                                                                                                                                             |
 | `evidence-verify` | Validate screenshot and evidence artifacts                                                                                                                                                                                        |
 | `ui:fast`         | Run a Storybook-first local UI loop                                                                                                                                                                                               |
@@ -551,10 +555,12 @@ harness commands --json | jq '
 For agent source inspection, use `harness source-outline <path>` before opening
 raw TypeScript-family files. If implementation detail is needed, unwrap one
 symbol at a time with `--symbol <name>` so context growth stays deliberate.
+
 After instruction discovery, use `AI/context/diagram-context.md` as the compact
 architecture map; it combines Mermaid architecture, dependency, database, and
 ERD diagrams, with `.diagram/manifest.json` available when a narrower diagram
 file is enough.
+
 
 ## Requirements
 

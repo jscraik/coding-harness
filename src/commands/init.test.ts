@@ -1722,8 +1722,10 @@ describe("runInit", () => {
 			expect(makefile).toContain(
 				"hooks-commit-msg: ## Validate commit message policy (use HOOK_COMMIT_MSG or MSG_FILE=/path)",
 			);
+
 			expect(makefile).toContain("\tnpm run quality:docstrings");
 			expect(makefile).toContain("\tnpm run quality:size");
+
 			expect(makefile).toContain("\t$(MAKE) secrets-staged");
 			expect(makefile).toContain("\t$(MAKE) docs-style-changed");
 			expect(makefile).toContain("\t$(MAKE) related-tests");

@@ -65,6 +65,7 @@ export function deriveRequiredCheckMetadata(
 			class: "required",
 		};
 	}
+
 	if (normalizedDisplayName === SEMGREP_CLOUD_CHECK_NAME) {
 		return {
 			sourceAppSlug: "semgrep-cloud-platform",
@@ -73,6 +74,7 @@ export function deriveRequiredCheckMetadata(
 			class: "required",
 		};
 	}
+
 	if (normalizedDisplayName === "security-scan") {
 		if (provider === "circleci") {
 			return {
