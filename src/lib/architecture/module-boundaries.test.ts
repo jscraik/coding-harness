@@ -30,9 +30,39 @@ const DOCTOR_SURFACE_RATCHETS = [
 	},
 	{
 		path: "src/commands/doctor-checks.ts",
-		maxLines: 800,
+		maxLines: 40,
 		reason:
-			"Doctor check catalogue must not grow past the generic module limit without splitting check families by surface.",
+			"Doctor check catalogue must stay a thin composition module after check families have been split.",
+	},
+	{
+		path: "src/commands/doctor-check-utils.ts",
+		maxLines: 80,
+		reason:
+			"Doctor check utilities must stay generic; move surface-specific behavior into check-family modules.",
+	},
+	{
+		path: "src/commands/doctor-tool-checks.ts",
+		maxLines: 200,
+		reason:
+			"Doctor tool checks must stay focused; split larger tool groups before raising this limit.",
+	},
+	{
+		path: "src/commands/doctor-file-checks.ts",
+		maxLines: 260,
+		reason:
+			"Doctor file checks must stay focused; split baseline checks before raising this limit.",
+	},
+	{
+		path: "src/commands/doctor-config-checks.ts",
+		maxLines: 220,
+		reason:
+			"Doctor config checks must stay focused; split contract policy families before raising this limit.",
+	},
+	{
+		path: "src/commands/doctor-ci-checks.ts",
+		maxLines: 200,
+		reason:
+			"Doctor CI checks must stay focused; split provider-specific checks before raising this limit.",
 	},
 ] as const;
 
