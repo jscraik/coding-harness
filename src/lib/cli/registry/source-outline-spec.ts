@@ -4,8 +4,12 @@ import type { CommandSpec } from "./types.js";
 /** Registry entry for the source-outline exploration command. */
 export const SOURCE_OUTLINE_COMMAND_SPEC: CommandSpec = {
 	name: "source-outline",
-	summary: "Print declaration-style source signatures before unwrapping bodies",
-	example: "source-outline src/commands/search.ts --symbol runSearchCLI --json",
+
+	summary:
+		"Inspect TypeScript signatures/comments before opening implementations",
+	example:
+		"source-outline src/lib/source-outline.ts --symbol runSourceOutline --json",
+
 	errorLabel: "Source Outline Error",
 	execute: (args) => runSourceOutlineCLI(args),
 };

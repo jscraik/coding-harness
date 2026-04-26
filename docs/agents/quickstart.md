@@ -1,3 +1,7 @@
+---
+last_validated: 2026-04-26
+---
+
 # Quickstart
 
 ## Prerequisites
@@ -35,14 +39,16 @@ bash scripts/verify-work.sh
 
 ## Command reference
 
-| Command | Purpose |
-| --- | --- |
-| `pnpm check` | lint + typecheck + test + audit |
-| `pnpm lint` | Biome check |
-| `pnpm typecheck` | TypeScript compiler no-emit check |
-| `pnpm test` | Vitest run |
-| `pnpm build` | Compile to dist/ |
-| `harness source-outline <path>` | Inspect TypeScript-family comments and signatures before raw file reads |
+
+| Command                                                    | Purpose                                                                                  |
+| ---------------------------------------------------------- | ---------------------------------------------------------------------------------------- |
+| `pnpm check`                                               | lint + typecheck + test + audit                                                          |
+| `pnpm lint`                                                | Biome check                                                                              |
+| `pnpm typecheck`                                           | TypeScript compiler no-emit check                                                        |
+| `pnpm test`                                                | Vitest run                                                                               |
+| `pnpm build`                                               | Compile to dist/                                                                         |
+| `bash scripts/harness-cli.sh source-outline <path> --json` | Inspect TypeScript-family comments and signatures before raw file reads in this checkout |
+
 
 ## Where to go next
 

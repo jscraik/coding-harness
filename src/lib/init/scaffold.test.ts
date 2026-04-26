@@ -70,10 +70,7 @@ describe("scaffold templates resolution", () => {
 					template.path === ".github/workflows/release-private-npm.yml",
 			),
 		).toBe(true);
-		const githubActionsOnlyWorkflows = [
-			".github/workflows/pr-pipeline.yml",
-			".github/workflows/secret-scan.yml",
-		];
+		const githubActionsOnlyWorkflows = [".github/workflows/pr-pipeline.yml"];
 		for (const workflowPath of githubActionsOnlyWorkflows) {
 			expect(
 				ghaTemplates.some((template) => template.path === workflowPath),
@@ -384,7 +381,17 @@ describe("scaffold templates resolution", () => {
 		expect(harnessCliTemplate).toBeDefined();
 		const rendered = harnessCliTemplate!.render("yarn", context);
 
-		// The wrapper should resolve the local node_modules CLI path first.
+		// The wrapper should support this source checkout before package fallbacks.
+		expect(rendered).toContain("is_harness_source_repo");
+		expect(rendered).toContain('exec node "$REPO_ROOT/dist/cli.js" "$@"');
+		expect(rendered).toContain(
+			'exec yarn exec tsx "$REPO_ROOT/src/cli.ts" "$@"',
+		);
+		expect(
+			rendered.indexOf('exec yarn exec tsx "$REPO_ROOT/src/cli.ts" "$@"'),
+		).toBeLessThan(rendered.indexOf('exec node "$REPO_ROOT/dist/cli.js" "$@"'));
+
+		// Downstream installs should still resolve the local node_modules CLI path.
 		expect(rendered).toContain('CLI_PATH="$REPO_ROOT/node_modules/');
 		expect(rendered).toContain('if [[ ! -f "$CLI_PATH" ]]; then');
 		expect(rendered).toContain('exec node "$CLI_PATH" "$@"');

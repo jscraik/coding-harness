@@ -121,11 +121,6 @@ const stableId = (prefix, value) => {
   return `${prefix}_${slug}_${digest}`;
 };
 
-const rawNodeFingerprint = (rawId) => {
-  const match = rawId.match(/_([0-9a-f]{8})$/i);
-  return match ? match[1].toLowerCase() : rawId.toLowerCase();
-};
-
 const parseArchitecture = (content) => {
   const lines = content.trimEnd().split(/\r?\n/);
   const subgraphs = [];
@@ -163,22 +158,29 @@ const parseArchitecture = (content) => {
 const buildArchitecture = (subgraphs) => {
   const nodeMap = new Map();
   const lines = ["graph TD"];
+  const rawNodeFingerprint = (rawId) =>
+    rawId.match(/_([0-9a-f]{8})$/i)?.[1]?.toLowerCase() ?? null;
+  const normalizedRawNodeKey = (rawId) =>
+    rawNodeFingerprint(rawId) ?? rawId.toLowerCase();
   const sortedSubgraphs = [...subgraphs].sort((left, right) =>
-    left.label.localeCompare(right.label),
+    left.label.localeCompare(right.label) ||
+    normalizedRawNodeKey(left.rawId).localeCompare(normalizedRawNodeKey(right.rawId)),
   );
 
   for (const subgraph of sortedSubgraphs) {
-    const subgraphId = stableId("sg", subgraph.label);
+    const subgraphId = stableId(
+      "sg",
+      `${subgraph.label}/${normalizedRawNodeKey(subgraph.rawId)}`,
+    );
     lines.push(`  subgraph ${subgraphId}["${subgraph.label}"]`);
     const sortedNodes = [...subgraph.nodes].sort((left, right) =>
       left.label.localeCompare(right.label) ||
-      rawNodeFingerprint(left.rawId).localeCompare(rawNodeFingerprint(right.rawId)) ||
-      left.rawId.localeCompare(right.rawId),
+      normalizedRawNodeKey(left.rawId).localeCompare(normalizedRawNodeKey(right.rawId)),
     );
     for (const node of sortedNodes) {
       const nodeId = stableId(
         "node",
-        `${subgraph.label}/${node.label}/${rawNodeFingerprint(node.rawId)}`,
+        `${subgraph.label}/${node.label}/${normalizedRawNodeKey(node.rawId)}`,
       );
       nodeMap.set(node.rawId, { canonicalId: nodeId, label: node.label });
       lines.push(`    ${nodeId}["${node.label}"]`);
@@ -199,8 +201,8 @@ const buildDependency = (content, nodeMap) => {
   }
 
   const externalNodeMap = new Map();
-  const dependencyEdges = [];
-  const styleEntries = [];
+  const dependencyEdges = new Map();
+  const styleEntries = new Map();
 
   for (const line of lines.slice(1)) {
     const edgeMatch = line.match(/^  (\S+)\["(.+)"\] --> (\S+)$/);
@@ -213,8 +215,9 @@ const buildDependency = (content, nodeMap) => {
       const sourceCanonicalId =
         externalNodeMap.get(rawSourceId) ?? stableId("ext", sourceLabel);
       externalNodeMap.set(rawSourceId, sourceCanonicalId);
-      dependencyEdges.push({
-        line: `  ${sourceCanonicalId}["${sourceLabel}"] --> ${target.canonicalId}`,
+      const line = `  ${sourceCanonicalId}["${sourceLabel}"] --> ${target.canonicalId}`;
+      dependencyEdges.set(line, {
+        line,
         sortKey: `${sourceLabel}::${target.label}`,
       });
       continue;
@@ -225,8 +228,9 @@ const buildDependency = (content, nodeMap) => {
       const [, rawNodeId, styleSpec] = styleMatch;
       const canonicalId = externalNodeMap.get(rawNodeId);
       if (canonicalId) {
-        styleEntries.push({
-          line: `  style ${canonicalId} ${styleSpec}`,
+        const line = `  style ${canonicalId} ${styleSpec}`;
+        styleEntries.set(line, {
+          line,
           sortKey: canonicalId,
         });
       }
@@ -236,10 +240,10 @@ const buildDependency = (content, nodeMap) => {
   return ensureTrailingNewline(
     [
       "graph LR",
-      ...dependencyEdges
+      ...[...dependencyEdges.values()]
         .sort((left, right) => left.sortKey.localeCompare(right.sortKey) || left.line.localeCompare(right.line))
         .map((entry) => entry.line),
-      ...styleEntries
+      ...[...styleEntries.values()]
         .sort((left, right) => left.sortKey.localeCompare(right.sortKey) || left.line.localeCompare(right.line))
         .map((entry) => entry.line),
     ].join("\n"),
@@ -339,6 +343,20 @@ TMP_CONTEXT="$TMP_DIR/diagram-context.md"
 	echo "# Diagram Context Pack"
 	echo
 	echo "Generated: $(date -u +"%Y-%m-%dT%H:%M:%SZ")"
+	echo
+	echo "## Table of Contents"
+	echo
+	echo "- [How to use this pack](#how-to-use-this-pack)"
+	for file in "$TMP_DIR"/diagrams/*.mmd; do
+		name="$(basename "$file" .mmd)"
+		echo "- [${name}](#${name})"
+	done
+	echo
+	echo "## How to use this pack"
+	echo
+	echo "- Start here for compact architecture, dependency, database, and ERD context before opening raw source files."
+	echo "- Use .diagram/manifest.json to choose a focused Mermaid file when this combined pack is too large."
+	echo '- For TypeScript implementation detail in this checkout, run `bash scripts/harness-cli.sh source-outline <path> --json` first, then unwrap one symbol with `--symbol <name>`. Downstream repositories can use `harness source-outline <path>`.'
 	echo
 	for file in "$TMP_DIR"/diagrams/*.mmd; do
 		name="$(basename "$file" .mmd)"

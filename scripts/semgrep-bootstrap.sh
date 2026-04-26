@@ -1,5 +1,6 @@
 #!/usr/bin/env bash
 # Shared Semgrep bootstrap helpers for repository hook and CI scripts.
+set -euo pipefail
 
 if [[ -z "${REPO_ROOT:-}" ]]; then
   REPO_ROOT="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")/.." && pwd)"

@@ -89,6 +89,7 @@ const normalizeMermaidLine = (line) => {
 	if (!value) return "";
 
 	value = value.replace(/^([A-Za-z0-9_:-]+)\s*(\[[^\]]+\]|\([^)]*\)|\{[^}]*\})/, "NODE$2");
+	value = value.replace(/^class\s+[A-Za-z0-9_:-]+\s*\{$/, "class NODE {");
 	value = value.replace(/\b(style|class|click)\s+[A-Za-z0-9_:-]+\b/g, "$1 NODE");
 	value = value.replace(/^([A-Za-z0-9_:-]+)(\s*[-.=]+.*)$/, "NODE$2");
 	value = value.replace(/([-.=]+>|<[-.=]+)\s*([A-Za-z0-9_:-]+)/g, "$1 NODE");

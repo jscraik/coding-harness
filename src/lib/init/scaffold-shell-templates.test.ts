@@ -29,6 +29,14 @@ describe("scaffold shell templates", () => {
 		expect(renderLocalHarnessExecCommand("yarn")).toBe("yarn harness");
 	});
 
+	it("rejects unsafe generated package install arguments", () => {
+		expect(() =>
+			renderAddPackageCommand("pnpm", "@scope/package; rm -rf /"),
+		).toThrow(
+			"Invalid package name for scaffold command: @scope/package; rm -rf /",
+		);
+	});
+
 	it("loads packaged Codex shell templates", () => {
 		const templates = [
 			renderCodexPreflightTemplate(),
@@ -51,11 +59,29 @@ describe("scaffold shell templates", () => {
 		expect(pnpmWrapper).toContain("pnpm install");
 		expect(pnpmWrapper).toContain("pnpm add -D @brainwav/coding-harness");
 		expect(pnpmWrapper).toContain("pnpm exec harness <command>");
+
+		expect(pnpmWrapper).toContain("is_harness_source_repo");
+		expect(pnpmWrapper).toContain('exec node "$REPO_ROOT/dist/cli.js" "$@"');
+		expect(pnpmWrapper).toContain(
+			'exec pnpm --dir "$REPO_ROOT" exec tsx "$REPO_ROOT/src/cli.ts" "$@"',
+		);
+		expect(
+			pnpmWrapper.indexOf(
+				'exec pnpm --dir "$REPO_ROOT" exec tsx "$REPO_ROOT/src/cli.ts" "$@"',
+			),
+		).toBeLessThan(
+			pnpmWrapper.indexOf('exec node "$REPO_ROOT/dist/cli.js" "$@"'),
+		);
+
 		expect(npmWrapper).toContain("npm install");
 		expect(npmWrapper).toContain(
 			"npm install --save-dev @brainwav/coding-harness",
 		);
 		expect(npmWrapper).toContain("npm exec harness -- <command>");
+
+		expect(npmWrapper).toContain(
+			'exec npm exec tsx "$REPO_ROOT/src/cli.ts" "$@"',
+		);
 	});
 
 	it("renders the harness gate runner fallback chain", () => {

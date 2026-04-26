@@ -101,7 +101,10 @@ jobs:
               npm install --global --prefix "$NPM_CONFIG_PREFIX" "pnpm@${required_pnpm_version}"
             fi
             pnpm --version
-{{configureCacheStep}}      - run:
+
+{{configureCacheStep}}
+      - run:
+
           name: Inject npm auth
           command: |
             if [[ -n "${NPM_TOKEN:-}" ]]; then
@@ -110,7 +113,10 @@ jobs:
       - run:
           name: Install dependencies
           command: {{installCommand}}
-{{saveCacheStep}}      - run:
+
+{{saveCacheStep}}
+      - run:
+
           name: Ensure test-results directory exists
           when: always
           command: |
@@ -146,10 +152,14 @@ workflows:
           filters:
             tags:
               ignore: /.*/
-{{linearGateJob}}      - run-governance-check:
+
+{{linearGateJob}}
+      - run-governance-check:
           name: risk-policy-gate
           check_name: risk-policy-gate
-{{riskPolicyRequires}}          command: bash scripts/run-harness-gate.sh policy-gate --max-tier medium --json
+{{riskPolicyRequires}}
+          command: bash scripts/run-harness-gate.sh policy-gate --max-tier medium --json
+
           filters:
             tags:
               ignore: /.*/
