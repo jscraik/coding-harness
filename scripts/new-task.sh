@@ -199,4 +199,4 @@ elif [[ -f "$worktree_path/Makefile" ]] && rg -q '^worktree-ready:' "$worktree_p
 else
 	echo "  bash scripts/prepare-worktree.sh"
 fi
-echo "  bash scripts/codex-preflight.sh --mode optional"
+echo "  bash scripts/codex-preflight.sh --stack auto --mode required"
