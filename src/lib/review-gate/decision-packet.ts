@@ -98,6 +98,15 @@ type ReviewGateRunRecordArtifacts = {
 	alignmentDecisionChecksum: string;
 };
 
+/**
+ * Resolve the package's producer version from the workspace package.json.
+ *
+ * Attempts to read and parse the package.json at the repository root and return its `version`
+ * (trimmed). If the file is missing, malformed, or the version is absent, returns the
+ * fallback `"0.0.0-dev"`.
+ *
+ * @returns The trimmed `version` value from package.json, or `"0.0.0-dev"` if not found or on error.
+ */
 function resolveProducerVersion(): string {
 	try {
 		const packageJson = JSON.parse(
@@ -174,6 +183,16 @@ function buildCompactionReasons(
 	return reasons;
 }
 
+/**
+ * Produce guardrail candidate messages from a review-gate result.
+ *
+ * When `result.ok` is `false`, returns one or more recommendation messages derived
+ * from `result.error.code`. When `result.ok` is `true`, returns the review-gate's
+ * blocker messages with internal whitespace normalized.
+ *
+ * @param result - The review-gate invocation result (either a successful `output` with blockers or an `error` with a code)
+ * @returns An array of guardrail candidate messages
+ */
 function buildGuardrailCandidates(
 	result: ReviewGateArtifactInput["result"],
 ): string[] {
@@ -201,6 +220,13 @@ function buildGuardrailCandidates(
 	);
 }
 
+/**
+ * Write an object as pretty JSON to disk and return its path and content checksum.
+ *
+ * @param path - Filesystem path where the JSON file will be written; parent directories will be created if missing
+ * @param packet - The object to serialize and write
+ * @returns An object containing the written `path` and a `checksum` of the serialized `packet`
+ */
 function writeJsonArtifact(
 	path: string,
 	packet: object,
@@ -214,6 +240,16 @@ function writeJsonArtifact(
 	};
 }
 
+/**
+ * Construct a `review-decision-packet/v1` representing the repository, decision classification, and review-gate outcome for a run.
+ *
+ * @param input - Invocation metadata and the review-gate result used to populate timing, repository, and reviewGate fields
+ * @param runId - Unique identifier for the run
+ * @param decision - Normalized decision classification (state, PR closure status, requiresHumanDecision)
+ * @param compactionReasons - Reasons recommending compaction; an empty array indicates no compaction recommendation
+ * @param guardrailCandidates - Guardrail promotion candidate messages; an empty array indicates no recommendations
+ * @returns The assembled ReviewDecisionPacket ready for artifact emission
+ */
 function buildReviewDecisionPacket(
 	input: ReviewGateArtifactInput,
 	runId: string,
@@ -273,6 +309,12 @@ function buildReviewDecisionPacket(
 	};
 }
 
+/**
+ * Convert a review decision packet into a North Star alignment decision artifact.
+ *
+ * @param packet - The review-decision-packet/v1 object to convert
+ * @returns A NorthStarAlignmentDecisionArtifact with `schemaVersion` set to the alignmentDecision version and `sourceSchemaVersion` preserved from the original packet
+ */
 function buildAlignmentDecisionArtifact(
 	packet: ReviewDecisionPacket,
 ): NorthStarAlignmentDecisionArtifact {
@@ -283,6 +325,12 @@ function buildAlignmentDecisionArtifact(
 	};
 }
 
+/**
+ * Map a review-gate result into the canonical run record outcome.
+ *
+ * @param result - The review-gate invocation result to classify.
+ * @returns `success` when the review was verified; `blocked` when verification failed or resources were missing; `hold` for timeouts or permission-related issues; `failed` for validation, system, or other terminal errors.
+ */
 function resolveRunRecordOutcome(
 	result: ReviewGateArtifactInput["result"],
 ): RunOutcome {
@@ -303,6 +351,12 @@ function resolveRunRecordOutcome(
 	}
 }
 
+/**
+ * Map a review-gate result to its normalized exit classification.
+ *
+ * @param result - The review-gate run result to classify
+ * @returns The `ExitClassification` corresponding to `result`: `ok` when verified; `policy_blocked` when the run completed but is not verified; `validation_failed` for validation errors; `precondition_failed` when a referenced resource was not found; `manual_intervention_required` for timeouts or permission errors; `runtime_failed` for other failures
+ */
 function resolveRunRecordClassification(
 	result: ReviewGateArtifactInput["result"],
 ): ExitClassification {
@@ -322,6 +376,12 @@ function resolveRunRecordClassification(
 	}
 }
 
+/**
+ * Map a review-gate result to the run record event status.
+ *
+ * @param result - The review-gate invocation result used to determine event status
+ * @returns `completed` when the run verified successfully, `blocked` when verification failed or the resource was not found, `failed` otherwise
+ */
 function resolveRunRecordEventStatus(
 	result: ReviewGateArtifactInput["result"],
 ): RunEventStatus {
@@ -331,6 +391,12 @@ function resolveRunRecordEventStatus(
 	return result.error.code === "NOT_FOUND" ? "blocked" : "failed";
 }
 
+/**
+ * Determine the run event severity for a given review-gate result.
+ *
+ * @param result - The review-gate invocation result to evaluate
+ * @returns `"info"` when the run completed and verification succeeded, `"warn"` when completed but not verified or for most failures, and `"error"` when the run failed due to a system error
+ */
 function resolveRunRecordEventSeverity(
 	result: ReviewGateArtifactInput["result"],
 ): RunEventSeverity {
@@ -340,6 +406,15 @@ function resolveRunRecordEventSeverity(
 	return result.error.code === "SYSTEM_ERROR" ? "error" : "warn";
 }
 
+/**
+ * Emit a terminal run record describing a completed review-gate run to the run-record system.
+ *
+ * @param input - Invocation metadata, timing, options, and the review-gate result used to derive outcome, event status, and context
+ * @param runId - Unique identifier for this review-gate run
+ * @param decision - Normalized decision classification (state, PR closure status, and whether human decision is required)
+ * @param packet - The constructed review-decision-packet included in the event payload
+ * @param artifacts - Paths and checksums for the emitted decision and alignment artifacts to be recorded as run artifacts
+ */
 function emitReviewGateRunRecord(
 	input: ReviewGateArtifactInput,
 	runId: string,
@@ -410,10 +485,13 @@ function emitReviewGateRunRecord(
 }
 
 /**
- * Write review-gate decision artifacts and emit the terminal run record.
+ * Emit review-gate decision artifacts and the terminal run record.
  *
- * @param input - Review-gate invocation metadata and result payload.
- * @returns Paths for the run-scoped decision packet and canonical alignment artifact.
+ * @param input - Invocation metadata, options, timing, and result of the review-gate run
+ * @returns An object containing:
+ *  - `runId`: the generated run identifier,
+ *  - `decisionPacketPath`: filesystem path to the run-scoped decision packet JSON,
+ *  - `alignmentDecisionPath`: filesystem path to the repository-level North Star alignment decision JSON
  */
 export function emitReviewGateDecisionArtifacts(
 	input: ReviewGateArtifactInput,

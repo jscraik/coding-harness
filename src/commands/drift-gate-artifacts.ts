@@ -62,7 +62,18 @@ interface NorthStarDriftFindingsArtifact {
 	findings: DriftFinding[];
 }
 
-/** Build drift-gate summary counters from active and suppressed findings. */
+/**
+ * Compute summary counters for drift findings grouped by baseline and severity, and count suppressed findings.
+ *
+ * @param findings - Active (non-suppressed) drift findings to summarize
+ * @param suppressed - Suppressed drift findings; only used to count suppressed entries
+ * @returns A DriftSummary containing:
+ *  - `finding_count`: total number of active findings
+ *  - `new_count`: number of active findings with `baseline_state === "new"`
+ *  - `preexisting_count`: number of active findings with `baseline_state === "preexisting"`
+ *  - `error_count`: number of active findings with `rule_result === "error"`
+ *  - `suppressed_count`: total number of suppressed findings
+ */
 export function summarizeDriftFindings(
 	findings: DriftFinding[],
 	suppressed: DriftFinding[],
@@ -78,7 +89,11 @@ export function summarizeDriftFindings(
 	};
 }
 
-/** Return the canonical north-star drift artifact reference for reports. */
+/**
+ * Create the canonical north-star drift findings artifact reference.
+ *
+ * @returns The artifact reference object containing `type: "north-star-drift-findings"`, the canonical `path`, and the canonical `schemaVersion` for north-star drift findings.
+ */
 export function createNorthStarDriftArtifactRef(): NorthStarDriftArtifactRef {
 	return {
 		type: "north-star-drift-findings",
@@ -87,15 +102,37 @@ export function createNorthStarDriftArtifactRef(): NorthStarDriftArtifactRef {
 	};
 }
 
-/** Return the canonical relative path for north-star drift findings. */
+/**
+ * Get the canonical relative path for the north-star drift findings artifact.
+ *
+ * @returns The relative artifact path where north-star drift findings are stored
+ */
 export function getNorthStarDriftArtifactPath(): string {
 	return getNorthStarDriftFindingsPath();
 }
 
+/**
+ * Determines whether a drift finding is associated with the north-star ruleset.
+ *
+ * @param finding - The drift finding whose `rule_id` will be checked for the `status.north_star.` prefix
+ * @returns `true` if `finding.rule_id` starts with `status.north_star.`, `false` otherwise
+ */
 function isNorthStarDriftFinding(finding: DriftFinding): boolean {
 	return finding.rule_id.startsWith("status.north_star.");
 }
 
+/**
+ * Builds the canonical north-star drift findings artifact from a drift-gate report.
+ *
+ * The resulting artifact conforms to the north-star drift findings schema and includes
+ * metadata derived from the input report, a summary of counts, and the set of findings
+ * included in the artifact (only findings with `rule_id` beginning with `status.north_star.`).
+ *
+ * @param report - The drift-gate report used to build the artifact
+ * @returns The north-star drift findings artifact containing `schemaVersion`, `command`,
+ *   `generatedAt`, `mode`, `repoRoot`, a `sourceReport` snapshot, a `summary` of counts,
+ *   and the filtered `findings`
+ */
 function buildNorthStarDriftFindingsArtifact(
 	report: DriftReportForArtifact,
 ): NorthStarDriftFindingsArtifact {
@@ -125,7 +162,17 @@ function buildNorthStarDriftFindingsArtifact(
 	};
 }
 
-/** Write the canonical north-star drift findings artifact and return its path. */
+/**
+ * Writes the canonical north-star drift findings artifact for a drift-gate report to disk.
+ *
+ * The function builds the canonical artifact from `report`, resolves and validates the target
+ * path relative to `repoRoot`, ensures the target directory exists, and writes a pretty-printed
+ * JSON file terminated with a newline.
+ *
+ * @param repoRoot - Repository root used to resolve the artifact path on disk
+ * @param report - Drift-gate report used to build the north-star drift findings artifact
+ * @returns The canonical relative artifact path for the written artifact
+ */
 export function writeNorthStarDriftFindingsArtifact(
 	repoRoot: string,
 	report: DriftReportForArtifact,

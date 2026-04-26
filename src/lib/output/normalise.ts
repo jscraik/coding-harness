@@ -305,12 +305,20 @@ function adaptDriftFinding(f: DriftFinding): GateFinding {
 }
 
 /**
- * Normalise a DriftGateResult to canonical GateResult.
- * Status mapping:
- *   report.outcome === "error" → "fail"
- *   report.status  === "blocked" → "fail"
- *   report.status  === "partial" → "warn"
- *   otherwise → "pass"
+ * Convert a DriftGateResult into a canonical GateResult for the drift-gate.
+ *
+ * The returned GateResult contains findings mapped from the drift report, a
+ * timestamp taken from the report (or now), and a status derived from the
+ * report outcome/status:
+ * - `report.outcome === "error"` or `report.status === "blocked"` → `fail`
+ * - `report.status === "partial"` → `warn`
+ * - otherwise → `pass`
+ *
+ * When the drift report provides artifact references, those paths are included
+ * in `meta.artifactRefs` and are merged into the result `decision.evidenceRef`.
+ *
+ * @param result - The raw DriftGateResult produced by the drift gate
+ * @returns A canonical GateResult representing the normalized drift-gate output
  */
 export function normaliseDriftGateResult(result: DriftGateResult): GateResult {
 	const gate = "drift-gate";
