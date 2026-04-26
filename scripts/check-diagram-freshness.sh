@@ -113,11 +113,14 @@ for (const line of lines) {
 	if (/^##\s+/.test(line)) {
 		activeSection = line.trim();
 	}
-	if (
-		activeSection &&
-		activeSection !== "## architecture" &&
-		activeSection !== "## dependency"
-	) {
+	const normalizedSection = activeSection.toLowerCase();
+	const includedSections = new Set([
+		"## architecture",
+		"## dependency",
+		"## erd",
+		"## database",
+	]);
+	if (normalizedSection && !includedSections.has(normalizedSection)) {
 		continue;
 	}
 	if (line.trim() === "```mermaid") {
