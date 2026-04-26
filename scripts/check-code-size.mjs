@@ -39,6 +39,9 @@ function getScriptKind(path) {
 	if (path.endsWith(".js")) {
 		return ts.ScriptKind.JS;
 	}
+	if (path.endsWith(".mts") || path.endsWith(".cts")) {
+		return ts.ScriptKind.TS;
+	}
 	return ts.ScriptKind.TS;
 }
 
