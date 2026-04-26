@@ -1,4 +1,3 @@
-import { renderCiTemplate } from "./scaffold-ci-template-utils.js";
 import type { CIProvider } from "./types.js";
 
 export { renderCircleCIConfig } from "./scaffold-circleci-config-template.js";
@@ -16,20 +15,12 @@ export {
 	getNormalizedRequiredChecks,
 	renderRequiredChecksManifest,
 } from "./scaffold-required-checks-manifest-template.js";
+export { renderSecurityScanWorkflow } from "./scaffold-security-scan-template.js";
 
 /**
  * Default CI provider used when scaffold render context does not specify one.
  */
 export const DEFAULT_CI_PROVIDER: CIProvider = "circleci";
-
-/**
- * Render the scaffolded GitHub Actions security scan workflow.
- *
- * @returns The YAML contents for `.github/workflows/secret-scan.yml`.
- */
-export function renderSecurityScanWorkflow(): string {
-	return renderCiTemplate("secret-scan.yml");
-}
 
 /**
  * Determine whether a scaffold template should be emitted for the specified CI provider.
