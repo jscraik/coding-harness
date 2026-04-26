@@ -229,8 +229,8 @@ jobs:
             --out artifacts/consistency-gate/consistency-drift-advisory-latest.json
       - name: Advisory guard (soft-fail)
         run: |
-	          if [[ ! -s artifacts/consistency-gate/consistency-drift-advisory-latest.json ]]; then
-	            echo "::warning::advisory report missing; writing deterministic fallback report."
+          if [[ ! -s artifacts/consistency-gate/consistency-drift-advisory-latest.json ]]; then
+            echo "::warning::advisory report missing; writing deterministic fallback report."
             cat > artifacts/consistency-gate/consistency-drift-advisory-latest.json <<'JSON'
           {
             "schemaVersion": "1.0.0",
@@ -250,7 +250,7 @@ jobs:
                 "rule_result": "error",
                 "severity": "error",
                 "baseline_state": "new",
-	                "message": "Advisory report missing; generated deterministic fallback report."
+                "message": "Advisory report missing; generated deterministic fallback report."
               }
             ]
           }
