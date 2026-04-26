@@ -201,8 +201,8 @@ const buildDependency = (content, nodeMap) => {
   }
 
   const externalNodeMap = new Map();
-  const dependencyEdges = [];
-  const styleEntries = [];
+  const dependencyEdges = new Map();
+  const styleEntries = new Map();
 
   for (const line of lines.slice(1)) {
     const edgeMatch = line.match(/^  (\S+)\["(.+)"\] --> (\S+)$/);
@@ -215,8 +215,9 @@ const buildDependency = (content, nodeMap) => {
       const sourceCanonicalId =
         externalNodeMap.get(rawSourceId) ?? stableId("ext", sourceLabel);
       externalNodeMap.set(rawSourceId, sourceCanonicalId);
-      dependencyEdges.push({
-        line: `  ${sourceCanonicalId}["${sourceLabel}"] --> ${target.canonicalId}`,
+      const line = `  ${sourceCanonicalId}["${sourceLabel}"] --> ${target.canonicalId}`;
+      dependencyEdges.set(line, {
+        line,
         sortKey: `${sourceLabel}::${target.label}`,
       });
       continue;
@@ -227,8 +228,9 @@ const buildDependency = (content, nodeMap) => {
       const [, rawNodeId, styleSpec] = styleMatch;
       const canonicalId = externalNodeMap.get(rawNodeId);
       if (canonicalId) {
-        styleEntries.push({
-          line: `  style ${canonicalId} ${styleSpec}`,
+        const line = `  style ${canonicalId} ${styleSpec}`;
+        styleEntries.set(line, {
+          line,
           sortKey: canonicalId,
         });
       }
@@ -238,10 +240,10 @@ const buildDependency = (content, nodeMap) => {
   return ensureTrailingNewline(
     [
       "graph LR",
-      ...dependencyEdges
+      ...[...dependencyEdges.values()]
         .sort((left, right) => left.sortKey.localeCompare(right.sortKey) || left.line.localeCompare(right.line))
         .map((entry) => entry.line),
-      ...styleEntries
+      ...[...styleEntries.values()]
         .sort((left, right) => left.sortKey.localeCompare(right.sortKey) || left.line.localeCompare(right.line))
         .map((entry) => entry.line),
     ].join("\n"),

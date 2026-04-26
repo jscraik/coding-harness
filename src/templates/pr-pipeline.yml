@@ -147,7 +147,6 @@ jobs:
             --contract "$CONTRACT_PATH" \
             --max-tier medium \
             --files "${CHANGED_FILES}" \
-
             --json
 
   dependency-review:

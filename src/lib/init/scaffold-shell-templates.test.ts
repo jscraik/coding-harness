@@ -32,7 +32,9 @@ describe("scaffold shell templates", () => {
 	it("rejects unsafe generated package install arguments", () => {
 		expect(() =>
 			renderAddPackageCommand("pnpm", "@scope/package; rm -rf /"),
-		).toThrow("Invalid package name");
+		).toThrow(
+			"Invalid package name for scaffold command: @scope/package; rm -rf /",
+		);
 	});
 
 	it("loads packaged Codex shell templates", () => {

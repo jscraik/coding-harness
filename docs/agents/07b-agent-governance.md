@@ -1,5 +1,5 @@
 ---
-last_validated: 2026-04-25
+last_validated: 2026-04-26
 ---
 
 # Agent governance
@@ -56,7 +56,6 @@ on their own. Run the smallest real executable path that exercises the exact
 production code touched whenever feasible, and run the changed-source ratchets:
 `pnpm run quality:docstrings`, `pnpm run quality:size`, and
 `pnpm run test:related`.
-
 
 Prefer invoking the production function, class, CLI command, shell script,
 validator, or route directly. If no existing test covers the path, create a
