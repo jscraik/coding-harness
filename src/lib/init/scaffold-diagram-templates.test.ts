@@ -39,6 +39,8 @@ describe("scaffold diagram templates", () => {
 		const context = renderInitialDiagramContextTemplate();
 
 		expect(context).toContain("# Diagram Context Pack");
+		expect(context).toContain("## Table of Contents");
+		expect(context).toContain("- [Usage for Agents](#usage-for-agents)");
 		expect(context).toContain("Reference this file to understand:");
 
 		expect(context).toContain("Database and ERD relationships");

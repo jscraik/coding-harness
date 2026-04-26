@@ -766,7 +766,7 @@ describe("runInit", () => {
 			).toBe(true);
 			expect(
 				existsSync(join(tempDir, ".github/workflows/secret-scan.yml")),
-			).toBe(true);
+			).toBe(false);
 			expect(
 				existsSync(join(tempDir, ".github/workflows/release-private-npm.yml")),
 			).toBe(true);
@@ -2074,7 +2074,7 @@ describe("runInit", () => {
 			);
 			expect(environmentCheck).not.toContain("required_simple_git_hooks=(");
 			expect(environmentCheck).toContain(
-				`if jq -e 'has("simple-git-hooks")' "$PACKAGE_JSON_PATH" >/dev/null; then`,
+				`or (((.scripts // {}) | to_entries | any(.value | test("simple-git-hooks"))))`,
 			);
 			expect(environmentCheck).toContain('"check"');
 			expect(environmentCheck).toContain('"env-check"');

@@ -104,6 +104,10 @@ export function renderCodeownersTemplate(): string {
 /harness.contract.json ${governanceOwner}
 /CONTRIBUTING.md ${governanceOwner}
 /AGENTS.md ${governanceOwner}
+/scripts/setup-git-hooks.js ${governanceOwner}
+/scripts/validate-commit-msg.js ${governanceOwner}
+/scripts/check-staged-secrets.sh ${governanceOwner}
+/scripts/check-hook-critical-config-sync.sh ${governanceOwner}
 /scripts/codex-preflight.sh ${governanceOwner}
 /scripts/verify-work.sh ${governanceOwner}
 /scripts/validate-codestyle.sh ${governanceOwner}
@@ -112,9 +116,14 @@ export function renderCodeownersTemplate(): string {
 /scripts/check-code-size.mjs ${governanceOwner}
 /scripts/lib/changed-files.mjs ${governanceOwner}
 /scripts/check-codestyle-parity.sh ${governanceOwner}
+/scripts/check-semgrep-changed.sh ${governanceOwner}
+/scripts/check-semgrep-full.sh ${governanceOwner}
+/scripts/semgrep-bootstrap.sh ${governanceOwner}
+/scripts/semgrep-pre-push.yml ${governanceOwner}
 /scripts/prepare-worktree.sh ${governanceOwner}
 /scripts/new-task.sh ${governanceOwner}
 /scripts/harness-cli.sh ${governanceOwner}
+/scripts/run-harness-gate.sh ${governanceOwner}
 /scripts/check-environment.sh ${governanceOwner}
 /codestyle/** ${governanceOwner}
 `;

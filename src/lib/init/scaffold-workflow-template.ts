@@ -96,13 +96,13 @@ hooks:
       exit 1
     fi
     mise_trust_status="$(mise trust --show .mise.toml 2>/dev/null || true)"
-    if [[ "$mise_trust_status" != *": trusted"* ]]; then
+    if ! printf '%s\n' "$mise_trust_status" | grep -Eq '(^|[[:space:]])[^[:space:]]+:[[:space:]]+trusted($|[[:space:]])'; then
       echo "[symphony] mise config is not trusted"
       echo "[symphony] Fix: run 'mise trust --yes .mise.toml' and retry"
       exit 1
     fi
   after_run: |
-    cd "$WORKSPACE" && rm -rf node_modules
+    cd "$SYMPHONY_WORKSPACE_ROOT" && rm -rf node_modules
 agent:
   max_concurrent_agents: 3
   max_turns: 12

@@ -25,12 +25,14 @@ describe("scaffold root command templates", () => {
 		expect(AGENT_BRANCH_PREFIX).toBe("codex");
 		expect(renderMemoryValidateCommand()).toContain('.meta.version == "1.0"');
 		expect(renderDefaultNpmrc()).toContain("ignore-scripts=true");
+		expect(renderDefaultNpmrc()).toContain("node-linker=isolated");
 	});
 
 	it("renders the root Makefile command surface", () => {
 		const makefile = renderMakefileTemplate();
 
 		expect(makefile).toContain("hooks-pre-push:");
+		expect(makefile).toContain("bash ./scripts/validate-codestyle.sh --fast");
 		expect(makefile).toContain("bash ./scripts/run-harness-gate.sh docs-gate");
 		expect(makefile).toContain(
 			"bash ./scripts/run-harness-gate.sh tooling-audit",

@@ -33,6 +33,11 @@ describe("workflow scaffold template", () => {
 		);
 		expect(workflow).toContain("pnpm install --frozen-lockfile");
 		expect(workflow).toContain(
+			'cd "$SYMPHONY_WORKSPACE_ROOT" && rm -rf node_modules',
+		);
+		expect(workflow).not.toContain('cd "$WORKSPACE"');
+		expect(workflow).toContain("grep -Eq");
+		expect(workflow).toContain(
 			"`harness linear claim --issue <LK> --branch <codex/...>`",
 		);
 		expect(workflow).toContain("`pnpm check` passes");

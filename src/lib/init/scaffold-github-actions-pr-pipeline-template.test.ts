@@ -48,7 +48,7 @@ describe("GitHub Actions PR pipeline scaffold template", () => {
 		expect(workflow).not.toContain(
 			"pnpm exec tsx src/cli.ts preflight-gate \\\\",
 		);
-		expect(workflow).not.toMatch(/{{[a-zA-Z]+}}/);
+		expect(workflow).not.toMatch(/(?<!\$){{[A-Za-z0-9_]+}}/);
 		expect(workflow).toContain(
 			'done < <(rg -n "^[[:space:]]*(-[[:space:]]*)?uses:[[:space:]]*[^[:space:]]+" .github/workflows/*.yml 2>/dev/null || true)',
 		);

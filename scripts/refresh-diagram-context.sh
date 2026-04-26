@@ -342,6 +342,14 @@ TMP_CONTEXT="$TMP_DIR/diagram-context.md"
 	echo
 	echo "Generated: $(date -u +"%Y-%m-%dT%H:%M:%SZ")"
 	echo
+	echo "## Table of Contents"
+	echo
+	echo "- [How to use this pack](#how-to-use-this-pack)"
+	for file in "$TMP_DIR"/diagrams/*.mmd; do
+		name="$(basename "$file" .mmd)"
+		echo "- [${name}](#${name})"
+	done
+	echo
 	echo "## How to use this pack"
 	echo
 	echo "- Start here for compact architecture, dependency, database, and ERD context before opening raw source files."

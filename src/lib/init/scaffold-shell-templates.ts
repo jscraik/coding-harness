@@ -166,11 +166,11 @@ is_harness_source_repo() {
 }
 
 if is_harness_source_repo; then
-	if [[ -f "$REPO_ROOT/dist/cli.js" ]]; then
-		exec node "$REPO_ROOT/dist/cli.js" "$@"
-	fi
 	if command -v ${packageManager} >/dev/null 2>&1; then
 		exec ${packageExecCommand} tsx "$REPO_ROOT/src/cli.ts" "$@"
+	fi
+	if [[ -f "$REPO_ROOT/dist/cli.js" ]]; then
+		exec node "$REPO_ROOT/dist/cli.js" "$@"
 	fi
 	echo "Error: coding-harness source checkout detected but no local runner is available." >&2
 	echo "Build the repo or install dependencies, then rerun:" >&2

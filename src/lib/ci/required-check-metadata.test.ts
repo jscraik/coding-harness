@@ -26,4 +26,15 @@ describe("deriveRequiredCheckMetadata", () => {
 			githubCheckName: "security-scan",
 		});
 	});
+
+	it("normalizes CircleCI workflow-owned check names", () => {
+		expect(
+			deriveRequiredCheckMetadata("circleci", " pr-pipeline ", {
+				circleciPrimaryCheckName: "ci/circleci: pr-pipeline",
+			}),
+		).toMatchObject({
+			sourceAppSlug: "circleci",
+			githubCheckName: "ci/circleci: pr-pipeline",
+		});
+	});
 });

@@ -306,7 +306,12 @@ function renderRepositoryPolicyChecks(): string {
 			fi
 		done
 
-		if jq -e 'has("simple-git-hooks")' "$PACKAGE_JSON_PATH" >/dev/null; then
+		if jq -e '
+			has("simple-git-hooks")
+			or ((.dependencies // {}) | has("simple-git-hooks"))
+			or ((.devDependencies // {}) | has("simple-git-hooks"))
+			or (((.scripts // {}) | to_entries | any(.value | test("simple-git-hooks"))))
+		' "$PACKAGE_JSON_PATH" >/dev/null; then
 			echo "Error: legacy simple-git-hooks config must be removed from $PACKAGE_JSON_PATH"
 			echo "Fix: delete the simple-git-hooks package/config and use node scripts/setup-git-hooks.js to install prek hooks."
 			exit 1

@@ -164,6 +164,11 @@ describe("refresh-diagram-context.sh", () => {
 			);
 
 			expect(context).toContain("## How to use this pack");
+			expect(context).toContain("## Table of Contents");
+			expect(context).toContain(
+				"- [How to use this pack](#how-to-use-this-pack)",
+			);
+			expect(context).toContain("- [erd](#erd)");
 			expect(context).toContain("database, and ERD context");
 			expect(context).toContain("harness source-outline <path>");
 			expect(context).toContain(

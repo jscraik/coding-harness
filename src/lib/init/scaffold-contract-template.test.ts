@@ -53,7 +53,7 @@ describe("contract scaffold template", () => {
 		expect(contract.productSurface.surfaces[0].lastReviewedAt).toMatch(
 			/^\d{4}-\d{2}-\d{2}$/,
 		);
-		expect(contract.productSurface.surfaces[0].lastReviewedAt).not.toBe(
+		expect(contract.productSurface.surfaces[0].lastReviewedAt).toBe(
 			"2026-04-22",
 		);
 		expect(

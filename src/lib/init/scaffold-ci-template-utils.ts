@@ -11,7 +11,9 @@ import { fileURLToPath } from "node:url";
 export function renderCiTemplate(relativePath: string): string {
 	const normalizedPath = posix.normalize(relativePath);
 	if (
+		relativePath.trim().length === 0 ||
 		normalizedPath.length === 0 ||
+		normalizedPath === "." ||
 		normalizedPath.startsWith("../") ||
 		normalizedPath === ".." ||
 		posix.isAbsolute(normalizedPath) ||
@@ -39,6 +41,14 @@ export function replaceTemplateTokens(
 	let rendered = template;
 	for (const [name, value] of Object.entries(tokens)) {
 		rendered = rendered.replaceAll(`{{${name}}}`, value);
+	}
+	const unreplacedTokens = [
+		...new Set(rendered.match(/(?<!\$){{[A-Za-z0-9_]+}}/g) ?? []),
+	];
+	if (unreplacedTokens.length > 0) {
+		throw new Error(
+			`Unreplaced template tokens: ${unreplacedTokens.join(", ")}`,
+		);
 	}
 	return rendered;
 }

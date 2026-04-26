@@ -63,8 +63,9 @@ export function renderDefaultNpmrc(): string {
 ignore-scripts=true
 strict-peer-dependencies=false
 auto-install-peers=false
+node-linker=isolated
 shamefully-hoist=false
-# Keep pnpm's isolated linker default; enable hoisted linker only for legacy-compat repos.
+# Enable hoisted linker only for legacy-compat repos.
 # node-linker=hoisted
 
 # Auth should come from user-level ~/.npmrc or CI-injected ~/.npmrc, not this repo.
@@ -163,6 +164,7 @@ function renderMakefileHookSection(commands: MakefileCommands): string {
 hooks-pre-commit: ## Run local pre-commit gates before creating a commit
 	@bash ./scripts/check-hook-critical-config-sync.sh
 	$(MAKE) codestyle-parity
+	@bash ./scripts/validate-codestyle.sh --fast
 	${commands.lint}
 	${commands.docsLint}
 	${commands.typecheck}

@@ -17,7 +17,6 @@ import {
 	renderGitHubActionsPrPipelineWorkflow,
 	renderReleasePrivateNpmWorkflow,
 	renderRequiredChecksManifest,
-	renderSecurityScanWorkflow,
 	renderTransitionStatusArtifact,
 } from "./scaffold-ci-templates.js";
 import { renderCodexEnvironmentTemplate } from "./scaffold-codex-environment-templates.js";
@@ -181,10 +180,6 @@ export const TEMPLATES: Template[] = [
 				linearTrackingEnabled:
 					context.issueTracker !== "github" && context.issueTracker !== "none",
 			}),
-	},
-	{
-		path: ".github/workflows/secret-scan.yml",
-		render: () => renderSecurityScanWorkflow(),
 	},
 	{
 		path: ".circleci/config.yml",

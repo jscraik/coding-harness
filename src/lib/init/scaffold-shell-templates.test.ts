@@ -63,6 +63,13 @@ describe("scaffold shell templates", () => {
 		expect(pnpmWrapper).toContain(
 			'exec pnpm --dir "$REPO_ROOT" exec tsx "$REPO_ROOT/src/cli.ts" "$@"',
 		);
+		expect(
+			pnpmWrapper.indexOf(
+				'exec pnpm --dir "$REPO_ROOT" exec tsx "$REPO_ROOT/src/cli.ts" "$@"',
+			),
+		).toBeLessThan(
+			pnpmWrapper.indexOf('exec node "$REPO_ROOT/dist/cli.js" "$@"'),
+		);
 
 		expect(npmWrapper).toContain("npm install");
 		expect(npmWrapper).toContain(

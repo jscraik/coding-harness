@@ -4,13 +4,15 @@ import {
 } from "./scaffold-ci-template-utils.js";
 import { renderGitHubActionsPnpmSetupStep } from "./scaffold-github-actions-pr-pipeline-template.js";
 
-/**
- * Package-manager-specific command inputs for the private npm release workflow.
- */
+/** Package-manager-specific command inputs for the private npm release workflow. */
 export interface ReleasePrivateNpmWorkflowRenderInput {
+	/** Detected package-manager executable or versioned package-manager string. */
 	packageManager: string;
+	/** Dependency installation command rendered for the scaffolded workflow. */
 	installCommand: string;
+	/** Validation command rendered before publish. */
 	checkCommand: string;
+	/** Build command rendered before publish. */
 	buildCommand: string;
 }
 
