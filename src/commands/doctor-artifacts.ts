@@ -36,7 +36,11 @@ interface NorthStarSurfaceClassificationSnapshot {
 	surfaces: DoctorCheck[];
 }
 
-/** Return the canonical north-star surface classification artifact reference. */
+/**
+ * Create the canonical north-star surface classification artifact reference.
+ *
+ * @returns A `NorthStarSurfaceClassificationArtifactRef` containing the canonical `path`, `type` set to `"north-star-surface-classification"`, and the snapshot `schemaVersion`
+ */
 export function createNorthStarSurfaceClassificationArtifactRef(): NorthStarSurfaceClassificationArtifactRef {
 	return {
 		type: "north-star-surface-classification",
@@ -46,11 +50,21 @@ export function createNorthStarSurfaceClassificationArtifactRef(): NorthStarSurf
 	};
 }
 
-/** Return the canonical relative path for north-star surface classifications. */
+/**
+ * Get the canonical relative artifact path for north-star surface classification snapshots.
+ *
+ * @returns The canonical relative path to the north-star surface classification snapshot artifact
+ */
 export function getNorthStarSurfaceClassificationArtifactPath(): string {
 	return getNorthStarSurfaceClassificationSnapshotPath();
 }
 
+/**
+ * Determines whether a DoctorCheck pertains to a north-star surface.
+ *
+ * @param check - The check to evaluate
+ * @returns `true` if the check's `id` or `message` contains `"north-star"`, or the `message` contains `"productSurface"`, `false` otherwise.
+ */
 function isNorthStarSurfaceCheck(check: DoctorCheck): boolean {
 	return (
 		check.id.includes("north-star") ||
@@ -59,6 +73,12 @@ function isNorthStarSurfaceCheck(check: DoctorCheck): boolean {
 	);
 }
 
+/**
+ * Builds a North Star surface classification snapshot from a doctor report.
+ *
+ * @param report - The doctor run report providing provenance, aggregated counts, and checks to classify
+ * @returns The constructed `NorthStarSurfaceClassificationSnapshot` containing schema metadata, repository and report provenance, a summary of counts (including `northStarSurfaceCount`), and the filtered `surfaces` array
+ */
 function buildNorthStarSurfaceClassificationSnapshot(
 	report: DoctorReport,
 ): NorthStarSurfaceClassificationSnapshot {
@@ -87,7 +107,13 @@ function buildNorthStarSurfaceClassificationSnapshot(
 	};
 }
 
-/** Write the canonical north-star surface classification artifact and return its path. */
+/**
+ * Write the canonical north-star surface classification snapshot artifact to disk.
+ *
+ * @param repoRoot - Repository root used to resolve the artifact output location
+ * @param report - Doctor report used to build the snapshot
+ * @returns The canonical relative artifact path where the snapshot was written
+ */
 export function writeNorthStarSurfaceClassificationSnapshot(
 	repoRoot: string,
 	report: DoctorReport,

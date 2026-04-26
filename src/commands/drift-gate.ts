@@ -380,6 +380,16 @@ function push(
 	collection.push(staged);
 }
 
+/**
+ * Evaluates repository consistency rules and returns detected drift findings.
+ *
+ * Performs checks across command surface parity (CLI vs README), todo filename vs frontmatter status, quality score structure and freshness, status narrative coherence, and—when a harness contract with a northStar is provided—north star document parity. Each detected issue is returned as a `DriftFinding`.
+ *
+ * @param repoRoot - Absolute path to the repository root to evaluate
+ * @param baselineFingerprints - Set of baseline fingerprints used to mark findings as `preexisting` when a match is found
+ * @param contract - Optional harness contract; when present and containing `northStar`, north-star parity checks are executed
+ * @returns An array of `DriftFinding` objects describing discovered issues; each finding includes rule metadata, message, optional `path` and `fix` guidance, and a `baseline_state` of `preexisting` or `new`
+ */
 function evaluate(
 	repoRoot: string,
 	baselineFingerprints: Set<string>,
@@ -684,7 +694,17 @@ function evaluate(
 	return findings;
 }
 
-/** Run drift-gate and return the report plus process-style exit code. */
+/**
+ * Execute the drift-gate evaluation and produce a DriftReport plus a process-style exit code.
+ *
+ * Runs repository consistency checks, compares findings against an optional baseline and contract,
+ * optionally seeds or writes baseline/output artifacts, and persists a north-star drift artifact.
+ *
+ * @param options - Configuration for the run (mode, JSON/output handling, baseline behavior, repoRoot override, seedBaseline toggle, suppressions)
+ * @returns An object with `report` containing the generated `DriftReport` and `exitCode` where:
+ *          - In non-health mode the exit code is always `0`.
+ *          - In health mode `2` indicates an error outcome, `1` indicates a health-blocking finding, and `0` indicates success.
+ */
 export function runDriftGate(options: DriftGateOptions = {}): DriftGateResult {
 	const mode: DriftGateMode = options.mode ?? "advisory";
 	const repoRoot = resolve(options.repoRoot ?? process.cwd());
@@ -912,7 +932,13 @@ export function runDriftGate(options: DriftGateOptions = {}): DriftGateResult {
 	return { report, exitCode };
 }
 
-/** Execute the drift-gate CLI adapter and write human or JSON output. */
+/**
+ * Runs the drift-gate process and writes either JSON or human-readable CLI output.
+ *
+ * If `options.json` is true, writes a normalized JSON result to stdout; otherwise prints a concise human-readable summary and per-finding details.
+ *
+ * @returns The exit code to use for the process: `0` for success (or non-blocking advisory runs), `1` when health-mode findings block the gate, `2` for error conditions encountered during execution.
+ */
 export function runDriftGateCLI(options: DriftGateOptions = {}): number {
 	const result = runDriftGate(options);
 

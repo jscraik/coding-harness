@@ -145,7 +145,11 @@ function renderReport(report: DoctorReport): string {
 	return lines.join("\n");
 }
 
-// ─── Public API ───────────────────────────────────────────────────────────────
+/**
+ * Produce a tally of checks grouped by their status.
+ *
+ * @returns An object with numeric counts for each status: `ok`, `warn`, `fail`, and `skip`
+ */
 
 function countChecks(checks: DoctorCheck[]): DoctorReport["counts"] {
 	const counts = { ok: 0, warn: 0, fail: 0, skip: 0 };
@@ -156,7 +160,14 @@ function countChecks(checks: DoctorCheck[]): DoctorReport["counts"] {
 }
 
 /**
- * JSC-65: Check all harness gate prerequisites and return a doctor report.
+ * Run prerequisite checks for a target directory and produce a DoctorReport.
+ *
+ * Executes each check from DOCTOR_CHECKS against the resolved directory, aggregates counts and overall failure state,
+ * and attempts to write a North Star surface classification artifact; if artifact creation fails the error is captured
+ * as an additional failing check and included in the returned report.
+ *
+ * @param options - Optional settings; `options.dir` overrides the current working directory used for checks.
+ * @returns A DoctorReport containing metadata, the full list of checks, aggregated `counts`, `hasFailures`, optional `artifact_refs`, and `postInitChecklist`.
  */
 export function runDoctor(options: DoctorOptions = {}): DoctorReport {
 	const dir = resolve(options.dir ?? process.cwd());

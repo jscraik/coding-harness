@@ -9,7 +9,12 @@ import {
 import { detectHarnessVersionCoherence } from "../lib/version-coherence.js";
 import type { DoctorCheck } from "./doctor.js";
 
-// ─── Tool checks ─────────────────────────────────────────────────────────────
+/**
+ * Checks whether an executable with the given name is available on the current PATH.
+ *
+ * @param cmd - The executable or command name to locate (e.g., "node", "git").
+ * @returns `true` if the command is found on PATH, `false` otherwise.
+ */
 
 function commandExists(cmd: string): boolean {
 	const lookupCommand = process.platform === "win32" ? "where" : "which";
@@ -20,6 +25,13 @@ function commandExists(cmd: string): boolean {
 	return result.status === 0;
 }
 
+/**
+ * Get the first line of a command's version output.
+ *
+ * @param cmd - The executable name to run (e.g., `node`, `git`, `pnpm`)
+ * @param versionArg - Argument to request version information (defaults to `--version`)
+ * @returns `string` containing the first trimmed line of stdout if the command exited successfully and produced output, `null` otherwise
+ */
 function getCommandVersion(
 	cmd: string,
 	versionArg = "--version",
@@ -33,7 +45,12 @@ function getCommandVersion(
 	return (result.stdout ?? "").trim().split("\n")[0] ?? null;
 }
 
-// ─── File / config checks ─────────────────────────────────────────────────────
+/**
+ * Read and parse a JSON file from disk.
+ *
+ * @param path - Filesystem path to the JSON file; read using UTF-8 encoding
+ * @returns The parsed JSON value, or `null` if the file cannot be read or contains invalid JSON
+ */
 
 function readJsonFile(path: string): unknown | null {
 	try {
