@@ -132,10 +132,10 @@ jobs:
           if [[ -z "$CHANGED_FILES" ]]; then
             CHANGED_FILES="$(git ls-files | paste -sd, -)"
           fi
-          pnpm exec tsx src/cli.ts preflight-gate \\
-            --contract "$CONTRACT_PATH" \\
-            --max-tier medium \\
-            --files "${CHANGED_FILES}" \\
+          pnpm exec tsx src/cli.ts preflight-gate \
+            --contract "$CONTRACT_PATH" \
+            --max-tier medium \
+            --files "${CHANGED_FILES}" \
             --json
 
   dependency-review:
@@ -223,9 +223,9 @@ jobs:
           fi
       - name: Run advisory drift gate
         run: |
-          pnpm exec tsx src/cli.ts drift-gate \\
-            --mode advisory \\
-            --json \\
+          pnpm exec tsx src/cli.ts drift-gate \
+            --mode advisory \
+            --json \
             --out artifacts/consistency-gate/consistency-drift-advisory-latest.json
       - name: Advisory guard (soft-fail)
         run: |
@@ -291,9 +291,9 @@ jobs:
       - name: Run health drift gate
         if: steps.baseline-seed.outputs.seeded == 'true'
         run: |
-          pnpm exec tsx src/cli.ts drift-gate \\
-            --mode health \\
-            --json \\
+          pnpm exec tsx src/cli.ts drift-gate \
+            --mode health \
+            --json \
             --out artifacts/consistency-gate/health.json
       - name: Bootstrap health warning (first-run)
         if: steps.baseline-seed.outputs.seeded != 'true'

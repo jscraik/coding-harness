@@ -41,6 +41,12 @@ describe("GitHub Actions PR pipeline scaffold template", () => {
 		expect(workflow).toContain("run: pnpm audit");
 		expect(workflow).toContain("run: pnpm check");
 		expect(workflow).toContain("run: pnpm memory:validate");
+		expect(workflow).toContain("pnpm exec tsx src/cli.ts linear-gate \\");
+		expect(workflow).not.toContain("pnpm exec tsx src/cli.ts linear-gate \\\\");
+		expect(workflow).toContain("pnpm exec tsx src/cli.ts preflight-gate \\");
+		expect(workflow).not.toContain(
+			"pnpm exec tsx src/cli.ts preflight-gate \\\\",
+		);
 		expect(workflow).not.toMatch(/{{[a-zA-Z]+}}/);
 		expect(workflow).toContain(
 			'done < <(rg -n "^[[:space:]]*(-[[:space:]]*)?uses:[[:space:]]*[^[:space:]]+" .github/workflows/*.yml)',

@@ -37,6 +37,11 @@ export interface WorkerOptions {
 
 /** Runs queued work. */
 export class Worker {
+	/** Handler set at construction time. */
+	handler = (value: number): number => {
+		return value + 10;
+	};
+
 	/** Start one job. */
 	run(count: number): number {
 		return count + 1;
@@ -77,8 +82,14 @@ export const format = (value: number): string => {
 		expect(greet?.signature).not.toContain("toUpperCase");
 		const worker = output.symbols.find((symbol) => symbol.name === "Worker");
 		expect(worker?.children.map((symbol) => symbol.qualifiedName)).toEqual([
+			"Worker.handler",
 			"Worker.run",
 		]);
+		const handler = worker?.children.find(
+			(symbol) => symbol.name === "handler",
+		);
+		expect(handler?.signature).toBe("handler = ...;");
+		expect(handler?.signature).not.toContain("return value + 10;");
 	});
 
 	it("unwraps one requested implementation by qualified symbol name", () => {

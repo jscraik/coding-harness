@@ -268,6 +268,14 @@ function methodSignature(
 		return signatureBeforeBody(sourceFile, node);
 	}
 	if (ts.isPropertyDeclaration(node)) {
+		if (node.initializer) {
+			const declarationPrefix = sourceFile.text
+				.slice(node.getStart(sourceFile), node.initializer.getStart(sourceFile))
+				.trimEnd()
+				.replace(/=\s*$/, "")
+				.trimEnd();
+			return `${compactWhitespace(declarationPrefix)} = ...;`;
+		}
 		return `${compactWhitespace(getNodeText(sourceFile, node)).replace(/;?$/, "")};`;
 	}
 	return undefined;
