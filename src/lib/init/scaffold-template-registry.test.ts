@@ -3,16 +3,6 @@ import {
 	TEMPLATES,
 	getTemplatesForProvider,
 } from "./scaffold-template-registry.js";
-import type { InitOptions } from "./types.js";
-
-const defaultOptions: InitOptions = {
-	dryRun: false,
-	force: false,
-};
-
-function templatePaths(ciProvider: "circleci" | "github-actions") {
-	return getTemplatesForProvider(ciProvider).map((template) => template.path);
-}
 
 describe("scaffold template registry", () => {
 	it("owns the root scaffold inventory", () => {
@@ -25,41 +15,32 @@ describe("scaffold template registry", () => {
 		expect(paths).toContain("WORKFLOW.md");
 	});
 
-	it("selects provider-specific CI templates", () => {
-		const circleciPaths = templatePaths("circleci");
-		const githubActionsPaths = templatePaths("github-actions");
+	it("applies template selection rules to the root scaffold inventory", () => {
+		const circleciPaths = getTemplatesForProvider("circleci").map(
+			(template) => template.path,
+		);
+		const githubActionsPaths = getTemplatesForProvider("github-actions").map(
+			(template) => template.path,
+		);
+		const minimalPaths = getTemplatesForProvider("circleci", {
+			dryRun: false,
+			force: false,
+			minimal: true,
+		}).map((template) => template.path);
+		const noIssueTrackerPaths = getTemplatesForProvider("circleci", {
+			dryRun: false,
+			force: false,
+			issueTracker: "none",
+		}).map((template) => template.path);
 
 		expect(circleciPaths).toContain(".circleci/config.yml");
 		expect(circleciPaths).not.toContain(".github/workflows/pr-pipeline.yml");
 		expect(githubActionsPaths).toContain(".github/workflows/pr-pipeline.yml");
 		expect(githubActionsPaths).not.toContain(".circleci/config.yml");
-	});
-
-	it("keeps the release workflow provider-neutral", () => {
-		expect(templatePaths("circleci")).toContain(
-			".github/workflows/release-private-npm.yml",
+		expect(minimalPaths).not.toContain(".harness/ci-required-checks.json");
+		expect(noIssueTrackerPaths).not.toContain(
+			".github/ISSUE_TEMPLATE/config.yml",
 		);
-		expect(templatePaths("github-actions")).toContain(
-			".github/workflows/release-private-npm.yml",
-		);
-	});
-
-	it("omits governance templates in minimal mode", () => {
-		const paths = getTemplatesForProvider("circleci", {
-			...defaultOptions,
-			minimal: true,
-		}).map((template) => template.path);
-
-		expect(paths).not.toContain(".github/CODEOWNERS");
-		expect(paths).not.toContain(".harness/ci-required-checks.json");
-	});
-
-	it("omits issue templates when issue tracking is disabled", () => {
-		const paths = getTemplatesForProvider("circleci", {
-			...defaultOptions,
-			issueTracker: "none",
-		}).map((template) => template.path);
-
-		expect(paths).not.toContain(".github/ISSUE_TEMPLATE/config.yml");
+		expect(noIssueTrackerPaths).toContain("harness.contract.json");
 	});
 });

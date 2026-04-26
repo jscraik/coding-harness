@@ -86,6 +86,7 @@ import {
 	renderLocalHarnessExecCommand,
 	renderVerifyWorkScript,
 } from "./scaffold-shell-templates.js";
+import { selectTemplatesForProvider } from "./scaffold-template-selection.js";
 import { renderWorkflowTemplate } from "./scaffold-workflow-template.js";
 import {
 	renderNewTaskScript,
@@ -458,40 +459,5 @@ export function getTemplatesForProvider(
 	ciProvider: CIProvider,
 	options?: InitOptions,
 ): Template[] {
-	return TEMPLATES.filter((template) => {
-		if (!isTemplateEnabledForProvider(template.path, ciProvider)) {
-			return false;
-		}
-
-		// Minimal mode skips enterprise governance templates
-		if (options?.minimal) {
-			const minimalOmit = [
-				".github/CODEOWNERS",
-				"docs/PRODUCT-PLAN.md",
-				".harness/ci-required-checks.json",
-			];
-			if (minimalOmit.includes(template.path)) {
-				return false;
-			}
-		}
-
-		// Issue tracker skips (linear templates are implicitly skipped in minimal mode)
-		if (
-			options?.minimal ||
-			options?.issueTracker === "none" ||
-			options?.issueTracker === "github"
-		) {
-			if (template.path.startsWith(".linear/")) {
-				return false;
-			}
-		}
-
-		if (options?.issueTracker === "none") {
-			if (template.path.includes("ISSUE_TEMPLATE")) {
-				return false;
-			}
-		}
-
-		return true;
-	});
+	return selectTemplatesForProvider(TEMPLATES, ciProvider, options);
 }
