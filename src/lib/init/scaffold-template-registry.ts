@@ -1,8 +1,8 @@
 /**
  * Scaffold template registry for harness init.
  *
- * This module owns the list of files emitted by `harness init` and the
- * provider/option filtering rules that select the active scaffold surface.
+ * This module owns the root list of files emitted by `harness init` and delegates
+ * focused template sub-inventories and selection rules to smaller modules.
  *
  * @module lib/init/scaffold-template-registry
  */
@@ -38,19 +38,12 @@ import {
 	renderPrekConfigTemplate,
 	renderPullRequestTemplate,
 } from "./scaffold-doc-templates.js";
-import { renderCheckEnvironmentScript } from "./scaffold-environment-templates.js";
 import {
 	renderChangelogTemplate,
 	renderCodeRabbitTemplate,
 	renderCodeownersTemplate,
 	renderIssueTemplateConfig,
 } from "./scaffold-governance-templates.js";
-import {
-	renderCheckHookCriticalConfigSyncScript,
-	renderCheckStagedSecretsScript,
-	renderSetupGitHooksScript,
-	renderValidateCommitMsgScript,
-} from "./scaffold-hook-templates.js";
 import {
 	AGENT_BRANCH_PREFIX,
 	renderDefaultNpmrc,
@@ -61,37 +54,20 @@ import {
 } from "./scaffold-root-command-templates.js";
 import {
 	CODESTYLE_PACK_TEMPLATE_FILES,
-	renderCheckCodestyleParityScript,
-	renderCheckDocStyleScript,
 	renderCodestylePackTemplate,
 	renderCodestyleTemplate,
-	renderPackagedRootFile,
-	renderValidateCodestyleScript,
 } from "./scaffold-root-templates.js";
 import {
-	renderSemgrepBootstrapScript,
-	renderSemgrepChangedScript,
-	renderSemgrepFullScript,
-	renderSemgrepPrePushRules,
-} from "./scaffold-semgrep-templates.js";
+	CODEX_AND_WORKFLOW_SCRIPT_TEMPLATES,
+	QUALITY_AND_HOOK_SCRIPT_TEMPLATES,
+} from "./scaffold-script-template-registry.js";
 import {
 	renderAddPackageCommand,
-	renderCodexEnforcedTemplate,
-	renderCodexLearnTemplate,
-	renderCodexPreflightLegacyLocalMemoryTemplate,
-	renderCodexPreflightTemplate,
-	renderHarnessCliWrapper,
-	renderHarnessGateRunner,
 	renderInstallCommand,
 	renderLocalHarnessExecCommand,
-	renderVerifyWorkScript,
 } from "./scaffold-shell-templates.js";
 import { selectTemplatesForProvider } from "./scaffold-template-selection.js";
 import { renderWorkflowTemplate } from "./scaffold-workflow-template.js";
-import {
-	renderNewTaskScript,
-	renderPrepareWorktreeScript,
-} from "./scaffold-worktree-templates.js";
 import {
 	type CIProvider,
 	CODEX_ENVIRONMENT_TEMPLATE_PATH,
@@ -271,58 +247,7 @@ export const TEMPLATES: Template[] = [
 			});
 		},
 	},
-	{
-		path: "scripts/validate-commit-msg.js",
-		render: () => renderValidateCommitMsgScript(AGENT_BRANCH_PREFIX),
-	},
-	{
-		path: "scripts/setup-git-hooks.js",
-		render: () => renderSetupGitHooksScript(),
-	},
-	{
-		path: "scripts/check-staged-secrets.sh",
-		render: () => renderCheckStagedSecretsScript(),
-	},
-	{
-		path: "scripts/check-hook-critical-config-sync.sh",
-		render: () => renderCheckHookCriticalConfigSyncScript(),
-	},
-	{
-		path: "scripts/check-doc-style.sh",
-		render: () => renderCheckDocStyleScript(),
-	},
-	{
-		path: "scripts/check-related-tests.sh",
-		render: () => renderPackagedRootFile("scripts/check-related-tests.sh"),
-	},
-	{
-		path: "scripts/check-public-api-docs.mjs",
-		render: () => renderPackagedRootFile("scripts/check-public-api-docs.mjs"),
-	},
-	{
-		path: "scripts/check-code-size.mjs",
-		render: () => renderPackagedRootFile("scripts/check-code-size.mjs"),
-	},
-	{
-		path: "scripts/lib/changed-files.mjs",
-		render: () => renderPackagedRootFile("scripts/lib/changed-files.mjs"),
-	},
-	{
-		path: "scripts/check-semgrep-changed.sh",
-		render: () => renderSemgrepChangedScript(),
-	},
-	{
-		path: "scripts/check-semgrep-full.sh",
-		render: () => renderSemgrepFullScript(),
-	},
-	{
-		path: "scripts/semgrep-bootstrap.sh",
-		render: () => renderSemgrepBootstrapScript(),
-	},
-	{
-		path: "scripts/semgrep-pre-push.yml",
-		render: () => renderSemgrepPrePushRules(),
-	},
+	...QUALITY_AND_HOOK_SCRIPT_TEMPLATES,
 	{
 		path: "scripts/refresh-diagram-context.sh",
 		render: renderRefreshDiagramContextScript,
@@ -367,54 +292,7 @@ export const TEMPLATES: Template[] = [
 		path,
 		render: () => renderCodestylePackTemplate(path),
 	})),
-	{
-		path: "scripts/codex-preflight.sh",
-		render: () => renderCodexPreflightTemplate(),
-	},
-	{
-		path: "scripts/codex-preflight-local-memory-legacy.sh",
-		render: () => renderCodexPreflightLegacyLocalMemoryTemplate(),
-	},
-	{
-		path: "scripts/codex-learn",
-		render: () => renderCodexLearnTemplate(),
-	},
-	{
-		path: "scripts/codex-enforced",
-		render: () => renderCodexEnforcedTemplate(),
-	},
-	{
-		path: "scripts/verify-work.sh",
-		render: (pm) => renderVerifyWorkScript(pm),
-	},
-	{
-		path: "scripts/validate-codestyle.sh",
-		render: () => renderValidateCodestyleScript(),
-	},
-	{
-		path: "scripts/check-codestyle-parity.sh",
-		render: () => renderCheckCodestyleParityScript(),
-	},
-	{
-		path: "scripts/prepare-worktree.sh",
-		render: (pm) => renderPrepareWorktreeScript(pm),
-	},
-	{
-		path: "scripts/new-task.sh",
-		render: () => renderNewTaskScript(),
-	},
-	{
-		path: "scripts/harness-cli.sh",
-		render: (pm) => renderHarnessCliWrapper(pm),
-	},
-	{
-		path: "scripts/run-harness-gate.sh",
-		render: (pm) => renderHarnessGateRunner(pm),
-	},
-	{
-		path: "scripts/check-environment.sh",
-		render: () => renderCheckEnvironmentScript(),
-	},
+	...CODEX_AND_WORKFLOW_SCRIPT_TEMPLATES,
 	{
 		path: CODEX_ENVIRONMENT_TEMPLATE_PATH,
 		render: (pm, context) => renderCodexEnvironmentTemplate(pm, context),
