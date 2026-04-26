@@ -1,6 +1,6 @@
 # Diagram Context Pack
 
-Generated: 2026-04-26T00:54:39Z
+Generated: 2026-04-26T12:01:04Z
 
 ## architecture
 
@@ -372,6 +372,8 @@ graph TD
     node_src_lib_init_scaffold_governance_templates_test_576bbcda["scaffold-governance-templates.test"]
     node_src_lib_init_scaffold_hook_templates_0b5a55e9["scaffold-hook-templates"]
     node_src_lib_init_scaffold_hook_templates_test_d526c745["scaffold-hook-templates.test"]
+    node_src_lib_init_scaffold_root_command_templates_22c15cd1["scaffold-root-command-templates"]
+    node_src_lib_init_scaffold_root_command_templates_tes_cd6c47be["scaffold-root-command-templates.test"]
     node_src_lib_init_scaffold_root_templates_32adb40e["scaffold-root-templates"]
     node_src_lib_init_scaffold_root_templates_test_94044835["scaffold-root-templates.test"]
     node_src_lib_init_scaffold_semgrep_templates_1c07176e["scaffold-semgrep-templates"]
@@ -871,12 +873,12 @@ flowchart TD
   ci_adapter_90d6f8f4["ci-adapter"]
   UserRequest --> ci_adapter_90d6f8f4
   ci_adapter_90d6f8f4 --> ci_adapter_90d6f8f4_result["result"]
-  types_1_4ecdf56e["types"]
-  UserRequest --> types_1_4ecdf56e
-  types_1_4ecdf56e --> types_1_4ecdf56e_result["result"]
   decision_packet_test_9ea0e97b["decision-packet.test"]
   UserRequest --> decision_packet_test_9ea0e97b
   decision_packet_test_9ea0e97b --> decision_packet_test_9ea0e97b_result["result"]
+  types_2_d9bc6e7a["types"]
+  UserRequest --> types_2_d9bc6e7a
+  types_2_d9bc6e7a --> types_2_d9bc6e7a_result["result"]
   types_4_822d0f88["types"]
   UserRequest --> types_4_822d0f88
   types_4_822d0f88 --> types_4_822d0f88_result["result"]
@@ -1939,6 +1941,7 @@ graph LR
   ext_vitest_4c9cfa13["vitest"] --> node_src_lib_init_scaffold_environment_templates_test_2d7b8173
   ext_vitest_4c9cfa13["vitest"] --> node_src_lib_init_scaffold_governance_templates_test_576bbcda
   ext_vitest_4c9cfa13["vitest"] --> node_src_lib_init_scaffold_hook_templates_test_d526c745
+  ext_vitest_4c9cfa13["vitest"] --> node_src_lib_init_scaffold_root_command_templates_tes_cd6c47be
   ext_vitest_4c9cfa13["vitest"] --> node_src_lib_init_scaffold_root_templates_test_94044835
   ext_vitest_4c9cfa13["vitest"] --> node_src_lib_init_scaffold_semgrep_templates_test_762f3bf2
   ext_vitest_4c9cfa13["vitest"] --> node_src_lib_init_scaffold_shell_quality_test_03012dbf
@@ -2246,14 +2249,14 @@ flowchart TD
   Untrusted --> orchestrator_11376b7e
   orchestrator_test_18d2fe26["orchestrator.test"]
   Untrusted --> orchestrator_test_18d2fe26
-  types_1_4ecdf56e["types"]
-  Untrusted --> types_1_4ecdf56e
   decision_packet_8ee9d119["decision-packet"]
   Untrusted --> decision_packet_8ee9d119
   decision_packet_test_9ea0e97b["decision-packet.test"]
   Untrusted --> decision_packet_test_9ea0e97b
   authz_29ba2f46["authz"]
   Untrusted --> authz_29ba2f46
+  types_2_d9bc6e7a["types"]
+  Untrusted --> types_2_d9bc6e7a
   tracer_test_cb965d81["tracer.test"]
   Untrusted --> tracer_test_cb965d81
   trace_normalizer_cb1be1d2["trace-normalizer"]
@@ -2350,6 +2353,8 @@ flowchart TD
   Untrusted --> scaffold_root_templates_61731280
   scaffold_root_templates_test_f6604622["scaffold-root-templates.test"]
   Untrusted --> scaffold_root_templates_test_f6604622
+  scaffold_root_command_templates_404fed7f["scaffold-root-command-templates"]
+  Untrusted --> scaffold_root_command_templates_404fed7f
   scaffold_hook_templates_8c74ab50["scaffold-hook-templates"]
   Untrusted --> scaffold_hook_templates_8c74ab50
   scaffold_governance_templates_5c949d24["scaffold-governance-templates"]
@@ -2374,16 +2379,16 @@ flowchart TD
   Untrusted --> post_bootstrap_summary_b2b5a20a
   cli_1_084e05fe["cli"]
   Untrusted --> cli_1_084e05fe
+  ralph_runtime_73d63c0e["ralph-runtime"]
+  Untrusted --> ralph_runtime_73d63c0e
+  ralph_runtime_test_682f806b["ralph-runtime.test"]
+  Untrusted --> ralph_runtime_test_682f806b
   policy_823412d1["policy"]
   Untrusted --> policy_823412d1
   policy_test_2c06901d["policy.test"]
   Untrusted --> policy_test_2c06901d
   index_3_7e40d474["index"]
   Untrusted --> index_3_7e40d474
-  ralph_runtime_73d63c0e["ralph-runtime"]
-  Untrusted --> ralph_runtime_73d63c0e
-  ralph_runtime_test_682f806b["ralph-runtime.test"]
-  Untrusted --> ralph_runtime_test_682f806b
   validator_5_b19ac2be["validator"]
   Untrusted --> validator_5_b19ac2be
   validator_test_5_2bb3219d["validator.test"]
@@ -2410,12 +2415,12 @@ flowchart TD
   Untrusted --> index_4_013aa0e3
   command_registry_test_0cf92cba["command-registry.test"]
   Untrusted --> command_registry_test_0cf92cba
+  required_check_metadata_dc610201["required-check-metadata"]
+  Untrusted --> required_check_metadata_dc610201
   context_compact_policy_3dcaf95d["context-compact-policy"]
   Untrusted --> context_compact_policy_3dcaf95d
   context_compact_policy_test_da148267["context-compact-policy.test"]
   Untrusted --> context_compact_policy_test_da148267
-  required_check_metadata_dc610201["required-check-metadata"]
-  Untrusted --> required_check_metadata_dc610201
   module_boundaries_test_c0caf46b["module-boundaries.test"]
   Untrusted --> module_boundaries_test_c0caf46b
   command_specs_69167c63["command-specs"]
@@ -2508,6 +2513,8 @@ flowchart TD
   Untrusted --> eject_1_d0ecd4d1
   eject_test_96dad02e["eject.test"]
   Untrusted --> eject_test_96dad02e
+  pr_creator_dc6b1ea4["pr-creator"]
+  Untrusted --> pr_creator_dc6b1ea4
   sha_d600474b["sha"]
   Untrusted --> sha_d600474b
   sha_test_5a5924fc["sha.test"]
@@ -2532,8 +2539,6 @@ flowchart TD
   Untrusted --> check_run_2fc00bd3
   check_run_test_85d17d04["check-run.test"]
   Untrusted --> check_run_test_85d17d04
-  pr_creator_dc6b1ea4["pr-creator"]
-  Untrusted --> pr_creator_dc6b1ea4
   provider_adapter_3bcf82b7["provider-adapter"]
   Untrusted --> provider_adapter_3bcf82b7
   config_validator_669ebc2e["config-validator"]
