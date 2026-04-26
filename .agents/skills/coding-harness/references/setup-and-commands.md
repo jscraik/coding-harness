@@ -295,6 +295,7 @@ Important constraints:
 
 - `harness context`
 - `harness search`
+- `harness source-outline`
 - `harness index-context`
 - `harness context-health`
 - `harness remediate`

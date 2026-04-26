@@ -1,0 +1,19 @@
+{
+	"run_id": "swe-20260424-184252",
+	"track": "swe",
+	"command": "pnpm check",
+	"status": "pass",
+	"started_at": "2026-04-24T18:42:52Z",
+	"finished_at": "2026-04-24T18:44:01Z",
+	"duration_seconds": 69,
+	"notes": "",
+	"artifacts": [],
+	"git": {
+		"commit": "b632f81f8d5fde87b815818247baa5c58331ef2e",
+		"branch": "codex/jsc-224-prepare-coding-harness-0-14-0-release",
+		"repository": "https://github.com/jscraik/coding-harness.git"
+	},
+	"metrics": {
+		"exit_code": 0
+	}
+}

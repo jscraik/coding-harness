@@ -14,11 +14,23 @@
 	"reviewPolicy": {
 		"timeoutSeconds": 600,
 		"timeoutAction": "fail",
-		"requiredChecks": ["lint", "typecheck", "test", "security-scan"],
+		"requiredChecks": [
+			"lint",
+			"typecheck",
+			"test",
+			"security-scan",
+			"semgrep-cloud-platform/scan"
+		],
 		"enforceReviewerIndependence": true
 	},
 	"branchProtection": {
-		"requiredChecks": ["lint", "typecheck", "test", "security-scan"],
+		"requiredChecks": [
+			"lint",
+			"typecheck",
+			"test",
+			"security-scan",
+			"semgrep-cloud-platform/scan"
+		],
 		"restrictDeletions": true,
 		"blockForcePushes": true,
 		"requireLinearHistory": true,

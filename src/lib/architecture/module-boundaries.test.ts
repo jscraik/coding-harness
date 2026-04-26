@@ -1,10 +1,91 @@
-import { readFileSync } from "node:fs";
+import { readFileSync, readdirSync } from "node:fs";
 import { join } from "node:path";
 import { describe, expect, it } from "vitest";
+
+const LEGACY_MODULE_RATCHETS = [
+	{
+		path: "src/commands/ci-migrate.ts",
+		maxLines: 10_400,
+		reason: "CI migration must move toward a control-plane service seam.",
+	},
+	{
+		path: "src/lib/output/normalise.ts",
+		maxLines: 1_100,
+		reason: "Output normalisation should not keep absorbing command types.",
+	},
+] as const;
+
+const SCAFFOLD_SURFACE_RATCHETS = [
+	{
+		path: "src/lib/init/scaffold.ts",
+		maxLines: 450,
+		reason:
+			"Scaffold entrypoint must stay a thin orchestrator; extract surface-specific rendering modules before raising this limit.",
+	},
+	{
+		path: "src/lib/init/scaffold-template-registry.ts",
+		maxLines: 425,
+		reason:
+			"Scaffold template registry must stay an inventory seam; extract focused template groups before raising this limit.",
+	},
+	{
+		path: "src/lib/init/scaffold-script-template-registry.ts",
+		maxLines: 225,
+		reason:
+			"Scaffold script template registry must stay focused; extract script-family renderers before raising this limit.",
+	},
+] as const;
+
+const TRANSITIONAL_LIB_TO_COMMAND_IMPORTS = new Set([
+	"src/lib/cli/registry/command-specs.ts",
+	"src/lib/init/index.ts",
+	"src/lib/output/normalise.ts",
+]);
+
+const COMMAND_IMPORT_PATTERN = /from\s+["'](?:\.\.\/)+commands\//;
 
 function countFileLines(path: string): number {
 	const content = readFileSync(join(process.cwd(), path), "utf-8");
 	return content.split("\n").length;
+}
+
+function expectRatchetsWithinBudget(
+	ratchets: readonly { path: string; maxLines: number; reason: string }[],
+): void {
+	for (const moduleRatchet of ratchets) {
+		const lineCount = countFileLines(moduleRatchet.path);
+
+		expect(
+			lineCount,
+			`${moduleRatchet.path} has ${lineCount} lines; ${moduleRatchet.reason}`,
+		).toBeLessThanOrEqual(moduleRatchet.maxLines);
+	}
+}
+
+function collectTypeScriptFiles(directory: string): string[] {
+	const root = join(process.cwd(), directory);
+	const files: string[] = [];
+
+	for (const entry of readdirSync(root, { withFileTypes: true })) {
+		const relativePath = join(directory, entry.name);
+
+		if (entry.isDirectory()) {
+			files.push(...collectTypeScriptFiles(relativePath));
+			continue;
+		}
+
+		if (
+			entry.isFile() &&
+			relativePath.endsWith(".ts") &&
+			!relativePath.endsWith(".test.ts") &&
+			!relativePath.endsWith(".spec.ts") &&
+			!relativePath.endsWith(".d.ts")
+		) {
+			files.push(relativePath);
+		}
+	}
+
+	return files;
 }
 
 describe("module boundaries", () => {
@@ -22,5 +103,25 @@ describe("module boundaries", () => {
 		expect(content).toContain("./policy-validators.js");
 		expect(content).toContain("./validator-helpers.js");
 		expect(countFileLines(validatorPath)).toBeLessThanOrEqual(2700);
+	});
+
+	it("ratchets legacy drift seams while they are decomposed", () => {
+		expectRatchetsWithinBudget(LEGACY_MODULE_RATCHETS);
+	});
+
+	it("keeps scaffold surfaces split after decomposition", () => {
+		expectRatchetsWithinBudget(SCAFFOLD_SURFACE_RATCHETS);
+	});
+
+	it("prevents new lib-to-command imports outside transitional adapters", () => {
+		const violations = collectTypeScriptFiles("src/lib")
+			.filter((path) => !TRANSITIONAL_LIB_TO_COMMAND_IMPORTS.has(path))
+			.filter((path) =>
+				COMMAND_IMPORT_PATTERN.test(
+					readFileSync(join(process.cwd(), path), "utf-8"),
+				),
+			);
+
+		expect(violations).toEqual([]);
 	});
 });

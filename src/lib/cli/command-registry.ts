@@ -17,6 +17,7 @@ import {
 	normalizeCommandName,
 	suggestCommands as suggestRegistryCommands,
 } from "./registry/fuzzy-resolution.js";
+import { SOURCE_OUTLINE_COMMAND_SPEC } from "./registry/source-outline-spec.js";
 import type { CommandSpec, RegistryDispatchResult } from "./registry/types.js";
 
 export type {
@@ -62,6 +63,7 @@ const COMMAND_SPECS: CommandSpec[] = [
 			return 0;
 		},
 	},
+	SOURCE_OUTLINE_COMMAND_SPEC,
 	...EXTRACTED_COMMAND_SPECS,
 ];
 
@@ -78,14 +80,17 @@ export const MIGRATED_COMMAND_AND_ALIAS_NAMES = COMMAND_SPECS.flatMap(
 	(spec) => [spec.name, ...(spec.aliases ?? [])],
 );
 
+/** Return command capability metadata for every registered CLI command. */
 export function getRegistryCommandCapabilities(): CommandCapability[] {
 	return getCommandCapabilities(COMMAND_SPECS);
 }
 
+/** Build the versioned command capability catalog for `harness commands --json`. */
 export function getRegistryCommandCatalogDocument(): CommandCapabilityCatalogDocument {
 	return getCommandCapabilityCatalogDocument(COMMAND_SPECS);
 }
 
+/** Return display-ready command help rows derived from registry capabilities. */
 export function getRegistryCommandHelpRows(options?: {
 	includeLegacy?: boolean;
 }): Array<{
@@ -114,6 +119,7 @@ export function getRegistryCommandHelpRows(options?: {
 	return [...canonicalRows, ...aliasRows];
 }
 
+/** Dispatch one CLI command name plus the original CLI argument vector. */
 export function dispatchRegistryCommand(
 	command: string | undefined,
 	args: string[],
@@ -131,10 +137,12 @@ export function dispatchRegistryCommand(
 	};
 }
 
+/** Fuzzy-find a registered command by name or alias. */
 export function fuzzyFindCommand(name: string): FuzzyCommandMatch | undefined {
 	return fuzzyFindRegistryCommand(name, COMMAND_SPECS, COMMAND_INDEX);
 }
 
+/** Suggest likely registered commands for an unknown command name. */
 export function suggestCommands(
 	name: string,
 	limit = 3,
@@ -142,6 +150,7 @@ export function suggestCommands(
 	return suggestRegistryCommands(name, COMMAND_SPECS, limit);
 }
 
+/** Suggest likely command capabilities for an unknown command name. */
 export function suggestCommandCapabilities(
 	name: string,
 	limit = 3,

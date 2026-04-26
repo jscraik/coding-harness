@@ -43,6 +43,8 @@ hooks-pre-commit: ## Run local pre-commit gates before creating a commit
 	pnpm lint
 	pnpm docs:lint
 	pnpm typecheck
+	pnpm run quality:docstrings
+	pnpm run quality:size
 	$(MAKE) secrets-staged
 	$(MAKE) docs-style-changed
 	$(MAKE) related-tests
@@ -75,7 +77,7 @@ secrets-staged: ## Scan staged content for secrets before committing
 docs-style-changed: ## Run Vale on staged authoritative docs only
 	pnpm run docs:style:changed
 
-related-tests: ## Run Vitest related mode for staged src implementation files
+related-tests: ## Run Vitest related mode for changed src implementation files
 	pnpm run test:related
 
 semgrep-changed: ## Run narrow Semgrep rules against changed src implementation files

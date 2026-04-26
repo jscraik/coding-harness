@@ -4,11 +4,11 @@
 	"reviewPolicy": {
 		"timeoutSeconds": 600,
 		"timeoutAction": "fail",
-		"requiredChecks": ["security-scan"],
+		"requiredChecks": ["security-scan", "semgrep-cloud-platform/scan"],
 		"enforceReviewerIndependence": false
 	},
 	"branchProtection": {
-		"requiredChecks": ["security-scan"],
+		"requiredChecks": ["security-scan", "semgrep-cloud-platform/scan"],
 		"restrictDeletions": true,
 		"blockForcePushes": true,
 		"requireLinearHistory": true,

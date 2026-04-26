@@ -1,3 +1,4 @@
+import { type PartialDeep, fromPartial } from "@total-typescript/shoehorn";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 vi.mock("../lib/linear/client.js", () => ({
@@ -17,6 +18,8 @@ import { LinearClient } from "../lib/linear/client.js";
 import { runLinearPrepare } from "./linear-prepare.js";
 
 const mockLinearClient = vi.mocked(LinearClient);
+const mockLinearPrepareClient = (client: PartialDeep<LinearClient>) =>
+	fromPartial<LinearClient>(client);
 
 const baseIssue = {
 	id: "issue-id",
@@ -47,9 +50,7 @@ describe("runLinearPrepare", () => {
 		vi.clearAllMocks();
 		vi.stubEnv("LINEAR_API_KEY", "");
 		client.searchIssues.mockResolvedValue([baseIssue]);
-		mockLinearClient.mockImplementation(
-			() => client as unknown as LinearClient,
-		);
+		mockLinearClient.mockImplementation(() => mockLinearPrepareClient(client));
 	});
 
 	afterEach(() => {

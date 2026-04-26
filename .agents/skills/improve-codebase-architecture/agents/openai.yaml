@@ -1,0 +1,4 @@
+interface:
+  display_name: "Improve Codebase Architecture"
+  short_description: "Find deepening opportunities in coding-harness."
+  default_prompt: "Use the project-local improve-codebase-architecture skill to review coding-harness for deepening opportunities aligned with the north star."

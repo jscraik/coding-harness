@@ -83,9 +83,9 @@ jobs:
         env:
           NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
 
-      # __PACKAGE_MANAGER_SETUP_STEP__
+{{packageManagerSetupStep}}
       - name: Install dependencies
-        run: __INSTALL_COMMAND__
+        run: {{installCommand}}
 
       - name: Materialize CODESTYLE.md for CI
         run: |
@@ -95,10 +95,10 @@ jobs:
           fi
 
       - name: Validate release candidate
-        run: __CHECK_COMMAND__
+        run: {{checkCommand}}
 
       - name: Build package
-        run: __BUILD_COMMAND__
+        run: {{buildCommand}}
 
       - name: Generate SBOM
         # Use cyclonedx-npm with --ignore-npm-errors flag for pnpm compatibility
@@ -244,11 +244,11 @@ jobs:
             echo "::error::NPM_TOKEN secret is required when publish_auth=token."
             exit 1
           fi
-          __PUBLISH_TOKEN_COMMAND__
+          {{publishTokenCommand}}
 
       - name: Publish private package (OIDC trusted publisher)
         if: steps.publish-auth.outputs.mode == 'oidc'
-        run: __PUBLISH_OIDC_COMMAND__
+        run: {{publishOidcCommand}}
 
       - name: Generate build provenance attestation
         id: attest

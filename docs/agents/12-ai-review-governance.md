@@ -1,5 +1,5 @@
 ---
-last_validated: 2026-04-18
+last_validated: 2026-04-26
 ---
 
 # AI review governance
@@ -65,7 +65,6 @@ Use these names as branch-protection check contexts, not as shorthand for local 
   `risk-policy-gate`, `dependency-scan`, `orb-pinning`,
   `consistency-drift-health`, `docs-gate`, `lint`, `typecheck`, `test`,
   `audit`, `check`, `memory`, `security-scan`
-- External GitHub App required-check context: `CodeRabbit`
 
 Local commands such as `pnpm lint` or `pnpm check` are validation evidence only
 unless they correspond to one of the required check contexts above.

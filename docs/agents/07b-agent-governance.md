@@ -1,5 +1,5 @@
 ---
-last_validated: 2026-04-23
+last_validated: 2026-04-26
 ---
 
 # Agent governance
@@ -48,6 +48,20 @@ Every agent handoff should include:
 - remaining risks and assumptions,
 - clear next step.
 - CodeRabbit Semgrep disposition when findings were raised: fixed, explicitly waived with rationale, or not applicable.
+- Exact behavior evidence whenever executable behavior changed, or a clear blocker note when the touched production path could not run safely.
+
+When executable behavior changes, broad gates are necessary but not sufficient
+on their own. Run the smallest real executable path that exercises the exact
+
+production code touched whenever feasible, and run the changed-source ratchets:
+`pnpm run quality:docstrings`, `pnpm run quality:size`, and
+`pnpm run test:related`.
+
+Prefer invoking the production function, class, CLI command, shell script,
+validator, or route directly. If no existing test covers the path, create a
+temporary local reproduction harness under `codex-scripts/`, keep it
+gitignored, and import or invoke production code directly instead of copying
+implementation into the harness.
 
 ## Fail-safe rules
 

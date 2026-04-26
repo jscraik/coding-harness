@@ -5,6 +5,7 @@
 - [Research and reuse first](#research-and-reuse-first)
 - [Plan before implementation](#plan-before-implementation)
 - [Build and verify loop](#build-and-verify-loop)
+- [Temporary reproduction harnesses](#temporary-reproduction-harnesses)
 - [Pre-review readiness](#pre-review-readiness)
 - [Enforcement](#enforcement)
 
@@ -26,9 +27,17 @@
 
 ## Build and verify loop
 1. Implement the smallest meaningful increment.
-2. Relevant tests/validators MUST run immediately.
-3. Failures MUST be fixed before expanding scope.
-4. Repeat until the intended behavior and contract checks are green (or explicitly blocked).
+2. Run the smallest real executable path that exercises the exact production code touched whenever feasible.
+3. Relevant tests/validators MUST run immediately, including `pnpm run quality:docstrings`, `pnpm run quality:size`, and `pnpm run test:related` for changed production source.
+4. Failures MUST be fixed before expanding scope.
+5. Repeat until the intended behavior and contract checks are green (or explicitly blocked).
+
+## Temporary reproduction harnesses
+- If no existing test covers the exact touched path, agents MAY create a temporary local reproduction harness under `codex-scripts/`.
+- `codex-scripts/` MUST remain gitignored and is for local evidence only.
+- Temporary harnesses SHOULD import or invoke production code directly. Copy only the minimum fixtures or input data needed to reproduce behavior.
+- If a temporary reproduction becomes generally useful, it SHOULD graduate into the tracked test suite or a maintained helper script instead of remaining in `codex-scripts/`.
+- If the exact path cannot run because it depends on unavailable credentials, external services, unsafe side effects, or missing generated runtime state, the blocker MUST be recorded explicitly and the nearest meaningful validation SHOULD run instead.
 
 ## Pre-review readiness
 - Before handoff or PR review:
@@ -40,6 +49,9 @@
 - Required baseline validation for this repository:
   - `pnpm lint`
   - `pnpm typecheck`
+  - `pnpm run quality:docstrings`
+  - `pnpm run quality:size`
+  - `pnpm run test:related`
   - `pnpm test`
   - `pnpm audit`
   - `pnpm check`

@@ -56,6 +56,7 @@ This workflow keeps delivery auditable, reversible, and consistent even for solo
 - bash scripts/validate-codestyle.sh
 - pnpm check
 - test -f memory.json && jq -e '.meta.version == "1.0" and (.preamble.bootstrap | type == "boolean") and (.preamble.search | type == "boolean") and (.entries | type == "array")' memory.json >/dev/null
+- CircleCI PR governance/security checks, plus the external GitHub App required check `semgrep-cloud-platform/scan`, must be green before merge.
 
 ## Required tooling baseline
 
@@ -96,6 +97,9 @@ Recommended policy:
 - Keep repo-scoped telemetry and learned overrides under `.harness/memory/`, and global telemetry under `~/.codex/`.
 - Treat `scripts/verify-work.sh` as the canonical repo-facing verification command and keep it wired to repo-local preflight defaults.
 - Treat `scripts/validate-codestyle.sh` as the fail-closed code style gate and require exact proof-of-pass in change summaries and PRs.
+- When executable behavior changes, run the smallest real code path that exercises the exact production code touched before claiming verification.
+- Prefer invoking production functions, classes, CLI commands, shell scripts, validators, or routes directly. If no existing test covers the path, create a temporary reproduction harness under `codex-scripts/` and keep that directory gitignored.
+- If the exact path cannot run because of unavailable credentials, external services, unsafe side effects, or missing generated state, record the blocker clearly, run the nearest meaningful validation, and do not describe production behavior as verified unless the touched path actually ran.
 - Keep docs-gate required documentation surfaces updated together when validation, required-check, tooling/runtime, or architecture-context behavior changes.
 - Treat `scripts/new-task.sh` as the canonical task-entry helper so each task starts with a repo-local branch/worktree boundary instead of branch switching inside a shared checkout.
 - Treat `scripts/prepare-worktree.sh` as required first-push bootstrap for freshly created worktrees so local hooks run with dependencies and canonical hook wiring.
@@ -122,6 +126,10 @@ Recommended policy:
 - Use `./scripts/codex-learn analyze` and `./scripts/codex-learn apply` to inspect repo-scoped failure patterns and write override files into `.harness/memory/`.
 - Start new work with `bash scripts/new-task.sh <issue-key>-<slug>`, then enter the generated worktree and continue there.
 - During iteration, run `bash scripts/validate-codestyle.sh --fast` for focused code style validation.
+- Treat `pnpm run quality:docstrings`, `pnpm run quality:size`, and `pnpm run test:related` as mandatory changed-code gates; they are included in `pnpm check`, `bash scripts/validate-codestyle.sh --fast`, and local pre-commit hooks.
+- When executable behavior changes, run the smallest real code path that exercises the exact production code touched before claiming verification.
+- Prefer production functions, classes, CLI commands, shell scripts, validators, or routes directly. If no existing test covers the path, create a temporary reproduction harness under `codex-scripts/`, keep it gitignored, and import or invoke production code instead of copying implementation into the harness.
+- If the exact path cannot run because of unavailable credentials, external services, unsafe side effects, or missing generated state, record the blocker clearly and run the nearest meaningful validation instead.
 - Before handoff, run `bash scripts/validate-codestyle.sh` for the fail-closed code style bundle.
 - For the broader verification bundle, run `bash scripts/verify-work.sh`.
 - For preflight + code style fast lane coverage, run `bash scripts/verify-work.sh --fast`.
@@ -205,6 +213,7 @@ Configure GitHub branch protection (or rulesets) on `main`:
   - `memory`
   - `security-scan`
   - `CodeRabbit`
+  - `semgrep-cloud-platform/scan`
 - Require branches to be up to date before merge.
 - Require code quality results with severity `all`.
 - In public repositories, require `CodeQL` code scanning results with `high_or_higher` security alerts and `errors` alerts thresholds.

@@ -2,6 +2,25 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [0.14.0](https://github.com/jscraik/coding-harness/compare/v0.13.1...v0.14.0) (2026-04-24)
+
+### Features
+
+- Narrowed the product surface around a codex-first, north-star-driven harness model and documented the contract explicitly in repo-facing surfaces.
+- Expanded the CLI contract and command registry coverage so machine-readable command behavior is easier to discover and safer to automate against.
+- Tightened `review-gate`, `preflight`, `verify-work`, and related workflow gates to make required-check resolution, resume behavior, and evidence handling more deterministic.
+- Moved non-release CI responsibility fully into CircleCI while keeping GitHub Actions reserved for tag-driven private npm publishing and release creation.
+- Added stronger init scaffolding for release workflow, changelog generation, and downstream contract surfaces so new repos inherit the same release discipline.
+
+### Commits
+
+- `feat(init)`: scaffold npm release workflow and changelog generation.
+- `feat(ci)`: move non-release CI ownership to CircleCI and tighten template contracts.
+- `feat(review-gate)`: add provider-aware required-check resolution.
+- `feat(validation)`: tighten preflight and workflow gates.
+- `feat(north-star)`: add contract surfaces and scaffold docs for the agent-first north star.
+- `feat(cli)`: expand contract and command registry coverage.
+
 ## [0.13.1](https://github.com/jscraik/coding-harness/compare/v0.13.0...v0.13.1) (2026-04-19)
 
 

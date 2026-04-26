@@ -55,8 +55,12 @@ const EXPECTED_TEMPLATE_PATHS = [
 	"scripts/check-staged-secrets.sh",
 	"scripts/check-doc-style.sh",
 	"scripts/check-related-tests.sh",
+	"scripts/check-public-api-docs.mjs",
+	"scripts/check-code-size.mjs",
+	"scripts/lib/changed-files.mjs",
 	"scripts/check-semgrep-changed.sh",
 	"scripts/check-semgrep-full.sh",
+	"scripts/semgrep-bootstrap.sh",
 	"scripts/semgrep-pre-push.yml",
 	"scripts/refresh-diagram-context.sh",
 	"scripts/check-diagram-freshness.sh",
@@ -317,6 +321,7 @@ describe("runInit", () => {
 				"memory",
 				"security-scan",
 				"CodeRabbit",
+				"semgrep-cloud-platform/scan",
 			]);
 			expect(
 				generatedChecks.every(
@@ -328,7 +333,8 @@ describe("runInit", () => {
 					.filter(
 						(entry) =>
 							entry.displayName !== "CodeRabbit" &&
-							entry.displayName !== "security-scan",
+							entry.displayName !== "security-scan" &&
+							entry.displayName !== "semgrep-cloud-platform/scan",
 					)
 					.every((entry) => entry.githubCheckName === "pr-pipeline"),
 			).toBe(true);
@@ -343,6 +349,13 @@ describe("runInit", () => {
 			);
 			expect(codeRabbitCheck?.provider).toBe("coderabbit");
 			expect(codeRabbitCheck?.githubCheckName).toBe("CodeRabbit");
+			const semgrepCloudCheck = generatedChecks.find(
+				(entry) => entry.displayName === "semgrep-cloud-platform/scan",
+			);
+			expect(semgrepCloudCheck?.provider).toBe("semgrep-cloud-platform");
+			expect(semgrepCloudCheck?.githubCheckName).toBe(
+				"semgrep-cloud-platform/scan",
+			);
 
 			const circleConfig = require("node:fs").readFileSync(
 				join(tempDir, ".circleci/config.yml"),
@@ -1530,12 +1543,28 @@ describe("runInit", () => {
 				join(tempDir, "scripts/check-related-tests.sh"),
 				"utf-8",
 			);
+			const publicApiDocs = require("node:fs").readFileSync(
+				join(tempDir, "scripts/check-public-api-docs.mjs"),
+				"utf-8",
+			);
+			const codeSize = require("node:fs").readFileSync(
+				join(tempDir, "scripts/check-code-size.mjs"),
+				"utf-8",
+			);
+			const changedFiles = require("node:fs").readFileSync(
+				join(tempDir, "scripts/lib/changed-files.mjs"),
+				"utf-8",
+			);
 			const semgrepChanged = require("node:fs").readFileSync(
 				join(tempDir, "scripts/check-semgrep-changed.sh"),
 				"utf-8",
 			);
 			const semgrepFull = require("node:fs").readFileSync(
 				join(tempDir, "scripts/check-semgrep-full.sh"),
+				"utf-8",
+			);
+			const semgrepBootstrap = require("node:fs").readFileSync(
+				join(tempDir, "scripts/semgrep-bootstrap.sh"),
 				"utf-8",
 			);
 			const semgrepRules = require("node:fs").readFileSync(
@@ -1634,27 +1663,45 @@ describe("runInit", () => {
 			);
 			expect(docStyle).toContain("vale --config .vale.ini");
 			expect(docStyle).toContain('":(glob)docs/**/*.md"');
-			expect(relatedTests).toContain(
-				"pnpm exec vitest related --run --passWithNoTests",
+			expect(relatedTests).toContain("Usage: scripts/check-related-tests.sh");
+			expect(relatedTests).toContain("pnpm exec vitest related --run");
+			expect(relatedTests).not.toContain("--passWithNoTests");
+			expect(publicApiDocs).toContain("[check-public-api-docs]");
+			expect(publicApiDocs).toContain(
+				"exported public API declarations need JSDoc",
 			);
+			expect(codeSize).toContain("[check-code-size]");
+			expect(codeSize).toContain("MAX_FUNCTION_LINES");
+			expect(changedFiles).toContain("collectChangedPaths");
 			expect(semgrepChanged).toContain(
 				'RULESET_PATH="$REPO_ROOT/scripts/semgrep-pre-push.yml"',
 			);
 			expect(semgrepChanged).toContain(
 				'git diff --name-only --diff-filter=ACMR -z "$base_ref"...HEAD --',
 			);
-			expect(semgrepChanged).toContain('SEMGREP_VERSION="1.153.1"');
+			expect(semgrepChanged).toContain(
+				'source "$REPO_ROOT/scripts/semgrep-bootstrap.sh"',
+			);
 			expect(semgrepChanged).toContain("run_semgrep scan");
 			expect(semgrepFull).toContain(
 				'RULESET_PATH="$REPO_ROOT/scripts/semgrep-pre-push.yml"',
 			);
-			expect(semgrepFull).toContain('SEMGREP_VERSION="1.153.1"');
+			expect(semgrepFull).toContain(
+				'source "$REPO_ROOT/scripts/semgrep-bootstrap.sh"',
+			);
 			expect(semgrepFull).toContain("run_semgrep scan");
 			expect(semgrepFull).toContain("\t.");
+			expect(semgrepBootstrap).toContain(
+				'SEMGREP_VERSION="${SEMGREP_VERSION:-1.153.1}"',
+			);
+			expect(semgrepBootstrap).toContain("semgrep_version_usable()");
+			expect(semgrepBootstrap).toContain(
+				"install_semgrep_with_site_packages()",
+			);
 			expect(semgrepRules).toContain("ts-no-eval");
 			expect(semgrepRules).toContain("ts-no-shell-true");
 			expect(makefile).toContain("check: ## Run all required quality gates");
-			expect(makefile).toContain("\tpnpm check");
+			expect(makefile).toContain("\tnpm run check");
 			expect(makefile).toContain(
 				"preflight: ## Run repository preflight checks (required local-memory gate by default)",
 			);
@@ -1675,21 +1722,25 @@ describe("runInit", () => {
 			expect(makefile).toContain(
 				"hooks-commit-msg: ## Validate commit message policy (use HOOK_COMMIT_MSG or MSG_FILE=/path)",
 			);
+
+			expect(makefile).toContain("\tnpm run quality:docstrings");
+			expect(makefile).toContain("\tnpm run quality:size");
+
 			expect(makefile).toContain("\t$(MAKE) secrets-staged");
 			expect(makefile).toContain("\t$(MAKE) docs-style-changed");
 			expect(makefile).toContain("\t$(MAKE) related-tests");
 			expect(makefile).toContain("\t$(MAKE) semgrep-changed");
 			expect(makefile).toContain(
-				"\tpnpm exec tsx src/cli.ts docs-gate --mode required --json",
+				"\t@bash ./scripts/run-harness-gate.sh docs-gate --mode required --json",
 			);
 			expect(makefile).toContain(
 				"\t@bash ./scripts/check-diagram-freshness.sh",
 			);
 			expect(makefile).toContain(
-				"\tpnpm exec tsx src/cli.ts tooling-audit --path . --json",
+				"\t@bash ./scripts/run-harness-gate.sh tooling-audit --path . --json",
 			);
 			expect(makefile).toContain("\t@bash ./scripts/check-environment.sh");
-			expect(makefile).toContain("\tpnpm build");
+			expect(makefile).toContain("\tnpm run build");
 			expect(makefile).toContain(
 				"diagrams-check: ## Refresh architecture diagrams when sensitive paths change and fail on drift",
 			);
@@ -1766,49 +1817,46 @@ describe("runInit", () => {
 			expect(runHarnessGate).toContain(
 				'MISE_RESOLVED="$(mise which harness 2>/dev/null || true)"',
 			);
-			expect(semgrepChanged).toContain(
+			expect(semgrepBootstrap).toContain(
 				'echo "Error: python3 is required to install Semgrep." >&2',
 			);
-			expect(semgrepChanged).toContain(
+			expect(semgrepBootstrap).toContain(
 				'SEMGREP_SITE_PACKAGES_DIR="${SEMGREP_CACHE_ROOT}/semgrep-site-packages-${SEMGREP_VERSION}"',
 			);
-			expect(semgrepChanged).toContain(
+			expect(semgrepBootstrap).toContain(
 				'PYTHONPATH="$SEMGREP_SITE_PACKAGES_DIR${PYTHONPATH:+:$PYTHONPATH}" \\',
 			);
-			expect(semgrepChanged).toContain(
-				'python3 -m pip install --quiet --upgrade --target "$SEMGREP_SITE_PACKAGES_DIR" "semgrep==$SEMGREP_VERSION"',
+			expect(semgrepBootstrap).toContain(
+				'python3 -m pip install --quiet --upgrade --target "$SEMGREP_SITE_PACKAGES_DIR" "$SEMGREP_PIP_SPEC"',
 			);
-			expect(semgrepChanged).toContain("has_semgrep_installation()");
-			expect(semgrepChanged).toContain(
-				'if [[ -d "$SEMGREP_SITE_PACKAGES_DIR/semgrep" ]]; then',
+			expect(semgrepBootstrap).toContain("has_semgrep_installation()");
+			expect(semgrepBootstrap).toContain(
+				'if [[ -d "$SEMGREP_SITE_PACKAGES_DIR/semgrep" ]] && semgrep_version_usable; then',
 			);
-			expect(semgrepChanged).toContain(
+			expect(semgrepBootstrap).toContain(
 				'if [[ -z "${CI:-}" && -z "${CIRCLECI:-}" ]]; then',
 			);
-			expect(semgrepChanged).toContain(
+			expect(semgrepBootstrap).toContain(
 				"sudo apt-get install -y python3-pip python3-venv",
 			);
-			expect(semgrepFull).toContain(
-				'SEMGREP_SITE_PACKAGES_DIR="${SEMGREP_CACHE_ROOT}/semgrep-site-packages-${SEMGREP_VERSION}"',
-			);
-			expect(semgrepFull).toContain(
+			expect(semgrepBootstrap).toContain(
 				'python3 -m venv "$SEMGREP_VENV_DIR" >/dev/null 2>&1',
 			);
-			expect(semgrepFull).toContain(
-				'python3 -m pip install --quiet --upgrade --target "$SEMGREP_SITE_PACKAGES_DIR" "semgrep==$SEMGREP_VERSION"',
+			expect(semgrepBootstrap).toContain(
+				'python3 -m pip install --quiet --upgrade --target "$SEMGREP_SITE_PACKAGES_DIR" "$SEMGREP_PIP_SPEC"',
 			);
-			expect(semgrepFull).toContain("has_semgrep_installation()");
-			expect(semgrepFull).toContain(
-				'if [[ -d "$SEMGREP_SITE_PACKAGES_DIR/semgrep" ]]; then',
+			expect(semgrepBootstrap).toContain("has_semgrep_installation()");
+			expect(semgrepBootstrap).toContain(
+				'if [[ -d "$SEMGREP_SITE_PACKAGES_DIR/semgrep" ]] && semgrep_version_usable; then',
 			);
-			expect(semgrepFull).toContain(
+			expect(semgrepBootstrap).toContain(
 				'if [[ -z "${CI:-}" && -z "${CIRCLECI:-}" ]]; then',
 			);
-			expect(semgrepFull).toContain(
+			expect(semgrepBootstrap).toContain(
 				"sudo apt-get install -y python3-pip python3-venv",
 			);
-			expect(semgrepFull).toContain(
-				"python3 -m venv is unavailable and python3 -m pip could not be used as a fallback.",
+			expect(semgrepBootstrap).toContain(
+				"Error: unable to install Semgrep ${SEMGREP_VERSION} or newer.",
 			);
 			expect(verifyWork).toContain("Canonical repo-local verification runner.");
 			expect(verifyWork).toContain("--mode required");
@@ -1996,6 +2044,9 @@ describe("runInit", () => {
 			expect(environmentCheck).toContain(
 				'"scripts/check-hook-critical-config-sync.sh"',
 			);
+			expect(environmentCheck).toContain('"scripts/check-public-api-docs.mjs"');
+			expect(environmentCheck).toContain('"scripts/check-code-size.mjs"');
+			expect(environmentCheck).toContain('"scripts/lib/changed-files.mjs"');
 			expect(environmentCheck).toContain('"scripts/check-semgrep-changed.sh"');
 			expect(environmentCheck).toContain('"scripts/check-semgrep-full.sh"');
 			expect(environmentCheck).toContain('"scripts/semgrep-pre-push.yml"');
@@ -2015,9 +2066,15 @@ describe("runInit", () => {
 			expect(environmentCheck).toContain(
 				'"semgrep:changed|bash scripts/check-semgrep-changed.sh"',
 			);
+			expect(environmentCheck).toContain(
+				'"quality:docstrings|node scripts/check-public-api-docs.mjs"',
+			);
+			expect(environmentCheck).toContain(
+				'"quality:size|node scripts/check-code-size.mjs"',
+			);
 			expect(environmentCheck).not.toContain("required_simple_git_hooks=(");
 			expect(environmentCheck).toContain(
-				`if jq -e 'has("simple-git-hooks")' "$PACKAGE_JSON_PATH" >/dev/null; then`,
+				`or (((.scripts // {}) | to_entries | any(.value | test("simple-git-hooks"))))`,
 			);
 			expect(environmentCheck).toContain('"check"');
 			expect(environmentCheck).toContain('"env-check"');
@@ -2128,13 +2185,15 @@ describe("runInit", () => {
 				'TMP_DIR="$(mktemp -d "$ROOT_DIR/${TRUNC_DIR}")"',
 			);
 			expect(refreshDiagrams).toContain(
-				'EXCLUDE_PATTERNS="node_modules/**,.git/**,dist/**,${TMP_BASENAME}/**"',
+				'EXCLUDE_PATTERNS="node_modules/**,.git/**,dist/**,artifacts/tmp-*/**,artifacts/tmp/**,${TMP_BASENAME}/**"',
 			);
 			expect(refreshDiagrams).toContain(
 				'MAX_FILES="${DIAGRAM_REFRESH_MAX_FILES:-1000}"',
 			);
 			expect(refreshDiagrams).toContain('--max-files "$MAX_FILES"');
 			expect(refreshDiagrams).toContain('cp "$TMP_DIR/diagrams/manifest.json"');
+			expect(refreshDiagrams).toContain("const sourceManifest = (() => {");
+			expect(refreshDiagrams).toContain("...sourceManifest,");
 			expect(diagramFreshness).toContain("is_ignored_change()");
 			expect(diagramFreshness).toContain("is_architecture_sensitive_change()");
 			expect(diagramFreshness).toContain(".diagram/*)");
@@ -2468,7 +2527,7 @@ exit 1
 					FAKE_MISE_WHICH_MODE: "present",
 				},
 			});
-			expect(miseRun.status).toBe(0);
+			expect(miseRun.status, miseRun.stdout + miseRun.stderr).toBe(0);
 			expect(miseRun.stdout).toContain(
 				`Using harness runner: mise harness (${fakeMiseHarness})`,
 			);

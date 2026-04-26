@@ -30,6 +30,8 @@ export const REQUIRED_PREK_HOOKS = {
 export const REQUIRED_PACKAGE_SCRIPTS = {
 	"codestyle:parity": "bash scripts/check-codestyle-parity.sh",
 	"codestyle:validate": "bash scripts/validate-codestyle.sh",
+	"quality:docstrings": "node scripts/check-public-api-docs.mjs",
+	"quality:size": "node scripts/check-code-size.mjs",
 	"secrets:staged": "bash scripts/check-staged-secrets.sh",
 	"docs:style:changed": "bash scripts/check-doc-style.sh",
 	"test:related": "bash scripts/check-related-tests.sh",
@@ -333,6 +335,9 @@ export const REQUIRED_HOOK_SUPPORT_FILES = [
 	"scripts/codex-enforced",
 	"scripts/verify-work.sh",
 	"scripts/validate-codestyle.sh",
+	"scripts/check-public-api-docs.mjs",
+	"scripts/check-code-size.mjs",
+	"scripts/lib/changed-files.mjs",
 	"scripts/check-codestyle-parity.sh",
 	"scripts/prepare-worktree.sh",
 	"scripts/new-task.sh",

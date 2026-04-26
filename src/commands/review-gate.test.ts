@@ -1,6 +1,7 @@
 import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
+import { type PartialDeep, fromPartial } from "@total-typescript/shoehorn";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import {
 	NORTH_STAR_DECISION_QUESTION_SPECS,
@@ -70,6 +71,9 @@ import { runCheckAuthz } from "../lib/review-gate/authz.js";
 import { emitReviewGateDecisionArtifacts } from "../lib/review-gate/decision-packet.js";
 
 const mockGitHubClient = vi.mocked(GitHubClient);
+const mockReviewGateGitHubClient = (client: PartialDeep<GitHubClient>) =>
+	fromPartial<GitHubClient>(client);
+
 const mockLoadContract = vi.mocked(loadContract);
 const mockValidateSha = vi.mocked(validateSha);
 const mockRunPlanGate = vi.mocked(runPlanGate);
@@ -141,21 +145,20 @@ describe("runReviewGate", () => {
 		});
 
 		// Default: PR head SHA matches the supplied SHA so unchanged tests pass.
-		mockGitHubClient.mockImplementation(
-			() =>
-				({
-					getPullRequest: vi.fn().mockResolvedValue({
-						number: defaultOptions.prNumber,
-						title: "Traceability hardening",
-						body: "- Plan IDs: `feat-review-gate-traceability`",
-						user: { login: "coding-actor" },
-						head: { sha: validSha, ref: "feature/test" },
-					}),
-					listPullRequestFiles: vi
-						.fn()
-						.mockResolvedValue([{ filename: "src/commands/review-gate.ts" }]),
-					listCheckRunsForRef: vi.fn().mockResolvedValue([]),
-				}) as unknown as GitHubClient,
+		mockGitHubClient.mockImplementation(() =>
+			mockReviewGateGitHubClient({
+				getPullRequest: vi.fn().mockResolvedValue({
+					number: defaultOptions.prNumber,
+					title: "Traceability hardening",
+					body: "- Plan IDs: `feat-review-gate-traceability`",
+					user: { login: "coding-actor" },
+					head: { sha: validSha, ref: "feature/test" },
+				}),
+				listPullRequestFiles: vi
+					.fn()
+					.mockResolvedValue([{ filename: "src/commands/review-gate.ts" }]),
+				listCheckRunsForRef: vi.fn().mockResolvedValue([]),
+			}),
 		);
 	});
 
@@ -183,15 +186,14 @@ describe("runReviewGate", () => {
 	// Security: provided SHA must match the PR's actual head SHA
 	it("returns validation error when provided SHA does not match PR head", async () => {
 		const mismatchedSha = "fedcba9876543210fedcba9876543210fedcba98";
-		mockGitHubClient.mockImplementation(
-			() =>
-				({
-					getPullRequest: vi.fn().mockResolvedValue({
-						number: defaultOptions.prNumber,
-						user: { login: "coding-actor" },
-						head: { sha: validSha, ref: "feature/test" },
-					}),
-				}) as unknown as GitHubClient,
+		mockGitHubClient.mockImplementation(() =>
+			mockReviewGateGitHubClient({
+				getPullRequest: vi.fn().mockResolvedValue({
+					number: defaultOptions.prNumber,
+					user: { login: "coding-actor" },
+					head: { sha: validSha, ref: "feature/test" },
+				}),
+			}),
 		);
 
 		const result = await runReviewGate({
@@ -213,19 +215,18 @@ describe("runReviewGate", () => {
 			reviewPolicy: { timeoutSeconds: 0, timeoutAction: "warn" },
 		});
 		const mockListCheckRuns = vi.fn().mockResolvedValue([]);
-		mockGitHubClient.mockImplementation(
-			() =>
-				({
-					getPullRequest: vi.fn().mockResolvedValue({
-						number: defaultOptions.prNumber,
-						user: { login: "coding-actor" },
-						head: { sha: validSha, ref: "feature/test" },
-					}),
-					listPullRequestFiles: vi
-						.fn()
-						.mockResolvedValue([{ filename: "src/commands/review-gate.ts" }]),
-					listCheckRunsForRef: mockListCheckRuns,
-				}) as unknown as GitHubClient,
+		mockGitHubClient.mockImplementation(() =>
+			mockReviewGateGitHubClient({
+				getPullRequest: vi.fn().mockResolvedValue({
+					number: defaultOptions.prNumber,
+					user: { login: "coding-actor" },
+					head: { sha: validSha, ref: "feature/test" },
+				}),
+				listPullRequestFiles: vi
+					.fn()
+					.mockResolvedValue([{ filename: "src/commands/review-gate.ts" }]),
+				listCheckRunsForRef: mockListCheckRuns,
+			}),
 		);
 		const result = await runReviewGate(defaultOptions);
 
@@ -254,19 +255,18 @@ describe("runReviewGate", () => {
 			reviewPolicy: { timeoutSeconds: 0, timeoutAction: "fail" },
 		});
 		const mockListCheckRuns = vi.fn().mockResolvedValue([]);
-		mockGitHubClient.mockImplementation(
-			() =>
-				({
-					getPullRequest: vi.fn().mockResolvedValue({
-						number: defaultOptions.prNumber,
-						user: { login: "coding-actor" },
-						head: { sha: validSha, ref: "feature/test" },
-					}),
-					listPullRequestFiles: vi
-						.fn()
-						.mockResolvedValue([{ filename: "src/commands/review-gate.ts" }]),
-					listCheckRunsForRef: mockListCheckRuns,
-				}) as unknown as GitHubClient,
+		mockGitHubClient.mockImplementation(() =>
+			mockReviewGateGitHubClient({
+				getPullRequest: vi.fn().mockResolvedValue({
+					number: defaultOptions.prNumber,
+					user: { login: "coding-actor" },
+					head: { sha: validSha, ref: "feature/test" },
+				}),
+				listPullRequestFiles: vi
+					.fn()
+					.mockResolvedValue([{ filename: "src/commands/review-gate.ts" }]),
+				listCheckRunsForRef: mockListCheckRuns,
+			}),
 		);
 
 		const result = await runReviewGate(defaultOptions);
@@ -302,16 +302,15 @@ describe("runReviewGate", () => {
 				user: { login: "independent-reviewer" },
 			},
 		]);
-		mockGitHubClient.mockImplementation(
-			() =>
-				({
-					listPullRequestFiles: vi
-						.fn()
-						.mockResolvedValue([{ filename: "src/commands/review-gate.ts" }]),
-					listCheckRunsForRef: mockListCheckRuns,
-					getPullRequest: mockGetPullRequest,
-					listPullRequestReviews: mockListReviews,
-				}) as unknown as GitHubClient,
+		mockGitHubClient.mockImplementation(() =>
+			mockReviewGateGitHubClient({
+				listPullRequestFiles: vi
+					.fn()
+					.mockResolvedValue([{ filename: "src/commands/review-gate.ts" }]),
+				listCheckRunsForRef: mockListCheckRuns,
+				getPullRequest: mockGetPullRequest,
+				listPullRequestReviews: mockListReviews,
+			}),
 		);
 
 		const result = await runReviewGate(defaultOptions);
@@ -349,26 +348,25 @@ describe("runReviewGate", () => {
 				head_sha: validSha,
 			},
 		];
-		mockGitHubClient.mockImplementation(
-			() =>
-				({
-					getPullRequest: vi.fn().mockResolvedValue({
-						number: defaultOptions.prNumber,
-						user: { login: "coding-actor" },
-						head: { sha: validSha, ref: "feature/test" },
-					}),
-					listPullRequestFiles: vi
-						.fn()
-						.mockResolvedValue([{ filename: "src/commands/review-gate.ts" }]),
-					listCheckRunsForRef: vi.fn().mockResolvedValue(mockCheckRuns),
-					listPullRequestReviews: vi.fn().mockResolvedValue([
-						{
-							state: "APPROVED",
-							commit_id: validSha,
-							user: { login: "independent-reviewer" },
-						},
-					]),
-				}) as unknown as GitHubClient,
+		mockGitHubClient.mockImplementation(() =>
+			mockReviewGateGitHubClient({
+				getPullRequest: vi.fn().mockResolvedValue({
+					number: defaultOptions.prNumber,
+					user: { login: "coding-actor" },
+					head: { sha: validSha, ref: "feature/test" },
+				}),
+				listPullRequestFiles: vi
+					.fn()
+					.mockResolvedValue([{ filename: "src/commands/review-gate.ts" }]),
+				listCheckRunsForRef: vi.fn().mockResolvedValue(mockCheckRuns),
+				listPullRequestReviews: vi.fn().mockResolvedValue([
+					{
+						state: "APPROVED",
+						commit_id: validSha,
+						user: { login: "independent-reviewer" },
+					},
+				]),
+			}),
 		);
 
 		const result = await runReviewGate({
@@ -412,28 +410,27 @@ describe("runReviewGate", () => {
 				head_sha: validSha,
 			},
 		];
-		mockGitHubClient.mockImplementation(
-			() =>
-				({
-					getPullRequest: vi.fn().mockResolvedValue({
-						number: defaultOptions.prNumber,
-						title: "Traceability hardening",
-						body: "",
-						user: { login: "coding-actor" },
-						head: { sha: validSha, ref: "feature/test" },
-					}),
-					listPullRequestFiles: vi
-						.fn()
-						.mockResolvedValue([{ filename: "src/commands/review-gate.ts" }]),
-					listCheckRunsForRef: vi.fn().mockResolvedValue(mockCheckRuns),
-					listPullRequestReviews: vi.fn().mockResolvedValue([
-						{
-							state: "APPROVED",
-							commit_id: validSha,
-							user: { login: "independent-reviewer" },
-						},
-					]),
-				}) as unknown as GitHubClient,
+		mockGitHubClient.mockImplementation(() =>
+			mockReviewGateGitHubClient({
+				getPullRequest: vi.fn().mockResolvedValue({
+					number: defaultOptions.prNumber,
+					title: "Traceability hardening",
+					body: "",
+					user: { login: "coding-actor" },
+					head: { sha: validSha, ref: "feature/test" },
+				}),
+				listPullRequestFiles: vi
+					.fn()
+					.mockResolvedValue([{ filename: "src/commands/review-gate.ts" }]),
+				listCheckRunsForRef: vi.fn().mockResolvedValue(mockCheckRuns),
+				listPullRequestReviews: vi.fn().mockResolvedValue([
+					{
+						state: "APPROVED",
+						commit_id: validSha,
+						user: { login: "independent-reviewer" },
+					},
+				]),
+			}),
 		);
 
 		const result = await runReviewGate(defaultOptions);
@@ -457,28 +454,27 @@ describe("runReviewGate", () => {
 				head_sha: validSha,
 			},
 		];
-		mockGitHubClient.mockImplementation(
-			() =>
-				({
-					getPullRequest: vi.fn().mockResolvedValue({
-						number: defaultOptions.prNumber,
-						title: "Traceability hardening",
-						body: "- Plan IDs: `feat-review-gate-traceability`",
-						user: { login: "coding-actor" },
-						head: { sha: validSha, ref: "feature/test" },
-					}),
-					listPullRequestFiles: vi
-						.fn()
-						.mockResolvedValue([{ filename: "src/commands/review-gate.ts" }]),
-					listCheckRunsForRef: vi.fn().mockResolvedValue(mockCheckRuns),
-					listPullRequestReviews: vi.fn().mockResolvedValue([
-						{
-							state: "APPROVED",
-							commit_id: validSha,
-							user: { login: "independent-reviewer" },
-						},
-					]),
-				}) as unknown as GitHubClient,
+		mockGitHubClient.mockImplementation(() =>
+			mockReviewGateGitHubClient({
+				getPullRequest: vi.fn().mockResolvedValue({
+					number: defaultOptions.prNumber,
+					title: "Traceability hardening",
+					body: "- Plan IDs: `feat-review-gate-traceability`",
+					user: { login: "coding-actor" },
+					head: { sha: validSha, ref: "feature/test" },
+				}),
+				listPullRequestFiles: vi
+					.fn()
+					.mockResolvedValue([{ filename: "src/commands/review-gate.ts" }]),
+				listCheckRunsForRef: vi.fn().mockResolvedValue(mockCheckRuns),
+				listPullRequestReviews: vi.fn().mockResolvedValue([
+					{
+						state: "APPROVED",
+						commit_id: validSha,
+						user: { login: "independent-reviewer" },
+					},
+				]),
+			}),
 		);
 
 		const result = await runReviewGate(defaultOptions);
@@ -517,28 +513,27 @@ describe("runReviewGate", () => {
 				head_sha: validSha,
 			},
 		];
-		mockGitHubClient.mockImplementation(
-			() =>
-				({
-					getPullRequest: vi.fn().mockResolvedValue({
-						number: defaultOptions.prNumber,
-						title: "Traceability hardening",
-						body: "- Plan IDs: `feat-review-gate-traceability`",
-						user: { login: "coding-actor" },
-						head: { sha: validSha, ref: "feature/test" },
-					}),
-					listPullRequestFiles: vi
-						.fn()
-						.mockResolvedValue([{ filename: "src/commands/review-gate.ts" }]),
-					listCheckRunsForRef: vi.fn().mockResolvedValue(mockCheckRuns),
-					listPullRequestReviews: vi.fn().mockResolvedValue([
-						{
-							state: "APPROVED",
-							commit_id: validSha,
-							user: { login: "independent-reviewer" },
-						},
-					]),
-				}) as unknown as GitHubClient,
+		mockGitHubClient.mockImplementation(() =>
+			mockReviewGateGitHubClient({
+				getPullRequest: vi.fn().mockResolvedValue({
+					number: defaultOptions.prNumber,
+					title: "Traceability hardening",
+					body: "- Plan IDs: `feat-review-gate-traceability`",
+					user: { login: "coding-actor" },
+					head: { sha: validSha, ref: "feature/test" },
+				}),
+				listPullRequestFiles: vi
+					.fn()
+					.mockResolvedValue([{ filename: "src/commands/review-gate.ts" }]),
+				listCheckRunsForRef: vi.fn().mockResolvedValue(mockCheckRuns),
+				listPullRequestReviews: vi.fn().mockResolvedValue([
+					{
+						state: "APPROVED",
+						commit_id: validSha,
+						user: { login: "independent-reviewer" },
+					},
+				]),
+			}),
 		);
 
 		const result = await runReviewGate(defaultOptions);
@@ -575,16 +570,15 @@ describe("runReviewGate", () => {
 				user: { login: "coding-actor" },
 			},
 		]);
-		mockGitHubClient.mockImplementation(
-			() =>
-				({
-					listPullRequestFiles: vi
-						.fn()
-						.mockResolvedValue([{ filename: "src/commands/review-gate.ts" }]),
-					listCheckRunsForRef: mockListCheckRuns,
-					getPullRequest: mockGetPullRequest,
-					listPullRequestReviews: mockListReviews,
-				}) as unknown as GitHubClient,
+		mockGitHubClient.mockImplementation(() =>
+			mockReviewGateGitHubClient({
+				listPullRequestFiles: vi
+					.fn()
+					.mockResolvedValue([{ filename: "src/commands/review-gate.ts" }]),
+				listCheckRunsForRef: mockListCheckRuns,
+				getPullRequest: mockGetPullRequest,
+				listPullRequestReviews: mockListReviews,
+			}),
 		);
 
 		const result = await runReviewGate(defaultOptions);
@@ -640,28 +634,27 @@ describe("runReviewGate", () => {
 				head_sha: validSha,
 			},
 		];
-		mockGitHubClient.mockImplementation(
-			() =>
-				({
-					getPullRequest: vi.fn().mockResolvedValue({
-						number: defaultOptions.prNumber,
-						title: "Traceability hardening",
-						body: "- Plan IDs: `feat-review-gate-traceability`",
-						user: { login: "coding-actor" },
-						head: { sha: validSha, ref: "feature/test" },
-					}),
-					listPullRequestFiles: vi
-						.fn()
-						.mockResolvedValue([{ filename: "src/commands/review-gate.ts" }]),
-					listCheckRunsForRef: vi.fn().mockResolvedValue(mockCheckRuns),
-					listPullRequestReviews: vi.fn().mockResolvedValue([
-						{
-							state: "APPROVED",
-							commit_id: validSha,
-							user: { login: "independent-reviewer" },
-						},
-					]),
-				}) as unknown as GitHubClient,
+		mockGitHubClient.mockImplementation(() =>
+			mockReviewGateGitHubClient({
+				getPullRequest: vi.fn().mockResolvedValue({
+					number: defaultOptions.prNumber,
+					title: "Traceability hardening",
+					body: "- Plan IDs: `feat-review-gate-traceability`",
+					user: { login: "coding-actor" },
+					head: { sha: validSha, ref: "feature/test" },
+				}),
+				listPullRequestFiles: vi
+					.fn()
+					.mockResolvedValue([{ filename: "src/commands/review-gate.ts" }]),
+				listCheckRunsForRef: vi.fn().mockResolvedValue(mockCheckRuns),
+				listPullRequestReviews: vi.fn().mockResolvedValue([
+					{
+						state: "APPROVED",
+						commit_id: validSha,
+						user: { login: "independent-reviewer" },
+					},
+				]),
+			}),
 		);
 
 		const result = await runReviewGate(defaultOptions);
@@ -716,28 +709,27 @@ describe("runReviewGate", () => {
 				head_sha: validSha,
 			},
 		];
-		mockGitHubClient.mockImplementation(
-			() =>
-				({
-					getPullRequest: vi.fn().mockResolvedValue({
-						number: defaultOptions.prNumber,
-						title: "Traceability hardening",
-						body: "- Plan IDs: `feat-review-gate-traceability`",
-						user: { login: "coding-actor" },
-						head: { sha: validSha, ref: "feature/test" },
-					}),
-					listPullRequestFiles: vi
-						.fn()
-						.mockResolvedValue([{ filename: "src/commands/review-gate.ts" }]),
-					listCheckRunsForRef: vi.fn().mockResolvedValue(mockCheckRuns),
-					listPullRequestReviews: vi.fn().mockResolvedValue([
-						{
-							state: "APPROVED",
-							commit_id: validSha,
-							user: { login: "independent-reviewer" },
-						},
-					]),
-				}) as unknown as GitHubClient,
+		mockGitHubClient.mockImplementation(() =>
+			mockReviewGateGitHubClient({
+				getPullRequest: vi.fn().mockResolvedValue({
+					number: defaultOptions.prNumber,
+					title: "Traceability hardening",
+					body: "- Plan IDs: `feat-review-gate-traceability`",
+					user: { login: "coding-actor" },
+					head: { sha: validSha, ref: "feature/test" },
+				}),
+				listPullRequestFiles: vi
+					.fn()
+					.mockResolvedValue([{ filename: "src/commands/review-gate.ts" }]),
+				listCheckRunsForRef: vi.fn().mockResolvedValue(mockCheckRuns),
+				listPullRequestReviews: vi.fn().mockResolvedValue([
+					{
+						state: "APPROVED",
+						commit_id: validSha,
+						user: { login: "independent-reviewer" },
+					},
+				]),
+			}),
 		);
 
 		const result = await runReviewGate(defaultOptions);
@@ -787,28 +779,27 @@ describe("runReviewGate", () => {
 				head_sha: validSha,
 			},
 		];
-		mockGitHubClient.mockImplementation(
-			() =>
-				({
-					getPullRequest: vi.fn().mockResolvedValue({
-						number: defaultOptions.prNumber,
-						title: "Traceability hardening",
-						body: "- Plan IDs: `feat-review-gate-traceability`",
-						user: { login: "coding-actor" },
-						head: { sha: validSha, ref: "feature/test" },
-					}),
-					listPullRequestFiles: vi
-						.fn()
-						.mockResolvedValue([{ filename: "src/commands/review-gate.ts" }]),
-					listCheckRunsForRef: vi.fn().mockResolvedValue(mockCheckRuns),
-					listPullRequestReviews: vi.fn().mockResolvedValue([
-						{
-							state: "APPROVED",
-							commit_id: validSha,
-							user: { login: "independent-reviewer" },
-						},
-					]),
-				}) as unknown as GitHubClient,
+		mockGitHubClient.mockImplementation(() =>
+			mockReviewGateGitHubClient({
+				getPullRequest: vi.fn().mockResolvedValue({
+					number: defaultOptions.prNumber,
+					title: "Traceability hardening",
+					body: "- Plan IDs: `feat-review-gate-traceability`",
+					user: { login: "coding-actor" },
+					head: { sha: validSha, ref: "feature/test" },
+				}),
+				listPullRequestFiles: vi
+					.fn()
+					.mockResolvedValue([{ filename: "src/commands/review-gate.ts" }]),
+				listCheckRunsForRef: vi.fn().mockResolvedValue(mockCheckRuns),
+				listPullRequestReviews: vi.fn().mockResolvedValue([
+					{
+						state: "APPROVED",
+						commit_id: validSha,
+						user: { login: "independent-reviewer" },
+					},
+				]),
+			}),
 		);
 
 		const result = await runReviewGate(defaultOptions);
@@ -868,28 +859,27 @@ describe("runReviewGate", () => {
 			"- agent_reliability: yes. Evidence: [tests](/artifacts/review/reliability.md:5)",
 			"- safety_floor: yes. Evidence: [gate](/artifacts/review/safety.md:3)",
 		].join("\n");
-		mockGitHubClient.mockImplementation(
-			() =>
-				({
-					getPullRequest: vi.fn().mockResolvedValue({
-						number: defaultOptions.prNumber,
-						title: "Traceability hardening",
-						body: prBody,
-						user: { login: "coding-actor" },
-						head: { sha: validSha, ref: "feature/test" },
-					}),
-					listPullRequestFiles: vi
-						.fn()
-						.mockResolvedValue([{ filename: "src/commands/review-gate.ts" }]),
-					listCheckRunsForRef: vi.fn().mockResolvedValue(mockCheckRuns),
-					listPullRequestReviews: vi.fn().mockResolvedValue([
-						{
-							state: "APPROVED",
-							commit_id: validSha,
-							user: { login: "independent-reviewer" },
-						},
-					]),
-				}) as unknown as GitHubClient,
+		mockGitHubClient.mockImplementation(() =>
+			mockReviewGateGitHubClient({
+				getPullRequest: vi.fn().mockResolvedValue({
+					number: defaultOptions.prNumber,
+					title: "Traceability hardening",
+					body: prBody,
+					user: { login: "coding-actor" },
+					head: { sha: validSha, ref: "feature/test" },
+				}),
+				listPullRequestFiles: vi
+					.fn()
+					.mockResolvedValue([{ filename: "src/commands/review-gate.ts" }]),
+				listCheckRunsForRef: vi.fn().mockResolvedValue(mockCheckRuns),
+				listPullRequestReviews: vi.fn().mockResolvedValue([
+					{
+						state: "APPROVED",
+						commit_id: validSha,
+						user: { login: "independent-reviewer" },
+					},
+				]),
+			}),
 		);
 
 		const result = await runReviewGate(defaultOptions);
@@ -938,36 +928,35 @@ describe("runReviewGate", () => {
 			"- agent_reliability: yes. Evidence: src/commands/review-gate.ts:220",
 			"- safety_floor: yes. Evidence: src/commands/review-gate.test.ts:600",
 		].join("\n");
-		mockGitHubClient.mockImplementation(
-			() =>
-				({
-					getPullRequest: vi.fn().mockResolvedValue({
-						number: defaultOptions.prNumber,
-						title: "Traceability hardening",
-						body: prBody,
-						user: { login: "coding-actor" },
-						head: { sha: validSha, ref: "feature/test" },
-					}),
-					listPullRequestFiles: vi
-						.fn()
-						.mockResolvedValue([{ filename: "src/commands/review-gate.ts" }]),
-					listCheckRunsForRef: vi.fn().mockResolvedValue([
-						{
-							id: 1,
-							name: "review-check",
-							status: "completed",
-							conclusion: "success",
-							head_sha: validSha,
-						},
-					]),
-					listPullRequestReviews: vi.fn().mockResolvedValue([
-						{
-							state: "APPROVED",
-							commit_id: validSha,
-							user: { login: "independent-reviewer" },
-						},
-					]),
-				}) as unknown as GitHubClient,
+		mockGitHubClient.mockImplementation(() =>
+			mockReviewGateGitHubClient({
+				getPullRequest: vi.fn().mockResolvedValue({
+					number: defaultOptions.prNumber,
+					title: "Traceability hardening",
+					body: prBody,
+					user: { login: "coding-actor" },
+					head: { sha: validSha, ref: "feature/test" },
+				}),
+				listPullRequestFiles: vi
+					.fn()
+					.mockResolvedValue([{ filename: "src/commands/review-gate.ts" }]),
+				listCheckRunsForRef: vi.fn().mockResolvedValue([
+					{
+						id: 1,
+						name: "review-check",
+						status: "completed",
+						conclusion: "success",
+						head_sha: validSha,
+					},
+				]),
+				listPullRequestReviews: vi.fn().mockResolvedValue([
+					{
+						state: "APPROVED",
+						commit_id: validSha,
+						user: { login: "independent-reviewer" },
+					},
+				]),
+			}),
 		);
 
 		const result = await runReviewGate(defaultOptions);
@@ -1015,36 +1004,35 @@ describe("runReviewGate", () => {
 			"- agent_reliability: yes. Evidence: .github/workflows/pr-pipeline.yml:42",
 			"- safety_floor: yes. Evidence: codex/hooks/pre-tool-use-guard.sh:19",
 		].join("\n");
-		mockGitHubClient.mockImplementation(
-			() =>
-				({
-					getPullRequest: vi.fn().mockResolvedValue({
-						number: defaultOptions.prNumber,
-						title: "Traceability hardening",
-						body: prBody,
-						user: { login: "coding-actor" },
-						head: { sha: validSha, ref: "feature/test" },
-					}),
-					listPullRequestFiles: vi
-						.fn()
-						.mockResolvedValue([{ filename: "src/commands/review-gate.ts" }]),
-					listCheckRunsForRef: vi.fn().mockResolvedValue([
-						{
-							id: 1,
-							name: "review-check",
-							status: "completed",
-							conclusion: "success",
-							head_sha: validSha,
-						},
-					]),
-					listPullRequestReviews: vi.fn().mockResolvedValue([
-						{
-							state: "APPROVED",
-							commit_id: validSha,
-							user: { login: "independent-reviewer" },
-						},
-					]),
-				}) as unknown as GitHubClient,
+		mockGitHubClient.mockImplementation(() =>
+			mockReviewGateGitHubClient({
+				getPullRequest: vi.fn().mockResolvedValue({
+					number: defaultOptions.prNumber,
+					title: "Traceability hardening",
+					body: prBody,
+					user: { login: "coding-actor" },
+					head: { sha: validSha, ref: "feature/test" },
+				}),
+				listPullRequestFiles: vi
+					.fn()
+					.mockResolvedValue([{ filename: "src/commands/review-gate.ts" }]),
+				listCheckRunsForRef: vi.fn().mockResolvedValue([
+					{
+						id: 1,
+						name: "review-check",
+						status: "completed",
+						conclusion: "success",
+						head_sha: validSha,
+					},
+				]),
+				listPullRequestReviews: vi.fn().mockResolvedValue([
+					{
+						state: "APPROVED",
+						commit_id: validSha,
+						user: { login: "independent-reviewer" },
+					},
+				]),
+			}),
 		);
 
 		const result = await runReviewGate(defaultOptions);
@@ -1101,28 +1089,27 @@ describe("runReviewGate", () => {
 			"3. agent_reliability: yes. Evidence: [tests](/artifacts/review/reliability.md:5)",
 			"4. safety_floor: yes. Evidence: [gate](/artifacts/review/safety.md:3)",
 		].join("\n");
-		mockGitHubClient.mockImplementation(
-			() =>
-				({
-					getPullRequest: vi.fn().mockResolvedValue({
-						number: defaultOptions.prNumber,
-						title: "Traceability hardening",
-						body: prBody,
-						user: { login: "coding-actor" },
-						head: { sha: validSha, ref: "feature/test" },
-					}),
-					listPullRequestFiles: vi
-						.fn()
-						.mockResolvedValue([{ filename: "src/commands/review-gate.ts" }]),
-					listCheckRunsForRef: vi.fn().mockResolvedValue(mockCheckRuns),
-					listPullRequestReviews: vi.fn().mockResolvedValue([
-						{
-							state: "APPROVED",
-							commit_id: validSha,
-							user: { login: "independent-reviewer" },
-						},
-					]),
-				}) as unknown as GitHubClient,
+		mockGitHubClient.mockImplementation(() =>
+			mockReviewGateGitHubClient({
+				getPullRequest: vi.fn().mockResolvedValue({
+					number: defaultOptions.prNumber,
+					title: "Traceability hardening",
+					body: prBody,
+					user: { login: "coding-actor" },
+					head: { sha: validSha, ref: "feature/test" },
+				}),
+				listPullRequestFiles: vi
+					.fn()
+					.mockResolvedValue([{ filename: "src/commands/review-gate.ts" }]),
+				listCheckRunsForRef: vi.fn().mockResolvedValue(mockCheckRuns),
+				listPullRequestReviews: vi.fn().mockResolvedValue([
+					{
+						state: "APPROVED",
+						commit_id: validSha,
+						user: { login: "independent-reviewer" },
+					},
+				]),
+			}),
 		);
 
 		const result = await runReviewGate(defaultOptions);
@@ -1180,28 +1167,27 @@ describe("runReviewGate", () => {
 					`- ${question.prompt}: yes. Evidence: [evidence-${index + 1}](/artifacts/review/proof-${index + 1}.md:1)`,
 			),
 		].join("\n");
-		mockGitHubClient.mockImplementation(
-			() =>
-				({
-					getPullRequest: vi.fn().mockResolvedValue({
-						number: defaultOptions.prNumber,
-						title: "Traceability hardening",
-						body: prBody,
-						user: { login: "coding-actor" },
-						head: { sha: validSha, ref: "feature/test" },
-					}),
-					listPullRequestFiles: vi
-						.fn()
-						.mockResolvedValue([{ filename: "src/commands/review-gate.ts" }]),
-					listCheckRunsForRef: vi.fn().mockResolvedValue(mockCheckRuns),
-					listPullRequestReviews: vi.fn().mockResolvedValue([
-						{
-							state: "APPROVED",
-							commit_id: validSha,
-							user: { login: "independent-reviewer" },
-						},
-					]),
-				}) as unknown as GitHubClient,
+		mockGitHubClient.mockImplementation(() =>
+			mockReviewGateGitHubClient({
+				getPullRequest: vi.fn().mockResolvedValue({
+					number: defaultOptions.prNumber,
+					title: "Traceability hardening",
+					body: prBody,
+					user: { login: "coding-actor" },
+					head: { sha: validSha, ref: "feature/test" },
+				}),
+				listPullRequestFiles: vi
+					.fn()
+					.mockResolvedValue([{ filename: "src/commands/review-gate.ts" }]),
+				listCheckRunsForRef: vi.fn().mockResolvedValue(mockCheckRuns),
+				listPullRequestReviews: vi.fn().mockResolvedValue([
+					{
+						state: "APPROVED",
+						commit_id: validSha,
+						user: { login: "independent-reviewer" },
+					},
+				]),
+			}),
 		);
 
 		const result = await runReviewGate(defaultOptions);
@@ -1259,28 +1245,27 @@ describe("runReviewGate", () => {
 			"- agent_reliability: yes",
 			"- safety_floor: yes",
 		].join("\n");
-		mockGitHubClient.mockImplementation(
-			() =>
-				({
-					getPullRequest: vi.fn().mockResolvedValue({
-						number: defaultOptions.prNumber,
-						title: "Traceability hardening",
-						body: prBody,
-						user: { login: "coding-actor" },
-						head: { sha: validSha, ref: "feature/test" },
-					}),
-					listPullRequestFiles: vi
-						.fn()
-						.mockResolvedValue([{ filename: "src/commands/review-gate.ts" }]),
-					listCheckRunsForRef: vi.fn().mockResolvedValue(mockCheckRuns),
-					listPullRequestReviews: vi.fn().mockResolvedValue([
-						{
-							state: "APPROVED",
-							commit_id: validSha,
-							user: { login: "independent-reviewer" },
-						},
-					]),
-				}) as unknown as GitHubClient,
+		mockGitHubClient.mockImplementation(() =>
+			mockReviewGateGitHubClient({
+				getPullRequest: vi.fn().mockResolvedValue({
+					number: defaultOptions.prNumber,
+					title: "Traceability hardening",
+					body: prBody,
+					user: { login: "coding-actor" },
+					head: { sha: validSha, ref: "feature/test" },
+				}),
+				listPullRequestFiles: vi
+					.fn()
+					.mockResolvedValue([{ filename: "src/commands/review-gate.ts" }]),
+				listCheckRunsForRef: vi.fn().mockResolvedValue(mockCheckRuns),
+				listPullRequestReviews: vi.fn().mockResolvedValue([
+					{
+						state: "APPROVED",
+						commit_id: validSha,
+						user: { login: "independent-reviewer" },
+					},
+				]),
+			}),
 		);
 
 		const result = await runReviewGate(defaultOptions);
@@ -1343,28 +1328,27 @@ describe("runReviewGate", () => {
 			"- agent_reliability: yes",
 			"- safety_floor: yes",
 		].join("\n");
-		mockGitHubClient.mockImplementation(
-			() =>
-				({
-					getPullRequest: vi.fn().mockResolvedValue({
-						number: defaultOptions.prNumber,
-						title: "Traceability hardening",
-						body: prBody,
-						user: { login: "coding-actor" },
-						head: { sha: validSha, ref: "feature/test" },
-					}),
-					listPullRequestFiles: vi
-						.fn()
-						.mockResolvedValue([{ filename: "src/commands/review-gate.ts" }]),
-					listCheckRunsForRef: vi.fn().mockResolvedValue(mockCheckRuns),
-					listPullRequestReviews: vi.fn().mockResolvedValue([
-						{
-							state: "APPROVED",
-							commit_id: validSha,
-							user: { login: "independent-reviewer" },
-						},
-					]),
-				}) as unknown as GitHubClient,
+		mockGitHubClient.mockImplementation(() =>
+			mockReviewGateGitHubClient({
+				getPullRequest: vi.fn().mockResolvedValue({
+					number: defaultOptions.prNumber,
+					title: "Traceability hardening",
+					body: prBody,
+					user: { login: "coding-actor" },
+					head: { sha: validSha, ref: "feature/test" },
+				}),
+				listPullRequestFiles: vi
+					.fn()
+					.mockResolvedValue([{ filename: "src/commands/review-gate.ts" }]),
+				listCheckRunsForRef: vi.fn().mockResolvedValue(mockCheckRuns),
+				listPullRequestReviews: vi.fn().mockResolvedValue([
+					{
+						state: "APPROVED",
+						commit_id: validSha,
+						user: { login: "independent-reviewer" },
+					},
+				]),
+			}),
 		);
 
 		const result = await runReviewGate(defaultOptions);
@@ -1424,28 +1408,27 @@ describe("runReviewGate", () => {
 			"- [x] agent_reliability: yes. Evidence: [tests](/artifacts/review/reliability.md:5)",
 			"- [x] safety_floor: yes. Evidence: [gate](/artifacts/review/safety.md:3)",
 		].join("\n");
-		mockGitHubClient.mockImplementation(
-			() =>
-				({
-					getPullRequest: vi.fn().mockResolvedValue({
-						number: defaultOptions.prNumber,
-						title: "Traceability hardening",
-						body: prBody,
-						user: { login: "coding-actor" },
-						head: { sha: validSha, ref: "feature/test" },
-					}),
-					listPullRequestFiles: vi
-						.fn()
-						.mockResolvedValue([{ filename: "src/commands/review-gate.ts" }]),
-					listCheckRunsForRef: vi.fn().mockResolvedValue(mockCheckRuns),
-					listPullRequestReviews: vi.fn().mockResolvedValue([
-						{
-							state: "APPROVED",
-							commit_id: validSha,
-							user: { login: "independent-reviewer" },
-						},
-					]),
-				}) as unknown as GitHubClient,
+		mockGitHubClient.mockImplementation(() =>
+			mockReviewGateGitHubClient({
+				getPullRequest: vi.fn().mockResolvedValue({
+					number: defaultOptions.prNumber,
+					title: "Traceability hardening",
+					body: prBody,
+					user: { login: "coding-actor" },
+					head: { sha: validSha, ref: "feature/test" },
+				}),
+				listPullRequestFiles: vi
+					.fn()
+					.mockResolvedValue([{ filename: "src/commands/review-gate.ts" }]),
+				listCheckRunsForRef: vi.fn().mockResolvedValue(mockCheckRuns),
+				listPullRequestReviews: vi.fn().mockResolvedValue([
+					{
+						state: "APPROVED",
+						commit_id: validSha,
+						user: { login: "independent-reviewer" },
+					},
+				]),
+			}),
 		);
 
 		const result = await runReviewGate(defaultOptions);
@@ -1509,28 +1492,27 @@ describe("runReviewGate", () => {
 			"- agent_reliability: yes. Evidence: [tests](/artifacts/review/reliability.md:5)",
 			"- safety_floor: yes. Evidence: [gate](/artifacts/review/safety.md:3)",
 		].join("\n");
-		mockGitHubClient.mockImplementation(
-			() =>
-				({
-					getPullRequest: vi.fn().mockResolvedValue({
-						number: defaultOptions.prNumber,
-						title: "Traceability hardening",
-						body: prBody,
-						user: { login: "coding-actor" },
-						head: { sha: validSha, ref: "feature/test" },
-					}),
-					listPullRequestFiles: vi
-						.fn()
-						.mockResolvedValue([{ filename: "src/commands/review-gate.ts" }]),
-					listCheckRunsForRef: vi.fn().mockResolvedValue(mockCheckRuns),
-					listPullRequestReviews: vi.fn().mockResolvedValue([
-						{
-							state: "APPROVED",
-							commit_id: validSha,
-							user: { login: "independent-reviewer" },
-						},
-					]),
-				}) as unknown as GitHubClient,
+		mockGitHubClient.mockImplementation(() =>
+			mockReviewGateGitHubClient({
+				getPullRequest: vi.fn().mockResolvedValue({
+					number: defaultOptions.prNumber,
+					title: "Traceability hardening",
+					body: prBody,
+					user: { login: "coding-actor" },
+					head: { sha: validSha, ref: "feature/test" },
+				}),
+				listPullRequestFiles: vi
+					.fn()
+					.mockResolvedValue([{ filename: "src/commands/review-gate.ts" }]),
+				listCheckRunsForRef: vi.fn().mockResolvedValue(mockCheckRuns),
+				listPullRequestReviews: vi.fn().mockResolvedValue([
+					{
+						state: "APPROVED",
+						commit_id: validSha,
+						user: { login: "independent-reviewer" },
+					},
+				]),
+			}),
 		);
 
 		const result = await runReviewGate(defaultOptions);
@@ -1592,28 +1574,27 @@ describe("runReviewGate", () => {
 			"- agent_reliability: yes. Evidence: [tests](/artifacts/review/reliability.md:5)",
 			"- safety_floor: yes. Evidence: [gate](/artifacts/review/safety.md:3)",
 		].join("\n");
-		mockGitHubClient.mockImplementation(
-			() =>
-				({
-					getPullRequest: vi.fn().mockResolvedValue({
-						number: defaultOptions.prNumber,
-						title: "Traceability hardening",
-						body: prBody,
-						user: { login: "coding-actor" },
-						head: { sha: validSha, ref: "feature/test" },
-					}),
-					listPullRequestFiles: vi
-						.fn()
-						.mockResolvedValue([{ filename: "src/commands/review-gate.ts" }]),
-					listCheckRunsForRef: vi.fn().mockResolvedValue(mockCheckRuns),
-					listPullRequestReviews: vi.fn().mockResolvedValue([
-						{
-							state: "APPROVED",
-							commit_id: validSha,
-							user: { login: "independent-reviewer" },
-						},
-					]),
-				}) as unknown as GitHubClient,
+		mockGitHubClient.mockImplementation(() =>
+			mockReviewGateGitHubClient({
+				getPullRequest: vi.fn().mockResolvedValue({
+					number: defaultOptions.prNumber,
+					title: "Traceability hardening",
+					body: prBody,
+					user: { login: "coding-actor" },
+					head: { sha: validSha, ref: "feature/test" },
+				}),
+				listPullRequestFiles: vi
+					.fn()
+					.mockResolvedValue([{ filename: "src/commands/review-gate.ts" }]),
+				listCheckRunsForRef: vi.fn().mockResolvedValue(mockCheckRuns),
+				listPullRequestReviews: vi.fn().mockResolvedValue([
+					{
+						state: "APPROVED",
+						commit_id: validSha,
+						user: { login: "independent-reviewer" },
+					},
+				]),
+			}),
 		);
 
 		const result = await runReviewGate(defaultOptions);
@@ -1677,28 +1658,27 @@ describe("runReviewGate", () => {
 				return `- ${question.prompt}: ${answerToken}. Evidence: [evidence-${index + 1}](/artifacts/review/proof-${index + 1}.md:1)`;
 			}),
 		].join("\n");
-		mockGitHubClient.mockImplementation(
-			() =>
-				({
-					getPullRequest: vi.fn().mockResolvedValue({
-						number: defaultOptions.prNumber,
-						title: "Traceability hardening",
-						body: prBody,
-						user: { login: "coding-actor" },
-						head: { sha: validSha, ref: "feature/test" },
-					}),
-					listPullRequestFiles: vi
-						.fn()
-						.mockResolvedValue([{ filename: "src/commands/review-gate.ts" }]),
-					listCheckRunsForRef: vi.fn().mockResolvedValue(mockCheckRuns),
-					listPullRequestReviews: vi.fn().mockResolvedValue([
-						{
-							state: "APPROVED",
-							commit_id: validSha,
-							user: { login: "independent-reviewer" },
-						},
-					]),
-				}) as unknown as GitHubClient,
+		mockGitHubClient.mockImplementation(() =>
+			mockReviewGateGitHubClient({
+				getPullRequest: vi.fn().mockResolvedValue({
+					number: defaultOptions.prNumber,
+					title: "Traceability hardening",
+					body: prBody,
+					user: { login: "coding-actor" },
+					head: { sha: validSha, ref: "feature/test" },
+				}),
+				listPullRequestFiles: vi
+					.fn()
+					.mockResolvedValue([{ filename: "src/commands/review-gate.ts" }]),
+				listCheckRunsForRef: vi.fn().mockResolvedValue(mockCheckRuns),
+				listPullRequestReviews: vi.fn().mockResolvedValue([
+					{
+						state: "APPROVED",
+						commit_id: validSha,
+						user: { login: "independent-reviewer" },
+					},
+				]),
+			}),
 		);
 
 		const result = await runReviewGate(defaultOptions);
@@ -1759,28 +1739,27 @@ describe("runReviewGate", () => {
 			"- agent_reliability: yes. Evidence: [tests](/artifacts/review/reliability.md:5)",
 			"- safety_floor: yes. Evidence: [gate](/artifacts/review/safety.md:3)",
 		].join("\n");
-		mockGitHubClient.mockImplementation(
-			() =>
-				({
-					getPullRequest: vi.fn().mockResolvedValue({
-						number: defaultOptions.prNumber,
-						title: "Traceability hardening",
-						body: prBody,
-						user: { login: "coding-actor" },
-						head: { sha: validSha, ref: "feature/test" },
-					}),
-					listPullRequestFiles: vi
-						.fn()
-						.mockResolvedValue([{ filename: "src/commands/review-gate.ts" }]),
-					listCheckRunsForRef: vi.fn().mockResolvedValue(mockCheckRuns),
-					listPullRequestReviews: vi.fn().mockResolvedValue([
-						{
-							state: "APPROVED",
-							commit_id: validSha,
-							user: { login: "independent-reviewer" },
-						},
-					]),
-				}) as unknown as GitHubClient,
+		mockGitHubClient.mockImplementation(() =>
+			mockReviewGateGitHubClient({
+				getPullRequest: vi.fn().mockResolvedValue({
+					number: defaultOptions.prNumber,
+					title: "Traceability hardening",
+					body: prBody,
+					user: { login: "coding-actor" },
+					head: { sha: validSha, ref: "feature/test" },
+				}),
+				listPullRequestFiles: vi
+					.fn()
+					.mockResolvedValue([{ filename: "src/commands/review-gate.ts" }]),
+				listCheckRunsForRef: vi.fn().mockResolvedValue(mockCheckRuns),
+				listPullRequestReviews: vi.fn().mockResolvedValue([
+					{
+						state: "APPROVED",
+						commit_id: validSha,
+						user: { login: "independent-reviewer" },
+					},
+				]),
+			}),
 		);
 
 		const result = await runReviewGate(defaultOptions);
@@ -1837,28 +1816,27 @@ describe("runReviewGate", () => {
 			"- manual_glue: yes. Evidence: [workflow](/artifacts/review/glue.md:7)",
 			"- agent_reliability: yes. Evidence: [tests](/artifacts/review/reliability.md:5)",
 		].join("\n");
-		mockGitHubClient.mockImplementation(
-			() =>
-				({
-					getPullRequest: vi.fn().mockResolvedValue({
-						number: defaultOptions.prNumber,
-						title: "Traceability hardening",
-						body: prBody,
-						user: { login: "coding-actor" },
-						head: { sha: validSha, ref: "feature/test" },
-					}),
-					listPullRequestFiles: vi
-						.fn()
-						.mockResolvedValue([{ filename: "src/commands/review-gate.ts" }]),
-					listCheckRunsForRef: vi.fn().mockResolvedValue(mockCheckRuns),
-					listPullRequestReviews: vi.fn().mockResolvedValue([
-						{
-							state: "APPROVED",
-							commit_id: validSha,
-							user: { login: "independent-reviewer" },
-						},
-					]),
-				}) as unknown as GitHubClient,
+		mockGitHubClient.mockImplementation(() =>
+			mockReviewGateGitHubClient({
+				getPullRequest: vi.fn().mockResolvedValue({
+					number: defaultOptions.prNumber,
+					title: "Traceability hardening",
+					body: prBody,
+					user: { login: "coding-actor" },
+					head: { sha: validSha, ref: "feature/test" },
+				}),
+				listPullRequestFiles: vi
+					.fn()
+					.mockResolvedValue([{ filename: "src/commands/review-gate.ts" }]),
+				listCheckRunsForRef: vi.fn().mockResolvedValue(mockCheckRuns),
+				listPullRequestReviews: vi.fn().mockResolvedValue([
+					{
+						state: "APPROVED",
+						commit_id: validSha,
+						user: { login: "independent-reviewer" },
+					},
+				]),
+			}),
 		);
 
 		const result = await runReviewGate(defaultOptions);
@@ -1919,28 +1897,27 @@ describe("runReviewGate", () => {
 			"- agent_reliability: yes. Evidence: [tests](/artifacts/review/reliability.md:5)",
 			"- safety_floor: yes. Evidence: [gate](/artifacts/review/safety.md:3)",
 		].join("\n");
-		mockGitHubClient.mockImplementation(
-			() =>
-				({
-					getPullRequest: vi.fn().mockResolvedValue({
-						number: defaultOptions.prNumber,
-						title: "Traceability hardening",
-						body: prBody,
-						user: { login: "coding-actor" },
-						head: { sha: validSha, ref: "feature/test" },
-					}),
-					listPullRequestFiles: vi
-						.fn()
-						.mockResolvedValue([{ filename: "src/commands/review-gate.ts" }]),
-					listCheckRunsForRef: vi.fn().mockResolvedValue(mockCheckRuns),
-					listPullRequestReviews: vi.fn().mockResolvedValue([
-						{
-							state: "APPROVED",
-							commit_id: validSha,
-							user: { login: "independent-reviewer" },
-						},
-					]),
-				}) as unknown as GitHubClient,
+		mockGitHubClient.mockImplementation(() =>
+			mockReviewGateGitHubClient({
+				getPullRequest: vi.fn().mockResolvedValue({
+					number: defaultOptions.prNumber,
+					title: "Traceability hardening",
+					body: prBody,
+					user: { login: "coding-actor" },
+					head: { sha: validSha, ref: "feature/test" },
+				}),
+				listPullRequestFiles: vi
+					.fn()
+					.mockResolvedValue([{ filename: "src/commands/review-gate.ts" }]),
+				listCheckRunsForRef: vi.fn().mockResolvedValue(mockCheckRuns),
+				listPullRequestReviews: vi.fn().mockResolvedValue([
+					{
+						state: "APPROVED",
+						commit_id: validSha,
+						user: { login: "independent-reviewer" },
+					},
+				]),
+			}),
 		);
 
 		const result = await runReviewGate(defaultOptions);
@@ -2001,28 +1978,27 @@ describe("runReviewGate", () => {
 			"- agent_reliability: yes. Evidence: [tests](/artifacts/review/reliability.md:5)",
 			"- safety_floor: yes. Evidence: [gate](/artifacts/review/safety.md:3)",
 		].join("\n");
-		mockGitHubClient.mockImplementation(
-			() =>
-				({
-					getPullRequest: vi.fn().mockResolvedValue({
-						number: defaultOptions.prNumber,
-						title: "Traceability hardening",
-						body: prBody,
-						user: { login: "coding-actor" },
-						head: { sha: validSha, ref: "feature/test" },
-					}),
-					listPullRequestFiles: vi
-						.fn()
-						.mockResolvedValue([{ filename: "src/commands/review-gate.ts" }]),
-					listCheckRunsForRef: vi.fn().mockResolvedValue(mockCheckRuns),
-					listPullRequestReviews: vi.fn().mockResolvedValue([
-						{
-							state: "APPROVED",
-							commit_id: validSha,
-							user: { login: "independent-reviewer" },
-						},
-					]),
-				}) as unknown as GitHubClient,
+		mockGitHubClient.mockImplementation(() =>
+			mockReviewGateGitHubClient({
+				getPullRequest: vi.fn().mockResolvedValue({
+					number: defaultOptions.prNumber,
+					title: "Traceability hardening",
+					body: prBody,
+					user: { login: "coding-actor" },
+					head: { sha: validSha, ref: "feature/test" },
+				}),
+				listPullRequestFiles: vi
+					.fn()
+					.mockResolvedValue([{ filename: "src/commands/review-gate.ts" }]),
+				listCheckRunsForRef: vi.fn().mockResolvedValue(mockCheckRuns),
+				listPullRequestReviews: vi.fn().mockResolvedValue([
+					{
+						state: "APPROVED",
+						commit_id: validSha,
+						user: { login: "independent-reviewer" },
+					},
+				]),
+			}),
 		);
 
 		const result = await runReviewGate(defaultOptions);
@@ -2080,28 +2056,27 @@ describe("runReviewGate", () => {
 			"- agent_reliability: yes. Evidence: [tests](/artifacts/review/reliability.md:5)",
 			"- safety_floor: yes. Evidence: [gate](/artifacts/review/safety.md:3)",
 		].join("\n");
-		mockGitHubClient.mockImplementation(
-			() =>
-				({
-					getPullRequest: vi.fn().mockResolvedValue({
-						number: defaultOptions.prNumber,
-						title: "Traceability hardening",
-						body: prBody,
-						user: { login: "coding-actor" },
-						head: { sha: validSha, ref: "feature/test" },
-					}),
-					listPullRequestFiles: vi
-						.fn()
-						.mockResolvedValue([{ filename: "src/commands/review-gate.ts" }]),
-					listCheckRunsForRef: vi.fn().mockResolvedValue(mockCheckRuns),
-					listPullRequestReviews: vi.fn().mockResolvedValue([
-						{
-							state: "APPROVED",
-							commit_id: validSha,
-							user: { login: "independent-reviewer" },
-						},
-					]),
-				}) as unknown as GitHubClient,
+		mockGitHubClient.mockImplementation(() =>
+			mockReviewGateGitHubClient({
+				getPullRequest: vi.fn().mockResolvedValue({
+					number: defaultOptions.prNumber,
+					title: "Traceability hardening",
+					body: prBody,
+					user: { login: "coding-actor" },
+					head: { sha: validSha, ref: "feature/test" },
+				}),
+				listPullRequestFiles: vi
+					.fn()
+					.mockResolvedValue([{ filename: "src/commands/review-gate.ts" }]),
+				listCheckRunsForRef: vi.fn().mockResolvedValue(mockCheckRuns),
+				listPullRequestReviews: vi.fn().mockResolvedValue([
+					{
+						state: "APPROVED",
+						commit_id: validSha,
+						user: { login: "independent-reviewer" },
+					},
+				]),
+			}),
 		);
 
 		const result = await runReviewGate(defaultOptions);
@@ -2148,16 +2123,15 @@ describe("runReviewGate", () => {
 				user: { login: "coding-actor" },
 			},
 		]);
-		mockGitHubClient.mockImplementation(
-			() =>
-				({
-					listPullRequestFiles: vi
-						.fn()
-						.mockResolvedValue([{ filename: "src/commands/review-gate.ts" }]),
-					listCheckRunsForRef: mockListCheckRuns,
-					getPullRequest: mockGetPullRequest,
-					listPullRequestReviews: mockListReviews,
-				}) as unknown as GitHubClient,
+		mockGitHubClient.mockImplementation(() =>
+			mockReviewGateGitHubClient({
+				listPullRequestFiles: vi
+					.fn()
+					.mockResolvedValue([{ filename: "src/commands/review-gate.ts" }]),
+				listCheckRunsForRef: mockListCheckRuns,
+				getPullRequest: mockGetPullRequest,
+				listPullRequestReviews: mockListReviews,
+			}),
 		);
 
 		const result = await runReviewGate(defaultOptions);
@@ -2180,32 +2154,31 @@ describe("runReviewGate", () => {
 				head_sha: validSha,
 			},
 		];
-		mockGitHubClient.mockImplementation(
-			() =>
-				({
-					listPullRequestFiles: vi
-						.fn()
-						.mockResolvedValue([{ filename: "src/commands/review-gate.ts" }]),
-					listCheckRunsForRef: vi.fn().mockResolvedValue(mockCheckRuns),
-					getPullRequest: vi.fn().mockResolvedValue({
-						number: defaultOptions.prNumber,
-						user: { login: "automation-bot" },
-						head: { sha: validSha, ref: "feature/test" },
-					}),
-					listPullRequestCommits: vi.fn().mockResolvedValue([
-						{
-							sha: validSha,
-							author: { login: "alice" },
-						},
-					]),
-					listPullRequestReviews: vi.fn().mockResolvedValue([
-						{
-							state: "APPROVED",
-							commit_id: validSha,
-							user: { login: "alice" },
-						},
-					]),
-				}) as unknown as GitHubClient,
+		mockGitHubClient.mockImplementation(() =>
+			mockReviewGateGitHubClient({
+				listPullRequestFiles: vi
+					.fn()
+					.mockResolvedValue([{ filename: "src/commands/review-gate.ts" }]),
+				listCheckRunsForRef: vi.fn().mockResolvedValue(mockCheckRuns),
+				getPullRequest: vi.fn().mockResolvedValue({
+					number: defaultOptions.prNumber,
+					user: { login: "automation-bot" },
+					head: { sha: validSha, ref: "feature/test" },
+				}),
+				listPullRequestCommits: vi.fn().mockResolvedValue([
+					{
+						sha: validSha,
+						author: { login: "alice" },
+					},
+				]),
+				listPullRequestReviews: vi.fn().mockResolvedValue([
+					{
+						state: "APPROVED",
+						commit_id: validSha,
+						user: { login: "alice" },
+					},
+				]),
+			}),
 		);
 
 		const result = await runReviewGate(defaultOptions);
@@ -2230,29 +2203,28 @@ describe("runReviewGate", () => {
 				head_sha: validSha,
 			},
 		];
-		mockGitHubClient.mockImplementation(
-			() =>
-				({
-					listPullRequestFiles: vi
-						.fn()
-						.mockResolvedValue([{ filename: "src/commands/review-gate.ts" }]),
-					listCheckRunsForRef: vi.fn().mockResolvedValue(mockCheckRuns),
-					getPullRequest: vi.fn().mockResolvedValue({
-						number: defaultOptions.prNumber,
-						user: { login: "coding-actor" },
-						head: { sha: validSha, ref: "feature/test" },
-					}),
-					listPullRequestCommits: vi
-						.fn()
-						.mockRejectedValue(new Error("github API unavailable")),
-					listPullRequestReviews: vi.fn().mockResolvedValue([
-						{
-							state: "APPROVED",
-							commit_id: validSha,
-							user: { login: "reviewer-one" },
-						},
-					]),
-				}) as unknown as GitHubClient,
+		mockGitHubClient.mockImplementation(() =>
+			mockReviewGateGitHubClient({
+				listPullRequestFiles: vi
+					.fn()
+					.mockResolvedValue([{ filename: "src/commands/review-gate.ts" }]),
+				listCheckRunsForRef: vi.fn().mockResolvedValue(mockCheckRuns),
+				getPullRequest: vi.fn().mockResolvedValue({
+					number: defaultOptions.prNumber,
+					user: { login: "coding-actor" },
+					head: { sha: validSha, ref: "feature/test" },
+				}),
+				listPullRequestCommits: vi
+					.fn()
+					.mockRejectedValue(new Error("github API unavailable")),
+				listPullRequestReviews: vi.fn().mockResolvedValue([
+					{
+						state: "APPROVED",
+						commit_id: validSha,
+						user: { login: "reviewer-one" },
+					},
+				]),
+			}),
 		);
 
 		const result = await runReviewGate(defaultOptions);
@@ -2275,32 +2247,31 @@ describe("runReviewGate", () => {
 				head_sha: validSha,
 			},
 		];
-		mockGitHubClient.mockImplementation(
-			() =>
-				({
-					listPullRequestFiles: vi
-						.fn()
-						.mockResolvedValue([{ filename: "src/commands/review-gate.ts" }]),
-					listCheckRunsForRef: vi.fn().mockResolvedValue(mockCheckRuns),
-					getPullRequest: vi.fn().mockResolvedValue({
-						number: defaultOptions.prNumber,
-						user: { login: "coding-actor" },
-						head: { sha: validSha, ref: "feature/test" },
-					}),
-					listPullRequestCommits: vi.fn().mockResolvedValue([
-						{
-							sha: "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
-							author: { login: "coding-actor" },
-						},
-					]),
-					listPullRequestReviews: vi.fn().mockResolvedValue([
-						{
-							state: "APPROVED",
-							commit_id: validSha,
-							user: { login: "reviewer-one" },
-						},
-					]),
-				}) as unknown as GitHubClient,
+		mockGitHubClient.mockImplementation(() =>
+			mockReviewGateGitHubClient({
+				listPullRequestFiles: vi
+					.fn()
+					.mockResolvedValue([{ filename: "src/commands/review-gate.ts" }]),
+				listCheckRunsForRef: vi.fn().mockResolvedValue(mockCheckRuns),
+				getPullRequest: vi.fn().mockResolvedValue({
+					number: defaultOptions.prNumber,
+					user: { login: "coding-actor" },
+					head: { sha: validSha, ref: "feature/test" },
+				}),
+				listPullRequestCommits: vi.fn().mockResolvedValue([
+					{
+						sha: "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+						author: { login: "coding-actor" },
+					},
+				]),
+				listPullRequestReviews: vi.fn().mockResolvedValue([
+					{
+						state: "APPROVED",
+						commit_id: validSha,
+						user: { login: "reviewer-one" },
+					},
+				]),
+			}),
 		);
 
 		const result = await runReviewGate(defaultOptions);
@@ -2324,26 +2295,25 @@ describe("runReviewGate", () => {
 				head_sha: validSha,
 			},
 		];
-		mockGitHubClient.mockImplementation(
-			() =>
-				({
-					listPullRequestFiles: vi
-						.fn()
-						.mockResolvedValue([{ filename: "src/commands/review-gate.ts" }]),
-					listCheckRunsForRef: vi.fn().mockResolvedValue(mockCheckRuns),
-					getPullRequest: vi.fn().mockResolvedValue({
-						number: defaultOptions.prNumber,
-						user: { login: "coding-actor" },
-						head: { sha: validSha, ref: "feature/test" },
-					}),
-					listPullRequestReviews: vi.fn().mockResolvedValue([
-						{
-							state: "APPROVED",
-							commit_id: validSha,
-							user: { login: "reviewer-one" },
-						},
-					]),
-				}) as unknown as GitHubClient,
+		mockGitHubClient.mockImplementation(() =>
+			mockReviewGateGitHubClient({
+				listPullRequestFiles: vi
+					.fn()
+					.mockResolvedValue([{ filename: "src/commands/review-gate.ts" }]),
+				listCheckRunsForRef: vi.fn().mockResolvedValue(mockCheckRuns),
+				getPullRequest: vi.fn().mockResolvedValue({
+					number: defaultOptions.prNumber,
+					user: { login: "coding-actor" },
+					head: { sha: validSha, ref: "feature/test" },
+				}),
+				listPullRequestReviews: vi.fn().mockResolvedValue([
+					{
+						state: "APPROVED",
+						commit_id: validSha,
+						user: { login: "reviewer-one" },
+					},
+				]),
+			}),
 		);
 
 		const result = await runReviewGate(defaultOptions);
@@ -2366,32 +2336,31 @@ describe("runReviewGate", () => {
 				head_sha: validSha,
 			},
 		];
-		mockGitHubClient.mockImplementation(
-			() =>
-				({
-					listPullRequestFiles: vi
-						.fn()
-						.mockResolvedValue([{ filename: "src/commands/review-gate.ts" }]),
-					listCheckRunsForRef: vi.fn().mockResolvedValue(mockCheckRuns),
-					getPullRequest: vi.fn().mockResolvedValue({
-						number: defaultOptions.prNumber,
-						user: { login: "automation-bot" },
-						head: { sha: validSha, ref: "feature/test" },
-					}),
-					listPullRequestCommits: vi.fn().mockResolvedValue([
-						{
-							sha: validSha,
-							author: { login: "alice" },
-						},
-					]),
-					listPullRequestReviews: vi.fn().mockResolvedValue([
-						{
-							state: "APPROVED",
-							commit_id: validSha,
-							user: { login: "Alice" },
-						},
-					]),
-				}) as unknown as GitHubClient,
+		mockGitHubClient.mockImplementation(() =>
+			mockReviewGateGitHubClient({
+				listPullRequestFiles: vi
+					.fn()
+					.mockResolvedValue([{ filename: "src/commands/review-gate.ts" }]),
+				listCheckRunsForRef: vi.fn().mockResolvedValue(mockCheckRuns),
+				getPullRequest: vi.fn().mockResolvedValue({
+					number: defaultOptions.prNumber,
+					user: { login: "automation-bot" },
+					head: { sha: validSha, ref: "feature/test" },
+				}),
+				listPullRequestCommits: vi.fn().mockResolvedValue([
+					{
+						sha: validSha,
+						author: { login: "alice" },
+					},
+				]),
+				listPullRequestReviews: vi.fn().mockResolvedValue([
+					{
+						state: "APPROVED",
+						commit_id: validSha,
+						user: { login: "Alice" },
+					},
+				]),
+			}),
 		);
 
 		const result = await runReviewGate(defaultOptions);
@@ -2415,26 +2384,25 @@ describe("runReviewGate", () => {
 				head_sha: validSha,
 			},
 		];
-		mockGitHubClient.mockImplementation(
-			() =>
-				({
-					listPullRequestFiles: vi
-						.fn()
-						.mockResolvedValue([{ filename: "src/commands/review-gate.ts" }]),
-					listCheckRunsForRef: vi.fn().mockResolvedValue(mockCheckRuns),
-					getPullRequest: vi.fn().mockResolvedValue({
-						number: defaultOptions.prNumber,
-						user: { login: "coding-actor" },
-						head: { sha: validSha, ref: "feature/test" },
-					}),
-					listPullRequestReviews: vi.fn().mockResolvedValue([
-						{
-							state: "APPROVED",
-							commit_id: validSha,
-							user: { login: "coderabbitai[bot]" },
-						},
-					]),
-				}) as unknown as GitHubClient,
+		mockGitHubClient.mockImplementation(() =>
+			mockReviewGateGitHubClient({
+				listPullRequestFiles: vi
+					.fn()
+					.mockResolvedValue([{ filename: "src/commands/review-gate.ts" }]),
+				listCheckRunsForRef: vi.fn().mockResolvedValue(mockCheckRuns),
+				getPullRequest: vi.fn().mockResolvedValue({
+					number: defaultOptions.prNumber,
+					user: { login: "coding-actor" },
+					head: { sha: validSha, ref: "feature/test" },
+				}),
+				listPullRequestReviews: vi.fn().mockResolvedValue([
+					{
+						state: "APPROVED",
+						commit_id: validSha,
+						user: { login: "coderabbitai[bot]" },
+					},
+				]),
+			}),
 		);
 
 		const result = await runReviewGate(defaultOptions);
@@ -2458,31 +2426,30 @@ describe("runReviewGate", () => {
 				head_sha: validSha,
 			},
 		];
-		mockGitHubClient.mockImplementation(
-			() =>
-				({
-					listPullRequestFiles: vi
-						.fn()
-						.mockResolvedValue([{ filename: "src/commands/review-gate.ts" }]),
-					listCheckRunsForRef: vi.fn().mockResolvedValue(mockCheckRuns),
-					getPullRequest: vi.fn().mockResolvedValue({
-						number: defaultOptions.prNumber,
-						user: { login: "coding-actor" },
-						head: { sha: validSha, ref: "feature/test" },
-					}),
-					listPullRequestReviews: vi.fn().mockResolvedValue([
-						{
-							state: "APPROVED",
-							commit_id: validSha,
-							user: { login: "coderabbitai[bot]" },
-						},
-						{
-							state: "APPROVED",
-							commit_id: validSha,
-							user: { login: "independent-reviewer" },
-						},
-					]),
-				}) as unknown as GitHubClient,
+		mockGitHubClient.mockImplementation(() =>
+			mockReviewGateGitHubClient({
+				listPullRequestFiles: vi
+					.fn()
+					.mockResolvedValue([{ filename: "src/commands/review-gate.ts" }]),
+				listCheckRunsForRef: vi.fn().mockResolvedValue(mockCheckRuns),
+				getPullRequest: vi.fn().mockResolvedValue({
+					number: defaultOptions.prNumber,
+					user: { login: "coding-actor" },
+					head: { sha: validSha, ref: "feature/test" },
+				}),
+				listPullRequestReviews: vi.fn().mockResolvedValue([
+					{
+						state: "APPROVED",
+						commit_id: validSha,
+						user: { login: "coderabbitai[bot]" },
+					},
+					{
+						state: "APPROVED",
+						commit_id: validSha,
+						user: { login: "independent-reviewer" },
+					},
+				]),
+			}),
 		);
 
 		const result = await runReviewGate(defaultOptions);
@@ -2522,16 +2489,15 @@ describe("runReviewGate", () => {
 		});
 		// No reviews at all — this is the bypass vector
 		const mockListReviews = vi.fn().mockResolvedValue([]);
-		mockGitHubClient.mockImplementation(
-			() =>
-				({
-					listPullRequestFiles: vi
-						.fn()
-						.mockResolvedValue([{ filename: "src/commands/review-gate.ts" }]),
-					listCheckRunsForRef: mockListCheckRuns,
-					getPullRequest: mockGetPullRequest,
-					listPullRequestReviews: mockListReviews,
-				}) as unknown as GitHubClient,
+		mockGitHubClient.mockImplementation(() =>
+			mockReviewGateGitHubClient({
+				listPullRequestFiles: vi
+					.fn()
+					.mockResolvedValue([{ filename: "src/commands/review-gate.ts" }]),
+				listCheckRunsForRef: mockListCheckRuns,
+				getPullRequest: mockGetPullRequest,
+				listPullRequestReviews: mockListReviews,
+			}),
 		);
 
 		const result = await runReviewGate(defaultOptions);
@@ -2600,16 +2566,15 @@ describe("runReviewGate", () => {
 				user: { login: "coding-actor" },
 			},
 		]);
-		mockGitHubClient.mockImplementation(
-			() =>
-				({
-					listPullRequestFiles: vi
-						.fn()
-						.mockResolvedValue([{ filename: "src/commands/review-gate.ts" }]),
-					listCheckRunsForRef: mockListCheckRuns,
-					getPullRequest: mockGetPullRequest,
-					listPullRequestReviews: mockListReviews,
-				}) as unknown as GitHubClient,
+		mockGitHubClient.mockImplementation(() =>
+			mockReviewGateGitHubClient({
+				listPullRequestFiles: vi
+					.fn()
+					.mockResolvedValue([{ filename: "src/commands/review-gate.ts" }]),
+				listCheckRunsForRef: mockListCheckRuns,
+				getPullRequest: mockGetPullRequest,
+				listPullRequestReviews: mockListReviews,
+			}),
 		);
 
 		const result = await runReviewGate(defaultOptions);
@@ -2653,16 +2618,15 @@ describe("runReviewGate", () => {
 				user: { login: "independent-reviewer" },
 			},
 		]);
-		mockGitHubClient.mockImplementation(
-			() =>
-				({
-					listPullRequestFiles: vi
-						.fn()
-						.mockResolvedValue([{ filename: "src/commands/review-gate.ts" }]),
-					listCheckRunsForRef: mockListCheckRuns,
-					getPullRequest: mockGetPullRequest,
-					listPullRequestReviews: mockListReviews,
-				}) as unknown as GitHubClient,
+		mockGitHubClient.mockImplementation(() =>
+			mockReviewGateGitHubClient({
+				listPullRequestFiles: vi
+					.fn()
+					.mockResolvedValue([{ filename: "src/commands/review-gate.ts" }]),
+				listCheckRunsForRef: mockListCheckRuns,
+				getPullRequest: mockGetPullRequest,
+				listPullRequestReviews: mockListReviews,
+			}),
 		);
 
 		const result = await runReviewGate(defaultOptions);
@@ -2705,16 +2669,15 @@ describe("runReviewGate", () => {
 				user: { login: "independent-reviewer" },
 			},
 		]);
-		mockGitHubClient.mockImplementation(
-			() =>
-				({
-					listPullRequestFiles: vi
-						.fn()
-						.mockResolvedValue([{ filename: "src/commands/review-gate.ts" }]),
-					listCheckRunsForRef: mockListCheckRuns,
-					getPullRequest: mockGetPullRequest,
-					listPullRequestReviews: mockListReviews,
-				}) as unknown as GitHubClient,
+		mockGitHubClient.mockImplementation(() =>
+			mockReviewGateGitHubClient({
+				listPullRequestFiles: vi
+					.fn()
+					.mockResolvedValue([{ filename: "src/commands/review-gate.ts" }]),
+				listCheckRunsForRef: mockListCheckRuns,
+				getPullRequest: mockGetPullRequest,
+				listPullRequestReviews: mockListReviews,
+			}),
 		);
 
 		const result = await runReviewGate(defaultOptions);
@@ -2758,16 +2721,15 @@ describe("runReviewGate", () => {
 				user: { login: "independent-reviewer" },
 			},
 		]);
-		mockGitHubClient.mockImplementation(
-			() =>
-				({
-					listPullRequestFiles: vi
-						.fn()
-						.mockResolvedValue([{ filename: "src/commands/review-gate.ts" }]),
-					listCheckRunsForRef: mockListCheckRuns,
-					getPullRequest: mockGetPullRequest,
-					listPullRequestReviews: mockListReviews,
-				}) as unknown as GitHubClient,
+		mockGitHubClient.mockImplementation(() =>
+			mockReviewGateGitHubClient({
+				listPullRequestFiles: vi
+					.fn()
+					.mockResolvedValue([{ filename: "src/commands/review-gate.ts" }]),
+				listCheckRunsForRef: mockListCheckRuns,
+				getPullRequest: mockGetPullRequest,
+				listPullRequestReviews: mockListReviews,
+			}),
 		);
 
 		const result = await runReviewGate(defaultOptions);
@@ -2803,16 +2765,15 @@ describe("runReviewGate", () => {
 				user: { login: "independent-reviewer" },
 			},
 		]);
-		mockGitHubClient.mockImplementation(
-			() =>
-				({
-					listPullRequestFiles: vi
-						.fn()
-						.mockResolvedValue([{ filename: "src/commands/review-gate.ts" }]),
-					listCheckRunsForRef: mockListCheckRuns,
-					getPullRequest: mockGetPullRequest,
-					listPullRequestReviews: mockListReviews,
-				}) as unknown as GitHubClient,
+		mockGitHubClient.mockImplementation(() =>
+			mockReviewGateGitHubClient({
+				listPullRequestFiles: vi
+					.fn()
+					.mockResolvedValue([{ filename: "src/commands/review-gate.ts" }]),
+				listCheckRunsForRef: mockListCheckRuns,
+				getPullRequest: mockGetPullRequest,
+				listPullRequestReviews: mockListReviews,
+			}),
 		);
 
 		const result = await runReviewGate(defaultOptions);
@@ -2862,16 +2823,15 @@ describe("runReviewGate", () => {
 				user: { login: "independent-reviewer" },
 			},
 		]);
-		mockGitHubClient.mockImplementation(
-			() =>
-				({
-					listPullRequestFiles: vi
-						.fn()
-						.mockResolvedValue([{ filename: "src/commands/review-gate.ts" }]),
-					listCheckRunsForRef: mockListCheckRuns,
-					getPullRequest: mockGetPullRequest,
-					listPullRequestReviews: mockListReviews,
-				}) as unknown as GitHubClient,
+		mockGitHubClient.mockImplementation(() =>
+			mockReviewGateGitHubClient({
+				listPullRequestFiles: vi
+					.fn()
+					.mockResolvedValue([{ filename: "src/commands/review-gate.ts" }]),
+				listCheckRunsForRef: mockListCheckRuns,
+				getPullRequest: mockGetPullRequest,
+				listPullRequestReviews: mockListReviews,
+			}),
 		);
 
 		const result = await runReviewGate(defaultOptions);
@@ -2948,16 +2908,15 @@ describe("runReviewGate", () => {
 				user: { login: "independent-reviewer" },
 			},
 		]);
-		mockGitHubClient.mockImplementation(
-			() =>
-				({
-					listPullRequestFiles: vi
-						.fn()
-						.mockResolvedValue([{ filename: "src/commands/review-gate.ts" }]),
-					listCheckRunsForRef: mockListCheckRuns,
-					getPullRequest: mockGetPullRequest,
-					listPullRequestReviews: mockListReviews,
-				}) as unknown as GitHubClient,
+		mockGitHubClient.mockImplementation(() =>
+			mockReviewGateGitHubClient({
+				listPullRequestFiles: vi
+					.fn()
+					.mockResolvedValue([{ filename: "src/commands/review-gate.ts" }]),
+				listCheckRunsForRef: mockListCheckRuns,
+				getPullRequest: mockGetPullRequest,
+				listPullRequestReviews: mockListReviews,
+			}),
 		);
 
 		const result = await runReviewGate(defaultOptions);
@@ -3043,26 +3002,25 @@ describe("runReviewGate", () => {
 					},
 				},
 			];
-			mockGitHubClient.mockImplementation(
-				() =>
-					({
-						listPullRequestFiles: vi
-							.fn()
-							.mockResolvedValue([{ filename: "src/commands/review-gate.ts" }]),
-						listCheckRunsForRef: vi.fn().mockResolvedValue(mockCheckRuns),
-						getPullRequest: vi.fn().mockResolvedValue({
-							number: defaultOptions.prNumber,
-							user: { login: "coding-actor" },
-							head: { sha: validSha, ref: "feature/test" },
-						}),
-						listPullRequestReviews: vi.fn().mockResolvedValue([
-							{
-								state: "APPROVED",
-								commit_id: validSha,
-								user: { login: "independent-reviewer" },
-							},
-						]),
-					}) as unknown as GitHubClient,
+			mockGitHubClient.mockImplementation(() =>
+				mockReviewGateGitHubClient({
+					listPullRequestFiles: vi
+						.fn()
+						.mockResolvedValue([{ filename: "src/commands/review-gate.ts" }]),
+					listCheckRunsForRef: vi.fn().mockResolvedValue(mockCheckRuns),
+					getPullRequest: vi.fn().mockResolvedValue({
+						number: defaultOptions.prNumber,
+						user: { login: "coding-actor" },
+						head: { sha: validSha, ref: "feature/test" },
+					}),
+					listPullRequestReviews: vi.fn().mockResolvedValue([
+						{
+							state: "APPROVED",
+							commit_id: validSha,
+							user: { login: "independent-reviewer" },
+						},
+					]),
+				}),
 			);
 
 			const result = await runReviewGate({
@@ -3151,26 +3109,25 @@ describe("runReviewGate", () => {
 				},
 			];
 
-			mockGitHubClient.mockImplementation(
-				() =>
-					({
-						listPullRequestFiles: vi
-							.fn()
-							.mockResolvedValue([{ filename: "src/commands/review-gate.ts" }]),
-						listCheckRunsForRef: vi.fn().mockResolvedValue(mockCheckRuns),
-						getPullRequest: vi.fn().mockResolvedValue({
-							number: defaultOptions.prNumber,
-							user: { login: "coding-actor" },
-							head: { sha: validSha, ref: "feature/test" },
-						}),
-						listPullRequestReviews: vi.fn().mockResolvedValue([
-							{
-								state: "APPROVED",
-								commit_id: validSha,
-								user: { login: "independent-reviewer" },
-							},
-						]),
-					}) as unknown as GitHubClient,
+			mockGitHubClient.mockImplementation(() =>
+				mockReviewGateGitHubClient({
+					listPullRequestFiles: vi
+						.fn()
+						.mockResolvedValue([{ filename: "src/commands/review-gate.ts" }]),
+					listCheckRunsForRef: vi.fn().mockResolvedValue(mockCheckRuns),
+					getPullRequest: vi.fn().mockResolvedValue({
+						number: defaultOptions.prNumber,
+						user: { login: "coding-actor" },
+						head: { sha: validSha, ref: "feature/test" },
+					}),
+					listPullRequestReviews: vi.fn().mockResolvedValue([
+						{
+							state: "APPROVED",
+							commit_id: validSha,
+							user: { login: "independent-reviewer" },
+						},
+					]),
+				}),
 			);
 
 			const result = await runReviewGate({
@@ -3245,26 +3202,25 @@ describe("runReviewGate", () => {
 				},
 			];
 
-			mockGitHubClient.mockImplementation(
-				() =>
-					({
-						listPullRequestFiles: vi
-							.fn()
-							.mockResolvedValue([{ filename: "src/commands/review-gate.ts" }]),
-						listCheckRunsForRef: vi.fn().mockResolvedValue(mockCheckRuns),
-						getPullRequest: vi.fn().mockResolvedValue({
-							number: defaultOptions.prNumber,
-							user: { login: "coding-actor" },
-							head: { sha: validSha, ref: "feature/test" },
-						}),
-						listPullRequestReviews: vi.fn().mockResolvedValue([
-							{
-								state: "APPROVED",
-								commit_id: validSha,
-								user: { login: "independent-reviewer" },
-							},
-						]),
-					}) as unknown as GitHubClient,
+			mockGitHubClient.mockImplementation(() =>
+				mockReviewGateGitHubClient({
+					listPullRequestFiles: vi
+						.fn()
+						.mockResolvedValue([{ filename: "src/commands/review-gate.ts" }]),
+					listCheckRunsForRef: vi.fn().mockResolvedValue(mockCheckRuns),
+					getPullRequest: vi.fn().mockResolvedValue({
+						number: defaultOptions.prNumber,
+						user: { login: "coding-actor" },
+						head: { sha: validSha, ref: "feature/test" },
+					}),
+					listPullRequestReviews: vi.fn().mockResolvedValue([
+						{
+							state: "APPROVED",
+							commit_id: validSha,
+							user: { login: "independent-reviewer" },
+						},
+					]),
+				}),
 			);
 
 			const result = await runReviewGate({
@@ -3321,26 +3277,25 @@ describe("runReviewGate", () => {
 				},
 			];
 
-			mockGitHubClient.mockImplementation(
-				() =>
-					({
-						listPullRequestFiles: vi
-							.fn()
-							.mockResolvedValue([{ filename: "src/commands/review-gate.ts" }]),
-						listCheckRunsForRef: vi.fn().mockResolvedValue(mockCheckRuns),
-						getPullRequest: vi.fn().mockResolvedValue({
-							number: defaultOptions.prNumber,
-							user: { login: "coding-actor" },
-							head: { sha: validSha, ref: "feature/test" },
-						}),
-						listPullRequestReviews: vi.fn().mockResolvedValue([
-							{
-								state: "APPROVED",
-								commit_id: validSha,
-								user: { login: "independent-reviewer" },
-							},
-						]),
-					}) as unknown as GitHubClient,
+			mockGitHubClient.mockImplementation(() =>
+				mockReviewGateGitHubClient({
+					listPullRequestFiles: vi
+						.fn()
+						.mockResolvedValue([{ filename: "src/commands/review-gate.ts" }]),
+					listCheckRunsForRef: vi.fn().mockResolvedValue(mockCheckRuns),
+					getPullRequest: vi.fn().mockResolvedValue({
+						number: defaultOptions.prNumber,
+						user: { login: "coding-actor" },
+						head: { sha: validSha, ref: "feature/test" },
+					}),
+					listPullRequestReviews: vi.fn().mockResolvedValue([
+						{
+							state: "APPROVED",
+							commit_id: validSha,
+							user: { login: "independent-reviewer" },
+						},
+					]),
+				}),
 			);
 
 			const result = await runReviewGate({
@@ -3417,26 +3372,25 @@ describe("runReviewGate", () => {
 				},
 			];
 
-			mockGitHubClient.mockImplementation(
-				() =>
-					({
-						listPullRequestFiles: vi
-							.fn()
-							.mockResolvedValue([{ filename: "src/commands/review-gate.ts" }]),
-						listCheckRunsForRef: vi.fn().mockResolvedValue(mockCheckRuns),
-						getPullRequest: vi.fn().mockResolvedValue({
-							number: defaultOptions.prNumber,
-							user: { login: "coding-actor" },
-							head: { sha: validSha, ref: "feature/test" },
-						}),
-						listPullRequestReviews: vi.fn().mockResolvedValue([
-							{
-								state: "APPROVED",
-								commit_id: validSha,
-								user: { login: "independent-reviewer" },
-							},
-						]),
-					}) as unknown as GitHubClient,
+			mockGitHubClient.mockImplementation(() =>
+				mockReviewGateGitHubClient({
+					listPullRequestFiles: vi
+						.fn()
+						.mockResolvedValue([{ filename: "src/commands/review-gate.ts" }]),
+					listCheckRunsForRef: vi.fn().mockResolvedValue(mockCheckRuns),
+					getPullRequest: vi.fn().mockResolvedValue({
+						number: defaultOptions.prNumber,
+						user: { login: "coding-actor" },
+						head: { sha: validSha, ref: "feature/test" },
+					}),
+					listPullRequestReviews: vi.fn().mockResolvedValue([
+						{
+							state: "APPROVED",
+							commit_id: validSha,
+							user: { login: "independent-reviewer" },
+						},
+					]),
+				}),
 			);
 
 			const result = await runReviewGate({
@@ -3541,26 +3495,25 @@ describe("runReviewGate", () => {
 				},
 			];
 
-			mockGitHubClient.mockImplementation(
-				() =>
-					({
-						listPullRequestFiles: vi
-							.fn()
-							.mockResolvedValue([{ filename: "src/commands/review-gate.ts" }]),
-						listCheckRunsForRef: vi.fn().mockResolvedValue(mockCheckRuns),
-						getPullRequest: vi.fn().mockResolvedValue({
-							number: defaultOptions.prNumber,
-							user: { login: "coding-actor" },
-							head: { sha: validSha, ref: "feature/test" },
-						}),
-						listPullRequestReviews: vi.fn().mockResolvedValue([
-							{
-								state: "APPROVED",
-								commit_id: validSha,
-								user: { login: "independent-reviewer" },
-							},
-						]),
-					}) as unknown as GitHubClient,
+			mockGitHubClient.mockImplementation(() =>
+				mockReviewGateGitHubClient({
+					listPullRequestFiles: vi
+						.fn()
+						.mockResolvedValue([{ filename: "src/commands/review-gate.ts" }]),
+					listCheckRunsForRef: vi.fn().mockResolvedValue(mockCheckRuns),
+					getPullRequest: vi.fn().mockResolvedValue({
+						number: defaultOptions.prNumber,
+						user: { login: "coding-actor" },
+						head: { sha: validSha, ref: "feature/test" },
+					}),
+					listPullRequestReviews: vi.fn().mockResolvedValue([
+						{
+							state: "APPROVED",
+							commit_id: validSha,
+							user: { login: "independent-reviewer" },
+						},
+					]),
+				}),
 			);
 
 			const result = await runReviewGate({
@@ -3665,26 +3618,25 @@ describe("runReviewGate", () => {
 				},
 			];
 
-			mockGitHubClient.mockImplementation(
-				() =>
-					({
-						listPullRequestFiles: vi
-							.fn()
-							.mockResolvedValue([{ filename: "src/commands/review-gate.ts" }]),
-						listCheckRunsForRef: vi.fn().mockResolvedValue(mockCheckRuns),
-						getPullRequest: vi.fn().mockResolvedValue({
-							number: defaultOptions.prNumber,
-							user: { login: "coding-actor" },
-							head: { sha: validSha, ref: "feature/test" },
-						}),
-						listPullRequestReviews: vi.fn().mockResolvedValue([
-							{
-								state: "APPROVED",
-								commit_id: validSha,
-								user: { login: "independent-reviewer" },
-							},
-						]),
-					}) as unknown as GitHubClient,
+			mockGitHubClient.mockImplementation(() =>
+				mockReviewGateGitHubClient({
+					listPullRequestFiles: vi
+						.fn()
+						.mockResolvedValue([{ filename: "src/commands/review-gate.ts" }]),
+					listCheckRunsForRef: vi.fn().mockResolvedValue(mockCheckRuns),
+					getPullRequest: vi.fn().mockResolvedValue({
+						number: defaultOptions.prNumber,
+						user: { login: "coding-actor" },
+						head: { sha: validSha, ref: "feature/test" },
+					}),
+					listPullRequestReviews: vi.fn().mockResolvedValue([
+						{
+							state: "APPROVED",
+							commit_id: validSha,
+							user: { login: "independent-reviewer" },
+						},
+					]),
+				}),
 			);
 
 			const result = await runReviewGate({
@@ -3795,26 +3747,25 @@ describe("runReviewGate", () => {
 				},
 			];
 
-			mockGitHubClient.mockImplementation(
-				() =>
-					({
-						listPullRequestFiles: vi
-							.fn()
-							.mockResolvedValue([{ filename: "src/commands/review-gate.ts" }]),
-						listCheckRunsForRef: vi.fn().mockResolvedValue(mockCheckRuns),
-						getPullRequest: vi.fn().mockResolvedValue({
-							number: defaultOptions.prNumber,
-							user: { login: "coding-actor" },
-							head: { sha: validSha, ref: "feature/test" },
-						}),
-						listPullRequestReviews: vi.fn().mockResolvedValue([
-							{
-								state: "APPROVED",
-								commit_id: validSha,
-								user: { login: "independent-reviewer" },
-							},
-						]),
-					}) as unknown as GitHubClient,
+			mockGitHubClient.mockImplementation(() =>
+				mockReviewGateGitHubClient({
+					listPullRequestFiles: vi
+						.fn()
+						.mockResolvedValue([{ filename: "src/commands/review-gate.ts" }]),
+					listCheckRunsForRef: vi.fn().mockResolvedValue(mockCheckRuns),
+					getPullRequest: vi.fn().mockResolvedValue({
+						number: defaultOptions.prNumber,
+						user: { login: "coding-actor" },
+						head: { sha: validSha, ref: "feature/test" },
+					}),
+					listPullRequestReviews: vi.fn().mockResolvedValue([
+						{
+							state: "APPROVED",
+							commit_id: validSha,
+							user: { login: "independent-reviewer" },
+						},
+					]),
+				}),
 			);
 
 			const result = await runReviewGate({
@@ -3901,26 +3852,25 @@ describe("runReviewGate", () => {
 				},
 			];
 
-			mockGitHubClient.mockImplementation(
-				() =>
-					({
-						listPullRequestFiles: vi
-							.fn()
-							.mockResolvedValue([{ filename: "src/commands/review-gate.ts" }]),
-						listCheckRunsForRef: vi.fn().mockResolvedValue(mockCheckRuns),
-						getPullRequest: vi.fn().mockResolvedValue({
-							number: defaultOptions.prNumber,
-							user: { login: "coding-actor" },
-							head: { sha: validSha, ref: "feature/test" },
-						}),
-						listPullRequestReviews: vi.fn().mockResolvedValue([
-							{
-								state: "APPROVED",
-								commit_id: validSha,
-								user: { login: "independent-reviewer" },
-							},
-						]),
-					}) as unknown as GitHubClient,
+			mockGitHubClient.mockImplementation(() =>
+				mockReviewGateGitHubClient({
+					listPullRequestFiles: vi
+						.fn()
+						.mockResolvedValue([{ filename: "src/commands/review-gate.ts" }]),
+					listCheckRunsForRef: vi.fn().mockResolvedValue(mockCheckRuns),
+					getPullRequest: vi.fn().mockResolvedValue({
+						number: defaultOptions.prNumber,
+						user: { login: "coding-actor" },
+						head: { sha: validSha, ref: "feature/test" },
+					}),
+					listPullRequestReviews: vi.fn().mockResolvedValue([
+						{
+							state: "APPROVED",
+							commit_id: validSha,
+							user: { login: "independent-reviewer" },
+						},
+					]),
+				}),
 			);
 
 			const result = await runReviewGate({
@@ -4007,26 +3957,25 @@ describe("runReviewGate", () => {
 				},
 			];
 
-			mockGitHubClient.mockImplementation(
-				() =>
-					({
-						listPullRequestFiles: vi
-							.fn()
-							.mockResolvedValue([{ filename: "src/commands/review-gate.ts" }]),
-						listCheckRunsForRef: vi.fn().mockResolvedValue(mockCheckRuns),
-						getPullRequest: vi.fn().mockResolvedValue({
-							number: defaultOptions.prNumber,
-							user: { login: "coding-actor" },
-							head: { sha: validSha, ref: "feature/test" },
-						}),
-						listPullRequestReviews: vi.fn().mockResolvedValue([
-							{
-								state: "APPROVED",
-								commit_id: validSha,
-								user: { login: "independent-reviewer" },
-							},
-						]),
-					}) as unknown as GitHubClient,
+			mockGitHubClient.mockImplementation(() =>
+				mockReviewGateGitHubClient({
+					listPullRequestFiles: vi
+						.fn()
+						.mockResolvedValue([{ filename: "src/commands/review-gate.ts" }]),
+					listCheckRunsForRef: vi.fn().mockResolvedValue(mockCheckRuns),
+					getPullRequest: vi.fn().mockResolvedValue({
+						number: defaultOptions.prNumber,
+						user: { login: "coding-actor" },
+						head: { sha: validSha, ref: "feature/test" },
+					}),
+					listPullRequestReviews: vi.fn().mockResolvedValue([
+						{
+							state: "APPROVED",
+							commit_id: validSha,
+							user: { login: "independent-reviewer" },
+						},
+					]),
+				}),
 			);
 
 			const result = await runReviewGate({
@@ -4077,26 +4026,25 @@ describe("runReviewGate", () => {
 				},
 			},
 		];
-		mockGitHubClient.mockImplementation(
-			() =>
-				({
-					listPullRequestFiles: vi
-						.fn()
-						.mockResolvedValue([{ filename: "src/commands/review-gate.ts" }]),
-					listCheckRunsForRef: vi.fn().mockResolvedValue(mockCheckRuns),
-					getPullRequest: vi.fn().mockResolvedValue({
-						number: defaultOptions.prNumber,
-						user: { login: "coding-actor" },
-						head: { sha: validSha, ref: "feature/test" },
-					}),
-					listPullRequestReviews: vi.fn().mockResolvedValue([
-						{
-							state: "APPROVED",
-							commit_id: validSha,
-							user: { login: "independent-reviewer" },
-						},
-					]),
-				}) as unknown as GitHubClient,
+		mockGitHubClient.mockImplementation(() =>
+			mockReviewGateGitHubClient({
+				listPullRequestFiles: vi
+					.fn()
+					.mockResolvedValue([{ filename: "src/commands/review-gate.ts" }]),
+				listCheckRunsForRef: vi.fn().mockResolvedValue(mockCheckRuns),
+				getPullRequest: vi.fn().mockResolvedValue({
+					number: defaultOptions.prNumber,
+					user: { login: "coding-actor" },
+					head: { sha: validSha, ref: "feature/test" },
+				}),
+				listPullRequestReviews: vi.fn().mockResolvedValue([
+					{
+						state: "APPROVED",
+						commit_id: validSha,
+						user: { login: "independent-reviewer" },
+					},
+				]),
+			}),
 		);
 
 		const result = await runReviewGate(defaultOptions);
@@ -4141,26 +4089,25 @@ describe("runReviewGate", () => {
 				},
 			},
 		];
-		mockGitHubClient.mockImplementation(
-			() =>
-				({
-					listPullRequestFiles: vi
-						.fn()
-						.mockResolvedValue([{ filename: "src/commands/review-gate.ts" }]),
-					listCheckRunsForRef: vi.fn().mockResolvedValue(mockCheckRuns),
-					getPullRequest: vi.fn().mockResolvedValue({
-						number: defaultOptions.prNumber,
-						user: { login: "coding-actor" },
-						head: { sha: validSha, ref: "feature/test" },
-					}),
-					listPullRequestReviews: vi.fn().mockResolvedValue([
-						{
-							state: "APPROVED",
-							commit_id: validSha,
-							user: { login: "independent-reviewer" },
-						},
-					]),
-				}) as unknown as GitHubClient,
+		mockGitHubClient.mockImplementation(() =>
+			mockReviewGateGitHubClient({
+				listPullRequestFiles: vi
+					.fn()
+					.mockResolvedValue([{ filename: "src/commands/review-gate.ts" }]),
+				listCheckRunsForRef: vi.fn().mockResolvedValue(mockCheckRuns),
+				getPullRequest: vi.fn().mockResolvedValue({
+					number: defaultOptions.prNumber,
+					user: { login: "coding-actor" },
+					head: { sha: validSha, ref: "feature/test" },
+				}),
+				listPullRequestReviews: vi.fn().mockResolvedValue([
+					{
+						state: "APPROVED",
+						commit_id: validSha,
+						user: { login: "independent-reviewer" },
+					},
+				]),
+			}),
 		);
 
 		const result = await runReviewGate(defaultOptions);
@@ -4184,33 +4131,32 @@ describe("runReviewGate", () => {
 				head_sha: validSha,
 			},
 		];
-		mockGitHubClient.mockImplementation(
-			() =>
-				({
-					listPullRequestFiles: vi
-						.fn()
-						.mockResolvedValue([{ filename: "src/commands/review-gate.ts" }]),
-					listCheckRunsForRef: vi.fn().mockResolvedValue(mockCheckRuns),
-					getPullRequest: vi.fn().mockResolvedValue({
-						number: defaultOptions.prNumber,
-						user: { login: "coding-actor" },
-						head: { sha: validSha, ref: "feature/test" },
-					}),
-					listPullRequestReviews: vi.fn().mockResolvedValue([
-						{
-							state: "APPROVED",
-							commit_id: validSha,
-							user: { login: "independent-reviewer" },
-						},
-					]),
-					listPullRequestReviewThreads: vi.fn().mockResolvedValue([
-						{
-							id: "thread-1",
-							isResolved: false,
-							comments: [{ author: { login: "independent-reviewer" } }],
-						},
-					]),
-				}) as unknown as GitHubClient,
+		mockGitHubClient.mockImplementation(() =>
+			mockReviewGateGitHubClient({
+				listPullRequestFiles: vi
+					.fn()
+					.mockResolvedValue([{ filename: "src/commands/review-gate.ts" }]),
+				listCheckRunsForRef: vi.fn().mockResolvedValue(mockCheckRuns),
+				getPullRequest: vi.fn().mockResolvedValue({
+					number: defaultOptions.prNumber,
+					user: { login: "coding-actor" },
+					head: { sha: validSha, ref: "feature/test" },
+				}),
+				listPullRequestReviews: vi.fn().mockResolvedValue([
+					{
+						state: "APPROVED",
+						commit_id: validSha,
+						user: { login: "independent-reviewer" },
+					},
+				]),
+				listPullRequestReviewThreads: vi.fn().mockResolvedValue([
+					{
+						id: "thread-1",
+						isResolved: false,
+						comments: [{ author: { login: "independent-reviewer" } }],
+					},
+				]),
+			}),
 		);
 
 		const result = await runReviewGate(defaultOptions);
@@ -4236,33 +4182,32 @@ describe("runReviewGate", () => {
 					head_sha: validSha,
 				},
 			];
-			mockGitHubClient.mockImplementation(
-				() =>
-					({
-						listPullRequestFiles: vi
-							.fn()
-							.mockResolvedValue([{ filename: "src/commands/review-gate.ts" }]),
-						listCheckRunsForRef: vi.fn().mockResolvedValue(mockCheckRuns),
-						getPullRequest: vi.fn().mockResolvedValue({
-							number: defaultOptions.prNumber,
-							user: { login: "coding-actor" },
-							head: { sha: validSha, ref: "feature/test" },
-						}),
-						listPullRequestReviews: vi.fn().mockResolvedValue([
-							{
-								state: "APPROVED",
-								commit_id: validSha,
-								user: { login: "independent-reviewer" },
-							},
-						]),
-						listPullRequestReviewThreads: vi.fn().mockResolvedValue([
-							{
-								id: "thread-1",
-								isResolved: false,
-								comments: [{ author: { login: botLogin } }],
-							},
-						]),
-					}) as unknown as GitHubClient,
+			mockGitHubClient.mockImplementation(() =>
+				mockReviewGateGitHubClient({
+					listPullRequestFiles: vi
+						.fn()
+						.mockResolvedValue([{ filename: "src/commands/review-gate.ts" }]),
+					listCheckRunsForRef: vi.fn().mockResolvedValue(mockCheckRuns),
+					getPullRequest: vi.fn().mockResolvedValue({
+						number: defaultOptions.prNumber,
+						user: { login: "coding-actor" },
+						head: { sha: validSha, ref: "feature/test" },
+					}),
+					listPullRequestReviews: vi.fn().mockResolvedValue([
+						{
+							state: "APPROVED",
+							commit_id: validSha,
+							user: { login: "independent-reviewer" },
+						},
+					]),
+					listPullRequestReviewThreads: vi.fn().mockResolvedValue([
+						{
+							id: "thread-1",
+							isResolved: false,
+							comments: [{ author: { login: botLogin } }],
+						},
+					]),
+				}),
 			);
 
 			const result = await runReviewGate(defaultOptions);
@@ -4330,16 +4275,15 @@ describe("runReviewGate", () => {
 				user: { login: "independent-reviewer" },
 			},
 		]);
-		mockGitHubClient.mockImplementation(
-			() =>
-				({
-					listPullRequestFiles: vi
-						.fn()
-						.mockResolvedValue([{ filename: "src/commands/review-gate.ts" }]),
-					listCheckRunsForRef: mockListCheckRuns,
-					getPullRequest: mockGetPullRequest,
-					listPullRequestReviews: mockListReviews,
-				}) as unknown as GitHubClient,
+		mockGitHubClient.mockImplementation(() =>
+			mockReviewGateGitHubClient({
+				listPullRequestFiles: vi
+					.fn()
+					.mockResolvedValue([{ filename: "src/commands/review-gate.ts" }]),
+				listCheckRunsForRef: mockListCheckRuns,
+				getPullRequest: mockGetPullRequest,
+				listPullRequestReviews: mockListReviews,
+			}),
 		);
 
 		const result = await runReviewGate(defaultOptions);
@@ -4368,26 +4312,25 @@ describe("runReviewGate", () => {
 				head_sha: validSha,
 			},
 		];
-		mockGitHubClient.mockImplementation(
-			() =>
-				({
-					listPullRequestFiles: vi
-						.fn()
-						.mockResolvedValue([{ filename: "src/commands/review-gate.ts" }]),
-					listCheckRunsForRef: vi.fn().mockResolvedValue(mockCheckRuns),
-					getPullRequest: vi.fn().mockResolvedValue({
-						number: defaultOptions.prNumber,
-						user: { login: "coding-actor" },
-						head: { sha: validSha, ref: "feature/test" },
-					}),
-					listPullRequestReviews: vi.fn().mockResolvedValue([
-						{
-							state: "APPROVED",
-							commit_id: validSha,
-							user: { login: "independent-reviewer" },
-						},
-					]),
-				}) as unknown as GitHubClient,
+		mockGitHubClient.mockImplementation(() =>
+			mockReviewGateGitHubClient({
+				listPullRequestFiles: vi
+					.fn()
+					.mockResolvedValue([{ filename: "src/commands/review-gate.ts" }]),
+				listCheckRunsForRef: vi.fn().mockResolvedValue(mockCheckRuns),
+				getPullRequest: vi.fn().mockResolvedValue({
+					number: defaultOptions.prNumber,
+					user: { login: "coding-actor" },
+					head: { sha: validSha, ref: "feature/test" },
+				}),
+				listPullRequestReviews: vi.fn().mockResolvedValue([
+					{
+						state: "APPROVED",
+						commit_id: validSha,
+						user: { login: "independent-reviewer" },
+					},
+				]),
+			}),
 		);
 
 		const result = await runReviewGate(defaultOptions);
@@ -4411,19 +4354,18 @@ describe("runReviewGate", () => {
 			},
 		];
 		const mockListCheckRuns = vi.fn().mockResolvedValue(mockCheckRuns);
-		mockGitHubClient.mockImplementation(
-			() =>
-				({
-					getPullRequest: vi.fn().mockResolvedValue({
-						number: defaultOptions.prNumber,
-						user: { login: "coding-actor" },
-						head: { sha: validSha, ref: "feature/test" },
-					}),
-					listPullRequestFiles: vi
-						.fn()
-						.mockResolvedValue([{ filename: "src/commands/review-gate.ts" }]),
-					listCheckRunsForRef: mockListCheckRuns,
-				}) as unknown as GitHubClient,
+		mockGitHubClient.mockImplementation(() =>
+			mockReviewGateGitHubClient({
+				getPullRequest: vi.fn().mockResolvedValue({
+					number: defaultOptions.prNumber,
+					user: { login: "coding-actor" },
+					head: { sha: validSha, ref: "feature/test" },
+				}),
+				listPullRequestFiles: vi
+					.fn()
+					.mockResolvedValue([{ filename: "src/commands/review-gate.ts" }]),
+				listCheckRunsForRef: mockListCheckRuns,
+			}),
 		);
 
 		const result = await runReviewGate(defaultOptions);
@@ -4458,19 +4400,18 @@ describe("runReviewGate", () => {
 			},
 		];
 		const mockListCheckRuns = vi.fn().mockResolvedValue(mockCheckRuns);
-		mockGitHubClient.mockImplementation(
-			() =>
-				({
-					getPullRequest: vi.fn().mockResolvedValue({
-						number: defaultOptions.prNumber,
-						user: { login: "coding-actor" },
-						head: { sha: validSha, ref: "feature/test" },
-					}),
-					listPullRequestFiles: vi
-						.fn()
-						.mockResolvedValue([{ filename: "src/commands/review-gate.ts" }]),
-					listCheckRunsForRef: mockListCheckRuns,
-				}) as unknown as GitHubClient,
+		mockGitHubClient.mockImplementation(() =>
+			mockReviewGateGitHubClient({
+				getPullRequest: vi.fn().mockResolvedValue({
+					number: defaultOptions.prNumber,
+					user: { login: "coding-actor" },
+					head: { sha: validSha, ref: "feature/test" },
+				}),
+				listPullRequestFiles: vi
+					.fn()
+					.mockResolvedValue([{ filename: "src/commands/review-gate.ts" }]),
+				listCheckRunsForRef: mockListCheckRuns,
+			}),
 		);
 
 		const result = await runReviewGate(defaultOptions);
@@ -4499,19 +4440,18 @@ describe("runReviewGate", () => {
 					head_sha: validSha,
 				},
 			];
-			mockGitHubClient.mockImplementation(
-				() =>
-					({
-						getPullRequest: vi.fn().mockResolvedValue({
-							number: defaultOptions.prNumber,
-							user: { login: "coding-actor" },
-							head: { sha: validSha, ref: "feature/test" },
-						}),
-						listPullRequestFiles: vi
-							.fn()
-							.mockResolvedValue([{ filename: "src/commands/review-gate.ts" }]),
-						listCheckRunsForRef: vi.fn().mockResolvedValue(mockCheckRuns),
-					}) as unknown as GitHubClient,
+			mockGitHubClient.mockImplementation(() =>
+				mockReviewGateGitHubClient({
+					getPullRequest: vi.fn().mockResolvedValue({
+						number: defaultOptions.prNumber,
+						user: { login: "coding-actor" },
+						head: { sha: validSha, ref: "feature/test" },
+					}),
+					listPullRequestFiles: vi
+						.fn()
+						.mockResolvedValue([{ filename: "src/commands/review-gate.ts" }]),
+					listCheckRunsForRef: vi.fn().mockResolvedValue(mockCheckRuns),
+				}),
 			);
 
 			vi.useFakeTimers();
@@ -4602,19 +4542,18 @@ describe("runReviewGateCLI", () => {
 				head_sha: validSha,
 			},
 		]);
-		mockGitHubClient.mockImplementation(
-			() =>
-				({
-					getPullRequest: vi.fn().mockResolvedValue({
-						number: defaultOptions.prNumber,
-						user: { login: "coding-actor" },
-						head: { sha: validSha, ref: "feature/test" },
-					}),
-					listPullRequestFiles: vi
-						.fn()
-						.mockResolvedValue([{ filename: "src/commands/review-gate.ts" }]),
-					listCheckRunsForRef: mockListCheckRuns,
-				}) as unknown as GitHubClient,
+		mockGitHubClient.mockImplementation(() =>
+			mockReviewGateGitHubClient({
+				getPullRequest: vi.fn().mockResolvedValue({
+					number: defaultOptions.prNumber,
+					user: { login: "coding-actor" },
+					head: { sha: validSha, ref: "feature/test" },
+				}),
+				listPullRequestFiles: vi
+					.fn()
+					.mockResolvedValue([{ filename: "src/commands/review-gate.ts" }]),
+				listCheckRunsForRef: mockListCheckRuns,
+			}),
 		);
 
 		const exitCode = await runReviewGateCLI(defaultOptions);
@@ -4701,15 +4640,14 @@ describe("runReviewGateCLI", () => {
 		const consoleErrorSpy = vi
 			.spyOn(console, "error")
 			.mockImplementation(() => undefined);
-		mockGitHubClient.mockImplementation(
-			() =>
-				({
-					getPullRequest: vi.fn().mockRejectedValue(
-						Object.assign(new Error("PR not found"), {
-							name: "NotFoundError",
-						}),
-					),
-				}) as unknown as GitHubClient,
+		mockGitHubClient.mockImplementation(() =>
+			mockReviewGateGitHubClient({
+				getPullRequest: vi.fn().mockRejectedValue(
+					Object.assign(new Error("PR not found"), {
+						name: "NotFoundError",
+					}),
+				),
+			}),
 		);
 		mockEmitReviewGateDecisionArtifacts.mockImplementation(() => {
 			throw new Error("artifact write failed");
@@ -4743,15 +4681,14 @@ describe("runReviewGateCLI", () => {
 	});
 
 	it("returns PERMISSION_DENIED for ForbiddenError", async () => {
-		mockGitHubClient.mockImplementation(
-			() =>
-				({
-					getPullRequest: vi.fn().mockRejectedValue(
-						Object.assign(new Error("Forbidden"), {
-							name: "ForbiddenError",
-						}),
-					),
-				}) as unknown as GitHubClient,
+		mockGitHubClient.mockImplementation(() =>
+			mockReviewGateGitHubClient({
+				getPullRequest: vi.fn().mockRejectedValue(
+					Object.assign(new Error("Forbidden"), {
+						name: "ForbiddenError",
+					}),
+				),
+			}),
 		);
 
 		const exitCode = await runReviewGateCLI(defaultOptions);
@@ -4760,15 +4697,14 @@ describe("runReviewGateCLI", () => {
 	});
 
 	it("returns NOT_FOUND for NotFoundError", async () => {
-		mockGitHubClient.mockImplementation(
-			() =>
-				({
-					getPullRequest: vi.fn().mockRejectedValue(
-						Object.assign(new Error("Not Found"), {
-							name: "NotFoundError",
-						}),
-					),
-				}) as unknown as GitHubClient,
+		mockGitHubClient.mockImplementation(() =>
+			mockReviewGateGitHubClient({
+				getPullRequest: vi.fn().mockRejectedValue(
+					Object.assign(new Error("Not Found"), {
+						name: "NotFoundError",
+					}),
+				),
+			}),
 		);
 
 		const exitCode = await runReviewGateCLI(defaultOptions);
@@ -4777,15 +4713,14 @@ describe("runReviewGateCLI", () => {
 	});
 
 	it("returns PERMISSION_DENIED for UnauthorizedError", async () => {
-		mockGitHubClient.mockImplementation(
-			() =>
-				({
-					getPullRequest: vi.fn().mockRejectedValue(
-						Object.assign(new Error("Unauthorized"), {
-							name: "UnauthorizedError",
-						}),
-					),
-				}) as unknown as GitHubClient,
+		mockGitHubClient.mockImplementation(() =>
+			mockReviewGateGitHubClient({
+				getPullRequest: vi.fn().mockRejectedValue(
+					Object.assign(new Error("Unauthorized"), {
+						name: "UnauthorizedError",
+					}),
+				),
+			}),
 		);
 
 		const exitCode = await runReviewGateCLI(defaultOptions);
@@ -4803,56 +4738,54 @@ describe("runReviewGateCLI", () => {
 		const mockResolveThread = vi.fn().mockResolvedValue(undefined);
 
 		mockGitHubClient
-			.mockImplementationOnce(
-				() =>
-					({
-						getPullRequest: vi.fn().mockResolvedValue({
-							number: defaultOptions.prNumber,
-							user: { login: "coding-actor" },
-							head: { sha: validSha, ref: "feature/test" },
-						}),
-						listPullRequestFiles: vi
-							.fn()
-							.mockResolvedValue([{ filename: "src/commands/review-gate.ts" }]),
-						listCheckRunsForRef: vi.fn().mockResolvedValue([
-							{
-								id: 1,
-								name: defaultOptions.checkName,
-								status: "completed",
-								conclusion: "success",
-								head_sha: validSha,
-							},
-						]),
-						listPullRequestReviews: vi.fn().mockResolvedValue([
-							{
-								state: "APPROVED",
-								commit_id: validSha,
-								user: { login: "independent-reviewer" },
-							},
-						]),
-						listPullRequestReviewThreads: vi.fn().mockResolvedValue([]),
-					}) as unknown as GitHubClient,
+			.mockImplementationOnce(() =>
+				mockReviewGateGitHubClient({
+					getPullRequest: vi.fn().mockResolvedValue({
+						number: defaultOptions.prNumber,
+						user: { login: "coding-actor" },
+						head: { sha: validSha, ref: "feature/test" },
+					}),
+					listPullRequestFiles: vi
+						.fn()
+						.mockResolvedValue([{ filename: "src/commands/review-gate.ts" }]),
+					listCheckRunsForRef: vi.fn().mockResolvedValue([
+						{
+							id: 1,
+							name: defaultOptions.checkName,
+							status: "completed",
+							conclusion: "success",
+							head_sha: validSha,
+						},
+					]),
+					listPullRequestReviews: vi.fn().mockResolvedValue([
+						{
+							state: "APPROVED",
+							commit_id: validSha,
+							user: { login: "independent-reviewer" },
+						},
+					]),
+					listPullRequestReviewThreads: vi.fn().mockResolvedValue([]),
+				}),
 			)
-			.mockImplementationOnce(
-				() =>
-					({
-						listPullRequestReviewThreads: vi.fn().mockResolvedValue([
-							{
-								id: "thread-bot-only",
-								isResolved: false,
-								comments: [{ author: { login: "coderabbitai[bot]" } }],
-							},
-							{
-								id: "thread-mixed",
-								isResolved: false,
-								comments: [
-									{ author: { login: "coderabbitai[bot]" } },
-									{ author: { login: "independent-reviewer" } },
-								],
-							},
-						]),
-						resolvePullRequestReviewThread: mockResolveThread,
-					}) as unknown as GitHubClient,
+			.mockImplementationOnce(() =>
+				mockReviewGateGitHubClient({
+					listPullRequestReviewThreads: vi.fn().mockResolvedValue([
+						{
+							id: "thread-bot-only",
+							isResolved: false,
+							comments: [{ author: { login: "coderabbitai[bot]" } }],
+						},
+						{
+							id: "thread-mixed",
+							isResolved: false,
+							comments: [
+								{ author: { login: "coderabbitai[bot]" } },
+								{ author: { login: "independent-reviewer" } },
+							],
+						},
+					]),
+					resolvePullRequestReviewThread: mockResolveThread,
+				}),
 			);
 
 		const exitCode = await runReviewGateCLI({
@@ -4879,43 +4812,41 @@ describe("runReviewGateCLI", () => {
 			.mockImplementation(() => undefined);
 
 		mockGitHubClient
-			.mockImplementationOnce(
-				() =>
-					({
-						getPullRequest: vi.fn().mockResolvedValue({
-							number: defaultOptions.prNumber,
-							user: { login: "coding-actor" },
-							head: { sha: validSha, ref: "feature/test" },
-						}),
-						listPullRequestFiles: vi
-							.fn()
-							.mockResolvedValue([{ filename: "src/commands/review-gate.ts" }]),
-						listCheckRunsForRef: vi.fn().mockResolvedValue([
-							{
-								id: 1,
-								name: defaultOptions.checkName,
-								status: "completed",
-								conclusion: "success",
-								head_sha: validSha,
-							},
-						]),
-						listPullRequestReviews: vi.fn().mockResolvedValue([
-							{
-								state: "APPROVED",
-								commit_id: validSha,
-								user: { login: "independent-reviewer" },
-							},
-						]),
-						listPullRequestReviewThreads: vi.fn().mockResolvedValue([]),
-					}) as unknown as GitHubClient,
+			.mockImplementationOnce(() =>
+				mockReviewGateGitHubClient({
+					getPullRequest: vi.fn().mockResolvedValue({
+						number: defaultOptions.prNumber,
+						user: { login: "coding-actor" },
+						head: { sha: validSha, ref: "feature/test" },
+					}),
+					listPullRequestFiles: vi
+						.fn()
+						.mockResolvedValue([{ filename: "src/commands/review-gate.ts" }]),
+					listCheckRunsForRef: vi.fn().mockResolvedValue([
+						{
+							id: 1,
+							name: defaultOptions.checkName,
+							status: "completed",
+							conclusion: "success",
+							head_sha: validSha,
+						},
+					]),
+					listPullRequestReviews: vi.fn().mockResolvedValue([
+						{
+							state: "APPROVED",
+							commit_id: validSha,
+							user: { login: "independent-reviewer" },
+						},
+					]),
+					listPullRequestReviewThreads: vi.fn().mockResolvedValue([]),
+				}),
 			)
-			.mockImplementationOnce(
-				() =>
-					({
-						listPullRequestReviewThreads: vi
-							.fn()
-							.mockRejectedValue(new Error("resolve failure")),
-					}) as unknown as GitHubClient,
+			.mockImplementationOnce(() =>
+				mockReviewGateGitHubClient({
+					listPullRequestReviewThreads: vi
+						.fn()
+						.mockRejectedValue(new Error("resolve failure")),
+				}),
 			);
 
 		const exitCode = await runReviewGateCLI({
@@ -4950,7 +4881,7 @@ describe("postRerunCommentIfNeeded", () => {
 		getPullRequest?: () => Promise<unknown>;
 		getRepositoryIdentifier?: () => string;
 	}) =>
-		({
+		mockReviewGateGitHubClient({
 			listIssueComments:
 				overrides.listIssueComments ?? vi.fn().mockResolvedValue([]),
 			createIssueComment:
@@ -4975,7 +4906,7 @@ describe("postRerunCommentIfNeeded", () => {
 			getRepositoryIdentifier:
 				overrides.getRepositoryIdentifier ??
 				vi.fn().mockReturnValue(mockRepositoryIdentifier),
-		}) as unknown as GitHubClient;
+		});
 
 	it("returns hold when authz preflight fails", async () => {
 		const mockListIssueComments = vi.fn().mockResolvedValue([]);

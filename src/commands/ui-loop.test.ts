@@ -1,5 +1,6 @@
 import { spawnSync } from "node:child_process";
 import { existsSync, mkdirSync, writeFileSync } from "node:fs";
+import { type PartialDeep, fromPartial } from "@total-typescript/shoehorn";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { loadContract } from "../lib/contract/loader.js";
 import { EXIT_CODES, runUIExplore, runUIFast, runUIVerify } from "./ui-loop.js";
@@ -32,6 +33,11 @@ const MOCK_POLICY = {
 	},
 };
 
+type LoadedContract = ReturnType<typeof loadContract>;
+
+const mockLoadedContract = (contract: PartialDeep<LoadedContract>) =>
+	fromPartial<LoadedContract>(contract);
+
 describe("ui-loop commands", () => {
 	beforeEach(() => {
 		vi.resetAllMocks();
@@ -53,9 +59,7 @@ describe("ui-loop commands", () => {
 
 	describe("runUIFast", () => {
 		it("supports prepare mode and writes artifact metadata", () => {
-			vi.mocked(loadContract).mockReturnValue(
-				MOCK_POLICY as unknown as ReturnType<typeof loadContract>,
-			);
+			vi.mocked(loadContract).mockReturnValue(mockLoadedContract(MOCK_POLICY));
 
 			const result = runUIFast({
 				mode: "prepare",
@@ -131,13 +135,15 @@ describe("ui-loop commands", () => {
 		});
 
 		it("rejects quoted fast policy commands that require shell parsing", () => {
-			vi.mocked(loadContract).mockReturnValue({
-				...MOCK_POLICY,
-				uiLoopPolicy: {
-					...MOCK_POLICY.uiLoopPolicy,
-					fastCommand: 'npm run "ui:fast"',
-				},
-			} as unknown as ReturnType<typeof loadContract>);
+			vi.mocked(loadContract).mockReturnValue(
+				mockLoadedContract({
+					...MOCK_POLICY,
+					uiLoopPolicy: {
+						...MOCK_POLICY.uiLoopPolicy,
+						fastCommand: 'npm run "ui:fast"',
+					},
+				}),
+			);
 
 			const result = runUIFast({ mode: "prepare" });
 
@@ -148,9 +154,7 @@ describe("ui-loop commands", () => {
 
 	describe("runUIVerify", () => {
 		it("supports prepare mode with contract command and args", () => {
-			vi.mocked(loadContract).mockReturnValue(
-				MOCK_POLICY as unknown as ReturnType<typeof loadContract>,
-			);
+			vi.mocked(loadContract).mockReturnValue(mockLoadedContract(MOCK_POLICY));
 
 			const result = runUIVerify({
 				mode: "prepare",
@@ -244,9 +248,7 @@ describe("ui-loop commands", () => {
 		});
 
 		it("forwards verify policy args through npm run separator", () => {
-			vi.mocked(loadContract).mockReturnValue(
-				MOCK_POLICY as unknown as ReturnType<typeof loadContract>,
-			);
+			vi.mocked(loadContract).mockReturnValue(mockLoadedContract(MOCK_POLICY));
 
 			const result = runUIVerify({
 				mode: "execute",
@@ -270,13 +272,15 @@ describe("ui-loop commands", () => {
 		});
 
 		it("rejects quoted verify policy commands that require shell parsing", () => {
-			vi.mocked(loadContract).mockReturnValue({
-				...MOCK_POLICY,
-				uiLoopPolicy: {
-					...MOCK_POLICY.uiLoopPolicy,
-					verifyCommand: 'npm run "ui:verify"',
-				},
-			} as unknown as ReturnType<typeof loadContract>);
+			vi.mocked(loadContract).mockReturnValue(
+				mockLoadedContract({
+					...MOCK_POLICY,
+					uiLoopPolicy: {
+						...MOCK_POLICY.uiLoopPolicy,
+						verifyCommand: 'npm run "ui:verify"',
+					},
+				}),
+			);
 
 			const result = runUIVerify({ mode: "prepare" });
 
@@ -285,13 +289,15 @@ describe("ui-loop commands", () => {
 		});
 
 		it("rejects verify policy commands with leading env assignments", () => {
-			vi.mocked(loadContract).mockReturnValue({
-				...MOCK_POLICY,
-				uiLoopPolicy: {
-					...MOCK_POLICY.uiLoopPolicy,
-					verifyCommand: "NODE_ENV=test npm run ui:verify",
-				},
-			} as unknown as ReturnType<typeof loadContract>);
+			vi.mocked(loadContract).mockReturnValue(
+				mockLoadedContract({
+					...MOCK_POLICY,
+					uiLoopPolicy: {
+						...MOCK_POLICY.uiLoopPolicy,
+						verifyCommand: "NODE_ENV=test npm run ui:verify",
+					},
+				}),
+			);
 
 			const result = runUIVerify({ mode: "prepare" });
 
@@ -360,9 +366,7 @@ describe("ui-loop commands", () => {
 		});
 
 		it("keeps canonical policy fields aligned across command adapters", () => {
-			vi.mocked(loadContract).mockReturnValue(
-				MOCK_POLICY as unknown as ReturnType<typeof loadContract>,
-			);
+			vi.mocked(loadContract).mockReturnValue(mockLoadedContract(MOCK_POLICY));
 
 			const payloads = [
 				JSON.parse(runUIFast({ mode: "prepare", json: true }).message),
@@ -409,13 +413,15 @@ describe("ui-loop commands", () => {
 		});
 
 		it("rejects quoted explore policy commands that require shell parsing", () => {
-			vi.mocked(loadContract).mockReturnValue({
-				...MOCK_POLICY,
-				uiLoopPolicy: {
-					...MOCK_POLICY.uiLoopPolicy,
-					exploreCommand: 'npm run "ui:explore"',
-				},
-			} as unknown as ReturnType<typeof loadContract>);
+			vi.mocked(loadContract).mockReturnValue(
+				mockLoadedContract({
+					...MOCK_POLICY,
+					uiLoopPolicy: {
+						...MOCK_POLICY.uiLoopPolicy,
+						exploreCommand: 'npm run "ui:explore"',
+					},
+				}),
+			);
 
 			const result = runUIExplore({ mode: "prepare" });
 
@@ -425,9 +431,7 @@ describe("ui-loop commands", () => {
 
 		it("enforces kill-switch mode matrix across adapters", () => {
 			process.env.HARNESS_UI_EXECUTION_DISABLED = "true";
-			vi.mocked(loadContract).mockReturnValue(
-				MOCK_POLICY as unknown as ReturnType<typeof loadContract>,
-			);
+			vi.mocked(loadContract).mockReturnValue(mockLoadedContract(MOCK_POLICY));
 
 			const executePayloads = [
 				JSON.parse(runUIFast({ mode: "execute", json: true }).message),

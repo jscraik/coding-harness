@@ -336,6 +336,17 @@ Confirm `.harness/memory/LEARNINGS.md` is gitignored:
 grep -q "\.harness/memory" .gitignore && echo "✅ gitignored" || echo "⚠️  add .harness/memory/ to .gitignore"
 ```
 
+Reserve a local-only scratch directory for temporary reproduction harnesses:
+
+```bash
+grep -q "^/codex-scripts/$" .gitignore && echo "✅ codex-scripts ignored" || echo "/codex-scripts/" >> .gitignore
+```
+
+Use `codex-scripts/` only for throwaway evidence harnesses that import or
+invoke production code directly. If a reproduction becomes generally useful,
+promote it into a tracked test or maintained helper script instead of leaving
+it in `codex-scripts/`.
+
 ---
 
 ## Phase 9: Validate end-to-end

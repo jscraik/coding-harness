@@ -409,6 +409,7 @@ describe("getRegistryCommandCapabilities", () => {
 			"drift-gate",
 			"search",
 			"context",
+			"source-outline",
 		] as const;
 
 		it.each(EXPECTED_READ_COMMANDS)(
@@ -724,6 +725,7 @@ describe("getRegistryCommandCapabilities", () => {
 			["context-health", "drift-search-evidence"],
 			["search", "drift-search-evidence"],
 			["context", "drift-search-evidence"],
+			["source-outline", "drift-search-evidence"],
 			["index-context", "drift-search-evidence"],
 			["evidence-verify", "drift-search-evidence"],
 			["ui:fast", "drift-search-evidence"],
@@ -764,6 +766,33 @@ describe("getRegistryCommandCapabilities", () => {
 				(c) => c.name === "policy-gate",
 			);
 			expect(cap?.aliases).toContain("risk-policy-gate");
+		});
+	});
+
+	describe("'source-outline' capability", () => {
+		let sourceOutlineCapability: CommandCapability | undefined;
+		beforeEach(() => {
+			sourceOutlineCapability = getRegistryCommandCapabilities().find(
+				(c) => c.name === "source-outline",
+			);
+		});
+
+		it("describes signature/comment inspection before implementations", () => {
+			expect(sourceOutlineCapability?.summary).toBe(
+				"Inspect TypeScript signatures/comments before opening implementations",
+			);
+		});
+
+		it("shows a single-symbol JSON example", () => {
+			expect(sourceOutlineCapability?.example).toBe(
+				"source-outline src/lib/source-outline.ts --symbol runSourceOutline --json",
+			);
+		});
+
+		it("remains a safe read-only discovery command", () => {
+			expect(sourceOutlineCapability?.mutability).toBe("read");
+			expect(sourceOutlineCapability?.retryability).toBe("safe");
+			expect(sourceOutlineCapability?.category).toBe("drift-search-evidence");
 		});
 	});
 });
