@@ -1,3 +1,4 @@
+import { type PartialDeep, fromPartial } from "@total-typescript/shoehorn";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 vi.mock("../lib/linear/client.js", () => ({
@@ -17,6 +18,8 @@ import { LinearClient } from "../lib/linear/client.js";
 import { runLinearWorkflow } from "./linear-workflow.js";
 
 const mockLinearClient = vi.mocked(LinearClient);
+const mockLinearWorkflowClient = (client: PartialDeep<LinearClient>) =>
+	fromPartial<LinearClient>(client);
 
 const baseIssue = {
 	id: "issue-id",
@@ -80,9 +83,7 @@ describe("runLinearWorkflow", () => {
 			name: "Jamie",
 			email: "jamie@example.com",
 		});
-		mockLinearClient.mockImplementation(
-			() => client as unknown as LinearClient,
-		);
+		mockLinearClient.mockImplementation(() => mockLinearWorkflowClient(client));
 	});
 
 	afterEach(() => {

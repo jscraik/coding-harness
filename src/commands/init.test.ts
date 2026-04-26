@@ -55,6 +55,9 @@ const EXPECTED_TEMPLATE_PATHS = [
 	"scripts/check-staged-secrets.sh",
 	"scripts/check-doc-style.sh",
 	"scripts/check-related-tests.sh",
+	"scripts/check-public-api-docs.mjs",
+	"scripts/check-code-size.mjs",
+	"scripts/lib/changed-files.mjs",
 	"scripts/check-semgrep-changed.sh",
 	"scripts/check-semgrep-full.sh",
 	"scripts/semgrep-pre-push.yml",
@@ -317,6 +320,7 @@ describe("runInit", () => {
 				"memory",
 				"security-scan",
 				"CodeRabbit",
+				"semgrep-cloud-platform/scan",
 			]);
 			expect(
 				generatedChecks.every(
@@ -328,7 +332,8 @@ describe("runInit", () => {
 					.filter(
 						(entry) =>
 							entry.displayName !== "CodeRabbit" &&
-							entry.displayName !== "security-scan",
+							entry.displayName !== "security-scan" &&
+							entry.displayName !== "semgrep-cloud-platform/scan",
 					)
 					.every((entry) => entry.githubCheckName === "pr-pipeline"),
 			).toBe(true);
@@ -343,6 +348,13 @@ describe("runInit", () => {
 			);
 			expect(codeRabbitCheck?.provider).toBe("coderabbit");
 			expect(codeRabbitCheck?.githubCheckName).toBe("CodeRabbit");
+			const semgrepCloudCheck = generatedChecks.find(
+				(entry) => entry.displayName === "semgrep-cloud-platform/scan",
+			);
+			expect(semgrepCloudCheck?.provider).toBe("semgrep-cloud-platform");
+			expect(semgrepCloudCheck?.githubCheckName).toBe(
+				"semgrep-cloud-platform/scan",
+			);
 
 			const circleConfig = require("node:fs").readFileSync(
 				join(tempDir, ".circleci/config.yml"),
@@ -1530,6 +1542,18 @@ describe("runInit", () => {
 				join(tempDir, "scripts/check-related-tests.sh"),
 				"utf-8",
 			);
+			const publicApiDocs = require("node:fs").readFileSync(
+				join(tempDir, "scripts/check-public-api-docs.mjs"),
+				"utf-8",
+			);
+			const codeSize = require("node:fs").readFileSync(
+				join(tempDir, "scripts/check-code-size.mjs"),
+				"utf-8",
+			);
+			const changedFiles = require("node:fs").readFileSync(
+				join(tempDir, "scripts/lib/changed-files.mjs"),
+				"utf-8",
+			);
 			const semgrepChanged = require("node:fs").readFileSync(
 				join(tempDir, "scripts/check-semgrep-changed.sh"),
 				"utf-8",
@@ -1634,9 +1658,16 @@ describe("runInit", () => {
 			);
 			expect(docStyle).toContain("vale --config .vale.ini");
 			expect(docStyle).toContain('":(glob)docs/**/*.md"');
-			expect(relatedTests).toContain(
-				"pnpm exec vitest related --run --passWithNoTests",
+			expect(relatedTests).toContain("Usage: scripts/check-related-tests.sh");
+			expect(relatedTests).toContain("pnpm exec vitest related --run");
+			expect(relatedTests).not.toContain("--passWithNoTests");
+			expect(publicApiDocs).toContain("[check-public-api-docs]");
+			expect(publicApiDocs).toContain(
+				"exported public API declarations need JSDoc",
 			);
+			expect(codeSize).toContain("[check-code-size]");
+			expect(codeSize).toContain("MAX_FUNCTION_LINES");
+			expect(changedFiles).toContain("collectChangedPaths");
 			expect(semgrepChanged).toContain(
 				'RULESET_PATH="$REPO_ROOT/scripts/semgrep-pre-push.yml"',
 			);
@@ -1675,6 +1706,8 @@ describe("runInit", () => {
 			expect(makefile).toContain(
 				"hooks-commit-msg: ## Validate commit message policy (use HOOK_COMMIT_MSG or MSG_FILE=/path)",
 			);
+			expect(makefile).toContain("\tpnpm run quality:docstrings");
+			expect(makefile).toContain("\tpnpm run quality:size");
 			expect(makefile).toContain("\t$(MAKE) secrets-staged");
 			expect(makefile).toContain("\t$(MAKE) docs-style-changed");
 			expect(makefile).toContain("\t$(MAKE) related-tests");
@@ -1996,6 +2029,9 @@ describe("runInit", () => {
 			expect(environmentCheck).toContain(
 				'"scripts/check-hook-critical-config-sync.sh"',
 			);
+			expect(environmentCheck).toContain('"scripts/check-public-api-docs.mjs"');
+			expect(environmentCheck).toContain('"scripts/check-code-size.mjs"');
+			expect(environmentCheck).toContain('"scripts/lib/changed-files.mjs"');
 			expect(environmentCheck).toContain('"scripts/check-semgrep-changed.sh"');
 			expect(environmentCheck).toContain('"scripts/check-semgrep-full.sh"');
 			expect(environmentCheck).toContain('"scripts/semgrep-pre-push.yml"');
@@ -2014,6 +2050,12 @@ describe("runInit", () => {
 			expect(environmentCheck).toContain("required_package_scripts=(");
 			expect(environmentCheck).toContain(
 				'"semgrep:changed|bash scripts/check-semgrep-changed.sh"',
+			);
+			expect(environmentCheck).toContain(
+				'"quality:docstrings|node scripts/check-public-api-docs.mjs"',
+			);
+			expect(environmentCheck).toContain(
+				'"quality:size|node scripts/check-code-size.mjs"',
 			);
 			expect(environmentCheck).not.toContain("required_simple_git_hooks=(");
 			expect(environmentCheck).toContain(
@@ -2128,13 +2170,15 @@ describe("runInit", () => {
 				'TMP_DIR="$(mktemp -d "$ROOT_DIR/${TRUNC_DIR}")"',
 			);
 			expect(refreshDiagrams).toContain(
-				'EXCLUDE_PATTERNS="node_modules/**,.git/**,dist/**,${TMP_BASENAME}/**"',
+				'EXCLUDE_PATTERNS="node_modules/**,.git/**,dist/**,artifacts/tmp-*/**,artifacts/tmp/**,${TMP_BASENAME}/**"',
 			);
 			expect(refreshDiagrams).toContain(
 				'MAX_FILES="${DIAGRAM_REFRESH_MAX_FILES:-1000}"',
 			);
 			expect(refreshDiagrams).toContain('--max-files "$MAX_FILES"');
 			expect(refreshDiagrams).toContain('cp "$TMP_DIR/diagrams/manifest.json"');
+			expect(refreshDiagrams).toContain("const sourceManifest = (() => {");
+			expect(refreshDiagrams).toContain("...sourceManifest,");
 			expect(diagramFreshness).toContain("is_ignored_change()");
 			expect(diagramFreshness).toContain("is_architecture_sensitive_change()");
 			expect(diagramFreshness).toContain(".diagram/*)");

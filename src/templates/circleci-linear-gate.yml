@@ -1,0 +1,25 @@
+      - run-governance-check:
+          name: linear-gate
+          check_name: linear-gate
+          requires:
+            - pr-template
+          command: |
+            pr_ref="${CIRCLE_PULL_REQUEST:-}"
+            if [[ -z "$pr_ref" && -n "${CIRCLE_BRANCH:-}" ]]; then
+              pr_ref="$(gh pr list --head "$CIRCLE_BRANCH" --state open --json url --jq '.[0].url // ""')"
+            fi
+            if [[ -z "$pr_ref" ]]; then
+              echo "Error: unable to resolve pull request context for linear-gate."
+              exit 1
+            fi
+            branch_name="$(gh pr view "$pr_ref" --json headRefName --jq .headRefName)"
+            pr_title="$(gh pr view "$pr_ref" --json title --jq .title)"
+            pr_body="$(gh pr view "$pr_ref" --json body --jq .body)"
+            bash scripts/run-harness-gate.sh linear-gate \
+              --branch "$branch_name" \
+              --pr-title "$pr_title" \
+              --pr-body "$pr_body" \
+              --json
+          filters:
+            tags:
+              ignore: /.*/

@@ -73,6 +73,9 @@ importers:
       '@brainwav/diagram':
         specifier: ^1.0.8
         version: 1.0.8
+      '@total-typescript/shoehorn':
+        specifier: ^0.1.2
+        version: 0.1.2
       '@types/better-sqlite3':
         specifier: ^7.6.13
         version: 7.6.13
@@ -747,6 +750,9 @@ packages:
   '@sindresorhus/merge-streams@4.0.0':
     resolution: {integrity: sha512-tlqY9xq5ukxTUZBmoOp+m61cqwQD5pHJtFY3Mn8CA8ps6yghLH/Hw8UPdqg4OLmFW3IFlcXnQNmo/dh8HzXYIQ==}
     engines: {node: '>=18'}
+
+  '@total-typescript/shoehorn@0.1.2':
+    resolution: {integrity: sha512-p7nNZbOZIofpDNyP0u1BctFbjxD44Qc+oO5jufgQdFdGIXJLc33QRloJpq7k5T59CTgLWfQSUxsuqLcmeurYRw==}
 
   '@types/better-sqlite3@7.6.13':
     resolution: {integrity: sha512-NMv9ASNARoKksWtsq/SHakpYAYnhBrQgGD8zkLYk/jaK8jUGn08CfEdTRgYhMypUQAfzSP8W6gNLe0q19/t4VA==}
@@ -2945,6 +2951,8 @@ snapshots:
     optional: true
 
   '@sindresorhus/merge-streams@4.0.0': {}
+
+  '@total-typescript/shoehorn@0.1.2': {}
 
   '@types/better-sqlite3@7.6.13':
     dependencies:

@@ -14,6 +14,7 @@
 
 ## Type discipline
 - Explicit types at public API boundaries (functions, modules, component props) are REQUIRED.
+- Exported public API declarations in changed production `src/**` files MUST have JSDoc; `pnpm run quality:docstrings` enforces this changed-file ratchet.
 - Use strict TypeScript configuration and keep boundary validation explicit.
 - `any` SHOULD be avoided in production paths; use concrete types or `unknown` plus narrowing.
 
@@ -43,6 +44,7 @@
 - TypeScript changes MUST pass:
   - `pnpm lint`
   - `pnpm typecheck`
+  - `pnpm run quality:docstrings`
   - `pnpm test`
   - `pnpm audit`
   - `pnpm check`

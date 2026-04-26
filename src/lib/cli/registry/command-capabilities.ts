@@ -2,6 +2,7 @@ import type { CommandSpec } from "./types.js";
 
 export const COMMAND_CATALOG_SCHEMA_VERSION = "harness-command-catalog/v1";
 
+/** High-level grouping used by command help and machine-readable catalogs. */
 export type CommandCategory =
 	| "discovery"
 	| "bootstrap-governance"
@@ -33,9 +34,13 @@ export const COMMAND_CATEGORY_LABELS: Readonly<
 	uncategorized: "Other",
 };
 
+/** Whether a command is expected to mutate the repository or external state. */
 export type CommandMutability = "read" | "write";
+
+/** How safely an agent can retry a command after failure or interruption. */
 export type CommandRetryability = "safe" | "conditional" | "manual";
 
+/** Machine-readable capability metadata for one registry command. */
 export interface CommandCapability {
 	name: string;
 	aliases: string[];
@@ -49,6 +54,7 @@ export interface CommandCapability {
 	safeFirstAlternatives: string[];
 }
 
+/** Versioned command capability catalog emitted by `harness commands --json`. */
 export interface CommandCapabilityCatalogDocument {
 	schemaVersion: typeof COMMAND_CATALOG_SCHEMA_VERSION;
 	generatedAt: string;
@@ -112,6 +118,7 @@ const COMMAND_CATEGORY_BY_NAME: Partial<Record<string, CommandCategory>> = {
 	"context-health": "drift-search-evidence",
 	search: "drift-search-evidence",
 	context: "drift-search-evidence",
+	"source-outline": "drift-search-evidence",
 	"index-context": "drift-search-evidence",
 	"evidence-verify": "drift-search-evidence",
 	"ui:fast": "drift-search-evidence",
@@ -159,6 +166,7 @@ const RETRYABILITY_BY_NAME: Partial<Record<string, CommandRetryability>> = {
 	"local-memory-preflight": "safe",
 	search: "safe",
 	context: "safe",
+	"source-outline": "safe",
 	"index-context": "conditional",
 	"automation-run": "manual",
 	"pilot-rollback": "manual",
@@ -203,6 +211,7 @@ function getCommandRetryability(
 	return mutability === "read" ? "safe" : "conditional";
 }
 
+/** Convert a command registry spec into agent-consumable capability metadata. */
 export function toCommandCapability(spec: CommandSpec): CommandCapability {
 	const mutability = getCommandMutability(spec.name);
 	return {
@@ -221,6 +230,7 @@ export function toCommandCapability(spec: CommandSpec): CommandCapability {
 	};
 }
 
+/** Build the JSON document used by the command capability catalog. */
 export function buildCommandCapabilityCatalogDocument(
 	commands: CommandCapability[],
 ): CommandCapabilityCatalogDocument {
@@ -232,12 +242,14 @@ export function buildCommandCapabilityCatalogDocument(
 	};
 }
 
+/** Return capability metadata for every registered command spec. */
 export function getCommandCapabilities(
 	specs: CommandSpec[],
 ): CommandCapability[] {
 	return specs.map((spec) => toCommandCapability(spec));
 }
 
+/** Build the full capability catalog document from command specs. */
 export function getCommandCapabilityCatalogDocument(
 	specs: CommandSpec[],
 ): CommandCapabilityCatalogDocument {

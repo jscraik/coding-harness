@@ -1,6 +1,8 @@
 agentic
 AGENTS
 allowlisted
+allowlist
+allowlists
 APIs
 arg
 args
@@ -25,6 +27,8 @@ cutover
 deps
 dev
 Dockerfile
+docstring
+docstrings
 dotfiles
 env
 ESLint

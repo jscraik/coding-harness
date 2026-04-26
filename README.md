@@ -165,9 +165,9 @@ The code, tests, and recent history point to a few especially strong surfaces.
   `scripts/validate-codestyle.sh` so a downstream repo has a local verification
   contract instead of a loosely documented checklist.
 - **Context, search, and multi-repo audit.** `search`, `context`,
-  `index-context`, `context-health`, `tooling-audit`, and `org-audit` make the
-  project broader than "just repo init". It also helps teams inspect governed
-  context and drift across repositories.
+  `source-outline`, `index-context`, `context-health`, `tooling-audit`, and
+  `org-audit` make the project broader than "just repo init". It also helps
+  teams inspect governed context and drift across repositories.
 
 If you want the highest-confidence paths today, start with `init`, `upgrade`,
 `ci-migrate`, `docs-gate` or `review-gate`, `verify-coderabbit`,
@@ -186,10 +186,13 @@ artifacts that are versioned alongside code.
   `scripts/check-scorecard-regressions.mjs`
 - Continuous CI security gate:
   `.circleci/config.yml` (`security-scan` in `pr-pipeline`)
+- External Semgrep Cloud gate:
+  GitHub required check `semgrep-cloud-platform/scan`
 
 Security scanning now runs in CircleCI as part of `pr-pipeline`. GitHub Actions
 in this repository is reserved for release publishing only
 (`.github/workflows/release-private-npm.yml`).
+Semgrep Cloud is enforced separately as an external GitHub App required check.
 
 ## Installation
 
@@ -251,11 +254,26 @@ Use `bash scripts/verify-work.sh` as the canonical repo-local verification
 entrypoint. It runs repo-local preflight in `required` Local Memory mode and
 then executes the full verification bundle.
 
+When executable behavior changes, do not stop at broad validation alone. Run
+the smallest real code path that exercises the exact production code touched:
+prefer the production function, class, CLI command, shell script, validator,
+or route directly. If no existing test covers the path, use a temporary local
+reproduction harness under `codex-scripts/` and keep that directory gitignored.
+If the exact path cannot run because it needs unavailable credentials, external
+services, unsafe side effects, or generated runtime state, say so explicitly
+and run the nearest meaningful validation instead.
+
 For a quicker local loop, use:
 
 ```bash
 bash scripts/verify-work.sh --fast
 ```
+
+The fast lane now includes changed-file enforcement for public API docstrings,
+function/file size, and related tests through `pnpm run quality:docstrings`,
+`pnpm run quality:size`, and `pnpm run test:related`. Related tests must find
+and run a real Vitest related path; the gate no longer passes silently when no
+test covers changed production source.
 
 For downstream repos, this is one of the most practical parts of harness. It
 turns "what do I need to run before handoff?" into a single local command.
@@ -449,84 +467,89 @@ harness commands --json | jq '
 
 ### Bootstrap And Governance
 
-| Command | Purpose |
-| --- | --- |
-| `commands` | Emit the versioned machine-readable command capability catalog (`--json`) |
-| `init` | Scaffold or update harness-managed repo surfaces (`--project-type`, `--json`, `--dry-run`, `--force`, `--track`, `--update`, `--migrate`, `--minimal`, `--issue-tracker`) |
-| `eject` | Safely remove harness-managed files and templates, including legacy Greptile artifacts, while preserving custom non-Greptile CI workflows (`--dry-run`, `--force`) |
-| `check` | Zero-config repo health snapshot — works before full setup |
-| `audit` | Audit for configuration drift, parity gaps, and governance posture |
-| `doctor` | Check all gate prerequisites (tools, files, config, CI) |
-| `health` | Unified gate status scorecard across all gates |
-| `brain` | Query and update Project Brain context artifacts |
-| `contract` | Validate `harness.contract.json` or print the JSON Schema (`init`, `validate`, `schema`) |
-| `upgrade` | Safely upgrade harness in an existing repo (`--dry-run` supported) |
-| `ci-migrate` | Stage, verify, commit, abort, sync branch protection, or promote CI mode |
-| `branch-protect` | Configure GitHub branch protection rulesets |
-| `verify-work` | Run canonical repo-local verification (fresh or resume mode) |
-| `verify-coderabbit` | Verify CodeRabbit configuration and remote wiring |
-| `preset` | List and inspect bundled presets |
-| `symphony-check` | Validate `WORKFLOW.md`, Linear config, and transition-table readiness |
+| Command             | Purpose                                                                                                                                                                   |
+| ------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `commands`          | Emit the versioned machine-readable command capability catalog (`--json`)                                                                                                 |
+| `init`              | Scaffold or update harness-managed repo surfaces (`--project-type`, `--json`, `--dry-run`, `--force`, `--track`, `--update`, `--migrate`, `--minimal`, `--issue-tracker`) |
+| `eject`             | Safely remove harness-managed files and templates, including legacy Greptile artifacts, while preserving custom non-Greptile CI workflows (`--dry-run`, `--force`)        |
+| `check`             | Zero-config repo health snapshot — works before full setup                                                                                                                |
+| `audit`             | Audit for configuration drift, parity gaps, and governance posture                                                                                                        |
+| `doctor`            | Check all gate prerequisites (tools, files, config, CI)                                                                                                                   |
+| `health`            | Unified gate status scorecard across all gates                                                                                                                            |
+| `brain`             | Query and update Project Brain context artifacts                                                                                                                          |
+| `contract`          | Validate `harness.contract.json` or print the JSON Schema (`init`, `validate`, `schema`)                                                                                  |
+| `upgrade`           | Safely upgrade harness in an existing repo (`--dry-run` supported)                                                                                                        |
+| `ci-migrate`        | Stage, verify, commit, abort, sync branch protection, or promote CI mode                                                                                                  |
+| `branch-protect`    | Configure GitHub branch protection rulesets                                                                                                                               |
+| `verify-work`       | Run canonical repo-local verification (fresh or resume mode)                                                                                                              |
+| `verify-coderabbit` | Verify CodeRabbit configuration and remote wiring                                                                                                                         |
+| `preset`            | List and inspect bundled presets                                                                                                                                          |
+| `symphony-check`    | Validate `WORKFLOW.md`, Linear config, and transition-table readiness                                                                                                     |
 
 ### Review And Policy Gates
 
-| Command | Purpose |
-| --- | --- |
-| `policy-gate` | Validate policy expectations from changed files |
-| `preflight-gate` | Run fast policy checks before expensive work |
-| `review-gate` | Validate SHA-linked review readiness (review check + review-policy required checks) |
-| `docs-gate` | Enforce documentation parity for governed changes |
-| `plan-gate` | Validate plan IDs, traceability, and acceptance evidence |
-| `brainstorm-gate` | Validate brainstorm artifacts |
-| `prompt-gate` | Validate prompt template usage |
-| `pr-template-gate` | Validate PR template completion and placeholder replacement |
-| `license-gate` | Validate open-source license expectations |
-| `check-authz` | Validate authorization policy for mutative operations |
-| `check-environment` | Validate pilot environment governance checks |
-| `local-memory-preflight` | Run the structured Local Memory preflight smoke checks |
-| `blast-radius` | Determine required checks from changed files |
-| `risk-tier` | Classify changed files by risk tier |
-| `diff-budget` | Enforce diff budget constraints |
-| `observability-gate` | Check metrics cardinality limits |
-| `silent-error` | Detect silent error-handling anti-patterns |
-| `memory-gate` | Validate local-memory workflow compliance |
+| Command                  | Purpose                                                                             |
+| ------------------------ | ----------------------------------------------------------------------------------- |
+| `policy-gate`            | Validate policy expectations from changed files                                     |
+| `preflight-gate`         | Run fast policy checks before expensive work                                        |
+| `review-gate`            | Validate SHA-linked review readiness (review check + review-policy required checks) |
+| `docs-gate`              | Enforce documentation parity for governed changes                                   |
+| `plan-gate`              | Validate plan IDs, traceability, and acceptance evidence                            |
+| `brainstorm-gate`        | Validate brainstorm artifacts                                                       |
+| `prompt-gate`            | Validate prompt template usage                                                      |
+| `pr-template-gate`       | Validate PR template completion and placeholder replacement                         |
+| `license-gate`           | Validate open-source license expectations                                           |
+| `check-authz`            | Validate authorization policy for mutative operations                               |
+| `check-environment`      | Validate pilot environment governance checks                                        |
+| `local-memory-preflight` | Run the structured Local Memory preflight smoke checks                              |
+| `blast-radius`           | Determine required checks from changed files                                        |
+| `risk-tier`              | Classify changed files by risk tier                                                 |
+| `diff-budget`            | Enforce diff budget constraints                                                     |
+| `observability-gate`     | Check metrics cardinality limits                                                    |
+| `silent-error`           | Detect silent error-handling anti-patterns                                          |
+| `memory-gate`            | Validate local-memory workflow compliance                                           |
 
 ### Linear And Workflow Operations
 
-| Command | Purpose |
-| --- | --- |
-| `linear` | Claim, hand off, close, prepare, or sync Linear work from one command family |
-| `linear-gate` | Enforce Linear-first intake, branch naming, and PR linkage |
-| `workflow:generate` | Generate compact workflow specs from annotated markdown |
+| Command             | Purpose                                                                      |
+| ------------------- | ---------------------------------------------------------------------------- |
+| `linear`            | Claim, hand off, close, prepare, or sync Linear work from one command family |
+| `linear-gate`       | Enforce Linear-first intake, branch naming, and PR linkage                   |
+| `workflow:generate` | Generate compact workflow specs from annotated markdown                      |
 
 ### Pilot, Remediation, And Automation
 
-| Command | Purpose |
-| --- | --- |
+| Command          | Purpose                                                  |
+| ---------------- | -------------------------------------------------------- |
 | `pilot-evaluate` | Evaluate pilot metrics and determine promotion readiness |
-| `pilot-rollback` | Move pilot mode between autonomous and manual states |
-| `simulate` | Run counterfactual policy simulation |
-| `automation-run` | Execute idempotent automation playbooks |
-| `gap-case` | Manage production gap cases |
-| `remediate` | Plan and run deterministic remediation for findings |
-| `replay` | Re-run policy checks from saved snapshots |
+| `pilot-rollback` | Move pilot mode between autonomous and manual states     |
+| `simulate`       | Run counterfactual policy simulation                     |
+| `automation-run` | Execute idempotent automation playbooks                  |
+| `gap-case`       | Manage production gap cases                              |
+| `remediate`      | Plan and run deterministic remediation for findings      |
+| `replay`         | Re-run policy checks from saved snapshots                |
 
 ### Drift, Search, And Evidence
 
-| Command | Purpose |
-| --- | --- |
-| `drift-gate` | Evaluate consistency drift across governance surfaces |
-| `org-audit` | Scan multi-repo governance and drift posture |
-| `tooling-audit` | Audit managed repo tooling baselines |
-| `gardener` | Detect stale docs and broken links |
-| `context-health` | Generate advisory context-integrity scorecards |
-| `search` | Run hybrid lexical and semantic search; if `--limit` or `--threshold` is omitted, `contextCompact` policy applies when present, otherwise static defaults (`DEFAULT_SEARCH_LIMIT`, `DEFAULT_SIMILARITY_THRESHOLD`) are used |
-| `context` | Search indexed plans, specs, and brainstorms; if `--limit` or `--threshold` is omitted, `contextCompact` policy applies when present, otherwise static defaults (`DEFAULT_SEARCH_LIMIT`, `DEFAULT_SIMILARITY_THRESHOLD`) are used |
-| `index-context` | Build the local semantic-search index |
-| `evidence-verify` | Validate screenshot and evidence artifacts |
-| `ui:fast` | Run a Storybook-first local UI loop |
-| `ui:verify` | Run Playwright smoke verification with evidence capture |
-| `ui:explore` | Run agent-browser exploratory testing |
+| Command           | Purpose                                                                                                                                                                                                                           |
+| ----------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `drift-gate`      | Evaluate consistency drift across governance surfaces                                                                                                                                                                             |
+| `org-audit`       | Scan multi-repo governance and drift posture                                                                                                                                                                                      |
+| `tooling-audit`   | Audit managed repo tooling baselines                                                                                                                                                                                              |
+| `gardener`        | Detect stale docs and broken links                                                                                                                                                                                                |
+| `context-health`  | Generate advisory context-integrity scorecards                                                                                                                                                                                    |
+| `search`          | Run hybrid lexical and semantic search; if `--limit` or `--threshold` is omitted, `contextCompact` policy applies when present, otherwise static defaults (`DEFAULT_SEARCH_LIMIT`, `DEFAULT_SIMILARITY_THRESHOLD`) are used       |
+| `context`         | Search indexed plans, specs, and brainstorms; if `--limit` or `--threshold` is omitted, `contextCompact` policy applies when present, otherwise static defaults (`DEFAULT_SEARCH_LIMIT`, `DEFAULT_SIMILARITY_THRESHOLD`) are used |
+| `source-outline`  | Print declaration-style TypeScript-family source signatures and comments, with optional single-symbol implementation unwrapping via `--symbol`                                                                                    |
+| `index-context`   | Build the local semantic-search index                                                                                                                                                                                             |
+| `evidence-verify` | Validate screenshot and evidence artifacts                                                                                                                                                                                        |
+| `ui:fast`         | Run a Storybook-first local UI loop                                                                                                                                                                                               |
+| `ui:verify`       | Run Playwright smoke verification with evidence capture                                                                                                                                                                           |
+| `ui:explore`      | Run agent-browser exploratory testing                                                                                                                                                                                             |
+
+For agent source inspection, use `harness source-outline <path>` before opening
+raw TypeScript-family files. If implementation detail is needed, unwrap one
+symbol at a time with `--symbol <name>` so context growth stays deliberate.
 
 ## Requirements
 
@@ -561,6 +584,11 @@ pnpm build
 pnpm exec tsx src/cli.ts --help
 pnpm check
 ```
+
+When you change executable behavior in this repository, run the smallest real
+path that exercises the touched production code before claiming it works. If
+you need a throwaway reproduction harness, keep it under `codex-scripts/` so
+it stays local-only.
 
 When you change runtime behavior or artifact formats, run the deeper validation
 path as well:

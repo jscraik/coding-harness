@@ -1,13 +1,15 @@
 ---
-last_validated: 2026-04-23
+last_validated: 2026-04-25
 ---
 
 # Architecture bootstrap
 
 ## Table of Contents
+
 - [Purpose](#purpose)
 - [One-task-at-a-time intake](#one-task-at-a-time-intake)
 - [Artifact validation gates](#artifact-validation-gates)
+- [Exact behavior evidence](#exact-behavior-evidence)
 - [Refresh workflow](#refresh-workflow)
 - [Deterministic Fingerprints](#deterministic-fingerprints)
 - [Stop conditions](#stop-conditions)
@@ -19,10 +21,13 @@ Use this guide first when a task changes architecture, policy flow, or cross-com
 ## One-task-at-a-time intake
 
 1. Confirm architecture artifacts exist:
-   - `AI/diagrams/manifest.json`
+   - `.diagram/manifest.json`
    - `AI/context/diagram-context.md`
-2. Read `AI/diagrams/manifest.json` to identify generated diagram types and timestamp.
+2. Read `.diagram/manifest.json` to identify generated diagram types and timestamp.
 3. Read only the relevant sections in `AI/context/diagram-context.md` for the task.
+   - For schema, persistence, or data-integrity work, check `## erd` when
+     present; otherwise use `## database` as the current diagram-cli
+     persistence view.
 4. Route to deeper SOPs in `docs/agents/` after architecture context is loaded.
 
 ## Artifact validation gates
@@ -30,7 +35,7 @@ Use this guide first when a task changes architecture, policy flow, or cross-com
 Run these checks before architecture-sensitive edits:
 
 ```bash
-jq -r '.generatedAt, (.diagrams | length)' AI/diagrams/manifest.json
+jq -r '.generatedAt, (.diagrams | length)' .diagram/manifest.json
 rg -n '^## ' AI/context/diagram-context.md
 harness docs-gate --mode advisory --json
 ```
@@ -38,6 +43,25 @@ harness docs-gate --mode advisory --json
 If either command fails, refresh artifacts before proceeding.
 When `docs-gate` reports required documentation surfaces for the same change category, update the listed operator guides in that PR before merge.
 For north-star contract/scaffold updates that affect workflow authority, update this guide and `docs/agents/07b-agent-governance.md` together in the same PR.
+For required-check architecture changes, keep the branch-protection identity set aligned across `harness.contract.json`, `.harness/ci-required-checks.json`, generated scaffold templates, and external app checks such as `semgrep-cloud-platform/scan`.
+
+## Exact behavior evidence
+
+When architecture or cross-command behavior changes, do not rely only on broad
+validation. Run the smallest real executable path that exercises the exact
+production code touched whenever feasible.
+
+Prefer invoking the production function, class, CLI command, shell script,
+validator, or route directly. If no existing test covers the path, create a
+temporary local reproduction harness under `codex-scripts/`, keep it
+gitignored, and import or invoke production code directly instead of copying
+implementation into the harness.
+
+If the exact path cannot run because it depends on unavailable credentials,
+external services, unsafe side effects, or missing generated runtime state,
+record that blocker explicitly and run the nearest meaningful validation
+instead. Do not describe production behavior as verified unless the touched
+path actually ran.
 
 ## Refresh workflow
 
@@ -46,7 +70,7 @@ Use this sequence when artifacts are missing or stale:
 ```bash
 bash scripts/refresh-diagram-context.sh --dry-run
 bash scripts/refresh-diagram-context.sh --force
-jq -r '.generated_at, .diagram_count, .changed' AI/context/diagram-context.meta.json
+jq -r '.generated_at, .diagram_count, .changed' .diagram/context/diagram-context.meta.json
 ```
 
 The local `make hooks-pre-push` path also runs `scripts/check-diagram-freshness.sh`. That gate now skips refresh work unless architecture-sensitive implementation paths changed, and it ignores test-only source changes to keep the local loop tighter.
@@ -63,6 +87,7 @@ The local `make hooks-pre-push` path also runs `scripts/check-diagram-freshness.
 ## Stop conditions
 
 Stop and ask for direction when any gate fails:
+
 - `scripts/refresh-diagram-context.sh` exits non-zero.
 - `AI/context/diagram-context.md` is missing after refresh.
 - Diagram output does not include the command or module area touched by your change.

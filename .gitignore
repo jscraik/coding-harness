@@ -107,3 +107,5 @@ docs/sketches/
 # Local git worktrees
 .worktrees/
 /.codex/hook-conformance.json
+.local/
+/codex-scripts/

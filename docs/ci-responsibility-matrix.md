@@ -1,5 +1,5 @@
 ---
-last_validated: 2026-04-19
+last_validated: 2026-04-25
 ---
 
 # CI Responsibility Matrix
@@ -29,39 +29,41 @@ This document is the operational source of truth for CI ownership intent. `harne
 2. **No duplicated gates.** The same check must not run in both systems unless explicitly transitional.
 3. **Branch protection references canonical checks only.** The required-check list must match the owning system `githubCheckName` values.
 4. **Publishing is single-owner.** GitHub Actions is the only publish path in this repository.
-5. **Security scanning is single-owner.** CircleCI is the only security scan owner in this repository.
+5. **Repo-run security scanning is single-owner.** CircleCI is the only repo-run security scan owner in this repository; independent app checks such as Semgrep Cloud stay external required checks.
 
 ## Responsibility Assignment
 
 ### CircleCI Owns
 
-| Responsibility | Workflow | Job | Trigger |
-|---|---|---|---|
-| PR governance and quality checks (`pr-template`, `linear-gate`, `risk-policy-gate`, `docs-gate`, `lint`, `typecheck`, `test`, `audit`, `check`, `memory`) | `pr-pipeline` | `run-governance-check` fan-out jobs | Pull request and merge queue events via GitHub webhook |
-| Security scanning (`security-scan`) | `security-scan` | `security-scan` | Pull request and merge queue events via GitHub webhook |
-| Environment and dependency policy checks (`dependency-scan`, `orb-pinning`) | `pr-pipeline` | `dependency-scan`, `orb-pinning` | Pull request and merge queue events via GitHub webhook |
+| Responsibility                                                                                                                                            | Workflow        | Job                                 | Trigger                                                |
+| --------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------- | ----------------------------------- | ------------------------------------------------------ |
+| PR governance and quality checks (`pr-template`, `linear-gate`, `risk-policy-gate`, `docs-gate`, `lint`, `typecheck`, `test`, `audit`, `check`, `memory`) | `pr-pipeline`   | `run-governance-check` fan-out jobs | Pull request and merge queue events via GitHub webhook |
+| Security scanning (`security-scan`)                                                                                                                       | `security-scan` | `security-scan`                     | Pull request and merge queue events via GitHub webhook |
+| Environment and dependency policy checks (`dependency-scan`, `orb-pinning`)                                                                               | `pr-pipeline`   | `dependency-scan`, `orb-pinning`    | Pull request and merge queue events via GitHub webhook |
 
 ### GitHub Actions Owns
 
-| Responsibility | Workflow | Job | Trigger | Workflow File |
-|---|---|---|---|---|
+| Responsibility                                        | Workflow              | Job       | Trigger                                       | Workflow File                               |
+| ----------------------------------------------------- | --------------------- | --------- | --------------------------------------------- | ------------------------------------------- |
 | npm publish + provenance attestation + GitHub Release | `release-private-npm` | `publish` | `Semver` tag push and guarded manual dispatch | `.github/workflows/release-private-npm.yml` |
 
 ### Not Owned by Either CI System
 
-| Check Name | Source | Notes |
-|---|---|---|
-| `CodeRabbit` | CodeRabbit GitHub App | Independent review bot |
+| Check Name                    | Source                   | Notes                                        |
+| ----------------------------- | ------------------------ | -------------------------------------------- |
+| `CodeRabbit`                  | CodeRabbit GitHub App    | Independent review bot                       |
+| `semgrep-cloud-platform/scan` | Semgrep Cloud GitHub App | Independent Semgrep Cloud code scanning gate |
 
 ## Canonical Status Checks
 
 These are the check names that GitHub branch protection must reference:
 
-| Canonical Check Name | Owning System | Workflow File |
-|---|---|---|
-| `pr-pipeline` | CircleCI | `.circleci/config.yml` |
-| `security-scan` | CircleCI | `.circleci/config.yml` |
-| `CodeRabbit` | CodeRabbit App | (external) |
+| Canonical Check Name          | Owning System     | Workflow File          |
+| ----------------------------- | ----------------- | ---------------------- |
+| `pr-pipeline`                 | CircleCI          | `.circleci/config.yml` |
+| `security-scan`               | CircleCI          | `.circleci/config.yml` |
+| `CodeRabbit`                  | CodeRabbit App    | (external)             |
+| `semgrep-cloud-platform/scan` | Semgrep Cloud App | (external)             |
 
 All harness governance checks (`pr-template`, `linear-gate`, `risk-policy-gate`, `docs-gate`, `lint`, `typecheck`, `test`, `audit`, `check`, `memory`) are tracked as CircleCI fan-out jobs under the `pr-pipeline` workflow.
 
@@ -90,7 +92,7 @@ The repository is in a **CircleCI-primary state**:
 
 - CircleCI is the canonical owner for PR governance and security checks.
 - GitHub Actions is retained only for release publishing at `.github/workflows/release-private-npm.yml`.
-- `.harness/ci-required-checks.json` maps `security-scan` to CircleCI and `CodeRabbit` to the external app.
+- `.harness/ci-required-checks.json` maps `security-scan` to CircleCI, `CodeRabbit` to the CodeRabbit app, and `semgrep-cloud-platform/scan` to the Semgrep Cloud app.
 
 ## Target State
 
@@ -98,7 +100,7 @@ Current target:
 
 1. CircleCI remains the sole owner of non-release CI checks.
 2. GitHub Actions remains release-only.
-3. Branch protection references `pr-pipeline`, `security-scan`, and `CodeRabbit`.
+3. Branch protection references `pr-pipeline`, `security-scan`, `CodeRabbit`, and `semgrep-cloud-platform/scan`.
 4. No fallback or duplicate non-release workflows exist in `.github/workflows/`.
 
 ## Migration Rules
@@ -132,11 +134,11 @@ For ownership overlap detection, manually verify:
 
 ## Secrets and Runtime Parity
 
-| Dimension | CircleCI | GitHub Actions |
-|---|---|---|
-| Node.js version | `cimg/node:24.13` | `actions/setup-node@v6` (node-version: 24) |
-| pnpm version | npm install --global `pnpm@10.33.0` | `pnpm/action-setup@v5` (version: `10.33.0`) |
-| Install command | `pnpm install --frozen-lockfile --prefer-offline` | `pnpm install --frozen-lockfile` |
-| Security scan lane | `security-scan` job in `.circleci/config.yml` | N/A (release-only) |
-| npm publish token | N/A (does not publish) | `NPM_TOKEN` secret or OIDC (`id-token: write`) |
-| Attestation signing | N/A | OIDC (`actions/attest-build-provenance`) |
+| Dimension           | CircleCI                                          | GitHub Actions                                 |
+| ------------------- | ------------------------------------------------- | ---------------------------------------------- |
+| Node.js version     | `cimg/node:24.13`                                 | `actions/setup-node@v6` (node-version: 24)     |
+| pnpm version        | npm install --global `pnpm@10.33.0`               | `pnpm/action-setup@v5` (version: `10.33.0`)    |
+| Install command     | `pnpm install --frozen-lockfile --prefer-offline` | `pnpm install --frozen-lockfile`               |
+| Security scan lane  | `security-scan` job in `.circleci/config.yml`     | N/A (release-only)                             |
+| npm publish token   | N/A (does not publish)                            | `NPM_TOKEN` secret or OIDC (`id-token: write`) |
+| Attestation signing | N/A                                               | OIDC (`actions/attest-build-provenance`)       |

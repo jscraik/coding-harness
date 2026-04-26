@@ -16,6 +16,7 @@ This repository is a TypeScript control plane for agentic development and review
 ## Required Essentials
 - Runtime/toolchain: `pnpm@10.33.0` and Node `>=24.0.0` (see `package.json`).
 - Baseline gates: `pnpm codestyle:parity`, `pnpm check`, `bash scripts/validate-codestyle.sh`, and `bash scripts/verify-work.sh`.
+- Branch-protection defaults include the external Semgrep Cloud GitHub App check `semgrep-cloud-platform/scan`; keep it aligned across generated contracts, `.harness/ci-required-checks.json`, and required-check docs.
 - Compatibility posture: canonical-only.
 - Treat repo evidence (`package.json`, lockfiles, tsconfig, scripts) as authoritative over copied instructions.
 
@@ -65,6 +66,10 @@ Notes:
 
 ## Quality Checks
 - During iteration, run the narrowest check first, then `bash scripts/validate-codestyle.sh --fast`.
+- Changed production source must satisfy `pnpm run quality:docstrings`, `pnpm run quality:size`, and `pnpm run test:related`; these are wired into `pnpm check`, `bash scripts/validate-codestyle.sh --fast`, and local pre-commit hooks.
+- When executable behavior changes, run the smallest real code path that exercises the exact production code touched before claiming the change is verified.
+- Prefer invoking the production function, class, CLI command, shell script, validator, or route directly. If no existing test covers the path, create a temporary reproduction harness under `codex-scripts/` and keep that directory gitignored.
+- If the exact path cannot run because of unavailable credentials, external services, unsafe side effects, or missing generated state, state the blocker clearly, run the nearest meaningful validation, and do not describe production behavior as verified unless the touched path actually ran.
 - Before handoff when behavior changed, run `bash scripts/validate-codestyle.sh`; use `bash scripts/verify-work.sh` as the broader readiness gate.
 - If runtime or artifact behavior changed, run `pnpm test:deep`.
 - When docs-gate categories are affected, run `bash scripts/run-harness-gate.sh docs-gate --mode required --json` and clear warnings before merge.

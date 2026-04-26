@@ -1,5 +1,5 @@
 ---
-last_validated: 2026-04-18
+last_validated: 2026-04-25
 ---
 
 # 17 — CI Required Checks vs GitHub Branch Protection
@@ -21,10 +21,10 @@ last_validated: 2026-04-18
 
 The harness maintains **two independent "required checks" concepts** that are often confused:
 
-| System | File / Location | Purpose | Example values |
-|--------|----------------|---------|----------------|
-| **Harness internal checks** | `.harness/ci-required-checks.json` | Tracks what the harness considers a complete CI run for governance gates | `lint`, `typecheck`, `test`, `audit`, `docs-gate` |
-| **GitHub branch protection** | GitHub Ruleset / `harness.contract.json → branchProtection.requiredChecks` | The actual check names GitHub enforces before a PR can merge | `pr-pipeline`, `harness-gates` |
+| System                       | File / Location                                                            | Purpose                                                                  | Example values                                    |
+| ---------------------------- | -------------------------------------------------------------------------- | ------------------------------------------------------------------------ | ------------------------------------------------- |
+| **Harness internal checks**  | `.harness/ci-required-checks.json`                                         | Tracks what the harness considers a complete CI run for governance gates | `lint`, `typecheck`, `test`, `audit`, `docs-gate` |
+| **GitHub branch protection** | GitHub Ruleset / `harness.contract.json → branchProtection.requiredChecks` | The actual check names GitHub enforces before a PR can merge             | `pr-pipeline`, `harness-gates`                    |
 
 > [!IMPORTANT]
 > These systems use **completely different check names**. A project can have 15 harness internal checks but only 2 GitHub branch protection checks. They are independent.
@@ -48,6 +48,7 @@ GitHub check run: "pr-pipeline"  ← only this name matters for branch protectio
 When CI jobs or local validation steps invoke `harness linear*` commands, the runner must expose `LINEAR_API_KEY` (or pass `--token` explicitly). If secrets are stored in `~/.codex/.env`, load that file into the active shell/session first, and run `harness symphony-check` when validating secret discovery behavior.
 
 The harness internal checks in `ci-required-checks.json` are used by:
+
 - `harness drift-gate` — to verify all expected checks completed
 - `harness doctor` — to validate the manifest is present and aligned
 - `harness ci-migrate` — to bootstrap and track the check manifest across migrations
@@ -62,42 +63,42 @@ Each entry in `.harness/ci-required-checks.json` supports optional canonical orc
 
 ```json
 {
-  "version": 1,
-  "activeProvider": "circleci",
-  "requiredChecks": [
-    {
-      "policyId": "required-check-1",
-      "displayName": "lint",
-      "sourceAppSlug": "circleci",
-      "sourceAppId": "circleci",
-      "externalIdPattern": "^lint$",
-      "requiredOnEvents": ["pull_request", "merge_group"],
-      "freshnessWindowDays": 7,
-      "class": "required",
-      "githubCheckName": "pr-pipeline",
-      "gateId": "lint",
-      "executionClass": "read_only_parallel",
-      "failureClassDefault": "transient_infra",
-      "order": 20,
-      "enabled": true
-    },
-    {
-      "policyId": "required-check-7",
-      "displayName": "docs-gate",
-      "sourceAppSlug": "circleci",
-      "sourceAppId": "circleci",
-      "externalIdPattern": "^docs-gate$",
-      "requiredOnEvents": ["pull_request", "merge_group"],
-      "freshnessWindowDays": 7,
-      "class": "required",
-      "githubCheckName": "pr-pipeline",
-      "gateId": "docs-gate",
-      "executionClass": "serial_guarded",
-      "failureClassDefault": "contract_policy",
-      "order": 40,
-      "enabled": true
-    }
-  ]
+	"version": 1,
+	"activeProvider": "circleci",
+	"requiredChecks": [
+		{
+			"policyId": "required-check-1",
+			"displayName": "lint",
+			"sourceAppSlug": "circleci",
+			"sourceAppId": "circleci",
+			"externalIdPattern": "^lint$",
+			"requiredOnEvents": ["pull_request", "merge_group"],
+			"freshnessWindowDays": 7,
+			"class": "required",
+			"githubCheckName": "pr-pipeline",
+			"gateId": "lint",
+			"executionClass": "read_only_parallel",
+			"failureClassDefault": "transient_infra",
+			"order": 20,
+			"enabled": true
+		},
+		{
+			"policyId": "required-check-7",
+			"displayName": "docs-gate",
+			"sourceAppSlug": "circleci",
+			"sourceAppId": "circleci",
+			"externalIdPattern": "^docs-gate$",
+			"requiredOnEvents": ["pull_request", "merge_group"],
+			"freshnessWindowDays": 7,
+			"class": "required",
+			"githubCheckName": "pr-pipeline",
+			"gateId": "docs-gate",
+			"executionClass": "serial_guarded",
+			"failureClassDefault": "contract_policy",
+			"order": 40,
+			"enabled": true
+		}
+	]
 }
 ```
 
@@ -145,10 +146,10 @@ Rollback/remediation when identity tuple changes break resume compatibility:
 
 CircleCI reports **one check run per workflow**, not per job:
 
-| CircleCI entity | GitHub check-run name |
-|---|---|
-| Workflow `pr-pipeline` | `pr-pipeline` |
-| Workflow `harness-gates` | `harness-gates` |
+| CircleCI entity                  | GitHub check-run name                    |
+| -------------------------------- | ---------------------------------------- |
+| Workflow `pr-pipeline`           | `pr-pipeline`                            |
+| Workflow `harness-gates`         | `harness-gates`                          |
 | Individual jobs (`lint`, `test`) | ❌ not visible as separate GitHub checks |
 
 > [!NOTE]
@@ -158,10 +159,10 @@ CircleCI reports **one check run per workflow**, not per job:
 
 GHA reports **one check run per job** under the workflow:
 
-| GHA entity | GitHub check-run name |
-|---|---|
+| GHA entity                          | GitHub check-run name      |
+| ----------------------------------- | -------------------------- |
 | Workflow `pr-pipeline` / job `lint` | `lint` (just the job name) |
-| Workflow `pr-pipeline` / job `test` | `test` |
+| Workflow `pr-pipeline` / job `test` | `test`                     |
 
 > [!NOTE]
 > With GitHub Actions, individual job names **do** appear as separate GitHub check-run entries and can each be required in branch protection.
@@ -178,6 +179,7 @@ Add these to GitHub branch protection rulesets:
 pr-pipeline     ← CircleCI workflow-level check context for harness checks
 security-scan   ← CircleCI security check context
 CodeRabbit      ← CodeRabbit review check context
+semgrep-cloud-platform/scan  ← Semgrep Cloud code scanning check context
 ```
 
 Run `harness branch-protect` to apply via the contract.
@@ -207,6 +209,7 @@ harness ci-migrate status --provider circleci
 #   GitHub branch protection check: pr-pipeline
 #   GitHub branch protection check: security-scan
 #   GitHub branch protection check: CodeRabbit
+#   GitHub branch protection check: semgrep-cloud-platform/scan
 ```
 
 `harness ci-migrate bootstrap` seeds `.harness/ci-required-checks.json` and adds `githubCheckName` metadata automatically for the target provider.

@@ -42,6 +42,7 @@ bash scripts/verify-work.sh
 | `pnpm typecheck` | TypeScript compiler no-emit check |
 | `pnpm test` | Vitest run |
 | `pnpm build` | Compile to dist/ |
+| `harness source-outline <path>` | Inspect TypeScript-family comments and signatures before raw file reads |
 
 ## Where to go next
 

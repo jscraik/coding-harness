@@ -4527,8 +4527,8 @@ describe("runCIMigrateCLI", () => {
 		const externalCheck = manifest.requiredChecks.find(
 			(check) => check.displayName === "semgrep-cloud-platform/scan",
 		);
-		expect(externalCheck?.sourceAppSlug).toBe("external");
-		expect(externalCheck?.sourceAppId).toBe("external");
+		expect(externalCheck?.sourceAppSlug).toBe("semgrep-cloud-platform");
+		expect(externalCheck?.sourceAppId).toBe("semgrep-cloud-platform");
 		expect(externalCheck?.githubCheckName).toBe("semgrep-cloud-platform/scan");
 		expect(externalCheck?.class).toBe("required");
 		expect(

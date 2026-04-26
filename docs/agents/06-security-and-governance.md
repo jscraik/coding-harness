@@ -1,5 +1,5 @@
 ---
-last_validated: 2026-04-22
+last_validated: 2026-04-25
 ---
 
 # Security and governance
@@ -58,11 +58,12 @@ Failure mode is intentionally fail-closed: missing code-style files, checksum dr
 - If sensitive material appears in a file, sanitize and rotate as soon as practical.
 - Keep environment-specific credentials outside repo and out of command snippets unless placeholders are explicit.
 - Keep repo-specific Gitleaks allow lists in the repo-root `.gitleaks.toml` so staged scans and manual secret scans share the same reviewed exceptions.
-- CircleCI now owns non-release security scanning in this repository. Keep `security-scan` in `.circleci/config.yml` and avoid reintroducing non-release GitHub Actions security workflows.
+- CircleCI now owns repo-run non-release security scanning in this repository. Keep `security-scan` in `.circleci/config.yml` and avoid reintroducing non-release GitHub Actions security workflows. Semgrep Cloud is enforced separately through the external GitHub App check `semgrep-cloud-platform/scan`; do not fold that required check into CircleCI workflow metadata.
 
 ## Code and data governance
 
 - Validate behavior changes before merge using documented gates.
+- Validate behavior changes with the smallest real executable path that exercises the exact production code touched whenever feasible; broad gates are necessary but not sufficient on their own.
 - Keep audit trail artifacts (closeout outputs, validation status) in the task record.
 - For high-risk edits (policy/validation gates), include rollback expectations in docs.
 - Validation evidence must name the wrapper that ran (`validate-codestyle.sh`, `verify-work.sh`, or deeper gates), not just the underlying tool categories.
@@ -72,6 +73,7 @@ Failure mode is intentionally fail-closed: missing code-style files, checksum dr
 - Do not skip required gates to save time.
 - If checks fail repeatedly, stop and request decision on risk acceptance.
 - Treat stale check output as non-evidence.
+- If the exact touched path cannot run because it depends on unavailable credentials, external services, unsafe side effects, or missing generated runtime state, record that blocker explicitly and run the nearest meaningful validation instead.
 - Do not replace `bash scripts/validate-codestyle.sh` with an informal list of roughly equivalent commands when documenting or attesting verification; the wrapper is the governed proof surface.
 - Treat hook-exported repository git environment (`GIT_DIR`, `GIT_WORK_TREE`, and related `GIT_*` variables) as untrusted input for nested validation scripts; `scripts/validate-codestyle.sh` should sanitize those values before invoking `pnpm run` so fixture-local git checks are isolated from hook context.
 - CircleCI test reliability guardrail: use `pnpm test:ci` so the long-running `ci-migrate` suite executes in an isolated lane with scoped Vitest worker-timeout mitigation (`--dangerouslyIgnoreUnhandledErrors`) while all functional assertions remain enforced.
@@ -89,6 +91,7 @@ Failure mode is intentionally fail-closed: missing code-style files, checksum dr
 - No unauthorized command or toolchain mutation.
 - Validation gate outputs captured.
 - `bash scripts/validate-codestyle.sh` output captured whenever behavior or command-contract surfaces changed.
+- Exact behavior evidence captured whenever executable behavior changed, or the blocker recorded when the touched path could not be run safely.
 - No secrets in docs/memory.
 - For harness scaffold/setup checks, run `bash scripts/run-harness-setup-checks.sh` so preflight, environment posture (`CLAUDE_APPROVAL_POSTURE=require`), pinned `uv`, and quality gates are evaluated as one auditable sequence.
 - For fresh git worktrees, run `bash scripts/prepare-worktree.sh` before the first push so local pre-push hooks do not fail from missing dependencies in the new worktree.
@@ -117,11 +120,11 @@ This repository uses `prek` as the canonical local hook installer, and `prek.tom
 
 ### Hooks installed
 
-| Hook | Purpose |
-| --- | --- |
-| `pre-commit` | Runs `make hooks-pre-commit` (`pnpm lint`, `pnpm docs:lint`, `pnpm typecheck`, staged `gitleaks`, staged-doc `vale`, related tests) |
-| `commit-msg` | Validates conventional commit format, reminds about PR template |
-| `pre-push` | Runs `make hooks-pre-push` (`docs-gate --mode required`, diagram freshness, `tooling-audit`, `check-environment`, changed-file `semgrep`, `make codestyle`, `pnpm build`) |
+| Hook         | Purpose                                                                                                                                                                    |
+| ------------ | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `pre-commit` | Runs `make hooks-pre-commit` (`pnpm lint`, `pnpm docs:lint`, `pnpm typecheck`, changed-code docstring and size gates, staged `gitleaks`, staged-doc `vale`, related tests) |
+| `commit-msg` | Validates conventional commit format, reminds about PR template                                                                                                            |
+| `pre-push`   | Runs `make hooks-pre-push` (`docs-gate --mode required`, diagram freshness, `tooling-audit`, `check-environment`, changed-file `semgrep`, `make codestyle`, `pnpm build`)  |
 
 The staged `gitleaks` lane should prefer the repo-root `.gitleaks.toml` when present so approved fixture/example exceptions are consistent across local hooks, manual scans, and downstream scaffold expectations.
 `hooks-commit-msg` remains a required Makefile wrapper even though `prek.toml` only installs `pre-commit` and `pre-push`; use that wrapper for deterministic commit-policy verification and cross-repo governance checks.
@@ -143,7 +146,7 @@ Port-free usage should remain scoped to app-style run actions that map to `dev`/
 - Completed acceptance checklist items in referenced plans must carry evidence links or refs before merge.
 - `risk-policy-gate` enforces this in CI, and `review-gate` treats missing or invalid plan traceability as a merge blocker even when the review check itself passed.
 
-`scripts/check-semgrep-changed.sh` is intentionally narrow: it compares `HEAD` to the upstream merge-base (or the nearest main/master fallback), filters to changed implementation files under `src/**`, and runs only the local `scripts/semgrep-pre-push.yml` ruleset. That keeps the local lane useful without duplicating the full CI security scan. Keep the script pinned to the same Semgrep version used by the CircleCI `security-scan` lane in `.circleci/config.yml` (`semgrep==1.153.1`) so local and CI findings stay aligned.
+`scripts/check-semgrep-changed.sh` is intentionally narrow: it compares `HEAD` to the upstream merge-base (or the nearest main/master fallback), filters to changed implementation files under `src/**`, and runs only the local `scripts/semgrep-pre-push.yml` ruleset. That keeps the local lane useful without duplicating the full CI security scan. Keep the script pinned to the same Semgrep version used by the CircleCI `security-scan` lane in `.circleci/config.yml` (`semgrep==1.153.1`) so local and CI findings stay aligned. Keep Semgrep Cloud's `semgrep-cloud-platform/scan` branch-protection check as an independent external app gate.
 
 ### Setup
 
@@ -177,6 +180,7 @@ Types: `feat`, `fix`, `chore`, `docs`, `refactor`, `test`, `style`, `perf`, `ci`
 ### PR template reminder
 
 On agent branches (`codex/*`, `claude/*`), the commit-msg hook reminds about PR template requirements:
+
 - ## Summary (1-3 bullet points)
 - Plan IDs
 - ## Checklist (all items checked)

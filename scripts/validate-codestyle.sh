@@ -168,6 +168,8 @@ run_optional_script "docs:lint"
 run_optional_script "skill:validate"
 run_optional_script "workflow:validate"
 run_required_script "typecheck"
+run_required_script "quality:docstrings"
+run_required_script "quality:size"
 
 if [[ "$changed_only" -eq 1 ]]; then
 	if has_package_script "test:related"; then
