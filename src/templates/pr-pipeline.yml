@@ -182,11 +182,7 @@ jobs:
         run: |
           set -euo pipefail
           violations=0
-          uses_matches="$(rg -n "^[[:space:]]*(-[[:space:]]*)?uses:[[:space:]]*[^[:space:]]+" .github/workflows/*.yml || true)"
-          while IFS=: read -r file line raw; do
-            if [[ -z "$file" ]]; then
-              continue
-            fi
+          while IFS=: read -r file line raw || [[ -n "$file" ]]; do
             ref="$(printf "%s" "$raw" | sed -E 's/^[[:space:]]*(-[[:space:]]*)?uses:[[:space:]]*([^[:space:]#]+).*/\\2/')"
             if [[ "$ref" == ./* ]] || [[ "$ref" == docker://* ]]; then
               continue
@@ -195,7 +191,7 @@ jobs:
               echo "::error file=$file,line=$line::Action is not pinned to a full commit SHA: $ref"
               violations=1
             fi
-          done <<< "$uses_matches"
+          done < <(rg -n "^[[:space:]]*(-[[:space:]]*)?uses:[[:space:]]*[^[:space:]]+" .github/workflows/*.yml 2>/dev/null || true)
           exit "$violations"
 
   consistency-drift-advisory:
