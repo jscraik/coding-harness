@@ -65,8 +65,9 @@ Use these names as branch-protection check contexts, not as shorthand for local 
   `risk-policy-gate`, `dependency-scan`, `orb-pinning`,
   `consistency-drift-health`, `docs-gate`, `lint`, `typecheck`, `test`,
   `audit`, `check`, `memory`, `security-scan`
-- External GitHub App required-check contexts: `CodeRabbit`,
-  `semgrep-cloud-platform/scan`
+---
+last_validated: 2026-04-26
+---
 
 Local commands such as `pnpm lint` or `pnpm check` are validation evidence only
 unless they correspond to one of the required check contexts above.
