@@ -1,4 +1,5 @@
 import { readFileSync } from "node:fs";
+import { posix } from "node:path";
 import { fileURLToPath } from "node:url";
 
 /**
@@ -8,8 +9,18 @@ import { fileURLToPath } from "node:url";
  * @returns Raw template contents.
  */
 export function renderCiTemplate(relativePath: string): string {
+	const normalizedPath = posix.normalize(relativePath);
+	if (
+		normalizedPath.length === 0 ||
+		normalizedPath.startsWith("../") ||
+		normalizedPath === ".." ||
+		posix.isAbsolute(normalizedPath) ||
+		normalizedPath.includes("\\")
+	) {
+		throw new Error(`Invalid CI template path: ${relativePath}`);
+	}
 	const templatePath = fileURLToPath(
-		new URL(`../../templates/${relativePath}`, import.meta.url),
+		new URL(`../../templates/${normalizedPath}`, import.meta.url),
 	);
 	return readFileSync(templatePath, "utf-8");
 }

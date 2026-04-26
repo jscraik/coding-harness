@@ -31,10 +31,23 @@ describe("scaffold root command templates", () => {
 		const makefile = renderMakefileTemplate();
 
 		expect(makefile).toContain("hooks-pre-push:");
-		expect(makefile).toContain("pnpm exec tsx src/cli.ts docs-gate");
-		expect(makefile).toContain("pnpm run quality:size");
+		expect(makefile).toContain("bash ./scripts/run-harness-gate.sh docs-gate");
+		expect(makefile).toContain(
+			"bash ./scripts/run-harness-gate.sh tooling-audit",
+		);
+		expect(makefile).toContain("pnpm quality:size");
 		expect(makefile).toContain(
 			"bash ./scripts/refresh-diagram-context.sh --force",
 		);
+	});
+
+	it("renders Makefile commands for the selected package manager", () => {
+		const makefile = renderMakefileTemplate("npm");
+
+		expect(makefile).toContain("\tnpm install");
+		expect(makefile).toContain("\tnpm run lint");
+		expect(makefile).toContain("\tnpm run quality:size");
+		expect(makefile).toContain("\tnpm run test:related");
+		expect(makefile).not.toContain("pnpm run quality:size");
 	});
 });

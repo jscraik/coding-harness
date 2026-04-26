@@ -29,8 +29,9 @@
 1. Implement the smallest meaningful increment.
 2. Run the smallest real executable path that exercises the exact production code touched whenever feasible.
 3. Relevant tests/validators MUST run immediately, including `pnpm run quality:docstrings`, `pnpm run quality:size`, and `pnpm run test:related` for changed production source.
-4. Failures MUST be fixed before expanding scope.
-5. Repeat until the intended behavior and contract checks are green (or explicitly blocked).
+4. If runtime behavior or generated artifacts changed, `pnpm test:deep` MUST run before handoff.
+5. Failures MUST be fixed before expanding scope.
+6. Repeat until the intended behavior and contract checks are green (or explicitly blocked).
 
 ## Temporary reproduction harnesses
 - If no existing test covers the exact touched path, agents MAY create a temporary local reproduction harness under `codex-scripts/`.
@@ -52,6 +53,7 @@
   - `pnpm run quality:docstrings`
   - `pnpm run quality:size`
   - `pnpm run test:related`
+  - `pnpm test:deep` when runtime behavior or generated artifacts change
   - `pnpm test`
   - `pnpm audit`
   - `pnpm check`

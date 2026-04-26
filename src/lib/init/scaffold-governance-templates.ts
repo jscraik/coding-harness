@@ -98,23 +98,24 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
  * @returns CODEOWNERS contents for `.github/CODEOWNERS`.
  */
 export function renderCodeownersTemplate(): string {
+	const governanceOwner = "@your-org/harness-maintainers";
 	return `# Governance-sensitive surfaces
-/.github/workflows/** @jscraik
-/harness.contract.json @jscraik
-/CONTRIBUTING.md @jscraik
-/AGENTS.md @jscraik
-/scripts/codex-preflight.sh @jscraik
-/scripts/verify-work.sh @jscraik
-/scripts/validate-codestyle.sh @jscraik
-/scripts/check-related-tests.sh @jscraik
-/scripts/check-public-api-docs.mjs @jscraik
-/scripts/check-code-size.mjs @jscraik
-/scripts/lib/changed-files.mjs @jscraik
-/scripts/check-codestyle-parity.sh @jscraik
-/scripts/prepare-worktree.sh @jscraik
-/scripts/new-task.sh @jscraik
-/scripts/harness-cli.sh @jscraik
-/scripts/check-environment.sh @jscraik
-/codestyle/** @jscraik
+/.github/workflows/** ${governanceOwner}
+/harness.contract.json ${governanceOwner}
+/CONTRIBUTING.md ${governanceOwner}
+/AGENTS.md ${governanceOwner}
+/scripts/codex-preflight.sh ${governanceOwner}
+/scripts/verify-work.sh ${governanceOwner}
+/scripts/validate-codestyle.sh ${governanceOwner}
+/scripts/check-related-tests.sh ${governanceOwner}
+/scripts/check-public-api-docs.mjs ${governanceOwner}
+/scripts/check-code-size.mjs ${governanceOwner}
+/scripts/lib/changed-files.mjs ${governanceOwner}
+/scripts/check-codestyle-parity.sh ${governanceOwner}
+/scripts/prepare-worktree.sh ${governanceOwner}
+/scripts/new-task.sh ${governanceOwner}
+/scripts/harness-cli.sh ${governanceOwner}
+/scripts/check-environment.sh ${governanceOwner}
+/codestyle/** ${governanceOwner}
 `;
 }

@@ -168,4 +168,24 @@ export const format = (value: number): string => {
 			infoSpy.mockRestore();
 		}
 	});
+
+	it("treats help as success", () => {
+		const infoSpy = vi.spyOn(console, "info").mockImplementation(() => {});
+		try {
+			const exitCode = runSourceOutlineCLI(["--help"]);
+			expect(exitCode).toBe(EXIT_CODES.SUCCESS);
+		} finally {
+			infoSpy.mockRestore();
+		}
+	});
+
+	it("rejects missing symbol operands as usage errors", () => {
+		const infoSpy = vi.spyOn(console, "info").mockImplementation(() => {});
+		try {
+			const exitCode = runSourceOutlineCLI(["src/example.ts", "--symbol"]);
+			expect(exitCode).toBe(EXIT_CODES.VALIDATION_ERROR);
+		} finally {
+			infoSpy.mockRestore();
+		}
+	});
 });

@@ -47,9 +47,9 @@ Coverage and mutation thresholds MAY be enforced only when wired to executable r
 * Use `rg` not `grep` for project-wide search.
 * Prefer `fd` for file finding.
 * Use `jq` for JSON parsing/transformations.
-* For TypeScript-family source, run `harness source-outline <path>` before
-  reading full file bodies; unwrap implementation only for the needed symbol
-  with `--symbol <name>`.
+* For TypeScript-family source, agents MUST run `harness source-outline <path>`
+  before reading full file bodies; agents SHOULD unwrap implementation only for
+  the needed symbol with `--symbol <name>`.
 * Read limits: cap reads at ~250 lines; prefer targeted context flags.
 
 ---

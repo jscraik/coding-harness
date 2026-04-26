@@ -31,9 +31,9 @@ describe("scaffold environment templates", () => {
 		const globalIndex = script.indexOf("global npm harness");
 
 		expect(sourceIndex).toBeGreaterThan(-1);
-		expect(distIndex).toBeGreaterThan(sourceIndex);
-		expect(wrapperIndex).toBeGreaterThan(distIndex);
-		expect(miseIndex).toBeGreaterThan(wrapperIndex);
+		expect(wrapperIndex).toBeGreaterThan(sourceIndex);
+		expect(distIndex).toBeGreaterThan(wrapperIndex);
+		expect(miseIndex).toBeGreaterThan(distIndex);
 		expect(globalIndex).toBeGreaterThan(miseIndex);
 	});
 });

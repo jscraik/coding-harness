@@ -28,7 +28,10 @@ Use this guide first when a task changes architecture, policy flow, or cross-com
    - For schema, persistence, or data-integrity work, check `## erd` when
      present; otherwise use `## database` as the current diagram-cli
      persistence view.
-4. Route to deeper SOPs in `docs/agents/` after architecture context is loaded.
+4. For TypeScript-family implementation detail, run `bash
+scripts/harness-cli.sh source-outline <path> --json` before opening full
+   source, then unwrap only the needed symbol with `--symbol <name>`.
+5. Route to deeper SOPs in `docs/agents/` after architecture context is loaded.
 
 ## Artifact validation gates
 

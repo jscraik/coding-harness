@@ -73,7 +73,48 @@ shamefully-hoist=false
 `;
 }
 
-const MAKEFILE_TEMPLATE = `# Harness Development Makefile
+type MakefileCommands = {
+	audit: string;
+	build: string;
+	check: string;
+	dev: string;
+	docstrings: string;
+	docsLint: string;
+	docsStyleChanged: string;
+	fmt: string;
+	install: string;
+	lint: string;
+	relatedTests: string;
+	secretsStaged: string;
+	semgrepChanged: string;
+	size: string;
+	test: string;
+	typecheck: string;
+};
+
+function buildMakefileCommands(packageManager: string): MakefileCommands {
+	return {
+		audit: renderScriptCommand(packageManager, "audit"),
+		build: renderScriptCommand(packageManager, "build"),
+		check: renderScriptCommand(packageManager, "check"),
+		dev: renderScriptCommand(packageManager, "dev"),
+		docstrings: renderScriptCommand(packageManager, "quality:docstrings"),
+		docsLint: renderScriptCommand(packageManager, "docs:lint"),
+		docsStyleChanged: renderScriptCommand(packageManager, "docs:style:changed"),
+		fmt: renderScriptCommand(packageManager, "fmt"),
+		install: renderInstallCommand(packageManager),
+		lint: renderScriptCommand(packageManager, "lint"),
+		relatedTests: renderScriptCommand(packageManager, "test:related"),
+		secretsStaged: renderScriptCommand(packageManager, "secrets:staged"),
+		semgrepChanged: renderScriptCommand(packageManager, "semgrep:changed"),
+		size: renderScriptCommand(packageManager, "quality:size"),
+		test: renderScriptCommand(packageManager, "test"),
+		typecheck: renderScriptCommand(packageManager, "typecheck"),
+	};
+}
+
+function renderMakefileHeader(): string {
+	return `# Harness Development Makefile
 # Run \`make help\` to see available commands
 
 .PHONY: help install setup preflight worktree-ready verify-work codestyle-parity codestyle hooks hooks-pre-commit hooks-pre-push hooks-commit-msg secrets-staged docs-style-changed related-tests semgrep-changed diagrams-check dev build lint docs-lint fmt typecheck test check audit secrets security clean reset ci diagrams env-check
@@ -84,11 +125,15 @@ help: ## Show this help message
 	@echo ''
 	@echo 'Targets:'
 	@awk 'BEGIN {FS = ":.*?## "} /^[a-zA-Z_-]+:.*?## / {printf "  %-15s %s\\n", $1, $2}' $(MAKEFILE_LIST)
+`;
+}
 
+function renderMakefileSetupSection(commands: MakefileCommands): string {
+	return `
 # === Setup ===
 
 install: ## Install dependencies
-	pnpm install
+	${commands.install}
 
 setup: install hooks ## Full setup: install deps and configure git hooks
 
@@ -109,27 +154,32 @@ codestyle: ## Run fail-closed codestyle validation
 
 hooks: ## Setup git hooks
 	node scripts/setup-git-hooks.js
+`;
+}
+
+function renderMakefileHookSection(commands: MakefileCommands): string {
+	return `
 
 hooks-pre-commit: ## Run local pre-commit gates before creating a commit
 	@bash ./scripts/check-hook-critical-config-sync.sh
 	$(MAKE) codestyle-parity
-	pnpm lint
-	pnpm docs:lint
-	pnpm typecheck
-	pnpm run quality:docstrings
-	pnpm run quality:size
+	${commands.lint}
+	${commands.docsLint}
+	${commands.typecheck}
+	${commands.docstrings}
+	${commands.size}
 	$(MAKE) secrets-staged
 	$(MAKE) docs-style-changed
 	$(MAKE) related-tests
 
 hooks-pre-push: ## Run local pre-push governance gates before pushing
-	pnpm exec tsx src/cli.ts docs-gate --mode required --json
+	@bash ./scripts/run-harness-gate.sh docs-gate --mode required --json
 	@bash ./scripts/check-diagram-freshness.sh
-	pnpm exec tsx src/cli.ts tooling-audit --path . --json
+	@bash ./scripts/run-harness-gate.sh tooling-audit --path . --json
 	@bash ./scripts/check-environment.sh
 	$(MAKE) semgrep-changed
 	$(MAKE) codestyle
-	pnpm build
+	${commands.build}
 
 hooks-commit-msg: ## Validate commit message policy (use HOOK_COMMIT_MSG or MSG_FILE=/path)
 	@tmp_file="$(mktemp)"; \
@@ -145,58 +195,66 @@ hooks-commit-msg: ## Validate commit message policy (use HOOK_COMMIT_MSG or MSG_
 	node scripts/validate-commit-msg.js "$tmp_file"
 
 secrets-staged: ## Scan staged content for secrets before committing
-	pnpm run secrets:staged
+	${commands.secretsStaged}
 
 docs-style-changed: ## Run Vale on staged authoritative docs only
-	pnpm run docs:style:changed
+	${commands.docsStyleChanged}
 
 related-tests: ## Run Vitest related mode for staged src implementation files
-	pnpm run test:related
+	${commands.relatedTests}
 
 semgrep-changed: ## Run narrow Semgrep rules against changed src implementation files
-	pnpm run semgrep:changed
+	${commands.semgrepChanged}
 
 diagrams-check: ## Refresh architecture diagrams when sensitive paths change and fail on drift
 	@bash ./scripts/check-diagram-freshness.sh
+`;
+}
 
+function renderMakefileDevelopmentSection(commands: MakefileCommands): string {
+	return `
 # === Development ===
 
 dev: ## Start development server
-	pnpm dev
+	${commands.dev}
 
 build: ## Build for production
-	pnpm build
+	${commands.build}
 
 # === Quality ===
 
 lint: ## Run linter
-	pnpm lint
+	${commands.lint}
 
 docs-lint: ## Lint markdown/docs
-	pnpm docs:lint
+	${commands.docsLint}
 
 fmt: ## Format code
-	pnpm fmt
+	${commands.fmt}
 
 typecheck: ## Run TypeScript type checking
-	pnpm typecheck
+	${commands.typecheck}
 
 test: ## Run tests
-	pnpm test
+	${commands.test}
 
 check: ## Run all required quality gates
-	pnpm check
+	${commands.check}
 
 # === Security ===
 
 audit: ## Run security audit
-	pnpm audit
+	${commands.audit}
 
 secrets: ## Scan for secrets with gitleaks
 	@gitleaks detect --source . --verbose || (echo "Install gitleaks: brew install gitleaks" && exit 1)
 
 security: audit secrets ## Run all security checks
+`;
+}
 
+function renderMakefileMaintenanceSection(commands: MakefileCommands): string {
+	return `
 # === Maintenance ===
 
 clean: ## Clean build artifacts and caches
@@ -204,12 +262,12 @@ clean: ## Clean build artifacts and caches
 	rm -rf node_modules/.cache
 
 reset: clean ## Full reset: clean and reinstall
-	pnpm install
+	${commands.install}
 
 # === CI ===
 
 ci: ## Run CI-equivalent local checks
-	pnpm check
+	${commands.check}
 
 # === Diagrams ===
 
@@ -221,11 +279,25 @@ diagrams: ## Generate architecture diagrams
 env-check: ## Check environment policy envelope
 	@bash ./scripts/check-environment.sh
 `;
+}
+
+function renderMakefileContent(packageManager: string): string {
+	const commands = buildMakefileCommands(packageManager);
+	return [
+		renderMakefileHeader(),
+		renderMakefileSetupSection(commands),
+		renderMakefileHookSection(commands),
+		renderMakefileDevelopmentSection(commands),
+		renderMakefileMaintenanceSection(commands),
+	].join("");
+}
+
 /**
  * Render the root Makefile emitted by `harness init`.
  *
+ * @param packageManager - Package manager used by generated script targets.
  * @returns The scaffolded Makefile contents.
  */
-export function renderMakefileTemplate(): string {
-	return MAKEFILE_TEMPLATE;
+export function renderMakefileTemplate(packageManager = "pnpm"): string {
+	return renderMakefileContent(packageManager);
 }

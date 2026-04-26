@@ -42,7 +42,7 @@ const TRANSITIONAL_LIB_TO_COMMAND_IMPORTS = new Set([
 	"src/lib/output/normalise.ts",
 ]);
 
-const COMMAND_IMPORT_PATTERN = /from\s+(?:type\s+)?["'](?:\.\.\/)+commands\//;
+const COMMAND_IMPORT_PATTERN = /from\s+["'](?:\.\.\/)+commands\//;
 
 function countFileLines(path: string): number {
 	const content = readFileSync(join(process.cwd(), path), "utf-8");
@@ -67,7 +67,7 @@ function collectTypeScriptFiles(directory: string): string[] {
 	const files: string[] = [];
 
 	for (const entry of readdirSync(root, { withFileTypes: true })) {
-		const relativePath = `${directory}/${entry.name}`;
+		const relativePath = join(directory, entry.name);
 
 		if (entry.isDirectory()) {
 			files.push(...collectTypeScriptFiles(relativePath));
@@ -78,7 +78,8 @@ function collectTypeScriptFiles(directory: string): string[] {
 			entry.isFile() &&
 			relativePath.endsWith(".ts") &&
 			!relativePath.endsWith(".test.ts") &&
-			!relativePath.endsWith(".spec.ts")
+			!relativePath.endsWith(".spec.ts") &&
+			!relativePath.endsWith(".d.ts")
 		) {
 			files.push(relativePath);
 		}

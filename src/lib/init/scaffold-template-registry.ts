@@ -307,7 +307,7 @@ export const TEMPLATES: Template[] = [
 	},
 	{
 		path: "Makefile",
-		render: () => renderMakefileTemplate(),
+		render: (pm) => renderMakefileTemplate(pm),
 	},
 	{
 		path: "WORKFLOW.md",

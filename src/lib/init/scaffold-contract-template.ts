@@ -67,6 +67,7 @@ function renderScaffoldNorthStar(
 function renderScaffoldProductSurface(): NonNullable<
 	HarnessContract["productSurface"]
 > {
+	const lastReviewedAt = new Date().toISOString().slice(0, 10);
 	return {
 		surfaces: [
 			{
@@ -82,7 +83,7 @@ function renderScaffoldProductSurface(): NonNullable<
 					"Centralizes automation guardrails in one deterministic contract surface.",
 				evidenceReference: "harness.contract.json",
 				ownedPaths: ["harness.contract.json"],
-				lastReviewedAt: "2026-04-22",
+				lastReviewedAt,
 			},
 		],
 	};

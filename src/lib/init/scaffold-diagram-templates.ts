@@ -51,8 +51,14 @@ Reference this file to understand:
 - Test coverage patterns
 
 Use this pack before opening raw source files. When you need TypeScript
-implementation detail, run \`harness source-outline <path>\` first and unwrap one
-symbol at a time with \`--symbol <name>\`.
+implementation detail in this checkout, run:
+
+\`\`\`bash
+bash scripts/harness-cli.sh source-outline <path> --json
+\`\`\`
+
+Then unwrap one symbol at a time with \`--symbol <name>\`. Downstream repositories
+can use \`harness source-outline <path>\`.
 
 ## Manual refresh
 
@@ -62,11 +68,17 @@ To refresh diagrams locally:
 # Install the tool
 pnpm add -D @brainwav/diagram
 
+# Preview context changes
+bash scripts/refresh-diagram-context.sh --dry-run
+
 # Generate diagrams
 pnpm exec diagram all . --output-dir .diagram
 
 # Update context
-./scripts/refresh-diagram-context.sh --force
+bash scripts/refresh-diagram-context.sh --force
+
+# Verify generated manifest
+jq '.generatedAt' .diagram/manifest.json >/dev/null
 \`\`\`
 `;
 }

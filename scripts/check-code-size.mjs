@@ -10,10 +10,7 @@ const TEST_OR_TYPE_DECLARATION =
 const PROD_SOURCE_PREFIX = "src/";
 const MAX_FILE_LINES = 800;
 const MAX_FUNCTION_LINES = 120;
-const LEGACY_OVERSIZED_FILES = new Set([
-	"src/commands/ci-migrate.ts",
-	"src/lib/init/scaffold.ts",
-]);
+const LEGACY_OVERSIZED_FILES = new Set(["src/commands/ci-migrate.ts"]);
 
 const args = new Set(process.argv.slice(2));
 const repoRoot = resolve(process.cwd());
@@ -38,6 +35,9 @@ function getScriptKind(path) {
 	}
 	if (path.endsWith(".js")) {
 		return ts.ScriptKind.JS;
+	}
+	if (path.endsWith(".mts") || path.endsWith(".cts")) {
+		return ts.ScriptKind.TS;
 	}
 	return ts.ScriptKind.TS;
 }
@@ -66,6 +66,13 @@ function functionName(node) {
 		return parent.name.text;
 	}
 	return "<anonymous>";
+}
+
+function countLogicalLines(sourceText) {
+	if (sourceText.length === 0) {
+		return 0;
+	}
+	return sourceText.replace(/\r?\n$/, "").split(/\r?\n/).length;
 }
 
 function isFunctionLike(node) {
@@ -98,7 +105,7 @@ function checkFile(path) {
 		getScriptKind(path),
 	);
 	const findings = [];
-	const fileLines = sourceText.split(/\r?\n/).length;
+	const fileLines = countLogicalLines(sourceText);
 
 	if (fileLines > MAX_FILE_LINES) {
 		findings.push({

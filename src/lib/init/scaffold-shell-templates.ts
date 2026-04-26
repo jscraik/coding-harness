@@ -17,6 +17,14 @@ function renderPackagedTemplate(relativePath: string): string {
 	return readFileSync(templatePath, "utf-8");
 }
 
+function assertSafePackageName(packageName: string): void {
+	if (!/^(@[a-z0-9._-]+\/)?[a-z0-9._-]+$/i.test(packageName)) {
+		throw new Error(
+			`Invalid package name for scaffold command: ${packageName}`,
+		);
+	}
+}
+
 /**
  * Builds the package-manager-specific install command used in scaffolded scripts.
  *
@@ -38,6 +46,7 @@ export function renderAddPackageCommand(
 	packageManager: string,
 	packageName: string,
 ): string {
+	assertSafePackageName(packageName);
 	if (packageManager === "npm") {
 		return `npm install --save-dev ${packageName}`;
 	}

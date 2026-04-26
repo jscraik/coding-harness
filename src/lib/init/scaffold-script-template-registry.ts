@@ -45,7 +45,7 @@ import type { Template } from "./types.js";
 /**
  * Hook, quality, and Semgrep scripts emitted before config/codestyle templates.
  */
-export const QUALITY_AND_HOOK_SCRIPT_TEMPLATES: Template[] = [
+export const QUALITY_AND_HOOK_SCRIPT_TEMPLATES: readonly Template[] = [
 	{
 		path: "scripts/validate-commit-msg.js",
 		render: () => renderValidateCommitMsgScript(AGENT_BRANCH_PREFIX),
@@ -103,7 +103,7 @@ export const QUALITY_AND_HOOK_SCRIPT_TEMPLATES: Template[] = [
 /**
  * Codex, verification, worktree, and environment scripts emitted after codestyle templates.
  */
-export const CODEX_AND_WORKFLOW_SCRIPT_TEMPLATES: Template[] = [
+export const CODEX_AND_WORKFLOW_SCRIPT_TEMPLATES: readonly Template[] = [
 	{
 		path: "scripts/codex-preflight.sh",
 		render: () => renderCodexPreflightTemplate(),

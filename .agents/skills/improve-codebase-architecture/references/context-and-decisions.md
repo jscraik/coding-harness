@@ -1,5 +1,15 @@
 # Context And Linear Decisions
 
+## Table of Contents
+
+- [Decision Records](#decision-records)
+- [When To Offer A Linear Issue](#when-to-offer-a-linear-issue)
+- [What Qualifies](#what-qualifies)
+- [Linear Issue Content](#linear-issue-content)
+- [ADR Compatibility](#adr-compatibility)
+- [CONTEXT.md Format](#contextmd-format)
+- [Single vs Multi-Context Repos](#single-vs-multi-context-repos)
+
 Use this reference only when architecture work needs durable project language or
 decision records.
 

@@ -158,20 +158,29 @@ const parseArchitecture = (content) => {
 const buildArchitecture = (subgraphs) => {
   const nodeMap = new Map();
   const lines = ["graph TD"];
+  const rawNodeFingerprint = (rawId) =>
+    rawId.match(/_([0-9a-f]{8})$/i)?.[1]?.toLowerCase() ?? null;
+  const normalizedRawNodeKey = (rawId) =>
+    rawNodeFingerprint(rawId) ?? rawId.toLowerCase();
   const sortedSubgraphs = [...subgraphs].sort((left, right) =>
-    left.label.localeCompare(right.label),
+    left.label.localeCompare(right.label) ||
+    normalizedRawNodeKey(left.rawId).localeCompare(normalizedRawNodeKey(right.rawId)),
   );
 
   for (const subgraph of sortedSubgraphs) {
-    const subgraphId = stableId("sg", subgraph.label);
+    const subgraphId = stableId(
+      "sg",
+      `${subgraph.label}/${normalizedRawNodeKey(subgraph.rawId)}`,
+    );
     lines.push(`  subgraph ${subgraphId}["${subgraph.label}"]`);
     const sortedNodes = [...subgraph.nodes].sort((left, right) =>
-      left.label.localeCompare(right.label) || left.rawId.localeCompare(right.rawId),
+      left.label.localeCompare(right.label) ||
+      normalizedRawNodeKey(left.rawId).localeCompare(normalizedRawNodeKey(right.rawId)),
     );
     for (const node of sortedNodes) {
       const nodeId = stableId(
         "node",
-        `${subgraph.label}/${node.label}`,
+        `${subgraph.label}/${node.label}/${normalizedRawNodeKey(node.rawId)}`,
       );
       nodeMap.set(node.rawId, { canonicalId: nodeId, label: node.label });
       lines.push(`    ${nodeId}["${node.label}"]`);
@@ -337,7 +346,7 @@ TMP_CONTEXT="$TMP_DIR/diagram-context.md"
 	echo
 	echo "- Start here for compact architecture, dependency, database, and ERD context before opening raw source files."
 	echo "- Use .diagram/manifest.json to choose a focused Mermaid file when this combined pack is too large."
-	echo '- For TypeScript implementation detail, run `harness source-outline <path>` first, then unwrap one symbol with `--symbol <name>`.'
+	echo '- For TypeScript implementation detail in this checkout, run `bash scripts/harness-cli.sh source-outline <path> --json` first, then unwrap one symbol with `--symbol <name>`. Downstream repositories can use `harness source-outline <path>`.'
 	echo
 	for file in "$TMP_DIR"/diagrams/*.mmd; do
 		name="$(basename "$file" .mmd)"

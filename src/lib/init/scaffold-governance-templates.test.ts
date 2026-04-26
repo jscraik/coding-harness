@@ -50,7 +50,10 @@ describe("governance scaffold templates", () => {
 		expect(changelog).toContain("# Changelog");
 		expect(changelog).toContain("Keep a Changelog");
 		expect(codeowners).toContain("# Governance-sensitive surfaces");
-		expect(codeowners).toContain("/.github/workflows/** @jscraik");
-		expect(codeowners).toContain("/codestyle/** @jscraik");
+		expect(codeowners).toContain(
+			"/.github/workflows/** @your-org/harness-maintainers",
+		);
+		expect(codeowners).toContain("/codestyle/** @your-org/harness-maintainers");
+		expect(codeowners).not.toContain("@jscraik");
 	});
 });

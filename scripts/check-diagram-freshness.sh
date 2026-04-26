@@ -83,7 +83,6 @@ const lines = fs.readFileSync(filePath, "utf8").split(/\r?\n/);
 const normalized = [];
 let inMermaid = false;
 let mermaidLines = [];
-let activeSection = "";
 
 const normalizeMermaidLine = (line) => {
 	let value = line.trim();
@@ -110,16 +109,6 @@ const flushMermaid = () => {
 
 for (const line of lines) {
 	if (/^Generated: /.test(line)) continue;
-	if (/^##\s+/.test(line)) {
-		activeSection = line.trim();
-	}
-	if (
-		activeSection &&
-		activeSection !== "## architecture" &&
-		activeSection !== "## dependency"
-	) {
-		continue;
-	}
 	if (line.trim() === "```mermaid") {
 		inMermaid = true;
 		mermaidLines = [];

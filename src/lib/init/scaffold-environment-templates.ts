@@ -244,27 +244,49 @@ function renderRepositoryPolicyChecks(): string {
 	required_prek_hooks=(${renderPrekHookSpecs()})
 	for hook_spec in "\${required_prek_hooks[@]}"; do
 		IFS='|' read -r hook_name hook_display_name hook_command hook_language hook_pass_filenames hook_stages <<< "$hook_spec"
-		if ! rg -q "^[[:space:]]*id[[:space:]]*=[[:space:]]*\\\"\${hook_name}\\\"[[:space:]]*$" "$PREK_CONFIG_PATH"; then
+		hook_block="$(awk -v wanted="$hook_name" '
+			function flush() {
+				if (matched) {
+					printf "%s", block
+				}
+			}
+			/^\\[\\[hooks\\]\\]/ {
+				flush()
+				block = $0 ORS
+				matched = 0
+				next
+			}
+			{
+				block = block $0 ORS
+				if ($0 ~ "^[[:space:]]*id[[:space:]]*=[[:space:]]*\\\"" wanted "\\\"[[:space:]]*$") {
+					matched = 1
+				}
+			}
+			END {
+				flush()
+			}
+		' "$PREK_CONFIG_PATH")"
+		if [[ -z "$hook_block" ]]; then
 			echo "Error: required prek hook '\$hook_name' is missing or out of date in $PREK_CONFIG_PATH"
 			exit 1
 		fi
-		if ! rg -q "^[[:space:]]*name[[:space:]]*=[[:space:]]*\\\"\${hook_display_name}\\\"[[:space:]]*$" "$PREK_CONFIG_PATH"; then
+		if ! rg -q "^[[:space:]]*name[[:space:]]*=[[:space:]]*\\\"\${hook_display_name}\\\"[[:space:]]*$" <<< "$hook_block"; then
 			echo "Error: required prek hook '\$hook_name' is missing or out of date in $PREK_CONFIG_PATH"
 			exit 1
 		fi
-		if ! rg -q "^[[:space:]]*entry[[:space:]]*=[[:space:]]*\\\"\${hook_command}\\\"[[:space:]]*$" "$PREK_CONFIG_PATH"; then
+		if ! rg -q "^[[:space:]]*entry[[:space:]]*=[[:space:]]*\\\"\${hook_command}\\\"[[:space:]]*$" <<< "$hook_block"; then
 			echo "Error: required prek hook '\$hook_name' is missing or out of date in $PREK_CONFIG_PATH"
 			exit 1
 		fi
-		if ! rg -q "^[[:space:]]*language[[:space:]]*=[[:space:]]*\\\"\${hook_language}\\\"[[:space:]]*$" "$PREK_CONFIG_PATH"; then
+		if ! rg -q "^[[:space:]]*language[[:space:]]*=[[:space:]]*\\\"\${hook_language}\\\"[[:space:]]*$" <<< "$hook_block"; then
 			echo "Error: required prek hook '\$hook_name' is missing or out of date in $PREK_CONFIG_PATH"
 			exit 1
 		fi
-		if ! rg -q "^[[:space:]]*pass_filenames[[:space:]]*=[[:space:]]*\${hook_pass_filenames}[[:space:]]*$" "$PREK_CONFIG_PATH"; then
+		if ! rg -q "^[[:space:]]*pass_filenames[[:space:]]*=[[:space:]]*\${hook_pass_filenames}[[:space:]]*$" <<< "$hook_block"; then
 			echo "Error: required prek hook '\$hook_name' is missing or out of date in $PREK_CONFIG_PATH"
 			exit 1
 		fi
-		if [[ -n "$hook_stages" ]] && ! rg -q "^[[:space:]]*stages[[:space:]]*=[[:space:]]*\\\\[\\\"$hook_stages\\\"\\\\][[:space:]]*$" "$PREK_CONFIG_PATH"; then
+		if [[ -n "$hook_stages" ]] && ! rg -q "^[[:space:]]*stages[[:space:]]*=[[:space:]]*\\\\[\\\"$hook_stages\\\"\\\\][[:space:]]*$" <<< "$hook_block"; then
 			echo "Error: required prek hook '\$hook_name' is missing or out of date in $PREK_CONFIG_PATH"
 			exit 1
 		fi
@@ -418,14 +440,14 @@ function renderEnvironmentRunnerSelection(): string {
 		echo "Error: repo source CLI failed to run check-environment successfully."
 		exit 1
 	fi
-elif [[ -f "$REPO_ROOT/dist/cli.js" ]] && command -v node >/dev/null 2>&1; then
-	if ! run_check_environment_with_runner "repo dist CLI (node dist/cli.js)" node "$REPO_ROOT/dist/cli.js"; then
-		echo "Error: repo dist CLI failed to run check-environment successfully."
-		exit 1
-	fi
 elif [[ -r "$REPO_ROOT/scripts/harness-cli.sh" ]]; then
 	if ! run_check_environment_with_runner "repo wrapper (bash scripts/harness-cli.sh)" bash "$REPO_ROOT/scripts/harness-cli.sh"; then
 		echo "Error: repo wrapper failed to run check-environment successfully."
+		exit 1
+	fi
+elif [[ -f "$REPO_ROOT/dist/cli.js" ]] && command -v node >/dev/null 2>&1; then
+	if ! run_check_environment_with_runner "repo dist CLI (node dist/cli.js)" node "$REPO_ROOT/dist/cli.js"; then
+		echo "Error: repo dist CLI failed to run check-environment successfully."
 		exit 1
 	fi
 else

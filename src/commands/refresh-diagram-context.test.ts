@@ -19,7 +19,7 @@ const SCRIPT_SOURCE = join(
 	"refresh-diagram-context.sh",
 );
 const STABLE_PATH = [
-	"/opt/homebrew/bin",
+	...(process.platform === "darwin" ? ["/opt/homebrew/bin"] : []),
 	"/usr/local/bin",
 	"/usr/bin",
 	"/bin",
@@ -76,7 +76,8 @@ mkdir -p "$out_dir"
 cat > "$out_dir/architecture.mmd" <<'MMD'
 graph TD
   subgraph src["src"]
-    api["api"]
+    api_aaaaaaaa["api"]
+    api_bbbbbbbb["api"]
   end
 MMD
 cat > "$out_dir/erd.mmd" <<'MMD'
@@ -161,8 +162,12 @@ describe("refresh-diagram-context.sh", () => {
 			expect(context).toContain("## How to use this pack");
 			expect(context).toContain("database, and ERD context");
 			expect(context).toContain("harness source-outline <path>");
+			expect(context).toContain(
+				"bash scripts/harness-cli.sh source-outline <path> --json",
+			);
 			expect(context).toContain("## erd");
 			expect(context).toContain("erDiagram");
+			expect(context.match(/\["api"\]/g)).toHaveLength(2);
 		},
 	);
 });

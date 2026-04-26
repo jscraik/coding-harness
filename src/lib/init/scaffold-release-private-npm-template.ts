@@ -1,4 +1,7 @@
-import { renderCiTemplate } from "./scaffold-ci-template-utils.js";
+import {
+	renderCiTemplate,
+	replaceTemplateTokens,
+} from "./scaffold-ci-template-utils.js";
 import { renderGitHubActionsPnpmSetupStep } from "./scaffold-github-actions-pr-pipeline-template.js";
 
 /**
@@ -38,17 +41,18 @@ export function renderReleasePrivateNpmWorkflow(
 			? `${renderGitHubActionsPnpmSetupStep()}\n`
 			: "";
 
-	return renderCiTemplate("release-private-npm.yml")
-		.replace("__PACKAGE_MANAGER_SETUP_STEP__", packageManagerSetupStep)
-		.replace("__INSTALL_COMMAND__", input.installCommand)
-		.replace("__CHECK_COMMAND__", input.checkCommand)
-		.replace("__BUILD_COMMAND__", input.buildCommand)
-		.replace(
-			"__PUBLISH_TOKEN_COMMAND__",
-			renderPrivateNpmPublishCommand(input.packageManager, false),
-		)
-		.replace(
-			"__PUBLISH_OIDC_COMMAND__",
-			renderPrivateNpmPublishCommand(input.packageManager, true),
-		);
+	return replaceTemplateTokens(renderCiTemplate("release-private-npm.yml"), {
+		buildCommand: input.buildCommand,
+		checkCommand: input.checkCommand,
+		installCommand: input.installCommand,
+		packageManagerSetupStep,
+		publishOidcCommand: renderPrivateNpmPublishCommand(
+			input.packageManager,
+			true,
+		),
+		publishTokenCommand: renderPrivateNpmPublishCommand(
+			input.packageManager,
+			false,
+		),
+	});
 }

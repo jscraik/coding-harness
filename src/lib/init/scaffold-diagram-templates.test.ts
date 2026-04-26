@@ -15,7 +15,7 @@ describe("scaffold diagram templates", () => {
 		expect(script).toContain('MAX_FILES="${DIAGRAM_REFRESH_MAX_FILES:-1000}"');
 		expect(script).toContain("const sourceManifest = (() => {");
 		expect(script).toContain("...sourceManifest,");
-		expect(script).toContain("`${subgraph.label}/${node.label}`");
+		expect(script).toContain("normalizedRawNodeKey(node.rawId)");
 		expect(script).toContain("artifacts/tmp-*/**");
 		expect(script).toContain('cp "$TMP_DIR/diagrams/manifest.json"');
 	});
@@ -40,8 +40,17 @@ describe("scaffold diagram templates", () => {
 		expect(context).toContain("Reference this file to understand:");
 		expect(context).toContain("Database and ERD relationships");
 		expect(context).toContain("harness source-outline <path>");
+		expect(context).toContain(
+			"bash scripts/harness-cli.sh source-outline <path> --json",
+		);
+		expect(context).toContain(
+			"bash scripts/refresh-diagram-context.sh --dry-run",
+		);
 		expect(context).toContain("pnpm exec diagram all . --output-dir .diagram");
-		expect(context).toContain("./scripts/refresh-diagram-context.sh --force");
+		expect(context).toContain(
+			"bash scripts/refresh-diagram-context.sh --force",
+		);
+		expect(context).toContain("jq '.generatedAt' .diagram/manifest.json");
 	});
 
 	it("renders the default diagram CLI config", () => {

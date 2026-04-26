@@ -56,7 +56,8 @@ export function deriveRequiredCheckMetadata(
 	displayName: string,
 	options?: DeriveRequiredCheckMetadataOptions,
 ): RequiredCheckMetadata {
-	if (displayName === "CodeRabbit") {
+	const normalizedDisplayName = displayName.trim();
+	if (normalizedDisplayName === "CodeRabbit") {
 		return {
 			sourceAppSlug: "coderabbit",
 			sourceAppId: "coderabbit",
@@ -64,7 +65,7 @@ export function deriveRequiredCheckMetadata(
 			class: "required",
 		};
 	}
-	if (displayName === SEMGREP_CLOUD_CHECK_NAME) {
+	if (normalizedDisplayName === SEMGREP_CLOUD_CHECK_NAME) {
 		return {
 			sourceAppSlug: "semgrep-cloud-platform",
 			sourceAppId: "semgrep-cloud-platform",
@@ -72,7 +73,7 @@ export function deriveRequiredCheckMetadata(
 			class: "required",
 		};
 	}
-	if (displayName === "security-scan") {
+	if (normalizedDisplayName === "security-scan") {
 		if (provider === "circleci") {
 			return {
 				sourceAppSlug: "circleci",
@@ -94,7 +95,6 @@ export function deriveRequiredCheckMetadata(
 			options.circleciPrimaryCheckName.trim().length > 0
 				? options.circleciPrimaryCheckName.trim()
 				: CIRCLECI_PRIMARY_CHECK;
-		const normalizedDisplayName = displayName.trim();
 		const isCircleCiWorkflowOwnedCheck =
 			CIRCLECI_WORKFLOW_OWNED_CHECKS.has(normalizedDisplayName) ||
 			normalizedDisplayName === CIRCLECI_PRIMARY_CHECK ||
@@ -117,7 +117,7 @@ export function deriveRequiredCheckMetadata(
 	return {
 		sourceAppSlug: provider,
 		sourceAppId: provider,
-		githubCheckName: displayName,
+		githubCheckName: normalizedDisplayName,
 		class: "required",
 	};
 }

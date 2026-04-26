@@ -50,8 +50,9 @@ describe("GitHub Actions PR pipeline scaffold template", () => {
 		);
 		expect(workflow).not.toMatch(/{{[a-zA-Z]+}}/);
 		expect(workflow).toContain(
-			'done < <(rg -n "^[[:space:]]*(-[[:space:]]*)?uses:[[:space:]]*[^[:space:]]+" .github/workflows/*.yml)',
+			'uses_matches="$(rg -n "^[[:space:]]*(-[[:space:]]*)?uses:[[:space:]]*[^[:space:]]+" .github/workflows/*.yml || true)"',
 		);
+		expect(workflow).toContain('done <<< "$uses_matches"');
 		expect(workflow).toContain(
 			"Advisory report missing; generated deterministic fallback report.",
 		);

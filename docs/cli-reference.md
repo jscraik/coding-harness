@@ -165,9 +165,12 @@ Compatibility:
 Use `source-outline` as the first read for TypeScript-family source files:
 
 ```bash
-harness source-outline src/commands/search.ts
-harness source-outline src/commands/search.ts --symbol runSearchCLI --json
+bash scripts/harness-cli.sh source-outline src/commands/search.ts --json
+bash scripts/harness-cli.sh source-outline src/commands/search.ts --symbol runSearchCLI --json
 ```
+
+In downstream repositories that consume the packaged CLI directly, use the same
+command shape through `harness source-outline <path>`.
 
 After instruction discovery, use `AI/context/diagram-context.md` as the compact
 architecture map. It combines architecture, dependency, database, and ERD

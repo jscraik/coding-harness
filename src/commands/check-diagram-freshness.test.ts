@@ -19,7 +19,7 @@ const CHECK_SCRIPT_SOURCE = join(
 );
 const STABLE_PATH = [
 	dirname(process.execPath),
-	"/opt/homebrew/bin",
+	...(process.platform === "darwin" ? ["/opt/homebrew/bin"] : []),
 	"/usr/local/bin",
 	"/usr/bin",
 	"/bin",
@@ -192,6 +192,33 @@ printf '%s\n' \
 		roots.push(root);
 
 		write(root, "src/example.ts", "export const example = 3;\n");
+
+		const result = run(root, "bash", ["scripts/check-diagram-freshness.sh"]);
+		expect(result.status).toBe(1);
+		expect(result.stdout).toContain(
+			"Error: architecture diagram artifacts are stale after refresh.",
+		);
+		expect(result.stdout).toContain("AI/context/diagram-context.md");
+	});
+
+	it("fails when refresh changes a generated persistence diagram section", () => {
+		const root = createRepo(`#!/usr/bin/env bash
+set -euo pipefail
+printf '%s\n' "$*" > .refresh-invoked
+fence="$(printf '\\x60\\x60\\x60')"
+printf '%s\n' \
+	"" \
+	"## erd" \
+	"" \
+	"\${fence}mermaid" \
+	"erDiagram" \
+	"  USER ||--o{ REPO : owns" \
+	"\${fence}" \
+	>> AI/context/diagram-context.md
+`);
+		roots.push(root);
+
+		write(root, "src/example.ts", "export const example = 5;\n");
 
 		const result = run(root, "bash", ["scripts/check-diagram-freshness.sh"]);
 		expect(result.status).toBe(1);

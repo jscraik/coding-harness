@@ -21,7 +21,7 @@ export const EXIT_CODES = {
 	SUCCESS: 0,
 	NOT_FOUND: 1,
 	VALIDATION_ERROR: 2,
-	ERROR: 3,
+	ERROR: 1,
 } as const;
 
 const SUPPORTED_EXTENSIONS = new Set([
@@ -490,10 +490,11 @@ function parseSourceOutlineArgs(
 	args: string[],
 ): SourceOutlineOptions | undefined {
 	const json = args.includes("--json");
-	const help = args.includes("--help") || args.includes("-h");
-	if (help) return undefined;
 	const symbolIndex = args.indexOf("--symbol");
 	const symbol = symbolIndex >= 0 ? args[symbolIndex + 1] : undefined;
+	if (symbolIndex >= 0 && (!symbol || symbol.startsWith("--"))) {
+		return undefined;
+	}
 	const path = args.find((arg, index) => {
 		if (arg.startsWith("--")) return false;
 		if (index > 0 && args[index - 1] === "--symbol") return false;
@@ -614,6 +615,10 @@ export function runSourceOutline(
 
 /** Execute the source-outline command from registry-dispatched CLI args. */
 export function runSourceOutlineCLI(args: string[]): number {
+	if (args.includes("--help") || args.includes("-h")) {
+		printSourceOutlineUsage();
+		return EXIT_CODES.SUCCESS;
+	}
 	const options = parseSourceOutlineArgs(args);
 	if (!options) {
 		printSourceOutlineUsage();

@@ -29,6 +29,12 @@ describe("scaffold shell templates", () => {
 		expect(renderLocalHarnessExecCommand("yarn")).toBe("yarn harness");
 	});
 
+	it("rejects unsafe generated package install arguments", () => {
+		expect(() =>
+			renderAddPackageCommand("pnpm", "@scope/package; rm -rf /"),
+		).toThrow("Invalid package name");
+	});
+
 	it("loads packaged Codex shell templates", () => {
 		const templates = [
 			renderCodexPreflightTemplate(),
