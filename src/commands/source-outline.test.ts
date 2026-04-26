@@ -1,8 +1,12 @@
 import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { afterEach, describe, expect, it } from "vitest";
-import { runSourceOutline } from "./source-outline.js";
+import { afterEach, describe, expect, it, vi } from "vitest";
+import {
+	EXIT_CODES,
+	runSourceOutline,
+	runSourceOutlineCLI,
+} from "./source-outline.js";
 
 describe("runSourceOutline", () => {
 	const tempDirs: string[] = [];
@@ -105,6 +109,8 @@ export const format = (value: number): string => {
 		expect(output.mode).toBe("implementation");
 		expect(output.implementation?.symbol).toBe("Worker.run");
 		expect(output.implementation?.text).toContain("return count + 1;");
+		expect(output.implementation?.text).not.toContain("toUpperCase");
+		expect(output.implementation?.text).not.toContain("return String(value);");
 	});
 
 	it("reports an error when the requested symbol is absent", () => {
@@ -131,5 +137,35 @@ export const format = (value: number): string => {
 
 		expect(output.success).toBe(false);
 		expect(output.error).toBe("Path traversal detected");
+	});
+
+	it("rejects unsupported source extensions before parsing", () => {
+		const workspacePath = createWorkspace();
+		writeFileSync(join(workspacePath, "src", "notes.md"), "# Notes\n");
+
+		const output = runSourceOutline({
+			baseDir: workspacePath,
+			path: "src/notes.md",
+		});
+
+		expect(output.success).toBe(false);
+		expect(output.error).toBe(
+			'Unsupported source extension ".md". Expected one of: .ts, .tsx, .js, .jsx, .mts, .cts',
+		);
+	});
+
+	it("prints agent-first usage when no path is provided", () => {
+		const infoSpy = vi.spyOn(console, "info").mockImplementation(() => {});
+		try {
+			const exitCode = runSourceOutlineCLI([]);
+			expect(exitCode).toBe(EXIT_CODES.VALIDATION_ERROR);
+			const usage = infoSpy.mock.calls
+				.map((call) => String(call[0]))
+				.join("\n");
+			expect(usage).toContain("before opening implementation bodies");
+			expect(usage).toContain("--symbol");
+		} finally {
+			infoSpy.mockRestore();
+		}
 	});
 });

@@ -509,8 +509,8 @@ function parseSourceOutlineArgs(
 function printSourceOutlineUsage(): void {
 	console.info(`Usage: harness source-outline <path> [--symbol <name>] [--json]
 
-Print declaration-style comments and signatures for a TypeScript-family source file.
-Use --symbol to unwrap the implementation for a single top-level symbol or class member.
+Inspect declaration-style comments and signatures before opening implementation bodies.
+Use --symbol to unwrap one implementation body for a top-level symbol or class member.
 
 Examples:
   harness source-outline src/commands/source-outline.ts
