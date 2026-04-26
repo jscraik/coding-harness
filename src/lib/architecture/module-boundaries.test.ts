@@ -26,7 +26,7 @@ const TRANSITIONAL_LIB_TO_COMMAND_IMPORTS = new Set([
 	"src/lib/output/normalise.ts",
 ]);
 
-const COMMAND_IMPORT_PATTERN = /from\s+(?:type\s+)?["'](?:\.\.\/)+commands\//;
+const COMMAND_IMPORT_PATTERN = /from\s+["'](?:\.\.\/)+commands\//;
 
 function countFileLines(path: string): number {
 	const content = readFileSync(join(process.cwd(), path), "utf-8");
