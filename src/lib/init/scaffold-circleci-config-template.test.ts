@@ -18,6 +18,7 @@ describe("scaffold CircleCI config template", () => {
 	it("renders the CircleCI PR pipeline with Linear gating enabled", () => {
 		const config = renderCircleCIConfig(circleCiConfigInput);
 
+		expect(config).not.toContain("\t");
 		expect(config).toContain("version: 2.1");
 		expect(config).toContain("name: linear-gate");
 		expect(config).toContain("bash scripts/run-harness-gate.sh linear-gate");
@@ -36,6 +37,7 @@ describe("scaffold CircleCI config template", () => {
 		expect(config).toContain("name: Configure pnpm store");
 		expect(config).toContain("v2-pnpm-store-{{ arch }}-");
 		expect(config).toContain("name: security-scan");
+		expect(config).not.toContain("}}      -");
 		expect(config).not.toMatch(/{{[a-zA-Z]+}}/);
 	});
 
@@ -49,6 +51,7 @@ describe("scaffold CircleCI config template", () => {
 
 		expect(config).not.toContain("name: linear-gate");
 		expect(config).not.toContain("linear-gate \\");
+		expect(config).not.toContain("}}      -");
 		expect(config).toContain("            - pr-template\n");
 		expect(config).not.toContain("            - linear-gate");
 		expect(config).not.toContain("name: Configure pnpm store");
