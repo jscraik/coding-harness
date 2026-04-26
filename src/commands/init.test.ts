@@ -766,7 +766,7 @@ describe("runInit", () => {
 			).toBe(true);
 			expect(
 				existsSync(join(tempDir, ".github/workflows/secret-scan.yml")),
-			).toBe(false);
+			).toBe(true);
 			expect(
 				existsSync(join(tempDir, ".github/workflows/release-private-npm.yml")),
 			).toBe(true);

@@ -3,11 +3,12 @@ import {
 	replaceTemplateTokens,
 } from "./scaffold-ci-template-utils.js";
 import { renderGitHubActionsPnpmSetupStep } from "./scaffold-github-actions-pr-pipeline-template.js";
+import type { PackageManager } from "./types.js";
 
 /** Package-manager-specific command inputs for the private npm release workflow. */
 export interface ReleasePrivateNpmWorkflowRenderInput {
-	/** Detected package-manager executable or versioned package-manager string. */
-	packageManager: string;
+	/** Detected supported package manager. */
+	packageManager: PackageManager;
 	/** Dependency installation command rendered for the scaffolded workflow. */
 	installCommand: string;
 	/** Validation command rendered before publish. */
@@ -17,7 +18,7 @@ export interface ReleasePrivateNpmWorkflowRenderInput {
 }
 
 function renderPrivateNpmPublishCommand(
-	packageManager: string,
+	packageManager: PackageManager,
 	withProvenance: boolean,
 ): string {
 	if (packageManager === "pnpm") {
