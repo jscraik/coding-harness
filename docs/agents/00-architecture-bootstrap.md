@@ -34,7 +34,6 @@ scripts/harness-cli.sh source-outline <path> --json` before opening full
    source, then unwrap only the needed symbol with `--symbol <name>`.
 5. Route to deeper SOPs in `docs/agents/` after architecture context is loaded.
 
-
 ## Artifact validation gates
 
 Run these checks before architecture-sensitive edits:
