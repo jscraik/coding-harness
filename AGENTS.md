@@ -50,7 +50,7 @@ Notes:
 - If instruction precedence is unclear, stop and resolve it before editing behavior.
 
 ## Startup Workflow
-1. Read this file first, then [docs/agents/01-instruction-map.md](./docs/agents/01-instruction-map.md) to route into extension docs, and open only task-relevant linked SOPs.
+1. After global discovery surfaces (`~/.codex/AGENTS.md`), read this file first in-repo, then [docs/agents/01-instruction-map.md](./docs/agents/01-instruction-map.md) to route into extension docs, and open only task-relevant linked SOPs.
 2. Run `bash scripts/codex-preflight.sh --stack auto --mode required` before multi-step, destructive, or path-sensitive work.
 3. Summarize repo structure, active constraints, and blockers before edits.
 4. Make the smallest change that satisfies the task, then run the narrowest validation that proves it works; widen only as risk increases.
@@ -74,6 +74,7 @@ Notes:
 - Before handoff when behavior changed, run `bash scripts/validate-codestyle.sh`; use `bash scripts/verify-work.sh` as the broader readiness gate.
 - If runtime or artifact behavior changed, run `pnpm test:deep`.
 - When docs-gate categories are affected, run `bash scripts/run-harness-gate.sh docs-gate --mode required --json` and clear warnings before merge.
+- When AGENTS/vocabulary surfaces change, run `pnpm run docs:ubiquitous:guard` to ensure `AGENTS.md` keeps the glossary linkage contract.
 - When changing validation, required-check, tooling/runtime, or architecture-context behavior, update the docs-gate required surfaces in the same change (`README.md`, `AGENTS.md`, `CONTRIBUTING.md`, `docs/agents/02-tooling-policy.md`, `docs/agents/06-security-and-governance.md`, `docs/agents/00-architecture-bootstrap.md`).
 - Report exact commands/outcomes in handoff notes and update the matching Linear issue for durable findings.
 
