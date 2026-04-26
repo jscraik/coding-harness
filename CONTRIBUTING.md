@@ -56,6 +56,7 @@ This workflow keeps delivery auditable, reversible, and consistent even for solo
 - bash scripts/validate-codestyle.sh
 - pnpm check
 - test -f memory.json && jq -e '.meta.version == "1.0" and (.preamble.bootstrap | type == "boolean") and (.preamble.search | type == "boolean") and (.entries | type == "array")' memory.json >/dev/null
+- CircleCI PR governance/security checks, plus the external GitHub App required check `semgrep-cloud-platform/scan`, must be green before merge.
 
 ## Required tooling baseline
 
