@@ -38,6 +38,8 @@ describe("scaffold diagram templates", () => {
 
 		expect(context).toContain("# Diagram Context Pack");
 		expect(context).toContain("Reference this file to understand:");
+		expect(context).toContain("Database and ERD relationships");
+		expect(context).toContain("harness source-outline <path>");
 		expect(context).toContain("pnpm exec diagram all . --output-dir .diagram");
 		expect(context).toContain("./scripts/refresh-diagram-context.sh --force");
 	});

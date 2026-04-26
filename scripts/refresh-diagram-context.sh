@@ -333,6 +333,12 @@ TMP_CONTEXT="$TMP_DIR/diagram-context.md"
 	echo
 	echo "Generated: $(date -u +"%Y-%m-%dT%H:%M:%SZ")"
 	echo
+	echo "## How to use this pack"
+	echo
+	echo "- Start here for compact architecture, dependency, database, and ERD context before opening raw source files."
+	echo "- Use .diagram/manifest.json to choose a focused Mermaid file when this combined pack is too large."
+	echo '- For TypeScript implementation detail, run `harness source-outline <path>` first, then unwrap one symbol with `--symbol <name>`.'
+	echo
 	for file in "$TMP_DIR"/diagrams/*.mmd; do
 		name="$(basename "$file" .mmd)"
 		echo "## ${name}"

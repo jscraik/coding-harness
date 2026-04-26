@@ -158,6 +158,9 @@ describe("refresh-diagram-context.sh", () => {
 				join(root, "AI", "context", "diagram-context.md"),
 				"utf-8",
 			);
+			expect(context).toContain("## How to use this pack");
+			expect(context).toContain("database, and ERD context");
+			expect(context).toContain("harness source-outline <path>");
 			expect(context).toContain("## erd");
 			expect(context).toContain("erDiagram");
 		},

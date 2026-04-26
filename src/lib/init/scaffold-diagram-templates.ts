@@ -47,7 +47,12 @@ When source files change, the CI pipeline:
 Reference this file to understand:
 - Project structure and component relationships
 - Module dependencies and data flows
+- Database and ERD relationships emitted by \`@brainwav/diagram\`
 - Test coverage patterns
+
+Use this pack before opening raw source files. When you need TypeScript
+implementation detail, run \`harness source-outline <path>\` first and unwrap one
+symbol at a time with \`--symbol <name>\`.
 
 ## Manual refresh
 
