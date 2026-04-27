@@ -110,3 +110,4 @@ docs/sketches/
 /.codex/hook-conformance.json
 .local/
 /codex-scripts/
+.codex/config.toml
