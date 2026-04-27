@@ -26,6 +26,7 @@ last_validated: 2026-04-27
 - Expands rollout guidance so the harness repo proves the runtime contract first, then emits the same contract through scaffold and update flows, then realigns product-facing docs last.
 
 ## Table of Contents
+
 - [Enhancement Summary](#enhancement-summary)
 - [Overview](#overview)
 - [Problem Statement / Motivation](#problem-statement--motivation)
@@ -140,6 +141,9 @@ The phases below should be executed as bounded slices with explicit handoff chec
 - P4 should stop if README or status wording would describe behavior that is not yet enforced by `review-gate`, `drift-gate`, `doctor`, or preflight in the current tree.
 - Any phase that changes artifact names or persistence paths should stop until matching tests and downstream-emission surfaces are updated in the same slice.
 - Any phase blocked by `scripts/check-code-size.mjs` should add or complete a dedicated size-control slice before marking the phase complete.
+- A phase can be marked `completed` only when both conditions are true:
+  - phase-scoped behavior tests pass with deterministic evidence,
+  - required quality gates for the touched slice are green (`scripts/check-code-size.mjs`, `bash scripts/validate-codestyle.sh --fast`, and `pnpm check` unless an out-of-slice blocker is explicitly documented with owner and follow-up issue).
 
 ### P0 - Canonical contract shape and validator boundary
 
@@ -177,8 +181,9 @@ Approach:
 - Add harness default contract entries in `harness.contract.json` for the new north-star block, initial product-surface registration inventory, and reviewer registry.
 - Preserve compatibility by making missing north-star fields a hard error only where the spec requires runtime invalidation, not through implicit fallback behavior. Add migration notes and compatibility fixtures for existing repos:
   - scaffold defaults should provide explicit placeholders where missing by design,
-  - existing repos must pass through a deprecation-first warning path until they adopt required keys under spec-defined deadlines,
-  - add fixture coverage for both warning-to-enforced transition and hard-fail enforcement boundaries.
+  - existing repos must pass through a deprecation-first warning path until they adopt required keys under a documented enforcement transition,
+  - define and test the migration cutover explicitly: warning mode for legacy contract shape, then enforced failure mode once upgrade criteria are met,
+  - add fixture coverage for both warning-to-enforced transition and hard-fail enforcement boundaries, including legacy reviewer-registry shapes.
 - Keep the reviewer authority source singular: runtime and tests should resolve trusted reviewers only from `harness.contract.json.overrideReviewerRegistry.trustedReviewers[]`, even if other legacy approval or reviewer concepts exist elsewhere in the contract.
 
 Test scenarios:
@@ -301,9 +306,11 @@ Approach:
 - Keep `.harness/overrides/...` and `.harness/guardrails/...` as canonical governance sidecar records, not replacements for existing gate outputs. `preflight-gate`, `review-gate`, and `drift-gate` should continue to emit their established normalized results and, where applicable, existing run-record artifacts while referencing the north-star sidecar paths in machine-readable output.
 - Reconcile write-path expectations explicitly in this phase. If any gate currently restricts artifact output to an approved output root, the implementation must either extend that approved root set for the new `.harness/...` sidecar records or route the write through an already-authorized persistence path in the same slice.
 - Preserve existing public output contracts for downstream tooling by keeping all pre-existing gate output keys and adding north-star artifact references as additive fields.
+- Treat sidecar rollout as a compatibility contract, not only an implementation detail. P2 must include explicit before/after output-compat fixtures that prove existing command consumers continue to parse outputs when sidecar references are absent and when they are present.
 - Keep `review-gate` layered over the existing merge-readiness path rather than turning it into a general artifact orchestrator. The north-star checks should consume the shared helper results and emit the new alignment artifacts, but existing approval-state and current-head checks remain the primary safety floor.
 - Keep `drift-gate` inventory-backed. The widened comparison scope must not regress its deterministic changed-surface posture or silently bypass `surface_registration_gap` findings when governed files move faster than inventory updates.
 - Treat `doctor` as readiness detection, not policy authoring. It should report missing or invalid north-star contract/artifact state, but it should not become a second implementation of drift or review logic.
+- Insert a decomposition checkpoint before P2 closeout: extract or isolate `drift-gate` helper seams needed to satisfy size-budget limits and failure localization before claiming P2 runtime parity.
 - Treat Project Brain as the gate-integration memory substrate. Before editing this phase, run `harness brain preflight --files <changed-files> --json` and include the returned governance/tooling rules in the implementation notes.
 - If Project Brain cannot run in the current environment, treat this as an explicit environment precondition and add a documented skip reason to the handoff instead of blocking the implementation indefinitely.
 - At closeout, update Project Brain when the slice creates or confirms durable knowledge:
@@ -311,7 +318,7 @@ Approach:
   - record stable architecture or policy choices under `.harness/decisions/` when they should not be re-litigated,
   - record non-obvious implementation gotchas in the matching `.harness/knowledge/<domain>/knowledge.md`,
   - add a `.harness/review-log.md` row for the reviewed Project Brain update.
-  Skip Project Brain writes only when the slice produces no reusable learning; record that skip reason in the handoff.
+    Skip Project Brain writes only when the slice produces no reusable learning; record that skip reason in the handoff.
 
 Test scenarios:
 
@@ -351,9 +358,9 @@ Goal: eliminate blockers from `scripts/check-code-size.mjs` so P2 and P3 can com
 Primary files:
 
 - `src/commands/drift-gate-core.ts`
-- `src/lib/contract/json-schema.ts` *(if still blocked after P2 extraction)*
-- `src/lib/pilot-evaluation/control-plane.ts` *(if still blocked after P2 extraction)*
-- `src/lib/output/normalise-review-preflight.ts` *(if still blocked after P2 extraction)*
+- `src/lib/contract/json-schema.ts` _(if still blocked after P2 extraction)_
+- `src/lib/pilot-evaluation/control-plane.ts` _(if still blocked after P2 extraction)_
+- `src/lib/output/normalise-review-preflight.ts` _(if still blocked after P2 extraction)_
 
 Requirements:
 
@@ -463,6 +470,7 @@ Verification:
 - targeted drift-gate fixtures for canonical-surface agreement
 - prose lint on changed docs
 - executable drift check for docs/runtime coupling (fixture test that compares `docs/roadmap/north-star.md`, `README.md`, and `docs/roadmap/agent-first-status.md` against canonical contract/command output fields; fail if field names drift or decisions are omitted)
+- machine-checkable narrative parity assertion that verifies the canonical decision-question set and artifact names are sourced from current runtime contract/helper outputs, not manually copied prose.
 
 Exit criteria:
 
@@ -582,28 +590,30 @@ Phase-oriented validation expectations:
 - `AC5`: README and status surfaces align to the runtime-enforced north star and fail drift checks when they diverge.
   Traceability: Spec `Goals` 2 and 6; `SA7`, `SA11`, `SA12`
 
+Completion rubric:
+
+- Keep `AC` items unchecked until the scoped implementation evidence and required gates are both green for the owning phase.
+- Functional progress may be noted inline, but merge-ready completion requires passing `scripts/check-code-size.mjs`, `bash scripts/validate-codestyle.sh --fast`, and `pnpm check` for the affected slice (or an explicitly tracked out-of-slice blocker with owner and follow-up issue).
+- Do not mark downstream `AC` items complete when prerequisite phase stop rules remain open.
+
 ## Acceptance Checklist
 
-- [x] `AC1` Contract layer ships with canonical north-star, product-surface, and reviewer-registry support.
-- [x] `AC2` Shared north-star helper layer exists and is reused by runtime gates.
+- [ ] `AC1` Contract layer ships with canonical north-star, product-surface, and reviewer-registry support. Functional test evidence exists, but completion remains gated by full required quality gates for the owning slice.
+- [ ] `AC2` Shared north-star helper layer exists and is reused by runtime gates. Functional test evidence exists, but completion remains gated by full required quality gates for the owning slice.
 - [ ] `AC3` Preflight/review/drift/doctor behavior matches the spec’s admission and gate blocker classes, question contract, artifact model, and Project Brain preflight/closeout memory loop. Current state: functional slice tests pass, but `pnpm check` is blocked by `scripts/check-code-size.mjs` regressions in `src/commands/drift-gate-core.ts` and existing oversized legacy files.
 - [ ] `AC4` Preflight and scaffolded output are contract-sourced and remain in parity. Pending verification after the drift-gate split refactor is rebalanced to satisfy code-size constraints.
 - [ ] `AC5` README and status reporting align to runtime truth and are covered by drift-oriented tests or fixtures.
 
-Current-state note:
-
-- `AC1` and `AC2` are functionally implemented with direct test evidence, but merge-ready completion is deferred until `scripts/check-code-size.mjs` and `pnpm check` are fully green across P2/P3 scope.
-
 ## Execution Ledger (Planning Mode)
 
-STEP_ID | status | owner | evidence
----|---|---|---
-P0 | `in_progress` | implementation | `pnpm exec vitest run src/lib/contract/validator.test.ts src/lib/contract/loader.test.ts src/commands/contract.test.ts` (pass); `pnpm check` blocked by code-size regressions in this broader slice (`src/commands/drift-gate-core.ts`, plus pre-existing oversized files outside P0 ownership).
-P1 | `in_progress` | implementation | `pnpm exec vitest run src/lib/contract/north-star-validators.test.ts` (pass); `pnpm check` blocked by code-size regressions in `src/commands/drift-gate-core.ts` and pre-existing oversized files.
-P2 | `in_progress` | implementation | `pnpm exec vitest run src/commands/preflight-gate.test.ts src/commands/drift-gate.test.ts src/commands/review-gate.test.ts src/commands/doctor.test.ts src/lib/contract/north-star-validators.test.ts src/lib/contract/north-star-alignment.test.ts src/lib/contract/north-star-artifact-io.test.ts src/lib/output/normalise.test.ts` (pass); `pnpm check` blocked by size-budget violations in `src/commands/drift-gate-core.ts` and pre-existing oversized files.
-P2a | `in_progress` | implementation | `scripts/check-code-size.mjs` (required `unblocker`); targeted Vitest slices for extracted helpers and compatibility checks; `bash scripts/validate-codestyle.sh --fast` once split.
-P3 | `in_progress` | implementation | `bash scripts/validate-codestyle.sh --fast` (blocked by `scripts/check-code-size.mjs` until P2a closure on `src/commands/drift-gate-core.ts` and any remaining scoped oversized functions).
-P4 | pending | implementation | `harness` command and docs alignment remains open because `src/commands/drift-gate-core.ts` and the current repository placeholder states must be resolved before docs drift-check closure.
+| STEP_ID | status        | owner          | evidence                                                                                                                                                                                                                                                                                                                                                                                                                                                            |
+| ------- | ------------- | -------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| P0      | `in_progress` | implementation | `pnpm exec vitest run src/lib/contract/validator.test.ts src/lib/contract/loader.test.ts src/commands/contract.test.ts` (pass); `pnpm check` blocked by code-size regressions in this broader slice (`src/commands/drift-gate-core.ts`, plus pre-existing oversized files outside P0 ownership).                                                                                                                                                                    |
+| P1      | `in_progress` | implementation | `pnpm exec vitest run src/lib/contract/north-star-validators.test.ts` (pass); `pnpm check` blocked by code-size regressions in `src/commands/drift-gate-core.ts` and pre-existing oversized files.                                                                                                                                                                                                                                                                  |
+| P2      | `in_progress` | implementation | `pnpm exec vitest run src/commands/preflight-gate.test.ts src/commands/drift-gate.test.ts src/commands/review-gate.test.ts src/commands/doctor.test.ts src/lib/contract/north-star-validators.test.ts src/lib/contract/north-star-alignment.test.ts src/lib/contract/north-star-artifact-io.test.ts src/lib/output/normalise.test.ts` (pass); `pnpm check` blocked by size-budget violations in `src/commands/drift-gate-core.ts` and pre-existing oversized files. |
+| P2a     | `in_progress` | implementation | `scripts/check-code-size.mjs` (required `unblocker`); targeted Vitest slices for extracted helpers and compatibility checks; `bash scripts/validate-codestyle.sh --fast` once split.                                                                                                                                                                                                                                                                                |
+| P3      | `in_progress` | implementation | `bash scripts/validate-codestyle.sh --fast` (blocked by `scripts/check-code-size.mjs` until P2a closure on `src/commands/drift-gate-core.ts` and any remaining scoped oversized functions).                                                                                                                                                                                                                                                                         |
+| P4      | pending       | implementation | `harness` command and docs alignment remains open because `src/commands/drift-gate-core.ts` and the current repository placeholder states must be resolved before docs drift-check closure.                                                                                                                                                                                                                                                                         |
 
 ## Sources & References
 
