@@ -1,4 +1,5 @@
 import { spawnSync } from "node:child_process";
+import semver from "semver";
 import { detectHarnessVersionCoherence } from "../lib/version-coherence.js";
 import { commandExists, getCommandVersion } from "./doctor-check-utils.js";
 import type { DoctorCheckFn } from "./doctor-checks.js";
@@ -26,7 +27,7 @@ export const DOCTOR_TOOL_CHECKS: DoctorCheckFn[] = [
 				id: "tool:node",
 				category: "tool",
 				label: "Node.js",
-				status: "warn",
+				status: "fail",
 				message: `Node ${version} found — harness requires v24+`,
 				fix: "Upgrade via mise: mise install node@24 && mise use node@24",
 			};
@@ -54,12 +55,33 @@ export const DOCTOR_TOOL_CHECKS: DoctorCheckFn[] = [
 			};
 		}
 		const version = getCommandVersion("pnpm");
+		if (!version) {
+			return {
+				id: "tool:pnpm",
+				category: "tool",
+				label: "pnpm",
+				status: "fail",
+				message: "Unable to determine pnpm version",
+				fix: "npm install -g pnpm@10.33.0",
+			};
+		}
+		const requiredVersion = "10.33.0";
+		if (!semver.satisfies(version, `>=${requiredVersion}`)) {
+			return {
+				id: "tool:pnpm",
+				category: "tool",
+				label: "pnpm",
+				status: "fail",
+				message: `pnpm ${version} found — harness requires v${requiredVersion}+`,
+				fix: `npm install -g pnpm@${requiredVersion}`,
+			};
+		}
 		return {
 			id: "tool:pnpm",
 			category: "tool",
 			label: "pnpm",
 			status: "ok",
-			message: version ?? "found",
+			message: version,
 		};
 	},
 
